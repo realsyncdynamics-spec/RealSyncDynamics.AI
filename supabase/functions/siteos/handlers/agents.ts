@@ -1,6 +1,6 @@
 // siteos-agents — asynchrone Ausführung der SiteOS-Agenten.
 //
-// POST /functions/v1/siteos-agents
+// POST /functions/v1/siteos/agents
 // Auth: Authorization: Bearer <user JWT>
 // Body:
 //   { op: 'list',    tenant_id, status? }
@@ -8,7 +8,7 @@
 //   { op: 'run',     tenant_id, run_id? }       // arbeitet einen bzw. den
 //                                               // nächsten Lauf ab
 //
-// Die Agenten laufen asynchron: `siteos-builder` und `siteos-runtime-scan`
+// Die Agenten laufen asynchron: `siteos/builder` und `siteos/runtime-scan`
 // reihen nur ein, gearbeitet wird hier — angestoßen von der SPA oder vom
 // Cron der Governance-Runtime.
 //
@@ -17,9 +17,9 @@
 // mit ihrem Nachweis unangetastet.
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-import { handleOptions, jsonResponse, jsonError, methodNotAllowed } from '../_shared/gateway.ts';
-import { audit } from '../_shared/auditLog.ts';
-import { appendCustodyEvent } from '../_shared/provenanceCore.ts';
+import { handleOptions, jsonResponse, jsonError, methodNotAllowed } from '../../_shared/gateway.ts';
+import { audit } from '../../_shared/auditLog.ts';
+import { appendCustodyEvent } from '../../_shared/provenanceCore.ts';
 import {
   AGENTS,
   analyzeBlueprint,
@@ -29,7 +29,7 @@ import {
   type AgentKey,
   type RuntimeFinding,
   type SiteBlueprint,
-} from '../../../packages/siteos-core/src/index.ts';
+} from '../../../../packages/siteos-core/src/index.ts';
 
 interface AgentRunRow {
   id: string;
@@ -42,7 +42,7 @@ interface AgentRunRow {
   requires_approval: boolean;
 }
 
-Deno.serve(async (req) => {
+export async function handle(req: Request): Promise<Response> {
   const preflight = handleOptions(req);
   if (preflight) return preflight;
   if (req.method !== 'POST') return methodNotAllowed();
@@ -138,7 +138,7 @@ Deno.serve(async (req) => {
     }));
     return jsonError(500, 'INTERNAL', 'siteos-agents failed');
   }
-});
+}
 
 type Admin = ReturnType<typeof createClient>;
 

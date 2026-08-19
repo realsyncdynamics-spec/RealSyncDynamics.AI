@@ -15,18 +15,20 @@ import {
 } from '../../components/landing/EdgeFunctionAvailabilityNotice';
 
 /**
- * Die Functions, auf denen dieser Builder steht.
+ * Die Function, auf der dieser Builder steht.
  *
- * `siteos-discover` liest die Ausgangsseite, `siteos-builder` erzeugt daraus
- * den Blueprint. Ohne beide gibt es nichts zu zeigen — die Oberflaeche wuerde
- * einen leeren Rahmen und eine Fehlermeldung in der Seitenleiste zeigen,
- * waehrend die Kopfzeile „Ihre neue Website ist bereits gebaut" behauptet.
+ * `siteos/discover` liest die Ausgangsseite, `siteos/builder` erzeugt daraus
+ * den Blueprint. Beide sind Pfade **eines** Function-Slots `siteos` — geprueft
+ * wird deshalb ein Name, nicht zwei. Fehlt er, gibt es nichts zu zeigen: Die
+ * Oberflaeche zeigte einen leeren Rahmen und eine Fehlermeldung in der
+ * Seitenleiste, waehrend die Kopfzeile „Ihre neue Website ist bereits
+ * gebaut" behauptet.
  *
- * Geprueft wird deshalb **vor** dem Aufbau, nicht danach: Anders als beim
+ * Geprueft wird **vor** dem Aufbau, nicht danach: Anders als beim
  * Onboarding kostet ein Fehlversuch hier keine Anfrage, sondern eine Minute
  * Ladebalken mit einem Versprechen darueber.
  */
-const BUILDER_FUNCTIONS = ['siteos-discover', 'siteos-builder'] as const;
+const BUILDER_FUNCTIONS = ['siteos'] as const;
 
 type Discovery = { source_url: string; title: string | null; description: string | null; h1: string | null; services: string[]; visible_text: string };
 type Device = 'desktop' | 'tablet' | 'mobile';
@@ -59,7 +61,7 @@ export default function PreviewSelectionPage() {
     setBusy(true); setError('');
     try {
       const sb = getSupabase();
-      const { data: found, error: discoveryError } = await sb.functions.invoke('siteos-discover', { body: { tenant_id: activeTenantId, url: sourceUrl } });
+      const { data: found, error: discoveryError } = await sb.functions.invoke('siteos/discover', { body: { tenant_id: activeTenantId, url: sourceUrl } });
       if (discoveryError) throw discoveryError;
       const site = found as Discovery;
       if (!site?.source_url) throw new Error('Die Ausgangswebsite konnte nicht analysiert werden.');

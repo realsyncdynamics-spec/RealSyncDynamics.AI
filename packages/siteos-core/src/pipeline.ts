@@ -4,7 +4,7 @@
 // Blueprint, dann Hash, dann Prüfung, dann Bewertung. Wer die Prüfung nach
 // dem Hash einsetzt, bekommt einen Nachweis über eine ungeprüfte Struktur.
 //
-// Die Edge Function `siteos-builder` ruft ausschließlich diese Funktion auf
+// Der Endpunkt `siteos/builder` ruft ausschließlich diese Funktion auf
 // und persistiert deren Ergebnis.
 
 import { canonicalHash, sha256Hex } from './canonical.ts';

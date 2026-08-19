@@ -1,12 +1,12 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-import { handleOptions, jsonError, jsonResponse, methodNotAllowed } from '../_shared/gateway.ts';
+import { handleOptions, jsonError, jsonResponse, methodNotAllowed } from '../../_shared/gateway.ts';
 
 const MAX_HTML_BYTES = 1_000_000;
 const MAX_TEXT_CHARS = 12_000;
 const MAX_SERVICES = 12;
 const MAX_REDIRECTS = 3;
 
-Deno.serve(async (req) => {
+export async function handle(req: Request): Promise<Response> {
   const preflight = handleOptions(req);
   if (preflight) return preflight;
   if (req.method !== 'POST') return methodNotAllowed();
@@ -40,7 +40,7 @@ Deno.serve(async (req) => {
 
   try { return jsonResponse({ ok: true, ...(await discover(sourceUrl)) }); }
   catch (error) { return jsonError(502, 'UNREACHABLE', error instanceof Error ? error.message : 'website discovery failed'); }
-});
+}
 
 async function discover(startUrl: URL) {
   let current = startUrl;

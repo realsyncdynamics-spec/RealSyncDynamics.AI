@@ -85,10 +85,7 @@ den Kaufwegen ausgewiesen.
 | `save-company-profile` | `src/unified-entry/pages/PostRegisterOnboardingPage.tsx` |
 | `seo-dashboard-data` | `src/features/seo-marketing-dashboard/SEOMarketingDashboard.tsx` |
 | `share-dashboard` | `src/features/seo-marketing-dashboard/CollaborationPanel.tsx` |
-| `siteos-agents` | `src/features/siteos/siteOsApi.ts` |
-| `siteos-builder` | `src/features/siteos/siteOsApi.ts` |
-| `siteos-discover` | `src/unified-entry/pages/PreviewSelectionPage.tsx`<br>`src/pages/WebsiteTransformationFlow.tsx` |
-| `siteos-runtime-scan` | `src/features/siteos/siteOsApi.ts` |
+| `siteos` (Router: `/discover`, `/builder`, `/runtime-scan`, `/agents`) | `src/features/siteos/siteOsApi.ts`<br>`src/unified-entry/pages/PreviewSelectionPage.tsx`<br>`src/pages/WebsiteTransformationFlow.tsx` |
 | `social-orchestrator-persistence` | `src/core/social-orchestrator/persistenceClient.ts` |
 | `sync-ga-metrics` | `src/features/seo-marketing-dashboard/IntegrationSettings.tsx` |
 | `sync-stripe-metrics` | `src/features/seo-marketing-dashboard/IntegrationSettings.tsx` |
@@ -242,7 +239,7 @@ Der Test sagt anschließend selbst, welche Einträge in `UNBACKED_CALLERS`
 |---|---|---|
 | `save-company-profile` | `/unified-entry/onboarding` | Fehlschlag wird als eigener Zustand gezeigt, Konto bleibt nutzbar |
 | `create-trial-subscription` | `/unified-entry/onboarding` | dito — kein „Growth ist bereit" ohne angelegten Growth-Testzeitraum |
-| `siteos-discover` | `/unified-entry/preview` | offen |
+| `siteos` | `/handwerk-website` · `/app/siteos/builder` | Hinweis statt Ladebalken, siehe unten |
 | `audit`, `avv-generator`, `dsfa`, `sub-processors` | `/api-docs` | als „Noch nicht verfügbar" gekennzeichnet |
 
 `api-quota` steht zusätzlich in `src/features/api/API_DEVELOPER_GUIDE.md`,
@@ -258,7 +255,7 @@ bauen. Der Bestand ist erheblich und funktionsfähig geschrieben —
 | Baustein | Umfang |
 |---|---|
 | `packages/siteos-core` — Prompt → Brief → Blueprint → Render, Scoring, Agenten | 3.322 Zeilen |
-| `supabase/functions/siteos-builder` | 282 Zeilen |
+| `supabase/functions/siteos` — Router mit vier Handlern | 1.175 Zeilen |
 | `platform/builder_orchestrator` (Python, Multi-Agent) | 6.792 Zeilen |
 
 Was fehlte, war nie der Code, sondern der Weg dorthin.
@@ -268,33 +265,43 @@ Was fehlte, war nie der Code, sondern der Weg dorthin.
 - `PreviewSelectionPage` ist unter **`/app/siteos/builder`** geroutet. Sie lag
   seit ihrer Entstehung ohne Route im Repo.
 - Verlinkt vom SiteOS-Dashboard („Website aus Prompt bauen").
-- Die Seite prüft `siteos-discover` und `siteos-builder` **vor** dem Aufbau.
-  Fehlen sie, erscheint ein Hinweis statt eines dauerhaften Ladebalkens, und
-  die Kopfzeile behauptet nicht mehr, die Website sei bereits gebaut.
+- Die Seite prüft `siteos` **vor** dem Aufbau. Fehlt der Slot, erscheint ein
+  Hinweis statt eines dauerhaften Ladebalkens, und die Kopfzeile behauptet
+  nicht mehr, die Website sei bereits gebaut.
+- Die vier Functions sind zu **einem** Router zusammengefasst
+  (`supabase/functions/siteos/`). Damit kostet SiteOS einen Slot statt vier.
+  Das war die einzige Stellschraube, die ohne fremde Zustimmung zu drehen war:
+  Slots freigeben heißt Produktionsfunktionen löschen, den Bedarf senken
+  nicht.
 
-### Offen — braucht vier Edge-Function-Slots
+### Offen — braucht **einen** Edge-Function-Slot
 
-Der Builder arbeitet erst, wenn diese Functions in Produktion sind:
+Der Builder arbeitet, sobald der Router in Produktion ist:
 
-| Function | wofür |
+| Endpunkt | wofür |
 |---|---|
-| `siteos-discover` | liest die Ausgangsseite |
-| `siteos-builder` | erzeugt den Blueprint |
-| `siteos-runtime-scan` | die acht Laufzeit-Analysen |
-| `siteos-agents` | die sieben asynchronen Agenten |
+| `siteos/discover` | liest die Ausgangsseite |
+| `siteos/builder` | erzeugt den Blueprint |
+| `siteos/runtime-scan` | die acht Laufzeit-Analysen |
+| `siteos/agents` | die sieben asynchronen Agenten |
 
-Das Kontingent ist mit 100 voll (`EDGE_FUNCTION_PLAN_LIMIT`). Vier Slots gibt
-es auf zwei Wegen:
+Das Kontingent ist mit 100 voll (`EDGE_FUNCTION_PLAN_LIMIT`), gemessen am
+2026-08-19 gegen das Live-Projekt. Den einen Slot gibt es auf zwei Wegen:
 
 1. **Tauschen.** `.github/workflows/k1-slots-freigeben.yml` gibt zwei frei
    (`enterprise-ai-os-evaluate`, `enterprise-ai-os-agents-list`). Nach dem
    Merge von #1087 kommen über den Router weitere fünf dazu. **Vorher** müssen
    beide Slugs in `scripts/edge-functions-retired.txt` stehen, sonst legt der
-   nächste `deploy_all` sie wieder an.
+   nächste `deploy_all` sie wieder an. Beides — der Workflow-Start wie der
+   Merge — liegt außerhalb dessen, was diese Sitzung ausführen kann: Der
+   Dispatch wird mit `403` abgewiesen.
 2. **Plan wechseln.** Der Free-Tarif begrenzt auf 100 Functions und bietet
    weder tägliche Backups noch Point-in-Time-Recovery noch ein SLA — für ein
    Produkt, das Prüfpfad und Evidence-Ketten zusagt, ohnehin ein offener
    Governance-Befund (CLAUDE.md §5).
 
-Sobald die vier laufen, verschwindet der Hinweis von selbst: Er hängt an
-`isEdgeFunctionInProduction()`, nicht an einem weiteren Commit.
+Sobald der Router läuft, verschwindet der Hinweis von selbst: Er hängt an
+`isEdgeFunctionInProduction()`, nicht an einem weiteren Commit. Einzutragen
+ist dann nur noch `siteos` in `PRODUCTION_EDGE_FUNCTIONS` — der Vertragstest
+`test/backend/edge-function-contract.test.ts` erinnert daran, indem er den
+dann überflüssigen `UNBACKED_CALLERS`-Eintrag anmahnt.

@@ -48,12 +48,29 @@ function collectSourceFiles(dir: string, out: string[] = []): string[] {
 /**
  * Die drei Aufrufwege, die im Repo tatsächlich vorkommen. Bewusst keine
  * Heuristik über beliebige Strings — sonst wird jedes Wort zum Function-Namen.
+ *
+ * Der Schrägstrich gehört ins Zeichenraster, seit Functions als **Router**
+ * gebaut werden: `invoke('siteos/builder')` spricht den Slot `siteos` an.
+ * Ohne ihn hätte die Umstellung auf einen Router jeden Aufruf unsichtbar
+ * gemacht — der Scanner hätte nichts mehr gefunden und wäre grün geblieben,
+ * also genau das Gegenteil von dem, wofür dieser Test da ist.
  */
 const CALL_PATTERNS: readonly RegExp[] = [
-  /functions\.invoke\(\s*['"]([a-z0-9-]+)['"]/g,
-  /(?:postEdgeFunction|getEdgeFunction|callEdgeFunction|invokeFunction)\(\s*['"]([a-z0-9-]+)['"]/g,
-  /\/functions\/v1\/([a-z0-9-]+)/g,
+  /functions\.invoke\(\s*['"]([a-z0-9/-]+)['"]/g,
+  /(?:postEdgeFunction|getEdgeFunction|callEdgeFunction|invokeFunction)\(\s*['"]([a-z0-9/-]+)['"]/g,
+  /\/functions\/v1\/([a-z0-9/-]+)/g,
 ];
+
+/**
+ * Vom Aufrufpfad auf den Slot, der bezahlt wird.
+ *
+ * Das Plan-Limit zählt Slots, nicht Endpunkte: `siteos/builder` und
+ * `siteos/discover` kosten zusammen einen. Verglichen wird deshalb das erste
+ * Segment.
+ */
+function slotOf(callPath: string): string {
+  return callPath.split('/')[0];
+}
 
 interface Call {
   slug: string;
@@ -69,7 +86,7 @@ function collectCalls(): Call[] {
       const re = new RegExp(pattern.source, pattern.flags);
       let match: RegExpExecArray | null;
       while ((match = re.exec(content)) !== null) {
-        calls.push({ slug: match[1], file: file.slice(SRC.length + 1) });
+        calls.push({ slug: slotOf(match[1]), file: file.slice(SRC.length + 1) });
       }
     }
   }

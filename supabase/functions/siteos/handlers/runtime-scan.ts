@@ -1,6 +1,6 @@
 // siteos-runtime-scan — die acht Runtime-Analysen gegen eine Live-Site.
 //
-// POST /functions/v1/siteos-runtime-scan
+// POST /functions/v1/siteos/runtime-scan
 // Auth: Authorization: Bearer <user JWT>
 // Body:
 //   {
@@ -20,8 +20,8 @@
 // Signale und die Befunde.
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-import { handleOptions, jsonResponse, jsonError, methodNotAllowed } from '../_shared/gateway.ts';
-import { audit } from '../_shared/auditLog.ts';
+import { handleOptions, jsonResponse, jsonError, methodNotAllowed } from '../../_shared/gateway.ts';
+import { audit } from '../../_shared/auditLog.ts';
 import {
   analyzeBlueprint,
   analyzeObservation,
@@ -30,13 +30,13 @@ import {
   type RuntimeFinding,
   type SiteBlueprint,
   type SiteObservation,
-} from '../../../packages/siteos-core/src/index.ts';
+} from '../../../../packages/siteos-core/src/index.ts';
 
 const FETCH_TIMEOUT_MS = 15_000;
 const MAX_HTML_BYTES = 2_000_000;
 const VALID_TRIGGERS = new Set(['deploy', 'cron', 'manual', 'agent']);
 
-Deno.serve(async (req) => {
+export async function handle(req: Request): Promise<Response> {
   const preflight = handleOptions(req);
   if (preflight) return preflight;
   if (req.method !== 'POST') return methodNotAllowed();
@@ -231,7 +231,7 @@ Deno.serve(async (req) => {
     }));
     return jsonError(500, 'INTERNAL', 'siteos-runtime-scan failed');
   }
-});
+}
 
 // ─────────────────────────────────────────────────────────────────────
 // Zielprüfung — SSRF-Schutz

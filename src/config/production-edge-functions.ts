@@ -181,24 +181,19 @@ export const UNBACKED_CALLERS: readonly UnbackedCaller[] = [
     publicPath: true,
   },
   {
+    // Ein Eintrag für vier Endpunkte: Seit der Zusammenfassung zum Router
+    // `siteos` (`/discover`, `/builder`, `/runtime-scan`, `/agents`) kostet
+    // SiteOS **einen** Slot statt vier. Das ist der Unterschied zwischen
+    // „braucht einen Tausch" und „braucht vier".
+    //
     // Korrigiert am 2026-08-19: Der erste Eintrag nannte
     // `/unified-entry/preview`. Diese Route rendert `DashboardPreviewPage`,
     // nicht den Builder. Der echte öffentliche Aufrufer ist
     // `/handwerk-website` — über die Wiederausfuhr-Kette KmuWebsiteLanding →
     // WebsiteBuilderLanding → WebsiteTransformationFlow, weshalb weder die
     // Route noch der Dateiname im Router auftaucht.
-    slug: 'siteos-discover',
-    surface: '/handwerk-website · /app/siteos/builder — Ausgangsseite lesen',
-    publicPath: true,
-  },
-  {
-    slug: 'siteos-runtime-scan',
-    surface: '/handwerk-website — Scan nach der Analyse',
-    publicPath: true,
-  },
-  {
-    slug: 'siteos-builder',
-    surface: '/handwerk-website · /app/siteos/builder — Blueprint erzeugen',
+    slug: 'siteos',
+    surface: '/handwerk-website · /app/siteos/builder — Analyse, Blueprint, Scan, Agenten',
     publicPath: true,
   },
   // Öffentlich dokumentierte, aber nicht existierende API-Endpunkte.
@@ -228,7 +223,6 @@ export const UNBACKED_CALLERS: readonly UnbackedCaller[] = [
   { slug: 'export-audit', surface: 'features/governance — Prüfpfad-Export', publicPath: false },
   { slug: 'update-member-role', surface: 'features/governance — Terminal-Zusammenarbeit', publicPath: false },
   { slug: 'log-tool-run', surface: 'governance-os — eingebetteter Browser', publicPath: false },
-  { slug: 'siteos-agents', surface: 'features/siteos', publicPath: false },
   { slug: 'social-orchestrator-persistence', surface: 'core/social-orchestrator', publicPath: false },
   { slug: 'tenant-branding-update', surface: 'features/settings — Branding', publicPath: false },
   { slug: 'trigger-workflow', surface: 'features/workflows', publicPath: false },

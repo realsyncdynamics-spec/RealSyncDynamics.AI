@@ -124,7 +124,7 @@ export async function buildSite(args: {
   enrichment?: BuildEnrichment;
 }): Promise<SiteOsResult<BuildResponse>> {
   const sb = getSupabase();
-  const { data, error } = await sb.functions.invoke('siteos-builder', { body: args });
+  const { data, error } = await sb.functions.invoke('siteos/builder', { body: args });
   if (error) return mapError(error);
   return { kind: 'ok', data: data as BuildResponse };
 }
@@ -136,14 +136,14 @@ export async function runScan(args: {
   trigger?: 'deploy' | 'cron' | 'manual' | 'agent';
 }): Promise<SiteOsResult<ScanResponse>> {
   const sb = getSupabase();
-  const { data, error } = await sb.functions.invoke('siteos-runtime-scan', { body: args });
+  const { data, error } = await sb.functions.invoke('siteos/runtime-scan', { body: args });
   if (error) return mapError(error);
   return { kind: 'ok', data: data as ScanResponse };
 }
 
 export async function approveAgentRun(tenantId: string, runId: string): Promise<SiteOsResult<{ run_id: string }>> {
   const sb = getSupabase();
-  const { data, error } = await sb.functions.invoke('siteos-agents', {
+  const { data, error } = await sb.functions.invoke('siteos/agents', {
     body: { op: 'approve', tenant_id: tenantId, run_id: runId },
   });
   if (error) return mapError(error);
@@ -152,7 +152,7 @@ export async function approveAgentRun(tenantId: string, runId: string): Promise<
 
 export async function runAgent(tenantId: string, runId?: string): Promise<SiteOsResult<{ ran: boolean; applied?: string[] }>> {
   const sb = getSupabase();
-  const { data, error } = await sb.functions.invoke('siteos-agents', {
+  const { data, error } = await sb.functions.invoke('siteos/agents', {
     body: { op: 'run', tenant_id: tenantId, ...(runId ? { run_id: runId } : {}) },
   });
   if (error) return mapError(error);

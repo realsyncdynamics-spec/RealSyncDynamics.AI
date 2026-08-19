@@ -604,3 +604,24 @@ html, body {
 .main-landing-light .bg-\[rgb\(3\,7\,18\)\] {
      background-color: #ffffff;
 }
+
+/* ── Hero-Kartengruppe (Startseite) ──────────────────────────────────────
+   Sehr langsames Schweben, damit die Gruppe ueber dem Globus lebendig wirkt,
+   ohne vom Text abzulenken. Bewusst reines `transform` in den Keyframes:
+   nicht registrierte Custom Properties interpolieren nicht, eine Animation
+   ueber `--x` springt bei 50 % statt zu gleiten.
+   `prefers-reduced-motion` schaltet sie vollstaendig ab. */
+@keyframes landing-hero-float {
+  0%   { transform: translate3d(0, 0, 0); }
+  50%  { transform: translate3d(0, -6px, 0); }
+  100% { transform: translate3d(0, 0, 0); }
+}
+
+.landing-hero-card {
+  animation: landing-hero-float 9s ease-in-out infinite;
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-hero-card { animation: none; }
+}

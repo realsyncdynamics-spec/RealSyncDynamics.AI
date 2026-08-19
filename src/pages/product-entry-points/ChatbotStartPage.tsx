@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { SEOHead } from '../../components/SEOHead';
 import { Snowflake, ArrowRight, ArrowLeft, MessageCircle } from 'lucide-react';
+import { CapabilityAvailabilityNotice } from '../../components/landing/CapabilityAvailabilityNotice';
 
 const BG = 'rgb(3, 7, 18)';
 const FONT_STACK = "'Plus Jakarta Sans', 'Inter', system-ui, sans-serif";
@@ -35,6 +36,8 @@ export function ChatbotStartPage() {
             <p className="text-base sm:text-lg text-white/70 leading-relaxed max-w-xl mx-auto mb-8 sm:mb-10">
               Ein intelligenter Chatbot für Ihre Website — trainiert auf Ihre Dokumentation, Ihre Daten und Ihre Policies. EU-gehostet, DSGVO-konform, ohne externe AI-Aufrufe.
             </p>
+
+            <CapabilityAvailabilityNotice capabilityId="bots" className="mb-8 text-left sm:mb-10" />
 
             <div className="bg-white/[0.02] border border-white/10 rounded-2xl p-6 sm:p-8 mb-8 sm:mb-10">
               <h3 className="text-lg font-semibold mb-4 text-white/90">Was können Sie mit dem Chat-Assistenten tun?</h3>

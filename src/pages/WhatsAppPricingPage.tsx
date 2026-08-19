@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { LandingNavbar } from '../components/LandingNavbar';
 import { PublicFooter } from '../enterprise-os/layout/PublicFooter';
 import { Check, MessageCircle, Users, Shield, Zap } from 'lucide-react';
+import { CapabilityAvailabilityNotice } from '../components/landing/CapabilityAvailabilityNotice';
 
 /**
  * Dedicated WhatsApp Pricing Page
@@ -185,6 +186,9 @@ export function WhatsAppPricingPage() {
           DSGVO- und EU AI Act-konform. Automatisierte Compliance-Kommunikation über WhatsApp Business.
           Von Audit-Assistenten bis zur Fallbearbeitung — alles audit-geloggt.
         </p>
+
+        {/* Steht vor den Kauf-CTAs, nicht darunter: hier fällt der Entscheid. */}
+        <CapabilityAvailabilityNotice capabilityId="bots" className="mx-auto mb-8 max-w-2xl text-left" />
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Link

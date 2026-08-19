@@ -24,7 +24,7 @@
 // Preisspannen des breiten Überblicks.
 
 /** Stand der 7 detailliert bewerteten Anbieter (Feature-Matrix). */
-export const MATRIX_AS_OF_LABEL = 'Mai 2026';
+export const MATRIX_AS_OF_LABEL = 'August 2026';
 
 /** Stand des breiten Marktüberblicks (Preise, Positionierung). */
 export const LANDSCAPE_AS_OF_LABEL = 'August 2026';
@@ -143,7 +143,7 @@ export const DSGVO_TOOLS: readonly DsgvoTool[] = [
     origin: 'EU',
     transfer: 'eu-intern',
     category: 'cmp',
-    pricingFrom: '~10 €/M',
+    pricingFrom: '~10–50 €/M',
     strengths: 'Einfacher Einstieg, automatischer Cookie-Crawler, TCF 2.2.',
     bestFor: 'KMU und WordPress-Sites',
     capabilities: ['Cookie-Consent'],
@@ -244,7 +244,7 @@ export const DSGVO_TOOLS: readonly DsgvoTool[] = [
     origin: 'EU',
     transfer: 'eu-intern',
     category: 'privacy-management',
-    pricingFrom: '~300 €/M',
+    pricingFrom: 'ab ~500 €/M',
     strengths: 'Software kombiniert mit deutscher Beratung und externem DSB.',
     bestFor: 'DACH-Mittelstand mit DSB-Pflicht',
     capabilities: ['DSB-as-a-Service', 'AVV', 'DSFA'],
@@ -321,7 +321,7 @@ export const DSGVO_TOOLS: readonly DsgvoTool[] = [
     origin: 'US',
     transfer: 'drittland-garantien',
     category: 'privacy-management',
-    pricingFrom: '~600 €/M (Enterprise-only)',
+    pricingFrom: '~1.500–25.000+ €/Jahr',
     strengths: 'Marktführer mit sehr breitem Modulumfang: Consent, GRC, Drittanbieter-Risiko, AI-Act-Modul.',
     bestFor: 'Konzerne mit eigenem Privacy-Team',
     capabilities: ['Cookie-Consent', 'AVV', 'DSFA'],
@@ -338,7 +338,7 @@ export const DSGVO_TOOLS: readonly DsgvoTool[] = [
     origin: 'US',
     transfer: 'drittland-garantien',
     category: 'privacy-management',
-    pricingFrom: '~400 €/M',
+    pricingFrom: 'auf Anfrage',
     strengths: 'Etablierte Assessment- und DSFA-Methodik, umfangreiche Zertifizierungsprogramme.',
     bestFor: 'Enterprise mit internationalem Footprint',
     capabilities: ['Cookie-Consent', 'DSFA'],

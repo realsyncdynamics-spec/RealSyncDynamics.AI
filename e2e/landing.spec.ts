@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { HERO_HEADLINE_TEST_SUBSTRING } from '../src/components/governance-frontend/hero-content';
+import { HERO_HEADLINE_TEST_SUBSTRING, HERO_HEADLINE_LINES } from '../src/components/governance-frontend/hero-content';
 import { LIVE_CAPABILITIES, BUILDING_CAPABILITIES } from '../src/config/platform-capabilities';
 import {
   RUNTIME_PREVIEW_LABEL,
@@ -118,7 +118,15 @@ test.describe('Governance-AI-Landing (/)', () => {
 
     // Nicht auf den zusammengesetzten Fliesstext pruefen: Die H1 rendert je
     // Zeile ein eigenes Block-Element, zwischen denen kein Leerzeichen steht.
-    await expect(page.getByRole('heading', { level: 1 }).first()).toContainText('Code-Compliance');
+    //
+    // Und nicht auf ein Wort festnageln: Hier stand `'Code-Compliance'` —
+    // abgeschrieben aus der damaligen Headline. Bei der naechsten Aenderung an
+    // hero-content.ts fiel der Test um, obwohl die Seite in Ordnung war. Die
+    // Zeilen kommen jetzt aus derselben Quelle wie die H1.
+    const h1 = page.getByRole('heading', { level: 1 }).first();
+    for (const line of HERO_HEADLINE_LINES) {
+      await expect(h1).toContainText(line);
+    }
 
     // Beide CTAs sind Links (<Link> bzw. <a href="#platform">), keine Buttons.
     // Die frueher hier erwartete Button-Rolle traf auf keinen von beiden zu.

@@ -44,10 +44,10 @@ export function MainLanding() {
   return (
     <div className="landing-context min-h-screen bg-[rgb(3,7,18)] text-white antialiased" style={{ backgroundColor: BG, fontFamily: SANS }}>
       <SEOHead
-        title="RealSyncDynamics.AI — KI-Governance für DSGVO, EU AI Act & Code"
-        description="Das KI-Betriebssystem für DSGVO, EU AI Act und Code-Compliance. Website-Governance, Claude Code Optimizer, Evidence Vault, Policy Packs, auditfähiger Nachweis-Export und kontinuierliches Monitoring in einer Runtime."
+        title="RealSyncDynamics.AI — Das Governance OS für DSGVO & EU AI Act"
+        description="Das Governance OS für DSGVO und EU AI Act. Website-Governance, Claude Code Optimizer, Evidence Vault, Policy Packs, auditfähiger Nachweis-Export und kontinuierliches Monitoring in einer Runtime."
         canonical="/"
-        ogTitle="Das KI-Betriebssystem für DSGVO, EU AI Act & Code-Compliance"
+        ogTitle="Das Governance OS für DSGVO & EU AI Act"
         ogDescription="RealSyncDynamics.AI verbindet DSGVO, EU AI Act, Code-Compliance, Policy-Durchsetzung und auditfähige Nachweise in einer operativen Governance-Runtime."
       />
 
@@ -58,10 +58,14 @@ export function MainLanding() {
           <div className="absolute inset-0">
             <picture>
               <source srcSet="/europe-globe.webp" type="image/webp" />
-              <img src="/europe-globe.jpg" alt="Europa bei Nacht mit digitalen Datenströmen" width={1376} height={768} fetchPriority="high" className="h-full w-full object-cover object-right opacity-75" />
+              <img src="/europe-globe.jpg" alt="Europa bei Nacht mit digitalen Datenströmen" width={1376} height={768} fetchPriority="high" className="h-full w-full object-cover object-right opacity-90" />
             </picture>
-            <div className="absolute inset-0 bg-gradient-to-r from-black via-black/95 to-black/30" />
-            <div className="absolute inset-0 bg-gradient-to-t from-[rgb(3,7,18)] via-transparent to-black/40" />
+            {/* Der Verlauf haelt die Textspalte lesbar, gibt den Globus rechts aber
+                frei. Vorher lag bis 95% Schwarz darueber — Europa war kaum zu sehen. */}
+            <div className="absolute inset-0 bg-gradient-to-r from-black via-black/85 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[rgb(3,7,18)] via-transparent to-black/30" />
+            {/* Vignette: zieht den Blick zur Bildmitte, ohne die Kanten zu haerten. */}
+            <div className="absolute inset-0" style={{ background: 'radial-gradient(120% 90% at 68% 45%, transparent 0%, transparent 42%, rgba(3,7,18,.55) 100%)' }} />
           </div>
 
           <div className="relative z-10 mx-auto grid min-h-[880px] max-w-7xl items-center gap-10 px-6 pb-20 pt-28 lg:grid-cols-[1.05fr_.95fr] lg:px-10">
@@ -72,9 +76,9 @@ export function MainLanding() {
               </Link>
 
               {/* H1 aus hero-content.ts — nicht hartkodieren. Siehe FE-001 dort. */}
-              {/* lg:text-6xl, nicht groesser: „Das KI-Betriebssystem" bricht sonst
-                  mitten im Wort um, weil die linke Spalte ~640px breit ist. */}
-              <h1 className="text-4xl leading-[1.02] tracking-[-.03em] sm:text-5xl lg:text-6xl" style={{ fontFamily: SERIF, fontWeight: 500 }}>
+              {/* Seit v5 zwei kurze Zeilen — die tragen `lg:text-7xl`, ohne im Wort
+                  umzubrechen. Bei der dreizeiligen v4-Headline ging das nicht. */}
+              <h1 className="text-[2.6rem] leading-[.98] tracking-[-.035em] sm:text-6xl lg:text-7xl" style={{ fontFamily: SERIF, fontWeight: 500 }}>
                 {HERO_HEADLINE.map((segments, line) => (
                   <span key={line} className="block">
                     {segments.map((segment, i) => (
@@ -123,8 +127,12 @@ export function MainLanding() {
             <div className="hidden lg:block">
               <p className="mb-4 text-right font-mono text-[10px] tracking-[.22em] text-cyan-300/70">{RUNTIME_PREVIEW_LABEL}</p>
               <div className="space-y-3">
-                {RUNTIME_PREVIEW_CARDS.map(card => (
-                  <div key={card.id} className={`${card.offset} max-w-[19rem] rounded-2xl border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl`}>
+                {RUNTIME_PREVIEW_CARDS.map((card, i) => (
+                  <div
+                    key={card.id}
+                    className={`${card.offset} landing-hero-card max-w-[19rem] rounded-2xl border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl`}
+                    style={{ animationDelay: `${i * 0.9}s` }}
+                  >
                     <div className="flex items-center gap-2">
                       <span className={`h-1.5 w-1.5 rounded-full ${card.tone === 'ok' ? 'bg-emerald-400' : 'bg-cyan-400'}`} />
                       <span className="font-mono text-[9px] tracking-[.18em] text-white/45">{card.label}</span>

@@ -12,7 +12,16 @@ export type HeroHeadlineSegment = {
 };
 
 /**
- * Governance-Level Hero — Positionierung v4 (Enterprise-Hero, 2026-08-17).
+ * Governance-Level Hero — Positionierung v5 (2026-08-19).
+ *
+ * v5 kehrt zur Positionierung „Governance OS" zurueck. „Das
+ * KI-Betriebssystem" aus v4 war die Uebersetzung einer Entwurfsvorlage und
+ * beschrieb die Kategorie zu breit: Das Produkt ist keine KI-Plattform,
+ * sondern die Governance-Schicht darueber (CLAUDE.md §1).
+ *
+ * Drei kurze Zeilen. Zwei laengere wurden bei `lg:text-7xl` umbrochen und
+ * liessen „Act" als Waisenwort allein stehen; kurze Zeilen tragen die
+ * Groesse, ohne dass der Browser sie selbst bricht.
  *
  * ## Warum diese Datei neunmal wirkungslos war
  *
@@ -26,9 +35,9 @@ export type HeroHeadlineSegment = {
  * Test folgen automatisch.
  */
 export const HERO_HEADLINE: readonly (readonly HeroHeadlineSegment[])[] = [
-  [{ text: 'Das KI-Betriebssystem' }],
-  [{ text: 'für DSGVO, EU AI Act', accent: true }],
-  [{ text: '& Code-Compliance', accent: true }],
+  [{ text: 'Das Governance OS' }],
+  [{ text: 'für DSGVO', accent: true }],
+  [{ text: '& EU AI Act', accent: true }],
 ];
 
 /** Reine Textzeilen der H1 — für Tests und Accessible-Name-Abgleich. */
@@ -37,7 +46,7 @@ export const HERO_HEADLINE_LINES: readonly string[] = HERO_HEADLINE.map((segment
 );
 
 /** Substring für den FE-001-Check. Muss vollständig innerhalb einer Zeile liegen. */
-export const HERO_HEADLINE_TEST_SUBSTRING = 'Das KI-Betriebssystem';
+export const HERO_HEADLINE_TEST_SUBSTRING = 'Das Governance OS';
 
 if (!HERO_HEADLINE_LINES.some((line) => line.includes(HERO_HEADLINE_TEST_SUBSTRING))) {
   throw new Error(

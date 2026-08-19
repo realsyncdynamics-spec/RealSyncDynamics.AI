@@ -8,6 +8,27 @@ Erhoben über alle 237 Dateien, deren Name auf `View`, `Page`, `Dashboard`,
 `Hub`, `Cockpit` oder `Workspace` endet; als verwaist gilt, wer im gesamten
 `src/`-Baum außerhalb der eigenen Datei nicht vorkommt.
 
+## Es gibt bereits einen Wächter — mit blindem Fleck
+
+`test/routing/pages-reachable.test.ts` prüft dieselbe Frage, und zwar sauberer
+als eine Namenssuche: Er folgt ab `src/main.tsx` den echten relativen Importen
+und beantwortet damit „ist die Datei Teil der Anwendung?".
+
+Sein Blickfeld ist aber auf zwei Verzeichnisse begrenzt:
+
+```ts
+const PAGE_DIRS = ['src/pages', 'src/unified-entry/pages'];
+```
+
+**`src/features` steht nicht darin** — und genau dort liegen die acht großen
+Waisen dieser Liste. Der Wächter hat sie nie gesehen, weil er nicht hinsieht.
+
+`PAGE_DIRS` um `src/features` zu erweitern, ist der naheliegende Schluss, aber
+erst *nach* der Entscheidung unten: Vorher würde der Test sofort auf allen acht
+fehlschlagen, und die einzige Möglichkeit, ihn grün zu bekommen, wäre ein
+`KNOWN_UNREACHABLE`-Eintrag je Datei — also die Waisen festzuschreiben statt
+sie aufzulösen.
+
 ## Warum das kein reines Aufräumthema ist
 
 Drei der acht Tabellen, die das Frontend abfragt und die es in Produktion nicht
@@ -63,6 +84,13 @@ Edge Functions, nicht mit dem vorhandenen Direktzugriff.
 
 **Nicht bauen** — die Schemas für `workspace_members`, `compliance_snapshots`
 und `compliance_audit_log`. Sie hätten keinen erreichbaren Nutzer.
+
+## Nächster Schritt nach der Entscheidung
+
+Sind die neun Waisen gelöscht oder verlinkt, gehört `PAGE_DIRS` in
+`pages-reachable.test.ts` um `src/features` erweitert. Dann deckt der Wächter
+auch den Bereich ab, in dem das Problem entstanden ist, und der nächste Fall
+fällt beim Testlauf auf statt bei einer Stichprobe.
 
 ## Bereits erledigt
 

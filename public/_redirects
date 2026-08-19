@@ -10,4 +10,14 @@ https://www.realsyncdynamicsai.de/* https://realsyncdynamicsai.de/:splat 301
 # Problem an der Wurzel, statt es per canonical zu reparieren.
 /waitlist  /warteliste  301
 
+# Englischer Zwilling des Impressums. Datenschutz und AGB haben je einen
+# deutschen UND einen englischen Pfad (/legal/datenschutz + /legal/privacy,
+# /agb + /legal/terms), das Impressum bisher nur den deutschen. Wer unter
+# /legal/privacy einsteigt, probiert folgerichtig /legal/imprint — und landet
+# über den /*-Fallback auf der Startseite mit HTTP 200. Fuer einen Prueflauf
+# ohne JavaScript sieht das aus wie ein fehlendes Impressum (§ 5 DDG), obwohl
+# es unter /legal/impressum vollstaendig ausgeliefert wird. Ziel ist der
+# kanonische Pfad aus src/config/seo.ts, nicht /impressum.
+/legal/imprint  /legal/impressum  301
+
 /*  /index.html  200

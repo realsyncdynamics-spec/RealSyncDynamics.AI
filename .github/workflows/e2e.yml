@@ -54,7 +54,23 @@ jobs:
           VITE_META_PIXEL_ID: '000000000000000'
 
       - name: Install Playwright Browsers
-        run: npx playwright install --with-deps chromium
+        # `--with-deps` ruft im Hintergrund `apt-get` gegen die Ubuntu-Spiegel.
+        # Genau dort hingen am 2026-08-19 zwei Laeufe bis zum Job-Timeout: Das
+        # Log endet mitten in `apt-get update` mit `Ign:` fuer jedes Repository,
+        # danach 28 Minuten Stille, und `playwright-report/` blieb leer — es lief
+        # kein einziger Test. Auffaellig war, dass ausschliesslich die zwei Jobs
+        # mit diesem Schritt hingen, alle uebrigen liefen gruen durch.
+        #
+        # Das Runner-Image `ubuntu-latest` bringt die Systembibliotheken fuer
+        # Chromium bereits mit (Chrome ist vorinstalliert). Der apt-Lauf sichert
+        # hier also gegen ein Risiko ab, das nicht besteht — und schafft dabei
+        # ein neues.
+        #
+        # `timeout-minutes` bleibt als Netz: Haengt der Download doch einmal,
+        # faellt der Job nach sechs Minuten mit einer lesbaren Meldung aus,
+        # statt eine halbe Stunde still zu blockieren.
+        timeout-minutes: 6
+        run: npx playwright install chromium
 
       - name: Start Preview Server
         run: |

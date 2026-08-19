@@ -10,6 +10,13 @@
 // Nebenwirkungsfrei: es wird ausschliesslich OPTIONS geschickt (CORS-Preflight).
 // Keine Business-Logik, keine Schreibzugriffe, keine Payloads.
 //
+// Ein 404 allein sagt nichts: eine deployte Function, die auf dem nackten Pfad
+// kein Handler hat (z.B. der `siteos`-Router), antwortet selbst mit 404 und war
+// hier zunaechst faelschlich als "nicht deployt" gezaehlt. Unterschieden wird
+// deshalb am Antwortkoerper — die Plattform meldet fuer eine unbekannte Function
+// woertlich "Requested function was not found", jede Function-eigene Antwort
+// sieht anders aus.
+//
 //   SUPABASE_URL=https://<ref>.supabase.co node scripts/smoke-edge-functions.mjs
 //   node scripts/smoke-edge-functions.mjs plans skills   # nur diese
 //
@@ -35,9 +42,15 @@ function repoFunctions() {
     .sort();
 }
 
-// 404 = nicht deployt · 401/403 = deployt, Auth-Tor greift · 5xx = kaputt
-function classify(status) {
-  if (status === 404) return 'FEHLT';
+// Wortlaut der Plattform-Antwort fuer eine nicht existierende Function.
+const PLATFORM_NOT_FOUND = 'Requested function was not found';
+
+// 404 = nicht deployt ODER Function routet selbst auf 404 (siehe Kopf)
+// 401/403 = deployt, Auth-Tor greift · 5xx = kaputt
+function classify(status, body) {
+  if (status === 404) {
+    return body.includes(PLATFORM_NOT_FOUND) ? 'FEHLT' : 'ROUTET-404';
+  }
   if (status >= 500) return 'KAPUTT';
   if (status === 401 || status === 403) return 'AUTH';
   if (status < 400) return 'OK';
@@ -48,7 +61,9 @@ async function probe(name) {
   const url = `${BASE}/functions/v1/${name}`;
   try {
     const res = await fetch(url, { method: 'OPTIONS' });
-    return { name, status: res.status, verdict: classify(res.status) };
+    // Nur bei 404 noetig — sonst bleibt der Koerper ungelesen.
+    const body = res.status === 404 ? await res.text() : '';
+    return { name, status: res.status, verdict: classify(res.status, body) };
   } catch (err) {
     return { name, status: 0, verdict: 'UNERREICHBAR', error: err.message };
   }
@@ -74,7 +89,10 @@ for (const [verdict, names] of [...byVerdict].sort()) {
 
 const broken = byVerdict.get('KAPUTT') ?? [];
 const missing = byVerdict.get('FEHLT') ?? [];
-console.log(`\n${results.length} geprueft · ${missing.length} nicht deployt · ${broken.length} mit 5xx`);
+const routed = byVerdict.get('ROUTET-404') ?? [];
+console.log(
+  `\n${results.length} geprueft · ${missing.length} nicht deployt · ` +
+  `${routed.length} deployt ohne Handler auf dem Basispfad · ${broken.length} mit 5xx`);
 
 if (broken.length) {
   console.error('\nDeployt, aber startet nicht — meist ein fehlendes Secret:');

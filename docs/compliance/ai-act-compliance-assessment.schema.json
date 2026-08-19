@@ -1,0 +1,163 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "realsync://compliance/ai-act-compliance-assessment/v1",
+  "title": "AI Act compliance assessment record (Governance OS)",
+  "description": "One assessment row per (asset, requirement). Chain: Requirement → Assessment → Evidence → Finding → Remediation → Review. Art. 50 is a separate block from Art. 13.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "asset_id",
+    "tenant_id",
+    "regulation",
+    "article",
+    "requirement_id",
+    "status",
+    "assessed_at"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Primary key of the assessment record"
+    },
+    "asset_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Governance asset under assessment"
+    },
+    "tenant_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "regulation": {
+      "type": "string",
+      "const": "EU_AI_ACT"
+    },
+    "article": {
+      "type": "integer",
+      "enum": [9, 10, 11, 12, 13, 14, 15, 50],
+      "description": "AI Act article number; 50 is transparency, not merged into 13"
+    },
+    "requirement_id": {
+      "type": "string",
+      "pattern": "^(9|10|11|12|13|14|15|50)\\.\\d+$",
+      "description": "Catalog ID, e.g. 9.1 … 15.6, 50.1 … 50.4"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["open", "partial", "satisfied", "not_applicable", "blocked"]
+    },
+    "applicability_reason": {
+      "type": ["string", "null"],
+      "description": "Required when status is not_applicable or blocked"
+    },
+    "evidence_ids": {
+      "type": "array",
+      "items": { "type": "string", "format": "uuid" },
+      "default": [],
+      "description": "Links into governance evidence / custody objects"
+    },
+    "finding_ids": {
+      "type": "array",
+      "items": { "type": "string", "format": "uuid" },
+      "default": [],
+      "description": "Optional gap findings derived from this assessment"
+    },
+    "policy_id": {
+      "type": ["string", "null"],
+      "format": "uuid",
+      "description": "Optional linked governance policy / policy pack"
+    },
+    "owner": {
+      "type": ["string", "null"],
+      "description": "Accountable person or role"
+    },
+    "reviewer": {
+      "type": ["string", "null"],
+      "description": "Independent reviewer where required"
+    },
+    "assessed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "due_at": {
+      "type": ["string", "null"],
+      "format": "date-time"
+    },
+    "remediation": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "properties": {
+        "summary": { "type": "string" },
+        "steps": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "owner": { "type": ["string", "null"] },
+        "due_at": { "type": ["string", "null"], "format": "date-time" },
+        "status": {
+          "type": "string",
+          "enum": ["planned", "in_progress", "done", "cancelled"]
+        }
+      },
+      "required": ["summary", "status"]
+    },
+    "risk_level": {
+      "type": ["string", "null"],
+      "enum": ["info", "low", "medium", "high", "critical", null]
+    },
+    "next_review_at": {
+      "type": ["string", "null"],
+      "format": "date-time"
+    },
+    "related_requirement_ids": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": [],
+      "description": "Cross-links (e.g. 13.x ↔ 50.x) without merging legal bases"
+    },
+    "classification_context": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "properties": {
+        "high_risk": { "type": "boolean" },
+        "basis": {
+          "type": "string",
+          "enum": [
+            "annex_iii",
+            "annex_i",
+            "art_6_3_not_high_risk",
+            "not_in_scope",
+            "undetermined"
+          ]
+        },
+        "annex_iii_area": { "type": ["string", "null"] },
+        "rationale": { "type": ["string", "null"] }
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": true,
+      "default": {}
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "status": { "const": "not_applicable" } }
+      },
+      "then": {
+        "required": ["applicability_reason"]
+      }
+    },
+    {
+      "if": {
+        "properties": { "status": { "const": "blocked" } }
+      },
+      "then": {
+        "required": ["applicability_reason"]
+      }
+    }
+  ]
+}

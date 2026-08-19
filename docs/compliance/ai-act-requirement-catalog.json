@@ -1,0 +1,386 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "id": "realsync://compliance/ai-act-requirement-catalog/v1",
+  "title": "EU AI Act requirement catalog (Art. 9-15 + Art. 50)",
+  "regulation": "EU_AI_ACT",
+  "legal_refs": [
+    "Regulation (EU) 2024/1689",
+    "Regulation (EU) 2026/1744"
+  ],
+  "verified_at": "2026-08-19",
+  "application": {
+    "art_50_from": "2026-08-02",
+    "art_50_2_existing_systems_marking_until": "2026-12-02",
+    "high_risk_annex_iii_from": "2027-12-02",
+    "high_risk_annex_i_from": "2028-08-02"
+  },
+  "notes": [
+    "Art. 50 is a separate compliance block from Art. 13; link via related_requirement_ids only.",
+    "Dates must be re-verified against the consolidated Official Journal before formal claims."
+  ],
+  "requirements": [
+    {
+      "requirement_id": "9.1",
+      "article": 9,
+      "title": "Risk management system established and maintained",
+      "applies_to": ["provider", "deployer"],
+      "high_risk_only": true
+    },
+    {
+      "requirement_id": "9.2",
+      "article": 9,
+      "title": "Identify and analyse risks to health, safety, fundamental rights",
+      "applies_to": ["provider", "deployer"],
+      "high_risk_only": true
+    },
+    {
+      "requirement_id": "9.3",
+      "article": 9,
+      "title": "Assess intended use and reasonably foreseeable misuse",
+      "applies_to": ["provider", "deployer"],
+      "high_risk_only": true
+    },
+    {
+      "requirement_id": "9.4",
+      "article": 9,
+      "title": "Define and prioritise risk mitigation measures",
+      "applies_to": ["provider", "deployer"],
+      "high_risk_only": true
+    },
+    {
+      "requirement_id": "9.5",
+      "article": 9,
+      "title": "Document residual risks and acceptance rationale",
+      "applies_to": ["provider", "deployer"],
+      "high_risk_only": true
+    },
+    {
+      "requirement_id": "9.6",
+      "article": 9,
+      "title": "Update risk management on system, risk, or incident change",
+      "applies_to": ["provider", "deployer"],
+      "high_risk_only": true
+    },
+    {
+      "requirement_id": "9.7",
+      "article": 9,
+      "title": "Test risk-mitigation measures as appropriate",
+      "applies_to": ["provider", "deployer"],
+      "high_risk_only": true
+    },
+    {
+      "requirement_id": "9.8",
+      "article": 9,
+      "title": "Feed post-market monitoring into risk management",
+      "applies_to": ["provider", "deployer"],
+      "high_risk_only": true
+    },
+    {
+      "requirement_id": "10.1",
+      "article": 10,
+      "title": "Describe training, validation, and testing data where used",
+      "applies_to": ["provider", "deployer"],
+      "high_risk_only": true
+    },
+    {
+      "requirement_id": "10.2",
+      "article": 10,
+      "title": "Data relevant, representative, and sufficiently complete for purpose",
+      "applies_to": ["provider", "deployer"],
+      "high_risk_only": true
+    },
+    {
+      "requirement_id": "10.3",
+      "article": 10,
+      "title": "Document data governance practices",
+      "applies_to": ["provider", "deployer"],
+      "high_risk_only": true
+    },
+    {
+      "requirement_id": "10.4",
+      "article": 10,
+      "title": "Examine and mitigate bias where relevant",
+      "applies_to": ["provider", "deployer"],
+      "high_risk_only": true
+    },
+    {
+      "requirement_id": "10.5",
+      "article": 10,
+      "title": "Special-category data only under applicable legal conditions",
+      "applies_to": ["provider", "deployer"],
+      "high_risk_only": true
+    },
+    {
+      "requirement_id": "10.6",
+      "article": 10,
+      "title": "Datasets and governance traceable for conformity assessment",
+      "applies_to": ["provider", "deployer"],
+      "high_risk_only": true
+    },
+    {
+      "requirement_id": "11.1",
+      "article": 11,
+      "title": "Technical documentation available before placing on market / putting into service",
+      "applies_to": ["provider"],
+      "high_risk_only": true
+    },
+    {
+      "requirement_id": "11.2",
+      "article": 11,
+      "title": "General description of the AI system",
+      "applies_to": ["provider"],
+      "high_risk_only": true
+    },
+    {
+      "requirement_id": "11.3",
+      "article": 11,
+      "title": "Detailed technical description",
+      "applies_to": ["provider"],
+      "high_risk_only": true
+    },
+    {
+      "requirement_id": "11.4",
+      "article": 11,
+      "title": "Development process and data described",
+      "applies_to": ["provider"],
+      "high_risk_only": true
+    },
+    {
+      "requirement_id": "11.5",
+      "article": 11,
+      "title": "Risk management documented (link Art. 9)",
+      "applies_to": ["provider"],
+      "high_risk_only": true,
+      "related_requirement_ids": ["9.1", "9.2", "9.3", "9.4", "9.5", "9.6", "9.7", "9.8"]
+    },
+    {
+      "requirement_id": "11.6",
+      "article": 11,
+      "title": "Monitoring and control mechanisms described",
+      "applies_to": ["provider"],
+      "high_risk_only": true
+    },
+    {
+      "requirement_id": "11.7",
+      "article": 11,
+      "title": "System changes traceable",
+      "applies_to": ["provider"],
+      "high_risk_only": true
+    },
+    {
+      "requirement_id": "11.8",
+      "article": 11,
+      "title": "Documentation current and available to authorities",
+      "applies_to": ["provider"],
+      "high_risk_only": true
+    },
+    {
+      "requirement_id": "12.1",
+      "article": 12,
+      "title": "Automatic logging of relevant operational events",
+      "applies_to": ["provider", "deployer"],
+      "high_risk_only": true
+    },
+    {
+      "requirement_id": "12.2",
+      "article": 12,
+      "title": "Logs support traceability of outputs",
+      "applies_to": ["provider", "deployer"],
+      "high_risk_only": true
+    },
+    {
+      "requirement_id": "12.3",
+      "article": 12,
+      "title": "Logs support monitoring and risk detection",
+      "applies_to": ["provider", "deployer"],
+      "high_risk_only": true
+    },
+    {
+      "requirement_id": "12.4",
+      "article": 12,
+      "title": "Retention period defined and enforced",
+      "applies_to": ["provider", "deployer"],
+      "high_risk_only": true
+    },
+    {
+      "requirement_id": "12.5",
+      "article": 12,
+      "title": "Log integrity and access control",
+      "applies_to": ["provider", "deployer"],
+      "high_risk_only": true
+    },
+    {
+      "requirement_id": "12.6",
+      "article": 12,
+      "title": "Deployers can use or receive relevant logs",
+      "applies_to": ["provider", "deployer"],
+      "high_risk_only": true
+    },
+    {
+      "requirement_id": "13.1",
+      "article": 13,
+      "title": "Clear instructions for use for deployers",
+      "applies_to": ["provider"],
+      "high_risk_only": true,
+      "related_requirement_ids": ["50.1", "50.2", "50.3", "50.4"],
+      "notes": "Art. 50 is linked, not merged."
+    },
+    {
+      "requirement_id": "13.2",
+      "article": 13,
+      "title": "Characteristics, capabilities, and limitations described",
+      "applies_to": ["provider"],
+      "high_risk_only": true
+    },
+    {
+      "requirement_id": "13.3",
+      "article": 13,
+      "title": "Intended purpose and risky misuse described",
+      "applies_to": ["provider"],
+      "high_risk_only": true
+    },
+    {
+      "requirement_id": "13.4",
+      "article": 13,
+      "title": "Performance information provided",
+      "applies_to": ["provider"],
+      "high_risk_only": true
+    },
+    {
+      "requirement_id": "13.5",
+      "article": 13,
+      "title": "Human oversight guidance",
+      "applies_to": ["provider"],
+      "high_risk_only": true,
+      "related_requirement_ids": ["14.1", "14.2", "14.3", "14.4", "14.5", "14.6"]
+    },
+    {
+      "requirement_id": "13.6",
+      "article": 13,
+      "title": "Guidance on interpreting outputs",
+      "applies_to": ["provider"],
+      "high_risk_only": true
+    },
+    {
+      "requirement_id": "13.7",
+      "article": 13,
+      "title": "Maintenance, updates, and material changes communicated",
+      "applies_to": ["provider"],
+      "high_risk_only": true
+    },
+    {
+      "requirement_id": "14.1",
+      "article": 14,
+      "title": "System enables effective human oversight",
+      "applies_to": ["provider", "deployer"],
+      "high_risk_only": true
+    },
+    {
+      "requirement_id": "14.2",
+      "article": 14,
+      "title": "Oversight persons have competence and authority",
+      "applies_to": ["deployer"],
+      "high_risk_only": true
+    },
+    {
+      "requirement_id": "14.3",
+      "article": 14,
+      "title": "Oversight can understand, challenge, and withhold reliance",
+      "applies_to": ["provider", "deployer"],
+      "high_risk_only": true
+    },
+    {
+      "requirement_id": "14.4",
+      "article": 14,
+      "title": "Ability to interrupt, stop, or deactivate",
+      "applies_to": ["provider", "deployer"],
+      "high_risk_only": true
+    },
+    {
+      "requirement_id": "14.5",
+      "article": 14,
+      "title": "Measures against automation bias",
+      "applies_to": ["provider", "deployer"],
+      "high_risk_only": true
+    },
+    {
+      "requirement_id": "14.6",
+      "article": 14,
+      "title": "Oversight in instructions and procedures",
+      "applies_to": ["provider", "deployer"],
+      "high_risk_only": true
+    },
+    {
+      "requirement_id": "15.1",
+      "article": 15,
+      "title": "Appropriate accuracy defined and measured",
+      "applies_to": ["provider"],
+      "high_risk_only": true
+    },
+    {
+      "requirement_id": "15.2",
+      "article": 15,
+      "title": "Robustness against errors and inconsistencies",
+      "applies_to": ["provider"],
+      "high_risk_only": true
+    },
+    {
+      "requirement_id": "15.3",
+      "article": 15,
+      "title": "Resilience to manipulation where relevant",
+      "applies_to": ["provider"],
+      "high_risk_only": true
+    },
+    {
+      "requirement_id": "15.4",
+      "article": 15,
+      "title": "Proportionate cybersecurity measures",
+      "applies_to": ["provider", "deployer"],
+      "high_risk_only": true
+    },
+    {
+      "requirement_id": "15.5",
+      "article": 15,
+      "title": "Feedback loops and drift handled where applicable",
+      "applies_to": ["provider"],
+      "high_risk_only": true
+    },
+    {
+      "requirement_id": "15.6",
+      "article": 15,
+      "title": "Performance and security maintained over lifecycle",
+      "applies_to": ["provider", "deployer"],
+      "high_risk_only": true
+    },
+    {
+      "requirement_id": "50.1",
+      "article": 50,
+      "title": "Inform natural persons of AI interaction",
+      "applies_to": ["provider"],
+      "high_risk_only": false,
+      "related_requirement_ids": ["13.1"]
+    },
+    {
+      "requirement_id": "50.2",
+      "article": 50,
+      "title": "Machine-readable marking of synthetic content",
+      "applies_to": ["provider"],
+      "high_risk_only": false,
+      "related_requirement_ids": ["13.1"]
+    },
+    {
+      "requirement_id": "50.3",
+      "article": 50,
+      "title": "Inform persons exposed to emotion recognition or biometric categorisation",
+      "applies_to": ["deployer"],
+      "high_risk_only": false
+    },
+    {
+      "requirement_id": "50.4",
+      "article": 50,
+      "title": "Disclose deepfakes and certain public-interest AI text",
+      "applies_to": ["deployer"],
+      "high_risk_only": false
+    }
+  ]
+}

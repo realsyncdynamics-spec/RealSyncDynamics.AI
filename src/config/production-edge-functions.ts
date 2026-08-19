@@ -188,7 +188,7 @@ export const UNBACKED_CALLERS: readonly UnbackedCaller[] = [
     // WebsiteBuilderLanding → WebsiteTransformationFlow, weshalb weder die
     // Route noch der Dateiname im Router auftaucht.
     slug: 'siteos-discover',
-    surface: '/handwerk-website — „Website analysieren"',
+    surface: '/handwerk-website · /app/siteos/builder — Ausgangsseite lesen',
     publicPath: true,
   },
   {
@@ -198,7 +198,7 @@ export const UNBACKED_CALLERS: readonly UnbackedCaller[] = [
   },
   {
     slug: 'siteos-builder',
-    surface: '/handwerk-website — „Transformation vorbereiten"',
+    surface: '/handwerk-website · /app/siteos/builder — Blueprint erzeugen',
     publicPath: true,
   },
   // Öffentlich dokumentierte, aber nicht existierende API-Endpunkte.

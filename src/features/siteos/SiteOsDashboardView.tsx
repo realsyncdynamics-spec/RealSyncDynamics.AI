@@ -131,6 +131,14 @@ function SiteOsInner() {
             Jede Version wird geprüft, gehasht und im Herkunftsnachweis erfasst. Die Bewertung entsteht
             ausschließlich aus benannten Befunden und ist damit im Audit nachvollziehbar.
           </p>
+          {/* Einstieg in den Builder. Die Oberflaeche lag ohne Route und ohne
+              Verweis im Repo — erreichbar war sie fuer niemanden. */}
+          <Link
+            to="/app/siteos/builder"
+            className="mt-5 inline-flex items-center gap-2 border border-cyan-500/40 bg-cyan-500/10 px-4 py-2 font-mono text-[11px] uppercase tracking-[0.14em] text-cyan-300 transition hover:border-cyan-400/60 hover:bg-cyan-500/15"
+          >
+            Website aus Prompt bauen
+          </Link>
         </header>
 
         {error && (

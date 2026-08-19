@@ -247,3 +247,54 @@ Der Test sagt anschließend selbst, welche Einträge in `UNBACKED_CALLERS`
 
 `api-quota` steht zusätzlich in `src/features/api/API_DEVELOPER_GUIDE.md`,
 wird aber von keinem Code aufgerufen — dokumentierter Endpunkt ohne Backend.
+
+---
+
+## SiteOS-Builder scharf schalten (Stand 2026-08-19)
+
+Entscheidung des Eigentümers: **den vorhandenen Builder nutzen**, keinen neuen
+bauen. Der Bestand ist erheblich und funktionsfähig geschrieben —
+
+| Baustein | Umfang |
+|---|---|
+| `packages/siteos-core` — Prompt → Brief → Blueprint → Render, Scoring, Agenten | 3.322 Zeilen |
+| `supabase/functions/siteos-builder` | 282 Zeilen |
+| `platform/builder_orchestrator` (Python, Multi-Agent) | 6.792 Zeilen |
+
+Was fehlte, war nie der Code, sondern der Weg dorthin.
+
+### Erledigt (Frontend)
+
+- `PreviewSelectionPage` ist unter **`/app/siteos/builder`** geroutet. Sie lag
+  seit ihrer Entstehung ohne Route im Repo.
+- Verlinkt vom SiteOS-Dashboard („Website aus Prompt bauen").
+- Die Seite prüft `siteos-discover` und `siteos-builder` **vor** dem Aufbau.
+  Fehlen sie, erscheint ein Hinweis statt eines dauerhaften Ladebalkens, und
+  die Kopfzeile behauptet nicht mehr, die Website sei bereits gebaut.
+
+### Offen — braucht vier Edge-Function-Slots
+
+Der Builder arbeitet erst, wenn diese Functions in Produktion sind:
+
+| Function | wofür |
+|---|---|
+| `siteos-discover` | liest die Ausgangsseite |
+| `siteos-builder` | erzeugt den Blueprint |
+| `siteos-runtime-scan` | die acht Laufzeit-Analysen |
+| `siteos-agents` | die sieben asynchronen Agenten |
+
+Das Kontingent ist mit 100 voll (`EDGE_FUNCTION_PLAN_LIMIT`). Vier Slots gibt
+es auf zwei Wegen:
+
+1. **Tauschen.** `.github/workflows/k1-slots-freigeben.yml` gibt zwei frei
+   (`enterprise-ai-os-evaluate`, `enterprise-ai-os-agents-list`). Nach dem
+   Merge von #1087 kommen über den Router weitere fünf dazu. **Vorher** müssen
+   beide Slugs in `scripts/edge-functions-retired.txt` stehen, sonst legt der
+   nächste `deploy_all` sie wieder an.
+2. **Plan wechseln.** Der Free-Tarif begrenzt auf 100 Functions und bietet
+   weder tägliche Backups noch Point-in-Time-Recovery noch ein SLA — für ein
+   Produkt, das Prüfpfad und Evidence-Ketten zusagt, ohnehin ein offener
+   Governance-Befund (CLAUDE.md §5).
+
+Sobald die vier laufen, verschwindet der Hinweis von selbst: Er hängt an
+`isEdgeFunctionInProduction()`, nicht an einem weiteren Commit.

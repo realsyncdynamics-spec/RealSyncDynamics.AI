@@ -205,8 +205,13 @@ Jeder Agent braucht vier Dimensionen — fehlt eine, ist er nicht governance-fä
 > Syntaxfehler in `add-auditor` ist über #941 behoben, blockiert also nichts
 > mehr. Was zur verbleibenden Lücke belegt ist — und was nicht:
 >
-> - Alle 80 fehlenden Functions liegen **alphabetisch nach `api-gateway`**,
->   keine einzige davor. Ein sauberer Schnitt bei exakt 100.
+> - Zum Messzeitpunkt lagen alle 80 fehlenden Functions **alphabetisch nach
+>   `api-gateway`**, keine einzige davor — ein sauberer Schnitt bei exakt 100.
+>   Seit dem Slot-Swap gilt das nicht mehr: `agent-scheduler` und
+>   `ai-act-auto-classify` wurden bewusst entfernt und liegen davor
+>   (`scripts/edge-functions-retired.txt`). Der Schnitt war ein Indiz, kein
+>   Beweis — belegt ist das Kontingent durch `HTTP 402: Max number of
+>   functions reached for project`.
 > - Ein Zusammenhang mit Typfehlern liess sich **nicht** herstellen. `deno check`
 >   ist als Beleg untauglich, solange es nicht in einer Umgebung mit aufgelösten
 >   npm-Abhängigkeiten läuft: dort scheitern auch live deployte Functions

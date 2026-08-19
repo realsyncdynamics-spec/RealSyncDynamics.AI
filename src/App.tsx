@@ -230,6 +230,10 @@ const SchedulerView = lazy(() => import('./features/scheduler/SchedulerView').th
 const EvidenceVaultAdvancedView = lazy(() => import('./features/evidence-vault/EvidenceVaultAdvancedView').then((m) => ({ default: m.EvidenceVaultAdvancedView })));
 const PolicyPacksView = lazy(() => import('./features/policy-packs/PolicyPacksView').then((m) => ({ default: m.PolicyPacksView })));
 const SiteOsDashboardView = lazy(() => import('./features/siteos/SiteOsDashboardView').then((m) => ({ default: m.SiteOsDashboardView })));
+// Der SiteOS-Builder (Prompt → Blueprint → Vorschau). Die Oberflaeche lag
+// seit ihrer Entstehung ohne Route im Repo — fertiger Code, den niemand
+// erreichen konnte (CLAUDE.md §14).
+const SiteOsBuilderPage = lazy(() => import('./unified-entry/pages/PreviewSelectionPage'));
 const LegalRagView = lazy(() => import('./features/legal-rag/LegalRagView').then((m) => ({ default: m.LegalRagView })));
 const AgentOsAdminPage = lazy(() => import('./features/agent-os-admin/AgentOsAdminPage').then((m) => ({ default: m.AgentOsAdminPage })));
 const GovernanceDashboardView = lazy(() => import('./features/governance/GovernanceDashboardView').then((m) => ({ default: m.GovernanceDashboardView })));
@@ -774,6 +778,7 @@ function RoutesWithTracking() {
       <Route path="/app/evidence-vault" element={<GovernanceBrowserShell><EvidenceVaultAdvancedView /></GovernanceBrowserShell>} />
       <Route path="/app/policy-packs" element={<GovernanceBrowserShell><PolicyPacksView /></GovernanceBrowserShell>} />
       <Route path="/app/siteos" element={<GovernanceBrowserShell><SiteOsDashboardView /></GovernanceBrowserShell>} />
+      <Route path="/app/siteos/builder" element={<SiteOsBuilderPage />} />
       <Route path="/app/bots" element={<GovernanceBrowserShell><BotsView /></GovernanceBrowserShell>} />
       <Route path="/app/bots/inbox" element={<GovernanceBrowserShell><BotInboxView /></GovernanceBrowserShell>} />
       <Route path="/app/bots/:botId" element={<GovernanceBrowserShell><BotBuilderView /></GovernanceBrowserShell>} />

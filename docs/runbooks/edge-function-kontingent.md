@@ -1,5 +1,80 @@
 # Runbook — Edge-Function-Kontingent aufräumen und erweitern
 
+> ## ✅ Status 2026-08-19 — das Limit ist weg, der Rollout steht aus
+>
+> Die Organisation `kejfpjavqgqrecnbhzex` läuft seit dem Billing-Upgrade auf Plan
+> **`pro`** (geprüft über die Management-API, nicht angenommen). Das Free-Limit von
+> 100 Edge Functions gilt nicht mehr; `HTTP 402: Max number of functions reached`
+> kann nicht mehr auftreten.
+>
+> Damit gilt für alles unterhalb dieser Zeile: **historischer Befund**. Kein
+> Slot-Tausch mehr, keine Löschung live deployter Functions, um Platz zu schaffen.
+> Die vier One-Shot-Workflows dazu sind überholt und dürfen nicht mehr gestartet
+> werden — sie löschen produktive Functions ohne Gegenwert:
+> `free-plan-slot-swap.yml`, `k1-slots-freigeben.yml`,
+> `selective-p0-auth-free-slot.yml`, `selective-p0-auth-deploy.yml`.
+>
+> ### Offen: 80 Functions nachziehen
+>
+> Messung 2026-08-19 gegen `RealSyncDynamicsLive` (`ebljyceifhnlzhjfyxup`):
+> 180 Functions im Repo, 100 live, **80 fehlen**. Der Code ist vollständig — es
+> ist ein reiner Rollout.
+>
+> **Durchführung** (GitHub → Actions → *Deploy* → *Run workflow*):
+>
+> | Feld | Wert |
+> |---|---|
+> | Use workflow from | der Branch mit dem erweiterten `deploy.yml` |
+> | `deploy_functions` | `true` |
+> | `push_migrations` | **`false`** — reiner Function-Rollout, Prod-Schema bleibt unberührt |
+> | `functions` | die 80 Slugs unten, leerzeichengetrennt |
+>
+> Der Input `functions` hat Vorrang vor der Changed-Files-Auswahl; ein Slug ohne
+> `supabase/functions/<slug>/index.ts` bricht den Lauf ab, bevor irgendetwas
+> deployt wird.
+>
+> ```
+> agent-scheduler ai-act-auto-classify api-gateway api-webhook-deliver
+> appointment-book audit-determinism-verify auditor-engagement automation-trigger-trial-webhook
+> bot-chat bot-voice-webhook bulk-scan c2pa-manifest-generate
+> calculate-seo-metrics certification-readiness checkout-siteos-project cloudflare-deployer
+> compliance-alert-trigger compliance-remediation-execute create-trial-subscription dashboard-digest-generate
+> dashboard-intelligence email-delivery-webhook email-notify-send export-audit
+> generate-certification-report generate-compliance-report governance-analytics-aggregator governance-audit-report-gen
+> governance-deadline-monitor governance-evidence-handler governance-gap-analyzer governance-risk-escalate
+> governance-score-calculator governance-workflow-intake hostinger-agent-brief invoice-email
+> legal-embed log-tool-run maintenance-schedule memory-confidence-trigger
+> mfa-admin-reset nis2-deadline-calculator notify-terminal-event oauth2-apps
+> oauth2-token optimize-analyze optimize-execute order-intake
+> partner-provision-tenant pitch-deck-pdf plans remediation-workflow
+> report-generator save-company-profile schedule-data-syncs seed-integrations
+> seo-dashboard-data share-dashboard siteos-agents siteos-builder
+> siteos-discover siteos-runtime-scan skills social-orchestrator-persistence
+> social-publisher-worker stripe-oauth-callback stripe-token-meter-sync sync-ga-metrics
+> sync-stripe-metrics tenant-branding-get tenant-branding-update train-forecast-models
+> update-member-role webhook-deliver webhook-dispatcher webhook-retry-cron
+> website-domain-manager website-maintenance-agent website-maintenance-daily-cron website-operations-agent
+> ```
+>
+> **Danach prüfen** — gemessen, nicht geschätzt:
+> `supabase functions list --project-ref ebljyceifhnlzhjfyxup | wc -l` muss 180
+> ergeben. Anschließend die Tabelle in `CLAUDE.md` §5 aktualisieren.
+>
+> **Was der Rollout freischaltet** (Auszug): `save-company-profile` und
+> `create-trial-subscription` — beide werden von `/unified-entry/onboarding`
+> aufgerufen und antworten heute mit 404, der Registrierungsabschluss bricht dort
+> ab (siehe `frontend-backend-gap.md`). Dazu die `siteos-*`-Runtime, `oauth2-*`,
+> die `webhook-*`-Zustellung und die Reporting-Functions.
+>
+> ### Weiterhin offen, unabhängig vom Limit
+>
+> Point-in-Time-Recovery ist auch im Pro-Tarif ein Zusatz. Solange er nicht
+> gebucht ist, steht die Zusage „auditierbarer Prüfpfad" ohne PITR da — eigener
+> Governance-Befund, nicht Teil dieses Rollouts.
+
+---
+
+
 **Stand:** 2026-08-11
 **Auslöser:** Jeder `Deploy`-Lauf scheitert mit `HTTP 402: Max number of functions reached for project`.
 

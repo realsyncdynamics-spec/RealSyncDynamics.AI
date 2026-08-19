@@ -184,7 +184,7 @@ Jeder Agent braucht vier Dimensionen — fehlt eine, ist er nicht governance-fä
 > Die Prozentangaben unten beschreiben den **Stand im Repository**, nicht was in
 > Produktion läuft.
 >
-> **Messung vom 2026-08-16**, direkt gegen das Live-Projekt `RealSyncDynamicsLive`
+> **Messung vom 2026-08-19**, direkt gegen das Live-Projekt `RealSyncDynamicsLive`
 > (`ebljyceifhnlzhjfyxup`, eu-central-1, PostgreSQL 17) erhoben — nicht geschätzt:
 >
 > | | Repo | in Produktion | Lücke |
@@ -192,6 +192,7 @@ Jeder Agent braucht vier Dimensionen — fehlt eine, ist er nicht governance-fä
 > | Migrationen | 279 | 278 (neueste `20260820000000`) | **1** |
 > | Edge Functions | 180 | 100 | **80** |
 > | Tabellen in `public` | — | 341 | — |
+> | Organisations-Plan | — | **`pro`** | — |
 >
 > **Die Migrations-Seite ist geschlossen.** Frühere Stände dieser Datei nannten
 > „118 nie angewendet" — das gilt seit der Reconciliation nicht mehr. Es fehlt
@@ -201,32 +202,31 @@ Jeder Agent braucht vier Dimensionen — fehlt eine, ist er nicht governance-fä
 > `scan_runs.asset_id` und der Constraint `findings_scan_run_fk` existieren
 > live **nicht**.
 >
-> **Die Function-Seite braucht eine andere Erklärung als bisher.** Der
-> Syntaxfehler in `add-auditor` ist über #941 behoben, blockiert also nichts
-> mehr. Was zur verbleibenden Lücke belegt ist — und was nicht:
+> **Die Function-Seite ist erklärt und der Blocker ist weg.** Die Diagnose von
+> 2026-08-16 hat sich bestätigt: exakt 100 deployte Functions, harter Schnitt,
+> Organisation auf `free` — das war das Function-Kontingent des Free-Tarifs, kein
+> Deploy-Bug und kein Typfehler. Seit dem Billing-Upgrade läuft die Organisation
+> auf Plan **`pro`**; das Limit von 100 existiert nicht mehr.
 >
-> - Alle 80 fehlenden Functions liegen **alphabetisch nach `api-gateway`**,
->   keine einzige davor. Ein sauberer Schnitt bei exakt 100.
-> - Ein Zusammenhang mit Typfehlern liess sich **nicht** herstellen. `deno check`
->   ist als Beleg untauglich, solange es nicht in einer Umgebung mit aufgelösten
->   npm-Abhängigkeiten läuft: dort scheitern auch live deployte Functions
->   (`health`, `governance-agent`, `ai-gateway`) — allerdings an der
->   Paketauflösung (`Could not find a matching package for
->   'npm:@supabase/realtime-js'`), nicht an ihrem Code. Wer die These prüfen
->   will, braucht `deno install` gegen die echten Dependencies.
-> - Die Organisation läuft auf **Plan `free`**.
+> Damit ist die Lücke von 80 Functions ab sofort eine reine **Rollout**-Aufgabe:
+> deployen, nicht debuggen. Betroffen sind unter anderem `siteos-*`,
+> `oauth2-*`, `webhook-*`, `save-company-profile` und `create-trial-subscription`
+> (die beiden brechen bis dahin den Onboarding-Abschluss mit 404).
 >
-> Exakt 100 deployte Functions plus harter alphabetischer Schnitt deutet auf das
-> **Function-Kontingent des Free-Tarifs**, nicht auf einen Deploy-Bug. Vor einer
-> Gegenmaßnahme gegen Supabase' aktuelle Limits gegenprüfen — aber kein Code-Fix
-> deployt Function 101. Betroffen sind genau die Module, die diese Liste als
-> weitgehend fertig führt: `evidence-vault`, `policy-packs`, `provenance`, alle
-> `iso42001-*`.
+> Der Rollout läuft über `deploy.yml` (workflow_dispatch) mit dem Input
+> `functions` = Slug-Liste und `push_migrations = false`. Danach diese Tabelle
+> gegen `supabase functions list` neu erheben, nicht schätzen.
 >
-> Der Free-Tarif bedeutet zusätzlich: keine täglichen Backups, kein
-> Point-in-Time-Recovery, kein SLA, Projekt-Pausierung bei Inaktivität. Für ein
-> Produkt, das Prüfpfad, Evidence-Hash-Ketten und ISO-orientierte Prozesse
-> zusagt, ist das ein eigener Governance-Befund — unabhängig vom Limit.
+> **Die Slot-Tausch-Workflows sind damit überholt und gefährlich.**
+> `free-plan-slot-swap.yml`, `k1-slots-freigeben.yml`,
+> `selective-p0-auth-free-slot.yml` und `selective-p0-auth-deploy.yml` löschen
+> live deployte Functions, um Platz unter einem Limit zu schaffen, das es nicht
+> mehr gibt. Nicht mehr starten.
+>
+> Was vom Free-Tarif als Befund bleibt, ist die Betriebsseite: tägliche Backups,
+> Point-in-Time-Recovery und SLA hängen am Plan. Der Pro-Tarif bringt tägliche
+> Backups mit — PITR ist ein eigener Zusatz und ist zu prüfen, bevor Prüfpfad und
+> Evidence-Hash-Ketten als abgesichert zugesagt werden.
 >
 > Ein Modul, dessen Backend nie deployt wurde, ist in Produktion **nicht** verfügbar,
 > egal wie vollständig der Code im Repo ist. Vor Aussagen zum Produktionsstand daher

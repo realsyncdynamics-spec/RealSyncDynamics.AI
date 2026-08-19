@@ -98,11 +98,11 @@ describe('Warteliste — Alias /waitlist', () => {
   it('ist als 301 in public/_redirects hinterlegt, damit Crawler ohne JS nicht auf der Startseite landen', async () => {
     const { readFileSync } = await import('node:fs');
     const redirects = readFileSync('public/_redirects', 'utf8');
-    // Der /*-Fallback liefert sonst die index.html der Startseite samt deren
-    // canonical — das Alias wuerde auf / statt auf /warteliste konsolidiert.
+    // Der /*-Fallback faengt sonst alles ab — das Alias wuerde nie auf
+    // /warteliste konsolidiert, sondern auf dem Fallback-Dokument landen.
     expect(redirects).toMatch(/^\/waitlist\s+\/warteliste\s+301$/m);
     // Die Redirect-Regel muss VOR dem SPA-Fallback stehen, sonst greift sie nie.
-    expect(redirects.indexOf('/waitlist')).toBeLessThan(redirects.indexOf('/*  /index.html'));
+    expect(redirects.indexOf('/waitlist')).toBeLessThan(redirects.indexOf('/*  /404.html'));
   });
 
   it('hat keinen eigenen SEO-Eintrag — die Seite rendert unter /waitlist nie', async () => {

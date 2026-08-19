@@ -20,4 +20,13 @@ https://www.realsyncdynamicsai.de/* https://realsyncdynamicsai.de/:splat 301
 # kanonische Pfad aus src/config/seo.ts, nicht /impressum.
 /legal/imprint  /legal/impressum  301
 
-/*  /index.html  200
+# SPA-Fallback. Ziel ist 404.html, NICHT index.html: sonst antwortet jede
+# unbekannte URL mit Titel, Canonical und `robots: index, follow` der
+# Startseite, und der noindex aus NotFoundPage greift erst nach dem
+# JS-Rendering. 404.html ist derselbe Bundle — die Client-Navigation fuer
+# nicht prerenderte Routen (/app/*, /flow/*) bleibt unveraendert.
+#
+# Status bleibt 200. Ein echter 404 verlangte eine Allowlist ueber alle 459
+# Router-Pfade; jede dort vergessene Route waere sofort tot. Erzeugt wird die
+# Datei in scripts/prerender.mjs.
+/*  /404.html  200

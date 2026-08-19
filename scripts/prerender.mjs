@@ -32,7 +32,10 @@ const PORT = parseInt(process.env.PRERENDER_PORT ?? '4173', 10);
 const BASE_URL = `http://localhost:${PORT}`;
 const TIMEOUT = parseInt(process.env.PRERENDER_TIMEOUT ?? '15000', 10);
 const CONCURRENCY = parseInt(process.env.PRERENDER_CONCURRENCY ?? '4', 10);
-const PRIORITY_MIN = parseFloat(process.env.PRERENDER_PRIORITY_MIN ?? '0.6');
+// 0.4 statt 0.6: die Sitemap IST die Indexierungsabsicht. Lag die Schwelle
+// darueber, blieben 26 Sitemap-Seiten ohne statisches HTML — ein Crawler
+// ohne JS bekam dort den SPA-Shell samt Titel und Canonical der Startseite.
+const PRIORITY_MIN = parseFloat(process.env.PRERENDER_PRIORITY_MIN ?? '0.4');
 // Wall-Clock-Obergrenze fuer den GESAMTEN Lauf. Wichtig fuer die Cloudflare-
 // Pages-Build-Sandbox: dort kann der Chromium-Download haengen statt sauber
 // zu scheitern, und ein Hang wuerde den kompletten Deploy ins Timeout ziehen.
@@ -137,6 +140,34 @@ async function renderRoute(browser, route) {
   } finally {
     await context.close();
   }
+}
+
+/**
+ * Erzeugt das Dokument, das der SPA-Fallback ausliefert.
+ *
+ * Bisher zeigte `/*` in public/_redirects auf die index.html der Startseite.
+ * Jede unbekannte URL antwortete damit HTTP 200 mit Titel, Canonical und
+ * `robots: index, follow` der Startseite. Erst nach dem JS-Rendering setzte
+ * NotFoundPage den noindex — Googlebot rendert JS und sieht ihn, jeder andere
+ * Abruf nicht.
+ *
+ * Deshalb rendert der Fallback jetzt die 404-Seite: derselbe Bundle, dieselbe
+ * Client-Navigation (React Router liest window.location, nicht den Dateinamen),
+ * aber im Roh-HTML steht „Seite nicht gefunden" mit noindex statt der Startseite.
+ *
+ * Der Statuscode bleibt bewusst 200. Ein echter 404 setzte eine Allowlist
+ * ueber alle 459 Router-Pfade voraus; jede dort fehlende Route waere sofort
+ * tot. Ein falscher Statuscode ist ein SEO-Mangel, eine fehlende Route ein
+ * Ausfall — die Abwaegung faellt eindeutig aus.
+ */
+async function writeFallbackDocument(browser) {
+  // Ein Pfad, den der Router garantiert nicht kennt: erzwingt NotFoundPage.
+  const html = await renderRoute(browser, '/__prerender-not-found__');
+  if (!/name="robots"\s+content="noindex/.test(html)) {
+    throw new Error('Fallback-Dokument traegt kein noindex — NotFoundPage/SEOHead pruefen.');
+  }
+  await writeFile(join(DIST, '404.html'), html, 'utf8');
+  console.log('[prerender] ✓ 404.html (SPA-Fallback, noindex)');
 }
 
 // ─── Write HTML to dist/<route>.html ─────────────────────────────────────────
@@ -265,6 +296,7 @@ async function main() {
         await writeRoute(item.route, html);
         console.log(`[prerender] ✓ ${item.route} (priority ${item.prio})`);
       }, CONCURRENCY);
+      await writeFallbackDocument(browser);
     } finally {
       await browser.close();
     }

@@ -54,7 +54,15 @@ jobs:
           VITE_META_PIXEL_ID: '000000000000000'
 
       - name: Install Playwright Browsers
-        run: npx playwright install --with-deps chromium
+        # Ohne `--with-deps`: der Flag löst ein `apt-get` aus, das auf dem
+        # Azure-Mirror hängen bleibt und den Job in den 30-Minuten-Timeout
+        # laufen lässt, bevor ein einziger Test startet (Lauf 32234900023).
+        # Das ubuntu-latest-Image bringt die von Chromium benötigten
+        # Bibliotheken bereits mit. Das Step-Timeout sorgt dafür, dass ein
+        # solcher Hänger als schneller Fehlschlag sichtbar wird, statt das
+        # Job-Budget stumm aufzubrauchen.
+        timeout-minutes: 5
+        run: npx playwright install chromium
 
       - name: Start Preview Server
         run: |

@@ -357,7 +357,7 @@ Runtime-Limits, Module, Berechtigungen, Feature-Listen und Add-ons.
 Vollständige Regeln: `docs/product/pricing-governance.md`
 
 ### Routing-Struktur
-- `/` → MainLanding (Grunddesign gesperrt, Texte/Buttons frei — siehe §10)
+- `/` → MainLanding (**Design eingefroren**, Ergänzen frei, Ändern nur nach Rückfrage — siehe §10)
 - `/app/*` → Auth-gated Dashboard (Onboarding-First-Gate)
 - `/flow/*` → Seitenbasierter Flow (Trial, Onboarding, Assessment)
 - `/governance/*` → Public Features (Runtime, Docs, Score, Browser)
@@ -434,29 +434,59 @@ die Git-History bleibt als Archiv erhalten.
 
 ---
 
-## 10. Design-System & Design-Lock
+## 10. Design-System & Design-Freeze
 
-### 🔒 Grundregel: Inhalt frei, Grunddesign gesperrt
+### 🔒 Design-Freeze — verbindlich seit 2026-08-19
 
-Gilt für **Landing und Frontend** (`src/pages/`, `src/components/`, inkl. `MainLanding.tsx`,
-Baseline: Commit `3b972f3`, 2026-07-01):
+**Baseline: Commit `f0c03bd`** (Governance-OS-Hero, PR #1091). Das ist der
+Stand, der auf Cloudflare deployt wurde und vom Eigentümer ausdrücklich als
+fertig abgenommen ist. Er gilt als eingefroren.
 
-- **Erlaubt ohne Rückfrage — Inhalt**
-  - Texte/Copy ändern, ergänzen, entfernen
-  - Buttons und Links **hinzufügen**, umbenennen, Ziele ändern, entfernen
-  - Neue Buttons/CTAs in bestehende Sektionen einsetzen — **mit den vorhandenen
-    Button-/Link-Komponenten und Klassen**, keine neuen Varianten erfinden
+> Zum Zeitpunkt der Festlegung liegt `f0c03bd` auf dem Branch
+> `claude/enterprise-frontend-capability-truth` und **nicht** in Produktion.
+> `realsyncdynamicsai.de` zeigt bis zum Merge von #1091 den älteren Hero. Der
+> Freeze bezieht sich trotzdem auf `f0c03bd`, nicht auf den Produktionsstand.
 
-- **Nur mit ausdrücklicher Genehmigung — Grunddesign**
-  - Layout, Grid, Struktur, Sektions-Reihenfolge, Sektions-Umbau
-  - Farben, Theme-Wechsel, Typografie-Skala, Spacing-System, Radien, Schatten
-  - Austausch/Neubau von UI-Komponenten, neue Design-Varianten, Icon-Set-Wechsel
-  - Seiten-Ersatz oder Neuentwurf einer bestehenden Seite
+#### 1. Am Design wird nichts mehr geändert
 
-**Faustregel**: *Was drinsteht* ist frei. *Wie es aussieht* ist gesperrt.
-Ein neuer Button im bestehenden Stil ist Inhalt. Ein Button in neuer Farbe oder
-neuer Form ist Design — vorher fragen.
-- Im Zweifel: **fragen, nicht ändern.**
+Gesperrt sind: Layout, Grid, Sektionsreihenfolge, Farben, Theme, Typografie-
+Skala, Schriftgrößen, Spacing, Radien, Schatten, Verläufe, Animationen,
+Icon-Set, Austausch oder Neubau von UI-Komponenten, Neuentwurf einer Seite.
+
+Das gilt **ausnahmslos** und unabhängig davon, wie gut eine Idee erscheint.
+Ein Design, das eingefroren ist, wird nicht „nur kurz verbessert".
+
+#### 2. Ergänzungen sind frei
+
+Neue Funktionen, neue Sektionen, neue Texte und neue Buttons dürfen **ohne
+Rückfrage hinzugefügt** werden — aber ausschließlich mit den vorhandenen
+Komponenten, Klassen und Tokens. Wer etwas hinzufügt, erfindet dafür keine
+neue Optik.
+
+#### 3. Bestehendes ändern oder entfernen → vorher fragen
+
+Für jede Änderung **an bereits vorhandenem** Text, Button, Link oder einer
+backend-gebundenen Funktion gilt Fragepflicht. Wortlaut des Hinweises:
+
+> **Achtung, Textänderung — sollen wir dies machen? Ja oder nein?**
+
+Bei Funktionen entsprechend „Funktionsänderung". Danach wird **gewartet**, bis
+eine Antwort vorliegt. Keine Vorab-Umsetzung „zum Zeigen".
+
+#### 4. Freigabe für Design-Änderungen — die Drei-Fragen-Regel
+
+Soll doch etwas am Design geändert werden, ist das nur über diesen Weg
+möglich: Es werden dem Eigentümer **genau drei Fragen** gestellt, die die
+geplante Änderung vollständig beschreiben. Erst wenn **alle drei mit Ja**
+beantwortet sind, ist die Änderung freigegeben — für genau diesen Umfang, nicht
+darüber hinaus.
+
+Ein „Ja" zu einer früheren Änderung gilt nicht für die nächste.
+
+#### Faustregel
+
+**Hinzufügen ja, Ändern nur nach Rückfrage, Design gar nicht.**
+Im Zweifel: fragen, nicht ändern.
 
 ### Aktive Design-Tokens (`tailwind.config.ts` — verbindlich)
 - **App / Dashboard**: Hard-Edge Industrial UI, keine abgerundeten Ecken
@@ -534,6 +564,9 @@ Gilt für **alle Repos** dieses Projekts. Bei jeder Aufgabe mitprüfen:
 - **Funktionen funktionsfähig machen** — Buttons ohne Handler, `href="#"`, dauerhaft
   `disabled` ohne Grund, „coming soon" ohne Termin, TODO-Stubs in Produktionspfaden:
   entweder fertigstellen oder entfernen. Kein Element vortäuschen, das nichts tut.
+  **Achtung, Vorrang §10**: Fertigstellen ist eine Ergänzung und damit frei.
+  Entfernen oder Umschreiben greift in Bestehendes ein — dafür gilt die
+  Fragepflicht. Also melden, nicht stillschweigend abräumen.
 - **Abgelöstes benennen** — wird eine Seite durch einen Redirect ersetzt, gehört die
   alte Datei entfernt, nicht als toter Code liegengelassen.
 

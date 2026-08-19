@@ -21,7 +21,7 @@ import { join, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import {
-  EDGE_FUNCTION_PLAN_LIMIT,
+  EDGE_FUNCTIONS_OBSERVED_MAX,
   PRODUCTION_EDGE_FUNCTIONS,
   UNBACKED_CALLERS,
   isEdgeFunctionInProduction,
@@ -64,7 +64,7 @@ const CALL_PATTERNS: readonly RegExp[] = [
 /**
  * Vom Aufrufpfad auf den Slot, der bezahlt wird.
  *
- * Das Plan-Limit zählt Slots, nicht Endpunkte: `siteos/builder` und
+ * Gezählt werden Slots, nicht Endpunkte: `siteos/builder` und
  * `siteos/discover` kosten zusammen einen. Verglichen wird deshalb das erste
  * Segment.
  */
@@ -102,8 +102,14 @@ describe('Edge-Function-Vertrag: Oberfläche gegen Produktion', () => {
     expect(CALLED_SLUGS.length).toBeGreaterThan(50);
   });
 
-  it('hält die Produktionsliste innerhalb des Plan-Limits', () => {
-    expect(PRODUCTION_EDGE_FUNCTIONS.length).toBeLessThanOrEqual(EDGE_FUNCTION_PLAN_LIMIT);
+  it('hält Liste und beobachteten Höchststand beieinander', () => {
+    // Früher stand hier `<= EDGE_FUNCTION_PLAN_LIMIT` (100) — eine Schranke,
+    // die am 2026-08-19 fiel: Function 101 (`siteos`) deployte ohne 402. Ein
+    // „kleiner-gleich" gegen eine erfundene Obergrenze prüft nichts; ein
+    // „gleich" gegen den zuletzt gemessenen Stand schon. Wer neu misst,
+    // zieht beide Zahlen mit — sonst beschreibt die Datei einen Stand, den
+    // es nicht mehr gibt.
+    expect(PRODUCTION_EDGE_FUNCTIONS.length).toBe(EDGE_FUNCTIONS_OBSERVED_MAX);
   });
 
   it('führt die Produktionsliste doppelfrei und sortiert', () => {

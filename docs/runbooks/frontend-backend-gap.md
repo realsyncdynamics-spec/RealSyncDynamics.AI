@@ -85,7 +85,6 @@ den Kaufwegen ausgewiesen.
 | `save-company-profile` | `src/unified-entry/pages/PostRegisterOnboardingPage.tsx` |
 | `seo-dashboard-data` | `src/features/seo-marketing-dashboard/SEOMarketingDashboard.tsx` |
 | `share-dashboard` | `src/features/seo-marketing-dashboard/CollaborationPanel.tsx` |
-| `siteos` (Router: `/discover`, `/builder`, `/runtime-scan`, `/agents`) | `src/features/siteos/siteOsApi.ts`<br>`src/unified-entry/pages/PreviewSelectionPage.tsx`<br>`src/pages/WebsiteTransformationFlow.tsx` |
 | `social-orchestrator-persistence` | `src/core/social-orchestrator/persistenceClient.ts` |
 | `sync-ga-metrics` | `src/features/seo-marketing-dashboard/IntegrationSettings.tsx` |
 | `sync-stripe-metrics` | `src/features/seo-marketing-dashboard/IntegrationSettings.tsx` |
@@ -239,7 +238,6 @@ Der Test sagt anschließend selbst, welche Einträge in `UNBACKED_CALLERS`
 |---|---|---|
 | `save-company-profile` | `/unified-entry/onboarding` | Fehlschlag wird als eigener Zustand gezeigt, Konto bleibt nutzbar |
 | `create-trial-subscription` | `/unified-entry/onboarding` | dito — kein „Growth ist bereit" ohne angelegten Growth-Testzeitraum |
-| `siteos` | `/handwerk-website` · `/app/siteos/builder` | Hinweis statt Ladebalken, siehe unten |
 | `audit`, `avv-generator`, `dsfa`, `sub-processors` | `/api-docs` | als „Noch nicht verfügbar" gekennzeichnet |
 
 `api-quota` steht zusätzlich in `src/features/api/API_DEVELOPER_GUIDE.md`,
@@ -274,34 +272,43 @@ Was fehlte, war nie der Code, sondern der Weg dorthin.
   Slots freigeben heißt Produktionsfunktionen löschen, den Bedarf senken
   nicht.
 
-### Offen — braucht **einen** Edge-Function-Slot
+### Erledigt — der Router läuft (2026-08-19, 16:39 Uhr)
 
-Der Builder arbeitet, sobald der Router in Produktion ist:
+Der Builder arbeitet. `siteos` ist in Produktion, alle vier Pfade sind über
+HTTP nachgewiesen:
 
-| Endpunkt | wofür |
-|---|---|
-| `siteos/discover` | liest die Ausgangsseite |
-| `siteos/builder` | erzeugt den Blueprint |
-| `siteos/runtime-scan` | die acht Laufzeit-Analysen |
-| `siteos/agents` | die sieben asynchronen Agenten |
+| Endpunkt | wofür | Live-Antwort ohne Nutzdaten |
+|---|---|---|
+| `siteos/discover` | liest die Ausgangsseite | `400 BAD_REQUEST · tenant_id required` |
+| `siteos/builder` | erzeugt den Blueprint | `400 BAD_REQUEST · tenant_id required` |
+| `siteos/runtime-scan` | die acht Laufzeit-Analysen | `400 BAD_REQUEST · tenant_id required` |
+| `siteos/agents` | die sieben asynchronen Agenten | `400 BAD_REQUEST · op must be list\|approve\|run` |
 
-Das Kontingent ist mit 100 voll (`EDGE_FUNCTION_PLAN_LIMIT`), gemessen am
-2026-08-19 gegen das Live-Projekt. Den einen Slot gibt es auf zwei Wegen:
+Ein unbekannter Pfad antwortet mit `404 UNKNOWN_ENDPOINT` und listet die vier
+bekannten; der alte Bindestrich-Slug `siteos-builder` ist ein Plattform-404 und
+löst bewusst **nicht** über den Router auf.
 
-1. **Tauschen.** `.github/workflows/k1-slots-freigeben.yml` gibt zwei frei
-   (`enterprise-ai-os-evaluate`, `enterprise-ai-os-agents-list`). Nach dem
-   Merge von #1087 kommen über den Router weitere fünf dazu. **Vorher** müssen
-   beide Slugs in `scripts/edge-functions-retired.txt` stehen, sonst legt der
-   nächste `deploy_all` sie wieder an. Beides — der Workflow-Start wie der
-   Merge — liegt außerhalb dessen, was diese Sitzung ausführen kann: Der
-   Dispatch wird mit `403` abgewiesen.
-2. **Plan wechseln.** Der Free-Tarif begrenzt auf 100 Functions und bietet
-   weder tägliche Backups noch Point-in-Time-Recovery noch ein SLA — für ein
-   Produkt, das Prüfpfad und Evidence-Ketten zusagt, ohnehin ein offener
-   Governance-Befund (CLAUDE.md §5).
+Der Hinweis in der Oberfläche ist damit weg — er hing an
+`isEdgeFunctionInProduction()`, und `siteos` steht seit der Neumessung in
+`PRODUCTION_EDGE_FUNCTIONS`.
 
-Sobald der Router läuft, verschwindet der Hinweis von selbst: Er hängt an
-`isEdgeFunctionInProduction()`, nicht an einem weiteren Commit. Einzutragen
-ist dann nur noch `siteos` in `PRODUCTION_EDGE_FUNCTIONS` — der Vertragstest
-`test/backend/edge-function-contract.test.ts` erinnert daran, indem er den
-dann überflüssigen `UNBACKED_CALLERS`-Eintrag anmahnt.
+### Der Slot war da — die angenommene Schranke nicht
+
+Dieser Abschnitt hielt bis zum Deploy fest, das Kontingent sei mit 100 voll und
+der eine Slot nur durch Tauschen oder Tarifwechsel zu bekommen. Das hat sich
+beim ersten Versuch erledigt: `siteos` ging als **101.** Function durch, ohne
+402. Eine Neumessung über alle 177 Verzeichnisse ergibt 101 deployt, 76 fehlend.
+
+Die Lehre ist nicht „das Limit ist weg" — wo es liegt, ist unbekannt und nicht
+gemessen. Die Lehre ist, dass ein Zählstand von exakt 100 plus ein historisches
+402 eine **Vermutung** trugen, die niemand nachgeprüft hatte, und die einen
+fertigen Builder wochenlang als unerreichbar führte. Ein Deploy-Versuch kostet
+einen Workflow-Lauf.
+
+Vollständige Korrektur: `docs/runbooks/edge-function-kontingent.md`, Abschnitt 0.
+
+### Was jetzt naheliegt
+
+`save-company-profile` und `create-trial-subscription` — die beiden Functions,
+an denen die Registrierung hängt (Tabelle oben) — sind unter derselben
+Vermutung liegengeblieben. Sie sind wieder Kandidaten für einen Versuch.

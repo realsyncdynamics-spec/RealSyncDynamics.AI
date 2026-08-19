@@ -7,13 +7,16 @@
 //
 // ## Warum ein Router und nicht vier Functions
 //
-// Die Organisation läuft auf dem Supabase-Free-Plan mit hartem Limit von
-// 100 Edge Functions; belegt sind 100. Jeder weitere Deploy scheitert mit
-// `HTTP 402: Max number of functions reached for project`
-// (docs/runbooks/edge-function-kontingent.md). Als vier Einzel-Functions
-// kostet SiteOS vier Slots, die es nicht gibt — als Router kostet es einen.
-// Damit ist der Weg zur Freischaltung nicht mehr „vier Slots tauschen",
-// sondern „einen".
+// Zum Zeitpunkt des Umbaus galt eine Obergrenze von 100 Edge Functions als
+// belegt — ein früherer Deploy war mit `HTTP 402: Max number of functions
+// reached for project` gescheitert. Vier Einzel-Functions hätten vier Slots
+// gekostet, ein Router kostet einen.
+//
+// Beim ersten Deploy stellte sich heraus, dass die Grenze dort nicht mehr
+// liegt: `siteos` ging als 101. Function ohne Fehler durch. Der Router bleibt
+// trotzdem richtig — vier Endpunkte, die dieselbe Vorprüfung und denselben
+// Kern (`packages/siteos-core`) teilen, gehören in einen Slot, unabhängig
+// davon, wie viele noch frei sind.
 //
 // Anders als bei der Konsolidierung K1 (`enterprise-ai-os`) gibt es hier
 // **keinen Cutover-Zeitraum**: Keine der vier Functions war je in Produktion.

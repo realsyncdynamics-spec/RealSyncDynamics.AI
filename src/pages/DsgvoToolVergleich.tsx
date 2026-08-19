@@ -1,99 +1,39 @@
 import { Link } from 'react-router-dom';
-import { ArrowLeft, ShieldCheck, ArrowRight, Check, X, Minus, ExternalLink } from 'lucide-react';
+import { ArrowLeft, ShieldCheck, ArrowRight, Check, X, Minus, ExternalLink, Info, Layers, Wallet, ListChecks } from 'lucide-react';
+import {
+  DSGVO_TOOLS,
+  MATRIX_TOOLS,
+  MATRIX_AS_OF_LABEL,
+  LANDSCAPE_AS_OF_LABEL,
+  TOOL_CATEGORIES,
+  BUDGET_GUIDANCE,
+  SELECTION_CRITERIA,
+  PRICING_DISCLAIMER,
+  TRANSFER_LABEL,
+  toolsByCategory,
+  type DsgvoTool,
+  type Rating,
+} from '../config/dsgvo-tool-landscape';
 
-interface Tool {
-  name: string;
-  vendor: string;
-  url: string;
-  origin: 'EU' | 'US' | 'UK';
-  pricingFrom: string;
-  category: string[];
-  cookieConsent: 'yes' | 'partial' | 'no';
-  avvGenerator: 'yes' | 'partial' | 'no';
-  auditLog: 'yes' | 'partial' | 'no';
-  aiAct: 'yes' | 'partial' | 'no';
-  dsfaWizard: 'yes' | 'partial' | 'no';
-  euHosted: 'yes' | 'partial' | 'no';
-  notes: string;
-}
-
-const TOOLS: Tool[] = [
-  {
-    name: 'RealSyncDynamics.AI',
-    vendor: 'RealSync Dynamics',
-    url: 'https://RealSyncDynamicsAI.de',
-    origin: 'EU',
-    pricingFrom: '79 €/M (Starter)',
-    category: ['Cookie-Consent', 'AVV', 'Audit-Log', 'AI-Act', 'DSFA'],
-    cookieConsent: 'yes', avvGenerator: 'yes', auditLog: 'yes', aiAct: 'yes', dsfaWizard: 'yes', euHosted: 'yes',
-    notes: 'All-in-One für KI-First-Compliance · BAIT/MaRisk-tauglich · Made in Germany',
-  },
-  {
-    name: 'OneTrust',
-    vendor: 'OneTrust LLC',
-    url: 'https://onetrust.com',
-    origin: 'US',
-    pricingFrom: '~600 €/M (Enterprise-only)',
-    category: ['Cookie-Consent', 'AVV', 'DSFA'],
-    cookieConsent: 'yes', avvGenerator: 'yes', auditLog: 'partial', aiAct: 'partial', dsfaWizard: 'yes', euHosted: 'partial',
-    notes: 'Enterprise-Tier komplex · Schrems-II-Risiko · keine integrierten KI-Audit-Logs',
-  },
-  {
-    name: 'TrustArc',
-    vendor: 'TrustArc Inc.',
-    url: 'https://trustarc.com',
-    origin: 'US',
-    pricingFrom: '~400 €/M',
-    category: ['Cookie-Consent', 'DSFA'],
-    cookieConsent: 'yes', avvGenerator: 'partial', auditLog: 'no', aiAct: 'no', dsfaWizard: 'yes', euHosted: 'partial',
-    notes: 'Stark in DSFA · schwach in KI-Compliance · US-DPA',
-  },
-  {
-    name: 'Usercentrics',
-    vendor: 'Usercentrics GmbH',
-    url: 'https://usercentrics.com',
-    origin: 'EU',
-    pricingFrom: '~150 €/M',
-    category: ['Cookie-Consent'],
-    cookieConsent: 'yes', avvGenerator: 'no', auditLog: 'no', aiAct: 'no', dsfaWizard: 'no', euHosted: 'yes',
-    notes: 'Cookie-Banner-Marktführer DACH · keine AVV/AI-Tools',
-  },
-  {
-    name: 'DataGuard',
-    vendor: 'DataGuard GmbH',
-    url: 'https://dataguard.de',
-    origin: 'EU',
-    pricingFrom: '~300 €/M',
-    category: ['DSB-as-a-Service', 'AVV', 'DSFA'],
-    cookieConsent: 'partial', avvGenerator: 'yes', auditLog: 'no', aiAct: 'no', dsfaWizard: 'yes', euHosted: 'yes',
-    notes: 'Externer DSB + Tools · personell-getrieben · keine KI-Compliance',
-  },
-  {
-    name: 'Borlabs Cookie',
-    vendor: 'Borlabs GmbH',
-    url: 'https://borlabs.io',
-    origin: 'EU',
-    pricingFrom: '79 €/Jahr (WP-only)',
-    category: ['Cookie-Consent'],
-    cookieConsent: 'yes', avvGenerator: 'no', auditLog: 'no', aiAct: 'no', dsfaWizard: 'no', euHosted: 'yes',
-    notes: 'WordPress-only · günstig, aber nur Cookie-Banner',
-  },
-  {
-    name: 'Cookiebot (Cybot)',
-    vendor: 'Cybot A/S',
-    url: 'https://cookiebot.com',
-    origin: 'EU',
-    pricingFrom: '~10 €/M',
-    category: ['Cookie-Consent'],
-    cookieConsent: 'yes', avvGenerator: 'no', auditLog: 'no', aiAct: 'no', dsfaWizard: 'no', euHosted: 'partial',
-    notes: 'Dänisch, günstig · Server in EU + US · kein KI-Tooling',
-  },
-];
-
-function cell(v: 'yes' | 'partial' | 'no'): React.ReactNode {
+function cell(v: Rating): React.ReactNode {
   if (v === 'yes') return <Check className="h-4 w-4 text-emerald-400 inline" />;
   if (v === 'partial') return <Minus className="h-4 w-4 text-amber-400 inline" />;
   return <X className="h-4 w-4 text-red-400 inline" />;
+}
+
+/** Origin-Chip — EU gruen, US amber, uebrige Drittlaender blau (wie bisher). */
+function originChip(origin: DsgvoTool['origin']) {
+  const tone =
+    origin === 'EU'
+      ? 'border-emerald-900 text-emerald-300 bg-emerald-950/30'
+      : origin === 'US'
+        ? 'border-amber-900 text-amber-300 bg-amber-950/30'
+        : 'border-blue-900 text-blue-300 bg-blue-950/30';
+  return (
+    <span className={`inline-block px-1.5 py-0.5 text-[10px] font-bold rounded-none border ${tone}`}>
+      {origin}
+    </span>
+  );
 }
 
 export function DsgvoToolVergleich() {
@@ -114,8 +54,16 @@ export function DsgvoToolVergleich() {
       <main className="px-4 sm:px-6 py-12 sm:py-16">
         <div className="max-w-5xl mx-auto space-y-8">
           <div className="text-center mb-12">
-            <div className="inline-flex items-center gap-2 px-3 py-1 border border-emerald-900 bg-emerald-950/30 text-emerald-300 text-xs font-bold uppercase tracking-wider rounded-none mb-5">
-              7 Anbieter · Stand Mai 2026
+            <div className="flex flex-wrap items-center justify-center gap-2 mb-5">
+              <div className="inline-flex items-center gap-2 px-3 py-1 border border-emerald-900 bg-emerald-950/30 text-emerald-300 text-xs font-bold uppercase tracking-wider rounded-none">
+                {MATRIX_TOOLS.length} Anbieter · Stand {MATRIX_AS_OF_LABEL}
+              </div>
+              <a
+                href="#marktueberblick"
+                className="inline-flex items-center gap-2 px-3 py-1 border border-titanium-800 bg-obsidian-900 text-titanium-300 hover:text-titanium-100 hover:border-security-700 text-xs font-bold uppercase tracking-wider rounded-none"
+              >
+                + {DSGVO_TOOLS.length} im Marktüberblick · Stand {LANDSCAPE_AS_OF_LABEL}
+              </a>
             </div>
             <h1 className="text-3xl sm:text-5xl font-display font-bold text-titanium-50 tracking-tight leading-tight mb-4">
               DSGVO-Tool-Vergleich: <span className="text-security-400">7 Anbieter</span> im Direkt-Test
@@ -142,24 +90,20 @@ export function DsgvoToolVergleich() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-titanium-900">
-                {TOOLS.map((t) => (
+                {MATRIX_TOOLS.map((t) => (
                   <tr key={t.name} className={t.name === 'RealSyncDynamics.AI' ? 'bg-emerald-950/20' : 'hover:bg-obsidian-950'}>
                     <td className="px-3 py-2.5">
                       <div className="font-display font-bold text-titanium-50">{t.name}</div>
                       <div className="text-[10px] text-titanium-500">{t.vendor}</div>
                     </td>
-                    <td className="px-3 py-2.5">
-                      <span className={`inline-block px-1.5 py-0.5 text-[10px] font-bold rounded-none border ${t.origin === 'EU' ? 'border-emerald-900 text-emerald-300 bg-emerald-950/30' : t.origin === 'US' ? 'border-amber-900 text-amber-300 bg-amber-950/30' : 'border-blue-900 text-blue-300 bg-blue-950/30'}`}>
-                        {t.origin}
-                      </span>
-                    </td>
+                    <td className="px-3 py-2.5">{originChip(t.origin)}</td>
                     <td className="px-3 py-2.5 text-titanium-300 text-[11px]">{t.pricingFrom}</td>
-                    <td className="px-3 py-2.5 text-center">{cell(t.cookieConsent)}</td>
-                    <td className="px-3 py-2.5 text-center">{cell(t.avvGenerator)}</td>
-                    <td className="px-3 py-2.5 text-center">{cell(t.auditLog)}</td>
-                    <td className="px-3 py-2.5 text-center">{cell(t.aiAct)}</td>
-                    <td className="px-3 py-2.5 text-center">{cell(t.dsfaWizard)}</td>
-                    <td className="px-3 py-2.5 text-center">{cell(t.euHosted)}</td>
+                    <td className="px-3 py-2.5 text-center">{cell(t.matrix.cookieConsent)}</td>
+                    <td className="px-3 py-2.5 text-center">{cell(t.matrix.avvGenerator)}</td>
+                    <td className="px-3 py-2.5 text-center">{cell(t.matrix.auditLog)}</td>
+                    <td className="px-3 py-2.5 text-center">{cell(t.matrix.aiAct)}</td>
+                    <td className="px-3 py-2.5 text-center">{cell(t.matrix.dsfaWizard)}</td>
+                    <td className="px-3 py-2.5 text-center">{cell(t.matrix.euHosted)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -167,12 +111,12 @@ export function DsgvoToolVergleich() {
           </div>
 
           <div className="space-y-3">
-            {TOOLS.map((t) => (
+            {MATRIX_TOOLS.map((t) => (
               <div key={t.name} className="bg-obsidian-900 border border-titanium-900 rounded-none p-4">
                 <div className="flex items-start justify-between gap-3 mb-2">
                   <div>
                     <h2 className="font-display font-bold text-titanium-50">{t.name}</h2>
-                    <div className="text-[11px] text-titanium-500">{t.category.join(' · ')}</div>
+                    <div className="text-[11px] text-titanium-500">{t.capabilities.join(' · ')}</div>
                   </div>
                   <a href={t.url} target="_blank" rel="noopener noreferrer" className="text-xs text-security-400 hover:underline inline-flex items-center gap-1 shrink-0">
                     Website <ExternalLink className="h-3 w-3" />
@@ -182,6 +126,143 @@ export function DsgvoToolVergleich() {
               </div>
             ))}
           </div>
+
+          {/* ── Marktüberblick: die 4 Kategorien ───────────────────────────── */}
+          <section id="marktueberblick" className="pt-8 scroll-mt-20">
+            <div className="flex items-start gap-3 mb-2">
+              <Layers className="h-6 w-6 text-security-400 shrink-0 mt-0.5" />
+              <div>
+                <h2 className="font-display font-bold text-titanium-50 text-xl mb-2">
+                  Marktüberblick {LANDSCAPE_AS_OF_LABEL}: {DSGVO_TOOLS.length} Anbieter in 4 Kategorien
+                </h2>
+                <p className="text-sm text-titanium-300 leading-relaxed max-w-3xl">
+                  Die DSGVO-Pflichten zerfallen in vier Aufgabenbereiche. Die meisten Tools decken genau einen davon
+                  ab — nur Enterprise-Plattformen versuchen das Gesamtpaket. Wer die Kategorie kennt, in die die eigene
+                  Lücke fällt, spart sich den Vergleich der übrigen drei.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-2 p-3 mt-4 mb-6 bg-obsidian-900 border border-titanium-900 rounded-none">
+              <Info className="h-4 w-4 text-titanium-500 shrink-0 mt-0.5" />
+              <p className="text-[11px] text-titanium-400 leading-relaxed">{PRICING_DISCLAIMER}</p>
+            </div>
+
+            <div className="space-y-6">
+              {TOOL_CATEGORIES.map((cat, i) => (
+                <div key={cat.key} className="bg-obsidian-900 border border-titanium-900 rounded-none">
+                  <div className="border-b border-titanium-900 px-4 py-3">
+                    <h3 className="font-display font-bold text-titanium-50 text-sm">
+                      <span className="text-titanium-600 font-mono mr-2">{String(i + 1).padStart(2, '0')}</span>
+                      {cat.label}
+                    </h3>
+                    <p className="text-[11px] text-titanium-400 leading-relaxed mt-1">{cat.focus}</p>
+                  </div>
+
+                  <div className="divide-y divide-titanium-900">
+                    {toolsByCategory(cat.key).map((t) => (
+                      <div
+                        key={t.name}
+                        className={`px-4 py-3 ${t.name === 'RealSyncDynamics.AI' ? 'bg-emerald-950/20' : ''}`}
+                      >
+                        <div className="flex flex-wrap items-center gap-2 mb-1.5">
+                          <span className="font-display font-bold text-titanium-50 text-sm">{t.name}</span>
+                          {originChip(t.origin)}
+                          <span className="text-[10px] font-mono text-titanium-500">{TRANSFER_LABEL[t.transfer]}</span>
+                          {t.matrix && (
+                            <span className="inline-block px-1.5 py-0.5 text-[10px] font-bold rounded-none border border-security-800 text-security-300 bg-security-900/30">
+                              im Detailvergleich
+                            </span>
+                          )}
+                          <a
+                            href={t.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="ml-auto text-[11px] text-security-400 hover:underline inline-flex items-center gap-1 shrink-0"
+                          >
+                            Website <ExternalLink className="h-3 w-3" />
+                          </a>
+                        </div>
+                        <div className="text-[10px] text-titanium-500 mb-1.5">{t.vendor}</div>
+                        <p className="text-xs text-titanium-300 leading-relaxed">{t.strengths}</p>
+                        <div className="flex flex-wrap gap-x-6 gap-y-1 mt-2 text-[11px]">
+                          <span className="text-titanium-400">
+                            Einstieg: <span className="font-mono text-titanium-200">{t.pricingFrom}</span>
+                          </span>
+                          <span className="text-titanium-400">
+                            Passend für: <span className="text-titanium-200">{t.bestFor}</span>
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* ── Budget nach Unternehmensgröße ──────────────────────────────── */}
+          <section className="pt-8">
+            <div className="flex items-start gap-3 mb-4">
+              <Wallet className="h-6 w-6 text-security-400 shrink-0 mt-0.5" />
+              <div>
+                <h2 className="font-display font-bold text-titanium-50 text-xl mb-2">
+                  Was das kostet — Orientierung nach Unternehmensgröße
+                </h2>
+                <p className="text-sm text-titanium-300 leading-relaxed max-w-3xl">
+                  Richtwerte für das Gesamtbudget aus Lizenzen und Beratung, nicht für ein einzelnes Tool.
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-obsidian-900 border border-titanium-900 rounded-none overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead className="bg-obsidian-950 text-titanium-400 uppercase tracking-wider">
+                  <tr>
+                    <th className="text-left px-3 py-2.5">Unternehmensgröße</th>
+                    <th className="text-left px-3 py-2.5">Budget / Jahr</th>
+                    <th className="text-left px-3 py-2.5">Typische Zusammenstellung</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-titanium-900">
+                  {BUDGET_GUIDANCE.map((b) => (
+                    <tr key={b.size} className="hover:bg-obsidian-950">
+                      <td className="px-3 py-2.5 font-display font-bold text-titanium-50 align-top whitespace-nowrap">{b.size}</td>
+                      <td className="px-3 py-2.5 font-mono text-titanium-200 align-top whitespace-nowrap">{b.budgetPerYear}</td>
+                      <td className="px-3 py-2.5 text-titanium-300 leading-relaxed">{b.recommendation}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          {/* ── Auswahlkriterien ───────────────────────────────────────────── */}
+          <section className="pt-8">
+            <div className="flex items-start gap-3 mb-4">
+              <ListChecks className="h-6 w-6 text-security-400 shrink-0 mt-0.5" />
+              <div>
+                <h2 className="font-display font-bold text-titanium-50 text-xl mb-2">
+                  Sechs Kriterien, an denen sich die Auswahl entscheidet
+                </h2>
+                <p className="text-sm text-titanium-300 leading-relaxed max-w-3xl">
+                  Jedes Kriterium mit der Pflicht, aus der es folgt — damit die Entscheidung begründbar bleibt.
+                </p>
+              </div>
+            </div>
+
+            <div className="grid sm:grid-cols-2 gap-3">
+              {SELECTION_CRITERIA.map((c, i) => (
+                <div key={c.title} className="bg-obsidian-900 border border-titanium-900 rounded-none p-4">
+                  <h3 className="font-display font-bold text-titanium-50 text-sm mb-1.5">
+                    <span className="text-titanium-600 font-mono mr-2">{String(i + 1).padStart(2, '0')}</span>
+                    {c.title}
+                  </h3>
+                  <p className="text-xs text-titanium-300 leading-relaxed">{c.why}</p>
+                </div>
+              ))}
+            </div>
+          </section>
 
           <div className="mt-12 p-6 sm:p-8 bg-obsidian-900 border border-security-700 rounded-none">
             <div className="flex items-start gap-3 mb-4">
@@ -231,6 +312,7 @@ export function DsgvoToolVergleich() {
             headline: 'DSGVO-Tool-Vergleich 2026: 7 Anbieter im Test',
             description: 'OneTrust, TrustArc, Usercentrics, DataGuard, Borlabs, Cookiebot, RealSyncDynamics — Feature-Matrix mit Pricing und Origin.',
             datePublished: '2026-05-06',
+            dateModified: '2026-08-19',
             inLanguage: 'de-DE',
             author: { '@type': 'Organization', name: 'RealSync Dynamics' },
           }),

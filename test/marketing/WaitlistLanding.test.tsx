@@ -102,7 +102,7 @@ describe('Warteliste — Alias /waitlist', () => {
     // /warteliste konsolidiert, sondern auf dem Fallback-Dokument landen.
     expect(redirects).toMatch(/^\/waitlist\s+\/warteliste\s+301$/m);
     // Die Redirect-Regel muss VOR dem SPA-Fallback stehen, sonst greift sie nie.
-    expect(redirects.indexOf('/waitlist')).toBeLessThan(redirects.indexOf('/*  /404.html'));
+    expect(redirects.indexOf('/waitlist')).toBeLessThan(redirects.indexOf('/*  /404'));
   });
 
   it('hat keinen eigenen SEO-Eintrag — die Seite rendert unter /waitlist nie', async () => {

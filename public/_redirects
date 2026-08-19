@@ -29,4 +29,10 @@ https://www.realsyncdynamicsai.de/* https://realsyncdynamicsai.de/:splat 301
 # Status bleibt 200. Ein echter 404 verlangte eine Allowlist ueber alle 459
 # Router-Pfade; jede dort vergessene Route waere sofort tot. Erzeugt wird die
 # Datei in scripts/prerender.mjs.
-/*  /404.html  200
+#
+# Ziel OHNE .html-Endung, sonst Endlosschleife: Cloudflare Pages kanonisiert
+# /404.html per 308 auf /404, das erneut auf /* trifft. Am Preview-Deploy
+# nachgewiesen (curl bricht nach 50 Sprüngen ab). Dieselbe Kanonisierung ist
+# der Grund, warum writeRoute() in scripts/prerender.mjs flache .html-Dateien
+# statt Verzeichnisse schreibt.
+/*  /404  200

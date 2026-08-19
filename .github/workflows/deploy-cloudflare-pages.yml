@@ -33,8 +33,17 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: cloudflare-pages
-  cancel-in-progress: false
+  # Je Referenz statt global. Zuvor lag jeder Lauf des Repositories in
+  # derselben Gruppe `cloudflare-pages` — ein haengender Job blockierte
+  # damit auch Deploys von `main`, nicht nur den eigenen PR.
+  group: cloudflare-pages-${{ github.ref }}
+  # Fuer Pull Requests loest ein neuer Push den vorigen Lauf ab: Der alte
+  # prueft ohnehin einen ueberholten Stand.
+  #
+  # Fuer `main` bleibt es bei `false`. Einen laufenden Produktions-Deploy
+  # mittendrin abzubrechen, waere gefaehrlicher als ihn zu Ende laufen zu
+  # lassen — dabei koennte ein halb hochgeladener Stand ausgeliefert werden.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
@@ -43,6 +52,10 @@ jobs:
   build:
     name: Build SPA
     runs-on: ubuntu-latest
+    # Build inklusive Prerender braucht regulaer rund fuenf Minuten. Ohne diese Grenze gilt der GitHub-Standard von 360 Minuten —
+    # ein haengender Schritt blockiert dann sechs Stunden lang die
+    # Warteschlange, statt schnell und lesbar zu scheitern.
+    timeout-minutes: 25
     outputs:
       cf_ready: ${{ steps.cfcheck.outputs.ready }}
     steps:
@@ -121,6 +134,10 @@ jobs:
 
   deploy:
     name: Deploy to Cloudflare Pages
+    # Upload nach Cloudflare Pages. Ohne diese Grenze gilt der GitHub-Standard von 360 Minuten —
+    # ein haengender Schritt blockiert dann sechs Stunden lang die
+    # Warteschlange, statt schnell und lesbar zu scheitern.
+    timeout-minutes: 15
     needs: build
     if: needs.build.outputs.cf_ready == 'true'
     runs-on: ubuntu-latest
@@ -140,6 +157,10 @@ jobs:
 
   smoke-test:
     name: Smoke test live routes
+    # Wenige HTTP-Pruefungen gegen die ausgelieferte Seite. Ohne diese Grenze gilt der GitHub-Standard von 360 Minuten —
+    # ein haengender Schritt blockiert dann sechs Stunden lang die
+    # Warteschlange, statt schnell und lesbar zu scheitern.
+    timeout-minutes: 10
     needs: [build, deploy]
     if: needs.build.outputs.cf_ready == 'true'
     runs-on: ubuntu-latest

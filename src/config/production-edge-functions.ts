@@ -8,7 +8,7 @@
  * dieses Repos: Er ist in keinem Build, keinem Lint und keinem Typecheck
  * sichtbar, weil Vite und `tsc` nur Strings sehen.
  *
- * Im Repository liegen 177 Function-Verzeichnisse, in Produktion laufen 101.
+ * Im Repository liegen 177 Function-Verzeichnisse, in Produktion laufen 103.
  * Die Differenz ist **nicht** erklärt.
  *
  * ## Was mit der Obergrenze war — und was davon noch gilt
@@ -23,7 +23,7 @@
  * Obergrenze von 100 als *aktuelle* Schranke widerlegt — wo sie heute liegt,
  * ist unbekannt und ausdrücklich nicht gemessen.
  *
- * Für die verbleibenden 76 heißt das: „kann nicht deployt werden" ist keine
+ * Für die verbleibenden 74 heißt das: „kann nicht deployt werden" ist keine
  * belegte Aussage mehr. Wer sie braucht, probiert einen Deploy — das ist
  * billiger als jede Herleitung. Siehe `docs/runbooks/edge-function-kontingent.md`.
  *
@@ -47,10 +47,10 @@
  * Sie darf steigen, sobald jemand einen höheren Stand misst — und sie ist
  * kein Argument dafür, dass ein weiterer Deploy scheitern wird.
  */
-export const EDGE_FUNCTIONS_OBSERVED_MAX = 101;
+export const EDGE_FUNCTIONS_OBSERVED_MAX = 103;
 
 /** Datum der letzten Messung gegen das Live-Projekt. */
-export const PRODUCTION_EDGE_FUNCTIONS_MEASURED_AT = '2026-08-19T16:45Z';
+export const PRODUCTION_EDGE_FUNCTIONS_MEASURED_AT = '2026-08-19T20:18Z';
 
 /**
  * Die in Produktion aktiven Function-Slugs — alphabetisch, damit ein Diff
@@ -78,6 +78,7 @@ export const PRODUCTION_EDGE_FUNCTIONS: readonly string[] = [
   'classify-document',
   'cookie-scan',
   'cookie-scan-deep',
+  'create-trial-subscription',
   'daily-digest',
   'enterprise-ai-os-agent-runs-list',
   'enterprise-ai-os-agents-list',
@@ -133,6 +134,7 @@ export const PRODUCTION_EDGE_FUNCTIONS: readonly string[] = [
   'rebuild-website',
   'remediation-agent',
   'sales-lead',
+  'save-company-profile',
   'scheduler',
   'scheduler-dispatch',
   'security-signal-ingest',
@@ -189,19 +191,15 @@ export interface UnbackedCaller {
 
 export const UNBACKED_CALLERS: readonly UnbackedCaller[] = [
   // ── Öffentlicher Trichter — wiegt am schwersten ────────────────────────
-  {
-    slug: 'save-company-profile',
-    surface: '/unified-entry/onboarding — Schritt „Growth starten"',
-    publicPath: true,
-  },
-  {
-    slug: 'create-trial-subscription',
-    surface: '/unified-entry/onboarding — Schritt „Growth starten"',
-    publicPath: true,
-  },
-  // `siteos` stand hier bis zum 2026-08-19, 16:45 Uhr. Der Router ist seit
-  // 16:39 Uhr deployt und über alle vier Pfade nachgewiesen — der Eintrag ist
-  // deshalb weg und der Hinweis in der Oberfläche verschwindet von selbst.
+  //
+  // Was hier am 2026-08-19 wegfiel — die Reihenfolge ist die des Nachweises,
+  // nicht die des Deploys, und der Unterschied ist der Punkt:
+  //
+  //   16:45  `siteos` — Router seit 16:39 deployt, alle vier Pfade über HTTP
+  //          geprüft. Der Verfügbarkeitshinweis verschwand von selbst.
+  //   20:18  `save-company-profile`, `create-trial-subscription` — seit 19:38
+  //          deployt, beide antworten aus dem Handler (401 bzw. 400), nicht
+  //          mit dem Plattform-404. Die Registrierung läuft bis zum Ende durch.
   //
   // Öffentlich dokumentierte, aber nicht existierende API-Endpunkte.
   // ApiDocs kennzeichnet sie inzwischen — siehe src/pages/ApiDocs.tsx.

@@ -438,14 +438,19 @@ die Git-History bleibt als Archiv erhalten.
 
 ### 🔒 Design-Freeze — verbindlich seit 2026-08-19
 
-**Baseline: Commit `f0c03bd`** (Governance-OS-Hero, PR #1091). Das ist der
-Stand, der auf Cloudflare deployt wurde und vom Eigentümer ausdrücklich als
-fertig abgenommen ist. Er gilt als eingefroren.
+**Baseline: Commit `339b08e7`** auf `main` — „feat(landing): Enterprise Ultra
+Plus frontend". Das ist der Stand, der vom Eigentümer abgenommen wurde und
+seit dem 2026-08-19 auf `realsyncdynamicsai.de` ausgeliefert wird. Er gilt als
+eingefroren.
 
-> Zum Zeitpunkt der Festlegung liegt `f0c03bd` auf dem Branch
-> `claude/enterprise-frontend-capability-truth` und **nicht** in Produktion.
-> `realsyncdynamicsai.de` zeigt bis zum Merge von #1091 den älteren Hero. Der
-> Freeze bezieht sich trotzdem auf `f0c03bd`, nicht auf den Produktionsstand.
+> Die erste Fassung dieser Regel nannte `f0c03bd` — den Commit auf dem Branch
+> `claude/enterprise-frontend-capability-truth`. PR #1091 wurde als **Squash**
+> gemergt, wodurch die fünfzehn Einzel-Commits zu `339b08e7` zusammengefasst
+> wurden. `f0c03bd` existiert in `main` deshalb nicht; die Baseline zeigte auf
+> einen Commit, den dort niemand findet.
+>
+> Lehre für den nächsten Freeze: Ein Baseline-Verweis gehört erst gesetzt,
+> wenn der Stand auf `main` liegt — vorher ist die SHA nicht die endgültige.
 
 #### 1. Am Design wird nichts mehr geändert
 

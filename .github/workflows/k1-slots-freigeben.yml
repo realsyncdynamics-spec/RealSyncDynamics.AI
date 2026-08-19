@@ -1,0 +1,100 @@
+name: K1 — zwei Slots für den enterprise-ai-os-Router freigeben (one-shot)
+
+# Schritt 2 der Reihenfolge aus docs/runbooks/edge-function-konsolidierung.md
+# bzw. PR #1087. Löscht genau zwei Live-Functions, die im gesamten
+# Repo-Aufrufkorpus keinen Aufrufer haben, und schafft damit die Slots, die
+# der Router `enterprise-ai-os` und anschließend die Onboarding-Functions
+# brauchen.
+#
+# ── Warum überhaupt ──────────────────────────────────────────────────────
+# Die Organisation läuft auf dem Free-Plan mit hartem Limit von 100 Edge
+# Functions; belegt sind 100. Jeder Deploy einer neuen Function scheitert mit
+# `HTTP 402: Max number of functions reached for project`. Ein Slot ist nur
+# gegen einen anderen zu haben (docs/runbooks/edge-function-kontingent.md).
+#
+# Konkret blockiert das die Registrierung: `/unified-entry/onboarding` ruft
+# `save-company-profile` und `create-trial-subscription` auf, beide antworten
+# mit 404. Ein Interessent bekommt ein Konto und bleibt im letzten Schritt
+# stehen (docs/runbooks/frontend-backend-gap.md).
+#
+# ── Auswahl der beiden Slugs ─────────────────────────────────────────────
+# Gemessen am 2026-08-19, nicht übernommen:
+#   • kein Treffer in `src/` für beide
+#   • keine dynamisch zusammengesetzten Function-URLs im Frontend
+#   • `agentsApi.ts` bezieht die Agentenliste aus der lokalen Registry
+#     (`src/lib/enterprise-ai-os/agents/registry.ts`) — ohne Netzwerk
+#   • verbleibende Referenzen: nur die Allowlist in scripts/pre-deploy-lint.mjs
+#
+# Der Code beider Functions bleibt unter supabase/functions/ und ist jederzeit
+# redeploybar, sobald wieder ein Slot frei ist. Gelöscht wird der Slot, nicht
+# die Implementierung.
+#
+# ── VORAUSSETZUNG, ohne die dieser Lauf wirkungslos ist ──────────────────
+# `scripts/edge-functions-retired.txt` (kommt mit PR #1087) muss **beide**
+# Slugs führen. Sonst schaltet der nächste Merge, der supabase/config.toml
+# oder supabase/functions/_shared/* anfasst, `deploy.yml` auf `deploy_all` —
+# und legt genau die zwei Functions wieder an, die dieser Lauf entfernt hat.
+# Die Slots wären still wieder belegt und der Router bekäme sein 402.
+#
+# Stand 2026-08-19 führt die Liste in #1087 diese beiden **nicht**. Erst
+# ergänzen, dann diesen Workflow starten.
+#
+# ── Danach ───────────────────────────────────────────────────────────────
+#   3. PR #1087 mergen → deploy.yml deployt den Router `enterprise-ai-os`
+#   4. Aufräum-PR: die 5 verbliebenen enterprise-ai-os-* löschen → 6 Slots frei
+#   5. save-company-profile + create-trial-subscription deployen
+#
+# Ebenfalls im Cutover zu erledigen: `_shared/enterprise-ai-os-agents.ts`
+# verweist Clients per `delegateTo` auf `/functions/v1/enterprise-ai-os-evaluate`.
+# Dieser Pfad verschwindet mit dem Löschen; der Router bedient
+# `/functions/v1/enterprise-ai-os/evaluate`. Der Verweis gehört mitgezogen.
+
+on:
+  workflow_dispatch:
+
+jobs:
+  free-slots:
+    name: 2 Slots ohne Aufrufer freigeben
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: supabase/setup-cli@ab058987d8d6c725971f6cf9d0b5c98467e30bd1 # v1.7.1
+        with:
+          version: latest
+
+      - name: Vorher — Slot-Stand
+        run: |
+          set -uo pipefail
+          echo "Live-Functions vor dem Lauf:"
+          supabase functions list --project-ref "${{ secrets.SUPABASE_PROJECT_ID }}" | wc -l
+
+      - name: Slots freigeben
+        run: |
+          set -uo pipefail
+          # Tolerant gegen "bereits gelöscht", damit der Lauf wiederholbar ist.
+          for slug in enterprise-ai-os-evaluate enterprise-ai-os-agents-list; do
+            echo "=== delete $slug ==="
+            if supabase functions delete "$slug" --project-ref "${{ secrets.SUPABASE_PROJECT_ID }}"; then
+              echo "DELETED: $slug"
+            else
+              echo "WARN: delete fehlgeschlagen für $slug (evtl. bereits gelöscht) — weiter"
+            fi
+          done
+
+      - name: Nachher — Slot-Bilanz
+        run: |
+          set -uo pipefail
+          n=$(supabase functions list --project-ref "${{ secrets.SUPABASE_PROJECT_ID }}" | wc -l)
+          echo "Live-Functions nach dem Lauf: $n"
+          {
+            echo "### K1 — Slots freigegeben"
+            echo ""
+            echo "Gelöscht: \`enterprise-ai-os-evaluate\`, \`enterprise-ai-os-agents-list\`"
+            echo ""
+            echo "Zeilen in \`functions list\` danach: **$n**"
+            echo ""
+            echo "Nächster Schritt: PR #1087 mergen — \`deploy.yml\` legt den Router an."
+            echo "Vorher prüfen, dass beide Slugs in \`scripts/edge-functions-retired.txt\` stehen."
+          } >> "$GITHUB_STEP_SUMMARY"

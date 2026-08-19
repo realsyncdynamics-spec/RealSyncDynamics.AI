@@ -8,6 +8,7 @@
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
+import { requireTenantMembership } from '../_shared/auth.ts';
 
 Deno.serve(async (req) => {
   const preflight = handleOptions(req, corsHeaders);
@@ -31,8 +32,17 @@ Deno.serve(async (req) => {
   const { data: { user }, error: userError } = await supabase.auth.getUser(token);
   if (userError || !user?.id) return jsonError(401, 'UNAUTHORIZED', 'Invalid token');
 
+  // Ein tenantId aus dem Body ist eine Vertrauensgrenze, kein Hinweis: der
+  // Client unten schreibt mit Service-Role und umgeht damit RLS. Ohne
+  // Mitgliedschaftspruefung koennte jeder angemeldete Nutzer die
+  // subscriptions-Zeile eines fremden Tenants ueberschreiben — der Upsert
+  // laeuft auf `onConflict: tenant_id` und wuerde ein bezahltes Abo durch
+  // einen Growth-Trial ersetzen.
   let tenantId = body.tenantId;
-  if (!tenantId) {
+  if (tenantId) {
+    const isMember = await requireTenantMembership(supabase, user.id, tenantId);
+    if (!isMember) return jsonError(403, 'FORBIDDEN', 'not a member of the requested tenant');
+  } else {
     const { data: profile, error: profileError } = await supabase
       .from('profiles').select('active_tenant_id').eq('id', user.id).single();
     if (profileError || !profile?.active_tenant_id) return jsonError(400, 'TENANT_NOT_FOUND', 'No active tenant found');

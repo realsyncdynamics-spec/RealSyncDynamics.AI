@@ -8,6 +8,7 @@
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
+import { requireTenantMembership } from '../_shared/auth.ts';
 
 const VALID_SECTORS = new Set(['saas', 'agency', 'healthcare', 'public_sector', 'generic']);
 
@@ -52,10 +53,20 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Get user's active tenant
+    // Get user's active tenant.
+    //
+    // Ein tenantId aus dem Body ist eine Vertrauensgrenze, kein Hinweis: der
+    // Client schreibt mit Service-Role und umgeht damit RLS. Ohne
+    // Mitgliedschaftspruefung landet das Firmenprofil sonst im Datensatz eines
+    // fremden Tenants.
     let tenantId = body.tenantId;
 
-    if (!tenantId) {
+    if (tenantId) {
+      const isMember = await requireTenantMembership(supabase, user.id, tenantId);
+      if (!isMember) {
+        return jsonError(403, 'FORBIDDEN', 'not a member of the requested tenant');
+      }
+    } else {
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('active_tenant_id')

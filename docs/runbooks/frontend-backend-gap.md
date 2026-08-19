@@ -236,9 +236,25 @@ Der Test sagt anschließend selbst, welche Einträge in `UNBACKED_CALLERS`
 
 | Function | Oberfläche | Behandlung |
 |---|---|---|
-| `save-company-profile` | `/unified-entry/onboarding` | Fehlschlag wird als eigener Zustand gezeigt, Konto bleibt nutzbar |
-| `create-trial-subscription` | `/unified-entry/onboarding` | dito — kein „Growth ist bereit" ohne angelegten Growth-Testzeitraum |
 | `audit`, `avv-generator`, `dsfa`, `sub-processors` | `/api-docs` | als „Noch nicht verfügbar" gekennzeichnet |
+
+### Registrierung — geschlossen am 2026-08-19
+
+`save-company-profile` und `create-trial-subscription` standen in der Tabelle
+darüber, bis sie um 19:38 Uhr deployt wurden. Beide antworten seither aus dem
+Handler (`401 UNAUTHORIZED` bzw. `400 TRIAL_NOT_AVAILABLE`), nicht mit dem
+Plattform-404 — der Trichter läuft bis zum Ende durch.
+
+Der Deploy allein hätte nicht gereicht. Vier Fehler steckten in Functions, die
+nie jemand hatte laufen sehen (#1103): Mandantensuche über eine Spalte, die es
+nicht gibt; `tenantId` aus dem Body ungeprüft mit Service-Role-Rechten; eine
+Zieltabelle, die fehlte, während die Function `success: true` meldete; ein
+Upsert, der ein bezahltes Abo durch einen 14-Tage-Test ersetzt hätte. Ein
+blinder Deploy hätte den ehrlichen Hinweis „nicht verfügbar" durch einen
+Fehler ersetzt — also verschlechtert.
+
+Daraus die Regel für die verbleibenden 74: **erst lesen, dann deployen.** Eine
+Function, die nie lief, ist nicht „fertig, nur nicht ausgerollt".
 
 `api-quota` steht zusätzlich in `src/features/api/API_DEVELOPER_GUIDE.md`,
 wird aber von keinem Code aufgerufen — dokumentierter Endpunkt ohne Backend.

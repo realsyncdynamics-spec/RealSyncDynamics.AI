@@ -20,20 +20,21 @@
 >
 > | | Anzahl |
 > |---|---|
-> | Live in Supabase | **101** |
+> | Live in Supabase | **103** (Stand 20:18 Uhr) |
 > | Im Repo | 177 |
-> | Nicht deployt | **76** |
+> | Nicht deployt | **74** |
 >
 > **Was das heißt.** Das 402 von 2026-08-10 war echt, aber es belegte einen
 > Zustand, keine dauerhafte Grenze. Wo die Grenze heute liegt, ist **nicht
 > gemessen** — bekannt ist nur, dass sie über 100 liegt.
 >
-> **Was daraus folgt.** Für jede der 76 fehlenden Functions ist „kann nicht
+> **Was daraus folgt.** Für jede der 74 fehlenden Functions ist „kann nicht
 > deployt werden" keine belegte Aussage mehr. Der billigste Weg zur Antwort ist
-> ein Deploy-Versuch, nicht eine Herleitung aus Zählständen. Insbesondere
+> ein Deploy-Versuch, nicht eine Herleitung aus Zählständen. Für
 > `save-company-profile` und `create-trial-subscription` — die beiden, an denen
-> die Registrierung hängt (`docs/runbooks/frontend-backend-gap.md`) — sind damit
-> wieder Kandidaten.
+> die Registrierung hing — ist der Versuch am selben Abend gemacht worden: Sie
+> laufen seit 19:38 Uhr. Vier Fehler mussten dafür vorher raus (#1103); ein
+> blinder Deploy hätte den ehrlichen Hinweis durch einen Fehler ersetzt.
 >
 > **Was schon nachgezogen ist.** `evidence-vault`, `policy-packs`, `provenance`,
 > alle vier `iso42001-*`, `governance-memory` und `memory-decay-worker` laufen

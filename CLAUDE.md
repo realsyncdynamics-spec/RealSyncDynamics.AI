@@ -78,7 +78,7 @@ Menschen · Unternehmen · KI-Agenten · Daten · Entscheidungen.
 
 **Primär: Supabase Cloud (EU / Frankfurt)**
 - PostgreSQL 17 (Live-Projekt, Stand 2026-08-16)
-- **177 Edge Functions** im Repo (`supabase/functions/`, Deno/V8) — **101 davon in Produktion**, siehe §5
+- **177 Edge Functions** im Repo (`supabase/functions/`, Deno/V8) — **103 davon in Produktion**, siehe §5
 - **279 Migrations** (`supabase/migrations/`) — 278 angewendet, siehe §5
 - RLS auf allen App-Tabellen · Realtime Subscriptions
 
@@ -190,7 +190,7 @@ Jeder Agent braucht vier Dimensionen — fehlt eine, ist er nicht governance-fä
 > | | Repo | in Produktion | Lücke |
 > |---|---|---|---|
 > | Migrationen | 279 | 278 (neueste `20260820000000`) | **1** |
-> | Edge Functions | 177 | **101** (neu gemessen 2026-08-19, 16:45 Uhr) | **76** |
+> | Edge Functions | 177 | **103** (neu gemessen 2026-08-19, 20:18 Uhr) | **74** |
 > | Tabellen in `public` | — | 341 | — |
 >
 > **Die Migrations-Seite ist geschlossen.** Frühere Stände dieser Datei nannten
@@ -225,15 +225,16 @@ Jeder Agent braucht vier Dimensionen — fehlt eine, ist er nicht governance-fä
 > „Exakt 100 plus harter alphabetischer Schnitt = Free-Tarif-Kontingent, kein
 > Code-Fix deployt Function 101." Der Router `siteos` **ist** als Function 101
 > durchgelaufen — Deploy-Lauf 32277074625, `Deployed Functions on project:
-> siteos`, anschließend über HTTP an allen vier Pfaden nachgewiesen. Eine
-> Neumessung über alle 177 Verzeichnisse ergibt 101 deployt, 76 fehlend.
+> siteos`, anschließend über HTTP an allen vier Pfaden nachgewiesen. Danach
+> gingen `save-company-profile` und `create-trial-subscription` ebenso durch.
+> Eine Neumessung über alle 177 Verzeichnisse ergibt 103 deployt, 74 fehlend.
 >
 > Was daraus folgt und was nicht:
 >
 > - Die Zahl 100 war eine **Beobachtung**, das Kontingent eine **Schlussfolgerung
 >   daraus**. Das 402 war echt, aber es belegte den Zustand von damals, nicht
 >   eine dauerhafte Schranke. Wo die Grenze heute liegt, ist **nicht gemessen**.
-> - „Kann nicht deployt werden" ist für die verbleibenden 76 keine belegte
+> - „Kann nicht deployt werden" ist für die verbleibenden 74 keine belegte
 >   Aussage mehr. Wer eine davon braucht, probiert den Deploy — das kostet einen
 >   Workflow-Lauf und beantwortet die Frage, die keine Herleitung beantwortet
 >   hat.

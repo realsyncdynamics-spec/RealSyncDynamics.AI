@@ -1,0 +1,16 @@
+# Lokale Wrangler-Dev-Secrets (kopieren nach .dev.vars)
+# .dev.vars ist gitignored — nie echte Secrets committen.
+#
+#   cp .dev.vars.example .dev.vars
+#   # Werte eintragen, dann:
+#   npm run dev:workers
+
+# Pflicht für JWT-Verify-Canary
+SUPABASE_JWT_SECRET=replace-with-local-jwt-secret
+SUPABASE_URL=https://ebljyceifhnlzhjfyxup.supabase.co
+
+# Service-Role nur lokal / Staging — nie in Frontend-Builds
+SUPABASE_SERVICE_ROLE_KEY=replace-with-service-role-key
+
+# Optional
+# SENTRY_DSN=

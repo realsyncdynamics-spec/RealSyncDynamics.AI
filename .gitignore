@@ -7,6 +7,8 @@ coverage/
 .env*
 !.env.example
 !.env.docker.example
+.dev.vars
+.wrangler/
 /scans/
 test-results/
 playwright-report/

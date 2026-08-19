@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite --port=3000 --host=0.0.0.0",
+    "dev:workers": "wrangler dev --config wrangler-workers.toml",
+    "dev:workers:remote": "wrangler dev --config wrangler-workers.toml --remote",
     "build:base": "vite build && npm run generate:legal-pages",
     "build": "npm run build:base && npm run prerender:safe",
     "build:full": "npm run build:base && npm run prerender",
@@ -88,6 +90,7 @@
     "tsx": "^4.21.0",
     "typescript": "~5.8.2",
     "vite": "^6.2.0",
-    "vitest": "^4.1.5"
+    "vitest": "^4.1.5",
+    "wrangler": "^4.28.0"
   }
 }

@@ -96,7 +96,7 @@ export function LegalMethodology() {
                 <div className="font-display font-bold text-titanium-50 text-sm mb-1">AI-Act-Klassifikator</div>
                 <div className="text-xs text-titanium-400 leading-relaxed">
                   Decision Tree mit 12 Fragen → Mapping auf Annex III Punkte 1-8 + Art. 5 (verbotene Praktiken)
-                  + Art. 52 (Transparenz). Output: Indikation („möglicherweise High-Risk Annex III(4)" — nicht
+                  + Art. 50 (Transparenz). Output: Indikation („möglicherweise High-Risk Annex III(4)" — nicht
                   „Sie sind High-Risk"). Confidence basiert auf Übereinstimmungstiefe der Antworten mit
                   Annex-Beispielen.
                 </div>
@@ -186,7 +186,7 @@ export function LegalMethodology() {
             </ul>
             <p className="mt-3">
               Plus: Art. 5 (verbotene Praktiken — Social Scoring, Manipulation, Real-time-Biometrie),
-              Art. 52 (Transparenz für Limited Risk — Chatbots, AI-generated Content).
+              Art. 50 (Transparenz für Limited Risk — Chatbots, AI-generated Content).
             </p>
           </Section>
 

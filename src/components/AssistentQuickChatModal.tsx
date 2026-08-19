@@ -209,7 +209,7 @@ export function AssistentQuickChatModal({ open, onClose }: Props) {
         </header>
 
         <div className="border-b border-cyan-500/20 bg-cyan-500/5 px-4 py-2 text-[11px] text-cyan-300 leading-relaxed">
-          <span className="font-semibold">KI-Transparenz:</span> Sie interagieren mit einem automatisierten Sprachmodell (AI Act Art. 52). Antworten können Fehler enthalten.
+          <span className="font-semibold">KI-Transparenz:</span> Sie interagieren mit einem automatisierten Sprachmodell (AI Act Art. 50). Antworten können Fehler enthalten.
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 space-y-3">

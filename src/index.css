@@ -728,48 +728,34 @@ html, body {
    (`.hero-shine-glow`), damit er die Textkontur nicht aufweicht und von
    Screenreadern nicht doppelt gelesen wird (aria-hidden am Element). */
 .hero-shine {
-  background-image: linear-gradient(
-    174deg,
-    #ffffff 0%,
-    #ffffff 34%,
-    #eafcff 52%,
-    #ffffff 72%,
-    #d8eef3 100%
-  );
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  /* Fallback fuer Engines ohne background-clip: text — ohne diese Zeile
-     bliebe die Headline unsichtbar statt schlicht weiss. */
-  -webkit-text-fill-color: transparent;
+  color: #fff8ee;
+  -webkit-text-fill-color: #fff8ee;
+  text-shadow:
+    0 0 18px rgb(0 0 0 / 0.95),
+    0 1px 0 rgb(0 0 0),
+    0 16px 48px rgb(0 0 0);
 }
 
 @supports not ((background-clip: text) or (-webkit-background-clip: text)) {
   .hero-shine {
-    color: #ffffff;
-    -webkit-text-fill-color: #ffffff;
+    color: #fff8ee;
+    -webkit-text-fill-color: #fff8ee;
   }
 }
 
-/* Die Akzentzeilen behalten Cyan, bekommen aber denselben Lichtverlauf. */
 .hero-shine-accent {
-  background-image: linear-gradient(
-    174deg,
-    #67e8f9 0%,
-    #22d3ee 40%,
-    #67e8f9 62%,
-    #0e9fb8 100%
-  );
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  -webkit-text-fill-color: transparent;
+  color: #f3d9a0;
+  -webkit-text-fill-color: #f3d9a0;
+  text-shadow:
+    0 0 18px rgb(0 0 0 / 0.95),
+    0 1px 0 rgb(0 0 0),
+    0 16px 48px rgb(0 0 0);
 }
 
 @supports not ((background-clip: text) or (-webkit-background-clip: text)) {
   .hero-shine-accent {
-    color: #22d3ee;
-    -webkit-text-fill-color: #22d3ee;
+    color: #f3d9a0;
+    -webkit-text-fill-color: #f3d9a0;
   }
 }
 

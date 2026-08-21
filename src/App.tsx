@@ -1087,6 +1087,8 @@ function RoutesWithTracking() {
       />
 
       {/* Unified Entry: Scan → Dashboard with Trial */}
+      <Route path="/builder" element={<Navigate to="/unified-entry/scan" replace />} />
+      <Route path="/app/bauen" element={<Navigate to="/unified-entry/scan" replace />} />
       <Route path="/unified-entry" element={<Navigate to="/unified-entry/scan" replace />} />
       <Route
         path="/unified-entry/scan"
@@ -1104,6 +1106,7 @@ function RoutesWithTracking() {
           </UnifiedEntryShell>
         }
       />
+      <Route path="/unified-entry/transformation" element={<SiteOsBuilderPage />} />
       <Route
         path="/unified-entry/trial-offer"
         element={

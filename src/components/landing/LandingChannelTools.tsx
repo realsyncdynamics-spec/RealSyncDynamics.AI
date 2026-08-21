@@ -1,4 +1,4 @@
-import { Bot, MessageCircle, Phone, ArrowRight, Globe2, Code2 } from 'lucide-react';
+import { MessageCircle, Phone, ArrowRight, Globe2, Code2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { PLATFORM_CAPABILITIES } from '../../config/platform-capabilities';
 
@@ -42,10 +42,10 @@ const TOOLS = [
     eyebrow: 'AI · WEBSITE',
     title: 'DSGVO Web App Builder',
     icon: Globe2,
-    text: 'Website zuerst prüfen, DSGVO- und Governance-Befund erfassen und anschließend in den bestehenden Web-App-Transformation-Flow übergeben.',
-    bullets: ['DSGVO-Audit', 'SEO & Accessibility', 'Web-App-Transformation'],
-    href: '/unified-entry/scan',
-    cta: 'DSGVO Builder starten',
+    text: 'Domain einlesen, Inhalte übernehmen, fotorealistisch neu bauen — nicht klonen. DSGVO-Befund und Governance bleiben die Control Plane.',
+    bullets: ['Fotorealistisches Design', 'Domain-Fotos 1:1', 'SiteOS-Transformation'],
+    href: '/handwerk-website',
+    cta: 'Website neu bauen',
     capabilityId: 'gdpr-audit',
   },
   {
@@ -65,7 +65,6 @@ export function LandingChannelTools() {
     <section id="tools" className="relative border-y border-white/10 bg-white/[.02] py-20 md:py-28">
       <div className="mx-auto max-w-7xl px-6 lg:px-10">
         <div className="mb-12 max-w-3xl">
-          {/* Nicht „LIVE GOVERNANCE TOOLS": nicht jede Karte ist in Produktion. */}
           <p className="font-mono text-[10px] tracking-[.25em] text-cyan-400">GOVERNANCE TOOLS</p>
           <h2 className="mt-3 text-4xl tracking-tight sm:text-5xl" style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontWeight: 500 }}>
             Ihre KI-Kanäle. <span className="text-cyan-400">Eine Governance-Ebene.</span>

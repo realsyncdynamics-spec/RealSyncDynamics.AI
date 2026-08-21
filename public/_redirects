@@ -10,4 +10,8 @@ https://www.realsyncdynamicsai.de/* https://realsyncdynamicsai.de/:splat 301
 # Problem an der Wurzel, statt es per canonical zu reparieren.
 /waitlist  /warteliste  301
 
+# Web-App-Builder: dokumentierter und OS-Sidebar-Pfad landen auf dem
+# bestehenden SiteOS-Transformation-Flow (/handwerk-website).
+/website-builder  /handwerk-website  301
+
 /*  /index.html  200

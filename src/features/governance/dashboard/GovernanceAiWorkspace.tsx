@@ -102,7 +102,7 @@ export function GovernanceAiWorkspace() {
           <div className="px-4 py-4 border-b border-slate-100 flex items-center justify-between">
             <Link to="/app" className="flex items-center gap-2.5">
               <div className="h-8 w-8 rounded-xl bg-slate-950 text-white flex items-center justify-center shadow-sm"><Sparkles className="h-4 w-4" /></div>
-              <div><div className="font-semibold tracking-tight text-sm">RealSyncDynamics<span className="text-cyan-600">AI</span></div><div className="text-[10px] text-slate-400">Governance AI</div></div>
+              <div><div className="font-semibold tracking-tight text-sm">RealSyncDynamics<span className="text-amber-700">AI</span></div><div className="text-[10px] text-slate-400">Governance Dashboard</div></div>
             </Link>
             <button onClick={() => setMobileNav(false)} className="lg:hidden p-2 text-slate-500" aria-label="Menü schließen"><X className="h-4 w-4" /></button>
           </div>
@@ -132,7 +132,7 @@ export function GovernanceAiWorkspace() {
 
       <main className="min-w-0 flex-1 flex flex-col h-screen">
         <header className="h-14 shrink-0 border-b border-slate-200/80 bg-white/75 backdrop-blur-xl flex items-center justify-between px-4 sm:px-6">
-          <div className="flex items-center gap-2 min-w-0"><button onClick={() => setMobileNav(true)} className="lg:hidden p-2 -ml-2 text-slate-600" aria-label="Menü öffnen"><Menu className="h-5 w-5" /></button><span className="text-sm font-medium text-slate-800 truncate">Governance AI</span><span className="text-slate-300">/</span><span className="text-sm text-slate-500 truncate">{tenantName}</span></div>
+          <div className="flex items-center gap-2 min-w-0"><button onClick={() => setMobileNav(true)} className="lg:hidden p-2 -ml-2 text-slate-600" aria-label="Menü öffnen"><Menu className="h-5 w-5" /></button><span className="text-sm font-medium text-slate-800 truncate">Governance Dashboard</span><span className="text-slate-300">/</span><span className="text-sm text-slate-500 truncate">{tenantName}</span></div>
           <div className="hidden sm:flex items-center gap-2 text-[11px] text-slate-500"><ShieldCheck className="h-3.5 w-3.5 text-emerald-600" /> EU · DSGVO · AI Act</div>
         </header>
 
@@ -140,10 +140,10 @@ export function GovernanceAiWorkspace() {
           <div className="mx-auto w-full max-w-4xl px-4 sm:px-8 py-10 sm:py-14">
             {messages.length === 0 ? (
               <div className="min-h-[calc(100vh-260px)] flex flex-col items-center justify-center text-center">
-                <div className="h-14 w-14 rounded-2xl bg-white border border-slate-200 shadow-sm flex items-center justify-center mb-6"><Sparkles className="h-6 w-6 text-cyan-600" /></div>
+                <div className="h-14 w-14 rounded-2xl bg-white border border-slate-200 shadow-sm flex items-center justify-center mb-6"><Sparkles className="h-6 w-6 text-amber-700" /></div>
                 <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight text-slate-950">Was möchtest du heute erledigen?</h1>
-                <p className="mt-3 max-w-xl text-sm sm:text-base text-slate-500">SEO, Website, DSGVO und EU AI Act — Governance AI analysiert, erklärt und führt Workflows innerhalb deiner Plattform aus.</p>
-                <div className="mt-8 grid w-full max-w-2xl grid-cols-1 sm:grid-cols-2 gap-2 text-left">{STARTERS.map((starter) => <button key={starter} onClick={() => void send(starter)} className="group rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-700 hover:border-cyan-300 hover:shadow-sm transition-all"><span>{starter}</span><ArrowUp className="mt-3 h-4 w-4 rotate-45 text-slate-300 group-hover:text-cyan-600" /></button>)}</div>
+                <p className="mt-3 max-w-xl text-sm sm:text-base text-slate-500">Governance Dashboard by RealSyncDynamics.AI — Übersicht und Funktion. Der Assistent führt den nächsten Schritt.</p>
+                <div className="mt-8 grid w-full max-w-2xl grid-cols-1 sm:grid-cols-2 gap-2 text-left">{STARTERS.map((starter) => <button key={starter} onClick={() => void send(starter)} className="group rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-700 hover:border-amber-300 hover:shadow-sm transition-all"><span>{starter}</span><ArrowUp className="mt-3 h-4 w-4 rotate-45 text-slate-300 group-hover:text-amber-700" /></button>)}</div>
               </div>
             ) : (
               <div className="space-y-8 pb-10">

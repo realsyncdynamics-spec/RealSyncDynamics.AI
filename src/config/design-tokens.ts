@@ -19,8 +19,8 @@
 export const CONTEXT_COLORS = {
   /** Public landing pages — MainLanding uses dark/obsidian (design-locked baseline) */
   landing: {
-    /** Cyan-400 — accent (MainLanding enterprise hero) */
-    accent: 'cyan-400',
+    /** Gold — Wert, Enterprise, Kaufmoment (nicht Cyan-SaaS) */
+    accent: 'gold-500',
     /** Obsidian-950 — dark background */
     background: 'obsidian-950',
     /** Titanium-100 — text on dark background */

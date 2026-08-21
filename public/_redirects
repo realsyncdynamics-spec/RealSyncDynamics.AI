@@ -10,4 +10,31 @@ https://www.realsyncdynamicsai.de/* https://realsyncdynamicsai.de/:splat 301
 # Problem an der Wurzel, statt es per canonical zu reparieren.
 /waitlist  /warteliste  301
 
+# Englischer Zwilling des Impressums. Datenschutz und AGB haben je einen
+# deutschen UND einen englischen Pfad (/legal/datenschutz + /legal/privacy,
+# /agb + /legal/terms), das Impressum bisher nur den deutschen. Wer unter
+# /legal/privacy einsteigt, probiert folgerichtig /legal/imprint — und landet
+# über den /*-Fallback auf der Startseite mit HTTP 200. Fuer einen Prueflauf
+# ohne JavaScript sieht das aus wie ein fehlendes Impressum (§ 5 DDG), obwohl
+# es unter /legal/impressum vollstaendig ausgeliefert wird. Ziel ist der
+# kanonische Pfad aus src/config/seo.ts, nicht /impressum.
+/legal/imprint  /legal/impressum  301
+
+# SPA-Fallback auf die index.html der Startseite.
+#
+# ACHTUNG — nicht auf ein 404-Dokument umstellen. Zwei Versuche dazu sind am
+# Preview-Deploy gescheitert und beide Gruende gelten weiter:
+#
+#  1. Ein Ziel mit .html-Endung erzeugt eine Endlosschleife: Cloudflare Pages
+#     kanonisiert /404.html per 308 auf /404, das erneut auf /* trifft.
+#  2. Ohne Endung greift die Regel, aber der Pages-Build der Git-Integration
+#     laeuft mit `npm run build` (prerender:SAFE, also nicht-strikt). Faellt
+#     der Prerender dort aus, liegt keine der 115 Seiten statisch vor — jede
+#     echte Seite bekaeme dann das noindex-404-Dokument. Am Preview belegt:
+#     /, /pricing und /impressum lieferten `robots: noindex, nofollow`.
+#
+# Der Soft-404 (HTTP 200 auf unbekannte URLs) bleibt damit bestehen. Er ist
+# durch den noindex in NotFoundPage abgedeckt, sobald JavaScript laeuft. Eine
+# saubere Loesung braucht entweder einen strikten Prerender im Pages-Build
+# oder eine Allowlist ueber alle 459 Router-Pfade.
 /*  /index.html  200

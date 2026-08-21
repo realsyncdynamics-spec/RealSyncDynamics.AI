@@ -32,7 +32,10 @@ const PORT = parseInt(process.env.PRERENDER_PORT ?? '4173', 10);
 const BASE_URL = `http://localhost:${PORT}`;
 const TIMEOUT = parseInt(process.env.PRERENDER_TIMEOUT ?? '15000', 10);
 const CONCURRENCY = parseInt(process.env.PRERENDER_CONCURRENCY ?? '4', 10);
-const PRIORITY_MIN = parseFloat(process.env.PRERENDER_PRIORITY_MIN ?? '0.6');
+// 0.4 statt 0.6: die Sitemap IST die Indexierungsabsicht. Lag die Schwelle
+// darueber, blieben 26 Sitemap-Seiten ohne statisches HTML — ein Crawler
+// ohne JS bekam dort den SPA-Shell samt Titel und Canonical der Startseite.
+const PRIORITY_MIN = parseFloat(process.env.PRERENDER_PRIORITY_MIN ?? '0.4');
 // Wall-Clock-Obergrenze fuer den GESAMTEN Lauf. Wichtig fuer die Cloudflare-
 // Pages-Build-Sandbox: dort kann der Chromium-Download haengen statt sauber
 // zu scheitern, und ein Hang wuerde den kompletten Deploy ins Timeout ziehen.

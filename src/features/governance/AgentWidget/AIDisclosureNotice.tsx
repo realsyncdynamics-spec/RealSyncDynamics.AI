@@ -1,4 +1,4 @@
-// EU AI Act Article 52 compliance: Transparency notice for users interacting with AI systems.
+// EU AI Act Article 50 compliance: Transparency notice for users interacting with AI systems.
 // This component ensures users are clearly informed they are interacting with an AI
 // before or immediately upon opening the chatbot.
 

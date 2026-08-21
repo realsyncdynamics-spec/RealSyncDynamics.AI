@@ -22,6 +22,7 @@ import {
   Scan,
   ShieldCheck,
 } from 'lucide-react';
+import { AIDisclosureNotice } from '../../features/governance/AgentWidget/AIDisclosureNotice';
 import { ChatMessageView } from '../../features/governance/AgentWidget/ChatMessageView';
 import { useAgentChat } from '../../features/governance/AgentWidget/useAgentChat';
 import { useTenant } from '../../core/access/TenantProvider';
@@ -223,6 +224,10 @@ export function GovernanceChatSidebar({ open, onClose }: GovernanceChatSidebarPr
           </div>
         )}
       </div>
+
+      {/* Art. 50 Abs. 1 EU AI Act: Offenlegung vor der ersten Interaktion,
+          nicht erst in der Antwort des Systems. */}
+      <AIDisclosureNotice variant="compact" className="shrink-0" />
 
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 min-h-0">
         {messages.map((msg) => <ChatMessageView key={msg.id} message={msg} />)}

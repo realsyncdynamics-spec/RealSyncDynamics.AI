@@ -16,6 +16,7 @@
 //   • link[rel=canonical]                 → seo.missing-canonical
 //   • Footer-Links auf Impressum/Datenschutz → gdpr.*-link-not-delivered
 //   • data-ai-disclosure bei generiertem Inhalt → eu-ai-act.disclosure-*
+//   • data-ai-generated am erzeugten Block      → Art. 50 Abs. 2 Kennzeichnung
 //   • alt an jedem <img>                  → accessibility.image-without-alt
 //   • <label> an jedem Eingabefeld        → accessibility.form-without-labels
 //   • Drittanbieter erst nach Einwilligung → tdddg.third-party-before-consent
@@ -71,6 +72,12 @@ export function renderPage(blueprint: SiteBlueprint, page: SitePage, options: Re
     `<meta name="description" content="${description}">`,
     `<link rel="canonical" href="${canonical}">`,
     page.noindex ? '<meta name="robots" content="noindex">' : '',
+    // Art. 50 Abs. 2 EU AI Act verlangt die Kennzeichnung in einem
+    // maschinenlesbaren Format. Der sichtbare Hinweisblock allein genügt
+    // dafür nicht: er ist Fließtext und für einen Prüf- oder Crawler-Client
+    // nicht zuverlässig auswertbar. Deshalb zusätzlich ein Marker am
+    // Dokument (welche Seite) und einer je Block (welcher Teil).
+    ...renderGeneratedContentMeta(blueprint, page),
     renderStructuredData(blueprint, page, options),
     // Inline statt externer Datei: das Stylesheet ist klein, und ein
     // eigener Request würde die erste Darstellung verzögern. Die Werte
@@ -95,6 +102,51 @@ interface RenderState {
 // ─────────────────────────────────────────────────────────────────────
 
 function renderBlock(blueprint: SiteBlueprint, block: SiteBlock, state: RenderState): string {
+  return markGenerated(renderBlockBody(blueprint, block, state), block);
+}
+
+/**
+ * Zeichnet einen generativ erzeugten Block maschinenlesbar aus.
+ *
+ * Der Marker sitzt am Wurzelelement des Blocks, nicht am Dokument: Art. 50
+ * Abs. 2 EU AI Act verlangt die Kennzeichnung des erzeugten Inhalts, und
+ * eine Seite mischt in der Regel erzeugte und redaktionelle Blöcke. Ein
+ * Marker am <html> würde behaupten, alles sei erzeugt — das wäre entweder
+ * unwahr oder nutzlos.
+ *
+ * Eingesetzt wird hinter `id="…"` des ersten Elements. Jeder Block-Zweig
+ * beginnt mit genau diesem Attribut; die weiteren `id`-Werte im Block
+ * (Formularfelder) tragen den Block-Präfix und werden deshalb nicht
+ * getroffen.
+ */
+function markGenerated(html: string, block: SiteBlock): string {
+  if (!block.aiGenerated || html === '') return html;
+  const anchor = `id="${escapeHtml(block.id)}"`;
+  const at = html.indexOf(anchor);
+  if (at === -1) return html;
+  const end = at + anchor.length;
+  return `${html.slice(0, end)} data-ai-generated="true"${html.slice(end)}`;
+}
+
+/**
+ * Dokument-Marker für Seiten mit generiertem Inhalt.
+ *
+ * Ergänzt die Block-Marker um eine Angabe auf Seitenebene, damit ein
+ * Prüfer die Herkunft feststellen kann, ohne das gesamte Markup zu
+ * durchsuchen. `ai-generated-model` stammt aus `origin.model` — derselben
+ * Quelle, die `analysis/blueprint.ts` als Nachweis einfordert.
+ */
+function renderGeneratedContentMeta(blueprint: SiteBlueprint, page: SitePage): string[] {
+  if (!page.blocks.some((block) => block.aiGenerated)) return [];
+
+  const meta = ['<meta name="ai-generated" content="true">'];
+  if (blueprint.origin.model) {
+    meta.push(`<meta name="ai-generated-model" content="${escapeHtml(blueprint.origin.model)}">`);
+  }
+  return meta;
+}
+
+function renderBlockBody(blueprint: SiteBlueprint, block: SiteBlock, state: RenderState): string {
   const id = escapeHtml(block.id);
   const content = block.content as Record<string, unknown>;
 

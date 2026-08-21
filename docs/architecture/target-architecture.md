@@ -783,7 +783,7 @@ auf bestehende Modul-Schlüssel abgebildet, nicht als zweite Modul-Welt eingefü
 | Asset Lifecycle | 4 Blueprint-Status | 8 Assetzustände, additiv oberhalb der Versionsstatus |
 | Continuous Observation | Scans als Läufe, Cron für Governance-Monitoring; SiteOS-Agenten noch SPA-getriggert | Beobachtung als Dauerzustand am Asset, Agenten an den Cron |
 | Governance Decision | Policies, Controls, Approvals, Incidents vorhanden | benannte, gespeicherte Entscheidung mit ALLOW/REVIEW/BLOCK und Eingabeankern |
-| **Publish Gate** | **nicht vorhanden** | Contract §7 vor dem ersten Publish-Pfad umsetzen |
+| **Publish Gate** | Contract-Typ, Ableitungsregel und Transparenzprüfung in `packages/siteos-core/src/deploy/publish-gate.ts`; Einstieg `preparePublish` | serverseitige Auswertung (G1) und Persistenz der Evaluation (G5) als eigene Edge Function; `evidence_complete` und `backend_preservation` werden noch vom Aufrufer gesetzt |
 | Deployment-Pfad | Renderer erzeugt gehashtes Artefakt; Upload/Domain offen | Publish nur über das Gate |
 | Skills / Workflows | 7 SiteOS-Agenten, `automation_skills`/`automation_runs` | 8 Skills als Vokabular, Workflows über Assetgrenzen |
 | Integrationen | `integration_connectors`, `remediation_actions`, Feature `src/features/integrations` | beidseitige Integrationen als Beobachtungs- **und** Aktionsquelle |

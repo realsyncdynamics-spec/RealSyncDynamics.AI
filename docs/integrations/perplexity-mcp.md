@@ -267,7 +267,7 @@ INSERT INTO ai_tool_runs (
 
 ### Compliance Aspects
 
-- **EU AI Act (Article 52):** AI tools must be disclosed to users
+- **EU AI Act (Article 50):** AI tools must be disclosed to users
   - ✅ Perplexity MCP is marked as a tool used
   - ✅ Sources are attributed and traceable
 

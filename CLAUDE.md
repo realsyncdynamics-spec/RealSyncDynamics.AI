@@ -184,7 +184,7 @@ Jeder Agent braucht vier Dimensionen — fehlt eine, ist er nicht governance-fä
 > Die Prozentangaben unten beschreiben den **Stand im Repository**, nicht was in
 > Produktion läuft.
 >
-> **Messung vom 2026-08-16**, direkt gegen das Live-Projekt `RealSyncDynamicsLive`
+> **Messung vom 2026-08-19**, direkt gegen das Live-Projekt `RealSyncDynamicsLive`
 > (`ebljyceifhnlzhjfyxup`, eu-central-1, PostgreSQL 17) erhoben — nicht geschätzt:
 >
 > | | Repo | in Produktion | Lücke |
@@ -192,6 +192,7 @@ Jeder Agent braucht vier Dimensionen — fehlt eine, ist er nicht governance-fä
 > | Migrationen | 279 | 278 (neueste `20260820000000`) | **1** |
 > | Edge Functions | 177 | **103** (neu gemessen 2026-08-19, 20:18 Uhr) | **74** |
 > | Tabellen in `public` | — | 341 | — |
+> | Organisations-Plan | — | **`pro`** | — |
 >
 > **Die Migrations-Seite ist geschlossen.** Frühere Stände dieser Datei nannten
 > „118 nie angewendet" — das gilt seit der Reconciliation nicht mehr. Es fehlt
@@ -201,9 +202,11 @@ Jeder Agent braucht vier Dimensionen — fehlt eine, ist er nicht governance-fä
 > `scan_runs.asset_id` und der Constraint `findings_scan_run_fk` existieren
 > live **nicht**.
 >
-> **Die Function-Seite braucht eine andere Erklärung als bisher.** Der
-> Syntaxfehler in `add-auditor` ist über #941 behoben, blockiert also nichts
-> mehr. Was zur verbleibenden Lücke belegt ist — und was nicht:
+> **Die Function-Seite ist erklärt und der Blocker ist weg.** Die Diagnose von
+> 2026-08-16 hat sich bestätigt: exakt 100 deployte Functions, harter Schnitt,
+> Organisation auf `free` — das war das Function-Kontingent des Free-Tarifs, kein
+> Deploy-Bug und kein Typfehler. Seit dem Billing-Upgrade läuft die Organisation
+> auf Plan **`pro`**; das Limit von 100 existiert nicht mehr.
 >
 > - Zum Messzeitpunkt lagen alle 80 fehlenden Functions **alphabetisch nach
 >   `api-gateway`**, keine einzige davor — ein sauberer Schnitt bei exakt 100.
@@ -219,7 +222,10 @@ Jeder Agent braucht vier Dimensionen — fehlt eine, ist er nicht governance-fä
 >   Paketauflösung (`Could not find a matching package for
 >   'npm:@supabase/realtime-js'`), nicht an ihrem Code. Wer die These prüfen
 >   will, braucht `deno install` gegen die echten Dependencies.
-> - Die Organisation läuft auf **Plan `free`**.
+> - Die Organisation lief zum Messzeitpunkt auf **Plan `free`**. Am 2026-08-19
+>   über die Management-API erhoben: **`pro`**. Das erklärt Function 101 ohne
+>   Widerspruch — das Kontingent hat existiert, es ist mit dem Upgrade
+>   weggefallen.
 >
 > **Diese Erklärung ist am 2026-08-19 gefallen.** Der frühere Stand schloss:
 > „Exakt 100 plus harter alphabetischer Schnitt = Free-Tarif-Kontingent, kein
@@ -249,10 +255,30 @@ Jeder Agent braucht vier Dimensionen — fehlt eine, ist er nicht governance-fä
 > unverändert: gegen `src/config/production-edge-functions.ts` bzw. die Live-DB
 > prüfen.
 >
-> Der Free-Tarif bedeutet zusätzlich: keine täglichen Backups, kein
-> Point-in-Time-Recovery, kein SLA, Projekt-Pausierung bei Inaktivität. Für ein
-> Produkt, das Prüfpfad, Evidence-Hash-Ketten und ISO-orientierte Prozesse
-> zusagt, ist das ein eigener Governance-Befund — unabhängig vom Limit.
+> **Rollout-Mechanik.** `deploy.yml` nimmt per `workflow_dispatch` den Input
+> `functions` = Slug-Liste entgegen; er hat Vorrang vor der Changed-Files-Auswahl
+> und bricht bei einem unbekannten Slug ab, bevor irgendetwas deployt wird. Mit
+> `push_migrations = false` bleibt das Prod-Schema unberührt. Damit lässt sich in
+> Wellen ausrollen, statt 177 Deploys in einen Lauf zu legen.
+>
+> **Messung 2026-08-19, abends** (`scripts/smoke-edge-functions.mjs` gegen die
+> Live-URL, nicht geschätzt): 177 Functions im Repo, **74 nicht deployt**, 0 mit
+> 5xx. Dazu eine Besonderheit, die eine reine 404-Zählung falsch macht: `siteos`
+> ist deployt (Management-API: ACTIVE, v2), antwortet auf dem nackten Pfad aber
+> selbst mit 404, weil der Router dort keinen Handler hat. Ein 404 belegt also
+> nicht, dass eine Function fehlt — unterschieden wird am Antwortkörper.
+>
+> **Die vier Slot-Tausch-Workflows sind entfernt.** `free-plan-slot-swap.yml`,
+> `k1-slots-freigeben.yml`, `selective-p0-auth-free-slot.yml` und
+> `selective-p0-auth-deploy.yml` löschten live deployte Functions, um Platz
+> unter einem Limit zu schaffen, das es nicht mehr gibt — ein Fehlklick in
+> Actions wäre ein Löschbefehl auf produktive Functions gewesen. Der Code liegt
+> in der Git-History; wiederherstellen wäre ein Rückschritt, kein Notfallplan.
+>
+> Was vom Free-Tarif als Befund bleibt, ist die Betriebsseite: tägliche Backups,
+> Point-in-Time-Recovery und SLA hängen am Plan. Der Pro-Tarif bringt tägliche
+> Backups mit — PITR ist ein eigener Zusatz und ist zu prüfen, bevor Prüfpfad und
+> Evidence-Hash-Ketten als abgesichert zugesagt werden.
 >
 > Ein Modul, dessen Backend nie deployt wurde, ist in Produktion **nicht** verfügbar,
 > egal wie vollständig der Code im Repo ist. Vor Aussagen zum Produktionsstand daher

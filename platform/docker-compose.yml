@@ -2,11 +2,10 @@
 #
 # Start:  docker compose up --build
 # Hosts:  http://builder.localhost | http://rsd.localhost | http://app.localhost
-#         https://builder.localhost | https://rsd.localhost | https://app.localhost (selbstsigniertes Zert)
 #         traefik.localhost:8080 (Dashboard)
 #
 # Hinweis: *.localhost löst auf den meisten Systemen automatisch auf 127.0.0.1 auf.
-# Falls nicht, Einträge in /etc/hosts ergänzen. Browser-Warnung bei HTTPS ignorieren (self-signed cert).
+# Falls nicht, Einträge in /etc/hosts ergänzen.
 
 services:
   traefik:
@@ -21,7 +20,6 @@ services:
     volumes:
       - ./traefik/traefik.yml:/etc/traefik/traefik.yml:ro
       - ./traefik/dynamic.yml:/etc/traefik/dynamic.yml:ro
-      - ./traefik/certs:/etc/traefik/certs:ro
       - ./traefik/acme.json:/etc/traefik/acme.json
       - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:

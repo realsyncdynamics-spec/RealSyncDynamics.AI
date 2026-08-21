@@ -1,7 +1,6 @@
 /**
- * Legacy public route kept for backwards compatibility.
- * The former KMU sales page now opens the governed SiteOS website
- * transformation experience: existing URL → new website → selected AI
- * features → preview/freigabe → customer domain.
+ * Public KMU doorway. The login-walled SiteOS scan used to live here;
+ * customers never saw their rebuilt site, so they never paid.
+ * `/handwerk-website` now opens the anonymous photoreal reconstruction.
  */
 export { WebsiteBuilderLanding as KmuWebsiteLanding } from './WebsiteBuilderLanding';

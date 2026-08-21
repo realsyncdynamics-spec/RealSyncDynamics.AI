@@ -58,7 +58,7 @@ interface KpiCard {
 
 const actionCards: ActionCard[] = [
   { label: 'Website prüfen', hint: 'Vollständiger Audit', icon: Search, path: '/unified-entry/scan' },
-  { label: 'Website bauen', hint: 'Neue Website erstellen', icon: Wand2, path: '/unified-entry/scan' },
+  { label: 'Website bauen', hint: 'Neue Website erstellen', icon: Wand2, path: '/builder' },
   { label: 'Website verbessern', hint: 'SEO, DSGVO, Performance', icon: Activity, path: '/unified-entry/scan' },
   { label: 'AI Act Check', hint: 'KI-System prüfen', icon: ShieldCheck, path: '/app/governance/ai-act-assessment' },
   { label: 'Risikoanalyse', hint: 'Risiken identifizieren', icon: AlertTriangle, path: '/app/governance/gaps' },

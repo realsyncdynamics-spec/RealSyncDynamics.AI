@@ -1,1 +1,1 @@
-export { WebsiteTransformationFlow as WebsiteBuilderLanding } from './WebsiteTransformationFlow';
+export { PhotorealBuilderPage as WebsiteBuilderLanding } from '../features/photoreal-builder/PhotorealBuilderPage';

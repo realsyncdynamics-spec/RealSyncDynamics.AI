@@ -1,17 +1,41 @@
-name: SSH Setup Helper
+name: SSH Host Scan
+
+# This helper may be used to obtain the current host key for VPS_SSH_KNOWN_HOST.
+# It deliberately does NOT generate or print a private key. GitHub Actions job
+# summaries are visible to repository users and are not a secure private-key
+# transport.
+
 on:
   workflow_dispatch:
+
 jobs:
-  generate-ssh-key:
+  scan-host:
     runs-on: ubuntu-latest
     steps:
-      - name: Generate key and scan
+      - name: Scan VPS SSH host key
+        env:
+          VPS_SSH_HOST: ${{ secrets.VPS_SSH_HOST }}
+          VPS_SSH_PORT: ${{ secrets.VPS_SSH_PORT || '22' }}
         run: |
-          ssh-keygen -t ed25519 -C deploy -f /tmp/dk -N ''
-          echo '## Results' >> $GITHUB_STEP_SUMMARY
-          echo '### KNOWN_HOST' >> $GITHUB_STEP_SUMMARY
-          ssh-keyscan -t ed25519 187.77.89.1 2>/dev/null >> $GITHUB_STEP_SUMMARY
-          echo '### PRIVATE KEY' >> $GITHUB_STEP_SUMMARY
-          cat /tmp/dk >> $GITHUB_STEP_SUMMARY
-          echo '### PUBLIC KEY' >> $GITHUB_STEP_SUMMARY
-          cat /tmp/dk.pub >> $GITHUB_STEP_SUMMARY
+          if [ -z "$VPS_SSH_HOST" ]; then
+            echo "::error::VPS_SSH_HOST is not configured."
+            exit 1
+          fi
+
+          echo "## SSH host-key scan"
+          echo "Target: ${VPS_SSH_HOST}:${VPS_SSH_PORT}"
+          echo ""
+          echo "### VPS_SSH_KNOWN_HOST"
+          ssh-keyscan -p "$VPS_SSH_PORT" -t ed25519 "$VPS_SSH_HOST" 2>/dev/null | tee /tmp/known-host
+
+          if [ ! -s /tmp/known-host ]; then
+            echo "::error::No ed25519 host key was returned. Check SSH connectivity and port."
+            exit 1
+          fi
+
+          {
+            echo ""
+            echo "Copy the single line above into the VPS_SSH_KNOWN_HOST secret after verifying it against the server console."
+            echo ""
+            echo "No private key was generated or exposed by this workflow."
+          } >> "$GITHUB_STEP_SUMMARY"

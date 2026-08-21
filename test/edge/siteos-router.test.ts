@@ -25,7 +25,7 @@ import { describe, expect, it } from 'vitest';
 import { resolveEndpoint, ROUTER_SLUG } from '../../supabase/functions/siteos/resolve';
 
 /** Muss mit der Route-Map in supabase/functions/siteos/index.ts übereinstimmen. */
-const ENDPOINTS = ['agents', 'builder', 'discover', 'runtime-scan'];
+const ENDPOINTS = ['agents', 'builder', 'discover', 'public-discover', 'runtime-scan'];
 
 describe('siteos Router — resolveEndpoint', () => {
   it.each(ENDPOINTS)('löst /%s auf den Endpunkt auf', (ep) => {

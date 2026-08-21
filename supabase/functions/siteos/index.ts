@@ -1,9 +1,10 @@
 // siteos — Domänen-Router für die SiteOS-Schreibpfade.
 //
-//   POST /functions/v1/siteos/discover      Ausgangsseite lesen
-//   POST /functions/v1/siteos/builder       Prompt → geprüfter Blueprint
-//   POST /functions/v1/siteos/runtime-scan  die acht Laufzeit-Analysen
-//   POST /functions/v1/siteos/agents        die sieben asynchronen Agenten
+//   POST /functions/v1/siteos/discover         Ausgangsseite lesen (auth + tenant)
+//   POST /functions/v1/siteos/public-discover  HTML-Crawl ohne Login (Photoreal-Builder)
+//   POST /functions/v1/siteos/builder          Prompt → geprüfter Blueprint
+//   POST /functions/v1/siteos/runtime-scan     die acht Laufzeit-Analysen
+//   POST /functions/v1/siteos/agents           die sieben asynchronen Agenten
 //
 // ## Warum ein Router und nicht vier Functions
 //
@@ -14,32 +15,32 @@
 //
 // Beim ersten Deploy stellte sich heraus, dass die Grenze dort nicht mehr
 // liegt: `siteos` ging als 101. Function ohne Fehler durch. Der Router bleibt
-// trotzdem richtig — vier Endpunkte, die dieselbe Vorprüfung und denselben
+// trotzdem richtig — Endpunkte, die dieselbe Vorprüfung und denselben
 // Kern (`packages/siteos-core`) teilen, gehören in einen Slot, unabhängig
 // davon, wie viele noch frei sind.
 //
 // Anders als bei der Konsolidierung K1 (`enterprise-ai-os`) gibt es hier
-// **keinen Cutover-Zeitraum**: Keine der vier Functions war je in Produktion.
+// **keinen Cutover-Zeitraum**: Keine der Functions war je in Produktion.
 // Es verschwindet also kein Endpunkt, der gerade bedient wird.
 //
 // Jeder Handler behandelt Preflight, Methode, Bearer-Token und die
-// Mandanten-Zugehörigkeit weiterhin selbst — unverändert aus den
-// Einzel-Functions übernommen. Der Router löst nur den Pfad auf. Das ist
-// Absicht: Eine gemeinsame Vorprüfung im Router hätte die vier Handler beim
-// Verschieben verändert, und eine Änderung an der Zugriffsprüfung ist genau
-// die Sorte Änderung, die man nicht nebenbei macht.
+// Mandanten-Zugehörigkeit weiterhin selbst. `public-discover` ist die
+// bewusste Ausnahme: Der Kunde muss die rekonstruierte Seite sehen, bevor
+// er ein Konto anlegt.
 
 import { jsonError } from '../_shared/gateway.ts';
 import { resolveEndpoint } from './resolve.ts';
 import { handle as agents } from './handlers/agents.ts';
 import { handle as builder } from './handlers/builder.ts';
 import { handle as discover } from './handlers/discover.ts';
+import { handle as publicDiscover } from './handlers/public-discover.ts';
 import { handle as runtimeScan } from './handlers/runtime-scan.ts';
 
 const routes: Record<string, (req: Request) => Response | Promise<Response>> = {
   'agents': agents,
   'builder': builder,
   'discover': discover,
+  'public-discover': publicDiscover,
   'runtime-scan': runtimeScan,
 };
 

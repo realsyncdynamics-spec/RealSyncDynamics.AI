@@ -138,6 +138,7 @@ import { ToolsHub } from './pages/ToolsHub';
 // Industry + Competitor Doorways
 import { HealthTechLanding } from './pages/HealthTechLanding';
 import { KmuWebsiteLanding } from './pages/KmuWebsiteLanding';
+import { PhotorealBuilderPage, PhotorealCheckoutPage } from './features/photoreal-builder';
 import { Branchen } from './pages/Branchen';
 import { IndustryDetail } from './pages/branchen/IndustryDetail';
 import { LegalTechLanding } from './pages/LegalTechLanding';
@@ -591,6 +592,7 @@ function RoutesWithTracking() {
       {/* Website + Chat-/Telefon-Assistent für kleine Betriebe (Handwerk, Praxen, Kanzleien) */}
       <Route path="/handwerk-website" element={<KmuWebsiteLanding />} />
       <Route path="/kmu-website" element={<Navigate to="/handwerk-website" replace />} />
+      <Route path="/website-builder" element={<Navigate to="/builder" replace />} />
       <Route path="/legal-tech" element={<LegalTechLanding />} />
       {/* Competitor-Alternative-Doorways */}
       <Route path="/onetrust-alternative" element={<OneTrustAlternative />} />
@@ -1087,8 +1089,9 @@ function RoutesWithTracking() {
       />
 
       {/* Unified Entry: Scan → Dashboard with Trial */}
-      <Route path="/builder" element={<Navigate to="/unified-entry/scan" replace />} />
-      <Route path="/app/bauen" element={<Navigate to="/unified-entry/scan" replace />} />
+      <Route path="/builder" element={<PhotorealBuilderPage />} />
+      <Route path="/builder/checkout" element={<PhotorealCheckoutPage />} />
+      <Route path="/app/bauen" element={<Navigate to="/builder" replace />} />
       <Route path="/unified-entry" element={<Navigate to="/unified-entry/scan" replace />} />
       <Route
         path="/unified-entry/scan"

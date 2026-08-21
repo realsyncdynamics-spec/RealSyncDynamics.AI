@@ -55,6 +55,8 @@ const EXTENSIONS = ['.tsx', '.ts', '.jsx', '.js'];
 const KNOWN_UNREACHABLE: Readonly<Record<string, string>> = {
   'src/pages/WebsiteBuilderWowFlow.tsx':
     'Wiederausfuhr von PreviewSelectionPage. Die Seite selbst ist seit dem 2026-08-19 unter /app/siteos/builder erreichbar; dieser Wrapper bleibt ungenutzt.',
+  'src/pages/WebsiteTransformationFlow.tsx':
+    'Öffentlicher Trichter ersetzt durch den anonymen Photoreal-Builder unter /builder. SiteOS bleibt hinter Login unter /app/siteos/builder.',
   'src/pages/WowWebsitePreview.tsx':
     'Variante der Builder-Vorschau ohne Route.',
   'src/unified-entry/pages/WebsitePreviewRoute.tsx':

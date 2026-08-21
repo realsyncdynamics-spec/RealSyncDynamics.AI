@@ -105,8 +105,8 @@ export function DsgvoToolVergleich() {
                     <td className="px-3 py-2.5 text-center">{cell(t.matrix.cookieConsent)}</td>
                     <td className="px-3 py-2.5 text-center">{cell(t.matrix.avvGenerator)}</td>
                     <td className="px-3 py-2.5 text-center">{cell(t.matrix.auditLog)}</td>
-                    <td className="px-3 py-2.5 text-center">{cell(t.matrix.dsfaWizard)}</td>
                     <td className="px-3 py-2.5 text-center">{cell(t.matrix.aiAct)}</td>
+                    <td className="px-3 py-2.5 text-center">{cell(t.matrix.dsfaWizard)}</td>
                     <td className="px-3 py-2.5 text-center">{cell(t.matrix.euHosted)}</td>
                   </tr>
                 ))}

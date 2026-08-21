@@ -5,6 +5,7 @@
 
 http:
   middlewares:
+    # Security-Header für alle öffentlichen Routen.
     secure-headers:
       headers:
         frameDeny: true
@@ -12,11 +13,13 @@ http:
         browserXssFilter: true
         referrerPolicy: strict-origin-when-cross-origin
 
+    # Rate-Limit als Basisschutz der API-Endpoints.
     api-ratelimit:
       rateLimit:
         average: 100
         burst: 50
 
+    # HSTS für Prod-Stack (Preload-Liste).
     hsts:
       headers:
         stsSeconds: 31536000

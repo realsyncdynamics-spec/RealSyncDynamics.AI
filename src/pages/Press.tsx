@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Newspaper, Download, Mail, Image as ImageIcon, FileText, Quote } from 'lucide-react';
+import { COMPETITOR_PRICING } from '../config/competitor-pricing';
 
 const FACTS = [
   { k: 'Gegründet', v: '2026 · Frankfurt am Main' },
@@ -17,7 +18,7 @@ const QUOTES = [
     a: 'Founder, RealSync Dynamics',
   },
   {
-    q: 'OneTrust kostet ab 24.000 €/Jahr. Usercentrics ab 1.800 €/Jahr. Wir liefern dasselbe ab 790 €/Jahr — plus AVV, VVT, AI-Act-Tools.',
+    q: `OneTrust wird in dieser Vergleichsmatrix mit ${COMPETITOR_PRICING.OneTrust.pricing} angesetzt. RealSyncDynamics.AI startet bei 79 €/M — plus AVV, VVT und AI-Act-Tools.`,
     a: 'Founder, RealSync Dynamics',
   },
 ];
@@ -185,7 +186,7 @@ export function Press() {
           <div>© 2026 RealSync Dynamics · Made in Germany · EU-Hosted</div>
           <div className="flex flex-wrap gap-3">
             <Link to="/legal/privacy" className="hover:text-titanium-300">Datenschutz</Link>
-            <Link to="/legal/avv" className="hover:text-titanium-300">AVV</Link>
+            <Link to="/legal/avv" className="hover:text-titanium-200">AVV</Link>
           </div>
         </div>
       </footer>

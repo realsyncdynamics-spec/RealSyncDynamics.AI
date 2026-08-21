@@ -105,8 +105,8 @@ export function DsgvoToolVergleich() {
                     <td className="px-3 py-2.5 text-center">{cell(t.matrix.cookieConsent)}</td>
                     <td className="px-3 py-2.5 text-center">{cell(t.matrix.avvGenerator)}</td>
                     <td className="px-3 py-2.5 text-center">{cell(t.matrix.auditLog)}</td>
-                    <td className="px-3 py-2.5 text-center">{cell(t.matrix.aiAct)}</td>
                     <td className="px-3 py-2.5 text-center">{cell(t.matrix.dsfaWizard)}</td>
+                    <td className="px-3 py-2.5 text-center">{cell(t.matrix.aiAct)}</td>
                     <td className="px-3 py-2.5 text-center">{cell(t.matrix.euHosted)}</td>
                   </tr>
                 ))}
@@ -276,7 +276,7 @@ export function DsgvoToolVergleich() {
                   Warum RealSyncDynamics.AI gewinnt — wenn du KI nutzt.
                 </h2>
                 <p className="text-sm text-titanium-300 leading-relaxed">
-                  Die anderen sind stark in Cookie-Banner oder AVV. Aber niemand außer uns deckt KI-Compliance ab —
+                  Die anderen sind stark in Cookie-Banner oder AVV. Aber niemand außer uns macht KI-Compliance zur Runtime-Eigenschaft —
                   Audit-Log pro AI-Call, AI-Act-Risk-Klassifikation, BAIT-Doku-Export, EU-local-Modus mit Ollama.
                   {OWN_TOOL && ONETRUST_TOOL && (
                     <>

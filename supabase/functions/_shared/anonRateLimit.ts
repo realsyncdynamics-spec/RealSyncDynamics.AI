@@ -119,3 +119,26 @@ export const ANON_BUILD_BURST: RateLimitOptions = { max: 3, windowMs: 60_000 };
  * beschränkt bleiben.
  */
 export const ANON_BUILD_DAILY: RateLimitOptions = { max: 20, windowMs: 24 * 60 * 60 * 1000 };
+
+/**
+ * Schnelle Wiederholungen beim Ändern eines Entwurfs.
+ *
+ * Deutlich grosszügiger als beim Bauen, weil Ändern der Normalfall ist: Wer
+ * eine Seite formt, macht das in kurzer Folge — „grösser", „doch heller",
+ * „Team weg". Eine Grenze, die dabei greift, würde genau das Verhalten
+ * bestrafen, das das Produkt erzeugen will.
+ *
+ * Teuer ist die Änderung nicht: Sie ist deterministisch, ohne Modellaufruf.
+ * Die Grenze schützt deshalb nur vor maschineller Wiederholung.
+ */
+export const ANON_ITERATE_BURST: RateLimitOptions = { max: 15, windowMs: 60_000 };
+
+/**
+ * Wie viele Fassungen ein einzelner Entwurf haben darf.
+ *
+ * Die eigentliche Grenze der Änderung — sie hängt am Entwurf, nicht an der
+ * Herkunft, und ist damit nicht durch einen Adresswechsel zu umgehen. Jede
+ * Fassung belegt eine Zeile in der Kette; ohne Deckel wäre die Kette eines
+ * einzelnen Entwurfs unbegrenzt.
+ */
+export const ANON_DRAFT_MAX_REVISIONS = 60;

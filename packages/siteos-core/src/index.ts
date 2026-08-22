@@ -11,6 +11,8 @@ export * from './canonical.ts';
 export * from './blueprint/industries.ts';
 export * from './blueprint/brief.ts';
 export * from './blueprint/synthesize.ts';
+export * from './blueprint/edit.ts';
+export * from './blueprint/edit-intent.ts';
 
 export * from './analysis/blueprint.ts';
 export * from './analysis/observation.ts';

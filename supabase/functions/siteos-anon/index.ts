@@ -35,6 +35,7 @@
 // die Strecke offen und die Kosten liefen bereits.
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
+import { handleIterate } from './iterate.ts';
 import { handleOptions, jsonResponse, jsonError, methodNotAllowed } from '../_shared/gateway.ts';
 import { reserveAnonAudit, completeAnonAudit, extractPayloadKeys } from '../_shared/anonAudit.ts';
 import {
@@ -73,6 +74,13 @@ Deno.serve(async (req) => {
   const preflight = handleOptions(req);
   if (preflight) return preflight;
   if (req.method !== 'POST') return methodNotAllowed();
+
+  // Zwei Endpunkte, eine Function: Bauen und Ändern teilen sich Kontingent,
+  // Prüfpfad und Vorschau-Anbindung. Sie zu trennen hiesse, all das zu
+  // verdoppeln — und `verify_jwt = false` ein zweites Mal zu setzen.
+  if (new URL(req.url).pathname.replace(/\/+$/, '').endsWith('/iterate')) {
+    return await handleIterate(req);
+  }
 
   let body: Record<string, unknown>;
   try {
@@ -179,6 +187,33 @@ Deno.serve(async (req) => {
     if (draftErr) {
       await completeAnonAudit(admin, requestId, { outcome: 'error', error_code: 'DRAFT_WRITE_FAILED', duration_ms: Date.now() - startedAt });
       return jsonError(500, 'INTERNAL', 'Der Entwurf konnte nicht gespeichert werden.');
+    }
+
+    // Erstfassung in der Kette. Sie ist der Anker, auf den die erste Änderung
+    // verweist — ohne sie begänne die Kette mit einem Vorgänger, den es
+    // nirgends gibt. Der Entwurf ist zu diesem Zeitpunkt bereits abgelegt;
+    // die Kennung wird deshalb nachgelesen statt beim Einfügen mitgegeben.
+    //
+    // Bewusst ohne Fehlerabbruch: Der Entwurf steht schon und ist gültig; ihn
+    // wegen des Ankers zu verwerfen, wäre der grössere Schaden. Fehlt er,
+    // trägt ihn die erste Änderung nach (`iterate.ts`).
+    //
+    // Für die Erstfassung ist die „Anweisung" die Beschreibung selbst —
+    // daher deren Hash.
+    const { data: draftRow } = await admin
+      .from('siteos_anonymous_drafts')
+      .select('id')
+      .eq('draft_key', draftKey)
+      .maybeSingle();
+    if (draftRow?.id) {
+      await admin.from('siteos_anonymous_draft_revisions').insert({
+        draft_id: draftRow.id,
+        revision: 0,
+        content_sha256: contentSha256,
+        prev_sha256: null,
+        op: 'create',
+        instruction_sha256: promptSha256,
+      });
     }
 
     // ── Vorschau ablegen ─────────────────────────────────────────────────

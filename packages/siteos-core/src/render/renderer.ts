@@ -115,9 +115,19 @@ function renderBlock(blueprint: SiteBlueprint, block: SiteBlock, state: RenderSt
       const media = content.media as { alt?: unknown; ratio?: unknown } | undefined;
       const cta = content.primaryCta as { label?: unknown; href?: unknown } | undefined;
       const ctaHref = cta ? safeUrl(cta.href) : null;
+      // Betonung des Titelbereichs. Ohne Angabe wird kein Attribut gesetzt —
+      // das Markup bestehender Blueprints ändert sich also nicht.
+      //
+      // Die zwei zugehörigen CSS-Regeln stehen dagegen ab jetzt in jedem
+      // Stylesheet. Ein neu gerendertes Artefakt hat deshalb einen anderen
+      // Hash als vor dieser Erweiterung. Gespeicherte Artefakte und ihre
+      // Bewertungen bleiben davon unberührt: Eine alte Bewertung deckt ein
+      // neues Artefakt schlicht nicht ab, was `evaluationCoversArtifact`
+      // bereits abfängt.
+      const emphasis = heroEmphasis(content.emphasis);
 
       return [
-        `<section id="${id}">`,
+        `<section id="${id}"${emphasis === null ? '' : ` data-emphasis="${emphasis}"`}>`,
         `<${heading}>${escapeHtml(content.headline ?? blueprint.name)}</${heading}>`,
         content.subline ? `<p>${escapeHtml(content.subline)}</p>` : '',
         // Platzhalter statt <img src>: es gibt noch kein Bild mit geklärter
@@ -390,4 +400,15 @@ const LEGAL_HEADINGS: Readonly<Record<string, string>> = Object.freeze({
 
 function legalHeading(ref: unknown): string {
   return LEGAL_HEADINGS[String(ref)] ?? 'Rechtliche Hinweise';
+}
+
+/**
+ * Prüft die Betonung gegen eine feste Liste. Alles andere fällt auf `null`
+ * — der Wert landet als Attribut im HTML und darf deshalb nie aus dem
+ * Blueprint durchgereicht werden, sondern nur aus dieser Liste stammen.
+ */
+function heroEmphasis(value: unknown): 'compact' | 'large' | null {
+  if (value === 'compact') return 'compact';
+  if (value === 'large') return 'large';
+  return null;
 }

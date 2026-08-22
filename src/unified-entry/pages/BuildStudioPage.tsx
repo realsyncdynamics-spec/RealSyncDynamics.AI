@@ -24,10 +24,15 @@
 //
 // ## Sandbox
 //
-// Der Rahmen läuft mit leerem `sandbox`-Attribut: kein Skript, kein
-// gemeinsamer Ursprung, kein Formularversand, keine Navigation. Das erzeugte
-// Dokument enthält ohnehin kein Skript — aber die Vorschau darf sich nicht
-// darauf verlassen, dass das so bleibt.
+// Die Vorschau nutzt `SandboxedPreviewFrame` — denselben Rahmen wie die
+// übrigen Vorschauen, mit `sandbox=""`, eingebetteter CSP, `no-referrer`
+// und gesperrten Gerätezugriffen (`src/lib/preview-sandbox.ts`).
+//
+// Ein eigener `<iframe>` an dieser Stelle wäre die zweite Antwort auf die
+// Frage, was eine Vorschau darf. Zwei Antworten heißt: Eine davon wird beim
+// nächsten Mal vergessen — und das erzeugte Dokument enthält zwar heute kein
+// Skript, aber die Vorschau darf sich nicht darauf verlassen, dass das so
+// bleibt.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -40,6 +45,7 @@ import {
   type ScoreBreakdown,
   type SiteBlueprint,
 } from '../../../packages/siteos-core/src/index';
+import { SandboxedPreviewFrame } from '../../components/preview/SandboxedPreviewFrame';
 import {
   appendInstruction,
   clearBuildSession,
@@ -367,11 +373,10 @@ export default function BuildStudioPage() {
         <section className="min-w-0 p-3 sm:p-5">
           <div className="flex min-h-[70vh] justify-center overflow-auto rounded-xl border border-titanium-800 bg-obsidian-900 p-3 sm:p-5">
             <div style={{ width: DEVICE_WIDTH[device] }} className="overflow-hidden rounded-lg bg-white shadow-2xl transition-all">
-              <iframe
+              <SandboxedPreviewFrame
                 title={`Vorschau ${blueprint.name} — ${path}`}
-                srcDoc={html}
+                html={html}
                 className="h-[78vh] w-full border-0"
-                sandbox=""
               />
             </div>
           </div>

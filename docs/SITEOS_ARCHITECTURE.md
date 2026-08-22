@@ -408,9 +408,85 @@ auch nicht versprochen.
 
 ---
 
+## 5b. Publish Gate
+
+Umsetzung von Contract §7 der Zielarchitektur — der Festlegung, dass
+**niemand** eine Veröffentlichung freischaltet, sondern sie abgeleitet wird.
+
+```text
+Blueprint-Version
+      ↓
+Artefakt neu bauen (showcase)      ← nicht aus dem Speicher gelesen
+      ↓
+Befunde neu erheben
+      ↓
+Nachweis schreiben (Scan + Custody für den Artefakt-Hash)
+      ↓
+evaluatePublishGate()
+      ↓
+siteos_publish_evaluations         ← publishable ist GENERATED
+```
+
+### Die fünf Bedingungen
+
+`publishable` gilt nur, wenn alle zutreffen: `status === 'passed'`,
+`evidence_complete`, `backend_preservation === 'preserve_all'`,
+`policy_compliant`, und **keine** offene Freigabepflicht.
+
+### Was blockiert und was eine Person entscheiden lässt
+
+| Lage | Wirkung |
+| --- | --- |
+| Schwerer Befund in DSGVO · EU AI Act · TDDDG | **sperrt** — im Auslieferungszustand ein Rechtsverstoß, keine Abwägung |
+| Kritischer Befund in jeder anderen Dimension | **sperrt** — „kritisch" heißt bereits: so nicht ausliefern |
+| Schwerer Befund in Barrierefreiheit · Sicherheit | **Freigabe** — verbindlich, aber die Abwägung hat Kontext |
+| DSFA indiziert oder besondere Kategorien | **Freigabe** durch `owner`, `admin` oder `dpo` |
+| Backend-Vergleich nicht durchgeführt | **sperrt** (`unknown`) — „wir wissen es nicht" ist kein Freigabegrund |
+| Mittlerer Befund in einer Rechtsdimension | Hinweis, keine Sperre |
+
+### Warum `greenfield` kein Schlupfloch ist
+
+`backend_preservation` fragt, ob die Transformation etwas verliert:
+Formularziele, Zahlungswege, Buchungsstrecken, Schnittstellen,
+Einwilligungskategorien. Wo es keine Vorgängerseite gibt, kann nichts
+verlorengehen — die Feststellung ist dort **beweisbar**, nicht geraten. Bei
+einer Transformation ohne durchgeführten Vergleich gilt dagegen `unknown`,
+und das sperrt.
+
+### Warum die Ableitung im Kern steht, obwohl G1 sie serverseitig verlangt
+
+Weil sie sonst zweimal geschrieben würde. Sie steht **einmal**
+(`publish/gate.ts`) und läuft in Deno wie in Vitest. Das Frontend importiert
+den *Typ*, nicht die Funktion: Es rendert `publishable` und die Begründung
+(G2) und ruft `evaluatePublishGate` nicht auf.
+
+Zusätzlich ist `publishable` in der Datenbank eine generierte Spalte. Damit
+gibt es keinen Schreibpfad — auch keinen mit `service_role` —, der die
+Veröffentlichung an den Gründen vorbei erzwingen könnte.
+
+### Freigabe ist eine Zurechnung
+
+Eine Freigabe braucht Person, Begründung (mindestens 10 Zeichen) und eine
+Rolle aus `owner` · `admin` · `dpo`. Sie gilt für **genau einen**
+Artefakt-Hash: Ändert sich die Site, verfällt sie, und die Oberfläche sagt
+das, statt kommentarlos wieder zu sperren.
+
+Die freigegebene Bewertung bleibt als `pending` stehen; die Freigabe erzeugt
+eine **neue** Bewertung. Im Prüfpfad bleibt damit sichtbar, dass eine Person
+entschieden hat und nicht das System.
+
+### Noch nicht angeschlossen
+
+Es gibt keinen Publish-Knopf. Das Gate ist absichtlich vor dem Pfad gebaut,
+den es absichert — anders herum ließe es sich nachträglich umgehen. Der
+nächste Schritt ist der Deploy von `cloudflare-deployer` und die Bindung des
+Deployments an genau eine `evaluation_id` (G5).
+
+---
+
 ## 6. Stand und Grenzen
 
-**Umgesetzt**: Domänenkern mit 184 Tests, AI Builder (Prompt → geprüfter
+**Umgesetzt**: Domänenkern mit 201 Tests, AI Builder (Prompt → geprüfter
 Blueprint), Renderer (Blueprint → HTML, gegen die Live-Analyse abgesichert),
 acht Runtime-Analysen, fünf Kennzahlen, sieben Agenten mit deterministischer
 Behebung, Datenmodell mit RLS, drei Edge Functions, Dashboard unter
@@ -420,7 +496,10 @@ Behebung, Datenmodell mit RLS, drei Edge Functions, Dashboard unter
 
 - **Deployment-Pfad.** Der Renderer erzeugt das HTML (siehe §3.5), aber es
   wird noch nicht auf Cloudflare Pages hochgeladen und unter einer Domain
-  veröffentlicht. Das ist die verbliebene Hälfte der ursprünglich größten
+  veröffentlicht. **Der Publish Gate steht bereits** (§5b) — er wurde
+  bewusst vor dem Pfad gebaut, den er absichert. `cloudflare-deployer` und
+  `website-domain-manager` liegen im Repo, sind aber nicht deployt; es
+  fehlen ihr Deploy und die Cloudflare-Zugangsdaten. Das ist die verbliebene Hälfte der ursprünglich größten
   Lücke: aus dem Blueprint entsteht jetzt ein vollständiges, geprüftes
   Auslieferungsartefakt — was fehlt, ist der Upload samt Domain-Anbindung.
   Dafür sind Cloudflare-Zugangsdaten und eine Entscheidung über das
@@ -451,9 +530,9 @@ Behebung, Datenmodell mit RLS, drei Edge Functions, Dashboard unter
 
 ```bash
 npm run lint                     # tsc --noEmit
-npx vitest run test/siteos/      # 184 Tests des Kerns
+npx vitest run test/siteos/      # 201 Tests des Kerns
 supabase db push                 # Migration
-supabase functions deploy siteos            # ein Slot, vier Endpunkte
+supabase functions deploy siteos            # ein Slot, sechs Endpunkte
 ```
 
 Optionale Umgebungsvariable: `SITEOS_BUILDER_MODEL` — Modell-ID für den

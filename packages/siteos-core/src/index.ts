@@ -25,6 +25,7 @@ export * from './render/presentation.ts';
 export * from './render/templates.ts';
 
 export * from './deploy/artifact.ts';
+export * from './publish/gate.ts';
 
 export * from './agents/registry.ts';
 export * from './agents/remediate.ts';

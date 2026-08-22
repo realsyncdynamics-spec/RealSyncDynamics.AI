@@ -3,7 +3,7 @@
  *
  * ## Warum das geprüft wird
  *
- * Der Router fasst vier Endpunkte in einem Function-Slot zusammen — der
+ * Der Router fasst sechs Endpunkte in einem Function-Slot zusammen — der
  * einzige Grund, warum SiteOS unter dem Free-Plan-Limit überhaupt eine
  * Chance auf Produktion hat (`src/config/production-edge-functions.ts`).
  * Löst er einen Pfad falsch auf, ist der Preis nicht ein Tippfehler, sondern
@@ -11,8 +11,9 @@
  * `/app/siteos/builder` laufen beide über `discover` und `builder`.
  *
  * Unter Test steht **nur** die Routing-Schicht: eine reine Funktion ohne
- * Deno-Importe. Die vier Handler sind unverändert aus den Einzel-Functions
- * übernommen (`git log --follow` auf den Dateien zeigt die Herkunft).
+ * Deno-Importe. Die ersten vier Handler sind unverändert aus den
+ * Einzel-Functions übernommen (`git log --follow` auf den Dateien zeigt die
+ * Herkunft); `publish-gate` kam mit Contract §7 dazu.
  *
  * ## Der Fall, der hier wirklich zählt
  *
@@ -25,7 +26,30 @@ import { describe, expect, it } from 'vitest';
 import { resolveEndpoint, ROUTER_SLUG } from '../../supabase/functions/siteos/resolve';
 
 /** Muss mit der Route-Map in supabase/functions/siteos/index.ts übereinstimmen. */
-const ENDPOINTS = ['agents', 'builder', 'discover', 'runtime-scan'];
+const ENDPOINTS = ['agents', 'builder', 'discover', 'publish-approve', 'publish-gate', 'runtime-scan'];
+
+/**
+ * Handler-Dateien. Nicht deckungsgleich mit `ENDPOINTS`, seit
+ * `publish-gate.ts` zwei Endpunkte bedient.
+ *
+ * Die frühere Zusicherung war „eine Datei je Endpunkt". Sie wurde
+ * aufgegeben, weil `publish-approve` nach der Freigabe **neu bewerten**
+ * muss: Eine zweite Datei bräuchte denselben Auswertungspfad ein zweites
+ * Mal — und zwei Auswertungswege für dieselbe Freigabeentscheidung sind
+ * genau die Drift, die Contract §7 G2 ausschließt.
+ *
+ * Was die Prüfung dadurch nicht verliert: Jeder registrierte Endpunkt muss
+ * weiterhin auf eine vorhandene Datei zeigen, und jede Datei muss
+ * registriert sein. Nur die Kardinalität ist jetzt 1:n statt 1:1.
+ */
+const HANDLER_FILES: Readonly<Record<string, string>> = Object.freeze({
+  'agents': 'agents',
+  'builder': 'builder',
+  'discover': 'discover',
+  'runtime-scan': 'runtime-scan',
+  'publish-gate': 'publish-gate',
+  'publish-approve': 'publish-gate',
+});
 
 describe('siteos Router — resolveEndpoint', () => {
   it.each(ENDPOINTS)('löst /%s auf den Endpunkt auf', (ep) => {
@@ -79,7 +103,8 @@ describe('siteos Router — Route-Map und Handler stimmen überein', () => {
     // Zwei Listen, die auseinanderlaufen können: eine Handler-Datei ohne
     // Eintrag in der Route-Map ist toter Code, ein Eintrag ohne Datei ein
     // Importfehler beim Deploy.
-    expect(files).toEqual([...ENDPOINTS].sort());
+    expect(files).toEqual([...new Set(Object.values(HANDLER_FILES))].sort());
+    expect(Object.keys(HANDLER_FILES).sort()).toEqual([...ENDPOINTS].sort());
   });
 
   it('registriert in index.ts genau diese Endpunkte', async () => {

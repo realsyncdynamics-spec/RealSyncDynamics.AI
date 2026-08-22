@@ -115,7 +115,14 @@ export function synthesizeBlueprint(brief: SiteBrief, options: SynthesizeOptions
 // Blöcke
 // ─────────────────────────────────────────────────────────────────────
 
-function buildBlock(
+/**
+ * Baut einen einzelnen Block. Öffentlich, weil die nachträgliche Verfeinerung
+ * (`blueprint/refine.ts`) Blöcke nachrüstet und dabei exakt dieselben Inhalte
+ * und Compliance-Merkmale erzeugen muss wie der Erstbau. Ein zweiter
+ * Block-Bauer wäre die Stelle, an der ein Kontaktformular irgendwann ohne
+ * Rechtsgrundlage entstünde.
+ */
+export function buildBlock(
   kind: BlockKind,
   index: number,
   path: string,
@@ -132,7 +139,14 @@ function buildBlock(
 
   switch (kind) {
     case 'navigation':
-      return { ...base, aiGenerated: false, content: { brand: brief.name } };
+      // Die Wortmarke allein ist keine Navigation. Ohne Seitenlinks sind
+      // alle Unterseiten des Seitenplans nur über die Sitemap erreichbar —
+      // für Besucher wie für Suchmaschinen praktisch nicht vorhanden.
+      return {
+        ...base,
+        aiGenerated: false,
+        content: { brand: brief.name, links: navigationLinks(brief) },
+      };
 
     case 'hero':
       return {
@@ -343,6 +357,20 @@ export function slugify(input: string): string {
 function blockId(path: string, kind: BlockKind, index: number): string {
   const pathPart = path === '/' ? 'root' : slugify(path);
   return `${pathPart}--${kind}--${index}`;
+}
+
+/** Rechtsseiten stehen im Fuß, nicht in der Hauptnavigation. */
+const LEGAL_PATHS = new Set(['/impressum', '/datenschutz', '/barrierefreiheit', '/agb', '/widerruf']);
+
+/**
+ * Hauptnavigation aus dem Seitenplan. Die Startseite fehlt bewusst — sie
+ * hängt an der Wortmarke, und ein zusätzlicher „Start"-Link wäre ein
+ * zweiter Weg zum selben Ziel im selben Element.
+ */
+function navigationLinks(brief: SiteBrief): { label: string; href: string }[] {
+  return getIndustryPreset(brief.industry)
+    .pagePlan.filter((page) => page.path !== '/' && !page.noindex && !LEGAL_PATHS.has(page.path))
+    .map((page) => ({ label: page.title, href: page.path }));
 }
 
 function contactPath(brief: SiteBrief): string {

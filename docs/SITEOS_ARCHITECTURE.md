@@ -308,9 +308,185 @@ Datenhaltung ohne Zweck (Art. 5 Abs. 1 lit. c DSGVO).
 
 ---
 
+## 5a. Anonymer Build-Flow (Prompt → Vorschau → Übernahme)
+
+Bis dahin war die Reihenfolge: Scan → Entscheidung → Konto → Builder. Der
+Account stand damit **vor** dem Ergebnis; was ein Besucher bis zur
+Registrierung sah, war ein Musterlayout. Die Reihenfolge ist umgedreht:
+
+```
+Beschreibung → Bau → vollständige Vorschau → (Konto) → Übernahme → Governance → Domain
+```
+
+Das Konto wird gebraucht, sobald jemand das Ergebnis **besitzen**,
+weiterbearbeiten oder veröffentlichen will — nicht, um es zu sehen.
+
+### Wo der Entwurf vor der Anmeldung liegt
+
+Im Browser, und zwar als **Prompt + Anweisungsfolge**, nicht als Blueprint
+(`src/features/siteos/buildSession.ts`).
+
+Ein anonymer Entwurf in der Datenbank hieße: eine Tabelle, die ohne
+Anmeldung beschreibbar ist — mit Rate-Limit, Aufbewahrungsfrist und
+Löschpflicht für Daten, die noch niemandem zugeordnet sind. Da der Kern
+deterministisch ist, genügen die paar hundert Zeichen, aus denen der
+Blueprint jederzeit wieder entsteht.
+
+Die Grenze davon ist real und wird in der Oberfläche benannt: Ein Entwurf
+überlebt keinen Gerätewechsel und kein privates Fenster.
+
+### Warum die Übernahme Anweisungen überträgt und keinen Blueprint
+
+`POST /functions/v1/siteos/builder` nimmt neben `prompt` ein Feld
+`refinements: string[]` und **spielt die Folge serverseitig nach**.
+
+Käme der Blueprint aus dem Browser, käme mit ihm das Compliance-Profil aus
+einer Quelle, die der Nutzer kontrolliert: Rechtsgrundlagen,
+Consent-Kategorien und der KI-Hinweis nach Art. 50 EU AI Act wären dann
+Client-Eingaben. Gleiche Eingabe ⇒ gleicher Blueprint ⇒ gleicher Hash —
+der Besucher sieht genau das, was persistiert wird, ohne dass ihm dabei
+vertraut werden muss. Die Anweisungsfolge selbst geht in den Prüfpfad; sie
+erklärt, warum dieser Blueprint von dem abweicht, den der Prompt allein
+ergäbe.
+
+### Verfeinerung statt Neubau
+
+`refineBlueprint(blueprint, anweisung)` (`blueprint/refine.ts`) ändert den
+**bestehenden** Blueprint. Der frühere Builder erzeugte bei jeder
+Kundenanweisung eine neue Site — damit war jede Änderung ein Glücksspiel
+gegen das vorherige Ergebnis.
+
+Die Verfeinerung ist deterministisch und modellfrei, aus demselben Grund wie
+`parseBrief`, nur schärfer: Sie verändert einen Blueprint, der bereits
+geprüft, gehasht und gezeigt wurde. Ein Modell darf davor sitzen und freie
+Sprache in diese Anweisungen übersetzen; es schreibt den Blueprint nicht.
+
+Zugesagt wird:
+
+- Jede strukturelle Änderung leitet das Compliance-Profil neu ab. Ein
+  nachgerüstetes Kontaktformular bringt seine Rechtsgrundlage mit, eine
+  Karte ihre Einwilligungskategorie.
+- Der KI-Hinweis ist nicht entfernbar — die Anweisung wird abgelehnt und
+  begründet, nicht stillschweigend ignoriert.
+- Eine nicht verstandene Anweisung wird als solche gemeldet
+  (`understood: false`), statt als unveränderte Vorschau durchzugehen.
+
+Derselbe Weg gilt für den Erstbau: `buildSiteFromPrompt` liest den Prompt
+zweimal — `parseBrief` für Branche und Compliance-Gerüst, `deriveRequests`
+für ausdrücklich genannte Bausteine („Terminbuchung", „Referenzen") und
+Stilangaben. Ein Prompt kann damit nichts erreichen, was ein Kunde später
+nicht auch sagen könnte.
+
+### Vorschau
+
+`renderSite(blueprint, { presentation: 'showcase' })` hängt eine **additive
+Layoutschicht** an (`render/presentation.ts`). Sie greift ausschließlich über
+die vorhandenen Block-IDs (`[id*="--hero--"]`); das Markup bleibt
+unangetastet, und der Default `minimal` bleibt byte-stabil — sonst änderte
+jede Gestaltungsentscheidung den Hash jedes Artefakts.
+
+Die Vorschau läuft in einem vollständig gesperrten `iframe` (`sandbox=""`):
+kein Skript, kein gemeinsamer Ursprung, kein Formularversand. Das erzeugte
+Dokument enthält ohnehin kein Skript — die Vorschau verlässt sich nicht
+darauf, dass das so bleibt.
+
+### Was der Flow **nicht** tut
+
+Kein Domain-Anschluss, keine Veröffentlichung, kein Deployment. Beides
+gehört hinter Übernahme und Publish Gate (§6 und
+`docs/architecture/target-architecture.md`) — und wird in der Oberfläche
+auch nicht versprochen.
+
+### Einstiegspunkte
+
+| Route | Zweck |
+| --- | --- |
+| `/build` | Build Studio: Beschreibung → Website → Vorschau → Ändern (ohne Konto) |
+| `/builder`, `/app/bauen`, `/unified-entry` | Weiterleitung auf `/build` |
+| `/unified-entry/scan` | URL-Analyse einer bestehenden Website — zweiter Weg, vom Studio verlinkt |
+| `/app/siteos/claim` | Übernahme des Entwurfs in den Workspace |
+
+---
+
+## 5b. Publish Gate
+
+Umsetzung von Contract §7 der Zielarchitektur — der Festlegung, dass
+**niemand** eine Veröffentlichung freischaltet, sondern sie abgeleitet wird.
+
+```text
+Blueprint-Version
+      ↓
+Artefakt neu bauen (showcase)      ← nicht aus dem Speicher gelesen
+      ↓
+Befunde neu erheben
+      ↓
+Nachweis schreiben (Scan + Custody für den Artefakt-Hash)
+      ↓
+evaluatePublishGate()
+      ↓
+siteos_publish_evaluations         ← publishable ist GENERATED
+```
+
+### Die fünf Bedingungen
+
+`publishable` gilt nur, wenn alle zutreffen: `status === 'passed'`,
+`evidence_complete`, `backend_preservation === 'preserve_all'`,
+`policy_compliant`, und **keine** offene Freigabepflicht.
+
+### Was blockiert und was eine Person entscheiden lässt
+
+| Lage | Wirkung |
+| --- | --- |
+| Schwerer Befund in DSGVO · EU AI Act · TDDDG | **sperrt** — im Auslieferungszustand ein Rechtsverstoß, keine Abwägung |
+| Kritischer Befund in jeder anderen Dimension | **sperrt** — „kritisch" heißt bereits: so nicht ausliefern |
+| Schwerer Befund in Barrierefreiheit · Sicherheit | **Freigabe** — verbindlich, aber die Abwägung hat Kontext |
+| DSFA indiziert oder besondere Kategorien | **Freigabe** durch `owner`, `admin` oder `dpo` |
+| Backend-Vergleich nicht durchgeführt | **sperrt** (`unknown`) — „wir wissen es nicht" ist kein Freigabegrund |
+| Mittlerer Befund in einer Rechtsdimension | Hinweis, keine Sperre |
+
+### Warum `greenfield` kein Schlupfloch ist
+
+`backend_preservation` fragt, ob die Transformation etwas verliert:
+Formularziele, Zahlungswege, Buchungsstrecken, Schnittstellen,
+Einwilligungskategorien. Wo es keine Vorgängerseite gibt, kann nichts
+verlorengehen — die Feststellung ist dort **beweisbar**, nicht geraten. Bei
+einer Transformation ohne durchgeführten Vergleich gilt dagegen `unknown`,
+und das sperrt.
+
+### Warum die Ableitung im Kern steht, obwohl G1 sie serverseitig verlangt
+
+Weil sie sonst zweimal geschrieben würde. Sie steht **einmal**
+(`publish/gate.ts`) und läuft in Deno wie in Vitest. Das Frontend importiert
+den *Typ*, nicht die Funktion: Es rendert `publishable` und die Begründung
+(G2) und ruft `evaluatePublishGate` nicht auf.
+
+Zusätzlich ist `publishable` in der Datenbank eine generierte Spalte. Damit
+gibt es keinen Schreibpfad — auch keinen mit `service_role` —, der die
+Veröffentlichung an den Gründen vorbei erzwingen könnte.
+
+### Freigabe ist eine Zurechnung
+
+Eine Freigabe braucht Person, Begründung (mindestens 10 Zeichen) und eine
+Rolle aus `owner` · `admin` · `dpo`. Sie gilt für **genau einen**
+Artefakt-Hash: Ändert sich die Site, verfällt sie, und die Oberfläche sagt
+das, statt kommentarlos wieder zu sperren.
+
+Die freigegebene Bewertung bleibt als `pending` stehen; die Freigabe erzeugt
+eine **neue** Bewertung. Im Prüfpfad bleibt damit sichtbar, dass eine Person
+entschieden hat und nicht das System.
+
+### Noch nicht angeschlossen
+
+Es gibt keinen Publish-Knopf. Das Gate ist absichtlich vor dem Pfad gebaut,
+den es absichert — anders herum ließe es sich nachträglich umgehen. Der
+nächste Schritt ist der Deploy von `cloudflare-deployer` und die Bindung des
+Deployments an genau eine `evaluation_id` (G5).
+
+---
+
 ## 6. Stand und Grenzen
 
-**Umgesetzt**: Domänenkern mit 155 Tests, AI Builder (Prompt → geprüfter
+**Umgesetzt**: Domänenkern mit 201 Tests, AI Builder (Prompt → geprüfter
 Blueprint), Renderer (Blueprint → HTML, gegen die Live-Analyse abgesichert),
 acht Runtime-Analysen, fünf Kennzahlen, sieben Agenten mit deterministischer
 Behebung, Datenmodell mit RLS, drei Edge Functions, Dashboard unter
@@ -320,7 +496,10 @@ Behebung, Datenmodell mit RLS, drei Edge Functions, Dashboard unter
 
 - **Deployment-Pfad.** Der Renderer erzeugt das HTML (siehe §3.5), aber es
   wird noch nicht auf Cloudflare Pages hochgeladen und unter einer Domain
-  veröffentlicht. Das ist die verbliebene Hälfte der ursprünglich größten
+  veröffentlicht. **Der Publish Gate steht bereits** (§5b) — er wurde
+  bewusst vor dem Pfad gebaut, den er absichert. `cloudflare-deployer` und
+  `website-domain-manager` liegen im Repo, sind aber nicht deployt; es
+  fehlen ihr Deploy und die Cloudflare-Zugangsdaten. Das ist die verbliebene Hälfte der ursprünglich größten
   Lücke: aus dem Blueprint entsteht jetzt ein vollständiges, geprüftes
   Auslieferungsartefakt — was fehlt, ist der Upload samt Domain-Anbindung.
   Dafür sind Cloudflare-Zugangsdaten und eine Entscheidung über das
@@ -332,8 +511,10 @@ Behebung, Datenmodell mit RLS, drei Edge Functions, Dashboard unter
   `data-legal-document`-Attribut. Der Text selbst kommt zur Build-Zeit aus
   dem Legal-Modul (`scripts/generate-static-legal-pages.mjs`) — der
   Renderer erfindet keinen Rechtstext.
-- **Keine Komponentenbibliothek.** Das Stylesheet deckt Grundgestaltung ab
-  (Kontrast, Zeilenlänge, Fokus, Sprungmarke); Layout-Varianten je Block
+- **Keine Komponentenbibliothek.** Das Kern-Stylesheet deckt Grundgestaltung
+  ab (Kontrast, Zeilenlänge, Fokus, Sprungmarke). Die Layoutschicht aus
+  §5a (`presentation: 'showcase'`) ergänzt Raster, Karten und Formulare —
+  aber weiterhin genau **eine** Variante je Blocktyp. Alternativen je Block
   fehlen.
 - Visueller Drag-&-Drop-Editor (React Flow)
 - Mehrsprachigkeit über die Modellebene hinaus (`locales` ist vorbereitet,
@@ -349,9 +530,9 @@ Behebung, Datenmodell mit RLS, drei Edge Functions, Dashboard unter
 
 ```bash
 npm run lint                     # tsc --noEmit
-npx vitest run test/siteos/      # 155 Tests des Kerns
+npx vitest run test/siteos/      # 201 Tests des Kerns
 supabase db push                 # Migration
-supabase functions deploy siteos            # ein Slot, vier Endpunkte
+supabase functions deploy siteos            # ein Slot, sechs Endpunkte
 ```
 
 Optionale Umgebungsvariable: `SITEOS_BUILDER_MODEL` — Modell-ID für den

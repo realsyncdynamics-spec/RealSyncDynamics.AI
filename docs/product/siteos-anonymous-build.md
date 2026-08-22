@@ -161,7 +161,7 @@ existieren bereits, brauchen aber ein Gegenstück für Sitzungen ohne Mandant.
 
 | # | Schritt | Vorbedingung |
 |---|---|---|
-| S1 | Isolierte Vorschau-Herkunft + CSP (§3) | — |
+| S1 | Vorschau-Isolierung: Sandbox + CSP (§3) | **umgesetzt** — siehe unten |
 | S2 | Anonyme Build-Session mit Gate, Kontingent und Verfall | S1 |
 | S3 | `siteos/builder` für Sitzungen ohne Tenant öffnen | S2 |
 | S4 | Interaktive Preview (Skripte laufen, aber isoliert) | S1 |
@@ -171,6 +171,38 @@ existieren bereits, brauchen aber ein Gegenstück für Sitzungen ohne Mandant.
 | S8 | **Publish Gate** | S7 |
 | S9 | Publish + eigene Domain | S8 |
 | S10 | Entitlements und Verbrauchsabrechnung | S9 |
+
+### S1 — umgesetzt (Stand 2026-08-22)
+
+`src/lib/preview-sandbox.ts` und `src/components/preview/SandboxedPreviewFrame.tsx`.
+Alle drei Vorschauen (`DashboardPreviewPage`, `PreviewSelectionPage`,
+`WebsiteTransformationFlow`) laufen darüber.
+
+| | vorher | jetzt |
+|---|---|---|
+| `sandbox` | `allow-same-origin` | `""` (alles gesperrt) |
+| CSP | keine | `default-src 'none'`, eingebettet je Dokument |
+| Referrer | Standard | `no-referrer` |
+| Geräte-Zugriff | Standard | `allow=""` |
+
+Der entscheidende Punkt ist die **Bauform**, nicht der heutige Wert:
+`sandboxTokens()` hat keinen Parameter, mit dem sich `allow-same-origin`
+zuschalten liesse. Wer später `allow-scripts` für eine interaktive Vorschau
+braucht, bekommt zwangsläufig eine **opake Herkunft** — die gefährliche
+Kombination ist nicht abgeraten, sondern unerreichbar.
+
+`test/security/preview-sandbox.test.ts` liest zusätzlich den gesamten
+Quellbaum unter `src/` und `packages/` und schlägt fehl, sobald irgendein
+Rahmen beide Marken trägt — auch einer, der `preview-sandbox.ts` gar nicht
+kennt.
+
+Im ausgelieferten Build nachgewiesen: die drei Rahmen tragen `sandbox=""`,
+die CSP ist eingebettet, Inhalt und Gestaltung rendern unverändert.
+
+**Offen bleibt** die eigene Herkunft je Vorschau (eigene Subdomain). Sie wird
+gebraucht, sobald Vorschauen über eine URL teilbar werden; die opake Herkunft
+schützt die Anwendung, aber die Vorschau liegt weiterhin im selben
+Dokumentbaum.
 
 S1 steht bewusst vorn. Jede andere Reihenfolge baut die Vorschau, bevor sie
 sicher ist — und eine unsichere Vorschau lässt sich später nicht nachträglich

@@ -1,6 +1,7 @@
 import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { postEdgeFunction } from '../../lib/edgeFunction';
+import { SandboxedPreviewFrame } from '../../components/preview/SandboxedPreviewFrame';
 import { mergeBrief, parseBrief } from '../../../packages/siteos-core/src/blueprint/brief';
 import { synthesizeBlueprint } from '../../../packages/siteos-core/src/blueprint/synthesize';
 import { renderSite } from '../../../packages/siteos-core/src/render/renderer';
@@ -121,12 +122,10 @@ function ScaledPreview({ html, title, className }: { html: string; title: string
 
   return (
     <div ref={wrap} className={`relative overflow-hidden bg-white ${className ?? ''}`}>
-      <iframe
+      <SandboxedPreviewFrame
         title={title}
-        srcDoc={html}
-        sandbox="allow-same-origin"
-        aria-hidden="true"
-        tabIndex={-1}
+        html={html}
+        decorative
         className="pointer-events-none absolute left-0 top-0 border-0 bg-white"
         style={{
           width: PREVIEW_VIEWPORT,

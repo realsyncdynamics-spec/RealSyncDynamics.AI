@@ -9,6 +9,7 @@ import { getSupabase } from '../../lib/supabase';
 import type {
   AgentKey,
   PublishGateEvaluation,
+  RefinementChange,
   RuntimeFinding,
   ScoreBreakdown,
   SiteBlueprint,
@@ -296,4 +297,112 @@ export async function approvePublish(args: {
   const { data, error } = await sb.functions.invoke('siteos/publish-approve', { body: args });
   if (error) return await mapErrorDetailed(error);
   return { kind: 'ok', data: data as { ok: true; approved_evaluation_id: string; evaluation: PublishGateEvaluation } };
+}
+
+// ── Anonymer Build (Zielarchitektur: Idee → Vorschau → Konto → Claim) ───
+//
+// Bauen und Verfeinern laufen serverseitig, ohne Konto. Der Blueprint liegt
+// damit von Anfang an beim Server — Voraussetzung dafür, dass der Claim ihn
+// **verschieben** kann, statt ihn nachzubauen.
+
+export interface AnonBuildResponse {
+  ok: true;
+  session_id: string;
+  expires_at: string;
+  version: number;
+  slug: string;
+  content_sha256: string;
+  blueprint: SiteBlueprint;
+  findings: RuntimeFinding[];
+  scores: ScoreBreakdown;
+}
+
+export interface AnonRefineResponse {
+  ok: true;
+  unchanged: boolean;
+  session_id: string;
+  version: number;
+  content_sha256?: string;
+  blueprint: SiteBlueprint;
+  findings: RuntimeFinding[];
+  scores: ScoreBreakdown;
+  changes: RefinementChange[];
+  refusals: string[];
+  understood: boolean;
+}
+
+export interface ClaimResponse {
+  ok: true;
+  already_claimed: boolean;
+  blueprint_id: string | null;
+  slug: string;
+  version: number;
+  content_sha256: string;
+  provenance_linked?: boolean;
+}
+
+export async function buildAnon(args: {
+  prompt: string;
+  locale?: string;
+  enrichment?: BuildEnrichment;
+}): Promise<SiteOsResult<AnonBuildResponse>> {
+  const sb = getSupabase();
+  const { data, error } = await sb.functions.invoke('siteos/build-anon', { body: args });
+  if (error) return await mapErrorDetailed(error);
+  return { kind: 'ok', data: data as AnonBuildResponse };
+}
+
+export async function refineAnon(args: {
+  session_id: string;
+  instruction: string;
+}): Promise<SiteOsResult<AnonRefineResponse>> {
+  const sb = getSupabase();
+  const { data, error } = await sb.functions.invoke('siteos/refine-anon', { body: args });
+  if (error) return await mapErrorDetailed(error);
+  return { kind: 'ok', data: data as AnonRefineResponse };
+}
+
+/**
+ * Übernimmt die Sitzung in einen Mandanten.
+ *
+ * Idempotent: Ein zweiter Aufruf liefert dieselbe `blueprint_id`, erkennbar
+ * an `already_claimed`. Der Aufrufer muss das nicht abfangen — er darf es
+ * aber anzeigen.
+ */
+export async function claimAnonBuild(args: {
+  tenant_id: string;
+  session_id: string;
+}): Promise<SiteOsResult<ClaimResponse>> {
+  const sb = getSupabase();
+  const { data, error } = await sb.functions.invoke('siteos/claim', { body: args });
+  if (error) return await mapErrorDetailed(error);
+  return { kind: 'ok', data: data as ClaimResponse };
+}
+
+export interface AnonSessionResponse {
+  ok: true;
+  session_id: string;
+  version: number;
+  slug: string;
+  content_sha256: string;
+  blueprint: SiteBlueprint;
+  findings: RuntimeFinding[];
+  scores: ScoreBreakdown;
+  expires_at: string;
+  claimed: boolean;
+  claimed_blueprint_id: string | null;
+}
+
+/**
+ * Liest den aktuellen Stand einer anonymen Sitzung.
+ *
+ * Der Neuladen-Fall geht über diesen Weg und nicht über einen lokalen
+ * Zwischenspeicher: Was die Vorschau zeigt, muss dasselbe sein, was der
+ * Claim überträgt.
+ */
+export async function getAnonSession(args: { session_id: string }): Promise<SiteOsResult<AnonSessionResponse>> {
+  const sb = getSupabase();
+  const { data, error } = await sb.functions.invoke('siteos/session', { body: args });
+  if (error) return await mapErrorDetailed(error);
+  return { kind: 'ok', data: data as AnonSessionResponse };
 }

@@ -47,13 +47,11 @@ import {
 } from '../../../packages/siteos-core/src/index';
 import { SandboxedPreviewFrame } from '../../components/preview/SandboxedPreviewFrame';
 import {
-  appendInstruction,
-  clearBuildSession,
-  loadBuildSession,
-  newBuildSession,
-  runBuildSession,
-  saveBuildSession,
-  type BuildSession,
+  applyInstruction,
+  clear as clearBuildSession,
+  resumeBuild,
+  startBuild,
+  type BuildState,
   type BuildStep,
 } from '../../features/siteos/buildSession';
 
@@ -83,11 +81,11 @@ export default function BuildStudioPage() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
 
-  const [session, setSession] = useState<BuildSession | null>(null);
-  const [blueprint, setBlueprint] = useState<SiteBlueprint | null>(null);
-  const [findings, setFindings] = useState<RuntimeFinding[]>([]);
-  const [scores, setScores] = useState<ScoreBreakdown | null>(null);
-  const [hash, setHash] = useState('');
+  const [state, setState] = useState<BuildState | null>(null);
+  const blueprint = state?.blueprint ?? null;
+  const findings = state?.findings ?? [];
+  const scores = state?.scores ?? null;
+  const hash = state?.contentSha256 ?? '';
 
   const [draft, setDraft] = useState(params.get('prompt') ?? '');
   const [brand, setBrand] = useState('');
@@ -101,25 +99,24 @@ export default function BuildStudioPage() {
 
   const startedRef = useRef(false);
 
-  const run = useCallback(async (next: BuildSession) => {
+  const adopt = useCallback((next: BuildState) => {
+    setState(next);
+    setPath((current) => (next.blueprint.pages.some((page) => page.path === current) ? current : '/'));
+  }, []);
+
+  const run = useCallback(async (task: () => Promise<BuildState | null>) => {
     setBusy(true);
     setError('');
     setStage(0);
     try {
-      const outcome = await runBuildSession(next);
-      setSession(outcome.session);
-      setBlueprint(outcome.blueprint);
-      setFindings(outcome.findings);
-      setScores(outcome.scores);
-      setHash(outcome.blueprintSha256);
-      setPath((current) => (outcome.blueprint.pages.some((p) => p.path === current) ? current : '/'));
-      saveBuildSession(outcome.session);
+      const outcome = await task();
+      if (outcome) adopt(outcome);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Die Website konnte nicht erzeugt werden.');
     } finally {
       setBusy(false);
     }
-  }, []);
+  }, [adopt]);
 
   // Vorhandene Sitzung oder ?prompt= aufnehmen — einmal, nicht bei jedem Render.
   useEffect(() => {
@@ -128,11 +125,13 @@ export default function BuildStudioPage() {
 
     const fromUrl = params.get('prompt')?.trim();
     if (fromUrl) {
-      void run(newBuildSession(fromUrl));
+      void run(() => startBuild(fromUrl, null));
       return;
     }
-    const stored = loadBuildSession();
-    if (stored) void run(stored);
+    // Wiederaufnahme liest den Stand vom Server, statt ihn aus einer lokalen
+    // Kopie zu rekonstruieren — sonst zeigte die Vorschau nach einem Neuladen
+    // etwas anderes, als die Übernahme überträgt.
+    void run(() => resumeBuild());
   }, [params, run]);
 
   // Fortschrittszeilen laufen nur, solange gebaut wird. Sie behaupten keinen
@@ -158,33 +157,36 @@ export default function BuildStudioPage() {
       return;
     }
     setLog([]);
-    void run(newBuildSession(text, brand));
+    void run(() => startBuild(text, brand));
   };
 
-  const applyInstruction = (text: string) => {
-    if (!session || !blueprint) return;
+  const submitInstruction = (text: string) => {
+    if (!state) return;
     const trimmed = text.trim();
     if (!trimmed) return;
 
-    const { session: next, step } = appendInstruction(session, trimmed, blueprint);
-    setLog((entries) => [step, ...entries].slice(0, 12));
     setInstruction('');
-    if (step.changes.length === 0) {
-      // Nichts geändert — das wird gesagt, nicht durch einen neuen Ladebalken
-      // überdeckt.
-      saveBuildSession(next);
-      setSession(next);
-      return;
-    }
-    void run(next);
+    setBusy(true);
+    setError('');
+
+    void (async () => {
+      try {
+        const { state: next, step } = await applyInstruction(state, trimmed);
+        setLog((entries) => [step, ...entries].slice(0, 12));
+        // Auch eine wirkungslose Anweisung wird übernommen — sie ändert
+        // nichts, aber der Verlauf soll zeigen, was versucht wurde.
+        adopt(next);
+      } catch (cause) {
+        setError(cause instanceof Error ? cause.message : 'Die Änderung konnte nicht angewendet werden.');
+      } finally {
+        setBusy(false);
+      }
+    })();
   };
 
   const restart = () => {
     clearBuildSession();
-    setSession(null);
-    setBlueprint(null);
-    setFindings([]);
-    setScores(null);
+    setState(null);
     setLog([]);
     setDraft('');
   };
@@ -302,7 +304,7 @@ export default function BuildStudioPage() {
     );
   }
 
-  if (!blueprint || !session) return null;
+  if (!blueprint || !state) return null;
 
   const critical = findings.filter((f) => f.severity === 'critical' || f.severity === 'high');
 
@@ -395,7 +397,7 @@ export default function BuildStudioPage() {
           </p>
 
           <form
-            onSubmit={(event) => { event.preventDefault(); applyInstruction(instruction); }}
+            onSubmit={(event) => { event.preventDefault(); submitInstruction(instruction); }}
             className="mt-3"
           >
             <label htmlFor="refine" className="sr-only">Änderungswunsch</label>
@@ -423,7 +425,7 @@ export default function BuildStudioPage() {
                 key={action}
                 type="button"
                 disabled={busy}
-                onClick={() => applyInstruction(action)}
+                onClick={() => submitInstruction(action)}
                 className="rounded-full border border-titanium-800 px-3 py-1.5 text-[11px] text-titanium-400 hover:border-petrol-700 hover:text-titanium-100 disabled:opacity-40"
               >
                 {action}

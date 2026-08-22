@@ -6,10 +6,18 @@
 //
 // ## Was übertragen wird
 //
-// Prompt und Anweisungsfolge — nicht der Blueprint. Der Server baut ihn mit
-// demselben Kern erneut. Das ist kein Umweg: Käme die Struktur aus dem
-// Browser, käme mit ihr das Compliance-Profil aus einer Quelle, die der
-// Nutzer bearbeiten kann. Die ausführliche Begründung steht am Endpunkt.
+// Nur die Sitzungskennung. Der Blueprint liegt bereits serverseitig
+// (`siteos_anonymous_builds`); die Übernahme **verschiebt** ihn in den
+// Mandanten, statt ihn nachzubauen.
+//
+// Eine frühere Fassung übertrug Prompt und Anweisungsfolge und liess den
+// Server nachspielen. Deterministisch — aber der Blueprint wurde dabei neu
+// erzeugt. Ändert sich `packages/siteos-core` zwischen Vorschau und
+// Anmeldung, bekommt der Kunde etwas anderes als das, was er gesehen hat,
+// und niemand merkt es: Beide Ergebnisse sind für sich „richtig".
+//
+// Der Beleg dafür, dass nichts neu entstanden ist, steht im Prüfpfad:
+// derselbe `content_sha256` wie in der Vorschau.
 //
 // ## Warum die Anmeldung hier und nicht früher steht
 //
@@ -38,21 +46,23 @@ import { useNavigate } from 'react-router-dom';
 import { AlertTriangle, ArrowRight, Check, Loader2, ShieldCheck, ShieldAlert, Clock } from 'lucide-react';
 import { useTenant } from '../../core/access/TenantProvider';
 import { useSupabaseAuth } from '../supabase/SupabaseAuthContext';
-import { buildSite, errorMessage, evaluatePublish } from './siteOsApi';
+import { claimAnonBuild, errorMessage, evaluatePublish, getAnonSession } from './siteOsApi';
 import type { PublishGateEvaluation } from '../../../packages/siteos-core/src/index';
-import { clearBuildSession, loadBuildSession, refinementList, type BuildSession } from './buildSession';
+import { clear as clearBuildSession, load as loadStoredSession, type StoredSession } from './buildSession';
 
-type Phase = 'idle' | 'claiming' | 'evaluating' | 'done' | 'empty' | 'failed';
+type Phase = 'idle' | 'claiming' | 'evaluating' | 'done' | 'empty' | 'local_only' | 'failed';
 
 export function SiteOsClaimView() {
   const navigate = useNavigate();
   const { activeTenantId } = useTenant();
   const { isAuthenticated, isLoading } = useSupabaseAuth();
 
-  const [session, setSession] = useState<BuildSession | null>(null);
+  const [session, setSession] = useState<StoredSession | null>(null);
+  const [sessionVersion, setSessionVersion] = useState<number | null>(null);
   const [phase, setPhase] = useState<Phase>('idle');
   const [error, setError] = useState('');
   const [slug, setSlug] = useState('');
+  const [alreadyClaimed, setAlreadyClaimed] = useState(false);
   const [evaluation, setEvaluation] = useState<PublishGateEvaluation | null>(null);
   // Getrennt vom allgemeinen Fehler: Eine fehlende Bewertung macht die
   // Übernahme nicht rückgängig. Sie ist ein eigener Befund, kein Abbruch.
@@ -65,9 +75,29 @@ export function SiteOsClaimView() {
       navigate(`/welcome?next=${encodeURIComponent('/app/siteos/claim')}`, { replace: true });
       return;
     }
-    const stored = loadBuildSession();
-    if (!stored) setPhase('empty');
+    const stored = loadStoredSession();
+    if (!stored) {
+      setPhase('empty');
+      return;
+    }
     setSession(stored);
+
+    // Ein Entwurf, der nur im Browser gebaut wurde, hat serverseitig keine
+    // Sitzung — er kann nicht übernommen werden. Das gehört hierher gesagt
+    // und nicht erst beim Klick auf „Übernehmen".
+    if (stored.mode !== 'server') {
+      setPhase('local_only');
+      return;
+    }
+
+    void (async () => {
+      const live = await getAnonSession({ session_id: stored.id });
+      if (live.kind === 'ok') {
+        setSessionVersion(live.data.version);
+        return;
+      }
+      setPhase(live.kind === 'not_deployed' ? 'local_only' : 'empty');
+    })();
   }, [isAuthenticated, isLoading, navigate]);
 
   const claim = useCallback(async () => {
@@ -75,23 +105,15 @@ export function SiteOsClaimView() {
     setPhase('claiming');
     setError('');
     try {
-      const result = await buildSite({
-        tenant_id: activeTenantId,
-        prompt: session.prompt,
-        locale: 'de',
-        enrichment: session.brand ? { name: session.brand } : undefined,
-        refinements: refinementList(session),
-      });
+      const result = await claimAnonBuild({ tenant_id: activeTenantId, session_id: session.id });
       if (result.kind !== 'ok') throw new Error(errorMessage(result));
 
       setSlug(result.data.slug);
-      // Erst nach bestätigter Persistenz löschen. Andernfalls wäre der
-      // Entwurf bei einem Fehler auf beiden Seiten weg.
+      setAlreadyClaimed(result.data.already_claimed);
+      // Erst nach bestätigter Übernahme löschen. Andernfalls wäre die
+      // Kennung bei einem Fehler auf beiden Seiten weg.
       clearBuildSession();
 
-      // Bewertung anschließen. Sie darf die Übernahme nicht gefährden —
-      // die Site gehört dem Mandanten ab dem erfolgreichen Build, nicht
-      // ab einer bestandenen Prüfung.
       const blueprintId = result.data.blueprint_id;
       if (blueprintId) {
         setPhase('evaluating');
@@ -107,8 +129,6 @@ export function SiteOsClaimView() {
         } else {
           setGateNote(`Die Freigabeprüfung konnte nicht durchgeführt werden: ${errorMessage(gate)}`);
         }
-      } else {
-        setGateNote('Diese Beschreibung ergab denselben Stand wie zuvor — es wurde keine neue Version angelegt und daher nichts neu bewertet.');
       }
 
       setPhase('done');
@@ -142,6 +162,32 @@ export function SiteOsClaimView() {
     );
   }
 
+  if (phase === 'local_only') {
+    return (
+      <Shell>
+        <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-amber-700 px-3 py-1 text-xs text-amber-400">
+          <AlertTriangle size={13} /> Noch nicht übernehmbar
+        </div>
+        <h1 className="text-2xl font-bold">Dieser Entwurf liegt nur in Ihrem Browser</h1>
+        <p className="mt-3 text-sm leading-6 text-titanium-400">
+          Er wurde erzeugt, während der Dienst für gespeicherte Entwürfe noch nicht erreichbar war.
+          Ansehen und Ändern funktioniert, Übernehmen noch nicht — dafür muss der Entwurf
+          serverseitig liegen.
+        </p>
+        <p className="mt-3 text-sm leading-6 text-titanium-400">
+          Erzeugen Sie ihn erneut, sobald der Dienst läuft. Ihre Beschreibung bleibt erhalten.
+        </p>
+        <button
+          type="button"
+          onClick={() => navigate('/build')}
+          className="mt-6 inline-flex items-center gap-2 rounded-lg bg-petrol-600 px-5 py-3 text-sm font-semibold text-white hover:bg-petrol-700"
+        >
+          Zurück zur Vorschau <ArrowRight size={15} />
+        </button>
+      </Shell>
+    );
+  }
+
   if (phase === 'done') {
     return (
       <Shell>
@@ -150,8 +196,9 @@ export function SiteOsClaimView() {
         </div>
         <h1 className="text-2xl font-bold">Die Website gehört jetzt Ihrem Workspace</h1>
         <p className="mt-3 text-sm leading-6 text-titanium-400">
-          Der Entwurf <span className="font-mono text-titanium-200">{slug}</span> ist als Version 1
-          gespeichert, kanonisch gehasht und im Prüfpfad vermerkt.
+          Der Entwurf <span className="font-mono text-titanium-200">{slug}</span> ist gespeichert,
+          kanonisch gehasht und im Prüfpfad vermerkt.
+          {alreadyClaimed && ' Er war bereits übernommen — Sie sehen dieselbe Website, keine zweite.'}
         </p>
 
         {evaluation && <GateResult evaluation={evaluation} />}
@@ -177,22 +224,17 @@ export function SiteOsClaimView() {
     <Shell>
       <h1 className="text-2xl font-bold">Website übernehmen</h1>
       <p className="mt-3 text-sm leading-6 text-titanium-400">
-        Ihr Entwurf wird Ihrem Workspace zugeordnet, versioniert und geprüft. Dabei werden Ihre
-        Beschreibung und Ihre {session.steps.length} Änderung{session.steps.length === 1 ? '' : 'en'}
-        {' '}erneut ausgeführt — das Ergebnis entspricht dem, was Sie in der Vorschau gesehen haben.
+        Ihr Entwurf wird Ihrem Workspace zugeordnet, versioniert und geprüft. Übernommen wird
+        genau der Stand aus der Vorschau — er wird verschoben, nicht neu erzeugt.
       </p>
 
       <div className="mt-6 rounded-xl border border-titanium-800 p-4">
         <div className="text-[10px] font-bold uppercase tracking-[.16em] text-titanium-500">Beschreibung</div>
         <p className="mt-2 text-sm leading-6 text-titanium-300">{session.prompt}</p>
-        {session.steps.length > 0 && (
-          <>
-            <div className="mt-4 text-[10px] font-bold uppercase tracking-[.16em] text-titanium-500">Änderungen</div>
-            <ul className="mt-2 space-y-1 text-xs text-titanium-400">
-              {session.steps.map((step) => <li key={step.at}>· {step.instruction}</li>)}
-            </ul>
-          </>
-        )}
+        <div className="mt-4 font-mono text-[10px] text-titanium-600">
+          Entwurf {session.id.slice(0, 8)}
+          {sessionVersion !== null && ` · Fassung ${sessionVersion}`}
+        </div>
       </div>
 
       {!activeTenantId && (

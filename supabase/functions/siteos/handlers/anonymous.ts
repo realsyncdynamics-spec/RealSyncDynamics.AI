@@ -2,6 +2,7 @@
 //
 //   POST /functions/v1/siteos/build-anon    Beschreibung → Blueprint, ohne Konto
 //   POST /functions/v1/siteos/refine-anon   Anweisung → neue Version, ohne Konto
+//   POST /functions/v1/siteos/session       Sitzung lesen, ohne Konto
 //   POST /functions/v1/siteos/claim         Sitzung → Mandant, mit Konto
 //
 // ## Warum der Blueprint hier serverseitig entsteht
@@ -223,6 +224,64 @@ export async function handleRefineAnon(req: Request): Promise<Response> {
     content_sha256: contentSha,
     blueprint: step.blueprint, findings, scores,
     changes: step.changes, refusals: step.refusals, understood: step.understood,
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Schritt 2 — Sitzung lesen
+// ─────────────────────────────────────────────────────────────────────
+
+/**
+ * Liefert den aktuellen Stand einer Sitzung.
+ *
+ * Nötig für den Neuladen-Fall: Ohne Lesepfad müsste der Browser seine
+ * eigene Kopie anzeigen — und die kann von dem abweichen, was der Claim
+ * übernimmt. Genau diese Abweichung soll der serverseitige Entwurf
+ * beseitigen; ein clientseitiger Zwischenspeicher als Anzeigequelle würde
+ * sie wieder einführen.
+ *
+ * Ohne Konto, weil die Sitzungskennung selbst das Zugriffsmittel ist (128
+ * Bit, siehe Migration 20260822180000). Sie steht in keiner Antwort, die
+ * jemand anders bekommt.
+ *
+ * Bewusst **ohne** Rate-Limit und ohne Prüfpfad-Eintrag: Lesen erzeugt
+ * nichts, verbraucht kein Modell und ändert nichts. Ein Zähler darauf würde
+ * das Neuladen der eigenen Vorschau bestrafen.
+ */
+export async function handleGetSession(req: Request): Promise<Response> {
+  const pre = handleOptions(req);
+  if (pre) return pre;
+  if (req.method !== 'POST') return methodNotAllowed();
+
+  let body: Record<string, unknown>;
+  try { body = await req.json(); } catch { return jsonError(400, 'BAD_REQUEST', 'invalid json'); }
+
+  const sessionId = String(body.session_id ?? '').trim();
+  if (!sessionId) return jsonError(400, 'BAD_REQUEST', 'session_id required');
+
+  const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
+  const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+  const admin: AdminClient = createClient(SUPABASE_URL, SERVICE_ROLE, { auth: { persistSession: false } });
+
+  const session = await loadSession(admin, sessionId);
+  // „Nicht gefunden" und „abgelaufen" antworten unterschiedlich, weil der
+  // Unterschied für den Besucher zählt: Im einen Fall hilft die Kennung
+  // nicht mehr, im anderen ist die Frist abgelaufen und er weiss, warum.
+  if (session === null) return jsonError(404, 'NOT_FOUND', 'build session not found');
+  if (isExpired(session)) return jsonError(410, 'GONE', 'build session expired');
+
+  return jsonResponse({
+    ok: true,
+    session_id: session.row.id,
+    version: session.row.version,
+    slug: session.row.slug,
+    content_sha256: session.row.content_sha256,
+    blueprint: session.row.blueprint,
+    findings: session.row.findings,
+    scores: session.row.scores,
+    expires_at: session.row.expires_at,
+    claimed: session.claimed_at_set,
+    claimed_blueprint_id: session.row.claimed_blueprint_id,
   });
 }
 

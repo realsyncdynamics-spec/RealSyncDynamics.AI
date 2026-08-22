@@ -3,7 +3,7 @@
  *
  * ## Warum das geprüft wird
  *
- * Der Router fasst neun Endpunkte in einem Function-Slot zusammen — der
+ * Der Router fasst zehn Endpunkte in einem Function-Slot zusammen — der
  * einzige Grund, warum SiteOS unter dem Free-Plan-Limit überhaupt eine
  * Chance auf Produktion hat (`src/config/production-edge-functions.ts`).
  * Löst er einen Pfad falsch auf, ist der Preis nicht ein Tippfehler, sondern
@@ -29,7 +29,7 @@ import { resolveEndpoint, ROUTER_SLUG } from '../../supabase/functions/siteos/re
 const ENDPOINTS = [
   'agents', 'builder', 'discover', 'runtime-scan',
   'publish-approve', 'publish-gate',
-  'build-anon', 'refine-anon', 'claim',
+  'build-anon', 'refine-anon', 'session', 'claim',
 ];
 
 /**
@@ -57,6 +57,7 @@ const HANDLER_FILES: Readonly<Record<string, string>> = Object.freeze({
   // und Ablaufregel. Getrennte Dateien hiessen drei Kopien davon.
   'build-anon': 'anonymous',
   'refine-anon': 'anonymous',
+  'session': 'anonymous',
   'claim': 'anonymous',
 });
 

@@ -3,7 +3,7 @@
  *
  * ## Warum das geprüft wird
  *
- * Der Router fasst sechs Endpunkte in einem Function-Slot zusammen — der
+ * Der Router fasst neun Endpunkte in einem Function-Slot zusammen — der
  * einzige Grund, warum SiteOS unter dem Free-Plan-Limit überhaupt eine
  * Chance auf Produktion hat (`src/config/production-edge-functions.ts`).
  * Löst er einen Pfad falsch auf, ist der Preis nicht ein Tippfehler, sondern
@@ -26,7 +26,11 @@ import { describe, expect, it } from 'vitest';
 import { resolveEndpoint, ROUTER_SLUG } from '../../supabase/functions/siteos/resolve';
 
 /** Muss mit der Route-Map in supabase/functions/siteos/index.ts übereinstimmen. */
-const ENDPOINTS = ['agents', 'builder', 'discover', 'publish-approve', 'publish-gate', 'runtime-scan'];
+const ENDPOINTS = [
+  'agents', 'builder', 'discover', 'runtime-scan',
+  'publish-approve', 'publish-gate',
+  'build-anon', 'refine-anon', 'claim',
+];
 
 /**
  * Handler-Dateien. Nicht deckungsgleich mit `ENDPOINTS`, seit
@@ -49,6 +53,11 @@ const HANDLER_FILES: Readonly<Record<string, string>> = Object.freeze({
   'runtime-scan': 'runtime-scan',
   'publish-gate': 'publish-gate',
   'publish-approve': 'publish-gate',
+  // Bauen, verfeinern und uebernehmen teilen Sitzungsladen, Prüfpfad-Gate
+  // und Ablaufregel. Getrennte Dateien hiessen drei Kopien davon.
+  'build-anon': 'anonymous',
+  'refine-anon': 'anonymous',
+  'claim': 'anonymous',
 });
 
 describe('siteos Router — resolveEndpoint', () => {

@@ -308,9 +308,109 @@ Datenhaltung ohne Zweck (Art. 5 Abs. 1 lit. c DSGVO).
 
 ---
 
+## 5a. Anonymer Build-Flow (Prompt → Vorschau → Übernahme)
+
+Bis dahin war die Reihenfolge: Scan → Entscheidung → Konto → Builder. Der
+Account stand damit **vor** dem Ergebnis; was ein Besucher bis zur
+Registrierung sah, war ein Musterlayout. Die Reihenfolge ist umgedreht:
+
+```
+Beschreibung → Bau → vollständige Vorschau → (Konto) → Übernahme → Governance → Domain
+```
+
+Das Konto wird gebraucht, sobald jemand das Ergebnis **besitzen**,
+weiterbearbeiten oder veröffentlichen will — nicht, um es zu sehen.
+
+### Wo der Entwurf vor der Anmeldung liegt
+
+Im Browser, und zwar als **Prompt + Anweisungsfolge**, nicht als Blueprint
+(`src/features/siteos/buildSession.ts`).
+
+Ein anonymer Entwurf in der Datenbank hieße: eine Tabelle, die ohne
+Anmeldung beschreibbar ist — mit Rate-Limit, Aufbewahrungsfrist und
+Löschpflicht für Daten, die noch niemandem zugeordnet sind. Da der Kern
+deterministisch ist, genügen die paar hundert Zeichen, aus denen der
+Blueprint jederzeit wieder entsteht.
+
+Die Grenze davon ist real und wird in der Oberfläche benannt: Ein Entwurf
+überlebt keinen Gerätewechsel und kein privates Fenster.
+
+### Warum die Übernahme Anweisungen überträgt und keinen Blueprint
+
+`POST /functions/v1/siteos/builder` nimmt neben `prompt` ein Feld
+`refinements: string[]` und **spielt die Folge serverseitig nach**.
+
+Käme der Blueprint aus dem Browser, käme mit ihm das Compliance-Profil aus
+einer Quelle, die der Nutzer kontrolliert: Rechtsgrundlagen,
+Consent-Kategorien und der KI-Hinweis nach Art. 50 EU AI Act wären dann
+Client-Eingaben. Gleiche Eingabe ⇒ gleicher Blueprint ⇒ gleicher Hash —
+der Besucher sieht genau das, was persistiert wird, ohne dass ihm dabei
+vertraut werden muss. Die Anweisungsfolge selbst geht in den Prüfpfad; sie
+erklärt, warum dieser Blueprint von dem abweicht, den der Prompt allein
+ergäbe.
+
+### Verfeinerung statt Neubau
+
+`refineBlueprint(blueprint, anweisung)` (`blueprint/refine.ts`) ändert den
+**bestehenden** Blueprint. Der frühere Builder erzeugte bei jeder
+Kundenanweisung eine neue Site — damit war jede Änderung ein Glücksspiel
+gegen das vorherige Ergebnis.
+
+Die Verfeinerung ist deterministisch und modellfrei, aus demselben Grund wie
+`parseBrief`, nur schärfer: Sie verändert einen Blueprint, der bereits
+geprüft, gehasht und gezeigt wurde. Ein Modell darf davor sitzen und freie
+Sprache in diese Anweisungen übersetzen; es schreibt den Blueprint nicht.
+
+Zugesagt wird:
+
+- Jede strukturelle Änderung leitet das Compliance-Profil neu ab. Ein
+  nachgerüstetes Kontaktformular bringt seine Rechtsgrundlage mit, eine
+  Karte ihre Einwilligungskategorie.
+- Der KI-Hinweis ist nicht entfernbar — die Anweisung wird abgelehnt und
+  begründet, nicht stillschweigend ignoriert.
+- Eine nicht verstandene Anweisung wird als solche gemeldet
+  (`understood: false`), statt als unveränderte Vorschau durchzugehen.
+
+Derselbe Weg gilt für den Erstbau: `buildSiteFromPrompt` liest den Prompt
+zweimal — `parseBrief` für Branche und Compliance-Gerüst, `deriveRequests`
+für ausdrücklich genannte Bausteine („Terminbuchung", „Referenzen") und
+Stilangaben. Ein Prompt kann damit nichts erreichen, was ein Kunde später
+nicht auch sagen könnte.
+
+### Vorschau
+
+`renderSite(blueprint, { presentation: 'showcase' })` hängt eine **additive
+Layoutschicht** an (`render/presentation.ts`). Sie greift ausschließlich über
+die vorhandenen Block-IDs (`[id*="--hero--"]`); das Markup bleibt
+unangetastet, und der Default `minimal` bleibt byte-stabil — sonst änderte
+jede Gestaltungsentscheidung den Hash jedes Artefakts.
+
+Die Vorschau läuft in einem vollständig gesperrten `iframe` (`sandbox=""`):
+kein Skript, kein gemeinsamer Ursprung, kein Formularversand. Das erzeugte
+Dokument enthält ohnehin kein Skript — die Vorschau verlässt sich nicht
+darauf, dass das so bleibt.
+
+### Was der Flow **nicht** tut
+
+Kein Domain-Anschluss, keine Veröffentlichung, kein Deployment. Beides
+gehört hinter Übernahme und Publish Gate (§6 und
+`docs/architecture/target-architecture.md`) — und wird in der Oberfläche
+auch nicht versprochen.
+
+### Einstiegspunkte
+
+| Route | Zweck |
+| --- | --- |
+| `/build` | Build Studio: Beschreibung → Website → Vorschau → Ändern (ohne Konto) |
+| `/builder`, `/app/bauen`, `/unified-entry` | Weiterleitung auf `/build` |
+| `/unified-entry/scan` | URL-Analyse einer bestehenden Website — zweiter Weg, vom Studio verlinkt |
+| `/app/siteos/claim` | Übernahme des Entwurfs in den Workspace |
+
+---
+
 ## 6. Stand und Grenzen
 
-**Umgesetzt**: Domänenkern mit 155 Tests, AI Builder (Prompt → geprüfter
+**Umgesetzt**: Domänenkern mit 181 Tests, AI Builder (Prompt → geprüfter
 Blueprint), Renderer (Blueprint → HTML, gegen die Live-Analyse abgesichert),
 acht Runtime-Analysen, fünf Kennzahlen, sieben Agenten mit deterministischer
 Behebung, Datenmodell mit RLS, drei Edge Functions, Dashboard unter
@@ -332,8 +432,10 @@ Behebung, Datenmodell mit RLS, drei Edge Functions, Dashboard unter
   `data-legal-document`-Attribut. Der Text selbst kommt zur Build-Zeit aus
   dem Legal-Modul (`scripts/generate-static-legal-pages.mjs`) — der
   Renderer erfindet keinen Rechtstext.
-- **Keine Komponentenbibliothek.** Das Stylesheet deckt Grundgestaltung ab
-  (Kontrast, Zeilenlänge, Fokus, Sprungmarke); Layout-Varianten je Block
+- **Keine Komponentenbibliothek.** Das Kern-Stylesheet deckt Grundgestaltung
+  ab (Kontrast, Zeilenlänge, Fokus, Sprungmarke). Die Layoutschicht aus
+  §5a (`presentation: 'showcase'`) ergänzt Raster, Karten und Formulare —
+  aber weiterhin genau **eine** Variante je Blocktyp. Alternativen je Block
   fehlen.
 - Visueller Drag-&-Drop-Editor (React Flow)
 - Mehrsprachigkeit über die Modellebene hinaus (`locales` ist vorbereitet,
@@ -349,7 +451,7 @@ Behebung, Datenmodell mit RLS, drei Edge Functions, Dashboard unter
 
 ```bash
 npm run lint                     # tsc --noEmit
-npx vitest run test/siteos/      # 155 Tests des Kerns
+npx vitest run test/siteos/      # 181 Tests des Kerns
 supabase db push                 # Migration
 supabase functions deploy siteos            # ein Slot, vier Endpunkte
 ```

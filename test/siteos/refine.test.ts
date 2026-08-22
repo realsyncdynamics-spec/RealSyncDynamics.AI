@@ -10,6 +10,7 @@ import {
   analyzeObservation,
   buildSiteFromPrompt,
   deriveRequests,
+  mergeBrief,
   parseBrief,
   refineBlueprint,
   renderSite,
@@ -271,5 +272,27 @@ describe('Prompt-Wünsche im Erstbau', () => {
     const a = await buildSiteFromPrompt(prompt, { model: null });
     const b = await buildSiteFromPrompt(prompt, { model: null });
     expect(a.blueprintSha256).toBe(b.blueprintSha256);
+  });
+});
+
+describe('mergeBrief — Namensübernahme', () => {
+  it('zieht den Firmennamen in die Zusammenfassung nach', () => {
+    const base = parseBrief('Architekturbüro in Leipzig.');
+    const merged = mergeBrief(base, { name: 'Studio Vogt Architekten' });
+
+    // Vorher stand hier „Agentur in Leipzig — …" unter der Überschrift
+    // „Studio Vogt Architekten".
+    expect(merged.summary.startsWith('Studio Vogt Architekten in Leipzig')).toBe(true);
+  });
+
+  it('lässt eine vom Modell gelieferte Zusammenfassung unangetastet', () => {
+    const base = parseBrief('Architekturbüro in Leipzig.');
+    const merged = mergeBrief(base, { name: 'Studio Vogt', summary: 'Wir planen Räume, die halten.' });
+    expect(merged.summary).toBe('Wir planen Räume, die halten.');
+  });
+
+  it('ändert nichts, wenn kein Name geliefert wurde', () => {
+    const base = parseBrief('Architekturbüro in Leipzig.');
+    expect(mergeBrief(base, {}).summary).toBe(base.summary);
   });
 });

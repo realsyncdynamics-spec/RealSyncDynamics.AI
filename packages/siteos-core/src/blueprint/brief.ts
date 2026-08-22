@@ -124,16 +124,37 @@ export function parseBrief(prompt: string, locale: Locale = 'de'): SiteBrief {
  */
 export function mergeBrief(base: SiteBrief, enrichment: BriefEnrichment): SiteBrief {
   const services = enrichment.services?.map((s) => s.trim()).filter((s) => s.length > 0);
+  const name = enrichment.name?.trim() || base.name;
 
   return {
     ...base,
-    name: enrichment.name?.trim() || base.name,
-    summary: enrichment.summary?.trim() || base.summary,
+    name,
+    summary: enrichment.summary?.trim() || renameInSummary(base, name),
     services: services && services.length > 0 ? services.slice(0, 12) : base.services,
     // `null` ist eine gültige Korrektur („kein Ort erkennbar"), `undefined`
     // heißt „keine Aussage" — nur dann bleibt der Basiswert stehen.
     locality: enrichment.locality === undefined ? base.locality : enrichment.locality,
   };
+}
+
+/**
+ * Zieht einen neuen Namen in die Zusammenfassung nach.
+ *
+ * Ohne das steht im Hero „Studio Vogt Architekten" und direkt darunter
+ * „Agentur in Leipzig — …": Die Kurzbeschreibung stammt aus dem
+ * Branchen-Preset und trüge weiterhin den Katalogbegriff. Sie landet als
+ * Meta-Description und als Hero-Unterzeile im ausgelieferten Dokument — der
+ * Widerspruch wäre also sichtbar und indexiert.
+ *
+ * Ersetzt wird ausschließlich der führende Katalogbegriff. Eine
+ * Zusammenfassung, die anders beginnt (weil ein Modell sie geliefert hat),
+ * bleibt unangetastet.
+ */
+function renameInSummary(base: SiteBrief, name: string): string {
+  if (name === base.name) return base.summary;
+
+  const label = INDUSTRY_PRESETS[base.industry].label.split(' / ')[0];
+  return base.summary.startsWith(label) ? name + base.summary.slice(label.length) : base.summary;
 }
 
 const SERVICE_DEFAULTS: Readonly<Partial<Record<IndustryKey, string[]>>> = Object.freeze({

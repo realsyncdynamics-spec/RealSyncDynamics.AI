@@ -410,7 +410,7 @@ auch nicht versprochen.
 
 ## 6. Stand und Grenzen
 
-**Umgesetzt**: Domänenkern mit 181 Tests, AI Builder (Prompt → geprüfter
+**Umgesetzt**: Domänenkern mit 184 Tests, AI Builder (Prompt → geprüfter
 Blueprint), Renderer (Blueprint → HTML, gegen die Live-Analyse abgesichert),
 acht Runtime-Analysen, fünf Kennzahlen, sieben Agenten mit deterministischer
 Behebung, Datenmodell mit RLS, drei Edge Functions, Dashboard unter
@@ -451,7 +451,7 @@ Behebung, Datenmodell mit RLS, drei Edge Functions, Dashboard unter
 
 ```bash
 npm run lint                     # tsc --noEmit
-npx vitest run test/siteos/      # 181 Tests des Kerns
+npx vitest run test/siteos/      # 184 Tests des Kerns
 supabase db push                 # Migration
 supabase functions deploy siteos            # ein Slot, vier Endpunkte
 ```

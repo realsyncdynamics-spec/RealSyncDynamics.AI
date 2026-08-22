@@ -162,13 +162,13 @@ existieren bereits, brauchen aber ein Gegenstück für Sitzungen ohne Mandant.
 | # | Schritt | Vorbedingung |
 |---|---|---|
 | S1 | Vorschau-Isolierung: Sandbox + CSP (§3) | **umgesetzt** — siehe unten |
-| S2 | Anonyme Build-Session mit Gate, Kontingent und Verfall | **umgesetzt** — `siteos-anon` |
-| S3 | Erzeugung für Sitzungen ohne Tenant | **umgesetzt** — eigene Function statt Router-Öffnung |
+| S2 | Anonyme Build-Session mit Gate, Kontingent und Verfall | S1 |
+| S3 | `siteos/builder` für Sitzungen ohne Tenant öffnen | S2 |
 | S4 | Interaktive Preview (Skripte laufen, aber isoliert) | S1 |
-| S5 | Iteratives Nachbessern auf versionierten Blueprints | **umgesetzt** — siehe unten |
-| S6 | Project Claim: Entwurf → Tenant, verlustfrei | **umgesetzt** — `siteos/claim` |
+| S5 | Iteratives Nachbessern auf versionierten Blueprints | S3 |
+| S6 | Project Claim: Entwurf → Tenant, verlustfrei | S3 |
 | S7 | Governance-Lauf auf dem übernommenen Projekt | S6 |
-| S8 | **Publish Gate** | **umgesetzt** — vor dem ersten Publish-Pfad |
+| S8 | **Publish Gate** | S7 |
 | S9 | Publish + eigene Domain | S8 |
 | S10 | Entitlements und Verbrauchsabrechnung | S9 |
 
@@ -209,98 +209,6 @@ sicher ist — und eine unsichere Vorschau lässt sich später nicht nachträgli
 absichern, ohne sie neu zu bauen.
 
 Der Publish Gate bleibt vor dem ersten Publish-Pfad (`CLAUDE.md` §14).
-
-### S5 — Iteration umgesetzt (Stand 2026-08-22)
-
-`POST /functions/v1/siteos-anon/iterate` mit `{ draft_key, instruction }`.
-
-Der Kern liegt in `packages/siteos-core/src/blueprint/edit.ts` (Anwenden) und
-`edit-intent.ts` (Freitext deuten). Beides ist rein: kein Modellaufruf, keine
-Uhr, kein Zufall — gleicher Blueprint plus gleiche Anweisung ergibt denselben
-Hash.
-
-**Die Regel, an der alles hängt:** Es wird nicht neu gebaut. `iterate.ts`
-importiert `parseBrief` und `synthesizeBlueprint` nicht — dieselbe Trennung
-wie im Claim-Handler. Was nicht importiert ist, kann nicht versehentlich
-aufgerufen werden. `test/siteos/iteration-claim-chain.test.ts` prüft
-zusätzlich, dass eine Neuerzeugung aus demselben Prompt einen **anderen** Hash
-ergäbe; der Test schlägt fehl, sobald jemand die Iteration umstellt.
-
-#### Was die Runtime ausführen kann — und nur das
-
-| Anweisung | Wirkung im Blueprint | sichtbar durch |
-|---|---|---|
-| „Mach den Hero grösser" | `hero.content.emphasis` | `data-emphasis` + zwei CSS-Regeln |
-| „Überschrift: …" / „Untertitel: …" | `hero.content.headline` / `.subline` | Text |
-| „Name: …" | `name`, `seo`, Navigation — **nicht** `slug` | Text |
-| „Mach die Akzentfarbe grün" | `theme.accent` | `--accent` |
-| „Mach die Seite heller" | `theme.mode` **und** `surface`/`foreground` | `--surface` |
-| „Mach die Ecken runder" | `theme.radiusPx` | `--radius` |
-| „Entferne die Team-Sektion" | Block entfernt, Compliance neu berechnet | Markup |
-| „Füge das Team wieder hinzu" | Block aus der Synthese zurückgeholt | Markup |
-
-Alles andere wird **abgelehnt und benannt** (`422 INTENT_UNSUPPORTED`), mit
-`EDIT_CAPABILITIES` als Antwort. Es wird nicht genähert: Eine geratene
-Änderung landet sonst in einer Fassung, die der Besucher anschliessend
-übernimmt.
-
-Zwei Entscheidungen, die dahinter stehen:
-
-- **`theme.mode` allein wäre eine Attrappe.** Das Stylesheet liest Flächen-
-  und Textfarbe, nicht den Modus. „Heller" führt deshalb beide mit — sonst
-  gäbe es einen neuen Hash bei unveränderter Ansicht.
-- **Der Hero brauchte Renderer-Unterstützung.** „Grösser" liess sich vorher
-  nicht ausführen; das Attribut und die beiden CSS-Regeln sind dafür
-  hinzugekommen. Ohne `emphasis` erscheint kein Attribut, das Markup
-  bestehender Blueprints ändert sich also nicht. Die zwei CSS-Regeln stehen
-  dagegen ab jetzt in jedem Stylesheet — ein neu gerendertes Artefakt hat
-  deshalb einen anderen Hash als vor dieser Änderung. Gespeicherte Artefakte
-  und ihre Bewertungen bleiben gültig; eine alte Bewertung deckt ein neues
-  Artefakt schlicht nicht ab, was `evaluationCoversArtifact` bereits abfängt.
-
-#### Was nicht entfernt werden kann
-
-`PROTECTED_BLOCK_KINDS` = `navigation`, `footer`, `legal-text`,
-`ai-disclosure`. Der KI-Hinweis nach Art. 50 EU AI Act und die
-Pflichtverlinkung auf Impressum und Datenschutzerklärung stehen im Blueprint,
-damit sie niemand wegklickt — für die Erzeugung sagt das der Kommentar in
-`synthesize.ts`, für die Änderung gilt es hier.
-
-Ein zu schwacher Farbkontrast wird dagegen **zugelassen**. Er ist kein
-ungültiger Wert, sondern ein Befund: Die Barrierefreiheits-Analyse erhebt ihn,
-der Publish Gate wertet ihn. Ihn hier abzulehnen hiesse, ihn zu verstecken.
-
-#### Fassungskette
-
-Migration `20260827000000_siteos_draft_revisions.sql`:
-`siteos_anonymous_draft_revisions` hält je Fassung Hash, Vorgänger-Hash und
-Operation. Append-only, Deny-by-default-RLS wie die Elterntabelle,
-`ON DELETE CASCADE` — verfällt der Entwurf, verfällt die Kette mit ihm.
-
-Gespeichert wird der **Hash** der Anweisung, nie ihr Wortlaut. Dieselbe Regel
-wie beim ursprünglichen Prompt: Wer kein Konto hat, hat in keine Speicherung
-seiner Formulierungen eingewilligt (DSGVO Art. 5 Abs. 1 lit. c).
-
-`UNIQUE (draft_id, revision)` ist zugleich die **Sperre** gegen gleichzeitige
-Änderungen — bewusst der Eintrag im Prüfpfad und nicht die Aktualisierung des
-Entwurfs: Wer die Kette nicht schreiben konnte, hat die Fassung nicht erzeugt
-und darf sie deshalb auch nicht ablegen. Gegen echtes PostgreSQL geprüft:
-Von zwei gleichzeitigen Änderungen gewinnt genau eine, der Verlierer bekommt
-`23505`; das bedingte `UPDATE` des Verlierers trifft 0 Zeilen; ein
-übernommener Entwurf lässt sich gar nicht mehr ändern.
-
-#### Grenzen, die bewusst so stehen
-
-- Die Vorschau behält **dieselbe Kennung** über alle Fassungen. Eine neue
-  Adresse je Änderung bräche jeden geteilten Link.
-- Die Verfallszeit wird durch eine Änderung **nicht verlängert**. Sonst hielte
-  sich ein Entwurf durch Betrieb beliebig lange am Leben.
-- Höchstens `ANON_DRAFT_MAX_REVISIONS` (60) Fassungen je Entwurf. Die Grenze
-  hängt am Entwurf, nicht an der Herkunft, und ist damit nicht durch einen
-  Adresswechsel zu umgehen.
-- `block.add` holt praktisch nur zurück, was vorher entfernt wurde: Die
-  Branchen-Presets bringen ihre Abschnitte vollständig mit. Die Beschriftung
-  in `EDIT_CAPABILITIES` sagt das auch so.
 
 ---
 

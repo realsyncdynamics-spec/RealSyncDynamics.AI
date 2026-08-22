@@ -141,16 +141,6 @@ export function renderThemeCss(theme: Partial<SiteTheme> | undefined): string {
     '[data-placeholder]{background:color-mix(in srgb,var(--foreground) 12%,transparent);',
     'aspect-ratio:16/9;border-radius:var(--radius);}',
     '[data-consent-required]{border:1px dashed var(--foreground);padding:1rem;border-radius:var(--radius);}',
-    // Betonung des Titelbereichs. Die Werte stammen nie aus dem Blueprint,
-    // sondern aus der festen Liste in `heroEmphasis` — hier stehen deshalb
-    // nur zwei Regeln und keine berechneten Groessen.
-    // `clamp` haelt die Schrift auf kleinen Geraeten lesbar, statt eine feste
-    // Groesse zu erzwingen, die dort ueberlaeuft (WCAG 1.4.4).
-    '[data-emphasis="large"]{padding:2.5rem 0;}',
-    '[data-emphasis="large"] h1,[data-emphasis="large"] h2{font-size:clamp(2rem,6vw,3.25rem);}',
-    '[data-emphasis="large"] p{font-size:clamp(1.05rem,2.2vw,1.35rem);}',
-    '[data-emphasis="compact"]{padding:.5rem 0;}',
-    '[data-emphasis="compact"] h1,[data-emphasis="compact"] h2{font-size:clamp(1.25rem,3vw,1.75rem);}',
     // Bewegung nur, wenn der Nutzer sie nicht abbestellt hat (WCAG 2.3.3).
     '@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;}}',
   ].join('');

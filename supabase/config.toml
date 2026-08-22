@@ -112,20 +112,6 @@ verify_jwt = false
 [functions.health]
 verify_jwt = false
 
-# siteos-anon — Website erzeugen, bevor es ein Konto gibt.
-#
-# Bewusst eine eigene Function und NICHT der Router `siteos`: Der hat keinen
-# Eintrag hier, gilt also als verify_jwt = true. Ihn zu oeffnen wuerde die
-# Plattform-Absicherung fuer vier bestehende, angemeldete Endpunkte entfernen,
-# nur damit ein fuenfter offen sein kann.
-#
-# Der Endpunkt schuetzt sich selbst: Sicherheits-Gate ueber anon_chat_runs
-# (ohne Pruefpfad-Eintrag keine Arbeit), Kontingent im Speicher gegen schnelle
-# Wiederholungen und in der Datenbank gegen Kaltstart-Umgehung. Der erzeugte
-# Entwurf hat keinen Mandanten und verfaellt nach sieben Tagen.
-[functions.siteos-anon]
-verify_jwt = false
-
 [functions.cookie-scan]
 verify_jwt = false
 

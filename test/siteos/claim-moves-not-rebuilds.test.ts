@@ -48,11 +48,28 @@ describe('Claim verschiebt, statt neu zu bauen', () => {
 
   it('übernimmt Blueprint und Hash unverändert aus der Sitzung', () => {
     const body = claimBody();
-    // Der Hash wird NICHT neu berechnet — er wird mitgenommen. Eine
-    // Neuberechnung wäre für sich harmlos, aber sie verdeckte, dass der
-    // Blueprint aus einer anderen Quelle stammen könnte.
+    // Der gespeicherte Hash wird mitgenommen, nicht ersetzt: Was in den
+    // Mandanten wandert, trägt denselben Nachweis wie die Vorschau.
     expect(body).toContain('content_sha256: session.row.content_sha256');
-    expect(body).not.toContain('await canonicalHash');
+    // Und es wird nichts erzeugt, aus dem sich ein anderer Hash ergäbe.
+    expect(body).not.toContain('synthesizeBlueprint');
+    expect(body).not.toContain('parseBrief');
+  });
+
+  it('rechnet den gespeicherten Hash vor der Übernahme nach', () => {
+    // Frühere Fassung dieser Datei verbot `await canonicalHash` im
+    // Claim-Rumpf — als Stellvertreter für „baut nicht neu". Der
+    // Stellvertreter war zu grob: Hashen ist nicht Bauen. Ohne die
+    // Nachrechnung wurden Blueprint und Hash nebeneinander kopiert, ohne
+    // dass je geprüft wurde, ob sie zusammengehören — die Zusage „genau
+    // diese Fassung" war damit unbelegt.
+    //
+    // Was „baut nicht neu" wirklich heisst, prüft der Test darüber und der
+    // erste in dieser Datei: keine Synthese, keine Verfeinerung.
+    const body = claimBody();
+    expect(body).toContain('const verifiedSha = await canonicalHash(blueprint)');
+    expect(body).toContain("verifiedSha !== session.row.content_sha256");
+    expect(body).toContain('DRAFT_CORRUPT');
   });
 
   it('schreibt den Hash der Vorschau in den Prüfpfad', () => {

@@ -361,6 +361,28 @@ export async function handleClaim(req: Request): Promise<Response> {
     const nowIso = new Date().toISOString();
     const blueprint = session.row.blueprint;
 
+    // Unversehrtheit vor der Uebernahme.
+    //
+    // Die Zusage des Claims lautet „genau diese Fassung". Nachgerechnet wurde
+    // sie bisher nicht: Blueprint und gespeicherter Hash wurden nebeneinander
+    // kopiert, ohne zu pruefen, dass sie zusammengehoeren. Der Blueprint macht
+    // dazwischen einen Umlauf durch JSONB — passte die Kanonisierung nicht,
+    // faellt das sonst nirgends auf, sondern erst einem Pruefer, der die
+    // Kette nachrechnet.
+    //
+    // Schreiben kann diese Zeile nur service_role, das Risiko ist also klein.
+    // Der Aufwand ist aber genauso klein, und eine Nachweiskette, die man
+    // nicht prueft, ist eine Behauptung.
+    const verifiedSha = await canonicalHash(blueprint);
+    if (verifiedSha !== session.row.content_sha256) {
+      console.error(JSON.stringify({
+        level: 'error', scope: 'siteos_claim_integrity_mismatch',
+        session_id: sessionId, stored: session.row.content_sha256, computed: verifiedSha,
+      }));
+      return jsonError(409, 'DRAFT_CORRUPT',
+        'Der Entwurf stimmt nicht mehr mit seinem Nachweis ueberein und wird nicht uebernommen.');
+    }
+
     const { data: previous } = await admin
       .from('siteos_blueprints').select('version, content_sha256')
       .eq('tenant_id', tenantId).eq('slug', session.row.slug)

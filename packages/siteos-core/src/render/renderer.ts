@@ -147,10 +147,13 @@ function renderBlock(blueprint: SiteBlueprint, block: SiteBlock, state: RenderSt
       const ctaHref = cta ? safeUrl(cta.href) : null;
 
       // `data-emphasis` steuert die Höhe des Heroes in der Layoutschicht.
+      // Der Wert stammt aus einer festen Liste, nicht aus dem Blueprint:
+      // Er landet als Attribut im ausgelieferten HTML, und was dort landet,
+      // wird nicht durchgereicht.
       // Fehlt es (Default), ist die Ausgabe unverändert — das Attribut wird
       // nur gesetzt, wenn der Blueprint es tatsächlich führt.
       return [
-        `<section id="${id}"${attr('data-emphasis', content.emphasis)}>`,
+        `<section id="${id}"${attr('data-emphasis', heroEmphasis(content.emphasis))}>`,
         `<${heading}>${escapeHtml(content.headline ?? blueprint.name)}</${heading}>`,
         content.subline ? `<p>${escapeHtml(content.subline)}</p>` : '',
         // Platzhalter statt <img src>: es gibt noch kein Bild mit geklärter
@@ -423,4 +426,14 @@ const LEGAL_HEADINGS: Readonly<Record<string, string>> = Object.freeze({
 
 function legalHeading(ref: unknown): string {
   return LEGAL_HEADINGS[String(ref)] ?? 'Rechtliche Hinweise';
+}
+
+/**
+ * Prüft die Betonung des Titelbereichs gegen die erlaubten Werte.
+ *
+ * `undefined` heisst „kein Attribut" — damit bleibt das Markup jedes
+ * Blueprints ohne Angabe unverändert.
+ */
+function heroEmphasis(value: unknown): string | undefined {
+  return value === 'tall' || value === 'compact' ? value : undefined;
 }

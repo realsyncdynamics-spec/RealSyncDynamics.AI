@@ -36,10 +36,12 @@
 // nachzurechnen: Zwei Ableitungswege driften, und im Zweifel gewinnt der
 // falsche. Hier steht deshalb kein `&&` über den Contract-Feldern.
 //
-// Die Bewertung meldet `greenfield` — bei einer aus einer Beschreibung
-// gebauten Site gibt es beweisbar keine Vorgängerseite, an der etwas
-// verlorengehen könnte. Für eine Transformation wäre das falsch; dort
-// gehört der tatsächlich durchgeführte Vergleich in die Anfrage.
+// Die Backend-Lage schickt diese Ansicht nicht mit. Der Server leitet sie
+// aus `origin_source` ab — bei einer aus einer Beschreibung gebauten Site
+// gibt es beweisbar keine Vorgängerseite, an der etwas verlorengehen
+// könnte. Für eine Transformation gilt das nicht, und deshalb darf die
+// Feststellung nicht von hier kommen: Was der Client behauptet, prüft
+// niemand nach.
 
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -120,7 +122,6 @@ export function SiteOsClaimView() {
         const gate = await evaluatePublish({
           tenant_id: activeTenantId,
           blueprint_id: blueprintId,
-          backend: { kind: 'greenfield' },
         });
         if (gate.kind === 'ok') {
           setEvaluation(gate.data.evaluation);

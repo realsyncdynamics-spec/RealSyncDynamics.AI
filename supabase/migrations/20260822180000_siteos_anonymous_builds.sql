@@ -62,8 +62,9 @@ ALTER TABLE public.anon_chat_runs
 -- ============================================================
 
 CREATE TABLE IF NOT EXISTS public.siteos_anonymous_builds (
-  -- Zugleich die Sitzungskennung, die der Browser behaelt. 128 Bit aus
-  -- gen_random_uuid(): Wer sie hat, hat den Entwurf — sie ist damit ein
+  -- Zugleich die Sitzungskennung, die der Browser behaelt. Eine UUIDv4 aus
+  -- gen_random_uuid() traegt 122 Bit Zufall (sechs Bits sind Version und
+  -- Variante): Wer sie hat, hat den Entwurf — sie ist damit ein
   -- Zugriffsmittel und darf nicht ratbar sein.
   id                   UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 

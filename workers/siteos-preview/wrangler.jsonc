@@ -20,13 +20,16 @@
   "compatibility_date": "2026-06-23",
   "workers_dev": true,
 
-  // Die KV-Namespace-ID wird beim ersten Anlegen eingetragen
-  // (`wrangler kv namespace create PREVIEWS`). Bis dahin bleibt der Platzhalter
-  // stehen und der Deploy-Workflow überspringt sich selbst — ein Deploy gegen
-  // eine nicht existierende Ablage wäre ein Worker, der jede Vorschau als
-  // „nicht gefunden" beantwortet.
+  // Angelegt am 2026-08-22 als `siteos_previews`. Die Kennung ist kein
+  // Geheimnis — sie benennt die Ablage, sie öffnet sie nicht: Schreibzugriff
+  // hängt allein an `PREVIEW_WRITE_TOKEN`, und das steht als Secret nicht in
+  // dieser Datei.
+  //
+  // Der Deploy-Workflow prüfte bisher auf den Platzhalter und übersprang sich
+  // selbst; diese Bedingung ist damit erfüllt. Er bleibt an die Repo-Secrets
+  // CLOUDFLARE_API_TOKEN und CLOUDFLARE_ACCOUNT_ID gebunden.
   "kv_namespaces": [
-    { "binding": "PREVIEWS", "id": "PLACEHOLDER_SET_VIA_WRANGLER_KV_CREATE" }
+    { "binding": "PREVIEWS", "id": "f5a9a38844064d51b4aa68e91eba628c" }
   ],
 
   "observability": { "enabled": true }

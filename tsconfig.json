@@ -37,6 +37,7 @@
     "services/realsync-runtime-core",
     "services/realsync-evidence-runtime",
     "worker",
+    "workers",
     "apps/agent-runtime",
     "apps/mcp-server",
     "extension",

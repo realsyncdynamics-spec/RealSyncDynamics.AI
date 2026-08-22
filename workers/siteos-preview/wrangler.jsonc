@@ -1,0 +1,33 @@
+{
+  // Vorschau-Herkunft für SiteOS.
+  //
+  // Zweck dieses Workers ist Trennung: Er liefert erzeugte Vorschauen von
+  // einer anderen Registrierdomain als die Anwendung aus. Erst dadurch kann
+  // erzeugter Code niemals an den localStorage der Anwendung — dort liegt die
+  // Supabase-Sitzung.
+  //
+  // `workers_dev: true` ist Absicht und kein Provisorium: Die dabei vergebene
+  // Adresse `<name>.<account>.workers.dev` ist bereits eine eigene
+  // Registrierdomain und liefert die Trennung sofort, ohne DNS-Eintrag. Eine
+  // eigene Subdomain (preview.realsyncdynamicsai.de) kommt später als
+  // `routes`-Eintrag dazu; sie verbessert die Lesbarkeit, nicht die Sicherheit.
+  //
+  // Secrets stehen NICHT hier. `PREVIEW_WRITE_TOKEN` wird einmalig per
+  // `wrangler secret put PREVIEW_WRITE_TOKEN` gesetzt.
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "siteos-preview",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-06-23",
+  "workers_dev": true,
+
+  // Die KV-Namespace-ID wird beim ersten Anlegen eingetragen
+  // (`wrangler kv namespace create PREVIEWS`). Bis dahin bleibt der Platzhalter
+  // stehen und der Deploy-Workflow überspringt sich selbst — ein Deploy gegen
+  // eine nicht existierende Ablage wäre ein Worker, der jede Vorschau als
+  // „nicht gefunden" beantwortet.
+  "kv_namespaces": [
+    { "binding": "PREVIEWS", "id": "PLACEHOLDER_SET_VIA_WRANGLER_KV_CREATE" }
+  ],
+
+  "observability": { "enabled": true }
+}

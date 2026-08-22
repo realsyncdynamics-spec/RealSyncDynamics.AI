@@ -89,6 +89,7 @@ import { TrialOfferPage } from './unified-entry/pages/TrialOfferPage';
 import { RegisterPage } from './unified-entry/pages/RegisterPage';
 import { PostRegisterOnboardingPage } from './unified-entry/pages/PostRegisterOnboardingPage';
 import { SuccessPage } from './unified-entry/pages/SuccessPage';
+import { PathChoicePage } from './unified-entry/pages/PathChoicePage';
 // ── Geführter, seitenbasierter Flow (/flow/*) ──
 import { FlowProvider } from './flow/FlowContext';
 import { FlowStepRoute } from './flow/FlowStepRoute';
@@ -1095,6 +1096,14 @@ function RoutesWithTracking() {
         element={
           <UnifiedEntryShell currentStep={1} totalSteps={5}>
             <ScanEntryPage />
+          </UnifiedEntryShell>
+        }
+      />
+      <Route
+        path="/unified-entry/entscheidung"
+        element={
+          <UnifiedEntryShell currentStep={2} totalSteps={5}>
+            <PathChoicePage />
           </UnifiedEntryShell>
         }
       />

@@ -1028,6 +1028,359 @@ export const ADDONS: AddOn[] = [
 ];
 
 // ─────────────────────────────────────────────────────────────────────────
+//  Buchbare Module (modulare Product Experience)
+// ─────────────────────────────────────────────────────────────────────────
+
+/**
+ * Der Produktpfad, den ein Kunde nach dem kostenlosen Scan wählt.
+ *
+ * Der entscheidende Produktgrundsatz: **Compliance ist das Fundament,
+ * das Frontend ist optional.** Niemand darf gezwungen werden, seine
+ * bestehende Website umzubauen, um Governance nutzen zu können — und
+ * niemand verliert Governance, weil er beim alten Frontend bleibt.
+ *
+ * Deshalb sind das zwei getrennte Entscheidungen und kein Auf-/Abstieg:
+ *  - `keep_frontend`      — bestehendes Frontend bleibt unangetastet,
+ *                           RealSync liefert nur die Governance-Schicht
+ *                           (Scan, API, SDK, Snippet, Runtime-Anbindung).
+ *  - `modernize_frontend` — zusätzlich wird über SiteOS ein neues Frontend
+ *                           aus den vorhandenen Inhalten erzeugt.
+ *
+ * `modernize_frontend` ist eine **Ergänzung** von `keep_frontend`, kein
+ * Ersatz: der Governance-Umfang ist in beiden Pfaden identisch. Der Pfad
+ * ist jederzeit wechselbar und darf nirgendwo als Berechtigung dienen —
+ * dafür gibt es `hasModule()` / `hasPermission()`.
+ */
+export type ProductTrack = 'keep_frontend' | 'modernize_frontend';
+
+export const PRODUCT_TRACKS: ProductTrack[] = ['keep_frontend', 'modernize_frontend'];
+
+export function isProductTrack(value: string | null | undefined): value is ProductTrack {
+  return value === 'keep_frontend' || value === 'modernize_frontend';
+}
+
+/**
+ * Ein einzeln buchbares, kostenpflichtiges Modul.
+ *
+ * Abgrenzung zu den beiden benachbarten Begriffen in dieser Datei — die
+ * drei sind bewusst verschieden und dürfen nicht vermischt werden:
+ *
+ *  - `ModuleDefinition` (`ModuleId`) beschreibt eine **Fähigkeit** der
+ *    Runtime. Sie hat keinen Preis; ein Plan schaltet sie über
+ *    `plan.modules` frei.
+ *  - `AddOn` (`AddOnId`) ist ein **Zusatz zu einem bestehenden Abo** und
+ *    an `availableFor`-Pläne gebunden.
+ *  - `BookableModule` (hier) ist die **Verkaufseinheit des modularen
+ *    Checkouts**: Governance Core als Fundament, alles Weitere einzeln
+ *    zubuchbar, unabhängig von der Plan-Leiter.
+ *
+ * Ein Modul schaltet über `unlocks` die Fähigkeiten frei, die es abdeckt.
+ * Die Berechtigungsprüfung im Produkt bleibt damit `hasModule()` — der
+ * Kaufweg ändert nichts an der Art, wie Zugriff entschieden wird.
+ */
+export type BookableModuleId =
+  | 'governance_core'
+  | 'ai_frontend'
+  | 'website_chat'
+  | 'voice_bot'
+  | 'whatsapp_bot'
+  | 'booking'
+  | 'advanced_ai_governance'
+  | 'additional_domain'
+  | 'additional_company';
+
+/**
+ * `flat`            — fester Monatspreis, keine nutzungsabhängigen Kosten.
+ * `flat_plus_usage` — fester Monatspreis **plus** verbrauchsabhängige
+ *                     Abrechnung. Pflicht überall dort, wo echte
+ *                     Drittkosten je Nutzung anfallen (Telefonie, STT/TTS,
+ *                     WhatsApp-Konversationen). Ohne diese Kennzeichnung
+ *                     verkauft ein intensiver Kunde die Marge auf.
+ * `per_unit`        — Preis je zusätzlicher Einheit (Domain, Unternehmen).
+ */
+export type ModulePriceModel = 'flat' | 'flat_plus_usage' | 'per_unit';
+
+export interface BookableModule {
+  id: BookableModuleId;
+  name: string;
+  description: string;
+  /**
+   * ⚠️ PROVISORISCH — siehe `MODULE_PRICING_STATUS`. Diese Beträge sind
+   * Testwerte für den Aufbau des Checkouts, keine kalkulierten Preise.
+   */
+  priceEur: number;
+  priceModel: ModulePriceModel;
+  /** Zusatz zum Preis, z.B. Minutenpreis. `null` bei reinem Festpreis. */
+  usageNote: string | null;
+  /** Fundament — kann im Checkout nicht abgewählt werden. */
+  required: boolean;
+  /**
+   * `true`, wenn das Modul das von RealSync erzeugte Frontend voraussetzt.
+   *
+   * Steht bewusst bei **keinem** Modul auf `true` außer `ai_frontend`
+   * selbst: Chat, Voice, WhatsApp und Terminbuchung funktionieren auch
+   * auf einer fremden Website — über Snippet, SDK oder API. Wer das
+   * ändert, hebelt den Produktgrundsatz aus.
+   */
+  requiresFrontend: boolean;
+  /** Fähigkeiten, die dieses Modul freischaltet. */
+  unlocks: ModuleId[];
+  /** Lucide-Icon-Name — einheitliches Icon-Set über alle Oberflächen. */
+  icon: string;
+  bullets: string[];
+}
+
+/**
+ * Statuskennzeichnung der Modulpreise.
+ *
+ * Die Beträge in `BOOKABLE_MODULES` sind bewusst **nicht** festgezurrt.
+ * Sie müssen aus den tatsächlichen Infrastrukturkosten rückwärts
+ * kalkuliert werden — insbesondere Voice (Telefonie + STT/TTS), LLM-Token,
+ * WhatsApp-Konversationsgebühren, Scan-Laufzeit und zusätzliche Domains.
+ * Bis dahin gilt: Struktur ist verbindlich, Betrag ist ein Testwert.
+ */
+export const MODULE_PRICING_STATUS = 'provisional' as const;
+
+/**
+ * Warum die Beträge hier von `ADDONS` abweichen dürfen.
+ *
+ * `ADDONS` bepreist Zusätze **innerhalb** der Plan-Leiter (Voice 150 €,
+ * WhatsApp 99 €) und bleibt unverändert gültig. `BOOKABLE_MODULES`
+ * bepreist dieselben Kanäle als **eigenständige Verkaufseinheit** neben
+ * dem Governance Core. Zwei Preise für denselben Kanal sind auf Dauer
+ * kein haltbarer Zustand — die Auflösung gehört in die Preiskalkulation,
+ * nicht in eine stillschweigende Angleichung hier. Bis dahin wird die
+ * Abweichung benannt statt versteckt.
+ */
+export const MODULE_ADDON_PRICE_DIVERGENCE: BookableModuleId[] = ['voice_bot', 'whatsapp_bot'];
+
+export const BOOKABLE_MODULES: BookableModule[] = [
+  {
+    id: 'governance_core',
+    name: 'Governance Core',
+    description: 'Kontinuierliche DSGVO- und EU-AI-Act-Governance für ein Unternehmen und eine Domain.',
+    priceEur: 79,
+    priceModel: 'flat',
+    usageNote: null,
+    required: true,
+    requiresFrontend: false,
+    unlocks: ['dsgvo', 'eu_ai_act', 'policy_engine', 'evidence_vault', 'audit_center', 'monitoring', 'compliance_reports', 'alerts'],
+    icon: 'Shield',
+    bullets: [
+      'Ein Unternehmen, eine Domain',
+      'DSGVO und EU AI Act als Policy Packs',
+      'Kontinuierliches Monitoring statt Einmalprüfung',
+      'Governance Score, Evidence Vault und Audit-Export',
+      'Alerts bei neuen Findings',
+    ],
+  },
+  {
+    id: 'ai_frontend',
+    name: 'AI Frontend',
+    description: 'Erzeugt aus der bestehenden Website ein modernes Frontend — ohne die vorhandenen Inhalte zu verlieren.',
+    priceEur: 49,
+    priceModel: 'flat',
+    usageNote: null,
+    required: false,
+    requiresFrontend: true,
+    unlocks: [],
+    icon: 'LayoutTemplate',
+    bullets: [
+      'Inhalts-Inventar der bestehenden Seite statt Neutexten',
+      'Vorschau und ausdrückliche Freigabe vor dem Publish',
+      'Jederzeit zurück auf das Original umschaltbar',
+      'Responsive, barrierearm, SEO-erhaltend',
+    ],
+  },
+  {
+    id: 'website_chat',
+    name: 'Website Chat',
+    description: 'Eingebetteter Chatbot auf der eigenen Website — auch auf einem fremden Frontend.',
+    priceEur: 39,
+    priceModel: 'flat_plus_usage',
+    usageNote: 'zzgl. Verbrauch je Konversation',
+    required: false,
+    requiresFrontend: false,
+    unlocks: ['website_chat', 'ai_bots'],
+    icon: 'MessageSquare',
+    bullets: [
+      'Snippet-Einbindung ohne Frontend-Umbau',
+      'Antwortet nur aus dem hinterlegten Unternehmenskontext',
+      'Transparenzhinweis nach Art. 50 EU AI Act',
+      'Jede Antwort im Prüfpfad',
+    ],
+  },
+  {
+    id: 'voice_bot',
+    name: 'Voice Bot',
+    description: 'Telefonischer Sprachkanal mit derselben Buchungs- und Kontext-Engine wie der Website-Chat.',
+    priceEur: 99,
+    priceModel: 'flat_plus_usage',
+    usageNote: 'zzgl. Telefonie- und Sprachverbrauch je Minute',
+    required: false,
+    requiresFrontend: false,
+    unlocks: ['voice', 'ai_bots', 'human_handoff'],
+    icon: 'Phone',
+    bullets: [
+      'Eingehende Anrufe mit Speech-to-Text und Text-to-Speech',
+      'Übergabe an Menschen mit Eskalationsstufen',
+      'Keine eigene Terminlogik — fragt die Booking Engine',
+      'Verbrauchsabhängig, weil echte Telefoniekosten anfallen',
+    ],
+  },
+  {
+    id: 'whatsapp_bot',
+    name: 'WhatsApp Bot',
+    description: 'WhatsApp-Business-Kanal mit identischem Governance-Protokoll.',
+    priceEur: 39,
+    priceModel: 'flat_plus_usage',
+    usageNote: 'zzgl. WhatsApp-Konversationsgebühren',
+    required: false,
+    requiresFrontend: false,
+    unlocks: ['whatsapp', 'ai_bots', 'multi_channel_messaging'],
+    icon: 'MessageCircle',
+    bullets: [
+      'WhatsApp Business API',
+      'Ein Bot, mehrere Kanäle, ein Prüfpfad',
+      'Media-Support für Bilder und Dokumente',
+      'Konversationsgebühren werden durchgereicht',
+    ],
+  },
+  {
+    id: 'booking',
+    name: 'Terminbuchung',
+    description: 'Booking Engine mit Öffnungszeiten, Pausen, Urlaub und variablen Termindauern.',
+    priceEur: 29,
+    priceModel: 'flat',
+    usageNote: null,
+    required: false,
+    requiresFrontend: false,
+    unlocks: [],
+    icon: 'CalendarClock',
+    bullets: [
+      'Zentrale Slot-Berechnung für alle Kanäle',
+      'Variable Termindauer je Zeitfenster',
+      'Urlaub, Feiertage und Pausen blockieren sofort',
+      'Bots erfinden keine Termine — sie fragen die Engine',
+    ],
+  },
+  {
+    id: 'advanced_ai_governance',
+    name: 'Advanced AI Governance',
+    description: 'Erweiterte Rahmenwerke, Risikoregister und Behebungspläne über den Core hinaus.',
+    priceEur: 149,
+    priceModel: 'flat',
+    usageNote: null,
+    required: false,
+    requiresFrontend: false,
+    unlocks: ['nis2', 'iso_27001', 'risk_register', 'remediation', 'drift_detection'],
+    icon: 'Brain',
+    bullets: [
+      'NIS2 und ISO 27001 zusätzlich zu DSGVO und EU AI Act',
+      'Risikoregister mit Eigentümern und Maßnahmenverfolgung',
+      'Drift-Erkennung zwischen zwei Läufen',
+      'Vorbereitete Behebungspläne mit Review-Pflicht',
+    ],
+  },
+  {
+    id: 'additional_domain',
+    name: 'Weitere Domain',
+    description: 'Jede weitere überwachte Domain innerhalb desselben Unternehmens.',
+    priceEur: 19,
+    priceModel: 'per_unit',
+    usageNote: 'je Domain und Monat',
+    required: false,
+    requiresFrontend: false,
+    unlocks: [],
+    icon: 'Globe',
+    bullets: [
+      'Eigener Governance Score je Domain',
+      'Gemeinsames Evidence Vault des Unternehmens',
+      'Beliebig oft buchbar',
+    ],
+  },
+  {
+    id: 'additional_company',
+    name: 'Weiteres Unternehmen',
+    description: 'Ein weiteres Unternehmen im selben Konto — datentechnisch getrennt.',
+    priceEur: 49,
+    priceModel: 'per_unit',
+    usageNote: 'je Unternehmen und Monat',
+    required: false,
+    requiresFrontend: false,
+    unlocks: ['multi_channel_messaging'],
+    icon: 'Building2',
+    bullets: [
+      'Eigene Domains, Bots und Governance je Unternehmen',
+      'Umschalten im Dashboard',
+      'Mandantentrennung über RLS, nicht über die Oberfläche',
+    ],
+  },
+];
+
+/** Das Fundament, das in jedem Checkout enthalten ist. */
+export const REQUIRED_MODULES: BookableModule[] = BOOKABLE_MODULES.filter((m) => m.required);
+
+/** Alles, was der Kunde frei dazu- oder abwählen kann. */
+export const OPTIONAL_MODULES: BookableModule[] = BOOKABLE_MODULES.filter((m) => !m.required);
+
+export function bookableModuleById(id: BookableModuleId): BookableModule | undefined {
+  return BOOKABLE_MODULES.find((m) => m.id === id);
+}
+
+/**
+ * Module, die im gewählten Produktpfad überhaupt angeboten werden.
+ *
+ * Im Pfad `keep_frontend` entfällt genau ein Modul: `ai_frontend`. Alles
+ * andere bleibt buchbar — das ist der Punkt.
+ */
+export function modulesForTrack(track: ProductTrack): BookableModule[] {
+  if (track === 'modernize_frontend') return BOOKABLE_MODULES;
+  return BOOKABLE_MODULES.filter((m) => !m.requiresFrontend);
+}
+
+/**
+ * Monatlicher Festpreis der Auswahl. Der Core wird immer mitgerechnet,
+ * auch wenn er in der Auswahl fehlt — er ist nicht abwählbar.
+ *
+ * Verbrauchsabhängige Anteile (`flat_plus_usage`) sind bewusst **nicht**
+ * enthalten: sie stehen zum Zeitpunkt des Checkouts nicht fest. Wer eine
+ * Gesamtsumme anzeigt, muss `hasUsageBasedModules()` mitprüfen und den
+ * Verbrauch getrennt ausweisen — sonst verspricht die Oberfläche einen
+ * Endbetrag, den die Rechnung nicht hält.
+ */
+export function monthlyBaseTotalEur(selection: readonly BookableModuleId[]): number {
+  const ids = new Set<BookableModuleId>(selection);
+  for (const module of REQUIRED_MODULES) ids.add(module.id);
+  let total = 0;
+  for (const id of ids) total += bookableModuleById(id)?.priceEur ?? 0;
+  return total;
+}
+
+/** Enthält die Auswahl mindestens ein verbrauchsabhängiges Modul? */
+export function hasUsageBasedModules(selection: readonly BookableModuleId[]): boolean {
+  const ids = new Set<BookableModuleId>(selection);
+  for (const module of REQUIRED_MODULES) ids.add(module.id);
+  for (const id of ids) {
+    if (bookableModuleById(id)?.priceModel === 'flat_plus_usage') return true;
+  }
+  return false;
+}
+
+/**
+ * Normalisiert eine Auswahl: unbekannte IDs fallen weg, Pflichtmodule
+ * kommen hinzu, die Reihenfolge folgt `BOOKABLE_MODULES`.
+ *
+ * Nötig, weil die Auswahl aus einer URL oder aus `sessionStorage` kommen
+ * kann — beides ist Nutzereingabe und darf nicht ungeprüft in den
+ * Checkout laufen.
+ */
+export function normalizeModuleSelection(raw: readonly string[]): BookableModuleId[] {
+  const wanted = new Set(raw);
+  return BOOKABLE_MODULES.filter((m) => m.required || wanted.has(m.id)).map((m) => m.id);
+}
+
+// ─────────────────────────────────────────────────────────────────────────
 //  Runtime-Architektur (Darstellung auf Landing + Pricing)
 // ─────────────────────────────────────────────────────────────────────────
 

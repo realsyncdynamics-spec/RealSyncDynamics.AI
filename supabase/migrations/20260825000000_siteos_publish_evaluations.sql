@@ -45,9 +45,21 @@ CREATE TABLE IF NOT EXISTS public.siteos_publish_evaluations (
 
   -- Spiegelspalten für Abfragen. Sie stammen AUS dem Vertrag und werden von
   -- der Datenbank abgeleitet, nicht von der Anwendung geschrieben (G4).
+  --
+  -- `evaluated_at` steht bewusst NICHT als generierte Spalte hier. Ein erster
+  -- Entwurf hatte sie, und PostgreSQL hat sie zu Recht abgelehnt:
+  -- `generation expression is not immutable`. Die Eingabefunktion
+  -- `timestamptz_in` ist nur `stable`, weil sie von der TimeZone-Einstellung
+  -- der Sitzung abhängt — eine generierte Spalte könnte also je nach
+  -- Sitzungseinstellung unterschiedliche Werte ergeben. Genau das darf ein
+  -- Nachweis nicht.
+  --
+  -- `status` (jsonb_object_field_text) und `publishable` (boolin) sind
+  -- dagegen immutable und bleiben abgeleitet — sie sind die beiden, auf die
+  -- es für G4 ankommt. Der Auswertungszeitpunkt steht weiterhin im Vertrag;
+  -- für Reihenfolge und Alter dient `created_at`, das die Datenbank setzt.
   status              TEXT GENERATED ALWAYS AS (contract ->> 'status') STORED,
   publishable         BOOLEAN GENERATED ALWAYS AS ((contract ->> 'publishable')::BOOLEAN) STORED,
-  evaluated_at        TIMESTAMPTZ GENERATED ALWAYS AS ((contract ->> 'evaluated_at')::TIMESTAMPTZ) STORED,
 
   -- Wer die Auswertung ausgelöst hat. Nicht wer sie entschieden hat — das tut
   -- niemand, sie ist abgeleitet.
@@ -63,7 +75,13 @@ CREATE TABLE IF NOT EXISTS public.siteos_publish_evaluations (
   -- Die Bindung an das Artefakt muss auch im Vertrag stehen, sonst könnten
   -- Spalte und Nachweis auseinanderlaufen.
   CONSTRAINT siteos_publish_evaluations_artifact_matches_contract
-    CHECK (contract ->> 'artifact_sha256' = artifact_sha256)
+    CHECK (contract ->> 'artifact_sha256' = artifact_sha256),
+  -- Der Auswertungszeitpunkt hat keine eigene Spalte (s.o.), muss aber im
+  -- Vertrag stehen — ohne ihn liesse sich das Alter einer Freigabe nicht
+  -- beurteilen. Nur auf Anwesenheit geprüft: Ein Cast waere hier aus demselben
+  -- Grund unzulaessig wie oben.
+  CONSTRAINT siteos_publish_evaluations_evaluated_at_present
+    CHECK (length(coalesce(contract ->> 'evaluated_at', '')) > 0)
 );
 
 COMMENT ON TABLE public.siteos_publish_evaluations IS

@@ -4,6 +4,12 @@
 //   POST /functions/v1/siteos/builder       Prompt → geprüfter Blueprint
 //   POST /functions/v1/siteos/runtime-scan  die acht Laufzeit-Analysen
 //   POST /functions/v1/siteos/agents        die sieben asynchronen Agenten
+//   POST /functions/v1/siteos/publish-gate     Freigabebewertung (§7)
+//   POST /functions/v1/siteos/publish-approve  Freigabe erteilen + neu bewerten
+//   POST /functions/v1/siteos/build-anon       Beschreibung -> Blueprint, ohne Konto
+//   POST /functions/v1/siteos/refine-anon      Anweisung -> neue Version, ohne Konto
+//   POST /functions/v1/siteos/session          Sitzung lesen, ohne Konto
+//   POST /functions/v1/siteos/claim            Sitzung -> Mandant (idempotent)
 //
 // ## Warum ein Router und nicht vier Functions
 //
@@ -35,12 +41,23 @@ import { handle as agents } from './handlers/agents.ts';
 import { handle as builder } from './handlers/builder.ts';
 import { handle as discover } from './handlers/discover.ts';
 import { handle as runtimeScan } from './handlers/runtime-scan.ts';
+import { handle as publishGate, handleApprove as publishApprove } from './handlers/publish-gate.ts';
+import { handleBuildAnon, handleClaim, handleGetSession, handleRefineAnon } from './handlers/anonymous.ts';
 
 const routes: Record<string, (req: Request) => Response | Promise<Response>> = {
   'agents': agents,
   'builder': builder,
   'discover': discover,
   'runtime-scan': runtimeScan,
+  // Publish Gate (Zielarchitektur §7). Zwei Pfade, ein Slot — dieselbe
+  // Begründung wie oben, und beide teilen Auswertung und Persistenz.
+  'publish-gate': publishGate,
+  'publish-approve': publishApprove,
+  // Anonymer Pfad: bauen und verfeinern ohne Konto, uebernehmen mit.
+  'build-anon': handleBuildAnon,
+  'refine-anon': handleRefineAnon,
+  'session': handleGetSession,
+  'claim': handleClaim,
 };
 
 Deno.serve((req) => {

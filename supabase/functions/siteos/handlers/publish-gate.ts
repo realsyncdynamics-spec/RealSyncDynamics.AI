@@ -49,8 +49,25 @@ const APPROVER_ROLES = new Set(['owner', 'admin', 'dpo']);
 
 const MAX_REASON_LENGTH = 1000;
 
+/**
+ * Der Admin-Client, wie ihn die übrigen Handler benutzen.
+ *
+ * `ReturnType<typeof createClient>` ohne Typargumente wäre naheliegend und
+ * falsch: Ohne generiertes Datenbankschema lösen die Vorgabewerte zu `never`
+ * auf, und jeder `.insert()`/`.update()` wird dann gegen `never` geprüft —
+ * acht Fehler, die nichts über den Code aussagen. Die anderen Handler
+ * umgehen das, indem sie den Client gar nicht erst benennen.
+ *
+ * `any` ist hier bewusst und auf die Schema-Parameter begrenzt: Das Projekt
+ * führt keine generierten Supabase-Typen, also gibt es nichts Genaueres
+ * einzusetzen. Sobald `generate_typescript_types` im Repo landet, gehört
+ * hier der echte `Database`-Typ hin.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AdminClient = ReturnType<typeof createClient<any, 'public', any>>;
+
 interface Context {
-  admin: ReturnType<typeof createClient>;
+  admin: AdminClient;
   tenantId: string;
   userId: string;
   userEmail: string | null;

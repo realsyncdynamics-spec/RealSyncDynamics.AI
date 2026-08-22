@@ -11,6 +11,7 @@ export * from './canonical.ts';
 export * from './blueprint/industries.ts';
 export * from './blueprint/brief.ts';
 export * from './blueprint/synthesize.ts';
+export * from './blueprint/refine.ts';
 
 export * from './analysis/blueprint.ts';
 export * from './analysis/observation.ts';
@@ -20,6 +21,8 @@ export * from './scoring/scores.ts';
 export * from './render/escape.ts';
 export * from './render/theme.ts';
 export * from './render/renderer.ts';
+export * from './render/presentation.ts';
+export * from './render/templates.ts';
 
 export * from './deploy/artifact.ts';
 

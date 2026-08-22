@@ -122,6 +122,12 @@ export async function buildSite(args: {
   project_id?: string;
   locale?: string;
   enrichment?: BuildEnrichment;
+  /**
+   * Anweisungsfolge aus der anonymen Vorschau. Wird serverseitig nachgespielt
+   * (siehe `supabase/functions/siteos/handlers/builder.ts`) — der Blueprint
+   * selbst wandert nie vom Browser in die Datenbank.
+   */
+  refinements?: string[];
 }): Promise<SiteOsResult<BuildResponse>> {
   const sb = getSupabase();
   const { data, error } = await sb.functions.invoke('siteos/builder', { body: args });

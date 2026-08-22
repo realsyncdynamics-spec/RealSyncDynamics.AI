@@ -95,10 +95,15 @@ export function parseBrief(prompt: string, locale: Locale = 'de'): SiteBrief {
   const locality = detectLocality(trimmed);
   const preset = INDUSTRY_PRESETS[industry];
 
-  const name = locality ? `${preset.label} ${locality}` : preset.label;
+  // Der Preset-Name ist ein Katalogeintrag („Agentur / Dienstleistung"),
+  // kein Firmenname. Bis der Kunde einen echten nennt, wird wenigstens die
+  // Schrägstrich-Form vermieden — als Wortmarke im Kopf der Website liest
+  // sie sich wie ein Fehler.
+  const label = preset.label.split(' / ')[0];
+  const name = locality ? `${label} ${locality}` : label;
   const summary = locality
-    ? `${preset.label} in ${locality} — persönliche Beratung, transparente Leistungen und kurze Wege.`
-    : `${preset.label} — persönliche Beratung, transparente Leistungen und kurze Wege.`;
+    ? `${label} in ${locality} — persönliche Beratung, transparente Leistungen und kurze Wege.`
+    : `${label} — persönliche Beratung, transparente Leistungen und kurze Wege.`;
 
   return {
     name,

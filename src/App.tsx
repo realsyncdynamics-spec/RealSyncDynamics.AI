@@ -235,6 +235,15 @@ const SiteOsDashboardView = lazy(() => import('./features/siteos/SiteOsDashboard
 // seit ihrer Entstehung ohne Route im Repo — fertiger Code, den niemand
 // erreichen konnte (CLAUDE.md §14).
 const SiteOsBuilderPage = lazy(() => import('./unified-entry/pages/PreviewSelectionPage'));
+// Build Studio: Prompt → vollständige Website → Live-Vorschau, ohne Konto.
+//
+// Abweichung von der Regel „Public Pages eager" (CLAUDE.md §7): Diese Seite
+// ist kein Inhalts-, sondern ein Werkzeugeinstieg — sie trägt keinen Text,
+// den eine Suchmaschine indexieren soll, und zieht mit `packages/siteos-core`
+// Blueprint-Synthese, Analyse und Renderer in ihr Bündel. Eager importiert
+// läge das im kritischen Pfad jeder Landingpage.
+const BuildStudioPage = lazy(() => import('./unified-entry/pages/BuildStudioPage'));
+const SiteOsClaimView = lazy(() => import('./features/siteos/SiteOsClaimView').then((m) => ({ default: m.SiteOsClaimView })));
 const LegalRagView = lazy(() => import('./features/legal-rag/LegalRagView').then((m) => ({ default: m.LegalRagView })));
 const AgentOsAdminPage = lazy(() => import('./features/agent-os-admin/AgentOsAdminPage').then((m) => ({ default: m.AgentOsAdminPage })));
 const GovernanceDashboardView = lazy(() => import('./features/governance/GovernanceDashboardView').then((m) => ({ default: m.GovernanceDashboardView })));
@@ -780,6 +789,10 @@ function RoutesWithTracking() {
       <Route path="/app/policy-packs" element={<GovernanceBrowserShell><PolicyPacksView /></GovernanceBrowserShell>} />
       <Route path="/app/siteos" element={<GovernanceBrowserShell><SiteOsDashboardView /></GovernanceBrowserShell>} />
       <Route path="/app/siteos/builder" element={<SiteOsBuilderPage />} />
+      {/* Übernahme des anonymen Entwurfs. Die Anmeldung prüft die View
+          selbst, damit der Rücksprung an genau diese Stelle erhalten
+          bleibt — `ProtectedRoute` führt ohne `next` nach /demo-login. */}
+      <Route path="/app/siteos/claim" element={<SiteOsClaimView />} />
       <Route path="/app/bots" element={<GovernanceBrowserShell><BotsView /></GovernanceBrowserShell>} />
       <Route path="/app/bots/inbox" element={<GovernanceBrowserShell><BotInboxView /></GovernanceBrowserShell>} />
       <Route path="/app/bots/:botId" element={<GovernanceBrowserShell><BotBuilderView /></GovernanceBrowserShell>} />
@@ -1087,10 +1100,20 @@ function RoutesWithTracking() {
         }
       />
 
-      {/* Unified Entry: Scan → Dashboard with Trial */}
-      <Route path="/builder" element={<Navigate to="/unified-entry/scan" replace />} />
-      <Route path="/app/bauen" element={<Navigate to="/unified-entry/scan" replace />} />
-      <Route path="/unified-entry" element={<Navigate to="/unified-entry/scan" replace />} />
+      {/* Unified Entry.
+          Der Einstieg ist seit dem Umbau auf die Build-Reihenfolge das Studio:
+          Idee → Bau → vollständige Vorschau → Konto → Übernahme.
+
+          Die Aliase `/builder` und `/app/bauen` zeigen mit — sie sind der
+          beworbene Einstieg in den Builder, und der beginnt jetzt mit der
+          Beschreibung statt mit einer URL. Der URL-Scan bleibt unter
+          `/unified-entry/scan` erreichbar und wird vom Studio aus verlinkt;
+          er ist nicht mehr das Tor. */}
+      <Route path="/builder" element={<Navigate to="/build" replace />} />
+      <Route path="/app/bauen" element={<Navigate to="/build" replace />} />
+      <Route path="/unified-entry" element={<Navigate to="/build" replace />} />
+      <Route path="/unified-entry/build" element={<Navigate to="/build" replace />} />
+      <Route path="/build" element={<BuildStudioPage />} />
       <Route
         path="/unified-entry/scan"
         element={

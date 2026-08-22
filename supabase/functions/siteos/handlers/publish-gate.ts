@@ -17,11 +17,15 @@
 //
 // ## Was der Client zur Backend-Erhaltung sagen darf
 //
-// Nichts, das durchgewunken wird. `backend` ist optional; fehlt es, gilt
-// `unknown` und damit gesperrt (G3). Ein Aufrufer kann also nicht durch
-// Weglassen freigeben — nur durch einen Vergleich, der die verlorenen
-// Ziele benennt. Greenfield ist erlaubt, weil dort beweisbar nichts
-// verlorengehen kann: Es gibt keine Vorgängerseite.
+// Gar nichts. Der Endpunkt nimmt zu dieser Frage keine Eingabe mehr
+// entgegen; die Lage wird aus `siteos_blueprints.origin_source` abgeleitet
+// (siehe `deriveBackendState`).
+//
+// Vorher stand hier, ein Aufrufer koenne „nicht durch Weglassen freigeben,
+// nur durch einen Vergleich". Das stimmte nicht: Der Vergleich kam
+// ebenfalls aus dem Request, und einer mit lauter leeren Listen ergab
+// `preserve_all`. Dasselbe galt fuer eine behauptete Neuentwicklung ohne
+// Vorgaengerseite. Beide Wege sind geschlossen.
 //
 // ## Reihenfolge
 //
@@ -91,7 +95,7 @@ export async function handle(req: Request): Promise<Response> {
   if (!blueprintId) return jsonError(400, 'BAD_REQUEST', 'blueprint_id required');
 
   try {
-    const result = await runEvaluation(ctx, blueprintId, readBackendState(body.backend), typeof body.base_url === 'string' ? body.base_url : undefined);
+    const result = await runEvaluation(ctx, blueprintId, typeof body.base_url === 'string' ? body.base_url : undefined);
     if (result instanceof Response) return result;
     return jsonResponse({ ok: true, evaluation: result });
   } catch (e) {
@@ -157,7 +161,7 @@ export async function handleApprove(req: Request): Promise<Response> {
   // Die alte bleibt als „pending" stehen, damit im Prüfpfad sichtbar
   // bleibt, dass eine Person entschieden hat und nicht das System.
   try {
-    const result = await runEvaluation(ctx, evaluation.blueprint_id, readBackendState(body.backend), typeof body.base_url === 'string' ? body.base_url : undefined);
+    const result = await runEvaluation(ctx, evaluation.blueprint_id, typeof body.base_url === 'string' ? body.base_url : undefined);
     if (result instanceof Response) return result;
     return jsonResponse({ ok: true, approved_evaluation_id: evaluationId, evaluation: result });
   } catch (e) {
@@ -173,14 +177,13 @@ export async function handleApprove(req: Request): Promise<Response> {
 async function runEvaluation(
   ctx: Context,
   blueprintId: string,
-  backend: BackendState,
   baseUrl: string | undefined,
 ): Promise<PublishGateEvaluation | Response> {
   const { data: row } = await ctx.admin
     .from('siteos_blueprints')
-    .select('id, slug, blueprint, content_sha256')
+    .select('id, slug, blueprint, content_sha256, origin_source')
     .eq('id', blueprintId).eq('tenant_id', ctx.tenantId)
-    .maybeSingle<{ id: string; slug: string; blueprint: SiteBlueprint; content_sha256: string }>();
+    .maybeSingle<{ id: string; slug: string; blueprint: SiteBlueprint; content_sha256: string; origin_source: string | null }>();
 
   if (!row?.blueprint) return jsonError(404, 'NOT_FOUND', 'blueprint not found for this tenant');
 
@@ -256,7 +259,8 @@ async function runEvaluation(
     findings,
     artifactSha256: artifact.artifactSha256,
     evidence: { snapshotWritten: scan !== null, custodyLinked },
-    backend,
+    // Serverseitig festgestellt, nicht vom Aufrufer entgegengenommen.
+    backend: deriveBackendState(row.origin_source),
     approval,
     evaluationId,
     evaluatedAt: nowIso,
@@ -309,37 +313,50 @@ async function runEvaluation(
 // ─────────────────────────────────────────────────────────────────────
 
 /**
- * Liest die Backend-Feststellung aus dem Body.
+ * Stellt die Backend-Lage fest — aus dem, was der Server aufgezeichnet hat.
  *
- * Alles, was nicht eindeutig `greenfield` oder ein vollständiger Vergleich
- * ist, wird zu `transformation` ohne Vergleich — und damit zu `unknown`.
- * Fail-closed beginnt beim Parsen, nicht erst bei der Bewertung.
+ * ## Warum das nicht mehr aus dem Body kommt
+ *
+ * Vorher las diese Stelle die Backend-Angabe aus dem Request. Damit
+ * behauptete der Aufrufer eine
+ * der fuenf Bedingungen, aus denen die Datenbank `publishable` erzeugt — und
+ * zwar auf zwei Wegen: `{"kind":"greenfield"}` ergab unmittelbar
+ * `preserve_all`, und ein mitgeschickter Vergleich mit lauter leeren Listen
+ * ebenso. Beides ohne jede Nachpruefung.
+ *
+ * Genau das schliesst G1 aus: Der Client darf eine sicherheitsrelevante
+ * Voraussetzung nicht selbst behaupten. Ein Publish Gate, dessen
+ * Sperrgrund sich wegargumentieren laesst, indem man ihn im Request
+ * verneint, ist keine Schranke.
+ *
+ * ## Was jetzt gilt
+ *
+ * `origin_source` wird bei der Erzeugung des Blueprints gesetzt und danach
+ * nicht mehr vom Aufrufer beeinflusst. Er traegt die einzige Tatsache, die
+ * hier zaehlt: Wurde diese Site aus einer Beschreibung synthetisiert, oder
+ * loest sie etwas Bestehendes ab?
+ *
+ *   `ai-builder`  aus einer Beschreibung entstanden. Es gab keine
+ *                 Vorgaengerseite, also kann auch nichts verlorengegangen
+ *                 sein — die Feststellung ist beweisbar, nicht geraten.
+ *   alles andere  `import` bringt eine bestehende Seite mit, `manual` sagt
+ *                 nichts ueber einen Vorgaenger. Beide fuehren zu
+ *                 `transformation` ohne Vergleich, also zu `unknown` — und
+ *                 das sperrt.
+ *
+ * Konservativ heisst hier: Im Zweifel nicht `greenfield`. Wer eine
+ * bestehende Seite abloest, kommt erst durch, wenn ein echter Vergleich
+ * vorliegt — und der muss von einem Prozess kommen, der die Vorgaengerseite
+ * tatsaechlich gesehen hat, nicht aus dem Request.
+ *
+ * Solange es diesen Vergleichslauf nicht gibt, ist eine Transformation
+ * nicht veroeffentlichbar. Das ist die richtige Reihenfolge: lieber ein
+ * Weg, der noch fehlt, als eine Schranke, die nur so aussieht.
  */
-function readBackendState(raw: unknown): BackendState {
-  if (!raw || typeof raw !== 'object') return { kind: 'transformation', comparison: null };
-  const value = raw as Record<string, unknown>;
-
-  if (value.kind === 'greenfield') return { kind: 'greenfield' };
-
-  const c = value.comparison;
-  if (!c || typeof c !== 'object') return { kind: 'transformation', comparison: null };
-  const cmp = c as Record<string, unknown>;
-
-  return {
-    kind: 'transformation',
-    comparison: {
-      lostFormTargets: stringList(cmp.lostFormTargets),
-      lostPaymentPaths: stringList(cmp.lostPaymentPaths),
-      lostBookingPaths: stringList(cmp.lostBookingPaths),
-      lostApiEndpoints: stringList(cmp.lostApiEndpoints),
-      lostConsentCategories: stringList(cmp.lostConsentCategories),
-    },
-  };
-}
-
-function stringList(raw: unknown): string[] {
-  if (!Array.isArray(raw)) return [];
-  return raw.filter((entry): entry is string => typeof entry === 'string').map((entry) => entry.slice(0, 300)).slice(0, 100);
+function deriveBackendState(originSource: string | null): BackendState {
+  return originSource === 'ai-builder'
+    ? { kind: 'greenfield' }
+    : { kind: 'transformation', comparison: null };
 }
 
 async function authorize(req: Request): Promise<{ ctx: Context; body: Record<string, unknown> } | Response> {

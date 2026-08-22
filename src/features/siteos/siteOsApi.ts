@@ -254,30 +254,20 @@ export async function listBlueprintChain(tenantId: string, slug: string): Promis
 // nachgerechnet — `publishable` kommt vom Server oder gar nicht.
 
 /**
- * Zustand des Backends für die Bewertung.
+ * Die Backend-Lage ist **keine** Client-Eingabe mehr.
  *
- * `greenfield` ist nur dort zulässig, wo es beweisbar keine Vorgängerseite
- * gibt — etwa bei einer aus einem Prompt gebauten Site. Bei einer
- * Transformation gehört der tatsächlich durchgeführte Vergleich hierher;
- * fehlt er, sperrt der Server (`unknown`).
+ * Frueher stand hier ein Eingabetyp dafuer, den der Aufrufer mitschickte.
+ * Damit behauptete das Frontend eine der Bedingungen, aus denen die
+ * Datenbank `publishable` erzeugt — und ein handgebauter Request konnte
+ * dieselbe Behauptung aufstellen, ohne dass irgendetwas sie prueft.
+ *
+ * Der Server leitet die Lage jetzt aus `siteos_blueprints.origin_source` ab.
+ * Diese Datei schickt dazu nichts mehr; das ist die Client-Seite von G1.
  */
-export type PublishBackendInput =
-  | { kind: 'greenfield' }
-  | {
-      kind: 'transformation';
-      comparison: {
-        lostFormTargets: string[];
-        lostPaymentPaths: string[];
-        lostBookingPaths: string[];
-        lostApiEndpoints: string[];
-        lostConsentCategories: string[];
-      } | null;
-    };
 
 export async function evaluatePublish(args: {
   tenant_id: string;
   blueprint_id: string;
-  backend: PublishBackendInput;
   base_url?: string;
 }): Promise<SiteOsResult<{ ok: true; evaluation: PublishGateEvaluation }>> {
   const sb = getSupabase();
@@ -290,7 +280,6 @@ export async function approvePublish(args: {
   tenant_id: string;
   evaluation_id: string;
   reason: string;
-  backend: PublishBackendInput;
   base_url?: string;
 }): Promise<SiteOsResult<{ ok: true; approved_evaluation_id: string; evaluation: PublishGateEvaluation }>> {
   const sb = getSupabase();

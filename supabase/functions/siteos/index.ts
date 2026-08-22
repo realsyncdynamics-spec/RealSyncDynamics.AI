@@ -5,6 +5,7 @@
 //   POST /functions/v1/siteos/runtime-scan  die acht Laufzeit-Analysen
 //   POST /functions/v1/siteos/agents        die sieben asynchronen Agenten
 //   POST /functions/v1/siteos/publish-gate  serverseitige Freigabe-Auswertung
+//   POST /functions/v1/siteos/claim         anonymen Entwurf uebernehmen
 //
 // ## Warum ein Router und nicht vier Functions
 //
@@ -37,6 +38,7 @@ import { handle as builder } from './handlers/builder.ts';
 import { handle as discover } from './handlers/discover.ts';
 import { handle as runtimeScan } from './handlers/runtime-scan.ts';
 import { handle as publishGate } from './handlers/publish-gate.ts';
+import { handle as claim } from './handlers/claim.ts';
 
 const routes: Record<string, (req: Request) => Response | Promise<Response>> = {
   'agents': agents,
@@ -44,6 +46,7 @@ const routes: Record<string, (req: Request) => Response | Promise<Response>> = {
   'discover': discover,
   'runtime-scan': runtimeScan,
   'publish-gate': publishGate,
+  'claim': claim,
 };
 
 Deno.serve((req) => {

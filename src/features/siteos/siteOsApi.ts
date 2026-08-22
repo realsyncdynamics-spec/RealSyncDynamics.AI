@@ -8,6 +8,7 @@
 import { getSupabase } from '../../lib/supabase';
 import type {
   AgentKey,
+  PublishGateEvaluation,
   RuntimeFinding,
   ScoreBreakdown,
   SiteBlueprint,
@@ -91,6 +92,15 @@ export type SiteOsError =
   | { kind: 'payment_required'; message: string }
   | { kind: 'bad_request'; message: string }
   | { kind: 'unreachable'; message: string }
+  /**
+   * Der Router läuft, der angefragte Pfad ist dort aber nicht registriert —
+   * der Deploy hinkt dem Repo hinterher. Eigener Fall, weil er etwas völlig
+   * anderes bedeutet als „nicht gefunden": Nicht die Sache fehlt, sondern
+   * die Funktion, die sie liefern würde. Als generischer Fehler angezeigt,
+   * sucht der Nutzer den Fehler bei sich.
+   */
+  | { kind: 'not_deployed'; message: string }
+  | { kind: 'not_found'; message: string }
   | { kind: 'error'; message: string };
 
 export type SiteOsResult<T> = { kind: 'ok'; data: T } | SiteOsError;
@@ -110,8 +120,32 @@ export function errorMessage(e: SiteOsError): string {
     case 'forbidden': return 'Kein Zugriff auf diesen Mandanten.';
     case 'payment_required': return 'SiteOS ist in diesem Tarif nicht enthalten.';
     case 'unreachable': return `Die Adresse war nicht erreichbar: ${e.message}`;
+    case 'not_deployed': return 'Diese Funktion ist noch nicht ausgerollt.';
+    case 'not_found': return e.message;
     default: return e.message;
   }
+}
+
+/**
+ * Wie `mapError`, unterscheidet aber 404-Fälle anhand des Fehlercodes im
+ * Body. Nur für neue Pfade verwendet — die bestehenden bleiben unverändert,
+ * damit sich ihr Verhalten nicht nebenbei ändert.
+ */
+async function mapErrorDetailed(error: unknown): Promise<SiteOsError> {
+  const context = (error as { context?: Response }).context;
+  if (context?.status !== 404) return mapError(error);
+
+  let code: string | null = null;
+  try {
+    const body = await context.clone().json() as { error?: { code?: string; message?: string } };
+    code = body?.error?.code ?? null;
+  } catch {
+    // Kein lesbarer Body — dann bleibt es beim unspezifischen Fall.
+  }
+
+  return code === 'UNKNOWN_ENDPOINT'
+    ? { kind: 'not_deployed', message: 'Der Endpunkt ist im Router nicht registriert.' }
+    : { kind: 'not_found', message: 'Der angefragte Gegenstand wurde nicht gefunden.' };
 }
 
 // ── Schreibpfade ────────────────────────────────────────────────────────
@@ -211,4 +245,55 @@ export async function listBlueprintChain(tenantId: string, slug: string): Promis
     .order('version', { ascending: true });
   if (error) throw new Error(error.message);
   return data ?? [];
+}
+
+// ── Publish Gate (Zielarchitektur §7) ───────────────────────────────────
+//
+// G2: Diese Wrapper reichen das Ergebnis unverändert durch. Es wird nichts
+// nachgerechnet — `publishable` kommt vom Server oder gar nicht.
+
+/**
+ * Zustand des Backends für die Bewertung.
+ *
+ * `greenfield` ist nur dort zulässig, wo es beweisbar keine Vorgängerseite
+ * gibt — etwa bei einer aus einem Prompt gebauten Site. Bei einer
+ * Transformation gehört der tatsächlich durchgeführte Vergleich hierher;
+ * fehlt er, sperrt der Server (`unknown`).
+ */
+export type PublishBackendInput =
+  | { kind: 'greenfield' }
+  | {
+      kind: 'transformation';
+      comparison: {
+        lostFormTargets: string[];
+        lostPaymentPaths: string[];
+        lostBookingPaths: string[];
+        lostApiEndpoints: string[];
+        lostConsentCategories: string[];
+      } | null;
+    };
+
+export async function evaluatePublish(args: {
+  tenant_id: string;
+  blueprint_id: string;
+  backend: PublishBackendInput;
+  base_url?: string;
+}): Promise<SiteOsResult<{ ok: true; evaluation: PublishGateEvaluation }>> {
+  const sb = getSupabase();
+  const { data, error } = await sb.functions.invoke('siteos/publish-gate', { body: args });
+  if (error) return await mapErrorDetailed(error);
+  return { kind: 'ok', data: data as { ok: true; evaluation: PublishGateEvaluation } };
+}
+
+export async function approvePublish(args: {
+  tenant_id: string;
+  evaluation_id: string;
+  reason: string;
+  backend: PublishBackendInput;
+  base_url?: string;
+}): Promise<SiteOsResult<{ ok: true; approved_evaluation_id: string; evaluation: PublishGateEvaluation }>> {
+  const sb = getSupabase();
+  const { data, error } = await sb.functions.invoke('siteos/publish-approve', { body: args });
+  if (error) return await mapErrorDetailed(error);
+  return { kind: 'ok', data: data as { ok: true; approved_evaluation_id: string; evaluation: PublishGateEvaluation } };
 }

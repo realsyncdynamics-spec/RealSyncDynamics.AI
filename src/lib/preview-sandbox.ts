@@ -127,3 +127,119 @@ export function withPreviewCsp(html: string, isolation: PreviewIsolation): strin
 
   return `${meta}${html}`;
 }
+
+// ─────────────────────────────────────────────────────────────────────────
+//  Ausgelieferte Vorschau (eigene Herkunft)
+// ─────────────────────────────────────────────────────────────────────────
+
+/**
+ * Ab hier geht es um Vorschauen, die von einer **eigenen Herkunft**
+ * ausgeliefert werden, statt als `srcDoc` im Dokumentbaum der Anwendung zu
+ * hängen.
+ *
+ * Warum das die stärkere Lösung ist: Eine opake Herkunft schützt die
+ * Anwendung, aber sie entsteht erst im Browser und nur solange niemand am
+ * `sandbox`-Attribut dreht. Eine echte zweite Herkunft ist dagegen eine
+ * Eigenschaft der Auslieferung — sie lässt sich im Frontend nicht versehentlich
+ * abschalten, sie erlaubt echte HTTP-Header statt eines `<meta>`-Elements, und
+ * sie ist die Voraussetzung dafür, dass eine Vorschau später über eine URL
+ * teilbar wird.
+ *
+ * Erst mit einer eigenen Herkunft wird `allow-scripts` unbedenklich: Der
+ * erzeugte Code läuft dann ohnehin fremd, unabhängig vom Sandbox-Attribut.
+ *
+ * Die Richtlinien stehen bewusst hier neben `previewCsp()` und nicht im
+ * Worker: Es soll genau **eine** Quelle dafür geben, was eine Vorschau darf.
+ * Diese Datei hat keine Imports und läuft in Browser, Node, Vitest und im
+ * Workers-Runtime gleichermassen.
+ */
+
+/**
+ * Wer die ausgelieferte Vorschau einbetten darf.
+ *
+ * Ohne diese Begrenzung könnte jede fremde Seite die Vorschau eines Kunden
+ * in einen eigenen Rahmen setzen. `'none'` wäre sicherer, macht die Vorschau
+ * aber unbrauchbar — die Anwendung muss sie ja zeigen.
+ */
+export const PREVIEW_FRAME_ANCESTORS: readonly string[] = [
+  "'self'",
+  'https://realsyncdynamicsai.de',
+  'https://www.realsyncdynamicsai.de',
+  'https://*.realsyncdynamics-ai.pages.dev',
+];
+
+/**
+ * CSP für die ausgelieferte Vorschau.
+ *
+ * Unterschied zu `previewCsp()`: `frame-ancestors` kommt hinzu. Diese
+ * Direktive wirkt **nur** als HTTP-Header und wird in einem `<meta>`-Element
+ * ignoriert — sie ist einer der Gründe, warum die eigene Herkunft mehr kann
+ * als die eingebettete Variante.
+ */
+export function servedPreviewCsp(isolation: PreviewIsolation): string {
+  return `${previewCsp(isolation)}; frame-ancestors ${PREVIEW_FRAME_ANCESTORS.join(' ')}`;
+}
+
+/**
+ * Vollständiger Header-Satz für eine ausgelieferte Vorschau.
+ *
+ * `Cache-Control: no-store` ist Absicht: Ein Entwurf ist unveröffentlichter
+ * Inhalt eines Besuchers. Er gehört weder in einen geteilten Zwischenspeicher
+ * noch in den Verlauf eines Zwischenrechners.
+ */
+export function servedPreviewHeaders(isolation: PreviewIsolation): Record<string, string> {
+  return {
+    'Content-Type': 'text/html; charset=utf-8',
+    'Content-Security-Policy': servedPreviewCsp(isolation),
+    'X-Content-Type-Options': 'nosniff',
+    'Referrer-Policy': 'no-referrer',
+    // Gerätezugriffe, die eine Gestaltungsvorschau nie braucht.
+    'Permissions-Policy': 'camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()',
+    'Cache-Control': 'no-store, max-age=0',
+    // Verhindert, dass eine Vorschau in den Suchindex gerät.
+    'X-Robots-Tag': 'noindex, nofollow',
+  };
+}
+
+/**
+ * Kennung einer Vorschau.
+ *
+ * Anonyme Entwürfe sind **nicht** auflistbar und hängen an keinem Mandanten —
+ * die Kennung ist der einzige Zugangsschutz. Sie muss deshalb aus einem
+ * kryptographischen Zufallsgenerator stammen, nicht aus einem Zähler und nicht
+ * aus einem Zeitstempel.
+ *
+ * 128 Bit als 32 Hex-Zeichen. Die Prüfung ist absichtlich streng: Sie läuft
+ * vor jedem Speicherzugriff und hält Pfad-Manipulationen von der Ablage fern.
+ */
+export const PREVIEW_ID_PATTERN = /^[0-9a-f]{32}$/;
+
+export function isPreviewId(value: string | null | undefined): boolean {
+  return typeof value === 'string' && PREVIEW_ID_PATTERN.test(value);
+}
+
+/**
+ * Erzeugt eine Vorschau-Kennung aus `crypto.getRandomValues`.
+ *
+ * Nimmt den Generator als Argument, damit dieselbe Funktion im Browser, im
+ * Workers-Runtime und im Test läuft — und damit ein Test beweisen kann, dass
+ * wirklich der übergebene Generator benutzt wird.
+ */
+export function createPreviewId(getRandomValues: (array: Uint8Array) => Uint8Array): string {
+  const bytes = getRandomValues(new Uint8Array(16));
+  let out = '';
+  for (const byte of bytes) out += byte.toString(16).padStart(2, '0');
+  return out;
+}
+
+/**
+ * Lebensdauer eines anonymen Entwurfs in Sekunden.
+ *
+ * Ein Entwurf ohne Konto ist Inhalt, den jemand hinterlassen hat, ohne in eine
+ * Speicherung einzuwilligen. Er verfällt deshalb von selbst — das ist die
+ * Antwort auf DSGVO Art. 5 Abs. 1 lit. e (Speicherbegrenzung) und zugleich
+ * die Obergrenze dafür, wie lange eine nicht übernommene Vorschau erreichbar
+ * bleibt. Beim Project Claim wandert der Entwurf in den Mandanten und
+ * unterliegt dann dessen Aufbewahrungsregeln.
+ */
+export const ANONYMOUS_PREVIEW_TTL_SECONDS = 7 * 24 * 60 * 60;

@@ -4,10 +4,15 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import {
+  ANONYMOUS_PREVIEW_TTL_SECONDS,
   FORBIDDEN_SANDBOX_PAIR,
+  createPreviewId,
   hasForbiddenSandboxCombination,
+  isPreviewId,
   previewCsp,
   sandboxTokens,
+  servedPreviewCsp,
+  servedPreviewHeaders,
   withPreviewCsp,
 } from '../../src/lib/preview-sandbox';
 
@@ -131,5 +136,95 @@ describe('Kein Rahmen im Repository mit der verbotenen Kombination', () => {
 
   it('benennt das verbotene Paar unmissverständlich', () => {
     expect([...FORBIDDEN_SANDBOX_PAIR]).toEqual(['allow-scripts', 'allow-same-origin']);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────
+//  Ausgelieferte Vorschau (eigene Herkunft)
+// ─────────────────────────────────────────────────────────────────────────
+
+describe('Header der ausgelieferten Vorschau', () => {
+  it('begrenzt, wer die Vorschau einbetten darf', () => {
+    // Ohne frame-ancestors könnte jede fremde Seite die Vorschau eines
+    // Kunden in einen eigenen Rahmen setzen.
+    const csp = servedPreviewCsp('static');
+    expect(csp).toContain('frame-ancestors');
+    expect(csp).toContain("'self'");
+    expect(csp).toContain('https://realsyncdynamicsai.de');
+  });
+
+  it('behält alle Beschränkungen der eingebetteten Variante', () => {
+    const served = servedPreviewCsp('interactive');
+    for (const directive of previewCsp('interactive').split('; ')) {
+      expect(served, directive).toContain(directive);
+    }
+  });
+
+  it('erlaubt frame-ancestors nicht pauschal', () => {
+    expect(servedPreviewCsp('static')).not.toMatch(/frame-ancestors[^;]*\*(\s|$|;)/);
+  });
+
+  it('liefert Content-Type, damit nichts erraten wird', () => {
+    const headers = servedPreviewHeaders('static');
+    expect(headers['Content-Type']).toContain('text/html');
+    expect(headers['X-Content-Type-Options']).toBe('nosniff');
+  });
+
+  it('sperrt Gerätezugriffe, die eine Gestaltungsvorschau nie braucht', () => {
+    const policy = servedPreviewHeaders('static')['Permissions-Policy'];
+    for (const feature of ['camera', 'microphone', 'geolocation', 'payment']) {
+      expect(policy, feature).toContain(`${feature}=()`);
+    }
+  });
+
+  it('hält unveröffentlichte Entwürfe aus Zwischenspeichern und Suchindex', () => {
+    const headers = servedPreviewHeaders('static');
+    expect(headers['Cache-Control']).toContain('no-store');
+    expect(headers['X-Robots-Tag']).toContain('noindex');
+    expect(headers['Referrer-Policy']).toBe('no-referrer');
+  });
+});
+
+describe('Vorschau-Kennung', () => {
+  it('akzeptiert nur 128 Bit als Hex in Kleinschreibung', () => {
+    expect(isPreviewId('a'.repeat(32))).toBe(true);
+    expect(isPreviewId('A'.repeat(32))).toBe(false);
+    expect(isPreviewId('a'.repeat(31))).toBe(false);
+    expect(isPreviewId('a'.repeat(33))).toBe(false);
+    expect(isPreviewId('')).toBe(false);
+    expect(isPreviewId(null)).toBe(false);
+  });
+
+  it('weist Pfad-Manipulation ab, bevor sie die Ablage erreicht', () => {
+    // Die Kennung landet in einem Speicherschlüssel. Alles, was wie ein Pfad
+    // aussieht, muss vorher scheitern.
+    for (const bad of ['../secret', 'a/../b', '..', 'a'.repeat(31) + '/', '%2e%2e']) {
+      expect(isPreviewId(bad), bad).toBe(false);
+    }
+  });
+
+  it('erzeugt Kennungen aus dem übergebenen Zufallsgenerator', () => {
+    const id = createPreviewId((array) => {
+      array.fill(0xab);
+      return array;
+    });
+    expect(id).toBe('ab'.repeat(16));
+    expect(isPreviewId(id)).toBe(true);
+  });
+
+  it('erzeugt bei echtem Zufall keine Kollisionen', () => {
+    const random = (array: Uint8Array) => globalThis.crypto.getRandomValues(array);
+    const ids = new Set(Array.from({ length: 200 }, () => createPreviewId(random)));
+    expect(ids.size).toBe(200);
+    for (const id of ids) expect(isPreviewId(id)).toBe(true);
+  });
+});
+
+describe('Verfall anonymer Entwürfe', () => {
+  it('lässt einen Entwurf ohne Konto von selbst ablaufen', () => {
+    // DSGVO Art. 5 Abs. 1 lit. e: Inhalt, den jemand ohne Konto hinterlässt,
+    // darf nicht unbegrenzt liegenbleiben.
+    expect(ANONYMOUS_PREVIEW_TTL_SECONDS).toBeGreaterThan(0);
+    expect(ANONYMOUS_PREVIEW_TTL_SECONDS).toBeLessThanOrEqual(30 * 24 * 60 * 60);
   });
 });

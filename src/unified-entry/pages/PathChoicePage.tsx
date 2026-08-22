@@ -1,6 +1,12 @@
 import { useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { modulesForTrack, type ProductTrack } from '@/shared/pricing';
+import {
+  AVAILABLE_FRONTEND_ENTRY_MODES,
+  FRONTEND_DELIVERY_LIMIT_NOTE,
+  FRONTEND_INDIVIDUALITY_NOTE,
+  PLANNED_FRONTEND_ENTRY_MODES,
+} from '../../config/frontend-entry-modes';
 import { withTrack, writeTrack } from '../productTrack';
 
 /**
@@ -43,12 +49,13 @@ const OPTIONS: TrackOption[] = [
   {
     track: 'modernize_frontend',
     eyebrow: 'Option B',
-    title: 'Website modernisieren',
-    claim: 'Lassen Sie aus Ihrer bestehenden Website ein modernes Frontend erzeugen, ohne Ihre Inhalte zu verlieren.',
+    title: 'Individuelles Frontend erstellen',
+    claim: FRONTEND_INDIVIDUALITY_NOTE,
+    // Die Aufzählung kommt aus der Fähigkeits-Quelle, nicht aus dieser Datei.
+    // So kann hier nichts stehen, was die Runtime nicht ausführt.
     bullets: [
-      'Inhalts-Inventar der bestehenden Seite statt Neutexten',
-      'Vorschau und ausdrückliche Freigabe vor dem Publish',
-      'Jederzeit zurück auf das Original umschaltbar',
+      ...AVAILABLE_FRONTEND_ENTRY_MODES.map((mode) => `${mode.name}: ${mode.pipeline}`),
+      'Ihre bestehenden Inhalte bleiben erhalten — kein Neutexten',
       'Governance ist im gleichen Umfang enthalten',
     ],
     cta: 'Vorschau ansehen',
@@ -134,6 +141,20 @@ export function PathChoicePage() {
           </div>
         ))}
       </div>
+
+      {PLANNED_FRONTEND_ENTRY_MODES.length > 0 && (
+        <div className="bg-obsidian-900 border border-titanium-800 rounded-lg p-4 space-y-2">
+          <p className="text-sm font-medium text-titanium-200">Noch nicht verfügbar</p>
+          <ul className="space-y-1">
+            {PLANNED_FRONTEND_ENTRY_MODES.map((mode) => (
+              <li key={mode.id} className="text-sm text-titanium-500">
+                <span className="text-titanium-400">{mode.name}</span> — {mode.unavailableReason}
+              </li>
+            ))}
+          </ul>
+          <p className="text-sm text-titanium-500">{FRONTEND_DELIVERY_LIMIT_NOTE}</p>
+        </div>
+      )}
 
       <p className="text-sm text-titanium-500 border-t border-titanium-800 pt-6">
         Beide Wege führen zur Registrierung und zum selben Governance-Umfang. Ohne Frontend-Umbau

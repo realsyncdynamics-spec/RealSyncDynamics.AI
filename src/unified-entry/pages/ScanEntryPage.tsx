@@ -75,7 +75,7 @@ export function ScanEntryPage() {
         consent: data.consent_manager_detected ? '1' : '0',
       });
 
-      navigate(`/unified-entry/preview?${params.toString()}`);
+      navigate(`/unified-entry/entscheidung?${params.toString()}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Ein Fehler ist aufgetreten');
       setLoading(false);
@@ -85,10 +85,12 @@ export function ScanEntryPage() {
   return (
     <div className="space-y-8">
       <div className="space-y-4">
-        <h1 className="text-4xl font-bold text-titanium-50">Welche Website sollen wir neu bauen?</h1>
+        <h1 className="text-4xl font-bold text-titanium-50">Was soll RealSync für Ihre Website automatisieren?</h1>
         <p className="text-xl text-titanium-300">
-          Erst scannen wir Ihre Website. Danach zeigen wir Ihnen sichtbar,
-          was wir daraus machen können.
+          Wir beginnen mit der Prüfung Ihrer Domain auf DSGVO- und
+          KI-Governance-Risiken. Danach entscheiden Sie, ob es bei der
+          laufenden Überwachung bleibt oder ob zusätzlich ein neues Frontend
+          entsteht.
         </p>
       </div>
 
@@ -121,7 +123,7 @@ export function ScanEntryPage() {
       <div className="grid grid-cols-3 gap-4 pt-4">
         <div><div className="text-2xl font-bold text-petrol-500">URL zuerst</div><p className="text-sm text-titanium-400">Kein Account nötig</p></div>
         <div><div className="text-2xl font-bold text-petrol-500">Live Scan</div><p className="text-sm text-titanium-400">Bestehende Website</p></div>
-        <div><div className="text-2xl font-bold text-petrol-500">Preview</div><p className="text-sm text-titanium-400">Danach sichtbar neu bauen</p></div>
+        <div><div className="text-2xl font-bold text-petrol-500">Ihre Wahl</div><p className="text-sm text-titanium-400">Überwachen oder zusätzlich neu bauen</p></div>
       </div>
     </div>
   );

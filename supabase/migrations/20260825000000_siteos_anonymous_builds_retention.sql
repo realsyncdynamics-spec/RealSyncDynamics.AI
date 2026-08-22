@@ -1,4 +1,4 @@
--- Migration: 20260828000000_siteos_anonymous_builds_retention.sql
+-- Migration: 20260825000000_siteos_anonymous_builds_retention.sql
 -- Der 7-Tage-Verfall anonymer Entwürfe — tatsächlich vollzogen.
 --
 -- ## Was fehlte

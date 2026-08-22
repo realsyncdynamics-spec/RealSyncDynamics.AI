@@ -78,8 +78,8 @@ Menschen · Unternehmen · KI-Agenten · Daten · Entscheidungen.
 
 **Primär: Supabase Cloud (EU / Frankfurt)**
 - PostgreSQL 17 (Live-Projekt, Stand 2026-08-16)
-- **178 Edge Functions** im Repo (`supabase/functions/`, Deno/V8) — **177 davon in Produktion** (Stand 2026-08-22), siehe §5
-- **286 Migrations** (`supabase/migrations/`) — 283 angewendet, siehe §5
+- **177 Edge Functions** im Repo (`supabase/functions/`, Deno/V8) — **alle 177 in Produktion** (Stand 2026-08-22), siehe §5
+- **286 Migrations** (`supabase/migrations/`) — **alle 286 angewendet**, siehe §5
 - RLS auf allen App-Tabellen · Realtime Subscriptions
 
 **Node/TypeScript-Services** (containerisiert — **kein Go im Repo**)
@@ -185,28 +185,32 @@ Jeder Agent braucht vier Dimensionen — fehlt eine, ist er nicht governance-fä
 > Produktion läuft. Die Regel bleibt: vor jeder Aussage zum Produktionsstand
 > gegen die Live-DB messen, nicht gegen diese Liste.
 >
-> **Messung vom 2026-08-22**, direkt gegen das Live-Projekt `RealSyncDynamicsLive`
-> (`ebljyceifhnlzhjfyxup`, eu-central-1, PostgreSQL 17):
+> **Messung vom 2026-08-22, nach dem Merge von PR #1117**, direkt gegen das
+> Live-Projekt `RealSyncDynamicsLive` (`ebljyceifhnlzhjfyxup`, eu-central-1,
+> PostgreSQL 17):
 >
-> | | Repo | in Produktion | Lücke |
+> | | Repo (`main`) | in Produktion | Lücke |
 > |---|---|---|---|
-> | Migrationen | 286 | 283 (neueste `20260824000000`) | **3** (die aus PR #1118) |
-> | Edge Functions | 178 | **177** | **1** (`siteos-anon`, neu in PR #1118) |
-> | Tabellen in `public` | — | 367 | — |
+> | Migrationen | 286 | **286** (neueste `20260825000000`) | **0** |
+> | Edge Functions | 177 | **177** | **0** |
+> | Tabellen in `public` | — | 369 | — |
+>
+> **Repo und Produktion decken sich derzeit vollständig** — in beide
+> Richtungen geprüft, es gibt weder eine nicht deployte Function noch eine
+> deployte ohne Verzeichnis. Das ist ein Momentzustand, kein Naturgesetz: Der
+> nächste Merge, der eine Function hinzufügt, öffnet die Lücke wieder, bis
+> `deploy.yml` gelaufen ist.
 >
 > **Die Function-Lücke ist geschlossen.** Frühere Stände dieser Datei nannten
 > „103 deployt, 74 fehlend" und erklärten das mit dem Kontingent des
 > Free-Tarifs (`HTTP 402: Max number of functions reached`). Diese Erklärung
-> ist überholt: Gemessen sind 177 von 178 deployt, und die einzige fehlende
-> ist die, die es zum Messzeitpunkt noch gar nicht gab. Die Vermutung einer
-> harten Schranke bei 100 hat sich damit endgültig erledigt — sie war schon
-> beim Deploy von Function 101 (`siteos`) widerlegt.
+> ist überholt. Die Vermutung einer harten Schranke bei 100 hat sich
+> erledigt — sie war schon beim Deploy von Function 101 (`siteos`) widerlegt.
 >
 > **Auch die Migrations-Lücke von damals ist geschlossen.** `20260821000000_b2_website_asset_relation`
 > ist angekommen; am Schema geprüft, nicht aus der Liste geschlossen:
 > `websites.governance_asset_id`, `scan_runs.asset_id` und der Constraint
-> `findings_scan_run_fk` existieren live. Die verbleibenden drei Migrationen
-> sind die noch nicht gemergten aus PR #1118.
+> `findings_scan_run_fk` existieren live.
 >
 > **Was daraus für die Arbeitsweise folgt.** Zweimal stand hier eine
 > Erklärung, die aus einer Beobachtung geschlossen war (erst der alphabetische
@@ -300,7 +304,7 @@ RealSyncDynamics.AI/
 ├── shared/
 │   └── pricing.ts     Single Source of Truth für Produkt-, Preis- und Berechtigungsmodell
 ├── supabase/
-│   ├── functions/     178 Edge Functions (einziger Ort für Service-Role-Keys)
+│   ├── functions/     177 Edge Functions (einziger Ort für Service-Role-Keys)
 │   └── migrations/    286 Migrations
 ├── apps/
 │   └── agent-runtime/ Agent Runtime (Node/TS, Docker)

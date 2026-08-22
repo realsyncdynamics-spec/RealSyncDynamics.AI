@@ -78,8 +78,8 @@ Menschen · Unternehmen · KI-Agenten · Daten · Entscheidungen.
 
 **Primär: Supabase Cloud (EU / Frankfurt)**
 - PostgreSQL 17 (Live-Projekt, Stand 2026-08-16)
-- **177 Edge Functions** im Repo (`supabase/functions/`, Deno/V8) — **103 davon in Produktion**, siehe §5
-- **279 Migrations** (`supabase/migrations/`) — 278 angewendet, siehe §5
+- **178 Edge Functions** im Repo (`supabase/functions/`, Deno/V8) — **177 davon in Produktion** (Stand 2026-08-22), siehe §5
+- **286 Migrations** (`supabase/migrations/`) — 283 angewendet, siehe §5
 - RLS auf allen App-Tabellen · Realtime Subscriptions
 
 **Node/TypeScript-Services** (containerisiert — **kein Go im Repo**)
@@ -182,81 +182,49 @@ Jeder Agent braucht vier Dimensionen — fehlt eine, ist er nicht governance-fä
 > #### ⚠️ Repo-Stand ≠ Produktions-Stand
 >
 > Die Prozentangaben unten beschreiben den **Stand im Repository**, nicht was in
-> Produktion läuft.
+> Produktion läuft. Die Regel bleibt: vor jeder Aussage zum Produktionsstand
+> gegen die Live-DB messen, nicht gegen diese Liste.
 >
-> **Messung vom 2026-08-16**, direkt gegen das Live-Projekt `RealSyncDynamicsLive`
-> (`ebljyceifhnlzhjfyxup`, eu-central-1, PostgreSQL 17) erhoben — nicht geschätzt:
+> **Messung vom 2026-08-22**, direkt gegen das Live-Projekt `RealSyncDynamicsLive`
+> (`ebljyceifhnlzhjfyxup`, eu-central-1, PostgreSQL 17):
 >
 > | | Repo | in Produktion | Lücke |
 > |---|---|---|---|
-> | Migrationen | 279 | 278 (neueste `20260820000000`) | **1** |
-> | Edge Functions | 177 | **103** (neu gemessen 2026-08-19, 20:18 Uhr) | **74** |
-> | Tabellen in `public` | — | 341 | — |
+> | Migrationen | 286 | 283 (neueste `20260824000000`) | **3** (die aus PR #1118) |
+> | Edge Functions | 178 | **177** | **1** (`siteos-anon`, neu in PR #1118) |
+> | Tabellen in `public` | — | 367 | — |
 >
-> **Die Migrations-Seite ist geschlossen.** Frühere Stände dieser Datei nannten
-> „118 nie angewendet" — das gilt seit der Reconciliation nicht mehr. Es fehlt
-> genau eine: `20260821000000_b2_website_asset_relation` (B2, gemergt am
-> 2026-08-16, in Produktion nicht angekommen). Am Schema geprüft, nicht aus der
-> Migrationsliste geschlossen: `websites.governance_asset_id`,
-> `scan_runs.asset_id` und der Constraint `findings_scan_run_fk` existieren
-> live **nicht**.
+> **Die Function-Lücke ist geschlossen.** Frühere Stände dieser Datei nannten
+> „103 deployt, 74 fehlend" und erklärten das mit dem Kontingent des
+> Free-Tarifs (`HTTP 402: Max number of functions reached`). Diese Erklärung
+> ist überholt: Gemessen sind 177 von 178 deployt, und die einzige fehlende
+> ist die, die es zum Messzeitpunkt noch gar nicht gab. Die Vermutung einer
+> harten Schranke bei 100 hat sich damit endgültig erledigt — sie war schon
+> beim Deploy von Function 101 (`siteos`) widerlegt.
 >
-> **Die Function-Seite braucht eine andere Erklärung als bisher.** Der
-> Syntaxfehler in `add-auditor` ist über #941 behoben, blockiert also nichts
-> mehr. Was zur verbleibenden Lücke belegt ist — und was nicht:
+> **Auch die Migrations-Lücke von damals ist geschlossen.** `20260821000000_b2_website_asset_relation`
+> ist angekommen; am Schema geprüft, nicht aus der Liste geschlossen:
+> `websites.governance_asset_id`, `scan_runs.asset_id` und der Constraint
+> `findings_scan_run_fk` existieren live. Die verbleibenden drei Migrationen
+> sind die noch nicht gemergten aus PR #1118.
 >
-> - Zum Messzeitpunkt lagen alle 80 fehlenden Functions **alphabetisch nach
->   `api-gateway`**, keine einzige davor — ein sauberer Schnitt bei exakt 100.
->   Seit dem Slot-Swap gilt das nicht mehr: `agent-scheduler` und
->   `ai-act-auto-classify` wurden bewusst entfernt und liegen davor
->   (`scripts/edge-functions-retired.txt`). Der Schnitt war ein Indiz, kein
->   Beweis — belegt ist das Kontingent durch `HTTP 402: Max number of
->   functions reached for project`.
-> - Ein Zusammenhang mit Typfehlern liess sich **nicht** herstellen. `deno check`
->   ist als Beleg untauglich, solange es nicht in einer Umgebung mit aufgelösten
->   npm-Abhängigkeiten läuft: dort scheitern auch live deployte Functions
->   (`health`, `governance-agent`, `ai-gateway`) — allerdings an der
->   Paketauflösung (`Could not find a matching package for
->   'npm:@supabase/realtime-js'`), nicht an ihrem Code. Wer die These prüfen
->   will, braucht `deno install` gegen die echten Dependencies.
-> - Die Organisation läuft auf **Plan `free`**.
+> **Was daraus für die Arbeitsweise folgt.** Zweimal stand hier eine
+> Erklärung, die aus einer Beobachtung geschlossen war (erst der alphabetische
+> Schnitt, dann das Tarif-Kontingent), und zweimal war sie falsch. Beide Male
+> hätte eine Messung die Frage sofort beantwortet. Deshalb: messen, nicht
+> herleiten — und die Messung mit Datum und Methode hinschreiben, damit die
+> nächste Sitzung sie prüfen statt glauben muss.
 >
-> **Diese Erklärung ist am 2026-08-19 gefallen.** Der frühere Stand schloss:
-> „Exakt 100 plus harter alphabetischer Schnitt = Free-Tarif-Kontingent, kein
-> Code-Fix deployt Function 101." Der Router `siteos` **ist** als Function 101
-> durchgelaufen — Deploy-Lauf 32277074625, `Deployed Functions on project:
-> siteos`, anschließend über HTTP an allen vier Pfaden nachgewiesen. Danach
-> gingen `save-company-profile` und `create-trial-subscription` ebenso durch.
-> Eine Neumessung über alle 177 Verzeichnisse ergibt 103 deployt, 74 fehlend.
+> Der Free-Tarif bleibt davon unberührt und bleibt ein eigener Befund: keine
+> täglichen Backups, kein Point-in-Time-Recovery, kein SLA, Projekt-Pausierung
+> bei Inaktivität. Für ein Produkt, das Prüfpfad, Evidence-Hash-Ketten und
+> ISO-orientierte Prozesse zusagt, ist das unabhängig von jedem Limit ein
+> Problem.
 >
-> Was daraus folgt und was nicht:
->
-> - Die Zahl 100 war eine **Beobachtung**, das Kontingent eine **Schlussfolgerung
->   daraus**. Das 402 war echt, aber es belegte den Zustand von damals, nicht
->   eine dauerhafte Schranke. Wo die Grenze heute liegt, ist **nicht gemessen**.
-> - „Kann nicht deployt werden" ist für die verbleibenden 74 keine belegte
->   Aussage mehr. Wer eine davon braucht, probiert den Deploy — das kostet einen
->   Workflow-Lauf und beantwortet die Frage, die keine Herleitung beantwortet
->   hat.
-> - Der alphabetische Schnitt war von Anfang an als Indiz gekennzeichnet. Er hat
->   in die Irre geführt; das ist der Grund, warum hier künftig gemessen und
->   nicht geschlossen wird.
->
-> Betroffen sind weiterhin die Module, die diese Liste als weitgehend fertig
-> führt: `evidence-vault`, `policy-packs`, `provenance`, alle `iso42001-*` —
-> allerdings sind `evidence-vault`, `policy-packs`, `provenance` und die vier
-> `iso42001-*` inzwischen deployt. Vor jeder Aussage zum Produktionsstand gilt
-> unverändert: gegen `src/config/production-edge-functions.ts` bzw. die Live-DB
-> prüfen.
->
-> Der Free-Tarif bedeutet zusätzlich: keine täglichen Backups, kein
-> Point-in-Time-Recovery, kein SLA, Projekt-Pausierung bei Inaktivität. Für ein
-> Produkt, das Prüfpfad, Evidence-Hash-Ketten und ISO-orientierte Prozesse
-> zusagt, ist das ein eigener Governance-Befund — unabhängig vom Limit.
->
-> Ein Modul, dessen Backend nie deployt wurde, ist in Produktion **nicht** verfügbar,
-> egal wie vollständig der Code im Repo ist. Vor Aussagen zum Produktionsstand daher
-> immer gegen die Live-DB bzw. `supabase functions list` prüfen, nicht gegen diese Liste.
+> Ein Modul, dessen Backend nie deployt wurde, ist in Produktion **nicht**
+> verfügbar, egal wie vollständig der Code im Repo ist. Vor Aussagen zum
+> Produktionsstand daher gegen `src/config/production-edge-functions.ts` bzw.
+> `supabase functions list` prüfen.
 
 - **Audit** (95%) — DSGVO-Scan, Recheck-Cron, Email-Drip, Share-Token
 - **Policy Packs** (100%) — DSGVO, EU AI Act, branchenspezifisch; Auto-Empfehlung nach Tenant-Branche
@@ -332,8 +300,8 @@ RealSyncDynamics.AI/
 ├── shared/
 │   └── pricing.ts     Single Source of Truth für Produkt-, Preis- und Berechtigungsmodell
 ├── supabase/
-│   ├── functions/     177 Edge Functions (einziger Ort für Service-Role-Keys)
-│   └── migrations/    279 Migrations
+│   ├── functions/     178 Edge Functions (einziger Ort für Service-Role-Keys)
+│   └── migrations/    286 Migrations
 ├── apps/
 │   └── agent-runtime/ Agent Runtime (Node/TS, Docker)
 ├── services/          runtime-core · evidence-runtime · openclaw-agent · playwright-scanner

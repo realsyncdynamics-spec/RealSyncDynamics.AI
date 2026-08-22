@@ -5,8 +5,10 @@
 `RealSyncDynamicsLive` (`ebljyceifhnlzhjfyxup`, eu-central-1, PostgreSQL 17),
 Edge-Function-Verzeichnis, Stripe-Abbildung in der Datenbank.
 
-Ergänzende Spezifikation zu Design Intelligence und Guided Integration:
-`docs/product/design-intelligence-and-guided-integration.md`.
+Ergänzende Spezifikationen:
+`docs/product/design-intelligence-and-guided-integration.md` (Design Intelligence,
+Guided Integration) und `docs/product/siteos-anonymous-build.md` (anonymer Build,
+Live Preview, Project Claim — inkl. der Sandbox-Grenze für interaktive Vorschauen).
 
 Diese Matrix ist **gemessen, nicht abgeleitet**. Jede Zeile nennt den Beleg.
 Wo etwas nicht geprüft werden konnte, steht das ausdrücklich da — nicht eine

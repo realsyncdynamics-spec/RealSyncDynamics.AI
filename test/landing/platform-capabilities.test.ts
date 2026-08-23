@@ -65,22 +65,19 @@ describe('Plattform-Fähigkeiten — Behauptung deckt sich mit dem Backend', () 
   });
 
   it('die gemessenen Lücken stehen nicht auf live', () => {
-    // Am 2026-08-17 (zweite Messung, nachmittags) gegen Produktion geprüft:
-    // diese Functions sind nicht deployt.
-    //
-    // Die Liste hat sich am selben Tag geändert — `evidence-vault`,
-    // `policy-packs` und `provenance` wurden zwischen den beiden Messungen
-    // deployt. Wer hier etwas streicht oder ergänzt, misst vorher gegen
-    // `supabase functions list` und zieht CAPABILITIES_MEASURED_AT mit.
+    // Messung 2026-08-23 (Management-API gegen das Live-Projekt): alle 177
+    // Repo-Functions sind deployt, Repo ⇄ Produktion deckungsgleich — die
+    // Liste der gemessenen Lücken ist damit leer. Frühere Stände (2026-08-17:
+    // bot-chat, bot-voice-webhook, appointment-book, order-intake,
+    // ai-act-auto-classify, c2pa-manifest-generate) sind geschlossen.
+    // Wer hier etwas ergänzt, misst vorher gegen `supabase functions list`
+    // und zieht CAPABILITIES_MEASURED_AT mit.
     //
     // Grenze des Tests, ausdrücklich: Er kennt nur diese handgepflegte Liste.
     // Eine Function, die niemand hier einträgt, kann unbemerkt auf 'live'
     // stehen — genau so stand „WhatsApp- & Telefonbot" mit 0 von 4 deployten
     // Functions als verfügbar auf der Startseite.
-    const notDeployed = [
-      'bot-chat', 'bot-voice-webhook', 'appointment-book', 'order-intake',
-      'ai-act-auto-classify', 'c2pa-manifest-generate',
-    ];
+    const notDeployed: string[] = [];
     const wrongly = LIVE_CAPABILITIES
       .filter((cap) => cap.backedBy.some((fn) => notDeployed.includes(fn)))
       .map((cap) => cap.name);
@@ -288,6 +285,13 @@ describe('Hero-Panel — Beispiel ist als Beispiel gekennzeichnet', () => {
         .split(/[^A-ZÄÖÜ0-9]+/)
         .filter((w) => w.length > 3),
     );
+    // Seit der Messung vom 2026-08-23 kann die Building-Liste legitim leer
+    // sein — dann gibt es nichts, was eine Beispielkarte fälschlich zeigen
+    // könnte. Der Wort-Guard greift nur, wenn Module in Arbeit existieren.
+    if (BUILDING_CAPABILITIES.length === 0) {
+      expect(buildingWords).toEqual([]);
+      return;
+    }
     expect(buildingWords.length, 'Keine Wörter zum Prüfen extrahiert').toBeGreaterThan(0);
     for (const card of RUNTIME_PREVIEW_CARDS) {
       const text = `${card.label} ${card.detail ?? ''}`.toUpperCase();

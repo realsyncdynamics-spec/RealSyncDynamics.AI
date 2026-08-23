@@ -306,9 +306,22 @@ Benannt statt übergangen (`CLAUDE.md` §14).
 | 4 | **Doppelter Abrufcode** | `siteos/handlers/runtime-scan.ts` enthält eine eigene `observe()`-Fassung mit derselben Aufgabe wie `_shared/public-scan/observe.ts`. Bewusst nicht zusammengeführt: Das hätte einen produktiven SiteOS-Pfad angefasst, ohne dass der Auftrag es verlangt. Zusammenführen ist ein sauberer Folgeschritt. |
 | 5 | **`production-edge-functions.ts` ist gegenüber `CLAUDE.md` veraltet** | Die Datei nennt „177 im Repository, 103 in Produktion" (Messung 2026-08-19); `CLAUDE.md` §5 nennt eine Messung vom 2026-08-22 mit 177/177. Beide können nicht stimmen. **Vor der nächsten Aussage zum Produktionsstand neu messen** — die Datei selbst mahnt genau das an. |
 | 6 | **WhatsApp-Agent** | Weiterhin ohne Tabelle und ohne Edge Function (Reality Matrix). Der Marketplace führt das Modul, weist es aber nie als aktiv aus. |
-| 7 | **Drei anonyme Scan-Pfade nebeneinander** | Siehe §7.1. Braucht eine Entscheidung des Eigentümers, keine stille Angleichung. |
+| 7 | ~~Drei anonyme Scan-Pfade nebeneinander~~ | **Entschieden 2026-08-23**: `/audit` ist kanonisch. Siehe §7.1 und `canonical-funnel-decision.md`. |
 
-### 7.1 Der wichtigste offene Punkt: drei Scan-Pfade
+### 7.1 Entschieden am 2026-08-23: `/audit` ist kanonisch
+
+> **Dieser Punkt ist beantwortet.** Der Eigentümer hat `/audit` + `gdpr_audits`
+> als kanonischen Einstieg und Datensatz festgelegt, mit
+> `audit_id := gdpr_audits.id` und ohne Umbenennung der Spalte.
+> `public_site_scans` und `/scan` sind damit **nicht** das Fundament;
+> übernommen wird die Analysefähigkeit dieses PR, nicht sein
+> Persistenzmodell. Entscheid, Begründung und das gemessene
+> Integrations-Audit der vier Lücken: `docs/product/canonical-funnel-decision.md`.
+>
+> Der folgende Abschnitt bleibt als Beleg stehen — er ist die Messung, auf
+> der die Entscheidung beruht.
+
+#### Die Ausgangslage: drei Scan-Pfade
 
 Nach dieser Änderung führen **drei** Wege zu einem anonymen Scan:
 

@@ -177,76 +177,69 @@ leichter als ein blockierter Dienst. `test/public-scan/detectors.test.ts`
 hält beides fest: 1,5 MB feindseliges HTML in vertretbarer Zeit **und** die
 weiterhin funktionierende Erkennung an einem gewöhnlichen Tag.
 
-### 4.1b Erkennung nur in Adressposition
+### 4.1b Hosts werden verglichen, nicht gesucht
 
-CodeQL meldete neun hochstufige Befunde in `detectors.ts`. Sie waren **keine
-Formalie** — beide Klassen zeigten auf echte Ungenauigkeiten:
+CodeQL meldete neun hochstufige Befunde in `detectors.ts`, beide Klassen mit
+Recht:
 
 **Sieben × „Missing regular expression anchor".** Muster wie
 `/static\.hotjar\.com/i` trafen die Zeichenfolge überall im Dokument: im
-Fliesstext („wir verzichten auf static.hotjar.com"), in einem Kommentar, in
-einer Beispiel-URL eines Blogartikels. Für einen Bericht, der dem Kunden
-sagt „wir haben Hotjar erkannt", ist das eine Falschmeldung.
-
-Gelöst über `signal()`: Vor jedem Host steht jetzt das `//` einer echten
-Adresse, davor beliebige (begrenzt viele) Subdomains.
-`//www.googletagmanager.com/gtag/js` wird erkannt, der Satz darüber nicht.
-Signale, die keine Adresse sind — `__NEXT_DATA__`, `wp-content/`,
-`dataLayer.push` — stehen unverändert daneben.
+Fliesstext („wir verzichten auf static.hotjar.com"), in Kommentaren, in
+Beispiel-URLs. Für einen Bericht, der „wir haben Hotjar erkannt" behauptet,
+ist das eine Falschmeldung.
 
 **Zwei × „Incomplete URL substring sanitization".** Die Einstufung eines
-Schrift-Hosts als Google Fonts lief über
-`h.endsWith('googleapis.com')`. Das trifft auch `boesegoogleapis.com`. An
-dieser Prüfung hängt, ob der Bericht das Urteil des LG München I zitiert —
-ein Gerichtsurteil dem falschen Sachverhalt zuzuordnen ist genau die Art
-Falschaussage, die §3.3 ausschliesst. Jetzt ein exakter Vergleich gegen
-`GOOGLE_FONT_HOSTS`.
+Schrift-Hosts als Google Fonts lief über `h.endsWith('googleapis.com')` —
+das trifft auch `boesegoogleapis.com`. An dieser Prüfung hängt, ob der
+Bericht das Urteil des LG München I zitiert. Ein Gerichtsurteil dem falschen
+Sachverhalt zuzuordnen ist genau die Art Falschaussage, die §3.3
+ausschliesst.
 
-**Lehre für die nächste Sitzung.** Vor diesen Befunden standen zwei Runden
-Blindkorrektur: erst die Rückverfolgung, dann die Weiterleitungen — beides
-real und nachgemessen, aber beides **nicht** die Ursache der Meldung. Die
-Zahl blieb zweimal bei exakt neun. Was gefehlt hat, war die Befundliste
-selbst; sie kam schliesslich über die Review-Kommentare des Bots mit Regel,
-Datei und Zeile. Also: bei einem roten Prüfer zuerst die Befundliste
-beschaffen, nicht die plausibelste Ursache raten. Die zwei nebenbei
-geschlossenen Lücken waren ein Glücksfall, kein Verfahren.
+#### Zwei Fehlversuche, und was sie gelehrt haben
 
-### 4.2 Menge und Zeit
+Der erste Anlauf begrenzte Quantoren, der zweite verankerte Host-Muster an
+`//`. Beide Male blieb die Ursache unberührt:
 
-Der Abruf liest **streamend** und bricht bei der Obergrenze ab
-(`observe.ts`). `response.text()` würde die vollständige Antwort in den
-Speicher ziehen — eine Datei von einem Gigabyte hinter einer harmlos
-aussehenden Adresse wäre damit ein Denial-of-Service gegen die eigene
-Funktion. Der Test dazu füttert einen **endlosen** Strom; ohne Abbruch liefe
-er nicht durch.
+| Stand | Befunde |
+|---|---|
+| `b01da7c` (ursprünglich) | 9 |
+| `580eb61` (Quantoren begrenzt, Weiterleitungen geprüft) | 9 |
+| `61a6a26` (Host-Muster an `//` verankert) | **17** |
 
-Dazu: 12 s Zeitgrenze, 4 Scans je Minute und IP-Hash in eigenem Zählerraum.
+Der zweite Versuch hat die Zahl **verdoppelt**: Das Aufteilen in `signal()`
+machte mehr Einzelmuster sichtbar, jedes mit demselben Mangel. Am Muster zu
+schrauben konnte nicht helfen, weil das Muster selbst das Problem war.
 
-### 4.3 Mandantentrennung und Zugriff
+#### Die Lösung: keine Host-Muster mehr
 
-`public_site_scans` (Migration `20260826000000`) trägt `tenant_id NULL` bis
-zur Übernahme.
+Adressen werden jetzt **einmal geparst** (`extractDocumentUrls()`) und Hosts
+**verglichen** (`hostMatches()` — exakt oder als echte Subdomain, mit Punkt
+davor). Kein regulärer Ausdruck der Datei enthält noch einen Hostnamen.
 
-- **Vor der Übernahme**: kein Weg über PostgREST. Die SELECT-Policy verlangt
-  `tenant_id IS NOT NULL`; eine anonyme Zeile erfüllt sie nie. Erreichbar ist
-  sie nur über die Edge Function mit service_role, und die verlangt die
-  Scan-Kennung (UUIDv4, 122 Bit Zufall). Es gibt keine Auflistung und keine
-  Aufzählbarkeit — damit ist die Forderung aus §28 des Auftrags erfüllt, dass
-  eine Kennung nicht genügt, um *beliebige* fremde Berichte zu holen.
-- **Nach der Übernahme**: gewöhnliche Mandantentrennung über
-  `is_tenant_member()`.
+Das ist keine Beruhigung des Prüfers, sondern in jeder Hinsicht besser:
 
-Die Übernahme (`public-site-scan/claim`) löst den Mandanten aus dem **Token**
-des Aufrufers auf, nie aus dem Anfragekörper. Sie ist idempotent und schliesst
-über ein bedingtes `UPDATE … WHERE tenant_id IS NULL` das Rennen zweier
-gleichzeitiger Übernahmen aus.
+- **exakt an der Subdomain-Grenze** — `static.hotjar.com.angreifer.example`
+  ist kein Hotjar, `cdn.static.hotjar.com` schon;
+- **keine Fehlalarme aus Fliesstext** — nur echte Adressen zählen;
+- **schneller** — ein Durchlauf statt dreissig;
+- **ohne Rückverfolgungsrisiko** im Host-Teil.
 
-### 4.4 Datenminimierung
+Signale, die keine Adresse sind (`__NEXT_DATA__`, `wp-content/`,
+`dataLayer.push`), bleiben Muster — sie enthalten keinen Hostnamen und sind
+weder unscharf noch teuer. Die Schrift-Erkennung läuft über denselben Weg;
+zwei Extraktionspfade nebeneinander wären eine zweite Wahrheit.
 
-Kein HTML der geprüften Seite wird gespeichert (Art. 5 Abs. 1 lit. c DSGVO) —
-nur die abgeleiteten Befunde, Kennzahlen und erkannten Technologien. Die IP
-liegt als Hash vor. Nicht übernommene Scans verfallen nach sieben Tagen
-(Art. 5 Abs. 1 lit. e DSGVO).
+#### Lehre für die nächste Sitzung
+
+Bei einem roten Prüfer **zuerst die Befundliste beschaffen**, dann die
+Methode hinterfragen — nicht das Muster nachbessern. Zwei Runden gingen
+verloren, weil die plausibelste Ursache geraten statt gemessen wurde. Die
+Liste kam schliesslich über die Review-Kommentare des Bots, mit Regel, Datei
+und Zeile.
+
+Die dabei nebenbei geschlossenen Lücken (quadratische Rückverfolgung,
+ungeprüfte Weiterleitungen) waren real und sind nachgemessen — aber sie
+waren nicht die Ursache der Meldung. Ein Glücksfall, kein Verfahren.
 
 ---
 

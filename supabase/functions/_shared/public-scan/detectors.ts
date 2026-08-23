@@ -70,97 +70,128 @@ export interface PublicScanSignals {
 const ATTR = '[^>]{0,200}';
 
 /**
- * Baut ein Erkennungsmuster aus zwei Arten von Signalen.
+ * Ein Signal, das an einer **Adresse** hängt.
  *
- * ## Warum ein Host nur in Adressposition zählt
+ * ## Warum hier keine regulären Ausdrücke mehr stehen
  *
- * Ein blosses `/static\.hotjar\.com/` trifft die Zeichenfolge **überall** im
- * Dokument — auch in einem Fliesstext („wir verzichten auf
- * static.hotjar.com"), in einem Kommentar oder in einer Beispiel-URL eines
- * Blogartikels. Für einen Bericht, der dem Kunden sagt „wir haben Hotjar
- * erkannt", ist das eine Falschmeldung.
+ * Bis zum 2026-08-23 wurden Hosts mit Mustern wie `/static\.hotjar\.com/i`
+ * im HTML gesucht. Das war aus drei Gründen falsch, und zwei davon hat erst
+ * die Sicherheitsanalyse sichtbar gemacht:
  *
- * Deshalb steht vor jedem Host das `//` einer echten Adresse, davor
- * beliebige Subdomains. `//www.googletagmanager.com/gtag/js` wird erkannt,
- * der Satz darüber nicht.
+ *  1. **Zu unscharf.** Die Zeichenfolge trifft auch im Fliesstext („wir
+ *     verzichten auf static.hotjar.com"), in Kommentaren und in
+ *     Beispiel-URLs. Für einen Bericht, der „wir haben Hotjar erkannt"
+ *     behauptet, ist das eine Falschmeldung.
+ *  2. **Nicht abgrenzbar.** `googleapis\.com` trifft auch
+ *     `boesegoogleapis.com`. Ein Muster kann Subdomain-Grenzen nicht
+ *     zuverlässig ausdrücken, ein Hostvergleich schon.
+ *  3. **Teuer.** Dreissig Muster über 1,5 MB fremdes HTML, jedes mit eigenem
+ *     Rückverfolgungsverhalten.
  *
- * Nebenbei beantwortet das die CodeQL-Meldung „Missing regular expression
- * anchor": Ein Host-Muster ohne Verankerung sieht für die Analyse aus wie
- * eine Adressprüfung, bei der beliebige Hosts davor stehen dürfen. Die
- * Verankerung an `//` ist hier aber keine Beruhigung des Prüfers, sondern
- * die sachlich richtige Erkennung — der Prüfer hat auf eine echte
- * Ungenauigkeit gezeigt.
+ * Jetzt werden die Adressen des Dokuments **einmal** geparst und die Hosts
+ * **verglichen**. Das ist schneller, exakt an der Subdomain-Grenze und
+ * braucht für den Host-Teil überhaupt keinen regulären Ausdruck.
  *
- * @param hosts Adress-Bestandteile, Punkte bereits maskiert. Dürfen einen
- *   Pfad enthalten (`googletagmanager\.com/gtag/js`).
- * @param raw Signale, die **keine** Adresse sind: globale Variablen,
- *   Attribute, Dateipfade. Sie stehen unverändert im Muster.
+ * Zwei Anläufe davor haben nur am Muster geschraubt und die Zahl der
+ * Sicherheitsmeldungen erst nicht bewegt und dann verdoppelt. Die Lehre
+ * steht in `docs/product/public-scan-funnel.md` §4.1b: Die Ursache war die
+ * Methode, nicht das Muster.
  */
-function signal(hosts: readonly string[], raw?: string): RegExp {
-  const parts: string[] = [];
-  if (hosts.length > 0) {
-    // Label-Länge und Anzahl sind begrenzt — siehe die Anmerkung zu `ATTR`:
-    // unbegrenzte Quantoren haben auf fremdem HTML nichts zu suchen.
-    parts.push(`//(?:[a-z0-9-]{1,63}\\.){0,8}(?:${hosts.join('|')})`);
-  }
-  if (raw !== undefined) parts.push(raw);
-  return new RegExp(parts.join('|'), 'i');
+interface HostSignal {
+  /** Registrierbarer Host oder vollständiger Hostname. */
+  host: string;
+  /** Muss zusätzlich im Pfad vorkommen. Ohne Angabe genügt der Host. */
+  pathContains?: string;
 }
 
-const AI_SERVICE_PATTERNS: readonly (readonly [string, RegExp])[] = [
-  ['OpenAI', signal(['api\\.openai\\.com', 'cdn\\.openai\\.com'], `["']gpt-(?:3\\.5|4|4o|5)`)],
-  ['Anthropic', signal(['api\\.anthropic\\.com'], `["']claude-[a-z0-9-]`)],
-  ['Google Gemini', signal(['generativelanguage\\.googleapis\\.com'], `["']gemini-[a-z0-9-]`)],
-  ['Azure OpenAI', signal(['openai\\.azure\\.com'])],
-  ['Cohere', signal(['api\\.cohere\\.(?:ai|com)'])],
-  ['Mistral', signal(['api\\.mistral\\.ai'])],
-  ['Hugging Face', signal(['api-inference\\.huggingface\\.co'])],
-  ['Perplexity', signal(['api\\.perplexity\\.ai'])],
+interface Detector {
+  label: string;
+  /** Adressen, an denen der Dienst erkennbar ist. */
+  hosts?: readonly HostSignal[];
+  /**
+   * Signale, die **keine** Adresse sind: globale Variablen, Attribute,
+   * ausgelieferte Pfade auf der eigenen Domain. Bleiben Muster — sie
+   * enthalten keinen Hostnamen und sind damit weder unscharf noch teuer.
+   */
+  raw?: RegExp;
+}
+
+const AI_SERVICE_DETECTORS: readonly Detector[] = [
+  { label: 'OpenAI', hosts: [{ host: 'api.openai.com' }, { host: 'cdn.openai.com' }], raw: /["']gpt-(?:3\.5|4|4o|5)/i },
+  { label: 'Anthropic', hosts: [{ host: 'api.anthropic.com' }], raw: /["']claude-[a-z0-9-]/i },
+  { label: 'Google Gemini', hosts: [{ host: 'generativelanguage.googleapis.com' }], raw: /["']gemini-[a-z0-9-]/i },
+  { label: 'Azure OpenAI', hosts: [{ host: 'openai.azure.com' }] },
+  { label: 'Cohere', hosts: [{ host: 'api.cohere.ai' }, { host: 'api.cohere.com' }] },
+  { label: 'Mistral', hosts: [{ host: 'api.mistral.ai' }] },
+  { label: 'Hugging Face', hosts: [{ host: 'api-inference.huggingface.co' }] },
+  { label: 'Perplexity', hosts: [{ host: 'api.perplexity.ai' }] },
 ];
 
-const CHAT_WIDGET_PATTERNS: readonly (readonly [string, RegExp])[] = [
-  ['Intercom', signal(['widget\\.intercom\\.io'], 'intercomSettings')],
-  ['Drift', signal(['js\\.driftt\\.com'], 'drift\\.load')],
-  ['Tidio', signal(['code\\.tidio\\.co'])],
-  ['Crisp', signal(['client\\.crisp\\.chat'])],
-  ['Zendesk', signal(['static\\.zdassets\\.com'], 'zEmbed')],
-  ['HubSpot Chat', signal(['js\\.hs-scripts\\.com'], 'hubspot-messages')],
-  ['LiveChat', signal(['cdn\\.livechatinc\\.com'])],
-  ['Tawk.to', signal(['embed\\.tawk\\.to'])],
-  ['Userlike', signal(['widget\\.userlike\\.com'], 'userlike-cdn')],
-  ['Botpress', signal(['cdn\\.botpress\\.cloud'])],
-  ['Voiceflow', signal(['cdn\\.voiceflow\\.com'])],
+const CHAT_WIDGET_DETECTORS: readonly Detector[] = [
+  { label: 'Intercom', hosts: [{ host: 'widget.intercom.io' }], raw: /intercomSettings/i },
+  { label: 'Drift', hosts: [{ host: 'js.driftt.com' }], raw: /drift\.load/i },
+  { label: 'Tidio', hosts: [{ host: 'code.tidio.co' }] },
+  { label: 'Crisp', hosts: [{ host: 'client.crisp.chat' }] },
+  { label: 'Zendesk', hosts: [{ host: 'static.zdassets.com' }], raw: /zEmbed/i },
+  { label: 'HubSpot Chat', hosts: [{ host: 'js.hs-scripts.com' }], raw: /hubspot-messages/i },
+  { label: 'LiveChat', hosts: [{ host: 'cdn.livechatinc.com' }] },
+  { label: 'Tawk.to', hosts: [{ host: 'embed.tawk.to' }] },
+  { label: 'Userlike', hosts: [{ host: 'widget.userlike.com' }], raw: /userlike-cdn/i },
+  { label: 'Botpress', hosts: [{ host: 'cdn.botpress.cloud' }] },
+  { label: 'Voiceflow', hosts: [{ host: 'cdn.voiceflow.com' }] },
 ];
 
-const TECHNOLOGY_PATTERNS: readonly (readonly [string, RegExp])[] = [
-  // Die vier CMS werden an ausgelieferten Pfaden und der Generator-Angabe
-  // erkannt, nicht an einem Host — sie liegen auf der Domain des Kunden.
-  ['WordPress', signal([], `wp-content/|wp-includes/|name=["']generator["']${ATTR}WordPress`)],
-  ['TYPO3', signal([], `typo3temp/|name=["']generator["']${ATTR}TYPO3`)],
-  ['Drupal', signal([], `sites/default/files/|Drupal\\.settings`)],
-  ['Joomla', signal([], `/media/jui/|name=["']generator["']${ATTR}Joomla`)],
-  ['Shopify', signal(['cdn\\.shopify\\.com'], 'Shopify\\.theme')],
-  ['Wix', signal(['static\\.wixstatic\\.com'])],
-  ['Squarespace', signal(['static1\\.squarespace\\.com'])],
-  ['Webflow', signal(['assets(?:-global)?\\.website-files\\.com'], 'data-wf-page')],
-  ['Next.js', signal([], '/_next/static/|__NEXT_DATA__')],
-  ['Nuxt', signal([], '/_nuxt/|__NUXT__')],
-  ['React', signal([], 'data-reactroot|__REACT_DEVTOOLS')],
-  ['Vue', signal([], 'data-v-[0-9a-f]{8}|__VUE__')],
-  ['Angular', signal([], 'ng-version=|\\bng-app\\b')],
-  ['Google Analytics', signal(['googletagmanager\\.com/gtag/js', 'google-analytics\\.com/analytics\\.js'])],
-  ['Google Tag Manager', signal(['googletagmanager\\.com/gtm\\.js'], 'dataLayer\\.push')],
-  ['Meta Pixel', signal([`connect\\.facebook\\.net/[^"']{0,120}/fbevents\\.js`], 'fbq\\(')],
-  ['Matomo', signal([], 'matomo\\.js|piwik\\.js')],
-  ['Hotjar', signal(['static\\.hotjar\\.com'])],
+const TECHNOLOGY_DETECTORS: readonly Detector[] = [
+  // Die vier CMS liegen auf der Domain des Kunden — sie sind an
+  // ausgelieferten Pfaden und der Generator-Angabe erkennbar, nicht an
+  // einem Fremd-Host.
+  { label: 'WordPress', raw: new RegExp(`wp-content/|wp-includes/|name=["']generator["']${ATTR}WordPress`, 'i') },
+  { label: 'TYPO3', raw: new RegExp(`typo3temp/|name=["']generator["']${ATTR}TYPO3`, 'i') },
+  { label: 'Drupal', raw: /sites\/default\/files\/|Drupal\.settings/i },
+  { label: 'Joomla', raw: new RegExp(`/media/jui/|name=["']generator["']${ATTR}Joomla`, 'i') },
+  { label: 'Shopify', hosts: [{ host: 'cdn.shopify.com' }], raw: /Shopify\.theme/i },
+  { label: 'Wix', hosts: [{ host: 'static.wixstatic.com' }] },
+  { label: 'Squarespace', hosts: [{ host: 'static1.squarespace.com' }] },
+  { label: 'Webflow', hosts: [{ host: 'website-files.com' }], raw: /data-wf-page/i },
+  { label: 'Next.js', raw: /\/_next\/static\/|__NEXT_DATA__/i },
+  { label: 'Nuxt', raw: /\/_nuxt\/|__NUXT__/i },
+  { label: 'React', raw: /data-reactroot|__REACT_DEVTOOLS/i },
+  { label: 'Vue', raw: /data-v-[0-9a-f]{8}|__VUE__/i },
+  { label: 'Angular', raw: /ng-version=|\bng-app\b/i },
+  {
+    label: 'Google Analytics',
+    hosts: [
+      { host: 'googletagmanager.com', pathContains: '/gtag/js' },
+      { host: 'google-analytics.com', pathContains: '/analytics.js' },
+    ],
+  },
+  {
+    label: 'Google Tag Manager',
+    hosts: [{ host: 'googletagmanager.com', pathContains: '/gtm.js' }],
+    raw: /dataLayer\.push/i,
+  },
+  {
+    label: 'Meta Pixel',
+    hosts: [{ host: 'connect.facebook.net', pathContains: '/fbevents.js' }],
+    raw: /fbq\(/i,
+  },
+  { label: 'Matomo', raw: /matomo\.js|piwik\.js/i },
+  { label: 'Hotjar', hosts: [{ host: 'static.hotjar.com' }] },
 ];
 
 const CONSENT_MANAGER_PATTERN =
   /cookiebot|usercentrics|onetrust|borlabs|klaro|cookieyes|iubenda|complianz|consentmanager|didomi|osano|termly|cmplz|__tcfapi/i;
 
 /** Schrift-Dienste, die als Fremd-Host ins HTML eingebunden werden. */
-const FONT_HOST_PATTERN =
-  /https?:\/\/(fonts\.googleapis\.com|fonts\.gstatic\.com|use\.typekit\.net|p\.typekit\.net|use\.fontawesome\.com|cdn\.fonts\.net|fast\.fonts\.net)/gi;
+const FONT_HOSTS: readonly string[] = [
+  'fonts.googleapis.com',
+  'fonts.gstatic.com',
+  'use.typekit.net',
+  'p.typekit.net',
+  'use.fontawesome.com',
+  'cdn.fonts.net',
+  'fast.fonts.net',
+];
 
 /**
  * Die Google-Schrift-Hosts, exakt.
@@ -189,13 +220,16 @@ const AI_DISCLOSURE_PATTERN =
 
 export function collectSignals(obs: SiteObservation): PublicScanSignals {
   const html = obs.html;
+  // Einmal parsen, dreimal auswerten. Vorher lief je Detektor ein eigener
+  // Ausdruck über das gesamte Dokument.
+  const urls = extractDocumentUrls(html);
 
   return {
-    technologies: matchLabels(html, TECHNOLOGY_PATTERNS),
-    aiTools: matchLabels(html, AI_SERVICE_PATTERNS),
-    chatWidgets: matchLabels(html, CHAT_WIDGET_PATTERNS),
+    technologies: matchDetectors(html, urls, TECHNOLOGY_DETECTORS),
+    aiTools: matchDetectors(html, urls, AI_SERVICE_DETECTORS),
+    chatWidgets: matchDetectors(html, urls, CHAT_WIDGET_DETECTORS),
     hasConsentManager: CONSENT_MANAGER_PATTERN.test(html),
-    externalFontHosts: uniqueFontHosts(html),
+    externalFontHosts: uniqueFontHosts(urls),
     hasAiDisclosure: AI_DISCLOSURE_PATTERN.test(html),
     formCount: (html.match(/<form\b/gi) ?? []).length,
     hasViewportMeta: new RegExp(`<meta${ATTR}name\\s*=\\s*["']viewport["']`, 'i').test(html),
@@ -206,23 +240,87 @@ export function collectSignals(obs: SiteObservation): PublicScanSignals {
   };
 }
 
-function matchLabels(html: string, patterns: readonly (readonly [string, RegExp])[]): string[] {
-  const found: string[] = [];
-  for (const [label, pattern] of patterns) {
-    if (pattern.test(html)) found.push(label);
+/** Eine im Dokument gefundene Adresse, zerlegt. */
+interface DocumentUrl {
+  host: string;
+  path: string;
+}
+
+/**
+ * Alle absoluten Adressen des Dokuments, einmal geparst.
+ *
+ * Erfasst `src`/`href`-Attribute **und** Adressen im Skript-Text (ein
+ * `fetch("https://api.openai.com/…")` steht in keinem Attribut). Relative
+ * Verweise werden übergangen — sie tragen keinen Host, und die Signale auf
+ * der eigenen Domain laufen ohnehin über `raw`.
+ *
+ * Die Quantoren sind begrenzt: Auch dieser Ausdruck läuft über fremdes HTML.
+ */
+export function extractDocumentUrls(html: string): DocumentUrl[] {
+  const urls: DocumentUrl[] = [];
+  const seen = new Set<string>();
+
+  // Schema-relative Adressen (`//cdn.example.com/x.js`) sind im Web üblich
+  // und tragen einen Host — deshalb die Auflösung gegen eine Basis.
+  for (const match of html.matchAll(/(?:https?:)?\/\/[^\s"'<>()\\]{1,600}/gi)) {
+    const raw = match[0];
+    if (seen.has(raw)) continue;
+    seen.add(raw);
+    try {
+      const url = new URL(raw.startsWith('//') ? `https:${raw}` : raw);
+      urls.push({ host: url.hostname.toLowerCase(), path: url.pathname });
+    } catch {
+      // Unlesbares wird übergangen, nicht geraten.
+    }
   }
+
+  return urls;
+}
+
+/**
+ * Gehört `candidate` zu `host`? Exakt oder als echte Subdomain.
+ *
+ * Der Punkt vor `host` ist der ganze Punkt: Ohne ihn würde
+ * `boesegoogleapis.com` als Treffer für `googleapis.com` gelten — genau der
+ * Fehler, den die Sicherheitsanalyse in der Schrift-Einstufung gefunden hat.
+ */
+export function hostMatches(candidate: string, host: string): boolean {
+  return candidate === host || candidate.endsWith(`.${host}`);
+}
+
+function matchDetectors(
+  html: string,
+  urls: readonly DocumentUrl[],
+  detectors: readonly Detector[],
+): string[] {
+  const found: string[] = [];
+
+  for (const detector of detectors) {
+    const viaHost = detector.hosts?.some((signal) =>
+      urls.some((url) =>
+        hostMatches(url.host, signal.host) &&
+        (signal.pathContains === undefined || url.path.includes(signal.pathContains)),
+      ),
+    ) ?? false;
+
+    if (viaHost || detector.raw?.test(html) === true) found.push(detector.label);
+  }
+
   return found;
 }
 
-function uniqueFontHosts(html: string): string[] {
+/**
+ * Schrift-Hosts aus den bereits geparsten Adressen.
+ *
+ * Läuft über denselben Weg wie die Technologie-Erkennung — ein zweiter
+ * Extraktionspfad daneben wäre eine zweite Wahrheit über denselben
+ * Gegenstand.
+ */
+function uniqueFontHosts(urls: readonly DocumentUrl[]): string[] {
   const hosts = new Set<string>();
-  // `matchAll` statt `test` — das globale Flag hält sonst `lastIndex` und
-  // liefert bei wiederholtem Aufruf falsche Ergebnisse.
-  for (const match of html.matchAll(FONT_HOST_PATTERN)) {
-    try {
-      hosts.add(new URL(match[0]).hostname);
-    } catch {
-      // Unlesbare Treffer werden übergangen, nicht geraten.
+  for (const url of urls) {
+    for (const font of FONT_HOSTS) {
+      if (hostMatches(url.host, font)) hosts.add(url.host);
     }
   }
   return [...hosts].sort();

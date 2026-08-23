@@ -361,3 +361,43 @@ describe('Google-Fonts-Zuordnung ist exakt', () => {
     expect(befund!.reference).toMatch(/LG München/);
   });
 });
+
+describe('Host-Vergleich statt Host-Muster', () => {
+  it('erkennt einen Dienst an einer echten Subdomain', () => {
+    const html = SAUBER.replace('</head>', '<script src="https://cdn.static.hotjar.com/x.js"></script></head>');
+    expect(collectSignals(beobachtung(html)).technologies).toContain('Hotjar');
+  });
+
+  it('lässt sich von einem ähnlich benannten Host nicht täuschen', () => {
+    // `static.hotjar.com.angreifer.example` endet nicht auf `.static.hotjar.com`
+    // und ist ein völlig anderer Host. Ein Muster hätte hier zugeschlagen.
+    const html = SAUBER.replace(
+      '</head>',
+      '<script src="https://static.hotjar.com.angreifer.example/x.js"></script></head>',
+    );
+    expect(collectSignals(beobachtung(html)).technologies).toEqual([]);
+  });
+
+  it('verlangt den Pfad, wo der Dienst nur daran erkennbar ist', () => {
+    // googletagmanager.com liefert sowohl gtag/js als auch gtm.js — der
+    // Host allein sagt nicht, welches der beiden eingebunden ist.
+    const nurGtm = SAUBER.replace('</head>', '<script src="https://www.googletagmanager.com/gtm.js"></script></head>');
+    const erkannt = collectSignals(beobachtung(nurGtm)).technologies;
+
+    expect(erkannt).toContain('Google Tag Manager');
+    expect(erkannt).not.toContain('Google Analytics');
+  });
+
+  it('erkennt eine schema-relative Adresse', () => {
+    const html = SAUBER.replace('</head>', '<script src="//widget.intercom.io/w.js"></script></head>');
+    expect(collectSignals(beobachtung(html)).chatWidgets).toContain('Intercom');
+  });
+
+  it('zählt einen Schrift-Host nur bei echter Zugehörigkeit', () => {
+    const echt = SAUBER.replace('</head>', '<link href="https://fonts.googleapis.com/css2"></head>');
+    const gefaelscht = SAUBER.replace('</head>', '<link href="https://fonts.googleapis.com.evil.example/css2"></head>');
+
+    expect(collectSignals(beobachtung(echt)).externalFontHosts).toEqual(['fonts.googleapis.com']);
+    expect(collectSignals(beobachtung(gefaelscht)).externalFontHosts).toEqual([]);
+  });
+});

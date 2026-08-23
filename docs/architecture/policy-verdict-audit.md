@@ -182,11 +182,38 @@ Wand. Drei UI-Stellen laufen hinein:
 Ein Server-Pfad für die Registrierung in `websites` existiert **nicht**.
 `website-domain-manager` arbeitet auf `website_projects`, nicht auf `websites`.
 
-**Nach §3 (REUSE > FIX > EXTEND > CREATE) und §14** ist der Weg: eine Edge
-Function, die `requireUser` + `requireTenantMembership` prüft und dann mit
-Service-Role schreibt. Nicht: eine INSERT-Policy für `authenticated` ergänzen —
-das gäbe dem Browser Schreibrecht auf eine Registry, deren Kommentar das
-ausdrücklich ausschließt. **Nicht in diesem Schritt umgesetzt** (§25).
+**Behoben** — `supabase/functions/tenant-website-register` plus umgestellter
+Aufrufer in `scansApi.ts`.
+
+Vorgehen nach §3 (REUSE > FIX > EXTEND > CREATE) geprüft, in dieser Reihenfolge:
+
+| Weg | Ergebnis |
+|---|---|
+| REUSE einer bestehenden Function | keine schreibt in `websites` — nur `scan-pipeline.ts` und `schedule-assets.ts` lesen |
+| EXTEND von `tenant-audit` | passt nicht: Registrierung ist eine eigene Aktion, alle drei Aufrufstellen legen eine Domain an, ohne zwingend zu scannen |
+| RLS-INSERT-Policy für `authenticated` | **verworfen** — siehe unten |
+| CREATE | gewählt, Auth-Muster 1:1 von `tenant-audit` |
+
+**Warum keine INSERT-Policy.** Das war zunächst der naheliegende Weg: eine
+Policy mit `is_tenant_member(tenant_id)` würde die Tenant-Grenze exakt
+durchsetzen. Sie scheitert an den Spalten. `plan_tier` ist
+`check in ('audit','rebuild','managed')` und `status` läuft bis `live` — beides
+kaufmännische Zustände, die laut Tabellenkommentar von Stripe-Webhook und
+Provisioning gesetzt werden. Mit einer INSERT-Policy dürfte der Browser sie
+selbst wählen und sich ein bezahltes Paket eintragen. Die Function setzt sie
+deshalb fest und übernimmt sie nie aus dem Body.
+
+**Idempotent statt fehlerhaft.** `unique (tenant_id, domain)` existiert; die
+Function gibt bei bereits registrierter Domain die bestehende Zeile mit
+`created: false` zurück, und fängt den Wettlauf zweier paralleler
+Registrierungen über `23505` ab. Damit entfällt der Sonderfall, den eine
+Aufrufstelle bisher mit `/* RLS oder Duplikat */` verschluckt hat.
+
+**Noch nicht ausgerollt.** Die Function liegt im Repo, `deploy.yml` rollt sie
+beim Merge aus. Bis dahin ist sie in `UNBACKED_CALLERS` vermerkt — der Test
+`edge-function-contract.test.ts` verlangt genau das und meldet den Eintrag
+wieder, sobald sie deployt ist. Der Client übersetzt ein 404 in „Registry-Dienst
+ist nicht verfügbar (noch nicht ausgerollt)" statt in ein nacktes `HTTP 404`.
 
 ### 4.2 `website-domain-manager` — Tenant-Grenze wird nicht geprüft
 
@@ -339,7 +366,7 @@ Erst danach Phase 2 (Evidence).
 
 | # | Punkt | Warum gestoppt |
 |---|---|---|
-| 1 | `/websites`-INSERT | Fix berührt Produktionspfad; Edge Function vs. RLS-Policy ist eine Architekturentscheidung |
+| 1 | ~~`/websites`-INSERT~~ | **erledigt** — `tenant-website-register`, siehe §4.1 |
 | 2 | `website-domain-manager` | Autorisierungslücke in deployter Function — Fix gehört in einen eigenen, sichtbaren PR |
 | 3 | 103 Functions ohne JWT-Prüfung | Triage nötig, Zahl ist kein Befund |
 | 4 | 103 vs. 177 deployt | Doku widerspricht sich; messen statt zitieren |

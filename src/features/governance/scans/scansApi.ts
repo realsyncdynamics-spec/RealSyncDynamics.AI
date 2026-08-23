@@ -107,29 +107,75 @@ export async function listWebsitesForTenant(tenantId: string): Promise<TenantWeb
 }
 
 /**
- * Adds a website to the tenant's registry. Domain is normalised
- * lowercase + scheme-stripped. Caller is responsible for being a
- * tenant member; the server-side RLS / service-role-only insert
- * policy is the actual gate (this just shapes the row).
+ * Trägt eine Domain in die Registry des Tenants ein — über die Edge
+ * Function `tenant-website-register`.
+ *
+ * Vorher stand hier ein direktes `sb.from('websites').insert(...)`. Das
+ * konnte nie gelingen: `public.websites` hat für `authenticated` nur eine
+ * SELECT-Policy, jeder Schreibversuch aus dem Browser wurde von RLS
+ * abgelehnt. Serverseitig zu schreiben ist auch die richtige Grenze, denn
+ * `plan_tier` und `status` sind kaufmännisch bedeutsam und dürfen nicht
+ * vom Client gewählt werden — die Function setzt sie fest.
+ *
+ * Eine bereits registrierte Domain ist kein Fehler: die Function gibt die
+ * bestehende Zeile zurück.
  */
 export async function addWebsiteForTenant(
   tenantId: string,
   rawInput: string,
 ): Promise<TenantWebsite> {
-  const sb = getSupabase();
   const domain = normaliseDomain(rawInput);
   if (!domain) throw new Error('Bitte eine gültige Domain angeben.');
-  const { data, error } = await sb.from('websites')
-    .insert({
-      tenant_id: tenantId,
-      domain,
-      plan_tier: 'audit',
-      status:    'lead',
-    })
-    .select('id, tenant_id, domain, plan_tier, status, created_at')
-    .single();
-  if (error) throw new Error(error.message);
-  return data as TenantWebsite;
+
+  const sb = getSupabase();
+  const { data: sess } = await sb.auth.getSession();
+  const accessToken = sess?.session?.access_token;
+  if (!accessToken) throw new Error('Bitte einloggen, um eine Domain zu hinterlegen.');
+
+  let r: Response;
+  try {
+    r = await fetch(`${SUPABASE_URL}/functions/v1/tenant-website-register`, {
+      method:  'POST',
+      headers: {
+        'Content-Type':  'application/json',
+        'Authorization': `Bearer ${accessToken}`,
+        'X-Tenant-Id':   tenantId,
+      },
+      body: JSON.stringify({ domain }),
+    });
+  } catch {
+    throw new Error('Registry-Dienst nicht erreichbar. Bitte Verbindung prüfen.');
+  }
+
+  // Wie bei triggerTenantAudit: bei 5xx und Gateway-Timeouts kommt teils ein
+  // leerer Body, r.json() würde dann „Unexpected end of JSON input" ins UI werfen.
+  const raw = await r.text().catch(() => '');
+  let body: { ok?: boolean; website?: TenantWebsite; error?: { message?: string } } = {};
+  if (raw.trim()) {
+    try {
+      body = JSON.parse(raw);
+    } catch {
+      throw new Error(
+        r.ok
+          ? 'Ungültige Antwort vom Registry-Dienst erhalten.'
+          : registerErrorForStatus(r.status),
+      );
+    }
+  }
+
+  if (!r.ok || !body.ok || !body.website) {
+    throw new Error(body.error?.message ?? registerErrorForStatus(r.status));
+  }
+  return body.website;
+}
+
+function registerErrorForStatus(status: number): string {
+  if (status === 401 || status === 403) return 'Keine Berechtigung für diesen Workspace.';
+  // 404 heißt hier fast immer: die Edge Function ist noch nicht deployt.
+  // Ohne diesen Fall läge im UI ein nacktes „HTTP 404", das niemand deuten kann.
+  if (status === 404) return 'Registry-Dienst ist nicht verfügbar (noch nicht ausgerollt).';
+  if (status >= 500)  return 'Registry-Dienst ist derzeit nicht verfügbar.';
+  return `Domain konnte nicht hinterlegt werden (HTTP ${status}).`;
 }
 
 function normaliseDomain(raw: string): string | null {

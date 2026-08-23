@@ -231,6 +231,13 @@ export const UNBACKED_CALLERS: readonly UnbackedCaller[] = [
   { slug: 'social-orchestrator-persistence', surface: 'core/social-orchestrator', publicPath: false },
   { slug: 'tenant-branding-update', surface: 'features/settings — Branding', publicPath: false },
   { slug: 'trigger-workflow', surface: 'features/workflows', publicPath: false },
+  // Neu in diesem PR angelegt, noch nicht ausgerollt. Der Aufrufer
+  // (`scansApi.ts::addWebsiteForTenant`) ersetzt ein clientseitiges INSERT,
+  // das RLS ohnehin ablehnte — der Pfad ist also nicht schlechter als vorher,
+  // sondern meldet den Grund jetzt verständlich. Eintrag entfernen, sobald
+  // `deploy.yml` gelaufen ist; der Test „meldet Einträge in UNBACKED_CALLERS,
+  // die inzwischen deployt sind" erinnert daran.
+  { slug: 'tenant-website-register', surface: 'features/governance — Domain hinterlegen', publicPath: false },
   { slug: 'website-domain-manager', surface: 'features/website-operations — Domains', publicPath: false },
   { slug: 'website-maintenance-agent', surface: 'features/website-operations — Wartung', publicPath: false },
   { slug: 'website-operations-agent', surface: 'features/website-operations — Website anlegen', publicPath: false },

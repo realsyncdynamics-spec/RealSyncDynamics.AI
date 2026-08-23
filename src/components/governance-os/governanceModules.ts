@@ -45,7 +45,7 @@ export const GOVERNANCE_MODULES: GovernanceModule[] = [
   { id: 'documents', label: 'Dokumente', icon: 'FileText', route: '/app/documents', status: 'live', gate: { kind: 'all' }, description: 'Erzeugte Dokumente und Nachweise' },
   { id: 'audit', label: 'Audit Center', icon: 'ClipboardCheck', route: '/app/audit', status: 'live', gate: { kind: 'module', module: 'audit_center' }, description: 'Prüfpfad, Audit-Läufe und Exporte' },
   { id: 'settings', label: 'Einstellungen', icon: 'Settings', route: '/app/settings', status: 'live', gate: { kind: 'all' }, description: 'Konto, Sicherheit und Integrationen' },
-  { id: 'crm', label: 'CRM', icon: 'Users', route: '/app/crm', status: 'live', gate: { kind: 'all' }, description: 'Leads, Kontakte, Unternehmen, Deals und Funnel-Aktivitäten' },
+  { id: 'crm', label: 'CRM', icon: 'Users', route: '/app/company?view=crm', status: 'live', gate: { kind: 'all' }, description: 'Leads, Kontakte, Unternehmen, Deals und Funnel-Aktivitäten' },
 ];
 
 export const TAB_MODULES = GOVERNANCE_MODULES.filter((m) => m.status === 'live' || m.status === 'beta');

@@ -416,7 +416,6 @@ const EnterpriseCompliancePage = lazy(() => import('./enterprise-os/pages/Compli
 const EnterpriseEvidencePage = lazy(() => import('./enterprise-os/pages/EvidencePage').then((m) => ({ default: m.EvidencePage })));
 const EnterpriseMonitoringPage = lazy(() => import('./enterprise-os/pages/MonitoringPage').then((m) => ({ default: m.MonitoringPage })));
 
-const AgentsOverviewPage = lazy(() => import('./features/agents/AgentsOverviewPage').then((m) => ({ default: m.AgentsOverviewPage })));
 const AutomationAgentPage = lazy(() => import('./features/agents/AutomationAgentPage').then((m) => ({ default: m.AutomationAgentPage })));
 const SupportAgentPage = lazy(() => import('./features/agents/SupportAgentPage').then((m) => ({ default: m.SupportAgentPage })));
 const CallAgentSusiPage = lazy(() => import('./features/agents/CallAgentSusiPage').then((m) => ({ default: m.CallAgentSusiPage })));
@@ -849,7 +848,9 @@ function RoutesWithTracking() {
       <Route path="/app/documents" element={<GovernanceBrowserShell><GovernanceDocumentsView /></GovernanceBrowserShell>} />
       <Route path="/app/audit" element={<GovernanceBrowserShell><GovernanceAuditExportView /></GovernanceBrowserShell>} />
       <Route path="/app/settings" element={<GovernanceBrowserShell><SettingsView /></GovernanceBrowserShell>} />
-      <Route path="/app/agents" element={<GovernanceBrowserShell><AgentsOverviewPage /></GovernanceBrowserShell>} />
+      {/* /app/agents ist oben bereits auf GovernanceAgentsCenterView registriert —
+          eine zweite Registrierung (AgentsOverviewPage) war unerreichbar und wurde
+          nach Freigabe vom 2026-08-23 entfernt; die Unterrouten bleiben. */}
       <Route path="/app/agents/automation" element={<GovernanceBrowserShell><AutomationAgentPage /></GovernanceBrowserShell>} />
       <Route path="/app/agents/support" element={<GovernanceBrowserShell><SupportAgentPage /></GovernanceBrowserShell>} />
       <Route path="/app/agents/susi" element={<GovernanceBrowserShell><CallAgentSusiPage /></GovernanceBrowserShell>} />

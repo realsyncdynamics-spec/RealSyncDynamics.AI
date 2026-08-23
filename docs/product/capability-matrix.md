@@ -36,7 +36,7 @@ Limit-Zählung.
 |---|---|---|---|---|---|---|---|---|
 | Website Chatbot | `/chatbot/start` (CTA verlinkt auf `/app/bots`) · `/app/bots`, `/app/bots/:botId`, `/app/bots/inbox` | `bot-chat` · `bots`, `bot_conversations`, `bot_messages` | ✅ | Backend: `_shared/entitlements.ts` in `bot-chat` · Frontend: **kein Gate** | starter (`ai_bots`, `website_chat`) | `response_pack` (growth+) | `website_chat` | ja (`answersPerMonth`, `flat_plus_usage`) |
 | Telefon-Agent (Voice) | `/phonebot/start` · `/app/agents/susi` | `bot-voice-webhook` · `voice_channels` | ✅ | Backend: Entitlement-Prüfung in `bot-voice-webhook` (`bots.voice`, `limit.bot_voice_minutes_monthly`) · Frontend: kein Gate | agency (`voice`) | `voice` (agency+) | `voice_bot` | ja (Minuten) |
-| WhatsApp Bot | nur `/pricing/whatsapp` (Marketing) — **keine App-Route** | **keine Function, keine Tabelle** (live gemessen: kein `whatsapp`-Slug) | ❌ | — | growth (`whatsapp` in `plan.modules`) | `whatsapp` (growth+) | `whatsapp_bot` | vorgesehen (Konversationsgebühren) |
+| WhatsApp Bot | `/pricing/whatsapp` (Marketing) — App-Route für Kanal-Setup fehlt noch | `whatsapp-webhook` (Meta Cloud API, seit 2026-08-23 im Repo) · `whatsapp_channels` (Migration `20260826000000`) | Repo ✅ · Prod erst nach Merge + `deploy.yml` | Backend: Signaturprüfung + `bots.whatsapp`-Gate + `limit.bot_messages_monthly`; neue Konversationen auf `limit.whatsapp_conversations_monthly` (metered) | growth (`whatsapp` in `plan.modules`, Entitlements gebunden) | `whatsapp` (growth+) | `whatsapp_bot` | ja (Konversationen, metered) |
 | Telegram Bot | keine eigene App-Route (Kanal in Bot-Konfig) | `telegram-webhook`, `telegram-channels` · `telegram_connections` | ✅ | über Bot-Capabilities | growth (`telegram`) | — | — | ja (Antworten) |
 | Terminbuchung | keine eigene App-Route | `appointment-book` · `appointments`, `bot_appointments`, `availability_rules` | ✅ | prüft nur `capabilities.appointments` — **keine Verfügbarkeitsprüfung** (`reality-matrix.md` §2) | in keinem `plan.modules` | — | `booking` | Limit vorgesehen (`limit.booking_appointments_monthly` fehlt noch) |
 | Agent Runtime | `/app/ai-systems/agents` · `/app/agents` (⚠️ Route doppelt, siehe §3.5) | `enterprise-ai-os-agents-list/-run`, `agent-os-runner`, `governance-agents-list` · `enterprise_agent_runs` · Service `apps/agent-runtime` | ✅ | Backend: Entitlement-Prüfung in `enterprise-ai-os-agents-run` | — (nicht als `ModuleId` modelliert) | — | — | `automationRunsPerMonth` |
@@ -111,11 +111,16 @@ Zielbild ist damit Verdrahtungsarbeit an bestehenden Bausteinen.
    und Herkunftsnachweis sind per Messung `live`,
    `CAPABILITIES_MEASURED_AT = 2026-08-23`) samt der messungs-gepinnten
    Tests.
-2. **WhatsApp wird dreifach verkauft, existiert aber nicht.** Als Modul ab
-   Growth (`plan.modules`), als Add-on (growth+) und als Bookable Module —
-   ohne Function, ohne Tabelle, ohne App-Route (live verifiziert). Vor jeder
-   Plan-Konsolidierung entscheiden: bauen oder aus den Verkaufsflächen
-   nehmen.
+2. **WhatsApp wurde dreifach verkauft, existierte aber nicht — Entscheidung
+   „Backend bauen" (2026-08-23), v1 auf diesem Branch.** Neu:
+   Edge Function `whatsapp-webhook` (Meta Cloud API: Verify-Handshake,
+   `X-Hub-Signature-256`, Dedupe, `bots.whatsapp`-Gate, `bot_reply`-Pipeline,
+   Graph-API-Versand), Migration `20260826000000_whatsapp_channel.sql`
+   (`whatsapp_channels` mit RLS, Entitlement-Keys `bots.whatsapp` +
+   `limit.whatsapp_conversations_monthly` ab Growth), Tests
+   `test/bots/whatsapp-parse.test.ts`. **Noch offen**: Deploy (erst nach
+   Merge), Meta-Secrets (`WHATSAPP_VERIFY_TOKEN`, `WHATSAPP_APP_SECRET`,
+   `WHATSAPP_ACCESS_TOKEN`), App-Route für das Kanal-Setup im Dashboard.
 3. **Voice hat zwei Preise.** Add-on vs. Bookable Module — als
    `MODULE_ADDON_PRICE_DIVERGENCE` deklariert und getestet, aber ungelöst.
    Auflösung gehört in die Preiskalkulation (`reality-matrix.md` §5.2).
@@ -123,10 +128,11 @@ Zielbild ist damit Verdrahtungsarbeit an bestehenden Bausteinen.
    `appointment-book` prüft keine Verfügbarkeit, `availability_rules` wird
    nirgends gelesen (`reality-matrix.md` §2). Das Bookable Module `booking`
    verspricht eine Slot-Engine, die es nicht gibt.
-5. **`/app/agents` ist doppelt registriert** (`src/App.tsx:848` und
-   `src/App.tsx:852`). Die erste Route gewinnt; `AgentsOverviewPage` ist
-   toter Code hinter einer unerreichbaren Route. Entfernen greift in
-   Bestehendes ein → Fragepflicht nach `CLAUDE.md` §10.3.
+5. **`/app/agents` war doppelt registriert — nach Freigabe vom 2026-08-23
+   bereinigt.** Die unerreichbare zweite Registrierung (`AgentsOverviewPage`)
+   wurde aus `src/App.tsx` entfernt; die Datei und die `/app/agents/*`-
+   Unterrouten bleiben. Verhalten unverändert (die erste Route gewann schon
+   vorher).
 6. **`ChatbotStartPage`/`PhonebotStartPage` täuschten eine Funktion vor —
    erledigt am 2026-08-23 (dieser Branch).** Beide Erstellungs-Buttons
    lösten nur einen Platzhalter-`alert` aus, obwohl `bot-chat` und
@@ -141,11 +147,12 @@ Zielbild ist damit Verdrahtungsarbeit an bestehenden Bausteinen.
 8. **Plan-Reduktion (Free + 2–3 Kernpakete) ist eine Produktentscheidung,
    keine Architekturarbeit.** Die Struktur dafür liegt bereits auf `main`:
    `BOOKABLE_MODULES` modelliert genau „Core + einzeln zubuchbare Module"
-   neben der Sechser-Leiter. Eine Reduktion heißt: Leiter in
-   `shared/pricing.ts` ändern, `npm run sync:pricing`, DB-Katalog
-   (`plan_catalog`, `products`) und Stripe nachziehen — Regeln in
-   `docs/product/pricing-governance.md`. Solange beide Systeme parallel
-   existieren, gilt Befund 3 (doppelte Preise) verschärft.
+   neben der Sechser-Leiter. Der konkrete Zielschnitt ist als Vorschlag
+   ausgearbeitet: `docs/product/plan-consolidation-proposal.md`
+   (FREE / STARTER / BUSINESS + Modul-Store, Enterprise auf Anfrage) —
+   Umsetzung erst nach Freigabe der dort gelisteten Entscheidungen.
+   Solange beide Systeme parallel existieren, gilt Befund 3 (doppelte
+   Preise) verschärft.
 
 ---
 

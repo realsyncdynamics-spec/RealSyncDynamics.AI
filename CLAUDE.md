@@ -227,7 +227,9 @@ Jeder Agent braucht vier Dimensionen — fehlt eine, ist er nicht governance-fä
 > `20260826000000_restore_client_function_grants.sql` (gezielte Grants nur für
 > Client-Rollen, interne Funktionen bleiben gesperrt). Konsequenz: Auch
 > Funktions-ACLs gehören zur Drift-Prüfung, nicht nur Existenz von Functions
-> und Migrationen.
+> und Migrationen — seitdem geprüft durch `npm run check:function-acls`
+> (`.github/workflows/function-acl-drift.yml`, täglich 06:30 UTC; Soll-Listen
+> im Skript nachziehen, wenn eine Migration Client-Grants ändert).
 >
 > Der Free-Tarif bleibt davon unberührt und bleibt ein eigener Befund: keine
 > täglichen Backups, kein Point-in-Time-Recovery, kein SLA, Projekt-Pausierung

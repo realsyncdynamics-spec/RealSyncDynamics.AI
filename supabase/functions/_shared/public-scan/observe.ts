@@ -20,9 +20,16 @@
 // die abgeleiteten Befunde und Signale.
 
 import type { SiteObservation } from '../../../../packages/siteos-core/src/index.ts';
+import { validateScanTarget } from './target.ts';
 
 export const FETCH_TIMEOUT_MS = 12_000;
 export const MAX_HTML_BYTES = 1_500_000;
+
+/**
+ * Wie viele Weiterleitungen verfolgt werden. Jede einzelne wird erneut
+ * geprüft — siehe `followWithGuard()`.
+ */
+export const MAX_REDIRECTS = 5;
 
 export const SCANNER_USER_AGENT =
   'RealSyncDynamics-Scanner/1.0 (+https://realsyncdynamicsai.de/scan)';
@@ -49,18 +56,7 @@ export async function observeSite(url: URL, options: ObserveOptions = {}): Promi
   const startedAt = now();
 
   try {
-    const response = await fetchImpl(url.toString(), {
-      method: 'GET',
-      redirect: 'follow',
-      signal: controller.signal,
-      headers: {
-        'user-agent': SCANNER_USER_AGENT,
-        // Ohne diesen Header liefern manche Seiten eine reine
-        // Weiterleitungsantwort statt des Dokuments.
-        accept: 'text/html,application/xhtml+xml',
-        'accept-language': 'de-DE,de;q=0.9,en;q=0.8',
-      },
-    });
+    const response = await followWithGuard(url, fetchImpl, controller.signal);
     const ttfbMs = now() - startedAt;
 
     const headers: Record<string, string> = {};
@@ -70,9 +66,11 @@ export async function observeSite(url: URL, options: ObserveOptions = {}): Promi
 
     const { text, byteLength } = await readCapped(response, maxBytes);
 
-    // Nach Weiterleitungen ist `response.url` die tatsächlich gelesene
-    // Adresse. Sie zählt für die Analyse — sonst würde ein Verweis von
-    // http auf https als unverschlüsselt gemeldet.
+    // Die tatsächlich gelesene Adresse. Sie stammt aus der Sprungkette in
+    // `followWithGuard()`, das sie über `withUrl()` setzt — die Laufzeit
+    // füllt `response.url` bei `redirect: 'manual'` nicht mehr selbst.
+    // Für die Analyse zählt genau diese Adresse: Sonst würde eine Seite,
+    // die http auf https umleitet, als unverschlüsselt gemeldet.
     const finalUrl = response.url && response.url !== '' ? response.url : url.toString();
     const finalHost = safeHostname(finalUrl) ?? url.hostname;
 
@@ -90,6 +88,90 @@ export async function observeSite(url: URL, options: ObserveOptions = {}): Promi
   } finally {
     clearTimeout(timeout);
   }
+}
+
+/**
+ * Verfolgt Weiterleitungen **selbst** und prüft jedes Ziel erneut.
+ *
+ * ## Warum nicht `redirect: 'follow'`
+ *
+ * Das wäre eine Umgehung der gesamten SSRF-Schranke. `validateScanTarget()`
+ * prüft die Adresse, die der Besucher eingibt — nicht die, bei der der Abruf
+ * endet. Mit automatischem Folgen genügt eine **öffentliche** Seite, die mit
+ * `302 Location: http://169.254.169.254/…` antwortet, um den Scanner auf den
+ * Cloud-Metadaten-Endpunkt zu lenken. Die Eingangsprüfung sähe eine
+ * harmlose Domain und liesse sie durch.
+ *
+ * Deshalb: `redirect: 'manual'`, jede Zwischenstation durch dieselbe
+ * Prüfung, und eine Obergrenze gegen Weiterleitungsschleifen.
+ */
+async function followWithGuard(
+  start: URL,
+  fetchImpl: FetchLike,
+  signal: AbortSignal,
+): Promise<Response> {
+  let current = start;
+
+  for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
+    const response = await fetchImpl(current.toString(), {
+      method: 'GET',
+      redirect: 'manual',
+      signal,
+      headers: {
+        'user-agent': SCANNER_USER_AGENT,
+        // Ohne diesen Header liefern manche Seiten eine reine
+        // Weiterleitungsantwort statt des Dokuments.
+        accept: 'text/html,application/xhtml+xml',
+        'accept-language': 'de-DE,de;q=0.9,en;q=0.8',
+      },
+    });
+
+    const location = isRedirect(response.status) ? response.headers.get('location') : null;
+    if (location === null || location.trim() === '') {
+      // `Response.url` bleibt bei `redirect: 'manual'` leer. Damit die
+      // Analyse die tatsächlich gelesene Adresse kennt (sonst würde eine
+      // Seite, die http auf https umleitet, als unverschlüsselt gemeldet),
+      // wird sie hier gesetzt.
+      return withUrl(response, current.toString());
+    }
+
+    // Der Körper der Weiterleitungsantwort wird nie gelesen. Ohne
+    // ausdrückliches Schliessen bliebe die Verbindung offen — bei fünf
+    // Sprüngen je Scan summiert sich das.
+    await response.body?.cancel().catch(() => undefined);
+
+    let next: URL;
+    try {
+      next = new URL(location, current);
+    } catch {
+      throw new Error('redirect target is not parseable');
+    }
+
+    const check = validateScanTarget(next.toString());
+    if (!check.ok) {
+      // Bewusst ein Abbruch und kein stilles Ignorieren: Wer hierher
+      // umleitet, versucht etwas, das nicht stattfinden soll.
+      throw new Error(`redirect target refused: ${check.reason}`);
+    }
+    current = check.url;
+  }
+
+  throw new Error('too many redirects');
+}
+
+function isRedirect(status: number): boolean {
+  return status === 301 || status === 302 || status === 303 || status === 307 || status === 308;
+}
+
+/** `Response.url` ist schreibgeschützt und bei `manual` leer. */
+function withUrl(response: Response, url: string): Response {
+  try {
+    Object.defineProperty(response, 'url', { value: url, configurable: true });
+  } catch {
+    // Lässt eine Laufzeit das nicht zu, fällt `observeSite` auf die
+    // Ausgangsadresse zurück — schlechter, aber nicht falsch.
+  }
+  return response;
 }
 
 /**

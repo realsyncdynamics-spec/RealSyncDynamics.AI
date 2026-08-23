@@ -136,10 +136,46 @@ Zwei Befunde aus der Testarbeit, die sonst niemand mehr nachvollziehen könnte:
   `127.0.0.1` an. Eine eigene Erkennung wäre nicht nur überflüssig, sie würde
   öffentliche Adressen fälschlich sperren (`010.0.0.1` → `8.0.0.1`).
 
+**Weiterleitungen werden selbst verfolgt und einzeln geprüft.** Das ist keine
+Feinheit, sondern der Unterschied zwischen Schranke und Schein: Mit
+`redirect: 'follow'` prüft die Eingangskontrolle nur die Adresse, die der
+Besucher eingibt — nicht die, bei der der Abruf endet. Eine **öffentliche**
+Seite, die mit `302 Location: http://169.254.169.254/…` antwortet, hätte den
+Scanner damit auf den Cloud-Metadaten-Endpunkt gelenkt, und die
+Eingangsprüfung hätte eine harmlose Domain gesehen und durchgelassen. Der
+erste Entwurf hatte genau diese Lücke. Jetzt: `redirect: 'manual'`, jede
+Zwischenstation durch dieselbe Prüfung, höchstens fünf Sprünge. Die Tests
+belegen, dass das verbotene Ziel **nie abgerufen** wird.
+
 Bekannte Grenze, ausdrücklich nicht geschlossen: **DNS-Rebinding**. Dafür
 müsste der Host vor dem Abruf aufgelöst und die Verbindung an die geprüfte
 Adresse gebunden werden. Die Schranke senkt die Angriffsfläche, ersetzt aber
 keine Netzsegmentierung.
+
+### 4.1a Rückverfolgung in regulären Ausdrücken
+
+Der Scanner lässt rund 30 Ausdrücke über bis zu 1,5 MB HTML einer **fremden**
+Seite laufen. Ein unbegrenztes `[^>]+` vor einem Literal ist in dieser Lage
+eine Denial-of-Service-Lücke, keine Stilfrage.
+
+Gemessen am 2026-08-23 an `/<meta[^>]+name…robots…[^>]*content…/`:
+
+| Eingabe (`'<meta '`-Wiederholungen) | unbegrenzt | begrenzt auf 200 |
+|---|---|---|
+| 4 000 (24 kB) | 90 ms | 3 ms |
+| 16 000 (96 kB) | 1 379 ms | 13 ms |
+| 64 000 (384 kB) | **19 743 ms** | 51 ms |
+
+Quadratisch gegen linear — und 384 kB liegen weit unter der Leseobergrenze.
+Ein einziger Aufruf hätte den Worker minutenlang gebunden, bei einem
+Endpunkt, der ohne Anmeldung erreichbar ist.
+
+Alle Attribut-Quantoren sind deshalb über die Konstante `ATTR` auf 200 Zeichen
+begrenzt. Der Preis ist bewusst gewählt: Ein Tag, dessen gesuchtes Attribut
+jenseits davon steht, wird nicht erkannt — ein übersehener Hinweis wiegt
+leichter als ein blockierter Dienst. `test/public-scan/detectors.test.ts`
+hält beides fest: 1,5 MB feindseliges HTML in vertretbarer Zeit **und** die
+weiterhin funktionierende Erkennung an einem gewöhnlichen Tag.
 
 ### 4.2 Menge und Zeit
 

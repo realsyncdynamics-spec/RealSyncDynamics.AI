@@ -12,6 +12,7 @@ import {
   observeSite,
   parseSetCookies,
   registrableDomain,
+  MAX_REDIRECTS,
 } from '../../supabase/functions/_shared/public-scan/observe';
 
 /** Antwort mit Body-Stream, wie `fetch` ihn liefert. */
@@ -57,14 +58,16 @@ describe('observeSite', () => {
     expect(headers['user-agent']).toMatch(/RealSyncDynamics-Scanner/);
   });
 
-  it('übernimmt nach einer Weiterleitung die tatsächlich gelesene Adresse', async () => {
-    // Sonst würde eine Seite, die http auf https umleitet, als
-    // unverschlüsselt ausgeliefert gemeldet — ein Falschbefund.
-    const obs = await observeSite(new URL('http://firma.de'), {
-      fetchImpl: async () => antwort('<html></html>', { url: 'https://www.firma.de/' }),
+  it('meldet ohne Weiterleitung die angefragte Adresse', async () => {
+    // `Response.url` wird bewusst nicht ausgewertet: Seit die
+    // Weiterleitungen selbst verfolgt werden (redirect: 'manual'), setzt
+    // die Laufzeit das Feld nicht mehr. Die gelesene Adresse ergibt sich
+    // aus der Sprungkette — der Fall mit Weiterleitung steht weiter unten.
+    const obs = await observeSite(new URL('https://firma.de/pfad'), {
+      fetchImpl: async () => antwort('<html></html>', { url: 'https://irrefuehrend.example/' }),
     });
 
-    expect(obs.url).toBe('https://www.firma.de/');
+    expect(obs.url).toBe('https://firma.de/pfad');
   });
 
   it('misst die Antwortzeit über die eingesetzte Zeitquelle', async () => {
@@ -186,5 +189,84 @@ describe('registrableDomain', () => {
 
   it('lässt eine bereits kurze Domain unverändert', () => {
     expect(registrableDomain('firma.de')).toBe('firma.de');
+  });
+});
+
+describe('Weiterleitungen — die Schranke gilt auf jedem Sprung', () => {
+  /** Antwort mit Weiterleitung. */
+  function umleitung(nach: string, status = 302): Response {
+    return new Response(null, { status, headers: { location: nach } });
+  }
+
+  it('folgt einer Weiterleitung auf einen öffentlichen Host', async () => {
+    const besucht: string[] = [];
+    const obs = await observeSite(new URL('http://firma.de'), {
+      fetchImpl: async (input) => {
+        besucht.push(input);
+        return besucht.length === 1
+          ? umleitung('https://www.firma.de/')
+          : antwort('<html>ziel</html>', { url: '' });
+      },
+    });
+
+    expect(besucht).toEqual(['http://firma.de/', 'https://www.firma.de/']);
+    expect(obs.html).toContain('ziel');
+    // Die Analyse muss die tatsächlich gelesene Adresse sehen, sonst würde
+    // eine Seite, die http auf https umleitet, als unverschlüsselt gemeldet.
+    expect(obs.url).toBe('https://www.firma.de/');
+  });
+
+  it.each([
+    ['http://169.254.169.254/latest/meta-data/', 'Cloud-Metadaten'],
+    ['http://127.0.0.1:80/', 'Loopback'],
+    ['http://10.0.0.5/', 'privates Netz'],
+    ['file:///etc/passwd', 'Datei-Schema'],
+  ])('weist eine Weiterleitung auf %s zurück (%s)', async (ziel) => {
+    // Der eigentliche Angriff: Die Eingangsadresse ist harmlos und kommt
+    // durch die Prüfung — erst die Antwort lenkt weiter. Ohne Prüfung je
+    // Sprung wäre die gesamte SSRF-Schranke damit umgangen.
+    const besucht: string[] = [];
+    await expect(
+      observeSite(new URL('https://firma.de'), {
+        fetchImpl: async (input) => {
+          besucht.push(input);
+          return besucht.length === 1 ? umleitung(ziel) : antwort('<html>geheim</html>');
+        },
+      }),
+    ).rejects.toThrow(/redirect target refused/);
+
+    // Entscheidend: Das verbotene Ziel wurde nie abgerufen.
+    expect(besucht).toEqual(['https://firma.de/']);
+  });
+
+  it('folgt auch einer relativen Weiterleitung', async () => {
+    const besucht: string[] = [];
+    const obs = await observeSite(new URL('https://firma.de/alt'), {
+      fetchImpl: async (input) => {
+        besucht.push(input);
+        return besucht.length === 1 ? umleitung('/neu') : antwort('<html>neu</html>', { url: '' });
+      },
+    });
+
+    expect(besucht[1]).toBe('https://firma.de/neu');
+    expect(obs.html).toContain('neu');
+  });
+
+  it('bricht eine Weiterleitungsschleife ab', async () => {
+    let aufrufe = 0;
+    await expect(
+      observeSite(new URL('https://firma.de'), {
+        fetchImpl: async () => { aufrufe++; return umleitung('https://firma.de/'); },
+      }),
+    ).rejects.toThrow(/too many redirects/);
+
+    expect(aufrufe).toBeLessThanOrEqual(MAX_REDIRECTS + 1);
+  });
+
+  it('behandelt eine 3xx-Antwort ohne Location als gewöhnliche Antwort', async () => {
+    const obs = await observeSite(new URL('https://firma.de'), {
+      fetchImpl: async () => new Response('<html>kein ziel</html>', { status: 302 }),
+    });
+    expect(obs.statusCode).toBe(302);
   });
 });

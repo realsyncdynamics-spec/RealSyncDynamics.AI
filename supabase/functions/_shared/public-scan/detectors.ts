@@ -49,6 +49,25 @@ export interface PublicScanSignals {
 // steht (Skript-URL, Klassenname, globale Variable). Reine Wortfunde im
 // Fließtext werden vermieden — „wir nutzen künstliche Intelligenz“ in einem
 // Blogtext ist kein Nachweis eines eingesetzten Systems.
+//
+// ## Warum jeder Quantor eine Obergrenze hat
+//
+// Diese Ausdrücke laufen über das HTML einer **fremden** Seite, die ein
+// nicht angemeldeter Besucher benennt. Sie ist damit potenziell feindselig,
+// und bis zu 1,5 MB davon werden gelesen.
+//
+// Ein unbegrenztes `[^>]+` vor einem Literal ist in dieser Lage eine
+// Denial-of-Service-Lücke, keine Stilfrage: Gemessen am 2026-08-23 kostete
+// `/<meta[^>]+name…robots…[^>]*content…/` bei 16 000 Wiederholungen von
+// `'<meta '` (96 kB) bereits 1,3 s — und die Kosten wachsen quadratisch.
+// Auf 1,5 MB hochgerechnet bindet ein einziger Aufruf den Worker minutenlang.
+//
+// `ATTR` begrenzt die Rückverfolgung je Fundstelle auf eine Konstante und
+// macht den Durchlauf damit linear. Der Preis ist bewusst in Kauf genommen:
+// Ein Tag, dessen gesuchtes Attribut jenseits von 200 Zeichen steht, wird
+// nicht erkannt. Reale Tags liegen weit darunter — ein übersehener Hinweis
+// wiegt hier leichter als ein blockierter Dienst.
+const ATTR = '[^>]{0,200}';
 
 const AI_SERVICE_PATTERNS: readonly (readonly [string, RegExp])[] = [
   ['OpenAI', /api\.openai\.com|cdn\.openai\.com|["']gpt-(?:3\.5|4|4o|5)/i],
@@ -76,10 +95,12 @@ const CHAT_WIDGET_PATTERNS: readonly (readonly [string, RegExp])[] = [
 ];
 
 const TECHNOLOGY_PATTERNS: readonly (readonly [string, RegExp])[] = [
-  ['WordPress', /wp-content\/|wp-includes\/|name=["']generator["'][^>]*WordPress/i],
-  ['TYPO3', /typo3temp\/|name=["']generator["'][^>]*TYPO3/i],
+  // `new RegExp` statt Literal, weil `ATTR` sonst nicht eingesetzt würde —
+  // in einem Regex-Literal ist `${…}` kein Platzhalter, sondern Text.
+  ['WordPress', new RegExp(`wp-content/|wp-includes/|name=["']generator["']${ATTR}WordPress`, 'i')],
+  ['TYPO3', new RegExp(`typo3temp/|name=["']generator["']${ATTR}TYPO3`, 'i')],
   ['Drupal', /sites\/default\/files\/|Drupal\.settings/i],
-  ['Joomla', /\/media\/jui\/|name=["']generator["'][^>]*Joomla/i],
+  ['Joomla', new RegExp(`/media/jui/|name=["']generator["']${ATTR}Joomla`, 'i')],
   ['Shopify', /cdn\.shopify\.com|Shopify\.theme/i],
   ['Wix', /static\.wixstatic\.com/i],
   ['Squarespace', /static1\.squarespace\.com/i],
@@ -124,9 +145,9 @@ export function collectSignals(obs: SiteObservation): PublicScanSignals {
     externalFontHosts: uniqueFontHosts(html),
     hasAiDisclosure: AI_DISCLOSURE_PATTERN.test(html),
     formCount: (html.match(/<form\b/gi) ?? []).length,
-    hasViewportMeta: /<meta[^>]+name\s*=\s*["']viewport["']/i.test(html),
+    hasViewportMeta: new RegExp(`<meta${ATTR}name\\s*=\\s*["']viewport["']`, 'i').test(html),
     hasStructuredData:
-      /<script[^>]+type\s*=\s*["']application\/ld\+json["']/i.test(html) ||
+      new RegExp(`<script${ATTR}type\\s*=\\s*["']application/ld\\+json["']`, 'i').test(html) ||
       /\bitemscope\b/i.test(html),
     headingLevels: collectHeadingLevels(html),
   };
@@ -292,7 +313,7 @@ function checkConsentManagement(obs: SiteObservation, s: PublicScanSignals): Run
 function checkFormPrivacy(obs: SiteObservation, s: PublicScanSignals): RuntimeFinding[] {
   if (s.formCount === 0) return [];
   // Reine Suchfelder sind keine Datenerhebung im Sinne der Norm.
-  const onlySearch = /<form[^>]+role\s*=\s*["']search["']/i.test(obs.html) && s.formCount === 1;
+  const onlySearch = new RegExp(`<form${ATTR}role\\s*=\\s*["']search["']`, 'i').test(obs.html) && s.formCount === 1;
   if (onlySearch) return [];
   if (/href\s*=\s*["'][^"']*(datenschutz|privacy)/i.test(obs.html)) return [];
 
@@ -369,7 +390,7 @@ function checkDiscoverability(obs: SiteObservation, s: PublicScanSignals): Runti
 
   // Ein `noindex` auf der Startseite ist fast immer ein Versehen aus einer
   // Testumgebung und nimmt die Seite vollständig aus der Suche.
-  if (/<meta[^>]+name\s*=\s*["']robots["'][^>]*content\s*=\s*["'][^"']*noindex/i.test(obs.html)) {
+  if (new RegExp(`<meta${ATTR}name\\s*=\\s*["']robots["']${ATTR}content\\s*=\\s*["'][^"']{0,200}noindex`, 'i').test(obs.html)) {
     findings.push({
       code: 'seo.noindex-delivered',
       dimension: 'seo',

@@ -263,3 +263,43 @@ describe('Wiederholbarkeit', () => {
       .toEqual(detectAdditionalFindings(obs, collectSignals(obs)));
   });
 });
+
+describe('Feindseliges HTML', () => {
+  // Der Scanner liest bis zu 1,5 MB von einer **fremden** Seite, und der
+  // Endpunkt ist ohne Anmeldung erreichbar. Ein unbegrenzter Quantor vor
+  // einem Literal ist damit keine Stilfrage, sondern eine
+  // Denial-of-Service-Lücke: Vor der Begrenzung kosteten 96 kB aus
+  // Wiederholungen von '<meta ' bereits 1,3 s, mit quadratischem Wachstum.
+  //
+  // Die Grenze unten ist bewusst grosszügig — sie soll eine Rückkehr des
+  // quadratischen Verhaltens anzeigen, nicht die Laufzeit feinmessen.
+  const GRENZE_MS = 2000;
+
+  it.each([
+    ['<meta ', 'Meta-Tag-Anfänge'],
+    ['<form ', 'Formular-Anfänge'],
+    ['<script ', 'Skript-Anfänge'],
+    ['name="generator" ', 'Generator-Angaben'],
+  ])('verarbeitet 1,5 MB aus %s in vertretbarer Zeit (%s)', (baustein) => {
+    const html = baustein.repeat(Math.ceil(1_500_000 / baustein.length));
+    const obs = beobachtung(html);
+
+    const start = Date.now();
+    const signale = collectSignals(obs);
+    detectAdditionalFindings(obs, signale);
+    const dauer = Date.now() - start;
+
+    expect(dauer).toBeLessThan(GRENZE_MS);
+  });
+
+  it('erkennt ein echtes Attribut weiterhin, trotz Begrenzung', () => {
+    // Die Begrenzung darf die Erkennung nicht aushebeln: Ein gewöhnliches
+    // Tag mit Zusatzattributen davor muss weiter gefunden werden.
+    const html = SAUBER.replace(
+      '<meta name="viewport" content="width=device-width, initial-scale=1">',
+      '<meta data-x="1" class="a b c" name="viewport" content="width=device-width">',
+    );
+    expect(collectSignals(beobachtung(html)).hasViewportMeta).toBe(true);
+    expect(codes(html)).not.toContain('content.missing-viewport');
+  });
+});

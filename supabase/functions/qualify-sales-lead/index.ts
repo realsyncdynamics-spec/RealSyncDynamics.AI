@@ -1,4 +1,11 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
+import {
+  PLAN_ORDER,
+  planById,
+  priceForPlanKey,
+  type ModuleId,
+  type PlanId,
+} from '../_shared/pricing.generated.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -7,6 +14,25 @@ const corsHeaders = {
 };
 
 type Severity = 'critical' | 'high' | 'medium' | 'low' | 'pass';
+
+const REQUESTED_MODULE_ALIASES: Record<string, ModuleId> = {
+  whatsapp: 'whatsapp',
+  'whatsapp-bot': 'whatsapp',
+  chatbot: 'ai_bots',
+  chat: 'website_chat',
+  'website-chat': 'website_chat',
+  telefon: 'voice',
+  phone: 'voice',
+  voice: 'voice',
+  monitoring: 'monitoring',
+  automation: 'automation_engine',
+  automations: 'automation_engine',
+};
+
+function recommendedPlanId(score: number): PlanId {
+  const targetRank = score >= 75 ? 3 : score >= 45 ? 2 : 1;
+  return PLAN_ORDER[targetRank] ?? 'starter';
+}
 
 function qualify(input: {
   companySize?: number | null;
@@ -17,7 +43,6 @@ function qualify(input: {
 }) {
   let score = 0;
   const rationale: string[] = [];
-  const modules = new Set(['DSGVO Audit']);
   const auditScore = typeof input.auditScore === 'number' ? input.auditScore : null;
 
   if (auditScore !== null) {
@@ -39,22 +64,38 @@ function qualify(input: {
   else if ((input.companySize ?? 0) >= 50) score += 12;
   else if ((input.companySize ?? 0) >= 10) score += 5;
 
-  const aliases: Record<string, string> = {
-    telefon: 'Telefon-Automation', phone: 'Telefon-Automation',
-    whatsapp: 'WhatsApp-Automation', chatbot: 'KI-Chatbot', chat: 'KI-Chatbot',
-    website: 'SiteOS', monitoring: 'Continuous Monitoring',
-  };
+  const requestedModules = new Set<ModuleId>();
   for (const raw of input.requestedAutomations ?? []) {
-    const module = aliases[raw.trim().toLowerCase()];
-    if (module) { modules.add(module); score += 5; }
+    const module = REQUESTED_MODULE_ALIASES[raw.trim().toLowerCase()];
+    if (module) {
+      requestedModules.add(module);
+      score += 5;
+    }
   }
 
   score = Math.min(100, score);
-  const plan = score >= 75 ? 'agency' : score >= 45 ? 'growth' : 'starter';
-  if (score >= 75) modules.add('Automations Engine');
-  if (score >= 45) modules.add('Continuous Monitoring');
+  const planId = recommendedPlanId(score);
+  const plan = planById(planId);
+
+  const recommendedModules = new Set<ModuleId>(plan.modules);
+  for (const module of requestedModules) {
+    if (plan.modules.includes(module)) recommendedModules.add(module);
+  }
+
   const priority = score >= 80 ? 'hot' : score >= 60 ? 'high' : score >= 35 ? 'medium' : 'low';
-  return { leadScore: score, priority, plan, modules: [...modules], rationale };
+
+  return {
+    leadScore: score,
+    priority,
+    planId: plan.id,
+    planKey: plan.planKey,
+    planName: plan.name,
+    monthlyPriceEur: priceForPlanKey(plan.planKey),
+    trialDays: plan.trialDays,
+    recommendedModules: [...recommendedModules],
+    requestedModules: [...requestedModules],
+    rationale,
+  };
 }
 
 Deno.serve(async (req) => {
@@ -64,16 +105,33 @@ Deno.serve(async (req) => {
   const body = await req.json().catch(() => null);
   if (!body?.lead_id) return new Response(JSON.stringify({ error: 'lead_id required' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
-  const url = Deno.env.get('SUPABASE_URL')!;
-  const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+  const url = Deno.env.get('SUPABASE_URL');
+  const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+  if (!url || !key) return new Response(JSON.stringify({ error: 'server configuration incomplete' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+
   const db = createClient(url, key, { auth: { persistSession: false } });
 
-  const { data: lead, error: leadError } = await db.from('sales_leads').select('id,email,company,status,metadata').eq('id', body.lead_id).single();
+  const { data: lead, error: leadError } = await db
+    .from('sales_leads')
+    .select('id,email,company,status,metadata')
+    .eq('id', body.lead_id)
+    .single();
   if (leadError || !lead) return new Response(JSON.stringify({ error: 'lead not found' }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
-  const { data: audit } = await db.from('gdpr_audits').select('id,score,severity,issues,domain').eq('sales_lead_id', lead.id).order('created_at', { ascending: false }).limit(1).maybeSingle();
-  const metadata = lead.metadata && typeof lead.metadata === 'object' ? lead.metadata as Record<string, unknown> : {};
-  const requestedAutomations = Array.isArray(metadata.requested_automations) ? metadata.requested_automations.filter((v): v is string => typeof v === 'string') : [];
+  const { data: audit } = await db
+    .from('gdpr_audits')
+    .select('id,score,severity,issues,domain')
+    .eq('sales_lead_id', lead.id)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const metadata = lead.metadata && typeof lead.metadata === 'object'
+    ? lead.metadata as Record<string, unknown>
+    : {};
+  const requestedAutomations = Array.isArray(metadata.requested_automations)
+    ? metadata.requested_automations.filter((v): v is string => typeof v === 'string')
+    : [];
 
   const result = qualify({
     auditScore: audit?.score,
@@ -88,16 +146,29 @@ Deno.serve(async (req) => {
     qualification: {
       lead_score: result.leadScore,
       priority: result.priority,
-      recommended_plan: result.plan,
-      recommended_modules: result.modules,
+      recommended_plan_id: result.planId,
+      recommended_plan_key: result.planKey,
+      recommended_plan_name: result.planName,
+      recommended_monthly_price_eur: result.monthlyPriceEur,
+      trial_days: result.trialDays,
+      recommended_modules: result.recommendedModules,
+      requested_modules: result.requestedModules,
       rationale: result.rationale,
       qualified_at: new Date().toISOString(),
     },
   };
 
   const nextStatus = result.leadScore >= 35 ? 'qualified' : lead.status === 'new' ? 'contacted' : lead.status;
-  const { error: updateError } = await db.from('sales_leads').update({ status: nextStatus, metadata: nextMetadata }).eq('id', lead.id);
+  const { error: updateError } = await db
+    .from('sales_leads')
+    .update({ status: nextStatus, metadata: nextMetadata })
+    .eq('id', lead.id);
   if (updateError) return new Response(JSON.stringify({ error: updateError.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
-  return new Response(JSON.stringify({ ok: true, lead_id: lead.id, ...result, domain: audit?.domain ?? null }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+  return new Response(JSON.stringify({
+    ok: true,
+    lead_id: lead.id,
+    ...result,
+    domain: audit?.domain ?? null,
+  }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 });

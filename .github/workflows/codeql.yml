@@ -1,0 +1,89 @@
+name: CodeQL
+
+# Unabhängige, dauerhaft laufende Sicherheitsanalyse.
+#
+# ## Warum diese Datei existiert
+#
+# Am 2026-08-22 wurde beim Aufräumen der SiteOS-Kette gemessen: Das
+# Repository hat **genau einen Mitarbeiter**, `main` ist **nicht geschützt**,
+# es gibt **keine erforderlichen Status-Checks**, keine CODEOWNERS und keine
+# Sicherheitsanalyse. Der externe Review-Bot war zudem am Kontingent
+# gescheitert — auf drei aufeinanderfolgenden PRs.
+#
+# Das Ergebnis: Jede Prüfung vor einem Merge war eine **Gewohnheit, keine
+# Regel**. Genau das schliesst die Zielarchitektur für das Produkt aus
+# (§7, G4: „Eine Ausnahme ist immer ein Approval, nie ein Flag") — für den
+# Prozess, der das Produkt baut, galt es nicht.
+#
+# CodeQL ersetzt keinen menschlichen Reviewer. Es schliesst die Lücke aber an
+# der Stelle, an der sie automatisierbar ist: Eine Analyse, die bei jedem PR
+# läuft, hängt an keinem Kontingent und ermüdet nicht.
+#
+# ## Warum das nichts kostet
+#
+# Das Repository ist öffentlich. CodeQL und die Ergebnisdarstellung im
+# Security-Reiter sind für öffentliche Repositories kostenfrei.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  # Wöchentlich, damit neue Abfragen auch ohne Codeänderung greifen: Ein
+  # Befund entsteht nicht nur, wenn jemand Code schreibt, sondern auch, wenn
+  # eine Schwachstellenklasse neu beschrieben wird.
+  schedule:
+    - cron: '23 4 * * 1'
+  workflow_dispatch:
+
+# Ein zweiter Lauf auf demselben Stand bringt keine neuen Erkenntnisse.
+concurrency:
+  group: codeql-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze:
+    name: Analyse (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    permissions:
+      # Ohne dieses Recht landen die Befunde nirgends.
+      security-events: write
+      contents: read
+      actions: read
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # 1468 TS/JS-Dateien: SPA, siteos-core, Edge Functions, Worker.
+          - language: javascript-typescript
+          # 67 Python-Dateien unter platform/ (FastAPI-Dienste).
+          - language: python
+
+    steps:
+      # Actions sind auf volle Commit-SHAs gepinnt (Org-Policy, siehe die
+      # übrigen Workflows). Ein beweglicher Tag wäre eine Lieferkette, die
+      # sich unter der Hand ändern kann.
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: CodeQL initialisieren
+        uses: github/codeql-action/init@42947a340483f03ba47bb1a039b2c519aab3df85 # v3.37.8
+        with:
+          languages: ${{ matrix.language }}
+          # Beide Sprachen sind interpretiert — es gibt nichts zu bauen.
+          # `autobuild` würde hier nur einen npm-Install anstossen, der für
+          # die Analyse nichts beiträgt und Minuten kostet.
+          build-mode: none
+          # `security-extended` statt der Standardauswahl: Dieses Repo trägt
+          # Prüfpfad, Evidence-Hash-Ketten und Mandantentrennung. Die
+          # zusätzlichen Abfragen kosten Laufzeit, aber die ist hier
+          # nachrangig.
+          queries: security-extended
+
+      - name: Analysieren
+        uses: github/codeql-action/analyze@42947a340483f03ba47bb1a039b2c519aab3df85 # v3.37.8
+        with:
+          category: /language:${{ matrix.language }}

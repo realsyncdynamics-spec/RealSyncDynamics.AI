@@ -36,7 +36,7 @@ Limit-Zählung.
 |---|---|---|---|---|---|---|---|---|
 | Website Chatbot | `/chatbot/start` (CTA verlinkt auf `/app/bots`) · `/app/bots`, `/app/bots/:botId`, `/app/bots/inbox` | `bot-chat` · `bots`, `bot_conversations`, `bot_messages` | ✅ | Backend: `_shared/entitlements.ts` in `bot-chat` · Frontend: **kein Gate** | starter (`ai_bots`, `website_chat`) | `response_pack` (growth+) | `website_chat` | ja (`answersPerMonth`, `flat_plus_usage`) |
 | Telefon-Agent (Voice) | `/phonebot/start` · `/app/agents/susi` | `bot-voice-webhook` · `voice_channels` | ✅ | Backend: Entitlement-Prüfung in `bot-voice-webhook` (`bots.voice`, `limit.bot_voice_minutes_monthly`) · Frontend: kein Gate | agency (`voice`) | `voice` (agency+) | `voice_bot` | ja (Minuten) |
-| WhatsApp Bot | `/pricing/whatsapp` (Marketing) — App-Route für Kanal-Setup fehlt noch | `whatsapp-webhook` (Meta Cloud API, seit 2026-08-23 im Repo) · `whatsapp_channels` (Migration `20260826000000`) | Repo ✅ · Prod erst nach Merge + `deploy.yml` | Backend: Signaturprüfung + `bots.whatsapp`-Gate + `limit.bot_messages_monthly`; neue Konversationen auf `limit.whatsapp_conversations_monthly` (metered) | growth (`whatsapp` in `plan.modules`, Entitlements gebunden) | `whatsapp` (growth+) | `whatsapp_bot` | ja (Konversationen, metered) |
+| WhatsApp Bot | `/app/bots/whatsapp` (Kanal-Setup, verlinkt aus `/app/bots`) · `/pricing/whatsapp` (Marketing) | `whatsapp-webhook` (Meta Cloud API, seit 2026-08-23 im Repo) · `whatsapp_channels` (Migration `20260826000000`) | Repo ✅ · Prod erst nach Merge + `deploy.yml` | Backend: Signaturprüfung + `bots.whatsapp`-Gate + `limit.bot_messages_monthly`; neue Konversationen auf `limit.whatsapp_conversations_monthly` (metered) | growth (`whatsapp` in `plan.modules`, Entitlements gebunden) | `whatsapp` (growth+) | `whatsapp_bot` | ja (Konversationen, metered) |
 | Telegram Bot | keine eigene App-Route (Kanal in Bot-Konfig) | `telegram-webhook`, `telegram-channels` · `telegram_connections` | ✅ | über Bot-Capabilities | growth (`telegram`) | — | — | ja (Antworten) |
 | Terminbuchung | keine eigene App-Route | `appointment-book` · `appointments`, `bot_appointments`, `availability_rules` | ✅ | prüft nur `capabilities.appointments` — **keine Verfügbarkeitsprüfung** (`reality-matrix.md` §2) | in keinem `plan.modules` | — | `booking` | Limit vorgesehen (`limit.booking_appointments_monthly` fehlt noch) |
 | Agent Runtime | `/app/ai-systems/agents` · `/app/agents` (⚠️ Route doppelt, siehe §3.5) | `enterprise-ai-os-agents-list/-run`, `agent-os-runner`, `governance-agents-list` · `enterprise_agent_runs` · Service `apps/agent-runtime` | ✅ | Backend: Entitlement-Prüfung in `enterprise-ai-os-agents-run` | — (nicht als `ModuleId` modelliert) | — | — | `automationRunsPerMonth` |
@@ -118,9 +118,11 @@ Zielbild ist damit Verdrahtungsarbeit an bestehenden Bausteinen.
    Graph-API-Versand), Migration `20260826000000_whatsapp_channel.sql`
    (`whatsapp_channels` mit RLS, Entitlement-Keys `bots.whatsapp` +
    `limit.whatsapp_conversations_monthly` ab Growth), Tests
-   `test/bots/whatsapp-parse.test.ts`. **Noch offen**: Deploy (erst nach
-   Merge), Meta-Secrets (`WHATSAPP_VERIFY_TOKEN`, `WHATSAPP_APP_SECRET`,
-   `WHATSAPP_ACCESS_TOKEN`), App-Route für das Kanal-Setup im Dashboard.
+   `test/bots/whatsapp-parse.test.ts`, Kanal-Setup-Ansicht
+   `/app/bots/whatsapp` (`WhatsAppChannelsView`, verlinkt aus `/app/bots`).
+   **Noch offen**: Deploy (erst nach Merge) und Meta-Secrets
+   (`WHATSAPP_VERIFY_TOKEN`, `WHATSAPP_APP_SECRET`,
+   `WHATSAPP_ACCESS_TOKEN`).
 3. **Voice hat zwei Preise.** Add-on vs. Bookable Module — als
    `MODULE_ADDON_PRICE_DIVERGENCE` deklariert und getestet, aber ungelöst.
    Auflösung gehört in die Preiskalkulation (`reality-matrix.md` §5.2).

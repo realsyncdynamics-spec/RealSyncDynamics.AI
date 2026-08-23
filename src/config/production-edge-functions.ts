@@ -275,6 +275,11 @@ export const UNBACKED_CALLERS: readonly UnbackedCaller[] = [
   // von keinem Code aufgerufen — deshalb kein Eintrag hier, aber ein offener
   // Punkt: Das Handbuch beschreibt einen Endpunkt, den es nicht gibt.
   { slug: 'export-bulk-results', surface: 'features/bulk — Export', publicPath: false },
+  // Kein Frontend-Aufruf, sondern die angezeigte Callback-URL für die
+  // Meta-App: die Function ist seit 2026-08-23 im Repo und wird mit dem
+  // nächsten deploy.yml-Lauf deployt — dann meldet der Contract-Test diesen
+  // Eintrag als überflüssig (der schöne Fall).
+  { slug: 'whatsapp-webhook', surface: 'features/bots — WhatsApp-Kanäle (Webhook-URL-Anzeige)', publicPath: false },
   { slug: 'iso42001-control-update', surface: 'features/governance — Control-Detail', publicPath: false },
   { slug: 'trigger-workflow', surface: 'features/workflows', publicPath: false },
 ];

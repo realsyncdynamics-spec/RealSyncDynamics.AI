@@ -99,3 +99,30 @@ export interface CreateBotArgs {
 }
 
 export type UpdateBotArgs = Partial<Omit<Bot, 'id' | 'tenant_id' | 'created_at' | 'updated_at'>>;
+
+// Spiegelt public.whatsapp_channels (20260826000000_whatsapp_channel.sql):
+// Zuordnung Meta-Geschäftsnummer → Bot. Der Webhook (whatsapp-webhook)
+// löst eingehende Nachrichten über phone_number_id auf.
+export interface WhatsAppChannel {
+  id: string;
+  tenant_id: string;
+  bot_id: string;
+  phone_number_id: string;
+  display_phone_number: string | null;
+  waba_id: string | null;
+  greeting: string | null;
+  config: Record<string, unknown>;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateWhatsAppChannelArgs {
+  tenant_id: string;
+  bot_id: string;
+  phone_number_id: string;
+  display_phone_number?: string | null;
+  waba_id?: string | null;
+  greeting?: string | null;
+  is_active?: boolean;
+}

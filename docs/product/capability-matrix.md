@@ -34,7 +34,7 @@ Limit-Zählung.
 
 | Modul | Route(n) | Backend (Function · Tabellen) | Deployt | Entitlement / Gating | Plan ab | Add-on | Bookable | Usage |
 |---|---|---|---|---|---|---|---|---|
-| Website Chatbot | `/chatbot/start` (Start-CTA ist Platzhalter-`alert`, `src/pages/product-entry-points/ChatbotStartPage.tsx:78`) · `/app/bots`, `/app/bots/:botId`, `/app/bots/inbox` | `bot-chat` · `bots`, `bot_conversations`, `bot_messages` | ✅ | Backend: `_shared/entitlements.ts` in `bot-chat` · Frontend: **kein Gate** | starter (`ai_bots`, `website_chat`) | `response_pack` (growth+) | `website_chat` | ja (`answersPerMonth`, `flat_plus_usage`) |
+| Website Chatbot | `/chatbot/start` (CTA verlinkt auf `/app/bots`) · `/app/bots`, `/app/bots/:botId`, `/app/bots/inbox` | `bot-chat` · `bots`, `bot_conversations`, `bot_messages` | ✅ | Backend: `_shared/entitlements.ts` in `bot-chat` · Frontend: **kein Gate** | starter (`ai_bots`, `website_chat`) | `response_pack` (growth+) | `website_chat` | ja (`answersPerMonth`, `flat_plus_usage`) |
 | Telefon-Agent (Voice) | `/phonebot/start` · `/app/agents/susi` | `bot-voice-webhook` · `voice_channels` | ✅ | Backend: Entitlement-Prüfung in `bot-voice-webhook` (`bots.voice`, `limit.bot_voice_minutes_monthly`) · Frontend: kein Gate | agency (`voice`) | `voice` (agency+) | `voice_bot` | ja (Minuten) |
 | WhatsApp Bot | nur `/pricing/whatsapp` (Marketing) — **keine App-Route** | **keine Function, keine Tabelle** (live gemessen: kein `whatsapp`-Slug) | ❌ | — | growth (`whatsapp` in `plan.modules`) | `whatsapp` (growth+) | `whatsapp_bot` | vorgesehen (Konversationsgebühren) |
 | Telegram Bot | keine eigene App-Route (Kanal in Bot-Konfig) | `telegram-webhook`, `telegram-channels` · `telegram_connections` | ✅ | über Bot-Capabilities | growth (`telegram`) | — | — | ja (Antworten) |
@@ -98,16 +98,19 @@ Zielbild ist damit Verdrahtungsarbeit an bestehenden Bausteinen.
 
 ## 3. Befunde
 
-1. **`src/config/production-edge-functions.ts` ist veraltet.** Die Datei
-   trägt `MEASURED_AT = 2026-08-19`, listet 103 Functions und nennt die
-   Differenz „nicht erklärt". Live gemessen (2026-08-23): **177**, deckungs-
-   gleich mit dem Repo — u. a. fehlen `bot-chat`, `bot-voice-webhook` und
-   `appointment-book` in der Liste, obwohl sie deployt sind. Da die Datei
-   laut eigenem Kommentar die UI-Erreichbarkeit steuert, gehört sie per
-   Neumessung ersetzt (`MEASURED_AT` mitziehen, `UNBACKED_CALLERS`
-   durchsehen, `npm run check:edge-functions`). Bewusst nicht in diesem
-   Audit-PR erledigt, weil die `UNBACKED_CALLERS`-Durchsicht eigenes Review
-   braucht.
+1. **`src/config/production-edge-functions.ts` war veraltet — erledigt am
+   2026-08-23 (dieser Branch).** Die Datei trug `MEASURED_AT = 2026-08-19`
+   mit 103 Functions und nannte die Differenz „nicht erklärt"; live gemessen
+   sind es **177**, deckungsgleich mit dem Repo. Die Liste wurde per
+   Neumessung ersetzt, `MEASURED_AT` mitgezogen, `UNBACKED_CALLERS`
+   durchgesehen: 19 Einträge (u. a. `website-domain-manager`, `bulk-scan`,
+   SEO-Dashboard, ISO-42001-Strecke) waren inzwischen deployt und wurden
+   entfernt; übrig bleiben 7 echte Lücken (4× `/api-docs`-Endpunkte,
+   `export-bulk-results`, `iso42001-control-update`, `trigger-workflow`).
+   Ebenfalls nachgezogen: `src/config/platform-capabilities.ts` (Bot-Laufzeit
+   und Herkunftsnachweis sind per Messung `live`,
+   `CAPABILITIES_MEASURED_AT = 2026-08-23`) samt der messungs-gepinnten
+   Tests.
 2. **WhatsApp wird dreifach verkauft, existiert aber nicht.** Als Modul ab
    Growth (`plan.modules`), als Add-on (growth+) und als Bookable Module —
    ohne Function, ohne Tabelle, ohne App-Route (live verifiziert). Vor jeder
@@ -124,12 +127,12 @@ Zielbild ist damit Verdrahtungsarbeit an bestehenden Bausteinen.
    `src/App.tsx:852`). Die erste Route gewinnt; `AgentsOverviewPage` ist
    toter Code hinter einer unerreichbaren Route. Entfernen greift in
    Bestehendes ein → Fragepflicht nach `CLAUDE.md` §10.3.
-6. **`ChatbotStartPage` täuscht eine Funktion vor.** Der Erstellungs-Button
-   löst nur `alert('Chat-Assistent wird in der nächsten Phase
-   implementiert.')` aus (`ChatbotStartPage.tsx:78`) — obwohl `bot-chat`
-   deployt ist und `/app/bots` existiert. Fertigstellen (Verlinken auf
-   `/app/bots`) wäre nach §10.2 eine freie Ergänzung; Umbau des Buttons
-   selbst fällt unter die Fragepflicht.
+6. **`ChatbotStartPage`/`PhonebotStartPage` täuschten eine Funktion vor —
+   erledigt am 2026-08-23 (dieser Branch).** Beide Erstellungs-Buttons
+   lösten nur einen Platzhalter-`alert` aus, obwohl `bot-chat` und
+   `bot-voice-webhook` deployt sind. Fertiggestellt nach §14/§10.2: beide
+   CTAs verlinken jetzt auf `/app/bots` (unverändertes Design, unveränderte
+   Beschriftung).
 7. **Landingpage Builder gehört bereits ins Dashboard-Zielbild.** Er ist
    unter `/app/siteos/builder` erreichbar und hat einen eigenen
    Checkout-Pfad. Offen bleibt der normative **Publish Gate vor dem ersten

@@ -56,6 +56,13 @@ Dependency portierbar und läuft unverändert in Deno und Cloudflare Workers.
 
 ### 2.1 Fünf konkurrierende Policy-Verdict-Modelle
 
+> **Korrigiert am 2026-08-23.** Diese Zählung war ungenau. `ingestClient.ts`
+> ist kein eigenes Modell, sondern ein Client-Typ; dafür fehlten zwei echte
+> Engines (`src/lib/enterprise-ai-os/policy-engine.ts` und deren Kopie in
+> `supabase/functions/enterprise-ai-os-evaluate/index.ts`). Korrekt sind
+> **sechs Implementierungen mit fünf Vokabularen**, jeweils mit
+> nachverfolgtem Aufrufer — siehe `policy-verdict-audit.md` §2.
+
 | # | Ort | Vokabular |
 |---|---|---|
 | 1 | `packages/agent-runtime-contracts` (neu) | `ALLOW` / `DENY` / `REQUIRE_CONFIRMATION` + `trace[]` |

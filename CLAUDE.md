@@ -540,6 +540,32 @@ Umgesetzt: `.surface-panel` / `.hairline` und die Reveal-Regeln in
 Was **nicht** freigegeben ist und weiterhin unter §10.1 fällt: Sektionsreihenfolge,
 Grid, Typografie-Skala, Icon-Set, Farbpalette.
 
+**2026-08-23 — CTA-Hierarchie der Startseite auf den Scan-Trichter**
+
+Freigegeben durch die ausdrückliche Anweisung des Eigentümers im Auftrag
+„Landingpage / Scan / Dashboard / Marketplace Refactor" (§2 und §24: „Der
+wichtigste CTA der Landingpage ist: Website kostenlos scannen", Priorität 1
+Scan, 2 Demo, 3 Preise).
+
+Umfang — und **nur** dieser:
+
+| Was | Vorher | Nachher |
+|---|---|---|
+| Reihenfolge im Hero | Schaltflächenreihe, darunter Scan-Formular | Scan-Formular zuerst, Schaltflächenreihe darunter |
+| „Präsenz & App bauen" | gefüllte Fläche (primär) | Umriss (sekundär) — Text und Ziel unverändert |
+| Scan-Schaltfläche | „Audit starten" | „Website kostenlos scannen" |
+| Ziel des Scan-Formulars | `/unified-entry/scan` | `/scan` |
+| Navigation oben rechts | „Free Audit starten" → `/unified-entry/scan` | „Kostenlos scannen" → `/scan` |
+
+Nicht berührt und weiterhin gesperrt: Farben, Typografie, Grid,
+Sektionsreihenfolge der Seite, Icon-Set, sämtliche Abschnitte unterhalb des
+Hero. `/unified-entry/scan` bleibt bestehen und erreichbar — es ist nur nicht
+mehr das Tor von der Startseite aus.
+
+Damit ist auch die seit Phase 1 offene Freigabe aus
+`docs/product/reality-matrix.md` §5.1 erteilt: Der Scan führt jetzt in den
+Trichter statt in die Gestaltungsauswahl.
+
 #### Faustregel
 
 **Hinzufügen ja, Ändern nur nach Rückfrage, Design gar nicht.**

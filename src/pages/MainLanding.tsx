@@ -46,7 +46,10 @@ export function MainLanding() {
   const startScan = (event: FormEvent) => {
     event.preventDefault();
     const value = domain.trim();
-    navigate(value ? `/unified-entry/scan?domain=${encodeURIComponent(value)}` : '/unified-entry/scan');
+    // Ziel ist der öffentliche Scan-Trichter (`/scan`). Der frühere
+    // Build-Einstieg `/unified-entry/scan` bleibt bestehen und erreichbar —
+    // er ist nur nicht mehr das Tor von der Startseite aus.
+    navigate(value ? `/scan?domain=${encodeURIComponent(value)}` : '/scan');
   };
 
   return (
@@ -59,7 +62,7 @@ export function MainLanding() {
         ogDescription="RealSyncDynamics.AI verbindet DSGVO, EU AI Act, Code-Compliance, Policy-Durchsetzung und auditfähige Nachweise in einer operativen Governance-Runtime."
       />
 
-      <header className="absolute inset-x-0 top-0 z-30"><div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6 lg:px-10"><Link to="/" className="flex items-center gap-2.5"><Snowflake className="h-6 w-6 text-[#e8c98a]" strokeWidth={1.5} /><span className="text-base font-semibold tracking-tight sm:text-lg">RealSync <span className="font-normal text-white/80">Dynamics.AI</span></span></Link><nav className="hidden items-center gap-7 md:flex"><a href="#tools" className="text-sm text-white/65 transition-colors hover:text-white">Tools</a><a href="#platform" className="text-sm text-white/65 transition-colors hover:text-white">Produkt</a><a href="#evidence" className="text-sm text-white/65 transition-colors hover:text-white">Evidence</a><a href="#enterprise" className="hidden text-sm text-white/65 transition-colors hover:text-white lg:block">Enterprise</a><Link to="/ai-act" className="hidden text-sm text-white/65 transition-colors hover:text-white xl:block">EU AI Act</Link><Link to="/sicherheit" className="hidden text-sm text-white/65 transition-colors hover:text-white xl:block">Sicherheit</Link><Link to="/pricing" className="text-sm text-white/65 transition-colors hover:text-white">Preise</Link><Link to="/welcome" className="text-sm text-white/65 transition-colors hover:text-white">Login</Link><Link to="/unified-entry/scan" className="rounded-full bg-[#f0e6d2] px-6 py-3 text-sm font-semibold text-[#1a1714] transition hover:bg-[#f6efe4]">Free Audit starten</Link></nav></div></header>
+      <header className="absolute inset-x-0 top-0 z-30"><div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6 lg:px-10"><Link to="/" className="flex items-center gap-2.5"><Snowflake className="h-6 w-6 text-[#e8c98a]" strokeWidth={1.5} /><span className="text-base font-semibold tracking-tight sm:text-lg">RealSync <span className="font-normal text-white/80">Dynamics.AI</span></span></Link><nav className="hidden items-center gap-7 md:flex"><a href="#tools" className="text-sm text-white/65 transition-colors hover:text-white">Tools</a><a href="#platform" className="text-sm text-white/65 transition-colors hover:text-white">Produkt</a><a href="#evidence" className="text-sm text-white/65 transition-colors hover:text-white">Evidence</a><a href="#enterprise" className="hidden text-sm text-white/65 transition-colors hover:text-white lg:block">Enterprise</a><Link to="/ai-act" className="hidden text-sm text-white/65 transition-colors hover:text-white xl:block">EU AI Act</Link><Link to="/sicherheit" className="hidden text-sm text-white/65 transition-colors hover:text-white xl:block">Sicherheit</Link><Link to="/pricing" className="text-sm text-white/65 transition-colors hover:text-white">Preise</Link><Link to="/welcome" className="text-sm text-white/65 transition-colors hover:text-white">Login</Link><Link to="/scan" className="rounded-full bg-[#f0e6d2] px-6 py-3 text-sm font-semibold text-[#1a1714] transition hover:bg-[#f6efe4]">Kostenlos scannen</Link></nav></div></header>
 
       <main ref={revealRoot}>
         <section className="relative min-h-[880px] overflow-hidden">
@@ -125,18 +128,24 @@ export function MainLanding() {
                 ))}
               </div>
 
-              <div className="mt-7 flex flex-wrap gap-3">
-                <Link to="/unified-entry/transformation" className="inline-flex items-center gap-2 rounded-full bg-[#f0e6d2] px-7 py-3.5 font-semibold text-[#1a1714] transition hover:bg-[#f6efe4]">Präsenz & App bauen <ArrowRight className="h-4 w-4" /></Link>
+              {/* CTA-Hierarchie (Freigabe 2026-08-23, siehe CLAUDE.md §10):
+                  Der kostenlose Scan ist Priorität 1 und steht deshalb zuerst
+                  und als einzige gefüllte Fläche. „Präsenz & App bauen" und
+                  „Preise ansehen" bleiben erhalten, treten aber als Umriss
+                  zurück — der Trichter soll einen Einstieg haben, nicht drei
+                  gleichwertige. */}
+              <form onSubmit={startScan} className="mt-7 max-w-2xl">
+                <div className="flex flex-col gap-2 rounded-2xl border border-white/15 bg-black/35 p-2 backdrop-blur-xl sm:flex-row">
+                  <input value={domain} onChange={event => setDomain(event.target.value)} placeholder="Ihre Website — z. B. firma.de" aria-label="Website-URL für den kostenlosen Scan" className="min-w-0 flex-1 bg-transparent px-4 py-3 text-sm text-white outline-none placeholder:text-white/30" />
+                  <button type="submit" className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#f0e6d2] px-5 py-3 text-sm font-semibold text-[#1a1714] transition hover:bg-[#f6efe4]">Website kostenlos scannen <ArrowRight className="h-4 w-4" /></button>
+                </div>
+                <p className="mt-2 text-[10px] text-white/35">DSGVO · EU AI Act · Sicherheit · Barrierefreiheit · SEO — kein Account nötig</p>
+              </form>
+
+              <div className="mt-5 flex flex-wrap gap-3">
+                <Link to="/unified-entry/transformation" className="inline-flex items-center gap-2 rounded-full border border-[#e8c98a]/45 px-7 py-3.5 font-medium text-[#fff8ee] transition hover:bg-white/5">Präsenz & App bauen <ArrowRight className="h-4 w-4" /></Link>
                 <Link to="/pricing" className="inline-flex items-center gap-2 rounded-full border border-[#e8c98a]/45 px-7 py-3.5 font-medium text-[#fff8ee] transition hover:bg-white/5">Preise ansehen</Link>
               </div>
-
-              <form onSubmit={startScan} className="mt-5 max-w-2xl">
-                <div className="flex flex-col gap-2 rounded-2xl border border-white/15 bg-black/35 p-2 backdrop-blur-xl sm:flex-row">
-                  <input value={domain} onChange={event => setDomain(event.target.value)} placeholder="Ihre Website für den kostenlosen Governance-Audit" aria-label="Website-URL für Governance-Scan" className="min-w-0 flex-1 bg-transparent px-4 py-3 text-sm text-white outline-none placeholder:text-white/30" />
-                  <button type="submit" className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#f0e6d2] px-5 py-3 text-sm font-semibold text-[#1a1714] transition hover:bg-[#f6efe4]">Audit starten <ArrowRight className="h-4 w-4" /></button>
-                </div>
-                <p className="mt-2 text-[10px] text-white/35">URL genügt · kein Account vor dem Einstieg · Ergebnis in wenigen Minuten</p>
-              </form>
             </div>
 
             {/*

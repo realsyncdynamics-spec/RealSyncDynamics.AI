@@ -1,9 +1,10 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useSupabaseAuth } from '../../features/supabase/SupabaseAuthContext';
 import { useTenant } from '../../core/access/TenantProvider';
 import { postEdgeFunction } from '../../lib/edgeFunction';
 import { isEdgeFunctionInProduction } from '../../config/production-edge-functions';
+import { claimPendingScan } from '../../lib/scanClaim';
 
 /**
  * Die beiden Functions, die diesen Schritt tragen.
@@ -40,6 +41,21 @@ export function PostRegisterOnboardingPage() {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [searchParams] = useSearchParams();
+
+  // Übernahme des kostenlosen Scans, sobald ein Konto besteht.
+  //
+  // Bewusst hier und nicht im Absenden-Pfad: Der Mandant existiert bereits
+  // mit der Registrierung, und die Zuordnung soll auch dann gelingen, wenn
+  // der Nutzer die Branchenfragen abbricht. Der Aufruf blockiert nichts und
+  // meldet nichts — schlägt er fehl, bleibt das Konto unberührt und der Scan
+  // in der Sitzung, wo ihn ein späterer Versuch noch einlösen kann.
+  const claimVersucht = useRef(false);
+  useEffect(() => {
+    if (!user || claimVersucht.current) return;
+    claimVersucht.current = true;
+    void claimPendingScan(searchParams.get('scan'));
+  }, [user, searchParams]);
 
   if (!user) {
     navigate('/unified-entry/register');

@@ -566,6 +566,30 @@ Damit ist auch die seit Phase 1 offene Freigabe aus
 `docs/product/reality-matrix.md` §5.1 erteilt: Der Scan führt jetzt in den
 Trichter statt in die Gestaltungsauswahl.
 
+**2026-08-23 (2) — Landing-CTA von `/scan` auf `/audit`**
+
+Auf die Fragepflicht nach §10.3 („Achtung, Funktionsänderung — sollen wir dies
+machen?") hat der Eigentümer ausdrücklich mit **Ja** geantwortet, mit der
+Begründung: „Das ist zwar eine Funktionsänderung, aber eine gewollte
+Produktkorrektur, keine kosmetische Änderung. Der Funnel soll künftig eindeutig
+sein. Nicht zwei parallele Scan-Einstiege weiter mitschleppen."
+
+Umfang — und **nur** dieser:
+
+| Was | Vorher | Nachher |
+|---|---|---|
+| Ziel des Scan-Formulars im Hero | `/scan` | `/audit` |
+| Navigation oben rechts, „Kostenlos scannen" | `/scan` | `/audit` |
+
+Die Freigabe vom selben Tag (Reihenfolge im Hero, Umriss statt Fläche,
+Beschriftung „Website kostenlos scannen") bleibt unverändert gültig — es ändert
+sich allein das Ziel. Farben, Typografie, Grid, Sektionsreihenfolge und
+Icon-Set sind unberührt.
+
+Die Freigabe wird **wirksam mit dem Schnitt von PR #1129**, weil `/scan` erst
+dann entfällt. Hintergrund und Zielmatrix:
+`docs/architecture/canonical-builder-target-matrix.md`.
+
 #### Faustregel
 
 **Hinzufügen ja, Ändern nur nach Rückfrage, Design gar nicht.**

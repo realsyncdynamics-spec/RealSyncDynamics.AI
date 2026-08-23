@@ -185,15 +185,19 @@ Jeder Agent braucht vier Dimensionen — fehlt eine, ist er nicht governance-fä
 > Produktion läuft. Die Regel bleibt: vor jeder Aussage zum Produktionsstand
 > gegen die Live-DB messen, nicht gegen diese Liste.
 >
-> **Messung vom 2026-08-22, nach dem Merge von PR #1117**, direkt gegen das
+> **Messung vom 2026-08-23, nach dem Merge von PR #1131 (WhatsApp-Kanal) und
+> dem zugehörigen `deploy.yml`-Lauf**, per Management-API direkt gegen das
 > Live-Projekt `RealSyncDynamicsLive` (`ebljyceifhnlzhjfyxup`, eu-central-1,
 > PostgreSQL 17):
 >
 > | | Repo (`main`) | in Produktion | Lücke |
 > |---|---|---|---|
-> | Migrationen | 286 | **286** (neueste `20260825000000`) | **0** |
-> | Edge Functions | 177 | **177** | **0** |
-> | Tabellen in `public` | — | 369 | — |
+> | Migrationen | 287 | **287** (neueste `20260826000000`) | **0** |
+> | Edge Functions | 178 | **178** | **0** |
+> | Tabellen in `public` | — | 351 (`pg_tables`, ohne Views) | — |
+>
+> Frühere Stände nannten hier 369 Tabellen ohne Messmethode — vermutlich
+> inklusive Views. Ab jetzt zählt `pg_tables`, damit die Zahl vergleichbar bleibt.
 >
 > **Repo und Produktion decken sich derzeit vollständig** — in beide
 > Richtungen geprüft, es gibt weder eine nicht deployte Function noch eine

@@ -69,52 +69,90 @@ export interface PublicScanSignals {
 // wiegt hier leichter als ein blockierter Dienst.
 const ATTR = '[^>]{0,200}';
 
+/**
+ * Baut ein Erkennungsmuster aus zwei Arten von Signalen.
+ *
+ * ## Warum ein Host nur in Adressposition zählt
+ *
+ * Ein blosses `/static\.hotjar\.com/` trifft die Zeichenfolge **überall** im
+ * Dokument — auch in einem Fliesstext („wir verzichten auf
+ * static.hotjar.com"), in einem Kommentar oder in einer Beispiel-URL eines
+ * Blogartikels. Für einen Bericht, der dem Kunden sagt „wir haben Hotjar
+ * erkannt", ist das eine Falschmeldung.
+ *
+ * Deshalb steht vor jedem Host das `//` einer echten Adresse, davor
+ * beliebige Subdomains. `//www.googletagmanager.com/gtag/js` wird erkannt,
+ * der Satz darüber nicht.
+ *
+ * Nebenbei beantwortet das die CodeQL-Meldung „Missing regular expression
+ * anchor": Ein Host-Muster ohne Verankerung sieht für die Analyse aus wie
+ * eine Adressprüfung, bei der beliebige Hosts davor stehen dürfen. Die
+ * Verankerung an `//` ist hier aber keine Beruhigung des Prüfers, sondern
+ * die sachlich richtige Erkennung — der Prüfer hat auf eine echte
+ * Ungenauigkeit gezeigt.
+ *
+ * @param hosts Adress-Bestandteile, Punkte bereits maskiert. Dürfen einen
+ *   Pfad enthalten (`googletagmanager\.com/gtag/js`).
+ * @param raw Signale, die **keine** Adresse sind: globale Variablen,
+ *   Attribute, Dateipfade. Sie stehen unverändert im Muster.
+ */
+function signal(hosts: readonly string[], raw?: string): RegExp {
+  const parts: string[] = [];
+  if (hosts.length > 0) {
+    // Label-Länge und Anzahl sind begrenzt — siehe die Anmerkung zu `ATTR`:
+    // unbegrenzte Quantoren haben auf fremdem HTML nichts zu suchen.
+    parts.push(`//(?:[a-z0-9-]{1,63}\\.){0,8}(?:${hosts.join('|')})`);
+  }
+  if (raw !== undefined) parts.push(raw);
+  return new RegExp(parts.join('|'), 'i');
+}
+
 const AI_SERVICE_PATTERNS: readonly (readonly [string, RegExp])[] = [
-  ['OpenAI', /api\.openai\.com|cdn\.openai\.com|["']gpt-(?:3\.5|4|4o|5)/i],
-  ['Anthropic', /api\.anthropic\.com|["']claude-[a-z0-9-]/i],
-  ['Google Gemini', /generativelanguage\.googleapis\.com|["']gemini-[a-z0-9-]/i],
-  ['Azure OpenAI', /[a-z0-9-]+\.openai\.azure\.com/i],
-  ['Cohere', /api\.cohere\.(?:ai|com)/i],
-  ['Mistral', /api\.mistral\.ai/i],
-  ['Hugging Face', /api-inference\.huggingface\.co/i],
-  ['Perplexity', /api\.perplexity\.ai/i],
+  ['OpenAI', signal(['api\\.openai\\.com', 'cdn\\.openai\\.com'], `["']gpt-(?:3\\.5|4|4o|5)`)],
+  ['Anthropic', signal(['api\\.anthropic\\.com'], `["']claude-[a-z0-9-]`)],
+  ['Google Gemini', signal(['generativelanguage\\.googleapis\\.com'], `["']gemini-[a-z0-9-]`)],
+  ['Azure OpenAI', signal(['openai\\.azure\\.com'])],
+  ['Cohere', signal(['api\\.cohere\\.(?:ai|com)'])],
+  ['Mistral', signal(['api\\.mistral\\.ai'])],
+  ['Hugging Face', signal(['api-inference\\.huggingface\\.co'])],
+  ['Perplexity', signal(['api\\.perplexity\\.ai'])],
 ];
 
 const CHAT_WIDGET_PATTERNS: readonly (readonly [string, RegExp])[] = [
-  ['Intercom', /widget\.intercom\.io|intercomSettings/i],
-  ['Drift', /js\.driftt\.com|drift\.load/i],
-  ['Tidio', /code\.tidio\.co/i],
-  ['Crisp', /client\.crisp\.chat/i],
-  ['Zendesk', /static\.zdassets\.com|zEmbed/i],
-  ['HubSpot Chat', /js\.hs-scripts\.com|hubspot-messages/i],
-  ['LiveChat', /cdn\.livechatinc\.com/i],
-  ['Tawk.to', /embed\.tawk\.to/i],
-  ['Userlike', /userlike-cdn|widget\.userlike\.com/i],
-  ['Botpress', /cdn\.botpress\.cloud/i],
-  ['Voiceflow', /cdn\.voiceflow\.com/i],
+  ['Intercom', signal(['widget\\.intercom\\.io'], 'intercomSettings')],
+  ['Drift', signal(['js\\.driftt\\.com'], 'drift\\.load')],
+  ['Tidio', signal(['code\\.tidio\\.co'])],
+  ['Crisp', signal(['client\\.crisp\\.chat'])],
+  ['Zendesk', signal(['static\\.zdassets\\.com'], 'zEmbed')],
+  ['HubSpot Chat', signal(['js\\.hs-scripts\\.com'], 'hubspot-messages')],
+  ['LiveChat', signal(['cdn\\.livechatinc\\.com'])],
+  ['Tawk.to', signal(['embed\\.tawk\\.to'])],
+  ['Userlike', signal(['widget\\.userlike\\.com'], 'userlike-cdn')],
+  ['Botpress', signal(['cdn\\.botpress\\.cloud'])],
+  ['Voiceflow', signal(['cdn\\.voiceflow\\.com'])],
 ];
 
 const TECHNOLOGY_PATTERNS: readonly (readonly [string, RegExp])[] = [
-  // `new RegExp` statt Literal, weil `ATTR` sonst nicht eingesetzt würde —
-  // in einem Regex-Literal ist `${…}` kein Platzhalter, sondern Text.
-  ['WordPress', new RegExp(`wp-content/|wp-includes/|name=["']generator["']${ATTR}WordPress`, 'i')],
-  ['TYPO3', new RegExp(`typo3temp/|name=["']generator["']${ATTR}TYPO3`, 'i')],
-  ['Drupal', /sites\/default\/files\/|Drupal\.settings/i],
-  ['Joomla', new RegExp(`/media/jui/|name=["']generator["']${ATTR}Joomla`, 'i')],
-  ['Shopify', /cdn\.shopify\.com|Shopify\.theme/i],
-  ['Wix', /static\.wixstatic\.com/i],
-  ['Squarespace', /static1\.squarespace\.com/i],
-  ['Webflow', /assets(?:-global)?\.website-files\.com|data-wf-page/i],
-  ['Next.js', /\/_next\/static\/|__NEXT_DATA__/i],
-  ['Nuxt', /\/_nuxt\/|__NUXT__/i],
-  ['React', /data-reactroot|__REACT_DEVTOOLS/i],
-  ['Vue', /data-v-[0-9a-f]{8}|__VUE__/i],
-  ['Angular', /ng-version=|\bng-app\b/i],
-  ['Google Analytics', /googletagmanager\.com\/gtag\/js|google-analytics\.com\/analytics\.js/i],
-  ['Google Tag Manager', /googletagmanager\.com\/gtm\.js|dataLayer\.push/i],
-  ['Meta Pixel', /connect\.facebook\.net\/[^"']*\/fbevents\.js|fbq\(/i],
-  ['Matomo', /matomo\.js|piwik\.js/i],
-  ['Hotjar', /static\.hotjar\.com/i],
+  // Die vier CMS werden an ausgelieferten Pfaden und der Generator-Angabe
+  // erkannt, nicht an einem Host — sie liegen auf der Domain des Kunden.
+  ['WordPress', signal([], `wp-content/|wp-includes/|name=["']generator["']${ATTR}WordPress`)],
+  ['TYPO3', signal([], `typo3temp/|name=["']generator["']${ATTR}TYPO3`)],
+  ['Drupal', signal([], `sites/default/files/|Drupal\\.settings`)],
+  ['Joomla', signal([], `/media/jui/|name=["']generator["']${ATTR}Joomla`)],
+  ['Shopify', signal(['cdn\\.shopify\\.com'], 'Shopify\\.theme')],
+  ['Wix', signal(['static\\.wixstatic\\.com'])],
+  ['Squarespace', signal(['static1\\.squarespace\\.com'])],
+  ['Webflow', signal(['assets(?:-global)?\\.website-files\\.com'], 'data-wf-page')],
+  ['Next.js', signal([], '/_next/static/|__NEXT_DATA__')],
+  ['Nuxt', signal([], '/_nuxt/|__NUXT__')],
+  ['React', signal([], 'data-reactroot|__REACT_DEVTOOLS')],
+  ['Vue', signal([], 'data-v-[0-9a-f]{8}|__VUE__')],
+  ['Angular', signal([], 'ng-version=|\\bng-app\\b')],
+  ['Google Analytics', signal(['googletagmanager\\.com/gtag/js', 'google-analytics\\.com/analytics\\.js'])],
+  ['Google Tag Manager', signal(['googletagmanager\\.com/gtm\\.js'], 'dataLayer\\.push')],
+  ['Meta Pixel', signal([`connect\\.facebook\\.net/[^"']{0,120}/fbevents\\.js`], 'fbq\\(')],
+  ['Matomo', signal([], 'matomo\\.js|piwik\\.js')],
+  ['Hotjar', signal(['static\\.hotjar\\.com'])],
 ];
 
 const CONSENT_MANAGER_PATTERN =
@@ -123,6 +161,21 @@ const CONSENT_MANAGER_PATTERN =
 /** Schrift-Dienste, die als Fremd-Host ins HTML eingebunden werden. */
 const FONT_HOST_PATTERN =
   /https?:\/\/(fonts\.googleapis\.com|fonts\.gstatic\.com|use\.typekit\.net|p\.typekit\.net|use\.fontawesome\.com|cdn\.fonts\.net|fast\.fonts\.net)/gi;
+
+/**
+ * Die Google-Schrift-Hosts, exakt.
+ *
+ * Bewusst eine Menge und kein `endsWith('googleapis.com')`: Jene Prüfung
+ * trifft auch `boesegoogleapis.com` oder `meine-fonts.googleapis.com.evil.example`.
+ * Der Unterschied ist hier nicht theoretisch — an ihm hängt, ob der Bericht
+ * das Urteil des LG München I zitiert. Ein Gerichtsurteil dem falschen
+ * Sachverhalt zuzuordnen ist genau die Art Falschaussage, die dieser Scan
+ * nicht treffen darf.
+ */
+const GOOGLE_FONT_HOSTS: ReadonlySet<string> = new Set([
+  'fonts.googleapis.com',
+  'fonts.gstatic.com',
+]);
 
 /**
  * Transparenzhinweis zur KI-Nutzung. Verlangt eine **Aussage**, nicht nur
@@ -266,7 +319,7 @@ function checkAiTransparency(obs: SiteObservation, s: PublicScanSignals): Runtim
 function checkExternalFonts(obs: SiteObservation, s: PublicScanSignals): RuntimeFinding[] {
   if (s.externalFontHosts.length === 0) return [];
 
-  const isGoogle = s.externalFontHosts.some((h) => h.endsWith('googleapis.com') || h.endsWith('gstatic.com'));
+  const isGoogle = s.externalFontHosts.some((h) => GOOGLE_FONT_HOSTS.has(h));
 
   return [{
     code: 'gdpr.external-font-host',

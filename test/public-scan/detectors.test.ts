@@ -303,3 +303,61 @@ describe('Feindseliges HTML', () => {
     expect(codes(html)).not.toContain('content.missing-viewport');
   });
 });
+
+describe('Erkennung nur in Adressposition', () => {
+  // CodeQL hat hier auf eine echte Ungenauigkeit gezeigt: Ein blosses
+  // Host-Muster trifft die Zeichenfolge überall im Dokument. Für einen
+  // Bericht, der dem Kunden sagt „wir haben X erkannt", ist das eine
+  // Falschmeldung.
+  it('hält einen Hostnamen im Fliesstext nicht für eingebundene Technik', () => {
+    const html = SAUBER.replace(
+      '</body>',
+      '<p>Wir verzichten bewusst auf static.hotjar.com und auf ' +
+      'www.googletagmanager.com/gtag/js — aus Datenschutzgründen.</p></body>',
+    );
+    expect(collectSignals(beobachtung(html)).technologies).toEqual([]);
+  });
+
+  it('erkennt denselben Host in einer echten Adresse', () => {
+    const html = SAUBER.replace('</body>', '<script src="https://static.hotjar.com/c/hotjar.js"></script></body>');
+    expect(collectSignals(beobachtung(html)).technologies).toContain('Hotjar');
+  });
+
+  it('erkennt einen Host auch mit Subdomain davor', () => {
+    const html = SAUBER.replace('</head>', '<script src="https://www.googletagmanager.com/gtag/js?id=G-1"></script></head>');
+    expect(collectSignals(beobachtung(html)).technologies).toContain('Google Analytics');
+  });
+
+  it('hält eine erwähnte KI-Adresse im Text nicht für einen eingebundenen Dienst', () => {
+    const html = SAUBER.replace('</body>', '<p>Unser Anbieter nutzt api.openai.com.</p></body>');
+    expect(collectSignals(beobachtung(html)).aiTools).toEqual([]);
+  });
+});
+
+describe('Google-Fonts-Zuordnung ist exakt', () => {
+  it('zitiert das Urteil nicht für einen Host, der nur so endet', () => {
+    // `endsWith('googleapis.com')` hätte hier zugeschlagen und dem Kunden
+    // ein Gerichtsurteil zugeordnet, das den Sachverhalt nicht trifft.
+    const obs = beobachtung(SAUBER);
+    const signale = {
+      ...collectSignals(obs),
+      externalFontHosts: ['boesegoogleapis.com'],
+    };
+    const befund = detectAdditionalFindings(obs, signale)
+      .find((f) => f.code === 'gdpr.external-font-host');
+
+    expect(befund).toBeDefined();
+    expect(befund!.severity).toBe('medium');
+    expect(befund!.reference).not.toMatch(/LG München/);
+  });
+
+  it('zitiert es für den echten Host', () => {
+    const obs = beobachtung(SAUBER);
+    const signale = { ...collectSignals(obs), externalFontHosts: ['fonts.googleapis.com'] };
+    const befund = detectAdditionalFindings(obs, signale)
+      .find((f) => f.code === 'gdpr.external-font-host');
+
+    expect(befund!.severity).toBe('high');
+    expect(befund!.reference).toMatch(/LG München/);
+  });
+});

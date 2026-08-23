@@ -177,6 +177,40 @@ leichter als ein blockierter Dienst. `test/public-scan/detectors.test.ts`
 hält beides fest: 1,5 MB feindseliges HTML in vertretbarer Zeit **und** die
 weiterhin funktionierende Erkennung an einem gewöhnlichen Tag.
 
+### 4.1b Erkennung nur in Adressposition
+
+CodeQL meldete neun hochstufige Befunde in `detectors.ts`. Sie waren **keine
+Formalie** — beide Klassen zeigten auf echte Ungenauigkeiten:
+
+**Sieben × „Missing regular expression anchor".** Muster wie
+`/static\.hotjar\.com/i` trafen die Zeichenfolge überall im Dokument: im
+Fliesstext („wir verzichten auf static.hotjar.com"), in einem Kommentar, in
+einer Beispiel-URL eines Blogartikels. Für einen Bericht, der dem Kunden
+sagt „wir haben Hotjar erkannt", ist das eine Falschmeldung.
+
+Gelöst über `signal()`: Vor jedem Host steht jetzt das `//` einer echten
+Adresse, davor beliebige (begrenzt viele) Subdomains.
+`//www.googletagmanager.com/gtag/js` wird erkannt, der Satz darüber nicht.
+Signale, die keine Adresse sind — `__NEXT_DATA__`, `wp-content/`,
+`dataLayer.push` — stehen unverändert daneben.
+
+**Zwei × „Incomplete URL substring sanitization".** Die Einstufung eines
+Schrift-Hosts als Google Fonts lief über
+`h.endsWith('googleapis.com')`. Das trifft auch `boesegoogleapis.com`. An
+dieser Prüfung hängt, ob der Bericht das Urteil des LG München I zitiert —
+ein Gerichtsurteil dem falschen Sachverhalt zuzuordnen ist genau die Art
+Falschaussage, die §3.3 ausschliesst. Jetzt ein exakter Vergleich gegen
+`GOOGLE_FONT_HOSTS`.
+
+**Lehre für die nächste Sitzung.** Vor diesen Befunden standen zwei Runden
+Blindkorrektur: erst die Rückverfolgung, dann die Weiterleitungen — beides
+real und nachgemessen, aber beides **nicht** die Ursache der Meldung. Die
+Zahl blieb zweimal bei exakt neun. Was gefehlt hat, war die Befundliste
+selbst; sie kam schliesslich über die Review-Kommentare des Bots mit Regel,
+Datei und Zeile. Also: bei einem roten Prüfer zuerst die Befundliste
+beschaffen, nicht die plausibelste Ursache raten. Die zwei nebenbei
+geschlossenen Lücken waren ein Glücksfall, kein Verfahren.
+
 ### 4.2 Menge und Zeit
 
 Der Abruf liest **streamend** und bricht bei der Obergrenze ab

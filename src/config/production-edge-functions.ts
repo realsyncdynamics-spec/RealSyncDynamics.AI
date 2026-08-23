@@ -8,26 +8,28 @@
  * dieses Repos: Er ist in keinem Build, keinem Lint und keinem Typecheck
  * sichtbar, weil Vite und `tsc` nur Strings sehen.
  *
- * Im Repository liegen 177 Function-Verzeichnisse, in Produktion laufen 103.
- * Die Differenz ist **nicht** erklärt.
+ * **Seit dem 2026-08-22 deckt sich beides**: 177 Verzeichnisse im Repository,
+ * 177 Functions in Produktion, keine Abweichung in beide Richtungen.
  *
- * ## Was mit der Obergrenze war — und was davon noch gilt
+ * ## Die Geschichte der Obergrenze — und wie sie endete
  *
  * Bis zum 2026-08-19 galt hier: Free-Plan, hartes Limit 100, belegt 100,
  * jeder weitere Deploy scheitert mit `HTTP 402: Max number of functions
  * reached for project`. Das 402 war echt und der Zählstand von exakt 100 auch.
  *
- * Am selben Tag ist der Router `siteos` als **einhundertunderste** Function
- * ohne Fehler durchgelaufen (Deploy-Lauf 32277074625, `Deployed Functions on
- * project: siteos`), anschließend über HTTP nachgewiesen. Damit ist die
- * Obergrenze von 100 als *aktuelle* Schranke widerlegt — wo sie heute liegt,
- * ist unbekannt und ausdrücklich nicht gemessen.
+ * Dann ging `siteos` als einhundertunderste Function durch, und der Stand
+ * kletterte auf 103. Diese Datei schloss daraus: Die Grenze liegt nicht mehr
+ * bei 100, wo sie liegt, ist unbekannt. Die verbleibenden 74 galten als
+ * ungeklärt.
  *
- * Für die verbleibenden 74 heißt das: „kann nicht deployt werden" ist keine
- * belegte Aussage mehr. Wer sie braucht, probiert einen Deploy — das ist
- * billiger als jede Herleitung. Siehe `docs/runbooks/edge-function-kontingent.md`.
+ * Am 2026-08-22 hat der Deploy-Lauf nach dem Merge von #1117 **alle 177**
+ * ausgerollt — darunter `cloudflare-deployer` und `website-domain-manager`,
+ * die diese Datei zuvor als nicht erreichbar führte. Es gab keine Obergrenze
+ * mehr zu umgehen; es fehlte nur ein Lauf.
  *
- * Solange das so ist, muss die Oberfläche wissen, was sie erreichen kann.
+ * Die Lehre steht schon im nächsten Absatz und hat sich zum zweiten Mal
+ * bestätigt: **messen, nicht herleiten**. Die 100 waren eine Beobachtung, die
+ * zur Schranke erklärt wurde; die 103 ebenso.
  *
  * ## Wie diese Liste entsteht
  *
@@ -46,11 +48,14 @@
  * Bewusst kein „Plan-Limit": Diese Zahl ist eine Beobachtung, keine Schranke.
  * Sie darf steigen, sobald jemand einen höheren Stand misst — und sie ist
  * kein Argument dafür, dass ein weiterer Deploy scheitern wird.
+ *
+ * Zweimal wurde sie hier fälschlich als Grenze gelesen (100, dann 103).
+ * Beide Male lag der nächste Stand darüber.
  */
-export const EDGE_FUNCTIONS_OBSERVED_MAX = 103;
+export const EDGE_FUNCTIONS_OBSERVED_MAX = 177;
 
 /** Datum der letzten Messung gegen das Live-Projekt. */
-export const PRODUCTION_EDGE_FUNCTIONS_MEASURED_AT = '2026-08-19T20:18Z';
+export const PRODUCTION_EDGE_FUNCTIONS_MEASURED_AT = '2026-08-22T22:46Z';
 
 /**
  * Die in Produktion aktiven Function-Slugs — alphabetisch, damit ein Diff
@@ -59,27 +64,49 @@ export const PRODUCTION_EDGE_FUNCTIONS_MEASURED_AT = '2026-08-19T20:18Z';
 export const PRODUCTION_EDGE_FUNCTIONS: readonly string[] = [
   'add-auditor',
   'agent-os-runner',
+  'agent-scheduler',
+  'ai-act-auto-classify',
   'ai-act-classify',
   'ai-act-risk-inventory',
   'ai-gateway',
   'ai-invoke',
   'api-audit',
+  'api-gateway',
+  'api-webhook-deliver',
+  'appointment-book',
+  'audit-determinism-verify',
   'audit-drip-cron',
   'audit-monitor-cron',
   'audit-recheck-weekly',
   'audit-report-email',
   'audit-report-pdf',
+  'auditor-engagement',
   'automation-callback',
   'automation-trigger',
+  'automation-trigger-trial-webhook',
+  'bot-chat',
+  'bot-voice-webhook',
   'browser-action-log',
+  'bulk-scan',
   'business-metrics-cron',
+  'c2pa-manifest-generate',
+  'calculate-seo-metrics',
   'ceo-brief-pdf',
+  'certification-readiness',
+  'checkout-siteos-project',
   'checkout-website-rebuild',
   'classify-document',
+  'cloudflare-deployer',
+  'compliance-alert-trigger',
+  'compliance-remediation-execute',
   'cookie-scan',
   'cookie-scan-deep',
   'create-trial-subscription',
   'daily-digest',
+  'dashboard-digest-generate',
+  'dashboard-intelligence',
+  'email-delivery-webhook',
+  'email-notify-send',
   'enterprise-ai-os-agent-runs-list',
   'enterprise-ai-os-agents-list',
   'enterprise-ai-os-agents-run',
@@ -91,18 +118,26 @@ export const PRODUCTION_EDGE_FUNCTIONS: readonly string[] = [
   'evidence-export',
   'evidence-vault',
   'evidence-vault-export',
+  'export-audit',
   'gdpr-audit',
   'gdpr-delete',
   'gdpr-export',
+  'generate-certification-report',
+  'generate-compliance-report',
   'generate-document',
   'governance-agent',
   'governance-agents-list',
+  'governance-analytics-aggregator',
   'governance-analytics-export',
   'governance-approvals',
+  'governance-audit-report-gen',
   'governance-connectors',
+  'governance-deadline-monitor',
   'governance-dpias',
   'governance-dsr',
   'governance-erasure-sweeper',
+  'governance-evidence-handler',
+  'governance-gap-analyzer',
   'governance-incidents',
   'governance-ingest',
   'governance-keys',
@@ -110,10 +145,15 @@ export const PRODUCTION_EDGE_FUNCTIONS: readonly string[] = [
   'governance-monitoring-scheduler',
   'governance-remediate',
   'governance-resources',
+  'governance-risk-escalate',
   'governance-risk-score',
+  'governance-score-calculator',
   'governance-vendors',
   'governance-webhooks',
+  'governance-workflow-intake',
   'health',
+  'hostinger-agent-brief',
+  'invoice-email',
   'iso42001-control-detail',
   'iso42001-controls-library',
   'iso42001-evidence-vault',
@@ -122,41 +162,80 @@ export const PRODUCTION_EDGE_FUNCTIONS: readonly string[] = [
   'kodee-advise',
   'kodee-diagnose',
   'kodee-onboard',
+  'legal-embed',
   'legal-retrieve',
+  'log-tool-run',
+  'maintenance-schedule',
   'market-scanner',
   'marketing-event',
+  'memory-confidence-trigger',
   'memory-decay-worker',
+  'mfa-admin-reset',
   'mfa-recovery-redeem',
   'newsletter-confirm',
   'newsletter-subscribe',
+  'nis2-deadline-calculator',
+  'notify-terminal-event',
+  'oauth2-apps',
+  'oauth2-token',
+  'optimize-analyze',
+  'optimize-execute',
+  'order-intake',
+  'partner-provision-tenant',
+  'pitch-deck-pdf',
+  'plans',
   'policy-packs',
   'provenance',
   'rebuild-website',
   'remediation-agent',
+  'remediation-workflow',
+  'report-generator',
   'sales-lead',
   'save-company-profile',
+  'schedule-data-syncs',
   'scheduler',
   'scheduler-dispatch',
   'security-signal-ingest',
+  'seed-integrations',
+  'seo-dashboard-data',
+  'share-dashboard',
   'shopify-callback',
   'shopify-install',
   'shopify-scan',
   'shopify-webhooks',
   'siteos',
+  'skills',
+  'social-orchestrator-persistence',
+  'social-publisher-worker',
   'stripe-checkout',
   'stripe-checkout-verify',
   'stripe-meter-sync',
+  'stripe-oauth-callback',
   'stripe-portal',
+  'stripe-token-meter-sync',
   'stripe-webhook',
   'sub-processor-notify',
+  'sync-ga-metrics',
+  'sync-stripe-metrics',
   'telegram-channels',
   'telegram-webhook',
   'telemetry-ai-event',
   'tenant-audit',
+  'tenant-branding-get',
+  'tenant-branding-update',
   'tenant-invite',
   'tenant-members',
   'track-pageview',
+  'train-forecast-models',
+  'update-member-role',
   'usage-increment',
+  'webhook-deliver',
+  'webhook-dispatcher',
+  'webhook-retry-cron',
+  'website-domain-manager',
+  'website-maintenance-agent',
+  'website-maintenance-daily-cron',
+  'website-operations-agent',
   'welcome-email',
   'workflow-callback',
   'workflow-trigger',
@@ -190,51 +269,36 @@ export interface UnbackedCaller {
 }
 
 export const UNBACKED_CALLERS: readonly UnbackedCaller[] = [
+  // Stand 2026-08-22: von 26 Einträgen sind 19 weggefallen, sieben bleiben.
+  //
+  // Der Deploy-Lauf nach dem Merge von #1117 hat alle 177 Functions des
+  // Repositories ausgerollt. Damit ist jeder Aufruf belegt, für den es
+  // überhaupt Code gibt.
+  //
+  // Die sieben hier sind ein anderer Fall — und ein schwererer: Für sie
+  // existiert **kein Verzeichnis unter `supabase/functions/`**. Sie waren
+  // nie „nicht deployt", sondern nie geschrieben. Ein Deploy hilft ihnen
+  // nicht; sie brauchen entweder eine Implementierung oder das Abräumen
+  // ihres Aufrufers.
+
   // ── Öffentlicher Trichter — wiegt am schwersten ────────────────────────
   //
-  // Was hier am 2026-08-19 wegfiel — die Reihenfolge ist die des Nachweises,
-  // nicht die des Deploys, und der Unterschied ist der Punkt:
-  //
-  //   16:45  `siteos` — Router seit 16:39 deployt, alle vier Pfade über HTTP
-  //          geprüft. Der Verfügbarkeitshinweis verschwand von selbst.
-  //   20:18  `save-company-profile`, `create-trial-subscription` — seit 19:38
-  //          deployt, beide antworten aus dem Handler (401 bzw. 400), nicht
-  //          mit dem Plattform-404. Die Registrierung läuft bis zum Ende durch.
-  //
-  // Öffentlich dokumentierte, aber nicht existierende API-Endpunkte.
-  // ApiDocs kennzeichnet sie inzwischen — siehe src/pages/ApiDocs.tsx.
+  // Vier in `/api-docs` dokumentierte Endpunkte, die es nicht gibt. Eine
+  // API-Dokumentation, die auf Nichts zeigt, ist keine Lücke im UI, sondern
+  // eine Falschaussage nach außen: Wer danach integriert, baut gegen einen
+  // Endpunkt, den niemand je geschrieben hat.
   { slug: 'audit', surface: '/api-docs — dokumentierter Endpunkt', publicPath: true },
   { slug: 'avv-generator', surface: '/api-docs — dokumentierter Endpunkt', publicPath: true },
   { slug: 'dsfa', surface: '/api-docs — dokumentierter Endpunkt', publicPath: true },
   { slug: 'sub-processors', surface: '/api-docs — dokumentierter Endpunkt', publicPath: true },
 
-  // ── Hinter Login ───────────────────────────────────────────────────────
-  // `api-quota` steht nur in src/features/api/API_DEVELOPER_GUIDE.md und wird
-  // von keinem Code aufgerufen — deshalb kein Eintrag hier, aber ein offener
-  // Punkt: Das Handbuch beschreibt einen Endpunkt, den es nicht gibt.
-  { slug: 'auditor-engagement', surface: 'features/governance — Prüfer-Mandat', publicPath: false },
-  { slug: 'bulk-scan', surface: 'features/bulk — Sammel-Scan', publicPath: false },
+  // ── Hinter der Anmeldung ───────────────────────────────────────────────
   { slug: 'export-bulk-results', surface: 'features/bulk — Export', publicPath: false },
-  { slug: 'calculate-seo-metrics', surface: 'features/seo-marketing-dashboard', publicPath: false },
-  { slug: 'seo-dashboard-data', surface: 'features/seo-marketing-dashboard', publicPath: false },
-  { slug: 'share-dashboard', surface: 'features/seo-marketing-dashboard — Teilen', publicPath: false },
-  { slug: 'train-forecast-models', surface: 'features/seo-marketing-dashboard — Prognose', publicPath: false },
-  { slug: 'generate-compliance-report', surface: 'features/governance — Berichtsbau', publicPath: false },
-  { slug: 'certification-readiness', surface: 'features/governance — ISO-42001-Reifegrad', publicPath: false },
-  { slug: 'generate-certification-report', surface: 'features/governance — Zertifizierungsbericht', publicPath: false },
   { slug: 'iso42001-control-update', surface: 'features/governance — Control-Detail', publicPath: false },
-  { slug: 'maintenance-schedule', surface: 'features/governance — ISO-42001-Wartung', publicPath: false },
-  { slug: 'remediation-workflow', surface: 'features/governance — Behebungs-Workflow', publicPath: false },
-  { slug: 'export-audit', surface: 'features/governance — Prüfpfad-Export', publicPath: false },
-  { slug: 'update-member-role', surface: 'features/governance — Terminal-Zusammenarbeit', publicPath: false },
-  { slug: 'log-tool-run', surface: 'governance-os — eingebetteter Browser', publicPath: false },
-  { slug: 'social-orchestrator-persistence', surface: 'core/social-orchestrator', publicPath: false },
-  { slug: 'tenant-branding-update', surface: 'features/settings — Branding', publicPath: false },
   { slug: 'trigger-workflow', surface: 'features/workflows', publicPath: false },
-  { slug: 'website-domain-manager', surface: 'features/website-operations — Domains', publicPath: false },
-  { slug: 'website-maintenance-agent', surface: 'features/website-operations — Wartung', publicPath: false },
-  { slug: 'website-operations-agent', surface: 'features/website-operations — Website anlegen', publicPath: false },
 ];
+
+
 
 const UNBACKED_SET = new Set(UNBACKED_CALLERS.map((c) => c.slug));
 

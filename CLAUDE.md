@@ -207,6 +207,17 @@ Jeder Agent braucht vier Dimensionen — fehlt eine, ist er nicht governance-fä
 > ist überholt. Die Vermutung einer harten Schranke bei 100 hat sich
 > erledigt — sie war schon beim Deploy von Function 101 (`siteos`) widerlegt.
 >
+> **Eine andere Lücke bleibt und ist nicht dieselbe.** Sieben Slugs, die das
+> Frontend aufruft, existieren **weder in Produktion noch im Repository** —
+> für sie wurde nie eine Function geschrieben. Ein Deploy hilft ihnen nicht.
+> Vier davon sind öffentlich und wiegen schwerer: `audit`, `avv-generator`,
+> `dsfa` und `sub-processors` stehen als Endpunkte in `/api-docs`. Eine
+> API-Dokumentation, die auf Nichts zeigt, ist keine UI-Lücke, sondern eine
+> Falschaussage nach außen. Dazu intern `export-bulk-results`,
+> `iso42001-control-update`, `trigger-workflow`. Geführt in
+> `src/config/production-edge-functions.ts` → `UNBACKED_CALLERS`, abgesichert
+> durch `test/backend/edge-function-contract.test.ts`.
+>
 > **Auch die Migrations-Lücke von damals ist geschlossen.** `20260821000000_b2_website_asset_relation`
 > ist angekommen; am Schema geprüft, nicht aus der Liste geschlossen:
 > `websites.governance_asset_id`, `scan_runs.asset_id` und der Constraint

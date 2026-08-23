@@ -102,6 +102,7 @@ const FORBIDDEN_CLIENT = [
   'legal_retrieve_chunks',
   'legal_retrieve_chunks_hybrid',
   'audit_jobs_claim_next',
+  'audit_jobs_complete',
   'bulk_scan_claim_next',
   'distribution_queue_claim_next',
 ];

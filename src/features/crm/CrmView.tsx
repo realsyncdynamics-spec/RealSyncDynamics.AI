@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Building2, Contact, Handshake, Plus, RefreshCw } from 'lucide-react';
-import { getSupabaseClient } from '../../lib/supabaseClient';
+import { getSupabase } from '../../lib/supabase';
 import { useTenant } from '../../core/access/TenantProvider';
 
 type Company = { id: string; name: string; domain: string | null; lifecycle_stage: string };
@@ -8,10 +8,10 @@ type ContactRow = { id: string; first_name: string | null; last_name: string | n
 type Deal = { id: string; name: string; stage: string; value_cents: number; currency: string };
 
 const STAGES = ['new', 'qualified', 'proposal', 'negotiation', 'won', 'lost'];
+const supabase = getSupabase();
 
 export function CrmView() {
   const { activeTenantId } = useTenant();
-  const supabase = getSupabaseClient();
   const [companies, setCompanies] = useState<Company[]>([]);
   const [contacts, setContacts] = useState<ContactRow[]>([]);
   const [deals, setDeals] = useState<Deal[]>([]);

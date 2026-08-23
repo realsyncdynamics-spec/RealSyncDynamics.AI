@@ -303,15 +303,35 @@ Cloudflare bleibt Edge/Hosting, Supabase bleibt Auth/DB/RLS/Functions.
 
 ---
 
-## 6. Nächster Schritt
+## 6. Umsetzungsstand
 
 Nach §27 und der bestätigten Reihenfolge:
 
-1. **Tests für das kanonische Modell** — Tabelle aus §3 als Testfälle, inklusive
-   der verlustbehafteten Fälle `warn`/`log`.
-2. **Paritätstest #4 ↔ #5** — bindet die handkopierte Edge-Fassung an das
-   Original, analog `rfc003-sql-parity.test.ts`.
-3. **Adapter-Modul** — reine Übersetzung, keine Entscheidung.
+| Schritt | Stand |
+|---|---|
+| Tests für das kanonische Modell | ✅ `test/governance/verdict-mapping.test.ts` — 28 Fälle, inklusive `warn`/`log`-Verlustfreiheit und Fail-closed |
+| Paritätstest #4 ↔ #5 | ✅ `test/governance/enterprise-os-evaluate-parity.test.ts` — 5 Fälle, Vorgehen wie `rfc003-sql-parity.test.ts` |
+| Adapter-Modul | ✅ `supabase/functions/_shared/verdict.ts` — reine Übersetzung, keine Entscheidung |
+
+**Getroffene Annahme**: umgesetzt ist die **verlustfreie** Variante aus §3.1
+(`advisory` + `sourceEngine` + `sourceVerdict`). Begründung: `warn` und `log`
+ohne Seitenkanal auf `ALLOW` zu kollabieren zerstört Prüfpfad-Information.
+Die harte 5→3-Abbildung bliebe eine Streichung des `advisory`-Feldes.
+
+**Verifiziert statt behauptet:**
+
+- Der Paritätstest fängt Drift tatsächlich: eine künstlich geänderte
+  Regel-Begründung in der Edge-Kopie ließ ihn rot werden, danach wurde das
+  Original wiederhergestellt.
+- `supabase/functions` steht in `tsconfig.json` unter `exclude`. `verdict.ts`
+  wird über den Test-Import trotzdem typgeprüft — mit einem absichtlichen
+  Typfehler nachgewiesen (`error TS2322`), danach zurückgenommen.
+- `npm run lint` exit 0 · `npm test` 3342 bestanden, 0 Fehlschläge.
+
+**Keine bestehende Engine wurde angefasst.** `governance-ingest`,
+`telemetry-ai-event` und `gateway.ts` laufen unverändert; der Adapter hat
+bislang keinen Aufrufer — er wird erst in Phase 4 (serverseitige Durchsetzung)
+verdrahtet.
 
 Erst danach Phase 2 (Evidence).
 

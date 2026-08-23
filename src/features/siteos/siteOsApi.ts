@@ -304,6 +304,23 @@ export interface AnonBuildResponse {
   blueprint: SiteBlueprint;
   findings: RuntimeFinding[];
   scores: ScoreBreakdown;
+  preview?: PreviewState;
+}
+
+/**
+ * Zustand der geteilten Vorschau.
+ *
+ * `not_configured` und `failed` sind getrennt, weil sie Verschiedenes
+ * bedeuten: Das eine heisst „diese Umgebung hat keinen Vorschau-Worker"
+ * (bekannter, dokumentierter Zustand — siehe
+ * `docs/product/siteos-anonymous-build.md`), das andere „es gibt einen, und
+ * er hat abgelehnt". Die Oberfläche darf daraus nicht denselben Satz machen.
+ */
+export interface PreviewState {
+  status: 'stored' | 'none' | 'not_configured' | 'failed';
+  url?: string;
+  expires_in?: number;
+  reason?: string;
 }
 
 export interface AnonRefineResponse {
@@ -318,6 +335,7 @@ export interface AnonRefineResponse {
   changes: RefinementChange[];
   refusals: string[];
   understood: boolean;
+  preview?: PreviewState;
 }
 
 export interface ClaimResponse {
@@ -328,6 +346,7 @@ export interface ClaimResponse {
   version: number;
   content_sha256: string;
   provenance_linked?: boolean;
+  preview_revoked?: boolean;
 }
 
 export async function buildAnon(args: {
@@ -380,6 +399,7 @@ export interface AnonSessionResponse {
   expires_at: string;
   claimed: boolean;
   claimed_blueprint_id: string | null;
+  preview?: PreviewState;
 }
 
 /**

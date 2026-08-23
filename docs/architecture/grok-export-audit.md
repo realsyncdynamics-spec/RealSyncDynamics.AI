@@ -11,9 +11,10 @@ Reines Audit. **Es wurde nichts migriert.** Dieses Dokument stellt fest, was
 ## 0. Ausgangslage — die Contracts sind bereits portiert
 
 Commit `53c7e41` („feat(agent-runtime): Voice-Contracts v0.1", 2026-08-23 11:49)
-hat `packages/agent-runtime-contracts` angelegt. Er liegt auf diesem Branch,
-**nicht auf `main`**. Punkt 1 des Übernahmeplans ist damit erledigt; das Audit
-prüft ab hier die *Logik*, nicht die Typen.
+hat `packages/agent-runtime-contracts` angelegt. Er liegt auf **`main`**
+(geprüft am 2026-08-23 gegen `origin/main`, nicht aus einem lokalen Ref
+geschlossen). Punkt 1 des Übernahmeplans ist damit erledigt; das Audit prüft ab
+hier die *Logik*, nicht die Typen.
 
 ---
 

@@ -45,6 +45,17 @@ export const GOVERNANCE_MODULES: GovernanceModule[] = [
     description: 'Echtzeit-Workspace mit Live-Daten (Auth erforderlich)',
   },
   {
+    id: 'modules',
+    label: 'Module',
+    icon: 'Layers',
+    route: '/app/modules',
+    status: 'live',
+    // Für jeden Plan sichtbar: Der Hub zeigt gerade auch gesperrte
+    // Capabilities — mit Aktivierungspfad über das zentrale Billing.
+    gate: { kind: 'all' },
+    description: 'Capability-Übersicht: aktivieren, öffnen, upgraden',
+  },
+  {
     id: 'websites',
     label: 'Websites',
     icon: 'Globe',

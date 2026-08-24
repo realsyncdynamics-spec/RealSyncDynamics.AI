@@ -1,6 +1,6 @@
 # Governance OS — Ist-Analyse, Zielarchitektur und Umsetzungsplan (Enforcement)
 
-**Status: Entscheidungsvorlage. Keine Implementierung.**
+**Status: P0 freigegeben und umgesetzt — Umsetzungsstand in §10.**
 Stand: 2026-08-24 · Branch `claude/governance-os-plan-y5rplu` · Basis `c0e0858`
 
 Dieses Dokument beantwortet den Auftrag „RealSyncDynamics.AI zum Governance OS
@@ -8,8 +8,9 @@ ausbauen" in der geforderten Reihenfolge: messen → Zielarchitektur → Plan 1 
 kritische Prüfung des eigenen Plans → Plan 2 → Risiken → offene Entscheidungen →
 Priorisierung → Aufwand.
 
-Es wurde **kein Produktionscode geändert**, keine Migration angelegt, keine
-Dependency installiert. Die einzige Änderung im Repository ist diese Datei.
+Die Abschnitte 1–9 sind die ursprüngliche Entscheidungsvorlage und beschreiben
+den Zustand **vor** der Freigabe („GO" + E8-Ja am 2026-08-24); was seitdem
+gebaut wurde, steht in §10. Für P1/P2 gilt weiterhin: erst Freigabe, dann Code.
 
 ## Verhältnis zu bestehenden Dokumenten
 
@@ -693,7 +694,7 @@ Relativ, keine erfundenen Zeitangaben.
 | P0-3 Snapshot + Endpunkt | ✅ | Migration `20260824090000_pdp_snapshots_shadow.sql` (`policy_snapshots`, `pdp_shadow_log`, RLS) · `_shared/pdp/decide.ts` (Instanz-Cache, 30 s TTL) · Edge Function `governance-decide` (`rsd_gov_`-Key-Auth, Evidence bei Nicht-allow) |
 | P0-4 ai-gateway-PEP | ✅ | `AI_GATEWAY_ENFORCEMENT=off\|shadow\|enforce`, **Default `shadow`** — Produktionsverhalten ändert sich erst durch bewusstes Umschalten. Grenze dokumentiert: Gateway ist tenant-los (nur globale Policies), Vendor steht erst nach Routing fest |
 | P0-5 Shadow-Mode | ✅ | `telemetry-ai-event` und `governance-ingest` rechnen v2 auf denselben geladenen Policy-Zeilen mit; Divergenzen → `pdp_shadow_log`. Antwortverhalten unverändert |
-| P0-1 Credentials | ⏳ **wartet auf E8** | §10.3-Fragepflicht: Änderung an `IntegrationMarketplaceView.tsx` braucht ausdrückliches Ja |
+| P0-1 Credentials | ✅ (E8: **Ja** am 2026-08-24) | Migration `20260824110000`: Spaltenrechte — `credentials`/`credentials_enc` erreichen Clients nie mehr, kein Client-INSERT; Edge Function `integration-credentials` (AES-256-GCM-Siegel via `_shared/secretBox.ts`, owner/admin-only, Audit-Log, 503 statt Klartext-Fallback); View liest/schreibt nur noch Metadaten |
 
 Noch nicht deployt: `governance-decide` und die Migration laufen erst mit dem
 nächsten `deploy.yml`-Lauf nach dem Merge (siehe CLAUDE.md §5 — Repo ≠ Produktion).

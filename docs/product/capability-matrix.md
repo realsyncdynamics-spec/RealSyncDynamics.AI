@@ -229,3 +229,106 @@ ist die richtige Auflösung, den Claim zu streichen statt eine Fähigkeit zu
 vergeben. Das gehört entschieden, nicht nebenbei behoben. Festgehalten als
 Testfall in `test/billing/ap2-package-model.test.ts` — fällt er, ist die
 Lücke geschlossen worden und der Fall gehört wieder in die reguläre Prüfung.
+
+---
+
+## 6. Claims-Reality-Audit, Teil 1: Enforcement (2026-08-24, Stand `8a652d4`)
+
+Erste Messung zur Frage aus dem Auftrag: **Wo ist ein Versprechen bloß eine
+Preisangabe, und wo ist es eine Regel?**
+
+### 6.1 Wie viel wird überhaupt serverseitig geprüft
+
+| | Anzahl |
+|---|---:|
+| Edge Functions im Repo | 178 |
+| davon mit Entitlement-Wächter (`_shared/entitlements.ts`) | **10** |
+
+Die zehn: `automation-trigger`, `bot-chat`, `bot-voice-webhook`, `bulk-scan`,
+`evidence-vault`, `policy-packs`, `provenance`, `scheduler`,
+`whatsapp-webhook`, `workflow-trigger`.
+
+Durchgesetzte Boolean-Keys: `ai.tool.automations`, `ai.tool.workflows`,
+`bots.enabled`, `bots.voice`, `bots.whatsapp`, `bulk.jobs`,
+`evidence.advanced`, `policy.packs`, `provenance.advanced`,
+`scheduler.enabled`. **Zehn von 73.** Alles Übrige ist heute Anzeige, nicht
+Kontrolle — das ist der Befund, nicht ein Vorwurf: Viele Keys beschreiben
+Fähigkeiten ohne eigenen Endpunkt.
+
+### 6.2 Kontingent ist nicht gleich Kontingent
+
+`_shared/usage.ts` kennt zwei Wege, und nur einer hält:
+
+| Funktion | Verhalten |
+|---|---|
+| `consumeUsage()` | prüft **vor** dem Buchen und wirft `QUOTA_EXCEEDED` |
+| `recordUsage()` | bucht nur, **ohne** Grenze |
+
+`recordUsage()` ist an Stellen richtig, wo die Leistung bereits eingekauft
+ist (LLM-Aufruf, Telefonieminute) — sie zu verschweigen wäre schlimmer als
+sie über der Grenze zu buchen. Aber: **`limit.bot_voice_minutes_monthly`,
+`limit.automation_runs_monthly` (im Callback), `limit.ai_tokens_monthly`,
+`limit.ai_calls_monthly` und `limit.whatsapp_conversations_monthly` werden
+nur gebucht, nicht begrenzt.** Wer sie als harte Grenze verkauft, verkauft
+eine Zusage, die nur nachträglich sichtbar wird.
+
+Mit `consumeUsage()` und damit tatsächlich begrenzt:
+`limit.bot_messages_monthly`, `limit.bulk_jobs_monthly`.
+
+### 6.3 Der schwerwiegende Befund — und er stammt aus dieser Arbeit
+
+Die Frage „Kann Starter technisch mehr als 500 Antworten erzeugen?" führte
+auf etwas Größeres.
+
+`consumeUsage()` und `gateFeature()` lösen Entitlements über den
+**Admin-Client** auf (`admin.rpc('tenant_entitlements', …)`). Ein
+service_role-Token trägt keinen `sub`-Claim, `auth.uid()` ist also NULL.
+Seit `20260828010000` filtert die Funktion aber über eine
+Mitgliedschaftsprüfung — und liefert dem Server damit **null Zeilen**.
+
+Gegen eine echte PostgreSQL gemessen, Growth-Mandant mit 47 Entitlements:
+
+| Aufrufer | vor `20260828010000` | mit Prüfung | nach `20260831020000` |
+|---|---:|---:|---:|
+| Browser, Mitglied | 47 | 47 | 47 |
+| Edge Function (service_role) | 47 | **0** | 47 |
+| Fremder eingeloggter Nutzer | **47** | 0 | 0 |
+
+Die mittlere Spalte wäre mit diesem PR in Produktion gegangen. Folgen:
+
+- `gateFeature()` hätte **jeden** Aufruf der zehn Functions abgewiesen —
+  für jeden Kunden bis Enterprise.
+- `consumeUsage()` hätte die Plan-Grenze übersprungen (`planLimit` NULL),
+  Kontingente wären lautlos wirkungslos geworden.
+
+Die linke Spalte zeigt zugleich, warum die Prüfung überhaupt eingeführt
+wurde: Vorher konnte **jeder eingeloggte Nutzer die Entitlements jedes
+beliebigen Mandanten lesen**. Beide Eigenschaften sollen gelten, nicht eine.
+`20260831020000` lässt deshalb zusätzlich `auth.role() = 'service_role'` zu.
+
+**Korrektur einer eigenen Aussage.** Der Kommentar in `20260828010000`
+behauptet, die Mitgliedschaftsprüfung sei „unverändert" übernommen worden.
+Das war falsch — die Fassung davor (`20260808120000`) hatte keine. Der
+Nachweis zu AP1 und AP4 hat den Fehler nicht gefunden, weil er `auth.uid()`
+auf einen festen Nutzer gestubbt hat und den service_role-Fall damit nie
+gesehen hat. **Lehre: Ein Nachweis, der nur den Weg prüft, den man im Kopf
+hat, prüft nichts.** Jede Zugriffsregel braucht die Gegenprobe für *jeden*
+Aufrufer, den es gibt — hier Browser, Server, fremder Nutzer, anonym.
+
+Abgesichert durch `test/runtime/db/tenant-entitlements-callers.db.test.ts`
+(fünf Fälle, mutationsgeprüft: gegen die kaputte Fassung fallen genau die
+beiden service_role-Fälle, die Mandantentrennung bleibt grün).
+
+### 6.4 Was Teil 2 messen muss
+
+Noch offen und für den nächsten Schritt vorgemerkt:
+
+1. **Frontend-only-Gates.** Der Agency-Befund ist der Musterfall
+   (Oberfläche versteckt, Server erlaubte). Dieselbe Prüfung fehlt für die
+   übrigen eingeschränkten Fähigkeiten — insbesondere für die 63 Keys ohne
+   Wächter aus §6.1.
+2. **Compliance-Claims.** Für NIS2, ISO 27001, TISAX und DORA ist bisher nur
+   belegt, dass ein Entitlement-Key existiert und ab welchem Plan er liegt.
+   Nicht belegt: welche Controls, welche Evidence, welche Automatisierung,
+   welche Assessment-Funktion dahinterstehen — und welche Aussage daraus
+   zulässig ist. Ein Policy Pack ist kein Compliance-Nachweis.

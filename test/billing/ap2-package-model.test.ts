@@ -224,6 +224,34 @@ describe('Agency und Partner sind stillgelegt, nicht gelöscht', () => {
   it('lässt genau drei Stufen im Self-Service', () => {
     expect(SELF_SERVICE_PLANS.map((p) => p.id)).toEqual(['free', 'starter', 'growth']);
   });
+
+  /**
+   * Die Stilllegung muss eine Regel sein, keine Anzeigeentscheidung.
+   *
+   * Agency behält `purchaseMode: 'checkout'` — seine laufenden Abos rechnen
+   * unverändert ab. Genau deshalb wäre der Plan über eine getippte URL oder
+   * einen selbst gebauten Request weiterhin käuflich, wenn ihn nur die
+   * Oberfläche versteckte. `stripe-checkout` weist ihn deshalb serverseitig
+   * ab (`PLAN_RETIRED`), und `CheckoutPage` leitet vorher um.
+   */
+  it('hält den Kaufmodus stillgelegter Pläne, sperrt aber den Neukauf', () => {
+    const agency = planById('agency');
+    expect(agency.purchaseMode).toBe('checkout');
+    expect(agency.availability).toBe('legacy');
+
+    const wächter = readFileSync(
+      join('supabase', 'functions', 'stripe-checkout', 'index.ts'),
+      'utf8',
+    );
+    expect(wächter).toContain("plan.availability === 'legacy'");
+    expect(wächter).toContain('PLAN_RETIRED');
+
+    const seite = readFileSync(
+      join('src', 'features', 'billing', 'CheckoutPage.tsx'),
+      'utf8',
+    );
+    expect(seite).toContain("plan.availability === 'legacy'");
+  });
 });
 
 describe('WhatsApp — ein Preis, und für den richtigen Plan', () => {

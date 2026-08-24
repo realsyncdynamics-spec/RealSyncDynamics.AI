@@ -694,9 +694,15 @@ Relativ, keine erfundenen Zeitangaben.
 | P0-3 Snapshot + Endpunkt | ✅ | Migration `20260824090000_pdp_snapshots_shadow.sql` (`policy_snapshots`, `pdp_shadow_log`, RLS) · `_shared/pdp/decide.ts` (Instanz-Cache, 30 s TTL) · Edge Function `governance-decide` (`rsd_gov_`-Key-Auth, Evidence bei Nicht-allow) |
 | P0-4 ai-gateway-PEP | ✅ | `AI_GATEWAY_ENFORCEMENT=off\|shadow\|enforce`, **Default `shadow`** — Produktionsverhalten ändert sich erst durch bewusstes Umschalten. Grenze dokumentiert: Gateway ist tenant-los (nur globale Policies), Vendor steht erst nach Routing fest |
 | P0-5 Shadow-Mode | ✅ | `telemetry-ai-event` und `governance-ingest` rechnen v2 auf denselben geladenen Policy-Zeilen mit; Divergenzen → `pdp_shadow_log`. Antwortverhalten unverändert |
+| P1-1 Subjektmodell | ✅ (Freigabe „go" 2026-08-24) | Migration `20260824120000`: `org_units` (materialisierter Pfad, Zyklen-/Tenant-Guard per Trigger, Teilbaum-Umhängen inkl. Nachfahren-Repath), `principals` (user/service/agent/device), `role_bindings` (additive Rollen `dpo`/`it_admin`/`compliance_officer`/`approver`/`employee`, Geltungsbereich Tenant oder Teilbaum). PIP-Anreicherung in `decide.ts` (Rollen entlang des Org-Pfads); generic-Bedingungen `principal_roles`/`principal_type`/`org_unit` (Teilbaum-Matching) mit payload-Fallback ohne Principal (K1-Schutz) |
+| P1-4 Approval-Kette | ✅ (Freigabe „go" 2026-08-24) | `pdp_approval_gates` (Request-Fingerprint `approvalFingerprint()`, genau ein offenes Gate je Fingerprint, 7-Tage-Ablauf); `decide()` erzeugt Gates und erkennt erteilte Deckung (→ allow mit Begründung); `governance-approvals` neu: `gates_list`/`gate_approve`/`gate_reject` — freigeben darf owner/admin **oder** die Rolle aus `approver_role`; Evidence je Gate-Entscheidung. v1-Grenze dokumentiert: Rollen-Check tenantweit, Teilbaum-Eingrenzung folgt mit P1-3 |
 | P0-1 Credentials | ✅ (E8: **Ja** am 2026-08-24) | Migration `20260824110000`: Spaltenrechte — `credentials`/`credentials_enc` erreichen Clients nie mehr, kein Client-INSERT; Edge Function `integration-credentials` (AES-256-GCM-Siegel via `_shared/secretBox.ts`, owner/admin-only, Audit-Log, 503 statt Klartext-Fallback); View liest/schreibt nur noch Metadaten |
 
-Noch nicht deployt: `governance-decide` und die Migration laufen erst mit dem
+**Noch offen in P1:** P1-2 (Klassifikations-PIP), P1-3 (Rollen-Sichten — inkl.
+UI für Org-Einheiten, Rollen und Gates; bis dahin sind Gates nur per API
+erreichbar), P1-5 (Agent-PEP), P1-6 (Evidence härten).
+
+Noch nicht deployt: `governance-decide` und die Migrationen laufen erst mit dem
 nächsten `deploy.yml`-Lauf nach dem Merge (siehe CLAUDE.md §5 — Repo ≠ Produktion).
 
 **Umschalt-Kriterium bleibt:** v2 übernimmt nirgends die Entscheidung, bevor der

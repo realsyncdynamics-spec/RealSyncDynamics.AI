@@ -36,7 +36,19 @@ export interface DecisionPrincipal {
   type: 'user' | 'service' | 'agent' | 'device';
   id?: string;
   org_unit?: string;
+  /**
+   * Materialisierter Pfad '/<root>/<...>/<unit>' aus org_units.org_path.
+   * Wird vom PIP (decide.ts) angereichert; erlaubt Policies auf einen
+   * Teilbaum ("gilt fuer Standort X inkl. aller Abteilungen darunter").
+   */
+  org_path?: string;
   roles?: string[];
+}
+
+/** Zerlegt einen org_path in die Unit-IDs von der Wurzel bis zur eigenen. */
+export function orgAncestors(orgPath: string | undefined): string[] {
+  if (!orgPath) return [];
+  return orgPath.split('/').filter((s) => s.length > 0);
 }
 
 export interface DecisionRequest {
@@ -93,6 +105,16 @@ export interface DecisionResult {
   snapshot_version: string;
   /** Cache-Erlaubnis fuer den PEP. 0 = nicht cachen. */
   ttl_ms: number;
+  /**
+   * Freigabe-Kette (P1-4), vom PDP-Glue gefuellt:
+   * - decision=require_approval  -> offenes/neues Gate (status 'pending')
+   * - decision=allow mit covered -> eine erteilte Freigabe deckt die Aktion
+   */
+  approval?: {
+    gate_id: string | null;
+    approver_role: string;
+    status: 'pending' | 'approved';
+  };
 }
 
 export const PDP_DEFAULT_TTL_MS = 30_000;
@@ -124,6 +146,13 @@ export interface CompiledPolicy {
    * Ueberschreibbar per `on_engine_unavailable` in der Condition-JSONB.
    */
   on_engine_unavailable: FailMode;
+  /**
+   * Rolle, die eine require_approval-Entscheidung dieser Policy freigeben
+   * darf (P1-4). Aus `approver_role` in der Condition-JSONB; Default
+   * 'approver'. Der CEO muss nicht jede Aktion freigeben — die Freigabe
+   * adressiert eine Rolle, keine Person (Auftrag §2).
+   */
+  approver_role: string;
 }
 
 export interface PolicySnapshot {
@@ -157,6 +186,11 @@ function normalizeAction(raw: unknown): PdpDecision {
     case 'block': return 'block';
     default: return 'log_only'; // unbekannte Action nie eskalieren, nur dokumentieren
   }
+}
+
+function approverRoleOf(condition: Record<string, unknown>): string {
+  const raw = condition['approver_role'];
+  return typeof raw === 'string' && raw.length > 0 ? raw : 'approver';
 }
 
 function failModeOf(condition: Record<string, unknown>, action: PdpDecision): FailMode {
@@ -196,6 +230,7 @@ export function compileAiPolicies(rows: AiPolicyRowInput[]): CompiledPolicy[] {
       action,
       condition,
       on_engine_unavailable: failModeOf(condition, action),
+      approver_role: approverRoleOf(condition),
     });
   }
   return out;
@@ -225,6 +260,7 @@ export function compileGovernancePolicies(rows: GovernancePolicyRowInput[]): Com
       action,
       condition,
       on_engine_unavailable: failModeOf(condition, action),
+      approver_role: approverRoleOf(condition),
     });
   }
   return out;
@@ -342,6 +378,19 @@ function genericFieldValue(req: DecisionRequest, key: string): unknown {
     case 'risk_level':   return req.data?.risk_level;
     case 'asset_type':   return req.asset?.asset_type;
     case 'ai_act_class': return req.asset?.ai_act_class;
+    // Principal-Schluessel (P1-1). Nur wenn ein Principal am Request haengt —
+    // sonst payload-Fallback, damit die Shadow-Aequivalenz mit der Alt-Engine
+    // fuer alle Alt-Pfade (die keinen Principal setzen) erhalten bleibt (K1).
+    case 'principal_type':
+      return req.principal ? req.principal.type : req.payload?.[key];
+    case 'principal_roles':
+      return req.principal ? (req.principal.roles ?? []) : req.payload?.[key];
+    case 'org_unit':
+      // Liste aus eigener Unit + allen Vorfahren: eine Bedingung
+      // { org_unit: '<id>' } matcht damit den ganzen Teilbaum darunter.
+      return req.principal
+        ? orgAncestors(req.principal.org_path ?? (req.principal.org_unit ? `/${req.principal.org_unit}` : undefined))
+        : req.payload?.[key];
     default:             return req.payload?.[key];
   }
 }
@@ -357,9 +406,19 @@ function matchGenericValue(expected: unknown, actual: unknown): boolean {
   return expected === actual;
 }
 
+// Schluessel, deren Ist-Wert bei vorhandenem Principal eine LISTE ist
+// (Rollen, Vorfahren-Units). Ein skalarer Soll-Wert wird dann als
+// Ein-Element-Liste gelesen — { org_unit: 'X' } und { org_unit: ['X'] }
+// meinen dasselbe. Ohne Principal (payload-Fallback) bleibt die exakte
+// Alt-Semantik unangetastet (K1).
+const PRINCIPAL_LIST_KEYS = new Set(['principal_roles', 'org_unit']);
+
 function matchGenericPolicy(req: DecisionRequest, p: CompiledPolicy): boolean {
-  for (const [k, v] of Object.entries(p.condition)) {
-    if (k === 'on_engine_unavailable') continue; // Meta-Feld, keine Match-Bedingung
+  for (const [k, rawExpected] of Object.entries(p.condition)) {
+    if (k === 'on_engine_unavailable' || k === 'approver_role') continue; // Meta-Felder, keine Match-Bedingung
+    const v = req.principal && PRINCIPAL_LIST_KEYS.has(k) && !Array.isArray(rawExpected)
+      ? [rawExpected]
+      : rawExpected;
     if (ASSET_KEYS.has(k) && !req.asset) {
       // Alt-Engine: Asset-Felder ohne Asset fallen in payload zurueck
       if (!matchGenericValue(v, req.payload?.[k])) return false;
@@ -475,4 +534,41 @@ export function toLegacyAiStatus(result: DecisionResult): string {
 export function toLegacyGovAction(result: DecisionResult): string | null {
   if (result.matched_policy_ids.length === 0) return null;
   return result.decision === 'log_only' ? 'log' : result.decision;
+}
+
+// ─── Approval-Fingerprint (P1-4) ─────────────────────────────────────────────
+
+/**
+ * Deterministischer Fingerprint eines Entscheidungs-Requests. Eine erteilte
+ * Freigabe deckt exakt die Wiederholung DERSELBEN Aktion — gleicher Kanal,
+ * gleiches Verb, gleiches Ziel, gleiche Datenklasse, gleicher Principal.
+ * Bewusst NICHT enthalten: payload/context (zu volatil — jede Freigabe
+ * waere sonst wirkungslos) und risk_level (abgeleitet, nicht identitaets-
+ * stiftend). FNV-1a genuegt: Der Fingerprint ist ein Schluessel, kein
+ * Integritaetsnachweis.
+ */
+export function approvalFingerprint(req: DecisionRequest): string {
+  const canonical = JSON.stringify([
+    req.tenant_id ?? '',
+    req.action.channel,
+    req.action.verb,
+    req.action.event_type ?? '',
+    req.target?.system_id ?? '',
+    (req.target?.vendor ?? '').toLowerCase(),
+    req.target?.model ?? '',
+    req.data?.classification ?? '',
+    [...(req.data?.data_types ?? [])].sort(),
+    req.principal?.id ?? '',
+  ]);
+  let h = 0x811c9dc5;
+  for (let i = 0; i < canonical.length; i++) {
+    h ^= canonical.charCodeAt(i);
+    h = Math.imul(h, 0x01000193) >>> 0;
+  }
+  let h2 = 0xcbf29ce4;
+  for (let i = canonical.length - 1; i >= 0; i--) {
+    h2 ^= canonical.charCodeAt(i);
+    h2 = Math.imul(h2, 0x01000193) >>> 0;
+  }
+  return `fp1:${h.toString(16).padStart(8, '0')}${h2.toString(16).padStart(8, '0')}`;
 }

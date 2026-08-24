@@ -17,8 +17,10 @@
 
 // deno-lint-ignore-file no-explicit-any
 import {
+  approvalFingerprint,
   buildSnapshot,
   evaluateSnapshot,
+  orgAncestors,
   type DecisionRequest,
   type DecisionResult,
   type PolicySnapshot,
@@ -118,13 +120,192 @@ export async function persistSnapshot(admin: any, snapshot: PolicySnapshot): Pro
   }
 }
 
-/** Entscheidung in-process: laden (gecacht) → auswerten → Snapshot sichern. */
+/**
+ * PIP-Anreicherung (P1-1): Haengt am Request ein Principal mit id, wird er
+ * gegen principals / role_bindings / org_units aufgeloest — Rollen entlang
+ * des Org-Pfads (eine Bindung an einer Einheit gilt fuer deren Teilbaum).
+ * Best-effort: schlaegt die Aufloesung fehl, entscheidet der PDP mit dem,
+ * was der Aufrufer mitgegeben hat — nie mit MEHR Rechten als angegeben.
+ */
+export async function enrichPrincipal(
+  admin: any,
+  request: DecisionRequest,
+): Promise<DecisionRequest> {
+  const pid = request.principal?.id;
+  if (!pid || !request.tenant_id) return request;
+  try {
+    let { data: p } = await admin
+      .from('principals')
+      .select('id, type, org_unit_id, status')
+      .eq('tenant_id', request.tenant_id)
+      .eq('id', pid)
+      .maybeSingle();
+    if (!p && request.principal?.type === 'user') {
+      const r = await admin
+        .from('principals')
+        .select('id, type, org_unit_id, status')
+        .eq('tenant_id', request.tenant_id)
+        .eq('user_id', pid)
+        .maybeSingle();
+      p = r.data;
+    }
+    if (!p) return request;
+
+    let orgPath: string | undefined;
+    if (p.org_unit_id) {
+      const { data: unit } = await admin
+        .from('org_units')
+        .select('org_path')
+        .eq('id', p.org_unit_id)
+        .maybeSingle();
+      orgPath = unit?.org_path ?? undefined;
+    }
+
+    // Deaktivierte Principals behalten KEINE Rollen — sie werden nicht
+    // unsichtbar (Policies auf principal_type greifen weiter), aber jede
+    // rollenbasierte Erlaubnis erlischt.
+    let roles: string[] = [];
+    if (p.status === 'active') {
+      const { data: bindings } = await admin
+        .from('role_bindings')
+        .select('role, scope_type, org_unit_id')
+        .eq('tenant_id', request.tenant_id)
+        .eq('principal_id', p.id);
+      const ancestors = new Set(orgAncestors(orgPath));
+      roles = [...new Set((bindings ?? [])
+        .filter((b: { scope_type: string; org_unit_id: string | null }) =>
+          b.scope_type === 'tenant' || (b.org_unit_id !== null && ancestors.has(b.org_unit_id)))
+        .map((b: { role: string }) => b.role))];
+    }
+
+    return {
+      ...request,
+      principal: {
+        ...request.principal!,
+        id: p.id,
+        type: p.type,
+        org_unit: p.org_unit_id ?? request.principal?.org_unit,
+        org_path: orgPath,
+        roles,
+      },
+    };
+  } catch (e) {
+    console.error('[pdp] principal enrichment failed', e);
+    return request;
+  }
+}
+
+/**
+ * Freigabe-Kette (P1-4): require_approval wird gegen pdp_approval_gates
+ * aufgeloest. Eine erteilte, nicht abgelaufene Freigabe mit identischem
+ * Request-Fingerprint deckt die Aktion (→ allow mit Begruendung); sonst
+ * wird genau EIN offenes Gate je Fingerprint gefuehrt.
+ * Fehlerverhalten: bei jedem Fehler bleibt es bei require_approval —
+ * die Kette darf nie versehentlich freigeben.
+ */
+async function resolveApproval(
+  admin: any,
+  request: DecisionRequest,
+  result: DecisionResult,
+  snapshot: PolicySnapshot,
+): Promise<DecisionResult> {
+  if (result.decision !== 'require_approval' || !request.tenant_id) return result;
+  const approverRole =
+    snapshot.policies.find((p) => p.id === result.primary_policy_id)?.approver_role ?? 'approver';
+  try {
+    const fp = approvalFingerprint(request);
+    const nowIso = new Date().toISOString();
+
+    const { data: approved } = await admin
+      .from('pdp_approval_gates')
+      .select('id, expires_at')
+      .eq('tenant_id', request.tenant_id)
+      .eq('fingerprint', fp)
+      .eq('status', 'approved')
+      .gt('expires_at', nowIso)
+      .order('resolved_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (approved) {
+      return {
+        ...result,
+        decision: 'allow',
+        reasons: [
+          {
+            policy_id: result.primary_policy_id ?? '',
+            policy_source: result.reasons[0]?.policy_source ?? 'governance_policies',
+            rule: 'approval_coverage',
+            action: 'allow',
+            text_de: `Die Aktion ist durch eine erteilte Freigabe gedeckt (Gate ${approved.id}).`,
+          },
+          ...result.reasons,
+        ],
+        approval: { gate_id: approved.id, approver_role: approverRole, status: 'approved' },
+        ttl_ms: 0,
+      };
+    }
+
+    const { data: pending } = await admin
+      .from('pdp_approval_gates')
+      .select('id')
+      .eq('tenant_id', request.tenant_id)
+      .eq('fingerprint', fp)
+      .eq('status', 'pending')
+      .maybeSingle();
+    let gateId: string | null = pending?.id ?? null;
+    if (!gateId) {
+      const { data: created, error } = await admin
+        .from('pdp_approval_gates')
+        .insert({
+          tenant_id: request.tenant_id,
+          fingerprint: fp,
+          policy_id: result.primary_policy_id,
+          approver_role: approverRole,
+          requested_by: request.principal?.id ?? null,
+          // Datenminimierung: nur die identitaetsstiftenden Felder, keine Inhalte
+          request_summary: {
+            channel: request.action.channel,
+            verb: request.action.verb,
+            vendor: request.target?.vendor ?? null,
+            model: request.target?.model ?? null,
+            classification: request.data?.classification ?? null,
+          },
+        })
+        .select('id')
+        .maybeSingle();
+      if (error) {
+        // Unique-Konflikt = paralleles Gate — nachlesen statt scheitern
+        const { data: raced } = await admin
+          .from('pdp_approval_gates')
+          .select('id')
+          .eq('tenant_id', request.tenant_id)
+          .eq('fingerprint', fp)
+          .eq('status', 'pending')
+          .maybeSingle();
+        gateId = raced?.id ?? null;
+      } else {
+        gateId = created?.id ?? null;
+      }
+    }
+    return { ...result, approval: { gate_id: gateId, approver_role: approverRole, status: 'pending' } };
+  } catch (e) {
+    console.error('[pdp] approval resolution failed', e);
+    return { ...result, approval: { gate_id: null, approver_role: approverRole, status: 'pending' } };
+  }
+}
+
+/**
+ * Entscheidung in-process: Principal anreichern (PIP) → laden (gecacht) →
+ * auswerten → Freigabe-Kette → Snapshot sichern.
+ */
 export async function decide(
   admin: any,
   request: DecisionRequest,
 ): Promise<DecisionResult> {
-  const snapshot = await loadSnapshot(admin, request.tenant_id);
-  const result = evaluateSnapshot(snapshot, request);
+  const enriched = await enrichPrincipal(admin, request);
+  const snapshot = await loadSnapshot(admin, enriched.tenant_id);
+  let result = evaluateSnapshot(snapshot, enriched);
+  result = await resolveApproval(admin, enriched, result, snapshot);
   await persistSnapshot(admin, snapshot);
   return result;
 }

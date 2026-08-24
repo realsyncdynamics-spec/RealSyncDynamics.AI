@@ -46,7 +46,8 @@ interface CacheEntry {
 export const FREE_TIER_FALLBACK: EntitlementValue[] = [
   { key: 'dashboard.access',              value: 1, kind: 'boolean' },
   { key: 'website.scan',                  value: 1, kind: 'boolean' },
-  { key: 'website.scan_monthly_limit',    value: 3, kind: 'limit'   },
+  // Unbegrenzt: Scans sind seit dem 2026-08-24 in jedem Plan kostenlos.
+  { key: 'website.scan_monthly_limit',    value: -1, kind: 'limit'  },
   { key: 'evidence.basic_vault',          value: 1, kind: 'boolean' },
   { key: 'governance.dsgvo_directory',    value: 1, kind: 'boolean' },
   { key: 'governance.ai_register',        value: 1, kind: 'boolean' },

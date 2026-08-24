@@ -1,5 +1,5 @@
 -- ═══════════════════════════════════════════════════════════════════════════
---  Kanonischer Plan-Katalog — Neuausgabe: Scan-Kontingente Free und Starter
+--  Kanonischer Plan-Katalog — Neuausgabe: Scans sind unbegrenzt kostenlos
 -- ═══════════════════════════════════════════════════════════════════════════
 --
 -- Ersetzt die Katalog-Daten aus 20260808140000_canonical_plan_catalog.sql.
@@ -11,23 +11,22 @@
 --
 -- Neu gegenüber 20260808140000 — Entscheidung des Eigentümers vom 2026-08-24:
 --
---   1. Der Free-Plan umfasst **drei** Scans pro Monat statt einem.
---      - `free_audit.limits.auditReportsPerMonth`: 1 → 3
---      - `technicalSubheadline`: „Einmaliger Runtime-Scan …" → „Drei
---        Runtime-Scans Ihrer Domain pro Monat …", weil „einmalig" die Zusage
---        sonst widerlegt hätte
+--   „Mache die Scans immer kostenlos, wir verkaufen was anderes — nämlich die
+--    dauerhafte Überwachung, die dann im Dashboard nach dem Buchen des ersten
+--    Pakets beginnt. Der Rest passiert im Dashboard."
 --
---   2. Starter steigt von 2 auf **6** Scans pro Monat.
---      Das ist die zwingende Folge von 1.: Ein bezahlter Plan darf nie weniger
---      bieten als der kostenlose. `test/config/pricing-ssot.test.ts` hat genau
---      das blockiert („starter.auditReportsPerMonth < free.auditReportsPerMonth").
---      6 ergibt die Leiter 3 → 6 → 12 (Free → Starter → Growth); Agency 50,
---      Enterprise 200 und Partner 500 bleiben unberührt.
+--   Der Scan ist damit die Eintrittskarte, nicht die Ware. Konkret:
+--     - `free_audit.technicalSubheadline`: „Einmaliger Runtime-Scan …" →
+--       „Unbegrenzte Runtime-Scans …"
+--     - das Kontingent selbst steht nicht im Katalog, sondern als
+--       Berechtigung `website.scan_monthly_limit = -1` in
+--       20260828000000_entitlement_base_keys_paid_plans
 --
--- Die zugehörigen Berechtigungen (`website.scan_monthly_limit`) setzt
--- 20260828000000_entitlement_base_keys_paid_plans. Beide Zahlenreihen werden
--- von test/billing/entitlement-migration-parity.test.ts gegen
--- shared/pricing.ts geprüft, damit sie nicht auseinanderlaufen.
+--   `limits.auditReportsPerMonth` bleibt unverändert (1/2/12/50/200/500). Das
+--   Feld meint **Compliance-Exporte**, nicht Scans — es speist
+--   `complianceExportsMonthly` in src/core/billing/entitlements.ts. Ein
+--   früherer Entwurf hatte die beiden verwechselt und dieses Feld als
+--   Scan-Kontingent behandelt.
 --
 -- Der Block unten wird von `scripts/generate-plan-catalog-sql.ts` erzeugt und
 -- von `test/config/pricing-ssot.test.ts` gegen shared/pricing.ts geprüft.
@@ -46,7 +45,7 @@ INSERT INTO public.plan_catalog (
     'free',
     'Free Audit',
     'Sehen Sie in 90 Sekunden, wo Ihre Governance-Lücken liegen.',
-    'Drei Runtime-Scans Ihrer Domain pro Monat mit Governance Score, Top-Risiken und Planempfehlung.',
+    'Unbegrenzte Runtime-Scans Ihrer Domain mit Governance Score, Top-Risiken und Planempfehlung.',
     0,
     NULL,
     NULL,
@@ -56,7 +55,7 @@ INSERT INTO public.plan_catalog (
     false,
     0,
     0,
-    '{"bots":0,"answersPerMonth":0,"domains":1,"automationRunsPerMonth":0,"seats":1,"apiCallsPerMonth":0,"tenants":1,"evidenceStorageGb":0.5,"auditReportsPerMonth":3,"remediationPlans":0,"bulkJobsPerMonth":0,"apiKeys":0}'::jsonb,
+    '{"bots":0,"answersPerMonth":0,"domains":1,"automationRunsPerMonth":0,"seats":1,"apiCallsPerMonth":0,"tenants":1,"evidenceStorageGb":0.5,"auditReportsPerMonth":1,"remediationPlans":0,"bulkJobsPerMonth":0,"apiKeys":0}'::jsonb,
     '["dsgvo","audit_center","compliance_reports"]'::jsonb,
     '{"scheduler":false,"api":false,"webhooks":false,"whiteLabelReports":false,"whiteLabelDashboard":false,"multiTenant":false,"evidenceVault":false,"auditExport":false,"sso":false,"bulkOperations":false,"provenanceSigning":false,"prioritySupport":false}'::jsonb,
     '[]'::jsonb,
@@ -79,7 +78,7 @@ INSERT INTO public.plan_catalog (
     true,
     1,
     500,
-    '{"bots":1,"answersPerMonth":500,"domains":1,"automationRunsPerMonth":25,"seats":1,"apiCallsPerMonth":0,"tenants":1,"evidenceStorageGb":2,"auditReportsPerMonth":6,"remediationPlans":5,"bulkJobsPerMonth":0,"apiKeys":0}'::jsonb,
+    '{"bots":1,"answersPerMonth":500,"domains":1,"automationRunsPerMonth":25,"seats":1,"apiCallsPerMonth":0,"tenants":1,"evidenceStorageGb":2,"auditReportsPerMonth":2,"remediationPlans":5,"bulkJobsPerMonth":0,"apiKeys":0}'::jsonb,
     '["dsgvo","eu_ai_act","evidence_vault","audit_center","monitoring","compliance_reports","automation_engine","alerts","ai_bots","website_chat"]'::jsonb,
     '{"scheduler":false,"api":false,"webhooks":false,"whiteLabelReports":false,"whiteLabelDashboard":false,"multiTenant":false,"evidenceVault":true,"auditExport":true,"sso":false,"bulkOperations":false,"provenanceSigning":false,"prioritySupport":false}'::jsonb,
     '["website"]'::jsonb,

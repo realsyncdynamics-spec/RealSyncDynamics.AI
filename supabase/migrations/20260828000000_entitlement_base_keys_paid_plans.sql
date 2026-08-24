@@ -57,31 +57,52 @@ WHERE NOT EXISTS (
   SELECT 1 FROM public.products WHERE default_for_plan_key = 'free_audit'
 );
 
--- Das Scan-Kontingent je Plan. Die Zahlen stammen aus `shared/pricing.ts`
--- (`limits.auditReportsPerMonth`) — der Single Source of Truth für Limits.
--- Sie werden hier nicht erfunden, sondern gespiegelt.
--- `free_audit` steht bewusst mit in der Tabelle statt das Kontingent nur von
--- `free_tier` zu erben: Drei kostenlose Scans sind eine Produktentscheidung
--- (Eigentümer, 2026-08-24), keine Nebenwirkung einer Vorlage. So steht die
--- Zahl an derselben Stelle wie die der bezahlten Pläne und wird vom
--- Paritätstest gegen `shared/pricing.ts` mitgeprüft.
+-- Scans sind unbegrenzt und kostenlos — für jeden Plan, auch den kostenlosen.
+--
+-- Entscheidung des Eigentümers vom 2026-08-24: „mache die Scans immer
+-- kostenlos, wir verkaufen was anderes — nämlich die dauerhafte Überwachung,
+-- die nach dem Buchen des ersten Pakets im Dashboard beginnt."
+--
+-- Der Scan ist damit die Eintrittskarte, nicht die Ware. Ein Kontingent darauf
+-- würde genau den Trichter drosseln, der Kunden bringen soll. `-1` ist in
+-- diesem Schema die Kodierung für unbegrenzt (siehe `tenant_entitlements()`:
+-- `bool_or(pe.value = -1) THEN -1`).
+--
+-- Verkauft wird stattdessen `monitoring.*`, und das hängt bereits an den
+-- bezahlten Plänen: `monitoring.monthly` ab Starter, `monitoring.daily` und
+-- `monitoring.drift` ab Growth. Daran ist nichts zu ändern.
+--
+-- Ein früherer Entwurf dieser Migration spiegelte hier
+-- `limits.auditReportsPerMonth` aus `shared/pricing.ts` hinein. Das war eine
+-- Verwechslung: Jenes Feld speist `complianceExportsMonthly`
+-- (`src/core/billing/entitlements.ts`) und meint Compliance-Exporte, nicht
+-- Scans. Die beiden Zahlen gehören zu verschiedenen Berechtigungen —
+-- `limit.compliance_exports_monthly` und `website.scan_monthly_limit`.
 INSERT INTO public.product_entitlements (product_id, entitlement_id, value)
-SELECT p.id, e.id, v.wert
-FROM (VALUES
-  ('free_audit',   3),
-  ('starter',      6),
-  ('growth',      12),
-  ('agency',      50),
-  ('enterprise', 200),
-  ('partner',    500)
-) AS v(plan_key, wert)
-JOIN public.products p ON p.default_for_plan_key = v.plan_key
+SELECT p.id, e.id, -1
+FROM public.products p
 CROSS JOIN public.entitlements e
-WHERE e.key = 'website.scan_monthly_limit'
+WHERE p.default_for_plan_key IN (
+        'free_audit', 'free', 'free_tier',
+        'starter', 'growth', 'agency', 'enterprise', 'partner',
+        'starter_yearly', 'growth_yearly', 'agency_yearly', 'partner_yearly'
+      )
+  AND e.key = 'website.scan_monthly_limit'
   AND NOT EXISTS (
     SELECT 1 FROM public.product_entitlements pe
     WHERE pe.product_id = p.id AND pe.entitlement_id = e.id
   );
+
+-- Bestehende Kontingente auf unbegrenzt heben. Das ist die einzige Stelle in
+-- dieser Migration, die einen vorhandenen Wert überschreibt — bewusst, denn
+-- `free_tier` trägt live eine 3, und die soll gerade wegfallen. Es nimmt
+-- niemandem etwas: `-1` ist mehr als jede endliche Zahl.
+UPDATE public.product_entitlements pe
+SET value = -1
+FROM public.entitlements e
+WHERE pe.entitlement_id = e.id
+  AND e.key = 'website.scan_monthly_limit'
+  AND pe.value <> -1;
 
 INSERT INTO public.product_entitlements (product_id, entitlement_id, value)
 SELECT neu.id, pe.entitlement_id, pe.value

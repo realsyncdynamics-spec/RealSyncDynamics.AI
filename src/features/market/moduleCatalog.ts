@@ -11,11 +11,16 @@
  *
  * ## Die Quelle des Zustands
  *
- * Ein `BookableModule` schaltet über `unlocks` Fähigkeiten (`ModuleId`) frei.
- * Ob der Mandant sie hat, entscheidet allein `hasModule()` gegen seinen Plan
- * — nie ein Vergleich von Plan-Namen (`CLAUDE.md` §6). Ein Modul gilt als
- * aktiv, wenn **alle** seine Fähigkeiten im Plan liegen; teilweise
- * freigeschaltet ist nicht aktiv, sondern verfügbar.
+ * Ein `BookableModule` schaltet über `unlocks` Entitlement-Keys frei. Ob der
+ * Plan sie trägt, entscheidet `planGrants()` — nie ein Vergleich von
+ * Plan-Namen (`CLAUDE.md` §6). Ein Modul gilt als aktiv, wenn **alle** seine
+ * Keys im Plan liegen; teilweise freigeschaltet ist nicht aktiv, sondern
+ * verfügbar.
+ *
+ * Bis AP1 stand hier `hasModule()` gegen `plan.modules`. Das war eine zweite
+ * Definition dessen, was ein Plan enthält, und sie wich von der Datenbank ab —
+ * die Oberfläche zeigte also etwas anderes an, als der Server zuließ. Seither
+ * gilt der Entitlement-Key.
  *
  * ## Was hier bewusst fehlt
  *
@@ -30,8 +35,8 @@
 import {
   BOOKABLE_MODULES,
   PLAN_ORDER,
-  hasModule,
   planByKey,
+  planGrants,
   type BookableModule,
   type PlanId,
 } from '@/shared/pricing';
@@ -58,13 +63,18 @@ export interface CatalogEntry {
   unlockedByPlan: PlanId | null;
 }
 
-/** Ist jede Fähigkeit dieses Moduls im Plan enthalten? */
+/**
+ * Trägt der Plan jeden Entitlement-Key dieses Moduls?
+ *
+ * `planId` ist hier der `planKey` (`free_audit`, `starter`, …) — dieselbe
+ * Kennung wie in `products.default_for_plan_key`.
+ */
 export function isModuleActive(planId: PlanId | string | null | undefined, module: BookableModule): boolean {
   // Ein Modul ohne `unlocks` schaltet nichts frei — es kann folglich auch
   // nicht als aktiv gelten. Sonst erschiene es bei jedem Kunden als
   // vorhanden, nur weil die leere Menge jede Bedingung erfüllt.
   if (module.unlocks.length === 0) return false;
-  return module.unlocks.every((capability) => hasModule(planId, capability));
+  return module.unlocks.every((key) => planGrants(planId, key));
 }
 
 /**

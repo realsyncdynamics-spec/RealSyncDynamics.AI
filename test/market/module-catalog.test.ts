@@ -10,7 +10,7 @@ import { describe, expect, it } from 'vitest';
 import {
   BOOKABLE_MODULES,
   PLAN_ORDER,
-  hasModule,
+  planGrants,
   type BookableModule,
 } from '@/shared/pricing';
 import {
@@ -39,7 +39,7 @@ describe('isModuleActive', () => {
     // Ein Plan, dem mindestens eine der Fähigkeiten fehlt, darf das Modul
     // nicht als aktiv ausweisen — teilweise ist nicht aktiv.
     const unvollstaendig = PLAN_ORDER.find(
-      (p) => core.unlocks.some((c) => !hasModule(p, c)),
+      (p) => core.unlocks.some((c) => !planGrants(p, c)),
     );
     expect(unvollstaendig).toBeDefined();
     expect(isModuleActive(unvollstaendig, core)).toBe(false);
@@ -102,7 +102,7 @@ describe('buildCatalog', () => {
     for (const eintrag of buildCatalog('free')) {
       if (eintrag.status !== 'active') continue;
       for (const capability of eintrag.module.unlocks) {
-        expect(hasModule('free', capability)).toBe(true);
+        expect(planGrants('free_audit', capability)).toBe(true);
       }
     }
   });

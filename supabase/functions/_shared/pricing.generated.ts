@@ -1134,8 +1134,14 @@ export interface BookableModule {
    * ändert, hebelt den Produktgrundsatz aus.
    */
   requiresFrontend: boolean;
-  /** Fähigkeiten, die dieses Modul freischaltet. */
-  unlocks: ModuleId[];
+  /**
+   * Entitlement-Keys, die dieses Modul freischaltet.
+   *
+   * Vorher `ModuleId[]`. Seit AP1 ist der Entitlement-Key der einzige
+   * Namensraum: `plan.modules` und die Datenbank gingen auseinander, und
+   * maßgeblich ist die Datenbank, weil sie zur Laufzeit autorisiert.
+   */
+  unlocks: EntitlementKey[];
   /** Lucide-Icon-Name — einheitliches Icon-Set über alle Oberflächen. */
   icon: string;
   bullets: string[];
@@ -1175,7 +1181,7 @@ export const BOOKABLE_MODULES: BookableModule[] = [
     usageNote: null,
     required: true,
     requiresFrontend: false,
-    unlocks: ['dsgvo', 'eu_ai_act', 'policy_engine', 'evidence_vault', 'audit_center', 'monitoring', 'compliance_reports', 'alerts'],
+    unlocks: ['governance.dsgvo_directory', 'governance.ai_register', 'policy.packs', 'evidence.basic_vault', 'website.scan', 'monitoring.monthly', 'compliance.export', 'alerts.email'],
     icon: 'Shield',
     bullets: [
       'Ein Unternehmen, eine Domain',
@@ -1212,7 +1218,7 @@ export const BOOKABLE_MODULES: BookableModule[] = [
     usageNote: 'zzgl. Verbrauch je Konversation',
     required: false,
     requiresFrontend: false,
-    unlocks: ['website_chat', 'ai_bots'],
+    unlocks: ['bots.chat', 'bots.enabled'],
     icon: 'MessageSquare',
     bullets: [
       'Snippet-Einbindung ohne Frontend-Umbau',
@@ -1230,7 +1236,7 @@ export const BOOKABLE_MODULES: BookableModule[] = [
     usageNote: 'zzgl. Telefonie- und Sprachverbrauch je Minute',
     required: false,
     requiresFrontend: false,
-    unlocks: ['voice', 'ai_bots', 'human_handoff'],
+    unlocks: ['bots.voice', 'bots.enabled', 'bots.human_handoff'],
     icon: 'Phone',
     bullets: [
       'Eingehende Anrufe mit Speech-to-Text und Text-to-Speech',
@@ -1248,7 +1254,7 @@ export const BOOKABLE_MODULES: BookableModule[] = [
     usageNote: 'zzgl. WhatsApp-Konversationsgebühren',
     required: false,
     requiresFrontend: false,
-    unlocks: ['whatsapp', 'ai_bots', 'multi_channel_messaging'],
+    unlocks: ['bots.whatsapp', 'bots.enabled', 'bots.multi_channel'],
     icon: 'MessageCircle',
     bullets: [
       'WhatsApp Business API',
@@ -1266,7 +1272,7 @@ export const BOOKABLE_MODULES: BookableModule[] = [
     usageNote: null,
     required: false,
     requiresFrontend: false,
-    unlocks: [],
+    unlocks: ['bots.appointments'],
     icon: 'CalendarClock',
     bullets: [
       'Zentrale Slot-Berechnung für alle Kanäle',
@@ -1284,7 +1290,7 @@ export const BOOKABLE_MODULES: BookableModule[] = [
     usageNote: null,
     required: false,
     requiresFrontend: false,
-    unlocks: ['nis2', 'iso_27001', 'risk_register', 'remediation', 'drift_detection'],
+    unlocks: ['policy.nis2', 'policy.iso27001', 'governance.risk_register', 'fix.snippets', 'monitoring.drift'],
     icon: 'Brain',
     bullets: [
       'NIS2 und ISO 27001 zusätzlich zu DSGVO und EU AI Act',
@@ -1319,7 +1325,7 @@ export const BOOKABLE_MODULES: BookableModule[] = [
     usageNote: 'je Unternehmen und Monat',
     required: false,
     requiresFrontend: false,
-    unlocks: ['multi_channel_messaging'],
+    unlocks: ['bots.multi_channel'],
     icon: 'Building2',
     bullets: [
       'Eigene Domains, Bots und Governance je Unternehmen',
@@ -1429,6 +1435,456 @@ export const RUNTIME_PIPELINE: RuntimeStage[] = [
  * gekauft und dürfen die Monotonie-Invarianten nicht verwässern.
  */
 export const PLAN_ORDER: PlanId[] = ['free', 'starter', 'growth', 'agency', 'enterprise', 'partner'];
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Kanonisches Entitlement-Vokabular (AP1)
+   ═══════════════════════════════════════════════════════════════════════════
+
+   **Ein** Namensraum für die Frage „Was darf dieser Kunde?".
+
+       Paket ┐
+       Add-on┼──→  Entitlement-Key  ──→  Runtime-Autorisierung  ──→  Oberfläche
+       Grant ┘
+
+   Vorher standen drei Vokabulare nebeneinander: `ModuleId` (in `unlocks` und
+   `plan.modules`), `addon_id` und die Entitlement-Keys der Datenbank. Jedes
+   neue Modul musste an drei Stellen gepflegt werden, und keine der drei war
+   maßgeblich — autorisiert wurde über die Datenbank, angezeigt über die
+   Module.
+
+   ## Was hier maßgeblich ist
+
+   Diese Zuordnung spiegelt den Stand **nach allen Migrationen**, gemessen
+   gegen eine lokale PostgreSQL mit dem vollständigen Migrationslauf — nicht
+   den Live-Stand und nicht `plan.modules`. Wo beide auseinandergingen, gilt
+   die Datenbank: Sie ist es, die zur Laufzeit autorisiert.
+
+   ## Was ausdrücklich bleibt
+
+   `plan.modules` und `plan.permissions` bleiben unangetastet. Sie tragen die
+   Feature-Listen der Preisseite und speisen über
+   `src/core/billing/entitlements.ts` das Verbrauchsmodell. `FEATURE_RULES`
+   dort ist **kein** Freischaltungs-Vokabular und darf nicht in dieses System
+   gezogen werden — es beantwortet Kontingentfragen, nicht Zugriffsfragen.
+
+   ## Regel
+
+   Ein neues Modul bekommt einen Key hier und eine Zeile in der Migration.
+   Kein vierter Namensraum, keine Übersetzungstabelle.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/** Vollständiges Vokabular. Alphabetisch, damit Diffs klein bleiben. */
+export const ENTITLEMENT_KEYS = [
+  'ai.tool.automations',
+  'ai.tool.bot_reply',
+  'ai.tool.code_explain',
+  'ai.tool.log_analyze',
+  'ai.tool.vps_action_advisor',
+  'ai.tool.vps_status',
+  'ai.tool.workflows',
+  'ai_classification.limited',
+  'alerts.email',
+  'api.access',
+  'asset.register',
+  'asset.verify',
+  'barcode.issue',
+  'bots.appointments',
+  'bots.chat',
+  'bots.count',
+  'bots.enabled',
+  'bots.human_handoff',
+  'bots.multi_channel',
+  'bots.orders',
+  'bots.voice',
+  'bots.whatsapp',
+  'bulk.jobs',
+  'c2pa.export',
+  'compliance.export',
+  'dashboard.access',
+  'dse.generator',
+  'evidence.advanced',
+  'evidence.basic_vault',
+  'fix.snippets',
+  'governance.ai_register',
+  'governance.dsgvo_directory',
+  'governance.risk_register',
+  'limit.active_assets',
+  'limit.agent_runs_monthly',
+  'limit.ai_calls_monthly',
+  'limit.ai_cost_monthly_cents',
+  'limit.ai_tokens_monthly',
+  'limit.api_calls_monthly',
+  'limit.automation_runs_monthly',
+  'limit.bot_messages_monthly',
+  'limit.bot_voice_minutes_monthly',
+  'limit.bots',
+  'limit.bulk_jobs_monthly',
+  'limit.compliance_exports_monthly',
+  'limit.domains',
+  'limit.evidence_storage_gb',
+  'limit.llm_queries_monthly',
+  'limit.monthly_registrations',
+  'limit.team_seats',
+  'limit.whatsapp_conversations_monthly',
+  'limit.workflow_runs_monthly',
+  'monitoring.daily',
+  'monitoring.drift',
+  'monitoring.monthly',
+  'org.governance',
+  'policy.iso27001',
+  'policy.nis2',
+  'policy.packs',
+  'provenance.advanced',
+  'provenance.basic',
+  'public-sector.mode',
+  'reports.export',
+  'scheduler.enabled',
+  'sla.priority',
+  'sso.enabled',
+  'team.members',
+  'watermark.apply',
+  'webhooks.enabled',
+  'website.scan',
+  'website.scan_monthly_limit',
+  'whitelabel.dashboard',
+  'whitelabel.reports',
+] as const;
+
+export type EntitlementKey = (typeof ENTITLEMENT_KEYS)[number];
+
+/**
+ * Was jeder Plan gewährt, je Key mit seinem Wert.
+ *
+ * `1` = an (boolesch) · `0` = aus · `-1` = unbegrenzt · sonst das Kontingent.
+ * Schlüssel ist der `planKey`, nicht die `PlanId` — dieselbe Kennung wie in
+ * `products.default_for_plan_key` und `subscriptions.plan_key`.
+ *
+ * Erzeugt aus dem gemessenen Migrationsstand, nicht abgetippt.
+ * `test/billing/entitlement-vocabulary.test.ts` hält die Zuordnung an die
+ * Migrationen gebunden.
+ */
+export const PLAN_ENTITLEMENTS: Readonly<
+  Record<string, Readonly<Partial<Record<EntitlementKey, number>>>>
+> = {
+  free_audit: {
+    'ai_classification.limited': 0,
+    'bots.count': 0,
+    'dashboard.access': 1,
+    'evidence.basic_vault': 1,
+    'governance.ai_register': 1,
+    'governance.dsgvo_directory': 1,
+    'reports.export': 0,
+    'website.scan': 1,
+    'website.scan_monthly_limit': -1,
+  },
+  starter: {
+    'ai.tool.automations': 1,
+    'alerts.email': 1,
+    'asset.verify': 1,
+    'compliance.export': 1,
+    'dashboard.access': 1,
+    'dse.generator': 1,
+    'evidence.basic_vault': 1,
+    'governance.ai_register': 1,
+    'governance.dsgvo_directory': 1,
+    'limit.agent_runs_monthly': 100,
+    'limit.automation_runs_monthly': 25,
+    'limit.compliance_exports_monthly': 5,
+    'limit.domains': 1,
+    'limit.llm_queries_monthly': 100,
+    'limit.team_seats': 3,
+    'monitoring.monthly': 1,
+    'website.scan': 1,
+    'website.scan_monthly_limit': -1,
+  },
+  growth: {
+    'ai.tool.automations': 1,
+    'ai.tool.bot_reply': 1,
+    'alerts.email': 1,
+    'asset.register': 1,
+    'asset.verify': 1,
+    'bots.appointments': 1,
+    'bots.chat': 1,
+    'bots.enabled': 1,
+    'bots.multi_channel': 1,
+    'bots.orders': 1,
+    'bots.whatsapp': 1,
+    'compliance.export': 1,
+    'dashboard.access': 1,
+    'dse.generator': 1,
+    'evidence.basic_vault': 1,
+    'fix.snippets': 1,
+    'governance.ai_register': 1,
+    'governance.dsgvo_directory': 1,
+    'governance.risk_register': 1,
+    'limit.ai_calls_monthly': 2000,
+    'limit.ai_cost_monthly_cents': 2000,
+    'limit.ai_tokens_monthly': 2000000,
+    'limit.api_calls_monthly': 5000,
+    'limit.automation_runs_monthly': 100,
+    'limit.bot_messages_monthly': 2000,
+    'limit.bots': 2,
+    'limit.compliance_exports_monthly': 20,
+    'limit.domains': 3,
+    'limit.llm_queries_monthly': 500,
+    'limit.team_seats': 5,
+    'limit.whatsapp_conversations_monthly': 500,
+    'monitoring.daily': 1,
+    'monitoring.drift': 1,
+    'monitoring.monthly': 1,
+    'policy.iso27001': 1,
+    'team.members': 1,
+    'website.scan': 1,
+    'website.scan_monthly_limit': -1,
+  },
+  agency: {
+    'ai.tool.automations': 1,
+    'ai.tool.bot_reply': 1,
+    'ai.tool.vps_action_advisor': 1,
+    'ai.tool.vps_status': 1,
+    'alerts.email': 1,
+    'api.access': 1,
+    'asset.register': 1,
+    'asset.verify': 1,
+    'bots.appointments': 1,
+    'bots.chat': 1,
+    'bots.enabled': 1,
+    'bots.human_handoff': 1,
+    'bots.multi_channel': 1,
+    'bots.orders': 1,
+    'bots.voice': 1,
+    'bots.whatsapp': 1,
+    'bulk.jobs': 1,
+    'c2pa.export': 1,
+    'compliance.export': 1,
+    'dashboard.access': 1,
+    'dse.generator': 1,
+    'evidence.advanced': 1,
+    'evidence.basic_vault': 1,
+    'fix.snippets': 1,
+    'governance.ai_register': 1,
+    'governance.dsgvo_directory': 1,
+    'governance.risk_register': 1,
+    'limit.ai_calls_monthly': 10000,
+    'limit.ai_cost_monthly_cents': 10000,
+    'limit.ai_tokens_monthly': 10000000,
+    'limit.api_calls_monthly': 25000,
+    'limit.automation_runs_monthly': 500,
+    'limit.bot_messages_monthly': 10000,
+    'limit.bot_voice_minutes_monthly': 500,
+    'limit.bots': 10,
+    'limit.bulk_jobs_monthly': 50,
+    'limit.compliance_exports_monthly': 100,
+    'limit.domains': 10,
+    'limit.llm_queries_monthly': -1,
+    'limit.team_seats': 15,
+    'limit.whatsapp_conversations_monthly': 2500,
+    'monitoring.daily': 1,
+    'monitoring.drift': 1,
+    'monitoring.monthly': 1,
+    'policy.iso27001': 1,
+    'policy.nis2': 1,
+    'policy.packs': 1,
+    'provenance.advanced': 1,
+    'scheduler.enabled': 1,
+    'sla.priority': 1,
+    'team.members': 1,
+    'webhooks.enabled': 1,
+    'website.scan': 1,
+    'website.scan_monthly_limit': -1,
+    'whitelabel.reports': 1,
+  },
+  enterprise: {
+    'ai.tool.automations': 1,
+    'ai.tool.bot_reply': 1,
+    'ai.tool.vps_action_advisor': 1,
+    'ai.tool.vps_status': 1,
+    'alerts.email': 1,
+    'api.access': 1,
+    'asset.register': 1,
+    'asset.verify': 1,
+    'bots.appointments': 1,
+    'bots.chat': 1,
+    'bots.enabled': 1,
+    'bots.human_handoff': 1,
+    'bots.multi_channel': 1,
+    'bots.orders': 1,
+    'bots.voice': 1,
+    'bots.whatsapp': 1,
+    'bulk.jobs': 1,
+    'c2pa.export': 1,
+    'compliance.export': 1,
+    'dashboard.access': 1,
+    'dse.generator': 1,
+    'evidence.advanced': 1,
+    'evidence.basic_vault': 1,
+    'fix.snippets': 1,
+    'governance.ai_register': 1,
+    'governance.dsgvo_directory': 1,
+    'governance.risk_register': 1,
+    'limit.agent_runs_monthly': -1,
+    'limit.ai_calls_monthly': -1,
+    'limit.ai_cost_monthly_cents': -1,
+    'limit.ai_tokens_monthly': -1,
+    'limit.api_calls_monthly': -1,
+    'limit.automation_runs_monthly': -1,
+    'limit.bot_messages_monthly': -1,
+    'limit.bot_voice_minutes_monthly': -1,
+    'limit.bots': -1,
+    'limit.bulk_jobs_monthly': -1,
+    'limit.compliance_exports_monthly': -1,
+    'limit.domains': -1,
+    'limit.llm_queries_monthly': -1,
+    'limit.team_seats': -1,
+    'limit.whatsapp_conversations_monthly': -1,
+    'monitoring.daily': 1,
+    'monitoring.drift': 1,
+    'monitoring.monthly': 1,
+    'org.governance': 1,
+    'policy.iso27001': 1,
+    'policy.nis2': 1,
+    'policy.packs': 1,
+    'provenance.advanced': 1,
+    'scheduler.enabled': 1,
+    'sla.priority': 1,
+    'sso.enabled': 1,
+    'team.members': 1,
+    'webhooks.enabled': 1,
+    'website.scan': 1,
+    'website.scan_monthly_limit': -1,
+    'whitelabel.dashboard': 1,
+    'whitelabel.reports': 1,
+  },
+  partner: {
+    'ai.tool.automations': 1,
+    'ai.tool.bot_reply': 1,
+    'ai.tool.vps_action_advisor': 1,
+    'ai.tool.vps_status': 1,
+    'alerts.email': 1,
+    'api.access': 1,
+    'asset.register': 1,
+    'asset.verify': 1,
+    'bots.appointments': 1,
+    'bots.chat': 1,
+    'bots.enabled': 1,
+    'bots.human_handoff': 1,
+    'bots.multi_channel': 1,
+    'bots.orders': 1,
+    'bots.voice': 1,
+    'bots.whatsapp': 1,
+    'bulk.jobs': 1,
+    'c2pa.export': 1,
+    'compliance.export': 1,
+    'dashboard.access': 1,
+    'dse.generator': 1,
+    'evidence.advanced': 1,
+    'evidence.basic_vault': 1,
+    'fix.snippets': 1,
+    'governance.ai_register': 1,
+    'governance.dsgvo_directory': 1,
+    'governance.risk_register': 1,
+    'limit.ai_calls_monthly': 50000,
+    'limit.ai_cost_monthly_cents': 50000,
+    'limit.ai_tokens_monthly': 50000000,
+    'limit.api_calls_monthly': 100000,
+    'limit.automation_runs_monthly': 2500,
+    'limit.bot_messages_monthly': 50000,
+    'limit.bot_voice_minutes_monthly': 2500,
+    'limit.bots': 50,
+    'limit.bulk_jobs_monthly': 500,
+    'limit.compliance_exports_monthly': 500,
+    'limit.domains': 50,
+    'limit.llm_queries_monthly': -1,
+    'limit.team_seats': 50,
+    'limit.whatsapp_conversations_monthly': -1,
+    'monitoring.daily': 1,
+    'monitoring.drift': 1,
+    'monitoring.monthly': 1,
+    'org.governance': 1,
+    'policy.iso27001': 1,
+    'policy.nis2': 1,
+    'policy.packs': 1,
+    'provenance.advanced': 1,
+    'scheduler.enabled': 1,
+    'sla.priority': 1,
+    'team.members': 1,
+    'webhooks.enabled': 1,
+    'website.scan': 1,
+    'website.scan_monthly_limit': -1,
+    'whitelabel.dashboard': 1,
+    'whitelabel.reports': 1,
+  },
+  governance_launch: {
+    'bots.enabled': 1,
+    'compliance.export': 1,
+    'dashboard.access': 1,
+    'dse.generator': 1,
+    'evidence.basic_vault': 1,
+    'governance.dsgvo_directory': 1,
+    'limit.automation_runs_monthly': 10,
+    'limit.bot_messages_monthly': 1000,
+    'limit.bots': 1,
+    'limit.compliance_exports_monthly': 5,
+    'limit.domains': 1,
+    'limit.evidence_storage_gb': 5,
+    'limit.team_seats': 3,
+    'policy.packs': 1,
+    'reports.export': 1,
+    'website.scan': 1,
+  },
+};
+
+/**
+ * Wert eines Keys in einem Plan. `null` heißt: der Plan kennt ihn nicht.
+ *
+ * Bewusst `null` statt `0`: „nicht enthalten" und „enthalten, aber auf null
+ * gesetzt" sind verschiedene Aussagen. `free_tier` führt etwa
+ * `reports.export` ausdrücklich mit `0`.
+ */
+export function planEntitlementValue(
+  planKeyOrId: string | null | undefined,
+  key: EntitlementKey,
+): number | null {
+  if (!planKeyOrId) return null;
+
+  // Aufrufer übergeben mal den `planKey` (`free_audit`, aus der Datenbank),
+  // mal die `PlanId` (`free`, aus der Oberfläche). Beides muss dieselbe
+  // Antwort liefern — sonst zeigte der Marketplace für denselben Kunden je
+  // nach Aufrufweg ein anderes Ergebnis.
+  //
+  // Auch Jahresvarianten (`growth_yearly`) landen so beim Basisplan, weil
+  // `planByKey()` sie über `yearlyPlanKey` auflöst. Das entspricht dem
+  // Auflöser in der Datenbank, der `_yearly` ebenfalls zurückführt.
+  let satz = PLAN_ENTITLEMENTS[planKeyOrId];
+  if (!satz) {
+    const plan = PLANS.find((p) => p.id === planKeyOrId) ?? planByKey(planKeyOrId);
+    if (plan) satz = PLAN_ENTITLEMENTS[plan.planKey];
+  }
+  if (!satz) return null;
+
+  const wert = satz[key];
+  return wert === undefined ? null : wert;
+}
+
+/**
+ * Gewährt dieser Plan den Key?
+ *
+ * Dieselbe Regel wie im serverseitigen Wächter
+ * (`supabase/functions/_shared/entitlements.ts`): `-1` (unbegrenzt) und jeder
+ * Wert über null gelten als gewährt, `0` und „nicht enthalten" nicht.
+ *
+ * Freischalten tut das nichts — das entscheidet `tenant_entitlements()` auf
+ * dem Server. Diese Funktion beantwortet die Frage „welcher Plan enthält
+ * das?", etwa für den Marketplace.
+ */
+export function planGrants(
+  planKey: string | null | undefined,
+  key: EntitlementKey,
+): boolean {
+  const wert = planEntitlementValue(planKey, key);
+  return wert !== null && (wert === -1 || wert > 0);
+}
+
 
 /**
  * Grace Period nach einer fehlgeschlagenen Zahlung, in Tagen.

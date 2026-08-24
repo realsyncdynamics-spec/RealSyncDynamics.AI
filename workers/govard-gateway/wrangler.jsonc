@@ -1,0 +1,62 @@
+{
+  // GOVARD Gateway — Governance-/Evidence-Schicht vor austauschbaren Agenten.
+  //
+  // Ein Command (n8n, OpenAI, Claude, Zapier, UI, API) läuft immer über
+  // POST /api/command: Policy-Evaluation (deny by default), Command State
+  // Machine, Approval Inbox, Evidence-Chain (Durable Object pro Org,
+  // D1-Projektion, tägliches R2-Siegel). Architektur: README.md.
+  //
+  // Provisionierung (einmalig, siehe README):
+  //   npx wrangler d1 create govard-gateway
+  //     -> database_id unten eintragen (Platzhalter ersetzen)
+  //   npx wrangler r2 bucket create govard-evidence-seals
+  //   npx wrangler d1 migrations apply govard-gateway --remote \
+  //     --config workers/govard-gateway/wrangler.jsonc
+  //
+  // Der Deploy-Workflow (.github/workflows/deploy-govard-gateway.yml)
+  // überspringt sich selbst, solange der Platzhalter unten steht — gleiches
+  // Guard-Muster wie workers/siteos-preview.
+  //
+  // Secrets stehen NICHT hier. API-Keys leben ausschließlich als SHA-256-
+  // Hashes in der Tabelle api_keys (Seeding: README).
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "govard-gateway",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-06-23",
+  "workers_dev": true,
+
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "govard-gateway",
+      "database_id": "PLACEHOLDER_SET_VIA_WRANGLER_D1_CREATE",
+      "migrations_dir": "migrations"
+    }
+  ],
+
+  "durable_objects": {
+    "bindings": [
+      { "name": "EVIDENCE", "class_name": "EvidenceSequencer" }
+    ]
+  },
+  "migrations": [
+    { "tag": "v1", "new_sqlite_classes": ["EvidenceSequencer"] }
+  ],
+
+  "r2_buckets": [
+    {
+      "binding": "EVIDENCE_BUCKET",
+      "bucket_name": "govard-evidence-seals"
+    }
+  ],
+
+  // Tägliches Siegel des Chain-Heads + Verfall offener Freigaben.
+  "triggers": { "crons": ["30 3 * * *"] },
+
+  "vars": {
+    // Kommagetrennt; leer = kein CORS. Für die Approval Inbox im SPA.
+    "ALLOWED_ORIGINS": "https://realsyncdynamicsai.de,https://www.realsyncdynamicsai.de"
+  },
+
+  "observability": { "enabled": true }
+}

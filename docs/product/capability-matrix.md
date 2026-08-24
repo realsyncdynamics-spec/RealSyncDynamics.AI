@@ -266,14 +266,22 @@ Fähigkeiten ohne eigenen Endpunkt.
 
 `recordUsage()` ist an Stellen richtig, wo die Leistung bereits eingekauft
 ist (LLM-Aufruf, Telefonieminute) — sie zu verschweigen wäre schlimmer als
-sie über der Grenze zu buchen. Aber: **`limit.bot_voice_minutes_monthly`,
-`limit.automation_runs_monthly` (im Callback), `limit.ai_tokens_monthly`,
-`limit.ai_calls_monthly` und `limit.whatsapp_conversations_monthly` werden
-nur gebucht, nicht begrenzt.** Wer sie als harte Grenze verkauft, verkauft
-eine Zusage, die nur nachträglich sichtbar wird.
+sie über der Grenze zu buchen.
 
-Mit `consumeUsage()` und damit tatsächlich begrenzt:
-`limit.bot_messages_monthly`, `limit.bulk_jobs_monthly`.
+> **Korrigiert am 2026-08-24 durch Teil 2.** Dieser Abschnitt nannte hier
+> fünf Kontingente, die „nur gebucht, nicht begrenzt" würden. Das war zu
+> grob: Die Messung hatte nur nach `consumeUsage()` gesucht und den zweiten,
+> gleichwertigen Weg übersehen — eine eigene Vorprüfung mit
+> `getCurrentTotal()`, die mit `402 QUOTA_EXCEEDED` abbricht.
+> Automationsläufe, AI-Calls und AI-Token nutzen genau den und sind **hart
+> begrenzt**. Wirklich unbegrenzt sind Voice-Minuten und
+> WhatsApp-Konversationen — beide laut `usage_limits_config` aber
+> ausdrücklich `metered`, also so gewollt.
+>
+> Die vollständige, handgeprüfte Tabelle steht in
+> `docs/product/claims-reality-audit.md` §1. Sie nennt auch die eigentliche
+> Lücke, die diese Zählung verdeckt hatte: **sieben Kontingente sind je Plan
+> vergeben und haben überhaupt keinen Prüfpunkt.**
 
 ### 6.3 Der schwerwiegende Befund — und er stammt aus dieser Arbeit
 
@@ -319,7 +327,21 @@ Abgesichert durch `test/runtime/db/tenant-entitlements-callers.db.test.ts`
 (fünf Fälle, mutationsgeprüft: gegen die kaputte Fassung fallen genau die
 beiden service_role-Fälle, die Mandantentrennung bleibt grün).
 
-### 6.4 Was Teil 2 messen muss
+### 6.4 Was Teil 2 gemessen hat
+
+**Ergebnis: `docs/product/claims-reality-audit.md`** (2026-08-24, Stand
+`7365de1`). Die beiden Punkte unten sind dort abgearbeitet; der
+folgenreichste Fund war keiner der erwarteten:
+
+> **Die Überwachung — die verkaufte Kernleistung — ist nicht durchgesetzt.**
+> `governance-monitoring-scheduler` wählt `monitoring_sources` allein nach
+> `status = 'active'`, ohne Plan-Filter und ohne Entitlement-Prüfung.
+
+Ausserdem: sieben Kontingente sind je Plan vergeben und haben keinen
+Prüfpunkt; der globale Riegel in `usage_limits_config.hard_limit` ist in
+allen 15 Zeilen `NULL`.
+
+### 6.5 Was Teil 2 messen sollte
 
 Noch offen und für den nächsten Schritt vorgemerkt:
 

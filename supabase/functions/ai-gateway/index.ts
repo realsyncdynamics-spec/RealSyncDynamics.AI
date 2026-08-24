@@ -132,7 +132,8 @@ async function pdpCheck(feature: string, modelProfile: string): Promise<Response
       return jsonError(403, 'APPROVAL_REQUIRED',
         result.reasons[0]?.text_de ?? 'Diese Aktion erfordert eine Freigabe gemäß Unternehmensrichtlinie.');
     }
-    return result;
+    // Shadow-Modus veraendert die Antwort NIE — auch kein warn-Anhang.
+    return mode === 'enforce' ? result : null;
   } catch (e) {
     console.error('[ai-gateway-pep] pdp unavailable — fail open', e);
     return null;

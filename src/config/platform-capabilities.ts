@@ -69,7 +69,7 @@ export interface PlatformCapability {
 }
 
 /** Datum der letzten Messung gegen Produktion. Bei Statuswechsel mitziehen. */
-export const CAPABILITIES_MEASURED_AT = '2026-08-17';
+export const CAPABILITIES_MEASURED_AT = '2026-08-23';
 
 export const PLATFORM_CAPABILITIES: readonly PlatformCapability[] = [
   {
@@ -87,8 +87,10 @@ export const PLATFORM_CAPABILITIES: readonly PlatformCapability[] = [
     description:
       'KI-Systeme nach Risikoklasse einordnen, Anforderungen ableiten und den Bestand als Inventar führen.',
     status: 'live',
-    // `ai-act-auto-classify` gehört bewusst nicht dazu: nicht in Produktion.
-    // Die Klassifizierung arbeitet ohne sie, die Automatik ist der Aufsatz.
+    // `ai-act-auto-classify` gehört bewusst nicht dazu — die Klassifizierung
+    // arbeitet ohne sie, die Automatik ist der Aufsatz. (Seit der Messung
+    // 2026-08-23 ist sie deployt; die Abgrenzung hier ist fachlich, nicht
+    // mehr eine Deployment-Frage.)
     backedBy: ['ai-act-classify', 'ai-act-risk-inventory'],
   },
   {
@@ -117,13 +119,13 @@ export const PLATFORM_CAPABILITIES: readonly PlatformCapability[] = [
     name: 'Bot-Laufzeit — Chat, WhatsApp, Telefon',
     description:
       'Kundenkommunikation über Chat und Sprache auf derselben Governance-Ebene — mit Prüfpfad je Gespräch.',
-    status: 'building',
+    // Messung 2026-08-23 (Management-API): alle vier Functions deployt.
+    // Damit ist der Zustand vom 2026-08-17 („Anlegen ja, Antworten nein")
+    // behoben — der Hinweis auf den Start-Seiten verschwindet dadurch von
+    // selbst, genau wie im Kommentar der CapabilityAvailabilityNotice
+    // vorgesehen.
+    status: 'live',
     backedBy: ['bot-chat', 'bot-voice-webhook', 'appointment-book', 'order-intake'],
-    // Genau diese Trennung, weil sie den Kunden unterschiedlich trifft: Die
-    // Tabellen (bots, bot_conversations, bot_messages, bot_appointments,
-    // bot_orders) existieren in Produktion mit RLS — Anlegen und Speichern
-    // funktioniert. Keine der vier Functions ist deployt — Antworten nicht.
-    note: 'Bots lassen sich anlegen und speichern; die Laufzeit, die Nachrichten beantwortet, ist nicht in Produktion (Messung 2026-08-17).',
   },
   {
     id: 'ai-gateway',
@@ -156,9 +158,9 @@ export const PLATFORM_CAPABILITIES: readonly PlatformCapability[] = [
     name: 'Herkunftsnachweis (C2PA)',
     description:
       'Inhalte signieren und ihre Herkunft überprüfbar machen — Ed25519, C2PA Content Credentials.',
-    status: 'building',
+    // Messung 2026-08-23: `c2pa-manifest-generate` ist inzwischen deployt.
+    status: 'live',
     backedBy: ['provenance', 'c2pa-manifest-generate'],
-    note: 'Signaturdienst läuft, die C2PA-Manifest-Erzeugung noch nicht in Produktion.',
   },
 ];
 

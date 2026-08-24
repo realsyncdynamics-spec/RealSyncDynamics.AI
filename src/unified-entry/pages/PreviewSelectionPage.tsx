@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ArrowRight, Check, ChevronLeft, Loader2, Monitor, Palette, RefreshCw, Smartphone, Sparkles, Tablet, Wand2 } from 'lucide-react';
+import { ArrowRight, Check, ChevronLeft, Globe, Loader2, Monitor, Palette, RefreshCw, Smartphone, Sparkles, Tablet, Wand2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { getSupabase } from '../../lib/supabase';
 import { useTenant } from '../../core/access/TenantProvider';
@@ -39,24 +39,40 @@ const SECTIONS = ['Hero', 'Leistungen', 'Über uns', 'Vorteile', 'Referenzen', '
 
 export default function PreviewSelectionPage() {
   const navigate = useNavigate();
-  const { activeTenantId } = useTenant();
+  const { activeTenantId, loading: tenantLoading } = useTenant();
   const { isAuthenticated } = useSupabaseAuth();
   const params = useMemo(() => new URLSearchParams(window.location.search), []);
-  const sourceUrl = params.get('url') || params.get('domain') || '';
+  // Die Ausgangs-URL kommt normalerweise als Query-Parameter (WowPreview,
+  // Audit-Handoff). Die Landing-CTA verlinkt aber ohne Parameter hierher —
+  // dann muss die Domain hier abgefragt werden, statt dass der Aufbau mit
+  // leerer URL still scheitert und der Ladebalken nie endet.
+  const initialUrl = params.get('url') || params.get('domain') || '';
+  const [sourceUrl, setSourceUrl] = useState(initialUrl);
+  const [urlInput, setUrlInput] = useState(initialUrl);
+  const [urlInputError, setUrlInputError] = useState('');
   const auditId = params.get('auditId') || params.get('auditid') || '';
   const [discovery, setDiscovery] = useState<Discovery | null>(null);
   const [blueprint, setBlueprint] = useState<SiteBlueprint | null>(null);
   const [template, setTemplate] = useState<SiteDesignTemplate>((params.get('variant') as SiteDesignTemplate) || 'modern-minimal');
   const [device, setDevice] = useState<Device>('desktop');
-  // Ohne verfuegbares Backend gar nicht erst in den Ladezustand starten: Der
-  // Vollbild-Ladebalken „Ihre neue Website wird gebaut" waere sonst das Erste,
-  // was ein Nutzer sieht, und er stuende dort dauerhaft.
-  const [busy, setBusy] = useState(() => allEdgeFunctionsAvailable(BUILDER_FUNCTIONS));
+  // Ohne verfuegbares Backend oder ohne Ausgangs-URL gar nicht erst in den
+  // Ladezustand starten: Der Vollbild-Ladebalken „Ihre neue Website wird
+  // gebaut" waere sonst das Erste, was ein Nutzer sieht, und er stuende dort
+  // dauerhaft.
+  const [busy, setBusy] = useState(() => Boolean(initialUrl) && allEdgeFunctionsAvailable(BUILDER_FUNCTIONS));
   const [error, setError] = useState('');
   const [instruction, setInstruction] = useState('');
 
   const build = useCallback(async (instructionOverride = '') => {
-    if (!activeTenantId || !sourceUrl) return;
+    // Ohne URL fragt die Oberflaeche zuerst nach der Domain — kein Spinner.
+    if (!sourceUrl) { setBusy(false); return; }
+    // Solange der Tenant noch laedt, den Ladezustand halten: der Effect ruft
+    // nach dem Laden erneut auf. Fehlt danach ein Workspace, ist das ein
+    // echter Fehler und darf nicht als ewiger Ladebalken enden.
+    if (!activeTenantId) {
+      if (!tenantLoading) { setBusy(false); setError('Kein aktiver Workspace gefunden. Bitte erneut anmelden oder das Onboarding abschließen.'); }
+      return;
+    }
     // Vor dem Ladebalken, nicht danach — siehe BUILDER_FUNCTIONS.
     if (!allEdgeFunctionsAvailable(BUILDER_FUNCTIONS)) { setBusy(false); return; }
     setBusy(true); setError('');
@@ -82,12 +98,32 @@ export default function PreviewSelectionPage() {
       setBlueprint(result.data.blueprint);
     } catch (cause) { setError(cause instanceof Error ? cause.message : 'Die neue Website konnte nicht erzeugt werden.'); }
     finally { setBusy(false); }
-  }, [activeTenantId, sourceUrl]);
+  }, [activeTenantId, tenantLoading, sourceUrl]);
 
   useEffect(() => {
     if (!isAuthenticated) { navigate(`/welcome?next=${encodeURIComponent(window.location.pathname + window.location.search)}`); return; }
     void build();
   }, [build, isAuthenticated, navigate]);
+
+  // Nutzereingabe der Ausgangsdomain: nachsichtig normalisieren (Protokoll
+  // ergaenzen), aber vor dem Start pruefen — eine unbrauchbare URL wuerde
+  // sonst erst nach dem Ladebalken als Discovery-Fehler sichtbar.
+  const submitUrl = (raw: string) => {
+    const trimmed = raw.trim();
+    if (!trimmed) { setUrlInputError('Bitte geben Sie die Adresse Ihrer bestehenden Website ein.'); return; }
+    const candidate = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+    let parsed: URL;
+    try { parsed = new URL(candidate); } catch { setUrlInputError('Das sieht nicht nach einer gültigen Website-Adresse aus.'); return; }
+    if (!parsed.hostname.includes('.')) { setUrlInputError('Bitte eine vollständige Domain angeben, z. B. ihre-firma.de.'); return; }
+    setUrlInputError('');
+    const normalized = parsed.toString();
+    // Query-Parameter mitschreiben, damit Reload und geteilte Links denselben
+    // Stand zeigen wie die Eingabe.
+    const search = new URLSearchParams(window.location.search);
+    search.set('url', normalized);
+    navigate({ search: `?${search.toString()}` }, { replace: true });
+    setSourceUrl(normalized);
+  };
 
   const previewBlueprint = useMemo(() => blueprint ? applySiteDesignTemplate(blueprint, template) : null, [blueprint, template]);
   const previewHtml = useMemo(() => previewBlueprint ? renderSite(previewBlueprint, { baseUrl: sourceUrl }).find(page => page.path === '/')?.html ?? '' : '', [previewBlueprint, sourceUrl]);
@@ -114,6 +150,7 @@ export default function PreviewSelectionPage() {
         <aside className="border-t border-black/[.07] bg-white p-4 lg:border-l lg:border-t-0 sm:p-5"><EdgeFunctionAvailabilityNotice functions={BUILDER_FUNCTIONS} title="Der Aufbau ist derzeit nicht verfügbar" detail="Die Dienste, die Ihre Ausgangsseite lesen und daraus einen Entwurf bauen, laufen noch nicht in Produktion. Sobald sie deployt sind, arbeitet diese Oberfläche ohne weitere Änderung." className="mb-5 border-amber-500/40 bg-amber-50 [&_p:first-child]:text-amber-900 [&_p:last-child]:text-amber-800/80" /><div className="flex items-center gap-2 text-sm font-bold"><Wand2 size={17} className="text-cyan-600"/> AI Website Editor</div><p className="mt-1 text-xs leading-5 text-black/45">Die Website ist bereits generiert. Sag der KI, was geändert werden soll.</p><textarea value={instruction} onChange={e => setInstruction(e.target.value)} placeholder="z. B. Hero hochwertiger, CTA stärker, mehr Vertrauen …" className="mt-4 min-h-28 w-full resize-none rounded-xl border border-black/[.08] p-3 text-xs outline-none"/><button onClick={() => { const text = instruction.trim(); if (text) { setInstruction(''); void build(text); } }} disabled={!instruction.trim() || busy} className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-[#111827] px-3 py-2.5 text-xs font-bold text-white disabled:opacity-40"><Wand2 size={14}/> AI anwenden</button><div className="mt-5 text-[10px] font-bold uppercase tracking-[.16em] text-black/35">Schnellaktionen</div>{['Hero hochwertiger machen','Conversion verbessern','Mobile optimieren','SEO stärken'].map(action => <button key={action} onClick={() => void build(action)} disabled={busy} className="mt-2 flex w-full items-center justify-between rounded-lg border border-black/[.07] px-3 py-2.5 text-left text-xs text-black/60 hover:bg-black/[.03] disabled:opacity-40">{action}<ArrowRight size={13}/></button>)}<div className="mt-6 rounded-xl border border-emerald-200 bg-emerald-50 p-4"><div className="text-xs font-bold text-emerald-800">Governance Layer</div><div className="mt-1 text-[11px] leading-5 text-emerald-700">SEO · DSGVO · Accessibility · EU AI Act · Evidence</div></div><button onClick={() => void checkout()} disabled={!blueprint || busy} className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-cyan-500 px-4 py-3 text-xs font-bold text-[#06111f] disabled:opacity-40">Website fertig umsetzen <ArrowRight size={14}/></button>{auditId && <div className="mt-3 text-[9px] text-black/30">Audit {auditId.slice(0, 12)}…</div>}{error && <div className="mt-4 rounded-lg border border-rose-200 bg-rose-50 p-3 text-[11px] leading-5 text-rose-700">{error}</div>}</aside>
       </div>
       {busy && <div className="fixed inset-0 z-[60] grid place-items-center bg-[#07111f]/70 p-5 backdrop-blur-sm"><div className="w-full max-w-md rounded-2xl bg-white p-7 text-center shadow-2xl"><div className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-cyan-50 text-cyan-600"><Loader2 className="animate-spin" size={22}/></div><h2 className="mt-4 text-lg font-bold">Ihre neue Website wird gebaut</h2><p className="mt-2 text-sm leading-6 text-black/50">RealSync analysiert die bestehende Website und erzeugt daraus gerade ein vollständiges SiteOS-Redesign.</p><div className="mt-5 flex items-center justify-center gap-2 text-[10px] text-black/35"><RefreshCw size={12} className="animate-spin"/> Analyse · Blueprint · Render</div></div></div>}
+      {!sourceUrl && !busy && <div className="fixed inset-0 z-[60] grid place-items-center bg-[#07111f]/70 p-5 backdrop-blur-sm"><form onSubmit={e => { e.preventDefault(); submitUrl(urlInput); }} className="w-full max-w-md rounded-2xl bg-white p-7 shadow-2xl"><div className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-cyan-50 text-cyan-600"><Globe size={22}/></div><h2 className="mt-4 text-center text-lg font-bold">Welche Website sollen wir neu bauen?</h2><p className="mt-2 text-center text-sm leading-6 text-black/50">Geben Sie die Adresse Ihrer bestehenden Website ein. RealSync analysiert sie und erzeugt daraus ein vollständiges SiteOS-Redesign.</p><input value={urlInput} onChange={e => setUrlInput(e.target.value)} autoFocus inputMode="url" autoComplete="url" placeholder="ihre-firma.de" aria-label="Adresse Ihrer bestehenden Website" className="mt-5 w-full rounded-xl border border-black/[.08] px-4 py-3 text-sm outline-none focus:border-cyan-400/60" />{urlInputError && <p className="mt-2 text-xs leading-5 text-rose-600">{urlInputError}</p>}<button type="submit" className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#111827] px-4 py-3 text-sm font-bold text-white">Website bauen <ArrowRight size={15}/></button></form></div>}
     </main>
   );
 }

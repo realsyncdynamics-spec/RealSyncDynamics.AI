@@ -231,6 +231,24 @@ export type BillingInterval = 'none' | 'month' | 'year' | 'one_time';
  */
 export type PurchaseMode = 'free' | 'checkout' | 'inquiry' | 'one_time';
 
+/**
+ * Wie ein Plan **vertrieben** wird — getrennt davon, wie er bezahlt wird.
+ *
+ * `purchaseMode` beantwortet „welche Art von Stripe-Session?", diese
+ * Angabe beantwortet „darf ihn heute noch jemand neu wählen?". Beides
+ * zusammenzulegen ginge schief: Ein stillgelegter Plan behält seinen
+ * Kaufmodus, denn seine bestehenden Abos rechnen unverändert weiter ab.
+ *
+ *   `self_service` — im Preisraster sichtbar, direkt buchbar
+ *   `contract`     — sichtbar, aber nur über ein Angebot erreichbar
+ *   `legacy`       — nicht mehr wählbar; bestehende Abos laufen weiter
+ *
+ * **`legacy` löscht nichts.** Produkte, Preise, Entitlements und laufende
+ * Subscriptions bleiben unangetastet — die Auflösung geht über `products`,
+ * nicht über diese Angabe. Es entfällt allein das Angebot an Neukunden.
+ */
+export type PlanAvailability = 'self_service' | 'contract' | 'legacy';
+
 export type ChannelId = 'website' | 'whatsapp' | 'telegram' | 'slack' | 'teams' | 'email' | 'voice';
 
 /**
@@ -374,6 +392,8 @@ export interface Plan {
   price: PlanPrice;
   currency: 'EUR';
   purchaseMode: PurchaseMode;
+  /** Vertriebszustand — siehe `PlanAvailability`. */
+  availability: PlanAvailability;
   /** Hebt die Karte im Grid hervor */
   highlight: boolean;
   /** Badges auf der Karte */
@@ -434,6 +454,7 @@ export const PLANS: Plan[] = [
     price: { monthlyEur: 0, yearlyEur: null, oneTimeEur: null },
     currency: 'EUR',
     purchaseMode: 'free',
+    availability: 'self_service',
     highlight: false,
     badges: [],
     ctaLabel: 'Kostenlosen Audit starten',
@@ -486,6 +507,7 @@ export const PLANS: Plan[] = [
     price: { monthlyEur: 79, yearlyEur: 790, oneTimeEur: null },
     currency: 'EUR',
     purchaseMode: 'checkout',
+    availability: 'self_service',
     highlight: false,
     badges: [],
     ctaLabel: '14 Tage kostenlos testen',
@@ -506,6 +528,9 @@ export const PLANS: Plan[] = [
     channels: ['website'],
     modules: [
       'dsgvo', 'eu_ai_act',
+      // Seit AP2 Teil von Starter: Die Feature-Liste sagte „Policy Packs:
+      // DSGVO und EU AI Act" schon vorher zu, die Berechtigung fehlte.
+      'policy_engine',
       'evidence_vault', 'audit_center', 'monitoring', 'compliance_reports',
       'automation_engine', 'alerts',
       'ai_bots', 'website_chat',
@@ -515,7 +540,12 @@ export const PLANS: Plan[] = [
       auditExport: true,
     }),
     support: 'email',
-    addons: [],
+    // AP2: Starter ist der einzige Plan **ohne** WhatsApp-Kanal — und damit
+    // der einzige, für den das Add-on überhaupt Sinn ergibt. Bis hierher war
+    // es genau umgekehrt gebucht (zielzustand-paketmodell.md §3.2).
+    // `channels` bleibt `['website']`: Der Kanal kommt mit dem Add-on, nicht
+    // mit dem Plan.
+    addons: ['whatsapp'],
     features: {
       audit_evidence: [
         'Vollständiger DSGVO-Scan mit Paragraphenbezug',
@@ -550,6 +580,7 @@ export const PLANS: Plan[] = [
     price: { monthlyEur: 249, yearlyEur: 2490, oneTimeEur: null },
     currency: 'EUR',
     purchaseMode: 'checkout',
+    availability: 'self_service',
     highlight: true,
     badges: ['Empfohlen'],
     ctaLabel: '14 Tage kostenlos testen',
@@ -559,13 +590,20 @@ export const PLANS: Plan[] = [
       domains: 3,
       automationRunsPerMonth: 100,
       seats: 5,
-      apiCallsPerMonth: 0,
+      // AP2: API, Bulk-Jobs und Schlüssel wandern von Agency nach Growth.
+      // 5.000 Aufrufe sind kein neuer Wert, sondern der bereits in der
+      // Datenbank hinterlegte (`limit.api_calls_monthly` auf Growth) — er
+      // stand dort ohne die zugehörige Berechtigung und war damit tot.
+      apiCallsPerMonth: 5_000,
       tenants: 1,
       evidenceStorageGb: 10,
       auditReportsPerMonth: 12,
       remediationPlans: 20,
-      bulkJobsPerMonth: 0,
-      apiKeys: 0,
+      // Neu vergeben, weil es für Growth keinen Vorwert gab: bewusst
+      // deutlich unter Agency (100 Bulk-Jobs, 10 Schlüssel) — Growth ist
+      // ein Ein-Mandanten-Plan.
+      bulkJobsPerMonth: 10,
+      apiKeys: 3,
     },
     channels: ['website', 'whatsapp', 'telegram'],
     modules: [
@@ -577,13 +615,27 @@ export const PLANS: Plan[] = [
     permissions: permissions({
       evidenceVault: true,
       auditExport: true,
+      // AP2 — Zielzustand §1.1: Diese Fähigkeiten lagen ausschließlich auf
+      // Agency. Da Agency als Self-Service entfällt, brauchen sie ein
+      // Zuhause, sonst gehen sie mit dem Plan verloren.
+      api: true,
+      webhooks: true,
+      scheduler: true,
+      bulkOperations: true,
+      provenanceSigning: true,
     }),
     support: 'priority',
-    addons: ['response_pack', 'whatsapp', 'compliance_pack'],
+    // `whatsapp` entfällt hier: Growth *enthält* den Kanal bereits. Ein
+    // Add-on, das verkauft, was der Plan schon hat, war der Widerspruch aus
+    // `zielzustand-paketmodell.md` §3.2. Voice und White Label kommen dazu,
+    // weil sie sonst mit Agency aus dem Angebot fielen.
+    addons: ['response_pack', 'compliance_pack', 'voice', 'white_label', 'agency_bot_pack'],
     features: {
       audit_evidence: [
         'Alles aus Starter',
         'Evidence Vault mit Versionierung',
+        'Erweiterter Evidence-Zugriff mit C2PA-Export',
+        'Signierter Herkunftsnachweis (Provenance)',
         'Bis zu 12 Audit-Berichte pro Monat',
         'Consent-Timing-Analyse (Requests vor Einwilligung)',
       ],
@@ -596,6 +648,8 @@ export const PLANS: Plan[] = [
       automation_ops: [
         'Tägliches Monitoring mit Drift Detection',
         'Behebungsvorschläge mit Code-Snippets',
+        'API-Zugriff, Webhooks und Scheduler',
+        '10 Bulk-Jobs pro Monat, 3 API-Schlüssel',
         '100 Automationsläufe pro Monat',
         '2 Governance-Bots mit 2.000 Antworten (Website, WhatsApp, Telegram)',
       ],
@@ -615,6 +669,7 @@ export const PLANS: Plan[] = [
     price: { monthlyEur: 699, yearlyEur: 6900, oneTimeEur: null },
     currency: 'EUR',
     purchaseMode: 'checkout',
+    availability: 'legacy',
     highlight: false,
     badges: ['Für Agenturen'],
     ctaLabel: '14 Tage kostenlos testen',
@@ -692,7 +747,8 @@ export const PLANS: Plan[] = [
     technicalSubheadline: 'Multi-Tenant-Runtime für bis zu 5 Organisationen, zentrale Rechteverwaltung und unbegrenzte geplante Läufe.',
     price: { monthlyEur: 1_249, yearlyEur: 12_490, oneTimeEur: null },
     currency: 'EUR',
-    purchaseMode: 'checkout',
+    purchaseMode: 'inquiry',
+    availability: 'contract',
     highlight: false,
     badges: ['SLA 4 h'],
     ctaLabel: '14 Tage kostenlos testen',
@@ -734,7 +790,9 @@ export const PLANS: Plan[] = [
       prioritySupport: true,
     }),
     support: 'dedicated',
-    addons: ['response_pack', 'whatsapp', 'voice', 'compliance_pack', 'agency_bot_pack', 'white_label'],
+    // `whatsapp` entfällt wie bei Growth: Der Kanal ist im Plan enthalten
+    // (`channels`), ein Add-on darauf verkaufte Vorhandenes.
+    addons: ['response_pack', 'voice', 'compliance_pack', 'agency_bot_pack', 'white_label'],
     features: {
       audit_evidence: [
         'Alles aus Agency',
@@ -774,6 +832,7 @@ export const PLANS: Plan[] = [
     price: { monthlyEur: 1_999, yearlyEur: 19_000, oneTimeEur: null },
     currency: 'EUR',
     purchaseMode: 'inquiry',
+    availability: 'legacy',
     highlight: false,
     badges: ['Reseller', 'Multi Tenant'],
     // „Partner anfragen" folgt CTA.enterprise aus runtimeVocab.ts. Formen wie
@@ -869,6 +928,7 @@ export const PLANS: Plan[] = [
     // (das ist Growth). Ein zweiter hervorgehobener Eintrag würde die
     // Empfehlung entwerten — das Einmalprodukt trägt stattdessen das
     // Badge „Einmalig".
+    availability: 'self_service',
     highlight: false,
     badges: ['Einmalig'],
     ctaLabel: 'Jetzt buchen',
@@ -941,7 +1001,16 @@ export interface AddOn {
   priceNote: string;
   interval: 'month';
   bullets: string[];
-  /** Pläne, für die das Add-on buchbar ist */
+  /**
+   * Pläne, für die das Add-on **angeboten** wird.
+   *
+   * Seit AP2 nennt diese Liste ausschließlich Pläne, die noch verkauft
+   * werden. Was ein bestehender Kunde tatsächlich buchen darf, entscheidet
+   * weiterhin `plan.addons` — und die Add-on-Listen der stillgelegten Pläne
+   * Agency und Partner sind absichtlich unverändert geblieben. Ein
+   * Bestandskunde verliert dadurch kein Add-on; es wird nur keinem
+   * Neukunden mehr auf einem Plan angeboten, den er gar nicht wählen kann.
+   */
   availableFor: PlanId[];
 }
 
@@ -959,7 +1028,7 @@ export const ADDONS: AddOn[] = [
       'Additiv zur Plan-Quote',
       'Nicht verbrauchte Antworten verfallen zum Monatsende',
     ],
-    availableFor: ['growth', 'agency', 'enterprise', 'partner'],
+    availableFor: ['growth', 'enterprise'],
   },
   {
     id: 'whatsapp',
@@ -974,7 +1043,11 @@ export const ADDONS: AddOn[] = [
       'Media-Support für Bilder und Dokumente',
       'Einrichtung im Onboarding durch das Team',
     ],
-    availableFor: ['growth', 'agency', 'enterprise', 'partner'],
+    // AP2 — die Korrektur aus `zielzustand-paketmodell.md` §3.2: Das Add-on
+    // war ausgerechnet für den einzigen Plan *ohne* WhatsApp nicht buchbar
+    // und wurde denen angeboten, die den Kanal bereits enthalten. Genau
+    // verkehrt herum. Ab Growth ist WhatsApp Teil des Plans.
+    availableFor: ['starter'],
   },
   {
     id: 'voice',
@@ -989,7 +1062,7 @@ export const ADDONS: AddOn[] = [
       'Speech-to-Text und Text-to-Speech',
       'Mehrsprachig: DE, EN, FR, ES',
     ],
-    availableFor: ['agency', 'enterprise', 'partner'],
+    availableFor: ['growth', 'enterprise'],
   },
   {
     id: 'compliance_pack',
@@ -1004,7 +1077,7 @@ export const ADDONS: AddOn[] = [
       'Quartalsbericht als PDF',
       'Human-Review-Workflow für sensible Absichten',
     ],
-    availableFor: ['growth', 'agency', 'enterprise', 'partner'],
+    availableFor: ['growth', 'enterprise'],
   },
   {
     id: 'agency_bot_pack',
@@ -1019,7 +1092,7 @@ export const ADDONS: AddOn[] = [
       'White-Label je Bot konfigurierbar',
       'Priorisiertes Onboarding',
     ],
-    availableFor: ['agency', 'enterprise', 'partner'],
+    availableFor: ['growth', 'enterprise'],
   },
   {
     id: 'white_label',
@@ -1034,7 +1107,7 @@ export const ADDONS: AddOn[] = [
       'Eigener Bot-Name und eigene Persona',
       'Analysen im eigenen Dashboard',
     ],
-    availableFor: ['agency', 'enterprise', 'partner'],
+    availableFor: ['growth', 'enterprise'],
   },
 ];
 
@@ -1168,8 +1241,15 @@ export const MODULE_PRICING_STATUS = 'provisional' as const;
  * kein haltbarer Zustand — die Auflösung gehört in die Preiskalkulation,
  * nicht in eine stillschweigende Angleichung hier. Bis dahin wird die
  * Abweichung benannt statt versteckt.
+ *
+ * **WhatsApp ist seit AP2 aufgelöst** (99 € an beiden Stellen) und steht
+ * deshalb nicht mehr hier. Voice bleibt offen: 99 € als Modul gegen 150 €
+ * als Add-on. Das ist keine Nachlässigkeit, sondern der Rest einer
+ * Kalkulation, die für Telefonie noch aussteht — Minutenpreise und
+ * STT/TTS-Kosten sind nicht gemessen. Wer sie angleicht, ohne gerechnet zu
+ * haben, ersetzt eine benannte Abweichung durch eine verdeckte.
  */
-export const MODULE_ADDON_PRICE_DIVERGENCE: BookableModuleId[] = ['voice_bot', 'whatsapp_bot'];
+export const MODULE_ADDON_PRICE_DIVERGENCE: BookableModuleId[] = ['voice_bot'];
 
 export const BOOKABLE_MODULES: BookableModule[] = [
   {
@@ -1249,7 +1329,16 @@ export const BOOKABLE_MODULES: BookableModule[] = [
     id: 'whatsapp_bot',
     name: 'WhatsApp Bot',
     description: 'WhatsApp-Business-Kanal mit identischem Governance-Protokoll.',
-    priceEur: 39,
+    // AP2 — Entscheidung des Eigentümers vom 2026-08-24: ein Preis für den
+    // WhatsApp-Kanal, und zwar der aus `ADDONS` (99 €). Er stand an drei
+    // übereinstimmenden Stellen — Datenbank, Preisseite, `ADDONS` — gegen
+    // die 39 € an einer. Die 39 € gehörten zum rein modularen Modell, das
+    // mit der Dreier-Leiter entfällt.
+    //
+    // Die Kachel selbst bleibt: WhatsApp ist weiterhin buchbar, und ein
+    // Dienst, den man kaufen kann, gehört in den Marketplace
+    // (`CLAUDE.md` §14). Entfallen ist der zweite Preis, nicht der Kanal.
+    priceEur: 99,
     priceModel: 'flat_plus_usage',
     usageNote: 'zzgl. WhatsApp-Konversationsgebühren',
     required: false,
@@ -1581,6 +1670,8 @@ export const PLAN_ENTITLEMENTS: Readonly<
     'ai.tool.automations': 1,
     'alerts.email': 1,
     'asset.verify': 1,
+    'bots.chat': 1,
+    'bots.enabled': 1,
     'compliance.export': 1,
     'dashboard.access': 1,
     'dse.generator': 1,
@@ -1589,11 +1680,14 @@ export const PLAN_ENTITLEMENTS: Readonly<
     'governance.dsgvo_directory': 1,
     'limit.agent_runs_monthly': 100,
     'limit.automation_runs_monthly': 25,
+    'limit.bot_messages_monthly': 500,
+    'limit.bots': 1,
     'limit.compliance_exports_monthly': 5,
     'limit.domains': 1,
     'limit.llm_queries_monthly': 100,
     'limit.team_seats': 3,
     'monitoring.monthly': 1,
+    'policy.packs': 1,
     'website.scan': 1,
     'website.scan_monthly_limit': -1,
   },
@@ -1601,6 +1695,7 @@ export const PLAN_ENTITLEMENTS: Readonly<
     'ai.tool.automations': 1,
     'ai.tool.bot_reply': 1,
     'alerts.email': 1,
+    'api.access': 1,
     'asset.register': 1,
     'asset.verify': 1,
     'bots.appointments': 1,
@@ -1609,9 +1704,12 @@ export const PLAN_ENTITLEMENTS: Readonly<
     'bots.multi_channel': 1,
     'bots.orders': 1,
     'bots.whatsapp': 1,
+    'bulk.jobs': 1,
+    'c2pa.export': 1,
     'compliance.export': 1,
     'dashboard.access': 1,
     'dse.generator': 1,
+    'evidence.advanced': 1,
     'evidence.basic_vault': 1,
     'fix.snippets': 1,
     'governance.ai_register': 1,
@@ -1624,6 +1722,7 @@ export const PLAN_ENTITLEMENTS: Readonly<
     'limit.automation_runs_monthly': 100,
     'limit.bot_messages_monthly': 2000,
     'limit.bots': 2,
+    'limit.bulk_jobs_monthly': 10,
     'limit.compliance_exports_monthly': 20,
     'limit.domains': 3,
     'limit.llm_queries_monthly': 500,
@@ -1633,7 +1732,11 @@ export const PLAN_ENTITLEMENTS: Readonly<
     'monitoring.drift': 1,
     'monitoring.monthly': 1,
     'policy.iso27001': 1,
+    'policy.packs': 1,
+    'provenance.advanced': 1,
+    'scheduler.enabled': 1,
     'team.members': 1,
+    'webhooks.enabled': 1,
     'website.scan': 1,
     'website.scan_monthly_limit': -1,
   },
@@ -2052,6 +2155,36 @@ export const PAID_PLANS: Plan[] = PLANS.filter((p) => p.price.monthlyEur > 0);
 
 /** Alle Abo-Pläne in verbindlicher Reihenfolge (ohne Einmalprodukte). */
 export const ORDERED_PLANS: Plan[] = PLAN_ORDER.map((id) => planById(id));
+
+/**
+ * Die Pläne, die einem Neukunden **angeboten** werden — Free, Starter,
+ * Growth und Enterprise (letzteres als Angebot).
+ *
+ * Bewusst nicht `ORDERED_PLANS`: Dort stehen weiterhin alle Ränge, weil
+ * `planRank()` und `isUpgrade()` auch für Bestandskunden auf Agency oder
+ * Partner die richtige Antwort geben müssen. Wer ein Preisraster, eine
+ * Vergleichstabelle oder eine Planauswahl rendert, nimmt diese Liste —
+ * sonst bietet die Oberfläche etwas an, das niemand mehr buchen kann
+ * (`CLAUDE.md` §14: kein Element vortäuschen, das nichts tut).
+ */
+export const SALES_PLANS: Plan[] = ORDERED_PLANS.filter((p) => p.availability !== 'legacy');
+
+/** Pläne, die ohne Vertrieb sofort buchbar sind. */
+export const SELF_SERVICE_PLANS: Plan[] = ORDERED_PLANS.filter(
+  (p) => p.availability === 'self_service',
+);
+
+/**
+ * Stillgelegte Pläne. Sie erscheinen nirgends im Verkauf, bleiben aber
+ * vollständig gültig, wo sie gebucht sind — Produkte, Preise und
+ * Entitlements sind unverändert.
+ */
+export const LEGACY_PLANS: Plan[] = ORDERED_PLANS.filter((p) => p.availability === 'legacy');
+
+/** Darf dieser Plan heute noch neu gewählt werden? */
+export function isPlanSelectable(plan: Plan | PlanId | string | null | undefined): boolean {
+  return resolvePlan(plan)?.availability !== 'legacy';
+}
 
 /**
  * Einmalprodukte — Käufe ohne Verlängerung, die zusätzlich zu einem Abo

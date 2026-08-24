@@ -35,6 +35,7 @@
 import {
   BOOKABLE_MODULES,
   PLAN_ORDER,
+  isPlanSelectable,
   planByKey,
   planGrants,
   type BookableModule,
@@ -84,9 +85,17 @@ export function isModuleActive(planId: PlanId | string | null | undefined, modul
  * Pläne, die nicht gekauft werden können (`inquiry`, `free`), bleiben als
  * Ergebnis zulässig — die Oberfläche entscheidet dann, ob sie zum Checkout
  * oder zum Vertrieb führt.
+ *
+ * **Stillgelegte Pläne werden übersprungen.** Seit AP2 sind Agency und
+ * Partner nicht mehr wählbar. Ein Vorschlag „verfügbar ab Agency" wäre
+ * damit ein Weg, den niemand mehr gehen kann — genau das Element, das
+ * `CLAUDE.md` §14 verbietet. Für die Frage, ob ein *bestehender* Kunde das
+ * Modul hat, ist weiterhin `isModuleActive()` zuständig; die kennt Agency
+ * und Partner unverändert.
  */
 export function cheapestPlanFor(module: BookableModule): PlanId | null {
   for (const planId of PLAN_ORDER) {
+    if (!isPlanSelectable(planId)) continue;
     if (isModuleActive(planId, module)) return planId;
   }
   return null;

@@ -404,6 +404,15 @@ Runtime-Limits, Module, Berechtigungen, Feature-Listen und Add-ons.
   `hasPermission()`, `hasModule()`, `limitOf()`
 - Es gibt genau sechs **Abo-Pläne**: Free Audit · Starter · Growth · Agency ·
   Enterprise · Partner. Der Name „Scale" ist untersagt.
+- Seit AP2 (2026-08-24) trägt jeder Plan zusätzlich `availability`:
+  `self_service` (Free, Starter, Growth) · `contract` (Enterprise) ·
+  `legacy` (Agency, Partner). Das ist **nicht** dasselbe wie `purchaseMode`:
+  Jenes sagt, welche Art Stripe-Session entsteht, dieses, ob der Plan heute
+  noch neu gewählt werden darf. Stillgelegte Pläne behalten Produkte, Preise,
+  Entitlements und laufende Abos vollständig — sie stehen weiterhin in
+  `PLAN_ORDER`, damit Rangvergleiche für Bestandskunden stimmen.
+  **Verkaufslisten nehmen `SALES_PLANS` bzw. `SELF_SERVICE_PLANS`, nie
+  `ORDERED_PLANS`.** Einzelheiten: `docs/product/ap2-paketumbau.md`.
 - Daneben gibt es **Einmalprodukte** (`purchaseMode: 'one_time'`), derzeit
   Governance Launch (349 € einmalig). Sie sind kein Rang der Abo-Leiter:
   nicht in `PLAN_ORDER`, Preis in `price.oneTimeEur`, Persistenz als Grant in
@@ -619,6 +628,29 @@ Icon-Set sind unberührt.
 Die Freigabe wird **wirksam mit dem Schnitt von PR #1129**, weil `/scan` erst
 dann entfällt. Hintergrund und Zielmatrix:
 `docs/architecture/canonical-builder-target-matrix.md`.
+
+**2026-08-24 — AP2, Paketumbau auf drei Self-Service-Stufen**
+
+Freigegeben durch die ausdrückliche Anweisung des Eigentümers: „Paketmodell auf
+drei bezahlte Pakete umbauen · `policy.packs` ab Starter · WhatsApp als
+99-€-Add-on · AP1 als kanonische Entitlement-Basis verwenden · die beiden in
+AP1 sichtbar gewordenen Widersprüche gezielt bereinigen."
+
+Zwei Änderungen an bereits Sichtbarem sind darin enthalten und damit gedeckt:
+
+| Was | Vorher | Nachher |
+|---|---|---|
+| WhatsApp-Kachel in `/app/marketplace` | 39 € | **99 €** — derselbe Betrag wie das Add-on |
+| CTA der Enterprise-Karte | `/checkout/enterprise` | `/contact-sales?plan=enterprise` |
+
+Alles Übrige ist Datenschicht: Entitlements, Katalog, Berechtigungen.
+
+**Ausdrücklich NICHT freigegeben und deshalb unverändert geblieben**: die
+Preisseite selbst. Sie zeigt weiterhin fünf Karten in `lg:grid-cols-5`, und
+`PricingTeaserSection` trägt weiterhin die Überschrift „Free Audit · Starter ·
+Growth · Agency · Enterprise · Partner". Das Grid fällt unter §10.1
+(gesperrt), die Überschrift unter §10.3 (fragepflichtig). Hintergrund:
+`docs/product/ap2-paketumbau.md` §7.
 
 #### Faustregel
 

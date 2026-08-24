@@ -7,6 +7,7 @@ import {
   ENTITLEMENT_KEYS,
   PLANS,
   PLAN_ENTITLEMENTS,
+  isPlanSelectable,
   planEntitlementValue,
   planGrants,
 } from '../../shared/pricing';
@@ -166,27 +167,50 @@ describe('planGrants — dieselbe Regel wie der serverseitige Wächter', () => {
 
 describe('Der Marketplace bleibt nachvollziehbar', () => {
   /**
-   * Das gemessene Verhalten nach der Umstellung. Drei Einträge haben sich
-   * gegenüber vorher geändert — alle drei sind Korrekturen, weil die alte
-   * Antwort aus `plan.modules` kam und die Datenbank etwas anderes sagte:
+   * Das gemessene Verhalten nach AP2.
    *
-   *   governance_core  ab Growth  → ab Agency  (`policy.packs` fehlt Growth)
-   *   website_chat     ab Starter → ab Growth  (`bots.enabled` fehlt Starter)
-   *   booking          nie        → ab Growth  (hatte gar keine `unlocks`)
+   * AP1 hatte drei Widersprüche sichtbar gemacht, indem es die Anzeige an
+   * die Datenbank band. AP2 hat zwei davon an der Wurzel behoben — nicht
+   * indem die Anzeige nachgab, sondern indem der Plan bekam, was er dem
+   * Kunden ohnehin zusagte:
+   *
+   *   governance_core  AP1: ab Agency → AP2: ab Starter
+   *                    `policy.packs` liegt jetzt auf Starter. Eine
+   *                    Governance-Plattform, die ihre Regelwerke erst in
+   *                    der vierten Stufe gewährt, war nicht haltbar.
+   *
+   *   website_chat     AP1: ab Growth → AP2: ab Starter
+   *                    `bots.enabled`/`bots.chat` liegen jetzt auf Starter.
+   *                    `plan.limits` sagte dort seit jeher `bots: 1`.
+   *
+   * Zwei Einträge wandern nach oben, weil Agency stillgelegt ist und ein
+   * Vorschlag auf einen unwählbaren Plan nichts wert wäre:
+   *
+   *   voice_bot                ab Agency → ab Enterprise
+   *   advanced_ai_governance   ab Agency → ab Enterprise
    */
   it.each([
-    ['governance_core', 'agency'],
-    ['website_chat', 'growth'],
-    ['voice_bot', 'agency'],
+    ['governance_core', 'starter'],
+    ['website_chat', 'starter'],
+    ['voice_bot', 'enterprise'],
     ['whatsapp_bot', 'growth'],
     ['booking', 'growth'],
-    ['advanced_ai_governance', 'agency'],
+    ['advanced_ai_governance', 'enterprise'],
     ['additional_company', 'growth'],
     ['ai_frontend', null],
     ['additional_domain', null],
   ])('%s wird ab %s freigeschaltet', (modulId, erwartet) => {
     const modul = BOOKABLE_MODULES.find((m) => m.id === modulId)!;
     expect(cheapestPlanFor(modul)).toBe(erwartet);
+  });
+
+  it('schlägt nie einen stillgelegten Plan vor', () => {
+    // Agency und Partner sind seit AP2 nicht mehr wählbar. Ein Marketplace,
+    // der „verfügbar ab Agency" sagt, schickt den Kunden in eine Sackgasse.
+    for (const modul of BOOKABLE_MODULES) {
+      const vorschlag = cheapestPlanFor(modul);
+      expect(vorschlag === null || isPlanSelectable(vorschlag)).toBe(true);
+    }
   });
 
   it('hält ein Modul ohne Keys nie für aktiv', () => {

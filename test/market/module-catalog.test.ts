@@ -10,6 +10,7 @@ import { describe, expect, it } from 'vitest';
 import {
   BOOKABLE_MODULES,
   PLAN_ORDER,
+  isPlanSelectable,
   planGrants,
   type BookableModule,
 } from '@/shared/pricing';
@@ -72,9 +73,16 @@ describe('cheapestPlanFor', () => {
       if (plan === null) continue;
 
       expect(isModuleActive(plan, module)).toBe(true);
-      // Kein früherer Plan in der Leiter darf es auch schon können.
+      expect(isPlanSelectable(plan)).toBe(true);
+      // Kein früherer **wählbarer** Plan darf es auch schon können.
+      //
+      // Die Einschränkung auf wählbare Pläne ist seit AP2 nötig und kein
+      // Aufweichen der Regel: Agency kann `voice_bot` weiterhin, ist aber
+      // stillgelegt. Ein Vorschlag darauf wäre eine Sackgasse, und die
+      // Reihenfolge der verkäuflichen Pläne bleibt streng monoton.
       const index = PLAN_ORDER.indexOf(plan);
       for (const niedriger of PLAN_ORDER.slice(0, index)) {
+        if (!isPlanSelectable(niedriger)) continue;
         expect(isModuleActive(niedriger, module)).toBe(false);
       }
     }

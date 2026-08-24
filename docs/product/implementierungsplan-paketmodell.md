@@ -114,7 +114,25 @@ auf Modul-IDs mehr; der neue Test ist grün.
 
 ---
 
-## AP2 — Paketumbau
+## AP2 — Paketumbau ✅ umgesetzt am 2026-08-24
+
+> **Ergebnis und Abweichungen: `docs/product/ap2-paketumbau.md`.** Zwei
+> Dinge sind anders gelaufen als hier geplant:
+>
+> 1. **AP2.3** — `BOOKABLE_MODULES.whatsapp_bot` ist **nicht** entfallen.
+>    Entfallen ist der zweite Preis (39 € → 99 €); die Marketplace-Kachel
+>    bleibt, weil der Marketplace `BOOKABLE_MODULES` rendert und WhatsApp
+>    sonst im Dashboard verschwunden wäre.
+> 2. **Die Oberfläche ist bewusst offen geblieben.** Die Preisseite zeigt
+>    weiterhin fünf Karten; `lg:grid-cols-5` und die Überschrift mit Agency
+>    und Partner fallen unter `CLAUDE.md` §10.1 bzw. §10.3 und brauchen eine
+>    eigene Entscheidung.
+>
+> Zusätzlich behoben, weil es dieselbe Wurzel hat: Starter bekommt
+> `bots.enabled` und `bots.chat` samt Kontingenten — `plan.limits` sagte dort
+> seit jeher `bots: 1`.
+
+
 
 **Ziel:** Drei Self-Service-Stufen, Enterprise als Vertrag. Die Berechtigungen
 der entfallenden Stufen bekommen ein Zuhause.

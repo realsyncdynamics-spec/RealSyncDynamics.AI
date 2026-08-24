@@ -88,6 +88,15 @@ Antwort aus `plan.modules` kam und die Datenbank etwas anderes sagte:
 Die ersten beiden Fälle sind der Grund, warum es AP1 gab: Die Oberfläche
 versprach etwas anderes, als der Server zuließ.
 
+> **Nachtrag AP2 (2026-08-24).** Die ersten beiden Fälle sind inzwischen an
+> der Wurzel behoben — nicht dadurch, dass die Anzeige nachgibt, sondern
+> indem der Plan bekam, was er ohnehin zusagte: `policy.packs` liegt jetzt
+> auf Starter, `bots.enabled` und `bots.chat` ebenfalls. Beide Module sind
+> damit **ab Starter** aktiv. `voice_bot` und `advanced_ai_governance`
+> wandern im Gegenzug von Agency nach Enterprise, weil Agency stillgelegt
+> ist und ein Vorschlag auf einen unwählbaren Plan nichts wert wäre.
+> Einzelheiten: `docs/product/ap2-paketumbau.md`.
+
 ---
 
 ## 3. Was ausdrücklich **nicht** angetastet wurde

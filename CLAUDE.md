@@ -79,7 +79,7 @@ Menschen · Unternehmen · KI-Agenten · Daten · Entscheidungen.
 **Primär: Supabase Cloud (EU / Frankfurt)**
 - PostgreSQL 17 (Live-Projekt, Stand 2026-08-16)
 - **180 Edge Functions** im Repo (`supabase/functions/`, Deno/V8) — 178 davon in Produktion (`whatsapp-webhook` deployt, PR #1134); `governance-decide` und `integration-credentials` (Governance OS P0, seit 2026-08-24) werden mit dem nächsten `deploy.yml`-Lauf deployt, siehe §5
-- **291 Migrations** (`supabase/migrations/`) — 287 verbucht; `20260824090000_pdp_snapshots_shadow` und `20260824110000_integration_credentials_hardening` warten auf den Merge; zur Lücke und zur Versionskollision vom 2026-08-24 siehe §5
+- **292 Migrations** (`supabase/migrations/`) — 287 verbucht; `20260824090000_pdp_snapshots_shadow`, `20260824110000_integration_credentials_hardening` und `20260824120000_org_subject_model_approval_gates` warten auf den Merge; zur Lücke und zur Versionskollision vom 2026-08-24 siehe §5
 - RLS auf allen App-Tabellen · Realtime Subscriptions
 
 **Node/TypeScript-Services** (containerisiert — **kein Go im Repo**)
@@ -335,7 +335,7 @@ RealSyncDynamics.AI/
 │   └── pricing.ts     Single Source of Truth für Produkt-, Preis- und Berechtigungsmodell
 ├── supabase/
 │   ├── functions/     180 Edge Functions (einziger Ort für Service-Role-Keys)
-│   └── migrations/    291 Migrations
+│   └── migrations/    292 Migrations
 ├── apps/
 │   └── agent-runtime/ Agent Runtime (Node/TS, Docker)
 ├── services/          runtime-core · evidence-runtime · openclaw-agent · playwright-scanner

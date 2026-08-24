@@ -39,7 +39,7 @@ weiterhin die Regel aus `CLAUDE.md` §5: gegen die Live-DB messen.
 
 | Größe | Wert |
 |---|---|
-| Edge Functions (Verzeichnisse) | 179 |
+| Edge Functions (ohne `_shared`) | 178 |
 | Migrationen | 287 |
 | Tabellen (aus `CREATE TABLE` in Migrationen, dedupliziert) | 345 |
 | Public Pages (`src/pages/*.tsx`) | 113 |
@@ -683,11 +683,25 @@ Relativ, keine erfundenen Zeitangaben.
 
 ---
 
-# 10. STOP
+# 10. Umsetzungsstand
 
-Der Plan liegt vor. Ich implementiere nichts, bis eine ausdrückliche Freigabe
-kommt. Bei „Plan freigegeben." beginne ich mit **P0-1** — und stelle dafür
-vorher die Frage aus **E8**, weil bestehende Funktionalität berührt wird.
+**2026-08-24 — Freigabe „GO" erhalten.** Umgesetzt auf diesem Branch:
 
-Wenn du nur Teile freigeben willst, reicht die Nennung der Nummern
-(z. B. „P0-2 und P0-3 freigegeben").
+| Vorhaben | Stand | Wo |
+|---|---|---|
+| P0-2 PDP-v2-Kern | ✅ | `supabase/functions/_shared/pdp/core.ts` — Vertrag v1, Kompilierung beider Alt-Formate, deutsche Begründungen, Ausfallverhalten. 21 Tests inkl. Äquivalenz gegen beide Alt-Engines (`test/governance/pdp-core.test.ts`) |
+| P0-3 Snapshot + Endpunkt | ✅ | Migration `20260824090000_pdp_snapshots_shadow.sql` (`policy_snapshots`, `pdp_shadow_log`, RLS) · `_shared/pdp/decide.ts` (Instanz-Cache, 30 s TTL) · Edge Function `governance-decide` (`rsd_gov_`-Key-Auth, Evidence bei Nicht-allow) |
+| P0-4 ai-gateway-PEP | ✅ | `AI_GATEWAY_ENFORCEMENT=off\|shadow\|enforce`, **Default `shadow`** — Produktionsverhalten ändert sich erst durch bewusstes Umschalten. Grenze dokumentiert: Gateway ist tenant-los (nur globale Policies), Vendor steht erst nach Routing fest |
+| P0-5 Shadow-Mode | ✅ | `telemetry-ai-event` und `governance-ingest` rechnen v2 auf denselben geladenen Policy-Zeilen mit; Divergenzen → `pdp_shadow_log`. Antwortverhalten unverändert |
+| P0-1 Credentials | ⏳ **wartet auf E8** | §10.3-Fragepflicht: Änderung an `IntegrationMarketplaceView.tsx` braucht ausdrückliches Ja |
+
+Noch nicht deployt: `governance-decide` und die Migration laufen erst mit dem
+nächsten `deploy.yml`-Lauf nach dem Merge (siehe CLAUDE.md §5 — Repo ≠ Produktion).
+
+**Umschalt-Kriterium bleibt:** v2 übernimmt nirgends die Entscheidung, bevor der
+Shadow-Log über einen definierten Beobachtungszeitraum keine unerklärte
+Divergenz zeigt. Der `ai-gateway`-`enforce`-Modus betrifft nur globale
+Policies und ist eine bewusste Betriebsentscheidung, kein Deploy-Nebeneffekt.
+
+Für die weiteren Phasen gilt weiterhin: Teilfreigaben per Nummer
+(z. B. „P1-1 und P1-4 freigegeben").

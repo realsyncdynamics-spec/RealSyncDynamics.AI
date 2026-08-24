@@ -2,7 +2,7 @@
 // Function-ACL-Drift-Guard.
 //
 // Verhindert die Wiederholung des Vorfalls vom 2026-08-23 (CLAUDE.md §5,
-// Migration 20260826000000): Ein ausserhalb des Repos ausgefuehrter
+// Migration 20260826000001): Ein ausserhalb des Repos ausgefuehrter
 // Bulk-REVOKE hatte ~160 public-Funktionen auf {postgres, service_role}
 // reduziert und damit alle RLS-Policies fuer eingeloggte Nutzer gebrochen
 // ("permission denied for function is_tenant_member" auf /welcome).
@@ -22,7 +22,7 @@
 //      geben neuen Funktionen automatisch anon/authenticated, das ist
 //      kein Drift, nur Sichtbarkeit.
 //
-// Quelle der Soll-Listen: supabase/migrations/20260826000000_restore_client_function_grants.sql.
+// Quelle der Soll-Listen: supabase/migrations/20260826000001_restore_client_function_grants.sql.
 // Wer per Migration Client-Grants aendert, zieht die Listen hier nach —
 // der schedule-Lauf failt sonst am naechsten Morgen und sagt genau das.
 //
@@ -44,7 +44,7 @@
 // API-/Netz-Fehler failen NICHT hart (≠ Drift) — aber wie beim
 // Migrations-Guard gibt es dann auch keinen gruenen Haken.
 
-// ── Soll-Zustand (Spiegel von 20260826000000) ────────────────────────────────
+// ── Soll-Zustand (Spiegel von 20260826000001) ────────────────────────────────
 
 // anon + authenticated: RLS-Helper und bewusst oeffentliche Endpunkte.
 const REQUIRED_ANON = [
@@ -213,7 +213,7 @@ if (missing.length > 0) {
   console.error(
     '\nDas ist der 2026-08-23-Vorfall: RLS-Policies und SPA-RPCs brechen fuer\n' +
     'Nutzer mit "permission denied for function ..." (42501).\n' +
-    'Fix: 20260826000000_restore_client_function_grants.sql erneut anwenden\n' +
+    'Fix: 20260826000001_restore_client_function_grants.sql erneut anwenden\n' +
     '(idempotent) — und klaeren, WER den Revoke ausserhalb des Repos ausfuehrt.',
   );
 }

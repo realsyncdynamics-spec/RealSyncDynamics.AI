@@ -40,13 +40,36 @@ WHERE p.default_for_plan_key IN ('starter', 'growth', 'agency', 'enterprise', 'p
     WHERE pe.product_id = p.id AND pe.entitlement_id = e.id
   );
 
+-- `free_audit` ist der Plan-Schlüssel des Free-Plans in `shared/pricing.ts` und
+-- trägt live drei Subscriptions — aber es gab **kein** Produkt dazu. Dass diese
+-- Mandanten trotzdem Berechtigungen hatten, war der Rückfall auf `free_tier`
+-- im Auflöser, also Zufall statt Absicht.
+--
+-- Das Produkt wird mit den Berechtigungen von `free_tier` angelegt: Für die drei
+-- bestehenden Mandanten ändert sich dadurch nichts — es ist nur nicht länger ein
+-- Zufall. Ohne Stripe-Price, weil der Free-Plan nichts kostet.
+--
+-- Es steht hier oben, weil der Kontingent-Block darunter darauf verweist; ohne
+-- das Produkt fiele dessen `free_audit`-Zeile stillschweigend weg.
+INSERT INTO public.products (stripe_price_id, name, default_for_plan_key)
+SELECT '', 'Free Audit (default)', 'free_audit'
+WHERE NOT EXISTS (
+  SELECT 1 FROM public.products WHERE default_for_plan_key = 'free_audit'
+);
+
 -- Das Scan-Kontingent je Plan. Die Zahlen stammen aus `shared/pricing.ts`
 -- (`limits.auditReportsPerMonth`) — der Single Source of Truth für Limits.
 -- Sie werden hier nicht erfunden, sondern gespiegelt.
+-- `free_audit` steht bewusst mit in der Tabelle statt das Kontingent nur von
+-- `free_tier` zu erben: Drei kostenlose Scans sind eine Produktentscheidung
+-- (Eigentümer, 2026-08-24), keine Nebenwirkung einer Vorlage. So steht die
+-- Zahl an derselben Stelle wie die der bezahlten Pläne und wird vom
+-- Paritätstest gegen `shared/pricing.ts` mitgeprüft.
 INSERT INTO public.product_entitlements (product_id, entitlement_id, value)
 SELECT p.id, e.id, v.wert
 FROM (VALUES
-  ('starter',      2),
+  ('free_audit',   3),
+  ('starter',      6),
   ('growth',      12),
   ('agency',      50),
   ('enterprise', 200),
@@ -59,20 +82,6 @@ WHERE e.key = 'website.scan_monthly_limit'
     SELECT 1 FROM public.product_entitlements pe
     WHERE pe.product_id = p.id AND pe.entitlement_id = e.id
   );
-
--- `free_audit` ist der Plan-Schlüssel des Free-Plans in `shared/pricing.ts` und
--- trägt live drei Subscriptions — aber es gab **kein** Produkt dazu. Dass diese
--- Mandanten trotzdem Berechtigungen hatten, war der Rückfall auf `free_tier`
--- im Auflöser, also Zufall statt Absicht.
---
--- Das Produkt wird mit exakt den Berechtigungen von `free_tier` angelegt: Für
--- die drei bestehenden Mandanten ändert sich dadurch nichts — es ist nur nicht
--- länger ein Zufall. Ohne Stripe-Price, weil der Free-Plan nichts kostet.
-INSERT INTO public.products (stripe_price_id, name, default_for_plan_key)
-SELECT '', 'Free Audit (default)', 'free_audit'
-WHERE NOT EXISTS (
-  SELECT 1 FROM public.products WHERE default_for_plan_key = 'free_audit'
-);
 
 INSERT INTO public.product_entitlements (product_id, entitlement_id, value)
 SELECT neu.id, pe.entitlement_id, pe.value

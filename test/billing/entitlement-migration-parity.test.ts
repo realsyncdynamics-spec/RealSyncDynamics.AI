@@ -39,10 +39,10 @@ describe('Scan-Kontingente: Migration gegen shared/pricing.ts', () => {
   it('liest überhaupt Kontingente aus der Migration', () => {
     // Ohne diese Zusicherung wäre ein leeres Ergebnis stillschweigend grün —
     // genau die Sorte Test, die nichts prüft.
-    expect(ausMigration.size).toBe(5);
+    expect(ausMigration.size).toBe(6);
   });
 
-  it.each(['starter', 'growth', 'agency', 'enterprise', 'partner'])(
+  it.each(['free_audit', 'starter', 'growth', 'agency', 'enterprise', 'partner'])(
     'stimmt für %s mit auditReportsPerMonth überein',
     (planKey) => {
       const tier = PLANS.find((t) => t.planKey === planKey);

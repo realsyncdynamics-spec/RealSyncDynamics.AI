@@ -1431,6 +1431,64 @@ export const RUNTIME_PIPELINE: RuntimeStage[] = [
 export const PLAN_ORDER: PlanId[] = ['free', 'starter', 'growth', 'agency', 'enterprise', 'partner'];
 
 /**
+ * Grace Period nach einer fehlgeschlagenen Zahlung, in Tagen.
+ *
+ * Entscheidung des Eigentümers vom 2026-08-24: Innerhalb dieser Frist bleibt
+ * **alles** aktiv — Dashboard, Governance-Funktionen, Monitoring und geplante
+ * Prüfungen. Erst danach werden die kostenpflichtigen Berechtigungen
+ * pausiert. Daten, Konfiguration und Prüfpfad bleiben in jedem Fall erhalten.
+ *
+ * Die Zahl steht zwangsläufig zweimal: hier und als Intervall in
+ * `20260829000000_grace_period.sql`, weil der Auflöser in SQL entscheidet und
+ * die Oberfläche die verbleibenden Tage anzeigt.
+ * `test/billing/grace-period.test.ts` bindet beide aneinander.
+ */
+export const GRACE_PERIOD_DAYS = 7;
+
+/** Status, in denen ein Abo alle Berechtigungen trägt — ohne Fristprüfung. */
+export const SUBSCRIPTION_STATES_ACTIVE = ['active', 'trialing'] as const;
+
+/**
+ * Verbleibende Tage der Grace Period.
+ *
+ * `null` heißt: keine Frist im Gange. Das gilt auch für `past_due` **ohne**
+ * Zeitstempel — fehlt er (Altdaten oder ein Webhook-Ereignis, das nie ankam),
+ * wird daraus keine Sperrung abgeleitet. Eine fehlende Information ist kein
+ * Zahlungsverzug. Dieselbe Regel steht im Auflöser.
+ */
+export function graceDaysRemaining(
+  status: string | null | undefined,
+  pastDueSince: string | Date | null | undefined,
+  now: Date,
+): number | null {
+  if (status !== 'past_due' || !pastDueSince) return null;
+  const beginn = pastDueSince instanceof Date ? pastDueSince : new Date(pastDueSince);
+  if (Number.isNaN(beginn.getTime())) return null;
+  const vergangeneTage = (now.getTime() - beginn.getTime()) / 86_400_000;
+  return Math.max(0, Math.ceil(GRACE_PERIOD_DAYS - vergangeneTage));
+}
+
+/**
+ * Trägt dieses Abo derzeit die bezahlten Berechtigungen?
+ *
+ * Spiegelt `abo_wirksam` aus `20260829000000_grace_period.sql`. Die Oberfläche
+ * darf damit nichts freischalten — das entscheidet der Server. Sie darf damit
+ * nur *anzeigen*, was ohnehin gilt.
+ */
+export function subscriptionGrantsPaidAccess(
+  status: string | null | undefined,
+  pastDueSince: string | Date | null | undefined,
+  now: Date,
+): boolean {
+  if (!status) return false;
+  if ((SUBSCRIPTION_STATES_ACTIVE as readonly string[]).includes(status)) return true;
+  if (status !== 'past_due') return false;
+  if (!pastDueSince) return true; // fehlender Zeitstempel sperrt nicht
+  const verbleibend = graceDaysRemaining(status, pastDueSince, now);
+  return verbleibend === null || verbleibend > 0;
+}
+
+/**
  * Legacy-Plan-Keys aus Bestandsdaten (DB-Zeilen, Stripe-Metadaten, alte
  * Links). Ausschließlich für die Normalisierung eingehender Daten — niemals
  * für neue Ausgaben verwenden.

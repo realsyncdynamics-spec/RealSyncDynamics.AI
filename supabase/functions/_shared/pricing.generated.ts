@@ -263,6 +263,8 @@ export interface PlanLimits {
   bulkJobsPerMonth: number;
   /** API-Schlüssel */
   apiKeys: number;
+  /** Industrielle KI-Systeme (OT) im AI-Act-Inventar (Policy Pack Industrial OT) */
+  industrialOtSystems: number;
 }
 
 /**
@@ -450,6 +452,7 @@ export const PLANS: Plan[] = [
       remediationPlans: 0,
       bulkJobsPerMonth: 0,
       apiKeys: 0,
+      industrialOtSystems: 1,
     },
     channels: [],
     modules: ['dsgvo', 'audit_center', 'compliance_reports'],
@@ -502,6 +505,7 @@ export const PLANS: Plan[] = [
       remediationPlans: 5,
       bulkJobsPerMonth: 0,
       apiKeys: 0,
+      industrialOtSystems: 5,
     },
     channels: ['website'],
     modules: [
@@ -566,6 +570,7 @@ export const PLANS: Plan[] = [
       remediationPlans: 20,
       bulkJobsPerMonth: 0,
       apiKeys: 0,
+      industrialOtSystems: 25,
     },
     channels: ['website', 'whatsapp', 'telegram'],
     modules: [
@@ -631,6 +636,7 @@ export const PLANS: Plan[] = [
       remediationPlans: 100,
       bulkJobsPerMonth: 100,
       apiKeys: 10,
+      industrialOtSystems: 200,
     },
     channels: ALL_CHANNELS,
     modules: [
@@ -709,6 +715,7 @@ export const PLANS: Plan[] = [
       remediationPlans: 500,
       bulkJobsPerMonth: 500,
       apiKeys: 50,
+      industrialOtSystems: -1,
     },
     channels: ALL_CHANNELS,
     modules: [
@@ -792,6 +799,7 @@ export const PLANS: Plan[] = [
       remediationPlans: -1,
       bulkJobsPerMonth: -1,
       apiKeys: -1,
+      industrialOtSystems: -1,
     },
     channels: ALL_CHANNELS,
     modules: [
@@ -890,6 +898,9 @@ export const PLANS: Plan[] = [
       remediationPlans: 0,
       bulkJobsPerMonth: 0,
       apiKeys: 0,
+      // Einmalprodukt außerhalb der Abo-Leiter: bewusst wie Free (1 System),
+      // damit der Einmalkauf die gestaffelten Abo-Kontingente nicht unterläuft.
+      industrialOtSystems: 1,
     },
     channels: ['website'],
     modules: ['dsgvo', 'policy_engine', 'evidence_vault', 'audit_center', 'compliance_reports'],

@@ -1,0 +1,217 @@
+{
+  "pack_id": "industrial_ot",
+  "pack_name": "Industrial OT — EU AI Act Indikatoren",
+  "version": "1.0.0",
+  "legal_basis_version": "VO (EU) 2024/1689 i.d.F. Digital Omnibus, politische Einigung 06./13.05.2026",
+  "legal_status_note": "Fristen nach Digital Omnibus. Formale Verabschiedung zum Stand 08/2026 pruefen. Bei Scheitern gelten die Ursprungsfristen (02.08.2026).",
+  "disclaimer": "Indikatorenbasierte Vorpruefung. Keine Rechtsberatung. Die verbindliche Einstufung setzt eine Pruefung von Zweckbestimmung, Funktion und einschlaegigem Harmonisierungsrecht im Einzelfall voraus.",
+
+  "outcomes": [
+    {
+      "code": "MINIMAL",
+      "label": "Kein Hochrisiko-Indikator",
+      "severity": 0,
+      "meaning": "Keine der geprueften Indikatorbedingungen erfuellt. Allgemeine Pflichten bleiben bestehen."
+    },
+    {
+      "code": "TRANSPARENCY",
+      "label": "Transparenzpflichten pruefen",
+      "severity": 1,
+      "meaning": "Pflichten nach Art. 50 einschlaegig. Anwendbar seit 02.08.2026."
+    },
+    {
+      "code": "HIGH_RISK_CANDIDATE",
+      "label": "Hochrisiko-Indikator — rechtliche Pruefung erforderlich",
+      "severity": 2,
+      "meaning": "Mindestens ein Indikator spricht fuer eine Einstufung als Hochrisiko-System. Die Einstufung selbst wird NICHT automatisch gesetzt."
+    },
+    {
+      "code": "PROHIBITED_CHECK",
+      "label": "Moegliche verbotene Praktik — sofortige Pruefung",
+      "severity": 3,
+      "meaning": "Anhaltspunkt fuer eine nach Art. 5 verbotene Praktik. Verbote gelten seit 02.02.2025 ohne Uebergangsfrist."
+    }
+  ],
+
+  "deadlines": {
+    "prohibitions_art5": "2025-02-02",
+    "ai_literacy_art4": "2025-02-02",
+    "transparency_art50": "2026-08-02",
+    "additional_prohibitions": "2026-12-02",
+    "high_risk_annex_iii": "2027-12-02",
+    "machinery_regulation_2023_1230": "2027-01-20",
+    "high_risk_annex_i": "2028-08-02"
+  },
+
+  "inputs": [
+    { "field": "site", "type": "text", "question": "Standort / Werk" },
+    { "field": "sector", "type": "enum", "question": "Branche", "values": ["hochtemperaturwolle", "glas", "stahl", "chemie", "automotive", "lebensmittel", "sonstige"] },
+    { "field": "asset", "type": "text", "question": "Anlage / Prozessschritt" },
+    { "field": "intervention", "type": "enum", "question": "Was macht die KI?", "values": ["advisory", "operator_confirm", "closed_loop"] },
+    { "field": "safety_function", "type": "tristate", "question": "Uebernimmt das System eine Sicherheitsfunktion?", "values": ["yes", "no", "unclear"] },
+    { "field": "machinery_ce", "type": "tristate", "question": "Ist die Maschine ein Produkt nach Anhang-I-Harmonisierungsrecht (CE / Maschinenverordnung)?", "values": ["yes", "no", "unclear"] },
+    { "field": "critical_infra", "type": "enum", "question": "Steuert oder sichert das System oeffentliche Versorgung?", "values": ["none", "strom", "gas", "waerme", "wasser", "verkehr", "digitale_infrastruktur"], "hint": "Nur oeffentliche Versorgungsnetze. Werksinternes Energiemanagement zaehlt NICHT." },
+    { "field": "learning", "type": "enum", "question": "Lernverhalten im Betrieb", "values": ["static", "ml_offline_update", "self_evolving_online"], "conditional_on": "safety_function != no" },
+    { "field": "worker_monitoring", "type": "enum", "question": "Werden Beschaeftigte erfasst oder bewertet?", "values": ["none", "performance", "behaviour_safety", "emotion"] },
+    { "field": "human_interaction", "type": "boolean", "question": "Interagiert das System direkt mit Menschen (Chat, Sprache, Assistenz)?" },
+    { "field": "generates_content", "type": "boolean", "question": "Erzeugt das System Bild-, Audio-, Video- oder Textinhalte?", "conditional_on": "human_interaction == true" }
+  ],
+
+  "indicators": [
+    {
+      "id": "OT-01",
+      "title": "Sicherheitsbauteil in reguliertem Produkt",
+      "when": "machinery_ce == 'yes' && safety_function == 'yes'",
+      "outcome": "HIGH_RISK_CANDIDATE",
+      "legal_basis": "Art. 6 Abs. 1 lit. a VO (EU) 2024/1689 i.V.m. Anhang I",
+      "open_question": "Ist fuer das Produkt eine Konformitaetsbewertung durch Dritte nach dem einschlaegigen Anhang-I-Rechtsakt vorgeschrieben (Art. 6 Abs. 1 lit. b)? Nur dann greift die Hochrisiko-Einstufung.",
+      "measures": [
+        "Einschlaegigen Anhang-I-Rechtsakt benennen und dokumentieren",
+        "Pruefen, ob Selbstbewertung genuegt oder eine Benannte Stelle einzubinden ist",
+        "Zweckbestimmung des KI-Systems schriftlich fixieren"
+      ],
+      "deadline_ref": "high_risk_annex_i"
+    },
+    {
+      "id": "OT-02",
+      "title": "Selbstlernendes Sicherheitsbauteil — Benannte Stelle zwingend",
+      "when": "machinery_ce == 'yes' && safety_function == 'yes' && learning == 'self_evolving_online'",
+      "outcome": "HIGH_RISK_CANDIDATE",
+      "severity_boost": true,
+      "legal_basis": "Anhang I Teil A VO (EU) 2023/1230 (Sicherheitsbauteile mit ganz oder teilweise selbstentwickelndem Verhalten durch maschinelles Lernen) i.V.m. Art. 6 Abs. 1 lit. b VO (EU) 2024/1689",
+      "open_question": "Diese Kategorie ist von der Selbstbewertung ausgenommen. Bestaetigen, dass eine Benannte Stelle eingebunden wird — daraus folgt regelmaessig die Hochrisiko-Einstufung nach Art. 6 Abs. 1.",
+      "measures": [
+        "Benannte Stelle identifizieren und Zeitplan bis 20.01.2027 aufsetzen",
+        "Technische Dokumentation nach Anhang IV vorbereiten",
+        "Risikomanagementsystem nach Art. 9 aufsetzen",
+        "Menschliche Aufsicht nach Art. 14 spezifizieren"
+      ],
+      "deadline_ref": "machinery_regulation_2023_1230"
+    },
+    {
+      "id": "OT-03",
+      "title": "Kritische Infrastruktur",
+      "when": "critical_infra != 'none' && safety_function != 'no'",
+      "outcome": "HIGH_RISK_CANDIDATE",
+      "legal_basis": "Anhang III Nr. 2 VO (EU) 2024/1689",
+      "open_question": "Betrifft das System die Verwaltung oder den Betrieb oeffentlicher Versorgung — oder ausschliesslich werksinterne Prozesse? Werksinterne Energie- oder Medienversorgung faellt nicht unter Anhang III Nr. 2.",
+      "measures": [
+        "Abgrenzung werksintern / oeffentliche Versorgung dokumentieren",
+        "Ausnahme nach Art. 6 Abs. 3 pruefen (eng begrenzte Aufgabe, kein wesentlicher Entscheidungseinfluss) und Ergebnis nach Art. 6 Abs. 4 dokumentieren",
+        "Parallel NIS2-Betroffenheit pruefen"
+      ],
+      "deadline_ref": "high_risk_annex_iii"
+    },
+    {
+      "id": "OT-04",
+      "title": "Bewertung oder Ueberwachung von Beschaeftigten",
+      "when": "worker_monitoring == 'performance' || worker_monitoring == 'behaviour_safety'",
+      "outcome": "HIGH_RISK_CANDIDATE",
+      "legal_basis": "Anhang III Nr. 4 lit. b VO (EU) 2024/1689; ergaenzend Art. 88 DSGVO, § 26 BDSG, § 87 Abs. 1 Nr. 6 BetrVG",
+      "open_question": "Werden individuelle Leistungen oder individuelles Verhalten bewertet — oder ausschliesslich anonymisierte Aggregate auf Anlagenebene?",
+      "measures": [
+        "Mitbestimmung des Betriebsrats einholen (technische Einrichtung zur Verhaltens- oder Leistungskontrolle)",
+        "DSFA nach Art. 35 DSGVO durchfuehren",
+        "Anonymisierung auf Anlagenebene als Alternative pruefen",
+        "Betroffeneninformation nach Art. 13 DSGVO ergaenzen"
+      ],
+      "deadline_ref": "high_risk_annex_iii"
+    },
+    {
+      "id": "OT-05",
+      "title": "Emotionserkennung am Arbeitsplatz",
+      "when": "worker_monitoring == 'emotion'",
+      "outcome": "PROHIBITED_CHECK",
+      "legal_basis": "Art. 5 Abs. 1 lit. f VO (EU) 2024/1689 — verboten seit 02.02.2025",
+      "open_question": "Greift die Ausnahme aus medizinischen oder Sicherheitsgruenden (z. B. Muedigkeitserkennung zum Schutz des Bedieners)? Die Ausnahme ist eng auszulegen und muss belegt werden.",
+      "measures": [
+        "System bis zur Klaerung nicht produktiv betreiben",
+        "Zweckbestimmung und Sicherheitsbegruendung schriftlich belegen",
+        "Externe rechtliche Pruefung veranlassen"
+      ],
+      "deadline_ref": "prohibitions_art5",
+      "escalate": true
+    },
+    {
+      "id": "OT-06",
+      "title": "Direkte Interaktion mit Menschen",
+      "when": "human_interaction == true",
+      "outcome": "TRANSPARENCY",
+      "legal_basis": "Art. 50 Abs. 1 VO (EU) 2024/1689 — anwendbar seit 02.08.2026",
+      "open_question": "Ist fuer eine verstaendige Person ohne Hinweis erkennbar, dass sie mit einem KI-System interagiert?",
+      "measures": [
+        "Hinweis auf KI-Interaktion an der Oberflaeche einblenden",
+        "Hinweistext in die Bedienerdokumentation aufnehmen",
+        "Nachweis der Umsetzung in den Evidence Vault legen"
+      ],
+      "deadline_ref": "transparency_art50"
+    },
+    {
+      "id": "OT-07",
+      "title": "Erzeugung synthetischer Inhalte",
+      "when": "generates_content == true",
+      "outcome": "TRANSPARENCY",
+      "legal_basis": "Art. 50 Abs. 2 VO (EU) 2024/1689",
+      "open_question": "Sind die Ausgaben maschinenlesbar als KI-erzeugt gekennzeichnet?",
+      "measures": [
+        "Maschinenlesbare Kennzeichnung implementieren (C2PA Content Credentials)",
+        "Kennzeichnung in die Ausgabepipeline aufnehmen"
+      ],
+      "deadline_ref": "transparency_art50"
+    },
+    {
+      "id": "OT-08",
+      "title": "Regeleingriff ohne Sicherheitsfunktion",
+      "when": "intervention == 'closed_loop' && safety_function == 'no' && machinery_ce == 'no' && critical_infra == 'none'",
+      "outcome": "MINIMAL",
+      "legal_basis": "Kein Tatbestand nach Art. 6 oder Anhang III erfuellt",
+      "open_question": null,
+      "measures": [
+        "Negativfeststellung mit Begruendung dokumentieren",
+        "Aenderungsanlass definieren: erneute Pruefung bei Zweckaenderung oder Anlagenumbau"
+      ],
+      "deadline_ref": null
+    },
+    {
+      "id": "OT-09",
+      "title": "Offene Angabe im Fragebogen",
+      "when": "safety_function == 'unclear' || machinery_ce == 'unclear'",
+      "outcome": "HIGH_RISK_CANDIDATE",
+      "legal_basis": "Vorsorgliche Einordnung. Keine Rechtsgrundlage, sondern Pruefauftrag.",
+      "open_question": "Unklare Angabe. Bis zur Klaerung wird konservativ eingeordnet.",
+      "measures": [
+        "Verantwortlichen benennen",
+        "Frist zur Klaerung setzen",
+        "Betriebsanleitung und CE-Konformitaetserklaerung der Maschine heranziehen"
+      ],
+      "deadline_ref": null
+    },
+    {
+      "id": "OT-10",
+      "title": "KI-Kompetenz",
+      "when": "always",
+      "outcome": "MINIMAL",
+      "legal_basis": "Art. 4 VO (EU) 2024/1689 — anwendbar seit 02.02.2025",
+      "open_question": null,
+      "measures": [
+        "Schulungsstand der Bediener und Instandhalter dokumentieren",
+        "Rollenbezogenes Schulungsniveau festlegen"
+      ],
+      "deadline_ref": "ai_literacy_art4"
+    }
+  ],
+
+  "aggregation": {
+    "rule": "Das Gesamtergebnis ist das Outcome mit der hoechsten severity unter allen ausgeloesten Indikatoren.",
+    "never_auto_classify": true,
+    "note": "Es wird ausschliesslich HIGH_RISK_CANDIDATE gesetzt, nie HIGH_RISK. Die verbindliche Einstufung erfolgt durch den Anbieter bzw. dessen rechtliche Pruefung."
+  },
+
+  "evidence": {
+    "entry_type": "ai_act_classification",
+    "fields": ["system_id", "pack_id", "pack_version", "answers", "answers_sha256", "triggered_indicators", "outcome", "legal_basis_version", "evaluated_at", "evaluated_by"],
+    "hash_chain": true,
+    "retention_years": 10,
+    "retention_basis": "Art. 18 VO (EU) 2024/1689 — Aufbewahrung technischer Dokumentation"
+  }
+}

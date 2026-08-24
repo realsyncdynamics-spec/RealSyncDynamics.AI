@@ -4,7 +4,7 @@ name: Function ACL Drift Guard
 # (Out-of-Band-Bulk-REVOKE, "permission denied for function is_tenant_member"
 # auf /welcome) blieb unsichtbar, weil Migrations- und Function-Existenz-Drift
 # gedeckt waren, die EXECUTE-Grants aber niemand pruefte.
-# Kontext: CLAUDE.md §5 (ACL-Vorfall 2026-08-23), Migration 20260826000000.
+# Kontext: CLAUDE.md §5 (ACL-Vorfall 2026-08-23), Migration 20260826000001.
 
 on:
   schedule:

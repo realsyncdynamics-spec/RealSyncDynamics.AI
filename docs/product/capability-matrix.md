@@ -163,3 +163,69 @@ Zielbild ist damit Verdrahtungsarbeit an bestehenden Bausteinen.
 Keine Preise geändert, keine Pläne entfernt, kein Code angefasst. Diese
 Datei ist Messung und Landkarte — die Entscheidungen aus §3 (insbesondere
 2, 5, 6, 8) liegen beim Eigentümer.
+
+---
+
+## 5. Abgleich nach AP2 (Nachtrag vom 2026-08-24)
+
+Die Matrix oben ist am 2026-08-23 erhoben worden, also **vor** AP1 und AP2.
+Die Spalte „Plan ab" liest dort aus `plan.modules`. Genau diese Quelle hat
+AP1 als nicht maßgeblich entlarvt und AP2 mit der Datenbank in Deckung
+gebracht. Der Abgleich steht deshalb hier — die Matrix selbst bleibt als
+Messung ihres Datums erhalten, damit nachvollziehbar bleibt, was sich
+wodurch verschoben hat.
+
+**Methode**: `planGrants()` über `PLAN_ORDER`, einmal über alle Ränge und
+einmal nur über die seit AP2 wählbaren Pläne. Quelle ist der Stand nach
+Migration `20260831010000`, gegen eine echte PostgreSQL geprüft.
+
+| Modul (Matrix §1) | Matrix sagt „Plan ab" | gemessen nach AP2 | Art der Abweichung |
+|---|---|---|---|
+| Website Chatbot | starter (`ai_bots`, `website_chat`) | **starter** | **Claim jetzt gedeckt.** Vorher stand er nur in `plan.modules`; `bots.enabled`/`bots.chat` fehlten Starter, die Runtime verweigerte ihn. AP2 hat die Berechtigung nachgezogen. |
+| Telefon-Agent (Voice) | agency (`voice`) | Plan: **enterprise** · Add-on „Voice" ab **growth** | Verschoben, weil Agency stillgelegt ist. Ein Vorschlag „ab Agency" führte in eine Sackgasse. |
+| WhatsApp Bot | Kanal ab growth · Add-on `whatsapp` (growth+) | Kanal ab **growth** · Add-on **nur starter** | Add-on-Zuordnung korrigiert: Es war für den einzigen Plan *ohne* WhatsApp nicht buchbar. |
+| Terminbuchung | „in keinem `plan.modules`" | **growth** (`bots.appointments`) | Der Key existiert seit Juni; nur `plan.modules` kannte ihn nicht. AP1 hat `unlocks` korrigiert. |
+| Policies | free/starter · agency+ (NIS2, TISAX) · enterprise (DORA) | `policy.packs` ab **starter** · `policy.iso27001` ab **growth** · `policy.nis2` ab **enterprise** | `policy.packs` ist neu auf Starter (AP2). NIS2 rückt nach oben, weil Agency entfällt. |
+| API / Webhooks | agency (`api`, `webhooks`) | **growth** | Durch AP2 verschoben — Agencys exklusive Fähigkeiten brauchten ein Zuhause. Dasselbe gilt für `scheduler.enabled`, `bulk.jobs`, `c2pa.export`, `provenance.advanced`, `evidence.advanced`. |
+| Monitoring | starter (`monitoring`) | **starter** (`monitoring.monthly`), täglich ab growth | unverändert |
+| Evidence | starter (`evidence_vault`) | Basis ab **free**, erweitert ab **growth** | ergänzt: `evidence.advanced` ist neu auf Growth |
+
+Nicht verschoben und hier nur zur Vollständigkeit: `sso.enabled` und
+`org.governance` bleiben Enterprise, `whitelabel.reports` ist Add-on
+(„White Label", ab Growth buchbar).
+
+### 5.1 Die Plan-Leiter im Kopf dieser Datei
+
+Der Verweis „`PLANS` (free → starter → growth → agency → enterprise →
+partner)" beschreibt weiterhin korrekt die **Ränge**. Die **Verkaufsleiter**
+ist seit AP2 eine andere:
+
+```
+free  →  starter  →  growth  →  enterprise (Vertrag)
+                     agency, partner: Legacy, nur Bestandskunden
+```
+
+Wer eine „Plan ab"-Angabe für den Verkauf braucht, muss die zweite Zeile
+lesen. Ausführlich: `docs/product/ap2-paketumbau.md`.
+
+### 5.2 Zwei Befunde, die dieser Abgleich offenlässt
+
+**`/realsync-landing` ist eine zweite Preisquelle.** Die Seite führt fünf
+Plan-Karten mit hart codierten Beträgen im JSX, inklusive Agency und
+Partner. Sie bezieht nichts aus `shared/pricing.ts` und ist seit AP2
+sachlich falsch. Das ist derselbe Befund wie bei `/pricing/whatsapp`
+(`zielzustand-paketmodell.md` §3.2) und derselbe Verstoß gegen
+`CLAUDE.md` §6. **Die Aufgabe heißt nicht „Landingpage anpassen", sondern:
+jeder öffentliche Preis-Konsument bezieht aus der kanonischen Quelle.**
+Solange das offen ist, kann AP2 die Drift nur an den Stellen beseitigen, die
+bereits ableiten.
+
+**Partner verspricht SSO, bekommt es aber nicht.** `permissions.sso` ist auf
+Partner `true`, `sso.enabled` liegt in der Datenbank nur auf Enterprise. Ein
+Claims-vs-Runtime-Widerspruch, älter als AP2. **Bewusst nicht repariert**:
+Die naheliegende Antwort („dann bekommt Partner eben SSO") wäre eine
+Produktentscheidung, und Partner ist seit AP2 stillgelegt. Möglicherweise
+ist die richtige Auflösung, den Claim zu streichen statt eine Fähigkeit zu
+vergeben. Das gehört entschieden, nicht nebenbei behoben. Festgehalten als
+Testfall in `test/billing/ap2-package-model.test.ts` — fällt er, ist die
+Lücke geschlossen worden und der Fall gehört wieder in die reguläre Prüfung.

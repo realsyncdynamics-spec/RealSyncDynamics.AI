@@ -423,18 +423,46 @@ umbenannt werden.
 
 ---
 
-## AP10 — `/pricing/whatsapp` entkoppeln
+## AP10 — Alle öffentlichen Preis-Konsumenten auf die kanonische Quelle
 
-**Ziel:** Keine Preise in React-Komponenten (CLAUDE.md §6, Auftrag §4).
+> **Umfang neu gefasst am 2026-08-24** auf ausdrückliche Anweisung des
+> Eigentümers nach dem AP2-Abgleich: „AP10 sollte nicht nur ‚Landing Page
+> anpassen' heißen. Sondern: Alle öffentlichen Pricing-Konsumenten müssen
+> dieselbe kanonische Pricing-Quelle verwenden."
+>
+> Der Grund ist nicht Kosmetik. Solange eine Seite ihre Beträge selbst
+> führt, existieren zwei Preisquellen nebeneinander — genau die Drift, die
+> AP1 und AP2 beseitigen sollten. Eine Preisänderung in
+> `shared/pricing.ts` erreicht sie nicht, und niemand merkt es, weil kein
+> Test die Seite gegen die Quelle hält.
 
-- die vier hartkodierten Tarife durch die Quelle ersetzen
-- die **1249 €** streichen (Entscheidung 5); Enterprise verweist auf
-  `/contact-sales`
-- den lokalen `ADDONS`-Block der Seite durch die Quelle ersetzen
+**Ziel:** Keine Preise in React-Komponenten (CLAUDE.md §6, Auftrag §4) —
+und ein Guard, der das hält.
+
+**Bekannte Fundstellen** (Stand 2026-08-24, beide gemessen):
+
+1. **`/pricing/whatsapp`** (`src/pages/WhatsAppPricingPage.tsx`)
+   - die vier hartkodierten Tarife durch die Quelle ersetzen
+   - die **1249 €** streichen (Entscheidung 5); Enterprise verweist auf
+     `/contact-sales`
+   - den lokalen `ADDONS`-Block der Seite durch die Quelle ersetzen
+2. **`/realsync-landing`** (`src/marketing/landing/RealSyncDynamicsLanding.tsx`)
+   - fünf Plan-Karten mit hart codierten Beträgen im JSX, **inklusive
+     Agency und Partner** — seit AP2 sachlich falsch
+   - Karten aus `SELLABLE_PRICING_TIERS` erzeugen statt einzeln zu schreiben
+
+**Vor der Umsetzung**: Erst suchen, dann bauen. Die beiden Fundstellen sind
+gemessen, nicht bewiesen vollständig — eine Suche nach Beträgen in `src/`
+gehört an den Anfang, sonst bleibt die dritte Seite unentdeckt.
+
+**Danach**: ein Guard, der eine neue hart codierte Preisangabe in `src/`
+findet, damit die Bereinigung hält. Ohne ihn ist AP10 in drei Monaten
+wieder fällig.
 
 **Achtung:** Das ist eine Änderung an bestehendem, öffentlich sichtbarem Text
-und Preis. Sie ist durch Entscheidung 1 und 5 gedeckt, wird aber im Diff
-ausdrücklich ausgewiesen.
+und Preis, bei `/realsync-landing` zusätzlich am Layout (§10.1). Durch
+Entscheidung 1 und 5 ist der Preisteil gedeckt; der Layout-Teil braucht eine
+eigene Antwort.
 
 ---
 

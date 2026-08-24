@@ -207,21 +207,62 @@ wäre nach `CLAUDE.md` §10.3 fragepflichtig.
 
 ---
 
-## 7. Was AP2 bewusst **nicht** angefasst hat
+## 7. Die Oberfläche — eigens freigegeben
 
-Die Oberfläche listet die Pläne an vier Stellen über `PUBLIC_PRICING_TIERS`,
-jeweils in einem `lg:grid-cols-5`, und `PricingTeaserSection` trägt die
-Überschrift „Free Audit · Starter · Growth · Agency · Enterprise · Partner".
+Die Raster und die Teaser-Überschrift fielen unter `CLAUDE.md` §10.1
+(Grid, gesperrt) bzw. §10.3 (Text, fragepflichtig) und waren deshalb nicht
+von der AP2-Freigabe gedeckt. Der Eigentümer hat sie am 2026-08-24 einzeln
+freigegeben:
 
-Beides ist eine Änderung an Bestehendem: das Grid nach `CLAUDE.md` §10.1
-(gesperrt), die Überschrift nach §10.3 (fragepflichtig). Die Datenschicht ist
-vollständig umgestellt und autorisiert korrekt; die Preisseite zeigt bis zu
-einer Entscheidung weiterhin fünf Karten.
+| Frage | Antwort |
+|---|---|
+| Raster von fünf auf drei Spalten (`lg:grid-cols-5` → `lg:grid-cols-3`) | **Ja** |
+| Teaser-Überschrift ohne Agency und Partner | **Ja** |
+| Agency und Partner ganz aus dem Verkauf nehmen (statt „nicht mehr verfügbar" anzuzeigen) | **Ja** |
 
-**Das ist kein halber Umbau, sondern die Trennlinie der Freigabe.** Wer sie
-auflöst, braucht dafür eine eigene Antwort — und dann sind es zwei
-Änderungen: `lg:grid-cols-5` → `lg:grid-cols-3` und die Überschrift ohne
-Agency und Partner.
+Umgesetzt — und **nur** das. Kartengröße, Farben, Typografie, Abstände,
+Icon-Set und Sektionsreihenfolge sind unberührt.
+
+### 7.1 Zwei Listen statt einer
+
+Der Kern der Umstellung ist eine Trennung, die es vorher nicht gab:
+
+| Liste | beantwortet | enthält |
+|---|---|---|
+| `PUBLIC_PRICING_TIERS` | „welche Ränge gibt es?" | Starter, Growth, Agency, Enterprise, Partner |
+| `SELLABLE_PRICING_TIERS` | „was kann man heute kaufen?" | Starter, Growth, Enterprise |
+
+`PUBLIC_PRICING_TIERS` bleibt vollständig. Fielen Agency und Partner dort
+heraus, gäbe `PlanUpgradeModal` einem Bestandskunden falsche
+Upgrade-Antworten und `BillingView` zeigte statt seines Plannamens
+„(historisch)". Auf der Ebene der Pläne gilt dasselbe: `SALES_PLANS` für
+Anzeige, `ORDERED_PLANS` für Ränge.
+
+### 7.2 Was umgestellt wurde
+
+| Datei | Änderung |
+|---|---|
+| `PricingPage` | drei Karten, `lg:grid-cols-3` |
+| `PricingTeaserSection` | drei Karten, Überschrift „Free Audit · Starter · Growth · Enterprise" |
+| `RuntimeActivationSection`, `PlanSelector`, `GovernanceBotsSection` | drei Karten |
+| `BillingView` | buchbare Pläne = `SELLABLE_PRICING_TIERS`; der *aktuelle* Plan weiterhin über `planByKey()` |
+| `PlanUpgradeModal` | Auswahl aus `SELLABLE_PRICING_TIERS`, Rangvergleich weiterhin über `PUBLIC_PRICING_TIERS` |
+| `CostCalculator`, `WebsiteTransformationFlow` | keine Empfehlung mehr auf einen stillgelegten Plan |
+| `GovernanceModuleMatrix`, `PlanFeatureGroups`, `Faq` | Spalten aus `SALES_PLANS` |
+| `UnifiedPricingGrid` | mitgezogen, obwohl ohne Aufrufer (siehe §6) |
+
+### 7.3 Eine Seite, die dabei nicht mitkommt
+
+`/realsync-landing` (`src/marketing/landing/RealSyncDynamicsLanding.tsx`)
+führt **fünf Plan-Karten mit hart codierten Preisen im JSX** — inklusive
+Agency und Partner. Sie bezieht nichts aus der Quelle und ist damit seit AP2
+sachlich falsch.
+
+Nicht angefasst: Das ist kein Nachziehen einer Liste, sondern ein Umbau der
+Seite auf die SSoT, und ihr Layout fällt unter §10.1. Derselbe Befund wie bei
+`/pricing/whatsapp` (`zielzustand-paketmodell.md` §3.2) und derselbe Verstoß
+gegen `CLAUDE.md` §6: Preise gehören nicht in eine React-Komponente. Gehört
+zusammen mit AP10 erledigt.
 
 ---
 

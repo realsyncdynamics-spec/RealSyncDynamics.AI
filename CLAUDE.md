@@ -645,12 +645,33 @@ Zwei Änderungen an bereits Sichtbarem sind darin enthalten und damit gedeckt:
 
 Alles Übrige ist Datenschicht: Entitlements, Katalog, Berechtigungen.
 
-**Ausdrücklich NICHT freigegeben und deshalb unverändert geblieben**: die
-Preisseite selbst. Sie zeigt weiterhin fünf Karten in `lg:grid-cols-5`, und
-`PricingTeaserSection` trägt weiterhin die Überschrift „Free Audit · Starter ·
-Growth · Agency · Enterprise · Partner". Das Grid fällt unter §10.1
-(gesperrt), die Überschrift unter §10.3 (fragepflichtig). Hintergrund:
-`docs/product/ap2-paketumbau.md` §7.
+**2026-08-24 (2) — Preisseite auf drei Stufen**
+
+Auf die Fragepflicht nach §10.1 (Grid) und §10.3 (Text) hat der Eigentümer
+mit drei ausdrücklichen **Ja** geantwortet:
+
+| Frage | Antwort |
+|---|---|
+| 1. Raster von fünf auf drei Spalten (`lg:grid-cols-5` → `lg:grid-cols-3`) | **Ja** |
+| 2. Teaser-Überschrift ohne Agency und Partner | **Ja** |
+| 3. Agency und Partner ganz aus dem Verkauf nehmen | **Ja** |
+
+Umfang — und **nur** dieser:
+
+| Was | Vorher | Nachher |
+|---|---|---|
+| Spaltenzahl in `PricingPage`, `PricingTeaserSection`, `RuntimeActivationSection`, `PlanSelector`, `GovernanceBotsSection`, `BillingView`, `UnifiedPricingGrid` | `lg:grid-cols-5` | `lg:grid-cols-3` |
+| Überschrift `PricingTeaserSection` | „Free Audit · Starter · Growth · Agency · Enterprise · Partner" | „Free Audit · Starter · Growth · Enterprise" |
+| Anzeige-Listen | `PUBLIC_PRICING_TIERS` / `ORDERED_PLANS` | `SELLABLE_PRICING_TIERS` / `SALES_PLANS` |
+
+Kartengröße, Farben, Typografie, Abstände, Icon-Set und Sektionsreihenfolge
+sind unberührt. Rangvergleiche (`PlanUpgradeModal`, `planRank()`) laufen
+weiterhin über die vollständige Leiter — sonst bekäme ein Bestandskunde auf
+Agency falsche Antworten. Hintergrund: `docs/product/ap2-paketumbau.md` §7.
+
+**Weiterhin offen**: `/realsync-landing` führt fünf Plan-Karten mit hart
+codierten Preisen im JSX, inklusive Agency und Partner. Umbau auf die Quelle
+ist ein eigener Schritt (§10.1) und gehört zu AP10.
 
 #### Faustregel
 

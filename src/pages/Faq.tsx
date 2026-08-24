@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, HelpCircle, Plus, Minus } from 'lucide-react';
-import { ORDERED_PLANS, formatLimit } from '@/shared/pricing';
+import { SALES_PLANS, formatLimit } from '@/shared/pricing';
 
 type Item = { q: string; a: React.ReactNode; tag: 'DSGVO' | 'AI Act' | 'Pricing' | 'Technik' | 'Migration' };
 
@@ -121,7 +121,7 @@ const ITEMS: Item[] = [
         </p>
         {/* Kontingente kommen aus der Pricing-SSoT — keine gepflegten Zahlen. */}
         <ul className="list-disc pl-5 space-y-1 mt-2">
-          {ORDERED_PLANS.filter((plan) => plan.limits.bots > 0).map((plan) => (
+          {SALES_PLANS.filter((plan) => plan.limits.bots > 0).map((plan) => (
             <li key={plan.id}>
               <strong className="text-titanium-50">{plan.name}</strong>
               {' — bis '}{formatLimit(plan.limits.bots)}{' Bots · '}
@@ -147,7 +147,7 @@ const ITEMS: Item[] = [
         </p>
         <ul className="list-disc pl-5 space-y-1 mt-2">
           <li>
-            {ORDERED_PLANS.map((plan, i) => (
+            {SALES_PLANS.map((plan, i) => (
               <span key={plan.id}>
                 {i > 0 && ' · '}
                 <strong className="text-titanium-50">{plan.name}</strong>
@@ -213,7 +213,7 @@ const ITEMS: Item[] = [
         <ul className="list-disc pl-5 space-y-1 mt-2">
           <li>
             {'Kontingent: '}
-            {ORDERED_PLANS.filter((plan) => plan.limits.bulkJobsPerMonth !== 0).map((plan, i) => (
+            {SALES_PLANS.filter((plan) => plan.limits.bulkJobsPerMonth !== 0).map((plan, i) => (
               <span key={plan.id}>
                 {i > 0 && ' · '}
                 <strong className="text-titanium-50">{plan.name}</strong>

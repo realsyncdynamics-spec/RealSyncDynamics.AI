@@ -35,6 +35,12 @@ import {
   type PolicyRow,
 } from '../_shared/policyEngine.ts';
 import {
+  buildSnapshot,
+  evaluateSnapshot,
+  toLegacyGovAction,
+  type GovernancePolicyRowInput,
+} from '../_shared/pdp/core.ts';
+import {
   detectFormat,
   formatPayload,
   type WebhookEnvelope,
@@ -208,6 +214,11 @@ Deno.serve(async (req) => {
       policiesForEval,
     );
   });
+
+  // ─── PDP-v2-Shadow (Plan P0-5) ─────────────────────────────────────────
+  // v2 rechnet auf DENSELBEN geladenen Policy-Zeilen mit; Divergenzen landen
+  // in pdp_shadow_log. Entscheidet weiterhin ausschliesslich die Alt-Engine.
+  await runPdpShadow(admin, keyRow.tenant_id, policiesForEval, items, assetsById, decisions);
 
   // Stamp policy_id + policy_action from the engine's decision when one matches;
   // otherwise leave caller-supplied hint values intact.
@@ -540,3 +551,65 @@ function uniq<T>(arr: T[]): T[] {
   return Array.from(new Set(arr));
 }
 
+
+// ─── PDP-v2-Shadow-Helfer (Plan P0-5) ────────────────────────────────────────
+// Batch-Variante: ein Snapshot, N Auswertungen, EIN Insert. Eigener
+// try/catch — der Shadow-Mode darf den Ingest-Pfad nie beeinflussen.
+async function runPdpShadow(
+  // deno-lint-ignore no-explicit-any
+  admin: any,
+  tenantId: string,
+  policiesForEval: PolicyRow[],
+  items: IngestItem[],
+  assetsById: Map<string, AssetForEval>,
+  decisions: Array<PolicyDecision | null>,
+): Promise<void> {
+  try {
+    const snapshot = buildSnapshot(
+      tenantId,
+      [],
+      policiesForEval as unknown as GovernancePolicyRowInput[],
+    );
+    const rows = items.map((i, idx) => {
+      const asset = i.event.asset_id ? assetsById.get(i.event.asset_id) ?? null : null;
+      const result = evaluateSnapshot(snapshot, {
+        contract: 'v1',
+        tenant_id: tenantId,
+        action: {
+          verb: 'ingest',
+          channel: 'governance_ingest',
+          event_type: i.event.event_type,
+          event_source: i.event.event_source,
+        },
+        target: { vendor: i.event.vendor ?? undefined, model: i.event.model_name ?? undefined },
+        data: { data_types: i.event.data_types ?? [], risk_level: i.event.risk_level ?? 'info' },
+        asset: asset
+          ? { id: asset.id, asset_type: asset.asset_type, ai_act_class: asset.ai_act_class }
+          : undefined,
+        payload: i.event.payload ?? {},
+      });
+      const legacy = decisions[idx]?.action ?? null;
+      const v2 = toLegacyGovAction(result);
+      return {
+        tenant_id: tenantId,
+        source: 'governance-ingest',
+        legacy_status: legacy,
+        v2_status: v2,
+        diverged: legacy !== v2,
+        snapshot_version: snapshot.version,
+        detail: {
+          legacy_policy: decisions[idx]?.policy_id ?? null,
+          v2_policy: result.primary_policy_id,
+          event_type: i.event.event_type,
+          event_source: i.event.event_source,
+        },
+      };
+    });
+    if (rows.length > 0) {
+      const { error } = await admin.from('pdp_shadow_log').insert(rows);
+      if (error) console.error('[governance-ingest] pdp shadow insert failed', error.message);
+    }
+  } catch (e) {
+    console.error('[governance-ingest] pdp shadow failed', e);
+  }
+}

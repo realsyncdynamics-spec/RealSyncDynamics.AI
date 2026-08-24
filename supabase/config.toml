@@ -86,6 +86,11 @@ verify_jwt = false
 [functions.governance-ingest]
 verify_jwt = false
 
+# governance-decide: PDP-Endpunkt, API-Key-Auth (rsd_gov_) wie governance-ingest —
+# externe PEPs (SDK-Preflight, CI-Gates) haben kein Supabase-JWT.
+[functions.governance-decide]
+verify_jwt = false
+
 [functions.security-signal-ingest]
 verify_jwt = false
 

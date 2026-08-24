@@ -4,7 +4,6 @@ import { useSupabaseAuth } from '../../features/supabase/SupabaseAuthContext';
 import { useTenant } from '../../core/access/TenantProvider';
 import { postEdgeFunction } from '../../lib/edgeFunction';
 import { isEdgeFunctionInProduction } from '../../config/production-edge-functions';
-import { claimPendingScan } from '../../lib/scanClaim';
 
 /**
  * Die beiden Functions, die diesen Schritt tragen.
@@ -43,19 +42,13 @@ export function PostRegisterOnboardingPage() {
   const [error, setError] = useState('');
   const [searchParams] = useSearchParams();
 
-  // Übernahme des kostenlosen Scans, sobald ein Konto besteht.
-  //
-  // Bewusst hier und nicht im Absenden-Pfad: Der Mandant existiert bereits
-  // mit der Registrierung, und die Zuordnung soll auch dann gelingen, wenn
-  // der Nutzer die Branchenfragen abbricht. Der Aufruf blockiert nichts und
-  // meldet nichts — schlägt er fehl, bleibt das Konto unberührt und der Scan
-  // in der Sitzung, wo ihn ein späterer Versuch noch einlösen kann.
-  const claimVersucht = useRef(false);
-  useEffect(() => {
-    if (!user || claimVersucht.current) return;
-    claimVersucht.current = true;
-    void claimPendingScan(searchParams.get('scan'));
-  }, [user, searchParams]);
+  // Hier stand die Übernahme des kostenlosen Scans. Sie hing am Datensatz
+  // `public_site_scans`, der mit dem Schnitt von PR #1129 entfallen ist:
+  // kanonisch ist `gdpr_audits` (docs/product/canonical-funnel-decision.md).
+  // Die Stelle bleibt die richtige — der Mandant existiert bereits mit der
+  // Registrierung, und die Zuordnung soll auch gelingen, wenn der Nutzer die
+  // Branchenfragen abbricht. Der Claim-Writer gegen `gdpr_audits` kommt in
+  // P0-B (docs/architecture/canonical-builder-target-matrix.md §7).
 
   if (!user) {
     navigate('/unified-entry/register');

@@ -21,9 +21,6 @@ import { DemoTourProvider } from './core/demo/DemoTourContext';
 // ── Public entry: Governance-OS Workspace Preview (replaces Marketing Landing on /)
 // ── Public entry: MainLanding (Unternehmenshauptseite, Earth-at-Night) auf /
 import { MainLanding } from './pages/MainLanding';
-// ── Öffentlicher Scan-Trichter (/scan, /scan/ergebnis)
-import { PublicScanPage } from './pages/PublicScanPage';
-import { PublicScanResultPage } from './pages/PublicScanResultPage';
 // ── Product Entry Points (/scan/start, /chatbot/start, /phonebot/start)
 import { ScanStartPage } from './pages/product-entry-points/ScanStartPage';
 import { ChatbotStartPage } from './pages/product-entry-points/ChatbotStartPage';
@@ -483,13 +480,11 @@ function RoutesWithTracking() {
           die Marketing-Landing bleibt unter /landing erreichbar. */}
       <Route path="/" element={<MainLanding />} />
 
-      {/* Öffentlicher Scan-Trichter: Startseite → Scan → Ergebnis → Konto.
-          Eager importiert wie jede öffentliche Seite — `/scan` ist der
-          beworbene Einstieg und liegt im kritischen Rendering-Pfad.
-          `/scan/ergebnis` traegt `noIndex`; das Ergebnis gehoert dem
-          Besucher, nicht der Suche. */}
-      <Route path="/scan" element={<PublicScanPage />} />
-      <Route path="/scan/ergebnis" element={<PublicScanResultPage />} />
+      {/* Der kanonische Scan-Einstieg ist `/audit` (siehe
+          docs/product/canonical-funnel-decision.md). `/scan` gab es kurzzeitig
+          als zweiten Trichter mit eigenem Datensatz; er ist mit dem Schnitt
+          von PR #1129 entfallen, damit es genau einen Einstieg gibt. */}
+      <Route path="/scan" element={<Navigate to="/audit" replace />} />
 
       {/* Product Entry Points */}
       <Route path="/scan/start" element={<ScanStartPage />} />

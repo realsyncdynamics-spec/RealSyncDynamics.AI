@@ -68,7 +68,14 @@ export function AuditLanding() {
       'Technische Vorprüfung für Websites: Consent, Tracking, Drittanbieter-Skripte und mögliche DSGVO-/TDDDG-Risiken analysieren.',
     url: 'https://RealSyncDynamicsAI.de/audit',
   });
-  const [url, setUrl] = useState('');
+  // Vorbelegung aus `?domain=`. Die Startseite schickt die dort getippte
+  // Adresse mit; ohne diese Zeile müsste der Besucher sie ein zweites Mal
+  // eingeben, was den Trichter genau an seiner engsten Stelle bricht.
+  // Nur als Startwert — danach gehört das Feld dem Besucher.
+  const [url, setUrl] = useState(() => {
+    const vorgabe = new URLSearchParams(window.location.search).get('domain');
+    return vorgabe ? vorgabe.trim().slice(0, 255) : '';
+  });
   const [email, setEmail] = useState('');
   const [company, setCompany] = useState('');
   const [loading, setLoading] = useState(false);

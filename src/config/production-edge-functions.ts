@@ -201,14 +201,6 @@ export const UNBACKED_CALLERS: readonly UnbackedCaller[] = [
   //          deployt, beide antworten aus dem Handler (401 bzw. 400), nicht
   //          mit dem Plattform-404. Die Registrierung läuft bis zum Ende durch.
   //
-  // `public-site-scan` ist neu im Repository und noch nicht gemessen. Der
-  // Eintrag steht hier bewusst statt in `PRODUCTION_EDGE_FUNCTIONS`: Jene
-  // Liste ist eine Messung gegen das Live-Projekt, und ein Verzeichnis im
-  // Repository ist keine. Bis der Deploy gelaufen und nachgewiesen ist,
-  // zeigt `/scan` den Verfügbarkeitshinweis — er verschwindet danach von
-  // selbst, ohne weiteren Commit.
-  { slug: 'public-site-scan', surface: '/scan — kostenloser Website-Scan', publicPath: true },
-
   // Öffentlich dokumentierte, aber nicht existierende API-Endpunkte.
   // ApiDocs kennzeichnet sie inzwischen — siehe src/pages/ApiDocs.tsx.
   { slug: 'audit', surface: '/api-docs — dokumentierter Endpunkt', publicPath: true },

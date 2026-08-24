@@ -46,10 +46,11 @@ export function MainLanding() {
   const startScan = (event: FormEvent) => {
     event.preventDefault();
     const value = domain.trim();
-    // Ziel ist der öffentliche Scan-Trichter (`/scan`). Der frühere
-    // Build-Einstieg `/unified-entry/scan` bleibt bestehen und erreichbar —
-    // er ist nur nicht mehr das Tor von der Startseite aus.
-    navigate(value ? `/scan?domain=${encodeURIComponent(value)}` : '/scan');
+    // Ziel ist der kanonische Einstieg `/audit` — freigegeben am 2026-08-23
+    // (CLAUDE.md §10). Genau ein Scan-Einstieg, keine zwei parallelen
+    // Trichter. `/audit` liest `?domain=` und belegt sein Formular damit vor,
+    // damit die hier getippte Adresse nicht verlorengeht.
+    navigate(value ? `/audit?domain=${encodeURIComponent(value)}` : '/audit');
   };
 
   return (
@@ -62,7 +63,7 @@ export function MainLanding() {
         ogDescription="RealSyncDynamics.AI verbindet DSGVO, EU AI Act, Code-Compliance, Policy-Durchsetzung und auditfähige Nachweise in einer operativen Governance-Runtime."
       />
 
-      <header className="absolute inset-x-0 top-0 z-30"><div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6 lg:px-10"><Link to="/" className="flex items-center gap-2.5"><Snowflake className="h-6 w-6 text-[#e8c98a]" strokeWidth={1.5} /><span className="text-base font-semibold tracking-tight sm:text-lg">RealSync <span className="font-normal text-white/80">Dynamics.AI</span></span></Link><nav className="hidden items-center gap-7 md:flex"><a href="#tools" className="text-sm text-white/65 transition-colors hover:text-white">Tools</a><a href="#platform" className="text-sm text-white/65 transition-colors hover:text-white">Produkt</a><a href="#evidence" className="text-sm text-white/65 transition-colors hover:text-white">Evidence</a><a href="#enterprise" className="hidden text-sm text-white/65 transition-colors hover:text-white lg:block">Enterprise</a><Link to="/ai-act" className="hidden text-sm text-white/65 transition-colors hover:text-white xl:block">EU AI Act</Link><Link to="/sicherheit" className="hidden text-sm text-white/65 transition-colors hover:text-white xl:block">Sicherheit</Link><Link to="/pricing" className="text-sm text-white/65 transition-colors hover:text-white">Preise</Link><Link to="/welcome" className="text-sm text-white/65 transition-colors hover:text-white">Login</Link><Link to="/scan" className="rounded-full bg-[#f0e6d2] px-6 py-3 text-sm font-semibold text-[#1a1714] transition hover:bg-[#f6efe4]">Kostenlos scannen</Link></nav></div></header>
+      <header className="absolute inset-x-0 top-0 z-30"><div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6 lg:px-10"><Link to="/" className="flex items-center gap-2.5"><Snowflake className="h-6 w-6 text-[#e8c98a]" strokeWidth={1.5} /><span className="text-base font-semibold tracking-tight sm:text-lg">RealSync <span className="font-normal text-white/80">Dynamics.AI</span></span></Link><nav className="hidden items-center gap-7 md:flex"><a href="#tools" className="text-sm text-white/65 transition-colors hover:text-white">Tools</a><a href="#platform" className="text-sm text-white/65 transition-colors hover:text-white">Produkt</a><a href="#evidence" className="text-sm text-white/65 transition-colors hover:text-white">Evidence</a><a href="#enterprise" className="hidden text-sm text-white/65 transition-colors hover:text-white lg:block">Enterprise</a><Link to="/ai-act" className="hidden text-sm text-white/65 transition-colors hover:text-white xl:block">EU AI Act</Link><Link to="/sicherheit" className="hidden text-sm text-white/65 transition-colors hover:text-white xl:block">Sicherheit</Link><Link to="/pricing" className="text-sm text-white/65 transition-colors hover:text-white">Preise</Link><Link to="/welcome" className="text-sm text-white/65 transition-colors hover:text-white">Login</Link><Link to="/audit" className="rounded-full bg-[#f0e6d2] px-6 py-3 text-sm font-semibold text-[#1a1714] transition hover:bg-[#f6efe4]">Kostenlos scannen</Link></nav></div></header>
 
       <main ref={revealRoot}>
         <section className="relative min-h-[880px] overflow-hidden">

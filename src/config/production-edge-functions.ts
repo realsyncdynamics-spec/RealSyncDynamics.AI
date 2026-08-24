@@ -10,8 +10,9 @@
  *
  * ## Stand der Messung
  *
- * 2026-08-23, Management-API gegen das Live-Projekt: 177 Function-Verzeichnisse
- * im Repository, **177 deployt — deckungsgleich in beide Richtungen** (weder
+ * 2026-08-23 (nach Merge von PR #1131 und dem zugehörigen `deploy.yml`-Lauf),
+ * Management-API gegen das Live-Projekt: 178 Function-Verzeichnisse im
+ * Repository, **178 deployt — deckungsgleich in beide Richtungen** (weder
  * eine nicht deployte Function noch eine deployte ohne Verzeichnis). Das ist
  * ein Momentzustand, kein Naturgesetz: Der nächste Merge, der eine Function
  * hinzufügt, öffnet die Lücke wieder, bis `deploy.yml` gelaufen ist.
@@ -39,10 +40,10 @@
  * Sie darf steigen, sobald jemand einen höheren Stand misst — und sie ist
  * kein Argument dafür, dass ein weiterer Deploy scheitern wird.
  */
-export const EDGE_FUNCTIONS_OBSERVED_MAX = 177;
+export const EDGE_FUNCTIONS_OBSERVED_MAX = 178;
 
 /** Datum der letzten Messung gegen das Live-Projekt. */
-export const PRODUCTION_EDGE_FUNCTIONS_MEASURED_AT = '2026-08-23T18:32Z';
+export const PRODUCTION_EDGE_FUNCTIONS_MEASURED_AT = '2026-08-23T20:57Z';
 
 /**
  * Die in Produktion aktiven Function-Slugs — alphabetisch, damit ein Diff
@@ -224,6 +225,7 @@ export const PRODUCTION_EDGE_FUNCTIONS: readonly string[] = [
   'website-maintenance-daily-cron',
   'website-operations-agent',
   'welcome-email',
+  'whatsapp-webhook',
   'workflow-callback',
   'workflow-trigger',
 ];
@@ -275,11 +277,6 @@ export const UNBACKED_CALLERS: readonly UnbackedCaller[] = [
   // von keinem Code aufgerufen — deshalb kein Eintrag hier, aber ein offener
   // Punkt: Das Handbuch beschreibt einen Endpunkt, den es nicht gibt.
   { slug: 'export-bulk-results', surface: 'features/bulk — Export', publicPath: false },
-  // Kein Frontend-Aufruf, sondern die angezeigte Callback-URL für die
-  // Meta-App: die Function ist seit 2026-08-23 im Repo und wird mit dem
-  // nächsten deploy.yml-Lauf deployt — dann meldet der Contract-Test diesen
-  // Eintrag als überflüssig (der schöne Fall).
-  { slug: 'whatsapp-webhook', surface: 'features/bots — WhatsApp-Kanäle (Webhook-URL-Anzeige)', publicPath: false },
   { slug: 'iso42001-control-update', surface: 'features/governance — Control-Detail', publicPath: false },
   { slug: 'trigger-workflow', surface: 'features/workflows', publicPath: false },
 ];

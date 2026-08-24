@@ -78,8 +78,8 @@ Menschen · Unternehmen · KI-Agenten · Daten · Entscheidungen.
 
 **Primär: Supabase Cloud (EU / Frankfurt)**
 - PostgreSQL 17 (Live-Projekt, Stand 2026-08-16)
-- **180 Edge Functions** im Repo (`supabase/functions/`, Deno/V8) — 177 davon in Produktion; `whatsapp-webhook` (seit 2026-08-23) sowie `governance-decide` und `integration-credentials` (Governance OS P0, seit 2026-08-24) werden mit dem nächsten `deploy.yml`-Lauf deployt, siehe §5
-- **289 Migrations** (`supabase/migrations/`) — 286 angewendet; `20260826000000_whatsapp_channel`, `20260824090000_pdp_snapshots_shadow` und `20260824110000_integration_credentials_hardening` warten auf den Merge, siehe §5
+- **180 Edge Functions** im Repo (`supabase/functions/`, Deno/V8) — 178 davon in Produktion (`whatsapp-webhook` deployt, PR #1134); `governance-decide` und `integration-credentials` (Governance OS P0, seit 2026-08-24) werden mit dem nächsten `deploy.yml`-Lauf deployt, siehe §5
+- **291 Migrations** (`supabase/migrations/`) — 287 verbucht; `20260824090000_pdp_snapshots_shadow` und `20260824110000_integration_credentials_hardening` warten auf den Merge; zur Lücke und zur Versionskollision vom 2026-08-24 siehe §5
 - RLS auf allen App-Tabellen · Realtime Subscriptions
 
 **Node/TypeScript-Services** (containerisiert — **kein Go im Repo**)
@@ -185,15 +185,33 @@ Jeder Agent braucht vier Dimensionen — fehlt eine, ist er nicht governance-fä
 > Produktion läuft. Die Regel bleibt: vor jeder Aussage zum Produktionsstand
 > gegen die Live-DB messen, nicht gegen diese Liste.
 >
-> **Messung vom 2026-08-22, nach dem Merge von PR #1117**, direkt gegen das
+> **Messung vom 2026-08-23, nach dem Merge von PR #1131 (WhatsApp-Kanal) und
+> dem zugehörigen `deploy.yml`-Lauf**, per Management-API direkt gegen das
 > Live-Projekt `RealSyncDynamicsLive` (`ebljyceifhnlzhjfyxup`, eu-central-1,
 > PostgreSQL 17):
 >
 > | | Repo (`main`) | in Produktion | Lücke |
 > |---|---|---|---|
-> | Migrationen | 286 | **286** (neueste `20260825000000`) | **0** |
-> | Edge Functions | 177 | **177** | **0** |
-> | Tabellen in `public` | — | 369 | — |
+> | Migrationen | 289 | **287** (neueste `20260826000000`) | **2**¹ |
+> | Edge Functions | 178 | **178** | **0** |
+> | Tabellen in `public` | — | 351 (`pg_tables`, ohne Views) | — |
+>
+> Frühere Stände nannten hier 369 Tabellen ohne Messmethode — vermutlich
+> inklusive Views. Ab jetzt zählt `pg_tables`, damit die Zahl vergleichbar bleibt.
+>
+> ¹ **Migrations-Lücke und Versionskollision, gemessen 2026-08-24** (Ledger via
+> `supabase_migrations.schema_migrations`, Deploy-Log Run 32705231581): PR #1131
+> und PR #1124 vergaben unabhängig voneinander dieselbe Version `20260826000000`
+> (`whatsapp_channel` bzw. `restore_client_function_grants`) — die PR-CI konnte
+> das nicht sehen, weil beide gegen eine `main`-Basis ohne die jeweils andere
+> Datei liefen. Der `deploy.yml`-Lauf nach dem #1124-Merge scheiterte daran
+> (CLI führte `whatsapp_channel` erneut aus → `42710`, Trigger existiert).
+> Fix: `restore_client_function_grants` → `20260826000001` umbenannt. Die zwei
+> unverbuchten Migrationen (`20260826000001`, `20260827000000`) sind inhaltlich
+> bereits wirksam (out-of-band-Hotfix, per ACL-Messung belegt); es fehlt nur die
+> Verbuchung durch den nächsten grünen Deploy. Lehre: Vor dem Merge eines PRs
+> mit Migration die Versionsnummer gegen den **aktuellen** `main`-Stand prüfen,
+> nicht gegen die PR-Basis.
 >
 > **Repo und Produktion decken sich derzeit vollständig** — in beide
 > Richtungen geprüft, es gibt weder eine nicht deployte Function noch eine
@@ -218,6 +236,18 @@ Jeder Agent braucht vier Dimensionen — fehlt eine, ist er nicht governance-fä
 > hätte eine Messung die Frage sofort beantwortet. Deshalb: messen, nicht
 > herleiten — und die Messung mit Datum und Methode hinschreiben, damit die
 > nächste Sitzung sie prüfen statt glauben muss.
+>
+> **ACL-Vorfall 2026-08-23**: Ein Out-of-Band-Bulk-Revoke (nicht aus dem Repo,
+> Actor unbekannt, älter als das 24h-Log-Fenster) hatte ~160 `public`-Funktionen
+> in Prod auf `{postgres, service_role}` reduziert und `update_onboarding_progress`
+> gedroppt — Symptom: „permission denied for function is_tenant_member" auf
+> /welcome, damit RLS für alle eingeloggten Nutzer kaputt. Repariert durch
+> `20260826000001_restore_client_function_grants.sql` (gezielte Grants nur für
+> Client-Rollen, interne Funktionen bleiben gesperrt). Konsequenz: Auch
+> Funktions-ACLs gehören zur Drift-Prüfung, nicht nur Existenz von Functions
+> und Migrationen — seitdem geprüft durch `npm run check:function-acls`
+> (`.github/workflows/function-acl-drift.yml`, täglich 06:30 UTC; Soll-Listen
+> im Skript nachziehen, wenn eine Migration Client-Grants ändert).
 >
 > Der Free-Tarif bleibt davon unberührt und bleibt ein eigener Befund: keine
 > täglichen Backups, kein Point-in-Time-Recovery, kein SLA, Projekt-Pausierung
@@ -305,7 +335,7 @@ RealSyncDynamics.AI/
 │   └── pricing.ts     Single Source of Truth für Produkt-, Preis- und Berechtigungsmodell
 ├── supabase/
 │   ├── functions/     180 Edge Functions (einziger Ort für Service-Role-Keys)
-│   └── migrations/    289 Migrations
+│   └── migrations/    291 Migrations
 ├── apps/
 │   └── agent-runtime/ Agent Runtime (Node/TS, Docker)
 ├── services/          runtime-core · evidence-runtime · openclaw-agent · playwright-scanner

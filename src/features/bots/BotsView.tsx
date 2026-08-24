@@ -74,9 +74,14 @@ function BotsInner() {
             </div>
           </div>
         </div>
-        <Link to="/app/bots/inbox">
-          <Button variant="secondary" size="sm"><Inbox className="h-3.5 w-3.5" /> Posteingang</Button>
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link to="/app/bots/whatsapp">
+            <Button variant="secondary" size="sm"><MessageSquare className="h-3.5 w-3.5" /> WhatsApp-Kanäle</Button>
+          </Link>
+          <Link to="/app/bots/inbox">
+            <Button variant="secondary" size="sm"><Inbox className="h-3.5 w-3.5" /> Posteingang</Button>
+          </Link>
+        </div>
       </header>
 
       <div className="mx-auto max-w-5xl px-4 py-6 space-y-6 sm:px-6">

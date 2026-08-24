@@ -8,7 +8,7 @@
 import { getSupabase } from '../../lib/supabase';
 import type {
   Bot, BotConversation, BotMessage, BotAppointment, BotOrder,
-  CreateBotArgs, UpdateBotArgs,
+  CreateBotArgs, UpdateBotArgs, WhatsAppChannel, CreateWhatsAppChannelArgs,
 } from './types';
 
 export async function listBots(tenant_id: string): Promise<Bot[]> {
@@ -123,4 +123,51 @@ export async function setOrderStatus(
     .from('bot_orders').update({ status })
     .eq('tenant_id', tenant_id).eq('id', order_id);
   if (error) throw new Error(`setOrderStatus: ${error.message}`);
+}
+
+// ── WhatsApp-Kanäle ────────────────────────────────────────────────────────
+// Schreibzugriff erlaubt RLS nur Owner/Admin (Verknüpfen einer Geschäfts-
+// nummer ist eine Governance-Entscheidung); Lesen jedes Tenant-Mitglied.
+
+export async function listWhatsAppChannels(tenant_id: string): Promise<WhatsAppChannel[]> {
+  const sb = getSupabase();
+  const { data, error } = await sb
+    .from('whatsapp_channels').select('*')
+    .eq('tenant_id', tenant_id)
+    .order('created_at', { ascending: false });
+  if (error) throw new Error(`listWhatsAppChannels: ${error.message}`);
+  return (data ?? []) as WhatsAppChannel[];
+}
+
+export async function createWhatsAppChannel(args: CreateWhatsAppChannelArgs): Promise<WhatsAppChannel> {
+  const sb = getSupabase();
+  const { data, error } = await sb.from('whatsapp_channels').insert({
+    tenant_id: args.tenant_id,
+    bot_id: args.bot_id,
+    phone_number_id: args.phone_number_id,
+    display_phone_number: args.display_phone_number ?? null,
+    waba_id: args.waba_id ?? null,
+    greeting: args.greeting ?? null,
+    is_active: args.is_active ?? false,
+  }).select('*').single();
+  if (error) throw new Error(`createWhatsAppChannel: ${error.message}`);
+  return data as WhatsAppChannel;
+}
+
+export async function setWhatsAppChannelActive(
+  tenant_id: string, channel_id: string, is_active: boolean,
+): Promise<void> {
+  const sb = getSupabase();
+  const { error } = await sb
+    .from('whatsapp_channels').update({ is_active })
+    .eq('tenant_id', tenant_id).eq('id', channel_id);
+  if (error) throw new Error(`setWhatsAppChannelActive: ${error.message}`);
+}
+
+export async function deleteWhatsAppChannel(tenant_id: string, channel_id: string): Promise<void> {
+  const sb = getSupabase();
+  const { error } = await sb
+    .from('whatsapp_channels').delete()
+    .eq('tenant_id', tenant_id).eq('id', channel_id);
+  if (error) throw new Error(`deleteWhatsAppChannel: ${error.message}`);
 }

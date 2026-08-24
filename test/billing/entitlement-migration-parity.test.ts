@@ -20,7 +20,7 @@ import { PLANS } from '../../shared/pricing';
  * anderes Kontingent, als die Preisseite ihm zusagt.
  */
 
-const MIGRATION = 'supabase/migrations/20260826000000_entitlement_base_keys_paid_plans.sql';
+const MIGRATION = 'supabase/migrations/20260828000000_entitlement_base_keys_paid_plans.sql';
 
 /** Liest die VALUES-Paare (plan_key, wert) aus dem Kontingent-Block. */
 function kontingenteAusMigration(): Map<string, number> {

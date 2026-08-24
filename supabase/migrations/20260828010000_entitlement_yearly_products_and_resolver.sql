@@ -135,4 +135,19 @@ AS $function$
   GROUP BY e.key, e.kind;
 $function$;
 
+-- Ausführungsrecht ausdrücklich setzen statt darauf zu vertrauen, dass
+-- CREATE OR REPLACE die ACL erhält.
+--
+-- Hintergrund: `20260826000000_restore_client_function_grants` musste genau
+-- diese Rechte wiederherstellen, nachdem sie einmal verlorengegangen waren —
+-- `tenant_entitlements` steht dort namentlich auf der Liste. Diese Migration
+-- läuft danach und ersetzt die Function. CREATE OR REPLACE behält die ACL
+-- zwar, aber diese Annahme ist genau die, die schon einmal nicht gehalten
+-- hat. Ohne das Recht bekäme jeder angemeldete Nutzer beim Auflösen seiner
+-- Berechtigungen einen Berechtigungsfehler statt seiner Entitlements.
+--
+-- Nur `authenticated`, nicht `anon`: Die Function löst den Mandanten über
+-- `auth.uid()` auf und ist für nicht angemeldete Aufrufer sinnlos.
+GRANT EXECUTE ON FUNCTION public.tenant_entitlements(uuid) TO authenticated;
+
 COMMIT;

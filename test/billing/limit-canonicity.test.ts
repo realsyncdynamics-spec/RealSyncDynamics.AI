@@ -148,6 +148,40 @@ describe('Kontingente — plan.limits gegen PLAN_ENTITLEMENTS', () => {
     }
   });
 
+  it('hält `products → entitlements` für Vertragspläne ausdrücklich nicht kanonisch', () => {
+    /**
+     * Die Sicherung gegen ein späteres Refactoring.
+     *
+     * Der Auflöser `tenant_entitlements()` kennt genau einen Weg:
+     * `subscriptions`/`entitlement_grants` → `products` →
+     * `product_entitlements` → `entitlements`. Für Self-Service-Pläne ist das
+     * eine korrekte **Ableitung** der Preisseite. Für Vertragspläne ist es
+     * das **nicht** — dort ist der Vertrag kanonisch, und der liegt dem
+     * System nicht vor.
+     *
+     * Ein Produkt- oder Pricing-Refactoring, das die Entitlement-Werte
+     * „aufräumt", würde die Zeilen unten stillschweigend zur Wahrheit
+     * erklären. Genau das soll hier auffallen.
+     *
+     * Bis zur Entscheidung aus `enterprise-quelle-entscheidungsvorlage.md`
+     * bleibt der Wert unbestimmt. Insbesondere ist `-1` **keine** belegte
+     * Kodierung für „der Vertrag entscheidet" — das ist eine Hypothese und
+     * darf hier nicht als Semantik festgeschrieben werden.
+     */
+    const vertragsplaene = ORDERED_PLANS.filter((p) => p.availability === 'contract');
+    expect(vertragsplaene.map((p) => p.id)).toEqual(['enterprise']);
+
+    for (const plan of vertragsplaene) {
+      const zeilen = grundlinie.filter((e) => e.plan === plan.id);
+      expect(zeilen.length, `${plan.id} ohne Divergenzzeilen`).toBeGreaterThan(0);
+      for (const zeile of zeilen) {
+        // Weder die eine noch die andere Spalte darf als kanonisch gelten.
+        expect(zeile.kanonische_quelle).toBe('vertrag');
+        expect(zeile.kanonische_quelle).not.toBe('preisseite');
+      }
+    }
+  });
+
   it('hält fest, dass nur Vertragspläne eine unaufgelöste Quelle haben', () => {
     // Die Zahl ist die Arbeitsmenge für Schritt 1 aus §7: acht Felder, deren
     // Wert erst bestimmbar ist, wenn es einen Ort für Vertragswerte gibt.

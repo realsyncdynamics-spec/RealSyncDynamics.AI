@@ -219,13 +219,21 @@ könnte einen Wert also nur **anheben**, nie senken.
 
 ### Was das für die Regel bedeutet
 
-Zwei Wege, beide noch nicht entschieden:
+Drei Wege, keiner entschieden — Abwägung mit gemessenen Kosten in
+`docs/product/enterprise-quelle-entscheidungsvorlage.md`:
 
-1. **Ein Produkt je Enterprise-Vertrag.** Passt ins bestehende Modell, keine
-   Schemaänderung; skaliert schlecht und vermischt Katalog mit Vertragsdaten.
-2. **Eine Überschreibungstabelle je Tenant und Key.** Sauberer, aber ein
-   Eingriff in den Auflöser — und der ist die Funktion, in der dieser PR
-   bereits eine Regression hatte.
+- **A** — `-1` offiziell als „vertraglich geregelt / unbegrenzt" spezifizieren
+- **B** — Tenant-Overrides (`tenant × entitlement_key × value`)
+- **C** — ein Produkt je Vertragsvariante
+
+Die Messung, die dort die Auswahl verschiebt: Es gibt **null**
+Enterprise-Verträge (Live-Projekt, 2026-08-25). B und C lösen damit ein
+Problem, das heute niemand hat.
+
+**Bis zur Entscheidung gilt:** Die Enterprise-Regel ist **spezifiziert und
+unimplementiert**. Sie darf nicht als Fachlogik behandelt werden — der
+Auflöser kann sie nicht deterministisch ausführen, solange kein
+vertragsspezifischer Wert persistierbar ist.
 
 ### Eine Lesart des Ist-Zustands, ausdrücklich als Lesart
 
@@ -239,6 +247,11 @@ Ich kann das nicht belegen — es gibt keinen Kommentar und keine Migration, die
 es sagt. Deshalb steht es hier als Lesart und nicht als Befund. Für die
 Entscheidung ist es trotzdem erheblich: Trifft sie zu, ist der Ist-Zustand
 bereits richtig und es fehlt nur die Dokumentation.
+
+> **Verbindlich, bis Option A ausdrücklich gewählt ist:** `-1` wird **nicht**
+> als Vertragswert umgedeutet. Die Deutung bleibt eine Hypothese und steht in
+> keinem Code und in keinem Test. Wer sie zur Semantik machen will, wählt
+> Option A — und schreibt sie hin.
 
 ---
 
@@ -294,9 +307,12 @@ lassen den Guard fallen, der unveränderte Stand nicht.
 Verbindlich ist die Kette aus §1.4: **Canonical Entitlements →
 Datenbereinigung → Gates → Tests.**
 
-1. **Enterprise-Quelle spezifizieren** (Klasse A + §4a). Nicht nur „welche
-   Zahl gilt", sondern **wo der Vertragswert steht**. Ohne Speicherort ist
-   die Regel nicht umsetzbar, sondern nur formuliert.
+1. **Enterprise-Quelle entscheiden** (Klasse A + §4a). Nicht nur „welche Zahl
+   gilt", sondern **wo der Vertragswert steht**. Ohne Speicherort ist die
+   Regel nicht umsetzbar, sondern nur formuliert. Vorlage mit gemessenen
+   Kosten: `enterprise-quelle-entscheidungsvorlage.md`. Das ist ein
+   **Architekturentscheid**, kein Wert-Fix — der nächste PR darf nicht
+   einfach die Enterprise-Werte korrigieren.
 2. **Bestandsschutz vor Wertkorrektur.** Erst der Trigger-Mechanismus
    (Entscheidung 5), dann die drei Kürzungen der Klasse B.
 3. **Die neun Ausweitungen** (Klasse D) laufen unabhängig; sie nehmen

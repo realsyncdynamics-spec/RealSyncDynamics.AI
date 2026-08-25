@@ -24,10 +24,8 @@ const DETAIL_SLUGS = [
 ];
 
 // Nur Pläne mit `purchaseMode: 'checkout'` (shared/pricing.ts) bleiben auf der
-// Checkout-Seite stehen. `partner` ist 'inquiry' und leitet auf /contact-sales
-// um — in dieser Liste erzeugte er ein Rennen zwischen page.goto und dem
-// Redirect, das der Test mal gewann und mal verlor. Der Redirect wird unten
-// eigens geprüft statt hier ignoriert.
+// Checkout-Seite stehen. `partner` und `enterprise` sind 'inquiry' und leiten
+// auf /contact-sales um. Die Redirects werden unten explizit geprüft.
 const CHECKOUT_PLAN_KEYS = [
   'starter',
   'growth',
@@ -127,11 +125,12 @@ test.describe('Pricing Flow', () => {
       await expect(page).toHaveURL(/\/audit/);
     });
 
-    test('enterprise checkout should stay on checkout page', async ({ page }) => {
+    test('enterprise checkout should redirect to contact-sales', async ({ page }) => {
+      // Enterprise ist laut Pricing-SSoT `purchaseMode: 'inquiry'` und
+      // darf weder Self-Service-Checkout noch Self-Service-Trial öffnen.
       await page.goto(`${BASE_URL}/checkout/enterprise`);
-      // Enterprise ist Self-Service-Checkout wie Agency — kein redirect zu contact-sales.
-      await page.waitForLoadState('domcontentloaded');
-      await expect(page).toHaveURL(/\/checkout\/enterprise/);
+      await page.waitForURL(/\/contact-sales/);
+      await expect(page).toHaveURL(/plan=enterprise/);
     });
   });
 

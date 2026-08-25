@@ -25,6 +25,10 @@ import {
   type DecisionResult,
   type PolicySnapshot,
 } from './core.ts';
+import {
+  resolveClassification,
+  type SignalHit,
+} from './classify.ts';
 
 export const PDP_CACHE_TTL_MS = 30_000;
 
@@ -295,14 +299,88 @@ async function resolveApproval(
 }
 
 /**
- * Entscheidung in-process: Principal anreichern (PIP) → laden (gecacht) →
- * auswerten → Freigabe-Kette → Snapshot sichern.
+ * Klassifikations-PIP (P1-2): Fuellt data.classification aus allen
+ * verfuegbaren Quellen (Deklaration, Asset-/System-Stammdaten, vom PEP
+ * gemeldete Signale) und haengt die Erkennungsguete an.
+ *
+ * Der PDP sieht dabei nie Inhalte — `data.signals` sind Signalnamen, die
+ * der PEP lokal ermittelt hat (detectSignals() in classify.ts).
+ *
+ * Stammdaten werden nachgeladen, wenn ein Asset oder System benannt ist,
+ * der Request aber keine data_types mitbringt. Best-effort: schlaegt das
+ * fehl, bleibt es bei dem, was der Aufrufer geliefert hat.
+ */
+export async function enrichClassification(
+  admin: any,
+  request: DecisionRequest,
+): Promise<DecisionRequest> {
+  try {
+    let dataTypes = request.data?.data_types ?? request.asset?.data_types;
+
+    if ((!dataTypes || dataTypes.length === 0) && request.tenant_id) {
+      if (request.asset?.id) {
+        const { data } = await admin
+          .from('governance_assets')
+          .select('data_types')
+          .eq('tenant_id', request.tenant_id)
+          .eq('id', request.asset.id)
+          .maybeSingle();
+        dataTypes = data?.data_types ?? undefined;
+      } else if (request.target?.system_id) {
+        const { data } = await admin
+          .from('ai_systems')
+          .select('data_types')
+          .eq('tenant_id', request.tenant_id)
+          .eq('id', request.target.system_id)
+          .maybeSingle();
+        dataTypes = data?.data_types ?? undefined;
+      }
+    }
+
+    // Signalnamen des Aufrufers in die Trefferform bringen. Ohne Anzahl
+    // zaehlt jedes Signal einmal — die Guete haengt an der Signalart,
+    // nicht an der Haeufigkeit.
+    const signals: SignalHit[] = (request.data?.signals ?? []).map((name) => ({
+      signal: name as SignalHit['signal'],
+      count: 1,
+    }));
+
+    const resolved = resolveClassification({
+      declared: request.data?.classification,
+      dataTypes,
+      signals,
+    });
+
+    // Nichts gefunden und nichts deklariert: Felder NICHT setzen, damit
+    // die Auswertung exakt so laeuft wie ohne PIP (K1).
+    if (resolved.source === 'none') return request;
+
+    return {
+      ...request,
+      data: {
+        ...request.data,
+        classification: resolved.classification,
+        classification_confidence: resolved.confidence,
+        classification_uncertain: resolved.uncertain,
+        data_types: dataTypes ?? request.data?.data_types,
+      },
+    };
+  } catch (e) {
+    console.error('[pdp] classification enrichment failed', e);
+    return request;
+  }
+}
+
+/**
+ * Entscheidung in-process: Principal anreichern (PIP) → klassifizieren (PIP)
+ * → Snapshot laden (gecacht) → auswerten → Freigabe-Kette → Snapshot sichern.
  */
 export async function decide(
   admin: any,
   request: DecisionRequest,
 ): Promise<DecisionResult> {
-  const enriched = await enrichPrincipal(admin, request);
+  let enriched = await enrichPrincipal(admin, request);
+  enriched = await enrichClassification(admin, enriched);
   const snapshot = await loadSnapshot(admin, enriched.tenant_id);
   let result = evaluateSnapshot(snapshot, enriched);
   result = await resolveApproval(admin, enriched, result, snapshot);

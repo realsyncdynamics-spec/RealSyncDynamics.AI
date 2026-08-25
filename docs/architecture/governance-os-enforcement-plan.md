@@ -696,11 +696,20 @@ Relativ, keine erfundenen Zeitangaben.
 | P0-5 Shadow-Mode | ✅ | `telemetry-ai-event` und `governance-ingest` rechnen v2 auf denselben geladenen Policy-Zeilen mit; Divergenzen → `pdp_shadow_log`. Antwortverhalten unverändert |
 | P1-1 Subjektmodell | ✅ (Freigabe „go" 2026-08-24) | Migration `20260824120000`: `org_units` (materialisierter Pfad, Zyklen-/Tenant-Guard per Trigger, Teilbaum-Umhängen inkl. Nachfahren-Repath), `principals` (user/service/agent/device), `role_bindings` (additive Rollen `dpo`/`it_admin`/`compliance_officer`/`approver`/`employee`, Geltungsbereich Tenant oder Teilbaum). PIP-Anreicherung in `decide.ts` (Rollen entlang des Org-Pfads); generic-Bedingungen `principal_roles`/`principal_type`/`org_unit` (Teilbaum-Matching) mit payload-Fallback ohne Principal (K1-Schutz) |
 | P1-4 Approval-Kette | ✅ (Freigabe „go" 2026-08-24) | `pdp_approval_gates` (Request-Fingerprint `approvalFingerprint()`, genau ein offenes Gate je Fingerprint, 7-Tage-Ablauf); `decide()` erzeugt Gates und erkennt erteilte Deckung (→ allow mit Begründung); `governance-approvals` neu: `gates_list`/`gate_approve`/`gate_reject` — freigeben darf owner/admin **oder** die Rolle aus `approver_role`; Evidence je Gate-Entscheidung. v1-Grenze dokumentiert: Rollen-Check tenantweit, Teilbaum-Eingrenzung folgt mit P1-3 |
+| P1-2 Klassifikations-PIP | ✅ (Freigabe „go" 2026-08-24) | `_shared/pdp/classify.ts`: Signal-Erkennung (`detectSignals()`) läuft **beim PEP**, an den PDP gehen nur Signalnamen — nie Inhalte (DSGVO Art. 5 Abs. 1 lit. c). Drei Quellen (Deklaration, Stammdaten, Signale); **Abweichung vom Planwortlaut, begründet**: den Wert bestimmt die *strengste* Quelle, nicht die erste — eine Deklaration `public` hätte sonst jede `data_transfer`-Regel ausgehebelt. Unsichere Klassifikation (< 0,6) schwächt einen **klassifikationsbasierten** Block zur Warnung ab, mit Ausweis in `classification.downgraded_from`; Vendor-/Rollen-/Modellsperren bleiben hart |
+| P1-3 Rollen-Sichten (Gate-UI) | ✅ teilweise (Freigabe „go" 2026-08-24) | `/app/governance/gates` (`ApprovalGatesView`): offene Gates freigeben/ablehnen mit Pflichtbegründung, Statusfilter, Ablaufanzeige, Fingerprint; darunter das Zugriffsmodell aus P1-1 (Einheiten, Principals, Rollen) lesend. Route + Modul-Eintrag + Badge im Governance-Dashboard mit **vorhandenen** Komponenten und Tokens (§10.2). **Noch nicht enthalten**: getrennte Einstiegs-Sichten je Rolle (CEO/DPO/IT/Mitarbeiter) und eine Pflege-Oberfläche für Org-Struktur und Rollen — beides bleibt offen |
 | P0-1 Credentials | ✅ (E8: **Ja** am 2026-08-24) | Migration `20260824110000`: Spaltenrechte — `credentials`/`credentials_enc` erreichen Clients nie mehr, kein Client-INSERT; Edge Function `integration-credentials` (AES-256-GCM-Siegel via `_shared/secretBox.ts`, owner/admin-only, Audit-Log, 503 statt Klartext-Fallback); View liest/schreibt nur noch Metadaten |
 
-**Noch offen in P1:** P1-2 (Klassifikations-PIP), P1-3 (Rollen-Sichten — inkl.
-UI für Org-Einheiten, Rollen und Gates; bis dahin sind Gates nur per API
-erreichbar), P1-5 (Agent-PEP), P1-6 (Evidence härten).
+**Noch offen in P1:** P1-3 zur Hälfte (rollenspezifische Einstiegs-Sichten und
+Pflege-Oberfläche für Org-Struktur/Rollen), P1-5 (Agent-PEP), P1-6 (Evidence
+härten).
+
+**Neue Grenze aus P1-2, ehrlich benannt:** Die Signal-Erkennung deckt gängige
+EU-Muster ab (E-Mail, IBAN, Steuer-ID, Kartennummer, Telefon, Anschrift) plus
+kurze Wortlisten für Art.-9-Kategorien. Sie ist bewusst konservativ: ein
+Fehlalarm kostet Vertrauen und treibt in Schatten-IT (R5). Sie ersetzt **kein**
+DLP-Produkt und erkennt nichts in Binärformaten (PDF, Office, Bilder) — dort
+sieht sie nur, was der PEP ihr als extrahierten Text übergibt.
 
 Noch nicht deployt: `governance-decide` und die Migrationen laufen erst mit dem
 nächsten `deploy.yml`-Lauf nach dem Merge (siehe CLAUDE.md §5 — Repo ≠ Produktion).

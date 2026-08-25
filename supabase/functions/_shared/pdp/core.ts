@@ -73,6 +73,17 @@ export interface DecisionRequest {
     data_types?: string[];
     prompt_category?: string;
     risk_level?: string;
+    /**
+     * Erkennungsguete der Klassifikation (0..1) und die daraus folgende
+     * Unsicherheits-Markierung — gesetzt vom Klassifikations-PIP
+     * (_shared/pdp/classify.ts), nie vom Aufrufer erfunden.
+     * Alt-Pfade im Shadow-Mode setzen diese Felder nicht; dort bleibt die
+     * Auswertung deshalb bitgleich zur Alt-Engine (K1).
+     */
+    classification_confidence?: number;
+    classification_uncertain?: boolean;
+    /** Erkannte Signalnamen — nie Inhalte (DSGVO Art. 5 Abs. 1 lit. c). */
+    signals?: string[];
   };
   /** Asset-Kontext (governance_assets) fuer generic-Bedingungen. */
   asset?: {
@@ -114,6 +125,18 @@ export interface DecisionResult {
     gate_id: string | null;
     approver_role: string;
     status: 'pending' | 'approved';
+  };
+  /**
+   * Warum diese Entscheidung auf welcher Datengrundlage steht (P1-2).
+   * `downgraded_from` ist gesetzt, wenn eine unsichere Klassifikation
+   * einen Block zur Warnung abgeschwaecht hat — das muss sichtbar sein,
+   * sonst sieht ein Prueffall wie ein durchgelassener Verstoss aus.
+   */
+  classification?: {
+    value: string;
+    confidence: number;
+    uncertain: boolean;
+    downgraded_from?: PdpDecision;
   };
 }
 
@@ -378,6 +401,12 @@ function genericFieldValue(req: DecisionRequest, key: string): unknown {
     case 'risk_level':   return req.data?.risk_level;
     case 'asset_type':   return req.asset?.asset_type;
     case 'ai_act_class': return req.asset?.ai_act_class;
+    // Klassifikation nur aufloesen, wenn der Request sie traegt — sonst
+    // payload-Fallback wie in der Alt-Engine (K1).
+    case 'classification':
+      return req.data?.classification !== undefined
+        ? req.data.classification
+        : req.payload?.[key];
     // Principal-Schluessel (P1-1). Nur wenn ein Principal am Request haengt —
     // sonst payload-Fallback, damit die Shadow-Aequivalenz mit der Alt-Engine
     // fuer alle Alt-Pfade (die keinen Principal setzen) erhalten bleibt (K1).
@@ -427,6 +456,23 @@ function matchGenericPolicy(req: DecisionRequest, p: CompiledPolicy): boolean {
     if (!matchGenericValue(v, genericFieldValue(req, k))) return false;
   }
   return true;
+}
+
+/**
+ * Stuetzt sich diese Policy auf die Datenklassifikation? Nur dann darf
+ * eine unsichere Klassifikation ihr Verdikt abschwaechen — eine
+ * Vendor-Sperre bleibt eine Vendor-Sperre, auch wenn unklar ist, welche
+ * Daten fliessen.
+ */
+export function policyUsesClassification(p: CompiledPolicy): boolean {
+  if (p.rule === 'data_transfer') {
+    const c = p.condition['data_classes'];
+    return Array.isArray(c) && c.length > 0;
+  }
+  if (p.rule === 'generic_condition') {
+    return Object.prototype.hasOwnProperty.call(p.condition, 'classification');
+  }
+  return false;
 }
 
 export function matchCompiledPolicy(req: DecisionRequest, p: CompiledPolicy): boolean {
@@ -481,25 +527,70 @@ export function evaluateSnapshot(snapshot: PolicySnapshot, req: DecisionRequest)
     (a, b) => DECISION_SEVERITY[b.action] - DECISION_SEVERITY[a.action],
   );
   const winner = sorted[0] ?? null;
-  const decision: PdpDecision = winner ? winner.action : 'allow';
+  let decision: PdpDecision = winner ? winner.action : 'allow';
+
+  const reasons: DecisionReason[] = sorted.map((p) => ({
+    policy_id: p.id,
+    policy_source: p.source,
+    rule: p.rule,
+    action: p.action,
+    text_de: reasonTextDe(req, p),
+  }));
+
+  // ─── Unsichere Klassifikation schwaecht ab (P1-2, Selbstkritik K5) ───────
+  //
+  // Ein Block auf Verdacht ist teurer als eine Warnung: Er erzeugt
+  // Fehlalarme, und Fehlalarme treiben Mitarbeiter in Schatten-IT (R5) —
+  // dort sieht die Governance dann gar nichts mehr. Deshalb: Blockiert
+  // eine Policy AUFGRUND der Datenklassifikation, und ist die
+  // Klassifikation unsicher, wird daraus eine Warnung mit klarer Ansage.
+  // Alles andere (Vendor-Sperren, Rollen, Modelle) bleibt hart — deren
+  // Grundlage ist ja nicht unsicher.
+  let classificationInfo: DecisionResult['classification'];
+  if (req.data?.classification !== undefined || req.data?.classification_uncertain !== undefined) {
+    classificationInfo = {
+      value: req.data?.classification ?? 'unknown',
+      confidence: req.data?.classification_confidence ?? 0,
+      uncertain: req.data?.classification_uncertain === true,
+    };
+  }
+  if (
+    req.data?.classification_uncertain === true &&
+    decision === 'block' &&
+    winner !== null &&
+    policyUsesClassification(winner)
+  ) {
+    decision = 'warn';
+    classificationInfo = { ...classificationInfo!, downgraded_from: 'block' };
+    reasons.unshift({
+      policy_id: winner.id,
+      policy_source: winner.source,
+      rule: 'classification_uncertain',
+      action: 'warn',
+      text_de:
+        'Die Datenklassifikation ist nicht sicher genug für eine Blockierung. '
+        + 'Die Aktion wird deshalb nur mit Hinweis versehen und dokumentiert — '
+        + 'bitte prüfen Sie selbst, ob personenbezogene Daten betroffen sind.',
+    });
+  }
 
   return {
     contract: 'v1',
     decision,
-    reasons: sorted.map((p) => ({
-      policy_id: p.id,
-      policy_source: p.source,
-      rule: p.rule,
-      action: p.action,
-      text_de: reasonTextDe(req, p),
-    })),
+    reasons,
     matched_policy_ids: sorted.map((p) => p.id),
     primary_policy_id: winner?.id ?? null,
     engine: 'pdp-v2',
     snapshot_version: snapshot.version,
     // Blockierende/freigabepflichtige Entscheidungen nicht cachen — eine
-    // zwischenzeitliche Freigabe muss sofort wirken.
-    ttl_ms: decision === 'block' || decision === 'require_approval' ? 0 : PDP_DEFAULT_TTL_MS,
+    // zwischenzeitliche Freigabe muss sofort wirken. Eine abgeschwaechte
+    // Entscheidung ebenfalls nicht: Sobald die Klassifikation belastbar
+    // wird, muss sie neu bewertet werden.
+    ttl_ms: decision === 'block' || decision === 'require_approval'
+      || classificationInfo?.downgraded_from
+      ? 0
+      : PDP_DEFAULT_TTL_MS,
+    ...(classificationInfo ? { classification: classificationInfo } : {}),
   };
 }
 

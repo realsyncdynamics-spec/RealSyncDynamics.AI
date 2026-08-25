@@ -31,6 +31,13 @@ export const GOVERNANCE_MODULES: ModuleDefinition[] = [
     description: 'Policy-Entscheidungen mit Audit-Trail'
   },
   {
+    id: 'gates',
+    label: 'Freigaben',
+    path: '/app/governance/gates',
+    status: 'live',
+    description: 'Vom Policy Decision Point angehaltene Aktionen freigeben'
+  },
+  {
     id: 'dpias',
     label: 'DPIAs',
     path: '/app/dpia',

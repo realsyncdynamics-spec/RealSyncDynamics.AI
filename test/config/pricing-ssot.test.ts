@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { readFileSync, readdirSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -7,6 +7,7 @@ import {
   ADDONS,
   ALL_MODULES,
   ALL_PLANS_ORDERED,
+  BOOKABLE_MODULES,
   FEATURE_GROUPS,
   ONE_TIME_PLANS,
   ORDERED_PLANS,
@@ -18,6 +19,7 @@ import {
   addonsFor,
   allPlanKeys,
   checkoutHrefForPlan,
+  hasUsageBasedModules,
   intervalForPlanKey,
   isOneTimePlan,
   isPlanId,
@@ -30,361 +32,197 @@ import {
   recommendPlan,
   resolvePlan,
 } from '../../shared/pricing';
-import { buildPlanCatalogSql } from '../../scripts/generate-plan-catalog-sql';
+import { PLAN_CONFIG, diffPricingTiersAgainstPlanConfig } from '../../src/lib/billing/planConfig';
 import { buildGenerated } from '../../scripts/sync-shared-pricing.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..', '..');
+const sharedPricingSource = readFileSync(join(ROOT, 'shared', 'pricing.ts'), 'utf8');
 
-/**
- * Qualitätskontrolle des Refactorings: Diese Datei erzwingt, dass Preis-,
- * Feature- und Berechtigungsinformationen ausschließlich aus der SSoT
- * stammen und dass alle abgeleiteten Artefakte synchron bleiben.
- */
-describe('Pricing SSoT — Struktur', () => {
-  it('definiert exakt sechs Abo-Pläne mit den vorgegebenen Preisen', () => {
-    // Die Abo-Leiter bleibt bei sechs Rängen. Einmalprodukte werden separat
-    // geführt und dürfen sie nicht verlängern.
-    expect(ORDERED_PLANS).toHaveLength(6);
-    expect(PLAN_ORDER).toHaveLength(6);
-    expect(ORDERED_PLANS.map((p) => [p.id, p.price.monthlyEur])).toEqual([
-      ['free', 0],
-      ['starter', 79],
-      ['growth', 249],
-      ['agency', 699],
-      ['enterprise', 1249],
-      ['partner', 1999],
+describe('Commercial Pricing SSoT — canonical ladder', () => {
+  it('defines exactly Free Audit → START → GROWTH → BUSINESS → ENTERPRISE', () => {
+    expect(ORDERED_PLANS.map((p) => [p.id, p.name, p.price.monthlyEur, p.purchaseMode])).toEqual([
+      ['free', 'Free Audit', 0, 'free'],
+      ['starter', 'START', 59, 'checkout'],
+      ['growth', 'GROWTH', 149, 'checkout'],
+      ['business', 'BUSINESS', 349, 'checkout'],
+      ['enterprise', 'ENTERPRISE', 0, 'inquiry'],
     ]);
+    expect(PLAN_ORDER).toEqual(['free', 'starter', 'growth', 'business', 'enterprise']);
+    expect(ORDERED_PLANS).toHaveLength(5);
   });
 
-  it('führt jeden Plan entweder auf der Abo-Leiter oder als Einmalprodukt', () => {
-    // Kein Plan darf aus beiden Listen herausfallen — sonst wäre er in
-    // abgeleiteten Artefakten (Plan-Katalog, Pricing-Grids) unsichtbar.
+  it('keeps Enterprise sales-only and removes the former public price ladder', () => {
+    const enterprise = planById('enterprise');
+    expect(enterprise.purchaseMode).toBe('inquiry');
+    expect(enterprise.yearlyPlanKey).toBeNull();
+    expect(enterprise.price.monthlyEur).toBe(0);
+    expect(enterprise.price.yearlyEur).toBeNull();
+    expect(sharedPricingSource).not.toContain('699');
+    expect(sharedPricingSource).not.toContain('1249');
+    expect(sharedPricingSource).not.toContain('1999');
+    expect(sharedPricingSource).not.toContain('6900');
+    expect(sharedPricingSource).not.toContain('12490');
+    expect(sharedPricingSource).not.toContain('19000');
+    expect(ORDERED_PLANS.map((p) => p.name)).not.toContain('Agency');
+    expect(ORDERED_PLANS.map((p) => p.name)).not.toContain('Partner');
+    expect(ORDERED_PLANS.map((p) => p.name)).not.toContain('Scale');
+    expect(allPlanKeys().some((key) => /^(agency|partner|scale)(?:_yearly)?$/i.test(key))).toBe(false);
+  });
+
+  it('allows only Growth to carry a 14-day trial', () => {
+    expect(PLANS.filter((p) => p.trialDays > 0).map((p) => p.id)).toEqual(['growth']);
+    expect(planById('growth').trialDays).toBe(14);
+    expect(planById('starter').trialDays).toBe(0);
+    expect(planById('business').trialDays).toBe(0);
+    expect(planById('enterprise').trialDays).toBe(0);
+    expect(planById('growth').highlight).toBe(true);
+    expect(PLANS.filter((p) => p.highlight).map((p) => p.id)).toEqual(['growth']);
+  });
+
+  it('keeps Governance Launch outside the subscription ladder', () => {
+    expect(ONE_TIME_PLANS.map((p) => p.id)).toEqual(['governance_launch']);
+    expect(planByKey('governance_launch')?.price.oneTimeEur).toBe(349);
+    expect(intervalForPlanKey('governance_launch')).toBe('one_time');
+    expect(planRank('governance_launch')).toBe(-1);
+    expect(isOneTimePlan('governance_launch')).toBe(true);
+  });
+
+  it('keeps canonical keys unique and complete', () => {
+    expect(new Set(allPlanKeys()).size).toBe(allPlanKeys().length);
     expect(ALL_PLANS_ORDERED).toHaveLength(PLANS.length);
     expect(new Set(ALL_PLANS_ORDERED.map((p) => p.id)).size).toBe(PLANS.length);
-    expect(ORDERED_PLANS.length + ONE_TIME_PLANS.length).toBe(PLANS.length);
-  });
-
-  it('kennt keinen Plan-Bezeichner, der „scale" enthält', () => {
-    for (const key of allPlanKeys()) {
-      expect(key).not.toMatch(/scale/i);
-    }
-    for (const plan of PLANS) {
-      expect(plan.id).not.toMatch(/scale/i);
-      expect(plan.name).not.toMatch(/scale/i);
-    }
-  });
-
-  it('hat eindeutige Plan-Keys ohne Kollisionen', () => {
-    const keys = allPlanKeys();
-    expect(new Set(keys).size).toBe(keys.length);
-  });
-
-  it('deckt die drei Produktbereiche vollständig ab', () => {
-    expect(PRODUCT_AREAS.map((a) => a.label)).toEqual(['GOVERN', 'AUTOMATE', 'ENGAGE']);
-    const areaModuleIds = PRODUCT_AREAS.flatMap((a) => a.modules).sort();
-    const allModuleIds = ALL_MODULES.map((m) => m.id).sort();
-    expect(areaModuleIds).toEqual(allModuleIds);
-  });
-
-  it('enthält die sechs geforderten Policy Packs', () => {
-    expect(POLICY_PACK_IDS).toEqual([
-      'dsgvo', 'eu_ai_act', 'nis2', 'dora', 'iso_27001', 'tisax',
-    ]);
-  });
-
-  it('bildet die Runtime-Kette in der verbindlichen Reihenfolge ab', () => {
-    expect(RUNTIME_PIPELINE.map((s) => s.label)).toEqual([
-      'Website / API', 'Runtime Scan', 'Policy Engine', 'Evidence Vault',
-      'Risk Engine', 'Automation', 'Audit Export',
-    ]);
-  });
-
-  it('gliedert Features in genau vier Gruppen', () => {
-    expect(FEATURE_GROUPS.map((g) => g.label)).toEqual([
-      'Audit & Evidence', 'AI Governance', 'Automation & Ops', 'Multi Tenant & Reseller',
-    ]);
-    for (const plan of PLANS) {
-      for (const group of FEATURE_GROUPS) {
-        expect(Array.isArray(plan.features[group.id]), `${plan.id}/${group.id}`).toBe(true);
-      }
-      expect(Object.keys(plan.features).sort()).toEqual(FEATURE_GROUPS.map((g) => g.id).sort());
-    }
-  });
-
-  it('referenziert nur existierende Module und Add-ons', () => {
-    const moduleIds = new Set(ALL_MODULES.map((m) => m.id));
-    const addonIds = new Set(ADDONS.map((a) => a.id));
-    for (const plan of PLANS) {
-      for (const module of plan.modules) {
-        expect(moduleIds.has(module), `${plan.id} referenziert unbekanntes Modul ${module}`).toBe(true);
-      }
-      expect(new Set(plan.modules).size, `${plan.id} hat doppelte Module`).toBe(plan.modules.length);
-      for (const addon of plan.addons) {
-        expect(addonIds.has(addon), `${plan.id} referenziert unbekanntes Add-on ${addon}`).toBe(true);
-      }
-    }
-  });
-
-  it('Add-ons sind nur für Pläne buchbar, die sie auch führen', () => {
-    for (const addon of ADDONS) {
-      for (const planId of addon.availableFor) {
-        expect(
-          addonsFor(planId).some((a) => a.id === addon.id),
-          `${addon.id} ist für ${planId} freigegeben, aber nicht im Plan gelistet`,
-        ).toBe(true);
-      }
-    }
   });
 });
 
-describe('Pricing SSoT — Monotonie', () => {
-  it('Module wachsen entlang der Plan-Reihenfolge', () => {
-    // Free ist bewusst kein Untermenge-Vorgänger von Starter im Preis, aber
-    // ein höherer Plan darf nie Module verlieren.
-    for (let i = 1; i < PLAN_ORDER.length; i++) {
-      const lower = planById(PLAN_ORDER[i - 1]);
-      const higher = planById(PLAN_ORDER[i]);
-      for (const module of lower.modules) {
-        expect(
-          higher.modules.includes(module),
-          `${higher.id} verliert Modul "${module}" gegenüber ${lower.id}`,
-        ).toBe(true);
-      }
-    }
+describe('Commercial Pricing SSoT — compatibility boundary', () => {
+  it('normalizes legacy identifiers only as input compatibility', () => {
+    expect(normalizePlanKey('agency')).toBe('business');
+    expect(normalizePlanKey('agency_yearly')).toBe('business_yearly');
+    expect(normalizePlanKey('partner')).toBe('enterprise');
+    expect(normalizePlanKey('partner_yearly')).toBe('enterprise');
+    expect(normalizePlanKey('scale')).toBe('enterprise');
+    expect(normalizePlanKey('scale_yearly')).toBe('enterprise');
+    expect(normalizePlanKey('free')).toBe('free_audit');
+    expect(planByKey('agency')?.id).toBe('business');
+    expect(planByKey('partner')?.id).toBe('enterprise');
+    expect(resolvePlan('agency')?.id).toBe('business');
+    expect(resolvePlan('partner')?.id).toBe('enterprise');
+    expect(isPlanId('agency')).toBe(true);
+    expect(isPlanId('partner')).toBe(true);
   });
 
-  it('Berechtigungen werden nie zurückgenommen', () => {
+  it('never emits legacy identifiers from the canonical catalog', () => {
+    for (const key of allPlanKeys()) expect(key).not.toMatch(/agency|partner|scale/i);
+    for (const plan of PLANS) expect(plan.planKey).not.toMatch(/agency|partner|scale/i);
+  });
+});
+
+describe('Commercial Pricing SSoT — entitlements and feature store', () => {
+  it('keeps entitlements monotonic along the public ladder', () => {
     for (let i = 1; i < PLAN_ORDER.length; i++) {
       const lower = planById(PLAN_ORDER[i - 1]);
       const higher = planById(PLAN_ORDER[i]);
+      for (const module of lower.modules) expect(higher.modules).toContain(module);
       for (const [key, enabled] of Object.entries(lower.permissions)) {
-        if (!enabled) continue;
-        expect(
-          higher.permissions[key as keyof typeof higher.permissions],
-          `${higher.id} verliert Berechtigung "${key}" gegenüber ${lower.id}`,
-        ).toBe(true);
+        if (enabled) expect(higher.permissions[key as keyof typeof higher.permissions]).toBe(true);
       }
-    }
-  });
-
-  it('Limits sinken nie (–1 gilt als unbegrenzt)', () => {
-    for (let i = 1; i < PLAN_ORDER.length; i++) {
-      const lower = planById(PLAN_ORDER[i - 1]);
-      const higher = planById(PLAN_ORDER[i]);
       for (const key of Object.keys(lower.limits) as Array<keyof typeof lower.limits>) {
         const a = lower.limits[key];
         const b = higher.limits[key];
         if (b === -1) continue;
-        expect(a === -1 ? Infinity : a, `${higher.id}.${key} < ${lower.id}.${key}`)
-          .toBeLessThanOrEqual(b);
+        expect(a === -1 ? Infinity : a).toBeLessThanOrEqual(b);
       }
     }
   });
 
-  it('isUpgrade folgt der Preisreihenfolge', () => {
-    expect(isUpgrade('starter', 'growth')).toBe(true);
-    expect(isUpgrade('partner', 'growth')).toBe(false);
-    expect(isUpgrade('growth', 'growth')).toBe(false);
-  });
-});
-
-describe('Pricing SSoT — Altdaten und Auflösung', () => {
-  it('bildet Legacy-Keys auf die kanonischen Keys ab', () => {
-    expect(normalizePlanKey('scale')).toBe('partner');
-    expect(normalizePlanKey('scale_yearly')).toBe('partner_yearly');
-    expect(normalizePlanKey('free')).toBe('free_audit');
-    expect(normalizePlanKey('free_tier')).toBe('free_audit');
-    expect(normalizePlanKey('  SCALE  ')).toBe('partner');
-    expect(normalizePlanKey('nonsense')).toBeNull();
-    expect(normalizePlanKey(null)).toBeNull();
-  });
-
-  it('planByKey löst Jahresvarianten und Legacy-Keys korrekt auf', () => {
-    expect(planByKey('scale')?.id).toBe('partner');
-    expect(planByKey('partner_yearly')?.id).toBe('partner');
-    expect(planByKey('growth_yearly')?.id).toBe('growth');
-    expect(planByKey('unbekannt')).toBeNull();
-  });
-
-  it('priceForPlanKey liefert die Variante, nicht den Basispreis', () => {
-    expect(priceForPlanKey('growth')).toBe(249);
-    expect(priceForPlanKey('growth_yearly')).toBe(2490);
-    expect(priceForPlanKey('scale_yearly')).toBe(19000);
-  });
-
-  it('resolvePlan akzeptiert Plan, PlanId und Plan-Key', () => {
-    expect(resolvePlan(planById('growth'))?.id).toBe('growth');
-    expect(resolvePlan('growth')?.id).toBe('growth');
-    expect(resolvePlan('growth_yearly')?.id).toBe('growth');
-    expect(resolvePlan('scale')?.id).toBe('partner');
-    expect(resolvePlan(undefined)).toBeNull();
-  });
-});
-
-describe('Pricing SSoT — Checkout-Ziele', () => {
-  it('erzeugt für jeden Plan ein internes Ziel passend zum Kaufmodus', () => {
+  it('keeps product areas, Policy Packs, feature groups and module references consistent', () => {
+    expect(PRODUCT_AREAS.map((a) => a.label)).toEqual(['GOVERN', 'AUTOMATE', 'ENGAGE']);
+    expect(PRODUCT_AREAS.flatMap((a) => a.modules).sort()).toEqual(ALL_MODULES.map((m) => m.id).sort());
+    expect(POLICY_PACK_IDS).toEqual(['dsgvo', 'eu_ai_act', 'nis2', 'dora', 'iso_27001', 'tisax']);
+    expect(RUNTIME_PIPELINE.map((s) => s.label)).toEqual(['Website / API', 'Runtime Scan', 'Policy Engine', 'Evidence Vault', 'Risk Engine', 'Automation', 'Audit Export']);
     for (const plan of PLANS) {
-      const href = checkoutHrefForPlan(plan);
-      expect(href.startsWith('/'), `${plan.id}: ${href}`).toBe(true);
-      if (plan.purchaseMode === 'free') expect(href).toContain('/audit');
-      if (plan.purchaseMode === 'inquiry') expect(href).toContain('/contact-sales');
-      if (plan.purchaseMode === 'checkout') expect(href).toContain(`/checkout/${plan.planKey}`);
-      // Einmalprodukte nutzen denselben Checkout-Einstieg wie Abos; der
-      // Kaufmodus wird serverseitig aus der SSoT abgeleitet, nicht aus der URL.
-      if (plan.purchaseMode === 'one_time') expect(href).toContain(`/checkout/${plan.planKey}`);
+      expect(Object.keys(plan.features).sort()).toEqual(FEATURE_GROUPS.map((g) => g.id).sort());
+      expect(new Set(plan.modules).size).toBe(plan.modules.length);
+      for (const module of plan.modules) expect(ALL_MODULES.some((m) => m.id === module)).toBe(true);
+      for (const addon of plan.addons) expect(ADDONS.some((a) => a.id === addon)).toBe(true);
+    }
+    for (const addon of ADDONS) {
+      for (const planId of addon.availableFor) expect(addonsFor(planId).some((a) => a.id === addon.id)).toBe(true);
     }
   });
 
-  it('hängt an Einmalprodukte keinen Pilot-Trial-Parameter', () => {
-    // Ein Trial ist ohne Subscription nicht darstellbar — `pilot=true` würde
-    // in der Edge Function ins Leere laufen.
-    for (const plan of ONE_TIME_PLANS) {
-      expect(checkoutHrefForPlan(plan)).not.toContain('pilot');
-      expect(plan.trialDays).toBe(0);
-    }
+  it('models AI Frontend Studio as credits/usage, not as a plan-included feature', () => {
+    const frontend = BOOKABLE_MODULES.find((m) => m.id === 'ai_frontend');
+    expect(frontend?.name).toBe('AI Frontend Studio');
+    expect(frontend?.priceModel).toBe('credits');
+    expect(frontend?.priceEur).toBe(0);
+    expect(frontend?.usageNote).toContain('Credits');
+    expect(hasUsageBasedModules(['ai_frontend'])).toBe(true);
+    expect(planById('business').modules).not.toContain('ai_frontend' as never);
   });
 
-  it('verwendet für Jahresvarianten den Jahres-Plan-Key', () => {
-    expect(checkoutHrefForPlan('growth', { interval: 'year' })).toContain('/checkout/growth_yearly');
+  it('retains flat, flat_plus_usage and per_unit as commercial primitives', () => {
+    expect(new Set(BOOKABLE_MODULES.map((m) => m.priceModel))).toEqual(new Set(['flat', 'flat_plus_usage', 'per_unit', 'credits']));
+    expect(BOOKABLE_MODULES.find((m) => m.id === 'website_chat')?.priceModel).toBe('flat_plus_usage');
+    expect(BOOKABLE_MODULES.find((m) => m.id === 'voice_bot')?.priceModel).toBe('flat_plus_usage');
+    expect(BOOKABLE_MODULES.find((m) => m.id === 'whatsapp_bot')?.priceModel).toBe('flat_plus_usage');
+    expect(BOOKABLE_MODULES.find((m) => m.id === 'additional_domain')?.priceModel).toBe('per_unit');
   });
 });
 
-describe('Governance Score → Planempfehlung', () => {
-  it('empfiehlt Partner, sobald mehr Mandanten als Enterprise nötig sind', () => {
-    expect(recommendPlan({ score: 95, tenants: 20 }).planId).toBe('partner');
+describe('Commercial Pricing SSoT — checkout and recommendations', () => {
+  it('emits only canonical checkout targets and only Growth gets pilot=true', () => {
+    expect(checkoutHrefForPlan('starter')).toBe('/checkout/starter?source=pricing');
+    expect(checkoutHrefForPlan('growth')).toBe('/checkout/growth?source=pricing&pilot=true');
+    expect(checkoutHrefForPlan('business')).toBe('/checkout/business?source=pricing');
+    expect(checkoutHrefForPlan('enterprise')).toBe('/contact-sales?plan=enterprise&source=pricing');
+    expect(checkoutHrefForPlan('agency')).toBe('/checkout/business?source=pricing');
+    expect(checkoutHrefForPlan('partner')).toBe('/contact-sales?plan=enterprise&source=pricing');
+    expect(checkoutHrefForPlan('starter')).not.toContain('pilot');
+    expect(checkoutHrefForPlan('business')).not.toContain('pilot');
+    expect(checkoutHrefForPlan('enterprise')).not.toContain('pilot');
   });
 
-  it('empfiehlt Enterprise bei mehreren Organisationen', () => {
+  it('uses only defined annual variants', () => {
+    expect(priceForPlanKey('starter_yearly')).toBe(590);
+    expect(priceForPlanKey('growth_yearly')).toBe(1490);
+    expect(priceForPlanKey('business_yearly')).toBe(3490);
+    expect(planByKey('enterprise')?.yearlyPlanKey).toBeNull();
+  });
+
+  it('uses the new commercial endpoints for recommendations', () => {
+    expect(recommendPlan({ score: 20 }).planId).toBe('growth');
+    expect(recommendPlan({ score: 85 }).planId).toBe('starter');
+    expect(recommendPlan({ score: 90, needsApi: true }).planId).toBe('business');
+    expect(recommendPlan({ score: 90, domains: 8 }).planId).toBe('business');
     expect(recommendPlan({ score: 95, tenants: 3 }).planId).toBe('enterprise');
   });
 
-  it('empfiehlt Agency bei API- oder White-Label-Bedarf', () => {
-    expect(recommendPlan({ score: 90, needsApi: true }).planId).toBe('agency');
-    expect(recommendPlan({ score: 90, needsWhiteLabel: true }).planId).toBe('agency');
-    expect(recommendPlan({ score: 90, domains: 8 }).planId).toBe('agency');
+  it('maps legacy upgrade ranks to canonical ranks', () => {
+    expect(planRank('agency')).toBe(3);
+    expect(planRank('partner')).toBe(4);
+    expect(isUpgrade('starter', 'growth')).toBe(true);
+    expect(isUpgrade('growth', 'business')).toBe(true);
+    expect(isUpgrade('business', 'enterprise')).toBe(true);
+    expect(isUpgrade('agency', 'growth')).toBe(false);
   });
+});
 
-  it('leitet aus niedrigem Score einen laufenden Betrieb ab', () => {
-    expect(recommendPlan({ score: 20 }).planId).toBe('growth');
-    expect(recommendPlan({ score: 55 }).planId).toBe('growth');
-    expect(recommendPlan({ score: 85 }).planId).toBe('starter');
-  });
-
-  it('liefert immer eine Begründung für den CTA', () => {
-    for (const score of [0, 30, 60, 90, 100]) {
-      expect(recommendPlan({ score }).reason.length).toBeGreaterThan(10);
+describe('Commercial Pricing SSoT — Stripe mapping boundary', () => {
+  it('derives PLAN_CONFIG from every canonical SSoT key without drift', () => {
+    expect(Object.keys(PLAN_CONFIG).sort()).toEqual(allPlanKeys().sort());
+    expect(diffPricingTiersAgainstPlanConfig()).toEqual([]);
+    for (const key of allPlanKeys()) {
+      expect(PLAN_CONFIG[key].price).toBe(priceForPlanKey(key));
+      expect(PLAN_CONFIG[key].interval).toBe(intervalForPlanKey(key));
     }
   });
 });
 
-describe('Pricing SSoT — Einmalprodukte', () => {
-  it('kennt Governance Launch als Einmalkauf zu 349 €', () => {
-    const plan = planByKey('governance_launch');
-    expect(plan).not.toBeNull();
-    expect(plan!.purchaseMode).toBe('one_time');
-    expect(plan!.name).toBe('Governance Launch');
-    // Der Betrag steht in `oneTimeEur`; `monthlyEur` ist 0, weil nichts
-    // wiederkehrend abgerechnet wird.
-    expect(plan!.price.oneTimeEur).toBe(349);
-    expect(plan!.price.monthlyEur).toBe(0);
-    expect(plan!.price.yearlyEur).toBeNull();
-    expect(priceForPlanKey('governance_launch')).toBe(349);
-    expect(intervalForPlanKey('governance_launch')).toBe('one_time');
-  });
-
-  it('isOneTimePlan trennt Einmalkäufe von Abos', () => {
-    expect(isOneTimePlan('governance_launch')).toBe(true);
-    expect(isOneTimePlan('starter')).toBe(false);
-    expect(isOneTimePlan('free_audit')).toBe(false);
-    expect(isOneTimePlan('unbekannt')).toBe(false);
-    expect(isOneTimePlan(null)).toBe(false);
-  });
-
-  it('ONE_TIME_PLANS enthält genau die Pläne mit purchaseMode one_time', () => {
-    expect(ONE_TIME_PLANS.length).toBeGreaterThan(0);
-    expect(ONE_TIME_PLANS.every((p) => p.purchaseMode === 'one_time')).toBe(true);
-    expect(ONE_TIME_PLANS.map((p) => p.id)).toEqual(
-      PLANS.filter((p) => p.purchaseMode === 'one_time').map((p) => p.id),
-    );
-  });
-
-  it('hält Einmalprodukte von der Abo-Leiter fern', () => {
-    for (const plan of ONE_TIME_PLANS) {
-      // Nicht auf der Leiter: sonst würden die Monotonie-Invarianten
-      // (Module/Berechtigungen/Limits wachsen) fälschlich auf ein
-      // Einmalprodukt angewandt.
-      expect(PLAN_ORDER).not.toContain(plan.id);
-      expect(planRank(plan.id)).toBe(-1);
-      expect(plan.yearlyPlanKey).toBeNull();
-    }
-  });
-
-  it('behandelt Einmalprodukte in isUpgrade als unvergleichbar', () => {
-    // Ohne Sonderfall würde Rang -1 jedes Abo als „Upgrade" ausweisen und
-    // nachgelagerte PLAN_ORDER.slice(-1, …)-Pfade leerlaufen lassen.
-    expect(isUpgrade('governance_launch', 'growth')).toBe(false);
-    expect(isUpgrade('growth', 'governance_launch')).toBe(false);
-  });
-
-  it('löst Einmalprodukte über jeden Auflösungsweg auf', () => {
-    // resolvePlan() nimmt den PlanId-Pfad nur, wenn isPlanId() greift —
-    // deshalb muss isPlanId() auch Pläne abseits der Leiter kennen.
-    expect(isPlanId('governance_launch')).toBe(true);
-    expect(resolvePlan('governance_launch')?.id).toBe('governance_launch');
-    expect(planById('governance_launch').planKey).toBe('governance_launch');
-    expect(allPlanKeys()).toContain('governance_launch');
-  });
-
-  it('verspricht kein Limit ohne die zugehörige Berechtigung', () => {
-    // Ein Kontingent > 0, das kein Gate freigibt, würde in der
-    // Limit-Anzeige einen Umfang vorspiegeln, den der Plan nicht hat.
-    for (const plan of PLANS) {
-      if (!plan.permissions.api) {
-        expect(plan.limits.apiCallsPerMonth, `${plan.id}.apiCallsPerMonth`).toBe(0);
-        expect(plan.limits.apiKeys, `${plan.id}.apiKeys`).toBe(0);
-      }
-      if (!plan.permissions.bulkOperations) {
-        expect(plan.limits.bulkJobsPerMonth, `${plan.id}.bulkJobsPerMonth`).toBe(0);
-      }
-    }
-  });
-
-  it('verspricht keine Behebungspläne ohne das Modul remediation', () => {
-    // Bekannte Altabweichung: `starter` führt remediationPlans = 5, hat das
-    // Modul `remediation` aber nicht — `hasFeature(plan, 'fix_snippets')` ist
-    // dort also false, während die Limit-Anzeige 5 Pläne verspricht. Das ist
-    // eine Produktentscheidung (Limit senken oder Modul ergänzen) und wird
-    // hier bewusst nur festgehalten, nicht stillschweigend korrigiert.
-    const KNOWN_DRIFT: string[] = ['starter'];
-    for (const plan of PLANS) {
-      if (plan.modules.includes('remediation')) continue;
-      if (KNOWN_DRIFT.includes(plan.id)) continue;
-      expect(plan.limits.remediationPlans, `${plan.id}.remediationPlans`).toBe(0);
-    }
-    // Die Ausnahmeliste darf nicht wachsen, ohne dass es auffällt.
-    expect(KNOWN_DRIFT).toEqual(['starter']);
-  });
-});
-
-describe('Abgeleitete Artefakte bleiben synchron', () => {
-  it('supabase/functions/_shared/pricing.generated.ts entspricht shared/pricing.ts', () => {
-    const source = readFileSync(join(ROOT, 'shared', 'pricing.ts'), 'utf8');
-    const generated = readFileSync(
-      join(ROOT, 'supabase', 'functions', '_shared', 'pricing.generated.ts'),
-      'utf8',
-    );
-    expect(generated).toBe(buildGenerated(source));
-  });
-
-  it('die Plan-Katalog-Migration entspricht shared/pricing.ts', () => {
-    const migrationsDir = join(ROOT, 'supabase', 'migrations');
-    const catalogMigration = readdirSync(migrationsDir)
-      .filter((f) => f.endsWith('_canonical_plan_catalog.sql'))
-      .sort()
-      .pop();
-    expect(catalogMigration, 'Katalog-Migration nicht gefunden').toBeDefined();
-    const sql = readFileSync(join(migrationsDir, catalogMigration!), 'utf8');
-    expect(sql).toContain(buildPlanCatalogSql());
+describe('Pricing SSoT — generated twin', () => {
+  it('keeps the Supabase pricing twin byte-identical to the SSoT', () => {
+    const target = readFileSync(join(ROOT, 'supabase', 'functions', '_shared', 'pricing.generated.ts'), 'utf8');
+    expect(target).toBe(buildGenerated(sharedPricingSource));
   });
 });

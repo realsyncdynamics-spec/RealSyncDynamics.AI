@@ -179,11 +179,22 @@ ist offen, ob sie einen Prüfpunkt brauchen. Beispiele für beide Richtungen:
 
 Der Unterschied ist nicht aus dem Namen ablesbar. Er gehört gemessen.
 
+**Gemessen am 2026-08-25**: `docs/product/entitlement-reality-map.md` verfolgt
+alle 16 Keys einzeln bis zur tatsächlichen Verwendung. Ergebnis: 2 `ENFORCED`,
+7 `DISPLAY_ONLY`, 7 `UNKNOWN`. Die beiden Beispiele oben haben sich dabei
+bestätigt — `sla.priority` ist keine Software-Frage, `webhooks.enabled` hat
+tatsächlich keinen Prüfpunkt.
+
 ### 3.3 `NOT_APPLICABLE` — keinem Plan zugeordnet
 
-`ai.tool.code_explain` · `ai.tool.log_analyze` · `barcode.issue` ·
+~~`ai.tool.code_explain`~~ · ~~`ai.tool.log_analyze`~~ · `barcode.issue` ·
 `limit.active_assets` · `limit.monthly_registrations` · `provenance.basic` ·
 `public-sector.mode` · `watermark.apply`
+
+Die beiden durchgestrichenen standen hier falsch: `_shared/ai.ts` baut den
+Schlüssel zur Laufzeit als `ai.tool.${tool.key}` zusammen, deshalb fand die
+Volltextsuche sie nicht. Sie sind **`ENFORCED`** — und weil kein Plan sie
+gewährt, für jeden Tenant gesperrt. Beleg: `entitlement-reality-map.md` §0.
 
 Sechs davon hängen ausschließlich an der stillzulegenden Fremdleiter
 (`bronze`/`silver`/`gold`) — dieselbe Liste, die

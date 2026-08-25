@@ -1,16 +1,16 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  ArrowLeft, Gavel, AlertTriangle, Loader2, Check, X,
-  Building2, Users, ShieldCheck, Clock,
+  ArrowLeft, Gavel, AlertTriangle, Loader2, Check, X, ShieldCheck, Clock,
 } from 'lucide-react';
 import { useTenant } from '../../core/access/TenantProvider';
 import { AuthGate } from '../kodee/connections/AuthGate';
 import { withPerformanceMonitoring } from './withPerformanceMonitoring';
 import {
-  approveGate, listGates, loadAccessModel, rejectGate,
-  type AccessModel, type ApprovalGate, type GateStatus,
+  approveGate, listGates, rejectGate,
+  type ApprovalGate, type GateStatus,
 } from './gatesApi';
+import { AccessManagementPanel } from './AccessManagementPanel';
 
 /**
  * /app/governance/gates — Freigaben des Policy Decision Point.
@@ -43,20 +43,15 @@ function Inner() {
   const { tenants, activeTenantId, setActiveTenant } = useTenant();
   const [status, setStatus] = useState<GateStatus>('pending');
   const [gates, setGates] = useState<ApprovalGate[] | null>(null);
-  const [access, setAccess] = useState<AccessModel | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
 
   const reload = useCallback(async () => {
-    if (!activeTenantId) { setGates([]); setAccess(null); return; }
+    if (!activeTenantId) { setGates([]); return; }
     setError(null); setGates(null);
-    const [res, model] = await Promise.all([
-      listGates(activeTenantId, status),
-      loadAccessModel(activeTenantId),
-    ]);
+    const res = await listGates(activeTenantId, status);
     if (!res.ok) { setError(res.error?.message ?? 'Freigaben konnten nicht geladen werden'); setGates([]); }
     else setGates(res.gates ?? []);
-    setAccess(model);
   }, [activeTenantId, status]);
 
   useEffect(() => { void reload(); }, [reload]);
@@ -153,7 +148,11 @@ function Inner() {
           </ul>
         )}
 
-        {activeTenantId && <AccessModelPanel model={access} />}
+        {activeTenantId && (
+          <div className="mt-10">
+            <AccessManagementPanel tenantId={activeTenantId} />
+          </div>
+        )}
       </main>
     </div>
   );
@@ -213,70 +212,5 @@ function GateRow({ gate, busy, onResolve }: {
       </div>
       <div className="text-[11px] font-mono text-titanium-600 mt-2">fingerprint: {gate.fingerprint}</div>
     </li>
-  );
-}
-
-/**
- * Zugriffsmodell aus P1-1. Lesend: Struktur und Rollen ändern owner/admin
- * heute per Migration bzw. direkt über die Tabellen — eine Pflege-Oberfläche
- * dafür ist bewusst noch nicht Teil dieser Stufe.
- */
-function AccessModelPanel({ model }: { model: AccessModel | null }) {
-  if (!model) return null;
-  const roleOf = (principalId: string) =>
-    model.bindings.filter((b) => b.principal_id === principalId).map((b) => b.role);
-
-  return (
-    <section className="mt-10">
-      <h2 className="flex items-center gap-2 text-sm font-display font-bold tracking-tight text-titanium-50 mb-3">
-        <ShieldCheck className="h-4 w-4" /> Zugriffsmodell
-      </h2>
-      {model.error && (
-        <div className="mb-3 text-[11px] text-amber-300">{model.error}</div>
-      )}
-      {model.units.length === 0 && model.principals.length === 0 ? (
-        <p className="text-[12px] text-titanium-500">
-          Noch keine Organisationseinheiten oder Principals angelegt. Bis dahin greifen
-          Policies tenantweit; Freigaben dürfen owner und admin erteilen.
-        </p>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <div className="border border-titanium-900 bg-obsidian-900/60 p-3">
-            <div className="flex items-center gap-1.5 text-[12px] font-mono uppercase tracking-wider text-titanium-300 mb-2">
-              <Building2 className="h-3.5 w-3.5" /> Einheiten ({model.units.length})
-            </div>
-            <ul className="space-y-1">
-              {model.units.map((u) => (
-                <li key={u.id} className="text-[11px] text-titanium-400 font-mono">
-                  <span style={{ paddingLeft: `${Math.max(0, u.org_path.split('/').filter(Boolean).length - 1) * 12}px` }}>
-                    {u.name} <span className="text-titanium-600">· {u.kind}</span>
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </div>
-          <div className="border border-titanium-900 bg-obsidian-900/60 p-3">
-            <div className="flex items-center gap-1.5 text-[12px] font-mono uppercase tracking-wider text-titanium-300 mb-2">
-              <Users className="h-3.5 w-3.5" /> Principals ({model.principals.length})
-            </div>
-            <ul className="space-y-1">
-              {model.principals.map((p) => {
-                const roles = roleOf(p.id);
-                return (
-                  <li key={p.id} className="text-[11px] text-titanium-400">
-                    <span className="font-mono text-titanium-200">{p.display_name}</span>
-                    <span className="text-titanium-600"> · {p.type}</span>
-                    {p.status === 'disabled' && <span className="text-amber-300"> · deaktiviert</span>}
-                    {roles.length > 0 && (
-                      <span className="text-titanium-500 font-mono"> · {roles.join(', ')}</span>
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-        </div>
-      )}
-    </section>
   );
 }

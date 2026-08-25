@@ -315,6 +315,8 @@ export const UNBACKED_CALLERS: readonly UnbackedCaller[] = [
   // Governance OS P0-1 (PR #1135): Function liegt im Repo und wird mit dem
   // naechsten deploy.yml-Lauf deployt — Eintrag nach der Neumessung entfernen.
   { slug: 'integration-credentials', surface: 'features/integrations — Marketplace, Zugangsdaten-Siegel', publicPath: false },
+  // Governance OS P1-3 (PR #1135): Pflege des Zugriffsmodells mit Pruefpfad.
+  { slug: 'governance-access', surface: 'features/governance — Zugriffsmodell pflegen', publicPath: false },
 ];
 
 const UNBACKED_SET = new Set(UNBACKED_CALLERS.map((c) => c.slug));

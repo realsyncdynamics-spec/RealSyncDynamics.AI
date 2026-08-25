@@ -7,7 +7,8 @@
     "berechtigung": 3,
     "richtung": "kuerzung",
     "availability": "self_service",
-    "grund": "Verkaufter Self-Service-Plan. Korrektur kuerzt heute nutzbare Kontingente — Bestandswirkung vor der Aenderung klaeren."
+    "grund": "Oeffentlich verkaufter Self-Service-Plan: die Preisseite ist kanonisch. Die Divergenz ist ein Datenfehler; die Korrektur darf Bestandskunden nicht rueckwirkend treffen.",
+    "kanonische_quelle": "preisseite"
   },
   {
     "plan": "starter",
@@ -17,7 +18,8 @@
     "berechtigung": 5,
     "richtung": "kuerzung",
     "availability": "self_service",
-    "grund": "Verkaufter Self-Service-Plan. Korrektur kuerzt heute nutzbare Kontingente — Bestandswirkung vor der Aenderung klaeren."
+    "grund": "Oeffentlich verkaufter Self-Service-Plan: die Preisseite ist kanonisch. Die Divergenz ist ein Datenfehler; die Korrektur darf Bestandskunden nicht rueckwirkend treffen.",
+    "kanonische_quelle": "preisseite"
   },
   {
     "plan": "growth",
@@ -27,7 +29,8 @@
     "berechtigung": 20,
     "richtung": "kuerzung",
     "availability": "self_service",
-    "grund": "Verkaufter Self-Service-Plan. Wie starter."
+    "grund": "Oeffentlich verkaufter Self-Service-Plan: die Preisseite ist kanonisch. Die Divergenz ist ein Datenfehler; die Korrektur darf Bestandskunden nicht rueckwirkend treffen.",
+    "kanonische_quelle": "preisseite"
   },
   {
     "plan": "agency",
@@ -37,7 +40,8 @@
     "berechtigung": 10000,
     "richtung": "ausweitung",
     "availability": "legacy",
-    "grund": "Stillgelegter Plan (AP2). Bestandsabos laufen unveraendert; eine Korrektur wirkt ausschliesslich auf Bestandskunden."
+    "grund": "Stillgelegter Plan, aber oeffentlich verkauft gewesen: die Preisseite ist kanonisch. Korrektur wirkt ausschliesslich auf Bestandskunden.",
+    "kanonische_quelle": "preisseite"
   },
   {
     "plan": "agency",
@@ -47,7 +51,8 @@
     "berechtigung": 25000,
     "richtung": "ausweitung",
     "availability": "legacy",
-    "grund": "Stillgelegter Plan (AP2). Bestandsabos laufen unveraendert; eine Korrektur wirkt ausschliesslich auf Bestandskunden."
+    "grund": "Stillgelegter Plan, aber oeffentlich verkauft gewesen: die Preisseite ist kanonisch. Korrektur wirkt ausschliesslich auf Bestandskunden.",
+    "kanonische_quelle": "preisseite"
   },
   {
     "plan": "agency",
@@ -57,7 +62,8 @@
     "berechtigung": 100,
     "richtung": "kuerzung",
     "availability": "legacy",
-    "grund": "Stillgelegter Plan (AP2). Bestandsabos laufen unveraendert; eine Korrektur wirkt ausschliesslich auf Bestandskunden."
+    "grund": "Stillgelegter Plan, aber oeffentlich verkauft gewesen: die Preisseite ist kanonisch. Korrektur wirkt ausschliesslich auf Bestandskunden.",
+    "kanonische_quelle": "preisseite"
   },
   {
     "plan": "agency",
@@ -67,7 +73,8 @@
     "berechtigung": 50,
     "richtung": "ausweitung",
     "availability": "legacy",
-    "grund": "Stillgelegter Plan (AP2). Bestandsabos laufen unveraendert; eine Korrektur wirkt ausschliesslich auf Bestandskunden."
+    "grund": "Stillgelegter Plan, aber oeffentlich verkauft gewesen: die Preisseite ist kanonisch. Korrektur wirkt ausschliesslich auf Bestandskunden.",
+    "kanonische_quelle": "preisseite"
   },
   {
     "plan": "enterprise",
@@ -77,7 +84,8 @@
     "berechtigung": -1,
     "richtung": "kuerzung",
     "availability": "contract",
-    "grund": "Vertragsplan: die Berechtigung sagt unbegrenzt, die Preisseite nennt Richtwerte. Welche Seite vertraglich gilt, ist ungeklaert — Kuerzung erst nach Vertragspruefung."
+    "grund": "Vertragsplan: die kanonische Quelle ist der individuelle Vertrag, nicht die oeffentliche Preisseite. Solange kein Vertragsdatensatz existiert, ist der Wert unbestimmt — weder Preisseite noch Berechtigung darf als Wahrheit gesetzt werden.",
+    "kanonische_quelle": "vertrag"
   },
   {
     "plan": "enterprise",
@@ -87,7 +95,8 @@
     "berechtigung": -1,
     "richtung": "kuerzung",
     "availability": "contract",
-    "grund": "Vertragsplan: die Berechtigung sagt unbegrenzt, die Preisseite nennt Richtwerte. Welche Seite vertraglich gilt, ist ungeklaert — Kuerzung erst nach Vertragspruefung."
+    "grund": "Vertragsplan: die kanonische Quelle ist der individuelle Vertrag, nicht die oeffentliche Preisseite. Solange kein Vertragsdatensatz existiert, ist der Wert unbestimmt — weder Preisseite noch Berechtigung darf als Wahrheit gesetzt werden.",
+    "kanonische_quelle": "vertrag"
   },
   {
     "plan": "enterprise",
@@ -97,7 +106,8 @@
     "berechtigung": -1,
     "richtung": "kuerzung",
     "availability": "contract",
-    "grund": "Vertragsplan: die Berechtigung sagt unbegrenzt, die Preisseite nennt Richtwerte. Welche Seite vertraglich gilt, ist ungeklaert — Kuerzung erst nach Vertragspruefung."
+    "grund": "Vertragsplan: die kanonische Quelle ist der individuelle Vertrag, nicht die oeffentliche Preisseite. Solange kein Vertragsdatensatz existiert, ist der Wert unbestimmt — weder Preisseite noch Berechtigung darf als Wahrheit gesetzt werden.",
+    "kanonische_quelle": "vertrag"
   },
   {
     "plan": "enterprise",
@@ -107,7 +117,8 @@
     "berechtigung": -1,
     "richtung": "kuerzung",
     "availability": "contract",
-    "grund": "Vertragsplan: die Berechtigung sagt unbegrenzt, die Preisseite nennt Richtwerte. Welche Seite vertraglich gilt, ist ungeklaert — Kuerzung erst nach Vertragspruefung."
+    "grund": "Vertragsplan: die kanonische Quelle ist der individuelle Vertrag, nicht die oeffentliche Preisseite. Solange kein Vertragsdatensatz existiert, ist der Wert unbestimmt — weder Preisseite noch Berechtigung darf als Wahrheit gesetzt werden.",
+    "kanonische_quelle": "vertrag"
   },
   {
     "plan": "enterprise",
@@ -117,7 +128,8 @@
     "berechtigung": -1,
     "richtung": "kuerzung",
     "availability": "contract",
-    "grund": "Vertragsplan: die Berechtigung sagt unbegrenzt, die Preisseite nennt Richtwerte. Welche Seite vertraglich gilt, ist ungeklaert — Kuerzung erst nach Vertragspruefung."
+    "grund": "Vertragsplan: die kanonische Quelle ist der individuelle Vertrag, nicht die oeffentliche Preisseite. Solange kein Vertragsdatensatz existiert, ist der Wert unbestimmt — weder Preisseite noch Berechtigung darf als Wahrheit gesetzt werden.",
+    "kanonische_quelle": "vertrag"
   },
   {
     "plan": "enterprise",
@@ -127,7 +139,8 @@
     "berechtigung": -1,
     "richtung": "kuerzung",
     "availability": "contract",
-    "grund": "Vertragsplan: die Berechtigung sagt unbegrenzt, die Preisseite nennt Richtwerte. Welche Seite vertraglich gilt, ist ungeklaert — Kuerzung erst nach Vertragspruefung."
+    "grund": "Vertragsplan: die kanonische Quelle ist der individuelle Vertrag, nicht die oeffentliche Preisseite. Solange kein Vertragsdatensatz existiert, ist der Wert unbestimmt — weder Preisseite noch Berechtigung darf als Wahrheit gesetzt werden.",
+    "kanonische_quelle": "vertrag"
   },
   {
     "plan": "enterprise",
@@ -137,7 +150,8 @@
     "berechtigung": -1,
     "richtung": "kuerzung",
     "availability": "contract",
-    "grund": "Vertragsplan: die Berechtigung sagt unbegrenzt, die Preisseite nennt Richtwerte. Welche Seite vertraglich gilt, ist ungeklaert — Kuerzung erst nach Vertragspruefung."
+    "grund": "Vertragsplan: die kanonische Quelle ist der individuelle Vertrag, nicht die oeffentliche Preisseite. Solange kein Vertragsdatensatz existiert, ist der Wert unbestimmt — weder Preisseite noch Berechtigung darf als Wahrheit gesetzt werden.",
+    "kanonische_quelle": "vertrag"
   },
   {
     "plan": "enterprise",
@@ -147,7 +161,8 @@
     "berechtigung": -1,
     "richtung": "kuerzung",
     "availability": "contract",
-    "grund": "Vertragsplan: die Berechtigung sagt unbegrenzt, die Preisseite nennt Richtwerte. Welche Seite vertraglich gilt, ist ungeklaert — Kuerzung erst nach Vertragspruefung."
+    "grund": "Vertragsplan: die kanonische Quelle ist der individuelle Vertrag, nicht die oeffentliche Preisseite. Solange kein Vertragsdatensatz existiert, ist der Wert unbestimmt — weder Preisseite noch Berechtigung darf als Wahrheit gesetzt werden.",
+    "kanonische_quelle": "vertrag"
   },
   {
     "plan": "partner",
@@ -157,7 +172,8 @@
     "berechtigung": 50000,
     "richtung": "ausweitung",
     "availability": "legacy",
-    "grund": "Stillgelegter Plan (AP2). Wie agency."
+    "grund": "Stillgelegter Plan, aber oeffentlich verkauft gewesen: die Preisseite ist kanonisch. Korrektur wirkt ausschliesslich auf Bestandskunden.",
+    "kanonische_quelle": "preisseite"
   },
   {
     "plan": "partner",
@@ -167,7 +183,8 @@
     "berechtigung": 50,
     "richtung": "ausweitung",
     "availability": "legacy",
-    "grund": "Stillgelegter Plan (AP2). Wie agency."
+    "grund": "Stillgelegter Plan, aber oeffentlich verkauft gewesen: die Preisseite ist kanonisch. Korrektur wirkt ausschliesslich auf Bestandskunden.",
+    "kanonische_quelle": "preisseite"
   },
   {
     "plan": "partner",
@@ -177,7 +194,8 @@
     "berechtigung": 2500,
     "richtung": "ausweitung",
     "availability": "legacy",
-    "grund": "Stillgelegter Plan (AP2). Wie agency."
+    "grund": "Stillgelegter Plan, aber oeffentlich verkauft gewesen: die Preisseite ist kanonisch. Korrektur wirkt ausschliesslich auf Bestandskunden.",
+    "kanonische_quelle": "preisseite"
   },
   {
     "plan": "partner",
@@ -187,7 +205,8 @@
     "berechtigung": 50,
     "richtung": "ausweitung",
     "availability": "legacy",
-    "grund": "Stillgelegter Plan (AP2). Wie agency."
+    "grund": "Stillgelegter Plan, aber oeffentlich verkauft gewesen: die Preisseite ist kanonisch. Korrektur wirkt ausschliesslich auf Bestandskunden.",
+    "kanonische_quelle": "preisseite"
   },
   {
     "plan": "partner",
@@ -197,7 +216,8 @@
     "berechtigung": 100000,
     "richtung": "ausweitung",
     "availability": "legacy",
-    "grund": "Stillgelegter Plan (AP2). Wie agency."
+    "grund": "Stillgelegter Plan, aber oeffentlich verkauft gewesen: die Preisseite ist kanonisch. Korrektur wirkt ausschliesslich auf Bestandskunden.",
+    "kanonische_quelle": "preisseite"
   },
   {
     "plan": "partner",
@@ -207,6 +227,7 @@
     "berechtigung": 500,
     "richtung": "ausweitung",
     "availability": "legacy",
-    "grund": "Stillgelegter Plan (AP2). Wie agency."
+    "grund": "Stillgelegter Plan, aber oeffentlich verkauft gewesen: die Preisseite ist kanonisch. Korrektur wirkt ausschliesslich auf Bestandskunden.",
+    "kanonische_quelle": "preisseite"
   }
 ]

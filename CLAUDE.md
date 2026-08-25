@@ -419,9 +419,14 @@ Runtime-Limits, Module, Berechtigungen, Feature-Listen und Add-ons.
   `entitlement_grants` (nicht `subscriptions` — dort gilt „genau ein Abo pro
   Tenant"), Anzeige über `ONE_TIME_PRICING_TIERS`.
 
-- Bei **Kontingenten** (Zahlenwerte) ist seit dem 2026-08-25 `plan.limits.*`
-  die kanonische Quelle, nicht `PLAN_ENTITLEMENTS['limit.*']`: Was dem Kunden
-  verkauft und angezeigt wird, ist der maximal durchsetzbare Wert. Beide Seiten
+- Bei **Kontingenten** (Zahlenwerte) hängt die kanonische Quelle seit dem
+  2026-08-25 an der **Planart**: für Self-Service und öffentlich verkaufte
+  Pläne gilt `plan.limits.*` (die Preisseite), für Vertragspläne
+  (`availability: 'contract'`, heute Enterprise) gilt **der Vertrag**.
+  `PLAN_ENTITLEMENTS['limit.*']` ist in beiden Fällen nur eine Ableitung.
+  Für Enterprise ist die Quelle heute **unaufgelöst** — der Vertrag liegt dem
+  System nicht vor, und es gibt keine Tabelle für tenant-spezifische Werte;
+  dort ist kein Gate erlaubt. Beide Seiten
   weichen heute in 21 von 38 Paaren ab; `npm run check:limits` verhindert
   **neue** Divergenzen (Ratsche, Grundlinie in
   `scripts/limit-canonicity-baseline.json`). **Kein neues Enforcement gegen

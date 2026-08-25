@@ -138,15 +138,25 @@ Für Zahlenwerte gibt es zwei Fassungen — `plan.limits.*` (Preisseite) und
 `PLAN_ENTITLEMENTS['limit.*']` (Autorisierung). Sie sind in **21 von 38**
 vergleichbaren Paaren auseinander. Die Entscheidung des Eigentümers:
 
-> **`plan.limits.*` ist die kanonische kommerzielle Quelle.** Was dem Kunden
-> verkauft und angezeigt wird, ist der maximal durchsetzbare Wert.
-> `product_entitlements.limit.*` ist keine zweite Wahrheit.
+> Die kanonische Quelle hängt an der **Planart**:
+>
+> | Planart | Kanonische Quelle |
+> |---|---|
+> | Self-Service / öffentlich verkauft (auch die stillgelegten) | `plan.limits` — die veröffentlichte Preisseite |
+> | Enterprise / individuell vertraglich (`availability: 'contract'`) | **der Vertrag**, nicht die öffentliche Preisseite |
+>
+> `product_entitlements.limit.*` ist in beiden Fällen eine **Ableitung**, nie
+> selbst die Wahrheit.
 
 Zwei Regeln, die daraus folgen und beide verbindlich sind:
 
 1. **Kein neues Enforcement gegen einen divergierenden Wert**, bevor die
-   kanonische Quelle für ihn hergestellt ist. Sonst entsteht technisch
-   korrektes Enforcement gegen eine falsche Zahl.
+   kanonische Quelle für ihn aufgelöst ist. Sonst entsteht technisch
+   korrektes Enforcement gegen eine falsche Zahl. Für Enterprise ist das
+   heute bei acht Feldern der Fall: Der Vertrag gilt, liegt dem System aber
+   nicht vor — und einen Speicherort dafür gibt es noch nicht.
+   Reihenfolge: **Canonical Entitlements → Datenbereinigung → Gates →
+   Tests.**
 2. **Keine stillschweigende Kürzung bei Bestandskunden.** Wo ein Kunde heute
    aufgrund des höheren Entitlements mehr nutzen kann, ist vor der Reduktion
    zu klären, ob das höhere Recht zugesagt wurde.

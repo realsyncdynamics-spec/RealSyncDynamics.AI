@@ -9,22 +9,46 @@ Trigger gesetzt, kein bestehendes Gate angefasst.
 
 ## 1. Die Entscheidung
 
-Am 2026-08-25 hat der Eigentümer festgelegt:
+Am 2026-08-25 hat der Eigentümer die kanonische Quelle festgelegt — in **zwei
+Schritten**, weil die erste Fassung für Vertragspläne zu grob war.
 
-> **`plan.limits.*` ist die kanonische kommerzielle Quelle.**
-> Was dem Kunden verkauft und angezeigt wird, ist der maximal durchsetzbare
-> Wert. `PLAN_ENTITLEMENTS['limit.*']` wird nicht als zweite Wahrheit
-> behandelt.
+### 1.1 Die erste Fassung
 
-Mit einer Schutzklausel, die genauso verbindlich ist:
+> `plan.limits.*` ist die kanonische kommerzielle Quelle. Was dem Kunden
+> verkauft und angezeigt wird, ist der maximal durchsetzbare Wert.
+
+### 1.2 Die Verfeinerung — Planart entscheidet
+
+Der Diff aus §3 hat gezeigt, dass diese Regel wörtlich angewandt einen
+individuell verhandelten Enterprise-Vertrag durch die öffentliche Preisseite
+gedeckelt hätte. Die endgültige Regel:
+
+| Planart | Kanonische Quelle |
+|---|---|
+| **Self-Service / öffentlich verkauft** (`free`, `starter`, `growth`; ebenso die stillgelegten `agency`, `partner`) | `plan.limits` — die veröffentlichte Preisseite |
+| **Enterprise / individuell vertraglich** (`availability: 'contract'`) | **der Vertrag**, nicht die öffentliche Preisseite |
+| **Technisches Entitlement** (`PLAN_ENTITLEMENTS['limit.*']`, `product_entitlements`) | abgeleitet aus der jeweils kanonischen kommerziellen Quelle — **nie selbst die Wahrheit** |
+| **Gate** | darf **erst** gegen einen eindeutig kanonischen Wert prüfen |
+
+Das schließt zwei Fehler in beide Richtungen aus:
+
+- Enterprise darf **nicht** durch die öffentliche Preisseite gedeckelt werden,
+  wenn der Vertrag höhere Kontingente vorsieht.
+- Die höhere technische Berechtigung darf **nicht** als Vertragsrecht
+  ausgelegt werden. `-1` in der Datenbank ist kein Beleg für eine Zusage.
+
+### 1.3 Die Schutzklausel
 
 > Bei Bestandskunden darf die Korrektur **nicht stillschweigend als Downgrade**
 > wirken. Wo ein Kunde heute aufgrund eines höheren bestehenden Entitlements
 > mehr nutzen kann, ist vor der Reduktion zu klären, ob dieses höhere Recht
 > vertraglich oder kommunikativ zugesagt wurde.
 
-**Gate-Regel:** Kein neues Enforcement gegen divergierende Werte, bevor die
-kanonische Quelle hergestellt ist.
+### 1.4 Die Reihenfolge
+
+> **Canonical Entitlements → Datenbereinigung → Gates → Tests.** Nicht
+> andersherum. Kein neues Enforcement gegen einen Wert, dessen kanonische
+> Quelle nicht aufgelöst ist.
 
 Die weiteren fünf Entscheidungen desselben Tages stehen in §5.
 
@@ -64,7 +88,10 @@ Absatz.
 Die Richtung ist entscheidend, weil sie bestimmt, wer etwas verliert. `-1`
 heißt „unbegrenzt".
 
-### 3.1 Preisseite ist **strenger** — die Korrektur kürzt (12)
+### 3.1 Preisseite ist **strenger** (12)
+
+Bei den vier Nicht-Vertragsplänen kürzt die Korrektur; bei den acht
+Enterprise-Zeilen sagt sie nichts, weil dort der Vertrag gilt (§4).
 
 | Plan | Feld | Key | Preisseite | Berechtigung |
 |---|---|---|---:|---:|
@@ -82,6 +109,9 @@ heißt „unbegrenzt".
 | `enterprise` | `bulkJobsPerMonth` | `limit.bulk_jobs_monthly` | 500 | unbegrenzt |
 
 ### 3.2 Preisseite ist **großzügiger** — die Korrektur weitet aus (9)
+
+Alle neun auf stillgelegten, aber öffentlich verkauften Plänen; Preisseite
+ist kanonisch.
 
 | Plan | Feld | Key | Preisseite | Berechtigung |
 |---|---|---|---:|---:|
@@ -102,48 +132,113 @@ Limit, das ihm nie genannt wurde.
 
 ---
 
-## 4. Das Bestandsrisiko — vier Klassen, nicht eine
+## 4. Die 21 Divergenzen, neu bewertet gegen die verfeinerte Regel
 
-Die Schutzklausel aus §1 greift nicht überall gleich. Nach Schwere:
+Die Planart entscheidet, welche Spalte überhaupt eine Wahrheit enthält.
 
-### Klasse A — Enterprise verliert „unbegrenzt" (8 Fälle) ⚠️
+| Klasse | Anzahl | Kanonische Quelle | Auflösung |
+|---|---:|---|---|
+| **A** — Enterprise | 8 | **Vertrag** | **unbestimmt** — keine der beiden Spalten gilt |
+| **B** — Starter, Growth | 3 | Preisseite | Datenfehler; Korrektur auf den Preisseitenwert |
+| **C** — Agency (Kürzung) | 1 | Preisseite | wie B, nur Bestandskunden |
+| **D** — Agency, Partner (Ausweitung) | 9 | Preisseite | Korrektur weitet aus, niemand verliert |
 
-**Das ist der schwerste Fall, und er war in der Entscheidung nicht sichtbar.**
+### Klasse A — Enterprise: unbestimmt, nicht „gekürzt" ⚠️
 
-Enterprise ist seit AP2 ein **Vertragsplan** (`availability: 'contract'`,
-`purchaseMode: 'inquiry'`). Die Berechtigung sagt in **acht von neun**
-vergleichbaren Feldern `unbegrenzt`; die Preisseite nennt endliche Zahlen.
+Die alte Fassung dieses Abschnitts nannte diese acht Fälle „Enterprise
+verliert unbegrenzt". Unter der verfeinerten Regel ist das **falsch
+formuliert**: Enterprise verliert nichts, weil die Preisseite hier gar nicht
+kanonisch ist. Die richtige Aussage ist:
 
-Wörtlich angewandt macht die Entscheidung aus einem unbegrenzten
-Enterprise-Vertrag einen mit 20 Bots, 25 Domains und 50 Sitzen.
+> Für diese acht Werte ist die kanonische Quelle der Vertrag — und der liegt
+> dem System nicht vor. Der Wert ist **unbestimmt**, bis er es tut.
 
-Die naheliegende Erklärung ist, dass die Zahlen auf der Preisseite für einen
-Vertragsplan **Richtwerte** sind und der Vertrag gilt — aber das ist eine
-Vermutung, und Vermutungen sind in diesem Audit dreimal falsch gewesen.
+Weder die 20 der Preisseite noch das `-1` der Berechtigung darf als Wahrheit
+gesetzt werden. Ein Gate auf diesen acht Feldern ist damit für Enterprise
+**blockiert**, nicht nur ungeklärt.
 
-> **Offen und ausdrücklich nicht entschieden:** Gilt für `enterprise` die
-> Preisseite oder der Vertrag? Vor einer Antwort darf an Enterprise-Werten
-> nichts geändert werden.
-
-### Klasse B — verkaufte Self-Service-Pläne kürzen (3 Fälle)
+### Klasse B — die drei Kürzungen auf verkauften Self-Service-Plänen
 
 `starter.seats` 3→1, `starter.auditReports` 5→2, `growth.auditReports` 20→12.
 
-Diese drei treffen **aktive, selbst gebuchte Kunden**. Ein Starter-Tenant mit
-heute drei Mitgliedern hätte nach der Korrektur einen zu viel. Die
-Bestandsregel aus Entscheidung 5 („Bestand bleibt, Neuanlage wird geprüft")
-löst genau das — sie muss hier also **vor** der Wertkorrektur greifen, nicht
-danach.
+Hier ist die öffentliche Zusage eindeutig, also ist die Divergenz ein
+**Datenfehler**. Die Anweisung des Eigentümers lautet, ihn „zugunsten des
+Kunden" zu behandeln. Meine Lesart — ausdrücklich als Lesart gekennzeichnet,
+weil der Satz zwei Deutungen zulässt:
 
-### Klasse C — stillgelegte Pläne kürzen (1 Fall)
+- Der **kanonische Wert** ist der Preisseitenwert (1 Sitz, 2 bzw. 12 Exporte).
+  Die Regel aus §1.2 lässt hier nichts anderes zu.
+- „Zugunsten des Kunden" betrifft den **Übergang**: Wer heute drei Mitglieder
+  hat, verliert keines. Bestand bleibt, Neuanlage wird geprüft — genau die
+  Bestandsregel aus Entscheidung 5.
 
-`agency.auditReports` 100→50. Trifft nur Bestandskunden eines Plans, der nicht
-mehr verkauft wird. Geringes Volumen, aber dieselbe Frage: Wurde die 100
-jemals zugesagt?
+Daraus folgt eine Reihenfolge, die nicht umkehrbar ist: **erst** der
+Bestandsschutz-Mechanismus, **dann** die Wertkorrektur. Umgekehrt stünde ein
+Starter-Tenant mit drei Mitgliedern nach der Korrektur über dem Limit, ohne
+dass eine Regel ihn schützt.
 
-### Klasse D — Ausweitungen (9 Fälle)
+Sollte stattdessen gemeint gewesen sein, dass der **höhere** Wert gilt, wäre
+das eine Änderung der Preisseite und keine Datenbereinigung — dann bitte
+widersprechen.
 
-Kein Risiko. Siehe §3.2.
+### Klasse C und D — die stillgelegten Pläne
+
+Agency und Partner wurden öffentlich verkauft, also ist die Preisseite auch
+für sie kanonisch. Neun Fälle weiten aus (niemand verliert), einer kürzt
+(`agency.auditReports` 100→50, nur Bestandskunden).
+
+Bemerkenswert an D: Bei Partner ist die **Preisseite die großzügigere** —
+`apiCallsPerMonth` 1.000.000 gegen 100.000. Die Regel „Preisseite ist
+kanonisch" schneidet also in beide Richtungen; sie ist keine Sparmaßnahme.
+
+---
+
+## 4a. Der strukturelle Befund: es gibt keinen Ort für einen Vertragswert
+
+Die Regel „für Enterprise ist der Vertrag kanonisch" setzt voraus, dass das
+System einen vertragsspezifischen Wert **speichern** kann. Gemessen am Schema:
+**kann es nicht.**
+
+`tenant_entitlements()` löst ausschließlich über Produkte auf:
+
+```
+subscriptions.stripe_price_id ─┐
+                               ├─→ products ─→ product_entitlements ─→ entitlements
+entitlement_grants.product_id ─┘
+```
+
+`entitlement_grants` gewährt ein **ganzes Produkt** (`product_id`), nicht
+einen einzelnen Key mit einem eigenen Wert. Eine Tabelle für
+tenant-spezifische Überschreibungen existiert nicht — geprüft, nicht
+geschlossen: keine Fundstelle für `tenant_entitlement_overrides`,
+`entitlement_override` oder `contract_limit` in Migrationen, `src/` oder
+`supabase/functions/`.
+
+Die Zusammenführungsregel lautet zudem `-1 gewinnt, sonst MAX`. Ein Grant
+könnte einen Wert also nur **anheben**, nie senken.
+
+### Was das für die Regel bedeutet
+
+Zwei Wege, beide noch nicht entschieden:
+
+1. **Ein Produkt je Enterprise-Vertrag.** Passt ins bestehende Modell, keine
+   Schemaänderung; skaliert schlecht und vermischt Katalog mit Vertragsdaten.
+2. **Eine Überschreibungstabelle je Tenant und Key.** Sauberer, aber ein
+   Eingriff in den Auflöser — und der ist die Funktion, in der dieser PR
+   bereits eine Regression hatte.
+
+### Eine Lesart des Ist-Zustands, ausdrücklich als Lesart
+
+Dass Enterprise heute in acht Feldern `-1` trägt, ist unter der neuen Regel
+**nicht sinnlos**: `-1` ist genau die Kodierung von „das System begrenzt hier
+nicht — der Vertrag entscheidet". Möglich, dass die Divergenz nie ein Fehler
+war, sondern die einzige Ausdrucksform, die das Schema für „vertraglich
+geregelt" anbietet.
+
+Ich kann das nicht belegen — es gibt keinen Kommentar und keine Migration, die
+es sagt. Deshalb steht es hier als Lesart und nicht als Befund. Für die
+Entscheidung ist es trotzdem erheblich: Trifft sie zu, ist der Ist-Zustand
+bereits richtig und es fehlt nur die Dokumentation.
 
 ---
 
@@ -196,16 +291,20 @@ lassen den Guard fallen, der unveränderte Stand nicht.
 
 ## 7. Was als Nächstes ansteht — und in welcher Reihenfolge
 
-1. **Enterprise klären** (Klasse A). Ohne diese Antwort ist die kanonische
-   Quelle für acht Werte unbestimmt.
-2. **Bestandsregel vor Wertkorrektur.** Erst der Trigger-Mechanismus mit
-   Bestandsschutz (Entscheidung 5), dann die drei Kürzungen auf verkauften
-   Plänen (Klasse B) — nicht umgekehrt.
-3. **Die neun Ausweitungen** (Klasse D) können unabhängig davon laufen; sie
-   nehmen niemandem etwas.
-4. **Erst danach Gates.** `team_seats`, `compliance_exports_monthly`,
-   `domains`/`bots`, `webhooks.enabled`.
+Verbindlich ist die Kette aus §1.4: **Canonical Entitlements →
+Datenbereinigung → Gates → Tests.**
 
-Der Grund für diese Reihenfolge steht in der Entscheidung selbst: Sonst
-entsteht technisch korrektes Enforcement gegen eine falsche Zahl — der Fehler,
-den dieser Audit gerade gefunden hat.
+1. **Enterprise-Quelle spezifizieren** (Klasse A + §4a). Nicht nur „welche
+   Zahl gilt", sondern **wo der Vertragswert steht**. Ohne Speicherort ist
+   die Regel nicht umsetzbar, sondern nur formuliert.
+2. **Bestandsschutz vor Wertkorrektur.** Erst der Trigger-Mechanismus
+   (Entscheidung 5), dann die drei Kürzungen der Klasse B.
+3. **Die neun Ausweitungen** (Klasse D) laufen unabhängig; sie nehmen
+   niemandem etwas.
+4. **Erst danach Gates**: `team_seats`, `compliance_exports_monthly`,
+   `domains`/`bots`, `webhooks.enabled` — und für Enterprise nur auf Feldern,
+   deren Quelle aufgelöst ist.
+
+Der Grund für die Reihenfolge steht in der Entscheidung selbst: Sonst entsteht
+technisch korrektes Enforcement gegen eine Zahl, die niemand als verbindlich
+bezeichnet hat — der Fehler, den dieser Audit gefunden hat.

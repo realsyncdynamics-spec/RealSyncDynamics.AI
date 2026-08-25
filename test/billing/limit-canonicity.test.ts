@@ -10,7 +10,11 @@ import { ORDERED_PLANS, PLAN_ENTITLEMENTS } from '../../shared/pricing';
  *
  * Für dieselbe Zahl existieren zwei Fassungen: `plan.limits.*` steht auf der
  * Preisseite, `PLAN_ENTITLEMENTS['limit.*']` autorisiert. Am 2026-08-25 hat
- * der Eigentümer entschieden, dass die **Preisseite** kanonisch ist.
+ * der Eigentümer entschieden, welche kanonisch ist — und zwar abhängig von
+ * der **Planart**: für öffentlich verkaufte Pläne die Preisseite, für
+ * Vertragspläne (`availability: 'contract'`) der **Vertrag**. Für Enterprise
+ * ist die Quelle damit heute unaufgelöst, weil der Vertrag dem System nicht
+ * vorliegt.
  *
  * Die Bereinigung der 21 bestehenden Abweichungen ist eine eigene
  * Entscheidung mit Bestandskundenwirkung und bewusst noch nicht erfolgt
@@ -42,6 +46,8 @@ interface Grundlinienzeile {
   berechtigung: number;
   richtung: 'kuerzung' | 'ausweitung';
   availability: string;
+  /** Woraus der verbindliche Wert stammt — Folge der Planart, nicht des Felds. */
+  kanonische_quelle: 'preisseite' | 'vertrag';
   grund: string;
 }
 
@@ -116,15 +122,37 @@ describe('Kontingente — plan.limits gegen PLAN_ENTITLEMENTS', () => {
     ]);
   });
 
-  it('weist Enterprise als offenen Vertragsfall aus', () => {
+  it('weist Enterprise als unaufgelösten Vertragsfall aus', () => {
     // Acht Felder, in denen die Berechtigung `unbegrenzt` sagt und die
-    // Preisseite eine Zahl. Wörtlich angewandt macht die Entscheidung aus
-    // einem unbegrenzten Vertrag einen mit 20 Bots. Das ist ungeklärt.
+    // Preisseite eine Zahl. Unter der verfeinerten Regel ist hier **keine**
+    // der beiden Spalten die Wahrheit — der Vertrag ist es, und der liegt
+    // dem System nicht vor. Deshalb darf auf diesen acht Feldern kein Gate
+    // entstehen, solange die Quelle nicht aufgelöst ist.
     const ent = grundlinie.filter((e) => e.plan === 'enterprise');
     expect(ent).toHaveLength(8);
     for (const e of ent) {
       expect(e.berechtigung).toBe(-1);
-      expect(e.richtung).toBe('kuerzung');
+      expect(e.kanonische_quelle).toBe('vertrag');
     }
+  });
+
+  it('leitet die kanonische Quelle aus der Planart ab, nicht aus dem Feld', () => {
+    // Die Regel vom 2026-08-25: Planart entscheidet. Stünde hier eine Zeile
+    // mit 'vertrag' auf einem Self-Service-Plan (oder umgekehrt), wäre die
+    // Grundlinie nach einem anderen Kriterium gepflegt worden als der Regel.
+    const art = new Map<string, string>(ORDERED_PLANS.map((p) => [p.id, p.availability]));
+    for (const zeile of grundlinie) {
+      const erwartet = art.get(zeile.plan) === 'contract' ? 'vertrag' : 'preisseite';
+      expect(zeile.kanonische_quelle, `${marke(zeile)}`).toBe(erwartet);
+      expect(zeile.availability).toBe(art.get(zeile.plan));
+    }
+  });
+
+  it('hält fest, dass nur Vertragspläne eine unaufgelöste Quelle haben', () => {
+    // Die Zahl ist die Arbeitsmenge für Schritt 1 aus §7: acht Felder, deren
+    // Wert erst bestimmbar ist, wenn es einen Ort für Vertragswerte gibt.
+    const unaufgeloest = grundlinie.filter((e) => e.kanonische_quelle === 'vertrag');
+    expect(unaufgeloest).toHaveLength(8);
+    expect(new Set(unaufgeloest.map((e) => e.plan))).toEqual(new Set(['enterprise']));
   });
 });

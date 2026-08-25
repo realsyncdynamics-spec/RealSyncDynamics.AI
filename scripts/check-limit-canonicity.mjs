@@ -3,12 +3,22 @@
 //
 // ── Die Entscheidung, die dieses Skript durchsetzt ────────────────────────
 //
-// Am 2026-08-25 hat der Eigentuemer festgelegt:
+// Am 2026-08-25 hat der Eigentuemer festgelegt — in zwei Schritten, weil die
+// erste Fassung fuer Vertragsplaene zu grob war:
 //
-//   `plan.limits.*` ist die kanonische kommerzielle Quelle.
-//   Was dem Kunden verkauft und angezeigt wird, ist der maximal
-//   durchsetzbare Wert. `PLAN_ENTITLEMENTS['limit.*']` ist keine
-//   zweite Wahrheit.
+//   Self-Service und oeffentlich verkaufte Plaene
+//     → `plan.limits.*` (die veroeffentlichte Preisseite) ist kanonisch.
+//   Enterprise und individuell vertragliche Plaene
+//     → der **Vertrag** ist kanonisch, nicht die oeffentliche Preisseite.
+//
+//   In beiden Faellen gilt: `PLAN_ENTITLEMENTS['limit.*']` ist eine
+//   Ableitung, nie selbst die Wahrheit. Und ein Gate darf erst gegen einen
+//   eindeutig kanonischen Wert pruefen.
+//
+// Warum die Verfeinerung noetig war: Enterprise sagt in acht von neun
+// vergleichbaren Feldern `unbegrenzt`. Die erste Fassung haette daraus einen
+// Vertrag mit 20 Bots und 25 Domains gemacht — die oeffentliche Preisseite
+// haette einen individuell verhandelten Vertrag gedeckelt.
 //
 // Anlass war der Befund aus `docs/product/kontingente-messung.md` §0: Beide
 // Seiten nennen fuer dieselbe Sache verschiedene Zahlen. Ein Gate, das gegen
@@ -107,12 +117,14 @@ const paare = abweichungen.length + gleich.length;
 console.log(`Vergleichbare Paare: ${paare}  ·  deckungsgleich: ${gleich.length}  ·  abweichend: ${abweichungen.length}\n`);
 
 if (abweichungen.length) {
-  console.log('Abweichungen (Preisseite ist kanonisch):');
+  console.log('Abweichungen (kanonisch: Preisseite — ausser bei Vertragsplaenen):');
   for (const a of abweichungen) {
     const bekannt = GRUNDLINIE.has(`${a.plan}:${a.feld}`);
     const marke = bekannt ? '  ' : '‼️';
-    const verkauft = a.availability !== 'legacy' ? ' [verkauft]' : '';
-    console.log(`${marke} ${a.plan.padEnd(11)} ${a.feld.padEnd(22)} Preisseite ${String(a.preisseite).padStart(9)}  Berechtigung ${String(a.berechtigung).padStart(9)}${verkauft}`);
+    // Bei Vertragsplaenen ist keine der beiden Spalten die Wahrheit — der
+    // Vertrag ist es, und den kennt dieses Skript nicht.
+    const quelle = a.availability === 'contract' ? ' → Vertrag entscheidet' : '';
+    console.log(`${marke} ${a.plan.padEnd(11)} ${a.feld.padEnd(22)} Preisseite ${String(a.preisseite).padStart(9)}  Berechtigung ${String(a.berechtigung).padStart(9)}${quelle}`);
   }
   console.log('');
 }

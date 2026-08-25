@@ -98,26 +98,41 @@ repariert alle gemeinsam.
 Das Produktversprechen lautet: *Der Scan ist kostenlos, verkauft wird die
 dauerhafte Überwachung.* Genau diese ist nicht abgesichert.
 
-`governance-monitoring-scheduler` wählt seine Arbeit so aus:
+`governance-monitoring-scheduler` wählte seine Arbeit so aus:
 
 ```
 from('monitoring_sources').select('*').eq('status', 'active')
 ```
 
-**Kein Plan-Filter, keine Entitlement-Prüfung.** `audit-recheck-weekly`
-enthält überhaupt keinen Entitlement-Bezug. Die Keys `monitoring.monthly`,
-`monitoring.daily` und `monitoring.drift` haben im gesamten
-Function-Verzeichnis keine Prüfstelle — der Treffer im Scheduler ist der
-Name eines Cron-Jobs (`'governance-monitoring-daily'`), keine Berechtigung.
+**Kein Plan-Filter, keine Entitlement-Prüfung.** Die Keys
+`monitoring.monthly`, `monitoring.daily` und `monitoring.drift` hatten im
+gesamten Function-Verzeichnis keine Prüfstelle — der Treffer im Scheduler war
+der Name eines Cron-Jobs (`'governance-monitoring-daily'`), keine
+Berechtigung.
 
-Damit gilt: Wer eine `monitoring_sources`-Zeile auf `active` hat, wird
+Damit galt: Wer eine `monitoring_sources`-Zeile auf `active` hatte, wurde
 überwacht — unabhängig davon, ob sein Plan tägliche Läufe, monatliche oder
 gar keine enthält.
 
-**Das ist keine Preisfrage, sondern die Kernleistung.** Es gehört als eigener
-Arbeitsschritt entschieden, nicht nebenbei behoben: Die richtige Auflösung
-könnte ein Gate im Scheduler sein, könnte aber auch heißen, dass
-`monitoring_sources` beim Anlegen bereits nach Plan begrenzt wird.
+> **Behoben am 2026-08-25** auf Freigabe des Eigentümers. Das Gate steht
+> jetzt vor jedem Scan; die Kadenz-Regel liegt importfrei in
+> `supabase/functions/_shared/monitoring-cadence.ts` und ist unter
+> `test/governance/monitoring-cadence.test.ts` geprüft. Einzelheiten in §2.1.
+
+### 2.1 Eine Korrektur: `audit-recheck-weekly` gehört nicht dazu
+
+Die erste Fassung dieses Abschnitts nannte `audit-recheck-weekly` im selben
+Atemzug, weil es „überhaupt keinen Entitlement-Bezug" enthält. Das stimmt,
+die Schlussfolgerung wäre aber falsch gewesen.
+
+Die Function arbeitet auf `audit_recheck_subscriptions` — einer Tabelle mit
+**E-Mail und Domain, ohne `tenant_id`**. Das ist der kostenlose
+E-Mail-Trichter nach dem Gratis-Scan, kein bezahltes Produkt. Ein Plan-Gate
+dort würde genau den Einstieg abschneiden, der Kunden bringt.
+
+**Lehre:** „Kein Entitlement-Bezug" ist ein Messwert, kein Befund. Erst der
+Blick auf die Datenquelle sagt, ob eine Lücke oder ein bewusst freier Pfad
+vorliegt — dieselbe Unterscheidung, die §3 für die `UNKNOWN`-Keys verlangt.
 
 ---
 
@@ -148,12 +163,13 @@ mit Prüf- oder Buchungspunkt.
 
 `ai.tool.bot_reply` · `alerts.email` · `bots.appointments` · `bots.chat` ·
 `bots.human_handoff` · `bots.multi_channel` · `bots.orders` · `dse.generator` ·
-`fix.snippets` · `governance.risk_register` · **`monitoring.daily`** ·
-**`monitoring.drift`** · **`monitoring.monthly`** · `policy.iso27001` ·
+`fix.snippets` · `governance.risk_register` · ~~`monitoring.daily`~~ ·
+~~`monitoring.drift`~~ · ~~`monitoring.monthly`~~ · `policy.iso27001` ·
 `policy.nis2` · `sla.priority` · `webhooks.enabled` · `whitelabel.dashboard` ·
 `whitelabel.reports`
 
-Drei davon sind in §2 bereits geklärt und sind echte Lücken. Bei den übrigen
+Die drei durchgestrichenen sind seit dem 2026-08-25 **`HARD`** — das Gate aus
+§2 prüft sie vor jedem Scan. Damit sind es noch 16 offene. Bei den übrigen
 ist offen, ob sie einen Prüfpunkt brauchen. Beispiele für beide Richtungen:
 
 - `sla.priority` beschreibt eine **organisatorische** Zusage (Reaktionszeit).
@@ -244,7 +260,8 @@ klassifizieren.
 Die drei Arbeitspakete, die dieser Befund nahelegt, in der Reihenfolge ihres
 Gewichts:
 
-1. **Überwachung durchsetzen** (§2). Betrifft die Kernleistung.
+1. ~~**Überwachung durchsetzen** (§2). Betrifft die Kernleistung.~~
+   **Erledigt am 2026-08-25.**
 2. **Die sieben unbewachten Kontingente** (§1.1) — je Kontingent entscheiden:
    Prüfpunkt nachrüsten, auf `metered` umstellen oder als reine Anzeige
    kennzeichnen.

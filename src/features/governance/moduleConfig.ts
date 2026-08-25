@@ -38,6 +38,13 @@ export const GOVERNANCE_MODULES: ModuleDefinition[] = [
     description: 'Vom Policy Decision Point angehaltene Aktionen freigeben'
   },
   {
+    id: 'role-home',
+    label: 'Mein Einstieg',
+    path: '/app/governance/start',
+    status: 'live',
+    description: 'Rollenspezifischer Einstieg (Datenschutz, IT, Compliance, Freigabe)'
+  },
+  {
     id: 'dpias',
     label: 'DPIAs',
     path: '/app/dpia',

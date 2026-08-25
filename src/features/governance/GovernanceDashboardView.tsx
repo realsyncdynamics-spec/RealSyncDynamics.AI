@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  ArrowLeft, Activity, AlertTriangle, ShieldCheck, Database,
+  ArrowLeft, Activity, AlertTriangle, ShieldCheck, Compass, Database,
   Bot, FileCheck2, Lock, Loader2, KeyRound, GitBranch, Plus, Archive, Webhook, Network, Gavel, ScrollText, Library, FileDown, UserCheck, ShieldAlert, Plug, Building2, DollarSign, Wrench, Sparkles,
 } from 'lucide-react';
 import { useTenant } from '../../core/access/TenantProvider';
@@ -148,6 +148,7 @@ function Inner() {
           </Link>
           <ModuleLink icon={<KeyRound className="h-4 w-4" />} to="/app/keys" label="Keys" moduleId="keys" />
           <ModuleLink icon={<Gavel className="h-4 w-4" />} to="/app/approvals" label="Approvals" moduleId="approvals" badge={pendingApprovals} />
+          <ModuleLink icon={<Compass className="h-4 w-4" />} to="/app/governance/start" label="Mein Einstieg" moduleId="role-home" />
           <ModuleLink icon={<ShieldCheck className="h-4 w-4" />} to="/app/governance/gates" label="Freigaben" moduleId="gates" badge={pendingGates} />
           <ModuleLink icon={<FileCheck2 className="h-4 w-4" />} to="/app/dpia" label="DPIAs" moduleId="dpias" badge={openDpias} />
           <ModuleLink icon={<UserCheck className="h-4 w-4" />} to="/app/dsr" label="DSR" moduleId="dsr" badge={openDsrs.overdue} />

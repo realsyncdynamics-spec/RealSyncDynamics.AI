@@ -19,6 +19,7 @@ import { GovernanceTrendsPanel } from './GovernanceTrendsPanel';
 import { DsgvoControlPackPanel } from './dsgvo-control-pack/DsgvoControlPackPanel';
 import { DEMO_CONTROL_SIGNALS } from './dsgvo-control-pack/dsgvoControlPackDemo';
 import { countPendingApprovals } from './approvalsApi';
+import { countPendingGates } from './gatesApi';
 import { countOpenDpias } from './dpiasApi';
 import { countOpenDsrs } from './dsrApi';
 import { countOpenIncidents } from './incidentsApi';
@@ -55,6 +56,7 @@ function Inner() {
   const [policies, setPolicies] = useState<DbGovernancePolicy[] | null>(null);
   const [controls, setControls] = useState<DbFrameworkControl[] | null>(null);
   const [pendingApprovals, setPendingApprovals] = useState(0);
+  const [pendingGates, setPendingGates] = useState(0);
   const [openDpias, setOpenDpias] = useState(0);
   const [openDsrs, setOpenDsrs] = useState({ total: 0, overdue: 0 });
   const [openIncidents, setOpenIncidents] = useState(0);
@@ -77,10 +79,12 @@ function Inner() {
       countOpenDpias(activeTenantId),
       countOpenDsrs(activeTenantId),
       countOpenIncidents(activeTenantId),
+      countPendingGates(activeTenantId),
     ])
-      .then(([e, a, p, c, pa, od, ds, oi]) => {
+      .then(([e, a, p, c, pa, od, ds, oi, pg]) => {
         setEvents(e); setAssets(a); setPolicies(p); setControls(c);
         setPendingApprovals(pa); setOpenDpias(od); setOpenDsrs(ds); setOpenIncidents(oi);
+        setPendingGates(pg);
       })
       .catch((err: Error) => setError(err.message));
   };
@@ -144,6 +148,7 @@ function Inner() {
           </Link>
           <ModuleLink icon={<KeyRound className="h-4 w-4" />} to="/app/keys" label="Keys" moduleId="keys" />
           <ModuleLink icon={<Gavel className="h-4 w-4" />} to="/app/approvals" label="Approvals" moduleId="approvals" badge={pendingApprovals} />
+          <ModuleLink icon={<ShieldCheck className="h-4 w-4" />} to="/app/governance/gates" label="Freigaben" moduleId="gates" badge={pendingGates} />
           <ModuleLink icon={<FileCheck2 className="h-4 w-4" />} to="/app/dpia" label="DPIAs" moduleId="dpias" badge={openDpias} />
           <ModuleLink icon={<UserCheck className="h-4 w-4" />} to="/app/dsr" label="DSR" moduleId="dsr" badge={openDsrs.overdue} />
           <ModuleLink icon={<ShieldAlert className="h-4 w-4" />} to="/app/incidents" label="Incidents" moduleId="incidents" badge={openIncidents} />

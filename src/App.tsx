@@ -308,6 +308,7 @@ const GovernanceEventDetailView = lazy(() => import('./features/governance/Event
 const GovernanceAssetDetailView = lazy(() => import('./features/governance/AssetDetailView').then((m) => ({ default: m.AssetDetailView })));
 const GovernanceApprovalsView = lazy(() => import('./features/governance/ApprovalsView').then((m) => ({ default: m.ApprovalsView })));
 const GovernanceAdminLogView = lazy(() => import('./features/governance/AdminLogView').then((m) => ({ default: m.AdminLogView })));
+const GovernanceApprovalGatesView = lazy(() => import('./features/governance/ApprovalGatesView').then((m) => ({ default: m.ApprovalGatesView })));
 const GovernancePolicyTemplatesView = lazy(() => import('./features/governance/PolicyTemplatesView').then((m) => ({ default: m.PolicyTemplatesView })));
 const GovernanceComplianceReportView = lazy(() => import('./features/governance/ComplianceReportView').then((m) => ({ default: m.ComplianceReportView })));
 const GovernanceDpiasView = lazy(() => import('./features/governance/DpiasView').then((m) => ({ default: m.DpiasView })));
@@ -823,6 +824,7 @@ function RoutesWithTracking() {
       <Route path="/app/assets/:assetId" element={<GovernanceBrowserShell><GovernanceAssetDetailView /></GovernanceBrowserShell>} />
       <Route path="/app/approvals" element={<GovernanceBrowserShell><GovernanceApprovalsView /></GovernanceBrowserShell>} />
       <Route path="/app/admin-log" element={<GovernanceBrowserShell><GovernanceAdminLogView /></GovernanceBrowserShell>} />
+      <Route path="/app/governance/gates" element={<GovernanceBrowserShell><GovernanceApprovalGatesView /></GovernanceBrowserShell>} />
       <Route path="/app/policies/templates" element={<GovernanceBrowserShell><GovernancePolicyTemplatesView /></GovernanceBrowserShell>} />
       <Route path="/app/connectors" element={<GovernanceBrowserShell><GovernanceConnectorsView /></GovernanceBrowserShell>} />
       <Route path="/app/costs" element={<GovernanceBrowserShell><GovernanceCostTrackingView /></GovernanceBrowserShell>} />

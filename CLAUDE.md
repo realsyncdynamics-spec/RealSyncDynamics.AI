@@ -419,6 +419,16 @@ Runtime-Limits, Module, Berechtigungen, Feature-Listen und Add-ons.
   `entitlement_grants` (nicht `subscriptions` — dort gilt „genau ein Abo pro
   Tenant"), Anzeige über `ONE_TIME_PRICING_TIERS`.
 
+- Bei **Kontingenten** (Zahlenwerte) ist seit dem 2026-08-25 `plan.limits.*`
+  die kanonische Quelle, nicht `PLAN_ENTITLEMENTS['limit.*']`: Was dem Kunden
+  verkauft und angezeigt wird, ist der maximal durchsetzbare Wert. Beide Seiten
+  weichen heute in 21 von 38 Paaren ab; `npm run check:limits` verhindert
+  **neue** Divergenzen (Ratsche, Grundlinie in
+  `scripts/limit-canonicity-baseline.json`). **Kein neues Enforcement gegen
+  einen divergierenden Wert**, solange er nicht bereinigt ist — und keine
+  stillschweigende Kürzung bei Bestandskunden. Diff und offene
+  Enterprise-Frage: `docs/product/kanonische-kontingente.md`.
+
 Vollständige Regeln: `docs/product/pricing-governance.md`
 
 ### Routing-Struktur
@@ -454,6 +464,7 @@ Vollständige Regeln: `docs/product/pricing-governance.md`
 | Smoke (deployed) | `npm run smoke:production` |
 | QA Smoke | `npm run qa:smoke` · Governance: `npm run qa:governance` · Load: `npm run qa:load` |
 | Edge-Function-Drift | `npm run check:edge-functions` |
+| Kontingent-Kanonizität | `npm run check:limits` |
 
 ### Nach jeder Änderung
 ```bash

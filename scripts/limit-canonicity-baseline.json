@@ -1,0 +1,212 @@
+[
+  {
+    "plan": "starter",
+    "feld": "seats",
+    "key": "limit.team_seats",
+    "preisseite": 1,
+    "berechtigung": 3,
+    "richtung": "kuerzung",
+    "availability": "self_service",
+    "grund": "Verkaufter Self-Service-Plan. Korrektur kuerzt heute nutzbare Kontingente — Bestandswirkung vor der Aenderung klaeren."
+  },
+  {
+    "plan": "starter",
+    "feld": "auditReportsPerMonth",
+    "key": "limit.compliance_exports_monthly",
+    "preisseite": 2,
+    "berechtigung": 5,
+    "richtung": "kuerzung",
+    "availability": "self_service",
+    "grund": "Verkaufter Self-Service-Plan. Korrektur kuerzt heute nutzbare Kontingente — Bestandswirkung vor der Aenderung klaeren."
+  },
+  {
+    "plan": "growth",
+    "feld": "auditReportsPerMonth",
+    "key": "limit.compliance_exports_monthly",
+    "preisseite": 12,
+    "berechtigung": 20,
+    "richtung": "kuerzung",
+    "availability": "self_service",
+    "grund": "Verkaufter Self-Service-Plan. Wie starter."
+  },
+  {
+    "plan": "agency",
+    "feld": "answersPerMonth",
+    "key": "limit.bot_messages_monthly",
+    "preisseite": 25000,
+    "berechtigung": 10000,
+    "richtung": "ausweitung",
+    "availability": "legacy",
+    "grund": "Stillgelegter Plan (AP2). Bestandsabos laufen unveraendert; eine Korrektur wirkt ausschliesslich auf Bestandskunden."
+  },
+  {
+    "plan": "agency",
+    "feld": "apiCallsPerMonth",
+    "key": "limit.api_calls_monthly",
+    "preisseite": 50000,
+    "berechtigung": 25000,
+    "richtung": "ausweitung",
+    "availability": "legacy",
+    "grund": "Stillgelegter Plan (AP2). Bestandsabos laufen unveraendert; eine Korrektur wirkt ausschliesslich auf Bestandskunden."
+  },
+  {
+    "plan": "agency",
+    "feld": "auditReportsPerMonth",
+    "key": "limit.compliance_exports_monthly",
+    "preisseite": 50,
+    "berechtigung": 100,
+    "richtung": "kuerzung",
+    "availability": "legacy",
+    "grund": "Stillgelegter Plan (AP2). Bestandsabos laufen unveraendert; eine Korrektur wirkt ausschliesslich auf Bestandskunden."
+  },
+  {
+    "plan": "agency",
+    "feld": "bulkJobsPerMonth",
+    "key": "limit.bulk_jobs_monthly",
+    "preisseite": 100,
+    "berechtigung": 50,
+    "richtung": "ausweitung",
+    "availability": "legacy",
+    "grund": "Stillgelegter Plan (AP2). Bestandsabos laufen unveraendert; eine Korrektur wirkt ausschliesslich auf Bestandskunden."
+  },
+  {
+    "plan": "enterprise",
+    "feld": "bots",
+    "key": "limit.bots",
+    "preisseite": 20,
+    "berechtigung": -1,
+    "richtung": "kuerzung",
+    "availability": "contract",
+    "grund": "Vertragsplan: die Berechtigung sagt unbegrenzt, die Preisseite nennt Richtwerte. Welche Seite vertraglich gilt, ist ungeklaert — Kuerzung erst nach Vertragspruefung."
+  },
+  {
+    "plan": "enterprise",
+    "feld": "answersPerMonth",
+    "key": "limit.bot_messages_monthly",
+    "preisseite": 50000,
+    "berechtigung": -1,
+    "richtung": "kuerzung",
+    "availability": "contract",
+    "grund": "Vertragsplan: die Berechtigung sagt unbegrenzt, die Preisseite nennt Richtwerte. Welche Seite vertraglich gilt, ist ungeklaert — Kuerzung erst nach Vertragspruefung."
+  },
+  {
+    "plan": "enterprise",
+    "feld": "domains",
+    "key": "limit.domains",
+    "preisseite": 25,
+    "berechtigung": -1,
+    "richtung": "kuerzung",
+    "availability": "contract",
+    "grund": "Vertragsplan: die Berechtigung sagt unbegrenzt, die Preisseite nennt Richtwerte. Welche Seite vertraglich gilt, ist ungeklaert — Kuerzung erst nach Vertragspruefung."
+  },
+  {
+    "plan": "enterprise",
+    "feld": "automationRunsPerMonth",
+    "key": "limit.automation_runs_monthly",
+    "preisseite": 2000,
+    "berechtigung": -1,
+    "richtung": "kuerzung",
+    "availability": "contract",
+    "grund": "Vertragsplan: die Berechtigung sagt unbegrenzt, die Preisseite nennt Richtwerte. Welche Seite vertraglich gilt, ist ungeklaert — Kuerzung erst nach Vertragspruefung."
+  },
+  {
+    "plan": "enterprise",
+    "feld": "seats",
+    "key": "limit.team_seats",
+    "preisseite": 50,
+    "berechtigung": -1,
+    "richtung": "kuerzung",
+    "availability": "contract",
+    "grund": "Vertragsplan: die Berechtigung sagt unbegrenzt, die Preisseite nennt Richtwerte. Welche Seite vertraglich gilt, ist ungeklaert — Kuerzung erst nach Vertragspruefung."
+  },
+  {
+    "plan": "enterprise",
+    "feld": "apiCallsPerMonth",
+    "key": "limit.api_calls_monthly",
+    "preisseite": 250000,
+    "berechtigung": -1,
+    "richtung": "kuerzung",
+    "availability": "contract",
+    "grund": "Vertragsplan: die Berechtigung sagt unbegrenzt, die Preisseite nennt Richtwerte. Welche Seite vertraglich gilt, ist ungeklaert — Kuerzung erst nach Vertragspruefung."
+  },
+  {
+    "plan": "enterprise",
+    "feld": "auditReportsPerMonth",
+    "key": "limit.compliance_exports_monthly",
+    "preisseite": 200,
+    "berechtigung": -1,
+    "richtung": "kuerzung",
+    "availability": "contract",
+    "grund": "Vertragsplan: die Berechtigung sagt unbegrenzt, die Preisseite nennt Richtwerte. Welche Seite vertraglich gilt, ist ungeklaert — Kuerzung erst nach Vertragspruefung."
+  },
+  {
+    "plan": "enterprise",
+    "feld": "bulkJobsPerMonth",
+    "key": "limit.bulk_jobs_monthly",
+    "preisseite": 500,
+    "berechtigung": -1,
+    "richtung": "kuerzung",
+    "availability": "contract",
+    "grund": "Vertragsplan: die Berechtigung sagt unbegrenzt, die Preisseite nennt Richtwerte. Welche Seite vertraglich gilt, ist ungeklaert — Kuerzung erst nach Vertragspruefung."
+  },
+  {
+    "plan": "partner",
+    "feld": "answersPerMonth",
+    "key": "limit.bot_messages_monthly",
+    "preisseite": 100000,
+    "berechtigung": 50000,
+    "richtung": "ausweitung",
+    "availability": "legacy",
+    "grund": "Stillgelegter Plan (AP2). Wie agency."
+  },
+  {
+    "plan": "partner",
+    "feld": "domains",
+    "key": "limit.domains",
+    "preisseite": 100,
+    "berechtigung": 50,
+    "richtung": "ausweitung",
+    "availability": "legacy",
+    "grund": "Stillgelegter Plan (AP2). Wie agency."
+  },
+  {
+    "plan": "partner",
+    "feld": "automationRunsPerMonth",
+    "key": "limit.automation_runs_monthly",
+    "preisseite": 10000,
+    "berechtigung": 2500,
+    "richtung": "ausweitung",
+    "availability": "legacy",
+    "grund": "Stillgelegter Plan (AP2). Wie agency."
+  },
+  {
+    "plan": "partner",
+    "feld": "seats",
+    "key": "limit.team_seats",
+    "preisseite": 100,
+    "berechtigung": 50,
+    "richtung": "ausweitung",
+    "availability": "legacy",
+    "grund": "Stillgelegter Plan (AP2). Wie agency."
+  },
+  {
+    "plan": "partner",
+    "feld": "apiCallsPerMonth",
+    "key": "limit.api_calls_monthly",
+    "preisseite": 1000000,
+    "berechtigung": 100000,
+    "richtung": "ausweitung",
+    "availability": "legacy",
+    "grund": "Stillgelegter Plan (AP2). Wie agency."
+  },
+  {
+    "plan": "partner",
+    "feld": "bulkJobsPerMonth",
+    "key": "limit.bulk_jobs_monthly",
+    "preisseite": -1,
+    "berechtigung": 500,
+    "richtung": "ausweitung",
+    "availability": "legacy",
+    "grund": "Stillgelegter Plan (AP2). Wie agency."
+  }
+]

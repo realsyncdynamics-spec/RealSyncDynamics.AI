@@ -30,6 +30,12 @@ import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 import { normalizePlanKey, planByKey } from '../_shared/pricing.generated.ts';
 
+// COMMERCIAL-SSOT: temporary production hotfix.
+// Canonical source migration tracked in Phase 2.
+// Plan-Keys, die niemals über Self-Service gekauft oder als Trial gestartet
+// werden dürfen (Monats- und Jahresvariante).
+const ENTERPRISE_SELF_SERVICE_BLOCKED = new Set(['enterprise', 'enterprise_yearly']);
+
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -95,6 +101,22 @@ Deno.serve(async (req) => {
   if (plan.purchaseMode === 'inquiry') {
     return jsonError(400, 'INQUIRY_ONLY',
       `${plan.name} wird über /contact-sales abgeschlossen, nicht über Self-Service-Checkout`);
+  }
+  // COMMERCIAL-SSOT: temporary production hotfix.
+  // Canonical source migration tracked in Phase 2.
+  //
+  // Harter Stopp für neue Enterprise-Selbstbedienung — bewusst unabhängig von
+  // `purchaseMode`, damit ein späteres Zurückdrehen auf 'checkout' den
+  // Enterprise-Trial nicht stillschweigend wieder öffnet. Enterprise wird
+  // manuell fakturiert und vertraglich vereinbart.
+  //
+  // Wirkt ausschliesslich auf NEUE Checkout-Sessions. Bestehende Abos und
+  // laufende Trials liegen in `public.subscriptions` und werden hier nicht
+  // gelesen, nicht geschrieben und nicht beendet.
+  if (ENTERPRISE_SELF_SERVICE_BLOCKED.has(planKey)) {
+    return jsonError(400, 'ENTERPRISE_CONTRACT_ONLY',
+      `${plan.name} wird vertraglich vereinbart und manuell fakturiert. ` +
+      `Kein Self-Service-Checkout und kein Self-Service-Trial — bitte über /contact-sales anfragen.`);
   }
   body.plan_key = planKey;
 

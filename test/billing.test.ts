@@ -238,9 +238,18 @@ describe('Billing Workflows', () => {
     expect(partner.plan.permissions.multiTenant).toBe(true);
   });
 
-  it('enterprise should have checkout CTA', () => {
+  // COMMERCIAL-SSOT: temporary production hotfix.
+  // Canonical source migration tracked in Phase 2.
+  // Enterprise wird vertraglich vereinbart und manuell fakturiert; ein
+  // Self-Service-Checkout-Link waere ein Kaufpfad ins Leere.
+  it('enterprise fuehrt auf /contact-sales, nicht in den Checkout', () => {
     const enterprise = tierById('enterprise')!;
-    expect(enterprise.cta.href).toContain('/checkout/enterprise');
+    expect(enterprise.cta.href).toContain('/contact-sales');
+    expect(enterprise.cta.href).not.toContain('/checkout/');
+    // Kein Self-Service-Trial und kein oeffentlicher Festpreis.
+    expect(enterprise.plan.trialDays).toBe(0);
+    expect(enterprise.priceOnRequest).toBe(true);
+    expect(enterprise.cta.href).not.toContain('pilot=true');
   });
 });
 

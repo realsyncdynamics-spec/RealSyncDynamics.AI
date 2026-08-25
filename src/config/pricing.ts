@@ -81,6 +81,14 @@ export interface PricingTier {
   /** Referenz auf den zugrundeliegenden Plan der SSoT */
   plan: Plan;
   priceEur: number;
+  /**
+   * COMMERCIAL-SSOT: temporary production hotfix.
+   * Canonical source migration tracked in Phase 2.
+   *
+   * `true` = kein oeffentlich zugesicherter Festpreis. Oberflaechen zeigen
+   * „Auf Anfrage" statt `priceEur`. Der Betrag bleibt interner Listenpreis.
+   */
+  priceOnRequest: boolean;
   /** Formatierter Betrag ohne Währungszeichen, z.B. "1.999" */
   priceString: string;
   /** "/ Monat", "/ Jahr" oder "einmalig · kein Account" */
@@ -142,7 +150,9 @@ function toTier(plan: Plan, interval: 'month' | 'year'): PricingTier {
     : isYearly ? (plan.price.yearlyEur ?? 0) : plan.price.monthlyEur;
   const id = (isYearly ? `${plan.id}_yearly` : plan.id) as TierId;
 
-  const priceSuffix = isOneTime
+  const priceSuffix = plan.priceOnRequest === true
+    ? 'individuelles Angebot'
+    : isOneTime
     ? 'einmalig'
     : plan.price.monthlyEur === 0
       ? 'einmalig · kein Account'
@@ -154,6 +164,7 @@ function toTier(plan: Plan, interval: 'month' | 'year'): PricingTier {
     planKey: planKeyFor(plan.id, interval),
     plan,
     priceEur,
+    priceOnRequest: plan.priceOnRequest === true,
     priceString: new Intl.NumberFormat('de-DE').format(priceEur),
     priceSuffix,
     // Free (0 €) und Einmalprodukte (Betrag in `oneTimeEur`) sind beide

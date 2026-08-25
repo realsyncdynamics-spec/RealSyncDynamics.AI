@@ -13,7 +13,10 @@ import { CapabilityAvailabilityNotice } from '../components/landing/CapabilityAv
 interface WhatsAppPricingTier {
   id: string;
   name: string;
-  monthlyPrice: number;
+  // COMMERCIAL-SSOT: temporary production hotfix.
+  // Canonical source migration tracked in Phase 2.
+  // `null` = Preis auf Anfrage (kein Self-Service-Checkout, manuelle Faktura).
+  monthlyPrice: number | null;
   yearlyPrice?: number;
   description: string;
   botLimit: number;
@@ -89,7 +92,7 @@ const WHATSAPP_TIERS: WhatsAppPricingTier[] = [
   {
     id: 'enterprise-wa',
     name: 'Enterprise WhatsApp',
-    monthlyPrice: 1249,
+    monthlyPrice: null,
     description: 'Bis zu 20 WhatsApp-Bots mit Multi-Tenant-Support',
     botLimit: 20,
     answersPerMonth: 50000,
@@ -101,8 +104,8 @@ const WHATSAPP_TIERS: WhatsAppPricingTier[] = [
       'API Premium + Webhooks',
       'White-Label Light (Branding, Logo, Farben)',
       'Advanced Analytics & Risk-Scoring',
-      'Priority Support (4h Response-Zeit)',
-      'SLA 99,5% Verfügbarkeit',
+      'Priority Support mit vertraglich vereinbarter Reaktionszeit',
+      'SLA nach Vereinbarung',
       'Audit Center Pro + Evidence Vault Enterprise',
     ],
     cta: { label: 'Kontakt', href: '/contact-sales?tier=enterprise&channel=whatsapp&source=pricing' },
@@ -254,7 +257,9 @@ export function WhatsAppPricingPage() {
 
                 <div className="mb-6">
                   <div className="flex items-baseline gap-2 mb-1">
-                    <span className="text-3xl font-bold">{tier.monthlyPrice}€</span>
+                    <span className="text-3xl font-bold">
+                      {tier.monthlyPrice === null ? 'Auf Anfrage' : `${tier.monthlyPrice}€`}
+                    </span>
                     <span className="text-titanium-400 text-sm">/Monat</span>
                   </div>
                   {tier.yearlyPrice && (

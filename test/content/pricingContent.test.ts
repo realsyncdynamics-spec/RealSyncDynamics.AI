@@ -88,11 +88,32 @@ describe('pricingContent', () => {
       expect(enterprise).toBeDefined();
     });
 
-    it('all plan CTAs should link to /checkout/{slug}', () => {
-      pricingPlans.forEach((plan) => {
-        expect(plan.cta.href).toBe(`/checkout/${plan.slug}`);
-        expect(plan.checkoutPath).toBe(`/checkout/${plan.slug}`);
-      });
+    // COMMERCIAL-SSOT: temporary production hotfix.
+    // Canonical source migration tracked in Phase 2.
+    // Plaene ohne Self-Service-Checkout fuehren bewusst NICHT auf
+    // /checkout/<slug>, sondern auf /contact-sales. Sie werden vertraglich
+    // vereinbart und manuell fakturiert — ein Checkout-Link waere ein
+    // Kaufpfad, den die Edge Function `stripe-checkout` ablehnt.
+    const INQUIRY_ONLY_SLUGS = ['enterprise'];
+
+    it('Self-Service-Plaene verlinken auf /checkout/{slug}', () => {
+      pricingPlans
+        .filter((plan) => !INQUIRY_ONLY_SLUGS.includes(plan.slug))
+        .forEach((plan) => {
+          expect(plan.cta.href).toBe(`/checkout/${plan.slug}`);
+          expect(plan.checkoutPath).toBe(`/checkout/${plan.slug}`);
+        });
+    });
+
+    it('Anfrage-Plaene verlinken auf /contact-sales statt auf einen Checkout', () => {
+      pricingPlans
+        .filter((plan) => INQUIRY_ONLY_SLUGS.includes(plan.slug))
+        .forEach((plan) => {
+          expect(plan.cta.href).toContain('/contact-sales');
+          expect(plan.checkoutPath).toContain('/contact-sales');
+          expect(plan.cta.href).not.toContain('/checkout/');
+          expect(plan.checkoutPath).not.toContain('/checkout/');
+        });
     });
 
     it('all plans should have at least one included feature', () => {
@@ -304,10 +325,16 @@ describe('pricingContent', () => {
       expect(freeAudit?.priceString).toBe('0 €');
     });
 
-    it('enterprise should have price 1249 (checkout tier)', () => {
+    // COMMERCIAL-SSOT: temporary production hotfix.
+    // Canonical source migration tracked in Phase 2.
+    // Enterprise darf keinen oeffentlichen Festpreis mehr ausweisen: der
+    // Self-Service-Checkout kann ihn nicht erfuellen (manuelle Faktura,
+    // Sentinel statt echter Stripe-Price).
+    it('enterprise weist keinen oeffentlichen Festpreis aus', () => {
       const enterprise = getPlanBySlug('enterprise');
-      expect(enterprise?.price).toBe(1249);
-      expect(enterprise?.priceString).toBe('1.249 €');
+      expect(enterprise?.priceString).toBe('Individuelles Angebot');
+      expect(enterprise?.priceString).not.toMatch(/\d/);
+      expect(enterprise?.price).toBe(0);
     });
 
     it('prices should be in ascending order for paid plans', () => {

@@ -7,9 +7,23 @@ import { Logo } from '../../components/Logo';
 import { SEOHead } from '../../components/SEOHead';
 import {
   PUBLIC_PRICING_TIERS, PRICING_TRUST_NOTE, PRICING_TAX_NOTE, TIER_ACCENT,
-  PRODUCT_POSITIONING, ORDERED_PLANS, formatPriceEur, planById,
+  PRODUCT_POSITIONING, ORDERED_PLANS, formatPriceEur, planById, PLANS,
   type PricingTier, type PlanId,
 } from '../../config/pricing';
+
+// COMMERCIAL-SSOT: temporary production hotfix.
+// Canonical source migration tracked in Phase 2.
+// Die Trial-Fussnote wird aus der SSoT abgeleitet statt als Liste gepflegt —
+// ein Plan, dessen `trialDays` auf 0 geht, verschwindet damit automatisch aus
+// dem Versprechen. Frueher stand hier „Starter, Growth, Agency und Enterprise",
+// obwohl Enterprise manuell fakturiert wird und keinen Self-Service-Trial hat.
+const TRIAL_PLAN_NAMES: string[] = PLANS
+  .filter((p) => p.purchaseMode === 'checkout' && p.trialDays > 0)
+  .map((p) => p.name);
+const TRIAL_DAYS: number = PLANS.find((p) => p.trialDays > 0)?.trialDays ?? 14;
+const TRIAL_PLAN_LIST: string = TRIAL_PLAN_NAMES.length > 1
+  ? `${TRIAL_PLAN_NAMES.slice(0, -1).join(', ')} und ${TRIAL_PLAN_NAMES.at(-1)}`
+  : (TRIAL_PLAN_NAMES[0] ?? '');
 import { PricingRoiExampleSection } from '../../components/sections/PricingRoiExampleSection';
 import { GovernanceBotsSection } from '../../components/pricing/GovernanceBotsSection';
 import { CostCalculator } from '../../components/pricing/CostCalculator';
@@ -101,11 +115,12 @@ export function PricingPage() {
             Governance Score ermitteln — der Plan folgt daraus <ArrowRight className="h-4 w-4" />
           </Link>
 
-          {/* 14-Tage-Trial klar sichtbar — Starter/Growth/Agency starten mit
-              ?pilot=true in den 14-Tage-Testmodus (siehe CheckoutPage). */}
+          {/* Trial klar sichtbar — nur die Self-Service-Plaene starten mit
+              ?pilot=true in den Testmodus (siehe CheckoutPage). Enterprise und
+              Partner werden angefragt und haben keinen Self-Service-Trial. */}
           <p className="mt-5 inline-flex items-center gap-2 text-[11px] font-mono uppercase tracking-[0.18em] text-titanium-300">
             <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
-            14 Tage kostenlos testen · keine Kosten bis Tag 15 · monatlich kündbar
+            {TRIAL_PLAN_LIST}: {TRIAL_DAYS} Tage kostenlos testen · keine Kosten bis Tag {TRIAL_DAYS + 1} · monatlich kündbar
           </p>
         </div>
       </section>
@@ -124,8 +139,9 @@ export function PricingPage() {
               {PRICING_TRUST_NOTE}
             </p>
             <p className="text-[10px] font-mono text-titanium-600">
-              Free Audit kostenlos · kein Account nötig · Starter, Growth, Agency und Enterprise:
-              14 Tage kostenlos testen — keine Kosten bis Tag 15, monatlich kündbar · Partner: nach Anfrage
+              Free Audit kostenlos · kein Account nötig · {TRIAL_PLAN_LIST}:{' '}
+              {TRIAL_DAYS} Tage kostenlos testen — keine Kosten bis Tag {TRIAL_DAYS + 1}, monatlich kündbar ·
+              {' '}Enterprise und Partner: nach Anfrage, kein Self-Service-Trial
             </p>
             <p className="text-[10px] font-mono text-titanium-600">
               Alle Preise in EUR. {PRICING_TAX_NOTE}
@@ -316,7 +332,11 @@ export function PricingPage() {
 function TierCard({ tier, selected = false }: { tier: PricingTier; selected?: boolean }) {
   const plan = tier.plan;
   const TierIcon = PLAN_ICONS[plan.id];
-  const priceDisplay = formatPriceEur(tier.priceEur);
+  // COMMERCIAL-SSOT: temporary production hotfix.
+  // Canonical source migration tracked in Phase 2.
+  // Plaene ohne oeffentlich zugesicherten Festpreis duerfen keinen Betrag
+  // ausweisen — sonst steht dort ein Angebot, das der Checkout nicht erfuellt.
+  const priceDisplay = tier.priceOnRequest ? 'Auf Anfrage' : formatPriceEur(tier.priceEur);
   const accent = TIER_ACCENT[tier.id];
 
   return (

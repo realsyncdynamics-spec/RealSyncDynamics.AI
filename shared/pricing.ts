@@ -361,6 +361,16 @@ export interface Plan {
   /** Technische Subheadline (wie die Runtime das leistet) */
   technicalSubheadline: string;
   price: PlanPrice;
+  /**
+   * COMMERCIAL-SSOT: temporary production hotfix.
+   * Canonical source migration tracked in Phase 2.
+   *
+   * `true` = kein oeffentlich zugesicherter Festpreis. Der Betrag in `price`
+   * bleibt interner Listenpreis (DB-Katalog, Angebotskalkulation), darf aber
+   * nirgends als kaufbares Festpreis-Angebot ausgewiesen werden. Oberflaechen
+   * zeigen stattdessen „Auf Anfrage".
+   */
+  priceOnRequest?: boolean;
   currency: 'EUR';
   purchaseMode: PurchaseMode;
   /** Hebt die Karte im Grid hervor */
@@ -671,20 +681,27 @@ export const PLANS: Plan[] = [
     trialDays: 14,
   },
 
-  // ── Enterprise — 1.249 € ────────────────────────────────────────────────
+  // ── Enterprise — Preis auf Anfrage ──────────────────────────────────────
+  // COMMERCIAL-SSOT: temporary production hotfix.
+  // Canonical source migration tracked in Phase 2.
+  // Enterprise wird manuell fakturiert (products.default_for_plan_key='enterprise'
+  // traegt bewusst nur einen Sentinel, keine echte Stripe-Price). Ein oeffentlich
+  // zugesicherter Festpreis von 1.249 € war damit ein Angebot, das der
+  // Self-Service-Checkout nicht erfuellen kann. Deshalb: inquiry + priceOnRequest.
   {
     id: 'enterprise',
     planKey: 'enterprise',
     yearlyPlanKey: 'enterprise_yearly',
     name: 'Enterprise',
     outcomeHeadline: 'Konzernweite Governance über alle sechs Rahmenwerke — mit SLA und SSO.',
-    technicalSubheadline: 'Multi-Tenant-Runtime für bis zu 5 Organisationen, zentrale Rechteverwaltung und unbegrenzte geplante Läufe.',
+    technicalSubheadline: 'Multi-Tenant-Runtime für bis zu 5 Organisationen, zentrale Rechteverwaltung und individuell dimensionierte Scheduler- und Automation-Kontingente.',
     price: { monthlyEur: 1_249, yearlyEur: 12_490, oneTimeEur: null },
+    priceOnRequest: true,
     currency: 'EUR',
-    purchaseMode: 'checkout',
+    purchaseMode: 'inquiry',
     highlight: false,
-    badges: ['SLA 4 h'],
-    ctaLabel: '14 Tage kostenlos testen',
+    badges: ['SLA nach Vereinbarung'],
+    ctaLabel: 'Enterprise anfragen',
     limits: {
       bots: 20,
       answersPerMonth: 50_000,
@@ -736,11 +753,10 @@ export const PLANS: Plan[] = [
         'Eigene Richtlinien und Kontrollkataloge',
       ],
       automation_ops: [
-        'Unbegrenzter Scheduler für geplante Läufe',
-        '2.000 Automationsläufe pro Monat',
+        'Individuell dimensionierte Scheduler- und Automation-Kontingente.',
         'API Premium mit 250.000 Aufrufen pro Monat',
         '20 Governance-Bots mit 50.000 Antworten (alle Kanäle)',
-        'Priorisierter Support mit 4 h Reaktionszeit',
+        'Priorisierter Support mit vertraglich vereinbarter Reaktionszeit',
       ],
       multi_tenant_reseller: [
         'Multi-Tenant-Dashboard für bis zu 5 Organisationen',
@@ -749,7 +765,8 @@ export const PLANS: Plan[] = [
         'White-Label mit Branding, Logo und Farben',
       ],
     },
-    trialDays: 14,
+    // Enterprise-Trial ist gesperrt: kein Self-Service-Pilot ohne Vertrag.
+    trialDays: 0,
   },
 
   // ── Partner — 1.999 € ───────────────────────────────────────────────────

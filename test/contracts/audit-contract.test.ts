@@ -92,8 +92,11 @@ describe('PLAN_CONFIG alignment with PRICING_TIERS', () => {
     expect(PLAN_CONFIG.free_audit.mode).toBe('free');
   });
 
-  it('enterprise mode is "checkout"', () => {
-    expect(PLAN_CONFIG.enterprise.mode).toBe('checkout');
+  // COMMERCIAL-SSOT: temporary production hotfix.
+  // Canonical source migration tracked in Phase 2.
+  // Enterprise ist kein Self-Service-Produkt mehr — manuelle Faktura.
+  it('enterprise mode is "inquiry"', () => {
+    expect(PLAN_CONFIG.enterprise.mode).toBe('inquiry');
   });
 });
 

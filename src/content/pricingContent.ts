@@ -477,9 +477,16 @@ export const pricingPlans: PricingPlan[] = [
   {
     slug: 'enterprise',
     name: 'Enterprise',
-    price: 1249,
-    priceString: '1.249 €',
-    interval: 'monatlich',
+    // COMMERCIAL-SSOT: temporary production hotfix.
+    // Canonical source migration tracked in Phase 2.
+    // Enterprise wird vertraglich vereinbart und manuell fakturiert
+    // (products.default_for_plan_key='enterprise' traegt bewusst nur einen
+    // Sentinel, keine echte Stripe-Price). Deshalb kein oeffentlicher
+    // Festpreis: `price: 0` unterdrueckt den Intervall-Zusatz, der Betrag
+    // steht als interner Listenpreis in shared/pricing.ts.
+    price: 0,
+    priceString: 'Individuelles Angebot',
+    interval: 'individuell',
     recommended: false,
     shortDescription: 'Für Großunternehmen und Konzerne mit erweiterten Governance-Anforderungen, Multi-Org-Verwaltung und SLA-Bedarf.',
     targetAudience: 'Für Großunternehmen, regulierte Industrien, Behörden, Finanzdienstleister und Organisationen mit erweiterten Governance- und Compliance-Prozessen.',
@@ -490,15 +497,15 @@ export const pricingPlans: PricingPlan[] = [
       'Zentrale Benutzerverwaltung & erweiterte Rollen/Rechte',
       'API Premium + Webhooks',
       'White-Label Light (Branding, Logo, Farben)',
-      'Priority Support (4h Response-Zeit)',
+      'Priority Support mit vertraglich vereinbarter Reaktionszeit',
       'Audit Center Pro + Evidence Vault Enterprise',
       'Advanced Analytics & Risk-Scoring',
     ],
     cta: {
-      label: '14 Tage kostenlos testen',
-      href: '/checkout/enterprise',
+      label: 'Enterprise anfragen',
+      href: '/contact-sales?intent=enterprise',
     },
-    checkoutPath: '/checkout/enterprise',
+    checkoutPath: '/contact-sales?intent=enterprise',
     problemsSolved: [
       'Anforderungen gehen über Standard-Pakete hinaus',
       'Besondere Compliance-Regeln notwendig',

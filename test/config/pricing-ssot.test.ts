@@ -388,3 +388,59 @@ describe('Abgeleitete Artefakte bleiben synchron', () => {
     expect(sql).toContain(buildPlanCatalogSql());
   });
 });
+
+/**
+ * COMMERCIAL-SSOT: temporary production hotfix.
+ * Canonical source migration tracked in Phase 2.
+ *
+ * Produktions-Sicherheit: Ein öffentlich ausgewiesener Festpreis ist ein
+ * Angebot. Es darf nur dort stehen, wo der Self-Service-Checkout es auch
+ * einlösen kann. Enterprise verletzte das — 1.249 €/Monat plus 14-Tage-Trial
+ * standen öffentlich, während `public.products` für den Plan-Key nur einen
+ * Sentinel trägt und `stripe-checkout` jeden Versuch mit
+ * `PRICE_NOT_CONFIGURED` abweist.
+ */
+describe('Öffentliche Angebote sind erfüllbar', () => {
+  it('kein Self-Service-Plan verbirgt seinen Preis', () => {
+    // Umgekehrter Fehlerfall: Wer kaufbar ist, muss den Preis auch nennen.
+    for (const plan of PLANS.filter((p) => p.purchaseMode === 'checkout')) {
+      expect(plan.priceOnRequest ?? false).toBe(false);
+    }
+  });
+
+  it('ein Plan ohne öffentlichen Festpreis ist weder kaufbar noch testbar', () => {
+    for (const plan of PLANS.filter((p) => p.priceOnRequest === true)) {
+      // Kein Self-Service-Checkout …
+      expect(plan.purchaseMode).toBe('inquiry');
+      // … und damit auch kein Self-Service-Trial.
+      expect(plan.trialDays).toBe(0);
+
+      const href = checkoutHrefForPlan(plan, { interval: 'month' });
+      expect(href).toContain('/contact-sales');
+      expect(href).not.toContain('/checkout/');
+      expect(href).not.toContain('pilot=true');
+    }
+  });
+
+  it('Enterprise ist anfragepflichtig, ohne Festpreis und ohne Trial', () => {
+    const enterprise = planById('enterprise');
+    expect(enterprise.purchaseMode).toBe('inquiry');
+    expect(enterprise.priceOnRequest).toBe(true);
+    expect(enterprise.trialDays).toBe(0);
+
+    // Auch die Jahresvariante darf keinen Kaufpfad öffnen.
+    for (const interval of ['month', 'year'] as const) {
+      const href = checkoutHrefForPlan(enterprise, { interval });
+      expect(href).not.toContain('/checkout/');
+      expect(href).not.toContain('pilot=true');
+    }
+  });
+
+  it('ein Trial-Versprechen setzt einen Self-Service-Checkout voraus', () => {
+    // Verhindert die Rückkehr des Enterprise-Falls über einen anderen Plan:
+    // Trial-Tage ohne Checkout wären ein Versprechen ohne Einlöseweg.
+    for (const plan of PLANS.filter((p) => p.trialDays > 0)) {
+      expect(plan.purchaseMode).toBe('checkout');
+    }
+  });
+});

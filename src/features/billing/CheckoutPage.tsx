@@ -74,6 +74,16 @@ export function CheckoutPage() {
       window.location.href = `/contact-sales?plan=${encodeURIComponent(plan.planKey)}&source=checkout-redirect`;
       return;
     }
+    // Stillgelegte Pläne (seit AP2: Agency, Partner) behalten ihren
+    // Kaufmodus, weil ihre laufenden Abos unverändert abrechnen — die
+    // *Neuwahl* ist trotzdem beendet. Ohne diese Weiche bliebe der Plan
+    // über die getippte URL käuflich, obwohl er in keiner Oberfläche mehr
+    // erscheint. Der Server weist ihn ohnehin ab (`stripe-checkout`,
+    // `PLAN_RETIRED`); diese Umleitung erspart dem Besucher die Fehlermeldung.
+    if (plan.availability === 'legacy') {
+      window.location.href = '/pricing?source=checkout-retired';
+      return;
+    }
   }, [planKey]);
 
   // 3. Auth-State + Membership-Lookup

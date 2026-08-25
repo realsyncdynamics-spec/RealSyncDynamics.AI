@@ -6,7 +6,7 @@ import {
 import { Logo } from '../../components/Logo';
 import { SEOHead } from '../../components/SEOHead';
 import {
-  PUBLIC_PRICING_TIERS, PRICING_TRUST_NOTE, PRICING_TAX_NOTE, TIER_ACCENT,
+  SELLABLE_PRICING_TIERS, PRICING_TRUST_NOTE, PRICING_TAX_NOTE, TIER_ACCENT,
   PRODUCT_POSITIONING, ORDERED_PLANS, formatPriceEur, planById,
   type PricingTier, type PlanId,
 } from '../../config/pricing';
@@ -110,11 +110,11 @@ export function PricingPage() {
         </div>
       </section>
 
-      {/* Tier-Cards — 4-spaltig auf Desktop */}
+      {/* Tier-Cards — drei Stufen seit AP2 (Starter, Growth, Enterprise) */}
       <section className="px-4 sm:px-6 lg:px-8 pb-16 sm:pb-20">
         <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 sm:gap-5 items-stretch">
-            {PUBLIC_PRICING_TIERS.map((tier) => (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 items-stretch">
+            {SELLABLE_PRICING_TIERS.map((tier) => (
               <TierCard key={tier.id} tier={tier} selected={tier.id === selectedPlan} />
             ))}
           </div>

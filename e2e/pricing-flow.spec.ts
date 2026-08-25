@@ -542,6 +542,10 @@ test.describe('Pricing Flow', () => {
       const expectedDestinations: Record<string, string> = {
         '/checkout/free-audit': '/audit',
         '/checkout/enterprise': '/contact-sales',
+        // Seit AP2 stillgelegt: Agency behält seinen Kaufmodus `checkout`
+        // (laufende Abos rechnen unverändert ab), die Neuwahl endet aber auf
+        // der Preisseite.
+        '/checkout/agency': '/pricing',
       };
 
       for (const path of paths) {

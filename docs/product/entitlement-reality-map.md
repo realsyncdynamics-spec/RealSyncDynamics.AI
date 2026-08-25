@@ -67,7 +67,7 @@ dem eine Zählung eine Messung vorgetäuscht hat.
 | `fix.snippets` | Behebungsvorschläge mit Code | growth, agency, ent, partner | Frontend-Optimizer | **nein** | `src/lib/optimizer/entitlement.ts` → `hasFeature(plan,'fix_snippets')`; `governance-remediate` **ohne** Gate | **`DISPLAY_ONLY`** | Serverseitig offen; die Anzeige entscheidet | dito |
 | `policy.iso27001` | ISO 27001 als Rahmenwerk | growth, agency, ent, partner | `policy-packs` | **nein, nicht einzeln** | `policy-packs` → `gateFeature('policy.packs')`, dann `pack_id` **ungefiltert** | **`DISPLAY_ONLY`** | Wer `policy.packs` hat, kann **jeden** Pack aktivieren — auch einen, den sein Plan nicht enthält | Einzelne Packs gegen ihren Key prüfen |
 | `policy.nis2` | NIS2 als Rahmenwerk | agency, ent, partner | dito | **nein** | dito | **`DISPLAY_ONLY`** | dito | dito |
-| `sla.priority` | Priorisierte Reaktionszeit | agency, ent, partner | — | entfällt | Feature-Liste der Preisseite | **`DISPLAY_ONLY`** | **Organisatorische Zusage, kein Software-Merkmal.** Ein Gate wäre sinnlos — es gibt nichts zu sperren | Ihre fünf Kategorien haben für organisatorische Zusagen keine eigene; siehe §3 |
+| `sla.priority` | Priorisierte Reaktionszeit | agency, ent, partner | — | entfällt | Feature-Liste der Preisseite | **`DISPLAY_ONLY`** ⚠️ | **Organisatorische Zusage, kein Software-Merkmal.** Ein Gate wäre sinnlos — es gibt nichts zu sperren. Die Einordnung gilt **nur innerhalb des vorgegebenen Fünfer-Vokabulars**, siehe §3 | Die fünf Kategorien haben für organisatorische Zusagen keine eigene |
 | `alerts.email` | E-Mail-Alert bei neuen Findings | starter … partner | `compliance-alert-trigger`, `email-notify-send`, `audit-monitor-cron` | **nein** | keine der drei Functions liest Entitlements | **`UNKNOWN`** | Der Key kommt außerhalb der Migrationen **nirgends** vor. Es gibt Versandwege, aber keine erkennbare Verbindung zu diesem Key | Zu klären: soll der Versand gegatet werden, oder ist E-Mail Teil des Grundumfangs? |
 | `bots.human_handoff` | Übergabe an einen Menschen | agency, ent, partner | — | **nein** | kein Fundort | **`UNKNOWN`** | Kam mit AP1 aus `plan.modules.human_handoff`. Im Repo existiert kein Übergabe-Mechanismus | Fähigkeit möglicherweise unimplementiert |
 | `bots.multi_channel` | Ein Bot über mehrere Kanäle | growth, agency, ent, partner | — | **nein** | kein Fundort | **`UNKNOWN`** | dito, aus `plan.modules.multi_channel_messaging` | dito |
@@ -125,8 +125,25 @@ Sinn ergibt. Ich habe es `DISPLAY_ONLY` zugeordnet, weil es auf der
 Preisseite steht und sonst nichts tut; richtiger wäre eine eigene Kategorie
 wie `ORGANIZATIONAL`.
 
+> **Verbindliche Lesart, festgelegt am 2026-08-25.**
+>
+> `sla.priority` = `DISPLAY_ONLY` **nur innerhalb des vorgegebenen
+> Fünfer-Vokabulars; semantisch eine organisatorische Zusage, kein technisches
+> Feature-Entitlement.**
+>
+> Der Zusatz steht hier, damit ein späterer Schritt nicht aus der
+> Klassifikation den Kurzschluss zieht: „`DISPLAY_ONLY` → also Gate einbauen."
+> Für diesen Key gibt es nichts zu sperren. Der Fünfer wurde für **technische**
+> Entitlements definiert; eine organisatorische Zusage ist semantisch etwas
+> anderes und wird von ihm nur mangels Alternative aufgenommen.
+
 Das betrifft mindestens noch `org.governance` (Enterprise, Partner) außerhalb
 dieser 16. Wer die Kategorien erweitert, sollte beide zusammen einordnen.
+
+**Für die übrigen sechs `DISPLAY_ONLY`-Keys gilt der Kurzschluss ebenfalls
+nicht** — aber aus einem anderen Grund: Dort *wäre* ein Gate möglich, ob es
+eines geben soll, ist eine Produktfrage. Nur bei `sla.priority` ist die Frage
+technisch gegenstandslos.
 
 ---
 

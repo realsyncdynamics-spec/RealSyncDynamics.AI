@@ -1,6 +1,6 @@
 # ADR 0010 — Native Evolution Governance Gate
 
-**Status:** Proposed  
+**Status:** Accepted  
 **Date:** 2026-08-25  
 **Author:** Dominik Steiner (Architecture / Agent OS)  
 **Supersedes / amends:** none  
@@ -124,10 +124,7 @@ Abgelehnt. Führt zu inkonsistenten Grenzen und erschwert spätere Erweiterung.
 
 ## Acceptance
 
-Dieses ADR ist **Proposed**.  
-Es wechselt zu **Accepted**, sobald:
-
-1. Review und Zustimmung erfolgt sind.
-2. Der Status in dieser Datei im selben Merge aktualisiert wird.
+Dieses ADR ist **Accepted**.  
+Es wurde nach Review und ausdrücklicher Zustimmung akzeptiert. Der Statuswechsel erfolgt in einem separaten versionierten Commit nach dem Merge des ursprünglichen Proposed-PRs.
 
 Keine Code- oder Runtime-Änderung ist Teil dieses ADRs.

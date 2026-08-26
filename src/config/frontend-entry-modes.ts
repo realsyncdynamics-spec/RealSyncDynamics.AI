@@ -21,7 +21,9 @@
  *    `prompt`, `locale`, `enrichment`, `model`, `project_id` entgegen —
  *    **keine Bilder, kein Logo, keinen Screenshot**.
  *  - `siteos/handlers/` enthält `discover`, `builder`, `runtime-scan`,
- *    `agents` — **keinen Publish-Handler**.
+ *    `agents` und seit dem 2026-08-22 `publish-gate` — aber weiterhin
+ *    **keinen Publish-Handler**. Der Gate entscheidet, *ob* veröffentlicht
+ *    werden darf; er veröffentlicht nicht.
  *  - Es gibt keine Vision-Analyse und keinen Storage-Bucket für
  *    Design-Assets im gesamten Repository.
  */
@@ -103,7 +105,10 @@ export const FRONTEND_ENTRY_MODES: FrontendEntryMode[] = [
     available: false,
     unavailableReason:
       'Das erzeugte Frontend lässt sich noch nicht an eine fremde API binden und noch nicht veröffentlichen.',
-    requires: 'Anbindung an externe APIs sowie Publish Gate und Publish-Pfad',
+    // Der Publish Gate steht seit dem 2026-08-22 (Zielarchitektur §7); was
+    // fehlt, ist der Pfad dahinter. Die Vorbedingung wurde entsprechend
+    // gekürzt, statt eine erledigte Bedingung weiter mitzuführen.
+    requires: 'Anbindung an externe APIs sowie der Publish-Pfad hinter dem Gate',
   },
 ];
 

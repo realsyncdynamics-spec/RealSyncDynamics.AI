@@ -23,12 +23,18 @@ describe('planAccess', () => {
     expect(hasFeature('starter', 'daily_monitoring')).toBe(false);
   });
 
-  it('growth ergaenzt Monitoring, Drift und Risk Register', () => {
+  it('growth ergaenzt Monitoring, Drift, Risk Register und seit AP2 die API', () => {
     expect(hasFeature('growth', 'monthly_scan')).toBe(true);
     expect(hasFeature('growth', 'daily_monitoring')).toBe(true);
     expect(hasFeature('growth', 'fix_snippets')).toBe(true);
     expect(hasFeature('growth', 'multi_tenant')).toBe(false);
-    expect(hasFeature('growth', 'api_webhooks')).toBe(false);
+    // AP2: API, Webhooks, Scheduler und Bulk Jobs lagen bis dahin erst ab
+    // Agency. Mit dessen Stilllegung sind sie nach Growth gewandert.
+    expect(hasFeature('growth', 'api_webhooks')).toBe(true);
+    expect(hasFeature('growth', 'scheduler')).toBe(true);
+    expect(hasFeature('growth', 'bulk_jobs')).toBe(true);
+    // White-Label bleibt oben — es ist seit AP2 ein Add-on, kein Planinhalt.
+    expect(hasFeature('growth', 'white_label_reports')).toBe(false);
   });
 
   it('agency schaltet API, Scheduler, Bulk und White-Label frei', () => {
@@ -103,7 +109,7 @@ describe('planAccess', () => {
     expect(minimumPlanForFeature('one_time_scan')).toBe('free');
     expect(minimumPlanForFeature('evidence_export')).toBe('starter');
     expect(minimumPlanForFeature('daily_monitoring')).toBe('growth');
-    expect(minimumPlanForFeature('api_webhooks')).toBe('agency');
+    expect(minimumPlanForFeature('api_webhooks')).toBe('growth');
     expect(minimumPlanForFeature('multi_tenant')).toBe('enterprise');
   });
 });

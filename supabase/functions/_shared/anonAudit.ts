@@ -10,11 +10,19 @@
 //
 // Pure-helper design so vitest can import it without a Deno runtime.
 
+/**
+ * Muss mit dem CHECK auf `anon_chat_runs.op` übereinstimmen (Migrationen
+ * 20260606000000 und 20260822180000). Läuft die Liste auseinander, lehnt die
+ * Datenbank den Eintrag ab — und weil der Eintrag VOR der Arbeit geschrieben
+ * wird, fällt der ganze anonyme Pfad aus, nicht nur das Protokoll.
+ */
 export type AnonOp =
   | 'chat_anon'
   | 'start_audit_scan'
   | 'explain_finding'
-  | 'generate_fix_snippet';
+  | 'generate_fix_snippet'
+  | 'siteos_build_anon'
+  | 'siteos_refine_anon';
 
 export type AnonOutcome =
   | 'pending'
@@ -48,9 +56,14 @@ export interface AnonAuditCompletion {
 // node (vitest with mocked clients).
 export interface AdminLike {
   from(table: string): {
-    insert(row: Record<string, unknown>): Promise<{ error: { message: string } | null }>;
+    // `PromiseLike`, nicht `Promise`: Der Query-Builder von supabase-js ist
+    // thenable, aber keine echte Promise — ihm fehlen `catch`, `finally` und
+    // `Symbol.toStringTag`. Auf `Promise` verengt passte kein einziger echter
+    // Client auf diese Schnittstelle, und jeder Aufrufer erzeugte Typfehler,
+    // die nichts über ihn aussagten.
+    insert(row: Record<string, unknown>): PromiseLike<{ error: { message: string } | null }>;
     update(patch: Record<string, unknown>): {
-      eq(col: string, val: string): Promise<{ error: { message: string } | null }>;
+      eq(col: string, val: string): PromiseLike<{ error: { message: string } | null }>;
     };
   };
 }

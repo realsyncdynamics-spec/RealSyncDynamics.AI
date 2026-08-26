@@ -314,6 +314,12 @@ verify_jwt = false
 [functions.bot-voice-webhook]
 verify_jwt = false
 
+# whatsapp-webhook wird von Metas Servern (WhatsApp Business Cloud API) ohne
+# JWT aufgerufen. Authentizität über X-Hub-Signature-256 (WHATSAPP_APP_SECRET)
+# + phone_number_id-Mapping in whatsapp_channels; Feature-Gate bots.whatsapp.
+[functions.whatsapp-webhook]
+verify_jwt = false
+
 # All other functions (stripe-checkout, stripe-portal, ai-invoke,
 # workflow-trigger, gdpr-export, gdpr-delete, tenant-invite,
 # governance-agent, governance-remediate,

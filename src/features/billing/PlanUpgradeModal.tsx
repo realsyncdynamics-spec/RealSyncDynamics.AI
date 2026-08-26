@@ -8,7 +8,7 @@
  */
 
 import React, { useState } from 'react';
-import { PUBLIC_PRICING_TIERS, type TierId } from '../../config/pricing';
+import { PUBLIC_PRICING_TIERS, SELLABLE_PRICING_TIERS, type TierId } from '../../config/pricing';
 import { AlertCircle, ArrowRight, Loader2, X } from 'lucide-react';
 
 interface PlanUpgradeModalProps {
@@ -67,8 +67,14 @@ export function PlanUpgradeModal({
           {/* Plan Selection Grid */}
           <div>
             <p className="text-sm font-semibold text-titanium-300 mb-3">Wähle einen neuen Plan:</p>
+            {/*
+              Zur Auswahl stehen nur verkäufliche Stufen. Das Nachschlagen
+              des *aktuellen* Plans oben läuft weiterhin über
+              `PUBLIC_PRICING_TIERS` — ein Bestandskunde auf Agency muss
+              seinen eigenen Plan sehen, auch wenn er nicht mehr wählbar ist.
+            */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {PUBLIC_PRICING_TIERS.map((tier) => (
+              {SELLABLE_PRICING_TIERS.map((tier) => (
                 <button
                   key={tier.id}
                   onClick={() => {

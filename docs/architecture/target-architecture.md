@@ -528,13 +528,28 @@ zulässiges, aber blockierendes Ergebnis — ehrlicher als eine geratene Zusage.
 
 ### Verhältnis zum Ist-Zustand
 
-Heute existiert `siteos_blueprints.status = 'approved'` ohne einen solchen
-Vertrag; der Deployment-Pfad ist noch offen (SITEOS_ARCHITECTURE §6). Genau
-deshalb ist jetzt der richtige Zeitpunkt für die Festlegung: das Gate gehört
-**vor** den ersten Publish-Pfad, nicht danach. Vorgesehener Ort: eine eigene
-Edge Function (Auswertung + Persistenz der Evaluation) und der Contract-Typ im
-abhängigkeitsfreien Kern `packages/siteos-core`, damit SPA, Deno und Tests
-dieselbe Definition benutzen.
+**Umgesetzt am 2026-08-22, bevor es einen Publish-Pfad gab** — genau so, wie
+dieser Abschnitt es verlangt. Was daneben weiterhin existiert und was daraus
+folgt:
+
+| Ort | Rolle |
+| --- | --- |
+| `packages/siteos-core/src/publish/gate.ts` | Contract-Typ und Ableitung, einmal geschrieben, in SPA · Deno · Vitest identisch |
+| `supabase/functions/siteos/publish-gate` | Auswertung (G1). Baut Artefakt und Befunde **neu**; übernimmt vom Aufrufer nur, welche Blueprint-Version gemeint ist |
+| `supabase/functions/siteos/publish-approve` | Freigabe mit Person und Begründung (G4), danach neue Bewertung |
+| `siteos_publish_evaluations` | Anker jeder Publish-Aktion (G5), gebunden an einen Artefakt-Hash (G6) |
+
+`publishable` ist dort eine **generierte Spalte**: Die Datenbank leitet sie aus
+denselben fünf Bedingungen ab wie der Kern. Damit ist G4 nicht nur eine Regel
+im Code, sondern eine, die kein Schreibpfad umgehen kann — auch keiner mit
+`service_role`.
+
+`siteos_blueprints.status = 'approved'` bleibt vorerst bestehen, verliert aber
+seine Bedeutung für die Veröffentlichung: Freigabe ist ab jetzt eine
+Evaluation, kein Status. Der Deployment-Pfad ist weiterhin offen
+(SITEOS_ARCHITECTURE §6); `cloudflare-deployer` und `website-domain-manager`
+liegen im Repo, sind aber nicht deployt. Das ist der beabsichtigte Zustand —
+das Gate steht vor dem Pfad und nicht umgekehrt.
 
 ---
 
@@ -783,7 +798,7 @@ auf bestehende Modul-Schlüssel abgebildet, nicht als zweite Modul-Welt eingefü
 | Asset Lifecycle | 4 Blueprint-Status | 8 Assetzustände, additiv oberhalb der Versionsstatus |
 | Continuous Observation | Scans als Läufe, Cron für Governance-Monitoring; SiteOS-Agenten noch SPA-getriggert | Beobachtung als Dauerzustand am Asset, Agenten an den Cron |
 | Governance Decision | Policies, Controls, Approvals, Incidents vorhanden | benannte, gespeicherte Entscheidung mit ALLOW/REVIEW/BLOCK und Eingabeankern |
-| **Publish Gate** | **nicht vorhanden** | Contract §7 vor dem ersten Publish-Pfad umsetzen |
+| **Publish Gate** | Contract §7 umgesetzt: `evaluatePublishGate` im Kern, `siteos/publish-gate` + `siteos/publish-approve`, Tabelle `siteos_publish_evaluations` mit generierter Spalte `publishable` | steht vor dem ersten Publish-Pfad — anschließen, sobald `cloudflare-deployer` deployt ist |
 | Deployment-Pfad | Renderer erzeugt gehashtes Artefakt; Upload/Domain offen | Publish nur über das Gate |
 | Skills / Workflows | 7 SiteOS-Agenten, `automation_skills`/`automation_runs` | 8 Skills als Vokabular, Workflows über Assetgrenzen |
 | Integrationen | `integration_connectors`, `remediation_actions`, Feature `src/features/integrations` | beidseitige Integrationen als Beobachtungs- **und** Aktionsquelle |

@@ -290,18 +290,37 @@ async function executeStep(
     }
 
     case 'package_deploy': {
-      // Bundle: index.html + llms.txt + api/ai-info.json + assets/
-      // Storage-Pfad: rebuilds/{rebuild_id}/...
-      // Preview-URL: signed-URL aus Storage (24h gültig) oder Cloudflare-Pages-Deploy.
-      // V1: nur Storage-Pfad, Cloudflare-Pages-Deploy kommt in Phase 2.
-      const bundlePath = `rebuilds/${ctx.rebuildId}/index.html`;
-      state.bundlePath = bundlePath;
-      state.previewUrl = `https://preview.realsyncdynamicsai.de/${ctx.rebuildId}`;
-      // TODO Phase 2: Upload zu Storage + Cloudflare-Pages-Deploy.
-      return {
-        summary: `Bundle gepackt (${bundlePath}); Preview pending Storage-Upload`,
-        metadata: { bundlePath, previewUrl: state.previewUrl },
-      };
+      // Noch nicht gebaut — und deshalb wird hier kein Erfolg gemeldet.
+      //
+      // Bis 2026-08-23 setzte dieser Schritt `previewUrl` auf
+      // `https://preview.realsyncdynamicsai.de/{id}` und meldete „Bundle
+      // gepackt", obwohl weder ein Upload noch ein Deploy stattfand. Hinter
+      // der Adresse lag nichts. Das ist die Sorte Attrappe, die CLAUDE.md §14
+      // ausschließt: ein Element vortäuschen, das nichts tut. Bei einem
+      // bezahlten Rebuild wäre es zudem eine Zusage, die das Produkt nicht
+      // einlöst.
+      //
+      // Bis der echte Deployer verdrahtet ist (`cloudflare-deployer` ist
+      // deployt und wartet auf einen Aufrufer, siehe
+      // docs/architecture/canonical-builder-target-matrix.md §3), bricht der
+      // Lauf hier hart ab. Der Fehlerpfad der Schleife setzt dann
+      // `status='failed'` mit `error_code='package_deploy_failed'` — und die
+      // „Preview ist fertig"-Email unterbleibt, weil sie erst nach der
+      // Schleife steht. Genau das ist gewollt: lieber ein sichtbarer
+      // Fehlschlag als eine Adresse, hinter der nichts liegt.
+      //
+      // Kein bezahlbarer Pfad ist davon betroffen: Die drei Tarife
+      // `website_rebuild_managed|premium|enterprise` haben keinen Aufrufer im
+      // Frontend, und `website_rebuilds` ist live leer.
+      //
+      // Erst dieser Schritt kann die häufigsten Befunde überhaupt beheben:
+      // `no_xframe`, `no_hsts`, `no_csp`, `no_https`, `mixed_content` sind
+      // Header- und Transportbefunde — 196 von 570 gemessenen Vorkommen.
+      // Kein HTML-Schritt davor erreicht sie.
+      throw new Error(
+        'Auslieferung ist nicht verdrahtet: cloudflare-deployer hat keinen Aufrufer. '
+        + 'Der Lauf endet ohne Bundle und ohne Preview-Adresse.',
+      );
     }
   }
 }

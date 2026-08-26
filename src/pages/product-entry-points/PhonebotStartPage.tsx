@@ -74,13 +74,13 @@ export function PhonebotStartPage() {
               <ArrowLeft className="w-4 h-4" />
               Zurück
             </Link>
-            <button
-              onClick={() => alert('Telefon-Assistent wird in der nächsten Phase implementiert.')}
+            <Link
+              to="/app/bots"
               className="inline-flex items-center justify-center gap-2 px-6 sm:px-7 py-3 sm:py-3.5 text-xs sm:text-sm font-semibold text-[rgb(3,7,18)] bg-cyan-400 hover:bg-cyan-300 transition-colors rounded-lg"
             >
               Telefon-Assistent einrichten
               <ArrowRight className="w-4 h-4" />
-            </button>
+            </Link>
           </div>
 
           <p className="text-center text-xs sm:text-sm text-white/50 font-mono">

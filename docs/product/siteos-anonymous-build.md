@@ -212,6 +212,16 @@ Der Publish Gate bleibt vor dem ersten Publish-Pfad (`CLAUDE.md` §14).
 
 ---
 
+## 6b. Nachweis gegen Produktion
+
+Der Ablauf, mit dem der ausgelieferte Stand Ende-zu-Ende geprüft wird, steht
+in **`docs/product/siteos-e2e-runbook.md`**. Er unterscheidet durchgängig
+zwischen Prüfpunkten, die erfolgreich sein müssen, solchen, die fehlschlagen
+müssen, und Messwerten, die nichts entscheiden — darunter die bewusst nicht
+implementierte Worker-Vorschau.
+
+---
+
 ## 7. Was diese Phase **nicht** ist
 
 Kein weiterer Website-Builder. Der Unterschied zu einem generischen

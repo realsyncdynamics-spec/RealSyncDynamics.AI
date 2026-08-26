@@ -98,13 +98,13 @@ interface SupabaseAdminClient {
   from(table: string): {
     select(columns: string): {
       eq(col: string, val: unknown): {
-        eq(col2: string, val2: unknown): { maybeSingle(): Promise<{ data: unknown; error: unknown }> };
-        maybeSingle(): Promise<{ data: unknown; error: unknown }>;
-        order(col: string, opts?: Record<string, unknown>): { limit(n: number): { maybeSingle(): Promise<{ data: unknown; error: unknown }> } };
+        eq(col2: string, val2: unknown): { maybeSingle(): PromiseLike<{ data: unknown; error: unknown }> };
+        maybeSingle(): PromiseLike<{ data: unknown; error: unknown }>;
+        order(col: string, opts?: Record<string, unknown>): { limit(n: number): { maybeSingle(): PromiseLike<{ data: unknown; error: unknown }> } };
       };
     };
-    insert(obj: Record<string, unknown>): PromiseLike<{ data?: unknown; error?: unknown }> & { select(columns?: string): { single(): Promise<{ data: unknown; error: unknown }> } };
-    update(obj: Record<string, unknown>): { eq(col: string, val: unknown): Promise<{ error: unknown }> };
+    insert(obj: Record<string, unknown>): PromiseLike<{ data?: unknown; error?: unknown }> & { select(columns?: string): { single(): PromiseLike<{ data: unknown; error: unknown }> } };
+    update(obj: Record<string, unknown>): { eq(col: string, val: unknown): PromiseLike<{ error: unknown }> };
   };
 }
 

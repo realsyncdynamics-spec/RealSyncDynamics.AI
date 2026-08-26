@@ -165,7 +165,12 @@ export const INDUSTRY_PRESETS: Readonly<Record<IndustryKey, IndustryPreset>> = O
     key: 'agentur',
     label: 'Agentur / Dienstleistung',
     structuredDataType: 'ProfessionalService',
-    promptTerms: ['agentur', 'beratung', 'consulting', 'marketing', 'dienstleist', 'coach'],
+    // Planende und gestaltende Büros fallen fachlich hierher: dieselbe
+    // Rechtsgrundlage, derselbe Seitenschnitt aus Leistungen, Team, Kontakt.
+    promptTerms: [
+      'agentur', 'beratung', 'consulting', 'marketing', 'dienstleist', 'coach',
+      'architekt', 'ingenieur', 'planungsbüro', 'designbüro', 'fotograf', 'atelier',
+    ],
     pagePlan: [
       { path: '/', title: 'Startseite', blocks: ['navigation', 'hero', 'features', 'services', 'testimonials', 'faq', 'cta', 'footer'] },
       { path: '/leistungen', title: 'Leistungen', blocks: ['navigation', 'hero', 'services', 'faq', 'footer'] },

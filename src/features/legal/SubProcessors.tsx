@@ -62,7 +62,7 @@ const SUB_PROCESSORS: SubProcessor[] = [
   },
   {
     name: 'Resend Inc.',
-    purpose: 'Transaktionale Emails (Audit-Reports, Welcome-Emails, System-Notifications)',
+    purpose: 'Transaktionale E-Mails (Audit-Reports, Welcome-E-Mails, System-Notifications)',
     data_categories: ['Email-Adresse des Empfängers', 'Email-Inhalt'],
     region: 'EU (Ireland) — Versand-Endpoint, Storage in EU',
     dpa_url: 'https://resend.com/legal/dpa',

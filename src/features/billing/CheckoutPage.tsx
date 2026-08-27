@@ -358,7 +358,7 @@ function NoUserShell({
             to={magicLinkHref}
             className="mt-4 w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 border border-silver-500 hover:border-gold-400 text-silver-100 hover:text-titanium-50 text-sm font-semibold rounded-none transition-colors"
           >
-            Mit Magic-Link (Email) anmelden
+            Mit Magic-Link (E-Mail) anmelden
           </Link>
 
           <div className="mt-6 inline-flex items-center gap-1.5 text-xs text-silver-500 w-full justify-center">

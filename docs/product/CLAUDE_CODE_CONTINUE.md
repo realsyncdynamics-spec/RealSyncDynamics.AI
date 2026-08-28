@@ -2,35 +2,44 @@
 
 Branch: `feat/platform-os-onboarding`
 
+Kurz nutzen: `implement the task in CLAUDE.md style`
+Nicht extra sagen, dass die Datei existiert.
+
 ## Schon da
 
-- `shared/platform.ts` — Schichten CREATE/OPERATE/GOVERN/WORKSTORE
-- `shared/onboarding.ts` + `shared/onboarding-copy.de.ts`
-- `test/onboarding/onboarding.test.ts`
-- `src/pages/StartOnboarding.tsx` — Q&A inkl. Möbelhaus-Spur
-- `src/components/sections/PlatformOsSection.tsx` — Copy auf Landing/Pricing
-- Migration `supabase/migrations/20260828230000_onboarding_profiles.sql`
-- Landing und Pricing rendern die Zielarchitektur
+- `shared/platform.ts` — CREATE / OPERATE / GOVERN / WORKSTORE
+- `shared/onboarding.ts` + Copy + Vitest
+- `shared/channel-gate.ts` — fail-closed Live-Gate + Evidence-Payload
+- `src/pages/StartOnboarding.tsx` — Q&A, persistiert Profil lokal
+- `src/features/operate/*` — Aus/Test/Live, Checkliste, Workstore-Stub
+- `PlatformOsSection` auf Landing (via LandingChannelTools) und Pricing (via RuntimePipeline)
+- `/start` und `/app/channels` erreichbar über NotFoundPage-Alias
 
-## Noch zu verdrahten (2 Stellen in App.tsx)
+## Jetzt in App.tsx verdrahten (kanonisch)
 
 ```tsx
 import { StartOnboarding } from './pages/StartOnboarding';
-// neben der Pricing-Route:
+const OperateChannelsView = lazy(() =>
+  import('./features/operate/OperateChannelsView').then((m) => ({ default: m.OperateChannelsView })),
+);
+
 <Route path="/start" element={<StartOnboarding />} />
+<Route path="/pricing" element={<PricingPage />} />
+<Route path="/app/channels" element={<AppGate><GovernanceBrowserShell><OperateChannelsView /></GovernanceBrowserShell></AppGate>} />
 ```
 
-Scan-CTA auf Audit-Erfolg: Link `/start?domain=…&source=audit`.
+Danach den Alias in `NotFoundPage.tsx` entfernen.
 
-## Danach, in dieser Reihenfolge
+Audit-Erfolg: Link `/start?domain=…&source=audit` in `TrialCtaBlock` / `GuidedPlanBlock`.
 
-1. `npm run test -- test/onboarding/onboarding.test.ts`
-2. Persistenz: StartOnboarding schreibt `onboarding_profiles` (RLS).
-3. Dashboard-Sektion Kanäle Aus/Test/Live + Furniture-Checkliste.
-4. Policy/Bot `locked_limits` aus dem Profil.
-5. Evidence-Event bei Profil-Save und Kanalwechsel.
-6. Workstore-Listing `support-agent` (Install disabled ohne Entitlement).
-7. Keine Price-ID-Änderung, kein Agency-self_service, keine Parallel-Vault.
+## Danach
+
+1. `npm run test -- test/onboarding`
+2. `onboarding_profiles` aus StartOnboarding schreiben (RLS, bestehende Migration).
+3. Channel-Wechsel als Evidence-Event in den vorhandenen Vault — Event-Name `operate.channel_transition`, kein Parallel-Vault.
+4. Policy/Bot `locked_limits` aus dem Profil lesen.
+5. Workstore `support-agent`: Install nur über `planGrants`, nicht über Plan-Namen.
+6. Keine Price-ID-Änderung, kein Agency-self_service, keine zweiten Orchestratoren.
 
 ## Verbote
 

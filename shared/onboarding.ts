@@ -128,13 +128,14 @@ export function recommendFromAnswers(selected: readonly OnboardingChoiceId[]): O
   const tenants = has('domains_multi') || has('role_enterprise') ? 3 : 1;
   const domains = has('domains_10') ? 8 : has('domains_3') ? 3 : 1;
   const needsWhiteLabel = has('role_agency');
-  const needsApi = has('fw_iso') || has('fw_regulated');
 
+  // ISO/NIS2/TISAX/DORA are governance requirements, not API/Webhook demand.
+  // `recommendPlan.needsApi` must only be set when the onboarding explicitly
+  // captures an API/Webhook requirement; this Q&A currently does not.
   let base = recommendPlan({
     score: has('fw_regulated') ? 30 : has('fw_iso') ? 50 : 80,
     domains,
     tenants,
-    needsApi,
     needsWhiteLabel,
   });
 

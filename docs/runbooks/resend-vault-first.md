@@ -8,7 +8,22 @@ Companion to `resend-production-email.md`.
 2. `RESEND_API_KEY` env (local / CI only)
 
 Implemented in `supabase/functions/_shared/mailer.ts`.
-`welcome-email` already uses it. Next callers: `audit-report-email`, `newsletter-subscribe`, `daily-digest`, `invoice-email`.
+
+Callers (all go through the helper, no raw `api.resend.com`):
+
+- `welcome-email`
+- `audit-report-email`
+- `newsletter-subscribe`
+- `daily-digest`
+- `invoice-email`
+- `email-notify-send`
+- `sales-lead` (Starter-Offer)
+- `audit-drip-cron`
+- `audit-monitor-cron`
+- `audit-recheck-weekly`
+- `sub-processor-notify`
+- `rebuild-website`
+- `stripe-webhook` (Checkout-Welcome)
 
 Evidence Vault (customer hash-chain) is **not** this store.
 

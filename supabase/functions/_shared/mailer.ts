@@ -22,6 +22,14 @@ export interface ResolvedResendKey {
   source: MailSource;
 }
 
+export function serviceClient(): ServiceClient {
+  return createClient(
+    Deno.env.get('SUPABASE_URL')!,
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+    { auth: { persistSession: false } },
+  );
+}
+
 export async function resolveResendKey(supa: ServiceClient): Promise<ResolvedResendKey> {
   try {
     const { data } = await supa.rpc('get_app_secret', { secret_name: 'resend_api_key' });
@@ -46,6 +54,7 @@ export interface SendEmailInput {
   from?: string;
   replyTo?: string;
   tags?: Array<{ name: string; value: string }>;
+  headers?: Record<string, string>;
 }
 
 export interface SendEmailResult {
@@ -66,20 +75,23 @@ export async function sendResendEmail(
   }
 
   const to = Array.isArray(input.to) ? input.to : [input.to];
+  const body: Record<string, unknown> = {
+    from: input.from ?? DEFAULT_FROM,
+    to,
+    subject: input.subject,
+    html: input.html,
+    reply_to: input.replyTo ?? DEFAULT_REPLY_TO,
+  };
+  if (input.tags) body.tags = input.tags;
+  if (input.headers) body.headers = input.headers;
+
   const resp = await fetch(RESEND_API_URL, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${resolved.key}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({
-      from: input.from ?? DEFAULT_FROM,
-      to,
-      subject: input.subject,
-      html: input.html,
-      reply_to: input.replyTo ?? DEFAULT_REPLY_TO,
-      tags: input.tags,
-    }),
+    body: JSON.stringify(body),
   });
 
   if (!resp.ok) {

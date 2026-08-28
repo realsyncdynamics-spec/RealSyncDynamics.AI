@@ -1,20 +1,10 @@
 import * as Icons from 'lucide-react';
 import { RUNTIME_PIPELINE, PRODUCT_POSITIONING } from '@/shared/pricing';
+import { PlatformOsSection } from '../sections/PlatformOsSection';
 
-/**
- * Visualisierung der kanonischen Runtime-Architektur:
- *
- *   Website / API → Runtime Scan → Policy Engine → Evidence Vault
- *   → Risk Engine → Automation → Audit Export
- *
- * Die Stufen kommen aus `RUNTIME_PIPELINE` (shared/pricing.ts), damit
- * Landingpage, Pricing und Dokumentation dieselbe Kette in derselben
- * Reihenfolge zeigen.
- */
 export function RuntimePipeline({
   variant = 'section',
 }: {
-  /** `section` rendert Überschrift + Rahmen, `bare` nur die Kette. */
   variant?: 'section' | 'bare';
 }) {
   const chain = (
@@ -46,29 +36,32 @@ export function RuntimePipeline({
   if (variant === 'bare') return chain;
 
   return (
-    <section
-      className="border-t border-silver-700/30 bg-obsidian-900/20 px-4 py-16 sm:px-6 sm:py-20 lg:px-8"
-      aria-labelledby="runtime-pipeline-heading"
-    >
-      <div className="mx-auto max-w-5xl">
-        <div className="mb-8">
-          <p className="mb-2 font-mono text-[11px] uppercase tracking-[0.22em] text-titanium-500">
-            {PRODUCT_POSITIONING}
-          </p>
-          <h2
-            id="runtime-pipeline-heading"
-            className="mb-3 font-display text-2xl font-bold tracking-tight text-titanium-50 sm:text-3xl"
-          >
-            Wie die Runtime arbeitet
-          </h2>
-          <p className="max-w-2xl text-sm leading-relaxed text-titanium-400">
-            Jeder Plan durchläuft dieselbe Kette. Der Unterschied liegt darin, wie viele
-            Rahmenwerke die Policy Engine prüft, wie oft die Runtime läuft und wie weit
-            die Automatisierung reicht.
-          </p>
+    <>
+      <section
+        className="border-t border-silver-700/30 bg-obsidian-900/20 px-4 py-16 sm:px-6 sm:py-20 lg:px-8"
+        aria-labelledby="runtime-pipeline-heading"
+      >
+        <div className="mx-auto max-w-5xl">
+          <div className="mb-8">
+            <p className="mb-2 font-mono text-[11px] uppercase tracking-[0.22em] text-titanium-500">
+              {PRODUCT_POSITIONING}
+            </p>
+            <h2
+              id="runtime-pipeline-heading"
+              className="mb-3 font-display text-2xl font-bold tracking-tight text-titanium-50 sm:text-3xl"
+            >
+              Wie die Runtime arbeitet
+            </h2>
+            <p className="max-w-2xl text-sm leading-relaxed text-titanium-400">
+              Jeder Plan durchläuft dieselbe Kette. Der Unterschied liegt darin, wie viele
+              Rahmenwerke die Policy Engine prüft, wie oft die Runtime läuft und wie weit
+              die Automatisierung reicht.
+            </p>
+          </div>
+          {chain}
         </div>
-        {chain}
-      </div>
-    </section>
+      </section>
+      <PlatformOsSection source="pricing" />
+    </>
   );
 }

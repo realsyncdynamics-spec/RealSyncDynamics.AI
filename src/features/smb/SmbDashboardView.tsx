@@ -24,21 +24,6 @@ import {
   type BusinessSignal,
 } from './lib/businessSignals';
 
-/**
- * SmbDashboardView — das Dashboard der SMB Experience Layer.
- *
- * Zielgruppe: Einzelunternehmer und kleine Unternehmen (1–10 Mitarbeiter).
- * Regeln:
- *  - Maximal 8 Hauptkacheln (aktuell 6, definiert in src/config/smb-experience.ts).
- *  - Keine Fachbegriffe auf der Oberfläche — nur geschäftlicher Mehrwert.
- *  - Konsumiert ausschließlich bestehende Services (siehe useSmbBusinessData).
- *  - Design: „European Enterprise Trust" Light-Theme (Slate + Petrol,
- *    rounded-card/chip) — bewusst freundlicher als die Enterprise-Ansicht.
- *
- * Die vollwertige Enterprise-Ansicht bleibt unverändert unter /app/dashboard
- * erreichbar („Expertenansicht").
- */
-
 const TILE_ICONS: Record<SmbTileId, typeof Shield> = {
   'website-health': HeartPulse,
   monitoring: Activity,
@@ -97,8 +82,6 @@ function TileCard({ tile, signal }: { tile: SmbTileDefinition; signal: BusinessS
 export function SmbDashboardView() {
   const data = useSmbBusinessData();
 
-  // Kachel-Signale: pro Kachel-ID das passende Business-Signal aus den
-  // aggregierten Plattformdaten (pure Funktionen, siehe lib/businessSignals).
   const signals: Record<SmbTileId, BusinessSignal> = {
     'website-health': websiteHealth({ auditScore: data.auditScore, severities: data.severities }),
     monitoring: monitoringSignal(data.eventsLast30d),
@@ -113,7 +96,6 @@ export function SmbDashboardView() {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
       <div className="max-w-5xl mx-auto px-4 py-10">
-        {/* Kopfbereich */}
         <header className="mb-8">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
@@ -130,12 +112,20 @@ export function SmbDashboardView() {
                 )}
               </p>
             </div>
-            <Link
-              to="/app/dashboard"
-              className="text-sm text-slate-500 hover:text-petrol-700 border border-slate-200 rounded-chip px-3 py-1.5 bg-white transition-colors"
-            >
-              Zur Expertenansicht
-            </Link>
+            <div className="flex flex-wrap gap-2">
+              <Link
+                to="/app/channels"
+                className="text-sm text-slate-500 hover:text-petrol-700 border border-slate-200 rounded-chip px-3 py-1.5 bg-white transition-colors"
+              >
+                Chat, WhatsApp, Telefon
+              </Link>
+              <Link
+                to="/app/dashboard"
+                className="text-sm text-slate-500 hover:text-petrol-700 border border-slate-200 rounded-chip px-3 py-1.5 bg-white transition-colors"
+              >
+                Zur Expertenansicht
+              </Link>
+            </div>
           </div>
 
           {!data.loading && !data.live && (
@@ -149,7 +139,6 @@ export function SmbDashboardView() {
           )}
         </header>
 
-        {/* Hauptkacheln (max. 8, siehe src/config/smb-experience.ts) */}
         {data.loading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" aria-busy>
             {SMB_TILES.map((tile) => (
@@ -164,7 +153,6 @@ export function SmbDashboardView() {
           </div>
         )}
 
-        {/* Automatische Handlungsempfehlungen */}
         <section className="mt-8 bg-white border border-slate-200 rounded-card p-6">
           <div className="flex items-center gap-2.5 mb-4">
             <span className="w-9 h-9 rounded-chip bg-petrol-50 text-petrol-700 flex items-center justify-center">
@@ -182,7 +170,6 @@ export function SmbDashboardView() {
           </ul>
         </section>
 
-        {/* Monatlicher Gesundheitsbericht */}
         <section className="mt-4 bg-petrol-700 text-white rounded-card p-6 flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <Mail className="w-5 h-5 shrink-0" aria-hidden />

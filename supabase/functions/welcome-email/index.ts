@@ -1,19 +1,13 @@
 // Welcome-Email Edge Function via Resend.
 //
 // POST /functions/v1/welcome-email
-// Body: { user_id: uuid }   — typically called from the auth-trigger
-//                              (handle_new_auth_user) via pg_net.http_post,
-//                              or manually from /admin tooling.
-//
-// 1. Looks up email + name from auth.users + profiles via service-role
-// 2. Renders a branded HTML welcome email
-// 3. Sends via Resend (or skips if RESEND_API_KEY missing)
-// 4. UPDATE profiles SET welcome_email_sent_at = now() to prevent double-send
-//
-// Idempotent. Graceful no-op if RESEND_API_KEY missing.
+// Body: { user_id: uuid }
+// Sends via _shared/mailer.ts (vault-first Resend key).
+// Idempotent. Graceful no-op if resend_api_key missing from vault and env.
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
+import { handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
+import { sendResendEmail } from '../_shared/mailer.ts';
 
 interface UserRow {
   id: string;
@@ -43,22 +37,15 @@ Deno.serve(async (req) => {
   const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
   const supa = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-  // Fetch auth user
   const { data: userResp, error: userErr } = await supa.auth.admin.getUserById(userId);
   if (userErr || !userResp.user) return jsonError(404, 'NOT_FOUND', 'user not found');
   const user = userResp.user as UserRow;
 
-  // Fetch profile (might not exist yet on signup-race; tolerate)
   const { data: profile } = await supa.from('profiles').select('*').eq('id', userId).maybeSingle();
   const p = (profile ?? null) as ProfileRow | null;
 
   if (p?.welcome_email_sent_at) {
     return jsonResponse({ ok: true, skipped: 'already_sent', sent_at: p.welcome_email_sent_at });
-  }
-
-  const apiKey = await getResendKey(supa);
-  if (!apiKey) {
-    return jsonResponse({ ok: true, skipped: 'no_api_key', hint: 'set RESEND_API_KEY env or vault.resend_api_key' });
   }
 
   const meta = user.raw_user_meta_data ?? {};
@@ -68,46 +55,33 @@ Deno.serve(async (req) => {
     || null;
 
   const html = renderEmail(displayName, user.email);
-  const subject = 'Willkommen bei RealSyncDynamics.AI';
-  const fromAddr = Deno.env.get('WELCOME_EMAIL_FROM') ?? 'team@realsyncdynamicsai.de';
-  const fromName = 'RealSync Dynamics';
+  const fromAddr = Deno.env.get('WELCOME_EMAIL_FROM') ?? 'noreply@realsyncdynamicsai.de';
+  const fromName = 'RealSyncDynamics.AI';
 
-  const resp = await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      from: `${fromName} <${fromAddr}>`,
-      to: [user.email],
-      subject,
-      html,
-      reply_to: 'kontakt@realsyncdynamicsai.de',
-      tags: [{ name: 'category', value: 'welcome' }],
-    }),
+  const sent = await sendResendEmail(supa, {
+    to: user.email,
+    subject: 'Willkommen bei RealSyncDynamics.AI',
+    html,
+    from: `${fromName} <${fromAddr}>`,
+    tags: [{ name: 'category', value: 'welcome' }],
   });
 
-  if (!resp.ok) {
-    const err = await resp.text();
-    return jsonError(502, 'RESEND_FAILED', err.slice(0, 500));
+  if (sent.skipped === 'no_api_key') {
+    return jsonResponse({
+      ok: true,
+      skipped: 'no_api_key',
+      hint: 'provision vault.resend_api_key via vault-set-secret (see docs/runbooks/resend-production-email.md)',
+    });
   }
 
-  const sent = await resp.json();
+  if (!sent.ok) {
+    return jsonError(502, 'RESEND_FAILED', sent.error ?? 'resend rejected');
+  }
+
   await supa.from('profiles').update({ welcome_email_sent_at: new Date().toISOString() }).eq('id', userId);
 
-  return jsonResponse({ ok: true, sent_id: sent.id, to: user.email });
+  return jsonResponse({ ok: true, sent_id: sent.id, to: user.email, source: sent.source });
 });
-
-async function getResendKey(supa: ReturnType<typeof createClient>): Promise<string | null> {
-  const env = Deno.env.get('RESEND_API_KEY');
-  if (env && env.startsWith('re_')) return env;
-  try {
-    const { data } = await supa.rpc('get_app_secret', { secret_name: 'resend_api_key' });
-    if (typeof data === 'string' && data.startsWith('re_')) return data;
-  } catch { /* RPC may not exist; fall through */ }
-  return null;
-}
 
 function renderEmail(displayName: string | null, email: string): string {
   const greeting = displayName ? `Hallo ${escapeHtml(displayName)},` : 'Hallo,';
@@ -153,7 +127,6 @@ function renderEmail(displayName: string | null, email: string): string {
 
 function escapeHtml(s: string): string {
   return String(s ?? '')
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    .replace(/&/g, '&').replace(/</g, '<').replace(/>/g, '>')
+    .replace(/"/g, '"').replace(/'/g, '&#39;');
 }
-

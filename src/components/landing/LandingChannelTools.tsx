@@ -1,18 +1,8 @@
 import { MessageCircle, Phone, ArrowRight, Globe2, Code2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { PLATFORM_CAPABILITIES } from '../../config/platform-capabilities';
+import { PlatformOsSection } from '../sections/PlatformOsSection';
 
-/**
- * Ein Werkzeug wird nur dann zur Konfiguration angeboten, wenn das Modul
- * dahinter in Produktion laeuft. Sonst zeigt die Karte, dass sie in
- * Vorbereitung ist, und fuehrt auf die Warteliste statt in einen Konfigurator,
- * dessen Backend 404 liefert (CLAUDE.md §14: keine Schaltflaeche vortaeuschen,
- * die nichts tut).
- *
- * Die Entscheidung faellt nicht hier, sondern in `platform-capabilities.ts`.
- * Wird das Bot-Backend deployt und der Status dort auf 'live' gesetzt, schalten
- * diese Karten von selbst zurueck auf den Konfigurator.
- */
 function isLive(capabilityId: string): boolean {
   return PLATFORM_CAPABILITIES.find((c) => c.id === capabilityId)?.status === 'live';
 }
@@ -62,6 +52,7 @@ const TOOLS = [
 
 export function LandingChannelTools() {
   return (
+    <>
     <section id="tools" className="relative border-y border-white/10 bg-white/[.02] py-20 md:py-28">
       <div className="mx-auto max-w-7xl px-6 lg:px-10">
         <div className="mb-12 max-w-3xl">
@@ -72,6 +63,9 @@ export function LandingChannelTools() {
           <p className="mt-5 max-w-2xl leading-relaxed text-white/55">
             Website, Code, WhatsApp und Telefon laufen nicht als isolierte Tools. Sie werden über dieselbe Governance-Runtime, Risikobewertung und Nachweis-Schicht kontrollierbar.
           </p>
+          <Link to="/start?source=landing-tools" className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-[#e8c98a]">
+            Betrieb in vier Fragen einrichten <ArrowRight className="h-4 w-4" />
+          </Link>
         </div>
 
         <div className="grid gap-5 sm:grid-cols-2">
@@ -124,5 +118,7 @@ export function LandingChannelTools() {
         <p className="mt-6 text-center font-mono text-[9px] tracking-[.18em] text-white/25">ONE GOVERNANCE PLANE · WEB · CODE · POLICY · EVIDENCE</p>
       </div>
     </section>
+    <PlatformOsSection source="landing" />
+    </>
   );
 }

@@ -1,12 +1,6 @@
 import { serve } from 'https://deno.land/std@0.208.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
-
-/**
- * Email Notification Function
- *
- * Scheduled to run every 5 minutes
- * Processes pending email notifications and sends via Resend or similar
- */
+import { sendResendEmail } from '../_shared/mailer.ts';
 
 interface EmailNotification {
   id: string;
@@ -18,17 +12,7 @@ interface EmailNotification {
   created_at: string;
 }
 
-interface SupabaseAdminClient {
-  from(table: string): {
-    update(obj: Record<string, unknown>): {
-      eq(col: string, val: unknown): Promise<{ error: unknown }>;
-    };
-  };
-}
-
-const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
 const FROM_EMAIL = 'alerts@realsyncdynamicsai.de';
-const RESEND_API_URL = 'https://api.resend.com/emails';
 
 serve(async () => {
   try {
@@ -41,7 +25,6 @@ serve(async () => {
 
     const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
 
-    // Fetch pending email notifications
     const { data: pendingEmails, error: fetchErr } = await supabase
       .from('email_notifications')
       .select('*')
@@ -60,9 +43,8 @@ serve(async () => {
       );
     }
 
-    // Send emails
     const results = await Promise.allSettled(
-      pendingEmails.map(email => sendEmail(supabase, email as EmailNotification))
+      pendingEmails.map(email => sendEmail(supabase as Parameters<typeof sendResendEmail>[0], email as EmailNotification))
     );
 
     const successful = results.filter(r => r.status === 'fulfilled').length;
@@ -91,33 +73,22 @@ serve(async () => {
   }
 });
 
-async function sendEmail(supabase: SupabaseAdminClient, email: EmailNotification): Promise<void> {
+async function sendEmail(supabase: Parameters<typeof sendResendEmail>[0], email: EmailNotification): Promise<void> {
   try {
-    if (!RESEND_API_KEY) {
-      throw new Error('RESEND_API_KEY not configured');
-    }
-
-    // Send via Resend API
-    const response = await fetch(RESEND_API_URL, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${RESEND_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        from: FROM_EMAIL,
-        to: email.recipient_email,
-        subject: email.subject,
-        html: formatEmailBody(email.body, email.event_type),
-      }),
+    const sent = await sendResendEmail(supabase, {
+      to: email.recipient_email,
+      subject: email.subject,
+      html: formatEmailBody(email.body, email.event_type),
+      from: FROM_EMAIL,
+      tags: [{ name: 'category', value: 'notify' }],
     });
-
-    if (!response.ok) {
-      const errorData = await response.text();
-      throw new Error(`Resend API error: ${response.status} - ${errorData}`);
+    if (sent.skipped === 'no_api_key') {
+      throw new Error('resend_api_key missing from vault and env');
+    }
+    if (!sent.ok) {
+      throw new Error(`Resend API error: ${sent.error ?? 'rejected'}`);
     }
 
-    // Mark as sent
     await supabase
       .from('email_notifications')
       .update({
@@ -128,12 +99,11 @@ async function sendEmail(supabase: SupabaseAdminClient, email: EmailNotification
     const errorMsg = error instanceof Error ? error.message : 'Unknown error';
     console.error(`Failed to send email ${email.id}:`, error);
 
-    // Log error
     await supabase
       .from('email_notifications')
       .update({
         error_message: errorMsg,
-        sent_at: new Date().toISOString(), // Mark as "sent" to stop retries
+        sent_at: new Date().toISOString(),
       })
       .eq('id', email.id);
   }

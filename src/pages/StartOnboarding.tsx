@@ -17,6 +17,7 @@ import {
 } from '@/shared/onboarding';
 import { ART50_SENTENCE_DE } from '@/shared/onboarding-copy.de';
 import { checkoutHrefForPlan, formatPriceEur, planById } from '@/shared/pricing';
+import { writeOnboardingProfile } from '../features/operate/onboardingStorage';
 
 type Step = 0 | 1 | 2 | 3;
 
@@ -46,6 +47,11 @@ export function StartOnboarding() {
   }, [industry, jobs, sourceUrl, vertical]);
 
   const plan = profile ? planById(profile.plan_suggested) : null;
+
+  function persistAndContinue() {
+    if (profile) writeOnboardingProfile(profile);
+    setStep(3);
+  }
 
   return (
     <div className="min-h-screen bg-[rgb(3,7,18)] text-white">
@@ -143,7 +149,7 @@ export function StartOnboarding() {
             {art50Required(profile.jobs) && (
               <p className="text-xs text-white/40">Art. 50 ist nicht abwählbar, sobald ein Kanal an ist.</p>
             )}
-            <button type="button" onClick={() => setStep(3)} className="inline-flex items-center gap-2 rounded-full bg-[#f0e6d2] px-6 py-3 text-sm font-semibold text-[#1a1714]">
+            <button type="button" onClick={persistAndContinue} className="inline-flex items-center gap-2 rounded-full bg-[#f0e6d2] px-6 py-3 text-sm font-semibold text-[#1a1714]">
               Zusammenfassung <ArrowRight className="h-4 w-4" />
             </button>
           </div>
@@ -162,9 +168,14 @@ export function StartOnboarding() {
                 Kanäle starten auf Test. Live erst nach Checkliste. Meta- und Minutenpreise sind Verbrauch.
               </p>
             </div>
-            <a href={checkoutHrefForPlan(plan.id, { source: 'start-onboarding' })} className="inline-flex items-center gap-2 rounded-full bg-[#f0e6d2] px-6 py-3 text-sm font-semibold text-[#1a1714]">
-              Dashboard einrichten <ArrowRight className="h-4 w-4" />
-            </a>
+            <div className="flex flex-wrap gap-3">
+              <a href={checkoutHrefForPlan(plan.id, { source: 'start-onboarding' })} className="inline-flex items-center gap-2 rounded-full bg-[#f0e6d2] px-6 py-3 text-sm font-semibold text-[#1a1714]">
+                Checkout {plan.name} <ArrowRight className="h-4 w-4" />
+              </a>
+              <Link to="/app/channels" className="inline-flex items-center gap-2 rounded-full border border-white/20 px-6 py-3 text-sm text-white/80">
+                Kanäle im Dashboard
+              </Link>
+            </div>
           </div>
         )}
       </div>

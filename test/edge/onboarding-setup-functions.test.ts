@@ -38,7 +38,19 @@ const FUNCTIONS = {
 } as const;
 
 const MIGRATION = readFileSync(root('supabase/migrations/20260824000000_company_profiles.sql'), 'utf8');
-const PAGE = readFileSync(root('src/unified-entry/pages/PostRegisterOnboardingPage.tsx'), 'utf8');
+
+// Den Wertebereich definiert nicht mehr die Ursprungsmigration, sondern die
+// Erweiterung um die Unternehmenstypen der Onboarding-Erklaerung. Die Prüfung
+// muss gegen den zuletzt gesetzten Constraint laufen, sonst vergleicht sie
+// gegen einen Stand, den die Datenbank gar nicht mehr führt.
+const SECTOR_MIGRATION = readFileSync(
+  root('supabase/migrations/20260901000000_company_profiles_sector_extend.sql'),
+  'utf8',
+);
+
+// Die Auswahl steht seit der Vereinheitlichung zentral in der Config, nicht
+// mehr im JSX der Seite — beide Onboarding-Oberflächen lesen von dort.
+const SECTOR_CONFIG = readFileSync(root('src/config/sectors.ts'), 'utf8');
 
 /** Ohne Kommentare — dort steht die Begründung, nicht der Verstoß. */
 const stripComments = (s: string) =>
@@ -130,10 +142,14 @@ describe('Branchen-Wertebereich steht dreifach — und muss übereinstimmen', ()
   ].map((m) => m[1]);
 
   const fromMigration = [
-    ...MIGRATION.match(/sector IN \(([^)]+)\)/)![1].matchAll(/'([a-z_]+)'/g),
+    ...SECTOR_MIGRATION.slice(
+      SECTOR_MIGRATION.indexOf('ADD CONSTRAINT company_profiles_sector_check'),
+    ).match(/sector IN \(([^)]+)\)/)![1].matchAll(/'([a-z_]+)'/g),
   ].map((m) => m[1]);
 
-  const fromPage = [...PAGE.matchAll(/\{ id: '([a-z_]+)' as Sector,/g)].map((m) => m[1]);
+  const fromPage = [
+    ...SECTOR_CONFIG.matchAll(/^\s{4}id: '([a-z_]+)',$/gm),
+  ].map((m) => m[1]);
 
   it('liest überhaupt drei Listen', () => {
     // Ohne diese Zusicherung verglichen die folgenden Fälle leere Mengen.
@@ -146,7 +162,7 @@ describe('Branchen-Wertebereich steht dreifach — und muss übereinstimmen', ()
     expect([...fromFunction].sort()).toEqual([...fromMigration].sort());
   });
 
-  it('Oberfläche bietet nichts an, was die Datenbank ablehnt', () => {
+  it('Auswahl-Katalog bietet nichts an, was die Datenbank ablehnt', () => {
     const allowed = new Set(fromMigration);
     const rejected = fromPage.filter((s) => !allowed.has(s));
     expect(

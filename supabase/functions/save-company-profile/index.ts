@@ -31,10 +31,27 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 
-// Spiegel von company_profiles_sector_check in
-// supabase/migrations/20260824000000_company_profiles.sql und von SECTORS in
-// src/unified-entry/pages/PostRegisterOnboardingPage.tsx.
-const VALID_SECTORS = new Set(['saas', 'agency', 'healthcare', 'public_sector', 'generic']);
+// Spiegel von company_profiles_sector_check (zuletzt gesetzt in
+// supabase/migrations/20260901000000_company_profiles_sector_extend.sql) und
+// von SECTORS in src/config/sectors.ts. Deno kann nicht aus src/ importieren,
+// deshalb diese Kopie — test/config/sectors-parity.test.ts prueft alle drei
+// Ebenen gegeneinander und schlaegt bei Drift fehl.
+//
+// Werte werden ergaenzt, nie entfernt: company_profiles.sector traegt die IDs
+// von Bestandsmandanten.
+const VALID_SECTORS = new Set([
+  'small_business',
+  'retail',
+  'furniture_retail',
+  'manufacturing',
+  'services',
+  'agency',
+  'industrial',
+  'saas',
+  'healthcare',
+  'public_sector',
+  'generic',
+]);
 
 /**
  * Erste Adresse aus `X-Forwarded-For`, sonst null — `trial_audit_logs.

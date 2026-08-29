@@ -14,7 +14,7 @@
  * (Art. 88 DSGVO, § 26 BDSG, § 87 Abs. 1 Nr. 6 BetrVG).
  *
  * Wertebereiche stehen doppelt — hier und in der Migrations-SQL
- * (20260828000000_industrial_ot_classification.sql). Nie einseitig ändern;
+ * (20260901000000_industrial_ot_classification.sql). Nie einseitig ändern;
  * test/governance/industrial-ot-parity.test.ts bricht sonst.
  */
 

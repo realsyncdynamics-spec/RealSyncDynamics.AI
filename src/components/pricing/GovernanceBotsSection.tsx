@@ -1,6 +1,6 @@
 import { Check, MessageCircle, Zap, MessageSquare, Globe, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { PUBLIC_PRICING_TIERS, BOT_ADDONS, botAddonsByTier } from '../../config/pricing';
+import { SELLABLE_PRICING_TIERS, BOT_ADDONS, botAddonsByTier } from '../../config/pricing';
 
 /**
  * Governance-Bots Section — zeigt Bot-Quotas pro Tier + Add-on-Karten
@@ -60,8 +60,8 @@ export function GovernanceBotsSection() {
           <h3 className="font-display font-bold text-xl text-titanium-50 mb-8">
             Bot-Kontingent pro Paket
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-            {PUBLIC_PRICING_TIERS.filter((t) => t.id !== 'free').map((tier) => {
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {SELLABLE_PRICING_TIERS.filter((t) => t.id !== 'free').map((tier) => {
               const quota = tier.botsQuota;
               const isUnlimited = quota.maxBots === -1;
 

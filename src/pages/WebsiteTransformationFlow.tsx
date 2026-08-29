@@ -10,7 +10,7 @@ import { buildSite, errorMessage, runScan } from '../features/siteos/siteOsApi';
 import type { SiteBlueprint } from '../../packages/siteos-core/src/index';
 import { renderSite } from '../../packages/siteos-core/src/render/renderer';
 import { applySiteDesignTemplate, SITE_DESIGN_TEMPLATES, type SiteDesignTemplate } from '../../packages/siteos-core/src/render/templates';
-import { ONE_TIME_PRICING_TIERS, PUBLIC_PRICING_TIERS, type PricingTier } from '../config/pricing';
+import { ONE_TIME_PRICING_TIERS, SELLABLE_PRICING_TIERS, type PricingTier } from '../config/pricing';
 import {
   EdgeFunctionAvailabilityNotice,
   allEdgeFunctionsAvailable,
@@ -43,7 +43,9 @@ type Phase = 'input' | 'scan' | 'preview' | 'offer';
 
 function recommendedPlan(features: string[], scores: any): PricingTier | undefined {
   const wantsAdvanced = features.includes('phonebot') || features.includes('booking') || features.includes('ai-act');
-  const candidates = PUBLIC_PRICING_TIERS.filter((tier) => !tier.isYearly);
+  // Nur verkäufliche Stufen: Eine Empfehlung auf Agency oder Partner wäre
+  // seit AP2 ein Vorschlag, den niemand annehmen kann.
+  const candidates = SELLABLE_PRICING_TIERS.filter((tier) => !tier.isYearly);
   if (!candidates.length) return undefined;
   if (wantsAdvanced) return candidates.find((tier) => tier.planKey === 'growth') ?? candidates[1] ?? candidates[0];
   if (typeof scores?.risk === 'number' && scores.risk < 70) return candidates.find((tier) => tier.planKey === 'growth') ?? candidates[1] ?? candidates[0];

@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   ALL_MODULES,
   BOOKABLE_MODULES,
+  ENTITLEMENT_KEYS,
   MODULE_ADDON_PRICE_DIVERGENCE,
   MODULE_PRICING_STATUS,
   OPTIONAL_MODULES,
@@ -40,8 +41,12 @@ describe('Buchbare Module — Struktur', () => {
     expect(new Set(ids).size).toBe(ids.length);
   });
 
-  it('verweist mit `unlocks` ausschliesslich auf existierende Fähigkeiten', () => {
-    const known = new Set(ALL_MODULES.map((m) => m.id));
+  it('verweist mit `unlocks` ausschliesslich auf existierende Entitlement-Keys', () => {
+    // Bis AP1 wurde hier gegen `ALL_MODULES` geprüft — `unlocks` trug damals
+    // `ModuleId`s. Seit AP1 ist der Entitlement-Key der einzige Namensraum,
+    // weil `plan.modules` und die Datenbank auseinandergingen und maßgeblich
+    // die Datenbank ist. Siehe docs/product/entitlement-vokabular.md.
+    const known = new Set<string>(ENTITLEMENT_KEYS);
     for (const module of BOOKABLE_MODULES) {
       for (const unlocked of module.unlocks) {
         expect(known, `${module.id} → ${unlocked}`).toContain(unlocked);

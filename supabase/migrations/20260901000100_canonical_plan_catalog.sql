@@ -2,16 +2,16 @@
 --  Kanonischer Plan-Katalog — Neuausgabe für das Limit `industrialOtSystems`
 -- ═══════════════════════════════════════════════════════════════════════════
 --
--- Ersetzt die Katalog-Daten aus 20260808140000_canonical_plan_catalog.sql.
+-- Ersetzt die Katalog-Daten aus 20260831010000_canonical_plan_catalog.sql.
 -- Migrationen sind unveränderlich, sobald sie deployt sind — eine Änderung
 -- an der Pricing-SSoT erfordert deshalb eine NEUE Katalog-Migration statt
 -- einer Bearbeitung der alten. Tabellen-, RLS- und Index-Definitionen stehen
 -- weiterhin in 20260802001000 und werden hier nicht wiederholt; dieser Lauf
 -- schreibt ausschließlich Katalog-Daten.
 --
--- Neu gegenüber 20260808140000:
+-- Neu gegenüber 20260831010000:
 --   - Limit `industrialOtSystems` in `limits` (Policy Pack Industrial OT,
---     Kontingent-Gate in 20260828000000_industrial_ot_classification.sql):
+--     Kontingent-Gate in 20260901000000_industrial_ot_classification.sql):
 --     free 1 · starter 5 · growth 25 · agency 200 · enterprise/partner -1 ·
 --     governance_launch 1
 --
@@ -32,7 +32,7 @@ INSERT INTO public.plan_catalog (
     'free',
     'Free Audit',
     'Sehen Sie in 90 Sekunden, wo Ihre Governance-Lücken liegen.',
-    'Einmaliger Runtime-Scan Ihrer Domain mit Governance Score, Top-Risiken und Planempfehlung.',
+    'Unbegrenzte Runtime-Scans Ihrer Domain mit Governance Score, Top-Risiken und Planempfehlung.',
     0,
     NULL,
     NULL,
@@ -66,10 +66,10 @@ INSERT INTO public.plan_catalog (
     1,
     500,
     '{"bots":1,"answersPerMonth":500,"domains":1,"automationRunsPerMonth":25,"seats":1,"apiCallsPerMonth":0,"tenants":1,"evidenceStorageGb":2,"auditReportsPerMonth":2,"remediationPlans":5,"bulkJobsPerMonth":0,"apiKeys":0,"industrialOtSystems":5}'::jsonb,
-    '["dsgvo","eu_ai_act","evidence_vault","audit_center","monitoring","compliance_reports","automation_engine","alerts","ai_bots","website_chat"]'::jsonb,
+    '["dsgvo","eu_ai_act","policy_engine","evidence_vault","audit_center","monitoring","compliance_reports","automation_engine","alerts","ai_bots","website_chat"]'::jsonb,
     '{"scheduler":false,"api":false,"webhooks":false,"whiteLabelReports":false,"whiteLabelDashboard":false,"multiTenant":false,"evidenceVault":true,"auditExport":true,"sso":false,"bulkOperations":false,"provenanceSigning":false,"prioritySupport":false}'::jsonb,
     '["website"]'::jsonb,
-    '[]'::jsonb,
+    '["whatsapp"]'::jsonb,
     '{"audit_evidence":["Vollständiger DSGVO-Scan mit Paragraphenbezug","Evidence Vault mit Hash-Chain-Verifizierung","Audit-Export als PDF und JSON","Lückenloser Prüfpfad über alle Läufe"],"ai_governance":["Policy Packs: DSGVO und EU AI Act","Generator für Datenschutzerklärung","Technische Consent-Empfehlungen"],"automation_ops":["Kontinuierliches Monitoring","E-Mail-Alert bei neuen Findings","25 Automationsläufe pro Monat","1 Governance-Bot mit 500 Antworten (Website)"],"multi_tenant_reseller":[]}'::jsonb,
     'email'
   ),
@@ -88,12 +88,12 @@ INSERT INTO public.plan_catalog (
     true,
     2,
     2000,
-    '{"bots":2,"answersPerMonth":2000,"domains":3,"automationRunsPerMonth":100,"seats":5,"apiCallsPerMonth":0,"tenants":1,"evidenceStorageGb":10,"auditReportsPerMonth":12,"remediationPlans":20,"bulkJobsPerMonth":0,"apiKeys":0,"industrialOtSystems":25}'::jsonb,
+    '{"bots":2,"answersPerMonth":2000,"domains":3,"automationRunsPerMonth":100,"seats":5,"apiCallsPerMonth":5000,"tenants":1,"evidenceStorageGb":10,"auditReportsPerMonth":12,"remediationPlans":20,"bulkJobsPerMonth":10,"apiKeys":3,"industrialOtSystems":25}'::jsonb,
     '["dsgvo","eu_ai_act","iso_27001","policy_engine","evidence_vault","audit_center","risk_register","monitoring","compliance_reports","automation_engine","alerts","workflows","drift_detection","remediation","background_jobs","ai_bots","website_chat","whatsapp","telegram","multi_channel_messaging"]'::jsonb,
-    '{"scheduler":false,"api":false,"webhooks":false,"whiteLabelReports":false,"whiteLabelDashboard":false,"multiTenant":false,"evidenceVault":true,"auditExport":true,"sso":false,"bulkOperations":false,"provenanceSigning":false,"prioritySupport":false}'::jsonb,
+    '{"scheduler":true,"api":true,"webhooks":true,"whiteLabelReports":false,"whiteLabelDashboard":false,"multiTenant":false,"evidenceVault":true,"auditExport":true,"sso":false,"bulkOperations":true,"provenanceSigning":true,"prioritySupport":false}'::jsonb,
     '["website","whatsapp","telegram"]'::jsonb,
-    '["response_pack","whatsapp","compliance_pack"]'::jsonb,
-    '{"audit_evidence":["Alles aus Starter","Evidence Vault mit Versionierung","Bis zu 12 Audit-Berichte pro Monat","Consent-Timing-Analyse (Requests vor Einwilligung)"],"ai_governance":["Policy Packs: DSGVO, EU AI Act, ISO 27001","Policy Engine mit versionierten Richtlinien","AI Risk Register mit Bewertung und Eigentümern","Governance Score je Rahmenwerk"],"automation_ops":["Tägliches Monitoring mit Drift Detection","Behebungsvorschläge mit Code-Snippets","100 Automationsläufe pro Monat","2 Governance-Bots mit 2.000 Antworten (Website, WhatsApp, Telegram)"],"multi_tenant_reseller":[]}'::jsonb,
+    '["response_pack","compliance_pack","voice","white_label","agency_bot_pack"]'::jsonb,
+    '{"audit_evidence":["Alles aus Starter","Evidence Vault mit Versionierung","Erweiterter Evidence-Zugriff mit C2PA-Export","Signierter Herkunftsnachweis (Provenance)","Bis zu 12 Audit-Berichte pro Monat","Consent-Timing-Analyse (Requests vor Einwilligung)"],"ai_governance":["Policy Packs: DSGVO, EU AI Act, ISO 27001","Policy Engine mit versionierten Richtlinien","AI Risk Register mit Bewertung und Eigentümern","Governance Score je Rahmenwerk"],"automation_ops":["Tägliches Monitoring mit Drift Detection","Behebungsvorschläge mit Code-Snippets","API-Zugriff, Webhooks und Scheduler","10 Bulk-Jobs pro Monat, 3 API-Schlüssel","100 Automationsläufe pro Monat","2 Governance-Bots mit 2.000 Antworten (Website, WhatsApp, Telegram)"],"multi_tenant_reseller":[]}'::jsonb,
     'priority'
   ),
   (
@@ -129,7 +129,7 @@ INSERT INTO public.plan_catalog (
     12490,
     NULL,
     'EUR',
-    'checkout',
+    'inquiry',
     14,
     true,
     20,
@@ -138,7 +138,7 @@ INSERT INTO public.plan_catalog (
     '["dsgvo","eu_ai_act","iso_27001","nis2","tisax","dora","policy_engine","evidence_vault","audit_center","risk_register","monitoring","compliance_reports","automation_engine","alerts","workflows","drift_detection","remediation","background_jobs","scheduler","n8n","kodee","bulk_jobs","ai_bots","website_chat","whatsapp","telegram","voice","multi_channel_messaging","api","webhooks","human_handoff"]'::jsonb,
     '{"scheduler":true,"api":true,"webhooks":true,"whiteLabelReports":true,"whiteLabelDashboard":true,"multiTenant":true,"evidenceVault":true,"auditExport":true,"sso":true,"bulkOperations":true,"provenanceSigning":true,"prioritySupport":true}'::jsonb,
     '["website","whatsapp","telegram","slack","teams","email","voice"]'::jsonb,
-    '["response_pack","whatsapp","voice","compliance_pack","agency_bot_pack","white_label"]'::jsonb,
+    '["response_pack","voice","compliance_pack","agency_bot_pack","white_label"]'::jsonb,
     '{"audit_evidence":["Alles aus Agency","Audit Center Pro mit 200 Berichten pro Monat","Evidence Vault Enterprise mit 200 GB Nachweisspeicher"],"ai_governance":["Alle sechs Policy Packs: DSGVO, EU AI Act, ISO 27001, NIS2, TISAX, DORA","Erweiterte Analysen und Risk Scoring","Eigene Richtlinien und Kontrollkataloge"],"automation_ops":["Unbegrenzter Scheduler für geplante Läufe","2.000 Automationsläufe pro Monat","API Premium mit 250.000 Aufrufen pro Monat","20 Governance-Bots mit 50.000 Antworten (alle Kanäle)","Priorisierter Support mit 4 h Reaktionszeit"],"multi_tenant_reseller":["Multi-Tenant-Dashboard für bis zu 5 Organisationen","Zentrale Benutzerverwaltung mit Rollen und Rechten","Single Sign-On","White-Label mit Branding, Logo und Farben"]}'::jsonb,
     'dedicated'
   ),
@@ -219,7 +219,7 @@ INSERT INTO public.plan_addons (addon_id, name, description, price_eur, price_no
     49,
     '/ Monat',
     'month',
-    '["growth","agency","enterprise","partner"]'::jsonb
+    '["growth","enterprise"]'::jsonb
   ),
   (
     'whatsapp',
@@ -228,7 +228,7 @@ INSERT INTO public.plan_addons (addon_id, name, description, price_eur, price_no
     99,
     '/ Monat',
     'month',
-    '["growth","agency","enterprise","partner"]'::jsonb
+    '["starter"]'::jsonb
   ),
   (
     'voice',
@@ -237,7 +237,7 @@ INSERT INTO public.plan_addons (addon_id, name, description, price_eur, price_no
     150,
     '/ Monat zzgl. 0,25 € pro Minute',
     'month',
-    '["agency","enterprise","partner"]'::jsonb
+    '["growth","enterprise"]'::jsonb
   ),
   (
     'compliance_pack',
@@ -246,7 +246,7 @@ INSERT INTO public.plan_addons (addon_id, name, description, price_eur, price_no
     149,
     '/ Monat',
     'month',
-    '["growth","agency","enterprise","partner"]'::jsonb
+    '["growth","enterprise"]'::jsonb
   ),
   (
     'agency_bot_pack',
@@ -255,7 +255,7 @@ INSERT INTO public.plan_addons (addon_id, name, description, price_eur, price_no
     199,
     '/ Monat',
     'month',
-    '["agency","enterprise","partner"]'::jsonb
+    '["growth","enterprise"]'::jsonb
   ),
   (
     'white_label',
@@ -264,7 +264,7 @@ INSERT INTO public.plan_addons (addon_id, name, description, price_eur, price_no
     299,
     '/ Monat',
     'month',
-    '["agency","enterprise","partner"]'::jsonb
+    '["growth","enterprise"]'::jsonb
   )
 ON CONFLICT (addon_id) DO UPDATE SET
   name = EXCLUDED.name,

@@ -229,11 +229,30 @@ geklärt sein.
 | # | Phase | Zustand |
 |---|---|---|
 | 1 | Produkt-/Routing-Struktur, Modulkatalog, Weiche | **umgesetzt** |
-| 2 | Free-Scan-Flow auf die Weiche ausrichten | offen (Freigabe §3.4) |
-| 3 | Registrierung: Pfad und Scan-Ergebnis dem Konto zuordnen | offen |
-| 4 | Pricing Engine: Auswahl-UI auf `BOOKABLE_MODULES` | offen |
-| 5 | Stripe Checkout modular (Core + Module, metered für Verbrauch) | offen |
-| 6 | Dashboard-Navigation nach §9 | offen |
+| 2 | Free-Scan-Flow ausrichten | **umgesetzt 2026-08-23** — Freigabe erteilt (`CLAUDE.md` §10), siehe unten |
+| 3 | Registrierung: Pfad und Scan-Ergebnis dem Konto zuordnen | **Scan-Ergebnis umgesetzt**, Pfad (`ProductTrack`) weiterhin offen |
+| 4 | Pricing Engine: Auswahl-UI auf `BOOKABLE_MODULES` | **teilweise** — `/app/marketplace` zeigt den Katalog mit echtem Zustand; die Auswahl-UI für den Checkout fehlt (Phase 5) |
+| 5 | Stripe Checkout modular (Core + Module, metered für Verbrauch) | offen — Vorbedingung: Preiskalkulation |
+| 6 | Dashboard-Navigation nach §9 | **teilweise** — Marketplace ergänzt, Restumbau offen |
+
+### Nachtrag 2026-08-23 — die Freigabe aus §3.4 ist erteilt
+
+Der Eigentümer hat die CTA-Hierarchie der Startseite ausdrücklich angewiesen
+(Auftrag „Landingpage / Scan / Dashboard / Marketplace Refactor", §2 und §24).
+Damit ist die in §3.4 und in `reality-matrix.md` §5.1 offene Entscheidung
+beantwortet. Umfang und Wortlaut der Freigabe stehen in `CLAUDE.md` §10 unter
+„Erteilte Freigaben".
+
+Umgesetzt wurde allerdings **nicht** „Scan → Weiche", sondern ein eigener
+öffentlicher Trichter: `/scan` → `/scan/ergebnis` → Registrierung. Der Grund
+ist der Produktgrundsatz aus dem Auftrag: Der Kunde soll **vor** dem Bezahlen
+einen echten Nutzen sehen, und dafür braucht er zuerst ein vollständiges
+Ergebnis — nicht sofort eine Wegentscheidung. Die Weiche
+(`/unified-entry/entscheidung`) bleibt bestehen und erreichbar; sie ist
+weiterhin der Einstieg des Build-Trichters, nur nicht mehr das, was die
+Startseite bewirbt.
+
+Einzelheiten: `docs/product/public-scan-funnel.md`.
 | 7 | Modul-Aktivierung und Feature Gating (`subscription.active && module.enabled`) | offen |
 | 8 | Frontend Builder: Content Inventory → Mapping → Preview → Approval → Publish | offen |
 | 9 | Booking Engine (Datenmodell + Slot-Berechnung) | offen |

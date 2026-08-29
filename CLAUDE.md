@@ -79,7 +79,7 @@ Menschen · Unternehmen · KI-Agenten · Daten · Entscheidungen.
 **Primär: Supabase Cloud (EU / Frankfurt)**
 - PostgreSQL 17 (Live-Projekt, Stand 2026-08-16)
 - **178 Edge Functions** im Repo (`supabase/functions/`, Deno/V8) — **179 in Produktion**: alle 178 plus `onboarding-orchestrator`, das kein Repo-Verzeichnis hat, siehe §5
-- **289 Migrations** (`supabase/migrations/`) — **299 im Ledger verbucht**: alle 289 plus 10 ohne Repo-Datei, siehe §5
+- **297 Migrations** (`supabase/migrations/`) — **299 im Ledger verbucht**: alle 297 plus 2 ohne Repo-Datei, siehe §5
 - RLS auf allen App-Tabellen · Realtime Subscriptions
 
 **Node/TypeScript-Services** (containerisiert — **kein Go im Repo**)
@@ -189,9 +189,9 @@ Jeder Agent braucht vier Dimensionen — fehlt eine, ist er nicht governance-fä
 > Live-Projekt `RealSyncDynamicsLive` (`ebljyceifhnlzhjfyxup`, eu-central-1,
 > PostgreSQL 17):
 >
-> | | Repo (`main` @ `1657e23`) | in Produktion | Lücke |
+> | | Repo (`main` @ `95cd8d7`) | in Produktion | Lücke |
 > |---|---|---|---|
-> | Migrationen | 289 | **299** (neueste `20260831020000`) | **+10**¹ |
+> | Migrationen | 297 | **299** (neueste `20260831020000`) | **+2**¹ |
 > | Edge Functions | 178 | **179** | **+1**² |
 > | Tabellen in `public` | — | 351 (`pg_tables`, ohne Views) | — |
 >
@@ -205,19 +205,25 @@ Jeder Agent braucht vier Dimensionen — fehlt eine, ist er nicht governance-fä
 > ungeprüft — genau der Vorfallstyp vom 2026-05-28
 > (`docs/runtime/SYSTEMCHECK-2026-05-28.md`).
 >
-> ¹ **Zehn Ledger-Versionen ohne Repo-Datei** (Ledger via
+> ¹ **Zwei Ledger-Versionen ohne Repo-Datei** (Ledger via
 > `supabase_migrations.schema_migrations`): `20260825204748`
-> (`fix_websites_authenticated_crud_rls`), `20260828000000`
-> (`entitlement_base_keys_paid_plans`), `20260828010000`
-> (`entitlement_yearly_products_and_resolver`), `20260828020000` +
-> `20260831010000` (`canonical_plan_catalog`), `20260829000000`
-> (`grace_period`), `20260829011038` (`onboarding_orchestrator_hardening`),
-> `20260830000000` (`canonical_entitlement_vocabulary`), `20260831000000`
-> (`ap2_package_model`), `20260831020000` (`tenant_entitlements_service_role`).
-> Sie greifen ins Entitlement-, Plan- und RLS-Modell ein — also genau in die
-> Ebene, die `shared/pricing.ts` als Single Source of Truth beansprucht. Wer
-> das Pricing-Modell anfasst, misst vorher die Live-Kataloge, statt der SSoT
-> zu glauben.
+> (`fix_websites_authenticated_crud_rls`) und `20260829011038`
+> (`onboarding_orchestrator_hardening`). Beide sind in Produktion wirksam,
+> ihr SQL ist im Repo aber nirgends nachlesbar — ein `supabase db reset`
+> erzeugt also ein anderes Schema als Produktion. Auflösung: SQL aus der
+> Live-DB ziehen und als Migration nachreichen.
+>
+> Die Messung um 07:51 UTC hatte hier noch **zehn** Versionen gezählt; acht
+> davon (`entitlement_base_keys_paid_plans`,
+> `entitlement_yearly_products_and_resolver`, `canonical_plan_catalog` ×2,
+> `grace_period`, `canonical_entitlement_vocabulary`, `ap2_package_model`,
+> `tenant_entitlements_service_role`) kamen mit dem AP-Canon-Merge (`2e60a21`)
+> um 08:0x ins Repo. Genau deshalb steht an jeder Zahl hier ein Zeitpunkt:
+> Der Ledger bewegt sich schneller, als eine Doku-Zeile altert.
+>
+> Diese acht greifen ins Entitlement- und Plan-Modell ein — also in die Ebene,
+> die `shared/pricing.ts` als Single Source of Truth beansprucht. Wer das
+> Pricing-Modell anfasst, misst die Live-Kataloge, statt der SSoT zu glauben.
 >
 > ² **`onboarding-orchestrator`** ist live (deployt 2026-08-29 01:06 UTC,
 > `verify_jwt: true`), hat aber kein Verzeichnis unter `supabase/functions/`.
@@ -354,7 +360,7 @@ RealSyncDynamics.AI/
 │   └── pricing.ts     Single Source of Truth für Produkt-, Preis- und Berechtigungsmodell
 ├── supabase/
 │   ├── functions/     178 Edge Functions (einziger Ort für Service-Role-Keys)
-│   └── migrations/    289 Migrations
+│   └── migrations/    297 Migrations
 ├── apps/
 │   └── agent-runtime/ Agent Runtime (Node/TS, Docker)
 ├── services/          runtime-core · evidence-runtime · openclaw-agent · playwright-scanner

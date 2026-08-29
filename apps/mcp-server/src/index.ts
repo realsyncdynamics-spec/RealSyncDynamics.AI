@@ -114,6 +114,17 @@ async function start() {
     },
   );
 
+  // Noch nicht implementierte Werkzeuge als 501 ausliefern, nicht als 500 —
+  // ein Agent soll unterscheiden können zwischen "geht noch nicht" und
+  // "ist kaputt".
+  fastify.setErrorHandler((error, request, reply) => {
+    if (error.name === 'NotImplementedError') {
+      return reply.code(501).send({ error: 'NOT_IMPLEMENTED', message: error.message });
+    }
+    request.log.error(error);
+    return reply.code(500).send({ error: 'INTERNAL' });
+  });
+
   // Start server
   try {
     await fastify.listen({ port: PORT, host: HOST });

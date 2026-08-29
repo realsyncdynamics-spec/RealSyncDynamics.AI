@@ -235,12 +235,42 @@ Jeder Agent braucht vier Dimensionen — fehlt eine, ist er nicht governance-fä
 > Function-Achse. Die Deckung ist ein Momentzustand, kein Naturgesetz, und
 > sie ist seitdem an beiden Achsen aufgegangen.
 >
-> **Was daraus folgt — der Drift-Wächter deckt nur eine Achse ab.**
-> `scripts/check-edge-function-drift.mjs` vergleicht Functions, sonst nichts.
-> Die Migrations-Achse ist **ungeprüft**: Beide out-of-band-Migrationen sind
-> durch keine CI aufgefallen, sondern erst beim Nachschlagen einer freien
-> Versionsnummer. Bis dafür ein Wächter existiert, gehört der Zwei-Wege-Diff
-> gegen `supabase_migrations.schema_migrations` von Hand in jede Messung.
+> **⛔ Folge: Seit dem 2026-08-26 erreicht KEINE Migration mehr die Produktion.**
+> Bei nicht verbuchten Remote-Versionen bricht `supabase db push` vollständig
+> ab — nicht nur für die betroffene Migration, sondern für alle. Alles, was
+> seitdem an Migrationen gemergt wurde, liegt im Repo und ist **nicht** in
+> Produktion. Das ist der teuerste Teil dieses Befunds und der Grund, warum er
+> Vorrang hat.
+>
+> **Der Wächter dafür existiert und hat funktioniert — er wurde nur nicht
+> gelesen.** `.github/workflows/migration-drift.yml` (`scripts/check-migration-drift.mjs`,
+> täglich 06:00 UTC) meldet genau diesen Zustand. Der Verlauf seiner
+> `schedule`-Läufe:
+>
+> | Datum | Ergebnis |
+> |---|---|
+> | 2026-08-18 … 2026-08-25 | grün |
+> | 2026-08-26 | **rot** |
+> | 2026-08-27 | **rot** |
+> | 2026-08-28 | **rot** |
+> | 2026-08-29 | **rot** |
+>
+> Der Umschlag passt exakt zu `20260825204748`, angewandt am 2026-08-25 um
+> 20:47 UTC — also nach dem grünen Lauf desselben Morgens. Der Wächter hat am
+> ersten Tag angeschlagen und seitdem jeden Morgen.
+>
+> **Warum es auf PRs trotzdem niemandem auffiel**: `MIGRATION_DRIFT_MODE` ist
+> auf Pull Requests bewusst `advisory` und nur im `schedule`-Lauf `fail` —
+> damit bestehender Drift keine fremden PRs blockiert. Die Begründung ist
+> richtig, aber sie verlagert das Signal in einen Lauf, den keine PR-Ansicht
+> zeigt. Wer nur auf grüne PR-Checks schaut, sieht vier rote Tage nicht.
+>
+> Die Lehre ist also **nicht** „es fehlt ein Wächter", sondern: ein Wächter,
+> dessen einziges hartes Signal in einem nächtlichen Lauf steht, muss
+> irgendwohin melden, wo jemand hinsieht. Solange das nicht geregelt ist,
+> gehört der Zwei-Wege-Diff gegen `supabase_migrations.schema_migrations`
+> von Hand in jede Messung — und der Blick in die letzten `schedule`-Läufe
+> von `migration-drift.yml` dazu.
 >
 > **Erledigt, bleibt als Lehre stehen.** Die Versionskollision vom 2026-08-24 (PR #1131 und #1124 vergaben beide
 > `20260826000000`) ist **erledigt**: `restore_client_function_grants` wurde zu

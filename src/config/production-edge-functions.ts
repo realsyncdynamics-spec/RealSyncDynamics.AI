@@ -10,12 +10,26 @@
  *
  * ## Stand der Messung
  *
- * 2026-08-23 (nach Merge von PR #1131 und dem zugehörigen `deploy.yml`-Lauf),
- * Management-API gegen das Live-Projekt: 178 Function-Verzeichnisse im
- * Repository, **178 deployt — deckungsgleich in beide Richtungen** (weder
- * eine nicht deployte Function noch eine deployte ohne Verzeichnis). Das ist
- * ein Momentzustand, kein Naturgesetz: Der nächste Merge, der eine Function
- * hinzufügt, öffnet die Lücke wieder, bis `deploy.yml` gelaufen ist.
+ * 2026-08-29, Management-API gegen das Live-Projekt: 178 Function-Verzeichnisse
+ * im Repository, **179 deployt**. Die Lücke läuft diesmal in die andere
+ * Richtung als sonst: Es fehlt keine deployte Function, sondern es läuft eine
+ * mehr, als das Repo kennt.
+ *
+ * `onboarding-orchestrator` (deployt 2026-08-29 01:06 UTC, `verify_jwt: true`)
+ * hat **kein Verzeichnis unter `supabase/functions/`**. Der `entrypoint_path`
+ * zeigt auf `/tmp/user_fn_…` statt auf den GitHub-Actions-Runner-Pfad, den
+ * `deploy.yml` hinterlässt — die Function wurde also out-of-band deployt
+ * (Dashboard oder Management-API), nicht aus diesem Repository.
+ *
+ * Sie steht hier, weil diese Datei misst, **was läuft** — nicht, was laufen
+ * darf. Das ist ausdrücklich keine Freigabe: `npm run check:edge-functions`
+ * wertet eine deployte Function ohne Repo-Verzeichnis als ORPHAN und damit
+ * als Fehler (Vorfall 2026-05-28, `docs/runtime/SYSTEMCHECK-2026-05-28.md`).
+ * Der Guard bleibt bewusst scharf — Quelle ins Repo committen oder Function
+ * löschen, nicht die Allowlist erweitern.
+ *
+ * Der Vorstand vom 2026-08-23 (178 ⇄ 178, deckungsgleich in beide Richtungen)
+ * war ein Momentzustand, kein Naturgesetz — genau wie dieser hier.
  *
  * Zur Geschichte der vermeintlichen 100er-Obergrenze (am 2026-08-19 durch den
  * Deploy von Function 101 widerlegt, Lücke bis 2026-08-22 vollständig
@@ -40,10 +54,10 @@
  * Sie darf steigen, sobald jemand einen höheren Stand misst — und sie ist
  * kein Argument dafür, dass ein weiterer Deploy scheitern wird.
  */
-export const EDGE_FUNCTIONS_OBSERVED_MAX = 178;
+export const EDGE_FUNCTIONS_OBSERVED_MAX = 179;
 
 /** Datum der letzten Messung gegen das Live-Projekt. */
-export const PRODUCTION_EDGE_FUNCTIONS_MEASURED_AT = '2026-08-23T20:57Z';
+export const PRODUCTION_EDGE_FUNCTIONS_MEASURED_AT = '2026-08-29T07:51Z';
 
 /**
  * Die in Produktion aktiven Function-Slugs — alphabetisch, damit ein Diff
@@ -166,6 +180,8 @@ export const PRODUCTION_EDGE_FUNCTIONS: readonly string[] = [
   'notify-terminal-event',
   'oauth2-apps',
   'oauth2-token',
+  // ORPHAN: live, aber ohne Repo-Verzeichnis — siehe Kopfkommentar.
+  'onboarding-orchestrator',
   'optimize-analyze',
   'optimize-execute',
   'order-intake',

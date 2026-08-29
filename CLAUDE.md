@@ -78,8 +78,8 @@ Menschen · Unternehmen · KI-Agenten · Daten · Entscheidungen.
 
 **Primär: Supabase Cloud (EU / Frankfurt)**
 - PostgreSQL 17 (Live-Projekt, Stand 2026-08-16)
-- **178 Edge Functions** im Repo (`supabase/functions/`, Deno/V8) — 177 davon in Produktion; `whatsapp-webhook` ist seit 2026-08-23 im Repo und wird mit dem nächsten `deploy.yml`-Lauf deployt, siehe §5
-- **289 Migrations** (`supabase/migrations/`) — 287 verbucht; zur Lücke und zur Versionskollision vom 2026-08-24 siehe §5
+- **178 Edge Functions** im Repo (`supabase/functions/`, Deno/V8) — **179 in Produktion**: alle 178 plus `onboarding-orchestrator`, das kein Repo-Verzeichnis hat, siehe §5
+- **289 Migrations** (`supabase/migrations/`) — **299 im Ledger verbucht**: alle 289 plus 10 ohne Repo-Datei, siehe §5
 - RLS auf allen App-Tabellen · Realtime Subscriptions
 
 **Node/TypeScript-Services** (containerisiert — **kein Go im Repo**)
@@ -185,39 +185,58 @@ Jeder Agent braucht vier Dimensionen — fehlt eine, ist er nicht governance-fä
 > Produktion läuft. Die Regel bleibt: vor jeder Aussage zum Produktionsstand
 > gegen die Live-DB messen, nicht gegen diese Liste.
 >
-> **Messung vom 2026-08-23, nach dem Merge von PR #1131 (WhatsApp-Kanal) und
-> dem zugehörigen `deploy.yml`-Lauf**, per Management-API direkt gegen das
+> **Messung vom 2026-08-29**, per Management-API und SQL direkt gegen das
 > Live-Projekt `RealSyncDynamicsLive` (`ebljyceifhnlzhjfyxup`, eu-central-1,
 > PostgreSQL 17):
 >
-> | | Repo (`main`) | in Produktion | Lücke |
+> | | Repo (`main` @ `1657e23`) | in Produktion | Lücke |
 > |---|---|---|---|
-> | Migrationen | 289 | **287** (neueste `20260826000000`) | **2**¹ |
-> | Edge Functions | 178 | **178** | **0** |
+> | Migrationen | 289 | **299** (neueste `20260831020000`) | **+10**¹ |
+> | Edge Functions | 178 | **179** | **+1**² |
 > | Tabellen in `public` | — | 351 (`pg_tables`, ohne Views) | — |
 >
 > Frühere Stände nannten hier 369 Tabellen ohne Messmethode — vermutlich
 > inklusive Views. Ab jetzt zählt `pg_tables`, damit die Zahl vergleichbar bleibt.
 >
-> ¹ **Migrations-Lücke und Versionskollision, gemessen 2026-08-24** (Ledger via
-> `supabase_migrations.schema_migrations`, Deploy-Log Run 32705231581): PR #1131
-> und PR #1124 vergaben unabhängig voneinander dieselbe Version `20260826000000`
-> (`whatsapp_channel` bzw. `restore_client_function_grants`) — die PR-CI konnte
-> das nicht sehen, weil beide gegen eine `main`-Basis ohne die jeweils andere
-> Datei liefen. Der `deploy.yml`-Lauf nach dem #1124-Merge scheiterte daran
-> (CLI führte `whatsapp_channel` erneut aus → `42710`, Trigger existiert).
-> Fix: `restore_client_function_grants` → `20260826000001` umbenannt. Die zwei
-> unverbuchten Migrationen (`20260826000001`, `20260827000000`) sind inhaltlich
-> bereits wirksam (out-of-band-Hotfix, per ACL-Messung belegt); es fehlt nur die
-> Verbuchung durch den nächsten grünen Deploy. Lehre: Vor dem Merge eines PRs
-> mit Migration die Versionsnummer gegen den **aktuellen** `main`-Stand prüfen,
-> nicht gegen die PR-Basis.
+> **Die Lücke läuft in die andere Richtung als bisher.** Bis 2026-08-24 fehlte
+> in Produktion, was im Repo lag. Jetzt ist umgekehrt in Produktion mehr, als
+> das Repo kennt. Das ist der gefährlichere Fall: Nicht deployter Code ist
+> unsichtbar, aber harmlos; deployter Code ohne Repo-Herkunft ist wirksam und
+> ungeprüft — genau der Vorfallstyp vom 2026-05-28
+> (`docs/runtime/SYSTEMCHECK-2026-05-28.md`).
 >
-> **Repo und Produktion decken sich derzeit vollständig** — in beide
-> Richtungen geprüft, es gibt weder eine nicht deployte Function noch eine
-> deployte ohne Verzeichnis. Das ist ein Momentzustand, kein Naturgesetz: Der
-> nächste Merge, der eine Function hinzufügt, öffnet die Lücke wieder, bis
-> `deploy.yml` gelaufen ist.
+> ¹ **Zehn Ledger-Versionen ohne Repo-Datei** (Ledger via
+> `supabase_migrations.schema_migrations`): `20260825204748`
+> (`fix_websites_authenticated_crud_rls`), `20260828000000`
+> (`entitlement_base_keys_paid_plans`), `20260828010000`
+> (`entitlement_yearly_products_and_resolver`), `20260828020000` +
+> `20260831010000` (`canonical_plan_catalog`), `20260829000000`
+> (`grace_period`), `20260829011038` (`onboarding_orchestrator_hardening`),
+> `20260830000000` (`canonical_entitlement_vocabulary`), `20260831000000`
+> (`ap2_package_model`), `20260831020000` (`tenant_entitlements_service_role`).
+> Sie greifen ins Entitlement-, Plan- und RLS-Modell ein — also genau in die
+> Ebene, die `shared/pricing.ts` als Single Source of Truth beansprucht. Wer
+> das Pricing-Modell anfasst, misst vorher die Live-Kataloge, statt der SSoT
+> zu glauben.
+>
+> ² **`onboarding-orchestrator`** ist live (deployt 2026-08-29 01:06 UTC,
+> `verify_jwt: true`), hat aber kein Verzeichnis unter `supabase/functions/`.
+> Der `entrypoint_path` zeigt auf `/tmp/user_fn_…` statt auf den
+> Runner-Pfad von `deploy.yml` — also out-of-band deployt, nicht aus diesem
+> Repo. `npm run check:edge-functions` wertet das als ORPHAN und damit als
+> Fehler; die Allowlist (`scripts/edge-function-drift-allowlist.json`) ist
+> bewusst leer geblieben. Auflösung: Quelle ins Repo committen **oder**
+> `supabase functions delete onboarding-orchestrator` — nicht den Guard
+> stummschalten.
+>
+> **Die Lücke vom 2026-08-24 ist geschlossen.** `20260826000001` und
+> `20260827000000` sind im Ledger angekommen. Zur Historie: PR #1131 und
+> PR #1124 vergaben unabhängig dieselbe Version `20260826000000` — die PR-CI
+> konnte das nicht sehen, weil beide gegen eine `main`-Basis ohne die jeweils
+> andere Datei liefen; der Deploy scheiterte mit `42710`. Fix in PR #1136:
+> Umbenennung auf `20260826000001`. Lehre: Vor dem Merge eines PRs mit
+> Migration die Versionsnummer gegen den **aktuellen** `main`-Stand prüfen,
+> nicht gegen die PR-Basis.
 >
 > **Die Function-Lücke ist geschlossen.** Frühere Stände dieser Datei nannten
 > „103 deployt, 74 fehlend" und erklärten das mit dem Kontingent des
@@ -335,7 +354,7 @@ RealSyncDynamics.AI/
 │   └── pricing.ts     Single Source of Truth für Produkt-, Preis- und Berechtigungsmodell
 ├── supabase/
 │   ├── functions/     178 Edge Functions (einziger Ort für Service-Role-Keys)
-│   └── migrations/    287 Migrations
+│   └── migrations/    289 Migrations
 ├── apps/
 │   └── agent-runtime/ Agent Runtime (Node/TS, Docker)
 ├── services/          runtime-core · evidence-runtime · openclaw-agent · playwright-scanner

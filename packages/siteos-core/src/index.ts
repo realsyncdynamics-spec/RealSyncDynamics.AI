@@ -23,6 +23,8 @@ export * from './render/renderer.ts';
 
 export * from './deploy/artifact.ts';
 
+export * from './governance/publish-gate.ts';
+
 export * from './agents/registry.ts';
 export * from './agents/remediate.ts';
 

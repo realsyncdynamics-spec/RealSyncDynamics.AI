@@ -3,7 +3,7 @@
  *
  * ## Warum das geprüft wird
  *
- * Der Router fasst vier Endpunkte in einem Function-Slot zusammen — der
+ * Der Router fasst fünf Endpunkte in einem Function-Slot zusammen — der
  * einzige Grund, warum SiteOS unter dem Free-Plan-Limit überhaupt eine
  * Chance auf Produktion hat (`src/config/production-edge-functions.ts`).
  * Löst er einen Pfad falsch auf, ist der Preis nicht ein Tippfehler, sondern
@@ -25,7 +25,7 @@ import { describe, expect, it } from 'vitest';
 import { resolveEndpoint, ROUTER_SLUG } from '../../supabase/functions/siteos/resolve';
 
 /** Muss mit der Route-Map in supabase/functions/siteos/index.ts übereinstimmen. */
-const ENDPOINTS = ['agents', 'builder', 'discover', 'runtime-scan'];
+const ENDPOINTS = ['agents', 'builder', 'discover', 'publish-gate', 'runtime-scan'];
 
 describe('siteos Router — resolveEndpoint', () => {
   it.each(ENDPOINTS)('löst /%s auf den Endpunkt auf', (ep) => {

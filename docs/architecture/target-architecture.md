@@ -530,11 +530,40 @@ zulässiges, aber blockierendes Ergebnis — ehrlicher als eine geratene Zusage.
 
 Heute existiert `siteos_blueprints.status = 'approved'` ohne einen solchen
 Vertrag; der Deployment-Pfad ist noch offen (SITEOS_ARCHITECTURE §6). Genau
-deshalb ist jetzt der richtige Zeitpunkt für die Festlegung: das Gate gehört
-**vor** den ersten Publish-Pfad, nicht danach. Vorgesehener Ort: eine eigene
-Edge Function (Auswertung + Persistenz der Evaluation) und der Contract-Typ im
-abhängigkeitsfreien Kern `packages/siteos-core`, damit SPA, Deno und Tests
-dieselbe Definition benutzen.
+deshalb war jetzt der richtige Zeitpunkt für die Festlegung: das Gate gehört
+**vor** den ersten Publish-Pfad, nicht danach.
+
+### Umsetzungsstand
+
+| Baustein | Ort |
+| --- | --- |
+| Contract-Typ + Ableitungsregel | `packages/siteos-core/src/governance/publish-gate.ts` |
+| Serverseitige Auswertung (G1) | `supabase/functions/siteos/handlers/publish-gate.ts` → `POST /functions/v1/siteos/publish-gate` |
+| Persistenz + Durchsetzung | `supabase/migrations/20260825000000_siteos_publish_gate.sql` |
+| Tests gegen diesen Abschnitt | `test/siteos/publish-gate.test.ts` |
+
+Drei der sechs Regeln stehen nicht im Anwendungscode, sondern im Schema — weil
+Anwendungscode sich umgehen lässt und ein Constraint nicht:
+
+- **G4** — `publishable` ist eine `GENERATED ALWAYS`-Spalte über der
+  Ableitungsregel. Es gibt keinen Schreibpfad, der sie setzen könnte.
+- **G5 + G6** — `siteos_publish_actions` referenziert per zusammengesetztem
+  Fremdschlüssel `(evaluation_id, artifact_sha256, gate_passed)` den
+  Unique-Index `(id, artifact_sha256, publishable)` der Evaluationstabelle. Eine
+  Veröffentlichung ohne bestandene Bewertung findet keine Zielzeile; ein
+  Artefaktwechsel nach der Freigabe lässt den Schlüssel ins Leere laufen.
+
+Zusätzlich rechnet der Handler nach dem Insert gegen, ob Kern und Datenbank zu
+demselben `publishable` kommen. Weichen sie ab, ist eine der beiden Definitionen
+falsch — und dann gewinnt nicht die freundlichere, sondern das geschlossene Gate.
+
+**Was noch fehlt** (und warum das Gate bis dahin nichts freigibt): Der Evidence
+Vault kennt keinen Schreibpfad, der einen Nachweis an den Artefakt-Hash bindet,
+und für den Backend-Vergleich gibt es keine Quelle ausser der transformierenden
+Stelle selbst. Beides führt nach G3 zu `pending` statt zu einer Freigabe. Das ist
+der beabsichtigte Zustand eines Gates, das vor seinem Publish-Pfad steht. Der
+Handler nennt die fehlenden Eingänge in `missing_inputs`, damit der Grund
+sichtbar ist und nicht nur das Ergebnis.
 
 ---
 
@@ -783,7 +812,7 @@ auf bestehende Modul-Schlüssel abgebildet, nicht als zweite Modul-Welt eingefü
 | Asset Lifecycle | 4 Blueprint-Status | 8 Assetzustände, additiv oberhalb der Versionsstatus |
 | Continuous Observation | Scans als Läufe, Cron für Governance-Monitoring; SiteOS-Agenten noch SPA-getriggert | Beobachtung als Dauerzustand am Asset, Agenten an den Cron |
 | Governance Decision | Policies, Controls, Approvals, Incidents vorhanden | benannte, gespeicherte Entscheidung mit ALLOW/REVIEW/BLOCK und Eingabeankern |
-| **Publish Gate** | **nicht vorhanden** | Contract §7 vor dem ersten Publish-Pfad umsetzen |
+| **Publish Gate** | Contract, Auswertung und Persistenz vorhanden (§7 „Umsetzungsstand") | Evidence-Schreibpfad und Backend-Vergleich fehlen — das Gate blockiert bis dahin fail-closed |
 | Deployment-Pfad | Renderer erzeugt gehashtes Artefakt; Upload/Domain offen | Publish nur über das Gate |
 | Skills / Workflows | 7 SiteOS-Agenten, `automation_skills`/`automation_runs` | 8 Skills als Vokabular, Workflows über Assetgrenzen |
 | Integrationen | `integration_connectors`, `remediation_actions`, Feature `src/features/integrations` | beidseitige Integrationen als Beobachtungs- **und** Aktionsquelle |

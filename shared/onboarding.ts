@@ -67,10 +67,6 @@ export const ONBOARDING_QUESTIONS: OnboardingQuestion[] = [
     ],
   },
   {
-    // `domains`, nicht `scale`: „Scale" ist ein abgeschaffter Plan-Name und
-    // steht unter Namensverbot (`test/config/pricing-no-legacy-names.test.ts`).
-    // Als Frage-Kennung wäre er zwar kein Plan — aber ein Namensverbot, das
-    // Ausnahmen sammelt, hört auf, eines zu sein.
     id: 'domains',
     title: 'Wie viele Domains oder Marken?',
     hint: '1 = Starter möglich · 2–3 = Growth · mehr = Agency.',

@@ -24,6 +24,7 @@ describe('useScanLimits', () => {
       hasFeature: () => true,
       getLimit: () => null,
       canAccess: () => ({ allowed: true }),
+      paymentState: { status: null, pastDueSince: null, graceDaysRemaining: null },
     });
 
     vi.spyOn(supabaseModule, 'isSupabaseConfigured').mockReturnValue(false);
@@ -43,6 +44,7 @@ describe('useScanLimits', () => {
       hasFeature: () => false,
       getLimit: () => 3,
       canAccess: () => ({ allowed: false }),
+      paymentState: { status: null, pastDueSince: null, graceDaysRemaining: null },
     });
 
     vi.spyOn(supabaseModule, 'isSupabaseConfigured').mockReturnValue(true);
@@ -91,6 +93,7 @@ describe('useScanLimits', () => {
       hasFeature: () => false,
       getLimit: () => 3,
       canAccess: () => ({ allowed: false }),
+      paymentState: { status: null, pastDueSince: null, graceDaysRemaining: null },
     });
 
     vi.spyOn(supabaseModule, 'isSupabaseConfigured').mockReturnValue(true);
@@ -135,6 +138,7 @@ describe('useScanLimits', () => {
       hasFeature: () => false,
       getLimit: () => 3,
       canAccess: () => ({ allowed: false }),
+      paymentState: { status: null, pastDueSince: null, graceDaysRemaining: null },
     });
 
     vi.spyOn(supabaseModule, 'isSupabaseConfigured').mockReturnValue(true);
@@ -177,6 +181,7 @@ describe('useScanLimits', () => {
       hasFeature: () => false,
       getLimit: () => 3,
       canAccess: () => ({ allowed: false }),
+      paymentState: { status: null, pastDueSince: null, graceDaysRemaining: null },
     });
 
     vi.spyOn(supabaseModule, 'isSupabaseConfigured').mockReturnValue(true);

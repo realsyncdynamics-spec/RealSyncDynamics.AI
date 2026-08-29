@@ -11,7 +11,7 @@ import { PlanUpgradeModal } from './PlanUpgradeModal';
 import { TrialCountdownBanner } from './TrialCountdownBanner';
 import { createCheckoutSession } from '../../lib/stripe';
 import { useAuth } from '../../lib/useAuth';
-import { PUBLIC_PRICING_TIERS, planByKey, type TierId } from '../../config/pricing';
+import { SELLABLE_PRICING_TIERS, planByKey, type TierId } from '../../config/pricing';
 
 interface Subscription {
   plan_key: string | null;
@@ -46,8 +46,11 @@ function planLabelFor(planKey: string | null | undefined): string {
   return planByKey(planKey)?.name ?? `${planKey} (historisch)`;
 }
 
-// Available plans for billing dashboard — excluding yearly variants
-const AVAILABLE_PLANS = PUBLIC_PRICING_TIERS
+// Buchbare Pläne im Billing-Dashboard — ohne Jahresvarianten und ohne die
+// seit AP2 stillgelegten Stufen. Der *aktuelle* Plan wird weiter über
+// `planByKey()` aufgelöst, damit ein Bestandskunde auf Agency seinen
+// Plannamen sieht statt „(historisch)".
+const AVAILABLE_PLANS = SELLABLE_PRICING_TIERS
   .filter((tier) => !tier.id.includes('yearly'))
   .map((tier) => ({
     id: tier.id,
@@ -353,7 +356,7 @@ export function BillingView() {
       {/* Available Plans */}
       <div>
         <h2 className="text-lg font-display font-bold text-titanium-50 tracking-tight mb-4">Verfügbare Pläne</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {AVAILABLE_PLANS.map((plan) => {
             const isCurrentPlan = sub !== 'none' && sub.plan_key === plan.key;
             return (

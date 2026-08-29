@@ -139,8 +139,8 @@ interface ScanResult {
  * /cookie-scanner — Erstes öffentliches Free-Tool.
  *
  * Single-purpose Cookie-Scanner: URL eingeben → Scan-Result mit Cookies +
- * Trackers + Score. Kein Email-Gate, kein Account, kein DB-Eintrag.
- * Reine Pre-Lead-Erfahrung; voll-Audit (mit Email + Methodik-Report) ist
+ * Trackers + Score. Kein E-Mail-Gate, kein Account, kein DB-Eintrag.
+ * Reine Pre-Lead-Erfahrung; voll-Audit (mit E-Mail + Methodik-Report) ist
  * der CTA am Ende.
  */
 export function CookieScanner() {
@@ -220,7 +220,7 @@ export function CookieScanner() {
             <>
               <div className="text-center mb-10">
                 <div className="inline-flex items-center gap-2 px-3 py-1 border border-amber-900 bg-amber-950/30 text-amber-300 text-xs font-bold uppercase tracking-wider rounded-none mb-5">
-                  <Cookie className="h-3 w-3" /> Kostenlos · Kein Email · 15 Sekunden
+                  <Cookie className="h-3 w-3" /> Kostenlos · Keine E-Mail · 15 Sekunden
                 </div>
                 <h1 className="text-3xl sm:text-5xl font-display font-bold text-titanium-50 tracking-tight leading-tight mb-4">
                   Welche Cookies setzt Ihre Website <span className="text-amber-400">vor Consent</span>?
@@ -485,7 +485,7 @@ function ResultView({ result, onRetry }: { result: ScanResult; onRetry: () => vo
 }
 
 /**
- * EmailCaptureCard — optional „PDF-Report per Email" nach dem Scan.
+ * EmailCaptureCard — optional „PDF-Report per E-Mail" nach dem Scan.
  *
  * Reuse der bestehenden sales-lead-Edge-Function (kein neuer Endpoint nötig).
  * source='cookie-scanner', message enthält Domain + Score + Cookie-Counts
@@ -564,7 +564,7 @@ function EmailCaptureCard({ result }: { result: ScanResult }) {
     >
       <div className="flex items-center gap-2 mb-2">
         <Mail className="h-4 w-4 text-amber-400" />
-        <h3 className="font-display font-bold text-titanium-50 text-base">PDF-Report per Email</h3>
+        <h3 className="font-display font-bold text-titanium-50 text-base">PDF-Report per E-Mail</h3>
         <span className="ml-auto px-1.5 py-0.5 text-[10px] font-mono uppercase tracking-wider bg-titanium-900 text-titanium-400 rounded-none">
           Optional
         </span>
@@ -596,7 +596,7 @@ function EmailCaptureCard({ result }: { result: ScanResult }) {
         </button>
       </div>
       <p className="text-[10px] text-titanium-500 mt-2 leading-relaxed">
-        Mit Klick stimmen Sie der Verarbeitung Ihrer Email zur Report-Versendung zu (Art. 6 Abs. 1 lit. a DSGVO).
+        Mit Klick stimmen Sie der Verarbeitung Ihrer E-Mail zur Report-Versendung zu (Art. 6 Abs. 1 lit. a DSGVO).
         Details in unserer <Link to="/legal/privacy" className="underline hover:text-titanium-300">Datenschutzerklärung</Link>.
       </p>
     </form>

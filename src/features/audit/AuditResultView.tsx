@@ -507,7 +507,7 @@ function GovernanceOnboardingCta({ onStart }: { onStart: () => void }) {
           </h3>
           <p className="mt-1.5 text-sm leading-relaxed text-titanium-300">
             Basierend auf Deinen Befunden analysieren wir Dein Governance-Profil und empfehlen
-            den passenden Plan für Deine Needs — mit Zeit-to-Value und konkreten Handlungsschritten.
+            den passenden Plan für Deinen Bedarf — mit Zeit-to-Value und konkreten Handlungsschritten.
           </p>
           <div className="mt-4 flex flex-wrap gap-2">
             <button

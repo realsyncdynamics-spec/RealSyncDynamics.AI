@@ -13,7 +13,7 @@ const INTEGRATIONS: Integration[] = [
   { name: 'Supabase', category: 'Auth/SSO', status: 'live', desc: 'Auth (Magic-Link, OAuth), Postgres, Edge Functions, Storage' },
   { name: 'n8n', category: 'Workflow', status: 'live', desc: 'Self-Hosted oder n8n.cloud — Workflow-Trigger und Callback-Handling' },
   { name: 'Slack', category: 'Communication', status: 'live', desc: 'Webhook für Sales-Lead-Notifications, Daily-Digest' },
-  { name: 'Resend', category: 'Communication', status: 'live', desc: 'Transaktionale Emails (Audit-Reports, Welcome, Newsletter)' },
+  { name: 'Resend', category: 'Communication', status: 'live', desc: 'Transaktionale E-Mails (Audit-Reports, Welcome, Newsletter)' },
   { name: 'Anthropic', category: 'Data/Analytics', status: 'live', desc: 'Claude-Modelle für AI-Tools, Provider-Routing' },
   { name: 'OpenAI', category: 'Data/Analytics', status: 'live', desc: 'GPT-Modelle als Alternative-Provider' },
   { name: 'Google Vertex AI', category: 'Data/Analytics', status: 'live', desc: 'Gemini-Modelle EU-region-pinned' },

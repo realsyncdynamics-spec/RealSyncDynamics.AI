@@ -90,7 +90,7 @@ export function DokumenteBundle() {
 
   async function handleGenerate(docId: DocId) {
     if (!formValid) {
-      setError('Bitte füllen Sie Firmenname, Anschrift und Kontakt-Email aus.');
+      setError('Bitte füllen Sie Firmenname, Anschrift und Kontakt-E-Mail aus.');
       return;
     }
     setError(null);
@@ -198,7 +198,7 @@ export function DokumenteBundle() {
                   className="w-full bg-obsidian-950 border border-silver-700/40 px-3 py-2 text-sm rounded-none outline-none focus:border-gold-400 text-titanium-50"
                 />
               </Field>
-              <Field label="Kontakt-Email *">
+              <Field label="Kontakt-E-Mail *">
                 <input
                   type="email" required value={contactEmail} onChange={(e) => setContactEmail(e.target.value)}
                   placeholder="datenschutz@firma.de"

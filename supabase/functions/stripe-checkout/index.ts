@@ -96,6 +96,15 @@ Deno.serve(async (req) => {
     return jsonError(400, 'INQUIRY_ONLY',
       `${plan.name} wird über /contact-sales abgeschlossen, nicht über Self-Service-Checkout`);
   }
+  // Stillgelegte Pläne sind aus dem Verkauf, nicht aus dem Betrieb: Ihre
+  // laufenden Abos rechnen unverändert weiter ab, ein *neues* entsteht nicht
+  // mehr. Die Prüfung gehört hierher und nicht nur in die Oberfläche — sonst
+  // bliebe der Plan über einen selbst gebauten Request käuflich, und die
+  // Stilllegung wäre eine Anzeigeentscheidung statt einer Regel.
+  if (plan.availability === 'legacy') {
+    return jsonError(400, 'PLAN_RETIRED',
+      `${plan.name} wird nicht mehr angeboten. Bestehende Abos laufen unverändert weiter.`);
+  }
   body.plan_key = planKey;
 
   // Membership + role check

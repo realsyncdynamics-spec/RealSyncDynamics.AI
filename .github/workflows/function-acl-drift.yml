@@ -15,6 +15,12 @@ on:
       - 'scripts/check-function-acl-drift.mjs'
       - '.github/workflows/function-acl-drift.yml'
 
+# Eng gefasst: Der Waechter liest den Stand und schreibt genau ein
+# Alarm-Issue. Keine weiteren Rechte.
+permissions:
+  contents: read
+  issues: write
+
 jobs:
   drift:
     runs-on: ubuntu-latest
@@ -24,6 +30,8 @@ jobs:
         with:
           node-version: '20'
       - name: Check function ACL drift
+        id: guard
+        continue-on-error: ${{ github.event_name == 'schedule' }}
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
@@ -32,3 +40,28 @@ jobs:
           # taeglichen schedule-Lauf hart.
           FUNCTION_ACL_DRIFT_MODE: ${{ github.event_name == 'pull_request' && 'advisory' || 'fail' }}
         run: node scripts/check-function-acl-drift.mjs
+
+      # Der Waechter meldet ab hier dorthin, wo jemand hinsieht.
+      #
+      # Wie beim Migration Drift Guard steht das harte Signal allein im
+      # `schedule`-Lauf, auf PRs ist er `advisory`. Dass genau diese
+      # Aufteilung ein Signal verschluckt, hat sich am 2026-08-29 gezeigt:
+      # Der Migration Drift Guard war vier Morgen in Folge rot, ohne dass es
+      # jemandem auffiel. Diese Meldung schliesst die Luecke fuer alle drei.
+      #
+      # Nur im `schedule`-Lauf, und `always()`, damit auch der gruene Fall
+      # ankommt: Er schliesst das Issue wieder.
+      - name: Drift-Alarm melden
+        if: always() && github.event_name == 'schedule'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GUARD_KEY: function-acl
+          GUARD_TITLE: Function ACL Drift Guard
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: node scripts/report-drift-alarm.mjs ${{ steps.guard.outcome == 'failure' && 'alarm' || 'resolve' }}
+
+      - name: Ergebnis des Wächters durchreichen
+        if: always() && github.event_name == 'schedule' && steps.guard.outcome == 'failure'
+        run: |
+          echo "Der Wächter hat Drift gemeldet — siehe Schritt oben und das Drift-Alarm-Issue."
+          exit 1

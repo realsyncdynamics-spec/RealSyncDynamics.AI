@@ -10,7 +10,7 @@
  *   <UnifiedPricingGrid variant="pricing-page" highlight="growth" />
  */
 
-import { type PlanId, ORDERED_PLANS, planById, checkoutHrefForPlan, type Plan } from '../../../config/pricing';
+import { type PlanId, SALES_PLANS, planById, checkoutHrefForPlan, type Plan } from '../../../config/pricing';
 import { UnifiedPlanCard, type UnifiedPlanCardVariant } from './UnifiedPlanCard';
 
 export type UnifiedPricingGridVariant = 'landing' | 'pricing-page' | 'compact' | 'full';
@@ -42,7 +42,9 @@ export function UnifiedPricingGrid({
   source = 'pricing-grid',
 }: UnifiedPricingGridProps) {
   // Welche Pläne anzeigen?
-  let plansToShow: Plan[] = ORDERED_PLANS.filter(
+  // `SALES_PLANS` statt `ORDERED_PLANS`: Agency und Partner sind seit AP2
+  // stillgelegt und dürfen in keinem Angebot mehr erscheinen.
+  let plansToShow: Plan[] = SALES_PLANS.filter(
     (p: Plan) => includeFree || p.price.monthlyEur > 0,
   );
 
@@ -55,10 +57,10 @@ export function UnifiedPricingGrid({
 
   // Grid-Klassen nach Variant
   const gridClasses = {
-    landing: 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4',
-    'pricing-page': 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 sm:gap-6',
+    landing: 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4',
+    'pricing-page': 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6',
     compact: 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4',
-    full: 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 sm:gap-6',
+    full: 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6',
   };
 
   return (

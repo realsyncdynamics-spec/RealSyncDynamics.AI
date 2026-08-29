@@ -38,9 +38,42 @@ describe('FREE_TIER_FALLBACK', () => {
     expect(missing).toEqual([]);
   });
 
-  it('stimmt Wert fuer Wert mit dem Migrations-Seed ueberein', () => {
-    for (const [key, value] of Object.entries(migrationGrants())) {
-      expect({ key, value: byKey(key)?.value }).toEqual({ key, value });
+  /**
+   * Spaeter angehobene Werte.
+   *
+   * Der Seed von 20260707010000 ist der Ausgangsstand, nicht der Endstand:
+   * Eine spaetere Migration darf einen Wert veraendern, und dann muss der
+   * Fallback dem *wirksamen* Wert folgen, nicht dem urspruenglichen.
+   *
+   * `website.scan_monthly_limit`: 20260828000000 hebt das Kontingent auf `-1`
+   * (unbegrenzt), weil Scans seit der Entscheidung vom 2026-08-24 in jedem
+   * Plan kostenlos sind. Verkauft wird die dauerhafte Ueberwachung.
+   *
+   * Jeder Eintrag hier braucht die Migration, die ihn aendert — sonst wird
+   * diese Liste zum bequemen Ort, an dem echte Abweichungen verschwinden.
+   */
+  const SPAETER_GEAENDERT: Record<string, { wert: number; migration: string }> = {
+    'website.scan_monthly_limit': {
+      wert: -1,
+      migration: '20260828000000_entitlement_base_keys_paid_plans.sql',
+    },
+  };
+
+  it('stimmt Wert fuer Wert mit dem wirksamen Migrationsstand ueberein', () => {
+    for (const [key, seedWert] of Object.entries(migrationGrants())) {
+      const erwartet = SPAETER_GEAENDERT[key]?.wert ?? seedWert;
+      expect({ key, value: byKey(key)?.value }).toEqual({ key, value: erwartet });
+    }
+  });
+
+  it('belegt jede Abweichung vom Seed mit der Migration, die sie verursacht', () => {
+    for (const [key, { wert, migration }] of Object.entries(SPAETER_GEAENDERT)) {
+      const sql = readFileSync(
+        resolve(__dirname, '../../../supabase/migrations/', migration),
+        'utf8',
+      );
+      expect(sql, `${migration} nennt ${key} nicht`).toContain(key);
+      expect(sql, `${migration} setzt ${key} nicht auf ${wert}`).toContain(String(wert));
     }
   });
 

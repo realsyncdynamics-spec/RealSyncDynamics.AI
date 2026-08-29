@@ -334,6 +334,7 @@ const OperationsItemsView       = lazy(() => import('./features/operations/Inven
 const BotsView                  = lazy(() => import('./features/bots/BotsView').then((m) => ({ default: m.BotsView })));
 const BotBuilderView            = lazy(() => import('./features/bots/BotBuilderView').then((m) => ({ default: m.BotBuilderView })));
 const BotInboxView              = lazy(() => import('./features/bots/BotInboxView').then((m) => ({ default: m.BotInboxView })));
+const WhatsAppChannelsView      = lazy(() => import('./features/bots/WhatsAppChannelsView').then((m) => ({ default: m.WhatsAppChannelsView })));
 const OperationsStockMovements  = lazy(() => import('./features/operations/StockMovementsView').then((m) => ({ default: m.StockMovementsView })));
 const OperationsSuppliersView   = lazy(() => import('./features/operations/SuppliersView').then((m) => ({ default: m.SuppliersView })));
 const OperationsLocationsView   = lazy(() => import('./features/operations/LocationsView').then((m) => ({ default: m.LocationsView })));
@@ -370,6 +371,7 @@ const WorkspaceEmbed = lazy(() => import('./features/workspace/WorkspaceEmbed').
 const CompanyView = lazy(() => import('./features/company/CompanyView').then((m) => ({ default: m.CompanyView })));
 const WorkflowsView = lazy(() => import('./features/workflows/WorkflowsView').then((m) => ({ default: m.WorkflowsView })));
 const MarketGapsView = lazy(() => import('./features/market/MarketGapsView').then((m) => ({ default: m.MarketGapsView })));
+const MarketplaceView = lazy(() => import('./features/market/MarketplaceView').then((m) => ({ default: m.MarketplaceView })));
 const OutreachView = lazy(() => import('./features/outreach/OutreachView').then((m) => ({ default: m.OutreachView })));
 const AnalyticsView = lazy(() => import('./features/analytics/AnalyticsView').then((m) => ({ default: m.AnalyticsView })));
 const AuditDashboardView = lazy(() => import('./features/audit/AuditDashboardView').then((m) => ({ default: m.AuditDashboardView })));
@@ -416,7 +418,6 @@ const EnterpriseCompliancePage = lazy(() => import('./enterprise-os/pages/Compli
 const EnterpriseEvidencePage = lazy(() => import('./enterprise-os/pages/EvidencePage').then((m) => ({ default: m.EvidencePage })));
 const EnterpriseMonitoringPage = lazy(() => import('./enterprise-os/pages/MonitoringPage').then((m) => ({ default: m.MonitoringPage })));
 
-const AgentsOverviewPage = lazy(() => import('./features/agents/AgentsOverviewPage').then((m) => ({ default: m.AgentsOverviewPage })));
 const AutomationAgentPage = lazy(() => import('./features/agents/AutomationAgentPage').then((m) => ({ default: m.AutomationAgentPage })));
 const SupportAgentPage = lazy(() => import('./features/agents/SupportAgentPage').then((m) => ({ default: m.SupportAgentPage })));
 const CallAgentSusiPage = lazy(() => import('./features/agents/CallAgentSusiPage').then((m) => ({ default: m.CallAgentSusiPage })));
@@ -478,6 +479,13 @@ function RoutesWithTracking() {
       {/* Public — Startseite ist die Governance-OS-Workspace-Vorschau;
           die Marketing-Landing bleibt unter /landing erreichbar. */}
       <Route path="/" element={<MainLanding />} />
+
+      {/* Der kanonische Scan-Einstieg ist `/audit` (siehe
+          docs/product/canonical-funnel-decision.md). `/scan` gab es kurzzeitig
+          als zweiten Trichter mit eigenem Datensatz; er ist mit dem Schnitt
+          von PR #1129 entfallen, damit es genau einen Einstieg gibt. */}
+      <Route path="/scan" element={<Navigate to="/audit" replace />} />
+
       {/* Product Entry Points */}
       <Route path="/scan/start" element={<ScanStartPage />} />
       <Route path="/chatbot/start" element={<ChatbotStartPage />} />
@@ -734,6 +742,9 @@ function RoutesWithTracking() {
       <Route path="/app/dashboard" element={<AppGate><GovernanceBrowserShell><DashboardRouter /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/cockpit/brief" element={<CeoBriefPrintView />} />
       <Route path="/app/seo-marketing-dashboard" element={<AppGate><GovernanceBrowserShell><SEOMarketingDashboard /></GovernanceBrowserShell></AppGate>} />
+      {/* Marketplace: zubuchbare Dienste mit ihrem tatsaechlichen Zustand.
+          Liest die Entitlements des Mandanten, daher auth-gegatet. */}
+      <Route path="/app/marketplace" element={<AppGate><GovernanceBrowserShell><MarketplaceView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/overview" element={<GovernanceBrowserShell><GovernanceOsDashboard /></GovernanceBrowserShell>} />
       <Route path="/app/home" element={<GovernanceBrowserShell><WorkspaceHome /></GovernanceBrowserShell>} />
       <Route path="/app/company" element={<GovernanceBrowserShell><CompanyView /></GovernanceBrowserShell>} />
@@ -795,6 +806,7 @@ function RoutesWithTracking() {
       <Route path="/app/siteos/claim" element={<SiteOsClaimView />} />
       <Route path="/app/bots" element={<GovernanceBrowserShell><BotsView /></GovernanceBrowserShell>} />
       <Route path="/app/bots/inbox" element={<GovernanceBrowserShell><BotInboxView /></GovernanceBrowserShell>} />
+      <Route path="/app/bots/whatsapp" element={<GovernanceBrowserShell><WhatsAppChannelsView /></GovernanceBrowserShell>} />
       <Route path="/app/bots/:botId" element={<GovernanceBrowserShell><BotBuilderView /></GovernanceBrowserShell>} />
       <Route path="/app/monitoring/legacy" element={<GovernanceBrowserShell><MonitoringSurface embedded /></GovernanceBrowserShell>} />
       <Route path="/app/security-signals" element={<GovernanceBrowserShell><SecuritySignalsView /></GovernanceBrowserShell>} />
@@ -849,7 +861,9 @@ function RoutesWithTracking() {
       <Route path="/app/documents" element={<GovernanceBrowserShell><GovernanceDocumentsView /></GovernanceBrowserShell>} />
       <Route path="/app/audit" element={<GovernanceBrowserShell><GovernanceAuditExportView /></GovernanceBrowserShell>} />
       <Route path="/app/settings" element={<GovernanceBrowserShell><SettingsView /></GovernanceBrowserShell>} />
-      <Route path="/app/agents" element={<GovernanceBrowserShell><AgentsOverviewPage /></GovernanceBrowserShell>} />
+      {/* /app/agents ist oben bereits auf GovernanceAgentsCenterView registriert —
+          eine zweite Registrierung (AgentsOverviewPage) war unerreichbar und wurde
+          nach Freigabe vom 2026-08-23 entfernt; die Unterrouten bleiben. */}
       <Route path="/app/agents/automation" element={<GovernanceBrowserShell><AutomationAgentPage /></GovernanceBrowserShell>} />
       <Route path="/app/agents/support" element={<GovernanceBrowserShell><SupportAgentPage /></GovernanceBrowserShell>} />
       <Route path="/app/agents/susi" element={<GovernanceBrowserShell><CallAgentSusiPage /></GovernanceBrowserShell>} />

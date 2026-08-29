@@ -2,12 +2,16 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, ChevronDown } from 'lucide-react';
 import { GOVERNANCE_MODULES, canAccessModule } from '../governance-os/governanceModules';
-import { ORDERED_PLANS } from '@/shared/pricing';
+import { SALES_PLANS } from '@/shared/pricing';
 
 // Spalten und Häkchen stammen beide aus der Pricing-SSoT — die Matrix kann
 // damit nicht von den Preis-Karten abweichen. Eine eigene Tier-Liste hier
 // wäre genau die Duplikation, die der Governance-Refactor beseitigt hat.
-const MATRIX_PLANS = ORDERED_PLANS.map((plan) => ({ id: plan.id, label: plan.name }));
+//
+// `SALES_PLANS` statt `ORDERED_PLANS`: Die Matrix steht neben den Karten und
+// muss dieselben Spalten zeigen. Agency und Partner sind seit AP2
+// stillgelegt.
+const MATRIX_PLANS = SALES_PLANS.map((plan) => ({ id: plan.id, label: plan.name }));
 
 export function GovernanceModuleMatrix() {
   const [isExpanded, setIsExpanded] = useState(true);

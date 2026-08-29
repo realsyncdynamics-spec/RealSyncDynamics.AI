@@ -1,14 +1,3 @@
-export interface ApiKeyCredential {
-  id: string;
-  keyHash: string;
-  tenantId: string;
-  scopes: string[];
-  createdAt: Date;
-  lastUsedAt?: Date;
-  expiresAt?: Date;
-  active: boolean;
-}
-
 export interface MctAuthContext {
   keyId: string;
   tenantId: string;
@@ -30,16 +19,6 @@ export interface EvidenceSnapshot {
   createdBy?: string;
   createdAt: Date;
   onHold?: boolean;
-}
-
-export interface AuditEvent {
-  id: string;
-  tenantId: string;
-  action: string;
-  subject: string;
-  actor: string;
-  details?: Record<string, unknown>;
-  timestamp: Date;
 }
 
 export interface GovernanceControl {

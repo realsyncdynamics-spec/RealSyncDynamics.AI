@@ -7,7 +7,7 @@ import { Button } from '../../enterprise-os/components/Button';
 import { Card, CardHeader, CardBody } from '../../enterprise-os/components/Card';
 import { sha256Hex } from '../../lib/provenance';
 import { describeRetention, RETENTION_CLASSES, type RetentionClass } from '../../lib/evidence/retention';
-import { verifyAllChains, type ChainReport } from '../../lib/evidence/verifyChain';
+import { verifyAllChains, type ChainReport } from '../../../packages/evidence-chain/src/index';
 import { createSnapshot, setLegalHold, listTimeline, listSnapshotsForVerification, exportEvidenceBundle, type TimelineEntry, type VaultError } from './evidenceVaultApi';
 import { buildEvidenceExportReportHtml } from './exportReportHtml';
 

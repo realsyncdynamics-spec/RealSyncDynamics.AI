@@ -89,6 +89,11 @@ Menschen · Unternehmen · KI-Agenten · Daten · Entscheidungen.
 - `services/openclaw-agent` — Agent-Worker (systemd-Unit vorhanden)
 - `services/playwright-scanner` — Scan-Service (DSGVO-Audit)
 - `packages/sdk` — öffentliches SDK (CJS + ESM Builds)
+- `packages/evidence-chain` — Hash-Chain-Verifizierung des Evidence Vault
+  (abhängigkeitsfrei, Hash-Funktion injiziert). Genutzt von der SPA **und** vom
+  MCP Server. **Regel**: Die Kanonisierung in `serializeSnapshotForHash` muss
+  zeichengenau zu `supabase/functions/evidence-vault` passen — eine Abweichung
+  meldet unversehrte Ketten als manipuliert.
 - `connectors/` — externe Integrationen · `worker/` — Legacy-Jobs (deprecated → Edge Functions + Cron)
 
 **Architekturprinzip**
@@ -337,9 +342,15 @@ RealSyncDynamics.AI/
 │   ├── functions/     178 Edge Functions (einziger Ort für Service-Role-Keys)
 │   └── migrations/    287 Migrations
 ├── apps/
-│   └── agent-runtime/ Agent Runtime (Node/TS, Docker)
+│   ├── agent-runtime/ Agent Runtime (Node/TS, Docker)
+│   └── mcp-server/    MCP Governance Server — Lesezugriff für KI-Agenten auf
+│                      Evidence/Governance über MCP-Protokoll (JSON-RPC) und
+│                      HTTP; API-Key-Auth, Scopes, Kontingent, Prüfpfad
+│                      (eigenes tsconfig, aus dem Root-Lint ausgenommen)
 ├── services/          runtime-core · evidence-runtime · openclaw-agent · playwright-scanner
-├── packages/sdk       Öffentliches SDK (CJS + ESM)
+├── packages/
+│   ├── sdk            Öffentliches SDK (CJS + ESM)
+│   └── evidence-chain Hash-Chain-Verifizierung (SPA + MCP Server)
 ├── connectors/        Externe Integrationen
 ├── deploy/ docker/ infra/ VPS-Stack (Traefik, Ollama, n8n)
 ├── platform/          🏗️ **WEBSITE BUILDER MONOREPO** (siehe unten)

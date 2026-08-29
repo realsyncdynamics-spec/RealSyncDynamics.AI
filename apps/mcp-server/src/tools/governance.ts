@@ -1,14 +1,13 @@
 import { ComplianceStatus, GovernanceControl } from '../types/index.js';
 
 /**
- * Signalisiert, dass ein Werkzeug noch keine echten Daten liefert.
+ * Signalisiert, dass ein Tool noch keine echten Daten liefert.
  *
- * Bewusst ein Fehler statt eines Platzhalter-Ergebnisses: Diese Werkzeuge
- * werden von KI-Agenten aufgerufen, die ihre Antwort ungeprüft weitergeben.
- * Zuvor lieferten sie hartkodiert `score: 0, totalControls: 0` bzw.
- * `compliant: false` — das liest sich wie ein Befund („nicht konform"),
- * obwohl nie etwas gemessen wurde. In einem Compliance-Produkt ist eine
- * erfundene Bewertung schädlicher als eine klare Fehlermeldung.
+ * Bewusst ein Fehler statt eines Platzhalter-Ergebnisses: Diese Tools werden
+ * von KI-Agenten aufgerufen, die ihre Antwort ungeprüft weitergeben. Ein
+ * zurückgegebenes `score: 0, compliant: false` liest sich wie ein Befund
+ * ("nicht konform"), obwohl nichts gemessen wurde — in einem Compliance-
+ * Produkt ist eine erfundene Bewertung schädlicher als eine klare Fehlermeldung.
  */
 export class NotImplementedError extends Error {
   constructor(tool: string, blockedBy: string) {

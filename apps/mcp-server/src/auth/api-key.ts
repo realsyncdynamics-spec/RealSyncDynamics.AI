@@ -1,31 +1,13 @@
-import crypto from 'crypto';
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { MctAuthContext } from '../types/index.js';
+import { validateApiKey, logKeyUsage } from '../services/api-keys-db.js';
 
 const API_KEY_PREFIX = 'rsmcp_';
-
-export function hashApiKey(key: string): string {
-  return crypto.createHash('sha256').update(key).digest('hex');
-}
 
 export function validateApiKeyFormat(key: string): boolean {
   return key.startsWith(API_KEY_PREFIX) && key.length > API_KEY_PREFIX.length;
 }
 
-/**
- * Authentifizierung — derzeit nicht verfügbar, weil es keinen Key-Speicher gibt.
- *
- * Vorher gab diese Funktion für JEDE Zeichenkette, die mit `rsmcp_` beginnt,
- * einen gültigen Kontext zurück — mit festen Scopes und leerer `tenantId`.
- * Es gab keine Prüfung gegen eine Datenbank, keinen Widerruf, keinen Ablauf.
- * Ein solcher Platzhalter darf in einer Zugriffsschicht auf Compliance-
- * Nachweise nicht gewähren, sondern muss verweigern: ohne Key-Speicher gibt es
- * niemanden, dessen Berechtigung sich feststellen ließe.
- *
- * Der Dienst antwortet daher durchgehend mit 401, bis die Key-Verwaltung
- * (Tabelle, Ausstellung, Widerruf) nachgezogen ist. Das ist die einzige
- * Aussage, die die vorhandene Datenlage deckt.
- */
 export async function authenticateRequest(
   request: FastifyRequest,
 ): Promise<MctAuthContext | null> {
@@ -34,23 +16,61 @@ export async function authenticateRequest(
     return null;
   }
 
-  if (!validateApiKeyFormat(authHeader.substring(7))) {
+  const apiKey = authHeader.substring(7);
+  if (!validateApiKeyFormat(apiKey)) {
     return null;
   }
 
-  request.log.warn(
-    { scope: 'mcp_auth_unavailable' },
-    'MCP-Key vorgelegt, aber es existiert kein Key-Speicher — Zugriff verweigert.',
-  );
-  return null;
+  // Validate against database (Phase 2.1)
+  const validation = await validateApiKey(apiKey);
+  if (!validation.valid || !validation.keyId || !validation.tenantId) {
+    return null;
+  }
+
+  return {
+    keyId: validation.keyId,
+    tenantId: validation.tenantId,
+    scopes: validation.scopes || [],
+  };
+}
+
+/**
+ * Log key usage after request completes.
+ * Call this from route handlers.
+ */
+export async function logRequestUsage(
+  request: FastifyRequest,
+  statusCode: number,
+  latencyMs: number,
+  options?: { countAgainstQuota?: boolean },
+): Promise<void> {
+  const auth = (request as any).user as MctAuthContext | undefined;
+  if (!auth) {
+    return;
+  }
+
+  const clientIp =
+    (request.headers['x-forwarded-for'] as string)?.split(',')[0] ||
+    request.socket.remoteAddress ||
+    'unknown';
+  const userAgent = request.headers['user-agent'] as string | undefined;
+  const action = `${request.method.toLowerCase()} ${request.url}`;
+
+  await logKeyUsage(auth.keyId, action, statusCode, {
+    ip: clientIp,
+    userAgent,
+    latencyMs,
+    countAgainstQuota: options?.countAgainstQuota,
+  });
 }
 
 /**
  * preHandler, der einen Scope erzwingt.
  *
- * War zuvor ein TypeScript-Decorator und damit zu Fastify-Routen gar nicht
- * kompatibel — er wurde an keiner Route angewandt. Als preHandler ist er
- * einsetzbar, sobald es echte Scopes aus einem Key-Speicher gibt.
+ * Ohne diese Prüfung wäre die Scope-Angabe eines Keys eine Absichtserklärung
+ * statt einer Kontrolle: Der Scope stünde in der Datenbank und im Auth-Kontext,
+ * ein Key mit ausschließlich `evidence.read` erreichte aber trotzdem jeden
+ * anderen Lesepfad.
  */
 export function requireScope(scope: string) {
   return async function (request: FastifyRequest, reply: FastifyReply): Promise<void> {
@@ -58,6 +78,7 @@ export function requireScope(scope: string) {
     if (!auth) {
       return reply.code(401).send({ error: 'UNAUTHORIZED' });
     }
+
     if (!auth.scopes.includes(scope)) {
       return reply.code(403).send({
         error: 'FORBIDDEN',

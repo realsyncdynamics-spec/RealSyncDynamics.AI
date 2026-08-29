@@ -31,7 +31,10 @@ function retainedUntil(cls: RetentionClass, fromMs: number): string | null {
 // ── Kanonik + Hash (identisch zu src/lib/provenance-Stil) ────────────────────
 function normalizeHex(h: string): string { return h.trim().toLowerCase().replace(/^0x/, ''); }
 function bufToHex(buf: Uint8Array): string { let o = ''; for (let i = 0; i < buf.length; i++) o += buf[i].toString(16).padStart(2, '0'); return o; }
-async function sha256Hex(bytes: Uint8Array): Promise<string> { return bufToHex(new Uint8Array(await crypto.subtle.digest('SHA-256', bytes))); }
+// `Uint8Array<ArrayBuffer>` statt `Uint8Array`: Seit TypeScript 5.7 ist der Typ über seinen
+// Puffer generisch, und `BufferSource` — was WebCrypto verlangt — deckt nur `ArrayBuffer` ab.
+// Rein typseitig, die Hash-Berechnung bleibt unverändert.
+async function sha256Hex(bytes: Uint8Array<ArrayBuffer>): Promise<string> { return bufToHex(new Uint8Array(await crypto.subtle.digest('SHA-256', bytes))); }
 async function snapshotHash(c: { subjectRef: string; version: number; contentSha256: string; retentionClass: string; timestamp: string; prevHash: string | null }): Promise<string> {
   const ordered = { subjectRef: c.subjectRef, version: c.version, contentSha256: normalizeHex(c.contentSha256), retentionClass: c.retentionClass, timestamp: c.timestamp, prevHash: c.prevHash === null ? null : normalizeHex(c.prevHash) };
   return sha256Hex(new TextEncoder().encode(JSON.stringify(ordered)));

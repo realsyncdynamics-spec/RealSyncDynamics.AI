@@ -29,13 +29,19 @@ function bufToHex(buf: Uint8Array): string {
   for (let i = 0; i < buf.length; i++) out += buf[i].toString(16).padStart(2, '0');
   return out;
 }
-function b64ToBytes(b64: string): Uint8Array {
+// `Uint8Array<ArrayBuffer>` statt `Uint8Array`: Seit TypeScript 5.7 ist der
+// Typ über seinen Puffer generisch, und `BufferSource` — was WebCrypto
+// verlangt — deckt nur `ArrayBuffer` ab, nicht das weitere `ArrayBufferLike`.
+// Ohne die Angabe lehnt `crypto.subtle` jeden dieser Puffer ab. Rein
+// typseitig: die erzeugten Bytes sind unverändert, die Kanonisierung bleibt
+// bit-identisch zu `src/lib/provenance/*`.
+function b64ToBytes(b64: string): Uint8Array<ArrayBuffer> {
   const bin = atob(b64.trim());
   const out = new Uint8Array(bin.length);
   for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
   return out;
 }
-function canonicalClaimBytes(c: Claim): Uint8Array {
+function canonicalClaimBytes(c: Claim): Uint8Array<ArrayBuffer> {
   const ordered = {
     assetRef: c.assetRef,
     contentSha256: normalizeHex(c.contentSha256),
@@ -46,7 +52,7 @@ function canonicalClaimBytes(c: Claim): Uint8Array {
   };
   return new TextEncoder().encode(JSON.stringify(ordered));
 }
-async function sha256Hex(bytes: Uint8Array): Promise<string> {
+async function sha256Hex(bytes: Uint8Array<ArrayBuffer>): Promise<string> {
   return bufToHex(new Uint8Array(await crypto.subtle.digest('SHA-256', bytes)));
 }
 function claimHash(c: Claim): Promise<string> {
@@ -90,25 +96,59 @@ export interface AppendResult {
   created: boolean;
 }
 
+interface QueryOutcome { data: unknown; error: unknown }
+
 /**
- * Hängt ein Custody-Event an die Kette eines Assets an (legt das Manifest bei
- * Bedarf an). Das erste Event eines Assets ist stets 'registered'.
+ * Die Filter-/Sortierkette verweist auf sich selbst, statt jede erreichbare
+ * Stufe einzeln auszuschreiben. Ausgeschrieben zwingt sie den Typprüfer, den
+ * generischen Query-Builder von supabase-js pro Stufe neu zu instanziieren —
+ * das endet in TS2589 ("Type instantiation is excessively deep"), und zwar bei
+ * jedem Aufrufer von `appendCustodyEvent`. Der rekursive Verweis wird
+ * stattdessen über den Relations-Cache aufgelöst. Fachlich beschreibt er
+ * dieselben Aufrufe.
  */
+interface SelectChain {
+  eq(col: string, val: unknown): SelectChain;
+  order(col: string, opts?: Record<string, unknown>): SelectChain;
+  limit(n: number): SelectChain;
+  maybeSingle(): PromiseLike<QueryOutcome>;
+}
+
+interface InsertChain extends PromiseLike<{ data?: unknown; error?: unknown }> {
+  select(columns?: string): { single(): PromiseLike<QueryOutcome> };
+}
+
 interface SupabaseAdminClient {
   from(table: string): {
-    select(columns: string): {
-      eq(col: string, val: unknown): {
-        eq(col2: string, val2: unknown): { maybeSingle(): PromiseLike<{ data: unknown; error: unknown }> };
-        maybeSingle(): PromiseLike<{ data: unknown; error: unknown }>;
-        order(col: string, opts?: Record<string, unknown>): { limit(n: number): { maybeSingle(): PromiseLike<{ data: unknown; error: unknown }> } };
-      };
-    };
-    insert(obj: Record<string, unknown>): PromiseLike<{ data?: unknown; error?: unknown }> & { select(columns?: string): { single(): PromiseLike<{ data: unknown; error: unknown }> } };
+    select(columns: string): SelectChain;
+    insert(obj: Record<string, unknown>): InsertChain;
     update(obj: Record<string, unknown>): { eq(col: string, val: unknown): PromiseLike<{ error: unknown }> };
   };
 }
 
-export async function appendCustodyEvent(admin: SupabaseAdminClient, args: {
+/**
+ * Die Schnittstelle nach außen ist absichtlich minimal.
+ *
+ * Würde hier `SupabaseAdminClient` stehen, müsste der Typprüfer bei jedem
+ * Aufrufer den vollständig generischen Query-Builder von supabase-js Stufe
+ * für Stufe gegen die Kette oben prüfen — jede `.eq()` liefert eine andere
+ * Instanziierung, der Relations-Cache greift nicht, und ab einer gewissen
+ * Dateigröße endet das in TS2589. Der Aufrufer trägt dann einen Fehler,
+ * der nichts über seinen Code aussagt.
+ *
+ * `from(): unknown` ist dagegen trivial erfüllbar. Die genaue Form wird
+ * einmalig, hier im Modul, per Cast wiederhergestellt — das ist die einzige
+ * Stelle, an der sie überhaupt gebraucht wird.
+ */
+interface SupabaseAdminClientLike {
+  from(table: string): unknown;
+}
+
+/**
+ * Hängt ein Custody-Event an die Kette eines Assets an (legt das Manifest bei
+ * Bedarf an). Das erste Event eines Assets ist stets 'registered'.
+ */
+export async function appendCustodyEvent(client: SupabaseAdminClientLike, args: {
   tenantId: string;
   assetRef: string;
   contentSha256: string;
@@ -116,6 +156,7 @@ export async function appendCustodyEvent(admin: SupabaseAdminClient, args: {
   issuer: string;
   timestamp?: string;
 }): Promise<AppendResult> {
+  const admin = client as SupabaseAdminClient;
   const nowIso = args.timestamp ?? new Date().toISOString();
   const contentSha = normalizeHex(args.contentSha256);
 

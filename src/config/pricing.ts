@@ -220,6 +220,22 @@ export const PUBLIC_PRICING_TIERS: PricingTier[] = PRICING_TIERS.filter(
 );
 
 /**
+ * COMMERCIAL-SSOT: temporary production hotfix.
+ * Canonical source migration tracked in Phase 2.
+ *
+ * Die Tiers, für die sich überhaupt ein Betrag ausrechnen lässt — also alle
+ * mit öffentlich zugesichertem Festpreis. Rechner und Vergleiche MÜSSEN
+ * diese Liste nutzen statt `PUBLIC_PRICING_TIERS`: ein Plan ohne Festpreis
+ * hat keinen Monatsbetrag, aus dem sich eine Ersparnis ableiten liesse.
+ * Wer ihn trotzdem einsetzt, veroeffentlicht den internen Listenpreis
+ * wieder — genau das ist im ROI-Rechner passiert, waehrend die Plan-Karte
+ * daneben bereits „Auf Anfrage" zeigte.
+ */
+export const CALCULABLE_PRICING_TIERS: PricingTier[] = PUBLIC_PRICING_TIERS.filter(
+  (tier) => !tier.priceOnRequest,
+);
+
+/**
  * Die Einmalprodukte (z.B. Governance Launch) — Käufe ohne Verlängerung.
  * Getrennt von der Abo-Leiter, damit Oberflächen bewusst entscheiden, ob
  * sie sie anzeigen, statt sie versehentlich als Abo-Rang zu behandeln.

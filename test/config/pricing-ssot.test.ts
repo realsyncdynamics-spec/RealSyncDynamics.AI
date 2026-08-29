@@ -30,6 +30,7 @@ import {
   recommendPlan,
   resolvePlan,
 } from '../../shared/pricing';
+import { CALCULABLE_PRICING_TIERS, PUBLIC_PRICING_TIERS } from '../../src/config/pricing';
 import { buildPlanCatalogSql } from '../../scripts/generate-plan-catalog-sql';
 import { buildGenerated } from '../../scripts/sync-shared-pricing.mjs';
 
@@ -442,5 +443,37 @@ describe('Öffentliche Angebote sind erfüllbar', () => {
     for (const plan of PLANS.filter((p) => p.trialDays > 0)) {
       expect(plan.purchaseMode).toBe('checkout');
     }
+  });
+});
+
+/**
+ * COMMERCIAL-SSOT: temporary production hotfix.
+ * Canonical source migration tracked in Phase 2.
+ *
+ * Nachgezogen nach einem Fund auf der Cloudflare-Preview: die Plan-Karte
+ * zeigte bereits „Auf Anfrage", während der ROI-Rechner daneben weiterhin
+ * „Enterprise 1249 €/Mo" rechnete und daraus eine konkrete Ersparnis ableitete.
+ * Ursache: der Rechner las `tier.priceEur` aus `PUBLIC_PRICING_TIERS` und
+ * umging damit `priceOnRequest`. Ein Literal-Grep nach „1249" findet so etwas
+ * nicht — der Betrag stammte aus der SSoT, nicht aus dem Quelltext.
+ */
+describe('Rechen-Oberflächen führen keinen Plan ohne Festpreis', () => {
+  it('CALCULABLE_PRICING_TIERS enthält keinen Auf-Anfrage-Plan', () => {
+    for (const tier of CALCULABLE_PRICING_TIERS) {
+      expect(tier.priceOnRequest).toBe(false);
+      // Jeder verbleibende Tier muss einen echten Betrag haben — sonst
+      // rechnet der ROI-Rechner mit 0 und behauptet falsche Ersparnisse.
+      expect(tier.priceEur).toBeGreaterThan(0);
+    }
+  });
+
+  it('genau die Auf-Anfrage-Pläne fehlen gegenüber PUBLIC_PRICING_TIERS', () => {
+    const excluded = PUBLIC_PRICING_TIERS
+      .filter((tier) => !CALCULABLE_PRICING_TIERS.includes(tier))
+      .map((tier) => tier.plan.id);
+    const onRequest = PUBLIC_PRICING_TIERS
+      .filter((tier) => tier.priceOnRequest)
+      .map((tier) => tier.plan.id);
+    expect(excluded).toEqual(onRequest);
   });
 });

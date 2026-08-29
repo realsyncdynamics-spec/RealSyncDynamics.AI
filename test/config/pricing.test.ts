@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { PRICING_TIERS, PUBLIC_PRICING_TIERS, tierById, tierByPlanKey } from '../../src/config/pricing';
+import { PRICING_TIERS, PUBLIC_PRICING_TIERS, SELLABLE_PRICING_TIERS, tierById, tierByPlanKey } from '../../src/config/pricing';
 import { ORDERED_PLANS, PLAN_ORDER, planById } from '../../shared/pricing';
 
 describe('pricing config (Single Source of Truth)', () => {
@@ -88,10 +88,37 @@ describe('pricing config (Single Source of Truth)', () => {
     expect(highlighted.map((t) => t.id)).toEqual(['growth', 'growth_yearly']);
   });
 
-  it('PUBLIC_PRICING_TIERS enthaelt die fuenf buchbaren Monatsplaene', () => {
+  it('PUBLIC_PRICING_TIERS enthaelt weiterhin alle fuenf Monatsraenge', () => {
+    // Bewusst unveraendert nach AP2: Diese Liste beantwortet „welche Raenge
+    // gibt es?" und wird fuer Rangvergleiche und das Nachschlagen des
+    // eigenen Plans benutzt. Fielen Agency und Partner hier heraus, bekaeme
+    // ein Bestandskunde dort falsche Antworten.
     expect(PUBLIC_PRICING_TIERS.map((t) => t.id)).toEqual([
       'starter', 'growth', 'agency', 'enterprise', 'partner',
     ]);
+  });
+
+  it('SELLABLE_PRICING_TIERS enthaelt nur die drei angebotenen Stufen', () => {
+    // Das ist die Liste fuer jede Anzeige. Seit AP2 sind Agency und Partner
+    // stillgelegt; sie anzubieten hiesse, in eine Sackgasse zu fuehren.
+    expect(SELLABLE_PRICING_TIERS.map((t) => t.id)).toEqual([
+      'starter', 'growth', 'enterprise',
+    ]);
+  });
+
+  it('SELLABLE_PRICING_TIERS ist eine Teilmenge von PUBLIC_PRICING_TIERS', () => {
+    // Beide leiten aus derselben Quelle ab. Ein Tier, das im Verkauf steht,
+    // aber keinen Rang hat, waere ein Plan ohne Upgrade-Pfad.
+    const raenge = new Set(PUBLIC_PRICING_TIERS.map((t) => t.id));
+    for (const tier of SELLABLE_PRICING_TIERS) {
+      expect(raenge.has(tier.id), tier.id).toBe(true);
+    }
+  });
+
+  it('kein angebotenes Tier gehoert zu einem stillgelegten Plan', () => {
+    for (const tier of SELLABLE_PRICING_TIERS) {
+      expect(tier.plan.availability, tier.id).not.toBe('legacy');
+    }
   });
 
   it('Preise steigen entlang der kanonischen Reihenfolge streng an', () => {

@@ -1,7 +1,7 @@
 import * as Icons from 'lucide-react';
 import {
   FEATURE_GROUPS,
-  ORDERED_PLANS,
+  SALES_PLANS,
   PRODUCT_AREAS,
   formatLimit,
   modulesForArea,
@@ -129,7 +129,7 @@ export function PlanComparisonMatrix() {
             >
               Bereich
             </th>
-            {ORDERED_PLANS.map((plan) => (
+            {SALES_PLANS.map((plan) => (
               <th
                 key={plan.id}
                 scope="col"
@@ -152,7 +152,7 @@ export function PlanComparisonMatrix() {
                   {group.summary}
                 </span>
               </th>
-              {ORDERED_PLANS.map((plan) => {
+              {SALES_PLANS.map((plan) => {
                 const count = plan.features[group.id as FeatureGroupId]?.length ?? 0;
                 return (
                   <td key={plan.id} className="px-3 py-3 text-center align-top">

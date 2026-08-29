@@ -8,28 +8,19 @@
  * dieses Repos: Er ist in keinem Build, keinem Lint und keinem Typecheck
  * sichtbar, weil Vite und `tsc` nur Strings sehen.
  *
- * **Seit dem 2026-08-22 deckt sich beides**: 177 Verzeichnisse im Repository,
- * 177 Functions in Produktion, keine Abweichung in beide Richtungen.
+ * ## Stand der Messung
  *
- * ## Die Geschichte der Obergrenze — und wie sie endete
+ * 2026-08-23 (nach Merge von PR #1131 und dem zugehörigen `deploy.yml`-Lauf),
+ * Management-API gegen das Live-Projekt: 178 Function-Verzeichnisse im
+ * Repository, **178 deployt — deckungsgleich in beide Richtungen** (weder
+ * eine nicht deployte Function noch eine deployte ohne Verzeichnis). Das ist
+ * ein Momentzustand, kein Naturgesetz: Der nächste Merge, der eine Function
+ * hinzufügt, öffnet die Lücke wieder, bis `deploy.yml` gelaufen ist.
  *
- * Bis zum 2026-08-19 galt hier: Free-Plan, hartes Limit 100, belegt 100,
- * jeder weitere Deploy scheitert mit `HTTP 402: Max number of functions
- * reached for project`. Das 402 war echt und der Zählstand von exakt 100 auch.
- *
- * Dann ging `siteos` als einhundertunderste Function durch, und der Stand
- * kletterte auf 103. Diese Datei schloss daraus: Die Grenze liegt nicht mehr
- * bei 100, wo sie liegt, ist unbekannt. Die verbleibenden 74 galten als
- * ungeklärt.
- *
- * Am 2026-08-22 hat der Deploy-Lauf nach dem Merge von #1117 **alle 177**
- * ausgerollt — darunter `cloudflare-deployer` und `website-domain-manager`,
- * die diese Datei zuvor als nicht erreichbar führte. Es gab keine Obergrenze
- * mehr zu umgehen; es fehlte nur ein Lauf.
- *
- * Die Lehre steht schon im nächsten Absatz und hat sich zum zweiten Mal
- * bestätigt: **messen, nicht herleiten**. Die 100 waren eine Beobachtung, die
- * zur Schranke erklärt wurde; die 103 ebenso.
+ * Zur Geschichte der vermeintlichen 100er-Obergrenze (am 2026-08-19 durch den
+ * Deploy von Function 101 widerlegt, Lücke bis 2026-08-22 vollständig
+ * geschlossen): `docs/runbooks/edge-function-kontingent.md` und `CLAUDE.md` §5.
+ * Die Lehre bleibt: messen, nicht herleiten.
  *
  * ## Wie diese Liste entsteht
  *
@@ -48,14 +39,11 @@
  * Bewusst kein „Plan-Limit": Diese Zahl ist eine Beobachtung, keine Schranke.
  * Sie darf steigen, sobald jemand einen höheren Stand misst — und sie ist
  * kein Argument dafür, dass ein weiterer Deploy scheitern wird.
- *
- * Zweimal wurde sie hier fälschlich als Grenze gelesen (100, dann 103).
- * Beide Male lag der nächste Stand darüber.
  */
-export const EDGE_FUNCTIONS_OBSERVED_MAX = 177;
+export const EDGE_FUNCTIONS_OBSERVED_MAX = 178;
 
 /** Datum der letzten Messung gegen das Live-Projekt. */
-export const PRODUCTION_EDGE_FUNCTIONS_MEASURED_AT = '2026-08-22T22:46Z';
+export const PRODUCTION_EDGE_FUNCTIONS_MEASURED_AT = '2026-08-23T20:57Z';
 
 /**
  * Die in Produktion aktiven Function-Slugs — alphabetisch, damit ein Diff
@@ -237,6 +225,7 @@ export const PRODUCTION_EDGE_FUNCTIONS: readonly string[] = [
   'website-maintenance-daily-cron',
   'website-operations-agent',
   'welcome-email',
+  'whatsapp-webhook',
   'workflow-callback',
   'workflow-trigger',
 ];
@@ -258,6 +247,11 @@ export function isEdgeFunctionInProduction(slug: string): boolean {
  * `test/backend/edge-function-contract.test.ts` prüft beide Richtungen:
  * kein unbekannter unbelegter Aufruf, und kein Eintrag hier, der inzwischen
  * deployt ist. Beides bricht den Test — der zweite Fall ist der schöne.
+ *
+ * Genau der schöne Fall trat mit der Neumessung vom 2026-08-23 ein: 19
+ * Einträge (u. a. `website-domain-manager`, `bulk-scan`, das gesamte
+ * SEO-Dashboard und die ISO-42001-Strecke) sind inzwischen deployt und
+ * wurden hier entfernt. Übrig bleibt, was wirklich fehlt.
  */
 export interface UnbackedCaller {
   /** Function-Slug, den das Frontend aufruft. */
@@ -269,36 +263,23 @@ export interface UnbackedCaller {
 }
 
 export const UNBACKED_CALLERS: readonly UnbackedCaller[] = [
-  // Stand 2026-08-22: von 26 Einträgen sind 19 weggefallen, sieben bleiben.
-  //
-  // Der Deploy-Lauf nach dem Merge von #1117 hat alle 177 Functions des
-  // Repositories ausgerollt. Damit ist jeder Aufruf belegt, für den es
-  // überhaupt Code gibt.
-  //
-  // Die sieben hier sind ein anderer Fall — und ein schwererer: Für sie
-  // existiert **kein Verzeichnis unter `supabase/functions/`**. Sie waren
-  // nie „nicht deployt", sondern nie geschrieben. Ein Deploy hilft ihnen
-  // nicht; sie brauchen entweder eine Implementierung oder das Abräumen
-  // ihres Aufrufers.
-
   // ── Öffentlicher Trichter — wiegt am schwersten ────────────────────────
   //
-  // Vier in `/api-docs` dokumentierte Endpunkte, die es nicht gibt. Eine
-  // API-Dokumentation, die auf Nichts zeigt, ist keine Lücke im UI, sondern
-  // eine Falschaussage nach außen: Wer danach integriert, baut gegen einen
-  // Endpunkt, den niemand je geschrieben hat.
+  // Öffentlich dokumentierte, aber nicht existierende API-Endpunkte.
+  // ApiDocs kennzeichnet sie inzwischen — siehe src/pages/ApiDocs.tsx.
   { slug: 'audit', surface: '/api-docs — dokumentierter Endpunkt', publicPath: true },
   { slug: 'avv-generator', surface: '/api-docs — dokumentierter Endpunkt', publicPath: true },
   { slug: 'dsfa', surface: '/api-docs — dokumentierter Endpunkt', publicPath: true },
   { slug: 'sub-processors', surface: '/api-docs — dokumentierter Endpunkt', publicPath: true },
 
-  // ── Hinter der Anmeldung ───────────────────────────────────────────────
+  // ── Hinter Login ───────────────────────────────────────────────────────
+  // `api-quota` steht nur in src/features/api/API_DEVELOPER_GUIDE.md und wird
+  // von keinem Code aufgerufen — deshalb kein Eintrag hier, aber ein offener
+  // Punkt: Das Handbuch beschreibt einen Endpunkt, den es nicht gibt.
   { slug: 'export-bulk-results', surface: 'features/bulk — Export', publicPath: false },
   { slug: 'iso42001-control-update', surface: 'features/governance — Control-Detail', publicPath: false },
   { slug: 'trigger-workflow', surface: 'features/workflows', publicPath: false },
 ];
-
-
 
 const UNBACKED_SET = new Set(UNBACKED_CALLERS.map((c) => c.slug));
 

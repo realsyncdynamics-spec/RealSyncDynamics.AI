@@ -55,15 +55,9 @@ function stripComments(source: string): string {
     .replace(/^(\s*)\/\/.*$/gm, '$1');
 }
 
-function isAllowed(line: string, relativePath = ''): boolean {
+function isAllowed(line: string): boolean {
   // Antworttyp einer Onboarding-Frage (Skala), kein Plan.
   if (line.includes("'yes_no' | 'scale'")) return true;
-  // Kennung der Onboarding-Frage „Wie viele Domains oder Marken?" in der
-  // Fragenliste — kein Abrechnungsplan. Die Ausnahme ist bewusst an Datei
-  // UND exakte Zeilenform gebunden: Sie soll genau diese eine Zeile
-  // durchlassen und nicht auf `planKey: 'scale'` o. Ä. durchschlagen, auch
-  // nicht in derselben Datei.
-  if (relativePath === 'shared/onboarding.ts' && /^\s*id: 'scale',$/.test(line)) return true;
   // Die Alias-Tabelle der SSoT MUSS die Altwerte nennen — das ist ihr Zweck.
   if (line.includes('LEGACY_PLAN_KEY_ALIASES')) return true;
   if (/^\s*(scale|scale_yearly|free|free_tier):\s*'(partner|partner_yearly|free_audit)',/.test(line)) return true;
@@ -106,7 +100,7 @@ describe('Keine Legacy-Plan-Bezeichner im Quellcode', () => {
       const relativePath = relative(ROOT, file);
       const lines = stripComments(readFileSync(file, 'utf8')).split('\n');
       lines.forEach((line, index) => {
-        if (isAllowed(line, relativePath)) return;
+        if (isAllowed(line)) return;
         for (const { pattern, label } of FORBIDDEN) {
           // Optimizer-Stufen sind Produkt-Labels, keine Abrechnungspläne.
           if (label === 'Legacy-Provenance-Plan' && relativePath.includes('optimizer')) continue;
@@ -119,31 +113,5 @@ describe('Keine Legacy-Plan-Bezeichner im Quellcode', () => {
     }
 
     expect(violations, `Verbotene Plan-Bezeichner gefunden:\n${violations.join('\n')}`).toEqual([]);
-  });
-});
-
-/**
- * Eine Ausnahme ohne Gegenprobe ist keine Ausnahme, sondern ein Loch. Diese
- * Fälle halten fest, wie eng die Onboarding-Ausnahme gemeint ist — wer sie
- * später aufweitet, bricht hier.
- */
-describe('Die Ausnahme für die Onboarding-Frage bleibt eng', () => {
-  it('lässt die Frage-Kennung in shared/onboarding.ts durch', () => {
-    expect(isAllowed("    id: 'scale',", 'shared/onboarding.ts')).toBe(true);
-  });
-
-  it('lässt dieselbe Zeile in einer anderen Datei nicht durch', () => {
-    expect(isAllowed("    id: 'scale',", 'shared/pricing.ts')).toBe(false);
-    expect(isAllowed("    id: 'scale',", 'src/config/pricing.ts')).toBe(false);
-  });
-
-  it('lässt eine Plan-Zuweisung auch in shared/onboarding.ts nicht durch', () => {
-    expect(isAllowed("    planKey: 'scale',", 'shared/onboarding.ts')).toBe(false);
-    expect(isAllowed("    id: 'scale_yearly',", 'shared/onboarding.ts')).toBe(false);
-    expect(isAllowed("    if (plan === 'scale') return;", 'shared/onboarding.ts')).toBe(false);
-  });
-
-  it('greift nicht ohne Dateiangabe', () => {
-    expect(isAllowed("    id: 'scale',")).toBe(false);
   });
 });

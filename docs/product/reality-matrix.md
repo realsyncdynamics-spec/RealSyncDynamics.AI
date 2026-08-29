@@ -167,11 +167,13 @@ keine Kalkulation.
 
 ## 5. Offene Entscheidungen
 
-1. **Einstiegsseite des Trichters.** Damit die Weiche der Regelfall wird
-   (Scan → Weiche statt Scan → Gestaltungsauswahl), müssen Überschrift und
-   Sprungziel von `/unified-entry/scan` geändert werden. Das ist eine Text-
-   und Funktionsänderung nach `CLAUDE.md` §10.3 und braucht eine Freigabe.
-   Bis dahin bleibt die Weiche ein Nebenausgang.
+1. ~~**Einstiegsseite des Trichters.**~~ **Erledigt am 2026-08-23.** Die
+   Freigabe liegt vor (`CLAUDE.md` §10, „CTA-Hierarchie der Startseite auf
+   den Scan-Trichter"). Gelöst wurde es anders als hier vermutet: nicht durch
+   Umbau von `/unified-entry/scan`, sondern durch einen eigenen öffentlichen
+   Trichter `/scan` → `/scan/ergebnis` → Registrierung. `/unified-entry/scan`
+   und die Weiche bleiben unverändert bestehen — sie sind nur nicht mehr das,
+   was die Startseite bewirbt. Siehe `docs/product/public-scan-funnel.md`.
 2. **Modulpreise.** Rückwärts aus Telefonie-, LLM-, WhatsApp-, Scan- und
    Speicherkosten kalkulieren. Voice und WhatsApp haben derzeit **zwei**
    Preise (Add-on 150 €/99 € vs. Modul 99 €/39 €); die Abweichung ist in

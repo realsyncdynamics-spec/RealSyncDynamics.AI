@@ -12,6 +12,7 @@ import { GovernanceStatusBar } from './GovernanceStatusBar';
 import { MobileBottomNavigation } from './MobileBottomNavigation';
 import { EmbeddedBrowserCanvas } from './EmbeddedBrowserCanvas';
 import { GovernanceChatSidebar } from './GovernanceChatSidebar';
+import { PaymentGraceBanner } from './PaymentGraceBanner';
 
 interface GovernanceBrowserShellProps {
   children: React.ReactNode;
@@ -39,6 +40,12 @@ export function GovernanceBrowserShell({ children }: GovernanceBrowserShellProps
         onLoadUrl={handleLoadUrl}
         activeEmbedUrl={embeddedUrl ?? undefined}
       />
+
+      {/* Zahlungshinweis über den Tabs: Während der Grace Period ändert sich
+          sonst nichts, und der Kunde stünde am achten Tag ohne Vorwarnung vor
+          einem eingeschränkten Konto. Rendert sich selbst weg, wenn kein
+          Zahlungsverzug vorliegt. */}
+      <PaymentGraceBanner />
 
       <div className="hidden lg:block">
         <GovernanceTabs />

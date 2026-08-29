@@ -54,10 +54,19 @@ function collectSourceFiles(dir: string, out: string[] = []): string[] {
  * Ohne ihn hätte die Umstellung auf einen Router jeden Aufruf unsichtbar
  * gemacht — der Scanner hätte nichts mehr gefunden und wäre grün geblieben,
  * also genau das Gegenteil von dem, wofür dieser Test da ist.
+ *
+ * ## Typargumente gehören mit ins Muster
+ *
+ * `postEdgeFunction` ist generisch, und die meisten Aufrufer nutzen das:
+ * `postEdgeFunction<ScanResponse>('public-site-scan', …)`. Ein Muster, das
+ * unmittelbar auf die Klammer zielt, übersieht genau diese Form — am
+ * 2026-08-23 waren das 8 von 11 Aufrufstellen in `src/`. Der Scanner fand
+ * damit nur die Minderheit und blieb trotzdem grün: derselbe Fehlertyp, den
+ * der Router-Fall oben beschreibt, nur eine Ebene früher.
  */
 const CALL_PATTERNS: readonly RegExp[] = [
-  /functions\.invoke\(\s*['"]([a-z0-9/-]+)['"]/g,
-  /(?:postEdgeFunction|getEdgeFunction|callEdgeFunction|invokeFunction)\(\s*['"]([a-z0-9/-]+)['"]/g,
+  /functions\.invoke\s*(?:<[^()]*>)?\(\s*['"]([a-z0-9/-]+)['"]/g,
+  /(?:postEdgeFunction|getEdgeFunction|callEdgeFunction|invokeFunction)\s*(?:<[^()]*>)?\(\s*['"]([a-z0-9/-]+)['"]/g,
   /\/functions\/v1\/([a-z0-9/-]+)/g,
 ];
 

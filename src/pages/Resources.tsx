@@ -152,7 +152,7 @@ export function Resources() {
               Newsletter — 1× monatlich, immer aktuell.
             </h2>
             <p className="text-sm text-titanium-300 leading-relaxed mb-4">
-              Wir schicken Dir einmal pro Monat die neusten DSGVO-Urteile, AI-Act-Updates, BfDI-Leitlinien
+              Wir schicken Dir einmal pro Monat die neuesten DSGVO-Urteile, AI-Act-Updates, BfDI-Leitlinien
               + 1 konkretes Case aus unserer Praxis. Double-Opt-In gemäß § 7 UWG.
             </p>
             <div className="flex flex-col sm:flex-row gap-2">

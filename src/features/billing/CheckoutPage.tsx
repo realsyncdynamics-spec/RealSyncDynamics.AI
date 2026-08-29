@@ -74,6 +74,16 @@ export function CheckoutPage() {
       window.location.href = `/contact-sales?plan=${encodeURIComponent(plan.planKey)}&source=checkout-redirect`;
       return;
     }
+    // Stillgelegte Pläne (seit AP2: Agency, Partner) behalten ihren
+    // Kaufmodus, weil ihre laufenden Abos unverändert abrechnen — die
+    // *Neuwahl* ist trotzdem beendet. Ohne diese Weiche bliebe der Plan
+    // über die getippte URL käuflich, obwohl er in keiner Oberfläche mehr
+    // erscheint. Der Server weist ihn ohnehin ab (`stripe-checkout`,
+    // `PLAN_RETIRED`); diese Umleitung erspart dem Besucher die Fehlermeldung.
+    if (plan.availability === 'legacy') {
+      window.location.href = '/pricing?source=checkout-retired';
+      return;
+    }
   }, [planKey]);
 
   // 3. Auth-State + Membership-Lookup
@@ -348,7 +358,7 @@ function NoUserShell({
             to={magicLinkHref}
             className="mt-4 w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 border border-silver-500 hover:border-gold-400 text-silver-100 hover:text-titanium-50 text-sm font-semibold rounded-none transition-colors"
           >
-            Mit Magic-Link (Email) anmelden
+            Mit Magic-Link (E-Mail) anmelden
           </Link>
 
           <div className="mt-6 inline-flex items-center gap-1.5 text-xs text-silver-500 w-full justify-center">

@@ -153,6 +153,18 @@ export const GOVERNANCE_MODULES: GovernanceModule[] = [
     description: 'Plan, Rechnungen und Zahlungsmittel',
   },
   {
+    // Gate `all`: Der Marketplace zeigt gerade das, was **noch nicht** im
+    // Plan steckt. Ihn hinter ein Modul-Gate zu legen hiesse, ihn genau
+    // denen zu verbergen, für die er gedacht ist.
+    id: 'marketplace',
+    label: 'Marketplace',
+    icon: 'Store',
+    route: '/app/marketplace',
+    status: 'live',
+    gate: { kind: 'all' },
+    description: 'Zubuchbare Dienste und ihr aktueller Zustand',
+  },
+  {
     id: 'team',
     label: 'Team',
     icon: 'Users',

@@ -13,6 +13,13 @@
  *
  * Was dieser Job tut:
  * 1. Holt alle monitoring_sources mit status='active' und next_scan_at <= NOW()
+ * 1a. **Plan-Gate je Quelle** (seit 2026-08-24): Ohne `monitoring.monthly`
+ *     oder `monitoring.daily` wird nicht gescannt, sondern ein SCAN_SKIPPED
+ *     in den Prüfpfad geschrieben. Mit Plan wird die Kadenz auf das
+ *     gedrosselt, was er trägt. Der Drift-Alert hängt zusätzlich an
+ *     `monitoring.drift`.
+ *     Vorher lief dieser Job über jede aktive Quelle, unabhängig vom Plan —
+ *     die Überwachung war damit als einzige Kernleistung nicht durchgesetzt.
  * 2. Löst Scan aus (cookie-scan Edge Function) pro Quelle
  * 3. Vergleicht Ergebnis mit letztem Score (Change Detection)
  * 4. Erzeugt governance_alerts bei Drift / neuen Risiken
@@ -20,8 +27,15 @@
  * 6. Aktualisiert last_scan_at, next_scan_at und current_score
  */
 
-import { createClient } from 'jsr:@supabase/supabase-js@2';
+import { createClient, type SupabaseClient } from 'jsr:@supabase/supabase-js@2';
 import { corsHeaders, handleOptions, jsonResponse } from '../_shared/gateway.ts';
+import { loadEntitlementsForTenant, hasFeature, type Entitlements } from '../_shared/entitlements.ts';
+import {
+  erlaubteKadenz,
+  naechsterLauf,
+  wirksameKadenz,
+  type Kadenz,
+} from '../_shared/monitoring-cadence.ts';
 
 const SUPABASE_URL  = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_KEY   = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -54,17 +68,57 @@ const FREQUENCY_INTERVAL: Record<string, string> = {
   monthly: '30 days',
 };
 
+// ── Plan-Gate ───────────────────────────────────────────────────────────────
+//
+// Bis zum Claims-Reality-Audit (2026-08-24) lief dieser Job über **jede**
+// aktive Quelle, unabhängig vom Plan. Damit war die Überwachung — die
+// eigentliche Ware, denn der Scan ist kostenlos — als einzige Kernleistung
+// nicht durchgesetzt: `monitoring.monthly`, `monitoring.daily` und
+// `monitoring.drift` hatten im gesamten Function-Verzeichnis keine
+// Prüfstelle.
+//
+// Die Kadenz kommt aus zwei Quellen, und beide müssen gelten:
+//   * `monitoring_sources.scan_frequency` — was der Kunde eingestellt hat
+//   * sein Plan — wie oft er das darf
+// Maßgeblich ist die **langsamere** von beiden. Eine Einstellung, die der
+// Plan nicht trägt, wird gedrosselt statt abgelehnt: Der Kunde verliert die
+// Überwachung nicht, sie läuft nur in der Frequenz, die er bezahlt.
+
+// Die Kadenz-Regel selbst steht in `_shared/monitoring-cadence.ts` — dort
+// ohne Importe, damit sie von Vitest geprüft werden kann.
+function planKadenz(ent: Entitlements): Kadenz | null {
+  return erlaubteKadenz(
+    hasFeature(ent, 'monitoring.daily'),
+    hasFeature(ent, 'monitoring.monthly'),
+  );
+}
+
+/**
+ * Entitlements je Mandant, einmal pro Lauf.
+ *
+ * Ohne den Zwischenspeicher entstünde ein RPC je Quelle; bei 50 Quellen
+ * desselben Mandanten wären das 50 identische Abfragen.
+ */
+function entitlementCache(sb: SupabaseClient) {
+  const gespeichert = new Map<string, Entitlements>();
+  return async (tenantId: string): Promise<Entitlements> => {
+    const vorhanden = gespeichert.get(tenantId);
+    if (vorhanden) return vorhanden;
+    const geladen = await loadEntitlementsForTenant(sb, tenantId);
+    gespeichert.set(tenantId, geladen);
+    return geladen;
+  };
+}
+
 // ── Hilfsfunktionen ─────────────────────────────────────────────────────────
 
-function nextScanAt(frequency: string): string {
-  const now = Date.now();
-  const ms = {
-    hourly:  3_600_000,
-    daily:   86_400_000,
-    weekly:  604_800_000,
-    monthly: 2_592_000_000,
-  }[frequency] ?? 86_400_000;
-  return new Date(now + ms).toISOString();
+/**
+ * Nächster Lauf. Die Abstände stehen in `_shared/monitoring-cadence.ts` —
+ * zwei Tabellen mit denselben Werten wären genau die Doppelung, an der die
+ * Kadenz später auseinanderliefe.
+ */
+function nextScanAt(kadenz: Kadenz): string {
+  return naechsterLauf(kadenz, Date.now());
 }
 
 async function scanSource(source: MonitoringSource): Promise<ScanResponse> {
@@ -156,13 +210,42 @@ Deno.serve(async (req) => {
   }
 
   const results: Array<{ id: string; name: string; status: string; score?: number }> = [];
+  const entitlementsFuer = entitlementCache(sb);
 
   for (const source of sources as MonitoringSource[]) {
+    // ── Plan-Gate, vor jedem Scan ──────────────────────────────────────────
+    const ent = await entitlementsFuer(source.tenant_id);
+    const erlaubt = planKadenz(ent);
+
+    if (erlaubt === null) {
+      // Kein Überwachungs-Entitlement. Der Prüfpfad hält fest, dass der Lauf
+      // ausgelassen wurde — stilles Überspringen wäre in einem
+      // Governance-Produkt der falsche Umgang damit.
+      await emitEvent(sb, source.tenant_id, source.id, 'SCAN_SKIPPED', {
+        source_name: source.name,
+        reason: 'plan_without_monitoring',
+      });
+      // Um einen Tag vertagen, damit nicht entitlementfreie Quellen bei jedem
+      // Lauf die Auswahl von 50 füllen und bezahlte Quellen verdrängen.
+      // `status` bleibt `active`: Der Kunde hat die Quelle nicht abgeschaltet,
+      // sein Plan trägt sie nur nicht. Nach einem Upgrade läuft sie weiter.
+      await sb.from('monitoring_sources').update({
+        next_scan_at: nextScanAt('daily'),
+      }).eq('id', source.id);
+      results.push({ id: source.id, name: source.name, status: 'skipped' });
+      continue;
+    }
+
+    const kadenz = wirksameKadenz(source.scan_frequency, erlaubt);
+    const driftErlaubt = hasFeature(ent, 'monitoring.drift');
+
     // SCAN_STARTED
     await emitEvent(sb, source.tenant_id, source.id, 'SCAN_STARTED', {
       source_name: source.name,
       source_type: source.type,
       url: source.url,
+      scan_frequency: kadenz,
+      requested_frequency: source.scan_frequency,
     });
 
     // Scan ausführen
@@ -179,7 +262,7 @@ Deno.serve(async (req) => {
         status:       'error',
         last_error:   result.error,
         last_scan_at: new Date().toISOString(),
-        next_scan_at: nextScanAt(source.scan_frequency),
+        next_scan_at: nextScanAt(kadenz),
       }).eq('id', source.id);
 
       await createAlert(sb, source.tenant_id, source.id, {
@@ -208,8 +291,13 @@ Deno.serve(async (req) => {
       cookie_count: result.cookie_count ?? 0,
     });
 
-    // Score-Drift-Alert bei Verschlechterung > 10 Punkte
-    if (scoreDelta !== null && scoreDelta > 10) {
+    // Score-Drift-Alert bei Verschlechterung > 10 Punkte.
+    //
+    // `monitoring.drift` liegt ab Growth. Starter bekommt den Scan und die
+    // Findings, aber nicht die Drift-Erkennung — genau so steht es in der
+    // Plan-Leiter. Der Score selbst wird trotzdem fortgeschrieben, damit ein
+    // späteres Upgrade auf einer echten Historie aufsetzt statt bei null.
+    if (driftErlaubt && scoreDelta !== null && scoreDelta > 10) {
       await createAlert(sb, source.tenant_id, source.id, {
         severity: scoreDelta > 30 ? 'critical' : 'high',
         category: 'compliance',
@@ -238,7 +326,7 @@ Deno.serve(async (req) => {
       status:         'active',
       last_error:     null,
       last_scan_at:   new Date().toISOString(),
-      next_scan_at:   nextScanAt(source.scan_frequency),
+      next_scan_at:   nextScanAt(kadenz),
       previous_score: source.current_score,
       current_score:  newScore,
       scan_count:     (source as MonitoringSource & { scan_count: number }).scan_count + 1,

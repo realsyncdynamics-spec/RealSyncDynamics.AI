@@ -4,8 +4,10 @@ import { getSupabase, isSupabaseConfigured } from '../../lib/supabase';
 import {
   PLAN_ORDER,
   checkoutHrefForPlan,
+  graceDaysRemaining,
   planById,
   resolvePlan,
+  subscriptionGrantsPaidAccess,
   type PlanId,
 } from '@/shared/pricing';
 
@@ -25,10 +27,26 @@ export interface EntitlementValue {
   kind: 'boolean' | 'limit';
 }
 
+/**
+ * Zahlungszustand des Mandanten — rein zur Anzeige.
+ *
+ * Freischalten tut das nichts: Was ein Mandant darf, entscheidet
+ * `tenant_entitlements()` auf dem Server. Die Oberflaeche darf damit nur
+ * sichtbar machen, dass eine Zahlung fehlgeschlagen ist und wie lange die
+ * Frist noch laeuft.
+ */
+export interface PaymentState {
+  status: string | null;
+  pastDueSince: string | null;
+  /** Verbleibende Tage der Grace Period; `null` = keine Frist im Gange. */
+  graceDaysRemaining: number | null;
+}
+
 export interface UserEntitlements {
   tier: TierId;
   loading: boolean;
   error?: string;
+  paymentState: PaymentState;
   features: Record<string, boolean | number>;
   hasFeature: (featureKey: string) => boolean;
   getLimit: (featureKey: string) => number | null;
@@ -46,7 +64,8 @@ interface CacheEntry {
 export const FREE_TIER_FALLBACK: EntitlementValue[] = [
   { key: 'dashboard.access',              value: 1, kind: 'boolean' },
   { key: 'website.scan',                  value: 1, kind: 'boolean' },
-  { key: 'website.scan_monthly_limit',    value: 3, kind: 'limit'   },
+  // Unbegrenzt: Scans sind seit dem 2026-08-24 in jedem Plan kostenlos.
+  { key: 'website.scan_monthly_limit',    value: -1, kind: 'limit'  },
   { key: 'evidence.basic_vault',          value: 1, kind: 'boolean' },
   { key: 'governance.dsgvo_directory',    value: 1, kind: 'boolean' },
   { key: 'governance.ai_register',        value: 1, kind: 'boolean' },
@@ -93,6 +112,9 @@ function nextPlanAfter(current: PlanId): PlanId | null {
 export function useEntitlements(): UserEntitlements {
   const { activeTenantId } = useTenant();
   const [entitlements, setEntitlements] = useState<EntitlementValue[]>([]);
+  const [paymentState, setPaymentState] = useState<PaymentState>({
+    status: null, pastDueSince: null, graceDaysRemaining: null,
+  });
   const [planId, setPlanId] = useState<PlanId>('free');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>();
@@ -124,7 +146,7 @@ export function useEntitlements(): UserEntitlements {
         supabase.rpc('tenant_entitlements', { p_tenant_id: activeTenantId }),
         supabase
           .from('subscriptions')
-          .select('plan_key, status')
+          .select('plan_key, status, past_due_since')
           .eq('tenant_id', activeTenantId)
           .order('updated_at', { ascending: false })
           .limit(1)
@@ -133,7 +155,22 @@ export function useEntitlements(): UserEntitlements {
 
       // Altdaten mit `scale` werden über resolvePlan() auf `partner` abgebildet.
       const subscription = subscriptionResult.data;
-      const active = subscription?.status === 'active' || subscription?.status === 'trialing';
+      // Ein Abo im Zahlungsverzug traegt innerhalb der Grace Period weiterhin
+      // alle Berechtigungen (AP4, Migration 20260829000000). Vorher galt hier
+      // nur `active`/`trialing` — ein Kunde in der Frist waere dadurch im
+      // Frontend auf die Heuristik zurueckgefallen, obwohl der Server ihm
+      // vollen Zugriff gewaehrt. Die Anzeige folgt jetzt derselben Regel.
+      const zahlungszustand: PaymentState = {
+        status: (subscription?.status as string | null) ?? null,
+        pastDueSince: (subscription?.past_due_since as string | null) ?? null,
+        graceDaysRemaining: graceDaysRemaining(
+          subscription?.status, subscription?.past_due_since, new Date()),
+      };
+      // Bewusst vor der Fehlerprüfung: Schlägt das Laden der Entitlements
+      // fehl, soll der Kunde trotzdem sehen, dass eine Zahlung offen ist.
+      setPaymentState(zahlungszustand);
+      const active = subscriptionGrantsPaidAccess(
+        subscription?.status, subscription?.past_due_since, new Date());
       const resolvedPlan = active ? resolvePlan(subscription?.plan_key) : null;
 
       if (entitlementsResult.error) {
@@ -217,6 +254,7 @@ export function useEntitlements(): UserEntitlements {
     tier: planId,
     loading,
     error,
+    paymentState,
     features,
     hasFeature,
     getLimit,

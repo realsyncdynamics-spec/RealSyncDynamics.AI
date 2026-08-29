@@ -193,6 +193,26 @@ async function syncSubscription(admin: SupabaseAdminClient, sub: Stripe.Subscrip
   const item = sub.items.data[0];
   const planKey = await resolvePlanKey(admin, item);
 
+  // Beginn des Zahlungsverzugs festhalten — der Anker der Grace Period.
+  //
+  // Der Zeitstempel wird beim **ersten** Wechsel nach `past_due` gesetzt und
+  // danach nicht mehr angefasst. Stripe schickt zu einem Verzug mehrere
+  // Ereignisse; würde jedes davon den Zeitstempel neu setzen, verlängerte sich
+  // die Grace Period stillschweigend bei jedem Zustellversuch und liefe nie
+  // ab. Deshalb wird der vorhandene Wert gelesen und behalten.
+  //
+  // Jeder andere Status leert ihn: Nach erfolgreicher Zahlung ist der Verzug
+  // vorbei, und beim nächsten Mal beginnt die Frist neu.
+  let pastDueSince: string | null = null;
+  if (sub.status === 'past_due') {
+    const { data: vorhanden } = await admin
+      .from('subscriptions')
+      .select('past_due_since')
+      .eq('stripe_subscription_id', sub.id)
+      .maybeSingle();
+    pastDueSince = (vorhanden?.past_due_since as string | null) ?? new Date().toISOString();
+  }
+
   const row = {
     tenant_id: tenantId,
     stripe_customer_id: typeof sub.customer === 'string' ? sub.customer : sub.customer.id,
@@ -213,6 +233,7 @@ async function syncSubscription(admin: SupabaseAdminClient, sub: Stripe.Subscrip
     trial_end: sub.trial_end ? new Date(sub.trial_end * 1000).toISOString() : null,
     canceled_at: sub.canceled_at ? new Date(sub.canceled_at * 1000).toISOString() : null,
     started_at: sub.start_date ? new Date(sub.start_date * 1000).toISOString() : null,
+    past_due_since: pastDueSince,
   };
 
   const { error } = await admin

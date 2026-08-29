@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRight, Check } from 'lucide-react';
-import { PUBLIC_PRICING_TIERS, TIER_ACCENT } from '../../config/pricing';
+import { SELLABLE_PRICING_TIERS, TIER_ACCENT } from '../../config/pricing';
 import { normalizeAuditTarget } from '../../utils/auditTargetValidation';
 
 // RuntimeActivationSection — "Activate your runtime."
@@ -89,8 +89,8 @@ export function RuntimeActivationSection() {
         </form>
 
         {/* Plan grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-px bg-titanium-900">
-          {PUBLIC_PRICING_TIERS.map((tier) => (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-px bg-titanium-900">
+          {SELLABLE_PRICING_TIERS.map((tier) => (
             <article
               key={tier.id}
               className={[

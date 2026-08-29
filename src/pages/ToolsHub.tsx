@@ -31,7 +31,7 @@ export function ToolsHub() {
       icon: '🍪',
       title: 'Cookie-Scanner',
       subtitle: 'Welche Cookies setzt Ihre Website vor Consent?',
-      desc: 'URL eingeben → Set-Cookie-Header + Tracker-Scripts in 15s analysiert. Kein Email-Gate, kein Account.',
+      desc: 'URL eingeben → Set-Cookie-Header + Tracker-Scripts in 15s analysiert. Kein E-Mail-Gate, kein Account.',
       href: '/cookie-scanner',
       badge: 'TDDDG § 25',
       badgeColor: '#3b2a00',

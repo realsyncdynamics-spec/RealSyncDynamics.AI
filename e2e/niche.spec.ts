@@ -81,12 +81,14 @@ for (const n of NICHES) {
       ).toBeVisible();
     }
 
-    // Pricing-Teaser-Section (geteilte Component aus #111-Refactor,
-    // 5-Tier-Modell seit #145: Free Audit / Starter 79€ / Growth 249€ /
-    // Agency 699€ / Enterprise 1.249€ / Partner 1.999€)
+    // Pricing-Teaser-Section (geteilte Component aus #111-Refactor).
+    // Seit AP2 (2026-08-24) drei Self-Service-Stufen plus Enterprise als
+    // Vertrag: Free Audit / Starter 79 € / Growth 249 € / Enterprise.
+    // Agency und Partner sind stillgelegt — bestehende Abos laufen weiter,
+    // angeboten werden sie nicht mehr.
     await expect(
       page.getByRole('heading', {
-        name: /Free Audit · Starter · Growth · Agency · Enterprise · Partner/i,
+        name: /Free Audit · Starter · Growth · Enterprise/i,
       }),
     ).toBeVisible();
     await expect(page.getByText(/79 €/).first()).toBeVisible();

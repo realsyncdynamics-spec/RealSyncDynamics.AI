@@ -5,6 +5,13 @@
 // Services) rufen VOR der Aktion hier an und setzen das Verdikt durch;
 // interne Edge-Function-PEPs importieren decide() direkt (kein HTTP-Hop).
 //
+// Alternativ nimmt der Endpunkt eine TOOL-CALL-Form entgegen (P1-5):
+//   { contract: 'v1', tool_call: { agent_id, tool, ... } }
+// Die Abbildung auf die Entscheidungsanfrage liegt in
+// _shared/pdp/toolcall.ts — genau einmal, nicht in jeder Agent-Runtime.
+// Dort steht auch, warum ausschliesslich strukturierte Fakten bewertet
+// werden und niemals Prompt oder Modellausgabe (Prompt Injection, K6).
+//
 // Auth: API-Key-basiert wie governance-ingest (rsd_gov_-Prefix, SHA-256-Hash
 // gegen governance_ingest_keys) — verify_jwt ist false, externe Aufrufer
 // haben kein Supabase-JWT. tenant_id kommt AUSSCHLIESSLICH aus dem Key,
@@ -20,6 +27,12 @@ import { sha256Hex } from '../_shared/hash.ts';
 import { buildCorsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 import { decide } from '../_shared/pdp/decide.ts';
 import type { DecisionRequest } from '../_shared/pdp/core.ts';
+import {
+  AGENT_CHANNEL,
+  toolCallToDecisionRequest,
+  validateToolCall,
+  type ToolCallInput,
+} from '../_shared/pdp/toolcall.ts';
 
 const corsHeaders = buildCorsHeaders('POST, OPTIONS');
 
@@ -66,7 +79,20 @@ Deno.serve(async (req) => {
   if (body.contract !== 'v1') {
     return jsonError(400, 'BAD_REQUEST', "contract must be 'v1'", corsHeaders);
   }
-  const action = body.action as Record<string, unknown> | undefined;
+
+  // Tool-Call-Form (P1-5) in die Entscheidungsanfrage uebersetzen, bevor
+  // die uebrige Pruefung greift — danach ist der Ablauf identisch.
+  let mappedFromToolCall: DecisionRequest | null = null;
+  if (body.tool_call !== undefined) {
+    const invalid = validateToolCall(body.tool_call);
+    if (invalid) return jsonError(400, 'BAD_REQUEST', invalid, corsHeaders);
+    mappedFromToolCall = toolCallToDecisionRequest(
+      keyRow.tenant_id,
+      body.tool_call as ToolCallInput,
+    );
+  }
+
+  const action = (mappedFromToolCall?.action ?? body.action) as Record<string, unknown> | undefined;
   if (!action || !isNonEmptyString(action.verb) || !isNonEmptyString(action.channel)) {
     return jsonError(400, 'BAD_REQUEST', 'action.verb and action.channel are required', corsHeaders);
   }
@@ -74,12 +100,14 @@ Deno.serve(async (req) => {
   // allowed_sources des Keys begrenzt die Kanaele, fuer die er entscheiden
   // darf — gleiche Semantik wie event_source beim Ingest.
   const allowedSources = (keyRow.allowed_sources ?? []) as string[];
+  // Tool-Calls laufen unter dem festen Kanal AGENT_CHANNEL; ein Key, der
+  // 'agent_runtime' nicht fuehrt, darf fuer Agenten nicht entscheiden.
   if (allowedSources.length > 0 && !allowedSources.includes(action.channel as string)) {
     return jsonError(403, 'FORBIDDEN', `channel '${action.channel}' not in allowed_sources`, corsHeaders);
   }
 
   // tenant_id im Body wird ignoriert — der Key bestimmt den Tenant.
-  const request: DecisionRequest = {
+  const request: DecisionRequest = mappedFromToolCall ?? {
     ...(body as unknown as DecisionRequest),
     contract: 'v1',
     tenant_id: keyRow.tenant_id,
@@ -96,7 +124,7 @@ Deno.serve(async (req) => {
         .insert({
           tenant_id: keyRow.tenant_id,
           policy_id: result.primary_policy_id,
-          event_type: 'pdp:decision',
+          event_type: request.action.channel === AGENT_CHANNEL ? 'pdp:agent_decision' : 'pdp:decision',
           event_summary: result.reasons[0]?.text_de
             ?? `PDP-Entscheidung: ${result.decision} (${request.action.channel})`,
           risk_level: result.decision === 'block' ? 'high' : 'medium',

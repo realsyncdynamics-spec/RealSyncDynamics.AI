@@ -9,6 +9,8 @@ interface EmitInput {
     RunAgentRequest,
     'tenantId' | 'agentId' | 'taskType' | 'requestedTool' | 'requestId'
   >;
+  /** Verdikt des Policy Decision Point, falls er befragt wurde (P1-5). */
+  pdp?: { decision: string; mode: string; reason: string | null };
 }
 
 /**
@@ -31,6 +33,13 @@ export function emitAuditEvent(input: EmitInput): AuditEvent {
     timestamp: new Date().toISOString(),
     reason: input.reason,
     request_id: input.request.requestId,
+    ...(input.pdp
+      ? {
+          pdp_decision: input.pdp.decision,
+          pdp_mode: input.pdp.mode,
+          pdp_reason: input.pdp.reason,
+        }
+      : {}),
   };
 
   process.stdout.write(`${JSON.stringify(event)}\n`);

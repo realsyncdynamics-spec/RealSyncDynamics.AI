@@ -35,6 +35,11 @@ export interface RunAgentRequest {
   requestedTool: string;
   input: Record<string, unknown>;
   requestId: string;
+  /**
+   * Principal-ID des Agenten aus dem Zugriffsmodell (P1-1). Ohne sie
+   * greifen rollenbasierte Regeln nicht — typbasierte schon.
+   */
+  principalId?: string;
 }
 
 export type DenyReason =
@@ -69,6 +74,12 @@ export interface AuditEvent {
   timestamp: string;
   reason: DenyReason | null;
   request_id: string;
+  /** Verdikt des Policy Decision Point, falls befragt (P1-5). */
+  pdp_decision?: string;
+  /** Modus, in dem der Agent-PEP lief: off | shadow | enforce. */
+  pdp_mode?: string;
+  /** Deutschsprachige Begruendung des PDP — fuer den Pruefpfad. */
+  pdp_reason?: string | null;
 }
 
 export interface AcceptedResponse {
@@ -83,6 +94,8 @@ export interface DeniedResponse {
   ok: false;
   status: 'denied';
   reason: DenyReason;
+  /** Verstaendliche Erklaerung fuer Menschen (Auftrag §8). */
+  message?: string;
   auditEvent: AuditEvent;
 }
 

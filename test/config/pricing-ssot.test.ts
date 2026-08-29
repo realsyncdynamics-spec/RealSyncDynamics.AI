@@ -467,13 +467,17 @@ describe('Rechen-Oberflächen führen keinen Plan ohne Festpreis', () => {
     }
   });
 
-  it('genau die Auf-Anfrage-Pläne fehlen gegenüber PUBLIC_PRICING_TIERS', () => {
+  it('genau die stillgelegten und die Auf-Anfrage-Pläne fehlen gegenüber PUBLIC_PRICING_TIERS', () => {
+    // Zwei Gründe schliessen einen Plan aus der Rechen-Liste aus, und nur
+    // diese zwei: er ist stillgelegt (AP2, `availability: 'legacy'` — gehoert
+    // in keine Kaufempfehlung, auch nicht als Rechenbeispiel), oder er hat
+    // keinen oeffentlichen Festpreis, aus dem sich etwas ableiten liesse.
     const excluded = PUBLIC_PRICING_TIERS
       .filter((tier) => !CALCULABLE_PRICING_TIERS.includes(tier))
       .map((tier) => tier.plan.id);
-    const onRequest = PUBLIC_PRICING_TIERS
-      .filter((tier) => tier.priceOnRequest)
+    const notCalculable = PUBLIC_PRICING_TIERS
+      .filter((tier) => tier.plan.availability === 'legacy' || tier.priceOnRequest)
       .map((tier) => tier.plan.id);
-    expect(excluded).toEqual(onRequest);
+    expect(excluded).toEqual(notCalculable);
   });
 });

@@ -102,13 +102,23 @@ Deno.serve(async (req) => {
     return jsonError(400, 'INQUIRY_ONLY',
       `${plan.name} wird über /contact-sales abgeschlossen, nicht über Self-Service-Checkout`);
   }
+  // Stillgelegte Pläne sind aus dem Verkauf, nicht aus dem Betrieb: Ihre
+  // laufenden Abos rechnen unverändert weiter ab, ein *neues* entsteht nicht
+  // mehr. Die Prüfung gehört hierher und nicht nur in die Oberfläche — sonst
+  // bliebe der Plan über einen selbst gebauten Request käuflich, und die
+  // Stilllegung wäre eine Anzeigeentscheidung statt einer Regel.
+  if (plan.availability === 'legacy') {
+    return jsonError(400, 'PLAN_RETIRED',
+      `${plan.name} wird nicht mehr angeboten. Bestehende Abos laufen unverändert weiter.`);
+  }
   // COMMERCIAL-SSOT: temporary production hotfix.
   // Canonical source migration tracked in Phase 2.
   //
   // Harter Stopp für neue Enterprise-Selbstbedienung — bewusst unabhängig von
-  // `purchaseMode`, damit ein späteres Zurückdrehen auf 'checkout' den
-  // Enterprise-Trial nicht stillschweigend wieder öffnet. Enterprise wird
-  // manuell fakturiert und vertraglich vereinbart.
+  // `purchaseMode` UND von `availability`, damit weder ein Zurückdrehen auf
+  // 'checkout' noch eine Umstufung der Verfügbarkeit den Enterprise-Trial
+  // stillschweigend wieder öffnet. Enterprise wird vertraglich vereinbart
+  // und manuell fakturiert (`availability: 'contract'`).
   //
   // Wirkt ausschliesslich auf NEUE Checkout-Sessions. Bestehende Abos und
   // laufende Trials liegen in `public.subscriptions` und werden hier nicht

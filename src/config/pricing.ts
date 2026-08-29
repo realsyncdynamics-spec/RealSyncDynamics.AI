@@ -220,18 +220,45 @@ export const PUBLIC_PRICING_TIERS: PricingTier[] = PRICING_TIERS.filter(
 );
 
 /**
+ * Die Monats-Abos, die einem Neukunden **angeboten** werden: Starter,
+ * Growth und Enterprise.
+ *
+ * Der Unterschied zu `PUBLIC_PRICING_TIERS` ist keine Doppelung, sondern
+ * eine Trennung von zwei Fragen, die seit AP2 verschiedene Antworten haben:
+ *
+ *   PUBLIC_PRICING_TIERS    „welche Ränge gibt es?"   — Rangvergleiche,
+ *                            Upgrade/Downgrade, Nachschlagen des eigenen
+ *                            Plans. Muss Agency und Partner enthalten,
+ *                            sonst bekommt ein Bestandskunde dort falsche
+ *                            Antworten.
+ *   SELLABLE_PRICING_TIERS  „was kann man heute kaufen?" — jede Anzeige,
+ *                            jede Auswahl, jedes Raster.
+ *
+ * Wer ein Raster rendert, nimmt diese Liste. Agency und Partner sind seit
+ * AP2 stillgelegt; sie anzubieten hieße, in eine Sackgasse zu führen
+ * (`CLAUDE.md` §14).
+ */
+export const SELLABLE_PRICING_TIERS: PricingTier[] = PUBLIC_PRICING_TIERS.filter(
+  (tier) => tier.plan.availability !== 'legacy',
+);
+
+/**
  * COMMERCIAL-SSOT: temporary production hotfix.
  * Canonical source migration tracked in Phase 2.
  *
- * Die Tiers, für die sich überhaupt ein Betrag ausrechnen lässt — also alle
- * mit öffentlich zugesichertem Festpreis. Rechner und Vergleiche MÜSSEN
- * diese Liste nutzen statt `PUBLIC_PRICING_TIERS`: ein Plan ohne Festpreis
- * hat keinen Monatsbetrag, aus dem sich eine Ersparnis ableiten liesse.
- * Wer ihn trotzdem einsetzt, veroeffentlicht den internen Listenpreis
- * wieder — genau das ist im ROI-Rechner passiert, waehrend die Plan-Karte
- * daneben bereits „Auf Anfrage" zeigte.
+ * Die Tiers, für die sich überhaupt ein Betrag ausrechnen lässt — also die
+ * angebotenen mit öffentlich zugesichertem Festpreis. Rechner und
+ * Vergleiche MÜSSEN diese Liste nutzen: ein Plan ohne Festpreis hat keinen
+ * Monatsbetrag, aus dem sich eine Ersparnis ableiten liesse. Wer ihn
+ * trotzdem einsetzt, veroeffentlicht den internen Listenpreis wieder —
+ * genau das ist im ROI-Rechner passiert, waehrend die Plan-Karte daneben
+ * bereits „Auf Anfrage" zeigte.
+ *
+ * Basis ist `SELLABLE_PRICING_TIERS`, nicht `PUBLIC_PRICING_TIERS`: ein
+ * stillgelegter Plan gehoert in keine Kaufempfehlung, auch nicht als
+ * Rechenbeispiel.
  */
-export const CALCULABLE_PRICING_TIERS: PricingTier[] = PUBLIC_PRICING_TIERS.filter(
+export const CALCULABLE_PRICING_TIERS: PricingTier[] = SELLABLE_PRICING_TIERS.filter(
   (tier) => !tier.priceOnRequest,
 );
 

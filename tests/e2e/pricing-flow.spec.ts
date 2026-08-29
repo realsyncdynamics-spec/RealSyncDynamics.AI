@@ -2,11 +2,13 @@ import { test, expect } from '@playwright/test';
 
 const BASE_URL = process.env.TEST_BASE_URL || process.env.BASE_URL || 'http://localhost:3000';
 
+// Die Karten, die auf /pricing stehen. Seit AP2 (2026-08-24) sind es drei:
+// Agency und Partner sind stillgelegt und erscheinen in keinem Angebot mehr.
+// Ihre Detailseiten (`DETAIL_SLUGS`) bleiben erreichbar — geteilte Links und
+// Bestandskunden sollen nicht ins Leere laufen.
 const CARD_IDS = [
   'starter',
   'growth',
-  'agency',
-  'partner',
   'enterprise',
 ];
 
@@ -24,15 +26,17 @@ const DETAIL_SLUGS = [
 ];
 
 // Nur Pläne mit `purchaseMode: 'checkout'` (shared/pricing.ts) bleiben auf der
-// Checkout-Seite stehen. `partner` und `enterprise` sind 'inquiry' und leiten
-// auf /contact-sales um. Die Redirects werden unten explizit geprüft.
+// Checkout-Seite stehen. `partner` ist 'inquiry' und leitet auf /contact-sales
+// um — in dieser Liste erzeugte er ein Rennen zwischen page.goto und dem
+// Redirect, das der Test mal gewann und mal verlor. Der Redirect wird unten
+// eigens geprüft statt hier ignoriert.
+// Die Plan-Keys, die einen Self-Service-Checkout erreichen. Agency ist seit
+// AP2 nicht mehr dabei: stillgelegt, führt auf die Preisseite zurück.
 const CHECKOUT_PLAN_KEYS = [
   'starter',
   'growth',
-  'agency',
   'starter_yearly',
   'growth_yearly',
-  'agency_yearly',
 ];
 
 test.describe('Pricing Flow', () => {
@@ -43,7 +47,7 @@ test.describe('Pricing Flow', () => {
       const pricingCards = page.locator('[data-testid^="pricing-card-"]');
       await expect(pricingCards.first()).toBeVisible({ timeout: 10000 });
       const cardCount = await pricingCards.count();
-      expect(cardCount).toBeGreaterThanOrEqual(4);
+      expect(cardCount).toBe(CARD_IDS.length);
     });
 
     test('should display all expected plan cards', async ({ page }) => {
@@ -126,11 +130,26 @@ test.describe('Pricing Flow', () => {
     });
 
     test('enterprise checkout should redirect to contact-sales', async ({ page }) => {
-      // Enterprise ist laut Pricing-SSoT `purchaseMode: 'inquiry'` und
-      // darf weder Self-Service-Checkout noch Self-Service-Trial öffnen.
+      // Seit AP2 (2026-08-24) ist Enterprise ein Vertrag, kein
+      // Self-Service-Checkout: `purchaseMode: 'inquiry'`. Er darf damit auch
+      // keinen Self-Service-Trial oeffnen. Bestehende Enterprise-Abos rechnen
+      // unverändert weiter ab — betroffen ist allein der Neuabschluss.
       await page.goto(`${BASE_URL}/checkout/enterprise`);
       await page.waitForURL(/\/contact-sales/);
       await expect(page).toHaveURL(/plan=enterprise/);
+      await expect(page).not.toHaveURL(/pilot=true/);
+    });
+
+    test('stillgelegte Pläne führen zurück auf die Preisseite', async ({ page }) => {
+      // Agency und Partner sind seit AP2 aus dem Verkauf. Partner läuft über
+      // `inquiry` in den Vertrieb (siehe oben); Agency behält seinen
+      // Kaufmodus `checkout`, weil laufende Abos unverändert abrechnen — die
+      // getippte URL darf trotzdem zu keinem Kauf mehr führen.
+      for (const planKey of ['agency', 'agency_yearly']) {
+        await page.goto(`${BASE_URL}/checkout/${planKey}`);
+        await page.waitForURL(/\/pricing/);
+        await expect(page).toHaveURL(/source=checkout-retired/);
+      }
     });
   });
 

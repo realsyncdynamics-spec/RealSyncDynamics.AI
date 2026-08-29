@@ -371,6 +371,7 @@ const WorkspaceEmbed = lazy(() => import('./features/workspace/WorkspaceEmbed').
 const CompanyView = lazy(() => import('./features/company/CompanyView').then((m) => ({ default: m.CompanyView })));
 const WorkflowsView = lazy(() => import('./features/workflows/WorkflowsView').then((m) => ({ default: m.WorkflowsView })));
 const MarketGapsView = lazy(() => import('./features/market/MarketGapsView').then((m) => ({ default: m.MarketGapsView })));
+const MarketplaceView = lazy(() => import('./features/market/MarketplaceView').then((m) => ({ default: m.MarketplaceView })));
 const OutreachView = lazy(() => import('./features/outreach/OutreachView').then((m) => ({ default: m.OutreachView })));
 const AnalyticsView = lazy(() => import('./features/analytics/AnalyticsView').then((m) => ({ default: m.AnalyticsView })));
 const AuditDashboardView = lazy(() => import('./features/audit/AuditDashboardView').then((m) => ({ default: m.AuditDashboardView })));
@@ -478,6 +479,13 @@ function RoutesWithTracking() {
       {/* Public — Startseite ist die Governance-OS-Workspace-Vorschau;
           die Marketing-Landing bleibt unter /landing erreichbar. */}
       <Route path="/" element={<MainLanding />} />
+
+      {/* Der kanonische Scan-Einstieg ist `/audit` (siehe
+          docs/product/canonical-funnel-decision.md). `/scan` gab es kurzzeitig
+          als zweiten Trichter mit eigenem Datensatz; er ist mit dem Schnitt
+          von PR #1129 entfallen, damit es genau einen Einstieg gibt. */}
+      <Route path="/scan" element={<Navigate to="/audit" replace />} />
+
       {/* Product Entry Points */}
       <Route path="/scan/start" element={<ScanStartPage />} />
       <Route path="/chatbot/start" element={<ChatbotStartPage />} />
@@ -734,6 +742,9 @@ function RoutesWithTracking() {
       <Route path="/app/dashboard" element={<AppGate><GovernanceBrowserShell><DashboardRouter /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/cockpit/brief" element={<CeoBriefPrintView />} />
       <Route path="/app/seo-marketing-dashboard" element={<AppGate><GovernanceBrowserShell><SEOMarketingDashboard /></GovernanceBrowserShell></AppGate>} />
+      {/* Marketplace: zubuchbare Dienste mit ihrem tatsaechlichen Zustand.
+          Liest die Entitlements des Mandanten, daher auth-gegatet. */}
+      <Route path="/app/marketplace" element={<AppGate><GovernanceBrowserShell><MarketplaceView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/overview" element={<GovernanceBrowserShell><GovernanceOsDashboard /></GovernanceBrowserShell>} />
       <Route path="/app/home" element={<GovernanceBrowserShell><WorkspaceHome /></GovernanceBrowserShell>} />
       <Route path="/app/company" element={<GovernanceBrowserShell><CompanyView /></GovernanceBrowserShell>} />

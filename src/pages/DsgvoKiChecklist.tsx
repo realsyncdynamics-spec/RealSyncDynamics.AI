@@ -23,7 +23,7 @@ const items: ChecklistItem[] = [
 
   // Sicherheit (Art. 32)
   { id: 's1', category: 'sicherheit', title: 'TLS 1.2+ erzwungen', detail: 'HTTP-Antworten müssen Strict-Transport-Security senden. Mixed Content (HTTP-Asset auf HTTPS-Seite) ist ein Befund.', ref: 'DSGVO Art. 32 Abs. 1 lit. a' },
-  { id: 's2', category: 'sicherheit', title: 'API-Keys nicht im Frontend', detail: 'Anthropic/OpenAI-Keys gehören in Edge Functions oder Vault, niemals in Vite-Bundle. Eine extrahierbare API-Key ist meldepflichtige Datenpanne.', ref: 'DSGVO Art. 32 Abs. 1 lit. b · Art. 33' },
+  { id: 's2', category: 'sicherheit', title: 'API-Keys nicht im Frontend', detail: 'Anthropic/OpenAI-Keys gehören in Edge Functions oder Vault, niemals in Vite-Bundle. Ein extrahierbarer API-Key ist eine meldepflichtige Datenpanne.', ref: 'DSGVO Art. 32 Abs. 1 lit. b · Art. 33' },
   { id: 's3', category: 'sicherheit', title: 'Audit-Log über Modellaufrufe', detail: 'Welcher User hat welche Daten an welches Modell geschickt — vollständig nachvollziehbar mit Timestamps. Pflicht bei betrieblicher KI-Nutzung.', ref: 'DSGVO Art. 32 Abs. 1 lit. d · BAIT AT 4.5' },
   { id: 's4', category: 'sicherheit', title: 'Verschlüsselung at-rest', detail: 'Datenbank, Backups, Object-Storage — alles AES-256 oder stärker. Cloud-Provider müssen Key-Management dokumentieren.', ref: 'DSGVO Art. 32 Abs. 1 lit. a' },
   { id: 's5', category: 'sicherheit', title: 'Zugriffskontrollen mit Least-Privilege', detail: 'Service-Accounts dürfen nur das, was sie müssen. Row-Level-Security in DB-Tabellen mit personenbezogenen Daten.', ref: 'DSGVO Art. 32 · ISO 27002 §9' },

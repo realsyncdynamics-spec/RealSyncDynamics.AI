@@ -205,8 +205,9 @@ export function CostCalculator() {
                 {/*
                   COMMERCIAL-SSOT: temporary production hotfix.
                   Canonical source migration tracked in Phase 2.
-                  CALCULABLE_PRICING_TIERS statt PUBLIC_PRICING_TIERS: Plaene
-                  ohne oeffentlichen Festpreis (Enterprise) haben keinen
+                  CALCULABLE_PRICING_TIERS ist die engere Liste: sie leitet aus
+                  SELLABLE_PRICING_TIERS ab und laesst zusaetzlich Plaene ohne
+                  oeffentlichen Festpreis (Enterprise) weg. Die haben keinen
                   Monatsbetrag, aus dem sich eine Ersparnis ableiten liesse —
                   sie hier zu fuehren hat den entfernten Preis wieder
                   veroeffentlicht.

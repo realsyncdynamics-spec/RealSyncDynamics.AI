@@ -92,10 +92,9 @@ describe('PLAN_CONFIG alignment with PRICING_TIERS', () => {
     expect(PLAN_CONFIG.free_audit.mode).toBe('free');
   });
 
-  // COMMERCIAL-SSOT: temporary production hotfix.
-  // Canonical source migration tracked in Phase 2.
-  // Enterprise ist kein Self-Service-Produkt mehr — manuelle Faktura.
-  it('enterprise mode is "inquiry"', () => {
+  it('enterprise mode is "inquiry" since AP2', () => {
+    // AP2 macht Enterprise zum Vertrag. `PLAN_CONFIG` ist aus der SSoT
+    // abgeleitet — dieser Fall belegt, dass die Ableitung mitzieht.
     expect(PLAN_CONFIG.enterprise.mode).toBe('inquiry');
   });
 });

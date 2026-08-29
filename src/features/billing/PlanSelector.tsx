@@ -1,12 +1,14 @@
 /**
  * Plan Selector — Interactive tier card grid with Checkout CTA
  *
- * Displays all PUBLIC_PRICING_TIERS (starter → partner) with feature comparison,
- * highlight states, and CTA buttons.
+ * Displays SELLABLE_PRICING_TIERS (Starter, Growth, Enterprise) with feature
+ * comparison, highlight states, and CTA buttons. Agency und Partner sind seit
+ * AP2 stillgelegt und stehen deshalb nicht zur Auswahl — bestehende Abos
+ * darauf laufen unverändert weiter.
  */
 
 import React from 'react';
-import { PUBLIC_PRICING_TIERS, type TierId, TIER_ACCENT, PRICING_TRUST_NOTE } from '../../config/pricing';
+import { SELLABLE_PRICING_TIERS, type TierId, TIER_ACCENT, PRICING_TRUST_NOTE } from '../../config/pricing';
 import { getComplianceBanner } from '../../lib/compliance-notices';
 
 export interface PlanSelectorProps {
@@ -47,8 +49,8 @@ export function PlanSelector({
         </div>
 
         {/* Tier Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-12">
-          {PUBLIC_PRICING_TIERS.map((tier) => {
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+          {SELLABLE_PRICING_TIERS.map((tier) => {
             const isSelected = selectedPlan === tier.id;
             const accentStyle = TIER_ACCENT[tier.id];
 

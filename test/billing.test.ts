@@ -238,15 +238,19 @@ describe('Billing Workflows', () => {
     expect(partner.plan.permissions.multiTenant).toBe(true);
   });
 
-  // COMMERCIAL-SSOT: temporary production hotfix.
-  // Canonical source migration tracked in Phase 2.
-  // Enterprise wird vertraglich vereinbart und manuell fakturiert; ein
-  // Self-Service-Checkout-Link waere ein Kaufpfad ins Leere.
-  it('enterprise fuehrt auf /contact-sales, nicht in den Checkout', () => {
+  it('enterprise fuehrt seit AP2 in den Vertrieb, nicht in den Checkout', () => {
+    // Enterprise ist ab AP2 ein Vertrag: `purchaseMode: 'inquiry'`. Der
+    // Self-Service endet bei Growth. Bestehende Enterprise-Abos rechnen
+    // unveraendert weiter ab — betroffen ist allein der Neuabschluss.
     const enterprise = tierById('enterprise')!;
     expect(enterprise.cta.href).toContain('/contact-sales');
     expect(enterprise.cta.href).not.toContain('/checkout/');
-    // Kein Self-Service-Trial und kein oeffentlicher Festpreis.
+    // COMMERCIAL-SSOT: temporary production hotfix.
+    // Canonical source migration tracked in Phase 2.
+    // Ergaenzend zum Kaufmodus: kein Self-Service-Trial und kein
+    // oeffentlicher Festpreis. Ohne diese drei Zusicherungen bewarb die
+    // Seite weiter „14 Tage kostenlos testen" zu 1.249 € fuer einen Plan,
+    // den der Checkout gar nicht abschliessen kann.
     expect(enterprise.plan.trialDays).toBe(0);
     expect(enterprise.priceOnRequest).toBe(true);
     expect(enterprise.cta.href).not.toContain('pilot=true');

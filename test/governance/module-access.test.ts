@@ -63,11 +63,15 @@ describe('GOVERNANCE_MODULES config', () => {
     expect(canAccessModule(risks!, 'free')).toBe(false);
   });
 
-  it('Scheduler und Bulk Jobs folgen der Agency-Berechtigung', () => {
+  it('Scheduler und Bulk Jobs liegen seit AP2 ab Growth', () => {
+    // Vor AP2 lagen beide erst ab Agency. Mit dem Wegfall von Agency als
+    // Self-Service brauchten sie ein Zuhause, sonst wären sie unverkäuflich
+    // geworden (zielzustand-paketmodell.md §1.1). Starter bleibt außen vor.
     const scheduler = GOVERNANCE_MODULES.find((m) => m.id === 'scheduler')!;
     const bulk = GOVERNANCE_MODULES.find((m) => m.id === 'bulk')!;
     for (const mod of [scheduler, bulk]) {
-      expect(canAccessModule(mod, 'growth'), mod.id).toBe(false);
+      expect(canAccessModule(mod, 'starter'), mod.id).toBe(false);
+      expect(canAccessModule(mod, 'growth'), mod.id).toBe(true);
       expect(canAccessModule(mod, 'agency'), mod.id).toBe(true);
       expect(canAccessModule(mod, 'enterprise'), mod.id).toBe(true);
       expect(canAccessModule(mod, 'partner'), mod.id).toBe(true);
@@ -112,9 +116,12 @@ describe('minimumPlanForModule', () => {
     expect(minimumPlanForModule(aiSystems)).toBe('starter');
   });
 
-  it('gibt agency zurück für Scheduler (Berechtigungs-Gate)', () => {
+  it('gibt growth zurück für Scheduler (Berechtigungs-Gate)', () => {
+    // Seit AP2 — siehe oben. Das Gate selbst ist unverändert
+    // `permissions.scheduler`; nur der niedrigste Plan, der es trägt, ist
+    // ein anderer.
     const scheduler = GOVERNANCE_MODULES.find((m) => m.id === 'scheduler')!;
-    expect(minimumPlanForModule(scheduler)).toBe('agency');
+    expect(minimumPlanForModule(scheduler)).toBe('growth');
   });
 });
 

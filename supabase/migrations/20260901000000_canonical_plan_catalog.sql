@@ -2,35 +2,43 @@
 --  Kanonischer Plan-Katalog — Enterprise ohne öffentlichen Festpreis
 -- ═══════════════════════════════════════════════════════════════════════════
 --
--- Ersetzt die Katalog-Daten aus 20260808140000_canonical_plan_catalog.sql.
--- Migrationen sind unveränderlich, sobald sie deployt sind — eine Änderung
--- an der Pricing-SSoT erfordert deshalb eine NEUE Katalog-Migration statt
--- einer Bearbeitung der alten. Tabellen-, RLS- und Index-Definitionen stehen
+-- Ersetzt die Katalog-Daten aus 20260831010000_canonical_plan_catalog.sql.
+-- Migrationen sind unveränderlich, sobald sie deployt sind — eine Änderung an
+-- der Pricing-SSoT erfordert deshalb eine NEUE Katalog-Migration statt einer
+-- Bearbeitung der alten. Tabellen-, RLS- und Index-Definitionen stehen
 -- weiterhin in 20260802001000 und werden hier nicht wiederholt; dieser Lauf
 -- schreibt ausschließlich Katalog-Daten.
 --
--- Neu gegenüber 20260808140000 — Produktions-Sicherheits-Hotfix:
+-- Neu gegenüber 20260831010000 — Produktions-Sicherheits-Hotfix:
 --
---   Enterprise wurde öffentlich als self-service kaufbares Abo zu 1.249 €/Monat
---   mit 14-Tage-Trial ausgewiesen. Beides war nicht erfüllbar:
---     - `public.products` trägt für `default_for_plan_key='enterprise'` bewusst
---       nur den Sentinel `internal_default_enterprise` (manuelle Faktura), den
---       die Edge Function `stripe-checkout` verwirft → jeder Checkout-Versuch
---       endete in `PRICE_NOT_CONFIGURED`.
---     - Ein zugesicherter Festpreis, den kein Checkout einlösen kann, ist ein
---       falsches öffentliches Angebot.
+--   AP2 hat Enterprise bereits auf `purchase_mode = 'inquiry'` gestellt, den
+--   Rest des Angebots aber stehen lassen. Damit warb die Seite weiter mit
+--   „14 Tage kostenlos testen" zu 1.249 €/Monat für einen Plan, den der
+--   Self-Service-Checkout nicht abschließen kann:
+--
+--     - `public.products` trägt für `default_for_plan_key='enterprise'`
+--       bewusst nur den Sentinel `internal_default_enterprise` (manuelle
+--       Faktura), den `stripe-checkout` verwirft → `PRICE_NOT_CONFIGURED`.
+--     - `trial_days = 14` blieb gesetzt, obwohl kein Kaufpfad ihn einlösen
+--       kann. Ein Trial-Versprechen ohne Checkout ist nicht erfüllbar.
 --
 --   Deshalb:
---     - `purchase_mode`: 'checkout' → 'inquiry'  (Abschluss über /contact-sales)
---     - `trial_days`:    14 → 0                  (kein Self-Service-Trial)
+--     - `trial_days`: 14 → 0   (kein Self-Service-Trial ohne Vertrag)
 --
 --   `price_monthly_eur` bleibt als interner Listenpreis erhalten — die
---   Oberflächen zeigen ihn wegen `priceOnRequest` nicht mehr als Angebot an.
+--   Oberflächen zeigen ihn wegen `priceOnRequest` nicht mehr als Angebot an,
+--   sondern „Auf Anfrage".
 --
 -- WICHTIG — Bestandsschutz: Dieser Lauf fasst ausschließlich `plan_catalog`
 -- an, also den Produkt-Katalog. `public.subscriptions` wird nicht gelesen und
 -- nicht geschrieben. Laufende Enterprise-Abos und -Trials bleiben unberührt;
 -- gesperrt ist nur der NEUE Self-Service-Abschluss.
+--
+-- Versionsnummer bewusst nach 20260831020000 vergeben: Ein früherer Stand
+-- dieses Branches lag auf 20260828000000 und kollidierte dort mit
+-- 20260828000000_entitlement_base_keys_paid_plans.sql aus `main` — genau der
+-- Fehler, den CLAUDE.md §5 für den 2026-08-24 beschreibt. Vor dem Merge einer
+-- Migration die Version gegen den AKTUELLEN `main`-Stand prüfen.
 --
 -- Der Block unten wird von `scripts/generate-plan-catalog-sql.ts` erzeugt und
 -- von `test/config/pricing-ssot.test.ts` gegen shared/pricing.ts geprüft.
@@ -49,7 +57,7 @@ INSERT INTO public.plan_catalog (
     'free',
     'Free Audit',
     'Sehen Sie in 90 Sekunden, wo Ihre Governance-Lücken liegen.',
-    'Einmaliger Runtime-Scan Ihrer Domain mit Governance Score, Top-Risiken und Planempfehlung.',
+    'Unbegrenzte Runtime-Scans Ihrer Domain mit Governance Score, Top-Risiken und Planempfehlung.',
     0,
     NULL,
     NULL,
@@ -83,10 +91,10 @@ INSERT INTO public.plan_catalog (
     1,
     500,
     '{"bots":1,"answersPerMonth":500,"domains":1,"automationRunsPerMonth":25,"seats":1,"apiCallsPerMonth":0,"tenants":1,"evidenceStorageGb":2,"auditReportsPerMonth":2,"remediationPlans":5,"bulkJobsPerMonth":0,"apiKeys":0}'::jsonb,
-    '["dsgvo","eu_ai_act","evidence_vault","audit_center","monitoring","compliance_reports","automation_engine","alerts","ai_bots","website_chat"]'::jsonb,
+    '["dsgvo","eu_ai_act","policy_engine","evidence_vault","audit_center","monitoring","compliance_reports","automation_engine","alerts","ai_bots","website_chat"]'::jsonb,
     '{"scheduler":false,"api":false,"webhooks":false,"whiteLabelReports":false,"whiteLabelDashboard":false,"multiTenant":false,"evidenceVault":true,"auditExport":true,"sso":false,"bulkOperations":false,"provenanceSigning":false,"prioritySupport":false}'::jsonb,
     '["website"]'::jsonb,
-    '[]'::jsonb,
+    '["whatsapp"]'::jsonb,
     '{"audit_evidence":["Vollständiger DSGVO-Scan mit Paragraphenbezug","Evidence Vault mit Hash-Chain-Verifizierung","Audit-Export als PDF und JSON","Lückenloser Prüfpfad über alle Läufe"],"ai_governance":["Policy Packs: DSGVO und EU AI Act","Generator für Datenschutzerklärung","Technische Consent-Empfehlungen"],"automation_ops":["Kontinuierliches Monitoring","E-Mail-Alert bei neuen Findings","25 Automationsläufe pro Monat","1 Governance-Bot mit 500 Antworten (Website)"],"multi_tenant_reseller":[]}'::jsonb,
     'email'
   ),
@@ -105,12 +113,12 @@ INSERT INTO public.plan_catalog (
     true,
     2,
     2000,
-    '{"bots":2,"answersPerMonth":2000,"domains":3,"automationRunsPerMonth":100,"seats":5,"apiCallsPerMonth":0,"tenants":1,"evidenceStorageGb":10,"auditReportsPerMonth":12,"remediationPlans":20,"bulkJobsPerMonth":0,"apiKeys":0}'::jsonb,
+    '{"bots":2,"answersPerMonth":2000,"domains":3,"automationRunsPerMonth":100,"seats":5,"apiCallsPerMonth":5000,"tenants":1,"evidenceStorageGb":10,"auditReportsPerMonth":12,"remediationPlans":20,"bulkJobsPerMonth":10,"apiKeys":3}'::jsonb,
     '["dsgvo","eu_ai_act","iso_27001","policy_engine","evidence_vault","audit_center","risk_register","monitoring","compliance_reports","automation_engine","alerts","workflows","drift_detection","remediation","background_jobs","ai_bots","website_chat","whatsapp","telegram","multi_channel_messaging"]'::jsonb,
-    '{"scheduler":false,"api":false,"webhooks":false,"whiteLabelReports":false,"whiteLabelDashboard":false,"multiTenant":false,"evidenceVault":true,"auditExport":true,"sso":false,"bulkOperations":false,"provenanceSigning":false,"prioritySupport":false}'::jsonb,
+    '{"scheduler":true,"api":true,"webhooks":true,"whiteLabelReports":false,"whiteLabelDashboard":false,"multiTenant":false,"evidenceVault":true,"auditExport":true,"sso":false,"bulkOperations":true,"provenanceSigning":true,"prioritySupport":false}'::jsonb,
     '["website","whatsapp","telegram"]'::jsonb,
-    '["response_pack","whatsapp","compliance_pack"]'::jsonb,
-    '{"audit_evidence":["Alles aus Starter","Evidence Vault mit Versionierung","Bis zu 12 Audit-Berichte pro Monat","Consent-Timing-Analyse (Requests vor Einwilligung)"],"ai_governance":["Policy Packs: DSGVO, EU AI Act, ISO 27001","Policy Engine mit versionierten Richtlinien","AI Risk Register mit Bewertung und Eigentümern","Governance Score je Rahmenwerk"],"automation_ops":["Tägliches Monitoring mit Drift Detection","Behebungsvorschläge mit Code-Snippets","100 Automationsläufe pro Monat","2 Governance-Bots mit 2.000 Antworten (Website, WhatsApp, Telegram)"],"multi_tenant_reseller":[]}'::jsonb,
+    '["response_pack","compliance_pack","voice","white_label","agency_bot_pack"]'::jsonb,
+    '{"audit_evidence":["Alles aus Starter","Evidence Vault mit Versionierung","Erweiterter Evidence-Zugriff mit C2PA-Export","Signierter Herkunftsnachweis (Provenance)","Bis zu 12 Audit-Berichte pro Monat","Consent-Timing-Analyse (Requests vor Einwilligung)"],"ai_governance":["Policy Packs: DSGVO, EU AI Act, ISO 27001","Policy Engine mit versionierten Richtlinien","AI Risk Register mit Bewertung und Eigentümern","Governance Score je Rahmenwerk"],"automation_ops":["Tägliches Monitoring mit Drift Detection","Behebungsvorschläge mit Code-Snippets","API-Zugriff, Webhooks und Scheduler","10 Bulk-Jobs pro Monat, 3 API-Schlüssel","100 Automationsläufe pro Monat","2 Governance-Bots mit 2.000 Antworten (Website, WhatsApp, Telegram)"],"multi_tenant_reseller":[]}'::jsonb,
     'priority'
   ),
   (
@@ -155,7 +163,7 @@ INSERT INTO public.plan_catalog (
     '["dsgvo","eu_ai_act","iso_27001","nis2","tisax","dora","policy_engine","evidence_vault","audit_center","risk_register","monitoring","compliance_reports","automation_engine","alerts","workflows","drift_detection","remediation","background_jobs","scheduler","n8n","kodee","bulk_jobs","ai_bots","website_chat","whatsapp","telegram","voice","multi_channel_messaging","api","webhooks","human_handoff"]'::jsonb,
     '{"scheduler":true,"api":true,"webhooks":true,"whiteLabelReports":true,"whiteLabelDashboard":true,"multiTenant":true,"evidenceVault":true,"auditExport":true,"sso":true,"bulkOperations":true,"provenanceSigning":true,"prioritySupport":true}'::jsonb,
     '["website","whatsapp","telegram","slack","teams","email","voice"]'::jsonb,
-    '["response_pack","whatsapp","voice","compliance_pack","agency_bot_pack","white_label"]'::jsonb,
+    '["response_pack","voice","compliance_pack","agency_bot_pack","white_label"]'::jsonb,
     '{"audit_evidence":["Alles aus Agency","Audit Center Pro mit 200 Berichten pro Monat","Evidence Vault Enterprise mit 200 GB Nachweisspeicher"],"ai_governance":["Alle sechs Policy Packs: DSGVO, EU AI Act, ISO 27001, NIS2, TISAX, DORA","Erweiterte Analysen und Risk Scoring","Eigene Richtlinien und Kontrollkataloge"],"automation_ops":["Individuell dimensionierte Scheduler- und Automation-Kontingente.","API Premium mit 250.000 Aufrufen pro Monat","20 Governance-Bots mit 50.000 Antworten (alle Kanäle)","Priorisierter Support mit vertraglich vereinbarter Reaktionszeit"],"multi_tenant_reseller":["Multi-Tenant-Dashboard für bis zu 5 Organisationen","Zentrale Benutzerverwaltung mit Rollen und Rechten","Single Sign-On","White-Label mit Branding, Logo und Farben"]}'::jsonb,
     'dedicated'
   ),
@@ -236,7 +244,7 @@ INSERT INTO public.plan_addons (addon_id, name, description, price_eur, price_no
     49,
     '/ Monat',
     'month',
-    '["growth","agency","enterprise","partner"]'::jsonb
+    '["growth","enterprise"]'::jsonb
   ),
   (
     'whatsapp',
@@ -245,7 +253,7 @@ INSERT INTO public.plan_addons (addon_id, name, description, price_eur, price_no
     99,
     '/ Monat',
     'month',
-    '["growth","agency","enterprise","partner"]'::jsonb
+    '["starter"]'::jsonb
   ),
   (
     'voice',
@@ -254,7 +262,7 @@ INSERT INTO public.plan_addons (addon_id, name, description, price_eur, price_no
     150,
     '/ Monat zzgl. 0,25 € pro Minute',
     'month',
-    '["agency","enterprise","partner"]'::jsonb
+    '["growth","enterprise"]'::jsonb
   ),
   (
     'compliance_pack',
@@ -263,7 +271,7 @@ INSERT INTO public.plan_addons (addon_id, name, description, price_eur, price_no
     149,
     '/ Monat',
     'month',
-    '["growth","agency","enterprise","partner"]'::jsonb
+    '["growth","enterprise"]'::jsonb
   ),
   (
     'agency_bot_pack',
@@ -272,7 +280,7 @@ INSERT INTO public.plan_addons (addon_id, name, description, price_eur, price_no
     199,
     '/ Monat',
     'month',
-    '["agency","enterprise","partner"]'::jsonb
+    '["growth","enterprise"]'::jsonb
   ),
   (
     'white_label',
@@ -281,7 +289,7 @@ INSERT INTO public.plan_addons (addon_id, name, description, price_eur, price_no
     299,
     '/ Monat',
     'month',
-    '["agency","enterprise","partner"]'::jsonb
+    '["growth","enterprise"]'::jsonb
   )
 ON CONFLICT (addon_id) DO UPDATE SET
   name = EXCLUDED.name,

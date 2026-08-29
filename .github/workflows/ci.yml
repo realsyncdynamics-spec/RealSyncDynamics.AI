@@ -21,6 +21,19 @@ jobs:
         run: npm run lint
       - name: Edge Function syntax
         run: npm run check:edge-syntax
+      # Die kommerzielle Wahrheit steht in shared/pricing.ts. Alles Abgeleitete
+      # — der Deno-Zwilling, die Plan-Katalog-Migration, die Kontingente —
+      # muss daraus folgen und darf keine zweite Wahrheit daneben bilden.
+      #
+      # Warum das hier steht und nicht nur als npm-Skript existiert: Am
+      # 2026-08-25 hat ein PR die SSoT auf ein neues Paketmodell umgestellt,
+      # die Katalog-Migration aber nicht mitgezogen — und im selben Zug den
+      # Test entfernt, der genau das geprueft haette. Keine CI-Stufe hat es
+      # bemerkt, weil check:pricing nirgends lief.
+      - name: Pricing-Kanonizitaet (SSoT, Deno-Zwilling, Plan-Katalog)
+        run: npm run check:pricing
+      - name: Kontingent-Kanonizitaet (Ratsche gegen neue Divergenzen)
+        run: npm run check:limits
       - name: Unit tests
         run: npm test
       - name: Build

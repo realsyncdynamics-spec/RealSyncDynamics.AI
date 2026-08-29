@@ -20,14 +20,44 @@ export interface KeyValidationResult {
   error?: string;
 }
 
+/** Mindestlänge des Peppers — kurz genug geraten ist so gut wie keiner. */
+const MIN_PEPPER_LENGTH = 32;
+
+function pepper(): string {
+  const secret = process.env.MCP_KEY_PEPPER ?? '';
+  if (secret.length < MIN_PEPPER_LENGTH) {
+    // Bewusst ein Fehler statt eines Rückfalls auf einen ungepfefferten Hash:
+    // ein stiller Rückfall erzeugte zwei unvereinbare Schemata und entwertete
+    // den Schutz, ohne dass es jemandem auffiele.
+    throw new Error(
+      `MCP_KEY_PEPPER fehlt oder ist kürzer als ${MIN_PEPPER_LENGTH} Zeichen — Key-Prüfung nicht möglich.`,
+    );
+  }
+  return secret;
+}
+
 /**
- * SHA-256-Hash eines API-Keys.
+ * Gepfefferter Schlüssel-Hash: HMAC-SHA-256 über den Key, verschlüsselt mit
+ * einem serverseitigen Geheimnis.
  *
- * Muss byte-identisch zu der Berechnung in der Edge Function
- * `mcp-api-key-manager` bleiben — sonst validiert kein einziger Key.
+ * Muss byte-identisch zur Berechnung in der Edge Function
+ * `mcp-api-key-manager` bleiben — sonst validiert kein einziger Key. Ein Test
+ * rechnet beide Seiten gegeneinander.
+ *
+ * **Warum HMAC und nicht scrypt/argon2:** Der Key ist kein menschliches
+ * Passwort, sondern ein Zufallstoken mit 256 Bit Entropie — Brute-Force ist
+ * nicht das Angriffsszenario, gegen das ein langsames KDF hier schützen würde.
+ * Der Hash läuft zudem bei *jedem* Request; ein absichtlich teures Verfahren
+ * wäre an dieser Stelle ein DoS-Verstärker, weil jeder gut geformte Rateversuch
+ * Rechenzeit erzwingt.
+ *
+ * Der Pepper leistet, worauf es hier ankommt: Wer nur die Datenbank erbeutet,
+ * kann geratene Keys nicht offline gegen die gespeicherten Hashes prüfen — dazu
+ * bräuchte er zusätzlich das Geheimnis, das ausschließlich in der Umgebung von
+ * Server und Edge Function liegt.
  */
 export function hashApiKey(key: string): string {
-  return crypto.createHash('sha256').update(key).digest('hex');
+  return crypto.createHmac('sha256', pepper()).update(key, 'utf8').digest('hex');
 }
 
 /**

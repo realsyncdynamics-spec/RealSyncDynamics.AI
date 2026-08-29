@@ -45,6 +45,14 @@ async function start() {
   }
   console.log('✓ Supabase connected');
 
+  // Ohne Pepper lässt sich kein Key prüfen. Sofortiger Fehlstart statt eines
+  // Dienstes, der erst beim ersten Request auffällt.
+  if ((process.env.MCP_KEY_PEPPER ?? '').length < 32) {
+    console.error('MCP_KEY_PEPPER fehlt oder ist kürzer als 32 Zeichen — Key-Prüfung nicht möglich.');
+    process.exit(1);
+  }
+  console.log('✓ Key-Pepper vorhanden');
+
   // Auth middleware
   fastify.addHook('onRequest', async (request, reply) => {
     if (request.url === '/health') {

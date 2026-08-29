@@ -62,7 +62,11 @@ curl -X POST "$SUPABASE_URL/functions/v1/mcp-api-key-manager" \
 ```
 
 Der Klartext-Key steht **nur in dieser einen Antwort**. Danach existiert im
-System ausschließlich sein SHA-256-Hash.
+System ausschließlich ein HMAC-SHA-256 davon, gebildet mit dem serverseitigen
+Geheimnis `MCP_KEY_PEPPER`. Dieses Geheimnis muss in der Edge Function und im
+MCP Server **identisch** gesetzt sein — weicht eine Seite ab, validiert kein
+Key mehr. Beide werfen, wenn es fehlt, statt still auf einen ungepfefferten
+Hash zurückzufallen.
 
 **Aufbewahrung:** in die Secret-Verwaltung der jeweiligen Laufzeitumgebung —
 `wrangler secret put` für Workers, Umgebungsvariable des Containers für

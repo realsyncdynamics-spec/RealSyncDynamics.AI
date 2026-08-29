@@ -202,9 +202,19 @@ geloggt, damit ein stiller Ausfall des Prüfpfads auffällt.
   preHandler; ein Key mit ausschließlich `evidence.read` erhält auf den
   Governance-Pfaden 403. Ohne diese Prüfung wäre die Scope-Angabe eine
   Absichtserklärung statt einer Kontrolle.
-- **Hash statt Klartext.** Gespeichert wird ausschließlich der SHA-256-Hash.
-  Die Berechnung in `services/api-keys-db.ts` und in der Edge Function muss
-  byte-identisch bleiben — ein Test rechnet das gegen.
+- **Gepfefferter Hash statt Klartext.** Gespeichert wird ausschließlich ein
+  HMAC-SHA-256 des Keys, gebildet mit dem serverseitigen Geheimnis
+  `MCP_KEY_PEPPER`. Wer allein die Datenbank erbeutet, kann geratene Keys nicht
+  offline gegen die Hashes prüfen — dazu bräuchte er zusätzlich den Pepper, der
+  nur in der Umgebung von Server und Edge Function liegt. Beide Seiten müssen
+  denselben Wert verwenden; ein Test rechnet sie gegeneinander, und beide werfen
+  bei fehlendem Geheimnis, statt still auf einen ungepfefferten Hash
+  zurückzufallen.
+
+  Bewusst **kein** scrypt/argon2: Der Key ist ein Zufallstoken mit 256 Bit
+  Entropie, kein menschliches Passwort — Brute-Force ist nicht das Szenario.
+  Der Hash läuft bei jedem Request; ein absichtlich teures Verfahren wäre hier
+  ein DoS-Verstärker, weil jeder gut geformte Rateversuch Rechenzeit erzwänge.
 - **Mandantentrennung.** RLS über `is_tenant_member`; der Widerruf filtert
   zusätzlich auf `tenant_id`, damit eine erratene Key-ID aus einem fremden
   Workspace ins Leere greift.
@@ -232,6 +242,7 @@ npm run docker:run
 |---|---|
 | `SUPABASE_URL` | Projekt-URL |
 | `SUPABASE_SERVICE_ROLE_KEY` | nur hier, nie im Client |
+| `MCP_KEY_PEPPER` | Geheimnis des Key-Hashes, min. 32 Zeichen — **identisch** in der Edge Function. Der Server startet ohne es nicht. |
 | `PORT` / `HOST` | Standard `3001` / `0.0.0.0` |
 
 Der Server bricht beim Start ab, wenn die Datenbank nicht erreichbar ist —

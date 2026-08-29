@@ -9,8 +9,11 @@
 //
 // Sicherheitsrelevanz: Diese Funktion vergibt Zugriff auf den MCP Governance
 // Server (Evidence Vault, Governance-Status). Der Klartext-Key existiert genau
-// einmal — in der Antwort auf 'generate'. Gespeichert wird nur der SHA-256-Hash,
-// ein verlorener Key kann also nicht wiederhergestellt, nur ersetzt werden.
+// einmal — in der Antwort auf 'generate'. Gespeichert wird nur ein mit einem
+// serverseitigen Pepper gebildeter HMAC-SHA-256 des Keys; ein verlorener Key
+// kann also nicht wiederhergestellt, nur ersetzt werden. Wer allein die
+// Datenbank erbeutet, kann geratene Keys nicht offline gegen die Hashes
+// prüfen — dazu bräuchte er zusätzlich MCP_KEY_PEPPER.
 //
 // Bewusst NICHT enthalten: eine 'validate'-Operation. Der MCP Server prüft Keys
 // über die RPC mcp_key_is_valid mit service_role. Ein öffentlich erreichbarer
@@ -45,9 +48,34 @@ function generateApiKey(): string {
   return KEY_PREFIX + bufToHex(crypto.getRandomValues(new Uint8Array(KEY_BYTES)));
 }
 
-async function sha256Hex(input: string): Promise<string> {
-  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(input));
-  return bufToHex(new Uint8Array(digest));
+/** Mindestlänge des Peppers — kurz genug geraten ist so gut wie keiner. */
+const MIN_PEPPER_LENGTH = 32;
+
+/**
+ * Gepfefferter Schlüssel-Hash: HMAC-SHA-256 über den Key mit einem
+ * serverseitigen Geheimnis.
+ *
+ * Muss byte-identisch zu `hashApiKey` in `apps/mcp-server/src/services/
+ * api-keys-db.ts` bleiben — weicht eine Seite ab, validiert kein Key mehr.
+ *
+ * Wirft, wenn das Geheimnis fehlt: ein stiller Rückfall auf einen
+ * ungepfefferten Hash erzeugte zwei unvereinbare Schemata und entwertete den
+ * Schutz, ohne dass es auffiele.
+ */
+async function peppered(input: string): Promise<string> {
+  const secret = Deno.env.get('MCP_KEY_PEPPER') ?? '';
+  if (secret.length < MIN_PEPPER_LENGTH) {
+    throw new Error('MCP_KEY_PEPPER fehlt oder ist zu kurz');
+  }
+  const key = await crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign'],
+  );
+  const sig = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(input));
+  return bufToHex(new Uint8Array(sig));
 }
 
 /** Unbekannte Scopes werden verworfen, statt sie ungeprüft zu speichern. */
@@ -146,7 +174,7 @@ Deno.serve(async (req) => {
       }
 
       const plainKey = generateApiKey();
-      const keyHash = await sha256Hex(plainKey);
+      const keyHash = await peppered(plainKey);
       const keyPrefix = plainKey.slice(0, DISPLAY_PREFIX_LEN);
       const scopes = sanitizeScopes(body.scopes);
       const expiresAt = expiryFromDays(body.expires_in_days);

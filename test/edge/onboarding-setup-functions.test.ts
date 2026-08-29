@@ -35,6 +35,10 @@ const root = (p: string) => resolve(__dirname, '../..', p);
 const FUNCTIONS = {
   'save-company-profile': readFileSync(root('supabase/functions/save-company-profile/index.ts'), 'utf8'),
   'create-trial-subscription': readFileSync(root('supabase/functions/create-trial-subscription/index.ts'), 'utf8'),
+  // Vierte Ebene des Branchen-Vertrags. Lag bis 2026-08-29 live in Produktion,
+  // ohne im Repo zu sein — der Drift-Guard hat sie als ORPHAN gemeldet. Sie
+  // validiert `sector` eigenstaendig und schreibt in dieselben Tabellen.
+  'onboarding-orchestrator': readFileSync(root('supabase/functions/onboarding-orchestrator/index.ts'), 'utf8'),
 } as const;
 
 const MIGRATION = readFileSync(root('supabase/migrations/20260824000000_company_profiles.sql'), 'utf8');
@@ -88,8 +92,15 @@ describe('Mandantenauflösung', () => {
 });
 
 describe('Prüfpfad', () => {
-  for (const [name, source] of Object.entries(FUNCTIONS)) {
-    const code = stripComments(source);
+  // Nur die Functions, die tatsächlich nach `trial_audit_logs` schreiben.
+  // Vorher lief die Schleife über FUNCTIONS insgesamt — das ging gut, solange
+  // dort genau diese beiden standen. Mit onboarding-orchestrator (schreibt in
+  // inventory_audit_events und enterprise_ai_audit_events, ganz ohne
+  // ip_address) verlangte sie plötzlich etwas, das es dort nicht geben muss.
+  const WRITES_TRIAL_AUDIT_LOG = ['save-company-profile', 'create-trial-subscription'] as const;
+
+  for (const name of WRITES_TRIAL_AUDIT_LOG) {
+    const code = stripComments(FUNCTIONS[name]);
 
     it(`${name}: schreibt keine ungültige inet-Adresse`, () => {
       // `trial_audit_logs.ip_address` ist vom Typ inet. Der Text 'unknown'
@@ -134,7 +145,7 @@ describe('Kein Erfolg ohne Wirkung', () => {
   });
 });
 
-describe('Branchen-Wertebereich steht dreifach — und muss übereinstimmen', () => {
+describe('Branchen-Wertebereich steht vierfach — und muss übereinstimmen', () => {
   const fromFunction = [
     ...stripComments(FUNCTIONS['save-company-profile'])
       .match(/VALID_SECTORS = new Set\(\[([^\]]+)\]\)/)![1]
@@ -151,11 +162,26 @@ describe('Branchen-Wertebereich steht dreifach — und muss übereinstimmen', ()
     ...SECTOR_CONFIG.matchAll(/^\s{4}id: '([a-z_]+)',$/gm),
   ].map((m) => m[1]);
 
-  it('liest überhaupt drei Listen', () => {
+  const fromOrchestrator = [
+    ...stripComments(FUNCTIONS['onboarding-orchestrator'])
+      .match(/const sectors = new Set\(\[([^\]]+)\]\)/)![1]
+      .matchAll(/'([a-z_]+)'/g),
+  ].map((m) => m[1]);
+
+  it('liest überhaupt vier Listen', () => {
     // Ohne diese Zusicherung verglichen die folgenden Fälle leere Mengen.
     expect(fromFunction.length).toBeGreaterThan(3);
     expect(fromMigration.length).toBeGreaterThan(3);
     expect(fromPage.length).toBeGreaterThan(3);
+    expect(fromOrchestrator.length).toBeGreaterThan(3);
+  });
+
+  it('onboarding-orchestrator führt denselben Wertebereich', () => {
+    // Diese Ebene war lange unsichtbar: Die Function lag nicht im Repo, also
+    // konnte kein Test sie kennen. Eine Branche, die sie ablehnt, waere im
+    // Onboarding als INVALID_SECTOR gescheitert, obwohl Datenbank und
+    // save-company-profile sie akzeptieren.
+    expect([...fromOrchestrator].sort()).toEqual([...fromMigration].sort());
   });
 
   it('Function und CHECK-Constraint führen denselben Wertebereich', () => {

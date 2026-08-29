@@ -769,14 +769,23 @@ function extractFacts(
   // eine in der CSP-Allowlist erlaubte Domain ist kein geladener Tracker.
   const trackerLc = stripPolicyDeclarations(html).toLowerCase();
 
-  // Tracker-Detection via URL-Patterns im HTML
-  const ga = /googletagmanager\.com\/gtag\/js|google-analytics\.com\/g\/collect|google-analytics\.com\/analytics\.js/.test(trackerLc);
-  const meta = /connect\.facebook\.net\/.+\/fbevents\.js|www\.facebook\.com\/tr/.test(trackerLc);
-  const tiktok = /analytics\.tiktok\.com/.test(trackerLc);
-  const linkedin = /snap\.licdn\.com\/li\.lms-analytics|px\.ads\.linkedin\.com/.test(trackerLc);
-  const hotjar = /static\.hotjar\.com|script\.hotjar\.com/.test(trackerLc);
-  const gFonts = /fonts\.googleapis\.com|fonts\.gstatic\.com/.test(trackerLc);
-  const gtm = /googletagmanager\.com\/gtm\.js/.test(trackerLc);
+  // Tracker-Detection via URL-Patterns im HTML.
+  //
+  // Jede Domain steht hinter einer Host-Grenze `(?:^|[\/.])`: Die Domain muss am
+  // Stringanfang, hinter einem Slash (`https://host`) oder hinter einem Punkt
+  // (Subdomain, `www.host`) beginnen. Ohne diese Grenze matcht das Muster auch
+  // mitten in einem fremden Hostnamen — `boese-googletagmanager.com` wäre als
+  // Google Tag Manager gezählt worden. Das ist ein Falsch-Positiv im
+  // Audit-Befund (und der CodeQL-Befund js/incomplete-hostname-regexp).
+  // Echte Tracker-URLs verlieren dadurch nichts: vor dem Host steht dort immer
+  // ein Slash oder der Subdomain-Punkt.
+  const ga = /(?:^|[\/.])(?:googletagmanager\.com\/gtag\/js|google-analytics\.com\/g\/collect|google-analytics\.com\/analytics\.js)/.test(trackerLc);
+  const meta = /(?:^|[\/.])(?:connect\.facebook\.net\/.+\/fbevents\.js|www\.facebook\.com\/tr)/.test(trackerLc);
+  const tiktok = /(?:^|[\/.])analytics\.tiktok\.com/.test(trackerLc);
+  const linkedin = /(?:^|[\/.])(?:snap\.licdn\.com\/li\.lms-analytics|px\.ads\.linkedin\.com)/.test(trackerLc);
+  const hotjar = /(?:^|[\/.])(?:static\.hotjar\.com|script\.hotjar\.com)/.test(trackerLc);
+  const gFonts = /(?:^|[\/.])(?:fonts\.googleapis\.com|fonts\.gstatic\.com)/.test(trackerLc);
+  const gtm = /(?:^|[\/.])googletagmanager\.com\/gtm\.js/.test(trackerLc);
 
   // Consent-Banner-Heuristik (statische DOM-Detection ist begrenzt)
   const consentKeywords = ['cookie', 'einwilligung', 'consent', 'datenschutz', 'akzeptieren', 'ablehnen'];

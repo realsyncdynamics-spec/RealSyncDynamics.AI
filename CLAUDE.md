@@ -185,44 +185,78 @@ Jeder Agent braucht vier Dimensionen — fehlt eine, ist er nicht governance-fä
 > Produktion läuft. Die Regel bleibt: vor jeder Aussage zum Produktionsstand
 > gegen die Live-DB messen, nicht gegen diese Liste.
 >
-> **Messung vom 2026-08-23, nach dem Merge von PR #1131 (WhatsApp-Kanal) und
-> dem zugehörigen `deploy.yml`-Lauf**, per Management-API direkt gegen das
-> Live-Projekt `RealSyncDynamicsLive` (`ebljyceifhnlzhjfyxup`, eu-central-1,
-> PostgreSQL 17):
+> **Messung vom 2026-08-29**, per Management-API und
+> `supabase_migrations.schema_migrations` direkt gegen das Live-Projekt
+> `RealSyncDynamicsLive` (`ebljyceifhnlzhjfyxup`, eu-central-1, PostgreSQL 17).
+> Beide Achsen als **Zwei-Wege-Diff**, nicht als Zählstand-Vergleich — eine
+> gleiche Zahl auf beiden Seiten beweist nichts, wenn sie verschiedene Dinge
+> zählt:
 >
-> | | Repo (`main`) | in Produktion | Lücke |
+> | | Repo | in Produktion | Lücke |
 > |---|---|---|---|
-> | Migrationen | 289 | **287** (neueste `20260826000000`) | **2**¹ |
-> | Edge Functions | 178 | **178** | **0** |
+> | Migrationen | 298 | **299 verbucht** (neueste `20260831020000`) | **2 + 1**¹ |
+> | Edge Functions | 178 | **179** | **1**² |
 > | Tabellen in `public` | — | 351 (`pg_tables`, ohne Views) | — |
 >
 > Frühere Stände nannten hier 369 Tabellen ohne Messmethode — vermutlich
 > inklusive Views. Ab jetzt zählt `pg_tables`, damit die Zahl vergleichbar bleibt.
 >
-> ¹ **Migrations-Lücke und Versionskollision, gemessen 2026-08-24** (Ledger via
-> `supabase_migrations.schema_migrations`, Deploy-Log Run 32705231581): PR #1131
-> und PR #1124 vergaben unabhängig voneinander dieselbe Version `20260826000000`
-> (`whatsapp_channel` bzw. `restore_client_function_grants`) — die PR-CI konnte
-> das nicht sehen, weil beide gegen eine `main`-Basis ohne die jeweils andere
-> Datei liefen. Der `deploy.yml`-Lauf nach dem #1124-Merge scheiterte daran
-> (CLI führte `whatsapp_channel` erneut aus → `42710`, Trigger existiert).
-> Fix: `restore_client_function_grants` → `20260826000001` umbenannt. Die zwei
-> unverbuchten Migrationen (`20260826000001`, `20260827000000`) sind inhaltlich
-> bereits wirksam (out-of-band-Hotfix, per ACL-Messung belegt); es fehlt nur die
-> Verbuchung durch den nächsten grünen Deploy. Lehre: Vor dem Merge eines PRs
-> mit Migration die Versionsnummer gegen den **aktuellen** `main`-Stand prüfen,
-> nicht gegen die PR-Basis.
+> ¹ **Zwei Migrationen stehen im Ledger, ohne dass es sie im Repository gibt.**
+> Sie wurden out-of-band direkt gegen Produktion angewandt:
 >
-> **Repo und Produktion decken sich derzeit vollständig** — in beide
-> Richtungen geprüft, es gibt weder eine nicht deployte Function noch eine
-> deployte ohne Verzeichnis. Das ist ein Momentzustand, kein Naturgesetz: Der
-> nächste Merge, der eine Function hinzufügt, öffnet die Lücke wieder, bis
-> `deploy.yml` gelaufen ist.
+> | Version | Name | Inhalt |
+> |---|---|---|
+> | `20260825204748` | `fix_websites_authenticated_crud_rls` | INSERT/UPDATE/DELETE-Policies auf `websites`, über `is_tenant_member(tenant_id)` |
+> | `20260829011038` | `onboarding_orchestrator_hardening` | neun Indizes + `SECURITY DEFINER`-Funktion `onboarding_tenant_policy_packs` |
 >
-> **Die Function-Lücke ist geschlossen.** Frühere Stände dieser Datei nannten
-> „103 deployt, 74 fehlend" und erklärten das mit dem Kontingent des
-> Free-Tarifs (`HTTP 402: Max number of functions reached`). Diese Erklärung
-> ist überholt. Die Vermutung einer harten Schranke bei 100 hat sich
+> Inhaltlich ist an beiden nichts auffällig — beide prüfen die
+> Mandantenzugehörigkeit. **Das Problem ist nicht ihr Inhalt, sondern ihr
+> Fehlen im Repo**: Seit dem 2026-08-25 erzeugt `supabase db reset` nicht mehr
+> das Schema der Produktion. Wer lokal gegen einen zurückgesetzten Stand
+> entwickelt, testet gegen ein Schema, das es nirgends gibt. Wer eine der
+> beiden Regeln später „hinzufügt", stellt fest, dass sie längst da ist.
+>
+> Das „+ 1" ist die Gegenrichtung und harmlos: `20260901000000`
+> (`agent_profiles_tenant_isolation`) liegt im Repo und wartet auf den
+> nächsten Deploy.
+>
+> ² **`onboarding-orchestrator` läuft live ohne Quelle im Repository** —
+> `ACTIVE`, `verify_jwt`, **Version 4** in elf Minuten am 2026-08-29 gegen
+> 01:10 UTC, also direkt in Produktion iteriert, rund zwanzig Minuten vor dem
+> Merge von `95cd8d7` (#1146). Kein Stub: Der Code läuft mit Service-Role und
+> schreibt in `tenants`, `company_profiles`, `websites`, `ai_systems`, `bots`,
+> `agent_profiles`, `agent_configuration`, `agent_knowledge_base`,
+> `policy_pack_activations` und zwei Audit-Tabellen. Privilegierter
+> Provisionierungs-Code, der nie durch Review, Test oder Build gelaufen ist.
+> `npm run check:edge-functions` meldet ihn als `ORPHAN`.
+>
+> **Die frühere Aussage „Repo und Produktion decken sich vollständig" ist
+> überholt** — sie galt am 2026-08-23 und beschrieb ohnehin nur die
+> Function-Achse. Die Deckung ist ein Momentzustand, kein Naturgesetz, und
+> sie ist seitdem an beiden Achsen aufgegangen.
+>
+> **Was daraus folgt — der Drift-Wächter deckt nur eine Achse ab.**
+> `scripts/check-edge-function-drift.mjs` vergleicht Functions, sonst nichts.
+> Die Migrations-Achse ist **ungeprüft**: Beide out-of-band-Migrationen sind
+> durch keine CI aufgefallen, sondern erst beim Nachschlagen einer freien
+> Versionsnummer. Bis dafür ein Wächter existiert, gehört der Zwei-Wege-Diff
+> gegen `supabase_migrations.schema_migrations` von Hand in jede Messung.
+>
+> **Erledigt, bleibt als Lehre stehen.** Die Versionskollision vom 2026-08-24 (PR #1131 und #1124 vergaben beide
+> `20260826000000`) ist **erledigt**: `restore_client_function_grants` wurde zu
+> `20260826000001`, und beide damals unverbuchten Migrationen stehen inzwischen
+> im Ledger. Die Lehre bleibt und hat sich als nötig erwiesen: Vor dem Merge
+> eines PRs mit Migration die Versionsnummer gegen den **aktuellen**
+> `main`-Stand prüfen, nicht gegen die PR-Basis — und seit dieser Messung
+> zusätzlich gegen das Ledger, weil dort Versionen stehen können, die `main`
+> nicht kennt.
+>
+> **Die Lücke von damals — „nicht deployt" — ist geschlossen.** Frühere Stände
+> dieser Datei nannten „103 deployt, 74 fehlend" und erklärten das mit dem
+> Kontingent des Free-Tarifs (`HTTP 402: Max number of functions reached`).
+> Diese Erklärung ist überholt. Die heutige Function-Lücke zeigt in die
+> **andere** Richtung (deployt ohne Quelle, siehe ² oben) und hat mit dem
+> Tarif nichts zu tun — die beiden nicht verwechseln. Die Vermutung einer harten Schranke bei 100 hat sich
 > erledigt — sie war schon beim Deploy von Function 101 (`siteos`) widerlegt.
 >
 > **Eine andere Lücke bleibt und ist nicht dieselbe.** Sieben Slugs, die das

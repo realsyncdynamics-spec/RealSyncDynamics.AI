@@ -15,6 +15,16 @@ import { stripPolicyDeclarations, effectiveCspValue } from '../_shared/tracker-d
 import { assessScanCoverage } from '../_shared/scan-coverage.ts';
 import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 import { detectAIDisclosure } from '../_shared/ai-disclosure-check.ts';
+import {
+  runChecks,
+  deepCheckImprint,
+  deepCheckPrivacy,
+  extractFacts,
+  scoreReport,
+  findLegalLink,
+  isDuplicateOfHeuristic,
+  type Issue,
+} from '../_shared/audit-checks.ts';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const URL_RE = /^https?:\/\/[^\s/$.?#].[^\s]*$/i;
@@ -24,13 +34,17 @@ const FREE_EMAIL_DOMAINS = new Set([
 ]);
 const IP_RE = /^\d{1,3}(\.\d{1,3}){3}$/;
 
-interface Issue {
-  id: string;
-  severity: 'critical' | 'high' | 'medium' | 'low' | 'info';
-  title: string;
-  detail: string;
-  paragraph_ref?: string;
-}
+/**
+ * Version der Auswertung.
+ *
+ * Von `2026.05.1` auf `2026.08.1` gehoben, weil die Prüf-Heuristiken in
+ * `_shared/audit-checks.ts` aus dem gemessenen Produktionsverhalten
+ * **rekonstruiert** sind — der Originalcode ging verloren (siehe Kopf jener
+ * Datei). Befund-Codes, Severities und Scoring-Gewichte sind identisch,
+ * die internen Schwellwerte nicht notwendig. Ergebnisse über diese
+ * Versionsgrenze hinweg sind vergleichbar mit Vorbehalt.
+ */
+const AUDIT_ENGINE_VERSION = '2026.08.1';
 
 async function sha256Hex(input: string): Promise<string> {
   const buf = new TextEncoder().encode(input);
@@ -125,14 +139,26 @@ Deno.serve(async (req) => {
 
   const issues: Issue[] = runChecks(url, html, headers, status, fetchError);
   const subpages = await scanSubpages(url, html);
-  for (const sub of subpages) issues.push(sub);
+  for (const sub of subpages.issues) issues.push(sub);
 
   if (status !== null && !fetchError) {
-    const facts = extractFacts(url, html, headers, issues);
+    const facts = extractFacts({
+      url,
+      html,
+      headers,
+      privacyHtml: subpages.privacyHtml,
+      privacyFound: subpages.privacyFound,
+      imprintFound: subpages.imprintFound,
+    });
     const ruleFindings = evaluateAll(facts);
     for (const f of ruleFindings) {
       const dupKey = `rule:${f.rule_id}`;
       if (issues.some((i) => i.id === dupKey)) continue;
+      // Denselben Sachverhalt nicht zweimal berichten. Ohne diese Zeile
+      // kostet ein fehlender Datenschutz-Link 50 statt 25 Punkte — der
+      // Score wäre strenger als vor dem Ausfall, bei gleicher Website.
+      // Beleg für die Verdopplung: `RULE_HEURISTIC_OVERLAP`.
+      if (isDuplicateOfHeuristic(f.rule_id, issues)) continue;
       issues.push({
         id: dupKey,
         severity: f.severity,
@@ -207,7 +233,7 @@ Deno.serve(async (req) => {
     coverage: coverageInfo.coverage,
     coverage_notice: coverageInfo.notice,
     methodology: {
-      audit_engine: '2026.05.1',
+      audit_engine: AUDIT_ENGINE_VERSION,
       rule_engine: RULE_ENGINE_VERSION,
     },
   });
@@ -215,3 +241,111 @@ Deno.serve(async (req) => {
 
 // ─── Heuristik-Checks ─────────────────────────────────────────────────────
 
+
+/**
+ * Abruf mit harter Zeitgrenze.
+ *
+ * Ohne Timeout hängt eine langsame oder absichtlich verzögernde Zielseite
+ * den Worker bis zum Plattform-Limit. Der Scan läuft gegen eine **fremde**
+ * Adresse, die ein nicht angemeldeter Besucher benennt — die Zeitgrenze ist
+ * deshalb Betriebsschutz, keine Höflichkeit.
+ */
+async function fetchWithTimeout(url: string, ms: number): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), ms);
+  try {
+    return await fetch(url, {
+      signal: controller.signal,
+      redirect: 'follow',
+      headers: {
+        // Ehrliche Kennung: Betreiber sollen den Zugriff in ihren Logs
+        // zuordnen und bei Bedarf sperren können.
+        'user-agent': 'RealSyncDynamicsAI-Audit/1.0 (+https://realsyncdynamicsai.de/audit)',
+        accept: 'text/html,application/xhtml+xml',
+      },
+    });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/** Fügt gelesene Chunks zu einem Puffer zusammen. */
+function concat(chunks: Uint8Array[]): Uint8Array {
+  let total = 0;
+  for (const c of chunks) total += c.byteLength;
+  const out = new Uint8Array(total);
+  let offset = 0;
+  for (const c of chunks) { out.set(c, offset); offset += c.byteLength; }
+  return out;
+}
+
+interface SubpageScan {
+  issues: Issue[];
+  privacyHtml: string | null;
+  privacyFound: boolean;
+  imprintFound: boolean;
+}
+
+/**
+ * Zweite Scan-Ebene: Impressum und Datenschutzerklärung als Dokumente.
+ *
+ * Die Startseite zeigt nur, **ob** verlinkt wurde. Ob das Dokument seine
+ * Pflichtangaben trägt, steht im Dokument. Diese Ebene liefert die
+ * häufigsten Befunde überhaupt (`sub_imprint_no_legal_form` in 62 von 159
+ * historischen Audits).
+ *
+ * Höchstens zwei zusätzliche Abrufe, je 8 s, je 500 kB. Fehlschläge sind
+ * still: Eine Unterseite, die nicht lädt, ist kein Compliance-Befund — sie
+ * ist eine fehlende Beobachtung, und darüber wird nichts behauptet.
+ */
+async function scanSubpages(url: string, html: string): Promise<SubpageScan> {
+  const issues: Issue[] = [];
+  const privacyHref = findLegalLink(html, 'privacy');
+  const imprintHref = findLegalLink(html, 'imprint');
+
+  const fetchDoc = async (href: string | null): Promise<string | null> => {
+    if (!href) return null;
+    let target: URL;
+    try { target = new URL(href, url); } catch { return null; }
+    // Nur http(s) und nur derselbe Host: Ein Pflicht-Dokument, das
+    // woanders liegt, ist nicht unser Prüfgegenstand — und ein `href`,
+    // das auf ein internes Netz zeigt, wäre eine SSRF-Einladung.
+    if (target.protocol !== 'https:' && target.protocol !== 'http:') return null;
+    if (target.hostname.toLowerCase() !== new URL(url).hostname.toLowerCase()) return null;
+    try {
+      const resp = await fetchWithTimeout(target.toString(), 8_000);
+      if (!resp.ok) return null;
+      const reader = resp.body?.getReader();
+      if (!reader) return null;
+      const chunks: Uint8Array[] = [];
+      let total = 0;
+      while (total < 500_000) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        chunks.push(value);
+        total += value.byteLength;
+      }
+      await reader.cancel();
+      return new TextDecoder('utf-8', { fatal: false }).decode(concat(chunks));
+    } catch {
+      return null;
+    }
+  };
+
+  const [imprintHtml, privacyHtml] = await Promise.all([
+    fetchDoc(imprintHref),
+    fetchDoc(privacyHref),
+  ]);
+
+  if (imprintHtml) for (const i of deepCheckImprint(imprintHtml)) issues.push(i);
+  if (privacyHtml) for (const i of deepCheckPrivacy(privacyHtml)) issues.push(i);
+
+  return {
+    issues,
+    privacyHtml,
+    // „Gefunden" heisst: verlinkt **und** abrufbar. Ein Link ins Leere ist
+    // für Art. 13 DSGVO keine erfüllte Pflicht.
+    privacyFound: privacyHtml !== null,
+    imprintFound: imprintHtml !== null,
+  };
+}

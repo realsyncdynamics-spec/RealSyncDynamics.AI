@@ -261,6 +261,17 @@ Jeder Agent braucht vier Dimensionen — fehlt eine, ist er nicht governance-fä
 > `supabase functions list` prüfen.
 
 - **Audit** (95%) — DSGVO-Scan, Recheck-Cron, Email-Drip, Share-Token
+  > ⚠️ **Ausfall 2026-08-11 bis 2026-08-30, behoben.** `gdpr-audit/index.ts` rief sechs
+  > nirgends definierte Funktionen auf — im Repo **und** in Produktion (Version 46).
+  > Jeder `/audit`-Aufruf endete in HTTP 500; `gdpr_audits` blieb 18 Tage bei 159 Zeilen.
+  > Wiederhergestellt aus dem gemessenen Produktionsvertrag, Engine-Version jetzt
+  > `2026.08.1`. Hergang, Vertrag und benannte Lücken: `docs/product/free-scan-recovery.md`.
+  >
+  > **Ursache, die bleibt**: `tsconfig.json` schliesst `supabase/functions` aus —
+  > `npm run lint` typprüft **keine** der 178 Edge Functions. Ein undefinierter
+  > Bezeichner in einer Deno-Function ist für die einzige statische Prüfung des
+  > Repositories unsichtbar. Solange das so ist, kann derselbe Ausfall jederzeit
+  > wieder unbemerkt ausgeliefert werden.
 - **Policy Packs** (100%) — DSGVO, EU AI Act, branchenspezifisch; Auto-Empfehlung nach Tenant-Branche
 - **Evidence Vault** (90%) — Ingestion, Retrieval, Hash-Chain-Verifizierung, PDF/JSON-Export, Compliance-Hold
 - **Governance Runtime** (85%) — Sentinel-Loop, SLO-Tracking, Auto-Mapping (Asset → Control-Status), Incident-Dispatch

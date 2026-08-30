@@ -189,7 +189,7 @@ Jeder Agent braucht vier Dimensionen — fehlt eine, ist er nicht governance-fä
 > Live-Projekt `RealSyncDynamicsLive` (`ebljyceifhnlzhjfyxup`, eu-central-1,
 > PostgreSQL 17):
 >
-> | | Repo (`main` @ `95cd8d7`) | in Produktion | Lücke |
+> | | Repo (`main` @ `8cb2986`) | in Produktion | Lücke |
 > |---|---|---|---|
 > | Migrationen | 297 | **299** (neueste `20260831020000`) | **+2**¹ |
 > | Edge Functions | 178 | **179** | **+1**² |

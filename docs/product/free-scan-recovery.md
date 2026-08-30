@@ -203,6 +203,66 @@ Abdeckung für grösser hält als sie ist.
 
 ---
 
+## 4a. Sicherheitsbefund: ReDoS im geteilten Scan-Code
+
+CodeQL meldete auf dem Recovery-PR **eine hohe Sicherheitslücke**
+(`polynomial ReDoS`). Sie lag **nicht** in der Rekonstruktion, sondern in
+`_shared/tracker-detection.ts` — bestehendem Code, den der Scanner seit
+jeher aufruft.
+
+Beide Funktionen liefen über Ausdrücke der Form:
+
+```
+<meta[^>]*http-equiv\s*=\s*["']?content-security-policy["']?[^>]*>
+```
+
+`[^>]` matcht auch `h`, `t`, `p`. Die Maschine hat an jeder Fundstelle die
+Wahl, wie viel der Quantor frisst und wo das Literal beginnt — und probiert
+alle Aufteilungen durch.
+
+**Gemessen** auf `'<meta '.repeat(60_000)` (360 kB, kein einziges `>`, also
+nur Fast-Treffer):
+
+| | vorher | nachher |
+|---|---|---|
+| `stripPolicyDeclarations` | **8 815 ms** | < 5 ms |
+| `effectiveCspValue` | **9 233 ms** | < 5 ms |
+
+Das ist über einen **öffentlichen, nicht authentifizierten** Endpunkt
+erreichbar (`/audit`, `cookie-scan`) und mit einer einzigen präparierten
+Seite auslösbar. Der Scan liest bis zu 1 MB fremdes HTML — die Eingabe ist
+per Definition nicht vertrauenswürdig.
+
+### Was der Zwischenschritt gelehrt hat
+
+Die erste Fassung der Rekonstruktion begrenzte die Quantoren
+(`[^>]{0,600}` statt `[^>]*`). Der Laufzeittest ergab: **17 322 ms** — kaum
+besser. Eine Obergrenze am Quantor deckelt nur, wie teuer eine einzelne
+Fundstelle wird, **nicht ihre Anzahl**. Bei 60 000 Fundstellen à 600
+Rückverfolgungsschritten bleibt es untragbar.
+
+Erst der Verzicht auf den Wildcard-Quantor löst es. `_shared/html-tags.ts`
+isoliert Tags mit einem `indexOf`-Durchlauf — jedes Zeichen wird höchstens
+konstant oft betrachtet, ein Dokument ohne `>` bricht sofort ab. Attribute
+werden danach auf der **kurzen, isolierten** Zeichenkette gelesen, wo
+Rückverfolgung folgenlos ist.
+
+Der Befund wäre ohne Laufzeitmessung nicht aufgefallen: Die begrenzte
+Fassung sah im Code korrekt aus. Deshalb messen die Tests jetzt Zeit, nicht
+nur Ergebnisse — `test/edge/tracker-detection.test.ts` und
+`test/edge/gdpr-audit-contract.test.ts`.
+
+### Nebenwirkung: zwei Fehler weniger
+
+Die Umstellung liest Attribute unabhängig von ihrer Reihenfolge. Der alte
+Ausdruck verlangte `content` **nach** `http-equiv` und übersah deshalb
+`<meta content="…" http-equiv="Content-Security-Policy">`. Ausserdem zählt
+`-report-only` jetzt korrekt **nicht** als durchgesetzter CSP — ein
+Report-Only-CSP meldet, erzwingt aber nichts. Beides ist mit Tests
+festgenagelt.
+
+---
+
 ## 5. Kein zweiter Stack
 
 Geprüft und wiederverwendet, nicht nachgebaut:

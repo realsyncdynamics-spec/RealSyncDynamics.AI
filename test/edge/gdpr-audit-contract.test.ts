@@ -38,6 +38,9 @@ import {
   deepCheckImprint,
   deepCheckPrivacy,
   isDuplicateOfHeuristic,
+  hasPhoneNumber,
+  tagsOf,
+  attrOf,
   SEVERITY_WEIGHTS,
   RULE_HEURISTIC_OVERLAP,
   type Issue,
@@ -322,5 +325,88 @@ describe('Berichtsstruktur', () => {
       new Headers(), 200, null);
     const prose = issues.map((i) => `${i.title} ${i.detail}`).join(' ');
     expect(prose).not.toMatch(/ist DSGVO-konform|rechtskonform|garantiert konform/i);
+  });
+});
+
+describe('Laufzeit auf feindseligem HTML (ReDoS)', () => {
+  // Diese Ausdruecke laufen ueber das HTML einer FREMDEN Seite, die ein nicht
+  // angemeldeter Besucher benennt. Eine Eingabe, die den Scanner minutenlang
+  // bindet, ist eine Denial-of-Service-Luecke — CodeQL hat genau das auf der
+  // ersten Fassung als "polynomial ReDoS" gemeldet.
+  //
+  // Gemessen wird deshalb Laufzeit, nicht nur Korrektheit. Die Schranken sind
+  // grosszuegig: Ein quadratischer Ausdruck braucht auf diesen Eingaben
+  // Sekunden bis Minuten, ein linearer Millisekunden. Zwischen beidem liegen
+  // Groessenordnungen, nicht Messrauschen.
+  const BUDGET_MS = 2000;
+
+  function within(label: string, fn: () => void) {
+    const t0 = Date.now();
+    fn();
+    const ms = Date.now() - t0;
+    expect(ms, `${label} brauchte ${ms} ms`).toBeLessThan(BUDGET_MS);
+  }
+
+  it('haelt bei 60 000 fast-Treffern auf Meta-Tags durch', () => {
+    // Der alte Ausdruck `<meta[^>]{0,200}property=["']og:` musste an jeder
+    // dieser Fundstellen jede Aufteilung durchprobieren.
+    const html = '<meta '.repeat(60_000);
+    within('runChecks / meta', () => runChecks('https://x.de', html, new Headers(), 200, null));
+  });
+
+  it('haelt bei einer langen Ziffernkette durch', () => {
+    // Frueher: \\d{2,5} und \\d{3,} teilten sich dieselbe Kette.
+    const text = `Telefon ${'9'.repeat(50_000)}`;
+    within('hasPhoneNumber', () => hasPhoneNumber(text));
+  });
+
+  it('haelt bei einer langen Buchstabenkette vor einem Strassenwort durch', () => {
+    // Frueher: [a-zäöüß.-]{2,30} und die Alternation (str|weg|…) konkurrierten
+    // um dieselben Zeichen.
+    const html = `<html><body>M${'a'.repeat(50_000)}strasse</body></html>`;
+    within('deepCheckImprint', () => deepCheckImprint(html));
+  });
+
+  it('haelt bei sehr vielen Ankern durch', () => {
+    const html = '<a href="/x">Text</a>'.repeat(20_000);
+    within('findLegalLink', () => findLegalLink(html, 'privacy'));
+  });
+
+  it('haelt bei einem unabgeschlossenen Anker durch', () => {
+    // Kein </a> — der Linktext-Pfad darf daran nicht haengenbleiben.
+    const html = `<a href="/legal/7">${'x'.repeat(100_000)}`;
+    within('findLegalLink / offen', () => findLegalLink(html, 'imprint'));
+  });
+
+  it('haelt bei einer langen Kette ohne @ durch', () => {
+    const html = `<html><body>${'a.b+c-'.repeat(20_000)}</body></html>`;
+    within('deepCheckPrivacy', () => deepCheckPrivacy(html));
+  });
+});
+
+describe('Tag-Extraktion', () => {
+  it('isoliert Tags und liest Attribute in beiden Anfuehrungsarten', () => {
+    expect(tagsOf('<meta property="og:title" content="x">', 'meta')).toHaveLength(1);
+    expect(attrOf('<meta property="og:title">', 'property')).toBe('og:title');
+    expect(attrOf("<meta property='og:title'>", 'property')).toBe('og:title');
+    expect(attrOf('<meta property=og:title>', 'property')).toBe('og:title');
+    expect(attrOf('<meta content="x">', 'property')).toBeNull();
+  });
+
+  it('verwechselt <a> nicht mit <article>', () => {
+    // `\b` nach dem Tag-Namen: sonst zaehlte jedes <article> als Anker.
+    expect(tagsOf('<article class="x">', 'a')).toHaveLength(0);
+    expect(tagsOf('<a href="/y">', 'a')).toHaveLength(1);
+  });
+});
+
+describe('Rufnummern-Erkennung', () => {
+  it('erkennt uebliche Schreibweisen', () => {
+    expect(hasPhoneNumber('+49 30 1234567')).toBe(true);
+    expect(hasPhoneNumber('(030) 123-4567')).toBe(true);
+  });
+
+  it('haelt Fliesstext mit wenigen Ziffern nicht fuer eine Nummer', () => {
+    expect(hasPhoneNumber('Gegruendet 1999 in Berlin, Team von 12 Personen')).toBe(false);
   });
 });

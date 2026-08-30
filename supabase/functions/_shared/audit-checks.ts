@@ -62,6 +62,11 @@
 import { isLikelyGermanJurisdiction } from './jurisdiction.ts';
 import { stripPolicyDeclarations, effectiveCspValue } from './tracker-detection.ts';
 import { detectAIDisclosure } from './ai-disclosure-check.ts';
+// Laufzeitsichere Tag-Extraktion: ein `indexOf`-Durchlauf statt eines
+// Wildcard-Quantors ueber fremdes HTML. Begruendung und Messwerte im Kopf
+// von `html-tags.ts`.
+import { tagsOf, attrOf } from './html-tags.ts';
+export { tagsOf, attrOf } from './html-tags.ts';
 
 export type IssueSeverity = 'critical' | 'high' | 'medium' | 'low' | 'info';
 
@@ -72,9 +77,6 @@ export interface Issue {
   detail: string;
   paragraph_ref?: string;
 }
-
-/** Attributwert-Rückverfolgung mit Obergrenze — hält den Durchlauf linear. */
-const ATTR = '[^>]{0,200}';
 
 // ── Tracker-Erkennung ───────────────────────────────────────────────────
 //
@@ -175,24 +177,33 @@ export function findLegalLink(html: string, kind: 'privacy' | 'imprint'): string
     ? ['datenschutz', 'privacy', 'privacy-policy', 'datenschutzerklaerung', 'datenschutzerklärung']
     : ['impressum', 'imprint', 'legal-notice', 'anbieterkennzeichnung'];
 
-  // 1. Adresse selbst trägt den Slug.
-  const anchors = html.match(new RegExp(`<a${ATTR}href\\s{0,3}=\\s{0,3}["']([^"']{1,500})["']${ATTR}>`, 'gi')) ?? [];
-  for (const tag of anchors) {
-    const href = tag.match(/href\s{0,3}=\s{0,3}["']([^"']{1,500})["']/i)?.[1];
+  const tags = tagsOf(html, 'a');
+
+  // 1. Die Adresse selbst trägt den Slug.
+  for (const tag of tags) {
+    const href = attrOf(tag, 'href');
     if (!href) continue;
     const lc = href.toLowerCase();
-    if (slugs.some((s) => lc.includes(s))) return href;
+    if (slugs.some((sl) => lc.includes(sl))) return href;
   }
 
-  // 2. Adresse ist neutral (/legal/1), aber der Linktext benennt das Dokument.
-  const labelled = html.match(
-    new RegExp(`<a${ATTR}href\\s{0,3}=\\s{0,3}["']([^"']{1,500})["']${ATTR}>([\\s\\S]{0,120}?)</a>`, 'gi'),
-  ) ?? [];
-  for (const tag of labelled) {
-    const m = tag.match(/href\s{0,3}=\s{0,3}["']([^"']{1,500})["'][^>]{0,200}>([\s\S]{0,120}?)<\/a>/i);
-    if (!m) continue;
-    const text = m[2].replace(/<[^>]{0,200}>/g, ' ').toLowerCase();
-    if (slugs.some((s) => text.includes(s))) return m[1];
+  // 2. Die Adresse ist neutral (/legal/7), aber der Linktext benennt das
+  //    Dokument. Der Text wird per indexOf geholt, nicht per Ausdruck über
+  //    das ganze Dokument — linear und ohne Rückverfolgung.
+  let cursor = 0;
+  for (const tag of tags) {
+    const at = html.indexOf(tag, cursor);
+    if (at === -1) continue;
+    cursor = at + tag.length;
+    const close = html.indexOf('</a', cursor);
+    if (close === -1) continue;
+    const text = html.slice(cursor, Math.min(close, cursor + 200))
+      .replace(/<[^>]{0,600}>/g, ' ')
+      .toLowerCase();
+    if (slugs.some((sl) => text.includes(sl))) {
+      const href = attrOf(tag, 'href');
+      if (href) return href;
+    }
   }
   return null;
 }
@@ -274,7 +285,12 @@ export function runChecks(
 
   // Nur eingebundene Ressourcen zählen. Ein <a href="http://…"> auf eine
   // fremde Seite ist kein Mixed Content, sondern ein normaler Link.
-  if (isHttps && new RegExp(`(?:<script|<img|<iframe|<link)${ATTR}(?:src|href)\\s{0,3}=\\s{0,3}["']http://`, 'i').test(html)) {
+  const embeds = ['script', 'img', 'iframe', 'link'].flatMap((t) => tagsOf(html, t));
+  const loadsInsecurely = embeds.some((tag) => {
+    const ref = attrOf(tag, 'src') ?? attrOf(tag, 'href');
+    return ref !== null && ref.toLowerCase().startsWith('http://');
+  });
+  if (isHttps && loadsInsecurely) {
     issues.push({
       id: 'mixed_content',
       severity: 'medium',
@@ -393,7 +409,8 @@ export function runChecks(
     });
   }
 
-  if (new RegExp(`<meta${ATTR}http-equiv\\s{0,3}=\\s{0,3}["']?refresh`, 'i').test(html)) {
+  const metas = tagsOf(html, 'meta');
+  if (metas.some((tag) => (attrOf(tag, 'http-equiv') ?? '').toLowerCase() === 'refresh')) {
     issues.push({
       id: 'meta_refresh',
       severity: 'low',
@@ -405,7 +422,7 @@ export function runChecks(
     });
   }
 
-  if (!new RegExp(`<meta${ATTR}property\\s{0,3}=\\s{0,3}["']og:`, 'i').test(html)) {
+  if (!metas.some((tag) => (attrOf(tag, 'property') ?? '').toLowerCase().startsWith('og:'))) {
     issues.push({
       id: 'no_og_tags',
       severity: 'info',
@@ -441,7 +458,11 @@ export function nonEssentialCookieNames(headers: Headers | null): string[] {
 /** Formular, das personenbezogene Daten aufnimmt (E-Mail-Feld als Indikator). */
 export function hasPersonalDataForm(html: string): boolean {
   if (!/<form\b/i.test(html)) return false;
-  return new RegExp(`<input${ATTR}(?:type\\s{0,3}=\\s{0,3}["']?email|name\\s{0,3}=\\s{0,3}["']?[^"']{0,40}e-?mail)`, 'i').test(html);
+  return tagsOf(html, 'input').some((tag) => {
+    const type = (attrOf(tag, 'type') ?? '').toLowerCase();
+    const name = (attrOf(tag, 'name') ?? '').toLowerCase();
+    return type === 'email' || name.includes('email') || name.includes('e-mail');
+  });
 }
 
 /** Datenschutz-Hinweis auf derselben Seite wie das Formular? */
@@ -455,6 +476,31 @@ export function mentionsPrivacyNearForm(html: string): boolean {
 // Dokument seine Pflichtangaben trägt, entscheidet sich erst im Dokument
 // selbst — deshalb diese zweite Ebene. Sie liefert die häufigsten Befunde
 // überhaupt (`sub_imprint_no_legal_form`: 62 von 159 Audits).
+
+/**
+ * Rufnummer im Text — als Durchlauf, nicht als Ausdruck.
+ *
+ * Der frühere Ausdruck `\(?\d{2,5}\)?[\s\-/]?\d{3,}` liess der Maschine
+ * die Wahl, wie sie eine Ziffernfolge auf die beiden Quantoren verteilt;
+ * auf einer langen Ziffernkette einer fremden Seite wächst der Aufwand
+ * quadratisch. Ein Zähldurchlauf ist linear und sagt dasselbe: mindestens
+ * sechs Ziffern, unterbrochen nur von üblichen Trennzeichen.
+ */
+export function hasPhoneNumber(text: string): boolean {
+  const MIN_DIGITS = 6;
+  let digits = 0;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (ch >= '0' && ch <= '9') {
+      if (++digits >= MIN_DIGITS) return true;
+    } else if (ch !== ' ' && ch !== '-' && ch !== '/' && ch !== '(' && ch !== ')' && ch !== '+' && ch !== '.') {
+      // Alles andere beendet die Rufnummer — Fliesstext soll nicht
+      // versehentlich als Telefonnummer durchgehen.
+      digits = 0;
+    }
+  }
+  return false;
+}
 
 export function deepCheckImprint(html: string): Issue[] {
   const issues: Issue[] = [];
@@ -474,7 +520,10 @@ export function deepCheckImprint(html: string): Issue[] {
   }
 
   // Ladungsfähige Anschrift = Strasse mit Hausnummer *und* PLZ mit Ort.
-  const hasStreet = /\b[A-ZÄÖÜ][a-zäöüß.\-]{2,30}(?:str(?:aße|asse)?|weg|platz|allee|gasse|ring|damm)\.?\s{0,3}\d{1,4}/i.test(text);
+  // Kein fuehrendes `[a-zäöüß.-]{2,30}` vor der Alternation: Beide koennten
+  // dieselben Zeichen matchen, die Maschine probierte jede Aufteilung durch.
+  // Das Strassenwort selbst plus Hausnummer traegt die Aussage genauso.
+  const hasStreet = /(?:stra(?:ß|ss)e|str\.|weg|platz|allee|gasse|ring|damm)\s{0,3}\d{1,4}\b/i.test(text);
   const hasPostal = /\b\d{4,5}\s+[A-ZÄÖÜ][a-zäöüß\-]{2,40}/.test(text);
   if (!hasStreet || !hasPostal) {
     issues.push({
@@ -486,9 +535,8 @@ export function deepCheckImprint(html: string): Issue[] {
     });
   }
 
-  const hasEmail = /[\w.+-]{1,64}@[\w-]{1,63}\.[a-z]{2,10}/i.test(text) || /mailto:/i.test(html);
-  const hasPhone = /(?:\+\d{1,3}[\s\-/]?)?\(?\d{2,5}\)?[\s\-/]?\d{3,}/.test(text) &&
-    /tel(?:efon)?|phone|fon\b|tel:/i.test(html);
+  const hasEmail = /[\w.+-]@[\w-]{1,63}\.[a-z]{2,10}/i.test(text) || /mailto:/i.test(html);
+  const hasPhone = hasPhoneNumber(text) && /tel(?:efon)?|phone|fon\b|tel:/i.test(html);
   if (!hasEmail || !hasPhone) {
     issues.push({
       id: 'sub_imprint_no_contact',

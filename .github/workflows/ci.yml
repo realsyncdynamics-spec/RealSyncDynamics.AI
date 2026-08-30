@@ -21,6 +21,13 @@ jobs:
         run: npm run lint
       - name: Edge Function syntax
         run: npm run check:edge-syntax
+      # Syntaktisch fehlerfreier Code kann trotzdem beim ersten Request
+      # sterben: `gdpr-audit` rief sechs Hilfsfunktionen auf, die es nie gab,
+      # deployte sauber und antwortete dann monatelang mit HTTP 500 — der
+      # kostenlose Audit, der wichtigste CTA der Startseite. Aufgefallen ist
+      # es erst bei einem Browser-Durchlauf gegen die Live-Seite.
+      - name: Edge Function references
+        run: npm run check:edge-refs
       # Die kommerzielle Wahrheit steht in shared/pricing.ts. Alles Abgeleitete
       # — der Deno-Zwilling, die Plan-Katalog-Migration, die Kontingente —
       # muss daraus folgen und darf keine zweite Wahrheit daneben bilden.

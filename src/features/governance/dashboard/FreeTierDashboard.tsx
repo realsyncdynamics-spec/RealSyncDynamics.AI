@@ -37,7 +37,7 @@ const DASHBOARD_CARDS: DashboardCard[] = [
     description: 'Monatliche Compliance-Scans durchführen',
     feature: 'website.scan_monthly_limit',
     cta: 'Scan starten',
-    path: '/app/governance/website-scan',
+    path: '/app/scans',
     tier: 'free',
   },
   {

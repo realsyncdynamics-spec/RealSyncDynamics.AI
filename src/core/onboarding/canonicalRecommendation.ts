@@ -234,7 +234,7 @@ const DIMENSION_MODULE: Partial<Record<GovernanceDimension, BookableModuleId>> =
  * Für sie bleibt `entryRoute` `null`, statt einen Knopf ins Leere zu bauen.
  */
 const MODULE_ENTRY_ROUTE: Partial<Record<BookableModuleId, string>> = {
-  governance_core: '/app/governance',
+  governance_core: '/app/dashboard',
   ai_frontend: '/build',
   website_chat: '/app/bots',
   whatsapp_bot: '/app/bots/whatsapp',

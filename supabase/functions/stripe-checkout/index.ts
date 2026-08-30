@@ -144,15 +144,40 @@ Deno.serve(async (req) => {
     auth: { persistSession: false },
   });
 
-  // Resolve Stripe Price ID. We prefer a live Stripe Price (one that does NOT
-  // start with the internal sentinel prefix); fall back is to refuse.
+  // Resolve Stripe Price ID.
+  //
+  // COMMERCIAL-SSOT: temporary production hotfix.
+  // Canonical source migration tracked in Phase 2.
+  //
+  // Frueher war das eine Sperrliste: alles galt als echte Price, was NICHT
+  // mit `internal_default_` beginnt. Gegen die Live-Daten gemessen liess das
+  // sechs Eintraege durch, die Stripe nie akzeptiert:
+  //
+  //   starter_yearly   STRIPE_PRICE_STARTER_YEARLY_XXX
+  //   growth_yearly    STRIPE_PRICE_GROWTH_YEARLY_XXX
+  //   agency_yearly    STRIPE_PRICE_AGENCY_YEARLY_XXX
+  //   partner_yearly   STRIPE_PRICE_SCALE_YEARLY_XXX
+  //   free_tier        internal_free_tier   (anderes Praefix)
+  //   free_audit       ""                   (leer)
+  //
+  // `starter_yearly` und `growth_yearly` sind verkaufbar: Wer heute
+  // „jaehrlich" waehlt, bekam damit einen Stripe-API-Fehler statt einer
+  // verstaendlichen Antwort — der Fehlschlag passierte spaet und an der
+  // falschen Stelle.
+  //
+  // Deshalb jetzt eine Positivliste: Nur eine echte Stripe-Price-ID zaehlt,
+  // und die beginnt immer mit `price_`. Alles andere ist ein Platzhalter,
+  // ein Sentinel oder leer und wird hier sauber mit PRICE_NOT_CONFIGURED
+  // abgewiesen, bevor Stripe ueberhaupt gerufen wird.
   const { data: products, error: prodErr } = await admin
     .from('products')
     .select('stripe_price_id, name')
     .eq('default_for_plan_key', body.plan_key);
   if (prodErr) return jsonError(500, 'INTERNAL', prodErr.message);
 
-  const realPrice = (products ?? []).find((p) => !p.stripe_price_id.startsWith('internal_default_'));
+  const isLiveStripePrice = (id: string | null | undefined): boolean =>
+    typeof id === 'string' && id.startsWith('price_');
+  const realPrice = (products ?? []).find((p) => isLiveStripePrice(p.stripe_price_id));
   if (!realPrice) {
     return jsonError(400, 'PRICE_NOT_CONFIGURED',
       `no Stripe Price wired for plan_key=${body.plan_key}; insert a real price_xxx into public.products with default_for_plan_key=${body.plan_key}`);

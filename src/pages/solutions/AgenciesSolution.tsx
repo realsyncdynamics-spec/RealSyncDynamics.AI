@@ -195,8 +195,17 @@ export function AgenciesSolution() {
             Agency-Paket: Professional Governance
           </h2>
           <div className="border border-silver-700 p-8 bg-obsidian-900 rounded-none mb-8">
-            <div className="font-display font-bold text-4xl text-titanium-50 mb-2">€699/Monat</div>
-            <p className="text-silver-400 mb-6">Agency-Tarif — White-Label, bis zu 10 Sites, API + Webhooks</p>
+            {/*
+              COMMERCIAL-SSOT: temporary production hotfix.
+              Canonical source migration tracked in Phase 2.
+              Agency ist seit AP2 stillgelegt (`availability: 'legacy'`);
+              `/checkout/agency` weist neue Abschluesse ab. Ein Festpreis
+              waere hier ein Angebot ohne Kaufpfad. Diese Zielgruppe —
+              Multi-Tenant, White-Label, eigene Kapazitaet — laeuft ueber
+              Enterprise nach Vereinbarung.
+            */}
+            <div className="font-display font-bold text-4xl text-titanium-50 mb-2">Auf Anfrage</div>
+            <p className="text-silver-400 mb-6">Enterprise — White-Label, Mandanten-Kapazität nach Vereinbarung, API + Webhooks</p>
             <ul className="space-y-3 text-sm text-silver-300 mb-8 max-w-lg mx-auto">
               {[
                 'Weiße Bluse (dein Logo, deine Domain)',
@@ -217,7 +226,7 @@ export function AgenciesSolution() {
           </div>
 
           <p className="text-silver-400 text-sm">
-            Bist du bereit für 50+ Kunden-Websites? Wechseln Sie auf <strong>Partner 1.999 €/Monat</strong> oder frag <Link to="/contact-sales?product=agency&plan=partner" className="text-security-500 hover:text-security-400">Enterprise an</Link>.
+            Bist du bereit für 50+ Kunden-Websites? <Link to="/contact-sales?product=agency&plan=enterprise" className="text-security-500 hover:text-security-400">Frag Enterprise an</Link> — Kapazität und Konditionen nach Vereinbarung.
           </p>
         </div>
       </section>

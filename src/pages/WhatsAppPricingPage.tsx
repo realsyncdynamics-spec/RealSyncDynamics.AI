@@ -68,10 +68,14 @@ const WHATSAPP_TIERS: WhatsAppPricingTier[] = [
     cta: { label: 'Kostenlos testen', href: '/checkout/growth?channel=whatsapp&source=pricing&pilot=true' },
   },
   {
+    // COMMERCIAL-SSOT: temporary production hotfix.
+    // Canonical source migration tracked in Phase 2.
+    // Agency ist seit AP2 stillgelegt; der CTA fuehrte mit `pilot=true` in
+    // einen Checkout, den `stripe-checkout` mit PLAN_RETIRED abweist.
     id: 'agency-wa',
-    name: 'Agency WhatsApp',
-    monthlyPrice: 699,
-    yearlyPrice: 6900,
+    name: 'Enterprise WhatsApp (Mehr-Bot)',
+    monthlyPrice: null,
+    yearlyPrice: undefined,
     description: 'Bis zu 10 WhatsApp-Bots mit vollständiger White-Label-Lösung',
     botLimit: 10,
     answersPerMonth: 25000,
@@ -87,7 +91,7 @@ const WHATSAPP_TIERS: WhatsAppPricingTier[] = [
       'Dedicated Support (4h Response)',
       'Branchenbibliothek integriert',
     ],
-    cta: { label: 'Testen', href: '/checkout/agency?channel=whatsapp&source=pricing&pilot=true' },
+    cta: { label: 'Anfragen', href: '/contact-sales?intent=enterprise&channel=whatsapp&source=pricing' },
   },
   {
     id: 'enterprise-wa',

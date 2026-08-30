@@ -23,7 +23,13 @@
 --       kann. Ein Trial-Versprechen ohne Checkout ist nicht erfüllbar.
 --
 --   Deshalb:
---     - `trial_days`: 14 → 0   (kein Self-Service-Trial ohne Vertrag)
+--     - Enterprise `trial_days`: 14 → 0  (kein Self-Service-Trial ohne Vertrag)
+--
+--   Ebenso Agency: AP2 hat den Plan stillgelegt (`availability = 'legacy'`,
+--   `stripe-checkout` weist neue Abschluesse mit PLAN_RETIRED ab), liess aber
+--   `trial_days = 14` stehen. Die aus der SSoT abgeleitete Trial-Fussnote
+--   fuehrte Agency deshalb weiter als testbar auf.
+--     - Agency `trial_days`: 14 → 0     (stillgelegt, kein Neuabschluss)
 --
 --   `price_monthly_eur` bleibt als interner Listenpreis erhalten — die
 --   Oberflächen zeigen ihn wegen `priceOnRequest` nicht mehr als Angebot an,
@@ -132,7 +138,7 @@ INSERT INTO public.plan_catalog (
     NULL,
     'EUR',
     'checkout',
-    14,
+    0,
     true,
     10,
     25000,

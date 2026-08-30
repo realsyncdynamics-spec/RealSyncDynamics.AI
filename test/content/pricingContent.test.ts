@@ -91,10 +91,12 @@ describe('pricingContent', () => {
     // COMMERCIAL-SSOT: temporary production hotfix.
     // Canonical source migration tracked in Phase 2.
     // Plaene ohne Self-Service-Checkout fuehren bewusst NICHT auf
-    // /checkout/<slug>, sondern auf /contact-sales. Sie werden vertraglich
-    // vereinbart und manuell fakturiert — ein Checkout-Link waere ein
-    // Kaufpfad, den die Edge Function `stripe-checkout` ablehnt.
-    const INQUIRY_ONLY_SLUGS = ['enterprise'];
+    // /checkout/<slug>, sondern auf /contact-sales. Zwei Gruende: Enterprise
+    // wird vertraglich vereinbart und manuell fakturiert (`inquiry`), Agency
+    // und Partner sind seit AP2 stillgelegt (`availability: 'legacy'`). In
+    // beiden Faellen lehnt `stripe-checkout` den Abschluss ab — ein
+    // Checkout-Link waere ein Kaufpfad ins Leere.
+    const INQUIRY_ONLY_SLUGS = ['enterprise', 'agency', 'agency_yearly', 'partner', 'partner_yearly'];
 
     it('Self-Service-Plaene verlinken auf /checkout/{slug}', () => {
       pricingPlans
@@ -312,11 +314,32 @@ describe('pricingContent', () => {
   });
 
   describe('Pricing Consistency', () => {
-    it('paid plans should have price > 0', () => {
-      const paidPlans = pricingPlans.filter((p) => p.slug !== 'free-audit' && p.slug !== 'enterprise');
+    // COMMERCIAL-SSOT: temporary production hotfix.
+    // Canonical source migration tracked in Phase 2.
+    // Ein Plan weist nur dann einen Betrag aus, wenn er auch abschliessbar
+    // ist. Enterprise wird vertraglich vereinbart, Agency und Partner sind
+    // seit AP2 stillgelegt — fuer beide waere ein Festpreis ein Angebot,
+    // das `stripe-checkout` nicht einloest.
+    const NO_PUBLIC_PRICE = [
+      'free-audit', 'enterprise',
+      'agency', 'agency_yearly', 'partner', 'partner_yearly',
+    ];
+
+    it('kaufbare Pläne weisen einen Betrag > 0 aus', () => {
+      const paidPlans = pricingPlans.filter((p) => !NO_PUBLIC_PRICE.includes(p.slug));
+      expect(paidPlans.length).toBeGreaterThan(0);
       paidPlans.forEach((plan) => {
         expect(plan.price).toBeGreaterThan(0);
       });
+    });
+
+    it('stillgelegte Pläne weisen keinen Festpreis aus', () => {
+      for (const slug of ['agency', 'agency_yearly', 'partner', 'partner_yearly']) {
+        const plan = getPlanBySlug(slug);
+        expect(plan, `Plan ${slug} fehlt`).toBeDefined();
+        expect(plan?.price).toBe(0);
+        expect(plan?.priceString).not.toMatch(/\d/);
+      }
     });
 
     it('free-audit should have price 0', () => {
@@ -358,10 +381,13 @@ describe('pricingContent', () => {
       expect(growth?.trial?.days).toBe(14);
     });
 
-    it('agency should have 14-day trial', () => {
+    // COMMERCIAL-SSOT: temporary production hotfix.
+    // Canonical source migration tracked in Phase 2.
+    // Agency hatte bis AP2 einen 14-Tage-Trial. Der Plan ist seither
+    // stillgelegt; ein Trial-Versprechen waere nicht mehr einloesbar.
+    it('agency should not have trial since AP2', () => {
       const agency = getPlanBySlug('agency');
-      expect(agency?.trial).toBeDefined();
-      expect(agency?.trial?.days).toBe(14);
+      expect(agency?.trial).toBeUndefined();
     });
 
     it('free-audit should not have trial', () => {

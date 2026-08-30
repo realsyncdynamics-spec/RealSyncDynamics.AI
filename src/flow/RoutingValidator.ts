@@ -36,7 +36,11 @@ const EXPECTED_EXTERNAL_ROUTES = new Set([
   '/app',                 // Workspace Dashboard
   '/checkout/starter',    // Stripe: Starter Plan
   '/checkout/growth',     // Stripe: Growth Plan
-  '/checkout/agency',     // Stripe: Agency Plan
+  // COMMERCIAL-SSOT: temporary production hotfix.
+  // Canonical source migration tracked in Phase 2.
+  // `/checkout/agency` ist hier entfallen: seit AP2 stillgelegt, der Flow
+  // fuehrt die Zielgruppe ueber /contact-sales zu Enterprise.
+  '/contact-sales',       // Vertrieb: Enterprise nach Vereinbarung
 ]);
 
 /**

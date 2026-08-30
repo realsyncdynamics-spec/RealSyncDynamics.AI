@@ -437,11 +437,15 @@ describe('Öffentliche Angebote sind erfüllbar', () => {
     }
   });
 
-  it('ein Trial-Versprechen setzt einen Self-Service-Checkout voraus', () => {
+  it('ein Trial-Versprechen setzt einen einlösbaren Kaufpfad voraus', () => {
     // Verhindert die Rückkehr des Enterprise-Falls über einen anderen Plan:
-    // Trial-Tage ohne Checkout wären ein Versprechen ohne Einlöseweg.
+    // Trial-Tage ohne Einlöseweg sind ein Versprechen ohne Deckung. Zwei
+    // Wege führen dahin, und beide sind hier gesperrt — kein
+    // Self-Service-Checkout (Enterprise), oder stillgelegt, sodass
+    // `stripe-checkout` den Neuabschluss mit PLAN_RETIRED abweist (Agency).
     for (const plan of PLANS.filter((p) => p.trialDays > 0)) {
       expect(plan.purchaseMode).toBe('checkout');
+      expect(plan.availability).not.toBe('legacy');
     }
   });
 });

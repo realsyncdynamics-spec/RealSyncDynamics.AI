@@ -744,7 +744,15 @@ export const PLANS: Plan[] = [
         'Bis zu 10 Domains unter einem Konto',
       ],
     },
-    trialDays: 14,
+    // COMMERCIAL-SSOT: temporary production hotfix.
+    // Canonical source migration tracked in Phase 2.
+    // Kein Trial mehr: Agency ist seit AP2 stillgelegt (`availability: 'legacy'`),
+    // `stripe-checkout` weist neue Abschluesse mit PLAN_RETIRED ab. Ein
+    // Trial-Versprechen waere damit nicht einloesbar — und die aus der SSoT
+    // abgeleitete Trial-Fussnote fuehrte Agency bis hierher weiter mit auf.
+    // Laufende Agency-Abos und -Trials sind davon unberuehrt; `trialDays`
+    // steuert ausschliesslich NEUE Checkout-Sessions.
+    trialDays: 0,
   },
 
   // ── Enterprise — Preis auf Anfrage ──────────────────────────────────────

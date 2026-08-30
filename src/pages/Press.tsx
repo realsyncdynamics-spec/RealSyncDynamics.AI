@@ -9,7 +9,7 @@ const FACTS = [
   { k: 'Modelle', v: 'Anthropic / OpenAI / Google · Ollama EU-local Fallback' },
   { k: 'Compliance-Stack', v: 'DSGVO · AI Act · BAIT · MaRisk · DORA · BfDI 2024' },
   { k: 'Zielmärkte', v: 'HealthTech · Legal-Tech · FinTech · Public Sector · Mittelstand' },
-  { k: 'Pricing', v: 'Free Audit kostenlos · Starter 79 €/M · Growth 249 €/M · Agency 699 €/M · Partner 1.999 €/M · Enterprise auf Anfrage' },
+  { k: 'Pricing', v: 'Free Audit kostenlos · Starter 79 €/M · Growth 249 €/M · Enterprise auf Anfrage' },
 ];
 
 const QUOTES = [

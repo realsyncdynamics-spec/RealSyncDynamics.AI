@@ -360,11 +360,18 @@ export const pricingPlans: PricingPlan[] = [
     },
   },
   {
+    // COMMERCIAL-SSOT: temporary production hotfix.
+    // Canonical source migration tracked in Phase 2.
+    // Seit AP2 stillgelegt (`availability: 'legacy'`): `stripe-checkout` weist
+    // neue Abschluesse mit PLAN_RETIRED ab und `/checkout/agency` leitet auf
+    // die Preisseite zurueck. Deshalb kein Festpreis, kein Trial und kein
+    // Checkout-Link mehr. Bestandskunden rechnen unveraendert weiter ab; der
+    // Eintrag bleibt bestehen, damit ihre Plan-Detailseite erreichbar ist.
     slug: 'agency',
     name: 'Agency',
-    price: 699,
-    priceString: '699 €',
-    interval: 'monatlich',
+    price: 0,
+    priceString: 'Nicht mehr im Verkauf',
+    interval: 'individuell',
     recommended: false,
     shortDescription: 'Die Profi-Suite für Datenschutzbeauftragte, Kanzleien und Agenturen, die mehrere Kunden professionell prüfen, dokumentieren und betreuen möchten.',
     targetAudience: 'Für externe Datenschutzbeauftragte, Datenschutzkanzleien, Webagenturen, IT-Dienstleister und Compliance-Berater.',
@@ -383,10 +390,10 @@ export const pricingPlans: PricingPlan[] = [
       '500 automatisierte Läufe pro Monat',
     ],
     cta: {
-      label: 'Agency buchen',
-      href: '/checkout/agency',
+      label: 'Enterprise anfragen',
+      href: '/contact-sales?intent=enterprise',
     },
-    checkoutPath: '/checkout/agency',
+    checkoutPath: '/contact-sales?intent=enterprise',
     problemsSolved: [
       'Viele Kunden müssen regelmäßig geprüft werden',
       'Reports sollen professionell und mit eigenem Branding ausgegeben werden',
@@ -419,10 +426,6 @@ export const pricingPlans: PricingPlan[] = [
         content: 'Agency ist für professionelle Dienstleister gedacht, die Compliance nicht nur für sich selbst, sondern für viele Kunden liefern. Der Plan kombiniert wiederholbare Prüfungen, White-Label-Berichte, API-Anbindung und Automatisierung. Agenturen und Datenschutzbeauftragte können Prüfungen standardisieren, Ergebnisse sauber dokumentieren und Kunden strukturierter betreuen. Die Governance Agents helfen dabei, wiederkehrende Prüf- und Dokumentationsaufgaben zu automatisieren.',
       },
     ],
-    trial: {
-      days: 14,
-      description: '14 Tage kostenlos testen, keine Kosten bis Tag 15, monatlich kündbar',
-    },
   },
   // ─── Jahres-Variante Starter — 12 Monate zum Preis von 10 ───
   // Slug identisch zur TierId in src/config/pricing.ts, damit die Info-
@@ -545,11 +548,18 @@ export const pricingPlans: PricingPlan[] = [
     ],
   },
   {
+    // COMMERCIAL-SSOT: temporary production hotfix.
+    // Canonical source migration tracked in Phase 2.
+    // Seit AP2 stillgelegt (`availability: 'legacy'`): `stripe-checkout` weist
+    // neue Abschluesse mit PLAN_RETIRED ab und `/checkout/partner` leitet auf
+    // die Preisseite zurueck. Deshalb kein Festpreis, kein Trial und kein
+    // Checkout-Link mehr. Bestandskunden rechnen unveraendert weiter ab; der
+    // Eintrag bleibt bestehen, damit ihre Plan-Detailseite erreichbar ist.
     slug: 'partner',
     name: 'Partner',
-    price: 1999,
-    priceString: '1.999 €',
-    interval: 'monatlich',
+    price: 0,
+    priceString: 'Nicht mehr im Verkauf',
+    interval: 'individuell',
     recommended: false,
     shortDescription: 'Die Multi-Mandanten-Lösung für Kanzleien, Datenschutzunternehmen und große Agenturen mit bis zu 50 Kundenwebsites.',
     targetAudience: 'Für Organisationen, die viele Mandanten, Kundenprojekte oder Websites zentral verwalten und skalierbar prüfen müssen.',
@@ -564,10 +574,10 @@ export const pricingPlans: PricingPlan[] = [
       'Strukturierte Kundenverwaltung',
     ],
     cta: {
-      label: 'Partner buchen',
-      href: '/checkout/partner',
+      label: 'Enterprise anfragen',
+      href: '/contact-sales?intent=enterprise',
     },
-    checkoutPath: '/checkout/partner',
+    checkoutPath: '/contact-sales?intent=enterprise',
     problemsSolved: [
       'Zu viele einzelne Kundenprüfungen ohne zentrale Übersicht',
       'Kein einheitlicher Prüfstatus über alle Mandanten',
@@ -651,20 +661,23 @@ export const pricingPlans: PricingPlan[] = [
         content: 'Die Jahresabrechnung bündelt 12 Monate Growth zum Preis von 10 Monaten. KI-Governance und das AI Risk Register laufen ohne Unterbrechung durch — wichtig, weil AI-Act- und DSGVO-Pflichten kontinuierlich gelten. Der Funktionsumfang ist identisch zur monatlichen Variante.',
       },
     ],
-    trial: {
-      days: 14,
-      description: '14 Tage kostenlos testen, keine Kosten bis Tag 15',
-    },
   },
   {
+    // COMMERCIAL-SSOT: temporary production hotfix.
+    // Canonical source migration tracked in Phase 2.
+    // Seit AP2 stillgelegt (`availability: 'legacy'`): `stripe-checkout` weist
+    // neue Abschluesse mit PLAN_RETIRED ab und `/checkout/agency_yearly` leitet auf
+    // die Preisseite zurueck. Deshalb kein Festpreis, kein Trial und kein
+    // Checkout-Link mehr. Bestandskunden rechnen unveraendert weiter ab; der
+    // Eintrag bleibt bestehen, damit ihre Plan-Detailseite erreichbar ist.
     slug: 'agency_yearly',
     name: 'Agency (Jährlich)',
-    price: 6900,
-    priceString: '6.900 €',
-    interval: 'pro Jahr — 12 Monate zum Preis von 10',
+    price: 0,
+    priceString: 'Nicht mehr im Verkauf',
+    interval: 'individuell',
     recommended: false,
     badge: 'Sparen Sie 2 Monate',
-    shortDescription: 'Agency mit Jahresabrechnung und 2-Monate-Rabatt: 699 € × 10 = 6.900 € pro Jahr. Branchenbibliotheken, White-Label und API-Zugriff für ein ganzes Jahr.',
+    shortDescription: 'Agency mit Jahresabrechnung — seit AP2 nicht mehr im Verkauf. Bestehende Jahresabos laufen unverändert weiter; Neukunden mit Bedarf an Branchenbibliotheken, White-Label und API-Zugriff wenden sich an den Vertrieb.',
     targetAudience: 'Für Datenschutzkanzleien, Agenturen und Compliance-Berater, die Mandanten langfristig betreuen und Jahresbudgets bevorzugen.',
     whatCustomerGets: [
       'Alles aus Agency (monatlich)',
@@ -673,10 +686,10 @@ export const pricingPlans: PricingPlan[] = [
       'Branchenbibliothek + White-Label für das ganze Jahr',
     ],
     cta: {
-      label: 'Agency jährlich testen',
-      href: '/checkout/agency_yearly',
+      label: 'Enterprise anfragen',
+      href: '/contact-sales?intent=enterprise',
     },
-    checkoutPath: '/checkout/agency_yearly',
+    checkoutPath: '/contact-sales?intent=enterprise',
     problemsSolved: [
       'Mandanten-Betreuung ist auf Jahre angelegt, nicht auf Monate',
       'Compliance-Budget soll planbar fürs ganze Jahr sein',
@@ -707,17 +720,20 @@ export const pricingPlans: PricingPlan[] = [
         content: 'Die Jahresabrechnung bündelt 12 Monate Agency zum Preis von 10 Monaten. Für Kanzleien und Agenturen, die Mandate über Jahresverträge abrechnen, passt die Laufzeit damit zum eigenen Geschäftsmodell. Der Funktionsumfang ist identisch zur monatlichen Variante.',
       },
     ],
-    trial: {
-      days: 14,
-      description: '14 Tage kostenlos testen, keine Kosten bis Tag 15',
-    },
   },
   {
+    // COMMERCIAL-SSOT: temporary production hotfix.
+    // Canonical source migration tracked in Phase 2.
+    // Seit AP2 stillgelegt (`availability: 'legacy'`): `stripe-checkout` weist
+    // neue Abschluesse mit PLAN_RETIRED ab und `/checkout/partner_yearly` leitet auf
+    // die Preisseite zurueck. Deshalb kein Festpreis, kein Trial und kein
+    // Checkout-Link mehr. Bestandskunden rechnen unveraendert weiter ab; der
+    // Eintrag bleibt bestehen, damit ihre Plan-Detailseite erreichbar ist.
     slug: 'partner_yearly',
     name: 'Partner (Jährlich)',
-    price: 19000,
-    priceString: '19.000 €',
-    interval: 'pro Jahr — 12 Monate zum Preis von 10',
+    price: 0,
+    priceString: 'Nicht mehr im Verkauf',
+    interval: 'individuell',
     recommended: false,
     badge: 'Reseller',
     shortDescription: 'Partner mit Jahresabrechnung und 2-Monate-Rabatt: 1.999 € × 10 = 19.000 € pro Jahr. Multi-Tenant-Verwaltung für bis zu 50 Mandanten, ein ganzes Jahr.',
@@ -729,10 +745,10 @@ export const pricingPlans: PricingPlan[] = [
       'Multi-Tenant für bis zu 50 Mandanten das ganze Jahr',
     ],
     cta: {
-      label: 'Partner jährlich buchen',
-      href: '/checkout/partner_yearly',
+      label: 'Enterprise anfragen',
+      href: '/contact-sales?intent=enterprise',
     },
-    checkoutPath: '/checkout/partner_yearly',
+    checkoutPath: '/contact-sales?intent=enterprise',
     problemsSolved: [
       'Multi-Mandanten-Betrieb braucht verlässliche Jahreslaufzeiten',
       'Compliance-Budget soll planbar fürs ganze Jahr sein',

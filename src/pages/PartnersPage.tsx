@@ -73,8 +73,8 @@ export function PartnersPage() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-px bg-titanium-900">
             <TierCard
               name="Agency"
-              price="€699 / Monat"
-              capacity="bis 10 Mandanten"
+              price="nicht mehr im Verkauf"
+              capacity="Bestandskunden behalten ihren Tarif"
               accent="text-cyan-300"
               bullets={[
                 'White-Label-Reports im eigenen Branding',
@@ -83,12 +83,13 @@ export function PartnersPage() {
                 'Bulk-Audit für Domain-Portfolios',
                 'Priority-Support',
               ]}
-              cta={{ label: 'Direkt buchen', href: '/audit?plan=agency&source=partners' }}
+              cta={{ label: 'Enterprise anfragen', href: '/contact-sales?tier=enterprise&source=partners' }}
+              footnote="Seit AP2 stillgelegt · laufende Abos rechnen unverändert weiter"
             />
             <TierCard
               name="Partner"
-              price="€1.999 / Monat"
-              capacity="bis 50 Mandanten"
+              price="nicht mehr im Verkauf"
+              capacity="Bestandskunden behalten ihren Tarif"
               accent="text-emerald-300"
               highlight
               bullets={[
@@ -98,16 +99,16 @@ export function PartnersPage() {
                 'Voller API-Zugriff',
                 'SLA 4 h · Priority-Support',
               ]}
-              cta={{ label: 'Enterprise anfragen', href: '/contact-sales?tier=scale&source=partners' }}
-              footnote="manuelles Onboarding · Pilot-Phase · Stripe-Self-Serve folgt"
+              cta={{ label: 'Enterprise anfragen', href: '/contact-sales?tier=enterprise&source=partners' }}
+              footnote="Seit AP2 stillgelegt · laufende Abos rechnen unverändert weiter"
             />
             <TierCard
               name="Enterprise"
               price="individuell"
-              capacity="unbegrenzte Mandanten"
+              capacity="Mandanten-Kapazität nach Vereinbarung"
               accent="text-violet-300"
               bullets={[
-                'Alle Scale-Funktionen',
+                'Alle Partner-Funktionen',
                 'Dedizierter Runtime-Kanal · SLA-Vertrag',
                 'EU AI Act Governance-Modul',
                 'DSB-Integration (intern oder extern)',

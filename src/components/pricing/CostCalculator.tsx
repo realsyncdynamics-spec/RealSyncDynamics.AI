@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { Calculator, Info, ArrowRight, TrendingDown } from 'lucide-react';
-import { PUBLIC_PRICING_TIERS, type TierId } from '../../config/pricing';
+import { SELLABLE_PRICING_TIERS, type TierId } from '../../config/pricing';
 
 interface CalculatorParams {
   websites: number;
@@ -202,7 +202,7 @@ export function CostCalculator() {
                 <h3 className="font-display font-bold text-titanium-50">Mit RealSync</h3>
               </div>
               <div className="space-y-2">
-                {PUBLIC_PRICING_TIERS.filter(
+                {SELLABLE_PRICING_TIERS.filter(
                   (tier) => tier.id !== 'free' && !tier.id.includes('yearly'),
                 ).map((tier) => {
                   // Aufwand-Skalierung pro Tier: höhere Tiers adressieren komplexere Setups

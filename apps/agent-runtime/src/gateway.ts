@@ -10,6 +10,9 @@ import { emitAuditEvent } from './audit-log.js';
 import { loadEnv } from './env.js';
 import { evaluate } from './policy-engine.js';
 import type { RunAgentResponse } from './types.js';
+import { evaluateVoiceToolRequest, toGatewayDecision } from './voice-policy.js';
+import { isVoiceToolName } from './voice-tools.js';
+import { VOICE_AGENT_ID, type VoiceConsentPurpose } from './voice-types.js';
 
 const env = loadEnv();
 const app = express();
@@ -84,6 +87,27 @@ app.post('/run-agent', requireBearerToken, (req, res) => {
   }
 
   const request = parsed.data;
+
+  // Voice läuft nur über /voice-tool. evaluate() bleibt unangetastet —
+  // dieser Kanal-Guard sitzt davor, sonst umgeht /run-agent Consent,
+  // Kill Switch und den 8-Check-Prüfpfad.
+  if (request.agentId === VOICE_AGENT_ID) {
+    const auditEvent = emitAuditEvent({
+      status: 'denied',
+      reviewRequired: false,
+      reason: 'denied_by_channel_policy',
+      request,
+    });
+    const body: RunAgentResponse = {
+      ok: false,
+      status: 'denied',
+      reason: 'denied_by_channel_policy',
+      auditEvent,
+    };
+    res.status(403).json(body);
+    return;
+  }
+
   const decision = evaluate(request);
 
   if (!decision.ok) {
@@ -130,6 +154,146 @@ app.post('/run-agent', requireBearerToken, (req, res) => {
     auditEvent,
   };
   res.json(body);
+});
+
+const voiceConsentPurposes: [VoiceConsentPurpose, ...VoiceConsentPurpose[]] = [
+  'record_audio',
+  'process_transcript',
+  'store_evidence',
+  'execute_tools',
+  'tts_playback',
+];
+
+const voiceToolSchema = z.object({
+  tenantId: z.string().min(1),
+  agentId: z.string().min(1),
+  sessionId: z.string().min(1),
+  requestId: z.string().min(1),
+  tool: z.string().min(1),
+  args: z.record(z.unknown()).default({}),
+  session: z.object({
+    killSwitch: z.boolean(),
+    turnCount: z.number().int().nonnegative(),
+    toolCount: z.number().int().nonnegative(),
+    rateLimit: z.object({
+      maxTurns: z.number().int().positive(),
+      maxTools: z.number().int().positive(),
+    }),
+  }),
+  consent: z
+    .object({
+      purposes: z.array(z.enum(voiceConsentPurposes)),
+      withdrawnAt: z.string().nullable(),
+    })
+    .nullable(),
+});
+
+/**
+ * Voice-Kanal. LLM schlägt nur vor — diese Route entscheidet.
+ * Keine Tool-Ausführung (gleicher Scope wie /run-agent).
+ */
+app.post('/voice-tool', requireBearerToken, (req, res) => {
+  const parsed = voiceToolSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({
+      ok: false,
+      status: 'denied',
+      reason: 'invalid_request',
+    });
+    return;
+  }
+
+  const body = parsed.data;
+  if (body.agentId !== VOICE_AGENT_ID) {
+    res.status(403).json({
+      ok: false,
+      status: 'denied',
+      reason: 'agent_not_found',
+    });
+    return;
+  }
+  if (!isVoiceToolName(body.tool)) {
+    res.status(403).json({
+      ok: false,
+      status: 'denied',
+      reason: 'tool_not_allowed',
+    });
+    return;
+  }
+
+  const agent = findAgent(body.agentId);
+  if (!agent) {
+    res.status(403).json({
+      ok: false,
+      status: 'denied',
+      reason: 'agent_not_found',
+    });
+    return;
+  }
+
+  const decision = evaluateVoiceToolRequest({
+    session: {
+      sessionId: body.sessionId,
+      tenantId: body.tenantId,
+      killSwitch: body.session.killSwitch,
+      turnCount: body.session.turnCount,
+      toolCount: body.session.toolCount,
+      rateLimit: body.session.rateLimit,
+    },
+    request: {
+      requestId: body.requestId,
+      sessionId: body.sessionId,
+      tenantId: body.tenantId,
+      agentId: body.agentId,
+      tool: body.tool,
+      args: body.args,
+      proposedBy: 'llm',
+      createdAt: new Date().toISOString(),
+    },
+    consent: body.consent,
+  });
+
+  const gateway = toGatewayDecision(decision.verdict);
+  const auditEvent = emitAuditEvent({
+    status: gateway.ok ? 'accepted' : 'denied',
+    reviewRequired: gateway.ok ? gateway.reviewRequired : false,
+    reason: gateway.ok ? null : gateway.reason,
+    request: {
+      tenantId: body.tenantId,
+      agentId: body.agentId,
+      taskType: 'voice_tool',
+      requestedTool: body.tool,
+      requestId: body.requestId,
+    },
+  });
+
+  if (decision.verdict === 'DENY') {
+    res.status(403).json({
+      ok: false,
+      status: 'denied',
+      reason: 'denied_by_channel_policy',
+      verdict: decision.verdict,
+      decision,
+      gateway,
+      agent: { id: agent.id, name: agent.name },
+      auditEvent,
+    });
+    return;
+  }
+
+  res.json({
+    ok: true,
+    status:
+      decision.verdict === 'REQUIRE_CONFIRMATION'
+        ? 'confirmation_required'
+        : 'accepted',
+    reviewRequired: decision.verdict === 'REQUIRE_CONFIRMATION',
+    verdict: decision.verdict,
+    decision,
+    gateway,
+    agent: { id: agent.id, name: agent.name },
+    auditEvent,
+  });
 });
 
 /* ------------------------------------------------------------------ */

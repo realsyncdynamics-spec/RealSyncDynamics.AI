@@ -73,7 +73,9 @@ export function GovernanceTabs() {
 
   return (
     <div className="relative shrink-0 bg-obsidian-900 border-b border-titanium-900">
-      <div className="flex overflow-x-auto scrollbar-none">
+      {/* flex-wrap statt overflow-x-auto: alle Module ohne Schiebeleiste
+          sichtbar (Vorgabe Eigentümer 2026-08-23) — bricht in weitere Zeilen um. */}
+      <div className="flex flex-wrap">
         {accessibleTabs.map((mod) => (
           <TabItem key={mod.id} module={mod} active={isActive(mod.route)} />
         ))}

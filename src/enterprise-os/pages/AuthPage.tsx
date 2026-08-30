@@ -4,6 +4,7 @@ import { ArrowRight, ShieldCheck, Lock, MapPin, CheckCircle2 } from 'lucide-reac
 import { Logo } from '../../components/Logo';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
+import { OAuthProviderButtons } from '../../features/auth/OAuthProviderButtons';
 
 interface AuthPageProps {
   mode: 'login' | 'signup';
@@ -62,7 +63,26 @@ export function AuthPage({ mode }: AuthPageProps) {
               </Link>
             </Card>
           ) : (
-            <form onSubmit={handleSubmit} className="mt-8 flex flex-col gap-4">
+            <>
+              {/* Anmeldung über einen Anbieter steht oben, weil sie der
+                  kürzere Weg ist — und sie funktioniert bereits, während
+                  das Formular darunter noch Prototyp ist (siehe Hinweis
+                  im Erfolgsfall). Gezeigt wird nur, was in Supabase
+                  wirklich eingerichtet ist: Die Komponente filtert selbst
+                  und rendert nichts, wenn kein Anbieter übrig bleibt. */}
+              <div className="mt-8">
+                <OAuthProviderButtons redirectAfterAuthTo="/app/dashboard" />
+              </div>
+
+              <div className="mt-6 flex items-center gap-3">
+                <span className="h-px flex-1 bg-titanium-800" />
+                <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-titanium-600">
+                  oder mit E-Mail
+                </span>
+                <span className="h-px flex-1 bg-titanium-800" />
+              </div>
+
+              <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">
               {isSignup && (
                 <div>
                   <label className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-titanium-500">
@@ -120,7 +140,8 @@ export function AuthPage({ mode }: AuthPageProps) {
                   </>
                 )}
               </p>
-            </form>
+              </form>
+            </>
           )}
         </div>
 

@@ -1,19 +1,21 @@
 name: VPS Backup
 
-# Daily snapshot of the production VPS (frontend dist, nginx config, deploy/).
-# Backups land on the VPS itself in /var/backups/realsyncdynamicsai/ with a
-# 7-day rotation. No external storage credentials required for the M1-Pilot
-# baseline; uplift to S3/B2 is a follow-up once we have a managed-customer
-# data inventory worth off-site replication.
+# The application production path is Cloudflare Pages. This backup remains
+# available for the Hostinger VPS because /opt/realsync/deploy may still carry
+# operational state, but the VPS is currently not reachable from GitHub
+# runners over SSH. Do not report a red scheduled workflow for an unavailable
+# secondary target.
 #
-# Required repo secrets (already configured for deploy-frontend.yml):
-#   VPS_SSH_HOST       currently 187.77.89.1
-#   VPS_SSH_USER       e.g. deploy
-#   VPS_SSH_KEY        OpenSSH private key
-#   VPS_SSH_KNOWN_HOST output of `ssh-keyscan -t ed25519 <host>`
+# Set repository variable VPS_BACKUP_ENABLED=true only after SSH connectivity
+# has been restored and verified. Until then the scheduled run is intentionally
+# paused and emits a successful, explicit status.
 #
-# Schedule: 03:17 UTC daily — off-peak for EU traffic, deliberate non-round
-# minute to avoid contention with other repos that pick :00 / :15 / :30.
+# Required repo secrets when enabled:
+#   VPS_SSH_HOST
+#   VPS_SSH_USER
+#   VPS_SSH_KEY
+#   VPS_SSH_KNOWN_HOST
+#   VPS_SSH_PORT (optional; defaults to 22)
 
 on:
   schedule:
@@ -25,7 +27,28 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  paused:
+    name: VPS backup paused
+    if: vars.VPS_BACKUP_ENABLED != 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Explain paused state
+        run: |
+          echo "VPS backup is intentionally paused."
+          echo "The Hostinger VPS is not currently reachable from GitHub runners over SSH."
+          echo "Set repository variable VPS_BACKUP_ENABLED=true only after SSH connectivity is restored."
+          {
+            echo "## VPS backup paused"
+            echo ""
+            echo "The backup target is currently unavailable over SSH."
+            echo "No backup is claimed to have been created."
+            echo ""
+            echo "Re-enable with repository variable \\`VPS_BACKUP_ENABLED=true\\` after the SSH path is verified."
+          } >> "$GITHUB_STEP_SUMMARY"
+
   backup:
+    name: Backup VPS
+    if: vars.VPS_BACKUP_ENABLED == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -35,7 +58,7 @@ jobs:
         env:
           VPS_SSH_HOST: ${{ secrets.VPS_SSH_HOST }}
           VPS_SSH_USER: ${{ secrets.VPS_SSH_USER }}
-          VPS_SSH_KEY:  ${{ secrets.VPS_SSH_KEY }}
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
           VPS_SSH_KNOWN_HOST: ${{ secrets.VPS_SSH_KNOWN_HOST }}
         run: |
           for v in VPS_SSH_HOST VPS_SSH_USER VPS_SSH_KEY VPS_SSH_KNOWN_HOST; do
@@ -51,17 +74,32 @@ jobs:
           VPS_SSH_KNOWN_HOST: ${{ secrets.VPS_SSH_KNOWN_HOST }}
         run: |
           mkdir -p ~/.ssh
-          echo "$VPS_SSH_KEY" > ~/.ssh/id_ed25519
+          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
-          echo "$VPS_SSH_KNOWN_HOST" > ~/.ssh/known_hosts
+          printf '%s\n' "$VPS_SSH_KNOWN_HOST" > ~/.ssh/known_hosts
           chmod 644 ~/.ssh/known_hosts
+
+      - name: Verify SSH connectivity
+        env:
+          VPS_SSH_HOST: ${{ secrets.VPS_SSH_HOST }}
+          VPS_SSH_PORT: ${{ secrets.VPS_SSH_PORT || '22' }}
+        run: |
+          if ! timeout 15 bash -c "</dev/tcp/${VPS_SSH_HOST}/${VPS_SSH_PORT}" 2>/dev/null; then
+            echo "::error::VPS ${VPS_SSH_HOST}:${VPS_SSH_PORT} is not reachable from the GitHub runner."
+            echo "Check Hostinger firewall/sshd and VPS_SSH_PORT before retrying."
+            exit 1
+          fi
+          echo "✓ VPS SSH port is reachable."
 
       - name: Run backup script on VPS
         env:
           VPS_SSH_USER: ${{ secrets.VPS_SSH_USER }}
           VPS_SSH_HOST: ${{ secrets.VPS_SSH_HOST }}
+          VPS_SSH_PORT: ${{ secrets.VPS_SSH_PORT || '22' }}
         run: |
-          # Ship the script and execute it remotely — keeps logic in repo,
-          # avoids state drift on the VPS itself.
-          scp scripts/vps-backup.sh "$VPS_SSH_USER@$VPS_SSH_HOST:/tmp/vps-backup.sh"
-          ssh "$VPS_SSH_USER@$VPS_SSH_HOST" "chmod +x /tmp/vps-backup.sh && /tmp/vps-backup.sh"
+          scp -P "$VPS_SSH_PORT" -i ~/.ssh/id_ed25519 \
+            scripts/vps-backup.sh \
+            "$VPS_SSH_USER@$VPS_SSH_HOST:/tmp/vps-backup.sh"
+          ssh -p "$VPS_SSH_PORT" -i ~/.ssh/id_ed25519 \
+            "$VPS_SSH_USER@$VPS_SSH_HOST" \
+            "chmod +x /tmp/vps-backup.sh && /tmp/vps-backup.sh"

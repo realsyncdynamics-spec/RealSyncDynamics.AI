@@ -44,6 +44,8 @@ The runtime layering used by the documents below is the **inner** view of layers
 | 8 | [`runtime-kernel-rfc.md`](./runtime-kernel-rfc.md) | Operational Governance Kernel v0 | Layer 2 | `proposed` | runtime_events Foundation, Replay Isolation, subject_ref Lifecycle, Memory Decay, tenant_cost_ledger. Master-RFC für den Governance-Runtime-Kernel mit konkreten Schema-Diffs + Code-Stubs. |
 | 9 | [`target-architecture.md`](./target-architecture.md) | Zielarchitektur (Plattformmodell) | cross | `adopted` | **Kanonische Zielarchitektur.** Fünf Ebenen, Trennung `/app` ↔ `/app/siteos`, Asset Lifecycle, Continuous Observation, Governance Engine, normativer SiteOS-Publish-Gate-Contract, Truth Layer (keine erfundenen Kennzahlen), AI Gateway statt hart verdrahtetem Provider, Free Baseline auf dem bestehenden `gdpr-audit`-Flow, Skills/Workflows, Integrationen, Pricing-Achsen (BASE + MODULE + SCALE), Delta Ist→Ziel und Phasen A–C. Löst den Produktebenen-Teil von `docs/ARCHITECTURE.md` ab. |
 | 10 | [`asset-lifecycle-contract.md`](./asset-lifecycle-contract.md) | Asset Lifecycle Contract (Phase B1) | Layer 2 | `proposed` | Datenvertrag für `Audit → Asset → Findings → Evidence → Subscription → Observation Run`. Legt `governance_assets` als kanonisches Asset fest, `websites` als Projektion, `governance_evidence` als Nachweisquelle der Beobachtung, `scan_runs` als Observation Run und `scan_schedules` als Monitoring-Beziehung. Lifecycle-Zustände werden serverseitig abgeleitet, nie als Statusspalte geführt. Enthält sechs verifizierte Schema-Defekte für B2. |
+| 11 | [`agent-runtime-contracts.md`](./agent-runtime-contracts.md) | Agent Runtime Contracts v0.1 | Layer 4 | `proposed` | Gemeinsame Typen für Voice/Chat/WhatsApp: AgentSession, ToolRequest, PolicyDecision (`ALLOW` / `DENY` / `REQUIRE_CONFIRMATION`), Consent, EvidenceEvent, AgentAction. Sitzt über dem bestehenden Gateway (`ok`/`denied`) ohne `evaluate()` zu brechen. Package: `packages/agent-runtime-contracts`. |
+| 12 | [`voice-agent-v0.1.md`](./voice-agent-v0.1.md) | Voice Agent v0.1 | Layer 4 | `proposed` | Voice als kontrollierte Agent-Schnittstelle in der Governance Runtime. LLM/STT/TTS schlagen nur vor. Ziel: `voice.realsyncdynamicsai.de` bzw. `/app/voice` — nicht die eingefrorene Public Landing (Baseline `339b08e7`). |
 
 ---
 
@@ -111,6 +113,8 @@ Brief table of the most important architectural decisions and why they were made
 | Lifecycle derived, never a status column | A stored `continuously_monitored` claims a state the data may not carry — the Phase A problem one layer down |
 | Anonymous baseline re-run, not claimed | Re-attributing anonymous `email`/`ip_hash` to a tenant changes the processing purpose; the first authenticated run starts the evidence chain |
 | RuntimeCanvas marked as Demo | Prevents misleading live-telemetry claims |
+| LLM never decides | Voice/Chat/WhatsApp tools are proposals. `PolicyDecision.decidedBy` is always `policy-engine`. |
+| Voice is a channel, not a product | Differentiation is governed agents (Prüfpfad, Tenant Isolation, Evidence), not a Vapi clone. Landing remains frozen. |
 
 ---
 

@@ -78,8 +78,8 @@ Menschen · Unternehmen · KI-Agenten · Daten · Entscheidungen.
 
 **Primär: Supabase Cloud (EU / Frankfurt)**
 - PostgreSQL 17 (Live-Projekt, Stand 2026-08-16)
-- **177 Edge Functions** im Repo (`supabase/functions/`, Deno/V8) — **101 davon in Produktion**, siehe §5
-- **279 Migrations** (`supabase/migrations/`) — 278 angewendet, siehe §5
+- **178 Edge Functions** im Repo (`supabase/functions/`, Deno/V8) — 177 davon in Produktion; `whatsapp-webhook` ist seit 2026-08-23 im Repo und wird mit dem nächsten `deploy.yml`-Lauf deployt, siehe §5
+- **289 Migrations** (`supabase/migrations/`) — 287 verbucht; zur Lücke und zur Versionskollision vom 2026-08-24 siehe §5
 - RLS auf allen App-Tabellen · Realtime Subscriptions
 
 **Node/TypeScript-Services** (containerisiert — **kein Go im Repo**)
@@ -182,106 +182,83 @@ Jeder Agent braucht vier Dimensionen — fehlt eine, ist er nicht governance-fä
 > #### ⚠️ Repo-Stand ≠ Produktions-Stand
 >
 > Die Prozentangaben unten beschreiben den **Stand im Repository**, nicht was in
-> Produktion läuft.
+> Produktion läuft. Die Regel bleibt: vor jeder Aussage zum Produktionsstand
+> gegen die Live-DB messen, nicht gegen diese Liste.
 >
-> **Messung vom 2026-08-19**, direkt gegen das Live-Projekt `RealSyncDynamicsLive`
-> (`ebljyceifhnlzhjfyxup`, eu-central-1, PostgreSQL 17) erhoben — nicht geschätzt:
+> **Messung vom 2026-08-23, nach dem Merge von PR #1131 (WhatsApp-Kanal) und
+> dem zugehörigen `deploy.yml`-Lauf**, per Management-API direkt gegen das
+> Live-Projekt `RealSyncDynamicsLive` (`ebljyceifhnlzhjfyxup`, eu-central-1,
+> PostgreSQL 17):
 >
-> | | Repo | in Produktion | Lücke |
+> | | Repo (`main`) | in Produktion | Lücke |
 > |---|---|---|---|
-> | Migrationen | 279 | 278 (neueste `20260820000000`) | **1** |
-> | Edge Functions | 177 | **101** (neu gemessen 2026-08-19, 16:45 Uhr) | **76** |
-> | Tabellen in `public` | — | 341 | — |
-> | Organisations-Plan | — | **`pro`** | — |
+> | Migrationen | 289 | **287** (neueste `20260826000000`) | **2**¹ |
+> | Edge Functions | 178 | **178** | **0** |
+> | Tabellen in `public` | — | 351 (`pg_tables`, ohne Views) | — |
 >
-> **Die Migrations-Seite ist geschlossen.** Frühere Stände dieser Datei nannten
-> „118 nie angewendet" — das gilt seit der Reconciliation nicht mehr. Es fehlt
-> genau eine: `20260821000000_b2_website_asset_relation` (B2, gemergt am
-> 2026-08-16, in Produktion nicht angekommen). Am Schema geprüft, nicht aus der
-> Migrationsliste geschlossen: `websites.governance_asset_id`,
-> `scan_runs.asset_id` und der Constraint `findings_scan_run_fk` existieren
-> live **nicht**.
+> Frühere Stände nannten hier 369 Tabellen ohne Messmethode — vermutlich
+> inklusive Views. Ab jetzt zählt `pg_tables`, damit die Zahl vergleichbar bleibt.
 >
-> **Die Function-Seite ist erklärt und der Blocker ist weg.** Die Diagnose von
-> 2026-08-16 hat sich bestätigt: exakt 100 deployte Functions, harter Schnitt,
-> Organisation auf `free` — das war das Function-Kontingent des Free-Tarifs, kein
-> Deploy-Bug und kein Typfehler. Seit dem Billing-Upgrade läuft die Organisation
-> auf Plan **`pro`**; das Limit von 100 existiert nicht mehr.
+> ¹ **Migrations-Lücke und Versionskollision, gemessen 2026-08-24** (Ledger via
+> `supabase_migrations.schema_migrations`, Deploy-Log Run 32705231581): PR #1131
+> und PR #1124 vergaben unabhängig voneinander dieselbe Version `20260826000000`
+> (`whatsapp_channel` bzw. `restore_client_function_grants`) — die PR-CI konnte
+> das nicht sehen, weil beide gegen eine `main`-Basis ohne die jeweils andere
+> Datei liefen. Der `deploy.yml`-Lauf nach dem #1124-Merge scheiterte daran
+> (CLI führte `whatsapp_channel` erneut aus → `42710`, Trigger existiert).
+> Fix: `restore_client_function_grants` → `20260826000001` umbenannt. Die zwei
+> unverbuchten Migrationen (`20260826000001`, `20260827000000`) sind inhaltlich
+> bereits wirksam (out-of-band-Hotfix, per ACL-Messung belegt); es fehlt nur die
+> Verbuchung durch den nächsten grünen Deploy. Lehre: Vor dem Merge eines PRs
+> mit Migration die Versionsnummer gegen den **aktuellen** `main`-Stand prüfen,
+> nicht gegen die PR-Basis.
 >
-> - Zum Messzeitpunkt lagen alle 80 fehlenden Functions **alphabetisch nach
->   `api-gateway`**, keine einzige davor — ein sauberer Schnitt bei exakt 100.
->   Seit dem Slot-Swap gilt das nicht mehr: `agent-scheduler` und
->   `ai-act-auto-classify` wurden bewusst entfernt und liegen davor
->   (`scripts/edge-functions-retired.txt`). Der Schnitt war ein Indiz, kein
->   Beweis — belegt ist das Kontingent durch `HTTP 402: Max number of
->   functions reached for project`.
-> - Ein Zusammenhang mit Typfehlern liess sich **nicht** herstellen. `deno check`
->   ist als Beleg untauglich, solange es nicht in einer Umgebung mit aufgelösten
->   npm-Abhängigkeiten läuft: dort scheitern auch live deployte Functions
->   (`health`, `governance-agent`, `ai-gateway`) — allerdings an der
->   Paketauflösung (`Could not find a matching package for
->   'npm:@supabase/realtime-js'`), nicht an ihrem Code. Wer die These prüfen
->   will, braucht `deno install` gegen die echten Dependencies.
-> - Die Organisation lief zum Messzeitpunkt auf **Plan `free`**. Am 2026-08-19
->   über die Management-API erhoben: **`pro`**. Das erklärt Function 101 ohne
->   Widerspruch — das Kontingent hat existiert, es ist mit dem Upgrade
->   weggefallen.
+> **Repo und Produktion decken sich derzeit vollständig** — in beide
+> Richtungen geprüft, es gibt weder eine nicht deployte Function noch eine
+> deployte ohne Verzeichnis. Das ist ein Momentzustand, kein Naturgesetz: Der
+> nächste Merge, der eine Function hinzufügt, öffnet die Lücke wieder, bis
+> `deploy.yml` gelaufen ist.
 >
-> **Diese Erklärung ist am 2026-08-19 gefallen.** Der frühere Stand schloss:
-> „Exakt 100 plus harter alphabetischer Schnitt = Free-Tarif-Kontingent, kein
-> Code-Fix deployt Function 101." Der Router `siteos` **ist** als Function 101
-> durchgelaufen — Deploy-Lauf 32277074625, `Deployed Functions on project:
-> siteos`, anschließend über HTTP an allen vier Pfaden nachgewiesen. Eine
-> Neumessung über alle 177 Verzeichnisse ergibt 101 deployt, 76 fehlend.
+> **Die Function-Lücke ist geschlossen.** Frühere Stände dieser Datei nannten
+> „103 deployt, 74 fehlend" und erklärten das mit dem Kontingent des
+> Free-Tarifs (`HTTP 402: Max number of functions reached`). Diese Erklärung
+> ist überholt. Die Vermutung einer harten Schranke bei 100 hat sich
+> erledigt — sie war schon beim Deploy von Function 101 (`siteos`) widerlegt.
 >
-> Was daraus folgt und was nicht:
+> **Auch die Migrations-Lücke von damals ist geschlossen.** `20260821000000_b2_website_asset_relation`
+> ist angekommen; am Schema geprüft, nicht aus der Liste geschlossen:
+> `websites.governance_asset_id`, `scan_runs.asset_id` und der Constraint
+> `findings_scan_run_fk` existieren live.
 >
-> - Die Zahl 100 war eine **Beobachtung**, das Kontingent eine **Schlussfolgerung
->   daraus**. Das 402 war echt, aber es belegte den Zustand von damals, nicht
->   eine dauerhafte Schranke. Wo die Grenze heute liegt, ist **nicht gemessen**.
-> - „Kann nicht deployt werden" ist für die verbleibenden 76 keine belegte
->   Aussage mehr. Wer eine davon braucht, probiert den Deploy — das kostet einen
->   Workflow-Lauf und beantwortet die Frage, die keine Herleitung beantwortet
->   hat.
-> - Der alphabetische Schnitt war von Anfang an als Indiz gekennzeichnet. Er hat
->   in die Irre geführt; das ist der Grund, warum hier künftig gemessen und
->   nicht geschlossen wird.
+> **Was daraus für die Arbeitsweise folgt.** Zweimal stand hier eine
+> Erklärung, die aus einer Beobachtung geschlossen war (erst der alphabetische
+> Schnitt, dann das Tarif-Kontingent), und zweimal war sie falsch. Beide Male
+> hätte eine Messung die Frage sofort beantwortet. Deshalb: messen, nicht
+> herleiten — und die Messung mit Datum und Methode hinschreiben, damit die
+> nächste Sitzung sie prüfen statt glauben muss.
 >
-> Betroffen sind weiterhin die Module, die diese Liste als weitgehend fertig
-> führt: `evidence-vault`, `policy-packs`, `provenance`, alle `iso42001-*` —
-> allerdings sind `evidence-vault`, `policy-packs`, `provenance` und die vier
-> `iso42001-*` inzwischen deployt. Vor jeder Aussage zum Produktionsstand gilt
-> unverändert: gegen `src/config/production-edge-functions.ts` bzw. die Live-DB
-> prüfen.
+> **ACL-Vorfall 2026-08-23**: Ein Out-of-Band-Bulk-Revoke (nicht aus dem Repo,
+> Actor unbekannt, älter als das 24h-Log-Fenster) hatte ~160 `public`-Funktionen
+> in Prod auf `{postgres, service_role}` reduziert und `update_onboarding_progress`
+> gedroppt — Symptom: „permission denied for function is_tenant_member" auf
+> /welcome, damit RLS für alle eingeloggten Nutzer kaputt. Repariert durch
+> `20260826000001_restore_client_function_grants.sql` (gezielte Grants nur für
+> Client-Rollen, interne Funktionen bleiben gesperrt). Konsequenz: Auch
+> Funktions-ACLs gehören zur Drift-Prüfung, nicht nur Existenz von Functions
+> und Migrationen — seitdem geprüft durch `npm run check:function-acls`
+> (`.github/workflows/function-acl-drift.yml`, täglich 06:30 UTC; Soll-Listen
+> im Skript nachziehen, wenn eine Migration Client-Grants ändert).
 >
-> **Rollout-Mechanik.** `deploy.yml` nimmt per `workflow_dispatch` den Input
-> `functions` = Slug-Liste entgegen; er hat Vorrang vor der Changed-Files-Auswahl
-> und bricht bei einem unbekannten Slug ab, bevor irgendetwas deployt wird. Mit
-> `push_migrations = false` bleibt das Prod-Schema unberührt. Damit lässt sich in
-> Wellen ausrollen, statt 177 Deploys in einen Lauf zu legen.
+> Der Free-Tarif bleibt davon unberührt und bleibt ein eigener Befund: keine
+> täglichen Backups, kein Point-in-Time-Recovery, kein SLA, Projekt-Pausierung
+> bei Inaktivität. Für ein Produkt, das Prüfpfad, Evidence-Hash-Ketten und
+> ISO-orientierte Prozesse zusagt, ist das unabhängig von jedem Limit ein
+> Problem.
 >
-> **Messung 2026-08-19, abends** (`scripts/smoke-edge-functions.mjs` gegen die
-> Live-URL, nicht geschätzt): 177 Functions im Repo, **74 nicht deployt**, 0 mit
-> 5xx. Dazu eine Besonderheit, die eine reine 404-Zählung falsch macht: `siteos`
-> ist deployt (Management-API: ACTIVE, v2), antwortet auf dem nackten Pfad aber
-> selbst mit 404, weil der Router dort keinen Handler hat. Ein 404 belegt also
-> nicht, dass eine Function fehlt — unterschieden wird am Antwortkörper.
->
-> **Die vier Slot-Tausch-Workflows sind entfernt.** `free-plan-slot-swap.yml`,
-> `k1-slots-freigeben.yml`, `selective-p0-auth-free-slot.yml` und
-> `selective-p0-auth-deploy.yml` löschten live deployte Functions, um Platz
-> unter einem Limit zu schaffen, das es nicht mehr gibt — ein Fehlklick in
-> Actions wäre ein Löschbefehl auf produktive Functions gewesen. Der Code liegt
-> in der Git-History; wiederherstellen wäre ein Rückschritt, kein Notfallplan.
->
-> Was vom Free-Tarif als Befund bleibt, ist die Betriebsseite: tägliche Backups,
-> Point-in-Time-Recovery und SLA hängen am Plan. Der Pro-Tarif bringt tägliche
-> Backups mit — PITR ist ein eigener Zusatz und ist zu prüfen, bevor Prüfpfad und
-> Evidence-Hash-Ketten als abgesichert zugesagt werden.
->
-> Ein Modul, dessen Backend nie deployt wurde, ist in Produktion **nicht** verfügbar,
-> egal wie vollständig der Code im Repo ist. Vor Aussagen zum Produktionsstand daher
-> immer gegen die Live-DB bzw. `supabase functions list` prüfen, nicht gegen diese Liste.
+> Ein Modul, dessen Backend nie deployt wurde, ist in Produktion **nicht**
+> verfügbar, egal wie vollständig der Code im Repo ist. Vor Aussagen zum
+> Produktionsstand daher gegen `src/config/production-edge-functions.ts` bzw.
+> `supabase functions list` prüfen.
 
 - **Audit** (95%) — DSGVO-Scan, Recheck-Cron, Email-Drip, Share-Token
 - **Policy Packs** (100%) — DSGVO, EU AI Act, branchenspezifisch; Auto-Empfehlung nach Tenant-Branche
@@ -357,8 +334,8 @@ RealSyncDynamics.AI/
 ├── shared/
 │   └── pricing.ts     Single Source of Truth für Produkt-, Preis- und Berechtigungsmodell
 ├── supabase/
-│   ├── functions/     177 Edge Functions (einziger Ort für Service-Role-Keys)
-│   └── migrations/    279 Migrations
+│   ├── functions/     178 Edge Functions (einziger Ort für Service-Role-Keys)
+│   └── migrations/    287 Migrations
 ├── apps/
 │   └── agent-runtime/ Agent Runtime (Node/TS, Docker)
 ├── services/          runtime-core · evidence-runtime · openclaw-agent · playwright-scanner
@@ -427,11 +404,35 @@ Runtime-Limits, Module, Berechtigungen, Feature-Listen und Add-ons.
   `hasPermission()`, `hasModule()`, `limitOf()`
 - Es gibt genau sechs **Abo-Pläne**: Free Audit · Starter · Growth · Agency ·
   Enterprise · Partner. Der Name „Scale" ist untersagt.
+- Seit AP2 (2026-08-24) trägt jeder Plan zusätzlich `availability`:
+  `self_service` (Free, Starter, Growth) · `contract` (Enterprise) ·
+  `legacy` (Agency, Partner). Das ist **nicht** dasselbe wie `purchaseMode`:
+  Jenes sagt, welche Art Stripe-Session entsteht, dieses, ob der Plan heute
+  noch neu gewählt werden darf. Stillgelegte Pläne behalten Produkte, Preise,
+  Entitlements und laufende Abos vollständig — sie stehen weiterhin in
+  `PLAN_ORDER`, damit Rangvergleiche für Bestandskunden stimmen.
+  **Verkaufslisten nehmen `SALES_PLANS` bzw. `SELF_SERVICE_PLANS`, nie
+  `ORDERED_PLANS`.** Einzelheiten: `docs/product/ap2-paketumbau.md`.
 - Daneben gibt es **Einmalprodukte** (`purchaseMode: 'one_time'`), derzeit
   Governance Launch (349 € einmalig). Sie sind kein Rang der Abo-Leiter:
   nicht in `PLAN_ORDER`, Preis in `price.oneTimeEur`, Persistenz als Grant in
   `entitlement_grants` (nicht `subscriptions` — dort gilt „genau ein Abo pro
   Tenant"), Anzeige über `ONE_TIME_PRICING_TIERS`.
+
+- Bei **Kontingenten** (Zahlenwerte) hängt die kanonische Quelle seit dem
+  2026-08-25 an der **Planart**: für Self-Service und öffentlich verkaufte
+  Pläne gilt `plan.limits.*` (die Preisseite), für Vertragspläne
+  (`availability: 'contract'`, heute Enterprise) gilt **der Vertrag**.
+  `PLAN_ENTITLEMENTS['limit.*']` ist in beiden Fällen nur eine Ableitung.
+  Für Enterprise ist die Quelle heute **unaufgelöst** — der Vertrag liegt dem
+  System nicht vor, und es gibt keine Tabelle für tenant-spezifische Werte;
+  dort ist kein Gate erlaubt. Beide Seiten
+  weichen heute in 21 von 38 Paaren ab; `npm run check:limits` verhindert
+  **neue** Divergenzen (Ratsche, Grundlinie in
+  `scripts/limit-canonicity-baseline.json`). **Kein neues Enforcement gegen
+  einen divergierenden Wert**, solange er nicht bereinigt ist — und keine
+  stillschweigende Kürzung bei Bestandskunden. Diff und offene
+  Enterprise-Frage: `docs/product/kanonische-kontingente.md`.
 
 Vollständige Regeln: `docs/product/pricing-governance.md`
 
@@ -468,6 +469,7 @@ Vollständige Regeln: `docs/product/pricing-governance.md`
 | Smoke (deployed) | `npm run smoke:production` |
 | QA Smoke | `npm run qa:smoke` · Governance: `npm run qa:governance` · Load: `npm run qa:load` |
 | Edge-Function-Drift | `npm run check:edge-functions` |
+| Kontingent-Kanonizität | `npm run check:limits` |
 
 ### Nach jeder Änderung
 ```bash
@@ -592,6 +594,100 @@ Umgesetzt: `.surface-panel` / `.hairline` und die Reveal-Regeln in
 
 Was **nicht** freigegeben ist und weiterhin unter §10.1 fällt: Sektionsreihenfolge,
 Grid, Typografie-Skala, Icon-Set, Farbpalette.
+
+**2026-08-23 — CTA-Hierarchie der Startseite auf den Scan-Trichter**
+
+Freigegeben durch die ausdrückliche Anweisung des Eigentümers im Auftrag
+„Landingpage / Scan / Dashboard / Marketplace Refactor" (§2 und §24: „Der
+wichtigste CTA der Landingpage ist: Website kostenlos scannen", Priorität 1
+Scan, 2 Demo, 3 Preise).
+
+Umfang — und **nur** dieser:
+
+| Was | Vorher | Nachher |
+|---|---|---|
+| Reihenfolge im Hero | Schaltflächenreihe, darunter Scan-Formular | Scan-Formular zuerst, Schaltflächenreihe darunter |
+| „Präsenz & App bauen" | gefüllte Fläche (primär) | Umriss (sekundär) — Text und Ziel unverändert |
+| Scan-Schaltfläche | „Audit starten" | „Website kostenlos scannen" |
+| Ziel des Scan-Formulars | `/unified-entry/scan` | `/scan` |
+| Navigation oben rechts | „Free Audit starten" → `/unified-entry/scan` | „Kostenlos scannen" → `/scan` |
+
+Nicht berührt und weiterhin gesperrt: Farben, Typografie, Grid,
+Sektionsreihenfolge der Seite, Icon-Set, sämtliche Abschnitte unterhalb des
+Hero. `/unified-entry/scan` bleibt bestehen und erreichbar — es ist nur nicht
+mehr das Tor von der Startseite aus.
+
+Damit ist auch die seit Phase 1 offene Freigabe aus
+`docs/product/reality-matrix.md` §5.1 erteilt: Der Scan führt jetzt in den
+Trichter statt in die Gestaltungsauswahl.
+
+**2026-08-23 (2) — Landing-CTA von `/scan` auf `/audit`**
+
+Auf die Fragepflicht nach §10.3 („Achtung, Funktionsänderung — sollen wir dies
+machen?") hat der Eigentümer ausdrücklich mit **Ja** geantwortet, mit der
+Begründung: „Das ist zwar eine Funktionsänderung, aber eine gewollte
+Produktkorrektur, keine kosmetische Änderung. Der Funnel soll künftig eindeutig
+sein. Nicht zwei parallele Scan-Einstiege weiter mitschleppen."
+
+Umfang — und **nur** dieser:
+
+| Was | Vorher | Nachher |
+|---|---|---|
+| Ziel des Scan-Formulars im Hero | `/scan` | `/audit` |
+| Navigation oben rechts, „Kostenlos scannen" | `/scan` | `/audit` |
+
+Die Freigabe vom selben Tag (Reihenfolge im Hero, Umriss statt Fläche,
+Beschriftung „Website kostenlos scannen") bleibt unverändert gültig — es ändert
+sich allein das Ziel. Farben, Typografie, Grid, Sektionsreihenfolge und
+Icon-Set sind unberührt.
+
+Die Freigabe wird **wirksam mit dem Schnitt von PR #1129**, weil `/scan` erst
+dann entfällt. Hintergrund und Zielmatrix:
+`docs/architecture/canonical-builder-target-matrix.md`.
+
+**2026-08-24 — AP2, Paketumbau auf drei Self-Service-Stufen**
+
+Freigegeben durch die ausdrückliche Anweisung des Eigentümers: „Paketmodell auf
+drei bezahlte Pakete umbauen · `policy.packs` ab Starter · WhatsApp als
+99-€-Add-on · AP1 als kanonische Entitlement-Basis verwenden · die beiden in
+AP1 sichtbar gewordenen Widersprüche gezielt bereinigen."
+
+Zwei Änderungen an bereits Sichtbarem sind darin enthalten und damit gedeckt:
+
+| Was | Vorher | Nachher |
+|---|---|---|
+| WhatsApp-Kachel in `/app/marketplace` | 39 € | **99 €** — derselbe Betrag wie das Add-on |
+| CTA der Enterprise-Karte | `/checkout/enterprise` | `/contact-sales?plan=enterprise` |
+
+Alles Übrige ist Datenschicht: Entitlements, Katalog, Berechtigungen.
+
+**2026-08-24 (2) — Preisseite auf drei Stufen**
+
+Auf die Fragepflicht nach §10.1 (Grid) und §10.3 (Text) hat der Eigentümer
+mit drei ausdrücklichen **Ja** geantwortet:
+
+| Frage | Antwort |
+|---|---|
+| 1. Raster von fünf auf drei Spalten (`lg:grid-cols-5` → `lg:grid-cols-3`) | **Ja** |
+| 2. Teaser-Überschrift ohne Agency und Partner | **Ja** |
+| 3. Agency und Partner ganz aus dem Verkauf nehmen | **Ja** |
+
+Umfang — und **nur** dieser:
+
+| Was | Vorher | Nachher |
+|---|---|---|
+| Spaltenzahl in `PricingPage`, `PricingTeaserSection`, `RuntimeActivationSection`, `PlanSelector`, `GovernanceBotsSection`, `BillingView`, `UnifiedPricingGrid` | `lg:grid-cols-5` | `lg:grid-cols-3` |
+| Überschrift `PricingTeaserSection` | „Free Audit · Starter · Growth · Agency · Enterprise · Partner" | „Free Audit · Starter · Growth · Enterprise" |
+| Anzeige-Listen | `PUBLIC_PRICING_TIERS` / `ORDERED_PLANS` | `SELLABLE_PRICING_TIERS` / `SALES_PLANS` |
+
+Kartengröße, Farben, Typografie, Abstände, Icon-Set und Sektionsreihenfolge
+sind unberührt. Rangvergleiche (`PlanUpgradeModal`, `planRank()`) laufen
+weiterhin über die vollständige Leiter — sonst bekäme ein Bestandskunde auf
+Agency falsche Antworten. Hintergrund: `docs/product/ap2-paketumbau.md` §7.
+
+**Weiterhin offen**: `/realsync-landing` führt fünf Plan-Karten mit hart
+codierten Preisen im JSX, inklusive Agency und Partner. Umbau auf die Quelle
+ist ein eigener Schritt (§10.1) und gehört zu AP10.
 
 #### Faustregel
 

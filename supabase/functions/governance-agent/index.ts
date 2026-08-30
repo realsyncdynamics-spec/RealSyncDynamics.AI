@@ -33,6 +33,7 @@ import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { audit } from '../_shared/auditLog.ts';
 import { AGENT_TOOLS, dispatchTool, SYSTEM_PROMPT } from '../_shared/agent-tools.ts';
 import { sha256Hex } from '../_shared/hash.ts';
+import { checkAnonRateLimit } from '../_shared/anonRateLimit.ts';
 import {
   reserveAnonAudit,
   completeAnonAudit,
@@ -114,28 +115,10 @@ const AGENT_LLM_MODEL_PROFILE = (Deno.env.get('AGENT_LLM_MODEL_PROFILE') ?? 'fas
 const ALLOW_US_ROUTING = Deno.env.get('AGENT_ALLOW_US_ROUTING') === 'true';
 
 // Per-IP rate-limit for anon chat — cleared per cold-start (in-memory).
-// `auditedDeny` ensures the security-gate audit log records ONE
-// rate_limited event per (ip,window) — without it a denied IP would
-// hammer the DB once per follow-up call.
-const ANON_RATE = new Map<string, { count: number; reset: number; auditedDeny: boolean }>();
-const ANON_RATE_MAX = 5;
-const ANON_RATE_WINDOW_MS = 60_000;
-
-function checkAnonRateLimit(ipHash: string): { allowed: boolean; shouldAuditDeny: boolean } {
-  const now = Date.now();
-  const rec = ANON_RATE.get(ipHash);
-  if (!rec || now > rec.reset) {
-    ANON_RATE.set(ipHash, { count: 1, reset: now + ANON_RATE_WINDOW_MS, auditedDeny: false });
-    return { allowed: true, shouldAuditDeny: false };
-  }
-  if (rec.count >= ANON_RATE_MAX) {
-    const firstDeny = !rec.auditedDeny;
-    rec.auditedDeny = true;
-    return { allowed: false, shouldAuditDeny: firstDeny };
-  }
-  rec.count++;
-  return { allowed: true, shouldAuditDeny: false };
-}
+// Seit dem SiteOS-Build gibt es einen zweiten anonymen Pfad; der Zähler
+// liegt deshalb in `_shared/anonRateLimit.ts`. Verhalten unverändert:
+// dieselben 5 Anfragen je 60 Sekunden, dieselbe `auditedDeny`-Regel, die
+// pro Fenster genau EINE rate_limited-Zeile schreibt.
 
 /**
  * Helper used by all four anon-handler entry points to enforce the
@@ -202,7 +185,9 @@ async function anonGate(
       `anon path refused: audit log not writable (${(e as Error).message})`);
   }
 
-  const rl = checkAnonRateLimit(ipHash);
+  // Eigener Zählerraum: Der SiteOS-Build-Pfad darf dieses Kontingent nicht
+  // mitverbrauchen — sonst sperrt ein Website-Entwurf den Assistenten.
+  const rl = checkAnonRateLimit(ipHash, { bucket: 'governance-agent' });
   if (!rl.allowed) {
     // Always complete THIS request's row as rate_limited; the auditedDeny
     // flag governs only subsequent denies within the window (they reuse

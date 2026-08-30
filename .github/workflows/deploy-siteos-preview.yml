@@ -1,0 +1,76 @@
+name: Deploy SiteOS Preview Worker
+
+# Deployt workers/siteos-preview — die eigene Herkunft für erzeugte
+# Vorschauen. Die Trennung von der Anwendung ist der ganze Zweck: Auf dieser
+# Herkunft läuft erzeugter Code, deshalb liegt dort kein Geheimnis der
+# Anwendung und keine Sitzung.
+#
+# Voraussetzungen (Repo-Secrets):
+#   - CLOUDFLARE_API_TOKEN   (Token mit Workers-Deploy- und KV-Rechten)
+#   - CLOUDFLARE_ACCOUNT_ID
+#
+# Einmalige Einrichtung vor dem ersten Deploy:
+#   1. npx wrangler kv namespace create PREVIEWS
+#      → die ausgegebene id in workers/siteos-preview/wrangler.jsonc eintragen
+#   2. npx wrangler secret put PREVIEW_WRITE_TOKEN
+#      → denselben Wert als Repo-Secret hinterlegen, damit der Schreibpfad
+#        aufgerufen werden kann
+#
+# Solange die KV-id noch der Platzhalter ist, überspringt sich dieser Workflow
+# selbst. Ein Deploy gegen eine nicht existierende Ablage wäre ein Worker, der
+# jede Vorschau als „nicht gefunden" beantwortet — schlimmer als kein Deploy.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'workers/siteos-preview/**'
+      - 'src/lib/preview-sandbox.ts'
+      - '.github/workflows/deploy-siteos-preview.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-siteos-preview
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      # Actions müssen im Repo auf volle Commit-SHAs gepinnt sein (Org-Policy).
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Guard — Cloudflare-Secrets und KV-Namespace vorhanden?
+        id: guard
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo "CLOUDFLARE_API_TOKEN/ACCOUNT_ID nicht gesetzt — Deploy übersprungen."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          elif grep -q 'PLACEHOLDER_SET_VIA_WRANGLER_KV_CREATE' workers/siteos-preview/wrangler.jsonc; then
+            echo "KV-Namespace noch nicht angelegt — Deploy übersprungen."
+            echo "Anleitung: siehe Kopf dieser Datei."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Setup Node
+        if: steps.guard.outputs.skip == 'false'
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '20'
+
+      - name: Install deps
+        if: steps.guard.outputs.skip == 'false'
+        run: npm ci --no-audit --no-fund || npm install --no-audit --no-fund
+
+      - name: Typecheck Worker
+        if: steps.guard.outputs.skip == 'false'
+        run: npx tsc --noEmit -p workers/siteos-preview/tsconfig.json
+
+      - name: Deploy (wrangler)
+        if: steps.guard.outputs.skip == 'false'
+        run: npx wrangler deploy --config workers/siteos-preview/wrangler.jsonc

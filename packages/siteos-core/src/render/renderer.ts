@@ -26,6 +26,7 @@
 import type { SiteBlock, SiteBlueprint, SitePage } from '../types.ts';
 import { attr, escapeHtml, jsonLdPayload, safeUrl } from './escape.ts';
 import { renderThemeCss } from './theme.ts';
+import { renderPresentationCss, type PresentationLevel } from './presentation.ts';
 
 export interface RenderOptions {
   /**
@@ -33,6 +34,15 @@ export interface RenderOptions {
    * werden relative Canonicals gesetzt — gültig, aber schwächer.
    */
   baseUrl?: string;
+  /**
+   * Darstellungsstufe. `minimal` (Default) hält das Ergebnis byte-stabil und
+   * ist die Grundlage der Artefakt-Hashes. `showcase` hängt die Layoutschicht
+   * aus `presentation.ts` an — dieselbe Struktur, gestaltet.
+   *
+   * Der Default bleibt bewusst `minimal`: Ein Aufrufer, der die Optik nicht
+   * anfordert, darf sie nicht ungefragt in seinem Hash wiederfinden.
+   */
+  presentation?: PresentationLevel;
 }
 
 export interface RenderedPage {
@@ -76,6 +86,12 @@ export function renderPage(blueprint: SiteBlueprint, page: SitePage, options: Re
     // eigener Request würde die erste Darstellung verzögern. Die Werte
     // sind in theme.ts geprüft, nicht escaped — CSS kennt kein Escaping.
     `<style>${renderThemeCss(blueprint.theme)}</style>`,
+    // Die Layoutschicht folgt dem Kern-Stylesheet und überschreibt dessen
+    // Grundregeln — nie umgekehrt. Sonst gewänne die Optik gegen die
+    // Lesbarkeits- und Fokusregeln, die geprüft werden.
+    options.presentation === 'showcase'
+      ? `<style>${renderPresentationCss(blueprint.theme)}</style>`
+      : '',
     '</head>',
     '<body>',
     // Sprungmarke zum Inhalt (WCAG 2.2 — 2.4.1).
@@ -99,16 +115,30 @@ function renderBlock(blueprint: SiteBlueprint, block: SiteBlock, state: RenderSt
   const content = block.content as Record<string, unknown>;
 
   switch (block.kind) {
-    case 'navigation':
+    case 'navigation': {
+      // Seitenlinks sind optional: Blueprints aus früheren Ständen führen
+      // sie nicht, und ein leeres <ul> wäre für Screenreader eine leere
+      // Liste statt gar keiner. Fehlen sie, bleibt die Ausgabe unverändert.
+      const links = Array.isArray(content.links) ? content.links : [];
+      const items = links
+        .map((link) => {
+          const entry = link as { label?: unknown; href?: unknown };
+          const href = safeUrl(entry.href);
+          return href ? `<li><a href="${href}">${escapeHtml(entry.label ?? '')}</a></li>` : '';
+        })
+        .filter((l) => l !== '');
+
       return [
         `<header id="${id}">`,
         '<nav aria-label="Hauptnavigation">',
         `<a href="/">${escapeHtml(content.brand ?? blueprint.name)}</a>`,
+        ...(items.length > 0 ? ['<ul>', ...items, '</ul>'] : []),
         '</nav>',
         '</header>',
         // Der Inhaltsanker sitzt direkt hinter der Navigation.
         '<main id="inhalt">',
       ].join('\n');
+    }
 
     case 'hero': {
       const heading = headingTag(state);
@@ -116,8 +146,14 @@ function renderBlock(blueprint: SiteBlueprint, block: SiteBlock, state: RenderSt
       const cta = content.primaryCta as { label?: unknown; href?: unknown } | undefined;
       const ctaHref = cta ? safeUrl(cta.href) : null;
 
+      // `data-emphasis` steuert die Höhe des Heroes in der Layoutschicht.
+      // Der Wert stammt aus einer festen Liste, nicht aus dem Blueprint:
+      // Er landet als Attribut im ausgelieferten HTML, und was dort landet,
+      // wird nicht durchgereicht.
+      // Fehlt es (Default), ist die Ausgabe unverändert — das Attribut wird
+      // nur gesetzt, wenn der Blueprint es tatsächlich führt.
       return [
-        `<section id="${id}">`,
+        `<section id="${id}"${attr('data-emphasis', heroEmphasis(content.emphasis))}>`,
         `<${heading}>${escapeHtml(content.headline ?? blueprint.name)}</${heading}>`,
         content.subline ? `<p>${escapeHtml(content.subline)}</p>` : '',
         // Platzhalter statt <img src>: es gibt noch kein Bild mit geklärter
@@ -390,4 +426,14 @@ const LEGAL_HEADINGS: Readonly<Record<string, string>> = Object.freeze({
 
 function legalHeading(ref: unknown): string {
   return LEGAL_HEADINGS[String(ref)] ?? 'Rechtliche Hinweise';
+}
+
+/**
+ * Prüft die Betonung des Titelbereichs gegen die erlaubten Werte.
+ *
+ * `undefined` heisst „kein Attribut" — damit bleibt das Markup jedes
+ * Blueprints ohne Angabe unverändert.
+ */
+function heroEmphasis(value: unknown): string | undefined {
+  return value === 'tall' || value === 'compact' ? value : undefined;
 }

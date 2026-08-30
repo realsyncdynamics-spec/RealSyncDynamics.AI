@@ -1,7 +1,7 @@
 # Traefik Dynamic Configuration.
 #
 # Das Routing selbst kommt aus den Container-Labels in docker-compose.yml.
-# Hier liegen nur Middlewares und TLS-Zertifikate, die dort referenziert werden.
+# Hier liegen nur Middlewares und TLS-Optionen.
 
 http:
   middlewares:
@@ -27,11 +27,6 @@ http:
         stsPreload: true
 
 tls:
-  stores:
-    default:
-      defaultCertificate:
-        certFile: /etc/traefik/certs/server.crt
-        keyFile: /etc/traefik/certs/server.key
   options:
     default:
       minVersion: VersionTLS12

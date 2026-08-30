@@ -231,6 +231,24 @@ export type BillingInterval = 'none' | 'month' | 'year' | 'one_time';
  */
 export type PurchaseMode = 'free' | 'checkout' | 'inquiry' | 'one_time';
 
+/**
+ * Wie ein Plan **vertrieben** wird — getrennt davon, wie er bezahlt wird.
+ *
+ * `purchaseMode` beantwortet „welche Art von Stripe-Session?", diese
+ * Angabe beantwortet „darf ihn heute noch jemand neu wählen?". Beides
+ * zusammenzulegen ginge schief: Ein stillgelegter Plan behält seinen
+ * Kaufmodus, denn seine bestehenden Abos rechnen unverändert weiter ab.
+ *
+ *   `self_service` — im Preisraster sichtbar, direkt buchbar
+ *   `contract`     — sichtbar, aber nur über ein Angebot erreichbar
+ *   `legacy`       — nicht mehr wählbar; bestehende Abos laufen weiter
+ *
+ * **`legacy` löscht nichts.** Produkte, Preise, Entitlements und laufende
+ * Subscriptions bleiben unangetastet — die Auflösung geht über `products`,
+ * nicht über diese Angabe. Es entfällt allein das Angebot an Neukunden.
+ */
+export type PlanAvailability = 'self_service' | 'contract' | 'legacy';
+
 export type ChannelId = 'website' | 'whatsapp' | 'telegram' | 'slack' | 'teams' | 'email' | 'voice';
 
 /**
@@ -374,6 +392,8 @@ export interface Plan {
   price: PlanPrice;
   currency: 'EUR';
   purchaseMode: PurchaseMode;
+  /** Vertriebszustand — siehe `PlanAvailability`. */
+  availability: PlanAvailability;
   /** Hebt die Karte im Grid hervor */
   highlight: boolean;
   /** Badges auf der Karte */
@@ -430,10 +450,11 @@ export const PLANS: Plan[] = [
     yearlyPlanKey: null,
     name: 'Free Audit',
     outcomeHeadline: 'Sehen Sie in 90 Sekunden, wo Ihre Governance-Lücken liegen.',
-    technicalSubheadline: 'Einmaliger Runtime-Scan Ihrer Domain mit Governance Score, Top-Risiken und Planempfehlung.',
+    technicalSubheadline: 'Unbegrenzte Runtime-Scans Ihrer Domain mit Governance Score, Top-Risiken und Planempfehlung.',
     price: { monthlyEur: 0, yearlyEur: null, oneTimeEur: null },
     currency: 'EUR',
     purchaseMode: 'free',
+    availability: 'self_service',
     highlight: false,
     badges: [],
     ctaLabel: 'Kostenlosen Audit starten',
@@ -486,6 +507,7 @@ export const PLANS: Plan[] = [
     price: { monthlyEur: 79, yearlyEur: 790, oneTimeEur: null },
     currency: 'EUR',
     purchaseMode: 'checkout',
+    availability: 'self_service',
     highlight: false,
     badges: [],
     ctaLabel: '14 Tage kostenlos testen',
@@ -506,6 +528,9 @@ export const PLANS: Plan[] = [
     channels: ['website'],
     modules: [
       'dsgvo', 'eu_ai_act',
+      // Seit AP2 Teil von Starter: Die Feature-Liste sagte „Policy Packs:
+      // DSGVO und EU AI Act" schon vorher zu, die Berechtigung fehlte.
+      'policy_engine',
       'evidence_vault', 'audit_center', 'monitoring', 'compliance_reports',
       'automation_engine', 'alerts',
       'ai_bots', 'website_chat',
@@ -515,7 +540,12 @@ export const PLANS: Plan[] = [
       auditExport: true,
     }),
     support: 'email',
-    addons: [],
+    // AP2: Starter ist der einzige Plan **ohne** WhatsApp-Kanal — und damit
+    // der einzige, für den das Add-on überhaupt Sinn ergibt. Bis hierher war
+    // es genau umgekehrt gebucht (zielzustand-paketmodell.md §3.2).
+    // `channels` bleibt `['website']`: Der Kanal kommt mit dem Add-on, nicht
+    // mit dem Plan.
+    addons: ['whatsapp'],
     features: {
       audit_evidence: [
         'Vollständiger DSGVO-Scan mit Paragraphenbezug',
@@ -550,6 +580,7 @@ export const PLANS: Plan[] = [
     price: { monthlyEur: 249, yearlyEur: 2490, oneTimeEur: null },
     currency: 'EUR',
     purchaseMode: 'checkout',
+    availability: 'self_service',
     highlight: true,
     badges: ['Empfohlen'],
     ctaLabel: '14 Tage kostenlos testen',
@@ -559,13 +590,20 @@ export const PLANS: Plan[] = [
       domains: 3,
       automationRunsPerMonth: 100,
       seats: 5,
-      apiCallsPerMonth: 0,
+      // AP2: API, Bulk-Jobs und Schlüssel wandern von Agency nach Growth.
+      // 5.000 Aufrufe sind kein neuer Wert, sondern der bereits in der
+      // Datenbank hinterlegte (`limit.api_calls_monthly` auf Growth) — er
+      // stand dort ohne die zugehörige Berechtigung und war damit tot.
+      apiCallsPerMonth: 5_000,
       tenants: 1,
       evidenceStorageGb: 10,
       auditReportsPerMonth: 12,
       remediationPlans: 20,
-      bulkJobsPerMonth: 0,
-      apiKeys: 0,
+      // Neu vergeben, weil es für Growth keinen Vorwert gab: bewusst
+      // deutlich unter Agency (100 Bulk-Jobs, 10 Schlüssel) — Growth ist
+      // ein Ein-Mandanten-Plan.
+      bulkJobsPerMonth: 10,
+      apiKeys: 3,
     },
     channels: ['website', 'whatsapp', 'telegram'],
     modules: [
@@ -577,13 +615,27 @@ export const PLANS: Plan[] = [
     permissions: permissions({
       evidenceVault: true,
       auditExport: true,
+      // AP2 — Zielzustand §1.1: Diese Fähigkeiten lagen ausschließlich auf
+      // Agency. Da Agency als Self-Service entfällt, brauchen sie ein
+      // Zuhause, sonst gehen sie mit dem Plan verloren.
+      api: true,
+      webhooks: true,
+      scheduler: true,
+      bulkOperations: true,
+      provenanceSigning: true,
     }),
     support: 'priority',
-    addons: ['response_pack', 'whatsapp', 'compliance_pack'],
+    // `whatsapp` entfällt hier: Growth *enthält* den Kanal bereits. Ein
+    // Add-on, das verkauft, was der Plan schon hat, war der Widerspruch aus
+    // `zielzustand-paketmodell.md` §3.2. Voice und White Label kommen dazu,
+    // weil sie sonst mit Agency aus dem Angebot fielen.
+    addons: ['response_pack', 'compliance_pack', 'voice', 'white_label', 'agency_bot_pack'],
     features: {
       audit_evidence: [
         'Alles aus Starter',
         'Evidence Vault mit Versionierung',
+        'Erweiterter Evidence-Zugriff mit C2PA-Export',
+        'Signierter Herkunftsnachweis (Provenance)',
         'Bis zu 12 Audit-Berichte pro Monat',
         'Consent-Timing-Analyse (Requests vor Einwilligung)',
       ],
@@ -596,6 +648,8 @@ export const PLANS: Plan[] = [
       automation_ops: [
         'Tägliches Monitoring mit Drift Detection',
         'Behebungsvorschläge mit Code-Snippets',
+        'API-Zugriff, Webhooks und Scheduler',
+        '10 Bulk-Jobs pro Monat, 3 API-Schlüssel',
         '100 Automationsläufe pro Monat',
         '2 Governance-Bots mit 2.000 Antworten (Website, WhatsApp, Telegram)',
       ],
@@ -615,6 +669,7 @@ export const PLANS: Plan[] = [
     price: { monthlyEur: 699, yearlyEur: 6900, oneTimeEur: null },
     currency: 'EUR',
     purchaseMode: 'checkout',
+    availability: 'legacy',
     highlight: false,
     badges: ['Für Agenturen'],
     ctaLabel: '14 Tage kostenlos testen',
@@ -692,7 +747,8 @@ export const PLANS: Plan[] = [
     technicalSubheadline: 'Multi-Tenant-Runtime für bis zu 5 Organisationen, zentrale Rechteverwaltung und unbegrenzte geplante Läufe.',
     price: { monthlyEur: 1_249, yearlyEur: 12_490, oneTimeEur: null },
     currency: 'EUR',
-    purchaseMode: 'checkout',
+    purchaseMode: 'inquiry',
+    availability: 'contract',
     highlight: false,
     badges: ['SLA 4 h'],
     ctaLabel: '14 Tage kostenlos testen',
@@ -734,7 +790,9 @@ export const PLANS: Plan[] = [
       prioritySupport: true,
     }),
     support: 'dedicated',
-    addons: ['response_pack', 'whatsapp', 'voice', 'compliance_pack', 'agency_bot_pack', 'white_label'],
+    // `whatsapp` entfällt wie bei Growth: Der Kanal ist im Plan enthalten
+    // (`channels`), ein Add-on darauf verkaufte Vorhandenes.
+    addons: ['response_pack', 'voice', 'compliance_pack', 'agency_bot_pack', 'white_label'],
     features: {
       audit_evidence: [
         'Alles aus Agency',
@@ -774,6 +832,7 @@ export const PLANS: Plan[] = [
     price: { monthlyEur: 1_999, yearlyEur: 19_000, oneTimeEur: null },
     currency: 'EUR',
     purchaseMode: 'inquiry',
+    availability: 'legacy',
     highlight: false,
     badges: ['Reseller', 'Multi Tenant'],
     // „Partner anfragen" folgt CTA.enterprise aus runtimeVocab.ts. Formen wie
@@ -869,6 +928,7 @@ export const PLANS: Plan[] = [
     // (das ist Growth). Ein zweiter hervorgehobener Eintrag würde die
     // Empfehlung entwerten — das Einmalprodukt trägt stattdessen das
     // Badge „Einmalig".
+    availability: 'self_service',
     highlight: false,
     badges: ['Einmalig'],
     ctaLabel: 'Jetzt buchen',
@@ -941,7 +1001,16 @@ export interface AddOn {
   priceNote: string;
   interval: 'month';
   bullets: string[];
-  /** Pläne, für die das Add-on buchbar ist */
+  /**
+   * Pläne, für die das Add-on **angeboten** wird.
+   *
+   * Seit AP2 nennt diese Liste ausschließlich Pläne, die noch verkauft
+   * werden. Was ein bestehender Kunde tatsächlich buchen darf, entscheidet
+   * weiterhin `plan.addons` — und die Add-on-Listen der stillgelegten Pläne
+   * Agency und Partner sind absichtlich unverändert geblieben. Ein
+   * Bestandskunde verliert dadurch kein Add-on; es wird nur keinem
+   * Neukunden mehr auf einem Plan angeboten, den er gar nicht wählen kann.
+   */
   availableFor: PlanId[];
 }
 
@@ -959,7 +1028,7 @@ export const ADDONS: AddOn[] = [
       'Additiv zur Plan-Quote',
       'Nicht verbrauchte Antworten verfallen zum Monatsende',
     ],
-    availableFor: ['growth', 'agency', 'enterprise', 'partner'],
+    availableFor: ['growth', 'enterprise'],
   },
   {
     id: 'whatsapp',
@@ -974,7 +1043,11 @@ export const ADDONS: AddOn[] = [
       'Media-Support für Bilder und Dokumente',
       'Einrichtung im Onboarding durch das Team',
     ],
-    availableFor: ['growth', 'agency', 'enterprise', 'partner'],
+    // AP2 — die Korrektur aus `zielzustand-paketmodell.md` §3.2: Das Add-on
+    // war ausgerechnet für den einzigen Plan *ohne* WhatsApp nicht buchbar
+    // und wurde denen angeboten, die den Kanal bereits enthalten. Genau
+    // verkehrt herum. Ab Growth ist WhatsApp Teil des Plans.
+    availableFor: ['starter'],
   },
   {
     id: 'voice',
@@ -989,7 +1062,7 @@ export const ADDONS: AddOn[] = [
       'Speech-to-Text und Text-to-Speech',
       'Mehrsprachig: DE, EN, FR, ES',
     ],
-    availableFor: ['agency', 'enterprise', 'partner'],
+    availableFor: ['growth', 'enterprise'],
   },
   {
     id: 'compliance_pack',
@@ -1004,7 +1077,7 @@ export const ADDONS: AddOn[] = [
       'Quartalsbericht als PDF',
       'Human-Review-Workflow für sensible Absichten',
     ],
-    availableFor: ['growth', 'agency', 'enterprise', 'partner'],
+    availableFor: ['growth', 'enterprise'],
   },
   {
     id: 'agency_bot_pack',
@@ -1019,7 +1092,7 @@ export const ADDONS: AddOn[] = [
       'White-Label je Bot konfigurierbar',
       'Priorisiertes Onboarding',
     ],
-    availableFor: ['agency', 'enterprise', 'partner'],
+    availableFor: ['growth', 'enterprise'],
   },
   {
     id: 'white_label',
@@ -1034,9 +1107,384 @@ export const ADDONS: AddOn[] = [
       'Eigener Bot-Name und eigene Persona',
       'Analysen im eigenen Dashboard',
     ],
-    availableFor: ['agency', 'enterprise', 'partner'],
+    availableFor: ['growth', 'enterprise'],
   },
 ];
+
+// ─────────────────────────────────────────────────────────────────────────
+//  Buchbare Module (modulare Product Experience)
+// ─────────────────────────────────────────────────────────────────────────
+
+/**
+ * Der Produktpfad, den ein Kunde nach dem kostenlosen Scan wählt.
+ *
+ * Der entscheidende Produktgrundsatz: **Compliance ist das Fundament,
+ * das Frontend ist optional.** Niemand darf gezwungen werden, seine
+ * bestehende Website umzubauen, um Governance nutzen zu können — und
+ * niemand verliert Governance, weil er beim alten Frontend bleibt.
+ *
+ * Deshalb sind das zwei getrennte Entscheidungen und kein Auf-/Abstieg:
+ *  - `keep_frontend`      — bestehendes Frontend bleibt unangetastet,
+ *                           RealSync liefert nur die Governance-Schicht
+ *                           (Scan, API, SDK, Snippet, Runtime-Anbindung).
+ *  - `modernize_frontend` — zusätzlich wird über SiteOS ein neues Frontend
+ *                           aus den vorhandenen Inhalten erzeugt.
+ *
+ * `modernize_frontend` ist eine **Ergänzung** von `keep_frontend`, kein
+ * Ersatz: der Governance-Umfang ist in beiden Pfaden identisch. Der Pfad
+ * ist jederzeit wechselbar und darf nirgendwo als Berechtigung dienen —
+ * dafür gibt es `hasModule()` / `hasPermission()`.
+ */
+export type ProductTrack = 'keep_frontend' | 'modernize_frontend';
+
+export const PRODUCT_TRACKS: ProductTrack[] = ['keep_frontend', 'modernize_frontend'];
+
+export function isProductTrack(value: string | null | undefined): value is ProductTrack {
+  return value === 'keep_frontend' || value === 'modernize_frontend';
+}
+
+/**
+ * Ein einzeln buchbares, kostenpflichtiges Modul.
+ *
+ * Abgrenzung zu den beiden benachbarten Begriffen in dieser Datei — die
+ * drei sind bewusst verschieden und dürfen nicht vermischt werden:
+ *
+ *  - `ModuleDefinition` (`ModuleId`) beschreibt eine **Fähigkeit** der
+ *    Runtime. Sie hat keinen Preis; ein Plan schaltet sie über
+ *    `plan.modules` frei.
+ *  - `AddOn` (`AddOnId`) ist ein **Zusatz zu einem bestehenden Abo** und
+ *    an `availableFor`-Pläne gebunden.
+ *  - `BookableModule` (hier) ist die **Verkaufseinheit des modularen
+ *    Checkouts**: Governance Core als Fundament, alles Weitere einzeln
+ *    zubuchbar, unabhängig von der Plan-Leiter.
+ *
+ * Ein Modul schaltet über `unlocks` die Fähigkeiten frei, die es abdeckt.
+ * Die Berechtigungsprüfung im Produkt bleibt damit `hasModule()` — der
+ * Kaufweg ändert nichts an der Art, wie Zugriff entschieden wird.
+ */
+export type BookableModuleId =
+  | 'governance_core'
+  | 'ai_frontend'
+  | 'website_chat'
+  | 'voice_bot'
+  | 'whatsapp_bot'
+  | 'booking'
+  | 'advanced_ai_governance'
+  | 'additional_domain'
+  | 'additional_company';
+
+/**
+ * `flat`            — fester Monatspreis, keine nutzungsabhängigen Kosten.
+ * `flat_plus_usage` — fester Monatspreis **plus** verbrauchsabhängige
+ *                     Abrechnung. Pflicht überall dort, wo echte
+ *                     Drittkosten je Nutzung anfallen (Telefonie, STT/TTS,
+ *                     WhatsApp-Konversationen). Ohne diese Kennzeichnung
+ *                     verkauft ein intensiver Kunde die Marge auf.
+ * `per_unit`        — Preis je zusätzlicher Einheit (Domain, Unternehmen).
+ */
+export type ModulePriceModel = 'flat' | 'flat_plus_usage' | 'per_unit';
+
+export interface BookableModule {
+  id: BookableModuleId;
+  name: string;
+  description: string;
+  /**
+   * ⚠️ PROVISORISCH — siehe `MODULE_PRICING_STATUS`. Diese Beträge sind
+   * Testwerte für den Aufbau des Checkouts, keine kalkulierten Preise.
+   */
+  priceEur: number;
+  priceModel: ModulePriceModel;
+  /** Zusatz zum Preis, z.B. Minutenpreis. `null` bei reinem Festpreis. */
+  usageNote: string | null;
+  /** Fundament — kann im Checkout nicht abgewählt werden. */
+  required: boolean;
+  /**
+   * `true`, wenn das Modul das von RealSync erzeugte Frontend voraussetzt.
+   *
+   * Steht bewusst bei **keinem** Modul auf `true` außer `ai_frontend`
+   * selbst: Chat, Voice, WhatsApp und Terminbuchung funktionieren auch
+   * auf einer fremden Website — über Snippet, SDK oder API. Wer das
+   * ändert, hebelt den Produktgrundsatz aus.
+   */
+  requiresFrontend: boolean;
+  /**
+   * Entitlement-Keys, die dieses Modul freischaltet.
+   *
+   * Vorher `ModuleId[]`. Seit AP1 ist der Entitlement-Key der einzige
+   * Namensraum: `plan.modules` und die Datenbank gingen auseinander, und
+   * maßgeblich ist die Datenbank, weil sie zur Laufzeit autorisiert.
+   */
+  unlocks: EntitlementKey[];
+  /** Lucide-Icon-Name — einheitliches Icon-Set über alle Oberflächen. */
+  icon: string;
+  bullets: string[];
+}
+
+/**
+ * Statuskennzeichnung der Modulpreise.
+ *
+ * Die Beträge in `BOOKABLE_MODULES` sind bewusst **nicht** festgezurrt.
+ * Sie müssen aus den tatsächlichen Infrastrukturkosten rückwärts
+ * kalkuliert werden — insbesondere Voice (Telefonie + STT/TTS), LLM-Token,
+ * WhatsApp-Konversationsgebühren, Scan-Laufzeit und zusätzliche Domains.
+ * Bis dahin gilt: Struktur ist verbindlich, Betrag ist ein Testwert.
+ */
+export const MODULE_PRICING_STATUS = 'provisional' as const;
+
+/**
+ * Warum die Beträge hier von `ADDONS` abweichen dürfen.
+ *
+ * `ADDONS` bepreist Zusätze **innerhalb** der Plan-Leiter (Voice 150 €,
+ * WhatsApp 99 €) und bleibt unverändert gültig. `BOOKABLE_MODULES`
+ * bepreist dieselben Kanäle als **eigenständige Verkaufseinheit** neben
+ * dem Governance Core. Zwei Preise für denselben Kanal sind auf Dauer
+ * kein haltbarer Zustand — die Auflösung gehört in die Preiskalkulation,
+ * nicht in eine stillschweigende Angleichung hier. Bis dahin wird die
+ * Abweichung benannt statt versteckt.
+ *
+ * **WhatsApp ist seit AP2 aufgelöst** (99 € an beiden Stellen) und steht
+ * deshalb nicht mehr hier. Voice bleibt offen: 99 € als Modul gegen 150 €
+ * als Add-on. Das ist keine Nachlässigkeit, sondern der Rest einer
+ * Kalkulation, die für Telefonie noch aussteht — Minutenpreise und
+ * STT/TTS-Kosten sind nicht gemessen. Wer sie angleicht, ohne gerechnet zu
+ * haben, ersetzt eine benannte Abweichung durch eine verdeckte.
+ */
+export const MODULE_ADDON_PRICE_DIVERGENCE: BookableModuleId[] = ['voice_bot'];
+
+export const BOOKABLE_MODULES: BookableModule[] = [
+  {
+    id: 'governance_core',
+    name: 'Governance Core',
+    description: 'Kontinuierliche DSGVO- und EU-AI-Act-Governance für ein Unternehmen und eine Domain.',
+    priceEur: 79,
+    priceModel: 'flat',
+    usageNote: null,
+    required: true,
+    requiresFrontend: false,
+    unlocks: ['governance.dsgvo_directory', 'governance.ai_register', 'policy.packs', 'evidence.basic_vault', 'website.scan', 'monitoring.monthly', 'compliance.export', 'alerts.email'],
+    icon: 'Shield',
+    bullets: [
+      'Ein Unternehmen, eine Domain',
+      'DSGVO und EU AI Act als Policy Packs',
+      'Kontinuierliches Monitoring statt Einmalprüfung',
+      'Governance Score, Evidence Vault und Audit-Export',
+      'Alerts bei neuen Findings',
+    ],
+  },
+  {
+    id: 'ai_frontend',
+    name: 'AI Frontend',
+    description: 'Erzeugt aus der bestehenden Website ein modernes Frontend — ohne die vorhandenen Inhalte zu verlieren.',
+    priceEur: 49,
+    priceModel: 'flat',
+    usageNote: null,
+    required: false,
+    requiresFrontend: true,
+    unlocks: [],
+    icon: 'LayoutTemplate',
+    bullets: [
+      'Inhalts-Inventar der bestehenden Seite statt Neutexten',
+      'Vorschau und ausdrückliche Freigabe vor dem Publish',
+      'Jederzeit zurück auf das Original umschaltbar',
+      'Responsive, barrierearm, SEO-erhaltend',
+    ],
+  },
+  {
+    id: 'website_chat',
+    name: 'Website Chat',
+    description: 'Eingebetteter Chatbot auf der eigenen Website — auch auf einem fremden Frontend.',
+    priceEur: 39,
+    priceModel: 'flat_plus_usage',
+    usageNote: 'zzgl. Verbrauch je Konversation',
+    required: false,
+    requiresFrontend: false,
+    unlocks: ['bots.chat', 'bots.enabled'],
+    icon: 'MessageSquare',
+    bullets: [
+      'Snippet-Einbindung ohne Frontend-Umbau',
+      'Antwortet nur aus dem hinterlegten Unternehmenskontext',
+      'Transparenzhinweis nach Art. 50 EU AI Act',
+      'Jede Antwort im Prüfpfad',
+    ],
+  },
+  {
+    id: 'voice_bot',
+    name: 'Voice Bot',
+    description: 'Telefonischer Sprachkanal mit derselben Buchungs- und Kontext-Engine wie der Website-Chat.',
+    priceEur: 99,
+    priceModel: 'flat_plus_usage',
+    usageNote: 'zzgl. Telefonie- und Sprachverbrauch je Minute',
+    required: false,
+    requiresFrontend: false,
+    unlocks: ['bots.voice', 'bots.enabled', 'bots.human_handoff'],
+    icon: 'Phone',
+    bullets: [
+      'Eingehende Anrufe mit Speech-to-Text und Text-to-Speech',
+      'Übergabe an Menschen mit Eskalationsstufen',
+      'Keine eigene Terminlogik — fragt die Booking Engine',
+      'Verbrauchsabhängig, weil echte Telefoniekosten anfallen',
+    ],
+  },
+  {
+    id: 'whatsapp_bot',
+    name: 'WhatsApp Bot',
+    description: 'WhatsApp-Business-Kanal mit identischem Governance-Protokoll.',
+    // AP2 — Entscheidung des Eigentümers vom 2026-08-24: ein Preis für den
+    // WhatsApp-Kanal, und zwar der aus `ADDONS` (99 €). Er stand an drei
+    // übereinstimmenden Stellen — Datenbank, Preisseite, `ADDONS` — gegen
+    // die 39 € an einer. Die 39 € gehörten zum rein modularen Modell, das
+    // mit der Dreier-Leiter entfällt.
+    //
+    // Die Kachel selbst bleibt: WhatsApp ist weiterhin buchbar, und ein
+    // Dienst, den man kaufen kann, gehört in den Marketplace
+    // (`CLAUDE.md` §14). Entfallen ist der zweite Preis, nicht der Kanal.
+    priceEur: 99,
+    priceModel: 'flat_plus_usage',
+    usageNote: 'zzgl. WhatsApp-Konversationsgebühren',
+    required: false,
+    requiresFrontend: false,
+    unlocks: ['bots.whatsapp', 'bots.enabled', 'bots.multi_channel'],
+    icon: 'MessageCircle',
+    bullets: [
+      'WhatsApp Business API',
+      'Ein Bot, mehrere Kanäle, ein Prüfpfad',
+      'Media-Support für Bilder und Dokumente',
+      'Konversationsgebühren werden durchgereicht',
+    ],
+  },
+  {
+    id: 'booking',
+    name: 'Terminbuchung',
+    description: 'Booking Engine mit Öffnungszeiten, Pausen, Urlaub und variablen Termindauern.',
+    priceEur: 29,
+    priceModel: 'flat',
+    usageNote: null,
+    required: false,
+    requiresFrontend: false,
+    unlocks: ['bots.appointments'],
+    icon: 'CalendarClock',
+    bullets: [
+      'Zentrale Slot-Berechnung für alle Kanäle',
+      'Variable Termindauer je Zeitfenster',
+      'Urlaub, Feiertage und Pausen blockieren sofort',
+      'Bots erfinden keine Termine — sie fragen die Engine',
+    ],
+  },
+  {
+    id: 'advanced_ai_governance',
+    name: 'Advanced AI Governance',
+    description: 'Erweiterte Rahmenwerke, Risikoregister und Behebungspläne über den Core hinaus.',
+    priceEur: 149,
+    priceModel: 'flat',
+    usageNote: null,
+    required: false,
+    requiresFrontend: false,
+    unlocks: ['policy.nis2', 'policy.iso27001', 'governance.risk_register', 'fix.snippets', 'monitoring.drift'],
+    icon: 'Brain',
+    bullets: [
+      'NIS2 und ISO 27001 zusätzlich zu DSGVO und EU AI Act',
+      'Risikoregister mit Eigentümern und Maßnahmenverfolgung',
+      'Drift-Erkennung zwischen zwei Läufen',
+      'Vorbereitete Behebungspläne mit Review-Pflicht',
+    ],
+  },
+  {
+    id: 'additional_domain',
+    name: 'Weitere Domain',
+    description: 'Jede weitere überwachte Domain innerhalb desselben Unternehmens.',
+    priceEur: 19,
+    priceModel: 'per_unit',
+    usageNote: 'je Domain und Monat',
+    required: false,
+    requiresFrontend: false,
+    unlocks: [],
+    icon: 'Globe',
+    bullets: [
+      'Eigener Governance Score je Domain',
+      'Gemeinsames Evidence Vault des Unternehmens',
+      'Beliebig oft buchbar',
+    ],
+  },
+  {
+    id: 'additional_company',
+    name: 'Weiteres Unternehmen',
+    description: 'Ein weiteres Unternehmen im selben Konto — datentechnisch getrennt.',
+    priceEur: 49,
+    priceModel: 'per_unit',
+    usageNote: 'je Unternehmen und Monat',
+    required: false,
+    requiresFrontend: false,
+    unlocks: ['bots.multi_channel'],
+    icon: 'Building2',
+    bullets: [
+      'Eigene Domains, Bots und Governance je Unternehmen',
+      'Umschalten im Dashboard',
+      'Mandantentrennung über RLS, nicht über die Oberfläche',
+    ],
+  },
+];
+
+/** Das Fundament, das in jedem Checkout enthalten ist. */
+export const REQUIRED_MODULES: BookableModule[] = BOOKABLE_MODULES.filter((m) => m.required);
+
+/** Alles, was der Kunde frei dazu- oder abwählen kann. */
+export const OPTIONAL_MODULES: BookableModule[] = BOOKABLE_MODULES.filter((m) => !m.required);
+
+export function bookableModuleById(id: BookableModuleId): BookableModule | undefined {
+  return BOOKABLE_MODULES.find((m) => m.id === id);
+}
+
+/**
+ * Module, die im gewählten Produktpfad überhaupt angeboten werden.
+ *
+ * Im Pfad `keep_frontend` entfällt genau ein Modul: `ai_frontend`. Alles
+ * andere bleibt buchbar — das ist der Punkt.
+ */
+export function modulesForTrack(track: ProductTrack): BookableModule[] {
+  if (track === 'modernize_frontend') return BOOKABLE_MODULES;
+  return BOOKABLE_MODULES.filter((m) => !m.requiresFrontend);
+}
+
+/**
+ * Monatlicher Festpreis der Auswahl. Der Core wird immer mitgerechnet,
+ * auch wenn er in der Auswahl fehlt — er ist nicht abwählbar.
+ *
+ * Verbrauchsabhängige Anteile (`flat_plus_usage`) sind bewusst **nicht**
+ * enthalten: sie stehen zum Zeitpunkt des Checkouts nicht fest. Wer eine
+ * Gesamtsumme anzeigt, muss `hasUsageBasedModules()` mitprüfen und den
+ * Verbrauch getrennt ausweisen — sonst verspricht die Oberfläche einen
+ * Endbetrag, den die Rechnung nicht hält.
+ */
+export function monthlyBaseTotalEur(selection: readonly BookableModuleId[]): number {
+  const ids = new Set<BookableModuleId>(selection);
+  for (const module of REQUIRED_MODULES) ids.add(module.id);
+  let total = 0;
+  for (const id of ids) total += bookableModuleById(id)?.priceEur ?? 0;
+  return total;
+}
+
+/** Enthält die Auswahl mindestens ein verbrauchsabhängiges Modul? */
+export function hasUsageBasedModules(selection: readonly BookableModuleId[]): boolean {
+  const ids = new Set<BookableModuleId>(selection);
+  for (const module of REQUIRED_MODULES) ids.add(module.id);
+  for (const id of ids) {
+    if (bookableModuleById(id)?.priceModel === 'flat_plus_usage') return true;
+  }
+  return false;
+}
+
+/**
+ * Normalisiert eine Auswahl: unbekannte IDs fallen weg, Pflichtmodule
+ * kommen hinzu, die Reihenfolge folgt `BOOKABLE_MODULES`.
+ *
+ * Nötig, weil die Auswahl aus einer URL oder aus `sessionStorage` kommen
+ * kann — beides ist Nutzereingabe und darf nicht ungeprüft in den
+ * Checkout laufen.
+ */
+export function normalizeModuleSelection(raw: readonly string[]): BookableModuleId[] {
+  const wanted = new Set(raw);
+  return BOOKABLE_MODULES.filter((m) => m.required || wanted.has(m.id)).map((m) => m.id);
+}
 
 // ─────────────────────────────────────────────────────────────────────────
 //  Runtime-Architektur (Darstellung auf Landing + Pricing)
@@ -1076,6 +1524,528 @@ export const RUNTIME_PIPELINE: RuntimeStage[] = [
  * gekauft und dürfen die Monotonie-Invarianten nicht verwässern.
  */
 export const PLAN_ORDER: PlanId[] = ['free', 'starter', 'growth', 'agency', 'enterprise', 'partner'];
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Kanonisches Entitlement-Vokabular (AP1)
+   ═══════════════════════════════════════════════════════════════════════════
+
+   **Ein** Namensraum für die Frage „Was darf dieser Kunde?".
+
+       Paket ┐
+       Add-on┼──→  Entitlement-Key  ──→  Runtime-Autorisierung  ──→  Oberfläche
+       Grant ┘
+
+   Vorher standen drei Vokabulare nebeneinander: `ModuleId` (in `unlocks` und
+   `plan.modules`), `addon_id` und die Entitlement-Keys der Datenbank. Jedes
+   neue Modul musste an drei Stellen gepflegt werden, und keine der drei war
+   maßgeblich — autorisiert wurde über die Datenbank, angezeigt über die
+   Module.
+
+   ## Was hier maßgeblich ist
+
+   Diese Zuordnung spiegelt den Stand **nach allen Migrationen**, gemessen
+   gegen eine lokale PostgreSQL mit dem vollständigen Migrationslauf — nicht
+   den Live-Stand und nicht `plan.modules`. Wo beide auseinandergingen, gilt
+   die Datenbank: Sie ist es, die zur Laufzeit autorisiert.
+
+   ## Was ausdrücklich bleibt
+
+   `plan.modules` und `plan.permissions` bleiben unangetastet. Sie tragen die
+   Feature-Listen der Preisseite und speisen über
+   `src/core/billing/entitlements.ts` das Verbrauchsmodell. `FEATURE_RULES`
+   dort ist **kein** Freischaltungs-Vokabular und darf nicht in dieses System
+   gezogen werden — es beantwortet Kontingentfragen, nicht Zugriffsfragen.
+
+   ## Regel
+
+   Ein neues Modul bekommt einen Key hier und eine Zeile in der Migration.
+   Kein vierter Namensraum, keine Übersetzungstabelle.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/** Vollständiges Vokabular. Alphabetisch, damit Diffs klein bleiben. */
+export const ENTITLEMENT_KEYS = [
+  'ai.tool.automations',
+  'ai.tool.bot_reply',
+  'ai.tool.code_explain',
+  'ai.tool.log_analyze',
+  'ai.tool.vps_action_advisor',
+  'ai.tool.vps_status',
+  'ai.tool.workflows',
+  'ai_classification.limited',
+  'alerts.email',
+  'api.access',
+  'asset.register',
+  'asset.verify',
+  'barcode.issue',
+  'bots.appointments',
+  'bots.chat',
+  'bots.count',
+  'bots.enabled',
+  'bots.human_handoff',
+  'bots.multi_channel',
+  'bots.orders',
+  'bots.voice',
+  'bots.whatsapp',
+  'bulk.jobs',
+  'c2pa.export',
+  'compliance.export',
+  'dashboard.access',
+  'dse.generator',
+  'evidence.advanced',
+  'evidence.basic_vault',
+  'fix.snippets',
+  'governance.ai_register',
+  'governance.dsgvo_directory',
+  'governance.risk_register',
+  'limit.active_assets',
+  'limit.agent_runs_monthly',
+  'limit.ai_calls_monthly',
+  'limit.ai_cost_monthly_cents',
+  'limit.ai_tokens_monthly',
+  'limit.api_calls_monthly',
+  'limit.automation_runs_monthly',
+  'limit.bot_messages_monthly',
+  'limit.bot_voice_minutes_monthly',
+  'limit.bots',
+  'limit.bulk_jobs_monthly',
+  'limit.compliance_exports_monthly',
+  'limit.domains',
+  'limit.evidence_storage_gb',
+  'limit.llm_queries_monthly',
+  'limit.monthly_registrations',
+  'limit.team_seats',
+  'limit.whatsapp_conversations_monthly',
+  'limit.workflow_runs_monthly',
+  'monitoring.daily',
+  'monitoring.drift',
+  'monitoring.monthly',
+  'org.governance',
+  'policy.iso27001',
+  'policy.nis2',
+  'policy.packs',
+  'provenance.advanced',
+  'provenance.basic',
+  'public-sector.mode',
+  'reports.export',
+  'scheduler.enabled',
+  'sla.priority',
+  'sso.enabled',
+  'team.members',
+  'watermark.apply',
+  'webhooks.enabled',
+  'website.scan',
+  'website.scan_monthly_limit',
+  'whitelabel.dashboard',
+  'whitelabel.reports',
+] as const;
+
+export type EntitlementKey = (typeof ENTITLEMENT_KEYS)[number];
+
+/**
+ * Was jeder Plan gewährt, je Key mit seinem Wert.
+ *
+ * `1` = an (boolesch) · `0` = aus · `-1` = unbegrenzt · sonst das Kontingent.
+ * Schlüssel ist der `planKey`, nicht die `PlanId` — dieselbe Kennung wie in
+ * `products.default_for_plan_key` und `subscriptions.plan_key`.
+ *
+ * Erzeugt aus dem gemessenen Migrationsstand, nicht abgetippt.
+ * `test/billing/entitlement-vocabulary.test.ts` hält die Zuordnung an die
+ * Migrationen gebunden.
+ */
+export const PLAN_ENTITLEMENTS: Readonly<
+  Record<string, Readonly<Partial<Record<EntitlementKey, number>>>>
+> = {
+  free_audit: {
+    'ai_classification.limited': 0,
+    'bots.count': 0,
+    'dashboard.access': 1,
+    'evidence.basic_vault': 1,
+    'governance.ai_register': 1,
+    'governance.dsgvo_directory': 1,
+    'reports.export': 0,
+    'website.scan': 1,
+    'website.scan_monthly_limit': -1,
+  },
+  starter: {
+    'ai.tool.automations': 1,
+    'alerts.email': 1,
+    'asset.verify': 1,
+    'bots.chat': 1,
+    'bots.enabled': 1,
+    'compliance.export': 1,
+    'dashboard.access': 1,
+    'dse.generator': 1,
+    'evidence.basic_vault': 1,
+    'governance.ai_register': 1,
+    'governance.dsgvo_directory': 1,
+    'limit.agent_runs_monthly': 100,
+    'limit.automation_runs_monthly': 25,
+    'limit.bot_messages_monthly': 500,
+    'limit.bots': 1,
+    'limit.compliance_exports_monthly': 5,
+    'limit.domains': 1,
+    'limit.llm_queries_monthly': 100,
+    'limit.team_seats': 3,
+    'monitoring.monthly': 1,
+    'policy.packs': 1,
+    'website.scan': 1,
+    'website.scan_monthly_limit': -1,
+  },
+  growth: {
+    'ai.tool.automations': 1,
+    'ai.tool.bot_reply': 1,
+    'alerts.email': 1,
+    'api.access': 1,
+    'asset.register': 1,
+    'asset.verify': 1,
+    'bots.appointments': 1,
+    'bots.chat': 1,
+    'bots.enabled': 1,
+    'bots.multi_channel': 1,
+    'bots.orders': 1,
+    'bots.whatsapp': 1,
+    'bulk.jobs': 1,
+    'c2pa.export': 1,
+    'compliance.export': 1,
+    'dashboard.access': 1,
+    'dse.generator': 1,
+    'evidence.advanced': 1,
+    'evidence.basic_vault': 1,
+    'fix.snippets': 1,
+    'governance.ai_register': 1,
+    'governance.dsgvo_directory': 1,
+    'governance.risk_register': 1,
+    'limit.ai_calls_monthly': 2000,
+    'limit.ai_cost_monthly_cents': 2000,
+    'limit.ai_tokens_monthly': 2000000,
+    'limit.api_calls_monthly': 5000,
+    'limit.automation_runs_monthly': 100,
+    'limit.bot_messages_monthly': 2000,
+    'limit.bots': 2,
+    'limit.bulk_jobs_monthly': 10,
+    'limit.compliance_exports_monthly': 20,
+    'limit.domains': 3,
+    'limit.llm_queries_monthly': 500,
+    'limit.team_seats': 5,
+    'limit.whatsapp_conversations_monthly': 500,
+    'monitoring.daily': 1,
+    'monitoring.drift': 1,
+    'monitoring.monthly': 1,
+    'policy.iso27001': 1,
+    'policy.packs': 1,
+    'provenance.advanced': 1,
+    'scheduler.enabled': 1,
+    'team.members': 1,
+    'webhooks.enabled': 1,
+    'website.scan': 1,
+    'website.scan_monthly_limit': -1,
+  },
+  agency: {
+    'ai.tool.automations': 1,
+    'ai.tool.bot_reply': 1,
+    'ai.tool.vps_action_advisor': 1,
+    'ai.tool.vps_status': 1,
+    'alerts.email': 1,
+    'api.access': 1,
+    'asset.register': 1,
+    'asset.verify': 1,
+    'bots.appointments': 1,
+    'bots.chat': 1,
+    'bots.enabled': 1,
+    'bots.human_handoff': 1,
+    'bots.multi_channel': 1,
+    'bots.orders': 1,
+    'bots.voice': 1,
+    'bots.whatsapp': 1,
+    'bulk.jobs': 1,
+    'c2pa.export': 1,
+    'compliance.export': 1,
+    'dashboard.access': 1,
+    'dse.generator': 1,
+    'evidence.advanced': 1,
+    'evidence.basic_vault': 1,
+    'fix.snippets': 1,
+    'governance.ai_register': 1,
+    'governance.dsgvo_directory': 1,
+    'governance.risk_register': 1,
+    'limit.ai_calls_monthly': 10000,
+    'limit.ai_cost_monthly_cents': 10000,
+    'limit.ai_tokens_monthly': 10000000,
+    'limit.api_calls_monthly': 25000,
+    'limit.automation_runs_monthly': 500,
+    'limit.bot_messages_monthly': 10000,
+    'limit.bot_voice_minutes_monthly': 500,
+    'limit.bots': 10,
+    'limit.bulk_jobs_monthly': 50,
+    'limit.compliance_exports_monthly': 100,
+    'limit.domains': 10,
+    'limit.llm_queries_monthly': -1,
+    'limit.team_seats': 15,
+    'limit.whatsapp_conversations_monthly': 2500,
+    'monitoring.daily': 1,
+    'monitoring.drift': 1,
+    'monitoring.monthly': 1,
+    'policy.iso27001': 1,
+    'policy.nis2': 1,
+    'policy.packs': 1,
+    'provenance.advanced': 1,
+    'scheduler.enabled': 1,
+    'sla.priority': 1,
+    'team.members': 1,
+    'webhooks.enabled': 1,
+    'website.scan': 1,
+    'website.scan_monthly_limit': -1,
+    'whitelabel.reports': 1,
+  },
+  enterprise: {
+    'ai.tool.automations': 1,
+    'ai.tool.bot_reply': 1,
+    'ai.tool.vps_action_advisor': 1,
+    'ai.tool.vps_status': 1,
+    'alerts.email': 1,
+    'api.access': 1,
+    'asset.register': 1,
+    'asset.verify': 1,
+    'bots.appointments': 1,
+    'bots.chat': 1,
+    'bots.enabled': 1,
+    'bots.human_handoff': 1,
+    'bots.multi_channel': 1,
+    'bots.orders': 1,
+    'bots.voice': 1,
+    'bots.whatsapp': 1,
+    'bulk.jobs': 1,
+    'c2pa.export': 1,
+    'compliance.export': 1,
+    'dashboard.access': 1,
+    'dse.generator': 1,
+    'evidence.advanced': 1,
+    'evidence.basic_vault': 1,
+    'fix.snippets': 1,
+    'governance.ai_register': 1,
+    'governance.dsgvo_directory': 1,
+    'governance.risk_register': 1,
+    'limit.agent_runs_monthly': -1,
+    'limit.ai_calls_monthly': -1,
+    'limit.ai_cost_monthly_cents': -1,
+    'limit.ai_tokens_monthly': -1,
+    'limit.api_calls_monthly': -1,
+    'limit.automation_runs_monthly': -1,
+    'limit.bot_messages_monthly': -1,
+    'limit.bot_voice_minutes_monthly': -1,
+    'limit.bots': -1,
+    'limit.bulk_jobs_monthly': -1,
+    'limit.compliance_exports_monthly': -1,
+    'limit.domains': -1,
+    'limit.llm_queries_monthly': -1,
+    'limit.team_seats': -1,
+    'limit.whatsapp_conversations_monthly': -1,
+    'monitoring.daily': 1,
+    'monitoring.drift': 1,
+    'monitoring.monthly': 1,
+    'org.governance': 1,
+    'policy.iso27001': 1,
+    'policy.nis2': 1,
+    'policy.packs': 1,
+    'provenance.advanced': 1,
+    'scheduler.enabled': 1,
+    'sla.priority': 1,
+    'sso.enabled': 1,
+    'team.members': 1,
+    'webhooks.enabled': 1,
+    'website.scan': 1,
+    'website.scan_monthly_limit': -1,
+    'whitelabel.dashboard': 1,
+    'whitelabel.reports': 1,
+  },
+  partner: {
+    'ai.tool.automations': 1,
+    'ai.tool.bot_reply': 1,
+    'ai.tool.vps_action_advisor': 1,
+    'ai.tool.vps_status': 1,
+    'alerts.email': 1,
+    'api.access': 1,
+    'asset.register': 1,
+    'asset.verify': 1,
+    'bots.appointments': 1,
+    'bots.chat': 1,
+    'bots.enabled': 1,
+    'bots.human_handoff': 1,
+    'bots.multi_channel': 1,
+    'bots.orders': 1,
+    'bots.voice': 1,
+    'bots.whatsapp': 1,
+    'bulk.jobs': 1,
+    'c2pa.export': 1,
+    'compliance.export': 1,
+    'dashboard.access': 1,
+    'dse.generator': 1,
+    'evidence.advanced': 1,
+    'evidence.basic_vault': 1,
+    'fix.snippets': 1,
+    'governance.ai_register': 1,
+    'governance.dsgvo_directory': 1,
+    'governance.risk_register': 1,
+    'limit.ai_calls_monthly': 50000,
+    'limit.ai_cost_monthly_cents': 50000,
+    'limit.ai_tokens_monthly': 50000000,
+    'limit.api_calls_monthly': 100000,
+    'limit.automation_runs_monthly': 2500,
+    'limit.bot_messages_monthly': 50000,
+    'limit.bot_voice_minutes_monthly': 2500,
+    'limit.bots': 50,
+    'limit.bulk_jobs_monthly': 500,
+    'limit.compliance_exports_monthly': 500,
+    'limit.domains': 50,
+    'limit.llm_queries_monthly': -1,
+    'limit.team_seats': 50,
+    'limit.whatsapp_conversations_monthly': -1,
+    'monitoring.daily': 1,
+    'monitoring.drift': 1,
+    'monitoring.monthly': 1,
+    'org.governance': 1,
+    'policy.iso27001': 1,
+    'policy.nis2': 1,
+    'policy.packs': 1,
+    'provenance.advanced': 1,
+    'scheduler.enabled': 1,
+    'sla.priority': 1,
+    'team.members': 1,
+    'webhooks.enabled': 1,
+    'website.scan': 1,
+    'website.scan_monthly_limit': -1,
+    'whitelabel.dashboard': 1,
+    'whitelabel.reports': 1,
+  },
+  governance_launch: {
+    'bots.enabled': 1,
+    'compliance.export': 1,
+    'dashboard.access': 1,
+    'dse.generator': 1,
+    'evidence.basic_vault': 1,
+    'governance.dsgvo_directory': 1,
+    'limit.automation_runs_monthly': 10,
+    'limit.bot_messages_monthly': 1000,
+    'limit.bots': 1,
+    'limit.compliance_exports_monthly': 5,
+    'limit.domains': 1,
+    'limit.evidence_storage_gb': 5,
+    'limit.team_seats': 3,
+    'policy.packs': 1,
+    'reports.export': 1,
+    'website.scan': 1,
+  },
+};
+
+/**
+ * Wert eines Keys in einem Plan. `null` heißt: der Plan kennt ihn nicht.
+ *
+ * Bewusst `null` statt `0`: „nicht enthalten" und „enthalten, aber auf null
+ * gesetzt" sind verschiedene Aussagen. `free_tier` führt etwa
+ * `reports.export` ausdrücklich mit `0`.
+ */
+export function planEntitlementValue(
+  planKeyOrId: string | null | undefined,
+  key: EntitlementKey,
+): number | null {
+  if (!planKeyOrId) return null;
+
+  // Aufrufer übergeben mal den `planKey` (`free_audit`, aus der Datenbank),
+  // mal die `PlanId` (`free`, aus der Oberfläche). Beides muss dieselbe
+  // Antwort liefern — sonst zeigte der Marketplace für denselben Kunden je
+  // nach Aufrufweg ein anderes Ergebnis.
+  //
+  // Auch Jahresvarianten (`growth_yearly`) landen so beim Basisplan, weil
+  // `planByKey()` sie über `yearlyPlanKey` auflöst. Das entspricht dem
+  // Auflöser in der Datenbank, der `_yearly` ebenfalls zurückführt.
+  let satz = PLAN_ENTITLEMENTS[planKeyOrId];
+  if (!satz) {
+    const plan = PLANS.find((p) => p.id === planKeyOrId) ?? planByKey(planKeyOrId);
+    if (plan) satz = PLAN_ENTITLEMENTS[plan.planKey];
+  }
+  if (!satz) return null;
+
+  const wert = satz[key];
+  return wert === undefined ? null : wert;
+}
+
+/**
+ * Gewährt dieser Plan den Key?
+ *
+ * Dieselbe Regel wie im serverseitigen Wächter
+ * (`supabase/functions/_shared/entitlements.ts`): `-1` (unbegrenzt) und jeder
+ * Wert über null gelten als gewährt, `0` und „nicht enthalten" nicht.
+ *
+ * Freischalten tut das nichts — das entscheidet `tenant_entitlements()` auf
+ * dem Server. Diese Funktion beantwortet die Frage „welcher Plan enthält
+ * das?", etwa für den Marketplace.
+ */
+export function planGrants(
+  planKey: string | null | undefined,
+  key: EntitlementKey,
+): boolean {
+  const wert = planEntitlementValue(planKey, key);
+  return wert !== null && (wert === -1 || wert > 0);
+}
+
+
+/**
+ * Grace Period nach einer fehlgeschlagenen Zahlung, in Tagen.
+ *
+ * Entscheidung des Eigentümers vom 2026-08-24: Innerhalb dieser Frist bleibt
+ * **alles** aktiv — Dashboard, Governance-Funktionen, Monitoring und geplante
+ * Prüfungen. Erst danach werden die kostenpflichtigen Berechtigungen
+ * pausiert. Daten, Konfiguration und Prüfpfad bleiben in jedem Fall erhalten.
+ *
+ * Die Zahl steht zwangsläufig zweimal: hier und als Intervall in
+ * `20260829000000_grace_period.sql`, weil der Auflöser in SQL entscheidet und
+ * die Oberfläche die verbleibenden Tage anzeigt.
+ * `test/billing/grace-period.test.ts` bindet beide aneinander.
+ */
+export const GRACE_PERIOD_DAYS = 7;
+
+/** Status, in denen ein Abo alle Berechtigungen trägt — ohne Fristprüfung. */
+export const SUBSCRIPTION_STATES_ACTIVE = ['active', 'trialing'] as const;
+
+/**
+ * Verbleibende Tage der Grace Period.
+ *
+ * `null` heißt: keine Frist im Gange. Das gilt auch für `past_due` **ohne**
+ * Zeitstempel — fehlt er (Altdaten oder ein Webhook-Ereignis, das nie ankam),
+ * wird daraus keine Sperrung abgeleitet. Eine fehlende Information ist kein
+ * Zahlungsverzug. Dieselbe Regel steht im Auflöser.
+ */
+export function graceDaysRemaining(
+  status: string | null | undefined,
+  pastDueSince: string | Date | null | undefined,
+  now: Date,
+): number | null {
+  if (status !== 'past_due' || !pastDueSince) return null;
+  const beginn = pastDueSince instanceof Date ? pastDueSince : new Date(pastDueSince);
+  if (Number.isNaN(beginn.getTime())) return null;
+  const vergangeneTage = (now.getTime() - beginn.getTime()) / 86_400_000;
+  return Math.max(0, Math.ceil(GRACE_PERIOD_DAYS - vergangeneTage));
+}
+
+/**
+ * Trägt dieses Abo derzeit die bezahlten Berechtigungen?
+ *
+ * Spiegelt `abo_wirksam` aus `20260829000000_grace_period.sql`. Die Oberfläche
+ * darf damit nichts freischalten — das entscheidet der Server. Sie darf damit
+ * nur *anzeigen*, was ohnehin gilt.
+ */
+export function subscriptionGrantsPaidAccess(
+  status: string | null | undefined,
+  pastDueSince: string | Date | null | undefined,
+  now: Date,
+): boolean {
+  if (!status) return false;
+  if ((SUBSCRIPTION_STATES_ACTIVE as readonly string[]).includes(status)) return true;
+  if (status !== 'past_due') return false;
+  if (!pastDueSince) return true; // fehlender Zeitstempel sperrt nicht
+  const verbleibend = graceDaysRemaining(status, pastDueSince, now);
+  return verbleibend === null || verbleibend > 0;
+}
 
 /**
  * Legacy-Plan-Keys aus Bestandsdaten (DB-Zeilen, Stripe-Metadaten, alte
@@ -1185,6 +2155,36 @@ export const PAID_PLANS: Plan[] = PLANS.filter((p) => p.price.monthlyEur > 0);
 
 /** Alle Abo-Pläne in verbindlicher Reihenfolge (ohne Einmalprodukte). */
 export const ORDERED_PLANS: Plan[] = PLAN_ORDER.map((id) => planById(id));
+
+/**
+ * Die Pläne, die einem Neukunden **angeboten** werden — Free, Starter,
+ * Growth und Enterprise (letzteres als Angebot).
+ *
+ * Bewusst nicht `ORDERED_PLANS`: Dort stehen weiterhin alle Ränge, weil
+ * `planRank()` und `isUpgrade()` auch für Bestandskunden auf Agency oder
+ * Partner die richtige Antwort geben müssen. Wer ein Preisraster, eine
+ * Vergleichstabelle oder eine Planauswahl rendert, nimmt diese Liste —
+ * sonst bietet die Oberfläche etwas an, das niemand mehr buchen kann
+ * (`CLAUDE.md` §14: kein Element vortäuschen, das nichts tut).
+ */
+export const SALES_PLANS: Plan[] = ORDERED_PLANS.filter((p) => p.availability !== 'legacy');
+
+/** Pläne, die ohne Vertrieb sofort buchbar sind. */
+export const SELF_SERVICE_PLANS: Plan[] = ORDERED_PLANS.filter(
+  (p) => p.availability === 'self_service',
+);
+
+/**
+ * Stillgelegte Pläne. Sie erscheinen nirgends im Verkauf, bleiben aber
+ * vollständig gültig, wo sie gebucht sind — Produkte, Preise und
+ * Entitlements sind unverändert.
+ */
+export const LEGACY_PLANS: Plan[] = ORDERED_PLANS.filter((p) => p.availability === 'legacy');
+
+/** Darf dieser Plan heute noch neu gewählt werden? */
+export function isPlanSelectable(plan: Plan | PlanId | string | null | undefined): boolean {
+  return resolvePlan(plan)?.availability !== 'legacy';
+}
 
 /**
  * Einmalprodukte — Käufe ohne Verlängerung, die zusätzlich zu einem Abo

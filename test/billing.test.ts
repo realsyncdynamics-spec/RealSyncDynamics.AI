@@ -238,9 +238,13 @@ describe('Billing Workflows', () => {
     expect(partner.plan.permissions.multiTenant).toBe(true);
   });
 
-  it('enterprise should have checkout CTA', () => {
+  it('enterprise fuehrt seit AP2 in den Vertrieb, nicht in den Checkout', () => {
+    // Enterprise ist ab AP2 ein Vertrag: `purchaseMode: 'inquiry'`. Der
+    // Self-Service endet bei Growth. Bestehende Enterprise-Abos rechnen
+    // unveraendert weiter ab — betroffen ist allein der Neuabschluss.
     const enterprise = tierById('enterprise')!;
-    expect(enterprise.cta.href).toContain('/checkout/enterprise');
+    expect(enterprise.cta.href).toContain('/contact-sales');
+    expect(enterprise.cta.href).not.toContain('/checkout/');
   });
 });
 

@@ -9,7 +9,12 @@
 
 interface SupabaseAdminClient {
   from(table: string): {
-    insert(obj: Record<string, unknown>): Promise<{ error: unknown }>;
+    // `PromiseLike`, nicht `Promise`: Der Query-Builder von supabase-js ist
+    // thenable, aber keine echte Promise — ihm fehlen `catch`, `finally` und
+    // `Symbol.toStringTag`. Auf `Promise` verengt, passt kein einziger echter
+    // Client auf diese Schnittstelle, und jeder Aufruf von `audit()` erzeugt
+    // einen Typfehler, der nichts über den Aufrufer aussagt.
+    insert(obj: Record<string, unknown>): PromiseLike<{ error: unknown }>;
   };
 }
 

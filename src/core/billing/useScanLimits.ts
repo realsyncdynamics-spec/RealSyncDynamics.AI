@@ -13,9 +13,18 @@ export interface ScanLimitStatus {
 }
 
 /**
- * Hook that manages scan limits for free tier users.
- * Tracks monthly scan quota and prevents scans when limit is reached.
- * Returns null for paid tiers (unlimited scans).
+ * Kontingentprüfung für Website-Scans.
+ *
+ * `null` bedeutet: kein Kontingent, unbegrenzt scannen.
+ *
+ * Seit der Entscheidung vom 2026-08-24 ist das der Normalfall — Scans sind
+ * für jeden Plan kostenlos und unbegrenzt, weil der Scan der Einstieg in den
+ * Trichter ist und nicht die verkaufte Ware. Verkauft wird die dauerhafte
+ * Überwachung (`monitoring.*`), die mit dem ersten gebuchten Paket beginnt.
+ *
+ * Die Mechanik bleibt trotzdem stehen: Sie hängt allein am Wert von
+ * `website.scan_monthly_limit`. Wird dort je wieder eine endliche Zahl
+ * hinterlegt, greift die Zählung ohne Codeänderung.
  */
 export function useScanLimits(): ScanLimitStatus | null {
   const { tier, getLimit } = useEntitlements();
@@ -29,8 +38,22 @@ export function useScanLimits(): ScanLimitStatus | null {
       return;
     }
 
-    // Only free tier has limits
+    // Kontingente gab es nur im Free-Plan.
     if (tier !== 'free') {
+      setStatus(null);
+      setLoading(false);
+      return;
+    }
+
+    // Unbegrenzt (`-1`) oder gar kein Wert → nicht zählen und nicht abfragen.
+    //
+    // Vorher stand hier `getLimit(...) || 3`. Dieser Rückfall hätte das
+    // abgeschaffte Kontingent stillschweigend wieder eingeführt, sobald der
+    // Wert fehlt — und `0` wäre ebenfalls zu `3` geworden. Ein Kontingent
+    // gilt jetzt nur noch, wenn es ausdrücklich als positive Zahl hinterlegt
+    // ist.
+    const limit = getLimit('website.scan_monthly_limit');
+    if (limit === null || limit < 0) {
       setStatus(null);
       setLoading(false);
       return;
@@ -39,7 +62,6 @@ export function useScanLimits(): ScanLimitStatus | null {
     try {
       setLoading(true);
       const sb = getSupabase();
-      const limit = getLimit('website.scan_monthly_limit') || 3;
 
       // Count scans in current month
       const now = new Date();

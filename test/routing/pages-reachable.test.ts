@@ -9,7 +9,11 @@
  * sieht aus wie Produktionscode und ist keiner.
  *
  * Am 2026-08-19 traf das sieben Dateien, alle aus derselben Funktion: der
- * SiteOS-Builder-Vorschau. Sie exportieren einander im Kreis
+ * SiteOS-Builder-Vorschau. Zwei davon — `TransformationPreviewPage` und
+ * `WowPreviewPage` — sind seither entfernt: fuenf Zeilen, die nur eine andere
+ * Seite wiederausfuehrten, ohne selbst eingebunden zu sein. Ihre Eintraege
+ * sind aus `KNOWN_UNREACHABLE` verschwunden, weil die Liste sonst einen
+ * Zustand beschreiben wuerde, den es nicht mehr gibt. Sie exportieren einander im Kreis
  * (`WowPreviewPage` → `PreviewSelectionPage`, `WebsiteBuilderWowFlow` →
  * dieselbe Datei, `routes/wowPreview.tsx` → dieselbe Datei), und **keiner**
  * dieser Wege ist in `src/App.tsx` registriert.
@@ -53,14 +57,10 @@ const KNOWN_UNREACHABLE: Readonly<Record<string, string>> = {
     'Wiederausfuhr von PreviewSelectionPage. Die Seite selbst ist seit dem 2026-08-19 unter /app/siteos/builder erreichbar; dieser Wrapper bleibt ungenutzt.',
   'src/pages/WowWebsitePreview.tsx':
     'Variante der Builder-Vorschau ohne Route.',
-  'src/unified-entry/pages/TransformationPreviewPage.tsx':
-    'Zweite Vorschau-Variante derselben Funktion, ohne Route.',
   'src/unified-entry/pages/WebsitePreviewRoute.tsx':
     'Router-Wrapper, der selbst nirgends registriert ist.',
   'src/unified-entry/pages/WowPreviewEntryPage.tsx':
     'Einstiegsvariante der Builder-Vorschau, ohne Route.',
-  'src/unified-entry/pages/WowPreviewPage.tsx':
-    'Wiederausfuhr von PreviewSelectionPage. Die Seite selbst ist geroutet; dieser Wrapper bleibt ungenutzt.',
 };
 
 function resolveSpecifier(fromFile: string, spec: string): string | null {

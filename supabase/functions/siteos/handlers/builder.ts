@@ -8,12 +8,28 @@
 //     prompt: string,
 //     project_id?: string,      // optionale Bindung an website_projects
 //     locale?: 'de' | 'en' | ...,
-//     enrichment?: { name?, summary?, services?, locality? }  // Modell-Vorschläge
+//     enrichment?: { name?, summary?, services?, locality? },  // Modell-Vorschläge
+//     refinements?: string[]    // Anweisungen aus der anonymen Vorschau
 //   }
+//
+// ## Warum `refinements` Anweisungen sind und kein fertiger Blueprint
+//
+// Vor der Registrierung baut und verfeinert der Besucher seine Site in der
+// anonymen Vorschau — im Browser, gegen denselben Kern. Beim Übernehmen
+// muss das Ergebnis hier ankommen. Naheliegend wäre, den Blueprint aus dem
+// Browser zu übernehmen. Das wäre eine Struktur aus einer Quelle, die der
+// Nutzer kontrolliert: Compliance-Profil, KI-Hinweis und Rechtsgrundlagen
+// kämen dann vom Client.
+//
+// Stattdessen kommt nur die Anweisungsfolge. Der Server spielt sie mit
+// derselben deterministischen Funktion nach und erzeugt das Ergebnis selbst.
+// Gleiche Eingabe ⇒ gleicher Blueprint ⇒ gleicher Hash: Der Besucher sieht
+// genau das, was persistiert wird, ohne dass ihm dabei vertraut werden muss.
 //
 // Ablauf (Reihenfolge ist verbindlich, siehe siteos-core/pipeline.ts):
 //   1. Brief deterministisch aus dem Prompt ableiten
 //   2. Blueprint synthetisieren (Compliance-Gerüst modellunabhängig)
+//   2b. Verfeinerungen nachspielen (falls übergeben)
 //   3. Kanonisch hashen
 //   4. Statisch prüfen (8 Dimensionen) und bewerten
 //   5. Persistieren, Evidence-Snapshot setzen, Agenten einreihen
@@ -26,12 +42,22 @@ import { handleOptions, jsonResponse, jsonError, methodNotAllowed } from '../../
 import { audit } from '../../_shared/auditLog.ts';
 import { appendCustodyEvent } from '../../_shared/provenanceCore.ts';
 import {
+  analyzeBlueprint,
   buildSiteFromPrompt,
+  canonicalHash,
+  computeScores,
   planAgentTasks,
+  refineBlueprint,
   type Locale,
+  type RefinementChange,
 } from '../../../../packages/siteos-core/src/index.ts';
 
 const MAX_PROMPT_LENGTH = 2000;
+// Obergrenzen für die nachgespielte Anweisungsfolge. Eine Vorschau-Sitzung
+// erreicht diese Werte im Normalfall nicht; sie begrenzen den Aufwand, den
+// ein einzelner Aufruf erzeugen kann.
+const MAX_REFINEMENTS = 40;
+const MAX_REFINEMENT_LENGTH = 400;
 const VALID_LOCALES = new Set<Locale>(['de', 'en', 'fr', 'it', 'es', 'nl', 'pl']);
 
 export async function handle(req: Request): Promise<Response> {
@@ -90,12 +116,36 @@ export async function handle(req: Request): Promise<Response> {
       ? body.model.trim()
       : Deno.env.get('SITEOS_BUILDER_MODEL') ?? null;
 
-    const result = await buildSiteFromPrompt(prompt, {
+    const built = await buildSiteFromPrompt(prompt, {
       locale,
       enrichment: sanitizeEnrichment(body.enrichment),
       model,
       createdAt: nowIso,
     });
+
+    // ── Verfeinerungen nachspielen ───────────────────────────────────────
+    // Nach der letzten Anweisung werden Hash, Befunde und Bewertung neu
+    // gebildet. Sie auf dem Erstbau stehen zu lassen, hieße einen Nachweis
+    // über eine Struktur auszustellen, die so nicht mehr existiert.
+    const refinements = sanitizeRefinements(body.refinements);
+    const refinementLog: RefinementChange[] = [];
+    let blueprint = built.blueprint;
+    for (const instruction of refinements) {
+      const step = refineBlueprint(blueprint, instruction);
+      blueprint = step.blueprint;
+      refinementLog.push(...step.changes);
+    }
+
+    const refinedFindings = refinements.length === 0 ? built.findings : analyzeBlueprint(blueprint);
+    const result = refinements.length === 0
+      ? built
+      : {
+          ...built,
+          blueprint,
+          blueprintSha256: await canonicalHash(blueprint),
+          findings: refinedFindings,
+          scores: computeScores(refinedFindings),
+        };
 
     // ── Version + Verkettung ─────────────────────────────────────────────
     // Version und prev_hash werden ausschließlich hier vergeben; RLS lässt
@@ -234,6 +284,9 @@ export async function handle(req: Request): Promise<Response> {
         slug: result.blueprint.slug, version, industry: result.blueprint.industry,
         content_sha256: result.blueprintSha256, finding_count: result.findings.length,
         severity_max: result.scores.severityMax, model,
+        // Die Anweisungsfolge gehört in den Prüfpfad: Sie erklärt, warum
+        // dieser Blueprint von dem abweicht, den der Prompt allein ergäbe.
+        refinements, refinement_codes: refinementLog.map((change) => change.code),
       },
     });
 
@@ -250,6 +303,7 @@ export async function handle(req: Request): Promise<Response> {
       scores: result.scores,
       agent_tasks: tasks,
       provenance_linked: provenanceLinked,
+      refinements: refinementLog,
     });
   } catch (e) {
     console.error(JSON.stringify({
@@ -265,6 +319,21 @@ export async function handle(req: Request): Promise<Response> {
  * `enrichment` wird verworfen — ein Aufrufer darf über diesen Weg weder
  * Branche noch Rechtsgrundlagen setzen.
  */
+/**
+ * Anweisungen aus der Vorschau. Reihenfolge ist bedeutungstragend — sie
+ * bleibt erhalten. Leere Einträge fallen weg, zu lange werden abgeschnitten;
+ * unbekannte Anweisungen bleiben drin und laufen ins Leere, statt den
+ * gesamten Aufruf abzulehnen.
+ */
+function sanitizeRefinements(input: unknown): string[] {
+  if (!Array.isArray(input)) return [];
+  return input
+    .filter((entry): entry is string => typeof entry === 'string')
+    .map((entry) => entry.trim().slice(0, MAX_REFINEMENT_LENGTH))
+    .filter((entry) => entry !== '')
+    .slice(0, MAX_REFINEMENTS);
+}
+
 function sanitizeEnrichment(raw: unknown): { name?: string; summary?: string; services?: string[]; locality?: string | null } | undefined {
   if (typeof raw !== 'object' || raw === null) return undefined;
   const input = raw as Record<string, unknown>;

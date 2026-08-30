@@ -24,7 +24,7 @@ jobs:
         include:
           - { dir: services/openclaw-agent,          check: 'npm run typecheck' }
           - { dir: services/playwright-scanner,       check: 'npm run typecheck' }
-          - { dir: apps/agent-runtime,                check: 'npm run typecheck' }
+          - { dir: apps/agent-runtime,                check: 'npm run typecheck && npm test' }
           # Worker importiert ../src/rules (Repo-Root) → reiner Typecheck ohne Emit,
           # damit keine .js-Artefakte ausserhalb des Worker-Verzeichnisses entstehen.
           - { dir: worker,                            check: 'npx tsc --noEmit' }

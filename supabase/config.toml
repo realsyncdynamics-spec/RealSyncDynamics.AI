@@ -314,6 +314,12 @@ verify_jwt = false
 [functions.bot-voice-webhook]
 verify_jwt = false
 
+# whatsapp-webhook wird von Metas Servern (WhatsApp Business Cloud API) ohne
+# JWT aufgerufen. Authentizität über X-Hub-Signature-256 (WHATSAPP_APP_SECRET)
+# + phone_number_id-Mapping in whatsapp_channels; Feature-Gate bots.whatsapp.
+[functions.whatsapp-webhook]
+verify_jwt = false
+
 # ── Rollout 2026-08-19: Aufrufer ist keine Supabase-Session ──
 # Der CLI-Default ist verify_jwt = true. Für diese beiden ist das nicht
 # "sicherer", sondern schlicht falsch: ihr Aufrufer schickt nie ein

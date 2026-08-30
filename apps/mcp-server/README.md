@@ -87,8 +87,8 @@ curl -X POST "$SUPABASE_URL/functions/v1/mcp-api-key-manager" \
 ```
 
 > Das Feld `key` erscheint **genau einmal** — in dieser Antwort. Gespeichert wird
-> nur sein SHA-256-Hash. Ein verlorener Key lässt sich nicht wiederherstellen,
-> nur widerrufen und neu ausstellen.
+> nur ein mit `MCP_KEY_PEPPER` gebildeter HMAC-SHA-256 davon. Ein verlorener Key
+> lässt sich nicht wiederherstellen, nur widerrufen und neu ausstellen.
 
 Weitere Operationen:
 

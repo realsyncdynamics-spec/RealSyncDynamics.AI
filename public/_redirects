@@ -14,4 +14,12 @@ https://www.realsyncdynamicsai.de/* https://realsyncdynamicsai.de/:splat 301
 # bestehenden SiteOS-Transformation-Flow (/handwerk-website).
 /website-builder  /handwerk-website  301
 
+# Abgeloeste Service-Doorway. Die Route wurde beim Product-Clarity-Cleanup
+# bewusst entfernt (siehe Kommentar in src/App.tsx), der Sitemap-Eintrag blieb
+# stehen — der Prerender machte daraus eine 404-Seite mit HTTP 200. Sitemap und
+# Metadaten sind raus; dieser 301 faengt Altbestand aus Index und Backlinks ab,
+# statt sie weiter auf den /*-Fallback laufen zu lassen. Ziel ist /audit: der
+# kanonische kostenlose DSGVO-Scan, also der inhaltliche Nachfolger.
+/dsgvo-website  /audit  301
+
 /*  /index.html  200

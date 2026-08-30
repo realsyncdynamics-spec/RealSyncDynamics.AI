@@ -213,11 +213,11 @@ export function AgenciesSolution() {
                 </li>
               ))}
             </ul>
-            <Link to="/contact-sales?plan=enterprise" className="surface-mono inline-block px-8 py-3 font-bold">Enterprise anfragen</Link>
+            <Link to="/contact-sales?tier=enterprise&source=solutions" className="surface-mono inline-block px-8 py-3 font-bold">Enterprise anfragen</Link>
           </div>
 
           <p className="text-silver-400 text-sm">
-            Mehr als 25 Kunden-Websites? Der Umfang wird im Enterprise-Vertrag festgelegt — <Link to="/contact-sales?plan=enterprise" className="text-security-500 hover:text-security-400">Enterprise anfragen</Link>.
+            Mehr als 25 Kunden-Websites? Der Umfang wird im Enterprise-Vertrag festgelegt — <Link to="/contact-sales?tier=enterprise&source=solutions" className="text-security-500 hover:text-security-400">Enterprise anfragen</Link>.
           </p>
         </div>
       </section>

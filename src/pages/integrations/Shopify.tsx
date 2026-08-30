@@ -151,7 +151,7 @@ export function ShopifyIntegrationPage() {
             <Link to="/checkout/growth?source=shopify" className="inline-flex items-center gap-2 px-4 py-2 surface-gold text-sm font-bold rounded-none">
               Growth aktivieren <ArrowRight className="h-3.5 w-3.5" />
             </Link>
-            <Link to="/contact-sales?plan=enterprise&intent=shopify" className="inline-flex items-center gap-2 px-4 py-2 border border-titanium-100/30 hover:border-amber-400 text-titanium-100 hover:text-amber-300 text-sm font-medium transition-colors">
+            <Link to="/contact-sales?tier=enterprise&intent=shopify&source=shopify" className="inline-flex items-center gap-2 px-4 py-2 border border-titanium-100/30 hover:border-amber-400 text-titanium-100 hover:text-amber-300 text-sm font-medium transition-colors">
               Enterprise anfragen
             </Link>
           </div>

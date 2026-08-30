@@ -210,7 +210,7 @@ export function SaaSSolution() {
                 </li>
               ))}
             </ul>
-            <Link to="/contact-sales?plan=enterprise" className="surface-mono inline-block px-8 py-3 font-bold">Enterprise anfragen</Link>
+            <Link to="/contact-sales?tier=enterprise&source=solutions" className="surface-mono inline-block px-8 py-3 font-bold">Enterprise anfragen</Link>
           </div>
 
           <p className="text-silver-400 text-sm mb-6">

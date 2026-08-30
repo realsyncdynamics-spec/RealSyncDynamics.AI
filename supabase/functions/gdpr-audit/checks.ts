@@ -109,9 +109,20 @@ export function hasEqualRejectButton(html: string): boolean {
   return /(alle[sn]? ablehn|reject all|decline|nur notwendig|only necessary|essenziell)/.test(h);
 }
 
-/** Dynamisch nachgeladene Google Fonts (LG Muenchen I, 3 O 17493/20). */
+/**
+ * Dynamisch nachgeladene Google Fonts (LG Muenchen I, 3 O 17493/20).
+ *
+ * Der Ausdruck ist bewusst am Host verankert — `//` davor, ein Trennzeichen
+ * danach. Ohne diese Verankerung (CodeQL-Alert vom 2026-08-30) wuerde auch
+ * `fonts.googleapis.com.angreifer.net` treffen, und der Scan meldete einem
+ * Kunden einen `medium`-Befund fuer etwas, das er gar nicht einbindet.
+ * Bei einem Werkzeug, das Befunde an Kunden ausliefert, ist ein Fehlalarm
+ * teurer als eine Luecke.
+ */
+const GOOGLE_FONTS_RE = /(?:https?:)?\/\/fonts\.(?:googleapis|gstatic)\.com(?=[:/?"'\s>]|$)/i;
+
 export function usesDynamicGoogleFonts(html: string): boolean {
-  return /fonts\.(googleapis|gstatic)\.com/i.test(stripPolicyDeclarations(html));
+  return GOOGLE_FONTS_RE.test(stripPolicyDeclarations(html));
 }
 
 // ── Fakten fuer die Rule Engine ──────────────────────────────────────

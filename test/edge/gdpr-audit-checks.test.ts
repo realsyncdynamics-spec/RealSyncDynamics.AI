@@ -93,7 +93,22 @@ describe('Pflichtangaben', () => {
 
   it('erkennt dynamisch geladene Google Fonts', () => {
     expect(usesDynamicGoogleFonts('<link href="https://fonts.googleapis.com/css?family=Roboto">')).toBe(true);
+    expect(usesDynamicGoogleFonts('<link href="//fonts.gstatic.com/s/roboto.woff2">')).toBe(true);
     expect(usesDynamicGoogleFonts(SAUBERE_SEITE)).toBe(false);
+  });
+
+  it('fällt nicht auf einen fremden Host mit Google-Fonts-Präfix herein', () => {
+    // CodeQL-Alert vom 2026-08-30: Ohne Verankerung am Host trifft der
+    // Ausdruck auch angehängte Domains. Ein Fehlalarm kostet den Kunden hier
+    // einen `medium`-Befund für etwas, das er nicht einbindet.
+    expect(usesDynamicGoogleFonts('<script src="https://fonts.googleapis.com.angreifer.net/x.js">')).toBe(false);
+    expect(usesDynamicGoogleFonts('<link href="https://meine-fonts.googleapis.com.cdn.example/a.css">')).toBe(false);
+  });
+
+  it('meldet selbst gehostete Schriften nicht', () => {
+    expect(usesDynamicGoogleFonts('<link href="/fonts/roboto.woff2">')).toBe(false);
+    // Ein Fließtext, der den Dienst nur erwähnt, ist keine Einbindung.
+    expect(usesDynamicGoogleFonts('<p>Wir verzichten auf fonts.googleapis.com.</p>')).toBe(false);
   });
 });
 

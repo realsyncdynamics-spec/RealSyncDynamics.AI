@@ -155,6 +155,19 @@ jobs:
       # dann auch echte Regressionen untergehen. Diese Suiten an das volle
       # Schema anzupassen ist eigene Arbeit und bleibt offen; sie hier zu
       # verschweigen waere genau der Fehler, den dieser Schritt behebt.
+      # Der db-Job installierte bisher keine Node-Abhaengigkeiten — er brauchte
+      # nur psql. Ohne node_modules zieht `npx vitest` das Paket zwar nach,
+      # scheitert dann aber daran, dass vitest.config.ts `vitest/config` und
+      # `@vitejs/plugin-react` importiert (ERR_MODULE_NOT_FOUND).
+      # Deshalb hier, und bewusst NACH den Migrationen: schlaegt eine Migration
+      # fehl, faellt der Job sofort, ohne erst zu installieren.
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '20'
+          cache: npm
+      - name: Install dependencies (fuer die DB-Tests)
+        run: npm ci
+
       - name: Security regression tests (RLS, IDOR, Billing-Upsert)
         env:
           TEST_DB_URL: postgresql://postgres:postgres@localhost:5432/postgres

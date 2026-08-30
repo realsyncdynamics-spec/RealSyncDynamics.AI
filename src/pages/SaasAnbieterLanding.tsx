@@ -76,8 +76,7 @@ export function SaasAnbieterLanding() {
           <Section title="Pricing für SaaS-Anbieter">
             <ul className="space-y-1.5 text-sm">
               <li><strong className="text-titanium-50">Growth 249 €/M</strong> — Multi-Tenant, API, AVV-Generator, Sub-Processors-Page, alle Tools</li>
-              <li><strong className="text-titanium-50">Agency 699 €/M</strong> — bis zu 10 Tenants, dedicated Onboarding, White-Label-Reports, Priority-Support</li>
-              <li><strong className="text-titanium-50">Enterprise</strong> — auf Anfrage, On-Premise-Option, SLA, Custom-Integration</li>
+              <li><strong className="text-titanium-50">Enterprise</strong> — nach Vertrag: Tenants nach Vertrag, dediziertes Onboarding, White-Label-Reports, Priority-Support, On-Premise-Option, SLA, Custom-Integration</li>
             </ul>
           </Section>
 

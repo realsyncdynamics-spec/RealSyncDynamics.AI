@@ -240,7 +240,7 @@ function Inner() {
               Zusätzliche Funktionen freischalten
             </h3>
             <p className="text-sm text-titanium-400 max-w-md mx-auto">
-              Mit dem Scale-Plan erhalten Sie erweiterte ISO 42001 Reporting-Features,
+              Mit einem kostenpflichtigen Tarif erhalten Sie erweiterte ISO 42001 Reporting-Features,
               automatische Compliance-Audits und Zertifizierungsvorbereitung.
             </p>
           </div>

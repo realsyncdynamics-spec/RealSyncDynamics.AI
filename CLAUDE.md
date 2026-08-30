@@ -685,6 +685,34 @@ sind unberührt. Rangvergleiche (`PlanUpgradeModal`, `planRank()`) laufen
 weiterhin über die vollständige Leiter — sonst bekäme ein Bestandskunde auf
 Agency falsche Antworten. Hintergrund: `docs/product/ap2-paketumbau.md` §7.
 
+**2026-08-30 — Texte und Buttons an die Route- und Pricing-Infrastruktur**
+
+Auf die Fragepflicht nach §10.3 hat der Eigentümer dreimal mit **Ja**
+geantwortet:
+
+| Frage | Antwort |
+|---|---|
+| 1. Erfundene Plannamen (Scale, Pro, Business, Premium) auf echte Plannamen korrigieren | **Ja** |
+| 2. Legacy-Pläne (Agency, Partner) auf die verkäuflichen Stufen umstellen | **Ja** |
+| 3. Falsche Kontingente auf `/agenturen-conversion` an die SSoT angleichen | **Ja** |
+
+Umfang — und **nur** dieser: Beschriftungen, Fließtext und Link-Ziele. Kein
+Layout, kein Grid, keine Farben, keine Typografie, keine Sektionsreihenfolge.
+
+Die Zuordnung ist aus `shared/pricing.ts` abgeleitet, nicht gewählt:
+White-Label (`whitelabel.reports`) gibt es nur in Agency, Enterprise und
+Partner — davon ist Enterprise der einzige verkäufliche Plan, deshalb geht
+jede White-Label-Aussage dorthin. `provenance.advanced`, `bulk.jobs`,
+`scheduler.enabled` und `evidence.advanced` beginnen bei Growth,
+`policy.packs` seit AP2 bei Starter, die Kodee-Tools (`ai.tool.vps_*`) bei
+Agency und damit verkäuflich erst bei Enterprise.
+
+**Nicht freigegeben und weiterhin offen**: Die WhatsApp-Preisseite
+(`/whatsapp-pricing`) führt vier Tarifkarten in `lg:grid-cols-4`, darunter
+„Agency WhatsApp" mit Self-Service-Checkout auf `/checkout/agency`. Die
+Karte zu entfernen ändert die Spaltenzahl und fällt damit unter §10.1 —
+das braucht eine eigene Freigabe wie beim Umbau der Preisseite in AP2.
+
 **Weiterhin offen**: `/realsync-landing` führt fünf Plan-Karten mit hart
 codierten Preisen im JSX, inklusive Agency und Partner. Umbau auf die Quelle
 ist ein eigener Schritt (§10.1) und gehört zu AP10.

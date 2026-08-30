@@ -67,7 +67,7 @@ export const ONBOARDING_QUESTIONS: OnboardingQuestion[] = [
     ],
   },
   {
-    id: 'scale',
+    id: 'domains',
     title: 'Wie viele Domains oder Marken?',
     hint: '1 = Starter möglich · 2–3 = Growth · mehr = Agency.',
     multi: false,

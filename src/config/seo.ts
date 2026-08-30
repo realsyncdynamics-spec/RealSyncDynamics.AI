@@ -809,6 +809,16 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
       { name: 'BAIT + MaRisk Guide', url: '/bait-marisk-compliance-guide' },
     ]),
   },
+  '/onboarding-erklaert': {
+    title: 'Onboarding erklärt — IT verbinden statt ersetzen | RealSyncDynamics.AI',
+    description:
+      'Wie das Onboarding abläuft: Unternehmensprofil, Systeme erkennen, verbinden, Datenflüsse analysieren, Risiken und Nachweise — ohne Ihre IT auszutauschen.',
+    canonical: `${SITE_URL}/onboarding-erklaert`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'Onboarding erklärt', url: '/onboarding-erklaert' },
+    ]),
+  },
   '/schrems-ii-erklaert': {
     title: 'Schrems II erklärt — Was EuGH-Urteil C-311/18 bedeutet | RealSyncDynamics.AI',
     description:

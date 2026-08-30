@@ -261,6 +261,55 @@ Ausdruck verlangte `content` **nach** `http-equiv` und übersah deshalb
 Report-Only-CSP meldet, erzwingt aber nichts. Beides ist mit Tests
 festgenagelt.
 
+### Zweiter CodeQL-Befund: `</script >` als falsch-negativer Befund
+
+CodeQL meldete auf derselben Datei zusätzlich `Bad HTML filtering regexp`.
+`visibleText` entfernte Skripte über `<script[\s\S]*?<\/script>` — und
+`</script >` ist ein **gültiges** End-Tag: HTML erlaubt Leerraum vor dem `>`.
+
+Der Ausdruck verfehlt es, das Element bleibt stehen, und beim
+anschliessenden Entfernen der Tags landet der **Skript-Inhalt im sichtbaren
+Text**. Belegt am 2026-08-30:
+
+```html
+<p>Wir uebermitteln Daten in die USA.</p>
+<script>var hinweis = "auf Basis der Standardvertragsklauseln";</script >
+```
+
+Der String aus dem Skript zählte als Seiteninhalt und unterdrückte
+`sub_privacy_third_country_no_legal_basis`. Die Seite bekam „alles in
+Ordnung" gemeldet, obwohl die Rechtsgrundlage nirgends im Dokument steht.
+Dieselbe Mechanik liess eine Ziffernfolge im Skript als Telefonnummer im
+Impressum durchgehen.
+
+**Das ist die gefährlichste Fehlerrichtung, die dieses Produkt haben kann.**
+Ein falsch-positiver Befund kostet Vertrauen; ein falsch-negativer gibt
+einem Kunden eine Entwarnung, auf die er sich verlässt — bei einem Produkt,
+das ausdrücklich keine Konformität zusichert, aber Beobachtungen belastbar
+melden soll.
+
+Behoben durch `stripElement` in `_shared/html-tags.ts`: Öffnung und
+Schliessung werden per `indexOf` gesucht und der ganze Bereich
+herausgeschnitten — unabhängig von Leerraum und Schreibweise. Fehlt das
+End-Tag, wird bis zum Dokumentende geschnitten, genau wie im Browser.
+
+### Offen: dasselbe Muster in `scan-coverage.ts`
+
+`_shared/scan-coverage.ts:54` trägt in `visibleTextLength` denselben
+Ausdruck (`<script[\s\S]*?<\/script>`) und damit denselben Fehler. CodeQL
+hat ihn nicht gemeldet, weil die Datei in diesem PR nicht geändert wurde.
+
+Die Auswirkung dort ist eine andere, aber verwandte: Skript-Inhalt zählt zur
+sichtbaren Textlänge, und die entscheidet, ob eine Seite als
+`coverage: 'limited'` markiert wird. Eine JavaScript-Shell mit viel
+Skript-Code kann so als `'full'` durchgehen — der Bericht verschweigt dann,
+dass der Scan nur das Grundgerüst gesehen hat.
+
+**Bewusst nicht in diesem PR behoben**: nicht gemeldet, nicht Teil der
+Wiederherstellung, und die Datei hat eigene Tests, die eine Änderung
+begleiten sollten. Der Einzeiler wäre `stripElement(html, 'script')` analog
+zu oben.
+
 ---
 
 ## 5. Kein zweiter Stack

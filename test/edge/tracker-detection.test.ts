@@ -119,21 +119,21 @@ describe('Laufzeit auf feindseligem HTML (ReDoS, behoben 2026-08-30)', () => {
   const hostile = '<meta '.repeat(60_000);
   const BUDGET_MS = 1000;
 
-  it('stripPolicyDeclarations bleibt unter einer Sekunde', () => {
+  test('stripPolicyDeclarations bleibt unter einer Sekunde', () => {
     const t0 = Date.now();
     stripPolicyDeclarations(hostile);
     const ms = Date.now() - t0;
     expect(ms, `brauchte ${ms} ms`).toBeLessThan(BUDGET_MS);
   });
 
-  it('effectiveCspValue bleibt unter einer Sekunde', () => {
+  test('effectiveCspValue bleibt unter einer Sekunde', () => {
     const t0 = Date.now();
     effectiveCspValue(null, hostile);
     const ms = Date.now() - t0;
     expect(ms, `brauchte ${ms} ms`).toBeLessThan(BUDGET_MS);
   });
 
-  it('bleibt auch bei sehr vielen vollstaendigen Meta-Tags schnell', () => {
+  test('bleibt auch bei sehr vielen vollstaendigen Meta-Tags schnell', () => {
     const many = '<meta name="x" content="y">'.repeat(40_000);
     const t0 = Date.now();
     stripPolicyDeclarations(many);
@@ -142,20 +142,20 @@ describe('Laufzeit auf feindseligem HTML (ReDoS, behoben 2026-08-30)', () => {
     expect(ms, `brauchte ${ms} ms`).toBeLessThan(BUDGET_MS);
   });
 
-  it('entfernt den CSP-Meta-Tag weiterhin, egal in welcher Attribut-Reihenfolge', () => {
+  test('entfernt den CSP-Meta-Tag weiterhin, egal in welcher Attribut-Reihenfolge', () => {
     const a = '<meta http-equiv="Content-Security-Policy" content="script-src https://www.googletagmanager.com">';
     const b = '<meta content="script-src https://www.googletagmanager.com" http-equiv="Content-Security-Policy">';
     expect(stripPolicyDeclarations(`<html>${a}</html>`)).not.toContain('googletagmanager');
     expect(stripPolicyDeclarations(`<html>${b}</html>`)).not.toContain('googletagmanager');
   });
 
-  it('liest den CSP-Wert auch, wenn content vor http-equiv steht', () => {
+  test('liest den CSP-Wert auch, wenn content vor http-equiv steht', () => {
     // Der alte Ausdruck verlangte content NACH http-equiv und uebersah das.
     const tag = `<meta content="default-src 'self'" http-equiv="Content-Security-Policy">`;
     expect(effectiveCspValue(null, tag)).toBe("default-src 'self'");
   });
 
-  it('akzeptiert report-only nicht als durchgesetzten CSP', () => {
+  test('akzeptiert report-only nicht als durchgesetzten CSP', () => {
     const tag = `<meta http-equiv="Content-Security-Policy-Report-Only" content="default-src 'self'">`;
     expect(effectiveCspValue(null, tag)).toBe('');
   });

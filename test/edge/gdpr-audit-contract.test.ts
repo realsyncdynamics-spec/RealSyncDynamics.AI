@@ -41,6 +41,7 @@ import {
   hasPhoneNumber,
   tagsOf,
   attrOf,
+  visibleText,
   SEVERITY_WEIGHTS,
   RULE_HEURISTIC_OVERLAP,
   type Issue,
@@ -408,5 +409,59 @@ describe('Rufnummern-Erkennung', () => {
 
   it('haelt Fliesstext mit wenigen Ziffern nicht fuer eine Nummer', () => {
     expect(hasPhoneNumber('Gegruendet 1999 in Berlin, Team von 12 Personen')).toBe(false);
+  });
+});
+
+describe('Skript-Inhalt zaehlt nicht als Seiteninhalt', () => {
+  // CodeQL "Bad HTML filtering regexp": `</script >` ist ein GUELTIGES
+  // End-Tag — HTML erlaubt Leerraum vor dem `>`. Der fruehere Ausdruck
+  // `<\/script>` traf es nicht, das Element blieb stehen, und der
+  // Skript-Inhalt landete im "sichtbaren Text".
+  //
+  // Fuer einen Compliance-Scanner ist das ein falsch-negativer Befund:
+  // Die Seite bekommt "alles in Ordnung" gemeldet, obwohl der Nachweis
+  // nur in einem Skript-String steht. Das ist die gefaehrlichste
+  // Fehlerrichtung, die dieses Produkt haben kann.
+
+  it('entfernt Skript-Inhalt auch bei "</script >" mit Leerraum', () => {
+    const html = '<html><body><script>var x = "geheim";</script >Sichtbar</body></html>';
+    const text = visibleText(html);
+    expect(text).not.toContain('geheim');
+    expect(text).toContain('Sichtbar');
+  });
+
+  it('entfernt ihn auch bei "</SCRIPT\t>" und Grossschreibung', () => {
+    const html = '<html><body><SCRIPT>var x = "geheim";</SCRIPT\t>Sichtbar</body></html>';
+    expect(visibleText(html)).not.toContain('geheim');
+  });
+
+  it('schneidet bis Dokumentende, wenn das End-Tag fehlt', () => {
+    // So behandelt es auch der Browser: Alles danach ist Skript.
+    const html = '<html><body><script>var x = "geheim";';
+    expect(visibleText(html)).not.toContain('geheim');
+  });
+
+  it('unterdrueckt den Drittland-Befund nicht wegen eines Skript-Strings', () => {
+    // Der konkrete Schaden, belegt am 2026-08-30.
+    const html = `<html><body>
+      <p>Wir uebermitteln Daten in die USA.</p>
+      <script>var hinweis = "auf Basis der Standardvertragsklauseln";</script >
+    </body></html>`;
+    const ids = deepCheckPrivacy(html).map((i) => i.id);
+    expect(ids).toContain('sub_privacy_third_country_no_legal_basis');
+  });
+
+  it('erfindet keine Telefonnummer aus Ziffern im Skript', () => {
+    const html = `<html><body>Muster GmbH, Musterstraße 12, 10115 Berlin
+      <script>var tel = "+49 30 1234567";</script ></body></html>`;
+    expect(deepCheckImprint(html).map((i) => i.id)).toContain('sub_imprint_no_contact');
+  });
+
+  it('entfernt Style-Inhalt genauso', () => {
+    expect(visibleText('<style>.a{content:"geheim"}</style >X')).not.toContain('geheim');
+  });
+
+  it('laesst echten Inhalt unangetastet', () => {
+    expect(visibleText('<p>Hallo <b>Welt</b></p>')).toBe('Hallo Welt');
   });
 });

@@ -65,7 +65,7 @@ import { detectAIDisclosure } from './ai-disclosure-check.ts';
 // Laufzeitsichere Tag-Extraktion: ein `indexOf`-Durchlauf statt eines
 // Wildcard-Quantors ueber fremdes HTML. Begruendung und Messwerte im Kopf
 // von `html-tags.ts`.
-import { tagsOf, attrOf } from './html-tags.ts';
+import { tagsOf, attrOf, stripElement } from './html-tags.ts';
 export { tagsOf, attrOf } from './html-tags.ts';
 
 export type IssueSeverity = 'critical' | 'high' | 'medium' | 'low' | 'info';
@@ -614,11 +614,17 @@ export function namesProcessors(text: string): boolean {
   return vendors.test(text);
 }
 
-/** Grob sichtbarer Text ohne Skripte, Styles und Tags. */
+/**
+ * Grob sichtbarer Text ohne Skripte, Styles und Tags.
+ *
+ * Skript- und Style-Inhalt wird ueber `stripElement` entfernt, nicht ueber
+ * einen Ausdruck: `</script >` ist ein gueltiges End-Tag, und ein Ausdruck,
+ * der es verfehlt, laesst den Skript-Inhalt als „Seiteninhalt" durchgehen —
+ * mit falsch-negativen Befunden als Folge. Begruendung und Beleg im Kopf von
+ * `stripElement`.
+ */
 export function visibleText(html: string): string {
-  return html
-    .replace(/<script[\s\S]{0,200000}?<\/script>/gi, ' ')
-    .replace(/<style[\s\S]{0,200000}?<\/style>/gi, ' ')
+  return stripElement(stripElement(html, 'script'), 'style')
     .replace(/<[^>]{0,2000}>/g, ' ')
     .replace(/&nbsp;/gi, ' ')
     .replace(/\s+/g, ' ')

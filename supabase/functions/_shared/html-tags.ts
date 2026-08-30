@@ -60,8 +60,7 @@ export function tagMatches(html: string, name: string): TagMatch[] {
     const at = hay.indexOf(needle, i);
     if (at === -1) break;
     i = at + needle.length;
-    const next = hay[i];
-    if (next !== undefined && ((next >= 'a' && next <= 'z') || (next >= '0' && next <= '9') || next === '-')) continue;
+    if (isNameChar(hay[i])) continue;
     const close = hay.indexOf('>', i);
     // Kein schliessendes `>` mehr im Dokument — es folgt kein Tag mehr.
     if (close === -1) break;
@@ -89,6 +88,68 @@ export function attrOf(tag: string, attr: string): string | null {
   );
   if (!m) return null;
   return m[2] ?? m[3] ?? m[4] ?? null;
+}
+
+/** Ist `ch` Teil eines Tag-Namens? Trennt `<a>` von `<article>`. */
+function isNameChar(ch: string | undefined): boolean {
+  if (ch === undefined) return false;
+  return (ch >= 'a' && ch <= 'z') || (ch >= '0' && ch <= '9') || ch === '-';
+}
+
+/**
+ * Entfernt ein Element **samt Inhalt** — `<script>…</script>`, `<style>…</style>`.
+ *
+ * ## Warum nicht `/<script[\s\S]*?<\/script>/gi`
+ *
+ * Weil `</script >` ein gültiges End-Tag ist: HTML erlaubt Leerraum vor dem
+ * `>`. Der Ausdruck trifft es nicht, das Element bleibt stehen, und beim
+ * anschliessenden Entfernen der Tags landet der **Skript-Inhalt im
+ * sichtbaren Text**. CodeQL meldet das als `Bad HTML filtering regexp`.
+ *
+ * Für einen Compliance-Scanner ist das kein Schönheitsfehler, sondern ein
+ * falsch-negativer Befund. Belegt am 2026-08-30:
+ *
+ * ```html
+ * <script>var t = "… auf Basis der Standardvertragsklauseln"; </script >
+ * ```
+ *
+ * Der Text aus dem Skript zählte als Seiteninhalt und unterdrückte damit
+ * `sub_privacy_third_country_no_legal_basis` — die Seite bekam „alles in
+ * Ordnung" gemeldet, obwohl die Rechtsgrundlage nirgends steht. Eine
+ * Ziffernfolge im Skript liess ebenso eine Telefonnummer im Impressum
+ * erscheinen, die es nicht gibt.
+ *
+ * Dieser Durchlauf sucht Öffnung und Schliessung mit `indexOf` und schneidet
+ * den ganzen Bereich heraus — unabhängig von Leerraum und Schreibweise.
+ * Fehlt das End-Tag, wird bis zum Dokumentende geschnitten: Genau so
+ * behandelt es auch der Browser.
+ */
+export function stripElement(html: string, name: string): string {
+  if (!html) return html;
+  const hay = html.toLowerCase();
+  const open = `<${name.toLowerCase()}`;
+  const close = `</${name.toLowerCase()}`;
+  const cuts: Array<{ start: number; end: number }> = [];
+  let i = 0;
+  for (;;) {
+    const start = hay.indexOf(open, i);
+    if (start === -1) break;
+    i = start + open.length;
+    if (isNameChar(hay[i])) continue;
+
+    const openEnd = hay.indexOf('>', i);
+    if (openEnd === -1) { cuts.push({ start, end: html.length }); break; }
+
+    const closeAt = hay.indexOf(close, openEnd + 1);
+    if (closeAt === -1) { cuts.push({ start, end: html.length }); break; }
+
+    // Leerraum zwischen Namen und `>` ist erlaubt: `</script >`.
+    const closeEnd = hay.indexOf('>', closeAt + close.length);
+    const end = closeEnd === -1 ? html.length : closeEnd + 1;
+    cuts.push({ start, end });
+    i = end;
+  }
+  return cutRanges(html, cuts);
 }
 
 /** Entfernt die angegebenen Bereiche aus dem Dokument — ein Durchlauf. */

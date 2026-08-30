@@ -67,6 +67,14 @@ jobs:
       - name: Bootstrap Supabase-equivalent stubs
         run: |
           psql -v ON_ERROR_STOP=1 <<'SQL'
+          -- `extensions` MUSS vor pgcrypto angelegt werden: Migrationen und
+          -- RPCs rufen extensions.digest(...) auf. Wird pgcrypto zuerst nach
+          -- public installiert, ist ein spaeteres "WITH SCHEMA extensions"
+          -- ein stiller No-op ("already exists, skipping") — extensions.digest
+          -- existiert dann nie und DB-Tests scheitern an der Umgebung statt
+          -- an echten Befunden.
+          CREATE SCHEMA IF NOT EXISTS extensions;
+          CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA extensions;
           CREATE EXTENSION IF NOT EXISTS pgcrypto;
           CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
           CREATE EXTENSION IF NOT EXISTS vector;
@@ -79,8 +87,19 @@ jobs:
           GRANT service_role TO authenticator;
           CREATE SCHEMA IF NOT EXISTS auth;
           CREATE TABLE IF NOT EXISTS auth.users (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), email TEXT UNIQUE, raw_user_meta_data JSONB, created_at TIMESTAMPTZ DEFAULT now());
-          CREATE OR REPLACE FUNCTION auth.uid() RETURNS UUID LANGUAGE sql STABLE AS 'SELECT NULL::uuid';
-          CREATE OR REPLACE FUNCTION auth.role() RETURNS TEXT LANGUAGE sql STABLE AS 'SELECT $$authenticated$$::text';
+          -- auth.uid()/auth.role() MUESSEN die JWT-Claims lesen, nicht konstant
+          -- antworten. Der vorherige Stub lieferte hart NULL::uuid. Damit waere
+          -- is_tenant_member() immer false, jede RLS-Policy haette immer
+          -- gesperrt, und ein Isolationstest waere gruen geworden, ohne
+          -- irgendetwas zu pruefen — die gefaehrlichste Sorte Test.
+          -- Gleiche Semantik wie scripts/test-db/bootstrap.sql, das es lokal
+          -- bereits richtig macht.
+          CREATE OR REPLACE FUNCTION auth.uid() RETURNS UUID LANGUAGE sql STABLE AS $fn$
+            SELECT NULLIF(current_setting('request.jwt.claims', true)::jsonb ->> 'sub', '')::uuid
+          $fn$;
+          CREATE OR REPLACE FUNCTION auth.role() RETURNS TEXT LANGUAGE sql STABLE AS $fn$
+            SELECT COALESCE(NULLIF(current_setting('request.jwt.claims', true)::jsonb ->> 'role', ''), 'authenticated')
+          $fn$;
           CREATE SCHEMA IF NOT EXISTS vault;
           CREATE TABLE IF NOT EXISTS vault.secrets (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), name TEXT UNIQUE, secret TEXT, description TEXT, created_at TIMESTAMPTZ DEFAULT now(), updated_at TIMESTAMPTZ DEFAULT now());
           CREATE OR REPLACE VIEW vault.decrypted_secrets AS SELECT id, name, secret AS decrypted_secret, description, created_at, updated_at FROM vault.secrets;
@@ -105,6 +124,43 @@ jobs:
             psql -v ON_ERROR_STOP=1 -f "$f"
             echo "::endgroup::"
           done
+      # Supabase-aequivalente Default-Privileges. In einem echten Projekt haben
+      # anon/authenticated Tabellenrechte in `public` — genau deshalb ist eine
+      # Tabelle ohne RLS dort offen. Ohne diese GRANTs scheitert ein RLS-Test
+      # an "permission denied" statt an einer Policy und beweist nichts ueber
+      # die Mandantentrennung.
+      - name: Grant Supabase-equivalent table privileges
+        run: |
+          psql -v ON_ERROR_STOP=1 <<'SQL'
+          GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role;
+          GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO anon, authenticated;
+          GRANT ALL ON ALL TABLES IN SCHEMA public TO service_role;
+          GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated, service_role;
+          SQL
+
+      # Bis hierher validierte CI nur, dass die Migrationen fehlerfrei
+      # DURCHLAUFEN — nicht, ob das entstandene Schema die Mandanten trennt.
+      # Die DB-Integrationstests sprangen mangels TEST_DB_URL still ab. Genau
+      # so konnten eine gruene Suite und offene Luecken nebeneinander bestehen.
+      #
+      # REQUIRE_DB_TESTS=1 macht das Ueberspringen hier zum Fehler: Fehlt die
+      # Datenbank, faellt der Job laut aus, statt leise nichts zu pruefen.
+      #
+      # BEWUSST NUR security-regressions, NICHT das ganze Verzeichnis:
+      # Die uebrigen Dateien in test/runtime/db/ sind gegen den minimalen
+      # Harness aus scripts/test-db/up.sh geschrieben (bootstrap.sql + vier
+      # SPEC-001-Migrationen) und scheitern gegen das hier voll migrierte
+      # Schema an Umgebungsannahmen. Das ganze Verzeichnis zu verdrahten
+      # faerbte CI dauerhaft rot — schlimmer als der bisherige Zustand, weil
+      # dann auch echte Regressionen untergehen. Diese Suiten an das volle
+      # Schema anzupassen ist eigene Arbeit und bleibt offen; sie hier zu
+      # verschweigen waere genau der Fehler, den dieser Schritt behebt.
+      - name: Security regression tests (RLS, IDOR, Billing-Upsert)
+        env:
+          TEST_DB_URL: postgresql://postgres:postgres@localhost:5432/postgres
+          REQUIRE_DB_TESTS: '1'
+        run: npx vitest run test/runtime/db/security-regressions.db.test.ts --no-file-parallelism
+
       - name: Verify migrations are append-only
         if: github.event_name == 'pull_request' && !contains(github.event.pull_request.title, '[hotfix]')
         run: |

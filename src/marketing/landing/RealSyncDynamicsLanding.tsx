@@ -486,10 +486,11 @@ export const RealSyncDynamicsLanding = () => {
                 </h3>
                 <p className="text-titanium/70">
                   Custom Deployment, EU-VPS, Evidence-Vault, SLA &amp; White-Label nach Bedarf.
+                  Ihren Preis rechnen Sie sich in vier Fragen selbst aus.
                 </p>
               </div>
               <Link
-                to="/contact-sales?tier=enterprise&source=realsync-landing"
+                to="/enterprise-konfigurator"
                 className="bg-gradient-to-r from-petrol to-security-blue hover:from-teal-700 hover:to-blue-600 text-obsidian font-bold py-3 px-8 rounded transition whitespace-nowrap"
               >
                 Enterprise anfragen

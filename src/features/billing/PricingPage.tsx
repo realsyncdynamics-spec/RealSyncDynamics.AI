@@ -262,21 +262,30 @@ export function PricingPage() {
                 q: 'Was ist "Auto-Remediation" genau?',
                 a: 'Für erkannte Probleme liefern wir konkrete technische Fixes: Script-Tags mit type="text/plain" und data-consent-Attribut, Consent-Banner-Code-Snippets, Google-Fonts-Self-Hosting-Script, YouTube-NoCookie-Umstellung. Kein LLM-generiertes "schreib eine Datenschutzerklärung", sondern strukturierte Regel-Engine → Template-System.',
               },
+              // COMMERCIAL-SSOT: temporary production hotfix.
+              // Canonical source migration tracked in Phase 2.
+              // Diese drei Antworten beschrieben den Agency-Kauf als lebenden
+              // Vorgang („nach dem Kauf", „nach der Zahlung", „im Grundpreis
+              // enthalten") — auf der Preisseite, also genau dort, wo jemand
+              // entscheidet. Agency ist seit AP2 stillgelegt; ein neuer Kauf
+              // kommt nicht mehr zustande. Die Antworten gelten weiter fuer
+              // Bestandskunden und sagen das jetzt auch. Ersetzt wird kein
+              // Plan: wer die Leistung neu braucht, laeuft ueber Enterprise.
               {
-                q: 'Was passiert nach dem Kauf des Agency-Pakets?',
-                a: 'Nach der Zahlung erhalten Sie innerhalb von 15 Minuten eine E-Mail mit Ihrem Account-Zugang. Im Dashboard finden Sie sofort: Ihren API-Key, das White-Label-Konfigurations-Panel (Logo, Farben, eigene Domain), und die Möglichkeit, die ersten 10 Kundenseiten hinzuzufügen. Unser Onboarding-Team meldet sich innerhalb von 24 Stunden für ein optionales Setup-Gespräch.',
+                q: 'Ich habe ein bestehendes Agency-Paket — was gilt für mich?',
+                a: 'Agency wird seit dem Paketumbau nicht mehr neu verkauft. Bestehende Agency-Abos laufen unverändert weiter: gleicher Funktionsumfang, gleicher Preis, gleiche Abrechnung. Im Dashboard finden Sie wie bisher Ihren API-Key, das White-Label-Konfigurations-Panel (Logo, Farben, eigene Domain) und Ihre Kundenseiten. Neu einsteigende Agenturen und Kanzleien mit Multi-Tenant- und White-Label-Bedarf besprechen Umfang und Konditionen über /contact-sales im Rahmen von Enterprise.',
               },
               {
-                q: 'Was bedeutet "Priority Support" beim Agency-Paket?',
-                a: 'Priority Support bedeutet: dedizierter Ansprechpartner per E-Mail mit garantierter Antwort innerhalb von 8 Stunden (Werktage). Für kritische Compliance-Fragen (aktiver Aufsichtsbehörden-Kontakt) eskalieren wir auf 4-Stunden-Response. Kontakt: support@realsyncdynamicsai.de mit Betreff [AGENCY].',
+                q: 'Was bedeutet "Priority Support" in meinem Agency-Paket?',
+                a: 'Priority Support bedeutet: dedizierter Ansprechpartner per E-Mail mit garantierter Antwort innerhalb von 8 Stunden (Werktage). Für kritische Compliance-Fragen (aktiver Aufsichtsbehörden-Kontakt) eskalieren wir auf 4-Stunden-Response. Kontakt: support@realsyncdynamicsai.de mit Betreff [AGENCY]. Für Bestandskunden gilt das unverändert.',
               },
               {
-                q: 'Wie viele Kundenseiten kann ich im Agency-Paket verwalten?',
-                a: '10 Kundenseiten (Domains) sind im Grundpreis enthalten. Weitere Domains können einzeln hinzugebucht werden. Jede Domain bekommt ihr eigenes Monitoring-Dashboard, White-Label-Report und API-Endpunkt. Die Multi-Tenant-Struktur ist vollständig isoliert — jeder Kunde sieht nur seine eigenen Daten.',
+                q: 'Wie viele Kundenseiten kann ich in meinem Agency-Paket verwalten?',
+                a: '10 Kundenseiten (Domains) sind enthalten; weitere Domains können einzeln hinzugebucht werden. Jede Domain bekommt ihr eigenes Monitoring-Dashboard, White-Label-Report und API-Endpunkt. Die Multi-Tenant-Struktur ist vollständig isoliert — jeder Kunde sieht nur seine eigenen Daten. Das gilt unverändert für bestehende Agency-Abos.',
               },
               {
                 q: 'Gibt es einen AVV (Auftragsverarbeitungsvertrag)?',
-                a: 'Ja. Als Auftragsverarbeiter stellen wir Ihnen und Ihren Kunden einen EU-konformen AVV bereit. Er ist ab Buchung automatisch aktiv und kann unter /legal/avv eingesehen und heruntergeladen werden. Für Agency-Kunden mit eigenen Endkunden stellen wir zusätzlich eine anpassbare AVV-Vorlage bereit.',
+                a: 'Ja. Als Auftragsverarbeiter stellen wir Ihnen und Ihren Kunden einen EU-konformen AVV bereit. Er ist ab Buchung automatisch aktiv und kann unter /legal/avv eingesehen und heruntergeladen werden. Für Kunden mit eigenen Endkunden — bestehende Agency-Abos ebenso wie Enterprise — stellen wir zusätzlich eine anpassbare AVV-Vorlage bereit.',
               },
               {
                 q: 'Wie kündige ich?',

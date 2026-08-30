@@ -6,8 +6,8 @@ import { ShieldCheck, ShieldAlert, KeyRound, Copy, Check, AlertTriangle } from '
 import { getSupabase } from '../../lib/supabase';
 import { useTenant } from '../../core/access/TenantProvider';
 import {
-  getMfaStatus, enrollTotp, verifyTotp, unenroll,
-  regenerateRecoveryCodes, redeemRecoveryCode, logAal2Intent,
+  getMfaStatus, enrollTotp, verifyTotp, cancelEnroll, removeAllTotpFactors,
+  regenerateRecoveryCodes, redeemRecoveryCode, logAal2Intent, mfaErrorMessage,
   type MfaStatus, type EnrollResult,
 } from '../../core/access/mfa';
 
@@ -25,6 +25,7 @@ export function SecuritySettings() {
 
   const [enroll, setEnroll] = useState<EnrollResult | null>(null);
   const [otp, setOtp] = useState('');
+  const [showSecret, setShowSecret] = useState(false);
   const [recoveryCodes, setRecoveryCodes] = useState<string[] | null>(null);
   const [copied, setCopied] = useState(false);
 
@@ -48,20 +49,26 @@ export function SecuritySettings() {
 
   async function run(fn: () => Promise<void>) {
     setBusy(true); setError(null);
-    try { await fn(); } catch (e) { setError((e as Error)?.message ?? String(e)); } finally { setBusy(false); }
+    try { await fn(); } catch (e) { setError(mfaErrorMessage(e)); } finally { setBusy(false); }
   }
 
-  const startEnroll = () => run(async () => { setEnroll(await enrollTotp()); });
+  const startEnroll = () => run(async () => { setShowSecret(false); setEnroll(await enrollTotp()); });
   const confirmEnroll = () => run(async () => {
     if (!enroll) return;
     await verifyTotp(enroll.factorId, otp.trim());
-    setEnroll(null); setOtp('');
+    setEnroll(null); setOtp(''); setShowSecret(false);
+    await refresh();
+  });
+  // Abbrechen muss den unverifizierten Faktor serverseitig entfernen — sonst
+  // bleibt ein verwaistes Enrollment (und dessen Secret) zurück und blockiert
+  // den nächsten Versuch.
+  const abortEnroll = () => run(async () => {
+    if (enroll) await cancelEnroll(enroll.factorId);
+    setEnroll(null); setOtp(''); setShowSecret(false);
     await refresh();
   });
   const removeFactor = () => run(async () => {
-    const sb = getSupabase();
-    const { data } = await sb.auth.mfa.listFactors();
-    for (const f of data?.totp ?? []) await unenroll(f.id);
+    await removeAllTotpFactors();
     await refresh();
   });
   const genRecovery = () => run(async () => {
@@ -118,6 +125,7 @@ export function SecuritySettings() {
               </div>
               <div className="font-mono text-[11px] text-titanium-500">
                 AAL: {status?.currentLevel ?? '—'} · Faktoren: {status?.factorCount ?? 0}
+                {(status?.pendingCount ?? 0) > 0 && ' · Einrichtung nicht abgeschlossen'}
               </div>
             </div>
           </div>
@@ -136,7 +144,15 @@ export function SecuritySettings() {
             <p className="text-sm text-titanium-300">Scannen Sie den QR-Code mit Ihrer Authenticator-App und geben Sie den 6-stelligen Code ein.</p>
             {/* qr_code ist ein SVG-Data-URI */}
             <img src={enroll.qrCode} alt="TOTP QR-Code" className="bg-white p-2 w-44 h-44" />
-            <div className="font-mono text-[11px] text-titanium-500 break-all">Secret: {enroll.secret}</div>
+            {/* Secret nur auf ausdrücklichen Wunsch zeigen (manuelle Eingabe) —
+                im Klartext landet es sonst auf Screenshots. */}
+            {showSecret ? (
+              <div className="font-mono text-[11px] text-titanium-500 break-all">Secret: {enroll.secret}</div>
+            ) : (
+              <button onClick={() => setShowSecret(true)} className="text-titanium-400 hover:text-titanium-200 text-[11px]">
+                QR-Code nicht scannbar? Secret für manuelle Eingabe anzeigen
+              </button>
+            )}
             <div className="flex gap-2">
               <input value={otp} onChange={(e) => setOtp(e.target.value)} inputMode="numeric" placeholder="123456"
                 className="bg-obsidian-950 border border-titanium-700 px-3 py-2 text-sm font-mono w-32 outline-none focus:border-cyan-400" />
@@ -144,8 +160,12 @@ export function SecuritySettings() {
                 className="bg-cyan-400 text-obsidian-950 px-4 py-2 text-sm font-semibold hover:bg-cyan-300 disabled:opacity-40">
                 Bestätigen
               </button>
-              <button onClick={() => { setEnroll(null); setOtp(''); }} className="text-titanium-400 text-sm px-3">Abbrechen</button>
+              <button onClick={abortEnroll} disabled={busy} className="text-titanium-400 text-sm px-3 disabled:opacity-40">Abbrechen</button>
             </div>
+            <p className="text-[11px] text-titanium-500">
+              Scannen Sie ausschließlich den aktuell angezeigten QR-Code — ältere QR-Codes aus früheren
+              Versuchen sind ungültig. Der Status oben wechselt erst nach erfolgreicher Bestätigung.
+            </p>
           </section>
         )}
 

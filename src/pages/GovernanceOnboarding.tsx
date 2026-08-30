@@ -10,6 +10,7 @@ import { syncTenantProfile } from '../features/company/tenantProfileService';
 import { useTenant } from '../core/access/TenantProvider';
 import type { ScanFinding, Sector, GovernanceQuestion } from '../core/onboarding/types';
 import { getQuestion } from '../core/onboarding/questionEngine';
+import { saveFunnelContext } from '../core/onboarding/funnelContext';
 
 /**
  * GovernanceOnboarding — guided post-scan flow
@@ -47,6 +48,14 @@ export function GovernanceOnboarding() {
   const domain = locationState.domain || 'example.com';
 
   const onboarding = useGovernanceOnboarding(scanId, domain, findings);
+
+  // Audit und Domain festhalten, sobald der Trichter beginnt. Ohne das gingen
+  // beide bei jedem Reload und spätestens bei der Anmeldung verloren — der
+  // Kunde landete dann in einem Checkout ohne Bezug zu seinem Scan.
+  useEffect(() => {
+    if (!scanId) return;
+    saveFunnelContext({ auditId: scanId, domain });
+  }, [scanId, domain]);
 
   if (findings.length === 0 && !loading) {
     return (
@@ -106,10 +115,14 @@ export function GovernanceOnboarding() {
         await syncTenantProfile(activeTenantId);
       }
 
+      // Die kanonische Empfehlung reist mit, damit die Folgeseite sie nicht
+      // erneut rechnen muss. Fehlt sie dort (Reload, Deep-Link), rechnet sie
+      // aus demselben Profil neu — nicht mit einer zweiten Logik.
       navigate(`/recommendation/${scanId}`, {
         state: {
           profile: onboarding.profile,
           recommendation: onboarding.recommendation,
+          canonical: onboarding.canonicalRecommendation,
           findings: onboarding.classified,
         },
       });

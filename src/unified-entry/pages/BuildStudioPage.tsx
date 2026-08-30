@@ -46,6 +46,7 @@ import {
   type SiteBlueprint,
 } from '../../../packages/siteos-core/src/index';
 import { SandboxedPreviewFrame } from '../../components/preview/SandboxedPreviewFrame';
+import { resolveAuditContext } from '../../core/onboarding/funnelContext';
 import {
   applyInstruction,
   clear as clearBuildSession,
@@ -100,7 +101,18 @@ export default function BuildStudioPage() {
   const scores = state?.scores ?? null;
   const hash = state?.contentSha256 ?? '';
 
-  const [draft, setDraft] = useState(params.get('prompt') ?? '');
+  // Scan-Kontext aus dem Trichter. Wer aus der Empfehlung kommt
+  // (`ai_frontend`), bringt Audit und Domain als Parameter mit — der Bau soll
+  // wissen, für welche Seite er entsteht. Ohne Parameter ändert sich nichts:
+  // der Builder bleibt der freie Prompt-Einstieg, der er war.
+  const auditContext = useMemo(
+    () => resolveAuditContext(params.toString()),
+    [params],
+  );
+
+  const [draft, setDraft] = useState(
+    params.get('prompt') ?? (auditContext.domain ? `Neue Website für ${auditContext.domain}. ` : ''),
+  );
   const [brand, setBrand] = useState('');
   const [instruction, setInstruction] = useState('');
   const [device, setDevice] = useState<Device>('desktop');
@@ -213,6 +225,19 @@ export default function BuildStudioPage() {
             <Sparkles size={13} className="text-petrol-500" /> Kein Konto nötig
           </div>
           <h1 className="text-4xl font-bold">Was möchten Sie erstellen?</h1>
+          {auditContext.domain && (
+            <div className="mt-4 rounded-lg border border-petrol-800 bg-petrol-950/30 px-4 py-3 text-sm text-titanium-200">
+              <div className="font-semibold text-titanium-100">
+                Neubau für {auditContext.domain}
+              </div>
+              <p className="mt-1 text-titanium-400">
+                Der Bau kennt Ihren Scan
+                {auditContext.auditId ? ` (Audit ${auditContext.auditId.slice(0, 8)})` : ''}. Die
+                Beschreibung unten ist ein Anfang — ergänzen Sie sie, sonst entsteht eine
+                allgemeine Seite statt Ihrer.
+              </p>
+            </div>
+          )}
           <p className="mt-4 text-lg text-titanium-300">
             Beschreiben Sie Ihre Website in eigenen Worten. RealSync baut daraus ein
             vollständiges Frontend mit Seitenstruktur, Inhalten, Rechtstexten und

@@ -43,6 +43,7 @@ import { DsgvoKiChecklist } from './pages/DsgvoKiChecklist';
 import { AuditShare } from './pages/AuditShare';
 import { AiActFaq } from './pages/AiActFaq';
 import { SchremsIIErklaert } from './pages/SchremsIIErklaert';
+import { OnboardingErklaert } from './pages/OnboardingErklaert';
 import { BaitMaRiskGuide } from './pages/BaitMaRiskGuide';
 import { NewsletterConfirm } from './pages/NewsletterConfirm';
 import { CaseStudies } from './pages/CaseStudies';
@@ -559,6 +560,7 @@ function RoutesWithTracking() {
       <Route path="/dsgvo-ki-checkliste" element={<DsgvoKiChecklist />} />
       <Route path="/ai-act-faq" element={<AiActFaq />} />
       <Route path="/schrems-ii-erklaert" element={<SchremsIIErklaert />} />
+      <Route path="/onboarding-erklaert" element={<OnboardingErklaert />} />
       <Route path="/bait-marisk-compliance-guide" element={<BaitMaRiskGuide />} />
       <Route path="/newsletter/confirm" element={<NewsletterConfirm />} />
       <Route path="/case-studies" element={<CaseStudies />} />

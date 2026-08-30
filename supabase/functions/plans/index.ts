@@ -7,9 +7,13 @@
 // Sonderfälle für Free, Enterprise oder Partner:
 //
 //   { id, key, name, outcomeHeadline, technicalSubheadline,
-//     price, currency, interval, purchaseMode,
+//     price, currency, interval, purchaseMode, availability,
 //     limits, modules, permissions, automation, bots, channels,
 //     features, addons, policyPacks, trialDays }
+//
+// `availability` unterscheidet seit AP2 zwischen `self_service`, `contract`
+// und `legacy`. Der Katalog liefert bewusst weiterhin alle Pläne — wer nur
+// das Angebot rendern will, filtert auf `!== 'legacy'`.
 //
 // Quelle ist ausschließlich `_shared/pricing.generated.ts`, erzeugt aus
 // `shared/pricing.ts`. Diese Function enthält keine eigenen Preise.
@@ -51,6 +55,11 @@ function serializePlan(plan: Plan) {
     currency: plan.currency,
     interval: plan.price.monthlyEur === 0 ? 'none' : 'month',
     purchaseMode: plan.purchaseMode,
+    // Seit AP2: Der Katalog liefert weiterhin *alle* Pläne, damit ein
+    // Bestandskunde auf Agency oder Partner seinen eigenen nachschlagen
+    // kann. Ob ein Plan noch angeboten wird, steht hier — additiv, damit
+    // bestehende Konsumenten unverändert weiterlaufen.
+    availability: plan.availability,
     trialDays: plan.trialDays,
     limits: plan.limits,
     modules: plan.modules,

@@ -3,6 +3,9 @@
  *
  * Alle exportierten Schnittstellen sind die einzige API-Quelle
  * der Wahrheit zwischen Gateway, Registry, Policy-Engine und Audit-Log.
+ *
+ * Voice-Kanal-Typen liegen in voice-types.ts und dürfen diese Union
+ * nicht ersetzen. Nur additive Erweiterung von DenyReason.
  */
 
 export type RiskLevel = 'low' | 'medium' | 'high';
@@ -50,7 +53,8 @@ export type DenyReason =
   /** Der PDP verlangt eine Freigabe, bevor der Lauf startet. */
   | 'approval_required'
   /** PDP nicht erreichbar und Ausfallverhalten ist fail closed. */
-  | 'policy_engine_unavailable';
+  | 'policy_engine_unavailable'
+  | 'denied_by_channel_policy';
 
 export interface PolicyAcceptedDecision {
   ok: true;

@@ -152,6 +152,7 @@ export function LandingFooter() {
       title: 'Ressourcen',
       links: [
         { label: 'Ressourcen', to: '/ressourcen' },
+        { label: 'Onboarding erklärt', to: '/onboarding-erklaert' },
         { label: 'Dokumentation', to: '/docs' },
         { label: 'Sicherheit', to: '/sicherheit' },
         { label: 'Roadmap', to: '/roadmap' },

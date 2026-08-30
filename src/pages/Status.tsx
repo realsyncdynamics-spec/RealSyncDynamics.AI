@@ -94,7 +94,7 @@ export function Status() {
               <div>
                 <div className="font-display font-bold text-titanium-50 mb-0.5">Keine Wartungsfenster geplant</div>
                 <div className="text-sm text-titanium-400">
-                  Wartungen werden mindestens 72h vorher hier und an alle aktiven Kunden per Email
+                  Wartungen werden mindestens 72h vorher hier und an alle aktiven Kunden per E-Mail
                   angekündigt.
                 </div>
               </div>

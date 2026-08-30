@@ -45,6 +45,17 @@ export const GOVERNANCE_MODULES: GovernanceModule[] = [
     description: 'Echtzeit-Workspace mit Live-Daten (Auth erforderlich)',
   },
   {
+    id: 'modules',
+    label: 'Module',
+    icon: 'Layers',
+    route: '/app/modules',
+    status: 'live',
+    // Für jeden Plan sichtbar: Der Hub zeigt gerade auch gesperrte
+    // Capabilities — mit Aktivierungspfad über das zentrale Billing.
+    gate: { kind: 'all' },
+    description: 'Capability-Übersicht: aktivieren, öffnen, upgraden',
+  },
+  {
     id: 'websites',
     label: 'Websites',
     icon: 'Globe',
@@ -151,6 +162,18 @@ export const GOVERNANCE_MODULES: GovernanceModule[] = [
     status: 'live',
     gate: { kind: 'all' },
     description: 'Plan, Rechnungen und Zahlungsmittel',
+  },
+  {
+    // Gate `all`: Der Marketplace zeigt gerade das, was **noch nicht** im
+    // Plan steckt. Ihn hinter ein Modul-Gate zu legen hiesse, ihn genau
+    // denen zu verbergen, für die er gedacht ist.
+    id: 'marketplace',
+    label: 'Marketplace',
+    icon: 'Store',
+    route: '/app/marketplace',
+    status: 'live',
+    gate: { kind: 'all' },
+    description: 'Zubuchbare Dienste und ihr aktueller Zustand',
   },
   {
     id: 'team',

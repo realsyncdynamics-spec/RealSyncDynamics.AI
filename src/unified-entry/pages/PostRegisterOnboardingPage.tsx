@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useSupabaseAuth } from '../../features/supabase/SupabaseAuthContext';
 import { useTenant } from '../../core/access/TenantProvider';
 import { postEdgeFunction } from '../../lib/edgeFunction';
@@ -40,6 +40,15 @@ export function PostRegisterOnboardingPage() {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [searchParams] = useSearchParams();
+
+  // Hier stand die Übernahme des kostenlosen Scans. Sie hing am Datensatz
+  // `public_site_scans`, der mit dem Schnitt von PR #1129 entfallen ist:
+  // kanonisch ist `gdpr_audits` (docs/product/canonical-funnel-decision.md).
+  // Die Stelle bleibt die richtige — der Mandant existiert bereits mit der
+  // Registrierung, und die Zuordnung soll auch gelingen, wenn der Nutzer die
+  // Branchenfragen abbricht. Der Claim-Writer gegen `gdpr_audits` kommt in
+  // P0-B (docs/architecture/canonical-builder-target-matrix.md §7).
 
   if (!user) {
     navigate('/unified-entry/register');

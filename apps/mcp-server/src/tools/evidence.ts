@@ -3,6 +3,15 @@ import { supabase } from '../services/supabase.js';
 import { EvidenceSnapshot } from '../types/index.js';
 import type { Database } from '../types/database.js';
 import { verifyChain, type ChainIssue } from '../../../../packages/evidence-chain/src/index.js';
+import { enforce } from '../services/rate-window.js';
+
+/**
+ * Kettenprüfungen je Tenant und Minute.
+ *
+ * Bewusst deutlich enger als die allgemeine Schranke: Der Aufruf skaliert mit
+ * der Kettenlänge, während eine gewöhnliche Leseanfrage konstant bleibt.
+ */
+const VERIFY_LIMIT_PER_TENANT = parseInt(process.env.MCP_VERIFY_LIMIT_PER_MINUTE || '10', 10);
 
 export async function listEvidence(
   tenantId: string,
@@ -82,6 +91,18 @@ export async function verifyHashChain(
   tenantId: string,
   evidenceId: string,
 ): Promise<ChainVerification> {
+  // Engere Schranke als der allgemeine Ratenschutz: Dieser Aufruf lädt die
+  // gesamte Kette und rechnet je Snapshot einen SHA-256 nach — eine billige
+  // Anfrage erzeugt Arbeit in der Länge der Kette. Gezählt wird hier und nicht
+  // an der Route, weil dieselbe Prüfung auch über das Werkzeug
+  // `evidence_verify_chain` auf `/mcp` erreichbar ist.
+  enforce(
+    `verify:${tenantId}`,
+    VERIFY_LIMIT_PER_TENANT,
+    60_000,
+    'Kettenprüfung',
+  );
+
   const anchor = await getEvidence(tenantId, evidenceId);
   if (!anchor) {
     throw new Error('Evidence not found');

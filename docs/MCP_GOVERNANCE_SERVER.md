@@ -187,9 +187,24 @@ evidence_list — Listet Compliance-Nachweise (Evidence-Snapshots) des Tenants.
 | `401` | Key fehlt, ungültig, abgelaufen oder widerrufen | Key prüfen, nicht wiederholen |
 | `404` | Nachweis existiert nicht in diesem Tenant | leeres Ergebnis melden |
 | `403` | Plan enthält keinen API-Zugriff (unter Agency) | dem Nutzer den Plan nennen, nicht wiederholen |
-| `429` | Monatskontingent ausgeschöpft | `Retry-After` beachten, nicht sofort erneut anfragen |
+| `413` | JSON-RPC-Stapel zu groß (Standard: über 20 Nachrichten) | Stapel aufteilen |
+| `429` | Monatskontingent ausgeschöpft **oder** Ratenbegrenzung | `Retry-After` beachten, nicht sofort erneut anfragen |
 | `501` | Endpunkt noch nicht implementiert | als „nicht verfügbar" melden, **nicht** als Befund |
 | `500` | Fehler im Dienst | begrenzt wiederholen |
+
+**Zu 429:** Zwei Ursachen teilen sich diesen Code, und der Unterschied ist für
+den Agenten wesentlich.
+
+- `error: "QUOTA_EXCEEDED"` — das Monatskontingent des Tenants ist
+  aufgebraucht. `Retry-After` zeigt auf den nächsten Monatsanfang; ein erneuter
+  Versuch lohnt vorher nicht. Dem Nutzer melden, nicht stillschweigend warten.
+- `error: "RATE_LIMITED"` — zu viele Anfragen in kurzer Zeit. `Retry-After`
+  liegt im Sekundenbereich; hier ist Abwarten und Wiederholen richtig.
+
+Besonders eng begrenzt ist `evidence_verify_chain` (Standard: 10 Aufrufe je
+Tenant und Minute), weil der Aufruf über die gesamte Kette rechnet. Ein Agent,
+der viele Subjects prüfen will, sollte das über die Zeit verteilen statt in
+einer Schleife.
 
 ---
 
@@ -266,6 +281,7 @@ Lesezugriff auf Compliance-Nachweise ist ein offenes Risiko.
 | Keine semantische Suche | `evidence/control/:id` ist ein Textmuster über `subject_ref`, keine Bedeutungssuche |
 | Keine Key-Rotation | Ersatz nur durch Widerruf und Neuausstellung |
 | Legacy-Snapshots nicht nachrechenbar | Ketten aus der Zeit vor `event_timestamp` sind nur strukturell prüfbar |
+| Ratenbegrenzung nur je Instanz | Gezählt wird im Prozessspeicher. Bei mehreren Instanzen vervielfacht sich die effektive Schranke — für eine gemeinsame bräuchte es Redis. Derzeit läuft eine Instanz. |
 
 Am ehesten fällt die fehlende semantische Suche ins Gewicht: `evidence_search_by_control`
 gleicht Text ab, kein leeres Ergebnis belegt daher die Abwesenheit von Nachweisen.

@@ -227,6 +227,33 @@ geloggt, damit ein stiller Ausfall des Prüfpfads auffällt.
   429 mit `Retry-After`. Die Zahlen stammen aus `plan_catalog` — der aus
   `shared/pricing.ts` erzeugten Projektion, die `npm run check:pricing` gegen
   die Quelle prüft.
+- **Ratenbegrenzung auf zwei Ebenen.** Das Monatskontingent allein genügt
+  nicht: Es greift erst *nach* der Authentifizierung und kann den Verkehr
+  davor nicht abfangen.
+
+  1. **Je IP, vor der Authentifizierung** (`MCP_RATE_LIMIT_PER_MINUTE`,
+     Standard 120). Schützt den Auth-Pfad selbst — `validateApiKey` kostet
+     eine Datenbank-Rundreise, und wer keinen gültigen Key hat, kommt bis
+     dorthin.
+  2. **Je Tenant, für die Kettenprüfung** (`MCP_VERIFY_LIMIT_PER_MINUTE`,
+     Standard 10). `verifyHashChain` lädt die gesamte Kette und rechnet je
+     Snapshot einen SHA-256 nach; die Arbeit wächst mit der Kettenlänge,
+     während eine gewöhnliche Leseanfrage konstant bleibt.
+
+  Die zweite Schranke sitzt in `verifyHashChain` selbst, nicht an der Route:
+  Dieselbe Prüfung ist auch über das Werkzeug `evidence_verify_chain` auf
+  `/mcp` erreichbar, und eine an die Route gehängte Schranke ließe diesen Weg
+  offen. Beide antworten mit 429 und `Retry-After`; ein so abgewiesener
+  Aufruf wird protokolliert, zählt aber nicht gegen das Monatskontingent.
+
+  **Stapelgrenze** (`MCP_MAX_BATCH_SIZE`, Standard 20): Ohne sie liefe jede
+  Ratenbegrenzung ins Leere, weil sie HTTP-Anfragen zählt, ein JSON-RPC-Stapel
+  aber beliebig viele Werkzeugaufrufe in einer einzigen tragen kann.
+
+  Gezählt wird im Prozessspeicher, also je Instanz. Bei mehreren Instanzen
+  vervielfacht sich die effektive Schranke; dafür bräuchte es einen
+  gemeinsamen Speicher (Redis). Der Ein-Instanz-Betrieb ist die derzeitige
+  Annahme.
 
 ---
 
@@ -244,6 +271,10 @@ npm run docker:run
 | `SUPABASE_SERVICE_ROLE_KEY` | nur hier, nie im Client |
 | `MCP_KEY_PEPPER` | Geheimnis des Key-Hashes, min. 32 Zeichen — **identisch** in der Edge Function. Der Server startet ohne es nicht. |
 | `PORT` / `HOST` | Standard `3001` / `0.0.0.0` |
+| `TRUST_PROXY` | `true` setzen, **wenn der Dienst hinter Traefik läuft**. Sonst trägt jede Anfrage die IP des Proxys, und die Ratenbegrenzung drosselt alle Clients gemeinsam. Standard `false`, weil X-Forwarded-For nur dort zu trauen ist, wo der Dienst ausschließlich über den Proxy erreichbar ist. |
+| `MCP_RATE_LIMIT_PER_MINUTE` | Anfragen je IP und Minute, Standard `120` |
+| `MCP_VERIFY_LIMIT_PER_MINUTE` | Kettenprüfungen je Tenant und Minute, Standard `10` |
+| `MCP_MAX_BATCH_SIZE` | JSON-RPC-Nachrichten je Stapel, Standard `20` |
 
 Der Server bricht beim Start ab, wenn die Datenbank nicht erreichbar ist —
 besser ein sofortiger Fehlstart als ein Dienst, der Anfragen annimmt und

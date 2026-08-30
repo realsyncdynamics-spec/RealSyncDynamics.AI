@@ -14,7 +14,15 @@ interface SupabaseAuthContextType {
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
-  register: (email: string, password: string) => Promise<void>;
+  /**
+   * Legt ein Konto an. Der Rückgabewert unterscheidet die beiden
+   * Supabase-Konfigurationen: Ist „Confirm email" aktiv, liefert `signUp`
+   * **keine** Session — der Nutzer muss erst den Link in seiner E-Mail
+   * öffnen. Ohne diese Unterscheidung schickt die aufrufende Seite ihn
+   * weiter in einen Bereich, der Anmeldung verlangt, und wirft ihn dort
+   * sofort zurück.
+   */
+  register: (email: string, password: string) => Promise<{ needsEmailConfirmation: boolean }>;
   session: Session | null;
 }
 
@@ -147,7 +155,12 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
           id: data.session.user.id,
           email: data.session.user.email || '',
         });
+        return { needsEmailConfirmation: false };
       }
+
+      // Konto angelegt, aber keine Session: „Confirm email" ist aktiv. Der
+      // Aufrufer muss das wissen — weiterleiten wäre hier eine Sackgasse.
+      return { needsEmailConfirmation: true };
     } finally {
       setIsLoading(false);
     }

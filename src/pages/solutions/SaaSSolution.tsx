@@ -196,14 +196,14 @@ export function SaaSSolution() {
             {/*
               COMMERCIAL-SSOT: temporary production hotfix.
               Canonical source migration tracked in Phase 2.
-              Agency ist seit AP2 stillgelegt (`availability: 'legacy'`);
-              `/checkout/agency` weist neue Abschluesse ab. Ein Festpreis
-              waere hier ein Angebot ohne Kaufpfad. Diese Zielgruppe —
-              Multi-Tenant, White-Label, eigene Kapazitaet — laeuft ueber
-              Enterprise nach Vereinbarung.
+              Kein Festpreis: Enterprise wird vertraglich vereinbart und
+              manuell fakturiert (`priceOnRequest`), der Self-Service-Checkout
+              kann 1.249 € nicht einloesen. Agency stand hier bis AP2 und ist
+              stillgelegt — ersetzt wird der Plan nicht durch einen Betrag,
+              sondern durch den Vertriebsweg.
             */}
             <div className="font-display font-bold text-4xl text-titanium-50 mb-2">Auf Anfrage</div>
-            <p className="text-silver-400 mb-6">Enterprise — für SaaS-Anbieter mit mehreren Websites und Produkten, Kapazität nach Vereinbarung</p>
+            <p className="text-silver-400 mb-6">Enterprise — für SaaS-Anbieter, Websites/Produkte nach Vertrag</p>
             <ul className="space-y-3 text-sm text-silver-300 mb-8 max-w-lg mx-auto">
               {[
                 'KI-System-Inventar (unbegrenzt)',
@@ -219,7 +219,7 @@ export function SaaSSolution() {
                 </li>
               ))}
             </ul>
-            <button className="surface-mono px-8 py-3 font-bold">Jetzt starten</button>
+            <Link to="/contact-sales?tier=enterprise&source=solutions" className="surface-mono inline-block px-8 py-3 font-bold">Enterprise anfragen</Link>
           </div>
 
           <p className="text-silver-400 text-sm mb-6">

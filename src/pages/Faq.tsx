@@ -60,12 +60,15 @@ const ITEMS: Item[] = [
     q: 'Was kostet die Plattform?',
     a: (
       <>
-        <p>Drei Self-Service-Stufen mit 14-Tage-Pilot, dazu Enterprise auf Anfrage:</p>
+        <p>Vier Tiers — Starter und Growth mit 14-Tage-Pilot, Enterprise nach Vertrag:</p>
         <ul className="list-disc pl-5 space-y-1 mt-2">
           <li><strong className="text-titanium-50">Free Audit</strong> kostenlos — einmaliger Compliance-Snapshot, kein Account</li>
           <li><strong className="text-titanium-50">Starter</strong> 79 €/Monat — eine Domain, Audit-Trail, monatlicher Re-Scan</li>
           <li><strong className="text-titanium-50">Growth</strong> 249 €/Monat — bis 3 Domains, tägliches Monitoring + Drift-Detection</li>
-          <li><strong className="text-titanium-50">Enterprise</strong> auf Anfrage — SLA nach Vereinbarung, AI-Act-Modul, DSB-Integration, Evidence Vault</li>
+          {/* COMMERCIAL-SSOT: kein Festpreis — Enterprise wird vertraglich
+              vereinbart und manuell fakturiert; der Self-Service-Checkout
+              kann 1.249 € nicht einloesen. */}
+          <li><strong className="text-titanium-50">Enterprise</strong> auf Anfrage — White-Label, Multi-Tenant, SLA nach Vereinbarung, AI-Act-Modul, DSB-Integration, Evidence Vault</li>
         </ul>
         <p className="mt-2">
           Volle Feature-Matrix: <Link to="/pricing" className="text-security-400">/pricing</Link>
@@ -167,7 +170,7 @@ const ITEMS: Item[] = [
     a: (
       <>
         <p>
-          Ja — <strong className="text-titanium-50">Kodee</strong>, der VPS-Assistent, ab dem <strong className="text-titanium-50">Agency</strong>-Tier.
+          Ja — <strong className="text-titanium-50">Kodee</strong>, der VPS-Assistent, ab dem <strong className="text-titanium-50">Enterprise</strong>-Tier.
           Er verbindet sich per SSH mit deinem Server und hilft bei Status- und Log-Checks, DNS/TLS-Prüfung sowie
           Deployment-Aufgaben — inklusive Risiko-Advisor, der Schreib-Aktionen (z. B. Neustarts) vorab bewertet.
         </p>
@@ -183,7 +186,7 @@ const ITEMS: Item[] = [
     a: (
       <>
         <p>
-          Ja — der <strong className="text-titanium-50">Herkunftsnachweis</strong> (ab <strong className="text-titanium-50">Agency</strong>) bindet
+          Ja — der <strong className="text-titanium-50">Herkunftsnachweis</strong> (ab <strong className="text-titanium-50">Growth</strong>) bindet
           jedes Asset über eine unveränderliche <strong className="text-titanium-50">Chain-of-Custody</strong> (SHA-256-Hash-Kette) an einen
           signierten Manifest-Eintrag. Manipulation bricht die Kette und wird beim Verifizieren sofort erkannt.
         </p>
@@ -204,7 +207,7 @@ const ITEMS: Item[] = [
     a: (
       <>
         <p>
-          Ja — <strong className="text-titanium-50">Bulk-Jobs</strong> ab dem <strong className="text-titanium-50">Agency</strong>-Tier.
+          Ja — <strong className="text-titanium-50">Bulk-Jobs</strong> ab dem <strong className="text-titanium-50">Growth</strong>-Tier.
           Du fügst Domains per Liste oder <strong className="text-titanium-50">CSV-Import</strong> ein; sie werden lokal geprüft
           (dedupliziert, ungültige markiert) und als Batch in eine <strong className="text-titanium-50">Prioritäts-Queue</strong> mit
           automatischem Retry eingereiht. Fortschritt je Batch ist live sichtbar, Abbrechen jederzeit möglich.
@@ -234,7 +237,7 @@ const ITEMS: Item[] = [
     a: (
       <>
         <p>
-          Ja — der <strong className="text-titanium-50">Scheduler</strong> ab dem <strong className="text-titanium-50">Agency</strong>-Tier.
+          Ja — der <strong className="text-titanium-50">Scheduler</strong> ab dem <strong className="text-titanium-50">Growth</strong>-Tier.
           Du legst pro Mandant Zeitpläne an (täglich, wöchentlich oder monatlich zu fester UTC-Uhrzeit); zum geplanten
           Zeitpunkt wird automatisch ein Bulk-Scan der hinterlegten Domains ausgeführt. Pausieren/Fortsetzen jederzeit.
         </p>
@@ -254,7 +257,7 @@ const ITEMS: Item[] = [
     a: (
       <>
         <p>
-          Der <strong className="text-titanium-50">Evidence Vault Advanced</strong> (ab <strong className="text-titanium-50">Agency</strong>) legt Nachweise als
+          Der <strong className="text-titanium-50">Evidence Vault Advanced</strong> (ab <strong className="text-titanium-50">Growth</strong>) legt Nachweise als
           <strong className="text-titanium-50"> versionierte, unveränderliche Snapshots</strong> ab: jeder Stand ist über eine SHA-256-Kette
           (prev_hash) mit dem Vorgänger verknüpft und wird per Datenbank-Trigger gegen Änderung/Löschung gesperrt (append-only).
         </p>
@@ -276,7 +279,7 @@ const ITEMS: Item[] = [
     a: (
       <>
         <p>
-          Ja — <strong className="text-titanium-50">Policy Packs</strong> ab dem <strong className="text-titanium-50">Agency</strong>-Tier.
+          Ja — <strong className="text-titanium-50">Policy Packs</strong> ab dem <strong className="text-titanium-50">Starter</strong>-Tier.
           Statt bei null anzufangen, aktivierst du ein kuratiertes Regelwerk mit einem Klick; die Controls landen in deiner
           Kontroll-Matrix und die <strong className="text-titanium-50">Abdeckung</strong> wird gegen deine dokumentierten Maßnahmen berechnet.
         </p>

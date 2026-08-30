@@ -685,6 +685,71 @@ sind unberührt. Rangvergleiche (`PlanUpgradeModal`, `planRank()`) laufen
 weiterhin über die vollständige Leiter — sonst bekäme ein Bestandskunde auf
 Agency falsche Antworten. Hintergrund: `docs/product/ap2-paketumbau.md` §7.
 
+**2026-08-30 — Texte und Buttons an die Route- und Pricing-Infrastruktur**
+
+Auf die Fragepflicht nach §10.3 hat der Eigentümer dreimal mit **Ja**
+geantwortet:
+
+| Frage | Antwort |
+|---|---|
+| 1. Erfundene Plannamen (Scale, Pro, Business, Premium) auf echte Plannamen korrigieren | **Ja** |
+| 2. Legacy-Pläne (Agency, Partner) auf die verkäuflichen Stufen umstellen | **Ja** |
+| 3. Falsche Kontingente auf `/agenturen-conversion` an die SSoT angleichen | **Ja** |
+
+Umfang — und **nur** dieser: Beschriftungen, Fließtext und Link-Ziele. Kein
+Layout, kein Grid, keine Farben, keine Typografie, keine Sektionsreihenfolge.
+
+Die Zuordnung ist aus `shared/pricing.ts` abgeleitet, nicht gewählt:
+White-Label (`whitelabel.reports`) gibt es nur in Agency, Enterprise und
+Partner — davon ist Enterprise der einzige verkäufliche Plan, deshalb geht
+jede White-Label-Aussage dorthin. `provenance.advanced`, `bulk.jobs`,
+`scheduler.enabled` und `evidence.advanced` beginnen bei Growth,
+`policy.packs` seit AP2 bei Starter, die Kodee-Tools (`ai.tool.vps_*`) bei
+Agency und damit verkäuflich erst bei Enterprise.
+
+**2026-08-30 (2) — WhatsApp-Preisseite auf drei Stufen**
+
+Auf die Drei-Fragen-Regel nach §10.4 hat der Eigentümer dreimal mit **Ja**
+geantwortet:
+
+| Frage | Antwort |
+|---|---|
+| 1. Karte „Agency WhatsApp" (699 €) aus `WHATSAPP_TIERS` entfernen | **Ja** |
+| 2. Raster von `lg:grid-cols-4` auf `lg:grid-cols-3` | **Ja** |
+| 3. Agency-Nennung in der FAQ derselben Seite auf Enterprise ziehen | **Ja** |
+
+Umfang — und **nur** dieser:
+
+| Was | Vorher | Nachher |
+|---|---|---|
+| Tarifkarten | Starter · Growth · Agency · Enterprise | Starter · Growth · Enterprise |
+| Raster der Tarifsektion | `lg:grid-cols-4` | `lg:grid-cols-3` |
+| FAQ „Setup-Dauer" | „Agency/Enterprise: Dedicated Onboarding" | „Enterprise: Dedicated Onboarding" |
+
+Damit entfällt `/checkout/agency?channel=whatsapp` — die letzte Stelle im
+Frontend, an der ein Legacy-Plan über Self-Service kaufbar war. Nichts geht
+verloren: Die Enterprise-Karte führt bereits mehr Bots (20 statt 10), mehr
+Antworten (50.000 statt 25.000) und White-Label. Kartengröße, Farben,
+Typografie, Abstände, Icon-Set und Sektionsreihenfolge sind unberührt; die
+beiden anderen Raster der Seite (`md:grid-cols-2`, `md:grid-cols-3`) ebenso.
+
+**2026-08-30 (3) — DORA-Karte als „In Vorbereitung"**
+
+Auf die Fragepflicht nach §10.3 hat der Eigentümer entschieden, die Karte
+zu behalten und als noch nicht verfügbar auszuweisen, statt sie zu
+entfernen. `path` ist jetzt `null` statt `/app/governance/dora` — diese
+Route existiert im Repo nicht —, die Karte navigiert nicht mehr und trägt
+das Abzeichen „In Vorbereitung". Das Schloss-Symbol entfällt dort, weil es
+„per Tarif gesperrt" bedeutet und nicht „noch nicht gebaut". Kartenzahl und
+Raster bleiben unverändert.
+
+**Korrektur am selben Tag**: Die vier CTAs, die AP2 folgend auf
+`/contact-sales?plan=enterprise` gelegt worden waren, lesen sich dort nicht
+— `src/pages/ContactSales.tsx` wertet `tier`, `source` und `intent` aus,
+**nicht** `plan`. Sie tragen jetzt `?tier=enterprise`. Der Eintrag zu AP2
+oben nennt weiterhin `plan=enterprise`; das ist die dort dokumentierte
+Absicht, nicht der Parameter, den die Seite liest.
+
 **Weiterhin offen**: `/realsync-landing` führt fünf Plan-Karten mit hart
 codierten Preisen im JSX, inklusive Agency und Partner. Umbau auf die Quelle
 ist ein eigener Schritt (§10.1) und gehört zu AP10.

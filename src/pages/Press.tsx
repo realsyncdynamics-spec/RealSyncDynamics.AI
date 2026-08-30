@@ -76,7 +76,7 @@ export function Press() {
               <p>
                 Die Plattform kombiniert acht kostenfreie Self-Service-Tools (AVV, VVT, DSFA, TOM,
                 AI-Act-Klassifikator, Datenschutz-Generator, Meldepflicht-Timer, Bußgeld-Rechner) mit einem
-                kostenpflichtigen Premium-Tier (Cookie-Consent-SDK, Audit-Trail, Multi-Tenant-Management).
+                kostenpflichtigen Tarifen ab Starter (Cookie-Consent-SDK, Audit-Trail, Multi-Tenant-Management).
                 Hosting erfolgt vollständig in der EU (Frankfurt). KI-Workloads laufen wahlweise auf europäischen
                 Anbietern oder lokal via Ollama (Llama / Mistral) — keine US-Cloud-Default-Pfade.
               </p>

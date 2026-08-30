@@ -192,24 +192,24 @@ export function AgenciesSolution() {
       <section className="px-4 sm:px-6 lg:px-8 py-12 border-t border-silver-700">
         <div className="max-w-3xl mx-auto text-center">
           <h2 className="font-display font-bold text-2xl text-titanium-50 mb-6">
-            Agency-Paket: Professional Governance
+            Enterprise-Paket: Professional Governance
           </h2>
           <div className="border border-silver-700 p-8 bg-obsidian-900 rounded-none mb-8">
             {/*
               COMMERCIAL-SSOT: temporary production hotfix.
               Canonical source migration tracked in Phase 2.
-              Agency ist seit AP2 stillgelegt (`availability: 'legacy'`);
-              `/checkout/agency` weist neue Abschluesse ab. Ein Festpreis
-              waere hier ein Angebot ohne Kaufpfad. Diese Zielgruppe —
-              Multi-Tenant, White-Label, eigene Kapazitaet — laeuft ueber
-              Enterprise nach Vereinbarung.
+              Kein Festpreis: Enterprise wird vertraglich vereinbart und
+              manuell fakturiert (`priceOnRequest`), der Self-Service-Checkout
+              kann 1.249 € nicht einloesen. Agency stand hier bis AP2 und ist
+              stillgelegt — ersetzt wird der Plan nicht durch einen Betrag,
+              sondern durch den Vertriebsweg.
             */}
             <div className="font-display font-bold text-4xl text-titanium-50 mb-2">Auf Anfrage</div>
-            <p className="text-silver-400 mb-6">Enterprise — White-Label, Mandanten-Kapazität nach Vereinbarung, API + Webhooks</p>
+            <p className="text-silver-400 mb-6">Enterprise — White-Label, Sites nach Vertrag, API + Webhooks</p>
             <ul className="space-y-3 text-sm text-silver-300 mb-8 max-w-lg mx-auto">
               {[
-                'Weiße Bluse (dein Logo, deine Domain)',
-                'bis zu 10 Kunden-Domains',
+                'White-Label (dein Logo, deine Domain)',
+                'Kunden-Domains nach Vertrag',
                 'DSGVO + AI-Act Monitoring',
                 'Evidence Vault',
                 'Team-Zugang (5 Nutzer)',
@@ -222,11 +222,11 @@ export function AgenciesSolution() {
                 </li>
               ))}
             </ul>
-            <button className="surface-mono px-8 py-3 font-bold">Jetzt starten</button>
+            <Link to="/contact-sales?tier=enterprise&source=solutions" className="surface-mono inline-block px-8 py-3 font-bold">Enterprise anfragen</Link>
           </div>
 
           <p className="text-silver-400 text-sm">
-            Bist du bereit für 50+ Kunden-Websites? <Link to="/contact-sales?product=agency&plan=enterprise" className="text-security-500 hover:text-security-400">Frag Enterprise an</Link> — Kapazität und Konditionen nach Vereinbarung.
+            Mehr als 25 Kunden-Websites? Der Umfang wird im Enterprise-Vertrag festgelegt — <Link to="/contact-sales?tier=enterprise&source=solutions" className="text-security-500 hover:text-security-400">Enterprise anfragen</Link>.
           </p>
         </div>
       </section>

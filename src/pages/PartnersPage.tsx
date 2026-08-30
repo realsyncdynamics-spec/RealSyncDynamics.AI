@@ -11,7 +11,7 @@ import {
 //
 // Future work that would let us extend this page:
 //   - Affiliate-tracking table + Edge Function (no code today)
-//   - 50-tenant quota enforcement (Scale-Tier ships in #349)
+//   - 50-tenant quota enforcement (Partner-Kontingent, ships in #349)
 //   - Stripe price IDs for Partner + recurring partner-rev-share
 //   - 30-day trial backend (not implemented)
 //
@@ -170,8 +170,8 @@ export function PartnersPage() {
               eta="Q4 2026"
             />
             <Roadmap
-              title="Self-Serve Scale-Checkout"
-              body="Stripe-Checkout direkt aus /pricing für Scale-Tier. Aktuell: manuelles Onboarding über Sales (besser für die ersten 10 Kunden — wir verifizieren persönlich)."
+              title="Self-Serve Partner-Checkout"
+              body="Stripe-Checkout direkt aus /pricing für den Partner-Plan. Aktuell: manuelles Onboarding (besser für die ersten 10 Kunden — wir verifizieren persönlich)."
               eta="Q3 2026"
             />
             <Roadmap

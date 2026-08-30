@@ -19,7 +19,29 @@ export type ModelProfile =
   | 'embed-default'
   | 'cloud-fallback';
 
-export type ProviderId = 'lm_studio' | 'openai' | 'anthropic' | 'mock';
+export type ProviderId = 'lm_studio' | 'openai' | 'anthropic' | 'google' | 'ollama' | 'mock';
+
+// --- Governed AI Routing Layer (R1) — additive, data-driven registry metadata.
+// Keep in sync with src/core/ai-gateway/types.ts. Consumed by registry.ts,
+// not by the current ServerAiGateway path — no behaviour change.
+export type ProviderKind = 'cloud' | 'local';
+export type ProviderLocality = 'eu' | 'non_eu' | 'on_prem';
+
+export interface ProviderDescriptor {
+  id: ProviderId;
+  kind: ProviderKind;
+  locality: ProviderLocality;
+  capabilities: AiTaskType[];
+  models: string[];
+  maxContext?: number;
+  costPer1k?: { input: number; output: number };
+  dataProcessingAgreement?: boolean;
+}
+
+export interface RegisteredProvider {
+  descriptor: ProviderDescriptor;
+  adapter: AiProviderAdapter;
+}
 
 export interface AiGatewayRequest {
   tenant_id?: string | null;

@@ -28,7 +28,7 @@
  * einlösbar; sie aus der SSoT zu beziehen ist eine Aufräumaufgabe (AP10),
  * keine Angebots-Sicherheitsfrage.
  */
-import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
+import { readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -74,8 +74,16 @@ function collectFiles() {
       else if (/\.(tsx?|html)$/.test(entry) && !/\.(test|spec)\.tsx?$/.test(entry)) files.push(p);
     }
   })(join(ROOT, 'src'));
+  // Kein existsSync davor: Pruefen-dann-Lesen ist eine Race (TOCTOU) — die
+  // Datei kann zwischen beiden Aufrufen verschwinden. Stattdessen lesen und
+  // ein fehlendes File am Fehlercode erkennen.
   const indexHtml = join(ROOT, 'index.html');
-  if (existsSync(indexHtml)) files.push(indexHtml);
+  try {
+    readFileSync(indexHtml);
+    files.push(indexHtml);
+  } catch (err) {
+    if (err.code !== 'ENOENT') throw err;
+  }
   return files;
 }
 
@@ -153,9 +161,14 @@ if (amounts.size === 0) {
 }
 
 const findings = scan(amounts);
-const baseline = existsSync(BASELINE_PATH)
-  ? JSON.parse(readFileSync(BASELINE_PATH, 'utf8'))
-  : { known: {} };
+// Auch hier kein existsSync: Eine fehlende Grundlinie ist ein legitimer
+// Startzustand und wird am Fehlercode erkannt, nicht vorab abgefragt.
+let baseline = { known: {} };
+try {
+  baseline = JSON.parse(readFileSync(BASELINE_PATH, 'utf8'));
+} catch (err) {
+  if (err.code !== 'ENOENT') throw err;
+}
 
 const known = baseline.known ?? {};
 const foundIds = new Set(findings.map((f) => f.id));
@@ -166,7 +179,6 @@ if (isUpdate) {
   for (const f of findings.sort((a, b) => a.id.localeCompare(b.id))) {
     next.known[f.id] = known[f.id] ?? `${f.planId} · ${f.amount} €`;
   }
-  const { writeFileSync } = await import('node:fs');
   writeFileSync(BASELINE_PATH, JSON.stringify(next, null, 2) + '\n');
   console.log(`✓ Grundlinie aktualisiert: ${findings.length} bekannte Fundstellen.`);
   process.exit(0);

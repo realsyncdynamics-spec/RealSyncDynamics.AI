@@ -32,7 +32,7 @@ import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 
 // Spiegel von company_profiles_sector_check (zuletzt gesetzt in
-// supabase/migrations/20260901000000_company_profiles_sector_extend.sql) und
+// supabase/migrations/20260902000000_company_profiles_sector_extend.sql) und
 // von SECTORS in src/config/sectors.ts. Deno kann nicht aus src/ importieren,
 // deshalb diese Kopie — test/config/sectors-parity.test.ts prueft alle drei
 // Ebenen gegeneinander und schlaegt bei Drift fehl.

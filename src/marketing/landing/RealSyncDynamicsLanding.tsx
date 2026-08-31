@@ -10,7 +10,11 @@ export const RealSyncDynamicsLanding = () => {
   // von der Quelle wegdriftet (AP10).
   const starterPrice = planById('starter').price.monthlyEur;
   const growthPrice = planById('growth').price.monthlyEur;
-  const agencyPrice = planById('agency').price.monthlyEur;
+  // COMMERCIAL-SSOT: temporary production hotfix.
+  // Canonical source migration tracked in Phase 2.
+  // `agencyPrice` ist entfallen: Agency ist seit AP2 stillgelegt und wird
+  // hier nicht mehr als Karte gefuehrt. Den Betrag aus der SSoT abzuleiten
+  // haette ihn korrekt, aber weiterhin uneinloesbar gemacht.
 
   const sections = [
     'Product',
@@ -464,12 +468,21 @@ export const RealSyncDynamicsLanding = () => {
               </div>
 
               <div className="bg-slate-900/80 backdrop-blur p-6 rounded-lg border border-petrol/30 hover:border-petrol/60 flex flex-col transition">
-                <h3 className="text-lg font-bold text-petrol mb-2" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Agency</h3>
-                <p className="text-3xl font-bold text-titanium mb-1">{agencyPrice} €</p>
-                <p className="text-xs font-mono uppercase tracking-wider text-titanium/50 mb-4">pro Monat</p>
+                {/*
+                  COMMERCIAL-SSOT: temporary production hotfix.
+                  Canonical source migration tracked in Phase 2.
+                  Diese Karte fuehrte Agency mit dem Betrag aus der SSoT. Den
+                  Preis abzuleiten macht ihn korrekt, aber nicht einloesbar:
+                  Agency ist seit AP2 stillgelegt, `/checkout/agency` weist
+                  neue Abschluesse ab. Die Zielgruppe laeuft ueber Enterprise
+                  — nach Vertrag, deshalb ohne Betrag.
+                */}
+                <h3 className="text-lg font-bold text-petrol mb-2" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Enterprise</h3>
+                <p className="text-3xl font-bold text-titanium mb-1">Auf Anfrage</p>
+                <p className="text-xs font-mono uppercase tracking-wider text-titanium/50 mb-4">nach Vertrag</p>
                 <ul className="space-y-2 text-sm text-titanium/70 mb-6 flex-1">
                   <li>✓ White-Label</li>
-                  <li>✓ 10 Kunden-Sites</li>
+                  <li>✓ Mandanten-Kapazität nach Vereinbarung</li>
                   <li>✓ API-Zugang</li>
                 </ul>
                 <Link to="/contact-sales?tier=agency&source=realsync-landing" className="block text-center w-full bg-slate-800 hover:bg-slate-700 py-2 rounded text-sm transition">

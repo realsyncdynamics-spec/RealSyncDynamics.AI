@@ -193,8 +193,17 @@ export function SaaSSolution() {
             SaaS-Paket: Professional Governance
           </h2>
           <div className="border border-silver-700 p-8 bg-obsidian-900 rounded-none mb-8">
-            <div className="font-display font-bold text-4xl text-titanium-50 mb-2">€1.249/Monat</div>
-            <p className="text-silver-400 mb-6">Enterprise-Tarif — für SaaS-Anbieter, Websites/Produkte nach Vertrag</p>
+            {/*
+              COMMERCIAL-SSOT: temporary production hotfix.
+              Canonical source migration tracked in Phase 2.
+              Kein Festpreis: Enterprise wird vertraglich vereinbart und
+              manuell fakturiert (`priceOnRequest`), der Self-Service-Checkout
+              kann 1.249 € nicht einloesen. Agency stand hier bis AP2 und ist
+              stillgelegt — ersetzt wird der Plan nicht durch einen Betrag,
+              sondern durch den Vertriebsweg.
+            */}
+            <div className="font-display font-bold text-4xl text-titanium-50 mb-2">Auf Anfrage</div>
+            <p className="text-silver-400 mb-6">Enterprise — für SaaS-Anbieter, Websites/Produkte nach Vertrag</p>
             <ul className="space-y-3 text-sm text-silver-300 mb-8 max-w-lg mx-auto">
               {[
                 'KI-System-Inventar (unbegrenzt)',

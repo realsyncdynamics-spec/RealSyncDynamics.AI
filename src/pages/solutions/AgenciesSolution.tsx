@@ -153,7 +153,12 @@ export function AgenciesSolution() {
               {
                 scenario: 'Szenario 1: Reseller',
                 model: 'Du nutzt RealSyncDynamics.AI, stellst den Kunden deine Domain vor',
-                pricing: 'Partner-Tarif: €1.999/Monat für bis zu 50 Mandanten · Endkundenpreis frei kalkulierbar',
+                // COMMERCIAL-SSOT: temporary production hotfix.
+                // Canonical source migration tracked in Phase 2.
+                // Partner ist seit AP2 stillgelegt (`availability: 'legacy'`);
+                // ein Festpreis waere hier ein Angebot ohne Kaufpfad. Die
+                // Mandanten-Kapazitaet wird vertraglich vereinbart.
+                pricing: 'Enterprise nach Vertrag · Mandanten-Kapazität nach Vereinbarung · Endkundenpreis frei kalkulierbar',
                 margin: 'Verdopplung der Governance-Revenue pro Kunde',
               },
               {
@@ -195,8 +200,17 @@ export function AgenciesSolution() {
             Enterprise-Paket: Professional Governance
           </h2>
           <div className="border border-silver-700 p-8 bg-obsidian-900 rounded-none mb-8">
-            <div className="font-display font-bold text-4xl text-titanium-50 mb-2">€1.249/Monat</div>
-            <p className="text-silver-400 mb-6">Enterprise-Tarif — White-Label, Sites nach Vertrag, API + Webhooks</p>
+            {/*
+              COMMERCIAL-SSOT: temporary production hotfix.
+              Canonical source migration tracked in Phase 2.
+              Kein Festpreis: Enterprise wird vertraglich vereinbart und
+              manuell fakturiert (`priceOnRequest`), der Self-Service-Checkout
+              kann 1.249 € nicht einloesen. Agency stand hier bis AP2 und ist
+              stillgelegt — ersetzt wird der Plan nicht durch einen Betrag,
+              sondern durch den Vertriebsweg.
+            */}
+            <div className="font-display font-bold text-4xl text-titanium-50 mb-2">Auf Anfrage</div>
+            <p className="text-silver-400 mb-6">Enterprise — White-Label, Sites nach Vertrag, API + Webhooks</p>
             <ul className="space-y-3 text-sm text-silver-300 mb-8 max-w-lg mx-auto">
               {[
                 'White-Label (dein Logo, deine Domain)',

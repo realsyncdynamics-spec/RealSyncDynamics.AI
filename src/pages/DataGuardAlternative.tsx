@@ -71,7 +71,7 @@ export function DataGuardAlternative() {
       <ComparisonTable
         competitor="DataGuard"
         rows={[
-          { f: 'Pricing-Modell', o: '4.000–12.000 €/Jahr (Abo)', r: '79–699 €/Monat (Self-Service)' },
+          { f: 'Pricing-Modell', o: '4.000–12.000 €/Jahr (Abo)', r: '79–249 €/Monat (Self-Service) · Enterprise auf Anfrage' },
           { f: 'Externer DSB stellen', o: 'yes', r: 'no' },
           { f: 'AVV-Generator (Self-Service)', o: 'partial', r: 'yes' },
           { f: 'VVT-Wizard (Art. 30)', o: 'partial', r: 'yes' },

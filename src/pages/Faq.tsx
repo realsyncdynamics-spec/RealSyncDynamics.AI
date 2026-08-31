@@ -60,12 +60,15 @@ const ITEMS: Item[] = [
     q: 'Was kostet die Plattform?',
     a: (
       <>
-        <p>Vier Tiers + 14-Tage Pilot-Trial:</p>
+        <p>Vier Tiers — Starter und Growth mit 14-Tage-Pilot, Enterprise nach Vertrag:</p>
         <ul className="list-disc pl-5 space-y-1 mt-2">
           <li><strong className="text-titanium-50">Free Audit</strong> kostenlos — einmaliger Compliance-Snapshot, kein Account</li>
           <li><strong className="text-titanium-50">Starter</strong> 79 €/Monat — eine Domain, Audit-Trail, monatlicher Re-Scan</li>
           <li><strong className="text-titanium-50">Growth</strong> 249 €/Monat — bis 3 Domains, tägliches Monitoring + Drift-Detection</li>
-          <li><strong className="text-titanium-50">Enterprise</strong> 1.249 €/Monat — White-Label, Multi-Tenant, SLA, AI-Act-Modul, DSB-Integration, Evidence Vault</li>
+          {/* COMMERCIAL-SSOT: kein Festpreis — Enterprise wird vertraglich
+              vereinbart und manuell fakturiert; der Self-Service-Checkout
+              kann 1.249 € nicht einloesen. */}
+          <li><strong className="text-titanium-50">Enterprise</strong> auf Anfrage — White-Label, Multi-Tenant, SLA nach Vereinbarung, AI-Act-Modul, DSB-Integration, Evidence Vault</li>
         </ul>
         <p className="mt-2">
           Volle Feature-Matrix: <Link to="/pricing" className="text-security-400">/pricing</Link>

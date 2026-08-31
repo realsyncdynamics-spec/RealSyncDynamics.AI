@@ -30,7 +30,7 @@ Tenants hinweg, oder Zugriff aus dem Browser.
 | | |
 |---|---|
 | Erreichbarer MCP Server | lokal `http://localhost:3001`, geplant `mcp.realsyncdynamicsai.de` |
-| Angewandte Migrationen | `20260901000000_mcp_api_keys.sql`, `20260901000100_mcp_quota.sql` |
+| Angewandte Migrationen | `20260902000000_mcp_api_keys.sql`, `20260902000100_mcp_quota.sql` |
 | Deployte Edge Function | `mcp-api-key-manager` |
 | API-Key | siehe Abschnitt 3 |
 | Plan mit API-Zugriff | ab Agency — darunter antwortet der Server mit 403 |
@@ -314,5 +314,5 @@ Sampling) fehlen — ein rein lesender Server hat nichts von sich aus zu senden.
 ## Verwandte Dokumente
 
 - [`apps/mcp-server/README.md`](../apps/mcp-server/README.md) — Betrieb und Endpunkte
-- [`supabase/migrations/20260901000000_mcp_api_keys.sql`](../supabase/migrations/20260901000000_mcp_api_keys.sql) — Schema, RLS, Prüfpfad
+- [`supabase/migrations/20260902000000_mcp_api_keys.sql`](../supabase/migrations/20260902000000_mcp_api_keys.sql) — Schema, RLS, Prüfpfad
 - [`docs/ARCHITECTURE.md`](./ARCHITECTURE.md) — Gesamtarchitektur

@@ -126,7 +126,11 @@ test.describe('Pricing Flow', () => {
     test('Jahres-Checkout ohne verdrahteten Preis leitet auf den Monats-Checkout', async ({ page }) => {
       for (const [yearlyKey, monthlyKey] of UNWIRED_YEARLY_REDIRECTS) {
         await page.goto(`${BASE_URL}/checkout/${yearlyKey}`);
-        await page.waitForURL(new RegExp(`/checkout/${monthlyKey}`));
+        // Am Ende verankert: `/checkout/starter` ist ein Praefix von
+        // `/checkout/starter_yearly`. Ohne `(\?|$)` waere die Wartebedingung
+        // schon von der Ausgangs-URL erfuellt und der Test gruen, bevor die
+        // Weiterleitung ueberhaupt stattgefunden hat.
+        await page.waitForURL(new RegExp(`/checkout/${monthlyKey}(\\?|$)`));
         expect(page.url()).toContain(`/checkout/${monthlyKey}`);
         expect(page.url()).not.toContain(yearlyKey);
       }

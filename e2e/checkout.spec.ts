@@ -87,8 +87,11 @@ test.describe('Checkout Flow', () => {
     // und „/ Jahr" stehen; genau das war das Angebot ohne Kaufpfad.
     await page.goto('http://localhost:3000/checkout/growth_yearly');
 
-    // Die Seite leitet auf den Monats-Checkout desselben Plans um.
-    await page.waitForURL(/\/checkout\/growth/);
+    // Die Seite leitet auf den Monats-Checkout desselben Plans um. Am Ende
+    // verankert, weil `/checkout/growth` ein Praefix von
+    // `/checkout/growth_yearly` ist — sonst waere die Bedingung schon vor der
+    // Weiterleitung erfuellt.
+    await page.waitForURL(/\/checkout\/growth(\?|$)/);
     expect(page.url()).not.toContain('growth_yearly');
 
     // Und der Jahresbetrag steht nirgends mehr als zugesicherter Preis.

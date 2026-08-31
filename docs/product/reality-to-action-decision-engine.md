@@ -116,12 +116,12 @@ Der primäre Aufruf ist bewusst die **Übernahme des Scans**, nicht ein Kauf.
 Ohne Konto ist der Bericht eine Momentaufnahme: kein Verlauf, keine
 Wiedervorlage, kein Nachweis.
 
-> ⚠️ Diese Kette hat weiterhin eine Lücke: Der Claim-Writer fehlt
-> (`docs/product/free-scan-recovery.md` §5). `gdpr_audits.claimed_at` ist in
-> 0 von 159 Zeilen gefüllt, nichts schreibt die Spalte. Der Aufruf führt
-> auf eine Route, die es gibt — aber die Übernahme selbst ist noch nicht
-> verdrahtet. Das ist der nächste Schritt, bevor diese Engine ihren Zweck
-> vollständig erfüllt.
+> ✅ **Die Kette ist seit dem 2026-08-31 geschlossen.** Der Claim-Writer
+> (`supabase/functions/audit-claim/`) setzt `tenant_id`, `user_id` und
+> `claimed_at`; damit wird das Audit über die Policy `gdpr_audits tenant_read`
+> im Konto sichtbar. Vertrauensmodell und offene Punkte:
+> `docs/product/audit-claim.md`. Die Function ist noch nicht deployt — bis zum
+> nächsten `deploy.yml`-Lauf steht sie in `UNBACKED_CALLERS`.
 
 ---
 

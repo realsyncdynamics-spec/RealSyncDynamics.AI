@@ -345,10 +345,12 @@ Tabelle. Damit bestätigt sich `canonical-funnel-decision.md` §1: Dem
 `/audit`-Pfad fehlt der Claim-Writer, und die Kette
 `Report → Auth → Tenant → Audit Claim` bricht nach dem Report ab.
 
-Das ist **hier bewusst nicht behoben**: Es ist eine eigene
-Vertragsentscheidung, kein Bestandteil der Wiederherstellung. Es ist der
-nächste Schritt, bevor BUILD/AUTOMATE/GOVERN an den Trichter angeschlossen
-werden — ein Report, den niemand übernehmen kann, trägt keinen Kunden weiter.
+Das war **in der Wiederherstellung bewusst nicht behoben** — eine eigene
+Vertragsentscheidung, kein Bestandteil des Recovery.
+
+> ✅ **Geschlossen am 2026-08-31**: `supabase/functions/audit-claim/` schreibt
+> die Spalten jetzt. Muster, Vertrauensmodell und offene Punkte:
+> `docs/product/audit-claim.md`.
 
 ---
 

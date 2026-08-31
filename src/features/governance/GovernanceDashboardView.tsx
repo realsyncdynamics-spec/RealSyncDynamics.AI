@@ -16,6 +16,35 @@ import {
 import { archiveAsset, togglePolicy } from './resourcesApi';
 import { CreateAssetModal, CreatePolicyModal } from './GovernanceResourceModals';
 import { GovernanceTrendsPanel } from './GovernanceTrendsPanel';
+import {
+  SELLABLE_PRICING_TIERS, formatPriceEur, checkoutHrefForPlan,
+} from '../../config/pricing';
+
+// COMMERCIAL-SSOT: temporary production hotfix.
+// Canonical source migration tracked in Phase 2.
+// Die Upgrade-Leiter des Dashboards, aus der SSoT abgeleitet statt gepflegt.
+// `SELLABLE_PRICING_TIERS` enthaelt genau die heute abschliessbaren Plaene —
+// stillgelegte (Agency, Partner) fallen damit automatisch heraus.
+const UPGRADE_TIER_BLURBS: Record<string, string> = {
+  starter: 'DSGVO-Monitoring · Evidence Vault · DSE-Generator',
+  growth: 'KI-Governance · Continuous Monitoring · Fix-Snippets',
+  enterprise: 'Multi-Tenant · SSO · Governance nach Vereinbarung',
+};
+
+const UPGRADE_TIERS = SELLABLE_PRICING_TIERS.map((tier) => ({
+  tier: tier.name,
+  // Ein Plan ohne oeffentlichen Festpreis darf hier keinen Betrag zeigen.
+  price: tier.priceOnRequest ? 'Auf Anfrage' : `${formatPriceEur(tier.priceEur)}/Monat`,
+  desc: UPGRADE_TIER_BLURBS[tier.plan.id] ?? tier.plan.outcomeHeadline,
+  href: checkoutHrefForPlan(tier.plan, { source: 'governance_dashboard' }),
+  // Der Trial-Hinweis folgt der SSoT: kein Trial, kein Versprechen.
+  note: tier.plan.trialDays > 0
+    ? `${tier.plan.trialDays} Tage gratis testen`
+    : tier.plan.ctaLabel,
+  color: tier.plan.highlight
+    ? 'border-cyan-700 hover:border-cyan-400'
+    : 'border-titanium-700 hover:border-titanium-400',
+}));
 import { DsgvoControlPackPanel } from './dsgvo-control-pack/DsgvoControlPackPanel';
 import { DEMO_CONTROL_SIGNALS } from './dsgvo-control-pack/dsgvoControlPackDemo';
 import { countPendingApprovals } from './approvalsApi';
@@ -415,11 +444,20 @@ function Body({
 
       {/* Upgrade-CTAs */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        {[
-          { tier: 'Starter', price: '79 €/Monat', desc: 'DSGVO-Monitoring · Evidence Vault · DSE-Generator', href: '/checkout/starter?source=governance_dashboard', color: 'border-titanium-700 hover:border-titanium-400' },
-          { tier: 'Growth', price: '249 €/Monat', desc: 'KI-Governance · Continuous Monitoring · Fix-Snippets', href: '/checkout/growth?source=governance_dashboard', color: 'border-cyan-700 hover:border-cyan-400' },
-          { tier: 'Agency', price: '699 €/Monat', desc: 'Governance Agents · Branchenbibliothek · Audit-Trail', href: '/checkout/agency?source=governance_dashboard', color: 'border-titanium-700 hover:border-titanium-400' },
-        ].map((plan) => (
+        {/*
+          COMMERCIAL-SSOT: temporary production hotfix.
+          Canonical source migration tracked in Phase 2.
+
+          Die Leiter kam aus einem Literal und zeigte zuletzt auf
+          `/checkout/agency` — einen Plan, den AP2 stillgelegt hat und den
+          `stripe-checkout` mit PLAN_RETIRED abweist. Der Nutzer landete also
+          aus dem Dashboard heraus in einer Sackgasse.
+
+          Statt das Literal zu korrigieren, wird die Leiter jetzt aus
+          SELLABLE_PRICING_TIERS abgeleitet: Preis, Ziel und Trial-Hinweis
+          stammen aus der SSoT und können nicht erneut auseinanderlaufen.
+        */}
+        {UPGRADE_TIERS.map((plan) => (
           <a
             key={plan.tier}
             href={plan.href}
@@ -431,7 +469,7 @@ function Body({
             </div>
             <p className="text-[11px] text-titanium-500 leading-relaxed mb-2">{plan.desc}</p>
             <span className="font-mono text-[10px] text-cyan-500 group-hover:text-cyan-300 transition-colors">
-              14 Tage gratis testen →
+              {plan.note} →
             </span>
           </a>
         ))}

@@ -29,6 +29,7 @@ import { PhonebotStartPage } from './pages/product-entry-points/PhonebotStartPag
 import { AetherOSLanding } from './pages/AetherOSLanding';
 // ── RealSyncDynamics Landing Page (eigene Route /realsync-landing) ──
 import { RealSyncDynamicsLanding } from './marketing/landing/RealSyncDynamicsLanding';
+import EnterpriseKonfigurator from './pages/EnterpriseKonfigurator';
 // ── Governance-OS Workspace Preview (moved to /preview) ──
 import { PublicWorkspacePreview } from './pages/PublicWorkspacePreview';
 import { GovernanceBrowserPage } from './pages/GovernanceBrowserPage';
@@ -499,6 +500,7 @@ function RoutesWithTracking() {
       <Route path="/landingpages" element={<LandingPagesOverview />} />
       <Route path="/landing-uebersicht" element={<LandingPagesOverview />} />
       <Route path="/realsync-landing" element={<RealSyncDynamicsLanding />} />
+      <Route path="/enterprise-konfigurator" element={<EnterpriseKonfigurator />} />
       <Route path="/governance-browser" element={<GovernanceBrowserPage />} />
       <Route path="/runtime"    element={<RuntimePage />} />
       <Route path="/monitoring" element={<MonitoringPage />} />

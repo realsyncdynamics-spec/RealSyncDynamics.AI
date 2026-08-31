@@ -310,8 +310,15 @@ async function start() {
     const auth = (request as any).user as MctAuthContext;
     const { framework_id } = request.query as Record<string, any>;
 
-    const controls = await listControls(auth.tenantId, framework_id || 'iso-42001');
-    return { data: controls, count: controls.length };
+    const controls = await listControls(auth.tenantId, framework_id || 'iso42001');
+    // `note` steht bewusst in jeder Antwort: Der Katalog beschreibt die
+    // Anforderungen des Frameworks, nicht den Stand des Tenants. Ohne den
+    // Hinweis liest ein Modell die Liste leicht als Prüfergebnis.
+    return {
+      data: controls,
+      count: controls.length,
+      note: 'Globaler Anforderungskatalog ohne Tenant-Bezug und ohne Erfüllungsstand.',
+    };
   });
 
   fastify.get<{ Params: { controlId: string } }>(
@@ -330,6 +337,11 @@ async function start() {
   fastify.setErrorHandler((error, request, reply) => {
     if (error.name === 'NotImplementedError') {
       return reply.code(501).send({ error: 'NOT_IMPLEMENTED', message: error.message });
+    }
+    // Ein unbekanntes Framework ist ein Eingabefehler des Aufrufers, kein
+    // Serverfehler — die Meldung nennt die gültigen Schlüssel.
+    if (error.name === 'UnknownFrameworkError') {
+      return reply.code(400).send({ error: 'UNKNOWN_FRAMEWORK', message: error.message });
     }
     if (error instanceof RateLimitError) {
       return reply

@@ -21,6 +21,34 @@ export interface EvidenceSnapshot {
   onHold?: boolean;
 }
 
+/**
+ * Ein Control aus dem globalen Katalog.
+ *
+ * Bewusst **ohne** `status` und ohne `tenantId`: Der Katalog beschreibt, was
+ * ein Framework fordert — nicht, wie weit ein Tenant es erfüllt. Der
+ * Erfüllungsstand steht in `framework_implementations` und ist heute für
+ * keinen Tenant erfasst. Ein Feld `status` an dieser Stelle würde ein Modell
+ * dazu verleiten, den Katalog als Befund zu lesen.
+ */
+export interface FrameworkControl {
+  id: string;
+  /** Kennung innerhalb des Frameworks, z. B. „Art.10" oder „A.5.1". */
+  controlCode: string;
+  name: string;
+  description?: string;
+  guidance?: string;
+  category?: string;
+  severity?: string;
+  /** Auflösbarer Framework-Schlüssel, z. B. `iso42001`. */
+  framework: string;
+  /**
+   * Welcher der beiden Zuordnungswege diese Zeile geliefert hat — `relation`
+   * über `framework_id`, `label` über die Textspalte. Offengelegt, weil sich
+   * die beiden Bestände inhaltlich unterscheiden.
+   */
+  source: 'relation' | 'label';
+}
+
 export interface GovernanceControl {
   id: string;
   tenantId: string;

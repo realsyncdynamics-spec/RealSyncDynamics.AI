@@ -45,6 +45,50 @@ export interface Database {
         Update: Record<string, never>;
         Relationships: [];
       };
+      // Globaler Framework-Katalog. Kein tenant_id — die Frameworks gelten für
+      // alle. Nur lesend genutzt, deshalb Insert/Update gesperrt.
+      compliance_frameworks: {
+        Row: {
+          id: string;
+          code: string;
+          name: string;
+          description: string | null;
+          version: string | null;
+          authority: string | null;
+          website_url: string | null;
+          created_at: string;
+          updated_at: string | null;
+        };
+        Insert: Record<string, never>;
+        Update: Record<string, never>;
+        Relationships: [];
+      };
+      // Control-Katalog. Ebenfalls global und ohne Erfüllungsstand — der läge
+      // in framework_implementations, die je Tenant geführt wird.
+      //
+      // Achtung: Die Tabelle trägt zwei Zuordnungswege nebeneinander, siehe
+      // die Anmerkung in tools/governance.ts. `framework_id` und `framework`
+      // sind daher beide nullbar.
+      framework_controls: {
+        Row: {
+          id: string;
+          framework: string | null;
+          framework_id: string | null;
+          control_code: string;
+          title: string | null;
+          control_name: string | null;
+          description: string | null;
+          guidance: string | null;
+          severity: string | null;
+          category: string | null;
+          parent_control_id: string | null;
+          metadata: Record<string, unknown> | null;
+          created_at: string;
+        };
+        Insert: Record<string, never>;
+        Update: Record<string, never>;
+        Relationships: [];
+      };
       tenants: {
         Row: {
           id: string;

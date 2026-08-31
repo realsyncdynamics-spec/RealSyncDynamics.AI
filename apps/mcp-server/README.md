@@ -6,11 +6,13 @@ Compliance-Nachweise lesen können — nachvollziehbar, mandantengetrennt, wider
 Kein generischer API-Wrapper: Jeder Zugriff braucht einen Key mit Scopes, gilt nur
 für einen Tenant und landet im Prüfpfad.
 
-> **Stand:** Der Evidence-Teil arbeitet gegen echte Daten. Die Governance-Endpunkte
-> sind Platzhalter und antworten mit **501 Not Implemented** — siehe
-> [Was noch nicht funktioniert](#was-noch-nicht-funktioniert). Sie liefern bewusst
-> keine Null-Werte, weil ein Agent `score: 0` sonst als Befund „nicht konform"
-> weiterreichen würde.
+> **Stand:** Der Evidence-Teil arbeitet gegen echte Daten. Bei Governance ist
+> der **Control-Katalog funktionsfähig** (219 Controls über acht Frameworks);
+> **Score und Control-Erfüllung antworten mit 501**, weil die zugrunde
+> liegenden Tabellen leer sind — siehe
+> [Was noch nicht funktioniert](#was-noch-nicht-funktioniert). Sie liefern
+> bewusst keine Null-Werte, weil ein Agent `score: 0` sonst als Befund „nicht
+> konform" weiterreichen würde.
 
 ---
 
@@ -156,16 +158,52 @@ Die Prüflogik liegt in `packages/evidence-chain` und wird von der SPA
 mitbenutzt; die Kanonisierung stimmt zeichengenau mit der Edge Function
 überein, die die Hashes erzeugt.
 
-### Governance — antwortet mit 501
+### Governance — Control-Katalog funktionsfähig
 
-| Methode | Pfad |
-|---|---|
-| `GET` | `/governance/status` |
-| `GET` | `/governance/controls` |
-| `GET` | `/governance/controls/:controlId/compliance` |
+| Methode | Pfad | Stand |
+|---|---|---|
+| `GET` | `/governance/controls?framework_id=iso42001` | **funktionsfähig** |
+| `GET` | `/governance/status` | 501 |
+| `GET` | `/governance/controls/:controlId/compliance` | 501 |
+
+`/governance/controls` liefert den **globalen Anforderungskatalog** eines
+Frameworks. Bekannt sind acht Schlüssel; die Schreibweise ist unerheblich
+(`ISO_27001`, `iso-27001` und `iso27001` gelten gleich):
+
+| Schlüssel | Controls | Schlüssel | Controls |
+|---|---|---|---|
+| `iso27001` | 98 | `ai_act` | 20 |
+| `gdpr` | 26 | `nis2` | 16 |
+| `iso42001` | 21 | `soc2` | 10 |
+| `dora` | 20 | `tisax` | 8 |
+
+> **Der Katalog sagt nichts über den Tenant aus.** Er beschreibt, was ein
+> Framework fordert — nicht, wie weit jemand es erfüllt. Deshalb hat die
+> Antwort kein Feld `status`, und jede Antwort trägt einen `note`-Hinweis.
+> Aus dieser Liste darf weder Konformität noch Nichtkonformität abgeleitet
+> werden.
+
+**Zwei Kataloge in einer Tabelle.** `framework_controls` führt zwei unabhängig
+gewachsene Bestände: 27 Zeilen hängen per `framework_id` an
+`compliance_frameworks`, 192 tragen stattdessen einen Text in `framework`. Sie
+überschneiden sich und widersprechen sich in der Menge — ISO 27001 hat 1
+Control über den Fremdschlüssel und 97 über die Textspalte. Der Endpunkt liest
+**beide** und führt sie zusammen; jede Zeile trägt in `source`, woher sie
+stammt. Nur einen Weg abzufragen lieferte je nach Framework zwischen 4 % und
+100 % des Katalogs, ohne dass es auffiele. Das ist eine Brücke, keine Lösung:
+Die Bestände gehören zusammengeführt, und das ist eine Datenentscheidung.
+
+Ein unbekannter Schlüssel ergibt **400** mit Aufzählung der gültigen Werte —
+nicht eine leere Liste, die sich wie „keine Controls" läse.
+
+Die beiden übrigen Endpunkte antworten weiterhin mit 501, und zwar aus einem
+Datengrund: `framework_implementations` und `asset_control_mappings` sind leer
+(gemessen 2026-08-31, über alle Tenants null Zeilen). Ein Score daraus wäre
+„0 von 219" und läse sich als „nicht konform", obwohl schlicht niemand etwas
+erfasst hat.
 
 ```json
-{ "error": "NOT_IMPLEMENTED", "message": "governance.get_status(iso-42001) ist noch nicht implementiert (offen: Auswertung von ai_policies/governance_controls)" }
+{ "error": "NOT_IMPLEMENTED", "message": "governance.get_status(iso42001) ist noch nicht implementiert (offen: framework_implementations ist leer — kein Tenant hat einen Control-Status erfasst)" }
 ```
 
 ---
@@ -286,7 +324,9 @@ nichts liefern kann.
 
 | Lücke | Auswirkung |
 |---|---|
-| Governance-Tools sind Platzhalter | drei Endpunkte antworten mit 501 |
+| Kein Control-Erfüllungsstand | `framework_implementations` und `asset_control_mappings` sind leer — Score und Control-Prüfung antworten mit 501 |
+| Zwei getrennte Control-Kataloge | `framework_controls` mischt FK- und Text-Zuordnung mit widersprüchlichen Mengen; der Endpunkt führt sie zusammen, bereinigt sind sie damit nicht |
+| Evidence Vault in Produktion leer | `evidence_snapshots` hat null Zeilen — die Evidence-Endpunkte antworten korrekt, aber ohne Inhalt |
 | Keine Key-Rotation | `rotated_from` ist vorbereitet, es gibt keine Operation dafür |
 | Keine Oberfläche | Keys nur über die Edge Function |
 | Keine semantische Suche | `evidence/control/:id` sucht als Textmuster über `subject_ref` |

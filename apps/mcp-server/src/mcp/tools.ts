@@ -86,10 +86,24 @@ export const MCP_TOOLS: McpToolDefinition[] = [
     name: 'governance_list_controls',
     scope: 'governance.read',
     description:
-      'Controls eines Frameworks. NOCH NICHT IMPLEMENTIERT — liefert einen Fehler.',
+      'Listet die Controls eines Compliance-Frameworks aus dem globalen Katalog. ' +
+      'WICHTIG: Das ist der Anforderungskatalog des Frameworks — er sagt NICHTS ' +
+      'darüber aus, ob der Tenant diese Controls erfüllt. Es gibt kein Feld ' +
+      '"status", weil kein Erfüllungsstand erfasst ist. Aus dieser Liste darf ' +
+      'weder Konformität noch Nichtkonformität abgeleitet werden. ' +
+      'Bekannt: iso42001, iso27001, gdpr, ai_act, nis2, dora, soc2, tisax. ' +
+      'Jede Zeile trägt "source": Der Katalog wird aus zwei Beständen ' +
+      'zusammengeführt, die sich inhaltlich unterscheiden.',
     inputSchema: {
       type: 'object',
-      properties: { framework_id: { type: 'string', description: 'Standard "iso-42001".' } },
+      properties: {
+        framework_id: {
+          type: 'string',
+          description:
+            'Framework-Schlüssel, Standard "iso42001". Schreibweise ist ' +
+            'unerheblich: "ISO_27001", "iso-27001" und "iso27001" gelten gleich.',
+        },
+      },
     },
   },
   {
@@ -151,12 +165,12 @@ export async function invokeTool(
     }
 
     case 'governance_status': {
-      const framework = typeof args.framework_id === 'string' ? args.framework_id : 'iso-42001';
+      const framework = typeof args.framework_id === 'string' ? args.framework_id : 'iso42001';
       return asText(await getGovernanceStatus(tenantId, framework));
     }
 
     case 'governance_list_controls': {
-      const framework = typeof args.framework_id === 'string' ? args.framework_id : 'iso-42001';
+      const framework = typeof args.framework_id === 'string' ? args.framework_id : 'iso42001';
       return asText(await listControls(tenantId, framework));
     }
 

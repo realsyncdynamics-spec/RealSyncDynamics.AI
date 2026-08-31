@@ -187,6 +187,7 @@ evidence_list — Listet Compliance-Nachweise (Evidence-Snapshots) des Tenants.
 | `401` | Key fehlt, ungültig, abgelaufen oder widerrufen | Key prüfen, nicht wiederholen |
 | `404` | Nachweis existiert nicht in diesem Tenant | leeres Ergebnis melden |
 | `403` | Plan enthält keinen API-Zugriff (unter Agency) | dem Nutzer den Plan nennen, nicht wiederholen |
+| `400` | Unbekannter Framework-Schlüssel | gültige Schlüssel stehen in der Meldung; **nicht** als „keine Controls" deuten |
 | `413` | JSON-RPC-Stapel zu groß (Standard: über 20 Nachrichten) | Stapel aufteilen |
 | `429` | Monatskontingent ausgeschöpft **oder** Ratenbegrenzung | `Retry-After` beachten, nicht sofort erneut anfragen |
 | `501` | Endpunkt noch nicht implementiert | als „nicht verfügbar" melden, **nicht** als Befund |
@@ -222,9 +223,23 @@ Konformitätsstand ist hier schädlicher als eine fehlende Antwort.
 
 > „Ihr ISO-42001-Score liegt bei 0 % — Sie sind nicht konform."
 
-Die Governance-Endpunkte antworten heute mit `501`. Ein Agent, der daraus einen
-Score ableitet, erfindet einen Befund. Genau deshalb liefern diese Endpunkte
-einen Fehler statt Null-Werten.
+Score und Control-Erfüllung antworten heute mit `501`. Ein Agent, der daraus
+einen Score ableitet, erfindet einen Befund. Genau deshalb liefern diese
+Endpunkte einen Fehler statt Null-Werten.
+
+**Der Control-Katalog ist die zweite Falle, und die naheliegendere.**
+`governance_list_controls` funktioniert und liefert echte Daten — aber es ist
+der *Anforderungskatalog* des Frameworks, nicht der Stand des Tenants. Die
+Antwort trägt deshalb kein Feld `status`.
+
+> **Zulässig:** „ISO 27001 umfasst in unserem Katalog 98 Controls."
+>
+> **Unzulässig:** „Sie erfüllen 98 Controls." — oder, ebenso falsch, „Sie
+> erfüllen keines davon."
+
+Wie weit ein Tenant den Katalog erfüllt, ist **nicht erfasst**: Die Tabelle
+`framework_implementations` ist leer. „Nicht erfasst" und „nicht erfüllt" sind
+zwei verschiedene Aussagen, und nur die erste ist gedeckt.
 
 Bei `POST /evidence/:id/verify-hash` kommt es auf einen Unterschied an, den ein
 Agent mitsprechen muss. Geprüft wird die gesamte Kette des Subjects: Struktur,
@@ -277,7 +292,9 @@ Lesezugriff auf Compliance-Nachweise ist ein offenes Risiko.
 
 | Grenze | Bedeutung für die Anbindung |
 |---|---|
-| Governance-Tools nicht implementiert | drei Endpunkte antworten mit 501 |
+| Kein Control-Erfüllungsstand | `framework_implementations` ist leer; Score und Control-Prüfung antworten mit 501. Der Control-**Katalog** funktioniert. |
+| Zwei getrennte Control-Kataloge | `framework_controls` mischt Fremdschlüssel- und Text-Zuordnung mit widersprüchlichen Mengen (ISO 27001: 1 gegenüber 97). Der Endpunkt führt beide zusammen und weist die Herkunft je Zeile in `source` aus. |
+| Evidence Vault in Produktion leer | `evidence_snapshots` hat null Zeilen — `evidence_list` und `evidence_search_by_control` antworten korrekt, aber leer. Das ist **kein** Beleg für fehlende Nachweise. |
 | Keine semantische Suche | `evidence/control/:id` ist ein Textmuster über `subject_ref`, keine Bedeutungssuche |
 | Keine Key-Rotation | Ersatz nur durch Widerruf und Neuausstellung |
 | Legacy-Snapshots nicht nachrechenbar | Ketten aus der Zeit vor `event_timestamp` sind nur strukturell prüfbar |

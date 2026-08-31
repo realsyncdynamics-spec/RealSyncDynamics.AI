@@ -268,10 +268,23 @@ Jeder Agent braucht vier Dimensionen — fehlt eine, ist er nicht governance-fä
   > `2026.08.1`. Hergang, Vertrag und benannte Lücken: `docs/product/free-scan-recovery.md`.
   >
   > **Ursache, die bleibt**: `tsconfig.json` schliesst `supabase/functions` aus —
-  > `npm run lint` typprüft **keine** der 178 Edge Functions. Ein undefinierter
-  > Bezeichner in einer Deno-Function ist für die einzige statische Prüfung des
-  > Repositories unsichtbar. Solange das so ist, kann derselbe Ausfall jederzeit
-  > wieder unbemerkt ausgeliefert werden.
+  > `npm run lint` typprüft **keine** der 178 Edge Functions.
+  >
+  > Es gibt sehr wohl ein Gate: `npm run check:edge-syntax` läuft in `ci.yml`
+  > über jede `supabase/functions/*/index.ts`. Es ist aber **bewusst ein reiner
+  > Parse-Check**, kein Typecheck — begründet im Skriptkopf: Deno-Specifier
+  > (`jsr:`, `npm:`) und das globale `Deno` kann `tsc` ohne Deno-libs nicht
+  > auflösen. Eine abgeschnittene Datei mit undefinierten Bezeichnern ist
+  > syntaktisch einwandfrei und kommt deshalb sauber durch.
+  >
+  > Die Lücke liegt also **oberhalb** des Syntax-Gates, nicht daneben: Niemand
+  > prüft, ob ein aufgerufener Bezeichner überhaupt existiert. `deno check`
+  > wäre das passende Werkzeug, gerade weil es die Specifier auflöst, an denen
+  > `tsc` scheitert. Solange das fehlt, kann derselbe Ausfall jederzeit wieder
+  > unbemerkt ausgeliefert werden — der Skriptkopf von
+  > `check-edge-function-syntax.mjs` dokumentiert bereits einen Vorfall
+  > derselben Familie (73 von 168 Functions erreichten wochenlang die
+  > Produktion nicht).
 - **Policy Packs** (100%) — DSGVO, EU AI Act, branchenspezifisch; Auto-Empfehlung nach Tenant-Branche
 - **Evidence Vault** (90%) — Ingestion, Retrieval, Hash-Chain-Verifizierung, PDF/JSON-Export, Compliance-Hold
 - **Governance Runtime** (85%) — Sentinel-Loop, SLO-Tracking, Auto-Mapping (Asset → Control-Status), Incident-Dispatch

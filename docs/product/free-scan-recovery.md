@@ -72,16 +72,41 @@ und Dateinamen — nicht den Inhalt der Funktionskörper. `deploy.yml` deployt,
 ohne zu typprüfen: Ein Bündel mit undefiniertem Bezeichner ist syntaktisch
 gültig und wird anstandslos ausgeliefert.
 
-**Es gab also keine Stelle, an der dieser Fehler hätte auffallen können.**
-Das ist die eigentliche Lehre — nicht die abgeschnittene Datei.
+### Ein Gate gibt es — es kann diesen Fall nur nicht sehen
+
+`npm run check:edge-syntax` (in `ci.yml`, jede `supabase/functions/*/index.ts`)
+existiert und lief auch über die abgeschnittene Datei. Es ist **bewusst ein
+reiner Parse-Check**, kein Typecheck; der Skriptkopf begründet das: Deno-
+Specifier (`jsr:`, `npm:`) und das globale `Deno` kann `tsc` ohne Deno-libs
+nicht auflösen.
+
+Eine Datei, die `runChecks(...)` aufruft, ohne dass `runChecks` existiert, ist
+**syntaktisch einwandfrei**. Der Parser hat nichts zu beanstanden — und hatte
+recht.
+
+**Die Lücke liegt oberhalb des Syntax-Gates, nicht daneben.** Niemand prüft, ob
+ein aufgerufener Bezeichner überhaupt existiert. Das ist die eigentliche
+Lehre — nicht die abgeschnittene Datei, und auch nicht ein vergessener Check.
+
+Bemerkenswert: Der Kopf von `check-edge-function-syntax.mjs` dokumentiert einen
+Vorfall derselben Familie vom 2026-08-02 — ein unvollständiger `Deno.serve(`
+blockierte den gesamten Deploy, 73 von 168 Functions erreichten wochenlang die
+Produktion nicht. Das Gate entstand als Antwort darauf. Es deckt die
+Syntax-Ebene ab; die Referenz-Ebene blieb offen.
 
 ### Offene Empfehlung (nicht Teil dieser Änderung)
 
-Eine Typprüfung der Edge Functions in CI, etwa `deno check` über
-`supabase/functions/**/index.ts` via `denoland/setup-deno`. Bewusst **nicht**
-in diesem Commit: Deno steht in dieser Arbeitsumgebung nicht zur Verfügung,
-ein ungetesteter CI-Schritt über 178 Funktionen wäre eine Behauptung statt
-einer Absicherung. Gehört entschieden und dann geprüft eingeführt.
+`deno check` über `supabase/functions/**/index.ts` via `denoland/setup-deno`,
+als zweite Stufe **neben** dem bestehenden Syntax-Gate — nicht als Ersatz.
+Gerade `deno check` ist das passende Werkzeug, weil es genau die Specifier
+auflöst, an denen `tsc` scheitert und deretwegen der Parse-Check bewusst auf
+Syntax beschränkt wurde.
+
+Bewusst **nicht** in diesem Commit: Deno steht in dieser Arbeitsumgebung nicht
+zur Verfügung, ein ungetesteter CI-Schritt über 178 Funktionen wäre eine
+Behauptung statt einer Absicherung. Zu erwarten ist ausserdem, dass er beim
+ersten Lauf über Altbestand rot wird — das gehört eingeplant, nicht
+überrascht entdeckt.
 
 ---
 

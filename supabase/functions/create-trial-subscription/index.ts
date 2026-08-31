@@ -157,7 +157,12 @@ Deno.serve(async (req) => {
 
     if (upsertError) throw upsertError;
 
-    await supabase.from('trial_audit_logs').insert({
+    // `.insert(...)` liefert einen PostgREST-Builder, kein Promise: `.catch()`
+    // gibt es dort nicht, der Zugriff warf `TypeError` — und zwar bevor der
+    // Insert abgeschickt wurde. Der Pruefpfad wurde also nicht nur nicht
+    // geschrieben, der ganze Request starb daran, nachdem das Abo bereits
+    // angelegt war. Fehler gehoert ueber das Ergebnis geprueft.
+    const { error: auditErr } = await supabase.from('trial_audit_logs').insert({
       tenant_id: tenantId,
       user_id: user.id,
       resource_type: 'subscription',
@@ -171,7 +176,8 @@ Deno.serve(async (req) => {
       source: 'unified-entry',
       ip_address: clientIp(req),
       user_agent: req.headers.get('user-agent'),
-    }).catch((err) => console.warn('Audit log failed:', err.message));
+    });
+    if (auditErr) console.warn('Audit log failed:', auditErr.message);
 
     return jsonResponse({
       success: true,

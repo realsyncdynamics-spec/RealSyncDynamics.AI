@@ -201,6 +201,35 @@ umkehrbare Besucher-Hashes. Der Fehler ist die fehlende Konfiguration.
 Der Wert darf nach dem Setzen nicht mehr geändert werden — sonst zerfällt die
 Besucher-Identität an der Änderungsgrenze in zwei Hälften.
 
+#### Die Sache hat eine Frist (gemessen 2026-08-31)
+
+Der Ausfall ist nicht bloß ein Stillstand — der Bestand schrumpft. Der pg_cron-Job
+`page-views-cleanup-daily` läuft weiter, täglich um 03:00 UTC:
+
+```sql
+DELETE FROM public.page_views WHERE created_at < now() - interval '90 days'
+```
+
+Aufnahme steht seit dem 2026-08-03, die Aufbewahrung räumt trotzdem weiter ab.
+Die Historie wird also von vorn aufgezehrt, während hinten nichts nachkommt:
+zwischen dem 2026-08-30 und dem 2026-08-31 sind 83 Zeilen verschwunden
+(136.138 → 136.055), der älteste Datensatz ist auf den 2026-06-02 gewandert.
+
+Gerechnet gegen die Live-DB am 2026-08-31: Der jüngste Datensatz stammt vom
+**2026-08-03**, seine 90 Tage laufen am **2026-11-01** ab. Bleibt das Secret
+bis dahin ungesetzt, ist `page_views` an diesem Tag **leer** — zwei Monate
+Besucherhistorie sind dann nicht bloß lückenhaft, sondern fort. In den
+nächsten 24 Stunden fallen 746 Zeilen.
+
+Der Job ist dabei nicht der Fehler: Eine 90-Tage-Aufbewahrung ist genau das,
+was eine DSGVO-konforme Analytik tun soll. Der Fehler ist die stehende
+Aufnahme daneben. Wer das Secret setzt, hält beides wieder im Gleichgewicht.
+
+**Lehre fürs Runbook**: Ein Ausfall in einem System mit Aufbewahrungsfrist hat
+immer eine Verfallsfrist. Bei jedem stehenden Datenpfad deshalb mitprüfen, ob
+ein Aufräum-Job weiterläuft — sonst wird aus einer Lücke stillschweigend ein
+Verlust.
+
 ### 5.4 CSP blockiert das eigene Analytics-Beacon
 
 Cloudflare Pages injiziert das Web-Analytics-Beacon von

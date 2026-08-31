@@ -164,6 +164,11 @@ export function AuditLanding() {
             <>
               <AuditChatHero
                 key={chatGen}
+                // Der Chat ist die voreingestellte Ansicht. Ohne diese Zeile
+                // bliebe die von der Startseite übergebene Adresse nur im
+                // klassischen Formular stehen, das hinter einem Umschalter
+                // liegt — der Besucher müsste sie ein zweites Mal eingeben.
+                initialDomain={url}
                 onScanComplete={(r) => {
                   setReport(r);
                   trackConversion('Lead', { content_name: 'dsgvo_audit' });

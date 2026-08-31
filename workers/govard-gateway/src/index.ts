@@ -5,9 +5,9 @@
  * Der HTTP-Pfad macht ausschließlich:
  *   authenticate → validate → idempotency → policy evaluation → create
  *   command → return commandId
- * Ausführung passiert nie im Request: ALLOW/APPROVED stößt sie serverseitig
- * per ctx.waitUntil an (siehe executor.ts; nächster Schritt: Cloudflare
- * Workflows). DENY und APPROVAL enden im jeweiligen Zustand.
+ * Ausführung passiert nie im Request: ALLOW und die erteilte Freigabe
+ * starten eine Workflow-Instanz (siehe executor.ts), die den Neustart des
+ * Workers überlebt. DENY und APPROVAL enden im jeweiligen Zustand.
  *
  * Die Frage, die dieses Gateway beantwortet, ist nicht „was kann der
  * Agent?", sondern: Darf diese KI-Aktion stattfinden — und lässt sich sechs

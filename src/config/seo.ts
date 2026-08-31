@@ -142,18 +142,6 @@ const COOKIE_SCANNER_WEBAPP_JSONLD = {
     'Kostenloser Cookie-Scanner: erkennt Tracker und Cookies, die VOR dem Consent geladen werden. Echter Headless-Browser, kein DOM-Scrape.',
 };
 
-const DSGVO_WEBSITE_WEBAPP_JSONLD = {
-  '@context': 'https://schema.org',
-  '@type': 'WebApplication',
-  name: 'DSGVO-Website-Check',
-  applicationCategory: 'BusinessApplication',
-  operatingSystem: 'Web',
-  url: `${SITE_URL}/dsgvo-website`,
-  offers: { '@type': 'Offer', price: '0', priceCurrency: 'EUR' },
-  description:
-    'Kostenloser DSGVO-Scan Ihrer Website. Tracker, fehlende Rechtsdokumente, Consent-Probleme und Security-Header werden automatisch erkannt.',
-};
-
 // Q+A sind 1:1 aus src/pages/AiActFaq.tsx (siehe FAQ_ENTRIES) uebernommen.
 // Google bestraft Schema-Inhalt der nicht sichtbar auf der Seite steht —
 // daher Wort-fuer-Wort identisch mit dem was der User im Akkordeon sieht.
@@ -419,19 +407,6 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
       breadcrumbs([
         { name: 'Home', url: '/' },
         { name: 'EU AI Act FAQ', url: '/ai-act-faq' },
-      ]),
-    ],
-  },
-  '/dsgvo-website': {
-    title: 'DSGVO-Website-Check — Ihre Website in 30 Sekunden geprüft | RealSyncDynamics.AI',
-    description:
-      'Kostenloser DSGVO-Scan Ihrer Website. Tracker, fehlende Rechtsdokumente, Consent-Probleme und Security-Header werden automatisch erkannt.',
-    canonical: `${SITE_URL}/dsgvo-website`,
-    jsonLd: [
-      DSGVO_WEBSITE_WEBAPP_JSONLD,
-      breadcrumbs([
-        { name: 'Home', url: '/' },
-        { name: 'DSGVO-Website', url: '/dsgvo-website' },
       ]),
     ],
   },
@@ -802,6 +777,16 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     jsonLd: breadcrumbs([
       { name: 'Home', url: '/' },
       { name: 'BAIT + MaRisk Guide', url: '/bait-marisk-compliance-guide' },
+    ]),
+  },
+  '/onboarding-erklaert': {
+    title: 'Onboarding erklärt — IT verbinden statt ersetzen | RealSyncDynamics.AI',
+    description:
+      'Wie das Onboarding abläuft: Unternehmensprofil, Systeme erkennen, verbinden, Datenflüsse analysieren, Risiken und Nachweise — ohne Ihre IT auszutauschen.',
+    canonical: `${SITE_URL}/onboarding-erklaert`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'Onboarding erklärt', url: '/onboarding-erklaert' },
     ]),
   },
   '/schrems-ii-erklaert': {

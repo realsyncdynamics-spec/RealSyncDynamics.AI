@@ -49,11 +49,11 @@ const PERSONAS: readonly Persona[] = [
     eyebrow: 'für Agenturen',
     title:   'White-Label-Compliance für jeden Endkunden.',
     bullets: [
-      'Multi-Tenant-Dashboard für bis zu 10 Kundenseiten parallel.',
+      'Multi-Tenant-Dashboard für Ihre Kundenseiten parallel.',
       'White-Label-Reports im eigenen Branding, eigene Domain.',
       'Stripe-Subscription für Euch; Eure Endkunden buchen über Euch — eu_local-Toggle pro Tenant.',
     ],
-    cta:     { label: 'Agency-Tier ab 699 €/Mo', to: '/agencies' },
+    cta:     { label: 'Für Agenturen ansehen', to: '/agencies' },
     accent:  'text-emerald-300',
   },
 ];

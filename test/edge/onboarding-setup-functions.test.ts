@@ -164,7 +164,7 @@ describe('Branchen-Wertebereich steht vierfach — und muss übereinstimmen', ()
 
   const fromOrchestrator = [
     ...stripComments(FUNCTIONS['onboarding-orchestrator'])
-      .match(/const sectors = new Set\(\[([^\]]+)\]\)/)![1]
+      .match(/const\s+sectors\s*=\s*new\s+Set\(\[([^\]]+)\]\)/)![1]
       .matchAll(/'([a-z_]+)'/g),
   ].map((m) => m[1]);
 

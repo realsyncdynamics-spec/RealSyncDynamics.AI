@@ -65,28 +65,6 @@ const WHATSAPP_TIERS: WhatsAppPricingTier[] = [
     cta: { label: 'Kostenlos testen', href: '/checkout/growth?channel=whatsapp&source=pricing&pilot=true' },
   },
   {
-    id: 'agency-wa',
-    name: 'Agency WhatsApp',
-    monthlyPrice: 699,
-    yearlyPrice: 6900,
-    description: 'Bis zu 10 WhatsApp-Bots mit vollständiger White-Label-Lösung',
-    botLimit: 10,
-    answersPerMonth: 25000,
-    features: [
-      'bis zu 10 produktive WhatsApp-Bots',
-      'bis zu 25.000 Antworten/Monat',
-      'White-Label mit eigenem Branding',
-      'Custom Intent-Matching & Fallbearbeitung',
-      'Human Handoff mit Eskalation',
-      'Advanced Analytics & Sentiment-Analyse',
-      'Vollständiger Audit-Trail & Compliance-Logging',
-      'Priority-Setup (1 Stunde, 24/7)',
-      'Dedicated Support (4h Response)',
-      'Branchenbibliothek integriert',
-    ],
-    cta: { label: 'Testen', href: '/checkout/agency?channel=whatsapp&source=pricing&pilot=true' },
-  },
-  {
     id: 'enterprise-wa',
     name: 'Enterprise WhatsApp',
     monthlyPrice: 1249,
@@ -230,7 +208,7 @@ export function WhatsAppPricingPage() {
           Alle Tiers beinhalten WhatsApp-Integration. Monatlich kündbar. 14 Tage kostenlos testen.
         </p>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {WHATSAPP_TIERS.map((tier) => (
             <div
               key={tier.id}
@@ -347,7 +325,7 @@ export function WhatsAppPricingPage() {
             },
             {
               q: 'Wie lange dauert das Setup?',
-              a: 'Abhängig vom Tier: Starter/Growth ~2–4 Stunden. Agency/Enterprise: Dedicated Onboarding im Rahmen des Contracts.',
+              a: 'Abhängig vom Tier: Starter/Growth ~2–4 Stunden. Enterprise: Dedicated Onboarding im Rahmen des Contracts.',
             },
             {
               q: 'Welche Zahlungsarten werden akzeptiert?',

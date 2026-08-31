@@ -221,6 +221,19 @@ Jeder Agent braucht vier Dimensionen — fehlt eine, ist er nicht governance-fä
 > Function live läuft, die es im Repo nie gab. Wer nur `wc -l` vergleicht,
 > übersieht das. Deshalb ab jetzt: `comm -23` **und** `comm -13`.
 >
+> **Wirksam in Produktion, nicht nur im Repo**: `deploy.yml` lief am
+> 2026-08-30 um 21:58 UTC grün auf `1533cf5` (Run 33337859594). Damit sind
+> die drei Migrationen aus PR #1172 angewandt — die beiden nachgezogenen
+> Out-of-Band-Versionen aus ¹ und
+> `20260831030000_integrations_catalog_read_access` aus ³. Nachgezogen heißt
+> nicht angekommen; dies ist der Beleg für Letzteres.
+>
+> **Zur Sperre durch die Migrations-Drift**: Sie bestand vom 2026-08-26 bis
+> zum 2026-08-30, blieb aber folgenlos — in diesem Fenster berührte kein
+> Commit `supabase/**`, also wurde `deploy.yml` gar nicht ausgelöst.
+> Blockiert, aber niemand ist hineingelaufen. Der letzte grüne Lauf davor
+> war am 2026-08-25 um 18:36 UTC auf `2e60a21`.
+>
 > ¹ **Zwei Migrationen sind live, ohne dass es je eine Datei gab**:
 > `20260825204748_fix_websites_authenticated_crud_rls` (2026-08-25) und
 > `20260829011038_onboarding_orchestrator_hardening` (2026-08-29). Beide

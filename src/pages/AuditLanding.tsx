@@ -49,7 +49,11 @@ interface Issue {
 
 interface Report {
   audit_id: string;
-  scan_run_id?: string;
+  // `scan_run_id` stand hier als optionales Feld, das `gdpr-audit` nie
+  // geliefert hat. Ein optionales Feld, das es nicht gibt, ist für den
+  // Compiler nicht von einem unterscheidbar, das gerade fehlt — deshalb
+  // blieb der tote Zweig darunter jahrelang unbemerkt. Entfernt, damit der
+  // Typ die Antwort beschreibt statt einer Wunschvorstellung.
   created_at?: string;
   email?: string;
   domain: string;
@@ -109,10 +113,19 @@ export function AuditLanding() {
       }, { requireAuth: false });
       setReport(data);
       trackConversion('Lead', { content_name: 'dsgvo_audit' });
-      if (data.scan_run_id && SUPABASE_URL) {
+      if (data.audit_id && SUPABASE_URL) {
         // Fire-and-forget: triggers Resend-email if RESEND_API_KEY is configured.
         // Failures are intentionally swallowed — report is already shown in-browser.
-        fetch(`${SUPABASE_URL}/functions/v1/audit-report-email?id=${data.scan_run_id}`, {
+        //
+        // Hier stand `data.scan_run_id`. Das Feld gibt `gdpr-audit` nicht
+        // zurück — die Antwort trägt `audit_id` —, und weil es im Typ als
+        // optional deklariert war, hat TypeScript nie gewarnt. Die Bedingung
+        // war damit immer falsch: Die Report-E-Mail wurde nie ausgelöst.
+        // Gemessen am 2026-08-31, nachdem die Function selbst wieder lief.
+        //
+        // `audit-report-email` erwartet genau diese ID: Es liest
+        // `gdpr_audits` per `?id=<uuid>` und markiert dort `email_sent_at`.
+        fetch(`${SUPABASE_URL}/functions/v1/audit-report-email?id=${data.audit_id}`, {
           method: 'GET',
           keepalive: true,
         }).catch(() => { /* non-blocking */ });

@@ -13,7 +13,7 @@
  * das Ergebnis der leeren Antwort eines noch nie gescannten Hosts gleicht und
  * der Fehler der RPC verworfen wurde (`const { data } = await …`).
  *
- * Seit 20260901000000_fix_compliance_timeline_idor.sql ist der Parameter
+ * Seit 20260902000000_fix_compliance_timeline_idor.sql ist der Parameter
  * zusaetzlich sicherheitsrelevant: die Funktion prueft ihn per
  * is_tenant_member() gegen die Session. Ein falscher Wert liefert damit
  * garantiert leer, ein richtiger die Daten.

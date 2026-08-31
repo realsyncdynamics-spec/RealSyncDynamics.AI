@@ -19,6 +19,13 @@
 // deklarierten und importierten Namen ein und meldet jeden AUFGERUFENEN
 // Bezeichner, der sich darauf nicht zurueckfuehren laesst.
 //
+// Zweite Regel (2026-08-31): `.catch()` auf einem PostgREST-Builder.
+// `business-metrics-cron` rief `admin.rpc('…').catch(…)` auf. Das sieht wie
+// ein Promise aus, ist aber keines: Der Builder ist `await`-bar (thenable),
+// besitzt aber kein `.catch()`. Der Zugriff warf `TypeError: … is not a
+// function` — 96 Fehlschlaege bei 96 Laeufen pro Tag, seit dem 2026-06-11,
+// unbemerkt. Dieselbe Familie wie oben: Deploy sauber, Laufzeit tot.
+//
 // Bewusst konservativ: Die Deklarationen werden ueber die ganze Datei
 // eingesammelt, ohne Block-Scoping nachzubilden. Das ueberschaetzt den
 // Sichtbarkeitsbereich und meldet damit lieber einmal zu wenig als einmal zu
@@ -139,6 +146,69 @@ function collectBareCalls(sf) {
   return calls;
 }
 
+/**
+ * Findet `.catch(` / `.finally(` direkt auf einem PostgREST-Builder.
+ *
+ * `supabase.rpc(…)`, `.from(…).select(…)` und Geschwister liefern einen
+ * Builder, der `then` implementiert und deshalb `await`-bar ist — aber weder
+ * `catch` noch `finally`. Wer das verwechselt, bekommt keinen abgefangenen
+ * Fehler, sondern einen geworfenen TypeError an genau der Stelle, die den
+ * Fehler abfangen sollte.
+ *
+ * Die Pruefung laeuft ueber das GERUEST der Aufrufkette, nicht ueber ihren
+ * Text. Eine erste Fassung verglich den Quelltext des Empfaengers per Regex
+ * und meldete prompt `fetch(…).then(async res => { await sb.update(…) })
+ * .catch(…)` — dort steht `.update(` zwar im Text, aber im Rumpf eines
+ * Callbacks, nicht in der Kette. Ein Gate mit Fehlalarmen wird abgeschaltet
+ * und schuetzt dann gar nichts mehr, deshalb hier strukturell:
+ *
+ *   - Nur Methoden auf dem Geruest zaehlen, nie etwas in Argumenten.
+ *   - Ein `.then()` auf dem Geruest macht aus dem Thenable eine echte
+ *     Promise — danach ist `.catch()` korrekt und wird nicht gemeldet.
+ */
+const POSTGREST_TERMINAL = new Set([
+  'rpc', 'select', 'insert', 'upsert', 'update', 'delete', 'single', 'maybeSingle',
+]);
+
+function chainSpine(node, sf) {
+  // Steigt die Kette hinab und sammelt nur die Methodennamen des Geruests.
+  const methoden = [];
+  let cur = node;
+  for (let tiefe = 0; tiefe < 64 && cur; tiefe++) {
+    if (ts.isCallExpression(cur)) { cur = cur.expression; continue; }
+    if (ts.isPropertyAccessExpression(cur)) {
+      methoden.push(cur.name.text);
+      cur = cur.expression;
+      continue;
+    }
+    break;
+  }
+  return methoden;
+}
+
+function collectBuilderCatches(sf) {
+  const treffer = [];
+  function walk(node) {
+    if (
+      ts.isCallExpression(node)
+      && ts.isPropertyAccessExpression(node.expression)
+      && (node.expression.name.text === 'catch' || node.expression.name.text === 'finally')
+    ) {
+      const spine = chainSpine(node.expression.expression, sf);
+      // `.then()` weiter unten in der Kette liefert eine echte Promise.
+      const echtePromise = spine.includes('then');
+      const builder = spine.some((m) => POSTGREST_TERMINAL.has(m));
+      if (builder && !echtePromise) {
+        const { line, character } = sf.getLineAndCharacterOfPosition(node.expression.name.getStart(sf));
+        treffer.push({ name: node.expression.name.text, line: line + 1, column: character + 1 });
+      }
+    }
+    ts.forEachChild(node, walk);
+  }
+  walk(sf);
+  return treffer;
+}
+
 const broken = [];
 for (const { name, file } of entrypoints) {
   const source = readFileSync(file, 'utf8');
@@ -153,6 +223,13 @@ for (const { name, file } of entrypoints) {
     if (bound.has(call.name) || GLOBALS.has(call.name)) continue;
     // Je Name nur die erste Fundstelle melden — der Rest ist dieselbe Ursache.
     if (!unresolved.has(call.name)) unresolved.set(call.name, call);
+  }
+
+  for (const t of collectBuilderCatches(sf)) {
+    unresolved.set(`builder-catch:${t.line}`, {
+      ...t,
+      grund: `.${t.name}() auf einem PostgREST-Builder — der hat kein .${t.name}()`,
+    });
   }
 
   if (unresolved.size > 0) {
@@ -172,13 +249,15 @@ console.error(`\n❌ ${total} nicht aufloesbare(r) Aufruf(e) in ${broken.length}
 for (const b of broken) {
   for (const c of b.calls) {
     // GitHub-Actions-Annotation: erscheint direkt an der Zeile im PR-Diff.
-    console.error(`::error file=${b.file},line=${c.line},col=${c.column}::${c.name} ist weder deklariert noch importiert`);
-    console.error(`   ${b.file}:${c.line}:${c.column}  ${c.name}() — weder deklariert noch importiert`);
+    const grund = c.grund ?? `${c.name} ist weder deklariert noch importiert`;
+    console.error(`::error file=${b.file},line=${c.line},col=${c.column}::${grund}`);
+    console.error(`   ${b.file}:${c.line}:${c.column}  ${grund}`);
   }
 }
 console.error(
-  '\nDiese Aufrufe werfen zur Laufzeit `ReferenceError` und beantworten JEDEN\n' +
-  'Request mit HTTP 500 — der Deploy laeuft dabei fehlerfrei durch. Entweder\n' +
-  'die fehlende Funktion ergaenzen oder den Aufruf entfernen.',
+  '\nDiese Stellen werfen zur Laufzeit — der Deploy laeuft dabei fehlerfrei\n' +
+  'durch, die Function stirbt erst beim ersten Request. Entweder die fehlende\n' +
+  'Funktion ergaenzen, den Aufruf entfernen, oder beim PostgREST-Builder den\n' +
+  'Fehler ueber das Ergebnis pruefen: `const { error } = await client.rpc(...)`.',
 );
 process.exit(1);

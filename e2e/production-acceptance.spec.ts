@@ -26,6 +26,12 @@ import { test, expect, type Page, type Response } from '@playwright/test';
  * Bewusst NICHT enthalten: alles hinter dem Login. Der Zugang laeuft ueber
  * Magic Link bzw. Google, beides ohne Postfachzugriff nicht automatisierbar.
  * Der eingeloggte Teil bleibt manuell — siehe `docs/qa/produktions-akzeptanz.md`.
+ *
+ * Ersatzweise abgedeckt (2026-08-31): `/demo-tour/dashboard` zeigt dieselbe
+ * Dashboard-Oberflaeche oeffentlich und als Demo gekennzeichnet, und der
+ * Kauf-Trichter laesst sich bis zum Anmeldegate des Checkouts verfolgen.
+ * Damit sind Dashboard und Billing wenigstens bis an die Login-Grenze
+ * geprueft, statt gar nicht.
  */
 
 const PROD = 'https://realsyncdynamicsai.de';
@@ -152,16 +158,82 @@ test('kein Vortaeuschen von Kennzahlen ohne Anmeldung', async ({ page }) => {
   // waeren es seine. Ein Datenleck ist es nicht, RLS haelt: `is_tenant_member()`
   // ist ohne Session falsch. Ein Vertrauensschaden ist es trotzdem, und
   // CLAUDE.md §14 verbietet es ausdruecklich ("Kein Element vortaeuschen").
+  //
+  // Die Regel, gegen die hier geprueft wird, ist bewusst allgemein: Wer einem
+  // nicht angemeldeten Besucher Kennzahlen zeigt, muss sie als Demo
+  // kennzeichnen. Das Projekt kann das bereits — `/demo-tour/dashboard`
+  // ueberschreibt sein Dashboard mit "Demo-Modus — Interaktive Vorschau".
+  // Genau dieses Muster fehlt unter `/app/*`.
   await page.goto('/app/evidence');
   await page.waitForTimeout(3_000);
   const text = await page.locator('#root').innerText();
 
   const zeigtZahlen = /1\.247|1\.198/.test(text);
+  const alsDemoGekennzeichnet = /demo[- ]?modus|vorschau|beispieldaten/i.test(text);
   const istAngemeldet = !/NICHT ANGEMELDET/i.test(text);
   expect(
-    zeigtZahlen && !istAngemeldet,
-    'Evidence Vault zeigt Kennzahlen, obwohl niemand angemeldet ist',
+    zeigtZahlen && !istAngemeldet && !alsDemoGekennzeichnet,
+    'Evidence Vault zeigt Kennzahlen ohne Anmeldung und ohne Demo-Kennzeichnung',
   ).toBe(false);
+});
+
+// ─────────────────────────────────────────────────────────────────────
+// Demo-Oberflaeche — die Dashboard-Ebene, die ohne Postfach pruefbar ist
+// ─────────────────────────────────────────────────────────────────────
+
+test.describe('Demo-Tour', () => {
+  // Der eingeloggte Bereich braucht einen Magic Link und ist deshalb nicht
+  // automatisierbar. `/demo-tour/*` ist die naechstbeste Ebene: dasselbe
+  // Dashboard-Layout, absichtlich oeffentlich, ausdruecklich als Demo
+  // gekennzeichnet. Damit laesst sich wenigstens pruefen, dass die
+  // Dashboard-Oberflaeche ueberhaupt rendert.
+
+  test('Demo-Dashboard rendert und weist sich als Demo aus', async ({ page }) => {
+    await page.goto('/demo-tour/dashboard');
+    await expect(page.locator('#root')).not.toBeEmpty({ timeout: 15_000 });
+    const text = await page.locator('#root').innerText();
+
+    // Die Kennzeichnung ist der Teil, der zaehlt: Ohne sie waeren die
+    // Demo-Kennzahlen genau der Vertrauensschaden aus dem Test darueber.
+    expect(text, 'Demo-Dashboard ohne Demo-Kennzeichnung').toMatch(/Demo[- ]?Modus/i);
+    expect(text, 'Demo-Dashboard rendert keine Kennzahlen').toMatch(/Governance Score/i);
+  });
+
+  test('/demo-app fuehrt Nicht-Angemeldete zum Login', async ({ page }) => {
+    await page.goto('/demo-app');
+    await expect(page).toHaveURL(/\/demo-login/);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────
+// Kauf-Trichter — vom Preis zur Kasse
+// ─────────────────────────────────────────────────────────────────────
+
+test.describe('Kauf-Trichter', () => {
+  test('Plan-Schaltflaeche auf /pricing fuehrt in den Checkout', async ({ page }) => {
+    await page.goto('/pricing');
+    await dismissConsent(page);
+
+    // §14: Eine Kauf-Schaltflaeche, die nichts tut, ist schlimmer als keine.
+    const kaufen = page.getByRole('button', { name: /14 Tage kostenlos testen/i }).first();
+    await expect(kaufen, 'Keine Kauf-Schaltflaeche auf der Preisseite').toBeVisible();
+    await expect(kaufen).toBeEnabled();
+    await kaufen.click();
+
+    await expect(page, 'Kauf-Schaltflaeche loest keine Navigation aus').toHaveURL(/\/checkout\//);
+  });
+
+  test('Checkout verlangt Anmeldung und verspricht die Rueckkehr', async ({ page }) => {
+    await page.goto('/checkout/starter');
+    await expect(page.locator('#root')).not.toBeEmpty({ timeout: 15_000 });
+    const text = await page.locator('#root').innerText();
+
+    // Ein Checkout, der anonym startet, waere ein Bezahlvorgang ohne Zuordnung.
+    expect(text, 'Checkout ohne Anmeldegate').toMatch(/Anmelden|Login|Magic-Link/i);
+    // Der Rueckkehrpfad ist der Unterschied zwischen einem Gate und einer
+    // Sackgasse — ohne ihn faellt der Kunde nach dem Login aus dem Trichter.
+    expect(text, 'Checkout verspricht keine Rueckkehr nach dem Login').toMatch(/wieder hier|automatisch/i);
+  });
 });
 
 // ─────────────────────────────────────────────────────────────────────

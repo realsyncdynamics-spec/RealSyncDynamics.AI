@@ -47,6 +47,25 @@ Trichter auf 390 px Breite.
 Magic Link oder Google — ohne Postfachzugriff nicht automatisierbar. Dieser
 Teil bleibt manuell, siehe Abschnitt 4.
 
+**Ersatzweise abgedeckt** (2026-08-31): Zwei Ebenen, die vorher als „nur
+manuell" abgelegt waren, gehen doch automatisiert — sie enden bloß an der
+Login-Grenze statt dahinter.
+
+- **Dashboard** über `/demo-tour/dashboard`. Dieselbe Oberfläche, absichtlich
+  öffentlich, und — das ist der Punkt — ausdrücklich als „Demo-Modus —
+  Interaktive Vorschau" gekennzeichnet. Geprüft wird beides: dass sie rendert
+  **und** dass die Kennzeichnung dasteht.
+- **Billing** über den Kauf-Trichter: `/pricing` → Klick auf „14 Tage
+  kostenlos testen" → `/checkout/starter?source=pricing&pilot=true` → Login-Gate
+  mit dem Versprechen „Nach Anmeldung sind Sie sofort wieder hier". Geprüft
+  wird, dass die Schaltfläche überhaupt navigiert (§14: eine Kauf-Schaltfläche,
+  die nichts tut, ist schlimmer als keine) und dass das Gate einen Rückweg
+  nennt statt in einer Sackgasse zu enden.
+
+Damit sind Dashboard und Abrechnung bis an die Login-Grenze geprüft statt gar
+nicht. Beide Pfade waren beim ersten Durchlauf **in Ordnung** — der
+Kauf-Trichter ist intakt.
+
 ---
 
 ## 3. Vom Befund zur Ursache
@@ -286,6 +305,15 @@ Es bleibt ein Vertrauensschaden: Ein Kunde ohne eigene Nachweise sieht fremde
 Zahlen, als wären es seine. CLAUDE.md §14 verbietet das ausdrücklich („Kein
 Element vortäuschen, das nichts tut"). **Offen**: Entfernen oder Ersetzen greift
 in Bestehendes ein und unterliegt damit der Fragepflicht nach §10.3.
+
+**Das Muster für die Lösung steht bereits im eigenen Code** (gefunden
+2026-08-31): `/demo-tour/dashboard` zeigt ebenfalls erfundene Kennzahlen —
+Governance Score 87/100, DSGVO-Status „Compliant" — aber mit der Überschrift
+„Demo-Modus — Interaktive Vorschau" darüber. Genau diese Kennzeichnung fehlt
+unter `/app/*`. Es braucht also keine neue Idee, nur dasselbe Etikett an der
+zweiten Stelle. Der Test in der Suite prüft deshalb nicht mehr bloß auf die
+Zahlen, sondern auf die Regel: Kennzahlen ohne Anmeldung **und** ohne
+Demo-Kennzeichnung sind der Befund.
 
 ### 5.6 Die strukturelle Ursache
 

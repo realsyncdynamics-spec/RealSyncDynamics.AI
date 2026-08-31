@@ -120,9 +120,13 @@ GRANT EXECUTE ON FUNCTION public.mcp_log_usage(UUID, TEXT, INT, INET, TEXT, INT,
 -- Tabelle wie die Nutzung: mcp_key_usage. Ein Trigger statt Anwendungscode,
 -- damit der Eintrag nicht umgangen werden kann — auch nicht vom service_role.
 --
--- Bewusst NICHT in audit_evidence: diese Tabelle beschreibt Audit-Findings
--- (audit_id + type mit CHECK-Constraint) und passt schematisch nicht zu
--- Lebenszyklus-Ereignissen eines API-Keys.
+-- Bewusst NICHT in audit_evidence, aus zwei Gründen. Erstens schematisch: Die
+-- Tabelle beschreibt laut 20260507100000_audit_evidence.sql Audit-Findings
+-- (audit_id + type mit CHECK-Constraint) und passt nicht zu
+-- Lebenszyklus-Ereignissen eines API-Keys. Zweitens tatsaechlich: Sie
+-- existiert in Produktion nicht, obwohl ihre Migration im Ledger als
+-- angewendet steht (geprueft 2026-08-31). Spaetere Migrationen fangen das mit
+-- to_regclass-Waechtern ab; ein Trigger von hier aus wuerde ins Leere greifen.
 --
 -- DELETE wird nicht protokolliert: mcp_key_usage.key_id hängt per ON DELETE
 -- CASCADE am Key, der Eintrag würde in derselben Anweisung wieder verschwinden.

@@ -141,11 +141,64 @@ Service-Role umgeht RLS — deshalb **ausschließlich in Edge Functions**.
 ### Kern-Tabellen (Auszug)
 
 - **Registry**: `ai_systems`, `tenants`, `profiles`
-- **Policy Engine**: `ai_policies`, `policy_packs`, `governance_controls`
-- **Evidence Stream**: `ai_evidence_events`, `audit_jobs`, `audit_evidence`, `evidence_retention`
+- **Policy Engine**: `ai_policies`, `policy_pack_catalog`, `policy_pack_controls`, `policy_pack_activations`
+- **Framework-Katalog**: `compliance_frameworks`, `framework_controls`, `custom_controls`;
+  Erfüllungsstand je Tenant in `framework_implementations` und `asset_control_mappings`
+- **Evidence Stream**: `ai_evidence_events`, `audit_jobs`, `evidence_snapshots`, `evidence_items`,
+  `governance_evidence`, `ai_evidence_retention`, `evidence_legal_holds`
 - **Governance**: `governance_approvals`, `governance_webhooks`, `governance_incidents`, `runtime_events`
-- **Integration**: `workflow_runs`, `ai_tool_runs`, `connectors`, `vendors`, `dpias`, `dsr_tracker`
-- **Operations**: `incidents`, `operations_inventory`, `enterprise_agent_runs`, `vps_connections`
+- **Integration**: `workflow_runs`, `ai_tool_runs`, `integration_connectors`, `enterprise_connectors`,
+  `vendors`, `dpias`, `dsr_requests`
+- **Operations**: `incidents`, `inventory_items` (und die übrige `inventory_*`-Familie),
+  `enterprise_agent_runs`, `vps_connections`
+
+> #### ⚠️ Sieben Namen in dieser Liste zeigten ins Leere
+>
+> **Gemessen 2026-08-31** gegen das Live-Projekt `ebljyceifhnlzhjfyxup`
+> (`pg_tables` / `pg_views`, jeder Name einzeln geprüft; Ledger über
+> `supabase_migrations.schema_migrations`). Bis dahin nannte dieser Abschnitt
+> sieben Tabellen, die **in Produktion nicht existieren**:
+>
+> | genannt | Migration im Repo | tatsächlich zu verwenden |
+> |---|---|---|
+> | `governance_controls` | keine | `framework_controls` (219 Zeilen) + `compliance_frameworks` (5) |
+> | `policy_packs` | keine | `policy_pack_catalog` (7), `policy_pack_controls` (196) |
+> | `evidence_retention` | keine | `ai_evidence_retention` |
+> | `connectors` | keine | `integration_connectors`, `enterprise_connectors` |
+> | `dsr_tracker` | keine | `dsr_requests` |
+> | `operations_inventory` | keine | `inventory_items` und die `inventory_*`-Familie |
+> | `audit_evidence` | **`20260507100000`** | Sonderfall, siehe unten |
+>
+> Für sechs der sieben gilt: kein `CREATE TABLE` im Repo, keine einzige
+> Abfrage im Code. Der Schaden lag allein darin, dass diese Datei die
+> Namensautorität ist — wer sich beim Bauen darauf verließ, schrieb gegen
+> etwas, das es nicht gibt. Genau das ist beim MCP Governance Server
+> passiert: Dessen Governance-Werkzeuge waren gegen `governance_controls`
+> entworfen und mussten auf `framework_controls` umgestellt werden.
+>
+> **`audit_evidence` ist der Sonderfall — und der einzige mit Wirkung.**
+> Die Migration `20260507100000_audit_evidence.sql` existiert und steht im
+> Ledger als **angewendet**; die Tabelle fehlt in Produktion trotzdem. Das ist
+> der Ledger-Wirklichkeits-Bruch, den `DEBUG_ROOT_CAUSE_2026-08-02.md` und
+> `docs/audit/01_INVENTORY.md` §339 bereits beschreiben. Spätere Migrationen
+> (`20260619000000`, `20260723000001`) fangen ihn mit `to_regclass`-Wächtern
+> ab und überspringen ihre Trigger und Policies mit `RAISE NOTICE`.
+>
+> **Ein Schreibpfad läuft weiterhin dagegen**: `worker/src/persistence.ts`
+> (`recordScreenshotEvidence`) insertet in `audit_evidence` und behandelt den
+> Fehler ausdrücklich als non-fatal — der Screenshot-Nachweis eines jeden
+> Audits geht also still verloren. Der Aufruf schlägt nicht fehl, er
+> protokolliert. Für ein Produkt, das Prüfpfad zusagt, ist das ein eigener
+> Befund; er ist hier vermerkt, aber nicht behoben.
+>
+> **Lehre, dieselbe wie in §5**: messen, nicht herleiten — und zwar
+> vollständig. Die erste Fassung dieses Kastens behauptete, `audit_evidence`
+> sei „nie angelegt" worden und kein Code greife zu. Beides war falsch: Der
+> zugrunde liegende `grep` hatte `worker/` nicht eingeschlossen und das
+> Migrations-Ledger gar nicht erst befragt. Eine Tabellenliste in einer
+> Kontextdatei altert still — sie bricht nichts, sie führt nur die Leser in
+> die Irre, die ihr am meisten vertrauen. Vor dem Hinzufügen eines Namens
+> hier: gegen `pg_tables` prüfen, nicht gegen die Erinnerung.
 
 ### Migrations
 

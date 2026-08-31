@@ -50,6 +50,23 @@
     { "tag": "v1", "new_sqlite_classes": ["EvidenceSequencer"] }
   ],
 
+  // Durable Ausfuehrung freigegebener Commands. Anders als Durable Objects
+  // brauchen Workflows KEINEN migrations-Eintrag — die Klasse wird allein
+  // ueber class_name gebunden (an der Cloudflare-Dokumentation geprueft).
+  //
+  // Warum ueberhaupt ein Workflow: ctx.waitUntil endet mit der
+  // Worker-Instanz. Stirbt sie waehrend eines LLM-, Stripe- oder
+  // Mail-Aufrufs, bliebe der Command fuer immer in EXECUTING und die
+  // Evidence-Kette ohne Ergebnis. Ein Workflow nimmt an der letzten
+  // abgeschlossenen Stufe wieder auf.
+  "workflows": [
+    {
+      "name": "govard-command",
+      "binding": "COMMAND_WORKFLOW",
+      "class_name": "CommandWorkflow"
+    }
+  ],
+
   // "jurisdiction": "eu" haelt die Siegel der Evidence-Chain in der EU.
   // Sie wird beim Anlegen mitgegeben (`--jurisdiction eu`) und ist danach
   // NICHT mehr aenderbar. Die Bindung muss sie wiederholen: ohne diese Zeile

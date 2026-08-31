@@ -19,11 +19,12 @@ import { authenticate, requireRole } from "./auth";
 import { OrgRepository } from "./db/repository";
 import { evaluatePolicies } from "./policy/engine";
 import { evidenceFor, EvidenceSequencer } from "./evidence/sequencer";
-import { executeCommand } from "./executor";
+import { CommandWorkflow } from "./workflows/command-workflow";
+import { startCommandExecution } from "./executor";
 import { hashObject } from "./lib/hash";
 import { GovardError, type PolicyAction, type PolicyRule, type Principal } from "./types";
 
-export { EvidenceSequencer };
+export { EvidenceSequencer, CommandWorkflow };
 
 const MAX_PAYLOAD_BYTES = 64 * 1024;
 const SOURCE_PATTERN = /^[a-z0-9_-]{1,32}$/;
@@ -218,7 +219,9 @@ async function handleCommand(
   } else {
     await repo.transition(commandId, "EVALUATED", "APPROVED");
     // Ausführung nach der Antwort — der Request blockiert nie auf den Agenten.
-    ctx.waitUntil(executeCommand(env, principal.org_id, commandId));
+    // Der Workflow überlebt den Worker-Neustart; waitUntil deckt nur das
+    // Anlegen der Instanz ab, nicht die Ausführung selbst.
+    ctx.waitUntil(startCommandExecution(env, principal.org_id, commandId));
     state = "APPROVED";
   }
 
@@ -287,7 +290,7 @@ async function handleApprovalDecision(
     await repo.transition(claimed.command_id, "PENDING_APPROVAL", "APPROVED", {
       actorId: principal.actor_id,
     });
-    ctx.waitUntil(executeCommand(env, principal.org_id, claimed.command_id));
+    ctx.waitUntil(startCommandExecution(env, principal.org_id, claimed.command_id));
   } else {
     await repo.transition(claimed.command_id, "PENDING_APPROVAL", "DENIED", {
       actorId: principal.actor_id,

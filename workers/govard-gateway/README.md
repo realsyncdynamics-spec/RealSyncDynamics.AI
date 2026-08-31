@@ -27,7 +27,7 @@ Command State Machine (zentrale Übergangstabelle)
         │
    PENDING_APPROVAL ──► Approval Inbox/API ──► Freigabe startet
         │                                      serverseitige Ausführung
-     APPROVED ──► Executor (v1: Referenz; nächster Schritt: CF Workflows)
+     APPROVED ──► Cloudflare Workflow (durable, Retries, überlebt Neustart)
         │
         ▼
 Evidence Sequencer (Durable Object pro Org, Input-Gate serialisiert)
@@ -55,6 +55,17 @@ Kernentscheidungen (die vier Korrekturen):
    prüft die Bindung (`evaluation_hash` der Freigabe == `evaluation_hash`
    des Commands) und startet erst dann die serverseitige Ausführung. Nie
    der Browser.
+
+5. **Ausführung als Cloudflare Workflow** — `ctx.waitUntil` endet mit der
+   Worker-Instanz. Stirbt sie während eines LLM-, Stripe- oder Mail-Aufrufs,
+   bliebe der Command für immer in `EXECUTING` und die Evidence-Kette ohne
+   Ergebnis — genau die Lücke, die ein Governance-Nachweis nicht haben darf.
+   Der Workflow nimmt an der letzten abgeschlossenen Stufe wieder auf und
+   wiederholt transiente Fehler mit Backoff. Die Instanz-Kennung *ist* die
+   Command-Kennung: Ein Command kann konstruktionsbedingt nicht zweimal
+   ausgeführt werden. Weil ein gescheiterter Schritt **ganz** wiederholt
+   wird, ist jeder Schritt idempotent — ein bereits vollzogener Übergang
+   (`STATE_CONFLICT`) gilt als erledigt, nicht als Fehler.
 
 Dazu: **Idempotenz** (Pflicht-Header `Idempotency-Key`, Key wird *vor* der
 Verarbeitung reserviert — kein doppelter Command, keine doppelte Kampagne)
@@ -194,19 +205,31 @@ Provisionierung nicht am Konto scheitert:
 | Zweite offene Freigabe pro Command | durch Teilindex abgewiesen |
 | Platzhalter-Guard des Deploy-Workflows | sperrt mit Platzhalter, öffnet mit echter ID |
 
+Und gegen den laufenden Worker (`wrangler dev --local`, echte Workflow-Engine):
+
+| Geprüft | Ergebnis |
+|---|---|
+| Verbotener Intent | `DENIED`, Verstoß mit Policy-Name und Begründung |
+| 4.200 Empfänger über `REQUIRE_APPROVAL` | `PENDING_APPROVAL`, Freigabe in der Inbox |
+| Freigabe erteilt | Workflow läuft serverseitig an, Command endet `EXECUTED` |
+| Übergangskette | RECEIVED → EVALUATED → PENDING_APPROVAL → APPROVED → EXECUTING → EXECUTED |
+| Evidence-Kette | 6 Ereignisse vom Eingang bis `EXECUTION_SUCCEEDED` |
+| `GET /api/evidence/verify` | `{ valid: true, checked: 8 }` — ab GENESIS nachgerechnet |
+| Dreimal derselbe Idempotency-Key | derselbe `commandId`, kein zweiter Command |
+| Derselbe Key, anderer Body | `422 IDEMPOTENCY_MISMATCH` |
+
 Der Deploy-Workflow überspringt sich selbst, solange in `wrangler.jsonc` der
 D1-Platzhalter steht (gleiches Guard-Muster wie `siteos-preview`).
 
 ## Was v1 bewusst NICHT ist
 
 - **Kein Agent-Hub.** Es gibt keinen Marketing-/Finance-/Sales-Agenten im
-  Gateway. Der Executor ist ein Referenz-„echo", der die Kette
-  APPROVED → EXECUTING → EXECUTED Ende-zu-Ende beweist. Externe Agenten
-  sind austauschbare Consumer *hinter* der Governance-Schicht.
-- **Noch keine Cloudflare Workflows.** Der nächste Ausbauschritt ersetzt
-  `executor.ts` durch eine Workflow-Definition (durable, Retries bei
-  transienten Fehlern). Zustandsübergänge und Evidence-Events bleiben
-  identisch — genau deshalb ist der Executor jetzt schon eine eigene Datei.
+  Gateway. `intents.ts` ist die einzige Stelle mit Fachlogik und enthält
+  bewusst nur ein „echo", das die Kette APPROVED → EXECUTING → EXECUTED
+  Ende-zu-Ende beweist. Dort hängt später der erste externe Consumer ein,
+  ohne dass Policy Engine, Zustandsautomat oder Evidence-Kette davon
+  berührt werden. Externe Agenten sind austauschbare Consumer *hinter*
+  der Governance-Schicht.
 - **Noch keine externe Verankerung der Siegel.** `evidence_seals.anchor_ref`
   ist der Haken für die bestehende CreatorSeal-Verankerung.
 

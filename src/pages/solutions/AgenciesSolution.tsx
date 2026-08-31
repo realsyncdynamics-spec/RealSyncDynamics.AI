@@ -153,7 +153,12 @@ export function AgenciesSolution() {
               {
                 scenario: 'Szenario 1: Reseller',
                 model: 'Du nutzt RealSyncDynamics.AI, stellst den Kunden deine Domain vor',
-                pricing: 'Partner-Tarif: €1.999/Monat für bis zu 50 Mandanten · Endkundenpreis frei kalkulierbar',
+                // COMMERCIAL-SSOT: temporary production hotfix.
+                // Canonical source migration tracked in Phase 2.
+                // Partner ist seit AP2 stillgelegt (`availability: 'legacy'`);
+                // ein Festpreis waere hier ein Angebot ohne Kaufpfad. Die
+                // Mandanten-Kapazitaet wird vertraglich vereinbart.
+                pricing: 'Enterprise nach Vertrag · Mandanten-Kapazität nach Vereinbarung · Endkundenpreis frei kalkulierbar',
                 margin: 'Verdopplung der Governance-Revenue pro Kunde',
               },
               {

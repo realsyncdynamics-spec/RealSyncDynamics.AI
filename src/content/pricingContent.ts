@@ -736,7 +736,7 @@ export const pricingPlans: PricingPlan[] = [
     interval: 'individuell',
     recommended: false,
     badge: 'Reseller',
-    shortDescription: 'Partner mit Jahresabrechnung und 2-Monate-Rabatt: 1.999 € × 10 = 19.000 € pro Jahr. Multi-Tenant-Verwaltung für bis zu 50 Mandanten, ein ganzes Jahr.',
+    shortDescription: 'Partner mit Jahresabrechnung — seit AP2 nicht mehr im Verkauf. Bestehende Jahresabos laufen unverändert weiter; Neukunden mit Bedarf an Multi-Tenant-Verwaltung für viele Mandanten wenden sich an den Vertrieb.',
     targetAudience: 'Für DSB-Kanzleien, Datenschutzunternehmen und große Agenturen mit vielen Mandanten und jahresbasierter Budgetplanung.',
     whatCustomerGets: [
       'Alles aus Partner (monatlich)',

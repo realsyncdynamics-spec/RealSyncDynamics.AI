@@ -34,6 +34,17 @@
 -- `tenants.industry` trägt 4× NULL und 1× 'generic'; kein Mandant führt einen
 -- der vier betroffenen Werte. Die Änderung schreibt nichts um.
 --
+-- ZWEITER BEFUND, beim lokalen Nachspielen gefunden: Die Zuweisungen lauteten
+-- `v_packs := v_packs || 'literal'`. In Postgres ist das nicht das, wonach es
+-- aussieht — von `anyarray || anyelement` und `anyarray || anyarray` gewinnt
+-- bei einem Literal ohne Typ die Array-Variante. Postgres liest den String als
+-- Array-Literal und wirft `malformed array literal`.
+--
+-- Latent blieb das nur, weil die Zweige nie erreicht wurden. Die Korrektur
+-- oben macht sie zum ersten Mal erreichbar — ohne den Cast waere aus stiller
+-- Wirkungslosigkeit ein harter Abbruch des Onboardings geworden, und zwar
+-- genau fuer die Mandanten, denen die Korrektur helfen soll. Deshalb `::text`.
+--
 -- Additiv: nur die beiden IN-Listen ändern sich, Signatur, Rechte und
 -- Membership-Prüfung bleiben unangetastet.
 
@@ -57,10 +68,10 @@ begin
   select coalesce(industry,'all') into v_industry from tenants where id=p_tenant_id;
   -- Die Literale folgen TENANT_INDUSTRY_OPTIONS (src/lib/policy-packs/recommend.ts).
   -- Wer sie hier ändert, ändert sie dort mit — sonst greift die Regel wieder ins Leere.
-  if v_industry in ('health','ai') then v_packs := v_packs || 'eu-ai-act-high-risk'; end if;
-  if v_industry in ('critical-infrastructure','public-sector') then v_packs := v_packs || 'nis2-cybersecurity'; end if;
-  if v_industry='automotive' then v_packs := v_packs || 'tisax-automotive'; end if;
-  if v_industry='fintech' then v_packs := v_packs || 'fintech-compliance'; end if;
+  if v_industry in ('health','ai') then v_packs := v_packs || 'eu-ai-act-high-risk'::text; end if;
+  if v_industry in ('critical-infrastructure','public-sector') then v_packs := v_packs || 'nis2-cybersecurity'::text; end if;
+  if v_industry='automotive' then v_packs := v_packs || 'tisax-automotive'::text; end if;
+  if v_industry='fintech' then v_packs := v_packs || 'fintech-compliance'::text; end if;
   foreach v_pack in array v_packs loop
     if exists(select 1 from policy_pack_catalog where id=v_pack) then
       insert into policy_pack_activations(tenant_id,pack_id,activated_at,created_by)

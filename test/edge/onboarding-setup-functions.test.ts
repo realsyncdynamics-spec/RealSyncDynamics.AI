@@ -270,6 +270,27 @@ describe('onboarding_tenant_policy_packs: SQL liest dasselbe Branchen-Vokabular'
     expect(literals.length).toBeGreaterThan(3);
   });
 
+  /**
+   * `text[] || 'literal'` ist in Postgres nicht das, wonach es aussieht: Von
+   * den Kandidaten `anyarray || anyelement` und `anyarray || anyarray` gewinnt
+   * bei einem Literal ohne Typ die Array-Variante — Postgres versucht, den
+   * String als Array-Literal zu lesen, und wirft "malformed array literal".
+   *
+   * Der Fehler ist latent: Er schlaegt erst zu, wenn der Zweig ueberhaupt
+   * erreicht wird. Genau das aendert die Vokabular-Korrektur oben — sie macht
+   * die Zweige zum ersten Mal erreichbar. Ohne den Cast wuerde aus stiller
+   * Wirkungslosigkeit ein harter Abbruch des Onboardings.
+   */
+  it('haengt Packs mit explizitem ::text an, nicht als Array-Literal', () => {
+    const ungecastet = [...body.matchAll(/v_packs\s*\|\|\s*'([a-z0-9-]+)'(?!::text)/g)].map(
+      (m) => m[1],
+    );
+    expect(
+      ungecastet,
+      'Ohne ::text liest Postgres das Literal als Array — die Funktion bricht ab, sobald der Zweig greift.',
+    ).toEqual([]);
+  });
+
   it('jedes Literal existiert in TENANT_INDUSTRY_OPTIONS', () => {
     const unknown = [...new Set(literals)].filter((v) => !TENANT_INDUSTRY_IDS.has(v));
     expect(

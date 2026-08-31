@@ -9,7 +9,7 @@ const FACTS = [
   { k: 'Modelle', v: 'Anthropic / OpenAI / Google · Ollama EU-local Fallback' },
   { k: 'Compliance-Stack', v: 'DSGVO · AI Act · BAIT · MaRisk · DORA · BfDI 2024' },
   { k: 'Zielmärkte', v: 'HealthTech · Legal-Tech · FinTech · Public Sector · Mittelstand' },
-  { k: 'Pricing', v: 'Free Audit kostenlos · Starter 79 €/M · Growth 249 €/M · Agency 699 €/M · Partner 1.999 €/M · Enterprise 1.249 €/M' },
+  { k: 'Pricing', v: 'Free Audit kostenlos · Starter 79 €/M · Growth 249 €/M · Enterprise 1.249 €/M' },
 ];
 
 const QUOTES = [
@@ -76,7 +76,7 @@ export function Press() {
               <p>
                 Die Plattform kombiniert acht kostenfreie Self-Service-Tools (AVV, VVT, DSFA, TOM,
                 AI-Act-Klassifikator, Datenschutz-Generator, Meldepflicht-Timer, Bußgeld-Rechner) mit einem
-                kostenpflichtigen Premium-Tier (Cookie-Consent-SDK, Audit-Trail, Multi-Tenant-Management).
+                kostenpflichtigen Tarifen ab Starter (Cookie-Consent-SDK, Audit-Trail, Multi-Tenant-Management).
                 Hosting erfolgt vollständig in der EU (Frankfurt). KI-Workloads laufen wahlweise auf europäischen
                 Anbietern oder lokal via Ollama (Llama / Mistral) — keine US-Cloud-Default-Pfade.
               </p>

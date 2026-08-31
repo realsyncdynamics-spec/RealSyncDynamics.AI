@@ -279,7 +279,7 @@ function Inner() {
       <div className="flex items-center gap-2 text-xs text-titanium-600 border border-titanium-900 bg-obsidian-900 px-3 py-2">
         <ShieldCheck className="h-3.5 w-3.5 text-titanium-500 shrink-0" />
         <span>Für Auditoren:</span>
-        <Link to="/app/evidence/audit" className="text-cyan-400 hover:text-cyan-300 underline">
+        <Link to="/app/evidence/auditor" className="text-cyan-400 hover:text-cyan-300 underline">
           Auditor Console öffnen
         </Link>
         <span className="text-titanium-700">— Hash-Chain-Verify, RACPO, DSR-Export (AAL2)</span>

@@ -108,7 +108,7 @@ export function Features() {
           <div className="md:col-span-2">
             <FeatureBlock
               icon={<Server className="h-5 w-5 text-emerald-400" />}
-              title="Kodee — VPS-Assistent (ab Agency)"
+              title="Kodee — VPS-Assistent (ab Enterprise)"
               wide
               bullets={[
                 'Verbindet sich per SSH mit deinem Server — Status, Logs, Disk, DNS- und TLS-Prüfung',

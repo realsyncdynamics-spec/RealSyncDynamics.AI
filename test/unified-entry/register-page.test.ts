@@ -95,3 +95,37 @@ describe('Fehler benennen die Ursache', () => {
     expect(code).toMatch(/return raw \|\|/);
   });
 });
+
+describe('Bestätigungspflicht per E-Mail', () => {
+  /**
+   * Steht in Supabase „Confirm email" auf an, liefert `signUp` **keine**
+   * Session. Die Seite schickte den Besucher trotzdem weiter nach
+   * `/unified-entry/onboarding` — und dessen Wächter (`if (!user)`) wirft ihn
+   * sofort auf die Registrierung zurück. Ergebnis: ein Kreis, während die
+   * Seite „erfolgreich erstellt" behauptet.
+   *
+   * Der Fall ist heute nicht auslösbar, weil der E-Mail-Anbieter im Projekt
+   * abgeschaltet ist. Genau deshalb steht er hier: Er wird scharf in dem
+   * Moment, in dem jemand den Anbieter aktiviert — und dann soll er schon
+   * behandelt sein, statt als neuer Befund aufzuschlagen.
+   */
+  it('unterscheidet die beiden Supabase-Konfigurationen', () => {
+    expect(code).toContain('needsEmailConfirmation');
+    expect(code).toMatch(/setStep\(\s*needsEmailConfirmation \? 'verify-email' : 'confirm'\s*\)/);
+  });
+
+  it('leitet ohne Session nicht in den geschützten Bereich weiter', () => {
+    // Der Zustand 'verify-email' darf keinen Weiter-Knopf tragen: Es gibt
+    // ohne Bestätigung nichts, wohin er führen könnte.
+    const start = code.indexOf("step === 'verify-email' ? (");
+    expect(start, "Zustand 'verify-email' nicht gefunden").toBeGreaterThan(-1);
+    const block = code.slice(start, code.indexOf(') : (', start));
+    expect(block.length).toBeGreaterThan(80);
+    expect(block).not.toContain('navigate(');
+    expect(block).not.toContain('onboarding');
+  });
+
+  it('nennt den Grund, statt Erfolg zu behaupten', () => {
+    expect(source).toContain('Bestätigungslink');
+  });
+});

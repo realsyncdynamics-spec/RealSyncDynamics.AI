@@ -80,6 +80,14 @@ Jeder Fehlschlag wird einer Schicht zugeordnet, statt ihn zu wiederholen:
 | Report oder Nachweis fehlt | `scan_runs`, `findings`, Storage, Export-Pfad |
 | Abrechnung falsch | Stripe-Produkte, Webhooks, `shared/pricing.ts` |
 
+Zusätzlich **regelmäßig** und nicht nur bei Verdacht: den Supabase-Advisor
+laufen lassen (`get_advisors`, Typ `security`). Er meldet fehlende
+RLS-Policies, `SECURITY DEFINER`-Funktionen mit veränderlichem `search_path`
+und solche, die `anon` aufrufen darf. Der Befund in §5.7 stammt von dort und
+wäre über den Browser nie sichtbar geworden. Entscheidend beim Durchsehen:
+Funktionen, die eine `tenant_id` **entgegennehmen**, statt sie aus der
+Sitzung abzuleiten.
+
 Die Edge-Function-Logs sind dabei die ergiebigste Quelle — sie nennen den
 Fehler im Klartext:
 
@@ -377,7 +385,104 @@ Die Regel prüft jetzt **strukturell** über das Gerüst der Aufrufkette, nie
 die Probe aufs Exempel für den Kommentar, der im Skript ohnehin schon stand:
 Ein Gate mit Fehlalarmen wird abgeschaltet und schützt dann gar nichts mehr.
 
-### 5.7 Die strukturelle Ursache
+### 5.7 `get_compliance_timeline` — latenter mandantenübergreifender Lesepfad
+
+Gefunden 2026-08-31 über den Supabase-Sicherheits-Advisor (81 Befunde; die
+Prüfung war in den bisherigen Durchläufen nicht enthalten und gehört ab jetzt
+in Abschnitt 3).
+
+Von den 81 trägt genau eine Funktion **beide** Warnungen zugleich —
+`SECURITY DEFINER` mit veränderlichem `search_path` **und** von `anon`
+aufrufbar:
+
+```sql
+CREATE OR REPLACE FUNCTION public.get_compliance_timeline(
+  p_domain text, p_tenant_id uuid, p_limit integer DEFAULT 30)
+ RETURNS TABLE(...) LANGUAGE sql STABLE SECURITY DEFINER
+AS $$
+  SELECT scanned_at, risk_score, risk_level, trackers,
+         drift_detected, new_trackers, scan_type
+    FROM public.audit_monitor_results
+   WHERE tenant_id = p_tenant_id AND domain = p_domain
+   ORDER BY scanned_at DESC LIMIT p_limit;
+$$;
+```
+
+Drei Eigenschaften zusammen ergeben den Befund:
+
+1. `SECURITY DEFINER` umgeht die RLS auf `audit_monitor_results`.
+2. Die `tenant_id` kommt **vom Aufrufer**; es gibt keine Prüfung, ob der
+   Aufrufer diesem Mandanten angehört.
+3. `anon` besitzt EXECUTE (per `has_function_privilege` bestätigt), also ist
+   sie ohne Anmeldung über `/rest/v1/rpc/get_compliance_timeline` erreichbar.
+
+Wer eine `tenant_id` und eine Domain kennt, könnte damit die Scan-Historie
+eines fremden Mandanten lesen — Risiko-Scores, erkannte Tracker, Drift.
+Das widerspricht dem, was CLAUDE.md §3 zusagt und die Startseite bewirbt.
+
+**Einordnung — und die gehört dazu:** Aktuell wird nichts preisgegeben.
+
+- `audit_monitor_results` ist **leer** (0 Zeilen, 0 Mandanten). Die Lücke
+  führt heute ins Nichts.
+- Der einzige Aufrufer ist `/app/risk` (`RiskDashboard.tsx:142`), und die
+  Route ist doppelt abgesichert (`AppGate` + `ProtectedRoute`). Es gibt also
+  keinen anonymen Aufrufer, den eine Absicherung brechen würde.
+- Eine `tenant_id` ist eine UUID und nicht zu erraten. „Nicht erratbar" ist
+  aber nicht „nicht bekannt": UUIDs stehen in URLs, Share-Links,
+  API-Antworten und Support-Tickets.
+
+Es ist also kein Vorfall, sondern eine scharf gestellte Falle, die auf Daten
+wartet. Sobald das Monitoring Zeilen schreibt, ist sie wirksam.
+
+**Nebenbefund im Aufrufer**: `RiskDashboard.tsx:142` übergibt
+
+```ts
+p_tenant_id: (await supabase.auth.getUser()).data.user?.id ?? ''
+```
+
+— also die **User-ID** dort, wo eine **Tenant-ID** erwartet wird. Selbst der
+legitime Aufruf liefert damit nichts. Die richtige Quelle ist
+`useTenant().activeTenantId`.
+
+**Vorgeschlagene Behebung** (bewusst nicht angewendet, Begründung unten):
+
+```sql
+CREATE OR REPLACE FUNCTION public.get_compliance_timeline(
+  p_domain text, p_tenant_id uuid, p_limit integer DEFAULT 30)
+ RETURNS TABLE(scanned_at timestamptz, risk_score integer, risk_level text,
+               trackers text[], drift boolean, new_t text[], scan_type text)
+ LANGUAGE sql STABLE SECURITY DEFINER
+ SET search_path = public, pg_temp        -- gegen search_path-Manipulation
+AS $$
+  SELECT scanned_at, risk_score, risk_level, trackers,
+         drift_detected, new_trackers, scan_type
+    FROM public.audit_monitor_results
+   WHERE tenant_id = p_tenant_id AND domain = p_domain
+     AND public.is_tenant_member(p_tenant_id)   -- der fehlende Riegel
+   ORDER BY scanned_at DESC LIMIT p_limit;
+$$;
+REVOKE EXECUTE ON FUNCTION public.get_compliance_timeline(text, uuid, integer) FROM anon;
+```
+
+**Warum sie hier nicht angewendet wird**, obwohl sie klein und sicher wäre:
+
+- Eine Sicherheitsmigration an einer `SECURITY DEFINER`-Funktion gehört eigen
+  geprüft und nicht in einen Test-PR mit sechs Commits eingebettet.
+- `main` trägt bereits `20260831030000`, dieser Branch nur bis
+  `20260831020000`. Eine Migration hier hineinzulegen läuft genau in das
+  Muster, aus dem am 2026-08-24 die Versionskollision entstand (CLAUDE.md §5).
+- Es brennt nicht: leere Tabelle, kein anonymer Aufrufer.
+
+**Die übrigen 80 Befunde** sind überwiegend harmlos oder gewollt: 27-mal
+`rls_enabled_no_policy` (RLS an, keine Policy — verweigert alles, also die
+sichere Richtung), und die meisten der 51 `SECURITY DEFINER`-Warnungen
+betreffen Funktionen wie `is_tenant_member` oder `is_tenant_admin`, deren
+Grants am 2026-08-23 bewusst wiederhergestellt wurden, damit RLS überhaupt
+funktioniert (CLAUDE.md §5). Sie geben für `anon` nur `false` zurück. Zu
+prüfen bleiben die wenigen, die — wie diese hier — eine ID **entgegennehmen**
+statt sie aus der Sitzung abzuleiten. Das ist die Form, auf die es ankommt.
+
+### 5.8 Die strukturelle Ursache
 
 Keiner dieser Fehler konnte auffallen, weil **keine der 178 Edge Functions je
 typgeprüft oder aufgerufen wird**. `npm run lint` ist `tsc --noEmit` und deckt

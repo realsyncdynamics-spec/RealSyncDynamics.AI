@@ -315,7 +315,69 @@ zweiten Stelle. Der Test in der Suite prüft deshalb nicht mehr bloß auf die
 Zahlen, sondern auf die Regel: Kennzahlen ohne Anmeldung **und** ohne
 Demo-Kennzeichnung sind der Befund.
 
-### 5.6 Die strukturelle Ursache
+### 5.6 Vier PostgREST-Builder mit `.catch()` (gefunden 2026-08-31)
+
+Nachdem `gdpr-audit` aufgefallen war, lag die Frage nahe: Was ist mit den
+anderen 177? Der Referenz-Wächter fängt nur `ReferenceError`. Also ein
+Durchlauf durch die Live-Logs:
+
+```sql
+SELECT substring(event_message,1,150) AS fehler, count(*), max(timestamp)
+FROM logs WHERE source='function_logs'
+  AND (positionCaseInsensitive(event_message,'error')>0
+       OR positionCaseInsensitive(event_message,'failed')>0)
+GROUP BY fehler ORDER BY 2 DESC
+```
+
+Zwei verschiedene Fehler im 24-Stunden-Fenster — einer davon meine eigenen
+Testaufrufe gegen `gdpr-audit`. Der andere war neu:
+
+```
+[business-metrics-cron] failed: TypeError: admin.rpc(...).catch is not a function
+```
+
+`rpc()` liefert einen `PostgrestFilterBuilder`. Der ist `await`-bar
+(thenable), besitzt aber **kein** `.catch()`. Der Zugriff wirft — und zwar
+bevor der RPC abgeschickt wird. Die Zeile tat damit das genaue Gegenteil
+ihres eigenen Kommentars: *„Best-effort retention. Don't fail the run if it
+errors."*
+
+**96 Fehlschläge bei 96 Läufen in 24 Stunden.** Der Cron
+(`business-metrics-cron-15min`) läuft alle 15 Minuten; Fehlerquote 100 % seit
+dem 2026-06-11. Folge: `prune_business_metric_snapshots` lief **nie** — 7.765
+Snapshots, kein einziger ausgedünnt, obwohl die SQL-Funktion genau dafür da
+ist.
+
+**Das ist das Spiegelbild von §5.3.** Dort läuft die Aufbewahrung, während die
+Aufnahme steht. Hier läuft die Aufnahme, während die Aufbewahrung steht.
+Zweimal dieselbe Blindstelle, aus entgegengesetzter Richtung — und beide Male
+war der Auslöser eine Messung, nicht eine Vermutung.
+
+**Drei weitere, latent**: `create-trial-subscription` und
+`save-company-profile` (zweimal) schreiben ihren Prüfpfad mit
+`.insert({...}).catch(...)`. Diese Functions haben wenig Verkehr und tauchen
+deshalb in keinem Fehlerlog auf — der Fehler träfe den nächsten echten Nutzer
+im Onboarding. Bei `create-trial-subscription` besonders unschön: Das Abo wird
+angelegt, dann stirbt der Request, der Kunde sieht einen Fehler und versucht
+es erneut.
+
+Alle vier behoben; die Fehlerprüfung läuft jetzt über das Ergebnis
+(`const { error } = await client.rpc(...)`), wie es PostgREST vorsieht.
+
+#### Ein Fehlalarm, und was er lehrt
+
+Die erste Fassung der neuen Wächter-Regel verglich den **Quelltext** der
+Aufrufkette per Regex — und meldete prompt
+`fetch(...).then(async res => { await sb.update(...) }).catch(...)` in
+`schedule-data-syncs`. Das ist korrekter Code: `.update(` steht dort nur im
+Rumpf eines Callbacks, nicht in der Kette.
+
+Die Regel prüft jetzt **strukturell** über das Gerüst der Aufrufkette, nie
+über Argumente; ein `.then()` auf dem Gerüst gilt als echte Promise. Das war
+die Probe aufs Exempel für den Kommentar, der im Skript ohnehin schon stand:
+Ein Gate mit Fehlalarmen wird abgeschaltet und schützt dann gar nichts mehr.
+
+### 5.7 Die strukturelle Ursache
 
 Keiner dieser Fehler konnte auffallen, weil **keine der 178 Edge Functions je
 typgeprüft oder aufgerufen wird**. `npm run lint` ist `tsc --noEmit` und deckt

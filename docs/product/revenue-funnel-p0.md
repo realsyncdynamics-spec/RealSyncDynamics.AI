@@ -234,26 +234,21 @@ deshalb auch `REBUILD_FIXABLE_CODES`.
 
 ### 5.2 P0 — Der Mandant bekommt die Empfehlung nicht (Akzeptanzkriterium I)
 
-Der Trichter-Kontext liegt in der Sitzung. Damit überlebt er Reload, Anmeldung
-und Stripe-Rückkehr im selben Tab — **aber er erreicht die Datenbank nie**. Nach
-einem Tab-Wechsel ist er weg, und kein Mandant trägt seine Empfehlung.
+**Erledigt 2026-08-30** über den Audit Claim (`claim_gdpr_audit`). Nach Login
+wird `gdpr_audits.tenant_id` gesetzt; RLS `gdpr_audits tenant_read` macht die
+Row und ihre `issues` im Dashboard sichtbar. Die NBA-Karte rechnet die
+Empfehlung aus diesem Datensatz (`canonicalRecommendation`), nicht aus einer
+zweiten Tabelle.
 
-Das ist bewusst offen: Ein Schreiber bräuchte entweder eine Spalte auf
-`gdpr_audits` oder eine eigene Tabelle, und die Vorbedingung dafür ist der
-**Audit Claim**, den `canonical-funnel-decision.md` §3.1 als einzigen echten
-Neubau der Kette benennt und der ebenfalls noch fehlt. Eine Empfehlung an einem
-Audit festzumachen, der dem Mandanten nicht zugeordnet ist, wäre die falsche
-Reihenfolge.
+Der Sitzungs-Kontext (`rsd.funnel.context` / `rsd_pending_audit`) bleibt der
+Träger *bis* zum Claim. Danach gilt die Datenbank.
 
-### 5.3 P0 — Audit Claim fehlt weiterhin
+### 5.3 P0 — Audit Claim
 
-Unverändert gegenüber `canonical-funnel-decision.md` §3.1: 159 Zeilen in
-`gdpr_audits`, davon 0 mit `tenant_id`, 0 mit `claimed_at`. Der Einhängepunkt
-existiert (`src/pages/Welcome.tsx` liest `sessionStorage['rsd_pending_audit']`
-und verwirft die Kennung nach einem Consent-Eintrag). Der neue Kontext liegt
-unter einem **eigenen** Schlüssel (`rsd.funnel.context`) und lässt
-`rsd_pending_audit` unangetastet — der Claim kann beide lesen, wenn er gebaut
-wird.
+**Erledigt 2026-08-30.** Writer: `public.claim_gdpr_audit(p_audit_id uuid)`,
+Autorisierung über verifizierte E-Mail, Einhängepunkte `Welcome.tsx` und
+`NextBestActionCard` (falls OAuth den Welcome-Handler überspringt).
+
 
 ### 5.4 P1 — Modularer Checkout
 

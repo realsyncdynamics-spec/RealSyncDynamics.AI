@@ -57,6 +57,19 @@ const SECTOR_MIGRATION = readFileSync(
 const SECTOR_CONFIG = readFileSync(root('src/config/sectors.ts'), 'utf8');
 
 /** Ohne Kommentare — dort steht die Begründung, nicht der Verstoß. */
+/** Kanonische Branchen-IDs — Quelle fuer den industryOf-Test unten. */
+const TENANT_INDUSTRY_IDS = new Set(
+  [
+    ...readFileSync(root('src/lib/policy-packs/recommend.ts'), 'utf8')
+      .slice(
+        readFileSync(root('src/lib/policy-packs/recommend.ts'), 'utf8').indexOf(
+          'TENANT_INDUSTRY_OPTIONS',
+        ),
+      )
+      .matchAll(/\{ id: '([a-z-]+)'/g),
+  ].map((m) => m[1]),
+);
+
 const stripComments = (s: string) =>
   s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
 
@@ -194,6 +207,36 @@ describe('Branchen-Wertebereich steht vierfach — und muss übereinstimmen', ()
     expect(
       rejected,
       'Diese Auswahl im Onboarding würde am CHECK-Constraint scheitern.'
+    ).toEqual([]);
+  });
+});
+
+describe('onboarding-orchestrator: industryOf schreibt kanonische Branchen', () => {
+  /**
+   * `industryOf()` schreibt nach `tenants.industry`. Der Vergleich in
+   * `recommendPacks` ist strikt (`pack.industry === industry`, W_INDUSTRY = 40
+   * Punkte) — ein Wert ausserhalb von TENANT_INDUSTRY_OPTIONS laesst die
+   * Branchen-Empfehlung also stillschweigend nie greifen.
+   *
+   * Genau das war der Fall: 'software' und 'professional-services' gab es dort
+   * nicht, 'healthcare' heisst dort 'health'. Der Fehler war unsichtbar, weil
+   * nichts fehlschlaegt — es passiert nur nichts. Deshalb dieser Test.
+   */
+  const targets = [
+    ...stripComments(FUNCTIONS['onboarding-orchestrator'])
+      .match(/function industryOf\(s:string\)\{return \(\{([^}]+)\}/)![1]
+      .matchAll(/:\s*'([a-z-]+)'/g),
+  ].map((m) => m[1]);
+
+  it('liest ueberhaupt eine Abbildung', () => {
+    expect(targets.length).toBeGreaterThan(3);
+  });
+
+  it('jeder Zielwert existiert in TENANT_INDUSTRY_OPTIONS', () => {
+    const unknown = [...new Set(targets)].filter((t) => !TENANT_INDUSTRY_IDS.has(t));
+    expect(
+      unknown,
+      'Diese Werte landen in tenants.industry, matchen aber keinen Pack — die Branchen-Empfehlung greift fuer sie nie.',
     ).toEqual([]);
   });
 });

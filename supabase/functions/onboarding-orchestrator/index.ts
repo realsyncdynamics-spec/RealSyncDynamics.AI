@@ -10,15 +10,23 @@ const err=(s:number,c:string,m:string)=>ok({ok:false,error:{code:c,message:m}},s
 // Geprueft von test/edge/onboarding-setup-functions.test.ts.
 const sectors=new Set(['small_business','retail','furniture_retail','manufacturing','services','agency','industrial','saas','healthcare','public_sector','generic']);
 function domainOf(raw:string|null){if(!raw)return null;try{return new URL(raw.includes('://')?raw:`https://${raw}`).hostname.toLowerCase().replace(/^www\./,'')}catch{return null}}
-// Fertigung und Industrie auf 'manufacturing', weil dieser Wert in
-// TENANT_INDUSTRY_OPTIONS existiert und eine Pack-Empfehlung ausloest. Handel,
-// Moebelhaus, Dienstleister und Kleinunternehmen auf 'other': dafuer gibt es keinen
-// passenden Pack-Branchenwert, und ein erfundener waere schlechter als ein
-// ehrliches 'other'. Bestandsabbildungen bleiben unveraendert — dass 'software' und
-// 'healthcare' nicht in TENANT_INDUSTRY_OPTIONS vorkommen (dort: 'saas', 'health')
-// und die Branchen-Empfehlung fuer diese Mandanten deshalb nicht greift, ist ein
-// Bestandsfehler. Ihn zu korrigieren schriebe die Branche bestehender Mandanten um.
-function industryOf(s:string){return ({saas:'software',agency:'professional-services',healthcare:'healthcare',public_sector:'public-sector',generic:'other',small_business:'other',retail:'other',furniture_retail:'other',manufacturing:'manufacturing',services:'other',industrial:'manufacturing'} as Record<string,string>)[s]??'other'}
+// Schreibt nach tenants.industry. JEDER Wert hier muss in
+// TENANT_INDUSTRY_OPTIONS (src/lib/policy-packs/recommend.ts) vorkommen, sonst
+// laeuft der Branchen-Vergleich in recommendPacks (pack.industry === industry,
+// W_INDUSTRY = 40 Punkte) ins Leere und die Branchen-Empfehlung greift nie.
+//
+// Drei Bestandswerte taten genau das: 'software' und 'professional-services'
+// gibt es dort nicht, 'healthcare' heisst dort 'health'. Korrigiert auf 'saas',
+// 'other' und 'health'. Gemessen am 2026-08-31 gegen die Live-Datenbank: von
+// fuenf Mandanten tragen vier NULL und einer 'generic' — keine einzige Zeile
+// fuehrt einen der drei alten Werte, die Korrektur schreibt also keine
+// bestehende Branche um. 'software' kommt auch sonst nirgends im Code vor.
+//
+// Fertigung und Industrie auf 'manufacturing': existiert dort und loest eine
+// Pack-Empfehlung aus. Handel, Moebelhaus, Dienstleister, Kleinunternehmen und
+// Agentur auf 'other' — dafuer gibt es keinen passenden Pack-Branchenwert, und
+// ein erfundener waere schlechter als ein ehrliches 'other'.
+function industryOf(s:string){return ({saas:'saas',agency:'other',healthcare:'health',public_sector:'public-sector',generic:'other',small_business:'other',retail:'other',furniture_retail:'other',manufacturing:'manufacturing',services:'other',industrial:'manufacturing'} as Record<string,string>)[s]??'other'}
 function persona(s:string,c:string){const r=({saas:'Produkt, Vertrieb, Support und Operations',agency:'Kundenkommunikation, Projekte, Vertrieb und Delivery',healthcare:'administrative Prozesse; keine Diagnose oder individuelle medizinische Beratung',public_sector:'Verwaltungs- und Organisationsprozesse; rechtswirksame Entscheidungen bleiben beim Menschen',generic:'Geschäftsprozesse und Kundenkommunikation',small_business:'Geschäftsprozesse und Kundenkommunikation',retail:'Verkauf, Warenwirtschaft und Kundenkommunikation',furniture_retail:'Verkauf, Produktdaten und Kundenkommunikation',manufacturing:'Produktions-, Lieferanten- und Qualitätsprozesse',services:'Kundenkommunikation, Projekte und Verwaltung',industrial:'Produktions-, Anlagen- und Lieferantenprozesse'} as Record<string,string>)[s];return `Du bist der digitale Unternehmensassistent von ${c}. Du unterstützt ${r}. Arbeite nachvollziehbar, datensparsam und eskaliere risikoreiche Entscheidungen an Menschen.`}
 async function one(admin:any,table:string,match:Record<string,unknown>,values:Record<string,unknown>){let q=admin.from(table).select('*').limit(1);for(const [k,v] of Object.entries(match))q=q.eq(k,v);const {data,error}=await q.maybeSingle();if(error)throw error;if(data){const {data:u,error:e}=await admin.from(table).update(values).eq('id',data.id).select('*').single();if(e)throw e;return {row:u,created:false}}const {data:i,error:e}=await admin.from(table).insert({...match,...values}).select('*').single();if(e)throw e;return {row:i,created:true}}
 Deno.serve(async req=>{if(req.method==='OPTIONS')return new Response('ok',{headers:cors});if(req.method!=='POST')return err(405,'METHOD_NOT_ALLOWED','method not allowed');const h=req.headers.get('Authorization');if(!h?.startsWith('Bearer '))return err(401,'UNAUTHORIZED','Authorization header required');let body:any;try{body=await req.json()}catch{return err(400,'BAD_REQUEST','invalid json')}if(!sectors.has(body?.sector))return err(400,'INVALID_SECTOR','Invalid sector value');const url=Deno.env.get('SUPABASE_URL'),key=Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');if(!url||!key)return err(500,'INTERNAL','Supabase configuration missing');const admin=createClient(url,key,{auth:{persistSession:false}});const {data:{user},error:ae}=await admin.auth.getUser(h.replace(/^Bearer\s+/i,''));if(ae||!user)return err(401,'UNAUTHORIZED','Invalid token');try{let tenantId=body.tenantId??null;if(tenantId){const {data:m}=await admin.from('memberships').select('id').eq('tenant_id',tenantId).eq('user_id',user.id).maybeSingle();if(!m)return err(403,'FORBIDDEN','not a member of this tenant')}else{const {data:ms,error:e}=await admin.from('memberships').select('tenant_id').eq('user_id',user.id).limit(2);if(e)throw e;if(!ms?.length)return err(400,'TENANT_NOT_FOUND','No tenant found for this user');if(ms.length>1)return err(400,'TENANT_AMBIGUOUS','Multiple tenants — tenantId required');tenantId=ms[0].tenant_id}

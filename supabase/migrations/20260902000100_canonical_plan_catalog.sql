@@ -2,16 +2,16 @@
 --  Kanonischer Plan-Katalog — Neuausgabe für das Limit `industrialOtSystems`
 -- ═══════════════════════════════════════════════════════════════════════════
 --
--- Ersetzt die Katalog-Daten aus 20260831010000_canonical_plan_catalog.sql.
+-- Ersetzt die Katalog-Daten aus 20260901000000_canonical_plan_catalog.sql.
 -- Migrationen sind unveränderlich, sobald sie deployt sind — eine Änderung
 -- an der Pricing-SSoT erfordert deshalb eine NEUE Katalog-Migration statt
 -- einer Bearbeitung der alten. Tabellen-, RLS- und Index-Definitionen stehen
 -- weiterhin in 20260802001000 und werden hier nicht wiederholt; dieser Lauf
 -- schreibt ausschließlich Katalog-Daten.
 --
--- Neu gegenüber 20260831010000:
+-- Neu gegenüber 20260901000000:
 --   - Limit `industrialOtSystems` in `limits` (Policy Pack Industrial OT,
---     Kontingent-Gate in 20260901000000_industrial_ot_classification.sql):
+--     Kontingent-Gate in 20260902000000_industrial_ot_classification.sql):
 --     free 1 · starter 5 · growth 25 · agency 200 · enterprise/partner -1 ·
 --     governance_launch 1
 --
@@ -107,7 +107,7 @@ INSERT INTO public.plan_catalog (
     NULL,
     'EUR',
     'checkout',
-    14,
+    0,
     true,
     10,
     25000,
@@ -124,13 +124,13 @@ INSERT INTO public.plan_catalog (
     'enterprise',
     'Enterprise',
     'Konzernweite Governance über alle sechs Rahmenwerke — mit SLA und SSO.',
-    'Multi-Tenant-Runtime für bis zu 5 Organisationen, zentrale Rechteverwaltung und unbegrenzte geplante Läufe.',
+    'Multi-Tenant-Runtime für bis zu 5 Organisationen, zentrale Rechteverwaltung und individuell dimensionierte Scheduler- und Automation-Kontingente.',
     1249,
     12490,
     NULL,
     'EUR',
     'inquiry',
-    14,
+    0,
     true,
     20,
     50000,
@@ -139,7 +139,7 @@ INSERT INTO public.plan_catalog (
     '{"scheduler":true,"api":true,"webhooks":true,"whiteLabelReports":true,"whiteLabelDashboard":true,"multiTenant":true,"evidenceVault":true,"auditExport":true,"sso":true,"bulkOperations":true,"provenanceSigning":true,"prioritySupport":true}'::jsonb,
     '["website","whatsapp","telegram","slack","teams","email","voice"]'::jsonb,
     '["response_pack","voice","compliance_pack","agency_bot_pack","white_label"]'::jsonb,
-    '{"audit_evidence":["Alles aus Agency","Audit Center Pro mit 200 Berichten pro Monat","Evidence Vault Enterprise mit 200 GB Nachweisspeicher"],"ai_governance":["Alle sechs Policy Packs: DSGVO, EU AI Act, ISO 27001, NIS2, TISAX, DORA","Erweiterte Analysen und Risk Scoring","Eigene Richtlinien und Kontrollkataloge"],"automation_ops":["Unbegrenzter Scheduler für geplante Läufe","2.000 Automationsläufe pro Monat","API Premium mit 250.000 Aufrufen pro Monat","20 Governance-Bots mit 50.000 Antworten (alle Kanäle)","Priorisierter Support mit 4 h Reaktionszeit"],"multi_tenant_reseller":["Multi-Tenant-Dashboard für bis zu 5 Organisationen","Zentrale Benutzerverwaltung mit Rollen und Rechten","Single Sign-On","White-Label mit Branding, Logo und Farben"]}'::jsonb,
+    '{"audit_evidence":["Alles aus Agency","Audit Center Pro mit 200 Berichten pro Monat","Evidence Vault Enterprise mit 200 GB Nachweisspeicher"],"ai_governance":["Alle sechs Policy Packs: DSGVO, EU AI Act, ISO 27001, NIS2, TISAX, DORA","Erweiterte Analysen und Risk Scoring","Eigene Richtlinien und Kontrollkataloge"],"automation_ops":["Individuell dimensionierte Scheduler- und Automation-Kontingente.","API Premium mit 250.000 Aufrufen pro Monat","20 Governance-Bots mit 50.000 Antworten (alle Kanäle)","Priorisierter Support mit vertraglich vereinbarter Reaktionszeit"],"multi_tenant_reseller":["Multi-Tenant-Dashboard für bis zu 5 Organisationen","Zentrale Benutzerverwaltung mit Rollen und Rechten","Single Sign-On","White-Label mit Branding, Logo und Farben"]}'::jsonb,
     'dedicated'
   ),
   (

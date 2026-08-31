@@ -152,7 +152,7 @@ END $$;
 -- ─── 6. Kontingent-Gate ──────────────────────────────────────────────────────
 -- Kein hartkodierter Plan-Name: Das Limit kommt aus dem kanonischen
 -- Plan-Katalog (Quelle: shared/pricing.ts, Limit `industrialOtSystems`,
--- eingespielt durch 20260901000100_canonical_plan_catalog.sql). -1 bedeutet
+-- eingespielt durch 20260902000100_canonical_plan_catalog.sql). -1 bedeutet
 -- unbegrenzt. Ohne aktives Abo gilt das Free-Kontingent; fehlt der
 -- Katalog-Eintrag (Migrationsfenster), fällt das Gate auf 1 zurück statt zu
 -- blockieren.

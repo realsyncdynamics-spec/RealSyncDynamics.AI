@@ -20,7 +20,7 @@ import {
 import { ALL_PLANS_ORDERED, limitOf } from '../../shared/pricing';
 
 const migrationSql = readFileSync(
-  resolve(__dirname, '../../supabase/migrations/20260901000000_industrial_ot_classification.sql'),
+  resolve(__dirname, '../../supabase/migrations/20260902000000_industrial_ot_classification.sql'),
   'utf8',
 );
 

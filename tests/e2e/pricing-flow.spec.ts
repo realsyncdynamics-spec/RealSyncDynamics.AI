@@ -32,11 +32,19 @@ const DETAIL_SLUGS = [
 // eigens geprüft statt hier ignoriert.
 // Die Plan-Keys, die einen Self-Service-Checkout erreichen. Agency ist seit
 // AP2 nicht mehr dabei: stillgelegt, führt auf die Preisseite zurück.
+// Die Jahres-Keys sind hier nicht mehr dabei: fuer `starter_yearly` und
+// `growth_yearly` ist in `public.products` kein echter Stripe-Preis
+// verdrahtet, `stripe-checkout` weist sie mit PRICE_NOT_CONFIGURED ab. Die
+// Checkout-Seite leitet sie deshalb auf den Monats-Checkout desselben Plans
+// um — eigens geprueft statt hier ignoriert.
 const CHECKOUT_PLAN_KEYS = [
   'starter',
   'growth',
-  'starter_yearly',
-  'growth_yearly',
+];
+
+const UNWIRED_YEARLY_REDIRECTS: Array<[string, string]> = [
+  ['starter_yearly', 'starter'],
+  ['growth_yearly', 'growth'],
 ];
 
 test.describe('Pricing Flow', () => {
@@ -112,6 +120,15 @@ test.describe('Pricing Flow', () => {
         await page.waitForLoadState('domcontentloaded');
 
         expect(page.url()).toContain(`/checkout/${planKey}`);
+      }
+    });
+
+    test('Jahres-Checkout ohne verdrahteten Preis leitet auf den Monats-Checkout', async ({ page }) => {
+      for (const [yearlyKey, monthlyKey] of UNWIRED_YEARLY_REDIRECTS) {
+        await page.goto(`${BASE_URL}/checkout/${yearlyKey}`);
+        await page.waitForURL(new RegExp(`/checkout/${monthlyKey}`));
+        expect(page.url()).toContain(`/checkout/${monthlyKey}`);
+        expect(page.url()).not.toContain(yearlyKey);
       }
     });
 

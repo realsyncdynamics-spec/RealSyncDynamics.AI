@@ -389,6 +389,31 @@ export interface Plan {
    * zeigen stattdessen „Auf Anfrage".
    */
   priceOnRequest?: boolean;
+  /**
+   * COMMERCIAL-SSOT: temporary production hotfix.
+   * Canonical source migration tracked in Phase 2.
+   *
+   * `true` = die Jahresvariante ist derzeit NICHT oeffentlich buchbar.
+   * In `public.products` steht fuer `yearlyPlanKey` kein echter Stripe-Preis,
+   * sondern ein Platzhalter (`STRIPE_PRICE_*_XXX`); `stripe-checkout` weist
+   * deshalb jeden Jahres-Checkout mit `PRICE_NOT_CONFIGURED` ab.
+   *
+   * Der Betrag in `price.yearlyEur` bleibt interner Listenpreis — er ist
+   * korrekt, nur eben nicht einloesbar — und darf nirgends als kaufbares
+   * Festpreis-Angebot ausgewiesen werden. Damit gilt fuer die Jahresvariante
+   * dieselbe Regel wie fuer Enterprise: ein oeffentlich zugesicherter Preis
+   * darf nur dort stehen, wo der Kaufpfad ihn auch einloesen kann.
+   *
+   * Bestandsschutz: `yearlyPlanKey` bleibt gesetzt. Ein bestehendes
+   * `_yearly`-Abo loest weiterhin ueber `planByKey()` auf seinen Basisplan
+   * auf und behaelt alle Berechtigungen. Gemessen am 2026-08-31: null
+   * Jahres-Abos in `public.subscriptions`.
+   *
+   * Stillgelegte Plaene brauchen das Feld nicht — `availability: 'legacy'`
+   * schliesst sie bereits von jeder Angebotsflaeche aus. Sobald ein echter
+   * Jahres-Preis verdrahtet ist, faellt dieses Feld ersatzlos weg.
+   */
+  yearlyCheckoutUnavailable?: boolean;
   currency: 'EUR';
   purchaseMode: PurchaseMode;
   /** Vertriebszustand — siehe `PlanAvailability`. */
@@ -504,6 +529,8 @@ export const PLANS: Plan[] = [
     outcomeHeadline: 'Ein nachweisbares Governance-Fundament, das jeden Prüfer überzeugt.',
     technicalSubheadline: 'Kontinuierlicher DSGVO- und AI-Act-Scan mit lückenloser Hash-Chain und exportierbarem Prüfpfad.',
     price: { monthlyEur: 79, yearlyEur: 790, oneTimeEur: null },
+    // Jahres-Preis in Stripe nicht verdrahtet — siehe `yearlyCheckoutUnavailable`.
+    yearlyCheckoutUnavailable: true,
     currency: 'EUR',
     purchaseMode: 'checkout',
     availability: 'self_service',
@@ -577,6 +604,8 @@ export const PLANS: Plan[] = [
     outcomeHeadline: 'KI-Governance, die sich selbst überwacht — statt einmal im Jahr geprüft zu werden.',
     technicalSubheadline: 'Tägliche Runtime-Läufe mit Drift Detection, Risk Register und Policy Engine über drei Rahmenwerke.',
     price: { monthlyEur: 249, yearlyEur: 2490, oneTimeEur: null },
+    // Jahres-Preis in Stripe nicht verdrahtet — siehe `yearlyCheckoutUnavailable`.
+    yearlyCheckoutUnavailable: true,
     currency: 'EUR',
     purchaseMode: 'checkout',
     availability: 'self_service',

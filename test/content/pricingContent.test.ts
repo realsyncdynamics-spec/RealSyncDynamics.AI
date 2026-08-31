@@ -98,13 +98,39 @@ describe('pricingContent', () => {
     // Checkout-Link waere ein Kaufpfad ins Leere.
     const INQUIRY_ONLY_SLUGS = ['enterprise', 'agency', 'agency_yearly', 'partner', 'partner_yearly'];
 
+    // Dritte Kategorie: Der Plan ist verkaeuflich, nur seine JAHRESvariante
+    // hat keinen verdrahteten Stripe-Preis. Hier waere `/contact-sales`
+    // falsch (der Plan ist ja im Self-Service zu haben) und
+    // `/checkout/<slug>_yearly` ebenso (endet mit PRICE_NOT_CONFIGURED).
+    // Richtig ist der Monats-Checkout DESSELBEN Plans — keine
+    // Plan-Substitution, nur ein anderer Abrechnungszeitraum.
+    const UNWIRED_YEARLY: Record<string, string> = {
+      starter_yearly: '/checkout/starter',
+      growth_yearly: '/checkout/growth',
+    };
+
     it('Self-Service-Plaene verlinken auf /checkout/{slug}', () => {
       pricingPlans
         .filter((plan) => !INQUIRY_ONLY_SLUGS.includes(plan.slug))
+        .filter((plan) => !(plan.slug in UNWIRED_YEARLY))
         .forEach((plan) => {
           expect(plan.cta.href).toBe(`/checkout/${plan.slug}`);
           expect(plan.checkoutPath).toBe(`/checkout/${plan.slug}`);
         });
+    });
+
+    it('Jahresvarianten ohne verdrahteten Preis fuehren auf den Monats-Checkout', () => {
+      for (const [slug, expected] of Object.entries(UNWIRED_YEARLY)) {
+        const plan = getPlanBySlug(slug);
+        expect(plan, `Plan ${slug} fehlt`).toBeDefined();
+        expect(
+          plan?.cta.href,
+          `${slug} darf nicht auf den Jahres-Checkout zeigen — dort gibt es keinen Stripe-Preis.`,
+        ).toBe(expected);
+        expect(plan?.checkoutPath).toBe(expected);
+        // Kein Trial-Versprechen: der Monats-CTA fordert keinen Pilot an.
+        expect(plan?.trial, `${slug} darf keinen Trial zusichern`).toBeUndefined();
+      }
     });
 
     it('Anfrage-Plaene verlinken auf /contact-sales statt auf einen Checkout', () => {
@@ -320,9 +346,15 @@ describe('pricingContent', () => {
     // ist. Enterprise wird vertraglich vereinbart, Agency und Partner sind
     // seit AP2 stillgelegt — fuer beide waere ein Festpreis ein Angebot,
     // das `stripe-checkout` nicht einloest.
+    // Dazu kommen Jahresvarianten ohne verdrahteten Stripe-Preis: fuer
+    // `starter_yearly` und `growth_yearly` steht in `public.products` nur ein
+    // Platzhalter, `stripe-checkout` weist sie mit PRICE_NOT_CONFIGURED ab.
+    // Ihre MONATS-Plaene sind davon unberuehrt und weisen weiter einen
+    // Betrag aus.
     const NO_PUBLIC_PRICE = [
       'free-audit', 'enterprise',
       'agency', 'agency_yearly', 'partner', 'partner_yearly',
+      'starter_yearly', 'growth_yearly',
     ];
 
     it('kaufbare Pläne weisen einen Betrag > 0 aus', () => {

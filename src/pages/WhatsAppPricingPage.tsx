@@ -17,7 +17,6 @@ interface WhatsAppPricingTier {
   // Canonical source migration tracked in Phase 2.
   // `null` = Preis auf Anfrage (kein Self-Service-Checkout, manuelle Faktura).
   monthlyPrice: number | null;
-  yearlyPrice?: number;
   description: string;
   botLimit: number;
   answersPerMonth: number;
@@ -26,12 +25,19 @@ interface WhatsAppPricingTier {
   cta: { label: string; href: string };
 }
 
+// COMMERCIAL-SSOT: temporary production hotfix.
+// Canonical source migration tracked in Phase 2.
+// Ohne Jahrespreise: `products` traegt fuer `starter_yearly` und
+// `growth_yearly` nur Platzhalter, jeder Jahres-Checkout endete mit
+// PRICE_NOT_CONFIGURED. Die Karten wiesen „oder 790€/Jahr" bzw.
+// „oder 2490€/Jahr" aus, waehrend ihr CTA auf den MONATS-Checkout zeigte —
+// ein zugesicherter Betrag ohne Kaufpfad. Die Monatspreise bleiben
+// unveraendert und sind einloesbar.
 const WHATSAPP_TIERS: WhatsAppPricingTier[] = [
   {
     id: 'starter-wa',
     name: 'Starter WhatsApp',
     monthlyPrice: 79,
-    yearlyPrice: 790,
     description: 'Einzelner WhatsApp-Bot mit grundlegenden Governance-Features',
     botLimit: 1,
     answersPerMonth: 500,
@@ -50,7 +56,6 @@ const WHATSAPP_TIERS: WhatsAppPricingTier[] = [
     id: 'growth-wa',
     name: 'Growth WhatsApp',
     monthlyPrice: 249,
-    yearlyPrice: 2490,
     description: 'Bis zu 2 WhatsApp-Bots mit erweiterten Governance-Features',
     botLimit: 2,
     answersPerMonth: 2000,
@@ -240,11 +245,6 @@ export function WhatsAppPricingPage() {
                     </span>
                     <span className="text-titanium-400 text-sm">/Monat</span>
                   </div>
-                  {tier.yearlyPrice && (
-                    <p className="text-xs text-titanium-500">
-                      oder {tier.yearlyPrice}€/Jahr (2-Monate-Rabatt)
-                    </p>
-                  )}
                 </div>
 
                 <div className="mb-6 p-3 rounded bg-obsidian-800/50 text-xs">

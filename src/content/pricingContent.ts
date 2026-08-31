@@ -427,36 +427,45 @@ export const pricingPlans: PricingPlan[] = [
       },
     ],
   },
-  // ─── Jahres-Variante Starter — 12 Monate zum Preis von 10 ───
+  // ─── Jahres-Variante Starter — derzeit nicht buchbar ───
+  // COMMERCIAL-SSOT: temporary production hotfix.
+  // Canonical source migration tracked in Phase 2.
   // Slug identisch zur TierId in src/config/pricing.ts, damit die Info-
   // Buttons der Pricing-Karten (/pricing/<tier.id>) auf echte Detailseiten
-  // führen. Position VOR Partner wegen der Preis-Invariante des Unit-Tests
-  // (bezahlte Pläne aufsteigend: 790 € < 1.999 €).
+  // führen.
+  //
+  // In `public.products` steht für `starter_yearly` kein echter Stripe-Preis,
+  // sondern der Platzhalter `STRIPE_PRICE_STARTER_YEARLY_XXX` — jeder
+  // Jahres-Checkout endete mit PRICE_NOT_CONFIGURED. Deshalb kein Festpreis
+  // und kein Trial-CTA mehr. Anders als bei Agency/Partner ist der Plan
+  // NICHT stillgelegt: Starter monatlich ist verdrahtet und kaufbar, deshalb
+  // führt der CTA dorthin — derselbe Plan, nur monatliche Abrechnung, keine
+  // Plan-Substitution. Sobald der Jahres-Preis verdrahtet ist, kehren Betrag
+  // und Rabatt-Aussage zurück (`yearlyCheckoutUnavailable` in shared/pricing.ts).
   {
     slug: 'starter_yearly',
     name: 'Starter (Jährlich)',
-    price: 790,
-    priceString: '790 €',
-    interval: 'pro Jahr — 12 Monate zum Preis von 10',
+    price: 0,
+    priceString: 'Derzeit nicht buchbar',
+    interval: 'Jahresabrechnung in Vorbereitung',
     recommended: false,
-    badge: 'Sparen Sie 2 Monate',
-    shortDescription: 'Starter mit Jahresabrechnung und 2-Monate-Rabatt: 79 € × 10 = 790 € pro Jahr. Gleicher Funktionsumfang wie Starter (monatlich), ein Jahr durchgehende DSGVO-Grundabsicherung.',
-    targetAudience: 'Für kleine Unternehmen, Praxen, Kanzleien und lokale Dienstleister, die sich für ein Jahr absichern und dabei 2 Monatsraten sparen möchten.',
+    badge: 'In Vorbereitung',
+    shortDescription: 'Die Jahresabrechnung für Starter ist derzeit nicht buchbar. Starter ist monatlich zu 79 € verfügbar — mit identischem Funktionsumfang und ohne Mindestlaufzeit.',
+    targetAudience: 'Für kleine Unternehmen, Praxen, Kanzleien und lokale Dienstleister, die eine durchgehende DSGVO-Grundabsicherung brauchen.',
     whatCustomerGets: [
       'Alles aus Starter (monatlich)',
-      '2-Monate-Rabatt: zahle 10, nutze 12 Monate',
-      'Automatische Jahres-Verlängerung',
       'Kontinuierliche DSGVO-Compliance ohne Unterbrechung',
+      'Monatliche Abrechnung, jederzeit kündbar',
     ],
     cta: {
-      label: '14 Tage kostenlos testen',
-      href: '/checkout/starter_yearly',
+      label: 'Starter monatlich buchen',
+      href: '/checkout/starter',
     },
-    checkoutPath: '/checkout/starter_yearly',
+    checkoutPath: '/checkout/starter',
     problemsSolved: [
-      'Monatliche Abrechnung erzeugt unnötigen Verwaltungsaufwand',
-      'Compliance-Budget soll planbar fürs ganze Jahr sein',
-      'Schutzlücken durch versehentlich ausgelaufene Monats-Abos',
+      'DSGVO-Pflichten gelten dauerhaft, nicht stichtagsbezogen',
+      'Compliance-Budget soll planbar sein',
+      'Schutzlücken durch versehentlich ausgelaufene Abos',
     ],
     includedFeatureSlugs: [
       'dsgvo-scan',
@@ -468,14 +477,10 @@ export const pricingPlans: PricingPlan[] = [
     ],
     detailedSections: [
       {
-        title: 'Warum die Jahresvariante?',
-        content: 'Die Jahresabrechnung bündelt 12 Monate Starter zum Preis von 10 Monaten. Der Funktionsumfang ist identisch zur monatlichen Variante — laufende Scans, Risiko-Hinweise, automatische Datenschutzerklärung und der prüfbare Nachweis-Verlauf. Für Unternehmen mit festem Jahresbudget entfällt die monatliche Rechnungsstellung.',
+        title: 'Warum steht hier kein Jahrespreis?',
+        content: 'Die Jahresabrechnung für Starter ist derzeit nicht buchbar — es ist kein Jahres-Zahlungsweg hinterlegt. Statt einen Betrag zuzusichern, den der Kauf nicht einlösen kann, weisen wir die Variante als in Vorbereitung aus. Starter ist unverändert monatlich zu 79 € verfügbar, mit identischem Funktionsumfang und ohne Mindestlaufzeit. Bestehende Jahresabos sind davon nicht betroffen und laufen unverändert weiter.',
       },
     ],
-    trial: {
-      days: 14,
-      description: '14 Tage kostenlos testen, keine Kosten bis Tag 15',
-    },
   },
   {
     slug: 'enterprise',
@@ -613,35 +618,38 @@ export const pricingPlans: PricingPlan[] = [
     ],
   },
   // ─── Weitere Jahres-Varianten (siehe starter_yearly weiter oben) ───
-  // Array-Position folgt der Preis-Invariante aus pricingContent.test.ts:
-  // bezahlte Pläne müssen aufsteigend sortiert sein (2.490 → 6.900 → 19.000 €).
+  // COMMERCIAL-SSOT: temporary production hotfix.
+  // Canonical source migration tracked in Phase 2.
+  // Wie starter_yearly: `products.default_for_plan_key='growth_yearly'` traegt
+  // den Platzhalter `STRIPE_PRICE_GROWTH_YEARLY_XXX`, der Jahres-Checkout
+  // endete mit PRICE_NOT_CONFIGURED. Growth monatlich ist verdrahtet und
+  // kaufbar — dorthin fuehrt der CTA.
   {
     slug: 'growth_yearly',
     name: 'Growth (Jährlich)',
-    price: 2490,
-    priceString: '2.490 €',
-    interval: 'pro Jahr — 12 Monate zum Preis von 10',
+    price: 0,
+    priceString: 'Derzeit nicht buchbar',
+    interval: 'Jahresabrechnung in Vorbereitung',
     // recommended bleibt exklusiv beim monatlichen Growth-Plan —
     // pricingContent.test.ts erzwingt genau EINEN empfohlenen Plan.
     recommended: false,
-    badge: 'Sparen Sie 2 Monate',
-    shortDescription: 'Growth mit Jahresabrechnung und 2-Monate-Rabatt: 249 € × 10 = 2.490 € pro Jahr. KI-Governance, AI Risk Register und tägliches Monitoring für ein ganzes Jahr.',
-    targetAudience: 'Für wachsende Unternehmen mit KI-Einsatz, die Governance-Prozesse für ein Jahr fest verankern und dabei 2 Monatsraten sparen möchten.',
+    badge: 'In Vorbereitung',
+    shortDescription: 'Die Jahresabrechnung für Growth ist derzeit nicht buchbar. Growth ist monatlich zu 249 € verfügbar — KI-Governance, AI Risk Register und tägliches Monitoring mit identischem Funktionsumfang.',
+    targetAudience: 'Für wachsende Unternehmen mit KI-Einsatz, die Governance-Prozesse dauerhaft verankern wollen.',
     whatCustomerGets: [
       'Alles aus Growth (monatlich)',
-      '2-Monate-Rabatt: zahle 10, nutze 12 Monate',
-      'Automatische Jahres-Verlängerung',
-      'KI-Governance + AI Risk Register für das ganze Jahr',
+      'KI-Governance + AI Risk Register',
+      'Monatliche Abrechnung, jederzeit kündbar',
     ],
     cta: {
-      label: '14 Tage kostenlos testen',
-      href: '/checkout/growth_yearly',
+      label: 'Growth monatlich buchen',
+      href: '/checkout/growth',
     },
-    checkoutPath: '/checkout/growth_yearly',
+    checkoutPath: '/checkout/growth',
     problemsSolved: [
       'KI-Compliance braucht Kontinuität statt Monats-Flickwerk',
-      'Compliance-Budget soll planbar fürs ganze Jahr sein',
-      'AI-Act-Pflichten gelten dauerhaft, nicht monatsweise',
+      'Governance-Prozesse sollen dauerhaft verankert sein',
+      'AI-Act-Pflichten gelten dauerhaft, nicht stichtagsbezogen',
     ],
     includedFeatureSlugs: [
       'dsgvo-scan',
@@ -657,8 +665,8 @@ export const pricingPlans: PricingPlan[] = [
     ],
     detailedSections: [
       {
-        title: 'Warum die Jahresvariante?',
-        content: 'Die Jahresabrechnung bündelt 12 Monate Growth zum Preis von 10 Monaten. KI-Governance und das AI Risk Register laufen ohne Unterbrechung durch — wichtig, weil AI-Act- und DSGVO-Pflichten kontinuierlich gelten. Der Funktionsumfang ist identisch zur monatlichen Variante.',
+        title: 'Warum steht hier kein Jahrespreis?',
+        content: 'Die Jahresabrechnung für Growth ist derzeit nicht buchbar — es ist kein Jahres-Zahlungsweg hinterlegt. Statt einen Betrag zuzusichern, den der Kauf nicht einlösen kann, weisen wir die Variante als in Vorbereitung aus. Growth ist unverändert monatlich zu 249 € verfügbar, mit identischem Funktionsumfang. Bestehende Jahresabos sind davon nicht betroffen und laufen unverändert weiter.',
       },
     ],
   },

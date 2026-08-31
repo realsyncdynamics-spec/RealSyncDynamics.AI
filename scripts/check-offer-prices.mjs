@@ -49,16 +49,26 @@ function nonSellableAmounts() {
 
     const availability = block.match(/availability: '([a-z_]+)'/)?.[1];
     const onRequest = /priceOnRequest: true/.test(block);
-    // Nur Pläne ohne einlösbaren Self-Service-Kaufpfad.
+    // Die Jahresvariante kann einzeln unverkäuflich sein, während der
+    // Monatsplan normal weiterläuft: für `starter_yearly` und `growth_yearly`
+    // steht in `public.products` nur ein Platzhalter statt einer echten
+    // Stripe-Price, der Jahres-Checkout endet mit PRICE_NOT_CONFIGURED.
+    // Deshalb werden Monats- und Jahresbetrag getrennt bewertet.
+    const yearlyBlocked = /yearlyCheckoutUnavailable: true/.test(block);
     if (!availability) continue;
-    if (availability === 'self_service' && !onRequest) continue;
 
     const price = block.match(/price: \{ monthlyEur: ([\d_]+), yearlyEur: ([\d_]+|null)/);
     if (!price) continue;
     const monthly = Number(price[1].replace(/_/g, ''));
     const yearly = price[2] === 'null' ? null : Number(price[2].replace(/_/g, ''));
-    if (monthly > 0) amounts.set(monthly, planId);
-    if (yearly) amounts.set(yearly, `${planId} (jährlich)`);
+
+    // Der Monatsbetrag ist nur dann ein Angebot ohne Kaufpfad, wenn der Plan
+    // selbst keinen Self-Service-Abschluss zulässt.
+    const monthlyBlocked = !(availability === 'self_service' && !onRequest);
+    if (monthlyBlocked && monthly > 0) amounts.set(monthly, planId);
+    if (yearly && (monthlyBlocked || yearlyBlocked)) {
+      amounts.set(yearly, `${planId} (jährlich)`);
+    }
   }
   return amounts;
 }

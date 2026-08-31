@@ -202,7 +202,23 @@ function toTier(plan: Plan, interval: 'month' | 'year'): PricingTier {
 export const PRICING_TIERS: PricingTier[] = [
   ...ORDERED_PLANS.map((plan) => toTier(plan, 'month')),
   ...ONE_TIME_PLANS.map((plan) => toTier(plan, 'month')),
-  ...ORDERED_PLANS.filter((plan) => plan.yearlyPlanKey !== null).map((plan) => toTier(plan, 'year')),
+  // COMMERCIAL-SSOT: temporary production hotfix.
+  // Canonical source migration tracked in Phase 2.
+  // `yearlyCheckoutUnavailable` haelt Jahresvarianten heraus, fuer die in
+  // `public.products` kein echter Stripe-Preis verdrahtet ist. Ein Tier ist
+  // hier die Grundlage jeder Angebotsflaeche — auch des JSON-LD-Guards. Ein
+  // Tier zu erzeugen hiesse, 790 € bzw. 2.490 € oeffentlich zuzusichern,
+  // waehrend `stripe-checkout` jeden Jahres-Abschluss mit
+  // PRICE_NOT_CONFIGURED abweist.
+  //
+  // Bewusst NICHT ueber `yearlyPlanKey: null` geloest: der Key bleibt
+  // erhalten, damit ein bestehendes `_yearly`-Abo weiterhin auf seinen
+  // Basisplan aufloest. `tierByPlanKey()` faellt fuer solche Keys auf die
+  // Monatsvariante desselben Plans zurueck — gleicher Plan, gleiche
+  // Berechtigungen, nur ohne Jahres-Kachel.
+  ...ORDERED_PLANS
+    .filter((plan) => plan.yearlyPlanKey !== null && plan.yearlyCheckoutUnavailable !== true)
+    .map((plan) => toTier(plan, 'year')),
 ];
 
 /**

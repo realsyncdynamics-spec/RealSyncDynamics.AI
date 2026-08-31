@@ -54,8 +54,15 @@ describe('Company Configuration (UG/GmbH Ready)', () => {
 // ─── Pricing Tier Tests ──────────────────────────────────────────────────────
 
 describe('Pricing Tiers (6-Tier Model + Yearly Variants)', () => {
-  it('should have 12 tiers (6 base + 5 yearly variants + 1 one-time)', () => {
-    expect(PRICING_TIERS).toHaveLength(12);
+  // COMMERCIAL-SSOT: temporary production hotfix.
+  // Canonical source migration tracked in Phase 2.
+  // Zehn statt zwoelf: `starter_yearly` und `growth_yearly` erzeugen kein Tier
+  // mehr, weil fuer sie in `public.products` kein echter Stripe-Preis
+  // verdrahtet ist (`yearlyCheckoutUnavailable` in shared/pricing.ts). Ein
+  // Tier waere die Grundlage einer oeffentlichen Angebotsflaeche — und damit
+  // ein zugesicherter Festpreis, den `stripe-checkout` nicht einloest.
+  it('should have 10 tiers (6 base + 3 yearly variants + 1 one-time)', () => {
+    expect(PRICING_TIERS).toHaveLength(10);
   });
 
   it('should have 5 public tiers sorted by price ascending', () => {

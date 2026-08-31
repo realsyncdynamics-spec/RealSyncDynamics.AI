@@ -33,12 +33,18 @@ function run(): { code: number; out: string } {
   }
 }
 
+// Jeder Test startet den Guard als eigenen Prozess; der laeuft einmal ueber
+// den gesamten `src`-Baum und braucht dafuer mehrere Sekunden. Unter der
+// Parallellast der Gesamtsuite reicht Vitests Standard von 5 s nicht — die
+// Tests schlugen dann mit Timeout fehl, ohne dass am Guard etwas falsch war.
+const GUARD_TIMEOUT_MS = 60_000;
+
 describe('check:offer-prices', () => {
   it('ist auf dem aktuellen Stand grün', () => {
     const { code, out } = run();
     expect(out).toContain('Kein öffentlicher Betrag ohne einlösbaren Kaufpfad');
     expect(code).toBe(0);
-  });
+  }, GUARD_TIMEOUT_MS);
 
   it('leitet die Beträge aus der SSoT ab, nicht aus einer eigenen Liste', () => {
     const { out } = run();
@@ -49,7 +55,7 @@ describe('check:offer-prices', () => {
     // Verkaufbare Pläne gehören ausdrücklich NICHT dazu: ihr Preis ist einlösbar.
     expect(out).not.toContain('79 € (starter)');
     expect(out).not.toContain('249 € (growth)');
-  });
+  }, GUARD_TIMEOUT_MS);
 
   it('schlägt an, wenn ein neuer Betrag ohne Kaufpfad öffentlich auftaucht', () => {
     // Mutationsprobe: Ein Guard, der nichts findet, ist wertlos. Die Datei
@@ -65,7 +71,7 @@ describe('check:offer-prices', () => {
     } finally {
       writeFileSync(victim, original);
     }
-  });
+  }, GUARD_TIMEOUT_MS);
 
   it('meldet eine verwaiste Grundlinie, statt sie still zu dulden', () => {
     const baselinePath = join(ROOT, 'scripts', 'offer-price-baseline.json');
@@ -80,12 +86,12 @@ describe('check:offer-prices', () => {
     } finally {
       writeFileSync(baselinePath, original);
     }
-  });
+  }, GUARD_TIMEOUT_MS);
 
   it('zählt Beträge in Kommentaren nicht als Angebot', () => {
     // Die Erklärtexte dieses Branches nennen 1.249 € mehrfach — in
     // mehrzeiligen Kommentaren, deren Folgezeilen wie Code aussehen.
     const { code } = run();
     expect(code).toBe(0);
-  });
+  }, GUARD_TIMEOUT_MS);
 });

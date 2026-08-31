@@ -80,17 +80,19 @@ test.describe('Checkout Flow', () => {
     }
   });
 
-  test('Jahresplan zeigt korrekte Preise', async ({ page }) => {
-    // Navigiere zu Growth Yearly Checkout
+  test('Jahresplan ohne verdrahteten Preis wird nicht als Kauf angeboten', async ({ page }) => {
+    // Fuer `growth_yearly` steht in `public.products` nur der Platzhalter
+    // `STRIPE_PRICE_GROWTH_YEARLY_XXX` — `stripe-checkout` antwortet mit
+    // PRICE_NOT_CONFIGURED. Frueher pruefte dieser Test, dass hier „2.490"
+    // und „/ Jahr" stehen; genau das war das Angebot ohne Kaufpfad.
     await page.goto('http://localhost:3000/checkout/growth_yearly');
 
-    // Prüfe dass Jahrespreis angezeigt wird, nicht Monatspreis
-    const priceText = page.locator('text=2.490');
-    await expect(priceText).toBeVisible();
+    // Die Seite leitet auf den Monats-Checkout desselben Plans um.
+    await page.waitForURL(/\/checkout\/growth/);
+    expect(page.url()).not.toContain('growth_yearly');
 
-    // Sollte "/ Jahr" zeigen, nicht "/ Monat"
-    const yearText = page.locator('text=/Jahr/i');
-    await expect(yearText).toBeVisible();
+    // Und der Jahresbetrag steht nirgends mehr als zugesicherter Preis.
+    await expect(page.locator('text=2.490')).toHaveCount(0);
   });
 
   test('Partner Plan Checkout wird korrekt verwaltet', async ({ page }) => {

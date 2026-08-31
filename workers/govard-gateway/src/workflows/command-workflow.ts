@@ -4,7 +4,7 @@ import { NonRetryableError } from "cloudflare:workflows";
 import type { Env } from "../env";
 import { OrgRepository } from "../db/repository";
 import { evidenceFor } from "../evidence/sequencer";
-import { GovardError } from "../types";
+import { isAlreadyApplied, isExecutableState } from "./execution-rules";
 import { runIntent } from "../intents";
 
 export interface CommandWorkflowParams {
@@ -53,7 +53,7 @@ export class CommandWorkflow extends WorkflowEntrypoint<Env, CommandWorkflowPara
       return { intent: c.intent, payload: c.payload, state: c.state };
     });
 
-    if (command.state !== "APPROVED" && command.state !== "EXECUTING") {
+    if (!isExecutableState(command.state)) {
       // Kein Fehler: Ein anderer Lauf war schneller, oder der Command wurde
       // inzwischen abgelehnt. Stillhalten ist hier richtig.
       return { skipped: true, state: command.state };
@@ -127,7 +127,7 @@ export class CommandWorkflow extends WorkflowEntrypoint<Env, CommandWorkflowPara
     try {
       await repo.transition(commandId, from, to, { failureReason });
     } catch (err) {
-      if (err instanceof GovardError && err.code === "STATE_CONFLICT") return;
+      if (isAlreadyApplied(err)) return;
       throw err;
     }
   }

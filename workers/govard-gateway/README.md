@@ -108,26 +108,70 @@ Regeltypen: `ALLOWED_INTENTS`, `MAX_BUDGET`, `MAX_RECIPIENTS`,
 
 ## Provisionierung
 
+> **EU-Jurisdiktion ist nur beim Anlegen setzbar.** `--jurisdiction eu` bindet
+> Datenbank und Bucket an EU-Rechenzentren. Wird das Flag beim ersten Anlegen
+> vergessen, liegen Commands und Evidence außerhalb dieser Bindung, und der
+> einzige Weg zurück ist Neuanlegen. Für eine EU-souveräne Governance-Runtime
+> ist das kein Detail, sondern die Voraussetzung.
+
+Zwei Wege. Beide sind idempotent — ein zweiter Lauf richtet keinen Schaden an.
+
+### Weg A — GitHub Actions (empfohlen)
+
+`.github/workflows/provision-govard-gateway.yml`, manuell zu starten
+(**Actions → Provision GOVARD Gateway → Run workflow**). Er läuft mit den
+bereits vorhandenen Repo-Secrets `CLOUDFLARE_API_TOKEN` und
+`CLOUDFLARE_ACCOUNT_ID`, legt D1 und R2 in der EU an, spielt die Migrationen
+ein, seedet Org und Admin-Key und gibt am Ende die `database_id` aus.
+
+Den Admin-Key erzeugst du **vorher lokal** und trägst nur seinen Hash in das
+Formular ein — so steht der Key nie in einem CI-Protokoll:
+
+```bash
+KEY="govard_sk_$(openssl rand -hex 32)"
+printf '%s' "$KEY" | sha256sum | cut -d' ' -f1   # -> Feld admin_key_hash
+echo "API-Key (einmalig sicher notieren): $KEY"
+```
+
+Der Hash allein erlaubt keinen Zugriff: `auth.ts` vergleicht `sha256(Token)`
+gegen ihn; aus dem Hash lässt sich kein gültiges Token herleiten.
+
+Das Präfix `govard_sk_` ist kein Schmuck: Ohne es wäre ein roher
+`openssl rand -hex 32`-Key von einem SHA-256-Hash nicht zu unterscheiden —
+beide sind 64 Hex-Zeichen — und der wahrscheinlichste Fehler (Key statt Hash
+einfügen) bliebe unentdeckt. Mit Präfix weist der Workflow ihn sicher ab,
+bevor er in ein Protokoll gelangt. `auth.ts` ist das Format gleichgültig; es
+hasht, was im Bearer-Header steht.
+
+Danach die ausgegebene `database_id` in `wrangler.jsonc` eintragen und
+committen — erst damit hört `deploy-govard-gateway.yml` auf, sich zu
+überspringen.
+
+### Weg B — lokal mit eigenem Token
+
 ```bash
 cd workers/govard-gateway
 
-# 1. D1-Datenbank anlegen, database_id in wrangler.jsonc eintragen
-npx wrangler d1 create govard-gateway
+# 1. D1-Datenbank in der EU anlegen, database_id in wrangler.jsonc eintragen
+npx wrangler d1 create govard-gateway --jurisdiction eu
 
-# 2. R2-Bucket für die Siegel
-npx wrangler r2 bucket create govard-evidence-seals
+# 2. R2-Bucket für die Siegel, ebenfalls EU
+#    (die Bindung in wrangler.jsonc trägt dazu passend "jurisdiction": "eu")
+npx wrangler r2 bucket create govard-evidence-seals --jurisdiction eu
 
 # 3. Schema einspielen
 npx wrangler d1 migrations apply govard-gateway --remote --config wrangler.jsonc
 
 # 4. Erste Org + Admin-Key seeden (Key nur als Hash speichern!)
-KEY=$(openssl rand -hex 32)
+#    strftime statt datetime(): erzeugt exakt das ISO-Format, das auch der
+#    Worker schreibt — gemischte Zeitstempel im Prüfpfad wären ein Mangel.
+KEY="govard_sk_$(openssl rand -hex 32)"
 HASH=$(printf '%s' "$KEY" | sha256sum | cut -d' ' -f1)
-npx wrangler d1 execute govard-gateway --remote --command "
-  INSERT INTO orgs (id, name, created_at)
-    VALUES ('org-demo', 'Demo Org', datetime('now'));
-  INSERT INTO api_keys (id, org_id, actor_id, name, role, key_hash, enabled, created_at)
-    VALUES ('key-1', 'org-demo', 'owner', 'bootstrap-admin', 'admin', '$HASH', 1, datetime('now'));
+npx wrangler d1 execute govard-gateway --remote --config wrangler.jsonc --command "
+  INSERT OR IGNORE INTO orgs (id, name, created_at)
+    VALUES ('org-demo', 'Demo Org', strftime('%Y-%m-%dT%H:%M:%fZ','now'));
+  INSERT OR IGNORE INTO api_keys (id, org_id, actor_id, name, role, key_hash, enabled, created_at)
+    VALUES ('key-1', 'org-demo', 'owner', 'bootstrap-admin', 'admin', '$HASH', 1, strftime('%Y-%m-%dT%H:%M:%fZ','now'));
 "
 echo "API-Key (einmalig notieren): $KEY"
 
@@ -135,8 +179,23 @@ echo "API-Key (einmalig notieren): $KEY"
 npx wrangler deploy --config wrangler.jsonc
 ```
 
-Der Deploy-Workflow überspringt sich selbst, solange in `wrangler.jsonc`
-der D1-Platzhalter steht (gleiches Guard-Muster wie `siteos-preview`).
+### Was vorab verifiziert ist
+
+Gegen das echte D1-Werkzeug lokal geprüft (`wrangler d1 … --local`), damit die
+Provisionierung nicht am Konto scheitert:
+
+| Geprüft | Ergebnis |
+|---|---|
+| `0001_init.sql` gegen D1 angewendet | 18 Kommandos, fehlerfrei |
+| `migrations_dir` aus dem Repo-Root aufgelöst | relativ zur Config — Deploy-Reihenfolge stimmt |
+| Seeding-Hash (`sha256sum`) gegen `auth.ts` (`crypto.subtle`) | identisch |
+| Bewachter Übergang bei falschem Zustand | `changes() = 0` → `STATE_CONFLICT` greift |
+| `UPDATE … RETURNING` (Freigaben-Verfall) | unterstützt |
+| Zweite offene Freigabe pro Command | durch Teilindex abgewiesen |
+| Platzhalter-Guard des Deploy-Workflows | sperrt mit Platzhalter, öffnet mit echter ID |
+
+Der Deploy-Workflow überspringt sich selbst, solange in `wrangler.jsonc` der
+D1-Platzhalter steht (gleiches Guard-Muster wie `siteos-preview`).
 
 ## Was v1 bewusst NICHT ist
 

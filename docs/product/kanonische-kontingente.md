@@ -37,6 +37,41 @@ Das schließt zwei Fehler in beide Richtungen aus:
 - Die höhere technische Berechtigung darf **nicht** als Vertragsrecht
   ausgelegt werden. `-1` in der Datenbank ist kein Beleg für eine Zusage.
 
+### 1.2a Wie die Regel ausführbar wurde — Entscheidung vom 2026-08-31
+
+§1.2 war ein Jahr lang spezifiziert und nicht ausführbar: Das Schema kennt
+keinen Ort für einen vertragsspezifischen Wert (§4a). Der Eigentümer hat sich
+am 2026-08-31 für **Option A** aus
+`enterprise-quelle-entscheidungsvorlage.md` entschieden — die Kodierung wird
+benannt, statt einen Ort dafür zu bauen:
+
+> Auf Plänen mit `availability: 'contract'` bedeutet `-1` bei einem
+> `limit.*`-Key: **Das System begrenzt hier nicht. Der Vertrag tut es.**
+
+Das ist ausdrücklich **keine** Auflösung der Quelle. Der Vertrag liegt dem
+System weiterhin nicht vor; §1.4 gilt unverändert, auf diesen acht Feldern
+entsteht kein Gate. Was sich ändert: Der Satz zwei Absätze weiter oben —
+„`-1` ist kein Beleg für eine Zusage" — gilt weiter für Self-Service-Pläne,
+auf Vertragsplänen ist `-1` jetzt die festgelegte Kodierung des Vorbehalts.
+
+**Der Preis dieser Entscheidung, offen benannt:** Unter A ist jeder
+Enterprise-Vertrag technisch unbegrenzt. Ein Vertrag mit vereinbarter
+**Obergrenze** („bis zu 50 Sitze") ist nicht durchsetzbar und damit nicht
+abschließbar, ohne vorher auf **Option B** (Tenant-Overrides) zu wechseln.
+Der erste solche Vertrag ist der benannte Auslöser dafür — die Frage
+verschwindet nicht, sie bekommt einen Termin.
+
+**Die Bedingung, gemessen statt behauptet** (2026-08-31, Live-Projekt
+`ebljyceifhnlzhjfyxup`): 0 Enterprise-Verträge, 0 `entitlement_grants`,
+5 Tenants, 5 Subscriptions. A wird also für null Bestandsfälle gewählt und
+bleibt umkehrbar; B und C hätten heute Schema bzw. Katalog angefasst, um ein
+Problem zu lösen, das noch kein Kunde hat.
+
+**Woran es hängt:** `test/billing/limit-canonicity.test.ts`, Fall
+„Vertragspläne tragen ausschliesslich `-1` als Kontingent". Er schlägt fehl,
+sobald ein Vertragsplan einen endlichen `limit.*`-Wert bekommt — das ist die
+maschinelle Meldung, dass der Auslöser für B eingetreten ist.
+
 ### 1.3 Die Schutzklausel
 
 > Bei Bestandskunden darf die Korrektur **nicht stillschweigend als Downgrade**

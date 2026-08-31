@@ -525,15 +525,24 @@ Runtime-Limits, Module, Berechtigungen, Feature-Listen und Add-ons.
   Pläne gilt `plan.limits.*` (die Preisseite), für Vertragspläne
   (`availability: 'contract'`, heute Enterprise) gilt **der Vertrag**.
   `PLAN_ENTITLEMENTS['limit.*']` ist in beiden Fällen nur eine Ableitung.
-  Für Enterprise ist die Quelle heute **unaufgelöst** — der Vertrag liegt dem
-  System nicht vor, und es gibt keine Tabelle für tenant-spezifische Werte;
-  dort ist kein Gate erlaubt. Beide Seiten
+  Seit dem **2026-08-31** ist die Kodierung für Vertragspläne festgelegt
+  (Option A): dort bedeutet `-1` bei einem `limit.*`-Key **„das System
+  begrenzt hier nicht, der Vertrag tut es"**. Die Quelle ist damit *benannt*,
+  nicht *aufgelöst* — der Vertrag liegt dem System weiterhin nicht vor, es
+  gibt keine Tabelle für tenant-spezifische Werte, und auf diesen acht
+  Feldern ist **kein Gate erlaubt**. Ein Vertragsplan trägt deshalb
+  ausschließlich `-1`; ein endlicher Wert wäre eine technisch durchgesetzte
+  Obergrenze, die unter A nicht abbildbar ist. Der erste Enterprise-Vertrag
+  mit vereinbarter Obergrenze ist der benannte Auslöser für Option B
+  (Tenant-Overrides) — festgehalten in
+  `test/billing/limit-canonicity.test.ts`. Beide Seiten
   weichen heute in 21 von 38 Paaren ab; `npm run check:limits` verhindert
   **neue** Divergenzen (Ratsche, Grundlinie in
   `scripts/limit-canonicity-baseline.json`). **Kein neues Enforcement gegen
   einen divergierenden Wert**, solange er nicht bereinigt ist — und keine
-  stillschweigende Kürzung bei Bestandskunden. Diff und offene
-  Enterprise-Frage: `docs/product/kanonische-kontingente.md`.
+  stillschweigende Kürzung bei Bestandskunden. Diff und Entscheidung:
+  `docs/product/kanonische-kontingente.md` §1.2a,
+  `docs/product/enterprise-quelle-entscheidungsvorlage.md`.
 
 Vollständige Regeln: `docs/product/pricing-governance.md`
 

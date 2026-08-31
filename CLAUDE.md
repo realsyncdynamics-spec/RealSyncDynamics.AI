@@ -851,9 +851,13 @@ Raster bleiben unverändert.
 oben nennt weiterhin `plan=enterprise`; das ist die dort dokumentierte
 Absicht, nicht der Parameter, den die Seite liest.
 
-**Weiterhin offen**: `/realsync-landing` führt fünf Plan-Karten mit hart
-codierten Preisen im JSX, inklusive Agency und Partner. Umbau auf die Quelle
-ist ein eigener Schritt (§10.1) und gehört zu AP10.
+**Erledigt, gemessen am 2026-08-31**: Der hier zuvor als offen geführte
+Punkt zu `/realsync-landing` („fünf Plan-Karten mit hart codierten Preisen
+im JSX, inklusive Agency und Partner") trifft auf den Code nicht mehr zu.
+`src/marketing/landing/RealSyncDynamicsLanding.tsx` führt vier Karten —
+Free Audit · Starter · Growth · Enterprise —, die Beträge kommen aus der
+Quelle (`planById('starter').price.monthlyEur`, ebenso Growth), Agency und
+Partner sind als Karten entfallen, Enterprise steht auf „Auf Anfrage".
 
 **2026-08-31 — Build Studio: Speicherort und Übernehmbarkeit an den Sitzungsmodus**
 

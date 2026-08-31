@@ -324,6 +324,38 @@ Jeder Agent braucht vier Dimensionen — fehlt eine, ist er nicht governance-fä
 > Prüfpfad und Nachvollziehbarkeit zusagt, ist jede solche Änderung ein
 > Governance-Befund, unabhängig davon, wie gut sie inhaltlich ist.
 >
+> #### Die Guards hatten recht, bevor die Messung lief
+>
+> Am 2026-08-30 nachträglich geprüft: **Die Automatik hatte alles schon
+> gefunden.** Die manuelle Messung hat nichts entdeckt, was die Drift-Guards
+> nicht Tage vorher gemeldet hätten — sie hat nur jemanden gefunden, der
+> hinsieht.
+>
+> | Guard | Stand | Befund |
+> |---|---|---|
+> | `Migration Drift Guard` | rot **seit 2026-08-26**, fünf Tage | nennt `20260825204748` und `20260829011038` namentlich |
+> | `Edge Function Drift Guard` | rot **seit 2026-08-29** | `ORPHAN: onboarding-orchestrator`, inkl. Handlungsanweisung |
+> | `Function ACL Drift Guard` | durchgehend grün | prüft Funktions-Grants, **nicht** RLS-Flags auf Tabellen → blinder Fleck, kein Versagen |
+>
+> Beide roten Guards nannten exakt den Fix, für den sich die Sitzung dann
+> unabhängig entschieden hat: „Quelle ins Repo committen".
+>
+> **Die Betriebsfolge, die dabei fast untergegangen wäre**: Solange
+> Migrations-Drift offen ist, bricht `supabase db push` vollständig ab —
+> dann erreicht **keine** Migration mehr die Produktion, auch keine
+> unbeteiligte. Der Guard sagt das in seinem eigenen Protokoll.
+>
+> **Daraus folgt nicht „mehr Prüfungen bauen", sondern „Befunde zustellen".**
+> Ein roter Scheduled-Run erzeugt bestenfalls eine E-Mail, die niemanden
+> erreicht, der handelt. Deshalb `.github/workflows/drift-alert.yml`: Es
+> beobachtet die drei Guards per `workflow_run` und legt bei Rot ein
+> GitHub-Issue an (bzw. kommentiert ein bestehendes, statt ein zweites zu
+> öffnen); wird der Guard wieder grün, schließt es das Issue selbst. Die
+> Guards bleiben unverändert — ihre Aufgabe ist Messen, nicht Melden.
+>
+> **Nächste Sitzung, bevor du misst**: Sieh in den Actions-Tab. Ein roter
+> Drift-Guard ist der schnellere Weg zum Befund als jede eigene Messung.
+>
 > ¹ **Migrations-Lücke und Versionskollision, gemessen 2026-08-24** (Ledger via
 > `supabase_migrations.schema_migrations`, Deploy-Log Run 32705231581): PR #1131
 > und PR #1124 vergaben unabhängig voneinander dieselbe Version `20260826000000`

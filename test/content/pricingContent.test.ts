@@ -88,11 +88,60 @@ describe('pricingContent', () => {
       expect(enterprise).toBeDefined();
     });
 
-    it('all plan CTAs should link to /checkout/{slug}', () => {
-      pricingPlans.forEach((plan) => {
-        expect(plan.cta.href).toBe(`/checkout/${plan.slug}`);
-        expect(plan.checkoutPath).toBe(`/checkout/${plan.slug}`);
-      });
+    // COMMERCIAL-SSOT: temporary production hotfix.
+    // Canonical source migration tracked in Phase 2.
+    // Plaene ohne Self-Service-Checkout fuehren bewusst NICHT auf
+    // /checkout/<slug>, sondern auf /contact-sales. Zwei Gruende: Enterprise
+    // wird vertraglich vereinbart und manuell fakturiert (`inquiry`), Agency
+    // und Partner sind seit AP2 stillgelegt (`availability: 'legacy'`). In
+    // beiden Faellen lehnt `stripe-checkout` den Abschluss ab — ein
+    // Checkout-Link waere ein Kaufpfad ins Leere.
+    const INQUIRY_ONLY_SLUGS = ['enterprise', 'agency', 'agency_yearly', 'partner', 'partner_yearly'];
+
+    // Dritte Kategorie: Der Plan ist verkaeuflich, nur seine JAHRESvariante
+    // hat keinen verdrahteten Stripe-Preis. Hier waere `/contact-sales`
+    // falsch (der Plan ist ja im Self-Service zu haben) und
+    // `/checkout/<slug>_yearly` ebenso (endet mit PRICE_NOT_CONFIGURED).
+    // Richtig ist der Monats-Checkout DESSELBEN Plans — keine
+    // Plan-Substitution, nur ein anderer Abrechnungszeitraum.
+    const UNWIRED_YEARLY: Record<string, string> = {
+      starter_yearly: '/checkout/starter',
+      growth_yearly: '/checkout/growth',
+    };
+
+    it('Self-Service-Plaene verlinken auf /checkout/{slug}', () => {
+      pricingPlans
+        .filter((plan) => !INQUIRY_ONLY_SLUGS.includes(plan.slug))
+        .filter((plan) => !(plan.slug in UNWIRED_YEARLY))
+        .forEach((plan) => {
+          expect(plan.cta.href).toBe(`/checkout/${plan.slug}`);
+          expect(plan.checkoutPath).toBe(`/checkout/${plan.slug}`);
+        });
+    });
+
+    it('Jahresvarianten ohne verdrahteten Preis fuehren auf den Monats-Checkout', () => {
+      for (const [slug, expected] of Object.entries(UNWIRED_YEARLY)) {
+        const plan = getPlanBySlug(slug);
+        expect(plan, `Plan ${slug} fehlt`).toBeDefined();
+        expect(
+          plan?.cta.href,
+          `${slug} darf nicht auf den Jahres-Checkout zeigen — dort gibt es keinen Stripe-Preis.`,
+        ).toBe(expected);
+        expect(plan?.checkoutPath).toBe(expected);
+        // Kein Trial-Versprechen: der Monats-CTA fordert keinen Pilot an.
+        expect(plan?.trial, `${slug} darf keinen Trial zusichern`).toBeUndefined();
+      }
+    });
+
+    it('Anfrage-Plaene verlinken auf /contact-sales statt auf einen Checkout', () => {
+      pricingPlans
+        .filter((plan) => INQUIRY_ONLY_SLUGS.includes(plan.slug))
+        .forEach((plan) => {
+          expect(plan.cta.href).toContain('/contact-sales');
+          expect(plan.checkoutPath).toContain('/contact-sales');
+          expect(plan.cta.href).not.toContain('/checkout/');
+          expect(plan.checkoutPath).not.toContain('/checkout/');
+        });
     });
 
     it('all plans should have at least one included feature', () => {
@@ -291,11 +340,38 @@ describe('pricingContent', () => {
   });
 
   describe('Pricing Consistency', () => {
-    it('paid plans should have price > 0', () => {
-      const paidPlans = pricingPlans.filter((p) => p.slug !== 'free-audit' && p.slug !== 'enterprise');
+    // COMMERCIAL-SSOT: temporary production hotfix.
+    // Canonical source migration tracked in Phase 2.
+    // Ein Plan weist nur dann einen Betrag aus, wenn er auch abschliessbar
+    // ist. Enterprise wird vertraglich vereinbart, Agency und Partner sind
+    // seit AP2 stillgelegt — fuer beide waere ein Festpreis ein Angebot,
+    // das `stripe-checkout` nicht einloest.
+    // Dazu kommen Jahresvarianten ohne verdrahteten Stripe-Preis: fuer
+    // `starter_yearly` und `growth_yearly` steht in `public.products` nur ein
+    // Platzhalter, `stripe-checkout` weist sie mit PRICE_NOT_CONFIGURED ab.
+    // Ihre MONATS-Plaene sind davon unberuehrt und weisen weiter einen
+    // Betrag aus.
+    const NO_PUBLIC_PRICE = [
+      'free-audit', 'enterprise',
+      'agency', 'agency_yearly', 'partner', 'partner_yearly',
+      'starter_yearly', 'growth_yearly',
+    ];
+
+    it('kaufbare Pläne weisen einen Betrag > 0 aus', () => {
+      const paidPlans = pricingPlans.filter((p) => !NO_PUBLIC_PRICE.includes(p.slug));
+      expect(paidPlans.length).toBeGreaterThan(0);
       paidPlans.forEach((plan) => {
         expect(plan.price).toBeGreaterThan(0);
       });
+    });
+
+    it('stillgelegte Pläne weisen keinen Festpreis aus', () => {
+      for (const slug of ['agency', 'agency_yearly', 'partner', 'partner_yearly']) {
+        const plan = getPlanBySlug(slug);
+        expect(plan, `Plan ${slug} fehlt`).toBeDefined();
+        expect(plan?.price).toBe(0);
+        expect(plan?.priceString).not.toMatch(/\d/);
+      }
     });
 
     it('free-audit should have price 0', () => {
@@ -304,10 +380,16 @@ describe('pricingContent', () => {
       expect(freeAudit?.priceString).toBe('0 €');
     });
 
-    it('enterprise should have price 1249 (checkout tier)', () => {
+    // COMMERCIAL-SSOT: temporary production hotfix.
+    // Canonical source migration tracked in Phase 2.
+    // Enterprise darf keinen oeffentlichen Festpreis mehr ausweisen: der
+    // Self-Service-Checkout kann ihn nicht erfuellen (manuelle Faktura,
+    // Sentinel statt echter Stripe-Price).
+    it('enterprise weist keinen oeffentlichen Festpreis aus', () => {
       const enterprise = getPlanBySlug('enterprise');
-      expect(enterprise?.price).toBe(1249);
-      expect(enterprise?.priceString).toBe('1.249 €');
+      expect(enterprise?.priceString).toBe('Individuelles Angebot');
+      expect(enterprise?.priceString).not.toMatch(/\d/);
+      expect(enterprise?.price).toBe(0);
     });
 
     it('prices should be in ascending order for paid plans', () => {
@@ -331,10 +413,13 @@ describe('pricingContent', () => {
       expect(growth?.trial?.days).toBe(14);
     });
 
-    it('agency should have 14-day trial', () => {
+    // COMMERCIAL-SSOT: temporary production hotfix.
+    // Canonical source migration tracked in Phase 2.
+    // Agency hatte bis AP2 einen 14-Tage-Trial. Der Plan ist seither
+    // stillgelegt; ein Trial-Versprechen waere nicht mehr einloesbar.
+    it('agency should not have trial since AP2', () => {
       const agency = getPlanBySlug('agency');
-      expect(agency?.trial).toBeDefined();
-      expect(agency?.trial?.days).toBe(14);
+      expect(agency?.trial).toBeUndefined();
     });
 
     it('free-audit should not have trial', () => {

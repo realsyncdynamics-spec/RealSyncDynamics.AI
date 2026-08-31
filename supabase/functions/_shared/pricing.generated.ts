@@ -390,6 +390,41 @@ export interface Plan {
   /** Technische Subheadline (wie die Runtime das leistet) */
   technicalSubheadline: string;
   price: PlanPrice;
+  /**
+   * COMMERCIAL-SSOT: temporary production hotfix.
+   * Canonical source migration tracked in Phase 2.
+   *
+   * `true` = kein oeffentlich zugesicherter Festpreis. Der Betrag in `price`
+   * bleibt interner Listenpreis (DB-Katalog, Angebotskalkulation), darf aber
+   * nirgends als kaufbares Festpreis-Angebot ausgewiesen werden. Oberflaechen
+   * zeigen stattdessen „Auf Anfrage".
+   */
+  priceOnRequest?: boolean;
+  /**
+   * COMMERCIAL-SSOT: temporary production hotfix.
+   * Canonical source migration tracked in Phase 2.
+   *
+   * `true` = die Jahresvariante ist derzeit NICHT oeffentlich buchbar.
+   * In `public.products` steht fuer `yearlyPlanKey` kein echter Stripe-Preis,
+   * sondern ein Platzhalter (`STRIPE_PRICE_*_XXX`); `stripe-checkout` weist
+   * deshalb jeden Jahres-Checkout mit `PRICE_NOT_CONFIGURED` ab.
+   *
+   * Der Betrag in `price.yearlyEur` bleibt interner Listenpreis — er ist
+   * korrekt, nur eben nicht einloesbar — und darf nirgends als kaufbares
+   * Festpreis-Angebot ausgewiesen werden. Damit gilt fuer die Jahresvariante
+   * dieselbe Regel wie fuer Enterprise: ein oeffentlich zugesicherter Preis
+   * darf nur dort stehen, wo der Kaufpfad ihn auch einloesen kann.
+   *
+   * Bestandsschutz: `yearlyPlanKey` bleibt gesetzt. Ein bestehendes
+   * `_yearly`-Abo loest weiterhin ueber `planByKey()` auf seinen Basisplan
+   * auf und behaelt alle Berechtigungen. Gemessen am 2026-08-31: null
+   * Jahres-Abos in `public.subscriptions`.
+   *
+   * Stillgelegte Plaene brauchen das Feld nicht — `availability: 'legacy'`
+   * schliesst sie bereits von jeder Angebotsflaeche aus. Sobald ein echter
+   * Jahres-Preis verdrahtet ist, faellt dieses Feld ersatzlos weg.
+   */
+  yearlyCheckoutUnavailable?: boolean;
   currency: 'EUR';
   purchaseMode: PurchaseMode;
   /** Vertriebszustand — siehe `PlanAvailability`. */
@@ -505,6 +540,8 @@ export const PLANS: Plan[] = [
     outcomeHeadline: 'Ein nachweisbares Governance-Fundament, das jeden Prüfer überzeugt.',
     technicalSubheadline: 'Kontinuierlicher DSGVO- und AI-Act-Scan mit lückenloser Hash-Chain und exportierbarem Prüfpfad.',
     price: { monthlyEur: 79, yearlyEur: 790, oneTimeEur: null },
+    // Jahres-Preis in Stripe nicht verdrahtet — siehe `yearlyCheckoutUnavailable`.
+    yearlyCheckoutUnavailable: true,
     currency: 'EUR',
     purchaseMode: 'checkout',
     availability: 'self_service',
@@ -578,6 +615,8 @@ export const PLANS: Plan[] = [
     outcomeHeadline: 'KI-Governance, die sich selbst überwacht — statt einmal im Jahr geprüft zu werden.',
     technicalSubheadline: 'Tägliche Runtime-Läufe mit Drift Detection, Risk Register und Policy Engine über drei Rahmenwerke.',
     price: { monthlyEur: 249, yearlyEur: 2490, oneTimeEur: null },
+    // Jahres-Preis in Stripe nicht verdrahtet — siehe `yearlyCheckoutUnavailable`.
+    yearlyCheckoutUnavailable: true,
     currency: 'EUR',
     purchaseMode: 'checkout',
     availability: 'self_service',
@@ -734,24 +773,39 @@ export const PLANS: Plan[] = [
         'Bis zu 10 Domains unter einem Konto',
       ],
     },
-    trialDays: 14,
+    // COMMERCIAL-SSOT: temporary production hotfix.
+    // Canonical source migration tracked in Phase 2.
+    // Kein Trial mehr: Agency ist seit AP2 stillgelegt (`availability: 'legacy'`),
+    // `stripe-checkout` weist neue Abschluesse mit PLAN_RETIRED ab. Ein
+    // Trial-Versprechen waere damit nicht einloesbar — und die aus der SSoT
+    // abgeleitete Trial-Fussnote fuehrte Agency bis hierher weiter mit auf.
+    // Laufende Agency-Abos und -Trials sind davon unberuehrt; `trialDays`
+    // steuert ausschliesslich NEUE Checkout-Sessions.
+    trialDays: 0,
   },
 
-  // ── Enterprise — 1.249 € ────────────────────────────────────────────────
+  // ── Enterprise — Preis auf Anfrage ──────────────────────────────────────
+  // COMMERCIAL-SSOT: temporary production hotfix.
+  // Canonical source migration tracked in Phase 2.
+  // Enterprise wird manuell fakturiert (products.default_for_plan_key='enterprise'
+  // traegt bewusst nur einen Sentinel, keine echte Stripe-Price). Ein oeffentlich
+  // zugesicherter Festpreis von 1.249 € war damit ein Angebot, das der
+  // Self-Service-Checkout nicht erfuellen kann. Deshalb: inquiry + priceOnRequest.
   {
     id: 'enterprise',
     planKey: 'enterprise',
     yearlyPlanKey: 'enterprise_yearly',
     name: 'Enterprise',
     outcomeHeadline: 'Konzernweite Governance über alle sechs Rahmenwerke — mit SLA und SSO.',
-    technicalSubheadline: 'Multi-Tenant-Runtime für bis zu 5 Organisationen, zentrale Rechteverwaltung und unbegrenzte geplante Läufe.',
+    technicalSubheadline: 'Multi-Tenant-Runtime für bis zu 5 Organisationen, zentrale Rechteverwaltung und individuell dimensionierte Scheduler- und Automation-Kontingente.',
     price: { monthlyEur: 1_249, yearlyEur: 12_490, oneTimeEur: null },
+    priceOnRequest: true,
     currency: 'EUR',
     purchaseMode: 'inquiry',
     availability: 'contract',
     highlight: false,
-    badges: ['SLA 4 h'],
-    ctaLabel: '14 Tage kostenlos testen',
+    badges: ['SLA nach Vereinbarung'],
+    ctaLabel: 'Enterprise anfragen',
     limits: {
       bots: 20,
       answersPerMonth: 50_000,
@@ -805,11 +859,10 @@ export const PLANS: Plan[] = [
         'Eigene Richtlinien und Kontrollkataloge',
       ],
       automation_ops: [
-        'Unbegrenzter Scheduler für geplante Läufe',
-        '2.000 Automationsläufe pro Monat',
+        'Individuell dimensionierte Scheduler- und Automation-Kontingente.',
         'API Premium mit 250.000 Aufrufen pro Monat',
         '20 Governance-Bots mit 50.000 Antworten (alle Kanäle)',
-        'Priorisierter Support mit 4 h Reaktionszeit',
+        'Priorisierter Support mit vertraglich vereinbarter Reaktionszeit',
       ],
       multi_tenant_reseller: [
         'Multi-Tenant-Dashboard für bis zu 5 Organisationen',
@@ -818,7 +871,8 @@ export const PLANS: Plan[] = [
         'White-Label mit Branding, Logo und Farben',
       ],
     },
-    trialDays: 14,
+    // Enterprise-Trial ist gesperrt: kein Self-Service-Pilot ohne Vertrag.
+    trialDays: 0,
   },
 
   // ── Partner — 1.999 € ───────────────────────────────────────────────────

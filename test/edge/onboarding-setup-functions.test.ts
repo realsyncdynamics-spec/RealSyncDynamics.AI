@@ -48,7 +48,7 @@ const MIGRATION = readFileSync(root('supabase/migrations/20260824000000_company_
 // muss gegen den zuletzt gesetzten Constraint laufen, sonst vergleicht sie
 // gegen einen Stand, den die Datenbank gar nicht mehr führt.
 const SECTOR_MIGRATION = readFileSync(
-  root('supabase/migrations/20260901000000_company_profiles_sector_extend.sql'),
+  root('supabase/migrations/20260902000000_company_profiles_sector_extend.sql'),
   'utf8',
 );
 
@@ -237,6 +237,44 @@ describe('onboarding-orchestrator: industryOf schreibt kanonische Branchen', () 
     expect(
       unknown,
       'Diese Werte landen in tenants.industry, matchen aber keinen Pack — die Branchen-Empfehlung greift fuer sie nie.',
+    ).toEqual([]);
+  });
+});
+
+describe('onboarding_tenant_policy_packs: SQL liest dasselbe Branchen-Vokabular', () => {
+  /**
+   * `tenants.industry` hat zwei Leser: den TypeScript-Empfehlungspfad
+   * (TENANT_INDUSTRY_OPTIONS) und diese SQL-Funktion. Sie sprachen
+   * unterschiedliche Sprachen — die Funktion prüfte auf 'healthcare' und
+   * 'public_sector', geschrieben wird 'health' und 'public-sector'.
+   *
+   * Folge war kein Fehler, sondern Stille: eu-ai-act-high-risk und
+   * nis2-cybersecurity wurden nie aktiviert, obwohl beide im Katalog stehen.
+   * Genau deshalb dieser Test — er prüft die Seite, die niemand ansieht.
+   */
+  const SQL = readFileSync(
+    root('supabase/migrations/20260902000001_onboarding_policy_packs_industry_vocabulary.sql'),
+    'utf8',
+  );
+
+  /** Nur der Funktionsrumpf — der Kommentarkopf nennt die alten Werte absichtlich. */
+  const body = SQL.slice(SQL.indexOf('create or replace function'));
+
+  const literals = [
+    ...body.matchAll(/v_industry\s*(?:in\s*\(([^)]*)\)|=\s*('[a-z-]+'))/g),
+  ]
+    .flatMap((m) => [...(m[1] ?? m[2]).matchAll(/'([a-z-]+)'/g)].map((x) => x[1]))
+    .filter((v) => v !== 'all');
+
+  it('liest ueberhaupt Branchen-Literale', () => {
+    expect(literals.length).toBeGreaterThan(3);
+  });
+
+  it('jedes Literal existiert in TENANT_INDUSTRY_OPTIONS', () => {
+    const unknown = [...new Set(literals)].filter((v) => !TENANT_INDUSTRY_IDS.has(v));
+    expect(
+      unknown,
+      'Diese Werte prueft die SQL-Funktion, aber niemand schreibt sie — die Pack-Aktivierung greift fuer sie nie.',
     ).toEqual([]);
   });
 });

@@ -107,25 +107,24 @@ const PRICING_PRODUCT_JSONLD = {
         billingDuration: 'P1M',
       },
     },
-    {
-      '@type': 'Offer',
-      name: 'Agency',
-      price: '699',
-      priceCurrency: 'EUR',
-      url: `${SITE_URL}/pricing`,
-      priceSpecification: {
-        '@type': 'UnitPriceSpecification',
-        price: '699',
-        priceCurrency: 'EUR',
-        billingDuration: 'P1M',
-      },
-    },
+    // COMMERCIAL-SSOT: temporary production hotfix.
+    // Canonical source migration tracked in Phase 2.
+    // Agency ist seit AP2 stillgelegt (`availability: 'legacy'`) und
+    // `/checkout/agency` leitet auf die Preisseite zurueck. Ein
+    // schema.org-Offer ist ein maschinenlesbares Angebot — fuer einen Plan,
+    // den niemand mehr abschliessen kann, gehoert es entfernt und nicht
+    // durch einen anderen Plan ersetzt. Bestandskunden behalten ihr Abo.
     {
       '@type': 'Offer',
       name: 'Enterprise',
       priceCurrency: 'EUR',
       url: `${SITE_URL}/contact-sales?intent=enterprise`,
-      description: '1.249 €/Monat — SLA, AI-Act-Modul, DSB-Integration, Evidence Vault',
+      // COMMERCIAL-SSOT: temporary production hotfix.
+      // Canonical source migration tracked in Phase 2.
+      // Kein Festpreis in schema.org-Offer: Enterprise wird vertraglich
+      // vereinbart und manuell fakturiert. Ein `price` hier waere ein
+      // maschinenlesbares Angebot, das der Checkout nicht erfuellt.
+      description: 'Preis auf Anfrage — SLA nach Vereinbarung, AI-Act-Modul, DSB-Integration, Evidence Vault',
     },
   ],
 };
@@ -263,7 +262,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
   '/pricing': {
     title: 'Preise – Runtime-native AI-Governance-Plattform | RealSyncDynamics.AI',
     description:
-      'Free Audit (0 €), Starter (79 €), Growth (249 €), Agency (699 €), Partner (1.999 €), Enterprise (1.249 €). Runtime-native Governance: kontinuierliche Telemetrie, Policy-Engine, kryptografisch nachvollziehbare Evidenz. EU-Hosting, AVV inklusive.',
+      'Free Audit (0 €), Starter (79 €), Growth (249 €), Enterprise (auf Anfrage). Runtime-native Governance: kontinuierliche Telemetrie, Policy-Engine, kryptografisch nachvollziehbare Evidenz. EU-Hosting, AVV inklusive.',
     canonical: `${SITE_URL}/pricing`,
     jsonLd: [
       PRICING_PRODUCT_JSONLD,

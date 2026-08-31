@@ -30,6 +30,10 @@ const session = readFileSync(
   resolve(ROOT, 'src/features/siteos/buildSession.ts'),
   'utf-8',
 );
+const studio = readFileSync(
+  resolve(ROOT, 'src/unified-entry/pages/BuildStudioPage.tsx'),
+  'utf-8',
+);
 
 /** Der Rumpf von `handleClaim` — nur dort gilt das Verbot. */
 function claimBody(): string {
@@ -114,5 +118,46 @@ describe('Vorschau zeigt den Serverstand', () => {
   it('benennt den Rückfall, statt ihn zu verschweigen', () => {
     expect(session).toContain("mode: BuildMode");
     expect(claimView).toContain("'local_only'");
+  });
+});
+
+// Der Rückfall wurde bisher nur dort benannt, wo es zu spät ist.
+//
+// `SiteOsClaimView` kennt `local_only` und sagt es sauber — aber die Ansicht
+// liegt hinter `/welcome`. Wer im Rückfall auf „Website übernehmen" klickt,
+// legt erst ein Konto an und erfährt danach, dass es nichts zu übernehmen
+// gibt. `buildSession.ts` verlangt ausdrücklich das Gegenteil: Der Zustand
+// „steht in `mode` und wird in der Oberfläche gesagt, statt beim Klick auf
+// ‚Übernehmen' als Fehler aufzutauchen."
+//
+// Geprüft wird wieder die Bauform, nicht das Verhalten: Ob der Hinweis
+// erscheint, hängt an einer Serverantwort, die im Test nicht existiert.
+describe('Das Studio sagt den Rückfall vor der Registrierung', () => {
+  /** Der Kasten, der den Speicherort behauptet. */
+  function storageNote(): string {
+    const start = studio.indexOf('bg-obsidian-900 p-4 text-[11px] leading-5 text-titanium-400');
+    expect(start).toBeGreaterThan(-1);
+    return studio.slice(start, studio.indexOf('</div>', start));
+  }
+
+  it('leitet die Übernehmbarkeit aus dem Modus der Sitzung ab', () => {
+    expect(studio).toContain("state.session.mode === 'server'");
+  });
+
+  it('sperrt „Website übernehmen", solange der Entwurf nur lokal liegt', () => {
+    // Ohne diese Sperre führt der Weg über eine Kontoerstellung ins Leere.
+    expect(studio).toContain('disabled={!claimable}');
+    const cta = studio.slice(studio.indexOf("navigate('/app/siteos/claim')"));
+    expect(cta.slice(0, cta.indexOf('</button>'))).toContain('disabled:opacity-40');
+  });
+
+  it('behauptet den Speicherort nicht unbedingt, sondern je Modus', () => {
+    // Im Servermodus liegt der Entwurf in `siteos_anonymous_builds`. Ein
+    // fester Satz „liegt nur in diesem Browser" wäre dort eine falsche
+    // Angabe über den Verbleib von Kundendaten.
+    const note = storageNote();
+    expect(note).toContain('claimable ?');
+    expect(note).toContain('serverseitig gespeichert');
+    expect(note).toContain('nur in diesem Browser');
   });
 });

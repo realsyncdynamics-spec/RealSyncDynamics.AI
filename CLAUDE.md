@@ -855,6 +855,39 @@ Absicht, nicht der Parameter, den die Seite liest.
 codierten Preisen im JSX, inklusive Agency und Partner. Umbau auf die Quelle
 ist ein eigener Schritt (§10.1) und gehört zu AP10.
 
+**2026-08-31 — Build Studio: Speicherort und Übernehmbarkeit an den Sitzungsmodus**
+
+Auf die Fragepflicht nach §10.3 hat der Eigentümer zweimal mit **Ja**
+geantwortet:
+
+| Frage | Antwort |
+|---|---|
+| 1. Textänderung: Den Satz zum Speicherort des Entwurfs an `session.mode` koppeln | **Ja** |
+| 2. Funktionsänderung: „Website übernehmen" im Rückfallmodus sperren | **Ja** |
+
+Umfang — und **nur** dieser, in `src/unified-entry/pages/BuildStudioPage.tsx`:
+
+| Was | Vorher | Nachher |
+|---|---|---|
+| Hinweis zum Speicherort | fest „Der Entwurf liegt nur in diesem Browser." | je Modus: serverseitig gespeichert (`server`) bzw. nur im Browser (`local`) |
+| „Website übernehmen" | immer aktiv | im Modus `local` deaktiviert, mit Begründung als `title` |
+| Abzeichen im Kopf | — | neu: „Nur lokal — nicht übernehmbar", nur im Modus `local` |
+
+Anlass ist kein Geschmack, sondern zwei Falschaussagen der Oberfläche. Der
+feste Satz behauptete den **falschen Speicherort für Kundendaten**: Im
+Servermodus liegt der Entwurf in `siteos_anonymous_builds` und wird beim
+Claim nur verschoben — so sagen es `buildSession.ts` und `SiteOsClaimView.tsx`
+übereinstimmend. Und der CTA lud im Rückfall zu einer Übernahme ein, die es
+nicht gibt: `/app/siteos/claim` schickt zuerst nach `/welcome`, der Besucher
+legt ein Konto an und erfährt **erst danach**, dass serverseitig keine
+Sitzung existiert. `buildSession.ts` verlangt ausdrücklich das Gegenteil.
+
+Farben, Typografie, Grid, Abstände, Icon-Set und Sektionsreihenfolge sind
+unberührt; das Abzeichen nutzt die im Repo vorhandene Amber-Warnoptik. Der
+Rückfall selbst bleibt, was er ist: Übergang, kein Dauerzustand — sobald der
+anonyme Pfad überall ausgerollt ist, entfallen Sperre und Abzeichen mit ihm.
+Gesichert durch `test/siteos/claim-moves-not-rebuilds.test.ts`.
+
 #### Faustregel
 
 **Hinzufügen ja, Ändern nur nach Rückfrage, Design gar nicht.**

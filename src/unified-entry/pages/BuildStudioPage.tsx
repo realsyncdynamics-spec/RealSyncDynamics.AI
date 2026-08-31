@@ -333,6 +333,13 @@ export default function BuildStudioPage() {
 
   const critical = findings.filter((f) => f.severity === 'critical' || f.severity === 'high');
 
+  // Der Rückfall ohne Serversitzung ist nicht übernehmbar (siehe
+  // `buildSession.ts`). Das gehört hierher gesagt und nicht erst hinter die
+  // Registrierung: `/app/siteos/claim` schickt zuerst nach `/welcome` — der
+  // Besucher legt ein Konto an und erfährt erst danach, dass es nichts zu
+  // übernehmen gibt.
+  const claimable = state.session.mode === 'server';
+
   // ── Studio ──────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-obsidian-950 text-titanium-50">
@@ -361,10 +368,17 @@ export default function BuildStudioPage() {
               </button>
             ))}
           </div>
+          {!claimable && (
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-700 px-2.5 py-1 text-[10px] text-amber-400">
+              <AlertTriangle size={11} /> Nur lokal — nicht übernehmbar
+            </span>
+          )}
           <button
             type="button"
             onClick={() => navigate('/app/siteos/claim')}
-            className="inline-flex items-center gap-2 rounded-lg bg-petrol-600 px-4 py-2 text-xs font-bold text-white hover:bg-petrol-700"
+            disabled={!claimable}
+            title={claimable ? undefined : 'Dieser Entwurf liegt nur in diesem Browser und hat serverseitig keine Sitzung. Übernehmen ist erst möglich, wenn der Dienst für gespeicherte Entwürfe wieder erreichbar ist.'}
+            className="inline-flex items-center gap-2 rounded-lg bg-petrol-600 px-4 py-2 text-xs font-bold text-white hover:bg-petrol-700 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-petrol-600"
           >
             Website übernehmen <ArrowRight size={14} />
           </button>
@@ -513,10 +527,27 @@ export default function BuildStudioPage() {
             </div>
           )}
 
+          {/* Der Speicherort ist eine Tatsachenbehauptung über Kundendaten, keine
+              Formulierung: Im Servermodus liegt der Entwurf in
+              `siteos_anonymous_builds` und wird beim Claim nur verschoben, im
+              Rückfall gibt es ihn serverseitig gar nicht. Ein fester Satz wäre
+              in genau einem der beiden Fälle falsch. */}
           <div className="mt-5 rounded-xl border border-titanium-800 bg-obsidian-900 p-4 text-[11px] leading-5 text-titanium-400">
-            Der Entwurf liegt nur in diesem Browser. Mit „Website übernehmen" wird er Ihrem
-            Workspace zugeordnet, versioniert und in den Prüfpfad aufgenommen. Domain und
-            Veröffentlichung folgen danach.
+            {claimable ? (
+              <>
+                Der Entwurf ist serverseitig gespeichert und gehört noch keinem Workspace. Mit
+                „Website übernehmen" wird er Ihrem Workspace zugeordnet, versioniert und in den
+                Prüfpfad aufgenommen — verschoben, nicht neu erzeugt. Domain und
+                Veröffentlichung folgen danach.
+              </>
+            ) : (
+              <>
+                Der Entwurf liegt nur in diesem Browser: Der Dienst für gespeicherte Entwürfe
+                war beim Bau nicht erreichbar. Ansehen und Ändern funktioniert, Übernehmen
+                nicht — dafür muss der Entwurf serverseitig liegen. Erzeugen Sie ihn erneut,
+                sobald der Dienst wieder läuft.
+              </>
+            )}
           </div>
 
           {error && (

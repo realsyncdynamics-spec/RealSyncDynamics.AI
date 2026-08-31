@@ -1,0 +1,6 @@
+{
+  "known": {
+    "src/enterprise-os/mock/data.ts:324": "agency · 699 € — Mock-Daten für src/enterprise-os/pages/PricingPage.tsx. Diese Seite ist NIRGENDS geroutet (kein Import in src/App.tsx, keine Referenz innerhalb von enterprise-os), also nicht öffentlich erreichbar. Entfernen greift in Bestehendes ein und fällt unter die Fragepflicht nach CLAUDE.md §10.3 — deshalb hier geduldet, nicht stillschweigend gelöscht.",
+    "src/features/admin/pages/AdminBillingPage.tsx:64": "agency · 699 € — Admin-Ansicht hinter Auth, kein öffentliches Angebot. Der Betrag ist allerdings fest verdrahtet statt aus dem Abo des Mandanten abgeleitet: Jeder Admin sieht „Agency €699/Monat\", unabhängig von seinem tatsächlichen Plan. Das ist ein Anzeigefehler, keine Angebots-Unwahrheit, und gehört in einen eigenen Vorgang."
+  }
+}

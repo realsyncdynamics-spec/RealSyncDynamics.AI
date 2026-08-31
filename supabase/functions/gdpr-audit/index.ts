@@ -10,11 +10,12 @@
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { evaluateAll, RULE_ENGINE_VERSION } from '../_shared/rules/evaluator.ts';
-import { isLikelyGermanJurisdiction } from '../_shared/jurisdiction.ts';
-import { stripPolicyDeclarations, effectiveCspValue } from '../_shared/tracker-detection.ts';
 import { assessScanCoverage } from '../_shared/scan-coverage.ts';
 import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
-import { detectAIDisclosure } from '../_shared/ai-disclosure-check.ts';
+// Die Pruef- und Bewertungslogik liegt bewusst in einem eigenen, Deno-freien
+// Modul: So laesst sie sich aus Vitest heraus testen. Dass sie hier fehlte
+// und niemand es merkte, war die Ursache des Ausfalls seit 2026-08-19.
+import { runChecks, extractFacts, scoreReport, findPrivacyLink, type Issue } from './checks.ts';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const URL_RE = /^https?:\/\/[^\s/$.?#].[^\s]*$/i;
@@ -24,12 +25,101 @@ const FREE_EMAIL_DOMAINS = new Set([
 ]);
 const IP_RE = /^\d{1,3}(\.\d{1,3}){3}$/;
 
-interface Issue {
-  id: string;
-  severity: 'critical' | 'high' | 'medium' | 'low' | 'info';
-  title: string;
-  detail: string;
-  paragraph_ref?: string;
+/**
+ * Abruf mit harter Zeitgrenze. Ohne sie haelt eine Zielseite, die nie
+ * antwortet, die Edge Function bis zum Plattform-Timeout fest und der
+ * Besucher sieht nur eine haengende Anzeige.
+ */
+async function fetchWithTimeout(url: string, timeoutMs: number): Promise<Response> {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+  try {
+    return await fetch(url, {
+      signal: ctrl.signal,
+      redirect: 'follow',
+      headers: {
+        // Ohne erkennbaren User-Agent liefern viele Seiten eine
+        // Bot-Abwehrseite statt ihres echten Markups — der Scan wuerde dann
+        // die Abwehrseite bewerten.
+        'user-agent': 'Mozilla/5.0 (compatible; RealSyncDynamicsAI-Audit/1.0; +https://realsyncdynamicsai.de/methodik)',
+        'accept': 'text/html,application/xhtml+xml',
+        'accept-language': 'de-DE,de;q=0.9,en;q=0.8',
+      },
+    });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/** Fuegt die gelesenen Body-Chunks zu einem Puffer zusammen. */
+function concat(chunks: Uint8Array[]): Uint8Array {
+  const gesamt = chunks.reduce((n, c) => n + c.byteLength, 0);
+  const out = new Uint8Array(gesamt);
+  let pos = 0;
+  for (const c of chunks) { out.set(c, pos); pos += c.byteLength; }
+  return out;
+}
+
+/**
+ * Prueft die beiden Pflichtunterseiten, die von der Startseite verlinkt sind.
+ *
+ * Der Free Audit bleibt bewusst flach: nur Impressum und Datenschutz, nur
+ * wenn verlinkt, mit kurzer Zeitgrenze. Ein tiefer Crawl gehoert in den
+ * bezahlten Scan und waere hier ein unangekuendigter Lastfaktor auf fremden
+ * Servern.
+ */
+async function scanSubpages(url: string, html: string): Promise<Issue[]> {
+  const issues: Issue[] = [];
+  const privacyHref = findPrivacyLink(html);
+  if (!privacyHref) return issues;
+
+  let ziel: string;
+  try { ziel = new URL(privacyHref, url).toString(); } catch { return issues; }
+  // Nur auf derselben Site — ein externer Link ist nicht unsere Pruefflaeche.
+  try {
+    if (new URL(ziel).hostname !== new URL(url).hostname) return issues;
+  } catch { return issues; }
+
+  try {
+    const resp = await fetchWithTimeout(ziel, 8_000);
+    if (!resp.ok) return issues;
+    const text = (await resp.text()).slice(0, 500_000);
+
+    // Positivbefund: Die Rule Engine fragt `page.privacy_policy.mentions_avv`
+    // ab, und `extractFacts` liest den Wert aus genau dieser Kennung.
+    if (/auftragsverarbeit|auftragsdatenverarbeit|art\.?\s*28\s*dsgvo|\bavv\b/i.test(text)) {
+      issues.push({
+        id: 'privacy_mentions_avv',
+        severity: 'info',
+        title: 'Auftragsverarbeitung in der Datenschutzerklaerung erwaehnt',
+        detail: 'Die Datenschutzerklaerung nennt die Auftragsverarbeitung nach Art. 28 DSGVO.',
+      });
+    }
+
+    if (!/verantwortlich|controller/i.test(text)) {
+      issues.push({
+        id: 'privacy_no_controller',
+        severity: 'medium',
+        title: 'Verantwortlicher nicht benannt',
+        detail: 'In der Datenschutzerklaerung wurde keine Angabe zum Verantwortlichen gefunden.',
+        paragraph_ref: 'Art. 13 Abs. 1 lit. a DSGVO',
+      });
+    }
+
+    if (!/betroffenenrecht|auskunftsrecht|widerspruchsrecht|recht auf loeschung|recht auf löschung/i.test(text)) {
+      issues.push({
+        id: 'privacy_no_data_subject_rights',
+        severity: 'medium',
+        title: 'Betroffenenrechte nicht aufgefuehrt',
+        detail: 'Die Datenschutzerklaerung nennt keine Betroffenenrechte (Auskunft, Loeschung, Widerspruch).',
+        paragraph_ref: 'Art. 13 Abs. 2 lit. b DSGVO',
+      });
+    }
+  } catch {
+    // Unterseite nicht lesbar — kein Befund. Ein Timeout auf einer
+    // Unterseite ist kein Datenschutzmangel und darf den Score nicht druecken.
+  }
+  return issues;
 }
 
 async function sha256Hex(input: string): Promise<string> {

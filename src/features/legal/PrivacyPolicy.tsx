@@ -10,6 +10,20 @@ import { ArrowLeft, Shield, AlertTriangle } from 'lucide-react';
  * prüfen lassen. Dies ist ein Skelett, das die wesentlichen Pflicht-Sektionen
  * (Art. 13/14 DSGVO) abdeckt.
  */
+
+/**
+ * Datum der letzten inhaltlichen Änderung dieser Erklärung — bewusst eine
+ * Konstante und nicht `new Date()`.
+ *
+ * Warum: Ein aus der Systemzeit erzeugtes „Stand" zeigt an, wann jemand die
+ * Seite geöffnet hat, nicht wann der Text zuletzt geändert wurde. Es datiert
+ * sich täglich selbst neu und ist damit als Nachweis wertlos: Ein Betroffener
+ * kann nicht erkennen, welche Fassung er gelesen hat, und wir können nicht
+ * belegen, welche Fassung wann galt.
+ *
+ * Beim Ändern des Textes unterhalb ist dieses Datum mitzuziehen — und nur dann.
+ */
+const LAST_UPDATED = '2026-08-19';
 export function PrivacyPolicy() {
   return (
     <div className="min-h-screen bg-obsidian-950 text-titanium-100">
@@ -26,7 +40,7 @@ export function PrivacyPolicy() {
                 und /legal/privacy) hatte kein h1 — sie stieg direkt mit den
                 nummerierten h2-Sektionen ein. Klassen unveraendert. */}
             <h1 className="font-display font-bold text-sm tracking-tight text-titanium-50">Datenschutzerklärung</h1>
-            <div className="text-[11px] text-titanium-400 font-medium">Stand {new Date().toISOString().slice(0, 10)}</div>
+            <div className="text-[11px] text-titanium-400 font-medium">Stand {LAST_UPDATED}</div>
           </div>
         </div>
       </header>

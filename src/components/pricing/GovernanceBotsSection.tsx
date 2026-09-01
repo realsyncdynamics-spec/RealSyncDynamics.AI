@@ -3,6 +3,23 @@ import { Link } from 'react-router-dom';
 import { SELLABLE_PRICING_TIERS, BOT_ADDONS, botAddonsByTier } from '../../config/pricing';
 
 /**
+ * „Starter" · „Growth und Enterprise" — die Pläne, für die ein Add-on
+ * angeboten wird, als deutscher Aufzählungssatz.
+ *
+ * Warum abgeleitet statt fest: Hier stand ein für alle Add-ons identischer
+ * Satz („Für Growth, Agency, Enterprise und Partner"), weil der Adapter
+ * `availableFor` nicht durchgereicht hat. Bei WhatsApp war er invers — das
+ * Add-on ist ausschließlich für Starter buchbar, genannt waren die Pläne, die
+ * den Kanal bereits enthalten. Genau die Korrektur, die AP2 in der Datenschicht
+ * schon vorgenommen hatte und die die Preisseite nicht mitbekommen hat.
+ */
+function formatPlanList(names: string[]): string {
+  if (names.length === 0) return '—';
+  if (names.length === 1) return names[0];
+  return `${names.slice(0, -1).join(', ')} und ${names[names.length - 1]}`;
+}
+
+/**
  * Governance-Bots Section — zeigt Bot-Quotas pro Tier + Add-on-Karten
  *
  * Positioniert sich nach dem Hauptpricingsektor, vor FAQ.
@@ -222,7 +239,7 @@ export function GovernanceBotsSection() {
                       </div>
                     </div>
                     <div className="text-[10px] text-silver-500 italic">
-                      Für Growth, Agency, Enterprise und Partner
+                      Für {formatPlanList(addon.availableForPlanNames)}
                     </div>
                   </div>
                 </div>

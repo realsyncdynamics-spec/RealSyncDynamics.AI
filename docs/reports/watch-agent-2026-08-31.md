@@ -38,7 +38,7 @@ Gemessen, nicht hergeleitet (§5 CLAUDE.md). Jede Zeile mit Fundstelle.
 |---|---|---|
 | 1 | Privacy-Seite (Stand 2026-08-30) gegen interne Änderungsprotokolle abgleichen | **Befund B-1** — das Datum ist kein Änderungsdatum, sondern immer der heutige Tag |
 | 2 | Sub-Prozessoren-Liste bei Bedarf aktualisieren | **Befund B-2** — dieselbe Mechanik, verschärft durch das Versprechen „laufend dokumentiert" |
-| 3 | Pricing-Seite auf Plan-Namen (Agency) und Add-on-Preise prüfen | **Befund B-3** — Add-on-Verfügbarkeit ist hart codiert und für WhatsApp genau verkehrt herum; Add-on-Preis (99 €) dagegen korrekt |
+| 3 | Pricing-Seite auf Plan-Namen (Agency) und Add-on-Preise prüfen | **Befund B-3** — Add-on-Verfügbarkeit war hart codiert und für WhatsApp genau verkehrt herum; Add-on-Preis (99 €) dagegen korrekt |
 | 4 | BFDI-Empfehlungen zu Cookie-Bannern (13.08.2026) berücksichtigen | **Befund B-4** — der Scanner erkennt CMPs und Tracker, prüft aber keine gleichwertige Ablehnen-Option |
 | 5 | AI-Act-Transparenzpflichten in Claims und Scan-Logik absichern | Kein neuer Befund in dieser Sitzung; nicht abschließend geprüft, siehe §5 |
 
@@ -81,6 +81,15 @@ selbstdatierendes Rechtsdokument ein Governance-Befund, unabhängig davon, wie
 korrekt der Inhalt daneben ist.
 
 Betrifft die Routen `/datenschutz`, `/legal/datenschutz` und `/legal/privacy`.
+
+**Beim Fixen fiel eine Verschärfung auf, die von außen wie Sorgfalt aussah**:
+Beide Seiten werden prerendert (`npm run build:full`, 90 Seiten). `new Date()`
+lief damit nicht im Browser des Besuchers, sondern **zur Build-Zeit** — das
+Datum stand fest und war das Datum des letzten Produktions-Deploys. Der Watch
+Agent sah „Stand 2026-08-30" also nicht, weil er die Seite an diesem Tag
+geöffnet hat, sondern weil an diesem Tag zuletzt gebaut wurde. Das sieht nach
+einem gepflegten Änderungsdatum aus und ist keines: Jeder Deploy — auch einer,
+der eine Landingpage-Farbe ändert — datiert die Datenschutzerklärung neu.
 
 ### B-2 · Sub-Prozessoren-Liste, dieselbe Mechanik — mit ausdrücklichem Versprechen
 
@@ -177,7 +186,7 @@ Korrektur. Sie gehört in die Planung, nicht in diesen Bericht.
 
 ---
 
-## 4. Was bewusst nicht geändert wurde
+## 4. Was daraufhin geändert wurde
 
 B-1 bis B-3 betreffen sichtbaren Text bzw. eine backend-gebundene Anzeige auf
 bestehenden Seiten. Nach §10.3 CLAUDE.md gilt dafür Fragepflicht — auch dann,
@@ -186,13 +195,26 @@ wenn die Änderung eine Korrektur und keine Gestaltung ist. Die Freigabe vom
 inhaltlich, gilt aber nach der ausdrücklichen Regel „Ein ‚Ja' zu einer früheren
 Änderung gilt nicht für die nächste" nicht automatisch weiter.
 
-Vorgelegt wurden daher die Fragen zu B-1/B-2 (echtes Änderungsdatum statt
-`new Date()`) und zu B-3 (Verfügbarkeit aus `availableFor` statt fester Satz).
-Ergebnis siehe Abschnitt „Erteilte Freigaben" in CLAUDE.md §10, sobald
-entschieden.
+Vorgelegt und am 2026-09-01 mit **Ja** beantwortet (Eintrag in CLAUDE.md §10):
+
+| Befund | Frage | Antwort | Umgesetzt |
+|---|---|---|---|
+| B-1 / B-2 | Festes Änderungsdatum statt `new Date()` | **Ja** | `LAST_UPDATED = '2026-08-19'` in beiden Dateien, mit Kommentar, wann es mitzuziehen ist |
+| B-3 | Verfügbarkeit aus `availableFor` ableiten | **Ja** | `toBotAddOn` reicht die Plannamen durch, die Preisseite formatiert sie |
+
+Der Umfang war ausdrücklich auf diese beiden Punkte begrenzt: keine Farben,
+kein Grid, keine Typografie, keine Sektionsreihenfolge, keine weitere Zeile
+Text.
+
+**Das Datum 2026-08-19 ist gemessen, nicht gewählt.** Es ist der letzte Commit,
+der den Inhalt beider Seiten tatsächlich geändert hat (`#1095`). Der spätere
+Commit vom 2026-08-27 auf `SubProcessors.tsx` hat „Emails" zu „E-Mails"
+korrigiert und die Liste der Sub-Prozessoren nicht angerührt — eine
+Rechtschreibkorrektur ist keine Änderung der Liste, und genau das steht jetzt
+auch im Kommentar über der Konstante.
 
 B-4 ist keine Änderung an Bestehendem, sondern eine Ergänzung — nach §10.2 frei,
-aber vom Umfang her ein eigener Arbeitsschritt.
+aber vom Umfang her ein eigener Arbeitsschritt. Nicht in dieser Sitzung.
 
 ---
 

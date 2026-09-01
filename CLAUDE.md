@@ -851,6 +851,44 @@ Raster bleiben unverändert.
 oben nennt weiterhin `plan=enterprise`; das ist die dort dokumentierte
 Absicht, nicht der Parameter, den die Seite liest.
 
+**2026-09-01 — Zwei Korrekturen aus dem Watch-Agent-Wochenbericht**
+
+Auf die Fragepflicht nach §10.3 hat der Eigentümer zweimal mit **Ja**
+geantwortet:
+
+| Frage | Antwort |
+|---|---|
+| 1. „Stand"-Datum auf Datenschutzerklärung und Sub-Prozessoren-Liste: festes Änderungsdatum statt `new Date()` | **Ja** |
+| 2. Add-on-Verfügbarkeit auf `/pricing` aus `availableFor` ableiten statt festem Satz | **Ja** |
+
+Umfang — und **nur** dieser:
+
+| Was | Vorher | Nachher |
+|---|---|---|
+| `PrivacyPolicy.tsx`, `SubProcessors.tsx` | `Stand {new Date()…}` | `Stand {LAST_UPDATED}`, Konstante `'2026-08-19'` |
+| `GovernanceBotsSection.tsx` | fester Satz „Für Growth, Agency, Enterprise und Partner" unter **jedem** Add-on | `Für {formatPlanList(addon.availableForPlanNames)}` — je Add-on aus der SSoT |
+| `src/config/pricing.ts` | `toBotAddOn` ließ `availableFor` weg | reicht die Plannamen als `availableForPlanNames` durch |
+
+Farben, Typografie, Grid, Abstände, Icon-Set und Sektionsreihenfolge sind
+unberührt; die Textposition bleibt dieselbe.
+
+**Warum das keine Kosmetik war.** Das „Stand"-Datum lief wegen des
+Prerenderings zur Build-Zeit: Es zeigte das Datum des letzten Deploys, nicht
+das der letzten Textänderung — und stand auf der Sub-Prozessoren-Seite direkt
+neben der Zusage „Änderungen werden hier laufend dokumentiert" samt Verweis auf
+Art. 28 Abs. 2 DSGVO. Auf der Preisseite war die Add-on-Aussage für WhatsApp
+invers: `availableFor: ['starter']`, angezeigt wurden ausgerechnet die Pläne,
+die den Kanal bereits enthalten. Das ist der Zustand von **vor** der
+AP2-Korrektur, deren Kommentar in `shared/pricing.ts` direkt darüber steht —
+die Datenschicht war berichtigt, die Oberfläche hatte es nie mitbekommen.
+
+**Lehre**: `toBotAddOn` hat ein Feld weggelassen, und weil die Komponente die
+Verfügbarkeit danach nicht mehr *anzeigen konnte*, ist an dieser Stelle ein
+fester Satz entstanden. Ein Adapter, der ein Feld der SSoT fallen lässt, erzeugt
+die Duplizierung, die die SSoT verhindern soll — nur eine Ebene tiefer und
+unsichtbar. Belege und die übrigen Befunde:
+`docs/reports/watch-agent-2026-08-31.md`.
+
 **Weiterhin offen**: `/realsync-landing` führt fünf Plan-Karten mit hart
 codierten Preisen im JSX, inklusive Agency und Partner. Umbau auf die Quelle
 ist ein eigener Schritt (§10.1) und gehört zu AP10.

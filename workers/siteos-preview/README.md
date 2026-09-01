@@ -73,6 +73,21 @@ npx wrangler secret put PREVIEW_WRITE_TOKEN --config workers/siteos-preview/wran
 # denselben Wert als Repo-Secret hinterlegen
 ```
 
+**Und die Gegenseite nicht vergessen.** Geschrieben wird hier ausschliesslich
+von der Edge Function `siteos` (`supabase/functions/siteos/preview.ts`). Sie
+braucht dieselben zwei Angaben, sonst legt sie nichts ab und meldet
+`preview.status = "not_configured"`:
+
+```bash
+supabase secrets set \
+  SITEOS_PREVIEW_ORIGIN=https://siteos-preview.<account>.workers.dev \
+  SITEOS_PREVIEW_WRITE_TOKEN=<derselbe Wert wie PREVIEW_WRITE_TOKEN>
+```
+
+Ein Token nur auf einer Seite ist der unangenehmere Fehler als gar keines:
+Der Worker antwortet dann auf jeden Schreibversuch mit `401`, und im Protokoll
+sieht das aus wie ein Angriff statt wie eine halbe Konfiguration.
+
 Solange die KV-Kennung der Platzhalter ist, überspringt sich der Workflow
 `.github/workflows/deploy-siteos-preview.yml` selbst. Ein Deploy gegen eine
 nicht existierende Ablage wäre ein Worker, der jede Vorschau als „nicht
@@ -85,6 +100,21 @@ CSP, Header, Kennungsformat und Verfall stehen in
 `srcDoc`-Vorschau ihre Richtlinien bezieht. Es soll genau **eine** Antwort
 darauf geben, was eine Vorschau darf.
 
-Geprüft in `test/security/preview-sandbox.test.ts` (Richtlinien) und
+Geprüft in `test/security/preview-sandbox.test.ts` (Richtlinien),
 `test/security/siteos-preview-worker.test.ts` (Verhalten: Autorisierung,
-Eingabeprüfung, Header).
+Eingabeprüfung, Header, Mehrseitigkeit, Lebensdauer) und
+`test/siteos/anon-preview.test.ts` (der Schreibpfad der Edge Function gegen
+ein `fetch`-Double).
+
+## Eine Vorschau ist ein Stand, kein Bestand aus Teilen
+
+Geschrieben und gelöscht wird immer die ganze Vorschau (`PUT`/`DELETE` auf
+`/p/<id>`), nie eine einzelne Unterseite. Ausgeliefert werden alle Seiten des
+Entwurfs: `/p/<id>` die Startseite, `/p/<id>/kontakt` die Unterseite. Ohne
+das zeigte ein geteilter Link zwar die Startseite, aber jeder
+Navigationslink darin endete im `404` der Ablage.
+
+Die Lebensdauer gibt der Schreiber vor (`ttl` im Rumpf), weil nur er sie
+kennt: Sie ist die **Restzeit der anonymen Sitzung**, nicht sieben feste
+Tage. Der Worker klemmt sie auf `[60 s, 7 Tage]` — er ist die zweite Grenze,
+nicht die erste.

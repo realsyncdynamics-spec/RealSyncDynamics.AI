@@ -476,6 +476,12 @@ export const RealSyncDynamicsLanding = () => {
                   Agency ist seit AP2 stillgelegt, `/checkout/agency` weist
                   neue Abschluesse ab. Die Zielgruppe laeuft ueber Enterprise
                   — nach Vertrag, deshalb ohne Betrag.
+
+                  `tier` muss dabei zur Ueberschrift passen: `ContactSales`
+                  baut daraus die Seitenueberschrift **und** schickt den Wert
+                  mit dem Lead an den Server. Ein Restwert `agency` fuehrte
+                  den Besucher auf „Agency — Founding Access" und verbuchte
+                  seine Anfrage unter einem stillgelegten Plan.
                 */}
                 <h3 className="text-lg font-bold text-petrol mb-2" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Enterprise</h3>
                 <p className="text-3xl font-bold text-titanium mb-1">Auf Anfrage</p>
@@ -485,7 +491,7 @@ export const RealSyncDynamicsLanding = () => {
                   <li>✓ Mandanten-Kapazität nach Vereinbarung</li>
                   <li>✓ API-Zugang</li>
                 </ul>
-                <Link to="/contact-sales?tier=agency&source=realsync-landing" className="block text-center w-full bg-slate-800 hover:bg-slate-700 py-2 rounded text-sm transition">
+                <Link to="/contact-sales?tier=enterprise&source=realsync-landing" className="block text-center w-full bg-slate-800 hover:bg-slate-700 py-2 rounded text-sm transition">
                   Buchen
                 </Link>
               </div>

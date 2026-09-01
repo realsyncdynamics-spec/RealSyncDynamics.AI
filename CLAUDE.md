@@ -390,6 +390,13 @@ Jeder Agent braucht vier Dimensionen — fehlt eine, ist er nicht governance-fä
   Nie einseitig ändern; `test/governance/rfc003-sql-parity.test.ts` bricht sonst.
   **Betrieb**: Der Decay-Worker tickt nur, wenn der pg_cron-Job `memory-decay-hourly`
   registriert ist (Migration `20260819000000`) — ohne ihn verfällt kein Memory.
+  **Registriert reicht aber nicht**, und genau darauf hat dieser Satz vertraut:
+  Am 2026-09-01 gegen die Live-DB gemessen ist der Job seit dem 2026-08-12
+  registriert, aktiv **und in allen 470 Läufen gescheitert** — das Vault-Secret
+  `service_role_key` fehlt (siehe `20260820000000_cron_dispatch_fix.sql`).
+  In Produktion verfällt heute kein Memory. Ohne Schaden, weil
+  `governance_memory` leer ist, aber die Zusage steht ungedeckt.
+  Prüfen also nicht an `cron.job`, sondern an `cron.job_run_details.status`.
 
 ### Dashboard-Module (modulare Reihenfolge)
 1. **Agent Registry** — Liste, Status, Risiko, Details
@@ -864,9 +871,46 @@ Raster bleiben unverändert.
 oben nennt weiterhin `plan=enterprise`; das ist die dort dokumentierte
 Absicht, nicht der Parameter, den die Seite liest.
 
-**Weiterhin offen**: `/realsync-landing` führt fünf Plan-Karten mit hart
-codierten Preisen im JSX, inklusive Agency und Partner. Umbau auf die Quelle
-ist ein eigener Schritt (§10.1) und gehört zu AP10.
+**Erledigt, gemessen am 2026-08-31**: Der hier zuvor als offen geführte
+Punkt zu `/realsync-landing` („fünf Plan-Karten mit hart codierten Preisen
+im JSX, inklusive Agency und Partner") trifft auf den Code nicht mehr zu.
+`src/marketing/landing/RealSyncDynamicsLanding.tsx` führt vier Karten —
+Free Audit · Starter · Growth · Enterprise —, die Beträge kommen aus der
+Quelle (`planById('starter').price.monthlyEur`, ebenso Growth), Agency und
+Partner sind als Karten entfallen, Enterprise steht auf „Auf Anfrage".
+
+**2026-08-31 — Build Studio: Speicherort und Übernehmbarkeit an den Sitzungsmodus**
+
+Auf die Fragepflicht nach §10.3 hat der Eigentümer zweimal mit **Ja**
+geantwortet:
+
+| Frage | Antwort |
+|---|---|
+| 1. Textänderung: Den Satz zum Speicherort des Entwurfs an `session.mode` koppeln | **Ja** |
+| 2. Funktionsänderung: „Website übernehmen" im Rückfallmodus sperren | **Ja** |
+
+Umfang — und **nur** dieser, in `src/unified-entry/pages/BuildStudioPage.tsx`:
+
+| Was | Vorher | Nachher |
+|---|---|---|
+| Hinweis zum Speicherort | fest „Der Entwurf liegt nur in diesem Browser." | je Modus: serverseitig gespeichert (`server`) bzw. nur im Browser (`local`) |
+| „Website übernehmen" | immer aktiv | im Modus `local` deaktiviert, mit Begründung als `title` |
+| Abzeichen im Kopf | — | neu: „Nur lokal — nicht übernehmbar", nur im Modus `local` |
+
+Anlass ist kein Geschmack, sondern zwei Falschaussagen der Oberfläche. Der
+feste Satz behauptete den **falschen Speicherort für Kundendaten**: Im
+Servermodus liegt der Entwurf in `siteos_anonymous_builds` und wird beim
+Claim nur verschoben — so sagen es `buildSession.ts` und `SiteOsClaimView.tsx`
+übereinstimmend. Und der CTA lud im Rückfall zu einer Übernahme ein, die es
+nicht gibt: `/app/siteos/claim` schickt zuerst nach `/welcome`, der Besucher
+legt ein Konto an und erfährt **erst danach**, dass serverseitig keine
+Sitzung existiert. `buildSession.ts` verlangt ausdrücklich das Gegenteil.
+
+Farben, Typografie, Grid, Abstände, Icon-Set und Sektionsreihenfolge sind
+unberührt; das Abzeichen nutzt die im Repo vorhandene Amber-Warnoptik. Der
+Rückfall selbst bleibt, was er ist: Übergang, kein Dauerzustand — sobald der
+anonyme Pfad überall ausgerollt ist, entfallen Sperre und Abzeichen mit ihm.
+Gesichert durch `test/siteos/claim-moves-not-rebuilds.test.ts`.
 
 #### Faustregel
 

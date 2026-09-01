@@ -78,8 +78,8 @@ Menschen · Unternehmen · KI-Agenten · Daten · Entscheidungen.
 
 **Primär: Supabase Cloud (EU / Frankfurt)**
 - PostgreSQL 17 (Live-Projekt, Stand 2026-08-16)
-- **179 Edge Functions** im Repo (`supabase/functions/`, Deno/V8; `_shared` ist Bibliothek, keine Function) — alle deployt, und alle 179 deployten haben ein Verzeichnis. Deckungsgleich in beide Richtungen, Stand 2026-08-30, siehe §5
-- **300 Migrations** (`supabase/migrations/`) — alle verbucht; zu den zwei nachgezogenen Out-of-Band-Migrationen siehe §5
+- **179 Edge Functions** im Repo (`supabase/functions/`, Deno/V8; `_shared` ist Bibliothek, keine Function) — alle deployt, und alle 179 deployten haben ein Verzeichnis. Deckungsgleich in beide Richtungen, Stand 2026-09-01, siehe §5
+- **305 Migrations** (`supabase/migrations/`) — alle verbucht, gemessen am 2026-09-01 gegen den Ledger, Mengen in beide Richtungen leer; zu den zwei nachgezogenen Out-of-Band-Migrationen siehe §5
 - RLS auf allen App-Tabellen · Realtime Subscriptions
 
 **Node/TypeScript-Services** (containerisiert — **kein Go im Repo**)
@@ -220,6 +220,36 @@ Jeder Agent braucht vier Dimensionen — fehlt eine, ist er nicht governance-fä
 > verschieden, weil `_shared` im Repo keine Function ist und dafür eine
 > Function live läuft, die es im Repo nie gab. Wer nur `wc -l` vergleicht,
 > übersieht das. Deshalb ab jetzt: `comm -23` **und** `comm -13`.
+>
+> **Wirksam in Produktion, nicht nur im Repo**: `deploy.yml` lief am
+> 2026-08-30 um 21:58 UTC grün auf `1533cf5` (Run 33337859594). Damit sind
+> die drei Migrationen aus PR #1172 angewandt — die beiden nachgezogenen
+> Out-of-Band-Versionen aus ¹ und
+> `20260831030000_integrations_catalog_read_access` aus ³. Nachgezogen heißt
+> nicht angekommen; dies ist der Beleg für Letzteres.
+>
+> **Zur Sperre durch die Migrations-Drift**: Sie bestand vom 2026-08-26 bis
+> zum 2026-08-30, blieb aber folgenlos — in diesem Fenster berührte kein
+> Commit `supabase/**`, also wurde `deploy.yml` gar nicht ausgelöst.
+> Blockiert, aber niemand ist hineingelaufen. Der letzte grüne Lauf davor
+> war am 2026-08-25 um 18:36 UTC auf `2e60a21`.
+>
+> **Nachmessung 2026-09-01**, `main` @ `310ab0e`, gleiche Methode und gleiche
+> Quelle wie oben. Repo und Produktion sind weiterhin deckungsgleich — auf
+> höheren Zahlen, weil seither fünf Migrationen dazugekommen sind:
+>
+> | | Repo (`main`) | in Produktion | Lücke |
+> |---|---|---|---|
+> | Migrationen | 305 Dateien | **305** verbucht (neueste `20260902000100`) | **0** |
+> | Edge Functions | 179 (+ `_shared`) | **179** aktiv | **0** |
+> | Tabellen in `public` | — | 354 | — |
+> | davon mit RLS | — | **354 / 354** | **0** |
+> | Views | — | 19 | — |
+>
+> `comm -23` und `comm -13` sind beide leer, bei Migrationen wie bei
+> Functions. Die Zahlen in §2 und §7 sind damit nicht geschätzt, sondern
+> nachgezogen. Dass Repo und Ledger beide 305 zeigen, war dabei nicht der
+> Beleg — der Mengenvergleich war es.
 >
 > ¹ **Zwei Migrationen sind live, ohne dass es je eine Datei gab**:
 > `20260825204748_fix_websites_authenticated_crud_rls` (2026-08-25) und
@@ -410,6 +440,13 @@ Jeder Agent braucht vier Dimensionen — fehlt eine, ist er nicht governance-fä
   Nie einseitig ändern; `test/governance/rfc003-sql-parity.test.ts` bricht sonst.
   **Betrieb**: Der Decay-Worker tickt nur, wenn der pg_cron-Job `memory-decay-hourly`
   registriert ist (Migration `20260819000000`) — ohne ihn verfällt kein Memory.
+  **Registriert reicht aber nicht**, und genau darauf hat dieser Satz vertraut:
+  Am 2026-09-01 gegen die Live-DB gemessen ist der Job seit dem 2026-08-12
+  registriert, aktiv **und in allen 470 Läufen gescheitert** — das Vault-Secret
+  `service_role_key` fehlt (siehe `20260820000000_cron_dispatch_fix.sql`).
+  In Produktion verfällt heute kein Memory. Ohne Schaden, weil
+  `governance_memory` leer ist, aber die Zusage steht ungedeckt.
+  Prüfen also nicht an `cron.job`, sondern an `cron.job_run_details.status`.
 
 ### Dashboard-Module (modulare Reihenfolge)
 1. **Agent Registry** — Liste, Status, Risiko, Details
@@ -469,7 +506,7 @@ RealSyncDynamics.AI/
 │   └── pricing.ts     Single Source of Truth für Produkt-, Preis- und Berechtigungsmodell
 ├── supabase/
 │   ├── functions/     179 Edge Functions (einziger Ort für Service-Role-Keys)
-│   └── migrations/    300 Migrations
+│   └── migrations/    305 Migrations
 ├── apps/
 │   └── agent-runtime/ Agent Runtime (Node/TS, Docker)
 ├── services/          runtime-core · evidence-runtime · openclaw-agent · playwright-scanner
@@ -884,9 +921,46 @@ Raster bleiben unverändert.
 oben nennt weiterhin `plan=enterprise`; das ist die dort dokumentierte
 Absicht, nicht der Parameter, den die Seite liest.
 
-**Weiterhin offen**: `/realsync-landing` führt fünf Plan-Karten mit hart
-codierten Preisen im JSX, inklusive Agency und Partner. Umbau auf die Quelle
-ist ein eigener Schritt (§10.1) und gehört zu AP10.
+**Erledigt, gemessen am 2026-08-31**: Der hier zuvor als offen geführte
+Punkt zu `/realsync-landing` („fünf Plan-Karten mit hart codierten Preisen
+im JSX, inklusive Agency und Partner") trifft auf den Code nicht mehr zu.
+`src/marketing/landing/RealSyncDynamicsLanding.tsx` führt vier Karten —
+Free Audit · Starter · Growth · Enterprise —, die Beträge kommen aus der
+Quelle (`planById('starter').price.monthlyEur`, ebenso Growth), Agency und
+Partner sind als Karten entfallen, Enterprise steht auf „Auf Anfrage".
+
+**2026-08-31 — Build Studio: Speicherort und Übernehmbarkeit an den Sitzungsmodus**
+
+Auf die Fragepflicht nach §10.3 hat der Eigentümer zweimal mit **Ja**
+geantwortet:
+
+| Frage | Antwort |
+|---|---|
+| 1. Textänderung: Den Satz zum Speicherort des Entwurfs an `session.mode` koppeln | **Ja** |
+| 2. Funktionsänderung: „Website übernehmen" im Rückfallmodus sperren | **Ja** |
+
+Umfang — und **nur** dieser, in `src/unified-entry/pages/BuildStudioPage.tsx`:
+
+| Was | Vorher | Nachher |
+|---|---|---|
+| Hinweis zum Speicherort | fest „Der Entwurf liegt nur in diesem Browser." | je Modus: serverseitig gespeichert (`server`) bzw. nur im Browser (`local`) |
+| „Website übernehmen" | immer aktiv | im Modus `local` deaktiviert, mit Begründung als `title` |
+| Abzeichen im Kopf | — | neu: „Nur lokal — nicht übernehmbar", nur im Modus `local` |
+
+Anlass ist kein Geschmack, sondern zwei Falschaussagen der Oberfläche. Der
+feste Satz behauptete den **falschen Speicherort für Kundendaten**: Im
+Servermodus liegt der Entwurf in `siteos_anonymous_builds` und wird beim
+Claim nur verschoben — so sagen es `buildSession.ts` und `SiteOsClaimView.tsx`
+übereinstimmend. Und der CTA lud im Rückfall zu einer Übernahme ein, die es
+nicht gibt: `/app/siteos/claim` schickt zuerst nach `/welcome`, der Besucher
+legt ein Konto an und erfährt **erst danach**, dass serverseitig keine
+Sitzung existiert. `buildSession.ts` verlangt ausdrücklich das Gegenteil.
+
+Farben, Typografie, Grid, Abstände, Icon-Set und Sektionsreihenfolge sind
+unberührt; das Abzeichen nutzt die im Repo vorhandene Amber-Warnoptik. Der
+Rückfall selbst bleibt, was er ist: Übergang, kein Dauerzustand — sobald der
+anonyme Pfad überall ausgerollt ist, entfallen Sperre und Abzeichen mit ihm.
+Gesichert durch `test/siteos/claim-moves-not-rebuilds.test.ts`.
 
 #### Faustregel
 

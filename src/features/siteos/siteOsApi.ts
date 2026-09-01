@@ -102,6 +102,17 @@ export type SiteOsError =
    */
   | { kind: 'not_deployed'; message: string }
   | { kind: 'not_found'; message: string }
+  /**
+   * Die Sache gab es, ihre Frist ist um. Für anonyme Entwürfe sind das die
+   * sieben Tage aus `siteos_anonymous_builds.expires_at`; der Server
+   * antwortet dann mit `410 GONE`.
+   *
+   * Eigener Fall, weil „abgelaufen" etwas anderes heißt als „Fehler": Der
+   * Nutzer hat nichts falsch gemacht und kann auch nichts reparieren — er
+   * muss neu beginnen. Ohne diesen Fall fiel ein 410 auf `error` durch und
+   * erschien als „Edge Function returned a non-2xx status code".
+   */
+  | { kind: 'gone'; message: string }
   | { kind: 'error'; message: string };
 
 export type SiteOsResult<T> = { kind: 'ok'; data: T } | SiteOsError;
@@ -113,6 +124,7 @@ function mapError(error: unknown): SiteOsError {
   if (status === 402) return { kind: 'payment_required', message };
   if (status === 400) return { kind: 'bad_request', message };
   if (status === 502) return { kind: 'unreachable', message };
+  if (status === 410) return { kind: 'gone', message };
   return { kind: 'error', message };
 }
 
@@ -123,6 +135,7 @@ export function errorMessage(e: SiteOsError): string {
     case 'unreachable': return `Die Adresse war nicht erreichbar: ${e.message}`;
     case 'not_deployed': return 'Diese Funktion ist noch nicht ausgerollt.';
     case 'not_found': return e.message;
+    case 'gone': return 'Dieser Entwurf ist abgelaufen. Bitte beginnen Sie neu.';
     default: return e.message;
   }
 }
@@ -304,6 +317,23 @@ export interface AnonBuildResponse {
   blueprint: SiteBlueprint;
   findings: RuntimeFinding[];
   scores: ScoreBreakdown;
+  preview?: PreviewState;
+}
+
+/**
+ * Zustand der geteilten Vorschau.
+ *
+ * `not_configured` und `failed` sind getrennt, weil sie Verschiedenes
+ * bedeuten: Das eine heisst „diese Umgebung hat keinen Vorschau-Worker"
+ * (bekannter, dokumentierter Zustand — siehe
+ * `docs/product/siteos-anonymous-build.md`), das andere „es gibt einen, und
+ * er hat abgelehnt". Die Oberfläche darf daraus nicht denselben Satz machen.
+ */
+export interface PreviewState {
+  status: 'stored' | 'none' | 'not_configured' | 'failed';
+  url?: string;
+  expires_in?: number;
+  reason?: string;
 }
 
 export interface AnonRefineResponse {
@@ -318,6 +348,7 @@ export interface AnonRefineResponse {
   changes: RefinementChange[];
   refusals: string[];
   understood: boolean;
+  preview?: PreviewState;
 }
 
 export interface ClaimResponse {
@@ -328,6 +359,7 @@ export interface ClaimResponse {
   version: number;
   content_sha256: string;
   provenance_linked?: boolean;
+  preview_revoked?: boolean;
 }
 
 export async function buildAnon(args: {
@@ -380,6 +412,7 @@ export interface AnonSessionResponse {
   expires_at: string;
   claimed: boolean;
   claimed_blueprint_id: string | null;
+  preview?: PreviewState;
 }
 
 /**

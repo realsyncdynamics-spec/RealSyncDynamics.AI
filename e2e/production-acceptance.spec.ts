@@ -138,6 +138,15 @@ test.describe('Scan-Trichter', () => {
 
     const bericht = await resp.json();
     expect(bericht, 'Bericht ohne Score — der Audit hat nichts bewertet').toHaveProperty('score');
+
+    // Vertrag mit der Oberflaeche: `AuditLanding` loest die Report-E-Mail ueber
+    // dieses Feld aus und `audit-report-email` liest `gdpr_audits` per `?id=`.
+    // Bis zum 2026-08-31 griff die Oberflaeche nach `scan_run_id` — ein Feld,
+    // das die Function nie geliefert hat. Weil der Typ es als optional
+    // deklarierte, schwieg der Compiler, und kein Kunde bekam je seinen
+    // Report zugestellt. Der Name gehoert deshalb geprueft, nicht angenommen.
+    expect(bericht, 'Antwort ohne audit_id — die Report-E-Mail kann nicht ausgeloest werden')
+      .toHaveProperty('audit_id');
   });
 });
 

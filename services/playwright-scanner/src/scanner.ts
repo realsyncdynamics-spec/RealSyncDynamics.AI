@@ -6,7 +6,8 @@
 // supabase/functions/_shared/rules/tracker-registry.json. Bei Updates dort
 // bitte hier nachziehen — siehe rules/CHANGELOG.md.
 
-import { chromium, type Browser, type BrowserContext, type Cookie as PlaywrightCookie } from 'playwright';
+import { chromium, type Browser, type BrowserContext, type Page, type Cookie as PlaywrightCookie } from 'playwright';
+import { assessConsentBanner, type ConsentButtonDescriptor } from './consent-banner.js';
 import type {
   Cookie,
   FormAnalysis,
@@ -212,6 +213,7 @@ export async function scan(targetUrl: string, options: ScanOptions = {}): Promis
     const trackers = detectTrackers(html, requestUrls);
     const privacyAnalytics = detectPrivacyAnalytics(html);
     const consentManagerDetected = CONSENT_PATTERNS.some((p) => html.includes(p));
+    const consentBanner = assessConsentBanner(await collectConsentButtons(page));
     const cookiesNormalized = cookies.map((c) => normalizeCookie(c, siteDomain));
     const thirdPartyHosts = extractThirdPartyHosts(requestUrls, siteDomain);
     const unknownScripts = extractUnknownThirdPartyScripts(html, requestUrls, siteDomain, trackers);
@@ -242,6 +244,7 @@ export async function scan(targetUrl: string, options: ScanOptions = {}): Promis
       trackers,
       privacy_analytics: privacyAnalytics,
       consent_manager_detected: consentManagerDetected,
+      consent_banner: consentBanner,
       forms: formAnalysis,
       local_storage: previewMap(localStorage),
       session_storage: previewMap(sessionStorage),
@@ -258,6 +261,121 @@ export async function scan(targetUrl: string, options: ScanOptions = {}): Promis
 }
 
 // ─── Detection Helpers ───────────────────────────────────────────────────────
+
+/**
+ * Schaltflächen eines Einwilligungsbanners aus dem DOM holen — Messwerte,
+ * keine Bewertung. Die steckt in `consent-banner.ts`.
+ *
+ * Warum erst der Container und dann die Schaltflächen: Ein einfaches „alle
+ * Knöpfe der Seite einsammeln" wäre unbrauchbar. Ein Navigationslink
+ * „Einstellungen" oder ein „OK" in einem beliebigen Dialog würde als
+ * Consent-Schaltfläche gelten, und die Seite bekäme einen Befund für ein
+ * Banner, das sie gar nicht hat. Deshalb zwei Wege zum Container, beide
+ * konservativ: benannte Kennzeichnung (id/class/data-Attribut) oder ein
+ * aufliegendes Overlay, dessen Text tatsächlich von Cookies oder
+ * Einwilligung handelt. Findet keiner etwas, wird nichts gemeldet.
+ */
+async function collectConsentButtons(page: Page): Promise<ConsentButtonDescriptor[]> {
+  return page.evaluate(() => {
+    interface Rect { width: number; height: number }
+    interface Style {
+      position: string; zIndex: string; backgroundColor: string;
+      fontSize: string; fontWeight: string;
+      display: string; visibility: string; opacity: string;
+    }
+    interface El {
+      id: string;
+      textContent: string | null;
+      getAttribute(name: string): string | null;
+      getBoundingClientRect(): Rect;
+      querySelectorAll(selectors: string): ArrayLike<El>;
+    }
+    interface Doc { querySelectorAll(selectors: string): ArrayLike<El> }
+    const g = globalThis as unknown as {
+      document: Doc;
+      getComputedStyle(el: El): Style;
+    };
+
+    const NAMED = /(cookie|consent|gdpr|dsgvo|cmp|privacy|datenschutz|usercentrics|cookiebot|borlabs|klaro|didomi|osano|onetrust)/i;
+    const TOPIC = /(cookie|einwillig|consent|datenschutz|tracking)/i;
+
+    const containers: El[] = [];
+    const seen = new Set<El>();
+
+    const all = g.document.querySelectorAll('div,section,aside,dialog,form');
+    for (let i = 0; i < all.length; i++) {
+      const el = all[i];
+      if (!el || seen.has(el)) continue;
+
+      const marker = `${el.id} ${el.getAttribute('class') ?? ''} ${el.getAttribute('data-testid') ?? ''} ${el.getAttribute('aria-label') ?? ''}`;
+      const style = g.getComputedStyle(el);
+      const overlay = (style.position === 'fixed' || style.position === 'sticky')
+        && Number.parseInt(style.zIndex, 10) >= 100;
+      const text = (el.textContent ?? '').slice(0, 2000);
+
+      // Ein Overlay zählt nur, wenn sein Text auch vom Thema handelt —
+      // sonst wäre jedes klebende Menü ein Cookie-Banner.
+      if (NAMED.test(marker) || (overlay && TOPIC.test(text))) {
+        seen.add(el);
+        containers.push(el);
+      }
+    }
+
+    const out: Array<{
+      text: string; width: number; height: number;
+      fontSizePx: number; fontWeight: number;
+      backgroundColor: string; visible: boolean;
+    }> = [];
+    const takenTexts = new Set<string>();
+
+    for (const container of containers) {
+      const clickables = container.querySelectorAll(
+        'button,a,[role="button"],input[type="button"],input[type="submit"]',
+      );
+      for (let i = 0; i < clickables.length; i++) {
+        const el = clickables[i];
+        if (!el) continue;
+
+        const text = (el.textContent ?? el.getAttribute('value') ?? '')
+          .replace(/\s+/g, ' ').trim();
+        // Fließtext mit Link ist keine Schaltfläche. 80 Zeichen lassen auch
+        // lange Beschriftungen wie „Nur technisch notwendige Cookies zulassen“
+        // durch, schneiden aber Absätze ab.
+        if (text.length === 0 || text.length > 80) continue;
+
+        const rect = el.getBoundingClientRect();
+        const style = g.getComputedStyle(el);
+        const visible = rect.width > 0 && rect.height > 0
+          && style.display !== 'none' && style.visibility !== 'hidden'
+          && Number.parseFloat(style.opacity || '1') > 0.05;
+
+        // Dieselbe Beschriftung mehrfach (verschachtelte Container, Desktop-
+        // und Mobil-Variante) verzerrt sonst den Flächenvergleich.
+        const key = `${text}|${Math.round(rect.width)}x${Math.round(rect.height)}`;
+        if (takenTexts.has(key)) continue;
+        takenTexts.add(key);
+
+        const weightRaw = style.fontWeight;
+        const weight = weightRaw === 'bold' ? 700
+          : weightRaw === 'normal' ? 400
+          : Number.parseInt(weightRaw, 10) || 400;
+
+        out.push({
+          text,
+          width: rect.width,
+          height: rect.height,
+          fontSizePx: Number.parseFloat(style.fontSize) || 0,
+          fontWeight: weight,
+          backgroundColor: style.backgroundColor,
+          visible,
+        });
+      }
+    }
+
+    return out;
+  }).catch<ConsentButtonDescriptor[]>(() => []);
+}
+
 
 function detectTrackers(html: string, requests: string[]): Tracker[] {
   const out: Tracker[] = [];

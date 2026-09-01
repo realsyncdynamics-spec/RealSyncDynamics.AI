@@ -39,7 +39,7 @@ Gemessen, nicht hergeleitet (§5 CLAUDE.md). Jede Zeile mit Fundstelle.
 | 1 | Privacy-Seite (Stand 2026-08-30) gegen interne Änderungsprotokolle abgleichen | **Befund B-1** — das Datum ist kein Änderungsdatum, sondern immer der heutige Tag |
 | 2 | Sub-Prozessoren-Liste bei Bedarf aktualisieren | **Befund B-2** — dieselbe Mechanik, verschärft durch das Versprechen „laufend dokumentiert" |
 | 3 | Pricing-Seite auf Plan-Namen (Agency) und Add-on-Preise prüfen | **Befund B-3** — Add-on-Verfügbarkeit war hart codiert und für WhatsApp genau verkehrt herum; Add-on-Preis (99 €) dagegen korrekt |
-| 4 | BFDI-Empfehlungen zu Cookie-Bannern (13.08.2026) berücksichtigen | **Befund B-4** — der Scanner erkennt CMPs und Tracker, prüft aber keine gleichwertige Ablehnen-Option |
+| 4 | BFDI-Empfehlungen zu Cookie-Bannern (13.08.2026) berücksichtigen | **Befund B-4** — der Scanner erkannte CMPs und Tracker, prüfte aber keine gleichwertige Ablehnen-Option; am 2026-09-01 nachgerüstet |
 | 5 | AI-Act-Transparenzpflichten in Claims und Scan-Logik absichern | Kein neuer Befund in dieser Sitzung; nicht abschließend geprüft, siehe §5 |
 
 Zusätzlich geprüft, weil CLAUDE.md §5 es vor jeder eigenen Messung verlangt
@@ -182,7 +182,41 @@ abmahnfähig sein — was für ein Produkt, dessen Einstieg der kostenlose Scan 
 die unangenehmere Hälfte des Versprechens betrifft.
 
 **Das ist ein Produktbefund, kein Fehler**: Die Erweiterung ist Arbeit, keine
-Korrektur. Sie gehört in die Planung, nicht in diesen Bericht.
+Korrektur.
+
+**Am 2026-09-01 gebaut.** Neu ist `services/playwright-scanner/src/consent-banner.ts`:
+Der Deep-Scan sammelt die Schaltflächen des Banners aus dem DOM und bewertet sie
+gegen drei Fragen — gibt es überhaupt ein Banner, steht die Ablehnung auf der
+ersten Ebene, und ist sie ebenso deutlich wie die Zustimmung. Befund-Codes
+`CB_NO_BANNER_DETECTED` (niedrig), `CB_NO_REJECT_ON_FIRST_LAYER` (hoch),
+`CB_REJECT_LESS_PROMINENT` (mittel), jeder mit Rechtsgrundlage im Befund selbst.
+
+Drei Entscheidungen dabei, die nicht selbstverständlich sind:
+
+- **Der Score bleibt unberührt.** Die Gewichte sind versionsrelevant: Flössen
+  die neuen Befunde ein, bekäme jede früher gescannte Seite still ein anderes
+  Ergebnis, ohne dass sich an ihr etwas geändert hat. Das Modul misst und
+  berichtet; ob daraus Punkte werden, ist eine eigene Entscheidung.
+- **Nur der Deep-Scan.** Die leichte Variante als Edge Function holt HTML und
+  kann Flächen und berechnete Stile nicht messen. Sie lässt das Feld weg statt
+  zu raten — `consent_banner` ist deshalb optional.
+- **Erst der Container, dann die Schaltflächen.** „Alle Knöpfe der Seite
+  einsammeln" hätte jeden Navigationslink „Einstellungen" und jedes „OK" in
+  einem beliebigen Dialog zum Consent-Element gemacht — die Seite bekäme einen
+  Befund für ein Banner, das sie nicht hat.
+
+Die heikelste Stelle ist die Reihenfolge der Klassifikation: „Nur notwendige
+Cookies akzeptieren" enthält *akzeptieren* und ist trotzdem die Ablehnung. Wer
+zuerst auf Zustimmung prüft, meldet ausgerechnet den Bannern „keine Ablehnung
+vorhanden", die es richtig machen. `test/scanner/consent-banner.test.ts` deckt
+das ab (12 Fälle); gegengeprobt: Dreht man die Reihenfolge um, fällt der Test.
+
+**Nebenbefund, dogfooding**: Unser eigenes Banner
+(`src/components/CookieConsent.tsx`) erfüllt den Maßstab bereits — „Alles
+akzeptieren" und „Alle ablehnen" teilen sich Klassen und `flex-1`, mit einem
+Kommentar, der auf BfDI, Art. 7 Abs. 3 DSGVO und § 25 TDDDG verweist. Wir
+haben also praktiziert, was wir nicht gemessen haben. Der Testfall
+„lässt ein gleichwertiges Banner ohne Befund durch" ist danach gebaut.
 
 ---
 
@@ -213,8 +247,9 @@ korrigiert und die Liste der Sub-Prozessoren nicht angerührt — eine
 Rechtschreibkorrektur ist keine Änderung der Liste, und genau das steht jetzt
 auch im Kommentar über der Konstante.
 
-B-4 ist keine Änderung an Bestehendem, sondern eine Ergänzung — nach §10.2 frei,
-aber vom Umfang her ein eigener Arbeitsschritt. Nicht in dieser Sitzung.
+B-4 ist keine Änderung an Bestehendem, sondern eine Ergänzung — nach §10.2 frei.
+Am 2026-09-01 umgesetzt, Einzelheiten oben im Befund. Kein bestehender Text,
+kein bestehendes Verhalten und keine Punktzahl wurden dabei angefasst.
 
 ---
 

@@ -216,6 +216,50 @@ Sollte stattdessen gemeint gewesen sein, dass der **höhere** Wert gilt, wäre
 das eine Änderung der Preisseite und keine Datenbereinigung — dann bitte
 widersprechen.
 
+#### ✅ Erledigt am 2026-09-01 — korrigiert, ohne Mechanismus
+
+Die Reihenfolge oben setzt voraus, dass es jemanden zu schützen gibt. Vor der
+Entscheidung gemessen, gegen das Live-Projekt `ebljyceifhnlzhjfyxup`:
+
+| | |
+|---|---:|
+| Starter-Abos | **0** |
+| Growth-Abos | 1, Status **`past_due`** |
+| `usage_counters` · `usage_events` · `usage_totals` | 0 · 0 · 0 |
+| `feature_usage` · `quota_alerts` · `audit_jobs` | 0 · 0 · 0 |
+| Mitglieder je Tenant | **genau 1** bei allen fünf |
+
+**Es gibt niemanden zu schützen.** Die Sitzplatz-Kürzung von 3 auf 1 träfe
+selbst dann keinen Tenant, wenn ein Starter-Abo existierte — kein Workspace hat
+ein zweites Mitglied. Kein Kunde verliert eine Fähigkeit, die er heute nutzt.
+
+Der Eigentümer hat deshalb entschieden, **jetzt zu korrigieren und keinen
+Bestandsschutz-Mechanismus zu bauen**. Umgesetzt in
+`20260903050000_align_starter_growth_quota_entitlements.sql`; die Werte in
+`PLAN_ENTITLEMENTS` und in `product_entitlements` stehen jetzt auf der
+Preisseite.
+
+**Warum kein Mechanismus** — ein struktureller Befund, der hier festgehalten
+gehört: `entitlement_grants` ist **produktförmig**. `product_id`, `plan_key`
+und `purchase_reference` sind `NOT NULL`; eine Spalte für Entitlement-Key oder
+Wert gibt es nicht. Die Tabelle kann „dieser Tenant behält `team_seats = 3`"
+gar nicht ausdrücken. Ein Override je Schlüssel hätte eine Schemaänderung
+gebraucht — für null bis einen Bestandsfall.
+
+**Falls er später doch gebraucht wird**, ist die Richtung günstig: Ein
+Bestandsschutz muss einen Wert *anheben*, und der Auflöser führt mit
+`CASE WHEN bool_or(value = -1) THEN -1 ELSE MAX(value) END` zusammen — ein
+anhebender Grant gewinnt von selbst, ohne dass die Regel gebrochen werden
+muss. Das ist der Unterschied zum Enterprise-Fall (§1.2a), wo ein Override
+hätte *senken* müssen.
+
+**Der Preis dieser Entscheidung:** Das Fenster war offen, weil niemand
+betroffen war. Es schließt mit dem ersten zahlenden Starter- oder
+Growth-Kunden. Käme die Divergenz zurück, wäre die Korrektur dann ein echtes
+Downgrade und §1.3 griffe erneut — diesmal mit Bestandskunden. Dagegen sichert
+`test/billing/limit-canonicity.test.ts`, Fall „führt keine Kürzung mehr auf
+verkauften Self-Service-Plänen".
+
 ### Klasse C und D — die stillgelegten Pläne
 
 Agency und Partner wurden öffentlich verkauft, also ist die Preisseite auch

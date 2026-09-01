@@ -573,9 +573,11 @@ Runtime-Limits, Module, Berechtigungen, Feature-Listen und Add-ons.
   mit vereinbarter Obergrenze ist der benannte Auslöser für Option B
   (Tenant-Overrides) — festgehalten in
   `test/billing/limit-canonicity.test.ts`. Beide Seiten
-  weichen heute in 21 von 38 Paaren ab; `npm run check:limits` verhindert
+  weichen heute in 18 von 38 Paaren ab; `npm run check:limits` verhindert
   **neue** Divergenzen (Ratsche, Grundlinie in
-  `scripts/limit-canonicity-baseline.json`). **Kein neues Enforcement gegen
+  `scripts/limit-canonicity-baseline.json`). Es waren 21 — die drei Kürzungen
+  auf Starter und Growth sind am 2026-09-01 an die Preisseite angeglichen
+  worden, nachdem gemessen war, dass sie niemanden treffen (§4 Klasse B). **Kein neues Enforcement gegen
   einen divergierenden Wert**, solange er nicht bereinigt ist — und keine
   stillschweigende Kürzung bei Bestandskunden. Diff und Entscheidung:
   `docs/product/kanonische-kontingente.md` §1.2a,

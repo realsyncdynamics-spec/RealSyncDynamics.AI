@@ -111,19 +111,56 @@ describe('Kontingente — plan.limits gegen PLAN_ENTITLEMENTS', () => {
     }
   });
 
-  it('weist die drei Kürzungen auf verkauften Self-Service-Plänen aus', () => {
-    // Klasse B aus `kanonische-kontingente.md` §4: Diese drei treffen aktive,
-    // selbst gebuchte Kunden. Sie dürfen nicht aus der Grundlinie fallen,
-    // ohne dass jemand die Bestandsfrage beantwortet hat.
-    const betroffen = grundlinie
+  /**
+   * Klasse B aus `kanonische-kontingente.md` §4 — am 2026-09-01 bereinigt.
+   *
+   * Bis dahin standen hier drei Kürzungen: `starter:seats` (3→1),
+   * `starter:auditReportsPerMonth` (5→2) und `growth:auditReportsPerMonth`
+   * (20→12). Der Test hielt sie fest, damit sie nicht aus der Grundlinie
+   * fallen, bevor jemand die Bestandsfrage aus §1.3 beantwortet hat.
+   *
+   * Sie ist beantwortet und die Werte sind angeglichen
+   * (`20260903050000_align_starter_growth_quota_entitlements.sql`). Gemessen
+   * am Entscheidungstag: null Starter-Abos, ein Growth-Abo auf `past_due`,
+   * sämtliche Nutzungstabellen leer, jeder Tenant mit genau einem Mitglied —
+   * die Korrektur hat niemandem etwas genommen.
+   *
+   * Der Test kehrt sich deshalb um: Auf verkauften Self-Service-Plänen darf
+   * **keine** Kürzung mehr in der Grundlinie stehen. Taucht dort wieder eine
+   * auf, ist entweder ein Wert zurückgefallen oder ein neuer Datenfehler
+   * entstanden — und dann gilt §1.3 erneut, diesmal womöglich mit echten
+   * Bestandskunden.
+   */
+  it('führt keine Kürzung mehr auf verkauften Self-Service-Plänen', () => {
+    const kuerzungen = grundlinie
       .filter((e) => e.richtung === 'kuerzung' && ['starter', 'growth'].includes(e.plan))
       .map(marke)
       .sort();
-    expect(betroffen).toEqual([
-      'growth:auditReportsPerMonth',
-      'starter:auditReportsPerMonth',
-      'starter:seats',
-    ]);
+    expect(
+      kuerzungen,
+      'Eine Kürzung auf einem verkauften Plan bedeutet: die Berechtigung liegt ' +
+        'über der Preisseite. Vor dem Angleichen ist die Bestandsfrage aus §1.3 ' +
+        'zu beantworten — nicht nachträglich.',
+    ).toEqual([]);
+  });
+
+  /**
+   * Die Gegenprobe zur Bereinigung: Die drei Paare stimmen jetzt überein.
+   * Ohne diesen Fall bliebe „keine Kürzung mehr" auch dann grün, wenn die
+   * Felder aus dem Vergleich herausfielen statt angeglichen zu werden.
+   */
+  it('gleicht die drei bereinigten Paare wertgleich ab', () => {
+    const erwartet: Array<[string, string, number]> = [
+      ['starter', 'limit.team_seats', 1],
+      ['starter', 'limit.compliance_exports_monthly', 2],
+      ['growth', 'limit.compliance_exports_monthly', 12],
+    ];
+    for (const [planKey, key, wert] of erwartet) {
+      expect(
+        PLAN_ENTITLEMENTS[planKey]?.[key as keyof (typeof PLAN_ENTITLEMENTS)[string]],
+        `${planKey}.${key} weicht von der Preisseite ab`,
+      ).toBe(wert);
+    }
   });
 
   it('weist Enterprise als unaufgelösten Vertragsfall aus', () => {

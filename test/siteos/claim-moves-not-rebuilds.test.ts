@@ -195,3 +195,31 @@ describe('Abgelaufene Entwürfe werden als Ablauf behandelt', () => {
     expect(studio).toContain('state.claimed');
   });
 });
+
+// Die Kennung der lokalen Sitzung kommt aus einer echten Zufallsquelle.
+//
+// CodeQL meldete `Math.random()` in `localId()` als „Insecure randomness"
+// (high). Der Wert benennt nur einen Entwurf im eigenen Browser, der ohnehin
+// nicht übernehmbar ist — aber eine schwache Zufallsquelle in einer Kennung
+// ist ein Muster, das nicht stehen bleiben soll.
+describe('Lokale Sitzungskennung', () => {
+  /** Quelltext ohne Kommentare — sonst schlägt die Prüfung am eigenen an. */
+  function code(): string {
+    return session
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .split('\n')
+      .map((line) => line.replace(/\/\/.*$/, ''))
+      .join('\n');
+  }
+
+  it('nutzt kein Math.random()', () => {
+    expect(code()).not.toContain('Math.random');
+  });
+
+  it('greift auf die Krypto-Zufallsquelle zurück, wenn randomUUID fehlt', () => {
+    // `getRandomValues` gibt es auch im unsicheren Kontext, in dem
+    // `randomUUID` nicht bereitsteht — deshalb ist es der richtige Rückfall.
+    expect(code()).toContain('randomUUID');
+    expect(code()).toContain('getRandomValues');
+  });
+});

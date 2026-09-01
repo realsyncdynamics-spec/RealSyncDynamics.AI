@@ -312,5 +312,18 @@ export function describeSessionError(e: SiteOsError): string {
 function localId(): string {
   const uuid = globalThis.crypto?.randomUUID?.();
   if (uuid) return `local-${uuid}`;
-  return `local-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+
+  // Kein `Math.random()`. Diese Kennung benennt zwar nur einen Entwurf im
+  // eigenen Browser, der ohnehin nicht übernehmbar ist — aber eine schwache
+  // Zufallsquelle in einer Kennung ist ein Muster, das man nicht stehen
+  // lässt, und CodeQL meldet es zu Recht als Befund.
+  //
+  // `getRandomValues` ist der richtige Rückfall: Es gibt die Funktion auch
+  // dort, wo `randomUUID` fehlt — etwa im unsicheren Kontext (http). Fehlt
+  // auch sie, bleiben die Bytes null und es trägt allein die Zeit; das
+  // genügt, weil in einem Browser genau eine Sitzung liegt.
+  const bytes = new Uint8Array(8);
+  globalThis.crypto?.getRandomValues?.(bytes);
+  const suffix = Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+  return `local-${Date.now().toString(36)}-${suffix}`;
 }

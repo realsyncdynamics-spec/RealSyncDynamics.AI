@@ -1,9 +1,20 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronDown, Mail, Github, Shield, Zap, Lock, TrendingUp } from 'lucide-react';
+import { planById } from '@/shared/pricing';
 
 export const RealSyncDynamicsLanding = () => {
   const [activeSection, setActiveSection] = useState(0);
+
+  // Preise kommen aus `shared/pricing.ts`, damit diese Seite nicht erneut
+  // von der Quelle wegdriftet (AP10).
+  const starterPrice = planById('starter').price.monthlyEur;
+  const growthPrice = planById('growth').price.monthlyEur;
+  // COMMERCIAL-SSOT: temporary production hotfix.
+  // Canonical source migration tracked in Phase 2.
+  // `agencyPrice` ist entfallen: Agency ist seit AP2 stillgelegt und wird
+  // hier nicht mehr als Karte gefuehrt. Den Betrag aus der SSoT abzuleiten
+  // haette ihn korrekt, aber weiterhin uneinloesbar gemacht.
 
   const sections = [
     'Product',
@@ -111,12 +122,12 @@ export const RealSyncDynamicsLanding = () => {
             </div>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <button className="bg-gradient-to-r from-petrol to-security-blue hover:from-teal-700 hover:to-blue-600 text-obsidian font-bold py-4 px-8 rounded transition transform hover:scale-105">
+              <Link to="/demo-landing?source=realsync-landing" className="bg-gradient-to-r from-petrol to-security-blue hover:from-teal-700 hover:to-blue-600 text-obsidian font-bold py-4 px-8 rounded transition transform hover:scale-105">
                 Demo anfordern
-              </button>
-              <button className="bg-obsidian/50 border border-titanium/30 hover:border-petrol/50 text-titanium font-bold py-4 px-8 rounded transition">
+              </Link>
+              <Link to="/docs" className="bg-obsidian/50 border border-titanium/30 hover:border-petrol/50 text-titanium font-bold py-4 px-8 rounded transition">
                 Dokumentation →
-              </button>
+              </Link>
             </div>
 
             <div className="mt-20 flex justify-center">
@@ -410,7 +421,7 @@ export const RealSyncDynamicsLanding = () => {
                 Vom kostenlosen Erst-Scan bis zur kompletten Governance-Runtime
               </p>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 mb-12">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
               <div className="bg-slate-900/80 backdrop-blur p-6 rounded-lg border border-titanium/20 hover:border-titanium/40 flex flex-col transition">
                 <h3 className="text-lg font-bold text-titanium mb-2" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Free Audit</h3>
                 <p className="text-3xl font-bold bg-gradient-to-r from-petrol to-security-blue bg-clip-text text-transparent mb-1">0 €</p>
@@ -420,23 +431,23 @@ export const RealSyncDynamicsLanding = () => {
                   <li>✓ Kein Account nötig</li>
                   <li>✓ Einzeldomain-Scan</li>
                 </ul>
-                <button className="w-full bg-slate-800 hover:bg-slate-700 py-2 rounded text-sm transition">
+                <Link to="/audit?source=realsync-landing" className="block text-center w-full bg-slate-800 hover:bg-slate-700 py-2 rounded text-sm transition">
                   Scan starten
-                </button>
+                </Link>
               </div>
 
               <div className="bg-slate-900/80 backdrop-blur p-6 rounded-lg border border-security-blue/30 hover:border-security-blue/60 flex flex-col transition">
                 <h3 className="text-lg font-bold text-security-blue mb-2" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Starter</h3>
-                <p className="text-3xl font-bold text-titanium mb-1">79 €</p>
+                <p className="text-3xl font-bold text-titanium mb-1">{starterPrice} €</p>
                 <p className="text-xs font-mono uppercase tracking-wider text-titanium/50 mb-4">pro Monat</p>
                 <ul className="space-y-2 text-sm text-titanium/70 mb-6 flex-1">
                   <li>✓ Einzeldomain</li>
                   <li>✓ Compliance-Monitoring</li>
                   <li>✓ Evidence-Export</li>
                 </ul>
-                <button className="w-full bg-slate-800 hover:bg-slate-700 py-2 rounded text-sm transition">
+                <Link to="/checkout/starter?source=realsync-landing" className="block text-center w-full bg-slate-800 hover:bg-slate-700 py-2 rounded text-sm transition">
                   Buchen
-                </button>
+                </Link>
               </div>
 
               <div className="relative bg-gradient-to-br from-security-blue/20 to-petrol/10 backdrop-blur p-6 rounded-lg border-2 border-security-blue/50 hover:border-security-blue flex flex-col transition">
@@ -444,44 +455,45 @@ export const RealSyncDynamicsLanding = () => {
                   ⭐ EMPFOHLEN
                 </div>
                 <h3 className="text-lg font-bold text-security-blue mb-2 mt-2" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Growth</h3>
-                <p className="text-3xl font-bold text-titanium mb-1">249 €</p>
+                <p className="text-3xl font-bold text-titanium mb-1">{growthPrice} €</p>
                 <p className="text-xs font-mono uppercase tracking-wider text-titanium/50 mb-4">pro Monat</p>
                 <ul className="space-y-2 text-sm text-titanium/70 mb-6 flex-1">
                   <li>✓ Monitoring + Auto-Fix</li>
                   <li>✓ Mehrere Domains</li>
                   <li>✓ Prioritäts-Support</li>
                 </ul>
-                <button className="w-full bg-gradient-to-r from-security-blue to-petrol hover:from-blue-600 hover:to-teal-700 text-obsidian font-bold py-2 rounded text-sm transition">
+                <Link to="/checkout/growth?source=realsync-landing" className="block text-center w-full bg-gradient-to-r from-security-blue to-petrol hover:from-blue-600 hover:to-teal-700 text-obsidian font-bold py-2 rounded text-sm transition">
                   Buchen
-                </button>
+                </Link>
               </div>
 
               <div className="bg-slate-900/80 backdrop-blur p-6 rounded-lg border border-petrol/30 hover:border-petrol/60 flex flex-col transition">
-                <h3 className="text-lg font-bold text-petrol mb-2" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Agency</h3>
-                <p className="text-3xl font-bold text-titanium mb-1">699 €</p>
-                <p className="text-xs font-mono uppercase tracking-wider text-titanium/50 mb-4">pro Monat</p>
+                {/*
+                  COMMERCIAL-SSOT: temporary production hotfix.
+                  Canonical source migration tracked in Phase 2.
+                  Diese Karte fuehrte Agency mit dem Betrag aus der SSoT. Den
+                  Preis abzuleiten macht ihn korrekt, aber nicht einloesbar:
+                  Agency ist seit AP2 stillgelegt, `/checkout/agency` weist
+                  neue Abschluesse ab. Die Zielgruppe laeuft ueber Enterprise
+                  — nach Vertrag, deshalb ohne Betrag.
+
+                  `tier` muss dabei zur Ueberschrift passen: `ContactSales`
+                  baut daraus die Seitenueberschrift **und** schickt den Wert
+                  mit dem Lead an den Server. Ein Restwert `agency` fuehrte
+                  den Besucher auf „Agency — Founding Access" und verbuchte
+                  seine Anfrage unter einem stillgelegten Plan.
+                */}
+                <h3 className="text-lg font-bold text-petrol mb-2" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Enterprise</h3>
+                <p className="text-3xl font-bold text-titanium mb-1">Auf Anfrage</p>
+                <p className="text-xs font-mono uppercase tracking-wider text-titanium/50 mb-4">nach Vertrag</p>
                 <ul className="space-y-2 text-sm text-titanium/70 mb-6 flex-1">
                   <li>✓ White-Label</li>
-                  <li>✓ 10 Kunden-Sites</li>
+                  <li>✓ Mandanten-Kapazität nach Vereinbarung</li>
                   <li>✓ API-Zugang</li>
                 </ul>
-                <button className="w-full bg-slate-800 hover:bg-slate-700 py-2 rounded text-sm transition">
+                <Link to="/contact-sales?tier=enterprise&source=realsync-landing" className="block text-center w-full bg-slate-800 hover:bg-slate-700 py-2 rounded text-sm transition">
                   Buchen
-                </button>
-              </div>
-
-              <div className="bg-slate-900/80 backdrop-blur p-6 rounded-lg border border-titanium/20 hover:border-titanium/40 flex flex-col transition">
-                <h3 className="text-lg font-bold text-titanium mb-2" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Partner</h3>
-                <p className="text-3xl font-bold text-titanium mb-1">1.999 €</p>
-                <p className="text-xs font-mono uppercase tracking-wider text-titanium/50 mb-4">pro Monat</p>
-                <ul className="space-y-2 text-sm text-titanium/70 mb-6 flex-1">
-                  <li>✓ DSB-Kanzleien</li>
-                  <li>✓ Bis 50 Mandanten</li>
-                  <li>✓ Evidence-Vault</li>
-                </ul>
-                <button className="w-full bg-slate-800 hover:bg-slate-700 py-2 rounded text-sm transition">
-                  Buchen
-                </button>
+                </Link>
               </div>
             </div>
 
@@ -493,14 +505,15 @@ export const RealSyncDynamicsLanding = () => {
                 </h3>
                 <p className="text-titanium/70">
                   Custom Deployment, EU-VPS, Evidence-Vault, SLA &amp; White-Label nach Bedarf.
+                  Ihren Preis rechnen Sie sich in vier Fragen selbst aus.
                 </p>
               </div>
-              <a
-                href="mailto:hello@realsyncdynamicsai.de"
+              <Link
+                to="/enterprise-konfigurator"
                 className="bg-gradient-to-r from-petrol to-security-blue hover:from-teal-700 hover:to-blue-600 text-obsidian font-bold py-3 px-8 rounded transition whitespace-nowrap"
               >
-                Anfrage stellen
-              </a>
+                Enterprise anfragen
+              </Link>
             </div>
           </div>
         </section>

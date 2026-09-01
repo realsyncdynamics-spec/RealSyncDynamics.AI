@@ -54,8 +54,15 @@ describe('Company Configuration (UG/GmbH Ready)', () => {
 // ─── Pricing Tier Tests ──────────────────────────────────────────────────────
 
 describe('Pricing Tiers (6-Tier Model + Yearly Variants)', () => {
-  it('should have 12 tiers (6 base + 5 yearly variants + 1 one-time)', () => {
-    expect(PRICING_TIERS).toHaveLength(12);
+  // COMMERCIAL-SSOT: temporary production hotfix.
+  // Canonical source migration tracked in Phase 2.
+  // Zehn statt zwoelf: `starter_yearly` und `growth_yearly` erzeugen kein Tier
+  // mehr, weil fuer sie in `public.products` kein echter Stripe-Preis
+  // verdrahtet ist (`yearlyCheckoutUnavailable` in shared/pricing.ts). Ein
+  // Tier waere die Grundlage einer oeffentlichen Angebotsflaeche — und damit
+  // ein zugesicherter Festpreis, den `stripe-checkout` nicht einloest.
+  it('should have 10 tiers (6 base + 3 yearly variants + 1 one-time)', () => {
+    expect(PRICING_TIERS).toHaveLength(10);
   });
 
   it('should have 5 public tiers sorted by price ascending', () => {
@@ -245,6 +252,15 @@ describe('Billing Workflows', () => {
     const enterprise = tierById('enterprise')!;
     expect(enterprise.cta.href).toContain('/contact-sales');
     expect(enterprise.cta.href).not.toContain('/checkout/');
+    // COMMERCIAL-SSOT: temporary production hotfix.
+    // Canonical source migration tracked in Phase 2.
+    // Ergaenzend zum Kaufmodus: kein Self-Service-Trial und kein
+    // oeffentlicher Festpreis. Ohne diese drei Zusicherungen bewarb die
+    // Seite weiter „14 Tage kostenlos testen" zu 1.249 € fuer einen Plan,
+    // den der Checkout gar nicht abschliessen kann.
+    expect(enterprise.plan.trialDays).toBe(0);
+    expect(enterprise.priceOnRequest).toBe(true);
+    expect(enterprise.cta.href).not.toContain('pilot=true');
   });
 });
 

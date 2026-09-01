@@ -23,7 +23,7 @@ const GOVERNANCE_NAV_ITEMS: NavItem[] = [
   { id: 'memory-governance', label: 'Memory Governance', path: '/app/governance/memory', feature: 'dashboard.access', group: 'governance', icon: '🧠' },
 
   // Starter+ Features
-  { id: 'website-scan', label: 'Website-Scan', path: '/app/governance/website-scan', feature: 'website.scan', group: 'compliance', icon: '🌐' },
+  { id: 'website-scan', label: 'Website-Scan', path: '/app/scans', feature: 'website.scan', group: 'compliance', icon: '🌐' },
   { id: 'reports', label: 'Reports', path: '/app/compliance', feature: 'reports.export', group: 'compliance', requiredTier: 'starter', icon: '📄' },
 
   // Growth+ Features

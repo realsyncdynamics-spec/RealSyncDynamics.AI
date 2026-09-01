@@ -17,12 +17,6 @@ on:
       - 'scripts/edge-function-drift-allowlist.json'
       - '.github/workflows/edge-function-drift.yml'
 
-# Eng gefasst: Der Waechter liest den Stand und schreibt genau ein
-# Alarm-Issue. Keine weiteren Rechte.
-permissions:
-  contents: read
-  issues: write
-
 jobs:
   drift:
     runs-on: ubuntu-latest
@@ -32,36 +26,9 @@ jobs:
         with:
           node-version: '20'
       - name: Check edge function drift
-        id: guard
-        continue-on-error: ${{ github.event_name == 'schedule' }}
         env:
           # Bei PRs aus Forks fehlen die Secrets → Skript ueberspringt den
           # Prod-Teil sauber (Exit 0) und prueft nur die Repo-Konsistenz.
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
         run: node scripts/check-edge-function-drift.mjs
-
-      # Der Waechter meldet ab hier dorthin, wo jemand hinsieht.
-      #
-      # Anders als der Migration- und der ACL-Guard schlaegt dieser hier auch
-      # auf PRs hart fehl. Das macht ihn auf PRs sichtbar, die
-      # `supabase/functions/**` anfassen — aber nur auf diesen. Bestehende
-      # Orphans bleiben sonst unbemerkt, bis zufaellig ein passender PR
-      # aufschlaegt. Deshalb meldet auch er seinen `schedule`-Lauf.
-      #
-      # Nur im `schedule`-Lauf, und `always()`, damit auch der gruene Fall
-      # ankommt: Er schliesst das Issue wieder.
-      - name: Drift-Alarm melden
-        if: always() && github.event_name == 'schedule'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GUARD_KEY: edge-function
-          GUARD_TITLE: Edge Function Drift Guard
-          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-        run: node scripts/report-drift-alarm.mjs ${{ steps.guard.outcome == 'failure' && 'alarm' || 'resolve' }}
-
-      - name: Ergebnis des Wächters durchreichen
-        if: always() && github.event_name == 'schedule' && steps.guard.outcome == 'failure'
-        run: |
-          echo "Der Wächter hat Drift gemeldet — siehe Schritt oben und das Drift-Alarm-Issue."
-          exit 1

@@ -41,6 +41,20 @@
 --
 -- Additiv und idempotent. Keine Zeile wird geloescht, kein Schreibpfad
 -- entzogen.
+--
+-- ## Zur Versionsnummer
+--
+-- Diese Migration hiess urspruenglich `20260901000000`. Genau diese Version
+-- ist inzwischen im Ledger verbucht — als `canonical_plan_catalog` aus `main`.
+-- Waere sie so geblieben, haette `supabase db push` sie fuer bereits
+-- angewandt gehalten und **stillschweigend uebersprungen**: Die Lesepolicy
+-- unten waere nie in Produktion angekommen, und nichts haette es gemeldet.
+--
+-- Umbenannt auf `20260902000200`, also ueber den hoechsten verbuchten Stand
+-- (`20260902000100`, gemessen 2026-09-01). Das ist die Lehre aus der
+-- Kollision vom 2026-08-24, die CLAUDE.md §5 festhaelt: Die Nummer gegen den
+-- **aktuellen** Stand pruefen, nicht gegen die Basis des eigenen Zweigs — und
+-- seit dem 2026-08-29 zusaetzlich gegen das Ledger.
 
 -- ─────────────────────────────────────────────────────────────────────────
 -- 1. Spalten

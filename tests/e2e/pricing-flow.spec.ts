@@ -32,11 +32,19 @@ const DETAIL_SLUGS = [
 // eigens geprüft statt hier ignoriert.
 // Die Plan-Keys, die einen Self-Service-Checkout erreichen. Agency ist seit
 // AP2 nicht mehr dabei: stillgelegt, führt auf die Preisseite zurück.
+// Die Jahres-Keys sind hier nicht mehr dabei: fuer `starter_yearly` und
+// `growth_yearly` ist in `public.products` kein echter Stripe-Preis
+// verdrahtet, `stripe-checkout` weist sie mit PRICE_NOT_CONFIGURED ab. Die
+// Checkout-Seite leitet sie deshalb auf den Monats-Checkout desselben Plans
+// um — eigens geprueft statt hier ignoriert.
 const CHECKOUT_PLAN_KEYS = [
   'starter',
   'growth',
-  'starter_yearly',
-  'growth_yearly',
+];
+
+const UNWIRED_YEARLY_REDIRECTS: Array<[string, string]> = [
+  ['starter_yearly', 'starter'],
+  ['growth_yearly', 'growth'],
 ];
 
 test.describe('Pricing Flow', () => {
@@ -115,6 +123,19 @@ test.describe('Pricing Flow', () => {
       }
     });
 
+    test('Jahres-Checkout ohne verdrahteten Preis leitet auf den Monats-Checkout', async ({ page }) => {
+      for (const [yearlyKey, monthlyKey] of UNWIRED_YEARLY_REDIRECTS) {
+        await page.goto(`${BASE_URL}/checkout/${yearlyKey}`);
+        // Am Ende verankert: `/checkout/starter` ist ein Praefix von
+        // `/checkout/starter_yearly`. Ohne `(\?|$)` waere die Wartebedingung
+        // schon von der Ausgangs-URL erfuellt und der Test gruen, bevor die
+        // Weiterleitung ueberhaupt stattgefunden hat.
+        await page.waitForURL(new RegExp(`/checkout/${monthlyKey}(\\?|$)`));
+        expect(page.url()).toContain(`/checkout/${monthlyKey}`);
+        expect(page.url()).not.toContain(yearlyKey);
+      }
+    });
+
     test('partner checkout should redirect to contact-sales', async ({ page }) => {
       for (const planKey of ['partner', 'partner_yearly']) {
         await page.goto(`${BASE_URL}/checkout/${planKey}`);
@@ -131,12 +152,13 @@ test.describe('Pricing Flow', () => {
 
     test('enterprise checkout should redirect to contact-sales', async ({ page }) => {
       // Seit AP2 (2026-08-24) ist Enterprise ein Vertrag, kein
-      // Self-Service-Checkout: `purchaseMode: 'inquiry'`. Bestehende
-      // Enterprise-Abos rechnen unverändert weiter ab — betroffen ist allein
-      // der Neuabschluss.
+      // Self-Service-Checkout: `purchaseMode: 'inquiry'`. Er darf damit auch
+      // keinen Self-Service-Trial oeffnen. Bestehende Enterprise-Abos rechnen
+      // unverändert weiter ab — betroffen ist allein der Neuabschluss.
       await page.goto(`${BASE_URL}/checkout/enterprise`);
       await page.waitForURL(/\/contact-sales/);
       await expect(page).toHaveURL(/plan=enterprise/);
+      await expect(page).not.toHaveURL(/pilot=true/);
     });
 
     test('stillgelegte Pläne führen zurück auf die Preisseite', async ({ page }) => {

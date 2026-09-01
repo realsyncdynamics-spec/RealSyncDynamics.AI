@@ -78,8 +78,8 @@ Menschen · Unternehmen · KI-Agenten · Daten · Entscheidungen.
 
 **Primär: Supabase Cloud (EU / Frankfurt)**
 - PostgreSQL 17 (Live-Projekt, Stand 2026-08-16)
-- **179 Edge Functions** im Repo (`supabase/functions/`, Deno/V8; `_shared` ist Bibliothek, keine Function) — alle deployt, und alle 179 deployten haben ein Verzeichnis. Deckungsgleich in beide Richtungen, Stand 2026-08-30, siehe §5
-- **300 Migrations** (`supabase/migrations/`) — alle verbucht; zu den zwei nachgezogenen Out-of-Band-Migrationen siehe §5
+- **179 Edge Functions** im Repo (`supabase/functions/`, Deno/V8; `_shared` ist Bibliothek, keine Function) — alle deployt, und alle 179 deployten haben ein Verzeichnis. Deckungsgleich in beide Richtungen, Stand 2026-09-01, siehe §5
+- **305 Migrations** (`supabase/migrations/`) — alle verbucht, gemessen am 2026-09-01 gegen den Ledger, Mengen in beide Richtungen leer; zu den zwei nachgezogenen Out-of-Band-Migrationen siehe §5
 - RLS auf allen App-Tabellen · Realtime Subscriptions
 
 **Node/TypeScript-Services** (containerisiert — **kein Go im Repo**)
@@ -233,6 +233,23 @@ Jeder Agent braucht vier Dimensionen — fehlt eine, ist er nicht governance-fä
 > Commit `supabase/**`, also wurde `deploy.yml` gar nicht ausgelöst.
 > Blockiert, aber niemand ist hineingelaufen. Der letzte grüne Lauf davor
 > war am 2026-08-25 um 18:36 UTC auf `2e60a21`.
+>
+> **Nachmessung 2026-09-01**, `main` @ `310ab0e`, gleiche Methode und gleiche
+> Quelle wie oben. Repo und Produktion sind weiterhin deckungsgleich — auf
+> höheren Zahlen, weil seither fünf Migrationen dazugekommen sind:
+>
+> | | Repo (`main`) | in Produktion | Lücke |
+> |---|---|---|---|
+> | Migrationen | 305 Dateien | **305** verbucht (neueste `20260902000100`) | **0** |
+> | Edge Functions | 179 (+ `_shared`) | **179** aktiv | **0** |
+> | Tabellen in `public` | — | 354 | — |
+> | davon mit RLS | — | **354 / 354** | **0** |
+> | Views | — | 19 | — |
+>
+> `comm -23` und `comm -13` sind beide leer, bei Migrationen wie bei
+> Functions. Die Zahlen in §2 und §7 sind damit nicht geschätzt, sondern
+> nachgezogen. Dass Repo und Ledger beide 305 zeigen, war dabei nicht der
+> Beleg — der Mengenvergleich war es.
 >
 > ¹ **Zwei Migrationen sind live, ohne dass es je eine Datei gab**:
 > `20260825204748_fix_websites_authenticated_crud_rls` (2026-08-25) und
@@ -456,7 +473,7 @@ RealSyncDynamics.AI/
 │   └── pricing.ts     Single Source of Truth für Produkt-, Preis- und Berechtigungsmodell
 ├── supabase/
 │   ├── functions/     179 Edge Functions (einziger Ort für Service-Role-Keys)
-│   └── migrations/    300 Migrations
+│   └── migrations/    305 Migrations
 ├── apps/
 │   └── agent-runtime/ Agent Runtime (Node/TS, Docker)
 ├── services/          runtime-core · evidence-runtime · openclaw-agent · playwright-scanner

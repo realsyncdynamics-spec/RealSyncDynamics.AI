@@ -698,7 +698,7 @@ Relativ, keine erfundenen Zeitangaben.
 | P1-4 Approval-Kette | ✅ (Freigabe „go" 2026-08-24) | `pdp_approval_gates` (Request-Fingerprint `approvalFingerprint()`, genau ein offenes Gate je Fingerprint, 7-Tage-Ablauf); `decide()` erzeugt Gates und erkennt erteilte Deckung (→ allow mit Begründung); `governance-approvals` neu: `gates_list`/`gate_approve`/`gate_reject` — freigeben darf owner/admin **oder** die Rolle aus `approver_role`; Evidence je Gate-Entscheidung. v1-Grenze dokumentiert: Rollen-Check tenantweit, Teilbaum-Eingrenzung folgt mit P1-3 |
 | P1-2 Klassifikations-PIP | ✅ (Freigabe „go" 2026-08-24) | `_shared/pdp/classify.ts`: Signal-Erkennung (`detectSignals()`) läuft **beim PEP**, an den PDP gehen nur Signalnamen — nie Inhalte (DSGVO Art. 5 Abs. 1 lit. c). Drei Quellen (Deklaration, Stammdaten, Signale); **Abweichung vom Planwortlaut, begründet**: den Wert bestimmt die *strengste* Quelle, nicht die erste — eine Deklaration `public` hätte sonst jede `data_transfer`-Regel ausgehebelt. Unsichere Klassifikation (< 0,6) schwächt einen **klassifikationsbasierten** Block zur Warnung ab, mit Ausweis in `classification.downgraded_from`; Vendor-/Rollen-/Modellsperren bleiben hart |
 | P1-3 Rollen-Sichten (Gate-UI) | ✅ (Freigabe „go" 2026-08-24/25) | `/app/governance/gates` (`ApprovalGatesView`): offene Gates freigeben/ablehnen mit Pflichtbegründung, Statusfilter, Ablaufanzeige, Fingerprint. `AccessManagementPanel`: Einheiten anlegen/umbenennen/löschen, Principals anlegen und deaktivieren, Rollen vergeben/entziehen — **schreibend über `governance-access`**, nie direkt aus dem Browser, damit jede Rollenvergabe im Prüfpfad landet. `/app/governance/start` (`GovernanceHomeView`): rollenspezifischer Einstieg (Datenschutz, IT, Compliance, Freigabe, Mitarbeitende) als **Filter über den vorhandenen Modulen**, kein neues UI-System. Alles mit vorhandenen Komponenten und Tokens (§10.2) |
-| P1-5 Agent-PEP | ✅ (Freigabe „go" 2026-08-25) | `_shared/pdp/toolcall.ts`: Abbildung Tool-Call → Entscheidungsanfrage, **einmalig auf der PDP-Seite** (nicht je Runtime — Fragmentierungsbefund §1.4). `governance-decide` nimmt zusätzlich die Form `{ contract:'v1', tool_call:{…} }`. `apps/agent-runtime`: `sanitizeToolCall()` als Manipulationsgrenze — es verlassen nur Werkzeugname, Aufgabenart, Zielsystem, Anbieter, Modell, deklarierte Klasse und die **Namen** der Argumente den Prozess; **keine Argumentwerte, kein freier Text, keine Modellausgabe** (K6). `AGENT_PDP_ENFORCEMENT=off\|shadow\|enforce`, Default `shadow`. Die lokale Registry-Prüfung bleibt erste Schranke: der PDP kann zusätzlich anhalten, nie zusätzlich erlauben |
+| P1-5 Agent-PEP | ✅ (Freigabe „go" 2026-08-25; `/voice-tool` am 2026-08-30 nachgezogen) | `_shared/pdp/toolcall.ts`: Abbildung Tool-Call → Entscheidungsanfrage, **einmalig auf der PDP-Seite** (nicht je Runtime — Fragmentierungsbefund §1.4). `governance-decide` nimmt zusätzlich die Form `{ contract:'v1', tool_call:{…} }`. `apps/agent-runtime`: `sanitizeToolCall()` als Manipulationsgrenze — es verlassen nur Werkzeugname, Aufgabenart, Zielsystem, Anbieter, Modell, deklarierte Klasse und die **Namen** der Argumente den Prozess; **keine Argumentwerte, kein freier Text, keine Modellausgabe** (K6). `AGENT_PDP_ENFORCEMENT=off\|shadow\|enforce`, Default `shadow`. Die lokale Prüfung bleibt erste Schranke: der PDP kann zusätzlich anhalten, nie zusätzlich erlauben. Gilt für **beide** Werkzeugrouten — `/run-agent` und `/voice-tool`; letztere kam mit #1127 während der Arbeit hinzu und entschied bis dahin allein über ihre Kanal-Policy, also an der zentralen Governance vorbei |
 | P0-1 Credentials | ✅ (E8: **Ja** am 2026-08-24) | Migration `20260824110000`: Spaltenrechte — `credentials`/`credentials_enc` erreichen Clients nie mehr, kein Client-INSERT; Edge Function `integration-credentials` (AES-256-GCM-Siegel via `_shared/secretBox.ts`, owner/admin-only, Audit-Log, 503 statt Klartext-Fallback); View liest/schreibt nur noch Metadaten |
 
 **Noch offen in P1:** P1-6 (Evidence härten).
@@ -708,6 +708,19 @@ allgemeine Default fail open ist (E2, offen), ist er für die Agent-Runtime
 **fail closed** (`AGENT_PDP_FAILURE_MODE=block`). Ein Agent handelt autonom,
 ohne Zuschauer; eine angehaltene Agentenaktion kostet einen Lauf, eine
 ungeprüfte kostet die Zusage des Produkts. Umstellbar, aber nur bewusst.
+
+**Vierte Policy-Auswertung, neu hinzugekommen:** `apps/agent-runtime/src/voice-policy.ts`
+(aus #1127) entscheidet eigenständig über Sprachkanal-Werkzeuge — neben
+`policy-engine.ts`, `policyEngine.ts` und `gate_engine.py`. Sie ist inhaltlich
+reicher als der PDP (Einwilligung, Kill-Switch, Rate-Limit) und bleibt deshalb
+erste Schranke; der PDP liegt seit dem 2026-08-30 darüber. Für die
+Konsolidierung gilt der Weg aus P0-5: erst Shadow-Vergleich, dann Umschaltung —
+nicht ersetzen, solange nichts gemessen ist.
+
+**Ohne Test-Harnisch:** `apps/agent-runtime` hat kein `test/`-Verzeichnis,
+obwohl `package.json` ein `test`-Skript darauf zeigt. Die reine Logik
+(`sanitizeToolCall`, `applyVerdict`, `loadPdpConfig`) wird deshalb aus der
+Root-Suite mitgetestet; die Verdrahtung der Routen selbst ist ungetestet.
 
 **Grenze des Agent-PEP, ehrlich benannt:** Die Agent-Runtime führt **keine**
 eigene Signal-Erkennung auf Argumentwerten durch — der Detektor aus P1-2 liegt

@@ -63,9 +63,11 @@ Auth-Header: `Authorization: Bearer ${AGENT_RUNTIME_API_TOKEN}`
 ### Agent-PEP (Governance-Prüfung vor dem Lauf)
 
 Ab P1-5 fragt der Gateway vor jedem freigegebenen Lauf den Policy Decision
-Point (`governance-decide`). Die lokale Registry-Prüfung bleibt die erste
-Schranke — sie kennt die erlaubten Werkzeuge des Agenten; der PDP kommt
-darüber und kennt die Regeln des Mandanten. **Ein lokales Nein bleibt ein
+Point (`governance-decide`) — auf **beiden** Werkzeugrouten, `/run-agent`
+und `/voice-tool`. Die lokale Prüfung bleibt die erste Schranke: bei
+`/run-agent` die Agent-Registry (erlaubte Werkzeuge), bei `/voice-tool` die
+Kanal-Policy (Einwilligung, Kill-Switch, Rate-Limit). Der PDP kommt darüber
+und kennt die Regeln des Mandanten. **Ein lokales Nein bleibt ein
 Nein: der PDP kann zusätzlich anhalten, nie zusätzlich erlauben.**
 
 Drei Modi:

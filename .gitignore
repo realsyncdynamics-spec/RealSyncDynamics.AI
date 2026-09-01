@@ -33,3 +33,6 @@ scripts/ops/.migration-drift-suggested.sh
 *.pfx
 # Öffentliche Schlüssel sind unkritisch (z. B. tools/realsync-cli/data/demo.pub.pem).
 !*.pub.pem
+
+# Lokaler wrangler-/Miniflare-Zustand (z. B. D1 unter --local) — nie ins Repo.
+.wrangler/

@@ -5,9 +5,9 @@
  * Der HTTP-Pfad macht ausschließlich:
  *   authenticate → validate → idempotency → policy evaluation → create
  *   command → return commandId
- * Ausführung passiert nie im Request: ALLOW/APPROVED stößt sie serverseitig
- * per ctx.waitUntil an (siehe executor.ts; nächster Schritt: Cloudflare
- * Workflows). DENY und APPROVAL enden im jeweiligen Zustand.
+ * Ausführung passiert nie im Request: ALLOW und die erteilte Freigabe
+ * starten eine Workflow-Instanz (siehe executor.ts), die den Neustart des
+ * Workers überlebt. DENY und APPROVAL enden im jeweiligen Zustand.
  *
  * Die Frage, die dieses Gateway beantwortet, ist nicht „was kann der
  * Agent?", sondern: Darf diese KI-Aktion stattfinden — und lässt sich sechs
@@ -19,11 +19,12 @@ import { authenticate, requireRole } from "./auth";
 import { OrgRepository } from "./db/repository";
 import { evaluatePolicies } from "./policy/engine";
 import { evidenceFor, EvidenceSequencer } from "./evidence/sequencer";
-import { executeCommand } from "./executor";
+import { CommandWorkflow } from "./workflows/command-workflow";
+import { startCommandExecution } from "./executor";
 import { hashObject } from "./lib/hash";
 import { GovardError, type PolicyAction, type PolicyRule, type Principal } from "./types";
 
-export { EvidenceSequencer };
+export { EvidenceSequencer, CommandWorkflow };
 
 const MAX_PAYLOAD_BYTES = 64 * 1024;
 const SOURCE_PATTERN = /^[a-z0-9_-]{1,32}$/;
@@ -218,7 +219,9 @@ async function handleCommand(
   } else {
     await repo.transition(commandId, "EVALUATED", "APPROVED");
     // Ausführung nach der Antwort — der Request blockiert nie auf den Agenten.
-    ctx.waitUntil(executeCommand(env, principal.org_id, commandId));
+    // Der Workflow überlebt den Worker-Neustart; waitUntil deckt nur das
+    // Anlegen der Instanz ab, nicht die Ausführung selbst.
+    ctx.waitUntil(startCommandExecution(env, principal.org_id, commandId));
     state = "APPROVED";
   }
 
@@ -287,7 +290,7 @@ async function handleApprovalDecision(
     await repo.transition(claimed.command_id, "PENDING_APPROVAL", "APPROVED", {
       actorId: principal.actor_id,
     });
-    ctx.waitUntil(executeCommand(env, principal.org_id, claimed.command_id));
+    ctx.waitUntil(startCommandExecution(env, principal.org_id, claimed.command_id));
   } else {
     await repo.transition(claimed.command_id, "PENDING_APPROVAL", "DENIED", {
       actorId: principal.actor_id,
@@ -381,18 +384,37 @@ async function route(
 
   if (method === "POST" && pathname === "/api/evidence/seal") {
     requireRole(principal, "admin");
-    const seal = await evidenceFor(env, principal.org_id).seal(principal.org_id);
-    await evidenceFor(env, principal.org_id).append({
-      org_id: principal.org_id,
-      command_id: null,
-      actor_id: principal.actor_id,
-      event_type: "CHAIN_SEALED",
-      payload: seal,
-    });
+    const seal = await sealAndRecord(env, principal.org_id, principal.actor_id);
     return json(env, request, seal, 201);
   }
 
   throw new GovardError("NOT_FOUND", "Unbekannter Endpunkt", 404);
+}
+
+/**
+ * Siegelt den Chain-Head UND vermerkt das Siegeln in der Kette selbst.
+ *
+ * Beides gehört zusammen und steht deshalb an genau einer Stelle. Vorher
+ * tat das nur der manuelle Endpunkt; der tägliche Cron siegelte still.
+ * Wer die Kette prüfte, sah vereinzelte CHAIN_SEALED-Ereignisse für
+ * Handbetrieb und keine für den Regelbetrieb — und schloss daraus, das
+ * Siegeln laufe nicht. Eine Aufzeichnung, die über ihren eigenen
+ * Integritätsmechanismus in die Irre führt, ist schlechter als gar keine.
+ *
+ * actor_id unterscheidet die Herkunft: eine Kennung bei Handbetrieb,
+ * null beim Cron.
+ */
+async function sealAndRecord(env: Env, orgId: string, actorId: string | null) {
+  const evidence = evidenceFor(env, orgId);
+  const seal = await evidence.seal(orgId);
+  await evidence.append({
+    org_id: orgId,
+    command_id: null,
+    actor_id: actorId,
+    event_type: "CHAIN_SEALED",
+    payload: seal,
+  });
+  return seal;
 }
 
 /** Verfallene Freigaben ordentlich schließen: Übergang + Evidence, kein stilles UPDATE. */
@@ -436,7 +458,7 @@ export default {
       for (const orgId of await OrgRepository.allOrgIds(env.DB)) {
         try {
           await expireApprovalsForOrg(env, orgId);
-          await evidenceFor(env, orgId).seal(orgId);
+          await sealAndRecord(env, orgId, null);
         } catch (err) {
           console.error("scheduled maintenance failed for org", orgId, err);
         }

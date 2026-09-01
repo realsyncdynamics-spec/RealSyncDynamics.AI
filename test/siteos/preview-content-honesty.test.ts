@@ -111,6 +111,10 @@ describe('Vorschau-Inhalte — nichts Erfundenes', () => {
       'Persönliche Betreuung',
       'Transparente Leistungen',
       'Kurze Wege',
+      // Aus `parseBrief` — dieselbe Behauptung, andere Stelle.
+      'persönliche Beratung',
+      'transparente Leistungen',
+      'kurze Wege',
     ];
 
     it.each(['AI Governance Runtime fuer Unternehmen', 'Zahnarzt in Hamburg', 'Restaurant in Leipzig'])(
@@ -120,6 +124,38 @@ describe('Vorschau-Inhalte — nichts Erfundenes', () => {
         for (const satz of ERFUNDEN) expect(text).not.toContain(satz);
       },
     );
+  });
+
+  describe('Zusammenfassung — sachlich statt werbend', () => {
+    // Freigabe des Eigentuemers vom 2026-09-01, zweite Frage nach §10.3:
+    // „Ja — nur Zusammenfassung". `defaultServices` bleibt ausdruecklich
+    // unangetastet.
+    it('nennt Branche und Ort, ohne etwas zu versprechen', () => {
+      expect(parseBrief('Zahnarzt in Hamburg').summary).toBe('Zahnarztpraxis in Hamburg.');
+      expect(parseBrief('Restaurant').summary).toBe('Gastronomie.');
+    });
+
+    it('bleibt gefuellt, damit seo.missing-description nicht greift', () => {
+      const bp = synthesizeBlueprint(parseBrief('Zahnarzt in Hamburg'));
+
+      expect(bp.seo.defaultDescription.length).toBeGreaterThan(0);
+      expect(analyzeBlueprint(bp).map((f) => f.code)).not.toContain('seo.missing-description');
+    });
+
+    it('zieht einen echten Namen weiterhin in die Zusammenfassung nach', () => {
+      // `renameInSummary` ersetzt den fuehrenden Katalogbegriff. Das muss
+      // auch mit der verkuerzten Form noch greifen — sonst stuende im Hero
+      // „Praxis Vogt" und darunter „Zahnarztpraxis in Hamburg."
+      const brief = mergeBrief(parseBrief('Zahnarzt in Hamburg'), { name: 'Praxis Vogt' });
+      expect(brief.summary).toBe('Praxis Vogt in Hamburg.');
+    });
+
+    it('laesst die echte Beschreibung aus dem Scan gewinnen', () => {
+      const brief = mergeBrief(parseBrief('Zahnarzt in Hamburg'), {
+        summary: 'Zahnmedizin am Hafen seit 1998.',
+      });
+      expect(brief.summary).toBe('Zahnmedizin am Hafen seit 1998.');
+    });
   });
 
   describe('Verfeinern verliert keine echten Inhalte', () => {

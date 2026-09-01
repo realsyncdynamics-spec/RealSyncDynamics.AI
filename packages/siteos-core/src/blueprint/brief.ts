@@ -120,9 +120,22 @@ export function parseBrief(prompt: string, locale: Locale = 'de'): SiteBrief {
   // sie sich wie ein Fehler.
   const label = preset.label.split(' / ')[0];
   const name = locality ? `${label} ${locality}` : label;
-  const summary = locality
-    ? `${label} in ${locality} — persönliche Beratung, transparente Leistungen und kurze Wege.`
-    : `${label} — persönliche Beratung, transparente Leistungen und kurze Wege.`;
+
+  // Sachlich, nicht werbend. Bis zum 2026-09-01 stand hier
+  // „… — persönliche Beratung, transparente Leistungen und kurze Wege." —
+  // dieselbe erfundene Behauptung wie im „Warum wir"-Block, nur an anderer
+  // Stelle. Sie ist folgenreicher als sie aussieht: Die Zusammenfassung
+  // wird zur Meta-Description und zur Hero-Unterzeile, landet also im
+  // ausgelieferten Dokument und im Suchindex. Aus einem Prompt allein lässt
+  // sich keine dieser drei Zusagen belegen.
+  //
+  // Leer darf sie trotzdem nicht sein, sonst greift `seo.missing-description`.
+  // Was bleibt, ist das, was der Prompt tatsächlich hergibt: Branche und Ort.
+  // Eine Längenregel gibt es nicht — geprüft wird allein auf „vorhanden".
+  //
+  // Der Scan-Pfad ist davon unberührt: `mergeBrief` ersetzt die
+  // Zusammenfassung ohnehin durch die echte Beschreibung der Website.
+  const summary = locality ? `${label} in ${locality}.` : `${label}.`;
 
   return {
     name,

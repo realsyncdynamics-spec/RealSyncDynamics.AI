@@ -1015,12 +1015,37 @@ genauso aussieht wie belegter und deshalb von keinem Render- oder
 Typ-Test gefunden wird. Die beanstandeten Formulierungen sind dort
 namentlich gesperrt.
 
-**Weiterhin offen, gleiche Klasse, nicht mit angefasst**: `brief.ts`
-erfindet in `parseBrief` die Zusammenfassung („… persönliche Beratung,
-transparente Leistungen und kurze Wege.") und in `defaultServices` die
-Leistungen. Beides wird im Scan-Pfad von `mergeBrief` mit echten Daten
-überschrieben und fällt dort nicht auf; im reinen Prompt-Pfad bleibt es
-stehen. Gehört entschieden, nicht nebenbei geändert.
+**2026-09-01 (2) — Zusammenfassung im Brief: sachlich statt werbend**
+
+Nachtrag zur Freigabe oben, gleiche Klasse an anderer Stelle. `parseBrief`
+setzte die Zusammenfassung auf „… — persönliche Beratung, transparente
+Leistungen und kurze Wege." Sie wird zur **Meta-Description und zur
+Hero-Unterzeile**, landet also im ausgelieferten Dokument und im
+Suchindex — aus einem Prompt allein ist keine der drei Zusagen belegbar.
+
+Auf die Fragepflicht nach §10.3 hat der Eigentümer entschieden: **„Ja — nur
+Zusammenfassung"**.
+
+| Was | Vorher | Nachher |
+|---|---|---|
+| `parseBrief`-Zusammenfassung | „Zahnarztpraxis in Hamburg — persönliche Beratung, transparente Leistungen und kurze Wege." | „Zahnarztpraxis in Hamburg." |
+| `defaultServices` | erfindet Leistungen je Branche | **unverändert** — ausdrücklich nicht freigegeben |
+
+Leer wäre keine Option gewesen: Dann griffe `seo.missing-description`. Eine
+Längenregel gibt es nicht — geprüft wird allein auf „vorhanden", am Code
+nachgesehen (`analysis/blueprint.ts`, `analysis/observation.ts` führen nur
+`missing-` bzw. `not-delivered`-Codes). `renameInSummary` greift weiter:
+Ein echter Firmenname ersetzt weiterhin den führenden Katalogbegriff.
+Der Scan-Pfad ist unberührt — `mergeBrief` ersetzt die Zusammenfassung
+ohnehin durch die echte Beschreibung der Website.
+
+**Weiterhin offen, nicht freigegeben**: `defaultServices` in `brief.ts`
+erfindet die Leistungen je Branche (für eine Zahnarztpraxis „Prophylaxe,
+Zahnerhaltung, Implantologie …"). Im Scan-Pfad überschreibt `mergeBrief`
+sie mit echten Daten; im reinen Prompt-Pfad bleiben sie stehen. Bewusst
+stehengelassen — der Leistungsblock ist zentral, und ohne ihn wäre die
+Startseite im Prompt-Pfad deutlich leerer. Gehört entschieden, nicht
+nebenbei geändert.
 
 #### Faustregel
 

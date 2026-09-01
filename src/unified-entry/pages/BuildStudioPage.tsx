@@ -37,7 +37,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
-  ArrowRight, Check, Loader2, Monitor, Smartphone, Sparkles, Tablet, Wand2, ShieldCheck, AlertTriangle,
+  ArrowRight, Check, Link2, Loader2, Monitor, Smartphone, Sparkles, Tablet, Wand2, ShieldCheck, AlertTriangle,
 } from 'lucide-react';
 import {
   renderSite,
@@ -77,6 +77,19 @@ const QUICK_ACTIONS: readonly string[] = [
   'Füge ein Kontaktformular hinzu.',
   'Füge eine Referenzseite hinzu.',
 ];
+
+/**
+ * Restfrist in Tagen, aufgerundet.
+ *
+ * Aufgerundet, weil „läuft in 0 Tagen ab" für etwas, das noch sechs Stunden
+ * erreichbar ist, falsch wirkt. Der genaue Zeitpunkt steht im Titel-Attribut.
+ */
+function daysLeft(expiresAt: string | null): number | null {
+  if (!expiresAt) return null;
+  const ms = new Date(expiresAt).getTime() - Date.now();
+  if (!Number.isFinite(ms) || ms <= 0) return 0;
+  return Math.ceil(ms / (24 * 60 * 60 * 1000));
+}
 
 export default function BuildStudioPage() {
   const navigate = useNavigate();
@@ -457,6 +470,40 @@ export default function BuildStudioPage() {
               </button>
             ))}
           </div>
+
+          {/*
+            Geteilte Vorschau. Sichtbar nur, wenn tatsächlich etwas abgelegt
+            wurde — ein Feld „Link" ohne Link wäre ein Versprechen, das die
+            Seite nicht hält. Fehlt die Ablage, steht der Grund da, nicht eine
+            tote Adresse (§14: keine vorgetäuschten Elemente).
+          */}
+          {state.preview.status === 'stored' && state.preview.url && (
+            <div className="mt-6">
+              <div className="mb-2 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[.16em] text-titanium-500">
+                <Link2 size={12} className="text-petrol-400" /> Vorschau teilen
+              </div>
+              <a
+                href={state.preview.url}
+                target="_blank"
+                rel="noreferrer noopener"
+                className="block break-all rounded-lg border border-titanium-800 px-3 py-2 font-mono text-[10px] text-titanium-300 hover:border-petrol-700 hover:text-titanium-100"
+              >
+                {state.preview.url}
+              </a>
+              <p className="mt-2 text-[10px] leading-4 text-titanium-500" title={state.expiresAt ?? undefined}>
+                Wer die Adresse hat, sieht den Entwurf — sie ist der einzige Zugang.
+                {daysLeft(state.expiresAt) !== null && (
+                  <> Sie verfällt in {daysLeft(state.expiresAt)} Tagen, zusammen mit dem Entwurf.</>
+                )}
+              </p>
+            </div>
+          )}
+          {state.preview.status === 'failed' && (
+            <p className="mt-6 text-[10px] leading-4 text-titanium-500">
+              Für diesen Entwurf konnte keine teilbare Adresse angelegt werden. Die
+              Vorschau hier und die Übernahme sind davon nicht betroffen.
+            </p>
+          )}
 
           {log.length > 0 && (
             <div className="mt-6">

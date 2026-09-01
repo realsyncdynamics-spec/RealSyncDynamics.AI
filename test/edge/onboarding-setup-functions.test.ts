@@ -48,7 +48,7 @@ const MIGRATION = readFileSync(root('supabase/migrations/20260824000000_company_
 // muss gegen den zuletzt gesetzten Constraint laufen, sonst vergleicht sie
 // gegen einen Stand, den die Datenbank gar nicht mehr führt.
 const SECTOR_MIGRATION = readFileSync(
-  root('supabase/migrations/20260902000000_company_profiles_sector_extend.sql'),
+  root('supabase/migrations/20260902000010_company_profiles_sector_extend.sql'),
   'utf8',
 );
 
@@ -253,7 +253,7 @@ describe('onboarding_tenant_policy_packs: SQL liest dasselbe Branchen-Vokabular'
    * Genau deshalb dieser Test — er prüft die Seite, die niemand ansieht.
    */
   const SQL = readFileSync(
-    root('supabase/migrations/20260902000001_onboarding_policy_packs_industry_vocabulary.sql'),
+    root('supabase/migrations/20260902000011_onboarding_policy_packs_industry_vocabulary.sql'),
     'utf8',
   );
 

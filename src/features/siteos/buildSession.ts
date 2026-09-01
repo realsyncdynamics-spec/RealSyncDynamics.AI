@@ -41,6 +41,7 @@ import {
   errorMessage,
   getAnonSession,
   refineAnon,
+  type PreviewState,
   type SiteOsError,
 } from './siteOsApi';
 
@@ -80,6 +81,14 @@ export interface BuildState {
   contentSha256: string;
   expiresAt: string | null;
   claimed: boolean;
+  /**
+   * Die teilbare Vorschau — oder der Grund, warum es keine gibt.
+   *
+   * Sie ist bewusst kein Teil des Entwurfs, sondern eine Aussage über ihn:
+   * Der Rahmen auf `/build` rendert weiterhin aus dem Blueprint. Fällt die
+   * Ablage aus, fehlt der Link, nicht die Vorschau.
+   */
+  preview: PreviewState;
 }
 
 export interface RefineResult {
@@ -116,6 +125,7 @@ export async function startBuild(prompt: string, brand: string | null): Promise<
       contentSha256: result.data.content_sha256,
       expiresAt: result.data.expires_at,
       claimed: false,
+      preview: result.data.preview ?? { status: 'none' },
     };
   }
 
@@ -154,6 +164,9 @@ async function buildLocally(prompt: string, brand: string | null): Promise<Build
     contentSha256: built.blueprintSha256,
     expiresAt: null,
     claimed: false,
+    // Ohne Sitzung gibt es auch keine geteilte Vorschau: Es liegt nichts,
+    // worauf eine Adresse zeigen könnte.
+    preview: { status: 'none' },
   };
 }
 
@@ -176,6 +189,7 @@ export async function applyInstruction(state: BuildState, instruction: string): 
         scores: result.data.scores,
         version: result.data.version,
         contentSha256: result.data.content_sha256 ?? state.contentSha256,
+        preview: result.data.preview ?? state.preview,
       },
       step: {
         instruction: trimmed,
@@ -242,6 +256,7 @@ export async function resumeBuild(): Promise<BuildState | null> {
         contentSha256: result.data.content_sha256,
         expiresAt: result.data.expires_at,
         claimed: result.data.claimed,
+        preview: result.data.preview ?? { status: 'none' },
       };
     }
     // Abgelaufen oder unbekannt: die lokale Kennung ist wertlos geworden.

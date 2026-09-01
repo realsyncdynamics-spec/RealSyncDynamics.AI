@@ -15,7 +15,17 @@ import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/
 // Die Pruef- und Bewertungslogik liegt bewusst in einem eigenen, Deno-freien
 // Modul: So laesst sie sich aus Vitest heraus testen. Dass sie hier fehlte
 // und niemand es merkte, war die Ursache des Ausfalls seit 2026-08-19.
-import { runChecks, extractFacts, scoreReport, findPrivacyLink, type Issue } from './checks.ts';
+import {
+  runChecks,
+  extractFacts,
+  scoreReport,
+  findPrivacyLink,
+  findImpressumLink,
+  deepCheckImprint,
+  deepCheckPrivacy,
+  isDuplicateOfHeuristic,
+  type Issue,
+} from './checks.ts';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const URL_RE = /^https?:\/\/[^\s/$.?#].[^\s]*$/i;
@@ -24,6 +34,18 @@ const FREE_EMAIL_DOMAINS = new Set([
   'web.de','icloud.com','live.com','protonmail.com','t-online.de',
 ]);
 const IP_RE = /^\d{1,3}(\.\d{1,3}){3}$/;
+
+/**
+ * Version der Auswertung.
+ *
+ * Von `2026.05.1` auf `2026.08.1` gehoben: Die Pruef-Heuristiken sind aus dem
+ * gemessenen Produktionsverhalten rekonstruiert (siehe Kopf von `checks.ts`).
+ * Befund-Codes, Severities und Scoring-Gewichte entsprechen dem Vertrag der
+ * 159 historischen Audits; die internen Schwellwerte nicht notwendig.
+ * Ergebnisse ueber diese Versionsgrenze hinweg sind vergleichbar mit
+ * Vorbehalt.
+ */
+const AUDIT_ENGINE_VERSION = '2026.08.1';
 
 /**
  * Abruf mit harter Zeitgrenze. Ohne sie haelt eine Zielseite, die nie
@@ -68,58 +90,68 @@ function concat(chunks: Uint8Array[]): Uint8Array {
  * bezahlten Scan und waere hier ein unangekuendigter Lastfaktor auf fremden
  * Servern.
  */
-async function scanSubpages(url: string, html: string): Promise<Issue[]> {
+interface SubpageScan {
+  issues: Issue[];
+  privacyHtml: string | null;
+  privacyFound: boolean;
+  imprintFound: boolean;
+}
+
+/**
+ * Zweite Scan-Ebene: Impressum UND Datenschutzerklaerung als Dokumente.
+ *
+ * Die Startseite zeigt nur, **ob** verlinkt wurde. Ob das verlinkte Dokument
+ * seine Pflichtangaben traegt, entscheidet sich erst im Dokument selbst.
+ *
+ * Diese Ebene lieferte in Produktion die haeufigsten Befunde ueberhaupt:
+ * `sub_imprint_no_legal_form` erschien in 62 von 159 Audits,
+ * `sub_privacy_third_country_no_legal_basis` in 40. Eine Fassung ohne sie
+ * meldet denselben Seiten ein deutlich besseres Ergebnis — deshalb ist sie
+ * hier wiederhergestellt.
+ *
+ * Hoechstens zwei zusaetzliche Abrufe, je 8 s, je 500 kB. Fehlschlaege sind
+ * still: Eine Unterseite, die nicht laedt, ist kein Compliance-Befund —
+ * sie ist eine fehlende Beobachtung, und darueber wird nichts behauptet.
+ */
+async function scanSubpages(url: string, html: string): Promise<SubpageScan> {
   const issues: Issue[] = [];
-  const privacyHref = findPrivacyLink(html);
-  if (!privacyHref) return issues;
 
-  let ziel: string;
-  try { ziel = new URL(privacyHref, url).toString(); } catch { return issues; }
-  // Nur auf derselben Site — ein externer Link ist nicht unsere Pruefflaeche.
-  try {
-    if (new URL(ziel).hostname !== new URL(url).hostname) return issues;
-  } catch { return issues; }
-
-  try {
-    const resp = await fetchWithTimeout(ziel, 8_000);
-    if (!resp.ok) return issues;
-    const text = (await resp.text()).slice(0, 500_000);
-
-    // Positivbefund: Die Rule Engine fragt `page.privacy_policy.mentions_avv`
-    // ab, und `extractFacts` liest den Wert aus genau dieser Kennung.
-    if (/auftragsverarbeit|auftragsdatenverarbeit|art\.?\s*28\s*dsgvo|\bavv\b/i.test(text)) {
-      issues.push({
-        id: 'privacy_mentions_avv',
-        severity: 'info',
-        title: 'Auftragsverarbeitung in der Datenschutzerklaerung erwaehnt',
-        detail: 'Die Datenschutzerklaerung nennt die Auftragsverarbeitung nach Art. 28 DSGVO.',
-      });
+  const fetchDoc = async (href: string | null): Promise<string | null> => {
+    if (!href) return null;
+    let target: URL;
+    try { target = new URL(href, url); } catch { return null; }
+    // Nur http(s) und nur derselbe Host: Ein Pflichtdokument, das woanders
+    // liegt, ist nicht unsere Pruefflaeche — und ein `href` auf ein internes
+    // Netz waere eine SSRF-Einladung.
+    if (target.protocol !== 'https:' && target.protocol !== 'http:') return null;
+    try {
+      if (target.hostname.toLowerCase() !== new URL(url).hostname.toLowerCase()) return null;
+    } catch { return null; }
+    try {
+      const resp = await fetchWithTimeout(target.toString(), 8_000);
+      if (!resp.ok) return null;
+      return (await resp.text()).slice(0, 500_000);
+    } catch {
+      return null;
     }
+  };
 
-    if (!/verantwortlich|controller/i.test(text)) {
-      issues.push({
-        id: 'privacy_no_controller',
-        severity: 'medium',
-        title: 'Verantwortlicher nicht benannt',
-        detail: 'In der Datenschutzerklaerung wurde keine Angabe zum Verantwortlichen gefunden.',
-        paragraph_ref: 'Art. 13 Abs. 1 lit. a DSGVO',
-      });
-    }
+  const [imprintHtml, privacyHtml] = await Promise.all([
+    fetchDoc(findImpressumLink(html)),
+    fetchDoc(findPrivacyLink(html)),
+  ]);
 
-    if (!/betroffenenrecht|auskunftsrecht|widerspruchsrecht|recht auf loeschung|recht auf löschung/i.test(text)) {
-      issues.push({
-        id: 'privacy_no_data_subject_rights',
-        severity: 'medium',
-        title: 'Betroffenenrechte nicht aufgefuehrt',
-        detail: 'Die Datenschutzerklaerung nennt keine Betroffenenrechte (Auskunft, Loeschung, Widerspruch).',
-        paragraph_ref: 'Art. 13 Abs. 2 lit. b DSGVO',
-      });
-    }
-  } catch {
-    // Unterseite nicht lesbar — kein Befund. Ein Timeout auf einer
-    // Unterseite ist kein Datenschutzmangel und darf den Score nicht druecken.
-  }
-  return issues;
+  if (imprintHtml) for (const i of deepCheckImprint(imprintHtml)) issues.push(i);
+  if (privacyHtml) for (const i of deepCheckPrivacy(privacyHtml)) issues.push(i);
+
+  return {
+    issues,
+    privacyHtml,
+    // „Gefunden" heisst: verlinkt **und** abrufbar. Ein Link ins Leere ist
+    // fuer Art. 13 DSGVO keine erfuellte Pflicht.
+    privacyFound: privacyHtml !== null,
+    imprintFound: imprintHtml !== null,
+  };
 }
 
 async function sha256Hex(input: string): Promise<string> {
@@ -215,14 +247,26 @@ Deno.serve(async (req) => {
 
   const issues: Issue[] = runChecks(url, html, headers, status, fetchError);
   const subpages = await scanSubpages(url, html);
-  for (const sub of subpages) issues.push(sub);
+  for (const sub of subpages.issues) issues.push(sub);
 
   if (status !== null && !fetchError) {
-    const facts = extractFacts(url, html, headers, issues);
+    const facts = extractFacts({
+      url,
+      html,
+      headers,
+      privacyHtml: subpages.privacyHtml,
+      privacyFound: subpages.privacyFound,
+      imprintFound: subpages.imprintFound,
+    });
     const ruleFindings = evaluateAll(facts);
     for (const f of ruleFindings) {
       const dupKey = `rule:${f.rule_id}`;
       if (issues.some((i) => i.id === dupKey)) continue;
+      // Denselben Sachverhalt nicht zweimal berichten. Von 14 Regeln
+      // erschienen in 159 Produktions-Audits nur drei je als `rule:`-Befund —
+      // genau jene ohne Heuristik-Entsprechung. Ohne diese Zeile kostet ein
+      // fehlender Datenschutz-Link 50 statt 25 Punkte.
+      if (isDuplicateOfHeuristic(f.rule_id, issues)) continue;
       issues.push({
         id: dupKey,
         severity: f.severity,
@@ -297,7 +341,7 @@ Deno.serve(async (req) => {
     coverage: coverageInfo.coverage,
     coverage_notice: coverageInfo.notice,
     methodology: {
-      audit_engine: '2026.05.1',
+      audit_engine: AUDIT_ENGINE_VERSION,
       rule_engine: RULE_ENGINE_VERSION,
     },
   });

@@ -1,0 +1,293 @@
+{
+  "_comment": "Gemessener Vertrag des produktiven gdpr-audit-Scanners. Erhoben am 2026-08-30 gegen das Live-Projekt ebljyceifhnlzhjfyxup, ueber alle 159 Audits in gdpr_audits (aeltestes 2026-05-06, neuestes 2026-08-11). Keine Kundendaten: nur Befund-Codes, Severity-Verteilungen und Scores. Diese Datei ist Referenz, nicht Ableitung — sie wird nicht aus dem Code erzeugt, sondern der Code gegen sie geprueft.",
+  "source": "gdpr_audits @ ebljyceifhnlzhjfyxup",
+  "measured_at": "2026-08-30",
+  "audit_count": 159,
+  "newest_audit": "2026-08-11",
+  "severity_weights": {
+    "critical": 25,
+    "high": 12,
+    "medium": 6,
+    "low": 2,
+    "info": 0
+  },
+  "id_severity": {
+    "no_csp": "low",
+    "no_hsts": "medium",
+    "no_https": "critical",
+    "no_xframe": "low",
+    "no_og_tags": "info",
+    "fetch_failed": "high",
+    "meta_refresh": "low",
+    "ga_no_ip_anon": "high",
+    "mixed_content": "medium",
+    "form_no_consent": "medium",
+    "no_imprint_link": "critical",
+    "no_privacy_link": "critical",
+    "tracker_no_consent": "critical",
+    "cookies_pre_consent": "high",
+    "no_imprint_link_non_de": "info",
+    "sub_imprint_no_address": "critical",
+    "sub_imprint_no_contact": "high",
+    "social_pixel_no_consent": "critical",
+    "sub_privacy_no_avv_list": "high",
+    "sub_imprint_no_legal_form": "critical",
+    "rule:MISSING_AVV_REFERENCE": "medium",
+    "sub_privacy_no_dpo_contact": "medium",
+    "sub_privacy_no_complaint_right": "medium",
+    "rule:COOKIE_BANNER_DARK_PATTERN": "medium",
+    "rule:AI_ACT_LIMITED_RISK_CHATBOT": "low",
+    "sub_privacy_third_country_no_legal_basis": "high",
+    "scan_coverage_limited": "info"
+  },
+  "rule_ids_ever_emitted": [
+    "rule:COOKIE_BANNER_DARK_PATTERN",
+    "rule:AI_ACT_LIMITED_RISK_CHATBOT",
+    "rule:MISSING_AVV_REFERENCE"
+  ],
+  "combinations": [
+    {
+      "critical": 0,
+      "high": 0,
+      "medium": 0,
+      "low": 0,
+      "info": 0,
+      "score": 100,
+      "severity": "pass"
+    },
+    {
+      "critical": 3,
+      "high": 1,
+      "medium": 1,
+      "low": 2,
+      "info": 1,
+      "score": 3,
+      "severity": "critical"
+    },
+    {
+      "critical": 3,
+      "high": 1,
+      "medium": 1,
+      "low": 2,
+      "info": 0,
+      "score": 3,
+      "severity": "critical"
+    },
+    {
+      "critical": 3,
+      "high": 0,
+      "medium": 1,
+      "low": 2,
+      "info": 1,
+      "score": 15,
+      "severity": "critical"
+    },
+    {
+      "critical": 2,
+      "high": 1,
+      "medium": 1,
+      "low": 2,
+      "info": 0,
+      "score": 28,
+      "severity": "critical"
+    },
+    {
+      "critical": 2,
+      "high": 0,
+      "medium": 1,
+      "low": 2,
+      "info": 1,
+      "score": 40,
+      "severity": "critical"
+    },
+    {
+      "critical": 2,
+      "high": 0,
+      "medium": 0,
+      "low": 2,
+      "info": 0,
+      "score": 46,
+      "severity": "critical"
+    },
+    {
+      "critical": 1,
+      "high": 1,
+      "medium": 2,
+      "low": 0,
+      "info": 0,
+      "score": 51,
+      "severity": "critical"
+    },
+    {
+      "critical": 1,
+      "high": 1,
+      "medium": 1,
+      "low": 2,
+      "info": 0,
+      "score": 53,
+      "severity": "critical"
+    },
+    {
+      "critical": 0,
+      "high": 2,
+      "medium": 3,
+      "low": 2,
+      "info": 0,
+      "score": 54,
+      "severity": "high"
+    },
+    {
+      "critical": 1,
+      "high": 1,
+      "medium": 1,
+      "low": 1,
+      "info": 0,
+      "score": 55,
+      "severity": "critical"
+    },
+    {
+      "critical": 1,
+      "high": 1,
+      "medium": 0,
+      "low": 1,
+      "info": 0,
+      "score": 61,
+      "severity": "critical"
+    },
+    {
+      "critical": 1,
+      "high": 0,
+      "medium": 2,
+      "low": 1,
+      "info": 1,
+      "score": 61,
+      "severity": "critical"
+    },
+    {
+      "critical": 1,
+      "high": 0,
+      "medium": 1,
+      "low": 2,
+      "info": 1,
+      "score": 65,
+      "severity": "critical"
+    },
+    {
+      "critical": 1,
+      "high": 0,
+      "medium": 1,
+      "low": 2,
+      "info": 2,
+      "score": 65,
+      "severity": "critical"
+    },
+    {
+      "critical": 1,
+      "high": 0,
+      "medium": 1,
+      "low": 1,
+      "info": 0,
+      "score": 67,
+      "severity": "critical"
+    },
+    {
+      "critical": 0,
+      "high": 2,
+      "medium": 0,
+      "low": 1,
+      "info": 0,
+      "score": 74,
+      "severity": "high"
+    },
+    {
+      "critical": 0,
+      "high": 1,
+      "medium": 1,
+      "low": 2,
+      "info": 0,
+      "score": 78,
+      "severity": "high"
+    },
+    {
+      "critical": 0,
+      "high": 0,
+      "medium": 2,
+      "low": 2,
+      "info": 1,
+      "score": 84,
+      "severity": "medium"
+    },
+    {
+      "critical": 0,
+      "high": 0,
+      "medium": 2,
+      "low": 1,
+      "info": 2,
+      "score": 86,
+      "severity": "medium"
+    },
+    {
+      "critical": 0,
+      "high": 1,
+      "medium": 0,
+      "low": 0,
+      "info": 1,
+      "score": 88,
+      "severity": "high"
+    },
+    {
+      "critical": 0,
+      "high": 1,
+      "medium": 0,
+      "low": 0,
+      "info": 0,
+      "score": 88,
+      "severity": "high"
+    },
+    {
+      "critical": 0,
+      "high": 0,
+      "medium": 1,
+      "low": 2,
+      "info": 0,
+      "score": 90,
+      "severity": "medium"
+    },
+    {
+      "critical": 0,
+      "high": 0,
+      "medium": 1,
+      "low": 1,
+      "info": 0,
+      "score": 92,
+      "severity": "medium"
+    },
+    {
+      "critical": 0,
+      "high": 0,
+      "medium": 1,
+      "low": 0,
+      "info": 1,
+      "score": 94,
+      "severity": "medium"
+    },
+    {
+      "critical": 0,
+      "high": 0,
+      "medium": 0,
+      "low": 2,
+      "info": 0,
+      "score": 96,
+      "severity": "low"
+    },
+    {
+      "critical": 0,
+      "high": 0,
+      "medium": 0,
+      "low": 1,
+      "info": 0,
+      "score": 98,
+      "severity": "low"
+    }
+  ]
+}

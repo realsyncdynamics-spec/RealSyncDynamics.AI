@@ -1,6 +1,10 @@
 # Add-on-Buchung, Zugriffsregister, Durchsetzung — Umsetzung AP5–AP9
 
-**Stand: 2026-09-01. Umgesetzt im Repo, noch nicht deployt.**
+**Stand: 2026-09-01. PR #1195 gemerged; die drei Migrationen sind in
+Produktion verbucht (gemessen per Management-API, `20260904000000`,
+`20260904000100`, `20260904000200`). Die drei Entscheidungsfragen aus §6 hat
+der Eigentümer am selben Tag freigegeben („go") — Umfang in CLAUDE.md §10,
+Umsetzung im Folge-PR.**
 
 Bezug: `docs/product/implementierungsplan-paketmodell.md` (AP5–AP9),
 `docs/product/zielzustand-paketmodell.md` §0 und §5,
@@ -210,12 +214,13 @@ existiert. Das braucht die ausdrückliche Freigabe des Eigentümers
     where addon_id = 'whatsapp';
    ```
 
-3. `subscription-addons` deployen (`deploy.yml` läuft bei Änderungen unter
-   `supabase/**`), danach den Eintrag in `UNBACKED_CALLERS` entfernen — der
-   Vertragstest (`edge-function-contract.test.ts`) erinnert daran.
+3. ~~`subscription-addons` deployen~~ — **erledigt** mit Deploy-Lauf
+   33562518753 (2026-09-01, 21:49 UTC): Version 1, `ACTIVE`,
+   `verify_jwt: true`. Der Eintrag in `UNBACKED_CALLERS` ist entfernt, die
+   Produktionsliste nachgemessen (181 = 181).
 
-Bis dahin zeigt „Mein Plan" jedes Add-on als „Buchung folgt". Das ist die
-Wahrheit, nicht ein Platzhalter.
+Bis Schritt 2 erledigt ist, zeigt „Mein Plan" jedes Add-on als „Buchung
+folgt". Das ist die Wahrheit, nicht ein Platzhalter.
 
 ---
 
@@ -268,9 +273,9 @@ unbegrenzten Kontingenten. Zur Laufzeit meldet `addonOfferStatus()` sie als
 `included` — verkauft wird nichts ohne Gegenwert. Die Liste selbst ist auf
 der Preisseite sichtbar (`GovernanceBotsSection`), deshalb unverändert.
 
-> **Achtung, Textänderung — sollen wir dies machen? Ja oder nein?**
-> Enterprise aus `availableFor` der fünf Add-ons nehmen (Zielzustand §5
-> nennt Enterprise dort ohnehin nicht).
+**Freigegeben und umgesetzt (2026-09-01)**: `availableFor` der fünf Add-ons
+nennt nur noch Growth (Katalog-Migration `20260904000300`). `plan.addons`
+von Enterprise bleibt — Bestandsverträge behalten, was sie gebucht haben.
 
 ### 6.3 Nach dem Kauf landen Kunden an vier verschiedenen Orten
 
@@ -280,9 +285,10 @@ der Preisseite sichtbar (`GovernanceBotsSection`), deshalb unverändert.
 Flow" spricht für **ein** Ziel: `/app/dashboard` (dort steht die Karte
 „Dein nächster Schritt", die aus dem übernommenen Audit rechnet).
 
-> **Achtung, Funktionsänderung — sollen wir dies machen? Ja oder nein?**
-> `/checkout/success` nach `/app/dashboard?subscription=…` statt
-> `/app/billing` leiten.
+**Freigegeben und umgesetzt (2026-09-01)**: `/checkout/success` leitet nach
+`/app/dashboard?subscription=…&plan=…`; der Knopf ebenso. Damit landen
+`/welcome`, `/setup-assistant`, `/unified-entry/success` und der Checkout am
+selben Ort. `/os/welcome` → `/os/app` bleibt als Rest der zweiten Oberfläche.
 
 ### 6.4 Zwei weitere Trichter mit eigener Anmeldung
 
@@ -293,9 +299,12 @@ Auth-Wrapper**. `/flow/login` führt nach `/os/login`. `/scan/start`,
 `/chatbot/start`, `/phonebot/start` sind Stubs mit `alert()`. `/demo` und
 `/trial` sind 404. Entfernen oder umleiten greift in Bestehendes ein.
 
-> **Achtung, Funktionsänderung — sollen wir dies machen? Ja oder nein?**
-> Die Registrierung von `/unified-entry/*` auf `/welcome?next=…` legen und
-> `/os/app/*` hinter `AppGate` stellen.
+**Freigegeben und umgesetzt (2026-09-01)**: `/unified-entry/register`
+leitet nach `/welcome?next=/unified-entry/onboarding` (Parameter bleiben),
+`/flow/login` nach `/welcome`, und alle zwölf `/os/app/*`-Routen stehen
+hinter `AppGate`. Die Stubs `/scan/start`, `/chatbot/start`,
+`/phonebot/start` und die 404 auf `/demo` und `/trial` sind nicht Teil der
+Freigabe und bleiben offen.
 
 ### 6.5 Was der Reality Map noch fehlt
 

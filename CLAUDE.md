@@ -78,8 +78,8 @@ Menschen · Unternehmen · KI-Agenten · Daten · Entscheidungen.
 
 **Primär: Supabase Cloud (EU / Frankfurt)**
 - PostgreSQL 17 (Live-Projekt, Stand 2026-08-16)
-- **180 Edge Functions** im Repo (`supabase/functions/`, Deno/V8; `_shared` ist Bibliothek, keine Function). 179 davon deployt und deckungsgleich mit Produktion (Stand 2026-09-01, siehe §5); `subscription-addons` ist neu und wartet auf den nächsten `deploy.yml`-Lauf — bis dahin steht sie in `UNBACKED_CALLERS`
-- **308 Migrations** (`supabase/migrations/`) — 305 verbucht, gemessen am 2026-09-01 gegen den Ledger; die drei vom 2026-09-04 (`addon_booking_schema`, `canonical_plan_catalog`, `workflows_current_plans`) kommen mit dem nächsten Deploy. Zu den zwei nachgezogenen Out-of-Band-Migrationen siehe §5
+- **181 Edge Functions** im Repo (`supabase/functions/`, Deno/V8; `_shared` ist Bibliothek, keine Function) — **181 deployt**, `comm` in beide Richtungen leer. Gemessen am 2026-09-01 um 21:50 UTC per Management-API nach dem Deploy-Lauf 33562518753 (PR #1195); damit sind auch `audit-claim` und `subscription-addons` live. Frühere Stände dieser Datei nannten 179/180 — die Liste in `src/config/production-edge-functions.ts` war seit dem 2026-08-23 nicht nachgemessen worden
+- **309 Migrations** (`supabase/migrations/`) — 308 verbucht, gemessen am 2026-09-01 gegen den Ledger (die drei vom 2026-09-04 sind mit Deploy-Lauf 33562518753 angekommen); `20260904000300_canonical_plan_catalog` kommt mit dem nächsten Deploy. Zu den zwei nachgezogenen Out-of-Band-Migrationen siehe §5
 - RLS auf allen App-Tabellen · Realtime Subscriptions
 
 **Node/TypeScript-Services** (containerisiert — **kein Go im Repo**)
@@ -505,8 +505,8 @@ RealSyncDynamics.AI/
 ├── shared/
 │   └── pricing.ts     Single Source of Truth für Produkt-, Preis- und Berechtigungsmodell
 ├── supabase/
-│   ├── functions/     180 Edge Functions (einziger Ort für Service-Role-Keys)
-│   └── migrations/    308 Migrations
+│   ├── functions/     181 Edge Functions (einziger Ort für Service-Role-Keys)
+│   └── migrations/    309 Migrations
 ├── apps/
 │   └── agent-runtime/ Agent Runtime (Node/TS, Docker)
 ├── services/          runtime-core · evidence-runtime · openclaw-agent · playwright-scanner
@@ -975,6 +975,32 @@ unberührt; das Abzeichen nutzt die im Repo vorhandene Amber-Warnoptik. Der
 Rückfall selbst bleibt, was er ist: Übergang, kein Dauerzustand — sobald der
 anonyme Pfad überall ausgerollt ist, entfallen Sperre und Abzeichen mit ihm.
 Gesichert durch `test/siteos/claim-moves-not-rebuilds.test.ts`.
+
+**2026-09-01 — Ein Flow für den Start: drei Freigaben nach der Add-on-Buchung**
+
+Auf die drei Fragen nach §10.3 aus `docs/product/addon-booking.md` §6 hat
+der Eigentümer mit **„go"** geantwortet — gelesen als Ja zu allen dreien,
+im Rahmen seines Auftrags „der Start ist am Ende immer der gleiche Flow".
+
+| Frage | Antwort |
+|---|---|
+| 1. Textänderung: Enterprise aus `availableFor` der fünf Add-ons nehmen, die Enterprise schon vollständig enthält | **Ja** |
+| 2. Funktionsänderung: `/checkout/success` nach `/app/dashboard` statt `/app/billing` leiten | **Ja** |
+| 3. Funktionsänderung: Registrierung von `/unified-entry/*` auf `/welcome?next=…` legen und `/os/app/*` hinter `AppGate` stellen | **Ja** |
+
+Umfang — und **nur** dieser:
+
+| Was | Vorher | Nachher |
+|---|---|---|
+| `availableFor` von Response Pack, Voice, Compliance Pack, Agency Bot Pack, White Label | `['growth', 'enterprise']` | `['growth']` — `plan.addons` von Enterprise unverändert |
+| `/checkout/success`, Weiterleitung und Knopf „Go to Dashboard Now" | `/app/billing?subscription=…` | `/app/dashboard?subscription=…` |
+| `/unified-entry/register` | eigenes Formular, danach `/unified-entry/onboarding` | Weiterleitung `/welcome?next=/unified-entry/onboarding` (Parameter bleiben) |
+| `/flow/login`, Knopf „Zur Anmeldung" | `/os/login` | `/welcome` |
+| `/os/app/*` (12 Routen) | ohne Auth-Wrapper | hinter `AppGate` |
+
+Farben, Typografie, Grid, Sektionsreihenfolge und Icon-Set sind unberührt.
+`/os/login` und `/os/signup` bleiben bestehen und erreichbar — sie sind nur
+kein Ziel des Flows mehr. Hergang: `docs/product/addon-booking.md` §6.
 
 #### Faustregel
 

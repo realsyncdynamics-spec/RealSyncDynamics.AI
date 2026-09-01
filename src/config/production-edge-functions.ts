@@ -9,6 +9,13 @@
  * sichtbar, weil Vite und `tsc` nur Strings sehen.
  *
  * ## Stand der Messung
+
+ * 2026-09-01 (nach dem Deploy-Lauf 33562518753 zu PR #1195), Management-API
+ * gegen das Live-Projekt: **181 deployt, 181 Verzeichnisse im
+ * Repository, `comm` in beide Richtungen leer.** Damit ist
+ * `subscription-addons` live und aus `UNBACKED_CALLERS` entfallen.
+ *
+ * Frühere Messung:
  *
  * 2026-08-23 (nach Merge von PR #1131 und dem zugehörigen `deploy.yml`-Lauf),
  * Management-API gegen das Live-Projekt: 178 Function-Verzeichnisse im
@@ -40,10 +47,10 @@
  * Sie darf steigen, sobald jemand einen höheren Stand misst — und sie ist
  * kein Argument dafür, dass ein weiterer Deploy scheitern wird.
  */
-export const EDGE_FUNCTIONS_OBSERVED_MAX = 178;
+export const EDGE_FUNCTIONS_OBSERVED_MAX = 181;
 
 /** Datum der letzten Messung gegen das Live-Projekt. */
-export const PRODUCTION_EDGE_FUNCTIONS_MEASURED_AT = '2026-08-23T20:57Z';
+export const PRODUCTION_EDGE_FUNCTIONS_MEASURED_AT = '2026-09-01T21:50Z';
 
 /**
  * Die in Produktion aktiven Function-Slugs — alphabetisch, damit ein Diff
@@ -62,6 +69,7 @@ export const PRODUCTION_EDGE_FUNCTIONS: readonly string[] = [
   'api-gateway',
   'api-webhook-deliver',
   'appointment-book',
+  'audit-claim',
   'audit-determinism-verify',
   'audit-drip-cron',
   'audit-monitor-cron',
@@ -166,6 +174,7 @@ export const PRODUCTION_EDGE_FUNCTIONS: readonly string[] = [
   'notify-terminal-event',
   'oauth2-apps',
   'oauth2-token',
+  'onboarding-orchestrator',
   'optimize-analyze',
   'optimize-execute',
   'order-intake',
@@ -203,6 +212,7 @@ export const PRODUCTION_EDGE_FUNCTIONS: readonly string[] = [
   'stripe-token-meter-sync',
   'stripe-webhook',
   'sub-processor-notify',
+  'subscription-addons',
   'sync-ga-metrics',
   'sync-stripe-metrics',
   'telegram-channels',
@@ -283,10 +293,6 @@ export const UNBACKED_CALLERS: readonly UnbackedCaller[] = [
   // `api-quota` steht nur in src/features/api/API_DEVELOPER_GUIDE.md und wird
   // von keinem Code aufgerufen — deshalb kein Eintrag hier, aber ein offener
   // Punkt: Das Handbuch beschreibt einen Endpunkt, den es nicht gibt.
-  // `subscription-addons` bucht und kündigt Add-ons als Positionen des
-  // Stripe-Abos (AP6). Die Fläche „Mein Plan" unter /app/marketplace ruft
-  // sie auf; bis zum Deploy zeigt sie den Ladefehler an, keinen leeren Plan.
-  { slug: 'subscription-addons', surface: '/app/marketplace — Mein Plan (Add-ons buchen und kündigen)', publicPath: false },
   { slug: 'export-bulk-results', surface: 'features/bulk — Export', publicPath: false },
   { slug: 'iso42001-control-update', surface: 'features/governance — Control-Detail', publicPath: false },
   { slug: 'trigger-workflow', surface: 'features/workflows', publicPath: false },

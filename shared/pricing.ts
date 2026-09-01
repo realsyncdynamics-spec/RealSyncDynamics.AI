@@ -1105,7 +1105,12 @@ export const ADDONS: AddOn[] = [
       'Additiv zur Plan-Quote',
       'Nicht verbrauchte Antworten verfallen zum Monatsende',
     ],
-    availableFor: ['growth', 'enterprise'],
+    // Freigabe 2026-09-01 (CLAUDE.md §10): Enterprise entfällt hier — der Plan
+    // trägt die Keys bereits mit unbegrenzten Kontingenten, ein Angebot wäre
+    // ein Kauf ohne Gegenwert (docs/product/addon-booking.md §6.2).
+    // `plan.addons` von Enterprise bleibt unverändert: Bestandsverträge
+    // dürfen weiterhin buchen, was sie gebucht haben.
+    availableFor: ['growth'],
     grants: { 'limit.bot_messages_monthly': 5_000 },
     perUnit: false,
   },
@@ -1149,7 +1154,12 @@ export const ADDONS: AddOn[] = [
       'Speech-to-Text und Text-to-Speech',
       'Mehrsprachig: DE, EN, FR, ES',
     ],
-    availableFor: ['growth', 'enterprise'],
+    // Freigabe 2026-09-01 (CLAUDE.md §10): Enterprise entfällt hier — der Plan
+    // trägt die Keys bereits mit unbegrenzten Kontingenten, ein Angebot wäre
+    // ein Kauf ohne Gegenwert (docs/product/addon-booking.md §6.2).
+    // `plan.addons` von Enterprise bleibt unverändert: Bestandsverträge
+    // dürfen weiterhin buchen, was sie gebucht haben.
+    availableFor: ['growth'],
     grants: {
       'bots.voice': 1,
       'bots.enabled': 1,
@@ -1172,7 +1182,12 @@ export const ADDONS: AddOn[] = [
       'Quartalsbericht als PDF',
       'Human-Review-Workflow für sensible Absichten',
     ],
-    availableFor: ['growth', 'enterprise'],
+    // Freigabe 2026-09-01 (CLAUDE.md §10): Enterprise entfällt hier — der Plan
+    // trägt die Keys bereits mit unbegrenzten Kontingenten, ein Angebot wäre
+    // ein Kauf ohne Gegenwert (docs/product/addon-booking.md §6.2).
+    // `plan.addons` von Enterprise bleibt unverändert: Bestandsverträge
+    // dürfen weiterhin buchen, was sie gebucht haben.
+    availableFor: ['growth'],
     grants: {
       'evidence.advanced': 1,
       'reports.export': 1,
@@ -1193,7 +1208,12 @@ export const ADDONS: AddOn[] = [
       'White-Label je Bot konfigurierbar',
       'Priorisiertes Onboarding',
     ],
-    availableFor: ['growth', 'enterprise'],
+    // Freigabe 2026-09-01 (CLAUDE.md §10): Enterprise entfällt hier — der Plan
+    // trägt die Keys bereits mit unbegrenzten Kontingenten, ein Angebot wäre
+    // ein Kauf ohne Gegenwert (docs/product/addon-booking.md §6.2).
+    // `plan.addons` von Enterprise bleibt unverändert: Bestandsverträge
+    // dürfen weiterhin buchen, was sie gebucht haben.
+    availableFor: ['growth'],
     grants: { 'limit.bots': 5 },
     perUnit: false,
   },
@@ -1210,7 +1230,12 @@ export const ADDONS: AddOn[] = [
       'Eigener Bot-Name und eigene Persona',
       'Analysen im eigenen Dashboard',
     ],
-    availableFor: ['growth', 'enterprise'],
+    // Freigabe 2026-09-01 (CLAUDE.md §10): Enterprise entfällt hier — der Plan
+    // trägt die Keys bereits mit unbegrenzten Kontingenten, ein Angebot wäre
+    // ein Kauf ohne Gegenwert (docs/product/addon-booking.md §6.2).
+    // `plan.addons` von Enterprise bleibt unverändert: Bestandsverträge
+    // dürfen weiterhin buchen, was sie gebucht haben.
+    availableFor: ['growth'],
     grants: { 'whitelabel.reports': 1, 'whitelabel.dashboard': 1 },
     perUnit: false,
   },

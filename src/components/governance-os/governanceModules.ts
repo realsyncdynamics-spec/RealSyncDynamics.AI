@@ -13,17 +13,8 @@ import {
 /**
  * Navigations-Module des Governance-Workspace.
  *
- * ⚠️  Kein Modul führt eine eigene Plan-Liste. Der Zugriff wird über ein
- *     `gate` aus der Pricing-SSoT abgeleitet (`shared/pricing.ts`) — sonst
- *     driften Navigation und Pricing auseinander, was vor diesem Refactoring
- *     nachweislich passiert ist (z.B. war der Evidence Vault im Pricing ab
- *     Starter enthalten, in der Navigation aber erst ab Agency sichtbar).
- *
- * Gate-Arten:
- *   all         — für jeden Plan sichtbar (Konto-, Übersichts- und Free-Audit-Flächen)
- *   module      — Modul muss im Plan freigeschaltet sein
- *   permission  — Berechtigung muss im Plan gesetzt sein
- *   limit       — numerisches Limit muss mindestens `min` betragen
+ * ⚠️ Kein Modul führt eine eigene Plan-Liste. Der Zugriff wird über ein
+ * `gate` aus der Pricing-SSoT abgeleitet.
  */
 export const GOVERNANCE_MODULES: GovernanceModule[] = [
   {
@@ -301,66 +292,46 @@ export const GOVERNANCE_MODULES: GovernanceModule[] = [
     gate: { kind: 'all' },
     description: 'Konto, Sicherheit und Integrationen',
   },
+  {
+    id: 'crm',
+    label: 'CRM',
+    icon: 'Users',
+    route: '/app/company?view=crm',
+    status: 'live',
+    gate: { kind: 'all' },
+    description: 'Leads, Kontakte, Unternehmen, Deals und Funnel-Aktivitäten',
+  },
 ];
 
-/** Alle nicht-Roadmap-Module für die Tab-Leiste. */
-export const TAB_MODULES = GOVERNANCE_MODULES.filter(
-  (m) => m.status === 'live' || m.status === 'beta',
-);
+export const TAB_MODULES = GOVERNANCE_MODULES.filter((m) => m.status === 'live' || m.status === 'beta');
+export const DOCK_MODULES = GOVERNANCE_MODULES.filter((m) => m.status === 'roadmap');
 
-/** Roadmap-Module für den More-Dock. */
-export const DOCK_MODULES = GOVERNANCE_MODULES.filter(
-  (m) => m.status === 'roadmap',
-);
-
-/** Wertet ein Gate gegen einen konkreten Plan aus. */
 function gateAllows(gate: ModuleGate, planId: PlanId): boolean {
   switch (gate.kind) {
-    case 'all':
-      return true;
-    case 'module':
-      return hasModule(planId, gate.module);
-    case 'permission':
-      return hasPermission(planId, gate.permission);
-    case 'limit': {
-      const value = limitOf(planId, gate.limit);
-      return value === -1 || value >= gate.min;
-    }
+    case 'all': return true;
+    case 'module': return hasModule(planId, gate.module);
+    case 'permission': return hasPermission(planId, gate.permission);
+    case 'limit': { const value = limitOf(planId, gate.limit); return value === -1 || value >= gate.min; }
   }
 }
 
-/**
- * Die Pläne, die auf ein Modul zugreifen dürfen — abgeleitet, nicht gepflegt.
- */
 export function plansForModule(module: GovernanceModule): PlanId[] {
   return PLAN_ORDER.filter((planId) => gateAllows(module.gate, planId));
 }
 
-/**
- * Hat `userPlan` Zugriff auf das Modul?
- * Akzeptiert PlanId, Plan-Key und Altdaten (`scale` → `partner`).
- * Unbekannte Pläne erhalten keinen Zugriff — defensiver Default.
- */
 export function canAccessModule(module: GovernanceModule, userPlan: string | null | undefined): boolean {
   const plan = resolvePlan(userPlan);
   if (!plan) return false;
   return gateAllows(module.gate, plan.id);
 }
 
-/**
- * Mindest-Plan für ein Modul (niedrigster Plan nach kanonischer Reihenfolge,
- * der das Gate erfüllt). Liefert `enterprise`, wenn kein Plan es erfüllt —
- * dieser Fall sollte durch den Konsistenztest ausgeschlossen sein.
- */
 export function minimumPlanForModule(module: GovernanceModule): PlanId {
   const allowed = plansForModule(module);
   return allowed.length > 0 ? allowed[0] : 'enterprise';
 }
 
-/** Anzeigename des Mindest-Plans, z.B. für Upgrade-Hinweise. */
 export function minimumPlanLabelForModule(module: GovernanceModule): string {
   return planById(minimumPlanForModule(module)).name;
 }
 
-/** Sortierrang eines Plans — Re-Export für Navigations-Logik. */
 export { planRank };

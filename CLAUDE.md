@@ -78,8 +78,8 @@ Menschen · Unternehmen · KI-Agenten · Daten · Entscheidungen.
 
 **Primär: Supabase Cloud (EU / Frankfurt)**
 - PostgreSQL 17 (Live-Projekt, Stand 2026-08-16)
-- **179 Edge Functions** im Repo (`supabase/functions/`, Deno/V8; `_shared` ist Bibliothek, keine Function) — alle deployt, und alle 179 deployten haben ein Verzeichnis. Deckungsgleich in beide Richtungen, Stand 2026-09-01, siehe §5
-- **305 Migrations** (`supabase/migrations/`) — alle verbucht, gemessen am 2026-09-01 gegen den Ledger, Mengen in beide Richtungen leer; zu den zwei nachgezogenen Out-of-Band-Migrationen siehe §5
+- **180 Edge Functions** im Repo (`supabase/functions/`, Deno/V8; `_shared` ist Bibliothek, keine Function). 179 davon deployt und deckungsgleich mit Produktion (Stand 2026-09-01, siehe §5); `subscription-addons` ist neu und wartet auf den nächsten `deploy.yml`-Lauf — bis dahin steht sie in `UNBACKED_CALLERS`
+- **308 Migrations** (`supabase/migrations/`) — 305 verbucht, gemessen am 2026-09-01 gegen den Ledger; die drei vom 2026-09-04 (`addon_booking_schema`, `canonical_plan_catalog`, `workflows_current_plans`) kommen mit dem nächsten Deploy. Zu den zwei nachgezogenen Out-of-Band-Migrationen siehe §5
 - RLS auf allen App-Tabellen · Realtime Subscriptions
 
 **Node/TypeScript-Services** (containerisiert — **kein Go im Repo**)
@@ -505,8 +505,8 @@ RealSyncDynamics.AI/
 ├── shared/
 │   └── pricing.ts     Single Source of Truth für Produkt-, Preis- und Berechtigungsmodell
 ├── supabase/
-│   ├── functions/     179 Edge Functions (einziger Ort für Service-Role-Keys)
-│   └── migrations/    305 Migrations
+│   ├── functions/     180 Edge Functions (einziger Ort für Service-Role-Keys)
+│   └── migrations/    308 Migrations
 ├── apps/
 │   └── agent-runtime/ Agent Runtime (Node/TS, Docker)
 ├── services/          runtime-core · evidence-runtime · openclaw-agent · playwright-scanner
@@ -604,6 +604,20 @@ Runtime-Limits, Module, Berechtigungen, Feature-Listen und Add-ons.
   einen divergierenden Wert**, solange er nicht bereinigt ist — und keine
   stillschweigende Kürzung bei Bestandskunden. Diff und offene
   Enterprise-Frage: `docs/product/kanonische-kontingente.md`.
+
+- **Add-ons** (seit 2026-09-01) sind Positionen des Stripe-Abos: `AddOn.grants`
+  in `shared/pricing.ts` nennt die Keys, der Generator erzeugt daraus
+  `products`/`product_entitlements`, die Function `subscription-addons` bucht
+  und kündigt, `tenant_entitlements()` **addiert** Kontingente aus Add-on-Grants
+  auf den Plan. Buchbar ist ein Add-on erst, wenn `plan_addons.stripe_price_id`
+  eine echte Price trägt — das ist ein Betreiberschritt mit Freigabe. Vertrag
+  und offene Entscheidungen: `docs/product/addon-booking.md`.
+- **Dashboard-Gates** kommen aus **einem** Register:
+  `src/core/access/featureAccess.ts` (Route → Entitlement-Key), geprüft von
+  `RouteEntitlementGate` in der `GovernanceBrowserShell`. Neue bezahlte
+  Fläche = ein Eintrag dort; `test/core/feature-access.test.ts` hält Register,
+  `App.tsx` und Navigation zusammen. Kein Gate gegen einen divergierenden
+  Kontingent-Wert.
 
 Vollständige Regeln: `docs/product/pricing-governance.md`
 

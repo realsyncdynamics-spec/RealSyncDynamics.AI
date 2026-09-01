@@ -11,6 +11,19 @@ import { readFunnelContext } from './funnelContext';
 
 export const PENDING_AUDIT_KEY = 'rsd_pending_audit';
 
+/**
+ * Zweiter Merkplatz — nur die Kennung, in `localStorage`, geschrieben vom
+ * Permalink `/audit/result/:auditId` (`features/audit/pendingAudit.ts`).
+ *
+ * Bis 2026-09-01 kannten sich beide Merkplätze nicht: Wer den Bericht als
+ * Permalink öffnete und sich dann über `/welcome` anmeldete, dessen Audit
+ * wurde nie übernommen — der eine Pfad schrieb nach localStorage, der andere
+ * las nur sessionStorage. Jetzt liest diese Datei beide und leert beide.
+ */
+export const PENDING_AUDIT_ID_KEY = 'rsd.pending_audit_id';
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export interface PendingAudit {
   audit_id: string;
   domain?: string;
@@ -38,6 +51,14 @@ export function readPendingAudit(): PendingAudit | null {
   } catch {
     /* sessionStorage blockiert */
   }
+  try {
+    if (typeof window !== 'undefined') {
+      const id = window.localStorage.getItem(PENDING_AUDIT_ID_KEY);
+      if (id && UUID_RE.test(id)) return { audit_id: id };
+    }
+  } catch {
+    /* localStorage blockiert */
+  }
   const funnel = readFunnelContext();
   if (funnel?.auditId) {
     return { audit_id: funnel.auditId, domain: funnel.domain };
@@ -49,6 +70,12 @@ export function clearPendingAudit(): void {
   try {
     if (typeof window === 'undefined') return;
     window.sessionStorage.removeItem(PENDING_AUDIT_KEY);
+  } catch {
+    /* ignore */
+  }
+  try {
+    if (typeof window === 'undefined') return;
+    window.localStorage.removeItem(PENDING_AUDIT_ID_KEY);
   } catch {
     /* ignore */
   }

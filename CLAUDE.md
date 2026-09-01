@@ -1047,6 +1047,49 @@ stehengelassen — der Leistungsblock ist zentral, und ohne ihn wäre die
 Startseite im Prompt-Pfad deutlich leerer. Gehört entschieden, nicht
 nebenbei geändert.
 
+**2026-09-01 (3) — Hero-Überschrift: langer einteiliger Name wurde abgeschnitten**
+
+Gefunden beim Nachstellen der reparierten Vorschau **mit einem echten
+Browser** — nicht im Code, nicht in einem Test. Die Layoutschicht begrenzt
+die Hero-Überschrift auf `max-width:16ch` und der Hero trägt
+`overflow:hidden`. Ein Firmenname ohne Leerzeichen ist aber ein einziges
+Wort, und ein Wort bricht bei `overflow-wrap:normal` nicht: Der Überhang
+wurde nicht umgebrochen, sondern **weggeschnitten**.
+
+Gemessen in Chromium bei 1280 px: „RealSyncDynamics.AI" ergab **648 px Text
+in einem 570 px breiten Kasten — 78 px fehlten.** Bei Markennamen und
+Domains ist der einteilige Name der Normalfall, nicht die Ausnahme.
+
+Der Fehler ist **älter als PR #1194**: `BuildStudioPage` und
+`siteos/preview.ts` rendern seit jeher `showcase` und waren gleich
+betroffen. Der PR hat ihn nur sichtbar gemacht.
+
+Auf die Fragepflicht nach §10.3: **„Ja — break-word ergänzen"**.
+
+| Was | Vorher | Nachher |
+|---|---|---|
+| `[id*="--hero--"]>h1,>h2` | `max-width:16ch` ohne Umbruchregel | zusätzlich `overflow-wrap:break-word` |
+
+**Warum `break-word` und nicht `anywhere`**: Der erste Versuch war
+`anywhere` — die Messwerte sahen gut aus (kein Überlauf), das **Bild aber
+nicht**. `anywhere` zählt beim Ermitteln der Mindestbreite mit und ließ die
+Textspalte im Hero-Raster von 570 px auf 226 px zusammenfallen; die
+Überschrift brach dann dreizeilig mitten im Wort. `break-word` bricht erst,
+wenn es sonst überliefe, und lässt die Spaltenbreite in Ruhe. Auf 1280,
+768 und 390 px geprüft: Spaltenbreite unverändert, nichts abgeschnitten,
+kein Seitenüberlauf.
+
+**Lehre, und sie ist die eigentliche**: Zwei Fehler dieser Sitzung waren
+weder im Code noch in 3990 grünen Tests zu sehen — erst das gerenderte Bild
+hat sie gezeigt. Und beim Fix hätten die Messwerte allein zur falschen
+Lösung geführt. Bei einer Änderung an der Vorschau-Optik gehört ein Blick
+auf das tatsächliche Rendering dazu, nicht nur eine grüne Suite.
+
+Gesichert durch `test/siteos/hero-longword.test.ts`. Geprüft wird am CSS,
+nicht am Pixel: Ein Pixel-Test hinge an der Schriftart des CI-Runners,
+während die fehlerhafte Kombination — Begrenzung plus `overflow:hidden`
+ohne Umbruchregel — eine Eigenschaft des Stylesheets ist.
+
 #### Faustregel
 
 **Hinzufügen ja, Ändern nur nach Rückfrage, Design gar nicht.**

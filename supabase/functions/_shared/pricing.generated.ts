@@ -423,8 +423,24 @@ export interface Plan {
    * Jahres-Abos in `public.subscriptions`.
    *
    * Stillgelegte Plaene brauchen das Feld nicht — `availability: 'legacy'`
-   * schliesst sie bereits von jeder Angebotsflaeche aus. Sobald ein echter
-   * Jahres-Preis verdrahtet ist, faellt dieses Feld ersatzlos weg.
+   * schliesst sie bereits von jeder Angebotsflaeche aus.
+   *
+   * ── Status: entschieden, nicht offen (2026-09-01) ──────────────────────
+   *
+   * Der Eigentuemer hat entschieden, die Jahres-Abos **vorerst nicht** wieder
+   * zu verkaufen. Dieses Feld ist damit keine Restarbeit, die noch jemand
+   * wegzuraeumen haette, sondern der gewollte Zustand.
+   *
+   * Konkret: In Stripe werden **keine** Jahres-Preise angelegt, und in
+   * `public.products` bleiben die Platzhalter stehen. Wer das aendern will,
+   * braucht dafuer eine neue Entscheidung des Eigentuemers — es ist ein
+   * Schreibzugriff auf Produktion und eine kommerzielle Festlegung, keine
+   * Aufraeumarbeit.
+   *
+   * Sollte die Entscheidung spaeter gedreht werden, gehoert beides zusammen:
+   * echte Preise verdrahten UND dieses Feld entfernen. Der Stripe-Price-Guard
+   * (`test/contracts/stripe-price-guard.test.ts`) erzwingt das — er bleibt
+   * rot, solange nur eine der beiden Seiten stimmt.
    */
   yearlyCheckoutUnavailable?: boolean;
   currency: 'EUR';

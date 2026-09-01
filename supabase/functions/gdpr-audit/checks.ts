@@ -59,14 +59,14 @@
  * `jurisdiction.ts`, `tracker-detection.ts` und `scan-coverage.ts`.
  */
 
-import { isLikelyGermanJurisdiction } from './jurisdiction.ts';
-import { stripPolicyDeclarations, effectiveCspValue } from './tracker-detection.ts';
-import { detectAIDisclosure } from './ai-disclosure-check.ts';
+import { isLikelyGermanJurisdiction } from '../_shared/jurisdiction.ts';
+import { stripPolicyDeclarations, effectiveCspValue } from '../_shared/tracker-detection.ts';
+import { detectAIDisclosure } from '../_shared/ai-disclosure-check.ts';
 // Laufzeitsichere Tag-Extraktion: ein `indexOf`-Durchlauf statt eines
 // Wildcard-Quantors ueber fremdes HTML. Begruendung und Messwerte im Kopf
 // von `html-tags.ts`.
-import { tagsOf, attrOf, stripElement } from './html-tags.ts';
-export { tagsOf, attrOf } from './html-tags.ts';
+import { tagsOf, attrOf, stripElement } from '../_shared/html-tags.ts';
+export { tagsOf, attrOf } from '../_shared/html-tags.ts';
 
 export type IssueSeverity = 'critical' | 'high' | 'medium' | 'low' | 'info';
 
@@ -793,4 +793,38 @@ export function scoreReport(issues: Issue[]): { score: number; severity: ReportS
     if (issues.some((i) => i.severity === level)) { severity = level; break; }
   }
   return { score, severity };
+}
+
+
+// ── Namen aus der Fassung auf `main` ────────────────────────────────────
+//
+// Die Rekonstruktion auf `main` (2305e3f) hat dieselbe Aufgabe unabhaengig
+// geloest und dabei eigene Namen vergeben. Ihre Dateistruktur wird hier
+// weitergefuehrt; damit `index.ts` und die dort entstandenen Tests
+// weitgehend unveraendert bleiben, tragen die Funktionen beide Namen.
+//
+// Was NICHT uebernommen wurde, ist das Befund-Vokabular: Es wich in 12
+// Codes vom gemessenen Produktionsvertrag ab und liess 19 weg, darunter
+// alle sieben Unterseiten-Pruefungen. Beleg: `test/fixtures/
+// gdpr-audit-production-contract.json`, Begruendung:
+// `docs/product/free-scan-recovery.md`.
+
+/** Alias zu {@link findLegalLink}(html, 'imprint'). */
+export function findImpressumLink(html: string): string | null {
+  return findLegalLink(html, 'imprint');
+}
+
+/** Alias zu {@link findLegalLink}(html, 'privacy'). */
+export function findPrivacyLink(html: string): string | null {
+  return findLegalLink(html, 'privacy');
+}
+
+/** Alias zu {@link hasConsentBanner}. */
+export function detectConsentBanner(html: string): boolean {
+  return hasConsentBanner(html);
+}
+
+/** Alias zu {@link hasEqualRejectOption}. */
+export function hasEqualRejectButton(html: string): boolean {
+  return hasEqualRejectOption(html);
 }

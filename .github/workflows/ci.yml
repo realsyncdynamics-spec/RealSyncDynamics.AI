@@ -21,6 +21,13 @@ jobs:
         run: npm run lint
       - name: Edge Function syntax
         run: npm run check:edge-syntax
+      # Syntaktisch fehlerfreier Code kann trotzdem beim ersten Request
+      # sterben: `gdpr-audit` rief sechs Hilfsfunktionen auf, die es nie gab,
+      # deployte sauber und antwortete dann monatelang mit HTTP 500 — der
+      # kostenlose Audit, der wichtigste CTA der Startseite. Aufgefallen ist
+      # es erst bei einem Browser-Durchlauf gegen die Live-Seite.
+      - name: Edge Function references
+        run: npm run check:edge-refs
       # Die kommerzielle Wahrheit steht in shared/pricing.ts. Alles Abgeleitete
       # — der Deno-Zwilling, die Plan-Katalog-Migration, die Kontingente —
       # muss daraus folgen und darf keine zweite Wahrheit daneben bilden.
@@ -34,6 +41,16 @@ jobs:
         run: npm run check:pricing
       - name: Kontingent-Kanonizitaet (Ratsche gegen neue Divergenzen)
         run: npm run check:limits
+      # Ein oeffentlich zugesicherter Preis ist ein Angebot und darf nur dort
+      # stehen, wo der Kaufpfad ihn einloesen kann. Dreimal stand ein Betrag
+      # oeffentlich, den `stripe-checkout` nicht einloesen konnte: Enterprise
+      # 1.249 € (Sentinel statt Stripe-Price), Agency 699 € und Partner
+      # 1.999 € (seit AP2 stillgelegt, PLAN_RETIRED). Zweimal war die Stelle
+      # per Literal-Grep nicht auffindbar — das JSON-LD steckt im
+      # HTML-Template, der Betrag im ROI-Rechner kam aus der SSoT. Deshalb
+      # prueft der Guard den Betrag, nicht den Plannamen.
+      - name: Angebots-Sicherheit (Ratsche gegen Preise ohne Kaufpfad)
+        run: npm run check:offer-prices
       - name: Unit tests
         run: npm test
       - name: Build

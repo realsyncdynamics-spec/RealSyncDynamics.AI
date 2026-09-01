@@ -7,9 +7,23 @@ import { Logo } from '../../components/Logo';
 import { SEOHead } from '../../components/SEOHead';
 import {
   SELLABLE_PRICING_TIERS, PRICING_TRUST_NOTE, PRICING_TAX_NOTE, TIER_ACCENT,
-  PRODUCT_POSITIONING, ORDERED_PLANS, formatPriceEur, planById,
+  PRODUCT_POSITIONING, ORDERED_PLANS, formatPriceEur, planById, PLANS,
   type PricingTier, type PlanId,
 } from '../../config/pricing';
+
+// COMMERCIAL-SSOT: temporary production hotfix.
+// Canonical source migration tracked in Phase 2.
+// Die Trial-Fussnote wird aus der SSoT abgeleitet statt als Liste gepflegt —
+// ein Plan, dessen `trialDays` auf 0 geht, verschwindet damit automatisch aus
+// dem Versprechen. Frueher stand hier „Starter, Growth, Agency und Enterprise",
+// obwohl Enterprise manuell fakturiert wird und keinen Self-Service-Trial hat.
+const TRIAL_PLAN_NAMES: string[] = PLANS
+  .filter((p) => p.purchaseMode === 'checkout' && p.trialDays > 0)
+  .map((p) => p.name);
+const TRIAL_DAYS: number = PLANS.find((p) => p.trialDays > 0)?.trialDays ?? 14;
+const TRIAL_PLAN_LIST: string = TRIAL_PLAN_NAMES.length > 1
+  ? `${TRIAL_PLAN_NAMES.slice(0, -1).join(', ')} und ${TRIAL_PLAN_NAMES.at(-1)}`
+  : (TRIAL_PLAN_NAMES[0] ?? '');
 import { PricingRoiExampleSection } from '../../components/sections/PricingRoiExampleSection';
 import { GovernanceBotsSection } from '../../components/pricing/GovernanceBotsSection';
 import { CostCalculator } from '../../components/pricing/CostCalculator';
@@ -101,11 +115,12 @@ export function PricingPage() {
             Governance Score ermitteln — der Plan folgt daraus <ArrowRight className="h-4 w-4" />
           </Link>
 
-          {/* 14-Tage-Trial klar sichtbar — Starter/Growth/Agency starten mit
-              ?pilot=true in den 14-Tage-Testmodus (siehe CheckoutPage). */}
+          {/* Trial klar sichtbar — nur die Self-Service-Plaene starten mit
+              ?pilot=true in den Testmodus (siehe CheckoutPage). Enterprise und
+              Partner werden angefragt und haben keinen Self-Service-Trial. */}
           <p className="mt-5 inline-flex items-center gap-2 text-[11px] font-mono uppercase tracking-[0.18em] text-titanium-300">
             <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
-            14 Tage kostenlos testen · keine Kosten bis Tag 15 · monatlich kündbar
+            {TRIAL_PLAN_LIST}: {TRIAL_DAYS} Tage kostenlos testen · keine Kosten bis Tag {TRIAL_DAYS + 1} · monatlich kündbar
           </p>
         </div>
       </section>
@@ -124,8 +139,9 @@ export function PricingPage() {
               {PRICING_TRUST_NOTE}
             </p>
             <p className="text-[10px] font-mono text-titanium-600">
-              Free Audit kostenlos · kein Account nötig · Starter, Growth, Agency und Enterprise:
-              14 Tage kostenlos testen — keine Kosten bis Tag 15, monatlich kündbar · Partner: nach Anfrage
+              Free Audit kostenlos · kein Account nötig · {TRIAL_PLAN_LIST}:{' '}
+              {TRIAL_DAYS} Tage kostenlos testen — keine Kosten bis Tag {TRIAL_DAYS + 1}, monatlich kündbar ·
+              {' '}Enterprise und Partner: nach Anfrage, kein Self-Service-Trial
             </p>
             <p className="text-[10px] font-mono text-titanium-600">
               Alle Preise in EUR. {PRICING_TAX_NOTE}
@@ -246,21 +262,30 @@ export function PricingPage() {
                 q: 'Was ist "Auto-Remediation" genau?',
                 a: 'Für erkannte Probleme liefern wir konkrete technische Fixes: Script-Tags mit type="text/plain" und data-consent-Attribut, Consent-Banner-Code-Snippets, Google-Fonts-Self-Hosting-Script, YouTube-NoCookie-Umstellung. Kein LLM-generiertes "schreib eine Datenschutzerklärung", sondern strukturierte Regel-Engine → Template-System.',
               },
+              // COMMERCIAL-SSOT: temporary production hotfix.
+              // Canonical source migration tracked in Phase 2.
+              // Diese drei Antworten beschrieben den Agency-Kauf als lebenden
+              // Vorgang („nach dem Kauf", „nach der Zahlung", „im Grundpreis
+              // enthalten") — auf der Preisseite, also genau dort, wo jemand
+              // entscheidet. Agency ist seit AP2 stillgelegt; ein neuer Kauf
+              // kommt nicht mehr zustande. Die Antworten gelten weiter fuer
+              // Bestandskunden und sagen das jetzt auch. Ersetzt wird kein
+              // Plan: wer die Leistung neu braucht, laeuft ueber Enterprise.
               {
-                q: 'Was passiert nach dem Kauf des Agency-Pakets?',
-                a: 'Nach der Zahlung erhalten Sie innerhalb von 15 Minuten eine E-Mail mit Ihrem Account-Zugang. Im Dashboard finden Sie sofort: Ihren API-Key, das White-Label-Konfigurations-Panel (Logo, Farben, eigene Domain), und die Möglichkeit, die ersten 10 Kundenseiten hinzuzufügen. Unser Onboarding-Team meldet sich innerhalb von 24 Stunden für ein optionales Setup-Gespräch.',
+                q: 'Ich habe ein bestehendes Agency-Paket — was gilt für mich?',
+                a: 'Agency wird seit dem Paketumbau nicht mehr neu verkauft. Bestehende Agency-Abos laufen unverändert weiter: gleicher Funktionsumfang, gleicher Preis, gleiche Abrechnung. Im Dashboard finden Sie wie bisher Ihren API-Key, das White-Label-Konfigurations-Panel (Logo, Farben, eigene Domain) und Ihre Kundenseiten. Neu einsteigende Agenturen und Kanzleien mit Multi-Tenant- und White-Label-Bedarf besprechen Umfang und Konditionen über /contact-sales im Rahmen von Enterprise.',
               },
               {
-                q: 'Was bedeutet "Priority Support" beim Agency-Paket?',
-                a: 'Priority Support bedeutet: dedizierter Ansprechpartner per E-Mail mit garantierter Antwort innerhalb von 8 Stunden (Werktage). Für kritische Compliance-Fragen (aktiver Aufsichtsbehörden-Kontakt) eskalieren wir auf 4-Stunden-Response. Kontakt: support@realsyncdynamicsai.de mit Betreff [AGENCY].',
+                q: 'Was bedeutet "Priority Support" in meinem Agency-Paket?',
+                a: 'Priority Support bedeutet: dedizierter Ansprechpartner per E-Mail mit garantierter Antwort innerhalb von 8 Stunden (Werktage). Für kritische Compliance-Fragen (aktiver Aufsichtsbehörden-Kontakt) eskalieren wir auf 4-Stunden-Response. Kontakt: support@realsyncdynamicsai.de mit Betreff [AGENCY]. Für Bestandskunden gilt das unverändert.',
               },
               {
-                q: 'Wie viele Kundenseiten kann ich im Agency-Paket verwalten?',
-                a: '10 Kundenseiten (Domains) sind im Grundpreis enthalten. Weitere Domains können einzeln hinzugebucht werden. Jede Domain bekommt ihr eigenes Monitoring-Dashboard, White-Label-Report und API-Endpunkt. Die Multi-Tenant-Struktur ist vollständig isoliert — jeder Kunde sieht nur seine eigenen Daten.',
+                q: 'Wie viele Kundenseiten kann ich in meinem Agency-Paket verwalten?',
+                a: '10 Kundenseiten (Domains) sind enthalten; weitere Domains können einzeln hinzugebucht werden. Jede Domain bekommt ihr eigenes Monitoring-Dashboard, White-Label-Report und API-Endpunkt. Die Multi-Tenant-Struktur ist vollständig isoliert — jeder Kunde sieht nur seine eigenen Daten. Das gilt unverändert für bestehende Agency-Abos.',
               },
               {
                 q: 'Gibt es einen AVV (Auftragsverarbeitungsvertrag)?',
-                a: 'Ja. Als Auftragsverarbeiter stellen wir Ihnen und Ihren Kunden einen EU-konformen AVV bereit. Er ist ab Buchung automatisch aktiv und kann unter /legal/avv eingesehen und heruntergeladen werden. Für Agency-Kunden mit eigenen Endkunden stellen wir zusätzlich eine anpassbare AVV-Vorlage bereit.',
+                a: 'Ja. Als Auftragsverarbeiter stellen wir Ihnen und Ihren Kunden einen EU-konformen AVV bereit. Er ist ab Buchung automatisch aktiv und kann unter /legal/avv eingesehen und heruntergeladen werden. Für Kunden mit eigenen Endkunden — bestehende Agency-Abos ebenso wie Enterprise — stellen wir zusätzlich eine anpassbare AVV-Vorlage bereit.',
               },
               {
                 q: 'Wie kündige ich?',
@@ -316,7 +341,11 @@ export function PricingPage() {
 function TierCard({ tier, selected = false }: { tier: PricingTier; selected?: boolean }) {
   const plan = tier.plan;
   const TierIcon = PLAN_ICONS[plan.id];
-  const priceDisplay = formatPriceEur(tier.priceEur);
+  // COMMERCIAL-SSOT: temporary production hotfix.
+  // Canonical source migration tracked in Phase 2.
+  // Plaene ohne oeffentlich zugesicherten Festpreis duerfen keinen Betrag
+  // ausweisen — sonst steht dort ein Angebot, das der Checkout nicht erfuellt.
+  const priceDisplay = tier.priceOnRequest ? 'Auf Anfrage' : formatPriceEur(tier.priceEur);
   const accent = TIER_ACCENT[tier.id];
 
   return (

@@ -11,7 +11,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { ShieldAlert, KeyRound, Loader2, AlertTriangle } from 'lucide-react';
 import { getSupabase, isSupabaseConfigured } from '../../lib/supabase';
 import { useTenant } from './TenantProvider';
-import { getMfaStatus, stepUpTotp } from './mfa';
+import { getMfaStatus, stepUpTotp, mfaErrorMessage } from './mfa';
 import { requiresAal2, aal2Decision, type Aal, type Aal2Outcome } from './aal2-policy';
 
 interface Props {
@@ -78,7 +78,7 @@ export function RequireAal2({ action, children }: Props) {
       setOtp('');
       await refresh();
     } catch (e) {
-      setError((e as Error)?.message ?? 'Bestätigung fehlgeschlagen');
+      setError(mfaErrorMessage(e));
     } finally {
       setBusy(false);
     }

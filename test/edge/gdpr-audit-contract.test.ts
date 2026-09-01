@@ -46,7 +46,7 @@ import {
   RULE_HEURISTIC_OVERLAP,
   type Issue,
   type IssueSeverity,
-} from '../../supabase/functions/_shared/audit-checks';
+} from '../../supabase/functions/gdpr-audit/checks';
 
 const contract = JSON.parse(
   readFileSync(resolve(__dirname, '../fixtures/gdpr-audit-production-contract.json'), 'utf-8'),
@@ -105,7 +105,7 @@ describe('Befund-Vokabular — keine erfundenen Codes', () => {
     // Die Quelle wird gelesen, nicht der Aufruf simuliert: So faellt auch
     // ein Code auf, den nur ein seltener Pfad erzeugt.
     const src = readFileSync(
-      resolve(__dirname, '../../supabase/functions/_shared/audit-checks.ts'), 'utf-8');
+      resolve(__dirname, '../../supabase/functions/gdpr-audit/checks.ts'), 'utf-8');
     const emitted = [...src.matchAll(/id: '([a-z_0-9]+)'/g)].map((m) => m[1]);
     expect(emitted.length).toBeGreaterThan(20);
     const invented = [...new Set(emitted)].filter((id) => !known.has(id));

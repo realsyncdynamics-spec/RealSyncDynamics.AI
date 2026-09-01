@@ -10,21 +10,22 @@
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { evaluateAll, RULE_ENGINE_VERSION } from '../_shared/rules/evaluator.ts';
-import { isLikelyGermanJurisdiction } from '../_shared/jurisdiction.ts';
-import { stripPolicyDeclarations, effectiveCspValue } from '../_shared/tracker-detection.ts';
 import { assessScanCoverage } from '../_shared/scan-coverage.ts';
 import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
-import { detectAIDisclosure } from '../_shared/ai-disclosure-check.ts';
+// Die Pruef- und Bewertungslogik liegt bewusst in einem eigenen, Deno-freien
+// Modul: So laesst sie sich aus Vitest heraus testen. Dass sie hier fehlte
+// und niemand es merkte, war die Ursache des Ausfalls seit 2026-08-19.
 import {
   runChecks,
-  deepCheckImprint,
-  deepCheckPrivacy,
   extractFacts,
   scoreReport,
-  findLegalLink,
+  findPrivacyLink,
+  findImpressumLink,
+  deepCheckImprint,
+  deepCheckPrivacy,
   isDuplicateOfHeuristic,
   type Issue,
-} from '../_shared/audit-checks.ts';
+} from './checks.ts';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const URL_RE = /^https?:\/\/[^\s/$.?#].[^\s]*$/i;
@@ -37,14 +38,121 @@ const IP_RE = /^\d{1,3}(\.\d{1,3}){3}$/;
 /**
  * Version der Auswertung.
  *
- * Von `2026.05.1` auf `2026.08.1` gehoben, weil die Prüf-Heuristiken in
- * `_shared/audit-checks.ts` aus dem gemessenen Produktionsverhalten
- * **rekonstruiert** sind — der Originalcode ging verloren (siehe Kopf jener
- * Datei). Befund-Codes, Severities und Scoring-Gewichte sind identisch,
- * die internen Schwellwerte nicht notwendig. Ergebnisse über diese
- * Versionsgrenze hinweg sind vergleichbar mit Vorbehalt.
+ * Von `2026.05.1` auf `2026.08.1` gehoben: Die Pruef-Heuristiken sind aus dem
+ * gemessenen Produktionsverhalten rekonstruiert (siehe Kopf von `checks.ts`).
+ * Befund-Codes, Severities und Scoring-Gewichte entsprechen dem Vertrag der
+ * 159 historischen Audits; die internen Schwellwerte nicht notwendig.
+ * Ergebnisse ueber diese Versionsgrenze hinweg sind vergleichbar mit
+ * Vorbehalt.
  */
 const AUDIT_ENGINE_VERSION = '2026.08.1';
+
+/**
+ * Abruf mit harter Zeitgrenze. Ohne sie haelt eine Zielseite, die nie
+ * antwortet, die Edge Function bis zum Plattform-Timeout fest und der
+ * Besucher sieht nur eine haengende Anzeige.
+ */
+async function fetchWithTimeout(url: string, timeoutMs: number): Promise<Response> {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+  try {
+    return await fetch(url, {
+      signal: ctrl.signal,
+      redirect: 'follow',
+      headers: {
+        // Ohne erkennbaren User-Agent liefern viele Seiten eine
+        // Bot-Abwehrseite statt ihres echten Markups — der Scan wuerde dann
+        // die Abwehrseite bewerten.
+        'user-agent': 'Mozilla/5.0 (compatible; RealSyncDynamicsAI-Audit/1.0; +https://realsyncdynamicsai.de/methodik)',
+        'accept': 'text/html,application/xhtml+xml',
+        'accept-language': 'de-DE,de;q=0.9,en;q=0.8',
+      },
+    });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/** Fuegt die gelesenen Body-Chunks zu einem Puffer zusammen. */
+function concat(chunks: Uint8Array[]): Uint8Array {
+  const gesamt = chunks.reduce((n, c) => n + c.byteLength, 0);
+  const out = new Uint8Array(gesamt);
+  let pos = 0;
+  for (const c of chunks) { out.set(c, pos); pos += c.byteLength; }
+  return out;
+}
+
+/**
+ * Prueft die beiden Pflichtunterseiten, die von der Startseite verlinkt sind.
+ *
+ * Der Free Audit bleibt bewusst flach: nur Impressum und Datenschutz, nur
+ * wenn verlinkt, mit kurzer Zeitgrenze. Ein tiefer Crawl gehoert in den
+ * bezahlten Scan und waere hier ein unangekuendigter Lastfaktor auf fremden
+ * Servern.
+ */
+interface SubpageScan {
+  issues: Issue[];
+  privacyHtml: string | null;
+  privacyFound: boolean;
+  imprintFound: boolean;
+}
+
+/**
+ * Zweite Scan-Ebene: Impressum UND Datenschutzerklaerung als Dokumente.
+ *
+ * Die Startseite zeigt nur, **ob** verlinkt wurde. Ob das verlinkte Dokument
+ * seine Pflichtangaben traegt, entscheidet sich erst im Dokument selbst.
+ *
+ * Diese Ebene lieferte in Produktion die haeufigsten Befunde ueberhaupt:
+ * `sub_imprint_no_legal_form` erschien in 62 von 159 Audits,
+ * `sub_privacy_third_country_no_legal_basis` in 40. Eine Fassung ohne sie
+ * meldet denselben Seiten ein deutlich besseres Ergebnis — deshalb ist sie
+ * hier wiederhergestellt.
+ *
+ * Hoechstens zwei zusaetzliche Abrufe, je 8 s, je 500 kB. Fehlschlaege sind
+ * still: Eine Unterseite, die nicht laedt, ist kein Compliance-Befund —
+ * sie ist eine fehlende Beobachtung, und darueber wird nichts behauptet.
+ */
+async function scanSubpages(url: string, html: string): Promise<SubpageScan> {
+  const issues: Issue[] = [];
+
+  const fetchDoc = async (href: string | null): Promise<string | null> => {
+    if (!href) return null;
+    let target: URL;
+    try { target = new URL(href, url); } catch { return null; }
+    // Nur http(s) und nur derselbe Host: Ein Pflichtdokument, das woanders
+    // liegt, ist nicht unsere Pruefflaeche — und ein `href` auf ein internes
+    // Netz waere eine SSRF-Einladung.
+    if (target.protocol !== 'https:' && target.protocol !== 'http:') return null;
+    try {
+      if (target.hostname.toLowerCase() !== new URL(url).hostname.toLowerCase()) return null;
+    } catch { return null; }
+    try {
+      const resp = await fetchWithTimeout(target.toString(), 8_000);
+      if (!resp.ok) return null;
+      return (await resp.text()).slice(0, 500_000);
+    } catch {
+      return null;
+    }
+  };
+
+  const [imprintHtml, privacyHtml] = await Promise.all([
+    fetchDoc(findImpressumLink(html)),
+    fetchDoc(findPrivacyLink(html)),
+  ]);
+
+  if (imprintHtml) for (const i of deepCheckImprint(imprintHtml)) issues.push(i);
+  if (privacyHtml) for (const i of deepCheckPrivacy(privacyHtml)) issues.push(i);
+
+  return {
+    issues,
+    privacyHtml,
+    // „Gefunden" heisst: verlinkt **und** abrufbar. Ein Link ins Leere ist
+    // fuer Art. 13 DSGVO keine erfuellte Pflicht.
+    privacyFound: privacyHtml !== null,
+    imprintFound: imprintHtml !== null,
+  };
+}
 
 async function sha256Hex(input: string): Promise<string> {
   const buf = new TextEncoder().encode(input);
@@ -154,10 +262,10 @@ Deno.serve(async (req) => {
     for (const f of ruleFindings) {
       const dupKey = `rule:${f.rule_id}`;
       if (issues.some((i) => i.id === dupKey)) continue;
-      // Denselben Sachverhalt nicht zweimal berichten. Ohne diese Zeile
-      // kostet ein fehlender Datenschutz-Link 50 statt 25 Punkte — der
-      // Score wäre strenger als vor dem Ausfall, bei gleicher Website.
-      // Beleg für die Verdopplung: `RULE_HEURISTIC_OVERLAP`.
+      // Denselben Sachverhalt nicht zweimal berichten. Von 14 Regeln
+      // erschienen in 159 Produktions-Audits nur drei je als `rule:`-Befund —
+      // genau jene ohne Heuristik-Entsprechung. Ohne diese Zeile kostet ein
+      // fehlender Datenschutz-Link 50 statt 25 Punkte.
       if (isDuplicateOfHeuristic(f.rule_id, issues)) continue;
       issues.push({
         id: dupKey,
@@ -241,111 +349,3 @@ Deno.serve(async (req) => {
 
 // ─── Heuristik-Checks ─────────────────────────────────────────────────────
 
-
-/**
- * Abruf mit harter Zeitgrenze.
- *
- * Ohne Timeout hängt eine langsame oder absichtlich verzögernde Zielseite
- * den Worker bis zum Plattform-Limit. Der Scan läuft gegen eine **fremde**
- * Adresse, die ein nicht angemeldeter Besucher benennt — die Zeitgrenze ist
- * deshalb Betriebsschutz, keine Höflichkeit.
- */
-async function fetchWithTimeout(url: string, ms: number): Promise<Response> {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), ms);
-  try {
-    return await fetch(url, {
-      signal: controller.signal,
-      redirect: 'follow',
-      headers: {
-        // Ehrliche Kennung: Betreiber sollen den Zugriff in ihren Logs
-        // zuordnen und bei Bedarf sperren können.
-        'user-agent': 'RealSyncDynamicsAI-Audit/1.0 (+https://realsyncdynamicsai.de/audit)',
-        accept: 'text/html,application/xhtml+xml',
-      },
-    });
-  } finally {
-    clearTimeout(timer);
-  }
-}
-
-/** Fügt gelesene Chunks zu einem Puffer zusammen. */
-function concat(chunks: Uint8Array[]): Uint8Array {
-  let total = 0;
-  for (const c of chunks) total += c.byteLength;
-  const out = new Uint8Array(total);
-  let offset = 0;
-  for (const c of chunks) { out.set(c, offset); offset += c.byteLength; }
-  return out;
-}
-
-interface SubpageScan {
-  issues: Issue[];
-  privacyHtml: string | null;
-  privacyFound: boolean;
-  imprintFound: boolean;
-}
-
-/**
- * Zweite Scan-Ebene: Impressum und Datenschutzerklärung als Dokumente.
- *
- * Die Startseite zeigt nur, **ob** verlinkt wurde. Ob das Dokument seine
- * Pflichtangaben trägt, steht im Dokument. Diese Ebene liefert die
- * häufigsten Befunde überhaupt (`sub_imprint_no_legal_form` in 62 von 159
- * historischen Audits).
- *
- * Höchstens zwei zusätzliche Abrufe, je 8 s, je 500 kB. Fehlschläge sind
- * still: Eine Unterseite, die nicht lädt, ist kein Compliance-Befund — sie
- * ist eine fehlende Beobachtung, und darüber wird nichts behauptet.
- */
-async function scanSubpages(url: string, html: string): Promise<SubpageScan> {
-  const issues: Issue[] = [];
-  const privacyHref = findLegalLink(html, 'privacy');
-  const imprintHref = findLegalLink(html, 'imprint');
-
-  const fetchDoc = async (href: string | null): Promise<string | null> => {
-    if (!href) return null;
-    let target: URL;
-    try { target = new URL(href, url); } catch { return null; }
-    // Nur http(s) und nur derselbe Host: Ein Pflicht-Dokument, das
-    // woanders liegt, ist nicht unser Prüfgegenstand — und ein `href`,
-    // das auf ein internes Netz zeigt, wäre eine SSRF-Einladung.
-    if (target.protocol !== 'https:' && target.protocol !== 'http:') return null;
-    if (target.hostname.toLowerCase() !== new URL(url).hostname.toLowerCase()) return null;
-    try {
-      const resp = await fetchWithTimeout(target.toString(), 8_000);
-      if (!resp.ok) return null;
-      const reader = resp.body?.getReader();
-      if (!reader) return null;
-      const chunks: Uint8Array[] = [];
-      let total = 0;
-      while (total < 500_000) {
-        const { value, done } = await reader.read();
-        if (done) break;
-        chunks.push(value);
-        total += value.byteLength;
-      }
-      await reader.cancel();
-      return new TextDecoder('utf-8', { fatal: false }).decode(concat(chunks));
-    } catch {
-      return null;
-    }
-  };
-
-  const [imprintHtml, privacyHtml] = await Promise.all([
-    fetchDoc(imprintHref),
-    fetchDoc(privacyHref),
-  ]);
-
-  if (imprintHtml) for (const i of deepCheckImprint(imprintHtml)) issues.push(i);
-  if (privacyHtml) for (const i of deepCheckPrivacy(privacyHtml)) issues.push(i);
-
-  return {
-    issues,
-    privacyHtml,
-    // „Gefunden" heisst: verlinkt **und** abrufbar. Ein Link ins Leere ist
-    // für Art. 13 DSGVO keine erfüllte Pflicht.
-    privacyFound: privacyHtml !== null,
-    imprintFound: imprintHtml !== null,
-  };
-}

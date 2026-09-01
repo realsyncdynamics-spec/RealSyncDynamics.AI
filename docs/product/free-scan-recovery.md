@@ -94,7 +94,7 @@ blockierte den gesamten Deploy, 73 von 168 Functions erreichten wochenlang die
 Produktion nicht. Das Gate entstand als Antwort darauf. Es deckt die
 Syntax-Ebene ab; die Referenz-Ebene blieb offen.
 
-### Offene Empfehlung (nicht Teil dieser Änderung)
+### Eingelöst: das Referenz-Gate
 
 `deno check` über `supabase/functions/**/index.ts` via `denoland/setup-deno`,
 als zweite Stufe **neben** dem bestehenden Syntax-Gate — nicht als Ersatz.
@@ -225,6 +225,67 @@ Belastbar prüfbar ist der **Vertrag**: Vokabular, Severity-Semantik,
 Scoring, Berichtsstruktur. Nicht die Frage, ob eine bestimmte Domain am
 2026-06-14 exakt 51 Punkte bekommen hätte. Das steht hier, damit niemand die
 Abdeckung für grösser hält als sie ist.
+
+---
+
+## 3a. Zwei Rekonstruktionen — und wie sie aufgelöst wurden
+
+Derselbe Ausfall wurde **zweimal unabhängig behoben**: `2305e3f` (auf `main`
+gemergt und seit dem 2026-08-30 live) und diese Arbeit. Beide zogen die Logik
+in ein testbares Modul — derselbe Instinkt, unabhängig gefasst.
+
+Der Unterschied liegt in der Grundlage. `2305e3f` entstand **ohne** die
+Produktionsdaten und leitete das Vokabular aus Code und Regelwerk ab. Gemessen
+gegen die 159 historischen Audits:
+
+| | |
+|---|---|
+| Erfundene Codes (nie in Produktion) | **12** — `no_impressum_link`, `tracking_without_consent`, `site_unreachable`, `hosting_undisclosed`, `dynamic_google_fonts`, … |
+| Verlorene Codes (Produktion lieferte sie) | **19** — darunter **alle sieben** Unterseiten-Prüfungen |
+| Severity-Abweichung | `no_privacy_link` live `high` statt `critical` |
+
+`sub_imprint_no_legal_form` allein erschien in **62 von 159** Audits als
+`critical`. Ohne die Unterseiten-Ebene fallen pro betroffener Seite 25 bis 50
+Punkte Abzug weg: Dieselbe Website bekommt ein deutlich besseres Ergebnis, ohne
+dass jemand die Lockerung beschlossen hätte.
+
+### Der stille Fehler: die Rule Engine schwieg
+
+Schwerer als das Vokabular wiegt ein Fehler, den man im Code nicht sieht.
+`extractFacts` gab die Fakten als **flache Punkt-Schlüssel** zurück:
+
+```js
+{ 'consent.banner.detected': true }
+```
+
+`getFact()` in `_shared/rules/evaluator.ts` zerlegt den Pfad aber an den
+Punkten und läuft durch **verschachtelte** Objekte. Nachgerechnet:
+
+```
+flach  → getFact(f,'consent.banner.detected') = undefined
+nested → getFact(f,'consent.banner.detected') = true
+```
+
+Jede Regelbedingung wurde damit gegen `undefined` geprüft und schlug fehl. Die
+**gesamte Rule Engine — 14 Regeln, DSGVO und EU AI Act — hat geschwiegen**,
+ohne dass etwas bricht oder ein Log etwas meldet.
+
+Beleg in den Daten: Von den 159 historischen Audits trugen **61** einen
+`rule:`-Befund (`COOKIE_BANNER_DARK_PATTERN` 47×,
+`AI_ACT_LIMITED_RISK_CHATBOT` 14×). Die drei Audits vom 2026-08-31: **keinen
+einzigen**.
+
+Festgenagelt in `test/edge/gdpr-audit-checks.test.ts` — einmal auf die Form
+(keine flachen Schlüssel) und einmal auf die Wirkung (`evaluateAll` feuert
+tatsächlich).
+
+### Der Entscheid
+
+Vom Eigentümer am 2026-08-31: **Struktur von `2305e3f`, Vertrag aus der
+Messung.** Die Dateistruktur (`gdpr-audit/checks.ts`, netzfrei und aus Vitest
+testbar) wird weitergeführt; Vokabular, Severities und Gewichte kommen aus der
+Fixture. Die Funktionen tragen beide Namensschemata, damit `index.ts` und die
+dort entstandenen Tests weitgehend unverändert bleiben.
 
 ---
 

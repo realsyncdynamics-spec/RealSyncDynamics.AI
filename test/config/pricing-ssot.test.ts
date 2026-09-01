@@ -30,6 +30,7 @@ import {
   recommendPlan,
   resolvePlan,
 } from '../../shared/pricing';
+import { CALCULABLE_PRICING_TIERS, PUBLIC_PRICING_TIERS } from '../../src/config/pricing';
 import { buildPlanCatalogSql } from '../../scripts/generate-plan-catalog-sql';
 import { buildGenerated } from '../../scripts/sync-shared-pricing.mjs';
 
@@ -386,5 +387,101 @@ describe('Abgeleitete Artefakte bleiben synchron', () => {
     expect(catalogMigration, 'Katalog-Migration nicht gefunden').toBeDefined();
     const sql = readFileSync(join(migrationsDir, catalogMigration!), 'utf8');
     expect(sql).toContain(buildPlanCatalogSql());
+  });
+});
+
+/**
+ * COMMERCIAL-SSOT: temporary production hotfix.
+ * Canonical source migration tracked in Phase 2.
+ *
+ * Produktions-Sicherheit: Ein öffentlich ausgewiesener Festpreis ist ein
+ * Angebot. Es darf nur dort stehen, wo der Self-Service-Checkout es auch
+ * einlösen kann. Enterprise verletzte das — 1.249 €/Monat plus 14-Tage-Trial
+ * standen öffentlich, während `public.products` für den Plan-Key nur einen
+ * Sentinel trägt und `stripe-checkout` jeden Versuch mit
+ * `PRICE_NOT_CONFIGURED` abweist.
+ */
+describe('Öffentliche Angebote sind erfüllbar', () => {
+  it('kein Self-Service-Plan verbirgt seinen Preis', () => {
+    // Umgekehrter Fehlerfall: Wer kaufbar ist, muss den Preis auch nennen.
+    for (const plan of PLANS.filter((p) => p.purchaseMode === 'checkout')) {
+      expect(plan.priceOnRequest ?? false).toBe(false);
+    }
+  });
+
+  it('ein Plan ohne öffentlichen Festpreis ist weder kaufbar noch testbar', () => {
+    for (const plan of PLANS.filter((p) => p.priceOnRequest === true)) {
+      // Kein Self-Service-Checkout …
+      expect(plan.purchaseMode).toBe('inquiry');
+      // … und damit auch kein Self-Service-Trial.
+      expect(plan.trialDays).toBe(0);
+
+      const href = checkoutHrefForPlan(plan, { interval: 'month' });
+      expect(href).toContain('/contact-sales');
+      expect(href).not.toContain('/checkout/');
+      expect(href).not.toContain('pilot=true');
+    }
+  });
+
+  it('Enterprise ist anfragepflichtig, ohne Festpreis und ohne Trial', () => {
+    const enterprise = planById('enterprise');
+    expect(enterprise.purchaseMode).toBe('inquiry');
+    expect(enterprise.priceOnRequest).toBe(true);
+    expect(enterprise.trialDays).toBe(0);
+
+    // Auch die Jahresvariante darf keinen Kaufpfad öffnen.
+    for (const interval of ['month', 'year'] as const) {
+      const href = checkoutHrefForPlan(enterprise, { interval });
+      expect(href).not.toContain('/checkout/');
+      expect(href).not.toContain('pilot=true');
+    }
+  });
+
+  it('ein Trial-Versprechen setzt einen einlösbaren Kaufpfad voraus', () => {
+    // Verhindert die Rückkehr des Enterprise-Falls über einen anderen Plan:
+    // Trial-Tage ohne Einlöseweg sind ein Versprechen ohne Deckung. Zwei
+    // Wege führen dahin, und beide sind hier gesperrt — kein
+    // Self-Service-Checkout (Enterprise), oder stillgelegt, sodass
+    // `stripe-checkout` den Neuabschluss mit PLAN_RETIRED abweist (Agency).
+    for (const plan of PLANS.filter((p) => p.trialDays > 0)) {
+      expect(plan.purchaseMode).toBe('checkout');
+      expect(plan.availability).not.toBe('legacy');
+    }
+  });
+});
+
+/**
+ * COMMERCIAL-SSOT: temporary production hotfix.
+ * Canonical source migration tracked in Phase 2.
+ *
+ * Nachgezogen nach einem Fund auf der Cloudflare-Preview: die Plan-Karte
+ * zeigte bereits „Auf Anfrage", während der ROI-Rechner daneben weiterhin
+ * „Enterprise 1249 €/Mo" rechnete und daraus eine konkrete Ersparnis ableitete.
+ * Ursache: der Rechner las `tier.priceEur` aus `PUBLIC_PRICING_TIERS` und
+ * umging damit `priceOnRequest`. Ein Literal-Grep nach „1249" findet so etwas
+ * nicht — der Betrag stammte aus der SSoT, nicht aus dem Quelltext.
+ */
+describe('Rechen-Oberflächen führen keinen Plan ohne Festpreis', () => {
+  it('CALCULABLE_PRICING_TIERS enthält keinen Auf-Anfrage-Plan', () => {
+    for (const tier of CALCULABLE_PRICING_TIERS) {
+      expect(tier.priceOnRequest).toBe(false);
+      // Jeder verbleibende Tier muss einen echten Betrag haben — sonst
+      // rechnet der ROI-Rechner mit 0 und behauptet falsche Ersparnisse.
+      expect(tier.priceEur).toBeGreaterThan(0);
+    }
+  });
+
+  it('genau die stillgelegten und die Auf-Anfrage-Pläne fehlen gegenüber PUBLIC_PRICING_TIERS', () => {
+    // Zwei Gründe schliessen einen Plan aus der Rechen-Liste aus, und nur
+    // diese zwei: er ist stillgelegt (AP2, `availability: 'legacy'` — gehoert
+    // in keine Kaufempfehlung, auch nicht als Rechenbeispiel), oder er hat
+    // keinen oeffentlichen Festpreis, aus dem sich etwas ableiten liesse.
+    const excluded = PUBLIC_PRICING_TIERS
+      .filter((tier) => !CALCULABLE_PRICING_TIERS.includes(tier))
+      .map((tier) => tier.plan.id);
+    const notCalculable = PUBLIC_PRICING_TIERS
+      .filter((tier) => tier.plan.availability === 'legacy' || tier.priceOnRequest)
+      .map((tier) => tier.plan.id);
+    expect(excluded).toEqual(notCalculable);
   });
 });

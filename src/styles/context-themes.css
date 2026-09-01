@@ -212,3 +212,46 @@
 .risk-medium { color: var(--risk-medium); }
 .risk-low { color: var(--risk-low); }
 .risk-passed { color: var(--risk-passed); }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Dashboard-Palette: Slate-Dunkel (Freigabe 2026-08-23, Drei-Fragen-Regel §10)
+
+   Der Eigentümer hat das Fast-Schwarz (#0A0A0B) als unarbeitbar bewertet.
+   Freigegeben: Grundton Slate-Dunkel, Akzent bleibt Security-Blue, Umfang
+   NUR .dashboard-context — Landing (Design-Freeze) und Flow behalten die
+   Standard-Obsidian-Werte aus @theme in src/index.css.
+
+   Mechanik: Tailwind 4 kompiliert bg-obsidian-900 etc. zu
+   var(--color-obsidian-900). Diese scoped Overrides färben deshalb jede
+   Dashboard-Fläche um, ohne eine Komponente anzufassen. Die Leiter bleibt
+   monoton (950 = dunkelste Fläche), damit bestehende Kontrast-Beziehungen
+   (Panel auf Hintergrund, Hover, Hairlines) erhalten bleiben.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.dashboard-context {
+  /* Flächen: tiefes Blaugrau statt Schwarz — sichtbare Tiefenstaffelung */
+  --color-obsidian-950: #0b1120;
+  --color-obsidian-900: #0f172a;
+  --color-obsidian-800: #1e293b;
+  --color-obsidian-700: #243247;
+  --color-obsidian-600: #2c3c55;
+  --color-obsidian-500: #364763;
+  --color-obsidian-400: #475569;
+  --color-obsidian-300: #64748b;
+  --color-obsidian-200: #94a3b8;
+  --color-obsidian-100: #cbd5e1;
+  --color-obsidian-50:  #f1f5f9;
+
+  /* Schrift + Hairlines: kühles Grau passend zum Slate-Grundton.
+     titanium-800/900 sind Border-Töne — heller als zuvor, damit Panels
+     auf dem helleren Hintergrund weiterhin eine sichtbare Kante haben. */
+  --color-titanium-50:  #f5f8fc;
+  --color-titanium-100: #e6edf7;
+  --color-titanium-200: #d3ddeb;
+  --color-titanium-300: #b4c1d5;
+  --color-titanium-400: #8b9bb4;
+  --color-titanium-500: #6b7a94;
+  --color-titanium-600: #51607a;
+  --color-titanium-700: #3e4c66;
+  --color-titanium-800: #324158;
+  --color-titanium-900: #263349;
+}

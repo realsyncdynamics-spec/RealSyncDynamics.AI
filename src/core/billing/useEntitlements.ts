@@ -219,7 +219,10 @@ export function useEntitlements(): UserEntitlements {
   const hasFeature = useCallback(
     (featureKey: string): boolean => {
       const val = features[featureKey];
-      return val === true || (typeof val === 'number' && val > 0);
+      // `-1` heißt unbegrenzt und gilt als gewährt — dieselbe Regel wie
+      // `load-entitlements.ts` und der serverseitige Wächter. Vorher las
+      // dieser Hook ein unbegrenztes Kontingent als „nicht vorhanden".
+      return val === true || val === -1 || (typeof val === 'number' && val > 0);
     },
     [features],
   );

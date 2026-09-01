@@ -81,3 +81,30 @@ describe('robots.txt hält /assistant heraus', () => {
     }
   });
 });
+
+// `/kodee` trägt dieselbe Last wie `/assistant`.
+//
+// `KodeeView` ruft ebenfalls `processAIGatewayRequest` auf und hat keinen
+// eigenen Guard. Ohne Router-Gate könnte jeder Besucher Modellaufrufe
+// auslösen — dieselbe Lücke, nur an anderer Stelle.
+//
+// `/kodee/connections` steht bewusst NICHT hier: `ConnectionsView` bringt
+// einen eigenen `AuthGate` mit. Diese Unterscheidung ist der Grund, warum
+// die Prüfung an der View hängt und nicht bloß am Routennamen.
+describe('/kodee ist auth-gegatet', () => {
+  it('hängt hinter AppGate', () => {
+    expect(routeLine('/kodee')).toContain('<AppGate>');
+  });
+
+  it('mountet KodeeView nicht ohne Wrapper', () => {
+    expect(app).not.toContain('element={<KodeeView />}');
+  });
+
+  it('lässt /kodee/connections in Ruhe — dort schützt die View selbst', () => {
+    const view = readFileSync(
+      resolve(ROOT, 'src/features/kodee/connections/ConnectionsView.tsx'),
+      'utf-8',
+    );
+    expect(view).toContain('AuthGate');
+  });
+});

@@ -894,7 +894,12 @@ function RoutesWithTracking() {
       <Route path="/dashboard/audit" element={<AuditDashboardView />} />
       <Route path="/dashboard/agents" element={<AgentOsAdminPage />} />
       <Route path="/business" element={<BusinessDashboard />} />
-      <Route path="/kodee" element={<KodeeView />} />
+      {/* `/kodee` führt denselben Gateway-Aufruf wie `/assistant`
+          (`processAIGatewayRequest`) und braucht deshalb denselben Schutz:
+          ohne Gate könnte jeder Besucher Modellaufrufe auslösen.
+          `/kodee/connections` ist nicht betroffen — `ConnectionsView`
+          bringt einen eigenen `AuthGate` mit. */}
+      <Route path="/kodee" element={<AppGate><KodeeView /></AppGate>} />
       <Route path="/kodee/connections" element={<ConnectionsView />} />
       <Route path="/billing/usage" element={<RequireAal2 action="Billing-Verwaltung"><UsageView /></RequireAal2>} />
       <Route path="/pricing" element={<PricingPage />} />

@@ -962,6 +962,66 @@ Rückfall selbst bleibt, was er ist: Übergang, kein Dauerzustand — sobald der
 anonyme Pfad überall ausgerollt ist, entfallen Sperre und Abzeichen mit ihm.
 Gesichert durch `test/siteos/claim-moves-not-rebuilds.test.ts`.
 
+**2026-09-01 — Vorschau-Inhalte: nichts behaupten, was der Scan nicht hergibt**
+
+Anlass war ein Screenshot des Eigentümers: Die Live-Vorschau einer
+AI-Governance-Plattform warb mit **„Termin anfragen"** und versprach unter
+„Warum wir" eine **„Persönliche Betreuung — Feste Ansprechpartner statt
+Warteschleife."** Urteil: „Das ist komplett am Ziel vorbei."
+
+Zu Recht. Beide Texte standen fest in `blueprint/synthesize.ts` (Zeilen 157
+und 177–181) und gingen unverändert an **jeden** Kunden **jeder** Branche.
+Sie stammten nicht aus der gescannten Website. Für nahezu jeden Empfänger
+waren sie damit falsch.
+
+Auf die Fragepflicht nach §10.3 hat der Eigentümer entschieden: **„Ja — aus
+dem Scan speisen"**, ausdrücklich mit der Maßgabe „wo der Scan nichts
+hergibt, bleibt der Block leer statt falsch."
+
+Umfang — und **nur** dieser:
+
+| Was | Vorher | Nachher |
+|---|---|---|
+| Hero-CTA | fest „Termin anfragen" | folgt dem Ziel im Seitenplan: `/termin` → „Termin anfragen", `/reservierung` → „Tisch reservieren", `/anfrage` → „Anfrage senden", sonst „Kontakt aufnehmen" |
+| Features-Block | drei erfundene Sätze | `brief.highlights` aus dem Scan; ohne Beleg leer und als `requiresRealContent` gemeldet |
+| `SiteBrief` / `BriefEnrichment` | — | neues Feld `highlights` als Kanal für belegte Vorzüge |
+| `sanitizeEnrichment` | ließ das Feld fallen | reicht `highlights` durch — in **beiden** Kopien (`builder.ts`, `anonymous.ts`) |
+
+**Der Hash-Preis ist bekannt und akzeptiert**: `synthesize.ts` ist
+deterministisch und gehasht („gleicher Brief ⇒ gleicher Blueprint ⇒ gleicher
+Hash"). Jeder neu erzeugte Blueprint bekommt damit einen anderen Hash als
+vor dem 2026-09-01. Bestehende Artefakte bleiben unangetastet — sie werden
+nicht neu gebaut. Der Determinismus selbst bleibt: gleicher Brief ergibt
+weiterhin byte-gleiches Ergebnis, geprüft.
+
+**Was der Scan heute wirklich hergibt — gemessen, nicht vermutet**:
+`handlers/discover.ts:77` bildet `services` als
+`unique([...headings, ...extractServiceLikeText(visibleText)])`. Die
+Überschriften sind also **vollständig in den Leistungen enthalten**; eine
+zweite, unabhängige Quelle für „Warum wir" existiert im Scan nicht. Der
+Block bleibt deshalb heute in der Regel leer — das ist der freigegebene
+Zustand, nicht ein unfertiger. Der Kanal steht bereit, sobald Redaktion
+oder ein Content-Agent echte Vorzüge liefert.
+
+**Regel daraus**: Ein Vorschau-Block, der etwas über ein fremdes Unternehmen
+behauptet, braucht eine Quelle. Ohne Quelle bleibt er leer und trägt
+`requiresRealContent: true` — dieselbe Behandlung wie `testimonials`, und
+aus demselben Grund (§ 5 UWG). Plausibel klingender Fülltext ist keine
+Vorschau, sondern eine Behauptung, für die niemand einstehen kann.
+
+Gesichert durch `test/siteos/preview-content-honesty.test.ts` — die Prüfung
+fragt nach der **Herkunft** des Textes, weil erfundener Text technisch
+genauso aussieht wie belegter und deshalb von keinem Render- oder
+Typ-Test gefunden wird. Die beanstandeten Formulierungen sind dort
+namentlich gesperrt.
+
+**Weiterhin offen, gleiche Klasse, nicht mit angefasst**: `brief.ts`
+erfindet in `parseBrief` die Zusammenfassung („… persönliche Beratung,
+transparente Leistungen und kurze Wege.") und in `defaultServices` die
+Leistungen. Beides wird im Scan-Pfad von `mergeBrief` mit echten Daten
+überschrieben und fällt dort nicht auf; im reinen Prompt-Pfad bleibt es
+stehen. Gehört entschieden, nicht nebenbei geändert.
+
 #### Faustregel
 
 **Hinzufügen ja, Ändern nur nach Rückfrage, Design gar nicht.**

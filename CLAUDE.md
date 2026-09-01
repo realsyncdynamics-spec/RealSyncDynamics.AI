@@ -548,7 +548,18 @@ Vollständige Regeln: `docs/product/pricing-governance.md`
 - `/` → MainLanding (**Design eingefroren**, Ergänzen frei, Ändern nur nach Rückfrage — siehe §10)
 - `/app/*` → Auth-gated Dashboard (Onboarding-First-Gate)
 - `/flow/*` → Seitenbasierter Flow (Trial, Onboarding, Assessment)
-- `/governance/*` → Public Features (Runtime, Docs, Score, Browser)
+- `/governance-runtime` · `/governance-score` · `/governance-browser` ·
+  `/governance-graph` · `/governance-complexity-score` · `/governance-os-pricing`
+  → Public Features. **Bindestrich, kein Schrägstrich.**
+- `/governance/*` (mit Schrägstrich) → auth-gated Governance-Modul
+  (`admin`, `approvals`, `dpias`, `dsr`, `incidents`, `scans`, `vendors`, …);
+  die meisten dieser Routen sind Weiterleitungen nach `/app/*`.
+
+  > Bis 2026-09-01 stand hier „`/governance/*` → Public Features (Runtime,
+  > Docs, Score, Browser)". Das war vertauscht: `/governance/runtime` und
+  > `/governance/score` existieren nicht und liefern „Seite nicht gefunden" —
+  > im Browser gegen die Live-Seite geprüft. Wer der Doku folgte, verlinkte
+  > ins Leere.
 - `/<branche>-landing` → Branchen-LPs
 - `/preview` · `/pricing` · `/contact-sales`
 

@@ -37,7 +37,7 @@ const DASHBOARD_CARDS: DashboardCard[] = [
     description: 'Monatliche Compliance-Scans durchführen',
     feature: 'website.scan_monthly_limit',
     cta: 'Scan starten',
-    path: '/app/governance/website-scan',
+    path: '/app/scans',
     tier: 'free',
   },
   {
@@ -345,7 +345,7 @@ export function FreeTierDashboard() {
               Mehr Features freischalten?
             </h3>
             <p className="text-titanium-400 mb-4 max-w-2xl mx-auto">
-              Upgrade auf einen Premium-Plan für erweiterte Compliance-Tools, KI-Klassifizierung,
+              Upgrade auf einen kostenpflichtigen Tarif für erweiterte Compliance-Tools, KI-Klassifizierung,
               Governance-Bots und mehr.
             </p>
             <button

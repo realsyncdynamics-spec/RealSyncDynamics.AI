@@ -368,4 +368,34 @@ CREATE TRIGGER evidence_anchors_no_delete
 
 REVOKE UPDATE, DELETE ON public.evidence_anchors FROM PUBLIC;
 
+-- ============================================================
+-- 5. Trigger-Funktionen gegen den Postgres-Default schliessen
+-- ============================================================
+--
+-- WARUM: `CREATE FUNCTION` vergibt EXECUTE an PUBLIC. Wer beim Anlegen kein
+-- REVOKE schreibt, oeffnet die Funktion fuer `anon` — ohne dass irgendwo ein
+-- GRANT steht, an dem man es sehen wuerde. Genau dieser Default hat den
+-- Repo-Stand gegenueber Produktion aufgehen lassen (siehe
+-- 20260903044500_align_repo_function_grants_with_prod). Trigger-Funktionen
+-- brauchen kein direktes EXECUTE: Der Trigger-Mechanismus ruft sie ohne
+-- Rechtepruefung auf. Ein direkter Aufruf durch einen anonymen Nutzer hat
+-- dagegen keinen legitimen Zweck.
+--
+-- service_role bekommt seinen Grant EXPLIZIT, bevor der Entzug greift —
+-- `REVOKE ... FROM PUBLIC` nimmt auch ihm das Recht, wenn es dort nur ueber
+-- PUBLIC bestand. Genau so entstand der ACL-Vorfall vom 2026-08-23.
+DO $$
+DECLARE
+    fn TEXT;
+BEGIN
+    FOREACH fn IN ARRAY ARRAY[
+        'public.ai_evidence_block_update()',
+        'public.ai_evidence_block_delete()',
+        'public.evidence_anchors_block_mutation()'
+    ] LOOP
+        EXECUTE format('GRANT EXECUTE ON FUNCTION %s TO service_role', fn);
+        EXECUTE format('REVOKE ALL ON FUNCTION %s FROM PUBLIC', fn);
+    END LOOP;
+END $$;
+
 COMMIT;

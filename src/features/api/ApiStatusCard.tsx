@@ -76,7 +76,7 @@ export function ApiStatusCard() {
                 </Link>
               ) : (
                 <Link
-                  to="/app/settings/api-keys"
+                  to="/settings/api-keys"
                   className="inline-flex items-center gap-1.5 px-3 py-2 bg-obsidian-800 hover:bg-obsidian-700 border border-titanium-700 hover:border-security-500 text-titanium-200 text-xs font-bold rounded-none transition-colors"
                   data-testid="api-card-manage"
                 >

@@ -272,6 +272,24 @@ export const UNBACKED_CALLERS: readonly UnbackedCaller[] = [
   { slug: 'dsfa', surface: '/api-docs — dokumentierter Endpunkt', publicPath: true },
   { slug: 'sub-processors', surface: '/api-docs — dokumentierter Endpunkt', publicPath: true },
 
+  // ── Im Repo, noch nicht deployt ────────────────────────────────────────
+  //
+  // `audit-claim` schliesst die Lücke zwischen anonymem Bericht und Konto:
+  // `gdpr_audits` trägt `user_id`, `tenant_id` und `claimed_at`, und die
+  // Lese-Policy `gdpr_audits tenant_read` macht ein Audit erst sichtbar, wenn
+  // `tenant_id` gesetzt ist — geschrieben hat die Spalten aber nie jemand
+  // (0 von 159 Zeilen, gemessen 2026-08-30).
+  //
+  // Der Aufruf ist bewusst **kein Knopf**: Er läuft als Effekt nach der
+  // Registrierung und `claimPendingAudit()` wirft nicht. Schlägt er fehl,
+  // weil die Function noch nicht deployt ist, bleibt die gemerkte Kennung
+  // liegen und der nächste Anlauf holt sie nach — der Nutzer sieht keine
+  // Sackgasse, nur eine Zuordnung, die noch aussteht.
+  //
+  // Dieser Eintrag verschwindet mit dem nächsten `deploy.yml`-Lauf; genau
+  // dann wird der Test rot und erinnert daran (der „schöne Fall" oben).
+  { slug: 'audit-claim', surface: '/unified-entry/onboarding — Übernahme nach Registrierung (stiller Effekt, kein Knopf)', publicPath: false },
+
   // ── Hinter Login ───────────────────────────────────────────────────────
   // `api-quota` steht nur in src/features/api/API_DEVELOPER_GUIDE.md und wird
   // von keinem Code aufgerufen — deshalb kein Eintrag hier, aber ein offener

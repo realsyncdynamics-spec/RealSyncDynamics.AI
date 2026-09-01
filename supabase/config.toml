@@ -129,12 +129,36 @@ verify_jwt = false
 [functions.browser-action-log]
 verify_jwt = false
 
-# AI Gateway — provider-neutral inference endpoint. Public per spec
-# (frontend talks to it directly without bearer tokens). The actual auth
-# + rate-limit + tenant-scope checks live inside the function once it
-# starts handling tenant-scoped traffic in a follow-up PR.
+# AI Gateway — provider-neutral inference endpoint.
+#
+# Vorher stand hier verify_jwt = false mit dem Vermerk, die Auth komme "in a
+# follow-up PR". Der PR kam nicht. Ein Probe-Request gegen die Produktions-
+# Function ohne jeden Header lieferte am 2026-08-09 und erneut am 2026-08-29
+# HTTP 200 und meldete den Anthropic-Fallback als `ok: true` — jeder im
+# Internet konnte Inferenz auf Kosten des Betreibers ausloesen.
+#
+# Das Rate-Limit im Function-Code schuetzt davor nicht: MINUTE_WINDOWS /
+# HOUR_WINDOWS sind Maps im Modul-Scope, leben also pro Isolate, verfallen bei
+# jedem Cold Start und sind per IP-Rotation umgehbar.
+#
+# Warum der Umstieg fuer bestehende Aufrufer folgenlos ist: ALLE gehen ueber
+# AiGatewayEdgeClient (src/core/ai-gateway/edgeClient.ts und der Deno-Zwilling),
+# und der setzt immer `apikey` + `Authorization: Bearer <key>`. Serverseitig
+# sind das SUPABASE_ANON_KEY bzw. SUPABASE_SERVICE_ROLE_KEY aus der Edge-
+# Runtime (governance-agent, classify-document, telegram-webhook,
+# ai-act-classify), im Browser der Anon-Key. Beides sind gueltige Projekt-JWTs
+# und passieren das Gateway.
+#
+# WICHTIG — erster Schritt, nicht die Loesung. Der Anon-Key steht per
+# Definition im Browser-Bundle. verify_jwt = true stoppt den anonymen Zugriff
+# von aussen, nicht den Missbrauch durch jemanden, der den Key aus dem Bundle
+# liest. Offen bleiben: Tenant-Aufloesung, persistentes Rate-Limit (Tabelle
+# `_rate_limits` existiert bereits), ai_tool_runs-Logging und Anbindung an
+# _shared/cost-cap.ts.
+#
+# Wirkt erst nach `supabase functions deploy ai-gateway`.
 [functions.ai-gateway]
-verify_jwt = false
+verify_jwt = true
 
 [functions.audit-report-pdf]
 verify_jwt = false

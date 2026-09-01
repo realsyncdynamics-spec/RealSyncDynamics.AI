@@ -10,7 +10,7 @@ export function ApiDocumentation() {
     <div className="min-h-screen bg-obsidian-950 text-titanium-100">
       <header className="h-14 border-b border-titanium-900 bg-obsidian-900 flex items-center px-4">
         <Link
-          to="/app/settings/api-keys"
+          to="/settings/api-keys"
           className="p-1.5 rounded-none hover:bg-obsidian-800 text-titanium-400 hover:text-titanium-200 mr-3"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -251,7 +251,7 @@ export function ApiDocumentation() {
 
         {/* Footer */}
         <div className="flex gap-3 pb-8">
-          <Link to="/app/settings/api-keys" className="px-3 py-2 bg-obsidian-900 border border-titanium-700 hover:border-security-500 text-titanium-200 rounded-none text-sm font-semibold">
+          <Link to="/settings/api-keys" className="px-3 py-2 bg-obsidian-900 border border-titanium-700 hover:border-security-500 text-titanium-200 rounded-none text-sm font-semibold">
             ← Zurück zu Verwaltung
           </Link>
         </div>

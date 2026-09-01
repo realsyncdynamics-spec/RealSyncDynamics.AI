@@ -29,6 +29,7 @@ import { PhonebotStartPage } from './pages/product-entry-points/PhonebotStartPag
 import { AetherOSLanding } from './pages/AetherOSLanding';
 // ── RealSyncDynamics Landing Page (eigene Route /realsync-landing) ──
 import { RealSyncDynamicsLanding } from './marketing/landing/RealSyncDynamicsLanding';
+import EnterpriseKonfigurator from './pages/EnterpriseKonfigurator';
 // ── Governance-OS Workspace Preview (moved to /preview) ──
 import { PublicWorkspacePreview } from './pages/PublicWorkspacePreview';
 import { GovernanceBrowserPage } from './pages/GovernanceBrowserPage';
@@ -269,6 +270,7 @@ const WebsiteGovernanceView = lazy(() => import('./features/governance/websites/
 const AiRegisterView = lazy(() => import('./features/governance/AiRegisterView').then((m) => ({ default: m.AiRegisterView })));
 const DsgvoDirectoryView = lazy(() => import('./features/governance/DsgvoDirectoryView').then((m) => ({ default: m.DsgvoDirectoryView })));
 const AiActRiskAssessmentView = lazy(() => import('./features/governance/AiActRiskAssessmentView').then((m) => ({ default: m.AiActRiskAssessmentView })));
+const IndustrialOtWizardView = lazy(() => import('./features/governance/IndustrialOtWizardView').then((m) => ({ default: m.IndustrialOtWizardView })));
 const Nis2IncidentsView = lazy(() => import('./features/governance/Nis2IncidentsView').then((m) => ({ default: m.Nis2IncidentsView })));
 const Iso27001ControlsView = lazy(() => import('./features/governance/Iso27001ControlsView').then((m) => ({ default: m.Iso27001ControlsView })));
 const Iso42001View = lazy(() => import('./features/governance/Iso42001View').then((m) => ({ default: m.Iso42001View })));
@@ -502,6 +504,7 @@ function RoutesWithTracking() {
       <Route path="/landingpages" element={<LandingPagesOverview />} />
       <Route path="/landing-uebersicht" element={<LandingPagesOverview />} />
       <Route path="/realsync-landing" element={<RealSyncDynamicsLanding />} />
+      <Route path="/enterprise-konfigurator" element={<EnterpriseKonfigurator />} />
       <Route path="/governance-browser" element={<GovernanceBrowserPage />} />
       <Route path="/runtime"    element={<RuntimePage />} />
       <Route path="/monitoring" element={<MonitoringPage />} />
@@ -761,6 +764,7 @@ function RoutesWithTracking() {
       <Route path="/app/governance/ai-register" element={<GovernanceBrowserShell><AiRegisterView /></GovernanceBrowserShell>} />
       <Route path="/app/governance/dsgvo-directory" element={<GovernanceBrowserShell><DsgvoDirectoryView /></GovernanceBrowserShell>} />
       <Route path="/app/governance/ai-act-assessment" element={<GovernanceBrowserShell><AiActRiskAssessmentView /></GovernanceBrowserShell>} />
+      <Route path="/app/governance/industrial-ot" element={<GovernanceBrowserShell><IndustrialOtWizardView /></GovernanceBrowserShell>} />
       <Route path="/app/governance/memory" element={<GovernanceBrowserShell><MemoryGovernanceView /></GovernanceBrowserShell>} />
       <Route path="/app/governance/nis2-incidents" element={<GovernanceBrowserShell><Nis2IncidentsView /></GovernanceBrowserShell>} />
       <Route path="/app/governance/iso27001" element={<GovernanceBrowserShell><Iso27001ControlsView /></GovernanceBrowserShell>} />

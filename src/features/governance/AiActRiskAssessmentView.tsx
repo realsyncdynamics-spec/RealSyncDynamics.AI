@@ -167,6 +167,23 @@ function Inner() {
               <ChevronRight className="h-5 w-5" />
             </button>
 
+            {/* Industrial OT Vorprüfung */}
+            <Link
+              to="/app/governance/industrial-ot"
+              className="w-full border border-titanium-900 bg-obsidian-900 hover:bg-obsidian-800 text-titanium-100 text-sm font-semibold px-6 py-4 rounded-none flex items-center justify-between transition-colors"
+            >
+              <span className="flex items-center gap-3">
+                <FileText className="h-5 w-5 text-security-400" />
+                <span className="leading-tight">
+                  Industrial OT — Vorprüfung für industrielle KI
+                  <span className="block text-[11px] text-titanium-400 font-medium">
+                    Sicherheitsbauteile, kritische Infrastruktur, Beschäftigtenüberwachung · Art. 5 / 6, Anhang I/III
+                  </span>
+                </span>
+              </span>
+              <ChevronRight className="h-5 w-5" />
+            </Link>
+
             {/* Existing Assessments */}
             {assessments.length > 0 && (
               <div>

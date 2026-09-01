@@ -568,6 +568,98 @@ aufgerufenen Bezeichner, der sich darauf nicht zurückführen lässt.
 Gemessen über alle 178 Entrypoints: **6 Treffer, alle in `gdpr-audit`, keine
 Fehlalarme.**
 
+### 5.10 Sechs pg_cron-Jobs, 5.259 Läufe, null Erfolge (gemessen 2026-09-01)
+
+Nach dem Merge von #1176 sollte nur nachgemessen werden, ob
+`business-metrics-cron` seine 96 täglichen `TypeError` losgeworden ist. Das
+hat es: **288 von 288 Läufen in drei Tagen erfolgreich**, und
+`prune_business_metric_snapshots` greift — die Snapshots sind von **7.765 auf
+1.274** gefallen. Der Blick in dieselbe Tabelle hat aber sechs Nachbarn
+gezeigt, die nie liefen:
+
+| Job | Takt | Läufe | Erfolge | Seit | Fehlendes Secret |
+|---|---|---|---|---|---|
+| `agent-os-runner-hourly` | stündlich | 2.271 | **0** | 2026-05-29 | `agent_os_runner_token` |
+| `agent-os-runner-daily` | täglich | 94 | **0** | 2026-05-30 | `agent_os_runner_token` |
+| `scan-scheduler-dispatch` | alle 15 min | 1.923 | **0** | 2026-08-12 | `service_role_key` |
+| `governance-monitoring-hourly` | stündlich | 481 | **0** | 2026-08-12 | `service_role_key` |
+| `memory-decay-hourly` | stündlich | 470 | **0** | 2026-08-12 | `service_role_key` |
+| `governance-monitoring-daily` | täglich | 20 | **0** | 2026-08-12 | `service_role_key` |
+
+**5.259 Läufe, kein einziger Erfolg.** Dasselbe Muster wie `gdpr-audit`:
+kaputt seit der Geburt, sauber deployt, nie bemerkt.
+
+Der Befund ist nicht neu — `20260820000000_cron_dispatch_fix.sql` hat ihn am
+2026-08-20 gefunden, die Fehlermeldung von einer NOT-NULL-Verletzung auf eine
+klare Textmeldung gehoben und beide Secrets an den Betreiber verwiesen. Er ist
+**seitdem offen**. Die Messung sagt nur, wie lange.
+
+#### Was das praktisch bedeutet
+
+Heute nichts, und das ist der Grund, warum es niemandem auffällt:
+`incidents`, `dpias`, `scan_schedules` und `governance_memory` sind **leer**.
+Die Jobs hätten ohnehin nichts zu tun gehabt. Der Ausfall wartet auf den
+ersten Kunden, der eine Frist, einen Scan-Zeitplan oder ein Memory anlegt —
+dann greift die Fristenüberwachung nicht, der geplante Scan läuft nicht, und
+kein Memory verfällt.
+
+Damit erklärt sich auch `audit_monitor_results = 0` (§5.7): nicht weil das
+Feature ungenutzt wäre, sondern weil sein Scheduler nie zum Zug kam.
+
+#### Eine Hälfte war im Code lösbar — und das wurde übersehen
+
+Die Migration von 2026-08-20 hat **beide** Secrets gleich behandelt. Für
+`service_role_key` zu Recht: Die drei Empfänger vergleichen den Bearer gegen
+`Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')`, der Wert ist vorgegeben und
+gehört nicht in die Git-History.
+
+Bei `agent_os_runner_token` stimmt das nicht. Sender und Empfänger lesen
+**dieselbe Vault-Zeile**: `dispatch_cron_function` über `get_app_secret`, und
+`agent-os-runner/index.ts:54` tut wörtlich dasselbe. Es gibt keinen
+vorgegebenen Wert — nur die Forderung, dass beide Seiten denselben sehen. Ein
+in der Migration erzeugter Zufallswert erfüllt sie.
+
+Von beiden Enden bestätigt, bevor etwas geschrieben wurde:
+
+```
+cron.job_run_details : Vault-Secret "agent_os_runner_token" fehlt
+POST /agent-os-runner: {"code":"NOT_CONFIGURED","detail":"vault token missing: empty"}
+```
+
+Behoben durch `20260901010000_agent_os_runner_token.sql`. In Git steht der
+Ausdruck, nie das Ergebnis; jede Umgebung bekommt ihr eigenes Token. Kein
+`cron.schedule` nötig — beide Jobs sind registriert und greifen beim nächsten
+Tick.
+
+#### Was der Betreiber tun muss
+
+Vier Jobs bleiben, und sie brauchen ein Geheimnis, das nicht aus dem Repo
+kommen kann:
+
+```sql
+SELECT vault.create_secret('<service-role-key>', 'service_role_key');
+```
+
+Danach laufen `scan-scheduler-dispatch`, `governance-monitoring-hourly/-daily`
+und `memory-decay-hourly` ohne weiteren Eingriff wieder an.
+
+#### Die Lehre: `registriert` ist kein Zustand
+
+CLAUDE.md §5 schrieb zum Decay-Worker, er ticke, „wenn der pg_cron-Job
+registriert ist". Er **ist** registriert, aktiv — und scheitert seit 470
+Läufen. Eine Prüfung an `cron.job` hätte grün gemeldet. Richtig ist
+`cron.job_run_details.status`:
+
+```sql
+select j.jobname, count(*) filter (where d.status='succeeded') as erfolge, count(*) as laeufe
+from cron.job_run_details d join cron.job j using (jobid)
+where d.start_time > now() - interval '3 days'
+group by 1 having count(*) filter (where d.status='succeeded') = 0;
+```
+
+Diese Abfrage gehört in jeden Produktionsdurchlauf — sie hätte alles oben in
+einer Sekunde geliefert.
+
 ---
 
 ## 6. Betriebshinweis: Browser hinter einem MITM-Proxy

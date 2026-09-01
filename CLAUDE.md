@@ -377,6 +377,13 @@ Jeder Agent braucht vier Dimensionen — fehlt eine, ist er nicht governance-fä
   Nie einseitig ändern; `test/governance/rfc003-sql-parity.test.ts` bricht sonst.
   **Betrieb**: Der Decay-Worker tickt nur, wenn der pg_cron-Job `memory-decay-hourly`
   registriert ist (Migration `20260819000000`) — ohne ihn verfällt kein Memory.
+  **Registriert reicht aber nicht**, und genau darauf hat dieser Satz vertraut:
+  Am 2026-09-01 gegen die Live-DB gemessen ist der Job seit dem 2026-08-12
+  registriert, aktiv **und in allen 470 Läufen gescheitert** — das Vault-Secret
+  `service_role_key` fehlt (siehe `20260820000000_cron_dispatch_fix.sql`).
+  In Produktion verfällt heute kein Memory. Ohne Schaden, weil
+  `governance_memory` leer ist, aber die Zusage steht ungedeckt.
+  Prüfen also nicht an `cron.job`, sondern an `cron.job_run_details.status`.
 
 ### Dashboard-Module (modulare Reihenfolge)
 1. **Agent Registry** — Liste, Status, Risiko, Details

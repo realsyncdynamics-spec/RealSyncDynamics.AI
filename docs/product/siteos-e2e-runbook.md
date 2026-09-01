@@ -115,13 +115,56 @@ WHERE op = 'siteos_build_anon' ORDER BY created_at DESC LIMIT 1;
 -- 2c
 SELECT preview_id FROM public.siteos_anonymous_builds WHERE id = :session_id;
 ```
-- 📋 **`preview_id` ist `NULL`, und das ist der erwartete Wert.** Auf `main`
-  existiert kein Codepfad, der in den Preview-Worker schreibt:
-  `SITEOS_PREVIEW_ORIGIN` und `PREVIEW_WRITE_TOKEN` kommen in
-  `supabase/functions/` nirgends vor. Die Worker-Vorschau ist **nicht
-  implementiert**, nicht bloss unkonfiguriert — kein Setzen von Secrets
-  ändert daran etwas. Dieser Messpunkt steht hier, damit ein grüner Lauf den
-  Pfad nicht versehentlich als vorhanden ausweist.
+**Der erwartete Wert hängt an der Konfiguration** — und genau deshalb steht
+dieser Punkt hier. Frühere Fassungen dieses Runbooks nannten `NULL` den
+erwarteten Wert und begründeten das damit, dass die Worker-Vorschau *nicht
+implementiert* sei. Das gilt nicht mehr: Der Schreibpfad steht
+(`supabase/functions/siteos/preview.ts`, verdrahtet in `handlers/anonymous.ts`).
+Was jetzt entscheidet, ist, ob die Edge Function ihr Ziel kennt.
+
+| Zustand | `preview_id` | Feld `preview` in der Antwort | Bedeutung |
+|---|---|---|---|
+| `SITEOS_PREVIEW_ORIGIN` **und** `SITEOS_PREVIEW_WRITE_TOKEN` gesetzt | UUID-Hex, 32 Zeichen | `{"status":"stored","url":…}` | ✅ **MUSS ERFOLGREICH SEIN** |
+| eines von beiden fehlt | `NULL` | `{"status":"not_configured"}` | 📋 **NUR GEMESSEN** — offenes Infrastruktur-Gate, siehe unten |
+| beide gesetzt, Worker antwortet nicht | `NULL` | `{"status":"failed","reason":…}` | ⛔ **MUSS FEHLSCHLAGEN** — ein konfiguriertes Ziel, das ablehnt, ist ein Fehler |
+
+Die dritte Zeile ist der Grund für die Trennung von `not_configured` und
+`failed`: Zusammengefasst wäre der offene Punkt von einem echten Ausfall
+nicht mehr unterscheidbar, und ein grüner Lauf höbe beides gleichzeitig auf.
+
+```sql
+-- 2d  Nur wenn preview_id gesetzt ist: die Vorschau ist tatsächlich abrufbar
+--     curl -sI https://<preview-origin>/p/<preview_id>
+```
+- ✅ `200`, Header `Content-Security-Policy: … script-src 'none'`,
+  `X-Robots-Tag: noindex`
+- ✅ Jede Unterseite aus `blueprint.pages` ist unter `/p/<id><pfad>` erreichbar
+- ⛔ Ein erfundener Unterpfad antwortet `404` — **nicht** die Startseite
+
+### Das Gate, und warum es eines ist
+
+Schritt 2c/2d ist ohne diese Infrastruktur **nicht prüfbar**, und das ist
+keine Konfigurationskleinigkeit, die man nebenbei nachträgt:
+
+| Nötig | Wo | Stand |
+|---|---|---|
+| KV-Namespace `siteos_previews` | `workers/siteos-preview/wrangler.jsonc` | **vorhanden** (#1118) |
+| `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` | GitHub-Repo-Secrets | **offen** — `deploy-siteos-preview.yml` überspringt sich selbst |
+| `PREVIEW_WRITE_TOKEN` | `npx wrangler secret put`, im Worker | **offen** |
+| `SITEOS_PREVIEW_ORIGIN`, `SITEOS_PREVIEW_WRITE_TOKEN` | Supabase-Function-Secrets | **offen** |
+
+Die letzten beiden tragen **dasselbe Geheimnis** auf beiden Seiten. Solange
+eines fehlt, meldet der Bau `not_configured`, der Entwurf entsteht trotzdem
+und bleibt übernehmbar — die Vorschau im Studio rendert im Browser aus dem
+Blueprint und hängt nicht daran. Was fehlt, ist ausschliesslich die
+**teilbare Adresse**.
+
+Was ohne diese Infrastruktur trotzdem geprüft ist: der Schreibpfad selbst
+(`test/siteos/anon-preview.test.ts`, 19 Prüfungen gegen ein `fetch`-Double)
+und die Ablage (`test/security/siteos-preview-worker.test.ts`, 29 Prüfungen
+gegen ein KV-Double). Was dadurch **nicht** geprüft ist: dass Worker und
+Edge Function einander in Produktion tatsächlich erreichen. Das kann nur
+dieser Lauf.
 
 ---
 
@@ -320,14 +363,42 @@ FROM public.siteos_publish_evaluations WHERE id = :evaluation_id;
 
 ### 10b — Anonymes Kontingent
 
-Sechs `build-anon` innerhalb einer Minute aus derselben Quelle.
+Zwei Grenzen, die Verschiedenes tun. Sie werden getrennt geprüft, weil ein
+Lauf, der sie verwechselt, die schwächere für die stärkere hält.
 
-- 📋 **Ein ausbleibender `429` ist kein Testfehler.** Die Grenze liegt bei 5
-  je 60 Sekunden, aber der Zähler liegt im Arbeitsspeicher der Isolate
-  (`_shared/anonRateLimit.ts`), überlebt keinen Kaltstart und zählt bei
-  mehreren Instanzen getrennt. Bleibt der `429` aus, **bestätigt das den
-  bereits gemeldeten Befund** „kein dauerhaftes Kontingent für den anonymen
-  Schreibpfad" — es widerlegt nicht den Produktkern.
+**Burst-Bremse** — sechs `build-anon` innerhalb einer Minute aus derselben
+Quelle.
+
+- 📋 **Ein ausbleibender `429 RATE_LIMIT` ist kein Testfehler.** Die Grenze
+  liegt bei 5 je 60 Sekunden, aber der Zähler liegt im Arbeitsspeicher der
+  Isolate (`_shared/anonRateLimit.ts`), überlebt keinen Kaltstart und zählt
+  bei mehreren Instanzen getrennt. Sie bremst einen Ansturm, sie ist kein
+  Kontingent.
+
+**Kontingent** — elf `build-anon` aus derselben Quelle innerhalb von 24
+Stunden, mit ≥ 15 Sekunden Abstand, damit nicht die Burst-Bremse zuerst
+greift.
+
+- ✅ **MUSS ERFOLGREICH SEIN**: Der elfte Aufruf antwortet `429` mit Code
+  `QUOTA_EXCEEDED`. Anders als bei der Burst-Bremse **ist ein ausbleibender
+  `429` hier ein Befund**: Das Kontingent zählt in der Datenbank
+  (`siteos_anonymous_builds` über `ip_hash` und `created_at`, Index
+  `siteos_anonymous_builds_ip_idx`), überlebt Isolate-Wechsel und gilt über
+  alle Instanzen.
+
+```sql
+-- 10c  Der abgewiesene Versuch steht im Prüfpfad, nicht nur im Log
+SELECT op, outcome, error_code FROM public.anon_chat_runs
+WHERE op = 'siteos_build_anon' ORDER BY occurred_at DESC LIMIT 1;
+```
+- ✅ `outcome = 'rate_limited'`, `error_code = 'QUOTA_EXCEEDED'`
+- ✅ Und: `SELECT count(*) … WHERE ip_hash = :hash` ist **10**, nicht 11 —
+  der abgewiesene Aufruf hat keine Sitzung angelegt.
+
+- ⛔ **MUSS FEHLSCHLAGEN**: Ein `503 QUOTA_UNAVAILABLE` im Normalbetrieb. Er
+  bedeutet, dass die Zählabfrage nicht lesbar war; der Pfad schliesst dann
+  bewusst, statt durchzulassen. Tritt er auf, ist die Datenbank das Problem,
+  nicht das Kontingent.
 
 ---
 
@@ -347,12 +418,20 @@ Sechs `build-anon` innerhalb einer Minute aus derselben Quelle.
 
 **Nicht belegt — und nach diesem Lauf weiterhin offen:**
 
-- **Die vom Worker ausgelieferte Vorschau unter eigener Herkunft.** Auf `main`
-  nicht implementiert. Folge-PR.
+- **Die vom Worker ausgelieferte Vorschau unter eigener Herkunft** — sofern
+  die vier Punkte aus dem Gate in Schritt 2c nicht gesetzt sind. Der
+  Schreibpfad ist implementiert und geprüft; was fehlt, ist die
+  Infrastruktur, gegen die er schreibt. Ohne sie belegt dieser Lauf nur, dass
+  der Ausfall **benannt** wird (`preview.status = "not_configured"`), nicht
+  dass die Vorschau erreichbar ist.
 - **Die Fassungskette** (Hash und Vorgänger-Hash je Änderung). `#1117` zählt
   `version` hoch und überschreibt; wie eine Fassung aus ihrer Vorgängerin
   hervorging, ist nicht belegbar. Folge-PR.
-- **Belastbarkeit des anonymen Kontingents** gegen verteilte Zugriffe.
+- **Belastbarkeit des anonymen Kontingents** gegen verteilte Zugriffe. Das
+  Kontingent zählt jetzt in der Datenbank und gilt über Instanzen hinweg,
+  aber es zählt nach `ip_hash` — wer über viele Adressen kommt, umgeht es.
+  Dagegen hilft nur ein Nachweis, den ein anonymer Besucher nicht führen
+  kann; das ist eine Produktentscheidung, keine Implementierungslücke.
 - **Der Publish-Pfad selbst** — Deployment und eigene Domain existieren nicht.
 - **Transformationen.** Seit dem G1-Fix nicht veröffentlichbar, solange kein
   Vergleichslauf existiert, der die Vorgängerseite tatsächlich gesehen hat.

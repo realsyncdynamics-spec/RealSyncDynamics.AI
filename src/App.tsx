@@ -109,7 +109,13 @@ const ComplianceFrameworkSelector = lazy(() => import('./features/governance/das
 const Iso42001ComplianceHub = lazy(() => import('./features/governance/dashboard/Iso42001ComplianceHub').then((m) => ({ default: m.Iso42001ComplianceHub })));
 // BusinessDashboard zieht recharts → aus dem Landing-Critical-Path lazyen.
 const BusinessDashboard = lazy(() => import('./pages/BusinessDashboard').then((m) => ({ default: m.BusinessDashboard })));
-// CreatorDashboard ist auth-gated → lazy
+// CreatorDashboard ist auth-gated → lazy.
+//
+// Die Aussage stimmt erst, seit die Route sie auch gattert. Die Komponente
+// selbst bringt keinen Guard mit — kein `AuthGate`, kein `RequireAal2`, keine
+// Sitzungsprüfung. Sie hing unter `/assistant` ohne Wrapper, und dieser
+// Kommentar behauptete das Gegenteil: Wer ihn las, musste die Route für
+// geschützt halten. Der Schutz sitzt in `<AppGate>` an der Route, nicht hier.
 const CreatorDashboard = lazy(() => import('./pages/CreatorDashboard').then((m) => ({ default: m.CreatorDashboard })));
 // Compliance Tools (Free)
 import { AvvGenerator } from './pages/AvvGenerator';
@@ -880,8 +886,9 @@ function RoutesWithTracking() {
 
       {/* ── Redirects: konkurrierende Einstiege → kanonische Workspace-URL ──
           Alte URLs werden NICHT entfernt (keine 404 / keine toten Bookmarks).
-          Chat bleibt als Assistent unter /assistant erreichbar. */}
-      <Route path="/assistant" element={<CreatorDashboard />} />
+          Chat bleibt als Assistent unter /assistant erreichbar — seit dem
+          Absichern der Route allerdings nur angemeldet, siehe `AppGate` dort. */}
+      <Route path="/assistant" element={<AppGate><CreatorDashboard /></AppGate>} />
       <Route path="/dashboard" element={<Navigate to="/app" replace />} />
       <Route path="/dashboard/business" element={<BusinessDashboard />} />
       <Route path="/dashboard/audit" element={<AuditDashboardView />} />

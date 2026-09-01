@@ -57,7 +57,23 @@ jobs:
       github.event.workflow_run.conclusion == 'success'
     steps:
       - name: Issue anlegen, kommentieren oder schließen
-        uses: actions/github-script@v7
+        # SHA-gepinnt, weil das Repository genau das erzwingt: Mit `@v7` bricht
+        # der Lauf schon in „Set up job" ab — noch bevor ein Schritt startet:
+        #
+        #   The action actions/github-script@v7 is not allowed in
+        #   realsyncdynamics-spec/RealSyncDynamics.AI because all actions must
+        #   be pinned to a full-length commit SHA.
+        #
+        # Dieser Workflow war deshalb **seit seiner Entstehung am 2026-08-30
+        # wirkungslos**: Er sollte rote Drift-Guards als Issue zustellen und
+        # ist selbst bei jedem Lauf gescheitert. Ausgerechnet die Zustellung
+        # von Befunden hatte damit denselben Fehler, den sie sichtbar machen
+        # soll — einen roten Lauf, den niemand sieht.
+        #
+        # SHA über `git ls-remote https://github.com/actions/github-script v7`
+        # aufgelöst, nicht abgeschrieben. `v7` ist ein leichtgewichtiges Tag,
+        # zeigt also direkt auf den Commit.
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
         with:
           script: |
             const run = context.payload.workflow_run;

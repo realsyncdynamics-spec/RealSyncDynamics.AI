@@ -18,6 +18,13 @@ Disallow: /risk-dashboard
 Disallow: /setup
 Disallow: /welcome
 
+# Assistent + seine Aliase: auth-gated, kein SEO-Wert. Kein globales
+# X-Robots-Tag in _headers und kein SEOHead auf der Seite — ohne diese
+# Zeilen gaebe es gar keine Index-Aussage.
+Disallow: /assistant
+Disallow: /command-center
+Disallow: /ai-command-center
+
 # Onboarding/Confirmation-Pages — Crawler haben keine valide Session
 Disallow: /dsgvo-website/danke
 Disallow: /dsgvo-website/rebuild/

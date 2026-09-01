@@ -384,18 +384,37 @@ async function route(
 
   if (method === "POST" && pathname === "/api/evidence/seal") {
     requireRole(principal, "admin");
-    const seal = await evidenceFor(env, principal.org_id).seal(principal.org_id);
-    await evidenceFor(env, principal.org_id).append({
-      org_id: principal.org_id,
-      command_id: null,
-      actor_id: principal.actor_id,
-      event_type: "CHAIN_SEALED",
-      payload: seal,
-    });
+    const seal = await sealAndRecord(env, principal.org_id, principal.actor_id);
     return json(env, request, seal, 201);
   }
 
   throw new GovardError("NOT_FOUND", "Unbekannter Endpunkt", 404);
+}
+
+/**
+ * Siegelt den Chain-Head UND vermerkt das Siegeln in der Kette selbst.
+ *
+ * Beides gehört zusammen und steht deshalb an genau einer Stelle. Vorher
+ * tat das nur der manuelle Endpunkt; der tägliche Cron siegelte still.
+ * Wer die Kette prüfte, sah vereinzelte CHAIN_SEALED-Ereignisse für
+ * Handbetrieb und keine für den Regelbetrieb — und schloss daraus, das
+ * Siegeln laufe nicht. Eine Aufzeichnung, die über ihren eigenen
+ * Integritätsmechanismus in die Irre führt, ist schlechter als gar keine.
+ *
+ * actor_id unterscheidet die Herkunft: eine Kennung bei Handbetrieb,
+ * null beim Cron.
+ */
+async function sealAndRecord(env: Env, orgId: string, actorId: string | null) {
+  const evidence = evidenceFor(env, orgId);
+  const seal = await evidence.seal(orgId);
+  await evidence.append({
+    org_id: orgId,
+    command_id: null,
+    actor_id: actorId,
+    event_type: "CHAIN_SEALED",
+    payload: seal,
+  });
+  return seal;
 }
 
 /** Verfallene Freigaben ordentlich schließen: Übergang + Evidence, kein stilles UPDATE. */
@@ -439,7 +458,7 @@ export default {
       for (const orgId of await OrgRepository.allOrgIds(env.DB)) {
         try {
           await expireApprovalsForOrg(env, orgId);
-          await evidenceFor(env, orgId).seal(orgId);
+          await sealAndRecord(env, orgId, null);
         } catch (err) {
           console.error("scheduled maintenance failed for org", orgId, err);
         }

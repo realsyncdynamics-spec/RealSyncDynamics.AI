@@ -217,6 +217,11 @@ Und gegen den laufenden Worker (`wrangler dev --local`, echte Workflow-Engine):
 | `GET /api/evidence/verify` | `{ valid: true, checked: 8 }` — ab GENESIS nachgerechnet |
 | Dreimal derselbe Idempotency-Key | derselbe `commandId`, kein zweiter Command |
 | Derselbe Key, anderer Body | `422 IDEMPOTENCY_MISMATCH` |
+| Agent-Key auf Inbox, Policies, Verify, Seal | jeweils `403 FORBIDDEN` |
+| **Agent-Key gibt sich selbst frei** | `403` — die Zusage hält |
+| Cron (`__scheduled`): verfallene Freigabe | `EXPIRED`, Command `DENIED` mit Begründung |
+| Cron: Siegel | geschrieben **und** als `CHAIN_SEALED` in der Kette vermerkt |
+| Herkunft eines Siegels | `actor_id: null` = Cron, Kennung = Handbetrieb |
 
 Der Deploy-Workflow überspringt sich selbst, solange in `wrangler.jsonc` der
 D1-Platzhalter steht (gleiches Guard-Muster wie `siteos-preview`).

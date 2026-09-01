@@ -45,6 +45,13 @@ export const GOVERNANCE_MODULES: ModuleDefinition[] = [
     description: 'Rollenspezifischer Einstieg (Datenschutz, IT, Compliance, Freigabe)'
   },
   {
+    id: 'evidence-integrity',
+    label: 'Beweiskette',
+    path: '/app/governance/evidence',
+    status: 'live',
+    description: 'Unversehrtheit der Evidence-Kette prüfen und Prüfpunkte sichern'
+  },
+  {
     id: 'dpias',
     label: 'DPIAs',
     path: '/app/dpia',

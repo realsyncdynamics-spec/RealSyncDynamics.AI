@@ -216,3 +216,67 @@ export async function myGovernanceRoles(tenant_id: string): Promise<string[]> {
     .eq('principal_id', principal.id);
   return [...new Set((bindings ?? []).map((b) => b.role as string))];
 }
+
+// ─── Evidence-Integrität (P1-6) ─────────────────────────────────────────────
+//
+// Die Evidence-Kette ist seit Migration 20260901090000 append-only. Ein Anker
+// hält ihren Zustand zu einem Zeitpunkt fest, damit spätere Änderungen
+// auffallen. Sein Beweiswert entsteht aber erst durch den Export aus der
+// Plattform heraus — das sagt die Oberfläche dem Nutzer auch.
+
+export interface EvidenceAnchor {
+  id: string;
+  chain_index: number;
+  chain_hash?: string;
+  event_count: number;
+  signature: string | null;
+  signature_alg: 'ed25519' | 'hmac-sha256' | null;
+  signing_key_id: string | null;
+  exported_at: string | null;
+  export_note: string | null;
+  created_at: string;
+}
+
+export interface AnchorListResult {
+  ok: boolean;
+  anchors?: EvidenceAnchor[];
+  error?: { code: string; message: string };
+}
+
+export interface AnchorCreateResult {
+  ok: boolean;
+  anchor?: EvidenceAnchor;
+  signed?: boolean;
+  note?: string;
+  error?: { code: string; message: string };
+}
+
+export interface ChainVerifyResult {
+  ok: boolean;
+  checked?: number;
+  intact?: boolean;
+  first_broken_index?: number | null;
+  broken_count?: number;
+  error?: { code: string; message: string };
+}
+
+async function anchorCall<T>(body: Record<string, unknown>): Promise<T> {
+  const sb = getSupabase();
+  const { data, error } = await sb.functions.invoke('evidence-anchor', { body });
+  if (error) return { ok: false, error: { code: 'NETWORK', message: error.message } } as T;
+  return data as T;
+}
+
+export const listAnchors = (tenant_id: string, limit = 20) =>
+  anchorCall<AnchorListResult>({ op: 'list', tenant_id, limit });
+
+export const createAnchor = (tenant_id: string) =>
+  anchorCall<AnchorCreateResult>({ op: 'create', tenant_id });
+
+export const verifyChain = (tenant_id: string) =>
+  anchorCall<ChainVerifyResult>({ op: 'verify', tenant_id });
+
+export const markAnchorExported = (tenant_id: string, anchor_id: string, note?: string) =>
+  anchorCall<{ ok: boolean; error?: { code: string; message: string } }>(
+    { op: 'export', tenant_id, anchor_id, note },
+  );

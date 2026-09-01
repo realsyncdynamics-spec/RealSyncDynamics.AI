@@ -7,11 +7,18 @@
   // D1-Projektion, tägliches R2-Siegel). Architektur: README.md.
   //
   // Provisionierung (einmalig, siehe README):
-  //   npx wrangler d1 create govard-gateway
+  //   npx wrangler d1 create govard-gateway --jurisdiction eu
   //     -> database_id unten eintragen (Platzhalter ersetzen)
-  //   npx wrangler r2 bucket create govard-evidence-seals
+  //   npx wrangler r2 bucket create govard-evidence-seals --jurisdiction eu
   //   npx wrangler d1 migrations apply govard-gateway --remote \
   //     --config workers/govard-gateway/wrangler.jsonc
+  //
+  // Die Jurisdiktion ist bei BEIDEN nur beim Anlegen setzbar. Wird sie
+  // vergessen, liegen Commands und Evidence ausserhalb der EU-Bindung —
+  // das widerspricht dem Kernversprechen des Produkts und laesst sich nur
+  // durch Neuanlegen heilen. Die D1-Bindung hat kein jurisdiction-Feld
+  // (die database_id adressiert die Datenbank bereits eindeutig), die
+  // R2-Bindung braucht es dagegen zwingend — siehe unten.
   //
   // Der Deploy-Workflow (.github/workflows/deploy-govard-gateway.yml)
   // überspringt sich selbst, solange der Platzhalter unten steht — gleiches
@@ -43,10 +50,32 @@
     { "tag": "v1", "new_sqlite_classes": ["EvidenceSequencer"] }
   ],
 
+  // Durable Ausfuehrung freigegebener Commands. Anders als Durable Objects
+  // brauchen Workflows KEINEN migrations-Eintrag — die Klasse wird allein
+  // ueber class_name gebunden (an der Cloudflare-Dokumentation geprueft).
+  //
+  // Warum ueberhaupt ein Workflow: ctx.waitUntil endet mit der
+  // Worker-Instanz. Stirbt sie waehrend eines LLM-, Stripe- oder
+  // Mail-Aufrufs, bliebe der Command fuer immer in EXECUTING und die
+  // Evidence-Kette ohne Ergebnis. Ein Workflow nimmt an der letzten
+  // abgeschlossenen Stufe wieder auf.
+  "workflows": [
+    {
+      "name": "govard-command",
+      "binding": "COMMAND_WORKFLOW",
+      "class_name": "CommandWorkflow"
+    }
+  ],
+
+  // "jurisdiction": "eu" haelt die Siegel der Evidence-Chain in der EU.
+  // Sie wird beim Anlegen mitgegeben (`--jurisdiction eu`) und ist danach
+  // NICHT mehr aenderbar. Die Bindung muss sie wiederholen: ohne diese Zeile
+  // sucht der Worker in der Standard-Jurisdiktion und findet den Bucket nicht.
   "r2_buckets": [
     {
       "binding": "EVIDENCE_BUCKET",
-      "bucket_name": "govard-evidence-seals"
+      "bucket_name": "govard-evidence-seals",
+      "jurisdiction": "eu"
     }
   ],
 

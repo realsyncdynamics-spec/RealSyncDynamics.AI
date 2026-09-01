@@ -379,22 +379,30 @@ Schliessung werden per `indexOf` gesucht und der ganze Bereich
 herausgeschnitten — unabhängig von Leerraum und Schreibweise. Fehlt das
 End-Tag, wird bis zum Dokumentende geschnitten, genau wie im Browser.
 
-### Offen: dasselbe Muster in `scan-coverage.ts`
+### Geschlossen: dasselbe Muster in `scan-coverage.ts`
 
-`_shared/scan-coverage.ts:54` trägt in `visibleTextLength` denselben
-Ausdruck (`<script[\s\S]*?<\/script>`) und damit denselben Fehler. CodeQL
-hat ihn nicht gemeldet, weil die Datei in diesem PR nicht geändert wurde.
+`_shared/scan-coverage.ts` trug in `visibleTextLength` denselben Ausdruck
+(`<script[\s\S]*?<\/script>`) und damit denselben Fehler. CodeQL hat ihn nicht
+gemeldet, weil die Datei im Recovery-PR nicht geändert wurde.
 
-Die Auswirkung dort ist eine andere, aber verwandte: Skript-Inhalt zählt zur
-sichtbaren Textlänge, und die entscheidet, ob eine Seite als
-`coverage: 'limited'` markiert wird. Eine JavaScript-Shell mit viel
-Skript-Code kann so als `'full'` durchgehen — der Bericht verschweigt dann,
-dass der Scan nur das Grundgerüst gesehen hat.
+Die Auswirkung ist dort eine andere und in einer Hinsicht heikler: Diese Länge
+entscheidet über `coverage`. Gemessen an einer gewöhnlichen JavaScript-Shell
+(Root-Div, Modul-Bundle, kein sichtbarer Inhalt):
 
-**Bewusst nicht in diesem PR behoben**: nicht gemeldet, nicht Teil der
-Wiederherstellung, und die Datei hat eigene Tests, die eine Änderung
-begleiten sollten. Der Einzeiler wäre `stripElement(html, 'script')` analog
-zu oben.
+| End-Tag | sichtbare Textlänge | `coverage` |
+|---|---|---|
+| `</script>` | 0 | `limited` — richtig |
+| `</script >` | **860** | **`full`** — falsch |
+
+Im zweiten Fall behauptet der Bericht, die Seite vollständig gesehen zu haben,
+obwohl er nur das Gerüst hatte — und verschweigt damit genau den Vorbehalt,
+für den `coverage` überhaupt existiert. Ein gutes Ergebnis auf einer Shell ist
+kein gutes Zeichen, sondern eine unvollständige Messung; das war der
+ursprüngliche Zweck dieser Datei.
+
+Behoben am 2026-09-01 über `stripElement`, gleichlautend für `head`, `script`,
+`style` und `noscript`. Die acht bestehenden Tests bleiben unverändert grün;
+vier neue nageln beide Schreibweisen fest.
 
 ---
 

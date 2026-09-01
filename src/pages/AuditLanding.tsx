@@ -11,12 +11,25 @@ import { trackUpgradeClick } from '../lib/trackUpgradeClick';
 import { trackConversion } from '../lib/pixels';
 import { usePageMeta } from '../lib/usePageMeta';
 import { postEdgeFunction } from '../lib/edgeFunction';
+import { getSupabaseUrl } from '../lib/supabaseUrl';
 import { LegalDisclaimer } from '../components/LegalDisclaimer';
 import { ReportPreviewSection } from '../components/sections/ReportPreviewSection';
 import { AuditChatHero } from '../components/audit/AuditChatHero';
 import { AuditCopilotPanel } from '../components/audit/AuditCopilotPanel';
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
+// Über `getSupabaseUrl()` statt direkt aus `import.meta.env`: Der Helfer fällt
+// auf die Produktions-Projekt-URL zurück, wenn `VITE_SUPABASE_URL` im Build
+// fehlt. Genau dafür wurde er angelegt — sein Kommentar nennt diesen
+// Audit-Assistenten als Beispiel.
+//
+// Warum das hier zählt: Der Scan lief längst über `postEdgeFunction` und damit
+// über denselben Helfer, die Report-E-Mail daneben aber über die rohe
+// Variable. In einem Build ohne gesetzte Variable war `SUPABASE_URL`
+// undefiniert, die Bedingung darunter immer falsch und die E-Mail still tot —
+// am 2026-08-31 im Browser gegen die Preview gemessen, wo `gdpr-audit` gerufen
+// wurde und `audit-report-email` nicht. Zwei Wege zur selben URL in einer
+// Datei, einer mit Netz, einer ohne.
+const SUPABASE_URL = getSupabaseUrl();
 
 type Severity = 'critical' | 'high' | 'medium' | 'low' | 'info' | 'pass';
 
@@ -49,7 +62,11 @@ interface Issue {
 
 interface Report {
   audit_id: string;
-  scan_run_id?: string;
+  // `scan_run_id` stand hier als optionales Feld, das `gdpr-audit` nie
+  // geliefert hat. Ein optionales Feld, das es nicht gibt, ist für den
+  // Compiler nicht von einem unterscheidbar, das gerade fehlt — deshalb
+  // blieb der tote Zweig darunter jahrelang unbemerkt. Entfernt, damit der
+  // Typ die Antwort beschreibt statt einer Wunschvorstellung.
   created_at?: string;
   email?: string;
   domain: string;
@@ -109,10 +126,19 @@ export function AuditLanding() {
       }, { requireAuth: false });
       setReport(data);
       trackConversion('Lead', { content_name: 'dsgvo_audit' });
-      if (data.scan_run_id && SUPABASE_URL) {
+      if (data.audit_id && SUPABASE_URL) {
         // Fire-and-forget: triggers Resend-email if RESEND_API_KEY is configured.
         // Failures are intentionally swallowed — report is already shown in-browser.
-        fetch(`${SUPABASE_URL}/functions/v1/audit-report-email?id=${data.scan_run_id}`, {
+        //
+        // Hier stand `data.scan_run_id`. Das Feld gibt `gdpr-audit` nicht
+        // zurück — die Antwort trägt `audit_id` —, und weil es im Typ als
+        // optional deklariert war, hat TypeScript nie gewarnt. Die Bedingung
+        // war damit immer falsch: Die Report-E-Mail wurde nie ausgelöst.
+        // Gemessen am 2026-08-31, nachdem die Function selbst wieder lief.
+        //
+        // `audit-report-email` erwartet genau diese ID: Es liest
+        // `gdpr_audits` per `?id=<uuid>` und markiert dort `email_sent_at`.
+        fetch(`${SUPABASE_URL}/functions/v1/audit-report-email?id=${data.audit_id}`, {
           method: 'GET',
           keepalive: true,
         }).catch(() => { /* non-blocking */ });
@@ -1145,7 +1171,11 @@ function DocumentGeneratorBlock({ auditId, domain }: { auditId: string; domain: 
     setError(null);
     setGenerating(docType);
     try {
-      const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
+      // Hier stand dieselbe rohe Variable noch einmal und beschattete die
+      // Modul-Konstante. Ohne gesetztes `VITE_SUPABASE_URL` wäre der Request
+      // gegen `undefined/functions/v1/generate-document` gegangen — ein
+      // Kundenknopf, der still ins Leere läuft. Jetzt gilt die Konstante oben
+      // mit ihrem Fallback.
       const resp = await fetch(`${SUPABASE_URL}/functions/v1/generate-document`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

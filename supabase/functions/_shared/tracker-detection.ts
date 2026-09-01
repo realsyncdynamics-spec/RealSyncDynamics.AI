@@ -28,7 +28,27 @@
  * Die Funktion ist bewusst pure (kein Fetch, kein Network) damit sie
  * direkt aus der Edge-Function aufgerufen und unter Vitest getestet
  * werden kann — analog zu `jurisdiction.ts`.
+ *
+ * ─── ReDoS, behoben am 2026-08-30 ───────────────────────────────────────
+ *
+ * Beide Funktionen liefen ueber `<meta[^>]*http-equiv=…>`. Weil `[^>]` auch
+ * `h`, `t`, `p` matcht, probiert die Maschine an jeder Fundstelle jede
+ * Aufteilung durch. Gemessen auf `'<meta '.repeat(60_000)` — 360 kB ohne
+ * ein einziges `>`, also nur Fast-Treffer:
+ *
+ *   stripPolicyDeclarations  8 815 ms
+ *   effectiveCspValue        9 233 ms
+ *
+ * Das ist ueber einen oeffentlichen, nicht authentifizierten Endpunkt
+ * erreichbar (`/audit`, `cookie-scan`) und mit einer einzigen praeparierten
+ * Seite ausloesbar — eine Denial-of-Service-Luecke, keine Stilfrage.
+ * CodeQL hat sie als `polynomial ReDoS` gemeldet.
+ *
+ * Beide arbeiten jetzt ueber `_shared/html-tags.ts`: ein `indexOf`-Durchlauf
+ * ohne Wildcard-Quantor. Dieselbe Eingabe: unter 5 ms. Festgenagelt in
+ * `test/edge/tracker-detection.test.ts`.
  */
+import { tagMatches, attrOf, cutRanges } from './html-tags.ts';
 
 /**
  * Entfernt nicht-ladende Policy-/Hint-Deklarationen aus dem HTML.
@@ -42,19 +62,25 @@
  */
 export function stripPolicyDeclarations(html: string): string {
   if (!html) return html;
-  return html
-    // CSP via <meta http-equiv="Content-Security-Policy" …> (Reihenfolge der
-    // Attribute egal — wir matchen das gesamte Tag, das ein content-security-
-    // policy http-equiv trägt).
-    .replace(
-      /<meta\b[^>]*\bhttp-equiv\s*=\s*["']?content-security-policy(?:-report-only)?["']?[^>]*>/gi,
-      '',
-    )
-    // Reine Verbindungs-Hints: <link rel="preconnect"> / rel="dns-prefetch">
-    .replace(
-      /<link\b[^>]*\brel\s*=\s*["']?(?:preconnect|dns-prefetch)["']?[^>]*>/gi,
-      '',
-    );
+
+  const cuts: Array<{ start: number; end: number }> = [];
+
+  // CSP via <meta http-equiv="Content-Security-Policy" …> (Allowlist).
+  for (const m of tagMatches(html, 'meta')) {
+    const he = (attrOf(m.tag, 'http-equiv') ?? '').trim().toLowerCase();
+    if (he === 'content-security-policy' || he === 'content-security-policy-report-only') {
+      cuts.push(m);
+    }
+  }
+
+  // Reine Verbindungs-Hints. Bewusst NICHT entfernt: rel="preload" /
+  // "prefetch" — die fordern eine Ressource tatsaechlich an.
+  for (const m of tagMatches(html, 'link')) {
+    const rel = (attrOf(m.tag, 'rel') ?? '').trim().toLowerCase();
+    if (rel === 'preconnect' || rel === 'dns-prefetch') cuts.push(m);
+  }
+
+  return cutRanges(html, cuts);
 }
 
 /**
@@ -68,11 +94,17 @@ export function stripPolicyDeclarations(html: string): string {
  * und `report-uri`; der Clickjacking-Check (X-Frame-Options /
  * frame-ancestors) muss deshalb header-basiert bleiben und darf den
  * Meta-Wert NICHT akzeptieren.
+ *
+ * `-report-only` zählt hier bewusst **nicht**: Ein Report-Only-CSP meldet,
+ * erzwingt aber nichts.
  */
 export function effectiveCspValue(headerCsp: string | null | undefined, html: string): string {
   if (headerCsp && headerCsp.trim()) return headerCsp;
-  const m = html.match(
-    /<meta\b[^>]*\bhttp-equiv\s*=\s*["']?content-security-policy["']?[^>]*\bcontent\s*=\s*("([^"]*)"|'([^']*)')/i,
-  );
-  return (m?.[2] ?? m?.[3] ?? '').trim();
+  for (const m of tagMatches(html, 'meta')) {
+    const he = (attrOf(m.tag, 'http-equiv') ?? '').trim().toLowerCase();
+    if (he !== 'content-security-policy') continue;
+    const content = attrOf(m.tag, 'content');
+    if (content !== null) return content.trim();
+  }
+  return '';
 }

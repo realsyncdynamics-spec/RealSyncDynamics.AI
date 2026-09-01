@@ -236,9 +236,52 @@ async function syncSubscription(admin: SupabaseAdminClient, sub: Stripe.Subscrip
     past_due_since: pastDueSince,
   };
 
+  // Konflikt-Ziel ist tenant_id, NICHT stripe_subscription_id.
+  //
+  // `subscriptions` traegt zwei UNIQUE-Constraints: auf tenant_id (seit
+  // 20260811020621) und auf stripe_subscription_id. Fachlich gilt "genau ein
+  // Abo pro Tenant" — deshalb ist tenant_id das richtige Konflikt-Ziel.
+  // create-trial-subscription macht das bereits so; dieser Pfad war der
+  // letzte, der noch auf stripe_subscription_id auflief.
+  //
+  // Warum das ein Deadlock war: Der Trigger aus 20260802000000 legt fuer jeden
+  // neuen Tenant eine Free-Tier-Zeile an, deren stripe_subscription_id NULL
+  // ist. Postgres behandelt NULLs in Unique-Indizes als verschieden, also
+  // greift ein ON CONFLICT (stripe_subscription_id) dort nie — der Upsert
+  // wurde zum INSERT und verletzte subscriptions_tenant_id_key (23505). Der
+  // Handler warf, der Idempotenz-Eintrag wurde zurueckgerollt, Stripe
+  // wiederholte, das Ergebnis blieb gleich. Die erste bezahlte Subscription
+  // eines Tenants konnte so nie provisioniert werden.
+  //
+  // Mit tenant_id trifft der Upsert die Free-Tier-Zeile und ersetzt sie durch
+  // das bezahlte Abo — genau das gewuenschte Verhalten.
+  //
+  // Schutz gegen verspaetete Ereignisse: Stripe garantiert keine Reihenfolge.
+  // Wechselt ein Tenant von Abo A auf Abo B und trifft danach noch ein
+  // `customer.subscription.deleted` fuer A ein, wuerde ein ungeschuetzter
+  // Upsert auf tenant_id das frische Abo B mit dem Endzustand von A
+  // ueberschreiben — der Kunde verlore seinen Zugang. Ein terminales Ereignis
+  // fuer eine ANDERE als die gespeicherte Subscription wird deshalb ignoriert.
+  const TERMINALE_STATUS = ['canceled', 'incomplete_expired'];
+  if (TERMINALE_STATUS.includes(sub.status)) {
+    const { data: aktuell } = await admin
+      .from('subscriptions')
+      .select('stripe_subscription_id')
+      .eq('tenant_id', tenantId)
+      .maybeSingle();
+    const gespeicherte = aktuell?.stripe_subscription_id as string | null | undefined;
+    if (gespeicherte && gespeicherte !== sub.id) {
+      console.log(
+        `[stripe-webhook] ${sub.status} fuer ${sub.id} ignoriert — Tenant ${tenantId} ` +
+        `haelt bereits ${gespeicherte}. Verspaetetes Ereignis einer abgeloesten Subscription.`,
+      );
+      return;
+    }
+  }
+
   const { error } = await admin
     .from('subscriptions')
-    .upsert(row, { onConflict: 'stripe_subscription_id' });
+    .upsert(row, { onConflict: 'tenant_id' });
   if (error) throw error;
 }
 

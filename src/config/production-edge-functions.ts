@@ -284,6 +284,8 @@ export const UNBACKED_CALLERS: readonly UnbackedCaller[] = [
   { slug: 'integration-credentials', surface: 'features/integrations — Marketplace, Zugangsdaten-Siegel', publicPath: false },
   // Governance OS P1-3 (PR #1135): Pflege des Zugriffsmodells mit Pruefpfad.
   { slug: 'governance-access', surface: 'features/governance — Zugriffsmodell pflegen', publicPath: false },
+  // Governance OS P1-6 (PR #1135): signierte Pruefpunkte der Evidence-Kette.
+  { slug: 'evidence-anchor', surface: 'features/governance — Evidence-Anker', publicPath: false },
 ];
 
 const UNBACKED_SET = new Set(UNBACKED_CALLERS.map((c) => c.slug));

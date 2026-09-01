@@ -29,6 +29,7 @@
  * Edge-Function aufrufbar und unter Vitest testbar (analog zu
  * `jurisdiction.ts` / `tracker-detection.ts`).
  */
+import { stripElement } from './html-tags.ts';
 
 export type ScanCoverage = 'full' | 'limited' | 'failed';
 
@@ -49,11 +50,25 @@ const MIN_ANCHORS = 5;        // gerenderte <a href>-Navigationselemente
  * und alle Tags. Reicht für eine Größenordnungs-Heuristik (kein DOM nötig).
  */
 export function visibleTextLength(html: string): number {
-  const text = html
-    .replace(/<head[\s\S]*?<\/head>/gi, ' ')
-    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
-    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
-    .replace(/<noscript[\s\S]*?<\/noscript>/gi, ' ')
+  // `stripElement` statt `<script[\s\S]*?<\/script>`: `</script >` ist ein
+  // gueltiges End-Tag — HTML erlaubt Leerraum vor dem `>`. Der Ausdruck
+  // verfehlte es, und der Bundle-Inhalt zaehlte als sichtbarer Text.
+  //
+  // Hier ist das kein Schoenheitsfehler, sondern eine falsche Auskunft an den
+  // Nutzer: Diese Laenge entscheidet ueber `coverage`. Gemessen an einer
+  // gewoehnlichen JS-Shell (Root-Div, Modul-Bundle, kein sichtbarer Inhalt):
+  //
+  //   </script>   →   0 Zeichen  → 'limited'  (richtig)
+  //   </script >  → 860 Zeichen  → 'full'     (falsch)
+  //
+  // Im zweiten Fall behauptet der Bericht, die Seite vollstaendig gesehen zu
+  // haben, obwohl er nur das Geruest hatte — und verschweigt damit genau den
+  // Vorbehalt, fuer den `coverage` existiert. Dieselbe Fehlerklasse wie in
+  // `gdpr-audit/checks.ts` (CodeQL: Bad HTML filtering regexp).
+  const text = stripElement(
+    stripElement(stripElement(stripElement(html, 'head'), 'script'), 'style'),
+    'noscript',
+  )
     .replace(/<[^>]+>/g, ' ')
     .replace(/&[a-z#0-9]+;/gi, ' ')
     .replace(/\s+/g, ' ')

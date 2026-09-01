@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useSupabaseAuth } from '../../features/supabase/SupabaseAuthContext';
+import { claimPendingAudit } from '../../features/audit/pendingAudit';
 import { useTenant } from '../../core/access/TenantProvider';
 import { postEdgeFunction } from '../../lib/edgeFunction';
 import { isEdgeFunctionInProduction } from '../../config/production-edge-functions';
@@ -42,13 +43,23 @@ export function PostRegisterOnboardingPage() {
   const [error, setError] = useState('');
   const [searchParams] = useSearchParams();
 
-  // Hier stand die Übernahme des kostenlosen Scans. Sie hing am Datensatz
-  // `public_site_scans`, der mit dem Schnitt von PR #1129 entfallen ist:
-  // kanonisch ist `gdpr_audits` (docs/product/canonical-funnel-decision.md).
-  // Die Stelle bleibt die richtige — der Mandant existiert bereits mit der
-  // Registrierung, und die Zuordnung soll auch gelingen, wenn der Nutzer die
-  // Branchenfragen abbricht. Der Claim-Writer gegen `gdpr_audits` kommt in
-  // P0-B (docs/architecture/canonical-builder-target-matrix.md §7).
+  // Übernahme des kostenlosen Scans in den Mandanten.
+  //
+  // Diese Stelle war im Repo bereits als die richtige markiert: Der Mandant
+  // existiert mit der Registrierung, und die Zuordnung soll auch gelingen,
+  // wenn der Nutzer die Branchenfragen abbricht. Deshalb ein eigener Effekt
+  // und kein Schritt im Absende-Pfad.
+  //
+  // `claimPendingAudit` wirft nicht. Die Übernahme ist ein Gewinn, kein Tor —
+  // sie darf die Registrierung nicht scheitern lassen. Gibt es nichts zu
+  // übernehmen (Nutzer kam ohne Scan), passiert nichts.
+  //
+  // Schreibpfad: `supabase/functions/audit-claim`. Es gibt keine
+  // INSERT-/UPDATE-Policy auf `gdpr_audits`; nur die Service-Role schreibt.
+  useEffect(() => {
+    if (!user) return;
+    void claimPendingAudit(activeTenantId);
+  }, [user, activeTenantId]);
 
   if (!user) {
     navigate('/unified-entry/register');

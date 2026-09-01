@@ -392,6 +392,39 @@ Jeder Agent braucht vier Dimensionen — fehlt eine, ist er nicht governance-fä
 > `supabase functions list` prüfen.
 
 - **Audit** (95%) — DSGVO-Scan, Recheck-Cron, Email-Drip, Share-Token
+  > ⚠️ **Ausfall 2026-08-11 bis 2026-08-30, behoben.** `gdpr-audit/index.ts`
+  > rief sechs nirgends definierte Funktionen auf — im Repo **und** in
+  > Produktion (Version 46). Jeder `/audit`-Aufruf endete in HTTP 500;
+  > `gdpr_audits` blieb 18 Tage bei 159 Zeilen.
+  >
+  > **Ursache — geschlossen.** Ein Gate gab es, aber es konnte diesen Fall
+  > nicht sehen: `check:edge-syntax` ist bewusst ein reiner Parse-Check, und
+  > eine Datei, die `runChecks(...)` aufruft, ohne dass `runChecks`
+  > existiert, ist syntaktisch einwandfrei. Die Lücke lag **oberhalb** des
+  > Syntax-Gates, bei der Auflösung der Namen — geschlossen durch
+  > `check:edge-refs` (`f94ebf4`).
+  >
+  > **Zwei unabhängige Rekonstruktionen.** Der Ausfall wurde zweimal
+  > behoben: `2305e3f` (auf `main`, live) und PR #1167. Aufgelöst nach
+  > Entscheid des Eigentümers vom 2026-08-31 — **Struktur von `2305e3f`
+  > (`gdpr-audit/checks.ts`), Vertrag aus der Messung**: Befund-Vokabular,
+  > Severities und Scoring-Gewichte (25/12/6/2/0) stammen aus den 159
+  > historischen Audits, festgehalten in
+  > `test/fixtures/gdpr-audit-production-contract.json`.
+  >
+  > Die zweite Fassung wich in 12 Codes ab und liess 19 weg (darunter alle
+  > sieben Unterseiten-Prüfungen). Schwerer wog ein stiller Fehler: Sie gab
+  > die Fakten **flach** (`{'consent.banner.detected': true}`) statt
+  > verschachtelt zurück. `getFact()` in `_shared/rules/evaluator.ts` zerlegt
+  > den Pfad an den Punkten — flach liefert das `undefined`, und die
+  > **gesamte Rule Engine (14 Regeln, DSGVO und AI Act) schwieg**, ohne dass
+  > etwas bricht. Beleg: 61 von 159 historischen Audits trugen einen
+  > `rule:`-Befund, die drei vom 2026-08-31 keinen einzigen.
+  >
+  > **Regel daraus**: Befund-Codes, Severities und Scoring-Gewichte sind
+  > versionsrelevant. Wer sie ändert, entscheidet über die Vergleichbarkeit
+  > aller bisherigen Kundenberichte — das gehört entschieden, nicht
+  > nebenbei. Hergang: `docs/product/free-scan-recovery.md`.
 - **Policy Packs** (100%) — DSGVO, EU AI Act, branchenspezifisch; Auto-Empfehlung nach Tenant-Branche
 - **Evidence Vault** (90%) — Ingestion, Retrieval, Hash-Chain-Verifizierung, PDF/JSON-Export, Compliance-Hold
 - **Governance Runtime** (85%) — Sentinel-Loop, SLO-Tracking, Auto-Mapping (Asset → Control-Status), Incident-Dispatch

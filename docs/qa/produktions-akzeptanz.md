@@ -151,8 +151,29 @@ Hilfscode verlorenging.
 Die Datei wurde in genau **einem** Commit angelegt (`a67ae2c`, 2026-08-19,
 PR #1095) und war von Beginn an unvollständig. Sie hat nie funktioniert.
 
-**Belegte Folge**: `scan_runs`, `audit_jobs` und `findings` sind leer — null
-Zeilen, jemals. Kein einziger kostenloser Audit hat je ein Ergebnis erzeugt.
+**Belegte Folge**: Jeder Aufruf endete mit HTTP 500 — direkt gegen die
+Function gemessen, nicht aus der Oberfläche geschlossen.
+
+> **Korrektur vom 2026-08-31.** Hier stand ursprünglich: „`scan_runs`,
+> `audit_jobs` und `findings` sind leer — null Zeilen, jemals. Kein einziger
+> kostenloser Audit hat je ein Ergebnis erzeugt."
+>
+> Die Messung stimmte, die Schlussfolgerung nicht. `gdpr-audit` schreibt in
+> **`gdpr_audits`** und `sales_leads` — in `scan_runs` hat es **nie**
+> geschrieben. Die drei leeren Tabellen gehören zur Monitoring-Pipeline und
+> waren von diesem Fehler nie betroffen; sie sind auch nach der Reparatur
+> leer, und das ist kein Mangel.
+>
+> Belegt nach dem Deploy am 2026-08-31: `gdpr_audits` hat 160 Zeilen, die
+> älteste vom 2026-05-06 — die Tabelle war also schon vor dem Fehler
+> gefüllt und ist es seither wieder.
+>
+> Das ist derselbe Fehler, vor dem CLAUDE.md §5 zweimal warnt und vor dem
+> weiter oben in diesem Dokument die Regel „messen, nicht herleiten" steht:
+> aus einer richtigen Beobachtung eine Erklärung **geschlossen**, statt die
+> Kausalkette zu prüfen. Ein `grep` nach `scan_runs` in
+> `gdpr-audit/index.ts` hätte fünf Sekunden gedauert und die Sache
+> entschieden.
 
 Der zweite Weg auf `/audit` ist ebenfalls kein Scan: Die voreingestellte
 Chat-Ansicht ruft `governance-agent` auf, das antwortet
@@ -191,6 +212,22 @@ der Kunde sieht, und ist damit versionsrelevant:
 
 Die Gesamteinstufung folgt dem **schwersten Einzelbefund**, nicht dem Score:
 Ein kritischer Verstoß bleibt kritisch, auch wenn sonst alles sauber ist.
+
+**In Produktion nachgemessen (2026-08-31, nach dem Merge von PR #1170):**
+
+```
+POST /functions/v1/gdpr-audit  {"url":"https://example.com", …}
+→ HTTP 200 in 2,2 s · Score 73 · Einstufung "high"
+```
+
+Sechs Befunde, und die Rechnung geht exakt gegen die Gewichte auf:
+3 × `low` (−9) + 1 × `high` (−15) + 1 × `low` (−3) = 27 → **73**. Der
+`info`-Befund zieht nichts ab, wie kalibriert.
+
+Bemerkenswert dabei: „Kein Impressum verlinkt" wurde korrekt auf `info`
+herabgestuft, weil `isLikelyGermanJurisdiction()` für `example.com` nicht
+greift — § 5 DDG gilt nicht weltweit. Die aus der Rule Engine abgeleitete
+Logik verhält sich in Produktion so, wie sie soll.
 
 ### 5.2 Trichterbruch: die Domain geht verloren
 
@@ -482,7 +519,41 @@ funktioniert (CLAUDE.md §5). Sie geben für `anon` nur `false` zurück. Zu
 prüfen bleiben die wenigen, die — wie diese hier — eine ID **entgegennehmen**
 statt sie aus der Sitzung abzuleiten. Das ist die Form, auf die es ankommt.
 
-### 5.8 Die strukturelle Ursache
+### 5.8 Die Report-E-Mail wurde nie verschickt (gefunden 2026-08-31)
+
+Erst sichtbar, nachdem `gdpr-audit` wieder lief — vorher verdeckte der HTTP 500
+alles dahinter.
+
+`AuditLanding.tsx` prüfte nach dem Scan:
+
+```ts
+if (data.scan_run_id && SUPABASE_URL) {
+  fetch(`${SUPABASE_URL}/functions/v1/audit-report-email?id=${data.scan_run_id}`, …)
+}
+```
+
+`gdpr-audit` gibt aber **`audit_id`** zurück, kein `scan_run_id`. Die
+Bedingung war damit immer falsch, der Zweig toter Code — **kein einziger
+Kunde hat je seinen Report per E-Mail bekommen**, obwohl die Oberfläche die
+E-Mail-Adresse als Pflichtfeld abfragt und „E-MAIL (FÜR REPORT-ZUSTELLUNG)"
+darüberschreibt.
+
+Warum der Compiler schwieg: Der Typ deklarierte `scan_run_id?: string` als
+**optional**. Ein optionales Feld, das es nie gibt, ist für TypeScript nicht
+von einem zu unterscheiden, das gerade fehlt.
+
+`audit-report-email` erwartet genau die ID, die die Function liefert: Es liest
+`gdpr_audits` per `?id=<uuid>` und markiert dort `email_sent_at`. Behoben durch
+den Feldnamen; das tote optionale Feld ist aus dem Typ entfernt, damit er die
+Antwort beschreibt statt einer Wunschvorstellung.
+
+**Dieselbe Familie wie §5.6**: syntaktisch einwandfrei, semantisch tot. Nur
+fängt diesen Fall kein Gate — er entsteht aus einer Typdeklaration, die
+großzügiger ist als die Wirklichkeit. Die einzige Prüfung, die ihn gefunden
+hätte, ist die, die ihn gefunden hat: hinterher nachmessen, ob die Wirkung
+eingetreten ist.
+
+### 5.9 Die strukturelle Ursache
 
 Keiner dieser Fehler konnte auffallen, weil **keine der 178 Edge Functions je
 typgeprüft oder aufgerufen wird**. `npm run lint` ist `tsc --noEmit` und deckt
@@ -496,6 +567,98 @@ aufgerufenen Bezeichner, der sich darauf nicht zurückführen lässt.
 
 Gemessen über alle 178 Entrypoints: **6 Treffer, alle in `gdpr-audit`, keine
 Fehlalarme.**
+
+### 5.10 Sechs pg_cron-Jobs, 5.259 Läufe, null Erfolge (gemessen 2026-09-01)
+
+Nach dem Merge von #1176 sollte nur nachgemessen werden, ob
+`business-metrics-cron` seine 96 täglichen `TypeError` losgeworden ist. Das
+hat es: **288 von 288 Läufen in drei Tagen erfolgreich**, und
+`prune_business_metric_snapshots` greift — die Snapshots sind von **7.765 auf
+1.274** gefallen. Der Blick in dieselbe Tabelle hat aber sechs Nachbarn
+gezeigt, die nie liefen:
+
+| Job | Takt | Läufe | Erfolge | Seit | Fehlendes Secret |
+|---|---|---|---|---|---|
+| `agent-os-runner-hourly` | stündlich | 2.271 | **0** | 2026-05-29 | `agent_os_runner_token` |
+| `agent-os-runner-daily` | täglich | 94 | **0** | 2026-05-30 | `agent_os_runner_token` |
+| `scan-scheduler-dispatch` | alle 15 min | 1.923 | **0** | 2026-08-12 | `service_role_key` |
+| `governance-monitoring-hourly` | stündlich | 481 | **0** | 2026-08-12 | `service_role_key` |
+| `memory-decay-hourly` | stündlich | 470 | **0** | 2026-08-12 | `service_role_key` |
+| `governance-monitoring-daily` | täglich | 20 | **0** | 2026-08-12 | `service_role_key` |
+
+**5.259 Läufe, kein einziger Erfolg.** Dasselbe Muster wie `gdpr-audit`:
+kaputt seit der Geburt, sauber deployt, nie bemerkt.
+
+Der Befund ist nicht neu — `20260820000000_cron_dispatch_fix.sql` hat ihn am
+2026-08-20 gefunden, die Fehlermeldung von einer NOT-NULL-Verletzung auf eine
+klare Textmeldung gehoben und beide Secrets an den Betreiber verwiesen. Er ist
+**seitdem offen**. Die Messung sagt nur, wie lange.
+
+#### Was das praktisch bedeutet
+
+Heute nichts, und das ist der Grund, warum es niemandem auffällt:
+`incidents`, `dpias`, `scan_schedules` und `governance_memory` sind **leer**.
+Die Jobs hätten ohnehin nichts zu tun gehabt. Der Ausfall wartet auf den
+ersten Kunden, der eine Frist, einen Scan-Zeitplan oder ein Memory anlegt —
+dann greift die Fristenüberwachung nicht, der geplante Scan läuft nicht, und
+kein Memory verfällt.
+
+Damit erklärt sich auch `audit_monitor_results = 0` (§5.7): nicht weil das
+Feature ungenutzt wäre, sondern weil sein Scheduler nie zum Zug kam.
+
+#### Eine Hälfte war im Code lösbar — und das wurde übersehen
+
+Die Migration von 2026-08-20 hat **beide** Secrets gleich behandelt. Für
+`service_role_key` zu Recht: Die drei Empfänger vergleichen den Bearer gegen
+`Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')`, der Wert ist vorgegeben und
+gehört nicht in die Git-History.
+
+Bei `agent_os_runner_token` stimmt das nicht. Sender und Empfänger lesen
+**dieselbe Vault-Zeile**: `dispatch_cron_function` über `get_app_secret`, und
+`agent-os-runner/index.ts:54` tut wörtlich dasselbe. Es gibt keinen
+vorgegebenen Wert — nur die Forderung, dass beide Seiten denselben sehen. Ein
+in der Migration erzeugter Zufallswert erfüllt sie.
+
+Von beiden Enden bestätigt, bevor etwas geschrieben wurde:
+
+```
+cron.job_run_details : Vault-Secret "agent_os_runner_token" fehlt
+POST /agent-os-runner: {"code":"NOT_CONFIGURED","detail":"vault token missing: empty"}
+```
+
+Behoben durch `20260901010000_agent_os_runner_token.sql`. In Git steht der
+Ausdruck, nie das Ergebnis; jede Umgebung bekommt ihr eigenes Token. Kein
+`cron.schedule` nötig — beide Jobs sind registriert und greifen beim nächsten
+Tick.
+
+#### Was der Betreiber tun muss
+
+Vier Jobs bleiben, und sie brauchen ein Geheimnis, das nicht aus dem Repo
+kommen kann:
+
+```sql
+SELECT vault.create_secret('<service-role-key>', 'service_role_key');
+```
+
+Danach laufen `scan-scheduler-dispatch`, `governance-monitoring-hourly/-daily`
+und `memory-decay-hourly` ohne weiteren Eingriff wieder an.
+
+#### Die Lehre: `registriert` ist kein Zustand
+
+CLAUDE.md §5 schrieb zum Decay-Worker, er ticke, „wenn der pg_cron-Job
+registriert ist". Er **ist** registriert, aktiv — und scheitert seit 470
+Läufen. Eine Prüfung an `cron.job` hätte grün gemeldet. Richtig ist
+`cron.job_run_details.status`:
+
+```sql
+select j.jobname, count(*) filter (where d.status='succeeded') as erfolge, count(*) as laeufe
+from cron.job_run_details d join cron.job j using (jobid)
+where d.start_time > now() - interval '3 days'
+group by 1 having count(*) filter (where d.status='succeeded') = 0;
+```
+
+Diese Abfrage gehört in jeden Produktionsdurchlauf — sie hätte alles oben in
+einer Sekunde geliefert.
 
 ---
 

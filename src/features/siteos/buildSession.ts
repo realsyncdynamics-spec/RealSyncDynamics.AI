@@ -245,7 +245,12 @@ export async function resumeBuild(): Promise<BuildState | null> {
       };
     }
     // Abgelaufen oder unbekannt: die lokale Kennung ist wertlos geworden.
-    if (result.kind === 'not_found' || result.kind === 'error') clear();
+    //
+    // `gone` gehört ausdrücklich dazu. Ohne diesen Fall bliebe die Kennung
+    // einer abgelaufenen Sitzung für immer im Browser stehen, und jede
+    // Wiederaufnahme fragte den Server erneut nach einem Entwurf, den es
+    // nicht mehr gibt.
+    if (result.kind === 'not_found' || result.kind === 'gone' || result.kind === 'error') clear();
     if (result.kind !== 'not_deployed') return null;
     // Endpunkt (noch) nicht da — der Prompt liegt vor, also lokal aufbauen.
   }

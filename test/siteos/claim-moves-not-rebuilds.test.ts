@@ -34,6 +34,10 @@ const studio = readFileSync(
   resolve(ROOT, 'src/unified-entry/pages/BuildStudioPage.tsx'),
   'utf-8',
 );
+const api = readFileSync(
+  resolve(ROOT, 'src/features/siteos/siteOsApi.ts'),
+  'utf-8',
+);
 
 /** Der Rumpf von `handleClaim` — nur dort gilt das Verbot. */
 function claimBody(): string {
@@ -159,5 +163,35 @@ describe('Das Studio sagt den Rückfall vor der Registrierung', () => {
     expect(note).toContain('claimable ?');
     expect(note).toContain('serverseitig gespeichert');
     expect(note).toContain('nur in diesem Browser');
+  });
+});
+
+// Ablauf ist ein eigener Zustand, kein Fehler.
+//
+// Die anonyme Sitzung lebt sieben Tage (`siteos_anonymous_builds.expires_at`);
+// danach antwortet der Server mit `410 GONE` — beim Verfeinern, beim Lesen und
+// beim Claim. Fehlt dafür ein eigener Fall, fällt der 410 auf `error` durch,
+// und der Besucher liest die Rohmeldung der Client-Bibliothek statt zu
+// erfahren, dass seine Frist um ist.
+describe('Abgelaufene Entwürfe werden als Ablauf behandelt', () => {
+  it('übersetzt 410 in einen eigenen Fall statt in einen generischen Fehler', () => {
+    expect(api).toContain('status === 410');
+    expect(api).toMatch(/kind: 'gone'/);
+    expect(api).toMatch(/case 'gone':/);
+  });
+
+  it('wirft die tote Kennung beim Wiederaufnehmen weg', () => {
+    // Ohne `gone` in dieser Bedingung bliebe die Kennung einer abgelaufenen
+    // Sitzung für immer im Browser, und jede Wiederaufnahme fragte den Server
+    // erneut nach einem Entwurf, den es nicht mehr gibt.
+    const clause = /if \(result\.kind === 'not_found'[^)]*\) clear\(\);/.exec(session)?.[0] ?? '';
+    expect(clause, 'Abbruchbedingung von resumeBuild nicht gefunden').not.toBe('');
+    expect(clause).toContain("'gone'");
+  });
+
+  it('nennt Frist und Übernahme-Zustand in der Vorschau', () => {
+    // Beides kommt vom Server und stand bisher ungenutzt im Zustand.
+    expect(studio).toContain('state?.expiresAt');
+    expect(studio).toContain('state.claimed');
   });
 });

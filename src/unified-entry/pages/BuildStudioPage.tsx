@@ -161,6 +161,20 @@ export default function BuildStudioPage() {
     return pages.find((page) => page.path === path)?.html ?? pages[0]?.html ?? '';
   }, [blueprint, path]);
 
+  // Die Serversitzung hat eine Frist: sieben Tage aus
+  // `siteos_anonymous_builds.expires_at`. Sie zu verschweigen hieße, den
+  // Besucher an einer Vorschau weiterarbeiten zu lassen, die ohne Vorwarnung
+  // verfällt — und was dann kommt, ist ein Fehler beim Ändern, kein Hinweis.
+  const expiryNote = useMemo(() => {
+    if (!state?.expiresAt) return '';
+    const at = new Date(state.expiresAt);
+    if (Number.isNaN(at.getTime())) return '';
+    const date = at.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    const days = Math.ceil((at.getTime() - Date.now()) / 86_400_000);
+    if (days <= 0) return `Die Frist dieses Entwurfs ist am ${date} abgelaufen.`;
+    return `Ohne Übernahme wird der Entwurf am ${date} gelöscht — noch ${days} ${days === 1 ? 'Tag' : 'Tage'}.`;
+  }, [state?.expiresAt]);
+
   const submitPrompt = (event: React.FormEvent) => {
     event.preventDefault();
     const text = draft.trim();
@@ -547,6 +561,13 @@ export default function BuildStudioPage() {
                 nicht — dafür muss der Entwurf serverseitig liegen. Erzeugen Sie ihn erneut,
                 sobald der Dienst wieder läuft.
               </>
+            )}
+            {claimable && expiryNote !== '' && <p className="mt-2">{expiryNote}</p>}
+            {state.claimed && (
+              <p className="mt-2 text-petrol-400">
+                Dieser Entwurf gehört bereits einem Workspace. „Website übernehmen" führt zu
+                derselben Website — es entsteht keine zweite.
+              </p>
             )}
           </div>
 

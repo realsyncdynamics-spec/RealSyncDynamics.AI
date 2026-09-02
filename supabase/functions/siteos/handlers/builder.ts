@@ -47,6 +47,7 @@ import {
   canonicalHash,
   computeScores,
   planAgentTasks,
+  skillForFindingCodes,
   refineBlueprint,
   type Locale,
   type RefinementChange,
@@ -247,6 +248,12 @@ export async function handle(req: Request): Promise<Response> {
         finding_codes: task.findingCodes,
         severity_max: task.severityMax,
         requires_approval: task.requiresApproval,
+        // Beschriftung nach §8: unter welchem Skill der Lauf steht und aus
+        // welchem Anlass. Hier ist der Anlass festgelegt, nicht abgeleitet —
+        // der Builder erzeugt eine neue Fassung, das ist per Definition
+        // Website Transformation.
+        skill: skillForFindingCodes(task.findingCodes, task.agent),
+        workflow: 'website-transformation',
       })));
     }
 

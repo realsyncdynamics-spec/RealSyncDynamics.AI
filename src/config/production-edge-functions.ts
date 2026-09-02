@@ -272,10 +272,21 @@ export const UNBACKED_CALLERS: readonly UnbackedCaller[] = [
   { slug: 'dsfa', surface: '/api-docs — dokumentierter Endpunkt', publicPath: true },
   { slug: 'sub-processors', surface: '/api-docs — dokumentierter Endpunkt', publicPath: true },
 
+  // ── Im Repo, noch nicht deployt ────────────────────────────────────────
+  //
+  // `audit-claim` steht weiterhin unter supabase/functions/, hat aber seit
+  // dem 2026-09-01 keinen Aufrufer mehr: Die Übernahme läuft auf allen
+  // Pfaden über die RPC `claim_gdpr_audit` (ein Schreibweg,
+  // canonical-funnel-decision.md). Kein Eintrag mehr hier.
+
   // ── Hinter Login ───────────────────────────────────────────────────────
   // `api-quota` steht nur in src/features/api/API_DEVELOPER_GUIDE.md und wird
   // von keinem Code aufgerufen — deshalb kein Eintrag hier, aber ein offener
   // Punkt: Das Handbuch beschreibt einen Endpunkt, den es nicht gibt.
+  // `subscription-addons` bucht und kündigt Add-ons als Positionen des
+  // Stripe-Abos (AP6). Die Fläche „Mein Plan" unter /app/marketplace ruft
+  // sie auf; bis zum Deploy zeigt sie den Ladefehler an, keinen leeren Plan.
+  { slug: 'subscription-addons', surface: '/app/marketplace — Mein Plan (Add-ons buchen und kündigen)', publicPath: false },
   { slug: 'export-bulk-results', surface: 'features/bulk — Export', publicPath: false },
   { slug: 'iso42001-control-update', surface: 'features/governance — Control-Detail', publicPath: false },
   { slug: 'trigger-workflow', surface: 'features/workflows', publicPath: false },

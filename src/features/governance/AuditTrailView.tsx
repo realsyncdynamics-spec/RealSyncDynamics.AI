@@ -162,7 +162,7 @@ function Inner() {
     <div className="min-h-screen bg-obsidian-950 text-titanium-100">
       <header className="h-14 border-b border-titanium-900 bg-obsidian-900 flex items-center px-4 justify-between">
         <div className="flex items-center gap-3">
-          <Link to="/app/governance" className="p-1.5 rounded-none hover:bg-obsidian-800 text-titanium-400">
+          <Link to="/app/dashboard" className="p-1.5 rounded-none hover:bg-obsidian-800 text-titanium-400">
             <ArrowLeft className="h-4 w-4" />
           </Link>
           <div>

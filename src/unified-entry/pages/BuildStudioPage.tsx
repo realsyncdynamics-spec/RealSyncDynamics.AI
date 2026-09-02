@@ -37,7 +37,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
-  ArrowRight, Check, Loader2, Monitor, Smartphone, Sparkles, Tablet, Wand2, ShieldCheck, AlertTriangle,
+  ArrowRight, Check, Link2, Loader2, Monitor, Smartphone, Sparkles, Tablet, Wand2, ShieldCheck, AlertTriangle,
 } from 'lucide-react';
 import {
   renderSite,
@@ -46,6 +46,7 @@ import {
   type SiteBlueprint,
 } from '../../../packages/siteos-core/src/index';
 import { SandboxedPreviewFrame } from '../../components/preview/SandboxedPreviewFrame';
+import { resolveAuditContext } from '../../core/onboarding/funnelContext';
 import {
   applyInstruction,
   clear as clearBuildSession,
@@ -77,6 +78,19 @@ const QUICK_ACTIONS: readonly string[] = [
   'Füge eine Referenzseite hinzu.',
 ];
 
+/**
+ * Restfrist in Tagen, aufgerundet.
+ *
+ * Aufgerundet, weil „läuft in 0 Tagen ab" für etwas, das noch sechs Stunden
+ * erreichbar ist, falsch wirkt. Der genaue Zeitpunkt steht im Titel-Attribut.
+ */
+function daysLeft(expiresAt: string | null): number | null {
+  if (!expiresAt) return null;
+  const ms = new Date(expiresAt).getTime() - Date.now();
+  if (!Number.isFinite(ms) || ms <= 0) return 0;
+  return Math.ceil(ms / (24 * 60 * 60 * 1000));
+}
+
 export default function BuildStudioPage() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
@@ -87,7 +101,18 @@ export default function BuildStudioPage() {
   const scores = state?.scores ?? null;
   const hash = state?.contentSha256 ?? '';
 
-  const [draft, setDraft] = useState(params.get('prompt') ?? '');
+  // Scan-Kontext aus dem Trichter. Wer aus der Empfehlung kommt
+  // (`ai_frontend`), bringt Audit und Domain als Parameter mit — der Bau soll
+  // wissen, für welche Seite er entsteht. Ohne Parameter ändert sich nichts:
+  // der Builder bleibt der freie Prompt-Einstieg, der er war.
+  const auditContext = useMemo(
+    () => resolveAuditContext(params.toString()),
+    [params],
+  );
+
+  const [draft, setDraft] = useState(
+    params.get('prompt') ?? (auditContext.domain ? `Neue Website für ${auditContext.domain}. ` : ''),
+  );
   const [brand, setBrand] = useState('');
   const [instruction, setInstruction] = useState('');
   const [device, setDevice] = useState<Device>('desktop');
@@ -149,6 +174,20 @@ export default function BuildStudioPage() {
     return pages.find((page) => page.path === path)?.html ?? pages[0]?.html ?? '';
   }, [blueprint, path]);
 
+  // Die Serversitzung hat eine Frist: sieben Tage aus
+  // `siteos_anonymous_builds.expires_at`. Sie zu verschweigen hieße, den
+  // Besucher an einer Vorschau weiterarbeiten zu lassen, die ohne Vorwarnung
+  // verfällt — und was dann kommt, ist ein Fehler beim Ändern, kein Hinweis.
+  const expiryNote = useMemo(() => {
+    if (!state?.expiresAt) return '';
+    const at = new Date(state.expiresAt);
+    if (Number.isNaN(at.getTime())) return '';
+    const date = at.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    const days = Math.ceil((at.getTime() - Date.now()) / 86_400_000);
+    if (days <= 0) return `Die Frist dieses Entwurfs ist am ${date} abgelaufen.`;
+    return `Ohne Übernahme wird der Entwurf am ${date} gelöscht — noch ${days} ${days === 1 ? 'Tag' : 'Tage'}.`;
+  }, [state?.expiresAt]);
+
   const submitPrompt = (event: React.FormEvent) => {
     event.preventDefault();
     const text = draft.trim();
@@ -200,6 +239,19 @@ export default function BuildStudioPage() {
             <Sparkles size={13} className="text-petrol-500" /> Kein Konto nötig
           </div>
           <h1 className="text-4xl font-bold">Was möchten Sie erstellen?</h1>
+          {auditContext.domain && (
+            <div className="mt-4 rounded-lg border border-petrol-800 bg-petrol-950/30 px-4 py-3 text-sm text-titanium-200">
+              <div className="font-semibold text-titanium-100">
+                Neubau für {auditContext.domain}
+              </div>
+              <p className="mt-1 text-titanium-400">
+                Der Bau kennt Ihren Scan
+                {auditContext.auditId ? ` (Audit ${auditContext.auditId.slice(0, 8)})` : ''}. Die
+                Beschreibung unten ist ein Anfang — ergänzen Sie sie, sonst entsteht eine
+                allgemeine Seite statt Ihrer.
+              </p>
+            </div>
+          )}
           <p className="mt-4 text-lg text-titanium-300">
             Beschreiben Sie Ihre Website in eigenen Worten. RealSync baut daraus ein
             vollständiges Frontend mit Seitenstruktur, Inhalten, Rechtstexten und
@@ -308,6 +360,13 @@ export default function BuildStudioPage() {
 
   const critical = findings.filter((f) => f.severity === 'critical' || f.severity === 'high');
 
+  // Der Rückfall ohne Serversitzung ist nicht übernehmbar (siehe
+  // `buildSession.ts`). Das gehört hierher gesagt und nicht erst hinter die
+  // Registrierung: `/app/siteos/claim` schickt zuerst nach `/welcome` — der
+  // Besucher legt ein Konto an und erfährt erst danach, dass es nichts zu
+  // übernehmen gibt.
+  const claimable = state.session.mode === 'server';
+
   // ── Studio ──────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-obsidian-950 text-titanium-50">
@@ -336,10 +395,17 @@ export default function BuildStudioPage() {
               </button>
             ))}
           </div>
+          {!claimable && (
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-700 px-2.5 py-1 text-[10px] text-amber-400">
+              <AlertTriangle size={11} /> Nur lokal — nicht übernehmbar
+            </span>
+          )}
           <button
             type="button"
             onClick={() => navigate('/app/siteos/claim')}
-            className="inline-flex items-center gap-2 rounded-lg bg-petrol-600 px-4 py-2 text-xs font-bold text-white hover:bg-petrol-700"
+            disabled={!claimable}
+            title={claimable ? undefined : 'Dieser Entwurf liegt nur in diesem Browser und hat serverseitig keine Sitzung. Übernehmen ist erst möglich, wenn der Dienst für gespeicherte Entwürfe wieder erreichbar ist.'}
+            className="inline-flex items-center gap-2 rounded-lg bg-petrol-600 px-4 py-2 text-xs font-bold text-white hover:bg-petrol-700 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-petrol-600"
           >
             Website übernehmen <ArrowRight size={14} />
           </button>
@@ -433,6 +499,40 @@ export default function BuildStudioPage() {
             ))}
           </div>
 
+          {/*
+            Geteilte Vorschau. Sichtbar nur, wenn tatsächlich etwas abgelegt
+            wurde — ein Feld „Link" ohne Link wäre ein Versprechen, das die
+            Seite nicht hält. Fehlt die Ablage, steht der Grund da, nicht eine
+            tote Adresse (§14: keine vorgetäuschten Elemente).
+          */}
+          {state.preview.status === 'stored' && state.preview.url && (
+            <div className="mt-6">
+              <div className="mb-2 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[.16em] text-titanium-500">
+                <Link2 size={12} className="text-petrol-400" /> Vorschau teilen
+              </div>
+              <a
+                href={state.preview.url}
+                target="_blank"
+                rel="noreferrer noopener"
+                className="block break-all rounded-lg border border-titanium-800 px-3 py-2 font-mono text-[10px] text-titanium-300 hover:border-petrol-700 hover:text-titanium-100"
+              >
+                {state.preview.url}
+              </a>
+              <p className="mt-2 text-[10px] leading-4 text-titanium-500" title={state.expiresAt ?? undefined}>
+                Wer die Adresse hat, sieht den Entwurf — sie ist der einzige Zugang.
+                {daysLeft(state.expiresAt) !== null && (
+                  <> Sie verfällt in {daysLeft(state.expiresAt)} Tagen, zusammen mit dem Entwurf.</>
+                )}
+              </p>
+            </div>
+          )}
+          {state.preview.status === 'failed' && (
+            <p className="mt-6 text-[10px] leading-4 text-titanium-500">
+              Für diesen Entwurf konnte keine teilbare Adresse angelegt werden. Die
+              Vorschau hier und die Übernahme sind davon nicht betroffen.
+            </p>
+          )}
+
           {log.length > 0 && (
             <div className="mt-6">
               <div className="mb-2 text-[10px] font-bold uppercase tracking-[.16em] text-titanium-500">Verlauf</div>
@@ -488,10 +588,34 @@ export default function BuildStudioPage() {
             </div>
           )}
 
+          {/* Der Speicherort ist eine Tatsachenbehauptung über Kundendaten, keine
+              Formulierung: Im Servermodus liegt der Entwurf in
+              `siteos_anonymous_builds` und wird beim Claim nur verschoben, im
+              Rückfall gibt es ihn serverseitig gar nicht. Ein fester Satz wäre
+              in genau einem der beiden Fälle falsch. */}
           <div className="mt-5 rounded-xl border border-titanium-800 bg-obsidian-900 p-4 text-[11px] leading-5 text-titanium-400">
-            Der Entwurf liegt nur in diesem Browser. Mit „Website übernehmen" wird er Ihrem
-            Workspace zugeordnet, versioniert und in den Prüfpfad aufgenommen. Domain und
-            Veröffentlichung folgen danach.
+            {claimable ? (
+              <>
+                Der Entwurf ist serverseitig gespeichert und gehört noch keinem Workspace. Mit
+                „Website übernehmen" wird er Ihrem Workspace zugeordnet, versioniert und in den
+                Prüfpfad aufgenommen — verschoben, nicht neu erzeugt. Domain und
+                Veröffentlichung folgen danach.
+              </>
+            ) : (
+              <>
+                Der Entwurf liegt nur in diesem Browser: Der Dienst für gespeicherte Entwürfe
+                war beim Bau nicht erreichbar. Ansehen und Ändern funktioniert, Übernehmen
+                nicht — dafür muss der Entwurf serverseitig liegen. Erzeugen Sie ihn erneut,
+                sobald der Dienst wieder läuft.
+              </>
+            )}
+            {claimable && expiryNote !== '' && <p className="mt-2">{expiryNote}</p>}
+            {state.claimed && (
+              <p className="mt-2 text-petrol-400">
+                Dieser Entwurf gehört bereits einem Workspace. „Website übernehmen" führt zu
+                derselben Website — es entsteht keine zweite.
+              </p>
+            )}
           </div>
 
           {error && (

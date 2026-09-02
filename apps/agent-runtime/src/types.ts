@@ -3,6 +3,9 @@
  *
  * Alle exportierten Schnittstellen sind die einzige API-Quelle
  * der Wahrheit zwischen Gateway, Registry, Policy-Engine und Audit-Log.
+ *
+ * Voice-Kanal-Typen liegen in voice-types.ts und dürfen diese Union
+ * nicht ersetzen. Nur additive Erweiterung von DenyReason.
  */
 
 export type RiskLevel = 'low' | 'medium' | 'high';
@@ -39,7 +42,8 @@ export type DenyReason =
   | 'tool_not_allowed'
   | 'restricted_action'
   | 'missing_token'
-  | 'invalid_request';
+  | 'invalid_request'
+  | 'denied_by_channel_policy';
 
 export interface PolicyAcceptedDecision {
   ok: true;

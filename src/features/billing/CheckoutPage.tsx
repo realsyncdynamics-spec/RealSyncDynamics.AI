@@ -84,6 +84,22 @@ export function CheckoutPage() {
       window.location.href = '/pricing?source=checkout-retired';
       return;
     }
+    // COMMERCIAL-SSOT: temporary production hotfix.
+    // Canonical source migration tracked in Phase 2.
+    // Jahres-Key ohne verdrahteten Stripe-Preis: `stripe-checkout` antwortet
+    // mit PRICE_NOT_CONFIGURED. Der Plan selbst ist kaufbar, nur eben
+    // monatlich — deshalb geht es hier NICHT auf die Preisseite (wie bei
+    // stillgelegten Plaenen), sondern auf den Monats-Checkout desselben
+    // Plans. Ohne diese Weiche zeigte die Seite unter der Jahres-URL die
+    // Monatskonditionen an, weil `tierByPlanKey()` auf das Monats-Tier
+    // zurueckfaellt — sichtbar waere ein Jahres-Kauf, abgeschlossen ein
+    // Monats-Abo.
+    if (plan.yearlyCheckoutUnavailable && validPlan === plan.yearlyPlanKey) {
+      const query = new URLSearchParams(searchParams);
+      query.set('source', 'checkout-yearly-unavailable');
+      window.location.href = `/checkout/${plan.planKey}?${query.toString()}`;
+      return;
+    }
   }, [planKey]);
 
   // 3. Auth-State + Membership-Lookup
@@ -358,7 +374,7 @@ function NoUserShell({
             to={magicLinkHref}
             className="mt-4 w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 border border-silver-500 hover:border-gold-400 text-silver-100 hover:text-titanium-50 text-sm font-semibold rounded-none transition-colors"
           >
-            Mit Magic-Link (Email) anmelden
+            Mit Magic-Link (E-Mail) anmelden
           </Link>
 
           <div className="mt-6 inline-flex items-center gap-1.5 text-xs text-silver-500 w-full justify-center">

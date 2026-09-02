@@ -6,6 +6,13 @@ import {
 } from 'lucide-react';
 import { AgentWidget } from '../governance/AgentWidget/AgentWidget';
 import type { ScanFinding } from '../../core/onboarding/types';
+import {
+  buildActionPlan,
+  moduleHref,
+  type ActionItem,
+  type ActionTrack,
+} from '@/shared/reality-decision';
+import { bookableModuleById } from '@/shared/pricing';
 
 /**
  * AuditResultView — Render-Surface fuer ein Audit-Ergebnis an
@@ -263,6 +270,8 @@ export function AuditResultView({
                 <FindingsBySeverity grouped={grouped} />
               )}
 
+              {findings.length > 0 && <ActionPlanSection findings={findings} />}
+
               {findings.length > 0 && (
                 <>
                   <GovernanceOnboardingCta onStart={handleGovernanceOnboarding} />
@@ -507,7 +516,7 @@ function GovernanceOnboardingCta({ onStart }: { onStart: () => void }) {
           </h3>
           <p className="mt-1.5 text-sm leading-relaxed text-titanium-300">
             Basierend auf Deinen Befunden analysieren wir Dein Governance-Profil und empfehlen
-            den passenden Plan für Deine Needs — mit Zeit-to-Value und konkreten Handlungsschritten.
+            den passenden Plan für Deinen Bedarf — mit Zeit-to-Value und konkreten Handlungsschritten.
           </p>
           <div className="mt-4 flex flex-wrap gap-2">
             <button
@@ -661,5 +670,126 @@ function EmptyFindings({ hasScore }: { hasScore: boolean }) {
       die Confidence-Grenzen der statischen Analyse: Server-Side-Tracking, dynamisch geladene
       Skripte und post-consent Tracker werden hier nicht erfasst.
     </div>
+  );
+}
+
+
+// ─── Massnahmenplan ────────────────────────────────────────────────────────
+//
+// Die Befundliste sagt, was ist. Dieser Abschnitt sagt, was zu tun ist —
+// nach Risiko geordnet, mit der geschaeftlichen Auswirkung in Klartext.
+//
+// Die Zuordnung Befund → Handlung steht in `shared/reality-decision.ts` und
+// ist gegen den gemessenen Scanner-Vertrag gepruefT: kein Befund ohne
+// Handlung, keine Handlung ohne Befund. Hier wird nur dargestellt.
+//
+// Rein additiv (CLAUDE.md §10.2): ausschliesslich vorhandene Klassen und
+// Tokens, kein bestehender Text und kein bestehender Aufruf veraendert.
+
+const TRACK_LABEL: Record<ActionTrack, string> = {
+  build:    'Bauen',
+  automate: 'Automatisieren',
+  govern:   'Absichern',
+};
+
+const HORIZON_TITLE: { key: 'now' | 'soon' | 'ongoing'; title: string; hint: string }[] = [
+  { key: 'now',     title: 'Jetzt umsetzen',   hint: 'Kritische und hohe Befunde — hier zuerst anfangen.' },
+  { key: 'soon',    title: 'Danach',           hint: 'Mittlere Befunde, in den naechsten Tagen.' },
+  { key: 'ongoing', title: 'Laufend absichern', hint: 'Geringe Befunde und Hinweise — dauerhaft im Blick behalten.' },
+];
+
+function ActionPlanSection({ findings }: { findings: AuditResultFinding[] }) {
+  const plan = useMemo(
+    () => buildActionPlan(findings.map((f) => ({ id: f.id, severity: f.severity === 'pass' ? 'info' : f.severity }))),
+    [findings],
+  );
+
+  const groups = HORIZON_TITLE
+    .map((h) => ({ ...h, items: plan[h.key] }))
+    .filter((g) => g.items.length > 0);
+
+  // Kein Plan ohne Grundlage: Wenn kein Befund abgebildet ist, wird auch
+  // nichts empfohlen — lieber nichts als eine erfundene Massnahme.
+  if (groups.length === 0) return null;
+
+  return (
+    <section aria-labelledby="massnahmenplan" className="border border-titanium-800 bg-obsidian-900 p-4 sm:p-5">
+      <h2 id="massnahmenplan" className="font-display text-base font-bold text-titanium-50 sm:text-lg">
+        Dein Massnahmenplan
+      </h2>
+      <p className="mt-1.5 text-sm leading-relaxed text-titanium-300">
+        Jeder Befund mit seiner geschaeftlichen Auswirkung und der konkreten Massnahme — nach
+        Risiko geordnet.
+      </p>
+
+      <div className="mt-4 space-y-5">
+        {groups.map((g) => (
+          <div key={g.key}>
+            <div className="flex flex-wrap items-baseline gap-x-3">
+              <h3 className="font-display text-sm font-semibold text-titanium-100">{g.title}</h3>
+              <span className="font-mono text-[10px] uppercase tracking-wider text-titanium-500">
+                {g.items.length} {g.items.length === 1 ? 'Massnahme' : 'Massnahmen'}
+              </span>
+            </div>
+            <p className="mt-0.5 text-[12px] text-titanium-500">{g.hint}</p>
+            <ul className="mt-2.5 space-y-2.5">
+              {g.items.map((item) => <ActionCard key={item.findingCode} item={item} />)}
+            </ul>
+          </div>
+        ))}
+      </div>
+
+      {plan.recommendedModules.length > 0 && (
+        <div className="mt-5 border-t border-titanium-900 pt-4">
+          <div className="font-mono text-[10px] uppercase tracking-wider text-titanium-500">
+            Setzt diese Massnahmen um
+          </div>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            {plan.recommendedModules.map((id) => {
+              const mod = bookableModuleById(id);
+              if (!mod) return null;
+              return (
+                <Link
+                  key={id}
+                  to={moduleHref(false)}
+                  className="inline-flex items-center gap-1.5 border border-titanium-700 bg-obsidian-950 px-3 py-1.5 text-[13px] font-semibold text-titanium-200 hover:border-titanium-500"
+                >
+                  {mod.name}
+                  <span className="font-mono text-[11px] text-titanium-500">ab {mod.priceEur} €/Mon.</span>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function ActionCard({ item }: { item: ActionItem }) {
+  const mod = item.module ? bookableModuleById(item.module) : undefined;
+  return (
+    <li className="border border-titanium-800 bg-obsidian-950 p-3">
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+        <span className="font-mono text-[10px] uppercase tracking-wider text-titanium-500">
+          {TRACK_LABEL[item.track]}
+        </span>
+        <span className={`font-mono text-[10px] uppercase tracking-wider ${scoreSevColor(item.severity)}`}>
+          {SEVERITY_LABEL[item.severity]}
+        </span>
+      </div>
+
+      <p className="mt-1.5 text-[13px] leading-relaxed text-titanium-200">{item.impact}</p>
+
+      <div className="mt-2 border-t border-titanium-900 pt-2">
+        <div className="font-mono text-[10px] uppercase tracking-wider text-titanium-500">Massnahme</div>
+        <p className="mt-0.5 text-[13px] leading-relaxed text-titanium-100">{item.action}</p>
+      </div>
+
+      <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-titanium-500">
+        <span className="font-mono text-titanium-600">{item.findingCode}</span>
+        {mod && <span className="text-titanium-400">Modul: {mod.name}</span>}
+      </div>
+    </li>
   );
 }

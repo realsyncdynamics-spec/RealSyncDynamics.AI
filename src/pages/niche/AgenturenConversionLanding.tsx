@@ -45,11 +45,11 @@ const CONFIG: NicheConfig = {
   faqs: [
     {
       q: 'Wie viele Mandanten-Domains kann ich einbinden?',
-      a: 'Das Starter-Paket umfasst 5 Domains, Business 25, Enterprise unbegrenzt. Für Pilot-Agenturen bieten wir individuelle Pakete mit 10–200 Domains — der AI Agent liefert auf Anfrage ein konkretes Angebot.',
+      a: 'Starter umfasst 1 Domain, Growth 3. Für Agenturen mit mehr Mandanten ist Enterprise der Weg — der Umfang wird dort vertraglich festgelegt, nicht über ein festes Kontingent.',
     },
     {
       q: 'Können wir die Reports unter unserem Logo ausliefern?',
-      a: 'White-Label-Reports sind im Pro- und Business-Plan vorgesehen (Ihr Logo, Ihre Farben, Ihr Kontakt). Aktuell im Beta-Programm — melden Sie sich für die Pilot-Warteliste.',
+      a: 'Ja — White-Label-Reports (Ihr Logo, Ihre Farben, Ihr Kontakt) sind in Enterprise enthalten.',
     },
     {
       q: 'Wer haftet bei einem Compliance-Vorfall beim Kunden?',
@@ -57,7 +57,7 @@ const CONFIG: NicheConfig = {
     },
     {
       q: 'Gibt es einen API-Zugang für unser eigenes Dashboard?',
-      a: 'Ja — REST-API und Webhooks sind geplant. Enterprise-Kunden können Audit-Ergebnisse in eigene Reporting-Tools pushen. Aktuell auf Anfrage verfügbar.',
+      a: 'Ja — REST-API und Webhooks sind ab Growth enthalten. Damit pushen Sie Audit-Ergebnisse in Ihre eigenen Reporting-Tools.',
     },
   ],
 };

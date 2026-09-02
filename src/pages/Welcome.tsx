@@ -6,6 +6,7 @@ import {
 import { OAuthProviderButtons } from '../features/auth/OAuthProviderButtons';
 import { Logo } from '../components/Logo';
 import { getSupabase, isSupabaseConfigured } from '../lib/supabase';
+import { claimPendingAudit } from '../core/onboarding/claimAudit';
 
 /**
  * /welcome — Onboarding-Setup-Wizard nach Stripe-Checkout.
@@ -76,29 +77,14 @@ export function Welcome() {
         setEmail((prev) => prev || session.user.email || '');
         setStep((prev) => (prev === 1 ? 2 : prev));
 
+        void claimPendingAudit().catch(() => null);
+
         // Nach Login: ?next= auslesen und weiterleiten (z.B. /checkout/starter?pilot=true)
+        // Dieselbe Whitelist wie in finalizeAndNavigate: nur Pfade, die mit
+        // `/` beginnen und nicht mit `//` — sonst wäre `?next=//fremde.seite`
+        // ein Open Redirect direkt nach der Anmeldung.
         const nextParam = new URLSearchParams(window.location.search).get('next');
-        if (nextParam) {
-          // Consent aus sessionStorage persistieren (fire-and-forget)
-          try {
-            const raw = sessionStorage.getItem('rsd_pending_audit');
-            if (raw) {
-              const pending = JSON.parse(raw) as {
-                audit_id: string; analytics_consent: boolean;
-                consent_version: string; consent_type: string;
-              };
-              if (pending.analytics_consent) {
-                sb.from('user_consents').insert({
-                  user_id: session.user.id,
-                  scan_result_id: pending.audit_id,
-                  consent_type: pending.consent_type,
-                  consent_version: pending.consent_version,
-                  granted: true,
-                }).then(() => {/* fire-and-forget */});
-              }
-              sessionStorage.removeItem('rsd_pending_audit');
-            }
-          } catch { /* sessionStorage nicht verfügbar */ }
+        if (nextParam && nextParam.startsWith('/') && !nextParam.startsWith('//')) {
           navigate(nextParam, { replace: true });
           return;
         }
@@ -128,10 +114,11 @@ export function Welcome() {
         .maybeSingle();
       if (cancelled) return;
       if (lookupErr) {
-        setError(lookupErr.message);
+        setError(friendlyError(lookupErr, 'Konto konnte nicht geladen werden.'));
         return;
       }
       if (data?.tenant_id) setTenantId(data.tenant_id);
+      void claimPendingAudit().catch(() => null);
     })();
     return () => { cancelled = true; };
   }, [step, tenantId]);
@@ -159,7 +146,7 @@ export function Welcome() {
       if (otpErr) throw otpErr;
       setMagicSent(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Magic-Link konnte nicht gesendet werden.');
+      setError(friendlyError(err, 'Magic-Link konnte nicht gesendet werden.'));
     } finally {
       setBusy(false);
     }
@@ -204,7 +191,7 @@ export function Welcome() {
         p_api_key_id: insertedKey?.id ?? null,
       });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'API-Key-Generierung fehlgeschlagen.');
+      setError(friendlyError(err, 'API-Key-Generierung fehlgeschlagen.'));
     } finally {
       setBusy(false);
     }
@@ -246,7 +233,7 @@ export function Welcome() {
         p_domain_connected: url,
       });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Audit konnte nicht gestartet werden.');
+      setError(friendlyError(err, 'Audit konnte nicht gestartet werden.'));
     } finally {
       setBusy(false);
     }
@@ -382,7 +369,7 @@ export function Welcome() {
               <div className="flex items-center gap-3">
                 <div className="flex-1 h-px bg-titanium-700/40" />
                 <span className="text-[10px] font-mono uppercase tracking-wider text-titanium-500">
-                  oder mit Email-Magic-Link
+                  oder mit E-Mail-Magic-Link
                 </span>
                 <div className="flex-1 h-px bg-titanium-700/40" />
               </div>
@@ -537,7 +524,7 @@ export function Welcome() {
               ) : (
                 <>
                   <p className="text-sm text-titanium-400">
-                    Trage die Domain ein, die wir für deinen Audit-Pro-Tiefenscan analysieren sollen:
+                    Trage die Domain ein, die wir im Audit-Pro-Tiefenscan analysieren sollen:
                   </p>
                   <input
                     type="text"
@@ -588,6 +575,40 @@ export function Welcome() {
       </main>
     </div>
   );
+}
+
+
+function friendlyError(err: unknown, fallback: string): string {
+  const raw =
+    err instanceof Error ? err.message
+    : typeof err === 'string' ? err
+    : '';
+  const msg = raw.trim();
+  if (!msg) return fallback;
+  const lower = msg.toLowerCase();
+  if (
+    lower.includes('failed to send a request') ||
+    lower.includes('edge function') ||
+    lower.includes('functionsrelayerror') ||
+    lower.includes('failed to send a request to the edge function')
+  ) {
+    return 'Der Audit-Dienst ist gerade nicht erreichbar. Bitte in ein paar Minuten erneut versuchen.';
+  }
+  if (lower.includes('failed to fetch') || lower.includes('networkerror') || lower.includes('load failed')) {
+    return 'Netzwerkfehler — bitte Verbindung prüfen und erneut versuchen.';
+  }
+  if (lower.includes('jwt') || lower.includes('not authenticated') || lower.includes('unauthorized') || lower.includes('invalid claim')) {
+    return 'Sitzung abgelaufen. Bitte neu anmelden.';
+  }
+  if (lower.includes('cors') || lower.includes('preflight')) {
+    return 'Der Audit-Dienst hat die Anfrage abgelehnt. Bitte später erneut versuchen.';
+  }
+  // Don't surface raw English infrastructure errors on a German page.
+  if (/[äöüÄÖÜß]/.test(msg)) return msg;
+  if (/[A-Za-z]/.test(msg) && !/[äöüÄÖÜß]/.test(msg) && /\b(error|failed|exception|undefined|null)\b/i.test(msg)) {
+    return fallback;
+  }
+  return msg || fallback;
 }
 
 function randString(len: number): string {

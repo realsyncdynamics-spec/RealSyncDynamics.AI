@@ -5,6 +5,7 @@ import {
   hasModule,
   hasPermission,
   limitOf,
+  planGrants,
   planRank,
   resolvePlan,
   type PlanId,
@@ -24,6 +25,8 @@ import {
  *   module      — Modul muss im Plan freigeschaltet sein
  *   permission  — Berechtigung muss im Plan gesetzt sein
  *   limit       — numerisches Limit muss mindestens `min` betragen
+ *   entitlement — Entitlement-Key muss im Plan gewährt sein (kanonisch,
+ *                 identisch mit View und Server; siehe governanceBrowserTypes)
  */
 export const GOVERNANCE_MODULES: GovernanceModule[] = [
   {
@@ -262,7 +265,10 @@ export const GOVERNANCE_MODULES: GovernanceModule[] = [
     icon: 'Archive',
     route: '/app/evidence-vault',
     status: 'live',
-    gate: { kind: 'permission', permission: 'evidenceVault' },
+    // Die Route ist der *erweiterte* Vault (EvidenceVaultAdvancedView, gated
+    // auf `evidence.advanced`, ab Growth). `permissions.evidenceVault` liegt
+    // schon auf Starter — die Kachel stand offen, die Fläche sperrte.
+    gate: { kind: 'entitlement', key: 'evidence.advanced' },
     description: 'Unveränderliche Snapshots, Retention und Legal Hold',
   },
   {
@@ -271,7 +277,10 @@ export const GOVERNANCE_MODULES: GovernanceModule[] = [
     icon: 'Scale',
     route: '/app/policy-packs',
     status: 'live',
-    gate: { kind: 'module', module: 'dsgvo' },
+    // PolicyPacksView und `policy-packs` (Server) prüfen `policy.packs`, das
+    // ab Starter liegt. Das Modul `dsgvo` hat auch Free — die Kachel zeigte
+    // dem Free-Nutzer offen, was die Fläche ihm dann verweigerte.
+    gate: { kind: 'entitlement', key: 'policy.packs' },
     description: 'Aktive Rahmenwerke des Plans verwalten',
   },
   {
@@ -326,6 +335,8 @@ function gateAllows(gate: ModuleGate, planId: PlanId): boolean {
       const value = limitOf(planId, gate.limit);
       return value === -1 || value >= gate.min;
     }
+    case 'entitlement':
+      return planGrants(planId, gate.key);
   }
 }
 

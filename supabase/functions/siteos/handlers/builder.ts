@@ -8,7 +8,7 @@
 //     prompt: string,
 //     project_id?: string,      // optionale Bindung an website_projects
 //     locale?: 'de' | 'en' | ...,
-//     enrichment?: { name?, summary?, services?, locality? },  // Modell-Vorschläge
+//     enrichment?: { name?, summary?, services?, highlights?, locality? },  // Modell-Vorschläge
 //     refinements?: string[]    // Anweisungen aus der anonymen Vorschau
 //   }
 //
@@ -341,10 +341,10 @@ function sanitizeRefinements(input: unknown): string[] {
     .slice(0, MAX_REFINEMENTS);
 }
 
-function sanitizeEnrichment(raw: unknown): { name?: string; summary?: string; services?: string[]; locality?: string | null } | undefined {
+function sanitizeEnrichment(raw: unknown): { name?: string; summary?: string; services?: string[]; highlights?: string[]; locality?: string | null } | undefined {
   if (typeof raw !== 'object' || raw === null) return undefined;
   const input = raw as Record<string, unknown>;
-  const out: { name?: string; summary?: string; services?: string[]; locality?: string | null } = {};
+  const out: { name?: string; summary?: string; services?: string[]; highlights?: string[]; locality?: string | null } = {};
 
   if (typeof input.name === 'string') out.name = input.name.slice(0, 120);
   if (typeof input.summary === 'string') out.summary = input.summary.slice(0, 400);
@@ -352,6 +352,13 @@ function sanitizeEnrichment(raw: unknown): { name?: string; summary?: string; se
   else if (typeof input.locality === 'string') out.locality = input.locality.slice(0, 80);
   if (Array.isArray(input.services)) {
     out.services = input.services.filter((s): s is string => typeof s === 'string').slice(0, 12).map((s) => s.slice(0, 80));
+  }
+  // Vorzüge für den „Warum wir"-Block. Ohne diese Zeile fiele das Feld hier
+  // still weg, und der Block bliebe auch dann leer, wenn Redaktion echte
+  // Inhalte geliefert hat — dieselbe Behandlung wie `services`, damit über
+  // diesen Weg kein ungeprüfter Text in ein ausgeliefertes Dokument gerät.
+  if (Array.isArray(input.highlights)) {
+    out.highlights = input.highlights.filter((s): s is string => typeof s === 'string').slice(0, 6).map((s) => s.slice(0, 120));
   }
 
   return Object.keys(out).length > 0 ? out : undefined;

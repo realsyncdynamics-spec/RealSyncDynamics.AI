@@ -16,6 +16,8 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { sha256Hex, randomToken } from '../_shared/hash.ts';
 import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
+import type { SupabaseClient } from 'jsr:@supabase/supabase-js@2';
+import { gateFeature, EntitlementError } from '../_shared/entitlements.ts';
 
 interface SupabaseAdminClient {
   from(table: string): {
@@ -98,6 +100,19 @@ async function handleCreate(admin: SupabaseAdminClient, userId: string, body: Re
 
   if (!(await isOwnerOrAdmin(admin, userId, tenant_id))) {
     return jsonError(403, 'FORBIDDEN', 'must be owner or admin');
+  }
+
+  // AP9 Welle 4: Anlegen nur mit `api.access` (ab Growth) — derselbe Key wie
+  // das Zugriffsregister für /app/governance/api-keys. Auflisten und
+  // Widerrufen bleiben frei, damit ein Kunde nach einem Downgrade seine
+  // Schlüssel noch sieht und stilllegen kann.
+  try {
+    await gateFeature(admin as unknown as SupabaseClient, tenant_id, 'api.access');
+  } catch (e) {
+    if (e instanceof EntitlementError) {
+      return jsonError(403, 'ENTITLEMENT_MISSING', 'API-Zugriff ist im aktuellen Plan nicht enthalten (api.access) — ab Growth.');
+    }
+    throw e;
   }
 
   const token = 'rsd_gov_' + randomToken(24);

@@ -179,6 +179,42 @@ sperrte eine freie Fläche. `email-notify-send` versendet Kontingent-Hinweise
 zur API-Nutzung; das sind Kontoauskünfte, keine Compliance-Alerts, und
 bleiben ohne Plan-Gate.
 
+**Welle 4 (2026-09-02)** — Daten ausleiten: Exporte, Berichte, API. Dazu
+die drei `DISPLAY_ONLY`-Keys der Reality Map, deren Server offen war.
+
+| Function | vorher | jetzt |
+|---|---|---|
+| `evidence-vault-export` | die **Tenant-UUID im Header** war der Schlüssel — eine UUID, die in URLs und Exporten steht; Plan-Check las `subscriptions.plan_key` selbst gegen die Alt-Berechtigung `auditExport`, an Add-ons und Grace Period vorbei | Nutzer-Token, Mitgliedschaft, dann **`compliance.export`** aus `tenant_entitlements()`; der Header wählt nur noch den Mandanten |
+| `generate-compliance-report` | JWT **ohne Signaturprüfung** dekodiert (jwt-decode), `user_metadata.tenant_id` gelesen (setzt niemand), Rolle in `team_members` geprüft (gibt es nicht) → jeder Aufruf scheiterte | `requireUser`, Rolle owner/admin in `memberships`, **`compliance.export`** |
+| `report-generator` | ein Header, der mit „Bearer" begann, war die ganze Prüfung; `tenant_id` aus dem Body → Berichte fremder Tenants samt URLs | Token, Mitgliedschaft, **`compliance.export`** |
+| `generate-certification-report` | Token, aber keine Mitgliedschaft | Mitgliedschaft, **`compliance.export`** |
+| `governance-analytics-export`, `governance-audit-report-gen` | Mitgliedschaft | zusätzlich **`compliance.export`** |
+| `api-audit` | `tenants.subscription_tier` gegen eine Liste, die nur agency/scale/enterprise kannte — **Growth bekam 403**, obwohl der Plan `api.access` trägt | **`api.access`**; das Monatskontingent bleibt bei der alten Liste, weil `limit.api_calls_monthly` divergiert (`check:limits`, CLAUDE.md §7) |
+| `api-gateway` | gültiger Schlüssel genügte | zusätzlich **`api.access`** — ein Schlüssel verliert seine Wirkung mit dem Plan, ohne Widerruf |
+| `governance-keys` | Rolle | Anlegen nur mit **`api.access`**; Auflisten und Widerrufen frei |
+| `governance-remediate` | Rolle | Erzeugen nur mit **`fix.snippets`**; Markieren, Verwerfen, Ersetzen frei |
+| `policy-packs` | `policy.packs`, dann **jeder** Pack aktivierbar | Packs mit Rahmenwerk NIS2 bzw. ISO_27001 zusätzlich gegen **`policy.nis2`** / **`policy.iso27001`** (aus `frameworks` im Katalog); Deaktivieren frei |
+
+Warum `compliance.export` und nicht `reports.export`: `reports.export`
+gewährt **kein** Abo-Plan — nur das Add-on Compliance Pack und der
+Einmalkauf Governance Launch (`shared/pricing.ts`). Ein Gate darauf sperrte
+etwas, das über die Preisseite niemand kaufen kann; der Test
+`wird von einem wählbaren Plan gewährt` hat genau das gemeldet. Ob
+`reports.export` neben `compliance.export` überhaupt eine eigene Fähigkeit
+bezeichnet, ist eine offene Vokabularfrage — bis dahin ist der Key
+Anzeige-Key des Add-ons.
+
+Bewusst offen: `audit-report-pdf` und `audit-report-email` (Free-Scan-Trichter),
+`gdpr-export` (Art. 15 — ein Recht, kein Feature), `evidence-export` und
+`export-audit` (Lesen über RLS mit dem Nutzer-Token, kein Plan-Merkmal),
+`ceo-brief-pdf` und `pitch-deck-pdf` (Super-Admin).
+
+Nebenbefund: `useReportBuilder.ts` ruft `generate-compliance-report` mit
+`{ configId, format, tenantId }` — die Function versteht `tenant_id`,
+`report_type`, `start_date`, `end_date`. Dieser Aufruf hat nie funktioniert
+und funktioniert weiter nicht; der zweite Aufrufer (`ComplianceReportPanel`)
+sendet das richtige Format. Fragepflicht §10.3, hier nur gemeldet.
+
 Nebenbefund: `src/features/api/OAuth2ConfigView.tsx` fragte `enterprise.tier`,
 `partner.tier`, `agency.tier`, `growth.tier` als Entitlement-Keys ab — die
 gab es nie, jeder Kunde sah „starter". Der Plan kommt jetzt aus
@@ -333,7 +369,11 @@ Freigabe und bleiben offen.
 
 Mit Welle 3 (§1.6) sind `alerts.email`, `whitelabel.reports`,
 `whitelabel.dashboard` und `governance.risk_register` serverseitig
-durchgesetzt. `whitelabel.dashboard` hängt über `ENTITLEMENT_DEPENDENCIES`
+durchgesetzt; mit Welle 4 auch `policy.iso27001`, `policy.nis2` und
+`fix.snippets` — die drei `DISPLAY_ONLY`-Keys, deren Server offen war —
+sowie `api.access` und `compliance.export` an den Export-, Berichts- und
+API-Functions. `reports.export` bleibt Anzeige-Key des Add-ons Compliance
+Pack (§1.6). `whitelabel.dashboard` hängt über `ENTITLEMENT_DEPENDENCIES`
 an `whitelabel.reports` und läuft über dieselbe Function — ein eigenes Gate
 gäbe es erst, wenn das Dashboard-Theming einen eigenen Schreibpfad bekommt.
 

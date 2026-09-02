@@ -1,5 +1,5 @@
 /**
- * AP9, Welle 1 bis 3 — Durchsetzung nachgerüstet.
+ * AP9, Welle 1 bis 4 — Durchsetzung nachgerüstet.
  *
  * Die Functions laufen in Deno und lassen sich hier nicht ausführen. Was
  * sich prüfen lässt, ist die Quelle: Trägt jede der genannten Functions das
@@ -25,6 +25,21 @@ const GATES: ReadonlyArray<{ fn: string; key: EntitlementKey }> = [
   { fn: 'ai-act-risk-inventory', key: 'governance.risk_register' },
   { fn: 'compliance-alert-trigger', key: 'alerts.email' },
   { fn: 'audit-monitor-cron', key: 'alerts.email' },
+  // Welle 4 (2026-09-02): Daten ausleiten — Exporte, Berichte, API.
+  { fn: 'api-audit', key: 'api.access' },
+  { fn: 'api-gateway', key: 'api.access' },
+  { fn: 'governance-keys', key: 'api.access' },
+  // `reports.export` gewährt kein Plan, nur das Add-on Compliance Pack —
+  // Berichte hängen deshalb an `compliance.export` (ab Starter).
+  { fn: 'governance-analytics-export', key: 'compliance.export' },
+  { fn: 'governance-audit-report-gen', key: 'compliance.export' },
+  { fn: 'report-generator', key: 'compliance.export' },
+  { fn: 'generate-certification-report', key: 'compliance.export' },
+  { fn: 'evidence-vault-export', key: 'compliance.export' },
+  { fn: 'generate-compliance-report', key: 'compliance.export' },
+  { fn: 'governance-remediate', key: 'fix.snippets' },
+  { fn: 'policy-packs', key: 'policy.nis2' },
+  { fn: 'policy-packs', key: 'policy.iso27001' },
   // Bestand — hier gelistet, damit ein Rückbau auffällt.
   { fn: 'bot-chat', key: 'bots.enabled' },
   { fn: 'whatsapp-webhook', key: 'bots.whatsapp' },
@@ -43,8 +58,8 @@ function quelle(fn: string): string {
 describe('Kostenverursachende Functions prüfen ihr Entitlement', () => {
   it.each(GATES.map((g) => [g.fn, g.key] as const))('%s gated auf %s', (fn, key) => {
     const src = quelle(fn);
-    expect(src, `${fn} importiert den Wächter nicht`).toMatch(/from '\.\.\/_shared\/entitlements\.ts'/);
-    expect(src, `${fn} prüft ${key} nicht`).toContain(`'${key}'`);
+    expect(src, `${fn} importiert den Wächter nicht`).toMatch(/from ['"]\.\.\/_shared\/entitlements\.ts['"]/);
+    expect(src, `${fn} prüft ${key} nicht`).toMatch(new RegExp(`['"]${key.replace(/\./g, '\\.')}['"]`));
     expect(src).toMatch(/gateFeature\(|requireFeature\(|hasFeature\(/);
   });
 
@@ -123,6 +138,65 @@ describe('Welle 3 — was neben dem Gate repariert wurde', () => {
       expect(src, `${plan}.tier ist kein Entitlement-Key`).not.toContain(`'${plan}.tier'`);
     }
     expect(src).toContain('useEntitlements()');
+  });
+});
+
+describe('Welle 4 — Auth-Reparaturen an Export-Functions', () => {
+  it('evidence-vault-export verlangt ein Nutzer-Token und Mitgliedschaft, die Tenant-UUID ist kein Schlüssel mehr', () => {
+    const src = quelle('evidence-vault-export');
+    expect(src).toContain('requireUser(req)');
+    expect(src).toContain('requireTenantMembership(');
+    // Der alte Plan-Check las subscriptions.plan_key selbst — an Add-ons und Grace Period vorbei.
+    expect(src).not.toContain('pricing.generated.ts');
+    expect(src).not.toContain('tenantHasPaidPlan');
+    // Reihenfolge: Token → Mitgliedschaft → Plan.
+    expect(src.indexOf('requireUser(req)')).toBeLessThan(src.indexOf('requireTenantMembership('));
+    expect(src.indexOf('requireTenantMembership(')).toBeLessThan(src.indexOf('await requireExportEntitlement(admin'));
+  });
+
+  it('generate-compliance-report dekodiert kein JWT mehr von Hand und prüft memberships statt team_members', () => {
+    const src = quelle('generate-compliance-report');
+    expect(src).not.toMatch(/from ['"]https:\/\/esm\.sh\/jwt-decode/);
+    expect(src).not.toContain('decoded.user_metadata');
+    expect(src).not.toContain(".from('team_members')");
+    expect(src).toContain('requireUser(req)');
+    expect(src).toContain("['owner', 'admin']");
+  });
+
+  it('report-generator prüft Token und Mitgliedschaft, nicht nur das Wort „Bearer"', () => {
+    const src = quelle('report-generator');
+    expect(src).not.toMatch(/authHeader\?\.startsWith\('Bearer '\)/);
+    expect(src).toContain('requireUser(req)');
+    expect(src).toContain('requireTenantMembership(');
+  });
+
+  it('generate-certification-report prüft die Mitgliedschaft vor dem Bericht', () => {
+    const src = quelle('generate-certification-report');
+    expect(src.indexOf('requireTenantMembership(')).toBeLessThan(src.indexOf('iso42001_implementations'));
+  });
+
+  it('api-audit entscheidet über api.access, nicht über eine Stufenliste mit „scale"', () => {
+    const src = quelle('api-audit');
+    expect(src).not.toMatch(/scale:\s*\d+/);
+    expect(src).not.toContain("free: 0");
+    // Das Monatskontingent bleibt bewusst unangetastet (divergenter Wert, CLAUDE.md §7).
+    expect(src).toContain('limit-canonicity-baseline.json');
+  });
+
+  it('policy-packs prüft Rahmenwerk-Keys nur beim Aktivieren', () => {
+    const src = quelle('policy-packs');
+    const activate = src.slice(src.indexOf("if (op === 'activate')"), src.indexOf('} else {'));
+    expect(activate).toContain('FRAMEWORK_ENTITLEMENTS[framework]');
+    const deactivate = src.slice(src.indexOf('} else {'), src.indexOf('await audit('));
+    expect(deactivate).not.toContain('FRAMEWORK_ENTITLEMENTS');
+  });
+
+  it('Verwalten bleibt frei: Schlüssel auflisten/widerrufen, Snippets markieren/verwerfen', () => {
+    const keys = quelle('governance-keys');
+    expect(keys.slice(keys.indexOf('async function handleList'))).not.toContain('gateFeature(');
+    const rem = quelle('governance-remediate');
+    const afterGenerate = rem.slice(rem.indexOf('async function handleMarkApplied'));
+    expect(afterGenerate).not.toContain('gateFeature(');
   });
 });
 

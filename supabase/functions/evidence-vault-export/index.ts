@@ -21,40 +21,45 @@
 // Der Signing-Key kommt aus EVIDENCE_VAULT_SIGNING_KEY env. In Production
 // pro Tenant via tenant_signing_keys-Tabelle (Folge-PR). Aktuell global.
 
-import { createClient, type SupabaseClient } from 'jsr:@supabase/supabase-js@2';
+import type { SupabaseClient } from 'jsr:@supabase/supabase-js@2';
 import { applyPolicy, sumHits, type RedactionPolicy } from '../_shared/redact.ts';
 import { buildCorsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
-import { hasPermission, resolvePlan } from '../_shared/pricing.generated.ts';
+import { requireUser, requireTenantMembership } from '../_shared/auth.ts';
+import { gateFeature, EntitlementError } from '../_shared/entitlements.ts';
 
 // Plan-Gate: Der Audit-Export ist die Kaufbegründung des ersten zahlenden
 // Plans (siehe docs/PRODUCT_PRIORITIZATION.md). Free-Tenants sehen den Prüfpfad
 // in der App read-only, exportieren können erst zahlende Pläne.
 //
-// Entschieden wird über die Berechtigung `auditExport` der Pricing-SSoT —
-// keine eigene Plan-Liste, die von den Preisen abweichen könnte.
+// AP9 Welle 4 (2026-09-02): Entschieden wird über `compliance.export` aus
+// `tenant_entitlements()` — damit zählen Add-on-Grants und die Grace Period
+// mit. Vorher las die Function `subscriptions.plan_key` selbst und prüfte
+// die Alt-Berechtigung `auditExport`, an der Add-ons vorbeiliefen.
+//
+// Und: Bis hier genügte die Tenant-UUID im Header `x-rsd-tenant-key` als
+// „Schlüssel". Eine UUID, die in URLs und Exporten steht, ist kein Geheimnis.
+// Jetzt braucht der Aufruf ein gültiges Nutzer-Token und eine Mitgliedschaft
+// im Tenant; der Header wählt nur noch den Mandanten aus.
 
-async function tenantHasPaidPlan(admin: SupabaseClient, tenantId: string): Promise<boolean> {
-  const { data, error } = await admin
-    .from('subscriptions')
-    .select('plan_key, status')
-    .eq('tenant_id', tenantId)
-    .order('updated_at', { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  if (error || !data) return false;
-  if (data.status !== 'active' && data.status !== 'trialing') return false;
-  // resolvePlan() bildet Altdaten (`scale`) transparent auf `partner` ab.
-  return hasPermission(resolvePlan(String(data.plan_key)), 'auditExport');
+async function requireExportEntitlement(admin: SupabaseClient, tenantId: string): Promise<Response | null> {
+  try {
+    await gateFeature(admin, tenantId, 'compliance.export');
+    return null;
+  } catch (e) {
+    if (e instanceof EntitlementError) {
+      return jsonError(403, 'ENTITLEMENT_MISSING', 'Audit-Export ist im aktuellen Plan nicht enthalten (compliance.export) — ab Starter.', corsHeaders);
+    }
+    throw e;
+  }
 }
 
 // Diese Funktion exportiert fuer Aufsichtsbehoerden / externe Auditoren.
 // Empfaenger sind Dritte — Klartext-PII darf nicht raus. Policy hart.
 const REDACTION_POLICY: RedactionPolicy = 'always';
 
-// Abweichende CORS-Header: diese Function ist nicht JWT-gesichert, sondern
-// via x-rsd-tenant-key. Kein Authorization-Header benötigt.
+// CORS: Authorization (Nutzer-Token) plus x-rsd-tenant-key (Mandantenwahl).
 const corsHeaders = buildCorsHeaders('POST, OPTIONS');
-corsHeaders['Access-Control-Allow-Headers'] = 'content-type, x-rsd-tenant-key';
+corsHeaders['Access-Control-Allow-Headers'] = 'authorization, content-type, x-rsd-tenant-key';
 
 interface ExportRequestBody {
   from?: string;
@@ -95,12 +100,15 @@ Deno.serve(async (req) => {
   if (preflight) return preflight;
   if (req.method !== 'POST') return jsonError(405, 'BAD_METHOD', 'POST only', corsHeaders);
 
+  const auth = await requireUser(req);
+  if (auth instanceof Response) return auth;
+
   const tenantKey = req.headers.get('x-rsd-tenant-key');
-  if (!tenantKey) return jsonError(401, 'UNAUTHORIZED', 'missing x-rsd-tenant-key', corsHeaders);
+  if (!tenantKey) return jsonError(400, 'BAD_REQUEST', 'missing x-rsd-tenant-key', corsHeaders);
 
   const tenantId = tenantKey.match(/^[0-9a-f-]{36}$/i) ? tenantKey : null;
   if (!tenantId) {
-    return jsonError(401, 'UNAUTHORIZED', 'invalid tenant key (expected uuid in this PR)', corsHeaders);
+    return jsonError(400, 'BAD_REQUEST', 'x-rsd-tenant-key must be a tenant uuid', corsHeaders);
   }
 
   let body: ExportRequestBody;
@@ -110,16 +118,15 @@ Deno.serve(async (req) => {
     return jsonError(400, 'BAD_JSON', 'request body must be valid JSON or empty', corsHeaders);
   }
 
-  const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
-  const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-  const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-    auth: { persistSession: false },
-  });
+  const admin = auth.admin;
 
-  // Tier-Gate: Export ist ab Starter verfügbar; Free-Tenants nur read-only in der App.
-  if (!(await tenantHasPaidPlan(admin, tenantId))) {
-    return jsonError(403, 'PLAN_REQUIRED', 'Audit-Export ab Starter-Tarif verfügbar');
+  if (!(await requireTenantMembership(admin, auth.user.id, tenantId))) {
+    return jsonError(403, 'FORBIDDEN', 'not a member of this tenant', corsHeaders);
   }
+
+  // Plan-Gate: Export ist ab Starter verfügbar; Free-Tenants nur read-only in der App.
+  const gate = await requireExportEntitlement(admin, tenantId);
+  if (gate) return gate;
 
   // Defaults: letzte 90 Tage wenn keine Range explizit
   const to = body.to ? new Date(body.to) : new Date();

@@ -12,6 +12,22 @@
 -- Die urspruenglichen Werte stammen aus `20260618000000_pricing_tier_alignment`
 -- und sind seither nie an die Preisseite angeglichen worden.
 --
+-- ── Warum auch die Jahresvarianten ──────────────────────────────────────────
+--
+-- `PLAN_ENTITLEMENTS` kennt keine `_yearly`-Eintraege: Die Jahresvariante ist
+-- kein eigener Plan, sondern derselbe Plan mit anderem Abrechnungszeitraum, und
+-- erbt dessen Kontingente. In `products` hat sie aber eine eigene Zeile mit
+-- eigenen `product_entitlements` — dort stehen dieselben zu hohen Werte.
+--
+-- Nur die Monatsplaene anzugleichen haette deshalb eine NEUE Inkonsistenz
+-- erzeugt: `starter` = 1 Sitz, `starter_yearly` = 3 Sitze. Derselbe Plan,
+-- unterschiedliches Kontingent, je nachdem wie abgerechnet wird.
+--
+-- `check:limits` haette das nicht gemeldet — der Guard vergleicht
+-- `plan.limits` gegen `PLAN_ENTITLEMENTS[planKey]` und sieht die
+-- Jahres-Produktzeilen der Datenbank gar nicht. Deshalb stehen sie hier
+-- ausdruecklich mit drin.
+--
 -- ── Bestandsschutz: §1.3, beantwortet statt uebergangen ─────────────────────
 --
 -- Die Schutzklausel verlangt, VOR einer Reduktion zu klaeren, ob der hoehere
@@ -54,9 +70,13 @@
 -- ============================================================================
 
 WITH korrektur(plan_key, ent_key, neuer_wert) AS (VALUES
-    ('starter', 'limit.team_seats',                  1),
-    ('starter', 'limit.compliance_exports_monthly',  2),
-    ('growth',  'limit.compliance_exports_monthly', 12)
+    ('starter',        'limit.team_seats',                  1),
+    ('starter',        'limit.compliance_exports_monthly',  2),
+    ('growth',         'limit.compliance_exports_monthly', 12),
+    -- Jahresvarianten: gleicher Plan, gleiche Kontingente (siehe Kopf).
+    ('starter_yearly', 'limit.team_seats',                  1),
+    ('starter_yearly', 'limit.compliance_exports_monthly',  2),
+    ('growth_yearly',  'limit.compliance_exports_monthly', 12)
 )
 UPDATE public.product_entitlements pe
    SET value = k.neuer_wert
@@ -80,9 +100,12 @@ DECLARE
   abweichend integer;
 BEGIN
   WITH soll(plan_key, ent_key, wert) AS (VALUES
-      ('starter', 'limit.team_seats',                  1),
-      ('starter', 'limit.compliance_exports_monthly',  2),
-      ('growth',  'limit.compliance_exports_monthly', 12)
+      ('starter',        'limit.team_seats',                  1),
+      ('starter',        'limit.compliance_exports_monthly',  2),
+      ('growth',         'limit.compliance_exports_monthly', 12),
+      ('starter_yearly', 'limit.team_seats',                  1),
+      ('starter_yearly', 'limit.compliance_exports_monthly',  2),
+      ('growth_yearly',  'limit.compliance_exports_monthly', 12)
   ), ist AS (
     SELECT s.plan_key, s.ent_key, s.wert, pe.value AS gefunden
       FROM soll s
@@ -95,9 +118,9 @@ BEGIN
     INTO vorhanden, abweichend
     FROM ist;
 
-  IF vorhanden <> 3 THEN
+  IF vorhanden <> 6 THEN
     RAISE EXCEPTION
-      'Kontingent-Angleichung: % von 3 Paaren gefunden. Fehlt ein Produkt '
+      'Kontingent-Angleichung: % von 6 Paaren gefunden. Fehlt ein Produkt '
       'oder ein Entitlement-Key, greift der UPDATE oben ins Leere.', vorhanden;
   END IF;
 

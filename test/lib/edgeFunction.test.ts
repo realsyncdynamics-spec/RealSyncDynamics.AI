@@ -39,6 +39,16 @@ describe('postEdgeFunction', () => {
     await expect(postEdgeFunction('gdpr-audit', {})).rejects.toThrow('too many audits');
   });
 
+  it('turns a network/CORS failure into a readable message that names the function', async () => {
+    // Genau so sah der Ausfall vom 2026-08-11 aus: die Function stürzte ab, die
+    // Edge-Runtime antwortete mit 500 ohne CORS-Header, der Browser verwarf die
+    // Antwort und fetch() rejectete mit `TypeError: Failed to fetch`.
+    global.fetch = vi.fn().mockRejectedValue(new TypeError('Failed to fetch'));
+    await expect(postEdgeFunction('gdpr-audit', {})).rejects.toThrow(
+      'Backend nicht erreichbar (gdpr-audit). Bitte Netzwerkverbindung prüfen und erneut versuchen.',
+    );
+  });
+
   it('throws a readable error on empty response body instead of a JSON.parse SyntaxError', async () => {
     global.fetch = vi.fn().mockResolvedValue(new Response('', { status: 405 }));
     await expect(postEdgeFunction('gdpr-audit', {})).rejects.toThrow('HTTP 405');

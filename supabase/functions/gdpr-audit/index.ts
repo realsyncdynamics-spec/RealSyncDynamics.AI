@@ -162,7 +162,7 @@ async function sha256Hex(input: string): Promise<string> {
     .join('');
 }
 
-Deno.serve(async (req) => {
+async function handleAudit(req: Request): Promise<Response> {
   const preflight = handleOptions(req, corsHeaders);
   if (preflight) return preflight;
   if (req.method !== 'POST') return jsonError(405, 'BAD_REQUEST', 'POST only');
@@ -345,6 +345,22 @@ Deno.serve(async (req) => {
       rule_engine: RULE_ENGINE_VERSION,
     },
   });
+}
+
+// Ein ungefangener Fehler im Handler endet in der Edge-Runtime als nackte
+// Text-500 ohne Access-Control-Allow-Origin. Der Browser verwirft diese
+// Antwort schon bei der CORS-Prüfung, fetch() rejected mit „Failed to fetch",
+// und der eigentliche Grund erreicht weder UI noch Nutzer — genau so blieb
+// der Ausfall vom 2026-08-11 bis 2026-08-30 im Frontend unsichtbar (#1119,
+// docs/product/free-scan-recovery.md). Deshalb wird hier alles gefangen und
+// als CORS-fähiges JSON ausgeliefert; die Ursache steht im Function-Log.
+Deno.serve(async (req) => {
+  try {
+    return await handleAudit(req);
+  } catch (e) {
+    console.error('gdpr-audit: unhandled error', e);
+    return jsonError(500, 'INTERNAL', 'Audit konnte nicht abgeschlossen werden. Bitte später erneut versuchen.');
+  }
 });
 
 // ─── Heuristik-Checks ─────────────────────────────────────────────────────

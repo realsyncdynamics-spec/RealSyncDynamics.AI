@@ -238,6 +238,15 @@ Deno.serve(async (req) => {
     return jsonError(405, 'BAD_REQUEST', 'POST only');
   }
 
+  // Nur Cron bzw. Service-Role (AP9, Welle 2): Diese Function führt
+  // Behebungsmaßnahmen an Kundendaten aus und hatte bis 2026-09-01 keinerlei
+  // Prüfung — weder Nutzer noch Mitgliedschaft noch Secret. Dasselbe Muster
+  // wie scheduler-dispatch.
+  const authHeader = req.headers.get('Authorization') ?? '';
+  if (authHeader !== `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`) {
+    return jsonError(401, 'UNAUTHORIZED', 'cron only');
+  }
+
   const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
     auth: { persistSession: false },
   });

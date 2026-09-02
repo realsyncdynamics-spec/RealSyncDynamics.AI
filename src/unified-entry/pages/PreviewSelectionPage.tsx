@@ -126,7 +126,12 @@ export default function PreviewSelectionPage() {
   };
 
   const previewBlueprint = useMemo(() => blueprint ? applySiteDesignTemplate(blueprint, template) : null, [blueprint, template]);
-  const previewHtml = useMemo(() => previewBlueprint ? renderSite(previewBlueprint, { baseUrl: sourceUrl }).find(page => page.path === '/')?.html ?? '' : '', [previewBlueprint, sourceUrl]);
+  // `showcase` haengt die Layoutschicht aus `render/presentation.ts` an.
+  // Ohne sie zeigt die Vorlagenauswahl ein rohes HTML-Dokument, und die
+  // Auswahl darueber bleibt wirkungslos: Sie tauscht nur Farb-Tokens, auf
+  // die ohne Layoutschicht nichts reagiert. Der Renderer-Default bleibt
+  // `minimal`, weil er die Grundlage der Artefakt-Hashes ist.
+  const previewHtml = useMemo(() => previewBlueprint ? renderSite(previewBlueprint, { baseUrl: sourceUrl, presentation: 'showcase' }).find(page => page.path === '/')?.html ?? '' : '', [previewBlueprint, sourceUrl]);
 
   const checkout = async () => {
     if (!activeTenantId || !discovery) return;

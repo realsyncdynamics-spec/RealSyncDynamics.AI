@@ -76,6 +76,18 @@ const NEU_DURCH_AP2: Readonly<Record<string, readonly string[]>> = {
   ],
 };
 
+/**
+ * Nach AP2 hinzugekommen — nicht Teil des Paketumbaus, aber derselbe Grund:
+ * ein Key, den der Plan verspricht und nicht trug. `ai.tool.workflows` lag
+ * ausschließlich auf der Fremdleiter; `/app/workflows` und `workflow-trigger`
+ * waren damit für jeden zahlenden Kunden gesperrt
+ * (20260904000200_workflows_current_plans.sql).
+ */
+const NEU_NACH_AP2: Readonly<Record<string, readonly string[]>> = {
+  starter: [],
+  growth: ['ai.tool.workflows', 'limit.workflow_runs_monthly'],
+};
+
 describe('AP2 nimmt keinem Plan etwas weg', () => {
   it.each(Object.keys(VOR_AP2))('%s behält jeden Key von vorher', (plan) => {
     const jetzt = new Set(Object.keys(PLAN_ENTITLEMENTS[plan]));
@@ -86,7 +98,7 @@ describe('AP2 nimmt keinem Plan etwas weg', () => {
   it.each(Object.keys(VOR_AP2))('%s bekommt genau die geplanten Keys dazu', (plan) => {
     const vorher = new Set(VOR_AP2[plan]);
     const dazu = Object.keys(PLAN_ENTITLEMENTS[plan]).filter((k) => !vorher.has(k)).sort();
-    expect(dazu).toEqual([...NEU_DURCH_AP2[plan]].sort());
+    expect(dazu).toEqual([...NEU_DURCH_AP2[plan], ...NEU_NACH_AP2[plan]].sort());
   });
 
   it('lässt Agency, Enterprise und Partner unangetastet', () => {

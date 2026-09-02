@@ -604,7 +604,7 @@ Workflows
 | --- | --- |
 | Skill-Vokabular (8) + Zuordnung auf die Agenten | `packages/siteos-core/src/workflows/skills.ts` |
 | Workflow-Vokabular (8) + Reichweite | `packages/siteos-core/src/workflows/workflows.ts` |
-| Beschriftung der Läufe | `siteos_agent_runs.skill` / `.workflow` (Migration `20260903050000`) |
+| Beschriftung der Läufe | `siteos_agent_runs.skill` / `.workflow` (Migration `20260904000300`) |
 | Invarianten zu Regel 1 | `test/siteos/workflow-vocabulary.test.ts` |
 
 Die Skills sind **Produktsprache über den vorhandenen sieben Agenten**, kein

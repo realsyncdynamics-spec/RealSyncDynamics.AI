@@ -423,8 +423,24 @@ export interface Plan {
    * Jahres-Abos in `public.subscriptions`.
    *
    * Stillgelegte Plaene brauchen das Feld nicht — `availability: 'legacy'`
-   * schliesst sie bereits von jeder Angebotsflaeche aus. Sobald ein echter
-   * Jahres-Preis verdrahtet ist, faellt dieses Feld ersatzlos weg.
+   * schliesst sie bereits von jeder Angebotsflaeche aus.
+   *
+   * ── Status: entschieden, nicht offen (2026-09-01) ──────────────────────
+   *
+   * Der Eigentuemer hat entschieden, die Jahres-Abos **vorerst nicht** wieder
+   * zu verkaufen. Dieses Feld ist damit keine Restarbeit, die noch jemand
+   * wegzuraeumen haette, sondern der gewollte Zustand.
+   *
+   * Konkret: In Stripe werden **keine** Jahres-Preise angelegt, und in
+   * `public.products` bleiben die Platzhalter stehen. Wer das aendern will,
+   * braucht dafuer eine neue Entscheidung des Eigentuemers — es ist ein
+   * Schreibzugriff auf Produktion und eine kommerzielle Festlegung, keine
+   * Aufraeumarbeit.
+   *
+   * Sollte die Entscheidung spaeter gedreht werden, gehoert beides zusammen:
+   * echte Preise verdrahten UND dieses Feld entfernen. Der Stripe-Price-Guard
+   * (`test/contracts/stripe-price-guard.test.ts`) erzwingt das — er bleibt
+   * rot, solange nur eine der beiden Seiten stimmt.
    */
   yearlyCheckoutUnavailable?: boolean;
   currency: 'EUR';
@@ -1767,6 +1783,34 @@ export type EntitlementKey = (typeof ENTITLEMENT_KEYS)[number];
  * Erzeugt aus dem gemessenen Migrationsstand, nicht abgetippt.
  * `test/billing/entitlement-vocabulary.test.ts` hält die Zuordnung an die
  * Migrationen gebunden.
+ *
+ * ── `-1` auf Vertragsplänen — entschieden am 2026-08-31 ──────────────────
+ *
+ * Auf Plänen mit `availability: 'contract'` (heute nur Enterprise) bedeutet
+ * `-1` bei einem `limit.*`-Key nicht bloß „unbegrenzt", sondern:
+ *
+ *     Das System begrenzt hier nicht. Der Vertrag tut es.
+ *
+ * Damit ist die Regel aus `kanonische-kontingente.md` §1.2 — für
+ * Vertragspläne ist der Vertrag kanonisch — erstmals ausführbar, ohne einen
+ * Ort für tenant-spezifische Werte zu schaffen. Vorher war das eine
+ * unbelegte Hypothese; jetzt ist es die festgelegte Kodierung
+ * (Option A aus `docs/product/enterprise-quelle-entscheidungsvorlage.md`).
+ *
+ * Was daraus folgt, und zwar hart:
+ *
+ *   1. Ein Vertragsplan trägt **ausschliesslich** `-1` als `limit.*`-Wert.
+ *      Ein endlicher Wert wäre eine technisch durchgesetzte Obergrenze und
+ *      damit genau der Fall, den diese Kodierung nicht abbilden kann.
+ *   2. Auf diesen Feldern entsteht **kein Gate**. Es gibt nichts zu prüfen —
+ *      die Grenze steht im Vertrag, der dem System nicht vorliegt.
+ *   3. Ein Enterprise-Vertrag mit vereinbarter **Obergrenze** ist unter
+ *      dieser Regel technisch nicht durchsetzbar und deshalb nicht
+ *      abschliessbar, ohne vorher auf Option B (Tenant-Overrides) zu
+ *      wechseln. Der erste solche Vertrag ist der Auslöser dafür.
+ *
+ * Punkt 1 hält `test/billing/limit-canonicity.test.ts` fest; er schlägt fehl,
+ * sobald ein Vertragsplan einen endlichen Wert bekommt.
  */
 export const PLAN_ENTITLEMENTS: Readonly<
   Record<string, Readonly<Partial<Record<EntitlementKey, number>>>>
@@ -1798,10 +1842,10 @@ export const PLAN_ENTITLEMENTS: Readonly<
     'limit.automation_runs_monthly': 25,
     'limit.bot_messages_monthly': 500,
     'limit.bots': 1,
-    'limit.compliance_exports_monthly': 5,
+    'limit.compliance_exports_monthly': 2,
     'limit.domains': 1,
     'limit.llm_queries_monthly': 100,
-    'limit.team_seats': 3,
+    'limit.team_seats': 1,
     'monitoring.monthly': 1,
     'policy.packs': 1,
     'website.scan': 1,
@@ -1840,7 +1884,7 @@ export const PLAN_ENTITLEMENTS: Readonly<
     'limit.bot_messages_monthly': 2000,
     'limit.bots': 2,
     'limit.bulk_jobs_monthly': 10,
-    'limit.compliance_exports_monthly': 20,
+    'limit.compliance_exports_monthly': 12,
     'limit.domains': 3,
     'limit.llm_queries_monthly': 500,
     'limit.team_seats': 5,

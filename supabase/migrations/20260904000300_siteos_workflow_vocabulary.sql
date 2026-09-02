@@ -1,3 +1,39 @@
+-- ============================================================================
+-- UMNUMMERIERT am 2026-09-02: 20260903050000 -> 20260904000300
+--
+-- Diese Datei trug urspruenglich die Version `20260903050000` — dieselbe, die
+-- `20260903050000_align_starter_growth_quota_entitlements.sql` aus PR #1178
+-- vergeben hatte. Beide PRs liefen gegen eine `main`-Basis ohne die jeweils
+-- andere Datei; keine der beiden PR-CIs konnte die Kollision sehen.
+--
+-- Wirksam wurde sie erst nacheinander in Produktion: Der Deploy von #1178
+-- (10:41 UTC) verbuchte `20260903050000` im Ledger. Der Deploy von #1193
+-- (10:43 UTC) scheiterte zwei Minuten spaeter daran:
+--
+--   ERROR: duplicate key value violates unique constraint
+--          "schema_migrations_pkey"  ·  Key (version)=(20260903050000)
+--
+-- Damit war `supabase db push` blockiert: Solange diese Migration scheitert,
+-- erreicht KEINE Migration mehr die Produktion, auch keine unbeteiligte.
+--
+-- Gemessen vor der Umnummerierung: Der Rumpf war NICHT angewandt — weder
+-- `siteos_agent_runs.workflow_key`/`skill_key` noch die beiden Indizes
+-- existierten. Die Transaktion war vollstaendig zurueckgerollt, das erneute
+-- Anwenden unter neuer Version ist deshalb sauber und nicht doppelt.
+--
+-- Umnummeriert wurde diese und nicht die andere, weil `20260903050000` im
+-- Ledger bereits vergeben ist: Die Migration aus #1178 ist angewandt und darf
+-- ihre Version nicht verlieren.
+--
+-- Inhaltlich ist unterhalb nichts geaendert.
+--
+-- Derselbe Fehler wie am 2026-08-26 (PR #1131 gegen #1124), dokumentiert in
+-- CLAUDE.md §5. Die dortige Lehre — Versionsnummer vor dem Merge gegen den
+-- AKTUELLEN `main` pruefen — greift nicht, wenn zwei PRs am selben Tag
+-- gemergt werden: Zwischen beiden Pruefungen lag kein `main`-Stand, der die
+-- jeweils andere Datei enthalten haette.
+-- ============================================================================
+
 -- Skill- und Workflow-Beschriftung der Agentenlaeufe (Zielarchitektur §8).
 -- Vokabular: packages/siteos-core/src/workflows/{skills,workflows}.ts
 --

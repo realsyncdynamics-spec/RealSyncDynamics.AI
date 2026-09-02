@@ -1,7 +1,35 @@
-# Entscheidungsvorlage — wo der Enterprise-Vertragswert steht
+# Entscheidung — wo der Enterprise-Vertragswert steht
 
-**Stand: 2026-08-25, gemessen auf `0fd8dcc`.** Read-only: kein Code geändert,
-kein Wert gesetzt, keine Option vorweggenommen.
+> ## ✅ Entschieden am 2026-08-31: **Option A**
+>
+> Auf Plänen mit `availability: 'contract'` bedeutet `-1` bei einem
+> `limit.*`-Key: **Das System begrenzt hier nicht. Der Vertrag tut es.**
+>
+> Damit ist §1.2 aus `kanonische-kontingente.md` erstmals ausführbar, ohne
+> einen Ort für tenant-spezifische Werte zu schaffen. Die Quelle ist
+> **benannt**, nicht aufgelöst — auf den acht Enterprise-Feldern entsteht
+> weiterhin kein Gate.
+>
+> **Umgesetzt** (nur Dokumentation und Tests, wie unten bepreist):
+> `shared/pricing.ts` (Kodierung am `PLAN_ENTITLEMENTS`-Kopf spezifiziert) ·
+> `kanonische-kontingente.md` §1.2a · `test/billing/limit-canonicity.test.ts`
+> (zwei neue Fälle) · `CLAUDE.md` §7.
+>
+> **Der Auslöser für Option B ist benannt:** der erste Enterprise-Vertrag mit
+> einer vereinbarten **Obergrenze**. Unter A ist eine solche Grenze technisch
+> nicht durchsetzbar; der Vertrag ist damit nicht abschließbar, ohne vorher
+> auf B zu wechseln. Maschinell gemeldet wird das durch den Testfall
+> „Vertragspläne tragen ausschliesslich `-1` als Kontingent" — er wird rot,
+> sobald jemand einen endlichen Wert einträgt.
+>
+> Diese Datei bleibt als **Entscheidungsnachweis** bestehen. Die Abwägung
+> unten ist der Stand, auf dem die Entscheidung getroffen wurde; sie wird
+> nicht nachträglich umgeschrieben.
+
+---
+
+**Ursprünglicher Stand: 2026-08-25, gemessen auf `0fd8dcc`.** Read-only: kein
+Code geändert, kein Wert gesetzt, keine Option vorweggenommen.
 
 Die Regel steht (`kanonische-kontingente.md` §1.2): Für Vertragspläne ist der
 **Vertrag** kanonisch, nicht die öffentliche Preisseite. Sie ist heute nicht
@@ -22,13 +50,23 @@ Gegen das Live-Projekt (`ebljyceifhnlzhjfyxup`, 2026-08-25):
 
 | | |
 |---|---:|
-| Tenants | **4** |
-| Subscriptions | 4 (3× `free_audit` aktiv, 1× `growth` in Testphase) |
-| **Enterprise-Verträge** | **0** |
-| `entitlement_grants` | **0** |
-| Produkte | 22 |
-| `product_entitlements` | 358 |
-| Entitlement-Keys | 65 |
+| | 2026-08-25 | 2026-08-31 |
+|---|---:|---:|
+| Tenants | 4 | **5** |
+| Subscriptions | 4 | **5** |
+| **Enterprise-Verträge** | **0** | **0** |
+| `entitlement_grants` | 0 | 0 |
+| Produkte | 22 | 23 |
+| `product_entitlements` | 358 | 601 |
+| Entitlement-Keys | 65 | 70 |
+
+Vor der Entscheidung am 2026-08-31 nachgemessen, weil die Empfehlung
+vollständig an einer dieser Zahlen hängt. **Sie hält:** weiterhin null
+Enterprise-Verträge. Gewachsen ist nur die Katalogseite (`product_entitlements`
+358 → 601 aus den AP-Merges), was an der Abwägung nichts ändert — es zeigt
+allein, dass der Katalog wächst, während die Vertragsseite bei null steht.
+Ebenfalls nachgezählt: `tenant_entitlements()` wird weiterhin von genau
+**6** Migrationen neu definiert, zuletzt `20260831020000`.
 
 **Es gibt heute keinen einzigen Enterprise-Vertrag.** Damit gibt es auch keine
 Bestandsdaten, keine Migration und keinen Kunden, der von einer falschen

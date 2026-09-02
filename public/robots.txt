@@ -17,10 +17,9 @@ Disallow: /outreach
 Disallow: /risk-dashboard
 Disallow: /setup
 Disallow: /welcome
-
-# Assistent + seine Aliase: auth-gated, kein SEO-Wert. Kein globales
-# X-Robots-Tag in _headers und kein SEOHead auf der Seite — ohne diese
-# Zeilen gaebe es gar keine Index-Aussage.
+# /assistant fuehrt CreatorDashboard (Chat, Prompts, Billing) und ist seit dem
+# Absichern der Route auth-gegatet. Die beiden Aliase leiten dorthin um und
+# haben damit denselben Wert fuer Crawler: keinen.
 Disallow: /assistant
 Disallow: /command-center
 Disallow: /ai-command-center

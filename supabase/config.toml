@@ -344,6 +344,24 @@ verify_jwt = false
 [functions.whatsapp-webhook]
 verify_jwt = false
 
+# ── Rollout 2026-08-19: Aufrufer ist keine Supabase-Session ──
+# Der CLI-Default ist verify_jwt = true. Für diese beiden ist das nicht
+# "sicherer", sondern schlicht falsch: ihr Aufrufer schickt nie ein
+# Supabase-JWT — sie würden mit 401 antworten, bevor ihre eigene Prüfung
+# überhaupt greift. Jede andere der 80 nachgezogenen Functions bleibt bewusst
+# beim Default; geprüft wurde einzeln, nicht nach Namensmuster.
+
+# Öffentlicher Plan-Katalog, ausschließlich GET. Dieselbe Information wie auf
+# /pricing, ohne Stripe-Price-IDs — die löst der Checkout serverseitig auf.
+[functions.plans]
+verify_jwt = false
+
+# Erwartet `Authorization: Bearer <WEBHOOK_RETRY_SECRET>` — der Platform-Check
+# würde genau diesen Header verwerfen. Ohne gesetztes Secret fällt die Function
+# geschlossen aus (`!secret` → 403); das Secret ist damit das alleinige Tor.
+[functions.webhook-retry-cron]
+verify_jwt = false
+
 # All other functions (stripe-checkout, stripe-portal, ai-invoke,
 # workflow-trigger, gdpr-export, gdpr-delete, tenant-invite,
 # governance-agent, governance-remediate,

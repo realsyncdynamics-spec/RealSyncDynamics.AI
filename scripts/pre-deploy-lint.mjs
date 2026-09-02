@@ -323,12 +323,29 @@ function lintNoisyVerifyJwtTrue() {
   const configPath = join(__root, 'supabase/config.toml');
   if (!existsSync(configPath)) return;
   const toml = readFileSync(configPath, 'utf8');
-  const noisyRx = /\[functions\.([a-z][a-z0-9_-]*)\][^\[]*verify_jwt\s*=\s*true/g;
-  let m;
-  while ((m = noisyRx.exec(toml)) !== null) {
-    push('info', 'noisy-verify-jwt-true',
-      `[functions.${m[1]}] explicitly sets verify_jwt=true — this is the default, the entry is no-op noise`,
-      'supabase/config.toml');
+
+  // Zeilenweise statt per Regex ueber die ganze Datei: ein Muster wie
+  // /\[functions\.(...)\][^\[]*verify_jwt\s*=\s*true/ laeuft ueber Tabellen-
+  // grenzen hinweg, weil nur `[` es stoppt. Es hat deshalb immer den letzten
+  // Eintrag vor dem Schlusskommentar gemeldet — der die Zeichenfolge
+  // "keep the default verify_jwt = true" enthaelt — auch wenn dieser Eintrag
+  // selbst `verify_jwt = false` setzt.
+  let current = null;
+  for (const rawLine of toml.split('\n')) {
+    const line = rawLine.trim();
+    if (line.startsWith('#')) continue;             // Kommentare zaehlen nicht
+    const table = line.match(/^\[([^\]]+)\]/);
+    if (table) {
+      const fn = table[1].match(/^functions\.([a-z][a-z0-9_-]*)$/);
+      current = fn ? fn[1] : null;                  // andere Tabelle → Kontext aus
+      continue;
+    }
+    if (!current) continue;
+    if (/^verify_jwt\s*=\s*true\b/.test(line)) {
+      push('info', 'noisy-verify-jwt-true',
+        `[functions.${current}] explicitly sets verify_jwt=true — this is the default, the entry is no-op noise`,
+        'supabase/config.toml');
+    }
   }
 }
 

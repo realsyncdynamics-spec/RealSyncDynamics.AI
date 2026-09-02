@@ -1,6 +1,12 @@
 # Runbook — Edge-Function-Konsolidierung (Free-Plan, 100 Slots)
 
-**Stand der Erhebung:** 2026-08-16, nach dem Slot-Swap (`free-plan-slot-swap.yml`, Run #1)
+> **Historisch (Stand 2026-08-19).** Die Organisation läuft auf Plan `pro`, das
+> Free-Limit von 100 Edge Functions ist aufgehoben und der hier erwähnte
+> Workflow `free-plan-slot-swap.yml` wurde entfernt. Dieses Runbook beschreibt,
+> was am 2026-08-16 galt — es ist keine Handlungsanweisung mehr. Aktueller Stand:
+> `edge-function-kontingent.md`.
+
+**Stand der Erhebung:** 2026-08-16, nach dem Slot-Swap (`free-plan-slot-swap.yml`, Run #1 — Workflow inzwischen entfernt)
 **Messung:** Live 100/100 · Repo 180 · **fehlend 80** (davon 12 bewusst gelöschte
 Alt-Functions ohne Aufrufer → echter Bedarf **68**)
 

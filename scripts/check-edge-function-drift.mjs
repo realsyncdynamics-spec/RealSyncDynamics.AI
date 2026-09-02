@@ -18,6 +18,21 @@
 //           bekannter Altbestand, der noch aufgeraeumt werden muss → WARNUNG)
 //        - UNDECLARED_NO_JWT: live verify_jwt=false, im Repo vorhanden, aber in
 //          config.toml NICHT als verify_jwt=false deklariert → FEHLER
+//        - NICHT_DEPLOYT: im Repo vorhanden, aber nicht live → WARNUNG
+//
+// Zur dritten Zeile: bis zum 2026-08-19 lief die Pruefung ausschliesslich ueber
+// die live deployten Functions. Die Gegenrichtung — fertiger Code im Repo, den
+// niemand erreichen kann — war damit strukturell unsichtbar. Der taegliche Lauf
+// meldete monatelang gruen und schrieb dabei "100 live geprueft, 180 im Repo"
+// in den Log; die Zahlen standen da, verglichen hat sie niemand. Deshalb ist der
+// Vergleich jetzt Teil des Guards und nicht mehr Sache eines aufmerksamen Lesers.
+//
+// Bewusst WARNUNG, nicht FEHLER: der Rollout der fehlenden Functions laeuft
+// (docs/runbooks/edge-function-kontingent.md). Ein Fehler wuerde den Guard bis
+// zum letzten Deploy rot faerben und damit genau die Signalwirkung zerstoeren,
+// um die es hier geht. Sobald `supabase functions list` und das Repo
+// deckungsgleich sind, gehoert die Meldung auf FEHLER hochgestuft — dann faengt
+// sie das naechste stillschweigend nie deployte Modul sofort ab.
 //
 // Ohne Token laeuft nur Check (1); der Prod-Teil wird sauber uebersprungen
 // (Exit 0), damit Forks/PRs ohne Secrets nicht rot werden.
@@ -122,7 +137,21 @@ if (deployed === null) {
         `ist aber in config.toml nicht so deklariert. Eintrag ergaenzen oder Funktion absichern.`);
     }
   }
-  console.log(`✓ ${deployed.length} live Functions geprueft, ${repo.size} im Repo, ${allow.size} allowlisted.`);
+  // Check (3): Repo → Prod. Was im Repo liegt, aber nirgends deployt ist, ist
+  // in Produktion schlicht nicht vorhanden — unabhaengig davon, wie vollstaendig
+  // der Code ist.
+  const deployedSlugs = new Set(deployed.map((fn) => fn.slug ?? fn.name));
+  const notDeployed = [...repo].filter((slug) => !deployedSlugs.has(slug)).sort();
+  if (notDeployed.length > 0) {
+    warnings.push(
+      `NICHT_DEPLOYT: ${notDeployed.length} Function(s) liegen im Repo, sind aber nicht live — ` +
+      `in Produktion also nicht verfuegbar: ${notDeployed.join(', ')}. ` +
+      `Rollout siehe docs/runbooks/edge-function-kontingent.md.`);
+  }
+
+  console.log(
+    `✓ ${deployed.length} live Functions geprueft, ${repo.size} im Repo, ` +
+    `${notDeployed.length} nicht deployt, ${allow.size} allowlisted.`);
 }
 
 for (const w of warnings) console.warn(`⚠️  ${w}`);

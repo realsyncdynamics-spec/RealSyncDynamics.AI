@@ -123,8 +123,28 @@ Deno.serve(async (req) => {
     return new Response("Method not allowed", { status: 405 });
   }
 
+  // AP9 Welle 3: Diese Function ist intern — sie schreibt per Service-Role
+  // in `governance_incidents` beliebiger Tenants und stößt n8n an. Bis hier
+  // war sie mit jedem gültigen JWT erreichbar, der Body wurde nicht gegen den
+  // Aufrufer geprüft. Jetzt nur noch mit Service-Role-Bearer, wie
+  // api-webhook-deliver und scheduler-dispatch. Im Repo gibt es keinen
+  // Aufrufer; wer sie aus einer anderen Function ruft, hat den Key.
+  const authHeader = req.headers.get("Authorization") ?? "";
+  if (authHeader !== `Bearer ${supabaseKey}`) {
+    return new Response(
+      JSON.stringify({ status: "error", message: "service role only" }),
+      { status: 401, headers: { "Content-Type": "application/json" } },
+    );
+  }
+
   try {
     const body = await req.json();
+    if (!body || typeof body.tenant_id !== "string" || typeof body.event_id !== "string") {
+      return new Response(
+        JSON.stringify({ status: "error", message: "tenant_id and event_id required" }),
+        { status: 400, headers: { "Content-Type": "application/json" } },
+      );
+    }
     const result = await escalateRisk(body as EscalationRequest);
     return new Response(JSON.stringify(result), {
       status: result.status === "success" ? 200 : 500,

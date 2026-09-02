@@ -112,6 +112,9 @@ function Inner({ session }: { session: Session }) {
     try {
       const { error: updateErr } = await getSupabase().functions.invoke('tenant-branding-update', {
         body: {
+          // Die Function prüft Mitgliedschaft, Rolle und `whitelabel.reports`
+          // gegen diesen Tenant — ein JWT-Claim dafür existiert nicht.
+          tenant_id: activeTenantId,
           company_name: branding.company_name,
           brand_colors: branding.brand_colors,
           custom_logo_url: branding.custom_logo_url,

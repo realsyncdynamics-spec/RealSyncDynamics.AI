@@ -14,7 +14,7 @@
 > | AP6 Buchung | umgesetzt | `supabase/functions/subscription-addons`, Webhook `syncAddonItems` |
 > | AP7 „Mein Plan" | umgesetzt | `src/features/market/MyPlanSection.tsx` |
 > | AP8 Abhängigkeiten | umgesetzt | `entitlement_dependencies`, `ENTITLEMENT_DEPENDENCIES` |
-> | AP9 Durchsetzung | Welle 1 und 2 umgesetzt, Welle 3 offen | `docs/product/addon-booking.md` §1.6, §6.5 |
+> | AP9 Durchsetzung | Welle 1 bis 3 umgesetzt; offen bleibt nur `bots.human_handoff` (kein Mechanismus im Repo) | `docs/product/addon-booking.md` §1.6, §6.5 |
 > | AP10 Preis-Konsumenten | umgesetzt (2026-08-30/31) | CLAUDE.md §10 |
 > | AP11 Aufräumen | offen, Fragepflicht | — |
 >

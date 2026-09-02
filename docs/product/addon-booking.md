@@ -161,6 +161,29 @@ Marketplace ihm alles gewährten. Die fünf `/app/admin/*`-Unterseiten und
 | `api-webhook-deliver` | **keinerlei Prüfung** | nur Service-Role-Bearer (wie `scheduler-dispatch`) |
 | `compliance-remediation-execute` | **keinerlei Prüfung** | nur Service-Role-Bearer |
 
+**Welle 3 (2026-09-01)** — die letzten Keys, die die Reality Map als
+`UNKNOWN` führte:
+
+| Function | vorher | jetzt |
+|---|---|---|
+| `tenant-branding-update` | Rolle aus einem **unverifizierten** JWT-Payload, `tenant_id` aus einem Claim, den niemand setzt (0 von 6 Nutzern in Produktion) → jeder Aufruf 401; nur PATCH, `functions.invoke()` sendet POST | `requireUser`, `tenant_id` aus dem Body, Rolle owner/admin, dann `whitelabel.reports`; POST und PATCH; nur bekannte Spalten |
+| `ai-act-risk-inventory` | Mitgliedschaft | zusätzlich `governance.risk_register` für alle Operationen — derselbe Key wie das Zugriffsregister für `/app/risk-inventory` |
+| `compliance-alert-trigger` | **keinerlei Prüfung**; schrieb Alerts für beliebige Tenants, rief Kunden-Webhooks | nur Service-Role-Bearer; E-Mail-Aktionen nur mit `alerts.email`, der Alert selbst wird immer protokolliert |
+| `audit-monitor-cron` | `verify_jwt = false`, **keinerlei Prüfung** — jeder konnte alle Domains scannen lassen | Service-Role-Bearer (wie im Dateikopf seit jeher verlangt); Versand nur mit `alerts.email`, Ergebnis wird immer gespeichert |
+| `governance-risk-escalate` | **keinerlei Prüfung**; Service-Role-Insert in `governance_incidents` beliebiger Tenants | nur Service-Role-Bearer; `tenant_id` und `event_id` Pflicht |
+
+Bewusst **nicht** gegated: `governance-risk-score`. Die Neuberechnung
+hängt am KI-Register (`governance.ai_register`, im Free-Plan) und wird aus
+`/app/assets/:id` aufgerufen — ein Gate auf `governance.risk_register`
+sperrte eine freie Fläche. `email-notify-send` versendet Kontingent-Hinweise
+zur API-Nutzung; das sind Kontoauskünfte, keine Compliance-Alerts, und
+bleiben ohne Plan-Gate.
+
+Nebenbefund: `src/features/api/OAuth2ConfigView.tsx` fragte `enterprise.tier`,
+`partner.tier`, `agency.tier`, `growth.tier` als Entitlement-Keys ab — die
+gab es nie, jeder Kunde sah „starter". Der Plan kommt jetzt aus
+`useEntitlements().tier` (Abo-Zeile).
+
 `test/edge/entitlement-gates.test.ts` hält die Gates in der Quelle fest.
 
 ### 1.7 Einstieg — derselbe Flow, jedes Mal
@@ -308,9 +331,20 @@ Freigabe und bleiben offen.
 
 ### 6.5 Was der Reality Map noch fehlt
 
-Unverändert `UNKNOWN`: `alerts.email` (kein Versandweg liest den Key),
-`bots.human_handoff` (kein Mechanismus im Repo), `whitelabel.*`
-(`tenant-branding-update` prüft die Rolle, nicht den Plan),
-`governance.risk_register` (drei Functions ohne Prüfung). Für `whitelabel.*`
-und `governance.risk_register` ist das Register jetzt das Frontend-Gate;
-serverseitig bleibt es offen — Welle 3 von AP9.
+Mit Welle 3 (§1.6) sind `alerts.email`, `whitelabel.reports`,
+`whitelabel.dashboard` und `governance.risk_register` serverseitig
+durchgesetzt. `whitelabel.dashboard` hängt über `ENTITLEMENT_DEPENDENCIES`
+an `whitelabel.reports` und läuft über dieselbe Function — ein eigenes Gate
+gäbe es erst, wenn das Dashboard-Theming einen eigenen Schreibpfad bekommt.
+
+Unverändert `UNKNOWN`: `bots.human_handoff` — im Repo existiert kein
+Übergabe-Mechanismus. Das ist keine Gate-Frage, sondern eine Zusage ohne
+Software dahinter; entscheiden muss der Eigentümer, ob die Fähigkeit gebaut
+oder aus der Feature-Liste genommen wird.
+
+Zwei Betriebsbefunde aus der Messung vom 2026-09-01 (`cron.job` in
+Produktion): Für `audit-monitor-cron` und `email-notify-send` ist **kein**
+Cron-Job registriert. Monitoring-Drift-Alerts und Kontingent-E-Mails werden
+heute also nicht versendet, unabhängig vom Plan. Die Service-Role-Pflicht
+auf `audit-monitor-cron` bricht deshalb nichts Laufendes — sie legt nur
+fest, wie der Job aufzusetzen ist (Dateikopf der Function).

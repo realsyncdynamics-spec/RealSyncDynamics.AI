@@ -59,7 +59,9 @@ describe('Kostenverursachende Functions prüfen ihr Entitlement', () => {
   it.each(GATES.map((g) => [g.fn, g.key] as const))('%s gated auf %s', (fn, key) => {
     const src = quelle(fn);
     expect(src, `${fn} importiert den Wächter nicht`).toMatch(/from ['"]\.\.\/_shared\/entitlements\.ts['"]/);
-    expect(src, `${fn} prüft ${key} nicht`).toMatch(new RegExp(`['"]${key.replace(/\./g, '\\.')}['"]`));
+    // Beide Anführungszeichen-Stile, ohne dynamische RegExp (CodeQL: unvollständiges Escaping).
+    const zitiert = src.includes(`'${key}'`) || src.includes(`"${key}"`);
+    expect(zitiert, `${fn} prüft ${key} nicht`).toBe(true);
     expect(src).toMatch(/gateFeature\(|requireFeature\(|hasFeature\(/);
   });
 

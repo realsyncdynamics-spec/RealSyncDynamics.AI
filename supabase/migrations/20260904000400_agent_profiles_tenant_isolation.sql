@@ -50,8 +50,14 @@
 -- angewandt gehalten und **stillschweigend uebersprungen**: Die Lesepolicy
 -- unten waere nie in Produktion angekommen, und nichts haette es gemeldet.
 --
--- Umbenannt auf `20260902000200`, also ueber den hoechsten verbuchten Stand
--- (`20260902000100`, gemessen 2026-09-01). Das ist die Lehre aus der
+-- Umbenannt zuerst auf `20260902000200` (ueber `20260902000100`, gemessen
+-- 2026-09-01) und am 2026-09-02 erneut auf `20260904000400`: Das Ledger stand
+-- inzwischen bei `20260904000200`, meine Version lag also wieder darunter.
+-- Dann verweigert `supabase db push` den Dienst — „found local migration
+-- files to be inserted before the last migration on remote database" — und
+-- zwar fuer ALLE Migrationen, nicht nur fuer diese. Ein Zweig, der lange
+-- offen steht, muss seine Migrationsnummer vor jedem Merge neu pruefen; die
+-- Nummer altert mit. Das ist die Lehre aus der
 -- Kollision vom 2026-08-24, die CLAUDE.md §5 festhaelt: Die Nummer gegen den
 -- **aktuellen** Stand pruefen, nicht gegen die Basis des eigenen Zweigs — und
 -- seit dem 2026-08-29 zusaetzlich gegen das Ledger.

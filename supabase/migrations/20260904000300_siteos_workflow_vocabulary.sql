@@ -1,3 +1,22 @@
+-- ⚠️ Umnummeriert am 2026-09-02 von `20260903050000` — die Migration wurde
+-- nie angewandt und waere es nie geworden.
+--
+-- PR #1193 vergab `20260903050000` ein zweites Mal: Dieselbe Version traegt
+-- auch `align_starter_growth_quota_entitlements`. Verbucht wurde nur jene;
+-- fuer `supabase db push` ist eine verbuchte Version eine erledigte Version,
+-- also hat es diese Datei stillschweigend uebersprungen. Kein Guard schlaegt
+-- an, weil aus seiner Sicht nichts fehlt.
+--
+-- Am 2026-09-02 gegen die Live-DB gemessen: `siteos_agent_runs` hat weder
+-- `skill` noch `workflow`, und keinen der beiden Indizes. Zugleich schreiben
+-- `siteos/handlers/builder.ts` und `runtime-scan.ts` seit demselben PR genau
+-- diese zwei Spalten beim Einreihen der Agentenlaeufe — der naechste Build
+-- und der naechste Scan waeren daran gescheitert.
+--
+-- Inhalt unveraendert; die Datei ist durchgehend idempotent
+-- (`IF NOT EXISTS`, gepruefte Constraint-Namen), ein erneuter Lauf schadet
+-- also auch dort nicht, wo sie doch schon angewandt sein sollte.
+
 -- Skill- und Workflow-Beschriftung der Agentenlaeufe (Zielarchitektur §8).
 -- Vokabular: packages/siteos-core/src/workflows/{skills,workflows}.ts
 --

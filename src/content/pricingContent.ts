@@ -360,11 +360,18 @@ export const pricingPlans: PricingPlan[] = [
     },
   },
   {
+    // COMMERCIAL-SSOT: temporary production hotfix.
+    // Canonical source migration tracked in Phase 2.
+    // Seit AP2 stillgelegt (`availability: 'legacy'`): `stripe-checkout` weist
+    // neue Abschluesse mit PLAN_RETIRED ab und `/checkout/agency` leitet auf
+    // die Preisseite zurueck. Deshalb kein Festpreis, kein Trial und kein
+    // Checkout-Link mehr. Bestandskunden rechnen unveraendert weiter ab; der
+    // Eintrag bleibt bestehen, damit ihre Plan-Detailseite erreichbar ist.
     slug: 'agency',
     name: 'Agency',
-    price: 699,
-    priceString: '699 €',
-    interval: 'monatlich',
+    price: 0,
+    priceString: 'Nicht mehr im Verkauf',
+    interval: 'individuell',
     recommended: false,
     shortDescription: 'Die Profi-Suite für Datenschutzbeauftragte, Kanzleien und Agenturen, die mehrere Kunden professionell prüfen, dokumentieren und betreuen möchten.',
     targetAudience: 'Für externe Datenschutzbeauftragte, Datenschutzkanzleien, Webagenturen, IT-Dienstleister und Compliance-Berater.',
@@ -383,10 +390,10 @@ export const pricingPlans: PricingPlan[] = [
       '500 automatisierte Läufe pro Monat',
     ],
     cta: {
-      label: 'Agency buchen',
-      href: '/checkout/agency',
+      label: 'Enterprise anfragen',
+      href: '/contact-sales?intent=enterprise',
     },
-    checkoutPath: '/checkout/agency',
+    checkoutPath: '/contact-sales?intent=enterprise',
     problemsSolved: [
       'Viele Kunden müssen regelmäßig geprüft werden',
       'Reports sollen professionell und mit eigenem Branding ausgegeben werden',
@@ -419,41 +426,46 @@ export const pricingPlans: PricingPlan[] = [
         content: 'Agency ist für professionelle Dienstleister gedacht, die Compliance nicht nur für sich selbst, sondern für viele Kunden liefern. Der Plan kombiniert wiederholbare Prüfungen, White-Label-Berichte, API-Anbindung und Automatisierung. Agenturen und Datenschutzbeauftragte können Prüfungen standardisieren, Ergebnisse sauber dokumentieren und Kunden strukturierter betreuen. Die Governance Agents helfen dabei, wiederkehrende Prüf- und Dokumentationsaufgaben zu automatisieren.',
       },
     ],
-    trial: {
-      days: 14,
-      description: '14 Tage kostenlos testen, keine Kosten bis Tag 15, monatlich kündbar',
-    },
   },
-  // ─── Jahres-Variante Starter — 12 Monate zum Preis von 10 ───
+  // ─── Jahres-Variante Starter — derzeit nicht buchbar ───
+  // COMMERCIAL-SSOT: temporary production hotfix.
+  // Canonical source migration tracked in Phase 2.
   // Slug identisch zur TierId in src/config/pricing.ts, damit die Info-
   // Buttons der Pricing-Karten (/pricing/<tier.id>) auf echte Detailseiten
-  // führen. Position VOR Partner wegen der Preis-Invariante des Unit-Tests
-  // (bezahlte Pläne aufsteigend: 790 € < 1.999 €).
+  // führen.
+  //
+  // In `public.products` steht für `starter_yearly` kein echter Stripe-Preis,
+  // sondern der Platzhalter `STRIPE_PRICE_STARTER_YEARLY_XXX` — jeder
+  // Jahres-Checkout endete mit PRICE_NOT_CONFIGURED. Deshalb kein Festpreis
+  // und kein Trial-CTA mehr. Anders als bei Agency/Partner ist der Plan
+  // NICHT stillgelegt: Starter monatlich ist verdrahtet und kaufbar, deshalb
+  // führt der CTA dorthin — derselbe Plan, nur monatliche Abrechnung, keine
+  // Plan-Substitution. Sobald der Jahres-Preis verdrahtet ist, kehren Betrag
+  // und Rabatt-Aussage zurück (`yearlyCheckoutUnavailable` in shared/pricing.ts).
   {
     slug: 'starter_yearly',
     name: 'Starter (Jährlich)',
-    price: 790,
-    priceString: '790 €',
-    interval: 'pro Jahr — 12 Monate zum Preis von 10',
+    price: 0,
+    priceString: 'Derzeit nicht buchbar',
+    interval: 'Jahresabrechnung in Vorbereitung',
     recommended: false,
-    badge: 'Sparen Sie 2 Monate',
-    shortDescription: 'Starter mit Jahresabrechnung und 2-Monate-Rabatt: 79 € × 10 = 790 € pro Jahr. Gleicher Funktionsumfang wie Starter (monatlich), ein Jahr durchgehende DSGVO-Grundabsicherung.',
-    targetAudience: 'Für kleine Unternehmen, Praxen, Kanzleien und lokale Dienstleister, die sich für ein Jahr absichern und dabei 2 Monatsraten sparen möchten.',
+    badge: 'In Vorbereitung',
+    shortDescription: 'Die Jahresabrechnung für Starter ist derzeit nicht buchbar. Starter ist monatlich zu 79 € verfügbar — mit identischem Funktionsumfang und ohne Mindestlaufzeit.',
+    targetAudience: 'Für kleine Unternehmen, Praxen, Kanzleien und lokale Dienstleister, die eine durchgehende DSGVO-Grundabsicherung brauchen.',
     whatCustomerGets: [
       'Alles aus Starter (monatlich)',
-      '2-Monate-Rabatt: zahle 10, nutze 12 Monate',
-      'Automatische Jahres-Verlängerung',
       'Kontinuierliche DSGVO-Compliance ohne Unterbrechung',
+      'Monatliche Abrechnung, jederzeit kündbar',
     ],
     cta: {
-      label: '14 Tage kostenlos testen',
-      href: '/checkout/starter_yearly',
+      label: 'Starter monatlich buchen',
+      href: '/checkout/starter',
     },
-    checkoutPath: '/checkout/starter_yearly',
+    checkoutPath: '/checkout/starter',
     problemsSolved: [
-      'Monatliche Abrechnung erzeugt unnötigen Verwaltungsaufwand',
-      'Compliance-Budget soll planbar fürs ganze Jahr sein',
-      'Schutzlücken durch versehentlich ausgelaufene Monats-Abos',
+      'DSGVO-Pflichten gelten dauerhaft, nicht stichtagsbezogen',
+      'Compliance-Budget soll planbar sein',
+      'Schutzlücken durch versehentlich ausgelaufene Abos',
     ],
     includedFeatureSlugs: [
       'dsgvo-scan',
@@ -465,21 +477,24 @@ export const pricingPlans: PricingPlan[] = [
     ],
     detailedSections: [
       {
-        title: 'Warum die Jahresvariante?',
-        content: 'Die Jahresabrechnung bündelt 12 Monate Starter zum Preis von 10 Monaten. Der Funktionsumfang ist identisch zur monatlichen Variante — laufende Scans, Risiko-Hinweise, automatische Datenschutzerklärung und der prüfbare Nachweis-Verlauf. Für Unternehmen mit festem Jahresbudget entfällt die monatliche Rechnungsstellung.',
+        title: 'Warum steht hier kein Jahrespreis?',
+        content: 'Die Jahresabrechnung für Starter ist derzeit nicht buchbar — es ist kein Jahres-Zahlungsweg hinterlegt. Statt einen Betrag zuzusichern, den der Kauf nicht einlösen kann, weisen wir die Variante als in Vorbereitung aus. Starter ist unverändert monatlich zu 79 € verfügbar, mit identischem Funktionsumfang und ohne Mindestlaufzeit. Bestehende Jahresabos sind davon nicht betroffen und laufen unverändert weiter.',
       },
     ],
-    trial: {
-      days: 14,
-      description: '14 Tage kostenlos testen, keine Kosten bis Tag 15',
-    },
   },
   {
     slug: 'enterprise',
     name: 'Enterprise',
-    price: 1249,
-    priceString: '1.249 €',
-    interval: 'monatlich',
+    // COMMERCIAL-SSOT: temporary production hotfix.
+    // Canonical source migration tracked in Phase 2.
+    // Enterprise wird vertraglich vereinbart und manuell fakturiert
+    // (products.default_for_plan_key='enterprise' traegt bewusst nur einen
+    // Sentinel, keine echte Stripe-Price). Deshalb kein oeffentlicher
+    // Festpreis: `price: 0` unterdrueckt den Intervall-Zusatz, der Betrag
+    // steht als interner Listenpreis in shared/pricing.ts.
+    price: 0,
+    priceString: 'Individuelles Angebot',
+    interval: 'individuell',
     recommended: false,
     shortDescription: 'Für Großunternehmen und Konzerne mit erweiterten Governance-Anforderungen, Multi-Org-Verwaltung und SLA-Bedarf.',
     targetAudience: 'Für Großunternehmen, regulierte Industrien, Behörden, Finanzdienstleister und Organisationen mit erweiterten Governance- und Compliance-Prozessen.',
@@ -490,15 +505,15 @@ export const pricingPlans: PricingPlan[] = [
       'Zentrale Benutzerverwaltung & erweiterte Rollen/Rechte',
       'API Premium + Webhooks',
       'White-Label Light (Branding, Logo, Farben)',
-      'Priority Support (4h Response-Zeit)',
+      'Priority Support mit vertraglich vereinbarter Reaktionszeit',
       'Audit Center Pro + Evidence Vault Enterprise',
       'Advanced Analytics & Risk-Scoring',
     ],
     cta: {
-      label: '14 Tage kostenlos testen',
-      href: '/checkout/enterprise',
+      label: 'Enterprise anfragen',
+      href: '/contact-sales?intent=enterprise',
     },
-    checkoutPath: '/checkout/enterprise',
+    checkoutPath: '/contact-sales?intent=enterprise',
     problemsSolved: [
       'Anforderungen gehen über Standard-Pakete hinaus',
       'Besondere Compliance-Regeln notwendig',
@@ -538,11 +553,18 @@ export const pricingPlans: PricingPlan[] = [
     ],
   },
   {
+    // COMMERCIAL-SSOT: temporary production hotfix.
+    // Canonical source migration tracked in Phase 2.
+    // Seit AP2 stillgelegt (`availability: 'legacy'`): `stripe-checkout` weist
+    // neue Abschluesse mit PLAN_RETIRED ab und `/checkout/partner` leitet auf
+    // die Preisseite zurueck. Deshalb kein Festpreis, kein Trial und kein
+    // Checkout-Link mehr. Bestandskunden rechnen unveraendert weiter ab; der
+    // Eintrag bleibt bestehen, damit ihre Plan-Detailseite erreichbar ist.
     slug: 'partner',
     name: 'Partner',
-    price: 1999,
-    priceString: '1.999 €',
-    interval: 'monatlich',
+    price: 0,
+    priceString: 'Nicht mehr im Verkauf',
+    interval: 'individuell',
     recommended: false,
     shortDescription: 'Die Multi-Mandanten-Lösung für Kanzleien, Datenschutzunternehmen und große Agenturen mit bis zu 50 Kundenwebsites.',
     targetAudience: 'Für Organisationen, die viele Mandanten, Kundenprojekte oder Websites zentral verwalten und skalierbar prüfen müssen.',
@@ -557,10 +579,10 @@ export const pricingPlans: PricingPlan[] = [
       'Strukturierte Kundenverwaltung',
     ],
     cta: {
-      label: 'Partner buchen',
-      href: '/checkout/partner',
+      label: 'Enterprise anfragen',
+      href: '/contact-sales?intent=enterprise',
     },
-    checkoutPath: '/checkout/partner',
+    checkoutPath: '/contact-sales?intent=enterprise',
     problemsSolved: [
       'Zu viele einzelne Kundenprüfungen ohne zentrale Übersicht',
       'Kein einheitlicher Prüfstatus über alle Mandanten',
@@ -596,35 +618,38 @@ export const pricingPlans: PricingPlan[] = [
     ],
   },
   // ─── Weitere Jahres-Varianten (siehe starter_yearly weiter oben) ───
-  // Array-Position folgt der Preis-Invariante aus pricingContent.test.ts:
-  // bezahlte Pläne müssen aufsteigend sortiert sein (2.490 → 6.900 → 19.000 €).
+  // COMMERCIAL-SSOT: temporary production hotfix.
+  // Canonical source migration tracked in Phase 2.
+  // Wie starter_yearly: `products.default_for_plan_key='growth_yearly'` traegt
+  // den Platzhalter `STRIPE_PRICE_GROWTH_YEARLY_XXX`, der Jahres-Checkout
+  // endete mit PRICE_NOT_CONFIGURED. Growth monatlich ist verdrahtet und
+  // kaufbar — dorthin fuehrt der CTA.
   {
     slug: 'growth_yearly',
     name: 'Growth (Jährlich)',
-    price: 2490,
-    priceString: '2.490 €',
-    interval: 'pro Jahr — 12 Monate zum Preis von 10',
+    price: 0,
+    priceString: 'Derzeit nicht buchbar',
+    interval: 'Jahresabrechnung in Vorbereitung',
     // recommended bleibt exklusiv beim monatlichen Growth-Plan —
     // pricingContent.test.ts erzwingt genau EINEN empfohlenen Plan.
     recommended: false,
-    badge: 'Sparen Sie 2 Monate',
-    shortDescription: 'Growth mit Jahresabrechnung und 2-Monate-Rabatt: 249 € × 10 = 2.490 € pro Jahr. KI-Governance, AI Risk Register und tägliches Monitoring für ein ganzes Jahr.',
-    targetAudience: 'Für wachsende Unternehmen mit KI-Einsatz, die Governance-Prozesse für ein Jahr fest verankern und dabei 2 Monatsraten sparen möchten.',
+    badge: 'In Vorbereitung',
+    shortDescription: 'Die Jahresabrechnung für Growth ist derzeit nicht buchbar. Growth ist monatlich zu 249 € verfügbar — KI-Governance, AI Risk Register und tägliches Monitoring mit identischem Funktionsumfang.',
+    targetAudience: 'Für wachsende Unternehmen mit KI-Einsatz, die Governance-Prozesse dauerhaft verankern wollen.',
     whatCustomerGets: [
       'Alles aus Growth (monatlich)',
-      '2-Monate-Rabatt: zahle 10, nutze 12 Monate',
-      'Automatische Jahres-Verlängerung',
-      'KI-Governance + AI Risk Register für das ganze Jahr',
+      'KI-Governance + AI Risk Register',
+      'Monatliche Abrechnung, jederzeit kündbar',
     ],
     cta: {
-      label: '14 Tage kostenlos testen',
-      href: '/checkout/growth_yearly',
+      label: 'Growth monatlich buchen',
+      href: '/checkout/growth',
     },
-    checkoutPath: '/checkout/growth_yearly',
+    checkoutPath: '/checkout/growth',
     problemsSolved: [
       'KI-Compliance braucht Kontinuität statt Monats-Flickwerk',
-      'Compliance-Budget soll planbar fürs ganze Jahr sein',
-      'AI-Act-Pflichten gelten dauerhaft, nicht monatsweise',
+      'Governance-Prozesse sollen dauerhaft verankert sein',
+      'AI-Act-Pflichten gelten dauerhaft, nicht stichtagsbezogen',
     ],
     includedFeatureSlugs: [
       'dsgvo-scan',
@@ -640,24 +665,27 @@ export const pricingPlans: PricingPlan[] = [
     ],
     detailedSections: [
       {
-        title: 'Warum die Jahresvariante?',
-        content: 'Die Jahresabrechnung bündelt 12 Monate Growth zum Preis von 10 Monaten. KI-Governance und das AI Risk Register laufen ohne Unterbrechung durch — wichtig, weil AI-Act- und DSGVO-Pflichten kontinuierlich gelten. Der Funktionsumfang ist identisch zur monatlichen Variante.',
+        title: 'Warum steht hier kein Jahrespreis?',
+        content: 'Die Jahresabrechnung für Growth ist derzeit nicht buchbar — es ist kein Jahres-Zahlungsweg hinterlegt. Statt einen Betrag zuzusichern, den der Kauf nicht einlösen kann, weisen wir die Variante als in Vorbereitung aus. Growth ist unverändert monatlich zu 249 € verfügbar, mit identischem Funktionsumfang. Bestehende Jahresabos sind davon nicht betroffen und laufen unverändert weiter.',
       },
     ],
-    trial: {
-      days: 14,
-      description: '14 Tage kostenlos testen, keine Kosten bis Tag 15',
-    },
   },
   {
+    // COMMERCIAL-SSOT: temporary production hotfix.
+    // Canonical source migration tracked in Phase 2.
+    // Seit AP2 stillgelegt (`availability: 'legacy'`): `stripe-checkout` weist
+    // neue Abschluesse mit PLAN_RETIRED ab und `/checkout/agency_yearly` leitet auf
+    // die Preisseite zurueck. Deshalb kein Festpreis, kein Trial und kein
+    // Checkout-Link mehr. Bestandskunden rechnen unveraendert weiter ab; der
+    // Eintrag bleibt bestehen, damit ihre Plan-Detailseite erreichbar ist.
     slug: 'agency_yearly',
     name: 'Agency (Jährlich)',
-    price: 6900,
-    priceString: '6.900 €',
-    interval: 'pro Jahr — 12 Monate zum Preis von 10',
+    price: 0,
+    priceString: 'Nicht mehr im Verkauf',
+    interval: 'individuell',
     recommended: false,
     badge: 'Sparen Sie 2 Monate',
-    shortDescription: 'Agency mit Jahresabrechnung und 2-Monate-Rabatt: 699 € × 10 = 6.900 € pro Jahr. Branchenbibliotheken, White-Label und API-Zugriff für ein ganzes Jahr.',
+    shortDescription: 'Agency mit Jahresabrechnung — seit AP2 nicht mehr im Verkauf. Bestehende Jahresabos laufen unverändert weiter; Neukunden mit Bedarf an Branchenbibliotheken, White-Label und API-Zugriff wenden sich an den Vertrieb.',
     targetAudience: 'Für Datenschutzkanzleien, Agenturen und Compliance-Berater, die Mandanten langfristig betreuen und Jahresbudgets bevorzugen.',
     whatCustomerGets: [
       'Alles aus Agency (monatlich)',
@@ -666,10 +694,10 @@ export const pricingPlans: PricingPlan[] = [
       'Branchenbibliothek + White-Label für das ganze Jahr',
     ],
     cta: {
-      label: 'Agency jährlich testen',
-      href: '/checkout/agency_yearly',
+      label: 'Enterprise anfragen',
+      href: '/contact-sales?intent=enterprise',
     },
-    checkoutPath: '/checkout/agency_yearly',
+    checkoutPath: '/contact-sales?intent=enterprise',
     problemsSolved: [
       'Mandanten-Betreuung ist auf Jahre angelegt, nicht auf Monate',
       'Compliance-Budget soll planbar fürs ganze Jahr sein',
@@ -700,20 +728,23 @@ export const pricingPlans: PricingPlan[] = [
         content: 'Die Jahresabrechnung bündelt 12 Monate Agency zum Preis von 10 Monaten. Für Kanzleien und Agenturen, die Mandate über Jahresverträge abrechnen, passt die Laufzeit damit zum eigenen Geschäftsmodell. Der Funktionsumfang ist identisch zur monatlichen Variante.',
       },
     ],
-    trial: {
-      days: 14,
-      description: '14 Tage kostenlos testen, keine Kosten bis Tag 15',
-    },
   },
   {
+    // COMMERCIAL-SSOT: temporary production hotfix.
+    // Canonical source migration tracked in Phase 2.
+    // Seit AP2 stillgelegt (`availability: 'legacy'`): `stripe-checkout` weist
+    // neue Abschluesse mit PLAN_RETIRED ab und `/checkout/partner_yearly` leitet auf
+    // die Preisseite zurueck. Deshalb kein Festpreis, kein Trial und kein
+    // Checkout-Link mehr. Bestandskunden rechnen unveraendert weiter ab; der
+    // Eintrag bleibt bestehen, damit ihre Plan-Detailseite erreichbar ist.
     slug: 'partner_yearly',
     name: 'Partner (Jährlich)',
-    price: 19000,
-    priceString: '19.000 €',
-    interval: 'pro Jahr — 12 Monate zum Preis von 10',
+    price: 0,
+    priceString: 'Nicht mehr im Verkauf',
+    interval: 'individuell',
     recommended: false,
     badge: 'Reseller',
-    shortDescription: 'Partner mit Jahresabrechnung und 2-Monate-Rabatt: 1.999 € × 10 = 19.000 € pro Jahr. Multi-Tenant-Verwaltung für bis zu 50 Mandanten, ein ganzes Jahr.',
+    shortDescription: 'Partner mit Jahresabrechnung — seit AP2 nicht mehr im Verkauf. Bestehende Jahresabos laufen unverändert weiter; Neukunden mit Bedarf an Multi-Tenant-Verwaltung für viele Mandanten wenden sich an den Vertrieb.',
     targetAudience: 'Für DSB-Kanzleien, Datenschutzunternehmen und große Agenturen mit vielen Mandanten und jahresbasierter Budgetplanung.',
     whatCustomerGets: [
       'Alles aus Partner (monatlich)',
@@ -722,10 +753,10 @@ export const pricingPlans: PricingPlan[] = [
       'Multi-Tenant für bis zu 50 Mandanten das ganze Jahr',
     ],
     cta: {
-      label: 'Partner jährlich buchen',
-      href: '/checkout/partner_yearly',
+      label: 'Enterprise anfragen',
+      href: '/contact-sales?intent=enterprise',
     },
-    checkoutPath: '/checkout/partner_yearly',
+    checkoutPath: '/contact-sales?intent=enterprise',
     problemsSolved: [
       'Multi-Mandanten-Betrieb braucht verlässliche Jahreslaufzeiten',
       'Compliance-Budget soll planbar fürs ganze Jahr sein',

@@ -214,7 +214,7 @@ export function NotificationCenter({
           {/* Footer */}
           {notifications.length > 0 && (
             <div className="border-t border-obsidian-700 px-4 py-3 bg-obsidian-900 text-center">
-              <a href="/app/notifications" className="text-xs text-cyan-400 hover:text-cyan-300 font-medium transition-colors">
+              <a href="/app/alerts" className="text-xs text-cyan-400 hover:text-cyan-300 font-medium transition-colors">
                 View all notifications →
               </a>
             </div>

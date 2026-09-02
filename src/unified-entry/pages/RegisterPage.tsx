@@ -40,7 +40,7 @@ export function RegisterPage() {
   const [passwordConfirm, setPasswordConfirm] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [step, setStep] = useState<'signup' | 'confirm'>('signup');
+  const [step, setStep] = useState<'signup' | 'confirm' | 'verify-email'>('signup');
 
   useEffect(() => {
     if (isAuthenticated && user) {
@@ -75,8 +75,12 @@ export function RegisterPage() {
       // das stimmt nicht: `signInWithPassword` erstellt kein Konto. Ein neuer
       // Besucher bekam „Invalid login credentials" auf einer Seite, die
       // „Konto erstellen" verspricht.
-      await register(email.trim(), password);
-      setStep('confirm');
+      const { needsEmailConfirmation } = await register(email.trim(), password);
+      // Ohne Session gibt es keinen Weg nach vorn: `/unified-entry/onboarding`
+      // verlangt einen angemeldeten Nutzer und schickt sonst hierher zurück.
+      // Der Besucher liefe im Kreis, während die Seite „erfolgreich erstellt"
+      // behauptet.
+      setStep(needsEmailConfirmation ? 'verify-email' : 'confirm');
     } catch (err) {
       setError(explainAuthError(err));
     } finally {
@@ -96,12 +100,18 @@ export function RegisterPage() {
     <div className="max-w-md mx-auto space-y-8">
       <div className="text-center space-y-2">
         <h1 className="text-3xl font-bold text-titanium-50">
-          {step === 'signup' ? 'Konto erstellen' : 'Bestätigung'}
+          {step === 'signup'
+            ? 'Konto erstellen'
+            : step === 'verify-email'
+              ? 'E-Mail bestätigen'
+              : 'Bestätigung'}
         </h1>
         <p className="text-titanium-300">
           {step === 'signup'
             ? 'Registrieren Sie sich, um 14 Tage kostenlos Zugriff zu erhalten'
-            : 'Ihr Konto wurde erstellt. Weiter gehts!'}
+            : step === 'verify-email'
+              ? 'Noch ein Schritt: Bitte bestätigen Sie Ihre E-Mail-Adresse.'
+              : 'Ihr Konto wurde erstellt. Weiter gehts!'}
         </p>
       </div>
 
@@ -197,6 +207,18 @@ export function RegisterPage() {
           </p>
         </form>
         </>
+      ) : step === 'verify-email' ? (
+        <div className="space-y-4 text-center">
+          <div className="text-5xl">✉️</div>
+          <p className="text-titanium-300">
+            Ihr Konto <strong>{email}</strong> wurde angelegt. Wir haben Ihnen einen
+            Bestätigungslink geschickt — bitte öffnen Sie ihn, um fortzufahren.
+          </p>
+          <p className="text-sm text-titanium-400">
+            Ohne Bestätigung ist die Einrichtung noch nicht freigeschaltet. Der Link
+            landet gelegentlich im Spam-Ordner.
+          </p>
+        </div>
       ) : (
         <div className="space-y-4 text-center">
           <div className="text-5xl">✓</div>

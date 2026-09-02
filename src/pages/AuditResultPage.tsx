@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
 import { AuditResultView, type AuditResultFinding } from '../features/audit/AuditResultView';
+import { rememberPendingAudit } from '../features/audit/pendingAudit';
 
 // AuditResultPage — sharable permalink for an audit result.
 //
@@ -96,6 +97,11 @@ export function AuditResultPage() {
     // hasWarmReport ist abgeleitet aus initialReport, das sich pro Navigation aendert.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [auditId]);
+
+  // Die Kennung merken, solange der Besucher sie hat: Zwischen Bericht und
+  // Uebernahme liegen Registrierung und E-Mail-Bestaetigung, und danach ist
+  // sie sonst weg. Nur die UUID, keine Befunde — siehe `pendingAudit.ts`.
+  useEffect(() => { rememberPendingAudit(auditId); }, [auditId]);
 
   return (
     <AuditResultView

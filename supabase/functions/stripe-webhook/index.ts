@@ -8,7 +8,7 @@
 //   cannot map a subscription back to a tenant and the event is rejected.
 
 import Stripe from 'npm:stripe@16.12.0';
-import { createClient } from 'jsr:@supabase/supabase-js@2';
+import { createClient, type SupabaseClient } from 'jsr:@supabase/supabase-js@2';
 import { reportServerConversion } from '../_shared/conversions-api.ts';
 import { normalizePlanKey, planByKey } from '../_shared/pricing.generated.ts';
 
@@ -109,8 +109,13 @@ Deno.serve(async (req) => {
     switch (event.type) {
       case 'customer.subscription.created':
       case 'customer.subscription.updated':
-      case 'customer.subscription.deleted':
-        await syncSubscription(admin, event.data.object as Stripe.Subscription);
+      case 'customer.subscription.deleted': {
+        const sub = event.data.object as Stripe.Subscription;
+        const applied = await syncSubscription(admin, sub);
+        // Add-on-Positionen nur für das Abo, das tatsächlich gilt — ein
+        // verspätetes Ereignis einer abgelösten Subscription (siehe
+        // syncSubscription) darf auch die Add-ons nicht anfassen.
+        if (applied) await syncAddonItems(admin, sub);
         if (event.type === 'customer.subscription.created') {
           await recordTrialEventIfApplicable(admin, event, 'trial_started');
         }
@@ -118,10 +123,14 @@ Deno.serve(async (req) => {
           await recordTrialEventIfApplicable(admin, event, 'canceled');
         }
         break;
-      case 'customer.subscription.trial_will_end':
-        await syncSubscription(admin, event.data.object as Stripe.Subscription);
+      }
+      case 'customer.subscription.trial_will_end': {
+        const sub = event.data.object as Stripe.Subscription;
+        const applied = await syncSubscription(admin, sub);
+        if (applied) await syncAddonItems(admin, sub);
         await recordTrialEventIfApplicable(admin, event, 'trial_will_end');
         break;
+      }
       case 'invoice.paid':
       case 'invoice.finalized':
       case 'invoice.created':
@@ -180,8 +189,145 @@ Deno.serve(async (req) => {
   });
 });
 
+/**
+ * Die Position, die den Plan trägt.
+ *
+ * Seit Add-ons Positionen desselben Abos sind, ist `items.data[0]` nicht
+ * mehr zwangsläufig der Plan — Stripe garantiert keine Reihenfolge. Der Plan
+ * ist die Position, deren Price **kein** Add-on-Price ist; nur wenn das
+ * nichts ergibt, bleibt es beim ersten Eintrag.
+ */
+export function pickPlanItem(
+  items: readonly Stripe.SubscriptionItem[],
+  addonPriceIds: ReadonlySet<string>,
+): Stripe.SubscriptionItem | undefined {
+  return items.find((i) => !addonPriceIds.has(i.price?.id ?? '')) ?? items[0];
+}
+
+async function addonPriceMap(admin: SupabaseClient): Promise<Map<string, { addon_id: string; product_id: string | null }>> {
+  const map = new Map<string, { addon_id: string; product_id: string | null }>();
+  const { data, error } = await admin
+    .from('plan_addons')
+    .select('addon_id, stripe_price_id, product_id')
+    .not('stripe_price_id', 'is', null);
+  if (error) {
+    // Der Abo-Sync darf nie an der Add-on-Tabelle scheitern — etwa im
+    // Fenster zwischen Function-Deploy und Migration. Ohne Preis-Liste gilt
+    // schlicht: keine Add-ons bekannt, `items.data[0]` ist der Plan.
+    console.warn(`[stripe-webhook] plan_addons nicht lesbar: ${error.message}`);
+    return map;
+  }
+  for (const row of (data ?? []) as { addon_id: string; stripe_price_id: string | null; product_id: string | null }[]) {
+    if (row.stripe_price_id) map.set(row.stripe_price_id, { addon_id: row.addon_id, product_id: row.product_id });
+  }
+  return map;
+}
+
+/**
+ * Add-on-Positionen mit Stripe abgleichen (AP6): Für jede Position mit einem
+ * Add-on-Price gibt es eine Zeile in `subscription_addons` und einen aktiven
+ * Grant; was in Stripe nicht mehr vorkommt, wird beendet. Beides über die
+ * Item-ID idempotent — `subscription-addons` schreibt dieselben Zeilen sofort,
+ * der Webhook bestätigt sie nur.
+ *
+ * Endet das Abo, werden seine Add-on-Grants widerrufen. Der Auflöser ließe
+ * sie ohnehin ruhen (`abo_wirksam`); der Widerruf macht es im Prüfpfad
+ * sichtbar.
+ */
+async function syncAddonItems(admin: SupabaseClient, sub: Stripe.Subscription): Promise<void> {
+  const tenantId =
+    (sub.metadata && sub.metadata.tenant_id) ||
+    (typeof sub.customer === 'object' ? sub.customer?.metadata?.tenant_id : undefined);
+  if (!tenantId) return;
+
+  const prices = await addonPriceMap(admin);
+  const jetzt = new Date().toISOString();
+  const beendet = ['canceled', 'incomplete_expired'].includes(sub.status);
+
+  const { data: subRow } = await admin
+    .from('subscriptions')
+    .select('id, plan_key, stripe_customer_id')
+    .eq('stripe_subscription_id', sub.id)
+    .maybeSingle();
+  const subscriptionId = (subRow as { id?: string } | null)?.id ?? null;
+  const planKey = (subRow as { plan_key?: string } | null)?.plan_key ?? 'free_audit';
+  const customerId = (subRow as { stripe_customer_id?: string } | null)?.stripe_customer_id
+    ?? (typeof sub.customer === 'string' ? sub.customer : sub.customer.id);
+
+  const aktiveItemIds = new Set<string>();
+  if (!beendet && subscriptionId) {
+    for (const item of sub.items.data) {
+      const addon = prices.get(item.price?.id ?? '');
+      if (!addon) continue;
+      aktiveItemIds.add(item.id);
+      const menge = Math.max(1, item.quantity ?? 1);
+
+      const { error: rowErr } = await admin.from('subscription_addons').upsert({
+        subscription_id: subscriptionId,
+        tenant_id: tenantId,
+        addon_key: addon.addon_id,
+        stripe_item_id: item.id,
+        stripe_price_id: item.price.id,
+        quantity: menge,
+        status: 'active',
+        removed_at: null,
+        updated_at: jetzt,
+      }, { onConflict: 'stripe_item_id' });
+      if (rowErr) throw new Error(`subscription_addons: ${rowErr.message}`);
+
+      if (!addon.product_id) {
+        // Ohne Produkt gibt es nichts zu gewähren — sichtbar machen statt
+        // einen leeren Grant zu schreiben, für den der Kunde bezahlt.
+        console.warn(`[stripe-webhook] add-on ${addon.addon_id} ohne product_id — Grant übersprungen`);
+        continue;
+      }
+      const { error: grantErr } = await admin.from('entitlement_grants').upsert({
+        tenant_id: tenantId,
+        product_id: addon.product_id,
+        plan_key: planKey,
+        source: 'addon_subscription',
+        purchase_reference: item.id,
+        stripe_subscription_item_id: item.id,
+        stripe_subscription_id: sub.id,
+        stripe_customer_id: customerId,
+        addon_id: addon.addon_id,
+        quantity: menge,
+        status: 'active',
+        revoked_at: null,
+        revoked_reason: null,
+        expires_at: null,
+        updated_at: jetzt,
+      }, { onConflict: 'source,purchase_reference' });
+      if (grantErr) throw new Error(`entitlement_grants: ${grantErr.message}`);
+    }
+  }
+
+  // Positionen, die Stripe nicht mehr führt (oder das ganze Abo ist zu Ende).
+  const { data: offene, error: offeneErr } = await admin
+    .from('subscription_addons')
+    .select('id, stripe_item_id')
+    .eq('tenant_id', tenantId)
+    .eq('status', 'active');
+  if (offeneErr) throw new Error(`subscription_addons: ${offeneErr.message}`);
+  for (const row of (offene ?? []) as { id: string; stripe_item_id: string | null }[]) {
+    if (row.stripe_item_id && aktiveItemIds.has(row.stripe_item_id)) continue;
+    const { error: e1 } = await admin.from('subscription_addons')
+      .update({ status: 'removed', removed_at: jetzt, updated_at: jetzt })
+      .eq('id', row.id);
+    if (e1) throw new Error(`subscription_addons: ${e1.message}`);
+    if (row.stripe_item_id) {
+      const { error: e2 } = await admin.from('entitlement_grants')
+        .update({ status: 'revoked', revoked_at: jetzt, revoked_reason: beendet ? 'subscription_ended' : 'stripe_item_removed', updated_at: jetzt })
+        .eq('source', 'addon_subscription')
+        .eq('purchase_reference', row.stripe_item_id)
+        .eq('status', 'active');
+      if (e2) throw new Error(`entitlement_grants: ${e2.message}`);
+    }
+  }
+}
+
 // deno-lint-ignore no-explicit-any
-async function syncSubscription(admin: SupabaseAdminClient, sub: Stripe.Subscription): Promise<void> {
+async function syncSubscription(admin: SupabaseAdminClient, sub: Stripe.Subscription): Promise<boolean> {
   const tenantId =
     (sub.metadata && sub.metadata.tenant_id) ||
     (typeof sub.customer === 'object' ? sub.customer?.metadata?.tenant_id : undefined);
@@ -190,7 +336,11 @@ async function syncSubscription(admin: SupabaseAdminClient, sub: Stripe.Subscrip
     throw new Error(`subscription ${sub.id} has no metadata.tenant_id (set it on Customer or Subscription)`);
   }
 
-  const item = sub.items.data[0];
+  // Add-on-Prices sind keine Plan-Prices: Der Plan ist die Position, die
+  // keinem Add-on gehört (pickPlanItem). Ein Add-on-Price als Plan gelesen
+  // ergäbe `free_audit` und nähme dem Kunden sein Abo.
+  const addonPrices = await addonPriceMap(admin as unknown as SupabaseClient);
+  const item = pickPlanItem(sub.items.data, new Set(addonPrices.keys()));
   const planKey = await resolvePlanKey(admin, item);
 
   // Beginn des Zahlungsverzugs festhalten — der Anker der Grace Period.
@@ -236,10 +386,54 @@ async function syncSubscription(admin: SupabaseAdminClient, sub: Stripe.Subscrip
     past_due_since: pastDueSince,
   };
 
+  // Konflikt-Ziel ist tenant_id, NICHT stripe_subscription_id.
+  //
+  // `subscriptions` traegt zwei UNIQUE-Constraints: auf tenant_id (seit
+  // 20260811020621) und auf stripe_subscription_id. Fachlich gilt "genau ein
+  // Abo pro Tenant" — deshalb ist tenant_id das richtige Konflikt-Ziel.
+  // create-trial-subscription macht das bereits so; dieser Pfad war der
+  // letzte, der noch auf stripe_subscription_id auflief.
+  //
+  // Warum das ein Deadlock war: Der Trigger aus 20260802000000 legt fuer jeden
+  // neuen Tenant eine Free-Tier-Zeile an, deren stripe_subscription_id NULL
+  // ist. Postgres behandelt NULLs in Unique-Indizes als verschieden, also
+  // greift ein ON CONFLICT (stripe_subscription_id) dort nie — der Upsert
+  // wurde zum INSERT und verletzte subscriptions_tenant_id_key (23505). Der
+  // Handler warf, der Idempotenz-Eintrag wurde zurueckgerollt, Stripe
+  // wiederholte, das Ergebnis blieb gleich. Die erste bezahlte Subscription
+  // eines Tenants konnte so nie provisioniert werden.
+  //
+  // Mit tenant_id trifft der Upsert die Free-Tier-Zeile und ersetzt sie durch
+  // das bezahlte Abo — genau das gewuenschte Verhalten.
+  //
+  // Schutz gegen verspaetete Ereignisse: Stripe garantiert keine Reihenfolge.
+  // Wechselt ein Tenant von Abo A auf Abo B und trifft danach noch ein
+  // `customer.subscription.deleted` fuer A ein, wuerde ein ungeschuetzter
+  // Upsert auf tenant_id das frische Abo B mit dem Endzustand von A
+  // ueberschreiben — der Kunde verlore seinen Zugang. Ein terminales Ereignis
+  // fuer eine ANDERE als die gespeicherte Subscription wird deshalb ignoriert.
+  const TERMINALE_STATUS = ['canceled', 'incomplete_expired'];
+  if (TERMINALE_STATUS.includes(sub.status)) {
+    const { data: aktuell } = await admin
+      .from('subscriptions')
+      .select('stripe_subscription_id')
+      .eq('tenant_id', tenantId)
+      .maybeSingle();
+    const gespeicherte = aktuell?.stripe_subscription_id as string | null | undefined;
+    if (gespeicherte && gespeicherte !== sub.id) {
+      console.log(
+        `[stripe-webhook] ${sub.status} fuer ${sub.id} ignoriert — Tenant ${tenantId} ` +
+        `haelt bereits ${gespeicherte}. Verspaetetes Ereignis einer abgeloesten Subscription.`,
+      );
+      return false;
+    }
+  }
+
   const { error } = await admin
     .from('subscriptions')
-    .upsert(row, { onConflict: 'stripe_subscription_id' });
+    .upsert(row, { onConflict: 'tenant_id' });
   if (error) throw error;
+  return true;
 }
 
 // Einmalkauf als Entitlement-Grant festhalten (z.B. Governance Launch, 349 €).

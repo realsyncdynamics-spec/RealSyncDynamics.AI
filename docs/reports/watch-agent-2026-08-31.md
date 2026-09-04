@@ -40,7 +40,7 @@ Gemessen, nicht hergeleitet (§5 CLAUDE.md). Jede Zeile mit Fundstelle.
 | 2 | Sub-Prozessoren-Liste bei Bedarf aktualisieren | **Befund B-2** — dieselbe Mechanik, verschärft durch das Versprechen „laufend dokumentiert" |
 | 3 | Pricing-Seite auf Plan-Namen (Agency) und Add-on-Preise prüfen | **Befund B-3** — Add-on-Verfügbarkeit war hart codiert und für WhatsApp genau verkehrt herum; Add-on-Preis (99 €) dagegen korrekt |
 | 4 | BFDI-Empfehlungen zu Cookie-Bannern (13.08.2026) berücksichtigen | **Befund B-4** — der Scanner erkannte CMPs und Tracker, prüfte aber keine gleichwertige Ablehnen-Option; am 2026-09-01 nachgerüstet |
-| 5 | AI-Act-Transparenzpflichten in Claims und Scan-Logik absichern | Kein neuer Befund in dieser Sitzung; nicht abschließend geprüft, siehe §5 |
+| 5 | AI-Act-Transparenzpflichten in Claims und Scan-Logik absichern | Am 2026-09-04 nachgeholt: Scan-Logik arbeitet (14 historische Treffer), aber **Befund B-6** — dieselbe Pflicht trägt im Repo zwei verschiedene Artikelnummern |
 
 Zusätzlich geprüft, weil CLAUDE.md §5 es vor jeder eigenen Messung verlangt
 („Sieh in den Actions-Tab"):
@@ -174,6 +174,18 @@ Nicht vorhanden: eine Prüfung der **Gestaltung** des Banners. Eine Suche nach
 keinen Treffer. Der Scan beantwortet damit „gibt es ein Banner und setzt die
 Seite vorher Tracker?", nicht „darf dieses Banner so aussehen?".
 
+> **Korrektur vom 2026-09-04 — dieser Absatz war zu weit gefasst.** Die drei
+> genannten Dateien (`cookie-scan`, `cookie-scan-deep`, Playwright-Scanner)
+> stimmen. Der **Audit-Pfad** war aber nicht darunter, und dort gibt es sehr
+> wohl eine Prüfung: `gdpr-audit/checks.ts:168` führt `hasEqualRejectOption`
+> und setzt daraus den Fakt `consent.banner.reject_button_equal_prominence`.
+> Ich habe drei Dateien durchsucht und über „den Scanner" gesprochen. Das ist
+> derselbe Fehler wie beim `/realsync-landing`-Punkt: aus einem Ausschnitt auf
+> das Ganze geschlossen.
+>
+> Die Sache wird dadurch nicht harmloser, sondern anders — und schlechter.
+> Siehe **B-5**.
+
 Genau letzteres ist der Kern der BFDI-Empfehlungen vom 13.08.2026 und der
 gefestigten Rechtsprechung zu § 25 TDDDG: Eine Ablehnen-Option muss auf der
 ersten Ebene und in gleicher Deutlichkeit wie die Zustimmung erreichbar sein.
@@ -220,6 +232,127 @@ haben also praktiziert, was wir nicht gemessen haben. Der Testfall
 
 ---
 
+### B-5 · Ein Fakt verspricht eine Messung, die nicht stattfindet · 2026-09-04
+
+`supabase/functions/gdpr-audit/checks.ts:168` und `_shared/rules/gdpr.json`
+
+Der Audit-Pfad setzt den Fakt `consent.banner.reject_button_equal_prominence`.
+Dahinter steht:
+
+```ts
+export function hasEqualRejectOption(html: string): boolean {
+  return /alle\s{0,3}ablehnen|nur\s{0,3}(technisch\s{0,3})?notwendige|ablehnen|
+          reject\s{0,3}all|decline\s{0,3}all|deny\s{0,3}all|essential\s{0,3}only/i.test(html);
+}
+```
+
+Das ist ein Test darauf, ob das **Wort** irgendwo im HTML vorkommt. Über
+Fläche, Ebene, Farbe oder Stil sagt er nichts — er *kann* nichts darüber
+sagen, weil er nur eine Zeichenkette sieht.
+
+Verbraucht wird der Fakt von `COOKIE_BANNER_DARK_PATTERN`, und dort steht,
+was der Kunde zu lesen bekommt:
+
+| | |
+|---|---|
+| Titel | „Cookie-Banner ohne gleichberechtigten Reject-Button" |
+| Beschreibung | „Banner zeigt prominenten Accept-All-Button ohne **sichtbar gleichwertigen** Reject-All-Button" |
+| Normen | DSGVO Art. 7 · TTDSG § 25 · BfDI 2024 Guidelines |
+| Schwere | medium |
+
+**Der Befund ist nicht die fehlende Prüfung, sondern die Differenz zwischen
+Zusage und Messung.** Ein Banner mit „Alles akzeptieren" als großem Knopf und
+„Ablehnen" als grauem Link in der zweiten Ebene — der Lehrbuchfall, nach dem
+die Regel benannt ist — enthält das Wort und wird deshalb als **konform**
+gewertet. Gemeldet wird nur der Fall „gar keine Ablehnung im Markup". Das ist
+die schwächere Messung unter der stärkeren Überschrift.
+
+Eine fehlende Prüfung ist als Lücke erkennbar. Eine, die unter falschem Namen
+läuft, sieht aus wie Abdeckung — und niemand sucht mehr danach.
+
+**Das Gewicht dieser Stelle**: `COOKIE_BANNER_DARK_PATTERN` ist die
+meistgefeuerte Regel des Produkts. Der Kommentar in `checks.ts` hält an den
+159 historischen Audits fest: 47 Treffer, mehr als jede andere Regel.
+
+**Nicht geändert.** Der Fakt ist Teil des rekonstruierten Produktionsvertrags
+(§5 CLAUDE.md, `gdpr-audit-production-contract.json`); schärfte man
+`hasEqualRejectOption` nach, bekämen künftige Scans andere Ergebnisse als alle
+bisherigen, ohne dass sich an den geprüften Seiten etwas geändert hat. Das ist
+dieselbe Klasse von Entscheidung wie beim Score in B-4 — sie gehört dem
+Eigentümer, nicht diesem Bericht.
+
+**Das Material für die Auflösung liegt aber bereits vor**: `consent-banner.ts`
+aus B-4 misst genau das, was der Fakt behauptet — Fläche, Ebene, Stil. Es
+hängt heute nur am Deep-Scan und speist diesen Fakt nicht. Der naheliegende
+Weg ist, den Fakt im Deep-Scan aus der echten Messung zu füllen und im
+leichten Pfad zu benennen, was er wirklich prüft.
+
+### B-6 · Dieselbe Pflicht, zwei Artikelnummern · 2026-09-04
+
+Das ist die Antwort auf Empfehlung 5, soweit sie messbar war.
+
+Die Transparenzpflicht „Nutzer müssen wissen, dass sie mit einer KI
+interagieren" wird im Repo an zwei verschiedene Normen gehängt:
+
+| Artikel | Wo | Beispiele |
+|---|---|---|
+| **Art. 50** | die zentralen, neueren Quellen | `shared/reality-decision.ts:227`, `shared/pricing.ts:1427`, `shared/onboarding.ts:88`, `src/rules/annex-iii.json`, `AiActRiskInventoryView`, `aiActRiskInventoryApi` |
+| **Art. 52** | Regelwerk und ältere Oberflächen | `rules/ai-act.json` (beide Zwillinge), `ai-disclosure-check.ts`, `AuditCopilotPanel.tsx:282`, `AssistentQuickChatModal.tsx:212`, `RiskCenterView.tsx:282/284/384`, `EvidenceVaultView.tsx:134`, `LegalMethodology.tsx:99/189`, `enterprise-os/mock/data.ts:462`, `ROADMAP.md`, `SCANNER-TEST-GUIDE.md` |
+
+Beides kann nicht stimmen. Der Widerspruch ist **innerhalb einer einzigen
+Regel** belegbar: `shared/reality-decision.ts` beschreibt den Befund
+`rule:AI_ACT_LIMITED_RISK_CHATBOT` mit „Transparenzpflicht nach **Art. 50**" —
+und in der Definition derselben Regel steht `"norms": ["AI Act Art. 52"]`.
+
+**Wofür Art. 50 spricht**, ohne dass man mir das glauben muss:
+
+- In derselben Datei `ai-act.json` trägt die GPAI-Regel **Art. 53** und
+  verweist auf **Art. 55** für Modelle mit systemischem Risiko. Das ist die
+  Nummerierung der **verabschiedeten** Verordnung (EU) 2024/1689. In dieser
+  Zählung ist Art. 50 die Transparenzpflicht und Art. 52 das Verfahren zur
+  Einstufung von GPAI-Modellen mit systemischem Risiko — also etwas ganz
+  anderes.
+- Art. 52 für Transparenz ist die Nummerierung des **Kommissionsentwurfs von
+  2021**. Die Datei mischt damit zwei Zählungen.
+- `annex-iii.json` stammt aus **demselben Commit** (`a67ae2c`, 2026-08-19) und
+  nummeriert durchgehend nach der Endfassung (`Art. 5(1)(f)`, `Art. 50`).
+
+**Wo das besonders unangenehm ist**: `AuditCopilotPanel.tsx` und
+`AssistentQuickChatModal.tsx` sind unsere **eigenen** Transparenzhinweise —
+genau die Offenlegung, die die Norm verlangt. Sie nennen dabei die falsche
+Norm. Und `LegalMethodology.tsx` ist die Seite, auf der wir unsere
+Prüfmethodik offenlegen.
+
+**Nicht geändert, weil Fragepflicht.** Elf Dateien, davon mehrere mit
+sichtbarem Text (§10.3) und zwei Regelwerks-Zwillinge, deren `norms` in
+Kundenbefunden erscheinen (§1 CLAUDE.md: versionsrelevant). Vorgelegt.
+
+**Und eine Grenze meiner Messung**, die dazugehört: Ich habe die
+Artikelzuordnung aus der inneren Widersprüchlichkeit des Repos hergeleitet und
+gegen meine Kenntnis der Endfassung gehalten. Das ist ein starkes Indiz, aber
+kein Blick ins Amtsblatt. Bevor eine korrigierte Nummer in Kundenbefunde geht,
+gehört sie einmal am Verordnungstext geprüft — bei einem Produkt, das
+Rechtsnormen zitiert, ist das keine Förmlichkeit.
+
+### Was an Empfehlung 5 in Ordnung ist
+
+Damit der Bericht nicht nur Befunde nennt: Die Transparenzprüfung **arbeitet**.
+`extractFacts` in `gdpr-audit/checks.ts:711` setzt `ai_use_case.is_chatbot` und
+`ai_use_case.disclosure_visible`, die Regel `AI_ACT_LIMITED_RISK_CHATBOT` ist
+in den 159 historischen Audits **14-mal** gefeuert. Sie ist keine Attrappe.
+
+Bemerkenswert und ausdrücklich richtig ist auch, was dort **nicht** gesetzt
+wird: die Fakten der High-Risk- und Prohibited-Regeln. Ob ein Unternehmen KI im
+Recruiting einsetzt, ist aus dem HTML seiner Startseite nicht beobachtbar; ein
+geratener Wert erzeugte einen `critical`-Befund ohne Grundlage. Der Kommentar
+sagt das und begründet es. Genau so gehört es gemacht.
+
+**Klein, aber gemessen**: Die Anbieter-Erkennung in `ai-disclosure-check.ts`
+sucht unter anderem nach `claude-[23]` und `gpt-[34]`. Aktuelle Modellnamen
+fallen aus diesen Mustern heraus. Betrifft nur den Erkennungspfad über
+Modellzeichenketten — die Endpunkte (`api.anthropic.com`, `api.openai.com`)
+greifen weiter.
+
 ## 4. Was daraufhin geändert wurde
 
 B-1 bis B-3 betreffen sichtbaren Text bzw. eine backend-gebundene Anzeige auf
@@ -255,10 +388,14 @@ kein bestehendes Verhalten und keine Punktzahl wurden dabei angefasst.
 
 ## 5. Offen für den nächsten Bericht
 
-- **Empfehlung 5 nicht abschließend geprüft**: Ob die Produkt-Claims die bereits
-  geltenden AI-Act-Transparenzpflichten korrekt abbilden, ist eine inhaltliche
-  Prüfung sämtlicher Claim-Flächen und war in dieser Sitzung nicht leistbar.
-  Nicht als „in Ordnung" verbuchen — als „nicht gemessen".
+- **Empfehlung 5 ist am 2026-09-04 nachgeholt** und steht jetzt als B-6 und als
+  Abschnitt „Was an Empfehlung 5 in Ordnung ist" in §3. Ergebnis: Die Scan-Logik
+  trägt, die Normzitate tragen nicht.
+
+  **Nicht erledigt ist damit die Claim-Prüfung im engeren Sinn.** Gemessen habe
+  ich die Normzitate und die Scan-Logik. Ob die Verkaufstexte auf den rund 25
+  Seiten mit AI-Act-Bezug inhaltlich decken, was das Produkt leistet — das ist
+  eine eigene Durchsicht und weiterhin **nicht gemessen**.
 - **`/realsync-landing` war kein offener Punkt — die Zeile war mein Fehler.**
   Hier stand zunächst, die Seite führe „weiterhin fünf Plan-Karten mit hart
   codierten Preisen, inklusive Agency und Partner". Das war schon beim

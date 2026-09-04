@@ -280,3 +280,86 @@ export const markAnchorExported = (tenant_id: string, anchor_id: string, note?: 
   anchorCall<{ ok: boolean; error?: { code: string; message: string } }>(
     { op: 'export', tenant_id, anchor_id, note },
   );
+
+// ─── Connector-Registratur (P2-1) ───────────────────────────────────────────
+//
+// Eine Zeile je angebundenem System, mit der Durchsetzbarkeits-Klasse.
+//
+// WARUM HIER DIREKT ÜBER RLS UND NICHT ÜBER EINE EDGE FUNCTION: Bei der
+// Rollenvergabe (P1-3) war die Edge Function nötig, weil die Vergabe selbst
+// die Autorisierungsgrundlage verändert und deshalb in den Prüfpfad gehört.
+// Hier liegt die sicherheitskritische Eigenschaft woanders: Die Klasse wird
+// vom Datenbank-Trigger abgeleitet und lässt sich vom Client nicht setzen —
+// egal, welchen Weg der Client nimmt. Eine Edge Function davor brächte keine
+// zusätzliche Sicherheit, nur eine weitere nicht deployte Function.
+// Schreibzugriff bleibt per RLS auf owner/admin beschränkt.
+
+export interface ConnectorRegistryEntry {
+  id: string;
+  tenant_id: string;
+  system_type: string;
+  display_name: string;
+  source_table: string | null;
+  source_id: string | null;
+  auth_kind: 'api_key' | 'oauth2' | 'webhook' | 'mtls' | 'none' | 'unknown';
+  scope: string | null;
+  status: 'connected' | 'pending' | 'error' | 'disabled';
+  last_sync_at: string | null;
+  last_error: string | null;
+  owner_principal_id: string | null;
+  /** Abgeleitet vom Trigger — ein hier gesendeter Wert wird verworfen. */
+  enforcement_class: 'A' | 'B' | 'C' | 'D';
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface EnforcementSummaryRow {
+  enforcement_class: 'A' | 'B' | 'C' | 'D';
+  kann_blockieren: boolean;
+  anzahl: number;
+  verbunden: number;
+}
+
+export async function listConnectors(tenant_id: string): Promise<ConnectorRegistryEntry[]> {
+  const sb = getSupabase();
+  const { data } = await sb
+    .from('connector_registry')
+    .select('*')
+    .eq('tenant_id', tenant_id)
+    .order('enforcement_class')
+    .order('display_name');
+  return (data ?? []) as ConnectorRegistryEntry[];
+}
+
+export async function enforcementSummary(tenant_id: string): Promise<EnforcementSummaryRow[]> {
+  const sb = getSupabase();
+  const { data } = await sb.rpc('connector_enforcement_summary', { p_tenant_id: tenant_id });
+  return (data ?? []) as EnforcementSummaryRow[];
+}
+
+export interface ConnectorInput {
+  system_type: string;
+  display_name: string;
+  auth_kind?: ConnectorRegistryEntry['auth_kind'];
+  scope?: string;
+  status?: ConnectorRegistryEntry['status'];
+  notes?: string;
+}
+
+export async function createConnector(
+  tenant_id: string,
+  input: ConnectorInput,
+): Promise<{ ok: boolean; error?: string }> {
+  const sb = getSupabase();
+  // enforcement_class wird bewusst NICHT mitgeschickt — sie kommt aus dem
+  // Trigger. Wer sie hier setzen wollte, bekäme sie ohnehin überschrieben.
+  const { error } = await sb.from('connector_registry').insert({ tenant_id, ...input });
+  return error ? { ok: false, error: error.message } : { ok: true };
+}
+
+export async function deleteConnector(id: string): Promise<{ ok: boolean; error?: string }> {
+  const sb = getSupabase();
+  const { error } = await sb.from('connector_registry').delete().eq('id', id);
+  return error ? { ok: false, error: error.message } : { ok: true };
+}

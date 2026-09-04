@@ -52,6 +52,13 @@ export const GOVERNANCE_MODULES: ModuleDefinition[] = [
     description: 'Unversehrtheit der Evidence-Kette prüfen und Prüfpunkte sichern'
   },
   {
+    id: 'connector-registry',
+    label: 'Anbindungen',
+    path: '/app/governance/connectors',
+    status: 'live',
+    description: 'Angebundene Systeme mit ihrer Durchsetzbarkeits-Klasse (A/B/C/D)'
+  },
+  {
     id: 'dpias',
     label: 'DPIAs',
     path: '/app/dpia',

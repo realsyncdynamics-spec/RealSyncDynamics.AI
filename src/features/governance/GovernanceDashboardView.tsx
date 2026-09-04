@@ -180,6 +180,7 @@ function Inner() {
           <ModuleLink icon={<Compass className="h-4 w-4" />} to="/app/governance/start" label="Mein Einstieg" moduleId="role-home" />
           <ModuleLink icon={<ShieldCheck className="h-4 w-4" />} to="/app/governance/gates" label="Freigaben" moduleId="gates" badge={pendingGates} />
           <ModuleLink icon={<Database className="h-4 w-4" />} to="/app/governance/evidence" label="Beweiskette" moduleId="evidence-integrity" />
+          <ModuleLink icon={<Plug className="h-4 w-4" />} to="/app/governance/connectors" label="Anbindungen" moduleId="connector-registry" />
           <ModuleLink icon={<FileCheck2 className="h-4 w-4" />} to="/app/dpia" label="DPIAs" moduleId="dpias" badge={openDpias} />
           <ModuleLink icon={<UserCheck className="h-4 w-4" />} to="/app/dsr" label="DSR" moduleId="dsr" badge={openDsrs.overdue} />
           <ModuleLink icon={<ShieldAlert className="h-4 w-4" />} to="/app/incidents" label="Incidents" moduleId="incidents" badge={openIncidents} />

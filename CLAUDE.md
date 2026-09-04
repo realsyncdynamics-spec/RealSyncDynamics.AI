@@ -524,6 +524,30 @@ Jeder Agent braucht vier Dimensionen — fehlt eine, ist er nicht governance-fä
   `governance_memory` leer ist, aber die Zusage steht ungedeckt.
   Prüfen also nicht an `cron.job`, sondern an `cron.job_run_details.status`.
 
+- **Enforcement-Schalter (Governance OS, P0–P2)** — der PDP (`_shared/pdp/`) ist der
+  einzige Entscheider; die Enforcement-Punkte (PEPs) fragen ihn. **Alle stehen auf
+  `shadow`**, damit kein Merge das Produktionsverhalten von selbst ändert:
+
+  | Schalter | Wo | Default | Ausfall |
+  |---|---|---|---|
+  | `AGENT_PDP_ENFORCEMENT` | `apps/agent-runtime` (P1-5) | `shadow` | fail-closed |
+  | `SITEOS_PUBLISH_PDP` | `siteos/publish-gate` (P2-3) | `shadow` | fail-closed (§7 G3) |
+  | `GOVERNANCE_PDP_MODE` | `platform/governance_backend` (P2-4) | `shadow` | fail-closed |
+  | `BOT_PDP_MODE` | `bot-chat`, `whatsapp-webhook`, `bot-voice-webhook` (P2-5) | `shadow` | fail-closed, umstellbar per `BOT_PDP_FAILURE_MODE=allow` |
+
+  **Regel**: `shadow` heißt, die Richtlinien des Mandanten binden dort **nicht**.
+  Wer eine Aussage über wirksame Durchsetzung macht, prüft den Schalter — nicht den
+  Code. Die gemessenen Abweichungen stehen in `pdp_shadow_log` (je Kanal eine eigene
+  `source`; die Liste ist per CHECK gebunden, Erweiterung nur per Migration).
+  Hintergrund und offene Entscheidungen: `docs/architecture/governance-os-enforcement-plan.md` §10.
+
+  **Zur Bot-Governance (P2-5)**: Chatbot, WhatsApp und Voice laufen durch **einen**
+  PEP (`_shared/pdp/botmessage.ts` rein, `_shared/bots-pep.ts` mit IO) — drei eigene
+  Auslegungen derselben Regel wären der Fragmentierungsbefund. Den Prozess verlassen
+  nur Merkmale: Kanal, Bot-ID, Konversations-ID, Zeichenzahl, Signalnamen. **Nie der
+  Nachrichtentext** — er stammt von einem Fremden und wäre sonst ein Hebel auf die
+  Bewertung der eigenen Anfrage. Gesichert durch `test/governance/bot-pep.test.ts`.
+
 ### Dashboard-Module (modulare Reihenfolge)
 1. **Agent Registry** — Liste, Status, Risiko, Details
 2. **Agent Identity** — Ownership, Permissions, Credentials

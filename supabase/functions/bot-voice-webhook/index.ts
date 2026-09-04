@@ -18,6 +18,11 @@
 //
 // Tenant/Bot werden via Query-Parameter (?tenant_id=…&bot_id=…) ODER im Body
 // übergeben. verify_jwt = false.
+//
+// Richtlinien (P2-5): Beide Modi laufen durch `replyForVoice` und damit
+// durch denselben PEP wie Web-Chat und WhatsApp (`_shared/bots-pep.ts`).
+// Betriebsmodus BOT_PDP_MODE, Default `shadow` — ein Deploy ändert das
+// Verhalten nicht von selbst.
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
@@ -28,6 +33,7 @@ import {
   resolveBot, upsertConversation, insertMessage, loadRecentHistory,
   buildBotPrompt, BotError, type BotRow,
 } from '../_shared/bots.ts';
+import { evaluateBotPolicy } from '../_shared/bots-pep.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -55,7 +61,14 @@ function speakAndGather(actionUrl: string, text: string): Response {
   );
 }
 
-/** Generiert eine Bot-Antwort und persistiert User- + Assistant-Nachricht. */
+/**
+ * Generiert eine Bot-Antwort und persistiert User- + Assistant-Nachricht.
+ *
+ * Bewusst die EINZIGE Stelle, an der dieser Webhook eine Antwort erzeugt —
+ * Twilio-Modus und JSON-Modus laufen beide hier durch. Deshalb genuegt
+ * eine Richtlinienpruefung fuer beide Betriebsarten; eine zweite waere
+ * eine zweite Auslegung derselben Regel (Fragmentierungsbefund §1.4).
+ */
 async function replyForVoice(
   admin: ReturnType<typeof createClient>,
   bot: BotRow,
@@ -63,6 +76,27 @@ async function replyForVoice(
   userText: string,
 ): Promise<string> {
   await insertMessage(admin, bot, conversationId, 'user', userText, { metadata: { channel: 'voice' } });
+
+  // P2-5 — Richtlinienpruefung vor dem Modellaufruf. Das Transkript
+  // verlaesst den Prozess nicht; an den PDP gehen nur Merkmale.
+  //
+  // Telefonie ist der schaerfste der drei Kanaele: Ein gesprochener Satz
+  // ist nicht zurueckholbar, und es sitzt niemand daneben, der ihn
+  // korrigieren koennte. Ausfallverhalten deshalb fail-closed.
+  const policy = await evaluateBotPolicy(admin, {
+    tenantId: bot.tenant_id, botId: bot.id, conversationId,
+    channel: 'voice', message: userText,
+  });
+  if (!policy.mayAnswer) {
+    // Die Absage wird gesprochen UND protokolliert — ein stumm
+    // abgebrochener Anruf waere fuer den Anrufer ein Defekt und fuer
+    // einen Prueffall nicht von einem Ausfall zu unterscheiden.
+    await insertMessage(admin, bot, conversationId, 'assistant', policy.refusal!, {
+      metadata: { channel: 'voice', refused: true, ...policy.trail },
+    });
+    return policy.refusal!;
+  }
+
   const history = await loadRecentHistory(admin, conversationId, 12);
   const prior = history.slice(0, -1);
   const prompt = buildBotPrompt({ persona: bot.persona, history: prior, userMessage: userText });
@@ -71,7 +105,7 @@ async function replyForVoice(
   });
   await insertMessage(admin, bot, conversationId, 'assistant', ai.output, {
     runId: ai.runId, inputTokens: ai.inputTokens, outputTokens: ai.outputTokens, costUsd: ai.costUsd,
-    metadata: { channel: 'voice', duration_ms: ai.durationMs },
+    metadata: { channel: 'voice', duration_ms: ai.durationMs, ...policy.trail },
   });
   return ai.output;
 }

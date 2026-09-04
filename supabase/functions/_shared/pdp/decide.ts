@@ -397,7 +397,17 @@ export async function logShadowComparison(
   admin: any,
   entry: {
     tenant_id: string;
-    source: 'telemetry-ai-event' | 'governance-ingest' | 'ai-gateway';
+    /**
+     * Muss zur CHECK-Liste von `pdp_shadow_log.source` passen (zuletzt
+     * erweitert durch Migration 20260904120000). Ein hier nicht gelisteter
+     * Wert laesst den INSERT an der CHECK-Bedingung scheitern — und weil
+     * diese Funktion Fehler bewusst schluckt, waere das Ergebnis eine
+     * still leere Divergenzauswertung (Fehlerklasse K1).
+     */
+    source:
+      | 'telemetry-ai-event' | 'governance-ingest' | 'ai-gateway'
+      | 'agent_runtime' | 'siteos_publish' | 'cicd_gate'
+      | 'bot_chat' | 'bot_whatsapp' | 'bot_voice';
     legacy_status: string | null;
     v2_status: string | null;
     snapshot_version: string;

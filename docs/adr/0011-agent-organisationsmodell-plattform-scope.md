@@ -209,6 +209,10 @@ Sicherheitsgrenze — siehe Befund B1.
 2. `platform_operators` und `is_platform_operator()` müssen **vor** `org_units`
    liegen — die erste Platform-Scope-Policy braucht die Funktion bereits. Die
    Reihenfolge aus D4 beginnt damit faktisch bei `platform_operators`.
+   **Erledigt am 2026-09-04** durch `20260905000100_platform_operators.sql`:
+   Tabelle mit RLS und bewusst ohne jede Client-Policy, Funktion nach dem
+   Muster von `is_tenant_member`, Bestand aus `profiles.is_super_admin`
+   übernommen. Damit ist `org_units` die nächste Migration.
 3. Die Autonomiegrenze aus D1 ist eine serverseitige Prüfung (Policy Engine),
    kein Feld auf der Agenten-Zeile.
 4. `ai_tool_runs` bekommt additive, nullable Zuordnungsspalten für Agent und
@@ -249,9 +253,14 @@ Service-Role im Erfolgs- **und** im Fehlerfall).
 Diese Befunde stammen aus der Messung zu dieser ADR, nicht aus dem Entscheid.
 Sie sind **nicht** mit ihm beschlossen und brauchen eigene Entscheidungen.
 
-### B1 — `profiles.is_super_admin` ist heute selbst setzbar (P0)
+### B1 — `profiles.is_super_admin` war selbst setzbar (P0) — behoben 2026-09-04
 
-Die UPDATE-Policy auf `public.profiles` lautet `USING (auth.uid() = id)` und hat
+> **Stand 2026-09-04**: geschlossen durch
+> `20260905000000_profiles_privilege_escalation_fix.sql`. Der Text unten
+> beschreibt den Befund, wie er am 2026-09-01 gemessen wurde; der Fix steht
+> darunter.
+
+Die UPDATE-Policy auf `public.profiles` lautete `USING (auth.uid() = id)` und hat
 **kein** `WITH CHECK`. Postgres verwendet in diesem Fall den `USING`-Ausdruck
 auch als Check — die Zeile bleibt also erlaubt, solange `id` unverändert bleibt.
 Welche **Spalten** dabei geschrieben werden, prüft die Policy nicht, und der
@@ -277,16 +286,39 @@ damit nicht nur Modellhygiene — sie behebt eine offene Rechteausweitung. **D5
 allein schließt sie aber nicht**: `platform_operators` regelt nur die *neue*
 Ebene; die 51 bestehenden Prüfungen auf `is_super_admin` bleiben unberührt.
 
-**Vorschlag (nicht umgesetzt, braucht Entscheid):**
-1. Sofort: `WITH CHECK` auf die Policy und `REVOKE UPDATE (is_super_admin, …)`
-   für `authenticated`/`anon`. Additiv, bricht keinen bekannten Schreibpfad —
-   das Frontend liest die Spalte, es schreibt sie nicht.
-2. Danach: `is_super_admin` gegen `is_platform_operator()` ablösen, damit es nur
-   **eine** Plattform-Quelle gibt statt zweier nebeneinander. Das berührt ADR
-   0005, wo `profiles.is_super_admin` als Plattform-Rolle festgeschrieben ist.
+**Fix (`20260905000000`), dreifach — weil eine Ebene hier nachweislich nicht reicht:**
 
-Die heutige Exposition ist gering (ein einziges Profil in Produktion, das dem
-Eigentümer gehört). Sie steigt mit dem ersten fremden Sign-up auf P0.
+1. `WITH CHECK` auf der Policy, gebunden an `authenticated`.
+2. **Trigger `trig_profiles_guard_privileged_columns` als primäre
+   Verteidigung.** Der ursprüngliche Vorschlag setzte allein auf Grants; beim
+   Nachstellen zeigte sich, dass das nicht trägt. Zwei Gründe, beide gemessen:
+   Ein tabellenweiter Grant lässt sich in PostgreSQL **nicht** durch `REVOKE`
+   einzelner Spalten einschränken — nötig ist erst der Tabellen-`REVOKE`, dann
+   eine Positivliste. Und selbst dann hebt ein späteres
+   `GRANT … ON ALL TABLES IN SCHEMA public` alles wieder auf; genau das tut der
+   `db`-Job in `ci.yml` nach den Migrationen, und genau diese Klasse
+   Bulk-Operation war der ACL-Vorfall vom 2026-08-23. Der Trigger überlebt
+   beides. Er ist `SECURITY INVOKER` — als `DEFINER` sähe er immer `postgres`
+   und wäre ein Placebo.
+3. Spalten-Grants als Tiefenstaffelung: Tabellen-`REVOKE`, dann `GRANT UPDATE`
+   auf die sieben Felder, die das Frontend tatsächlich schreibt (aus den
+   Schreibpfaden abgeleitet, nicht geraten). `anon` verliert das Schreibrecht
+   ganz.
+
+Gesichert durch vier Fälle in `test/runtime/db/security-regressions.db.test.ts`.
+Die Probe aufs Exempel wurde gemacht: Ohne den Trigger fällt der Test, mit ihm
+läuft er — und zwar in einer Datenbank, in der die CI-Grants den tabellenweiten
+`UPDATE` bereits wiederhergestellt haben.
+
+**Was der Fix NICHT tut, und das bleibt offen:** Er lässt die 51 bestehenden
+Prüfungen auf `is_super_admin` unverändert. Es gibt jetzt zwei
+Plattform-Quellen nebeneinander — `profiles.is_super_admin` (alt, gesperrt) und
+`platform_operators` (neu). Die Ablösung der einen durch die andere berührt ADR
+0005 und ist eigene Arbeit; sie steht weiter unter „Offene Punkte".
+
+Die Exposition war zum Zeitpunkt des Befunds gering (ein einziges Profil in
+Produktion, das dem Eigentümer gehört) und wäre mit dem ersten fremden Sign-up
+auf P0 gestiegen.
 
 ### B2 — `ai_tool_runs` kennt keine Agenten-Zuordnung
 
@@ -352,4 +384,7 @@ Datei ist mit einem datierten Hinweis korrigiert.
   festgeschrieben) durch `platform_operators` ersetzt wird oder daneben bestehen
   bleibt. Zwei Plattform-Quellen nebeneinander wären der Zustand, den D5
   vermeiden will (siehe B1).
-- **Der Fix zu B1** — Entscheid steht aus.
+- **Ablösung von `profiles.is_super_admin`** durch `is_platform_operator()`.
+  Der Sperr-Teil von B1 ist behoben (`20260905000000`), die Vereinheitlichung
+  der beiden Plattform-Quellen nicht. Solange beide existieren, gilt: neue
+  Berechtigungen ausschliesslich über `platform_operators`.

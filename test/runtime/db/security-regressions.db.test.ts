@@ -348,3 +348,203 @@ d('Schema-weite Invarianten fuer SECURITY DEFINER', () => {
     expect(rows[0]!.cfg?.some((c) => c.startsWith('search_path='))).toBe(true);
   });
 });
+
+/**
+ * B1 — Rechteausweitung ueber profiles.is_super_admin (ADR 0011).
+ *
+ * Der Befund war nicht, dass eine Policy fehlte, sondern dass die vorhandene
+ * die falsche Frage stellte: Sie prueft, WELCHE ZEILE geschrieben wird, nie
+ * WELCHE SPALTEN. Ein Test auf "es gibt eine UPDATE-Policy" waere gruen
+ * gewesen und haette nichts bewiesen. Deshalb hier der Angriff selbst.
+ *
+ * Bewusst NICHT ueber Spalten-Grants geprueft: Der db-Job in ci.yml fuehrt
+ * nach den Migrationen ein `GRANT ... ON ALL TABLES IN SCHEMA public` aus und
+ * stellt den tabellenweiten Grant wieder her. Ein Test auf fehlende Grants
+ * waere dort rot, obwohl Produktion in Ordnung ist — und genau diese
+ * Bulk-Grant-Klasse ist der Grund, warum der Trigger die primaere
+ * Verteidigung ist und nicht die Grants.
+ */
+d('B1 — profiles.is_super_admin ist clientseitig unveraenderlich', () => {
+  let ctx: DbCtx | null = null;
+  beforeEach(async () => { ctx = await openDb(); });
+  afterEach(async () => { await closeDb(ctx); ctx = null; });
+
+  async function seedProfil(email: string): Promise<string> {
+    const { rows } = await ctx!.client.query<{ id: string }>(
+      `INSERT INTO auth.users(email) VALUES ($1) RETURNING id`, [email],
+    );
+    const userId = rows[0]!.id;
+    await ctx!.client.query(`INSERT INTO public.profiles(id) VALUES ($1)`, [userId]);
+    return userId;
+  }
+
+  it('ein eingeloggter Nutzer kann sich nicht selbst zum Plattform-Admin machen', async () => {
+    const userId = await seedProfil('b1-angreifer@example.com');
+
+    await expect(
+      ctx!.withClaims({ sub: userId, role: 'authenticated' }, async () => {
+        await ctx!.client.query(
+          `UPDATE public.profiles SET is_super_admin = true WHERE id = $1`, [userId],
+        );
+      }),
+    ).rejects.toThrow(/unveraenderlich|permission denied|denied/i);
+
+    const { rows } = await ctx!.client.query<{ is_super_admin: boolean }>(
+      `SELECT is_super_admin FROM public.profiles WHERE id = $1`, [userId],
+    );
+    expect(rows[0]!.is_super_admin).toBe(false);
+  });
+
+  it('die harmlosen Profilfelder bleiben schreibbar — der Fix darf nichts zumauern', async () => {
+    const userId = await seedProfil('b1-normal@example.com');
+
+    await ctx!.withClaims({ sub: userId, role: 'authenticated' }, async () => {
+      await ctx!.client.query(
+        `UPDATE public.profiles SET full_name = 'Neuer Name', onboarding_step = 2 WHERE id = $1`,
+        [userId],
+      );
+    });
+
+    const { rows } = await ctx!.client.query<{ full_name: string; onboarding_step: number }>(
+      `SELECT full_name, onboarding_step FROM public.profiles WHERE id = $1`, [userId],
+    );
+    expect(rows[0]!.full_name).toBe('Neuer Name');
+    expect(rows[0]!.onboarding_step).toBe(2);
+  });
+
+  it('service_role darf die Rolle weiterhin vergeben — serverseitig, wie vorgesehen', async () => {
+    const userId = await seedProfil('b1-serverseitig@example.com');
+
+    await ctx!.withClaims({ sub: userId, role: 'service_role' }, async () => {
+      await ctx!.client.query(
+        `UPDATE public.profiles SET is_super_admin = true WHERE id = $1`, [userId],
+      );
+    });
+
+    const { rows } = await ctx!.client.query<{ is_super_admin: boolean }>(
+      `SELECT is_super_admin FROM public.profiles WHERE id = $1`, [userId],
+    );
+    expect(rows[0]!.is_super_admin).toBe(true);
+  });
+
+  it('der Schutz-Trigger ist SECURITY INVOKER — als DEFINER waere er wirkungslos', async () => {
+    // Als SECURITY DEFINER saehe die Funktion immer 'postgres' in current_user
+    // und liesse jede Aenderung durch. Der Test haelt genau diese Eigenschaft
+    // fest, weil sie beim Lesen des Codes nicht ins Auge springt.
+    const { rows } = await ctx!.client.query<{ prosecdef: boolean }>(
+      `SELECT p.prosecdef FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+        WHERE n.nspname='public' AND p.proname='profiles_guard_privileged_columns'`,
+    );
+    expect(rows[0]!.prosecdef).toBe(false);
+  });
+});
+
+/**
+ * ADR 0011, D5 — platform_operators als eigene Quelle der Plattform-Berechtigung.
+ *
+ * Der Sinn der Tabelle ist, dass der Beaufsichtigte sie nicht beschreiben kann.
+ * Genau das wird hier geprueft — sonst waere die Rechteausweitung aus B1 nur
+ * um eine Tabelle weitergewandert.
+ */
+d('D5 — platform_operators ist fuer Clients gesperrt', () => {
+  let ctx: DbCtx | null = null;
+  beforeEach(async () => { ctx = await openDb(); });
+  afterEach(async () => { await closeDb(ctx); ctx = null; });
+
+  async function seedNutzer(email: string): Promise<string> {
+    const { rows } = await ctx!.client.query<{ id: string }>(
+      `INSERT INTO auth.users(email) VALUES ($1) RETURNING id`, [email],
+    );
+    return rows[0]!.id;
+  }
+
+  it('RLS ist aktiv und es gibt bewusst keine einzige Policy', async () => {
+    const { rows } = await ctx!.client.query<{ rls: boolean; policies: string }>(`
+      SELECT c.relrowsecurity AS rls,
+             (SELECT count(*) FROM pg_policy WHERE polrelid = c.oid) AS policies
+        FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+       WHERE n.nspname = 'public' AND c.relname = 'platform_operators'
+    `);
+    expect(rows[0]!.rls).toBe(true);
+    expect(Number(rows[0]!.policies)).toBe(0);
+  });
+
+  it('ein eingeloggter Nutzer kann sich nicht selbst eintragen', async () => {
+    const userId = await seedNutzer('d5-angreifer@example.com');
+
+    await expect(
+      ctx!.withClaims({ sub: userId, role: 'authenticated' }, async () => {
+        await ctx!.client.query(
+          `INSERT INTO public.platform_operators(user_id) VALUES ($1)`, [userId],
+        );
+      }),
+    ).rejects.toThrow();
+
+    const { rows } = await ctx!.client.query<{ n: string }>(
+      `SELECT count(*) AS n FROM public.platform_operators WHERE user_id = $1`, [userId],
+    );
+    expect(Number(rows[0]!.n)).toBe(0);
+  });
+
+  it('ein eingeloggter Nutzer sieht die Tabelle nicht', async () => {
+    const userId = await seedNutzer('d5-leser@example.com');
+    await ctx!.client.query(`INSERT INTO public.platform_operators(user_id) VALUES ($1)`, [userId]);
+
+    const sichtbar = await ctx!.withClaims({ sub: userId, role: 'authenticated' }, async () => {
+      const { rows } = await ctx!.client.query<{ n: string }>(
+        `SELECT count(*) AS n FROM public.platform_operators`,
+      );
+      return Number(rows[0]!.n);
+    }).catch(() => 0);
+    expect(sichtbar).toBe(0);
+  });
+
+  it('is_platform_operator() trennt Eingetragene von Nicht-Eingetragenen', async () => {
+    const operator = await seedNutzer('d5-operator@example.com');
+    const normal = await seedNutzer('d5-normal@example.com');
+    await ctx!.client.query(`INSERT INTO public.platform_operators(user_id) VALUES ($1)`, [operator]);
+
+    const alsOperator = await ctx!.withClaims({ sub: operator, role: 'authenticated' }, async () => {
+      const { rows } = await ctx!.client.query<{ ok: boolean }>(`SELECT public.is_platform_operator() AS ok`);
+      return rows[0]!.ok;
+    });
+    const alsNormal = await ctx!.withClaims({ sub: normal, role: 'authenticated' }, async () => {
+      const { rows } = await ctx!.client.query<{ ok: boolean }>(`SELECT public.is_platform_operator() AS ok`);
+      return rows[0]!.ok;
+    });
+
+    expect(alsOperator).toBe(true);
+    expect(alsNormal).toBe(false);
+  });
+
+  it('active=false entzieht die Berechtigung, ohne die Zeile zu loeschen', async () => {
+    // Der Pruefpfad soll erhalten bleiben: Wer die Berechtigung hatte, bleibt
+    // sichtbar — nur wirkt sie nicht mehr.
+    const operator = await seedNutzer('d5-entzogen@example.com');
+    await ctx!.client.query(
+      `INSERT INTO public.platform_operators(user_id, active) VALUES ($1, false)`, [operator],
+    );
+
+    const ok = await ctx!.withClaims({ sub: operator, role: 'authenticated' }, async () => {
+      const { rows } = await ctx!.client.query<{ ok: boolean }>(`SELECT public.is_platform_operator() AS ok`);
+      return rows[0]!.ok;
+    });
+    expect(ok).toBe(false);
+
+    const { rows } = await ctx!.client.query<{ n: string }>(
+      `SELECT count(*) AS n FROM public.platform_operators WHERE user_id = $1`, [operator],
+    );
+    expect(Number(rows[0]!.n)).toBe(1);
+  });
+
+  it('anon darf is_platform_operator() ausfuehren — sonst bricht jede Policy-Auswertung ab', async () => {
+    // Lehre aus dem ACL-Vorfall vom 2026-08-23: Fehlt das EXECUTE-Recht,
+    // liefert die Policy keinen false-Wert, sondern einen Fehler.
+    const { rows } = await ctx!.client.query<{ anon: boolean; auth: boolean }>(`
+      SELECT has_function_privilege('anon',          'public.is_platform_operator()', 'EXECUTE') AS anon,
+             has_function_privilege('authenticated', 'public.is_platform_operator()', 'EXECUTE') AS auth
+    `);
+    expect(rows[0]!.anon).toBe(true);
+    expect(rows[0]!.auth).toBe(true);
+  });
+});

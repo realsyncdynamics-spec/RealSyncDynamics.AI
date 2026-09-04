@@ -505,8 +505,33 @@ async function consultPolicyEngine(
     const result = await decide(ctx.admin, request as never);
     if (mode !== 'enforce') {
       // Mitrechnen und protokollieren, aber nicht anwenden.
-      await logShadowComparison(ctx.admin, ctx.tenantId, 'siteos_publish', request as never, result as never, null)
-        .catch(() => {});
+      //
+      // KORRIGIERT am 2026-09-04: Der Aufruf stand hier mit sechs
+      // Positionsargumenten gegen eine Objekt-Signatur — `entry` war damit
+      // die Tenant-ID, `entry.tenant_id` undefined, der Insert waere an
+      // NOT NULL gescheitert. Hinter `.catch(() => {})` haette der
+      // Beobachtungsbetrieb also geschwiegen statt zu sammeln, und weil
+      // `shadow` der Vorgabewert ist, waere das der Normalfall gewesen.
+      // Kein Gate konnte es sehen: tsc deckt supabase/functions nicht ab,
+      // check:edge-syntax ist ein Parse-Check, check:edge-refs prueft nur,
+      // ob Namen aufloesen.
+      await logShadowComparison(ctx.admin, {
+        tenant_id: ctx.tenantId,
+        source: 'siteos_publish',
+        // Es gibt hier keine Alt-Engine, mit der zu vergleichen waere: Der
+        // Publish Gate hat vor P2-3 gar keine Richtlinie ausgewertet. `null`
+        // ist deshalb die richtige Aussage — nicht etwa 'allow', das eine
+        // Entscheidung behaupten wuerde, die niemand getroffen hat.
+        legacy_status: null,
+        v2_status: result.decision,
+        snapshot_version: result.snapshot_version,
+        detail: {
+          blueprint_id: row.id,
+          artifact_sha256: artifactSha256,
+          matched_policy_ids: result.matched_policy_ids,
+          mode,
+        },
+      });
       return {
         engine: 'not_enforcing',
         reason: `Beobachtungsbetrieb (SITEOS_PUBLISH_PDP=${mode}); der PDP haette "${result.decision}" entschieden.`,

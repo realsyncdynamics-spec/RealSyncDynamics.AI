@@ -176,7 +176,12 @@ export async function enrichPrincipal(
         .eq('tenant_id', request.tenant_id)
         .eq('principal_id', p.id);
       const ancestors = new Set(orgAncestors(orgPath));
-      roles = [...new Set((bindings ?? [])
+      // `new Set<string>` statt `new Set`: `admin` ist `any`, damit ist auch
+      // `bindings` any — TypeScript leitet daraus `Set<unknown>` ab und die
+      // Zuweisung an `string[]` schlaegt fehl. Aufgefallen erst, als ein Test
+      // diese Datei erstmals importierte; `supabase/functions` steht sonst
+      // nicht unter `tsc --noEmit`.
+      roles = [...new Set<string>((bindings ?? [])
         .filter((b: { scope_type: string; org_unit_id: string | null }) =>
           b.scope_type === 'tenant' || (b.org_unit_id !== null && ancestors.has(b.org_unit_id)))
         .map((b: { role: string }) => b.role))];
@@ -397,7 +402,13 @@ export async function logShadowComparison(
   admin: any,
   entry: {
     tenant_id: string;
-    source: 'telemetry-ai-event' | 'governance-ingest' | 'ai-gateway';
+    // Muss zur CHECK-Bedingung auf pdp_shadow_log.source passen
+    // (Migration 20260904120000). Ein Wert, den nur eine der beiden Seiten
+    // kennt, faellt erst beim Insert auf — und der laeuft im Hintergrund.
+    source:
+      | 'telemetry-ai-event' | 'governance-ingest' | 'ai-gateway'
+      | 'siteos_publish'
+      | 'bot-chat' | 'bot-whatsapp' | 'bot-voice';
     legacy_status: string | null;
     v2_status: string | null;
     snapshot_version: string;

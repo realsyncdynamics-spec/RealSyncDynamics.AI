@@ -199,6 +199,11 @@ jobs:
       #                          nicht faelschen (BEFORE-Trigger ueberschreibt).
       #   publish-gate-policy    Ein Ausfall des PDP kann nicht als
       #                          Konformitaet gespeichert werden (§7 G3).
+      #   pdp-shadow-channels    Der Beobachtungsbetrieb kann seine Zeilen
+      #                          ueberhaupt schreiben. Vor dem 2026-09-04 wies
+      #                          die CHECK-Bedingung `siteos_publish` ab — und
+      #                          weil der Insert im Hintergrund laeuft, haette
+      #                          das niemand bemerkt.
       #
       # WARUM NAMENTLICH UND NICHT DAS VERZEICHNIS: Am 2026-09-04 gemessen
       # bestehen 16 der 23 Dateien in test/runtime/db/ gegen dieses voll
@@ -220,6 +225,7 @@ jobs:
           npx vitest run \
             test/runtime/db/connector-registry.db.test.ts \
             test/runtime/db/publish-gate-policy.db.test.ts \
+            test/runtime/db/pdp-shadow-channels.db.test.ts \
             --no-file-parallelism
 
       - name: Verify migrations are append-only

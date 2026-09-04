@@ -747,16 +747,67 @@ Migration `20260904110000` trennt die drei Lagen (`consulted`,
 dass ein **Ausfall** nie als konform gespeichert werden kann — dieselbe
 Überlegung, aus der `publishable` eine generierte Spalte ist.
 
-**Offen in P2**: nur noch **P2-5** (Bot-Governance). P2-2 (Microsoft 365)
-bleibt zurückgestellt — **E6 ist am 2026-09-04 vom Eigentümer entschieden:
-eigene Kanäle zuerst.** P2-3 und P2-4 sind umgesetzt. Offen bleiben E1–E5 und
-E7 aus §7 sowie Phase P3.
+| P2-5 Bot-Governance | ✅ | **Drei kundenseitige Kanäle liefen ohne jede Richtliniendurchsetzung.** `bot-chat`, `whatsapp-webhook` und `bot-voice-webhook` enthielten keinen einzigen Treffer für `decide` oder `policy`. Jetzt hängen alle drei an **einem** PEP (`_shared/pdp/botmessage.ts`), jeweils **vor** dem Modellaufruf — danach ist das Geld ausgegeben, und bei WhatsApp und Voice ist die Antwort erzeugt. `BOT_PDP_ENFORCEMENT=off\|shadow\|enforce`, Vorgabe `shadow`; in `enforce` fail-closed. `require_approval` sperrt dort wie `block`, und das ist eine Entscheidung: Web-Chat, WhatsApp und Telefonat sind synchron, es gibt niemanden, der binnen Sekunden freigeben könnte |
 
-**Eine Entscheidung liegt beim Eigentümer**: `SITEOS_PUBLISH_PDP` steht auf
-`shadow`. Bis jemand `enforce` setzt, binden die Richtlinien des Mandanten
-beim Veröffentlichen **nicht** — sichtbar im Sperrtext, aber wirkungslos. Der
-Umschaltzeitpunkt gehört entschieden, sonst bleibt P2-3 dauerhaft ein
-Beobachter.
+**Zur Injektionsgrenze bei P2-5 — die schärfste im Produkt:** `bot-chat` und
+`whatsapp-webhook` laufen mit `verify_jwt = false`. Der Text, über den
+entschieden wird, stammt von **einem beliebigen Fremden aus dem Internet**.
+Ginge er in die Entscheidungsgrundlage, könnte jeder Absender die Regeln des
+Mandanten adressieren, indem er sie in seine Nachricht schreibt. Den Prozess
+verlassen deshalb nur Signal**namen** aus `detectSignals` und Zählwerte — kein
+Zeichen des Textes. Ein Test schickt eine Nachricht mit Injektionsversuch und
+IBAN durch und weist nach, dass beides die Anfrage nicht erreicht.
+
+**Der Sperrgrund erreicht den Absender nie.** Er ist Kunde *des Mandanten*,
+nicht der Mandant. Ihm die Richtlinie zu nennen, gäbe interne Regeln an einen
+Dritten preis — und lüde dazu ein, sie durch Umformulieren zu umgehen. Er
+bekommt einen neutralen Satz, der Prüfpfad die Begründung. Stille wäre die
+schlechteste Variante: Sie klingt nach technischem Ausfall.
+
+### Befund in der eigenen P2-3-Umsetzung, gefunden und behoben am 2026-09-04
+
+Beim Bauen des Bot-PEP fiel auf, dass der Publish Gate
+`logShadowComparison(admin, tenantId, 'siteos_publish', request, result, null)`
+aufrief — **sechs Positionsargumente gegen eine Objekt-Signatur**. `entry` war
+damit die Tenant-ID, `entry.tenant_id` undefined, der Insert wäre an `NOT NULL`
+gescheitert. Der Aufruf lag hinter `.catch(() => {})`.
+
+Zweiter, unabhängiger Fehler an derselben Stelle: `pdp_shadow_log.source` liess
+`siteos_publish` gar nicht zu — die CHECK-Bedingung kannte nur die drei
+Alt-Pfade. Auch ein *korrekter* Aufruf wäre abgewiesen worden.
+
+**Die Folge wiegt schwerer als der Fehler**: `shadow` ist der Vorgabewert. Der
+Beobachtungsbetrieb — die Vorstufe, aus der heraus über `enforce` entschieden
+werden soll — hätte also nichts gesammelt, und zwar im Normalfall, still.
+
+**Kein vorhandenes Gate konnte das sehen**: `tsc --noEmit` deckt
+`supabase/functions` nicht ab, `check:edge-syntax` ist ein Parse-Check,
+`check:edge-refs` prüft nur, ob Namen auflösen. Geschlossen durch
+`test/governance/bot-pep-wiring.test.ts`, das alle Aufrufstellen am Quelltext
+prüft und dessen Wirksamkeit gegen den wiederhergestellten Fehler belegt ist.
+Migration `20260904120000` erweitert die CHECK-Bedingung additiv.
+
+**Nebenbefund**: `_shared/pdp/decide.ts` stand nie unter dem Typechecker, weil
+kein Test sie importierte. Der erste Import brachte einen echten Typfehler ans
+Licht (`Set<unknown>` gegen `string[]`). Behoben. Die Datei steht damit ab
+jetzt unter `npm run lint`.
+
+**Offen in P2**: nichts mehr — P2-1, P2-3, P2-4 und P2-5 sind umgesetzt. P2-2 (Microsoft 365)
+bleibt zurückgestellt — **E6 ist am 2026-09-04 vom Eigentümer entschieden:
+eigene Kanäle zuerst.** Offen bleiben E1–E5 und E7 aus §7 sowie Phase P3.
+
+**Drei Entscheidungen liegen beim Eigentümer** — und es ist dieselbe Frage
+dreimal: `SITEOS_PUBLISH_PDP` (P2-3), `GOVERNANCE_PDP_MODE` (P2-4) und
+`BOT_PDP_ENFORCEMENT` (P2-5) stehen alle auf `shadow`. Bis jemand `enforce`
+setzt, binden die Richtlinien des Mandanten **nirgends** — die Kanäle sind
+verdrahtet, das Protokoll füllt sich, gesperrt wird nichts.
+
+Das ist der beabsichtigte Zwischenzustand und kein Versehen: So verlangt es
+das Vorgehen aus P0. Aber er ist eben auch keine Durchsetzung. Der
+Umschaltzeitpunkt gehört entschieden, sonst bleibt das ganze Governance OS ein
+Beobachter mit vollständiger Verkabelung. Grundlage dafür ist
+`pdp_shadow_log` — und die schrieb bis zum 2026-09-04 für den Publish Gate
+nichts, siehe oben.
 
 ### Befund am Prüfstand selbst, gemessen am 2026-09-04
 

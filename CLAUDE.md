@@ -79,7 +79,7 @@ Menschen · Unternehmen · KI-Agenten · Daten · Entscheidungen.
 **Primär: Supabase Cloud (EU / Frankfurt)**
 - PostgreSQL 17 (Live-Projekt, Stand 2026-08-16)
 - **185 Edge Functions** im Repo (`supabase/functions/`, Deno/V8; `_shared` ist Bibliothek, keine Function) — gemessen am 2026-09-04 am Merge-Baum dieses Branches, nicht addiert. 181 davon sind deployt und deckungsgleich mit Produktion (mains Messung vom 2026-09-04 mit zwei unabhängigen Methoden, `comm` in beide Richtungen leer — siehe §5). Die vier aus diesem Branch warten auf den nächsten `deploy.yml`-Lauf und stehen so lange in `UNBACKED_CALLERS`: `governance-decide` und `integration-credentials` (P0), `governance-access` (P1-3), `evidence-anchor` (P1-6)
-- **320 Migrations** (`supabase/migrations/`) — gemessen am 2026-09-04 am Merge-Baum, nach dem Nachziehen von 30 main-Commits. 314 davon sind verbucht bzw. kommen mit mains eigenem Deploy (`20260902000010`, `20260902000011` aus dem Onboarding-Vokabular); unverbucht aus **diesem** Branch sind sechs: `20260824090000_pdp_snapshots_shadow`, `20260824110000_integration_credentials_hardening`, `20260824120000_org_subject_model_approval_gates`, `20260901090000_evidence_append_only_anchors`, `20260904100000_connector_registry` (P2-1) und `20260904110000_publish_gate_policy_trail` (P2-3)
+- **321 Migrations** (`supabase/migrations/`) — gemessen am 2026-09-04 am Merge-Baum, nach dem Nachziehen von 30 main-Commits. 314 davon sind verbucht bzw. kommen mit mains eigenem Deploy (`20260902000010`, `20260902000011` aus dem Onboarding-Vokabular); unverbucht aus **diesem** Branch sind sieben: `20260824090000_pdp_snapshots_shadow`, `20260824110000_integration_credentials_hardening`, `20260824120000_org_subject_model_approval_gates`, `20260901090000_evidence_append_only_anchors`, `20260904100000_connector_registry` (P2-1), `20260904110000_publish_gate_policy_trail` (P2-3) und `20260904120000_pdp_shadow_log_channels` (P2-3/P2-5)
 
   > **Zur Messmethode, weil die Zahlen mehrfach auseinanderliefen**: Die Repo-Zahlen hier stammen aus `ls`/`git ls-tree` auf dem Merge-Baum, nicht aus der Addition zweier Doku-Stände; die Produktionszahlen stammen aus mains Messung gegen das Live-Projekt, nicht aus den Repo-Zahlen abgeleitet. Beide Richtungen sind schon falsch dagewesen: `main` nannte am 2026-09-04 vormittags 180 Functions bei 181 im eigenen Baum, und `subscription-addons` stand zwölf Tage als „wartet auf den Deploy“, obwohl der Lauf längst da war — die Function antwortete mit `401`, nicht `404` (#1204). Wer eine dieser Zahlen fortschreibt statt sie nachzuzählen, schreibt den Fehler fort.
 - RLS auf allen App-Tabellen · Realtime Subscriptions
@@ -450,6 +450,26 @@ Jeder Agent braucht vier Dimensionen — fehlt eine, ist er nicht governance-fä
   `governance_memory` leer ist, aber die Zusage steht ungedeckt.
   Prüfen also nicht an `cron.job`, sondern an `cron.job_run_details.status`.
 
+### Enforcement-Schalter — der PDP entscheidet erst, wenn jemand ihn lässt
+
+Seit P2 hängen fünf Pfade am PDP. **Alle stehen auf Beobachtung**; das ist der
+beabsichtigte Zwischenzustand aus P0, aber eben keine Durchsetzung:
+
+| Schalter | Wirkt auf | Vorgabe | In `enforce` |
+|---|---|---|---|
+| `AI_GATEWAY_ENFORCEMENT` | `ai-gateway` | `shadow` | blockt |
+| `AGENT_PDP_ENFORCEMENT` | Agent-Runtime | `shadow` | fail **closed** |
+| `SITEOS_PUBLISH_PDP` | Publish Gate (P2-3) | `shadow` | fail **closed** (§7 G3) |
+| `GOVERNANCE_PDP_MODE` | CI/CD-Gate (P2-4) | `shadow` | verschärft nur |
+| `BOT_PDP_ENFORCEMENT` | Chat · WhatsApp · Voice (P2-5) | `shadow` | fail **closed** |
+
+**Vor dem Umschalten `pdp_shadow_log` auswerten** — dafür ist der
+Beobachtungsbetrieb da. Und zwar wirklich auswerten: Die Tabelle blieb für den
+Publish Gate bis zum 2026-09-04 leer, weil der Aufruf falsch war und der
+Fehler in einem `catch` verschwand. Ein leeres Shadow-Protokoll bedeutet nicht
+„keine Abweichungen", sondern zuerst „nachsehen, ob überhaupt geschrieben
+wird".
+
 ### Dashboard-Module (modulare Reihenfolge)
 1. **Agent Registry** — Liste, Status, Risiko, Details
 2. **Agent Identity** — Ownership, Permissions, Credentials
@@ -508,7 +528,7 @@ RealSyncDynamics.AI/
 │   └── pricing.ts     Single Source of Truth für Produkt-, Preis- und Berechtigungsmodell
 ├── supabase/
 │   ├── functions/     185 Edge Functions (einziger Ort für Service-Role-Keys)
-│   └── migrations/    320 Migrations
+│   └── migrations/    321 Migrations
 ├── apps/
 │   └── agent-runtime/ Agent Runtime (Node/TS, Docker)
 ├── services/          runtime-core · evidence-runtime · openclaw-agent · playwright-scanner

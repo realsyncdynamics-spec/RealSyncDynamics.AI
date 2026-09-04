@@ -259,10 +259,21 @@ kein bestehendes Verhalten und keine Punktzahl wurden dabei angefasst.
   geltenden AI-Act-Transparenzpflichten korrekt abbilden, ist eine inhaltliche
   Prüfung sämtlicher Claim-Flächen und war in dieser Sitzung nicht leistbar.
   Nicht als „in Ordnung" verbuchen — als „nicht gemessen".
-- **`/realsync-landing`** führt weiterhin fünf Plan-Karten mit hart codierten
-  Preisen im JSX, inklusive Agency und Partner. Bereits in CLAUDE.md §10 als
-  offen vermerkt, gehört zu AP10. Der Watch Agent prüft diese Route nicht — sie
-  stand nicht in der Liste der Kernseiten.
+- **`/realsync-landing` war kein offener Punkt — die Zeile war mein Fehler.**
+  Hier stand zunächst, die Seite führe „weiterhin fünf Plan-Karten mit hart
+  codierten Preisen, inklusive Agency und Partner". Das war schon beim
+  Schreiben falsch. Am 2026-09-04 am Code gemessen:
+  `src/marketing/landing/RealSyncDynamicsLanding.tsx` führt **vier** Karten
+  (Free Audit · Starter · Growth · Enterprise), die Beträge kommen aus
+  `planById('starter').price.monthlyEur` bzw. Growth, die Agency-Karte ist
+  entfallen — mit Kommentar an Ort und Stelle —, Enterprise steht auf „Auf
+  Anfrage".
+
+  **Wie das passiert ist, und warum es hierher gehört**: Ich habe den Punkt
+  aus CLAUDE.md §10 übernommen, wo er als offen geführt war, statt ihn zu
+  messen. Genau das, wogegen dieser Bericht an drei anderen Stellen
+  argumentiert — und der Beleg dafür, dass „steht in der Doku" kein Ersatz
+  für eine Messung ist, auch dann nicht, wenn die Doku die eigene ist.
 - **Free-Tarif bei Supabase** bleibt der bekannte, unveränderte Befund: keine
   täglichen Backups, kein Point-in-Time-Recovery, kein SLA. Unabhängig von
   dieser Woche.

@@ -88,5 +88,71 @@ declare module "cloudflare:workers" {
     protected env: E;
     constructor(ctx: DurableObjectState, env: E);
   }
-  export { DurableObject };
+  abstract class WorkflowEntrypoint<E = unknown, P = unknown> {
+    protected ctx: ExecutionContext;
+    protected env: E;
+    constructor(ctx: ExecutionContext, env: E);
+    abstract run(event: WorkflowEvent<P>, step: WorkflowStep): Promise<unknown>;
+  }
+  export { DurableObject, WorkflowEntrypoint };
+}
+
+// ---------------------------------------------------------------
+// Workflows — durable, mit Wiederaufnahme und Retries.
+//
+// Modulnamen am workerd-Binary dieser Toolchain geprueft, nicht geraten:
+// `cloudflare:workers` fuehrt WorkflowEntrypoint neben DurableObject und
+// WorkerEntrypoint, `cloudflare:workflows` exportiert NonRetryableError.
+// ---------------------------------------------------------------
+interface WorkflowEvent<T> {
+  payload: Readonly<T>;
+  timestamp: Date;
+  instanceId: string;
+  workflowName: string;
+}
+
+/** Dauer als Zahl (Millisekunden) oder lesbar, z. B. "30 seconds". */
+type WorkflowDuration = string | number;
+
+interface WorkflowStepConfig {
+  retries?: {
+    limit: number;
+    delay: WorkflowDuration;
+    backoff?: "constant" | "linear" | "exponential";
+  };
+  timeout?: WorkflowDuration;
+}
+
+interface WorkflowStep {
+  /**
+   * Fuehrt den Rumpf hoechstens einmal erfolgreich aus: Das Ergebnis wird
+   * dauerhaft festgehalten. Ein Wiederanlauf ueberspringt bereits
+   * abgeschlossene Schritte. Ein FEHLGESCHLAGENER Schritt wird dagegen
+   * ganz wiederholt — der Rumpf muss deshalb idempotent sein.
+   */
+  do<T>(name: string, callback: () => Promise<T>): Promise<T>;
+  do<T>(name: string, config: WorkflowStepConfig, callback: () => Promise<T>): Promise<T>;
+  sleep(name: string, duration: WorkflowDuration): Promise<void>;
+}
+
+interface WorkflowInstance {
+  id: string;
+  status(): Promise<{ status: string; output?: unknown; error?: unknown }>;
+}
+
+interface WorkflowInstanceCreateOptions<T = unknown> {
+  /** Bis 100 Zeichen. Eine bereits vergebene Kennung wird abgewiesen. */
+  id?: string;
+  params?: T;
+}
+
+interface Workflow<T = unknown> {
+  create(options?: WorkflowInstanceCreateOptions<T>): Promise<WorkflowInstance>;
+  get(id: string): Promise<WorkflowInstance>;
+}
+
+declare module "cloudflare:workflows" {
+  export class NonRetryableError extends Error {
+    constructor(message: string, name?: string);
+  }
 }

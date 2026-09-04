@@ -12,6 +12,8 @@ import {
   type RecommendedModule,
 } from '../core/onboarding/canonicalRecommendation';
 import { saveFunnelContext, withAuditContext } from '../core/onboarding/funnelContext';
+import { useGovernanceOnboarding } from '../hooks/useGovernanceOnboarding';
+import { toScanFindings, useSharedAudit } from '../features/audit/loadSharedAudit';
 import type { OnboardingChoiceId } from '@/shared/onboarding';
 import {
   planById,
@@ -43,33 +45,87 @@ interface LocationState {
 
 export function GovernanceRecommendation() {
   const { scanId = '' } = useParams<{ scanId: string }>();
-  const navigate = useNavigate();
   const { state } = useLocation();
   const locationState = (state ?? {}) as LocationState;
 
-  const profile = locationState.profile;
-  const recommendation = locationState.recommendation;
-  const findings = locationState.findings || [];
+  // Der Router-State ist der schnelle Weg (direkt aus dem Onboarding). Fehlt
+  // er — Reload, geteilter Link, Rückkehr von Stripe —, wird die Empfehlung
+  // aus dem kanonischen Datensatz neu gerechnet statt in einer Sackgasse zu
+  // enden. Derselbe Rechenweg, keine zweite Engine.
+  if (locationState.profile && locationState.recommendation) {
+    return (
+      <RecommendationBody
+        scanId={scanId}
+        profile={locationState.profile}
+        recommendation={locationState.recommendation}
+        businessNeeds={locationState.businessNeeds ?? []}
+        canonical={locationState.canonical}
+      />
+    );
+  }
+  return <RecommendationFromAudit scanId={scanId} />;
+}
 
-  if (!profile || !recommendation) {
+/** Empfehlung ohne Router-State: Audit laden → Profil → Plan → Angebot. */
+function RecommendationFromAudit({ scanId }: { scanId: string }) {
+  const navigate = useNavigate();
+  const { audit, loading, error } = useSharedAudit(scanId);
+  const findings = React.useMemo(() => (audit ? toScanFindings(audit.issues) : []), [audit]);
+  const onboarding = useGovernanceOnboarding(scanId, audit?.domain ?? '', findings);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-obsidian-950 text-titanium-100 flex items-center justify-center p-4">
+        <p className="font-mono text-xs text-titanium-500">Empfehlung wird aus Ihrem Scan berechnet …</p>
+      </div>
+    );
+  }
+
+  if (error || !audit) {
     return (
       <div className="min-h-screen bg-obsidian-950 text-titanium-100 flex items-center justify-center p-4">
         <div className="max-w-md text-center">
           <AlertTriangle className="h-12 w-12 text-amber-400 mx-auto mb-4" />
           <h1 className="text-2xl font-display font-bold text-titanium-50 mb-2">Keine Empfehlung verfügbar</h1>
           <p className="text-sm text-titanium-300 mb-6">
-            Bitte schließe erst die Onboarding-Flow ab.
+            {error ?? 'Der Scan konnte nicht geladen werden.'} Starten Sie den kostenlosen Audit erneut, um eine Empfehlung zu erhalten.
           </p>
           <button
-            onClick={() => navigate('/onboarding/' + scanId)}
+            onClick={() => navigate('/audit')}
             className="surface-mono inline-flex items-center justify-center gap-2 px-6 py-3 font-bold text-sm"
           >
-            Zurück zum Onboarding <ArrowRight className="h-4 w-4" />
+            Zum Audit <ArrowRight className="h-4 w-4" />
           </button>
         </div>
       </div>
     );
   }
+
+  return (
+    <RecommendationBody
+      scanId={scanId}
+      profile={onboarding.profile}
+      recommendation={onboarding.recommendation}
+      businessNeeds={[]}
+      canonical={onboarding.canonicalRecommendation}
+    />
+  );
+}
+
+function RecommendationBody({
+  scanId,
+  profile,
+  recommendation,
+  businessNeeds,
+  canonical: given,
+}: {
+  scanId: string;
+  profile: GovernanceProfile;
+  recommendation: Recommendation;
+  businessNeeds: OnboardingChoiceId[];
+  canonical?: CanonicalRecommendation;
+}) {
+  const navigate = useNavigate();
 
   // Der empfohlene Plan ist bereits kanonisch (PlanId) — es gibt keine
   // Übersetzungstabelle mehr zwischen Onboarding und Pricing.
@@ -80,7 +136,7 @@ export function GovernanceRecommendation() {
   // aus dem Onboarding mit; fehlt sie (Reload, Deep-Link), wird sie aus dem
   // Profil neu gerechnet — dieselbe Funktion, kein zweiter Rechenweg.
   const canonical: CanonicalRecommendation =
-    locationState.canonical ?? recommendForProfile(profile, locationState.businessNeeds ?? []);
+    given ?? recommendForProfile(profile, businessNeeds);
 
   // Governance Score → Planempfehlung → CTA → Stripe Checkout.
   // Das Ziel kommt aus checkoutHrefForPlan(), damit Empfehlung und

@@ -40,7 +40,9 @@
  */
 
 import {
+  ANONYMOUS_PREVIEW_MAX_BYTES,
   ANONYMOUS_PREVIEW_TTL_SECONDS,
+  MIN_PREVIEW_TTL_SECONDS,
   isPreviewId,
   servedPreviewHeaders,
   type PreviewIsolation,
@@ -81,14 +83,23 @@ export interface Env {
 }
 
 interface StoredPreview {
+  /** Startseite. Eigenes Feld, damit ältere Einträge weiter gelesen werden. */
   html: string;
+  /**
+   * Unterseiten nach Pfad (`/kontakt` → HTML).
+   *
+   * Ohne sie zeigt eine geteilte Vorschau zwar die Startseite, aber jeder
+   * Navigationslink endet im 404 des Workers — und der Besucher hält die
+   * erzeugte Website für kaputt, obwohl nur die Ablage unvollständig war.
+   *
+   * Optional, weil Einträge aus der Zeit vor der Mehrseiten-Ablage im KV
+   * liegen können. Sie bleiben lesbar, statt beim Abruf zu scheitern.
+   */
+  pages?: Record<string, string>;
   isolation: PreviewIsolation;
   /** Nur zur Fehlersuche — enthält bewusst keine Nutzerdaten. */
   created_at: string;
 }
-
-/** Obergrenze je Dokument. Eine Startseite liegt weit darunter. */
-const MAX_HTML_BYTES = 2 * 1024 * 1024;
 
 function json(status: number, body: Record<string, unknown>): Response {
   return new Response(JSON.stringify(body), {
@@ -130,10 +141,13 @@ export default {
       return json(200, { ok: true });
     }
 
-    const match = /^\/p\/([^/]+)$/.exec(url.pathname);
+    const match = /^\/p\/([^/]+)(\/.*)?$/.exec(url.pathname);
     if (!match) return json(404, { error: 'not_found' });
 
     const previewId = match[1];
+    // Alles hinter der Kennung ist der Seitenpfad innerhalb der Vorschau.
+    // Ein Schrägstrich am Ende („/p/<id>/") meint die Startseite.
+    const subPath = match[2] && match[2] !== '/' ? match[2].replace(/\/+$/, '') : null;
     // Vor jedem Speicherzugriff geprüft: Die Kennung ist der einzige
     // Zugangsschutz eines anonymen Entwurfs.
     if (!isPreviewId(previewId)) return json(400, { error: 'invalid_preview_id' });
@@ -145,14 +159,25 @@ export default {
       // einmal gab.
       if (!raw) return json(404, { error: 'not_found' });
 
+      const html = subPath === null ? raw.html : raw.pages?.[subPath];
+      // Eine Unterseite, die es in diesem Entwurf nicht gibt, ist ein 404 der
+      // Vorschau — nicht die Startseite unter fremdem Pfad. Sonst zeigte
+      // jeder Tippfehler dasselbe Dokument und die Vorschau behauptete
+      // Seiten, die die erzeugte Website nicht hat.
+      if (typeof html !== 'string') return json(404, { error: 'not_found' });
+
       const headers = servedPreviewHeaders(raw.isolation);
-      return new Response(request.method === 'HEAD' ? null : raw.html, { status: 200, headers });
+      return new Response(request.method === 'HEAD' ? null : html, { status: 200, headers });
     }
 
     if (request.method === 'PUT') {
       if (!authorizeWrite(request, env)) return json(401, { error: 'unauthorized' });
+      // Geschrieben wird immer die Vorschau als Ganzes, nie eine einzelne
+      // Unterseite: Ein Entwurf ist ein Stand, kein Bestand aus Teilen, die
+      // aus verschiedenen Fassungen stammen dürften.
+      if (subPath !== null) return json(404, { error: 'not_found' });
 
-      let body: { html?: unknown; isolation?: unknown };
+      let body: { html?: unknown; isolation?: unknown; pages?: unknown; ttl?: unknown };
       try {
         // `request.json()` liefert `unknown` — der Inhalt kommt von aussen und
         // wird unten Feld für Feld geprüft, nicht per Zusicherung geglaubt.
@@ -160,31 +185,61 @@ export default {
         if (typeof parsed !== 'object' || parsed === null) {
           return json(400, { error: 'invalid_json' });
         }
-        body = parsed as { html?: unknown; isolation?: unknown };
+        body = parsed as { html?: unknown; isolation?: unknown; pages?: unknown; ttl?: unknown };
       } catch {
         return json(400, { error: 'invalid_json' });
       }
 
       const html = typeof body.html === 'string' ? body.html : '';
       if (!html) return json(400, { error: 'html_required' });
-      if (new TextEncoder().encode(html).byteLength > MAX_HTML_BYTES) {
-        return json(413, { error: 'html_too_large' });
+
+      // Unterseiten: nur Zeichenketten unter absoluten Pfaden. Was diese
+      // Prüfung nicht passiert, wird verworfen und nicht etwa als leere Seite
+      // abgelegt — eine Vorschau, die eine Seite behauptet und nichts zeigt,
+      // ist schlechter als eine, die sie gar nicht führt.
+      const pages: Record<string, string> = {};
+      if (body.pages && typeof body.pages === 'object' && !Array.isArray(body.pages)) {
+        for (const [path, value] of Object.entries(body.pages as Record<string, unknown>)) {
+          if (path.startsWith('/') && path !== '/' && typeof value === 'string' && value !== '') {
+            pages[path.replace(/\/+$/, '')] = value;
+          }
+        }
       }
 
       // Unbekannte Werte fallen auf die strengere Stufe zurück, nicht auf die
       // lockerere. Ein Tippfehler darf keine Skripte freischalten.
       const isolation: PreviewIsolation = body.isolation === 'interactive' ? 'interactive' : 'static';
 
-      const stored: StoredPreview = { html, isolation, created_at: new Date().toISOString() };
-      await env.PREVIEWS.put(previewId, JSON.stringify(stored), {
-        expirationTtl: ANONYMOUS_PREVIEW_TTL_SECONDS,
-      });
+      const stored: StoredPreview = {
+        html, pages, isolation, created_at: new Date().toISOString(),
+      };
+      const serialized = JSON.stringify(stored);
+      // Gemessen wird der ganze Eintrag. Eine Grenze, die nur die Startseite
+      // prüft, liesse sich mit Unterseiten beliebig überschreiten.
+      if (new TextEncoder().encode(serialized).byteLength > ANONYMOUS_PREVIEW_MAX_BYTES) {
+        return json(413, { error: 'html_too_large' });
+      }
 
-      return json(201, { ok: true, preview_id: previewId, expires_in: ANONYMOUS_PREVIEW_TTL_SECONDS });
+      // Die Lebensdauer kommt vom Schreiber, weil nur er sie kennt: Sie ist
+      // die **Restzeit der Sitzung**, nicht sieben feste Tage. Ohne Angabe
+      // gilt die Obergrenze; ausserhalb des erlaubten Bereichs wird geklemmt,
+      // nicht abgelehnt — der Worker ist die zweite Grenze, nicht die erste.
+      const requested = typeof body.ttl === 'number' && Number.isFinite(body.ttl)
+        ? Math.floor(body.ttl)
+        : ANONYMOUS_PREVIEW_TTL_SECONDS;
+      const ttl = Math.min(
+        Math.max(requested, MIN_PREVIEW_TTL_SECONDS),
+        ANONYMOUS_PREVIEW_TTL_SECONDS,
+      );
+
+      await env.PREVIEWS.put(previewId, serialized, { expirationTtl: ttl });
+
+      return json(201, { ok: true, preview_id: previewId, expires_in: ttl });
     }
 
     if (request.method === 'DELETE') {
       if (!authorizeWrite(request, env)) return json(401, { error: 'unauthorized' });
+      if (subPath !== null) return json(404, { error: 'not_found' });
       await env.PREVIEWS.delete(previewId);
       return json(200, { ok: true });
     }

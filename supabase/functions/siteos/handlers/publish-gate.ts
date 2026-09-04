@@ -505,8 +505,28 @@ async function consultPolicyEngine(
     const result = await decide(ctx.admin, request as never);
     if (mode !== 'enforce') {
       // Mitrechnen und protokollieren, aber nicht anwenden.
-      await logShadowComparison(ctx.admin, ctx.tenantId, 'siteos_publish', request as never, result as never, null)
-        .catch(() => {});
+      // Signatur ist (admin, entry) — der frueher hier stehende Aufruf mit
+      // sechs Stellungsargumenten lief ins Leere: `entry` war dann die
+      // Tenant-ID, `entry.tenant_id` undefiniert, der INSERT scheiterte an
+      // NOT NULL, und weil logShadowComparison Fehler bewusst schluckt,
+      // wurde **nichts** protokolliert. Der Beobachtungsbetrieb sah aus,
+      // als wuerde er mitschreiben (Fehlerklasse K1).
+      await logShadowComparison(ctx.admin, {
+        tenant_id: ctx.tenantId,
+        source: 'siteos_publish',
+        // Vor P2-3 gab es beim Veroeffentlichen keine Richtlinienpruefung:
+        // Der Alt-Zustand ist "nicht gefragt", nicht "erlaubt".
+        legacy_status: null,
+        v2_status: result.decision,
+        snapshot_version: result.snapshot_version ?? '',
+        detail: {
+          blueprint_id: row.id,
+          slug: row.slug,
+          artifact_sha256: artifactSha256,
+          finding_count: findingCount,
+          matched_policy_ids: result.matched_policy_ids ?? [],
+        },
+      });
       return {
         engine: 'not_enforcing',
         reason: `Beobachtungsbetrieb (SITEOS_PUBLISH_PDP=${mode}); der PDP haette "${result.decision}" entschieden.`,

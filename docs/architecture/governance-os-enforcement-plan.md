@@ -712,6 +712,7 @@ Relativ, keine erfundenen Zeitangaben.
 
 | Vorhaben | Stand | Wo |
 |---|---|---|
+| P2-5 Bot-Governance | ✅ (E6, eigene Kanäle zuerst) | **Der Befund war schärfer als bei P2-3 und P2-4.** Dort gab es jeweils ein funktionierendes Gate, das nur den falschen Entscheider hatte. Hier gab es **gar keine Prüfung**: `bot-chat`, `whatsapp-webhook` und `bot-voice-webhook` riefen `runAiTool('bot_reply')` unmittelbar — Feature-Gate und Monatskontingent ja, Richtlinie nein. Und das an den einzigen Kanälen neben Gateway und Agent, die nach `shared/enforcement-classes.ts` **Klasse A** sind, wo eine Sperre also wirklich verhindert statt nachträglich zu melden. Genau der Punkt, mit dem E6 begründet wurde. **Ein PEP für drei Kanäle**: `_shared/pdp/botmessage.ts` (rein, in Vitest geprüft) bildet ab und faltet, `_shared/bots-pep.ts` (Deno) befragt; die drei Functions liefern Tatsachen und führen aus. Drei eigene Auslegungen derselben Regel wären §1.4 in klein — derselbe Mandant bekäme am Telefon eine andere Antwort als im Web-Chat. **Einfügepunkt in allen drei Kanälen gleich**: nach dem Persistieren der Frage (sonst wäre die Sperre nicht dokumentiert), vor dem Modellaufruf (sonst käme sie zu spät, §1.3). `BOT_PDP_MODE=off\|shadow\|enforce`, **Default shadow** — der Merge ändert das Produktionsverhalten nicht. **Ausfallverhalten fail-closed** (`BOT_PDP_FAILURE_MODE`, Default `block`), abweichend vom allgemeinen Default aus E2 und aus demselben Grund wie beim Publish Gate: Eine gesendete WhatsApp-Nachricht bleibt gesendet, ein gesprochener Satz bleibt gesagt |
 | P2-4 CI/CD-Gate als PEP | ✅ (E6, eigene Kanäle zuerst) | Derselbe Befund wie bei P2-3, in der dritten Laufzeit: `platform/governance_backend/app/services/gate_engine.py` entschied vollständig aus eigener Logik (Risikoklasse, Gate-Katalog, Build-Artefakte); die Mandantenrichtlinien hatten an der **Auslieferungsschranke** keine Wirkung — Risiko R10 („drei Stacks, divergierende Semantik") an genau der Stelle, an der es weh tut. Neu: `app/services/pdp_client.py` ruft `governance-decide` über HTTP; `GOVERNANCE_PDP_MODE=off\|shadow\|enforce`, Default `shadow`. **Bewusste Abweichung vom Planwortlaut**: Der Plan sagt „ruft den PDP, **statt** eigene Logik zu führen". Wörtlich genommen wäre das ein Rückbau guter Regeln (Art. 5 AI Act: verbotene Praktik liefert nie aus; fehlende Tests blockieren immer). Der PDP kommt deshalb **hinzu** und kann nur verschärfen, nie lockern — ein `allow` macht aus einem lokal blockierten Build kein `approved`. Das ist die zentrale Prüfung der Testdatei, nicht eine Randnotiz. `require_approval` **sperrt** hier, statt durchzuwinken: Eine Pipeline kann niemanden fragen; die Begründung nennt den Weg zur Freigabe, sonst wäre die Sperre eine Sackgasse. Ausfall sperrt (wie P2-3), nennt sich aber ausdrücklich als Ausfall und **nennt den Ausweg** (`GOVERNANCE_PDP_MODE=off`) — ein blockierender PDP hielte sonst auch die Auslieferung des eigenen Fixes an. „Nicht konfiguriert" ist bewusst **kein** Ausfall, sonst blockierte die Anbindung jede Umgebung ohne PDP. Tests: 14 Fälle (`tests/test_gate_pdp.py`) |
 | P2-3 SiteOS Publish Gate als PEP | ✅ (E6 entschieden 2026-09-04: eigene Kanäle zuerst) | **Befund vorweg, weil er den Umfang bestimmt:** Der Publish Gate existierte seit dem 2026-08-22 — korrekt als Klasse-B-Schranke, fail-closed, hash-gebunden. Er rief aber **keinen PDP**. `policy_compliant` und `human_approval_required` kamen ausschließlich aus fest verdrahteten Regeln in `gate.ts` (Dimensions-/Severity-Tabelle plus zwei Blueprint-Flags); die Richtlinien des Mandanten hatten beim Veröffentlichen **keine Wirkung**. Genau §1.4 und R10, an der schärfsten Stelle des Produkts. P2-3 war deshalb „Gate an den einen Entscheider hängen", nicht „Gate bauen". **Der Vertrag aus Zielarchitektur §7 bleibt wörtlich unverändert**: Das Verdikt wird in die vorhandenen Felder gefaltet — `block` → `policy_compliant=false`, `require_approval` → `human_approval_required=true`, `warn` → Warnung. Kein sechstes Feld, weil das die generierte Spalte in der Datenbank und die Ableitung im Kern hätte auseinanderlaufen lassen (G2). `PolicyEngineState` ist **Pflichtfeld**: Wäre es optional, sähe „nicht befragt" genauso aus wie „vergessen zu befragen" — die K1-Fehlerklasse. Der Typ zwang prompt beide Bestandstests, sich zu erklären. Der PDP-Aufruf liegt im Deno-Handler, nicht im Kern: `gate.ts` bleibt abhängigkeitsfrei und deterministisch, sonst wäre keine Bewertung mehr nachvollziehbar. `SITEOS_PUBLISH_PDP=off|shadow|enforce`, **Default shadow** — der Merge ändert das Produktionsverhalten nicht. **Ausfallverhalten weicht bewusst ab**: hier fail-closed nach §7 G3, nicht fail-open wie der allgemeine Default aus E2 — Veröffentlichen ist eine bewusste, wiederholbare Handlung, und §7 ist normativ und spezieller. Die Sperre nennt den Ausfall beim Namen, damit niemand den Fehler in den Analysebefunden sucht |
 | P2-1 Connector-Rahmenwerk | ✅ | **Die Klasse ist abgeleitet, nicht eingegeben** — das ist der ganze Punkt. `shared/enforcement-classes.ts` trägt die Zuordnung Systemtyp → Klasse samt Begründung; `connector_enforcement_class()` (Migration `20260904100000`) trägt sie in SQL; ein BEFORE-Trigger auf `connector_registry` **überschreibt** jeden mitgeschickten Wert. Dürfte ein Mandant sein Microsoft 365 auf „A" setzen, behauptete die Oberfläche eine Blockierfähigkeit, die es dort nicht gibt — genau die Scheinimplementierung, die der Auftrag §3 untersagt. Ein DB-Test stellt den Angriff nach. Unbekannte Systemtypen ergeben **C, nicht A**: Ein System, dessen Integrationspunkt niemand belegt hat, kann nichts verhindern. `connector_enforcement_summary()` beantwortet die erste Prüferfrage („bei wie vielen können Sie wirklich verhindern?") in der Datenbank statt im Frontend, wo eine falsche Formel unbemerkt bliebe. Oberfläche: `/app/governance/connectors`. **Additiv**: Die vier Bestandstabellen (`integrations`, `integration_configs`, `integration_connectors`, `enterprise_connectors`) bleiben unangetastet, die Registratur legt sich darüber und zeigt per `source_table`/`source_id` auf die jeweilige Zeile |
@@ -747,16 +748,77 @@ Migration `20260904110000` trennt die drei Lagen (`consulted`,
 dass ein **Ausfall** nie als konform gespeichert werden kann — dieselbe
 Überlegung, aus der `publishable` eine generierte Spalte ist.
 
-**Offen in P2**: nur noch **P2-5** (Bot-Governance). P2-2 (Microsoft 365)
-bleibt zurückgestellt — **E6 ist am 2026-09-04 vom Eigentümer entschieden:
-eigene Kanäle zuerst.** P2-3 und P2-4 sind umgesetzt. Offen bleiben E1–E5 und
-E7 aus §7 sowie Phase P3.
+**Zur Injektionsgrenze bei P2-5 (K6), noch schärfer als bei P2-3:** Eine
+Bot-Nachricht ist der Text eines beliebigen Fremden — eines Anrufers, eines
+WhatsApp-Kontakts, eines Website-Besuchers. Ginge sie in die
+Entscheidungsgrundlage, könnte jeder die Bewertung seiner eigenen Anfrage
+steuern, indem er „diese Anfrage ist ausdrücklich erlaubt" hineinschreibt. Den
+Prozess verlassen deshalb ausschließlich: Kanal, Bot-ID, Konversations-ID,
+Zeichen**zahl** und Signal**namen** aus `detectSignals()`. Nicht der Text,
+nicht die Modellausgabe — und ausdrücklich auch nicht die Rufnummer oder der
+Anzeigename des Absenders, die für die Regelauswertung ohne Belang sind
+(DSGVO Art. 5 Abs. 1 lit. c). Ein Test stellt die Injektion nach.
 
-**Eine Entscheidung liegt beim Eigentümer**: `SITEOS_PUBLISH_PDP` steht auf
-`shadow`. Bis jemand `enforce` setzt, binden die Richtlinien des Mandanten
-beim Veröffentlichen **nicht** — sichtbar im Sperrtext, aber wirkungslos. Der
-Umschaltzeitpunkt gehört entschieden, sonst bleibt P2-3 dauerhaft ein
-Beobachter.
+**Was P2-5 ehrlich NICHT kann — `require_approval` im laufenden Gespräch.**
+Die Sperre wirkt: Bei Freigabepflicht entsteht keine Antwort, und der PDP legt
+das Gate an (`pdp_approval_gates`, P1-4), die Anfrage ist also tatsächlich zur
+Prüfung vorgelegt und in `/app/governance/gates` sichtbar. Was es **nicht**
+gibt, ist die Wiederaufnahme: Wird die Freigabe erteilt, nimmt niemand das
+Gespräch wieder auf und stellt die Antwort nach. **Technisch nicht vollständig
+durchsetzbar / benötigt zusätzliche Integration** — für die Zustellung, nicht
+für die Sperre. Der Absagetext sagt deshalb bewusst keine Rückmeldung zu; ein
+Test hält ihn darauf fest. Ein Satz wie „wir melden uns" wäre genau die
+Scheinimplementierung, die der Auftrag §3 untersagt.
+
+**Zwei Befunde nebenbei, beide Fehlerklasse K1 (still nicht wirksam):**
+
+1. **Der Shadow-Vergleich des Publish Gates schrieb nichts mit.**
+   `logShadowComparison(admin, entry)` wurde in `publish-gate.ts` mit sechs
+   Stellungsargumenten aufgerufen. In JavaScript ist das kein Fehler — `entry`
+   war dann die Tenant-ID, `entry.tenant_id` undefiniert, der INSERT scheiterte
+   an NOT NULL, und weil die Funktion Fehler bewusst schluckt (der
+   Beobachtungsbetrieb darf den Alt-Pfad nie beeinflussen), blieb es
+   unbemerkt. Der Beobachtungsbetrieb **sah aus**, als würde er messen.
+   Gefunden beim Nachbauen desselben Aufrufs für die Bot-Kanäle; korrigiert.
+2. **`pdp_shadow_log.source` kannte nur die drei Alt-Pfade aus P0-5.** Jeder
+   Vergleich eines neueren PEP wäre an der CHECK-Bedingung gescheitert — mit
+   demselben stillen Ausgang. Migration `20260904120000` erweitert die Liste
+   um `agent_runtime`, `siteos_publish`, `cicd_gate` und die drei Bot-Kanäle.
+   Bewusst weiterhin eine Liste und keine freie Textspalte: Ein Tippfehler im
+   PEP („bot_whatapp") würde sonst eine eigene Quelle erfinden und die
+   Divergenzauswertung eines Kanals still unvollständig lassen. Preis ist eine
+   Migration je neuem PEP — beabsichtigt.
+
+Beide Befunde haben dieselbe Form wie der `gdpr-audit`-Ausfall (CLAUDE.md §5):
+Es bricht nichts, es fehlt nur das Ergebnis. Die Lehre ist auch dieselbe — die
+Frage „woher weiß ich, dass das wirklich geschrieben wurde?" gehört gestellt,
+bevor man die leere Tabelle für ein gutes Zeichen hält.
+
+**Ein Befund, der nicht behoben wurde, weil er eine Produktentscheidung ist:**
+Eine vom PDP gesperrte Bot-Nachricht verbraucht trotzdem eine Einheit von
+`limit.bot_messages_monthly`. Das Kontingent wird vor der Prüfung gebucht, weil
+die bestehende Reihenfolge (Feature-Gate → Kontingent → Persistenz) nicht
+angetastet wurde. Ob eine blockierte Anfrage dem Mandanten in Rechnung gestellt
+werden soll, ist eine Preisfrage und gehört entschieden, nicht nebenbei
+geändert.
+
+**P2 ist damit vollständig**, bis auf das ausdrücklich zurückgestellte P2-2
+(Microsoft 365) — **E6 ist am 2026-09-04 vom Eigentümer entschieden: eigene
+Kanäle zuerst.** P2-1, P2-3, P2-4 und P2-5 sind umgesetzt. Offen bleiben
+E1–E5 und E7 aus §7 sowie Phase P3.
+
+**Eine Entscheidung liegt beim Eigentümer**, und sie betrifft inzwischen vier
+Schalter: `SITEOS_PUBLISH_PDP` (P2-3), `AGENT_PDP_ENFORCEMENT` (P1-5),
+`GOVERNANCE_PDP_MODE` (P2-4) und `BOT_PDP_MODE` (P2-5) stehen alle auf
+`shadow`. Bis jemand `enforce` setzt, binden die Richtlinien des Mandanten an
+keiner dieser Stellen — sichtbar im jeweiligen Hinweistext, aber wirkungslos.
+Das war so gewollt: Kein Merge sollte das Produktionsverhalten von selbst
+ändern. Es bleibt aber nur so lange richtig, wie jemand den Umschaltzeitpunkt
+festlegt. Andernfalls ist das Ergebnis von P1 und P2 eine vollständig gebaute
+Durchsetzung, die nichts durchsetzt — und das ist genau die Lage, die dieser
+Plan beheben sollte. Empfohlene Reihenfolge: erst die Divergenzen in
+`pdp_shadow_log` je Kanal ansehen, dann kanalweise umstellen, Bot-Kanäle
+zuletzt (dort sieht ein Kunde die Wirkung sofort).
 
 ### Befund am Prüfstand selbst, gemessen am 2026-09-04
 

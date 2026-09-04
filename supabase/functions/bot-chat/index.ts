@@ -14,8 +14,15 @@
 //   2. Feature-Gate                               bots.enabled
 //   3. Monats-Quota prüfen + zählen               limit.bot_messages_monthly
 //   4. Konversation upserten + User-Nachricht persistieren
-//   5. Verlauf laden, Prompt bauen, AI aufrufen   runAiTool('bot_reply')
-//   6. Antwort persistieren + zurückgeben
+//   5. Richtlinienpruefung durch den PDP            evaluateBotPolicy (P2-5)
+//   6. Verlauf laden, Prompt bauen, AI aufrufen   runAiTool('bot_reply')
+//   7. Antwort persistieren + zurückgeben
+//
+// Zu Schritt 5: Der Bot-Kanal ist Enforcement-Klasse A — eine Sperre wirkt
+// hier wirklich, weil die Antwort gar nicht erst entsteht. Die Pruefung
+// liegt bewusst NACH dem Persistieren der Frage (sonst waere die Sperre
+// nicht dokumentiert) und VOR dem Modellaufruf (sonst kaeme sie zu spaet).
+// Betriebsmodus BOT_PDP_MODE, Default `shadow`.
 //
 // verify_jwt = false (config.toml). Zugriff über (tenant_id, bot_id).
 
@@ -28,6 +35,7 @@ import {
   resolveBot, upsertConversation, insertMessage, loadRecentHistory,
   buildBotPrompt, BotError,
 } from '../_shared/bots.ts';
+import { evaluateBotPolicy } from '../_shared/bots-pep.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -86,6 +94,28 @@ Deno.serve(async (req) => {
 
     await insertMessage(admin, bot, conversationId, 'user', message.trim());
 
+    // P2-5 — Richtlinienpruefung. Der Nachrichtentext verlaesst den Prozess
+    // nicht; an den PDP gehen nur Merkmale (siehe _shared/pdp/botmessage.ts).
+    const policy = await evaluateBotPolicy(admin, {
+      tenantId, botId: bot.id, conversationId, channel: 'chat', message: message.trim(),
+    });
+    if (!policy.mayAnswer) {
+      // Die Absage gehoert in den Gespraechsverlauf: Ein Prueffall muss
+      // spaeter sehen koennen, dass gefragt und nicht geantwortet wurde.
+      // Die Begruendungen bleiben im Pruefpfad und gehen nicht an den
+      // Anrufer — sie nennen die internen Regeln des Mandanten.
+      await insertMessage(admin, bot, conversationId, 'assistant', policy.refusal!, {
+        metadata: { channel: 'chat', refused: true, ...policy.trail },
+      });
+      return jsonResponse({
+        ok: true,
+        conversation_id: conversationId,
+        reply: policy.refusal,
+        run_id: null,
+        policy_engine: policy.trail.policy_engine,
+      });
+    }
+
     const history = await loadRecentHistory(admin, conversationId, 12);
     // Die zuletzt eingefügte User-Nachricht ist bereits Teil von `history`;
     // entferne sie, damit sie nicht doppelt im Prompt landet.
@@ -102,7 +132,7 @@ Deno.serve(async (req) => {
       inputTokens: ai.inputTokens,
       outputTokens: ai.outputTokens,
       costUsd: ai.costUsd,
-      metadata: { duration_ms: ai.durationMs },
+      metadata: { duration_ms: ai.durationMs, ...policy.trail },
     });
 
     return jsonResponse({

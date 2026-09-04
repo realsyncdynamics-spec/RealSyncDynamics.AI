@@ -6,8 +6,16 @@
 > ADR 0006 (MFA/AAL2), RFC-003 (`docs/architecture/governance-memory-policy-rfc.md`),
 > RFC-004 (`docs/architecture/governance-intelligence-economic-control-rfc.md`),
 > `docs/architecture/agent-manager-roadmap.md`
-> **Bindet:** den noch nicht existierenden Migrationsentwurf der
-> Agenten-Organisationsebene (`org_units` … `agent_escalations`)
+> **Bindet:** den Migrationsentwurf der Agenten-Organisationsebene
+> (`org_units` … `agent_escalations`)
+>
+> **Umgesetzt 2026-09-04** in `supabase/migrations/20260904010000` …
+> `20260904010900` (zehn Dateien, D4-Reihenfolge, beginnend bei
+> `platform_operators`). Invarianten festgehalten in
+> `test/governance/agent-layer-rls-invariants.test.ts`. **Nicht** mitumgesetzt
+> und weiterhin offen: B1 (`profiles.is_super_admin`), B3 (Anker für D1 in
+> `governance_approvals`), B4 (`agent_decisions` als Vorschlags-Objekt) sowie
+> der Wertebereich von `severity`/`category`.
 
 ## Kontext
 

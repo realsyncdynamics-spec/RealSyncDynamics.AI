@@ -13,7 +13,6 @@ import {
   type ApprovalState,
   type BackendState,
   type EvidenceState,
-  type PolicyEngineState,
   type PublishGateInput,
   type RuntimeFinding,
   type SiteBlueprint,
@@ -32,17 +31,6 @@ const completeEvidence: EvidenceState = { snapshotWritten: true, custodyLinked: 
 const greenfield: BackendState = { kind: 'greenfield' };
 const noApproval: ApprovalState = { grantedForArtifactSha256: null, grantedBy: null, reason: null };
 
-// Die Regeln des Mandanten greifen nicht — der Zustand, den diese Tests
-// voraussetzen. Sie prüfen die eigene Befundtabelle des Gates, nicht den PDP;
-// dessen Wirkung steht in `publish-gate-pdp.test.ts`.
-const policyAllows: PolicyEngineState = {
-  kind: 'evaluated',
-  decision: 'allow',
-  reasons: [],
-  matchedPolicyIds: [],
-  snapshotVersion: 'test-snapshot',
-};
-
 function input(overrides: Partial<PublishGateInput> = {}): PublishGateInput {
   return {
     blueprint: cleanBlueprint(),
@@ -50,8 +38,10 @@ function input(overrides: Partial<PublishGateInput> = {}): PublishGateInput {
     artifactSha256: HASH_A,
     evidence: completeEvidence,
     backend: greenfield,
-    policy: policyAllows,
     approval: noApproval,
+    // P2-3: Voreinstellung der Tests — ohne Mandantenrichtlinie, damit die
+    // bestehenden Faelle unveraendert dasselbe pruefen wie zuvor.
+    policyEngine: { engine: 'not_enforcing', reason: 'Test ohne Richtlinienpruefung' },
     evaluationId: 'eval-1',
     evaluatedAt: '2026-08-22T12:00:00.000Z',
     ...overrides,

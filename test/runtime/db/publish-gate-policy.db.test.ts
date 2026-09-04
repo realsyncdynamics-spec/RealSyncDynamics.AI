@@ -79,13 +79,12 @@ d('P2-3 / Prüfpfad der Richtlinien-Entscheidung (DB)', () => {
   it('hält die Entscheidung des PDP fest', async () => {
     const { tenantId } = await createTenantWithMember(ctx!);
     const row = await insertEvaluation(ctx!, tenantId, {
-      policy_engine_status: 'evaluated',
+      policy_engine_status: 'consulted',
       policy_decision: 'allow',
-      policy_matched_ids: JSON.stringify([]),
-      policy_snapshot_version: 'v-1',
+      policy_reasons: JSON.stringify([]),
     });
 
-    expect(row.policy_engine_status).toBe('evaluated');
+    expect(row.policy_engine_status).toBe('consulted');
     expect(row.policy_decision).toBe('allow');
     expect(row.publishable).toBe(true);
   });
@@ -95,10 +94,22 @@ d('P2-3 / Prüfpfad der Richtlinien-Entscheidung (DB)', () => {
     const row = await insertEvaluation(
       ctx!,
       tenantId,
-      { policy_engine_status: 'evaluated', policy_decision: 'block' },
+      { policy_engine_status: 'consulted', policy_decision: 'block' },
       { status: 'blocked', policy_compliant: false },
     );
     expect(row.publishable).toBe(false);
+  });
+
+  it('Beobachtungsbetrieb ist als solcher erkennbar und sperrt nicht', async () => {
+    // `not_enforcing` heisst: befragt, aber nicht bindend. Ohne diese
+    // Unterscheidung sähe eine Veröffentlichung unter Beobachtung im
+    // Prüfpfad genauso aus wie eine unter Durchsetzung — für einen Prüfer
+    // der entscheidende Unterschied zwischen einer Schranke und einem
+    // Protokoll.
+    const { tenantId } = await createTenantWithMember(ctx!);
+    const row = await insertEvaluation(ctx!, tenantId, { policy_engine_status: 'not_enforcing' });
+    expect(row.policy_engine_status).toBe('not_enforcing');
+    expect(row.publishable).toBe(true);
   });
 
   it('Bestandszeilen ohne Policy-Angabe bleiben gültig (additiv)', async () => {
@@ -119,7 +130,7 @@ d('P2-3 / Prüfpfad der Richtlinien-Entscheidung (DB)', () => {
 
     expect(
       await rejects(ctx!, () =>
-        insertEvaluation(ctx!, tenantId, { policy_engine_status: 'evaluated', policy_decision: 'ja_bitte' }),
+        insertEvaluation(ctx!, tenantId, { policy_engine_status: 'consulted', policy_decision: 'ja_bitte' }),
       ),
     ).toMatch(/policy_decision_valid/);
   });

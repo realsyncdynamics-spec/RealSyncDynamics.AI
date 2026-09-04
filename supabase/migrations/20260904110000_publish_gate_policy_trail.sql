@@ -18,8 +18,19 @@
 -- Im Vertrag sind zwei sehr verschiedene Lagen dasselbe
 -- `policy_compliant: false`:
 --
---   1. Eine Richtlinie des Mandanten hat die Veröffentlichung untersagt.
---   2. Der PDP war nicht erreichbar, also ist gar nichts festgestellt.
+--   1. Eine Richtlinie des Mandanten hat die Veröffentlichung untersagt
+--      (`consulted` + `block`).
+--   2. Der PDP war nicht erreichbar, also ist gar nichts festgestellt
+--      (`unavailable`).
+--
+-- Und eine dritte, die gar nicht sperrt und trotzdem festgehalten gehört:
+--
+--   3. Der PDP wurde befragt, seine Antwort bindet aber nicht
+--      (`not_enforcing` — `SITEOS_PUBLISH_PDP` steht auf `shadow` oder `off`).
+--      Ohne diese Spalte liesse sich spaeter nicht belegen, ob eine
+--      Veroeffentlichung unter Durchsetzung oder unter Beobachtung stattfand.
+--      Fuer einen Pruefer ist das der Unterschied zwischen einer Schranke und
+--      einem Protokoll.
 --
 -- Für den Betroffenen ist der Unterschied entscheidend — im ersten Fall muss
 -- er die Site ändern, im zweiten muss jemand einen Dienst reparieren. Für
@@ -38,17 +49,21 @@
 BEGIN;
 
 ALTER TABLE public.siteos_publish_evaluations
-  -- 'evaluated' | 'unavailable'. NULL = vor P2-3 bewertet, siehe oben.
+  -- 'consulted' | 'not_enforcing' | 'unavailable'.
+  -- NULL = vor P2-3 bewertet, siehe oben.
   ADD COLUMN IF NOT EXISTS policy_engine_status    TEXT,
   -- Entscheidung des PDP. NULL, wenn er nicht geantwortet hat.
   ADD COLUMN IF NOT EXISTS policy_decision         TEXT,
-  -- Regeln, die zugetroffen haben. Leer heisst „keine getroffen" — das ist
-  -- eine Aussage und deshalb nicht dasselbe wie NULL.
-  ADD COLUMN IF NOT EXISTS policy_matched_ids      JSONB NOT NULL DEFAULT '[]'::jsonb,
-  -- Fassung des ausgewerteten Regelstands. Ohne sie liesse sich eine alte
-  -- Entscheidung spaeter nicht nachrechnen: Die Regeln koennten sich
-  -- inzwischen geaendert haben.
-  ADD COLUMN IF NOT EXISTS policy_snapshot_version TEXT;
+  -- Begruendungen des PDP im Klartext, wie er sie formuliert hat. Leer heisst
+  -- „keine Regel hat zugetroffen" — das ist eine Aussage und deshalb nicht
+  -- dasselbe wie NULL.
+  --
+  -- BEWUSST KEINE SPALTE fuer die Fassung des Regelstands: Sie waere fuer die
+  -- Nachrechenbarkeit wertvoll, aber `consultPolicyEngine` reicht sie heute
+  -- nicht heraus. Eine Spalte, die immer NULL ist, sieht aus wie ein Nachweis
+  -- und ist keiner — schlimmer als ihr Fehlen. Sie gehoert nachgezogen, wenn
+  -- der PEP die Snapshot-Version mitfuehrt.
+  ADD COLUMN IF NOT EXISTS policy_reasons          JSONB NOT NULL DEFAULT '[]'::jsonb;
 
 -- Werte aus geschlossenem Vokabular. Ein Tippfehler im Schreibpfad soll
 -- auffallen, nicht stillschweigend im Pruefpfad landen.
@@ -56,7 +71,7 @@ ALTER TABLE public.siteos_publish_evaluations
   DROP CONSTRAINT IF EXISTS siteos_publish_policy_engine_status_valid;
 ALTER TABLE public.siteos_publish_evaluations
   ADD CONSTRAINT siteos_publish_policy_engine_status_valid
-  CHECK (policy_engine_status IS NULL OR policy_engine_status IN ('evaluated', 'unavailable'));
+  CHECK (policy_engine_status IS NULL OR policy_engine_status IN ('consulted', 'not_enforcing', 'unavailable'));
 
 ALTER TABLE public.siteos_publish_evaluations
   DROP CONSTRAINT IF EXISTS siteos_publish_policy_decision_valid;
@@ -84,7 +99,7 @@ CREATE INDEX IF NOT EXISTS siteos_publish_evaluations_policy_idx
   WHERE policy_decision IS NOT NULL;
 
 COMMENT ON COLUMN public.siteos_publish_evaluations.policy_engine_status IS
-  'Ob der PDP geantwortet hat. NULL = Bewertung stammt aus der Zeit vor P2-3, als keine Mandanten-Richtlinie ausgewertet wurde.';
+  'consulted = befragt und bindend; not_enforcing = befragt, aber SITEOS_PUBLISH_PDP steht nicht auf enforce; unavailable = keine Antwort. NULL = Bewertung stammt aus der Zeit vor P2-3.';
 COMMENT ON COLUMN public.siteos_publish_evaluations.policy_decision IS
   'Entscheidung des PDP. block nimmt policy_compliant, require_approval setzt human_approval_required — beides ueber die Ableitung im Kern, nicht direkt.';
 

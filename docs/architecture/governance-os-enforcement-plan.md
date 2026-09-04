@@ -712,33 +712,50 @@ Relativ, keine erfundenen Zeitangaben.
 
 | Vorhaben | Stand | Wo |
 |---|---|---|
+| P2-3 SiteOS Publish Gate als PEP | ✅ (E6 entschieden 2026-09-04: eigene Kanäle zuerst) | **Befund vorweg, weil er den Umfang bestimmt:** Der Publish Gate existierte seit dem 2026-08-22 — korrekt als Klasse-B-Schranke, fail-closed, hash-gebunden. Er rief aber **keinen PDP**. `policy_compliant` und `human_approval_required` kamen ausschließlich aus fest verdrahteten Regeln in `gate.ts` (Dimensions-/Severity-Tabelle plus zwei Blueprint-Flags); die Richtlinien des Mandanten hatten beim Veröffentlichen **keine Wirkung**. Genau §1.4 und R10, an der schärfsten Stelle des Produkts. P2-3 war deshalb „Gate an den einen Entscheider hängen", nicht „Gate bauen". **Der Vertrag aus Zielarchitektur §7 bleibt wörtlich unverändert**: Das Verdikt wird in die vorhandenen Felder gefaltet — `block` → `policy_compliant=false`, `require_approval` → `human_approval_required=true`, `warn` → Warnung. Kein sechstes Feld, weil das die generierte Spalte in der Datenbank und die Ableitung im Kern hätte auseinanderlaufen lassen (G2). `PolicyEngineState` ist **Pflichtfeld**: Wäre es optional, sähe „nicht befragt" genauso aus wie „vergessen zu befragen" — die K1-Fehlerklasse. Der Typ zwang prompt beide Bestandstests, sich zu erklären. Der PDP-Aufruf liegt im Deno-Handler, nicht im Kern: `gate.ts` bleibt abhängigkeitsfrei und deterministisch, sonst wäre keine Bewertung mehr nachvollziehbar. `SITEOS_PUBLISH_PDP=off|shadow|enforce`, **Default shadow** — der Merge ändert das Produktionsverhalten nicht. **Ausfallverhalten weicht bewusst ab**: hier fail-closed nach §7 G3, nicht fail-open wie der allgemeine Default aus E2 — Veröffentlichen ist eine bewusste, wiederholbare Handlung, und §7 ist normativ und spezieller. Die Sperre nennt den Ausfall beim Namen, damit niemand den Fehler in den Analysebefunden sucht |
 | P2-1 Connector-Rahmenwerk | ✅ | **Die Klasse ist abgeleitet, nicht eingegeben** — das ist der ganze Punkt. `shared/enforcement-classes.ts` trägt die Zuordnung Systemtyp → Klasse samt Begründung; `connector_enforcement_class()` (Migration `20260904100000`) trägt sie in SQL; ein BEFORE-Trigger auf `connector_registry` **überschreibt** jeden mitgeschickten Wert. Dürfte ein Mandant sein Microsoft 365 auf „A" setzen, behauptete die Oberfläche eine Blockierfähigkeit, die es dort nicht gibt — genau die Scheinimplementierung, die der Auftrag §3 untersagt. Ein DB-Test stellt den Angriff nach. Unbekannte Systemtypen ergeben **C, nicht A**: Ein System, dessen Integrationspunkt niemand belegt hat, kann nichts verhindern. `connector_enforcement_summary()` beantwortet die erste Prüferfrage („bei wie vielen können Sie wirklich verhindern?") in der Datenbank statt im Frontend, wo eine falsche Formel unbemerkt bliebe. Oberfläche: `/app/governance/connectors`. **Additiv**: Die vier Bestandstabellen (`integrations`, `integration_configs`, `integration_connectors`, `enterprise_connectors`) bleiben unangetastet, die Registratur legt sich darüber und zeigt per `source_table`/`source_id` auf die jeweilige Zeile |
 
-| P2-3 SiteOS Publish Gate als PEP | ✅ | **Das Gate kannte die Regeln seines Betreibers nicht.** `policy_compliant` kam allein aus der fest verdrahteten Befundtabelle des Produkts (`LEGALLY_BLOCKING` × Severity) — die Untergrenze für jeden Mandanten, aber nicht die Regel DES Mandanten. Wer „keine Veröffentlichung ohne Freigabe des DSB" hinterlegt hatte, hatte keinen Weg, das auf die Veröffentlichung wirken zu lassen; die Oberfläche zeigte trotzdem ein Gate. Jetzt fragt der Handler den PDP (`_shared/pdp/publish.ts`, Kanal `siteos_publish`, Verb `publish`). **Die normative Ableitungsregel aus §7 bleibt unangetastet**: `block` nimmt `policy_compliant`, `require_approval` setzt `human_approval_required`, `warn` erzeugt einen Hinweis — ein sechstes Vertragsfeld hätte §7 geändert. **Fail-closed** nach G3, ausdrücklich anders als der allgemeine Default (E2): Ein durchgelassener Gateway-Aufruf lässt sich nachträglich bewerten, eine Veröffentlichung nicht zurückholen. Eigene Frist von 5 s, weil G3 die Zeitüberschreitung ausdrücklich nennt |
+| P2-3 SiteOS Publish Gate als PEP | ✅ | **Das Gate kannte die Regeln seines Betreibers nicht.** `policy_compliant` kam allein aus der fest verdrahteten Befundtabelle des Produkts (`LEGALLY_BLOCKING` × Severity) — die Untergrenze für jeden Mandanten, aber nicht die Regel DES Mandanten. Wer „keine Veröffentlichung ohne Freigabe des DSB" hinterlegt hatte, hatte keinen Weg, das auf die Veröffentlichung wirken zu lassen; die Oberfläche zeigte trotzdem ein Gate. Jetzt fragt der Handler den PDP (`consultPolicyEngine`, Kanal `siteos_publish`, Verb `publish`). **Die normative Ableitungsregel aus §7 bleibt unangetastet**: `block` nimmt `policy_compliant`, `require_approval` setzt `human_approval_required`, `warn` erzeugt einen Hinweis — ein sechstes Vertragsfeld hätte §7 geändert. **Fail-closed** nach G3 im Durchsetzbetrieb, ausdrücklich anders als der allgemeine Default (E2): Ein durchgelassener Gateway-Aufruf lässt sich nachträglich bewerten, eine Veröffentlichung nicht zurückholen. Der Default ist `SITEOS_PUBLISH_PDP=shadow` — der dritte Zustand `not_enforcing` macht im Sperrtext sichtbar, dass die Regeln des Mandanten hier gerade **nicht** binden. Wer das verschweigt, lässt ein Gate strenger wirken, als es ist |
 
 **Zur Injektionsgrenze bei P2-3 (K6), schärfer als beim Agenten:** Ein
 Blueprint besteht überwiegend aus fremdem Text — aus dem Prompt eines Nutzers
 oder aus einer **gescannten fremden Website**. Ginge er in die
 Entscheidungsgrundlage, könnte der Betreiber der gescannten Seite die Bewertung
 seiner eigenen Übernahme beeinflussen, durch nichts weiter als einen Satz auf
-seiner Startseite. Den Prozess verlassen deshalb nur strukturierte Tatsachen aus
-geschlossenem Vokabular: Befund-**Codes** statt Titel, Branchenschlüssel,
-Herkunftsart, Seitenzahl, Rechtsgrundlagen, Hashes. Ein Test stellt den Angriff
-nach.
+seiner Startseite. Den Prozess verlassen deshalb nur Merkmale, keine Inhalte:
+Slug, Artefakt-Hash, Befund**zahl**, DSFA-Kennzeichen, Art.-9-Einstufung.
+
+**Zwei Umsetzungen, zusammengeführt am 2026-09-04.** Zwei Sitzungen haben P2-3
+unabhängig gebaut — dasselbe Muster wie beim `gdpr-audit`-Ausfall (CLAUDE.md
+§5). Beide kamen zum **gleichen** Vertragsergebnis: Faltung in vorhandene
+Felder, kein sechstes Feld, fail-closed. Sie unterschieden sich im Default.
+Übernommen wurde die Fassung mit `shadow` als Vorgabe, weil die andere auf
+einer nachprüfbar **falschen** Prämisse beruhte: Sie nahm an, es gebe keinen
+Publish-Pfad in Produktion. `cloudflare-deployer` und `website-domain-manager`
+stehen aber beide in `PRODUCTION_SET` — sofortiges Durchsetzen hätte echte
+Veröffentlichungen sperren können. Lehre: Eine Prämisse, die eine
+Vorsichtsmaßnahme überflüssig erscheinen lässt, ist die, die man misst.
 
 **Zwei Lagen, ein Vertragsfeld — und warum das in der Datenbank steht:** Im
 Contract sind „eine Richtlinie hat gesperrt" und „der PDP war nicht erreichbar"
 beide `policy_compliant: false`. Für den Betroffenen ist der Unterschied
 entscheidend (Site ändern vs. Dienst reparieren), für einen Prüfer ebenso: Ein
 Gate, das wegen eines Ausfalls sperrt, hat nicht „die Richtlinie durchgesetzt".
-Migration `20260904110000` trennt beides maschinell auswertbar und erzwingt per
-CHECK, dass ein Ausfall **nie** als konform gespeichert werden kann — dieselbe
+Migration `20260904110000` trennt die drei Lagen (`consulted`,
+`not_enforcing`, `unavailable`) maschinell auswertbar und erzwingt per CHECK,
+dass ein **Ausfall** nie als konform gespeichert werden kann — dieselbe
 Überlegung, aus der `publishable` eine generierte Spalte ist.
 
-**Offen in P2**: P2-2 (Microsoft 365) bleibt liegen — **E6 ist am 2026-09-04
-vom Eigentümer entschieden: eigene Kanäle zuerst.** Damit folgen als Nächstes
-P2-4 (CI/CD-Gate) und P2-5 (Bot-Governance). Offen bleiben die Entscheidungen
-E1–E5 und E7 aus §7 sowie Phase P3.
+**Offen in P2**: P2-2 (Microsoft 365) bleibt zurückgestellt — **E6 ist am
+2026-09-04 vom Eigentümer entschieden: eigene Kanäle zuerst.** Damit folgen als
+Nächstes P2-4 (CI/CD-Gate) und P2-5 (Bot-Governance). Offen bleiben E1–E5 und
+E7 aus §7 sowie Phase P3.
+
+**Eine Entscheidung liegt beim Eigentümer**: `SITEOS_PUBLISH_PDP` steht auf
+`shadow`. Bis jemand `enforce` setzt, binden die Richtlinien des Mandanten
+beim Veröffentlichen **nicht** — sichtbar im Sperrtext, aber wirkungslos. Der
+Umschaltzeitpunkt gehört entschieden, sonst bleibt P2-3 dauerhaft ein
+Beobachter.
 
 ### Befund am Prüfstand selbst, gemessen am 2026-09-04
 

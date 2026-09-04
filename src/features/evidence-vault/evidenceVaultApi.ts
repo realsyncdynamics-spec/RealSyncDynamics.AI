@@ -5,7 +5,7 @@
 
 import { getSupabase } from '../../lib/supabase';
 import type { RetentionClass } from '../../lib/evidence/retention';
-import type { SnapshotRecord } from '../../lib/evidence/verifyChain';
+import type { SnapshotRecord } from '../../../packages/evidence-chain/src/index';
 
 export interface TimelineEntry {
   id: string;

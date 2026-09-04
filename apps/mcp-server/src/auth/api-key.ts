@@ -1,15 +1,8 @@
-import crypto from 'crypto';
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { MctAuthContext } from '../types/index.js';
+import { validateApiKey, logKeyUsage } from '../services/api-keys-db.js';
 
 const API_KEY_PREFIX = 'rsmcp_';
-
-export function hashApiKey(key: string): string {
-  return crypto
-    .createHash('sha256')
-    .update(key)
-    .digest('hex');
-}
 
 export function validateApiKeyFormat(key: string): boolean {
   return key.startsWith(API_KEY_PREFIX) && key.length > API_KEY_PREFIX.length;
@@ -28,35 +21,69 @@ export async function authenticateRequest(
     return null;
   }
 
-  // In Phase 1: placeholder. Phase 2 wird echte DB-Queries implementiert.
-  // Für jetzt: nur Struktur validieren.
-  const keyHash = hashApiKey(apiKey);
-  const keyId = apiKey.substring(0, 20); // Simplified for MVP
+  // Validate against database (Phase 2.1)
+  const validation = await validateApiKey(apiKey);
+  if (!validation.valid || !validation.keyId || !validation.tenantId) {
+    return null;
+  }
 
   return {
-    keyId,
-    tenantId: '', // würde aus DB kommen
-    scopes: ['evidence.read', 'governance.read'],
+    keyId: validation.keyId,
+    tenantId: validation.tenantId,
+    scopes: validation.scopes || [],
   };
 }
 
+/**
+ * Log key usage after request completes.
+ * Call this from route handlers.
+ */
+export async function logRequestUsage(
+  request: FastifyRequest,
+  statusCode: number,
+  latencyMs: number,
+  options?: { countAgainstQuota?: boolean },
+): Promise<void> {
+  const auth = (request as any).user as MctAuthContext | undefined;
+  if (!auth) {
+    return;
+  }
+
+  const clientIp =
+    (request.headers['x-forwarded-for'] as string)?.split(',')[0] ||
+    request.socket.remoteAddress ||
+    'unknown';
+  const userAgent = request.headers['user-agent'] as string | undefined;
+  const action = `${request.method.toLowerCase()} ${request.url}`;
+
+  await logKeyUsage(auth.keyId, action, statusCode, {
+    ip: clientIp,
+    userAgent,
+    latencyMs,
+    countAgainstQuota: options?.countAgainstQuota,
+  });
+}
+
+/**
+ * preHandler, der einen Scope erzwingt.
+ *
+ * Ohne diese Prüfung wäre die Scope-Angabe eines Keys eine Absichtserklärung
+ * statt einer Kontrolle: Der Scope stünde in der Datenbank und im Auth-Kontext,
+ * ein Key mit ausschließlich `evidence.read` erreichte aber trotzdem jeden
+ * anderen Lesepfad.
+ */
 export function requireScope(scope: string) {
-  return (target: any, propertyKey: string, descriptor: PropertyDescriptor) => {
-    const originalMethod = descriptor.value;
+  return async function (request: FastifyRequest, reply: FastifyReply): Promise<void> {
+    const auth = (request as any).user as MctAuthContext | undefined;
+    if (!auth) {
+      return reply.code(401).send({ error: 'UNAUTHORIZED' });
+    }
 
-    descriptor.value = async function (request: FastifyRequest, reply: FastifyReply) {
-      const auth = (request as any).user as MctAuthContext | undefined;
-      if (!auth) {
-        return reply.code(401).send({ error: 'Unauthorized' });
-      }
-
-      if (!auth.scopes.includes(scope)) {
-        return reply.code(403).send({ error: 'Forbidden: insufficient scope' });
-      }
-
-      return originalMethod.call(this, request, reply);
-    };
-
-    return descriptor;
+    if (!auth.scopes.includes(scope)) {
+      return reply.code(403).send({
+        error: 'FORBIDDEN',
+        message: `Dieser Key hat den Scope "${scope}" nicht.`,
+      });
+    }
   };
 }

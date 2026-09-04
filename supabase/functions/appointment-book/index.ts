@@ -18,6 +18,7 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { handleOptions, jsonResponse, jsonError, methodNotAllowed } from '../_shared/gateway.ts';
 import { resolveBot, upsertConversation, BotError } from '../_shared/bots.ts';
+import { gateFeature, EntitlementError } from '../_shared/entitlements.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -52,6 +53,19 @@ Deno.serve(async (req) => {
     const bot = await resolveBot(admin, tenantId, botId);
     if (!bot.capabilities?.appointments) {
       return jsonError(403, 'CAPABILITY_DISABLED', 'this bot cannot book appointments');
+    }
+
+    // Entitlement-Gate (AP9, Welle 1): `bot.capabilities.appointments` ist ein
+    // kundeneigenes Flag, das der Kunde im Browser selbst setzt — es fragt
+    // ihn, ob er darf (entitlement-reality-map.md §2). Ob der Plan die
+    // Terminbuchung trägt, entscheidet allein `bots.appointments`.
+    try {
+      await gateFeature(admin, bot.tenant_id, 'bots.appointments');
+    } catch (e) {
+      if (e instanceof EntitlementError) {
+        return jsonError(403, 'ENTITLEMENT_MISSING', 'Terminbuchung ist im Plan dieses Arbeitsbereichs nicht enthalten (bots.appointments).');
+      }
+      throw e;
     }
 
     const conversationRef = body.conversation_ref ? String(body.conversation_ref) : null;

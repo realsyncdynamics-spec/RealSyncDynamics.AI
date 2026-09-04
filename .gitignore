@@ -1,4 +1,8 @@
-node_modules/
+# Ohne Schrägstrich, damit auch ein *Symlink* namens `node_modules` ignoriert
+# wird. Mit `node_modules/` greift die Regel nur für Verzeichnisse — so landete
+# in f757c70c ein zirkulärer Symlink (node_modules -> …/node_modules) im Repo,
+# der jeden Checkout dieses Branches unbrauchbar machte.
+node_modules
 build/
 dist/
 coverage/

@@ -47,8 +47,8 @@ export function PostRegisterOnboardingPage() {
   // sie darf die Registrierung nicht scheitern lassen. Gibt es nichts zu
   // übernehmen (Nutzer kam ohne Scan), passiert nichts.
   //
-  // Schreibpfad: `supabase/functions/audit-claim`. Es gibt keine
-  // INSERT-/UPDATE-Policy auf `gdpr_audits`; nur die Service-Role schreibt.
+  // Schreibpfad: RPC `claim_gdpr_audit` (SECURITY DEFINER) — derselbe wie
+  // auf /welcome. Es gibt keine INSERT-/UPDATE-Policy auf `gdpr_audits`.
   useEffect(() => {
     if (!user) return;
     void claimPendingAudit(activeTenantId);

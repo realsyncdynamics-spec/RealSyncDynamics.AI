@@ -81,7 +81,11 @@ function buildBlueprint(domain: string) {
 
 /** Blueprint + Template → fertiges HTML der Startseite. */
 function renderVariant(blueprint: ReturnType<typeof buildBlueprint>, variant: Variant, domain: string): string {
-  const pages = renderSite(applySiteDesignTemplate(blueprint, variant), { baseUrl: domain });
+  // `showcase` ist hier gefahrlos und noetig: Gerendert wird ohnehin bei
+  // PREVIEW_VIEWPORT (1280 px) und erst danach skaliert, die `clamp()`-Werte
+  // der Layoutschicht loesen also auf ihre Desktop-Groessen auf. Ohne sie
+  // waere das Vorschaubild eine Textwueste statt einer Website.
+  const pages = renderSite(applySiteDesignTemplate(blueprint, variant), { baseUrl: domain, presentation: 'showcase' });
   return pages.find((page) => page.path === '/')?.html ?? pages[0]?.html ?? '';
 }
 

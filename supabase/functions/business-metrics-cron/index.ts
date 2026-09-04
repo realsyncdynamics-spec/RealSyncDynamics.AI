@@ -86,9 +86,25 @@ Deno.serve(async (req) => {
     await rollupDailyRevenue(admin, subs, invoices, events);
 
     // Best-effort retention. Don't fail the run if it errors.
-    await admin.rpc('prune_business_metric_snapshots').catch((e: unknown) => {
-      console.warn('[business-metrics-cron] prune failed:', (e as Error).message);
-    });
+    //
+    // Frueher stand hier `.rpc(...).catch(...)`. Das sieht wie ein Promise
+    // aus, ist aber keines: `rpc()` liefert einen PostgrestFilterBuilder, der
+    // zwar `await`-bar ist (thenable), aber kein `.catch()` besitzt. Der
+    // Zugriff darauf warf `TypeError: admin.rpc(...).catch is not a function`
+    // — und zwar bevor der RPC ueberhaupt abgeschickt wurde. Damit tat die
+    // Zeile das genaue Gegenteil ihres Kommentars: Sie liess den Lauf
+    // scheitern, und die Aufbewahrung lief nie.
+    //
+    // Gemessen am 2026-08-31: 96 Fehlschlaege in 24 Stunden bei 96 Laeufen —
+    // eine Fehlerquote von 100 % seit dem 2026-06-11, und keine einzige
+    // Ausduennung der Snapshots in dieser Zeit.
+    //
+    // Richtig ist die Fehlerpruefung ueber das Ergebnis: Ein PostgREST-Aufruf
+    // wirft nicht, er liefert `{ data, error }`.
+    const { error: pruneErr } = await admin.rpc('prune_business_metric_snapshots');
+    if (pruneErr) {
+      console.warn('[business-metrics-cron] prune failed:', pruneErr.message);
+    }
 
     return new Response(
       JSON.stringify({

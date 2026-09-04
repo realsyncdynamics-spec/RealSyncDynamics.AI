@@ -6,6 +6,7 @@ import {
 import { OAuthProviderButtons } from '../features/auth/OAuthProviderButtons';
 import { Logo } from '../components/Logo';
 import { getSupabase, isSupabaseConfigured } from '../lib/supabase';
+import { claimPendingAudit } from '../core/onboarding/claimAudit';
 
 /**
  * /welcome — Onboarding-Setup-Wizard nach Stripe-Checkout.
@@ -76,29 +77,14 @@ export function Welcome() {
         setEmail((prev) => prev || session.user.email || '');
         setStep((prev) => (prev === 1 ? 2 : prev));
 
+        void claimPendingAudit().catch(() => null);
+
         // Nach Login: ?next= auslesen und weiterleiten (z.B. /checkout/starter?pilot=true)
+        // Dieselbe Whitelist wie in finalizeAndNavigate: nur Pfade, die mit
+        // `/` beginnen und nicht mit `//` — sonst wäre `?next=//fremde.seite`
+        // ein Open Redirect direkt nach der Anmeldung.
         const nextParam = new URLSearchParams(window.location.search).get('next');
-        if (nextParam) {
-          // Consent aus sessionStorage persistieren (fire-and-forget)
-          try {
-            const raw = sessionStorage.getItem('rsd_pending_audit');
-            if (raw) {
-              const pending = JSON.parse(raw) as {
-                audit_id: string; analytics_consent: boolean;
-                consent_version: string; consent_type: string;
-              };
-              if (pending.analytics_consent) {
-                sb.from('user_consents').insert({
-                  user_id: session.user.id,
-                  scan_result_id: pending.audit_id,
-                  consent_type: pending.consent_type,
-                  consent_version: pending.consent_version,
-                  granted: true,
-                }).then(() => {/* fire-and-forget */});
-              }
-              sessionStorage.removeItem('rsd_pending_audit');
-            }
-          } catch { /* sessionStorage nicht verfügbar */ }
+        if (nextParam && nextParam.startsWith('/') && !nextParam.startsWith('//')) {
           navigate(nextParam, { replace: true });
           return;
         }
@@ -132,6 +118,7 @@ export function Welcome() {
         return;
       }
       if (data?.tenant_id) setTenantId(data.tenant_id);
+      void claimPendingAudit().catch(() => null);
     })();
     return () => { cancelled = true; };
   }, [step, tenantId]);

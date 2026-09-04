@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useSupabaseAuth } from '../../features/supabase/SupabaseAuthContext';
+import { claimPendingAudit } from '../../features/audit/pendingAudit';
 import { useTenant } from '../../core/access/TenantProvider';
 import { postEdgeFunction } from '../../lib/edgeFunction';
 import { isEdgeFunctionInProduction } from '../../config/production-edge-functions';
+import { SECTORS, type SectorId } from '../../config/sectors';
 
 /**
  * Die beiden Functions, die diesen Schritt tragen.
@@ -15,15 +17,7 @@ import { isEdgeFunctionInProduction } from '../../config/production-edge-functio
  */
 const SETUP_FUNCTIONS = ['save-company-profile', 'create-trial-subscription'] as const;
 
-type Sector = 'saas' | 'agency' | 'healthcare' | 'public_sector' | 'generic';
-
-const SECTORS = [
-  { id: 'saas' as Sector, label: 'SaaS / Tech Startup', description: 'Software-as-a-Service Produkte' },
-  { id: 'agency' as Sector, label: 'Agentur', description: 'Marketing-, Web- oder Digital-Agentur' },
-  { id: 'healthcare' as Sector, label: 'Healthcare', description: 'Medizin, Apotheken, Praxen' },
-  { id: 'public_sector' as Sector, label: 'Öffentliche Einrichtung', description: 'Behörde, öffentliche Organisation' },
-  { id: 'generic' as Sector, label: 'Sonstiges', description: 'Andere Branchen' },
-];
+type Sector = SectorId;
 
 const CONTEXT_QUESTIONS = [
   { id: 'team_size', label: 'Team-Größe', options: ['1-5 Personen', '6-20 Personen', '21-100 Personen', '100+ Personen'] },
@@ -42,13 +36,23 @@ export function PostRegisterOnboardingPage() {
   const [error, setError] = useState('');
   const [searchParams] = useSearchParams();
 
-  // Hier stand die Übernahme des kostenlosen Scans. Sie hing am Datensatz
-  // `public_site_scans`, der mit dem Schnitt von PR #1129 entfallen ist:
-  // kanonisch ist `gdpr_audits` (docs/product/canonical-funnel-decision.md).
-  // Die Stelle bleibt die richtige — der Mandant existiert bereits mit der
-  // Registrierung, und die Zuordnung soll auch gelingen, wenn der Nutzer die
-  // Branchenfragen abbricht. Der Claim-Writer gegen `gdpr_audits` kommt in
-  // P0-B (docs/architecture/canonical-builder-target-matrix.md §7).
+  // Übernahme des kostenlosen Scans in den Mandanten.
+  //
+  // Diese Stelle war im Repo bereits als die richtige markiert: Der Mandant
+  // existiert mit der Registrierung, und die Zuordnung soll auch gelingen,
+  // wenn der Nutzer die Branchenfragen abbricht. Deshalb ein eigener Effekt
+  // und kein Schritt im Absende-Pfad.
+  //
+  // `claimPendingAudit` wirft nicht. Die Übernahme ist ein Gewinn, kein Tor —
+  // sie darf die Registrierung nicht scheitern lassen. Gibt es nichts zu
+  // übernehmen (Nutzer kam ohne Scan), passiert nichts.
+  //
+  // Schreibpfad: RPC `claim_gdpr_audit` (SECURITY DEFINER) — derselbe wie
+  // auf /welcome. Es gibt keine INSERT-/UPDATE-Policy auf `gdpr_audits`.
+  useEffect(() => {
+    if (!user) return;
+    void claimPendingAudit(activeTenantId);
+  }, [user, activeTenantId]);
 
   if (!user) {
     navigate('/unified-entry/register');

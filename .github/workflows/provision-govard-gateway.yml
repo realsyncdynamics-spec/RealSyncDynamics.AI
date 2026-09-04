@@ -1,0 +1,206 @@
+# Einmalige Provisionierung des GOVARD Gateway.
+#
+# Legt D1 und R2 in der EU-Jurisdiktion an, spielt die Migrationen ein und
+# seedet die erste Org samt Admin-Key. Laeuft ausschliesslich auf manuellen
+# Start (workflow_dispatch) — nichts hiervon passiert automatisch.
+#
+# Warum als Workflow und nicht nur als Anleitung: Hier liegen die Cloudflare-
+# Zugangsdaten bereits als Repo-Secrets. Der Weg ohne Actions steht in
+# workers/govard-gateway/README.md, Weg B.
+#
+# Der Admin-Key wird NICHT hier erzeugt. Er entsteht lokal, und nur sein
+# SHA-256-Hash wird eingegeben — damit steht der Key nie in einem Protokoll.
+# Aus dem Hash laesst sich kein gueltiges Token herleiten (auth.ts vergleicht
+# sha256(Token) gegen ihn).
+#
+# Jeder Schritt ist idempotent: Ein zweiter Lauf legt nichts doppelt an und
+# ueberschreibt keinen bestehenden Key.
+name: Provision GOVARD Gateway
+
+on:
+  workflow_dispatch:
+    inputs:
+      org_id:
+        description: 'Kennung der ersten Org (z. B. org-demo)'
+        required: true
+        default: 'org-demo'
+      org_name:
+        description: 'Anzeigename der Org'
+        required: true
+        default: 'Demo Org'
+      actor_id:
+        description: 'Actor-Kennung des Admin-Keys'
+        required: true
+        default: 'owner'
+      admin_key_hash:
+        description: 'SHA-256-Hex des Admin-Keys (64 Zeichen), lokal erzeugt. NICHT der Key selbst — der beginnt mit govard_sk_ und wird abgewiesen.'
+        required: true
+      confirm:
+        description: 'Zum Bestaetigen exakt PROVISION eintippen'
+        required: true
+
+concurrency:
+  group: provision-govard-gateway
+  cancel-in-progress: false
+
+jobs:
+  provision:
+    runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CONFIG: workers/govard-gateway/wrangler.jsonc
+      DB_NAME: govard-gateway
+      BUCKET: govard-evidence-seals
+    steps:
+      # Actions muessen im Repo auf volle Commit-SHAs gepinnt sein (Org-Policy).
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Guard — Eingaben und Secrets pruefen
+        env:
+          CONFIRM: ${{ inputs.confirm }}
+          KEY_HASH: ${{ inputs.admin_key_hash }}
+        run: |
+          set -euo pipefail
+          if [ "$CONFIRM" != "PROVISION" ]; then
+            echo "::error::Bestaetigung fehlt — im Feld confirm exakt PROVISION eintragen."
+            exit 1
+          fi
+          if [ -z "${CLOUDFLARE_API_TOKEN:-}" ] || [ -z "${CLOUDFLARE_ACCOUNT_ID:-}" ]; then
+            echo "::error::CLOUDFLARE_API_TOKEN/ACCOUNT_ID sind nicht als Repo-Secrets gesetzt."
+            exit 1
+          fi
+          # Der Key traegt bewusst das Praefix govard_sk_ (siehe README). Nur
+          # dadurch ist diese Pruefung aussagekraeftig: Ein roher Hex-Key waere
+          # von einem sha256-Hash nicht zu unterscheiden, beide sind 64
+          # Hex-Zeichen. Mit Praefix ist die Verwechslung sicher erkennbar.
+          if printf '%s' "$KEY_HASH" | grep -q 'govard_sk_'; then
+            echo "::error::Hier steht der Admin-Key selbst, nicht sein Hash. Abgebrochen. Den Lauf loeschen und den Key als kompromittiert behandeln."
+            exit 1
+          fi
+          if ! printf '%s' "$KEY_HASH" | grep -Eq '^[0-9a-f]{64}$'; then
+            echo "::error::admin_key_hash ist kein SHA-256-Hex (64 Zeichen, 0-9a-f)."
+            exit 1
+          fi
+          echo "Eingaben in Ordnung."
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '20'
+
+      - name: Install deps
+        run: npm ci --no-audit --no-fund || npm install --no-audit --no-fund
+
+      # --jurisdiction eu ist nur beim Anlegen setzbar und danach unveraenderlich.
+      # Existiert die Datenbank schon, schlaegt create fehl — das ist der
+      # idempotente Pfad, nicht der Fehlerfall. Verlassen wird sich allein auf
+      # d1 info: Ohne aufloesbare database_id bricht der Lauf ab.
+      - name: D1 anlegen (EU) und database_id ermitteln
+        id: d1
+        run: |
+          set -uo pipefail
+          if npx wrangler d1 create "$DB_NAME" --jurisdiction eu 2>&1 | tee /tmp/d1create.log; then
+            echo "D1 neu angelegt."
+          else
+            echo "create nicht erfolgreich — existiert die Datenbank bereits? Ausgabe:"
+            cat /tmp/d1create.log
+          fi
+          set -e
+          npx wrangler d1 info "$DB_NAME" --json > /tmp/d1info.json
+          # Feldname aus wrangler belegt (der d1-info-Handler arbeitet mit
+          # db.uuid); die Alternativen fangen eine spaetere Umbenennung ab,
+          # statt still eine leere ID durchzureichen.
+          DB_ID=$(node -e "const o=JSON.parse(require('fs').readFileSync('/tmp/d1info.json','utf8')); process.stdout.write(o.uuid||o.database_id||o.id||'')")
+          if ! printf '%s' "$DB_ID" | grep -Eq '^[0-9a-f-]{36}$'; then
+            echo "::error::Keine gueltige database_id ermittelt. Hat der API-Token D1-Rechte?"
+            cat /tmp/d1info.json
+            exit 1
+          fi
+          echo "database_id=$DB_ID" >> "$GITHUB_OUTPUT"
+          echo "Ermittelte database_id: $DB_ID"
+
+      - name: R2-Bucket anlegen (EU)
+        run: |
+          set -uo pipefail
+          if npx wrangler r2 bucket create "$BUCKET" --jurisdiction eu 2>&1 | tee /tmp/r2create.log; then
+            echo "R2-Bucket neu angelegt."
+          else
+            echo "create nicht erfolgreich — existiert der Bucket bereits? Ausgabe:"
+            cat /tmp/r2create.log
+          fi
+          set -e
+          npx wrangler r2 bucket list --jurisdiction eu | tee /tmp/r2list.log
+          if ! grep -q "$BUCKET" /tmp/r2list.log; then
+            echo "::error::Bucket $BUCKET ist in der EU-Jurisdiktion nicht auffindbar. Hat der API-Token R2-Rechte?"
+            exit 1
+          fi
+
+      # Die echte ID wird nur in die Arbeitskopie geschrieben, nicht committet.
+      # Das Eintragen in wrangler.jsonc bleibt eine bewusste Entscheidung des
+      # Eigentuemers — erst damit hoert deploy-govard-gateway.yml auf, sich
+      # selbst zu ueberspringen.
+      - name: Migrationen einspielen
+        env:
+          DB_ID: ${{ steps.d1.outputs.database_id }}
+        run: |
+          set -euo pipefail
+          node -e "
+            const fs = require('fs');
+            const p = process.env.CONFIG;
+            const s = fs.readFileSync(p, 'utf8');
+            if (!s.includes('PLACEHOLDER_SET_VIA_WRANGLER_D1_CREATE')) {
+              console.log('Platzhalter nicht mehr vorhanden — Config traegt bereits eine ID.');
+              process.exit(0);
+            }
+            fs.writeFileSync(p, s.replace('PLACEHOLDER_SET_VIA_WRANGLER_D1_CREATE', process.env.DB_ID));
+            console.log('database_id in die Arbeitskopie eingesetzt (nicht committet).');
+          "
+          npx wrangler d1 migrations apply "$DB_NAME" --remote --config "$CONFIG"
+
+      # INSERT OR IGNORE: Ein zweiter Lauf ueberschreibt weder Org noch Key.
+      # strftime statt datetime(): identisches ISO-Format wie toISOString() im
+      # Worker — gemischte Zeitstempel im Pruefpfad waeren ein Mangel.
+      - name: Org und Admin-Key seeden
+        env:
+          ORG_ID: ${{ inputs.org_id }}
+          ORG_NAME: ${{ inputs.org_name }}
+          ACTOR_ID: ${{ inputs.actor_id }}
+          KEY_HASH: ${{ inputs.admin_key_hash }}
+        run: |
+          set -euo pipefail
+          npx wrangler d1 execute "$DB_NAME" --remote --config "$CONFIG" --command "
+            INSERT OR IGNORE INTO orgs (id, name, created_at)
+              VALUES ('$ORG_ID', '$ORG_NAME', strftime('%Y-%m-%dT%H:%M:%fZ','now'));
+            INSERT OR IGNORE INTO api_keys (id, org_id, actor_id, name, role, key_hash, enabled, created_at)
+              VALUES ('bootstrap-$ORG_ID', '$ORG_ID', '$ACTOR_ID', 'bootstrap-admin', 'admin', '$KEY_HASH', 1, strftime('%Y-%m-%dT%H:%M:%fZ','now'));
+          "
+
+      - name: Gegenprobe — Schema und Seed vorhanden?
+        env:
+          ORG_ID: ${{ inputs.org_id }}
+        run: |
+          set -euo pipefail
+          npx wrangler d1 execute "$DB_NAME" --remote --config "$CONFIG" --command "
+            SELECT (SELECT COUNT(*) FROM orgs WHERE id='$ORG_ID') AS orgs,
+                   (SELECT COUNT(*) FROM api_keys WHERE org_id='$ORG_ID' AND role='admin' AND enabled=1) AS admin_keys;
+          " | tee /tmp/verify.log
+          grep -q '"orgs": 1' /tmp/verify.log || { echo "::error::Org wurde nicht angelegt."; exit 1; }
+          grep -q '"admin_keys": 1' /tmp/verify.log || { echo "::error::Admin-Key wurde nicht angelegt."; exit 1; }
+
+      - name: Naechster Schritt
+        env:
+          DB_ID: ${{ steps.d1.outputs.database_id }}
+        run: |
+          {
+            echo "## GOVARD Gateway provisioniert"
+            echo ""
+            echo "D1 und R2 liegen in der EU-Jurisdiktion, Schema und Seed sind gegengeprueft."
+            echo ""
+            echo "**Jetzt von Hand:** in workers/govard-gateway/wrangler.jsonc den Platzhalter ersetzen durch"
+            echo ""
+            echo "    \"database_id\": \"$DB_ID\","
+            echo ""
+            echo "und committen — erst danach deployt deploy-govard-gateway.yml den Worker,"
+            echo "statt sich selbst zu ueberspringen."
+          } >> "$GITHUB_STEP_SUMMARY"

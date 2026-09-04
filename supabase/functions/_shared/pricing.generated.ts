@@ -281,6 +281,8 @@ export interface PlanLimits {
   bulkJobsPerMonth: number;
   /** API-Schlüssel */
   apiKeys: number;
+  /** Industrielle KI-Systeme (OT) im AI-Act-Inventar (Policy Pack Industrial OT) */
+  industrialOtSystems: number;
 }
 
 /**
@@ -390,6 +392,57 @@ export interface Plan {
   /** Technische Subheadline (wie die Runtime das leistet) */
   technicalSubheadline: string;
   price: PlanPrice;
+  /**
+   * COMMERCIAL-SSOT: temporary production hotfix.
+   * Canonical source migration tracked in Phase 2.
+   *
+   * `true` = kein oeffentlich zugesicherter Festpreis. Der Betrag in `price`
+   * bleibt interner Listenpreis (DB-Katalog, Angebotskalkulation), darf aber
+   * nirgends als kaufbares Festpreis-Angebot ausgewiesen werden. Oberflaechen
+   * zeigen stattdessen „Auf Anfrage".
+   */
+  priceOnRequest?: boolean;
+  /**
+   * COMMERCIAL-SSOT: temporary production hotfix.
+   * Canonical source migration tracked in Phase 2.
+   *
+   * `true` = die Jahresvariante ist derzeit NICHT oeffentlich buchbar.
+   * In `public.products` steht fuer `yearlyPlanKey` kein echter Stripe-Preis,
+   * sondern ein Platzhalter (`STRIPE_PRICE_*_XXX`); `stripe-checkout` weist
+   * deshalb jeden Jahres-Checkout mit `PRICE_NOT_CONFIGURED` ab.
+   *
+   * Der Betrag in `price.yearlyEur` bleibt interner Listenpreis — er ist
+   * korrekt, nur eben nicht einloesbar — und darf nirgends als kaufbares
+   * Festpreis-Angebot ausgewiesen werden. Damit gilt fuer die Jahresvariante
+   * dieselbe Regel wie fuer Enterprise: ein oeffentlich zugesicherter Preis
+   * darf nur dort stehen, wo der Kaufpfad ihn auch einloesen kann.
+   *
+   * Bestandsschutz: `yearlyPlanKey` bleibt gesetzt. Ein bestehendes
+   * `_yearly`-Abo loest weiterhin ueber `planByKey()` auf seinen Basisplan
+   * auf und behaelt alle Berechtigungen. Gemessen am 2026-08-31: null
+   * Jahres-Abos in `public.subscriptions`.
+   *
+   * Stillgelegte Plaene brauchen das Feld nicht — `availability: 'legacy'`
+   * schliesst sie bereits von jeder Angebotsflaeche aus.
+   *
+   * ── Status: entschieden, nicht offen (2026-09-01) ──────────────────────
+   *
+   * Der Eigentuemer hat entschieden, die Jahres-Abos **vorerst nicht** wieder
+   * zu verkaufen. Dieses Feld ist damit keine Restarbeit, die noch jemand
+   * wegzuraeumen haette, sondern der gewollte Zustand.
+   *
+   * Konkret: In Stripe werden **keine** Jahres-Preise angelegt, und in
+   * `public.products` bleiben die Platzhalter stehen. Wer das aendern will,
+   * braucht dafuer eine neue Entscheidung des Eigentuemers — es ist ein
+   * Schreibzugriff auf Produktion und eine kommerzielle Festlegung, keine
+   * Aufraeumarbeit.
+   *
+   * Sollte die Entscheidung spaeter gedreht werden, gehoert beides zusammen:
+   * echte Preise verdrahten UND dieses Feld entfernen. Der Stripe-Price-Guard
+   * (`test/contracts/stripe-price-guard.test.ts`) erzwingt das — er bleibt
+   * rot, solange nur eine der beiden Seiten stimmt.
+   */
+  yearlyCheckoutUnavailable?: boolean;
   currency: 'EUR';
   purchaseMode: PurchaseMode;
   /** Vertriebszustand — siehe `PlanAvailability`. */
@@ -471,6 +524,7 @@ export const PLANS: Plan[] = [
       remediationPlans: 0,
       bulkJobsPerMonth: 0,
       apiKeys: 0,
+      industrialOtSystems: 1,
     },
     channels: [],
     modules: ['dsgvo', 'audit_center', 'compliance_reports'],
@@ -505,6 +559,8 @@ export const PLANS: Plan[] = [
     outcomeHeadline: 'Ein nachweisbares Governance-Fundament, das jeden Prüfer überzeugt.',
     technicalSubheadline: 'Kontinuierlicher DSGVO- und AI-Act-Scan mit lückenloser Hash-Chain und exportierbarem Prüfpfad.',
     price: { monthlyEur: 79, yearlyEur: 790, oneTimeEur: null },
+    // Jahres-Preis in Stripe nicht verdrahtet — siehe `yearlyCheckoutUnavailable`.
+    yearlyCheckoutUnavailable: true,
     currency: 'EUR',
     purchaseMode: 'checkout',
     availability: 'self_service',
@@ -524,6 +580,7 @@ export const PLANS: Plan[] = [
       remediationPlans: 5,
       bulkJobsPerMonth: 0,
       apiKeys: 0,
+      industrialOtSystems: 5,
     },
     channels: ['website'],
     modules: [
@@ -578,6 +635,8 @@ export const PLANS: Plan[] = [
     outcomeHeadline: 'KI-Governance, die sich selbst überwacht — statt einmal im Jahr geprüft zu werden.',
     technicalSubheadline: 'Tägliche Runtime-Läufe mit Drift Detection, Risk Register und Policy Engine über drei Rahmenwerke.',
     price: { monthlyEur: 249, yearlyEur: 2490, oneTimeEur: null },
+    // Jahres-Preis in Stripe nicht verdrahtet — siehe `yearlyCheckoutUnavailable`.
+    yearlyCheckoutUnavailable: true,
     currency: 'EUR',
     purchaseMode: 'checkout',
     availability: 'self_service',
@@ -604,6 +663,7 @@ export const PLANS: Plan[] = [
       // ein Ein-Mandanten-Plan.
       bulkJobsPerMonth: 10,
       apiKeys: 3,
+      industrialOtSystems: 25,
     },
     channels: ['website', 'whatsapp', 'telegram'],
     modules: [
@@ -686,6 +746,7 @@ export const PLANS: Plan[] = [
       remediationPlans: 100,
       bulkJobsPerMonth: 100,
       apiKeys: 10,
+      industrialOtSystems: 200,
     },
     channels: ALL_CHANNELS,
     modules: [
@@ -734,24 +795,39 @@ export const PLANS: Plan[] = [
         'Bis zu 10 Domains unter einem Konto',
       ],
     },
-    trialDays: 14,
+    // COMMERCIAL-SSOT: temporary production hotfix.
+    // Canonical source migration tracked in Phase 2.
+    // Kein Trial mehr: Agency ist seit AP2 stillgelegt (`availability: 'legacy'`),
+    // `stripe-checkout` weist neue Abschluesse mit PLAN_RETIRED ab. Ein
+    // Trial-Versprechen waere damit nicht einloesbar — und die aus der SSoT
+    // abgeleitete Trial-Fussnote fuehrte Agency bis hierher weiter mit auf.
+    // Laufende Agency-Abos und -Trials sind davon unberuehrt; `trialDays`
+    // steuert ausschliesslich NEUE Checkout-Sessions.
+    trialDays: 0,
   },
 
-  // ── Enterprise — 1.249 € ────────────────────────────────────────────────
+  // ── Enterprise — Preis auf Anfrage ──────────────────────────────────────
+  // COMMERCIAL-SSOT: temporary production hotfix.
+  // Canonical source migration tracked in Phase 2.
+  // Enterprise wird manuell fakturiert (products.default_for_plan_key='enterprise'
+  // traegt bewusst nur einen Sentinel, keine echte Stripe-Price). Ein oeffentlich
+  // zugesicherter Festpreis von 1.249 € war damit ein Angebot, das der
+  // Self-Service-Checkout nicht erfuellen kann. Deshalb: inquiry + priceOnRequest.
   {
     id: 'enterprise',
     planKey: 'enterprise',
     yearlyPlanKey: 'enterprise_yearly',
     name: 'Enterprise',
     outcomeHeadline: 'Konzernweite Governance über alle sechs Rahmenwerke — mit SLA und SSO.',
-    technicalSubheadline: 'Multi-Tenant-Runtime für bis zu 5 Organisationen, zentrale Rechteverwaltung und unbegrenzte geplante Läufe.',
+    technicalSubheadline: 'Multi-Tenant-Runtime für bis zu 5 Organisationen, zentrale Rechteverwaltung und individuell dimensionierte Scheduler- und Automation-Kontingente.',
     price: { monthlyEur: 1_249, yearlyEur: 12_490, oneTimeEur: null },
+    priceOnRequest: true,
     currency: 'EUR',
     purchaseMode: 'inquiry',
     availability: 'contract',
     highlight: false,
-    badges: ['SLA 4 h'],
-    ctaLabel: '14 Tage kostenlos testen',
+    badges: ['SLA nach Vereinbarung'],
+    ctaLabel: 'Enterprise anfragen',
     limits: {
       bots: 20,
       answersPerMonth: 50_000,
@@ -765,6 +841,7 @@ export const PLANS: Plan[] = [
       remediationPlans: 500,
       bulkJobsPerMonth: 500,
       apiKeys: 50,
+      industrialOtSystems: -1,
     },
     channels: ALL_CHANNELS,
     modules: [
@@ -805,11 +882,10 @@ export const PLANS: Plan[] = [
         'Eigene Richtlinien und Kontrollkataloge',
       ],
       automation_ops: [
-        'Unbegrenzter Scheduler für geplante Läufe',
-        '2.000 Automationsläufe pro Monat',
+        'Individuell dimensionierte Scheduler- und Automation-Kontingente.',
         'API Premium mit 250.000 Aufrufen pro Monat',
         '20 Governance-Bots mit 50.000 Antworten (alle Kanäle)',
-        'Priorisierter Support mit 4 h Reaktionszeit',
+        'Priorisierter Support mit vertraglich vereinbarter Reaktionszeit',
       ],
       multi_tenant_reseller: [
         'Multi-Tenant-Dashboard für bis zu 5 Organisationen',
@@ -818,7 +894,8 @@ export const PLANS: Plan[] = [
         'White-Label mit Branding, Logo und Farben',
       ],
     },
-    trialDays: 14,
+    // Enterprise-Trial ist gesperrt: kein Self-Service-Pilot ohne Vertrag.
+    trialDays: 0,
   },
 
   // ── Partner — 1.999 € ───────────────────────────────────────────────────
@@ -851,6 +928,7 @@ export const PLANS: Plan[] = [
       remediationPlans: -1,
       bulkJobsPerMonth: -1,
       apiKeys: -1,
+      industrialOtSystems: -1,
     },
     channels: ALL_CHANNELS,
     modules: [
@@ -950,6 +1028,9 @@ export const PLANS: Plan[] = [
       remediationPlans: 0,
       bulkJobsPerMonth: 0,
       apiKeys: 0,
+      // Einmalprodukt außerhalb der Abo-Leiter: bewusst wie Free (1 System),
+      // damit der Einmalkauf die gestaffelten Abo-Kontingente nicht unterläuft.
+      industrialOtSystems: 1,
     },
     channels: ['website'],
     modules: ['dsgvo', 'policy_engine', 'evidence_vault', 'audit_center', 'compliance_reports'],
@@ -1012,6 +1093,29 @@ export interface AddOn {
    * Neukunden mehr auf einem Plan angeboten, den er gar nicht wählen kann.
    */
   availableFor: PlanId[];
+  /**
+   * Was das Add-on gewährt — je Entitlement-Key sein Wert, in derselben
+   * Semantik wie `PLAN_ENTITLEMENTS` (`1` = an, Zahl = Kontingent, `-1` =
+   * unbegrenzt).
+   *
+   * Kontingente sind **additiv** zum Plan: `tenant_entitlements()` summiert
+   * `limit.*`-Werte aus Add-on-Grants auf den Planwert (Migration
+   * `20260904000000_addon_booking_schema.sql`), boolesche Keys werden
+   * vereinigt. Ein Response Pack auf Growth ergibt also 2.000 + 5.000, nicht
+   * das Maximum von beiden.
+   *
+   * Aus dieser Liste erzeugt `scripts/generate-plan-catalog-sql.ts` die
+   * `products`-Zeile des Add-ons samt `product_entitlements` — es gibt keine
+   * zweite Rechte-Definition. Ein Add-on ohne Eintrag hier gewährt nichts
+   * und ist deshalb auch nicht buchbar.
+   */
+  grants: Readonly<Partial<Record<EntitlementKey, number>>>;
+  /**
+   * `true`, wenn das Add-on mehrfach gebucht werden kann (Menge, etwa
+   * „weitere Domain"). Der Auflöser multipliziert die Kontingente dann mit
+   * der gebuchten Menge. Alle heutigen Add-ons sind Einzelpositionen.
+   */
+  perUnit: boolean;
 }
 
 export const ADDONS: AddOn[] = [
@@ -1029,6 +1133,8 @@ export const ADDONS: AddOn[] = [
       'Nicht verbrauchte Antworten verfallen zum Monatsende',
     ],
     availableFor: ['growth', 'enterprise'],
+    grants: { 'limit.bot_messages_monthly': 5_000 },
+    perUnit: false,
   },
   {
     id: 'whatsapp',
@@ -1048,6 +1154,14 @@ export const ADDONS: AddOn[] = [
     // und wurde denen angeboten, die den Kanal bereits enthalten. Genau
     // verkehrt herum. Ab Growth ist WhatsApp Teil des Plans.
     availableFor: ['starter'],
+    grants: {
+      'bots.whatsapp': 1,
+      'bots.enabled': 1,
+      'bots.multi_channel': 1,
+      // Dasselbe Kontingent, das Growth für den enthaltenen Kanal trägt.
+      'limit.whatsapp_conversations_monthly': 500,
+    },
+    perUnit: false,
   },
   {
     id: 'voice',
@@ -1063,6 +1177,14 @@ export const ADDONS: AddOn[] = [
       'Mehrsprachig: DE, EN, FR, ES',
     ],
     availableFor: ['growth', 'enterprise'],
+    grants: {
+      'bots.voice': 1,
+      'bots.enabled': 1,
+      'bots.human_handoff': 1,
+      // Minutenkontingent wie im Agency-Plan, dem einzigen Vorwert.
+      'limit.bot_voice_minutes_monthly': 500,
+    },
+    perUnit: false,
   },
   {
     id: 'compliance_pack',
@@ -1078,6 +1200,12 @@ export const ADDONS: AddOn[] = [
       'Human-Review-Workflow für sensible Absichten',
     ],
     availableFor: ['growth', 'enterprise'],
+    grants: {
+      'evidence.advanced': 1,
+      'reports.export': 1,
+      'limit.compliance_exports_monthly': 100,
+    },
+    perUnit: false,
   },
   {
     id: 'agency_bot_pack',
@@ -1093,6 +1221,8 @@ export const ADDONS: AddOn[] = [
       'Priorisiertes Onboarding',
     ],
     availableFor: ['growth', 'enterprise'],
+    grants: { 'limit.bots': 5 },
+    perUnit: false,
   },
   {
     id: 'white_label',
@@ -1108,6 +1238,8 @@ export const ADDONS: AddOn[] = [
       'Analysen im eigenen Dashboard',
     ],
     availableFor: ['growth', 'enterprise'],
+    grants: { 'whitelabel.reports': 1, 'whitelabel.dashboard': 1 },
+    perUnit: false,
   },
 ];
 
@@ -1651,6 +1783,34 @@ export type EntitlementKey = (typeof ENTITLEMENT_KEYS)[number];
  * Erzeugt aus dem gemessenen Migrationsstand, nicht abgetippt.
  * `test/billing/entitlement-vocabulary.test.ts` hält die Zuordnung an die
  * Migrationen gebunden.
+ *
+ * ── `-1` auf Vertragsplänen — entschieden am 2026-08-31 ──────────────────
+ *
+ * Auf Plänen mit `availability: 'contract'` (heute nur Enterprise) bedeutet
+ * `-1` bei einem `limit.*`-Key nicht bloß „unbegrenzt", sondern:
+ *
+ *     Das System begrenzt hier nicht. Der Vertrag tut es.
+ *
+ * Damit ist die Regel aus `kanonische-kontingente.md` §1.2 — für
+ * Vertragspläne ist der Vertrag kanonisch — erstmals ausführbar, ohne einen
+ * Ort für tenant-spezifische Werte zu schaffen. Vorher war das eine
+ * unbelegte Hypothese; jetzt ist es die festgelegte Kodierung
+ * (Option A aus `docs/product/enterprise-quelle-entscheidungsvorlage.md`).
+ *
+ * Was daraus folgt, und zwar hart:
+ *
+ *   1. Ein Vertragsplan trägt **ausschliesslich** `-1` als `limit.*`-Wert.
+ *      Ein endlicher Wert wäre eine technisch durchgesetzte Obergrenze und
+ *      damit genau der Fall, den diese Kodierung nicht abbilden kann.
+ *   2. Auf diesen Feldern entsteht **kein Gate**. Es gibt nichts zu prüfen —
+ *      die Grenze steht im Vertrag, der dem System nicht vorliegt.
+ *   3. Ein Enterprise-Vertrag mit vereinbarter **Obergrenze** ist unter
+ *      dieser Regel technisch nicht durchsetzbar und deshalb nicht
+ *      abschliessbar, ohne vorher auf Option B (Tenant-Overrides) zu
+ *      wechseln. Der erste solche Vertrag ist der Auslöser dafür.
+ *
+ * Punkt 1 hält `test/billing/limit-canonicity.test.ts` fest; er schlägt fehl,
+ * sobald ein Vertragsplan einen endlichen Wert bekommt.
  */
 export const PLAN_ENTITLEMENTS: Readonly<
   Record<string, Readonly<Partial<Record<EntitlementKey, number>>>>
@@ -1682,10 +1842,10 @@ export const PLAN_ENTITLEMENTS: Readonly<
     'limit.automation_runs_monthly': 25,
     'limit.bot_messages_monthly': 500,
     'limit.bots': 1,
-    'limit.compliance_exports_monthly': 5,
+    'limit.compliance_exports_monthly': 2,
     'limit.domains': 1,
     'limit.llm_queries_monthly': 100,
-    'limit.team_seats': 3,
+    'limit.team_seats': 1,
     'monitoring.monthly': 1,
     'policy.packs': 1,
     'website.scan': 1,
@@ -1694,6 +1854,7 @@ export const PLAN_ENTITLEMENTS: Readonly<
   growth: {
     'ai.tool.automations': 1,
     'ai.tool.bot_reply': 1,
+    'ai.tool.workflows': 1,
     'alerts.email': 1,
     'api.access': 1,
     'asset.register': 1,
@@ -1723,11 +1884,12 @@ export const PLAN_ENTITLEMENTS: Readonly<
     'limit.bot_messages_monthly': 2000,
     'limit.bots': 2,
     'limit.bulk_jobs_monthly': 10,
-    'limit.compliance_exports_monthly': 20,
+    'limit.compliance_exports_monthly': 12,
     'limit.domains': 3,
     'limit.llm_queries_monthly': 500,
     'limit.team_seats': 5,
     'limit.whatsapp_conversations_monthly': 500,
+    'limit.workflow_runs_monthly': 100,
     'monitoring.daily': 1,
     'monitoring.drift': 1,
     'monitoring.monthly': 1,
@@ -1745,6 +1907,7 @@ export const PLAN_ENTITLEMENTS: Readonly<
     'ai.tool.bot_reply': 1,
     'ai.tool.vps_action_advisor': 1,
     'ai.tool.vps_status': 1,
+    'ai.tool.workflows': 1,
     'alerts.email': 1,
     'api.access': 1,
     'asset.register': 1,
@@ -1782,6 +1945,7 @@ export const PLAN_ENTITLEMENTS: Readonly<
     'limit.llm_queries_monthly': -1,
     'limit.team_seats': 15,
     'limit.whatsapp_conversations_monthly': 2500,
+    'limit.workflow_runs_monthly': 1000,
     'monitoring.daily': 1,
     'monitoring.drift': 1,
     'monitoring.monthly': 1,
@@ -1802,6 +1966,7 @@ export const PLAN_ENTITLEMENTS: Readonly<
     'ai.tool.bot_reply': 1,
     'ai.tool.vps_action_advisor': 1,
     'ai.tool.vps_status': 1,
+    'ai.tool.workflows': 1,
     'alerts.email': 1,
     'api.access': 1,
     'asset.register': 1,
@@ -1840,6 +2005,7 @@ export const PLAN_ENTITLEMENTS: Readonly<
     'limit.llm_queries_monthly': -1,
     'limit.team_seats': -1,
     'limit.whatsapp_conversations_monthly': -1,
+    'limit.workflow_runs_monthly': -1,
     'monitoring.daily': 1,
     'monitoring.drift': 1,
     'monitoring.monthly': 1,
@@ -1863,6 +2029,7 @@ export const PLAN_ENTITLEMENTS: Readonly<
     'ai.tool.bot_reply': 1,
     'ai.tool.vps_action_advisor': 1,
     'ai.tool.vps_status': 1,
+    'ai.tool.workflows': 1,
     'alerts.email': 1,
     'api.access': 1,
     'asset.register': 1,
@@ -1900,6 +2067,7 @@ export const PLAN_ENTITLEMENTS: Readonly<
     'limit.llm_queries_monthly': -1,
     'limit.team_seats': 50,
     'limit.whatsapp_conversations_monthly': -1,
+    'limit.workflow_runs_monthly': 2500,
     'monitoring.daily': 1,
     'monitoring.drift': 1,
     'monitoring.monthly': 1,
@@ -2347,6 +2515,190 @@ export function addonsFor(plan: Plan | PlanId | string | null | undefined): AddO
 
 export function addonById(id: AddOnId): AddOn | undefined {
   return ADDONS.find((a) => a.id === id);
+}
+
+// ── Add-on-Buchung: Abhängigkeiten, Produkte, Preisvorschau (AP5–AP8) ─────
+
+/**
+ * Abhängigkeiten zwischen Entitlement-Keys als `[key, braucht]` (AP8).
+ *
+ * Geprüft wird **beim Buchen** eines Add-ons, nicht bei der Auflösung — der
+ * Auflöser bleibt davon unberührt. Die Tabelle `entitlement_dependencies`
+ * spiegelt diese Liste; `scripts/generate-plan-catalog-sql.ts` erzeugt die
+ * Zeilen, `test/billing/addon-booking.test.ts` hält beide zusammen.
+ */
+export const ENTITLEMENT_DEPENDENCIES: ReadonlyArray<readonly [EntitlementKey, EntitlementKey]> = [
+  ['bots.voice', 'bots.enabled'],
+  ['bots.whatsapp', 'bots.enabled'],
+  ['whitelabel.dashboard', 'whitelabel.reports'],
+  ['provenance.advanced', 'provenance.basic'],
+];
+
+/**
+ * Präfix der Sentinel-`stripe_price_id` eines Add-on-Produkts in `products`.
+ *
+ * Add-ons haben ein eigenes Produkt, damit `entitlement_grants` darauf
+ * verweisen kann — derselbe Weg wie beim Einmalkauf. Der echte, wiederkehrende
+ * Stripe-Price liegt in `plan_addons.stripe_price_id`; das Produkt trägt nur
+ * die Rechte. `internal_` sorgt dafür, dass `stripe-checkout` den Sentinel
+ * nie für eine echte Price hält.
+ */
+export const ADDON_PRODUCT_PREFIX = 'internal_addon_';
+
+export function addonProductSentinel(id: AddOnId): string {
+  return `${ADDON_PRODUCT_PREFIX}${id}`;
+}
+
+/** Keys, die ein Add-on tatsächlich gewährt (Wert ungleich null). */
+export function addonGrantedKeys(addon: AddOn): EntitlementKey[] {
+  return (Object.keys(addon.grants) as EntitlementKey[]).filter((key) => {
+    const wert = addon.grants[key];
+    return wert !== undefined && wert !== 0;
+  });
+}
+
+/**
+ * Abhängigkeiten, die dem Mandanten für dieses Add-on fehlen.
+ *
+ * `held` sind die Keys, die der Mandant heute hält (aus
+ * `tenant_entitlements()`). Ein Key, den das Add-on selbst mitbringt, gilt als
+ * erfüllt — WhatsApp bringt `bots.enabled` mit und braucht es deshalb nicht
+ * vorab. Leer heißt: buchbar.
+ */
+export function addonMissingDependencies(
+  addon: AddOn,
+  held: Iterable<string>,
+): EntitlementKey[] {
+  const hat = new Set<string>(held);
+  const bringt = new Set<string>(addonGrantedKeys(addon));
+  const fehlt: EntitlementKey[] = [];
+  for (const key of bringt) {
+    for (const [abhaengig, braucht] of ENTITLEMENT_DEPENDENCIES) {
+      if (abhaengig !== key) continue;
+      if (hat.has(braucht) || bringt.has(braucht) || fehlt.includes(braucht)) continue;
+      fehlt.push(braucht);
+    }
+  }
+  return fehlt;
+}
+
+/**
+ * Darf ein Kunde auf diesem Plan das Add-on buchen?
+ *
+ * Quelle ist `plan.addons`, nicht `availableFor`: Letzteres sagt, wem es
+ * *angeboten* wird; Ersteres, wer es *buchen darf* — und das schließt
+ * Bestandskunden auf Agency und Partner ein.
+ */
+export function addonBookableOnPlan(
+  addon: AddOn | AddOnId,
+  plan: Plan | PlanId | string | null | undefined,
+): boolean {
+  const resolved = resolvePlan(plan);
+  if (!resolved) return false;
+  const id = typeof addon === 'string' ? addon : addon.id;
+  return resolved.addons.includes(id);
+}
+
+export interface BookedAddon {
+  id: AddOnId;
+  quantity: number;
+}
+
+/** Vorschau vor der Aktivierung: alter Betrag, Zuschlag, neuer Betrag. */
+export interface AddonPricePreview {
+  currentMonthlyEur: number;
+  deltaMonthlyEur: number;
+  newMonthlyEur: number;
+}
+
+/** Monatlicher Festbetrag der gebuchten Add-ons (Verbrauch nicht enthalten). */
+export function bookedAddonsMonthlyEur(booked: readonly BookedAddon[]): number {
+  let summe = 0;
+  for (const b of booked) {
+    const addon = addonById(b.id);
+    if (!addon) continue;
+    summe += addon.priceEur * Math.max(1, b.quantity);
+  }
+  return summe;
+}
+
+/**
+ * Zustand eines Add-ons für einen konkreten Mandanten — die eine Stelle,
+ * an der Function und Oberfläche dieselbe Antwort bekommen.
+ *
+ *   booked              gebucht, läuft
+ *   not_for_plan        der Plan führt das Add-on nicht (`plan.addons`)
+ *   included            der Mandant hält bereits alles, was es gewährt —
+ *                       ein Verkauf ohne Gegenwert wird nicht angeboten
+ *   missing_dependency  eine Voraussetzung fehlt (AP8); `missing` nennt sie
+ *   not_purchasable     kein Stripe-Price hinterlegt (AP5 steht aus)
+ *   bookable            kann jetzt gebucht werden
+ *
+ * Die Reihenfolge ist die Prüfreihenfolge: Was gebucht ist, ist gebucht,
+ * egal ob der Plan es heute noch führt.
+ */
+export type AddonOfferStatus =
+  | 'booked'
+  | 'not_for_plan'
+  | 'included'
+  | 'missing_dependency'
+  | 'not_purchasable'
+  | 'bookable';
+
+export interface AddonOfferInput {
+  addon: AddOn;
+  plan: Plan | PlanId | string | null | undefined;
+  /** Keys mit Wert, wie `tenant_entitlements()` sie liefert. */
+  held: Readonly<Record<string, number>>;
+  booked: readonly BookedAddon[];
+  /** `true`, wenn `plan_addons.stripe_price_id` eine echte Price trägt. */
+  purchasable: boolean;
+}
+
+export interface AddonOffer {
+  status: AddonOfferStatus;
+  missing: EntitlementKey[];
+}
+
+/** Hält der Mandant den Key bereits im Sinne der Server-Regel? */
+function haelt(held: Readonly<Record<string, number>>, key: string): boolean {
+  const wert = held[key];
+  return wert === -1 || (typeof wert === 'number' && wert > 0);
+}
+
+export function addonOfferStatus(input: AddonOfferInput): AddonOffer {
+  const { addon, held, booked, purchasable } = input;
+  if (booked.some((b) => b.id === addon.id)) return { status: 'booked', missing: [] };
+  if (!addonBookableOnPlan(addon, input.plan)) return { status: 'not_for_plan', missing: [] };
+
+  // Gegenwert: mindestens ein boolescher Key, den der Mandant nicht hält,
+  // oder ein Kontingent, das bei ihm nicht ohnehin unbegrenzt ist.
+  const bringtNeues = addonGrantedKeys(addon).some((key) =>
+    key.startsWith('limit.') ? held[key] !== -1 : !haelt(held, key),
+  );
+  if (!bringtNeues) return { status: 'included', missing: [] };
+
+  const missing = addonMissingDependencies(addon, Object.keys(held).filter((k) => haelt(held, k)));
+  if (missing.length > 0) return { status: 'missing_dependency', missing };
+  if (!purchasable) return { status: 'not_purchasable', missing: [] };
+  return { status: 'bookable', missing: [] };
+}
+
+/**
+ * Preisvorschau für eine Buchung (AP7): Plan plus bereits gebuchte Add-ons
+ * gegen denselben Betrag nach der Buchung. Kein Betrag entsteht hier — alles
+ * kommt aus dieser Datei. `quantity < 1` wird als 1 gewertet.
+ */
+export function addonPricePreview(
+  plan: Plan | PlanId | string | null | undefined,
+  booked: readonly BookedAddon[],
+  addon: AddOn,
+  quantity = 1,
+): AddonPricePreview {
+  const resolved = resolvePlan(plan);
+  const basis = (resolved?.price.monthlyEur ?? 0) + bookedAddonsMonthlyEur(booked);
+  const zuschlag = addon.priceEur * Math.max(1, quantity);
+  return { currentMonthlyEur: basis, deltaMonthlyEur: zuschlag, newMonthlyEur: basis + zuschlag };
 }
 
 // ── Governance Score → Planempfehlung ─────────────────────────────────────

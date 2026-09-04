@@ -1,38 +1,5 @@
 [
   {
-    "plan": "starter",
-    "feld": "seats",
-    "key": "limit.team_seats",
-    "preisseite": 1,
-    "berechtigung": 3,
-    "richtung": "kuerzung",
-    "availability": "self_service",
-    "grund": "Oeffentlich verkaufter Self-Service-Plan: die Preisseite ist kanonisch. Die Divergenz ist ein Datenfehler; die Korrektur darf Bestandskunden nicht rueckwirkend treffen.",
-    "kanonische_quelle": "preisseite"
-  },
-  {
-    "plan": "starter",
-    "feld": "auditReportsPerMonth",
-    "key": "limit.compliance_exports_monthly",
-    "preisseite": 2,
-    "berechtigung": 5,
-    "richtung": "kuerzung",
-    "availability": "self_service",
-    "grund": "Oeffentlich verkaufter Self-Service-Plan: die Preisseite ist kanonisch. Die Divergenz ist ein Datenfehler; die Korrektur darf Bestandskunden nicht rueckwirkend treffen.",
-    "kanonische_quelle": "preisseite"
-  },
-  {
-    "plan": "growth",
-    "feld": "auditReportsPerMonth",
-    "key": "limit.compliance_exports_monthly",
-    "preisseite": 12,
-    "berechtigung": 20,
-    "richtung": "kuerzung",
-    "availability": "self_service",
-    "grund": "Oeffentlich verkaufter Self-Service-Plan: die Preisseite ist kanonisch. Die Divergenz ist ein Datenfehler; die Korrektur darf Bestandskunden nicht rueckwirkend treffen.",
-    "kanonische_quelle": "preisseite"
-  },
-  {
     "plan": "agency",
     "feld": "answersPerMonth",
     "key": "limit.bot_messages_monthly",

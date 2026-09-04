@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import {
   ArrowRight, ArrowLeft, CheckCircle2, AlertTriangle, Loader2, Building2, Zap,
-  Globe, Briefcase, Heart, Shield, User,
+  Globe, Briefcase, Heart, Shield, User, ShoppingBag, Sofa, Factory,
 } from 'lucide-react';
+import { SECTORS as SECTOR_OPTIONS, sectorLabel } from '../config/sectors';
 import { useGovernanceOnboarding } from '../hooks/useGovernanceOnboarding';
+import { toScanFindings, useSharedAudit } from '../features/audit/loadSharedAudit';
 import { saveCompanyProfile, loadCompanyProfile } from '../features/company/companyProfileLocal';
 import { syncTenantProfile } from '../features/company/tenantProfileService';
 import { useTenant } from '../core/access/TenantProvider';
@@ -43,9 +45,18 @@ export function GovernanceOnboarding() {
   const [step, setStep] = useState<'sector' | 'questions' | 'summary'>('sector');
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
 
-  // Fallback to mock findings if not provided via state
-  const findings = locationState.findings || [];
-  const domain = locationState.domain || 'example.com';
+  // Befunde kommen im Normalfall aus dem Router-State (direkt vom Bericht).
+  // Fehlen sie — Reload, geteilter Link —, werden sie aus dem kanonischen
+  // Datensatz nachgeladen, statt dem Besucher „Keine Scan-Daten" zu zeigen.
+  const brauchtNachladen = !locationState.findings || locationState.findings.length === 0;
+  const geladen = useSharedAudit(scanId, brauchtNachladen);
+  const findings = useMemo(
+    () => (locationState.findings && locationState.findings.length > 0
+      ? locationState.findings
+      : geladen.audit ? toScanFindings(geladen.audit.issues) : []),
+    [locationState.findings, geladen.audit],
+  );
+  const domain = locationState.domain || geladen.audit?.domain || '';
 
   const onboarding = useGovernanceOnboarding(scanId, domain, findings);
 
@@ -57,7 +68,7 @@ export function GovernanceOnboarding() {
     saveFunnelContext({ auditId: scanId, domain });
   }, [scanId, domain]);
 
-  if (findings.length === 0 && !loading) {
+  if (findings.length === 0 && !loading && !geladen.loading) {
     return (
       <div className="min-h-screen bg-obsidian-950 text-titanium-100 flex items-center justify-center p-4">
         <div className="max-w-md text-center">
@@ -188,38 +199,31 @@ export function GovernanceOnboarding() {
 
 // ─── Sector Selection ────────────────────────────────────────────────────
 
-const SECTORS = [
-  {
-    value: 'saas' as const,
-    label: 'SaaS / Tech',
-    icon: Zap,
-    description: 'Software-as-a-Service, Cloud-Plattformen, AI-Produkte',
-  },
-  {
-    value: 'agency' as const,
-    label: 'Agentur / White-Label',
-    icon: Briefcase,
-    description: 'Marketing-Agenturen, Web-Agenturen, Consultants',
-  },
-  {
-    value: 'healthcare' as const,
-    label: 'Healthcare / Medical',
-    icon: Heart,
-    description: 'Kliniken, Arztpraxen, Telehealth, Medical Devices',
-  },
-  {
-    value: 'public_sector' as const,
-    label: 'Public Sector',
-    icon: Shield,
-    description: 'Behörden, Gemeinden, öffentliche Einrichtungen',
-  },
-  {
-    value: 'generic' as const,
-    label: 'Sonstiges',
-    icon: Globe,
-    description: 'E-Commerce, Handel, Dienstleistungen, andere',
-  },
-];
+/**
+ * Icon je Branche — reine Darstellung, deshalb hier und nicht in der Config.
+ * Fehlt ein Eintrag, greift Building2; die Auswahl bleibt damit vollstaendig,
+ * auch wenn src/config/sectors.ts um einen Typ waechst.
+ */
+const SECTOR_ICON: Record<string, typeof Building2> = {
+  small_business: Building2,
+  retail: ShoppingBag,
+  furniture_retail: Sofa,
+  manufacturing: Factory,
+  services: Briefcase,
+  agency: Briefcase,
+  industrial: Factory,
+  saas: Zap,
+  healthcare: Heart,
+  public_sector: Shield,
+  generic: Globe,
+};
+
+const SECTORS = SECTOR_OPTIONS.map((s) => ({
+  value: s.id,
+  label: s.label,
+  description: s.description,
+  icon: SECTOR_ICON[s.id] ?? Building2,
+}));
 
 function SectorSelectionStep({ onSelect }: { onSelect: (sector: Sector) => void }) {
   return (
@@ -441,7 +445,7 @@ function SummaryStep({
           Deine Branche
         </div>
         <div className="font-display font-bold text-titanium-50 capitalize">
-          {onboarding.selectedSector === 'public_sector' ? 'Public Sector' : onboarding.selectedSector}
+          {sectorLabel(onboarding.selectedSector)}
         </div>
       </div>
 

@@ -598,11 +598,34 @@ Workflows
    Doppelausführungsschutz und Nachvollziehbarkeit liegen bei der Plattform,
    nicht beim einzelnen Agenten.
 
-Heute vorhanden: sieben SiteOS-Agenten (`compliance`, `seo`, `accessibility`,
-`security`, `performance`, `content`, `monitoring`) mit deterministischer
-Behebung, sowie `automation_skills` / `automation_runs` als Datenmodell für
-Skill-Läufe. Die Zusammenfassung zu benannten **Workflows** über Assetgrenzen
-hinweg fehlt noch.
+### Umsetzungsstand
+
+| Baustein | Ort |
+| --- | --- |
+| Skill-Vokabular (8) + Zuordnung auf die Agenten | `packages/siteos-core/src/workflows/skills.ts` |
+| Workflow-Vokabular (8) + Reichweite | `packages/siteos-core/src/workflows/workflows.ts` |
+| Beschriftung der Läufe | `siteos_agent_runs.skill` / `.workflow` (Migration `20260903050000`) |
+| Invarianten zu Regel 1 | `test/siteos/workflow-vocabulary.test.ts` |
+
+Die Skills sind **Produktsprache über den vorhandenen sieben Agenten**, kein
+zweiter Ausführungsweg: `Dimension → Skill → Agent`. Zwei Invarianten halten
+Regel 1 durchsetzbar, statt sie als Vorsatz stehen zu lassen — jede Dimension
+gehört genau einem Skill, und jeder Agent ist aus mindestens einem Skill
+erreichbar. Ein neunter Agent ohne Zuordnung bricht den Test, nicht erst die
+Oberfläche.
+
+Zwei Stellen, an denen Produktsprache und Ausführung bewusst auseinanderfallen:
+`privacy` und `ai-risk` laufen beide über den Compliance-Agenten (deshalb wird
+der Skill aus der Dimension der Befundcodes abgeleitet, nicht aus dem Agenten),
+und `transformation` hat weder Dimension noch Agenten — sie beantwortet Befunde,
+statt welche zu erzeugen.
+
+**Was noch fehlt**: die Ausführung der vier Workflows mit `scope: 'portfolio'`
+(AI Governance, Continuous Compliance, Change Monitoring, Incident Response).
+Sie spannen über Assetgrenzen, `siteos_agent_runs` hängt aber an genau einem
+`blueprint_id`. Dafür braucht es ein Laufobjekt über mehrere Assets und einen
+Dispatcher — beides bewusst nicht vorgebaut, solange kein Aufrufer existiert.
+`executableWorkflows()` hält die Aussage aktuell, welche vier heute laufen.
 
 ### 8.1 Der Assistent kennt keinen Provider
 
@@ -800,7 +823,7 @@ auf bestehende Modul-Schlüssel abgebildet, nicht als zweite Modul-Welt eingefü
 | Governance Decision | Policies, Controls, Approvals, Incidents vorhanden | benannte, gespeicherte Entscheidung mit ALLOW/REVIEW/BLOCK und Eingabeankern |
 | **Publish Gate** | Contract §7 umgesetzt: `evaluatePublishGate` im Kern, `siteos/publish-gate` + `siteos/publish-approve`, Tabelle `siteos_publish_evaluations` mit generierter Spalte `publishable` | steht vor dem ersten Publish-Pfad — anschließen, sobald `cloudflare-deployer` deployt ist |
 | Deployment-Pfad | Renderer erzeugt gehashtes Artefakt; Upload/Domain offen | Publish nur über das Gate |
-| Skills / Workflows | 7 SiteOS-Agenten, `automation_skills`/`automation_runs` | 8 Skills als Vokabular, Workflows über Assetgrenzen |
+| Skills / Workflows | 8 Skills + 8 Workflows als Vokabular über den 7 Agenten (`siteos-core/workflows/`), Läufe in `siteos_agent_runs` mit `skill`/`workflow` beschriftet | **Ausführung** der vier `portfolio`-Workflows — dafür fehlt ein Laufobjekt über mehr als ein `blueprint_id` |
 | Integrationen | `integration_connectors`, `remediation_actions`, Feature `src/features/integrations` | beidseitige Integrationen als Beobachtungs- **und** Aktionsquelle |
 | Pricing | 6 Abo-Pläne + Einmalprodukte in `shared/pricing.ts` | BASE + MODULE + SCALE als Katalogänderung |
 | Truth Layer / Status Adapter | `governance-analytics-aggregator`, `governance-risk-score`, `evidence-export` vorhanden; Zusammenführung fehlt | ein Adapter, jede Zahl mit definierter Metrik, `—` statt Platzhalter |

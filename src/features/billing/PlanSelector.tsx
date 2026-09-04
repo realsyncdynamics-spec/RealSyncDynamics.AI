@@ -36,7 +36,8 @@ export function PlanSelector({
           </h2>
           <p className="text-titanium-300 max-w-2xl mx-auto">
             Von kostenlos bis Enterprise — alle Funktionen skalieren mit deinen Anforderungen.
-            14 Tage kostenlos testen, jederzeit kündbar.
+            Starter, Growth und Agency: 14 Tage kostenlos testen, jederzeit kündbar.
+            Enterprise und Partner: auf Anfrage.
           </p>
         </div>
 

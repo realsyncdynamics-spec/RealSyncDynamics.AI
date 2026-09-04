@@ -23,7 +23,16 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { ALL_PLANS_ORDERED, ADDONS, allPlanKeys, type Plan } from '../shared/pricing';
+import {
+  ADDON_PRODUCT_PREFIX,
+  ALL_PLANS_ORDERED,
+  ADDONS,
+  ENTITLEMENT_DEPENDENCIES,
+  addonGrantedKeys,
+  addonProductSentinel,
+  allPlanKeys,
+  type Plan,
+} from '../shared/pricing';
 
 /** Escaped einen String für ein SQL-Literal. */
 function sqlString(value: string): string {
@@ -90,7 +99,10 @@ export function buildPlanCatalogSql(): string {
   lines.push('  updated_at = now();');
   lines.push('');
 
-  lines.push('INSERT INTO public.plan_addons (addon_id, name, description, price_eur, price_note, interval, available_for) VALUES');
+  // `stripe_price_id` und `product_id` stehen bewusst NICHT in dieser Liste:
+  // Die Price-ID trägt der Betreiber nach (AP5), das Produkt verknüpft der
+  // Block darunter. Ein Katalog-Lauf darf beides nie überschreiben.
+  lines.push('INSERT INTO public.plan_addons (addon_id, name, description, price_eur, price_note, interval, available_for, grants, per_unit) VALUES');
   lines.push(ADDONS.map((addon) => `  (
     ${sqlString(addon.id)},
     ${sqlString(addon.name)},
@@ -98,13 +110,73 @@ export function buildPlanCatalogSql(): string {
     ${addon.priceEur},
     ${sqlString(addon.priceNote)},
     ${sqlString(addon.interval)},
-    ${sqlJson(addon.availableFor)}
+    ${sqlJson(addon.availableFor)},
+    ${sqlJson(addon.grants)},
+    ${addon.perUnit}
   )`).join(',\n'));
   lines.push('ON CONFLICT (addon_id) DO UPDATE SET');
-  for (const column of ['name', 'description', 'price_eur', 'price_note', 'interval', 'available_for']) {
+  for (const column of ['name', 'description', 'price_eur', 'price_note', 'interval', 'available_for', 'grants', 'per_unit']) {
     lines.push(`  ${column} = EXCLUDED.${column},`);
   }
   lines.push('  updated_at = now();');
+  lines.push('');
+
+  // ── Add-on-Produkte: eine products-Zeile je Add-on, damit ein Grant darauf
+  //    verweisen kann (AP6). Sentinel-Price, kein default_for_plan_key —
+  //    tenant_entitlements() wählt sie deshalb nie als Abo-Produkt, und
+  //    check-entitlement-parity.mjs (filtert auf default_for_plan_key) bleibt
+  //    unberührt.
+  lines.push('INSERT INTO public.products (stripe_price_id, name, default_for_plan_key) VALUES');
+  lines.push(ADDONS.map((addon) => `  (${sqlString(addonProductSentinel(addon.id))}, ${sqlString(`Add-on: ${addon.name}`)}, NULL)`).join(',\n'));
+  lines.push('ON CONFLICT (stripe_price_id) DO UPDATE SET name = EXCLUDED.name;');
+  lines.push('');
+  lines.push('UPDATE public.plan_addons a SET product_id = p.id, updated_at = now()');
+  lines.push(`  FROM public.products p`);
+  lines.push(`  WHERE p.stripe_price_id = ${sqlString(ADDON_PRODUCT_PREFIX)} || a.addon_id`);
+  lines.push('    AND a.product_id IS DISTINCT FROM p.id;');
+  lines.push('');
+
+  // ── Rechte je Add-on-Produkt: exakt der Satz aus `addon.grants`.
+  //    Upsert setzt geänderte Werte, das DELETE räumt Keys ab, die aus der
+  //    Quelle verschwunden sind — nur an Add-on-Produkten, nie an Plänen.
+  const grantRows: string[] = [];
+  const grantKeys: string[] = [];
+  for (const addon of ADDONS) {
+    for (const key of addonGrantedKeys(addon)) {
+      grantRows.push(`  (${sqlString(addon.id)}, ${sqlString(key)}, ${addon.grants[key]})`);
+      grantKeys.push(`  (${sqlString(addon.id)}, ${sqlString(key)})`);
+    }
+  }
+  lines.push('INSERT INTO public.product_entitlements (product_id, entitlement_id, value)');
+  lines.push('SELECT p.id, e.id, z.value');
+  lines.push('FROM (VALUES');
+  lines.push(grantRows.join(',\n'));
+  lines.push(') AS z(addon_id, key, value)');
+  lines.push(`JOIN public.products p ON p.stripe_price_id = ${sqlString(ADDON_PRODUCT_PREFIX)} || z.addon_id`);
+  lines.push('JOIN public.entitlements e ON e.key = z.key');
+  lines.push('ON CONFLICT (product_id, entitlement_id) DO UPDATE SET value = EXCLUDED.value;');
+  lines.push('');
+  lines.push('DELETE FROM public.product_entitlements pe');
+  lines.push('USING public.products p, public.entitlements e');
+  lines.push('WHERE pe.product_id = p.id AND pe.entitlement_id = e.id');
+  lines.push(`  AND p.stripe_price_id LIKE ${sqlString(ADDON_PRODUCT_PREFIX + '%')}`);
+  lines.push('  AND NOT EXISTS (');
+  lines.push('    SELECT 1 FROM (VALUES');
+  lines.push(grantKeys.join(',\n'));
+  lines.push('    ) AS z(addon_id, key)');
+  lines.push(`    WHERE p.stripe_price_id = ${sqlString(ADDON_PRODUCT_PREFIX)} || z.addon_id AND e.key = z.key`);
+  lines.push('  );');
+  lines.push('');
+
+  // ── Abhängigkeiten (AP8): geprüft beim Buchen, nicht bei der Auflösung.
+  lines.push('INSERT INTO public.entitlement_dependencies (entitlement_id, requires_entitlement_id)');
+  lines.push('SELECT e.id, r.id');
+  lines.push('FROM (VALUES');
+  lines.push(ENTITLEMENT_DEPENDENCIES.map(([key, requires]) => `  (${sqlString(key)}, ${sqlString(requires)})`).join(',\n'));
+  lines.push(') AS z(key, requires)');
+  lines.push('JOIN public.entitlements e ON e.key = z.key');
+  lines.push('JOIN public.entitlements r ON r.key = z.requires');
+  lines.push('ON CONFLICT DO NOTHING;');
   lines.push('');
 
   // Alles, was nicht mehr im Katalog steht, wird deaktiviert statt gelöscht —

@@ -5,7 +5,13 @@
     "lib": ["ES2020"],
     "moduleResolution": "node",
     "outDir": "./dist",
-    "rootDir": "./src",
+    // rootDir liegt im Repo-Wurzelverzeichnis, weil packages/evidence-chain
+    // mitkompiliert wird: die Hash-Chain-Verifizierung muss zeichengenau
+    // dieselbe sein wie in der Edge Function und in der SPA — eine Kopie hier
+    // würde irgendwann abweichen und still falsche Ergebnisse liefern.
+    // Folge: die Ausgabe liegt unter dist/apps/mcp-server/src/ (siehe
+    // package.json "main"/"start" und das Dockerfile).
+    "rootDir": "../..",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
@@ -19,6 +25,6 @@
     "strictFunctionTypes": true,
     "noImplicitThis": true
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "../../packages/evidence-chain/src/**/*"],
   "exclude": ["node_modules", "dist", "test"]
 }

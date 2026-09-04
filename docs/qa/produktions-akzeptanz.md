@@ -660,6 +660,126 @@ group by 1 having count(*) filter (where d.status='succeeded') = 0;
 Diese Abfrage gehört in jeden Produktionsdurchlauf — sie hätte alles oben in
 einer Sekunde geliefert.
 
+### 5.11 Der CSP-Fix aus §5.4 war wirkungslos — zwei Policies, eine repariert
+
+**Korrektur eines eigenen Befunds.** §5.4 meldete das blockierte
+Cloudflare-Beacon als behoben. Es war nicht behoben. Am 2026-09-01 im Browser
+gegen die Live-Seite gemessen, meldet die Konsole unverändert:
+
+```
+Refused to load the script 'https://static.cloudflareinsights.com/beacon.min.js/…'
+because it violates the following Content Security Policy directive…
+```
+
+Der ausgelieferte HTTP-Header **enthält** die Domain. Die Anwendung liefert
+ihre CSP aber an **zwei** Stellen aus:
+
+| Quelle | Cloudflare-Hosts | |
+|---|---|---|
+| `public/_headers` | vorhanden | in #1170 ergänzt |
+| `index.html:41` `<meta http-equiv>` | **fehlten** | übersehen |
+
+Der Browser wertet mehrere CSP-Quellen als **Schnittmenge** aus: Was in einer
+fehlt, ist gesperrt, egal wie großzügig die andere ist.
+
+**Wie der Fehler entstand.** Der Fix wurde am HTTP-Header abgelesen
+(`curl -I`) statt im Browser gemessen. Das ist derselbe Fehlschluss wie in
+§5.1 und derselbe, vor dem §3 „messen, nicht herleiten" warnt: eine richtige
+Beobachtung, aus der die falsche Folgerung gezogen wurde. Ein `curl` auf den
+Header beweist, was der Server sendet — nicht, was der Browser erlaubt.
+
+**Der Kommentar über dem Meta-Tag hatte exakt davor gewarnt**: „muss mit
+`public/_headers` inhaltlich synchron gehalten werden — beide Policies gelten
+gleichzeitig und werden als Schnittmenge ausgewertet." Ein Kommentar bricht
+aber keinen Build.
+
+Behoben in `index.html`, abgesichert durch `test/security/csp-parity.test.ts`:
+Der Test zerlegt beide Policies und meldet jede Quelle, die im Header steht
+und im Meta-Tag fehlt. `frame-ancestors` ist ausgenommen — es wird in einem
+Meta-CSP laut Spezifikation ignoriert und gehört zu Recht nur in den Header.
+
+Gegenprobe gemacht: Gegen den Stand *vor* dem Fix scheitert der Test und
+nennt beide fehlenden Quellen namentlich.
+
+---
+
+### 5.12 Der Magic-Link kommt nicht an — der einzige Login-Weg ist zu
+
+**Der schwerste Befund dieser Sitzung.** Ebene 1 hinter dem Login ließ sich
+nicht durchführen, und der Grund dafür ist selbst der Fehler.
+
+Gemessen am 2026-09-01, 02:29–02:40 UTC:
+
+| Schritt | Ergebnis |
+|---|---|
+| `/welcome`, E-Mail eingeben, absenden | Oberfläche meldet „Magic-Link gesendet" |
+| Supabase `POST /otp` | **HTTP 200**, `user_recovery_requested`, drei Mal |
+| Auth-Log auf Mailer-Fehler | **kein einziger Fehlereintrag** |
+| Postfach nach 10 Minuten | **nichts** — auch nicht in Spam oder Papierkorb |
+
+Eine der drei Anfragen brauchte **23,9 Sekunden** — der einzige Hinweis auf
+einen zähen Zustellweg. Nach außen sieht alles grün aus: Die Oberfläche sagt
+„gesendet", die API sagt 200, das Log schweigt.
+
+**Warum das niemandem aufgefallen ist.** Beide Eigentümerkonten hängen an
+**Google OAuth**:
+
+| Konto | Provider | letzter Login |
+|---|---|---|
+| `steinerdominik1982@gmail.com` | `google` | 2026-05-29 |
+| `realsyncdynamics@gmail.com` | `google` | 2026-05-28 |
+| `support+e2e@realsyncdynamicsai.de` | `email` | 2026-08-30 — programmatisch angelegt, eine Minute später angemeldet |
+
+**Kein einziger menschlicher Login lief je über den E-Mail-Magic-Link.** Wer
+den Weg testet, den ein Neukunde geht, ist noch nie durchgekommen.
+
+`supabase/config.toml` hat **keine SMTP-Sektion** — es läuft also der
+eingebaute Dienst von Supabase, der auf dem Free-Tarif scharf begrenzt ist.
+Das passt zum Bild, ist aber **nicht bewiesen**: Die Auth-Konfiguration des
+Live-Projekts ist von hier aus nicht lesbar. Belegt ist der Ausfall, nicht
+seine Ursache.
+
+**Zusammenhang mit §5.8**: Dort fehlt `RESEND_API_KEY`, weshalb kein
+Audit-Report verschickt wird. Zusammengenommen hat das Produkt **keinen
+funktionierenden ausgehenden E-Mail-Weg** — weder für Berichte noch für den
+Login. Ein Interessent, der über den Scan-Trichter kommt, bekommt weder
+seinen Bericht noch einen Zugang.
+
+Betreiber-Aufgabe, und die dringendste von allen: SMTP in Supabase Auth
+hinterlegen (Resend deckt beides ab).
+
+---
+
+### 5.13 Zwei Nebenbefunde aus demselben Durchlauf
+
+**Routen-Gate: 116 von 131 `/app/*`-Routen ohne `AppGate`.** Nur 15 tragen
+`AppGate`, `ProtectedRoute` oder `RequireAal2`; `/app/dashboard` gehört dazu,
+`/app/incidents`, `/app/keys` und `/app/admin/*` nicht.
+
+**Und trotzdem tritt kein Datenabfluss auf** — das wurde gemessen, nicht aus
+der RLS geschlossen: Sechs der heikelsten Routen (`/app/admin/api-keys`,
+`/app/keys`, `/app/admin/members`, `/app/admin/billing`, `/app/vendors`,
+`/app/dsr`) ohne Session aufgerufen, ergaben **null Tabellenzeilen und keine
+einzige REST-Abfrage** gegen Supabase. Die Views tragen ihr Gate auf
+Komponentenebene und zeigen statt Inhalten eine Login-Aufforderung.
+
+Der Befund ist damit **Hygiene, kein Leck**: Die Absicherung liegt nicht
+dort, wo CLAUDE.md §7 sie beschreibt („`/app/*` → Auth-gated Dashboard"),
+sondern eine Ebene tiefer. Sie hängt daran, dass jede einzelne View ihr Gate
+selbst mitbringt — eine neue View, die das vergisst, ist ungeschützt, und
+nichts im Routing fängt das ab.
+
+**Die Login-Aufforderung ist fremdmarkiert.** Der Hinweis, den nicht
+angemeldete Besucher auf diesen ~100 Routen sehen, lautet **„Bei Kodee
+anmelden"** und stammt aus `src/features/kodee/connections/AuthGate.tsx`.
+Kodee ist die Marke von Hostingers Assistenten, nicht die des Produkts. Auf
+der Anmeldefläche einer EU-Governance-Plattform ist das ein Vertrauensproblem,
+kein Schönheitsfehler. Bestehender Text — fällt unter die Fragepflicht nach
+CLAUDE.md §10.3 und wurde deshalb **gemeldet, nicht geändert**.
+
+Der Hinweis bietet außerdem „Magic Link senden" an — also genau den Weg aus
+§5.12, der nicht zustellt.
+
 ---
 
 ## 6. Betriebshinweis: Browser hinter einem MITM-Proxy

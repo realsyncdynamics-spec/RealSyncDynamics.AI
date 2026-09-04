@@ -1,5 +1,30 @@
 # PR-Merge-Matrix — Release-Zug Phase 2 → Produktion
 
+> ## ⚠️ Historischer Snapshot — Stand 2026-09-04
+>
+> Diese Matrix bildet den PR-Bestand vom **2026-08-04** ab. Sie ist als Beleg
+> aufgehoben, nicht als Entscheidungsgrundlage: Alle darin bewerteten PRs sind
+> inzwischen entschieden, und der Slot-Befund in §1 war falsch begründet.
+>
+> | PR | Bewertung damals | Tatsächlicher Ausgang |
+> |---|---|---|
+> | #963, #961 | MERGE | gemergt |
+> | #960 | MERGE (Reihenfolge 3) | von #978 überholt, kollidiert mit `main` — offen |
+> | #970, #971, #972 | HOLD / REVIEW | seither eigenständig entschieden |
+> | #932 | HOLD | eigenständig entschieden |
+> | #896 (samt #890, #889) | REOPEN | **nicht** wiedereröffnet — der Kern kam über #1103, der Archive-Knopf über #1208 |
+>
+> **§1 ist sachlich falsch.** Die dort behauptete harte Schranke bei 100 Edge
+> Functions gibt es nicht; am 2026-09-04 laufen 181. Die 402-Meldung war real,
+> ihre Erklärung war aus einer Beobachtung geschlossen statt gemessen. Die drei
+> zur Freigabe vorgeschlagenen Functions wurden am 2026-08-11 gelöscht — richtig,
+> aber aus Sicherheitsgründen, nicht wegen Kapazität.
+>
+> **Was Bestand hat**: der Befund zur geschlossenen Kette #874 → #890 → #896
+> (§4) und die dort belegte Teilmengen-Analyse; die Sicherheitsbefunde zu #970
+> und #971 (§3), soweit diese PRs noch offen sind; und die Methode selbst —
+> messen statt herleiten, Mengen in beide Richtungen vergleichen.
+
 **Stand der Erhebung**: 2026-08-04 · **Basis**: `origin/main` @ `541dafd`
 **Methode**: read-only — GitHub API (Status, Checks, Reviews), lokaler Diff gegen `main`,
 Live-Abgleich gegen Supabase-Projekt `ebljyceifhnlzhjfyxup` (eu-central-1).

@@ -1,10 +1,16 @@
 // ISO 42001 Evidence Vault: Retrieve and manage evidence items
-// GET: List evidence for ISO 42001
-// POST: Upload new evidence and link to controls
+// GET:   List evidence for ISO 42001
+// POST:  Upload new evidence and link to controls
+// PATCH: Archive/unarchive an evidence item (setzt archived_at)
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
+import { buildCorsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 import { audit } from '../_shared/auditLog.ts';
+
+// Der Default des Helfers deklariert nur 'POST, OPTIONS'. Ein PATCH-Preflight
+// wuerde daran scheitern, sobald die Function nicht mehr same-origin ueber
+// /functions/v1/... aufgerufen wird.
+const corsHeaders = buildCorsHeaders('GET, POST, PATCH, OPTIONS');
 
 interface EvidenceItem {
   [key: string]: unknown;
@@ -29,11 +35,11 @@ const detectEvidenceType = (fileName: string, mimeType: string): string => {
 };
 
 Deno.serve(async (req) => {
-  const preflight = handleOptions(req);
+  const preflight = handleOptions(req, corsHeaders);
   if (preflight) return preflight;
 
   const auth = req.headers.get('Authorization');
-  if (!auth?.startsWith('Bearer ')) return jsonError(401, 'UNAUTHORIZED', 'missing bearer token');
+  if (!auth?.startsWith('Bearer ')) return jsonError(401, 'UNAUTHORIZED', 'missing bearer token', corsHeaders);
 
   const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
   const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
@@ -45,7 +51,7 @@ Deno.serve(async (req) => {
   });
 
   const { data: userResp, error: userErr } = await userClient.auth.getUser();
-  if (userErr || !userResp.user) return jsonError(401, 'UNAUTHORIZED', 'invalid token');
+  if (userErr || !userResp.user) return jsonError(401, 'UNAUTHORIZED', 'invalid token', corsHeaders);
   const userId = userResp.user.id;
   const userEmail = userResp.user.email ?? null;
 
@@ -53,7 +59,7 @@ Deno.serve(async (req) => {
 
   const url = new URL(req.url);
   const tenantId = url.searchParams.get('tenant_id');
-  if (!tenantId) return jsonError(400, 'BAD_REQUEST', 'tenant_id required');
+  if (!tenantId) return jsonError(400, 'BAD_REQUEST', 'tenant_id required', corsHeaders);
 
   // Verify access
   const { data: member } = await userClient
@@ -64,7 +70,7 @@ Deno.serve(async (req) => {
     .single();
 
   if (!member) {
-    return jsonError(403, 'FORBIDDEN', 'not a member of this tenant');
+    return jsonError(403, 'FORBIDDEN', 'not a member of this tenant', corsHeaders);
   }
 
   // GET: List evidence items (with pagination support)
@@ -99,7 +105,7 @@ Deno.serve(async (req) => {
       });
     } catch (err) {
       console.error('Evidence retrieval error:', err);
-      return jsonError(500, 'ERROR', 'failed to retrieve evidence');
+      return jsonError(500, 'ERROR', 'failed to retrieve evidence', corsHeaders);
     }
   }
 
@@ -114,7 +120,7 @@ Deno.serve(async (req) => {
       const tagsStr = formData.get('tags') as string;
 
       if (!file || !title) {
-        return jsonError(400, 'BAD_REQUEST', 'file and title required');
+        return jsonError(400, 'BAD_REQUEST', 'file and title required', corsHeaders);
       }
 
       const controlIds = controlIdsStr ? JSON.parse(controlIdsStr) : [];
@@ -176,9 +182,60 @@ Deno.serve(async (req) => {
       });
     } catch (err) {
       console.error('Evidence upload error:', err);
-      return jsonError(500, 'ERROR', 'failed to upload evidence');
+      return jsonError(500, 'ERROR', 'failed to upload evidence', corsHeaders);
     }
   }
 
-  return jsonError(405, 'BAD_REQUEST', 'POST or GET only');
+  // PATCH: Archivieren bzw. Archivierung aufheben
+  //
+  // Bewusst kein DELETE: Evidence ist Nachweismaterial nach ISO 42001. Archivieren
+  // blendet den Eintrag aus der Standardansicht aus (GET filtert auf
+  // archived_at IS NULL), loescht aber nichts — die Hash-Kette und der Pruefpfad
+  // bleiben unangetastet. Geschrieben wird ueber userClient, damit RLS greift und
+  // ein fremder Tenant den Eintrag auch dann nicht trifft, wenn die
+  // Mitgliedschaftspruefung oben je umgangen wuerde.
+  if (req.method === 'PATCH') {
+    try {
+      const evidenceId = url.searchParams.get('evidence_id');
+      if (!evidenceId) return jsonError(400, 'BAD_REQUEST', 'evidence_id required', corsHeaders);
+
+      // Ohne Parameter wird archiviert; archived=false hebt es wieder auf.
+      const archived = url.searchParams.get('archived') !== 'false';
+
+      const { data: updated, error: updateError } = await userClient
+        .from('evidence_items')
+        .update({ archived_at: archived ? new Date().toISOString() : null })
+        .eq('id', evidenceId)
+        .eq('tenant_id', tenantId)
+        .select('id, title, archived_at')
+        .maybeSingle();
+
+      if (updateError) throw updateError;
+      if (!updated) return jsonError(404, 'NOT_FOUND', 'evidence item not found', corsHeaders);
+
+      await audit(admin, {
+        tenant_id: tenantId,
+        user_id: userId,
+        user_email: userEmail,
+        action: archived ? 'evidence_archived' : 'evidence_unarchived',
+        resource_type: 'evidence_item',
+        resource_id: updated.id,
+        changes: { title: updated.title, archived_at: updated.archived_at },
+        severity: 'info',
+      });
+
+      return jsonResponse({
+        success: true,
+        message: archived
+          ? `Evidence "${updated.title}" archived`
+          : `Evidence "${updated.title}" restored`,
+        evidence: updated,
+      });
+    } catch (err) {
+      console.error('Evidence archive error:', err);
+      return jsonError(500, 'ERROR', 'failed to update evidence', corsHeaders);
+    }
+  }
+
+  return jsonError(405, 'BAD_REQUEST', 'GET, POST or PATCH only', corsHeaders);
 });

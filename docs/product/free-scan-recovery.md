@@ -460,3 +460,68 @@ SCAN → REPORT → BUILD → AUTOMATE → GOVERN
 Der Scan ist der Eingangspunkt, nicht der Anlass, einen zweiten Trichter
 daneben zu bauen. BUILD, AUTOMATE und GOVERN schliessen an, sobald der
 Scan-/Report-Vertrag wieder belastbar ist.
+
+---
+
+## 7. Nachweis in Produktion — 2026-09-01
+
+Der Merge ist die Behauptung, ein Eintrag in `gdpr_audits` der Beleg. Nach dem
+Deploy von `66647c9` (Migrationen 08:52, Edge Functions 08:57 UTC) gemessen:
+
+| Prüfung | Ergebnis |
+|---|---|
+| `POST /functions/v1/gdpr-audit` | **HTTP 200** in 2,1 s (vorher: HTTP 500) |
+| Neue Zeile in `gdpr_audits` | `7d4f59fc…`, 2026-09-01 09:03:31 UTC |
+| Score | **88** = 100 − 12 für einen `high`-Befund — die gemessene Formel |
+| Befund | `sub_imprint_no_contact` |
+
+Der Befund ist der eigentliche Nachweis: Er stammt aus der Unterseiten-Prüfung.
+Die abweichende Fassung hatte alle sieben Unterseiten-Prüfungen weggelassen —
+sie hätte hier `100 / pass` gemeldet und den Mangel verschwiegen.
+
+Geprüft wurde mit `source: "optimizer"`. Dieser Pfad verlangt keine E-Mail und
+legt **keinen** `sales_leads`-Eintrag an, erzeugt also keinen Vertriebsdatensatz
+und keine Drip-Mail für eine Prüfung.
+
+### Ein offener Punkt, der dabei sichtbar wurde
+
+`https://realsyncdynamicsai.de` bekam am 2026-08-11 noch
+`rule:AI_ACT_LIMITED_RISK_CHATBOT` (Score 98), am 2026-09-01 keinen
+`rule:`-Befund mehr. **Das ist keine Regression**: Das ausgelieferte HTML
+enthält seit dem Neubau der Startseite (2026-08-19, Design-Freeze-Baseline
+`339b08e7`) keinen einzigen Chat-Widget-Marker mehr. Die Regel schweigt zu
+Recht.
+
+Nachgeprüft wurde das an der Live-Seite, nicht geschlossen. Aus den Tests
+heraus war die Frage nämlich **nicht** entscheidbar — und das war die eigentliche
+Lücke.
+
+### Die Lücke, die das aufgedeckt hat
+
+Von den drei Regeln, die in den 159 historischen Audits je gefeuert haben, war
+nur **eine** durch eine Wirkungsprobe gedeckt (`COOKIE_BANNER_DARK_PATTERN`).
+Für `AI_ACT_LIMITED_RISK_CHATBOT` und `MISSING_AVV_REFERENCE` prüfte der Test
+nur die **Form** der Fakten.
+
+Das genügt nicht. Belegt durch zwei Mutationen an `extractFacts`:
+
+| Mutation | Formtest | Wirkungstest |
+|---|---|---|
+| `is_chatbot` → `is_chatbot_detected` (Name geändert) | schlägt fehl | schlägt fehl |
+| `disclosure_visible: ai.has_disclosure` → `: true` | **grün** | schlägt fehl |
+
+Die zweite ist der gefährliche Fall: Form korrekt, Fakt gesetzt, Typ richtig —
+und die Regel kann trotzdem nie mehr feuern. Genau diese Fehlerklasse blieb
+18 Tage unbemerkt.
+
+Geschlossen durch `test/edge/gdpr-audit-checks.test.ts`: eine fixture-getriebene
+Tabelle über `rule_ids_ever_emitted`. Kommt ein vierter Regel-Code hinzu, schlägt
+der Test fehl, statt die neue Regel stillschweigend ungeprüft zu lassen.
+
+### Nebenbefund
+
+`MISSING_PRIVACY_POLICY` feuert in der Rule Engine sehr wohl — sie erscheint nur
+deshalb in keinem der 159 Audits, weil `RULE_HEURISTIC_OVERLAP` sie im Bericht
+unterdrückt, sobald `no_privacy_link` denselben Mangel bereits meldet. Engine und
+Bericht sind hier bewusst verschiedene Ebenen; beide sind jetzt einzeln
+festgenagelt.

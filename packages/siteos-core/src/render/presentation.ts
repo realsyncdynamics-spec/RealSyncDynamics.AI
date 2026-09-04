@@ -116,8 +116,22 @@ export function renderPresentationCss(theme: Partial<SiteTheme> | undefined): st
     '[id*="--hero--"]{position:relative;overflow:hidden;',
     'padding-block:clamp(3.5rem,9vw,7rem)!important;',
     'background:radial-gradient(1100px 520px at 12% -10%,var(--accent-soft),transparent 62%);}',
+    // `max-width:16ch` allein genuegt nicht: Ein Firmenname ohne Leerzeichen
+    // ist ein einziges Wort, und ein Wort bricht bei `overflow-wrap:normal`
+    // nicht. Der Hero hat `overflow:hidden` — der Ueberhang wurde also nicht
+    // nur breiter als seine Spalte, er wurde abgeschnitten. Gemessen am
+    // 2026-09-01: „RealSyncDynamics.AI" ergab 648px Text in einem 570px
+    // breiten Kasten, 78px fielen weg. Bei Markennamen und Domains ist der
+    // einteilige Name der Normalfall, nicht die Ausnahme.
+    //
+    // `break-word` und nicht `anywhere`: `anywhere` zaehlt beim Ermitteln der
+    // Mindestbreite mit und laesst die Textspalte im Hero-Raster
+    // zusammenfallen — gemessen sackte sie von 570px auf 226px, die
+    // Ueberschrift brach dann dreizeilig mitten im Wort. `break-word` bricht
+    // erst, wenn es sonst ueberliefe, und laesst die Spaltenbreite in Ruhe.
     '[id*="--hero--"]>h1,[id*="--hero--"]>h2{',
-    'font-size:clamp(2.1rem,5.4vw,4rem);line-height:1.05;max-width:16ch;}',
+    'font-size:clamp(2.1rem,5.4vw,4rem);line-height:1.05;max-width:16ch;',
+    'overflow-wrap:break-word;}',
     '[id*="--hero--"]>p{font-size:clamp(1.05rem,1.5vw,1.3rem);max-width:52ch;}',
     '[id*="--hero--"]>a{display:inline-block;margin-top:1.75rem;',
     'background:var(--accent);color:var(--surface);text-decoration:none;font-weight:600;',

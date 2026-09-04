@@ -35,6 +35,10 @@ const root = (p: string) => resolve(__dirname, '../..', p);
 const FUNCTIONS = {
   'save-company-profile': readFileSync(root('supabase/functions/save-company-profile/index.ts'), 'utf8'),
   'create-trial-subscription': readFileSync(root('supabase/functions/create-trial-subscription/index.ts'), 'utf8'),
+  // Vierte Ebene des Branchen-Vertrags. Lag bis 2026-08-29 live in Produktion,
+  // ohne im Repo zu sein — der Drift-Guard hat sie als ORPHAN gemeldet. Sie
+  // validiert `sector` eigenstaendig und schreibt in dieselben Tabellen.
+  'onboarding-orchestrator': readFileSync(root('supabase/functions/onboarding-orchestrator/index.ts'), 'utf8'),
 } as const;
 
 const MIGRATION = readFileSync(root('supabase/migrations/20260824000000_company_profiles.sql'), 'utf8');
@@ -53,6 +57,19 @@ const SECTOR_MIGRATION = readFileSync(
 const SECTOR_CONFIG = readFileSync(root('src/config/sectors.ts'), 'utf8');
 
 /** Ohne Kommentare — dort steht die Begründung, nicht der Verstoß. */
+/** Kanonische Branchen-IDs — Quelle fuer den industryOf-Test unten. */
+const TENANT_INDUSTRY_IDS = new Set(
+  [
+    ...readFileSync(root('src/lib/policy-packs/recommend.ts'), 'utf8')
+      .slice(
+        readFileSync(root('src/lib/policy-packs/recommend.ts'), 'utf8').indexOf(
+          'TENANT_INDUSTRY_OPTIONS',
+        ),
+      )
+      .matchAll(/\{ id: '([a-z-]+)'/g),
+  ].map((m) => m[1]),
+);
+
 const stripComments = (s: string) =>
   s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
 
@@ -88,8 +105,15 @@ describe('Mandantenauflösung', () => {
 });
 
 describe('Prüfpfad', () => {
-  for (const [name, source] of Object.entries(FUNCTIONS)) {
-    const code = stripComments(source);
+  // Nur die Functions, die tatsächlich nach `trial_audit_logs` schreiben.
+  // Vorher lief die Schleife über FUNCTIONS insgesamt — das ging gut, solange
+  // dort genau diese beiden standen. Mit onboarding-orchestrator (schreibt in
+  // inventory_audit_events und enterprise_ai_audit_events, ganz ohne
+  // ip_address) verlangte sie plötzlich etwas, das es dort nicht geben muss.
+  const WRITES_TRIAL_AUDIT_LOG = ['save-company-profile', 'create-trial-subscription'] as const;
+
+  for (const name of WRITES_TRIAL_AUDIT_LOG) {
+    const code = stripComments(FUNCTIONS[name]);
 
     it(`${name}: schreibt keine ungültige inet-Adresse`, () => {
       // `trial_audit_logs.ip_address` ist vom Typ inet. Der Text 'unknown'
@@ -134,7 +158,7 @@ describe('Kein Erfolg ohne Wirkung', () => {
   });
 });
 
-describe('Branchen-Wertebereich steht dreifach — und muss übereinstimmen', () => {
+describe('Branchen-Wertebereich steht vierfach — und muss übereinstimmen', () => {
   const fromFunction = [
     ...stripComments(FUNCTIONS['save-company-profile'])
       .match(/VALID_SECTORS = new Set\(\[([^\]]+)\]\)/)![1]
@@ -151,11 +175,26 @@ describe('Branchen-Wertebereich steht dreifach — und muss übereinstimmen', ()
     ...SECTOR_CONFIG.matchAll(/^\s{4}id: '([a-z_]+)',$/gm),
   ].map((m) => m[1]);
 
-  it('liest überhaupt drei Listen', () => {
+  const fromOrchestrator = [
+    ...stripComments(FUNCTIONS['onboarding-orchestrator'])
+      .match(/const\s+sectors\s*=\s*new\s+Set\(\[([^\]]+)\]\)/)![1]
+      .matchAll(/'([a-z_]+)'/g),
+  ].map((m) => m[1]);
+
+  it('liest überhaupt vier Listen', () => {
     // Ohne diese Zusicherung verglichen die folgenden Fälle leere Mengen.
     expect(fromFunction.length).toBeGreaterThan(3);
     expect(fromMigration.length).toBeGreaterThan(3);
     expect(fromPage.length).toBeGreaterThan(3);
+    expect(fromOrchestrator.length).toBeGreaterThan(3);
+  });
+
+  it('onboarding-orchestrator führt denselben Wertebereich', () => {
+    // Diese Ebene war lange unsichtbar: Die Function lag nicht im Repo, also
+    // konnte kein Test sie kennen. Eine Branche, die sie ablehnt, waere im
+    // Onboarding als INVALID_SECTOR gescheitert, obwohl Datenbank und
+    // save-company-profile sie akzeptieren.
+    expect([...fromOrchestrator].sort()).toEqual([...fromMigration].sort());
   });
 
   it('Function und CHECK-Constraint führen denselben Wertebereich', () => {
@@ -168,6 +207,95 @@ describe('Branchen-Wertebereich steht dreifach — und muss übereinstimmen', ()
     expect(
       rejected,
       'Diese Auswahl im Onboarding würde am CHECK-Constraint scheitern.'
+    ).toEqual([]);
+  });
+});
+
+describe('onboarding-orchestrator: industryOf schreibt kanonische Branchen', () => {
+  /**
+   * `industryOf()` schreibt nach `tenants.industry`. Der Vergleich in
+   * `recommendPacks` ist strikt (`pack.industry === industry`, W_INDUSTRY = 40
+   * Punkte) — ein Wert ausserhalb von TENANT_INDUSTRY_OPTIONS laesst die
+   * Branchen-Empfehlung also stillschweigend nie greifen.
+   *
+   * Genau das war der Fall: 'software' und 'professional-services' gab es dort
+   * nicht, 'healthcare' heisst dort 'health'. Der Fehler war unsichtbar, weil
+   * nichts fehlschlaegt — es passiert nur nichts. Deshalb dieser Test.
+   */
+  const targets = [
+    ...stripComments(FUNCTIONS['onboarding-orchestrator'])
+      .match(/function industryOf\(s:string\)\{return \(\{([^}]+)\}/)![1]
+      .matchAll(/:\s*'([a-z-]+)'/g),
+  ].map((m) => m[1]);
+
+  it('liest ueberhaupt eine Abbildung', () => {
+    expect(targets.length).toBeGreaterThan(3);
+  });
+
+  it('jeder Zielwert existiert in TENANT_INDUSTRY_OPTIONS', () => {
+    const unknown = [...new Set(targets)].filter((t) => !TENANT_INDUSTRY_IDS.has(t));
+    expect(
+      unknown,
+      'Diese Werte landen in tenants.industry, matchen aber keinen Pack — die Branchen-Empfehlung greift fuer sie nie.',
+    ).toEqual([]);
+  });
+});
+
+describe('onboarding_tenant_policy_packs: SQL liest dasselbe Branchen-Vokabular', () => {
+  /**
+   * `tenants.industry` hat zwei Leser: den TypeScript-Empfehlungspfad
+   * (TENANT_INDUSTRY_OPTIONS) und diese SQL-Funktion. Sie sprachen
+   * unterschiedliche Sprachen — die Funktion prüfte auf 'healthcare' und
+   * 'public_sector', geschrieben wird 'health' und 'public-sector'.
+   *
+   * Folge war kein Fehler, sondern Stille: eu-ai-act-high-risk und
+   * nis2-cybersecurity wurden nie aktiviert, obwohl beide im Katalog stehen.
+   * Genau deshalb dieser Test — er prüft die Seite, die niemand ansieht.
+   */
+  const SQL = readFileSync(
+    root('supabase/migrations/20260902000011_onboarding_policy_packs_industry_vocabulary.sql'),
+    'utf8',
+  );
+
+  /** Nur der Funktionsrumpf — der Kommentarkopf nennt die alten Werte absichtlich. */
+  const body = SQL.slice(SQL.indexOf('create or replace function'));
+
+  const literals = [
+    ...body.matchAll(/v_industry\s*(?:in\s*\(([^)]*)\)|=\s*('[a-z-]+'))/g),
+  ]
+    .flatMap((m) => [...(m[1] ?? m[2]).matchAll(/'([a-z-]+)'/g)].map((x) => x[1]))
+    .filter((v) => v !== 'all');
+
+  it('liest ueberhaupt Branchen-Literale', () => {
+    expect(literals.length).toBeGreaterThan(3);
+  });
+
+  /**
+   * `text[] || 'literal'` ist in Postgres nicht das, wonach es aussieht: Von
+   * den Kandidaten `anyarray || anyelement` und `anyarray || anyarray` gewinnt
+   * bei einem Literal ohne Typ die Array-Variante — Postgres versucht, den
+   * String als Array-Literal zu lesen, und wirft "malformed array literal".
+   *
+   * Der Fehler ist latent: Er schlaegt erst zu, wenn der Zweig ueberhaupt
+   * erreicht wird. Genau das aendert die Vokabular-Korrektur oben — sie macht
+   * die Zweige zum ersten Mal erreichbar. Ohne den Cast wuerde aus stiller
+   * Wirkungslosigkeit ein harter Abbruch des Onboardings.
+   */
+  it('haengt Packs mit explizitem ::text an, nicht als Array-Literal', () => {
+    const ungecastet = [...body.matchAll(/v_packs\s*\|\|\s*'([a-z0-9-]+)'(?!::text)/g)].map(
+      (m) => m[1],
+    );
+    expect(
+      ungecastet,
+      'Ohne ::text liest Postgres das Literal als Array — die Funktion bricht ab, sobald der Zweig greift.',
+    ).toEqual([]);
+  });
+
+  it('jedes Literal existiert in TENANT_INDUSTRY_OPTIONS', () => {
+    const unknown = [...new Set(literals)].filter((v) => !TENANT_INDUSTRY_IDS.has(v));
+    expect(
+      unknown,
+      'Diese Werte prueft die SQL-Funktion, aber niemand schreibt sie — die Pack-Aktivierung greift fuer sie nie.',
     ).toEqual([]);
   });
 });

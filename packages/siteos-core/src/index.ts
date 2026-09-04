@@ -30,4 +30,9 @@ export * from './publish/gate.ts';
 export * from './agents/registry.ts';
 export * from './agents/remediate.ts';
 
+// Skills und Workflows als Vokabular über den Agenten (§8). Ordnet zu, führt
+// nicht aus — die Ausführung bleibt bei den Agenten.
+export * from './workflows/skills.ts';
+export * from './workflows/workflows.ts';
+
 export { buildSiteFromPrompt } from './pipeline.ts';

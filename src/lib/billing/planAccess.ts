@@ -23,6 +23,7 @@ import {
   minimumPlanForModule,
   minimumPlanForPermission,
   planById,
+  subscriptionGrantsPaidAccess,
   type ModuleId,
   type PermissionKey,
   type PlanId,
@@ -155,11 +156,15 @@ export function planLimit(
 
 /**
  * Aktiver Plan für einen Tenant via Supabase `subscriptions`-Tabelle.
- * Liefert `null`, wenn keine aktive Subscription vorhanden ist —
+ * Liefert `null`, wenn keine wirksame Subscription vorhanden ist —
  * Aufrufer behandelt das als „free" (oder zeigt Upgrade-CTA).
  *
- * „aktiv" = status in ('trialing', 'active'). Wir vertrauen darauf, dass der
- * Stripe-Webhook die Tabelle aktuell hält.
+ * „wirksam" folgt derselben Regel wie `tenant_entitlements()` und
+ * `useEntitlements()`: `active`/`trialing`, oder `past_due` innerhalb der
+ * Grace Period (`subscriptionGrantsPaidAccess`). Vorher galt hier nur
+ * `active`/`trialing` — ein Kunde in der siebentägigen Frist sah seine
+ * Navigation gesperrt, während der Server ihm alles gewährte und der
+ * Marketplace seine Module als aktiv zeigte (Befund vom 2026-09-01).
  *
  * Bestandszeilen mit dem alten Plan-Key `scale` werden über
  * `resolvePlan()` transparent auf `partner` abgebildet.
@@ -169,12 +174,12 @@ export async function getActivePlanForTenant(tenantId: string): Promise<PlanId |
   const sb = getSupabase();
   const { data, error } = await sb
     .from('subscriptions')
-    .select('plan_key, status, cancel_at_period_end, current_period_end')
+    .select('plan_key, status, past_due_since, cancel_at_period_end, current_period_end')
     .eq('tenant_id', tenantId)
     .order('updated_at', { ascending: false })
     .limit(1)
     .maybeSingle();
   if (error || !data) return null;
-  if (data.status !== 'active' && data.status !== 'trialing') return null;
+  if (!subscriptionGrantsPaidAccess(data.status as string, data.past_due_since as string | null, new Date())) return null;
   return resolvePlan(data.plan_key as string | undefined)?.id ?? null;
 }

@@ -29,6 +29,7 @@ import { PhonebotStartPage } from './pages/product-entry-points/PhonebotStartPag
 import { AetherOSLanding } from './pages/AetherOSLanding';
 // ── RealSyncDynamics Landing Page (eigene Route /realsync-landing) ──
 import { RealSyncDynamicsLanding } from './marketing/landing/RealSyncDynamicsLanding';
+import EnterpriseKonfigurator from './pages/EnterpriseKonfigurator';
 // ── Governance-OS Workspace Preview (moved to /preview) ──
 import { PublicWorkspacePreview } from './pages/PublicWorkspacePreview';
 import { GovernanceBrowserPage } from './pages/GovernanceBrowserPage';
@@ -43,6 +44,7 @@ import { DsgvoKiChecklist } from './pages/DsgvoKiChecklist';
 import { AuditShare } from './pages/AuditShare';
 import { AiActFaq } from './pages/AiActFaq';
 import { SchremsIIErklaert } from './pages/SchremsIIErklaert';
+import { OnboardingErklaert } from './pages/OnboardingErklaert';
 import { BaitMaRiskGuide } from './pages/BaitMaRiskGuide';
 import { NewsletterConfirm } from './pages/NewsletterConfirm';
 import { CaseStudies } from './pages/CaseStudies';
@@ -100,12 +102,20 @@ const DashboardRouter = lazy(() => import('./features/governance/dashboard/Dashb
 // ── SMB Experience Layer: vereinfachte Business-Ansicht für Einzelunternehmer.
 //    Konsumiert nur bestehende Services (siehe src/features/smb/README.md).
 const SmbDashboardView = lazy(() => import('./features/smb/SmbDashboardView').then((m) => ({ default: m.SmbDashboardView })));
+// ── Modul-Hub: Capability-Übersicht des Workspaces (Aktivieren/Öffnen je Entitlement)
+const ModulesHubView = lazy(() => import('./features/modules/ModulesHubView').then((m) => ({ default: m.ModulesHubView })));
 // ── Phase 3: Advanced Governance Views
 const ComplianceFrameworkSelector = lazy(() => import('./features/governance/dashboard/ComplianceFrameworkSelector').then((m) => ({ default: m.ComplianceFrameworkSelector })));
 const Iso42001ComplianceHub = lazy(() => import('./features/governance/dashboard/Iso42001ComplianceHub').then((m) => ({ default: m.Iso42001ComplianceHub })));
 // BusinessDashboard zieht recharts → aus dem Landing-Critical-Path lazyen.
 const BusinessDashboard = lazy(() => import('./pages/BusinessDashboard').then((m) => ({ default: m.BusinessDashboard })));
-// CreatorDashboard ist auth-gated → lazy
+// CreatorDashboard ist auth-gated → lazy.
+//
+// Die Aussage stimmt erst, seit die Route sie auch gattert. Die Komponente
+// selbst bringt keinen Guard mit — kein `AuthGate`, kein `RequireAal2`, keine
+// Sitzungsprüfung. Sie hing unter `/assistant` ohne Wrapper, und dieser
+// Kommentar behauptete das Gegenteil: Wer ihn las, musste die Route für
+// geschützt halten. Der Schutz sitzt in `<AppGate>` an der Route, nicht hier.
 const CreatorDashboard = lazy(() => import('./pages/CreatorDashboard').then((m) => ({ default: m.CreatorDashboard })));
 // Compliance Tools (Free)
 import { AvvGenerator } from './pages/AvvGenerator';
@@ -191,7 +201,6 @@ import { CookieCompliance } from './pages/seo/CookieCompliance';
 import { PricingPage } from './features/billing/PricingPage';
 import { WhatsAppPricingPage } from './pages/WhatsAppPricingPage';
 import { CheckoutPage } from './features/billing/CheckoutPage';
-import { CheckoutSuccessPage } from './features/billing/CheckoutSuccessPage';
 import { CheckoutCancelledPage } from './features/billing/CheckoutCancelledPage';
 // Pricing detail pages — new detail routes for plans/features/checkout
 import { PricingDetailPageWrapper } from './pages/pricing/PricingDetailPage';
@@ -266,6 +275,7 @@ const WebsiteGovernanceView = lazy(() => import('./features/governance/websites/
 const AiRegisterView = lazy(() => import('./features/governance/AiRegisterView').then((m) => ({ default: m.AiRegisterView })));
 const DsgvoDirectoryView = lazy(() => import('./features/governance/DsgvoDirectoryView').then((m) => ({ default: m.DsgvoDirectoryView })));
 const AiActRiskAssessmentView = lazy(() => import('./features/governance/AiActRiskAssessmentView').then((m) => ({ default: m.AiActRiskAssessmentView })));
+const IndustrialOtWizardView = lazy(() => import('./features/governance/IndustrialOtWizardView').then((m) => ({ default: m.IndustrialOtWizardView })));
 const Nis2IncidentsView = lazy(() => import('./features/governance/Nis2IncidentsView').then((m) => ({ default: m.Nis2IncidentsView })));
 const Iso27001ControlsView = lazy(() => import('./features/governance/Iso27001ControlsView').then((m) => ({ default: m.Iso27001ControlsView })));
 const Iso42001View = lazy(() => import('./features/governance/Iso42001View').then((m) => ({ default: m.Iso42001View })));
@@ -496,6 +506,7 @@ function RoutesWithTracking() {
       <Route path="/landingpages" element={<LandingPagesOverview />} />
       <Route path="/landing-uebersicht" element={<LandingPagesOverview />} />
       <Route path="/realsync-landing" element={<RealSyncDynamicsLanding />} />
+      <Route path="/enterprise-konfigurator" element={<EnterpriseKonfigurator />} />
       <Route path="/governance-browser" element={<GovernanceBrowserPage />} />
       <Route path="/runtime"    element={<RuntimePage />} />
       <Route path="/monitoring" element={<MonitoringPage />} />
@@ -557,6 +568,7 @@ function RoutesWithTracking() {
       <Route path="/dsgvo-ki-checkliste" element={<DsgvoKiChecklist />} />
       <Route path="/ai-act-faq" element={<AiActFaq />} />
       <Route path="/schrems-ii-erklaert" element={<SchremsIIErklaert />} />
+      <Route path="/onboarding-erklaert" element={<OnboardingErklaert />} />
       <Route path="/bait-marisk-compliance-guide" element={<BaitMaRiskGuide />} />
       <Route path="/newsletter/confirm" element={<NewsletterConfirm />} />
       <Route path="/case-studies" element={<CaseStudies />} />
@@ -740,12 +752,13 @@ function RoutesWithTracking() {
       <Route path="/app/risk" element={<AppGate><ProtectedRoute><RiskDashboard /></ProtectedRoute></AppGate>} />
       {/* DashboardRouter conditionally shows FreeTierDashboard or CeoCockpitView. */}
       <Route path="/app/dashboard" element={<AppGate><GovernanceBrowserShell><DashboardRouter /></GovernanceBrowserShell></AppGate>} />
-      <Route path="/app/cockpit/brief" element={<CeoBriefPrintView />} />
+      <Route path="/app/cockpit/brief" element={<AppGate><CeoBriefPrintView /></AppGate>} />
       <Route path="/app/seo-marketing-dashboard" element={<AppGate><GovernanceBrowserShell><SEOMarketingDashboard /></GovernanceBrowserShell></AppGate>} />
       {/* Marketplace: zubuchbare Dienste mit ihrem tatsaechlichen Zustand.
           Liest die Entitlements des Mandanten, daher auth-gegatet. */}
       <Route path="/app/marketplace" element={<AppGate><GovernanceBrowserShell><MarketplaceView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/overview" element={<GovernanceBrowserShell><GovernanceOsDashboard /></GovernanceBrowserShell>} />
+      <Route path="/app/modules" element={<GovernanceBrowserShell><ModulesHubView /></GovernanceBrowserShell>} />
       <Route path="/app/home" element={<GovernanceBrowserShell><WorkspaceHome /></GovernanceBrowserShell>} />
       <Route path="/app/company" element={<GovernanceBrowserShell><CompanyView /></GovernanceBrowserShell>} />
       <Route path="/app/websites" element={<GovernanceBrowserShell><WebsiteGovernanceView /></GovernanceBrowserShell>} />
@@ -753,6 +766,7 @@ function RoutesWithTracking() {
       <Route path="/app/governance/ai-register" element={<GovernanceBrowserShell><AiRegisterView /></GovernanceBrowserShell>} />
       <Route path="/app/governance/dsgvo-directory" element={<GovernanceBrowserShell><DsgvoDirectoryView /></GovernanceBrowserShell>} />
       <Route path="/app/governance/ai-act-assessment" element={<GovernanceBrowserShell><AiActRiskAssessmentView /></GovernanceBrowserShell>} />
+      <Route path="/app/governance/industrial-ot" element={<GovernanceBrowserShell><IndustrialOtWizardView /></GovernanceBrowserShell>} />
       <Route path="/app/governance/memory" element={<GovernanceBrowserShell><MemoryGovernanceView /></GovernanceBrowserShell>} />
       <Route path="/app/governance/nis2-incidents" element={<GovernanceBrowserShell><Nis2IncidentsView /></GovernanceBrowserShell>} />
       <Route path="/app/governance/iso27001" element={<GovernanceBrowserShell><Iso27001ControlsView /></GovernanceBrowserShell>} />
@@ -850,13 +864,14 @@ function RoutesWithTracking() {
       <Route path="/app/monitoring/sources" element={<GovernanceBrowserShell><MonitoringSourcesView /></GovernanceBrowserShell>} />
       <Route path="/app/team" element={<GovernanceBrowserShell><RequireAal2 action="Team-Verwaltung"><TenantAdminConsole /></RequireAal2></GovernanceBrowserShell>} />
       <Route path="/app/settings/team" element={<GovernanceBrowserShell><RequireAal2 action="Team-Verwaltung"><TenantAdminConsole /></RequireAal2></GovernanceBrowserShell>} />
-      {/* Admin Panel Routes */}
+      {/* Admin Panel Routes — die Unterseiten hatten bis 2026-09-01 keinen
+          Auth-Wrapper (Befund Zugriffsregister); AppGate ist rein additiv. */}
       <Route path="/app/admin" element={<AppGate><GovernanceBrowserShell><AdminDashboard /></GovernanceBrowserShell></AppGate>} />
-      <Route path="/app/admin/members" element={<AdminMembersPage />} />
-      <Route path="/app/admin/settings" element={<AdminSettingsPage />} />
-      <Route path="/app/admin/billing" element={<AdminBillingPage />} />
-      <Route path="/app/admin/api-keys" element={<AdminAPIKeysPage />} />
-      <Route path="/app/admin/audit" element={<AdminAuditPage />} />
+      <Route path="/app/admin/members" element={<AppGate><AdminMembersPage /></AppGate>} />
+      <Route path="/app/admin/settings" element={<AppGate><AdminSettingsPage /></AppGate>} />
+      <Route path="/app/admin/billing" element={<AppGate><AdminBillingPage /></AppGate>} />
+      <Route path="/app/admin/api-keys" element={<AppGate><AdminAPIKeysPage /></AppGate>} />
+      <Route path="/app/admin/audit" element={<AppGate><AdminAuditPage /></AppGate>} />
       <Route path="/app/agents" element={<GovernanceBrowserShell><GovernanceAgentsCenterView /></GovernanceBrowserShell>} />
       <Route path="/app/documents" element={<GovernanceBrowserShell><GovernanceDocumentsView /></GovernanceBrowserShell>} />
       <Route path="/app/audit" element={<GovernanceBrowserShell><GovernanceAuditExportView /></GovernanceBrowserShell>} />
@@ -871,14 +886,20 @@ function RoutesWithTracking() {
 
       {/* ── Redirects: konkurrierende Einstiege → kanonische Workspace-URL ──
           Alte URLs werden NICHT entfernt (keine 404 / keine toten Bookmarks).
-          Chat bleibt als Assistent unter /assistant erreichbar. */}
-      <Route path="/assistant" element={<CreatorDashboard />} />
+          Chat bleibt als Assistent unter /assistant erreichbar — seit dem
+          Absichern der Route allerdings nur angemeldet, siehe `AppGate` dort. */}
+      <Route path="/assistant" element={<AppGate><CreatorDashboard /></AppGate>} />
       <Route path="/dashboard" element={<Navigate to="/app" replace />} />
       <Route path="/dashboard/business" element={<BusinessDashboard />} />
       <Route path="/dashboard/audit" element={<AuditDashboardView />} />
       <Route path="/dashboard/agents" element={<AgentOsAdminPage />} />
       <Route path="/business" element={<BusinessDashboard />} />
-      <Route path="/kodee" element={<KodeeView />} />
+      {/* `/kodee` führt denselben Gateway-Aufruf wie `/assistant`
+          (`processAIGatewayRequest`) und braucht deshalb denselben Schutz:
+          ohne Gate könnte jeder Besucher Modellaufrufe auslösen.
+          `/kodee/connections` ist nicht betroffen — `ConnectionsView`
+          bringt einen eigenen `AuthGate` mit. */}
+      <Route path="/kodee" element={<AppGate><KodeeView /></AppGate>} />
       <Route path="/kodee/connections" element={<ConnectionsView />} />
       <Route path="/billing/usage" element={<RequireAal2 action="Billing-Verwaltung"><UsageView /></RequireAal2>} />
       <Route path="/pricing" element={<PricingPage />} />
@@ -888,8 +909,10 @@ function RoutesWithTracking() {
       {/* Uebersicht zu den bereits vorhandenen /features/:slug-Detailseiten. */}
       <Route path="/features" element={<Features />} />
       <Route path="/features/:slug" element={<FeatureDetailPageWrapper />} />
-      {/* Checkout routes - specific paths must come before parameterized routes */}
-      <Route path="/checkout/success" element={<CheckoutSuccessPage />} />
+      {/* Checkout routes - specific paths must come before parameterized routes.
+          /checkout/success ist oben (pages/CheckoutSuccess) registriert; eine
+          zweite Registrierung (features/billing/CheckoutSuccessPage) war
+          unerreichbar und wurde am 2026-09-01 samt Datei entfernt. */}
       <Route path="/checkout/cancelled" element={<CheckoutCancelledPage />} />
       <Route path="/checkout/:planKey" element={<CheckoutPage />} />
       {/* End of Pricing Detail Routes */}

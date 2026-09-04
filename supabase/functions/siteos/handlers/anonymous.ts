@@ -36,6 +36,15 @@ import { audit } from '../../_shared/auditLog.ts';
 import { appendCustodyEvent } from '../../_shared/provenanceCore.ts';
 import { checkAnonRateLimit } from '../../_shared/anonRateLimit.ts';
 import { completeAnonAudit, extractPayloadKeys, reserveAnonAudit } from '../../_shared/anonAudit.ts';
+import { createPreviewId } from '../../../../src/lib/preview-sandbox.ts';
+import {
+  publishPreview,
+  readPreviewTarget,
+  revokePreview,
+  ttlUntil,
+  type PreviewOutcome,
+  type PreviewTarget,
+} from '../preview.ts';
 import {
   analyzeBlueprint,
   buildSiteFromPrompt,
@@ -58,6 +67,26 @@ const VALID_LOCALES = new Set<Locale>(['de', 'en', 'fr', 'it', 'es', 'nl', 'pl']
 /** Eigener Zählerraum (siehe Kopf). */
 const RATE_BUCKET = 'siteos-build';
 
+/**
+ * Anonyme Entwürfe je IP-Hash und 24 Stunden.
+ *
+ * Der Zähler aus `anonRateLimit.ts` liegt im Isolate-Speicher: Er bremst
+ * einen Ansturm innerhalb einer Minute, überlebt aber kein Recycling und
+ * kennt keine zweite Instanz. Als Kontingent taugt er deshalb nicht — genau
+ * das war der Befund im Runbook („ein ausbleibender 429 bestätigt den
+ * Befund").
+ *
+ * Dieses Kontingent zählt in der Datenbank, über den Index
+ * `siteos_anonymous_builds_ip_idx (ip_hash, created_at)`, der seit
+ * Migration 20260822180000 genau dafür liegt und bisher von keiner Abfrage
+ * benutzt wurde. Es überlebt Isolate-Wechsel und gilt über alle Instanzen.
+ *
+ * Gezählt werden **neue Sitzungen**, nicht Verfeinerungen: Die sind je
+ * Sitzung durch `MAX_VERSION` begrenzt und erzeugen keine weitere Ablage.
+ */
+const ANON_BUILD_QUOTA_PER_DAY = 10;
+const QUOTA_WINDOW_MS = 24 * 60 * 60 * 1000;
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AdminClient = ReturnType<typeof createClient<any, 'public', any>>;
 
@@ -75,6 +104,7 @@ interface SessionRow {
   origin_model: string | null;
   claimed_tenant_id: string | null;
   claimed_blueprint_id: string | null;
+  preview_id: string | null;
   expires_at: string;
 }
 
@@ -132,18 +162,27 @@ export async function handleBuildAnon(req: Request): Promise<Response> {
       return await deny(admin, requestId, startedAt, 500, 'INTERNAL', 'could not persist build session');
     }
 
+    const sessionId = (session as { id: string }).id;
+    const expiresAt = (session as { expires_at: string }).expires_at;
+
+    // Die Vorschau entsteht **nach** der Sitzung, nicht davor: Ihre
+    // Lebensdauer ist die Restzeit dieser Zeile, und die kennt erst die
+    // Datenbank (Default `now() + 7 days`).
+    const preview = await storePreview(admin, sessionId, result.blueprint, expiresAt, null);
+
     await completeAnonAudit(admin, requestId, { outcome: 'success', duration_ms: Date.now() - startedAt });
 
     return jsonResponse({
       ok: true,
-      session_id: (session as { id: string }).id,
-      expires_at: (session as { expires_at: string }).expires_at,
+      session_id: sessionId,
+      expires_at: expiresAt,
       version: 1,
       slug: result.blueprint.slug,
       content_sha256: result.blueprintSha256,
       blueprint: result.blueprint,
       findings: result.findings,
       scores: result.scores,
+      preview: describePreview(preview),
     });
   } catch (e) {
     console.error(JSON.stringify({ level: 'error', scope: 'siteos_anon_build_failed', error: (e as Error)?.message }));
@@ -191,6 +230,10 @@ export async function handleRefineAnon(req: Request): Promise<Response> {
       blueprint: session.row.blueprint,
       findings: session.row.findings, scores: session.row.scores,
       changes: [], refusals: step.refusals, understood: step.understood,
+      // Nichts geändert heisst auch: nichts neu abgelegt. Die Adresse bleibt
+      // dieselbe, damit ein geteilter Link nicht von einer folgenlosen
+      // Anweisung abhängt.
+      preview: describeExisting(session.row.preview_id),
     });
   }
 
@@ -216,6 +259,13 @@ export async function handleRefineAnon(req: Request): Promise<Response> {
     return await deny(admin, requestId, startedAt, 500, 'INTERNAL', 'could not persist refinement');
   }
 
+  // Dieselbe Kennung, neuer Inhalt: Wer den Link geteilt hat, sieht den
+  // aktuellen Stand — und es entsteht nicht bei jeder Anweisung eine weitere
+  // Kopie des Entwurfs im Netz.
+  const preview = await storePreview(
+    admin, sessionId, step.blueprint, session.row.expires_at, session.row.preview_id,
+  );
+
   await completeAnonAudit(admin, requestId, { outcome: 'success', duration_ms: Date.now() - startedAt });
 
   return jsonResponse({
@@ -224,6 +274,7 @@ export async function handleRefineAnon(req: Request): Promise<Response> {
     content_sha256: contentSha,
     blueprint: step.blueprint, findings, scores,
     changes: step.changes, refusals: step.refusals, understood: step.understood,
+    preview: describePreview(preview),
   });
 }
 
@@ -282,6 +333,7 @@ export async function handleGetSession(req: Request): Promise<Response> {
     expires_at: session.row.expires_at,
     claimed: session.claimed_at_set,
     claimed_blueprint_id: session.row.claimed_blueprint_id,
+    preview: describeExisting(session.row.preview_id),
   });
 }
 
@@ -444,6 +496,29 @@ export async function handleClaim(req: Request): Promise<Response> {
       });
     }
 
+    // Ab hier gehört der Entwurf einem Mandanten. Die anonym abrufbare Kopie
+    // hat damit keinen Zweck mehr (Art. 5 Abs. 1 lit. b DSGVO) und wird
+    // zurückgenommen — best effort: Der Claim ist bereits vollzogen und wird
+    // an einer Ablage, die nicht antwortet, nicht rückgängig gemacht. Bleibt
+    // sie stehen, verfällt sie spätestens mit ihrer eigenen Frist.
+    const revokedPreviewId = session.row.preview_id;
+    let previewRevoked = false;
+    if (revokedPreviewId) {
+      previewRevoked = await revokePreview(previewTarget(), revokedPreviewId);
+      // Die Spalte führt die **lebende** Vorschau. Nach der Übernahme gibt es
+      // keine; der Beleg, dass es eine gab, steht im Prüfpfad.
+      await admin
+        .from('siteos_anonymous_builds')
+        .update({ preview_id: null, updated_at: nowIso })
+        .eq('id', sessionId);
+      if (!previewRevoked) {
+        console.error(JSON.stringify({
+          level: 'warn', scope: 'siteos_claim_preview_revoke_failed',
+          session_id: sessionId,
+        }));
+      }
+    }
+
     // Prüfstand und Nachweis zum übernommenen Stand.
     const { data: scan } = await admin
       .from('siteos_runtime_scans')
@@ -496,6 +571,11 @@ export async function handleClaim(req: Request): Promise<Response> {
         content_sha256: session.row.content_sha256,
         session_version: session.row.version,
         finding_count: session.row.findings.length,
+        // Welche anonyme Vorschau es gab und ob sie zurückgenommen wurde.
+        // Ohne diesen Eintrag wäre nach dem Nullen der Spalte nicht mehr
+        // belegbar, dass überhaupt eine im Netz stand.
+        preview_id: revokedPreviewId,
+        preview_revoked: previewRevoked,
       },
     });
 
@@ -506,6 +586,7 @@ export async function handleClaim(req: Request): Promise<Response> {
       version,
       content_sha256: session.row.content_sha256,
       provenance_linked: provenanceLinked,
+      preview_revoked: previewRevoked,
     });
   } catch (e) {
     console.error(JSON.stringify({ level: 'error', scope: 'siteos_claim_failed', error: (e as Error)?.message }));
@@ -565,7 +646,138 @@ async function openAnonGate(req: Request, op: 'siteos_build_anon' | 'siteos_refi
     return jsonError(429, 'RATE_LIMIT', 'Zu viele Anfragen. Bitte in einer Minute erneut versuchen.');
   }
 
+  // Das dauerhafte Kontingent gilt nur für neue Sitzungen (siehe
+  // `ANON_BUILD_QUOTA_PER_DAY`).
+  if (op === 'siteos_build_anon') {
+    const quota = await checkBuildQuota(admin, ipHash);
+    if (quota.status === 'unavailable') {
+      // Fail closed, aus demselben Grund wie beim Prüfpfad: Ein Kontingent,
+      // das bei jedem Fehler alles durchlässt, ist keines. Der Fehler ist
+      // benannt, damit er im Betrieb nicht als Kundenfehler ankommt.
+      await completeAnonAudit(admin, requestId, {
+        outcome: 'error', error_code: 'QUOTA_UNAVAILABLE', duration_ms: Date.now() - startedAt,
+      });
+      return jsonError(503, 'QUOTA_UNAVAILABLE', 'anon path refused: quota not readable');
+    }
+    if (quota.status === 'exceeded') {
+      await completeAnonAudit(admin, requestId, {
+        outcome: 'rate_limited', error_code: 'QUOTA_EXCEEDED', duration_ms: Date.now() - startedAt,
+      });
+      return jsonError(
+        429,
+        'QUOTA_EXCEEDED',
+        `Kontingent erschöpft: ${ANON_BUILD_QUOTA_PER_DAY} Entwürfe in 24 Stunden. Mit einem Konto entfällt die Grenze.`,
+      );
+    }
+  }
+
   return { admin, requestId, ipHash, body, startedAt };
+}
+
+/**
+ * Zählt die Entwürfe dieses IP-Hashes im laufenden 24-Stunden-Fenster.
+ *
+ * `head: true` mit `count: 'exact'` holt nur die Zahl, keine Zeilen — die
+ * Abfrage liest den Index, nicht die Blueprints.
+ */
+async function checkBuildQuota(
+  admin: AdminClient,
+  ipHash: string,
+): Promise<{ status: 'ok' | 'exceeded' | 'unavailable'; used: number }> {
+  const since = new Date(Date.now() - QUOTA_WINDOW_MS).toISOString();
+  const { count, error } = await admin
+    .from('siteos_anonymous_builds')
+    .select('id', { count: 'exact', head: true })
+    .eq('ip_hash', ipHash)
+    .gte('created_at', since);
+
+  if (error || count === null || count === undefined) {
+    console.error(JSON.stringify({
+      level: 'error', scope: 'siteos_anon_quota_unreadable', error: error?.message ?? 'no count',
+    }));
+    return { status: 'unavailable', used: 0 };
+  }
+  return { status: count >= ANON_BUILD_QUOTA_PER_DAY ? 'exceeded' : 'ok', used: count };
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Vorschau
+// ─────────────────────────────────────────────────────────────────────
+
+/** Ziel des Vorschau-Workers. Einmal je Aufruf gelesen, nie zwischengespeichert. */
+function previewTarget(): PreviewTarget | null {
+  return readPreviewTarget((key) => Deno.env.get(key) ?? undefined);
+}
+
+/**
+ * Legt die Vorschau ab und schreibt die Kennung in die Sitzung.
+ *
+ * Reihenfolge: erst ablegen, dann vermerken. Andersherum stünde in der
+ * Datenbank eine Kennung, hinter der nichts liegt — und die Sitzung
+ * behauptete eine Adresse, die 404 antwortet.
+ *
+ * Wirft nie: Der Entwurf ist bereits gebaut und gespeichert. Eine
+ * fehlgeschlagene Ablage nimmt ihm die Adresse, nicht die Existenz.
+ */
+async function storePreview(
+  admin: AdminClient,
+  sessionId: string,
+  blueprint: SiteBlueprint,
+  expiresAt: string,
+  existingPreviewId: string | null,
+): Promise<PreviewOutcome> {
+  const target = previewTarget();
+  if (!target) return { status: 'not_configured' };
+
+  const previewId = existingPreviewId ?? createPreviewId((array) => crypto.getRandomValues(array));
+  const outcome = await publishPreview(target, previewId, blueprint, ttlUntil(expiresAt));
+
+  if (outcome.status !== 'stored') {
+    console.error(JSON.stringify({
+      level: 'warn', scope: 'siteos_anon_preview_unavailable',
+      session_id: sessionId, status: outcome.status,
+      reason: outcome.status === 'failed' ? outcome.reason : undefined,
+    }));
+    return outcome;
+  }
+
+  if (existingPreviewId === null) {
+    const { error } = await admin
+      .from('siteos_anonymous_builds')
+      .update({ preview_id: previewId, updated_at: new Date().toISOString() })
+      .eq('id', sessionId);
+    if (error) {
+      console.error(JSON.stringify({
+        level: 'warn', scope: 'siteos_anon_preview_link_failed',
+        session_id: sessionId, error: error.message,
+      }));
+    }
+  }
+
+  return outcome;
+}
+
+/** Die Vorschau in der Antwort. Ein Zustand, kein Fehler — siehe `preview.ts`. */
+function describePreview(outcome: PreviewOutcome): Record<string, unknown> {
+  if (outcome.status === 'stored') {
+    return { status: 'stored', url: outcome.url, expires_in: outcome.expiresInSeconds };
+  }
+  if (outcome.status === 'not_configured') return { status: 'not_configured' };
+  return { status: 'failed', reason: outcome.reason };
+}
+
+/**
+ * Beschreibt eine bereits abgelegte Vorschau, ohne sie neu zu schreiben.
+ *
+ * Die Adresse wird aus der Kennung und der konfigurierten Herkunft gebildet.
+ * Ist keine Herkunft gesetzt, gibt es auch keine Adresse — dann steht das da
+ * und nicht eine URL, die ins Nichts zeigt.
+ */
+function describeExisting(previewId: string | null): Record<string, unknown> {
+  if (!previewId) return { status: 'none' };
+  const target = previewTarget();
+  if (!target) return { status: 'not_configured' };
+  return { status: 'stored', url: `${target.origin}/p/${previewId}` };
 }
 
 /** Schliesst den Prüfpfad-Eintrag und antwortet mit dem Fehler. */
@@ -584,7 +796,7 @@ async function deny(
 async function loadSession(admin: AdminClient, sessionId: string): Promise<{ row: SessionRow & { claimed_at?: string | null }; claimed_at_set: boolean } | null> {
   const { data } = await admin
     .from('siteos_anonymous_builds')
-    .select('id, blueprint, content_sha256, slug, name, industry, findings, scores, version, prompt_sha256, origin_model, claimed_tenant_id, claimed_blueprint_id, claimed_at, expires_at')
+    .select('id, blueprint, content_sha256, slug, name, industry, findings, scores, version, prompt_sha256, origin_model, claimed_tenant_id, claimed_blueprint_id, preview_id, claimed_at, expires_at')
     .eq('id', sessionId).maybeSingle();
 
   if (!data) return null;
@@ -596,14 +808,20 @@ function isExpired(session: { row: { expires_at: string } }): boolean {
   return new Date(session.row.expires_at).getTime() <= Date.now();
 }
 
-function sanitizeEnrichment(raw: unknown): { name?: string; summary?: string; services?: string[]; locality?: string | null } | undefined {
+function sanitizeEnrichment(raw: unknown): { name?: string; summary?: string; services?: string[]; highlights?: string[]; locality?: string | null } | undefined {
   if (!raw || typeof raw !== 'object') return undefined;
   const v = raw as Record<string, unknown>;
-  const out: { name?: string; summary?: string; services?: string[]; locality?: string | null } = {};
+  const out: { name?: string; summary?: string; services?: string[]; highlights?: string[]; locality?: string | null } = {};
   if (typeof v.name === 'string') out.name = v.name.trim().slice(0, 120);
   if (typeof v.summary === 'string') out.summary = v.summary.trim().slice(0, 600);
   if (Array.isArray(v.services)) {
     out.services = v.services.filter((s): s is string => typeof s === 'string').map((s) => s.trim().slice(0, 80)).slice(0, 12);
+  }
+  // Muss dieselben Felder durchlassen wie die Zwillingsfunktion in
+  // builder.ts — sonst baut der anonyme Pfad eine andere Website als der
+  // angemeldete, und das faellt erst beim Claim auf.
+  if (Array.isArray(v.highlights)) {
+    out.highlights = v.highlights.filter((s): s is string => typeof s === 'string').map((s) => s.trim().slice(0, 120)).slice(0, 6);
   }
   if (v.locality === null || typeof v.locality === 'string') {
     out.locality = v.locality === null ? null : String(v.locality).trim().slice(0, 80);

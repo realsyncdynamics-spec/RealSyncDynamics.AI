@@ -21,6 +21,13 @@ jobs:
         run: npm run lint
       - name: Edge Function syntax
         run: npm run check:edge-syntax
+      # Syntaktisch fehlerfreier Code kann trotzdem beim ersten Request
+      # sterben: `gdpr-audit` rief sechs Hilfsfunktionen auf, die es nie gab,
+      # deployte sauber und antwortete dann monatelang mit HTTP 500 — der
+      # kostenlose Audit, der wichtigste CTA der Startseite. Aufgefallen ist
+      # es erst bei einem Browser-Durchlauf gegen die Live-Seite.
+      - name: Edge Function references
+        run: npm run check:edge-refs
       # Die kommerzielle Wahrheit steht in shared/pricing.ts. Alles Abgeleitete
       # — der Deno-Zwilling, die Plan-Katalog-Migration, die Kontingente —
       # muss daraus folgen und darf keine zweite Wahrheit daneben bilden.
@@ -34,6 +41,16 @@ jobs:
         run: npm run check:pricing
       - name: Kontingent-Kanonizitaet (Ratsche gegen neue Divergenzen)
         run: npm run check:limits
+      # Ein oeffentlich zugesicherter Preis ist ein Angebot und darf nur dort
+      # stehen, wo der Kaufpfad ihn einloesen kann. Dreimal stand ein Betrag
+      # oeffentlich, den `stripe-checkout` nicht einloesen konnte: Enterprise
+      # 1.249 € (Sentinel statt Stripe-Price), Agency 699 € und Partner
+      # 1.999 € (seit AP2 stillgelegt, PLAN_RETIRED). Zweimal war die Stelle
+      # per Literal-Grep nicht auffindbar — das JSON-LD steckt im
+      # HTML-Template, der Betrag im ROI-Rechner kam aus der SSoT. Deshalb
+      # prueft der Guard den Betrag, nicht den Plannamen.
+      - name: Angebots-Sicherheit (Ratsche gegen Preise ohne Kaufpfad)
+        run: npm run check:offer-prices
       - name: Unit tests
         run: npm test
       - name: Build
@@ -67,6 +84,14 @@ jobs:
       - name: Bootstrap Supabase-equivalent stubs
         run: |
           psql -v ON_ERROR_STOP=1 <<'SQL'
+          -- `extensions` MUSS vor pgcrypto angelegt werden: Migrationen und
+          -- RPCs rufen extensions.digest(...) auf. Wird pgcrypto zuerst nach
+          -- public installiert, ist ein spaeteres "WITH SCHEMA extensions"
+          -- ein stiller No-op ("already exists, skipping") — extensions.digest
+          -- existiert dann nie und DB-Tests scheitern an der Umgebung statt
+          -- an echten Befunden.
+          CREATE SCHEMA IF NOT EXISTS extensions;
+          CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA extensions;
           CREATE EXTENSION IF NOT EXISTS pgcrypto;
           CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
           CREATE EXTENSION IF NOT EXISTS vector;
@@ -79,8 +104,19 @@ jobs:
           GRANT service_role TO authenticator;
           CREATE SCHEMA IF NOT EXISTS auth;
           CREATE TABLE IF NOT EXISTS auth.users (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), email TEXT UNIQUE, raw_user_meta_data JSONB, created_at TIMESTAMPTZ DEFAULT now());
-          CREATE OR REPLACE FUNCTION auth.uid() RETURNS UUID LANGUAGE sql STABLE AS 'SELECT NULL::uuid';
-          CREATE OR REPLACE FUNCTION auth.role() RETURNS TEXT LANGUAGE sql STABLE AS 'SELECT $$authenticated$$::text';
+          -- auth.uid()/auth.role() MUESSEN die JWT-Claims lesen, nicht konstant
+          -- antworten. Der vorherige Stub lieferte hart NULL::uuid. Damit waere
+          -- is_tenant_member() immer false, jede RLS-Policy haette immer
+          -- gesperrt, und ein Isolationstest waere gruen geworden, ohne
+          -- irgendetwas zu pruefen — die gefaehrlichste Sorte Test.
+          -- Gleiche Semantik wie scripts/test-db/bootstrap.sql, das es lokal
+          -- bereits richtig macht.
+          CREATE OR REPLACE FUNCTION auth.uid() RETURNS UUID LANGUAGE sql STABLE AS $fn$
+            SELECT NULLIF(current_setting('request.jwt.claims', true)::jsonb ->> 'sub', '')::uuid
+          $fn$;
+          CREATE OR REPLACE FUNCTION auth.role() RETURNS TEXT LANGUAGE sql STABLE AS $fn$
+            SELECT COALESCE(NULLIF(current_setting('request.jwt.claims', true)::jsonb ->> 'role', ''), 'authenticated')
+          $fn$;
           CREATE SCHEMA IF NOT EXISTS vault;
           CREATE TABLE IF NOT EXISTS vault.secrets (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), name TEXT UNIQUE, secret TEXT, description TEXT, created_at TIMESTAMPTZ DEFAULT now(), updated_at TIMESTAMPTZ DEFAULT now());
           CREATE OR REPLACE VIEW vault.decrypted_secrets AS SELECT id, name, secret AS decrypted_secret, description, created_at, updated_at FROM vault.secrets;
@@ -105,6 +141,56 @@ jobs:
             psql -v ON_ERROR_STOP=1 -f "$f"
             echo "::endgroup::"
           done
+      # Supabase-aequivalente Default-Privileges. In einem echten Projekt haben
+      # anon/authenticated Tabellenrechte in `public` — genau deshalb ist eine
+      # Tabelle ohne RLS dort offen. Ohne diese GRANTs scheitert ein RLS-Test
+      # an "permission denied" statt an einer Policy und beweist nichts ueber
+      # die Mandantentrennung.
+      - name: Grant Supabase-equivalent table privileges
+        run: |
+          psql -v ON_ERROR_STOP=1 <<'SQL'
+          GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role;
+          GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO anon, authenticated;
+          GRANT ALL ON ALL TABLES IN SCHEMA public TO service_role;
+          GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated, service_role;
+          SQL
+
+      # Bis hierher validierte CI nur, dass die Migrationen fehlerfrei
+      # DURCHLAUFEN — nicht, ob das entstandene Schema die Mandanten trennt.
+      # Die DB-Integrationstests sprangen mangels TEST_DB_URL still ab. Genau
+      # so konnten eine gruene Suite und offene Luecken nebeneinander bestehen.
+      #
+      # REQUIRE_DB_TESTS=1 macht das Ueberspringen hier zum Fehler: Fehlt die
+      # Datenbank, faellt der Job laut aus, statt leise nichts zu pruefen.
+      #
+      # BEWUSST NUR security-regressions, NICHT das ganze Verzeichnis:
+      # Die uebrigen Dateien in test/runtime/db/ sind gegen den minimalen
+      # Harness aus scripts/test-db/up.sh geschrieben (bootstrap.sql + vier
+      # SPEC-001-Migrationen) und scheitern gegen das hier voll migrierte
+      # Schema an Umgebungsannahmen. Das ganze Verzeichnis zu verdrahten
+      # faerbte CI dauerhaft rot — schlimmer als der bisherige Zustand, weil
+      # dann auch echte Regressionen untergehen. Diese Suiten an das volle
+      # Schema anzupassen ist eigene Arbeit und bleibt offen; sie hier zu
+      # verschweigen waere genau der Fehler, den dieser Schritt behebt.
+      # Der db-Job installierte bisher keine Node-Abhaengigkeiten — er brauchte
+      # nur psql. Ohne node_modules zieht `npx vitest` das Paket zwar nach,
+      # scheitert dann aber daran, dass vitest.config.ts `vitest/config` und
+      # `@vitejs/plugin-react` importiert (ERR_MODULE_NOT_FOUND).
+      # Deshalb hier, und bewusst NACH den Migrationen: schlaegt eine Migration
+      # fehl, faellt der Job sofort, ohne erst zu installieren.
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '20'
+          cache: npm
+      - name: Install dependencies (fuer die DB-Tests)
+        run: npm ci
+
+      - name: Security regression tests (RLS, IDOR, Billing-Upsert)
+        env:
+          TEST_DB_URL: postgresql://postgres:postgres@localhost:5432/postgres
+          REQUIRE_DB_TESTS: '1'
+        run: npx vitest run test/runtime/db/security-regressions.db.test.ts --no-file-parallelism
+
       - name: Verify migrations are append-only
         if: github.event_name == 'pull_request' && !contains(github.event.pull_request.title, '[hotfix]')
         run: |

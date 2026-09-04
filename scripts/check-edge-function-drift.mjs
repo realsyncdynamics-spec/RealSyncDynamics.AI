@@ -18,6 +18,13 @@
 //           bekannter Altbestand, der noch aufgeraeumt werden muss → WARNUNG)
 //        - UNDECLARED_NO_JWT: live verify_jwt=false, im Repo vorhanden, aber in
 //          config.toml NICHT als verify_jwt=false deklariert → FEHLER
+//   3) Prod-seitig (gleiche Bedingung): die deployte Menge gegen die
+//      handgepflegte Liste in src/config/production-edge-functions.ts diffen.
+//      Diese Liste ist keine Doku, sondern Laufzeit-Eingabe: Sie entscheidet,
+//      ob die Oberflaeche einen "noch nicht verfuegbar"-Hinweis zeigt, und sie
+//      ist die Quelle des Tests, der deployte Eintraege aus UNBACKED_CALLERS
+//      austraegt. Am 2026-09-04 stand sie 12 Tage still falsch (178 statt 181)
+//      und hat genau diesen Test blind gemacht. Bis dahin sah kein Guard sie an.
 //
 // Ohne Token laeuft nur Check (1); der Prod-Teil wird sauber uebersprungen
 // (Exit 0), damit Forks/PRs ohne Secrets nicht rot werden.
@@ -30,6 +37,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const FUNCTIONS_DIR = join(ROOT, 'supabase', 'functions');
 const CONFIG_TOML = join(ROOT, 'supabase', 'config.toml');
 const ALLOWLIST = join(ROOT, 'scripts', 'edge-function-drift-allowlist.json');
+const PROD_LIST_TS = join(ROOT, 'src', 'config', 'production-edge-functions.ts');
 
 const errors = [];
 const warnings = [];
@@ -87,6 +95,39 @@ async function deployedFunctions() {
   return await res.json(); // [{ slug, verify_jwt, ... }]
 }
 
+/**
+ * Slugs aus `PRODUCTION_EDGE_FUNCTIONS` lesen.
+ *
+ * Bewusst per Regex statt per Import: Das Skript laeuft als reines Node-ESM
+ * ohne TypeScript-Ladekette. Faellt die Form des Exports weg, liefert das
+ * `null` — und der Aufrufer meldet das, statt stillschweigend "keine Drift".
+ */
+export function parseProductionList(source) {
+  const m = source.match(/export const PRODUCTION_EDGE_FUNCTIONS: readonly string\[\] = \[([\s\S]*?)\n\];/);
+  if (!m) return null;
+  return new Set([...m[1].matchAll(/'([^']+)'/g)].map((x) => x[1]));
+}
+
+/**
+ * Deployte Menge gegen die Konfigurationsliste, in BEIDE Richtungen.
+ *
+ * Warum beide: Zahlengleichheit ist kein Beleg (CLAUDE.md §5). Und die zwei
+ * Richtungen haben verschiedene Folgen, deshalb werden sie getrennt benannt:
+ *
+ *   fehlt in der Liste  → die Oberflaeche haelt eine laufende Function fuer
+ *                         nicht verfuegbar und kann faelschlich abraten
+ *   nicht deployt       → ein Knopf ruft ins Leere; genau der Fehlertyp,
+ *                         fuer den die Liste ueberhaupt angelegt wurde
+ */
+export function compareAgainstConfigList(deployedSlugs, configSlugs) {
+  const deployed = new Set(deployedSlugs);
+  const config = new Set(configSlugs);
+  return {
+    missingFromList: [...deployed].filter((s) => !config.has(s)).sort(),
+    notDeployed: [...config].filter((s) => !deployed.has(s)).sort(),
+  };
+}
+
 // --- Main -------------------------------------------------------------------
 const repo = repoFunctions();
 const declaredOff = declaredNoJwt();
@@ -122,6 +163,28 @@ if (deployed === null) {
         `ist aber in config.toml nicht so deklariert. Eintrag ergaenzen oder Funktion absichern.`);
     }
   }
+  // Check (3): Prod gegen die Konfigurationsliste.
+  const configSlugs = existsSync(PROD_LIST_TS)
+    ? parseProductionList(readFileSync(PROD_LIST_TS, 'utf8'))
+    : null;
+  if (configSlugs === null) {
+    errors.push(`PRODUCTION_EDGE_FUNCTIONS ist in ${PROD_LIST_TS} nicht lesbar. ` +
+      `Ohne diese Liste laeuft die Oberflaeche auf einer unbelegten Annahme.`);
+  } else {
+    const deployedSlugs = deployed.map((fn) => fn.slug ?? fn.name);
+    const { missingFromList, notDeployed } = compareAgainstConfigList(deployedSlugs, configSlugs);
+    if (missingFromList.length) {
+      errors.push(`STALE_PROD_LIST: deployt, fehlt aber in PRODUCTION_EDGE_FUNCTIONS: ` +
+        `${missingFromList.join(', ')}. Liste ergaenzen, EDGE_FUNCTIONS_OBSERVED_MAX ` +
+        `und PRODUCTION_EDGE_FUNCTIONS_MEASURED_AT mitziehen.`);
+    }
+    if (notDeployed.length) {
+      errors.push(`OVERSTATED_PROD_LIST: in PRODUCTION_EDGE_FUNCTIONS, aber nicht deployt: ` +
+        `${notDeployed.join(', ')}. Deployen oder aus der Liste nehmen — sonst zeigt ` +
+        `die Oberflaeche einen Knopf, der ins Leere ruft.`);
+    }
+  }
+
   console.log(`✓ ${deployed.length} live Functions geprueft, ${repo.size} im Repo, ${allow.size} allowlisted.`);
 }
 

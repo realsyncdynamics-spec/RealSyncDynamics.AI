@@ -31,10 +31,27 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 
-// Spiegel von company_profiles_sector_check in
-// supabase/migrations/20260824000000_company_profiles.sql und von SECTORS in
-// src/unified-entry/pages/PostRegisterOnboardingPage.tsx.
-const VALID_SECTORS = new Set(['saas', 'agency', 'healthcare', 'public_sector', 'generic']);
+// Spiegel von company_profiles_sector_check (zuletzt gesetzt in
+// supabase/migrations/20260902000010_company_profiles_sector_extend.sql) und
+// von SECTORS in src/config/sectors.ts. Deno kann nicht aus src/ importieren,
+// deshalb diese Kopie — test/config/sectors-parity.test.ts prueft alle drei
+// Ebenen gegeneinander und schlaegt bei Drift fehl.
+//
+// Werte werden ergaenzt, nie entfernt: company_profiles.sector traegt die IDs
+// von Bestandsmandanten.
+const VALID_SECTORS = new Set([
+  'small_business',
+  'retail',
+  'furniture_retail',
+  'manufacturing',
+  'services',
+  'agency',
+  'industrial',
+  'saas',
+  'healthcare',
+  'public_sector',
+  'generic',
+]);
 
 /**
  * Erste Adresse aus `X-Forwarded-For`, sonst null — `trial_audit_logs.
@@ -135,7 +152,12 @@ Deno.serve(async (req) => {
 
       if (error) throw error;
 
-      await supabase
+      // `.insert(...)` liefert einen PostgREST-Builder, kein Promise: `.catch()`
+      // gibt es dort nicht, der Zugriff warf `TypeError` — und zwar bevor der
+      // Insert abgeschickt wurde. Der Pruefpfad wurde also nicht nur nicht
+      // geschrieben, der ganze Request starb daran. Fehler gehoert ueber das
+      // Ergebnis geprueft.
+      const { error: auditErr } = await supabase
         .from('trial_audit_logs')
         .insert({
           tenant_id: tenantId,
@@ -147,10 +169,8 @@ Deno.serve(async (req) => {
           source: 'unified-entry',
           ip_address: clientIp(req),
           user_agent: req.headers.get('user-agent'),
-        })
-        .catch((err) => {
-          console.warn('Audit log failed:', err.message);
         });
+      if (auditErr) console.warn('Audit log failed:', auditErr.message);
 
       return jsonResponse({
         success: true,
@@ -181,7 +201,12 @@ Deno.serve(async (req) => {
 
     if (createError) throw createError;
 
-    await supabase
+    // `.insert(...)` liefert einen PostgREST-Builder, kein Promise: `.catch()`
+    // gibt es dort nicht, der Zugriff warf `TypeError` — und zwar bevor der
+    // Insert abgeschickt wurde. Der Pruefpfad wurde also nicht nur nicht
+    // geschrieben, der ganze Request starb daran. Fehler gehoert ueber das
+    // Ergebnis geprueft.
+    const { error: auditErr } = await supabase
       .from('trial_audit_logs')
       .insert({
         tenant_id: tenantId,
@@ -192,10 +217,8 @@ Deno.serve(async (req) => {
         source: 'unified-entry',
         ip_address: clientIp(req),
         user_agent: req.headers.get('user-agent'),
-      })
-      .catch((err) => {
-        console.warn('Audit log failed:', err.message);
       });
+    if (auditErr) console.warn('Audit log failed:', auditErr.message);
 
     return jsonResponse({
       success: true,

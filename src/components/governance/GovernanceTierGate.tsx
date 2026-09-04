@@ -110,7 +110,7 @@ export function GovernanceTierGate({
             <ChevronRight className="h-4 w-4" />
           </Link>
           <Link
-            to="/app/governance"
+            to="/app/dashboard"
             className="inline-flex items-center gap-2 px-6 py-3 border border-titanium-700 hover:border-titanium-500 text-titanium-200 hover:text-titanium-100 font-semibold rounded-none transition-colors"
           >
             Zurück zum Dashboard

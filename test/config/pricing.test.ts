@@ -10,13 +10,22 @@ describe('pricing config (Single Source of Truth)', () => {
     ]);
   });
 
-  it('fuehrt erst die Monatsplaene, danach die Jahresvarianten', () => {
+  // COMMERCIAL-SSOT: temporary production hotfix.
+  // Canonical source migration tracked in Phase 2.
+  // `starter_yearly` und `growth_yearly` fehlen hier bewusst: fuer beide steht
+  // in `public.products` nur ein Platzhalter statt einer echten Stripe-Price,
+  // `stripe-checkout` weist sie mit PRICE_NOT_CONFIGURED ab. Ein Tier waere
+  // die Grundlage jeder Angebotsflaeche — und damit ein oeffentlich
+  // zugesicherter Festpreis ohne Kaufpfad. Siehe `yearlyCheckoutUnavailable`
+  // in shared/pricing.ts; sobald ein Preis verdrahtet ist, kehren beide
+  // Eintraege an ihre alte Position zurueck.
+  it('fuehrt erst die Monatsplaene, danach die buchbaren Jahresvarianten', () => {
     const ids = PRICING_TIERS.map((tier) => tier.id);
     expect(ids).toEqual([
       'free', 'starter', 'growth', 'agency', 'enterprise', 'partner',
       // Einmalprodukte stehen nach der Abo-Leiter und vor den Jahresvarianten.
       'governance_launch',
-      'starter_yearly', 'growth_yearly', 'agency_yearly', 'enterprise_yearly', 'partner_yearly',
+      'agency_yearly', 'enterprise_yearly', 'partner_yearly',
     ]);
   });
 
@@ -30,11 +39,28 @@ describe('pricing config (Single Source of Truth)', () => {
   });
 
   it('hat die korrekten Jahrespreise', () => {
-    expect(tierById('starter_yearly')?.priceEur).toBe(790);
-    expect(tierById('growth_yearly')?.priceEur).toBe(2490);
     expect(tierById('agency_yearly')?.priceEur).toBe(6900);
     expect(tierById('enterprise_yearly')?.priceEur).toBe(12490);
     expect(tierById('partner_yearly')?.priceEur).toBe(19000);
+  });
+
+  // Der Betrag bleibt in der SSoT — er ist ja richtig, nur nicht einloesbar.
+  // Oeffentlich wird er nicht mehr: kein Tier, damit auch keine Karte, kein
+  // JSON-LD-Offer und keine Rechengrundlage.
+  it('haelt die nicht verdrahteten Jahresbetraege aus den Tiers heraus', () => {
+    expect(planById('starter').price.yearlyEur).toBe(790);
+    expect(planById('growth').price.yearlyEur).toBe(2490);
+    expect(planById('starter').yearlyCheckoutUnavailable).toBe(true);
+    expect(planById('growth').yearlyCheckoutUnavailable).toBe(true);
+    expect(tierById('starter_yearly')).toBeUndefined();
+    expect(tierById('growth_yearly')).toBeUndefined();
+  });
+
+  // Bestandsschutz: der Jahres-Key loest weiterhin auf, nur eben auf das
+  // Monats-Tier desselben Plans — gleicher Plan, gleiche Berechtigungen.
+  it('loest bestehende Jahres-Keys weiterhin auf ihren Basisplan auf', () => {
+    expect(tierByPlanKey('starter_yearly')?.plan.id).toBe('starter');
+    expect(tierByPlanKey('growth_yearly')?.plan.id).toBe('growth');
   });
 
   it('kennt den Begriff „Scale" nicht mehr', () => {
@@ -83,9 +109,11 @@ describe('pricing config (Single Source of Truth)', () => {
     }
   });
 
-  it('genau Growth ist hervorgehoben (monatlich + jaehrlich)', () => {
+  // Nur noch der Monats-Tier: die Jahresvariante von Growth ist mangels
+  // verdrahtetem Stripe-Preis kein Tier mehr (siehe oben).
+  it('genau Growth ist hervorgehoben', () => {
     const highlighted = PRICING_TIERS.filter((tier) => tier.highlight);
-    expect(highlighted.map((t) => t.id)).toEqual(['growth', 'growth_yearly']);
+    expect(highlighted.map((t) => t.id)).toEqual(['growth']);
   });
 
   it('PUBLIC_PRICING_TIERS enthaelt weiterhin alle fuenf Monatsraenge', () => {

@@ -49,6 +49,10 @@
 // anon + authenticated: RLS-Helper und bewusst oeffentliche Endpunkte.
 const REQUIRED_ANON = [
   'is_tenant_member',
+  // 20260905000100: RLS-Helper fuer den Platform Scope (ADR 0011, D5).
+  // anon bewusst dabei — ohne EXECUTE bricht eine Policy-Auswertung mit
+  // "permission denied for function" ab, statt false zu liefern.
+  'is_platform_operator',
   'is_tenant_owner_or_admin',
   'is_tenant_admin',
   'has_tenant_membership',

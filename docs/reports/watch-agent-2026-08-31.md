@@ -446,15 +446,49 @@ verschiedene Felder.
    beiden Seiten sind heute nicht synchron. Der Kommentar liest sich wie eine
    Zusicherung und ist keine.
 
-**Nicht entschieden, weil nicht meine Entscheidung**: Welcher der beiden
-Dienste unter `PLAYWRIGHT_SCANNER_URL` tatsächlich läuft, ist aus dem Repo
-nicht ablesbar — das steht im Supabase Vault. Solange das offen ist, wäre jede
-Verdrahtung geraten. **Erste Frage an den Betreiber, vor allem Weiteren**:
-Welcher Dienst ist deployt?
+#### Aufgelöst am 2026-09-04 — der Vault war die falsche Frage
 
-Davon hängt ab, ob `consent-banner.ts` dorthin gehört, wo es liegt, oder in den
-anderen Dienst — und ob die Prominenz-Messung aus B-5 überhaupt einen Weg in
-den Fakt hat.
+Ich hatte hier geschrieben, die Antwort stehe im Supabase Vault und sei aus dem
+Repo nicht ablesbar. Das war voreilig. Sie **ist** ablesbar, und zwar am
+Endpunkt:
+
+| | |
+|---|---|
+| `cookie-scan-deep` ruft auf | `POST ${PLAYWRIGHT_SCANNER_URL}/scan/full` |
+| `deploy/playwright-scanner` bedient | `/health` · **`/scan/full`** · `/scan/consent-timing` · `/scan/screenshot` |
+| `services/playwright-scanner` bedient | `/health` · `/scan` |
+
+**Damit ist die Sache entschieden, ganz ohne Vault**: Was auch immer unter
+`PLAYWRIGHT_SCANNER_URL` läuft, es muss `deploy/playwright-scanner` sein —
+stünde dort der andere Dienst, liefe jeder Deep-Scan in einen 404. Welcher Host
+im Vault steht, ändert daran nichts.
+
+**Und `services/playwright-scanner` hat keinen Aufrufer.** Gesucht über das
+ganze Repo, ausgenommen sein eigenes Verzeichnis: keine Edge Function, kein
+Workflow, keine fremde Compose-Datei spricht ihn an. Was auf ihn zeigt, ist
+sein Eintrag in der Backend-CI (`npm run typecheck`), sein Ausschluss in
+`tsconfig.json`, mein Test und mein eigener Kommentar. Er bringt eine eigene
+`docker-compose.yml` und eine systemd-Unit mit, könnte also irgendwo laufen —
+aber nichts in diesem Repo redet mit ihm.
+
+#### Was das für B-4 bedeutet — und das ist unangenehm
+
+**`consent-banner.ts` liegt im Dienst, den niemand aufruft.** Die Messung ist
+gebaut, getestet, CI-grün — und auf keinem Pfad erreichbar, der von diesem Repo
+ausgeht. Genau der Fall, den CLAUDE.md §14 beim Namen nennt: „fertiger Code,
+den niemand erreichen kann, ist verschwendete Arbeit."
+
+Ich habe beim Bauen von B-4 den Dienst am Namen gewählt
+(`services/playwright-scanner` klingt nach *dem* Scanner) und nicht geprüft,
+wer ihn ruft. Dasselbe Muster wie bei den beiden früheren Fehlern in diesem
+Bericht: aus dem Naheliegenden geschlossen, statt gemessen.
+
+**Der Weg zur Auflösung ist damit klar benannt, aber nicht beschritten**: Die
+Prominenz-Messung gehört in `deploy/playwright-scanner/server.ts` — den Dienst
+am `/scan/full`-Endpunkt —, und von dort über `cookie-scan-deep` in den Fakt.
+Das ist eine Ergänzung an einem Produktionsdienst und wirft zugleich die Frage
+auf, ob `services/playwright-scanner` überhaupt bestehen bleiben soll. Beides
+gehört entschieden, nicht nebenbei gemacht — vorgelegt.
 
 ### Was an Empfehlung 5 in Ordnung ist
 

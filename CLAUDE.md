@@ -1208,10 +1208,25 @@ Bestätigung stammt aus einer den amtlichen Text wiedergebenden Quelle plus der
 inneren Evidenz des Repos. Für die Vereinheitlichung von Nummern trägt das;
 für Zitate im Rechtsstreit gehört einmal ins Amtsblatt geschaut.
 
-**Offen und blockierend**: Welcher der beiden Playwright-Dienste
-(`services/` oder `deploy/`) unter `PLAYWRIGHT_SCANNER_URL` läuft, ist aus dem
-Repo nicht ablesbar. Davon hängt ab, ob die echte Prominenz-Messung je in den
-Fakt gelangt. Belege: `docs/reports/watch-agent-2026-08-31.md` B-5 bis B-7.
+**Nachtrag am selben Tag — dieser Absatz stand hier zuerst falsch.** Er
+lautete: „Welcher der beiden Playwright-Dienste unter
+`PLAYWRIGHT_SCANNER_URL` läuft, ist aus dem Repo nicht ablesbar." Das ist es
+sehr wohl, am Endpunkt: `cookie-scan-deep` ruft `POST …/scan/full` auf, und
+das bedient nur **`deploy/playwright-scanner`** — `services/playwright-scanner`
+bedient `/scan`. Stünde dort der andere Dienst, liefe jeder Deep-Scan in einen
+404.
+
+**Folge für B-4**: `services/playwright-scanner/src/consent-banner.ts` liegt im
+Dienst, den **kein Aufrufer im Repo** anspricht — keine Edge Function, kein
+Workflow, keine fremde Compose-Datei. Die Prominenz-Messung ist gebaut,
+getestet und CI-grün, aber auf keinem Pfad erreichbar, der von diesem Repo
+ausgeht (§14: „fertiger Code, den niemand erreichen kann, ist verschwendete
+Arbeit").
+
+**Offen und vorgelegt**: Die Messung nach `deploy/playwright-scanner/server.ts`
+ziehen und über `cookie-scan-deep` in den Fakt führen — und die Frage, ob
+`services/playwright-scanner` dann noch bestehen soll. Belege:
+`docs/reports/watch-agent-2026-08-31.md` B-5 bis B-7.
 
 #### Faustregel
 

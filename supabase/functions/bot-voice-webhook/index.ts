@@ -18,22 +18,17 @@
 //
 // Tenant/Bot werden via Query-Parameter (?tenant_id=…&bot_id=…) ODER im Body
 // übergeben. verify_jwt = false.
-//
-// Richtlinien (P2-5): Beide Modi laufen durch `replyForVoice` und damit
-// durch denselben PEP wie Web-Chat und WhatsApp (`_shared/bots-pep.ts`).
-// Betriebsmodus BOT_PDP_MODE, Default `shadow` — ein Deploy ändert das
-// Verhalten nicht von selbst.
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 import { gateFeature, EntitlementError } from '../_shared/entitlements.ts';
 import { recordUsage } from '../_shared/usage.ts';
 import { runAiTool, AiInvokeError } from '../_shared/ai.ts';
+import { enforceBotMessage } from '../_shared/pdp/botmessage.ts';
 import {
   resolveBot, upsertConversation, insertMessage, loadRecentHistory,
   buildBotPrompt, BotError, type BotRow,
 } from '../_shared/bots.ts';
-import { evaluateBotPolicy } from '../_shared/bots-pep.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -61,14 +56,7 @@ function speakAndGather(actionUrl: string, text: string): Response {
   );
 }
 
-/**
- * Generiert eine Bot-Antwort und persistiert User- + Assistant-Nachricht.
- *
- * Bewusst die EINZIGE Stelle, an der dieser Webhook eine Antwort erzeugt —
- * Twilio-Modus und JSON-Modus laufen beide hier durch. Deshalb genuegt
- * eine Richtlinienpruefung fuer beide Betriebsarten; eine zweite waere
- * eine zweite Auslegung derselben Regel (Fragmentierungsbefund §1.4).
- */
+/** Generiert eine Bot-Antwort und persistiert User- + Assistant-Nachricht. */
 async function replyForVoice(
   admin: ReturnType<typeof createClient>,
   bot: BotRow,
@@ -76,36 +64,51 @@ async function replyForVoice(
   userText: string,
 ): Promise<string> {
   await insertMessage(admin, bot, conversationId, 'user', userText, { metadata: { channel: 'voice' } });
-
-  // P2-5 — Richtlinienpruefung vor dem Modellaufruf. Das Transkript
-  // verlaesst den Prozess nicht; an den PDP gehen nur Merkmale.
-  //
-  // Telefonie ist der schaerfste der drei Kanaele: Ein gesprochener Satz
-  // ist nicht zurueckholbar, und es sitzt niemand daneben, der ihn
-  // korrigieren koennte. Ausfallverhalten deshalb fail-closed.
-  const policy = await evaluateBotPolicy(admin, {
-    tenantId: bot.tenant_id, botId: bot.id, conversationId,
-    channel: 'voice', message: userText,
-  });
-  if (!policy.mayAnswer) {
-    // Die Absage wird gesprochen UND protokolliert — ein stumm
-    // abgebrochener Anruf waere fuer den Anrufer ein Defekt und fuer
-    // einen Prueffall nicht von einem Ausfall zu unterscheiden.
-    await insertMessage(admin, bot, conversationId, 'assistant', policy.refusal!, {
-      metadata: { channel: 'voice', refused: true, ...policy.trail },
-    });
-    return policy.refusal!;
-  }
-
   const history = await loadRecentHistory(admin, conversationId, 12);
   const prior = history.slice(0, -1);
+
+  // ── Richtlinien des Mandanten (P2-5, PEP) ──────────────────────────
+  //
+  // Derselbe Aufruf wie in bot-chat und whatsapp-webhook. Im Sprachkanal
+  // wiegt die Schranke am schwersten: `userText` ist ein Transkript, das
+  // ungeprueft an das Modell ginge, und die Antwort wird vorgelesen —
+  // gesagt ist gesagt.
+  //
+  // ACHTUNG, ZWEITE SCHRANKE: `apps/agent-runtime/src/voice-policy.ts`
+  // entscheidet weiterhin eigenstaendig ueber Sprachkanal-WERKZEUGE
+  // (Einwilligung, Kill-Switch, Rate-Limit) und ist dort inhaltlich reicher
+  // als der PDP. Sie bleibt erste Schranke; dieser PEP liegt darueber und
+  // ersetzt sie nicht.
+  const verdict = await enforceBotMessage(admin, {
+    tenant_id: bot.tenant_id,
+    bot_id: bot.id,
+    channel: 'bot-voice',
+    message: userText,
+    history_length: prior.length,
+    capability_keys: Object.keys(bot.capabilities ?? {}),
+  });
+
+  if (!verdict.allowed) {
+    await insertMessage(admin, bot, conversationId, 'assistant', verdict.safe_reply!, {
+      metadata: {
+        channel: 'voice', policy_blocked: true,
+        policy_decision: verdict.decision, policy_reasons: verdict.reasons,
+        policy_signals: verdict.signals,
+      },
+    });
+    // Der Anrufer hoert den neutralen Satz — die Begruendung bleibt im
+    // Pruefpfad. Stille waere hier das Schlechteste: Sie klingt wie ein
+    // technischer Ausfall und ruft einen zweiten Anruf hervor.
+    return verdict.safe_reply!;
+  }
+
   const prompt = buildBotPrompt({ persona: bot.persona, history: prior, userMessage: userText });
   const ai = await runAiTool(admin, bot.tenant_id, null, 'bot_reply', prompt, {
     metadata: { bot_id: bot.id, conversation_id: conversationId, channel: 'voice' },
   });
   await insertMessage(admin, bot, conversationId, 'assistant', ai.output, {
     runId: ai.runId, inputTokens: ai.inputTokens, outputTokens: ai.outputTokens, costUsd: ai.costUsd,
-    metadata: { channel: 'voice', duration_ms: ai.durationMs, ...policy.trail },
+    metadata: { channel: 'voice', duration_ms: ai.durationMs },
   });
   return ai.output;
 }

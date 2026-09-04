@@ -17,10 +17,7 @@
 //         4. Quota limit.bot_messages_monthly (gleiches Kontingent wie Chat)
 //         5. Konversation (external_ref = Absender-WA-ID) + Nachricht persistieren;
 //            neue Konversation → limit.whatsapp_conversations_monthly buchen
-//         6. Richtlinienpruefung durch den PDP (P2-5, evaluateBotPolicy) —
-//            derselbe PEP wie Web-Chat und Telefonie, damit dieselbe Regel
-//            in jedem Kanal dasselbe bedeutet
-//         7. Antwort via runAiTool('bot_reply'), Versand über die Graph API
+//         6. Antwort via runAiTool('bot_reply'), Versand über die Graph API
 //
 // WICHTIG: Auf POST immer 200 OK zurückgeben — sonst wiederholt Meta die
 // Zustellung. Secrets dürfen NICHT in Logs erscheinen. verify_jwt = false
@@ -37,12 +34,12 @@ import { gateFeature, EntitlementError } from '../_shared/entitlements.ts';
 import { consumeUsage, recordUsage, UsageError } from '../_shared/usage.ts';
 import { runAiTool } from '../_shared/ai.ts';
 import { audit } from '../_shared/auditLog.ts';
+import { enforceBotMessage } from '../_shared/pdp/botmessage.ts';
 import {
   resolveBot, upsertConversation, insertMessage, loadRecentHistory,
   buildBotPrompt, type BotRow,
 } from '../_shared/bots.ts';
 import { extractInboundTextMessages, buildGraphTextMessage } from '../_shared/whatsapp.ts';
-import { evaluateBotPolicy } from '../_shared/bots-pep.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -197,38 +194,50 @@ async function handleInbound(
     metadata: { channel: 'whatsapp', wa_message_id: msg.waMessageId },
   });
 
-  // P2-5 — Richtlinienpruefung vor dem Modellaufruf. Weder der
-  // Nachrichtentext noch die WhatsApp-ID des Absenders verlassen den
-  // Prozess; an den PDP gehen nur Merkmale (_shared/pdp/botmessage.ts).
+  const history = await loadRecentHistory(admin, conversationId, 12);
+  const prior = history.slice(0, -1);
+
+  // ── Richtlinien des Mandanten (P2-5, PEP) ──────────────────────────
   //
-  // Der Kanal ist Enforcement-Klasse A, und hier zeigt sich, warum das
-  // zaehlt: Eine gesendete WhatsApp-Nachricht ist nicht zurueckholbar.
-  // Deshalb ist das Ausfallverhalten fail-closed (BOT_PDP_FAILURE_MODE).
-  const policy = await evaluateBotPolicy(admin, {
-    tenantId: bot.tenant_id, botId: bot.id, conversationId,
-    channel: 'whatsapp', message: msg.text,
+  // Derselbe Aufruf wie in bot-chat und bot-voice-webhook — das ist der
+  // Punkt von P2-5. Vor dem Modellaufruf und vor `sendWhatsAppText`: Eine
+  // einmal versendete WhatsApp-Nachricht ist nicht zurueckholbar.
+  const verdict = await enforceBotMessage(admin, {
+    tenant_id: bot.tenant_id,
+    bot_id: bot.id,
+    channel: 'bot-whatsapp',
+    message: msg.text,
+    history_length: prior.length,
+    capability_keys: Object.keys(bot.capabilities ?? {}),
   });
-  if (!policy.mayAnswer) {
-    await insertMessage(admin, bot, conversationId, 'assistant', policy.refusal!, {
-      metadata: { channel: 'whatsapp', refused: true, wa_message_id: msg.waMessageId, ...policy.trail },
+
+  if (!verdict.allowed) {
+    // Der Absender bekommt eine neutrale Antwort, der Pruefpfad die
+    // Begruendung. Antwortlos zu bleiben waere hier schlechter: Der Kunde
+    // haelt den Kanal dann fuer defekt.
+    await insertMessage(admin, bot, conversationId, 'assistant', verdict.safe_reply!, {
+      metadata: {
+        channel: 'whatsapp', policy_blocked: true,
+        policy_decision: verdict.decision, policy_reasons: verdict.reasons,
+        policy_signals: verdict.signals,
+      },
     });
-    await sendWhatsAppText(channel.phone_number_id, msg.from, policy.refusal!);
+    await sendWhatsAppText(channel.phone_number_id, msg.from, verdict.safe_reply!);
     await audit(admin, {
       tenant_id: bot.tenant_id,
       actor_user_id: '00000000-0000-0000-0000-000000000000',
       actor_email: null,
-      action: 'whatsapp.message_refused',
+      action: 'whatsapp.message_blocked_by_policy',
       target_type: 'bot_conversation',
       target_id: conversationId,
       payload: {
-        source: 'whatsapp', bot_id: bot.id, wa_message_id: msg.waMessageId, ...policy.trail,
+        bot_id: bot.id, decision: verdict.decision,
+        reasons: verdict.reasons, signals: verdict.signals,
       },
     });
     return;
   }
 
-  const history = await loadRecentHistory(admin, conversationId, 12);
-  const prior = history.slice(0, -1);
   const prompt = buildBotPrompt({ persona: bot.persona, history: prior, userMessage: msg.text });
 
   const ai = await runAiTool(admin, bot.tenant_id, null, 'bot_reply', prompt, {
@@ -237,7 +246,7 @@ async function handleInbound(
 
   await insertMessage(admin, bot, conversationId, 'assistant', ai.output, {
     runId: ai.runId, inputTokens: ai.inputTokens, outputTokens: ai.outputTokens, costUsd: ai.costUsd,
-    metadata: { channel: 'whatsapp', duration_ms: ai.durationMs, ...policy.trail },
+    metadata: { channel: 'whatsapp', duration_ms: ai.durationMs },
   });
 
   await sendWhatsAppText(channel.phone_number_id, msg.from, ai.output);

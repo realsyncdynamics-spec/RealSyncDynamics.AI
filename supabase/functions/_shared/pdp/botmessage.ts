@@ -1,307 +1,303 @@
 /**
- * Bot-Nachricht → Entscheidungsanfrage + Einfaltung des Verdikts (P2-5).
+ * Bot-Nachricht → Entscheidung (P2-5, Bot-PEP).
  *
- * ## Warum es dieses Modul gibt
+ * WARUM DIESES MODUL EXISTIERT
+ * Der Auftrag zu P2-5 lautet „Chatbot, WhatsApp, Voice über denselben PEP".
+ * Das Entscheidende daran ist nicht, DASS die drei Kanäle prüfen, sondern
+ * dass sie es an EINER Stelle tun. Drei Kopien derselben Prüfung sind der
+ * Fragmentierungsbefund aus §1.4 des Plans, nur eine Ebene tiefer: Sie
+ * laufen auseinander, und die Abweichung fällt erst auf, wenn ein Kanal
+ * durchlässt, was ein anderer sperrt.
  *
- * Der Plan formuliert P2-5 als „Chatbot, WhatsApp, Voice über denselben
- * PEP". Das Wort **denselben** ist die ganze Aufgabe. Drei Kanäle mit drei
- * eigenen Auslegungen derselben Richtlinie wären der Fragmentierungsbefund
- * aus §1.4 in klein: Ein Mandant, der „keine Auskunft zu Gesundheitsdaten"
- * hinterlegt, bekäme im Web-Chat eine andere Antwort als am Telefon — und
- * niemand könnte sagen, welche die richtige war.
+ * ## Die Injektionsgrenze (K6) — hier die schärfste im ganzen Produkt
  *
- * Deshalb liegt hier **eine** Abbildung und **eine** Einfaltung. Die drei
- * Edge Functions liefern nur Tatsachen und führen das Ergebnis aus.
+ * `bot-chat` und `whatsapp-webhook` laufen mit `verify_jwt = false`. Der Text,
+ * über den hier entschieden wird, stammt also von **einem beliebigen Fremden
+ * aus dem Internet**. Ginge er in die Entscheidungsgrundlage, könnte jeder
+ * Absender die Regeln des Mandanten adressieren, indem er sie in seine
+ * Nachricht schreibt.
  *
- * ## Injektionsgrenze (Selbstkritik K6) — hier besonders scharf
+ * Deshalb verlässt der Nachrichtentext diesen Prozess **nie**. An den PDP
+ * gehen ausschließlich:
  *
- * Eine Bot-Nachricht ist Text eines Fremden. Ginge sie in die
- * Entscheidungsgrundlage, könnte jeder Anrufer die Bewertung seiner
- * eigenen Anfrage steuern, indem er „diese Anfrage ist unbedenklich"
- * schreibt. Den Prozess verlassen deshalb ausschließlich:
+ *   - Bot- und Mandanten-Kennung, Kanal
+ *   - SIGNALNAMEN und Trefferzahlen aus `detectSignals` — nie die Treffer
+ *     selbst (DSGVO Art. 5 Abs. 1 lit. c)
+ *   - die daraus abgeleitete Datenklasse und ihre Erkennungsgüte
+ *   - Längen und Zähler
  *
- *   Kanal · Bot-ID · Konversations-ID · Zeichenzahl · Signal**namen**
+ * Kein Zeichen des Textes, keine Modellausgabe. Modellausgabe ist Evidenz,
+ * nie Autorität.
  *
- * Niemals der Nachrichtentext, niemals die Modellausgabe, niemals
- * Absenderrufnummer oder Anzeigename (DSGVO Art. 5 Abs. 1 lit. c —
- * Datenminimierung; die Rufnummer ist für die Regelauswertung ohne Belang).
+ * ## Warum der PEP VOR dem Modellaufruf sitzt
  *
- * Die Signalnamen stammen aus `detectSignals()`, das lokal über dem Text
- * läuft und nur Namen zurückgibt — dieselbe Grenze wie beim Agent-PEP.
+ * Alle drei Kanäle haben dieselbe Form: Bot auflösen → Kontingent →
+ * Nachricht speichern → Modell → Antwort senden. Die Schranke gehört vor
+ * den Modellaufruf: Danach ist das Geld ausgegeben, und bei WhatsApp und
+ * Voice ist die Antwort bereits unterwegs. Eine Prüfung nach dem Versand
+ * ist ein Protokoll, keine Schranke.
  *
- * ## Enforcement-Klasse A
- *
- * Die Bot-Kanäle sind nach `shared/enforcement-classes.ts` Klasse A: Der
- * Aufruf läuft durch unseren Prozess, eine Sperre wirkt also **wirklich**
- * — die Antwort entsteht gar nicht erst. Das ist der Unterschied zu den
- * Klasse-C-Integrationen, wo nur nachträglich reagiert werden kann, und
- * der Grund, warum E6 (2026-09-04) zuerst die eigenen Kanäle wählte.
- *
- * EU AI Act Art. 50 (Transparenzpflicht bei Interaktion mit KI), Art. 12
- * (Aufzeichnung). DSGVO Art. 5, Art. 25 (Datenschutz durch Voreinstellung).
- *
- * Rein und importfrei bis auf die Typen — läuft in Deno und in Vitest.
+ * EU AI Act Art. 50 (Transparenz bei Interaktion mit einem KI-System),
+ * Art. 12 (Aufzeichnung); DSGVO Art. 5 Abs. 1 lit. c, Art. 9.
  */
 
-import type { DecisionRequest } from './core.ts';
-import { detectSignals } from './classify.ts';
+import type { DecisionRequest, PdpDecision } from './core.ts';
+import { classifyFromSignals, detectSignals } from './classify.ts';
+import { decide, logShadowComparison } from './decide.ts';
 
-/** Die drei Kanäle, die dieselbe `bot_reply`-Pipeline benutzen. */
-export type BotChannel = 'chat' | 'whatsapp' | 'voice';
+/** Kanäle, unter denen Bot-Entscheidungen im Prüfpfad erscheinen. */
+export type BotPepChannel = 'bot-chat' | 'bot-whatsapp' | 'bot-voice';
+
+/** Verb der Aktion — dasselbe für alle drei Kanäle. */
+export const BOT_VERB = 'bot_reply';
 
 /**
- * Quellkennung im Prüfpfad (`pdp_shadow_log.source`, Migration
- * 20260904120000). Getrennt je Kanal, weil die Frage „greift die Regel am
- * Telefon anders als im Chat?" sonst nicht beantwortbar wäre.
+ * Betriebsart, gelesen aus `BOT_PDP_ENFORCEMENT`.
+ *
+ * Vorgabe ist `shadow`, aus demselben Grund wie beim Gateway (P0) und beim
+ * Publish Gate (P2-3): Der Merge darf das Verhalten laufender Kundenkanäle
+ * nicht ändern. Umgeschaltet wird bewusst, nachdem `pdp_shadow_log` zeigt,
+ * was `enforce` bewirkt hätte.
  */
-export const BOT_SHADOW_SOURCE: Readonly<Record<BotChannel, string>> = Object.freeze({
-  chat: 'bot_chat',
-  whatsapp: 'bot_whatsapp',
-  voice: 'bot_voice',
-});
+export type BotPepMode = 'off' | 'shadow' | 'enforce';
+
+export function readBotPepMode(): BotPepMode {
+  const raw = (Deno.env.get('BOT_PDP_ENFORCEMENT') ?? 'shadow').toLowerCase();
+  return raw === 'off' || raw === 'enforce' ? raw : 'shadow';
+}
 
 /**
- * Was den Bot-Prozess verlassen darf. Die Struktur IST die Grenze — was
- * hier nicht steht, existiert für den PDP nicht.
+ * Was bei einem Ausfall des PDP gilt — `block` (Vorgabe) oder `allow`.
+ *
+ * Getrennt vom Betriebsmodus, aus demselben Grund wie beim Agent-PEP
+ * (`AGENT_PDP_FAILURE_MODE`, P1-5): Ohne eigenen Schalter bliebe einem
+ * Betreiber, der Durchsetzung will, aber einen Ausfall nicht als Sperre
+ * hinnehmen kann, nur `BOT_PDP_ENFORCEMENT=shadow` — also die Durchsetzung
+ * ganz abzuschalten. Das ist ein zu grober Hebel für eine feine Frage.
+ *
+ * Die Vorgabe bleibt `block`, und die Begründung steht in `enforceBotMessage`:
+ * Eine Bot-Antwort geht an einen Dritten hinaus und ist nicht zurückholbar.
+ * E2 (allgemeines Ausfallverhalten) ist als Grundsatzfrage weiterhin offen;
+ * diese Stelle entscheidet nur für diesen Kanal und sagt, warum.
  */
-export interface BotMessageFacts {
-  channel: BotChannel;
+export type BotFailureMode = 'allow' | 'block';
+
+export function readBotFailureMode(): BotFailureMode {
+  return (Deno.env.get('BOT_PDP_FAILURE_MODE') ?? 'block').toLowerCase() === 'allow'
+    ? 'allow'
+    : 'block';
+}
+
+export interface BotMessageInput {
+  tenant_id: string;
   bot_id: string;
-  conversation_id: string;
-  /** Zeichenzahl der eingehenden Nachricht — nie der Text. */
-  message_length: number;
-  /** Lokal erkannte Signalnamen (detectSignals) — nie Inhalte. */
+  channel: BotPepChannel;
+  /**
+   * Der Nachrichtentext. Wird **ausschließlich** lokal auf Signale geprüft
+   * und verlässt diese Funktion nicht. Er steht hier, damit die Erkennung
+   * dort läuft, wo der Inhalt ohnehin liegt.
+   */
+  message: string;
+  /** Anzahl bisheriger Nachrichten der Konversation. Eine Zahl, kein Inhalt. */
+  history_length: number;
+  /** Fähigkeiten aus der Bot-Registry (`bots.capabilities`) — Schlüssel, keine Werte. */
+  capability_keys?: string[];
+}
+
+/**
+ * Ergebnis für den aufrufenden Kanal.
+ *
+ * `allowed: false` heißt: **keine** Modellantwort erzeugen und **nichts**
+ * an den Absender senden ausser `safe_reply`.
+ */
+export interface BotPepVerdict {
+  allowed: boolean;
+  mode: BotPepMode;
+  /** Entscheidung des PDP, sofern er befragt wurde und geantwortet hat. */
+  decision: PdpDecision | null;
+  /**
+   * Begründungen des PDP — **nur für den Prüfpfad**, nie für den Absender.
+   * Siehe `safe_reply`.
+   */
+  reasons: string[];
+  matched_policy_ids: string[];
+  /**
+   * Was der Absender zu sehen bekommt, wenn gesperrt wurde.
+   *
+   * Bewusst neutral und ohne jeden Hinweis auf die Regel: Der Absender ist
+   * ein Kunde DES MANDANTEN, nicht der Mandant. Ihm die Richtlinie zu
+   * nennen, gäbe interne Regeln an einen Dritten preis — und lüde dazu ein,
+   * sie durch Umformulieren zu umgehen.
+   */
+  safe_reply: string | null;
+  /** Erkannte Signalnamen — für den Prüfpfad, enthält keinen Inhalt. */
   signals: string[];
 }
 
-/**
- * Reduziert eine eingehende Nachricht auf die zulässigen Tatsachen.
- *
- * Bewusst die einzige Stelle, an der der Text überhaupt angefasst wird:
- * Wer `BotMessageFacts` von Hand baut, kann versehentlich Inhalt
- * einschleusen; wer diese Funktion benutzt, kann es nicht.
- */
-export function botMessageFacts(input: {
-  channel: BotChannel;
-  botId: string;
-  conversationId: string;
-  message: string;
-}): BotMessageFacts {
-  return {
-    channel: input.channel,
-    bot_id: input.botId,
-    conversation_id: input.conversationId,
-    message_length: input.message.length,
-    signals: detectSignals(input.message).map((h) => h.signal),
-  };
-}
-
-/** Kanal, unter dem Bot-Entscheidungen im Prüfpfad erscheinen. */
-export const BOT_CHANNEL_PREFIX = 'bot_';
+const BLOCKED_REPLY =
+  'Diese Anfrage kann ich hier nicht beantworten. Bitte wenden Sie sich direkt an uns.';
 
 /**
- * Baut die Entscheidungsanfrage.
- *
- * `verb: 'reply'` und nicht `'invoke'`: Bewertet wird, ob dieser Bot in
- * diesem Kanal auf diese Anfrage **antworten** darf. Das ist eine andere
- * Frage als „darf dieses Modell aufgerufen werden" — Letzteres entscheidet
- * der Gateway-PEP (P0-4) auf seinem eigenen Weg und bleibt unberührt.
+ * Baut die Entscheidungsanfrage. Alles, was nicht hier steht, existiert für
+ * den PDP nicht — die Struktur IST die Grenze.
  */
 export function botMessageToDecisionRequest(
-  tenantId: string,
-  facts: BotMessageFacts,
+  input: BotMessageInput,
+  signals: { signal: string; count: number }[],
+  classification: { classification: string; confidence: number },
 ): DecisionRequest {
   return {
     contract: 'v1',
-    tenant_id: tenantId,
-    principal: {
-      // Der Bot handelt, nicht der Anrufer: Ein anonymer Dritter ist kein
-      // Principal dieses Mandanten und bekommt hier auch keine Identität
-      // angedichtet. Rollenregeln greifen über den Bot, Typregeln über
-      // 'agent'.
-      type: 'agent',
-      id: facts.bot_id,
-    },
+    tenant_id: input.tenant_id,
+    // Der Absender ist kein Principal dieses Mandanten — er ist ein Fremder.
+    // Ihn als `user` auszugeben, würde Rollenregeln auf jemanden anwenden,
+    // der keine Rolle hat. `service` beschreibt den Bot, der antwortet.
+    principal: { type: 'service', id: input.bot_id },
     action: {
-      verb: 'reply',
-      channel: `${BOT_CHANNEL_PREFIX}${facts.channel}`,
+      verb: BOT_VERB,
+      channel: input.channel,
       event_type: 'bot_reply',
-      event_source: 'bots',
+      event_source: input.channel,
     },
-    target: { system_id: facts.bot_id },
     data: {
-      // Keine Klassifikation behaupten: Der Klassifikations-PIP
-      // (classify.ts) leitet sie aus genau diesen Signalnamen ab. Würde
-      // der PEP sie selbst setzen, gäbe es zwei Ableitungswege.
-      signals: facts.signals,
+      classification: classification.classification,
+      classification_confidence: classification.confidence,
+      // NUR die Namen. `detectSignals` gibt Trefferzahlen zurück, nie die
+      // Treffer — siehe classify.ts.
+      signals: signals.map((s) => s.signal),
     },
     payload: {
-      conversation_id: facts.conversation_id,
-      message_length: facts.message_length,
-      signal_count: facts.signals.length,
+      bot_id: input.bot_id,
+      channel: input.channel,
+      message_length: input.message.length,
+      history_length: input.history_length,
+      signal_counts: Object.fromEntries(signals.map((s) => [s.signal, s.count])),
+      ...(input.capability_keys && input.capability_keys.length > 0
+        ? { capability_keys: input.capability_keys }
+        : {}),
     },
-  };
-}
-
-// ─────────────────────────────────────────────────────────────────────
-// Zustand und Einfaltung
-// ─────────────────────────────────────────────────────────────────────
-
-export type BotVerdict = 'allow' | 'log_only' | 'warn' | 'block' | 'require_approval';
-
-export const KNOWN_BOT_VERDICTS: readonly BotVerdict[] = Object.freeze([
-  'allow', 'log_only', 'warn', 'block', 'require_approval',
-]);
-
-/**
- * Drei Zustände, kein `Optional` — dieselbe Überlegung wie bei
- * `PolicyEngineState` (P2-3) und `PdpOutcome` (P2-4): „nicht befragt" muss
- * sich von „vergeblich befragt" unterscheiden lassen. Wer beides zu
- * „keine Entscheidung" zusammenzieht, kann eine still nicht greifende
- * Regel nicht mehr von einem Ausfall trennen (Fehlerklasse K1).
- */
-export type BotPolicyState =
-  | { engine: 'consulted'; decision: BotVerdict; reasons: string[] }
-  | { engine: 'not_enforcing'; reason: string }
-  | { engine: 'unavailable'; detail: string };
-
-/** Was der PEP im Ausfall tun soll. Siehe `applyBotPolicy`. */
-export type BotFailureMode = 'allow' | 'block';
-
-export interface BotPolicyOutcome {
-  /** Darf die Antwort erzeugt und zugestellt werden? */
-  mayAnswer: boolean;
-  /**
-   * Text, den der Anrufer stattdessen hört bzw. liest. Nie `null`, wenn
-   * `mayAnswer` falsch ist — ein stummer Kanal wäre für den Anrufer ein
-   * Defekt, nicht eine Entscheidung.
-   */
-  refusal: string | null;
-  /** Hinweise für den Prüfpfad; erreichen den Anrufer nicht. */
-  warnings: string[];
-  /**
-   * Maschinell auswertbarer Prüfpfad-Anteil. Landet in
-   * `bot_messages.metadata`, damit später beantwortbar ist, ob eine
-   * Antwort unter geltenden Regeln entstand — im Ergebnis sieht ein Lauf
-   * ohne Regeln sonst genauso aus wie einer im Beobachtungsbetrieb.
-   */
-  trail: {
-    policy_engine: BotPolicyState['engine'];
-    policy_decision: BotVerdict | null;
-    policy_reasons: string[];
-    policy_detail: string | null;
+    context: { feature: 'bots' },
   };
 }
 
 /**
- * Die Begründungen des PDP gehen **nicht** an den Anrufer.
+ * Der Enforcement-Punkt. Einmal geschrieben, von allen drei Kanälen benutzt.
  *
- * Sie nennen Regelnamen und Zwecke des Mandanten („Auskunft zu
- * Vertragsdaten nur nach Legitimation") — gegenüber einem beliebigen
- * Anrufer ist das eine Auskunft über die internen Kontrollen des
- * Mandanten und eine Einladung, sie zu umgehen. Der Anrufer bekommt
- * deshalb einen neutralen Satz; die Gründe stehen im Prüfpfad.
+ * ## Ausfallverhalten
+ *
+ * In `enforce` sperrt ein Ausfall (fail closed). Das weicht vom allgemeinen
+ * Vorschlag aus E2 ab (durchlassen mit Alarm) und ist hier richtig: Eine
+ * Bot-Antwort geht an einen Dritten hinaus und ist nicht zurückholbar —
+ * dieselbe Überlegung wie beim Publish Gate. Wer nur DAS anders will, setzt
+ * `BOT_PDP_FAILURE_MODE=allow`; wer die Durchsetzung ganz aussetzen will,
+ * `BOT_PDP_ENFORCEMENT=shadow`. Beides steht ausdrücklich in der Betriebsart
+ * statt versteckt in einem `catch`.
+ *
+ * In `shadow` und `off` wird **nie** gesperrt. In `shadow` wird gerechnet
+ * und protokolliert, in `off` gar nicht erst gefragt.
  */
-export const BOT_REFUSAL_BLOCKED =
-  'Zu dieser Anfrage darf ich Ihnen keine Auskunft geben. '
-  + 'Bitte wenden Sie sich an einen Mitarbeiter.';
+export async function enforceBotMessage(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  admin: any,
+  input: BotMessageInput,
+): Promise<BotPepVerdict> {
+  const mode = readBotPepMode();
 
-/**
- * Freigabepflicht im Bot-Kanal.
- *
- * **Ehrlich benannt**: Der PDP legt bei `require_approval` ein Gate an
- * (`pdp_approval_gates`, P1-4), die Anfrage ist also tatsächlich zur
- * Prüfung vorgelegt und in `/app/governance/gates` sichtbar. Was es
- * **nicht** gibt, ist die spätere Zustellung der Antwort: Wird die
- * Freigabe erteilt, nimmt niemand das Gespräch wieder auf. Der Satz
- * verspricht deshalb keine Rückmeldung.
- *
- * Siehe Plan §10 — „Technisch nicht vollständig durchsetzbar / benötigt
- * zusätzliche Integration" gilt für die Wiederaufnahme, nicht für die
- * Sperre selbst.
- */
-export const BOT_REFUSAL_APPROVAL =
-  'Diese Anfrage muss ein Mitarbeiter freigeben. '
-  + 'Sie wurde zur Prüfung vorgelegt.';
+  const hits = detectSignals(input.message);
+  const signalNames = hits.map((h) => h.signal);
 
-export const BOT_REFUSAL_UNAVAILABLE =
-  'Der Dienst ist derzeit nicht verfügbar. Bitte versuchen Sie es später erneut.';
-
-/**
- * Faltet das Verdikt in eine Handlungsanweisung.
- *
- * ## Ausfallverhalten — bewusst gesetzt, nicht zufällig entstanden
- *
- * Der allgemeine Default des Plans (E2) ist fail-open. Hier ist er
- * **fail-closed** (`failureMode: 'block'` als Vorgabe der Aufrufer), aus
- * demselben Grund wie beim Publish Gate: Eine Bot-Antwort geht im Namen
- * des Mandanten an einen Dritten und ist nicht zurückholbar — eine
- * gesendete WhatsApp-Nachricht bleibt gesendet, ein gesprochener Satz
- * bleibt gesagt. Ein durchgelassener Gateway-Aufruf lässt sich
- * nachträglich bewerten, eine ausgelieferte Auskunft nicht.
- *
- * Wer das anders will, setzt `BOT_PDP_FAILURE_MODE=allow` — bewusst und
- * sichtbar, wie beim Agent-PEP. E2 bleibt als Grundsatzfrage offen; diese
- * Stelle entscheidet nur für diesen Kanal und sagt warum.
- *
- * Im Beobachtungsbetrieb (`not_enforcing`) wird **nie** gesperrt — sonst
- * änderte der Shadow-Mode doch das Verhalten, was seinen ganzen Zweck
- * ausschließt.
- */
-export function applyBotPolicy(
-  state: BotPolicyState,
-  opts: { failureMode: BotFailureMode } = { failureMode: 'block' },
-): BotPolicyOutcome {
-  const base = {
-    warnings: [] as string[],
-    trail: {
-      policy_engine: state.engine,
-      policy_decision: state.engine === 'consulted' ? state.decision : null,
-      policy_reasons: state.engine === 'consulted' ? state.reasons : [],
-      policy_detail:
-        state.engine === 'not_enforcing' ? state.reason
-        : state.engine === 'unavailable' ? state.detail
-        : null,
-    },
-  };
-
-  if (state.engine === 'not_enforcing') {
+  if (mode === 'off') {
     return {
-      ...base,
-      mayAnswer: true,
-      refusal: null,
-      warnings: [`Mandantenrichtlinien binden hier derzeit nicht: ${state.reason}`],
+      allowed: true, mode, decision: null, reasons: [], matched_policy_ids: [],
+      safe_reply: null, signals: signalNames,
     };
   }
 
-  if (state.engine === 'unavailable') {
-    const blocked = opts.failureMode === 'block';
+  const classification = classifyFromSignals(hits);
+  const request = botMessageToDecisionRequest(input, hits, classification);
+
+  let decision: PdpDecision;
+  let reasons: string[];
+  let matchedIds: string[];
+  let snapshotVersion: string;
+
+  try {
+    const result = await decide(admin, request);
+    decision = result.decision;
+    reasons = result.reasons.map((r) => r.text_de);
+    matchedIds = result.matched_policy_ids;
+    snapshotVersion = result.snapshot_version;
+  } catch (e) {
+    const detail = (e as Error)?.message ?? String(e);
+    console.error(JSON.stringify({
+      level: 'error', scope: 'bot_pdp_unavailable',
+      tenant_id: input.tenant_id, bot_id: input.bot_id, channel: input.channel, error: detail,
+    }));
+    // Fail closed — aber nur, wo die Betriebsart das sagt, und nur solange
+    // niemand das Ausfallverhalten ausdruecklich umgestellt hat.
+    const blocksOnFailure = mode === 'enforce' && readBotFailureMode() === 'block';
     return {
-      ...base,
-      mayAnswer: !blocked,
-      refusal: blocked ? BOT_REFUSAL_UNAVAILABLE : null,
-      warnings: [
-        `Richtlinienprüfung nicht erreichbar (${state.detail}) — `
-        + (blocked ? 'Antwort unterbunden (fail-closed).' : 'Antwort durchgelassen (BOT_PDP_FAILURE_MODE=allow).'),
+      allowed: !blocksOnFailure,
+      mode,
+      decision: null,
+      reasons: [
+        `Richtlinienprüfung nicht erreichbar: ${detail}`,
+        ...(mode === 'enforce' && !blocksOnFailure
+          ? ['Antwort durchgelassen (BOT_PDP_FAILURE_MODE=allow).']
+          : []),
       ],
+      matched_policy_ids: [],
+      safe_reply: blocksOnFailure ? BLOCKED_REPLY : null,
+      signals: signalNames,
     };
   }
 
-  switch (state.decision) {
-    case 'block':
-      return { ...base, mayAnswer: false, refusal: BOT_REFUSAL_BLOCKED };
-    case 'require_approval':
-      return { ...base, mayAnswer: false, refusal: BOT_REFUSAL_APPROVAL };
-    case 'warn':
-      return {
-        ...base,
-        mayAnswer: true,
-        refusal: null,
-        warnings: state.reasons.map((r) => `Richtlinie: ${r}`),
-      };
-    case 'allow':
-    case 'log_only':
-    default:
-      return { ...base, mayAnswer: true, refusal: null };
+  if (mode === 'shadow') {
+    // Mitrechnen und protokollieren, aber nicht anwenden.
+    //
+    // Bewusst OHNE `.catch(() => {})`: `logShadowComparison` faengt seine
+    // Fehler selbst und protokolliert sie. Ein zusaetzlicher stiller Fang
+    // hier hat in P2-3 dazu gefuehrt, dass der Beobachtungsbetrieb gar
+    // nichts sammelte, ohne dass es jemandem auffiel.
+    await logShadowComparison(admin, {
+      tenant_id: input.tenant_id,
+      source: input.channel,
+      // Vor P2-5 hat auf diesen Kanaelen keine Engine entschieden. `null`
+      // sagt das; 'allow' wuerde eine Entscheidung behaupten, die niemand
+      // getroffen hat.
+      legacy_status: null,
+      v2_status: decision,
+      snapshot_version: snapshotVersion,
+      detail: {
+        bot_id: input.bot_id,
+        channel: input.channel,
+        matched_policy_ids: matchedIds,
+        signals: signalNames,
+      },
+    });
+    return {
+      allowed: true, mode, decision, reasons, matched_policy_ids: matchedIds,
+      safe_reply: null, signals: signalNames,
+    };
   }
+
+  // ── enforce ────────────────────────────────────────────────────────
+  //
+  // `require_approval` sperrt hier wie `block`, und das ist eine Entscheidung,
+  // keine Vereinfachung: Ein Web-Chat, WhatsApp und ein Telefonat sind
+  // synchron. Es gibt niemanden, der binnen Sekunden freigeben könnte. Die
+  // ehrliche Umsetzung ist deshalb, die automatische Antwort zu unterlassen
+  // und den Fall an einen Menschen zu verweisen — nicht, den Absender warten
+  // zu lassen auf eine Freigabe, die in diesem Kanal nie kommt.
+  const blocks = decision === 'block' || decision === 'require_approval';
+
+  return {
+    allowed: !blocks,
+    mode,
+    decision,
+    reasons,
+    matched_policy_ids: matchedIds,
+    safe_reply: blocks ? BLOCKED_REPLY : null,
+    signals: signalNames,
+  };
 }

@@ -79,7 +79,7 @@ Menschen · Unternehmen · KI-Agenten · Daten · Entscheidungen.
 **Primär: Supabase Cloud (EU / Frankfurt)**
 - PostgreSQL 17 (Live-Projekt, Stand 2026-08-16)
 - **185 Edge Functions** im Repo (`supabase/functions/`, Deno/V8; `_shared` ist Bibliothek, keine Function) — gemessen am 2026-09-04 am Merge-Baum dieses Branches, nicht addiert. 181 davon sind deployt und deckungsgleich mit Produktion (mains Messung vom 2026-09-04 mit zwei unabhängigen Methoden, `comm` in beide Richtungen leer — siehe §5). Die vier aus diesem Branch warten auf den nächsten `deploy.yml`-Lauf und stehen so lange in `UNBACKED_CALLERS`: `governance-decide` und `integration-credentials` (P0), `governance-access` (P1-3), `evidence-anchor` (P1-6)
-- **321 Migrations** (`supabase/migrations/`) — gemessen am 2026-09-04 am Merge-Baum (`ls supabase/migrations/*.sql | wc -l`), nach dem Nachziehen von 30 main-Commits. 314 davon sind verbucht bzw. kommen mit mains eigenem Deploy (`20260902000010`, `20260902000011` aus dem Onboarding-Vokabular); unverbucht aus **diesem** Branch sind sieben: `20260824090000_pdp_snapshots_shadow`, `20260824110000_integration_credentials_hardening`, `20260824120000_org_subject_model_approval_gates`, `20260901090000_evidence_append_only_anchors`, `20260904100000_connector_registry` (P2-1), `20260904110000_publish_gate_policy_trail` (P2-3) und `20260904120000_pdp_shadow_log_channel_sources` (P2-5)
+- **321 Migrations** (`supabase/migrations/`) — gemessen am 2026-09-04 am Merge-Baum, nach dem Nachziehen von 30 main-Commits. 314 davon sind verbucht bzw. kommen mit mains eigenem Deploy (`20260902000010`, `20260902000011` aus dem Onboarding-Vokabular); unverbucht aus **diesem** Branch sind sieben: `20260824090000_pdp_snapshots_shadow`, `20260824110000_integration_credentials_hardening`, `20260824120000_org_subject_model_approval_gates`, `20260901090000_evidence_append_only_anchors`, `20260904100000_connector_registry` (P2-1), `20260904110000_publish_gate_policy_trail` (P2-3) und `20260904120000_pdp_shadow_log_channels` (P2-3/P2-5)
 
   > **Zur Messmethode, weil die Zahlen mehrfach auseinanderliefen**: Die Repo-Zahlen hier stammen aus `ls`/`git ls-tree` auf dem Merge-Baum, nicht aus der Addition zweier Doku-Stände; die Produktionszahlen stammen aus mains Messung gegen das Live-Projekt, nicht aus den Repo-Zahlen abgeleitet. Beide Richtungen sind schon falsch dagewesen: `main` nannte am 2026-09-04 vormittags 180 Functions bei 181 im eigenen Baum, und `subscription-addons` stand zwölf Tage als „wartet auf den Deploy“, obwohl der Lauf längst da war — die Function antwortete mit `401`, nicht `404` (#1204). Wer eine dieser Zahlen fortschreibt statt sie nachzuzählen, schreibt den Fehler fort.
 - RLS auf allen App-Tabellen · Realtime Subscriptions
@@ -450,29 +450,40 @@ Jeder Agent braucht vier Dimensionen — fehlt eine, ist er nicht governance-fä
   `governance_memory` leer ist, aber die Zusage steht ungedeckt.
   Prüfen also nicht an `cron.job`, sondern an `cron.job_run_details.status`.
 
-- **Enforcement-Schalter (Governance OS, P0–P2)** — der PDP (`_shared/pdp/`) ist der
-  einzige Entscheider; die Enforcement-Punkte (PEPs) fragen ihn. **Alle stehen auf
-  `shadow`**, damit kein Merge das Produktionsverhalten von selbst ändert:
+### Enforcement-Schalter — der PDP entscheidet erst, wenn jemand ihn lässt
 
-  | Schalter | Wo | Default | Ausfall |
-  |---|---|---|---|
-  | `AGENT_PDP_ENFORCEMENT` | `apps/agent-runtime` (P1-5) | `shadow` | fail-closed |
-  | `SITEOS_PUBLISH_PDP` | `siteos/publish-gate` (P2-3) | `shadow` | fail-closed (§7 G3) |
-  | `GOVERNANCE_PDP_MODE` | `platform/governance_backend` (P2-4) | `shadow` | fail-closed |
-  | `BOT_PDP_MODE` | `bot-chat`, `whatsapp-webhook`, `bot-voice-webhook` (P2-5) | `shadow` | fail-closed, umstellbar per `BOT_PDP_FAILURE_MODE=allow` |
+Seit P2 hängen fünf Pfade am PDP. **Alle stehen auf Beobachtung**; das ist der
+beabsichtigte Zwischenzustand aus P0, aber eben keine Durchsetzung:
 
-  **Regel**: `shadow` heißt, die Richtlinien des Mandanten binden dort **nicht**.
-  Wer eine Aussage über wirksame Durchsetzung macht, prüft den Schalter — nicht den
-  Code. Die gemessenen Abweichungen stehen in `pdp_shadow_log` (je Kanal eine eigene
-  `source`; die Liste ist per CHECK gebunden, Erweiterung nur per Migration).
-  Hintergrund und offene Entscheidungen: `docs/architecture/governance-os-enforcement-plan.md` §10.
+| Schalter | Wirkt auf | Vorgabe | In `enforce` |
+|---|---|---|---|
+| `AI_GATEWAY_ENFORCEMENT` | `ai-gateway` | `shadow` | blockt |
+| `AGENT_PDP_ENFORCEMENT` | Agent-Runtime | `shadow` | fail **closed** |
+| `SITEOS_PUBLISH_PDP` | Publish Gate (P2-3) | `shadow` | fail **closed** (§7 G3) |
+| `GOVERNANCE_PDP_MODE` | CI/CD-Gate (P2-4) | `shadow` | verschärft nur |
+| `BOT_PDP_ENFORCEMENT` | Chat · WhatsApp · Voice (P2-5) | `shadow` | fail **closed**, per `BOT_PDP_FAILURE_MODE=allow` umstellbar |
 
-  **Zur Bot-Governance (P2-5)**: Chatbot, WhatsApp und Voice laufen durch **einen**
-  PEP (`_shared/pdp/botmessage.ts` rein, `_shared/bots-pep.ts` mit IO) — drei eigene
-  Auslegungen derselben Regel wären der Fragmentierungsbefund. Den Prozess verlassen
-  nur Merkmale: Kanal, Bot-ID, Konversations-ID, Zeichenzahl, Signalnamen. **Nie der
-  Nachrichtentext** — er stammt von einem Fremden und wäre sonst ein Hebel auf die
-  Bewertung der eigenen Anfrage. Gesichert durch `test/governance/bot-pep.test.ts`.
+**Vor dem Umschalten `pdp_shadow_log` auswerten** — dafür ist der
+Beobachtungsbetrieb da. Und zwar wirklich auswerten: Die Tabelle blieb für den
+Publish Gate bis zum 2026-09-04 leer, weil der Aufruf falsch war und der
+Fehler in einem `catch` verschwand. Ein leeres Shadow-Protokoll bedeutet nicht
+„keine Abweichungen", sondern zuerst „nachsehen, ob überhaupt geschrieben
+wird".
+
+**Zur Bot-Governance (P2-5)**: Chatbot, WhatsApp und Voice laufen durch **einen**
+PEP (`_shared/pdp/botmessage.ts`, `enforceBotMessage()`) — drei eigene Auslegungen
+derselben Regel wären der Fragmentierungsbefund eine Ebene tiefer. Den Prozess
+verlassen nur Merkmale: Kanal, Bot-ID, Signalnamen und Zähler. **Nie der
+Nachrichtentext** — `bot-chat` und `whatsapp-webhook` laufen mit `verify_jwt = false`,
+der Text stammt also von einem beliebigen Fremden und wäre sonst ein Hebel auf die
+Bewertung der eigenen Anfrage. Gesichert durch `test/governance/pdp-botmessage.test.ts`
+und `test/governance/bot-pep-wiring.test.ts` (Letzterer prüft am Quelltext, dass alle
+drei Kanäle denselben PEP **vor** dem Modellaufruf rufen — dass sie sich gleich
+verhalten, ist kein Beleg dafür, dass sie dieselbe Stelle benutzen).
+
+**Offen, weil Produktentscheidung**: Eine vom PDP gesperrte Bot-Nachricht verbraucht
+trotzdem eine Einheit von `limit.bot_messages_monthly` — das Kontingent wird vor der
+Prüfung gebucht. Ob eine blockierte Anfrage berechnet wird, gehört entschieden.
 
 ### Dashboard-Module (modulare Reihenfolge)
 1. **Agent Registry** — Liste, Status, Risiko, Details

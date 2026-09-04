@@ -505,26 +505,31 @@ async function consultPolicyEngine(
     const result = await decide(ctx.admin, request as never);
     if (mode !== 'enforce') {
       // Mitrechnen und protokollieren, aber nicht anwenden.
-      // Signatur ist (admin, entry) — der frueher hier stehende Aufruf mit
-      // sechs Stellungsargumenten lief ins Leere: `entry` war dann die
-      // Tenant-ID, `entry.tenant_id` undefiniert, der INSERT scheiterte an
-      // NOT NULL, und weil logShadowComparison Fehler bewusst schluckt,
-      // wurde **nichts** protokolliert. Der Beobachtungsbetrieb sah aus,
-      // als wuerde er mitschreiben (Fehlerklasse K1).
+      //
+      // KORRIGIERT am 2026-09-04: Der Aufruf stand hier mit sechs
+      // Positionsargumenten gegen eine Objekt-Signatur — `entry` war damit
+      // die Tenant-ID, `entry.tenant_id` undefined, der Insert waere an
+      // NOT NULL gescheitert. Hinter `.catch(() => {})` haette der
+      // Beobachtungsbetrieb also geschwiegen statt zu sammeln, und weil
+      // `shadow` der Vorgabewert ist, waere das der Normalfall gewesen.
+      // Kein Gate konnte es sehen: tsc deckt supabase/functions nicht ab,
+      // check:edge-syntax ist ein Parse-Check, check:edge-refs prueft nur,
+      // ob Namen aufloesen.
       await logShadowComparison(ctx.admin, {
         tenant_id: ctx.tenantId,
         source: 'siteos_publish',
-        // Vor P2-3 gab es beim Veroeffentlichen keine Richtlinienpruefung:
-        // Der Alt-Zustand ist "nicht gefragt", nicht "erlaubt".
+        // Es gibt hier keine Alt-Engine, mit der zu vergleichen waere: Der
+        // Publish Gate hat vor P2-3 gar keine Richtlinie ausgewertet. `null`
+        // ist deshalb die richtige Aussage — nicht etwa 'allow', das eine
+        // Entscheidung behaupten wuerde, die niemand getroffen hat.
         legacy_status: null,
         v2_status: result.decision,
-        snapshot_version: result.snapshot_version ?? '',
+        snapshot_version: result.snapshot_version,
         detail: {
           blueprint_id: row.id,
-          slug: row.slug,
           artifact_sha256: artifactSha256,
-          finding_count: findingCount,
-          matched_policy_ids: result.matched_policy_ids ?? [],
+          matched_policy_ids: result.matched_policy_ids,
+          mode,
         },
       });
       return {

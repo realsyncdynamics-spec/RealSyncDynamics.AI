@@ -52,6 +52,9 @@ function input(overrides: Partial<PublishGateInput> = {}): PublishGateInput {
     backend: greenfield,
     policy: policyAllows,
     approval: noApproval,
+    // P2-3: Voreinstellung der Tests — ohne Mandantenrichtlinie, damit die
+    // bestehenden Faelle unveraendert dasselbe pruefen wie zuvor.
+    policyEngine: { engine: 'not_enforcing', reason: 'Test ohne Richtlinienpruefung' },
     evaluationId: 'eval-1',
     evaluatedAt: '2026-08-22T12:00:00.000Z',
     ...overrides,

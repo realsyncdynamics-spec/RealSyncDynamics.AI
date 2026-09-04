@@ -182,6 +182,35 @@ export interface ApprovalState {
   reason: string | null;
 }
 
+/**
+ * Ergebnis der Mandanten-Richtlinienprüfung (P2-3).
+ *
+ * WOZU: Bis hierher entschied der Publish Gate ausschließlich nach den fest
+ * verdrahteten Regeln weiter unten — Dimension, Schweregrad, zwei
+ * Blueprint-Flags. Die Richtlinien, die der Mandant selbst gepflegt hat und
+ * die der Policy Decision Point kompiliert, hatten beim Veröffentlichen
+ * **keine Wirkung**. Ein Gate, das die eigenen Regeln des Kunden nicht kennt,
+ * ist eine Insel, kein Enforcement-Punkt.
+ *
+ * WARUM ALS EINGABE UND NICHT ALS AUFRUF: Diese Datei ist abhängigkeitsfrei
+ * und seiteneffektlos — gleiche Eingabe ⇒ gleiches Ergebnis. Das ist die
+ * Voraussetzung dafür, dass eine Bewertung später nachvollzogen werden kann.
+ * Ein Netzwerkaufruf mitten in der Ableitung würde genau das zerstören. Der
+ * PDP wird deshalb im Deno-Handler befragt; hierher kommt nur sein Ergebnis.
+ *
+ * WARUM PFLICHTFELD: Wäre es optional, sähe „der PDP wurde nicht befragt"
+ * genauso aus wie „jemand hat vergessen, ihn zu befragen". Das ist die
+ * gefährlichste Fehlerklasse dieses Plans (K1: stilles Nicht-Greifen einer
+ * Regel). Der Typ zwingt jeden Aufrufer, sich zu erklären.
+ */
+export type PolicyEngineState =
+  /** Der PDP hat entschieden. `reasons` sind seine deutschen Begründungen. */
+  | { engine: 'consulted'; decision: 'allow' | 'log_only' | 'warn' | 'block' | 'require_approval'; reasons: string[] }
+  /** Bewusst nicht durchsetzend (Modus `off` oder `shadow`) — benannt, nicht verschwiegen. */
+  | { engine: 'not_enforcing'; reason: string }
+  /** Keine Antwort, Zeitüberschreitung, Fehler. Sperrt nach G3. */
+  | { engine: 'unavailable'; detail: string };
+
 export interface PublishGateInput {
   blueprint: SiteBlueprint;
   /** Befunde der Analyse — frisch erhoben, nicht aus dem Speicher gelesen. */
@@ -195,6 +224,11 @@ export interface PublishGateInput {
    */
   policy: PolicyEngineState;
   approval: ApprovalState;
+  /**
+   * Ergebnis der Mandanten-Richtlinien (P2-3). Pflichtfeld — siehe
+   * `PolicyEngineState`.
+   */
+  policyEngine: PolicyEngineState;
   /** Anker im Prüfpfad (G5). */
   evaluationId: string;
   evaluatedAt: string;

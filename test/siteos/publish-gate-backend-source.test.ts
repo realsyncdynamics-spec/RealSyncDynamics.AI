@@ -104,6 +104,8 @@ describe('Backend-Feststellung — Wirkung im Kern', () => {
         snapshotVersion: 'test-snapshot',
       },
       approval: { grantedForArtifactSha256: null, grantedBy: null, reason: null },
+      // P2-3: ohne Mandantenrichtlinie — dieser Test prueft allein die Backend-Lage.
+      policyEngine: { engine: 'not_enforcing', reason: 'Test ohne Richtlinienpruefung' },
       evaluationId: '00000000-0000-4000-8000-000000000000',
       evaluatedAt: '2026-08-22T21:00:00.000Z',
     });

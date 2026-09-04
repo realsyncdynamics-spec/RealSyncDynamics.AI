@@ -24,7 +24,7 @@ Claude / Hermes / eigener Agent
         ▼
    MCP Server (Fastify, Port 3001)
         │
-        ├── Auth-Middleware   → mcp_key_is_valid (RPC, service_role)
+        ├── Auth-Middleware   → mcp_key_candidates (RPC) + PBKDF2-Vergleich
         ├── Kontingent        → mcp_quota_state  (plan_catalog)
         ├── POST /mcp         → JSON-RPC 2.0 (tools/list · tools/call)
         ├── HTTP-Routen       → Evidence · Governance
@@ -89,7 +89,8 @@ curl -X POST "$SUPABASE_URL/functions/v1/mcp-api-key-manager" \
 ```
 
 > Das Feld `key` erscheint **genau einmal** — in dieser Antwort. Gespeichert wird
-> nur ein mit `MCP_KEY_PEPPER` gebildeter HMAC-SHA-256 davon. Ein verlorener Key
+> nur eine mit `MCP_KEY_PEPPER` und key-eigenem Salt gebildete
+> PBKDF2-SHA512-Ableitung davon. Ein verlorener Key
 > lässt sich nicht wiederherstellen, nur widerrufen und neu ausstellen.
 
 Weitere Operationen:
@@ -240,23 +241,37 @@ geloggt, damit ein stiller Ausfall des Prüfpfads auffällt.
   preHandler; ein Key mit ausschließlich `evidence.read` erhält auf den
   Governance-Pfaden 403. Ohne diese Prüfung wäre die Scope-Angabe eine
   Absichtserklärung statt einer Kontrolle.
-- **Gepfefferter Hash statt Klartext.** Gespeichert wird ausschließlich ein
-  HMAC-SHA-256 des Keys, gebildet mit dem serverseitigen Geheimnis
-  `MCP_KEY_PEPPER`. Wer allein die Datenbank erbeutet, kann geratene Keys nicht
-  offline gegen die Hashes prüfen — dazu bräuchte er zusätzlich den Pepper, der
-  nur in der Umgebung von Server und Edge Function liegt. Beide Seiten müssen
-  denselben Wert verwenden; ein Test rechnet sie gegeneinander, und beide werfen
-  bei fehlendem Geheimnis, statt still auf einen ungepfefferten Hash
-  zurückzufallen.
+- **PBKDF2-SHA512 mit Salt und Pepper statt Klartext.** Gespeichert wird
+  `pbkdf2-sha512$<iterationen>$<salt>$<ableitung>` — 210 000 Runden nach
+  OWASP-Empfehlung, key-eigenes Salt, dazu der serverseitige Pepper
+  `MCP_KEY_PEPPER` im Passwortmaterial. Salt und Pepper ersetzen einander
+  nicht: Das Salt verhindert, dass eine Vorberechnung mehrere Keys zugleich
+  trifft; der Pepper verhindert den Offline-Angriff überhaupt, weil er nur in
+  der Umgebung von Server und Edge Function liegt, nie in der Datenbank. Beide
+  Seiten müssen zeichengleich rechnen; ein Test rechnet sie gegeneinander, und
+  beide werfen bei fehlendem Geheimnis, statt still zurückzufallen.
 
-  Bewusst **kein** scrypt/argon2: Der Key ist ein Zufallstoken mit 256 Bit
-  Entropie, kein menschliches Passwort — Brute-Force ist nicht das Szenario.
-  Der Hash läuft bei jedem Request; ein absichtlich teures Verfahren wäre hier
-  ein DoS-Verstärker, weil jeder gut geformte Rateversuch Rechenzeit erzwänge.
+  **Warum PBKDF2 und nicht scrypt.** scrypt wäre kryptografisch die bessere
+  Wahl — speicherhart und bei gleicher Wartezeit teurer für den Angreifer
+  (gemessen 47 ms bei N=16384 gegenüber 137 ms für PBKDF2 mit 210 000 Runden).
+  Den Ausschlag gab, dass dieselbe Ableitung in zwei Laufzeiten bitgleich
+  laufen muss: Node im Server, Deno in der Edge Function. PBKDF2 gibt es in
+  beiden über dieselbe W3C-WebCrypto-Schnittstelle, scrypt nur über Denos
+  Node-Kompatibilitätsschicht — deren Übereinstimmung lässt sich hier nicht
+  testen. Ein Verfahren zu wählen, dessen Gleichheit man nicht prüfen kann,
+  wäre das größere Risiko: Weicht eine Seite ab, validiert kein einziger Key.
+
+  **Zweistufige Prüfung, damit die Kosten den Richtigen treffen.** Ein teures
+  Verfahren an einem unauthentifizierten Endpunkt wäre ein DoS-Verstärker,
+  wenn jeder Rateversuch Rechenzeit erzwingt. Deshalb wird zuerst über das
+  nicht geheime `key_prefix` vorausgewählt (indiziert, kostenlos); die
+  Ableitung läuft nur für die gefundenen Kandidaten. Wer kein gültiges Präfix
+  trifft — 32 Bit —, erhält null Zeilen und erzeugt keine einzige Runde.
+  Legitime Aufrufe zahlen dafür rund 137 ms je Anmeldung.
 - **Mandantentrennung.** RLS über `is_tenant_member`; der Widerruf filtert
   zusätzlich auf `tenant_id`, damit eine erratene Key-ID aus einem fremden
   Workspace ins Leere greift.
-- **Eingeschränkte RPCs.** `mcp_key_is_valid` und `mcp_log_usage` sind für
+- **Eingeschränkte RPCs.** `mcp_key_candidates` und `mcp_log_usage` sind für
   `PUBLIC`, `anon` und `authenticated` gesperrt und nur für `service_role`
   ausführbar.
 - **Ablauf und Widerruf** wirken sofort, weil bei jedem Request geprüft wird.

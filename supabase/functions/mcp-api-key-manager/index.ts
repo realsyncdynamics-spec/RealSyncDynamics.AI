@@ -10,15 +10,16 @@
 // Sicherheitsrelevanz: Diese Funktion vergibt Zugriff auf den MCP Governance
 // Server (Evidence Vault, Governance-Status). Der Klartext-Key existiert genau
 // einmal — in der Antwort auf 'generate'. Gespeichert wird nur ein mit einem
-// serverseitigen Pepper gebildeter HMAC-SHA-256 des Keys; ein verlorener Key
-// kann also nicht wiederhergestellt, nur ersetzt werden. Wer allein die
-// Datenbank erbeutet, kann geratene Keys nicht offline gegen die Hashes
-// prüfen — dazu bräuchte er zusätzlich MCP_KEY_PEPPER.
+// key-eigenen Salt und einem serverseitigen Pepper gebildeter
+// PBKDF2-SHA512-Wert; ein verlorener Key kann also nicht wiederhergestellt,
+// nur ersetzt werden. Wer allein die Datenbank erbeutet, kann geratene Keys
+// nicht offline prüfen — dazu bräuchte er zusätzlich MCP_KEY_PEPPER.
 //
-// Bewusst NICHT enthalten: eine 'validate'-Operation. Der MCP Server prüft Keys
-// über die RPC mcp_key_is_valid mit service_role. Ein öffentlich erreichbarer
-// Validierungs-Endpunkt wäre ein Orakel, an dem sich gestohlene Hashes
-// gefahrlos durchprobieren ließen.
+// Bewusst NICHT enthalten: eine 'validate'-Operation. Der MCP Server holt sich
+// über die RPC mcp_key_candidates mit service_role die Kandidaten zum Präfix
+// und rechnet die Ableitung selbst nach. Ein öffentlich erreichbarer
+// Validierungs-Endpunkt wäre ein Orakel, an dem sich Keys gefahrlos
+// durchprobieren ließen.
 //
 // EU AI Act / DSGVO: Jede Key-Vergabe und jeder Widerruf ist ein
 // Zugriffsereignis auf Compliance-Nachweise und wird doppelt protokolliert —
@@ -51,31 +52,46 @@ function generateApiKey(): string {
 /** Mindestlänge des Peppers — kurz genug geraten ist so gut wie keiner. */
 const MIN_PEPPER_LENGTH = 32;
 
+/** Iterationszahl nach OWASP-Empfehlung für PBKDF2-SHA512. */
+const PBKDF2_ITERATIONS = 210_000;
+const SALT_BYTES = 16;
+const DERIVED_BITS = 512;
+const ALGORITHM = 'pbkdf2-sha512';
+
 /**
- * Gepfefferter Schlüssel-Hash: HMAC-SHA-256 über den Key mit einem
- * serverseitigen Geheimnis.
+ * Bildet den zu speichernden Wert eines frisch ausgestellten Keys.
  *
- * Muss byte-identisch zu `hashApiKey` in `apps/mcp-server/src/services/
- * api-keys-db.ts` bleiben — weicht eine Seite ab, validiert kein Key mehr.
+ * Format: `pbkdf2-sha512$<iterationen>$<salt-hex>$<ableitung-hex>`
  *
- * Wirft, wenn das Geheimnis fehlt: ein stiller Rückfall auf einen
- * ungepfefferten Hash erzeugte zwei unvereinbare Schemata und entwertete den
- * Schutz, ohne dass es auffiele.
+ * Muss zeichengleich zu `hashNewKey` / `verifyAgainstStored` in
+ * `apps/mcp-server/src/services/key-hash.ts` rechnen — weicht eine Seite ab,
+ * validiert kein einziger Key mehr. Beide benutzen deshalb dieselbe
+ * W3C-WebCrypto-Schnittstelle und nicht die jeweils bequemere Hausbibliothek;
+ * ein Test rechnet die Seiten gegeneinander.
+ *
+ * Der Pepper geht in das Passwortmaterial ein und liegt nie in der Datenbank.
+ * Wirft, wenn er fehlt: ein stiller Rückfall erzeugte zwei unvereinbare
+ * Bestände und entwertete den Schutz, ohne dass es auffiele.
  */
-async function peppered(input: string): Promise<string> {
+async function hashNewKey(plainKey: string): Promise<string> {
   const secret = Deno.env.get('MCP_KEY_PEPPER') ?? '';
   if (secret.length < MIN_PEPPER_LENGTH) {
     throw new Error('MCP_KEY_PEPPER fehlt oder ist zu kurz');
   }
-  const key = await crypto.subtle.importKey(
+  const salt = crypto.getRandomValues(new Uint8Array(SALT_BYTES));
+  const material = await crypto.subtle.importKey(
     'raw',
-    new TextEncoder().encode(secret),
-    { name: 'HMAC', hash: 'SHA-256' },
+    new TextEncoder().encode(`${secret}:${plainKey}`),
+    { name: 'PBKDF2' },
     false,
-    ['sign'],
+    ['deriveBits'],
   );
-  const sig = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(input));
-  return bufToHex(new Uint8Array(sig));
+  const bits = await crypto.subtle.deriveBits(
+    { name: 'PBKDF2', salt, iterations: PBKDF2_ITERATIONS, hash: 'SHA-512' },
+    material,
+    DERIVED_BITS,
+  );
+  return `${ALGORITHM}$${PBKDF2_ITERATIONS}$${bufToHex(salt)}$${bufToHex(new Uint8Array(bits))}`;
 }
 
 /** Unbekannte Scopes werden verworfen, statt sie ungeprüft zu speichern. */
@@ -174,7 +190,7 @@ Deno.serve(async (req) => {
       }
 
       const plainKey = generateApiKey();
-      const keyHash = await peppered(plainKey);
+      const keyHash = await hashNewKey(plainKey);
       const keyPrefix = plainKey.slice(0, DISPLAY_PREFIX_LEN);
       const scopes = sanitizeScopes(body.scopes);
       const expiresAt = expiryFromDays(body.expires_in_days);

@@ -1,5 +1,6 @@
-import crypto from 'crypto';
+import { webcrypto } from 'crypto';
 import { supabase } from './supabase.js';
+import { pepper, verifyAgainstStored } from './key-hash.js';
 
 export interface ApiKey {
   id: string;
@@ -20,51 +21,25 @@ export interface KeyValidationResult {
   error?: string;
 }
 
-/** Mindestlänge des Peppers — kurz genug geraten ist so gut wie keiner. */
-const MIN_PEPPER_LENGTH = 32;
-
-function pepper(): string {
-  const secret = process.env.MCP_KEY_PEPPER ?? '';
-  if (secret.length < MIN_PEPPER_LENGTH) {
-    // Bewusst ein Fehler statt eines Rückfalls auf einen ungepfefferten Hash:
-    // ein stiller Rückfall erzeugte zwei unvereinbare Schemata und entwertete
-    // den Schutz, ohne dass es jemandem auffiele.
-    throw new Error(
-      `MCP_KEY_PEPPER fehlt oder ist kürzer als ${MIN_PEPPER_LENGTH} Zeichen — Key-Prüfung nicht möglich.`,
-    );
-  }
-  return secret;
-}
-
-/**
- * Gepfefferter Schlüssel-Hash: HMAC-SHA-256 über den Key, verschlüsselt mit
- * einem serverseitigen Geheimnis.
- *
- * Muss byte-identisch zur Berechnung in der Edge Function
- * `mcp-api-key-manager` bleiben — sonst validiert kein einziger Key. Ein Test
- * rechnet beide Seiten gegeneinander.
- *
- * **Warum HMAC und nicht scrypt/argon2:** Der Key ist kein menschliches
- * Passwort, sondern ein Zufallstoken mit 256 Bit Entropie — Brute-Force ist
- * nicht das Angriffsszenario, gegen das ein langsames KDF hier schützen würde.
- * Der Hash läuft zudem bei *jedem* Request; ein absichtlich teures Verfahren
- * wäre an dieser Stelle ein DoS-Verstärker, weil jeder gut geformte Rateversuch
- * Rechenzeit erzwingt.
- *
- * Der Pepper leistet, worauf es hier ankommt: Wer nur die Datenbank erbeutet,
- * kann geratene Keys nicht offline gegen die gespeicherten Hashes prüfen — dazu
- * bräuchte er zusätzlich das Geheimnis, das ausschließlich in der Umgebung von
- * Server und Edge Function liegt.
- */
-export function hashApiKey(key: string): string {
-  return crypto.createHmac('sha256', pepper()).update(key, 'utf8').digest('hex');
-}
+/** Präfix + 8 Hex-Zeichen — genau das, was in `key_prefix` gespeichert ist. */
+const DISPLAY_PREFIX_LEN = 'rsmcp_'.length + 8;
 
 /**
  * Prüft einen API-Key gegen die Datenbank.
  *
  * Läuft bei jedem Request durch die Auth-Middleware. Der Klartext-Key verlässt
- * diese Funktion nie — verglichen wird ausschließlich der Hash.
+ * diese Funktion nie.
+ *
+ * **Zwei Stufen, und die Reihenfolge ist der Punkt.** Zuerst wird über das
+ * nicht geheime Präfix vorausgewählt — eine indizierte Suche, die nichts
+ * kostet. Erst für die so gefundenen Kandidaten läuft die teure Ableitung
+ * (~137 ms, siehe `key-hash.ts`). Wer kein gültiges Präfix trifft, erhält null
+ * Zeilen und erzeugt keine einzige KDF-Runde; ein teures Verfahren an einem
+ * unauthentifizierten Endpunkt wäre sonst ein DoS-Verstärker.
+ *
+ * Die Datenbank entscheidet nicht mehr über die Gültigkeit — sie kann es
+ * nicht, weil der Pepper nur hier vorliegt. Sie liefert Kandidaten, der
+ * Vergleich geschieht in diesem Prozess und laufzeitkonstant.
  */
 export async function validateApiKey(apiKey: string): Promise<KeyValidationResult> {
   if (!apiKey.startsWith('rsmcp_') || apiKey.length < 20) {
@@ -72,25 +47,34 @@ export async function validateApiKey(apiKey: string): Promise<KeyValidationResul
   }
 
   try {
-    const { data, error } = await supabase.rpc('mcp_key_is_valid', {
-      p_key_hash: hashApiKey(apiKey),
+    const { data, error } = await supabase.rpc('mcp_key_candidates', {
+      p_key_prefix: apiKey.slice(0, DISPLAY_PREFIX_LEN),
     });
 
     if (error || !data || data.length === 0) {
       return { valid: false, error: 'Key not found or invalid' };
     }
 
-    const [row] = data;
-    if (!row.valid) {
-      return { valid: false, error: 'Key expired or inactive' };
+    const secret = pepper();
+    for (const row of data) {
+      if (!(await verifyAgainstStored(apiKey, secret, row.key_hash, webcrypto.subtle))) {
+        continue;
+      }
+      // Ablauf und Widerruf werden erst NACH dem Nachweis gemeldet. Andersherum
+      // verriete die Antwort, dass ein Präfix zu einem echten Key gehört, ohne
+      // dass der Aufrufer ihn besitzt.
+      if (!row.valid) {
+        return { valid: false, error: 'Key expired or inactive' };
+      }
+      return {
+        valid: true,
+        keyId: row.key_id,
+        tenantId: row.tenant_id,
+        scopes: row.scopes,
+      };
     }
 
-    return {
-      valid: true,
-      keyId: row.key_id,
-      tenantId: row.tenant_id,
-      scopes: row.scopes,
-    };
+    return { valid: false, error: 'Key not found or invalid' };
   } catch (err) {
     console.error('API key validation error:', err);
     return { valid: false, error: 'Validation failed' };

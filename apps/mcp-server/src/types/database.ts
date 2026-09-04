@@ -191,15 +191,19 @@ export interface Database {
           on_hold: boolean;
         }>;
       };
-      mcp_key_is_valid: {
+      // Liefert Kandidaten zum Präfix, nicht das Urteil: Die Gültigkeit des
+      // Keys kann die Datenbank nicht entscheiden, weil der Pepper nur in der
+      // Serverumgebung liegt. `valid` betrifft allein Ablauf und Widerruf.
+      mcp_key_candidates: {
         Args: {
-          p_key_hash: string;
+          p_key_prefix: string;
         };
         Returns: Array<{
           valid: boolean;
           key_id: string;
           tenant_id: string;
           scopes: string[];
+          key_hash: string;
         }>;
       };
       mcp_log_usage: {

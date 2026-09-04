@@ -1,15 +1,17 @@
 -- MCP API Keys Management
 --
--- Database-backed API key storage for MCP Server authentication.
--- Keys are hashed (SHA256) — only hash is stored, never the plain key.
--- Supports key rotation, expiration, scope management, and usage tracking.
+-- Speicherung der API-Keys des MCP Servers. Abgelegt wird nie der Klartext,
+-- sondern ein PBKDF2-SHA512-Ableitungswert mit key-eigenem Salt und einem
+-- serverseitigen Pepper.
+--
+-- Unterstützt Rotation, Ablauf, Scopes und Nutzungsprotokoll.
 
 -- ─── 1. MCP API Keys Table ────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS public.mcp_api_keys (
     id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id       UUID NOT NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
-    key_prefix      TEXT NOT NULL,                        -- First 8 chars (unencrypted, for UI)
-    key_hash        TEXT NOT NULL UNIQUE,                 -- SHA256 hash (stored)
+    key_prefix      TEXT NOT NULL,                        -- rsmcp_ + 8 Hex-Zeichen, nicht geheim
+    key_hash        TEXT NOT NULL UNIQUE,                 -- pbkdf2-sha512$<iter>$<salt-hex>$<hash-hex>
     name            TEXT,                                 -- User-friendly name (e.g. "Hermes Integration")
     scopes          TEXT[] NOT NULL DEFAULT ARRAY['evidence.read', 'governance.read'],
     created_by      UUID,
@@ -25,6 +27,11 @@ CREATE TABLE IF NOT EXISTS public.mcp_api_keys (
 
 CREATE INDEX IF NOT EXISTS idx_mcp_api_keys_tenant     ON public.mcp_api_keys(tenant_id);
 CREATE INDEX IF NOT EXISTS idx_mcp_api_keys_hash       ON public.mcp_api_keys(key_hash);
+-- Eigener Index auf key_prefix: Die Authentifizierung sucht ausschließlich
+-- darüber. Der UNIQUE-Index (tenant_id, key_prefix) hilft dabei nicht — sein
+-- führendes Feld ist tenant_id, und der Tenant steht bei der Anmeldung noch
+-- nicht fest. Ohne diesen Index liefe jede Anfrage in einen Seq Scan.
+CREATE INDEX IF NOT EXISTS idx_mcp_api_keys_prefix     ON public.mcp_api_keys(key_prefix);
 CREATE INDEX IF NOT EXISTS idx_mcp_api_keys_active     ON public.mcp_api_keys(active) WHERE active = TRUE;
 CREATE INDEX IF NOT EXISTS idx_mcp_api_keys_expires    ON public.mcp_api_keys(expires_at) WHERE expires_at IS NOT NULL;
 
@@ -64,25 +71,43 @@ CREATE POLICY "mcp_key_usage tenant can view own logs" ON public.mcp_key_usage
 
 -- ─── 4. Helper Functions ──────────────────────────────────────────────────
 
--- Check if a key is valid, active, and not expired
-CREATE OR REPLACE FUNCTION public.mcp_key_is_valid(p_key_hash TEXT)
-RETURNS TABLE (valid BOOLEAN, key_id UUID, tenant_id UUID, scopes TEXT[])
+-- Kandidaten zu einem Key-Präfix.
+--
+-- Die Datenbank entscheidet bewusst NICHT mehr über die Gültigkeit des Keys —
+-- sie kann es nicht mehr: Der gespeicherte Wert ist eine PBKDF2-Ableitung mit
+-- key-eigenem Salt, und der zugehörige Pepper liegt ausschließlich in der
+-- Umgebung des MCP Servers. Die Prüfung `key_hash = <übergebener Hash>` wäre
+-- damit sinnlos. Diese Funktion liefert deshalb die Kandidatenzeilen, der
+-- Server rechnet die Ableitung nach und vergleicht laufzeitkonstant.
+--
+-- Warum über das Präfix und nicht über den Hash: Ein teures Verfahren an einem
+-- unauthentifizierten Endpunkt wäre ein DoS-Verstärker, wenn jeder Rateversuch
+-- Rechenzeit erzwingt. Das Präfix ist nicht geheim, aber es trägt 32 Bit; wer
+-- es nicht trifft, erhält null Zeilen und kostet keine einzige KDF-Runde.
+--
+-- `key_prefix` ist nur je Tenant eindeutig, die Funktion kann also mehrere
+-- Zeilen liefern. Bei 32 Bit Präfix ist das praktisch nie der Fall, der Server
+-- behandelt es trotzdem als Liste.
+CREATE OR REPLACE FUNCTION public.mcp_key_candidates(p_key_prefix TEXT)
+RETURNS TABLE (valid BOOLEAN, key_id UUID, tenant_id UUID, scopes TEXT[], key_hash TEXT)
 LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
     SELECT
         (k.active AND (k.expires_at IS NULL OR k.expires_at > now())) AS valid,
         k.id,
         k.tenant_id,
-        k.scopes
+        k.scopes,
+        k.key_hash
     FROM public.mcp_api_keys k
-    WHERE k.key_hash = p_key_hash;
+    WHERE k.key_prefix = p_key_prefix;
 $$;
 
--- mcp_key_is_valid prüft Keys, bevor der Aufrufer einen Tenant nachweisen kann —
--- deshalb SECURITY DEFINER. Damit ist die Funktion aber auch ein Orakel für
--- gestohlene Hashes: Ausführung bleibt dem service_role vorbehalten (MCP Server),
--- anon/authenticated dürfen nicht raten.
-REVOKE ALL ON FUNCTION public.mcp_key_is_valid(TEXT) FROM PUBLIC, anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.mcp_key_is_valid(TEXT) TO service_role;
+-- mcp_key_candidates gibt Ableitungswerte heraus und läuft, bevor der Aufrufer
+-- einen Tenant nachweisen kann — deshalb SECURITY DEFINER und deshalb
+-- ausschließlich für den service_role. Für anon/authenticated wäre sie ein
+-- Leck: Wer die gespeicherten Hashes kennt, kann offline angreifen, sobald er
+-- zusätzlich an den Pepper kommt.
+REVOKE ALL ON FUNCTION public.mcp_key_candidates(TEXT) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.mcp_key_candidates(TEXT) TO service_role;
 
 -- Log key usage
 CREATE OR REPLACE FUNCTION public.mcp_log_usage(

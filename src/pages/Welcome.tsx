@@ -80,8 +80,11 @@ export function Welcome() {
         void claimPendingAudit().catch(() => null);
 
         // Nach Login: ?next= auslesen und weiterleiten (z.B. /checkout/starter?pilot=true)
+        // Dieselbe Whitelist wie in finalizeAndNavigate: nur Pfade, die mit
+        // `/` beginnen und nicht mit `//` — sonst wäre `?next=//fremde.seite`
+        // ein Open Redirect direkt nach der Anmeldung.
         const nextParam = new URLSearchParams(window.location.search).get('next');
-        if (nextParam) {
+        if (nextParam && nextParam.startsWith('/') && !nextParam.startsWith('//')) {
           navigate(nextParam, { replace: true });
           return;
         }

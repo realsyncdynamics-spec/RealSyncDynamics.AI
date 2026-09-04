@@ -498,8 +498,9 @@ Behebung, Datenmodell mit RLS, drei Edge Functions, Dashboard unter
   wird noch nicht auf Cloudflare Pages hochgeladen und unter einer Domain
   veröffentlicht. **Der Publish Gate steht bereits** (§5b) — er wurde
   bewusst vor dem Pfad gebaut, den er absichert. `cloudflare-deployer` und
-  `website-domain-manager` liegen im Repo, sind aber nicht deployt; es
-  fehlen ihr Deploy und die Cloudflare-Zugangsdaten. Das ist die verbliebene Hälfte der ursprünglich größten
+  `website-domain-manager` sind **deployt** (`PRODUCTION_SET`, am 2026-09-04
+  nachgemessen); diese Stelle behauptete bis dahin das Gegenteil. Was fehlt,
+  sind allein die Cloudflare-Zugangsdaten. Das ist die verbliebene Hälfte der ursprünglich größten
   Lücke: aus dem Blueprint entsteht jetzt ein vollständiges, geprüftes
   Auslieferungsartefakt — was fehlt, ist der Upload samt Domain-Anbindung.
   Dafür sind Cloudflare-Zugangsdaten und eine Entscheidung über das

@@ -552,10 +552,15 @@ im Code, sondern eine, die kein Schreibpfad umgehen kann — auch keiner mit
 
 `siteos_blueprints.status = 'approved'` bleibt vorerst bestehen, verliert aber
 seine Bedeutung für die Veröffentlichung: Freigabe ist ab jetzt eine
-Evaluation, kein Status. Der Deployment-Pfad ist weiterhin offen
-(SITEOS_ARCHITECTURE §6); `cloudflare-deployer` und `website-domain-manager`
-liegen im Repo, sind aber nicht deployt. Das ist der beabsichtigte Zustand —
-das Gate steht vor dem Pfad und nicht umgekehrt.
+Evaluation, kein Status. Zum Deployment-Pfad (SITEOS_ARCHITECTURE §6): `cloudflare-deployer` und
+`website-domain-manager` sind **deployt** — beide stehen in `PRODUCTION_SET`
+(`src/config/production-edge-functions.ts`), am 2026-09-04 nachgemessen. Diese
+Stelle behauptete bis dahin das Gegenteil, und die Aussage war folgenreich: Bei
+P2-3 wäre daraus fast der Schluss geworden, die Richtlinienprüfung könne
+gefahrlos sofort scharf geschaltet werden, weil es nichts zu sperren gebe. Was den Pfad
+heute offen hält, sind nicht die Functions, sondern die Cloudflare-Zugangsdaten
+und die Entscheidung über das Deployment-Ziel. Das Gate stand trotzdem zuerst —
+es wurde am 2026-08-22 gebaut, bevor irgendetwas veröffentlicht werden konnte.
 
 ---
 

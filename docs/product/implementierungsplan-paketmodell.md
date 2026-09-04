@@ -2,6 +2,24 @@
 
 **Stand: 2026-08-24. Plan, noch keine Umsetzung.**
 
+> **Stand der Umsetzung, 2026-09-01.** Gemessen am Repo, nicht am Plan:
+>
+> | AP | Stand | Wo |
+> |---|---|---|
+> | AP1 Namensraum | umgesetzt (2026-08-30) | `20260830000000_canonical_entitlement_vocabulary.sql` |
+> | AP2 Paketumbau | umgesetzt (2026-08-24) | `docs/product/ap2-paketumbau.md` |
+> | AP3 Legacy | mittelbar — der generierte Katalog deaktiviert alles außerhalb der Quelle; kein eigener, kommentierter Schritt | `*_canonical_plan_catalog.sql` |
+> | AP4 Grace Period | umgesetzt (2026-08-29) | `20260829000000_grace_period.sql` |
+> | AP5 Stripe-Prices | **Schema da, Prices fehlen** — Betreiberschritt mit Freigabe | `docs/product/addon-booking.md` §3 |
+> | AP6 Buchung | umgesetzt | `supabase/functions/subscription-addons`, Webhook `syncAddonItems` |
+> | AP7 „Mein Plan" | umgesetzt | `src/features/market/MyPlanSection.tsx` |
+> | AP8 Abhängigkeiten | umgesetzt | `entitlement_dependencies`, `ENTITLEMENT_DEPENDENCIES` |
+> | AP9 Durchsetzung | Welle 1 und 2 umgesetzt, Welle 3 offen | `docs/product/addon-booking.md` §1.6, §6.5 |
+> | AP10 Preis-Konsumenten | umgesetzt (2026-08-30/31) | CLAUDE.md §10 |
+> | AP11 Aufräumen | offen, Fragepflicht | — |
+>
+> Hergang, Vertrag und offene Entscheidungen: `docs/product/addon-booking.md`.
+
 Verbindliche Spezifikation: `docs/product/zielzustand-paketmodell.md` (Commit
 `28a9b1e`), ergänzt um die fünf Entscheidungen des Eigentümers vom 2026-08-24.
 Bestandsaufnahme: `docs/product/pricing-packaging-entscheidungsbericht.md`.

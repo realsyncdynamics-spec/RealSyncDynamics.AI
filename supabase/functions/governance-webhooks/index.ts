@@ -16,7 +16,8 @@
 // NOTE: the secret_hash is what governance-ingest reads to derive
 // the HMAC signing key — see ingest-handler delivery code.
 
-import { createClient } from 'jsr:@supabase/supabase-js@2';
+import { createClient, type SupabaseClient } from 'jsr:@supabase/supabase-js@2';
+import { gateFeature, EntitlementError } from '../_shared/entitlements.ts';
 import { sha256Hex, randomToken } from '../_shared/hash.ts';
 import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 
@@ -44,6 +45,25 @@ interface SupabaseAdminClient {
 }
 
 const RISK_LEVELS = ['info', 'low', 'medium', 'high', 'critical'];
+
+/**
+ * Entitlement-Gate (AP9, Welle 2): Webhooks erreichen fremde Systeme und
+ * liegen laut Quelle erst ab Growth (`webhooks.enabled`). Bis hierher prüfte
+ * die Function nur die Rolle — *wer* handelt, nicht *ob der Plan es trägt*
+ * (entitlement-reality-map.md). Gilt für Anlegen und Einschalten; Auflisten
+ * und Widerrufen bleiben frei.
+ */
+async function requireWebhooksEntitlement(admin: SupabaseAdminClient, tenantId: string): Promise<Response | null> {
+  try {
+    await gateFeature(admin as unknown as SupabaseClient, tenantId, 'webhooks.enabled');
+    return null;
+  } catch (e) {
+    if (e instanceof EntitlementError) {
+      return jsonError(403, 'ENTITLEMENT_MISSING', 'Webhooks sind im aktuellen Plan nicht enthalten (webhooks.enabled) — ab Growth.');
+    }
+    throw e;
+  }
+}
 
 Deno.serve(async (req) => {
   const preflight = handleOptions(req); if (preflight) return preflight;
@@ -98,6 +118,8 @@ async function handleCreate(admin: SupabaseAdminClient, userId: string, body: Re
   if (!(await isOwnerOrAdmin(admin, userId, tenant_id))) {
     return jsonError(403, 'FORBIDDEN', 'must be owner or admin');
   }
+  const gate = await requireWebhooksEntitlement(admin, tenant_id);
+  if (gate) return gate;
 
   const secret = 'rsd_whsec_' + randomToken(24);
   const secret_hash = await sha256Hex(secret);
@@ -143,6 +165,12 @@ async function handleToggle(admin: SupabaseAdminClient, userId: string, body: Re
   if (!row) return jsonError(404, 'NOT_FOUND', 'webhook not found');
   if (!(await isOwnerOrAdmin(admin, userId, row.tenant_id))) {
     return jsonError(403, 'FORBIDDEN', 'must be owner or admin');
+  }
+  // Einschalten braucht das Entitlement, Ausschalten nie — wer den Plan
+  // wechselt, muss seine Webhooks weiterhin stilllegen können.
+  if (enabled) {
+    const gate = await requireWebhooksEntitlement(admin, row.tenant_id as string);
+    if (gate) return gate;
   }
 
   const { error } = await admin.from('governance_webhooks')

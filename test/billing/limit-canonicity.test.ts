@@ -12,9 +12,13 @@ import { ORDERED_PLANS, PLAN_ENTITLEMENTS } from '../../shared/pricing';
  * Preisseite, `PLAN_ENTITLEMENTS['limit.*']` autorisiert. Am 2026-08-25 hat
  * der Eigentümer entschieden, welche kanonisch ist — und zwar abhängig von
  * der **Planart**: für öffentlich verkaufte Pläne die Preisseite, für
- * Vertragspläne (`availability: 'contract'`) der **Vertrag**. Für Enterprise
- * ist die Quelle damit heute unaufgelöst, weil der Vertrag dem System nicht
- * vorliegt.
+ * Vertragspläne (`availability: 'contract'`) der **Vertrag**.
+ *
+ * Am 2026-08-31 wurde nachgezogen, wie sich das ausdrücken lässt, ohne den
+ * Vertrag in die Datenbank zu holen (Option A): Auf Vertragsplänen bedeutet
+ * `-1` „das System begrenzt hier nicht, der Vertrag tut es". Die Quelle ist
+ * damit **benannt**, nicht aufgelöst — der Vertrag liegt dem System weiterhin
+ * nicht vor, und auf diesen Feldern entsteht weiterhin kein Gate.
  *
  * Die Bereinigung der 21 bestehenden Abweichungen ist eine eigene
  * Entscheidung mit Bestandskundenwirkung und bewusst noch nicht erfolgt
@@ -107,19 +111,56 @@ describe('Kontingente — plan.limits gegen PLAN_ENTITLEMENTS', () => {
     }
   });
 
-  it('weist die drei Kürzungen auf verkauften Self-Service-Plänen aus', () => {
-    // Klasse B aus `kanonische-kontingente.md` §4: Diese drei treffen aktive,
-    // selbst gebuchte Kunden. Sie dürfen nicht aus der Grundlinie fallen,
-    // ohne dass jemand die Bestandsfrage beantwortet hat.
-    const betroffen = grundlinie
+  /**
+   * Klasse B aus `kanonische-kontingente.md` §4 — am 2026-09-01 bereinigt.
+   *
+   * Bis dahin standen hier drei Kürzungen: `starter:seats` (3→1),
+   * `starter:auditReportsPerMonth` (5→2) und `growth:auditReportsPerMonth`
+   * (20→12). Der Test hielt sie fest, damit sie nicht aus der Grundlinie
+   * fallen, bevor jemand die Bestandsfrage aus §1.3 beantwortet hat.
+   *
+   * Sie ist beantwortet und die Werte sind angeglichen
+   * (`20260903050000_align_starter_growth_quota_entitlements.sql`). Gemessen
+   * am Entscheidungstag: null Starter-Abos, ein Growth-Abo auf `past_due`,
+   * sämtliche Nutzungstabellen leer, jeder Tenant mit genau einem Mitglied —
+   * die Korrektur hat niemandem etwas genommen.
+   *
+   * Der Test kehrt sich deshalb um: Auf verkauften Self-Service-Plänen darf
+   * **keine** Kürzung mehr in der Grundlinie stehen. Taucht dort wieder eine
+   * auf, ist entweder ein Wert zurückgefallen oder ein neuer Datenfehler
+   * entstanden — und dann gilt §1.3 erneut, diesmal womöglich mit echten
+   * Bestandskunden.
+   */
+  it('führt keine Kürzung mehr auf verkauften Self-Service-Plänen', () => {
+    const kuerzungen = grundlinie
       .filter((e) => e.richtung === 'kuerzung' && ['starter', 'growth'].includes(e.plan))
       .map(marke)
       .sort();
-    expect(betroffen).toEqual([
-      'growth:auditReportsPerMonth',
-      'starter:auditReportsPerMonth',
-      'starter:seats',
-    ]);
+    expect(
+      kuerzungen,
+      'Eine Kürzung auf einem verkauften Plan bedeutet: die Berechtigung liegt ' +
+        'über der Preisseite. Vor dem Angleichen ist die Bestandsfrage aus §1.3 ' +
+        'zu beantworten — nicht nachträglich.',
+    ).toEqual([]);
+  });
+
+  /**
+   * Die Gegenprobe zur Bereinigung: Die drei Paare stimmen jetzt überein.
+   * Ohne diesen Fall bliebe „keine Kürzung mehr" auch dann grün, wenn die
+   * Felder aus dem Vergleich herausfielen statt angeglichen zu werden.
+   */
+  it('gleicht die drei bereinigten Paare wertgleich ab', () => {
+    const erwartet: Array<[string, string, number]> = [
+      ['starter', 'limit.team_seats', 1],
+      ['starter', 'limit.compliance_exports_monthly', 2],
+      ['growth', 'limit.compliance_exports_monthly', 12],
+    ];
+    for (const [planKey, key, wert] of erwartet) {
+      expect(
+        PLAN_ENTITLEMENTS[planKey]?.[key as keyof (typeof PLAN_ENTITLEMENTS)[string]],
+        `${planKey}.${key} weicht von der Preisseite ab`,
+      ).toBe(wert);
+    }
   });
 
   it('weist Enterprise als unaufgelösten Vertragsfall aus', () => {
@@ -163,10 +204,18 @@ describe('Kontingente — plan.limits gegen PLAN_ENTITLEMENTS', () => {
      * „aufräumt", würde die Zeilen unten stillschweigend zur Wahrheit
      * erklären. Genau das soll hier auffallen.
      *
-     * Bis zur Entscheidung aus `enterprise-quelle-entscheidungsvorlage.md`
-     * bleibt der Wert unbestimmt. Insbesondere ist `-1` **keine** belegte
-     * Kodierung für „der Vertrag entscheidet" — das ist eine Hypothese und
-     * darf hier nicht als Semantik festgeschrieben werden.
+     * Entschieden am 2026-08-31 (Option A der
+     * `enterprise-quelle-entscheidungsvorlage.md`): `-1` ist auf
+     * Vertragsplänen jetzt die **festgelegte** Kodierung für „das System
+     * begrenzt hier nicht, der Vertrag tut es". Frühere Fassungen dieses
+     * Kommentars nannten das ausdrücklich eine unbelegte Hypothese — das
+     * war bis zur Entscheidung richtig und ist es seitdem nicht mehr.
+     *
+     * An der Aussage dieses Falls ändert die Entscheidung nichts: Der
+     * Vertrag bleibt kanonisch, `products → entitlements` bleibt für
+     * Vertragspläne eine blosse Ableitung, und auf diesen Feldern entsteht
+     * weiterhin kein Gate. Option A hat die Quelle benannt, nicht in die
+     * Datenbank geholt.
      */
     const vertragsplaene = ORDERED_PLANS.filter((p) => p.availability === 'contract');
     expect(vertragsplaene.map((p) => p.id)).toEqual(['enterprise']);
@@ -188,5 +237,75 @@ describe('Kontingente — plan.limits gegen PLAN_ENTITLEMENTS', () => {
     const unaufgeloest = grundlinie.filter((e) => e.kanonische_quelle === 'vertrag');
     expect(unaufgeloest).toHaveLength(8);
     expect(new Set(unaufgeloest.map((e) => e.plan))).toEqual(new Set(['enterprise']));
+  });
+
+  /**
+   * Option A, festgenagelt — Entscheidung vom 2026-08-31.
+   *
+   * Auf Vertragsplänen ist `-1` die Kodierung für „das System begrenzt hier
+   * nicht, der Vertrag tut es". Diese Kodierung trägt genau so lange, wie
+   * **kein** endlicher Wert danebensteht: Ein endlicher `limit.*`-Wert wäre
+   * eine technisch durchgesetzte Obergrenze — und eine Obergrenze ist genau
+   * der Fall, den Option A nicht abbilden kann.
+   *
+   * Fällt dieser Test, ist das kein Testfehler, sondern die Meldung, dass
+   * der Auslöser für Option B (Tenant-Overrides) eingetreten ist. Der Wert
+   * gehört dann nicht hierher, sondern an den Vertragswert-Ort, den Option B
+   * schafft.
+   *
+   * Gemessen am 2026-08-31: Enterprise trägt 15 `limit.*`-Keys, alle `-1`.
+   * Kein anderer Plan hat diese Eigenschaft — Starter, Growth, Agency,
+   * Partner und Governance Launch führen überwiegend endliche Werte.
+   */
+  it('Vertragspläne tragen ausschliesslich `-1` als Kontingent', () => {
+    const vertragsplaene = ORDERED_PLANS.filter((p) => p.availability === 'contract');
+    expect(vertragsplaene.map((p) => p.id)).toEqual(['enterprise']);
+
+    for (const plan of vertragsplaene) {
+      const satz = PLAN_ENTITLEMENTS[plan.planKey] ?? {};
+      const kontingente = Object.entries(satz).filter(([key]) => key.startsWith('limit.'));
+
+      expect(
+        kontingente.length,
+        `${plan.planKey} führt keine Kontingent-Keys — dann prüft dieser Test nichts.`,
+      ).toBeGreaterThan(0);
+
+      const endlich = kontingente.filter(([, wert]) => wert !== -1);
+      expect(
+        endlich,
+        `${plan.planKey}: endliche Kontingente auf einem Vertragsplan — ` +
+          `${endlich.map(([k, v]) => `${k}=${v}`).join(', ')}. ` +
+          `Unter Option A ist eine technisch durchgesetzte Obergrenze nicht vorgesehen; ` +
+          `sie gehört in einen Vertragswert-Ort (Option B), nicht in PLAN_ENTITLEMENTS.`,
+      ).toEqual([]);
+    }
+  });
+
+  /**
+   * Die Gegenprobe: Die Kodierung sagt nur auf VERTRAGSplänen „der Vertrag
+   * entscheidet". Auf Self-Service-Plänen heisst `-1` weiterhin schlicht
+   * „unbegrenzt" — dort gibt es keinen Vertrag, der etwas anderes regeln
+   * könnte. Ohne diese Abgrenzung liesse sich jedes `-1` irgendwo im
+   * Katalog nachträglich zu einer Vertragszusage umdeuten.
+   */
+  it('deutet `-1` nur auf Vertragsplänen als Vertragsvorbehalt', () => {
+    const selfService = ORDERED_PLANS.filter((p) => p.availability !== 'contract');
+    const mitUnbegrenzt = selfService.filter((p) =>
+      Object.entries(PLAN_ENTITLEMENTS[p.planKey] ?? {})
+        .some(([key, wert]) => key.startsWith('limit.') && wert === -1),
+    );
+
+    // Heute trifft das Agency (`limit.evidence_storage_gb`). Der Fall ist
+    // erlaubt und bedeutet dort „unbegrenzt", nicht „vertraglich geregelt".
+    for (const plan of mitUnbegrenzt) {
+      expect(plan.availability).not.toBe('contract');
+      const zeilen = grundlinie.filter((e) => e.plan === plan.id);
+      for (const zeile of zeilen) {
+        expect(
+          zeile.kanonische_quelle,
+          `${plan.id} ist kein Vertragsplan — seine Quelle bleibt die Preisseite.`,
+        ).toBe('preisseite');
+      }
+    }
   });
 });

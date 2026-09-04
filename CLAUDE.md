@@ -78,8 +78,8 @@ Menschen · Unternehmen · KI-Agenten · Daten · Entscheidungen.
 
 **Primär: Supabase Cloud (EU / Frankfurt)**
 - PostgreSQL 17 (Live-Projekt, Stand 2026-08-16)
-- **179 Edge Functions** im Repo (`supabase/functions/`, Deno/V8; `_shared` ist Bibliothek, keine Function) — alle deployt, und alle 179 deployten haben ein Verzeichnis. Deckungsgleich in beide Richtungen, Stand 2026-08-30, siehe §5
-- **300 Migrations** (`supabase/migrations/`) — alle verbucht; zu den zwei nachgezogenen Out-of-Band-Migrationen siehe §5
+- **180 Edge Functions** im Repo (`supabase/functions/`, Deno/V8; `_shared` ist Bibliothek, keine Function). 179 davon deployt und deckungsgleich mit Produktion (Stand 2026-09-01, siehe §5); `subscription-addons` ist neu und wartet auf den nächsten `deploy.yml`-Lauf — bis dahin steht sie in `UNBACKED_CALLERS`
+- **308 Migrations** (`supabase/migrations/`) — 305 verbucht, gemessen am 2026-09-01 gegen den Ledger; die drei vom 2026-09-04 (`addon_booking_schema`, `canonical_plan_catalog`, `workflows_current_plans`) kommen mit dem nächsten Deploy. Zu den zwei nachgezogenen Out-of-Band-Migrationen siehe §5
 - RLS auf allen App-Tabellen · Realtime Subscriptions
 
 **Node/TypeScript-Services** (containerisiert — **kein Go im Repo**)
@@ -220,6 +220,36 @@ Jeder Agent braucht vier Dimensionen — fehlt eine, ist er nicht governance-fä
 > verschieden, weil `_shared` im Repo keine Function ist und dafür eine
 > Function live läuft, die es im Repo nie gab. Wer nur `wc -l` vergleicht,
 > übersieht das. Deshalb ab jetzt: `comm -23` **und** `comm -13`.
+>
+> **Wirksam in Produktion, nicht nur im Repo**: `deploy.yml` lief am
+> 2026-08-30 um 21:58 UTC grün auf `1533cf5` (Run 33337859594). Damit sind
+> die drei Migrationen aus PR #1172 angewandt — die beiden nachgezogenen
+> Out-of-Band-Versionen aus ¹ und
+> `20260831030000_integrations_catalog_read_access` aus ³. Nachgezogen heißt
+> nicht angekommen; dies ist der Beleg für Letzteres.
+>
+> **Zur Sperre durch die Migrations-Drift**: Sie bestand vom 2026-08-26 bis
+> zum 2026-08-30, blieb aber folgenlos — in diesem Fenster berührte kein
+> Commit `supabase/**`, also wurde `deploy.yml` gar nicht ausgelöst.
+> Blockiert, aber niemand ist hineingelaufen. Der letzte grüne Lauf davor
+> war am 2026-08-25 um 18:36 UTC auf `2e60a21`.
+>
+> **Nachmessung 2026-09-01**, `main` @ `310ab0e`, gleiche Methode und gleiche
+> Quelle wie oben. Repo und Produktion sind weiterhin deckungsgleich — auf
+> höheren Zahlen, weil seither fünf Migrationen dazugekommen sind:
+>
+> | | Repo (`main`) | in Produktion | Lücke |
+> |---|---|---|---|
+> | Migrationen | 305 Dateien | **305** verbucht (neueste `20260902000100`) | **0** |
+> | Edge Functions | 179 (+ `_shared`) | **179** aktiv | **0** |
+> | Tabellen in `public` | — | 354 | — |
+> | davon mit RLS | — | **354 / 354** | **0** |
+> | Views | — | 19 | — |
+>
+> `comm -23` und `comm -13` sind beide leer, bei Migrationen wie bei
+> Functions. Die Zahlen in §2 und §7 sind damit nicht geschätzt, sondern
+> nachgezogen. Dass Repo und Ledger beide 305 zeigen, war dabei nicht der
+> Beleg — der Mengenvergleich war es.
 >
 > ¹ **Zwei Migrationen sind live, ohne dass es je eine Datei gab**:
 > `20260825204748_fix_websites_authenticated_crud_rls` (2026-08-25) und
@@ -362,6 +392,39 @@ Jeder Agent braucht vier Dimensionen — fehlt eine, ist er nicht governance-fä
 > `supabase functions list` prüfen.
 
 - **Audit** (95%) — DSGVO-Scan, Recheck-Cron, Email-Drip, Share-Token
+  > ⚠️ **Ausfall 2026-08-11 bis 2026-08-30, behoben.** `gdpr-audit/index.ts`
+  > rief sechs nirgends definierte Funktionen auf — im Repo **und** in
+  > Produktion (Version 46). Jeder `/audit`-Aufruf endete in HTTP 500;
+  > `gdpr_audits` blieb 18 Tage bei 159 Zeilen.
+  >
+  > **Ursache — geschlossen.** Ein Gate gab es, aber es konnte diesen Fall
+  > nicht sehen: `check:edge-syntax` ist bewusst ein reiner Parse-Check, und
+  > eine Datei, die `runChecks(...)` aufruft, ohne dass `runChecks`
+  > existiert, ist syntaktisch einwandfrei. Die Lücke lag **oberhalb** des
+  > Syntax-Gates, bei der Auflösung der Namen — geschlossen durch
+  > `check:edge-refs` (`f94ebf4`).
+  >
+  > **Zwei unabhängige Rekonstruktionen.** Der Ausfall wurde zweimal
+  > behoben: `2305e3f` (auf `main`, live) und PR #1167. Aufgelöst nach
+  > Entscheid des Eigentümers vom 2026-08-31 — **Struktur von `2305e3f`
+  > (`gdpr-audit/checks.ts`), Vertrag aus der Messung**: Befund-Vokabular,
+  > Severities und Scoring-Gewichte (25/12/6/2/0) stammen aus den 159
+  > historischen Audits, festgehalten in
+  > `test/fixtures/gdpr-audit-production-contract.json`.
+  >
+  > Die zweite Fassung wich in 12 Codes ab und liess 19 weg (darunter alle
+  > sieben Unterseiten-Prüfungen). Schwerer wog ein stiller Fehler: Sie gab
+  > die Fakten **flach** (`{'consent.banner.detected': true}`) statt
+  > verschachtelt zurück. `getFact()` in `_shared/rules/evaluator.ts` zerlegt
+  > den Pfad an den Punkten — flach liefert das `undefined`, und die
+  > **gesamte Rule Engine (14 Regeln, DSGVO und AI Act) schwieg**, ohne dass
+  > etwas bricht. Beleg: 61 von 159 historischen Audits trugen einen
+  > `rule:`-Befund, die drei vom 2026-08-31 keinen einzigen.
+  >
+  > **Regel daraus**: Befund-Codes, Severities und Scoring-Gewichte sind
+  > versionsrelevant. Wer sie ändert, entscheidet über die Vergleichbarkeit
+  > aller bisherigen Kundenberichte — das gehört entschieden, nicht
+  > nebenbei. Hergang: `docs/product/free-scan-recovery.md`.
 - **Policy Packs** (100%) — DSGVO, EU AI Act, branchenspezifisch; Auto-Empfehlung nach Tenant-Branche
 - **Evidence Vault** (90%) — Ingestion, Retrieval, Hash-Chain-Verifizierung, PDF/JSON-Export, Compliance-Hold
 - **Governance Runtime** (85%) — Sentinel-Loop, SLO-Tracking, Auto-Mapping (Asset → Control-Status), Incident-Dispatch
@@ -442,8 +505,8 @@ RealSyncDynamics.AI/
 ├── shared/
 │   └── pricing.ts     Single Source of Truth für Produkt-, Preis- und Berechtigungsmodell
 ├── supabase/
-│   ├── functions/     179 Edge Functions (einziger Ort für Service-Role-Keys)
-│   └── migrations/    300 Migrations
+│   ├── functions/     180 Edge Functions (einziger Ort für Service-Role-Keys)
+│   └── migrations/    308 Migrations
 ├── apps/
 │   └── agent-runtime/ Agent Runtime (Node/TS, Docker)
 ├── services/          runtime-core · evidence-runtime · openclaw-agent · playwright-scanner
@@ -532,15 +595,40 @@ Runtime-Limits, Module, Berechtigungen, Feature-Listen und Add-ons.
   Pläne gilt `plan.limits.*` (die Preisseite), für Vertragspläne
   (`availability: 'contract'`, heute Enterprise) gilt **der Vertrag**.
   `PLAN_ENTITLEMENTS['limit.*']` ist in beiden Fällen nur eine Ableitung.
-  Für Enterprise ist die Quelle heute **unaufgelöst** — der Vertrag liegt dem
-  System nicht vor, und es gibt keine Tabelle für tenant-spezifische Werte;
-  dort ist kein Gate erlaubt. Beide Seiten
-  weichen heute in 21 von 38 Paaren ab; `npm run check:limits` verhindert
+  Seit dem **2026-08-31** ist die Kodierung für Vertragspläne festgelegt
+  (Option A): dort bedeutet `-1` bei einem `limit.*`-Key **„das System
+  begrenzt hier nicht, der Vertrag tut es"**. Die Quelle ist damit *benannt*,
+  nicht *aufgelöst* — der Vertrag liegt dem System weiterhin nicht vor, es
+  gibt keine Tabelle für tenant-spezifische Werte, und auf diesen acht
+  Feldern ist **kein Gate erlaubt**. Ein Vertragsplan trägt deshalb
+  ausschließlich `-1`; ein endlicher Wert wäre eine technisch durchgesetzte
+  Obergrenze, die unter A nicht abbildbar ist. Der erste Enterprise-Vertrag
+  mit vereinbarter Obergrenze ist der benannte Auslöser für Option B
+  (Tenant-Overrides) — festgehalten in
+  `test/billing/limit-canonicity.test.ts`. Beide Seiten
+  weichen heute in 18 von 38 Paaren ab; `npm run check:limits` verhindert
   **neue** Divergenzen (Ratsche, Grundlinie in
-  `scripts/limit-canonicity-baseline.json`). **Kein neues Enforcement gegen
+  `scripts/limit-canonicity-baseline.json`). Es waren 21 — die drei Kürzungen
+  auf Starter und Growth sind am 2026-09-01 an die Preisseite angeglichen
+  worden, nachdem gemessen war, dass sie niemanden treffen (§4 Klasse B). **Kein neues Enforcement gegen
   einen divergierenden Wert**, solange er nicht bereinigt ist — und keine
-  stillschweigende Kürzung bei Bestandskunden. Diff und offene
-  Enterprise-Frage: `docs/product/kanonische-kontingente.md`.
+  stillschweigende Kürzung bei Bestandskunden. Diff und Entscheidung:
+  `docs/product/kanonische-kontingente.md` §1.2a,
+  `docs/product/enterprise-quelle-entscheidungsvorlage.md`.
+
+- **Add-ons** (seit 2026-09-01) sind Positionen des Stripe-Abos: `AddOn.grants`
+  in `shared/pricing.ts` nennt die Keys, der Generator erzeugt daraus
+  `products`/`product_entitlements`, die Function `subscription-addons` bucht
+  und kündigt, `tenant_entitlements()` **addiert** Kontingente aus Add-on-Grants
+  auf den Plan. Buchbar ist ein Add-on erst, wenn `plan_addons.stripe_price_id`
+  eine echte Price trägt — das ist ein Betreiberschritt mit Freigabe. Vertrag
+  und offene Entscheidungen: `docs/product/addon-booking.md`.
+- **Dashboard-Gates** kommen aus **einem** Register:
+  `src/core/access/featureAccess.ts` (Route → Entitlement-Key), geprüft von
+  `RouteEntitlementGate` in der `GovernanceBrowserShell`. Neue bezahlte
+  Fläche = ein Eintrag dort; `test/core/feature-access.test.ts` hält Register,
+  `App.tsx` und Navigation zusammen. Kein Gate gegen einen divergierenden
+  Kontingent-Wert.
 
 Vollständige Regeln: `docs/product/pricing-governance.md`
 
@@ -909,6 +997,134 @@ unberührt; das Abzeichen nutzt die im Repo vorhandene Amber-Warnoptik. Der
 Rückfall selbst bleibt, was er ist: Übergang, kein Dauerzustand — sobald der
 anonyme Pfad überall ausgerollt ist, entfallen Sperre und Abzeichen mit ihm.
 Gesichert durch `test/siteos/claim-moves-not-rebuilds.test.ts`.
+
+**2026-09-01 — Vorschau-Inhalte: nichts behaupten, was der Scan nicht hergibt**
+
+Anlass war ein Screenshot des Eigentümers: Die Live-Vorschau einer
+AI-Governance-Plattform warb mit **„Termin anfragen"** und versprach unter
+„Warum wir" eine **„Persönliche Betreuung — Feste Ansprechpartner statt
+Warteschleife."** Urteil: „Das ist komplett am Ziel vorbei."
+
+Zu Recht. Beide Texte standen fest in `blueprint/synthesize.ts` (Zeilen 157
+und 177–181) und gingen unverändert an **jeden** Kunden **jeder** Branche.
+Sie stammten nicht aus der gescannten Website. Für nahezu jeden Empfänger
+waren sie damit falsch.
+
+Auf die Fragepflicht nach §10.3 hat der Eigentümer entschieden: **„Ja — aus
+dem Scan speisen"**, ausdrücklich mit der Maßgabe „wo der Scan nichts
+hergibt, bleibt der Block leer statt falsch."
+
+Umfang — und **nur** dieser:
+
+| Was | Vorher | Nachher |
+|---|---|---|
+| Hero-CTA | fest „Termin anfragen" | folgt dem Ziel im Seitenplan: `/termin` → „Termin anfragen", `/reservierung` → „Tisch reservieren", `/anfrage` → „Anfrage senden", sonst „Kontakt aufnehmen" |
+| Features-Block | drei erfundene Sätze | `brief.highlights` aus dem Scan; ohne Beleg leer und als `requiresRealContent` gemeldet |
+| `SiteBrief` / `BriefEnrichment` | — | neues Feld `highlights` als Kanal für belegte Vorzüge |
+| `sanitizeEnrichment` | ließ das Feld fallen | reicht `highlights` durch — in **beiden** Kopien (`builder.ts`, `anonymous.ts`) |
+
+**Der Hash-Preis ist bekannt und akzeptiert**: `synthesize.ts` ist
+deterministisch und gehasht („gleicher Brief ⇒ gleicher Blueprint ⇒ gleicher
+Hash"). Jeder neu erzeugte Blueprint bekommt damit einen anderen Hash als
+vor dem 2026-09-01. Bestehende Artefakte bleiben unangetastet — sie werden
+nicht neu gebaut. Der Determinismus selbst bleibt: gleicher Brief ergibt
+weiterhin byte-gleiches Ergebnis, geprüft.
+
+**Was der Scan heute wirklich hergibt — gemessen, nicht vermutet**:
+`handlers/discover.ts:77` bildet `services` als
+`unique([...headings, ...extractServiceLikeText(visibleText)])`. Die
+Überschriften sind also **vollständig in den Leistungen enthalten**; eine
+zweite, unabhängige Quelle für „Warum wir" existiert im Scan nicht. Der
+Block bleibt deshalb heute in der Regel leer — das ist der freigegebene
+Zustand, nicht ein unfertiger. Der Kanal steht bereit, sobald Redaktion
+oder ein Content-Agent echte Vorzüge liefert.
+
+**Regel daraus**: Ein Vorschau-Block, der etwas über ein fremdes Unternehmen
+behauptet, braucht eine Quelle. Ohne Quelle bleibt er leer und trägt
+`requiresRealContent: true` — dieselbe Behandlung wie `testimonials`, und
+aus demselben Grund (§ 5 UWG). Plausibel klingender Fülltext ist keine
+Vorschau, sondern eine Behauptung, für die niemand einstehen kann.
+
+Gesichert durch `test/siteos/preview-content-honesty.test.ts` — die Prüfung
+fragt nach der **Herkunft** des Textes, weil erfundener Text technisch
+genauso aussieht wie belegter und deshalb von keinem Render- oder
+Typ-Test gefunden wird. Die beanstandeten Formulierungen sind dort
+namentlich gesperrt.
+
+**2026-09-01 (2) — Zusammenfassung im Brief: sachlich statt werbend**
+
+Nachtrag zur Freigabe oben, gleiche Klasse an anderer Stelle. `parseBrief`
+setzte die Zusammenfassung auf „… — persönliche Beratung, transparente
+Leistungen und kurze Wege." Sie wird zur **Meta-Description und zur
+Hero-Unterzeile**, landet also im ausgelieferten Dokument und im
+Suchindex — aus einem Prompt allein ist keine der drei Zusagen belegbar.
+
+Auf die Fragepflicht nach §10.3 hat der Eigentümer entschieden: **„Ja — nur
+Zusammenfassung"**.
+
+| Was | Vorher | Nachher |
+|---|---|---|
+| `parseBrief`-Zusammenfassung | „Zahnarztpraxis in Hamburg — persönliche Beratung, transparente Leistungen und kurze Wege." | „Zahnarztpraxis in Hamburg." |
+| `defaultServices` | erfindet Leistungen je Branche | **unverändert** — ausdrücklich nicht freigegeben |
+
+Leer wäre keine Option gewesen: Dann griffe `seo.missing-description`. Eine
+Längenregel gibt es nicht — geprüft wird allein auf „vorhanden", am Code
+nachgesehen (`analysis/blueprint.ts`, `analysis/observation.ts` führen nur
+`missing-` bzw. `not-delivered`-Codes). `renameInSummary` greift weiter:
+Ein echter Firmenname ersetzt weiterhin den führenden Katalogbegriff.
+Der Scan-Pfad ist unberührt — `mergeBrief` ersetzt die Zusammenfassung
+ohnehin durch die echte Beschreibung der Website.
+
+**Weiterhin offen, nicht freigegeben**: `defaultServices` in `brief.ts`
+erfindet die Leistungen je Branche (für eine Zahnarztpraxis „Prophylaxe,
+Zahnerhaltung, Implantologie …"). Im Scan-Pfad überschreibt `mergeBrief`
+sie mit echten Daten; im reinen Prompt-Pfad bleiben sie stehen. Bewusst
+stehengelassen — der Leistungsblock ist zentral, und ohne ihn wäre die
+Startseite im Prompt-Pfad deutlich leerer. Gehört entschieden, nicht
+nebenbei geändert.
+
+**2026-09-01 (3) — Hero-Überschrift: langer einteiliger Name wurde abgeschnitten**
+
+Gefunden beim Nachstellen der reparierten Vorschau **mit einem echten
+Browser** — nicht im Code, nicht in einem Test. Die Layoutschicht begrenzt
+die Hero-Überschrift auf `max-width:16ch` und der Hero trägt
+`overflow:hidden`. Ein Firmenname ohne Leerzeichen ist aber ein einziges
+Wort, und ein Wort bricht bei `overflow-wrap:normal` nicht: Der Überhang
+wurde nicht umgebrochen, sondern **weggeschnitten**.
+
+Gemessen in Chromium bei 1280 px: „RealSyncDynamics.AI" ergab **648 px Text
+in einem 570 px breiten Kasten — 78 px fehlten.** Bei Markennamen und
+Domains ist der einteilige Name der Normalfall, nicht die Ausnahme.
+
+Der Fehler ist **älter als PR #1194**: `BuildStudioPage` und
+`siteos/preview.ts` rendern seit jeher `showcase` und waren gleich
+betroffen. Der PR hat ihn nur sichtbar gemacht.
+
+Auf die Fragepflicht nach §10.3: **„Ja — break-word ergänzen"**.
+
+| Was | Vorher | Nachher |
+|---|---|---|
+| `[id*="--hero--"]>h1,>h2` | `max-width:16ch` ohne Umbruchregel | zusätzlich `overflow-wrap:break-word` |
+
+**Warum `break-word` und nicht `anywhere`**: Der erste Versuch war
+`anywhere` — die Messwerte sahen gut aus (kein Überlauf), das **Bild aber
+nicht**. `anywhere` zählt beim Ermitteln der Mindestbreite mit und ließ die
+Textspalte im Hero-Raster von 570 px auf 226 px zusammenfallen; die
+Überschrift brach dann dreizeilig mitten im Wort. `break-word` bricht erst,
+wenn es sonst überliefe, und lässt die Spaltenbreite in Ruhe. Auf 1280,
+768 und 390 px geprüft: Spaltenbreite unverändert, nichts abgeschnitten,
+kein Seitenüberlauf.
+
+**Lehre, und sie ist die eigentliche**: Zwei Fehler dieser Sitzung waren
+weder im Code noch in 3990 grünen Tests zu sehen — erst das gerenderte Bild
+hat sie gezeigt. Und beim Fix hätten die Messwerte allein zur falschen
+Lösung geführt. Bei einer Änderung an der Vorschau-Optik gehört ein Blick
+auf das tatsächliche Rendering dazu, nicht nur eine grüne Suite.
+
+Gesichert durch `test/siteos/hero-longword.test.ts`. Geprüft wird am CSS,
+nicht am Pixel: Ein Pixel-Test hinge an der Schriftart des CI-Runners,
+während die fehlerhafte Kombination — Begrenzung plus `overflow:hidden`
+ohne Umbruchregel — eine Eigenschaft des Stylesheets ist.
 
 #### Faustregel
 

@@ -39,6 +39,7 @@ import {
   planByKey,
   planGrants,
   type BookableModule,
+  type EntitlementKey,
   type PlanId,
 } from '@/shared/pricing';
 
@@ -94,9 +95,26 @@ export function isModuleActive(planId: PlanId | string | null | undefined, modul
  * und Partner unverändert.
  */
 export function cheapestPlanFor(module: BookableModule): PlanId | null {
+  // Ein Modul ohne `unlocks` schaltet nichts frei — siehe isModuleActive().
+  if (module.unlocks.length === 0) return null;
+  return cheapestPlanForKeys(module.unlocks);
+}
+
+/**
+ * Dieselbe Regel für eine beliebige Menge von Entitlement-Keys.
+ *
+ * Der Modul-Hub (`/app/modules`) beantwortet für einzelne Capabilities
+ * dieselbe Frage — „ab welchem Plan gibt es das?" — ohne ein
+ * `BookableModule` in der Hand zu haben. Die Antwort darf dort nicht ein
+ * zweites Mal hergeleitet werden: Der Marketplace ist die kommerzielle
+ * Wahrheit, der Hub liest sie hier ab. Damit gilt die Regel „stillgelegte
+ * Pläne überspringen" für beide Flächen automatisch.
+ */
+export function cheapestPlanForKeys(keys: readonly EntitlementKey[]): PlanId | null {
+  if (keys.length === 0) return null;
   for (const planId of PLAN_ORDER) {
     if (!isPlanSelectable(planId)) continue;
-    if (isModuleActive(planId, module)) return planId;
+    if (keys.every((key) => planGrants(planId, key))) return planId;
   }
   return null;
 }

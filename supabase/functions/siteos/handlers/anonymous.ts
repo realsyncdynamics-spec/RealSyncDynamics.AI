@@ -808,14 +808,20 @@ function isExpired(session: { row: { expires_at: string } }): boolean {
   return new Date(session.row.expires_at).getTime() <= Date.now();
 }
 
-function sanitizeEnrichment(raw: unknown): { name?: string; summary?: string; services?: string[]; locality?: string | null } | undefined {
+function sanitizeEnrichment(raw: unknown): { name?: string; summary?: string; services?: string[]; highlights?: string[]; locality?: string | null } | undefined {
   if (!raw || typeof raw !== 'object') return undefined;
   const v = raw as Record<string, unknown>;
-  const out: { name?: string; summary?: string; services?: string[]; locality?: string | null } = {};
+  const out: { name?: string; summary?: string; services?: string[]; highlights?: string[]; locality?: string | null } = {};
   if (typeof v.name === 'string') out.name = v.name.trim().slice(0, 120);
   if (typeof v.summary === 'string') out.summary = v.summary.trim().slice(0, 600);
   if (Array.isArray(v.services)) {
     out.services = v.services.filter((s): s is string => typeof s === 'string').map((s) => s.trim().slice(0, 80)).slice(0, 12);
+  }
+  // Muss dieselben Felder durchlassen wie die Zwillingsfunktion in
+  // builder.ts — sonst baut der anonyme Pfad eine andere Website als der
+  // angemeldete, und das faellt erst beim Claim auf.
+  if (Array.isArray(v.highlights)) {
+    out.highlights = v.highlights.filter((s): s is string => typeof s === 'string').map((s) => s.trim().slice(0, 120)).slice(0, 6);
   }
   if (v.locality === null || typeof v.locality === 'string') {
     out.locality = v.locality === null ? null : String(v.locality).trim().slice(0, 80);

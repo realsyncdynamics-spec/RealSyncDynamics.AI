@@ -54,7 +54,9 @@ export const GOVERNANCE_MODULES: GovernanceModule[] = [
     route: '/app/modules',
     status: 'live',
     // Für jeden Plan sichtbar: Der Hub zeigt gerade auch gesperrte
-    // Capabilities — mit Aktivierungspfad über das zentrale Billing.
+    // Capabilities — mit dem Grund und einem Übergang in den Marketplace.
+    // Die kommerzielle Entscheidung liegt dort, nicht hier
+    // (docs/product/modular-product-experience.md §8).
     gate: { kind: 'all' },
     description: 'Capability-Übersicht: aktivieren, öffnen, upgraden',
   },

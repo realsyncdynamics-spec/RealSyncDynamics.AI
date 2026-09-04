@@ -103,16 +103,6 @@ const CERTIFICATION_MODULES = [
     color: 'cyan',
     badge: 'Monitoring',
   },
-  {
-    id: 'timeline',
-    title: 'Certification Timeline',
-    description: 'Project timeline to certification with critical milestones',
-    icon: Clock,
-    route: '#timeline',
-    color: 'cyan',
-    badge: 'Planning',
-    comingSoon: true,
-  },
 ];
 
 const QUICK_ACTIONS = [
@@ -410,38 +400,24 @@ function ModuleCard({ module }: { module: (typeof CERTIFICATION_MODULES)[0] }) {
     amber: 'bg-amber-950 border-amber-800 text-amber-300',
   };
 
-  const content = (
-    <div className={`bg-obsidian-900 border ${colorMap[module.color]} rounded-none p-4 transition-all h-full flex flex-col ${module.comingSoon ? 'opacity-60' : ''}`}>
-      <div className="flex items-start justify-between mb-3">
-        <Icon className="h-6 w-6 shrink-0" />
-        <span className={`text-[10px] px-2 py-1 border rounded-none font-semibold ${BadgeColor[module.color]}`}>
-          {module.badge}
-        </span>
-      </div>
-
-      <h3 className="font-semibold text-titanium-50 text-[13px] mb-2">{module.title}</h3>
-      <p className="text-[11px] text-titanium-400 mb-4 flex-1">{module.description}</p>
-
-      <div className="flex items-center gap-2 text-[11px] font-semibold">
-        {module.comingSoon ? (
-          <span className="text-titanium-500">Coming Soon</span>
-        ) : (
-          <>
-            <span>Öffnen</span>
-            <ArrowRight className="h-3.5 w-3.5" />
-          </>
-        )}
-      </div>
-    </div>
-  );
-
-  if (module.comingSoon) {
-    return content;
-  }
-
   return (
     <Link to={module.route} className="group">
-      {content}
+      <div className={`border rounded-none p-4 transition-all h-full flex flex-col ${colorMap[module.color]}`}>
+        <div className="flex items-start justify-between mb-3">
+          <Icon className="h-6 w-6 shrink-0" />
+          <span className={`text-[10px] px-2 py-1 border rounded-none font-semibold ${BadgeColor[module.color]}`}>
+            {module.badge}
+          </span>
+        </div>
+
+        <h3 className="font-semibold text-titanium-50 text-[13px] mb-2">{module.title}</h3>
+        <p className="text-[11px] text-titanium-400 mb-4 flex-1">{module.description}</p>
+
+        <div className="flex items-center gap-2 text-[11px] font-semibold">
+          <span>Öffnen</span>
+          <ArrowRight className="h-3.5 w-3.5" />
+        </div>
+      </div>
     </Link>
   );
 }

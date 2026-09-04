@@ -297,6 +297,16 @@ export const UNBACKED_CALLERS: readonly UnbackedCaller[] = [
   { slug: 'export-bulk-results', surface: 'features/bulk — Export', publicPath: false },
   { slug: 'iso42001-control-update', surface: 'features/governance — Control-Detail', publicPath: false },
   { slug: 'trigger-workflow', surface: 'features/workflows', publicPath: false },
+  // Neu in diesem PR angelegt, noch nicht ausgerollt. Der Aufrufer
+  // (`scansApi.ts::addWebsiteForTenant`) ersetzt ein clientseitiges INSERT,
+  // das RLS ohnehin ablehnte — der Pfad ist also nicht schlechter als vorher,
+  // sondern meldet den Grund jetzt verständlich. Eintrag entfernen, sobald
+  // `deploy.yml` gelaufen ist; der Test „meldet Einträge in UNBACKED_CALLERS,
+  // die inzwischen deployt sind" erinnert daran.
+  //
+  // Die drei `website-*`-Einträge, die hier bis zum 2026-08-23 standen, hat
+  // `main` entfernt — sie sind seit der Neumessung (178, 20:57Z) deployt.
+  { slug: 'tenant-website-register', surface: 'features/governance — Domain hinterlegen', publicPath: false },
 ];
 
 const UNBACKED_SET = new Set(UNBACKED_CALLERS.map((c) => c.slug));

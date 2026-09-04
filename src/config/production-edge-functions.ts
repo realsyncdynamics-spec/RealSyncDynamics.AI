@@ -50,7 +50,7 @@
 export const EDGE_FUNCTIONS_OBSERVED_MAX = 181;
 
 /** Datum der letzten Messung gegen das Live-Projekt. */
-export const PRODUCTION_EDGE_FUNCTIONS_MEASURED_AT = '2026-09-01T21:50Z';
+export const PRODUCTION_EDGE_FUNCTIONS_MEASURED_AT = '2026-09-04T07:31Z';
 
 /**
  * Die in Produktion aktiven Function-Slugs — alphabetisch, damit ein Diff
@@ -284,15 +284,23 @@ export const UNBACKED_CALLERS: readonly UnbackedCaller[] = [
 
   // ── Im Repo, noch nicht deployt ────────────────────────────────────────
   //
-  // `audit-claim` steht weiterhin unter supabase/functions/, hat aber seit
-  // dem 2026-09-01 keinen Aufrufer mehr: Die Übernahme läuft auf allen
-  // Pfaden über die RPC `claim_gdpr_audit` (ein Schreibweg,
-  // canonical-funnel-decision.md). Kein Eintrag mehr hier.
+  // Derzeit keiner. `audit-claim` stand hier bis zum 2026-09-01: Es hat
+  // keinen Aufrufer mehr, weil die Übernahme auf allen Pfaden über die RPC
+  // `claim_gdpr_audit` läuft (ein Schreibweg, canonical-funnel-decision.md).
+  // Deployt ist es seit dem Lauf zu `66647c9` trotzdem — gemessen am
+  // 2026-09-04, siehe die Produktionsliste oben. „Kein Aufrufer" und „nicht
+  // deployt" sind zwei verschiedene Aussagen; hier gehört nur die zweite hin.
 
   // ── Hinter Login ───────────────────────────────────────────────────────
   // `api-quota` steht nur in src/features/api/API_DEVELOPER_GUIDE.md und wird
   // von keinem Code aufgerufen — deshalb kein Eintrag hier, aber ein offener
   // Punkt: Das Handbuch beschreibt einen Endpunkt, den es nicht gibt.
+  // `subscription-addons` (AP6, Add-ons als Positionen des Stripe-Abos) ist
+  // am 2026-09-04 als deployt gemessen worden und deshalb hier entfernt —
+  // genau der Schritt, den der Test „meldet Einträge in UNBACKED_CALLERS,
+  // die inzwischen deployt sind" erzwingen soll. Dass er nicht ausgelöst
+  // hat, lag an seiner Eingabe: Er misst gegen PRODUCTION_EDGE_FUNCTIONS,
+  // und diese Liste stand noch auf der Messung vom 2026-08-23.
   { slug: 'export-bulk-results', surface: 'features/bulk — Export', publicPath: false },
   { slug: 'iso42001-control-update', surface: 'features/governance — Control-Detail', publicPath: false },
   { slug: 'trigger-workflow', surface: 'features/workflows', publicPath: false },

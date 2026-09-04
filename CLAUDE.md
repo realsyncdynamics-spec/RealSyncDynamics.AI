@@ -78,8 +78,8 @@ Menschen · Unternehmen · KI-Agenten · Daten · Entscheidungen.
 
 **Primär: Supabase Cloud (EU / Frankfurt)**
 - PostgreSQL 17 (Live-Projekt, Stand 2026-08-16)
-- **181 Edge Functions** im Repo (`supabase/functions/`, Deno/V8; `_shared` ist Bibliothek, keine Function) — **181 deployt**, `comm` in beide Richtungen leer. Gemessen am 2026-09-01 um 21:50 UTC per Management-API nach dem Deploy-Lauf 33562518753 (PR #1195); damit sind auch `audit-claim` und `subscription-addons` live. Frühere Stände dieser Datei nannten 179/180 — die Liste in `src/config/production-edge-functions.ts` war seit dem 2026-08-23 nicht nachgemessen worden
-- **309 Migrations** (`supabase/migrations/`) — 308 verbucht, gemessen am 2026-09-01 gegen den Ledger (die drei vom 2026-09-04 sind mit Deploy-Lauf 33562518753 angekommen); `20260904000300_canonical_plan_catalog` kommt mit dem nächsten Deploy. Zu den zwei nachgezogenen Out-of-Band-Migrationen siehe §5
+- **181 Edge Functions** im Repo (`supabase/functions/`, Deno/V8; `_shared` ist Bibliothek, keine Function) — **alle 181 deployt**, deckungsgleich in beide Richtungen. Gemessen am 2026-09-04 mit zwei unabhängigen Methoden (Management-API und HTTP-Probe je Slug), `comm` in beide Richtungen leer. `subscription-addons` stand hier bis dahin als „wartet auf den nächsten `deploy.yml`-Lauf“ — der Lauf war längst da, die Function antwortet mit `401`, nicht `404`. Siehe §5
+- **315 Migrations** (`supabase/migrations/`) — **312 verbucht**, neueste `20260904000200`; `20260904000300_canonical_plan_catalog` (PR #1196) kommt mit dem nächsten Deploy. Gemessen am 2026-09-04 gegen `supabase_migrations.schema_migrations`, Mengen in beide Richtungen verglichen, beide leer. Die drei vom 2026-09-04, die hier als „kommen mit dem nächsten Deploy“ standen, sind angekommen. Zu den zwei nachgezogenen Out-of-Band-Migrationen siehe §5
 - RLS auf allen App-Tabellen · Realtime Subscriptions
 
 **Node/TypeScript-Services** (containerisiert — **kein Go im Repo**)
@@ -506,7 +506,7 @@ RealSyncDynamics.AI/
 │   └── pricing.ts     Single Source of Truth für Produkt-, Preis- und Berechtigungsmodell
 ├── supabase/
 │   ├── functions/     181 Edge Functions (einziger Ort für Service-Role-Keys)
-│   └── migrations/    309 Migrations
+│   └── migrations/    315 Migrations
 ├── apps/
 │   └── agent-runtime/ Agent Runtime (Node/TS, Docker)
 ├── services/          runtime-core · evidence-runtime · openclaw-agent · playwright-scanner

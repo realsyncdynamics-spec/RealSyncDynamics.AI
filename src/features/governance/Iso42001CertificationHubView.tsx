@@ -272,9 +272,9 @@ function Inner() {
                 <p className="text-[11px] text-titanium-400 mb-3">
                   Umfassender Leitfaden zur ISO 42001 Implementierung
                 </p>
-                <a href="#" className="text-[11px] font-semibold text-blue-400 hover:text-blue-300">
+                <Link to="/docs" className="text-[11px] font-semibold text-blue-400 hover:text-blue-300">
                   Zum Wiki →
-                </a>
+                </Link>
               </div>
 
               <div className="p-3 bg-obsidian-800 border border-titanium-900 rounded-none">

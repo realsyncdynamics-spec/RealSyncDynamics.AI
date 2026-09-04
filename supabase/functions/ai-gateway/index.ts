@@ -19,7 +19,7 @@
 // mirror).
 
 import { ServerAiGateway } from '../_shared/aiGateway/router.ts';
-import type { AiGatewayRequest } from '../_shared/aiGateway/types.ts';
+import type { AiGatewayRequest, AiGatewayResponse } from '../_shared/aiGateway/types.ts';
 import {
   routeOf,
   modelsResponse,
@@ -28,6 +28,9 @@ import {
   mapInferenceError,
   type OpenAIChatRequest,
 } from '../_shared/aiGateway/openaiCompat.ts';
+import { isGovernedRoutingEnabled } from '../_shared/aiGateway/featureFlags.ts';
+import { classifyError } from '../_shared/aiGateway/observability.ts';
+import { recordGatewayCall } from '../_shared/aiGateway/evidenceSink.ts';
 import {
   decideRateLimit,
   clientIp,
@@ -39,6 +42,47 @@ import { buildCorsHeaders, handleOptions, jsonResponse, jsonError } from '../_sh
 const corsHeaders = buildCorsHeaders('GET, POST, OPTIONS');
 
 const ALLOWED_OPS = new Set(['health', 'generate', 'extract_json', 'embed']);
+
+// R2 observability: log every inference call to ai_tool_runs, but ONLY when the
+// governed-routing flag is on. With the flag off (default) this wrapper is a
+// pure pass-through — no client, no insert, byte-identical to pre-R2 behaviour.
+function governedRoutingOn(): boolean {
+  return isGovernedRoutingEnabled(Deno.env.get('GOVERNED_ROUTING'));
+}
+
+// Wrap a gateway inference op so its outcome is recorded to the audit/cost
+// trail. The insert is best-effort (recordGatewayCall never throws) and is
+// awaited so it completes before the edge function returns. On error we still
+// log, then rethrow so the caller's error handling is unchanged.
+async function withObservability<T>(
+  request: AiGatewayRequest,
+  run: () => Promise<AiGatewayResponse<T>>,
+): Promise<AiGatewayResponse<T>> {
+  if (!governedRoutingOn()) return run();
+  const started = Date.now();
+  try {
+    const res = await run();
+    await recordGatewayCall(request, {
+      status: 'success',
+      provider: res.provider,
+      model: res.model,
+      profile: res.profile,
+      usage: res.usage,
+      durationMs: res.latency_ms ?? Date.now() - started,
+      traceId: res.trace_id,
+    });
+    return res;
+  } catch (e) {
+    const { status, code } = classifyError(e);
+    await recordGatewayCall(request, {
+      status,
+      durationMs: Date.now() - started,
+      errorCode: code,
+      errorMessage: e instanceof Error ? e.message : String(e),
+    });
+    throw e;
+  }
+}
 
 // Per-instance rate-limit windows. Cleared on cold-start which is fine:
 // a bad actor has no cheap way to trigger a cold-start.
@@ -140,9 +184,9 @@ async function handleOpBased(req: Request): Promise<Response> {
   const limited = await enforceRateLimit(req, request.feature);
   if (limited) return limited;
 
-  if (op === 'generate')     return jsonResponse({ ok: true, ...(await gateway.generate(request)) });
-  if (op === 'extract_json') return jsonResponse({ ok: true, ...(await gateway.extractJson(request)) });
-  if (op === 'embed')        return jsonResponse({ ok: true, ...(await gateway.embed(request)) });
+  if (op === 'generate')     return jsonResponse({ ok: true, ...(await withObservability(request, () => gateway.generate(request))) });
+  if (op === 'extract_json') return jsonResponse({ ok: true, ...(await withObservability(request, () => gateway.extractJson(request))) });
+  if (op === 'embed')        return jsonResponse({ ok: true, ...(await withObservability(request, () => gateway.embed(request))) });
 
   return jsonError(400, 'BAD_REQUEST', `unknown op: ${op}`);
 }
@@ -168,8 +212,8 @@ async function handleOpenAIChatCompletions(req: Request): Promise<Response> {
 
   try {
     const response = parsed.wantsJson
-      ? await gateway.extractJson(parsed.request)
-      : await gateway.generate(parsed.request);
+      ? await withObservability(parsed.request, () => gateway.extractJson(parsed.request))
+      : await withObservability(parsed.request, () => gateway.generate(parsed.request));
     return jsonResponse(formatChatResponse(response, parsed.request.model_profile));
   } catch (error) {
     const mapped = mapInferenceError(error);

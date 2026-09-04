@@ -700,3 +700,163 @@ d('D4 — org_units trennt Platform Scope, eigenen und fremden Mandanten', () =>
     await expect(mitSavepoint(() => seedUnit(null, 'vertrieb'))).rejects.toThrow();
   });
 });
+
+/**
+ * ADR 0011, D4 (Option A) — agents und agent_roles.
+ *
+ * Der Entscheid vom 2026-09-04 trennt zwei Dinge, die vorher eines waren:
+ * `agent_profiles` bleibt der globale Katalog interner Agenten, `agents` nimmt
+ * die mandantenbezogenen auf. Die Tests prüfen genau die Grenze zwischen
+ * beiden — denn wenn sie nicht hält, ist Befund B6 nur umgezogen.
+ */
+d('D4 — agents ist mandantengetrennt, agent_roles ist Katalog', () => {
+  let ctx: DbCtx | null = null;
+  beforeEach(async () => { ctx = await openDb(); });
+  afterEach(async () => { await closeDb(ctx); ctx = null; });
+
+  async function mitSavepoint<T>(fn: () => Promise<T>): Promise<T> {
+    const sp = `sp_ag_${Math.random().toString(36).slice(2, 10)}`;
+    await ctx!.client.query(`SAVEPOINT ${sp}`);
+    try {
+      const out = await fn();
+      await ctx!.client.query(`RELEASE SAVEPOINT ${sp}`);
+      return out;
+    } catch (err) {
+      await ctx!.client.query(`ROLLBACK TO SAVEPOINT ${sp}`);
+      throw err;
+    }
+  }
+
+  async function seedAgent(
+    tenantId: string, name: string,
+    opts: { orgUnitId?: string | null; role?: string } = {},
+  ): Promise<string> {
+    const { rows } = await ctx!.client.query<{ id: string }>(
+      `INSERT INTO public.agents(tenant_id, name, role_key, org_unit_id)
+       VALUES ($1, $2, $3, $4) RETURNING id`,
+      [tenantId, name, opts.role ?? 'MonitoringAgent', opts.orgUnitId ?? null],
+    );
+    return rows[0]!.id;
+  }
+
+  async function seedUnit(tenantId: string | null, key: string): Promise<string> {
+    const { rows } = await ctx!.client.query<{ id: string }>(
+      `INSERT INTO public.org_units(tenant_id, key, name) VALUES ($1,$2,$2) RETURNING id`,
+      [tenantId, key],
+    );
+    return rows[0]!.id;
+  }
+
+  it('ein Mandant sieht nur die eigenen Agenten', async () => {
+    const A = await createTenantWithMember(ctx!, { tenantName: 'ag-A', userEmail: 'ag-a@example.com' });
+    const B = await createTenantWithMember(ctx!, { tenantName: 'ag-B', userEmail: 'ag-b@example.com' });
+    await seedAgent(A.tenantId, 'Wächter A');
+    await seedAgent(B.tenantId, 'Wächter B');
+
+    const sichtbar = await ctx!.withClaims({ sub: A.userId, role: 'authenticated' }, async () => {
+      const { rows } = await ctx!.client.query<{ name: string }>(`SELECT name FROM public.agents`);
+      return rows.map((r) => r.name);
+    });
+    expect(sichtbar).toEqual(['Wächter A']);
+  });
+
+  it('ein Mitglied ohne Verwaltungsrolle darf keinen Agenten anlegen', async () => {
+    const A = await createTenantWithMember(ctx!, { tenantName: 'ag-ed', userEmail: 'ag-ed@example.com' });
+    await ctx!.client.query(
+      `UPDATE public.memberships SET role='editor' WHERE tenant_id=$1 AND user_id=$2`,
+      [A.tenantId, A.userId],
+    );
+
+    await expect(
+      ctx!.withClaims({ sub: A.userId, role: 'authenticated' }, async () => {
+        await ctx!.client.query(
+          `INSERT INTO public.agents(tenant_id, name, role_key) VALUES ($1,'Schmuggler','OutputAgent')`,
+          [A.tenantId],
+        );
+      }),
+    ).rejects.toThrow();
+  });
+
+  it('ein Admin kann einen Agenten nicht in einen fremden Mandanten umhängen', async () => {
+    const A = await createTenantWithMember(ctx!, { tenantName: 'ag-A2', userEmail: 'ag-a2@example.com' });
+    const B = await createTenantWithMember(ctx!, { tenantName: 'ag-B2', userEmail: 'ag-b2@example.com' });
+    const agent = await seedAgent(A.tenantId, 'Wandersmann');
+
+    await expect(
+      ctx!.withClaims({ sub: A.userId, role: 'authenticated' }, async () => {
+        await ctx!.client.query(`UPDATE public.agents SET tenant_id=$1 WHERE id=$2`, [B.tenantId, agent]);
+      }),
+    ).rejects.toThrow();
+
+    const { rows } = await ctx!.client.query<{ tenant_id: string }>(
+      `SELECT tenant_id FROM public.agents WHERE id=$1`, [agent],
+    );
+    expect(rows[0]!.tenant_id).toBe(A.tenantId);
+  });
+
+  it('eine Organisationseinheit aus einem fremden Mandanten wird abgewiesen', async () => {
+    const A = await createTenantWithMember(ctx!, { tenantName: 'ag-A3', userEmail: 'ag-a3@example.com' });
+    const B = await createTenantWithMember(ctx!, { tenantName: 'ag-B3', userEmail: 'ag-b3@example.com' });
+    const fremd = await seedUnit(B.tenantId, 'fremde-einheit');
+
+    await expect(
+      mitSavepoint(() => seedAgent(A.tenantId, 'Fehlzuordnung', { orgUnitId: fremd })),
+    ).rejects.toThrow(/anderen Scope/);
+  });
+
+  it('auch eine Platform-Einheit ist für einen Mandanten-Agenten kein gültiger Ort', async () => {
+    const A = await createTenantWithMember(ctx!, { tenantName: 'ag-A4', userEmail: 'ag-a4@example.com' });
+    const plattform = await seedUnit(null, 'plattform-einheit');
+
+    await expect(
+      mitSavepoint(() => seedAgent(A.tenantId, 'Grenzgänger', { orgUnitId: plattform })),
+    ).rejects.toThrow(/anderen Scope/);
+  });
+
+  it('eine unbekannte Rolle wird vom Katalog abgewiesen', async () => {
+    // Der Fremdschlüssel auf agent_roles ist der Grund, warum der
+    // Paritätstest zwischen SQL und TypeScript existiert: Eine Rolle, die es
+    // nur in TypeScript gibt, scheitert genau hier — zur Laufzeit.
+    const A = await createTenantWithMember(ctx!, { tenantName: 'ag-A5', userEmail: 'ag-a5@example.com' });
+    await expect(
+      mitSavepoint(() => seedAgent(A.tenantId, 'Erfundene Rolle', { role: 'ErfundenerAgent' })),
+    ).rejects.toThrow();
+  });
+
+  it('agent_roles trägt die neun Rollen und ist für Eingeloggte lesbar', async () => {
+    const A = await createTenantWithMember(ctx!, { tenantName: 'ag-A6', userEmail: 'ag-a6@example.com' });
+    const keys = await ctx!.withClaims({ sub: A.userId, role: 'authenticated' }, async () => {
+      const { rows } = await ctx!.client.query<{ key: string }>(
+        `SELECT key FROM public.agent_roles ORDER BY key`,
+      );
+      return rows.map((r) => r.key);
+    });
+    expect(keys).toHaveLength(9);
+    expect(keys).toContain('TrainerAgent');
+  });
+
+  it('agent_roles ist für Clients nicht schreibbar — das Vokabular kommt per Migration', async () => {
+    const A = await createTenantWithMember(ctx!, { tenantName: 'ag-A7', userEmail: 'ag-a7@example.com' });
+    await expect(
+      ctx!.withClaims({ sub: A.userId, role: 'authenticated' }, async () => {
+        await ctx!.client.query(
+          `INSERT INTO public.agent_roles(key, description) VALUES ('SchattenAgent','geschmuggelt')`,
+        );
+      }),
+    ).rejects.toThrow();
+  });
+
+  it('agent_profiles bleibt der globale Katalog — die Trennung aus Option A hält', async () => {
+    // Wenn jemand agents und agent_profiles wieder zusammenlegt, faellt dieser
+    // Test: agent_profiles hat bewusst keine tenant_id, agents hat sie zwingend.
+    const { rows } = await ctx!.client.query<{ tabelle: string; nullable: string | null }>(`
+      SELECT c.table_name AS tabelle, c.is_nullable AS nullable
+        FROM information_schema.columns c
+       WHERE c.table_schema='public' AND c.column_name='tenant_id'
+         AND c.table_name IN ('agents','agent_profiles')
+    `);
+    const nachTabelle = Object.fromEntries(rows.map((r) => [r.tabelle, r.nullable]));
+    expect(nachTabelle['agents']).toBe('NO');
+    expect(nachTabelle['agent_profiles']).toBeUndefined();
+  });
+});

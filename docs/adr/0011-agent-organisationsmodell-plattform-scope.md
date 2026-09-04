@@ -218,6 +218,15 @@ Sicherheitsgrenze — siehe Befund B1.
    ausdrücklichen Policies, `key` je Scope eindeutig, und zwei Invarianten per
    Trigger — die Hierarchie darf weder den Scope überschreiten noch einen
    Zyklus schliessen. Acht Testfälle.
+   **`agent_roles` und `agents` folgten am selben Tag** nach dem Entscheid des
+   Eigentümers (siehe B4-Nachtrag): `20260905000300_agent_roles.sql` spiegelt
+   `AgentRole` als Katalog mit Primärschlüssel — kein CHECK, damit eine neue
+   Rolle eine Zeile ist und keine Schema-Änderung; Parität gesichert durch
+   `test/governance/agent-roles-sql-parity.test.ts` in beide Richtungen.
+   `20260905000400_agents.sql` bringt die mandantenbezogenen Agenten mit
+   `tenant_id NOT NULL`, Bindung an `org_units` und `agent_roles` und einem
+   Trigger, der die Organisationseinheit im selben Mandanten hält. Neun
+   Testfälle. Als Nächstes: `agent_teams`.
 3. Die Autonomiegrenze aus D1 ist eine serverseitige Prüfung (Policy Engine),
    kein Feld auf der Agenten-Zeile.
 4. `ai_tool_runs` bekommt additive, nullable Zuordnungsspalten für Agent und
@@ -380,6 +389,57 @@ eine Produktentscheidung, keine Schemafrage — sie gehört entschieden, bevor d
 nächste Migration geschrieben wird. `org_units` war davon nicht betroffen (kein
 Gegenstück im Bestand) und ist deshalb vorgezogen worden.
 
+> **Korrektur am 2026-09-04.** Der Satz oben, `agent_profiles` ohne `tenant_id`
+> sei „für sich genommen ein Befund gegen CLAUDE.md §3", ist **falsch** und
+> wird hier richtiggestellt: Die Ursprungsmigration `20260624000000` legt die
+> Tabelle ausdrücklich als globalen Katalog an — „Globale Katalog-Tabellen
+> (agent_profiles, workflow_templates): lesbar für alle authenticated User,
+> Schreibzugriff nur via service_role. Keine Tenant-Bindung." Die fehlende
+> Spalte ist Absicht. An die Stelle des falschen Befunds tritt B6.
+
+> **Entschieden am 2026-09-04 — Option A.** `agent_profiles` bleibt der globale
+> Katalog, `agents` entsteht neu und mandantengebunden. Ausschlaggebend war,
+> dass Option B den Lesevertrag (`USING (true)`) einer Tabelle ändern müsste,
+> an der drei weitere per Fremdschlüssel hängen: `agent_knowledge_base`,
+> `agent_actions_log`, `automation_suggestions`. Für `agent_roles` wurde
+> zugleich entschieden, `AgentRole` in die Datenbank zu spiegeln statt ein
+> drittes Vokabular zu eröffnen.
+
+### B6 — `onboarding-orchestrator` schreibt Kundendaten in den globalen Katalog
+
+Gefunden am 2026-09-04 beim Klären von B4. `supabase/functions/onboarding-orchestrator`
+legt pro Mandant eine Zeile in `public.agent_profiles` an:
+
+```
+name:          "${company} Assistant"
+type:          'business'
+system_prompt: persona(sector, company)     // firmenspezifisch
+```
+
+und verknüpft sie über `bots.config.agent_profile_id`. Die Policy dieser
+Tabelle lautet `USING (true)` für alle `authenticated` — sie ist als globaler
+Katalog gedacht, nicht als Registry. Sobald der Onboarding-Pfad läuft, liest
+**jeder eingeloggte Nutzer jedes Mandanten** Name und Persona-Prompt jedes
+anderen Kunden.
+
+**Heute ohne Folgen, und das ist Zufall, keine Absicherung**: Live stehen vier
+Zeilen, alle intern (Automation Governance Agent, Call Agent Susi, RealSync
+Support Agent, Screenshot & Issue Fix Agent), und die Function wird von
+nirgendwo aufgerufen — derselbe Umstand, den §5 der CLAUDE.md schon als
+Produktfrage führt. Mit dem ersten echten Onboarding wird daraus ein
+Datenabfluss zwischen Mandanten.
+
+**Zielbild steht, Umsetzung offen.** `public.agents` (20260905000400) ist das
+Ziel, auf das der Orchestrator umgestellt wird. Die Umstellung ist bewusst
+nicht Teil derselben Migration: `agent_knowledge_base.agent_id`,
+`agent_actions_log.agent_id` und `automation_suggestions.agent_id` zeigen per
+Fremdschlüssel auf `agent_profiles`. Der Orchestrator schreibt einen dieser
+Sätze (`agent_knowledge_base`) mit. Der additive Weg ist deshalb: eine
+nullable Spalte `agent_ref UUID REFERENCES public.agents(id)` auf den
+betroffenen Tabellen, der Orchestrator schreibt künftig dorthin, `agent_id`
+bleibt dem Katalog. Nachzuarbeiten ist nichts — es existiert noch keine einzige
+mandantenbezogene Zeile.
+
 ### B5 — `agent-manager-roadmap.md` §2 ist überholt
 
 Der Abschnitt hält fest, `20260705180000_autonomous_agents_core.sql` sei nie
@@ -409,11 +469,12 @@ Datei ist mit einem datierten Hinweis korrigiert.
   festgeschrieben) durch `platform_operators` ersetzt wird oder daneben bestehen
   bleibt. Zwei Plattform-Quellen nebeneinander wären der Zustand, den D5
   vermeiden will (siehe B1).
-- **`agents` neu oder `agent_profiles` erweitert?** Blockiert die nächste
-  Migration nach `org_units` — Einzelheiten in Befund B4. Mit dieser
-  Entscheidung fällt auch die zu `agent_roles`: eigenes Vokabular in der
-  Datenbank oder `AgentRole` aus `src/core/trainer-agent/types.ts` dorthin
-  gespiegelt.
+- **B6 — Umstellung des `onboarding-orchestrator`** von `agent_profiles` auf
+  `agents`, samt der nullable `agent_ref`-Spalte auf den drei Tabellen mit
+  Fremdschlüssel. Das Ziel steht, der Schritt ist noch nicht gegangen.
+- **Lesezugriff für Plattform-Operatoren auf `agents`** — bewusst nicht in
+  `20260905000400` enthalten. Cross-Tenant-Einsicht in Kundendaten ist eine
+  Datenschutzentscheidung, keine Nebenwirkung einer Migration.
 - **Ablösung von `profiles.is_super_admin`** durch `is_platform_operator()`.
   Der Sperr-Teil von B1 ist behoben (`20260905000000`), die Vereinheitlichung
   der beiden Plattform-Quellen nicht. Solange beide existieren, gilt: neue

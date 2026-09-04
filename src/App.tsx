@@ -1040,100 +1040,103 @@ function RoutesWithTracking() {
       <Route path="/os/welcome" element={<EnterpriseWelcomeWizardPage />} />
       <Route path="/os/datenschutz" element={<EnterpriseDatenschutzPage />} />
       <Route path="/os/impressum" element={<EnterpriseImpressumPage />} />
+      {/* Freigabe 2026-09-01 (CLAUDE.md §10): /os/app/* hatte keinen
+          Auth-Wrapper. AppGate ist additiv und schickt Unangemeldete nach
+          /welcome?next=… — derselbe Weg wie für /app/*. */}
       <Route
         path="/os/app"
         element={
-          <EnterpriseAppShell title="Home" breadcrumb={['Übersicht']}>
+          <AppGate><EnterpriseAppShell title="Home" breadcrumb={['Übersicht']}>
             <EnterpriseAppHomePage />
-          </EnterpriseAppShell>
+          </EnterpriseAppShell></AppGate>
         }
       />
       <Route
         path="/os/app/websites"
         element={
-          <EnterpriseAppShell title="Websites" breadcrumb={['Übersicht']}>
+          <AppGate><EnterpriseAppShell title="Websites" breadcrumb={['Übersicht']}>
             <EnterpriseWebsitesPage />
-          </EnterpriseAppShell>
+          </EnterpriseAppShell></AppGate>
         }
       />
       <Route
         path="/os/app/risks"
         element={
-          <EnterpriseAppShell title="Risiken" breadcrumb={['Übersicht']}>
+          <AppGate><EnterpriseAppShell title="Risiken" breadcrumb={['Übersicht']}>
             <EnterpriseRisksPage />
-          </EnterpriseAppShell>
+          </EnterpriseAppShell></AppGate>
         }
       />
       <Route
         path="/os/app/compliance"
         element={
-          <EnterpriseAppShell title="Compliance" breadcrumb={['Governance']}>
+          <AppGate><EnterpriseAppShell title="Compliance" breadcrumb={['Governance']}>
             <EnterpriseCompliancePage />
-          </EnterpriseAppShell>
+          </EnterpriseAppShell></AppGate>
         }
       />
       <Route
         path="/os/app/evidence"
         element={
-          <EnterpriseAppShell title="Evidence Vault" breadcrumb={['Governance']}>
+          <AppGate><EnterpriseAppShell title="Evidence Vault" breadcrumb={['Governance']}>
             <EnterpriseEvidencePage />
-          </EnterpriseAppShell>
+          </EnterpriseAppShell></AppGate>
         }
       />
       <Route
         path="/os/app/monitoring"
         element={
-          <EnterpriseAppShell title="Monitoring" breadcrumb={['Governance']}>
+          <AppGate><EnterpriseAppShell title="Monitoring" breadcrumb={['Governance']}>
             <EnterpriseMonitoringPage />
-          </EnterpriseAppShell>
+          </EnterpriseAppShell></AppGate>
         }
       />
       <Route
         path="/os/app/ai-usecases"
         element={
-          <EnterpriseAppShell title="AI Use Cases" breadcrumb={['Governance']}>
+          <AppGate><EnterpriseAppShell title="AI Use Cases" breadcrumb={['Governance']}>
             <EnterprisePlaceholderPage title="AI Use Case Registry" description="Die vollständige Registry aller KI-Systeme inkl. Risikoklassifizierung nach EU AI Act folgt in Phase 3." />
-          </EnterpriseAppShell>
+          </EnterpriseAppShell></AppGate>
         }
       />
       <Route
         path="/os/app/agents"
         element={
-          <EnterpriseAppShell title="Agenten" breadcrumb={['Governance']}>
+          <AppGate><EnterpriseAppShell title="Agenten" breadcrumb={['Governance']}>
             <EnterprisePlaceholderPage title="Agenten" description="Die vollständige Agent-Verwaltung mit Konfiguration, Laufzeiten und Logs folgt in Phase 3." />
-          </EnterpriseAppShell>
+          </EnterpriseAppShell></AppGate>
         }
       />
       <Route
         path="/os/app/reports"
         element={
-          <EnterpriseAppShell title="Reports" breadcrumb={['Governance']}>
+          <AppGate><EnterpriseAppShell title="Reports" breadcrumb={['Governance']}>
             <EnterprisePlaceholderPage title="Audit Reports" description="Die vollständige Report-Bibliothek mit Export- und Freigabe-Workflows folgt in Phase 3." />
-          </EnterpriseAppShell>
+          </EnterpriseAppShell></AppGate>
         }
       />
       <Route
         path="/os/app/team"
         element={
-          <EnterpriseAppShell title="Team" breadcrumb={['Organisation']}>
+          <AppGate><EnterpriseAppShell title="Team" breadcrumb={['Organisation']}>
             <EnterprisePlaceholderPage title="Team & Rollen" description="Die vollständige Team-, Rollen- und Berechtigungsverwaltung folgt in Phase 3." />
-          </EnterpriseAppShell>
+          </EnterpriseAppShell></AppGate>
         }
       />
       <Route
         path="/os/app/billing"
         element={
-          <EnterpriseAppShell title="Billing" breadcrumb={['Organisation']}>
+          <AppGate><EnterpriseAppShell title="Billing" breadcrumb={['Organisation']}>
             <EnterprisePlaceholderPage title="Billing" description="Die vollständige Abrechnungs- und Plan-Verwaltung folgt in Phase 3." />
-          </EnterpriseAppShell>
+          </EnterpriseAppShell></AppGate>
         }
       />
       <Route
         path="/os/app/settings"
         element={
-          <EnterpriseAppShell title="Einstellungen" breadcrumb={['Organisation']}>
+          <AppGate><EnterpriseAppShell title="Einstellungen" breadcrumb={['Organisation']}>
             <EnterprisePlaceholderPage title="Einstellungen" description="Die vollständigen Organisations- und Account-Einstellungen folgen in Phase 3." />
-          </EnterpriseAppShell>
+          </EnterpriseAppShell></AppGate>
         }
       />
 

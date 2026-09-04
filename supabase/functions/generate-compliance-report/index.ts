@@ -1,6 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { jwtDecode } from 'https://esm.sh/jwt-decode@4.0.0'
+import { requireUser, requireTenantMembership } from '../_shared/auth.ts'
+import { gateFeature, EntitlementError } from '../_shared/entitlements.ts'
+import type { SupabaseClient } from 'jsr:@supabase/supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -21,37 +22,44 @@ serve(async (req: Request) => {
     return new Response('ok', { headers: corsHeaders })
   }
 
+  // AP9 Welle 4 (2026-09-02): Vorher dekodierte diese Function das JWT ohne
+  // Signaturprüfung (jwt-decode), las `user_metadata.tenant_id` — ein Claim,
+  // den niemand setzt — und prüfte die Rolle in `team_members`, einer Tabelle,
+  // die es nicht gibt. Jeder Aufruf endete in „Tenant ID not found in token".
+  // Jetzt: echte Token-Prüfung, Mitgliedschaft owner/admin in `memberships`,
+  // dann `compliance.export` (ab Starter).
+  const auth = await requireUser(req)
+  if (auth instanceof Response) return auth
+  const userId = auth.user.id
+
   try {
-    const auth = req.headers.get('Authorization')
-    if (!auth) throw new Error('Missing authorization header')
-
-    const token = auth.replace('Bearer ', '')
-    const decoded = jwtDecode(token) as { sub: string; user_metadata?: { tenant_id?: string } }
-    const userId = decoded.sub
-    const tenantId = decoded.user_metadata?.tenant_id
-
-    if (!tenantId) throw new Error('Tenant ID not found in token')
-
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') || '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '',
-    )
+    const supabase = auth.admin
 
     const body = await req.json() as ComplianceReportRequest
+    if (typeof body.tenant_id !== 'string' || !body.tenant_id) {
+      return new Response(
+        JSON.stringify({ error: 'tenant_id required' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
 
-    // Verify user is admin
-    const { data: teamMember, error: memberError } = await supabase
-      .from('team_members')
-      .select('role')
-      .eq('tenant_id', body.tenant_id)
-      .eq('user_id', userId)
-      .single()
-
-    if (memberError || !teamMember || !['admin', 'owner'].includes(teamMember.role)) {
+    if (!(await requireTenantMembership(supabase, userId, body.tenant_id, ['owner', 'admin']))) {
       return new Response(
         JSON.stringify({ error: 'Unauthorized - admin access required' }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
+    }
+
+    try {
+      await gateFeature(supabase, body.tenant_id, 'compliance.export')
+    } catch (e) {
+      if (e instanceof EntitlementError) {
+        return new Response(
+          JSON.stringify({ error: 'Compliance-Exporte sind im aktuellen Plan nicht enthalten (compliance.export) — ab Starter.', code: 'ENTITLEMENT_MISSING' }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+      throw e
     }
 
     let reportData: Record<string, unknown>
@@ -112,7 +120,7 @@ serve(async (req: Request) => {
 })
 
 async function generateDsgvoAccessLog(
-  supabase: ReturnType<typeof createClient>,
+  supabase: SupabaseClient,
   tenantId: string,
   startDate: string,
   endDate: string,
@@ -148,7 +156,7 @@ async function generateDsgvoAccessLog(
 }
 
 async function generateEuAiActAudit(
-  supabase: ReturnType<typeof createClient>,
+  supabase: SupabaseClient,
   tenantId: string,
   startDate: string,
   endDate: string,
@@ -185,7 +193,7 @@ async function generateEuAiActAudit(
 }
 
 async function generateExportHistory(
-  supabase: ReturnType<typeof createClient>,
+  supabase: SupabaseClient,
   tenantId: string,
   startDate: string,
   endDate: string,
@@ -225,7 +233,7 @@ async function generateExportHistory(
 }
 
 async function generateDataProcessingReport(
-  supabase: ReturnType<typeof createClient>,
+  supabase: SupabaseClient,
   tenantId: string,
   startDate: string,
   endDate: string,

@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { AuthGate } from '../kodee/connections/AuthGate';
 import { useTenant } from '../../core/access/TenantProvider';
+import { useEntitlements } from '../../core/billing/useEntitlements';
 import { Card, CardHeader, CardBody } from '../../enterprise-os/components/Card';
 import { Button } from '../../enterprise-os/components/Button';
 
@@ -53,7 +54,8 @@ export function OAuth2ConfigView() {
 }
 
 function Inner() {
-  const { activeTenantId, hasFeature } = useTenant();
+  const { activeTenantId } = useTenant();
+  const { tier } = useEntitlements();
   const [applications, setApplications] = useState<OAuth2Application[]>([]);
   const [showNew, setShowNew] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -67,12 +69,12 @@ function Inner() {
     scopes: [] as string[],
   });
 
-  // Determine plan tier based on features
-  let planTier: keyof typeof RATE_LIMIT_DEFAULTS = 'starter';
-  if (hasFeature('enterprise.tier')) planTier = 'enterprise';
-  else if (hasFeature('partner.tier')) planTier = 'partner';
-  else if (hasFeature('agency.tier')) planTier = 'agency';
-  else if (hasFeature('growth.tier')) planTier = 'growth';
+  // Der Plan kommt aus der Abo-Zeile (`subscriptions.plan_key`, aufgelöst
+  // in useEntitlements). Vorher fragte diese Stelle erfundene Keys wie
+  // `enterprise.tier` ab, die es in `ENTITLEMENT_KEYS` nie gab — deshalb
+  // stand hier für jeden Kunden „starter". Plan-Namen sind kein
+  // Entitlement-Vokabular (CLAUDE.md §7).
+  const planTier: keyof typeof RATE_LIMIT_DEFAULTS = tier;
 
   const rateLimitConfig = RATE_LIMIT_DEFAULTS[planTier];
 

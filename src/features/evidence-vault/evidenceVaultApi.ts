@@ -86,10 +86,11 @@ export interface EvidenceExportBundle {
   };
 }
 
-// `evidence-vault-export` hat keinen Membership-Check (Auth läuft über
-// `x-rsd-tenant-key`, nicht Bearer-JWT) — sein einziger 403-Grund ist
-// PLAN_REQUIRED (Tier-Gate ab Starter). Die generische mapError() würde das
-// hier fälschlich als "kein Zugriff auf den Mandanten" anzeigen.
+// `evidence-vault-export` prüft seit AP9 Welle 4 Token, Mitgliedschaft und
+// `compliance.export`. Der Aufrufer übergibt immer seinen aktiven Tenant,
+// deshalb ist ein 403 hier praktisch immer das Plan-Gate (ENTITLEMENT_MISSING)
+// — die generische mapError() würde das fälschlich als „kein Zugriff auf
+// den Mandanten" anzeigen.
 function mapExportError(error: unknown): VaultError {
   const status = (error as { context?: { status?: number } }).context?.status;
   if (status === 403) {
@@ -99,9 +100,9 @@ function mapExportError(error: unknown): VaultError {
 }
 
 /**
- * Aufsichtsbehoerden-Bundle (`evidence-vault-export`). Anders als die übrigen
- * Vault-Ops läuft diese Function über `x-rsd-tenant-key` statt Bearer-JWT und
- * ist tier-gated (ab Starter).
+ * Aufsichtsbehoerden-Bundle (`evidence-vault-export`). Das Nutzer-Token
+ * schickt `functions.invoke()` mit; `x-rsd-tenant-key` wählt den Mandanten.
+ * Gegated auf `compliance.export` (ab Starter).
  */
 export async function exportEvidenceBundle(args: {
   tenant_id: string;

@@ -34,7 +34,13 @@ was existieren sollte.
 - **Zwei Engines fehlten** in der Zählung: `src/lib/enterprise-ai-os/policy-engine.ts`
   und die eigenständige Kopie davon in `supabase/functions/enterprise-ai-os-evaluate/index.ts`.
 
-Korrekt sind **sechs Implementierungen mit fünf Verdict-Vokabularen**.
+Korrekt waren zum Zeitpunkt der Aufnahme **sechs Implementierungen mit fünf
+Verdict-Vokabularen**.
+
+> **Nachtrag 2026-09-04.** Es sind inzwischen **sieben mit sechs Vokabularen**.
+> `workers/govard-gateway/src/policy/engine.ts` ist über `main` dazugekommen —
+> siehe §2.5. Damit exportieren jetzt **drei** Dateien im Repo eine Funktion
+> namens `evaluatePolicies()`.
 
 ### 2.2 Vollständige Aufstellung
 
@@ -48,6 +54,7 @@ Ermittelt über `export function evaluate*` plus Rückverfolgung jedes Aufrufers
 | 4 | `src/lib/enterprise-ai-os/policy-engine.ts` | `evaluateAgentAction()` | `{allowed, requiresApproval, auditRequired, reasons}` | `agents/policy-enforcement-agent.ts` | **Browser** | — |
 | 5 | `supabase/functions/enterprise-ai-os-evaluate/index.ts` | `evaluateAgentAction()` (**Kopie**, kein Import) | wie #4 | HTTP-Endpunkt | Deno | ✅ |
 | 6 | `packages/agent-runtime-contracts` | — (nur Typen) | `ALLOW` `DENY` `REQUIRE_CONFIRMATION` | **niemand** | — | — |
+| 7 | `workers/govard-gateway/src/policy/engine.ts` | `evaluatePolicies()` | `ALLOW` `DENY` `APPROVAL` (+ je Policy `PASS`/`VIOLATION`/`NOT_APPLICABLE`) | `workers/govard-gateway/src/index.ts:182` | Cloudflare Worker | — |
 
 **Die Namensfalle**: #1 und #2 exportieren beide eine Funktion namens
 `evaluatePolicies()` und liegen im selben Verzeichnis. Sie unterscheiden sich
@@ -91,6 +98,40 @@ verschieden entscheiden, ohne dass ein Test bricht.
 Deno kann nicht aus `src/` importieren — die Kopie ist also nachvollziehbar.
 Der fehlende Paritätstest ist es nicht.
 
+### 2.5 Die siebte Engine — und was sie belegt
+
+`workers/govard-gateway/src/policy/engine.ts` (194 Z.) kam am 2026-09-04 über
+`main` dazu. Sie ist der wichtigste Einzelbefund seit der ersten Aufnahme,
+aus zwei Gründen.
+
+**Erstens bestätigt sie das kanonische Modell.** Ohne Bezug auf
+`packages/agent-runtime-contracts` entscheidet sie
+`decision: "ALLOW" | "DENY" | "APPROVAL"` — dieselbe Dreiteilung, nur mit
+anderem Namen für die mittlere Stufe. Zwei unabhängig entstandene Entwürfe, die
+auf dieselbe Form kommen, sind ein stärkeres Argument für dieses Vokabular als
+jede Festlegung von außen.
+
+**Zweitens ist sie in einem Punkt weiter als alles Bestehende.** Sie bewertet
+*jede* aktive Policy-Version einzeln (`PASS` / `VIOLATION` / `NOT_APPLICABLE`)
+statt nur die schärfste zu melden, sie ist dreifach deny-by-default (leeres
+Policy-Set, unbekannter Regeltyp, nicht verifizierbare Angabe), und sie bindet
+die Entscheidung kryptografisch an den Payload:
+
+```
+evaluation_hash = sha256({ payload_hash, decision, evaluated[] })
+```
+
+Damit lässt sich eine spätere Freigabe nicht auf einen anderen Inhalt
+umhängen. Das ist genau die Eigenschaft, die dem `EvidenceEvent`-Entwurf des
+Grok-Exports fehlt (§2.3), und sie kommt hier ohne die dortigen Schwächen.
+
+**Folge für den Adapter**: `fromGovardGateway()` ergänzt, `APPROVAL` →
+`REQUIRE_CONFIRMATION`. Die Engine selbst bleibt unangetastet.
+
+**Folge für die Namensfalle**: `evaluatePolicies()` gibt es jetzt dreimal —
+in beiden `_shared`-Dateien und hier. Die dritte liegt immerhin in einem
+anderen Verzeichnisbaum.
+
 ---
 
 ## 3. Vorschlag: kanonisches Verdict-Mapping
@@ -115,6 +156,9 @@ Kanonisch ist `ALLOW` / `DENY` / `REQUIRE_CONFIRMATION` (Arbeitsanweisung §11).
 | #4/#5 | `allowed:false` | `DENY` |
 | #4/#5 | `allowed:true, requiresApproval:true` | `REQUIRE_CONFIRMATION` |
 | #4/#5 | `allowed:true, requiresApproval:false` | `ALLOW` |
+| #7 | `DENY` | `DENY` |
+| #7 | `APPROVAL` | `REQUIRE_CONFIRMATION` |
+| #7 | `ALLOW` | `ALLOW` |
 
 ### 3.1 Das Mapping ist verlustbehaftet — und das ist der eigentliche Befund
 
@@ -336,7 +380,7 @@ Nach §27 und der bestätigten Reihenfolge:
 
 | Schritt | Stand |
 |---|---|
-| Tests für das kanonische Modell | ✅ `test/governance/verdict-mapping.test.ts` — 28 Fälle, inklusive `warn`/`log`-Verlustfreiheit und Fail-closed |
+| Tests für das kanonische Modell | ✅ `test/governance/verdict-mapping.test.ts` — 35 Fälle, inklusive `warn`/`log`-Verlustfreiheit, Fail-closed und govard-gateway |
 | Paritätstest #4 ↔ #5 | ✅ `test/governance/enterprise-os-evaluate-parity.test.ts` — 5 Fälle, Vorgehen wie `rfc003-sql-parity.test.ts` |
 | Adapter-Modul | ✅ `supabase/functions/_shared/verdict.ts` — reine Übersetzung, keine Entscheidung |
 

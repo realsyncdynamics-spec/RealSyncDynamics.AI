@@ -47,7 +47,9 @@ export type SourceEngine =
   /** apps/agent-runtime/src/policy-engine.ts — Node-Gateway */
   | 'agent-gateway'
   /** src/lib/enterprise-ai-os/policy-engine.ts + Edge-Kopie */
-  | 'enterprise-os';
+  | 'enterprise-os'
+  /** workers/govard-gateway/src/policy/engine.ts — Cloudflare Worker */
+  | 'govard-gateway';
 
 export interface CanonicalDecision {
   /** Maßgeblich für die Durchsetzung. */
@@ -82,6 +84,19 @@ export interface RuntimeAiResult {
 export type AgentGatewayResult =
   | { ok: true; reviewRequired: boolean }
   | { ok: false; reason: string };
+
+/**
+ * `workers/govard-gateway` → `PolicyEvaluation`.
+ *
+ * Diese Engine ist unabhängig auf fast dasselbe Vokabular gekommen: drei
+ * Ausgänge, deny-by-default. Nur `APPROVAL` heißt hier, was der Contract
+ * `REQUIRE_CONFIRMATION` nennt.
+ */
+export interface GovardGatewayResult {
+  decision: string;
+  violations?: Array<{ policy_id?: string; reason?: string }>;
+  evaluation_hash?: string;
+}
 
 /** `evaluateAgentAction()` — Browser wie Edge-Kopie. */
 export interface EnterpriseOsResult {
@@ -219,6 +234,34 @@ export function fromEnterpriseOs(result: EnterpriseOsResult): CanonicalDecision 
     matchedPolicyIds: [],
     reasons: result.reasons,
   };
+}
+
+/**
+ * `workers/govard-gateway` (Cloudflare Worker).
+ *
+ * Kennt kein `warn`/`log`, daher bleibt `advisory` null. Die Begründungen der
+ * verletzten Policies wandern in `reasons`, ihre IDs in `matchedPolicyIds` —
+ * bei DENY und APPROVAL ist genau das der Prüfpfad.
+ */
+export function fromGovardGateway(result: GovardGatewayResult): CanonicalDecision {
+  const violations = result.violations ?? [];
+  const base = {
+    advisory: null,
+    sourceEngine: 'govard-gateway' as const,
+    sourceVerdict: result.decision,
+    matchedPolicyIds: violations.map((v) => v.policy_id ?? '').filter(Boolean),
+    reasons: violations.map((v) => v.reason ?? '').filter(Boolean),
+  };
+  switch (result.decision) {
+    case 'ALLOW':
+      return { verdict: 'ALLOW', ...base };
+    case 'APPROVAL':
+      return { verdict: 'REQUIRE_CONFIRMATION', ...base };
+    case 'DENY':
+      return { verdict: 'DENY', ...base };
+    default:
+      return denyUnknown('govard-gateway', result.decision, base.matchedPolicyIds);
+  }
 }
 
 // ─── Hilfen ──────────────────────────────────────────────────────────────────

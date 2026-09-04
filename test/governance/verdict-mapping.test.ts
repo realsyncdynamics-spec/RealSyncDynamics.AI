@@ -17,6 +17,7 @@ import {
   fromRuntimeAi,
   fromAgentGateway,
   fromEnterpriseOs,
+  fromGovardGateway,
   isExecutable,
   requiresEvidence,
   type CanonicalVerdict,
@@ -150,6 +151,56 @@ describe('fromEnterpriseOs — evaluateAgentAction', () => {
     expect(fromEnterpriseOs({ ...base, allowed: false, requiresApproval: false, reasons }).reasons).toEqual(
       reasons,
     );
+  });
+});
+
+// ─── govard-gateway (Cloudflare Worker) ──────────────────────────────────────
+
+describe('fromGovardGateway — workers/govard-gateway', () => {
+  it('"ALLOW" → ALLOW', () => {
+    expect(fromGovardGateway({ decision: 'ALLOW' }).verdict).toBe('ALLOW');
+  });
+
+  it('"APPROVAL" → REQUIRE_CONFIRMATION', () => {
+    // Diese Engine ist unabhängig auf dieselbe Dreiteilung gekommen; nur der
+    // Name der mittleren Stufe weicht ab.
+    const d = fromGovardGateway({ decision: 'APPROVAL' });
+    expect(d.verdict).toBe('REQUIRE_CONFIRMATION');
+    expect(d.sourceVerdict).toBe('APPROVAL');
+  });
+
+  it('"DENY" → DENY', () => {
+    expect(fromGovardGateway({ decision: 'DENY' }).verdict).toBe('DENY');
+  });
+
+  it('trägt Policy-IDs und Begründungen der Verletzungen mit', () => {
+    const d = fromGovardGateway({
+      decision: 'DENY',
+      violations: [
+        { policy_id: 'p1', reason: 'Budget überschritten.' },
+        { policy_id: 'p2', reason: 'Empfängerzahl über Limit.' },
+      ],
+    });
+    expect(d.matchedPolicyIds).toEqual(['p1', 'p2']);
+    expect(d.reasons).toEqual(['Budget überschritten.', 'Empfängerzahl über Limit.']);
+  });
+
+  it('lässt unvollständige Verletzungseinträge aus, statt leere Strings zu führen', () => {
+    const d = fromGovardGateway({ decision: 'DENY', violations: [{ reason: 'ohne ID' }, {}] });
+    expect(d.matchedPolicyIds).toEqual([]);
+    expect(d.reasons).toEqual(['ohne ID']);
+  });
+
+  it('unbekannte decision ist fail-closed', () => {
+    const d = fromGovardGateway({ decision: 'ESCALATE' });
+    expect(d.verdict).toBe('DENY');
+    expect(d.reasons[0]).toContain('ESCALATE');
+  });
+
+  it('kennt kein advisory', () => {
+    for (const decision of ['ALLOW', 'APPROVAL', 'DENY']) {
+      expect(fromGovardGateway({ decision }).advisory).toBeNull();
+    }
   });
 });
 

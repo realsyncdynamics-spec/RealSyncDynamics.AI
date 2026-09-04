@@ -29,6 +29,7 @@ import { useEntitlements } from '../../core/billing/useEntitlements';
 import { MODULE_PRICING_STATUS, type BookableModule, type BookableModuleId } from '@/shared/pricing';
 import { buildCatalog, planLabel, type CatalogEntry } from './moduleCatalog';
 import { readFunnelContext } from '../../core/onboarding/funnelContext';
+import { MyPlanSection } from './MyPlanSection';
 
 export function MarketplaceView() {
   const { tier, loading } = useEntitlements();
@@ -85,6 +86,11 @@ export function MarketplaceView() {
             </p>
           )}
         </header>
+
+        {/* AP7 — „Mein Plan": Plan, Enthaltenes, Add-ons mit Preisvorschau.
+            Add-ons werden über `subscription-addons` gebucht; die Module
+            darunter laufen weiterhin über den Plan. */}
+        <MyPlanSection />
 
         {aktiv.length > 0 && (
           <section className="mb-12">

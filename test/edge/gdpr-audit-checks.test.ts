@@ -11,6 +11,8 @@ import {
   type Issue,
 } from '../../supabase/functions/gdpr-audit/checks';
 import { evaluateAll } from '../../supabase/functions/_shared/rules/evaluator';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 
 /**
  * Tests für die Prüflogik des kostenlosen DSGVO-Audits.
@@ -193,13 +195,79 @@ describe('extractFacts', () => {
     expect((f.consent as Record<string, unknown>).banner).toBeDefined();
   });
 
-  it('laesst die Rule Engine tatsaechlich feuern', () => {
-    // Die Gegenprobe zum Test darueber: nicht nur die Form, sondern die
-    // Wirkung. Banner ohne Ablehnen-Option muss COOKIE_BANNER_DARK_PATTERN
-    // ausloesen — der haeufigste Regel-Befund der Historie (47 von 159).
-    const html = SAUBERE_SEITE + '<div class="cookie-banner">Alle akzeptieren</div>';
-    const findings = evaluateAll(facts(html) as Record<string, unknown>);
-    expect(findings.map((f) => f.rule_id)).toContain('COOKIE_BANNER_DARK_PATTERN');
+  // Die Gegenprobe zum Test darueber: nicht nur die Form der Fakten, sondern
+  // ihre Wirkung. Der Test oben faellt auf, wenn jemand flache Punkt-Schluessel
+  // zurueckgibt; er faellt NICHT auf, wenn ein Fakt zwar verschachtelt, aber
+  // unter falschem Namen oder mit falschem Typ ankommt. Dann schweigt die
+  // Regel genauso still.
+  //
+  // Warum das keine theoretische Sorge ist: Am 2026-09-01 lieferte ein
+  // Produktionsscan von realsyncdynamicsai.de keinen einzigen `rule:`-Befund,
+  // waehrend derselbe Scan am 2026-08-11 noch AI_ACT_LIMITED_RISK_CHATBOT
+  // gemeldet hatte. Die Ursache war harmlos — die Startseite wurde am
+  // 2026-08-19 neu gebaut und traegt kein Chat-Widget mehr. Aber das liess
+  // sich aus den Tests heraus nicht entscheiden, weil nur eine der drei
+  // Regeln eine Wirkungsprobe hatte. Diese Tabelle schliesst die Menge.
+  const AUSLOESER: Record<string, () => Record<string, unknown>> = {
+    // Banner ohne gleichwertige Ablehnen-Option — 47 von 159 Audits.
+    COOKIE_BANNER_DARK_PATTERN: () =>
+      facts(SAUBERE_SEITE + '<div class="cookie-banner">Alle akzeptieren</div>') as Record<string, unknown>,
+    // Chat-Widget ohne KI-Transparenzhinweis — 14 von 159 Audits.
+    AI_ACT_LIMITED_RISK_CHATBOT: () =>
+      facts(SAUBERE_SEITE + '<div class="chat-widget">Frag uns etwas</div>') as Record<string, unknown>,
+    // Externer Tracker, Datenschutzerklaerung vorhanden, aber ohne AVV — 1 von 159.
+    MISSING_AVV_REFERENCE: () =>
+      facts(
+        SAUBERE_SEITE + '<script src="https://www.googletagmanager.com/gtag/js?id=G-XXXX"></script>',
+        '<p>Wir verarbeiten Daten sorgfaeltig.</p>',
+      ) as Record<string, unknown>,
+  };
+
+  it('deckt jede Regel ab, die in Produktion je gefeuert hat', () => {
+    // Fixture-getrieben statt handgepflegt: Kommt ein vierter Regel-Code in
+    // `rule_ids_ever_emitted` dazu, schlaegt dieser Test fehl, statt die neue
+    // Regel stillschweigend ungeprueft zu lassen.
+    const fixture = JSON.parse(
+      readFileSync(resolve(__dirname, '../fixtures/gdpr-audit-production-contract.json'), 'utf8'),
+    ) as { rule_ids_ever_emitted: string[] };
+    const erwartet = fixture.rule_ids_ever_emitted.map((id) => id.replace(/^rule:/, '')).sort();
+    expect(Object.keys(AUSLOESER).sort()).toEqual(erwartet);
+  });
+
+  for (const [ruleId, bauen] of Object.entries(AUSLOESER)) {
+    it(`laesst die Rule Engine tatsaechlich feuern: ${ruleId}`, () => {
+      expect(evaluateAll(bauen()).map((f) => f.rule_id)).toContain(ruleId);
+    });
+  }
+
+  it('schweigt bei einer mangelfreien Seite', () => {
+    // Ohne diese Gegenprobe wuerde ein Evaluator, der einfach alles meldet,
+    // die drei Tests darueber ebenfalls bestehen.
+    //
+    // "Mangelfrei" heisst hier ausdruecklich: mit gelesener
+    // Datenschutz-Unterseite. `facts()` ohne zweites Argument setzt
+    // `page.privacy_policy.url_found` auf false, und dann feuert
+    // MISSING_PRIVACY_POLICY voellig zu Recht.
+    //
+    // Genau diese Regel erscheint in keinem der 159 historischen Audits —
+    // nicht weil sie nie zutraf, sondern weil `RULE_HEURISTIC_OVERLAP` in
+    // `checks.ts` sie unterdrueckt, sobald der Heuristik-Befund
+    // `no_privacy_link` denselben Mangel bereits meldet. Die Engine sieht
+    // ihn, der Bericht zaehlt ihn einmal. Ohne diese Unterdrueckung kostete
+    // ein fehlender Pflicht-Link 50 statt 25 Punkte.
+    const mangelfrei = facts(
+      SAUBERE_SEITE,
+      '<p>Wir schliessen einen AVV nach Art. 28 DSGVO.</p>',
+    ) as Record<string, unknown>;
+    expect(evaluateAll(mangelfrei)).toEqual([]);
+  });
+
+  it('unterdrueckt MISSING_PRIVACY_POLICY nicht in der Engine, sondern im Bericht', () => {
+    // Die Trennung festgehalten: Die Rule Engine meldet den Mangel,
+    // `runChecks` + Overlap-Filter entscheiden, ob er im Bericht landet.
+    // Wer den Filter entfernt, sieht den Doppelbefund sofort hier.
+    const ohnePrivacy = facts(SAUBERE_SEITE) as Record<string, unknown>;
+    expect(evaluateAll(ohnePrivacy).map((f) => f.rule_id)).toContain('MISSING_PRIVACY_POLICY');
   });
 
   it('übernimmt den AVV-Befund aus der gelesenen Unterseite', () => {

@@ -27,6 +27,23 @@ export interface SiteBrief {
   summary: string;
   /** Angebotene Leistungen — füllt `services`-Blöcke. */
   services: string[];
+  /**
+   * Belege für den „Warum wir"-Block — ausschließlich aus dem Scan oder aus
+   * Redaktion, nie erfunden.
+   *
+   * Bis zum 2026-09-01 stand an dieser Stelle nichts, und der Block trug
+   * stattdessen drei fest verdrahtete Sätze („Persönliche Betreuung — Feste
+   * Ansprechpartner statt Warteschleife."). Die gingen an jeden Kunden
+   * jeder Branche, unabhängig davon, was gescannt wurde. Eine erfundene
+   * Aussage über ein fremdes Unternehmen ist keine Vorschau, sondern eine
+   * Behauptung, für die niemand einstehen kann (§ 5 UWG).
+   *
+   * Leer ist deshalb ein gültiger Zustand und der Normalfall: Der Block
+   * geht dann leer und als `requiresRealContent` markiert in den Blueprint
+   * und wird von `analysis/blueprint.ts` als
+   * `content.awaiting-real-content` gemeldet.
+   */
+  highlights: string[];
   locale: Locale;
   /** Wurde die Branche sicher erkannt oder auf `sonstiges` zurückgefallen? */
   industryConfident: boolean;
@@ -37,6 +54,8 @@ export interface BriefEnrichment {
   name?: string;
   summary?: string;
   services?: string[];
+  /** Echte Vorzüge aus Scan oder Redaktion. Ohne Angabe bleibt der Block leer. */
+  highlights?: string[];
   locality?: string | null;
 }
 
@@ -101,9 +120,22 @@ export function parseBrief(prompt: string, locale: Locale = 'de'): SiteBrief {
   // sie sich wie ein Fehler.
   const label = preset.label.split(' / ')[0];
   const name = locality ? `${label} ${locality}` : label;
-  const summary = locality
-    ? `${label} in ${locality} — persönliche Beratung, transparente Leistungen und kurze Wege.`
-    : `${label} — persönliche Beratung, transparente Leistungen und kurze Wege.`;
+
+  // Sachlich, nicht werbend. Bis zum 2026-09-01 stand hier
+  // „… — persönliche Beratung, transparente Leistungen und kurze Wege." —
+  // dieselbe erfundene Behauptung wie im „Warum wir"-Block, nur an anderer
+  // Stelle. Sie ist folgenreicher als sie aussieht: Die Zusammenfassung
+  // wird zur Meta-Description und zur Hero-Unterzeile, landet also im
+  // ausgelieferten Dokument und im Suchindex. Aus einem Prompt allein lässt
+  // sich keine dieser drei Zusagen belegen.
+  //
+  // Leer darf sie trotzdem nicht sein, sonst greift `seo.missing-description`.
+  // Was bleibt, ist das, was der Prompt tatsächlich hergibt: Branche und Ort.
+  // Eine Längenregel gibt es nicht — geprüft wird allein auf „vorhanden".
+  //
+  // Der Scan-Pfad ist davon unberührt: `mergeBrief` ersetzt die
+  // Zusammenfassung ohnehin durch die echte Beschreibung der Website.
+  const summary = locality ? `${label} in ${locality}.` : `${label}.`;
 
   return {
     name,
@@ -111,6 +143,9 @@ export function parseBrief(prompt: string, locale: Locale = 'de'): SiteBrief {
     locality,
     summary,
     services: defaultServices(industry),
+    // Aus einem Prompt allein lassen sich keine Vorzüge belegen. Der Brief
+    // sagt hier bewusst „nichts bekannt" statt etwas Plausibles.
+    highlights: [],
     locale,
     industryConfident: confident,
   };
@@ -124,6 +159,7 @@ export function parseBrief(prompt: string, locale: Locale = 'de'): SiteBrief {
  */
 export function mergeBrief(base: SiteBrief, enrichment: BriefEnrichment): SiteBrief {
   const services = enrichment.services?.map((s) => s.trim()).filter((s) => s.length > 0);
+  const highlights = enrichment.highlights?.map((s) => s.trim()).filter((s) => s.length > 0);
   const name = enrichment.name?.trim() || base.name;
 
   return {
@@ -131,6 +167,7 @@ export function mergeBrief(base: SiteBrief, enrichment: BriefEnrichment): SiteBr
     name,
     summary: enrichment.summary?.trim() || renameInSummary(base, name),
     services: services && services.length > 0 ? services.slice(0, 12) : base.services,
+    highlights: highlights && highlights.length > 0 ? highlights.slice(0, 6) : base.highlights,
     // `null` ist eine gültige Korrektur („kein Ort erkennbar"), `undefined`
     // heißt „keine Aussage" — nur dann bleibt der Basiswert stehen.
     locality: enrichment.locality === undefined ? base.locality : enrichment.locality,

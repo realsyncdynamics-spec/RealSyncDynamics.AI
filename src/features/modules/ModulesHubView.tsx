@@ -1,30 +1,49 @@
-// Modul-Hub — die Capability-Übersicht des Governance OS (/app/modules).
+// Modul-Hub — die operative Capability-Übersicht des Governance OS (/app/modules).
 //
-// Produktprinzip: Der Kunde erlebt EIN Produkt. Chatbot, Telefon-Agent,
-// Agent Runtime, Website-Builder und Governance-Flächen sind Capabilities
-// des Workspaces — aktiviert wird zentral über den Plan (Stripe → Webhook →
-// Entitlement), nicht über Einzelverkäufe auf der öffentlichen Website.
+// ## Rolle (Entscheidung des Eigentümers, 2026-08-30)
 //
-// Zugriffslogik: ausschließlich Gates aus der Pricing-SSoT
-// (`shared/pricing.ts` via `canAccessModule`) — keine eigene Plan-Liste,
-// sonst driften Hub und Pricing auseinander (siehe governanceModules.ts).
+// Diese Seite ist die **Navigations- und Zustandsschicht**, nicht der Laden:
+//   Was habe ich? · Was ist verfügbar? · Wo geht es hinein?
+// Die kommerzielle Wahrheit — Preise, Plan-Zuordnung, Kaufentscheidung —
+// liegt ausschließlich in `/app/marketplace`. Der Hub nennt deshalb keine
+// Beträge, trägt keinen Kauf-Knopf und verspricht keine Aktivierung, die er
+// nicht einlösen kann; gesperrte Capabilities nennen den Grund und führen
+// über **einen** kontrollierten Übergang dorthin, wo entschieden wird.
+// Hintergrund: `docs/product/modular-product-experience.md` §8.
+//
+// ## Warum Entitlement-Keys und nicht `plan.modules`
+//
+// Der Hub beantwortet eine Autorisierungsfrage („darf ich hier hinein?").
+// Maßgeblich dafür ist allein der Entitlement-Key — `plan.modules` trägt laut
+// `shared/pricing.ts` die Feature-Listen der Preisseite und ist ausdrücklich
+// kein Freischaltungs-Vokabular. Die erste Fassung dieser Seite fragte über
+// `canAccessModule()` gegen `plan.modules` und lag damit messbar falsch:
+// im Free Audit erschien „Policies · Öffnen", obwohl `policy.packs` erst ab
+// Starter gilt (Messung 2026-08-30, `test/governance/modules-hub.test.ts`).
 import { Link } from 'react-router-dom';
 import * as Icons from 'lucide-react';
-import { resolvePlan } from '@/shared/pricing';
-import {
-  canAccessModule,
-  minimumPlanLabelForModule,
-} from '../../components/governance-os/governanceModules';
-import type { GovernanceModule } from '../../components/governance-os/governanceBrowserTypes';
-import { useActivePlan } from '../../hooks/useModuleAccess';
+import { planByKey, planGrants, type EntitlementKey } from '@/shared/pricing';
+import { cheapestPlanForKeys } from '../market/moduleCatalog';
+import { useEntitlements } from '../../core/billing/useEntitlements';
 
 function icon(name: string): Icons.LucideIcon {
   return (Icons as unknown as Record<string, Icons.LucideIcon>)[name] ?? Icons.Circle;
 }
 
-/** Hub-Eintrag: ein Navigations-Modul plus Hub-spezifische Darstellung. */
-export interface HubEntry extends GovernanceModule {
-  /** Beschriftung der Aktion, wenn das Modul freigeschaltet ist. */
+/** Eine Capability des Arbeitsbereichs, wie der Hub sie führt. */
+export interface HubEntry {
+  id: string;
+  label: string;
+  icon: string;
+  route: string;
+  description: string;
+  /**
+   * Entitlement-Keys, die diese Capability voraussetzt. **Alle** müssen
+   * getragen sein. Eine leere Liste heißt: für jeden Arbeitsbereich offen —
+   * nicht „egal", sondern eine bewusste Aussage.
+   */
+  requires: EntitlementKey[];
+  /** Beschriftung der Aktion, wenn die Capability offen ist. */
   openLabel: 'Öffnen' | 'Verwalten';
 }
 
@@ -34,8 +53,6 @@ export interface HubSection {
   entries: HubEntry[];
 }
 
-// Gates spiegeln die Pricing-SSoT: `module`-Gates prüfen `plan.modules`,
-// `all` sind Flächen, die jeder Workspace hat (Free Audit eingeschlossen).
 export const HUB_SECTIONS: HubSection[] = [
   {
     id: 'ai-automation',
@@ -46,9 +63,8 @@ export const HUB_SECTIONS: HubSection[] = [
         label: 'Website Chatbot',
         icon: 'MessageSquare',
         route: '/app/bots',
-        status: 'live',
-        gate: { kind: 'module', module: 'website_chat' },
         description: 'Chat auf der eigenen Website — antwortet nur aus dem Unternehmenskontext, jede Antwort im Prüfpfad.',
+        requires: ['bots.chat'],
         openLabel: 'Öffnen',
       },
       {
@@ -56,9 +72,8 @@ export const HUB_SECTIONS: HubSection[] = [
         label: 'Telefon-Agent',
         icon: 'Phone',
         route: '/app/agents/susi',
-        status: 'live',
-        gate: { kind: 'module', module: 'voice' },
         description: 'Sprachkanal mit Speech-to-Text, Text-to-Speech und Übergabe an Menschen.',
+        requires: ['bots.voice'],
         openLabel: 'Öffnen',
       },
       {
@@ -66,9 +81,8 @@ export const HUB_SECTIONS: HubSection[] = [
         label: 'WhatsApp Bot',
         icon: 'MessageCircle',
         route: '/app/bots',
-        status: 'live',
-        gate: { kind: 'module', module: 'whatsapp' },
         description: 'WhatsApp-Business-Kanal mit identischem Governance-Protokoll.',
+        requires: ['bots.whatsapp'],
         openLabel: 'Öffnen',
       },
       {
@@ -76,9 +90,12 @@ export const HUB_SECTIONS: HubSection[] = [
         label: 'Agent Runtime',
         icon: 'Cpu',
         route: '/app/ai-systems/agents',
-        status: 'live',
-        gate: { kind: 'module', module: 'automation_engine' },
         description: 'Autonome Agenten mit Identity, Policy, Runtime und Observability.',
+        // Kontingent-Key als Zugangsfrage: Wer keine Läufe hat, kann die
+        // Runtime nicht benutzen. `limit.agent_runs_monthly` wäre der
+        // genauere Name, trägt aber eine Lücke (Growth fehlt) — siehe
+        // Befund in docs/product/modular-product-experience.md §8.
+        requires: ['limit.automation_runs_monthly'],
         openLabel: 'Öffnen',
       },
     ],
@@ -92,9 +109,8 @@ export const HUB_SECTIONS: HubSection[] = [
         label: 'Landingpage Builder',
         icon: 'LayoutTemplate',
         route: '/app/siteos',
-        status: 'live',
-        gate: { kind: 'all' },
         description: 'SiteOS: Prompt → geprüfter Blueprint → Publish Gate.',
+        requires: [],
         openLabel: 'Öffnen',
       },
       {
@@ -102,9 +118,8 @@ export const HUB_SECTIONS: HubSection[] = [
         label: 'Websites & Domains',
         icon: 'Globe',
         route: '/app/websites',
-        status: 'live',
-        gate: { kind: 'all' },
         description: 'Domains, Scans und Findings je Website.',
+        requires: ['website.scan'],
         openLabel: 'Verwalten',
       },
     ],
@@ -118,9 +133,8 @@ export const HUB_SECTIONS: HubSection[] = [
         label: 'Risk',
         icon: 'AlertTriangle',
         route: '/app/risks',
-        status: 'live',
-        gate: { kind: 'module', module: 'risk_register' },
         description: 'Zentrales Risikoregister mit Bewertung, Eigentümern und Maßnahmen.',
+        requires: ['governance.risk_register'],
         openLabel: 'Öffnen',
       },
       {
@@ -128,9 +142,8 @@ export const HUB_SECTIONS: HubSection[] = [
         label: 'Monitoring',
         icon: 'Activity',
         route: '/app/monitoring',
-        status: 'live',
-        gate: { kind: 'module', module: 'monitoring' },
         description: 'Kontinuierliche Runtime-Überwachung von Assets, Kontrollen und SLOs.',
+        requires: ['monitoring.monthly'],
         openLabel: 'Öffnen',
       },
       {
@@ -138,9 +151,8 @@ export const HUB_SECTIONS: HubSection[] = [
         label: 'Evidence',
         icon: 'FileCheck2',
         route: '/app/evidence',
-        status: 'live',
-        gate: { kind: 'all' },
         description: 'Manipulationssicherer Nachweisspeicher mit Hash-Chain und Prüfpfad.',
+        requires: ['evidence.basic_vault'],
         openLabel: 'Öffnen',
       },
       {
@@ -148,50 +160,68 @@ export const HUB_SECTIONS: HubSection[] = [
         label: 'Policies',
         icon: 'Scale',
         route: '/app/policy-packs',
-        status: 'live',
-        gate: { kind: 'module', module: 'dsgvo' },
         description: 'Policy Packs: DSGVO, EU AI Act und branchenspezifische Rahmenwerke.',
+        requires: ['policy.packs'],
         openLabel: 'Öffnen',
       },
     ],
   },
 ];
 
-function EntryRow({ entry, plan, loading }: { entry: HubEntry; plan: string; loading: boolean }) {
+/** Trägt der Plan alle Keys dieser Capability? */
+export function isEntryOpen(planId: string | null | undefined, entry: HubEntry): boolean {
+  if (entry.requires.length === 0) return true;
+  return entry.requires.every((key) => planGrants(planId, key));
+}
+
+/**
+ * Grund, warum eine Capability gesperrt ist — in der Sprache des Kunden.
+ *
+ * Kein Preis und kein Kauf-Knopf: Der Hub sagt, *warum* zu ist und *wo*
+ * entschieden wird. Nennt kein wählbarer Plan die Capability, führt der Weg
+ * über den Vertrieb — dieselbe Regel wie im Marketplace.
+ */
+export function lockReason(entry: HubEntry): string {
+  const plan = cheapestPlanForKeys(entry.requires);
+  const label = plan ? planByKey(plan)?.name ?? null : null;
+  return label ? `Enthalten ab ${label}` : 'Auf Anfrage';
+}
+
+function EntryRow({ entry, planId, loading }: { entry: HubEntry; planId: string; loading: boolean }) {
   const Icon = icon(entry.icon);
-  const active = canAccessModule(entry, plan);
+  const offen = isEntryOpen(planId, entry);
 
   return (
-    <div className="flex items-center gap-4 px-4 py-3 bg-obsidian-900 border border-titanium-900 hover:border-titanium-800 transition-colors">
-      <Icon className={`h-4 w-4 shrink-0 ${active ? 'text-cyan-400' : 'text-titanium-700'}`} aria-hidden="true" />
-      <div className="flex-1 min-w-0">
+    <div className="flex items-center gap-4 border border-titanium-900 bg-obsidian-900 px-4 py-3 transition-colors hover:border-titanium-800">
+      <Icon className={`h-4 w-4 shrink-0 ${offen ? 'text-cyan-400' : 'text-titanium-700'}`} aria-hidden="true" />
+      <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          <span className={`text-sm font-medium ${active ? 'text-titanium-100' : 'text-titanium-400'}`}>
+          <span className={`text-sm font-medium ${offen ? 'text-titanium-100' : 'text-titanium-400'}`}>
             {entry.label}
           </span>
-          {!active && !loading && (
-            <span className="font-mono text-[9px] uppercase tracking-widest text-titanium-600 border border-titanium-800 px-1.5 py-0.5">
-              Ab {minimumPlanLabelForModule(entry)}
+          {!offen && !loading && (
+            <span className="border border-titanium-800 px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-widest text-titanium-600">
+              {lockReason(entry)}
             </span>
           )}
         </div>
-        <p className="text-xs text-titanium-500 truncate">{entry.description}</p>
+        <p className="truncate text-xs text-titanium-500">{entry.description}</p>
       </div>
       {loading ? (
-        <span className="font-mono text-[10px] text-titanium-700 px-3 py-1.5">…</span>
-      ) : active ? (
+        <span className="px-3 py-1.5 font-mono text-[10px] text-titanium-700">…</span>
+      ) : offen ? (
         <Link
           to={entry.route}
-          className="shrink-0 px-3 py-1.5 text-xs font-medium text-titanium-100 border border-titanium-700 hover:border-cyan-400 hover:text-cyan-400 transition-colors"
+          className="shrink-0 border border-titanium-700 px-3 py-1.5 text-xs font-medium text-titanium-100 transition-colors hover:border-cyan-400 hover:text-cyan-400"
         >
           {entry.openLabel}
         </Link>
       ) : (
         <Link
-          to="/app/billing"
-          className="shrink-0 px-3 py-1.5 text-xs font-medium text-obsidian-950 bg-titanium-100 hover:bg-cyan-400 transition-colors"
+          to="/app/marketplace"
+          className="shrink-0 border border-titanium-800 px-3 py-1.5 text-xs font-medium text-titanium-400 transition-colors hover:border-titanium-600 hover:text-titanium-200"
         >
-          Aktivieren
+          Im Marketplace
         </Link>
       )}
     </div>
@@ -199,53 +229,49 @@ function EntryRow({ entry, plan, loading }: { entry: HubEntry; plan: string; loa
 }
 
 /**
- * Capability-Übersicht des Workspaces: was ist im Plan aktiv (→ Öffnen),
- * was nicht (→ Aktivieren über das zentrale Billing). Kein manuelles
- * Freischalten — nach Stripe-Checkout aktualisiert der Webhook die
- * Entitlements und die Fläche ist sofort verfügbar.
+ * Operative Übersicht des Arbeitsbereichs: was ist offen (→ Öffnen), was
+ * nicht (→ Grund plus Übergang in den Marketplace). Der Zustand kommt aus
+ * dem Autorisierungs-Vokabular, damit die Seite dasselbe sagt wie die
+ * Laufzeit — und dasselbe wie der Marketplace.
  */
 export function ModulesHubView() {
-  const { plan, loading } = useActivePlan();
-  const planName = resolvePlan(plan)?.name ?? 'Free Audit';
+  const { tier, loading } = useEntitlements();
+  const planName = planByKey(tier)?.name ?? 'Free Audit';
 
   return (
-    <div className="p-6 max-w-4xl mx-auto space-y-8">
-      <div className="flex items-end justify-between gap-4 flex-wrap">
+    <div className="mx-auto max-w-4xl space-y-8 p-6">
+      <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-titanium-600 mb-1">
+          <p className="mb-1 font-mono text-[10px] uppercase tracking-[0.2em] text-titanium-600">
             Governance OS
           </p>
           <h1 className="text-xl font-bold text-titanium-50">Module</h1>
         </div>
-        <div className="flex items-center gap-3">
-          <span className="font-mono text-xs text-titanium-400">
-            Plan: <span className="text-titanium-100">{loading ? '…' : planName}</span>
-          </span>
-          <Link
-            to="/app/billing"
-            className="px-3 py-1.5 text-xs font-medium text-titanium-300 border border-titanium-800 hover:border-titanium-600 hover:text-titanium-100 transition-colors"
-          >
-            Plan ändern
-          </Link>
-        </div>
+        <span className="font-mono text-xs text-titanium-400">
+          Plan: <span className="text-titanium-100">{loading ? '…' : planName}</span>
+        </span>
       </div>
 
       {HUB_SECTIONS.map((section) => (
         <section key={section.id} aria-label={section.label}>
-          <h2 className="font-mono text-[10px] uppercase tracking-[0.2em] text-titanium-600 mb-2">
+          <h2 className="mb-2 font-mono text-[10px] uppercase tracking-[0.2em] text-titanium-600">
             {section.label}
           </h2>
           <div className="space-y-1.5">
             {section.entries.map((entry) => (
-              <EntryRow key={entry.id} entry={entry} plan={plan} loading={loading} />
+              <EntryRow key={entry.id} entry={entry} planId={tier} loading={loading} />
             ))}
           </div>
         </section>
       ))}
 
-      <p className="text-xs text-titanium-600 border-t border-titanium-900 pt-4">
-        Aktivierung läuft zentral über den Plan: Upgrade → Stripe → Webhook →
-        Entitlement — die Fläche ist danach sofort verfügbar, ohne manuelles Freischalten.
+      <p className="border-t border-titanium-900 pt-4 text-xs text-titanium-600">
+        Diese Übersicht zeigt den Zustand Ihres Arbeitsbereichs. Was zusätzlich
+        buchbar ist — mit Preis und Plan-Zuordnung — steht im{' '}
+        <Link to="/app/marketplace" className="text-titanium-400 underline underline-offset-2 hover:text-cyan-400">
+          Marketplace
+        </Link>
+        .
       </p>
     </div>
   );

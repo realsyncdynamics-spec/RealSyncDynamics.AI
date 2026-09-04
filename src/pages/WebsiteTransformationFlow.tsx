@@ -74,7 +74,18 @@ export function WebsiteTransformationFlow() {
   const [features] = useState<string[]>(FEATURES.map(([id]) => id));
 
   const previewBlueprint = useMemo(() => blueprint ? applySiteDesignTemplate(blueprint, template) : null, [blueprint, template]);
-  const previewHtml = useMemo(() => previewBlueprint ? renderSite(previewBlueprint, { baseUrl: url }).find((page) => page.path === '/')?.html ?? '' : '', [previewBlueprint, url]);
+  // `showcase` ist hier nicht optional, sondern der Unterschied zwischen
+  // Vorschau und Textwueste: `minimal` liefert nur das Kern-Stylesheet
+  // (Kontrast, Zeilenlaenge, Fokus) und laesst die Layoutschicht aus
+  // `render/presentation.ts` weg. Ohne sie zeigt diese Seite unter der
+  // Ueberschrift "So kann Ihre Website aussehen" ein rohes HTML-Dokument —
+  // und der Vorlagenwechsler darueber bleibt wirkungslos, weil er nur
+  // Farb-Tokens tauscht, auf die ohne Layoutschicht nichts reagiert.
+  // Alle uebrigen Aufrufer rendern bereits `showcase`
+  // (BuildStudioPage, siteos/preview.ts, publish-gate.ts); diese Seite war
+  // die einzige Ausnahme. Der Default bleibt `minimal`, weil er die
+  // Grundlage der Artefakt-Hashes ist.
+  const previewHtml = useMemo(() => previewBlueprint ? renderSite(previewBlueprint, { baseUrl: url, presentation: 'showcase' }).find((page) => page.path === '/')?.html ?? '' : '', [previewBlueprint, url]);
   const launchTier = ONE_TIME_PRICING_TIERS.find((tier) => tier.planKey === 'governance_launch');
   const planTier = recommendedPlan(features, scan?.scores);
   const currentPhaseIndex = PHASES.findIndex((item) => item.id === phase);

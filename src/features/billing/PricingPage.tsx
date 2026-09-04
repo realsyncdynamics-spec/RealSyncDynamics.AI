@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
+import { resolveAuditContext, withAuditContext } from '../../core/onboarding/funnelContext';
 import {
   ArrowRight, Check, Sparkles, Award, Building2, Cookie, ShieldCheck, Zap, Globe, Briefcase, Rocket,
 } from 'lucide-react';
@@ -339,6 +340,16 @@ export function PricingPage() {
 }
 
 function TierCard({ tier, selected = false }: { tier: PricingTier; selected?: boolean }) {
+  // Der Scan-Kontext reiste bis hierher (`?audit_id=` aus dem Bericht, oder
+  // die Sitzung aus /onboarding) und ging genau an dieser Karte verloren:
+  // `tier.cta.href` kommt aus der Config und kannte ihn nicht. Der Checkout
+  // und der Claim nach der Anmeldung brauchen ihn aber. Ergänzen, nicht neu
+  // zusammensetzen — `source`, `interval` und `pilot` bleiben erhalten.
+  const [params] = useSearchParams();
+  const auditContext = resolveAuditContext(params, params.get('audit') ?? undefined);
+  const ctaHref = tier.cta.href.startsWith('http')
+    ? tier.cta.href
+    : withAuditContext(tier.cta.href, auditContext);
   const plan = tier.plan;
   const TierIcon = PLAN_ICONS[plan.id];
   // COMMERCIAL-SSOT: temporary production hotfix.
@@ -411,9 +422,9 @@ function TierCard({ tier, selected = false }: { tier: PricingTier; selected?: bo
 
       <div className="flex flex-col gap-3">
         {/* Primary CTA: Book / Start */}
-        {tier.cta.href.startsWith('http') ? (
+        {ctaHref.startsWith('http') ? (
           <button
-            onClick={() => window.open(tier.cta.href, '_blank')}
+            onClick={() => window.open(ctaHref, '_blank')}
             className={`inline-flex items-center justify-center gap-2 px-5 py-3 text-sm font-bold rounded-none transition-colors ${
               tier.highlight
                 ? 'surface-mono'
@@ -425,7 +436,7 @@ function TierCard({ tier, selected = false }: { tier: PricingTier; selected?: bo
           </button>
         ) : (
           <button
-            onClick={() => window.location.href = tier.cta.href}
+            onClick={() => window.location.href = ctaHref}
             className={`inline-flex items-center justify-center gap-2 px-5 py-3 text-sm font-bold rounded-none transition-colors ${
               tier.highlight
                 ? 'surface-mono'

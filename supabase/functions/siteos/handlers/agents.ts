@@ -75,7 +75,7 @@ export async function handle(req: Request): Promise<Response> {
   const userId = userResp.user.id;
   const userEmail = userResp.user.email ?? null;
 
-  const admin = createClient(SUPABASE_URL, SERVICE_ROLE, { auth: { persistSession: false } });
+  const admin: Admin = createClient(SUPABASE_URL, SERVICE_ROLE, { auth: { persistSession: false } });
 
   const { data: member } = await admin
     .from('memberships').select('user_id')
@@ -140,7 +140,22 @@ export async function handle(req: Request): Promise<Response> {
   }
 }
 
-type Admin = ReturnType<typeof createClient>;
+/**
+ * Der Admin-Client, wie ihn `publish-gate.ts` und `anonymous.ts` benennen.
+ *
+ * `ReturnType<typeof createClient>` ohne Typargumente war naheliegend und
+ * falsch: Ohne generiertes Datenbankschema lösen die Vorgabewerte zu `never`
+ * auf. Jedes `.insert()`/`.update()` wird dann gegen `never` geprüft und jede
+ * gelesene Zeile ist `never` — fünfzehn Fehler, die nichts über den Code
+ * aussagen und die echten Befunde übertönen.
+ *
+ * `any` ist hier bewusst und auf die Schema-Parameter begrenzt: Das Projekt
+ * führt keine generierten Supabase-Typen, also gibt es nichts Genaueres
+ * einzusetzen. Sobald sie im Repo landen, gehört hier der echte
+ * `Database`-Typ hin.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type Admin = ReturnType<typeof createClient<any, 'public', any>>;
 
 /**
  * Nimmt einen wartenden Lauf an. Der Übergang queued → running läuft als
@@ -272,7 +287,7 @@ async function executeRun(admin: Admin, run: AgentRunRow, userId: string, userEm
 
   // Nachweis der Agentenänderung in der Herkunftskette.
   try {
-    await appendCustodyEvent(admin as never, {
+    await appendCustodyEvent(admin, {
       tenantId: run.tenant_id,
       assetRef: `siteos:blueprint:${run.tenant_id}:${row.slug}`,
       contentSha256: nextSha,
@@ -320,7 +335,7 @@ async function executeRun(admin: Admin, run: AgentRunRow, userId: string, userEm
     },
   }).eq('id', run.id);
 
-  await audit(admin as never, {
+  await audit(admin, {
     tenant_id: run.tenant_id, actor_user_id: userId, actor_email: userEmail,
     action: 'siteos.agent.remediate', target_type: 'siteos_blueprint', target_id: created.id,
     payload: {

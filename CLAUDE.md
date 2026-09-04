@@ -78,8 +78,8 @@ Menschen · Unternehmen · KI-Agenten · Daten · Entscheidungen.
 
 **Primär: Supabase Cloud (EU / Frankfurt)**
 - PostgreSQL 17 (Live-Projekt, Stand 2026-08-16)
-- **180 Edge Functions** im Repo (`supabase/functions/`, Deno/V8; `_shared` ist Bibliothek, keine Function). 179 davon deployt und deckungsgleich mit Produktion (Stand 2026-09-01, siehe §5); `subscription-addons` ist neu und wartet auf den nächsten `deploy.yml`-Lauf — bis dahin steht sie in `UNBACKED_CALLERS`
-- **322 Migrations** (`supabase/migrations/`) — 305 verbucht, gemessen am 2026-09-01 gegen den Ledger. Die Zahl stand bis zum 2026-09-04 auf 308 und war da schon um vier Dateien veraltet; gezählt wird jetzt mit `ls supabase/migrations/*.sql | wc -l`, damit sie nachprüfbar bleibt statt fortgeschrieben zu werden. Unverbucht sind die drei vom 2026-09-04 (`addon_booking_schema`, `canonical_plan_catalog`, `workflows_current_plans`) und die zehn der Agenten-Organisationsebene (`20260904010000`–`20260904010900`, ADR 0011) — alle warten auf den nächsten `deploy.yml`-Lauf. Zu den zwei nachgezogenen Out-of-Band-Migrationen siehe §5
+- **181 Edge Functions** im Repo (`supabase/functions/`, Deno/V8; `_shared` ist Bibliothek, keine Function) — **alle 181 deployt**, deckungsgleich in beide Richtungen. Gemessen am 2026-09-04 mit zwei unabhängigen Methoden (Management-API und HTTP-Probe je Slug), `comm` in beide Richtungen leer. `subscription-addons` stand hier bis dahin als „wartet auf den nächsten `deploy.yml`-Lauf“ — der Lauf war längst da, die Function antwortet mit `401`, nicht `404`. Siehe §5
+- **322 Migrations** (`supabase/migrations/`) — 312 davon verbucht, neueste verbuchte `20260904000200`. Der verbuchte Stand ist am 2026-09-04 gegen `supabase_migrations.schema_migrations` gemessen worden, Mengen in beide Richtungen verglichen, beide leer; die drei vom 2026-09-04, die hier als „kommen mit dem nächsten Deploy“ standen, sind angekommen. **Unverbucht sind allein die zehn der Agenten-Organisationsebene** (`20260904010000`–`20260904010900`, ADR 0011) — sie sind neu im Repo und warten auf den nächsten `deploy.yml`-Lauf. Zu den zwei nachgezogenen Out-of-Band-Migrationen siehe §5
 - RLS auf allen App-Tabellen · Realtime Subscriptions
 
 **Node/TypeScript-Services** (containerisiert — **kein Go im Repo**)
@@ -505,7 +505,7 @@ RealSyncDynamics.AI/
 ├── shared/
 │   └── pricing.ts     Single Source of Truth für Produkt-, Preis- und Berechtigungsmodell
 ├── supabase/
-│   ├── functions/     180 Edge Functions (einziger Ort für Service-Role-Keys)
+│   ├── functions/     181 Edge Functions (einziger Ort für Service-Role-Keys)
 │   └── migrations/    322 Migrations
 ├── apps/
 │   └── agent-runtime/ Agent Runtime (Node/TS, Docker)

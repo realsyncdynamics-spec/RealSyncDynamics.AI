@@ -68,8 +68,10 @@ export interface ClaimResult {
  * **Ein Schreibweg.** Übernommen wird über die RPC `claim_gdpr_audit`
  * (`core/onboarding/claimAudit.ts`) — dieselbe, die `/welcome` und die
  * Dashboard-Karte benutzen. Vorher rief diese Datei die Edge Function
- * `audit-claim`, die nie deployt wurde (UNBACKED_CALLERS); die Übernahme
- * aus dem Unified-Entry-Pfad schlug damit still fehl. Der Mandant ergibt
+ * `audit-claim`; zu jenem Zeitpunkt war sie nicht deployt, und die
+ * Übernahme aus dem Unified-Entry-Pfad schlug still fehl. Deployt ist sie
+ * inzwischen (gemessen 2026-09-04) — sie hat nur keinen Aufrufer mehr, und
+ * das soll so bleiben: ein Schreibweg. Der Mandant ergibt
  * sich aus der Mitgliedschaft des angemeldeten Nutzers; `tenantId` bleibt
  * als Parameter erhalten, damit Aufrufer unverändert bleiben.
  *

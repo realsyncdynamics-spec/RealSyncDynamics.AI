@@ -1223,10 +1223,48 @@ getestet und CI-grün, aber auf keinem Pfad erreichbar, der von diesem Repo
 ausgeht (§14: „fertiger Code, den niemand erreichen kann, ist verschwendete
 Arbeit").
 
-**Offen und vorgelegt**: Die Messung nach `deploy/playwright-scanner/server.ts`
-ziehen und über `cookie-scan-deep` in den Fakt führen — und die Frage, ob
-`services/playwright-scanner` dann noch bestehen soll. Belege:
-`docs/reports/watch-agent-2026-08-31.md` B-5 bis B-7.
+**Umgesetzt am 2026-09-04, erste Hälfte.** `deploy/playwright-scanner`
+trägt jetzt `consent-banner.ts` als **byte-gleichen Zwilling** von
+`services/playwright-scanner/src/consent-banner.ts` und liefert
+`consent_banner` in `/scan/full` **und** `/scan/consent-timing` (dort vor dem
+Klick gemessen — nach „Alles akzeptieren" ist das Banner weg). Additiv: kein
+bestehender Schlüssel angefasst, damit `audit-monitor-cron` unberührt bleibt.
+**Regel**: Die beiden Dateien sind getrennte Build-Kontexte und dürfen nur
+gemeinsam geändert werden; `test/scanner/consent-banner-twin.test.ts` bricht
+sonst.
+
+**Dabei kam B-8 heraus: Der Dienst ließ sich nie bauen.** `npm ci` ohne
+`package-lock.json`, `COPY … tsconfig.json` auf eine Datei, die es in diesem
+Verzeichnis **nie gab**, `build` auf ein `src/`, das nicht existiert, ein
+`tsc … || true` als Scheinprüfung — und `deploy/**` in keiner CI. Das ganze
+Verzeichnis stammt aus einem Commit (#1095, 2026-08-19) und war seither
+unberührt. Aufgefallen ist es nicht, weil `audit-monitor-cron` bei fehlender
+`PLAYWRIGHT_SCANNER_URL` still auf den `fetch`-Scanner zurückfällt. Alles
+behoben; `backend-services-ci.yml` deckt `deploy/playwright-scanner` jetzt mit
+`typecheck && build` ab. **Wirksam erst nach einem Redeploy** — der Dienst
+läuft per `docker compose` auf dem VPS, nicht über `deploy.yml`.
+
+**Und die zweite Hälfte des Satzes war falsch.** „Über `cookie-scan-deep` in
+den Fakt führen" geht nicht: `cookie-scan-deep` erzeugt keine Fakten, und
+`gdpr-audit`, das sie erzeugt (`checks.ts:718`), **hat keinen Browser** und
+ruft keinen Scanner. Der Fakt ließe sich nur speisen, wenn `gdpr-audit` selbst
+eine browser-gestützte Eingabe bekäme — eine Änderung an dem Pfad, aus dem
+alle 159 historischen Audits stammen, und damit nach §1 versionsrelevant.
+Bis dahin bleibt B-5 richtig, wie es ist: `undefined` statt einer
+Behauptung.
+
+**Offen und vorgelegt** (`docs/reports/watch-agent-2026-08-31.md` B-5 bis B-9):
+
+1. **B-9 — der Deep-Scan kann heute nicht funktionieren.**
+   `cookie-scan-deep` liest `pwData.requests` (Zeile 389); `/scan/full`
+   liefert dieses Feld nicht → `undefined.map` → **HTTP 500 bei jedem
+   Aufruf**. Die öffentliche Route `/consent-timing` prüft zusätzlich
+   `data.ok`, das die Function nie setzt. Drei Verträge, keine zwei passen.
+   Die Reparatur legt fest, welche Form kanonisch ist, ändert eine bestehende
+   Function und eine bestehende Seite (§10.3) — und lässt erstmals eine
+   Bewertung in `gdpr_audits` laufen, die dort nie lief (§1).
+2. Ob `services/playwright-scanner` noch bestehen soll — Entfernen greift in
+   Bestehendes ein (§10.3).
 
 #### Faustregel
 

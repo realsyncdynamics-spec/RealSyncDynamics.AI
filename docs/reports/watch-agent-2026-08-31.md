@@ -39,7 +39,7 @@ Gemessen, nicht hergeleitet (§5 CLAUDE.md). Jede Zeile mit Fundstelle.
 | 1 | Privacy-Seite (Stand 2026-08-30) gegen interne Änderungsprotokolle abgleichen | **Befund B-1** — das Datum ist kein Änderungsdatum, sondern immer der heutige Tag |
 | 2 | Sub-Prozessoren-Liste bei Bedarf aktualisieren | **Befund B-2** — dieselbe Mechanik, verschärft durch das Versprechen „laufend dokumentiert" |
 | 3 | Pricing-Seite auf Plan-Namen (Agency) und Add-on-Preise prüfen | **Befund B-3** — Add-on-Verfügbarkeit war hart codiert und für WhatsApp genau verkehrt herum; Add-on-Preis (99 €) dagegen korrekt |
-| 4 | BFDI-Empfehlungen zu Cookie-Bannern (13.08.2026) berücksichtigen | **Befund B-4** — der Scanner erkannte CMPs und Tracker, prüfte aber keine gleichwertige Ablehnen-Option; am 2026-09-01 nachgerüstet |
+| 4 | BFDI-Empfehlungen zu Cookie-Bannern (13.08.2026) berücksichtigen | **Befund B-4** — der Scanner erkannte CMPs und Tracker, prüfte aber keine gleichwertige Ablehnen-Option; am 2026-09-01 nachgerüstet, am 2026-09-04 in den Dienst gezogen, der wirklich gerufen wird (B-7, B-8) |
 | 5 | AI-Act-Transparenzpflichten in Claims und Scan-Logik absichern | Am 2026-09-04 nachgeholt und **erledigt**: Scan-Logik arbeitet (14 historische Treffer); die uneinheitliche Artikelnummer (B-6) ist geprüft und auf Art. 50 vereinheitlicht |
 
 Zusätzlich geprüft, weil CLAUDE.md §5 es vor jeder eigenen Messung verlangt
@@ -422,7 +422,7 @@ ist ein eigener Befund.
 
 | | `services/playwright-scanner` | `deploy/playwright-scanner` |
 |---|---|---|
-| Antwort | `{ ok, meta, cookies, trackers, forms, consent_banner, score, … }` | `{ url, cookies, requests, preConsentRequests, consentTimingMs, screenshot, crawledUrls }` |
+| Antwort | `{ ok, meta, cookies, trackers, forms, consent_banner, score, … }` | `{ ok, url, scanned_at, cookies, cookie_count, trackers_detected, consent_manager, … }` (snake_case) |
 | Endpunkte | `/scan` | `/scan/full`, `/scan/consent-timing`, `/scan/screenshot` |
 | zuletzt berührt | 2026-09-01 (B-4) | 2026-08-19 |
 
@@ -490,6 +490,161 @@ Das ist eine Ergänzung an einem Produktionsdienst und wirft zugleich die Frage
 auf, ob `services/playwright-scanner` überhaupt bestehen bleiben soll. Beides
 gehört entschieden, nicht nebenbei gemacht — vorgelegt.
 
+> **Am 2026-09-04 umgesetzt — und der zweite Halbsatz war falsch.** Die
+> Messung liegt jetzt in `deploy/playwright-scanner` (siehe unten). Der Weg
+> „über `cookie-scan-deep` in den Fakt" führt dagegen nirgendwohin:
+> `cookie-scan-deep` erzeugt keine Fakten, und `gdpr-audit`, das sie erzeugt,
+> hat keinen Browser. Einzelheiten in B-9 und in der Korrektur darunter.
+
+#### Nachtrag 2026-09-04: Diese Tabellenzeile stand hier zuerst falsch
+
+In der Spalte `deploy/` stand ursprünglich
+`{ url, cookies, requests, preConsentRequests, consentTimingMs, screenshot, crawledUrls }`.
+Das ist **nicht**, was der Dienst antwortet — das ist, was `cookie-scan-deep`
+zu bekommen *glaubt*. Ich habe die Deklaration des Aufrufers für die Antwort
+des Aufgerufenen gehalten und beides nicht gegeneinander gelesen. Am
+2026-09-04 an `scanFull()` nachgesehen: Die echte Antwort ist snake_case und
+enthält **keines** dieser Felder. Daraus folgt B-9.
+
+### B-8 · Der einzige Playwright-Dienst mit Aufrufern ließ sich nie bauen · 2026-09-04
+
+Aufgefallen beim Umsetzen von B-7. Bevor die Messung in
+`deploy/playwright-scanner` einziehen konnte, war zu klären, wie dieser Dienst
+überhaupt gebaut wird. Antwort: gar nicht.
+
+| Blocker | Befund |
+|---|---|
+| `RUN npm ci` | ohne `package-lock.json` im Verzeichnis — `npm ci` bricht ausdrücklich ab, wenn keiner da ist |
+| `COPY server.ts tsconfig.json ./` | **`tsconfig.json` hat es in diesem Verzeichnis nie gegeben.** `git log --all --name-only` über den Pfad listet fünf Dateien, keine davon ist es. Docker bricht bei einer fehlenden COPY-Quelle hart ab |
+| `RUN npx tsc --noEmit 2>/dev/null \|\| true` | prüft nichts: Fehler werden verworfen, und nach `npm ci --omit=dev` war `tsc` gar nicht installiert |
+| `package.json` → `build: esbuild src/server.ts` | es gibt kein `src/` — die Datei liegt flach im Verzeichnis. Auch `main` zeigte auf `dist/server.js` |
+| CI | `backend-services-ci.yml` deckt `services/**`, `worker/**`, `apps/**` ab — **`deploy/**` nicht.** Der Dienst mit den Aufrufern war in keiner Prüfung, der ohne Aufrufer in einer |
+
+Das Verzeichnis stammt vollständig aus einem einzigen Commit (`a67ae2c`,
+#1095, 2026-08-19) und ist seither unberührt. `docker compose up --build`
+hätte an Tag eins abgebrochen. Dass es niemandem auffiel, hat einen Grund und
+der ist der eigentliche Befund: **`audit-monitor-cron` fällt still zurück.**
+`if (!PW_URL) return scanWithFetch(domain)` — ohne Scanner-URL scannt der Cron
+eben mit `fetch`, ohne Fehler, ohne Log, ohne Unterschied im Ergebnistyp. Ein
+Dienst, dessen Ausfall der Aufrufer stillschweigend überspielt, fehlt niemandem.
+
+**Behoben, weil es Voraussetzung für B-7 war** — und weil §14 dafür keinen
+Ermessensspielraum lässt:
+
+- `tsconfig.json` neu, `strict` samt `noUncheckedIndexedAccess`. Der bestehende
+  `server.ts` besteht ihn unverändert — es fehlte die Prüfung, nicht die Qualität.
+- `package-lock.json` erzeugt und eingecheckt, damit `npm ci` trägt.
+- `package.json`: Pfade auf die Wirklichkeit (`server.ts`, `server.js`),
+  `typecheck`-Skript ergänzt.
+- Dockerfile: `npm ci` mit devDependencies (esbuild wird zum Bauen gebraucht),
+  danach `npm prune --omit=dev`; der als Prüfung getarnte `|| true`-Aufruf ist
+  entfallen — die echte Prüfung läuft jetzt in der CI.
+- `backend-services-ci.yml` deckt `deploy/playwright-scanner` mit
+  `npm run typecheck && npm run build` ab.
+
+Gesichert durch `test/scanner/consent-banner-twin.test.ts`: Der Test liest die
+`COPY`-Zeilen des Dockerfiles und prüft, dass jede genannte Datei existiert.
+Genau dieser Fehler — Verweis auf eine Datei, die es nicht gibt — kann damit
+nicht wiederkommen.
+
+### B-7 umgesetzt: Die Messung liegt jetzt im Dienst, der gerufen wird
+
+`deploy/playwright-scanner/consent-banner.ts` ist ein **byte-gleicher
+Zwilling** von `services/playwright-scanner/src/consent-banner.ts`.
+`server.ts` sammelt die Schaltflächen aus dem DOM und liefert `consent_banner`
+in **beiden** Endpunkten, die ein Banner sehen können: `/scan/full` und
+`/scan/consent-timing`.
+
+**Warum ein Zwilling und kein Import.** Die beiden Dienste sind getrennte
+Build-Kontexte; das Dockerfile kopiert nur aus dem eigenen Verzeichnis. Ein
+Import über die Grenze wäre lokal grün und im Image kaputt. Der Zwilling folgt
+dem Muster, das dieses Repo bereits für `ai-act.json` verwendet — und wie dort
+hält ein Test die Gleichheit fest, weil ein Zwilling ohne Gleichheitsprüfung
+keine Kopie ist, sondern eine Abweichung mit Anlaufzeit.
+
+**In `/scan/consent-timing` wird vor dem Klick gemessen.** Nach „Alles
+akzeptieren" ist das Banner weg, und „gleiche Deutlichkeit" ist eine Aussage
+über die erste Ebene.
+
+**Additiv, ausdrücklich**: `consent_banner` ist ein zusätzlicher Schlüssel.
+Kein bestehendes Feld wurde umbenannt oder entfernt, damit
+`audit-monitor-cron` — der einzige Aufrufer, der heute funktioniert —
+unberührt weiterläuft.
+
+**Wirksam wird das erst nach einem Redeploy.** `deploy/playwright-scanner`
+läuft per `docker compose` auf dem VPS hinter Traefik, nicht über
+`deploy.yml`. Ein Commit ändert dort nichts, solange das Image nicht neu
+gebaut wird. Das ist keine Nebenbemerkung: Es ist der Unterschied zwischen
+„im Repo behoben" und „in Produktion behoben", und dieser Bericht besteht zur
+Hälfte aus genau dieser Unterscheidung.
+
+### B-9 · Der Deep-Scan kann nicht funktionieren — drei Verträge, keine zwei passen · 2026-09-04
+
+Der Rest von B-7 lautete: „von dort über `cookie-scan-deep` in den Fakt".
+Beim Umsetzen zeigte sich, dass dieser Satz **an zwei Stellen falsch** ist.
+
+**Erstens ist `cookie-scan-deep` selbst kaputt.** Es deklariert intern
+`PlaywrightScanResult` mit `requests`, `preConsentRequests`, `crawledUrls`,
+`consentTimingMs`, `screenshot` und liest sie ungeprüft:
+
+```ts
+const annotated = pwData.requests.map((r) => ({ … }));   // Zeile 389
+```
+
+`/scan/full` liefert keines dieser Felder. `pwData.requests` ist `undefined`,
+`.map` wirft, der äußere `catch` macht daraus **HTTP 500**. Und zwar bei jedem
+Aufruf, nicht in einem Randfall.
+
+**Zweitens ist die öffentliche Route darüber ebenfalls falsch verdrahtet.**
+`/consent-timing` und `/tools/consent-timing` (beide in `App.tsx`, öffentlich,
+ohne Auth) rufen `cookie-scan-deep` mit `{ scan_type: 'consent_timing' }` —
+ein Feld, das die Function nicht kennt; sie liest `scan_depth`. Danach prüft
+die Seite `if (!resp.ok || !data.ok) throw` — und `DeepScanResult` enthält
+**kein** `ok`. Selbst ein geglückter Scan endete in der Fehleranzeige.
+
+| Ebene | erwartet | bekommt |
+|---|---|---|
+| `ConsentTimingAnalysis.tsx` | `{ ok, requests_before_consent, violations, score, … }` | `DeepScanResult` ohne `ok` |
+| `cookie-scan-deep` | `{ requests, preConsentRequests, crawledUrls, consentTimingMs }` | snake_case-Zusammenfassung ohne diese Felder |
+| `deploy/playwright-scanner` `/scan/full` | — | genau diese Zusammenfassung |
+
+Zum Vergleich, und das ist der Beleg dafür, welcher Dienst wirklich läuft:
+`audit-monitor-cron` liest `d.trackers_detected`, `d.cookie_count`,
+`d.consent_manager?.detected` und schickt den Header `x-api-key` — alles
+passgenau zu `deploy/playwright-scanner`. Ein Aufrufer trifft den Vertrag, der
+andere nicht.
+
+**Nicht behoben, vorgelegt.** Die Reparatur ist keine Kleinigkeit und kein
+Ermessen: Sie legt fest, welche der drei Formen die kanonische ist, ändert die
+Antwort einer bestehenden Edge Function und das Verhalten einer bestehenden
+öffentlichen Seite (§10.3). Sie entscheidet außerdem, ob `gdpr_audits`
+künftig `scan_type: 'deep'`-Zeilen mit einer Bewertung bekommt, die dort noch
+nie gelaufen ist — und Bewertungsgewichte sind nach §1 versionsrelevant.
+
+### Korrektur zu B-7: `cookie-scan-deep` führt gar nicht zum Fakt
+
+Auch der zweite Teil des Satzes war falsch, und diesmal grundsätzlich.
+`consent.banner.reject_button_equal_prominence` wird an genau einer Stelle
+erzeugt: `gdpr-audit/checks.ts:718`. `gdpr-audit` holt das HTML per `fetch`
+und **hat keinen Browser** — es ruft weder `cookie-scan-deep` noch einen
+Playwright-Dienst, an keiner Zeile.
+
+`cookie-scan-deep` wiederum berührt die Regel-Engine überhaupt nicht; es
+erzeugt keine Fakten, sondern eigene `issues`.
+
+Damit steht die Sache anders, als ich sie am 2026-09-04 aufgeschrieben habe:
+Der Fakt lässt sich **nicht** über `cookie-scan-deep` speisen. Der Weg müsste
+sein, dass `gdpr-audit` eine browser-gestützte Eingabe erhält — also selbst
+den Scanner ruft. Das ist eine Änderung an dem Pfad, aus dem alle 159
+historischen Audits stammen, und würde Ergebnisse ändern, wo heute
+`undefined` steht. Nach §1 versionsrelevant, also eine Entscheidung, keine
+Umsetzung.
+
+**Bis dahin bleibt B-5 richtig, wie es ist**: Der Fakt sagt `undefined` statt
+`true`, weil eine Wortsuche Gleichrangigkeit nicht belegen kann. Das ist keine
+Übergangslösung, die auf B-7 wartet — es ist die zutreffende Aussage, solange
+der Pfad, der es messen könnte, nicht angeschlossen ist.
+
 ### Was an Empfehlung 5 in Ordnung ist
 
 Damit der Bericht nicht nur Befunde nennt: Die Transparenzprüfung **arbeitet**.
@@ -542,6 +697,23 @@ B-4 ist keine Änderung an Bestehendem, sondern eine Ergänzung — nach §10.2 
 Am 2026-09-01 umgesetzt, Einzelheiten oben im Befund. Kein bestehender Text,
 kein bestehendes Verhalten und keine Punktzahl wurden dabei angefasst.
 
+**B-7 und B-8, umgesetzt am 2026-09-04.** Beides Ergänzungen bzw. Reparaturen
+an einer Build-Kette, die nie funktioniert hat — kein sichtbarer Text, keine
+Oberfläche, kein Verhalten einer laufenden Funktion:
+
+| Was | Vorher | Nachher |
+|---|---|---|
+| `deploy/playwright-scanner/consent-banner.ts` | — | byte-gleicher Zwilling, Gleichheit per Test gesichert |
+| `consent_banner` in `/scan/full` und `/scan/consent-timing` | — | neu, additiv; bestehende Schlüssel unverändert |
+| `tsconfig.json` im Dienst | existierte nie | `strict` + `noUncheckedIndexedAccess`, grün ohne Codeänderung |
+| `package-lock.json` | fehlte, `npm ci` brach ab | erzeugt und eingecheckt |
+| `package.json` | `main`/`build` zeigten auf `src/server.ts` und `dist/` | auf die tatsächlichen Pfade, `typecheck` ergänzt |
+| Dockerfile | `COPY … tsconfig.json` auf eine Datei, die es nie gab; `tsc … \|\| true` als Scheinprüfung | COPY nur auf vorhandene Dateien; Bundle-Build, danach `npm prune`; Typecheck in der CI |
+| `backend-services-ci.yml` | `deploy/**` in keiner Prüfung | `deploy/playwright-scanner` mit `typecheck && build` in der Matrix |
+
+**B-9 ist nicht umgesetzt** und gehört ausdrücklich nicht in diese Tabelle —
+siehe den Befund oben.
+
 ---
 
 ## 5. Offen für den nächsten Bericht
@@ -569,6 +741,16 @@ kein bestehendes Verhalten und keine Punktzahl wurden dabei angefasst.
   messen. Genau das, wogegen dieser Bericht an drei anderen Stellen
   argumentiert — und der Beleg dafür, dass „steht in der Doku" kein Ersatz
   für eine Messung ist, auch dann nicht, wenn die Doku die eigene ist.
+- **B-9 ist die größte offene Sache dieses Berichts** und braucht eine
+  Entscheidung, keine Umsetzung: Welche der drei Formen im Deep-Scan-Pfad ist
+  die kanonische? Davon hängt ab, ob `/consent-timing` — eine öffentliche,
+  verlinkte Route — wieder etwas anderes zeigt als eine Fehlermeldung.
+- **Ob `services/playwright-scanner` bestehen bleiben soll**, ist weiterhin
+  offen. Seit dem 2026-09-04 hat er einen Zwilling seines einzigen
+  produktrelevanten Moduls im Dienst, der wirklich läuft. Entfernen greift in
+  Bestehendes ein (§10.3) und wird deshalb nicht nebenbei gemacht.
+- **Der Redeploy des Scanner-Containers** ist ein Betreiberschritt. Solange er
+  nicht läuft, ist B-7/B-8 im Repo behoben und in Produktion nicht.
 - **Free-Tarif bei Supabase** bleibt der bekannte, unveränderte Befund: keine
   täglichen Backups, kein Point-in-Time-Recovery, kein SLA. Unabhängig von
   dieser Woche.

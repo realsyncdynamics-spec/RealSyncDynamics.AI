@@ -40,3 +40,6 @@ scripts/ops/.migration-drift-suggested.sh
 
 # Lokaler wrangler-/Miniflare-Zustand (z. B. D1 unter --local) — nie ins Repo.
 .wrangler/
+
+# Bundle des Playwright-Scanners (wird in CI und im Docker-Build erzeugt)
+deploy/playwright-scanner/server.js

@@ -1153,6 +1153,48 @@ die Duplizierung, die die SSoT verhindern soll — nur eine Ebene tiefer und
 unsichtbar. Belege und die übrigen Befunde:
 `docs/reports/watch-agent-2026-08-31.md`.
 
+**2026-09-04 — Prominenz-Fakt und AI-Act-Artikelnummer**
+
+Auf die Fragepflicht nach §10.3 hat der Eigentümer zweimal mit **Ja**
+geantwortet — die zweite Antwort ist eine Freigabe **zum Prüfen**, nicht zum
+Ändern:
+
+| Frage | Antwort |
+|---|---|
+| 1. Funktionsänderung: `reject_button_equal_prominence` ehrlich machen — Deep-Scan misst, Text angleichen | **Ja** |
+| 2. Textänderung: Art. 50 / Art. 52 vereinheitlichen | **Ja — erst am Verordnungstext prüfen, dann korrigieren** |
+
+Umfang zu 1 — und **nur** dieser, in `supabase/functions/gdpr-audit/checks.ts`:
+
+| Fall | Vorher | Nachher |
+|---|---|---|
+| Banner mit Ablehnen-Option | `true` | `undefined` |
+| Banner ohne Ablehnen-Option | `false` | `false` |
+| kein Banner | `false` | `false` |
+
+`COOKIE_BANNER_DARK_PATTERN` feuert bei `equals false` und greift damit in
+**exakt denselben Fällen** wie vorher — kein Ergebnis ändert sich, die
+Vergleichbarkeit mit den 159 historischen Audits bleibt. Weg fällt allein die
+unbelegte Behauptung im ersten Fall. `hasEqualRejectOption` → `hasRejectOption`;
+der Alias `hasEqualRejectButton` bleibt.
+
+**Warum das eine Regression war, keine fehlende Funktion**:
+`worker/src/detectors/consent.ts` misst die Prominenz korrekt über
+`getBoundingClientRect()`. Der Worker ist deprecated; beim Umzug in die Edge
+Function trat eine Wortsuche an die Stelle der Messung — unter demselben
+Faktnamen. Der Kommentar über der Funktion hielt die richtige Überlegung
+bereits fest („das ist die Richtung, in der die Aussage belastbar ist"); der
+Code folgte ihr nur zur Hälfte.
+
+**Zu 2 ist bewusst nichts geändert.** Die 16 Stellen mit „Art. 52" bleiben,
+bis die Zuordnung am Text der Verordnung (EU) 2024/1689 bestätigt ist. Bei
+einem Produkt, das Rechtsnormen zitiert, ist das keine Förmlichkeit.
+
+**Offen und blockierend**: Welcher der beiden Playwright-Dienste
+(`services/` oder `deploy/`) unter `PLAYWRIGHT_SCANNER_URL` läuft, ist aus dem
+Repo nicht ablesbar. Davon hängt ab, ob die echte Prominenz-Messung je in den
+Fakt gelangt. Belege: `docs/reports/watch-agent-2026-08-31.md` B-5 bis B-7.
+
 #### Faustregel
 
 **Hinzufügen ja, Ändern nur nach Rückfrage, Design gar nicht.**

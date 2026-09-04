@@ -10,6 +10,7 @@
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
+import { sendResendEmail } from '../_shared/mailer.ts';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -41,14 +42,12 @@ Deno.serve(async (req) => {
   const ipHeader = req.headers.get('x-forwarded-for') ?? req.headers.get('cf-connecting-ip') ?? 'unknown';
   const ipHash = await sha256Hex(ipHeader);
 
-  // Rate-limit: 5 subscriptions per ip_hash per hour
   const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
   const { count } = await supa
     .from('newsletter_subscribers').select('*', { count: 'exact', head: true })
     .eq('ip_hash', ipHash).gte('created_at', oneHourAgo);
   if ((count ?? 0) >= 5) return jsonError(429, 'RATE_LIMITED', 'too many subscriptions, retry later');
 
-  // Idempotent insert: if email exists, just resend the DOI mail with existing token
   const { data: existing } = await supa.from('newsletter_subscribers')
     .select('confirm_token, status')
     .eq('email', email)
@@ -72,38 +71,19 @@ Deno.serve(async (req) => {
     confirmToken = row!.confirm_token;
   }
 
-  // Send DOI email via Resend (graceful no-op without key)
-  const apiKey = await getResendKey(supa);
-  if (apiKey) {
-    const fromAddr = Deno.env.get('NEWSLETTER_EMAIL_FROM') ?? 'newsletter@realsyncdynamicsai.de';
-    const confirmUrl = `https://RealSyncDynamicsAI.de/newsletter/confirm?token=${confirmToken}`;
-    const html = renderDoiEmail(email, confirmUrl);
-    await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        from: `RealSync Dynamics <${fromAddr}>`,
-        to: [email],
-        subject: 'Bitte bestätige Deine Newsletter-Anmeldung',
-        html,
-        reply_to: 'kontakt@realsyncdynamicsai.de',
-        tags: [{ name: 'category', value: 'newsletter_doi' }],
-      }),
-    }).catch(() => { /* swallow — user gets ok status anyway */ });
-  }
+  const fromAddr = Deno.env.get('NEWSLETTER_EMAIL_FROM') ?? 'newsletter@realsyncdynamicsai.de';
+  const confirmUrl = `https://RealSyncDynamicsAI.de/newsletter/confirm?token=${confirmToken}`;
+  const html = renderDoiEmail(email, confirmUrl);
+  await sendResendEmail(supa, {
+    to: email,
+    subject: 'Bitte bestätige Deine Newsletter-Anmeldung',
+    html,
+    from: `RealSync Dynamics <${fromAddr}>`,
+    tags: [{ name: 'category', value: 'newsletter_doi' }],
+  }).catch(() => { /* swallow — user gets ok status anyway */ });
 
   return jsonResponse({ ok: true });
 });
-
-async function getResendKey(supa: ReturnType<typeof createClient>): Promise<string | null> {
-  const env = Deno.env.get('RESEND_API_KEY');
-  if (env && env.startsWith('re_')) return env;
-  try {
-    const { data } = await supa.rpc('get_app_secret', { secret_name: 'resend_api_key' });
-    if (typeof data === 'string' && data.startsWith('re_')) return data;
-  } catch { /* RPC may not exist */ }
-  return null;
-}
 
 function renderDoiEmail(email: string, confirmUrl: string): string {
   return `<!doctype html>
@@ -137,4 +117,3 @@ function renderDoiEmail(email: string, confirmUrl: string): string {
 function escapeHtml(s: string): string {
   return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
-

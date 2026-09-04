@@ -181,7 +181,7 @@ Was bewusst *nicht* in Phase A ist: eigene CMS-Plugins, eigenes CRM/IAM/Ticket-S
 - [ ] AI-Tool-Inventar erfassen
 - [ ] Risk Level Assessment (minimal/limited/high-risk/banned)
 - [ ] Disclosure-Check fuer Chatbots
-- [ ] EU AI Act Art. 52 (Transparenzpflichten) pruefen
+- [ ] EU AI Act Art. 50 (Transparenzpflichten) pruefen
 
 ### DSB Integration
 - [ ] DSB-Dashboard (Datenschutzbeauftragter-Ansicht)

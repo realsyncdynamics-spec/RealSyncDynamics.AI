@@ -1,8 +1,8 @@
 /**
- * AI Disclosure Detection — Heuristic check for Art. 52 AI Act compliance
+ * AI Disclosure Detection — Heuristic check for Art. 50 AI Act compliance
  *
  * Detects whether a website discloses its use of AI systems.
- * Art. 52 AI Act (Limited-Risk AI) requires users to be informed when
+ * Art. 50 AI Act (Limited-Risk AI) requires users to be informed when
  * they interact with AI systems.
  *
  * This is a simplified, MVP-level heuristic:

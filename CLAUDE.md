@@ -1186,9 +1186,27 @@ Faktnamen. Der Kommentar über der Funktion hielt die richtige Überlegung
 bereits fest („das ist die Richtung, in der die Aussage belastbar ist"); der
 Code folgte ihr nur zur Hälfte.
 
-**Zu 2 ist bewusst nichts geändert.** Die 16 Stellen mit „Art. 52" bleiben,
-bis die Zuordnung am Text der Verordnung (EU) 2024/1689 bestätigt ist. Bei
-einem Produkt, das Rechtsnormen zitiert, ist das keine Förmlichkeit.
+**Zu 2, am selben Tag geprüft und dann korrigiert.** Die Prüfung ging der
+Änderung voraus, wie freigegeben. Ergebnis: **Art. 50** trägt die Überschrift
+„Transparency Obligations for Providers and Deployers of Certain AI Systems"
+und in Abs. 1 die Pflicht, Personen darüber zu informieren, dass sie mit
+einem KI-System interagieren; **Art. 52** heißt „Procedure" und regelt die
+Einstufung von GPAI-Modellen mit systemischem Risiko. Entscheidend war, dass
+**Kapitel IV aus genau einem Artikel besteht — Art. 50**.
+
+Daraufhin 17 Stellen in elf Dateien von `Art. 52` auf `Art. 50` gezogen:
+Regelwerk (beide Zwillinge), `ai-disclosure-check.ts`, unsere eigenen
+KI-Hinweise (`AuditCopilotPanel`, `AssistentQuickChatModal`),
+`RiskCenterView`, `EvidenceVaultView`, `LegalMethodology`, Mock-Daten,
+`ROADMAP.md`, `SCANNER-TEST-GUIDE.md`. Regel-`id`, `severity`, `conditions`
+und `version` bleiben unberührt — die Regel verhält sich unverändert.
+`updated_at` dieser einen Regel steht jetzt auf `2026-09-04`.
+
+**Grenze der Prüfung, ausdrücklich**: Der EUR-Lex-Volltext ließ sich nicht
+auswerten (zu groß, bricht in den Erwägungsgründen ab, DE wie EN). Die
+Bestätigung stammt aus einer den amtlichen Text wiedergebenden Quelle plus der
+inneren Evidenz des Repos. Für die Vereinheitlichung von Nummern trägt das;
+für Zitate im Rechtsstreit gehört einmal ins Amtsblatt geschaut.
 
 **Offen und blockierend**: Welcher der beiden Playwright-Dienste
 (`services/` oder `deploy/`) unter `PLAYWRIGHT_SCANNER_URL` läuft, ist aus dem

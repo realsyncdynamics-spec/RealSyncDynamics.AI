@@ -40,7 +40,7 @@ Gemessen, nicht hergeleitet (§5 CLAUDE.md). Jede Zeile mit Fundstelle.
 | 2 | Sub-Prozessoren-Liste bei Bedarf aktualisieren | **Befund B-2** — dieselbe Mechanik, verschärft durch das Versprechen „laufend dokumentiert" |
 | 3 | Pricing-Seite auf Plan-Namen (Agency) und Add-on-Preise prüfen | **Befund B-3** — Add-on-Verfügbarkeit war hart codiert und für WhatsApp genau verkehrt herum; Add-on-Preis (99 €) dagegen korrekt |
 | 4 | BFDI-Empfehlungen zu Cookie-Bannern (13.08.2026) berücksichtigen | **Befund B-4** — der Scanner erkannte CMPs und Tracker, prüfte aber keine gleichwertige Ablehnen-Option; am 2026-09-01 nachgerüstet |
-| 5 | AI-Act-Transparenzpflichten in Claims und Scan-Logik absichern | Am 2026-09-04 nachgeholt: Scan-Logik arbeitet (14 historische Treffer), aber **Befund B-6** — dieselbe Pflicht trägt im Repo zwei verschiedene Artikelnummern |
+| 5 | AI-Act-Transparenzpflichten in Claims und Scan-Logik absichern | Am 2026-09-04 nachgeholt und **erledigt**: Scan-Logik arbeitet (14 historische Treffer); die uneinheitliche Artikelnummer (B-6) ist geprüft und auf Art. 50 vereinheitlicht |
 
 Zusätzlich geprüft, weil CLAUDE.md §5 es vor jeder eigenen Messung verlangt
 („Sieh in den Actions-Tab"):
@@ -370,16 +370,47 @@ genau die Offenlegung, die die Norm verlangt. Sie nennen dabei die falsche
 Norm. Und `LegalMethodology.tsx` ist die Seite, auf der wir unsere
 Prüfmethodik offenlegen.
 
-**Nicht geändert, weil Fragepflicht.** Elf Dateien, davon mehrere mit
-sichtbarem Text (§10.3) und zwei Regelwerks-Zwillinge, deren `norms` in
-Kundenbefunden erscheinen (§1 CLAUDE.md: versionsrelevant). Vorgelegt.
+#### Geprüft am 2026-09-04, dann korrigiert
 
-**Und eine Grenze meiner Messung**, die dazugehört: Ich habe die
-Artikelzuordnung aus der inneren Widersprüchlichkeit des Repos hergeleitet und
-gegen meine Kenntnis der Endfassung gehalten. Das ist ein starkes Indiz, aber
-kein Blick ins Amtsblatt. Bevor eine korrigierte Nummer in Kundenbefunde geht,
-gehört sie einmal am Verordnungstext geprüft — bei einem Produkt, das
-Rechtsnormen zitiert, ist das keine Förmlichkeit.
+Der Eigentümer hat nach §10.3 mit **„Ja — erst prüfen, dann korrigieren"**
+entschieden. Die Prüfung ist erfolgt, bevor eine Zeile geändert wurde.
+
+**Was die Prüfung ergeben hat:**
+
+| Artikel | Amtliche Überschrift | Inhalt |
+|---|---|---|
+| **Art. 50** | „Transparency Obligations for Providers and Deployers of Certain AI Systems" | Abs. 1: Personen müssen „informed that they are interacting with an AI system" werden |
+| **Art. 52** | „Procedure" | Verfahren zur Einstufung von GPAI-Modellen mit systemischem Risiko |
+
+Entscheidend war ein struktureller Beleg: **Kapitel IV der Verordnung besteht
+aus genau einem Artikel — Artikel 50**, und die Kapitelüberschrift ist
+wortgleich mit der Artikelüberschrift. Damit ist ausgeschlossen, dass die
+Transparenzpflicht anderswo im Kapitel steht.
+
+**Was ich nicht belegen konnte, und das gehört dazu**: Der Volltext auf
+EUR-Lex ließ sich nicht auswerten — das Dokument ist zu groß und bricht beim
+Abruf mitten in den Erwägungsgründen ab, in der deutschen wie in der
+englischen Fassung. Die Bestätigung stammt daher aus einer Quelle, die den
+amtlichen Text wiedergibt (AI-Act-Explorer, Artikel- und Kapitelseite),
+zusammen mit der inneren Evidenz des Repos. Für eine Korrektur, die Nummern
+angleicht, trägt das. Wer die Zitate in einem Rechtsstreit braucht, sollte
+sie einmal am Amtsblatt selbst nachschlagen.
+
+**Was geändert wurde**: 17 Stellen in elf Dateien, von `Art. 52` auf
+`Art. 50` — Regelwerk (beide Zwillinge), `ai-disclosure-check.ts`, unsere
+eigenen KI-Hinweise in `AuditCopilotPanel` und `AssistentQuickChatModal`,
+`RiskCenterView`, `EvidenceVaultView`, `LegalMethodology`, die Mock-Daten und
+zwei Dokumentationsdateien.
+
+**Nicht geändert**: Die Regel-`id` `AI_ACT_LIMITED_RISK_CHATBOT`, `severity`
+und `conditions` — Befund-Codes und Gewichte sind versionsrelevant, und an
+der Sache ändert eine korrigierte Normangabe nichts. Ebenso bleibt
+`version: 2026.05.0`: Das Verhalten der Regel ist unverändert.
+
+**Nachgezogen**: `updated_at` dieser einen Regel steht jetzt auf `2026-09-04`
+statt `2026-05-07`. Es wäre schief, in einem Bericht ein selbstdatierendes
+„Stand" zu beanstanden (B-1/B-2) und im selben Zug ein Änderungsdatum stehen
+zu lassen, das die eigene Änderung verschweigt.
 
 ### B-7 · Zwei Playwright-Scanner, ein Vertrag, der nicht passt · 2026-09-04
 
@@ -460,7 +491,7 @@ Vorgelegt und am 2026-09-01 mit **Ja** beantwortet (Eintrag in CLAUDE.md §10):
 | B-1 / B-2 | Festes Änderungsdatum statt `new Date()` | **Ja** | `LAST_UPDATED = '2026-08-19'` in beiden Dateien, mit Kommentar, wann es mitzuziehen ist |
 | B-3 | Verfügbarkeit aus `availableFor` ableiten | **Ja** | `toBotAddOn` reicht die Plannamen durch, die Preisseite formatiert sie |
 | B-5 | Deep-Scan misst, Text angleichen (2026-09-04) | **Ja** | Fakt jetzt asymmetrisch, Funktion umbenannt, Test korrigiert — **ohne Ergebnisänderung**. Zweite Hälfte blockiert durch B-7 |
-| B-6 | Artikelnummer erst prüfen, dann korrigieren (2026-09-04) | **Ja** | Bewusst **nichts geändert**: Die 16 Art.-52-Stellen bleiben, bis die Zuordnung am Verordnungstext bestätigt ist |
+| B-6 | Artikelnummer erst prüfen, dann korrigieren (2026-09-04) | **Ja** | Geprüft (Kapitel IV = nur Art. 50), danach 17 Stellen in elf Dateien auf Art. 50 gezogen |
 
 Der Umfang war ausdrücklich auf diese beiden Punkte begrenzt: keine Farben,
 kein Grid, keine Typografie, keine Sektionsreihenfolge, keine weitere Zeile

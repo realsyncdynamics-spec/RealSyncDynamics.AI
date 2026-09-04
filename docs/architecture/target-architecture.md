@@ -536,8 +536,14 @@ folgt:
 | --- | --- |
 | `packages/siteos-core/src/publish/gate.ts` | Contract-Typ und Ableitung, einmal geschrieben, in SPA · Deno · Vitest identisch |
 | `supabase/functions/siteos/publish-gate` | Auswertung (G1). Baut Artefakt und Befunde **neu**; übernimmt vom Aufrufer nur, welche Blueprint-Version gemeint ist |
+| ↳ `consultPolicyEngine()` (seit 2026-09-04, P2-3) | Befragt den Policy Decision Point, damit die **Richtlinien des Mandanten** hier wirken. Bis dahin entschied das Gate nur nach fest verdrahteten Regeln — die eigenen Regeln des Kunden hatten beim Veröffentlichen keine Wirkung. `SITEOS_PUBLISH_PDP=off\|shadow\|enforce`, Default `shadow` |
 | `supabase/functions/siteos/publish-approve` | Freigabe mit Person und Begründung (G4), danach neue Bewertung |
 | `siteos_publish_evaluations` | Anker jeder Publish-Aktion (G5), gebunden an einen Artefakt-Hash (G6) |
+
+Das Verdikt des PDP wird in die **vorhandenen** Vertragsfelder gefaltet (`block` senkt
+`policy_compliant`, `require_approval` hebt `human_approval_required`) — der Contract oben
+und die Ableitungsregel bleiben wörtlich unverändert. Ein sechstes Feld hätte genau die
+Drift erzeugt, die G2 ausschliesst.
 
 `publishable` ist dort eine **generierte Spalte**: Die Datenbank leitet sie aus
 denselben fünf Bedingungen ab wie der Kern. Damit ist G4 nicht nur eine Regel

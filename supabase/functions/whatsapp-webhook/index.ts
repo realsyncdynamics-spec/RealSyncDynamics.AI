@@ -37,6 +37,7 @@ import { gateFeature, EntitlementError } from '../_shared/entitlements.ts';
 import { consumeUsage, recordUsage, UsageError } from '../_shared/usage.ts';
 import { runAiTool } from '../_shared/ai.ts';
 import { audit } from '../_shared/auditLog.ts';
+import { enforceBotMessage } from '../_shared/pdp/botmessage.ts';
 import {
   resolveBot, upsertConversation, insertMessage, loadRecentHistory,
   buildBotPrompt, type BotRow,
@@ -229,6 +230,48 @@ async function handleInbound(
 
   const history = await loadRecentHistory(admin, conversationId, 12);
   const prior = history.slice(0, -1);
+
+  // ── Richtlinien des Mandanten (P2-5, PEP) ──────────────────────────
+  //
+  // Derselbe Aufruf wie in bot-chat und bot-voice-webhook — das ist der
+  // Punkt von P2-5. Vor dem Modellaufruf und vor `sendWhatsAppText`: Eine
+  // einmal versendete WhatsApp-Nachricht ist nicht zurueckholbar.
+  const verdict = await enforceBotMessage(admin, {
+    tenant_id: bot.tenant_id,
+    bot_id: bot.id,
+    channel: 'bot-whatsapp',
+    message: msg.text,
+    history_length: prior.length,
+    capability_keys: Object.keys(bot.capabilities ?? {}),
+  });
+
+  if (!verdict.allowed) {
+    // Der Absender bekommt eine neutrale Antwort, der Pruefpfad die
+    // Begruendung. Antwortlos zu bleiben waere hier schlechter: Der Kunde
+    // haelt den Kanal dann fuer defekt.
+    await insertMessage(admin, bot, conversationId, 'assistant', verdict.safe_reply!, {
+      metadata: {
+        channel: 'whatsapp', policy_blocked: true,
+        policy_decision: verdict.decision, policy_reasons: verdict.reasons,
+        policy_signals: verdict.signals,
+      },
+    });
+    await sendWhatsAppText(channel.phone_number_id, msg.from, verdict.safe_reply!);
+    await audit(admin, {
+      tenant_id: bot.tenant_id,
+      actor_user_id: '00000000-0000-0000-0000-000000000000',
+      actor_email: null,
+      action: 'whatsapp.message_blocked_by_policy',
+      target_type: 'bot_conversation',
+      target_id: conversationId,
+      payload: {
+        bot_id: bot.id, decision: verdict.decision,
+        reasons: verdict.reasons, signals: verdict.signals,
+      },
+    });
+    return;
+  }
+
   const prompt = buildBotPrompt({ persona: bot.persona, history: prior, userMessage: msg.text });
 
   const ai = await runAiTool(admin, bot.tenant_id, null, 'bot_reply', prompt, {

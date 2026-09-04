@@ -121,6 +121,40 @@ Deno.serve(async (req) => {
     // entferne sie, damit sie nicht doppelt im Prompt landet.
     const priorHistory = history.slice(0, -1);
 
+    // ── Richtlinien des Mandanten (P2-5, PEP) ───────────────────────
+    //
+    // Vor dem Modellaufruf: Danach ist das Geld ausgegeben und die Antwort
+    // erzeugt. Der Nachrichtentext verlaesst diesen Prozess nicht — an den
+    // PDP gehen nur Signalnamen (siehe _shared/pdp/botmessage.ts).
+    const verdict = await enforceBotMessage(admin, {
+      tenant_id: tenantId,
+      bot_id: bot.id,
+      channel: 'bot-chat',
+      message,
+      history_length: priorHistory.length,
+      capability_keys: Object.keys(bot.capabilities ?? {}),
+    });
+
+    if (!verdict.allowed) {
+      // Der Sperrgrund geht in den Pruefpfad, NICHT an den Absender: Er ist
+      // Kunde des Mandanten, nicht der Mandant. Ihm die Regel zu nennen,
+      // gaebe interne Richtlinien an einen Dritten preis.
+      await insertMessage(admin, bot, conversationId, 'assistant', verdict.safe_reply!, {
+        metadata: {
+          channel: 'chat', policy_blocked: true,
+          policy_decision: verdict.decision, policy_reasons: verdict.reasons,
+          policy_signals: verdict.signals,
+        },
+      });
+      return jsonResponse({
+        ok: true,
+        conversation_id: conversationId,
+        reply: verdict.safe_reply,
+        run_id: null,
+        policy_blocked: true,
+      });
+    }
+
     const prompt = buildBotPrompt({ persona: bot.persona, history: priorHistory, userMessage: message });
 
     const ai = await runAiTool(admin, tenantId, null, 'bot_reply', prompt, {

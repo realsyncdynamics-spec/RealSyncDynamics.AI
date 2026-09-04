@@ -750,7 +750,7 @@ function RoutesWithTracking() {
       <Route path="/app/intelligence" element={<AppGate><ProtectedRoute><DashboardView /></ProtectedRoute></AppGate>} />
       {/* Liest tenant_users/monitored_domains — Tenant-Daten, daher auth-gegatet. */}
       <Route path="/app/risk" element={<AppGate><ProtectedRoute><RiskDashboard /></ProtectedRoute></AppGate>} />
-      {/* DashboardRouter conditionally shows FreeTierDashboard or CeoCockpitView. */}
+      {/* DashboardRouter rendert GovernanceAiWorkspace; die Plan-Unterscheidung liegt dort, nicht in der Route. */}
       <Route path="/app/dashboard" element={<AppGate><GovernanceBrowserShell><DashboardRouter /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/cockpit/brief" element={<AppGate><CeoBriefPrintView /></AppGate>} />
       <Route path="/app/seo-marketing-dashboard" element={<AppGate><GovernanceBrowserShell><SEOMarketingDashboard /></GovernanceBrowserShell></AppGate>} />

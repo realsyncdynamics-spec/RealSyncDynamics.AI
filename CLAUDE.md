@@ -78,7 +78,7 @@ Menschen · Unternehmen · KI-Agenten · Daten · Entscheidungen.
 
 **Primär: Supabase Cloud (EU / Frankfurt)**
 - PostgreSQL 17 (Live-Projekt, Stand 2026-08-16)
-- **181 Edge Functions** im Repo (`supabase/functions/`, Deno/V8; `_shared` ist Bibliothek, keine Function) — **alle 181 deployt**, deckungsgleich in beide Richtungen. Gemessen am 2026-09-04 mit zwei unabhängigen Methoden (Management-API und HTTP-Probe je Slug), `comm` in beide Richtungen leer. `subscription-addons` stand hier bis dahin als „wartet auf den nächsten `deploy.yml`-Lauf“ — der Lauf war längst da, die Function antwortet mit `401`, nicht `404`. Siehe §5
+- **182 Edge Functions** im Repo (`supabase/functions/`, Deno/V8; `_shared` ist Bibliothek, keine Function) — **alle 182 deployt**, deckungsgleich in beide Richtungen. Nachgemessen am 2026-09-04 um 23:23 UTC per Management-API, nachdem `mcp-api-key-manager` (PR #1160) dazugekommen war; die Produktionsliste in `src/config/production-edge-functions.ts` hatte den Eintrag nicht, der Drift-Guard war deshalb rot. Zuvor gemessen am 2026-09-04 mit zwei unabhängigen Methoden (Management-API und HTTP-Probe je Slug), `comm` in beide Richtungen leer. `subscription-addons` stand hier bis dahin als „wartet auf den nächsten `deploy.yml`-Lauf“ — der Lauf war längst da, die Function antwortet mit `401`, nicht `404`. Siehe §5
 - **315 Migrations** (`supabase/migrations/`) — **314 verbucht**, neueste `20260904000200`, gemessen am 2026-09-04 um 17:50 UTC gegen `supabase_migrations.schema_migrations`; die einzige unverbuchte ist `20260904000300_canonical_plan_catalog` (PR #1196) und kommt mit dem nächsten Deploy. Frühere Stände dieser Zeile nannten 312 — die zwei Migrationen aus #1161/#1162 waren noch nicht mitgezählt. Gemessen am 2026-09-04 gegen `supabase_migrations.schema_migrations`, Mengen in beide Richtungen verglichen, beide leer. Die drei vom 2026-09-04, die hier als „kommen mit dem nächsten Deploy“ standen, sind angekommen. Zu den zwei nachgezogenen Out-of-Band-Migrationen siehe §5
 - RLS auf allen App-Tabellen · Realtime Subscriptions
 
@@ -563,7 +563,7 @@ RealSyncDynamics.AI/
 ├── shared/
 │   └── pricing.ts     Single Source of Truth für Produkt-, Preis- und Berechtigungsmodell
 ├── supabase/
-│   ├── functions/     181 Edge Functions (einziger Ort für Service-Role-Keys)
+│   ├── functions/     182 Edge Functions (einziger Ort für Service-Role-Keys)
 │   └── migrations/    315 Migrations
 ├── apps/
 │   ├── agent-runtime/ Agent Runtime (Node/TS, Docker)

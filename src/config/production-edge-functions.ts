@@ -9,7 +9,14 @@
  * sichtbar, weil Vite und `tsc` nur Strings sehen.
  *
  * ## Stand der Messung
-
+ *
+ * 2026-09-04T23:23Z, Management-API gegen das Live-Projekt: **182 deployt,
+ * 182 Verzeichnisse im Repository, `comm` in beide Richtungen leer.** Neu ist
+ * `mcp-api-key-manager` (PR #1160); die Liste hier war nicht mitgezogen, der
+ * Drift-Guard hat das als STALE_PROD_LIST gemeldet.
+ *
+ * Frühere Messung:
+ *
  * 2026-09-01 (nach dem Deploy-Lauf 33562518753 zu PR #1195), Management-API
  * gegen das Live-Projekt: **181 deployt, 181 Verzeichnisse im
  * Repository, `comm` in beide Richtungen leer.** Damit ist
@@ -47,10 +54,10 @@
  * Sie darf steigen, sobald jemand einen höheren Stand misst — und sie ist
  * kein Argument dafür, dass ein weiterer Deploy scheitern wird.
  */
-export const EDGE_FUNCTIONS_OBSERVED_MAX = 181;
+export const EDGE_FUNCTIONS_OBSERVED_MAX = 182;
 
 /** Datum der letzten Messung gegen das Live-Projekt. */
-export const PRODUCTION_EDGE_FUNCTIONS_MEASURED_AT = '2026-09-04T07:31Z';
+export const PRODUCTION_EDGE_FUNCTIONS_MEASURED_AT = '2026-09-04T23:23Z';
 
 /**
  * Die in Produktion aktiven Function-Slugs — alphabetisch, damit ein Diff
@@ -164,6 +171,7 @@ export const PRODUCTION_EDGE_FUNCTIONS: readonly string[] = [
   'maintenance-schedule',
   'market-scanner',
   'marketing-event',
+  'mcp-api-key-manager',
   'memory-confidence-trigger',
   'memory-decay-worker',
   'mfa-admin-reset',

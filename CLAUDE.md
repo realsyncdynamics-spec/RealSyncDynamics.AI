@@ -78,8 +78,8 @@ Menschen · Unternehmen · KI-Agenten · Daten · Entscheidungen.
 
 **Primär: Supabase Cloud (EU / Frankfurt)**
 - PostgreSQL 17 (Live-Projekt, Stand 2026-08-16)
-- **180 Edge Functions** im Repo (`supabase/functions/`, Deno/V8; `_shared` ist Bibliothek, keine Function). 179 davon deployt und deckungsgleich mit Produktion (Stand 2026-09-01, siehe §5); `subscription-addons` ist neu und wartet auf den nächsten `deploy.yml`-Lauf — bis dahin steht sie in `UNBACKED_CALLERS`
-- **308 Migrations** (`supabase/migrations/`) — 305 verbucht, gemessen am 2026-09-01 gegen den Ledger; die drei vom 2026-09-04 (`addon_booking_schema`, `canonical_plan_catalog`, `workflows_current_plans`) kommen mit dem nächsten Deploy. Zu den zwei nachgezogenen Out-of-Band-Migrationen siehe §5
+- **181 Edge Functions** im Repo (`supabase/functions/`, Deno/V8; `_shared` ist Bibliothek, keine Function) — **alle 181 deployt**, deckungsgleich in beide Richtungen. Gemessen am 2026-09-04 mit zwei unabhängigen Methoden (Management-API und HTTP-Probe je Slug), `comm` in beide Richtungen leer. `subscription-addons` stand hier bis dahin als „wartet auf den nächsten `deploy.yml`-Lauf“ — der Lauf war längst da, die Function antwortet mit `401`, nicht `404`. Siehe §5
+- **312 Migrations** (`supabase/migrations/`) — **alle 312 verbucht**, neueste `20260904000200`. Gemessen am 2026-09-04 gegen `supabase_migrations.schema_migrations`, Mengen in beide Richtungen verglichen, beide leer. Die drei vom 2026-09-04, die hier als „kommen mit dem nächsten Deploy“ standen, sind angekommen. Zu den zwei nachgezogenen Out-of-Band-Migrationen siehe §5
 - RLS auf allen App-Tabellen · Realtime Subscriptions
 
 **Node/TypeScript-Services** (containerisiert — **kein Go im Repo**)
@@ -563,8 +563,8 @@ RealSyncDynamics.AI/
 ├── shared/
 │   └── pricing.ts     Single Source of Truth für Produkt-, Preis- und Berechtigungsmodell
 ├── supabase/
-│   ├── functions/     180 Edge Functions (einziger Ort für Service-Role-Keys)
-│   └── migrations/    308 Migrations
+│   ├── functions/     181 Edge Functions (einziger Ort für Service-Role-Keys)
+│   └── migrations/    312 Migrations
 ├── apps/
 │   ├── agent-runtime/ Agent Runtime (Node/TS, Docker)
 │   └── mcp-server/    MCP Governance Server — Lesezugriff für KI-Agenten auf

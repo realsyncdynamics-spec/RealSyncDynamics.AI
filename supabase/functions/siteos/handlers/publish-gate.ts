@@ -37,6 +37,13 @@ import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { handleOptions, jsonResponse, jsonError, methodNotAllowed } from '../../_shared/gateway.ts';
 import { audit } from '../../_shared/auditLog.ts';
 import { appendCustodyEvent } from '../../_shared/provenanceCore.ts';
+import { decide } from '../../_shared/pdp/decide.ts';
+import {
+  decisionResultToPolicyState,
+  policyUnavailable,
+  publishToDecisionRequest,
+  type PublishPolicyState,
+} from '../../_shared/pdp/publish.ts';
 import {
   analyzeBlueprint,
   buildDeploymentArtifact,
@@ -252,6 +259,17 @@ async function runEvaluation(
       }
     : { grantedForArtifactSha256: null, grantedBy: null, reason: null };
 
+  // ── Richtlinien des Mandanten (P2-3, PEP) ──────────────────────────
+  //
+  // Bis hierher kennt das Gate nur seine eigene Befundtabelle. Erst dieser
+  // Aufruf macht es zum Enforcement-Punkt: Die Regeln, die der Mandant in
+  // seiner Governance hinterlegt hat, entscheiden über die Veröffentlichung
+  // mit.
+  //
+  // Fail-closed nach G3 — ausdrücklich anders als das allgemeine
+  // Ausfallverhalten (E2). Begründung in `_shared/pdp/publish.ts`.
+  const policy = await evaluatePolicy(ctx, row, artifact.artifactSha256, findings, scores.severityMax);
+
   // ── Bewertung ──────────────────────────────────────────────────────
   const evaluationId = crypto.randomUUID();
   const evaluation = evaluatePublishGate({
@@ -261,6 +279,9 @@ async function runEvaluation(
     evidence: { snapshotWritten: scan !== null, custodyLinked },
     // Serverseitig festgestellt, nicht vom Aufrufer entgegengenommen.
     backend: deriveBackendState(row.origin_source),
+    // Ebenso: eingeholt, nicht behauptet (G1). Kein Cast: Die beiden
+    // Typen sind strukturgleich, und genau das prüft der Paritätstest.
+    policy,
     approval,
     evaluationId,
     evaluatedAt: nowIso,
@@ -284,6 +305,13 @@ async function runEvaluation(
     warnings: evaluation.warnings,
     finding_count: findings.length,
     severity_max: scores.severityMax,
+    // Der Prüfpfad muss „eine Regel hat gesperrt" von „die Regeln waren
+    // nicht erreichbar" unterscheiden koennen. Im Vertrag sind beide
+    // `policy_compliant: false`; hier stehen sie getrennt.
+    policy_engine_status: policy.kind,
+    policy_decision: policy.kind === 'evaluated' ? policy.decision : null,
+    policy_matched_ids: policy.kind === 'evaluated' ? policy.matchedPolicyIds : [],
+    policy_snapshot_version: policy.kind === 'evaluated' ? policy.snapshotVersion : null,
     evaluated_at: nowIso,
     created_by: ctx.userId,
   });
@@ -302,10 +330,76 @@ async function runEvaluation(
       status: evaluation.status, publishable: evaluation.publishable,
       backend_preservation: evaluation.backend_preservation,
       blocker_count: evaluation.blockers.length,
+      policy_engine_status: policy.kind,
+      policy_decision: policy.kind === 'evaluated' ? policy.decision : null,
+      policy_matched_ids: policy.kind === 'evaluated' ? policy.matchedPolicyIds : [],
     },
   });
 
   return evaluation;
+}
+
+/**
+ * Holt die Richtlinien-Entscheidung des Mandanten ein.
+ *
+ * ## Warum jeder Fehler hier zu `unavailable` wird und nicht zu `allow`
+ *
+ * Ein `catch`, das weiterläuft, ist der übliche Weg, ein Gate versehentlich
+ * abzuschalten: Es fällt niemandem auf, weil nichts bricht — es wird nur
+ * nichts mehr geprüft. Deshalb gibt es hier keinen Pfad, auf dem ein
+ * Ausfall wie ein „keine Regel greift" aussieht. `unavailable` sperrt (G3),
+ * und der Grund steht im Sperrtext.
+ *
+ * ## Zeitüberschreitung
+ *
+ * §7 G3 nennt sie ausdrücklich neben der fehlenden Antwort. Ohne eigene
+ * Frist hinge der Aufruf am Vorgabewert der Laufzeit — und ein Gate, das
+ * minutenlang wartet, ist für den Benutzer nicht von einem defekten zu
+ * unterscheiden.
+ */
+const POLICY_TIMEOUT_MS = 5_000;
+
+async function evaluatePolicy(
+  ctx: Context,
+  row: { id: string; slug: string; blueprint: SiteBlueprint; origin_source: string | null },
+  artifactSha256: string,
+  findings: { code: string }[],
+  severityMax: string | null,
+): Promise<PublishPolicyState> {
+  const request = publishToDecisionRequest(ctx.tenantId, {
+    blueprint_id: row.id,
+    slug: row.slug,
+    industry: row.blueprint.industry,
+    origin_source: row.blueprint.origin.source,
+    origin_model: row.blueprint.origin.model,
+    artifact_sha256: artifactSha256,
+    page_count: row.blueprint.pages.length,
+    // Nur die Codes — die Titel sind freier Text und bleiben draußen.
+    finding_codes: findings.map((f) => f.code),
+    severity_max: severityMax,
+    dpia_required: row.blueprint.compliance.dpiaRequired,
+    special_categories: row.blueprint.compliance.specialCategories,
+    legal_bases: row.blueprint.compliance.legalBases,
+    consent_categories: row.blueprint.compliance.consentCategories,
+    user_id: ctx.userId,
+  });
+
+  try {
+    const result = await Promise.race([
+      decide(ctx.admin, request),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('policy evaluation timed out')), POLICY_TIMEOUT_MS),
+      ),
+    ]);
+    return decisionResultToPolicyState(result);
+  } catch (e) {
+    const message = (e as Error)?.message ?? String(e);
+    console.error(JSON.stringify({
+      level: 'error', scope: 'siteos_publish_policy_unavailable',
+      tenant_id: ctx.tenantId, blueprint_id: row.id, error: message,
+    }));
+    return policyUnavailable(message);
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────

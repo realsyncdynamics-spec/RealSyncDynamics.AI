@@ -78,8 +78,8 @@ Menschen · Unternehmen · KI-Agenten · Daten · Entscheidungen.
 
 **Primär: Supabase Cloud (EU / Frankfurt)**
 - PostgreSQL 17 (Live-Projekt, Stand 2026-08-16)
-- **185 Edge Functions** im Repo (`supabase/functions/`, Deno/V8; `_shared` ist Bibliothek, keine Function) — gemessen am 2026-09-04 am Merge-Baum dieses Branches, nicht addiert. 181 davon sind deployt und deckungsgleich mit Produktion (mains Messung vom 2026-09-04 mit zwei unabhängigen Methoden, `comm` in beide Richtungen leer — siehe §5). Die vier aus diesem Branch warten auf den nächsten `deploy.yml`-Lauf und stehen so lange in `UNBACKED_CALLERS`: `governance-decide` und `integration-credentials` (P0), `governance-access` (P1-3), `evidence-anchor` (P1-6)
-- **321 Migrations** (`supabase/migrations/`) — gemessen am 2026-09-04 am Merge-Baum, nach dem Nachziehen von 30 main-Commits. 314 davon sind verbucht bzw. kommen mit mains eigenem Deploy (`20260902000010`, `20260902000011` aus dem Onboarding-Vokabular); unverbucht aus **diesem** Branch sind sieben: `20260824090000_pdp_snapshots_shadow`, `20260824110000_integration_credentials_hardening`, `20260824120000_org_subject_model_approval_gates`, `20260901090000_evidence_append_only_anchors`, `20260904100000_connector_registry` (P2-1), `20260904110000_publish_gate_policy_trail` (P2-3) und `20260904120000_pdp_shadow_log_channels` (P2-3/P2-5)
+- **186 Edge Functions** im Repo (`supabase/functions/`, Deno/V8; `_shared` ist Bibliothek, keine Function) — gemessen am 2026-09-04 nach dem Nachziehen von sechs weiteren `main`-Commits (`ls -d`, nicht addiert); `mcp-api-key-manager` kam damit aus `main` dazu. 181 davon sind deployt und deckungsgleich mit Produktion (mains Messung vom 2026-09-04 mit zwei unabhängigen Methoden, `comm` in beide Richtungen leer — siehe §5). Die vier aus diesem Branch warten auf den nächsten `deploy.yml`-Lauf und stehen so lange in `UNBACKED_CALLERS`: `governance-decide` und `integration-credentials` (P0), `governance-access` (P1-3), `evidence-anchor` (P1-6)
+- **323 Migrations** (`supabase/migrations/`) — gemessen am 2026-09-04 (`ls | wc -l`) nach dem Nachziehen von sechs weiteren `main`-Commits; `20260903120000_mcp_api_keys` und `20260903120100_mcp_quota` kamen dabei aus `main`. 316 davon sind verbucht bzw. kommen mit mains eigenem Deploy; unverbucht aus **diesem** Branch sind sieben: `20260824090000_pdp_snapshots_shadow`, `20260824110000_integration_credentials_hardening`, `20260824120000_org_subject_model_approval_gates`, `20260901090000_evidence_append_only_anchors`, `20260904100000_connector_registry` (P2-1), `20260904110000_publish_gate_policy_trail` (P2-3) und `20260904120000_pdp_shadow_log_channels` (P2-3/P2-5)
 
   > **Zur Messmethode, weil die Zahlen mehrfach auseinanderliefen**: Die Repo-Zahlen hier stammen aus `ls`/`git ls-tree` auf dem Merge-Baum, nicht aus der Addition zweier Doku-Stände; die Produktionszahlen stammen aus mains Messung gegen das Live-Projekt, nicht aus den Repo-Zahlen abgeleitet. Beide Richtungen sind schon falsch dagewesen: `main` nannte am 2026-09-04 vormittags 180 Functions bei 181 im eigenen Baum, und `subscription-addons` stand zwölf Tage als „wartet auf den Deploy“, obwohl der Lauf längst da war — die Function antwortete mit `401`, nicht `404` (#1204). Wer eine dieser Zahlen fortschreibt statt sie nachzuzählen, schreibt den Fehler fort.
 - RLS auf allen App-Tabellen · Realtime Subscriptions
@@ -600,8 +600,8 @@ RealSyncDynamics.AI/
 ├── shared/
 │   └── pricing.ts     Single Source of Truth für Produkt-, Preis- und Berechtigungsmodell
 ├── supabase/
-│   ├── functions/     185 Edge Functions (einziger Ort für Service-Role-Keys)
-│   └── migrations/    321 Migrations
+│   ├── functions/     186 Edge Functions (einziger Ort für Service-Role-Keys)
+│   └── migrations/    323 Migrations
 ├── apps/
 │   ├── agent-runtime/ Agent Runtime (Node/TS, Docker)
 │   └── mcp-server/    MCP Governance Server — Lesezugriff für KI-Agenten auf

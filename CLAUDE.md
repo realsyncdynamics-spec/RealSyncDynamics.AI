@@ -78,10 +78,10 @@ Menschen · Unternehmen · KI-Agenten · Daten · Entscheidungen.
 
 **Primär: Supabase Cloud (EU / Frankfurt)**
 - PostgreSQL 17 (Live-Projekt, Stand 2026-08-16)
-- **186 Edge Functions** im Repo (`supabase/functions/`, Deno/V8; `_shared` ist Bibliothek, keine Function) — gemessen am 2026-09-04 nach dem Nachziehen von sechs weiteren `main`-Commits (`ls -d`, nicht addiert); `mcp-api-key-manager` kam damit aus `main` dazu. 181 davon sind deployt und deckungsgleich mit Produktion (mains Messung vom 2026-09-04 mit zwei unabhängigen Methoden, `comm` in beide Richtungen leer — siehe §5). Die vier aus diesem Branch warten auf den nächsten `deploy.yml`-Lauf und stehen so lange in `UNBACKED_CALLERS`: `governance-decide` und `integration-credentials` (P0), `governance-access` (P1-3), `evidence-anchor` (P1-6)
-- **323 Migrations** (`supabase/migrations/`) — gemessen am 2026-09-04 (`ls | wc -l`) nach dem Nachziehen von sechs weiteren `main`-Commits; `20260903120000_mcp_api_keys` und `20260903120100_mcp_quota` kamen dabei aus `main`. 316 davon sind verbucht bzw. kommen mit mains eigenem Deploy; unverbucht aus **diesem** Branch sind sieben: `20260824090000_pdp_snapshots_shadow`, `20260824110000_integration_credentials_hardening`, `20260824120000_org_subject_model_approval_gates`, `20260901090000_evidence_append_only_anchors`, `20260904100000_connector_registry` (P2-1), `20260904110000_publish_gate_policy_trail` (P2-3) und `20260904120000_pdp_shadow_log_channels` (P2-3/P2-5)
+- **186 Edge Functions** im Repo (`supabase/functions/`, Deno/V8; `_shared` ist Bibliothek, keine Function) — gemessen am 2026-09-04 am **Merge-Baum** (`ls -d`, nicht addiert). 182 davon sind mains Bestand und **alle deployt**, deckungsgleich in beide Richtungen: mains Messung vom 2026-09-04 um 23:23 UTC per Management-API, `comm` in beide Richtungen leer, nachdem `mcp-api-key-manager` (PR #1160) dazugekommen war — der Eintrag fehlte in `src/config/production-edge-functions.ts`, der Drift-Guard hatte recht. Die vier aus **diesem** Branch warten auf den nächsten `deploy.yml`-Lauf und stehen so lange in `UNBACKED_CALLERS`: `governance-decide` und `integration-credentials` (P0), `governance-access` (P1-3), `evidence-anchor` (P1-6)
+- **324 Migrations** (`supabase/migrations/`) — gemessen am 2026-09-04 am Merge-Baum (`ls supabase/migrations/*.sql | wc -l`). 317 davon sind mains Bestand, sieben stammen aus **diesem** Branch und sind unverbucht: `20260824090000_pdp_snapshots_shadow`, `20260824110000_integration_credentials_hardening`, `20260824120000_org_subject_model_approval_gates`, `20260901090000_evidence_append_only_anchors`, `20260904100000_connector_registry` (P2-1), `20260904110000_publish_gate_policy_trail` (P2-3) und `20260904120000_pdp_shadow_log_channels` (P2-3/P2-5)
 
-  > **Zur Messmethode, weil die Zahlen mehrfach auseinanderliefen**: Die Repo-Zahlen hier stammen aus `ls`/`git ls-tree` auf dem Merge-Baum, nicht aus der Addition zweier Doku-Stände; die Produktionszahlen stammen aus mains Messung gegen das Live-Projekt, nicht aus den Repo-Zahlen abgeleitet. Beide Richtungen sind schon falsch dagewesen: `main` nannte am 2026-09-04 vormittags 180 Functions bei 181 im eigenen Baum, und `subscription-addons` stand zwölf Tage als „wartet auf den Deploy“, obwohl der Lauf längst da war — die Function antwortete mit `401`, nicht `404` (#1204). Wer eine dieser Zahlen fortschreibt statt sie nachzuzählen, schreibt den Fehler fort.
+  > **Befund am 2026-09-04 abends, und er ist genau der Fehler, vor dem der nächste Absatz warnt**: Mains eigene Fassung dieser Zeile nannte **315** Dateien bei **317** im eigenen Baum, und daraus abgeleitet „die einzige unverbuchte ist `20260904000300`". Beides stimmt nicht mehr: Die Ledger-Messung stammt von **17:50 UTC**, danach hat PR #1160 zwei Migrationen mit *früheren* Versionsnummern nachgeschoben (`20260903120000_mcp_api_keys`, `20260903120100_mcp_quota`). Sie stehen deshalb nicht am Ende der Liste und fallen beim Blick auf „die neueste" nicht auf. Mains Tree-Zahl ist damit 317, seine unverbuchten sind **drei**, nicht eine — alle drei kommen mit mains eigenem Deploy. Die Zahl war nicht falsch gemessen, sie war nur nicht **nach**gemessen. Für diesen Branch ändert das nichts; für die nächste Sitzung schon: **Die Ledger-Messung altert mit jedem Merge, die Tree-Messung nicht.**
 - RLS auf allen App-Tabellen · Realtime Subscriptions
 
 **Node/TypeScript-Services** (containerisiert — **kein Go im Repo**)
@@ -601,7 +601,7 @@ RealSyncDynamics.AI/
 │   └── pricing.ts     Single Source of Truth für Produkt-, Preis- und Berechtigungsmodell
 ├── supabase/
 │   ├── functions/     186 Edge Functions (einziger Ort für Service-Role-Keys)
-│   └── migrations/    323 Migrations
+│   └── migrations/    324 Migrations
 ├── apps/
 │   ├── agent-runtime/ Agent Runtime (Node/TS, Docker)
 │   └── mcp-server/    MCP Governance Server — Lesezugriff für KI-Agenten auf
@@ -1237,6 +1237,32 @@ Gesichert durch `test/siteos/hero-longword.test.ts`. Geprüft wird am CSS,
 nicht am Pixel: Ein Pixel-Test hinge an der Schriftart des CI-Runners,
 während die fehlerhafte Kombination — Begrenzung plus `overflow:hidden`
 ohne Umbruchregel — eine Eigenschaft des Stylesheets ist.
+
+**2026-09-01 — Ein Flow für den Start: drei Freigaben nach der Add-on-Buchung**
+
+Auf die drei Fragen nach §10.3 aus `docs/product/addon-booking.md` §6 hat
+der Eigentümer mit **„go"** geantwortet — gelesen als Ja zu allen dreien,
+im Rahmen seines Auftrags „der Start ist am Ende immer der gleiche Flow".
+
+| Frage | Antwort |
+|---|---|
+| 1. Textänderung: Enterprise aus `availableFor` der fünf Add-ons nehmen, die Enterprise schon vollständig enthält | **Ja** |
+| 2. Funktionsänderung: `/checkout/success` nach `/app/dashboard` statt `/app/billing` leiten | **Ja** |
+| 3. Funktionsänderung: Registrierung von `/unified-entry/*` auf `/welcome?next=…` legen und `/os/app/*` hinter `AppGate` stellen | **Ja** |
+
+Umfang — und **nur** dieser:
+
+| Was | Vorher | Nachher |
+|---|---|---|
+| `availableFor` von Response Pack, Voice, Compliance Pack, Agency Bot Pack, White Label | `['growth', 'enterprise']` | `['growth']` — `plan.addons` von Enterprise unverändert |
+| `/checkout/success`, Weiterleitung und Knopf „Go to Dashboard Now" | `/app/billing?subscription=…` | `/app/dashboard?subscription=…` |
+| `/unified-entry/register` | eigenes Formular, danach `/unified-entry/onboarding` | Weiterleitung `/welcome?next=/unified-entry/onboarding` (Parameter bleiben) |
+| `/flow/login`, Knopf „Zur Anmeldung" | `/os/login` | `/welcome` |
+| `/os/app/*` (12 Routen) | ohne Auth-Wrapper | hinter `AppGate` |
+
+Farben, Typografie, Grid, Sektionsreihenfolge und Icon-Set sind unberührt.
+`/os/login` und `/os/signup` bleiben bestehen und erreichbar — sie sind nur
+kein Ziel des Flows mehr. Hergang: `docs/product/addon-booking.md` §6.
 
 **2026-09-04 — AP11 Aufräumen: verwaiste Dateien**
 

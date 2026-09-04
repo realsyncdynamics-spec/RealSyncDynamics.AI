@@ -3,6 +3,8 @@
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
+import { requireTenantMembership } from '../_shared/auth.ts';
+import { gateFeature, EntitlementError } from '../_shared/entitlements.ts';
 
 Deno.serve(async (req) => {
   const preflight = handleOptions(req);
@@ -38,6 +40,22 @@ Deno.serve(async (req) => {
 
   if (!tenantId || !templateId) {
     return jsonError(400, 'BAD_REQUEST', 'tenant_id and template_id required');
+  }
+
+  // AP9 Welle 4: Die Lesezugriffe laufen über RLS, aber der Bericht ist ein
+  // Export — Mitgliedschaft und `compliance.export` (ab Starter) werden hier
+  // geprüft, nicht erst an der Tabelle.
+  const admin = createClient(SUPABASE_URL, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, { auth: { persistSession: false } });
+  if (!(await requireTenantMembership(admin, userResp.user.id, tenantId))) {
+    return jsonError(403, 'FORBIDDEN', 'not a member of this tenant');
+  }
+  try {
+    await gateFeature(admin, tenantId, 'compliance.export');
+  } catch (e) {
+    if (e instanceof EntitlementError) {
+      return jsonError(403, 'ENTITLEMENT_MISSING', 'Compliance-Exporte sind im aktuellen Plan nicht enthalten (compliance.export) — ab Starter.');
+    }
+    throw e;
   }
 
   try {

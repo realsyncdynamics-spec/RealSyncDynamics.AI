@@ -6,6 +6,7 @@
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { corsHeaders, handleOptions, jsonResponse } from '../_shared/gateway.ts';
+import { gateFeature, EntitlementError } from '../_shared/entitlements.ts';
 
 interface ExportRequest {
   format: 'csv' | 'pdf';
@@ -130,6 +131,17 @@ Deno.serve(async (req) => {
 
     if (!member) {
       return jsonResponse({ error: 'Unauthorized' }, 403);
+    }
+
+    // AP9 Welle 4: Export nur mit `compliance.export` (ab Starter). Der
+    // Nutzer-Client reicht — tenant_entitlements() ist für Mitglieder lesbar.
+    try {
+      await gateFeature(userClient, body.tenant_id, 'compliance.export');
+    } catch (e) {
+      if (e instanceof EntitlementError) {
+        return jsonResponse({ error: 'Compliance-Exporte sind im aktuellen Plan nicht enthalten (compliance.export) — ab Starter.', code: 'ENTITLEMENT_MISSING' }, 403);
+      }
+      throw e;
     }
 
     // Fetch KPI data for date range

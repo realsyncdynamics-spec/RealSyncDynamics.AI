@@ -18,6 +18,7 @@
 
 import { createClient, SupabaseClient } from 'jsr:@supabase/supabase-js@2';
 import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
+import { gateFeature, EntitlementError } from '../_shared/entitlements.ts';
 
 type Severity = 'prohibited' | 'high' | 'limited' | 'minimal';
 const SEVERITIES: readonly Severity[] = ['prohibited', 'high', 'limited', 'minimal'] as const;
@@ -118,6 +119,21 @@ Deno.serve(async (req) => {
       .maybeSingle();
     if (mErr)     return jsonError(500, 'DB_ERROR', mErr.message);
     if (!member)  return jsonError(403, 'FORBIDDEN', 'not a member of this tenant');
+
+    // AP9 Welle 3: Das Inventar ist Teil des Risikoregisters
+    // (`governance.risk_register`, ab Growth). Das Zugriffsregister sperrt
+    // `/app/risk-inventory` auf denselben Key; hier greift die Prüfung, die
+    // sich nicht im Browser umgehen lässt. Das KI-Register (`governance.ai_register`)
+    // bleibt davon unberührt — es ist im Free-Plan enthalten und läuft nicht
+    // über diese Function.
+    try {
+      await gateFeature(admin, tenantIdForCheck, 'governance.risk_register');
+    } catch (e) {
+      if (e instanceof EntitlementError) {
+        return jsonError(403, 'ENTITLEMENT_MISSING', 'Das Risikoregister ist im aktuellen Plan nicht enthalten (governance.risk_register) — ab Growth.');
+      }
+      throw e;
+    }
   }
 
   try {

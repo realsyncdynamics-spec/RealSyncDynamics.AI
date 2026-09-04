@@ -213,6 +213,11 @@ Sicherheitsgrenze — siehe Befund B1.
    Tabelle mit RLS und bewusst ohne jede Client-Policy, Funktion nach dem
    Muster von `is_tenant_member`, Bestand aus `profiles.is_super_admin`
    übernommen. Damit ist `org_units` die nächste Migration.
+   **Ebenfalls erledigt am 2026-09-04** durch `20260905000200_org_units.sql`:
+   hierarchische Einheiten mit nullbarem `tenant_id`, den drei Scope-Fällen als
+   ausdrücklichen Policies, `key` je Scope eindeutig, und zwei Invarianten per
+   Trigger — die Hierarchie darf weder den Scope überschreiten noch einen
+   Zyklus schliessen. Acht Testfälle.
 3. Die Autonomiegrenze aus D1 ist eine serverseitige Prüfung (Policy Engine),
    kein Feld auf der Agenten-Zeile.
 4. `ai_tool_runs` bekommt additive, nullable Zuordnungsspalten für Agent und
@@ -355,6 +360,26 @@ einhakt statt ein zweites, konkurrierendes Modell zu eröffnen.
 Gleiches gilt für `agent_kg_*` gegenüber den vorhandenen `agent_knowledge_base`
 und `agent_memory` (Letztere ist RFC-003-Gegenstand, siehe CLAUDE.md §5).
 
+**Nachtrag 2026-09-04, und dieser blockiert die nächsten Migrationen.** Für
+`agents` und `agent_roles` aus D4 gibt es bereits zwei Vorlagen im Bestand, und
+keine der beiden ist offensichtlich die richtige:
+
+| Vorhanden | Stand | Verhältnis zu D4 |
+|---|---|---|
+| `public.agent_profiles` | **4 Zeilen live**; `id`, `name`, `type`, `description`, `system_prompt`, `enabled`, `created_at` | das, was `agents` wäre — **aber ohne `tenant_id`**, also ohne Mandantentrennung |
+| `AgentRole` in `src/core/trainer-agent/types.ts` | 9 Werte (`ResearchAgent` … `TrainerAgent`), rein in TypeScript | das, was `agent_roles` wäre — nur nicht in der Datenbank |
+
+`agent_profiles.type` und `AgentRole` sind bereits zwei Rollen-Vokabulare
+nebeneinander; ein drittes in `agent_roles` anzulegen würde die Lage
+verschlechtern, nicht verbessern. Und `agent_profiles` ohne `tenant_id` ist für
+sich genommen ein Befund gegen CLAUDE.md §3.
+
+Die Frage ist deshalb **nicht**, welche Spalten `agents` bekommt, sondern ob
+`agents` überhaupt neu entsteht oder ob `agent_profiles` erweitert wird. Das ist
+eine Produktentscheidung, keine Schemafrage — sie gehört entschieden, bevor die
+nächste Migration geschrieben wird. `org_units` war davon nicht betroffen (kein
+Gegenstück im Bestand) und ist deshalb vorgezogen worden.
+
 ### B5 — `agent-manager-roadmap.md` §2 ist überholt
 
 Der Abschnitt hält fest, `20260705180000_autonomous_agents_core.sql` sei nie
@@ -384,6 +409,11 @@ Datei ist mit einem datierten Hinweis korrigiert.
   festgeschrieben) durch `platform_operators` ersetzt wird oder daneben bestehen
   bleibt. Zwei Plattform-Quellen nebeneinander wären der Zustand, den D5
   vermeiden will (siehe B1).
+- **`agents` neu oder `agent_profiles` erweitert?** Blockiert die nächste
+  Migration nach `org_units` — Einzelheiten in Befund B4. Mit dieser
+  Entscheidung fällt auch die zu `agent_roles`: eigenes Vokabular in der
+  Datenbank oder `AgentRole` aus `src/core/trainer-agent/types.ts` dorthin
+  gespiegelt.
 - **Ablösung von `profiles.is_super_admin`** durch `is_platform_operator()`.
   Der Sperr-Teil von B1 ist behoben (`20260905000000`), die Vereinheitlichung
   der beiden Plattform-Quellen nicht. Solange beide existieren, gilt: neue

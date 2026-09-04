@@ -548,3 +548,155 @@ d('D5 — platform_operators ist fuer Clients gesperrt', () => {
     expect(rows[0]!.auth).toBe(true);
   });
 });
+
+/**
+ * ADR 0011, D4 — org_units: die drei Scope-Fälle, ausdrücklich geprüft.
+ *
+ * Der Kern der Entscheidung ist, dass es DREI Fälle gibt und nicht zwei. Ein
+ * Test, der nur „Mandant A sieht B nicht" prüft, würde den dritten übersehen —
+ * und genau dort liegt das Risiko: eine Platform-Zeile (`tenant_id IS NULL`),
+ * die durch die Lücke zwischen zwei Policies sichtbar wird.
+ */
+d('D4 — org_units trennt Platform Scope, eigenen und fremden Mandanten', () => {
+  let ctx: DbCtx | null = null;
+  beforeEach(async () => { ctx = await openDb(); });
+  afterEach(async () => { await closeDb(ctx); ctx = null; });
+
+  /** Legt eine Einheit als Superuser an (Fixture, an RLS vorbei). */
+  async function seedUnit(tenantId: string | null, key: string, parentId: string | null = null): Promise<string> {
+    const { rows } = await ctx!.client.query<{ id: string }>(
+      `INSERT INTO public.org_units(tenant_id, key, name, parent_id)
+       VALUES ($1, $2, $2, $3) RETURNING id`,
+      [tenantId, key, parentId],
+    );
+    return rows[0]!.id;
+  }
+
+  /**
+   * Fuehrt fn in einem SAVEPOINT aus. Noetig, weil ein erwarteter Fehler
+   * (Unique-Verletzung, Trigger-Raise) sonst die ganze Testtransaktion
+   * abbricht und jede weitere Anweisung mit "current transaction is aborted"
+   * scheitert — der Test wuerde dann an der Mechanik fallen, nicht an der
+   * Sache. withClaims macht dasselbe fuer die RLS-Faelle.
+   */
+  async function mitSavepoint<T>(fn: () => Promise<T>): Promise<T> {
+    const sp = `sp_ou_${Math.random().toString(36).slice(2, 10)}`;
+    await ctx!.client.query(`SAVEPOINT ${sp}`);
+    try {
+      const out = await fn();
+      await ctx!.client.query(`RELEASE SAVEPOINT ${sp}`);
+      return out;
+    } catch (err) {
+      await ctx!.client.query(`ROLLBACK TO SAVEPOINT ${sp}`);
+      throw err;
+    }
+  }
+
+  async function sichtbareKeys(userId: string): Promise<string[]> {
+    return ctx!.withClaims({ sub: userId, role: 'authenticated' }, async () => {
+      const { rows } = await ctx!.client.query<{ key: string }>(
+        `SELECT key FROM public.org_units ORDER BY key`,
+      );
+      return rows.map((r) => r.key);
+    });
+  }
+
+  it('ein normaler Mandantennutzer sieht die Platform-Zeile nicht', async () => {
+    const A = await createTenantWithMember(ctx!, { tenantName: 'ou-A', userEmail: 'ou-a@example.com' });
+    await seedUnit(null, 'plattform-intern');
+    await seedUnit(A.tenantId, 'mandant-a');
+
+    expect(await sichtbareKeys(A.userId)).toEqual(['mandant-a']);
+  });
+
+  it('ein Plattform-Operator sieht die Platform-Zeile', async () => {
+    const A = await createTenantWithMember(ctx!, { tenantName: 'ou-op', userEmail: 'ou-op@example.com' });
+    await ctx!.client.query(`INSERT INTO public.platform_operators(user_id) VALUES ($1)`, [A.userId]);
+    await seedUnit(null, 'plattform-intern');
+    await seedUnit(A.tenantId, 'mandant-a');
+
+    expect(await sichtbareKeys(A.userId)).toEqual(['mandant-a', 'plattform-intern']);
+  });
+
+  it('ein fremder Mandant bleibt unsichtbar', async () => {
+    const A = await createTenantWithMember(ctx!, { tenantName: 'ou-A2', userEmail: 'ou-a2@example.com' });
+    const B = await createTenantWithMember(ctx!, { tenantName: 'ou-B2', userEmail: 'ou-b2@example.com' });
+    await seedUnit(A.tenantId, 'einheit-a');
+    await seedUnit(B.tenantId, 'einheit-b');
+
+    expect(await sichtbareKeys(A.userId)).toEqual(['einheit-a']);
+    expect(await sichtbareKeys(B.userId)).toEqual(['einheit-b']);
+  });
+
+  it('ein Mitglied ohne Verwaltungsrolle darf nicht anlegen', async () => {
+    const A = await createTenantWithMember(ctx!, { tenantName: 'ou-editor', userEmail: 'ou-editor@example.com' });
+    // createTenantWithMember vergibt 'owner' — hier auf 'editor' herunterstufen.
+    await ctx!.client.query(
+      `UPDATE public.memberships SET role='editor' WHERE tenant_id=$1 AND user_id=$2`,
+      [A.tenantId, A.userId],
+    );
+
+    await expect(
+      ctx!.withClaims({ sub: A.userId, role: 'authenticated' }, async () => {
+        await ctx!.client.query(
+          `INSERT INTO public.org_units(tenant_id, key, name) VALUES ($1,'schmuggel','Schmuggel')`,
+          [A.tenantId],
+        );
+      }),
+    ).rejects.toThrow();
+  });
+
+  it('ein Admin kann eine Einheit im eigenen Mandanten nicht in einen fremden schieben', async () => {
+    // Ohne WITH CHECK auf der UPDATE-Policy waere genau das moeglich — derselbe
+    // Fehler wie in Befund B1, nur mit tenant_id statt is_super_admin.
+    const A = await createTenantWithMember(ctx!, { tenantName: 'ou-A3', userEmail: 'ou-a3@example.com' });
+    const B = await createTenantWithMember(ctx!, { tenantName: 'ou-B3', userEmail: 'ou-b3@example.com' });
+    const unit = await seedUnit(A.tenantId, 'wandert');
+
+    await expect(
+      ctx!.withClaims({ sub: A.userId, role: 'authenticated' }, async () => {
+        await ctx!.client.query(
+          `UPDATE public.org_units SET tenant_id = $1 WHERE id = $2`, [B.tenantId, unit],
+        );
+      }),
+    ).rejects.toThrow();
+
+    const { rows } = await ctx!.client.query<{ tenant_id: string }>(
+      `SELECT tenant_id FROM public.org_units WHERE id = $1`, [unit],
+    );
+    expect(rows[0]!.tenant_id).toBe(A.tenantId);
+  });
+
+  it('die Hierarchie darf den Scope nicht überschreiten', async () => {
+    const A = await createTenantWithMember(ctx!, { tenantName: 'ou-A4', userEmail: 'ou-a4@example.com' });
+    const platform = await seedUnit(null, 'plattform-wurzel');
+
+    await expect(
+      mitSavepoint(() => seedUnit(A.tenantId, 'kind-am-falschen-baum', platform)),
+    ).rejects.toThrow(/anderen Scope/);
+  });
+
+  it('ein Zyklus in der Hierarchie wird abgewiesen', async () => {
+    const A = await createTenantWithMember(ctx!, { tenantName: 'ou-A5', userEmail: 'ou-a5@example.com' });
+    const oben = await seedUnit(A.tenantId, 'oben');
+    const unten = await seedUnit(A.tenantId, 'unten', oben);
+
+    await expect(
+      mitSavepoint(() =>
+        ctx!.client.query(`UPDATE public.org_units SET parent_id = $1 WHERE id = $2`, [unten, oben]),
+      ),
+    ).rejects.toThrow(/Zyklus/);
+  });
+
+  it('key ist je Scope eindeutig, aber zwei Mandanten dürfen denselben key führen', async () => {
+    const A = await createTenantWithMember(ctx!, { tenantName: 'ou-A6', userEmail: 'ou-a6@example.com' });
+    const B = await createTenantWithMember(ctx!, { tenantName: 'ou-B6', userEmail: 'ou-b6@example.com' });
+
+    await seedUnit(A.tenantId, 'vertrieb');
+    await expect(mitSavepoint(() => seedUnit(B.tenantId, 'vertrieb'))).resolves.toBeTruthy();
+    await expect(mitSavepoint(() => seedUnit(A.tenantId, 'vertrieb'))).rejects.toThrow();
+
+    await seedUnit(null, 'vertrieb');
+    await expect(mitSavepoint(() => seedUnit(null, 'vertrieb'))).rejects.toThrow();
+  });
+});

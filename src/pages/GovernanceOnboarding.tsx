@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import {
   ArrowRight, ArrowLeft, CheckCircle2, AlertTriangle, Loader2, Building2, Zap,
@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { SECTORS as SECTOR_OPTIONS, sectorLabel } from '../config/sectors';
 import { useGovernanceOnboarding } from '../hooks/useGovernanceOnboarding';
+import { toScanFindings, useSharedAudit } from '../features/audit/loadSharedAudit';
 import { saveCompanyProfile, loadCompanyProfile } from '../features/company/companyProfileLocal';
 import { syncTenantProfile } from '../features/company/tenantProfileService';
 import { useTenant } from '../core/access/TenantProvider';
@@ -44,9 +45,18 @@ export function GovernanceOnboarding() {
   const [step, setStep] = useState<'sector' | 'questions' | 'summary'>('sector');
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
 
-  // Fallback to mock findings if not provided via state
-  const findings = locationState.findings || [];
-  const domain = locationState.domain || 'example.com';
+  // Befunde kommen im Normalfall aus dem Router-State (direkt vom Bericht).
+  // Fehlen sie — Reload, geteilter Link —, werden sie aus dem kanonischen
+  // Datensatz nachgeladen, statt dem Besucher „Keine Scan-Daten" zu zeigen.
+  const brauchtNachladen = !locationState.findings || locationState.findings.length === 0;
+  const geladen = useSharedAudit(scanId, brauchtNachladen);
+  const findings = useMemo(
+    () => (locationState.findings && locationState.findings.length > 0
+      ? locationState.findings
+      : geladen.audit ? toScanFindings(geladen.audit.issues) : []),
+    [locationState.findings, geladen.audit],
+  );
+  const domain = locationState.domain || geladen.audit?.domain || '';
 
   const onboarding = useGovernanceOnboarding(scanId, domain, findings);
 
@@ -58,7 +68,7 @@ export function GovernanceOnboarding() {
     saveFunnelContext({ auditId: scanId, domain });
   }, [scanId, domain]);
 
-  if (findings.length === 0 && !loading) {
+  if (findings.length === 0 && !loading && !geladen.loading) {
     return (
       <div className="min-h-screen bg-obsidian-950 text-titanium-100 flex items-center justify-center p-4">
         <div className="max-w-md text-center">

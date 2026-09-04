@@ -2,8 +2,9 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import {
   ArrowRight, ArrowLeft, CheckCircle2, AlertTriangle, Loader2, Building2, Zap,
-  Globe, Briefcase, Heart, Shield, User,
+  Globe, Briefcase, Heart, Shield, User, ShoppingBag, Sofa, Factory,
 } from 'lucide-react';
+import { SECTORS as SECTOR_OPTIONS, sectorLabel } from '../config/sectors';
 import { useGovernanceOnboarding } from '../hooks/useGovernanceOnboarding';
 import { toScanFindings, useSharedAudit } from '../features/audit/loadSharedAudit';
 import { saveCompanyProfile, loadCompanyProfile } from '../features/company/companyProfileLocal';
@@ -198,38 +199,31 @@ export function GovernanceOnboarding() {
 
 // ─── Sector Selection ────────────────────────────────────────────────────
 
-const SECTORS = [
-  {
-    value: 'saas' as const,
-    label: 'SaaS / Tech',
-    icon: Zap,
-    description: 'Software-as-a-Service, Cloud-Plattformen, AI-Produkte',
-  },
-  {
-    value: 'agency' as const,
-    label: 'Agentur / White-Label',
-    icon: Briefcase,
-    description: 'Marketing-Agenturen, Web-Agenturen, Consultants',
-  },
-  {
-    value: 'healthcare' as const,
-    label: 'Healthcare / Medical',
-    icon: Heart,
-    description: 'Kliniken, Arztpraxen, Telehealth, Medical Devices',
-  },
-  {
-    value: 'public_sector' as const,
-    label: 'Public Sector',
-    icon: Shield,
-    description: 'Behörden, Gemeinden, öffentliche Einrichtungen',
-  },
-  {
-    value: 'generic' as const,
-    label: 'Sonstiges',
-    icon: Globe,
-    description: 'E-Commerce, Handel, Dienstleistungen, andere',
-  },
-];
+/**
+ * Icon je Branche — reine Darstellung, deshalb hier und nicht in der Config.
+ * Fehlt ein Eintrag, greift Building2; die Auswahl bleibt damit vollstaendig,
+ * auch wenn src/config/sectors.ts um einen Typ waechst.
+ */
+const SECTOR_ICON: Record<string, typeof Building2> = {
+  small_business: Building2,
+  retail: ShoppingBag,
+  furniture_retail: Sofa,
+  manufacturing: Factory,
+  services: Briefcase,
+  agency: Briefcase,
+  industrial: Factory,
+  saas: Zap,
+  healthcare: Heart,
+  public_sector: Shield,
+  generic: Globe,
+};
+
+const SECTORS = SECTOR_OPTIONS.map((s) => ({
+  value: s.id,
+  label: s.label,
+  description: s.description,
+  icon: SECTOR_ICON[s.id] ?? Building2,
+}));
 
 function SectorSelectionStep({ onSelect }: { onSelect: (sector: Sector) => void }) {
   return (
@@ -451,7 +445,7 @@ function SummaryStep({
           Deine Branche
         </div>
         <div className="font-display font-bold text-titanium-50 capitalize">
-          {onboarding.selectedSector === 'public_sector' ? 'Public Sector' : onboarding.selectedSector}
+          {sectorLabel(onboarding.selectedSector)}
         </div>
       </div>
 

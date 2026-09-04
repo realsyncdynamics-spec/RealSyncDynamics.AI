@@ -79,7 +79,7 @@ Menschen · Unternehmen · KI-Agenten · Daten · Entscheidungen.
 **Primär: Supabase Cloud (EU / Frankfurt)**
 - PostgreSQL 17 (Live-Projekt, Stand 2026-08-16)
 - **181 Edge Functions** im Repo (`supabase/functions/`, Deno/V8; `_shared` ist Bibliothek, keine Function) — **alle 181 deployt**, deckungsgleich in beide Richtungen. Gemessen am 2026-09-04 mit zwei unabhängigen Methoden (Management-API und HTTP-Probe je Slug), `comm` in beide Richtungen leer. `subscription-addons` stand hier bis dahin als „wartet auf den nächsten `deploy.yml`-Lauf“ — der Lauf war längst da, die Function antwortet mit `401`, nicht `404`. Siehe §5
-- **312 Migrations** (`supabase/migrations/`) — **alle 312 verbucht**, neueste `20260904000200`. Gemessen am 2026-09-04 gegen `supabase_migrations.schema_migrations`, Mengen in beide Richtungen verglichen, beide leer. Die drei vom 2026-09-04, die hier als „kommen mit dem nächsten Deploy“ standen, sind angekommen. Zu den zwei nachgezogenen Out-of-Band-Migrationen siehe §5
+- **314 Migrations** (`supabase/migrations/`) — **alle 314 verbucht**, neueste `20260904000200`. Gemessen am 2026-09-04 nach dem Merge von #1161 und #1162 gegen `supabase_migrations.schema_migrations`, Mengen in beide Richtungen verglichen (`comm -23` und `comm -13`), beide leer. Die zwei neuen sind `20260902000010_company_profiles_sector_extend` und `20260902000011_onboarding_policy_packs_industry_vocabulary`. Zu den zwei nachgezogenen Out-of-Band-Migrationen siehe §5
 - RLS auf allen App-Tabellen · Realtime Subscriptions
 
 **Node/TypeScript-Services** (containerisiert — **kein Go im Repo**)
@@ -148,6 +148,19 @@ Service-Role umgeht RLS — deshalb **ausschließlich in Edge Functions**.
 - **Immer additiv.** Keine destruktiven Änderungen ohne ausdrückliche Bestätigung.
 - Bestehende RLS-Policies und öffentliche API-Contracts **niemals** brechen.
 - Lokal testen: `supabase db reset` → `npm run test:db`
+
+> **Blinder Fleck bei Funktions-Migrationen**: `Migration validation` wendet
+> Migrationen an, **ruft** die erzeugten Funktionen aber nie auf. PL/pgSQL
+> prüft den Rumpf erst zur Laufzeit — eine Migration mit fehlerhaftem
+> Funktionskörper läuft in CI deshalb grün durch. Am 2026-09-04 belegt:
+> `v_packs || 'literal'` ohne `::text` wählt `anyarray || anyarray` und wirft
+> `malformed array literal`, sobald der Zweig erreicht wird. Der Fehler lag
+> latent im Bestand, weil kein Mandant den Zweig erreichte — und wäre durch
+> die Korrektur des Branchen-Vokabulars (`20260902000011`) erstmals scharf
+> geworden, also genau für die Mandanten, denen sie helfen sollte.
+> **Regel**: Wer eine Funktion per Migration anlegt oder ändert, spielt sie
+> lokal gegen echtes Postgres ein **und ruft sie auf**. Grün in CI heißt hier
+> nichts.
 
 ---
 
@@ -506,7 +519,7 @@ RealSyncDynamics.AI/
 │   └── pricing.ts     Single Source of Truth für Produkt-, Preis- und Berechtigungsmodell
 ├── supabase/
 │   ├── functions/     181 Edge Functions (einziger Ort für Service-Role-Keys)
-│   └── migrations/    312 Migrations
+│   └── migrations/    314 Migrations
 ├── apps/
 │   └── agent-runtime/ Agent Runtime (Node/TS, Docker)
 ├── services/          runtime-core · evidence-runtime · openclaw-agent · playwright-scanner

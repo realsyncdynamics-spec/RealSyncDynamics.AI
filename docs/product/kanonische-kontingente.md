@@ -372,8 +372,10 @@ Nebenwirkung eines grünen CI-Laufs treffen — genau die Vermischung von Audit
 und Reparatur, die vermieden werden soll. Bis dahin verhindert die Ratsche das
 Einzige, was ohne Entscheidung passieren kann: **neue** Divergenzen.
 
-Die Grundlinie steht in `scripts/limit-canonicity-baseline.json` — 21 Zeilen,
-jede mit Plan, Feld, beiden Werten, Richtung und Grund.
+Die Grundlinie steht in `scripts/limit-canonicity-baseline.json` — ursprünglich
+21 Zeilen, jede mit Plan, Feld, beiden Werten, Richtung und Grund. Nach der
+Bereinigung der Klasse B (2026-09-01) und der Klasse D (2026-09-04) sind es
+**9**: die acht Enterprise-Felder und die eine offene Agency-Kürzung.
 
 Beide Richtungen sind mutationsgeprüft: eine künstlich eingebaute Divergenz
 (`growth.domains` 3→4) und eine künstlich behobene (`starter.seats` 1→3)
@@ -399,6 +401,31 @@ Datenbereinigung → Gates → Tests.**
 4. **Erst danach Gates**: `team_seats`, `compliance_exports_monthly`,
    `domains`/`bots`, `webhooks.enabled` — und für Enterprise nur auf Feldern,
    deren Quelle aufgelöst ist.
+
+### Stand der Abarbeitung
+
+| Schritt | Klasse | Stand |
+|---|---|---|
+| 1. Enterprise-Quelle | A (8) | **offen** — Architekturentscheid, `enterprise-quelle-entscheidungsvorlage.md` |
+| 2. Kürzungen Self-Service | B (3) | **erledigt** 2026-09-01, Migration `20260903050000` |
+| 2b. Kürzung Agency | C (1) | **offen** — trifft Bestandskunden, braucht eigene Klärung |
+| 3. Ausweitungen | D (9) | **erledigt** 2026-09-04, Migration `20260904000300` |
+| 4. Gates | — | blockiert, solange A und C offen sind |
+
+Zu Schritt 2: Der Bestandsschutz-Mechanismus wurde nicht gebaut, sondern durch
+eine Messung ersetzt — bei null betroffenen Abos gab es nichts zu schützen. Die
+Begründung steht im Kopf von `20260903050000`. Für die Agency-Kürzung (C) gilt
+das **nicht** automatisch: sie trifft Bestandskunden eines verkauft gewesenen
+Plans und braucht eine eigene Messung oder einen Mechanismus.
+
+Zu Schritt 3: Ausweitungen brauchten keine Bestandsfrage — sie geben nur, was
+die Preisseite ohnehin zugesagt hat. Die Jahresvarianten (`agency_yearly`,
+`partner_yearly`) sind mitgezogen, weil `check:limits` sie nicht sieht und eine
+Angleichung nur der Monatspläne eine neue Inkonsistenz erzeugt hätte — dieselbe
+Falle wie bei Klasse B. Gesichert durch die Fälle „führt keine Ausweitung mehr
+auf den stillgelegten Plänen", „gleicht die neun ausgeweiteten Paare wertgleich
+ab" und „lässt die Agency-Kürzung offen, bis der Bestandsschutz steht" in
+`test/billing/limit-canonicity.test.ts`.
 
 Der Grund für die Reihenfolge steht in der Entscheidung selbst: Sonst entsteht
 technisch korrektes Enforcement gegen eine Zahl, die niemand als verbindlich

@@ -1,44 +1,11 @@
 [
   {
     "plan": "agency",
-    "feld": "answersPerMonth",
-    "key": "limit.bot_messages_monthly",
-    "preisseite": 25000,
-    "berechtigung": 10000,
-    "richtung": "ausweitung",
-    "availability": "legacy",
-    "grund": "Stillgelegter Plan, aber oeffentlich verkauft gewesen: die Preisseite ist kanonisch. Korrektur wirkt ausschliesslich auf Bestandskunden.",
-    "kanonische_quelle": "preisseite"
-  },
-  {
-    "plan": "agency",
-    "feld": "apiCallsPerMonth",
-    "key": "limit.api_calls_monthly",
-    "preisseite": 50000,
-    "berechtigung": 25000,
-    "richtung": "ausweitung",
-    "availability": "legacy",
-    "grund": "Stillgelegter Plan, aber oeffentlich verkauft gewesen: die Preisseite ist kanonisch. Korrektur wirkt ausschliesslich auf Bestandskunden.",
-    "kanonische_quelle": "preisseite"
-  },
-  {
-    "plan": "agency",
     "feld": "auditReportsPerMonth",
     "key": "limit.compliance_exports_monthly",
     "preisseite": 50,
     "berechtigung": 100,
     "richtung": "kuerzung",
-    "availability": "legacy",
-    "grund": "Stillgelegter Plan, aber oeffentlich verkauft gewesen: die Preisseite ist kanonisch. Korrektur wirkt ausschliesslich auf Bestandskunden.",
-    "kanonische_quelle": "preisseite"
-  },
-  {
-    "plan": "agency",
-    "feld": "bulkJobsPerMonth",
-    "key": "limit.bulk_jobs_monthly",
-    "preisseite": 100,
-    "berechtigung": 50,
-    "richtung": "ausweitung",
     "availability": "legacy",
     "grund": "Stillgelegter Plan, aber oeffentlich verkauft gewesen: die Preisseite ist kanonisch. Korrektur wirkt ausschliesslich auf Bestandskunden.",
     "kanonische_quelle": "preisseite"
@@ -130,71 +97,5 @@
     "availability": "contract",
     "grund": "Vertragsplan: die kanonische Quelle ist der individuelle Vertrag, nicht die oeffentliche Preisseite. Solange kein Vertragsdatensatz existiert, ist der Wert unbestimmt — weder Preisseite noch Berechtigung darf als Wahrheit gesetzt werden.",
     "kanonische_quelle": "vertrag"
-  },
-  {
-    "plan": "partner",
-    "feld": "answersPerMonth",
-    "key": "limit.bot_messages_monthly",
-    "preisseite": 100000,
-    "berechtigung": 50000,
-    "richtung": "ausweitung",
-    "availability": "legacy",
-    "grund": "Stillgelegter Plan, aber oeffentlich verkauft gewesen: die Preisseite ist kanonisch. Korrektur wirkt ausschliesslich auf Bestandskunden.",
-    "kanonische_quelle": "preisseite"
-  },
-  {
-    "plan": "partner",
-    "feld": "domains",
-    "key": "limit.domains",
-    "preisseite": 100,
-    "berechtigung": 50,
-    "richtung": "ausweitung",
-    "availability": "legacy",
-    "grund": "Stillgelegter Plan, aber oeffentlich verkauft gewesen: die Preisseite ist kanonisch. Korrektur wirkt ausschliesslich auf Bestandskunden.",
-    "kanonische_quelle": "preisseite"
-  },
-  {
-    "plan": "partner",
-    "feld": "automationRunsPerMonth",
-    "key": "limit.automation_runs_monthly",
-    "preisseite": 10000,
-    "berechtigung": 2500,
-    "richtung": "ausweitung",
-    "availability": "legacy",
-    "grund": "Stillgelegter Plan, aber oeffentlich verkauft gewesen: die Preisseite ist kanonisch. Korrektur wirkt ausschliesslich auf Bestandskunden.",
-    "kanonische_quelle": "preisseite"
-  },
-  {
-    "plan": "partner",
-    "feld": "seats",
-    "key": "limit.team_seats",
-    "preisseite": 100,
-    "berechtigung": 50,
-    "richtung": "ausweitung",
-    "availability": "legacy",
-    "grund": "Stillgelegter Plan, aber oeffentlich verkauft gewesen: die Preisseite ist kanonisch. Korrektur wirkt ausschliesslich auf Bestandskunden.",
-    "kanonische_quelle": "preisseite"
-  },
-  {
-    "plan": "partner",
-    "feld": "apiCallsPerMonth",
-    "key": "limit.api_calls_monthly",
-    "preisseite": 1000000,
-    "berechtigung": 100000,
-    "richtung": "ausweitung",
-    "availability": "legacy",
-    "grund": "Stillgelegter Plan, aber oeffentlich verkauft gewesen: die Preisseite ist kanonisch. Korrektur wirkt ausschliesslich auf Bestandskunden.",
-    "kanonische_quelle": "preisseite"
-  },
-  {
-    "plan": "partner",
-    "feld": "bulkJobsPerMonth",
-    "key": "limit.bulk_jobs_monthly",
-    "preisseite": -1,
-    "berechtigung": 500,
-    "richtung": "ausweitung",
-    "availability": "legacy",
-    "grund": "Stillgelegter Plan, aber oeffentlich verkauft gewesen: die Preisseite ist kanonisch. Korrektur wirkt ausschliesslich auf Bestandskunden.",
-    "kanonische_quelle": "preisseite"
   }
 ]

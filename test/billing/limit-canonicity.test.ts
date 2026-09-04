@@ -163,6 +163,67 @@ describe('Kontingente — plan.limits gegen PLAN_ENTITLEMENTS', () => {
     }
   });
 
+  /**
+   * Klasse D aus §4: neun Paare, in denen die Berechtigung UNTER der
+   * öffentlichen Zusage lag. Anders als bei einer Kürzung war dafür keine
+   * Bestandsmessung nötig — eine Ausweitung nimmt niemandem etwas. Bliebe
+   * eine stehen, bekäme ein Bestandskunde dauerhaft weniger, als die
+   * Preisseite ihm zugesagt hat.
+   */
+  it('führt keine Ausweitung mehr auf den stillgelegten Plänen', () => {
+    const ausweitungen = grundlinie
+      .filter((e) => e.richtung === 'ausweitung' && ['agency', 'partner'].includes(e.plan))
+      .map(marke)
+      .sort();
+    expect(
+      ausweitungen,
+      'Eine Ausweitung bedeutet: die Berechtigung liegt unter der Preisseite. ' +
+        'Agency und Partner sind stillgelegt, wurden aber öffentlich verkauft — ' +
+        'die Zusage gilt für Bestandskunden weiter.',
+    ).toEqual([]);
+  });
+
+  /**
+   * Gegenprobe wie bei Klasse B: ohne sie bliebe der Fall oben auch dann grün,
+   * wenn die Felder aus dem Vergleich fielen statt angeglichen zu werden.
+   */
+  it('gleicht die neun ausgeweiteten Paare wertgleich ab', () => {
+    const erwartet: Array<[string, string, number]> = [
+      ['agency', 'limit.api_calls_monthly', 50000],
+      ['agency', 'limit.bot_messages_monthly', 25000],
+      ['agency', 'limit.bulk_jobs_monthly', 100],
+      ['partner', 'limit.api_calls_monthly', 1000000],
+      ['partner', 'limit.automation_runs_monthly', 10000],
+      ['partner', 'limit.bot_messages_monthly', 100000],
+      ['partner', 'limit.bulk_jobs_monthly', -1],
+      ['partner', 'limit.domains', 100],
+      ['partner', 'limit.team_seats', 100],
+    ];
+    for (const [planKey, key, wert] of erwartet) {
+      expect(
+        PLAN_ENTITLEMENTS[planKey]?.[key as keyof (typeof PLAN_ENTITLEMENTS)[string]],
+        `${planKey}.${key} weicht von der Preisseite ab`,
+      ).toBe(wert);
+    }
+  });
+
+  /**
+   * Die Klasse-C-Kürzung bleibt bewusst offen: sie trifft Bestandskunden und
+   * braucht nach §5 erst den Bestandsschutz-Mechanismus. Dieser Fall hält
+   * fest, dass sie nicht versehentlich mit den Ausweitungen mitgelaufen ist.
+   */
+  it('lässt die Agency-Kürzung offen, bis der Bestandsschutz steht', () => {
+    const kuerzung = grundlinie.filter((e) => e.richtung === 'kuerzung' && e.plan === 'agency');
+    expect(kuerzung).toHaveLength(1);
+    expect(kuerzung[0].feld).toBe('auditReportsPerMonth');
+    expect(
+      PLAN_ENTITLEMENTS['agency']?.[
+        'limit.compliance_exports_monthly' as keyof (typeof PLAN_ENTITLEMENTS)[string]
+      ],
+      'Die Kürzung 100 → 50 darf erst nach dem Bestandsschutz greifen (§5).',
+    ).toBe(100);
+  });
+
   it('weist Enterprise als unaufgelösten Vertragsfall aus', () => {
     // Acht Felder, in denen die Berechtigung `unbegrenzt` sagt und die
     // Preisseite eine Zahl. Unter der verfeinerten Regel ist hier **keine**

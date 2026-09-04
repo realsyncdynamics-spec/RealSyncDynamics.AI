@@ -96,6 +96,7 @@ describe('Consent-Banner', () => {
 
   it('akzeptiert ein gleichwertiges Ablehnen', () => {
     expect(hasEqualRejectButton('<button>Alle akzeptieren</button><button>Alle ablehnen</button>')).toBe(true);
+    // Der Alias meldet weiterhin nur Vorkommen — das ist sein Vertrag.
   });
 });
 

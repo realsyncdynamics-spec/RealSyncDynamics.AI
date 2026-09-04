@@ -274,18 +274,65 @@ läuft, sieht aus wie Abdeckung — und niemand sucht mehr danach.
 meistgefeuerte Regel des Produkts. Der Kommentar in `checks.ts` hält an den
 159 historischen Audits fest: 47 Treffer, mehr als jede andere Regel.
 
-**Nicht geändert.** Der Fakt ist Teil des rekonstruierten Produktionsvertrags
-(§5 CLAUDE.md, `gdpr-audit-production-contract.json`); schärfte man
-`hasEqualRejectOption` nach, bekämen künftige Scans andere Ergebnisse als alle
-bisherigen, ohne dass sich an den geprüften Seiten etwas geändert hat. Das ist
-dieselbe Klasse von Entscheidung wie beim Score in B-4 — sie gehört dem
-Eigentümer, nicht diesem Bericht.
+#### Nachtrag vom 2026-09-04: Der Befund war schärfer, als hier zuerst stand
 
-**Das Material für die Auflösung liegt aber bereits vor**: `consent-banner.ts`
-aus B-4 misst genau das, was der Fakt behauptet — Fläche, Ebene, Stil. Es
-hängt heute nur am Deep-Scan und speist diesen Fakt nicht. Der naheliegende
-Weg ist, den Fakt im Deep-Scan aus der echten Messung zu füllen und im
-leichten Pfad zu benennen, was er wirklich prüft.
+Zwei Dinge kamen bei der Umsetzung ans Licht und ändern die Bewertung.
+
+**Erstens: Der Kommentar über der Funktion wusste es bereits.** Wörtlich stand
+dort: „Konservativ: Wir können aus statischem HTML keine Pixel messen. Gewertet
+wird deshalb allein, ob eine Ablehnen-Option **überhaupt** im Markup steht.
+Fehlt sie, ist Gleichrangigkeit ausgeschlossen — das ist die Richtung, in der
+die Aussage belastbar ist."
+
+Die Überlegung ist vollständig und richtig. Der Code folgte ihr nur zur
+Hälfte: Er gab den Wert in **beide** Richtungen zurück, und der Fakt wurde in
+beide gelesen. Das ist kein Denkfehler, sondern eine nicht zu Ende geführte
+Implementierung — und deshalb umso leichter zu übersehen.
+
+**Zweitens: Die Messung gab es schon einmal.** `worker/src/detectors/consent.ts`
+misst die Prominenz richtig — Accept- und Reject-Knopf werden über
+`getBoundingClientRect()` verglichen, Höhe ±20 %, Breite ≥ 50 %. Der Worker ist
+laut CLAUDE.md §2 „Legacy-Jobs (deprecated → Edge Functions + Cron)".
+
+Damit ist B-5 keine fehlende Funktion, sondern eine **Regression**: Beim Umzug
+in die Edge Function trat eine Wortsuche an die Stelle einer echten Messung —
+unter demselben Faktnamen. Der Name blieb korrekt, die Deckung dahinter
+verschwand. Genau deshalb fällt so etwas nicht auf.
+
+#### Was am 2026-09-04 geändert wurde
+
+Freigegeben nach §10.3 („Deep-Scan misst, Text angleichen"). Umgesetzt ist der
+Teil, der ohne neue Annahmen tragfähig ist:
+
+`gdpr-audit/checks.ts` beantwortet die Frage jetzt **asymmetrisch**, so wie der
+Kommentar es immer schon vorgezeichnet hat:
+
+| Fall | vorher | jetzt |
+|---|---|---|
+| kein Banner | `false` | `false` |
+| Banner ohne Ablehnen-Option | `false` | `false` |
+| Banner mit Ablehnen-Option | **`true`** | **`undefined`** |
+
+`COOKIE_BANNER_DARK_PATTERN` feuert bei `equals false` — die Regel greift also
+in **exakt denselben Fällen** wie vorher. Kein Ergebnis ändert sich, keine
+Vergleichbarkeit mit den 159 historischen Audits geht verloren. Weg fällt
+allein die unbelegte Behauptung im dritten Fall.
+
+`hasEqualRejectOption` heißt jetzt `hasRejectOption` — sie prüft Vorkommen, und
+so heißt sie auch. Der exportierte Alias `hasEqualRejectButton` bleibt als
+Modul-Oberfläche bestehen, mit Hinweis.
+
+**Der Test, der die Falschbehauptung festschrieb**, hieß „erkennt eine
+gleichrangige Ablehnen-Option" und erwartete `true` für den Text
+`Alle akzeptieren · Alle ablehnen` — ohne Knopf, ohne Größe, ohne Stil. Er
+prüfte damit ab, dass der Fehler bestehen bleibt. Jetzt heißt er „behauptet
+keine Gleichrangigkeit, wenn nur das Wort dasteht".
+
+#### Was ausdrücklich **nicht** umgesetzt ist
+
+Die zweite Hälfte der Freigabe — „der Deep-Scan speist den Fakt" — ist so nicht
+machbar. Die Leitung, die ich dabei vorausgesetzt hatte, existiert nicht:
+siehe **B-7**.
 
 ### B-6 · Dieselbe Pflicht, zwei Artikelnummern · 2026-09-04
 
@@ -334,6 +381,50 @@ kein Blick ins Amtsblatt. Bevor eine korrigierte Nummer in Kundenbefunde geht,
 gehört sie einmal am Verordnungstext geprüft — bei einem Produkt, das
 Rechtsnormen zitiert, ist das keine Förmlichkeit.
 
+### B-7 · Zwei Playwright-Scanner, ein Vertrag, der nicht passt · 2026-09-04
+
+Aufgefallen beim Versuch, B-5 zu Ende zu bringen. Der Deep-Scan sollte den
+Prominenz-Fakt aus der echten Messung speisen. Das geht nicht, und der Grund
+ist ein eigener Befund.
+
+**Es gibt zwei Playwright-Scanner im Repo:**
+
+| | `services/playwright-scanner` | `deploy/playwright-scanner` |
+|---|---|---|
+| Antwort | `{ ok, meta, cookies, trackers, forms, consent_banner, score, … }` | `{ url, cookies, requests, preConsentRequests, consentTimingMs, screenshot, crawledUrls }` |
+| Endpunkte | `/scan` | `/scan/full`, `/scan/consent-timing`, `/scan/screenshot` |
+| zuletzt berührt | 2026-09-01 (B-4) | 2026-08-19 |
+
+`supabase/functions/cookie-scan-deep/index.ts` deklariert intern ein
+`PlaywrightScanResult` mit `requests`, `preConsentRequests`, `consentTimingMs`,
+`screenshot`, `crawledUrls` — das ist die Form von **`deploy/`**, nicht die von
+`services/`. Beide teilen sich lediglich `url`, und selbst `cookies` haben
+verschiedene Felder.
+
+**Zwei Folgen, beide unangenehm:**
+
+1. **Meine B-4-Arbeit hängt möglicherweise am falschen Dienst.**
+   `consent-banner.ts` liegt in `services/playwright-scanner` — dem Dienst, den
+   `cookie-scan-deep` nach dieser Deklaration **nicht** anspricht. Die Messung
+   ist gebaut, getestet und CI-grün, erreicht aber vielleicht keinen
+   Produktionspfad. Das gehört zu B-4 dazu und steht deshalb hier, nicht in
+   einer Fußnote.
+2. **`types.ts` verspricht eine Synchronität, die es nicht gibt.** Im Kopf der
+   Datei steht: „Request/Response-Interfaces — synchronisiert mit cookie-scan
+   Edge Function … Bei Schema-Änderungen IMMER beide Seiten anpassen." Die
+   beiden Seiten sind heute nicht synchron. Der Kommentar liest sich wie eine
+   Zusicherung und ist keine.
+
+**Nicht entschieden, weil nicht meine Entscheidung**: Welcher der beiden
+Dienste unter `PLAYWRIGHT_SCANNER_URL` tatsächlich läuft, ist aus dem Repo
+nicht ablesbar — das steht im Supabase Vault. Solange das offen ist, wäre jede
+Verdrahtung geraten. **Erste Frage an den Betreiber, vor allem Weiteren**:
+Welcher Dienst ist deployt?
+
+Davon hängt ab, ob `consent-banner.ts` dorthin gehört, wo es liegt, oder in den
+anderen Dienst — und ob die Prominenz-Messung aus B-5 überhaupt einen Weg in
+den Fakt hat.
+
 ### Was an Empfehlung 5 in Ordnung ist
 
 Damit der Bericht nicht nur Befunde nennt: Die Transparenzprüfung **arbeitet**.
@@ -368,6 +459,8 @@ Vorgelegt und am 2026-09-01 mit **Ja** beantwortet (Eintrag in CLAUDE.md §10):
 |---|---|---|---|
 | B-1 / B-2 | Festes Änderungsdatum statt `new Date()` | **Ja** | `LAST_UPDATED = '2026-08-19'` in beiden Dateien, mit Kommentar, wann es mitzuziehen ist |
 | B-3 | Verfügbarkeit aus `availableFor` ableiten | **Ja** | `toBotAddOn` reicht die Plannamen durch, die Preisseite formatiert sie |
+| B-5 | Deep-Scan misst, Text angleichen (2026-09-04) | **Ja** | Fakt jetzt asymmetrisch, Funktion umbenannt, Test korrigiert — **ohne Ergebnisänderung**. Zweite Hälfte blockiert durch B-7 |
+| B-6 | Artikelnummer erst prüfen, dann korrigieren (2026-09-04) | **Ja** | Bewusst **nichts geändert**: Die 16 Art.-52-Stellen bleiben, bis die Zuordnung am Verordnungstext bestätigt ist |
 
 Der Umfang war ausdrücklich auf diese beiden Punkte begrenzt: keine Farben,
 kein Grid, keine Typografie, keine Sektionsreihenfolge, keine weitere Zeile

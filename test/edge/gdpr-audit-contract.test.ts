@@ -300,9 +300,18 @@ describe('Fakten-Vertrag zur Rule Engine', () => {
     expect(f.consent.banner.reject_button_equal_prominence).toBe(false);
   });
 
-  it('erkennt eine gleichrangige Ablehnen-Option', () => {
+  it('behauptet keine Gleichrangigkeit, wenn nur das Wort dasteht', () => {
+    // Der Test hiess bis zum 2026-09-04 „erkennt eine gleichrangige
+    // Ablehnen-Option" und erwartete `true` — fuer reinen Text ohne Knopf,
+    // ohne Groesse, ohne Stil. Er schrieb damit die Falschbehauptung fest,
+    // die er haette verhindern sollen.
+    //
+    // Aus dem Markup ist nur das Vorkommen belegbar. `undefined` laesst
+    // COOKIE_BANNER_DARK_PATTERN schweigen, statt Konformitaet zu
+    // unterstellen.
     const f = facts('<div class="cookie-banner">Alle akzeptieren · Alle ablehnen</div>') as Record<string, any>;
-    expect(f.consent.banner.reject_button_equal_prominence).toBe(true);
+    expect(f.consent.banner.detected).toBe(true);
+    expect(f.consent.banner.reject_button_equal_prominence).toBeUndefined();
   });
 });
 

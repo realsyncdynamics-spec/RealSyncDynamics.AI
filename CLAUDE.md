@@ -644,6 +644,17 @@ Root-CI/CD-Workflows verwaltet. Sie ist physisch ein eigenständiges Projekt, da
 - RLS + Migrations wie im Hauptrepo (selbe DB-Conn in `docker-compose.yml`)
 - OpenAPI-First: Endpoints mit `@app.post`, `@app.get` + Schemas in Pydantic
 - Prüfpfad: `audit_log` + `workflow_runs` (selbe Tabellen wie Root-Governance)
+- **Der PDP ist auch hier der Entscheider** (P2-4, seit 2026-09-04):
+  `app/services/pdp_client.py` ruft `governance-decide`; die CI/CD-Gate-Engine
+  faltet das Verdikt in ihre Entscheidung ein. Der PDP kann nur **verschärfen**,
+  nie lockern — ein `allow` hebt keine lokale Sperre auf.
+  `GOVERNANCE_PDP_MODE=off|shadow|enforce`, Default `shadow`.
+- **Tests hier laufen mit `pytest`, nicht mit Vitest**:
+  `cd platform/governance_backend && pip install -r requirements.txt && pytest`.
+  Stand 2026-09-04: 93 passed, 14 skipped, **7 vorbestehend rot** in
+  `test_config.py` und `test_security_headers.py` (erwarten Umgebungsvariablen
+  bzw. eine Datenbank). Gegen den unveränderten Stand gegengeprüft — wer hier
+  arbeitet, sollte sie nicht für eigene Fehler halten.
 
 ### Preise, Pläne und Berechtigungen
 

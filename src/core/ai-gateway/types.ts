@@ -22,7 +22,40 @@ export type ProviderId =
   | 'lm_studio'
   | 'openai'
   | 'anthropic'
+  | 'google'
+  | 'ollama'
   | 'mock';
+
+// --- Governed AI Routing Layer (R1) — additive, data-driven registry metadata.
+// These describe a provider so routing can decide by capability and data
+// locality instead of a hardcoded profile→provider table. Nothing here
+// changes existing behaviour; the descriptor is consumed by the registry
+// (registry.ts), not by the current ServerAiGateway path.
+
+/** Where the inference physically runs — cloud API vs. a local/on-prem daemon. */
+export type ProviderKind = 'cloud' | 'local';
+
+/** Data-locality class, relevant for DSGVO / EU-AI-Act routing constraints. */
+export type ProviderLocality = 'eu' | 'non_eu' | 'on_prem';
+
+export interface ProviderDescriptor {
+  id: ProviderId;
+  kind: ProviderKind;
+  locality: ProviderLocality;
+  /** Which task types this provider can serve. */
+  capabilities: AiTaskType[];
+  /** Advertised model ids (informational — the adapter holds the live config). */
+  models: string[];
+  maxContext?: number;
+  costPer1k?: { input: number; output: number };
+  /** Whether a data-processing agreement (AVV) is in place for this provider. */
+  dataProcessingAgreement?: boolean;
+}
+
+export interface RegisteredProvider {
+  descriptor: ProviderDescriptor;
+  adapter: AiProviderAdapter;
+}
 
 export interface AiGatewayRequest {
   tenant_id?: string | null;

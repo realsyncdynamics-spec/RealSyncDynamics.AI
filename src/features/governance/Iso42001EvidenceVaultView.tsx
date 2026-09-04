@@ -312,6 +312,8 @@ function Inner() {
       {selectedEvidence && (
         <DetailPanel
           evidence={selectedEvidence}
+          tenantId={activeTenantId}
+          onArchived={loadEvidence}
           onClose={() => setSelectedEvidence(null)}
         />
       )}
@@ -528,14 +530,22 @@ function UploadModal({
   );
 }
 
-function DetailPanel({
+// Exportiert fuer test/features/governance/evidenceVaultArchive.test.tsx —
+// der Archivierungsweg soll am Verhalten geprueft werden, nicht am Quelltext.
+export function DetailPanel({
   evidence,
+  tenantId,
+  onArchived,
   onClose,
 }: {
   evidence: EvidenceItem;
+  tenantId: string | null;
+  onArchived: () => void | Promise<void>;
   onClose: () => void;
 }) {
   const typeInfo = EVIDENCE_TYPE_LABELS[evidence.evidence_type];
+  const [archiving, setArchiving] = useState(false);
+  const [archiveError, setArchiveError] = useState<string | null>(null);
 
   const handleDownload = () => {
     if (evidence.file_path) {
@@ -544,12 +554,28 @@ function DetailPanel({
   };
 
   const handleArchive = async () => {
+    if (!tenantId) return;
     if (!window.confirm('Archive this evidence? It will be hidden from the default view.')) return;
+
+    setArchiving(true);
+    setArchiveError(null);
     try {
-      // TODO: Implement archive API call
-      console.log('Archive evidence:', evidence.id);
+      const token = await getAuthToken();
+      const response = await fetch(
+        `/functions/v1/iso42001-evidence-vault?tenant_id=${tenantId}&evidence_id=${evidence.id}&archived=true`,
+        { method: 'PATCH', headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      if (!response.ok) throw new Error('Failed to archive evidence');
+
+      // Erst neu laden, dann schliessen — sonst zeigt die Liste den Eintrag
+      // noch, waehrend das Panel schon weg ist.
+      await onArchived();
+      onClose();
     } catch (err) {
-      console.error('Archive failed:', err);
+      setArchiveError(err instanceof Error ? err.message : 'Archive failed');
+    } finally {
+      setArchiving(false);
     }
   };
 
@@ -645,23 +671,29 @@ function DetailPanel({
       </div>
 
       {/* Actions */}
-      <div className="border-t border-titanium-900 p-4 flex gap-2">
-        {evidence.file_path && (
-          <button
-            onClick={handleDownload}
-            className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold rounded-none transition"
-          >
-            <Download className="h-4 w-4" />
-            Download
-          </button>
+      <div className="border-t border-titanium-900 p-4 space-y-2">
+        {archiveError && (
+          <p className="text-[11px] text-red-400">{archiveError}</p>
         )}
-        <button
-          onClick={handleArchive}
-          className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-obsidian-800 border border-titanium-800 hover:bg-obsidian-700 text-titanium-200 text-sm font-semibold rounded-none transition"
-        >
-          <Trash2 className="h-4 w-4" />
-          Archive
-        </button>
+        <div className="flex gap-2">
+          {evidence.file_path && (
+            <button
+              onClick={handleDownload}
+              className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold rounded-none transition"
+            >
+              <Download className="h-4 w-4" />
+              Download
+            </button>
+          )}
+          <button
+            onClick={handleArchive}
+            disabled={archiving || !tenantId}
+            className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-obsidian-800 border border-titanium-800 hover:bg-obsidian-700 disabled:opacity-50 disabled:cursor-not-allowed text-titanium-200 text-sm font-semibold rounded-none transition"
+          >
+            <Trash2 className="h-4 w-4" />
+            {archiving ? 'Archiving…' : 'Archive'}
+          </button>
+        </div>
       </div>
     </div>
   );

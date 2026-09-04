@@ -16,7 +16,7 @@
 > | AP8 Abhängigkeiten | umgesetzt | `entitlement_dependencies`, `ENTITLEMENT_DEPENDENCIES` |
 > | AP9 Durchsetzung | Welle 1 bis 4 umgesetzt (Kosten · fremde Systeme · Daten ausleiten); offen bleibt nur `bots.human_handoff` (kein Mechanismus im Repo) | `docs/product/addon-booking.md` §1.6, §6.5 |
 > | AP10 Preis-Konsumenten | umgesetzt (2026-08-30/31) | CLAUDE.md §10 |
-> | AP11 Aufräumen | offen, Fragepflicht | — |
+> | AP11 Aufräumen | erster Schnitt umgesetzt (2026-09-04): 52 verwaiste Dateien entfernt, Kommentar korrigiert; offen: sechs ungeroutete Views mit Backend, 14 Folge-Waisen, 19 doppelte Basenamen in Gebrauch | `docs/product/ap11-aufraeumen.md` |
 >
 > Hergang, Vertrag und offene Entscheidungen: `docs/product/addon-booking.md`.
 

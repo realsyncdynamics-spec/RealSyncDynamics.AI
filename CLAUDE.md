@@ -1141,6 +1141,35 @@ Farben, Typografie, Grid, Sektionsreihenfolge und Icon-Set sind unberührt.
 `/os/login` und `/os/signup` bleiben bestehen und erreichbar — sie sind nur
 kein Ziel des Flows mehr. Hergang: `docs/product/addon-booking.md` §6.
 
+**2026-09-04 — AP11 Aufräumen: verwaiste Dateien**
+
+Auf die drei Fragen zur AP11-Liste (gemessen am Import-Graphen von `src`,
+Stand `main` `6c8e98c`) hat der Eigentümer mit **„go"** geantwortet —
+gelesen wie am 2026-09-01: Ja zu den Ja/Nein-Fragen 1 und 3; Frage 2 war
+offen formuliert („welche bekommen eine Route?") und ist mit „go" nicht
+beantwortet.
+
+| Frage | Antwort |
+|---|---|
+| 1. Sechs verwaiste Duplikate löschen, deren gerouteter Zwilling existiert | **Ja** |
+| 2. Elf ungeroutete Views mit echtem Backend: welche bekommen eine Route, welche fallen weg? | **offen** — nur die fünf mit geroutetem Nachfolger entfernt |
+| 3. Mock-Views und ungenutzte Landing-Bausteine löschen | **Ja** |
+
+Umfang — und **nur** dieser: 52 `.tsx`-Dateien, die keine andere Datei
+importiert (statische und dynamische Imports, Re-Exports, Alias `@/`,
+geprüft auch gegen `test/`, `tests/`, `e2e/`, `scripts/`). Kein Grid, keine
+Farbe, kein sichtbarer Text ändert sich; die eingefrorene Startseite nutzt
+keinen der entfernten Bausteine. Vollständige Liste, bewusst Stehengelassenes
+und die 14 Folge-Waisen: `docs/product/ap11-aufraeumen.md`.
+
+Bewusst **nicht** gelöscht: `components/landing/FrankfurtSkyline.tsx` (wird
+nirgends gerendert, aber `test/landing/frankfurt-skyline.test.ts` schützt sie
+ausdrücklich — Route oder Löschung entscheidet der Eigentümer),
+`features/api/OAuth2ConfigView.tsx` (der Gate-Test in PR #1196 liest die
+Datei), und die sechs Views aus Frage 2 ohne Nachfolger
+(`IntegrationMarketplaceView`, `UnknownTrackersView`, `AgentsView`,
+`ApiUsageStats`, `NewsletterForm`, `PolicyPackAutoActivator`).
+
 #### Faustregel
 
 **Hinzufügen ja, Ändern nur nach Rückfrage, Design gar nicht.**

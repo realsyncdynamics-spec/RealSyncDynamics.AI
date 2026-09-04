@@ -620,6 +620,10 @@ eigenen Kanäle vollständig (Gateway, Agenten, Bots, Publish)?
 *Empfehlung: eigene Kanäle zuerst — sie sind die einzigen, wo wir wirklich
 blockieren können, und sie beweisen das Produkt.*
 
+> **Entschieden am 2026-09-04: eigene Kanäle.** Damit ist P2-2 (Microsoft 365)
+> zurückgestellt und die Reihenfolge festgelegt: P2-3 (Publish Gate) → P2-4
+> (CI/CD-Gate) → P2-5 (Bot-Governance). P2-3 ist umgesetzt.
+
 **E7 — Preis-Zuordnung.**
 In welchen Plänen ist aktives Enforcement enthalten? Ohne Antwort kann ich
 `shared/pricing.ts` nicht sauber erweitern.
@@ -710,8 +714,54 @@ Relativ, keine erfundenen Zeitangaben.
 |---|---|---|
 | P2-1 Connector-Rahmenwerk | ✅ | **Die Klasse ist abgeleitet, nicht eingegeben** — das ist der ganze Punkt. `shared/enforcement-classes.ts` trägt die Zuordnung Systemtyp → Klasse samt Begründung; `connector_enforcement_class()` (Migration `20260904100000`) trägt sie in SQL; ein BEFORE-Trigger auf `connector_registry` **überschreibt** jeden mitgeschickten Wert. Dürfte ein Mandant sein Microsoft 365 auf „A" setzen, behauptete die Oberfläche eine Blockierfähigkeit, die es dort nicht gibt — genau die Scheinimplementierung, die der Auftrag §3 untersagt. Ein DB-Test stellt den Angriff nach. Unbekannte Systemtypen ergeben **C, nicht A**: Ein System, dessen Integrationspunkt niemand belegt hat, kann nichts verhindern. `connector_enforcement_summary()` beantwortet die erste Prüferfrage („bei wie vielen können Sie wirklich verhindern?") in der Datenbank statt im Frontend, wo eine falsche Formel unbemerkt bliebe. Oberfläche: `/app/governance/connectors`. **Additiv**: Die vier Bestandstabellen (`integrations`, `integration_configs`, `integration_connectors`, `enterprise_connectors`) bleiben unangetastet, die Registratur legt sich darüber und zeigt per `source_table`/`source_id` auf die jeweilige Zeile |
 
-**Offen in P2**: P2-2 (Microsoft 365) hängt an E6; P2-3 (SiteOS Publish Gate), P2-4 (CI/CD-Gate) und P2-5 (Bot-Governance) sind unabhängig von den offenen Entscheidungen und folgen der Empfehlung zu E6 („eigene Kanäle zuerst"). Offen bleiben die Entscheidungen E1–E7 aus §7 und
-die Phasen P2/P3.
+| P2-3 SiteOS Publish Gate als PEP | ✅ | **Das Gate kannte die Regeln seines Betreibers nicht.** `policy_compliant` kam allein aus der fest verdrahteten Befundtabelle des Produkts (`LEGALLY_BLOCKING` × Severity) — die Untergrenze für jeden Mandanten, aber nicht die Regel DES Mandanten. Wer „keine Veröffentlichung ohne Freigabe des DSB" hinterlegt hatte, hatte keinen Weg, das auf die Veröffentlichung wirken zu lassen; die Oberfläche zeigte trotzdem ein Gate. Jetzt fragt der Handler den PDP (`_shared/pdp/publish.ts`, Kanal `siteos_publish`, Verb `publish`). **Die normative Ableitungsregel aus §7 bleibt unangetastet**: `block` nimmt `policy_compliant`, `require_approval` setzt `human_approval_required`, `warn` erzeugt einen Hinweis — ein sechstes Vertragsfeld hätte §7 geändert. **Fail-closed** nach G3, ausdrücklich anders als der allgemeine Default (E2): Ein durchgelassener Gateway-Aufruf lässt sich nachträglich bewerten, eine Veröffentlichung nicht zurückholen. Eigene Frist von 5 s, weil G3 die Zeitüberschreitung ausdrücklich nennt |
+
+**Zur Injektionsgrenze bei P2-3 (K6), schärfer als beim Agenten:** Ein
+Blueprint besteht überwiegend aus fremdem Text — aus dem Prompt eines Nutzers
+oder aus einer **gescannten fremden Website**. Ginge er in die
+Entscheidungsgrundlage, könnte der Betreiber der gescannten Seite die Bewertung
+seiner eigenen Übernahme beeinflussen, durch nichts weiter als einen Satz auf
+seiner Startseite. Den Prozess verlassen deshalb nur strukturierte Tatsachen aus
+geschlossenem Vokabular: Befund-**Codes** statt Titel, Branchenschlüssel,
+Herkunftsart, Seitenzahl, Rechtsgrundlagen, Hashes. Ein Test stellt den Angriff
+nach.
+
+**Zwei Lagen, ein Vertragsfeld — und warum das in der Datenbank steht:** Im
+Contract sind „eine Richtlinie hat gesperrt" und „der PDP war nicht erreichbar"
+beide `policy_compliant: false`. Für den Betroffenen ist der Unterschied
+entscheidend (Site ändern vs. Dienst reparieren), für einen Prüfer ebenso: Ein
+Gate, das wegen eines Ausfalls sperrt, hat nicht „die Richtlinie durchgesetzt".
+Migration `20260904110000` trennt beides maschinell auswertbar und erzwingt per
+CHECK, dass ein Ausfall **nie** als konform gespeichert werden kann — dieselbe
+Überlegung, aus der `publishable` eine generierte Spalte ist.
+
+**Offen in P2**: P2-2 (Microsoft 365) bleibt liegen — **E6 ist am 2026-09-04
+vom Eigentümer entschieden: eigene Kanäle zuerst.** Damit folgen als Nächstes
+P2-4 (CI/CD-Gate) und P2-5 (Bot-Governance). Offen bleiben die Entscheidungen
+E1–E5 und E7 aus §7 sowie Phase P3.
+
+### Befund am Prüfstand selbst, gemessen am 2026-09-04
+
+Beim Verdrahten von P2-3 zeigte sich, dass **`Migration validation` nur
+`security-regressions.db.test.ts` ausführt**, nicht das Verzeichnis. Die
+DB-Tests aus P2-1 (`connector-registry.db.test.ts`) liefen deshalb **in keinem
+einzigen CI-Lauf**; ein grüner Job belegte nur, dass die Migration durchläuft —
+nicht, dass der Fälschungsschutz wirkt. Eine frühere Aussage in dieser Sitzung,
+die Tests seien „nachgewiesen", war damit falsch.
+
+Behoben: Beide Enforcement-Dateien sind namentlich in `ci.yml` verdrahtet, und
+`requireDbOrFail()` in `db-helpers.ts` macht ein stilles Überspringen unter
+`REQUIRE_DB_TESTS=1` zum lauten Fehler — bisher trug nur eine einzige Datei
+diese Vorkehrung.
+
+**Nicht behoben, weil außerhalb des Auftragsrahmens:** Gegen das voll migrierte
+Schema bestehen **16 der 23** Dateien in `test/runtime/db/`; 7 scheitern
+(`addon-entitlements`, `entitlement-grants`, `event-ordering`, `mv-aggregates`,
+`rls`, `subject-ref`, `tenant-entitlements-callers`) — sie sind gegen den
+minimalen Harness aus `scripts/test-db/up.sh` geschrieben. Die 14 weiteren
+lauffähigen Dateien nachzuziehen ist eigene Arbeit. Besonders `rls.db.test.ts`
+wiegt schwer: Die Mandantentrennung wird heute nur durch
+`security-regressions` geprüft.
 
 **Nebenbefund aus P1-6, gemeldet statt stillschweigend behoben:**
 `ai_evidence_retention.hard_delete_after_days` stand seit der Einführung im

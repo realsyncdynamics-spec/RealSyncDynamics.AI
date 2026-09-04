@@ -191,6 +191,37 @@ jobs:
           REQUIRE_DB_TESTS: '1'
         run: npx vitest run test/runtime/db/security-regressions.db.test.ts --no-file-parallelism
 
+      # Die Zusagen des Governance OS, die in der DATENBANK stehen und nicht
+      # im Code — jede von ihnen deckt einen Weg ab, eine Schranke zu
+      # umgehen, der mit `service_role` offenstuende:
+      #
+      #   connector-registry     Die Durchsetzbarkeits-Klasse laesst sich
+      #                          nicht faelschen (BEFORE-Trigger ueberschreibt).
+      #   publish-gate-policy    Ein Ausfall des PDP kann nicht als
+      #                          Konformitaet gespeichert werden (§7 G3).
+      #
+      # WARUM NAMENTLICH UND NICHT DAS VERZEICHNIS: Am 2026-09-04 gemessen
+      # bestehen 16 der 23 Dateien in test/runtime/db/ gegen dieses voll
+      # migrierte Schema, 7 nicht — sie sind gegen den minimalen Harness aus
+      # scripts/test-db/up.sh geschrieben und wenden Migrationen teils selbst
+      # an. Das ganze Verzeichnis zu verdrahten faerbte CI rot. Die uebrigen
+      # 14 lauffaehigen Dateien nachzuziehen ist eigene Arbeit und bleibt
+      # offen; sie hier zu verschweigen waere derselbe Fehler, den der
+      # Schritt darueber behebt.
+      #
+      # Diese beiden Dateien standen bis hierher in KEINEM CI-Lauf. Ein
+      # gruener `Migration validation`-Job belegte nur, dass die Migration
+      # durchlaeuft — nicht, dass der Trigger und die Bedingung wirken.
+      - name: Enforcement-Zusagen in der Datenbank (P2-1, P2-3)
+        env:
+          TEST_DB_URL: postgresql://postgres:postgres@localhost:5432/postgres
+          REQUIRE_DB_TESTS: '1'
+        run: |
+          npx vitest run \
+            test/runtime/db/connector-registry.db.test.ts \
+            test/runtime/db/publish-gate-policy.db.test.ts \
+            --no-file-parallelism
+
       - name: Verify migrations are append-only
         if: github.event_name == 'pull_request' && !contains(github.event.pull_request.title, '[hotfix]')
         run: |

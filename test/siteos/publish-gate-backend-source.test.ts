@@ -94,6 +94,15 @@ describe('Backend-Feststellung — Wirkung im Kern', () => {
       artifactSha256: 'a'.repeat(64),
       evidence: { snapshotWritten: true, custodyLinked: true },
       backend,
+      // Die Regeln des Mandanten greifen nicht — hier variiert allein die
+      // Backend-Lage.
+      policy: {
+        kind: 'evaluated',
+        decision: 'allow',
+        reasons: [],
+        matchedPolicyIds: [],
+        snapshotVersion: 'test-snapshot',
+      },
       approval: { grantedForArtifactSha256: null, grantedBy: null, reason: null },
       evaluationId: '00000000-0000-4000-8000-000000000000',
       evaluatedAt: '2026-08-22T21:00:00.000Z',

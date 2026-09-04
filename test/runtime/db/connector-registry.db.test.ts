@@ -9,10 +9,11 @@
  * Falschaussage mit dem Anschein einer Prüfung.
  */
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { closeDb, createTenantWithMember, getDbUrl, openDb, type DbCtx } from './db-helpers';
+import { closeDb, createTenantWithMember, openDb, requireDbOrFail, type DbCtx } from './db-helpers';
 
-const skip = !getDbUrl();
-const d = skip ? describe.skip : describe;
+// Faellt laut aus, wenn CI die Datenbank erwartet, sie aber fehlt — statt
+// still nichts zu pruefen.
+const d = requireDbOrFail('P2-1 / Connector-Registratur') ? describe : describe.skip;
 
 async function register(
   ctx: DbCtx,

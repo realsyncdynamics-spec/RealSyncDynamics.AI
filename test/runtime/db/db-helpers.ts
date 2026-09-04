@@ -180,3 +180,27 @@ export async function insertEvent(
   );
   return rows[0]!;
 }
+
+/**
+ * Macht ein stilles Überspringen zum Fehler, wenn `REQUIRE_DB_TESTS=1` gesetzt
+ * ist.
+ *
+ * Ohne `TEST_DB_URL` überspringen sich DB-Tests still — bequem lokal, fatal in
+ * CI: Eine Suite, die nichts prüft, ist dort nicht von einer zu unterscheiden,
+ * die alles prüft. `security-regressions.db.test.ts` trug diese Vorkehrung
+ * bisher als Einzelstück; hier steht sie einmal, damit jede Datei, die in CI
+ * laufen SOLL, sie übernehmen kann.
+ *
+ * Gibt zurück, ob die Tests laufen können — der Aufrufer wählt damit
+ * `describe` oder `describe.skip`.
+ */
+export function requireDbOrFail(label: string): boolean {
+  const url = getDbUrl();
+  if (!url && process.env.REQUIRE_DB_TESTS === '1') {
+    throw new Error(
+      `REQUIRE_DB_TESTS=1, aber TEST_DB_URL fehlt. „${label}" waere still ` +
+      'uebersprungen worden — genau der Zustand, den diese Vorkehrung verhindert.',
+    );
+  }
+  return Boolean(url);
+}

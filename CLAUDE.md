@@ -78,8 +78,8 @@ Menschen · Unternehmen · KI-Agenten · Daten · Entscheidungen.
 
 **Primär: Supabase Cloud (EU / Frankfurt)**
 - PostgreSQL 17 (Live-Projekt, Stand 2026-08-16)
-- **182 Edge Functions** im Repo (`supabase/functions/`, Deno/V8; `_shared` ist Bibliothek, keine Function) — **alle 182 deployt**, deckungsgleich in beide Richtungen. Nachgemessen am 2026-09-05 um 00:35 UTC per Management-API gegen die Verzeichnisse im Repo, `comm -23` und `comm -13` beide leer. `mcp-api-key-manager` (PR #1160) ist dabei; die Produktionsliste in `src/config/production-edge-functions.ts` hatte den Eintrag zwischenzeitlich nicht, der Drift-Guard war deshalb rot. `subscription-addons` stand hier länger als „wartet auf den nächsten `deploy.yml`-Lauf“ — der Lauf war längst da, die Function antwortet mit `401`, nicht `404`. Siehe §5
-- **317 Migrations** (`supabase/migrations/`) — **alle 317 verbucht**, neueste `20260904000300`. Nachgemessen am 2026-09-05 um 00:35 UTC gegen `supabase_migrations.schema_migrations`, Mengen in beide Richtungen verglichen (`comm -23` und `comm -13`), beide leer. `20260904000300_canonical_plan_catalog` (PR #1196) stand hier als unverbucht — der Deploy ist inzwischen gelaufen. Zu den zwei nachgezogenen Out-of-Band-Migrationen siehe §5
+- **182 Edge Functions** im Repo (`supabase/functions/`, Deno/V8; `_shared` ist Bibliothek, keine Function) — **alle 182 deployt**, deckungsgleich in beide Richtungen. Nachgemessen am 2026-09-04 um 23:23 UTC per Management-API, nachdem `mcp-api-key-manager` (PR #1160) dazugekommen war; die Produktionsliste in `src/config/production-edge-functions.ts` hatte den Eintrag nicht, der Drift-Guard war deshalb rot. Zuvor gemessen am 2026-09-04 mit zwei unabhängigen Methoden (Management-API und HTTP-Probe je Slug), `comm` in beide Richtungen leer. `subscription-addons` stand hier bis dahin als „wartet auf den nächsten `deploy.yml`-Lauf“ — der Lauf war längst da, die Function antwortet mit `401`, nicht `404`. Siehe §5
+- **317 Migrations** (`supabase/migrations/`) — **317 verbucht**, neueste `20260904000300`, gemessen am 2026-09-04 um 23:39 UTC gegen `supabase_migrations.schema_migrations` nach dem grünen Deploy-Lauf 33929752213 (Merge von PR #1196, `main` @ `1c40003`); Versionen in beide Richtungen verglichen, `comm -23` und `comm -13` leer. Damit sind `20260904000300_canonical_plan_catalog` (#1196) und die beiden MCP-Migrationen `20260903120000`/`20260903120100` (#1160) verbucht. Frühere Stände dieser Zeile nannten 315/314 (17:50 UTC) bzw. 312 — jeweils der Stand vor dem folgenden Deploy. Zu den zwei nachgezogenen Out-of-Band-Migrationen siehe §5
 - RLS auf allen App-Tabellen · Realtime Subscriptions
 
 **Node/TypeScript-Services** (containerisiert — **kein Go im Repo**)
@@ -321,6 +321,24 @@ Jeder Agent braucht vier Dimensionen — fehlt eine, ist er nicht governance-fä
 > Functions. Die Zahlen in §2 und §7 sind damit nicht geschätzt, sondern
 > nachgezogen. Dass Repo und Ledger beide 305 zeigen, war dabei nicht der
 > Beleg — der Mengenvergleich war es.
+>
+> **Nachmessung 2026-09-04, 23:39 UTC**, `main` @ `1c40003` (Merge von
+> PR #1196), nach dem grünen Deploy-Lauf 33929752213. Gleiche Methode:
+> Ledger und Management-API, Mengen in beide Richtungen verglichen.
+>
+> | | Repo (`main`) | in Produktion | Lücke |
+> |---|---|---|---|
+> | Migrationen | 317 Dateien | **317** verbucht (neueste `20260904000300`) | **0** |
+> | Edge Functions | 182 (+ `_shared`) | **182** aktiv | **0** |
+>
+> `comm -23` und `comm -13` sind beide leer. Zusätzlich per HTTP-Probe ohne
+> Token geprüft, dass die Gates aus AP9 Welle 3 und 4 in Produktion greifen:
+> `tenant-branding-update`, `evidence-vault-export`,
+> `generate-compliance-report`, `report-generator`, `api-audit`,
+> `compliance-alert-trigger`, `governance-risk-escalate` und
+> `audit-monitor-cron` antworten alle mit `401` — die beiden Cron-Functions
+> aus ihrem eigenen Bearer-Check (`verify_jwt` ist dort aus), die übrigen
+> aus `requireUser`.
 >
 > ¹ **Zwei Migrationen sind live, ohne dass es je eine Datei gab**:
 > `20260825204748_fix_websites_authenticated_crud_rls` (2026-08-25) und

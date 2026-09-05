@@ -61,7 +61,7 @@ curl -X POST http://localhost:3000/functions/v1/gdpr-audit \
       "severity": "critical",
       "title": "KI-Nutzung ohne Disclosure: OpenAI (ChatGPT)",
       "detail": "Die Website nutzt KI-Services (OpenAI (ChatGPT)), hat aber keinen sichtbaren Hinweis...",
-      "paragraph_ref": "AI Act Art. 52 (Limited-Risk AI)"
+      "paragraph_ref": "AI Act Art. 50 (Limited-Risk AI)"
     },
     ... other DSGVO findings ...
   ],

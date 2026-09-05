@@ -75,6 +75,15 @@ export interface ScanMeta {
   scanner_version: string;
 }
 
+/**
+ * Ergebnis der Banner-Gestaltungsprüfung — siehe `consent-banner.ts`.
+ *
+ * Optional, weil nur der Deep-Scan (Playwright) es liefern kann: Die
+ * leichte Variante als Edge Function holt nur HTML und kann Flächen und
+ * berechnete Stile nicht messen. Sie lässt das Feld weg statt zu raten.
+ */
+export type { ConsentBannerAnalysis, ConsentBannerFinding, ConsentButtonRole } from './consent-banner.js';
+
 export interface ScanResult {
   ok: true;
   meta: ScanMeta;
@@ -88,6 +97,12 @@ export interface ScanResult {
   network_requests_count: number;
   third_party_hosts: string[];               // dedupliziert
   unknown_third_party_scripts: Array<{ host: string; sample_url: string }>;
+  /**
+   * Gestaltung des Einwilligungsbanners (§ 25 TDDDG, BfDI 13.08.2026).
+   * Nur im Deep-Scan gesetzt; `undefined` bei der leichten Edge Function.
+   * Fließt **nicht** in `score` ein — Begründung in `consent-banner.ts`.
+   */
+  consent_banner?: import('./consent-banner.js').ConsentBannerAnalysis;
   score: number;                             // 0..100
   severity: Severity;
   summary: string;

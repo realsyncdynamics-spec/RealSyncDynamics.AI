@@ -3,7 +3,7 @@
 //
 // Endpoints:
 //   GET  /health                — Liveness-Check
-//   POST /scan/full             — Vollstaendiger Scan (Cookies, Requests, Tracker, HTML)
+//   POST /scan/full             — Vollstaendiger Scan (Cookies, Requests, Tracker, HTML, Banner-Gestaltung)
 //   POST /scan/consent-timing   — Consent-Timing: welche Tracker laden VOR Consent-Click?
 //   POST /scan/screenshot       — Screenshot + HTML-Dump
 //
@@ -13,6 +13,7 @@
 
 import { chromium, Browser, BrowserContext, Page, Request, Response } from 'playwright';
 import * as http from 'http';
+import { assessConsentBanner, type ConsentButtonDescriptor } from './consent-banner';
 
 const PORT = parseInt(process.env.PORT ?? '3001', 10);
 const API_KEY = process.env.SCANNER_API_KEY ?? '';
@@ -81,6 +82,123 @@ function detectConsentManager(html: string): { detected: boolean; name: string|n
   return { detected: false, name: null };
 }
 
+// ─── Banner-Gestaltung: Messwerte aus dem DOM ────────────────────────────────
+/**
+ * Schaltflaechen eines Einwilligungsbanners aus dem DOM holen — Messwerte,
+ * keine Bewertung. Die steckt in `consent-banner.ts`, byte-gleicher Zwilling
+ * zu `services/playwright-scanner/src/consent-banner.ts`; die Gleichheit
+ * haelt `test/scanner/consent-banner-twin.test.ts` fest.
+ *
+ * Warum erst der Container und dann die Schaltflaechen: Ein einfaches „alle
+ * Knoepfe der Seite einsammeln" waere unbrauchbar. Ein Navigationslink
+ * „Einstellungen" oder ein „OK" in einem beliebigen Dialog wuerde als
+ * Consent-Schaltflaeche gelten, und die Seite bekaeme einen Befund fuer ein
+ * Banner, das sie gar nicht hat. Deshalb zwei Wege zum Container, beide
+ * konservativ: benannte Kennzeichnung (id/class/data-Attribut) oder ein
+ * aufliegendes Overlay, dessen Text tatsaechlich von Cookies oder
+ * Einwilligung handelt. Findet keiner etwas, wird nichts gemeldet.
+ */
+async function collectConsentButtons(page: Page): Promise<ConsentButtonDescriptor[]> {
+  return page.evaluate(() => {
+    interface Rect { width: number; height: number }
+    interface Style {
+      position: string; zIndex: string; backgroundColor: string;
+      fontSize: string; fontWeight: string;
+      display: string; visibility: string; opacity: string;
+    }
+    interface El {
+      id: string;
+      textContent: string | null;
+      getAttribute(name: string): string | null;
+      getBoundingClientRect(): Rect;
+      querySelectorAll(selectors: string): ArrayLike<El>;
+    }
+    interface Doc { querySelectorAll(selectors: string): ArrayLike<El> }
+    const g = globalThis as unknown as {
+      document: Doc;
+      getComputedStyle(el: El): Style;
+    };
+
+    const NAMED = /(cookie|consent|gdpr|dsgvo|cmp|privacy|datenschutz|usercentrics|cookiebot|borlabs|klaro|didomi|osano|onetrust)/i;
+    const TOPIC = /(cookie|einwillig|consent|datenschutz|tracking)/i;
+
+    const containers: El[] = [];
+    const seen = new Set<El>();
+
+    const all = g.document.querySelectorAll('div,section,aside,dialog,form');
+    for (let i = 0; i < all.length; i++) {
+      const el = all[i];
+      if (!el || seen.has(el)) continue;
+
+      const marker = `${el.id} ${el.getAttribute('class') ?? ''} ${el.getAttribute('data-testid') ?? ''} ${el.getAttribute('aria-label') ?? ''}`;
+      const style = g.getComputedStyle(el);
+      const overlay = (style.position === 'fixed' || style.position === 'sticky')
+        && Number.parseInt(style.zIndex, 10) >= 100;
+      const text = (el.textContent ?? '').slice(0, 2000);
+
+      // Ein Overlay zaehlt nur, wenn sein Text auch vom Thema handelt —
+      // sonst waere jedes klebende Menue ein Cookie-Banner.
+      if (NAMED.test(marker) || (overlay && TOPIC.test(text))) {
+        seen.add(el);
+        containers.push(el);
+      }
+    }
+
+    const out: Array<{
+      text: string; width: number; height: number;
+      fontSizePx: number; fontWeight: number;
+      backgroundColor: string; visible: boolean;
+    }> = [];
+    const takenTexts = new Set<string>();
+
+    for (const container of containers) {
+      const clickables = container.querySelectorAll(
+        'button,a,[role="button"],input[type="button"],input[type="submit"]',
+      );
+      for (let i = 0; i < clickables.length; i++) {
+        const el = clickables[i];
+        if (!el) continue;
+
+        const text = (el.textContent ?? el.getAttribute('value') ?? '')
+          .replace(/\s+/g, ' ').trim();
+        // Flieaastext mit Link ist keine Schaltflaeche. 80 Zeichen lassen auch
+        // lange Beschriftungen wie „Nur technisch notwendige Cookies zulassen"
+        // durch, schneiden aber Absaetze ab.
+        if (text.length === 0 || text.length > 80) continue;
+
+        const rect = el.getBoundingClientRect();
+        const style = g.getComputedStyle(el);
+        const visible = rect.width > 0 && rect.height > 0
+          && style.display !== 'none' && style.visibility !== 'hidden'
+          && Number.parseFloat(style.opacity || '1') > 0.05;
+
+        // Dieselbe Beschriftung mehrfach (verschachtelte Container, Desktop-
+        // und Mobil-Variante) verzerrt sonst den Flaechenvergleich.
+        const key = `${text}|${Math.round(rect.width)}x${Math.round(rect.height)}`;
+        if (takenTexts.has(key)) continue;
+        takenTexts.add(key);
+
+        const weightRaw = style.fontWeight;
+        const weight = weightRaw === 'bold' ? 700
+          : weightRaw === 'normal' ? 400
+          : Number.parseInt(weightRaw, 10) || 400;
+
+        out.push({
+          text,
+          width: rect.width,
+          height: rect.height,
+          fontSizePx: Number.parseFloat(style.fontSize) || 0,
+          fontWeight: weight,
+          backgroundColor: style.backgroundColor,
+          visible,
+        });
+      }
+    }
+
+    return out;
+  }).catch<ConsentButtonDescriptor[]>(() => []);
+}
+
 // ─── Endpoint: /scan/full ─────────────────────────────────────────────────────
 async function scanFull(url: string, timeout = DEFAULT_TIMEOUT) {
   const b = await getBrowser();
@@ -94,6 +212,9 @@ async function scanFull(url: string, timeout = DEFAULT_TIMEOUT) {
   const responseCodes: Record<string, number> = {};
   const cookies: Array<{name:string;domain:string;httpOnly:boolean;secure:boolean;sameSite:string}> = [];
   let html = '';
+  // Muss vor ctx.close() gemessen werden — danach gibt es keine Seite mehr,
+  // an der Flaechen und berechnete Stile abzulesen waeren.
+  let consentBanner: ReturnType<typeof assessConsentBanner> | null = null;
 
   ctx.on('request', (req: Request) => requestUrls.push(req.url()));
   ctx.on('response', (resp: Response) => { responseCodes[resp.url()] = resp.status(); });
@@ -103,6 +224,8 @@ async function scanFull(url: string, timeout = DEFAULT_TIMEOUT) {
   try {
     await page.goto(url, { waitUntil: 'networkidle', timeout });
     html = await page.content();
+
+    consentBanner = assessConsentBanner(await collectConsentButtons(page));
 
     const rawCookies = await ctx.cookies();
     for (const c of rawCookies) {
@@ -139,6 +262,10 @@ async function scanFull(url: string, timeout = DEFAULT_TIMEOUT) {
     cookie_count: cookies.length,
     trackers_detected: trackers,
     consent_manager: consentManager,
+    // Gestaltung des Banners (§ 25 TDDDG, BfDI 13.08.2026). Zusaetzliches
+    // Feld — die bestehenden Schluessel bleiben unveraendert, damit
+    // audit-monitor-cron unberuehrt weiterlaeuft.
+    consent_banner: consentBanner,
     top_external_domains: [...new Set(externalRequests.map(u => { try { return new URL(u).hostname; } catch { return 'unknown'; } }))].slice(0, 20),
     scanner_version: '2026.05.0',
   };
@@ -176,6 +303,10 @@ async function scanConsentTiming(url: string, timeout = DEFAULT_TIMEOUT) {
     await page.waitForTimeout(2000);
     const htmlBeforeConsent = await page.content();
     const consentMgr = detectConsentManager(htmlBeforeConsent);
+
+    // Vor dem Klick messen: Nach „Alles akzeptieren" ist das Banner weg, und
+    // „gleiche Deutlichkeit" ist eine Aussage ueber die erste Ebene.
+    const consentBanner = assessConsentBanner(await collectConsentButtons(page));
 
     // Versuche Consent-Banner-Button zu finden und zu klicken
     const acceptSelectors = [
@@ -225,6 +356,7 @@ async function scanConsentTiming(url: string, timeout = DEFAULT_TIMEOUT) {
       url,
       scanned_at: new Date().toISOString(),
       consent_manager: consentMgr,
+      consent_banner: consentBanner,
       consent_button_found: clicked,
       consent_click_ms: consentClickMs,
       pre_consent: {

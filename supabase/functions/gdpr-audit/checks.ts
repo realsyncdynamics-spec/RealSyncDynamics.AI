@@ -158,15 +158,48 @@ export function hasConsentBanner(html: string): boolean {
 }
 
 /**
- * Reject-Button mit gleicher Prominenz wie Accept?
+ * Steht eine Ablehnen-Option **überhaupt** im Markup?
  *
- * Konservativ: Wir können aus statischem HTML keine Pixel messen. Gewertet
- * wird deshalb allein, ob eine Ablehnen-Option **überhaupt** im Markup
- * steht. Fehlt sie, ist Gleichrangigkeit ausgeschlossen — das ist die
- * Richtung, in der die Aussage belastbar ist.
+ * Das ist alles, was diese Funktion beantwortet — und sie heißt seit dem
+ * 2026-09-04 auch so. Vorher hieß sie `hasEqualRejectOption`, prüfte aber
+ * schon damals nur das Vorkommen des Wortes. Aus statischem HTML sind
+ * Fläche, Ebene und Stil nicht beobachtbar; sie stehen im gerenderten
+ * Layout, nicht im Text.
  */
-export function hasEqualRejectOption(html: string): boolean {
+export function hasRejectOption(html: string): boolean {
   return /alle\s{0,3}ablehnen|nur\s{0,3}(technisch\s{0,3})?notwendige|ablehnen|reject\s{0,3}all|decline\s{0,3}all|deny\s{0,3}all|essential\s{0,3}only/i.test(html);
+}
+
+/**
+ * Gleichrangigkeit der Ablehnen-Option — soweit aus dem HTML belegbar.
+ *
+ * Die Antwort ist bewusst **asymmetrisch**, und darin liegt die Korrektur:
+ *
+ * - Fehlt die Option ganz, ist Gleichrangigkeit ausgeschlossen → `false`.
+ *   In dieser Richtung trägt die Aussage.
+ * - Steht sie da, sagt das über ihre Deutlichkeit **nichts** → `undefined`.
+ *   Die Regel schweigt dann, statt Gleichrangigkeit zu behaupten.
+ *
+ * Der Kommentar der Vorgängerfassung hat genau das schon festgehalten
+ * („das ist die Richtung, in der die Aussage belastbar ist") — der Code
+ * lieferte den Wert trotzdem in beide Richtungen, und der Fakt
+ * `reject_button_equal_prominence` wurde in beide Richtungen gelesen. Ein
+ * Banner mit „Alles akzeptieren" als Knopf und „Ablehnen" als grauem Link
+ * in zweiter Ebene galt damit als gleichrangig.
+ *
+ * **Kein Ergebnis ändert sich dadurch.** `COOKIE_BANNER_DARK_PATTERN` feuert
+ * bei `equals false`; die Regel greift also in genau denselben Fällen wie
+ * vorher. Weg fällt allein die unbelegte Behauptung im Gegenfall.
+ *
+ * Wer die Prominenz wirklich messen will, braucht ein gerendertes Layout:
+ * `worker/src/detectors/consent.ts` tut das (Höhen- und Breitenverhältnis),
+ * ebenso `services/playwright-scanner/src/consent-banner.ts`. Beide hängen
+ * heute nicht an diesem Pfad — siehe B-5/B-7 in
+ * `docs/reports/watch-agent-2026-08-31.md`.
+ */
+export function rejectProminence(html: string, bannerSeen: boolean): boolean | undefined {
+  if (!bannerSeen) return false;
+  return hasRejectOption(html) ? undefined : false;
 }
 
 // ── Pflicht-Links ───────────────────────────────────────────────────────
@@ -682,7 +715,7 @@ export function extractFacts(input: ExtractFactsInput): Record<string, unknown> 
     consent: {
       banner: {
         detected: bannerSeen,
-        reject_button_equal_prominence: bannerSeen ? hasEqualRejectOption(html) : false,
+        reject_button_equal_prominence: rejectProminence(html, bannerSeen),
       },
       // Ohne Banner kann vor dem Laden nichts eingewilligt worden sein.
       detected_before_load: bannerSeen,
@@ -824,7 +857,12 @@ export function detectConsentBanner(html: string): boolean {
   return hasConsentBanner(html);
 }
 
-/** Alias zu {@link hasEqualRejectOption}. */
+/**
+ * Alias zu {@link hasRejectOption}.
+ *
+ * Der Name bleibt, weil er zur Modul-Oberfläche gehört; er beschreibt aber
+ * nicht, was gemessen wird. Für neuen Code `hasRejectOption` nehmen.
+ */
 export function hasEqualRejectButton(html: string): boolean {
-  return hasEqualRejectOption(html);
+  return hasRejectOption(html);
 }

@@ -10,9 +10,9 @@ name: Backend Services CI
 on:
   push:
     branches: [main]
-    paths: ['services/**', 'worker/**', 'apps/**', '.github/workflows/backend-services-ci.yml']
+    paths: ['services/**', 'worker/**', 'apps/**', 'deploy/playwright-scanner/**', '.github/workflows/backend-services-ci.yml']
   pull_request:
-    paths: ['services/**', 'worker/**', 'apps/**', '.github/workflows/backend-services-ci.yml']
+    paths: ['services/**', 'worker/**', 'apps/**', 'deploy/playwright-scanner/**', '.github/workflows/backend-services-ci.yml']
   workflow_dispatch:
 
 jobs:
@@ -24,6 +24,10 @@ jobs:
         include:
           - { dir: services/openclaw-agent,          check: 'npm run typecheck' }
           - { dir: services/playwright-scanner,       check: 'npm run typecheck' }
+          # Der Dienst, den cookie-scan-deep und audit-monitor-cron tatsaechlich
+          # rufen (/scan/full). Stand 2026-09-04 war er in keiner CI und hatte
+          # keinen tsconfig — sein Docker-Build scheiterte am fehlenden File.
+          - { dir: deploy/playwright-scanner,        check: 'npm run typecheck && npm run build' }
           - { dir: apps/agent-runtime,                check: 'npm run typecheck && npm test' }
           # Worker importiert ../src/rules (Repo-Root) → reiner Typecheck ohne Emit,
           # damit keine .js-Artefakte ausserhalb des Worker-Verzeichnisses entstehen.

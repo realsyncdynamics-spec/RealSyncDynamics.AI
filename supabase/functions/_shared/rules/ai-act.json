@@ -121,10 +121,10 @@
     {
       "id": "AI_ACT_LIMITED_RISK_CHATBOT",
       "title": "Limited-Risk: Chatbot ohne Transparenz-Hinweis",
-      "description": "Art. 52 AI Act verlangt, dass User wissen, dass sie mit KI interagieren. Fehlt der Disclosure-Hinweis, ist die Pflicht verletzt.",
+      "description": "Art. 50 AI Act verlangt, dass User wissen, dass sie mit KI interagieren. Fehlt der Disclosure-Hinweis, ist die Pflicht verletzt.",
       "category": "ai-act",
       "severity": "low",
-      "norms": ["AI Act Art. 52"],
+      "norms": ["AI Act Art. 50"],
       "conditions": [
         { "fact": "ai_use_case.is_chatbot", "operator": "equals", "value": true },
         { "fact": "ai_use_case.disclosure_visible", "operator": "equals", "value": false }
@@ -139,7 +139,7 @@
         ]
       },
       "version": "2026.05.0",
-      "updated_at": "2026-05-07"
+      "updated_at": "2026-09-04"
     },
     {
       "id": "AI_ACT_GPAI_FOUNDATION_MODEL",

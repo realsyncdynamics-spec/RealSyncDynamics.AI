@@ -366,6 +366,17 @@ export interface BotAddOn {
   bullets: string[];
   priceEur: number;
   priceSuffix: string;
+  /**
+   * Namen der Pläne, für die das Add-on angeboten wird — abgeleitet aus
+   * `addon.availableFor` in der SSoT, nicht in der Oberfläche gepflegt.
+   *
+   * Warum das Feld nötig ist: Solange der Adapter `availableFor` weggelassen
+   * hat, *konnte* die Preisseite die Verfügbarkeit nicht anzeigen und trug
+   * stattdessen einen festen Satz unter jedem Add-on. Für WhatsApp war der
+   * genau invers — genannt waren die Pläne, die den Kanal ohnehin enthalten,
+   * der einzige buchbare Plan fehlte.
+   */
+  availableForPlanNames: string[];
 }
 
 function toBotAddOn(addon: AddOn): BotAddOn {
@@ -376,6 +387,7 @@ function toBotAddOn(addon: AddOn): BotAddOn {
     bullets: addon.bullets,
     priceEur: addon.priceEur,
     priceSuffix: addon.priceNote,
+    availableForPlanNames: addon.availableFor.map((planId) => planById(planId).name),
   };
 }
 

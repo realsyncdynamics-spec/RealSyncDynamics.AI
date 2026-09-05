@@ -11,6 +11,23 @@ interface SubProcessor {
   status: 'signed' | 'available' | 'pending';
 }
 
+/**
+ * Datum der letzten inhaltlichen Änderung dieser Liste — bewusst eine
+ * Konstante und nicht `new Date()`.
+ *
+ * Warum: Direkt neben diesem Datum steht die Zusage, Änderungen würden hier
+ * laufend dokumentiert und wesentliche Änderungen den Workspace-Ownern
+ * avisiert (Art. 28 Abs. 2 DSGVO). Ein aus der Systemzeit erzeugtes „Stand"
+ * erweckt den Eindruck einer gepflegten Liste und ist zugleich der einzige
+ * Beleg dafür — ein Beleg, der sich täglich selbst erneuert, auch wenn sich
+ * seit Monaten nichts geändert hat. Art. 28 Abs. 2 knüpft Widerspruchsrechte
+ * an die Mitteilung von Änderungen; die trägt ein solches Datum nicht.
+ *
+ * Beim Ändern von SUB_PROCESSORS ist dieses Datum mitzuziehen — und nur dann.
+ * Eine reine Rechtschreibkorrektur ist keine Änderung der Liste.
+ */
+const LAST_UPDATED = '2026-08-19';
+
 const SUB_PROCESSORS: SubProcessor[] = [
   {
     name: 'Supabase Inc.',
@@ -131,7 +148,7 @@ export function SubProcessors() {
             nicht</strong> kontaktiert.
           </p>
           <p className="text-[11px] text-titanium-500">
-            Stand: {new Date().toISOString().slice(0, 10)} · Änderungen werden hier
+            Stand: {LAST_UPDATED} · Änderungen werden hier
             laufend dokumentiert. Wesentliche Änderungen werden Workspace-Ownern per
             Email avisiert (Art. 28 Abs. 2 DSGVO).
           </p>

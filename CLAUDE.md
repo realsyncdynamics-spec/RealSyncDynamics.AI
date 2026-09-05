@@ -1208,7 +1208,45 @@ nicht am Pixel: Ein Pixel-Test hinge an der Schriftart des CI-Runners,
 während die fehlerhafte Kombination — Begrenzung plus `overflow:hidden`
 ohne Umbruchregel — eine Eigenschaft des Stylesheets ist.
 
-**2026-09-01 — Ein Flow für den Start: drei Freigaben nach der Add-on-Buchung**
+**2026-09-01 (4) — Zwei Korrekturen aus dem Watch-Agent-Wochenbericht**
+
+Auf die Fragepflicht nach §10.3 hat der Eigentümer zweimal mit **Ja**
+geantwortet:
+
+| Frage | Antwort |
+|---|---|
+| 1. „Stand"-Datum auf Datenschutzerklärung und Sub-Prozessoren-Liste: festes Änderungsdatum statt `new Date()` | **Ja** |
+| 2. Add-on-Verfügbarkeit auf `/pricing` aus `availableFor` ableiten statt festem Satz | **Ja** |
+
+Umfang — und **nur** dieser:
+
+| Was | Vorher | Nachher |
+|---|---|---|
+| `PrivacyPolicy.tsx`, `SubProcessors.tsx` | `Stand {new Date()…}` | `Stand {LAST_UPDATED}`, Konstante `'2026-08-19'` |
+| `GovernanceBotsSection.tsx` | fester Satz „Für Growth, Agency, Enterprise und Partner" unter **jedem** Add-on | `Für {formatPlanList(addon.availableForPlanNames)}` — je Add-on aus der SSoT |
+| `src/config/pricing.ts` | `toBotAddOn` ließ `availableFor` weg | reicht die Plannamen als `availableForPlanNames` durch |
+
+Farben, Typografie, Grid, Abstände, Icon-Set und Sektionsreihenfolge sind
+unberührt; die Textposition bleibt dieselbe.
+
+**Warum das keine Kosmetik war.** Das „Stand"-Datum lief wegen des
+Prerenderings zur Build-Zeit: Es zeigte das Datum des letzten Deploys, nicht
+das der letzten Textänderung — und stand auf der Sub-Prozessoren-Seite direkt
+neben der Zusage „Änderungen werden hier laufend dokumentiert" samt Verweis auf
+Art. 28 Abs. 2 DSGVO. Auf der Preisseite war die Add-on-Aussage für WhatsApp
+invers: `availableFor: ['starter']`, angezeigt wurden ausgerechnet die Pläne,
+die den Kanal bereits enthalten. Das ist der Zustand von **vor** der
+AP2-Korrektur, deren Kommentar in `shared/pricing.ts` direkt darüber steht —
+die Datenschicht war berichtigt, die Oberfläche hatte es nie mitbekommen.
+
+**Lehre**: `toBotAddOn` hat ein Feld weggelassen, und weil die Komponente die
+Verfügbarkeit danach nicht mehr *anzeigen konnte*, ist an dieser Stelle ein
+fester Satz entstanden. Ein Adapter, der ein Feld der SSoT fallen lässt, erzeugt
+die Duplizierung, die die SSoT verhindern soll — nur eine Ebene tiefer und
+unsichtbar. Belege und die übrigen Befunde:
+`docs/reports/watch-agent-2026-08-31.md`.
+
+**2026-09-01 (5) — Ein Flow für den Start: drei Freigaben nach der Add-on-Buchung**
 
 Auf die drei Fragen nach §10.3 aus `docs/product/addon-booking.md` §6 hat
 der Eigentümer mit **„go"** geantwortet — gelesen als Ja zu allen dreien,
@@ -1234,7 +1272,122 @@ Farben, Typografie, Grid, Sektionsreihenfolge und Icon-Set sind unberührt.
 `/os/login` und `/os/signup` bleiben bestehen und erreichbar — sie sind nur
 kein Ziel des Flows mehr. Hergang: `docs/product/addon-booking.md` §6.
 
-**2026-09-04 — AP11 Aufräumen: verwaiste Dateien**
+**2026-09-04 — Prominenz-Fakt und AI-Act-Artikelnummer**
+
+Auf die Fragepflicht nach §10.3 hat der Eigentümer zweimal mit **Ja**
+geantwortet — die zweite Antwort ist eine Freigabe **zum Prüfen**, nicht zum
+Ändern:
+
+| Frage | Antwort |
+|---|---|
+| 1. Funktionsänderung: `reject_button_equal_prominence` ehrlich machen — Deep-Scan misst, Text angleichen | **Ja** |
+| 2. Textänderung: Art. 50 / Art. 52 vereinheitlichen | **Ja — erst am Verordnungstext prüfen, dann korrigieren** |
+
+Umfang zu 1 — und **nur** dieser, in `supabase/functions/gdpr-audit/checks.ts`:
+
+| Fall | Vorher | Nachher |
+|---|---|---|
+| Banner mit Ablehnen-Option | `true` | `undefined` |
+| Banner ohne Ablehnen-Option | `false` | `false` |
+| kein Banner | `false` | `false` |
+
+`COOKIE_BANNER_DARK_PATTERN` feuert bei `equals false` und greift damit in
+**exakt denselben Fällen** wie vorher — kein Ergebnis ändert sich, die
+Vergleichbarkeit mit den 159 historischen Audits bleibt. Weg fällt allein die
+unbelegte Behauptung im ersten Fall. `hasEqualRejectOption` → `hasRejectOption`;
+der Alias `hasEqualRejectButton` bleibt.
+
+**Warum das eine Regression war, keine fehlende Funktion**:
+`worker/src/detectors/consent.ts` misst die Prominenz korrekt über
+`getBoundingClientRect()`. Der Worker ist deprecated; beim Umzug in die Edge
+Function trat eine Wortsuche an die Stelle der Messung — unter demselben
+Faktnamen. Der Kommentar über der Funktion hielt die richtige Überlegung
+bereits fest („das ist die Richtung, in der die Aussage belastbar ist"); der
+Code folgte ihr nur zur Hälfte.
+
+**Zu 2, am selben Tag geprüft und dann korrigiert.** Die Prüfung ging der
+Änderung voraus, wie freigegeben. Ergebnis: **Art. 50** trägt die Überschrift
+„Transparency Obligations for Providers and Deployers of Certain AI Systems"
+und in Abs. 1 die Pflicht, Personen darüber zu informieren, dass sie mit
+einem KI-System interagieren; **Art. 52** heißt „Procedure" und regelt die
+Einstufung von GPAI-Modellen mit systemischem Risiko. Entscheidend war, dass
+**Kapitel IV aus genau einem Artikel besteht — Art. 50**.
+
+Daraufhin 17 Stellen in elf Dateien von `Art. 52` auf `Art. 50` gezogen
+(seit dem Merge von PR #1205 sind es 16 in zehn — `AssistentQuickChatModal.tsx`
+wurde dort als verwaist entfernt, siehe die AP11-Freigabe unten):
+Regelwerk (beide Zwillinge), `ai-disclosure-check.ts`, unsere eigenen
+KI-Hinweise (`AuditCopilotPanel`, `AssistentQuickChatModal`),
+`RiskCenterView`, `EvidenceVaultView`, `LegalMethodology`, Mock-Daten,
+`ROADMAP.md`, `SCANNER-TEST-GUIDE.md`. Regel-`id`, `severity`, `conditions`
+und `version` bleiben unberührt — die Regel verhält sich unverändert.
+`updated_at` dieser einen Regel steht jetzt auf `2026-09-04`.
+
+**Grenze der Prüfung, ausdrücklich**: Der EUR-Lex-Volltext ließ sich nicht
+auswerten (zu groß, bricht in den Erwägungsgründen ab, DE wie EN). Die
+Bestätigung stammt aus einer den amtlichen Text wiedergebenden Quelle plus der
+inneren Evidenz des Repos. Für die Vereinheitlichung von Nummern trägt das;
+für Zitate im Rechtsstreit gehört einmal ins Amtsblatt geschaut.
+
+**Nachtrag am selben Tag — dieser Absatz stand hier zuerst falsch.** Er
+lautete: „Welcher der beiden Playwright-Dienste unter
+`PLAYWRIGHT_SCANNER_URL` läuft, ist aus dem Repo nicht ablesbar." Das ist es
+sehr wohl, am Endpunkt: `cookie-scan-deep` ruft `POST …/scan/full` auf, und
+das bedient nur **`deploy/playwright-scanner`** — `services/playwright-scanner`
+bedient `/scan`. Stünde dort der andere Dienst, liefe jeder Deep-Scan in einen
+404.
+
+**Folge für B-4**: `services/playwright-scanner/src/consent-banner.ts` liegt im
+Dienst, den **kein Aufrufer im Repo** anspricht — keine Edge Function, kein
+Workflow, keine fremde Compose-Datei. Die Prominenz-Messung ist gebaut,
+getestet und CI-grün, aber auf keinem Pfad erreichbar, der von diesem Repo
+ausgeht (§14: „fertiger Code, den niemand erreichen kann, ist verschwendete
+Arbeit").
+
+**Umgesetzt am 2026-09-04, erste Hälfte.** `deploy/playwright-scanner`
+trägt jetzt `consent-banner.ts` als **byte-gleichen Zwilling** von
+`services/playwright-scanner/src/consent-banner.ts` und liefert
+`consent_banner` in `/scan/full` **und** `/scan/consent-timing` (dort vor dem
+Klick gemessen — nach „Alles akzeptieren" ist das Banner weg). Additiv: kein
+bestehender Schlüssel angefasst, damit `audit-monitor-cron` unberührt bleibt.
+**Regel**: Die beiden Dateien sind getrennte Build-Kontexte und dürfen nur
+gemeinsam geändert werden; `test/scanner/consent-banner-twin.test.ts` bricht
+sonst.
+
+**Dabei kam B-8 heraus: Der Dienst ließ sich nie bauen.** `npm ci` ohne
+`package-lock.json`, `COPY … tsconfig.json` auf eine Datei, die es in diesem
+Verzeichnis **nie gab**, `build` auf ein `src/`, das nicht existiert, ein
+`tsc … || true` als Scheinprüfung — und `deploy/**` in keiner CI. Das ganze
+Verzeichnis stammt aus einem Commit (#1095, 2026-08-19) und war seither
+unberührt. Aufgefallen ist es nicht, weil `audit-monitor-cron` bei fehlender
+`PLAYWRIGHT_SCANNER_URL` still auf den `fetch`-Scanner zurückfällt. Alles
+behoben; `backend-services-ci.yml` deckt `deploy/playwright-scanner` jetzt mit
+`typecheck && build` ab. **Wirksam erst nach einem Redeploy** — der Dienst
+läuft per `docker compose` auf dem VPS, nicht über `deploy.yml`.
+
+**Und die zweite Hälfte des Satzes war falsch.** „Über `cookie-scan-deep` in
+den Fakt führen" geht nicht: `cookie-scan-deep` erzeugt keine Fakten, und
+`gdpr-audit`, das sie erzeugt (`checks.ts:718`), **hat keinen Browser** und
+ruft keinen Scanner. Der Fakt ließe sich nur speisen, wenn `gdpr-audit` selbst
+eine browser-gestützte Eingabe bekäme — eine Änderung an dem Pfad, aus dem
+alle 159 historischen Audits stammen, und damit nach §1 versionsrelevant.
+Bis dahin bleibt B-5 richtig, wie es ist: `undefined` statt einer
+Behauptung.
+
+**Offen und vorgelegt** (`docs/reports/watch-agent-2026-08-31.md` B-5 bis B-9):
+
+1. **B-9 — der Deep-Scan kann heute nicht funktionieren.**
+   `cookie-scan-deep` liest `pwData.requests` (Zeile 389); `/scan/full`
+   liefert dieses Feld nicht → `undefined.map` → **HTTP 500 bei jedem
+   Aufruf**. Die öffentliche Route `/consent-timing` prüft zusätzlich
+   `data.ok`, das die Function nie setzt. Drei Verträge, keine zwei passen.
+   Die Reparatur legt fest, welche Form kanonisch ist, ändert eine bestehende
+   Function und eine bestehende Seite (§10.3) — und lässt erstmals eine
+   Bewertung in `gdpr_audits` laufen, die dort nie lief (§1).
+2. Ob `services/playwright-scanner` noch bestehen soll — Entfernen greift in
+   Bestehendes ein (§10.3).
+
+**2026-09-04 (2) — AP11 Aufräumen: verwaiste Dateien**
 
 Auf die drei Fragen zur AP11-Liste (gemessen am Import-Graphen von `src`,
 Stand `main` `6c8e98c`) hat der Eigentümer mit **„go"** geantwortet —

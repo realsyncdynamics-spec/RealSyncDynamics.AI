@@ -1,6 +1,6 @@
 import { FormEvent, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowRight, Code2, FileCheck2, Lock, Scan, ShieldCheck, Snowflake } from 'lucide-react';
+import { ArrowRight, Code2, FileCheck2, Lock, Scan, ShieldCheck, Snowflake, Eye, TrendingUp, CheckCircle2, AlertCircle } from 'lucide-react';
 import { SEOHead } from '../components/SEOHead';
 import { LandingChannelTools } from '../components/landing/LandingChannelTools';
 import {
@@ -196,6 +196,145 @@ export function MainLanding() {
         <section id="evidence" className="border-y border-white/10 bg-white/[.02] py-20 md:py-28"><div className="mx-auto max-w-7xl px-6 lg:px-10"><div className="grid gap-12 lg:grid-cols-[.8fr_1.2fr] lg:items-end"><div><p className="font-mono text-[10px] tracking-[.25em] text-[#e8c98a]">EVIDENCE &amp; TRUST</p><h2 className="mt-3 text-4xl tracking-tight sm:text-5xl" style={{ fontFamily: SERIF, fontWeight: 500 }}>Compliance, die sich <span className="text-[#e8c98a]">beweisen lässt.</span></h2><p className="mt-5 leading-relaxed text-white/55">PDFs, Logs, Zeitstempel und nachvollziehbare Prüfpfade. Jede Prüfung, jede Entscheidung und jede Änderung landet in derselben Governance-Historie.</p></div><div className="grid gap-3 sm:grid-cols-2"><TrustItem icon={ShieldCheck} title="DSGVO" text="Verarbeitung, Risiko, Policy und Nachweis im laufenden Governance-Prozess." /><TrustItem icon={Lock} title="EU AI Act" text="Risikoklassifikation, Transparenz und Dokumentation für KI-Systeme." /><TrustItem icon={FileCheck2} title="Nachweis-Export" text="Prüfungen und Entscheidungen als auditfähiger Export — für interne Kontrollen und externe Prüfer." /><TrustItem icon={Code2} title="Code Compliance" text="Claude Code prüft und unterstützt konkrete technische Remediation." /></div></div></div></section>
 
         <section className="py-20 md:py-28"><div className="mx-auto max-w-7xl px-6 lg:px-10"><div className="mb-12 max-w-3xl"><p className="font-mono text-[10px] tracking-[.25em] text-[#e8c98a]">GOVERNANCE RUNTIME</p><h2 className="mt-3 text-4xl tracking-tight sm:text-5xl" style={{ fontFamily: SERIF, fontWeight: 500 }}>Von der KI-Nutzung zur <span className="text-[#e8c98a]">kontrollierten KI-Organisation.</span></h2></div><div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{GOVERNANCE_STEPS.map(([no,title,text]) => <div key={no} data-reveal data-reveal-group="runtime" className="surface-panel rounded-2xl p-7"><span className="font-mono text-3xl text-[#e8c98a]/35">{no}</span><h3 className="mt-4 text-lg font-semibold tracking-wide">{title}</h3><p className="mt-2 text-sm leading-relaxed text-white/50">{text}</p></div>)}</div></div></section>
+
+        {/* HOW IT WORKS — Die vier Prinzipien */}
+        <section className="border-y border-white/10 bg-white/[.02] py-20 md:py-28">
+          <div className="mx-auto max-w-7xl px-6 lg:px-10">
+            <div className="mb-16 max-w-3xl">
+              <p className="font-mono text-[10px] tracking-[.25em] text-[#e8c98a]">FUNKTIONSPRINZIP</p>
+              <h2 className="mt-3 text-4xl tracking-tight sm:text-5xl" style={{ fontFamily: SERIF, fontWeight: 500 }}>Observe. <span className="text-[#e8c98a]">Understand. Govern. Act.</span></h2>
+            </div>
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+              {[
+                ['OBSERVE', 'Kontinuierliche Beobachtung Ihrer digitalen Infrastruktur und relevanter Signale.'],
+                ['UNDERSTAND', 'Signale in Befunde, Risiken und verwertbare Informationen umwandeln.'],
+                ['GOVERN', 'Policies, Entscheidungen und Genehmigungen vor kritischen Aktionen anwenden.'],
+                ['ACT', 'Kontrollierte Aktionen nur dort ausführen, wo der Governance-Pfad es erlaubt.']
+              ].map(([title, text]) => (
+                <div key={title} data-reveal data-reveal-group="how-it-works" className="surface-panel rounded-2xl p-7">
+                  <h3 className="font-mono text-sm font-semibold tracking-[.08em] text-[#e8c98a]">{title}</h3>
+                  <p className="mt-4 text-sm leading-relaxed text-white/60">{text}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* GOVERNANCE ENGINE — Die Kette */}
+        <section className="py-20 md:py-28">
+          <div className="mx-auto max-w-7xl px-6 lg:px-10">
+            <div className="mb-16 max-w-3xl">
+              <p className="font-mono text-[10px] tracking-[.25em] text-[#e8c98a]">DAS HERZ DES SYSTEMS</p>
+              <h2 className="mt-3 text-4xl tracking-tight sm:text-5xl" style={{ fontFamily: SERIF, fontWeight: 500 }}>KI, die nicht nur erkennt. <span className="text-[#e8c98a]">Sie regelt.</span></h2>
+              <p className="mt-5 leading-relaxed text-white/55">RealSyncDynamics.AI verbindet Evidence, Policy, Risiko und Entscheidungsfindung, bevor eine Aktion die Systeme erreicht, die zählen.</p>
+            </div>
+            <div className="max-w-2xl">
+              <div className="space-y-1 rounded-2xl border border-white/10 bg-black/40 p-8">
+                <div className="grid grid-cols-5 gap-2 text-center font-mono text-[11px] tracking-[.1em] text-white/40">
+                  <span>Evidence</span>
+                  <span className="text-[#e8c98a]">→</span>
+                  <span>Risk</span>
+                  <span className="text-[#e8c98a]">→</span>
+                  <span>Policy</span>
+                </div>
+                <div className="my-6 h-px bg-gradient-to-r from-transparent via-[#e8c98a]/30 to-transparent" />
+                <div className="grid grid-cols-5 gap-2 text-center font-mono text-[11px] tracking-[.1em] text-white/40">
+                  <span>Decision</span>
+                  <span className="text-[#e8c98a]">→</span>
+                  <span>Approval</span>
+                  <span className="text-[#e8c98a]">→</span>
+                  <span>Action</span>
+                </div>
+              </div>
+              <div className="mt-8 grid gap-4 sm:grid-cols-2">
+                <div>
+                  <h4 className="font-semibold text-white">Policy-gestützte Entscheidungen</h4>
+                  <p className="mt-2 text-sm text-white/50">Entscheidungen folgen Regeln, nicht Intuition.</p>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-white">Evidence-gestützte Governance</h4>
+                  <p className="mt-2 text-sm text-white/50">Jede Entscheidung ruht auf nachvollziehbarer Grundlage.</p>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-white">Genehmigung wo erforderlich</h4>
+                  <p className="mt-2 text-sm text-white/50">Kritische Aktionen benötigen explizite menschliche Freigabe.</p>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-white">Kontrollierte Ausführung</h4>
+                  <p className="mt-2 text-sm text-white/50">Nur Aktionen, die der Governance-Pfad erlaubt.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ENFORCEMENT HONESTY — Was kann technisch durchgesetzt werden */}
+        <section className="border-y border-white/10 bg-white/[.02] py-20 md:py-28">
+          <div className="mx-auto max-w-7xl px-6 lg:px-10">
+            <div className="mb-16 max-w-3xl">
+              <p className="font-mono text-[10px] tracking-[.25em] text-[#e8c98a]">TRANSPARENZ</p>
+              <h2 className="mt-3 text-4xl tracking-tight sm:text-5xl" style={{ fontFamily: SERIF, fontWeight: 500 }}>Wissen, was <span className="text-[#e8c98a]">tatsächlich durchgesetzt</span> werden kann.</h2>
+              <p className="mt-5 leading-relaxed text-white/55">Nicht jede Kontrolle hat dieselbe technische Reichweite. RealSyncDynamics.AI macht diesen Unterschied sichtbar, statt ihn hinter generischen Compliance-Versprechen zu verstecken.</p>
+            </div>
+            <div className="grid gap-6 md:grid-cols-3">
+              {[
+                { title: 'BLOCK', subtitle: 'Technisch durchsetzbar', text: 'Die Governance-Schicht kann die Aktion verhindern, bevor sie ausgeführt wird.' },
+                { title: 'CONTROL', subtitle: 'Genehmigung oder Workflow', text: 'Die Aktion benötigt explizite Governance-Entscheidung oder menschliche Genehmigung vor Ausführung.' },
+                { title: 'DETECT', subtitle: 'Erkennung und Reaktion', text: 'Die Plattform kann die Bedingung identifizieren und eine gesteuerte Reaktion auslösen, kann aber externe Aktionen nicht direkt verhindern.' }
+              ].map(({ title, subtitle, text }) => (
+                <div key={title} data-reveal data-reveal-group="enforcement" className="surface-panel rounded-2xl p-7">
+                  <h3 className="font-mono text-sm font-semibold tracking-[.12em] text-[#e8c98a]">{title}</h3>
+                  <p className="mt-4 text-xs font-mono tracking-[.08em] text-white/50 uppercase">{subtitle}</p>
+                  <p className="mt-4 text-sm leading-relaxed text-white/60">{text}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* EVIDENCE — Jede Entscheidung hinterlässt Spuren */}
+        <section className="py-20 md:py-28">
+          <div className="mx-auto max-w-7xl px-6 lg:px-10">
+            <div className="mb-16 max-w-3xl">
+              <p className="font-mono text-[10px] tracking-[.25em] text-[#e8c98a]">NACHVOLLZIEHBARKEIT</p>
+              <h2 className="mt-3 text-4xl tracking-tight sm:text-5xl" style={{ fontFamily: SERIF, fontWeight: 500 }}>Jede wichtige Entscheidung hinterlässt <span className="text-[#e8c98a]">Evidence.</span></h2>
+              <p className="mt-5 leading-relaxed text-white/55">Governance-Entscheidungen sollten erklärbar, nachverfolgbar und an Evidence gebunden sein.</p>
+            </div>
+            <div className="max-w-2xl">
+              <div className="space-y-1 rounded-2xl border border-white/10 bg-black/40 p-8">
+                <div className="grid grid-cols-5 gap-2 text-center font-mono text-[11px] tracking-[.1em] text-white/40">
+                  <span>Signal</span>
+                  <span className="text-[#e8c98a]">→</span>
+                  <span>Finding</span>
+                  <span className="text-[#e8c98a]">→</span>
+                  <span>Decision</span>
+                </div>
+                <div className="my-6 h-px bg-gradient-to-r from-transparent via-[#e8c98a]/30 to-transparent" />
+                <div className="grid grid-cols-5 gap-2 text-center font-mono text-[11px] tracking-[.1em] text-white/40">
+                  <span>Approval</span>
+                  <span className="text-[#e8c98a]">→</span>
+                  <span>Action</span>
+                  <span className="text-[#e8c98a]">→</span>
+                  <span>Evidence</span>
+                </div>
+              </div>
+              <p className="mt-8 text-sm leading-relaxed text-white/60">Signale durchlaufen den gesamten Pfad — von der Erkennung über die Entscheidung bis zur Ausführung. Am Ende steht nachvollziehbare Evidence: Was wurde beobachtet, entschieden und warum. Für Audits, Kontrollen und Verantwortlichkeit.</p>
+            </div>
+          </div>
+        </section>
+
+        {/* FINALE CTA — See what your governance can do */}
+        <section className="border-t border-white/10 bg-gradient-to-b from-white/[.02] to-black/40 py-20 md:py-28">
+          <div className="mx-auto max-w-4xl px-6 text-center lg:px-10">
+            <h2 className="text-4xl tracking-tight sm:text-5xl" style={{ fontFamily: SERIF, fontWeight: 500 }}>Sehen Sie, was Ihre Infrastruktur tatsächlich regeln kann.</h2>
+            <p className="mx-auto mt-6 max-w-2xl leading-relaxed text-white/60">Starten Sie eine Governance Assessment und entdecken Sie, wo Ihre Systeme heute kontrollierbar sind — und wo noch Lücken sind.</p>
+            <p className="mx-auto mt-8 max-w-2xl text-sm leading-relaxed text-white/40">Keine erfundenen Scores. Kein Compliance Theater. Nur Claims, die die Plattform beweisen kann.</p>
+            <div className="mt-10 flex flex-col justify-center gap-3 sm:flex-row">
+              <Link to="/audit" className="inline-flex items-center justify-center gap-2 rounded-full bg-[#f0e6d2] px-8 py-3.5 font-semibold text-[#1a1714] transition hover:bg-[#f6efe4]">Governance Assessment starten <ArrowRight className="h-4 w-4" /></Link>
+              <Link to="/app/governance" className="inline-flex items-center justify-center gap-2 rounded-full border border-[#e8c98a]/45 px-8 py-3.5 font-medium text-[#e8c98a] transition hover:bg-white/5">Plattform erkunden</Link>
+            </div>
+          </div>
+        </section>
 
         <EnterpriseAccessSection />
 

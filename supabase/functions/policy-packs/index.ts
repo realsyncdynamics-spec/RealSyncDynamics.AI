@@ -4,14 +4,29 @@
 // Auth: Authorization: Bearer <user JWT>
 // Body: { op: 'activate' | 'deactivate', tenant_id, pack_id }
 //
-// Gate: policy.packs (ab Agency). Katalog + Abdeckung liest das Frontend
-// RLS-sicher direkt (policy_pack_catalog/_controls sind global lesbar,
-// framework_controls + asset_control_mappings ebenfalls).
+// Gate: policy.packs (seit AP2 ab Starter). Katalog + Abdeckung liest das
+// Frontend RLS-sicher direkt (policy_pack_catalog/_controls sind global
+// lesbar, framework_controls + asset_control_mappings ebenfalls).
+//
+// AP9 Welle 4 (2026-09-02): Packs mit eigenem Rahmenwerk-Key werden beim
+// Aktivieren zusätzlich gegen diesen Key geprüft — vorher konnte, wer
+// `policy.packs` hatte, jeden Pack aktivieren, auch einen, den sein Plan
+// nicht enthält (entitlement-reality-map.md). Deaktivieren bleibt frei.
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 import { gateFeature, EntitlementError } from '../_shared/entitlements.ts';
 import { audit } from '../_shared/auditLog.ts';
+
+/**
+ * Rahmenwerke, die ihren eigenen Entitlement-Key haben. Alle anderen
+ * (GDPR, EU_AI_ACT, TISAX, DORA) sind mit `policy.packs` abgedeckt.
+ * Quelle: `frameworks` im `policy_pack_catalog`; Keys aus `shared/pricing.ts`.
+ */
+const FRAMEWORK_ENTITLEMENTS: Readonly<Record<string, string>> = {
+  NIS2: 'policy.nis2',
+  ISO_27001: 'policy.iso27001',
+};
 
 Deno.serve(async (req) => {
   const preflight = handleOptions(req);
@@ -48,16 +63,32 @@ Deno.serve(async (req) => {
   try {
     await gateFeature(admin, tenantId, 'policy.packs');
   } catch (e) {
-    if (e instanceof EntitlementError) return jsonError(402, 'PAYMENT_REQUIRED', 'Policy Packs sind erst ab Agency verfügbar.');
+    if (e instanceof EntitlementError) return jsonError(402, 'PAYMENT_REQUIRED', 'Policy Packs sind im aktuellen Plan nicht enthalten (policy.packs) — ab Starter.');
     return jsonError(500, 'INTERNAL', 'entitlement check failed');
   }
 
   try {
     // Pack muss existieren.
-    const { data: pack } = await admin.from('policy_pack_catalog').select('id').eq('id', packId).maybeSingle();
+    const { data: pack } = await admin.from('policy_pack_catalog').select('id, frameworks').eq('id', packId).maybeSingle();
     if (!pack) return jsonError(404, 'NOT_FOUND', 'unbekanntes Policy Pack');
 
     if (op === 'activate') {
+      const frameworks = Array.isArray((pack as { frameworks?: unknown }).frameworks)
+        ? ((pack as { frameworks: unknown[] }).frameworks).map((f) => String(f).toUpperCase())
+        : [];
+      for (const framework of frameworks) {
+        const key = FRAMEWORK_ENTITLEMENTS[framework];
+        if (!key) continue;
+        try {
+          await gateFeature(admin, tenantId, key);
+        } catch (e) {
+          if (e instanceof EntitlementError) {
+            return jsonError(402, 'PAYMENT_REQUIRED', `Das Rahmenwerk ${framework} ist im aktuellen Plan nicht enthalten (${key}).`);
+          }
+          throw e;
+        }
+      }
+
       const { error } = await admin.from('policy_pack_activations')
         .upsert({ tenant_id: tenantId, pack_id: packId, created_by: userId }, { onConflict: 'tenant_id,pack_id' });
       if (error) return jsonError(500, 'INTERNAL', 'could not activate pack');

@@ -10,6 +10,7 @@
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { jsonResponse, jsonError } from '../_shared/gateway.ts';
+import { loadEntitlementsForTenant, hasFeature } from '../_shared/entitlements.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -85,6 +86,8 @@ async function executeActions(
     description: string;
     entityType?: string;
     entityId?: string;
+    /** `alerts.email` des Tenants — ohne den Key wird keine E-Mail-Aktion ausgeführt. */
+    emailAllowed: boolean;
   }
 ): Promise<string[]> {
   const executedActions: string[] = [];
@@ -92,6 +95,10 @@ async function executeActions(
   for (const action of actions) {
     try {
       if (action.action === 'alert_email' && action.recipients) {
+        if (!context.emailAllowed) {
+          executedActions.push('email_skipped_entitlement_missing');
+          continue;
+        }
         // Email notification (would integrate with email service)
         executedActions.push(`email_sent_to_${action.recipients.length}_recipients`);
       }
@@ -202,6 +209,16 @@ Deno.serve(async (req) => {
     return jsonError(405, 'BAD_REQUEST', 'POST only');
   }
 
+  // AP9 Welle 3: Diese Function ist intern — sie legt per Service-Role
+  // Alerts für beliebige `tenant_id`s an, ruft die in den Regeln hinterlegten
+  // Webhooks auf und erzeugt Behebungsaufgaben. Bis hier war sie mit jedem
+  // gültigen JWT erreichbar. Jetzt nur noch mit Service-Role-Bearer, wie
+  // compliance-remediation-execute.
+  const authHeader = req.headers.get('Authorization') ?? '';
+  if (authHeader !== `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`) {
+    return jsonError(401, 'UNAUTHORIZED', 'service role only');
+  }
+
   const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
     auth: { persistSession: false },
   });
@@ -211,6 +228,10 @@ Deno.serve(async (req) => {
     body = await req.json();
   } catch {
     return jsonError(400, 'BAD_REQUEST', 'invalid json');
+  }
+
+  if (typeof body.tenant_id !== 'string' || !body.tenant_id || typeof body.trigger_event !== 'string' || !body.trigger_event) {
+    return jsonError(400, 'BAD_REQUEST', 'tenant_id and trigger_event required');
   }
 
   const validSeverities = ['low', 'medium', 'high', 'critical'];
@@ -237,6 +258,19 @@ Deno.serve(async (req) => {
 
     const executedActions: string[] = [];
 
+    // `alerts.email` (ab Starter) entscheidet, ob E-Mail-Aktionen laufen.
+    // Der Alert selbst wird immer protokolliert — der Prüfpfad hängt nicht
+    // am Plan, nur der Versand.
+    // Fail closed: Lässt sich der Plan nicht lesen, geht keine E-Mail raus —
+    // der Alert ist protokolliert, die Webhook-Aktionen laufen trotzdem.
+    let emailAllowed = false;
+    try {
+      const entitlements = await loadEntitlementsForTenant(admin, body.tenant_id);
+      emailAllowed = hasFeature(entitlements, 'alerts.email');
+    } catch (err) {
+      console.warn('entitlements unavailable, e-mail actions suppressed:', err);
+    }
+
     for (const rule of rules) {
       // Execute rule actions
       const actions = await executeActions(rule.actions || [], {
@@ -245,6 +279,7 @@ Deno.serve(async (req) => {
         description: body.description || rule.description || body.trigger_event,
         entityType: body.entity_type,
         entityId: body.entity_id,
+        emailAllowed,
       });
 
       executedActions.push(...actions);

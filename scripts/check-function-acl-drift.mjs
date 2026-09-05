@@ -26,6 +26,11 @@
 // Wer per Migration Client-Grants aendert, zieht die Listen hier nach —
 // der schedule-Lauf failt sonst am naechsten Morgen und sagt genau das.
 //
+// Nachgezogen 2026-09-04: is_platform_operator
+// (20260904010000_platform_operators.sql, ADR 0011 D5). RLS-Helper der
+// Agenten-Organisationsebene, bewusst NUR fuer authenticated — alle Policies
+// dieser Ebene sind TO authenticated, anon braucht die Funktion nie.
+//
 // NICHT in den Pflichtlisten, obwohl das SPA sie per rpc() aufruft (Befund
 // 2026-08-23, gegen Prod UND Repo geprueft): adjust_worker_pool,
 // create_oauth2_app, create_workflow, get_rate_limit_status,
@@ -79,6 +84,7 @@ const REQUIRED_AUTHENTICATED = [
   'governance_kpi_range',
   'governance_kpi_timeseries_data',
   'incident_correlation_export',
+  'is_platform_operator',
   'runtime_events_verify_chain',
   'siteos_site_overview',
   'tenant_entitlements',

@@ -79,7 +79,7 @@ Menschen · Unternehmen · KI-Agenten · Daten · Entscheidungen.
 **Primär: Supabase Cloud (EU / Frankfurt)**
 - PostgreSQL 17 (Live-Projekt, Stand 2026-08-16)
 - **182 Edge Functions** im Repo (`supabase/functions/`, Deno/V8; `_shared` ist Bibliothek, keine Function) — **alle 182 deployt**, deckungsgleich in beide Richtungen. Nachgemessen am 2026-09-04 um 23:23 UTC per Management-API, nachdem `mcp-api-key-manager` (PR #1160) dazugekommen war; die Produktionsliste in `src/config/production-edge-functions.ts` hatte den Eintrag nicht, der Drift-Guard war deshalb rot. Zuvor gemessen am 2026-09-04 mit zwei unabhängigen Methoden (Management-API und HTTP-Probe je Slug), `comm` in beide Richtungen leer. `subscription-addons` stand hier bis dahin als „wartet auf den nächsten `deploy.yml`-Lauf“ — der Lauf war längst da, die Function antwortet mit `401`, nicht `404`. Siehe §5
-- **317 Migrations** (`supabase/migrations/`) — **317 verbucht**, neueste `20260904000300`, gemessen am 2026-09-04 um 23:39 UTC gegen `supabase_migrations.schema_migrations` nach dem grünen Deploy-Lauf 33929752213 (Merge von PR #1196, `main` @ `1c40003`); Versionen in beide Richtungen verglichen, `comm -23` und `comm -13` leer. Damit sind `20260904000300_canonical_plan_catalog` (#1196) und die beiden MCP-Migrationen `20260903120000`/`20260903120100` (#1160) verbucht. Frühere Stände dieser Zeile nannten 315/314 (17:50 UTC) bzw. 312 — jeweils der Stand vor dem folgenden Deploy. Zu den zwei nachgezogenen Out-of-Band-Migrationen siehe §5
+- **327 Migrations** (`supabase/migrations/`) — 317 davon verbucht, neueste verbuchte `20260904000300`, gemessen am 2026-09-04 um 23:39 UTC gegen `supabase_migrations.schema_migrations` nach dem grünen Deploy-Lauf 33929752213 (Merge von PR #1196, `main` @ `1c40003`); Versionen in beide Richtungen verglichen, `comm -23` und `comm -13` leer. Damit sind `20260904000300_canonical_plan_catalog` (#1196) und die beiden MCP-Migrationen `20260903120000`/`20260903120100` (#1160) verbucht. Frühere Stände dieser Zeile nannten 315/314 (17:50 UTC) bzw. 312 — jeweils der Stand vor dem folgenden Deploy. **Unverbucht sind allein die zehn der Agenten-Organisationsebene** (`20260904010000`–`20260904010900`, ADR 0011) — sie sind neu im Repo und warten auf den nächsten `deploy.yml`-Lauf. Zu den zwei nachgezogenen Out-of-Band-Migrationen siehe §5
 - RLS auf allen App-Tabellen · Realtime Subscriptions
 
 **Node/TypeScript-Services** (containerisiert — **kein Go im Repo**)
@@ -582,7 +582,7 @@ RealSyncDynamics.AI/
 │   └── pricing.ts     Single Source of Truth für Produkt-, Preis- und Berechtigungsmodell
 ├── supabase/
 │   ├── functions/     182 Edge Functions (einziger Ort für Service-Role-Keys)
-│   └── migrations/    317 Migrations
+│   └── migrations/    327 Migrations
 ├── apps/
 │   ├── agent-runtime/ Agent Runtime (Node/TS, Docker)
 │   └── mcp-server/    MCP Governance Server — Lesezugriff für KI-Agenten auf

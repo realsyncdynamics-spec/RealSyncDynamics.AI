@@ -1,5 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.105.1";
+import type { SupabaseClient } from "jsr:@supabase/supabase-js@2";
+import { gateFeature, EntitlementError } from "../_shared/entitlements.ts";
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL");
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
@@ -54,6 +56,22 @@ serve(async (req: Request) => {
     const tenantId = keyInfo.tenant_id;
     const scopes = keyInfo.scopes || [];
     const rateLimit = keyInfo.rate_limit_requests || 100;
+
+    // AP9 Welle 4: Ein gültiger Schlüssel reicht nicht — der Plan des Tenants
+    // muss `api.access` (ab Growth) tragen. So verliert ein Schlüssel seine
+    // Wirkung, wenn der Plan ihn nicht mehr deckt, ohne dass er widerrufen
+    // werden muss.
+    try {
+      await gateFeature(supabase as unknown as SupabaseClient, tenantId, "api.access");
+    } catch (e) {
+      if (e instanceof EntitlementError) {
+        return new Response(
+          JSON.stringify({ error: "API access is not included in the current plan (api.access) — available from Growth.", code: "ENTITLEMENT_MISSING" }),
+          { status: 403, headers: { "Content-Type": "application/json" } }
+        );
+      }
+      throw e;
+    }
 
     // Check IP whitelist (if configured)
     const { data: apiKeyData } = await supabase

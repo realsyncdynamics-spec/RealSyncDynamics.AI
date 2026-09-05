@@ -199,7 +199,10 @@ export const FLOW_STEPS: Record<string, FlowStep> = {
       'zur Paketwahl oder direkt ins Dashboard.',
     stage: 'anmeldung',
     stateEffect: { loginIntent: true },
-    primary: { label: 'Zur Anmeldung', to: '/os/login', external: true, hint: 'Öffnet die echte Login-Seite.' },
+    // Freigabe 2026-09-01 (CLAUDE.md §10): ein Anmeldeweg für alle Trichter.
+    // /os/login führte in die zweite App-Oberfläche; /welcome ist die Drehscheibe
+    // des kanonischen Flows (Audit-Claim, Setup-Assistent, /app/dashboard).
+    primary: { label: 'Zur Anmeldung', to: '/welcome', external: true, hint: 'Öffnet die echte Login-Seite.' },
     secondary: { label: 'Zurück zur Startseite', to: '/' },
     extraActions: [
       { label: 'Weiter zur Paketwahl', to: flow('choose-plan') },

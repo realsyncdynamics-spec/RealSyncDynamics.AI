@@ -52,13 +52,13 @@ const EXTENSIONS = ['.tsx', '.ts', '.jsx', '.js'];
  * schlägt auch fehl, wenn eine dieser Dateien wieder erreichbar wird. Dann
  * gehört der Eintrag entfernt, nicht der Test angepasst.
  */
+// AP11 (2026-09-04): `pages/WebsiteBuilderWowFlow.tsx` und
+// `unified-entry/pages/WebsitePreviewRoute.tsx` standen hier als geduldete
+// Wrapper — sie sind mit Freigabe des Eigentümers entfernt (CLAUDE.md §10),
+// deshalb entfällt ihr Eintrag.
 const KNOWN_UNREACHABLE: Readonly<Record<string, string>> = {
-  'src/pages/WebsiteBuilderWowFlow.tsx':
-    'Wiederausfuhr von PreviewSelectionPage. Die Seite selbst ist seit dem 2026-08-19 unter /app/siteos/builder erreichbar; dieser Wrapper bleibt ungenutzt.',
   'src/pages/WowWebsitePreview.tsx':
     'Variante der Builder-Vorschau ohne Route.',
-  'src/unified-entry/pages/WebsitePreviewRoute.tsx':
-    'Router-Wrapper, der selbst nirgends registriert ist.',
   'src/unified-entry/pages/WowPreviewEntryPage.tsx':
     'Einstiegsvariante der Builder-Vorschau, ohne Route.',
 };

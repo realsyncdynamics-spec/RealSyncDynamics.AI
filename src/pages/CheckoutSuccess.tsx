@@ -64,9 +64,12 @@ export function CheckoutSuccess() {
 
         const { subscription } = await response.json();
 
-        // Redirect to billing dashboard after 2 seconds to show success message
+        // Freigabe 2026-09-01 (CLAUDE.md §10): Nach dem Kauf landet jeder
+        // Kunde am selben Ort wie nach /welcome — /app/dashboard, wo die
+        // Karte „Dein nächster Schritt" aus dem übernommenen Audit rechnet.
+        // Vorher: /app/billing, einer von vier verschiedenen Landeplätzen.
         setTimeout(() => {
-          navigate(`/app/billing?subscription=${subscription.id}&plan=${planKey || 'unknown'}`);
+          navigate(`/app/dashboard?subscription=${subscription.id}&plan=${planKey || 'unknown'}`);
         }, 2000);
       } catch (err) {
         setError((err as Error).message || 'Network error');
@@ -127,7 +130,7 @@ export function CheckoutSuccess() {
 
         {/* Manual navigation fallback */}
         <button
-          onClick={() => navigate('/app/billing')}
+          onClick={() => navigate('/app/dashboard')}
           className="w-full mt-6 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-card transition-colors"
         >
           Go to Dashboard Now

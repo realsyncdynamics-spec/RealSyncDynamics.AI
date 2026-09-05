@@ -2,8 +2,15 @@ import { describe, expect, it } from 'vitest';
 import { ALL_SKILLS, SKILL_REGISTRY } from '../../src/lib/skills/registry';
 
 describe('SKILL_REGISTRY', () => {
-  it('exposes exactly 8 skills', () => {
-    expect(ALL_SKILLS).toHaveLength(8);
+  it('exposes exactly 9 skills', () => {
+    expect(ALL_SKILLS).toHaveLength(9);
+  });
+
+  it('includes the ai-act-risk skill with the no-legal-opinion guardrail', () => {
+    const s = SKILL_REGISTRY['ai-act-risk'];
+    expect(s).toBeTruthy();
+    expect(s.guardrails.some((g) => g.includes('Rechtsberatung'))).toBe(true);
+    expect(s.reviewRequired).toBe(true); // high-risk
   });
 
   it('includes the gdpr-audit skill with the no-legal-opinion guardrail', () => {

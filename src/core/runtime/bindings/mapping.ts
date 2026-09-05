@@ -34,6 +34,10 @@ interface DomainHint {
 }
 
 const DOMAIN_HINTS: Record<SkillKey, DomainHint> = {
+  'ai-act-risk': {
+    capabilities: ['read:ai_systems'],
+    pii_class: 'none',
+  },
   'data-exploration': {
     capabilities: ['read:dataset', 'pii:process'],
     pii_class: 'identifier',

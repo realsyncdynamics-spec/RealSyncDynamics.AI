@@ -8,6 +8,7 @@
 // Keine externen API-Calls hier. Kein Auto-Sending. Kein Legal/Audit-Opinion.
 
 export type SkillKey =
+  | 'ai-act-risk'
   | 'data-exploration'
   | 'finance-audit-support'
   | 'gdpr-audit'
@@ -49,6 +50,28 @@ const NO_RAW_SENSITIVE_DATA =
   'Keine sensiblen Rohdaten (PII, Finanzdetails, Healthdata) im Output wiederholen. Aggregate und Hashes bevorzugen.';
 
 export const SKILL_REGISTRY: Record<SkillKey, SkillDef> = {
+  'ai-act-risk': {
+    key: 'ai-act-risk',
+    label: 'EU AI Act Risikoeinordnung',
+    description:
+      'Ordnet eine KI-Nutzung in die vier EU-AI-Act-Risikoklassen ein ' +
+      '(prohibited/high/limited/minimal) und leitet die Pflichten ab. Keine Rechtsberatung.',
+    triggers: [
+      'ai act', 'ki-vo', 'ki verordnung', 'risikoklasse', 'annex iii',
+      'hochrisiko', 'transparenzpflicht', 'verbotene praktik', 'ai act klassifizierung',
+    ],
+    useCases: [
+      'Nutzungs-Kategorie einer AI-Act-Risikoklasse zuordnen',
+      'Pflichten je Risikoklasse ableiten (Doku, Human Oversight, Audit-Trail)',
+      'Transparenz-/Offenlegungspflichten fuer Chatbots und generierte Inhalte pruefen',
+    ],
+    guardrails: [NO_LEGAL_OPINION],
+    riskLevel: 'high',
+    requiresWebResearch: false,
+    requiresUserData: false,
+    reviewRequired: true,
+  },
+
   'data-exploration': {
     key: 'data-exploration',
     label: 'Data Exploration',

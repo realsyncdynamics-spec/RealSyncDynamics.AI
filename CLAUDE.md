@@ -694,7 +694,7 @@ Runtime-Limits, Module, Berechtigungen, Feature-Listen und Add-ons.
   auf Starter und Growth sind am 2026-09-01 an die Preisseite angeglichen
   worden, nachdem gemessen war, dass sie niemanden treffen (§4 Klasse B), und
   die neun Ausweitungen auf Agency und Partner am 2026-09-04 (§4 Klasse D,
-  Migration `20260904000300`). Ausweitungen brauchten keine Bestandsmessung —
+  Migration `20260904000400`). Ausweitungen brauchten keine Bestandsmessung —
   sie geben nur, was die Preisseite zugesagt hat. Die verbleibenden neun sind
   die acht Enterprise-Felder (Klasse A, Quelle unaufgelöst) und die eine
   Agency-Kürzung (Klasse C), die Bestandskunden trifft und deshalb offen

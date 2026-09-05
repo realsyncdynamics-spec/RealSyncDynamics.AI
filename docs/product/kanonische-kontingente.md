@@ -409,7 +409,7 @@ Datenbereinigung → Gates → Tests.**
 | 1. Enterprise-Quelle | A (8) | **offen** — Architekturentscheid, `enterprise-quelle-entscheidungsvorlage.md` |
 | 2. Kürzungen Self-Service | B (3) | **erledigt** 2026-09-01, Migration `20260903050000` |
 | 2b. Kürzung Agency | C (1) | **offen** — trifft Bestandskunden, braucht eigene Klärung |
-| 3. Ausweitungen | D (9) | **erledigt** 2026-09-04, Migration `20260904000300` |
+| 3. Ausweitungen | D (9) | **erledigt** 2026-09-04, Migration `20260904000400` |
 | 4. Gates | — | blockiert, solange A und C offen sind |
 
 Zu Schritt 2: Der Bestandsschutz-Mechanismus wurde nicht gebaut, sondern durch

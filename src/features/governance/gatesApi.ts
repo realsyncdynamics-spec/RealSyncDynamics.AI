@@ -1,0 +1,478 @@
+import { getSupabase } from '../../lib/supabase';
+
+/**
+ * Client für die PDP-Freigabe-Gates (P1-4) und das Zugriffsmodell (P1-1).
+ *
+ * Gates entstehen, wenn der Policy Decision Point `require_approval`
+ * entscheidet. Ohne diese Oberfläche wären sie nur per API erreichbar —
+ * ein Freigabeprozess, den niemand bedienen kann, ist keiner
+ * (CLAUDE.md §14).
+ */
+
+export type GateStatus = 'pending' | 'approved' | 'rejected' | 'expired';
+
+/** Redaktionsarme Zusammenfassung — die Edge Function legt hier bewusst
+ *  keine Inhalte ab, nur Kanal, Verb, Ziel und Datenklasse. */
+export interface GateRequestSummary {
+  channel?: string;
+  verb?: string;
+  vendor?: string | null;
+  model?: string | null;
+  classification?: string | null;
+}
+
+export interface ApprovalGate {
+  id: string;
+  tenant_id: string;
+  fingerprint: string;
+  policy_id: string | null;
+  approver_role: string;
+  status: GateStatus;
+  request_summary: GateRequestSummary;
+  requested_by: string | null;
+  resolved_by: string | null;
+  resolved_at: string | null;
+  resolution_reason: string | null;
+  expires_at: string;
+  created_at: string;
+}
+
+export interface GatesListResult {
+  ok: boolean;
+  gates?: ApprovalGate[];
+  error?: { code: string; message: string };
+}
+
+export interface GateResolveResult {
+  ok: boolean;
+  status?: GateStatus;
+  resolved_at?: string;
+  error?: { code: string; message: string };
+}
+
+async function call<T>(body: Record<string, unknown>): Promise<T> {
+  const sb = getSupabase();
+  const { data, error } = await sb.functions.invoke('governance-approvals', { body });
+  if (error) return { ok: false, error: { code: 'NETWORK', message: error.message } } as T;
+  return data as T;
+}
+
+export const listGates = (tenant_id: string, status: GateStatus = 'pending') =>
+  call<GatesListResult>({ op: 'gates_list', tenant_id, status });
+
+export const approveGate = (gate_id: string, reason?: string) =>
+  call<GateResolveResult>({ op: 'gate_approve', gate_id, reason });
+
+export const rejectGate = (gate_id: string, reason: string) =>
+  call<GateResolveResult>({ op: 'gate_reject', gate_id, reason });
+
+/** Zähler für das Badge — direkter Lesezugriff über RLS. */
+export async function countPendingGates(tenant_id: string): Promise<number> {
+  const sb = getSupabase();
+  const { count, error } = await sb
+    .from('pdp_approval_gates')
+    .select('id', { count: 'exact', head: true })
+    .eq('tenant_id', tenant_id)
+    .eq('status', 'pending');
+  if (error) return 0;
+  return count ?? 0;
+}
+
+// ─── Zugriffsmodell (P1-1), lesend über RLS ─────────────────────────────────
+
+export interface OrgUnit {
+  id: string;
+  parent_id: string | null;
+  name: string;
+  kind: 'location' | 'department' | 'team' | 'unit';
+  org_path: string;
+}
+
+export interface Principal {
+  id: string;
+  type: 'user' | 'service' | 'agent' | 'device';
+  display_name: string;
+  org_unit_id: string | null;
+  status: 'active' | 'disabled';
+}
+
+export interface RoleBinding {
+  id: string;
+  principal_id: string;
+  role: string;
+  scope_type: 'tenant' | 'org_unit';
+  org_unit_id: string | null;
+}
+
+export interface AccessModel {
+  units: OrgUnit[];
+  principals: Principal[];
+  bindings: RoleBinding[];
+  error?: string;
+}
+
+export async function loadAccessModel(tenant_id: string): Promise<AccessModel> {
+  const sb = getSupabase();
+  const [u, p, b] = await Promise.all([
+    sb.from('org_units').select('id, parent_id, name, kind, org_path')
+      .eq('tenant_id', tenant_id).order('org_path'),
+    sb.from('principals').select('id, type, display_name, org_unit_id, status')
+      .eq('tenant_id', tenant_id).order('display_name'),
+    sb.from('role_bindings').select('id, principal_id, role, scope_type, org_unit_id')
+      .eq('tenant_id', tenant_id),
+  ]);
+  const err = u.error?.message ?? p.error?.message ?? b.error?.message;
+  return {
+    units: (u.data ?? []) as OrgUnit[],
+    principals: (p.data ?? []) as Principal[],
+    bindings: (b.data ?? []) as RoleBinding[],
+    ...(err ? { error: err } : {}),
+  };
+}
+
+// ─── Pflege des Zugriffsmodells (P1-3) ──────────────────────────────────────
+//
+// Läuft über die Edge Function `governance-access`, nicht direkt über RLS:
+// Wer welche Rolle hält, ist die Autorisierungsgrundlage der Plattform —
+// jede Änderung gehört in den Prüfpfad (governance_admin_log).
+
+export interface AccessMutationResult {
+  ok: boolean;
+  unit?: OrgUnit;
+  principal?: Principal;
+  binding?: RoleBinding;
+  error?: { code: string; message: string };
+}
+
+async function accessCall(body: Record<string, unknown>): Promise<AccessMutationResult> {
+  const sb = getSupabase();
+  const { data, error } = await sb.functions.invoke('governance-access', { body });
+  if (error) return { ok: false, error: { code: 'NETWORK', message: error.message } };
+  return data as AccessMutationResult;
+}
+
+export const createUnit = (
+  tenant_id: string, name: string, kind: OrgUnit['kind'], parent_id?: string | null,
+) => accessCall({ op: 'unit_create', tenant_id, name, kind, parent_id: parent_id ?? null });
+
+export const renameUnit = (unit_id: string, name: string) =>
+  accessCall({ op: 'unit_rename', unit_id, name });
+
+export const deleteUnit = (unit_id: string) =>
+  accessCall({ op: 'unit_delete', unit_id });
+
+export const createPrincipal = (
+  tenant_id: string, type: Principal['type'], display_name: string,
+  opts: { org_unit_id?: string | null; external_ref?: string | null } = {},
+) => accessCall({ op: 'principal_create', tenant_id, type, display_name, ...opts });
+
+export const updatePrincipal = (
+  principal_id: string,
+  patch: { display_name?: string; org_unit_id?: string | null; status?: Principal['status'] },
+) => accessCall({ op: 'principal_update', principal_id, ...patch });
+
+export const grantRole = (
+  principal_id: string, role: string,
+  scope_type: RoleBinding['scope_type'] = 'tenant', org_unit_id?: string | null,
+) => accessCall({ op: 'role_grant', principal_id, role, scope_type, org_unit_id: org_unit_id ?? null });
+
+export const revokeRole = (binding_id: string) =>
+  accessCall({ op: 'role_revoke', binding_id });
+
+/** Die Governance-Rollen, die über role_bindings vergeben werden können. */
+export const GOVERNANCE_ROLES = [
+  'dpo', 'it_admin', 'compliance_officer', 'approver', 'employee',
+] as const;
+
+export const ROLE_LABEL: Record<string, string> = {
+  owner: 'Eigentümer',
+  admin: 'Administrator',
+  member: 'Mitglied',
+  viewer: 'Betrachter',
+  dpo: 'Datenschutzbeauftragte:r',
+  it_admin: 'IT-Administration',
+  compliance_officer: 'Compliance',
+  approver: 'Freigeber:in',
+  employee: 'Mitarbeitende:r',
+};
+
+/** Rollen der angemeldeten Person in diesem Tenant — Grundlage der Startseite. */
+export async function myGovernanceRoles(tenant_id: string): Promise<string[]> {
+  const sb = getSupabase();
+  const { data: auth } = await sb.auth.getUser();
+  const uid = auth?.user?.id;
+  if (!uid) return [];
+  const { data: principal } = await sb
+    .from('principals')
+    .select('id, status')
+    .eq('tenant_id', tenant_id)
+    .eq('user_id', uid)
+    .maybeSingle();
+  if (!principal || principal.status !== 'active') return [];
+  const { data: bindings } = await sb
+    .from('role_bindings')
+    .select('role')
+    .eq('tenant_id', tenant_id)
+    .eq('principal_id', principal.id);
+  return [...new Set((bindings ?? []).map((b) => b.role as string))];
+}
+
+// ─── Evidence-Integrität (P1-6) ─────────────────────────────────────────────
+//
+// Die Evidence-Kette ist seit Migration 20260901090000 append-only. Ein Anker
+// hält ihren Zustand zu einem Zeitpunkt fest, damit spätere Änderungen
+// auffallen. Sein Beweiswert entsteht aber erst durch den Export aus der
+// Plattform heraus — das sagt die Oberfläche dem Nutzer auch.
+
+export interface EvidenceAnchor {
+  id: string;
+  chain_index: number;
+  chain_hash?: string;
+  event_count: number;
+  signature: string | null;
+  signature_alg: 'ed25519' | 'hmac-sha256' | null;
+  signing_key_id: string | null;
+  exported_at: string | null;
+  export_note: string | null;
+  created_at: string;
+}
+
+export interface AnchorListResult {
+  ok: boolean;
+  anchors?: EvidenceAnchor[];
+  error?: { code: string; message: string };
+}
+
+export interface AnchorCreateResult {
+  ok: boolean;
+  anchor?: EvidenceAnchor;
+  signed?: boolean;
+  note?: string;
+  error?: { code: string; message: string };
+}
+
+export interface ChainVerifyResult {
+  ok: boolean;
+  checked?: number;
+  intact?: boolean;
+  first_broken_index?: number | null;
+  broken_count?: number;
+  error?: { code: string; message: string };
+}
+
+async function anchorCall<T>(body: Record<string, unknown>): Promise<T> {
+  const sb = getSupabase();
+  const { data, error } = await sb.functions.invoke('evidence-anchor', { body });
+  if (error) return { ok: false, error: { code: 'NETWORK', message: error.message } } as T;
+  return data as T;
+}
+
+export const listAnchors = (tenant_id: string, limit = 20) =>
+  anchorCall<AnchorListResult>({ op: 'list', tenant_id, limit });
+
+export const createAnchor = (tenant_id: string) =>
+  anchorCall<AnchorCreateResult>({ op: 'create', tenant_id });
+
+export const verifyChain = (tenant_id: string) =>
+  anchorCall<ChainVerifyResult>({ op: 'verify', tenant_id });
+
+export const markAnchorExported = (tenant_id: string, anchor_id: string, note?: string) =>
+  anchorCall<{ ok: boolean; error?: { code: string; message: string } }>(
+    { op: 'export', tenant_id, anchor_id, note },
+  );
+
+// ─── Connector-Registratur (P2-1) ───────────────────────────────────────────
+//
+// Eine Zeile je angebundenem System, mit der Durchsetzbarkeits-Klasse.
+//
+// WARUM HIER DIREKT ÜBER RLS UND NICHT ÜBER EINE EDGE FUNCTION: Bei der
+// Rollenvergabe (P1-3) war die Edge Function nötig, weil die Vergabe selbst
+// die Autorisierungsgrundlage verändert und deshalb in den Prüfpfad gehört.
+// Hier liegt die sicherheitskritische Eigenschaft woanders: Die Klasse wird
+// vom Datenbank-Trigger abgeleitet und lässt sich vom Client nicht setzen —
+// egal, welchen Weg der Client nimmt. Eine Edge Function davor brächte keine
+// zusätzliche Sicherheit, nur eine weitere nicht deployte Function.
+// Schreibzugriff bleibt per RLS auf owner/admin beschränkt.
+
+export interface ConnectorRegistryEntry {
+  id: string;
+  tenant_id: string;
+  system_type: string;
+  display_name: string;
+  source_table: string | null;
+  source_id: string | null;
+  auth_kind: 'api_key' | 'oauth2' | 'webhook' | 'mtls' | 'none' | 'unknown';
+  scope: string | null;
+  status: 'connected' | 'pending' | 'error' | 'disabled';
+  last_sync_at: string | null;
+  last_error: string | null;
+  owner_principal_id: string | null;
+  /** Abgeleitet vom Trigger — ein hier gesendeter Wert wird verworfen. */
+  enforcement_class: 'A' | 'B' | 'C' | 'D';
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface EnforcementSummaryRow {
+  enforcement_class: 'A' | 'B' | 'C' | 'D';
+  kann_blockieren: boolean;
+  anzahl: number;
+  verbunden: number;
+}
+
+export async function listConnectors(tenant_id: string): Promise<ConnectorRegistryEntry[]> {
+  const sb = getSupabase();
+  const { data } = await sb
+    .from('connector_registry')
+    .select('*')
+    .eq('tenant_id', tenant_id)
+    .order('enforcement_class')
+    .order('display_name');
+  return (data ?? []) as ConnectorRegistryEntry[];
+}
+
+export async function enforcementSummary(tenant_id: string): Promise<EnforcementSummaryRow[]> {
+  const sb = getSupabase();
+  const { data } = await sb.rpc('connector_enforcement_summary', { p_tenant_id: tenant_id });
+  return (data ?? []) as EnforcementSummaryRow[];
+}
+
+export interface ConnectorInput {
+  system_type: string;
+  display_name: string;
+  auth_kind?: ConnectorRegistryEntry['auth_kind'];
+  scope?: string;
+  status?: ConnectorRegistryEntry['status'];
+  notes?: string;
+}
+
+export async function createConnector(
+  tenant_id: string,
+  input: ConnectorInput,
+): Promise<{ ok: boolean; error?: string }> {
+  const sb = getSupabase();
+  // enforcement_class wird bewusst NICHT mitgeschickt — sie kommt aus dem
+  // Trigger. Wer sie hier setzen wollte, bekäme sie ohnehin überschrieben.
+  const { error } = await sb.from('connector_registry').insert({ tenant_id, ...input });
+  return error ? { ok: false, error: error.message } : { ok: true };
+}
+
+export async function deleteConnector(id: string): Promise<{ ok: boolean; error?: string }> {
+  const sb = getSupabase();
+  const { error } = await sb.from('connector_registry').delete().eq('id', id);
+  return error ? { ok: false, error: error.message } : { ok: true };
+}
+
+// ───────────────────────────────────────────────────────────────────────────
+// Microsoft 365 (P2-2) — Anbindung, Ereignisse, Reaktionsübersicht
+// ───────────────────────────────────────────────────────────────────────────
+//
+// WARUM SCHREIBEND ÜBER EINE EDGE FUNCTION, LESEND DIREKT: Das App-Geheimnis
+// muss serverseitig versiegelt werden und darf den Browser nie erreichen —
+// deshalb `microsoft365-connect`. Die festgestellten Ereignisse dagegen sind
+// per RLS auf den Mandanten begrenzt und enthalten keine Inhalte, nur
+// Merkmale; sie direkt zu lesen spart eine Function ohne Sicherheitsverlust.
+// Dieselbe Abwägung wie bei der Connector-Registratur oben.
+
+export interface M365Connection {
+  id: string;
+  tenant_id: string;
+  azure_tenant_id: string;
+  client_id: string;
+  scope: string | null;
+  streams: string[];
+  primary_domain: string | null;
+  status: 'connected' | 'pending' | 'error' | 'disabled';
+  last_sync_at: string | null;
+  last_error: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface M365AuditEvent {
+  id: string;
+  graph_id: string;
+  stream: 'directory_audits' | 'sign_ins';
+  occurred_at: string;
+  activity_kind: string;
+  result: 'success' | 'failure' | 'unknown';
+  actor_external: boolean;
+  target_count: number;
+  signals: string[];
+  classification: string | null;
+  verdict: 'log_only' | 'warn' | 'react';
+  /** Gesetzt, wenn eine Regel sperren wollte und die Klasse es nicht hergab. */
+  verdict_downgraded_from: 'block' | 'require_approval' | null;
+  pdp_status: 'consulted' | 'not_enforcing' | 'unavailable';
+  reasons: string[];
+  incident_id: string | null;
+}
+
+export interface M365ReactionSummaryRow {
+  verdict: 'log_only' | 'warn' | 'react';
+  anzahl: number;
+  herabgestuft: number;
+  letztes_ereignis: string | null;
+}
+
+async function callM365(body: Record<string, unknown>): Promise<Record<string, unknown>> {
+  const sb = getSupabase();
+  const { data, error } = await sb.functions.invoke('microsoft365-connect', { body });
+  if (error) throw new Error(error.message);
+  return (data ?? {}) as Record<string, unknown>;
+}
+
+export async function loadM365Connection(tenant_id: string): Promise<M365Connection | null> {
+  const sb = getSupabase();
+  // `credentials_enc` steht bewusst nicht in der Auswahl — die Spalte ist für
+  // `authenticated` ohnehin gesperrt, und eine Auswahl, die sie nennt, würde
+  // die ganze Abfrage scheitern lassen.
+  const { data } = await sb
+    .from('m365_connections')
+    .select('id, tenant_id, azure_tenant_id, client_id, scope, streams, primary_domain, '
+      + 'status, last_sync_at, last_error, created_at, updated_at')
+    .eq('tenant_id', tenant_id)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  // `as unknown` noetig, solange die generierten Supabase-Typen die neuen
+  // Tabellen nicht kennen: Sie entstehen aus der Live-Datenbank, und dort gibt
+  // es sie erst nach dem naechsten Deploy-Lauf.
+  return (data ?? null) as unknown as M365Connection | null;
+}
+
+export async function listM365Events(
+  tenant_id: string,
+  limit = 50,
+): Promise<M365AuditEvent[]> {
+  const sb = getSupabase();
+  const { data } = await sb
+    .from('m365_audit_events')
+    .select('id, graph_id, stream, occurred_at, activity_kind, result, actor_external, '
+      + 'target_count, signals, classification, verdict, verdict_downgraded_from, '
+      + 'pdp_status, reasons, incident_id')
+    .eq('tenant_id', tenant_id)
+    .order('occurred_at', { ascending: false })
+    .limit(limit);
+  return (data ?? []) as unknown as M365AuditEvent[];
+}
+
+export async function m365ReactionSummary(
+  tenant_id: string,
+): Promise<M365ReactionSummaryRow[]> {
+  const sb = getSupabase();
+  const { data } = await sb.rpc('m365_reaction_summary', { p_tenant_id: tenant_id });
+  return (data ?? []) as unknown as M365ReactionSummaryRow[];
+}
+
+export const configureM365 = (
+  tenant_id: string,
+  input: { azure_tenant_id: string; client_id: string; client_secret: string; scope?: string; streams?: string[] },
+) => callM365({ op: 'configure', tenant_id, ...input });
+
+export const testM365 = (tenant_id: string, connection_id: string) =>
+  callM365({ op: 'test', tenant_id, connection_id });
+
+export const disconnectM365 = (tenant_id: string, connection_id: string) =>
+  callM365({ op: 'disconnect', tenant_id, connection_id });

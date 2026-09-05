@@ -47,6 +47,8 @@ import {
   type PublishGateEvaluation,
   type SiteBlueprint,
 } from '../../../../packages/siteos-core/src/index.ts';
+import type { PolicyEngineState } from '../../../../packages/siteos-core/src/index.ts';
+import { decide, logShadowComparison } from '../../_shared/pdp/decide.ts';
 
 /** Rollen, die eine Freigabe erteilen dürfen. */
 const APPROVER_ROLES = new Set(['owner', 'admin', 'dpo']);
@@ -252,9 +254,18 @@ async function runEvaluation(
       }
     : { grantedForArtifactSha256: null, grantedBy: null, reason: null };
 
+  // ── Mandanten-Richtlinien befragen (P2-3) ──────────────────────────
+  //
+  // Der Publish Gate war bis hierher eine Insel: Er entschied nach fest
+  // verdrahteten Regeln, die Richtlinien des Mandanten hatten beim
+  // Veroeffentlichen keine Wirkung. Genau der Fragmentierungsbefund aus §1.4
+  // des Enforcement-Plans, an der schaerfsten Stelle des Produkts.
+  const policyEngine = await consultPolicyEngine(ctx, row, artifact.artifactSha256, findings.length);
+
   // ── Bewertung ──────────────────────────────────────────────────────
   const evaluationId = crypto.randomUUID();
   const evaluation = evaluatePublishGate({
+    policyEngine,
     blueprint: row.blueprint,
     findings,
     artifactSha256: artifact.artifactSha256,
@@ -283,6 +294,14 @@ async function runEvaluation(
     blockers: evaluation.blockers,
     warnings: evaluation.warnings,
     finding_count: findings.length,
+    // Prüfpfad der Richtlinien-Entscheidung (Migration 20260904110000).
+    //
+    // Im Vertrag sind „eine Richtlinie hat gesperrt" und „der PDP war nicht
+    // erreichbar" beide `policy_compliant: false`; und ein Lauf unter
+    // Beobachtung sieht im Ergebnis aus wie einer ohne Regeln. Für einen
+    // Prüfer ist beides der entscheidende Unterschied — er gehört
+    // maschinell auswertbar festgehalten, nicht nur im Sperrtext.
+    ...policyTrail(policyEngine),
     severity_max: scores.severityMax,
     evaluated_at: nowIso,
     created_by: ctx.userId,
@@ -402,4 +421,143 @@ async function authorize(req: Request): Promise<{ ctx: Context; body: Record<str
     },
     body,
   };
+}
+
+
+// ─────────────────────────────────────────────────────────────────────
+// Mandanten-Richtlinien (P2-3)
+// ─────────────────────────────────────────────────────────────────────
+
+/**
+ * Befragt den Policy Decision Point fuer diese Veroeffentlichung.
+ *
+ * SICHERHEITSRELEVANZ: Der Publish Gate ist ein Klasse-B-Punkt — die
+ * Schranke gehoert uns, wir koennen den Uebergang wirklich anhalten. Damit
+ * ist er einer der wenigen Orte, an denen eine Mandantenrichtlinie nicht nur
+ * festgestellt, sondern durchgesetzt werden kann. Bis P2-3 wurde sie hier
+ * nicht einmal gelesen.
+ *
+ * MODUS, wie bei jedem anderen PEP dieses Plans:
+ *   off      — nicht befragen
+ *   shadow   — befragen, Abweichung protokollieren, Ergebnis NICHT anwenden (Default)
+ *   enforce  — befragen und anwenden
+ *
+ * Der Default ist `shadow`, damit der Merge das Produktionsverhalten nicht
+ * aendert. Umgestellt wird bewusst, nach Auswertung von `pdp_shadow_log`.
+ *
+ * AUSFALLVERHALTEN: In `enforce` sperrt ein Ausfall (G3 der Zielarchitektur
+ * §7 — fehlende Antwort ⇒ nicht veroeffentlichbar). Das weicht vom
+ * allgemeinen Default des Plans ab (E2: durchlassen mit Alarm) und ist hier
+ * richtig: Veroeffentlichen ist eine bewusste, wiederholbare Handlung, keine
+ * laufende Arbeit, die stillsteht. §7 ist ausserdem normativ und spezieller.
+ *
+ * EU AI Act Art. 14 (menschliche Aufsicht am Freigabepunkt); DSGVO Art. 5
+ * Abs. 2 (die Freigabe muss belegbar sein).
+ */
+/**
+ * Übersetzt die Lage der Richtlinienprüfung in die Prüfpfad-Spalten.
+ *
+ * Bewusst eine eigene Funktion und kein Inline-Ausdruck: Die Zuordnung ist
+ * die einzige Stelle, an der der Zustand des PEP zu einer dauerhaften
+ * Aussage wird. Wer sie ändert, ändert, was später belegbar ist.
+ */
+function policyTrail(state: PolicyEngineState): Record<string, unknown> {
+  return {
+    policy_engine_status: state.engine,
+    policy_decision: state.engine === 'consulted' ? state.decision : null,
+    // Die Begründungen des PDP; bei `not_enforcing`/`unavailable` steht der
+    // Grund im Sperr- bzw. Hinweistext, nicht hier.
+    policy_reasons: state.engine === 'consulted' ? state.reasons : [],
+  };
+}
+
+async function consultPolicyEngine(
+  ctx: { admin: any; tenantId: string; userId: string | null },
+  row: { id: string; slug: string; blueprint: { compliance?: { dpiaRequired?: boolean; specialCategories?: boolean } } },
+  artifactSha256: string,
+  findingCount: number,
+): Promise<PolicyEngineState> {
+  const mode = (Deno.env.get('SITEOS_PUBLISH_PDP') ?? 'shadow').toLowerCase();
+  if (mode === 'off') {
+    return { engine: 'not_enforcing', reason: 'Richtlinienpruefung ist abgeschaltet (SITEOS_PUBLISH_PDP=off).' };
+  }
+
+  const request = {
+    contract: 'v1' as const,
+    tenant_id: ctx.tenantId,
+    action: { verb: 'publish', channel: 'siteos_publish' },
+    target: { system_id: row.id },
+    data: {
+      // Nur Merkmale, keine Inhalte: Der PDP entscheidet ueber Art und Umfang,
+      // nicht ueber den Text der Seite (DSGVO Art. 5 Abs. 1 lit. c).
+      classification: row.blueprint?.compliance?.specialCategories ? 'special_category' : undefined,
+      risk_level: findingCount > 0 ? 'elevated' : 'normal',
+    },
+    payload: {
+      slug: row.slug,
+      artifact_sha256: artifactSha256,
+      finding_count: findingCount,
+      dpia_required: row.blueprint?.compliance?.dpiaRequired === true,
+    },
+  };
+
+  try {
+    const result = await decide(ctx.admin, request as never);
+    if (mode !== 'enforce') {
+      // Mitrechnen und protokollieren, aber nicht anwenden.
+      //
+      // KORRIGIERT am 2026-09-04: Der Aufruf stand hier mit sechs
+      // Positionsargumenten gegen eine Objekt-Signatur — `entry` war damit
+      // die Tenant-ID, `entry.tenant_id` undefined, der Insert waere an
+      // NOT NULL gescheitert. Hinter `.catch(() => {})` haette der
+      // Beobachtungsbetrieb also geschwiegen statt zu sammeln, und weil
+      // `shadow` der Vorgabewert ist, waere das der Normalfall gewesen.
+      // Kein Gate konnte es sehen: tsc deckt supabase/functions nicht ab,
+      // check:edge-syntax ist ein Parse-Check, check:edge-refs prueft nur,
+      // ob Namen aufloesen.
+      await logShadowComparison(ctx.admin, {
+        tenant_id: ctx.tenantId,
+        source: 'siteos_publish',
+        // Es gibt hier keine Alt-Engine, mit der zu vergleichen waere: Der
+        // Publish Gate hat vor P2-3 gar keine Richtlinie ausgewertet. `null`
+        // ist deshalb die richtige Aussage — nicht etwa 'allow', das eine
+        // Entscheidung behaupten wuerde, die niemand getroffen hat.
+        legacy_status: null,
+        v2_status: result.decision,
+        snapshot_version: result.snapshot_version,
+        detail: {
+          blueprint_id: row.id,
+          artifact_sha256: artifactSha256,
+          matched_policy_ids: result.matched_policy_ids,
+          mode,
+        },
+      });
+      return {
+        engine: 'not_enforcing',
+        reason: `Beobachtungsbetrieb (SITEOS_PUBLISH_PDP=${mode}); der PDP haette "${result.decision}" entschieden.`,
+      };
+    }
+    // Der PDP kennt genau diese fuenf Verdikte (Vertrag v1). Ein unbekanntes
+    // waere ein Vertragsbruch — dann lieber sperren als raten.
+    const known = ['allow', 'log_only', 'warn', 'block', 'require_approval'] as const;
+    type Verdict = (typeof known)[number];
+    if (!known.includes(result.decision as Verdict)) {
+      return { engine: 'unavailable', detail: `unbekanntes Verdikt "${result.decision}"` };
+    }
+    return {
+      engine: 'consulted',
+      decision: result.decision as Verdict,
+      reasons: Array.isArray(result.reasons) ? result.reasons : [],
+    };
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : 'unbekannter Fehler';
+    console.error(JSON.stringify({ level: 'error', scope: 'siteos_publish_pdp_failed', error: detail }));
+    if (mode !== 'enforce') {
+      // Im Beobachtungsbetrieb darf ein Ausfall nichts blockieren — sonst
+      // aendert der Shadow-Mode doch das Verhalten, was sein ganzer Zweck
+      // ausschliesst.
+      return { engine: 'not_enforcing', reason: `Beobachtungsbetrieb; die Pruefung schlug fehl (${detail}).` };
+    }
+    return { engine: 'unavailable', detail };
+  }
 }

@@ -14,7 +14,7 @@ from __future__ import annotations
 from typing import Dict, List, Literal, Tuple
 
 from ..schemas import GateCheckRequest, GateCheckResponse
-from . import inventory
+from . import inventory, pdp_client
 
 Severity = Literal["low", "medium", "high"]
 
@@ -112,23 +112,81 @@ async def evaluate(payload: GateCheckRequest) -> GateCheckResponse:
         else:
             warnings.append(gate)
 
+    # ── Mandantenrichtlinien (P2-4) ────────────────────────────────────
+    #
+    # Bis hierher entschied diese Engine vollständig aus eigener Logik. Die
+    # Richtlinien, die ein Mandant in der Plattform gepflegt hat, hatten an der
+    # Auslieferungsschranke keine Wirkung — Risiko R10 des Enforcement-Plans
+    # („drei Stacks, divergierende Semantik") an genau der Stelle, an der es
+    # weh tut.
+    #
+    # Der PDP kommt HINZU und kann nur verschärfen, nie lockern: Ein `allow`
+    # macht aus einem lokalen `blocked` kein `approved`. Ein lokales Nein
+    # bleibt ein Nein.
+    pdp = await pdp_client.evaluate_build(
+        project_id=payload.project_id,
+        risk_tier=tier,
+        build_hash=payload.build_hash,
+        # Nur die NAMEN der offenen Gates, keine Artefaktinhalte.
+        unmet_gates=blocking + warnings,
+    )
+    if pdp.blocks:
+        blocking.append("__policy__")
+    elif pdp.requires_approval:
+        # Eine Pipeline kann niemanden fragen. „Freigabe erforderlich" heißt
+        # hier deshalb: anhalten und sagen, wer entscheiden muss — nicht
+        # durchwinken und hoffen, dass es jemand nachholt.
+        blocking.append("__policy_approval__")
+    elif pdp.warns:
+        warnings.append("__policy_warn__")
+    elif pdp.state == "unavailable":
+        blocking.append("__policy_unavailable__")
+
+    def _policy_text(marker: str) -> Tuple[str, str]:
+        """Klartext für die Richtlinien-Marker — sie stehen in keinem Katalog."""
+        gruende = "; ".join(pdp.reasons or []) or "ohne nähere Begründung"
+        if marker == "__policy__":
+            return (f"Mandantenrichtlinie untersagt die Auslieferung ({gruende})",
+                    "Die genannte Richtlinie erfüllen oder sie im Governance-Dashboard anpassen.")
+        if marker == "__policy_approval__":
+            return (f"Mandantenrichtlinie verlangt eine Freigabe ({gruende})",
+                    "Freigabe unter /app/governance/gates einholen und den Build erneut anstoßen.")
+        if marker == "__policy_warn__":
+            return (f"Hinweis aus einer Mandantenrichtlinie ({gruende})", "Befund prüfen.")
+        # Ausfall: ausdrücklich als Ausfall benennen, nicht als Verstoß —
+        # sonst sucht jemand den Fehler in seinem Build.
+        return (f"Die Richtlinienprüfung war nicht erreichbar ({pdp.detail})",
+                "PDP-Erreichbarkeit prüfen; im Notfall GOVERNANCE_PDP_MODE=off setzen "
+                "(bewusst und dokumentiert, nicht stillschweigend).")
+
+    def _text(gate: str) -> Tuple[str, str]:
+        return _policy_text(gate) if gate.startswith("__policy") else _beschreibung(gate)
+
     if blocking:
         decision = GateCheckResponse(
             status="blocked",
-            reason="Gates nicht erfüllt: " + ", ".join(_beschreibung(g)[0] for g in blocking),
-            remediation=" ".join(_beschreibung(g)[1] for g in blocking),
+            reason="Gates nicht erfüllt: " + ", ".join(_text(g)[0] for g in blocking),
+            remediation=" ".join(_text(g)[1] for g in blocking),
             severity=SEVERITY_BY_TIER[tier],
         )
     elif warnings:
         decision = GateCheckResponse(
             status="warning",
             reason="Nicht blockierende Befunde: "
-            + ", ".join(_beschreibung(g)[0] for g in warnings),
-            remediation=" ".join(_beschreibung(g)[1] for g in warnings),
+            + ", ".join(_text(g)[0] for g in warnings),
+            remediation=" ".join(_text(g)[1] for g in warnings),
             severity="low",
         )
     else:
         decision = GateCheckResponse(status="approved")
+        if pdp.state == "not_enforcing":
+            # Nicht verschweigen, dass die Mandantenrichtlinien hier gerade
+            # nicht binden. Ein Gate, das strenger wirkt, als es ist, ist
+            # dieselbe Unehrlichkeit wie eines, das zu wenig prüft.
+            decision = GateCheckResponse(
+                status="approved",
+                reason=f"Mandantenrichtlinien binden hier derzeit nicht: {pdp.detail}",
+            )
 
     await inventory.record_gate_result(payload.project_id, decision.status)
 

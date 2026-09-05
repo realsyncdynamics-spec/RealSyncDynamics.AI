@@ -35,6 +35,11 @@ export interface RunAgentRequest {
   requestedTool: string;
   input: Record<string, unknown>;
   requestId: string;
+  /**
+   * Principal-ID des Agenten aus dem Zugriffsmodell (P1-1). Ohne sie
+   * greifen rollenbasierte Regeln nicht — typbasierte schon.
+   */
+  principalId?: string;
 }
 
 export type DenyReason =
@@ -43,6 +48,12 @@ export type DenyReason =
   | 'restricted_action'
   | 'missing_token'
   | 'invalid_request'
+  /** Der Policy Decision Point hat den Tool-Aufruf abgelehnt (P1-5). */
+  | 'policy_blocked'
+  /** Der PDP verlangt eine Freigabe, bevor der Lauf startet. */
+  | 'approval_required'
+  /** PDP nicht erreichbar und Ausfallverhalten ist fail closed. */
+  | 'policy_engine_unavailable'
   | 'denied_by_channel_policy';
 
 export interface PolicyAcceptedDecision {
@@ -69,6 +80,12 @@ export interface AuditEvent {
   timestamp: string;
   reason: DenyReason | null;
   request_id: string;
+  /** Verdikt des Policy Decision Point, falls befragt (P1-5). */
+  pdp_decision?: string;
+  /** Modus, in dem der Agent-PEP lief: off | shadow | enforce. */
+  pdp_mode?: string;
+  /** Deutschsprachige Begruendung des PDP — fuer den Pruefpfad. */
+  pdp_reason?: string | null;
 }
 
 export interface AcceptedResponse {
@@ -83,6 +100,8 @@ export interface DeniedResponse {
   ok: false;
   status: 'denied';
   reason: DenyReason;
+  /** Verstaendliche Erklaerung fuer Menschen (Auftrag §8). */
+  message?: string;
   auditEvent: AuditEvent;
 }
 

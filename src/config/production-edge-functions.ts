@@ -312,6 +312,19 @@ export const UNBACKED_CALLERS: readonly UnbackedCaller[] = [
   { slug: 'export-bulk-results', surface: 'features/bulk — Export', publicPath: false },
   { slug: 'iso42001-control-update', surface: 'features/governance — Control-Detail', publicPath: false },
   { slug: 'trigger-workflow', surface: 'features/workflows', publicPath: false },
+  // Governance OS P0-1 (PR #1135): Function liegt im Repo und wird mit dem
+  // naechsten deploy.yml-Lauf deployt — Eintrag nach der Neumessung entfernen.
+  { slug: 'integration-credentials', surface: 'features/integrations — Marketplace, Zugangsdaten-Siegel', publicPath: false },
+  // Governance OS P1-3 (PR #1135): Pflege des Zugriffsmodells mit Pruefpfad.
+  { slug: 'governance-access', surface: 'features/governance — Zugriffsmodell pflegen', publicPath: false },
+  // Governance OS P1-6 (PR #1135): signierte Pruefpunkte der Evidence-Kette.
+  { slug: 'evidence-anchor', surface: 'features/governance — Evidence-Anker', publicPath: false },
+  // Governance OS P2-2 (PR #1135): Einrichtung der Microsoft-365-Anbindung.
+  // Der zugehoerige Abholjob `microsoft365-audit-sync` steht hier bewusst
+  // nicht: Er hat keinen Aufrufer im Frontend, sondern wird von pg_cron
+  // getriggert. „Kein Aufrufer" und „nicht deployt" sind zwei verschiedene
+  // Aussagen; diese Liste fuehrt nur die erste zusammen mit der zweiten.
+  { slug: 'microsoft365-connect', surface: 'features/governance — Microsoft 365 einrichten', publicPath: false },
 ];
 
 const UNBACKED_SET = new Set(UNBACKED_CALLERS.map((c) => c.slug));

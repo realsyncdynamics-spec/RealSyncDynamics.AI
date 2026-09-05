@@ -35,6 +35,8 @@ import {
 } from '../_shared/aiGateway/rateLimit.ts';
 import { sha256Hex } from '../_shared/hash.ts';
 import { buildCorsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
+import { decide } from '../_shared/pdp/decide.ts';
+import type { DecisionRequest, DecisionResult } from '../_shared/pdp/core.ts';
 
 const corsHeaders = buildCorsHeaders('GET, POST, OPTIONS');
 
@@ -50,6 +52,93 @@ const HOUR_WINDOWS   = new Map<string, WindowState>();
 // not configured, which is still acceptable because the hash is only
 // used as a Map key, never persisted or logged.
 const IP_HASH_SALT = Deno.env.get('AI_GATEWAY_IP_HASH_SALT') ?? 'ai-gateway-default-salt';
+
+// ─── PDP-Anbindung: der Gateway als erster Policy Enforcement Point ─────────
+//
+// Modi (Plan P0-4, Rollout-Regel R5 — Enforcement nie still einschalten):
+//   off     → Gateway verhaelt sich exakt wie vor dieser Aenderung
+//   shadow  → Entscheidung wird berechnet und geloggt, aber NIE durchgesetzt
+//   enforce → block / require_approval fuehren zu 403 mit deutscher Begruendung
+// Default ist shadow: Produktionsverhalten aendert sich erst durch bewusstes
+// Umschalten der Env-Variable, nicht durch diesen Deploy.
+//
+// Grenze (ehrlich, Plan §2.3): Der Gateway hat heute keinen Tenant-Kontext —
+// es greifen ausschliesslich GLOBALE ai_policies (tenant_id IS NULL). Und der
+// Ziel-Vendor steht erst nach dem internen Routing fest, deshalb bewertet
+// dieser PEP model_profile/feature, nicht den finalen Vendor. Beides wird
+// mit dem Subjektmodell (P1-1) und dem Klassifikations-PIP (P1-2) reicher.
+type EnforcementMode = 'off' | 'shadow' | 'enforce';
+
+function enforcementMode(): EnforcementMode {
+  const raw = (Deno.env.get('AI_GATEWAY_ENFORCEMENT') ?? 'shadow').toLowerCase();
+  return raw === 'off' || raw === 'enforce' ? raw : 'shadow';
+}
+
+// deno-lint-ignore no-explicit-any
+let pdpAdmin: any | null = null;
+// deno-lint-ignore no-explicit-any
+async function getPdpAdmin(): Promise<any | null> {
+  if (pdpAdmin) return pdpAdmin;
+  const url = Deno.env.get('SUPABASE_URL');
+  const srk = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+  if (!url || !srk) return null;
+  const { createClient } = await import('jsr:@supabase/supabase-js@2');
+  pdpAdmin = createClient(url, srk, { auth: { persistSession: false } });
+  return pdpAdmin;
+}
+
+/**
+ * Prueft die Anfrage gegen den PDP. Rueckgabe:
+ *   Response  → Aktion ist durchgesetzt blockiert (nur im enforce-Modus)
+ *   Ergebnis  → warn/allow: Aufrufer haengt es als `governance` an die Antwort
+ *   null      → PDP aus, nicht konfiguriert oder nicht erreichbar
+ *
+ * Ausfallverhalten: Ein PDP-Fehler laesst den Gateway durch (fail open) und
+ * wird laut geloggt. Globale Block-Policies mit fail-closed-Anspruch brauchen
+ * die lokale Snapshot-Auswertung im PEP — Teil der P1-Haertung, bewusst
+ * nicht still hier hineingebaut (offene Entscheidung E2 im Plan).
+ */
+async function pdpCheck(feature: string, modelProfile: string): Promise<Response | DecisionResult | null> {
+  const mode = enforcementMode();
+  if (mode === 'off') return null;
+  try {
+    const admin = await getPdpAdmin();
+    if (!admin) return null;
+    const request: DecisionRequest = {
+      contract: 'v1',
+      tenant_id: null, // Gateway ist (noch) tenant-los: nur globale Policies
+      principal: { type: 'service' },
+      action: { verb: 'invoke', channel: 'ai_gateway', event_type: 'prompt_sent' },
+      target: { model: modelProfile },
+      context: { feature },
+    };
+    const result = await decide(admin, request);
+
+    if (result.matched_policy_ids.length > 0) {
+      console.log(JSON.stringify({
+        scope: 'ai-gateway-pep', mode, feature, model_profile: modelProfile,
+        decision: result.decision, policies: result.matched_policy_ids,
+        snapshot: result.snapshot_version,
+      }));
+    }
+
+    if (mode === 'enforce' && result.decision === 'block') {
+      return jsonError(403, 'POLICY_BLOCKED',
+        result.reasons[0]?.text_de ?? 'Diese Aktion ist durch eine Unternehmensrichtlinie blockiert.');
+    }
+    if (mode === 'enforce' && result.decision === 'require_approval') {
+      // Die durchgehende Freigabekette (wartender PEP) ist P1-4; bis dahin
+      // ist freigabepflichtig = nicht ausfuehrbar, mit klarer Erklaerung.
+      return jsonError(403, 'APPROVAL_REQUIRED',
+        result.reasons[0]?.text_de ?? 'Diese Aktion erfordert eine Freigabe gemäß Unternehmensrichtlinie.');
+    }
+    // Shadow-Modus veraendert die Antwort NIE — auch kein warn-Anhang.
+    return mode === 'enforce' ? result : null;
+  } catch (e) {
+    console.error('[ai-gateway-pep] pdp unavailable — fail open', e);
+    return null;
+  }
+}
 
 async function enforceRateLimit(req: Request, feature: string): Promise<Response | null> {
   const ip = clientIp(req.headers);
@@ -140,9 +229,17 @@ async function handleOpBased(req: Request): Promise<Response> {
   const limited = await enforceRateLimit(req, request.feature);
   if (limited) return limited;
 
-  if (op === 'generate')     return jsonResponse({ ok: true, ...(await gateway.generate(request)) });
-  if (op === 'extract_json') return jsonResponse({ ok: true, ...(await gateway.extractJson(request)) });
-  if (op === 'embed')        return jsonResponse({ ok: true, ...(await gateway.embed(request)) });
+  // PEP: Entscheidung VOR dem Provider-Call (Plan P0-4). Eine Response ist
+  // ein durchgesetzter Block; ein warn-Ergebnis wird der Antwort angehaengt.
+  const verdict = await pdpCheck(request.feature, request.model_profile);
+  if (verdict instanceof Response) return verdict;
+  const governance = verdict && verdict.decision === 'warn'
+    ? { decision: verdict.decision, reasons: verdict.reasons.map((r) => r.text_de) }
+    : undefined;
+
+  if (op === 'generate')     return jsonResponse({ ok: true, ...(await gateway.generate(request)), ...(governance ? { governance } : {}) });
+  if (op === 'extract_json') return jsonResponse({ ok: true, ...(await gateway.extractJson(request)), ...(governance ? { governance } : {}) });
+  if (op === 'embed')        return jsonResponse({ ok: true, ...(await gateway.embed(request)), ...(governance ? { governance } : {}) });
 
   return jsonError(400, 'BAD_REQUEST', `unknown op: ${op}`);
 }
@@ -162,6 +259,12 @@ async function handleOpenAIChatCompletions(req: Request): Promise<Response> {
 
   const limited = await enforceRateLimit(req, parsed.request.feature);
   if (limited) return limited;
+
+  // PEP auch auf der OpenAI-kompatiblen Schale — gleiche Entscheidung,
+  // gleicher Block. warn kann hier nicht angehaengt werden (fremdes
+  // Antwortformat) und wird nur geloggt.
+  const verdict = await pdpCheck(parsed.request.feature, parsed.request.model_profile);
+  if (verdict instanceof Response) return verdict;
 
   const gateway = await buildGateway();
   if (gateway instanceof Response) return gateway;

@@ -31,6 +31,34 @@ export const GOVERNANCE_MODULES: ModuleDefinition[] = [
     description: 'Policy-Entscheidungen mit Audit-Trail'
   },
   {
+    id: 'gates',
+    label: 'Freigaben',
+    path: '/app/governance/gates',
+    status: 'live',
+    description: 'Vom Policy Decision Point angehaltene Aktionen freigeben'
+  },
+  {
+    id: 'role-home',
+    label: 'Mein Einstieg',
+    path: '/app/governance/start',
+    status: 'live',
+    description: 'Rollenspezifischer Einstieg (Datenschutz, IT, Compliance, Freigabe)'
+  },
+  {
+    id: 'evidence-integrity',
+    label: 'Beweiskette',
+    path: '/app/governance/evidence',
+    status: 'live',
+    description: 'Unversehrtheit der Evidence-Kette prüfen und Prüfpunkte sichern'
+  },
+  {
+    id: 'connector-registry',
+    label: 'Anbindungen',
+    path: '/app/governance/connectors',
+    status: 'live',
+    description: 'Angebundene Systeme mit ihrer Durchsetzbarkeits-Klasse (A/B/C/D)'
+  },
+  {
     id: 'dpias',
     label: 'DPIAs',
     path: '/app/dpia',

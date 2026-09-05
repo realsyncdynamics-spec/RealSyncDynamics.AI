@@ -78,8 +78,10 @@ Menschen · Unternehmen · KI-Agenten · Daten · Entscheidungen.
 
 **Primär: Supabase Cloud (EU / Frankfurt)**
 - PostgreSQL 17 (Live-Projekt, Stand 2026-08-16)
-- **182 Edge Functions** im Repo (`supabase/functions/`, Deno/V8; `_shared` ist Bibliothek, keine Function) — **alle 182 deployt**, deckungsgleich in beide Richtungen. Nachgemessen am 2026-09-04 um 23:23 UTC per Management-API, nachdem `mcp-api-key-manager` (PR #1160) dazugekommen war; die Produktionsliste in `src/config/production-edge-functions.ts` hatte den Eintrag nicht, der Drift-Guard war deshalb rot. Zuvor gemessen am 2026-09-04 mit zwei unabhängigen Methoden (Management-API und HTTP-Probe je Slug), `comm` in beide Richtungen leer. `subscription-addons` stand hier bis dahin als „wartet auf den nächsten `deploy.yml`-Lauf“ — der Lauf war längst da, die Function antwortet mit `401`, nicht `404`. Siehe §5
-- **317 Migrations** (`supabase/migrations/`) — **317 verbucht**, neueste `20260904000300`, gemessen am 2026-09-04 um 23:39 UTC gegen `supabase_migrations.schema_migrations` nach dem grünen Deploy-Lauf 33929752213 (Merge von PR #1196, `main` @ `1c40003`); Versionen in beide Richtungen verglichen, `comm -23` und `comm -13` leer. Damit sind `20260904000300_canonical_plan_catalog` (#1196) und die beiden MCP-Migrationen `20260903120000`/`20260903120100` (#1160) verbucht. Frühere Stände dieser Zeile nannten 315/314 (17:50 UTC) bzw. 312 — jeweils der Stand vor dem folgenden Deploy. Zu den zwei nachgezogenen Out-of-Band-Migrationen siehe §5
+- **188 Edge Functions** im Repo (`supabase/functions/`, Deno/V8; `_shared` ist Bibliothek, keine Function) — gemessen am 2026-09-05 am **Merge-Baum** (`ls -d`, nicht addiert). 182 davon sind mains Bestand und **alle deployt**, deckungsgleich in beide Richtungen (mains Messung vom 2026-09-04 um 23:23 UTC per Management-API, nachdem `mcp-api-key-manager` aus PR #1160 in `src/config/production-edge-functions.ts` nachgetragen war — der Drift-Guard hatte recht). Die **sechs** aus diesem Branch warten auf den nächsten `deploy.yml`-Lauf: `governance-decide` und `integration-credentials` (P0), `governance-access` (P1-3), `evidence-anchor` (P1-6), `microsoft365-connect` und `microsoft365-audit-sync` (P2-2). Fünf davon stehen in `UNBACKED_CALLERS`; `microsoft365-audit-sync` bewusst nicht — es hat keinen Aufrufer im Frontend, sondern wird von pg_cron getriggert, und diese Liste führt Aufrufer ohne Backend, nicht Functions ohne Deploy
+- **325 Migrations** (`supabase/migrations/`) — gemessen am 2026-09-05 am Merge-Baum (`ls supabase/migrations/*.sql | wc -l`), keine doppelte Versionsnummer. 317 davon sind mains Bestand und **alle verbucht** (mains Messung vom 2026-09-04 um 23:39 UTC gegen `supabase_migrations.schema_migrations` nach dem grünen Deploy-Lauf 33929752213, `comm` in beide Richtungen leer). Die **acht** aus diesem Branch sind unverbucht: `20260824090000_pdp_snapshots_shadow`, `20260824110000_integration_credentials_hardening`, `20260824120000_org_subject_model_approval_gates`, `20260901090000_evidence_append_only_anchors`, `20260904100000_connector_registry` (P2-1), `20260904110000_publish_gate_policy_trail` (P2-3), `20260904120000_pdp_shadow_log_channels` (P2-3/P2-5) und `20260905100000_microsoft365_connector` (P2-2)
+
+  > **Ein Befund vom Vorabend hat sich erledigt, und zwar richtig herum**: Hier stand am 2026-09-04 abends, mains Zeile nenne 315 Dateien bei 317 im Baum und seine unverbuchten seien drei statt einer. Das stimmte zum Zeitpunkt der Messung — inzwischen ist der Deploy gelaufen, und `main` hat um 23:39 UTC gegen das Ledger nachgemessen: 317 Dateien, 317 verbucht, in beide Richtungen verglichen. Die Differenz war also kein Fehler, sondern eine Momentaufnahme zwischen Merge und Deploy. Die Lehre bleibt trotzdem stehen, weil sie den Fall beschreibt, in dem sie *nicht* von selbst heilt: **Die Ledger-Messung altert mit jedem Merge, die Tree-Messung nicht** — wer eine Ledger-Zahl fortschreibt, ohne das Datum mitzulesen, behauptet einen Stand, den es so nicht mehr gibt.
 - RLS auf allen App-Tabellen · Realtime Subscriptions
 
 **Node/TypeScript-Services** (containerisiert — **kein Go im Repo**)
@@ -524,6 +526,50 @@ Jeder Agent braucht vier Dimensionen — fehlt eine, ist er nicht governance-fä
   `governance_memory` leer ist, aber die Zusage steht ungedeckt.
   Prüfen also nicht an `cron.job`, sondern an `cron.job_run_details.status`.
 
+### Enforcement-Schalter — der PDP entscheidet erst, wenn jemand ihn lässt
+
+Seit P2 hängen fünf Pfade am PDP. **Alle stehen auf Beobachtung**; das ist der
+beabsichtigte Zwischenzustand aus P0, aber eben keine Durchsetzung:
+
+| Schalter | Wirkt auf | Vorgabe | In `enforce` |
+|---|---|---|---|
+| `AI_GATEWAY_ENFORCEMENT` | `ai-gateway` | `shadow` | blockt |
+| `AGENT_PDP_ENFORCEMENT` | Agent-Runtime | `shadow` | fail **closed** |
+| `SITEOS_PUBLISH_PDP` | Publish Gate (P2-3) | `shadow` | fail **closed** (§7 G3) |
+| `GOVERNANCE_PDP_MODE` | CI/CD-Gate (P2-4) | `shadow` | verschärft nur |
+| `BOT_PDP_ENFORCEMENT` | Chat · WhatsApp · Voice (P2-5) | `shadow` | fail **closed**, per `BOT_PDP_FAILURE_MODE=allow` umstellbar |
+| `M365_PDP_ENFORCEMENT` | Microsoft 365 (P2-2) | `shadow` | **löst die Reaktion aus** — anhalten kann Klasse C nichts |
+
+**`enforce` heißt nicht überall dasselbe.** Bei den ersten vier Schaltern
+bedeutet es „die Handlung wird angehalten". Bei `M365_PDP_ENFORCEMENT`
+(Klasse C, nachgelagert) kann nichts angehalten werden — dort bedeutet es „die
+Reaktion wird ausgelöst, es entsteht ein Vorgang". Wer den Namen für dieselbe
+Zusage hält, überschätzt, was diese Anbindung kann. Ein `block` des PDP wird
+dort zu `react` **mit Vermerk** (`verdict_downgraded_from`); die Datenbank
+lässt per CHECK gar nichts anderes zu.
+
+**Vor dem Umschalten `pdp_shadow_log` auswerten** — dafür ist der
+Beobachtungsbetrieb da. Und zwar wirklich auswerten: Die Tabelle blieb für den
+Publish Gate bis zum 2026-09-04 leer, weil der Aufruf falsch war und der
+Fehler in einem `catch` verschwand. Ein leeres Shadow-Protokoll bedeutet nicht
+„keine Abweichungen", sondern zuerst „nachsehen, ob überhaupt geschrieben
+wird".
+
+**Zur Bot-Governance (P2-5)**: Chatbot, WhatsApp und Voice laufen durch **einen**
+PEP (`_shared/pdp/botmessage.ts`, `enforceBotMessage()`) — drei eigene Auslegungen
+derselben Regel wären der Fragmentierungsbefund eine Ebene tiefer. Den Prozess
+verlassen nur Merkmale: Kanal, Bot-ID, Signalnamen und Zähler. **Nie der
+Nachrichtentext** — `bot-chat` und `whatsapp-webhook` laufen mit `verify_jwt = false`,
+der Text stammt also von einem beliebigen Fremden und wäre sonst ein Hebel auf die
+Bewertung der eigenen Anfrage. Gesichert durch `test/governance/pdp-botmessage.test.ts`
+und `test/governance/bot-pep-wiring.test.ts` (Letzterer prüft am Quelltext, dass alle
+drei Kanäle denselben PEP **vor** dem Modellaufruf rufen — dass sie sich gleich
+verhalten, ist kein Beleg dafür, dass sie dieselbe Stelle benutzen).
+
+**Offen, weil Produktentscheidung**: Eine vom PDP gesperrte Bot-Nachricht verbraucht
+trotzdem eine Einheit von `limit.bot_messages_monthly` — das Kontingent wird vor der
+Prüfung gebucht. Ob eine blockierte Anfrage berechnet wird, gehört entschieden.
+
 ### Dashboard-Module (modulare Reihenfolge)
 1. **Agent Registry** — Liste, Status, Risiko, Details
 2. **Agent Identity** — Ownership, Permissions, Credentials
@@ -581,8 +627,8 @@ RealSyncDynamics.AI/
 ├── shared/
 │   └── pricing.ts     Single Source of Truth für Produkt-, Preis- und Berechtigungsmodell
 ├── supabase/
-│   ├── functions/     182 Edge Functions (einziger Ort für Service-Role-Keys)
-│   └── migrations/    317 Migrations
+│   ├── functions/     188 Edge Functions (einziger Ort für Service-Role-Keys)
+│   └── migrations/    325 Migrations
 ├── apps/
 │   ├── agent-runtime/ Agent Runtime (Node/TS, Docker)
 │   └── mcp-server/    MCP Governance Server — Lesezugriff für KI-Agenten auf
@@ -644,6 +690,17 @@ Root-CI/CD-Workflows verwaltet. Sie ist physisch ein eigenständiges Projekt, da
 - RLS + Migrations wie im Hauptrepo (selbe DB-Conn in `docker-compose.yml`)
 - OpenAPI-First: Endpoints mit `@app.post`, `@app.get` + Schemas in Pydantic
 - Prüfpfad: `audit_log` + `workflow_runs` (selbe Tabellen wie Root-Governance)
+- **Der PDP ist auch hier der Entscheider** (P2-4, seit 2026-09-04):
+  `app/services/pdp_client.py` ruft `governance-decide`; die CI/CD-Gate-Engine
+  faltet das Verdikt in ihre Entscheidung ein. Der PDP kann nur **verschärfen**,
+  nie lockern — ein `allow` hebt keine lokale Sperre auf.
+  `GOVERNANCE_PDP_MODE=off|shadow|enforce`, Default `shadow`.
+- **Tests hier laufen mit `pytest`, nicht mit Vitest**:
+  `cd platform/governance_backend && pip install -r requirements.txt && pytest`.
+  Stand 2026-09-04: 93 passed, 14 skipped, **7 vorbestehend rot** in
+  `test_config.py` und `test_security_headers.py` (erwarten Umgebungsvariablen
+  bzw. eine Datenbank). Gegen den unveränderten Stand gegengeprüft — wer hier
+  arbeitet, sollte sie nicht für eigene Fehler halten.
 
 ### Preise, Pläne und Berechtigungen
 

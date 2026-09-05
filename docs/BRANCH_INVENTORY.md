@@ -41,6 +41,33 @@ fälschlich „ungemergt" aus. Der Abgleich Tip ↔ PR-Kopf ↔ PR-Nummer in der
 Merge bereits selbst. Belegt an den drei Branches aus der Sichtung
 (PR #1186, #1069, #649): alle drei existieren auf `origin` nicht mehr.
 
+## Ausführung — hier blockiert, Werkzeug liegt bereit
+
+Die Löschung der 226 Branches (Klasse A + B) ist **nicht erfolgt**. Sie wurde
+versucht und von GitHub mit `HTTP 403` abgewiesen:
+
+```
+error: RPC failed; HTTP 403 curl 22 The requested URL returned error: 403
+```
+
+Das ist keine Netz- und keine Proxy-Störung — der Egress-Proxy verzeichnet
+keinen Fehlschlag, und der Push **dieses** Branches lief im selben Lauf durch.
+Das Token dieser Sitzung darf also schreiben, aber keine Refs löschen. Nicht
+umgangen, nach der Regel „nicht drumherum arbeiten, sondern melden".
+
+Der Zustand auf `origin` ist unverändert: nichts gelöscht, kein Teilstand.
+
+**Auszuführen von einer Umgebung mit Löschrecht**:
+
+```bash
+./scripts/cleanup-merged-branches.sh            # Trockenlauf, zeigt die Liste
+./scripts/cleanup-merged-branches.sh --apply    # löscht Klasse A + B
+```
+
+Das Skript trägt **keine feste Liste** — es misst bei jedem Lauf neu, sonst wäre
+es ab dem nächsten Merge falsch. Klasse C (ohne PR) bleibt außen vor, bis sie
+mit `--with-orphans` ausdrücklich dazugenommen wird.
+
 ## Klasse A — in `main` enthalten (28)
 
 Auffällig: acht Varianten desselben Versuchs (`feat/governance-ai-product*`,

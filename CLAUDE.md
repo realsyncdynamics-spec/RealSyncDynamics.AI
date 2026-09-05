@@ -207,6 +207,19 @@ Service-Role umgeht RLS — deshalb **ausschließlich in Edge Functions**.
 - Bestehende RLS-Policies und öffentliche API-Contracts **niemals** brechen.
 - Lokal testen: `supabase db reset` → `npm run test:db`
 
+> **Blinder Fleck bei Funktions-Migrationen**: `Migration validation` wendet
+> Migrationen an, **ruft** die erzeugten Funktionen aber nie auf. PL/pgSQL
+> prüft den Rumpf erst zur Laufzeit — eine Migration mit fehlerhaftem
+> Funktionskörper läuft in CI deshalb grün durch. Am 2026-09-04 belegt:
+> `v_packs || 'literal'` ohne `::text` wählt `anyarray || anyarray` und wirft
+> `malformed array literal`, sobald der Zweig erreicht wird. Der Fehler lag
+> latent im Bestand, weil kein Mandant den Zweig erreichte — und wäre durch
+> die Korrektur des Branchen-Vokabulars (`20260902000011`) erstmals scharf
+> geworden, also genau für die Mandanten, denen sie helfen sollte.
+> **Regel**: Wer eine Funktion per Migration anlegt oder ändert, spielt sie
+> lokal gegen echtes Postgres ein **und ruft sie auf**. Grün in CI heißt hier
+> nichts.
+
 ---
 
 ## 4. Security — harte Regeln

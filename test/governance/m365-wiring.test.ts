@@ -132,8 +132,29 @@ describe('Graph-Zugriff bleibt bei Microsoft', () => {
     // `@odata.nextLink` kommt von Microsoft, ist aber eine fremde Angabe. Ohne
     // Prüfung wäre die Paginierung ein Weg, das Token an einen fremden Host zu
     // schicken.
+    //
+    // Diese Zusicherung lautete bis zum 2026-09-05 `toContain(
+    // 'url.startsWith(GRAPH_HOST)')` — und war damit nach dem CodeQL-Fix
+    // doppelt falsch. Sie blieb nur deshalb grün, weil der alte Ausdruck als
+    // ZITAT im Kommentar weiterlebt, der die Lücke erklärt. Ein Test, der an
+    // einer Dokumentation der Schwachstelle hängt, hätte eine Rückkehr zu
+    // genau dieser Schwachstelle nicht bemerkt — und wäre rot geworden, wenn
+    // jemand nur den Kommentar löscht. Zugesichert wird deshalb die
+    // Aufrufstelle, nicht ein Wortlaut.
     expect(graph).toContain('Unerwartete Folge-URL');
-    expect(graph).toContain('url.startsWith(GRAPH_HOST)');
+    expect(graph).toContain('if (!isGraphUrl(url))');
+  });
+
+  it('vergleicht nirgends mehr am Präfix — auch nicht an anderer Stelle', () => {
+    // Der Kommentar darf den alten Ausdruck nennen, der Code nicht. Ohne
+    // diesen Schnitt wäre die Prüfung wertlos, weil das Zitat sie erfüllt.
+    const code = graph
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/(^|[^:])\/\/.*$/gm, '$1');
+    expect(code).not.toContain('startsWith(GRAPH_HOST)');
+    // Das Verhalten selbst steht in m365-graph-url.test.ts; hier geht es
+    // allein darum, dass die alte Form nicht zurückkehrt.
+    expect(code).toContain('parsed.hostname === GRAPH_HOSTNAME');
   });
 
   it('reicht Microsoft-Fehlertexte nicht ungefiltert weiter', () => {

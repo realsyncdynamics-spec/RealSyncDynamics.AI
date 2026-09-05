@@ -94,6 +94,13 @@ verify_jwt = false
 [functions.security-signal-ingest]
 verify_jwt = false
 
+# microsoft365-audit-sync: Abholjob fuer Microsoft-365-Prueferereignisse (P2-2).
+# Aufrufer ist pg_cron per net.http_post, nicht ein Browser — es gibt kein
+# Supabase-JWT. Eigener Bearer-Check gegen SUPABASE_SERVICE_ROLE_KEY in der
+# Function selbst; ohne passenden Header antwortet sie 401.
+[functions.microsoft365-audit-sync]
+verify_jwt = false
+
 [functions.governance-webhooks]
 verify_jwt = false
 

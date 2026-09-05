@@ -620,9 +620,16 @@ eigenen Kanäle vollständig (Gateway, Agenten, Bots, Publish)?
 *Empfehlung: eigene Kanäle zuerst — sie sind die einzigen, wo wir wirklich
 blockieren können, und sie beweisen das Produkt.*
 
-> **Entschieden am 2026-09-04: eigene Kanäle.** Damit ist P2-2 (Microsoft 365)
+> **Entschieden am 2026-09-04: eigene Kanäle.** Damit war P2-2 (Microsoft 365)
 > zurückgestellt und die Reihenfolge festgelegt: P2-3 (Publish Gate) → P2-4
-> (CI/CD-Gate) → P2-5 (Bot-Governance). P2-3 ist umgesetzt.
+> (CI/CD-Gate) → P2-5 (Bot-Governance).
+>
+> **Nachgezogen am 2026-09-05**: Die eigenen Kanäle stehen alle, damit war die
+> Zurückstellung erledigt — P2-2 ist umgesetzt. Die Reihenfolge hat sich
+> gelohnt: Die drei Klasse-A/B-Positionen haben den Vertrag geschärft, an dem
+> sich P2-2 dann messen liess. Ohne sie wäre die Herabstufungsregel (`block`
+> → `react` mit Vermerk) vermutlich nicht entstanden, weil ohne Vergleich gar
+> nicht auffällt, dass hier etwas fehlt.
 
 **E7 — Preis-Zuordnung.**
 In welchen Plänen ist aktives Enforcement enthalten? Ohne Antwort kann ich
@@ -748,6 +755,29 @@ dass ein **Ausfall** nie als konform gespeichert werden kann — dieselbe
 Überlegung, aus der `publishable` eine generierte Spalte ist.
 
 | P2-5 Bot-Governance | ✅ | **Der Befund war schärfer als bei P2-3 und P2-4.** Dort gab es jeweils ein funktionierendes Gate, das nur den falschen Entscheider hatte. Hier gab es **gar keine Prüfung**:  `bot-chat`, `whatsapp-webhook` und `bot-voice-webhook` enthielten keinen einzigen Treffer für `decide` oder `policy`. Und das an Kanälen der Enforcement-Klasse A (`shared/enforcement-classes.ts`), wo eine Sperre wirklich verhindert statt nachträglich zu melden — genau der Punkt, mit dem E6 begründet wurde. Jetzt hängen alle drei an **einem** PEP (`_shared/pdp/botmessage.ts`), jeweils **vor** dem Modellaufruf — danach ist das Geld ausgegeben, und bei WhatsApp und Voice ist die Antwort erzeugt. `BOT_PDP_ENFORCEMENT=off\|shadow\|enforce`, Vorgabe `shadow`; in `enforce` fail-closed, abschaltbar allein für den Ausfall per `BOT_PDP_FAILURE_MODE=allow` — getrennt vom Betriebsmodus, weil sonst nur „Durchsetzung ganz aus" bliebe (dieselbe Trennung wie `AGENT_PDP_FAILURE_MODE`, P1-5). `require_approval` sperrt dort wie `block`, und das ist eine Entscheidung: Web-Chat, WhatsApp und Telefonat sind synchron, es gibt niemanden, der binnen Sekunden freigeben könnte |
+
+| P2-2 Microsoft 365 | ✅ (2026-09-05) | **Die erste Anbindung, bei der die Ehrlichkeit die eigentliche Arbeit ist.** Die vier Positionen davor lagen alle **vor** der Handlung; diese liegt dahinter. Die Datei ist geteilt, die Anmeldung erfolgt, die Berechtigung vergeben, bevor Graph davon berichtet. Daraus folgt die Regel, um die sich P2-2 dreht: **`block` und `require_approval` sind hier nicht einlösbar.** Ein PDP, der sie entscheidet, hat inhaltlich recht — die Klasse kann es nur nicht ausführen. Beide naheliegenden Auswege wären falsch: Als `block` speichern behauptete eine Sperre, die nie stattfand (die Scheinimplementierung, die der Auftrag §3 untersagt); still auf `log_only` senken liesse eine nicht durchsetzbare Regel wie eine nicht vorhandene aussehen (die K1-Fehlerklasse aus P2-3). Der Weg ist deshalb `react` **plus** `verdict_downgraded_from`. Das steht nicht nur im TypeScript, sondern in zwei CHECK-Bedingungen (`m365_audit_events_class_c_honest`, `m365_audit_events_downgrade_reacts`) — dieselbe Konstruktion wie der Klassen-Trigger in P2-1: Die Ehrlichkeit gehört dorthin, wo der aufrufende Code sie nicht umgehen kann, und der läuft hier in einem Cron-Job, den niemand ansieht. **Was `enforce` hier bedeutet, ist ausdrücklich anders** und steht so im Code: nicht „hält an", sondern „die Reaktion wird ausgelöst, es entsteht ein Vorgang, der jemanden erreicht". Denselben Schalternamen unkommentiert zu übernehmen hätte dasselbe Versprechen suggeriert wie beim Gateway. `M365_PDP_ENFORCEMENT=off\|shadow\|enforce`, Vorgabe `shadow`. **Ausfallverhalten**: „fail closed" gibt es hier nicht, es ist nichts zu schliessen — ein Ausfall wird als `warn` mit `pdp_status: 'unavailable'` festgehalten. `log_only` behauptete „nichts festzustellen", obwohl niemand nachgesehen hat; die Lücke sichtbar zu machen ist die einzige Entsprechung, die diese Klasse hergibt. Ein Ausfall löst bewusst **keinen** Vorgang aus: Er ist eine Betriebsstörung, kein Regelverstoss |
+
+**Zur Injektionsgrenze bei P2-2 — dieselbe Frage, andere Quelle:** Ein
+Graph-Prüfereignis besteht grösstenteils aus Text, den Menschen im Fremdsystem
+gesetzt haben — Dateinamen, Anzeigenamen, Gruppennamen, Fehlerbeschreibungen.
+Ginge er in die Entscheidungsgrundlage, könnte jeder Mitarbeitende und jeder
+externe Gast die Bewertung des eigenen Vorgangs beeinflussen, indem er eine
+Datei passend benennt. Den Prozess verlassen deshalb nur Merkmale: die
+**normalisierte** Tätigkeit aus einer festen Liste (unbekanntes wird `other`,
+nie der Rohwert), ein Aufzählungswert für das Ergebnis, ein SHA-256-Pseudonym
+des Handelnden samt der abgeleiteten Frage „ausserhalb der Hauptdomäne?", sowie
+Signal**namen** und Zähler. Die Hauptdomäne wird dabei **aus Graph gelesen und
+nicht eingegeben** — dürfte der Kunde sie eintippen, könnte er jeden Externen
+zum Internen erklären und damit genau die Regeln aushebeln, die auf dieser
+Unterscheidung beruhen.
+
+**Was P2-2 nicht ist:** kein Block, keine Verhinderung, keine Zusage in diese
+Richtung. Die Oberfläche (`/app/governance/microsoft365`) sagt das als Erstes
+und nicht in einer Fussnote, und sie zählt aus, wie oft eine Richtlinie sperren
+wollte und es hier nicht ging. Diese Zahl ist die ehrlichste Kennzahl der
+Anbindung — und das Argument für die Klasse-A-Kanäle, wenn ein Kunde fragt,
+warum er nicht alles über Microsoft 365 regeln kann.
 
 **Zur Injektionsgrenze bei P2-5 — die schärfste im Produkt:** `bot-chat` und
 `whatsapp-webhook` laufen mit `verify_jwt = false`. Der Text, über den

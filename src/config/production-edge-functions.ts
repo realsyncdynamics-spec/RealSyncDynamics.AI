@@ -319,6 +319,12 @@ export const UNBACKED_CALLERS: readonly UnbackedCaller[] = [
   { slug: 'governance-access', surface: 'features/governance — Zugriffsmodell pflegen', publicPath: false },
   // Governance OS P1-6 (PR #1135): signierte Pruefpunkte der Evidence-Kette.
   { slug: 'evidence-anchor', surface: 'features/governance — Evidence-Anker', publicPath: false },
+  // Governance OS P2-2 (PR #1135): Einrichtung der Microsoft-365-Anbindung.
+  // Der zugehoerige Abholjob `microsoft365-audit-sync` steht hier bewusst
+  // nicht: Er hat keinen Aufrufer im Frontend, sondern wird von pg_cron
+  // getriggert. „Kein Aufrufer" und „nicht deployt" sind zwei verschiedene
+  // Aussagen; diese Liste fuehrt nur die erste zusammen mit der zweiten.
+  { slug: 'microsoft365-connect', surface: 'features/governance — Microsoft 365 einrichten', publicPath: false },
 ];
 
 const UNBACKED_SET = new Set(UNBACKED_CALLERS.map((c) => c.slug));

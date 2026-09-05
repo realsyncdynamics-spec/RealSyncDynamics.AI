@@ -217,7 +217,7 @@ jobs:
       # Diese beiden Dateien standen bis hierher in KEINEM CI-Lauf. Ein
       # gruener `Migration validation`-Job belegte nur, dass die Migration
       # durchlaeuft — nicht, dass der Trigger und die Bedingung wirken.
-      - name: Enforcement-Zusagen in der Datenbank (P2-1, P2-3)
+      - name: Enforcement-Zusagen in der Datenbank (P2-1, P2-2, P2-3)
         env:
           TEST_DB_URL: postgresql://postgres:postgres@localhost:5432/postgres
           REQUIRE_DB_TESTS: '1'
@@ -226,6 +226,7 @@ jobs:
             test/runtime/db/connector-registry.db.test.ts \
             test/runtime/db/publish-gate-policy.db.test.ts \
             test/runtime/db/pdp-shadow-channels.db.test.ts \
+            test/runtime/db/m365-connector.db.test.ts \
             --no-file-parallelism
 
       - name: Verify migrations are append-only

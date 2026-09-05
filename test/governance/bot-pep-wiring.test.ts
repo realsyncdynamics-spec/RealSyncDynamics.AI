@@ -12,7 +12,7 @@
 // Dieselbe Bauart wie `publish-gate-backend-source.test.ts`.
 
 import { describe, it, expect } from 'vitest';
-import { readFileSync, readdirSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { resolve, join } from 'node:path';
 
 const FUNCTIONS = resolve(__dirname, '../../supabase/functions');
@@ -129,11 +129,23 @@ describe('Vokabular von Code und Datenbank stimmt überein', () => {
     const typeBlock = ts.slice(ts.indexOf('source:', sig), ts.indexOf('legacy_status:', sig));
     const inCode = [...typeBlock.matchAll(/'([a-z0-9-_]+)'/g)].map((m) => m[1]).sort();
 
-    const sql = readFileSync(
-      resolve(__dirname, '../../supabase/migrations/20260904120000_pdp_shadow_log_channels.sql'),
-      'utf8',
-    );
-    const checkBlock = sql.slice(sql.indexOf('CHECK (source IN ('), sql.indexOf('));'));
+    // NICHT gegen eine feste Migration pruefen: Die Bedingung wird erweitert,
+    // sobald ein Kanal dazukommt (P2-2 hat es getan). Ein fester Dateiname
+    // liesse den Test rot werden, obwohl beide Seiten stimmen — und der
+    // naheliegende „Fix" waere dann, die Pruefung zu entschaerfen. Massgeblich
+    // ist die zuletzt angewandte Migration, also die mit der hoechsten Version.
+    const MIGRATIONS = resolve(__dirname, '../../supabase/migrations');
+    const massgeblich = readdirSync(MIGRATIONS)
+      .filter((f) => f.endsWith('.sql'))
+      .sort()
+      .filter((f) => readFileSync(resolve(MIGRATIONS, f), 'utf8')
+        .includes('pdp_shadow_log_source_check'))
+      .pop();
+    expect(massgeblich, 'keine Migration definiert pdp_shadow_log_source_check').toBeTruthy();
+
+    const sql = readFileSync(resolve(MIGRATIONS, massgeblich!), 'utf8');
+    const checkStart = sql.indexOf('CHECK (source IN (');
+    const checkBlock = sql.slice(checkStart, sql.indexOf('));', checkStart));
     const inSql = [...checkBlock.matchAll(/'([a-z0-9-_]+)'/g)].map((m) => m[1]).sort();
 
     expect(inCode.length).toBeGreaterThan(0);

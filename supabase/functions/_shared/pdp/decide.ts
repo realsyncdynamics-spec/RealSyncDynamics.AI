@@ -408,7 +408,8 @@ export async function logShadowComparison(
     source:
       | 'telemetry-ai-event' | 'governance-ingest' | 'ai-gateway'
       | 'siteos_publish'
-      | 'bot-chat' | 'bot-whatsapp' | 'bot-voice';
+      | 'bot-chat' | 'bot-whatsapp' | 'bot-voice'
+      | 'm365-audit';
     legacy_status: string | null;
     v2_status: string | null;
     snapshot_version: string;

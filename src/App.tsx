@@ -322,6 +322,7 @@ const GovernanceApprovalGatesView = lazy(() => import('./features/governance/App
 const GovernanceHomeView = lazy(() => import('./features/governance/GovernanceHomeView').then((m) => ({ default: m.GovernanceHomeView })));
 const GovernanceEvidenceIntegrityView = lazy(() => import('./features/governance/EvidenceIntegrityView').then((m) => ({ default: m.EvidenceIntegrityView })));
 const GovernanceConnectorRegistryView = lazy(() => import('./features/governance/ConnectorRegistryView').then((m) => ({ default: m.ConnectorRegistryView })));
+const GovernanceMicrosoft365View = lazy(() => import('./features/governance/Microsoft365View').then((m) => ({ default: m.Microsoft365View })));
 const GovernancePolicyTemplatesView = lazy(() => import('./features/governance/PolicyTemplatesView').then((m) => ({ default: m.PolicyTemplatesView })));
 const GovernanceComplianceReportView = lazy(() => import('./features/governance/ComplianceReportView').then((m) => ({ default: m.ComplianceReportView })));
 const GovernanceDpiasView = lazy(() => import('./features/governance/DpiasView').then((m) => ({ default: m.DpiasView })));
@@ -856,6 +857,7 @@ function RoutesWithTracking() {
       <Route path="/app/governance/start" element={<GovernanceBrowserShell><GovernanceHomeView /></GovernanceBrowserShell>} />
       <Route path="/app/governance/evidence" element={<GovernanceBrowserShell><GovernanceEvidenceIntegrityView /></GovernanceBrowserShell>} />
       <Route path="/app/governance/connectors" element={<GovernanceBrowserShell><GovernanceConnectorRegistryView /></GovernanceBrowserShell>} />
+      <Route path="/app/governance/microsoft365" element={<GovernanceBrowserShell><GovernanceMicrosoft365View /></GovernanceBrowserShell>} />
       <Route path="/app/policies/templates" element={<GovernanceBrowserShell><GovernancePolicyTemplatesView /></GovernanceBrowserShell>} />
       <Route path="/app/connectors" element={<GovernanceBrowserShell><GovernanceConnectorsView /></GovernanceBrowserShell>} />
       <Route path="/app/costs" element={<GovernanceBrowserShell><GovernanceCostTrackingView /></GovernanceBrowserShell>} />

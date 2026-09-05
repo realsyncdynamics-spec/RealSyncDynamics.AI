@@ -363,3 +363,116 @@ export async function deleteConnector(id: string): Promise<{ ok: boolean; error?
   const { error } = await sb.from('connector_registry').delete().eq('id', id);
   return error ? { ok: false, error: error.message } : { ok: true };
 }
+
+// ───────────────────────────────────────────────────────────────────────────
+// Microsoft 365 (P2-2) — Anbindung, Ereignisse, Reaktionsübersicht
+// ───────────────────────────────────────────────────────────────────────────
+//
+// WARUM SCHREIBEND ÜBER EINE EDGE FUNCTION, LESEND DIREKT: Das App-Geheimnis
+// muss serverseitig versiegelt werden und darf den Browser nie erreichen —
+// deshalb `microsoft365-connect`. Die festgestellten Ereignisse dagegen sind
+// per RLS auf den Mandanten begrenzt und enthalten keine Inhalte, nur
+// Merkmale; sie direkt zu lesen spart eine Function ohne Sicherheitsverlust.
+// Dieselbe Abwägung wie bei der Connector-Registratur oben.
+
+export interface M365Connection {
+  id: string;
+  tenant_id: string;
+  azure_tenant_id: string;
+  client_id: string;
+  scope: string | null;
+  streams: string[];
+  primary_domain: string | null;
+  status: 'connected' | 'pending' | 'error' | 'disabled';
+  last_sync_at: string | null;
+  last_error: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface M365AuditEvent {
+  id: string;
+  graph_id: string;
+  stream: 'directory_audits' | 'sign_ins';
+  occurred_at: string;
+  activity_kind: string;
+  result: 'success' | 'failure' | 'unknown';
+  actor_external: boolean;
+  target_count: number;
+  signals: string[];
+  classification: string | null;
+  verdict: 'log_only' | 'warn' | 'react';
+  /** Gesetzt, wenn eine Regel sperren wollte und die Klasse es nicht hergab. */
+  verdict_downgraded_from: 'block' | 'require_approval' | null;
+  pdp_status: 'consulted' | 'not_enforcing' | 'unavailable';
+  reasons: string[];
+  incident_id: string | null;
+}
+
+export interface M365ReactionSummaryRow {
+  verdict: 'log_only' | 'warn' | 'react';
+  anzahl: number;
+  herabgestuft: number;
+  letztes_ereignis: string | null;
+}
+
+async function callM365(body: Record<string, unknown>): Promise<Record<string, unknown>> {
+  const sb = getSupabase();
+  const { data, error } = await sb.functions.invoke('microsoft365-connect', { body });
+  if (error) throw new Error(error.message);
+  return (data ?? {}) as Record<string, unknown>;
+}
+
+export async function loadM365Connection(tenant_id: string): Promise<M365Connection | null> {
+  const sb = getSupabase();
+  // `credentials_enc` steht bewusst nicht in der Auswahl — die Spalte ist für
+  // `authenticated` ohnehin gesperrt, und eine Auswahl, die sie nennt, würde
+  // die ganze Abfrage scheitern lassen.
+  const { data } = await sb
+    .from('m365_connections')
+    .select('id, tenant_id, azure_tenant_id, client_id, scope, streams, primary_domain, '
+      + 'status, last_sync_at, last_error, created_at, updated_at')
+    .eq('tenant_id', tenant_id)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  // `as unknown` noetig, solange die generierten Supabase-Typen die neuen
+  // Tabellen nicht kennen: Sie entstehen aus der Live-Datenbank, und dort gibt
+  // es sie erst nach dem naechsten Deploy-Lauf.
+  return (data ?? null) as unknown as M365Connection | null;
+}
+
+export async function listM365Events(
+  tenant_id: string,
+  limit = 50,
+): Promise<M365AuditEvent[]> {
+  const sb = getSupabase();
+  const { data } = await sb
+    .from('m365_audit_events')
+    .select('id, graph_id, stream, occurred_at, activity_kind, result, actor_external, '
+      + 'target_count, signals, classification, verdict, verdict_downgraded_from, '
+      + 'pdp_status, reasons, incident_id')
+    .eq('tenant_id', tenant_id)
+    .order('occurred_at', { ascending: false })
+    .limit(limit);
+  return (data ?? []) as unknown as M365AuditEvent[];
+}
+
+export async function m365ReactionSummary(
+  tenant_id: string,
+): Promise<M365ReactionSummaryRow[]> {
+  const sb = getSupabase();
+  const { data } = await sb.rpc('m365_reaction_summary', { p_tenant_id: tenant_id });
+  return (data ?? []) as unknown as M365ReactionSummaryRow[];
+}
+
+export const configureM365 = (
+  tenant_id: string,
+  input: { azure_tenant_id: string; client_id: string; client_secret: string; scope?: string; streams?: string[] },
+) => callM365({ op: 'configure', tenant_id, ...input });
+
+export const testM365 = (tenant_id: string, connection_id: string) =>
+  callM365({ op: 'test', tenant_id, connection_id });
+
+export const disconnectM365 = (tenant_id: string, connection_id: string) =>
+  callM365({ op: 'disconnect', tenant_id, connection_id });

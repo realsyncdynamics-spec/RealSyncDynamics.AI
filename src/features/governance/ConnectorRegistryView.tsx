@@ -266,6 +266,17 @@ function Inner() {
                           <div className="text-titanium-500 mt-0.5">{enforcementReasonOf(c.system_type)}</div>
                           {c.scope && <div className="text-titanium-600 mt-0.5">Umfang: {c.scope}</div>}
                           {c.last_error && <div className="text-red-300 mt-0.5">Letzter Fehler: {c.last_error}</div>}
+                          {/* Ergaenzung (P2-2): Microsoft 365 hat eine eigene Seite mit
+                              Einrichtung und den nachgelagert festgestellten Ereignissen.
+                              Ohne diesen Verweis waere sie fertiggebaut und unerreichbar. */}
+                          {c.system_type === 'microsoft365' && (
+                            <Link
+                              to="/app/governance/microsoft365"
+                              className="inline-block mt-1 text-security-blue hover:underline"
+                            >
+                              Einrichtung und festgestellte Ereignisse →
+                            </Link>
+                          )}
                         </div>
                       </div>
                       <button

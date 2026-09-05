@@ -1,5 +1,6 @@
 import type { GovernanceProfile, Recommendation, ClassifiedFinding, GovernanceAnswer, PlanTier } from './types';
 import { scoreDimensionCriticality } from './findingClassifier';
+import { sectorLabel } from '../../config/sectors';
 import {
   PLAN_ORDER,
   isUpgrade,
@@ -102,10 +103,25 @@ export function generateRecommendation(profile: GovernanceProfile): Recommendati
   }
 
   // Industry-based adjustments
-  if (profile.sector === 'healthcare' || profile.sector === 'public_sector') {
+  //
+  // REGULATED: Branchen mit eigener Aufsicht und besonderen Datenkategorien —
+  // dort ist Enterprise die realistische Stufe.
+  // MULTI_SYSTEM: Branchen, die typischerweise viele gekoppelte Systeme und
+  // KI-Nutzung mitbringen (ERP/MES/Lieferantenportale bei Fertigung und
+  // Industrie, Mandanten und Domains bei SaaS und Agentur).
+  //
+  // Bewusst OHNE Zuschlag bleiben Kleinunternehmen, Handel, Möbelhaus und
+  // Dienstleister: Sie sind nicht per se regulierter oder komplexer als der
+  // Durchschnitt. Ihre Empfehlung soll aus den gemessenen Befunden kommen,
+  // nicht aus einem pauschalen Branchen-Bonus, der ihnen einen zu grossen
+  // Tarif verkauft.
+  const REGULATED_SECTORS = ['healthcare', 'public_sector'];
+  const MULTI_SYSTEM_SECTORS = ['saas', 'agency', 'manufacturing', 'industrial'];
+
+  if (REGULATED_SECTORS.includes(profile.sector)) {
     scores[3].score += 50; // Enterprise for regulated sectors
     scores[2].score += 15;
-  } else if (profile.sector === 'saas' || profile.sector === 'agency') {
+  } else if (MULTI_SYSTEM_SECTORS.includes(profile.sector)) {
     scores[2].score += 15;
     scores[1].score += 10;
   }
@@ -140,7 +156,7 @@ export function generateRecommendation(profile: GovernanceProfile): Recommendati
     factors.push(`${highDimensions.length} dimension(s) would benefit from governance: ${highDimensions.join(', ')}`);
   }
   if (profile.sector !== 'generic') {
-    factors.push(`Sector-specific considerations for ${profile.sector}`);
+    factors.push(`Sector-specific considerations for ${sectorLabel(profile.sector)}`);
   }
 
   const planReasons: Record<string, string> = {

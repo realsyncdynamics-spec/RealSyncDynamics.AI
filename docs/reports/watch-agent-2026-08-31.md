@@ -402,6 +402,15 @@ eigenen KI-Hinweise in `AuditCopilotPanel` und `AssistentQuickChatModal`,
 `RiskCenterView`, `EvidenceVaultView`, `LegalMethodology`, die Mock-Daten und
 zwei Dokumentationsdateien.
 
+> **Nachtrag 2026-09-05, nach dem Merge von PR #1205 in `main`.** Eine der elf
+> Dateien gibt es nicht mehr: `src/components/AssistentQuickChatModal.tsx` ist
+> dort als verwaist entfernt worden (52 Dateien, die keine andere importiert).
+> Beim Merge in diesen Branch war das ein modify/delete-Konflikt; die Löschung
+> ist übernommen, weil nichts im Repo die Datei noch referenziert und meine
+> Änderung daran allein die Artikelnummer war. Aus 17 Stellen in elf Dateien
+> werden damit **16 in zehn**. Die Zahl steht oben unverändert, weil sie den
+> Stand der Änderung beschreibt; dieser Nachtrag ist die Fortschreibung.
+
 **Nicht geändert**: Die Regel-`id` `AI_ACT_LIMITED_RISK_CHATBOT`, `severity`
 und `conditions` — Befund-Codes und Gewichte sind versionsrelevant, und an
 der Sache ändert eine korrigierte Normangabe nichts. Ebenso bleibt
@@ -680,7 +689,7 @@ Vorgelegt und am 2026-09-01 mit **Ja** beantwortet (Eintrag in CLAUDE.md §10):
 | B-1 / B-2 | Festes Änderungsdatum statt `new Date()` | **Ja** | `LAST_UPDATED = '2026-08-19'` in beiden Dateien, mit Kommentar, wann es mitzuziehen ist |
 | B-3 | Verfügbarkeit aus `availableFor` ableiten | **Ja** | `toBotAddOn` reicht die Plannamen durch, die Preisseite formatiert sie |
 | B-5 | Deep-Scan misst, Text angleichen (2026-09-04) | **Ja** | Fakt jetzt asymmetrisch, Funktion umbenannt, Test korrigiert — **ohne Ergebnisänderung**. Zweite Hälfte blockiert durch B-7 |
-| B-6 | Artikelnummer erst prüfen, dann korrigieren (2026-09-04) | **Ja** | Geprüft (Kapitel IV = nur Art. 50), danach 17 Stellen in elf Dateien auf Art. 50 gezogen |
+| B-6 | Artikelnummer erst prüfen, dann korrigieren (2026-09-04) | **Ja** | Geprüft (Kapitel IV = nur Art. 50), danach 17 Stellen in elf Dateien auf Art. 50 gezogen — nach dem Merge von PR #1205 noch 16 in zehn, siehe Nachtrag |
 
 Der Umfang war ausdrücklich auf diese beiden Punkte begrenzt: keine Farben,
 kein Grid, keine Typografie, keine Sektionsreihenfolge, keine weitere Zeile

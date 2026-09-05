@@ -33,6 +33,29 @@ name: Drift Alert
 #           Lauf, der wieder grün war.
 #
 # Ein Guard, der nach einem roten Lauf wieder grün wird, räumt also selbst auf.
+#
+# ## Vierter Beobachter: „Pre-Deploy Check" auf main (seit 2026-09-05)
+#
+# Am 2026-09-02 vergaben #1178 und #1193 dieselbe Migrationsversion. Seit
+# #1203 läuft `pre-deploy-check.yml` auch bei Push nach main und wird bei
+# einer solchen Dublette rot — aber ein roter Lauf, den niemand sieht, ist
+# genau der Fehlermodus, für den es diesen Workflow gibt. Deshalb wird er
+# hier mit beobachtet.
+#
+# Das ist eine andere Befundklasse als Drift: Nicht Produktion weicht vom
+# Repo ab, sondern **main ist nicht deploybar** (`db push` würde abbrechen).
+# Der Issue-Text unterscheidet das.
+#
+# ## Warum nur Läufe auf main zählen
+#
+# `workflow_run` feuert bei jedem Abschluss des beobachteten Workflows —
+# auch für PR-Läufe. „Pre-Deploy Check" läuft aber bei jedem PR, der
+# Migrationen berührt. Ohne Filter würde ein roter PR-Lint ein Issue öffnen
+# und ein grüner PR-Lauf ein von main geöffnetes wieder schließen. Deshalb
+# zählt nur `head_branch == main`. Für die drei Drift-Guards ändert das
+# nichts: Ihre Scheduled-Läufe tragen ohnehin den Default-Branch. Ein
+# manueller Lauf auf einem anderen Branch erzeugt seither kein Issue mehr —
+# gewollt, denn er misst nicht den Stand, der zählt.
 
 on:
   workflow_run:
@@ -40,6 +63,7 @@ on:
       - Edge Function Drift Guard
       - Migration Drift Guard
       - Function ACL Drift Guard
+      - Pre-Deploy Check
     types:
       - completed
 
@@ -52,9 +76,12 @@ jobs:
     name: Issue für Drift-Befund pflegen
     runs-on: ubuntu-latest
     # `skipped` und `cancelled` sind keine Befunde — nur echte Ergebnisse zählen.
+    # Und nur Läufe auf main: PR-Läufe von „Pre-Deploy Check" dürfen weder
+    # ein Issue öffnen noch eines schließen (siehe Kopf).
     if: >
-      github.event.workflow_run.conclusion == 'failure' ||
-      github.event.workflow_run.conclusion == 'success'
+      github.event.workflow_run.head_branch == 'main' &&
+      (github.event.workflow_run.conclusion == 'failure' ||
+       github.event.workflow_run.conclusion == 'success')
     steps:
       - name: Issue anlegen, kommentieren oder schließen
         # SHA-gepinnt, weil das Repository genau das erzwingt: Mit `@v7` bricht
@@ -79,7 +106,10 @@ jobs:
             const run = context.payload.workflow_run;
             const guard = run.name;
             const failed = run.conclusion === 'failure';
-            const title = `Drift-Befund: ${guard}`;
+            // Zwei Befundklassen, zwei Titel — der Titel ist zugleich der
+            // Schlüssel, unter dem ein offenes Issue wiedergefunden wird.
+            const isLint = guard === 'Pre-Deploy Check';
+            const title = isLint ? `Deploy-Befund: ${guard}` : `Drift-Befund: ${guard}`;
             const label = 'drift-alert';
 
             // Bestehendes offenes Issue dieses Guards suchen. Der Titel ist der
@@ -146,7 +176,31 @@ jobs:
               return;
             }
 
-            const body = [
+            // Der Lint meldet keinen Drift, sondern einen Stand von main, den
+            // der Deploy nicht annehmen würde — deshalb ein eigener Text.
+            const body = isLint ? [
+              `**${guard}** ist auf main fehlgeschlagen: ${link} (${when}).`,
+              '',
+              'Das heißt: **main ist in diesem Stand nicht deploybar.** Der Lint',
+              'prüft Migrationsreihenfolge, Dateinamen und Function-Konfiguration;',
+              'der häufigste Fall ist eine doppelte Migrationsversion aus zwei',
+              'unabhängig gemergten PRs (so am 2026-09-02, #1178 / #1193).',
+              '',
+              '### Warum das zählt',
+              '',
+              'Bei einer doppelten Version bricht `supabase db push` vollständig ab,',
+              'solange der Befund offen ist — dann erreicht **keine** Migration mehr',
+              'die Produktion, auch keine unbeteiligte.',
+              '',
+              '### Was zu tun ist',
+              '',
+              '1. Protokoll des Laufs öffnen; der Lint nennt Datei und Regel',
+              '2. Bei einer Dublette: die jüngere Datei auf eine freie Version',
+              '   umbenennen (Vorbild: PR #1200), Inhalt unverändert',
+              '3. Danach prüfen, ob der Deploy auf dem Merge-Commit grün ist',
+              '',
+              'Dieses Issue schließt sich selbst, sobald der Lint auf main wieder grün läuft.',
+            ].join('\n') : [
               `Der Guard **${guard}** ist fehlgeschlagen: ${link} (${when}).`,
               '',
               'Das heißt in der Regel: **Produktion weicht vom Repo ab.** Jemand hat',

@@ -26,6 +26,45 @@
 const LOGIN_HOST = 'https://login.microsoftonline.com';
 const GRAPH_HOST = 'https://graph.microsoft.com';
 
+/**
+ * Der Hostname von Graph — die Prüfgröße, nicht das Präfix.
+ *
+ * Warum getrennt von `GRAPH_HOST`: Ein Vergleich auf das Präfix
+ * (`url.startsWith(GRAPH_HOST)`) ist unvollständig, weil ein Angreifer den
+ * erlaubten Text vorne anhängen kann und die Zeichenkette trotzdem passt —
+ * `https://graph.microsoft.com.example.invalid/…` beginnt mit dem Präfix,
+ * zeigt aber auf eine fremde Domain, und `https://graph.microsoft.com@example.invalid/`
+ * schiebt den erlaubten Teil in den Benutzer-Anteil der URL. Beides hätte
+ * das Bearer-Token an einen fremden Host geschickt (CodeQL:
+ * „Incomplete URL substring sanitization", hoch).
+ */
+const GRAPH_HOSTNAME = 'graph.microsoft.com';
+
+/**
+ * Ist das eine echte Graph-URL?
+ *
+ * Geprüft wird am geparsten `hostname` und am Protokoll, nie an der
+ * Zeichenkette. `URL` normalisiert dabei Benutzer-Anteil, Port und
+ * Groß-/Kleinschreibung — genau die Stellen, an denen ein Präfixvergleich
+ * danebengreift. Eine unparsbare Eingabe gilt als nicht erlaubt.
+ */
+export function isGraphUrl(candidate: string): boolean {
+  let parsed: URL;
+  try {
+    parsed = new URL(candidate);
+  } catch {
+    return false;
+  }
+  // Ein Port wäre bei Graph nie gesetzt; ein gesetzter deutet auf eine
+  // nachgebaute URL hin. `username`/`password` müssen leer sein, sonst
+  // steht der erlaubte Name nur im Benutzer-Anteil.
+  return parsed.protocol === 'https:'
+    && parsed.hostname === GRAPH_HOSTNAME
+    && parsed.port === ''
+    && parsed.username === ''
+    && parsed.password === '';
+}
+
 export interface GraphCredentials {
   azure_tenant_id: string;
   client_id: string;
@@ -92,10 +131,15 @@ export async function graphGet(
   urlOrPath: string,
 ): Promise<Record<string, unknown>> {
   const url = urlOrPath.startsWith('http') ? urlOrPath : `${GRAPH_HOST}/v1.0${urlOrPath}`;
-  if (!url.startsWith(GRAPH_HOST)) {
+  if (!isGraphUrl(url)) {
     // Die `@odata.nextLink` kommt von Microsoft, wird aber wie jede fremde
     // Angabe behandelt: Sie darf nur auf Graph zeigen. Sonst waere die
     // Paginierung ein Weg, das Token an einen fremden Host zu schicken.
+    //
+    // Geprueft wird am geparsten Hostnamen, nicht am Praefix — siehe
+    // `isGraphUrl`. Der Host darf nicht in der Fehlermeldung stehen: Sie
+    // landet im Pruefpfad, und eine untergeschobene URL gehoert dort nicht
+    // ungefiltert hinein.
     throw new Error('Unerwartete Folge-URL ausserhalb von Microsoft Graph');
   }
 

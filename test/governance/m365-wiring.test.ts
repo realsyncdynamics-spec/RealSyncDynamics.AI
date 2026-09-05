@@ -112,7 +112,17 @@ describe('Das App-Geheimnis verlässt die Serverseite nicht', () => {
 // ───────────────────────────────────────────────────────────────────────────
 describe('Graph-Zugriff bleibt bei Microsoft', () => {
   it('spricht nur mit den beiden Microsoft-Hosts', () => {
-    const hosts = [...graph.matchAll(/https:\/\/[a-z0-9.-]+/g)].map((m) => m[0]);
+    // Kommentare vorher entfernen: Seit dem CodeQL-Befund vom 2026-09-05
+    // stehen im Modul Beispiel-URLs, die den Angriff erklären
+    // (`https://graph.microsoft.com.example.invalid/…`). Sie gehören dorthin —
+    // wer die Prüfung ändert, soll lesen können, wogegen sie steht. Der Test
+    // meint aber Hosts, die der Code **anspricht**, nicht Hosts, über die er
+    // schreibt. Ohne diesen Schnitt bestraft er die eigene Dokumentation.
+    const code = graph
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/(^|[^:])\/\/.*$/gm, '$1');
+    const hosts = [...code.matchAll(/https:\/\/[a-z0-9.-]+/g)].map((m) => m[0]);
+    expect(hosts.length).toBeGreaterThan(0); // sonst prüft der Schnitt nichts mehr
     for (const h of hosts) {
       expect(['https://login.microsoftonline.com', 'https://graph.microsoft.com']).toContain(h);
     }

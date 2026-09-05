@@ -708,6 +708,44 @@ das Ausmaß an Kontrolle über die digitale Infrastruktur.
 4. Ausfall einer Integration ist ein bekannter Zustand mit Ereignis, kein
    stiller Datenverlust — eine ausgefallene Beobachtung ist beobachtbar.
 
+### Umsetzungsstand
+
+Die vier Regeln sind an **einem** Anbieter erfüllt — GitHub. Ein Anbieter
+vollständig ist mehr wert als sieben halb: an ihm lässt sich prüfen, ob der
+Vertrag trägt, bevor er sechsmal kopiert wird.
+
+| Baustein | Ort |
+| --- | --- |
+| Beobachtung → Befund (rein, ohne Netz) | `supabase/functions/_shared/github-observation.ts` |
+| Beobachten und Handeln | `supabase/functions/governance-connectors` (`op: observe` / `act`) |
+| Zugangsdaten, Assetbezug, Ausfallzustand | `supabase/migrations/20260905000000_integration_credentials_and_observation.sql` |
+| Tests gegen diesen Abschnitt | `test/integrations/github-observation.test.ts` |
+
+**Regel 2 hat einen eigenen Ort bekommen, und zwar wegen eines Befundes.**
+`connectors_tenant_read` gibt `authenticated` SELECT auf die ganze Zeile von
+`integration_connectors` — ein Token in `config` wäre aus dem Browser lesbar.
+Da PostgreSQL keine spaltenweise RLS kennt, liegen Zugangsdaten in
+`integration_connector_secrets`, einer Tabelle **ohne jede Policy für
+`authenticated`**. Ein DB-CHECK weist `config` mit geheimnisartigen Schlüsseln
+zurück. Der Mandant sieht, *dass* eine Verbindung besteht und wie es ihr geht —
+nie, womit sie sich ausweist.
+
+**Regel 4 heißt: der Lauf existiert vor dem Netzaufruf.** `integration_observations`
+bekommt seine Zeile, bevor GitHub befragt wird, und wird danach fortgeschrieben.
+Wer erst nach Erfolg schreibt, hat von einem Timeout keine Spur. Dazu gehört
+`undetermined`: Ein Token ohne `admin:repo` bekommt auf die Branch-Protection
+einen 403 — der Lauf ist dann erfolgreich und trotzdem unvollständig, und ohne
+diese Liste liest sich „0 Befunde" als Entwarnung.
+
+**`null` heißt nicht feststellbar, nicht „nein".** Aus einem 403 „ungeschützt"
+zu schließen wäre ein erfundener Befund über ein fremdes Unternehmen —
+dieselbe Klasse Fehler wie der erfundene Vorschau-Inhalt (CLAUDE.md §10,
+Freigabe 2026-09-01).
+
+**Was noch fehlt**: `jira`, `linear`, `servicenow`, `slack` und `teams` stehen
+im `connector_type`-CHECK, haben aber weder Beobachtung noch Aktion. Sie sind
+damit heute Datensilos im Sinne von Regel 1 — benannt, nicht angeschlossen.
+
 ---
 
 ## 10. Pricing-Architektur
@@ -824,7 +862,7 @@ auf bestehende Modul-Schlüssel abgebildet, nicht als zweite Modul-Welt eingefü
 | **Publish Gate** | Contract §7 umgesetzt: `evaluatePublishGate` im Kern, `siteos/publish-gate` + `siteos/publish-approve`, Tabelle `siteos_publish_evaluations` mit generierter Spalte `publishable` | steht vor dem ersten Publish-Pfad — anschließen, sobald `cloudflare-deployer` deployt ist |
 | Deployment-Pfad | Renderer erzeugt gehashtes Artefakt; Upload/Domain offen | Publish nur über das Gate |
 | Skills / Workflows | 8 Skills + 8 Workflows als Vokabular über den 7 Agenten (`siteos-core/workflows/`), Läufe in `siteos_agent_runs` mit `skill`/`workflow` beschriftet | **Ausführung** der vier `portfolio`-Workflows — dafür fehlt ein Laufobjekt über mehr als ein `blueprint_id` |
-| Integrationen | `integration_connectors`, `remediation_actions`, Feature `src/features/integrations` | beidseitige Integrationen als Beobachtungs- **und** Aktionsquelle |
+| Integrationen | **GitHub beidseitig**: `governance-connectors` beobachtet (Repo-Zustand → `findings`) und handelt (Befund → Issue → `remediation_actions`); Zugangsdaten in `integration_connector_secrets` (service-role only), Ausfall in `integration_observations` | die übrigen fünf Connector-Typen (jira, linear, servicenow, slack, teams) haben noch keinen Beobachtungs- oder Aktionspfad |
 | Pricing | 6 Abo-Pläne + Einmalprodukte in `shared/pricing.ts` | BASE + MODULE + SCALE als Katalogänderung |
 | Truth Layer / Status Adapter | `governance-analytics-aggregator`, `governance-risk-score`, `evidence-export` vorhanden; Zusammenführung fehlt | ein Adapter, jede Zahl mit definierter Metrik, `—` statt Platzhalter |
 | Health | `health` prüft `database` + `env` (`_shared/health.ts`) | Verbundstatus über Supabase · AI Gateway · Automation · Bot Layer · Evidence; VPS/Ollama/n8n getrennt |

@@ -845,6 +845,49 @@ geändert.
 bleibt zurückgestellt — **E6 ist am 2026-09-04 vom Eigentümer entschieden:
 eigene Kanäle zuerst.** Offen bleiben E1–E5 und E7 aus §7 sowie Phase P3.
 
+### Die Entscheidungsgrundlage gab es nicht — jetzt gibt es sie (2026-09-06)
+
+Dieser Abschnitt verlangt seit P0, `pdp_shadow_log` vor jedem Umschalten
+auszuwerten. Beim Nachsehen am 2026-09-06: **Sechs Kanäle schrieben hinein,
+und nichts las ihn.** Kein Code, keine Oberfläche, kein Skript — gemessen per
+`grep` über das ganze Repository. Die Entscheidung, an der das ganze
+Governance OS hängt, hatte damit keine Datengrundlage; die Aufforderung stand
+da, aber sie war nicht befolgbar.
+
+Neu ist deshalb `pdp_shadow_readiness()` (Migration `20260906100000`) und die
+Ansicht `/app/governance/shadow`. Drei Entwurfsentscheidungen tragen den
+eigentlichen Wert:
+
+**1. Die Auswertung geht von der Kanalliste aus, nicht von den Zeilen.** Ein
+`GROUP BY` über das Protokoll zeigt einen Kanal, der nie geschrieben hat, gar
+nicht erst — er sähe aus wie ein Kanal ohne Befund. Genau dieser Fall ist am
+2026-09-04 eingetreten (Publish Gate, kaputter Aufruf hinter einem `catch`,
+tagelang stumm). Wer damals auf eine naive Auswertung geschaut hätte, hätte
+„keine Divergenzen" gelesen und umgeschaltet. Jeder Kanal erscheint jetzt mit
+`beobachtet = false`, wenn er stumm ist: **unbeobachtet ist nicht
+unauffällig.**
+
+**2. Die Richtung der Abweichung wird getrennt gezählt.** „12 Divergenzen" ist
+keine Entscheidungsgrundlage. Ist v2 strenger, kostet das Umschalten
+Arbeitsfähigkeit (R5, Schatten-IT). Ist v2 **lockerer**, ist die heutige
+Zusage bereits ungedeckt — der schwerere Fall, und die Oberfläche sagt das
+auch so.
+
+**3. Unbekannte Verdikte ergeben NULL, nicht 0.** Ein Vokabular, das niemand
+in `pdp_verdict_rank` nachgetragen hat, als „so harmlos wie allow" zu zählen
+wäre die stille Variante desselben Fehlers. Sie werden eigens ausgewiesen.
+
+Was die Seite **nicht** anzeigt: den Zustand der Schalter selbst. Er ist eine
+Umgebungsvariable der Edge Functions und im Browser nicht lesbar; eine
+geratene Anzeige wäre genau die Sorte Behauptung, die diese Seite aufdecken
+soll. Sie nennt nur, welcher Schalter zu welchem Kanal gehört.
+
+Damit ist die Entscheidung **nicht getroffen** — sie ist nur zum ersten Mal
+belegbar vorbereitet. Gesichert durch `test/governance/shadow-readiness.test.ts`
+und `test/runtime/db/shadow-readiness.db.test.ts` (in `ci.yml` verdrahtet); die
+DB-Prüfung wurde gegen eine bewusst naive Fassung gegengeprüft und wird dort
+rot.
+
 **Drei Entscheidungen liegen beim Eigentümer** — und es ist dieselbe Frage
 dreimal: `SITEOS_PUBLISH_PDP` (P2-3), `GOVERNANCE_PDP_MODE` (P2-4) und
 `BOT_PDP_ENFORCEMENT` (P2-5) stehen alle auf `shadow`. Bis jemand `enforce`

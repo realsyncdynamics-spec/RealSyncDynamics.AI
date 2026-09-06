@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ArrowLeft, Compass, Loader2, Gavel, FileCheck2, UserCheck, ShieldAlert,
-  ScrollText, Plug, KeyRound, FileDown, ShieldCheck, Users,
+  ScrollText, Plug, KeyRound, FileDown, ShieldCheck, Users, Eye,
 } from 'lucide-react';
 import { useTenant } from '../../core/access/TenantProvider';
 import { AuthGate } from '../kodee/connections/AuthGate';
@@ -69,12 +69,14 @@ function entriesFor(roles: string[], counts: { gates: number; approvals: number 
     { to: '/app/connectors', label: 'Integrationen', hint: 'Verbundene Systeme und Status', icon: <Plug className="h-4 w-4" /> },
     { to: '/app/keys', label: 'Schlüssel', hint: 'Ingest-Keys verwalten', icon: <KeyRound className="h-4 w-4" /> },
     { to: '/app/governance/gates', label: 'Zugriffsmodell', hint: 'Einheiten, Principals, Rollen', icon: <Users className="h-4 w-4" /> },
+    { to: '/app/governance/shadow', label: 'Beobachtungsbetrieb', hint: 'Was Durchsetzung bewirken würde', icon: <Eye className="h-4 w-4" /> },
     { to: '/app/admin-log', label: 'Prüfpfad', hint: 'Wer hat wann was geändert', icon: <ScrollText className="h-4 w-4" /> },
   ];
 
   // Compliance
   if (has('compliance_officer')) return [
     { to: '/app/compliance', label: 'Bericht', hint: 'Nachweise für Prüfungen exportieren', icon: <FileDown className="h-4 w-4" /> },
+    { to: '/app/governance/shadow', label: 'Beobachtungsbetrieb', hint: 'Was Durchsetzung bewirken würde', icon: <Eye className="h-4 w-4" /> },
     approvals,
     gate,
     { to: '/app/admin-log', label: 'Prüfpfad', hint: 'Wer hat wann was geändert', icon: <ScrollText className="h-4 w-4" /> },

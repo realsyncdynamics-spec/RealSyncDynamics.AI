@@ -476,3 +476,76 @@ export const testM365 = (tenant_id: string, connection_id: string) =>
 
 export const disconnectM365 = (tenant_id: string, connection_id: string) =>
   callM365({ op: 'disconnect', tenant_id, connection_id });
+
+// ───────────────────────────────────────────────────────────────────────────
+// Beobachtungsbetrieb — die Grundlage der Umschaltentscheidung (Plan §7)
+// ───────────────────────────────────────────────────────────────────────────
+//
+// Sechs Kanäle schreiben in `pdp_shadow_log`, und bis zum 2026-09-06 hat ihn
+// nichts gelesen. Der Plan macht den Umschaltzeitpunkt aller Enforcement-
+// Schalter von seiner Auswertung abhängig — die Entscheidung hatte also keine
+// Datengrundlage.
+//
+// `beobachtet: false` ist das wichtigste Feld: Es unterscheidet „dieser Kanal
+// hat nichts gemeldet" von „dieser Kanal wird gar nicht beobachtet". Ohne
+// diese Unterscheidung hätte die Oberfläche am 2026-09-04 „keine Divergenzen"
+// für den Publish Gate gezeigt, während dessen Protokollaufruf schlicht kaputt
+// war.
+
+export interface ShadowReadinessRow {
+  source: string;
+  /** false = dieser Kanal hat im Zeitraum nichts geschrieben. */
+  beobachtet: boolean;
+  eintraege: number;
+  erste: string | null;
+  letzte: string | null;
+  divergenzen: number;
+  /** v2 hätte strenger entschieden als die Alt-Engine. */
+  v2_strenger: number;
+  /** v2 hätte lockerer entschieden — der schwerere Fall. */
+  v2_lockerer: number;
+  /** Fälle, in denen `enforce` gesperrt oder eine Freigabe verlangt hätte. */
+  wuerde_sperren: number;
+  /** Verdikte, die die Rangordnung nicht kennt. */
+  unbekannt: number;
+}
+
+export interface ShadowDivergence {
+  id: string;
+  source: string;
+  legacy_status: string | null;
+  v2_status: string | null;
+  snapshot_version: string | null;
+  created_at: string;
+  detail: Record<string, unknown>;
+}
+
+export async function shadowReadiness(
+  tenant_id: string,
+  sinceDays = 30,
+): Promise<ShadowReadinessRow[]> {
+  const sb = getSupabase();
+  const since = new Date(Date.now() - sinceDays * 86_400_000).toISOString();
+  const { data } = await sb.rpc('pdp_shadow_readiness', {
+    p_tenant_id: tenant_id,
+    p_since: since,
+  });
+  return (data ?? []) as unknown as ShadowReadinessRow[];
+}
+
+export async function listShadowDivergences(
+  tenant_id: string,
+  limit = 50,
+): Promise<ShadowDivergence[]> {
+  const sb = getSupabase();
+  // Direkt gelesen statt über eine Function: Die Tabelle ist per RLS auf den
+  // Mandanten begrenzt und enthält nur Merkmale, keine Inhalte.
+  const { data } = await sb
+    .from('pdp_shadow_log')
+    .select('id, source, legacy_status, v2_status, snapshot_version, created_at, detail')
+    .eq('tenant_id', tenant_id)
+    .eq('diverged', true)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+  return (data ?? []) as unknown as ShadowDivergence[];
+}

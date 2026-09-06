@@ -138,8 +138,16 @@ describe('Vokabular von Code und Datenbank stimmt überein', () => {
     const massgeblich = readdirSync(MIGRATIONS)
       .filter((f) => f.endsWith('.sql'))
       .sort()
-      .filter((f) => readFileSync(resolve(MIGRATIONS, f), 'utf8')
-        .includes('pdp_shadow_log_source_check'))
+      // Nicht auf eine ERWAEHNUNG des Namens filtern, sondern auf seine
+      // DEFINITION: Seit 20260906100000 nennt eine Migration die Bedingung im
+      // Kommentar, ohne sie zu setzen. Die Erwaehnung als Treffer zu werten
+      // waehlt die falsche Datei — derselbe Fehler wie eine Zusicherung, die
+      // an einem Zitat haengt.
+      .filter((f) => {
+        const s = readFileSync(resolve(MIGRATIONS, f), 'utf8');
+        return s.includes('ADD CONSTRAINT pdp_shadow_log_source_check')
+          && s.includes('CHECK (source IN (');
+      })
       .pop();
     expect(massgeblich, 'keine Migration definiert pdp_shadow_log_source_check').toBeTruthy();
 

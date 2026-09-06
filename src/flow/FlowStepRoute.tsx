@@ -22,7 +22,7 @@ export function FlowStepRoute() {
       <div className="min-h-screen bg-obsidian-950 text-titanium-100">
         <Navbar />
         <main className="mx-auto max-w-2xl px-4 pt-32 pb-16 text-center sm:px-6">
-          <div className="mb-2 font-mono text-[11px] uppercase tracking-[0.18em] text-security-blue">
+          <div className="mb-2 font-mono text-[11px] uppercase tracking-[0.18em] text-champagne">
             Flow-Schritt nicht gefunden
           </div>
           <h1 className="text-3xl font-display font-semibold tracking-tight text-titanium-50">
@@ -35,7 +35,7 @@ export function FlowStepRoute() {
           <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
             <Link
               to="/flow/start-scan"
-              className="inline-flex items-center justify-center gap-2 bg-security-blue px-6 py-3 font-mono text-sm font-bold uppercase tracking-widest text-obsidian transition-colors hover:bg-blue-600"
+              className="inline-flex items-center justify-center gap-2 bg-champagne-200 px-6 py-3 font-mono text-sm font-bold uppercase tracking-widest text-champagne-950 transition-colors hover:bg-champagne-100"
             >
               Ablauf starten
             </Link>

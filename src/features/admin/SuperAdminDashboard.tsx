@@ -150,7 +150,7 @@ function Inner({ session }: { session: Session }) {
                   <p className="font-display font-bold text-3xl text-titanium-50">{metrics.totalTenants}</p>
                   <p className="text-xs text-titanium-400 mt-1">{metrics.activeTenants} aktiv</p>
                 </div>
-                <Users className="h-8 w-8 text-security-blue opacity-50" />
+                <Users className="h-8 w-8 text-champagne opacity-50" />
               </CardContent>
             </Card>
 
@@ -204,7 +204,7 @@ function Inner({ session }: { session: Session }) {
           <h2 className="font-display font-bold text-lg text-titanium-50 mb-4">Administration</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Link to="/admin/customers">
-              <Card variant="default" className="hover:border-security-blue/50 transition-colors cursor-pointer h-full">
+              <Card variant="default" className="hover:border-champagne/50 transition-colors cursor-pointer h-full">
                 <CardHeader>
                   <CardTitle className="text-base flex items-center gap-2">
                     <Users className="h-5 w-5" />
@@ -213,14 +213,14 @@ function Inner({ session }: { session: Session }) {
                   <CardDescription>Tenant-Verwaltung und Subscription-Status</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-2xl font-bold text-security-blue">{metrics?.totalTenants || '—'}</p>
+                  <p className="text-2xl font-bold text-champagne">{metrics?.totalTenants || '—'}</p>
                   <p className="text-xs text-titanium-400 mt-1">Gesamt-Workspaces</p>
                 </CardContent>
               </Card>
             </Link>
 
             <Link to="/admin/leads">
-              <Card variant="default" className="hover:border-security-blue/50 transition-colors cursor-pointer h-full">
+              <Card variant="default" className="hover:border-champagne/50 transition-colors cursor-pointer h-full">
                 <CardHeader>
                   <CardTitle className="text-base flex items-center gap-2">
                     <TrendingUp className="h-5 w-5" />
@@ -236,7 +236,7 @@ function Inner({ session }: { session: Session }) {
             </Link>
 
             <Link to="/admin/system">
-              <Card variant="default" className="hover:border-security-blue/50 transition-colors cursor-pointer h-full">
+              <Card variant="default" className="hover:border-champagne/50 transition-colors cursor-pointer h-full">
                 <CardHeader>
                   <CardTitle className="text-base flex items-center gap-2">
                     <Zap className="h-5 w-5" />

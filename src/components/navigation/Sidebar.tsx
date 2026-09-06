@@ -57,7 +57,7 @@ export const Sidebar = React.forwardRef<HTMLElement, SidebarProps>(
             onClick={() => handleItemClick(item)}
             className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg font-mono text-sm font-semibold transition-colors ${
               item.active
-                ? 'text-security-blue bg-security-blue/10'
+                ? 'text-champagne bg-champagne/10'
                 : 'text-titanium/70 hover:text-titanium hover:bg-titanium/5'
             } ${depth > 0 ? 'ml-4' : ''}`}
           >
@@ -110,7 +110,7 @@ export const Sidebar = React.forwardRef<HTMLElement, SidebarProps>(
           {collapsible && (
             <button
               onClick={() => setIsCollapsed(!isCollapsed)}
-              className="p-2 text-titanium/60 hover:text-titanium hover:bg-titanium/10 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-security-blue"
+              className="p-2 text-titanium/60 hover:text-titanium hover:bg-titanium/10 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-champagne"
               aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
             >
               <svg

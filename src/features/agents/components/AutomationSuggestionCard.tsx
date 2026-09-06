@@ -25,7 +25,7 @@ const SEVERITY_DOT: Record<SuggestionSeverity, string> = {
 
 const STATUS_CLASS: Record<SuggestionStatus, string> = {
   new: 'border-titanium-700 text-titanium-400',
-  accepted: 'border-security-blue-700 text-blue-400',
+  accepted: 'border-champagne text-blue-400',
   rejected: 'border-rose-900 text-rose-400',
 };
 

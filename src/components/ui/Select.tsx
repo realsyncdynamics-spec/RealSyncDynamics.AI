@@ -54,7 +54,7 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
       lg: 'px-5 py-3 text-lg h-12',
     };
 
-    const variantStyles = `border border-titanium/30 bg-obsidian text-titanium placeholder:text-titanium/40 hover:border-titanium/50 focus:border-security-blue focus:ring-1 focus:ring-security-blue/30`;
+    const variantStyles = `border border-titanium/30 bg-obsidian text-titanium placeholder:text-titanium/40 hover:border-titanium/50 focus:border-champagne focus:ring-1 focus:ring-champagne/30`;
 
     const errorStyles = error ? 'border-red-500 focus:border-red-600 focus:ring-red-500/30' : '';
     const disabledStyles = disabled ? 'opacity-50 cursor-not-allowed' : '';
@@ -186,7 +186,7 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
                       setSearchTerm(e.target.value);
                       setHighlightedIndex(0);
                     }}
-                    className={`${baseInputStyles} w-full px-3 py-1.5 text-sm border border-titanium/30 bg-obsidian/50 text-titanium placeholder:text-titanium/40 focus:border-security-blue focus:ring-1 focus:ring-security-blue/30 rounded`}
+                    className={`${baseInputStyles} w-full px-3 py-1.5 text-sm border border-titanium/30 bg-obsidian/50 text-titanium placeholder:text-titanium/40 focus:border-champagne focus:ring-1 focus:ring-champagne/30 rounded`}
                   />
                 </div>
               )}
@@ -195,9 +195,9 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
                   <li key={`${option.value}-${index}`}>
                     <button
                       type="button"
-                      className={`w-full text-left px-4 py-2.5 hover:bg-security-blue/20 transition-colors flex items-center gap-2 ${
-                        highlightedIndex === index ? 'bg-security-blue/30' : ''
-                      } ${selectedValues.has(option.value) ? 'bg-security-blue/10 text-security-blue' : 'text-titanium'}`}
+                      className={`w-full text-left px-4 py-2.5 hover:bg-champagne/20 transition-colors flex items-center gap-2 ${
+                        highlightedIndex === index ? 'bg-champagne/30' : ''
+                      } ${selectedValues.has(option.value) ? 'bg-champagne/10 text-champagne' : 'text-titanium'}`}
                       onClick={() => handleSelectOption(option)}
                       onMouseEnter={() => setHighlightedIndex(index)}
                     >

@@ -25,7 +25,7 @@ export const Breadcrumb = React.forwardRef<HTMLElement, BreadcrumbProps>(
             {item.href && !item.isCurrentPage ? (
               <a
                 href={item.href}
-                className="text-titanium hover:text-security-blue transition-colors focus:outline-none focus:ring-2 focus:ring-security-blue rounded px-1"
+                className="text-titanium hover:text-champagne transition-colors focus:outline-none focus:ring-2 focus:ring-champagne rounded px-1"
               >
                 {item.label}
               </a>
@@ -33,7 +33,7 @@ export const Breadcrumb = React.forwardRef<HTMLElement, BreadcrumbProps>(
               <span
                 className={
                   item.isCurrentPage
-                    ? 'text-security-blue font-semibold'
+                    ? 'text-champagne font-semibold'
                     : 'text-titanium/60'
                 }
               >

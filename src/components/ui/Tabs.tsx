@@ -101,11 +101,11 @@ export const Tabs = React.forwardRef<HTMLDivElement, TabsProps>(
               disabled={tab.disabled}
               onClick={() => handleTabClick(tab.id)}
               onKeyDown={e => handleKeyDown(e, index)}
-              className={`flex items-center gap-2 font-mono font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-offset-obsidian focus:ring-security-blue ${tabSizeStyles[size]} ${
+              className={`flex items-center gap-2 font-mono font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-offset-obsidian focus:ring-champagne ${tabSizeStyles[size]} ${
                 activeTabId === tab.id
                   ? variant === 'contained'
-                    ? 'bg-security-blue text-obsidian rounded-md'
-                    : 'text-titanium border-b-2 border-security-blue -mb-[2px]'
+                    ? 'bg-champagne text-champagne-950 rounded-md'
+                    : 'text-titanium border-b-2 border-champagne -mb-[2px]'
                   : 'text-titanium/60 hover:text-titanium'
               } ${tab.disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
             >

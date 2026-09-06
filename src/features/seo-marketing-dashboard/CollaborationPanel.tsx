@@ -206,7 +206,7 @@ export function CollaborationPanel() {
       {/* Share Dashboard Section */}
       <div className="bg-obsidian-900 border border-obsidian-700 rounded-sm p-4">
         <div className="flex items-center gap-2 mb-4">
-          <Share2 size={16} className="text-security-blue" />
+          <Share2 size={16} className="text-champagne" />
           <h3 className="text-titanium-200 font-mono text-sm">DASHBOARD TEILEN</h3>
         </div>
 
@@ -220,12 +220,12 @@ export function CollaborationPanel() {
                 value={shareEmail}
                 onChange={e => setShareEmail(e.target.value)}
                 placeholder="user@example.com"
-                className="flex-1 bg-obsidian-800 border border-obsidian-600 text-titanium-50 px-3 py-2 rounded-sm text-sm font-mono focus:outline-none focus:border-security-blue"
+                className="flex-1 bg-obsidian-800 border border-obsidian-600 text-titanium-50 px-3 py-2 rounded-sm text-sm font-mono focus:outline-none focus:border-champagne"
               />
               <select
                 value={accessLevel}
                 onChange={e => setAccessLevel(e.target.value as any)}
-                className="bg-obsidian-800 border border-obsidian-600 text-titanium-50 px-3 py-2 rounded-sm text-sm font-mono focus:outline-none focus:border-security-blue"
+                className="bg-obsidian-800 border border-obsidian-600 text-titanium-50 px-3 py-2 rounded-sm text-sm font-mono focus:outline-none focus:border-champagne"
               >
                 {Object.entries(accessLevelLabels).map(([key, label]) => (
                   <option key={key} value={key}>
@@ -239,7 +239,7 @@ export function CollaborationPanel() {
           <button
             onClick={shareWithEmail}
             disabled={loading || !shareEmail}
-            className="w-full bg-security-blue text-titanium-50 px-4 py-2 rounded-sm font-mono text-sm hover:bg-blue-700 disabled:opacity-50 transition-colors"
+            className="w-full bg-champagne-200 text-champagne-950 px-4 py-2 rounded-sm font-mono text-sm hover:bg-champagne-100 disabled:opacity-50 transition-colors"
           >
             {loading ? 'Wird geteilt...' : 'Teilen'}
           </button>
@@ -299,7 +299,7 @@ export function CollaborationPanel() {
           <select
             value={annotationType}
             onChange={e => setAnnotationType(e.target.value as any)}
-            className="w-full bg-obsidian-700 border border-obsidian-600 text-titanium-50 px-3 py-2 rounded-sm text-sm font-mono focus:outline-none focus:border-security-blue"
+            className="w-full bg-obsidian-700 border border-obsidian-600 text-titanium-50 px-3 py-2 rounded-sm text-sm font-mono focus:outline-none focus:border-champagne"
           >
             <option value="comment">Kommentar</option>
             <option value="highlight">Highlight</option>
@@ -312,13 +312,13 @@ export function CollaborationPanel() {
             onChange={e => setNewAnnotation(e.target.value)}
             placeholder="Anmerkung hinzufügen..."
             rows={2}
-            className="w-full bg-obsidian-700 border border-obsidian-600 text-titanium-50 px-3 py-2 rounded-sm text-sm font-mono focus:outline-none focus:border-security-blue resize-none"
+            className="w-full bg-obsidian-700 border border-obsidian-600 text-titanium-50 px-3 py-2 rounded-sm text-sm font-mono focus:outline-none focus:border-champagne resize-none"
           />
 
           <button
             onClick={addAnnotation}
             disabled={!newAnnotation}
-            className="w-full bg-security-blue text-titanium-50 px-4 py-2 rounded-sm font-mono text-sm hover:bg-blue-700 disabled:opacity-50 transition-colors"
+            className="w-full bg-champagne-200 text-champagne-950 px-4 py-2 rounded-sm font-mono text-sm hover:bg-champagne-100 disabled:opacity-50 transition-colors"
           >
             Anmerkung hinzufügen
           </button>

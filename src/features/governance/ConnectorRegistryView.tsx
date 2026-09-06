@@ -272,7 +272,7 @@ function Inner() {
                           {c.system_type === 'microsoft365' && (
                             <Link
                               to="/app/governance/microsoft365"
-                              className="inline-block mt-1 text-security-blue hover:underline"
+                              className="inline-block mt-1 text-champagne hover:underline"
                             >
                               Einrichtung und festgestellte Ereignisse →
                             </Link>

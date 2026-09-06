@@ -34,7 +34,7 @@ export const Radio = React.forwardRef<HTMLInputElement, RadioProps>(
       lg: 'text-base',
     };
 
-    const radioClasses = `${sizeStyles[size]} accent-security-blue cursor-pointer transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-offset-obsidian focus:ring-security-blue ${
+    const radioClasses = `${sizeStyles[size]} accent-champagne cursor-pointer transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-offset-obsidian focus:ring-champagne ${
       error ? 'border-red-500' : 'border-titanium/30'
     } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`;
 

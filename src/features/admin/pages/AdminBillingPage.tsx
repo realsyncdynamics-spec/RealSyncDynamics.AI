@@ -120,7 +120,7 @@ export function AdminBillingPage() {
                   <span className="text-sm text-titanium-400">12.543 / 100.000</span>
                 </div>
                 <div className="w-full h-2 bg-obsidian-900 rounded-full overflow-hidden">
-                  <div className="h-full w-1/4 bg-security-blue"></div>
+                  <div className="h-full w-1/4 bg-champagne"></div>
                 </div>
               </div>
 
@@ -188,7 +188,7 @@ export function AdminBillingPage() {
                         <Badge variant="success" size="sm">{invoice.status}</Badge>
                       </td>
                       <td className="py-3 px-4 text-right">
-                        <button className="text-security-blue hover:text-security-blue/80 transition-colors">
+                        <button className="text-champagne hover:text-champagne/80 transition-colors">
                           <Download className="h-4 w-4" />
                         </button>
                       </td>

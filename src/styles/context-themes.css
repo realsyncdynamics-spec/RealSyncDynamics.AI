@@ -15,7 +15,7 @@
 
 :root {
   /* Default to dashboard theme (most common in authenticated app) */
-  --context-accent: var(--security-blue-500);
+  --context-accent: var(--champagne-500);
   --context-bg: var(--obsidian-950);
   --context-text: var(--titanium-100);
   --context-secondary: var(--titanium-400);
@@ -43,7 +43,7 @@
 
 /* Flow Context — progressive, warm, gold-accented */
 .flow-context {
-  --context-accent: var(--gold-500);
+  --context-accent: var(--champagne);
   --context-bg: var(--obsidian-950);
   --context-text: white;
   --context-secondary: var(--titanium-400);
@@ -57,7 +57,7 @@
 
 /* Dashboard Context — authoritative, hard-edge, blue-accented */
 .dashboard-context {
-  --context-accent: var(--security-blue-500);
+  --context-accent: var(--champagne-500);
   --context-bg: var(--obsidian-950);
   --context-text: var(--titanium-100);
   --context-secondary: var(--titanium-400);
@@ -84,7 +84,7 @@
 
 /* Button hierarchy variables — Primary, Secondary, Tertiary */
 :root {
-  --button-primary-bg: var(--gold-500);
+  --button-primary-bg: var(--champagne);
   --button-primary-text: var(--obsidian-950);
   --button-primary-hover: var(--gold-600);
 

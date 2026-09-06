@@ -192,7 +192,7 @@ export default function EnterpriseKonfigurator() {
                 <div
                   key={q.addonId}
                   className={`bg-slate-900/80 backdrop-blur p-5 rounded-lg border transition ${
-                    active ? 'border-security-blue/50' : 'border-titanium/20 hover:border-titanium/40'
+                    active ? 'border-champagne/50' : 'border-titanium/20 hover:border-titanium/40'
                   }`}
                 >
                   <div className="flex items-start justify-between gap-4">
@@ -233,7 +233,7 @@ export default function EnterpriseKonfigurator() {
                         onClick={() => setQuantity(q.addonId, active ? 0 : 1)}
                         className={`shrink-0 px-4 py-2 rounded text-sm font-bold transition ${
                           active
-                            ? 'bg-gradient-to-r from-security-blue to-petrol text-obsidian'
+                            ? 'bg-gradient-to-r from-champagne to-petrol text-obsidian'
                             : 'bg-slate-800 hover:bg-slate-700 text-titanium'
                         }`}
                       >
@@ -292,12 +292,12 @@ export default function EnterpriseKonfigurator() {
 
           {/* Ergebnis */}
           <aside className="lg:col-span-1">
-            <div className="bg-slate-900/80 backdrop-blur p-6 rounded-lg border border-security-blue/30 lg:sticky lg:top-8">
+            <div className="bg-slate-900/80 backdrop-blur p-6 rounded-lg border border-champagne/30 lg:sticky lg:top-8">
               <p className="text-xs font-mono uppercase tracking-wider text-titanium/50 mb-2">
                 Ihr Preis
               </p>
               <p
-                className="text-4xl font-bold bg-gradient-to-r from-petrol to-security-blue bg-clip-text text-transparent mb-1"
+                className="text-4xl font-bold bg-gradient-to-r from-petrol to-champagne bg-clip-text text-transparent mb-1"
                 data-testid="enterprise-total"
               >
                 {formatEur(monthlyTotal)} €
@@ -338,7 +338,7 @@ export default function EnterpriseKonfigurator() {
 
               <Link
                 to={requestHref}
-                className="block text-center w-full bg-gradient-to-r from-security-blue to-petrol hover:from-blue-600 hover:to-teal-700 text-obsidian font-bold py-3 rounded transition"
+                className="block text-center w-full bg-gradient-to-r from-champagne to-petrol hover:from-blue-600 hover:to-teal-700 text-obsidian font-bold py-3 rounded transition"
               >
                 Enterprise anfragen
               </Link>
@@ -374,7 +374,7 @@ export default function EnterpriseKonfigurator() {
             maxLength={500}
             placeholder="Was brauchen Sie, das es hier noch nicht gibt?"
             aria-label="Individuelle Anfrage oder Verbesserungsvorschlag"
-            className="w-full bg-obsidian/60 border border-titanium/20 focus:border-security-blue/60 rounded p-3 text-sm text-titanium placeholder:text-titanium/30 outline-none transition mb-3"
+            className="w-full bg-obsidian/60 border border-titanium/20 focus:border-champagne/60 rounded p-3 text-sm text-titanium placeholder:text-titanium/30 outline-none transition mb-3"
           />
 
           <div className="flex flex-wrap items-center gap-3">

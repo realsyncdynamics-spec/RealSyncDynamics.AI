@@ -42,10 +42,10 @@ export const RealSyncDynamicsLanding = () => {
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex justify-between items-center mb-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-petrol to-security-blue rounded-lg flex items-center justify-center">
+              <div className="w-10 h-10 bg-gradient-to-br from-petrol to-champagne rounded-lg flex items-center justify-center">
                 <span className="text-white font-bold text-lg">▲</span>
               </div>
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-petrol to-security-blue bg-clip-text text-transparent">RealSync</h1>
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-petrol to-champagne bg-clip-text text-transparent">RealSync</h1>
             </div>
             <div className="flex gap-4">
               <a href="mailto:hello@realsyncdynamicsai.de" className="hover:text-petrol transition">
@@ -60,7 +60,7 @@ export const RealSyncDynamicsLanding = () => {
                 onClick={() => scrollToSection(idx)}
                 className={`px-4 py-2 rounded text-sm whitespace-nowrap transition font-medium ${
                   activeSection === idx
-                    ? 'bg-gradient-to-r from-petrol to-security-blue text-obsidian'
+                    ? 'bg-gradient-to-r from-petrol to-champagne text-obsidian'
                     : 'bg-slate-800/50 hover:bg-slate-700/50 text-titanium/80'
                 }`}
               >
@@ -89,7 +89,7 @@ export const RealSyncDynamicsLanding = () => {
           {/* Animated background elements */}
           <div className="absolute inset-0 overflow-hidden pointer-events-none">
             <div className="absolute top-20 right-10 w-96 h-96 bg-petrol/5 rounded-full blur-3xl animate-pulse" />
-            <div className="absolute bottom-20 left-10 w-96 h-96 bg-security-blue/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+            <div className="absolute bottom-20 left-10 w-96 h-96 bg-champagne/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
           </div>
 
           <div className="max-w-6xl text-center relative z-10">
@@ -101,7 +101,7 @@ export const RealSyncDynamicsLanding = () => {
             <h2 className="text-7xl md:text-8xl font-bold mb-8 leading-tight" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
               Das KI-<br />Betriebssystem
               <br />
-              für<span className="bg-gradient-to-r from-petrol via-security-blue to-petrol bg-clip-text text-transparent"> Compliance</span>
+              für<span className="bg-gradient-to-r from-petrol via-champagne to-petrol bg-clip-text text-transparent"> Compliance</span>
             </h2>
             <p className="text-2xl text-titanium/80 mb-12 max-w-3xl mx-auto leading-relaxed">
               EU-souveräne Runtime-native Governance für DSGVO, TDDDG &amp; EU AI Act. Kontinuierliche Telemetrie statt Stichproben.
@@ -113,7 +113,7 @@ export const RealSyncDynamicsLanding = () => {
               <div className="px-4 py-2 bg-obsidian/50 border border-petrol/30 rounded-full text-sm text-titanium/80">
                 ✓ DSGVO-konform
               </div>
-              <div className="px-4 py-2 bg-obsidian/50 border border-security-blue/30 rounded-full text-sm text-titanium/80">
+              <div className="px-4 py-2 bg-obsidian/50 border border-champagne/30 rounded-full text-sm text-titanium/80">
                 ✓ AI-Act-ready
               </div>
               <div className="px-4 py-2 bg-obsidian/50 border border-petrol/30 rounded-full text-sm text-titanium/80">
@@ -122,7 +122,7 @@ export const RealSyncDynamicsLanding = () => {
             </div>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link to="/demo-landing?source=realsync-landing" className="bg-gradient-to-r from-petrol to-security-blue hover:from-teal-700 hover:to-blue-600 text-obsidian font-bold py-4 px-8 rounded transition transform hover:scale-105">
+              <Link to="/demo-landing?source=realsync-landing" className="bg-gradient-to-r from-petrol to-champagne hover:from-teal-700 hover:to-blue-600 text-obsidian font-bold py-4 px-8 rounded transition transform hover:scale-105">
                 Demo anfordern
               </Link>
               <Link to="/docs" className="bg-obsidian/50 border border-titanium/30 hover:border-petrol/50 text-titanium font-bold py-4 px-8 rounded transition">
@@ -144,7 +144,7 @@ export const RealSyncDynamicsLanding = () => {
           <div className="max-w-6xl relative z-10">
             <div className="text-center mb-20">
               <h2 className="text-6xl font-bold mb-6" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-                Was wir <span className="bg-gradient-to-r from-petrol to-security-blue bg-clip-text text-transparent">bieten</span>
+                Was wir <span className="bg-gradient-to-r from-petrol to-champagne bg-clip-text text-transparent">bieten</span>
               </h2>
               <p className="text-xl text-titanium/70 max-w-2xl mx-auto">
                 Kontinuierliche Überwachung, automatische Fixes und kryptografische Nachweise
@@ -167,12 +167,12 @@ export const RealSyncDynamicsLanding = () => {
               </div>
 
               <div className="group relative">
-                <div className="absolute inset-0 bg-gradient-to-r from-security-blue/20 to-transparent rounded-lg blur opacity-0 group-hover:opacity-100 transition" />
-                <div className="relative bg-slate-900/80 backdrop-blur p-8 rounded-lg border border-security-blue/30 group-hover:border-security-blue/60 transition">
-                  <div className="w-14 h-14 bg-security-blue/20 rounded-lg flex items-center justify-center mb-6">
+                <div className="absolute inset-0 bg-gradient-to-r from-champagne/20 to-transparent rounded-lg blur opacity-0 group-hover:opacity-100 transition" />
+                <div className="relative bg-slate-900/80 backdrop-blur p-8 rounded-lg border border-champagne/30 group-hover:border-champagne/60 transition">
+                  <div className="w-14 h-14 bg-champagne/20 rounded-lg flex items-center justify-center mb-6">
                     <span className="text-2xl">⚡</span>
                   </div>
-                  <h3 className="text-2xl font-bold text-security-blue mb-4" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                  <h3 className="text-2xl font-bold text-champagne mb-4" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
                     Auto-Fix Engine
                   </h3>
                   <p className="text-titanium/70">
@@ -207,26 +207,26 @@ export const RealSyncDynamicsLanding = () => {
           <div className="max-w-6xl relative z-10 w-full">
             <div className="text-center mb-20">
               <h2 className="text-6xl font-bold mb-6" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-                Technische <span className="bg-gradient-to-r from-security-blue to-petrol bg-clip-text text-transparent">Capabilities</span>
+                Technische <span className="bg-gradient-to-r from-champagne to-petrol bg-clip-text text-transparent">Capabilities</span>
               </h2>
               <p className="text-xl text-titanium/70 max-w-2xl mx-auto">
                 Enterprise-Grade Infrastruktur für Compliance &amp; Governance
               </p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <div className="bg-slate-900/80 backdrop-blur p-8 rounded-lg border border-security-blue/30 hover:border-security-blue/60 transition">
+              <div className="bg-slate-900/80 backdrop-blur p-8 rounded-lg border border-champagne/30 hover:border-champagne/60 transition">
                 <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 bg-security-blue/20 rounded-lg flex items-center justify-center flex-shrink-0 mt-1">
-                    <Shield size={20} className="text-security-blue" />
+                  <div className="w-10 h-10 bg-champagne/20 rounded-lg flex items-center justify-center flex-shrink-0 mt-1">
+                    <Shield size={20} className="text-champagne" />
                   </div>
                   <div>
-                    <h3 className="text-xl font-bold text-security-blue mb-3" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                    <h3 className="text-xl font-bold text-champagne mb-3" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
                       Regulatorik-Abdeckung
                     </h3>
                     <ul className="space-y-2 text-titanium/70 text-sm">
-                      <li className="flex gap-2"><span className="text-security-blue">✓</span> EU AI Act — Klassifizierung &amp; Monitoring</li>
-                      <li className="flex gap-2"><span className="text-security-blue">✓</span> DSGVO — Verarbeitung &amp; Betroffenenrechte</li>
-                      <li className="flex gap-2"><span className="text-security-blue">✓</span> TDDDG — Consent &amp; Tracking</li>
+                      <li className="flex gap-2"><span className="text-champagne">✓</span> EU AI Act — Klassifizierung &amp; Monitoring</li>
+                      <li className="flex gap-2"><span className="text-champagne">✓</span> DSGVO — Verarbeitung &amp; Betroffenenrechte</li>
+                      <li className="flex gap-2"><span className="text-champagne">✓</span> TDDDG — Consent &amp; Tracking</li>
                     </ul>
                   </div>
                 </div>
@@ -250,19 +250,19 @@ export const RealSyncDynamicsLanding = () => {
                 </div>
               </div>
 
-              <div className="bg-slate-900/80 backdrop-blur p-8 rounded-lg border border-security-blue/30 hover:border-security-blue/60 transition">
+              <div className="bg-slate-900/80 backdrop-blur p-8 rounded-lg border border-champagne/30 hover:border-champagne/60 transition">
                 <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 bg-security-blue/20 rounded-lg flex items-center justify-center flex-shrink-0 mt-1">
-                    <Lock size={20} className="text-security-blue" />
+                  <div className="w-10 h-10 bg-champagne/20 rounded-lg flex items-center justify-center flex-shrink-0 mt-1">
+                    <Lock size={20} className="text-champagne" />
                   </div>
                   <div>
-                    <h3 className="text-xl font-bold text-security-blue mb-3" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                    <h3 className="text-xl font-bold text-champagne mb-3" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
                       Multi-Tenancy & RLS
                     </h3>
                     <ul className="space-y-2 text-titanium/70 text-sm">
-                      <li className="flex gap-2"><span className="text-security-blue">✓</span> Row-Level Security auf allen Tabellen</li>
-                      <li className="flex gap-2"><span className="text-security-blue">✓</span> Keine Admin-Backdoors</li>
-                      <li className="flex gap-2"><span className="text-security-blue">✓</span> Vollständige Mandanten-Isolation</li>
+                      <li className="flex gap-2"><span className="text-champagne">✓</span> Row-Level Security auf allen Tabellen</li>
+                      <li className="flex gap-2"><span className="text-champagne">✓</span> Keine Admin-Backdoors</li>
+                      <li className="flex gap-2"><span className="text-champagne">✓</span> Vollständige Mandanten-Isolation</li>
                     </ul>
                   </div>
                 </div>
@@ -297,7 +297,7 @@ export const RealSyncDynamicsLanding = () => {
           <div className="max-w-6xl relative z-10 w-full">
             <div className="text-center mb-20">
               <h2 className="text-6xl font-bold mb-4" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-                Was sonst <span className="bg-gradient-to-r from-petrol to-security-blue bg-clip-text text-transparent">keiner</span> kann
+                Was sonst <span className="bg-gradient-to-r from-petrol to-champagne bg-clip-text text-transparent">keiner</span> kann
               </h2>
               <p className="text-xl text-titanium/70">Unser einzigartiger Vorsprung im Markt</p>
             </div>
@@ -312,10 +312,10 @@ export const RealSyncDynamicsLanding = () => {
                 </div>
               </div>
 
-              <div className="group bg-slate-900/80 backdrop-blur p-8 rounded-lg border border-security-blue/30 hover:border-security-blue/60 flex gap-6 transition">
+              <div className="group bg-slate-900/80 backdrop-blur p-8 rounded-lg border border-champagne/30 hover:border-champagne/60 flex gap-6 transition">
                 <div className="text-4xl min-w-fit">⚡</div>
                 <div className="flex-1">
-                  <h3 className="text-xl font-bold text-security-blue mb-2" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                  <h3 className="text-xl font-bold text-champagne mb-2" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
                     Auto-Fix statt Diagnose
                   </h3>
                   <p className="text-titanium/70">Andere zeigen nur das Problem. Wir liefern den einsetzbaren Fix-Code — Consent-Banner, Script-Blocking, Font-Self-Hosting.</p>
@@ -332,10 +332,10 @@ export const RealSyncDynamicsLanding = () => {
                 </div>
               </div>
 
-              <div className="group bg-slate-900/80 backdrop-blur p-8 rounded-lg border border-security-blue/30 hover:border-security-blue/60 flex gap-6 transition">
+              <div className="group bg-slate-900/80 backdrop-blur p-8 rounded-lg border border-champagne/30 hover:border-champagne/60 flex gap-6 transition">
                 <div className="text-4xl min-w-fit">🌍</div>
                 <div className="flex-1">
-                  <h3 className="text-xl font-bold text-security-blue mb-2" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                  <h3 className="text-xl font-bold text-champagne mb-2" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
                     EU-Datenresidenz &amp; lokale KI
                   </h3>
                   <p className="text-titanium/70">Sensible Compliance-Daten ohne US-APIs verarbeiten — optional mit EU-lokaler KI (Ollama) on-premise.</p>
@@ -363,7 +363,7 @@ export const RealSyncDynamicsLanding = () => {
           <div className="max-w-6xl relative z-10 w-full">
             <div className="text-center mb-20">
               <h2 className="text-6xl font-bold mb-4" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-                Roadmap – Was <span className="bg-gradient-to-r from-security-blue to-petrol bg-clip-text text-transparent">kommt</span>
+                Roadmap – Was <span className="bg-gradient-to-r from-champagne to-petrol bg-clip-text text-transparent">kommt</span>
               </h2>
               <p className="text-xl text-titanium/70">Produktentwicklung 2026–2027</p>
             </div>
@@ -377,12 +377,12 @@ export const RealSyncDynamicsLanding = () => {
                 </ul>
               </div>
 
-              <div className="bg-slate-900/80 backdrop-blur p-8 rounded-lg border-l-4 border-security-blue">
-                <h3 className="text-2xl font-bold text-security-blue mb-4" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Q4 2026</h3>
+              <div className="bg-slate-900/80 backdrop-blur p-8 rounded-lg border-l-4 border-champagne">
+                <h3 className="text-2xl font-bold text-champagne mb-4" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Q4 2026</h3>
                 <ul className="space-y-3 text-titanium/70">
-                  <li className="flex gap-2"><span className="text-security-blue">→</span> Automatisierte AI-Act-Risikoklassifizierung</li>
-                  <li className="flex gap-2"><span className="text-security-blue">→</span> Advanced Compliance-Analytics</li>
-                  <li className="flex gap-2"><span className="text-security-blue">→</span> Multi-Language-Reports</li>
+                  <li className="flex gap-2"><span className="text-champagne">→</span> Automatisierte AI-Act-Risikoklassifizierung</li>
+                  <li className="flex gap-2"><span className="text-champagne">→</span> Advanced Compliance-Analytics</li>
+                  <li className="flex gap-2"><span className="text-champagne">→</span> Multi-Language-Reports</li>
                 </ul>
               </div>
 
@@ -395,12 +395,12 @@ export const RealSyncDynamicsLanding = () => {
                 </ul>
               </div>
 
-              <div className="bg-slate-900/80 backdrop-blur p-8 rounded-lg border-l-4 border-security-blue">
-                <h3 className="text-2xl font-bold text-security-blue mb-4" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Q2 2027</h3>
+              <div className="bg-slate-900/80 backdrop-blur p-8 rounded-lg border-l-4 border-champagne">
+                <h3 className="text-2xl font-bold text-champagne mb-4" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Q2 2027</h3>
                 <ul className="space-y-3 text-titanium/70">
-                  <li className="flex gap-2"><span className="text-security-blue">→</span> Enterprise SSO & SAML 2.0</li>
-                  <li className="flex gap-2"><span className="text-security-blue">→</span> Erweiterter Prüfpfad-Export</li>
-                  <li className="flex gap-2"><span className="text-security-blue">→</span> Custom SLA Agreements</li>
+                  <li className="flex gap-2"><span className="text-champagne">→</span> Enterprise SSO & SAML 2.0</li>
+                  <li className="flex gap-2"><span className="text-champagne">→</span> Erweiterter Prüfpfad-Export</li>
+                  <li className="flex gap-2"><span className="text-champagne">→</span> Custom SLA Agreements</li>
                 </ul>
               </div>
             </div>
@@ -424,7 +424,7 @@ export const RealSyncDynamicsLanding = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
               <div className="bg-slate-900/80 backdrop-blur p-6 rounded-lg border border-titanium/20 hover:border-titanium/40 flex flex-col transition">
                 <h3 className="text-lg font-bold text-titanium mb-2" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Free Audit</h3>
-                <p className="text-3xl font-bold bg-gradient-to-r from-petrol to-security-blue bg-clip-text text-transparent mb-1">0 €</p>
+                <p className="text-3xl font-bold bg-gradient-to-r from-petrol to-champagne bg-clip-text text-transparent mb-1">0 €</p>
                 <p className="text-xs font-mono uppercase tracking-wider text-titanium/50 mb-4">einmalig</p>
                 <ul className="space-y-2 text-sm text-titanium/70 mb-6 flex-1">
                   <li>✓ Sofort-Risk-Score</li>
@@ -436,8 +436,8 @@ export const RealSyncDynamicsLanding = () => {
                 </Link>
               </div>
 
-              <div className="bg-slate-900/80 backdrop-blur p-6 rounded-lg border border-security-blue/30 hover:border-security-blue/60 flex flex-col transition">
-                <h3 className="text-lg font-bold text-security-blue mb-2" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Starter</h3>
+              <div className="bg-slate-900/80 backdrop-blur p-6 rounded-lg border border-champagne/30 hover:border-champagne/60 flex flex-col transition">
+                <h3 className="text-lg font-bold text-champagne mb-2" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Starter</h3>
                 <p className="text-3xl font-bold text-titanium mb-1">{starterPrice} €</p>
                 <p className="text-xs font-mono uppercase tracking-wider text-titanium/50 mb-4">pro Monat</p>
                 <ul className="space-y-2 text-sm text-titanium/70 mb-6 flex-1">
@@ -450,11 +450,11 @@ export const RealSyncDynamicsLanding = () => {
                 </Link>
               </div>
 
-              <div className="relative bg-gradient-to-br from-security-blue/20 to-petrol/10 backdrop-blur p-6 rounded-lg border-2 border-security-blue/50 hover:border-security-blue flex flex-col transition">
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-security-blue to-petrol text-obsidian text-xs px-4 py-1 rounded-full font-bold whitespace-nowrap">
+              <div className="relative bg-gradient-to-br from-champagne/20 to-petrol/10 backdrop-blur p-6 rounded-lg border-2 border-champagne/50 hover:border-champagne flex flex-col transition">
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-champagne to-petrol text-obsidian text-xs px-4 py-1 rounded-full font-bold whitespace-nowrap">
                   ⭐ EMPFOHLEN
                 </div>
-                <h3 className="text-lg font-bold text-security-blue mb-2 mt-2" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Growth</h3>
+                <h3 className="text-lg font-bold text-champagne mb-2 mt-2" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Growth</h3>
                 <p className="text-3xl font-bold text-titanium mb-1">{growthPrice} €</p>
                 <p className="text-xs font-mono uppercase tracking-wider text-titanium/50 mb-4">pro Monat</p>
                 <ul className="space-y-2 text-sm text-titanium/70 mb-6 flex-1">
@@ -462,7 +462,7 @@ export const RealSyncDynamicsLanding = () => {
                   <li>✓ Mehrere Domains</li>
                   <li>✓ Prioritäts-Support</li>
                 </ul>
-                <Link to="/checkout/growth?source=realsync-landing" className="block text-center w-full bg-gradient-to-r from-security-blue to-petrol hover:from-blue-600 hover:to-teal-700 text-obsidian font-bold py-2 rounded text-sm transition">
+                <Link to="/checkout/growth?source=realsync-landing" className="block text-center w-full bg-gradient-to-r from-champagne to-petrol hover:from-blue-600 hover:to-teal-700 text-obsidian font-bold py-2 rounded text-sm transition">
                   Buchen
                 </Link>
               </div>
@@ -498,9 +498,9 @@ export const RealSyncDynamicsLanding = () => {
             </div>
 
             {/* Enterprise — individueller Anfrage-Banner */}
-            <div className="bg-gradient-to-r from-petrol/20 to-security-blue/10 border border-petrol/50 rounded-lg p-8 flex flex-col md:flex-row items-center justify-between gap-4 backdrop-blur">
+            <div className="bg-gradient-to-r from-petrol/20 to-champagne/10 border border-petrol/50 rounded-lg p-8 flex flex-col md:flex-row items-center justify-between gap-4 backdrop-blur">
               <div>
-                <h3 className="text-2xl font-bold bg-gradient-to-r from-petrol to-security-blue bg-clip-text text-transparent mb-2" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                <h3 className="text-2xl font-bold bg-gradient-to-r from-petrol to-champagne bg-clip-text text-transparent mb-2" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
                   Enterprise — individuell
                 </h3>
                 <p className="text-titanium/70">
@@ -510,7 +510,7 @@ export const RealSyncDynamicsLanding = () => {
               </div>
               <Link
                 to="/enterprise-konfigurator"
-                className="bg-gradient-to-r from-petrol to-security-blue hover:from-teal-700 hover:to-blue-600 text-obsidian font-bold py-3 px-8 rounded transition whitespace-nowrap"
+                className="bg-gradient-to-r from-petrol to-champagne hover:from-teal-700 hover:to-blue-600 text-obsidian font-bold py-3 px-8 rounded transition whitespace-nowrap"
               >
                 Enterprise anfragen
               </Link>
@@ -526,35 +526,35 @@ export const RealSyncDynamicsLanding = () => {
           <div className="max-w-6xl w-full">
             <div className="text-center mb-16">
               <h2 className="text-6xl font-bold mb-4" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-                Service &amp; <span className="bg-gradient-to-r from-petrol to-security-blue bg-clip-text text-transparent">Support</span>
+                Service &amp; <span className="bg-gradient-to-r from-petrol to-champagne bg-clip-text text-transparent">Support</span>
               </h2>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <div className="bg-slate-900/80 backdrop-blur p-8 rounded-lg border border-security-blue/30 hover:border-security-blue/60 transition">
-                <h3 className="text-2xl font-bold text-security-blue mb-6" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Was wir bieten</h3>
+              <div className="bg-slate-900/80 backdrop-blur p-8 rounded-lg border border-champagne/30 hover:border-champagne/60 transition">
+                <h3 className="text-2xl font-bold text-champagne mb-6" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Was wir bieten</h3>
                 <ul className="space-y-4 text-titanium/70">
                   <li className="flex gap-4">
-                    <span className="text-security-blue min-w-fit font-bold">✓</span>
+                    <span className="text-champagne min-w-fit font-bold">✓</span>
                     <span>24/7 Support (Deutsch & Englisch)</span>
                   </li>
                   <li className="flex gap-4">
-                    <span className="text-security-blue min-w-fit font-bold">✓</span>
+                    <span className="text-champagne min-w-fit font-bold">✓</span>
                     <span>Technical Onboarding & Training</span>
                   </li>
                   <li className="flex gap-4">
-                    <span className="text-security-blue min-w-fit font-bold">✓</span>
+                    <span className="text-champagne min-w-fit font-bold">✓</span>
                     <span>Custom Integration Support</span>
                   </li>
                   <li className="flex gap-4">
-                    <span className="text-security-blue min-w-fit font-bold">✓</span>
+                    <span className="text-champagne min-w-fit font-bold">✓</span>
                     <span>Monthly Business Reviews</span>
                   </li>
                   <li className="flex gap-4">
-                    <span className="text-security-blue min-w-fit font-bold">✓</span>
+                    <span className="text-champagne min-w-fit font-bold">✓</span>
                     <span>Security & Compliance Audits</span>
                   </li>
                   <li className="flex gap-4">
-                    <span className="text-security-blue min-w-fit font-bold">✓</span>
+                    <span className="text-champagne min-w-fit font-bold">✓</span>
                     <span>EU-basiertes Support-Team</span>
                   </li>
                 </ul>
@@ -601,11 +601,11 @@ export const RealSyncDynamicsLanding = () => {
                 <h3 className="text-xl font-bold text-titanium mb-3">Kontakt</h3>
                 <p>
                   <strong>Telefon:</strong>{' '}
-                  <a href="tel:+4917640132161" className="text-security-blue hover:text-blue-400">+49 176 4013 2161</a> <br />
+                  <a href="tel:+4917640132161" className="text-champagne hover:text-blue-400">+49 176 4013 2161</a> <br />
                   <strong>E-Mail:</strong>{' '}
-                  <a href="mailto:hello@realsyncdynamicsai.de" className="text-security-blue hover:text-blue-400">hello@realsyncdynamicsai.de</a> <br />
+                  <a href="mailto:hello@realsyncdynamicsai.de" className="text-champagne hover:text-blue-400">hello@realsyncdynamicsai.de</a> <br />
                   <strong>Datenschutz:</strong>{' '}
-                  <a href="mailto:privacy@realsyncdynamicsai.de" className="text-security-blue hover:text-blue-400">privacy@realsyncdynamicsai.de</a>
+                  <a href="mailto:privacy@realsyncdynamicsai.de" className="text-champagne hover:text-blue-400">privacy@realsyncdynamicsai.de</a>
                 </p>
               </div>
               <div>
@@ -619,10 +619,10 @@ export const RealSyncDynamicsLanding = () => {
                   Häßlerstraße 8, 99096 Erfurt.
                 </p>
               </div>
-              <div className="bg-obsidian p-6 rounded border-l-4 border-security-blue mt-12">
+              <div className="bg-obsidian p-6 rounded border-l-4 border-champagne mt-12">
                 <p className="text-sm text-titanium/70">
                   Das vollständige Impressum mit allen Pflichtangaben (Haftung, Urheberrecht, EU-Streitschlichtung) findest Du hier:{' '}
-                  <Link to="/legal/impressum" className="text-security-blue hover:text-blue-400 font-bold">
+                  <Link to="/legal/impressum" className="text-champagne hover:text-blue-400 font-bold">
                     /legal/impressum →
                   </Link>
                 </p>
@@ -666,10 +666,10 @@ export const RealSyncDynamicsLanding = () => {
                   Widerrufsrecht regeln die vollständigen Nutzungsbedingungen.
                 </p>
               </div>
-              <div className="bg-obsidian p-6 rounded border-l-4 border-security-blue mt-12">
+              <div className="bg-obsidian p-6 rounded border-l-4 border-champagne mt-12">
                 <p className="text-sm text-titanium/70">
                   Die rechtsverbindlichen, vollständigen Nutzungsbedingungen (AGB) findest Du hier:{' '}
-                  <Link to="/legal/terms" className="text-security-blue hover:text-blue-400 font-bold">
+                  <Link to="/legal/terms" className="text-champagne hover:text-blue-400 font-bold">
                     /legal/terms →
                   </Link>
                 </p>
@@ -686,7 +686,7 @@ export const RealSyncDynamicsLanding = () => {
           <div className="max-w-4xl w-full">
             <div className="text-center mb-16">
               <h2 className="text-6xl font-bold" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-                Kontakt &amp; <span className="bg-gradient-to-r from-petrol to-security-blue bg-clip-text text-transparent">Support</span>
+                Kontakt &amp; <span className="bg-gradient-to-r from-petrol to-champagne bg-clip-text text-transparent">Support</span>
               </h2>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-16">
@@ -702,10 +702,10 @@ export const RealSyncDynamicsLanding = () => {
                 <p className="text-titanium/60 text-sm mt-2">Telefon: +49 176 4013 2161</p>
               </div>
 
-              <div className="bg-slate-900/80 backdrop-blur p-8 rounded-lg border border-security-blue/30 hover:border-security-blue/60 text-center transition">
-                <Github size={48} className="mx-auto mb-4 text-security-blue" />
+              <div className="bg-slate-900/80 backdrop-blur p-8 rounded-lg border border-champagne/30 hover:border-champagne/60 text-center transition">
+                <Github size={48} className="mx-auto mb-4 text-champagne" />
                 <h3 className="text-xl font-bold mb-4" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Dokumentation</h3>
-                <Link to="/docs" className="text-security-blue hover:text-blue-400 transition font-medium">
+                <Link to="/docs" className="text-champagne hover:text-blue-400 transition font-medium">
                   /docs →
                 </Link>
               </div>

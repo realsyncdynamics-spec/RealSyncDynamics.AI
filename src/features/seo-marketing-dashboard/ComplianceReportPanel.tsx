@@ -210,7 +210,7 @@ export function ComplianceReportPanel() {
               value={reportGen.type}
               onChange={e => setReportGen(prev => ({ ...prev, type: e.target.value as ReportType }))}
               disabled={reportGen.loading}
-              className="w-full bg-obsidian-800 border border-obsidian-600 text-titanium-50 px-3 py-2 rounded-sm text-sm font-mono focus:outline-none focus:border-security-blue disabled:opacity-50"
+              className="w-full bg-obsidian-800 border border-obsidian-600 text-titanium-50 px-3 py-2 rounded-sm text-sm font-mono focus:outline-none focus:border-champagne disabled:opacity-50"
             >
               {Object.entries(reportTypeLabels).map(([key, label]) => (
                 <option key={key} value={key}>
@@ -231,7 +231,7 @@ export function ComplianceReportPanel() {
                   value={reportGen.startDate}
                   onChange={e => setReportGen(prev => ({ ...prev, startDate: e.target.value }))}
                   disabled={reportGen.loading}
-                  className="flex-1 bg-obsidian-800 border border-obsidian-600 text-titanium-50 px-3 py-2 rounded-sm text-sm font-mono focus:outline-none focus:border-security-blue disabled:opacity-50"
+                  className="flex-1 bg-obsidian-800 border border-obsidian-600 text-titanium-50 px-3 py-2 rounded-sm text-sm font-mono focus:outline-none focus:border-champagne disabled:opacity-50"
                 />
               </div>
             </div>
@@ -244,7 +244,7 @@ export function ComplianceReportPanel() {
                   value={reportGen.endDate}
                   onChange={e => setReportGen(prev => ({ ...prev, endDate: e.target.value }))}
                   disabled={reportGen.loading}
-                  className="flex-1 bg-obsidian-800 border border-obsidian-600 text-titanium-50 px-3 py-2 rounded-sm text-sm font-mono focus:outline-none focus:border-security-blue disabled:opacity-50"
+                  className="flex-1 bg-obsidian-800 border border-obsidian-600 text-titanium-50 px-3 py-2 rounded-sm text-sm font-mono focus:outline-none focus:border-champagne disabled:opacity-50"
                 />
               </div>
             </div>
@@ -261,7 +261,7 @@ export function ComplianceReportPanel() {
                   disabled={reportGen.loading}
                   className={`flex-1 px-3 py-2 rounded-sm text-sm font-mono transition-colors ${
                     reportGen.format === format
-                      ? 'bg-security-blue text-titanium-50'
+                      ? 'bg-champagne-200 text-champagne-950'
                       : 'bg-obsidian-800 text-titanium-300 border border-obsidian-600 hover:border-obsidian-500'
                   } disabled:opacity-50`}
                 >
@@ -275,7 +275,7 @@ export function ComplianceReportPanel() {
           <button
             onClick={generateReport}
             disabled={reportGen.loading}
-            className="w-full bg-security-blue text-titanium-50 px-4 py-2 rounded-sm font-mono text-sm hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2 transition-colors"
+            className="w-full bg-champagne-200 text-champagne-950 px-4 py-2 rounded-sm font-mono text-sm hover:bg-champagne-100 disabled:opacity-50 flex items-center justify-center gap-2 transition-colors"
           >
             {reportGen.loading ? (
               <>

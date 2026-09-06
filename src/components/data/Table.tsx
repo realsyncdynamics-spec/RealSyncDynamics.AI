@@ -89,7 +89,7 @@ export const Table = React.forwardRef<HTMLTableElement, TableProps>(
                     type="checkbox"
                     onChange={handleSelectAll}
                     checked={selectedRows.size === data.length && data.length > 0}
-                    className="accent-security-blue cursor-pointer"
+                    className="accent-champagne cursor-pointer"
                   />
                 </th>
               )}
@@ -97,7 +97,7 @@ export const Table = React.forwardRef<HTMLTableElement, TableProps>(
                 <th
                   key={column.id}
                   className={`px-4 py-3 text-left font-semibold ${
-                    column.sortable ? 'cursor-pointer hover:text-security-blue' : ''
+                    column.sortable ? 'cursor-pointer hover:text-champagne' : ''
                   }`}
                   onClick={() => column.sortable && handleSort(column.id)}
                   style={{ width: column.width }}
@@ -128,7 +128,7 @@ export const Table = React.forwardRef<HTMLTableElement, TableProps>(
                       type="checkbox"
                       checked={selectedRows.has(rowIndex)}
                       onChange={() => handleSelectRow(rowIndex)}
-                      className="accent-security-blue cursor-pointer"
+                      className="accent-champagne cursor-pointer"
                     />
                   </td>
                 )}

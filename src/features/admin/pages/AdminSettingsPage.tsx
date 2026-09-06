@@ -55,7 +55,7 @@ export function AdminSettingsPage() {
                 defaultValue={activeTenant?.name || ''}
                 disabled={!isAdmin}
                 placeholder="z.B. Meine Organisation"
-                className="w-full bg-obsidian border border-titanium/20 text-titanium-100 text-sm rounded-sm px-4 py-2 outline-none focus:border-security-blue focus:ring-1 focus:ring-security-blue/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full bg-obsidian border border-titanium/20 text-titanium-100 text-sm rounded-sm px-4 py-2 outline-none focus:border-champagne focus:ring-1 focus:ring-champagne/30 disabled:opacity-50 disabled:cursor-not-allowed"
               />
             </div>
             <SovereignButton variant="primary" size="sm" disabled={!isAdmin}>
@@ -114,7 +114,7 @@ export function AdminSettingsPage() {
                   max="1440"
                   defaultValue="60"
                   disabled={!isAdmin}
-                  className="w-20 bg-obsidian border border-titanium/20 text-titanium-100 text-sm rounded-sm px-2 py-1 outline-none focus:border-security-blue focus:ring-1 focus:ring-security-blue/30 disabled:opacity-50"
+                  className="w-20 bg-obsidian border border-titanium/20 text-titanium-100 text-sm rounded-sm px-2 py-1 outline-none focus:border-champagne focus:ring-1 focus:ring-champagne/30 disabled:opacity-50"
                 />
               </div>
             </div>
@@ -135,7 +135,7 @@ export function AdminSettingsPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-3">
-              <label className="flex items-center p-3 border border-security-blue/50 rounded-sm cursor-pointer bg-security-blue/5">
+              <label className="flex items-center p-3 border border-champagne/50 rounded-sm cursor-pointer bg-champagne/5">
                 <input
                   type="radio"
                   name="residency"

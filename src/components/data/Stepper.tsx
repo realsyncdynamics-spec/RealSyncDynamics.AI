@@ -34,7 +34,7 @@ export const Stepper = React.forwardRef<HTMLDivElement, StepperProps>(
                     index < currentStep
                       ? 'bg-green-500 text-white border-2 border-green-600'
                       : index === currentStep
-                      ? 'bg-security-blue text-white border-2 border-security-blue ring-2 ring-security-blue/30'
+                      ? 'bg-champagne text-champagne-950 border-2 border-champagne ring-2 ring-champagne/30'
                       : 'bg-titanium/10 text-titanium border-2 border-titanium/30'
                   }`}
                 >

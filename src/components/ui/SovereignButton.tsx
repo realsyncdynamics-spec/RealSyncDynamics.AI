@@ -56,10 +56,10 @@ export const SovereignButton = ({
   className = '',
   ...props
 }: SovereignButtonProps) => {
-  const baseStyles = "inline-flex items-center justify-center gap-2 font-mono font-bold uppercase tracking-widest transition-all focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-offset-obsidian focus:ring-security-blue";
+  const baseStyles = "inline-flex items-center justify-center gap-2 font-mono font-bold uppercase tracking-widest transition-all focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-offset-obsidian focus:ring-champagne";
 
   const variantStyles = {
-    primary: `bg-security-blue text-obsidian hover:bg-blue-600 active:bg-blue-700 shadow-md hover:shadow-lg`,
+    primary: `bg-champagne-200 text-champagne-950 hover:bg-champagne-100 active:bg-champagne shadow-md hover:shadow-lg`,
     secondary: `bg-petrol text-white hover:bg-teal-700 active:bg-teal-800 shadow-md hover:shadow-lg`,
     tertiary: `bg-transparent border-2 border-titanium text-titanium hover:bg-titanium/10 active:bg-titanium/20 focus:ring-titanium`,
     outline: `bg-transparent border-2 border-titanium/50 text-titanium hover:border-titanium hover:bg-titanium/10 active:bg-titanium/20`,

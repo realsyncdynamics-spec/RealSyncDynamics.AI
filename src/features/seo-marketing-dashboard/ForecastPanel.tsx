@@ -223,7 +223,7 @@ export function ForecastPanel() {
               disabled={loading}
               className={`px-4 py-2 rounded-sm text-sm font-mono transition-colors ${
                 selectedModel === model
-                  ? 'bg-security-blue text-titanium-50 border border-security-blue'
+                  ? 'bg-champagne-200 text-champagne-950 border border-champagne'
                   : 'bg-obsidian-800 text-titanium-300 border border-obsidian-600 hover:border-obsidian-500'
               } disabled:opacity-50`}
             >
@@ -379,7 +379,7 @@ export function ForecastPanel() {
 
       {loading && !forecastData.length && (
         <div className="bg-obsidian-900 border border-obsidian-700 rounded-sm p-12 flex flex-col items-center justify-center gap-4">
-          <Loader size={32} className="text-security-blue animate-spin" />
+          <Loader size={32} className="text-champagne animate-spin" />
           <div className="text-titanium-400 font-mono text-sm">Forecast wird geladen...</div>
         </div>
       )}

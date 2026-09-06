@@ -133,7 +133,7 @@ function Inner() {
             <ArrowLeft className="h-4 w-4" />
           </Link>
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-none bg-gradient-to-br from-gold-500 to-amber-600 flex items-center justify-center shadow-sm">
+            <div className="w-8 h-8 rounded-none bg-gradient-to-br from-champagne to-amber-600 flex items-center justify-center shadow-sm">
               <ShieldCheck className="h-4 w-4 text-white" />
             </div>
             <div className="leading-tight">

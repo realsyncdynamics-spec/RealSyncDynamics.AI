@@ -34,9 +34,9 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
     const baseInputStyles = 'font-mono transition-colors focus:outline-none';
 
     const variantStyles = {
-      outline: `border border-titanium/30 bg-transparent text-titanium placeholder:text-titanium/40 hover:border-titanium/50 focus:border-security-blue focus:ring-1 focus:ring-security-blue/30`,
-      ghost: `border-0 bg-obsidian/50 text-titanium placeholder:text-titanium/40 hover:bg-obsidian/60 focus:bg-obsidian/80 focus:ring-1 focus:ring-security-blue`,
-      filled: `border-0 bg-titanium/10 text-titanium placeholder:text-titanium/40 hover:bg-titanium/15 focus:bg-titanium/20 focus:ring-1 focus:ring-security-blue`,
+      outline: `border border-titanium/30 bg-transparent text-titanium placeholder:text-titanium/40 hover:border-titanium/50 focus:border-champagne focus:ring-1 focus:ring-champagne/30`,
+      ghost: `border-0 bg-obsidian/50 text-titanium placeholder:text-titanium/40 hover:bg-obsidian/60 focus:bg-obsidian/80 focus:ring-1 focus:ring-champagne`,
+      filled: `border-0 bg-titanium/10 text-titanium placeholder:text-titanium/40 hover:bg-titanium/15 focus:bg-titanium/20 focus:ring-1 focus:ring-champagne`,
     };
 
     const sizeStyles = {

@@ -33,17 +33,21 @@ import { describe, expect, it } from 'vitest';
 const root = resolve(__dirname, '../..');
 
 /**
- * Bewusst offen — Welle 3 (Dashboard). Kein Versehen, sondern der
- * freigegebene Zuschnitt.
+ * Leer, seit Welle 3 (2026-09-06) das Dashboard mit umgestellt hat.
+ *
+ * Die Liste stand hier mit zwei Einträgen und hat ihren Zweck erfüllt: Der
+ * Test unten schlug an, sobald sie verrottete — also sobald die genannten
+ * Dateien umgestellt waren. Genau so war er gedacht; eine Ausnahmeliste, die
+ * niemand pflegt, hält sonst eine Lücke offen, die es längst nicht mehr gibt.
  */
-const NOCH_OFFEN = [
-  'src/features/ai-governance/RuntimeDashboard.tsx',
-  'src/features/governance/GovernanceDashboardView.tsx',
-];
+const NOCH_OFFEN: string[] = [];
 
-/** Die Flächen, die ein nicht angemeldeter Besucher sieht. */
-const OEFFENTLICHE_ORDNER = ['src/pages', 'src/components'];
-const OEFFENTLICHE_EINZELDATEIEN = ['src/features/billing/CheckoutPage.tsx'];
+/**
+ * Seit Welle 3 die gesamte Oberfläche, nicht mehr nur die öffentliche
+ * Ebene — Dashboard eingeschlossen.
+ */
+const OEFFENTLICHE_ORDNER = ['src/pages', 'src/components', 'src/features', 'src/flow', 'src/marketing'];
+const OEFFENTLICHE_EINZELDATEIEN: string[] = [];
 
 /**
  * Rekursiver Baumlauf mit `readdirSync` statt `fs.globSync`.
@@ -74,26 +78,33 @@ describe('öffentliche Ebene: ein Akzent, nicht zwei', () => {
 
   it('findet überhaupt Dateien', () => {
     // Ohne diese Prüfung wäre der Test bei einem kaputten Glob still grün.
-    expect(dateien.length).toBeGreaterThan(100);
+    expect(dateien.length).toBeGreaterThan(200);
   });
 
-  it('keine öffentliche Datei nutzt die gold-Skala', () => {
+  it('keine Datei der Oberfläche nutzt die gold-Skala', () => {
     const treffer: string[] = [];
     for (const datei of dateien) {
       const inhalt = readFileSync(resolve(root, datei), 'utf8');
       for (const m of inhalt.matchAll(/[\w:-]*gold-\d+[/\d]*/g)) {
         treffer.push(`${datei}: ${m[0]}`);
       }
+      // Seit Welle 3 ist auch der alte Dashboard-Akzent abgelöst. Er stand
+      // in 86 Klassen und war auf Obsidian nur 3,54:1 — Champagner erreicht
+      // dort 12,76:1. Ohne diese Zeile könnte er unbemerkt zurückkriechen.
+      for (const m of inhalt.matchAll(/[\w:-]*security-blue[\w/-]*/g)) {
+        treffer.push(`${datei}: ${m[0]}`);
+      }
     }
     expect(
       treffer,
-      'Champagner ist der Akzent der öffentlichen Ebene — `gold-*` ist die andere Farbe (#f5b324, Hero-Pivot)',
+      'Champagner ist der Akzent der Oberfläche — `gold-*` ist die andere Farbe (#f5b324, Hero-Pivot)',
     ).toEqual([]);
   });
 
-  it('die noch offenen Dateien existieren und tragen tatsächlich gold', () => {
-    // Sonst verrottet die Ausnahmeliste still: Ein Eintrag, der längst
-    // umgestellt ist, würde eine Lücke offenhalten, die es nicht gibt.
+  it('die Ausnahmeliste verrottet nicht still', () => {
+    // Ein Eintrag, der längst umgestellt ist, hielte eine Lücke offen, die
+    // es nicht gibt. Genau dieser Fall trat am 2026-09-06 ein und hat die
+    // Anpassung erzwungen — die Liste ist seither leer.
     for (const datei of NOCH_OFFEN) {
       const inhalt = readFileSync(resolve(root, datei), 'utf8');
       expect(inhalt, `${datei} ist umgestellt — Eintrag aus NOCH_OFFEN streichen`).toMatch(/gold-\d/);

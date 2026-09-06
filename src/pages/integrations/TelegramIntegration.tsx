@@ -172,7 +172,7 @@ function Inner({ session }: { session: Session }) {
         {/* Header */}
         <section>
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 bg-security-blue flex items-center justify-center">
+            <div className="w-10 h-10 bg-champagne flex items-center justify-center">
               <MessageCircle className="h-5 w-5 text-white" />
             </div>
             <div>
@@ -264,7 +264,7 @@ function Inner({ session }: { session: Session }) {
                   href="https://t.me/RealSyncDynamicsBot"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-security-blue text-white text-sm hover:opacity-90 transition-opacity"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-champagne text-champagne-950 text-sm hover:opacity-90 transition-opacity"
                 >
                   <MessageCircle className="h-3 w-3" />
                   Bot öffnen
@@ -295,7 +295,7 @@ function Inner({ session }: { session: Session }) {
                 ['/settings',   'Verbindungseinstellungen anzeigen'],
               ].map(([cmd, desc]) => (
                 <div key={cmd} className="flex items-start gap-3">
-                  <code className="shrink-0 font-mono text-security-blue text-xs bg-obsidian-800 px-1.5 py-0.5 w-28">
+                  <code className="shrink-0 font-mono text-champagne text-xs bg-obsidian-800 px-1.5 py-0.5 w-28">
                     {cmd}
                   </code>
                   <span className="text-titanium-300">{desc}</span>
@@ -307,7 +307,7 @@ function Inner({ session }: { session: Session }) {
 
         {/* Sicherheitshinweis */}
         <section className="flex items-start gap-3 border border-titanium-800 bg-obsidian-900 px-5 py-4">
-          <Shield className="h-4 w-4 text-security-blue shrink-0 mt-0.5" />
+          <Shield className="h-4 w-4 text-champagne shrink-0 mt-0.5" />
           <div className="text-sm text-titanium-400 leading-relaxed">
             <strong className="text-titanium-200">Datenschutz:</strong> Bot-Token und Verbindungsdaten werden
             ausschließlich als gehashte Werte gespeichert. Destruktive Aktionen erfordern immer eine explizite

@@ -1470,11 +1470,66 @@ geschwächt.
 > `--color-gold-200`, das nie definiert wurde — `hover:text-gold-200` im
 > Checkout war wirkungslos.
 
-**Offen für Welle 3** (Dashboard, eigener Schnitt — so freigegeben): die
-Serif-Identität der Überschriften existiert nur auf `/`; `/pricing`,
-`/claude-code-optimizer` und `/sicherheit` tragen gar keinen Akzent;
-`RuntimeDashboard.tsx` und `GovernanceDashboardView.tsx` stehen noch auf
-`gold-*`.
+**Welle 3 (Dashboard) — am 2026-09-06 ausgeführt.** `security-blue` war der
+Akzent der angemeldeten Oberfläche und liegt auf Obsidian bei **3,54:1**;
+Champagner erreicht dort **12,76:1**. 210 Klassen in 39 Dateien umgestellt,
+zusätzlich die zwei Ordner, die Welle 2 übersehen hatte: `src/flow/` (der
+`/flow/*`-Trichter) und `src/marketing/landing/` — Letzteres allein mit 73
+Treffern auf der öffentlichen Seite `/realsync-landing`.
+
+**Die Abbildung musste paarweise sein, nicht farbweise.** Die abgelösten
+Farben sind dunkel und trugen helle Schrift (`bg-security-blue
+text-titanium-50`, `bg-petrol-700 text-white`). Champagner ist hell: Ein
+blosser Farbtausch ergibt **1,24:1** — unlesbar, ohne dass der Knopf kaputt
+aussieht. Gefüllte Flächen tragen deshalb das Landing-Paar
+`bg-champagne-200 text-champagne-950` (**14,41:1**).
+
+**Nicht umgestellt, und zwar bewusst**: `PLAN_ACCENT` in
+`src/config/pricing.ts` ist eine **kategoriale** Palette (Silber, Cyan,
+Violett, Smaragd, Gold je Plan), kein Marken-Akzent — sie auf eine Farbe zu
+ziehen zerstört die Unterscheidung. Dieselbe Logik wie beim Amber-Warnhinweis
+auf `/audit`.
+
+> #### ⚠️ 487 Farbklassen im Repo erzeugen kein CSS
+>
+> Beim Rendern von `/flow/start` fiel ein Knopf auf, der `bg-champagne-200
+> text-obsidian` trug — dunkle Schrift laut Quelltext, im Browser aber
+> `rgb(237,237,238)` auf Champagner. Ursache: **`text-obsidian` existiert
+> nicht.** `tailwind.config.ts` definiert die stufenlosen Namen `obsidian`,
+> `titanium` und `petrol`, wird aber nicht geladen; `@theme` führt nur
+> nummerierte Stufen. Das Element erbt dann die Schriftfarbe des Elternknotens.
+>
+> Gemessen am 2026-09-06: **487 solcher Klassen in 46 Dateien**, darunter das
+> UI-Kit (`Card`, `Input`, `Badge`, `SovereignButton`, `Tabs`) — 159×
+> `text-titanium`, 73× `border-titanium`, 49× `text-petrol`, 38×
+> `bg-obsidian`.
+>
+> **Behoben wurden nur die sieben Stellen, die durch die Umstellung
+> unlesbar geworden wären** (Champagner-Fläche mit toter Schriftklasse). Die
+> übrigen 480 sind nach §14 gemeldet, nicht abgeräumt: Sie zu reparieren
+> hiesse, Farben einzuschalten, die es dort nie gab — das ändert das
+> Aussehen vieler Oberflächen und gehört entschieden, nicht nebenbei
+> repariert.
+>
+> **Die Lehre**: Eine tote Klasse ist für den Leser dasselbe wie eine falsche.
+> Typprüfung, Lint und 4481 Tests sehen beide nicht. Der Wächter
+> `test/landing/champagne-contrast.test.ts` behandelt sie deshalb gleich —
+> und gefunden hat sie weder er noch die Suite, sondern der Browser.
+
+**Ein Fehler in eigener Sache**, weil er zeigt, wie leicht ein mechanischer
+Tausch danebengreift: Die Regel `security-blue → champagne` traf auch den
+Schlüssel einer Farbtabelle in `src/styles/design-tokens.ts` und erzeugte
+`'champagne': '#0052FF'` — ein Token namens Champagner, das Blau enthält.
+Korrigiert auf `#e8c98a`.
+
+**Offen** (weiterhin nicht angefasst): die Serif-Identität der Überschriften
+existiert nur auf `/` — ein pauschaler Rollout ist die riskanteste der
+verbliebenen Änderungen (Georgia ist breiter, siehe `hero-longword`) und
+gehört einzeln entschieden. Die **Light-Theme-Flächen** (`text-petrol-700`
+42×, `bg-petrol-50` 17×, `border-petrol-200` 11×) bleiben Petrol: Champagner
+auf Weiss ergibt **1,60:1** und ist dort keine Option — es fehlt ein dunkler
+Champagner-Ton, und den zu erfinden wäre neues Design, nicht
+Vereinheitlichung.
 
 **2026-09-04 — AP11 Aufräumen: verwaiste Dateien**
 

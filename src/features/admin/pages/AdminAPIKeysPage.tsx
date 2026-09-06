@@ -165,11 +165,11 @@ export function AdminAPIKeysPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Link to="/api-docs" className="p-4 border border-titanium/10 rounded-sm hover:border-security-blue/50 hover:bg-security-blue/5 transition-colors">
+              <Link to="/api-docs" className="p-4 border border-titanium/10 rounded-sm hover:border-champagne/50 hover:bg-champagne/5 transition-colors">
                 <h3 className="font-semibold text-titanium-100 mb-1">REST API</h3>
                 <p className="text-xs text-titanium-400">Dokumentation und Code-Beispiele</p>
               </Link>
-              <Link to="/api-docs" className="p-4 border border-titanium/10 rounded-sm hover:border-security-blue/50 hover:bg-security-blue/5 transition-colors">
+              <Link to="/api-docs" className="p-4 border border-titanium/10 rounded-sm hover:border-champagne/50 hover:bg-champagne/5 transition-colors">
                 <h3 className="font-semibold text-titanium-100 mb-1">GraphQL</h3>
                 <p className="text-xs text-titanium-400">Schema und Spielplatz</p>
               </Link>

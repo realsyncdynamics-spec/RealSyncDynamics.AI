@@ -99,7 +99,7 @@ export const Drawer = React.forwardRef<HTMLDivElement, DrawerProps>(
               {closeButton && (
                 <button
                   onClick={onClose}
-                  className="ml-auto text-titanium/60 hover:text-titanium transition-colors focus:outline-none focus:ring-2 focus:ring-security-blue rounded p-1"
+                  className="ml-auto text-titanium/60 hover:text-titanium transition-colors focus:outline-none focus:ring-2 focus:ring-champagne rounded p-1"
                   aria-label="Close drawer"
                 >
                   <svg

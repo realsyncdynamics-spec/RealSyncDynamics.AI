@@ -24,9 +24,9 @@ interface FlowNavButtonsProps {
 }
 
 const primaryClasses =
-  'inline-flex items-center justify-center gap-2 px-6 py-3 bg-security-blue text-obsidian ' +
+  'inline-flex items-center justify-center gap-2 px-6 py-3 bg-champagne text-champagne-950 ' +
   'font-mono font-bold uppercase tracking-widest text-sm transition-colors ' +
-  'hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-security-blue focus:ring-offset-2 focus:ring-offset-obsidian-950';
+  'hover:bg-champagne-100 focus:outline-none focus:ring-2 focus:ring-champagne focus:ring-offset-2 focus:ring-offset-obsidian-950';
 
 const secondaryClasses =
   'inline-flex items-center justify-center gap-2 px-6 py-3 border-2 border-titanium-700 text-titanium-200 ' +
@@ -35,7 +35,7 @@ const secondaryClasses =
 
 const extraClasses =
   'inline-flex items-center gap-1.5 text-xs font-mono uppercase tracking-widest text-titanium-400 ' +
-  'hover:text-security-blue transition-colors';
+  'hover:text-champagne transition-colors';
 
 export function FlowNavButtons({
   primary,

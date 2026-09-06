@@ -49,7 +49,7 @@ export function AdminDashboard() {
             </CardHeader>
             <CardContent>
               <div className="flex items-center gap-3">
-                <Users className="h-8 w-8 text-security-blue" />
+                <Users className="h-8 w-8 text-champagne" />
                 <p className="font-display font-bold text-2xl text-titanium-50">—</p>
               </div>
               <p className="text-xs text-titanium-400 mt-2">Mitglieder im Workspace</p>
@@ -87,7 +87,7 @@ export function AdminDashboard() {
         <div>
           <h2 className="font-display font-bold text-lg text-titanium-50 mb-4">Schnellzugriff</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Card variant="default" className="hover:border-security-blue/50 transition-colors">
+            <Card variant="default" className="hover:border-champagne/50 transition-colors">
               <CardHeader>
                 <CardTitle className="text-base">Team verwalten</CardTitle>
                 <CardDescription>Mitglieder einladen, entfernen und Rollen ändern</CardDescription>
@@ -99,7 +99,7 @@ export function AdminDashboard() {
               </CardContent>
             </Card>
 
-            <Card variant="default" className="hover:border-security-blue/50 transition-colors">
+            <Card variant="default" className="hover:border-champagne/50 transition-colors">
               <CardHeader>
                 <CardTitle className="text-base">Einstellungen</CardTitle>
                 <CardDescription>Workspace-Name, Domains und Compliance-Optionen</CardDescription>
@@ -111,7 +111,7 @@ export function AdminDashboard() {
               </CardContent>
             </Card>
 
-            <Card variant="default" className="hover:border-security-blue/50 transition-colors">
+            <Card variant="default" className="hover:border-champagne/50 transition-colors">
               <CardHeader>
                 <CardTitle className="text-base">Abrechnung & Nutzung</CardTitle>
                 <CardDescription>Plan, Verbrauch und Rechnungen einsehen</CardDescription>
@@ -123,7 +123,7 @@ export function AdminDashboard() {
               </CardContent>
             </Card>
 
-            <Card variant="default" className="hover:border-security-blue/50 transition-colors">
+            <Card variant="default" className="hover:border-champagne/50 transition-colors">
               <CardHeader>
                 <CardTitle className="text-base">Prüfprotokoll</CardTitle>
                 <CardDescription>Alle Änderungen und Admin-Aktivitäten einsehen</CardDescription>
@@ -149,7 +149,7 @@ export function AdminDashboard() {
             </div>
             <div className="flex justify-between items-center py-2 border-b border-titanium/10">
               <span className="text-sm text-titanium-400">Rolle</span>
-              <span className="font-mono text-sm text-security-blue font-semibold uppercase">
+              <span className="font-mono text-sm text-champagne font-semibold uppercase">
                 {activeTenant.role}
               </span>
             </div>

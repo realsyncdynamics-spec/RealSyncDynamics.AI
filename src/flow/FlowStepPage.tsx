@@ -58,7 +58,7 @@ export function FlowStepPage({ step }: { step: FlowStep }) {
 
           {/* Wo bin ich / Was wurde geklickt? */}
           <div className="border border-titanium-900 bg-obsidian-900/60 p-6 sm:p-8">
-            <div className="mb-2 text-[11px] font-mono uppercase tracking-[0.18em] text-security-blue">
+            <div className="mb-2 text-[11px] font-mono uppercase tracking-[0.18em] text-champagne">
               Was wurde geklickt?
             </div>
             <h1 className="text-3xl font-display font-semibold tracking-tight text-titanium-50 sm:text-4xl">

@@ -149,7 +149,7 @@ export function AdminMembersPage() {
                                 value={m.role}
                                 disabled={busy === m.user_id}
                                 onChange={(e) => void handleChangeRole(m, e.target.value as TenantMemberRole)}
-                                className="bg-obsidian border border-titanium/20 text-titanium-100 text-xs rounded-sm px-2 py-1 outline-none focus:border-security-blue focus:ring-1 focus:ring-security-blue/30 disabled:opacity-50"
+                                className="bg-obsidian border border-titanium/20 text-titanium-100 text-xs rounded-sm px-2 py-1 outline-none focus:border-champagne focus:ring-1 focus:ring-champagne/30 disabled:opacity-50"
                               >
                                 {TENANT_ROLES.map(r => (
                                   <option key={r} value={r}>{r}</option>

@@ -22,7 +22,7 @@ export const TimelineItem = ({
           completed
             ? 'bg-green-500 border-green-600 text-white'
             : active
-            ? 'bg-security-blue border-security-blue text-white'
+            ? 'bg-champagne border-champagne text-champagne-950'
             : 'bg-titanium/10 border-titanium/30 text-titanium'
         }`}
       >

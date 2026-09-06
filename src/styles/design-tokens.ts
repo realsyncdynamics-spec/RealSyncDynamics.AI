@@ -11,7 +11,7 @@ export const COLORS = {
   },
   accent: {
     petrol: '#0F766E',
-    'security-blue': '#0052FF',
+    'champagne': '#e8c98a',
   },
   slate: {
     50: '#F8FAFC',
@@ -144,7 +144,7 @@ export const BREAKPOINTS = {
  */
 export const BUTTON_VARIANTS = {
   primary: {
-    bg: COLORS.accent['security-blue'],
+    bg: COLORS.accent['champagne'],
     text: COLORS.primary.obsidian,
     hover: 'bg-blue-600',
     active: 'bg-blue-700',
@@ -222,17 +222,17 @@ export const INPUT_VARIANTS = {
   outline: {
     border: `1px solid ${COLORS.primary.titanium}/30`,
     bg: 'transparent',
-    focus: `border-${COLORS.accent['security-blue']} bg-${COLORS.primary.obsidian}/50`,
+    focus: `border-${COLORS.accent['champagne']} bg-${COLORS.primary.obsidian}/50`,
   },
   ghost: {
     border: 'none',
     bg: `${COLORS.primary.obsidian}/50`,
-    focus: `bg-${COLORS.primary.obsidian}/80 ring-1 ring-${COLORS.accent['security-blue']}`,
+    focus: `bg-${COLORS.primary.obsidian}/80 ring-1 ring-${COLORS.accent['champagne']}`,
   },
   filled: {
     border: 'none',
     bg: `${COLORS.primary.titanium}/10`,
-    focus: `bg-${COLORS.primary.titanium}/20 ring-1 ring-${COLORS.accent['security-blue']}`,
+    focus: `bg-${COLORS.primary.titanium}/20 ring-1 ring-${COLORS.accent['champagne']}`,
   },
 } as const;
 

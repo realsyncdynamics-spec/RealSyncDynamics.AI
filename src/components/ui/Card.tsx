@@ -9,7 +9,7 @@ const cardVariants = {
   default: 'bg-obsidian border border-titanium/20 rounded-card',
   elevated: 'bg-obsidian/80 border border-titanium/30 rounded-card shadow-lg',
   glass: 'glass',
-  gradient: 'bg-gradient-to-br from-petrol/10 to-security-blue/5 border border-petrol/30 rounded-card backdrop-blur-md',
+  gradient: 'bg-gradient-to-br from-petrol/10 to-champagne/5 border border-petrol/30 rounded-card backdrop-blur-md',
 };
 
 export const Card = React.forwardRef<HTMLDivElement, CardProps>(

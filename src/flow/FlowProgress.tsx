@@ -21,7 +21,7 @@ export function FlowProgress({ stage }: { stage: FlowStageKey }) {
                 className={[
                   'flex items-center gap-2 px-3 py-1.5 border font-mono text-[11px] uppercase tracking-[0.14em]',
                   active
-                    ? 'border-security-blue text-security-blue bg-security-blue/10'
+                    ? 'border-champagne text-champagne bg-champagne/10'
                     : done
                       ? 'border-titanium-700 text-titanium-300'
                       : 'border-titanium-900 text-titanium-600',

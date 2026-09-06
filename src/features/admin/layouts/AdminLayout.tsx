@@ -45,7 +45,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
             <select
               value={activeTenantId ?? ''}
               onChange={(e) => setActiveTenant(e.target.value)}
-              className="w-full bg-obsidian border border-titanium/20 text-titanium-100 text-sm rounded-sm px-3 py-2 outline-none focus:border-security-blue focus:ring-1 focus:ring-security-blue/30"
+              className="w-full bg-obsidian border border-titanium/20 text-titanium-100 text-sm rounded-sm px-3 py-2 outline-none focus:border-champagne focus:ring-1 focus:ring-champagne/30"
             >
               {tenants.map(t => (
                 <option key={t.tenantId} value={t.tenantId}>{t.name}</option>
@@ -65,7 +65,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
                 to={item.href}
                 className={`flex items-center gap-3 px-3 py-2 rounded-sm text-sm font-medium transition-colors ${
                   active
-                    ? 'bg-security-blue/10 text-security-blue border-l-2 border-security-blue'
+                    ? 'bg-champagne/10 text-champagne border-l-2 border-champagne'
                     : 'text-titanium-400 hover:text-titanium-200 hover:bg-obsidian-800'
                 }`}
               >

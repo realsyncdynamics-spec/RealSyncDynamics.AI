@@ -37,10 +37,9 @@
  * Ohne TEST_DB_URL wird übersprungen (Muster der übrigen *.db.test.ts).
  */
 import { beforeEach, afterEach, describe, expect, it } from 'vitest';
-import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { getDbUrl, openDb, closeDb, type DbCtx } from './db-helpers';
+import { applyMigration, getDbUrl, openDb, closeDb, type DbCtx } from './db-helpers';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const MIGRATIONS_DIR = join(__dirname, '..', '..', '..', 'supabase', 'migrations');
@@ -67,6 +66,7 @@ AS $$SELECT nullif(current_setting('request.jwt.claim.sub', true), '')::uuid$$;
 CREATE OR REPLACE FUNCTION auth.role() RETURNS text LANGUAGE sql STABLE
 AS $$SELECT nullif(current_setting('request.jwt.claim.role', true), '')::text$$;
 
+CREATE TABLE IF NOT EXISTS auth.users (id UUID PRIMARY KEY, email TEXT);
 CREATE TABLE IF NOT EXISTS public.memberships (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id UUID NOT NULL,
@@ -75,7 +75,8 @@ CREATE TABLE IF NOT EXISTS public.memberships (
 );
 CREATE TABLE IF NOT EXISTS public.subscriptions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  tenant_id UUID NOT NULL,
+  -- UNIQUE wie in Produktion: genau ein Abo je Mandant.
+  tenant_id UUID NOT NULL UNIQUE,
   stripe_price_id TEXT,
   plan_key TEXT NOT NULL,
   status TEXT NOT NULL DEFAULT 'active',
@@ -114,10 +115,19 @@ INSERT INTO public.entitlements (key, kind) VALUES
   ('policy.packs','boolean')
 ON CONFLICT (key) DO NOTHING;
 
-INSERT INTO public.products (stripe_price_id, name, default_for_plan_key) VALUES
+-- Gegen das volle Schema fuehrt der kanonische Katalog 'growth' und
+-- 'free_audit' bereits — unter anderen Price-IDs. Ein ON CONFLICT auf
+-- stripe_price_id griff deshalb nicht und lief in das zweite UNIQUE
+-- (default_for_plan_key). Also nur einfuegen, wenn beide Schluessel frei sind;
+-- sonst gilt das Produkt des Katalogs.
+INSERT INTO public.products (stripe_price_id, name, default_for_plan_key)
+SELECT v.price, v.name, v.plan
+FROM (VALUES
   ('price_growth','RealSync Growth','growth'),
   ('internal_default_free','Free Audit','free_audit')
-ON CONFLICT (stripe_price_id) DO NOTHING;
+) AS v(price, name, plan)
+WHERE NOT EXISTS (SELECT 1 FROM public.products p WHERE p.stripe_price_id = v.price)
+  AND NOT EXISTS (SELECT 1 FROM public.products p WHERE p.default_for_plan_key = v.plan);
 
 INSERT INTO public.product_entitlements (product_id, entitlement_id, value)
 SELECT p.id, e.id, v.val FROM (VALUES
@@ -128,7 +138,7 @@ SELECT p.id, e.id, v.val FROM (VALUES
 ) AS v(plan_key, ent_key, val)
 JOIN public.products p ON p.default_for_plan_key = v.plan_key
 JOIN public.entitlements e ON e.key = v.ent_key
-ON CONFLICT DO NOTHING;
+ON CONFLICT (product_id, entitlement_id) DO NOTHING;
 `;
 
 /** Setzt die JWT-Claims für die Dauer der Sitzung — wie PostgREST es tut. */
@@ -155,17 +165,43 @@ d('tenant_entitlements — Browser und Server sehen beide das Richtige', () => {
     ctx = await openDb();
     await ctx.client.query('CREATE TABLE IF NOT EXISTS public.tenants (id UUID PRIMARY KEY, name TEXT NOT NULL)');
     await ctx.client.query(SCHEMA);
-    await ctx.client.query(readFileSync(join(MIGRATIONS_DIR, RESOLVER_MIGRATION), 'utf8'));
+    // Gegen das volle Schema ist der Aufloeser schon da — und zwar in seiner
+    // AKTUELLEN Fassung. Diese Migration hier erneut anzuwenden wuerde ihn auf
+    // den Stand von 20260831 zuruecksetzen und der Test praefte eine Fassung,
+    // die niemand ausliefert. Also nur im minimalen Harnisch anwenden.
+    const { rows: vorhanden } = await ctx.client.query<{ da: string | null }>(
+      `SELECT to_regprocedure('public.tenant_entitlements(uuid)')::text AS da`,
+    );
+    if (!vorhanden[0]!.da) {
+      await applyMigration(ctx, MIGRATIONS_DIR, RESOLVER_MIGRATION);
+    }
     await ctx.client.query(
       `INSERT INTO public.tenants (id, name) VALUES ($1, 'growth-kunde') ON CONFLICT (id) DO NOTHING`,
       [MANDANT],
     );
+    // Ein Trigger auf `tenants` legt gegen das volle Schema bereits ein
+    // Free-Tier-Abo an. Der Test setzt den Plan, er beansprucht nicht, der
+    // Erste zu sein.
     await ctx.client.query(
-      `INSERT INTO public.subscriptions (tenant_id, plan_key, status) VALUES ($1, 'growth', 'active')`,
+      `INSERT INTO public.subscriptions (tenant_id, plan_key, status)
+       VALUES ($1, 'growth', 'active')
+       ON CONFLICT (tenant_id) DO UPDATE
+         SET plan_key = EXCLUDED.plan_key,
+             status = EXCLUDED.status,
+             stripe_price_id = NULL,
+             past_due_since = NULL,
+             updated_at = now()`,
       [MANDANT],
     );
+    // `memberships.user_id` haengt an `auth.users` — sowohl in bootstrap.sql
+    // als auch im vollen Schema. Ohne diese Zeile scheiterte der Test schon
+    // beim Aufbau, und zwar in BEIDEN Harnischen.
     await ctx.client.query(
-      `INSERT INTO public.memberships (tenant_id, user_id) VALUES ($1, $2)`,
+      `INSERT INTO auth.users (id) VALUES ($1), ($2) ON CONFLICT (id) DO NOTHING`,
+      [MITGLIED, FREMDER],
+    );
+    await ctx.client.query(
+      `INSERT INTO public.memberships (tenant_id, user_id, role) VALUES ($1, $2, 'owner')`,
       [MANDANT, MITGLIED],
     );
   });

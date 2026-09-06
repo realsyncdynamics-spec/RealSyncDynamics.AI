@@ -1,5 +1,7 @@
 import { serve } from 'https://deno.land/std@0.208.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
+import type { SupabaseClient } from 'jsr:@supabase/supabase-js@2';
+import { gateFeature, EntitlementError } from '../_shared/entitlements.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -76,15 +78,27 @@ serve(async (req: Request) => {
       );
     }
 
-    // Get tenant subscription tier and check rate limits
-    const { data: tenantData, error: tenantErr } = await supabase
-      .from('tenants')
-      .select('subscription_tier')
-      .eq('id', tenantId)
-      .single();
-
-    if (tenantErr || !tenantData) {
-      throw new Error('Tenant not found');
+    // AP9 Welle 4 (2026-09-02): Zugang entscheidet `api.access` (ab Growth)
+    // aus tenant_entitlements(). Vorher las die Function `tenants.subscription_tier`
+    // gegen eine Stufenliste, die nur agency/scale/enterprise kannte — ein
+    // Growth-Kunde bekam 403, obwohl sein Plan den Key trägt.
+    try {
+      await gateFeature(supabase as unknown as SupabaseClient, tenantId, 'api.access');
+    } catch (e) {
+      if (e instanceof EntitlementError) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: 'API access is not included in the current plan (api.access) — available from Growth.',
+            timestamp: new Date().toISOString(),
+          } as ApiAuditResponse),
+          {
+            status: 403,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        );
+      }
+      throw e;
     }
 
     // Get API key info for logging
@@ -94,29 +108,22 @@ serve(async (req: Request) => {
       .eq('key_hash', await hashApiKey(apiKey))
       .single();
 
-    // Check rate limit based on tier
+    // Monatskontingent: `limit.api_calls_monthly` weicht zwischen Preisseite
+    // und Entitlements ab (scripts/limit-canonicity-baseline.json) — dagegen
+    // wird nichts Neues durchgesetzt (CLAUDE.md §7). Die bisherige Stufenliste
+    // bleibt für die Pläne, die sie kannte; alle anderen laufen ohne Deckel,
+    // bis der Wert bereinigt ist.
+    const { data: tenantData } = await supabase
+      .from('tenants')
+      .select('subscription_tier')
+      .eq('id', tenantId)
+      .maybeSingle();
     const tierLimits: Record<string, number> = {
       agency: 1000,
-      scale: 10000,
       enterprise: 100000,
-      free: 0,
     };
-
-    const limit = tierLimits[tenantData.subscription_tier?.toLowerCase() || 'free'] || 0;
-
-    if (limit === 0) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: `API access not available in ${tenantData.subscription_tier || 'free'} plan.`,
-          timestamp: new Date().toISOString(),
-        } as ApiAuditResponse),
-        {
-          status: 403,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      );
-    }
+    const tier = String(tenantData?.subscription_tier ?? '').toLowerCase();
+    const limit: number | null = tier in tierLimits ? tierLimits[tier] : null;
 
     // Count calls this month
     const monthStart = new Date();
@@ -135,11 +142,11 @@ serve(async (req: Request) => {
 
     const currentCalls = callCount?.length || 0;
 
-    if (currentCalls >= limit) {
+    if (limit !== null && currentCalls >= limit) {
       return new Response(
         JSON.stringify({
           success: false,
-          error: `Rate limit exceeded. Monthly quota (${limit} calls) for ${tenantData.subscription_tier} plan reached.`,
+          error: `Rate limit exceeded. Monthly quota (${limit} calls) for ${tier} plan reached.`,
           timestamp: new Date().toISOString(),
         } as ApiAuditResponse),
         {

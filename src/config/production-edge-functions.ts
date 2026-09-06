@@ -10,6 +10,20 @@
  *
  * ## Stand der Messung
  *
+ * 2026-09-04T23:23Z, Management-API gegen das Live-Projekt: **182 deployt,
+ * 182 Verzeichnisse im Repository, `comm` in beide Richtungen leer.** Neu ist
+ * `mcp-api-key-manager` (PR #1160); die Liste hier war nicht mitgezogen, der
+ * Drift-Guard hat das als STALE_PROD_LIST gemeldet.
+ *
+ * Frühere Messung:
+ *
+ * 2026-09-01 (nach dem Deploy-Lauf 33562518753 zu PR #1195), Management-API
+ * gegen das Live-Projekt: **181 deployt, 181 Verzeichnisse im
+ * Repository, `comm` in beide Richtungen leer.** Damit ist
+ * `subscription-addons` live und aus `UNBACKED_CALLERS` entfallen.
+ *
+ * Frühere Messung:
+ *
  * 2026-08-23 (nach Merge von PR #1131 und dem zugehörigen `deploy.yml`-Lauf),
  * Management-API gegen das Live-Projekt: 178 Function-Verzeichnisse im
  * Repository, **178 deployt — deckungsgleich in beide Richtungen** (weder
@@ -40,10 +54,10 @@
  * Sie darf steigen, sobald jemand einen höheren Stand misst — und sie ist
  * kein Argument dafür, dass ein weiterer Deploy scheitern wird.
  */
-export const EDGE_FUNCTIONS_OBSERVED_MAX = 181;
+export const EDGE_FUNCTIONS_OBSERVED_MAX = 182;
 
 /** Datum der letzten Messung gegen das Live-Projekt. */
-export const PRODUCTION_EDGE_FUNCTIONS_MEASURED_AT = '2026-09-04T07:31Z';
+export const PRODUCTION_EDGE_FUNCTIONS_MEASURED_AT = '2026-09-04T23:23Z';
 
 /**
  * Die in Produktion aktiven Function-Slugs — alphabetisch, damit ein Diff
@@ -157,6 +171,7 @@ export const PRODUCTION_EDGE_FUNCTIONS: readonly string[] = [
   'maintenance-schedule',
   'market-scanner',
   'marketing-event',
+  'mcp-api-key-manager',
   'memory-confidence-trigger',
   'memory-decay-worker',
   'mfa-admin-reset',
@@ -297,6 +312,19 @@ export const UNBACKED_CALLERS: readonly UnbackedCaller[] = [
   { slug: 'export-bulk-results', surface: 'features/bulk — Export', publicPath: false },
   { slug: 'iso42001-control-update', surface: 'features/governance — Control-Detail', publicPath: false },
   { slug: 'trigger-workflow', surface: 'features/workflows', publicPath: false },
+  // Governance OS P0-1 (PR #1135): Function liegt im Repo und wird mit dem
+  // naechsten deploy.yml-Lauf deployt — Eintrag nach der Neumessung entfernen.
+  { slug: 'integration-credentials', surface: 'features/integrations — Marketplace, Zugangsdaten-Siegel', publicPath: false },
+  // Governance OS P1-3 (PR #1135): Pflege des Zugriffsmodells mit Pruefpfad.
+  { slug: 'governance-access', surface: 'features/governance — Zugriffsmodell pflegen', publicPath: false },
+  // Governance OS P1-6 (PR #1135): signierte Pruefpunkte der Evidence-Kette.
+  { slug: 'evidence-anchor', surface: 'features/governance — Evidence-Anker', publicPath: false },
+  // Governance OS P2-2 (PR #1135): Einrichtung der Microsoft-365-Anbindung.
+  // Der zugehoerige Abholjob `microsoft365-audit-sync` steht hier bewusst
+  // nicht: Er hat keinen Aufrufer im Frontend, sondern wird von pg_cron
+  // getriggert. „Kein Aufrufer" und „nicht deployt" sind zwei verschiedene
+  // Aussagen; diese Liste fuehrt nur die erste zusammen mit der zweiten.
+  { slug: 'microsoft365-connect', surface: 'features/governance — Microsoft 365 einrichten', publicPath: false },
   // Neu in diesem PR angelegt, noch nicht ausgerollt. Der Aufrufer
   // (`scansApi.ts::addWebsiteForTenant`) ersetzt ein clientseitiges INSERT,
   // das RLS ohnehin ablehnte — der Pfad ist also nicht schlechter als vorher,

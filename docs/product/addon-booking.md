@@ -1,6 +1,10 @@
 # Add-on-Buchung, Zugriffsregister, Durchsetzung — Umsetzung AP5–AP9
 
-**Stand: 2026-09-01. Umgesetzt im Repo, noch nicht deployt.**
+**Stand: 2026-09-01. PR #1195 gemerged; die drei Migrationen sind in
+Produktion verbucht (gemessen per Management-API, `20260904000000`,
+`20260904000100`, `20260904000200`). Die drei Entscheidungsfragen aus §6 hat
+der Eigentümer am selben Tag freigegeben („go") — Umfang in CLAUDE.md §10,
+Umsetzung im Folge-PR.**
 
 Bezug: `docs/product/implementierungsplan-paketmodell.md` (AP5–AP9),
 `docs/product/zielzustand-paketmodell.md` §0 und §5,
@@ -157,6 +161,65 @@ Marketplace ihm alles gewährten. Die fünf `/app/admin/*`-Unterseiten und
 | `api-webhook-deliver` | **keinerlei Prüfung** | nur Service-Role-Bearer (wie `scheduler-dispatch`) |
 | `compliance-remediation-execute` | **keinerlei Prüfung** | nur Service-Role-Bearer |
 
+**Welle 3 (2026-09-01)** — die letzten Keys, die die Reality Map als
+`UNKNOWN` führte:
+
+| Function | vorher | jetzt |
+|---|---|---|
+| `tenant-branding-update` | Rolle aus einem **unverifizierten** JWT-Payload, `tenant_id` aus einem Claim, den niemand setzt (0 von 6 Nutzern in Produktion) → jeder Aufruf 401; nur PATCH, `functions.invoke()` sendet POST | `requireUser`, `tenant_id` aus dem Body, Rolle owner/admin, dann `whitelabel.reports`; POST und PATCH; nur bekannte Spalten |
+| `ai-act-risk-inventory` | Mitgliedschaft | zusätzlich `governance.risk_register` für alle Operationen — derselbe Key wie das Zugriffsregister für `/app/risk-inventory` |
+| `compliance-alert-trigger` | **keinerlei Prüfung**; schrieb Alerts für beliebige Tenants, rief Kunden-Webhooks | nur Service-Role-Bearer; E-Mail-Aktionen nur mit `alerts.email`, der Alert selbst wird immer protokolliert |
+| `audit-monitor-cron` | `verify_jwt = false`, **keinerlei Prüfung** — jeder konnte alle Domains scannen lassen | Service-Role-Bearer (wie im Dateikopf seit jeher verlangt); Versand nur mit `alerts.email`, Ergebnis wird immer gespeichert |
+| `governance-risk-escalate` | **keinerlei Prüfung**; Service-Role-Insert in `governance_incidents` beliebiger Tenants | nur Service-Role-Bearer; `tenant_id` und `event_id` Pflicht |
+
+Bewusst **nicht** gegated: `governance-risk-score`. Die Neuberechnung
+hängt am KI-Register (`governance.ai_register`, im Free-Plan) und wird aus
+`/app/assets/:id` aufgerufen — ein Gate auf `governance.risk_register`
+sperrte eine freie Fläche. `email-notify-send` versendet Kontingent-Hinweise
+zur API-Nutzung; das sind Kontoauskünfte, keine Compliance-Alerts, und
+bleiben ohne Plan-Gate.
+
+**Welle 4 (2026-09-02)** — Daten ausleiten: Exporte, Berichte, API. Dazu
+die drei `DISPLAY_ONLY`-Keys der Reality Map, deren Server offen war.
+
+| Function | vorher | jetzt |
+|---|---|---|
+| `evidence-vault-export` | die **Tenant-UUID im Header** war der Schlüssel — eine UUID, die in URLs und Exporten steht; Plan-Check las `subscriptions.plan_key` selbst gegen die Alt-Berechtigung `auditExport`, an Add-ons und Grace Period vorbei | Nutzer-Token, Mitgliedschaft, dann **`compliance.export`** aus `tenant_entitlements()`; der Header wählt nur noch den Mandanten |
+| `generate-compliance-report` | JWT **ohne Signaturprüfung** dekodiert (jwt-decode), `user_metadata.tenant_id` gelesen (setzt niemand), Rolle in `team_members` geprüft (gibt es nicht) → jeder Aufruf scheiterte | `requireUser`, Rolle owner/admin in `memberships`, **`compliance.export`** |
+| `report-generator` | ein Header, der mit „Bearer" begann, war die ganze Prüfung; `tenant_id` aus dem Body → Berichte fremder Tenants samt URLs | Token, Mitgliedschaft, **`compliance.export`** |
+| `generate-certification-report` | Token, aber keine Mitgliedschaft | Mitgliedschaft, **`compliance.export`** |
+| `governance-analytics-export`, `governance-audit-report-gen` | Mitgliedschaft | zusätzlich **`compliance.export`** |
+| `api-audit` | `tenants.subscription_tier` gegen eine Liste, die nur agency/scale/enterprise kannte — **Growth bekam 403**, obwohl der Plan `api.access` trägt | **`api.access`**; das Monatskontingent bleibt bei der alten Liste, weil `limit.api_calls_monthly` divergiert (`check:limits`, CLAUDE.md §7) |
+| `api-gateway` | gültiger Schlüssel genügte | zusätzlich **`api.access`** — ein Schlüssel verliert seine Wirkung mit dem Plan, ohne Widerruf |
+| `governance-keys` | Rolle | Anlegen nur mit **`api.access`**; Auflisten und Widerrufen frei |
+| `governance-remediate` | Rolle | Erzeugen nur mit **`fix.snippets`**; Markieren, Verwerfen, Ersetzen frei |
+| `policy-packs` | `policy.packs`, dann **jeder** Pack aktivierbar | Packs mit Rahmenwerk NIS2 bzw. ISO_27001 zusätzlich gegen **`policy.nis2`** / **`policy.iso27001`** (aus `frameworks` im Katalog); Deaktivieren frei |
+
+Warum `compliance.export` und nicht `reports.export`: `reports.export`
+gewährt **kein** Abo-Plan — nur das Add-on Compliance Pack und der
+Einmalkauf Governance Launch (`shared/pricing.ts`). Ein Gate darauf sperrte
+etwas, das über die Preisseite niemand kaufen kann; der Test
+`wird von einem wählbaren Plan gewährt` hat genau das gemeldet. Ob
+`reports.export` neben `compliance.export` überhaupt eine eigene Fähigkeit
+bezeichnet, ist eine offene Vokabularfrage — bis dahin ist der Key
+Anzeige-Key des Add-ons.
+
+Bewusst offen: `audit-report-pdf` und `audit-report-email` (Free-Scan-Trichter),
+`gdpr-export` (Art. 15 — ein Recht, kein Feature), `evidence-export` und
+`export-audit` (Lesen über RLS mit dem Nutzer-Token, kein Plan-Merkmal),
+`ceo-brief-pdf` und `pitch-deck-pdf` (Super-Admin).
+
+Nebenbefund: `useReportBuilder.ts` ruft `generate-compliance-report` mit
+`{ configId, format, tenantId }` — die Function versteht `tenant_id`,
+`report_type`, `start_date`, `end_date`. Dieser Aufruf hat nie funktioniert
+und funktioniert weiter nicht; der zweite Aufrufer (`ComplianceReportPanel`)
+sendet das richtige Format. Fragepflicht §10.3, hier nur gemeldet.
+
+Nebenbefund: `src/features/api/OAuth2ConfigView.tsx` fragte `enterprise.tier`,
+`partner.tier`, `agency.tier`, `growth.tier` als Entitlement-Keys ab — die
+gab es nie, jeder Kunde sah „starter". Der Plan kommt jetzt aus
+`useEntitlements().tier` (Abo-Zeile).
+
 `test/edge/entitlement-gates.test.ts` hält die Gates in der Quelle fest.
 
 ### 1.7 Einstieg — derselbe Flow, jedes Mal
@@ -210,12 +273,13 @@ existiert. Das braucht die ausdrückliche Freigabe des Eigentümers
     where addon_id = 'whatsapp';
    ```
 
-3. `subscription-addons` deployen (`deploy.yml` läuft bei Änderungen unter
-   `supabase/**`), danach den Eintrag in `UNBACKED_CALLERS` entfernen — der
-   Vertragstest (`edge-function-contract.test.ts`) erinnert daran.
+3. ~~`subscription-addons` deployen~~ — **erledigt** mit Deploy-Lauf
+   33562518753 (2026-09-01, 21:49 UTC): Version 1, `ACTIVE`,
+   `verify_jwt: true`. Der Eintrag in `UNBACKED_CALLERS` ist entfernt, die
+   Produktionsliste nachgemessen (181 = 181).
 
-Bis dahin zeigt „Mein Plan" jedes Add-on als „Buchung folgt". Das ist die
-Wahrheit, nicht ein Platzhalter.
+Bis Schritt 2 erledigt ist, zeigt „Mein Plan" jedes Add-on als „Buchung
+folgt". Das ist die Wahrheit, nicht ein Platzhalter.
 
 ---
 
@@ -268,9 +332,9 @@ unbegrenzten Kontingenten. Zur Laufzeit meldet `addonOfferStatus()` sie als
 `included` — verkauft wird nichts ohne Gegenwert. Die Liste selbst ist auf
 der Preisseite sichtbar (`GovernanceBotsSection`), deshalb unverändert.
 
-> **Achtung, Textänderung — sollen wir dies machen? Ja oder nein?**
-> Enterprise aus `availableFor` der fünf Add-ons nehmen (Zielzustand §5
-> nennt Enterprise dort ohnehin nicht).
+**Freigegeben und umgesetzt (2026-09-01)**: `availableFor` der fünf Add-ons
+nennt nur noch Growth (Katalog-Migration `20260904000300`). `plan.addons`
+von Enterprise bleibt — Bestandsverträge behalten, was sie gebucht haben.
 
 ### 6.3 Nach dem Kauf landen Kunden an vier verschiedenen Orten
 
@@ -280,9 +344,10 @@ der Preisseite sichtbar (`GovernanceBotsSection`), deshalb unverändert.
 Flow" spricht für **ein** Ziel: `/app/dashboard` (dort steht die Karte
 „Dein nächster Schritt", die aus dem übernommenen Audit rechnet).
 
-> **Achtung, Funktionsänderung — sollen wir dies machen? Ja oder nein?**
-> `/checkout/success` nach `/app/dashboard?subscription=…` statt
-> `/app/billing` leiten.
+**Freigegeben und umgesetzt (2026-09-01)**: `/checkout/success` leitet nach
+`/app/dashboard?subscription=…&plan=…`; der Knopf ebenso. Damit landen
+`/welcome`, `/setup-assistant`, `/unified-entry/success` und der Checkout am
+selben Ort. `/os/welcome` → `/os/app` bleibt als Rest der zweiten Oberfläche.
 
 ### 6.4 Zwei weitere Trichter mit eigener Anmeldung
 
@@ -293,15 +358,33 @@ Auth-Wrapper**. `/flow/login` führt nach `/os/login`. `/scan/start`,
 `/chatbot/start`, `/phonebot/start` sind Stubs mit `alert()`. `/demo` und
 `/trial` sind 404. Entfernen oder umleiten greift in Bestehendes ein.
 
-> **Achtung, Funktionsänderung — sollen wir dies machen? Ja oder nein?**
-> Die Registrierung von `/unified-entry/*` auf `/welcome?next=…` legen und
-> `/os/app/*` hinter `AppGate` stellen.
+**Freigegeben und umgesetzt (2026-09-01)**: `/unified-entry/register`
+leitet nach `/welcome?next=/unified-entry/onboarding` (Parameter bleiben),
+`/flow/login` nach `/welcome`, und alle zwölf `/os/app/*`-Routen stehen
+hinter `AppGate`. Die Stubs `/scan/start`, `/chatbot/start`,
+`/phonebot/start` und die 404 auf `/demo` und `/trial` sind nicht Teil der
+Freigabe und bleiben offen.
 
 ### 6.5 Was der Reality Map noch fehlt
 
-Unverändert `UNKNOWN`: `alerts.email` (kein Versandweg liest den Key),
-`bots.human_handoff` (kein Mechanismus im Repo), `whitelabel.*`
-(`tenant-branding-update` prüft die Rolle, nicht den Plan),
-`governance.risk_register` (drei Functions ohne Prüfung). Für `whitelabel.*`
-und `governance.risk_register` ist das Register jetzt das Frontend-Gate;
-serverseitig bleibt es offen — Welle 3 von AP9.
+Mit Welle 3 (§1.6) sind `alerts.email`, `whitelabel.reports`,
+`whitelabel.dashboard` und `governance.risk_register` serverseitig
+durchgesetzt; mit Welle 4 auch `policy.iso27001`, `policy.nis2` und
+`fix.snippets` — die drei `DISPLAY_ONLY`-Keys, deren Server offen war —
+sowie `api.access` und `compliance.export` an den Export-, Berichts- und
+API-Functions. `reports.export` bleibt Anzeige-Key des Add-ons Compliance
+Pack (§1.6). `whitelabel.dashboard` hängt über `ENTITLEMENT_DEPENDENCIES`
+an `whitelabel.reports` und läuft über dieselbe Function — ein eigenes Gate
+gäbe es erst, wenn das Dashboard-Theming einen eigenen Schreibpfad bekommt.
+
+Unverändert `UNKNOWN`: `bots.human_handoff` — im Repo existiert kein
+Übergabe-Mechanismus. Das ist keine Gate-Frage, sondern eine Zusage ohne
+Software dahinter; entscheiden muss der Eigentümer, ob die Fähigkeit gebaut
+oder aus der Feature-Liste genommen wird.
+
+Zwei Betriebsbefunde aus der Messung vom 2026-09-01 (`cron.job` in
+Produktion): Für `audit-monitor-cron` und `email-notify-send` ist **kein**
+Cron-Job registriert. Monitoring-Drift-Alerts und Kontingent-E-Mails werden
+heute also nicht versendet, unabhängig vom Plan. Die Service-Role-Pflicht
+auf `audit-monitor-cron` bricht deshalb nichts Laufendes — sie legt nur
+fest, wie der Job aufzusetzen ist (Dateikopf der Function).

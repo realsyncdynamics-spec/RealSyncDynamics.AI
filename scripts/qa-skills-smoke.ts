@@ -26,6 +26,7 @@ import { buildCallPrepOutline } from '../src/lib/skills/salesCallPrep';
 import { buildOutreachResearchPlan } from '../src/lib/skills/salesDraftOutreach';
 
 const expectedKeys: SkillKey[] = [
+  'ai-act-risk',
   'data-exploration',
   'finance-audit-support',
   'gdpr-audit',
@@ -42,7 +43,7 @@ function check(name: string, ok: boolean, detail = '') {
 }
 
 // 1. Registry-Vollstaendigkeit
-check('registry has exactly 8 skills', ALL_SKILLS.length === 8, `got ${ALL_SKILLS.length}`);
+check('registry has exactly 9 skills', ALL_SKILLS.length === 9, `got ${ALL_SKILLS.length}`);
 for (const key of expectedKeys) {
   check(`registry contains ${key}`, !!SKILL_REGISTRY[key]);
 }

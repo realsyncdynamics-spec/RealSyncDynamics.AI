@@ -21,6 +21,7 @@
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { corsHeaders, handleOptions, jsonResponse } from '../_shared/gateway.ts';
+import { loadEntitlementsForTenant, hasFeature } from '../_shared/entitlements.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_KEY  = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -135,6 +136,23 @@ async function sendAlert(domain: MonitoredDomain, drift: DriftReport, scan: Scan
 }
 
 // ---------------------------------------------------------------------------
+// Darf dieser Tenant E-Mail-Alerts bekommen? (`alerts.email`, ab Starter)
+// ---------------------------------------------------------------------------
+// Der Scan und das Ergebnis in audit_monitor_results hängen nicht am Plan —
+// nur der Versand. Schlägt das Laden der Entitlements fehl, wird nicht
+// gesendet (fail closed), damit ein Datenbankfehler keinen kostenlosen
+// Versand freischaltet; der Grund steht im Log.
+async function mayAlert(supabase: ReturnType<typeof createClient>, tenantId: string): Promise<boolean> {
+  try {
+    const ent = await loadEntitlementsForTenant(supabase, tenantId);
+    return hasFeature(ent, 'alerts.email');
+  } catch (err) {
+    console.warn(`[monitor] entitlements for ${tenantId} unavailable, alert suppressed:`, err);
+    return false;
+  }
+}
+
+// ---------------------------------------------------------------------------
 // shouldScan heute?
 // ---------------------------------------------------------------------------
 function shouldScan(d: MonitoredDomain): boolean {
@@ -149,6 +167,17 @@ function shouldScan(d: MonitoredDomain): boolean {
 Deno.serve(async (req: Request) => {
   const preflight = handleOptions(req);
   if (preflight) return preflight;
+
+  // AP9 Welle 3: `verify_jwt = false` — bis hier konnte jeder Aufrufer alle
+  // überwachten Domains scannen lassen (Playwright-Kosten, Resend-Versand).
+  // Der Kopf dieser Datei verlangt seit jeher den Service-Role-Bearer aus dem
+  // Cron; jetzt wird er auch geprüft. In Produktion ist derzeit kein Cron-Job
+  // für diese Function registriert (gemessen 2026-09-01, `cron.job`).
+  const authHeader = req.headers.get('Authorization') ?? '';
+  if (authHeader !== `Bearer ${SERVICE_KEY}`) {
+    return jsonResponse({ ok: false, error: 'cron only' }, 401);
+  }
+
   const supabase = createClient(SUPABASE_URL, SERVICE_KEY);
   const t0 = Date.now();
   const log: Array<{ domain: string; ok: boolean; drift: boolean; alerted: boolean; err?: string }> = [];
@@ -173,8 +202,12 @@ Deno.serve(async (req: Request) => {
         const drift = d.last_scan_at ? detectDrift(scan, d) : { has_drift: false, new_trackers: [], removed_trackers: [], score_delta: 0, new_critical_issues: [] };
         let alerted = false;
         if (drift.has_drift || drift.new_critical_issues.length > 0) {
-          await sendAlert(d, drift, scan);
-          alerted = true;
+          if (await mayAlert(supabase, d.tenant_id)) {
+            await sendAlert(d, drift, scan);
+            alerted = true;
+          } else {
+            console.log(`[monitor] alert suppressed for ${d.domain}: alerts.email not in plan`);
+          }
         }
 
         await supabase.from('monitored_domains').update({

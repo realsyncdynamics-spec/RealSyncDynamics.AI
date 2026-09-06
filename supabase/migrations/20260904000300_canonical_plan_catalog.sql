@@ -1,0 +1,368 @@
+-- ═══════════════════════════════════════════════════════════════════════════
+--  Kanonischer Plan-Katalog — Neuausgabe: Enterprise aus `availableFor`
+-- ═══════════════════════════════════════════════════════════════════════════
+--
+-- Ersetzt die Katalog-Daten aus 20260904000100_canonical_plan_catalog.sql.
+-- Migrationen sind unveränderlich, sobald sie deployt sind — eine Änderung
+-- an der Pricing-SSoT erfordert deshalb eine NEUE Katalog-Migration statt
+-- einer Bearbeitung der alten. Tabellen-, RLS- und Index-Definitionen stehen
+-- in 20260802001000 und 20260904000000 und werden hier nicht wiederholt.
+--
+-- Neu gegenüber 20260904000100 (Freigabe des Eigentümers vom 2026-09-01,
+-- CLAUDE.md §10): `available_for` der fünf Add-ons Response Pack, Voice,
+-- Compliance Pack, Agency Bot Pack und White Label nennt Enterprise nicht
+-- mehr — der Plan trägt die Keys bereits mit unbegrenzten Kontingenten
+-- (docs/product/addon-booking.md §6.2). `plan_catalog.addons` von Enterprise
+-- bleibt, damit Bestandsverträge behalten, was sie gebucht haben.
+--
+-- Der Block unten wird von `scripts/generate-plan-catalog-sql.ts` erzeugt und
+-- von `test/config/pricing-ssot.test.ts` gegen shared/pricing.ts geprüft.
+-- NICHT von Hand bearbeiten — stattdessen `npm run gen:plan-catalog`.
+-- >>> GENERATED PLAN CATALOG (scripts/generate-plan-catalog-sql.ts) >>>
+-- NICHT VON HAND BEARBEITEN. Quelle: shared/pricing.ts
+
+INSERT INTO public.plan_catalog (
+  plan_key, plan_id, name, outcome_headline, technical_subheadline,
+  price_monthly_eur, price_yearly_eur, price_one_time_eur, currency, purchase_mode, trial_days,
+  recurring, max_bots, max_answers_per_month,
+  limits, modules, permissions, channels, addons, features, support
+) VALUES
+  (
+    'free_audit',
+    'free',
+    'Free Audit',
+    'Sehen Sie in 90 Sekunden, wo Ihre Governance-Lücken liegen.',
+    'Unbegrenzte Runtime-Scans Ihrer Domain mit Governance Score, Top-Risiken und Planempfehlung.',
+    0,
+    NULL,
+    NULL,
+    'EUR',
+    'free',
+    0,
+    false,
+    0,
+    0,
+    '{"bots":0,"answersPerMonth":0,"domains":1,"automationRunsPerMonth":0,"seats":1,"apiCallsPerMonth":0,"tenants":1,"evidenceStorageGb":0.5,"auditReportsPerMonth":1,"remediationPlans":0,"bulkJobsPerMonth":0,"apiKeys":0,"industrialOtSystems":1}'::jsonb,
+    '["dsgvo","audit_center","compliance_reports"]'::jsonb,
+    '{"scheduler":false,"api":false,"webhooks":false,"whiteLabelReports":false,"whiteLabelDashboard":false,"multiTenant":false,"evidenceVault":false,"auditExport":false,"sso":false,"bulkOperations":false,"provenanceSigning":false,"prioritySupport":false}'::jsonb,
+    '[]'::jsonb,
+    '[]'::jsonb,
+    '{"audit_evidence":["Runtime-Scan einer Domain mit Governance Score 0–100","Top-3-Risiken mit Paragraphenbezug","Kompakter PDF-Bericht","Prüfpfad einsehbar (kein Export)"],"ai_governance":["DSGVO-Basisprüfung","Automatische Planempfehlung auf Basis des Scores"],"automation_ops":["Kein Account, kein Setup erforderlich"],"multi_tenant_reseller":[]}'::jsonb,
+    'community'
+  ),
+  (
+    'starter',
+    'starter',
+    'Starter',
+    'Ein nachweisbares Governance-Fundament, das jeden Prüfer überzeugt.',
+    'Kontinuierlicher DSGVO- und AI-Act-Scan mit lückenloser Hash-Chain und exportierbarem Prüfpfad.',
+    79,
+    790,
+    NULL,
+    'EUR',
+    'checkout',
+    14,
+    true,
+    1,
+    500,
+    '{"bots":1,"answersPerMonth":500,"domains":1,"automationRunsPerMonth":25,"seats":1,"apiCallsPerMonth":0,"tenants":1,"evidenceStorageGb":2,"auditReportsPerMonth":2,"remediationPlans":5,"bulkJobsPerMonth":0,"apiKeys":0,"industrialOtSystems":5}'::jsonb,
+    '["dsgvo","eu_ai_act","policy_engine","evidence_vault","audit_center","monitoring","compliance_reports","automation_engine","alerts","ai_bots","website_chat"]'::jsonb,
+    '{"scheduler":false,"api":false,"webhooks":false,"whiteLabelReports":false,"whiteLabelDashboard":false,"multiTenant":false,"evidenceVault":true,"auditExport":true,"sso":false,"bulkOperations":false,"provenanceSigning":false,"prioritySupport":false}'::jsonb,
+    '["website"]'::jsonb,
+    '["whatsapp"]'::jsonb,
+    '{"audit_evidence":["Vollständiger DSGVO-Scan mit Paragraphenbezug","Evidence Vault mit Hash-Chain-Verifizierung","Audit-Export als PDF und JSON","Lückenloser Prüfpfad über alle Läufe"],"ai_governance":["Policy Packs: DSGVO und EU AI Act","Generator für Datenschutzerklärung","Technische Consent-Empfehlungen"],"automation_ops":["Kontinuierliches Monitoring","E-Mail-Alert bei neuen Findings","25 Automationsläufe pro Monat","1 Governance-Bot mit 500 Antworten (Website)"],"multi_tenant_reseller":[]}'::jsonb,
+    'email'
+  ),
+  (
+    'growth',
+    'growth',
+    'Growth',
+    'KI-Governance, die sich selbst überwacht — statt einmal im Jahr geprüft zu werden.',
+    'Tägliche Runtime-Läufe mit Drift Detection, Risk Register und Policy Engine über drei Rahmenwerke.',
+    249,
+    2490,
+    NULL,
+    'EUR',
+    'checkout',
+    14,
+    true,
+    2,
+    2000,
+    '{"bots":2,"answersPerMonth":2000,"domains":3,"automationRunsPerMonth":100,"seats":5,"apiCallsPerMonth":5000,"tenants":1,"evidenceStorageGb":10,"auditReportsPerMonth":12,"remediationPlans":20,"bulkJobsPerMonth":10,"apiKeys":3,"industrialOtSystems":25}'::jsonb,
+    '["dsgvo","eu_ai_act","iso_27001","policy_engine","evidence_vault","audit_center","risk_register","monitoring","compliance_reports","automation_engine","alerts","workflows","drift_detection","remediation","background_jobs","ai_bots","website_chat","whatsapp","telegram","multi_channel_messaging"]'::jsonb,
+    '{"scheduler":true,"api":true,"webhooks":true,"whiteLabelReports":false,"whiteLabelDashboard":false,"multiTenant":false,"evidenceVault":true,"auditExport":true,"sso":false,"bulkOperations":true,"provenanceSigning":true,"prioritySupport":false}'::jsonb,
+    '["website","whatsapp","telegram"]'::jsonb,
+    '["response_pack","compliance_pack","voice","white_label","agency_bot_pack"]'::jsonb,
+    '{"audit_evidence":["Alles aus Starter","Evidence Vault mit Versionierung","Erweiterter Evidence-Zugriff mit C2PA-Export","Signierter Herkunftsnachweis (Provenance)","Bis zu 12 Audit-Berichte pro Monat","Consent-Timing-Analyse (Requests vor Einwilligung)"],"ai_governance":["Policy Packs: DSGVO, EU AI Act, ISO 27001","Policy Engine mit versionierten Richtlinien","AI Risk Register mit Bewertung und Eigentümern","Governance Score je Rahmenwerk"],"automation_ops":["Tägliches Monitoring mit Drift Detection","Behebungsvorschläge mit Code-Snippets","API-Zugriff, Webhooks und Scheduler","10 Bulk-Jobs pro Monat, 3 API-Schlüssel","100 Automationsläufe pro Monat","2 Governance-Bots mit 2.000 Antworten (Website, WhatsApp, Telegram)"],"multi_tenant_reseller":[]}'::jsonb,
+    'priority'
+  ),
+  (
+    'agency',
+    'agency',
+    'Agency',
+    'Governance für viele Kunden gleichzeitig — automatisiert und mit Ihrem Logo.',
+    'Scheduler, Bulk Jobs und REST-API über fünf Rahmenwerke, mit White-Label-Berichten und signiertem Herkunftsnachweis.',
+    699,
+    6900,
+    NULL,
+    'EUR',
+    'checkout',
+    0,
+    true,
+    10,
+    25000,
+    '{"bots":10,"answersPerMonth":25000,"domains":10,"automationRunsPerMonth":500,"seats":15,"apiCallsPerMonth":50000,"tenants":1,"evidenceStorageGb":50,"auditReportsPerMonth":50,"remediationPlans":100,"bulkJobsPerMonth":100,"apiKeys":10,"industrialOtSystems":200}'::jsonb,
+    '["dsgvo","eu_ai_act","iso_27001","nis2","tisax","policy_engine","evidence_vault","audit_center","risk_register","monitoring","compliance_reports","automation_engine","alerts","workflows","drift_detection","remediation","background_jobs","scheduler","n8n","kodee","bulk_jobs","ai_bots","website_chat","whatsapp","telegram","voice","multi_channel_messaging","api","webhooks","human_handoff"]'::jsonb,
+    '{"scheduler":true,"api":true,"webhooks":true,"whiteLabelReports":true,"whiteLabelDashboard":false,"multiTenant":false,"evidenceVault":true,"auditExport":true,"sso":false,"bulkOperations":true,"provenanceSigning":true,"prioritySupport":true}'::jsonb,
+    '["website","whatsapp","telegram","slack","teams","email","voice"]'::jsonb,
+    '["response_pack","whatsapp","voice","compliance_pack","agency_bot_pack","white_label"]'::jsonb,
+    '{"audit_evidence":["Alles aus Growth","Evidence Vault Advanced: unveränderliche Snapshots, Retention, Legal Hold","Herkunftsnachweis mit Ed25519-Signatur und Chain-of-Custody","White-Label-Berichte mit eigenem Logo"],"ai_governance":["Policy Packs: DSGVO, EU AI Act, ISO 27001, NIS2, TISAX","Branchenbibliothek vorkonfigurierter Governance-Profile","Governance Agents für Prüfungen und Maßnahmen (Review-pflichtig)"],"automation_ops":["Scheduler für geplante Läufe mit Slack-/Teams-/Webhook-Alerts","Bulk Jobs: Massen-Scan vieler Domains per CSV","n8n-Anbindung und Kodee Server-Assistent","REST-API und Webhooks für CI/CD","500 Automationsläufe pro Monat","10 Governance-Bots mit 25.000 Antworten (alle Kanäle inkl. Voice)"],"multi_tenant_reseller":["White-Label-Berichte mit eigenem Branding","Bis zu 10 Domains unter einem Konto"]}'::jsonb,
+    'priority'
+  ),
+  (
+    'enterprise',
+    'enterprise',
+    'Enterprise',
+    'Konzernweite Governance über alle sechs Rahmenwerke — mit SLA und SSO.',
+    'Multi-Tenant-Runtime für bis zu 5 Organisationen, zentrale Rechteverwaltung und individuell dimensionierte Scheduler- und Automation-Kontingente.',
+    1249,
+    12490,
+    NULL,
+    'EUR',
+    'inquiry',
+    0,
+    true,
+    20,
+    50000,
+    '{"bots":20,"answersPerMonth":50000,"domains":25,"automationRunsPerMonth":2000,"seats":50,"apiCallsPerMonth":250000,"tenants":5,"evidenceStorageGb":200,"auditReportsPerMonth":200,"remediationPlans":500,"bulkJobsPerMonth":500,"apiKeys":50,"industrialOtSystems":-1}'::jsonb,
+    '["dsgvo","eu_ai_act","iso_27001","nis2","tisax","dora","policy_engine","evidence_vault","audit_center","risk_register","monitoring","compliance_reports","automation_engine","alerts","workflows","drift_detection","remediation","background_jobs","scheduler","n8n","kodee","bulk_jobs","ai_bots","website_chat","whatsapp","telegram","voice","multi_channel_messaging","api","webhooks","human_handoff"]'::jsonb,
+    '{"scheduler":true,"api":true,"webhooks":true,"whiteLabelReports":true,"whiteLabelDashboard":true,"multiTenant":true,"evidenceVault":true,"auditExport":true,"sso":true,"bulkOperations":true,"provenanceSigning":true,"prioritySupport":true}'::jsonb,
+    '["website","whatsapp","telegram","slack","teams","email","voice"]'::jsonb,
+    '["response_pack","voice","compliance_pack","agency_bot_pack","white_label"]'::jsonb,
+    '{"audit_evidence":["Alles aus Agency","Audit Center Pro mit 200 Berichten pro Monat","Evidence Vault Enterprise mit 200 GB Nachweisspeicher"],"ai_governance":["Alle sechs Policy Packs: DSGVO, EU AI Act, ISO 27001, NIS2, TISAX, DORA","Erweiterte Analysen und Risk Scoring","Eigene Richtlinien und Kontrollkataloge"],"automation_ops":["Individuell dimensionierte Scheduler- und Automation-Kontingente.","API Premium mit 250.000 Aufrufen pro Monat","20 Governance-Bots mit 50.000 Antworten (alle Kanäle)","Priorisierter Support mit vertraglich vereinbarter Reaktionszeit"],"multi_tenant_reseller":["Multi-Tenant-Dashboard für bis zu 5 Organisationen","Zentrale Benutzerverwaltung mit Rollen und Rechten","Single Sign-On","White-Label mit Branding, Logo und Farben"]}'::jsonb,
+    'dedicated'
+  ),
+  (
+    'partner',
+    'partner',
+    'Partner',
+    'Verkaufen Sie Governance als eigenes Produkt — bis zu 50 Mandanten unter Ihrer Marke.',
+    'Vollständig mandantengetrennte Runtime mit White-Label-Subdomain, eigenem Branding und voller API.',
+    1999,
+    19000,
+    NULL,
+    'EUR',
+    'inquiry',
+    0,
+    true,
+    50,
+    100000,
+    '{"bots":50,"answersPerMonth":100000,"domains":100,"automationRunsPerMonth":10000,"seats":100,"apiCallsPerMonth":1000000,"tenants":50,"evidenceStorageGb":500,"auditReportsPerMonth":500,"remediationPlans":-1,"bulkJobsPerMonth":-1,"apiKeys":-1,"industrialOtSystems":-1}'::jsonb,
+    '["dsgvo","eu_ai_act","iso_27001","nis2","tisax","dora","policy_engine","evidence_vault","audit_center","risk_register","monitoring","compliance_reports","automation_engine","alerts","workflows","drift_detection","remediation","background_jobs","scheduler","n8n","kodee","bulk_jobs","ai_bots","website_chat","whatsapp","telegram","voice","multi_channel_messaging","api","webhooks","human_handoff"]'::jsonb,
+    '{"scheduler":true,"api":true,"webhooks":true,"whiteLabelReports":true,"whiteLabelDashboard":true,"multiTenant":true,"evidenceVault":true,"auditExport":true,"sso":true,"bulkOperations":true,"provenanceSigning":true,"prioritySupport":true}'::jsonb,
+    '["website","whatsapp","telegram","slack","teams","email","voice"]'::jsonb,
+    '["response_pack","whatsapp","voice","compliance_pack","agency_bot_pack","white_label"]'::jsonb,
+    '{"audit_evidence":["Alles aus Enterprise","500 GB Nachweisspeicher, 500 Audit-Berichte pro Monat","Unbegrenzte Behebungspläne und Bulk Jobs"],"ai_governance":["Alle sechs Policy Packs je Mandant getrennt aktivierbar","Mandantenspezifische Richtlinien und Kontrollkataloge"],"automation_ops":["10.000 Automationsläufe pro Monat","Voller API-Zugriff mit 1 Mio. Aufrufen pro Monat","50 Governance-Bots mit 100.000 Antworten, mandantengetrennt","SLA 4 h auf Fehlermeldungen mit festem Ansprechpartner"],"multi_tenant_reseller":["Multi-Tenant-Dashboard für bis zu 50 Mandanten","White-Label-Subdomain je Mandant","Vollständiges Branding: Logos, Farben, Texte","Mandanten-Isolation mit Unterkonten","Unbegrenzte API-Schlüssel"]}'::jsonb,
+    'dedicated'
+  ),
+  (
+    'governance_launch',
+    'governance_launch',
+    'Governance Launch',
+    'Einmalige Governance-Implementierung für Ihren ersten Anwendungsfall.',
+    'Einmalige Einrichtung: Rahmenwerk-Konfiguration, Evidence Vault und Audit Center für eine Domain.',
+    0,
+    NULL,
+    349,
+    'EUR',
+    'one_time',
+    0,
+    false,
+    1,
+    1000,
+    '{"bots":1,"answersPerMonth":1000,"domains":1,"automationRunsPerMonth":10,"seats":3,"apiCallsPerMonth":0,"tenants":1,"evidenceStorageGb":5,"auditReportsPerMonth":5,"remediationPlans":0,"bulkJobsPerMonth":0,"apiKeys":0,"industrialOtSystems":1}'::jsonb,
+    '["dsgvo","policy_engine","evidence_vault","audit_center","compliance_reports"]'::jsonb,
+    '{"scheduler":false,"api":false,"webhooks":false,"whiteLabelReports":false,"whiteLabelDashboard":false,"multiTenant":false,"evidenceVault":true,"auditExport":true,"sso":false,"bulkOperations":false,"provenanceSigning":false,"prioritySupport":false}'::jsonb,
+    '["website"]'::jsonb,
+    '[]'::jsonb,
+    '{"audit_evidence":["Evidence Vault mit 5 GB Nachweisspeicher","Audit Center mit vollständigem Prüfpfad","Fünf Audit-Berichte inklusive"],"ai_governance":["Policy Pack DSGVO eingerichtet und aktiv","Policy Engine für eigene Richtlinien","Compliance Reports als PDF und JSON"],"automation_ops":["Zehn Automationsläufe für die Einrichtung","Ein Governance-Bot für die Website"],"multi_tenant_reseller":[]}'::jsonb,
+    'email'
+  )
+ON CONFLICT (plan_key) DO UPDATE SET
+  plan_id = EXCLUDED.plan_id,
+  name = EXCLUDED.name,
+  outcome_headline = EXCLUDED.outcome_headline,
+  technical_subheadline = EXCLUDED.technical_subheadline,
+  price_monthly_eur = EXCLUDED.price_monthly_eur,
+  price_yearly_eur = EXCLUDED.price_yearly_eur,
+  price_one_time_eur = EXCLUDED.price_one_time_eur,
+  currency = EXCLUDED.currency,
+  purchase_mode = EXCLUDED.purchase_mode,
+  trial_days = EXCLUDED.trial_days,
+  recurring = EXCLUDED.recurring,
+  max_bots = EXCLUDED.max_bots,
+  max_answers_per_month = EXCLUDED.max_answers_per_month,
+  limits = EXCLUDED.limits,
+  modules = EXCLUDED.modules,
+  permissions = EXCLUDED.permissions,
+  channels = EXCLUDED.channels,
+  addons = EXCLUDED.addons,
+  features = EXCLUDED.features,
+  support = EXCLUDED.support,
+  updated_at = now();
+
+INSERT INTO public.plan_addons (addon_id, name, description, price_eur, price_note, interval, available_for, grants, per_unit) VALUES
+  (
+    'response_pack',
+    'Response Pack',
+    'Zusätzliche 5.000 Bot-Antworten pro Monat.',
+    49,
+    '/ Monat',
+    'month',
+    '["growth"]'::jsonb,
+    '{"limit.bot_messages_monthly":5000}'::jsonb,
+    false
+  ),
+  (
+    'whatsapp',
+    'WhatsApp',
+    'WhatsApp-Business-Kanal für Ihre Governance-Bots.',
+    99,
+    '/ Monat',
+    'month',
+    '["starter"]'::jsonb,
+    '{"bots.whatsapp":1,"bots.enabled":1,"bots.multi_channel":1,"limit.whatsapp_conversations_monthly":500}'::jsonb,
+    false
+  ),
+  (
+    'voice',
+    'Voice',
+    'Sprachkanal über Telefonie mit IVR.',
+    150,
+    '/ Monat zzgl. 0,25 € pro Minute',
+    'month',
+    '["growth"]'::jsonb,
+    '{"bots.voice":1,"bots.enabled":1,"bots.human_handoff":1,"limit.bot_voice_minutes_monthly":500}'::jsonb,
+    false
+  ),
+  (
+    'compliance_pack',
+    'Compliance Pack',
+    'Erweitertes Logging, Audit-Export und Review-Workflows.',
+    149,
+    '/ Monat',
+    'month',
+    '["growth"]'::jsonb,
+    '{"evidence.advanced":1,"reports.export":1,"limit.compliance_exports_monthly":100}'::jsonb,
+    false
+  ),
+  (
+    'agency_bot_pack',
+    'Agency Bot Pack',
+    'Fünf zusätzliche Governance-Bots für Kundenprojekte.',
+    199,
+    '/ Monat',
+    'month',
+    '["growth"]'::jsonb,
+    '{"limit.bots":5}'::jsonb,
+    false
+  ),
+  (
+    'white_label',
+    'White Label',
+    'Vollständiges Branding mit eigener Domain.',
+    299,
+    '/ Monat',
+    'month',
+    '["growth"]'::jsonb,
+    '{"whitelabel.reports":1,"whitelabel.dashboard":1}'::jsonb,
+    false
+  )
+ON CONFLICT (addon_id) DO UPDATE SET
+  name = EXCLUDED.name,
+  description = EXCLUDED.description,
+  price_eur = EXCLUDED.price_eur,
+  price_note = EXCLUDED.price_note,
+  interval = EXCLUDED.interval,
+  available_for = EXCLUDED.available_for,
+  grants = EXCLUDED.grants,
+  per_unit = EXCLUDED.per_unit,
+  updated_at = now();
+
+INSERT INTO public.products (stripe_price_id, name, default_for_plan_key) VALUES
+  ('internal_addon_response_pack', 'Add-on: Response Pack', NULL),
+  ('internal_addon_whatsapp', 'Add-on: WhatsApp', NULL),
+  ('internal_addon_voice', 'Add-on: Voice', NULL),
+  ('internal_addon_compliance_pack', 'Add-on: Compliance Pack', NULL),
+  ('internal_addon_agency_bot_pack', 'Add-on: Agency Bot Pack', NULL),
+  ('internal_addon_white_label', 'Add-on: White Label', NULL)
+ON CONFLICT (stripe_price_id) DO UPDATE SET name = EXCLUDED.name;
+
+UPDATE public.plan_addons a SET product_id = p.id, updated_at = now()
+  FROM public.products p
+  WHERE p.stripe_price_id = 'internal_addon_' || a.addon_id
+    AND a.product_id IS DISTINCT FROM p.id;
+
+INSERT INTO public.product_entitlements (product_id, entitlement_id, value)
+SELECT p.id, e.id, z.value
+FROM (VALUES
+  ('response_pack', 'limit.bot_messages_monthly', 5000),
+  ('whatsapp', 'bots.whatsapp', 1),
+  ('whatsapp', 'bots.enabled', 1),
+  ('whatsapp', 'bots.multi_channel', 1),
+  ('whatsapp', 'limit.whatsapp_conversations_monthly', 500),
+  ('voice', 'bots.voice', 1),
+  ('voice', 'bots.enabled', 1),
+  ('voice', 'bots.human_handoff', 1),
+  ('voice', 'limit.bot_voice_minutes_monthly', 500),
+  ('compliance_pack', 'evidence.advanced', 1),
+  ('compliance_pack', 'reports.export', 1),
+  ('compliance_pack', 'limit.compliance_exports_monthly', 100),
+  ('agency_bot_pack', 'limit.bots', 5),
+  ('white_label', 'whitelabel.reports', 1),
+  ('white_label', 'whitelabel.dashboard', 1)
+) AS z(addon_id, key, value)
+JOIN public.products p ON p.stripe_price_id = 'internal_addon_' || z.addon_id
+JOIN public.entitlements e ON e.key = z.key
+ON CONFLICT (product_id, entitlement_id) DO UPDATE SET value = EXCLUDED.value;
+
+DELETE FROM public.product_entitlements pe
+USING public.products p, public.entitlements e
+WHERE pe.product_id = p.id AND pe.entitlement_id = e.id
+  AND p.stripe_price_id LIKE 'internal_addon_%'
+  AND NOT EXISTS (
+    SELECT 1 FROM (VALUES
+  ('response_pack', 'limit.bot_messages_monthly'),
+  ('whatsapp', 'bots.whatsapp'),
+  ('whatsapp', 'bots.enabled'),
+  ('whatsapp', 'bots.multi_channel'),
+  ('whatsapp', 'limit.whatsapp_conversations_monthly'),
+  ('voice', 'bots.voice'),
+  ('voice', 'bots.enabled'),
+  ('voice', 'bots.human_handoff'),
+  ('voice', 'limit.bot_voice_minutes_monthly'),
+  ('compliance_pack', 'evidence.advanced'),
+  ('compliance_pack', 'reports.export'),
+  ('compliance_pack', 'limit.compliance_exports_monthly'),
+  ('agency_bot_pack', 'limit.bots'),
+  ('white_label', 'whitelabel.reports'),
+  ('white_label', 'whitelabel.dashboard')
+    ) AS z(addon_id, key)
+    WHERE p.stripe_price_id = 'internal_addon_' || z.addon_id AND e.key = z.key
+  );
+
+INSERT INTO public.entitlement_dependencies (entitlement_id, requires_entitlement_id)
+SELECT e.id, r.id
+FROM (VALUES
+  ('bots.voice', 'bots.enabled'),
+  ('bots.whatsapp', 'bots.enabled'),
+  ('whitelabel.dashboard', 'whitelabel.reports'),
+  ('provenance.advanced', 'provenance.basic')
+) AS z(key, requires)
+JOIN public.entitlements e ON e.key = z.key
+JOIN public.entitlements r ON r.key = z.requires
+ON CONFLICT DO NOTHING;
+
+UPDATE public.plan_catalog SET active = false, updated_at = now()
+  WHERE plan_key NOT IN ('free_audit', 'starter', 'starter_yearly', 'growth', 'growth_yearly', 'agency', 'agency_yearly', 'enterprise', 'enterprise_yearly', 'partner', 'partner_yearly', 'governance_launch');
+-- <<< GENERATED PLAN CATALOG <<<

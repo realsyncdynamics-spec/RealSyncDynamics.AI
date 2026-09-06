@@ -11,6 +11,7 @@ import {
   getDbUrl,
   insertEvent,
   openDb,
+  seedAppSecret,
   type DbCtx,
 } from './db-helpers';
 
@@ -26,11 +27,7 @@ async function seedKey(
 ): Promise<string> {
   const secretName = `subject_ref_key_${tenantId}_v${keyVersion}`;
   const secretValue = `key-material-${keyVersion}-${Math.random().toString(36).slice(2)}`;
-  await ctx.client.query(
-    `INSERT INTO public.app_secrets(name, value) VALUES ($1, $2)
-     ON CONFLICT (name) DO UPDATE SET value = EXCLUDED.value`,
-    [secretName, secretValue],
-  );
+  await seedAppSecret(ctx, secretName, secretValue);
   await ctx.client.query(
     `INSERT INTO public.subject_ref_keys(tenant_id, key_version, vault_secret_name, status)
      VALUES ($1, $2, $3, $4)
@@ -162,12 +159,7 @@ d('RFC-002 / key rotation (DB)', () => {
       await ctx!.client.query(`SELECT public.rotate_subject_ref_key($1::uuid)`, [tenantId]);
     });
     // The rotate RPC created v2's row but no Vault secret — seed it
-    await ctx!.client.query(
-      `INSERT INTO public.app_secrets(name, value)
-       VALUES ($1, 'new-key-material-v2')
-       ON CONFLICT (name) DO UPDATE SET value = EXCLUDED.value`,
-      [`subject_ref_key_${tenantId}_v2`],
-    );
+    await seedAppSecret(ctx!, `subject_ref_key_${tenantId}_v2`, 'new-key-material-v2');
 
     // Compute with v1 (rotating) still works
     const r1 = await ctx!.client.query<{ ref: string }>(

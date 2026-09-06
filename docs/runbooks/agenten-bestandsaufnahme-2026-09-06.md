@@ -86,6 +86,14 @@ Sechs Tenants, null Fehler, null Ergebnis. Der Runner funktioniert korrekt —
 `runMonitoringSloForTenant()` lädt `monitoring_sources` mit
 `status in ('active','error')`, und diese Menge ist leer.
 
+**Das verschärft eine Regel, die schon im Repo steht.** CLAUDE.md §5 hält seit
+dem 2026-09-01 fest, man solle „nicht an `cron.job`, sondern an
+`cron.job_run_details.status`" prüfen — geschrieben nach demselben Muster beim
+`memory-decay-hourly`. Diese Messung zeigt die nächste Stufe: Ein Job hat drei
+Zustände, nicht zwei — nicht registriert, registriert aber scheiternd, und grün
+aber wirkungslos. Der dritte ist der teuerste, weil jede Überwachung ihn als
+gesund meldet. Die Regel ist in CLAUDE.md §5 entsprechend ergänzt.
+
 **Konsequenz für die Überwachung:** Ein Health-Check auf pg_cron-Status hätte
 diesen Zustand als gesund gemeldet. Wer wissen will, ob ein Agent arbeitet,
 muss seine **Ausgabe** messen (Zeilen in `agent_observations` seit *t*), nicht

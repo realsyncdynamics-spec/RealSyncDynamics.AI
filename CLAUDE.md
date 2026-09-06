@@ -577,6 +577,16 @@ Jeder Agent braucht vier Dimensionen — fehlt eine, ist er nicht governance-fä
   In Produktion verfällt heute kein Memory. Ohne Schaden, weil
   `governance_memory` leer ist, aber die Zusage steht ungedeckt.
   Prüfen also nicht an `cron.job`, sondern an `cron.job_run_details.status`.
+  **Auch das reicht nicht, gemessen 2026-09-06**: `agent-os-runner-hourly` steht
+  seit dem 2026-09-01 auf 48 von 48 Läufen `succeeded` und richtet trotzdem
+  nichts aus — der Status belegt nur, dass der `net.http_post` abgesetzt wurde,
+  nicht was die Edge Function geantwortet hat. Die Antwort steht in
+  `net._http_response`; dort meldet der Runner für alle sechs Tenants
+  `monitoring_slos_evaluated: 0`. Ein Cron-Job hat also drei Zustände, nicht
+  zwei: nicht registriert, registriert aber scheiternd, und grün aber
+  wirkungslos. Der dritte ist der teuerste, weil jede Überwachung ihn als
+  gesund meldet. Kette und Ursache:
+  `docs/runbooks/agenten-bestandsaufnahme-2026-09-06.md`.
 
 ### Enforcement-Schalter — der PDP entscheidet erst, wenn jemand ihn lässt
 

@@ -1,0 +1,44 @@
+name: Cron Health Guard
+
+# Faengt pg_cron-Jobs ab, die zwar registriert sind, aber nicht durchlaufen.
+#
+# Anlass (gemessen 2026-09-06 gegen die Live-DB): vier Jobs scheiterten seit
+# dem 2026-08-12 bei jedem Lauf — 3629 Fehllaeufe an einer einzigen Ursache,
+# dem fehlenden Vault-Secret `service_role_key`. Betroffen sind der Scheduler
+# (ab Growth verkauft), die Governance-Sentinel-Schleife und der Memory-Decay
+# aus RFC-003. Keiner dieser Ausfaelle war irgendwo sichtbar: Die drei
+# bestehenden Guards pruefen Migrationen, Function-Existenz und Funktions-ACLs
+# — ob ein Job tatsaechlich laeuft, prueft keiner.
+#
+# CLAUDE.md §5 warnt genau davor: „Pruefen also nicht an `cron.job`, sondern an
+# `cron.job_run_details.status`." Dieser Guard tut das.
+#
+# Gemeldet wird ueber `drift-alert.yml`, das diesen Workflow per `workflow_run`
+# beobachtet und bei Rot ein Issue offen haelt.
+
+on:
+  schedule:
+    - cron: '45 6 * * *'   # taeglich 06:45 UTC, nach dem Function-ACL-Guard
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'scripts/check-cron-health.mjs'
+      - '.github/workflows/cron-health.yml'
+
+jobs:
+  cron-health:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '20'
+      - name: Check cron health
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+          # Wie bei den anderen Guards: Der Zustand beschreibt die PROD-DB,
+          # nicht die Qualitaet des Diffs — auf PRs advisory, im taeglichen
+          # schedule-Lauf hart.
+          CRON_HEALTH_MODE: ${{ github.event_name == 'pull_request' && 'advisory' || 'fail' }}
+        run: node scripts/check-cron-health.mjs

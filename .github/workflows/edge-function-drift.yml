@@ -16,6 +16,13 @@ on:
       - 'scripts/check-edge-function-drift.mjs'
       - 'scripts/edge-function-drift-allowlist.json'
       - '.github/workflows/edge-function-drift.yml'
+      # Die Soll-Liste selbst. Sie fehlte hier bis zum 2026-09-06 — mit der
+      # Folge, dass der Guard auf genau dem PR nicht lief, der ihn repariert:
+      # Ein PR, der nur diese Datei anfasst, loest keinen der Pfade oben aus.
+      # Fremde PRs blockierte er derweil, weil er dort ueber `supabase/**`
+      # mitlief. Wer die Liste nachzieht, soll die Gegenprobe im selben Lauf
+      # bekommen.
+      - 'src/config/production-edge-functions.ts'
 
 jobs:
   drift:

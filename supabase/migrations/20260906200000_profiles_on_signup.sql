@@ -54,6 +54,26 @@
 -- Bewusst **keine** INSERT-Policy fuer `authenticated`: Das Profil entsteht
 -- serverseitig beim Anlegen des Kontos, der Browser braucht dafuer kein
 -- Schreibrecht (CLAUDE.md §4).
+--
+-- ── PROBELAUF: der Trigger wurde AUSGELOEST, nicht nur angelegt ──────────────
+--
+-- CLAUDE.md §3 haelt seit dem 2026-09-06 fest, dass `Migration validation`
+-- Funktionen anwendet, aber nie aufruft — PL/pgSQL prueft den Rumpf erst zur
+-- Laufzeit, ein fehlerhafter Koerper laeuft in CI also gruen durch. Diese
+-- Migration aendert genau so eine Funktion. Der erste Probelauf hatte sie nur
+-- ersetzt; das genuegt nach dieser Regel nicht.
+--
+-- Nachgeholt am 2026-09-06 gegen das Live-Schema, alles in einer Transaktion
+-- mit ROLLBACK: zwei Inserts in `auth.users` haben den Trigger tatsaechlich
+-- gefeuert.
+--
+--   mit raw_user_meta_data.full_name  -> Profil da, full_name "Erika Musterfrau",
+--                                        Mandant "Probe-A's Workspace", Rolle owner
+--   ohne Metadaten                    -> Profil da, full_name NULL,
+--                                        Mandant "Probe B's Workspace", Rolle owner
+--
+-- Danach zurueckgerollt und nachgeprueft: 6 Nutzer, 1 Profil, 6 Mandanten —
+-- Produktion unveraendert.
 
 BEGIN;
 

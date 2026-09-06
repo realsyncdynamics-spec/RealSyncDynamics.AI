@@ -219,6 +219,7 @@ const KodeeView = lazy(() => import('./features/kodee/KodeeView').then((m) => ({
 const ConnectionsView = lazy(() => import('./features/kodee/connections/ConnectionsView').then((m) => ({ default: m.ConnectionsView })));
 const UsageView = lazy(() => import('./features/billing/UsageView').then((m) => ({ default: m.UsageView })));
 const BillingView = lazy(() => import('./features/billing/BillingView').then((m) => ({ default: m.BillingView })));
+const BillingRecoverView = lazy(() => import('./features/billing/BillingRecoverView').then((m) => ({ default: m.BillingRecoverView })));
 const GovernanceAlertsView = lazy(() => import('./features/governance/AlertsView').then((m) => ({ default: m.AlertsView })));
 const ComplianceAlertRulesView = lazy(() => import('./features/governance/ComplianceAlertRulesView').then((m) => ({ default: m.ComplianceAlertRulesView })));
 const ComplianceMonitoringDashboard = lazy(() => import('./features/governance/ComplianceMonitoringDashboard').then((m) => ({ default: m.ComplianceMonitoringDashboard })));
@@ -871,6 +872,15 @@ function RoutesWithTracking() {
       <Route path="/app/monitoring/rules" element={<GovernanceBrowserShell><RequireAal2 action="Compliance Rules"><ComplianceAlertRulesView /></RequireAal2></GovernanceBrowserShell>} />
       <Route path="/app/optimize" element={<GovernanceBrowserShell><OptimizationView /></GovernanceBrowserShell>} />
       <Route path="/app/billing" element={<GovernanceBrowserShell><RequireAal2 action="Billing-Verwaltung"><BillingView /></RequireAal2></GovernanceBrowserShell>} />
+      {/* Bewusst OHNE RequireAal2 — und das ist die einzige Ausnahme im
+          Billing-Bereich. Wessen Karte abgelaufen ist, muss sie erneuern
+          koennen, auch ohne Authenticator zur Hand; sonst endet ein
+          Zahlungsproblem in einem Kontoverlust. Die Ausnahme traegt, weil die
+          Fläche nur eine Sache kann: `stripe-portal` erzeugt fuer sie eine
+          Sitzung mit `flow: 'payment_method_update'`, in der Planwechsel,
+          Kuendigung und Rechnungen gar nicht erst vorkommen. `/app/billing`
+          selbst bleibt unveraendert hinter AAL2. */}
+      <Route path="/app/billing/recover" element={<AppGate><GovernanceBrowserShell><BillingRecoverView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/datasets" element={<GovernanceBrowserShell><AiActDataGovernanceView /></GovernanceBrowserShell>} />
       <Route path="/app/analytics" element={<GovernanceBrowserShell><Suspense fallback={<div>Loading...</div>}><DashboardAnalyticsView /></Suspense></GovernanceBrowserShell>} />
       <Route path="/app/monitoring/sources" element={<GovernanceBrowserShell><MonitoringSourcesView /></GovernanceBrowserShell>} />

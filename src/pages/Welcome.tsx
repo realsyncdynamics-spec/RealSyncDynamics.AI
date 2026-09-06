@@ -7,6 +7,10 @@ import { OAuthProviderButtons } from '../features/auth/OAuthProviderButtons';
 import { Logo } from '../components/Logo';
 import { getSupabase, isSupabaseConfigured } from '../lib/supabase';
 import { claimPendingAudit } from '../core/onboarding/claimAudit';
+import {
+  resolveCustomerDestination,
+  hasAuthCallbackArtifacts,
+} from '../core/access/customer-destination';
 
 /**
  * /welcome — Onboarding-Setup-Wizard nach Stripe-Checkout.
@@ -38,6 +42,16 @@ export function Welcome() {
   const [tenantId, setTenantId] = useState<string | null>(null);
   const [auditQueued, setAuditQueued] = useState(false);
 
+  // Synchron beim ersten Rendern gelesen — der Supabase-Client räumt die
+  // Auth-Artefakte aus der Adresse, sobald er die Sitzung übernommen hat.
+  // Danach wäre der Rückkehrer vom Magic-Link nicht mehr vom Bestandskunden
+  // zu unterscheiden. Siehe `hasAuthCallbackArtifacts`.
+  const [kamVomAuthCallback] = useState(() =>
+    typeof window === 'undefined'
+      ? false
+      : hasAuthCallbackArtifacts(window.location.search, window.location.hash),
+  );
+
   // OAuth-Provider-Fehler abfangen, falls der User mit ?error=... oder
   // #error=... auf /welcome zurueck navigiert (z.B. access_denied,
   // server_error). Der invalid_client-Fall bleibt allerdings auf der
@@ -66,10 +80,28 @@ export function Welcome() {
 
     sb.auth.getSession().then(({ data }) => {
       if (cancelled) return;
-      if (data.session?.user) {
-        setEmail((prev) => prev || data.session?.user.email || '');
-        setStep((prev) => (prev === 1 ? 2 : prev));
+      if (!data.session?.user) return;
+
+      // Wer hier bereits angemeldet ankommt und weder aus dem Checkout
+      // (`?session=`) noch frisch aus einem Auth-Callback kommt, ist ein
+      // Bestandskunde, der auf „Login" geklickt hat. Er gehört in seinen
+      // Arbeitsbereich — nicht in Schritt 2 des Einrichtungs-Assistenten, wo
+      // er einen weiteren API-Schlüssel erzeugen und das Cookie-SDK erneut
+      // einbinden soll. Der Assistent selbst bleibt unverändert; er ist
+      // richtig für den Fall, für den er gebaut wurde.
+      const ziel = resolveCustomerDestination({
+        hasSession: true,
+        checkoutSessionId: sessionId,
+        arrivedFromAuthCallback: kamVomAuthCallback,
+        nextParam: new URLSearchParams(window.location.search).get('next'),
+      });
+      if (ziel.kind === 'next' || ziel.kind === 'workspace') {
+        navigate(ziel.path, { replace: true });
+        return;
       }
+
+      setEmail((prev) => prev || data.session?.user.email || '');
+      setStep((prev) => (prev === 1 ? 2 : prev));
     });
 
     const { data: subscription } = sb.auth.onAuthStateChange((event, session) => {

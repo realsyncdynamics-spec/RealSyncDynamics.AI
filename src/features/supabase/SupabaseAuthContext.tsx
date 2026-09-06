@@ -190,3 +190,20 @@ export function useSupabaseAuth() {
   }
   return context;
 }
+
+/**
+ * Wie `useSupabaseAuth`, aber ohne Provider `null` statt Ausnahme.
+ *
+ * Für Bausteine, die auch außerhalb des Auth-Baums gerendert werden — die
+ * öffentliche Kopfzeile etwa erscheint auf jeder Landingpage, im
+ * Prerender-Lauf und in Tests, die eine einzelne Seite isoliert rendern. Ein
+ * geworfener Fehler nähme dort die ganze Seite mit, obwohl die Antwort
+ * „niemand angemeldet" völlig ausreicht.
+ *
+ * Wer über Zugriff entscheidet, nimmt weiterhin `useSupabaseAuth`: Dort ist
+ * ein fehlender Provider ein Fehler und darf nicht als „nicht angemeldet"
+ * durchgehen.
+ */
+export function useSupabaseAuthOptional(): SupabaseAuthContextType | null {
+  return useContext(SupabaseAuthContext);
+}

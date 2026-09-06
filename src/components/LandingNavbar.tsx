@@ -3,6 +3,8 @@ import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Logo } from './Logo';
 import { CTA } from '../content/runtimeVocab';
+import { useOptionalAuth } from '../lib/useAuth';
+import { resolveCustomerDestination, WELCOME_PATH } from '../core/access/customer-destination';
 
 const NAV_ITEMS = [
   { label: 'Produkt',         to: '/runtime' },
@@ -21,6 +23,17 @@ export function LandingNavbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const { pathname } = useLocation();
+
+  // Der Login-Punkt der Kopfzeile zeigt auf `/welcome` — die kanonische
+  // Anmeldefläche und zugleich der Einrichtungs-Assistent. Für einen bereits
+  // angemeldeten Bestandskunden war das ein Rückschritt in ein Onboarding, das
+  // er hinter sich hat. `resolveCustomerDestination` entscheidet das an einer
+  // Stelle für Kopfzeile und `/welcome` gemeinsam; solange die Sitzung noch
+  // aufgelöst wird, bleibt es beim bisherigen Ziel.
+  const { isAuthenticated, isLoading } = useOptionalAuth();
+  const loginZiel =
+    resolveCustomerDestination({ hasSession: isAuthenticated, isLoading }).path ?? WELCOME_PATH;
+  const zielFuer = (to: string) => (to === WELCOME_PATH ? loginZiel : to);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 16);
@@ -52,7 +65,7 @@ export function LandingNavbar() {
               return (
                 <Link
                   key={item.to}
-                  to={item.to}
+                  to={zielFuer(item.to)}
                   className={`text-sm font-medium tracking-tight transition-colors ${
                     active ? 'text-slate-900 font-semibold' : 'text-slate-500 hover:text-slate-900'
                   }`}
@@ -86,7 +99,7 @@ export function LandingNavbar() {
             {NAV_ITEMS.map((item) => (
               <Link
                 key={item.to}
-                to={item.to}
+                to={zielFuer(item.to)}
                 onClick={() => setIsOpen(false)}
                 className="block px-3 py-3 text-base font-medium text-slate-700 hover:bg-slate-50"
               >

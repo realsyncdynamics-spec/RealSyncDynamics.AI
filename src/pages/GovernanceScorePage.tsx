@@ -190,9 +190,20 @@ export function GovernanceScorePage() {
                   <div className="flex items-baseline justify-between gap-2 mb-1">
                     <h2 className="font-display font-bold text-2xl text-titanium-50">{result.recommended.name}</h2>
                     {tier && (
+                      // `priceOnRequest` schlägt den Betrag — sonst stünde hier
+                      // der interne Listenpreis eines Vertragsplans, während die
+                      // Preisseite daneben „Auf Anfrage" zeigt. Genau dieser
+                      // Fehler ist im ROI-Rechner schon einmal passiert
+                      // (siehe `CALCULABLE_PRICING_TIERS` in config/pricing.ts).
                       <span className="font-display font-semibold text-titanium-100">
-                        {tier.priceEur > 0 ? `${tier.priceString} €` : tier.priceString}
-                        {tier.priceEur > 0 && <span className="text-titanium-600 text-xs font-mono"> {tier.priceSuffix}</span>}
+                        {tier.priceOnRequest
+                          ? 'Auf Anfrage'
+                          : tier.priceEur > 0
+                            ? `${tier.priceString} €`
+                            : tier.priceString}
+                        {!tier.priceOnRequest && tier.priceEur > 0 && (
+                          <span className="text-titanium-600 text-xs font-mono"> {tier.priceSuffix}</span>
+                        )}
                       </span>
                     )}
                   </div>

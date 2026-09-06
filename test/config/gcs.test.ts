@@ -8,6 +8,7 @@ import {
   gcsPackageById,
   type GcsAnswers,
 } from '../../src/config/gcs';
+import { SELLABLE_PRICING_TIERS, tierById } from '../../src/config/pricing';
 
 describe('GCS-Modell (Governance Complexity Score)', () => {
   it('GCS_MAX_RAW entspricht der Summe der Dimensions-Maxima', () => {
@@ -24,8 +25,8 @@ describe('GCS-Modell (Governance Complexity Score)', () => {
     }
   });
 
-  it('die drei score-basierten Pakete decken lückenlos 0–100 ab', () => {
-    const scored = GCS_PACKAGES.filter((p) => p.id !== 'enterprise').sort((a, b) => a.minScore - b.minScore);
+  it('die Pakete decken lückenlos 0–100 ab', () => {
+    const scored = [...GCS_PACKAGES].sort((a, b) => a.minScore - b.minScore);
     expect(scored[0].minScore).toBe(0);
     expect(scored[scored.length - 1].maxScore).toBe(100);
     for (let i = 1; i < scored.length; i++) {
@@ -35,7 +36,32 @@ describe('GCS-Modell (Governance Complexity Score)', () => {
 
   it('jedes Paket mappt auf einen bestehenden Pricing-Tier (Checkout bleibt intakt)', () => {
     const tierIds = GCS_PACKAGES.map((p) => p.tierId);
-    expect(tierIds).toEqual(['starter', 'growth', 'agency', 'enterprise']);
+    expect(tierIds).toEqual(['starter', 'growth', 'enterprise']);
+  });
+
+  // Der eigentliche Befund vom 2026-09-06: Das obere Band zeigte auf `agency`
+  // — einen seit AP2 stillgelegten Plan. Wer dort landete, wurde auf einen
+  // Checkout geschickt, den es nicht mehr gibt. Diese beiden Prüfungen halten
+  // das fest, damit ein künftiger Plan-Umbau die Sackgasse nicht wieder öffnet.
+  it('kein Paket empfiehlt einen stillgelegten Plan', () => {
+    const angeboten = new Set(SELLABLE_PRICING_TIERS.map((t) => t.id as string));
+    for (const paket of GCS_PACKAGES) {
+      expect(angeboten, `${paket.id} → ${paket.tierId}`).toContain(paket.tierId as string);
+    }
+  });
+
+  // Das obere Band zeigt seither auf einen Vertragsplan. Dessen Betrag steht
+  // in der SSoT, ist aber nicht öffentlich zugesichert — die Fläche muss ihn
+  // deshalb als „Auf Anfrage" zeigen und nicht als Preis.
+  it('das obere Band führt auf einen Plan, dessen Betrag auf Anfrage gilt', () => {
+    const oben = GCS_PACKAGES.find((p) => p.maxScore === 100 && p.minScore > 0)!;
+    expect(tierById(oben.tierId)?.priceOnRequest).toBe(true);
+  });
+
+  it('kein Paket trägt einen Namen, den es als Plan nicht gibt', () => {
+    // „Professional" war so ein Name: nirgends buchbar, nirgends auffindbar.
+    const namen = GCS_PACKAGES.map((p) => p.name);
+    expect(namen).not.toContain('Professional');
   });
 
   it('levelForScore klassifiziert die Bänder korrekt', () => {
@@ -113,20 +139,20 @@ describe('GCS-Modell (Governance Complexity Score)', () => {
     expect(res.recommended.id).toBe('business');
   });
 
-  it('Arztpraxis → hohe Komplexität → Professional', () => {
+  it('Arztpraxis → hohe Komplexität → Enterprise', () => {
     const res = computeGcs(ARZTPRAXIS);
     expect(res.score).toBeGreaterThanOrEqual(56);
-    expect(res.recommended.id).toBe('professional');
+    expect(res.recommended.id).toBe('enterprise');
     // Gesundheitsdaten + KI in sensiblem Prozess müssen als Risiken auftauchen.
     const dims = res.risks.map((r) => r.dimension);
     expect(dims).toContain('sensitiveData');
     expect(dims).toContain('aiUsage');
   });
 
-  it('Kanzlei → hohe Komplexität → Professional', () => {
+  it('Kanzlei → hohe Komplexität → Enterprise', () => {
     const res = computeGcs(KANZLEI);
     expect(res.score).toBeGreaterThanOrEqual(56);
-    expect(res.recommended.id).toBe('professional');
+    expect(res.recommended.id).toBe('enterprise');
   });
 
   it('Score steigt monoton mit der Komplexität (Friseur < Handwerker < Arztpraxis)', () => {
@@ -148,6 +174,7 @@ describe('GCS-Modell (Governance Complexity Score)', () => {
   });
 
   it('gcsPackageById liefert das passende Paket', () => {
-    expect(gcsPackageById('professional').tierId).toBe('agency');
+    expect(gcsPackageById('business').tierId).toBe('growth');
+    expect(gcsPackageById('enterprise').tierId).toBe('enterprise');
   });
 });

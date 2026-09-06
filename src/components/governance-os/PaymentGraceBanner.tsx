@@ -17,6 +17,13 @@ import { useEntitlements } from '../../core/billing/useEntitlements';
  *
  * Er schaltet nichts frei und nichts ab. Was der Mandant darf, entscheidet
  * `tenant_entitlements()` auf dem Server; diese Fläche zeigt nur an.
+ *
+ * Der Verweis zeigt seit dem 2026-09-06 auf `/app/billing/recover`, nicht mehr
+ * auf `/app/billing`. Letzteres steht hinter `RequireAal2`: Der Hinweis
+ * zählte die Frist herunter und führte dann auf eine MFA-Abfrage — für
+ * jemanden ohne Authenticator zur Hand war das eine Sackgasse, und zwar
+ * genau in der Lage, in der Handeln nötig ist. Die Recovery-Fläche kann nur
+ * das Zahlungsmittel erneuern; `/app/billing` bleibt unverändert geschützt.
  */
 export function PaymentGraceBanner() {
   const { paymentState } = useEntitlements();
@@ -45,7 +52,7 @@ export function PaymentGraceBanner() {
         {frist} Ihre Daten, Prüfpfade und Nachweise bleiben in jedem Fall erhalten.
       </span>
       <Link
-        to="/app/billing"
+        to="/app/billing/recover"
         className="shrink-0 font-mono text-xs uppercase tracking-wider underline underline-offset-4 hover:text-amber-100"
       >
         Zahlung prüfen

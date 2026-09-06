@@ -279,7 +279,7 @@ function Inner() {
             <p className="text-[11px] text-titanium-500">Kontinuierliches Website-Monitoring, Alerts, Evidence-Snapshots.</p>
           </div>
           <div className="px-4 py-4 border-t sm:border-t-0 border-titanium-900">
-            <p className="font-mono text-[9px] uppercase tracking-widest text-cyan-500 mb-1">Professional</p>
+            <p className="font-mono text-[9px] uppercase tracking-widest text-cyan-500 mb-1">Growth</p>
             <p className="font-display font-bold text-titanium-50 text-sm mb-2">Monitoring + Control Packs</p>
             <p className="text-[11px] text-titanium-500">DSGVO, EU AI Act und Vendor Control Packs inklusive.</p>
           </div>

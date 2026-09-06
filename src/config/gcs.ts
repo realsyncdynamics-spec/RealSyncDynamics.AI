@@ -154,7 +154,7 @@ export const GCS_MAX_RAW = GCS_DIMENSIONS.reduce((sum, d) => sum + d.max, 0);
 
 // ─── Pakete (Governance Coverage) ────────────────────────────────────
 
-export type GcsPackageId = 'starter' | 'business' | 'professional' | 'enterprise';
+export type GcsPackageId = 'starter' | 'business' | 'enterprise';
 
 export interface GcsPackage {
   id: GcsPackageId;
@@ -174,6 +174,20 @@ export interface GcsPackage {
  * `tierId` bindet an die bestehenden, buchbaren Pricing-Tiers (Stripe), damit
  * der Checkout ohne Migration funktioniert. Die Preise werden zur Laufzeit aus
  * `PRICING_TIERS` (Single Source of Truth) gezogen — hier KEINE Preis-Duplikate.
+ *
+ * Drei Bänder, drei angebotene Pläne — genau die Leiter aus AP2
+ * (Starter · Growth · Enterprise). Bis zum 2026-09-06 stand hier ein viertes
+ * Paket „Professional" auf `tierId: 'agency'`. Agency ist seit AP2
+ * stillgelegt (`availability: 'legacy'`, CLAUDE.md §7): Der Rechner schickte
+ * jeden Interessenten mit hoher Komplexität — Arztpraxis, Kanzlei — auf
+ * `/checkout/agency`, also in einen Plan, den man nicht mehr buchen kann.
+ * Und „Professional" war kein Planname des Produkts, sondern ein hier
+ * erfundener; wer ihn auf /pricing suchte, fand ihn nicht.
+ *
+ * Beides ist mit derselben Änderung erledigt: Das obere Band zeigt jetzt auf
+ * Enterprise. Ein eigenes Paket daneben, das denselben Plan bucht, wäre die
+ * gleiche Doppelbenennung eine Ebene tiefer gewesen — deshalb sind die beiden
+ * oberen Pakete zusammengeführt statt umbenannt.
  */
 export const GCS_PACKAGES: GcsPackage[] = [
   {
@@ -195,22 +209,18 @@ export const GCS_PACKAGES: GcsPackage[] = [
     bullets: ['KI-Governance', 'AI Risk Register', 'Continuous Monitoring', 'Drift-Detection'],
   },
   {
-    id: 'professional',
-    name: 'Professional',
-    coverage: 'Branchenbibliothek, Governance Agents & auditfähige Automatisierung',
-    minScore: 56,
-    maxScore: 100,
-    tierId: 'agency',
-    bullets: ['Branchenbibliothek', 'Governance Agents', 'Automatische Dokumentation', 'Audit-Trail'],
-  },
-  {
     id: 'enterprise',
     name: 'Enterprise',
-    coverage: 'Multi-Mandant, White-Label & eigene Governance-Policies',
-    minScore: 0,
+    coverage: 'Branchenbibliothek, Governance Agents, Multi-Mandant & eigene Policies',
+    minScore: 56,
     maxScore: 100,
     tierId: 'enterprise',
-    bullets: ['Multi-Mandant', 'White-Label', 'API', 'Eigene Governance-Policies & Agenten'],
+    bullets: [
+      'Branchenbibliothek & Governance Agents',
+      'Automatische Dokumentation & Audit-Trail',
+      'Multi-Mandant, White-Label & API',
+      'Eigene Governance-Policies',
+    ],
   },
 ];
 
@@ -296,11 +306,13 @@ export function computeGcs(answers: GcsAnswers, opts?: { multiTenant?: boolean }
 
   let recommended: GcsPackage;
   if (opts?.multiTenant || enterpriseSignal) {
+    // Multi-Mandant / >250 Mitarbeitende schlagen das Score-Band: Enterprise
+    // auch bei niedriger Komplexität.
     recommended = gcsPackageById('enterprise');
   } else {
     recommended =
-      GCS_PACKAGES.find((p) => p.id !== 'enterprise' && score >= p.minScore && score <= p.maxScore) ??
-      gcsPackageById('professional');
+      GCS_PACKAGES.find((p) => score >= p.minScore && score <= p.maxScore) ??
+      gcsPackageById('enterprise');
   }
 
   // Coverage: Anteil der adressierten Governance-Komplexität. Höhere Pakete
@@ -308,7 +320,6 @@ export function computeGcs(answers: GcsAnswers, opts?: { multiTenant?: boolean }
   const coverageCeil: Record<GcsPackageId, number> = {
     starter: 40,
     business: 70,
-    professional: 95,
     enterprise: 100,
   };
   const coverage = Math.min(100, Math.round((coverageCeil[recommended.id] / 100) * 100));

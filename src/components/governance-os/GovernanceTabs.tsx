@@ -8,7 +8,7 @@ import {
   MessagesSquare, Zap, Server, ShieldCheck, Layers, CalendarClock, Archive, Library,
   type LucideIcon,
 } from 'lucide-react';
-import { TAB_MODULES, DOCK_MODULES, canAccessModule, minimumPlanForModule } from './governanceModules';
+import { TAB_MODULES, DOCK_MODULES, canAccessModule, minimumPlanLabelForModule } from './governanceModules';
 import { ModuleStatusBadge } from './ModuleStatusBadge';
 import type { GovernanceModule } from './governanceBrowserTypes';
 import { useActivePlan } from '../../hooks/useModuleAccess';
@@ -18,10 +18,6 @@ const ICON_MAP: Record<string, LucideIcon> = {
   Building2, BarChart3, Users, Settings, Bell, CreditCard, Wrench,
   GitMerge, FileText, ClipboardCheck, ClipboardList, LayoutDashboard,
   ShieldAlert, MessagesSquare, Zap, Server, ShieldCheck, Layers, CalendarClock, Archive, Library,
-};
-
-const PLAN_LABELS: Record<string, string> = {
-  starter: 'Starter', growth: 'Professional', agency: 'Agency', enterprise: 'Enterprise',
 };
 
 function TabItem({ module, active }: { module: GovernanceModule; active: boolean }) {
@@ -44,8 +40,12 @@ function TabItem({ module, active }: { module: GovernanceModule; active: boolean
 
 function LockedTabItem({ module }: { module: GovernanceModule }) {
   const Icon: LucideIcon = ICON_MAP[module.icon] ?? Home;
-  const minPlan = minimumPlanForModule(module);
-  const planLabel = PLAN_LABELS[minPlan] ?? minPlan;
+  // Plannamen kommen aus der Pricing-SSoT, nicht aus einer lokalen Tabelle.
+  // Die frühere Tabelle hier übersetzte `growth` nach „Professional" — einen
+  // Plannamen, den es im Produkt nicht gibt (CLAUDE.md §7: es gibt genau
+  // sechs Abo-Pläne). Der Sperrhinweis nannte damit einen Plan, den der
+  // Kunde auf /pricing nicht findet.
+  const planLabel = minimumPlanLabelForModule(module);
   return (
     <Link
       to="/pricing"

@@ -215,6 +215,23 @@ Service-Role umgeht RLS — deshalb **ausschließlich in Edge Functions**.
 >    Insert gescheitert. Wer nur die Tabelle nachgezogen hätte, hätte den Pfad
 >    nicht funktionsfähig gemacht und das für erledigt gehalten.
 >
+> **Was damit NICHT erledigt ist — und es ist die andere Hälfte des Befunds.**
+> Nachgemessen am 2026-09-06 um 20:35 UTC: `audit_jobs` 0, `scan_runs` 0,
+> `findings` 0, `audit_evidence` 0, **Objekte im Bucket `audit-evidence` 0** —
+> bei **174 Zeilen in `gdpr_audits`**, neueste vom selben Abend. Der Pfad, der
+> tatsächlich läuft, ist `gdpr-audit`, und er legt **keinen
+> Screenshot-Nachweis** an: `gdpr_audits` führt keine Spalte für Screenshot,
+> Evidence oder Storage (an `information_schema.columns` geprüft), und im
+> Quelltext der Function kommt „screenshot" nicht vor.
+>
+> Die Korrektur oben nimmt also zu Recht den Alarm heraus („es ging nichts
+> verloren"), darf aber nicht als Entwarnung gelesen werden: Tabelle und
+> Bucket stehen jetzt bereit, **gefüllt werden sie von niemandem**. Für ein
+> Produkt, das Prüfpfad zusagt, ist „der Nachweis geht verloren" und „es gibt
+> keinen Nachweis" derselbe Ausgang für den Kunden — nur der zweite lässt sich
+> nicht als Bug abtun. Ob der Auditpfad Screenshots beweissichern soll, ist
+> eine Produktentscheidung und gehört entschieden, nicht nebenbei nachgerüstet.
+>
 > **Bewusst nicht mitgenommen**: die View `v_findings_with_evidence` aus der
 > Ursprungsmigration. Sie liest `audit_findings.audit_id` und `.rule_id`;
 > Produktion führt eine andere `audit_findings` mit `audit_report_id` und

@@ -7,6 +7,8 @@
 
 import { getSupabase } from '../../lib/supabase';
 import type {
+  EditChange,
+  PageEdit,
   AgentKey,
   PublishGateEvaluation,
   RefinementChange,
@@ -113,6 +115,12 @@ export type SiteOsError =
    * erschien als „Edge Function returned a non-2xx status code".
    */
   | { kind: 'gone'; message: string }
+  /**
+   * Die Bearbeitung setzte auf einem Stand auf, der inzwischen überholt ist
+   * (`siteos/edit`, 409). Nichts wurde gespeichert; der Nutzer lädt neu und
+   * entscheidet selbst — statt dass eine ältere Fassung still gewinnt.
+   */
+  | { kind: 'conflict'; message: string }
   | { kind: 'error'; message: string };
 
 export type SiteOsResult<T> = { kind: 'ok'; data: T } | SiteOsError;
@@ -125,6 +133,7 @@ function mapError(error: unknown): SiteOsError {
   if (status === 400) return { kind: 'bad_request', message };
   if (status === 502) return { kind: 'unreachable', message };
   if (status === 410) return { kind: 'gone', message };
+  if (status === 409) return { kind: 'conflict', message };
   return { kind: 'error', message };
 }
 
@@ -136,6 +145,7 @@ export function errorMessage(e: SiteOsError): string {
     case 'not_deployed': return 'Diese Funktion ist noch nicht ausgerollt.';
     case 'not_found': return e.message;
     case 'gone': return 'Dieser Entwurf ist abgelaufen. Bitte beginnen Sie neu.';
+    case 'conflict': return 'Der Entwurf wurde inzwischen an anderer Stelle geändert. Bitte neu laden und die Änderung wiederholen.';
     default: return e.message;
   }
 }
@@ -181,6 +191,42 @@ export async function buildSite(args: {
   const { data, error } = await sb.functions.invoke('siteos/builder', { body: args });
   if (error) return mapError(error);
   return { kind: 'ok', data: data as BuildResponse };
+}
+
+export interface EditResponse {
+  ok: true;
+  unchanged: boolean;
+  blueprint_id?: string;
+  slug: string;
+  version: number;
+  content_sha256: string;
+  prev_hash?: string | null;
+  blueprint: SiteBlueprint;
+  findings: RuntimeFinding[];
+  scores: ScoreBreakdown;
+  changes: EditChange[];
+  rejected: string[];
+  provenance_linked?: boolean;
+}
+
+/**
+ * Redaktionelle Bearbeitung aus dem Block-Editor. Geschickt werden nur
+ * Reihenfolge, Art und editierbare Felder je Block (`PageEdit`); Rechtsgrund-
+ * lagen, Drittanbieter und KI-Kennzeichnung leitet der Server ab
+ * (`siteos-core/blueprint/edit.ts`). `base_sha256` ist der Stand, auf dem
+ * die Bearbeitung aufsetzt — weicht er vom gespeicherten ab, antwortet der
+ * Server mit 409, statt eine ältere Fassung stillschweigend zu überschreiben.
+ */
+export async function editSite(args: {
+  tenant_id: string;
+  slug: string;
+  base_sha256: string;
+  edits: PageEdit[];
+}): Promise<SiteOsResult<EditResponse>> {
+  const sb = getSupabase();
+  const { data, error } = await sb.functions.invoke('siteos/edit', { body: args });
+  if (error) return mapErrorDetailed(error);
+  return { kind: 'ok', data: data as EditResponse };
 }
 
 export async function runScan(args: {

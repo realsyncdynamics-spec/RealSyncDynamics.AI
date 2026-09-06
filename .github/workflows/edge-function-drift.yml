@@ -13,6 +13,14 @@ on:
     paths:
       - 'supabase/config.toml'
       - 'supabase/functions/**'
+      # Dritte Eingabe des Guards (Check 3: deployte Menge gegen die
+      # handgepflegte Liste) — und bis zum 2026-09-06 die einzige, die hier
+      # fehlte. Folge: Wer die Liste veralten liess, bekam davon in KEINEM
+      # PR-Check etwas zu sehen; der Befund tauchte erst im naechtlichen
+      # Lauf auf oder, schlimmer, an einem fremden PR, der zufaellig
+      # supabase/functions/** anfasste. Genau so ist #1229 rot geworden,
+      # ohne eine einzige Edge Function zu beruehren.
+      - 'src/config/production-edge-functions.ts'
       - 'scripts/check-edge-function-drift.mjs'
       - 'scripts/edge-function-drift-allowlist.json'
       - '.github/workflows/edge-function-drift.yml'

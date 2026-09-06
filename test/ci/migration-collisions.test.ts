@@ -22,6 +22,7 @@ import {
   allowedExistingTables,
   collide,
   duplicateVersions,
+  isTransient,
   stripSqlComments,
   tablesCreatedBy,
   versionOf,
@@ -184,5 +185,26 @@ describe('collide — gegen Basis und gegen fremde PRs', () => {
       idx({ '20260904000300': 'alt.sql' }, { org_units: 'alt.sql' }),
       'origin/main',
     )).toEqual([]);
+  });
+});
+
+describe('isTransient — wann ein zweiter Versuch etwas bringt', () => {
+  // Die Unterscheidung traegt Variante 2: Ein voruebergehender Fehler wird
+  // einmal wiederholt, ein dauerhafter faellt sofort durch. Wuerde 401 als
+  // voruebergehend gelten, verzoegerte der Guard eine Fehlkonfiguration nur,
+  // statt sie zu melden.
+  it('wiederholt bei fehlender Antwort', () => {
+    expect(isTransient(null)).toBe(true);
+  });
+
+  it('wiederholt bei Serverfehlern und Drosselung', () => {
+    for (const s of [429, 500, 502, 503, 504]) expect(isTransient(s)).toBe(true);
+  });
+
+  it('wiederholt NICHT bei Fehlkonfiguration', () => {
+    // 401 fehlender/ungueltiger Token · 403 fehlendes pull-requests:read ·
+    // 404 falsches GITHUB_REPOSITORY. Alle drei liefern beim zweiten Versuch
+    // dasselbe — und alle drei sind unter Variante 2 ein FEHLER, kein Skip.
+    for (const s of [400, 401, 403, 404, 422]) expect(isTransient(s)).toBe(false);
   });
 });

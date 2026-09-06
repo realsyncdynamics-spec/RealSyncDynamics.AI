@@ -30,17 +30,36 @@
 //      IF NOT EXISTS faellt still durch, und erst der folgende Index oder die
 //      folgende Policy bricht — mit einer Fehlermeldung, die nicht mehr nach
 //      Doppelung klingt ("column \"key\" does not exist").          (immer)
-//   4) Gegen die uebrigen offenen PRs: dieselben Pruefungen 2) und 3).
-//      Braucht GITHUB_TOKEN; ohne Token wird der Teil uebersprungen.
+//   4) Gegen die uebrigen offenen PRs: Pruefung 2) — Versionsnummern.
+//      Braucht GITHUB_TOKEN.
 //
 // Abgrenzung zu scripts/check-migration-drift.mjs: Jenes vergleicht Repo gegen
 // Produktions-Ledger (ist eine Migration angekommen?). Dieses vergleicht Repo
 // gegen Repo (kollidieren zwei Aenderungen?). Verschiedene Achsen, beide noetig.
 //
-// UEBERSPRINGEN IST NICHT BESTEHEN: Laeuft 4) mangels Token nicht, sagt der
-// Guard das ausdruecklich und nennt die Pruefung als NICHT GELAUFEN. Ein
-// stiller Skip haette denselben Wert wie das leere pdp_shadow_log aus §5 —
-// er sieht aus wie "keine Befunde".
+// UEBERSPRINGEN IST NICHT BESTEHEN. Fuer Pruefung 4) gibt es deshalb zwei
+// verschiedene Ausgaenge, und der Unterschied ist beabsichtigt:
+//
+//   Kein Token (Fork, lokaler Lauf)  → WARNUNG, Exit 0. Die Pruefung war hier
+//                                      nie moeglich; das ist kein Befund.
+//   Token da, Aufruf scheitert       → FEHLER, Exit 1. Sie war moeglich, sollte
+//                                      laufen und lief nicht.
+//
+// Der zweite Fall ist der wichtigere: Ein gruener Lauf mit unausgefuehrter
+// Pruefung sieht aus wie ein Lauf ohne Befund. Genau daran haette der Guard
+// still verrotten koennen — ein vertippter Feldname, und er meldet auf Jahre
+// "nichts gefunden". Dieselbe Klasse wie das leere pdp_shadow_log aus §5.
+// Angenommener Preis: Eine anhaltende GitHub-Stoerung faerbt Migrations-PRs
+// rot. Ein einzelner Wiederholungsversuch faengt den Einzelfall ab.
+//
+// WAS 4) NICHT TUT: Tabellennamen fremder PRs. Dafuer braeuchte es die
+// Dateiinhalte aller offenen PRs statt nur ihrer Dateinamen. Die Folge ist
+// benannt und bleibt offen: Zwei PRs, die dieselbe Tabelle unter
+// verschiedenen Versionsnummern anlegen (#1202 ↔ #1207 mit platform_operators,
+// agent_roles und agents), faellt dieser Guard nicht auf. Erst wenn der eine
+// gemergt ist, greift Pruefung 3) beim anderen. Das ist ein
+// Architekturkonflikt, den ein Guard ohnehin nicht entscheidet — aber niemand
+// sollte glauben, er sei hier abgedeckt.
 //
 // Exit: 0 = keine blockierende Kollision · 1 = Kollision · 2 = Fehlbedienung.
 //
@@ -184,23 +203,64 @@ export function duplicateVersions(files) {
 
 // ─── GitHub: die uebrigen offenen PRs ───────────────────────────────────────
 
+/**
+ * Ist ein Fehlschlag voruebergehend?
+ *
+ * `null` = gar keine Antwort (Netz, DNS, Abbruch). 5xx und 429 sind
+ * Serverzustaende, die ein zweiter Versuch loest. Alles andere — 401, 403,
+ * 404, 422 — ist eine Fehlkonfiguration: Ein zweiter Versuch liefert dasselbe
+ * Ergebnis und verschleiert nur, dass der Guard falsch verdrahtet ist.
+ */
+export function isTransient(status) {
+  return status === null || status === 429 || (status >= 500 && status < 600);
+}
+
+async function githubJson(url, headers) {
+  let res;
+  try {
+    res = await fetch(url, { headers });
+  } catch (e) {
+    const err = new Error(`${url}: ${e.message}`);
+    err.status = null;
+    throw err;
+  }
+  if (!res.ok) {
+    const err = new Error(`${url}: HTTP ${res.status}`);
+    err.status = res.status;
+    throw err;
+  }
+  return res.json();
+}
+
+// Ein einziger Wiederholungsversuch, und nur bei voruebergehenden Fehlern.
+// Ohne ihn kippt ein einzelner 502 der GitHub-API den PR rot — und ein Guard,
+// der aus fremden Gruenden rot wird, wird abgeschaltet. Mehr als einer waere
+// das andere Extrem: Er wuerde eine echte Stoerung in Wartezeit verwandeln.
+async function githubJsonWithRetry(url, headers) {
+  try {
+    return await githubJson(url, headers);
+  } catch (e) {
+    if (!isTransient(e.status)) throw e;
+    await new Promise((r) => setTimeout(r, 2000));
+    return githubJson(url, headers);
+  }
+}
+
 async function openPullRequests(repo, token, selfNumber) {
   const headers = {
     authorization: `Bearer ${token}`,
     accept: 'application/vnd.github+json',
     'user-agent': 'rsd-migration-collision-guard',
   };
-  const res = await fetch(`https://api.github.com/repos/${repo}/pulls?state=open&per_page=100`, { headers });
-  if (!res.ok) throw new Error(`GitHub /pulls: HTTP ${res.status}`);
-  const prs = await res.json();
+  const prs = await githubJsonWithRetry(
+    `https://api.github.com/repos/${repo}/pulls?state=open&per_page=100`, headers);
 
   const out = [];
   for (const pr of prs) {
     if (pr.draft === undefined) continue;
     if (selfNumber && pr.number === Number(selfNumber)) continue;
-    const fr = await fetch(`https://api.github.com/repos/${repo}/pulls/${pr.number}/files?per_page=100`, { headers });
-    if (!fr.ok) throw new Error(`GitHub /pulls/${pr.number}/files: HTTP ${fr.status}`);
-    const files = await fr.json();
+    const files = await githubJsonWithRetry(
+      `https://api.github.com/repos/${repo}/pulls/${pr.number}/files?per_page=100`, headers);
     const migrations = files
       .filter((f) => f.filename.startsWith(`${MIGRATIONS_DIR}/`) && f.status !== 'removed')
       .map((f) => f.filename.replace(/^.*\//, ''));
@@ -292,8 +352,26 @@ async function main() {
       for (const c of collide(ours, sibIndex, 'ein anderer offener PR')) errors.push(c.detail);
       console.log(`✓ ${siblings.length} weitere offene PRs mit Migrationen geprueft.`);
     } catch (e) {
-      notRun.push(`Abgleich gegen die uebrigen offenen PRs ist FEHLGESCHLAGEN: ${e.message}. ` +
-        `Das ist kein Freispruch — die Pruefung hat nicht stattgefunden.`);
+      // Variante 2, Entscheid des Eigentuemers vom 2026-09-06: Liegen
+      // Zugangsdaten vor und bringt dieser Zweig Migrationen mit — beides ist
+      // hier zwangslaeufig der Fall, der frueh ausgestiegene Lauf kommt gar
+      // nicht bis hierher —, dann ist ein Fehlschlag dieser Pruefung ein
+      // FEHLER, keine Warnung.
+      //
+      // Der Grund ist derselbe wie beim leeren pdp_shadow_log aus §5: Ein
+      // gruener Lauf mit unausgefuehrter Pruefung ist schlimmer als ein roter,
+      // weil er wie ein Befund-freier Lauf aussieht. Genau an dieser Stelle
+      // haette der Guard still verrotten koennen — ein vertippter Feldname in
+      // openPullRequests, und er meldet auf Jahre "nichts gefunden".
+      //
+      // Der Preis ist bekannt und angenommen: Eine echte, anhaltende
+      // GitHub-Stoerung faerbt Migrations-PRs rot. Der eine
+      // Wiederholungsversuch oben faengt den Einzelfall ab; was ihn ueberlebt,
+      // ist keine Zufaelligkeit mehr.
+      errors.push(`Abgleich gegen die uebrigen offenen PRs ist FEHLGESCHLAGEN: ${e.message}. ` +
+        `Zugangsdaten liegen vor und dieser Zweig bringt Migrationen mit — die Pruefung ` +
+        `ist hier also nicht optional. Ein gruener Lauf wuerde eine Kollision mit einem ` +
+        `anderen offenen PR verschweigen, statt sie auszuschliessen.`);
     }
   }
 

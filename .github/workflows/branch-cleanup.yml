@@ -1,0 +1,34 @@
+# Löscht erledigte Remote-Branches über scripts/cleanup-merged-branches.sh.
+# Manuell auszulösen (Actions → Branch Cleanup → Run workflow).
+# Ohne gesetztes "apply" läuft nur der Trockenlauf.
+name: Branch Cleanup
+
+on:
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: "Branches wirklich löschen (sonst Trockenlauf)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Cleanup ausführen
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          chmod +x scripts/cleanup-merged-branches.sh
+          if [ "${{ inputs.apply }}" = "true" ]; then
+            ./scripts/cleanup-merged-branches.sh --apply
+          else
+            ./scripts/cleanup-merged-branches.sh
+          fi

@@ -79,7 +79,7 @@ Menschen · Unternehmen · KI-Agenten · Daten · Entscheidungen.
 **Primär: Supabase Cloud (EU / Frankfurt)**
 - PostgreSQL 17 (Live-Projekt, Stand 2026-08-16)
 - **188 Edge Functions** im Repo (`supabase/functions/`, Deno/V8; `_shared` ist Bibliothek, keine Function) — gemessen am 2026-09-05 am **Merge-Baum** (`ls -d`, nicht addiert). 182 davon sind mains Bestand und **alle deployt**, deckungsgleich in beide Richtungen (mains Messung vom 2026-09-04 um 23:23 UTC per Management-API, nachdem `mcp-api-key-manager` aus PR #1160 in `src/config/production-edge-functions.ts` nachgetragen war — der Drift-Guard hatte recht). Die **sechs** aus diesem Branch warten auf den nächsten `deploy.yml`-Lauf: `governance-decide` und `integration-credentials` (P0), `governance-access` (P1-3), `evidence-anchor` (P1-6), `microsoft365-connect` und `microsoft365-audit-sync` (P2-2). Fünf davon stehen in `UNBACKED_CALLERS`; `microsoft365-audit-sync` bewusst nicht — es hat keinen Aufrufer im Frontend, sondern wird von pg_cron getriggert, und diese Liste führt Aufrufer ohne Backend, nicht Functions ohne Deploy
-- **327 Migrations** (`supabase/migrations/`) — gemessen am 2026-09-06 am Merge-Baum (`ls supabase/migrations/*.sql | wc -l`), keine doppelte Versionsnummer. 317 davon sind mains Bestand und **alle verbucht** (mains Messung vom 2026-09-04 um 23:39 UTC gegen `supabase_migrations.schema_migrations` nach dem grünen Deploy-Lauf 33929752213, `comm` in beide Richtungen leer). Die **neun** aus diesem Branch sind unverbucht: `20260824090000_pdp_snapshots_shadow`, `20260824110000_integration_credentials_hardening`, `20260824120000_org_subject_model_approval_gates`, `20260901090000_evidence_append_only_anchors`, `20260904100000_connector_registry` (P2-1), `20260904110000_publish_gate_policy_trail` (P2-3), `20260904120000_pdp_shadow_log_channels` (P2-3/P2-5) `20260905100000_microsoft365_connector` (P2-2) und `20260906100000_pdp_shadow_readiness` (Plan §7, Auswertung des Beobachtungsbetriebs). Die **zehnte unverbuchte** stammt aus PR #1221 und nicht aus dem Governance-OS-Branch: `20260906000000_reconcile_audit_evidence` — sie sortiert **vor** `20260906100000`, und keine Versionsnummer kommt doppelt vor (am Merge-Baum gezählt, nicht angenommen; genau diese Kollision hat am 2026-08-24 einen Deploy zerlegt, siehe §5). Siehe §3
+- **327 Migrations** (`supabase/migrations/`) — gemessen am 2026-09-06 am Merge-Baum (`ls supabase/migrations/*.sql | wc -l`), keine doppelte Versionsnummer. 317 davon sind mains Bestand und **alle verbucht** (mains Messung vom 2026-09-04 um 23:39 UTC gegen `supabase_migrations.schema_migrations` nach dem grünen Deploy-Lauf 33929752213, `comm` in beide Richtungen leer). Die **neun** aus diesem Branch sind unverbucht: `20260824090000_pdp_snapshots_shadow`, `20260824110000_integration_credentials_hardening`, `20260824120000_org_subject_model_approval_gates`, `20260901090000_evidence_append_only_anchors`, `20260904100000_connector_registry` (P2-1), `20260904110000_publish_gate_policy_trail` (P2-3), `20260904120000_pdp_shadow_log_channels` (P2-3/P2-5) `20260905100000_microsoft365_connector` (P2-2) und `20260906100000_pdp_shadow_readiness` (Plan §7, Auswertung des Beobachtungsbetriebs). Die **zehnte unverbuchte** stammt aus PR #1221 und nicht aus dem Governance-OS-Branch: `20260906000000_reconcile_audit_evidence` — sie sortiert **vor** `20260906100000`, und keine Versionsnummer kommt doppelt vor (am Merge-Baum gezählt, nicht angenommen; genau diese Kollision hat am 2026-08-24 einen Deploy zerlegt, siehe §5). **Alle 327 sind seit dem Deploy-Lauf 34057321551 (2026-09-06, 20:15 UTC, `main` @ `75f5fe7a`) verbucht** — gegen `schema_migrations` nachgemessen, ebenso Tabelle, Bucket, RLS, drei Trigger und der Fremdschlüssel von `audit_evidence`. Die **328.** liegt seither im Repo und wartet: `20260906200000_profiles_on_signup`. Siehe §3
 
   > **Ein Befund vom Vorabend hat sich erledigt, und zwar richtig herum**: Hier stand am 2026-09-04 abends, mains Zeile nenne 315 Dateien bei 317 im Baum und seine unverbuchten seien drei statt einer. Das stimmte zum Zeitpunkt der Messung — inzwischen ist der Deploy gelaufen, und `main` hat um 23:39 UTC gegen das Ledger nachgemessen: 317 Dateien, 317 verbucht, in beide Richtungen verglichen. Die Differenz war also kein Fehler, sondern eine Momentaufnahme zwischen Merge und Deploy. Die Lehre bleibt trotzdem stehen, weil sie den Fall beschreibt, in dem sie *nicht* von selbst heilt: **Die Ledger-Messung altert mit jedem Merge, die Tree-Messung nicht** — wer eine Ledger-Zahl fortschreibt, ohne das Datum mitzulesen, behauptet einen Stand, den es so nicht mehr gibt.
 - RLS auf allen App-Tabellen · Realtime Subscriptions
@@ -143,6 +143,30 @@ Service-Role umgeht RLS — deshalb **ausschließlich in Edge Functions**.
 ### Kern-Tabellen (Auszug)
 
 - **Registry**: `ai_systems`, `tenants`, `profiles`
+
+  > ⚠️ **`profiles` hatte bis zum 2026-09-06 keinen Erzeugungspfad.** Gemessen
+  > gegen Produktion: 6 Nutzer, **1 Profil**. Kein Teilproblem, sondern ein
+  > geschlossener Kreis — `handle_new_auth_user` legte Mandant und
+  > Mitgliedschaft an, aber kein Profil; **keine** Migration im Repo insertete
+  > je in `profiles`; und die Tabelle trägt Policies für SELECT und UPDATE,
+  > aber **keine für INSERT**. Serverseitig kein Pfad, clientseitig kein Recht.
+  >
+  > **Die stillste Folge zuerst**: `SettingsView` und `AiResidencySettings`
+  > schreiben mit `.update() … .eq('id', …)`. Ein UPDATE ohne Treffer ist kein
+  > Fehler — PostgREST liefert `error: null`. Beide Oberflächen meldeten
+  > „gespeichert" und behielten nichts, auch nicht die
+  > **KI-Datenresidenz-Präferenz** (`ai_data_residency`, EU-lokal vs. Cloud).
+  > Dieselbe Fehlerform wie bei `public.integrations` (§5 ³): kein Fehler,
+  > kein Ergebnis. Daneben fehlte der Abschnitt `profile` in jeder
+  > `gdpr-export`-Auskunft nach Art. 15 DSGVO. Die `is_super_admin`-Prüfungen
+  > sind unschädlich — sie schlagen fail-closed aus.
+  >
+  > Behoben durch `20260906200000_profiles_on_signup.sql`: Der Trigger legt
+  > das Profil mit an, die fünf Bestandsnutzer werden nachgetragen. **Der
+  > Insert steht vor dem Mitgliedschafts-Wächter** — dahinter liefe er für
+  > keinen Bestandsnutzer, weil der Early-Return greift, sobald eine
+  > Mitgliedschaft existiert. `test/db/profiles-on-signup.test.ts` hält genau
+  > diese Reihenfolge fest.
 - **Policy Engine**: `ai_policies`, `policy_pack_catalog`, `policy_pack_controls`, `policy_pack_activations`
 - **Framework-Katalog**: `compliance_frameworks`, `framework_controls`, `custom_controls`;
   Erfüllungsstand je Tenant in `framework_implementations` und `asset_control_mappings`
@@ -743,7 +767,7 @@ RealSyncDynamics.AI/
 │   └── pricing.ts     Single Source of Truth für Produkt-, Preis- und Berechtigungsmodell
 ├── supabase/
 │   ├── functions/     188 Edge Functions (einziger Ort für Service-Role-Keys)
-│   └── migrations/    327 Migrations
+│   └── migrations/    328 Migrations
 ├── apps/
 │   ├── agent-runtime/ Agent Runtime (Node/TS, Docker)
 │   └── mcp-server/    MCP Governance Server — Lesezugriff für KI-Agenten auf

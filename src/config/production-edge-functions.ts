@@ -10,6 +10,20 @@
  *
  * ## Stand der Messung
  *
+ * 2026-09-06T13:50Z, Management-API gegen das Live-Projekt, nach dem Merge
+ * von PR #1135 (`dce3278`) und dem grünen Deploy-Lauf 34036663016:
+ * **188 deployt, 188 Verzeichnisse im Repository, `comm` in beide Richtungen
+ * leer.** Neu sind die sechs Functions des Governance OS —
+ * `governance-decide`, `integration-credentials`, `governance-access`,
+ * `evidence-anchor`, `microsoft365-connect` und `microsoft365-audit-sync`.
+ *
+ * Der grüne Deploy-Lauf ist dabei **nicht** der Beleg: Er sagt nur, dass der
+ * Workflow durchlief. Gemessen wurde gegen die Management-API, und verglichen
+ * wurden die **Mengen** — dass beide Seiten 188 zeigen, wäre auch bei
+ * verschiedenen Mengen wahr gewesen (CLAUDE.md §5, Lehre vom 2026-08-30).
+ *
+ * Frühere Messung:
+ *
  * 2026-09-04T23:23Z, Management-API gegen das Live-Projekt: **182 deployt,
  * 182 Verzeichnisse im Repository, `comm` in beide Richtungen leer.** Neu ist
  * `mcp-api-key-manager` (PR #1160); die Liste hier war nicht mitgezogen, der

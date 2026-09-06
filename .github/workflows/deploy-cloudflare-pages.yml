@@ -120,7 +120,7 @@ jobs:
       - name: Generate 404 fallback for dynamic routes
         run: |
           cp dist/index.html dist/404.html
-          if [ ! -f dist/pricing.html ] && [ ! -f dist/audit.html ]; then
+          if [ ! -f dist/pricing/index.html ] && [ ! -f dist/audit/index.html ]; then
             echo "ERROR: expected prerendered routes missing"
             ls -la dist/ | head -20
             exit 1

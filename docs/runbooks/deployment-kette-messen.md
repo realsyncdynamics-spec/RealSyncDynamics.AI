@@ -130,14 +130,14 @@ diese Chunk-Hashes ein. Genau deshalb taugen sie als Commit-Fingerabdruck.
 
 ---
 
-## 5. Der Deploy-Pfad — und zwei Befunde
+## 5. Der Deploy-Pfad — und zwei Befunde (behoben am 2026-09-06)
 
 Der einzige automatische Frontend-Deploy ist die **Cloudflare-Git-Integration**
 (im Dashboard konfiguriert, `npm run build`). Alle konkurrierenden Workflows
 (`deploy-frontend-production`, `deploy-frontend-vps*`, `docker-deploy`,
 `cloudflare-domain-cutover`) laufen ausschließlich auf `workflow_dispatch`.
 
-### Befund 1 — ein grüner Deploy-Workflow, der nicht deployt
+### Befund 1 — ein grüner Deploy-Workflow, der nicht deployt · **behoben**
 
 `.github/workflows/deploy-cloudflare-pages.yml` meldet für `main` @ `dce3278`
 `conclusion: success`. Die Jobs dieses Laufs (34036663058):
@@ -154,12 +154,25 @@ sind. Das ist so **gewollt** — der Workflow tritt bewusst hinter die
 Git-Integration zurück (siehe `wrangler.toml` und
 `docs/runbooks/cloudflare-actions-deploy-cutover.md`).
 
-Die Zusage stimmt trotzdem nicht: Ein Lauf namens „Deploy to Cloudflare Pages"
+Die Zusage stimmte trotzdem nicht: Ein Lauf namens „Deploy to Cloudflare Pages"
 mit grünem Haken sagt dem Leser, es sei deployt worden. Gebaut wurde nur.
 Dieselbe Klasse wie die Befunde in CLAUDE.md §5 — grün heißt nicht, was es zu
 heißen scheint.
 
-### Befund 2 — der Smoke-Test kann per Konstruktion nicht fehlschlagen
+**Behoben** (Freigabe des Eigentümers vom 2026-09-06, „go"): Der Schritt
+`Detect Cloudflare credentials` schreibt jetzt in jedem der drei Fälle eine
+Zusammenfassung nach `$GITHUB_STEP_SUMMARY`. Im Regelfall steht dort
+unmissverständlich **„Dieser Lauf hat NICHT deployt"**, dazu der Satz „Ein
+grüner Haken an diesem Workflow ist kein Deploy-Beleg" und die Tabelle aus §3,
+die den echten Check-Run benennt.
+
+**Warum nicht einfach umbenennen**: Der Workflow-Name kann als `required check`
+in einer Branch-Protection-Regel stehen. Ein umbenannter Check gilt dort als
+**fehlend**, nicht als bestanden — die Regel blockierte dann jeden Merge. Die
+Klarstellung geht deshalb in die Zusammenfassung, nicht in den Namen. Das ist
+die risikoärmere Hälfte des Fixes und bewusst so gewählt.
+
+### Befund 2 — der Smoke-Test kann per Konstruktion nicht fehlschlagen · **behoben**
 
 Der übersprungene Smoke-Test prüft `/ /pricing /audit /governance-runtime /app`
 auf HTTP 200. `public/_redirects` endet aber auf `/*  /index.html  200` —
@@ -169,15 +182,54 @@ gegengeprüft:
 /gibt-es-garantiert-nicht-xyz123   →   HTTP 200
 ```
 
-Jede beliebige URL antwortet mit 200. Der Test würde also auch dann grün
-melden, wenn sämtliche Routen fehlten. Er müsste am Inhalt prüfen (etwa am
-`<title>` oder an einem routen-eigenen Marker), nicht am Statuscode.
+Jede beliebige URL antwortet mit 200. Der Test hätte also auch dann grün
+gemeldet, wenn sämtliche Routen gefehlt hätten.
 
-Nebenwirkung außerhalb von CI: Eine unbekannte URL liefert 200 mit der
-Startseite — ein Soft-404, den Suchmaschinen indexieren können.
+**Behoben**: Der Test prüft jetzt den **Inhalt**. Zwei Klassen, weil sie sich
+verschieden verhalten müssen — am 2026-09-06 an der Live-Seite gemessen, nicht
+angenommen:
 
-Beide Befunde sind hier **gemeldet, nicht behoben** (CLAUDE.md §14). Sie
-berühren die Auslieferung nicht.
+| Klasse | Routen | Erwartung |
+|---|---|---|
+| prerendert | `/pricing` (192 kB) · `/audit` (42 kB) · `/governance-runtime` (37 kB) | je **eigener** `<title>` |
+| SPA-Shell | `/` · `/app` (je 63 kB, **identischer** `<title>`) | `id="root"` + Einstiegs-Bundle |
+
+`/app` ist nicht prerendert und liefert regulär den Fallback — vom Fallback
+einer unbekannten URL also nicht zu unterscheiden. Ein naiver „eigener
+Titel"-Test hätte `/app` fälschlich rot gemacht. Diese Messung stand vor dem
+Test, nicht danach.
+
+**Der Test weist seine eigene Unterscheidungsfähigkeit nach.** Vor allen
+anderen Prüfungen ruft er eine garantiert unbekannte URL und verlangt, dass sie
+den Fallback liefert. Ohne diesen Schritt wiederholte er den alten Fehler:
+Lieferten alle Routen denselben Inhalt, sähen die Vergleiche danach trotzdem
+plausibel aus. Schlägt die Kontrolle an, gilt die Annahme des Tests nicht mehr
+— dann ist der Test anzupassen, nicht die Seite.
+
+Gegengeprüft am 2026-09-06, dieselbe Fehlerbedingung (eine prerenderte Route
+durch eine nicht existierende ersetzt):
+
+| Fassung | Ergebnis |
+|---|---|
+| alt (HTTP 200) | `✓ All routes returned 200` — **exit 0** |
+| neu (Inhalt) | `Smoke-test failed: /…(fallback)` — **exit 1** |
+
+Zweite Gegenprobe gegen einen fremden Origin: alle fünf Routen fallen auf,
+Shell-Routen mit `(kein-root-div)(kein-bundle)`.
+
+> **Zur Reichweite**: Der Job hängt weiter an `cf_ready` und läuft heute nicht.
+> Der Fix wirkt also erst, wenn der Actions-Pfad übernimmt
+> (`docs/runbooks/cloudflare-actions-deploy-cutover.md`). Ein Test, der nie
+> läuft, ist trotzdem besser richtig als falsch — sonst erbt der Cutover ein
+> Sicherheitsnetz, das keines ist.
+
+**Offen und ausdrücklich nicht angefasst**: Der Soft-404. Eine unbekannte URL
+liefert 200 mit der Startseite, Suchmaschinen können das indexieren. Der
+naheliegende Griff — `/*  /index.html  404` — wäre falsch: Gültige dynamische
+Client-Routen (`/branchen/:slug`) brauchen denselben Fallback und würden
+mit 404 ausgeliefert. Das ist eine Produktentscheidung über die Route-Liste,
+keine CI-Härtung, und gehört nach CLAUDE.md §14 gemeldet statt nebenbei
+geändert.
 
 ---
 

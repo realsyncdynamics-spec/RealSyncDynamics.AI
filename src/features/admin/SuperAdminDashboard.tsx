@@ -274,6 +274,24 @@ function Inner({ session }: { session: Session }) {
                 </CardContent>
               </Card>
             </Link>
+
+            <Link to="/market-intelligence">
+              <Card variant="default" className="hover:border-titanium/50 transition-colors cursor-pointer">
+                <CardContent className="py-4">
+                  <p className="font-semibold text-titanium-100">Market Intelligence</p>
+                  <p className="text-xs text-titanium-400 mt-1">Trichter, Trennschärfe und priorisierte Lücken</p>
+                </CardContent>
+              </Card>
+            </Link>
+
+            <Link to="/market-gaps">
+              <Card variant="default" className="hover:border-titanium/50 transition-colors cursor-pointer">
+                <CardContent className="py-4">
+                  <p className="font-semibold text-titanium-100">Markt-Lücken</p>
+                  <p className="text-xs text-titanium-400 mt-1">Vollständiger Bestand des Daily-Scanners</p>
+                </CardContent>
+              </Card>
+            </Link>
           </div>
         </div>
       </div>

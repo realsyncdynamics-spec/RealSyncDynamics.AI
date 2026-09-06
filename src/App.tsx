@@ -387,6 +387,7 @@ const WorkspaceEmbed = lazy(() => import('./features/workspace/WorkspaceEmbed').
 const CompanyView = lazy(() => import('./features/company/CompanyView').then((m) => ({ default: m.CompanyView })));
 const WorkflowsView = lazy(() => import('./features/workflows/WorkflowsView').then((m) => ({ default: m.WorkflowsView })));
 const MarketGapsView = lazy(() => import('./features/market/MarketGapsView').then((m) => ({ default: m.MarketGapsView })));
+const MarketIntelligenceView = lazy(() => import('./features/market/MarketIntelligenceView').then((m) => ({ default: m.MarketIntelligenceView })));
 const MarketplaceView = lazy(() => import('./features/market/MarketplaceView').then((m) => ({ default: m.MarketplaceView })));
 const OutreachView = lazy(() => import('./features/outreach/OutreachView').then((m) => ({ default: m.OutreachView })));
 const AnalyticsView = lazy(() => import('./features/analytics/AnalyticsView').then((m) => ({ default: m.AnalyticsView })));
@@ -1000,6 +1001,7 @@ function RoutesWithTracking() {
       <Route path="/app/api/rate-limiting" element={<GovernanceBrowserShell><RateLimitingAnalytics /></GovernanceBrowserShell>} />
       <Route path="/workflows" element={<WorkflowsView />} />
       <Route path="/market-gaps" element={<MarketGapsView />} />
+      <Route path="/market-intelligence" element={<MarketIntelligenceView />} />
       <Route path="/outreach" element={<OutreachView />} />
       {/* Admin */}
       <Route path="/admin" element={<SuperAdminDashboard />} />

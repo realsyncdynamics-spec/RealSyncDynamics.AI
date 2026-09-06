@@ -44,43 +44,62 @@ if (missing.length > 0) {
 }
 
 // Inject processor names
-const subProcessorsPath = join(DIST, 'legal/sub-processors/index.html');
-let html = readFileSync(subProcessorsPath, 'utf8');
+let injected = 0;
+const subProcessorsPath = join(DIST, 'legal/sub-processors.html');
 const processorInjection = `
 <!-- Processor list for production readiness checks -->
 <div style="display:none;">
 ${processorNames.map(p => `<span class="processor-marker">${p}</span>`).join('\n')}
 </div>
 `;
-html = html.replace('</body>', processorInjection + '\n</body>');
-writeFileSync(subProcessorsPath, html, 'utf8');
-console.log(`✓ Injected ${processorNames.length} processor names into ${subProcessorsPath}`);
+// Gleiche Behandlung wie die drei Bloecke darunter: fehlt die Zieldatei, wird
+// uebersprungen statt abgebrochen. Ohne das bricht `npm run build` mit ENOENT,
+// weil generate:legal-pages vor dem Prerender laeuft und die Route-Dateien
+// dann noch nicht existieren.
+try {
+  let html = readFileSync(subProcessorsPath, 'utf8');
+  html = html.replace('</body>', processorInjection + '\n</body>');
+  writeFileSync(subProcessorsPath, html, 'utf8');
+  injected += 1;
+  console.log(`✓ Injected ${processorNames.length} processor names into ${subProcessorsPath}`);
+} catch (e) {
+  console.warn(`⚠ Could not inject processor names: ${e.message}`);
+}
 
 // 2. Trust page marker
-const trustPath = join(DIST, 'trust/index.html');
+const trustPath = join(DIST, 'trust.html');
 try {
   injectMarker(trustPath, 'Trust');
+  injected += 1;
   console.log(`✓ Injected Trust marker into ${trustPath}`);
 } catch (e) {
   console.warn(`⚠ Could not inject Trust marker: ${e.message}`);
 }
 
 // 3. Pilot Readiness page marker
-const pilotPath = join(DIST, 'pilot-readiness/index.html');
+const pilotPath = join(DIST, 'pilot-readiness.html');
 try {
   injectMarker(pilotPath, 'Pilot');
+  injected += 1;
   console.log(`✓ Injected Pilot marker into ${pilotPath}`);
 } catch (e) {
   console.warn(`⚠ Could not inject Pilot marker: ${e.message}`);
 }
 
 // 4. Impressum page markers
-const impressumPath = join(DIST, 'legal/impressum/index.html');
+const impressumPath = join(DIST, 'legal/impressum.html');
 try {
   injectMarker(impressumPath, 'Umsatzsteuer-Identifikationsnummer');
+  injected += 1;
   console.log(`✓ Injected Impressum marker into ${impressumPath}`);
 } catch (e) {
   console.warn(`⚠ Could not inject Impressum marker: ${e.message}`);
 }
 
-console.log('\n✓ All markers injected successfully');
+// Kein Erfolg behaupten, der nicht stattgefunden hat: die Zieldateien entstehen
+// erst im Prerender-Schritt. Laeuft dieses Script davor, ist injected === 0.
+if (injected === 4) {
+  console.log('\n✓ Alle 4 Marker injiziert.');
+} else {
+  console.log(`\n⚠ ${injected} von 4 Markern injiziert — die uebrigen Zieldateien existierten nicht.`);
+}

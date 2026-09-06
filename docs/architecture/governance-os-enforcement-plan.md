@@ -984,3 +984,30 @@ Policies und ist eine bewusste Betriebsentscheidung, kein Deploy-Nebeneffekt.
 
 Für die weiteren Phasen gilt weiterhin: Teilfreigaben per Nummer
 (z. B. „P1-1 und P1-4 freigegeben").
+
+
+## §7 — Entscheidungsvorlage vom 2026-09-06 (Empfehlungen; die Entscheidung steht aus)
+
+Diese Vorlage gehört zu §7 und wird hier nachgeführt, weil §7 die Fragen stellt, aber keine Antwort protokolliert. Sie ist bewusst als Empfehlung formuliert: entschieden ist bislang allein E6 (2026-09-04, Nachtrag 2026-09-05). Alles Übrige ist vorbereitet, nicht beschlossen. Derselbe Block steht in der Beschreibung von PR #1135.
+
+**Stand der Technik zum Zeitpunkt der Vorlage.** P0, P1 und P2 sind umgesetzt, einschließlich P2-2. Alle sechs Enforcement-Schalter stehen auf shadow; ein Merge ändert damit kein Produktionsverhalten. Neu ist pdp_shadow_readiness (Migration 20260906100000): Sie unterscheidet "keine Abweichung" von "dieser Kanal hat nichts geschrieben" und ist damit die Grundlage, die dieser Plan seit P0 verlangt, aber bis zum 2026-09-06 nicht hatte.
+
+**E1 — Reichweite.** Empfehlung: Enforcement bleibt auf Klasse A/B. Der Endpunkt-Agent bzw. Unternehmensproxy ist ein zweites Produkt und wird hier nicht mitgeplant.
+
+**E2 — Ausfallverhalten.** Empfehlung: durchlassen mit lauter Alarmierung als Default, fail closed nur dort, wo eine Policy block deklariert. Das entspricht dem gebauten Zustand (Publish Gate nach §7 G3, BOT_PDP_FAILURE_MODE getrennt schaltbar); es fehlt allein die normative Bestätigung. Ohne sie entscheidet jede Umschaltung über zwei Variablen gleichzeitig.
+
+**E3 — Quelle der Wahrheit.** Empfehlung: governance_policies als Träger, Regeltypen aus ai_policies übernehmen; Versionierung ist teurer nachzurüsten als Regeltypen. Umsetzung in P3. Bis dahin sollte kein neuer PDP-Verbraucher auf ai_policies gebaut werden.
+
+**E4 — Supabase-Tarif.** Empfehlung: an die erste Umschaltung koppeln. Kein enforce bei einem Kunden ohne Backups/PITR, weil der revisionssichere Prüfpfad sonst eine unbelegte Zusage ist.
+
+**E5 — Rolle von platform/.** Empfehlung: als zweite Laufzeit behalten, aber verpflichtend PDP-rufend. Solange dieser Stack nicht ruft, ist er ein Umweg um die Durchsetzung, und jedes enforce daneben deckt weniger ab, als es behauptet.
+
+**E7 — Preis-Zuordnung.** Empfehlung: Beobachtung in allen Plänen, aktives Enforcement nur im bezahlten Governance-Tier. Vor der ersten Kundenumschaltung zu entscheiden, weil sie festlegt, wer überhaupt gesperrt wird; hängt an der Kontingentfrage aus P2-5.
+
+**E8 — Freigabe P0-1.** Faktisch mit P0 erledigt, dokumentarisch offen; nach §10.3 formal nachzuziehen.
+
+**P2-5, die beiden offenen Produktfragen.** Zur Abrechnung: eine gesperrte Bot-Nachricht wird nicht auf limit.bot_messages_monthly angerechnet. Der Kunde bezahlt eine zugestellte Antwort; eine Sperre ist unsere Entscheidung, nicht seine Nutzung. Die Buchung liegt heute vor der Prüfung, die Umsetzung gehört deshalb in einen Folge-PR. Solange BOT_PDP_ENFORCEMENT auf shadow steht, entsteht kein Abrechnungsfall — genau darum darf dieser Kanal nicht vor der Umsetzung umgeschaltet werden. Zur Freigabe: require_approval verhält sich auf Klasse-A-Kanälen bis zur Zustellintegration wie block. Ein Gate, das sperrt und nach der Freigabe niemanden mehr bedient, ist eine Sackgasse mit Genehmigungsstempel; die Nachstellung der ursprünglichen Anfrage gehört in P3.
+
+**Reihenfolge der Umschaltung.** Gestaffelt statt gesammelt, geordnet nach Umkehrbarkeit mal Reichweite: GOVERNANCE_PDP_MODE (trifft Entwickler, im Build sofort sichtbar), dann SITEOS_PUBLISH_PDP (Redakteure, bewusste wiederholbare Handlung), dann AGENT_PDP_ENFORCEMENT, dann AI_GATEWAY_ENFORCEMENT, dann BOT_PDP_ENFORCEMENT (trifft Endkunden im Gespräch), zuletzt M365_PDP_ENFORCEMENT — Klasse C, dort bedeutet enforce reagieren, nicht sperren, und ohne beschriebenen Reaktionspfad ist es eine Zusage, die nach Durchsetzung klingt und keine ist.
+
+**Kriterien je Kanal, gemessen mit pdp_shadow_readiness.** Erstens beobachtet = true; ein stummer Kanal ist ungemessen, nicht unauffällig (Publish Gate, 2026-09-04). Zweitens keine unerklärten unbekannten Verdikte; sie werden als NULL ausgewiesen und dürfen nicht als so harmlos wie allow gezählt werden. Drittens die Richtung der Abweichung: ist v2 lockerer, spricht das für sofortiges Umschalten, weil die heutige Zusage dort bereits ungedeckt ist; ist v2 strenger, kostet das Umschalten Arbeitsfähigkeit (R5) und jeder Fall wird einzeln durchgesehen. Viertens ein Schalter pro 72-Stunden-Fenster, mit vorab beschriebenem Rückweg auf shadow und benanntem Verantwortlichen. Fünftens nach jedem Umlegen ein bewusst gesperrter Testvorgang als Nachweis: Der Schalterzustand ist eine Umgebungsvariable der Edge Functions und in der Oberfläche nicht lesbar, die Wirkung ist also nur an einem echten Vorgang belegbar.

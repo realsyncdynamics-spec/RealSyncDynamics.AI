@@ -406,6 +406,58 @@ Jeder Agent braucht vier Dimensionen — fehlt eine, ist er nicht governance-fä
 > **Nächste Sitzung, bevor du misst**: Sieh in den Actions-Tab. Ein roter
 > Drift-Guard ist der schnellere Weg zum Befund als jede eigene Messung.
 >
+> #### Die DB-Integrationstests laufen seit dem 2026-09-06 vollständig in CI
+>
+> Bis dahin lief im `db`-Job **eine** Datei gegen das voll migrierte Schema,
+> später sechs. Begründet war das mit „7 der 23 Dateien scheitern dort" — und
+> das stimmte. Nachgemessen scheiterte aber **keine** an einem Befund, sondern
+> jede an einer Annahme des minimalen Harnischs (`scripts/test-db/up.sh`):
+> eine feste Vorgabe-Mailadresse gegen `auth.users.email UNIQUE`, ein Insert
+> in `public.app_secrets` statt in Vault, ein leerer Produktkatalog, ein
+> Trigger, der jedem neuen Mandanten sofort ein Free-Tier-Abo anlegt.
+>
+> **Das Schwerwiegendste daran**: `rls.db.test.ts` war eine der sieben. Die
+> Mandantentrennung ist laut §3 nicht verhandelbar — und ihr eigener Test lief
+> in keinem CI-Lauf. Er läuft jetzt; alle 25 Dateien laufen, mit genau einer
+> benannten Ausnahme (`entitlement-grants.db.test.ts`, siehe Kopf der Datei:
+> sie bildet bewusst den Produktionsstand vom 2026-08-08 nach). Der Schritt
+> nimmt das Verzeichnis, nicht eine Namensliste — sonst fehlt die nächste neue
+> Datei wieder.
+>
+> **Zwei Befunde fielen dabei ab, und beide sind grundsätzlicher als die
+> Testdateien:**
+>
+> **1. Das CI-Schema war durchlässiger als Produktion.** Ein pauschales
+> `GRANT ... ON ALL TABLES IN SCHEMA public TO anon, authenticated` lief
+> **nach** allen Migrationen und machte damit zwölf ausdrückliche `REVOKE`s
+> wieder auf — darunter die sechs auf `mv_cost_*` / `mv_tenant_risk_*` und die
+> Spaltenrechte, die `m365_connections.credentials_enc` schützen. Eine
+> materialisierte Sicht kennt keine RLS-Policies; ihr Inhalt ist die fertige
+> Aggregation über **alle** Mandanten. `mv-aggregates.db.test.ts` wies genau
+> das nach und fiel dort um, ohne dass an der Sperre etwas falsch war.
+> Behoben, indem CI die Default-Privileges jetzt **vor** den Migrationen setzt
+> (so wie Supabase) und Matviews danach ausdrücklich sperrt. Gegen das
+> Live-Projekt gemessen: dort tragen alle acht Matviews
+> `{postgres, service_role}` — CI bildet das jetzt ab.
+>
+> **Regel daraus**: Das CI-Schema darf **strenger** sein als Produktion,
+> niemals lockerer. Ein Test, der eine Sperre nachweist, ist sonst nichts wert
+> — und schlimmer: Ein Test, der Zugriff nachweist, wird dort grün, wo
+> Produktion sperrt.
+>
+> **2. Ein Test konnte die Testdatenbank dauerhaft verändern.** Jede Datei
+> läuft in einer Transaktion, die zurückgerollt wird — darauf beruht die
+> Isolation. `tenant-entitlements-callers` wandte `20260831020000`
+> unverändert an, samt deren eigenem `COMMIT;`. PostgreSQL kennt keine
+> geschachtelten Transaktionen: Das `COMMIT` schloss die **äußere**
+> Transaktion ab und hinterließ `products`, `entitlements`, `subscriptions`
+> und `entitlement_grants` dauerhaft in der Datenbank. Der nächste Lauf
+> scheiterte an „relation subscriptions already exists" — an einem Zustand,
+> den ein früherer Test hinterlassen hatte, nicht an einem Befund. Zwei
+> Dateien hatten die Klammer einzeln entfernt, eine nicht. **Regel**: Eine
+> Migration im Test nur über `applyMigration()` aus `db-helpers.ts` anwenden;
+> die entfernt `BEGIN`/`COMMIT` an einer Stelle für alle.
+>
 > ¹ **Migrations-Lücke und Versionskollision, gemessen 2026-08-24** (Ledger via
 > `supabase_migrations.schema_migrations`, Deploy-Log Run 32705231581): PR #1131
 > und PR #1124 vergaben unabhängig voneinander dieselbe Version `20260826000000`

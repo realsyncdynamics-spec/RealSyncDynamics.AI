@@ -8,6 +8,8 @@
  * If TEST_DB_URL is not set, getDb() returns null and the test files
  * gracefully skip their describe blocks. CI without a DB still passes.
  */
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { Client, type ClientConfig } from 'pg';
 
 export interface DbCtx {
@@ -96,7 +98,15 @@ export async function createTenantWithMember(
   ctx: DbCtx,
   opts: { tenantName?: string; userEmail?: string } = {},
 ): Promise<{ tenantId: string; userId: string }> {
-  const { tenantName = `t_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`, userEmail = 'test@example.com' } = opts;
+  // Die Vorgabe MUSS je Aufruf verschieden sein: `auth.users.email` ist UNIQUE
+  // (so in scripts/test-db/bootstrap.sql und im CI-Bootstrap). Eine feste
+  // Adresse liess jeden Test scheitern, der zwei Mandanten anlegt — und das
+  // sind genau die Isolationstests, auf die es ankommt. Wer eine bestimmte
+  // Adresse braucht, uebergibt sie weiterhin.
+  const {
+    tenantName = `t_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+    userEmail = `u_${Date.now()}_${Math.random().toString(36).slice(2, 10)}@example.com`,
+  } = opts;
 
   const { rows: tRows } = await ctx.client.query<{ id: string }>(
     `INSERT INTO public.tenants(name) VALUES ($1) RETURNING id`,
@@ -203,4 +213,96 @@ export function requireDbOrFail(label: string): boolean {
     );
   }
   return Boolean(url);
+}
+
+/**
+ * Ein benanntes Geheimnis so hinterlegen, dass `public.get_app_secret()` es
+ * findet — und zwar auf dem Weg, den die jeweilige Datenbank wirklich hat.
+ *
+ * ## Warum das nicht eine Zeile ist
+ *
+ * Es gibt zwei Fassungen von `get_app_secret`, und welche gilt, entscheidet
+ * die Migrationsfolge:
+ *
+ *   * `20260505230000_app_secret_rpc.sql` liest aus **Vault**
+ *     (`vault.decrypted_secrets`). Das ist die Fassung, die in Produktion und
+ *     im CI-Schema gilt.
+ *   * `20260603000000_subject_ref_lifecycle.sql` legt ersatzweise
+ *     `public.app_secrets` an — aber **nur, wenn `get_app_secret` noch nicht
+ *     existiert**. Gegen das volle Schema greift dieser Zweig nie.
+ *
+ * Ein Test, der fest in `public.app_secrets` schreibt, lief deshalb nur im
+ * minimalen Harnisch — also genau dort, wo der echte Vault-Pfad fehlt. Er
+ * prüfte damit einen Zustand, den es in Produktion nicht gibt.
+ *
+ * Diese Funktion schreibt in den Speicher, den die Datenbank tatsächlich
+ * führt, und bevorzugt Vault. Findet sie keinen von beiden, wirft sie —
+ * stillschweigend nichts zu hinterlegen wäre der schlechteste Ausgang, weil
+ * der Test dann an einer Folgezeile scheitert und die Ursache verdeckt.
+ */
+export async function seedAppSecret(
+  ctx: DbCtx,
+  name: string,
+  value: string,
+): Promise<void> {
+  const { rows } = await ctx.client.query<{ vault: string | null; legacy: string | null }>(
+    `SELECT to_regclass('vault.secrets')::text AS vault,
+            to_regclass('public.app_secrets')::text AS legacy`,
+  );
+  const { vault, legacy } = rows[0]!;
+
+  if (vault) {
+    await ctx.client.query(
+      `INSERT INTO vault.secrets(name, secret) VALUES ($1, $2)
+       ON CONFLICT (name) DO UPDATE SET secret = EXCLUDED.secret`,
+      [name, value],
+    );
+    return;
+  }
+  if (legacy) {
+    await ctx.client.query(
+      `INSERT INTO public.app_secrets(name, value) VALUES ($1, $2)
+       ON CONFLICT (name) DO UPDATE SET value = EXCLUDED.value`,
+      [name, value],
+    );
+    return;
+  }
+  throw new Error(
+    'Weder vault.secrets noch public.app_secrets vorhanden — '
+    + 'get_app_secret() kann in dieser Datenbank nichts finden.',
+  );
+}
+
+/**
+ * Eine Migration innerhalb der Testtransaktion anwenden — ohne ihre eigene
+ * Transaktionsklammer.
+ *
+ * ## Der Befund, den diese Funktion behebt
+ *
+ * Jeder Test hier laeuft in einer Transaktion, die `closeDb()` zurueckrollt.
+ * Genau darauf beruht die Isolation. Eine Migration, die selbst `BEGIN;` und
+ * `COMMIT;` enthaelt, bricht das: Das `COMMIT` schliesst die AEUSSERE
+ * Transaktion ab, und alles, was der Test bis dahin angelegt hat, bleibt
+ * dauerhaft in der Datenbank stehen.
+ *
+ * Am 2026-09-06 gemessen und genau so passiert: `tenant-entitlements-callers`
+ * wandte `20260831020000` unveraendert an (Zeile 67 `BEGIN;`, Zeile 191
+ * `COMMIT;`) und hinterliess `products`, `entitlements`, `subscriptions` und
+ * `entitlement_grants` in der Testdatenbank. Der naechste Lauf von
+ * `entitlement-grants.db.test.ts` scheiterte daran mit „relation
+ * subscriptions already exists" — an einem Zustand, den ein frueherer Test
+ * hinterlassen hatte, nicht an einem Befund. Zwei Dateien hatten die Klammer
+ * einzeln entfernt, eine nicht; deshalb steht sie ab jetzt hier.
+ *
+ * `PostgreSQL` kennt keine geschachtelten Transaktionen — ein `COMMIT` in
+ * einer laufenden Transaktion ist kein Fehler, sondern wirkt. Es gibt also
+ * keine Absicherung dagegen ausser: die Klammer entfernen.
+ */
+export function applyMigration(ctx: DbCtx, migrationsDir: string, file: string): Promise<unknown> {
+  const sql = readFileSync(join(migrationsDir, file), 'utf8')
+    // Alle Vorkommen, nicht nur das erste: Eine Migration darf mehrere
+    // Bloecke haben, und ein uebrig gebliebenes COMMIT genuegt fuer den
+    // Schaden oben.
+    .replace(/^\s*(BEGIN|COMMIT)\s*;\s*$/gm, '');
+  return ctx.client.query(sql);
 }

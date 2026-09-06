@@ -161,7 +161,7 @@ async function main() {
     } catch (err) {
       // Fallback: if Playwright chromium fails, use fetch-based prerender
       console.log('[prerender] Chromium launch failed, using fetch-based fallback');
-      const criticalRoutes = ['/trust', '/pilot-readiness', '/legal/impressum', '/legal/sub-processors'];
+      const criticalRoutes = ['/trust', '/pilot-readiness', '/legal/impressum', '/legal/sub-processors', '/pricing', '/audit'];
       for (const route of criticalRoutes) {
         try {
           const res = await fetch(BASE_URL + route);

@@ -479,3 +479,86 @@ Datei ist mit einem datierten Hinweis korrigiert.
   Der Sperr-Teil von B1 ist behoben (`20260905000000`), die Vereinheitlichung
   der beiden Plattform-Quellen nicht. Solange beide existieren, gilt: neue
   Berechtigungen ausschliesslich über `platform_operators`.
+
+---
+
+## B7 — `org_units` existiert zweimal, gemessen am 2026-09-06
+
+**Blockiert `20260905000200`, und damit jeden `supabase db push`.**
+
+Am 2026-09-06 um 07:51 UTC ist PR #1135 („Governance OS — Plan + P0 + P1")
+nach `main` gelaufen. Er bringt `20260824120000_org_subject_model_approval_gates.sql`
+mit — und darin eine eigene `public.org_units`. Die Migration trägt eine
+**ältere** Version als die hiesige `20260905000200`, läuft also zuerst.
+
+**Gemessen, nicht hergeleitet** (PostgreSQL 16, Stubs für `tenants`,
+`auth.users` und die drei Hilfsfunktionen, dann mains Migration, dann diese):
+
+```
+psql:…/20260905000200_org_units.sql:44: NOTICE:  relation "org_units" already exists, skipping
+psql:…/20260905000200_org_units.sql:57: ERROR:  column "key" does not exist
+```
+
+Der Ablauf ist der gefährlichere von zweien: `CREATE TABLE IF NOT EXISTS`
+bricht **nicht** ab, sondern überspringt still. Erst der Index auf `key`
+fällt — und dort steht dann eine Tabelle mit fremder Form. Nach CLAUDE.md §5
+bedeutet ein Abbruch in `db push`, dass **keine** Migration mehr Produktion
+erreicht, auch keine unbeteiligte. Der P0-Fix B1 (`20260905000000`) hängt
+mit darin.
+
+**Warum GitHub das nicht meldet.** `mergeable_state` steht auf `clean` und die
+Prüfungen sind grün — beides zu Recht und beides wertlos: Es gibt keinen
+Textkonflikt (verschiedene Dateien), und die grünen Läufe stammen vom
+2026-09-04, also von einer Basis ohne mains `org_units`. **Grün heisst hier
+veraltet, nicht bestanden.** `git merge-tree` findet ebenfalls nichts. Eine
+Kollision auf Schema-Ebene ist mit den Mitteln der Vorschau nicht sichtbar;
+sie zeigt sich erst beim Anwenden.
+
+Das ist die Kollisionsklasse aus CLAUDE.md §5 (PR #1131 / #1124), einen
+Schritt weiter: dort kollidierten **Versionsnummern**, hier kollidiert ein
+**Objektname** bei verschiedenen Versionsnummern. Die Lehre gilt unverändert
+und wird breiter: Vor dem Merge einer Migration nicht nur die Version, sondern
+auch die angelegten Objekte gegen den **aktuellen** `main`-Stand prüfen.
+
+### Es sind zwei verschiedene Antworten auf dieselbe Frage
+
+| | `main` (#1135, `20260824120000`) | dieser PR (`20260905000200`, D4) |
+|---|---|---|
+| `tenant_id` | `NOT NULL` | nullable — `NULL` = Platform Scope |
+| Hierarchie | materialisierter Pfad `org_path` | `parent_id` + Trigger-Wanderung |
+| Bezeichner | `name` + `kind` | `key` (stabil) + `name` |
+| Stilllegen | — | `active` |
+| Policies | `org_units_tenant_select`/`_admin_*` | `org_units_select`/`_insert`/`_update`/`_delete`, beide Scope-Fälle ausdrücklich |
+
+Der Unterschied ist kein Geschmack. #1135 schreibt in seinem eigenen Kopf
+fest: „tenant bleibt die EINZIGE Isolationsgrenze — org_units strukturieren
+innerhalb eines Tenants". D4 dieses ADR verlangt genau das Gegenteil, drei
+Fälle statt zwei, mit `tenant_id IS NULL` als Platform Scope. **Zwei
+Entscheidungen desselben Eigentümers, wenige Tage auseinander, die einander
+widersprechen.** Welche gilt, ist eine Governance-Frage und wird hier nicht
+nebenbei beantwortet.
+
+### Was nicht betroffen ist
+
+Nur `org_units` kollidiert. `agent_roles`, `agents`, `platform_operators` und
+`is_platform_operator()` kommen auf `main` nirgends vor; geprüft über alle
+Migrationen. Ausserhalb von `20260905000200` hängt nichts an `org_units.key` —
+die zehn Fundstellen im PR nutzen ausschliesslich `org_unit_id`, und das
+trägt jede der beiden Fassungen. Die Trennfuge ist also sauber: Die Frage
+betrifft eine Datei und ihre acht Testfälle, nicht den PR als Ganzes.
+
+### Warum hier gefragt und nicht entschieden wird
+
+Beide naheliegenden Auswege sind Eingriffe, die dem Eigentümer gehören:
+
+- **Mains Tabelle übernehmen** hiesse, den Platform Scope aus D4 fallen zu
+  lassen — eine Zusage stillschweigend zurücknehmen.
+- **Mains Tabelle anpassen** (`tenant_id` auf nullable, `key` nachrüsten,
+  Policies zusammenführen) hiesse, eine soeben gemergte Isolationsinvariante
+  zu lockern. Nebenbei: Policies werden **oder-verknüpft** — beide
+  Policy-Sätze nebeneinander wären keine Summe, sondern die jeweils weitere
+  Sichtbarkeit von beiden.
+
+Bis zur Entscheidung bleibt `20260905000200` unverändert im PR — kaputt,
+aber ehrlich. Ein Rückbau „damit es grün wird" wäre die Entscheidung,
+nur ohne sie zu treffen.

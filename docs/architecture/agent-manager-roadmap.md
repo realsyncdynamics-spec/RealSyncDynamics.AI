@@ -248,6 +248,12 @@ keine unbeobachteten Alt-Systeme mehr. (A: erledigt, s. o.)
 
 ## 6. Referenzen
 
+- `docs/architecture/agent-organisation-rfc.md` — RFC-005: Bewertung einer
+  Rollen-/Organisationsebene über dieser Roadmap; grenzt ab, was M0–M4 ergänzt
+  und was sie doppelt
+- `docs/runbooks/agenten-bestandsaufnahme-2026-09-06.md` — Messung des
+  tatsächlichen Betriebs (Kausalkette Scan-Dispatch → Agent-OS), Grundlage für
+  das Health-Kriterium in M1
 - `docs/architecture/agent-os.md` — Ziel-Architektur Runtime/Skills (Phase
   0–5, Skill-Ebene)
 - `docs/architecture/roadmap.md` — Runtime-Core-Roadmap (Phasen 0–5)

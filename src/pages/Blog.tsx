@@ -140,7 +140,7 @@ export function Blog() {
       <footer className="border-t border-titanium-900 px-4 sm:px-6 py-8">
         <div className="max-w-5xl mx-auto text-xs text-titanium-500 flex flex-wrap items-center justify-between gap-3">
           <span>© 2026 RealSync Dynamics — Made in Germany, Hosted in EU</span>
-          <Link to="/legal/compliance-methodology" className="hover:text-titanium-300">Compliance Methodik 2026.Q2</Link>
+          <Link to="/legal/methodology" className="hover:text-titanium-300">Compliance Methodik 2026.Q2</Link>
         </div>
       </footer>
     </div>

@@ -7,7 +7,7 @@ import {
 import { getSupabase } from '../lib/supabase';
 
 /**
- * /risk-dashboard — Compliance Monitoring Dashboard
+ * /app/risk — Compliance Monitoring Dashboard
  *
  * Zeigt für alle monitored_domains des Tenants:
  * - Aktuellen Compliance-Score + Risk-Level
@@ -17,7 +17,8 @@ import { getSupabase } from '../lib/supabase';
  * - Manueller Re-Scan-Button
  *
  * Tier: Growth/Business (249€/Monat) und höher
- * Route: /risk-dashboard
+ * Route: /app/risk (App.tsx, hinter AppGate + ProtectedRoute).
+ * Frueher stand hier /risk-dashboard — diesen Pfad hat das Repo nie geroutet.
  */
 
 const supabase = getSupabase();
@@ -26,6 +27,10 @@ const supabase = getSupabase();
 
 interface MonitoredDomain {
   id: string;
+  // Wird fuer get_compliance_timeline gebraucht. Die Zeile kommt bereits durch
+  // die RLS-Policy `tenant_owns_monitored_domain` gefiltert an, ihr tenant_id
+  // ist damit nachweislich der Mandant des angemeldeten Nutzers.
+  tenant_id: string;
   domain: string;
   tier: string;
   active: boolean;
@@ -139,16 +144,27 @@ function DomainCard({
   useEffect(() => {
     async function loadTimeline() {
       setLoading(true);
-      const { data } = await supabase.rpc('get_compliance_timeline', {
+      // Hier stand die User-ID (`auth.getUser().data.user?.id`) als p_tenant_id.
+      // Das sind zwei verschiedene Schluessel: get_compliance_timeline filtert
+      // audit_monitor_results nach tenant_id, eine User-ID trifft dort nie eine
+      // Zeile. Die Timeline blieb dadurch immer leer — auch fuer Berechtigte.
+      // Der Fehler fiel nicht auf, weil das Ergebnis der leeren Antwort eines
+      // ungescannten Hosts gleicht und `error` verworfen wurde.
+      const { data, error } = await supabase.rpc('get_compliance_timeline', {
         p_domain: domain.domain,
-        p_tenant_id: (await supabase.auth.getUser()).data.user?.id ?? '',
+        p_tenant_id: domain.tenant_id,
         p_limit: 30,
       });
+      if (error) {
+        // Nicht verschlucken: sonst ist der naechste stille Fehlschlag wieder
+        // nicht von "keine Scans vorhanden" zu unterscheiden.
+        console.error('[RiskDashboard] get_compliance_timeline fehlgeschlagen', error);
+      }
       setTimeline(data ?? []);
       setLoading(false);
     }
     loadTimeline();
-  }, [domain.domain]);
+  }, [domain.domain, domain.tenant_id]);
 
   const latestDrift = timeline.find(t => t.drift && t.new_t?.length > 0);
   const score = domain.last_risk_score;

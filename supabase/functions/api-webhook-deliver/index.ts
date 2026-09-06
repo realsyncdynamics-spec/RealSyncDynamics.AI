@@ -41,13 +41,25 @@ interface SupabaseClient {
   };
 }
 
-serve(async () => {
+serve(async (req: Request) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
     if (!supabaseUrl || !supabaseServiceRoleKey) {
       throw new Error('Missing Supabase configuration');
+    }
+
+    // Nur Cron bzw. Service-Role (AP9, Welle 2): Diese Function stellt
+    // Webhooks an fremde Systeme zu und hatte bis 2026-09-01 keinerlei
+    // Prüfung — jeder mit dem öffentlichen Anon-Key konnte die Queue
+    // anstoßen. Dasselbe Muster wie scheduler-dispatch.
+    const authHeader = req.headers.get('Authorization') ?? '';
+    if (authHeader !== `Bearer ${supabaseServiceRoleKey}`) {
+      return new Response(JSON.stringify({ success: false, error: 'cron only' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
 
     const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);

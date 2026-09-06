@@ -25,11 +25,23 @@ export async function postEdgeFunction<T>(
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const resp = await fetch(`${SUPABASE_URL}/functions/v1/${fn}`, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify(body),
-  });
+  // Ein Netzwerk-/CORS-Fehler wirft hier `TypeError: Failed to fetch` — eine
+  // Meldung, die im UI nichts erklärt. Sie tritt u. a. auf, wenn die Function
+  // zur Laufzeit abstürzt: die Edge-Runtime antwortet dann mit einer 500 ohne
+  // CORS-Header, und der Browser verwirft die Antwort vor dem Status-Check.
+  // Deshalb: eigene, verständliche Meldung inklusive Function-Name.
+  let resp: Response;
+  try {
+    resp = await fetch(`${SUPABASE_URL}/functions/v1/${fn}`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(body),
+    });
+  } catch {
+    throw new Error(
+      `Backend nicht erreichbar (${fn}). Bitte Netzwerkverbindung prüfen und erneut versuchen.`,
+    );
+  }
 
   const text = await resp.text();
   let data: unknown = null;

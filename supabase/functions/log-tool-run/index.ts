@@ -46,19 +46,42 @@ serve(async (req) => {
       });
     }
 
-    // Get tenant from user's current workspace
-    const { data: profile, error: profileErr } = await supabase
-      .from('profiles')
-      .select('active_tenant_id')
-      .eq('id', user.id)
-      .single();
+    // Mandant über `memberships` auflösen.
+    //
+    // Bis zum 2026-09-01 stand hier `profiles.active_tenant_id`. Diese Spalte
+    // gibt es nicht — nicht in `profiles` und nirgends sonst im Schema
+    // (`information_schema.columns`, gegen das Live-Projekt geprüft; eine
+    // Migration von 2026-07 hält denselben Befund für `auth.users` fest).
+    // Der Aufruf endete deshalb **immer** mit „No active tenant", seit die
+    // Function existiert. Aufgefallen ist das nie, weil der Fehler wie ein
+    // fehlender Arbeitsbereich aussah und nicht wie ein Defekt.
+    //
+    // `memberships` ist die einzige Zuordnung Nutzer→Mandant. Gelesen wird
+    // mit dem Nutzer-Token, nicht mit Service-Role: RLS begrenzt die Zeilen
+    // ohnehin auf die eigenen Mitgliedschaften.
+    const { data: memberships, error: membershipErr } = await supabase
+      .from('memberships')
+      .select('tenant_id')
+      .eq('user_id', user.id)
+      .limit(2);
 
-    if (profileErr || !profile?.active_tenant_id) {
+    if (membershipErr || !memberships || memberships.length === 0) {
       return new Response(JSON.stringify({ error: 'No active tenant' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+
+    // Bei mehreren Mandanten wird nicht geraten: Ein Lauf im falschen
+    // Arbeitsbereich verfälscht Kosten und Prüfpfad.
+    if (memberships.length > 1) {
+      return new Response(JSON.stringify({ error: 'Multiple tenants — tenant_id required' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const tenantId = memberships[0].tenant_id as string;
 
     // Parse request body
     const body: LogToolRunRequest = await req.json();
@@ -67,7 +90,7 @@ serve(async (req) => {
     const { data, error: insertErr } = await supabase
       .from('ai_tool_runs')
       .insert({
-        tenant_id: profile.active_tenant_id,
+        tenant_id: tenantId,
         user_id: user.id,
         tool_key: body.tool_key,
         input_tokens: body.input_tokens ?? 0,

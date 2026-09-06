@@ -11,15 +11,36 @@ name: Pre-Deploy Check
 #   - noisy verify_jwt=true that re-states the default
 #   - agent contract filename violations
 #
-# Runs only on PRs (not on push to main) — the deploy workflow itself
-# is the source of truth for what ships; this is the pre-deploy
-# gate that surfaces issues BEFORE merge.
+# Runs on PRs and on push to main, with the same path filter.
+#
+# Why main as well: on 2026-09-02 two PRs (#1178, #1193) independently
+# used the same migration stamp 20260903050000. The PR runs could not see
+# it — each PR's tree lacked the sibling file — and the merge that brought
+# both together did not run this lint. The finding therefore came from the
+# failing `db push` in the deploy workflow (run 33620908267), and every
+# migration was blocked for eight hours (fix: PR #1200). On push to main
+# the lint sees the unified tree and reports the duplicate on the first
+# push, not in the deploy.
+#
+# The deploy workflow remains the source of truth for what ships; this is
+# the gate in front of it.
 #
 # Status header companion: docs/runtime/production-runtime.md
 # Manual run on a branch: `node scripts/pre-deploy-lint.mjs`
 
 on:
   pull_request:
+    branches: [main]
+    paths:
+      - 'supabase/migrations/**'
+      - 'supabase/functions/**'
+      - 'supabase/config.toml'
+      - 'src/runtime/agents/**'
+      - 'src/runtime/validator.ts'
+      - '.github/workflows/deploy*.yml'
+      - '.github/workflows/pre-deploy-check.yml'
+      - 'scripts/pre-deploy-lint.mjs'
+  push:
     branches: [main]
     paths:
       - 'supabase/migrations/**'

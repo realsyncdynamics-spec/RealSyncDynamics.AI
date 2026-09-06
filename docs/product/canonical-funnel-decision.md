@@ -250,9 +250,9 @@ Claim — der kartenlose 14-Tage-Growth-Pilot oder der Stripe-Weg mit
 
 **Danach** in dieser Reihenfolge, weil jeder Schritt den vorigen braucht:
 
-1. **Claim-Writer** — der einzige echte Neubau. Autorisierung über die
+1. **Claim-Writer** — **erledigt 2026-08-30** (`claim_gdpr_audit`). Autorisierung über die
    verifizierte E-Mail, nicht über `audit_id` aus der URL oder `tenant_id`
-   aus dem Client. Einhängepunkt existiert (`Welcome.tsx`).
+   aus dem Client. Einhängepunkte: `Welcome.tsx`, Dashboard-NBA.
 2. **Governance Initialization verdrahten** — `tenant-audit` in den
    Kundenpfad hängen. Kein Neubau.
 3. **Domain Enrollment verdrahten** — `pilot_enroll_monitoring_source`

@@ -115,7 +115,7 @@ The current tool surface is:
 | Landing entry | Product destination | Role |
 |---|---|---|
 | Free Audit | `/unified-entry/scan` | Primary acquisition funnel |
-| DSGVO Web App Builder | `/website-builder` | Website analysis / transformation entry |
+| DSGVO Web App Builder | `/build` (`/website-builder` → 301) | Website analysis / transformation entry |
 | Claude Code Optimizer | `/claude-code-optimizer` | Code governance / remediation entry |
 | WhatsApp Bot | `/app/bots` | Bot management / builder |
 | Telefonbot | `/app/bots` / voice channel | Bot management / voice configuration |

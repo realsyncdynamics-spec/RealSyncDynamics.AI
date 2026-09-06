@@ -67,3 +67,52 @@ describe('visibleTextLength', () => {
     expect(visibleTextLength(html)).toBeLessThan(20);
   });
 });
+
+// Spiegelt MIN_VISIBLE_TEXT aus scan-coverage.ts. Nicht exportiert; waere es
+// das, stuende hier ein Import statt einer Zahl.
+const MIN_VISIBLE_TEXT_FOR_TEST = 500;
+
+describe('Skript-Inhalt zaehlt nicht als sichtbarer Text', () => {
+  // `</script >` ist ein GUELTIGES End-Tag — HTML erlaubt Leerraum vor dem
+  // `>`. Der fruehere Ausdruck `<script[\s\S]*?<\/script>` verfehlte es, und
+  // der Bundle-Inhalt zaehlte zur sichtbaren Textlaenge.
+  //
+  // Diese Laenge entscheidet ueber `coverage`. Eine JS-Shell rutschte damit
+  // von 'limited' auf 'full': Der Bericht behauptet, die Seite vollstaendig
+  // gesehen zu haben, obwohl er nur das Geruest hatte — und verschweigt
+  // genau den Vorbehalt, fuer den `coverage` existiert.
+  const bundle = 'var a=1;/* '.repeat(60) + 'x'.repeat(200);
+  const shell = (close: string) => `<html><head><title>x</title></head><body>
+    <div id="root"></div>
+    <script type="module" src="/a.js">${bundle}</script${close}>
+  </body></html>`;
+
+  test('zaehlt Bundle-Inhalt nicht mit, auch bei "</script >"', () => {
+    // Gemessen vor dem Fix: 860 Zeichen statt 0.
+    expect(visibleTextLength(shell(' '))).toBe(visibleTextLength(shell('')));
+    expect(visibleTextLength(shell(' '))).toBeLessThan(MIN_VISIBLE_TEXT_FOR_TEST);
+  });
+
+  test('meldet eine JS-Shell weiterhin als limited — mit und ohne Leerraum', () => {
+    for (const close of ['', ' ', '\t']) {
+      const result = assessScanCoverage(shell(close), 200, null);
+      expect(result.coverage, `Schreibweise "</script${close}>"`).toBe('limited');
+      expect(result.reason).toBe('client_rendered_shell');
+    }
+  });
+
+  test('zaehlt echten Inhalt weiterhin voll', () => {
+    const echt = `<html><body><p>${'Sichtbarer Fliesstext. '.repeat(40)}</p></body></html>`;
+    expect(visibleTextLength(echt)).toBeGreaterThan(MIN_VISIBLE_TEXT_FOR_TEST);
+  });
+
+  test('entfernt auch head, style und noscript mit Leerraum im End-Tag', () => {
+    const html = '<head><title>geheim</title></head >'
+      + '<style>.a{content:"geheim"}</style >'
+      + '<noscript>geheim</noscript >'
+      + '<p>Sichtbar</p>';
+    const text = visibleTextLength(html);
+    // „Sichtbar" allein ist 8 Zeichen; alles Uebrige darf nicht mitzaehlen.
+    expect(text).toBeLessThan(20);
+  });
+});

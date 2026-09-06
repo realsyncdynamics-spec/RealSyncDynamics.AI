@@ -1,4 +1,4 @@
-import type { ModuleId, PermissionKey, PlanId, PlanLimits } from '@/shared/pricing';
+import type { EntitlementKey, ModuleId, PermissionKey, PlanId, PlanLimits } from '@/shared/pricing';
 
 export type ModuleStatus = 'live' | 'beta' | 'roadmap';
 
@@ -17,7 +17,16 @@ export type ModuleGate =
   /** Die Berechtigung muss im Plan gesetzt sein. */
   | { kind: 'permission'; permission: PermissionKey }
   /** Das numerische Limit muss mindestens `min` betragen (-1 = unbegrenzt zählt immer). */
-  | { kind: 'limit'; limit: keyof PlanLimits; min: number };
+  | { kind: 'limit'; limit: keyof PlanLimits; min: number }
+  /**
+   * Der Entitlement-Key muss im Plan gewährt sein (`PLAN_ENTITLEMENTS`).
+   *
+   * Das kanonische Vokabular seit AP1 — dieselbe Frage, die die View und
+   * der Server stellen. Nötig, wo `plan.modules` gröber ist als der Key:
+   * `evidence_vault` liegt ab Starter, `evidence.advanced` erst ab Growth.
+   * Mit einem Modul-Gate zeigte die Kachel offen, die Fläche sperrte.
+   */
+  | { kind: 'entitlement'; key: EntitlementKey };
 
 export interface GovernanceModule {
   id: string;

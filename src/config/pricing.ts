@@ -81,6 +81,14 @@ export interface PricingTier {
   /** Referenz auf den zugrundeliegenden Plan der SSoT */
   plan: Plan;
   priceEur: number;
+  /**
+   * COMMERCIAL-SSOT: temporary production hotfix.
+   * Canonical source migration tracked in Phase 2.
+   *
+   * `true` = kein oeffentlich zugesicherter Festpreis. Oberflaechen zeigen
+   * „Auf Anfrage" statt `priceEur`. Der Betrag bleibt interner Listenpreis.
+   */
+  priceOnRequest: boolean;
   /** Formatierter Betrag ohne Währungszeichen, z.B. "1.999" */
   priceString: string;
   /** "/ Monat", "/ Jahr" oder "einmalig · kein Account" */
@@ -142,7 +150,9 @@ function toTier(plan: Plan, interval: 'month' | 'year'): PricingTier {
     : isYearly ? (plan.price.yearlyEur ?? 0) : plan.price.monthlyEur;
   const id = (isYearly ? `${plan.id}_yearly` : plan.id) as TierId;
 
-  const priceSuffix = isOneTime
+  const priceSuffix = plan.priceOnRequest === true
+    ? 'individuelles Angebot'
+    : isOneTime
     ? 'einmalig'
     : plan.price.monthlyEur === 0
       ? 'einmalig · kein Account'
@@ -154,6 +164,7 @@ function toTier(plan: Plan, interval: 'month' | 'year'): PricingTier {
     planKey: planKeyFor(plan.id, interval),
     plan,
     priceEur,
+    priceOnRequest: plan.priceOnRequest === true,
     priceString: new Intl.NumberFormat('de-DE').format(priceEur),
     priceSuffix,
     // Free (0 €) und Einmalprodukte (Betrag in `oneTimeEur`) sind beide
@@ -191,7 +202,23 @@ function toTier(plan: Plan, interval: 'month' | 'year'): PricingTier {
 export const PRICING_TIERS: PricingTier[] = [
   ...ORDERED_PLANS.map((plan) => toTier(plan, 'month')),
   ...ONE_TIME_PLANS.map((plan) => toTier(plan, 'month')),
-  ...ORDERED_PLANS.filter((plan) => plan.yearlyPlanKey !== null).map((plan) => toTier(plan, 'year')),
+  // COMMERCIAL-SSOT: temporary production hotfix.
+  // Canonical source migration tracked in Phase 2.
+  // `yearlyCheckoutUnavailable` haelt Jahresvarianten heraus, fuer die in
+  // `public.products` kein echter Stripe-Preis verdrahtet ist. Ein Tier ist
+  // hier die Grundlage jeder Angebotsflaeche — auch des JSON-LD-Guards. Ein
+  // Tier zu erzeugen hiesse, 790 € bzw. 2.490 € oeffentlich zuzusichern,
+  // waehrend `stripe-checkout` jeden Jahres-Abschluss mit
+  // PRICE_NOT_CONFIGURED abweist.
+  //
+  // Bewusst NICHT ueber `yearlyPlanKey: null` geloest: der Key bleibt
+  // erhalten, damit ein bestehendes `_yearly`-Abo weiterhin auf seinen
+  // Basisplan aufloest. `tierByPlanKey()` faellt fuer solche Keys auf die
+  // Monatsvariante desselben Plans zurueck — gleicher Plan, gleiche
+  // Berechtigungen, nur ohne Jahres-Kachel.
+  ...ORDERED_PLANS
+    .filter((plan) => plan.yearlyPlanKey !== null && plan.yearlyCheckoutUnavailable !== true)
+    .map((plan) => toTier(plan, 'year')),
 ];
 
 /**
@@ -229,6 +256,26 @@ export const PUBLIC_PRICING_TIERS: PricingTier[] = PRICING_TIERS.filter(
  */
 export const SELLABLE_PRICING_TIERS: PricingTier[] = PUBLIC_PRICING_TIERS.filter(
   (tier) => tier.plan.availability !== 'legacy',
+);
+
+/**
+ * COMMERCIAL-SSOT: temporary production hotfix.
+ * Canonical source migration tracked in Phase 2.
+ *
+ * Die Tiers, für die sich überhaupt ein Betrag ausrechnen lässt — also die
+ * angebotenen mit öffentlich zugesichertem Festpreis. Rechner und
+ * Vergleiche MÜSSEN diese Liste nutzen: ein Plan ohne Festpreis hat keinen
+ * Monatsbetrag, aus dem sich eine Ersparnis ableiten liesse. Wer ihn
+ * trotzdem einsetzt, veroeffentlicht den internen Listenpreis wieder —
+ * genau das ist im ROI-Rechner passiert, waehrend die Plan-Karte daneben
+ * bereits „Auf Anfrage" zeigte.
+ *
+ * Basis ist `SELLABLE_PRICING_TIERS`, nicht `PUBLIC_PRICING_TIERS`: ein
+ * stillgelegter Plan gehoert in keine Kaufempfehlung, auch nicht als
+ * Rechenbeispiel.
+ */
+export const CALCULABLE_PRICING_TIERS: PricingTier[] = SELLABLE_PRICING_TIERS.filter(
+  (tier) => !tier.priceOnRequest,
 );
 
 /**

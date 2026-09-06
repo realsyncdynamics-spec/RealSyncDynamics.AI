@@ -1,5 +1,32 @@
 # Operator-Runbook — Release-Zug Phase 2 → Produktion
 
+> ## ⚠️ Überholt — nicht mehr ausführen, Stand 2026-09-04
+>
+> Der zentrale Blocker dieses Runbooks existiert nicht mehr, und seine
+> Begründung war falsch. Am 2026-09-04 gegen das Live-Projekt gemessen:
+>
+> | Aussage im Runbook | Gemessen 2026-09-04 |
+> |---|---|
+> | „exakt 100 ACTIVE Functions, `402 — Max number of functions reached`" | **181 Functions aktiv** |
+> | „73 Functions nie deployt" | **0** — Repo (181 ohne `_shared`) und Produktion sind deckungsgleich |
+> | „100 ist das Free-Plan-Limit" | **widerlegt** — schon `siteos` als Function 101 wurde deployt |
+> | Stage 0.5: drei Functions löschen, um Slots zu schaffen | **am 2026-08-11 erledigt**, alle fünf Orphans gelöscht, Allowlist leer |
+>
+> Die Annahme einer harten Schranke bei 100 war aus einer Beobachtung
+> geschlossen, nicht gemessen — genau der Fehler, vor dem CLAUDE.md §5 warnt.
+> Die 402-Meldung war real, ihre Erklärung nicht.
+>
+> **Was noch gilt**: die Vorgehensweise (Vorbedingung → Schritte → Gate →
+> Rollback), der Hinweis auf fehlendes PITR im Free-Plan vor Migrations-Pushes,
+> und `supabase db push --dry-run` vor jedem Merge mit Migrationen.
+>
+> **Was nicht mehr gilt**: Stage 0.5 vollständig, alle Slot- und Kontingentzahlen,
+> und die Stage-Reihenfolge, soweit sie auf Stage 0.5 aufbaut.
+>
+> Aktueller Stand zu Function-Kontingenten:
+> [`edge-function-kontingent.md`](./edge-function-kontingent.md). Der Quellstand
+> der gelöschten Functions liegt in `.archive/retired-edge-functions/`.
+
 **Erhoben**: 2026-08-04 · **Basis**: `origin/main` @ `541dafd` · **Live-Projekt**: `ebljyceifhnlzhjfyxup` (eu-central-1)
 **Entscheidungsgrundlage**: [`pr-merge-matrix.md`](./pr-merge-matrix.md)
 

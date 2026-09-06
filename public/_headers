@@ -5,7 +5,17 @@
   Permissions-Policy: camera=(), microphone=(), geolocation=()
   Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
   Cross-Origin-Opener-Policy: same-origin-allow-popups
-  Content-Security-Policy: default-src 'self' https://*.supabase.co data:; script-src 'self' 'unsafe-inline' https://connect.facebook.net https://www.googletagmanager.com https://www.google-analytics.com https://analytics.tiktok.com https://snap.licdn.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://*.supabase.co https://*.supabase.in https://*.ingest.de.sentry.io https://*.ingest.sentry.io https://www.facebook.com https://www.google-analytics.com https://analytics.tiktok.com https://*.tiktok.com https://px.ads.linkedin.com; frame-ancestors 'self'; base-uri 'self'; form-action 'self'; object-src 'none'
+  # Cloudflare Pages injiziert das Web-Analytics-Beacon selbst; ohne
+  # static.cloudflareinsights.com in script-src (Skript) und
+  # cloudflareinsights.com in connect-src (Messwert-POST) wurde es bei
+  # JEDEM Seitenaufruf blockiert — gemessen am 2026-08-30, zusammen mit
+  # dem 500er von track-pageview waren damit beide Analytics-Wege stumm.
+  # Nach der eigenen Tracker-Registry (_shared/rules/tracker-registry.json,
+  # id: cloudflare_web_analytics) ist das Beacon cookieless und
+  # einwilligungsfrei (Art. 6 Abs. 1 lit. f). Die Registry verlangt aber
+  # zweierlei: Nennung in der Datenschutzerklaerung und einen AVV wegen
+  # des US-Transfers. Beides steht noch aus — siehe docs/qa/produktions-akzeptanz.md.
+  Content-Security-Policy: default-src 'self' https://*.supabase.co data:; script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com https://connect.facebook.net https://www.googletagmanager.com https://www.google-analytics.com https://analytics.tiktok.com https://snap.licdn.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://cloudflareinsights.com https://*.supabase.co https://*.supabase.in https://*.ingest.de.sentry.io https://*.ingest.sentry.io https://www.facebook.com https://www.google-analytics.com https://analytics.tiktok.com https://*.tiktok.com https://px.ads.linkedin.com; frame-ancestors 'self'; base-uri 'self'; form-action 'self'; object-src 'none'
   # HTML nie im Browser-Cache halten. Die Regel stand vorher unter
   # /index.html und griff dadurch nie: Cloudflare Pages matcht gegen den
   # Request-Pfad, und der ist "/" bzw. "/pricing" — nie "/index.html".

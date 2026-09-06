@@ -63,7 +63,19 @@ const SEV_LABEL: Record<Severity, string> = {
   pass: 'OK',
 };
 
-export function AuditChatHero({ onScanComplete }: { onScanComplete: (report: Report) => void }) {
+export function AuditChatHero({
+  onScanComplete,
+  initialDomain,
+}: {
+  onScanComplete: (report: Report) => void;
+  /**
+   * Adresse aus `?domain=`, die die Startseite mitschickt. Landet als
+   * Startwert im Eingabefeld — sichtbar, aber nicht abgeschickt: Der Besucher
+   * soll sehen, was gescannt wird, und es korrigieren können, bevor es
+   * losgeht. Danach gehört das Feld ihm.
+   */
+  initialDomain?: string;
+}) {
   const [phase, setPhase] = useState<Phase>('ask-url');
   const [url, setUrl] = useState('');
   const [bubbles, setBubbles] = useState<Bubble[]>([
@@ -73,7 +85,7 @@ export function AuditChatHero({ onScanComplete }: { onScanComplete: (report: Rep
       text: 'Hi! Ich bin der DSGVO-Audit-Assistent. Welche Website soll ich für Dich scannen?',
     },
   ]);
-  const [input, setInput] = useState('');
+  const [input, setInput] = useState(initialDomain ?? '');
   const [validationError, setValidationError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);

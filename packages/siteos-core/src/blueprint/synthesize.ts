@@ -154,7 +154,7 @@ export function buildBlock(
         content: {
           headline: brief.name,
           subline: brief.summary,
-          primaryCta: { label: 'Termin anfragen', href: contactPath(brief) },
+          primaryCta: ctaFor(brief),
           // Platzhalter statt generiertem Bild: ein Bild ohne geklärte
           // Rechtelage gehört nicht in eine ausgelieferte Site.
           media: { kind: 'placeholder', alt: `${brief.name} — Ansicht`, ratio: '16:9' },
@@ -171,15 +171,27 @@ export function buildBlock(
       };
 
     case 'features':
+      // „Warum wir" behauptet etwas über ein fremdes Unternehmen. Was hier
+      // steht, muss aus dem Scan oder aus Redaktion stammen — sonst steht
+      // hier gar nichts.
+      //
+      // Bis zum 2026-09-01 standen hier drei feste Sätze („Persönliche
+      // Betreuung — Feste Ansprechpartner statt Warteschleife."). Sie gingen
+      // an jeden Kunden jeder Branche und waren damit für nahezu jeden
+      // falsch: Eine Governance-Plattform hat keine Warteschleife, und ob
+      // die Wege kurz sind, weiss der Scanner nicht.
+      //
+      // `requiresRealContent` ist dabei nicht Zierde, sondern der Anschluss
+      // an die bestehende Prüfung: `analysis/blueprint.ts` meldet einen
+      // leeren Block mit dieser Marke als `content.awaiting-real-content`.
+      // Der leere Zustand ist dadurch sichtbar statt still — dasselbe
+      // Muster, das der `testimonials`-Block seit jeher nutzt.
       return {
         ...base,
         content: {
           heading: 'Warum wir',
-          items: [
-            { label: 'Persönliche Betreuung', description: 'Feste Ansprechpartner statt Warteschleife.' },
-            { label: 'Transparente Leistungen', description: 'Klare Angaben zu Umfang und Ablauf.' },
-            { label: 'Kurze Wege', description: brief.locality ? `Zentral in ${brief.locality}.` : 'Gut erreichbar.' },
-          ],
+          items: brief.highlights.map((label) => ({ label, description: null })),
+          requiresRealContent: true,
         },
       };
 
@@ -371,6 +383,32 @@ function navigationLinks(brief: SiteBrief): { label: string; href: string }[] {
   return getIndustryPreset(brief.industry)
     .pagePlan.filter((page) => page.path !== '/' && !page.noindex && !LEGAL_PATHS.has(page.path))
     .map((page) => ({ label: page.title, href: page.path }));
+}
+
+/**
+ * Beschriftung und Ziel des Hero-CTA.
+ *
+ * Die Beschriftung folgt dem **tatsächlichen Ziel** im Seitenplan, statt
+ * fest zu stehen. Vorher stand hier ausnahmslos „Termin anfragen" — auch
+ * dann, wenn der Seitenplan gar keine Terminseite führt und der Verweis auf
+ * `/kontakt` zeigte. Ein Besucher las damit eine Zusage („Termin"), die das
+ * Ziel nicht einlöst; bei einer Software- oder Governance-Seite war sie
+ * zusätzlich sachlich falsch.
+ *
+ * Erfunden wird dabei nichts: Jede Beschriftung benennt genau die Seite, auf
+ * der der Klick landet. Ist kein Ziel vorhanden, bleibt es beim neutralen
+ * „Kontakt aufnehmen" — das stimmt auch auf der Startseite.
+ */
+const CTA_LABEL_BY_PATH: Readonly<Record<string, string>> = Object.freeze({
+  '/termin': 'Termin anfragen',
+  '/reservierung': 'Tisch reservieren',
+  '/anfrage': 'Anfrage senden',
+  '/kontakt': 'Kontakt aufnehmen',
+});
+
+function ctaFor(brief: SiteBrief): { label: string; href: string } {
+  const href = contactPath(brief);
+  return { label: CTA_LABEL_BY_PATH[href] ?? 'Kontakt aufnehmen', href };
 }
 
 function contactPath(brief: SiteBrief): string {

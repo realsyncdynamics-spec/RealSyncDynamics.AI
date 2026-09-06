@@ -84,7 +84,7 @@ function getContext(pathname: string): ContextEntry {
 }
 
 const COMMAND_ACTIONS = [
-  { label: 'Neue Website erstellen', description: 'Bestehende URL analysieren und neue Website generieren', icon: Globe2, to: '/website-builder' },
+  { label: 'Neue Website erstellen', description: 'Bestehende URL analysieren und neue Website generieren', icon: Globe2, to: '/build' },
   { label: 'Website prüfen', description: 'DSGVO, AI Act, Security und SEO analysieren', icon: Scan, to: '/scan/start' },
   { label: 'AI Chatbot erstellen', description: 'Website-Assistent konfigurieren', icon: MessageCircle, to: '/chatbot/start' },
   { label: 'AI Telefonbot erstellen', description: 'Voice Agent konfigurieren', icon: Phone, to: '/phonebot/start' },
@@ -129,7 +129,7 @@ export function GovernanceChatSidebar({ open, onClose }: GovernanceChatSidebarPr
 
   const handleQuickAction = (action: string) => {
     if (action === 'Neue Website erstellen') {
-      navigate('/website-builder');
+      navigate('/build');
       return;
     }
     if (action === 'Website analysieren') {

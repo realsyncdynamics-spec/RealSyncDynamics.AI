@@ -1,9 +1,14 @@
 import type { Agent } from './types.js';
+import { VOICE_AGENT_ID, VOICE_AGENT_NAME, VOICE_AGENT_TOOLS } from './voice-types.js';
 
 /**
  * Initiale Agent-Registry — bewusst statisch in dieser MVP-Stufe.
  * Persistenz/Verwaltung folgt in einer Folge-PR (Supabase-backed registry,
  * RLS-isoliert pro Tenant).
+ *
+ * Voice sitzt als Kanal *neben* den internen Governance-Agents.
+ * Per-Tool-Confirmation kommt aus voice-policy.ts, nicht aus
+ * requiresHumanReview (sonst wäre lookup_kb fälschlich review-pflichtig).
  */
 const AGENTS: ReadonlyArray<Agent> = [
   {
@@ -55,6 +60,22 @@ const AGENTS: ReadonlyArray<Agent> = [
     permissions: ['read:repos', 'write:drafts'],
     restricted: ['production_change', 'github_pr_create'],
     requiresHumanReview: true,
+  },
+  {
+    id: VOICE_AGENT_ID,
+    name: VOICE_AGENT_NAME,
+    type: 'voice',
+    tools: [...VOICE_AGENT_TOOLS],
+    riskLevel: 'high',
+    permissions: [
+      'read:kb',
+      'write:tickets',
+      'write:appointments',
+      'write:handoff',
+      'read:transcript',
+    ],
+    restricted: ['production_change', 'legal_surface_change'],
+    requiresHumanReview: false,
   },
 ];
 

@@ -26,12 +26,25 @@ import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, CheckCircle2, Info, Sparkles } from 'lucide-react';
 import { useEntitlements } from '../../core/billing/useEntitlements';
-import { MODULE_PRICING_STATUS, type BookableModule } from '@/shared/pricing';
+import { MODULE_PRICING_STATUS, type BookableModule, type BookableModuleId } from '@/shared/pricing';
 import { buildCatalog, planLabel, type CatalogEntry } from './moduleCatalog';
+import { readFunnelContext } from '../../core/onboarding/funnelContext';
+import { MyPlanSection } from './MyPlanSection';
 
 export function MarketplaceView() {
   const { tier, loading } = useEntitlements();
   const katalog = useMemo(() => buildCatalog(tier), [tier]);
+
+  // Empfehlung aus dem Trichter, sofern der Kunde über Scan → Empfehlung
+  // hierher gekommen ist. Sie ist **keine** Berechtigung und ändert keinen
+  // Zustand — sie macht nur sichtbar, was aus den Befunden abgeleitet wurde.
+  // Der Kontext liegt in der Sitzung (`funnelContext.ts`); nach einem neuen
+  // Tab ist er weg, und dann zeigt der Marketplace schlicht keine Markierung.
+  const funnel = useMemo(() => readFunnelContext(), []);
+  const empfohlen = useMemo(
+    () => new Set<BookableModuleId>(funnel?.selectedModules ?? []),
+    [funnel],
+  );
 
   const aktiv = katalog.filter((e) => e.status === 'active');
   const verfuegbar = katalog.filter((e) => e.status !== 'active');
@@ -62,13 +75,30 @@ export function MarketplaceView() {
               </span>
             </p>
           )}
+          {empfohlen.size > 0 && (
+            <p className="mt-2 text-sm text-titanium-400">
+              Aus Ihrem Scan{funnel?.domain ? ` für ${funnel.domain}` : ''} empfohlen:{' '}
+              <span className="font-semibold text-titanium-200">
+                {empfohlen.size} {empfohlen.size === 1 ? 'Dienst' : 'Dienste'}
+              </span>
+              {' — '}
+              <span className="text-titanium-500">unten markiert.</span>
+            </p>
+          )}
         </header>
+
+        {/* AP7 — „Mein Plan": Plan, Enthaltenes, Add-ons mit Preisvorschau.
+            Add-ons werden über `subscription-addons` gebucht; die Module
+            darunter laufen weiterhin über den Plan. */}
+        <MyPlanSection />
 
         {aktiv.length > 0 && (
           <section className="mb-12">
             <h2 className="mb-4 font-mono text-xs tracking-widest text-titanium-500">AKTIV</h2>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {aktiv.map((eintrag) => <Karte key={eintrag.module.id} eintrag={eintrag} />)}
+              {aktiv.map((eintrag) => (
+                <Karte key={eintrag.module.id} eintrag={eintrag} empfohlen={empfohlen.has(eintrag.module.id)} />
+              ))}
             </div>
           </section>
         )}
@@ -76,7 +106,9 @@ export function MarketplaceView() {
         <section>
           <h2 className="mb-4 font-mono text-xs tracking-widest text-titanium-500">VERFÜGBAR</h2>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {verfuegbar.map((eintrag) => <Karte key={eintrag.module.id} eintrag={eintrag} />)}
+            {verfuegbar.map((eintrag) => (
+              <Karte key={eintrag.module.id} eintrag={eintrag} empfohlen={empfohlen.has(eintrag.module.id)} />
+            ))}
           </div>
         </section>
 
@@ -101,12 +133,21 @@ export function MarketplaceView() {
   );
 }
 
-function Karte({ eintrag }: { eintrag: CatalogEntry }) {
+function Karte({ eintrag, empfohlen = false }: { eintrag: CatalogEntry; empfohlen?: boolean }) {
   const { module, status, unlockedByPlan } = eintrag;
   const aktiv = status === 'active';
 
   return (
-    <article className="flex flex-col border border-titanium-800 bg-obsidian-900 p-5">
+    <article
+      className={`flex flex-col border bg-obsidian-900 p-5 ${
+        empfohlen ? 'border-ai-cyan-500/60' : 'border-titanium-800'
+      }`}
+    >
+      {empfohlen && (
+        <p className="mb-2 font-mono text-[10px] uppercase tracking-wide text-ai-cyan-300">
+          Aus Ihrem Scan empfohlen
+        </p>
+      )}
       <div className="mb-3 flex items-start justify-between gap-3">
         <h3 className="text-base font-semibold text-titanium-50">{module.name}</h3>
         {aktiv ? (

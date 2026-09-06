@@ -231,8 +231,8 @@ export function DashboardView() {
               <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm"><h3 className="font-semibold">Schnellaktionen</h3><div className="mt-3 space-y-1">{[
                 { label: 'Neuen Scan starten', icon: Search, path: '/unified-entry/scan' },
                 { label: 'Website in Comet öffnen', icon: Globe2, path: '/app/websites' },
-                { label: 'Chatbot konfigurieren', icon: MessageSquare, path: '/app/chatbot' },
-                { label: 'Telefonbot konfigurieren', icon: Mic, path: '/app/phonebot' },
+                { label: 'Chatbot konfigurieren', icon: MessageSquare, path: '/app/bots' },
+                { label: 'Telefonbot konfigurieren', icon: Mic, path: '/app/agents/susi' },
                 { label: 'Workflow starten', icon: Workflow, path: '/app/workflows' },
               ].map(({ label, icon: Icon, path }) => <button type="button" key={label} onClick={() => navigate(path)} className="flex w-full items-center gap-3 rounded-xl px-2 py-2.5 text-left text-sm hover:bg-slate-50"><Icon size={16} className="text-slate-500" /><span className="flex-1">{label}</span><ArrowRight size={14} className="text-slate-300" /></button>)}</div></section>
 

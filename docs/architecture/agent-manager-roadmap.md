@@ -79,6 +79,17 @@ Dieser Fund ist selbst das beste Argument für M0: eine Registry hätte
 "Subsystem A: nie deployed" sofort sichtbar gemacht, statt dass es sich
 hinter einer nie angewendeten Migration versteckt.
 
+> **Korrektur, gemessen 2026-09-01** (Live-Projekt `ebljyceifhnlzhjfyxup`,
+> `supabase_migrations.schema_migrations` und `pg_tables`): Punkt 3 oben gilt
+> nicht mehr. `20260705180000` ist inzwischen **verbucht**, und die Migration
+> legt heute `autonomous_agents`, `autonomous_agent_runs`,
+> `autonomous_agent_tasks` und `autonomous_agent_events` an — nicht mehr
+> `agents`/`agent_runs`/`agent_tasks`. Damit ist auch der Schema-Konflikt
+> gegenstandslos: die Namen kollidieren nicht mehr. Unverändert richtig bleibt,
+> dass **`public.agents` in Produktion nicht existiert** und `agent-scheduler`
+> von keinem Cron-Job getriggert wird. Der Name `agents` ist deshalb frei für
+> die Agenten-Organisationsebene (ADR 0011, D4).
+
 **Konsequenz für Beobachtbarkeit:** Um heute den Zustand *aller* Agenten
 eines Tenants zu sehen, müssen vier verschiedene Tabellen-Gruppen und ein
 externes n8n-Interface geprüft werden. Es gibt keine einzelne Abfrage,

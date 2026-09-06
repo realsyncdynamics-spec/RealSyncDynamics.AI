@@ -13,8 +13,10 @@ import { CapabilityAvailabilityNotice } from '../components/landing/CapabilityAv
 interface WhatsAppPricingTier {
   id: string;
   name: string;
-  monthlyPrice: number;
-  yearlyPrice?: number;
+  // COMMERCIAL-SSOT: temporary production hotfix.
+  // Canonical source migration tracked in Phase 2.
+  // `null` = Preis auf Anfrage (kein Self-Service-Checkout, manuelle Faktura).
+  monthlyPrice: number | null;
   description: string;
   botLimit: number;
   answersPerMonth: number;
@@ -23,12 +25,19 @@ interface WhatsAppPricingTier {
   cta: { label: string; href: string };
 }
 
+// COMMERCIAL-SSOT: temporary production hotfix.
+// Canonical source migration tracked in Phase 2.
+// Ohne Jahrespreise: `products` traegt fuer `starter_yearly` und
+// `growth_yearly` nur Platzhalter, jeder Jahres-Checkout endete mit
+// PRICE_NOT_CONFIGURED. Die Karten wiesen „oder 790€/Jahr" bzw.
+// „oder 2490€/Jahr" aus, waehrend ihr CTA auf den MONATS-Checkout zeigte —
+// ein zugesicherter Betrag ohne Kaufpfad. Die Monatspreise bleiben
+// unveraendert und sind einloesbar.
 const WHATSAPP_TIERS: WhatsAppPricingTier[] = [
   {
     id: 'starter-wa',
     name: 'Starter WhatsApp',
     monthlyPrice: 79,
-    yearlyPrice: 790,
     description: 'Einzelner WhatsApp-Bot mit grundlegenden Governance-Features',
     botLimit: 1,
     answersPerMonth: 500,
@@ -47,7 +56,6 @@ const WHATSAPP_TIERS: WhatsAppPricingTier[] = [
     id: 'growth-wa',
     name: 'Growth WhatsApp',
     monthlyPrice: 249,
-    yearlyPrice: 2490,
     description: 'Bis zu 2 WhatsApp-Bots mit erweiterten Governance-Features',
     botLimit: 2,
     answersPerMonth: 2000,
@@ -65,31 +73,9 @@ const WHATSAPP_TIERS: WhatsAppPricingTier[] = [
     cta: { label: 'Kostenlos testen', href: '/checkout/growth?channel=whatsapp&source=pricing&pilot=true' },
   },
   {
-    id: 'agency-wa',
-    name: 'Agency WhatsApp',
-    monthlyPrice: 699,
-    yearlyPrice: 6900,
-    description: 'Bis zu 10 WhatsApp-Bots mit vollständiger White-Label-Lösung',
-    botLimit: 10,
-    answersPerMonth: 25000,
-    features: [
-      'bis zu 10 produktive WhatsApp-Bots',
-      'bis zu 25.000 Antworten/Monat',
-      'White-Label mit eigenem Branding',
-      'Custom Intent-Matching & Fallbearbeitung',
-      'Human Handoff mit Eskalation',
-      'Advanced Analytics & Sentiment-Analyse',
-      'Vollständiger Audit-Trail & Compliance-Logging',
-      'Priority-Setup (1 Stunde, 24/7)',
-      'Dedicated Support (4h Response)',
-      'Branchenbibliothek integriert',
-    ],
-    cta: { label: 'Testen', href: '/checkout/agency?channel=whatsapp&source=pricing&pilot=true' },
-  },
-  {
     id: 'enterprise-wa',
     name: 'Enterprise WhatsApp',
-    monthlyPrice: 1249,
+    monthlyPrice: null,
     description: 'Bis zu 20 WhatsApp-Bots mit Multi-Tenant-Support',
     botLimit: 20,
     answersPerMonth: 50000,
@@ -101,8 +87,8 @@ const WHATSAPP_TIERS: WhatsAppPricingTier[] = [
       'API Premium + Webhooks',
       'White-Label Light (Branding, Logo, Farben)',
       'Advanced Analytics & Risk-Scoring',
-      'Priority Support (4h Response-Zeit)',
-      'SLA 99,5% Verfügbarkeit',
+      'Priority Support mit vertraglich vereinbarter Reaktionszeit',
+      'SLA nach Vereinbarung',
       'Audit Center Pro + Evidence Vault Enterprise',
     ],
     cta: { label: 'Kontakt', href: '/contact-sales?tier=enterprise&channel=whatsapp&source=pricing' },
@@ -230,7 +216,7 @@ export function WhatsAppPricingPage() {
           Alle Tiers beinhalten WhatsApp-Integration. Monatlich kündbar. 14 Tage kostenlos testen.
         </p>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {WHATSAPP_TIERS.map((tier) => (
             <div
               key={tier.id}
@@ -254,14 +240,11 @@ export function WhatsAppPricingPage() {
 
                 <div className="mb-6">
                   <div className="flex items-baseline gap-2 mb-1">
-                    <span className="text-3xl font-bold">{tier.monthlyPrice}€</span>
+                    <span className="text-3xl font-bold">
+                      {tier.monthlyPrice === null ? 'Auf Anfrage' : `${tier.monthlyPrice}€`}
+                    </span>
                     <span className="text-titanium-400 text-sm">/Monat</span>
                   </div>
-                  {tier.yearlyPrice && (
-                    <p className="text-xs text-titanium-500">
-                      oder {tier.yearlyPrice}€/Jahr (2-Monate-Rabatt)
-                    </p>
-                  )}
                 </div>
 
                 <div className="mb-6 p-3 rounded bg-obsidian-800/50 text-xs">
@@ -347,7 +330,7 @@ export function WhatsAppPricingPage() {
             },
             {
               q: 'Wie lange dauert das Setup?',
-              a: 'Abhängig vom Tier: Starter/Growth ~2–4 Stunden. Agency/Enterprise: Dedicated Onboarding im Rahmen des Contracts.',
+              a: 'Abhängig vom Tier: Starter/Growth ~2–4 Stunden. Enterprise: Dedicated Onboarding im Rahmen des Contracts.',
             },
             {
               q: 'Welche Zahlungsarten werden akzeptiert?',

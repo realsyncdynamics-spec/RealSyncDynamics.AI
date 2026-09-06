@@ -254,18 +254,32 @@ export function EnterpriseLanding() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {/*
+              COMMERCIAL-SSOT: temporary production hotfix.
+              Canonical source migration tracked in Phase 2.
+
+              Kapazitäts- und Zusagenversprechen entschärft. Die früheren
+              Formulierungen widersprachen den Limits in shared/pricing.ts:
+                „unlimited Kunden"        → limits.tenants = 5
+                „Unlimited Users + API Keys" → limits.seats = 50, apiKeys = 50
+                „4h SLA"                  → SLA ist vertraglich zu vereinbaren
+                „Compliance Certifications (ISO, SOC2)" → wir liefern
+                    Policy Packs und Nachweise, keine gehaltenen Zertifikate
+                „Volume Discounts (25%+)" → keine zugesicherte Rabatthöhe
+              Konkrete Kontingente stehen im Vertrag, nicht auf der Landingpage.
+            */}
             {[
-              'Evidence Vault (unveränderlich, mit Audit Trail)',
-              'Multi-Tenant Management (unlimited Kunden)',
+              'Evidence Vault (unveränderlich, mit Prüfpfad)',
+              'Multi-Tenant Management (Mandantenzahl nach Vereinbarung)',
               'White-Label (Logo, Domains, Branding)',
               'REST API + Webhooks',
-              'Priority Support (4h SLA)',
+              'Priority Support mit vereinbarter Reaktionszeit',
               'Custom Training + Onboarding',
-              'Compliance Certifications (ISO, SOC2, etc.)',
-              'Unlimited Users + API Keys',
+              'Policy Packs und prüffähige Nachweise (ISO 27001, DORA, NIS2, TISAX)',
+              'Nutzer- und API-Schlüssel-Kontingente nach Vereinbarung',
               'Custom Dashboards & Reports',
               'AI Model Selection (Claude, GPT, Gemma)',
-              'Volume Discounts (25%+)',
+              'Individuelle Konditionen nach Volumen',
               'Dedicated Account Manager',
             ].map((feature) => (
               <div key={feature} className="flex items-start gap-3 p-4 border border-titanium-800 rounded-none">
@@ -289,7 +303,7 @@ export function EnterpriseLanding() {
           <p className="text-lg text-silver-300 leading-relaxed mb-10">
             Abhängig von Anzahl der Domains, Benutzer, API-Calls, und SLA-Anforderungen.
             <br />
-            <strong>Start ab €1.249/Monat</strong> · Volume Discounts verfügbar.
+            <strong>Preis auf Anfrage</strong> · individuell nach Umfang und SLA.
           </p>
 
           <Link

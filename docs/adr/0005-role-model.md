@@ -2,6 +2,9 @@
 
 > **Status:** Accepted · 2026-05-30
 > **Related:** ADR 0004 (Enterprise Identity), ADR 0006 (MFA/AAL2)
+> **Amended by:** ADR 0011 (2026-09-01) — die Plattform-Berechtigung der
+> Agenten-Organisationsebene liest aus `platform_operators`, nicht aus
+> `profiles.is_super_admin`. Dort auch Befund B1 zu dieser Spalte.
 
 ## Kontext
 

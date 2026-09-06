@@ -13,6 +13,7 @@ import { MobileBottomNavigation } from './MobileBottomNavigation';
 import { EmbeddedBrowserCanvas } from './EmbeddedBrowserCanvas';
 import { GovernanceChatSidebar } from './GovernanceChatSidebar';
 import { PaymentGraceBanner } from './PaymentGraceBanner';
+import { RouteEntitlementGate } from '../../core/access/RouteEntitlementGate';
 
 interface GovernanceBrowserShellProps {
   children: React.ReactNode;
@@ -51,6 +52,10 @@ export function GovernanceBrowserShell({ children }: GovernanceBrowserShellProps
         <GovernanceTabs />
       </div>
 
+      {/* Ein Gate für jede Route der Shell: RouteEntitlementGate liest das
+          Zugriffsregister (core/access/featureAccess.ts) gegen die wirksamen
+          Entitlements — dieselbe Quelle wie der Server, inklusive Grace
+          Period und Add-on-Grants. Freie Flächen passieren unverändert. */}
       <div className="flex flex-1 overflow-hidden min-h-0">
         {embeddedUrl ? (
           <EmbeddedBrowserCanvas
@@ -59,7 +64,9 @@ export function GovernanceBrowserShell({ children }: GovernanceBrowserShellProps
             onScan={handleScan}
           />
         ) : (
-          <GovernanceCanvas>{children}</GovernanceCanvas>
+          <GovernanceCanvas>
+            <RouteEntitlementGate>{children}</RouteEntitlementGate>
+          </GovernanceCanvas>
         )}
 
         {/* Claude.ai-style Agent Sidebar: 380px open, 32px collapsed strip */}

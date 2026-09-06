@@ -19,6 +19,10 @@ export interface Database {
           retained_until: string | null;
           created_by: string | null;
           created_at: string;
+          // Exakt in den event_hash eingegangener Zeitstempel. NULL bei
+          // Snapshots von vor Einführung der Spalte — die sind nur
+          // strukturell prüfbar, gelten aber nicht als manipuliert.
+          event_timestamp: string | null;
         };
         Insert: {
           id?: string;
@@ -34,8 +38,56 @@ export interface Database {
           retained_until?: string | null;
           created_by?: string | null;
           created_at?: string;
+          event_timestamp?: string | null;
         };
-        Update: never;
+        // Append-only: die Tabelle hat einen Immutability-Trigger. Der leere
+        // Update-Typ macht schon im Compiler klar, dass es nichts zu ändern gibt.
+        Update: Record<string, never>;
+        Relationships: [];
+      };
+      // Globaler Framework-Katalog. Kein tenant_id — die Frameworks gelten für
+      // alle. Nur lesend genutzt, deshalb Insert/Update gesperrt.
+      compliance_frameworks: {
+        Row: {
+          id: string;
+          code: string;
+          name: string;
+          description: string | null;
+          version: string | null;
+          authority: string | null;
+          website_url: string | null;
+          created_at: string;
+          updated_at: string | null;
+        };
+        Insert: Record<string, never>;
+        Update: Record<string, never>;
+        Relationships: [];
+      };
+      // Control-Katalog. Ebenfalls global und ohne Erfüllungsstand — der läge
+      // in framework_implementations, die je Tenant geführt wird.
+      //
+      // Achtung: Die Tabelle trägt zwei Zuordnungswege nebeneinander, siehe
+      // die Anmerkung in tools/governance.ts. `framework_id` und `framework`
+      // sind daher beide nullbar.
+      framework_controls: {
+        Row: {
+          id: string;
+          framework: string | null;
+          framework_id: string | null;
+          control_code: string;
+          title: string | null;
+          control_name: string | null;
+          description: string | null;
+          guidance: string | null;
+          severity: string | null;
+          category: string | null;
+          parent_control_id: string | null;
+          metadata: Record<string, unknown> | null;
+          created_at: string;
+        };
+        Insert: Record<string, never>;
+        Update: Record<string, never>;
+        Relationships: [];
       };
       tenants: {
         Row: {
@@ -51,6 +103,72 @@ export interface Database {
         Update: {
           name?: string;
         };
+        Relationships: [];
+      };
+      mcp_api_keys: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          key_prefix: string;
+          key_hash: string;
+          name: string | null;
+          scopes: string[];
+          created_by: string | null;
+          created_at: string;
+          expires_at: string | null;
+          last_used_at: string | null;
+          last_used_ip: string | null;
+          active: boolean;
+          rotated_from: string | null;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          key_prefix: string;
+          key_hash: string;
+          name?: string | null;
+          scopes?: string[];
+          created_by?: string | null;
+          created_at?: string;
+          expires_at?: string | null;
+          active?: boolean;
+          rotated_from?: string | null;
+        };
+        Update: {
+          name?: string | null;
+          scopes?: string[];
+          expires_at?: string | null;
+          active?: boolean;
+        };
+        Relationships: [];
+      };
+      mcp_key_usage: {
+        Row: {
+          id: string;
+          key_id: string;
+          action: string;
+          status: number;
+          ip_address: string | null;
+          user_agent: string | null;
+          timestamp: string;
+          latency_ms: number | null;
+          error_message: string | null;
+        };
+        Insert: {
+          id?: string;
+          key_id: string;
+          action: string;
+          status: number;
+          ip_address?: string | null;
+          user_agent?: string | null;
+          timestamp?: string;
+          latency_ms?: number | null;
+          error_message?: string | null;
+        };
+        // Append-only: die Tabelle hat einen Immutability-Trigger. Der leere
+        // Update-Typ macht schon im Compiler klar, dass es nichts zu ändern gibt.
+        Update: Record<string, never>;
+        Relationships: [];
       };
     };
     Views: {};
@@ -71,6 +189,46 @@ export interface Database {
           retained_until: string | null;
           created_at: string;
           on_hold: boolean;
+        }>;
+      };
+      // Liefert Kandidaten zum Präfix, nicht das Urteil: Die Gültigkeit des
+      // Keys kann die Datenbank nicht entscheiden, weil der Pepper nur in der
+      // Serverumgebung liegt. `valid` betrifft allein Ablauf und Widerruf.
+      mcp_key_candidates: {
+        Args: {
+          p_key_prefix: string;
+        };
+        Returns: Array<{
+          valid: boolean;
+          key_id: string;
+          tenant_id: string;
+          scopes: string[];
+          key_hash: string;
+        }>;
+      };
+      mcp_log_usage: {
+        Args: {
+          p_key_id: string;
+          p_action: string;
+          p_status: number;
+          p_ip?: string | null;
+          p_user_agent?: string | null;
+          p_latency_ms?: number | null;
+          p_error?: string | null;
+          p_count?: boolean;
+        };
+        Returns: void;
+      };
+      mcp_quota_state: {
+        Args: {
+          p_tenant_id: string;
+        };
+        Returns: Array<{
+          allowed: boolean;
+          api_access: boolean;
+          used: number;
+          limit_calls: number;
+          plan_key: string;
         }>;
       };
     };

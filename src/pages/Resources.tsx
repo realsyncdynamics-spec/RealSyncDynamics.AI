@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ArrowLeft, ShieldCheck, ArrowRight, BookOpen, Globe, Building2, FileText, Layers,
-  AlertTriangle, GitMerge,
+  AlertTriangle, GitMerge, Plug,
 } from 'lucide-react';
 
 interface Resource {
@@ -28,6 +28,13 @@ const RESOURCES: Resource[] = [
     description: 'Was bedeutet der AI Act für Dein Business? Risiko-Klassen, Pflichten, Fristen, Sanktionen, Praxis-Tipps.',
     badge: 'FAQ',
     icon: <AlertTriangle className="h-5 w-5" />,
+  },
+  {
+    href: '/onboarding-erklaert',
+    title: 'So funktioniert das Onboarding',
+    description: 'Vom Unternehmensprofil über verbundene Systeme bis zu Risiken, Aufgaben und Nachweisen — warum Ihre bestehende IT dabei bleibt.',
+    badge: 'Guide',
+    icon: <Plug className="h-5 w-5" />,
   },
   {
     href: '/schrems-ii-erklaert',

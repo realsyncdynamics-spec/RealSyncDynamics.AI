@@ -109,7 +109,7 @@ export function ApiSetupWizard() {
     <div className="min-h-screen bg-obsidian-950 text-titanium-100">
       <header className="h-14 border-b border-titanium-900 bg-obsidian-900 flex items-center px-4">
         <button
-          onClick={() => navigate('/app/settings/api-keys')}
+          onClick={() => navigate('/settings/api-keys')}
           className="p-1.5 rounded-none hover:bg-obsidian-800 text-titanium-400 hover:text-titanium-200 mr-3"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -178,7 +178,7 @@ export function ApiSetupWizard() {
               keyName={name}
               fullKey={createdKey.raw}
               onCopyConfirmed={() => {
-                setTimeout(() => navigate('/app/settings/api-keys'), 1000);
+                setTimeout(() => navigate('/settings/api-keys'), 1000);
               }}
             />
           )}
@@ -195,7 +195,7 @@ export function ApiSetupWizard() {
 
           <div className="flex gap-3">
             <button
-              onClick={() => navigate('/app/settings/api-keys')}
+              onClick={() => navigate('/settings/api-keys')}
               className="px-4 py-2 bg-obsidian-900 border border-titanium-700 hover:border-titanium-600 text-titanium-400 rounded-none text-sm font-semibold transition-colors"
             >
               Abbrechen

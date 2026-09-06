@@ -30,6 +30,14 @@ const session = readFileSync(
   resolve(ROOT, 'src/features/siteos/buildSession.ts'),
   'utf-8',
 );
+const studio = readFileSync(
+  resolve(ROOT, 'src/unified-entry/pages/BuildStudioPage.tsx'),
+  'utf-8',
+);
+const api = readFileSync(
+  resolve(ROOT, 'src/features/siteos/siteOsApi.ts'),
+  'utf-8',
+);
 
 /** Der Rumpf von `handleClaim` — nur dort gilt das Verbot. */
 function claimBody(): string {
@@ -114,5 +122,104 @@ describe('Vorschau zeigt den Serverstand', () => {
   it('benennt den Rückfall, statt ihn zu verschweigen', () => {
     expect(session).toContain("mode: BuildMode");
     expect(claimView).toContain("'local_only'");
+  });
+});
+
+// Der Rückfall wurde bisher nur dort benannt, wo es zu spät ist.
+//
+// `SiteOsClaimView` kennt `local_only` und sagt es sauber — aber die Ansicht
+// liegt hinter `/welcome`. Wer im Rückfall auf „Website übernehmen" klickt,
+// legt erst ein Konto an und erfährt danach, dass es nichts zu übernehmen
+// gibt. `buildSession.ts` verlangt ausdrücklich das Gegenteil: Der Zustand
+// „steht in `mode` und wird in der Oberfläche gesagt, statt beim Klick auf
+// ‚Übernehmen' als Fehler aufzutauchen."
+//
+// Geprüft wird wieder die Bauform, nicht das Verhalten: Ob der Hinweis
+// erscheint, hängt an einer Serverantwort, die im Test nicht existiert.
+describe('Das Studio sagt den Rückfall vor der Registrierung', () => {
+  /** Der Kasten, der den Speicherort behauptet. */
+  function storageNote(): string {
+    const start = studio.indexOf('bg-obsidian-900 p-4 text-[11px] leading-5 text-titanium-400');
+    expect(start).toBeGreaterThan(-1);
+    return studio.slice(start, studio.indexOf('</div>', start));
+  }
+
+  it('leitet die Übernehmbarkeit aus dem Modus der Sitzung ab', () => {
+    expect(studio).toContain("state.session.mode === 'server'");
+  });
+
+  it('sperrt „Website übernehmen", solange der Entwurf nur lokal liegt', () => {
+    // Ohne diese Sperre führt der Weg über eine Kontoerstellung ins Leere.
+    expect(studio).toContain('disabled={!claimable}');
+    const cta = studio.slice(studio.indexOf("navigate('/app/siteos/claim')"));
+    expect(cta.slice(0, cta.indexOf('</button>'))).toContain('disabled:opacity-40');
+  });
+
+  it('behauptet den Speicherort nicht unbedingt, sondern je Modus', () => {
+    // Im Servermodus liegt der Entwurf in `siteos_anonymous_builds`. Ein
+    // fester Satz „liegt nur in diesem Browser" wäre dort eine falsche
+    // Angabe über den Verbleib von Kundendaten.
+    const note = storageNote();
+    expect(note).toContain('claimable ?');
+    expect(note).toContain('serverseitig gespeichert');
+    expect(note).toContain('nur in diesem Browser');
+  });
+});
+
+// Ablauf ist ein eigener Zustand, kein Fehler.
+//
+// Die anonyme Sitzung lebt sieben Tage (`siteos_anonymous_builds.expires_at`);
+// danach antwortet der Server mit `410 GONE` — beim Verfeinern, beim Lesen und
+// beim Claim. Fehlt dafür ein eigener Fall, fällt der 410 auf `error` durch,
+// und der Besucher liest die Rohmeldung der Client-Bibliothek statt zu
+// erfahren, dass seine Frist um ist.
+describe('Abgelaufene Entwürfe werden als Ablauf behandelt', () => {
+  it('übersetzt 410 in einen eigenen Fall statt in einen generischen Fehler', () => {
+    expect(api).toContain('status === 410');
+    expect(api).toMatch(/kind: 'gone'/);
+    expect(api).toMatch(/case 'gone':/);
+  });
+
+  it('wirft die tote Kennung beim Wiederaufnehmen weg', () => {
+    // Ohne `gone` in dieser Bedingung bliebe die Kennung einer abgelaufenen
+    // Sitzung für immer im Browser, und jede Wiederaufnahme fragte den Server
+    // erneut nach einem Entwurf, den es nicht mehr gibt.
+    const clause = /if \(result\.kind === 'not_found'[^)]*\) clear\(\);/.exec(session)?.[0] ?? '';
+    expect(clause, 'Abbruchbedingung von resumeBuild nicht gefunden').not.toBe('');
+    expect(clause).toContain("'gone'");
+  });
+
+  it('nennt Frist und Übernahme-Zustand in der Vorschau', () => {
+    // Beides kommt vom Server und stand bisher ungenutzt im Zustand.
+    expect(studio).toContain('state?.expiresAt');
+    expect(studio).toContain('state.claimed');
+  });
+});
+
+// Die Kennung der lokalen Sitzung kommt aus einer echten Zufallsquelle.
+//
+// CodeQL meldete `Math.random()` in `localId()` als „Insecure randomness"
+// (high). Der Wert benennt nur einen Entwurf im eigenen Browser, der ohnehin
+// nicht übernehmbar ist — aber eine schwache Zufallsquelle in einer Kennung
+// ist ein Muster, das nicht stehen bleiben soll.
+describe('Lokale Sitzungskennung', () => {
+  /** Quelltext ohne Kommentare — sonst schlägt die Prüfung am eigenen an. */
+  function code(): string {
+    return session
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .split('\n')
+      .map((line) => line.replace(/\/\/.*$/, ''))
+      .join('\n');
+  }
+
+  it('nutzt kein Math.random()', () => {
+    expect(code()).not.toContain('Math.random');
+  });
+
+  it('greift auf die Krypto-Zufallsquelle zurück, wenn randomUUID fehlt', () => {
+    // `getRandomValues` gibt es auch im unsicheren Kontext, in dem
+    // `randomUUID` nicht bereitsteht — deshalb ist es der richtige Rückfall.
+    expect(code()).toContain('randomUUID');
+    expect(code()).toContain('getRandomValues');
   });
 });

@@ -27,6 +27,8 @@ import {
   analyzeObservation,
   computeScores,
   planAgentTasks,
+  skillForFindingCodes,
+  workflowForScanTrigger,
   type RuntimeFinding,
   type SiteBlueprint,
   type SiteObservation,
@@ -171,6 +173,11 @@ export async function handle(req: Request): Promise<Response> {
         status: task.requiresApproval ? 'awaiting_approval' : 'queued',
         finding_codes: task.findingCodes, severity_max: task.severityMax,
         requires_approval: task.requiresApproval,
+        // Beschriftung nach §8. Der Anlass wird hier aus dem Auslöser des
+        // Scans abgeleitet und nicht gesetzt: ein Cron-Lauf ist Change
+        // Monitoring, ein Deploy-Lauf Publishing Governance.
+        skill: skillForFindingCodes(task.findingCodes, task.agent),
+        workflow: workflowForScanTrigger(trigger),
       })));
     }
 

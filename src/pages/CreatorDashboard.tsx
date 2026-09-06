@@ -56,7 +56,8 @@ export function CreatorDashboard() {
       const response = await processAIGatewayRequest({
         prompt: promptText,
         provider: selectedModel,
-        context: extractedContext.trim() !== '' ? extractedContext : undefined
+        context: extractedContext.trim() !== '' ? extractedContext : undefined,
+        feature: 'creator_dashboard_chat',
       });
 
       if (!response.success) throw new Error(response.error || 'Gateway Fehler');

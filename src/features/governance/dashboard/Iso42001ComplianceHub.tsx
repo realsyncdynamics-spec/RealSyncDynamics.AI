@@ -104,7 +104,7 @@ function Inner() {
     <div className="min-h-screen bg-obsidian-950 text-titanium-100">
       <header className="h-14 border-b border-titanium-900 bg-obsidian-900 flex items-center px-4">
         <button
-          onClick={() => navigate('/app/governance')}
+          onClick={() => navigate('/app/dashboard')}
           className="text-titanium-400 hover:text-titanium-200 text-sm"
         >
           ← Zurück zu Governance
@@ -240,7 +240,7 @@ function Inner() {
               Zusätzliche Funktionen freischalten
             </h3>
             <p className="text-sm text-titanium-400 max-w-md mx-auto">
-              Mit dem Scale-Plan erhalten Sie erweiterte ISO 42001 Reporting-Features,
+              Mit einem kostenpflichtigen Tarif erhalten Sie erweiterte ISO 42001 Reporting-Features,
               automatische Compliance-Audits und Zertifizierungsvorbereitung.
             </p>
           </div>

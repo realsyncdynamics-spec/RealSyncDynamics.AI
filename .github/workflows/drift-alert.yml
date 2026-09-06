@@ -1,0 +1,186 @@
+name: Drift Alert
+
+# Macht rote Drift-Läufe sichtbar, indem sie ein GitHub-Issue bekommen.
+#
+# ## Warum es diesen Workflow gibt
+#
+# Die drei Drift-Guards funktionieren. Sie haben am 2026-08-30 nachweislich
+# genau die Befunde gemeldet, die eine manuelle Messung am selben Tag noch
+# einmal gefunden hat — nur eben Tage früher:
+#
+#   * `Migration Drift Guard` war seit 2026-08-26 rot und nannte beide
+#     Out-of-Band-Migrationen (20260825204748, 20260829011038) namentlich.
+#     Fünf Tage lang.
+#   * `Edge Function Drift Guard` war seit 2026-08-29 rot und nannte
+#     `onboarding-orchestrator` als ORPHAN, inklusive der Handlungsanweisung.
+#
+# Das Problem war also nie die Erkennung, sondern die Zustellung: Ein roter
+# Scheduled-Run erzeugt bestenfalls eine E-Mail, die niemanden erreicht, der
+# handelt. Ein Issue landet dort, wo Arbeit ohnehin verwaltet wird, und bleibt
+# sichtbar, bis jemand es schließt.
+#
+# ## Warum als eigener Workflow statt als Schritt in den Guards
+#
+# `workflow_run` beobachtet die drei Guards von außen. Damit bleiben sie
+# unverändert — ihre Aufgabe ist Messen, nicht Melden. Ein Fehler in der
+# Benachrichtigung kann so auch keinen Guard rot färben und umgekehrt.
+#
+# ## Verhalten
+#
+#   rot   → Issue anlegen, oder bei einem bereits offenen Issue desselben
+#           Guards nur kommentieren. Kein zweites Issue für denselben Befund.
+#   grün  → offenes Issue desselben Guards schließen, mit Hinweis auf den
+#           Lauf, der wieder grün war.
+#
+# Ein Guard, der nach einem roten Lauf wieder grün wird, räumt also selbst auf.
+
+on:
+  workflow_run:
+    workflows:
+      - Edge Function Drift Guard
+      - Migration Drift Guard
+      - Function ACL Drift Guard
+    types:
+      - completed
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  alert:
+    name: Issue für Drift-Befund pflegen
+    runs-on: ubuntu-latest
+    # `skipped` und `cancelled` sind keine Befunde — nur echte Ergebnisse zählen.
+    if: >
+      github.event.workflow_run.conclusion == 'failure' ||
+      github.event.workflow_run.conclusion == 'success'
+    steps:
+      - name: Issue anlegen, kommentieren oder schließen
+        # SHA-gepinnt, weil das Repository genau das erzwingt: Mit `@v7` bricht
+        # der Lauf schon in „Set up job" ab — noch bevor ein Schritt startet:
+        #
+        #   The action actions/github-script@v7 is not allowed in
+        #   realsyncdynamics-spec/RealSyncDynamics.AI because all actions must
+        #   be pinned to a full-length commit SHA.
+        #
+        # Dieser Workflow war deshalb **seit seiner Entstehung am 2026-08-30
+        # wirkungslos**: Er sollte rote Drift-Guards als Issue zustellen und
+        # ist selbst bei jedem Lauf gescheitert. Ausgerechnet die Zustellung
+        # von Befunden hatte damit denselben Fehler, den sie sichtbar machen
+        # soll — einen roten Lauf, den niemand sieht.
+        #
+        # SHA über `git ls-remote https://github.com/actions/github-script v7`
+        # aufgelöst, nicht abgeschrieben. `v7` ist ein leichtgewichtiges Tag,
+        # zeigt also direkt auf den Commit.
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+        with:
+          script: |
+            const run = context.payload.workflow_run;
+            const guard = run.name;
+            const failed = run.conclusion === 'failure';
+            const title = `Drift-Befund: ${guard}`;
+            const label = 'drift-alert';
+
+            // Bestehendes offenes Issue dieses Guards suchen. Der Titel ist der
+            // Schlüssel — ein Guard hat höchstens ein offenes Drift-Issue.
+            const { data: open } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: label,
+              per_page: 100,
+            });
+            const existing = open.find((i) => i.title === title);
+
+            const link = `[Lauf #${run.run_number}](${run.html_url})`;
+            const when = run.updated_at;
+
+            if (!failed) {
+              if (existing) {
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: existing.number,
+                  body: `✅ **${guard}** ist wieder grün — ${link} (${when}).\n\nDer Befund ist behoben, das Issue wird geschlossen.`,
+                });
+                await github.rest.issues.update({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: existing.number,
+                  state: 'closed',
+                  state_reason: 'completed',
+                });
+                core.info(`Issue #${existing.number} geschlossen — ${guard} ist grün.`);
+              } else {
+                core.info(`${guard} ist grün, kein offenes Issue — nichts zu tun.`);
+              }
+              return;
+            }
+
+            // Label anlegen, falls es das Repo noch nicht führt.
+            try {
+              await github.rest.issues.getLabel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                name: label,
+              });
+            } catch {
+              await github.rest.issues.createLabel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                name: label,
+                color: 'b60205',
+                description: 'Produktion weicht vom Repo ab — von einem Drift-Guard gemeldet',
+              });
+            }
+
+            if (existing) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existing.number,
+                body: `❌ Weiterhin rot — ${link} (${when}).\n\nDer Befund besteht seit dem Öffnen dieses Issues fort.`,
+              });
+              core.setFailed(`${guard} weiterhin rot — Issue #${existing.number} aktualisiert.`);
+              return;
+            }
+
+            const body = [
+              `Der Guard **${guard}** ist fehlgeschlagen: ${link} (${when}).`,
+              '',
+              'Das heißt in der Regel: **Produktion weicht vom Repo ab.** Jemand hat',
+              'direkt gegen die Live-Umgebung gearbeitet, statt über Repo und CI.',
+              '',
+              'Den konkreten Befund nennt das Protokoll des Laufs — die Guards geben',
+              'die betroffenen Versionen bzw. Function-Slugs namentlich aus und',
+              'schlagen den Fix gleich mit vor.',
+              '',
+              '### Warum das zählt',
+              '',
+              'Bei Migrations-Drift bricht `supabase db push` vollständig ab, solange',
+              'der Befund offen ist — dann erreicht **keine** Migration mehr die',
+              'Produktion, auch keine unbeteiligte.',
+              '',
+              'Unabhängig davon ist jeder Eingriff an Repo und CI vorbei ein',
+              'Governance-Befund für ein Produkt, das Prüfpfad und',
+              'Nachvollziehbarkeit zusagt (siehe `CLAUDE.md` §5).',
+              '',
+              '### Was zu tun ist',
+              '',
+              '1. Protokoll des Laufs öffnen und den benannten Befund lesen',
+              '2. Die Quelle ins Repo nachziehen — wortgleich aus der Live-Umgebung,',
+              '   damit ein frisches `db reset` denselben Stand herstellt',
+              '3. Erst wenn das nicht geht: bewusst verwerfen',
+              '',
+              'Dieses Issue schließt sich selbst, sobald der Guard wieder grün läuft.',
+            ].join('\n');
+
+            const { data: created } = await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title,
+              body,
+              labels: [label],
+            });
+            core.setFailed(`${guard} rot — Issue #${created.number} angelegt.`);

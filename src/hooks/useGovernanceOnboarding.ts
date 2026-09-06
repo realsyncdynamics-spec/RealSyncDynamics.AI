@@ -3,6 +3,8 @@ import type { ScanFinding, GovernanceProfile, GovernanceAnswer, Recommendation, 
 import { classifyAllFindings, groupFindingsByDimension, scoreDimensionCriticality } from '../core/onboarding/findingClassifier';
 import { generateContextualQuestions } from '../core/onboarding/questionEngine';
 import { generateRecommendation } from '../core/onboarding/recommendationEngine';
+import { buildCustomerReality, recommendForReality } from '../core/onboarding/canonicalRecommendation';
+import type { OnboardingChoiceId } from '@/shared/onboarding';
 
 /**
  * Hook to manage the entire guided onboarding flow
@@ -12,7 +14,12 @@ export function useGovernanceOnboarding(
   scanId: string,
   domain: string,
   findings: ScanFinding[],
-  initialSector?: Sector
+  initialSector?: Sector,
+  /**
+   * Selbstauskünfte aus dem Q&A-Einstieg (`shared/onboarding.ts`).
+   * Sie **ergänzen** die kanonische Empfehlung; die Befunde führen.
+   */
+  businessNeeds: readonly OnboardingChoiceId[] = []
 ) {
   // Classification state
   const classified = useMemo(() => classifyAllFindings(findings), [findings]);
@@ -65,6 +72,20 @@ export function useGovernanceOnboarding(
   // Generate recommendation
   const recommendation = useMemo(() => generateRecommendation(profile), [profile]);
 
+  // Kanonische Sicht: Customer Reality → Angebot mit konkreten Modulen.
+  // `recommendation` bleibt daneben bestehen — sie ist die Plan-Aussage, auf
+  // der die kanonische Empfehlung aufsetzt, keine konkurrierende Zweitmeinung.
+  // `businessNeeds` kommt in der Regel als Literal von der aufrufenden Seite
+  // und wäre damit bei jedem Render eine neue Referenz. Der Vergleich läuft
+  // deshalb über den Inhalt, nicht über die Identität — sonst rechnete die
+  // Empfehlung bei jedem Tastendruck neu.
+  const needsKey = businessNeeds.join('|');
+  const reality = useMemo(
+    () => buildCustomerReality(profile, needsKey ? (needsKey.split('|') as OnboardingChoiceId[]) : []),
+    [profile, needsKey],
+  );
+  const canonicalRecommendation = useMemo(() => recommendForReality(reality), [reality]);
+
   // Callbacks
   const addAnswer = useCallback((questionId: string, answer: boolean | number | string | string[]) => {
     setAnswers((prev) => {
@@ -110,6 +131,8 @@ export function useGovernanceOnboarding(
     // Profile building
     profile,
     recommendation,
+    reality,
+    canonicalRecommendation,
     selectedSector,
     updateSector,
 

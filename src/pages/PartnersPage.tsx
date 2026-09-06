@@ -11,7 +11,7 @@ import {
 //
 // Future work that would let us extend this page:
 //   - Affiliate-tracking table + Edge Function (no code today)
-//   - 50-tenant quota enforcement (Scale-Tier ships in #349)
+//   - 50-tenant quota enforcement (Partner-Kontingent, ships in #349)
 //   - Stripe price IDs for Partner + recurring partner-rev-share
 //   - 30-day trial backend (not implemented)
 //
@@ -73,8 +73,8 @@ export function PartnersPage() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-px bg-titanium-900">
             <TierCard
               name="Agency"
-              price="€699 / Monat"
-              capacity="bis 10 Mandanten"
+              price="nicht mehr im Verkauf"
+              capacity="Bestandskunden behalten ihren Tarif"
               accent="text-cyan-300"
               bullets={[
                 'White-Label-Reports im eigenen Branding',
@@ -83,12 +83,13 @@ export function PartnersPage() {
                 'Bulk-Audit für Domain-Portfolios',
                 'Priority-Support',
               ]}
-              cta={{ label: 'Direkt buchen', href: '/audit?plan=agency&source=partners' }}
+              cta={{ label: 'Enterprise anfragen', href: '/contact-sales?tier=enterprise&source=partners' }}
+              footnote="Seit AP2 stillgelegt · laufende Abos rechnen unverändert weiter"
             />
             <TierCard
               name="Partner"
-              price="€1.999 / Monat"
-              capacity="bis 50 Mandanten"
+              price="nicht mehr im Verkauf"
+              capacity="Bestandskunden behalten ihren Tarif"
               accent="text-emerald-300"
               highlight
               bullets={[
@@ -98,23 +99,23 @@ export function PartnersPage() {
                 'Voller API-Zugriff',
                 'SLA 4 h · Priority-Support',
               ]}
-              cta={{ label: 'Enterprise anfragen', href: '/contact-sales?tier=scale&source=partners' }}
-              footnote="manuelles Onboarding · Pilot-Phase · Stripe-Self-Serve folgt"
+              cta={{ label: 'Enterprise anfragen', href: '/contact-sales?tier=enterprise&source=partners' }}
+              footnote="Seit AP2 stillgelegt · laufende Abos rechnen unverändert weiter"
             />
             <TierCard
               name="Enterprise"
               price="individuell"
-              capacity="unbegrenzte Mandanten"
+              capacity="Mandanten-Kapazität nach Vereinbarung"
               accent="text-violet-300"
               bullets={[
-                'Alle Scale-Funktionen',
+                'Alle Partner-Funktionen',
                 'Dedizierter Runtime-Kanal · SLA-Vertrag',
                 'EU AI Act Governance-Modul',
                 'DSB-Integration (intern oder extern)',
                 'Evidence Vault · Custom DPA',
               ]}
               cta={{ label: 'Enterprise anfragen', href: '/contact-sales?tier=enterprise&source=partners' }}
-              footnote="€ 1.249 / Monat · Festpreis nach Mandanten-Volumen"
+              footnote="Preis auf Anfrage · individuell nach Mandanten-Volumen"
             />
           </div>
         </section>
@@ -169,8 +170,8 @@ export function PartnersPage() {
               eta="Q4 2026"
             />
             <Roadmap
-              title="Self-Serve Scale-Checkout"
-              body="Stripe-Checkout direkt aus /pricing für Scale-Tier. Aktuell: manuelles Onboarding über Sales (besser für die ersten 10 Kunden — wir verifizieren persönlich)."
+              title="Self-Serve Partner-Checkout"
+              body="Stripe-Checkout direkt aus /pricing für den Partner-Plan. Aktuell: manuelles Onboarding (besser für die ersten 10 Kunden — wir verifizieren persönlich)."
               eta="Q3 2026"
             />
             <Roadmap

@@ -20,7 +20,7 @@ describe('GOVERNANCE_MODULES config', () => {
       expect(mod.label, `label fehlt für ${mod.id}`).toBeTruthy();
       expect(mod.route, `route fehlt für ${mod.id}`).toMatch(/^\//);
       expect(['live', 'beta', 'roadmap'], `status ungültig für ${mod.id}`).toContain(mod.status);
-      expect(['all', 'module', 'permission', 'limit'], `gate ungültig für ${mod.id}`)
+      expect(['all', 'module', 'permission', 'limit', 'entitlement'], `gate ungültig für ${mod.id}`)
         .toContain(mod.gate.kind);
       // Jedes Gate muss von mindestens einem Plan erfüllbar sein — sonst wäre
       // das Modul für niemanden erreichbar.
@@ -78,12 +78,19 @@ describe('GOVERNANCE_MODULES config', () => {
     }
   });
 
-  it('Evidence Vault ist ab Starter sichtbar — wie im Pricing ausgewiesen', () => {
-    // Vor dem SSoT-Refactoring war der Vault im Pricing ab Starter enthalten,
-    // in der Navigation aber erst ab Agency. Dieser Test pinnt die Auflösung.
+  it('Evidence Vault (erweitert) ist ab Growth sichtbar — wie evidence.advanced', () => {
+    // Die Route /app/evidence-vault ist der *erweiterte* Vault (Snapshots,
+    // Retention, Legal Hold). View und Server gaten ihn auf
+    // `evidence.advanced`, das ab Growth liegt. Bis 2026-09-01 zeigte die
+    // Kachel ab Starter offen und die Fläche sperrte — jetzt sagen beide
+    // dasselbe. Der Basis-Vault (/app/evidence) bleibt für jeden Plan offen,
+    // damit bleibt die Starter-Zusage „Evidence Vault mit Hash-Chain" gedeckt.
     const vault = GOVERNANCE_MODULES.find((m) => m.id === 'evidence-vault')!;
     expect(canAccessModule(vault, 'free')).toBe(false);
-    expect(canAccessModule(vault, 'starter')).toBe(true);
+    expect(canAccessModule(vault, 'starter')).toBe(false);
+    expect(canAccessModule(vault, 'growth')).toBe(true);
+    const basis = GOVERNANCE_MODULES.find((m) => m.id === 'evidence')!;
+    expect(canAccessModule(basis, 'starter')).toBe(true);
   });
 
   it('akzeptiert Altdaten `scale` als Partner', () => {

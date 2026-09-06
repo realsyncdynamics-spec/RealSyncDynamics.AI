@@ -78,8 +78,10 @@ Menschen · Unternehmen · KI-Agenten · Daten · Entscheidungen.
 
 **Primär: Supabase Cloud (EU / Frankfurt)**
 - PostgreSQL 17 (Live-Projekt, Stand 2026-08-16)
-- **178 Edge Functions** im Repo (`supabase/functions/`, Deno/V8) — 177 davon in Produktion; `whatsapp-webhook` ist seit 2026-08-23 im Repo und wird mit dem nächsten `deploy.yml`-Lauf deployt, siehe §5
-- **289 Migrations** (`supabase/migrations/`) — 287 verbucht; zur Lücke und zur Versionskollision vom 2026-08-24 siehe §5
+- **188 Edge Functions** im Repo (`supabase/functions/`, Deno/V8; `_shared` ist Bibliothek, keine Function) — gemessen am 2026-09-05 am **Merge-Baum** (`ls -d`, nicht addiert). 182 davon sind mains Bestand und **alle deployt**, deckungsgleich in beide Richtungen (mains Messung vom 2026-09-04 um 23:23 UTC per Management-API, nachdem `mcp-api-key-manager` aus PR #1160 in `src/config/production-edge-functions.ts` nachgetragen war — der Drift-Guard hatte recht). Die **sechs** aus diesem Branch warten auf den nächsten `deploy.yml`-Lauf: `governance-decide` und `integration-credentials` (P0), `governance-access` (P1-3), `evidence-anchor` (P1-6), `microsoft365-connect` und `microsoft365-audit-sync` (P2-2). Fünf davon stehen in `UNBACKED_CALLERS`; `microsoft365-audit-sync` bewusst nicht — es hat keinen Aufrufer im Frontend, sondern wird von pg_cron getriggert, und diese Liste führt Aufrufer ohne Backend, nicht Functions ohne Deploy
+- **326 Migrations** (`supabase/migrations/`) — gemessen am 2026-09-05 am Merge-Baum (`ls supabase/migrations/*.sql | wc -l`), keine doppelte Versionsnummer. 317 davon sind mains Bestand und **alle verbucht** (mains Messung vom 2026-09-04 um 23:39 UTC gegen `supabase_migrations.schema_migrations` nach dem grünen Deploy-Lauf 33929752213, `comm` in beide Richtungen leer). Die **neun** aus diesem Branch sind unverbucht: `20260824090000_pdp_snapshots_shadow`, `20260824110000_integration_credentials_hardening`, `20260824120000_org_subject_model_approval_gates`, `20260901090000_evidence_append_only_anchors`, `20260904100000_connector_registry` (P2-1), `20260904110000_publish_gate_policy_trail` (P2-3), `20260904120000_pdp_shadow_log_channels` (P2-3/P2-5) `20260905100000_microsoft365_connector` (P2-2) und `20260906100000_pdp_shadow_readiness` (Plan §7, Auswertung des Beobachtungsbetriebs)
+
+  > **Ein Befund vom Vorabend hat sich erledigt, und zwar richtig herum**: Hier stand am 2026-09-04 abends, mains Zeile nenne 315 Dateien bei 317 im Baum und seine unverbuchten seien drei statt einer. Das stimmte zum Zeitpunkt der Messung — inzwischen ist der Deploy gelaufen, und `main` hat um 23:39 UTC gegen das Ledger nachgemessen: 317 Dateien, 317 verbucht, in beide Richtungen verglichen. Die Differenz war also kein Fehler, sondern eine Momentaufnahme zwischen Merge und Deploy. Die Lehre bleibt trotzdem stehen, weil sie den Fall beschreibt, in dem sie *nicht* von selbst heilt: **Die Ledger-Messung altert mit jedem Merge, die Tree-Messung nicht** — wer eine Ledger-Zahl fortschreibt, ohne das Datum mitzulesen, behauptet einen Stand, den es so nicht mehr gibt.
 - RLS auf allen App-Tabellen · Realtime Subscriptions
 
 **Node/TypeScript-Services** (containerisiert — **kein Go im Repo**)
@@ -89,6 +91,11 @@ Menschen · Unternehmen · KI-Agenten · Daten · Entscheidungen.
 - `services/openclaw-agent` — Agent-Worker (systemd-Unit vorhanden)
 - `services/playwright-scanner` — Scan-Service (DSGVO-Audit)
 - `packages/sdk` — öffentliches SDK (CJS + ESM Builds)
+- `packages/evidence-chain` — Hash-Chain-Verifizierung des Evidence Vault
+  (abhängigkeitsfrei, Hash-Funktion injiziert). Genutzt von der SPA **und** vom
+  MCP Server. **Regel**: Die Kanonisierung in `serializeSnapshotForHash` muss
+  zeichengenau zu `supabase/functions/evidence-vault` passen — eine Abweichung
+  meldet unversehrte Ketten als manipuliert.
 - `connectors/` — externe Integrationen · `worker/` — Legacy-Jobs (deprecated → Edge Functions + Cron)
 
 **Architekturprinzip**
@@ -136,11 +143,64 @@ Service-Role umgeht RLS — deshalb **ausschließlich in Edge Functions**.
 ### Kern-Tabellen (Auszug)
 
 - **Registry**: `ai_systems`, `tenants`, `profiles`
-- **Policy Engine**: `ai_policies`, `policy_packs`, `governance_controls`
-- **Evidence Stream**: `ai_evidence_events`, `audit_jobs`, `audit_evidence`, `evidence_retention`
+- **Policy Engine**: `ai_policies`, `policy_pack_catalog`, `policy_pack_controls`, `policy_pack_activations`
+- **Framework-Katalog**: `compliance_frameworks`, `framework_controls`, `custom_controls`;
+  Erfüllungsstand je Tenant in `framework_implementations` und `asset_control_mappings`
+- **Evidence Stream**: `ai_evidence_events`, `audit_jobs`, `evidence_snapshots`, `evidence_items`,
+  `governance_evidence`, `ai_evidence_retention`, `evidence_legal_holds`
 - **Governance**: `governance_approvals`, `governance_webhooks`, `governance_incidents`, `runtime_events`
-- **Integration**: `workflow_runs`, `ai_tool_runs`, `connectors`, `vendors`, `dpias`, `dsr_tracker`
-- **Operations**: `incidents`, `operations_inventory`, `enterprise_agent_runs`, `vps_connections`
+- **Integration**: `workflow_runs`, `ai_tool_runs`, `integration_connectors`, `enterprise_connectors`,
+  `vendors`, `dpias`, `dsr_requests`
+- **Operations**: `incidents`, `inventory_items` (und die übrige `inventory_*`-Familie),
+  `enterprise_agent_runs`, `vps_connections`
+
+> #### ⚠️ Sieben Namen in dieser Liste zeigten ins Leere
+>
+> **Gemessen 2026-08-31** gegen das Live-Projekt `ebljyceifhnlzhjfyxup`
+> (`pg_tables` / `pg_views`, jeder Name einzeln geprüft; Ledger über
+> `supabase_migrations.schema_migrations`). Bis dahin nannte dieser Abschnitt
+> sieben Tabellen, die **in Produktion nicht existieren**:
+>
+> | genannt | Migration im Repo | tatsächlich zu verwenden |
+> |---|---|---|
+> | `governance_controls` | keine | `framework_controls` (219 Zeilen) + `compliance_frameworks` (5) |
+> | `policy_packs` | keine | `policy_pack_catalog` (7), `policy_pack_controls` (196) |
+> | `evidence_retention` | keine | `ai_evidence_retention` |
+> | `connectors` | keine | `integration_connectors`, `enterprise_connectors` |
+> | `dsr_tracker` | keine | `dsr_requests` |
+> | `operations_inventory` | keine | `inventory_items` und die `inventory_*`-Familie |
+> | `audit_evidence` | **`20260507100000`** | Sonderfall, siehe unten |
+>
+> Für sechs der sieben gilt: kein `CREATE TABLE` im Repo, keine einzige
+> Abfrage im Code. Der Schaden lag allein darin, dass diese Datei die
+> Namensautorität ist — wer sich beim Bauen darauf verließ, schrieb gegen
+> etwas, das es nicht gibt. Genau das ist beim MCP Governance Server
+> passiert: Dessen Governance-Werkzeuge waren gegen `governance_controls`
+> entworfen und mussten auf `framework_controls` umgestellt werden.
+>
+> **`audit_evidence` ist der Sonderfall — und der einzige mit Wirkung.**
+> Die Migration `20260507100000_audit_evidence.sql` existiert und steht im
+> Ledger als **angewendet**; die Tabelle fehlt in Produktion trotzdem. Das ist
+> der Ledger-Wirklichkeits-Bruch, den `DEBUG_ROOT_CAUSE_2026-08-02.md` und
+> `docs/audit/01_INVENTORY.md` §339 bereits beschreiben. Spätere Migrationen
+> (`20260619000000`, `20260723000001`) fangen ihn mit `to_regclass`-Wächtern
+> ab und überspringen ihre Trigger und Policies mit `RAISE NOTICE`.
+>
+> **Ein Schreibpfad läuft weiterhin dagegen**: `worker/src/persistence.ts`
+> (`recordScreenshotEvidence`) insertet in `audit_evidence` und behandelt den
+> Fehler ausdrücklich als non-fatal — der Screenshot-Nachweis eines jeden
+> Audits geht also still verloren. Der Aufruf schlägt nicht fehl, er
+> protokolliert. Für ein Produkt, das Prüfpfad zusagt, ist das ein eigener
+> Befund; er ist hier vermerkt, aber nicht behoben.
+>
+> **Lehre, dieselbe wie in §5**: messen, nicht herleiten — und zwar
+> vollständig. Die erste Fassung dieses Kastens behauptete, `audit_evidence`
+> sei „nie angelegt" worden und kein Code greife zu. Beides war falsch: Der
+> zugrunde liegende `grep` hatte `worker/` nicht eingeschlossen und das
+> Migrations-Ledger gar nicht erst befragt. Eine Tabellenliste in einer
+> Kontextdatei altert still — sie bricht nichts, sie führt nur die Leser in
+> die Irre, die ihr am meisten vertrauen. Vor dem Hinzufügen eines Namens
+> hier: gegen `pg_tables` prüfen, nicht gegen die Erinnerung.
 
 ### Migrations
 
@@ -185,19 +245,218 @@ Jeder Agent braucht vier Dimensionen — fehlt eine, ist er nicht governance-fä
 > Produktion läuft. Die Regel bleibt: vor jeder Aussage zum Produktionsstand
 > gegen die Live-DB messen, nicht gegen diese Liste.
 >
-> **Messung vom 2026-08-23, nach dem Merge von PR #1131 (WhatsApp-Kanal) und
-> dem zugehörigen `deploy.yml`-Lauf**, per Management-API direkt gegen das
-> Live-Projekt `RealSyncDynamicsLive` (`ebljyceifhnlzhjfyxup`, eu-central-1,
-> PostgreSQL 17):
+> **Messung vom 2026-08-30, nach dem Merge von PR #1171**, `main` @ `6e8b761`,
+> per Management-API direkt gegen das Live-Projekt `RealSyncDynamicsLive`
+> (`ebljyceifhnlzhjfyxup`, eu-central-1, PostgreSQL 17.6.1.104,
+> `ACTIVE_HEALTHY`). Quellen: `list_edge_functions`,
+> `supabase_migrations.schema_migrations`, `pg_tables` / `pg_class` /
+> `pg_policy`. **Mengen in beide Richtungen verglichen, nicht nur Zahlen** —
+> siehe die Lehre weiter unten.
 >
 > | | Repo (`main`) | in Produktion | Lücke |
 > |---|---|---|---|
-> | Migrationen | 289 | **287** (neueste `20260826000000`) | **2**¹ |
-> | Edge Functions | 178 | **178** | **0** |
+> | Migrationen | 297 Dateien | **299** verbucht (neueste `20260831020000`) | **2**¹ |
+> | Edge Functions | 179 (+ `_shared`) | **179** aktiv | **0**² |
 > | Tabellen in `public` | — | 351 (`pg_tables`, ohne Views) | — |
+> | davon mit RLS | — | **351 / 351** | **0** |
+> | Views · `public`-Funktionen | — | 19 · 227 | — |
 >
 > Frühere Stände nannten hier 369 Tabellen ohne Messmethode — vermutlich
 > inklusive Views. Ab jetzt zählt `pg_tables`, damit die Zahl vergleichbar bleibt.
+>
+> **Keine Repo-Migration ist unverbucht.** Die 2026-08-24 dokumentierte Lücke
+> in dieser Richtung ist geschlossen; die verbleibende Differenz zeigt in die
+> *andere* Richtung — siehe ¹ und ².
+>
+> **RLS gilt lückenlos**: alle 351 Tabellen haben RLS aktiviert, keine
+> einzige ohne. 28 davon haben RLS ohne eigene Policy; das ist bei 27 von
+> ihnen richtig so — 11 sind Partitionen von `runtime_events` (die
+> Elterntabelle trägt 3 Policies, die beim Zugriff über sie greifen) und 16
+> werden ausschließlich von Edge Functions per Service-Role angefasst, für
+> Clients also bewusst gesperrt. Der 28. Fall war ein Bug, siehe ³.
+>
+> **Lehre aus dieser Messung: Zahlengleichheit ist kein Beleg.** Repo und
+> Produktion zeigten beide „179 Edge Functions" — die Mengen waren trotzdem
+> verschieden, weil `_shared` im Repo keine Function ist und dafür eine
+> Function live läuft, die es im Repo nie gab. Wer nur `wc -l` vergleicht,
+> übersieht das. Deshalb ab jetzt: `comm -23` **und** `comm -13`.
+>
+> **Wirksam in Produktion, nicht nur im Repo**: `deploy.yml` lief am
+> 2026-08-30 um 21:58 UTC grün auf `1533cf5` (Run 33337859594). Damit sind
+> die drei Migrationen aus PR #1172 angewandt — die beiden nachgezogenen
+> Out-of-Band-Versionen aus ¹ und
+> `20260831030000_integrations_catalog_read_access` aus ³. Nachgezogen heißt
+> nicht angekommen; dies ist der Beleg für Letzteres.
+>
+> **Zur Sperre durch die Migrations-Drift**: Sie bestand vom 2026-08-26 bis
+> zum 2026-08-30, blieb aber folgenlos — in diesem Fenster berührte kein
+> Commit `supabase/**`, also wurde `deploy.yml` gar nicht ausgelöst.
+> Blockiert, aber niemand ist hineingelaufen. Der letzte grüne Lauf davor
+> war am 2026-08-25 um 18:36 UTC auf `2e60a21`.
+>
+> **Nachmessung 2026-09-01**, `main` @ `310ab0e`, gleiche Methode und gleiche
+> Quelle wie oben. Repo und Produktion sind weiterhin deckungsgleich — auf
+> höheren Zahlen, weil seither fünf Migrationen dazugekommen sind:
+>
+> | | Repo (`main`) | in Produktion | Lücke |
+> |---|---|---|---|
+> | Migrationen | 305 Dateien | **305** verbucht (neueste `20260902000100`) | **0** |
+> | Edge Functions | 179 (+ `_shared`) | **179** aktiv | **0** |
+> | Tabellen in `public` | — | 354 | — |
+> | davon mit RLS | — | **354 / 354** | **0** |
+> | Views | — | 19 | — |
+>
+> `comm -23` und `comm -13` sind beide leer, bei Migrationen wie bei
+> Functions. Die Zahlen in §2 und §7 sind damit nicht geschätzt, sondern
+> nachgezogen. Dass Repo und Ledger beide 305 zeigen, war dabei nicht der
+> Beleg — der Mengenvergleich war es.
+>
+> **Nachmessung 2026-09-04, 23:39 UTC**, `main` @ `1c40003` (Merge von
+> PR #1196), nach dem grünen Deploy-Lauf 33929752213. Gleiche Methode:
+> Ledger und Management-API, Mengen in beide Richtungen verglichen.
+>
+> | | Repo (`main`) | in Produktion | Lücke |
+> |---|---|---|---|
+> | Migrationen | 317 Dateien | **317** verbucht (neueste `20260904000300`) | **0** |
+> | Edge Functions | 182 (+ `_shared`) | **182** aktiv | **0** |
+>
+> `comm -23` und `comm -13` sind beide leer. Zusätzlich per HTTP-Probe ohne
+> Token geprüft, dass die Gates aus AP9 Welle 3 und 4 in Produktion greifen:
+> `tenant-branding-update`, `evidence-vault-export`,
+> `generate-compliance-report`, `report-generator`, `api-audit`,
+> `compliance-alert-trigger`, `governance-risk-escalate` und
+> `audit-monitor-cron` antworten alle mit `401` — die beiden Cron-Functions
+> aus ihrem eigenen Bearer-Check (`verify_jwt` ist dort aus), die übrigen
+> aus `requireUser`.
+>
+> ¹ **Zwei Migrationen sind live, ohne dass es je eine Datei gab**:
+> `20260825204748_fix_websites_authenticated_crud_rls` (2026-08-25) und
+> `20260829011038_onboarding_orchestrator_hardening` (2026-08-29). Beide
+> wurden am 2026-08-30 wortgleich aus dem Ledger ins Repo nachgezogen,
+> mit unveränderter Version, damit `db push` sie als angewandt erkennt und
+> ein frisches `db reset` denselben Stand herstellt. Die erste ist
+> sicherheitsrelevant: Sie trägt die INSERT/UPDATE/DELETE-Policies auf
+> `public.websites`. Solange sie fehlte, hatte eine lokale Datenbank eine
+> **andere Sicherheitslage als Produktion**.
+>
+> ² **Eine Edge Function lief ohne Quellcode im Repo — inzwischen geborgen**:
+> `onboarding-orchestrator`, Version 4, angelegt 2026-08-29 01:06 UTC,
+> zuletzt 01:17. Keine Git-History, kein Aufruf im Code, nicht in
+> `src/config/production-edge-functions.ts`. `verify_jwt: true`. Die
+> Migration aus ¹ vom selben Zeitfenster (01:10) gehört dazu — ein
+> vollständiges Feature ging an Repo und CI vorbei nach Produktion.
+>
+> Am 2026-08-30 wurde der Quellcode aus der laufenden Function
+> zurückgeholt und unverändert nach
+> `supabase/functions/onboarding-orchestrator/` gelegt, samt
+> `README.md` mit Herkunft, `ezbr_sha256` der deployten Version und
+> Sicherheitsbewertung. **Damit sind Repo und Produktion jetzt in beide
+> Richtungen deckungsgleich: 179 = 179, `comm` in beide Richtungen leer.**
+> Der Weg war bewusst der additive — eine laufende Production-Function zu
+> löschen wäre nicht rückholbar gewesen.
+>
+> **Weiterhin offen, aber keine Drift mehr, sondern eine Produktfrage**: Die
+> Function wird nirgends aufgerufen. Ob der Onboarding-Pfad noch kommt oder
+> das Feature aufgegeben wurde, entscheidet der Eigentümer.
+>
+> ³ **`public.integrations`**: RLS an, null Policies, kein Leserecht für
+> `authenticated` — bei fünf vorhandenen, aktiven Zeilen. Die clientseitige
+> Abfrage in `IntegrationMarketplaceView.tsx` lief deshalb immer leer, ohne
+> Fehlermeldung (`if (!error) …` verschluckt sie). Behoben durch
+> `20260831030000_integrations_catalog_read_access.sql`: Leserecht für
+> `authenticated`, Policy auf `enabled is true`, kein Schreibrecht. Die
+> Tabelle ist ein globaler Produktkatalog ohne `tenant_id` und ohne
+> Zugangsdaten — die liegen in `connectors`.
+>
+> **Der wiederkehrende Befund ist nicht die Zahl, sondern das Muster.** Nach
+> dem ACL-Vorfall vom 2026-08-23 ist dies der zweite und dritte belegte
+> Eingriff direkt in Produktion, vorbei an Repo und CI. Für ein Produkt, das
+> Prüfpfad und Nachvollziehbarkeit zusagt, ist jede solche Änderung ein
+> Governance-Befund, unabhängig davon, wie gut sie inhaltlich ist.
+>
+> #### Die Guards hatten recht, bevor die Messung lief
+>
+> Am 2026-08-30 nachträglich geprüft: **Die Automatik hatte alles schon
+> gefunden.** Die manuelle Messung hat nichts entdeckt, was die Drift-Guards
+> nicht Tage vorher gemeldet hätten — sie hat nur jemanden gefunden, der
+> hinsieht.
+>
+> | Guard | Stand | Befund |
+> |---|---|---|
+> | `Migration Drift Guard` | rot **seit 2026-08-26**, fünf Tage | nennt `20260825204748` und `20260829011038` namentlich |
+> | `Edge Function Drift Guard` | rot **seit 2026-08-29** | `ORPHAN: onboarding-orchestrator`, inkl. Handlungsanweisung |
+> | `Function ACL Drift Guard` | durchgehend grün | prüft Funktions-Grants, **nicht** RLS-Flags auf Tabellen → blinder Fleck, kein Versagen |
+>
+> Beide roten Guards nannten exakt den Fix, für den sich die Sitzung dann
+> unabhängig entschieden hat: „Quelle ins Repo committen".
+>
+> **Die Betriebsfolge, die dabei fast untergegangen wäre**: Solange
+> Migrations-Drift offen ist, bricht `supabase db push` vollständig ab —
+> dann erreicht **keine** Migration mehr die Produktion, auch keine
+> unbeteiligte. Der Guard sagt das in seinem eigenen Protokoll.
+>
+> **Daraus folgt nicht „mehr Prüfungen bauen", sondern „Befunde zustellen".**
+> Ein roter Scheduled-Run erzeugt bestenfalls eine E-Mail, die niemanden
+> erreicht, der handelt. Deshalb `.github/workflows/drift-alert.yml`: Es
+> beobachtet die drei Guards per `workflow_run` und legt bei Rot ein
+> GitHub-Issue an (bzw. kommentiert ein bestehendes, statt ein zweites zu
+> öffnen); wird der Guard wieder grün, schließt es das Issue selbst. Die
+> Guards bleiben unverändert — ihre Aufgabe ist Messen, nicht Melden.
+>
+> **Nächste Sitzung, bevor du misst**: Sieh in den Actions-Tab. Ein roter
+> Drift-Guard ist der schnellere Weg zum Befund als jede eigene Messung.
+>
+> #### Die DB-Integrationstests laufen seit dem 2026-09-06 vollständig in CI
+>
+> Bis dahin lief im `db`-Job **eine** Datei gegen das voll migrierte Schema,
+> später sechs. Begründet war das mit „7 der 23 Dateien scheitern dort" — und
+> das stimmte. Nachgemessen scheiterte aber **keine** an einem Befund, sondern
+> jede an einer Annahme des minimalen Harnischs (`scripts/test-db/up.sh`):
+> eine feste Vorgabe-Mailadresse gegen `auth.users.email UNIQUE`, ein Insert
+> in `public.app_secrets` statt in Vault, ein leerer Produktkatalog, ein
+> Trigger, der jedem neuen Mandanten sofort ein Free-Tier-Abo anlegt.
+>
+> **Das Schwerwiegendste daran**: `rls.db.test.ts` war eine der sieben. Die
+> Mandantentrennung ist laut §3 nicht verhandelbar — und ihr eigener Test lief
+> in keinem CI-Lauf. Er läuft jetzt; alle 25 Dateien laufen, mit genau einer
+> benannten Ausnahme (`entitlement-grants.db.test.ts`, siehe Kopf der Datei:
+> sie bildet bewusst den Produktionsstand vom 2026-08-08 nach). Der Schritt
+> nimmt das Verzeichnis, nicht eine Namensliste — sonst fehlt die nächste neue
+> Datei wieder.
+>
+> **Zwei Befunde fielen dabei ab, und beide sind grundsätzlicher als die
+> Testdateien:**
+>
+> **1. Das CI-Schema war durchlässiger als Produktion.** Ein pauschales
+> `GRANT ... ON ALL TABLES IN SCHEMA public TO anon, authenticated` lief
+> **nach** allen Migrationen und machte damit zwölf ausdrückliche `REVOKE`s
+> wieder auf — darunter die sechs auf `mv_cost_*` / `mv_tenant_risk_*` und die
+> Spaltenrechte, die `m365_connections.credentials_enc` schützen. Eine
+> materialisierte Sicht kennt keine RLS-Policies; ihr Inhalt ist die fertige
+> Aggregation über **alle** Mandanten. `mv-aggregates.db.test.ts` wies genau
+> das nach und fiel dort um, ohne dass an der Sperre etwas falsch war.
+> Behoben, indem CI die Default-Privileges jetzt **vor** den Migrationen setzt
+> (so wie Supabase) und Matviews danach ausdrücklich sperrt. Gegen das
+> Live-Projekt gemessen: dort tragen alle acht Matviews
+> `{postgres, service_role}` — CI bildet das jetzt ab.
+>
+> **Regel daraus**: Das CI-Schema darf **strenger** sein als Produktion,
+> niemals lockerer. Ein Test, der eine Sperre nachweist, ist sonst nichts wert
+> — und schlimmer: Ein Test, der Zugriff nachweist, wird dort grün, wo
+> Produktion sperrt.
+>
+> **2. Ein Test konnte die Testdatenbank dauerhaft verändern.** Jede Datei
+> läuft in einer Transaktion, die zurückgerollt wird — darauf beruht die
+> Isolation. `tenant-entitlements-callers` wandte `20260831020000`
+> unverändert an, samt deren eigenem `COMMIT;`. PostgreSQL kennt keine
+> geschachtelten Transaktionen: Das `COMMIT` schloss die **äußere**
+> Transaktion ab und hinterließ `products`, `entitlements`, `subscriptions`
+> und `entitlement_grants` dauerhaft in der Datenbank. Der nächste Lauf
+> scheiterte an „relation subscriptions already exists" — an einem Zustand,
+> den ein früherer Test hinterlassen hatte, nicht an einem Befund. Zwei
+> Dateien hatten die Klammer einzeln entfernt, eine nicht. **Regel**: Eine
+> Migration im Test nur über `applyMigration()` aus `db-helpers.ts` anwenden;
+> die entfernt `BEGIN`/`COMMIT` an einer Stelle für alle.
 >
 > ¹ **Migrations-Lücke und Versionskollision, gemessen 2026-08-24** (Ledger via
 > `supabase_migrations.schema_migrations`, Deploy-Log Run 32705231581): PR #1131
@@ -213,9 +472,11 @@ Jeder Agent braucht vier Dimensionen — fehlt eine, ist er nicht governance-fä
 > mit Migration die Versionsnummer gegen den **aktuellen** `main`-Stand prüfen,
 > nicht gegen die PR-Basis.
 >
-> **Repo und Produktion decken sich derzeit vollständig** — in beide
-> Richtungen geprüft, es gibt weder eine nicht deployte Function noch eine
-> deployte ohne Verzeichnis. Das ist ein Momentzustand, kein Naturgesetz: Der
+> **Diese Aussage galt am 2026-08-24 und gilt nicht mehr.** Die Messung vom
+> 2026-08-30 oben zeigt eine deployte Function ohne Verzeichnis
+> (`onboarding-orchestrator`). In der anderen Richtung stimmt es weiterhin:
+> Es gibt keine Function im Repo, die nicht deployt wäre. Das war ein
+> Momentzustand, kein Naturgesetz: Der
 > nächste Merge, der eine Function hinzufügt, öffnet die Lücke wieder, bis
 > `deploy.yml` gelaufen ist.
 >
@@ -261,6 +522,39 @@ Jeder Agent braucht vier Dimensionen — fehlt eine, ist er nicht governance-fä
 > `supabase functions list` prüfen.
 
 - **Audit** (95%) — DSGVO-Scan, Recheck-Cron, Email-Drip, Share-Token
+  > ⚠️ **Ausfall 2026-08-11 bis 2026-08-30, behoben.** `gdpr-audit/index.ts`
+  > rief sechs nirgends definierte Funktionen auf — im Repo **und** in
+  > Produktion (Version 46). Jeder `/audit`-Aufruf endete in HTTP 500;
+  > `gdpr_audits` blieb 18 Tage bei 159 Zeilen.
+  >
+  > **Ursache — geschlossen.** Ein Gate gab es, aber es konnte diesen Fall
+  > nicht sehen: `check:edge-syntax` ist bewusst ein reiner Parse-Check, und
+  > eine Datei, die `runChecks(...)` aufruft, ohne dass `runChecks`
+  > existiert, ist syntaktisch einwandfrei. Die Lücke lag **oberhalb** des
+  > Syntax-Gates, bei der Auflösung der Namen — geschlossen durch
+  > `check:edge-refs` (`f94ebf4`).
+  >
+  > **Zwei unabhängige Rekonstruktionen.** Der Ausfall wurde zweimal
+  > behoben: `2305e3f` (auf `main`, live) und PR #1167. Aufgelöst nach
+  > Entscheid des Eigentümers vom 2026-08-31 — **Struktur von `2305e3f`
+  > (`gdpr-audit/checks.ts`), Vertrag aus der Messung**: Befund-Vokabular,
+  > Severities und Scoring-Gewichte (25/12/6/2/0) stammen aus den 159
+  > historischen Audits, festgehalten in
+  > `test/fixtures/gdpr-audit-production-contract.json`.
+  >
+  > Die zweite Fassung wich in 12 Codes ab und liess 19 weg (darunter alle
+  > sieben Unterseiten-Prüfungen). Schwerer wog ein stiller Fehler: Sie gab
+  > die Fakten **flach** (`{'consent.banner.detected': true}`) statt
+  > verschachtelt zurück. `getFact()` in `_shared/rules/evaluator.ts` zerlegt
+  > den Pfad an den Punkten — flach liefert das `undefined`, und die
+  > **gesamte Rule Engine (14 Regeln, DSGVO und AI Act) schwieg**, ohne dass
+  > etwas bricht. Beleg: 61 von 159 historischen Audits trugen einen
+  > `rule:`-Befund, die drei vom 2026-08-31 keinen einzigen.
+  >
+  > **Regel daraus**: Befund-Codes, Severities und Scoring-Gewichte sind
+  > versionsrelevant. Wer sie ändert, entscheidet über die Vergleichbarkeit
+  > aller bisherigen Kundenberichte — das gehört entschieden, nicht
+  > nebenbei. Hergang: `docs/product/free-scan-recovery.md`.
 - **Policy Packs** (100%) — DSGVO, EU AI Act, branchenspezifisch; Auto-Empfehlung nach Tenant-Branche
 - **Evidence Vault** (90%) — Ingestion, Retrieval, Hash-Chain-Verifizierung, PDF/JSON-Export, Compliance-Hold
 - **Governance Runtime** (85%) — Sentinel-Loop, SLO-Tracking, Auto-Mapping (Asset → Control-Status), Incident-Dispatch
@@ -276,6 +570,69 @@ Jeder Agent braucht vier Dimensionen — fehlt eine, ist er nicht governance-fä
   Nie einseitig ändern; `test/governance/rfc003-sql-parity.test.ts` bricht sonst.
   **Betrieb**: Der Decay-Worker tickt nur, wenn der pg_cron-Job `memory-decay-hourly`
   registriert ist (Migration `20260819000000`) — ohne ihn verfällt kein Memory.
+  **Registriert reicht aber nicht**, und genau darauf hat dieser Satz vertraut:
+  Am 2026-09-01 gegen die Live-DB gemessen ist der Job seit dem 2026-08-12
+  registriert, aktiv **und in allen 470 Läufen gescheitert** — das Vault-Secret
+  `service_role_key` fehlt (siehe `20260820000000_cron_dispatch_fix.sql`).
+  In Produktion verfällt heute kein Memory. Ohne Schaden, weil
+  `governance_memory` leer ist, aber die Zusage steht ungedeckt.
+  Prüfen also nicht an `cron.job`, sondern an `cron.job_run_details.status`.
+
+### Enforcement-Schalter — der PDP entscheidet erst, wenn jemand ihn lässt
+
+Seit P2 hängen fünf Pfade am PDP. **Alle stehen auf Beobachtung**; das ist der
+beabsichtigte Zwischenzustand aus P0, aber eben keine Durchsetzung:
+
+| Schalter | Wirkt auf | Vorgabe | In `enforce` |
+|---|---|---|---|
+| `AI_GATEWAY_ENFORCEMENT` | `ai-gateway` | `shadow` | blockt |
+| `AGENT_PDP_ENFORCEMENT` | Agent-Runtime | `shadow` | fail **closed** |
+| `SITEOS_PUBLISH_PDP` | Publish Gate (P2-3) | `shadow` | fail **closed** (§7 G3) |
+| `GOVERNANCE_PDP_MODE` | CI/CD-Gate (P2-4) | `shadow` | verschärft nur |
+| `BOT_PDP_ENFORCEMENT` | Chat · WhatsApp · Voice (P2-5) | `shadow` | fail **closed**, per `BOT_PDP_FAILURE_MODE=allow` umstellbar |
+| `M365_PDP_ENFORCEMENT` | Microsoft 365 (P2-2) | `shadow` | **löst die Reaktion aus** — anhalten kann Klasse C nichts |
+
+**`enforce` heißt nicht überall dasselbe.** Bei den ersten vier Schaltern
+bedeutet es „die Handlung wird angehalten". Bei `M365_PDP_ENFORCEMENT`
+(Klasse C, nachgelagert) kann nichts angehalten werden — dort bedeutet es „die
+Reaktion wird ausgelöst, es entsteht ein Vorgang". Wer den Namen für dieselbe
+Zusage hält, überschätzt, was diese Anbindung kann. Ein `block` des PDP wird
+dort zu `react` **mit Vermerk** (`verdict_downgraded_from`); die Datenbank
+lässt per CHECK gar nichts anderes zu.
+
+**Vor dem Umschalten `pdp_shadow_log` auswerten** — dafür ist der
+Beobachtungsbetrieb da. Und zwar wirklich auswerten: Die Tabelle blieb für den
+Publish Gate bis zum 2026-09-04 leer, weil der Aufruf falsch war und der
+Fehler in einem `catch` verschwand. Ein leeres Shadow-Protokoll bedeutet nicht
+„keine Abweichungen", sondern zuerst „nachsehen, ob überhaupt geschrieben
+wird".
+
+**Seit dem 2026-09-06 ist das auswertbar**: `pdp_shadow_readiness()` (Migration
+`20260906100000`) und `/app/governance/shadow`. Bis dahin schrieben sechs
+Kanäle in die Tabelle und **nichts las sie** — die Aufforderung oben stand da,
+war aber nicht befolgbar. Die Auswertung geht bewusst von der **Kanalliste**
+aus, nicht von den Zeilen: Ein stummer Kanal erscheint mit `beobachtet = false`
+statt gar nicht. Ein `GROUP BY` hätte ihn verschluckt und wie einen Kanal ohne
+Befund aussehen lassen. Richtung der Abweichung (v2 strenger / lockerer) und
+unbekannte Verdikte werden getrennt gezählt; Letztere ergeben `NULL`, nicht
+`0`. **Regel**: Die Kanalliste in `pdp_shadow_known_sources()` steht doppelt —
+dort und in der CHECK-Bedingung `pdp_shadow_log_source_check`. Nie einseitig
+ändern; `test/governance/shadow-readiness.test.ts` bricht sonst.
+
+**Zur Bot-Governance (P2-5)**: Chatbot, WhatsApp und Voice laufen durch **einen**
+PEP (`_shared/pdp/botmessage.ts`, `enforceBotMessage()`) — drei eigene Auslegungen
+derselben Regel wären der Fragmentierungsbefund eine Ebene tiefer. Den Prozess
+verlassen nur Merkmale: Kanal, Bot-ID, Signalnamen und Zähler. **Nie der
+Nachrichtentext** — `bot-chat` und `whatsapp-webhook` laufen mit `verify_jwt = false`,
+der Text stammt also von einem beliebigen Fremden und wäre sonst ein Hebel auf die
+Bewertung der eigenen Anfrage. Gesichert durch `test/governance/pdp-botmessage.test.ts`
+und `test/governance/bot-pep-wiring.test.ts` (Letzterer prüft am Quelltext, dass alle
+drei Kanäle denselben PEP **vor** dem Modellaufruf rufen — dass sie sich gleich
+verhalten, ist kein Beleg dafür, dass sie dieselbe Stelle benutzen).
+
+**Offen, weil Produktentscheidung**: Eine vom PDP gesperrte Bot-Nachricht verbraucht
+trotzdem eine Einheit von `limit.bot_messages_monthly` — das Kontingent wird vor der
+Prüfung gebucht. Ob eine blockierte Anfrage berechnet wird, gehört entschieden.
 
 ### Dashboard-Module (modulare Reihenfolge)
 1. **Agent Registry** — Liste, Status, Risiko, Details
@@ -334,12 +691,18 @@ RealSyncDynamics.AI/
 ├── shared/
 │   └── pricing.ts     Single Source of Truth für Produkt-, Preis- und Berechtigungsmodell
 ├── supabase/
-│   ├── functions/     178 Edge Functions (einziger Ort für Service-Role-Keys)
-│   └── migrations/    287 Migrations
+│   ├── functions/     188 Edge Functions (einziger Ort für Service-Role-Keys)
+│   └── migrations/    326 Migrations
 ├── apps/
-│   └── agent-runtime/ Agent Runtime (Node/TS, Docker)
+│   ├── agent-runtime/ Agent Runtime (Node/TS, Docker)
+│   └── mcp-server/    MCP Governance Server — Lesezugriff für KI-Agenten auf
+│                      Evidence/Governance über MCP-Protokoll (JSON-RPC) und
+│                      HTTP; API-Key-Auth, Scopes, Kontingent, Prüfpfad
+│                      (eigenes tsconfig, aus dem Root-Lint ausgenommen)
 ├── services/          runtime-core · evidence-runtime · openclaw-agent · playwright-scanner
-├── packages/sdk       Öffentliches SDK (CJS + ESM)
+├── packages/
+│   ├── sdk            Öffentliches SDK (CJS + ESM)
+│   └── evidence-chain Hash-Chain-Verifizierung (SPA + MCP Server)
 ├── connectors/        Externe Integrationen
 ├── deploy/ docker/ infra/ VPS-Stack (Traefik, Ollama, n8n)
 ├── platform/          🏗️ **WEBSITE BUILDER MONOREPO** (siehe unten)
@@ -391,6 +754,17 @@ Root-CI/CD-Workflows verwaltet. Sie ist physisch ein eigenständiges Projekt, da
 - RLS + Migrations wie im Hauptrepo (selbe DB-Conn in `docker-compose.yml`)
 - OpenAPI-First: Endpoints mit `@app.post`, `@app.get` + Schemas in Pydantic
 - Prüfpfad: `audit_log` + `workflow_runs` (selbe Tabellen wie Root-Governance)
+- **Der PDP ist auch hier der Entscheider** (P2-4, seit 2026-09-04):
+  `app/services/pdp_client.py` ruft `governance-decide`; die CI/CD-Gate-Engine
+  faltet das Verdikt in ihre Entscheidung ein. Der PDP kann nur **verschärfen**,
+  nie lockern — ein `allow` hebt keine lokale Sperre auf.
+  `GOVERNANCE_PDP_MODE=off|shadow|enforce`, Default `shadow`.
+- **Tests hier laufen mit `pytest`, nicht mit Vitest**:
+  `cd platform/governance_backend && pip install -r requirements.txt && pytest`.
+  Stand 2026-09-04: 93 passed, 14 skipped, **7 vorbestehend rot** in
+  `test_config.py` und `test_security_headers.py` (erwarten Umgebungsvariablen
+  bzw. eine Datenbank). Gegen den unveränderten Stand gegengeprüft — wer hier
+  arbeitet, sollte sie nicht für eigene Fehler halten.
 
 ### Preise, Pläne und Berechtigungen
 
@@ -424,15 +798,40 @@ Runtime-Limits, Module, Berechtigungen, Feature-Listen und Add-ons.
   Pläne gilt `plan.limits.*` (die Preisseite), für Vertragspläne
   (`availability: 'contract'`, heute Enterprise) gilt **der Vertrag**.
   `PLAN_ENTITLEMENTS['limit.*']` ist in beiden Fällen nur eine Ableitung.
-  Für Enterprise ist die Quelle heute **unaufgelöst** — der Vertrag liegt dem
-  System nicht vor, und es gibt keine Tabelle für tenant-spezifische Werte;
-  dort ist kein Gate erlaubt. Beide Seiten
-  weichen heute in 21 von 38 Paaren ab; `npm run check:limits` verhindert
+  Seit dem **2026-08-31** ist die Kodierung für Vertragspläne festgelegt
+  (Option A): dort bedeutet `-1` bei einem `limit.*`-Key **„das System
+  begrenzt hier nicht, der Vertrag tut es"**. Die Quelle ist damit *benannt*,
+  nicht *aufgelöst* — der Vertrag liegt dem System weiterhin nicht vor, es
+  gibt keine Tabelle für tenant-spezifische Werte, und auf diesen acht
+  Feldern ist **kein Gate erlaubt**. Ein Vertragsplan trägt deshalb
+  ausschließlich `-1`; ein endlicher Wert wäre eine technisch durchgesetzte
+  Obergrenze, die unter A nicht abbildbar ist. Der erste Enterprise-Vertrag
+  mit vereinbarter Obergrenze ist der benannte Auslöser für Option B
+  (Tenant-Overrides) — festgehalten in
+  `test/billing/limit-canonicity.test.ts`. Beide Seiten
+  weichen heute in 18 von 38 Paaren ab; `npm run check:limits` verhindert
   **neue** Divergenzen (Ratsche, Grundlinie in
-  `scripts/limit-canonicity-baseline.json`). **Kein neues Enforcement gegen
+  `scripts/limit-canonicity-baseline.json`). Es waren 21 — die drei Kürzungen
+  auf Starter und Growth sind am 2026-09-01 an die Preisseite angeglichen
+  worden, nachdem gemessen war, dass sie niemanden treffen (§4 Klasse B). **Kein neues Enforcement gegen
   einen divergierenden Wert**, solange er nicht bereinigt ist — und keine
-  stillschweigende Kürzung bei Bestandskunden. Diff und offene
-  Enterprise-Frage: `docs/product/kanonische-kontingente.md`.
+  stillschweigende Kürzung bei Bestandskunden. Diff und Entscheidung:
+  `docs/product/kanonische-kontingente.md` §1.2a,
+  `docs/product/enterprise-quelle-entscheidungsvorlage.md`.
+
+- **Add-ons** (seit 2026-09-01) sind Positionen des Stripe-Abos: `AddOn.grants`
+  in `shared/pricing.ts` nennt die Keys, der Generator erzeugt daraus
+  `products`/`product_entitlements`, die Function `subscription-addons` bucht
+  und kündigt, `tenant_entitlements()` **addiert** Kontingente aus Add-on-Grants
+  auf den Plan. Buchbar ist ein Add-on erst, wenn `plan_addons.stripe_price_id`
+  eine echte Price trägt — das ist ein Betreiberschritt mit Freigabe. Vertrag
+  und offene Entscheidungen: `docs/product/addon-booking.md`.
+- **Dashboard-Gates** kommen aus **einem** Register:
+  `src/core/access/featureAccess.ts` (Route → Entitlement-Key), geprüft von
+  `RouteEntitlementGate` in der `GovernanceBrowserShell`. Neue bezahlte
+  Fläche = ein Eintrag dort; `test/core/feature-access.test.ts` hält Register,
+  `App.tsx` und Navigation zusammen. Kein Gate gegen einen divergierenden
+  Kontingent-Wert.
 
 Vollständige Regeln: `docs/product/pricing-governance.md`
 
@@ -440,7 +839,18 @@ Vollständige Regeln: `docs/product/pricing-governance.md`
 - `/` → MainLanding (**Design eingefroren**, Ergänzen frei, Ändern nur nach Rückfrage — siehe §10)
 - `/app/*` → Auth-gated Dashboard (Onboarding-First-Gate)
 - `/flow/*` → Seitenbasierter Flow (Trial, Onboarding, Assessment)
-- `/governance/*` → Public Features (Runtime, Docs, Score, Browser)
+- `/governance-runtime` · `/governance-score` · `/governance-browser` ·
+  `/governance-graph` · `/governance-complexity-score` · `/governance-os-pricing`
+  → Public Features. **Bindestrich, kein Schrägstrich.**
+- `/governance/*` (mit Schrägstrich) → auth-gated Governance-Modul
+  (`admin`, `approvals`, `dpias`, `dsr`, `incidents`, `scans`, `vendors`, …);
+  die meisten dieser Routen sind Weiterleitungen nach `/app/*`.
+
+  > Bis 2026-09-01 stand hier „`/governance/*` → Public Features (Runtime,
+  > Docs, Score, Browser)". Das war vertauscht: `/governance/runtime` und
+  > `/governance/score` existieren nicht und liefern „Seite nicht gefunden" —
+  > im Browser gegen die Live-Seite geprüft. Wer der Doku folgte, verlinkte
+  > ins Leere.
 - `/<branche>-landing` → Branchen-LPs
 - `/preview` · `/pricing` · `/contact-sales`
 
@@ -685,9 +1095,294 @@ sind unberührt. Rangvergleiche (`PlanUpgradeModal`, `planRank()`) laufen
 weiterhin über die vollständige Leiter — sonst bekäme ein Bestandskunde auf
 Agency falsche Antworten. Hintergrund: `docs/product/ap2-paketumbau.md` §7.
 
-**Weiterhin offen**: `/realsync-landing` führt fünf Plan-Karten mit hart
-codierten Preisen im JSX, inklusive Agency und Partner. Umbau auf die Quelle
-ist ein eigener Schritt (§10.1) und gehört zu AP10.
+**2026-08-30 — Texte und Buttons an die Route- und Pricing-Infrastruktur**
+
+Auf die Fragepflicht nach §10.3 hat der Eigentümer dreimal mit **Ja**
+geantwortet:
+
+| Frage | Antwort |
+|---|---|
+| 1. Erfundene Plannamen (Scale, Pro, Business, Premium) auf echte Plannamen korrigieren | **Ja** |
+| 2. Legacy-Pläne (Agency, Partner) auf die verkäuflichen Stufen umstellen | **Ja** |
+| 3. Falsche Kontingente auf `/agenturen-conversion` an die SSoT angleichen | **Ja** |
+
+Umfang — und **nur** dieser: Beschriftungen, Fließtext und Link-Ziele. Kein
+Layout, kein Grid, keine Farben, keine Typografie, keine Sektionsreihenfolge.
+
+Die Zuordnung ist aus `shared/pricing.ts` abgeleitet, nicht gewählt:
+White-Label (`whitelabel.reports`) gibt es nur in Agency, Enterprise und
+Partner — davon ist Enterprise der einzige verkäufliche Plan, deshalb geht
+jede White-Label-Aussage dorthin. `provenance.advanced`, `bulk.jobs`,
+`scheduler.enabled` und `evidence.advanced` beginnen bei Growth,
+`policy.packs` seit AP2 bei Starter, die Kodee-Tools (`ai.tool.vps_*`) bei
+Agency und damit verkäuflich erst bei Enterprise.
+
+**2026-08-30 (2) — WhatsApp-Preisseite auf drei Stufen**
+
+Auf die Drei-Fragen-Regel nach §10.4 hat der Eigentümer dreimal mit **Ja**
+geantwortet:
+
+| Frage | Antwort |
+|---|---|
+| 1. Karte „Agency WhatsApp" (699 €) aus `WHATSAPP_TIERS` entfernen | **Ja** |
+| 2. Raster von `lg:grid-cols-4` auf `lg:grid-cols-3` | **Ja** |
+| 3. Agency-Nennung in der FAQ derselben Seite auf Enterprise ziehen | **Ja** |
+
+Umfang — und **nur** dieser:
+
+| Was | Vorher | Nachher |
+|---|---|---|
+| Tarifkarten | Starter · Growth · Agency · Enterprise | Starter · Growth · Enterprise |
+| Raster der Tarifsektion | `lg:grid-cols-4` | `lg:grid-cols-3` |
+| FAQ „Setup-Dauer" | „Agency/Enterprise: Dedicated Onboarding" | „Enterprise: Dedicated Onboarding" |
+
+Damit entfällt `/checkout/agency?channel=whatsapp` — die letzte Stelle im
+Frontend, an der ein Legacy-Plan über Self-Service kaufbar war. Nichts geht
+verloren: Die Enterprise-Karte führt bereits mehr Bots (20 statt 10), mehr
+Antworten (50.000 statt 25.000) und White-Label. Kartengröße, Farben,
+Typografie, Abstände, Icon-Set und Sektionsreihenfolge sind unberührt; die
+beiden anderen Raster der Seite (`md:grid-cols-2`, `md:grid-cols-3`) ebenso.
+
+**2026-08-30 (3) — DORA-Karte als „In Vorbereitung"**
+
+Auf die Fragepflicht nach §10.3 hat der Eigentümer entschieden, die Karte
+zu behalten und als noch nicht verfügbar auszuweisen, statt sie zu
+entfernen. `path` ist jetzt `null` statt `/app/governance/dora` — diese
+Route existiert im Repo nicht —, die Karte navigiert nicht mehr und trägt
+das Abzeichen „In Vorbereitung". Das Schloss-Symbol entfällt dort, weil es
+„per Tarif gesperrt" bedeutet und nicht „noch nicht gebaut". Kartenzahl und
+Raster bleiben unverändert.
+
+**Korrektur am selben Tag**: Die vier CTAs, die AP2 folgend auf
+`/contact-sales?plan=enterprise` gelegt worden waren, lesen sich dort nicht
+— `src/pages/ContactSales.tsx` wertet `tier`, `source` und `intent` aus,
+**nicht** `plan`. Sie tragen jetzt `?tier=enterprise`. Der Eintrag zu AP2
+oben nennt weiterhin `plan=enterprise`; das ist die dort dokumentierte
+Absicht, nicht der Parameter, den die Seite liest.
+
+**Erledigt, gemessen am 2026-08-31**: Der hier zuvor als offen geführte
+Punkt zu `/realsync-landing` („fünf Plan-Karten mit hart codierten Preisen
+im JSX, inklusive Agency und Partner") trifft auf den Code nicht mehr zu.
+`src/marketing/landing/RealSyncDynamicsLanding.tsx` führt vier Karten —
+Free Audit · Starter · Growth · Enterprise —, die Beträge kommen aus der
+Quelle (`planById('starter').price.monthlyEur`, ebenso Growth), Agency und
+Partner sind als Karten entfallen, Enterprise steht auf „Auf Anfrage".
+
+**2026-08-31 — Build Studio: Speicherort und Übernehmbarkeit an den Sitzungsmodus**
+
+Auf die Fragepflicht nach §10.3 hat der Eigentümer zweimal mit **Ja**
+geantwortet:
+
+| Frage | Antwort |
+|---|---|
+| 1. Textänderung: Den Satz zum Speicherort des Entwurfs an `session.mode` koppeln | **Ja** |
+| 2. Funktionsänderung: „Website übernehmen" im Rückfallmodus sperren | **Ja** |
+
+Umfang — und **nur** dieser, in `src/unified-entry/pages/BuildStudioPage.tsx`:
+
+| Was | Vorher | Nachher |
+|---|---|---|
+| Hinweis zum Speicherort | fest „Der Entwurf liegt nur in diesem Browser." | je Modus: serverseitig gespeichert (`server`) bzw. nur im Browser (`local`) |
+| „Website übernehmen" | immer aktiv | im Modus `local` deaktiviert, mit Begründung als `title` |
+| Abzeichen im Kopf | — | neu: „Nur lokal — nicht übernehmbar", nur im Modus `local` |
+
+Anlass ist kein Geschmack, sondern zwei Falschaussagen der Oberfläche. Der
+feste Satz behauptete den **falschen Speicherort für Kundendaten**: Im
+Servermodus liegt der Entwurf in `siteos_anonymous_builds` und wird beim
+Claim nur verschoben — so sagen es `buildSession.ts` und `SiteOsClaimView.tsx`
+übereinstimmend. Und der CTA lud im Rückfall zu einer Übernahme ein, die es
+nicht gibt: `/app/siteos/claim` schickt zuerst nach `/welcome`, der Besucher
+legt ein Konto an und erfährt **erst danach**, dass serverseitig keine
+Sitzung existiert. `buildSession.ts` verlangt ausdrücklich das Gegenteil.
+
+Farben, Typografie, Grid, Abstände, Icon-Set und Sektionsreihenfolge sind
+unberührt; das Abzeichen nutzt die im Repo vorhandene Amber-Warnoptik. Der
+Rückfall selbst bleibt, was er ist: Übergang, kein Dauerzustand — sobald der
+anonyme Pfad überall ausgerollt ist, entfallen Sperre und Abzeichen mit ihm.
+Gesichert durch `test/siteos/claim-moves-not-rebuilds.test.ts`.
+
+**2026-09-01 — Vorschau-Inhalte: nichts behaupten, was der Scan nicht hergibt**
+
+Anlass war ein Screenshot des Eigentümers: Die Live-Vorschau einer
+AI-Governance-Plattform warb mit **„Termin anfragen"** und versprach unter
+„Warum wir" eine **„Persönliche Betreuung — Feste Ansprechpartner statt
+Warteschleife."** Urteil: „Das ist komplett am Ziel vorbei."
+
+Zu Recht. Beide Texte standen fest in `blueprint/synthesize.ts` (Zeilen 157
+und 177–181) und gingen unverändert an **jeden** Kunden **jeder** Branche.
+Sie stammten nicht aus der gescannten Website. Für nahezu jeden Empfänger
+waren sie damit falsch.
+
+Auf die Fragepflicht nach §10.3 hat der Eigentümer entschieden: **„Ja — aus
+dem Scan speisen"**, ausdrücklich mit der Maßgabe „wo der Scan nichts
+hergibt, bleibt der Block leer statt falsch."
+
+Umfang — und **nur** dieser:
+
+| Was | Vorher | Nachher |
+|---|---|---|
+| Hero-CTA | fest „Termin anfragen" | folgt dem Ziel im Seitenplan: `/termin` → „Termin anfragen", `/reservierung` → „Tisch reservieren", `/anfrage` → „Anfrage senden", sonst „Kontakt aufnehmen" |
+| Features-Block | drei erfundene Sätze | `brief.highlights` aus dem Scan; ohne Beleg leer und als `requiresRealContent` gemeldet |
+| `SiteBrief` / `BriefEnrichment` | — | neues Feld `highlights` als Kanal für belegte Vorzüge |
+| `sanitizeEnrichment` | ließ das Feld fallen | reicht `highlights` durch — in **beiden** Kopien (`builder.ts`, `anonymous.ts`) |
+
+**Der Hash-Preis ist bekannt und akzeptiert**: `synthesize.ts` ist
+deterministisch und gehasht („gleicher Brief ⇒ gleicher Blueprint ⇒ gleicher
+Hash"). Jeder neu erzeugte Blueprint bekommt damit einen anderen Hash als
+vor dem 2026-09-01. Bestehende Artefakte bleiben unangetastet — sie werden
+nicht neu gebaut. Der Determinismus selbst bleibt: gleicher Brief ergibt
+weiterhin byte-gleiches Ergebnis, geprüft.
+
+**Was der Scan heute wirklich hergibt — gemessen, nicht vermutet**:
+`handlers/discover.ts:77` bildet `services` als
+`unique([...headings, ...extractServiceLikeText(visibleText)])`. Die
+Überschriften sind also **vollständig in den Leistungen enthalten**; eine
+zweite, unabhängige Quelle für „Warum wir" existiert im Scan nicht. Der
+Block bleibt deshalb heute in der Regel leer — das ist der freigegebene
+Zustand, nicht ein unfertiger. Der Kanal steht bereit, sobald Redaktion
+oder ein Content-Agent echte Vorzüge liefert.
+
+**Regel daraus**: Ein Vorschau-Block, der etwas über ein fremdes Unternehmen
+behauptet, braucht eine Quelle. Ohne Quelle bleibt er leer und trägt
+`requiresRealContent: true` — dieselbe Behandlung wie `testimonials`, und
+aus demselben Grund (§ 5 UWG). Plausibel klingender Fülltext ist keine
+Vorschau, sondern eine Behauptung, für die niemand einstehen kann.
+
+Gesichert durch `test/siteos/preview-content-honesty.test.ts` — die Prüfung
+fragt nach der **Herkunft** des Textes, weil erfundener Text technisch
+genauso aussieht wie belegter und deshalb von keinem Render- oder
+Typ-Test gefunden wird. Die beanstandeten Formulierungen sind dort
+namentlich gesperrt.
+
+**2026-09-01 (2) — Zusammenfassung im Brief: sachlich statt werbend**
+
+Nachtrag zur Freigabe oben, gleiche Klasse an anderer Stelle. `parseBrief`
+setzte die Zusammenfassung auf „… — persönliche Beratung, transparente
+Leistungen und kurze Wege." Sie wird zur **Meta-Description und zur
+Hero-Unterzeile**, landet also im ausgelieferten Dokument und im
+Suchindex — aus einem Prompt allein ist keine der drei Zusagen belegbar.
+
+Auf die Fragepflicht nach §10.3 hat der Eigentümer entschieden: **„Ja — nur
+Zusammenfassung"**.
+
+| Was | Vorher | Nachher |
+|---|---|---|
+| `parseBrief`-Zusammenfassung | „Zahnarztpraxis in Hamburg — persönliche Beratung, transparente Leistungen und kurze Wege." | „Zahnarztpraxis in Hamburg." |
+| `defaultServices` | erfindet Leistungen je Branche | **unverändert** — ausdrücklich nicht freigegeben |
+
+Leer wäre keine Option gewesen: Dann griffe `seo.missing-description`. Eine
+Längenregel gibt es nicht — geprüft wird allein auf „vorhanden", am Code
+nachgesehen (`analysis/blueprint.ts`, `analysis/observation.ts` führen nur
+`missing-` bzw. `not-delivered`-Codes). `renameInSummary` greift weiter:
+Ein echter Firmenname ersetzt weiterhin den führenden Katalogbegriff.
+Der Scan-Pfad ist unberührt — `mergeBrief` ersetzt die Zusammenfassung
+ohnehin durch die echte Beschreibung der Website.
+
+**Weiterhin offen, nicht freigegeben**: `defaultServices` in `brief.ts`
+erfindet die Leistungen je Branche (für eine Zahnarztpraxis „Prophylaxe,
+Zahnerhaltung, Implantologie …"). Im Scan-Pfad überschreibt `mergeBrief`
+sie mit echten Daten; im reinen Prompt-Pfad bleiben sie stehen. Bewusst
+stehengelassen — der Leistungsblock ist zentral, und ohne ihn wäre die
+Startseite im Prompt-Pfad deutlich leerer. Gehört entschieden, nicht
+nebenbei geändert.
+
+**2026-09-01 (3) — Hero-Überschrift: langer einteiliger Name wurde abgeschnitten**
+
+Gefunden beim Nachstellen der reparierten Vorschau **mit einem echten
+Browser** — nicht im Code, nicht in einem Test. Die Layoutschicht begrenzt
+die Hero-Überschrift auf `max-width:16ch` und der Hero trägt
+`overflow:hidden`. Ein Firmenname ohne Leerzeichen ist aber ein einziges
+Wort, und ein Wort bricht bei `overflow-wrap:normal` nicht: Der Überhang
+wurde nicht umgebrochen, sondern **weggeschnitten**.
+
+Gemessen in Chromium bei 1280 px: „RealSyncDynamics.AI" ergab **648 px Text
+in einem 570 px breiten Kasten — 78 px fehlten.** Bei Markennamen und
+Domains ist der einteilige Name der Normalfall, nicht die Ausnahme.
+
+Der Fehler ist **älter als PR #1194**: `BuildStudioPage` und
+`siteos/preview.ts` rendern seit jeher `showcase` und waren gleich
+betroffen. Der PR hat ihn nur sichtbar gemacht.
+
+Auf die Fragepflicht nach §10.3: **„Ja — break-word ergänzen"**.
+
+| Was | Vorher | Nachher |
+|---|---|---|
+| `[id*="--hero--"]>h1,>h2` | `max-width:16ch` ohne Umbruchregel | zusätzlich `overflow-wrap:break-word` |
+
+**Warum `break-word` und nicht `anywhere`**: Der erste Versuch war
+`anywhere` — die Messwerte sahen gut aus (kein Überlauf), das **Bild aber
+nicht**. `anywhere` zählt beim Ermitteln der Mindestbreite mit und ließ die
+Textspalte im Hero-Raster von 570 px auf 226 px zusammenfallen; die
+Überschrift brach dann dreizeilig mitten im Wort. `break-word` bricht erst,
+wenn es sonst überliefe, und lässt die Spaltenbreite in Ruhe. Auf 1280,
+768 und 390 px geprüft: Spaltenbreite unverändert, nichts abgeschnitten,
+kein Seitenüberlauf.
+
+**Lehre, und sie ist die eigentliche**: Zwei Fehler dieser Sitzung waren
+weder im Code noch in 3990 grünen Tests zu sehen — erst das gerenderte Bild
+hat sie gezeigt. Und beim Fix hätten die Messwerte allein zur falschen
+Lösung geführt. Bei einer Änderung an der Vorschau-Optik gehört ein Blick
+auf das tatsächliche Rendering dazu, nicht nur eine grüne Suite.
+
+Gesichert durch `test/siteos/hero-longword.test.ts`. Geprüft wird am CSS,
+nicht am Pixel: Ein Pixel-Test hinge an der Schriftart des CI-Runners,
+während die fehlerhafte Kombination — Begrenzung plus `overflow:hidden`
+ohne Umbruchregel — eine Eigenschaft des Stylesheets ist.
+
+**2026-09-01 — Ein Flow für den Start: drei Freigaben nach der Add-on-Buchung**
+
+Auf die drei Fragen nach §10.3 aus `docs/product/addon-booking.md` §6 hat
+der Eigentümer mit **„go"** geantwortet — gelesen als Ja zu allen dreien,
+im Rahmen seines Auftrags „der Start ist am Ende immer der gleiche Flow".
+
+| Frage | Antwort |
+|---|---|
+| 1. Textänderung: Enterprise aus `availableFor` der fünf Add-ons nehmen, die Enterprise schon vollständig enthält | **Ja** |
+| 2. Funktionsänderung: `/checkout/success` nach `/app/dashboard` statt `/app/billing` leiten | **Ja** |
+| 3. Funktionsänderung: Registrierung von `/unified-entry/*` auf `/welcome?next=…` legen und `/os/app/*` hinter `AppGate` stellen | **Ja** |
+
+Umfang — und **nur** dieser:
+
+| Was | Vorher | Nachher |
+|---|---|---|
+| `availableFor` von Response Pack, Voice, Compliance Pack, Agency Bot Pack, White Label | `['growth', 'enterprise']` | `['growth']` — `plan.addons` von Enterprise unverändert |
+| `/checkout/success`, Weiterleitung und Knopf „Go to Dashboard Now" | `/app/billing?subscription=…` | `/app/dashboard?subscription=…` |
+| `/unified-entry/register` | eigenes Formular, danach `/unified-entry/onboarding` | Weiterleitung `/welcome?next=/unified-entry/onboarding` (Parameter bleiben) |
+| `/flow/login`, Knopf „Zur Anmeldung" | `/os/login` | `/welcome` |
+| `/os/app/*` (12 Routen) | ohne Auth-Wrapper | hinter `AppGate` |
+
+Farben, Typografie, Grid, Sektionsreihenfolge und Icon-Set sind unberührt.
+`/os/login` und `/os/signup` bleiben bestehen und erreichbar — sie sind nur
+kein Ziel des Flows mehr. Hergang: `docs/product/addon-booking.md` §6.
+
+**2026-09-04 — AP11 Aufräumen: verwaiste Dateien**
+
+Auf die drei Fragen zur AP11-Liste (gemessen am Import-Graphen von `src`,
+Stand `main` `6c8e98c`) hat der Eigentümer mit **„go"** geantwortet —
+gelesen wie am 2026-09-01: Ja zu den Ja/Nein-Fragen 1 und 3; Frage 2 war
+offen formuliert („welche bekommen eine Route?") und ist mit „go" nicht
+beantwortet.
+
+| Frage | Antwort |
+|---|---|
+| 1. Sechs verwaiste Duplikate löschen, deren gerouteter Zwilling existiert | **Ja** |
+| 2. Elf ungeroutete Views mit echtem Backend: welche bekommen eine Route, welche fallen weg? | **offen** — nur die fünf mit geroutetem Nachfolger entfernt |
+| 3. Mock-Views und ungenutzte Landing-Bausteine löschen | **Ja** |
+
+Umfang — und **nur** dieser: 52 `.tsx`-Dateien, die keine andere Datei
+importiert (statische und dynamische Imports, Re-Exports, Alias `@/`,
+geprüft auch gegen `test/`, `tests/`, `e2e/`, `scripts/`). Kein Grid, keine
+Farbe, kein sichtbarer Text ändert sich; die eingefrorene Startseite nutzt
+keinen der entfernten Bausteine. Vollständige Liste, bewusst Stehengelassenes
+und die 14 Folge-Waisen: `docs/product/ap11-aufraeumen.md`.
+
+Bewusst **nicht** gelöscht: `components/landing/FrankfurtSkyline.tsx` (wird
+nirgends gerendert, aber `test/landing/frankfurt-skyline.test.ts` schützt sie
+ausdrücklich — Route oder Löschung entscheidet der Eigentümer),
+`features/api/OAuth2ConfigView.tsx` (der Gate-Test in PR #1196 liest die
+Datei), und die sechs Views aus Frage 2 ohne Nachfolger
+(`IntegrationMarketplaceView`, `UnknownTrackersView`, `AgentsView`,
+`ApiUsageStats`, `NewsletterForm`, `PolicyPackAutoActivator`).
 
 #### Faustregel
 

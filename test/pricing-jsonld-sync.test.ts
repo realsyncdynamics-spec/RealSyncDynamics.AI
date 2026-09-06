@@ -12,10 +12,20 @@ import { PRICING_TIERS } from '../src/config/pricing';
  * auch das JSON-LD nachgezogen werden, sonst rote CI.
  *
  * Wir prüfen:
- *   1. Jeder Code-Tier hat genau ein @type=Offer mit passendem Namen
+ *   1. Jeder verkaufbare Tier hat genau ein @type=Offer mit passendem Namen
  *   2. Numerische Preise stimmen exakt überein
- *   3. Enterprise (priceString='individuell') hat KEINE numerische price-
- *      Property im JSON-LD — sonst zeigt Google falsche Rich-Snippets
+ *   3. Ein Tier ohne öffentlichen Festpreis (`priceOnRequest`) hat KEINE
+ *      numerische price-Property — sonst zeigt Google einen Festpreis für
+ *      etwas, das nur vertraglich zu haben ist
+ *   4. Stillgelegte Pläne (`availability: 'legacy'`) tauchen GAR NICHT auf
+ *
+ * COMMERCIAL-SSOT: temporary production hotfix.
+ * Canonical source migration tracked in Phase 2.
+ * Punkt 3 hing vorher am Anzeigetext (`priceString === 'individuell'`) statt
+ * am Datenfeld und griff deshalb nicht, als Enterprise auf „Auf Anfrage"
+ * umgestellt wurde — der Festpreis von 1.249 € blieb im JSON-LD stehen und
+ * wurde auf jeder Seite maschinenlesbar ausgeliefert. Punkt 4 ist neu: Agency
+ * und Partner sind seit AP2 stillgelegt und dürfen nicht als Angebot gelten.
  */
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -35,11 +45,25 @@ function extractOffers(): JsonLdOffer[] {
 describe('Pricing JSON-LD <-> pricing.ts drift guard', () => {
   const offers = extractOffers();
 
-  it('hat dieselbe Anzahl Offers wie PRICING_TIERS', () => {
-    expect(offers.length).toBe(PRICING_TIERS.length);
+  // Ein Angebot darf nur fuehren, wer heute noch abschliessbar ist.
+  const OFFERABLE_TIERS = PRICING_TIERS.filter((t) => t.plan.availability !== 'legacy');
+  const RETIRED_TIERS = PRICING_TIERS.filter((t) => t.plan.availability === 'legacy');
+
+  it('hat dieselbe Anzahl Offers wie die verkaufbaren Tiers', () => {
+    expect(offers.length).toBe(OFFERABLE_TIERS.length);
   });
 
-  for (const tier of PRICING_TIERS) {
+  for (const tier of RETIRED_TIERS) {
+    it(`stillgelegter Plan "${tier.name}" steht NICHT im JSON-LD`, () => {
+      const offer = offers.find((o) => o.name === tier.name);
+      expect(
+        offer,
+        `"${tier.name}" ist stillgelegt — ein schema.org-Offer waere ein Angebot ohne Kaufpfad.`,
+      ).toBeUndefined();
+    });
+  }
+
+  for (const tier of OFFERABLE_TIERS) {
     it(`Offer "${tier.name}" ist im JSON-LD vorhanden`, () => {
       const offer = offers.find((o) => o.name === tier.name);
       expect(offer, `Offer "${tier.name}" fehlt im index.html JSON-LD`).toBeDefined();
@@ -47,10 +71,10 @@ describe('Pricing JSON-LD <-> pricing.ts drift guard', () => {
 
     it(`Offer "${tier.name}" hat den richtigen Preis`, () => {
       const offer = offers.find((o) => o.name === tier.name)!;
-      if (tier.priceString === 'individuell') {
+      if (tier.priceOnRequest || tier.priceString === 'individuell') {
         expect(
           offer.price,
-          `Enterprise/Custom-Tier "${tier.name}" darf keine numerische price-Property im JSON-LD haben (Google würde sie als Festpreis rendern).`,
+          `"${tier.name}" hat keinen oeffentlichen Festpreis und darf keine numerische price-Property im JSON-LD haben (Google wuerde sie als Festpreis rendern).`,
         ).toBeUndefined();
       } else {
         const expected = tier.priceString.replace(/\./g, '');

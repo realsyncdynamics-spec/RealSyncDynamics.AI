@@ -38,17 +38,17 @@ const AGENTUREN_CONFIG: NicheConfig = {
     },
     {
       title: 'White-Label-Reports + Wiedervorlage',
-      body: 'Strukturierter Befund-PDF mit Ihrem Logo (Pro+), Wiedervorlage-Cadence (monatlich / quartalsweise), Mandanten-Kommunikations-Template.',
+      body: 'Strukturierter Befund-PDF mit Ihrem Logo (Enterprise), Wiedervorlage-Cadence (monatlich / quartalsweise), Mandanten-Kommunikations-Template.',
     },
   ],
   faqs: [
     {
       q: 'Können wir das Tool unter unserem Logo verkaufen?',
-      a: 'White-Label-Reports und Multi-Mandanten-Dashboards sind im Pro/Business-Plan vorgesehen. Aktuell im Beta-Programm — der AI Agent liefert auf Anfrage die genaue Roadmap.',
+      a: 'Ja — White-Label-Reports und White-Label-Dashboards sind in Enterprise enthalten.',
     },
     {
       q: 'Wie sieht das Pricing für Agenturen aus?',
-      a: 'Die finalen Tier-Preise (Starter / Business / Enterprise) folgen sobald die Stripe-Anbindung steht. Bis dahin bieten wir Pilot-Verträge mit 5-50 Mandanten-Domains.',
+      a: 'Starter 79 €/Monat, Growth 249 €/Monat, Enterprise nach Vertrag. Die jeweils gültigen Preise und Kontingente stehen auf /pricing.',
     },
     {
       q: 'Wer haftet, wenn ein Mandant trotzdem abgemahnt wird?',

@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  ArrowLeft, Activity, AlertTriangle, ShieldCheck, Database,
+  ArrowLeft, Activity, AlertTriangle, ShieldCheck, Compass, Database,
   Bot, FileCheck2, Lock, Loader2, KeyRound, GitBranch, Plus, Archive, Webhook, Network, Gavel, ScrollText, Library, FileDown, UserCheck, ShieldAlert, Plug, Building2, DollarSign, Wrench, Sparkles,
 } from 'lucide-react';
 import { useTenant } from '../../core/access/TenantProvider';
@@ -16,9 +16,39 @@ import {
 import { archiveAsset, togglePolicy } from './resourcesApi';
 import { CreateAssetModal, CreatePolicyModal } from './GovernanceResourceModals';
 import { GovernanceTrendsPanel } from './GovernanceTrendsPanel';
+import {
+  SELLABLE_PRICING_TIERS, formatPriceEur, checkoutHrefForPlan,
+} from '../../config/pricing';
+
+// COMMERCIAL-SSOT: temporary production hotfix.
+// Canonical source migration tracked in Phase 2.
+// Die Upgrade-Leiter des Dashboards, aus der SSoT abgeleitet statt gepflegt.
+// `SELLABLE_PRICING_TIERS` enthaelt genau die heute abschliessbaren Plaene —
+// stillgelegte (Agency, Partner) fallen damit automatisch heraus.
+const UPGRADE_TIER_BLURBS: Record<string, string> = {
+  starter: 'DSGVO-Monitoring · Evidence Vault · DSE-Generator',
+  growth: 'KI-Governance · Continuous Monitoring · Fix-Snippets',
+  enterprise: 'Multi-Tenant · SSO · Governance nach Vereinbarung',
+};
+
+const UPGRADE_TIERS = SELLABLE_PRICING_TIERS.map((tier) => ({
+  tier: tier.name,
+  // Ein Plan ohne oeffentlichen Festpreis darf hier keinen Betrag zeigen.
+  price: tier.priceOnRequest ? 'Auf Anfrage' : `${formatPriceEur(tier.priceEur)}/Monat`,
+  desc: UPGRADE_TIER_BLURBS[tier.plan.id] ?? tier.plan.outcomeHeadline,
+  href: checkoutHrefForPlan(tier.plan, { source: 'governance_dashboard' }),
+  // Der Trial-Hinweis folgt der SSoT: kein Trial, kein Versprechen.
+  note: tier.plan.trialDays > 0
+    ? `${tier.plan.trialDays} Tage gratis testen`
+    : tier.plan.ctaLabel,
+  color: tier.plan.highlight
+    ? 'border-cyan-700 hover:border-cyan-400'
+    : 'border-titanium-700 hover:border-titanium-400',
+}));
 import { DsgvoControlPackPanel } from './dsgvo-control-pack/DsgvoControlPackPanel';
 import { DEMO_CONTROL_SIGNALS } from './dsgvo-control-pack/dsgvoControlPackDemo';
 import { countPendingApprovals } from './approvalsApi';
+import { countPendingGates } from './gatesApi';
 import { countOpenDpias } from './dpiasApi';
 import { countOpenDsrs } from './dsrApi';
 import { countOpenIncidents } from './incidentsApi';
@@ -55,6 +85,7 @@ function Inner() {
   const [policies, setPolicies] = useState<DbGovernancePolicy[] | null>(null);
   const [controls, setControls] = useState<DbFrameworkControl[] | null>(null);
   const [pendingApprovals, setPendingApprovals] = useState(0);
+  const [pendingGates, setPendingGates] = useState(0);
   const [openDpias, setOpenDpias] = useState(0);
   const [openDsrs, setOpenDsrs] = useState({ total: 0, overdue: 0 });
   const [openIncidents, setOpenIncidents] = useState(0);
@@ -77,10 +108,12 @@ function Inner() {
       countOpenDpias(activeTenantId),
       countOpenDsrs(activeTenantId),
       countOpenIncidents(activeTenantId),
+      countPendingGates(activeTenantId),
     ])
-      .then(([e, a, p, c, pa, od, ds, oi]) => {
+      .then(([e, a, p, c, pa, od, ds, oi, pg]) => {
         setEvents(e); setAssets(a); setPolicies(p); setControls(c);
         setPendingApprovals(pa); setOpenDpias(od); setOpenDsrs(ds); setOpenIncidents(oi);
+        setPendingGates(pg);
       })
       .catch((err: Error) => setError(err.message));
   };
@@ -144,6 +177,10 @@ function Inner() {
           </Link>
           <ModuleLink icon={<KeyRound className="h-4 w-4" />} to="/app/keys" label="Keys" moduleId="keys" />
           <ModuleLink icon={<Gavel className="h-4 w-4" />} to="/app/approvals" label="Approvals" moduleId="approvals" badge={pendingApprovals} />
+          <ModuleLink icon={<Compass className="h-4 w-4" />} to="/app/governance/start" label="Mein Einstieg" moduleId="role-home" />
+          <ModuleLink icon={<ShieldCheck className="h-4 w-4" />} to="/app/governance/gates" label="Freigaben" moduleId="gates" badge={pendingGates} />
+          <ModuleLink icon={<Database className="h-4 w-4" />} to="/app/governance/evidence" label="Beweiskette" moduleId="evidence-integrity" />
+          <ModuleLink icon={<Plug className="h-4 w-4" />} to="/app/governance/connectors" label="Anbindungen" moduleId="connector-registry" />
           <ModuleLink icon={<FileCheck2 className="h-4 w-4" />} to="/app/dpia" label="DPIAs" moduleId="dpias" badge={openDpias} />
           <ModuleLink icon={<UserCheck className="h-4 w-4" />} to="/app/dsr" label="DSR" moduleId="dsr" badge={openDsrs.overdue} />
           <ModuleLink icon={<ShieldAlert className="h-4 w-4" />} to="/app/incidents" label="Incidents" moduleId="incidents" badge={openIncidents} />
@@ -415,11 +452,20 @@ function Body({
 
       {/* Upgrade-CTAs */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        {[
-          { tier: 'Starter', price: '79 €/Monat', desc: 'DSGVO-Monitoring · Evidence Vault · DSE-Generator', href: '/checkout/starter?source=governance_dashboard', color: 'border-titanium-700 hover:border-titanium-400' },
-          { tier: 'Growth', price: '249 €/Monat', desc: 'KI-Governance · Continuous Monitoring · Fix-Snippets', href: '/checkout/growth?source=governance_dashboard', color: 'border-cyan-700 hover:border-cyan-400' },
-          { tier: 'Agency', price: '699 €/Monat', desc: 'Governance Agents · Branchenbibliothek · Audit-Trail', href: '/checkout/agency?source=governance_dashboard', color: 'border-titanium-700 hover:border-titanium-400' },
-        ].map((plan) => (
+        {/*
+          COMMERCIAL-SSOT: temporary production hotfix.
+          Canonical source migration tracked in Phase 2.
+
+          Die Leiter kam aus einem Literal und zeigte zuletzt auf
+          `/checkout/agency` — einen Plan, den AP2 stillgelegt hat und den
+          `stripe-checkout` mit PLAN_RETIRED abweist. Der Nutzer landete also
+          aus dem Dashboard heraus in einer Sackgasse.
+
+          Statt das Literal zu korrigieren, wird die Leiter jetzt aus
+          SELLABLE_PRICING_TIERS abgeleitet: Preis, Ziel und Trial-Hinweis
+          stammen aus der SSoT und können nicht erneut auseinanderlaufen.
+        */}
+        {UPGRADE_TIERS.map((plan) => (
           <a
             key={plan.tier}
             href={plan.href}
@@ -431,7 +477,7 @@ function Body({
             </div>
             <p className="text-[11px] text-titanium-500 leading-relaxed mb-2">{plan.desc}</p>
             <span className="font-mono text-[10px] text-cyan-500 group-hover:text-cyan-300 transition-colors">
-              14 Tage gratis testen →
+              {plan.note} →
             </span>
           </a>
         ))}

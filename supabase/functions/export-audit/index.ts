@@ -191,18 +191,19 @@ Deno.serve(async (req) => {
     return jsonError(401, 'UNAUTHORIZED', 'could not get user from token');
   }
 
-  // Get user's tenant_id from auth.users.
-  const { data: userData, error: fetchUserErr } = await caller
-    .from('auth.users')
-    .select('user_metadata')
-    .eq('id', user.id)
-    .single();
-
-  if (fetchUserErr || !userData) {
-    return jsonError(403, 'FORBIDDEN', 'user not found');
-  }
-
-  // For now, derive tenant_id from the audit row (RLS will enforce access).
+  // Der Mandant kommt aus der Audit-Zeile; RLS setzt den Zugriff durch.
+  //
+  // Bis zum 2026-09-01 stand davor ein Lesezugriff auf `auth.users` über
+  // PostgREST (`caller.from('auth.users').select('user_metadata')`). Den kann
+  // es nicht geben — PostgREST kennt im exponierten Schema keine Tabelle
+  // dieses Namens. Der Aufruf scheiterte also **immer** und führte in
+  // `403 FORBIDDEN: user not found`: Der Export war nie möglich, seit die
+  // Function existiert.
+  //
+  // Das Ergebnis wurde obendrein nirgends verwendet — schon der Kommentar
+  // daneben sagte, der Mandant komme aus der Audit-Zeile. Entfernt statt
+  // repariert, weil hier nichts zu reparieren war: Der Block hatte keine
+  // Wirkung außer der Sperre.
   const { data: auditRow, error: auditErr } = await caller
     .from('terminal_activity_log')
     .select('tenant_id')

@@ -212,13 +212,114 @@ Der Publish Gate bleibt vor dem ersten Publish-Pfad (`CLAUDE.md` §14).
 
 ---
 
+## 6a. Preview-Persistenz — die teilbare Adresse
+
+Bis hierher lebte die Vorschau nur im Rahmen auf `/build`: gerendert im
+Browser, aus dem Blueprint, ohne Adresse. Damit fehlte dem Trichter sein
+kürzester Weg — „Sieh dir an, was aus deiner Seite geworden ist" lässt sich
+nicht schicken, wenn es nichts zu schicken gibt.
+
+Der Weg ist jetzt geschlossen:
+
+```
+build-anon  → Blueprint in siteos_anonymous_builds
+            → renderSite(showcase) → PUT /p/<preview_id> (KV)
+            → preview_id in der Sitzung, url in der Antwort
+refine-anon → dieselbe Kennung, neuer Inhalt
+claim       → DELETE /p/<preview_id>, preview_id = NULL
+```
+
+### Vier Festlegungen, und warum sie so sind
+
+**1. Die Vorschau ist zweitrangig, die Sitzung ist die Wahrheit.** Schlägt
+die Ablage fehl, ist der Entwurf trotzdem gebaut, gespeichert und
+übernehmbar. Der Schreibpfad wirft deshalb nie; jeder Ausgang ist ein
+Zustand in der Antwort (`preview.status`). Eine fehlende Vorschau ist ein
+fehlendes Fenster, kein verlorenes Haus.
+
+**2. Die Vorschau überlebt den Entwurf nicht.** Ihre Lebensdauer ist die
+**Restzeit der Sitzung** bis `expires_at`, nicht sieben feste Tage. Eine
+Verfeinerung am sechsten Tag verlängert sie nicht auf sieben weitere — sonst
+stünde nach dem Verfall der Sitzung ein Dokument im Netz, zu dem es keinen
+Entwurf mehr gibt. Die Zusage aus Art. 5 Abs. 1 lit. e DSGVO gilt für beide
+Ablagen oder für keine.
+
+**3. Die Kennung bleibt über Verfeinerungen bestehen.** Wer den Link geteilt
+hat, sieht den neuen Stand, statt ins Leere zu laufen — und es entsteht
+nicht bei jeder Anweisung eine weitere Kopie des Entwurfs im Netz.
+
+**4. Der Claim nimmt sie zurück.** Ab der Übernahme gehört der Entwurf einem
+Mandanten und folgt dessen Aufbewahrung; der Zweck der anonymen Ablage endet
+damit (Art. 5 Abs. 1 lit. b DSGVO). Eine daneben weiterlaufende, ohne Konto
+abrufbare Kopie wäre eine zweite Auslieferung desselben Inhalts. Best
+effort: Der Claim ist bereits vollzogen und wird an einer Ablage, die nicht
+antwortet, nicht rückgängig gemacht — welche Kennung es war und ob der
+Widerruf gelang, steht im Prüfpfad (`siteos.build.claim`).
+
+### Das Kontingent
+
+Der Zähler aus `_shared/anonRateLimit.ts` liegt im Isolate-Speicher: Er
+bremst einen Ansturm innerhalb einer Minute, überlebt aber kein Recycling und
+kennt keine zweite Instanz. Als Kontingent taugt er nicht — genau das war der
+gemeldete Befund.
+
+Daneben steht jetzt ein Kontingent, das in der Datenbank zählt: **10 neue
+Entwürfe je `ip_hash` und 24 Stunden**, über den Index
+`siteos_anonymous_builds_ip_idx`, der seit Migration `20260822180000` genau
+dafür liegt und von keiner Abfrage benutzt wurde. Es gilt über alle
+Instanzen und überlebt Kaltstarts.
+
+Verfeinerungen zählen nicht mit: Sie sind je Sitzung durch `MAX_VERSION`
+begrenzt und legen keine weitere Zeile an. Ein zweites Kontingent darauf
+bestrafte das Arbeiten am eigenen Entwurf.
+
+Ist die Zählabfrage nicht lesbar, **schliesst** der Pfad (`503
+QUOTA_UNAVAILABLE`) — dieselbe Regel wie beim Prüfpfad. Ein Kontingent, das
+bei jedem Fehler alles durchlässt, ist keines.
+
+### ⚠️ Offenes Gate: ohne diese Infrastruktur nicht in Betrieb
+
+Das ist keine Konfigurationskleinigkeit, die man nebenbei nachträgt, sondern
+die Bedingung dafür, dass Schritt 2 überhaupt etwas tut:
+
+| Nötig | Wo | Stand |
+|---|---|---|
+| KV-Namespace `siteos_previews` | `workers/siteos-preview/wrangler.jsonc` | **vorhanden** |
+| `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` | GitHub-Repo-Secrets | **offen** — `deploy-siteos-preview.yml` überspringt sich selbst |
+| `PREVIEW_WRITE_TOKEN` | `npx wrangler secret put` (Worker) | **offen** |
+| `SITEOS_PREVIEW_ORIGIN` | Supabase-Function-Secret | **offen** |
+| `SITEOS_PREVIEW_WRITE_TOKEN` | Supabase-Function-Secret, **derselbe Wert** wie oben | **offen** |
+
+Solange eines fehlt, antwortet der Bau `preview.status = "not_configured"`,
+der Entwurf entsteht trotzdem, und `/build` zeigt keinen Teilen-Link statt
+einer toten Adresse. Der Zustand ist benannt, nicht kaschiert — deshalb ist
+er von einem echten Ausfall (`failed`) getrennt.
+
+Geprüft ist der Schreibpfad unabhängig davon: `test/siteos/anon-preview.test.ts`
+gegen ein `fetch`-Double, `test/security/siteos-preview-worker.test.ts` gegen
+ein KV-Double. Was dadurch **nicht** geprüft ist: dass sich beide Seiten in
+Produktion tatsächlich erreichen. Das kann nur ein Lauf gegen den deployten
+Worker, und der ist bis zum Schliessen der Tabelle oben offen.
+
+### Was `verify_jwt` damit zu tun hat — nichts
+
+`supabase/config.toml` führt keinen Eintrag für `siteos`; damit gilt
+`verify_jwt = true`. Das ist **richtig so** und kein Hindernis für den
+anonymen Pfad: Der Browser schickt den Anon-Key, der selbst ein gültiges JWT
+ist. Wer ohne Schlüssel anfragt, wird abgewiesen — und `claim` prüft
+zusätzlich einen echten Nutzer, weil ein Anon-Key kein `auth.uid()` trägt.
+Ein Eintrag mit `verify_jwt = false` würde die Funktion für Aufrufer ganz
+ohne Schlüssel öffnen und nichts gewinnen.
+
+---
+
 ## 6b. Nachweis gegen Produktion
 
 Der Ablauf, mit dem der ausgelieferte Stand Ende-zu-Ende geprüft wird, steht
 in **`docs/product/siteos-e2e-runbook.md`**. Er unterscheidet durchgängig
 zwischen Prüfpunkten, die erfolgreich sein müssen, solchen, die fehlschlagen
-müssen, und Messwerten, die nichts entscheiden — darunter die bewusst nicht
-implementierte Worker-Vorschau.
+müssen, und Messwerten, die nichts entscheiden — darunter das oben benannte
+Infrastruktur-Gate der Worker-Vorschau.
 
 ---
 

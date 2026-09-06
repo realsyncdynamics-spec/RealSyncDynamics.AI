@@ -192,6 +192,51 @@ laufender Abos, also eine Geschäftsentscheidung), Produkte oder Preise
 deaktivieren, bestehende Subscriptions umstellen. Solche Fälle meldet das
 Skript als Hinweis.
 
+### Ein Betrag darf nur öffentlich stehen, wenn der Kaufpfad ihn einlöst
+
+Der Katalog in `shared/pricing.ts` und der verdrahtete Zahlungsweg in
+`public.products` sind zwei verschiedene Dinge. Ein Betrag in der SSoT ist
+eine **Preisangabe**, kein Angebot. Zum Angebot wird er erst dort, wo eine
+Oberfläche ihn öffentlich zusichert — und das ist nur zulässig, wenn
+`stripe-checkout` ihn auch abschließen kann.
+
+Zweimal ist das auseinandergelaufen, beide Male ohne dass es jemandem auffiel:
+
+| Fall | Öffentlich zugesichert | Tatsächlich hinterlegt |
+|---|---|---|
+| Enterprise | 1.249 €/Monat, 14 Tage Trial | Sentinel `internal_default_enterprise` |
+| Starter/Growth jährlich | 790 € bzw. 2.490 €, 14 Tage Trial | Platzhalter `STRIPE_PRICE_*_YEARLY_XXX` |
+
+Beide endeten mit `PRICE_NOT_CONFIGURED` — ein Kaufpfad ins Leere, für einen
+Betrag, den die Seite verbindlich genannt hatte.
+
+**Die zwei Kennzeichnungen in der SSoT**
+
+- `priceOnRequest: true` — es gibt keinen öffentlichen Festpreis. Der Betrag
+  bleibt interner Listenpreis; Oberflächen zeigen „Auf Anfrage".
+- `yearlyCheckoutUnavailable: true` — der **Monatsplan** ist normal kaufbar,
+  nur seine Jahresvariante hat keinen verdrahteten Preis. `PRICING_TIERS`
+  erzeugt dann kein Jahres-Tier, also auch keine Karte, kein JSON-LD-Offer und
+  keine Rechengrundlage.
+
+Beide sind **additiv und temporär**: Sobald ein echter Preis verdrahtet ist,
+fällt die Kennzeichnung ersatzlos weg. Keine der beiden verändert
+`yearlyPlanKey`, Entitlements oder laufende Abos — ein bestehendes
+`_yearly`-Abo löst weiterhin über `planByKey()` auf seinen Basisplan auf.
+
+**Wer das prüft**
+
+| Prüfung | Fängt ab |
+|---|---|
+| `npm run check:offer-prices` | Beträge ohne Kaufpfad in `src/**` und `index.html` (Ratsche mit Grundlinie) |
+| `test/pricing-jsonld-sync.test.ts` | JSON-LD-Offers, die es in `PRICING_TIERS` nicht gibt — und umgekehrt |
+| `test/contracts/stripe-price-guard.test.ts` | Kennzeichnung ≠ gemessener Zustand von `public.products` |
+| `test/content/pricingContent.test.ts` | Detailseiten mit Festpreis oder Checkout-Link ohne Kaufpfad |
+
+Wird ein Jahres-Preis in Stripe angelegt, schlägt der Stripe-Price-Guard fehl,
+bis die Kennzeichnung entfernt ist — die Richtung „Preis da, Kennzeichnung
+bleibt" ist damit genauso rot wie die umgekehrte.
+
 ## API
 
 `GET /functions/v1/plans` liefert den Katalog. Jeder Plan hat dieselbe

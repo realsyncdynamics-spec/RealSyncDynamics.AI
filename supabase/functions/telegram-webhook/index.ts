@@ -16,6 +16,7 @@ import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { sha256Hex, randomToken } from '../_shared/hash.ts';
 import { audit } from '../_shared/auditLog.ts';
 import { AiGatewayEdgeClient } from '../_shared/aiGateway/edgeClient.ts';
+import { gateFeature, EntitlementError } from '../_shared/entitlements.ts';
 
 const SUPABASE_URL      = Deno.env.get('SUPABASE_URL')!;
 const SRK               = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -411,6 +412,29 @@ Deno.serve(async (req) => {
       );
       await logTelegramEvent(admin, { tenant_id: null, user_id: null, telegram_user_id: telegramUserId, command, intent: 'unauthorized', outcome: 'blocked' });
       return new Response('OK', { status: 200 });
+    }
+
+    // Entitlement-Gate (AP9, Welle 1): Alles, was an den KI-Gateway geht,
+    // kostet Token. Der Telegram-Kanal liegt laut Quelle ab Growth
+    // (`plan.channels`); der zugehörige Key ist `bots.multi_channel` — ein
+    // eigener `bots.telegram`-Key existiert nicht und wird nicht erfunden
+    // (entitlement-vocabulary.test.ts). Verbinden, /start, /help, /settings
+    // und /status bleiben frei: Sie erzeugen keine Kosten.
+    const kostenpflichtig = new Set(['/audit', '/risks', '/evidence', '/compliance', '/assistant']);
+    const willRouten = (command && kostenpflichtig.has(command)) || (!command && text && isConnected);
+    if (willRouten && tenantId) {
+      try {
+        await gateFeature(admin, tenantId, 'bots.multi_channel');
+      } catch (e) {
+        if (!(e instanceof EntitlementError)) throw e;
+        await sendMessage(chatId,
+          `<b>Telegram-Kanal nicht im Plan</b>\n\n` +
+          `Der KI-Assistent über Telegram ist ab dem Plan Growth enthalten. ` +
+          `Plan und Add-ons verwalten Sie unter /app/marketplace.`,
+        );
+        await logTelegramEvent(admin, { tenant_id: tenantId, user_id: userId, telegram_user_id: telegramUserId, command, intent: command ? command.slice(1) : 'freetext', outcome: 'entitlement_missing' });
+        return new Response('OK', { status: 200 });
+      }
     }
 
     // Command-Routing

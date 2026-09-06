@@ -188,13 +188,31 @@ async function generateDigests(
 
   for (const tenant of tenants) {
     try {
-      // Get all users in tenant
-      const { data: users } = await admin
-        .from('auth.users')
-        .select('id')
-        .eq('raw_app_meta_data->active_tenant_id::text', `"${tenant.id}"`);
+      // Mitglieder des Mandanten über `memberships`.
+      //
+      // Bis zum 2026-09-01 stand hier `admin.from('auth.users')` mit einem
+      // Filter auf `raw_app_meta_data->active_tenant_id`. Beides ging nicht:
+      // PostgREST kennt keine Tabelle `auth.users` im `public`-Schema, und
+      // der Schlüssel `active_tenant_id` steht bei **null** Nutzern im
+      // App-Metadatensatz (beides am 2026-09-01 gegen das Live-Projekt
+      // gemessen). Der Fehler wurde nicht geprüft, `users` blieb leer, und
+      // die Schleife übersprang jeden Mandanten — die Function meldete
+      // `digestsCreated: 0` und sah dabei erfolgreich aus.
+      const { data: members, error: memberErr } = await admin
+        .from('memberships')
+        .select('user_id')
+        .eq('tenant_id', tenant.id);
 
-      if (!users || users.length === 0) continue;
+      if (memberErr) {
+        // Ein Lesefehler ist kein leerer Mandant. Ohne diesen Zweig wäre der
+        // Unterschied wieder unsichtbar — genau das war der ursprüngliche
+        // Defekt.
+        console.error(`Mitglieder von ${tenant.id} nicht lesbar:`, memberErr.message);
+        continue;
+      }
+      const users = (members ?? []).map((m) => ({ id: m.user_id as string }));
+
+      if (users.length === 0) continue;
 
       // Generate digest data
       const digestData = await generateTenantDigest(admin, tenant.id);

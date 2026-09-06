@@ -233,7 +233,7 @@ geklärt sein.
 | 3 | Registrierung: Pfad und Scan-Ergebnis dem Konto zuordnen | **Scan-Ergebnis umgesetzt**, Pfad (`ProductTrack`) weiterhin offen |
 | 4 | Pricing Engine: Auswahl-UI auf `BOOKABLE_MODULES` | **teilweise** — `/app/marketplace` zeigt den Katalog mit echtem Zustand; die Auswahl-UI für den Checkout fehlt (Phase 5) |
 | 5 | Stripe Checkout modular (Core + Module, metered für Verbrauch) | offen — Vorbedingung: Preiskalkulation |
-| 6 | Dashboard-Navigation nach §9 | **teilweise** — Marketplace ergänzt, Restumbau offen |
+| 6 | Dashboard-Navigation | **teilweise** — Marketplace und Modul-Hub ergänzt, Rollen getrennt (§8); Umstellung der Navigations-Gates auf Entitlement-Keys offen |
 
 ### Nachtrag 2026-08-23 — die Freigabe aus §3.4 ist erteilt
 
@@ -279,3 +279,73 @@ werden.
   eigene Terminlogik.
 - Migrationen additiv, RLS aktiviert, Mandantentrennung geprüft.
 - Design-Freeze: hinzufügen frei, ändern nur nach Rückfrage, Design gar nicht.
+
+---
+
+## 8. Rollentrennung: Modul-Hub und Marketplace
+
+**Entscheidung des Eigentümers vom 2026-08-30.** Anlass: Mit `/app/modules`
+(PR #1130) und `/app/marketplace` (PR #1129) standen zwei Flächen
+nebeneinander, die beide die Frage „Was kann ich aktivieren?" beantworteten —
+mit unterschiedlichen Antworten und unterschiedlichem Vokabular. Zwei
+konkurrierende Aktivierungsseiten sind kein Komfort, sondern eine Fehlerquelle:
+Der Kunde weiß nicht, welche gilt.
+
+| | `/app/modules` — Modul-Hub | `/app/marketplace` — Marketplace |
+|---|---|---|
+| Rolle | **operative Übersicht und Navigation** | **kommerzielle Wahrheit** |
+| Beantwortet | Was habe ich? Was ist verfügbar? Wo geht es hinein? | Was kann ich zusätzlich buchen? Was kostet es? |
+| Zeigt | alle Capabilities des Arbeitsbereichs, auch nicht buchbare | die neun `BOOKABLE_MODULES` mit Preis und Plan-Zuordnung |
+| Aktion, offen | „Öffnen" / „Verwalten" — Einstieg in die Fläche | „In Ihrem Plan enthalten" |
+| Aktion, gesperrt | Grund nennen (`Enthalten ab X` / `Auf Anfrage`) plus **ein** Übergang in den Marketplace | „Enthalten ab X" → `/pricing`, sonst `/contact-sales` |
+| Preise | **keine** | ja — aus `BOOKABLE_MODULES` |
+
+**Die Regel dahinter**: Der Hub wird kein zweiter Marketplace. Er nennt keine
+Beträge, führt keinen Kaufweg und trägt keinen Knopf „Aktivieren" — die
+Kaufentscheidung hat genau einen Ort. Umgekehrt bleibt der Marketplace kein
+Navigationsersatz: Er führt nicht in die Flächen hinein.
+`test/governance/modules-hub.test.ts` hält diese Grenze fest (keine Preise,
+kein Checkout-Ziel, kein Aktivieren-Versprechen); ein Verstoß bricht die Tests.
+
+### Was die Trennung technisch nach sich zog
+
+**1. Der Hub fragt jetzt das Autorisierungs-Vokabular.** Seine erste Fassung
+prüfte über `canAccessModule()` gegen `plan.modules`. Das ist laut
+`shared/pricing.ts` die Feature-Liste der **Preisseite**, ausdrücklich kein
+Freischaltungs-Vokabular — maßgeblich ist der Entitlement-Key. Gemessen am
+2026-08-30 über alle Pläne wich beides in drei Fällen voneinander ab:
+
+| Capability | `plan.modules` | Entitlement-Key | Folge |
+|---|---|---|---|
+| `dsgvo` @ Free Audit | zugänglich | `policy.packs` = nein | Hub zeigte „Policies · Öffnen", die Laufzeit verweigerte |
+| `compliance_reports` @ Free Audit | zugänglich | `compliance.export` = nein | dasselbe Muster in der Tab-Leiste |
+| `evidence_vault` @ Free Audit | gesperrt | `evidence.basic_vault` = ja | Navigation verbarg, was der Kunde hat |
+
+Der Hub liest deshalb `useEntitlements().tier` und `planGrants()` — dieselbe
+Quelle wie `moduleCatalog.ts`. Damit sagen Hub, Marketplace und Laufzeit
+dasselbe.
+
+**2. Der Mindestplan kommt aus einer Regel, nicht aus zweien.**
+`cheapestPlanForKeys()` in `src/features/market/moduleCatalog.ts` überspringt
+stillgelegte Pläne; der Hub ruft genau diese Funktion. Vorher nannte er über
+`minimumPlanForModule()` „Ab Agency" — einen Plan, den seit AP2 niemand mehr
+wählen kann. Richtig ist „Enthalten ab Enterprise".
+
+### Offene Befunde, die diese Trennung sichtbar gemacht hat
+
+Nicht in diesem Schritt behoben, weil sie außerhalb der Rollentrennung liegen —
+aber gemessen und hiermit benannt:
+
+- **Die Tab-Leiste hat dasselbe Problem wie der Hub.** `governanceModules.ts`
+  gated weiterhin über `plan.modules`; die beiden Free-Audit-Divergenzen oben
+  (`compliance_reports`, `evidence_vault`) wirken dort unverändert. Die
+  Umstellung der Navigations-Gates auf Entitlement-Keys ist ein eigener
+  Schritt und gehört zu Phase 6.
+- **`limit.agent_runs_monthly` hat eine Lücke**: Starter und Enterprise tragen
+  den Key, Growth nicht — ein Kunde verlöre die Agent Runtime beim Aufstieg
+  von Starter auf Growth. Der Hub gated deshalb vorerst über
+  `limit.automation_runs_monthly` (ab Starter, monoton). Ob die Lücke Absicht
+  oder Datenfehler ist, muss am Entitlement-Katalog entschieden werden.
+- **`ai.tool.workflows` trägt kein Plan.** Der Key existiert im Vokabular,
+  wird aber von keinem Plan gewährt — entweder fehlt die Zuordnung oder der
+  Key ist tot.

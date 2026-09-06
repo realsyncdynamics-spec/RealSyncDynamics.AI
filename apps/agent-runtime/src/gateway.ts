@@ -9,9 +9,19 @@ import { findAgent, listAgents } from './agent-registry.js';
 import { emitAuditEvent } from './audit-log.js';
 import { loadEnv } from './env.js';
 import { evaluate } from './policy-engine.js';
-import type { RunAgentResponse } from './types.js';
+import {
+  applyVerdict,
+  askPdp,
+  loadPdpConfig,
+  sanitizeToolCall,
+} from './pdp-client.js';
+import type { DenyReason, RunAgentResponse } from './types.js';
+import { evaluateVoiceToolRequest, toGatewayDecision } from './voice-policy.js';
+import { isVoiceToolName } from './voice-tools.js';
+import { VOICE_AGENT_ID, type VoiceConsentPurpose } from './voice-types.js';
 
 const env = loadEnv();
+const pdpConfig = loadPdpConfig();
 const app = express();
 
 app.disable('x-powered-by');
@@ -70,9 +80,10 @@ const runAgentSchema = z.object({
   requestedTool: z.string().min(1),
   input: z.record(z.unknown()),
   requestId: z.string().min(1),
+  principalId: z.string().min(1).optional(),
 });
 
-app.post('/run-agent', requireBearerToken, (req, res) => {
+app.post('/run-agent', requireBearerToken, async (req, res) => {
   const parsed = runAgentSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({
@@ -84,6 +95,27 @@ app.post('/run-agent', requireBearerToken, (req, res) => {
   }
 
   const request = parsed.data;
+
+  // Voice läuft nur über /voice-tool. evaluate() bleibt unangetastet —
+  // dieser Kanal-Guard sitzt davor, sonst umgeht /run-agent Consent,
+  // Kill Switch und den 8-Check-Prüfpfad.
+  if (request.agentId === VOICE_AGENT_ID) {
+    const auditEvent = emitAuditEvent({
+      status: 'denied',
+      reviewRequired: false,
+      reason: 'denied_by_channel_policy',
+      request,
+    });
+    const body: RunAgentResponse = {
+      ok: false,
+      status: 'denied',
+      reason: 'denied_by_channel_policy',
+      auditEvent,
+    };
+    res.status(403).json(body);
+    return;
+  }
+
   const decision = evaluate(request);
 
   if (!decision.ok) {
@@ -115,11 +147,70 @@ app.post('/run-agent', requireBearerToken, (req, res) => {
     return;
   }
 
+  /* ---------------------------------------------------------------- */
+  /* Agent-PEP (P1-5): zentrale Policies VOR der Freigabe des Laufs.   */
+  /*                                                                   */
+  /* Die lokale Registry-Prüfung oben bleibt die erste Schranke — sie  */
+  /* kennt die erlaubten Werkzeuge des Agenten. Der PDP kommt darüber: */
+  /* er kennt die Regeln des Mandanten. Ein lokales Nein bleibt ein    */
+  /* Nein; der PDP kann nur zusätzlich anhalten, nie zusätzlich        */
+  /* erlauben.                                                         */
+  /*                                                                   */
+  /* Bewertet werden ausschließlich strukturierte Fakten des Aufrufs — */
+  /* Argumentwerte und Modellausgabe verlassen den Prozess nie         */
+  /* (sanitizeToolCall, Prompt-Injection-Schutz K6).                   */
+  /* ---------------------------------------------------------------- */
+  let pdpAudit: { decision: string; mode: string; reason: string | null } | undefined;
+
+  if (pdpConfig.enforcement !== 'off') {
+    const verdict = await askPdp(
+      pdpConfig,
+      sanitizeToolCall({
+        agentId: request.agentId,
+        taskType: request.taskType,
+        requestedTool: request.requestedTool,
+        input: request.input,
+        principalId: request.principalId,
+        requiresHumanReview: decision.reviewRequired,
+      }),
+    );
+    const applied = applyVerdict(pdpConfig, verdict);
+    pdpAudit = {
+      decision: verdict.outcome,
+      mode: pdpConfig.enforcement,
+      reason: applied.reason ?? verdict.reasons[0] ?? null,
+    };
+
+    if (!applied.allowed) {
+      const reason: DenyReason =
+        verdict.outcome === 'require_approval' ? 'approval_required'
+          : verdict.outcome === 'unavailable' ? 'policy_engine_unavailable'
+            : 'policy_blocked';
+      const auditEvent = emitAuditEvent({
+        status: 'denied',
+        reviewRequired: decision.reviewRequired,
+        reason,
+        request,
+        pdp: pdpAudit,
+      });
+      const body: RunAgentResponse = {
+        ok: false,
+        status: 'denied',
+        reason,
+        message: applied.reason ?? undefined,
+        auditEvent,
+      };
+      res.status(403).json(body);
+      return;
+    }
+  }
+
   const auditEvent = emitAuditEvent({
     status: 'accepted',
     reviewRequired: decision.reviewRequired,
     reason: null,
     request,
+    pdp: pdpAudit,
   });
 
   const body: RunAgentResponse = {
@@ -130,6 +221,210 @@ app.post('/run-agent', requireBearerToken, (req, res) => {
     auditEvent,
   };
   res.json(body);
+});
+
+const voiceConsentPurposes: [VoiceConsentPurpose, ...VoiceConsentPurpose[]] = [
+  'record_audio',
+  'process_transcript',
+  'store_evidence',
+  'execute_tools',
+  'tts_playback',
+];
+
+const voiceToolSchema = z.object({
+  tenantId: z.string().min(1),
+  agentId: z.string().min(1),
+  sessionId: z.string().min(1),
+  requestId: z.string().min(1),
+  tool: z.string().min(1),
+  args: z.record(z.unknown()).default({}),
+  session: z.object({
+    killSwitch: z.boolean(),
+    turnCount: z.number().int().nonnegative(),
+    toolCount: z.number().int().nonnegative(),
+    rateLimit: z.object({
+      maxTurns: z.number().int().positive(),
+      maxTools: z.number().int().positive(),
+    }),
+  }),
+  consent: z
+    .object({
+      purposes: z.array(z.enum(voiceConsentPurposes)),
+      withdrawnAt: z.string().nullable(),
+    })
+    .nullable(),
+});
+
+/**
+ * Voice-Kanal. LLM schlägt nur vor — diese Route entscheidet.
+ * Keine Tool-Ausführung (gleicher Scope wie /run-agent).
+ */
+app.post('/voice-tool', requireBearerToken, async (req, res) => {
+  const parsed = voiceToolSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({
+      ok: false,
+      status: 'denied',
+      reason: 'invalid_request',
+    });
+    return;
+  }
+
+  const body = parsed.data;
+  if (body.agentId !== VOICE_AGENT_ID) {
+    res.status(403).json({
+      ok: false,
+      status: 'denied',
+      reason: 'agent_not_found',
+    });
+    return;
+  }
+  if (!isVoiceToolName(body.tool)) {
+    res.status(403).json({
+      ok: false,
+      status: 'denied',
+      reason: 'tool_not_allowed',
+    });
+    return;
+  }
+
+  const agent = findAgent(body.agentId);
+  if (!agent) {
+    res.status(403).json({
+      ok: false,
+      status: 'denied',
+      reason: 'agent_not_found',
+    });
+    return;
+  }
+
+  const decision = evaluateVoiceToolRequest({
+    session: {
+      sessionId: body.sessionId,
+      tenantId: body.tenantId,
+      killSwitch: body.session.killSwitch,
+      turnCount: body.session.turnCount,
+      toolCount: body.session.toolCount,
+      rateLimit: body.session.rateLimit,
+    },
+    request: {
+      requestId: body.requestId,
+      sessionId: body.sessionId,
+      tenantId: body.tenantId,
+      agentId: body.agentId,
+      tool: body.tool,
+      args: body.args,
+      proposedBy: 'llm',
+      createdAt: new Date().toISOString(),
+    },
+    consent: body.consent,
+  });
+
+  const gateway = toGatewayDecision(decision.verdict);
+  const auditEvent = emitAuditEvent({
+    status: gateway.ok ? 'accepted' : 'denied',
+    reviewRequired: gateway.ok ? gateway.reviewRequired : false,
+    reason: gateway.ok ? null : gateway.reason,
+    request: {
+      tenantId: body.tenantId,
+      agentId: body.agentId,
+      taskType: 'voice_tool',
+      requestedTool: body.tool,
+      requestId: body.requestId,
+    },
+  });
+
+  if (decision.verdict === 'DENY') {
+    res.status(403).json({
+      ok: false,
+      status: 'denied',
+      reason: 'denied_by_channel_policy',
+      verdict: decision.verdict,
+      decision,
+      gateway,
+      agent: { id: agent.id, name: agent.name },
+      auditEvent,
+    });
+    return;
+  }
+
+  /* ---------------------------------------------------------------- */
+  /* Agent-PEP auch auf dem Sprachkanal (P1-5).                        */
+  /*                                                                   */
+  /* Die Kanal-Policy oben ist reicher als der PDP (Einwilligung,      */
+  /* Kill-Switch, Rate-Limit) und bleibt die erste Schranke — ihr DENY */
+  /* ist oben schon beantwortet. Der PDP kommt darüber und bringt die  */
+  /* Regeln des Mandanten ein; er kann nur zusätzlich anhalten, nie    */
+  /* zusätzlich erlauben.                                              */
+  /*                                                                   */
+  /* Ohne diesen Aufruf wäre der Sprachkanal ein Werkzeugpfad, der an  */
+  /* der zentralen Governance vorbeiläuft — genau die Lücke, die P1-5  */
+  /* für /run-agent geschlossen hat.                                   */
+  /* ---------------------------------------------------------------- */
+  if (pdpConfig.enforcement !== 'off') {
+    const verdict = await askPdp(
+      pdpConfig,
+      sanitizeToolCall({
+        agentId: body.agentId,
+        taskType: 'voice_tool',
+        requestedTool: body.tool,
+        // `args` ist LLM-Vorschlag: Nur die Argumentnamen verlassen den
+        // Prozess, nie die Werte (K6).
+        input: (body.args ?? {}) as Record<string, unknown>,
+        requiresHumanReview: decision.verdict === 'REQUIRE_CONFIRMATION',
+      }),
+    );
+    const applied = applyVerdict(pdpConfig, verdict);
+    if (!applied.allowed) {
+      const reason: DenyReason =
+        verdict.outcome === 'require_approval' ? 'approval_required'
+          : verdict.outcome === 'unavailable' ? 'policy_engine_unavailable'
+            : 'policy_blocked';
+      const pdpAudit = emitAuditEvent({
+        status: 'denied',
+        reviewRequired: false,
+        reason,
+        request: {
+          tenantId: body.tenantId,
+          agentId: body.agentId,
+          taskType: 'voice_tool',
+          requestedTool: body.tool,
+          requestId: body.requestId,
+        },
+        pdp: {
+          decision: verdict.outcome,
+          mode: pdpConfig.enforcement,
+          reason: applied.reason ?? verdict.reasons[0] ?? null,
+        },
+      });
+      res.status(403).json({
+        ok: false,
+        status: 'denied',
+        reason,
+        message: applied.reason ?? undefined,
+        verdict: decision.verdict,
+        decision,
+        gateway,
+        agent: { id: agent.id, name: agent.name },
+        auditEvent: pdpAudit,
+      });
+      return;
+    }
+  }
+
+  res.json({
+    ok: true,
+    status:
+      decision.verdict === 'REQUIRE_CONFIRMATION'
+        ? 'confirmation_required'
+        : 'accepted',
+    reviewRequired: decision.verdict === 'REQUIRE_CONFIRMATION',
+    verdict: decision.verdict,
+    decision,
+    gateway,
+    agent: { id: agent.id, name: agent.name },
+    auditEvent,
+  });
 });
 
 /* ------------------------------------------------------------------ */
@@ -144,6 +439,9 @@ app.listen(env.port, () => {
       port: env.port,
       node_env: env.nodeEnv,
       auth_enforced: Boolean(env.apiToken),
+      pdp_enforcement: pdpConfig.enforcement,
+      pdp_configured: Boolean(pdpConfig.url && pdpConfig.key),
+      pdp_failure_mode: pdpConfig.failureMode,
       timestamp: new Date().toISOString(),
     })}\n`,
   );

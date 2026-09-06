@@ -37,6 +37,41 @@ Das schließt zwei Fehler in beide Richtungen aus:
 - Die höhere technische Berechtigung darf **nicht** als Vertragsrecht
   ausgelegt werden. `-1` in der Datenbank ist kein Beleg für eine Zusage.
 
+### 1.2a Wie die Regel ausführbar wurde — Entscheidung vom 2026-08-31
+
+§1.2 war ein Jahr lang spezifiziert und nicht ausführbar: Das Schema kennt
+keinen Ort für einen vertragsspezifischen Wert (§4a). Der Eigentümer hat sich
+am 2026-08-31 für **Option A** aus
+`enterprise-quelle-entscheidungsvorlage.md` entschieden — die Kodierung wird
+benannt, statt einen Ort dafür zu bauen:
+
+> Auf Plänen mit `availability: 'contract'` bedeutet `-1` bei einem
+> `limit.*`-Key: **Das System begrenzt hier nicht. Der Vertrag tut es.**
+
+Das ist ausdrücklich **keine** Auflösung der Quelle. Der Vertrag liegt dem
+System weiterhin nicht vor; §1.4 gilt unverändert, auf diesen acht Feldern
+entsteht kein Gate. Was sich ändert: Der Satz zwei Absätze weiter oben —
+„`-1` ist kein Beleg für eine Zusage" — gilt weiter für Self-Service-Pläne,
+auf Vertragsplänen ist `-1` jetzt die festgelegte Kodierung des Vorbehalts.
+
+**Der Preis dieser Entscheidung, offen benannt:** Unter A ist jeder
+Enterprise-Vertrag technisch unbegrenzt. Ein Vertrag mit vereinbarter
+**Obergrenze** („bis zu 50 Sitze") ist nicht durchsetzbar und damit nicht
+abschließbar, ohne vorher auf **Option B** (Tenant-Overrides) zu wechseln.
+Der erste solche Vertrag ist der benannte Auslöser dafür — die Frage
+verschwindet nicht, sie bekommt einen Termin.
+
+**Die Bedingung, gemessen statt behauptet** (2026-08-31, Live-Projekt
+`ebljyceifhnlzhjfyxup`): 0 Enterprise-Verträge, 0 `entitlement_grants`,
+5 Tenants, 5 Subscriptions. A wird also für null Bestandsfälle gewählt und
+bleibt umkehrbar; B und C hätten heute Schema bzw. Katalog angefasst, um ein
+Problem zu lösen, das noch kein Kunde hat.
+
+**Woran es hängt:** `test/billing/limit-canonicity.test.ts`, Fall
+„Vertragspläne tragen ausschliesslich `-1` als Kontingent". Er schlägt fehl,
+sobald ein Vertragsplan einen endlichen `limit.*`-Wert bekommt — das ist die
+maschinelle Meldung, dass der Auslöser für B eingetreten ist.
+
 ### 1.3 Die Schutzklausel
 
 > Bei Bestandskunden darf die Korrektur **nicht stillschweigend als Downgrade**
@@ -180,6 +215,50 @@ dass eine Regel ihn schützt.
 Sollte stattdessen gemeint gewesen sein, dass der **höhere** Wert gilt, wäre
 das eine Änderung der Preisseite und keine Datenbereinigung — dann bitte
 widersprechen.
+
+#### ✅ Erledigt am 2026-09-01 — korrigiert, ohne Mechanismus
+
+Die Reihenfolge oben setzt voraus, dass es jemanden zu schützen gibt. Vor der
+Entscheidung gemessen, gegen das Live-Projekt `ebljyceifhnlzhjfyxup`:
+
+| | |
+|---|---:|
+| Starter-Abos | **0** |
+| Growth-Abos | 1, Status **`past_due`** |
+| `usage_counters` · `usage_events` · `usage_totals` | 0 · 0 · 0 |
+| `feature_usage` · `quota_alerts` · `audit_jobs` | 0 · 0 · 0 |
+| Mitglieder je Tenant | **genau 1** bei allen fünf |
+
+**Es gibt niemanden zu schützen.** Die Sitzplatz-Kürzung von 3 auf 1 träfe
+selbst dann keinen Tenant, wenn ein Starter-Abo existierte — kein Workspace hat
+ein zweites Mitglied. Kein Kunde verliert eine Fähigkeit, die er heute nutzt.
+
+Der Eigentümer hat deshalb entschieden, **jetzt zu korrigieren und keinen
+Bestandsschutz-Mechanismus zu bauen**. Umgesetzt in
+`20260903050000_align_starter_growth_quota_entitlements.sql`; die Werte in
+`PLAN_ENTITLEMENTS` und in `product_entitlements` stehen jetzt auf der
+Preisseite.
+
+**Warum kein Mechanismus** — ein struktureller Befund, der hier festgehalten
+gehört: `entitlement_grants` ist **produktförmig**. `product_id`, `plan_key`
+und `purchase_reference` sind `NOT NULL`; eine Spalte für Entitlement-Key oder
+Wert gibt es nicht. Die Tabelle kann „dieser Tenant behält `team_seats = 3`"
+gar nicht ausdrücken. Ein Override je Schlüssel hätte eine Schemaänderung
+gebraucht — für null bis einen Bestandsfall.
+
+**Falls er später doch gebraucht wird**, ist die Richtung günstig: Ein
+Bestandsschutz muss einen Wert *anheben*, und der Auflöser führt mit
+`CASE WHEN bool_or(value = -1) THEN -1 ELSE MAX(value) END` zusammen — ein
+anhebender Grant gewinnt von selbst, ohne dass die Regel gebrochen werden
+muss. Das ist der Unterschied zum Enterprise-Fall (§1.2a), wo ein Override
+hätte *senken* müssen.
+
+**Der Preis dieser Entscheidung:** Das Fenster war offen, weil niemand
+betroffen war. Es schließt mit dem ersten zahlenden Starter- oder
+Growth-Kunden. Käme die Divergenz zurück, wäre die Korrektur dann ein echtes
+Downgrade und §1.3 griffe erneut — diesmal mit Bestandskunden. Dagegen sichert
+`test/billing/limit-canonicity.test.ts`, Fall „führt keine Kürzung mehr auf
+verkauften Self-Service-Plänen".
 
 ### Klasse C und D — die stillgelegten Pläne
 

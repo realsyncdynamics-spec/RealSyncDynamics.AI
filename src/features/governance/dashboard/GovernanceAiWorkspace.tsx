@@ -7,6 +7,7 @@ import {
 import { AiGatewayEdgeClient } from '../../../core/ai-gateway/edgeClient';
 import { getSupabaseAnonKey, getSupabaseUrl } from '../../../lib/supabaseUrl';
 import { useTenant } from '../../../core/access/TenantProvider';
+import { NextBestActionCard } from './NextBestActionCard';
 
 interface ChatMessage {
   role: 'user' | 'assistant';
@@ -143,6 +144,7 @@ export function GovernanceAiWorkspace() {
                 <div className="h-14 w-14 rounded-2xl bg-white border border-slate-200 shadow-sm flex items-center justify-center mb-6"><Sparkles className="h-6 w-6 text-amber-700" /></div>
                 <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight text-slate-950">Was möchtest du heute erledigen?</h1>
                 <p className="mt-3 max-w-xl text-sm sm:text-base text-slate-500">Governance Dashboard by RealSyncDynamics.AI — Übersicht und Funktion. Der Assistent führt den nächsten Schritt.</p>
+                <div className="mt-6 w-full flex justify-center"><NextBestActionCard /></div>
                 <div className="mt-8 grid w-full max-w-2xl grid-cols-1 sm:grid-cols-2 gap-2 text-left">{STARTERS.map((starter) => <button key={starter} onClick={() => void send(starter)} className="group rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-700 hover:border-amber-300 hover:shadow-sm transition-all"><span>{starter}</span><ArrowUp className="mt-3 h-4 w-4 rotate-45 text-slate-300 group-hover:text-amber-700" /></button>)}</div>
               </div>
             ) : (

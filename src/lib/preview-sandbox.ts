@@ -243,3 +243,26 @@ export function createPreviewId(getRandomValues: (array: Uint8Array) => Uint8Arr
  * unterliegt dann dessen Aufbewahrungsregeln.
  */
 export const ANONYMOUS_PREVIEW_TTL_SECONDS = 7 * 24 * 60 * 60;
+
+/**
+ * Kleinste Lebensdauer, die eine abgelegte Vorschau haben darf.
+ *
+ * Cloudflare KV lehnt `expirationTtl` unter 60 Sekunden ab. Der Wert steht
+ * hier und nicht im Worker, weil der Schreibpfad ihn kennen muss, bevor er
+ * schreibt: Eine Sitzung, deren Rest darunter liegt, ist praktisch abgelaufen
+ * — dann wird gar nichts erst abgelegt, statt in einen Fehler der Ablage zu
+ * laufen, dessen Ursache dort niemand mehr sieht.
+ */
+export const MIN_PREVIEW_TTL_SECONDS = 60;
+
+/**
+ * Obergrenze für ein abgelegtes Vorschau-Dokument in Bytes.
+ *
+ * Gemessen wird der **gesamte** Eintrag, nicht nur die Startseite: Eine
+ * Vorschau trägt seit der Mehrseiten-Ablage alle Unterseiten mit sich, und
+ * eine Grenze, die nur das erste Feld prüft, ist keine Grenze.
+ *
+ * Eine erzeugte Website liegt weit darunter — der Wert schützt die Ablage,
+ * nicht den Kunden vor sich selbst.
+ */
+export const ANONYMOUS_PREVIEW_MAX_BYTES = 2 * 1024 * 1024;

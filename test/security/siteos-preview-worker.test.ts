@@ -206,3 +206,111 @@ describe('Übrige Pfade', () => {
     expect(kv.store.has(VALID_ID)).toBe(false);
   });
 });
+
+// ── Mehrseitige Vorschau ────────────────────────────────────────────────
+//
+// Bis hierher lieferte der Worker genau ein Dokument je Kennung. Eine
+// erzeugte Website hat aber acht Seiten, und ihre Navigation verweist auf
+// alle. Ohne Unterseiten zeigt ein geteilter Link die Startseite, und jeder
+// Klick darin endet im 404 der Ablage — der Besucher hält die Website für
+// kaputt, obwohl nur die Ablage unvollständig war.
+
+describe('Mehrseitige Vorschau', () => {
+  const site = {
+    html: '<!doctype html><html><head></head><body>start</body></html>',
+    pages: {
+      '/kontakt': '<!doctype html><html><head></head><body>kontakt</body></html>',
+      '/leistungen': '<!doctype html><html><head></head><body>leistungen</body></html>',
+    },
+  };
+
+  it('liefert Unterseiten unter ihrem eigenen Pfad', async () => {
+    await put(site);
+    const res = await call('GET', `/p/${VALID_ID}/kontakt`);
+    expect(res.status).toBe(200);
+    expect(await res.text()).toContain('kontakt');
+    expect(res.headers.get('Content-Security-Policy')).toBeTruthy();
+  });
+
+  it('behandelt „/p/<id>/" wie die Startseite', async () => {
+    await put(site);
+    const res = await call('GET', `/p/${VALID_ID}/`);
+    expect(await res.text()).toContain('start');
+  });
+
+  it('antwortet auf eine unbekannte Unterseite mit 404, nicht mit der Startseite', async () => {
+    // Sonst behauptete die Vorschau Seiten, die die erzeugte Website nicht
+    // hat — und jeder Tippfehler sähe aus wie ein Treffer.
+    await put(site);
+    const res = await call('GET', `/p/${VALID_ID}/gibtesnicht`);
+    expect(res.status).toBe(404);
+  });
+
+  it('liest Einträge ohne Unterseiten weiter', async () => {
+    // Rückwärtskompatibilität: Im KV können Einträge aus der Zeit vor der
+    // Mehrseiten-Ablage liegen. Sie dürfen beim Abruf nicht scheitern.
+    await put({ html: '<p>alt</p>' });
+    expect((await call('GET', `/p/${VALID_ID}`)).status).toBe(200);
+    expect((await call('GET', `/p/${VALID_ID}/kontakt`)).status).toBe(404);
+  });
+
+  it('verwirft Unterseiten mit unbrauchbarem Pfad oder Inhalt', async () => {
+    await put({
+      html: '<p>start</p>',
+      pages: { 'kontakt': '<p>x</p>', '/': '<p>y</p>', '/leer': '', '/zahl': 42 },
+    });
+    const stored = JSON.parse(kv.store.get(VALID_ID)!) as { pages: Record<string, string> };
+    expect(Object.keys(stored.pages)).toEqual([]);
+  });
+
+  it('schreibt und löscht nur die Vorschau als Ganzes, nie eine einzelne Seite', async () => {
+    // Ein Entwurf ist ein Stand. Liesse sich eine Unterseite einzeln
+    // ersetzen, könnte eine Vorschau Seiten aus verschiedenen Fassungen
+    // zusammensetzen — und der geteilte Link zeigte etwas, das es so nie gab.
+    const single = await call('PUT', `/p/${VALID_ID}/kontakt`, {
+      body: JSON.stringify({ html: '<p>x</p>' }),
+      headers: { Authorization: `Bearer ${TOKEN}` },
+    });
+    expect(single.status).toBe(404);
+
+    await put(site);
+    const del = await call('DELETE', `/p/${VALID_ID}/kontakt`, {
+      headers: { Authorization: `Bearer ${TOKEN}` },
+    });
+    expect(del.status).toBe(404);
+    expect(kv.store.has(VALID_ID)).toBe(true);
+  });
+
+  it('misst die Grössengrenze über den ganzen Eintrag', async () => {
+    // Eine Grenze, die nur `html` prüft, liesse sich mit Unterseiten
+    // beliebig überschreiten.
+    const res = await put({
+      html: '<p>klein</p>',
+      pages: { '/gross': 'x'.repeat(3 * 1024 * 1024) },
+    });
+    expect(res.status).toBe(413);
+    expect(kv.store.size).toBe(0);
+  });
+});
+
+describe('Lebensdauer', () => {
+  it('übernimmt die vom Schreiber angegebene Restzeit', async () => {
+    // Die Vorschau darf den Entwurf nicht überleben: Ihre Frist ist die
+    // Restzeit der Sitzung, nicht sieben feste Tage.
+    await put({ html: '<p>a</p>', ttl: 3600 });
+    expect(kv.ttls.get(VALID_ID)).toBe(3600);
+  });
+
+  it('klemmt auf den erlaubten Bereich, statt abzulehnen', async () => {
+    await put({ html: '<p>a</p>', ttl: 5 });
+    expect(kv.ttls.get(VALID_ID)).toBe(60);
+
+    await put({ html: '<p>a</p>', ttl: 999 * 24 * 3600 });
+    expect(kv.ttls.get(VALID_ID)).toBe(7 * 24 * 3600);
+  });
+
+  it('nimmt ohne Angabe die Obergrenze', async () => {
+    await put({ html: '<p>a</p>' });
+    expect(kv.ttls.get(VALID_ID)).toBe(7 * 24 * 3600);
+  });
+});

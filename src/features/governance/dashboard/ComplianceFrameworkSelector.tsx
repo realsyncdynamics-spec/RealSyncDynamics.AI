@@ -11,10 +11,13 @@ interface Framework {
   shortCode: string;
   description: string;
   icon: React.ComponentType<{ className: string }>;
-  path: string;
+  /** null = es gibt (noch) keine Route. Die Karte navigiert dann nicht. */
+  path: string | null;
   tier: string;
   status: 'available' | 'locked' | 'in-progress';
   completionPercent: number;
+  /** Angekündigt, aber ohne Ziel — wird als „In Vorbereitung" ausgewiesen. */
+  comingSoon?: boolean;
 }
 
 const FRAMEWORKS: Framework[] = [
@@ -35,7 +38,7 @@ const FRAMEWORKS: Framework[] = [
     shortCode: 'ISO27001',
     description: 'Informationssicherheits-Management System',
     icon: BarChart3,
-    path: '/app/governance/iso-27001',
+    path: '/app/governance/iso27001',
     tier: 'starter',
     status: 'available',
     completionPercent: 28,
@@ -46,7 +49,7 @@ const FRAMEWORKS: Framework[] = [
     shortCode: 'ISO42001',
     description: 'AI Management System - Künstliche Intelligenz Compliance',
     icon: AlertTriangle,
-    path: '/app/governance/iso-42001',
+    path: '/app/governance/iso42001',
     tier: 'growth',
     status: 'in-progress',
     completionPercent: 12,
@@ -57,7 +60,7 @@ const FRAMEWORKS: Framework[] = [
     shortCode: 'NIS2',
     description: 'Netzwerk- und Informationssicherheitsrichtlinie (EU)',
     icon: Shield,
-    path: '/app/governance/nis2',
+    path: '/app/governance/nis2-incidents',
     tier: 'growth',
     status: 'in-progress',
     completionPercent: 0,
@@ -68,10 +71,13 @@ const FRAMEWORKS: Framework[] = [
     shortCode: 'DORA',
     description: 'Digital Operational Resilience Act - Finanzsektor',
     icon: Shield,
-    path: '/app/governance/dora',
-    tier: 'agency',
+    // DORA hat im Repo keine Route und kein Entitlement — deshalb kein Ziel
+    // und kein Klick, statt eines Knopfes, der in den 404 führt.
+    path: null,
+    tier: 'enterprise',
     status: 'in-progress',
     completionPercent: 0,
+    comingSoon: true,
   },
   {
     id: 'euaiact',
@@ -92,10 +98,13 @@ export function ComplianceFrameworkSelector() {
   const [hoveredFramework, setHoveredFramework] = useState<string | null>(null);
 
   const isAccessible = (framework: Framework): boolean => {
+    if (framework.comingSoon || !framework.path) return false;
     return hasFeature(`governance.${framework.id}`);
   };
 
   const handleFrameworkClick = (framework: Framework) => {
+    // Angekündigt heißt nicht erreichbar: kein Upgrade-Pfad, kein Ziel.
+    if (framework.comingSoon || !framework.path) return;
     if (isAccessible(framework)) {
       navigate(framework.path);
     } else {
@@ -163,7 +172,7 @@ export function ComplianceFrameworkSelector() {
                       </h3>
                     </div>
                   </div>
-                  {!accessible && (
+                  {!accessible && !framework.comingSoon && (
                     <Lock className="w-4 h-4 text-amber-600 shrink-0" />
                   )}
                 </div>
@@ -199,14 +208,20 @@ export function ComplianceFrameworkSelector() {
                         Active
                       </span>
                     )}
-                    {framework.status === 'in-progress' && (
+                    {framework.status === 'in-progress' && !framework.comingSoon && (
                       <span className="inline-flex items-center gap-1 text-xs bg-amber-500/10 text-amber-400 px-2 py-1 rounded-none font-mono">
                         <AlertTriangle className="w-3 h-3" />
                         In Progress
                       </span>
                     )}
+                    {framework.comingSoon && (
+                      <span className="inline-flex items-center gap-1 text-xs bg-amber-500/10 text-amber-400 px-2 py-1 rounded-none font-mono">
+                        <AlertTriangle className="w-3 h-3" />
+                        In Vorbereitung
+                      </span>
+                    )}
                   </div>
-                  <ArrowRight className="w-4 h-4 text-titanium-500" />
+                  {!framework.comingSoon && <ArrowRight className="w-4 h-4 text-titanium-500" />}
                 </div>
               </button>
             );

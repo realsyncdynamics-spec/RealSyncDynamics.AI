@@ -536,8 +536,14 @@ folgt:
 | --- | --- |
 | `packages/siteos-core/src/publish/gate.ts` | Contract-Typ und Ableitung, einmal geschrieben, in SPA · Deno · Vitest identisch |
 | `supabase/functions/siteos/publish-gate` | Auswertung (G1). Baut Artefakt und Befunde **neu**; übernimmt vom Aufrufer nur, welche Blueprint-Version gemeint ist |
+| ↳ `consultPolicyEngine()` (seit 2026-09-04, P2-3) | Befragt den Policy Decision Point, damit die **Richtlinien des Mandanten** hier wirken. Bis dahin entschied das Gate nur nach fest verdrahteten Regeln — die eigenen Regeln des Kunden hatten beim Veröffentlichen keine Wirkung. `SITEOS_PUBLISH_PDP=off\|shadow\|enforce`, Default `shadow` |
 | `supabase/functions/siteos/publish-approve` | Freigabe mit Person und Begründung (G4), danach neue Bewertung |
 | `siteos_publish_evaluations` | Anker jeder Publish-Aktion (G5), gebunden an einen Artefakt-Hash (G6) |
+
+Das Verdikt des PDP wird in die **vorhandenen** Vertragsfelder gefaltet (`block` senkt
+`policy_compliant`, `require_approval` hebt `human_approval_required`) — der Contract oben
+und die Ableitungsregel bleiben wörtlich unverändert. Ein sechstes Feld hätte genau die
+Drift erzeugt, die G2 ausschliesst.
 
 `publishable` ist dort eine **generierte Spalte**: Die Datenbank leitet sie aus
 denselben fünf Bedingungen ab wie der Kern. Damit ist G4 nicht nur eine Regel
@@ -546,10 +552,15 @@ im Code, sondern eine, die kein Schreibpfad umgehen kann — auch keiner mit
 
 `siteos_blueprints.status = 'approved'` bleibt vorerst bestehen, verliert aber
 seine Bedeutung für die Veröffentlichung: Freigabe ist ab jetzt eine
-Evaluation, kein Status. Der Deployment-Pfad ist weiterhin offen
-(SITEOS_ARCHITECTURE §6); `cloudflare-deployer` und `website-domain-manager`
-liegen im Repo, sind aber nicht deployt. Das ist der beabsichtigte Zustand —
-das Gate steht vor dem Pfad und nicht umgekehrt.
+Evaluation, kein Status. Zum Deployment-Pfad (SITEOS_ARCHITECTURE §6): `cloudflare-deployer` und
+`website-domain-manager` sind **deployt** — beide stehen in `PRODUCTION_SET`
+(`src/config/production-edge-functions.ts`), am 2026-09-04 nachgemessen. Diese
+Stelle behauptete bis dahin das Gegenteil, und die Aussage war folgenreich: Bei
+P2-3 wäre daraus fast der Schluss geworden, die Richtlinienprüfung könne
+gefahrlos sofort scharf geschaltet werden, weil es nichts zu sperren gebe. Was den Pfad
+heute offen hält, sind nicht die Functions, sondern die Cloudflare-Zugangsdaten
+und die Entscheidung über das Deployment-Ziel. Das Gate stand trotzdem zuerst —
+es wurde am 2026-08-22 gebaut, bevor irgendetwas veröffentlicht werden konnte.
 
 ---
 
@@ -598,11 +609,34 @@ Workflows
    Doppelausführungsschutz und Nachvollziehbarkeit liegen bei der Plattform,
    nicht beim einzelnen Agenten.
 
-Heute vorhanden: sieben SiteOS-Agenten (`compliance`, `seo`, `accessibility`,
-`security`, `performance`, `content`, `monitoring`) mit deterministischer
-Behebung, sowie `automation_skills` / `automation_runs` als Datenmodell für
-Skill-Läufe. Die Zusammenfassung zu benannten **Workflows** über Assetgrenzen
-hinweg fehlt noch.
+### Umsetzungsstand
+
+| Baustein | Ort |
+| --- | --- |
+| Skill-Vokabular (8) + Zuordnung auf die Agenten | `packages/siteos-core/src/workflows/skills.ts` |
+| Workflow-Vokabular (8) + Reichweite | `packages/siteos-core/src/workflows/workflows.ts` |
+| Beschriftung der Läufe | `siteos_agent_runs.skill` / `.workflow` (Migration `20260903050000`) |
+| Invarianten zu Regel 1 | `test/siteos/workflow-vocabulary.test.ts` |
+
+Die Skills sind **Produktsprache über den vorhandenen sieben Agenten**, kein
+zweiter Ausführungsweg: `Dimension → Skill → Agent`. Zwei Invarianten halten
+Regel 1 durchsetzbar, statt sie als Vorsatz stehen zu lassen — jede Dimension
+gehört genau einem Skill, und jeder Agent ist aus mindestens einem Skill
+erreichbar. Ein neunter Agent ohne Zuordnung bricht den Test, nicht erst die
+Oberfläche.
+
+Zwei Stellen, an denen Produktsprache und Ausführung bewusst auseinanderfallen:
+`privacy` und `ai-risk` laufen beide über den Compliance-Agenten (deshalb wird
+der Skill aus der Dimension der Befundcodes abgeleitet, nicht aus dem Agenten),
+und `transformation` hat weder Dimension noch Agenten — sie beantwortet Befunde,
+statt welche zu erzeugen.
+
+**Was noch fehlt**: die Ausführung der vier Workflows mit `scope: 'portfolio'`
+(AI Governance, Continuous Compliance, Change Monitoring, Incident Response).
+Sie spannen über Assetgrenzen, `siteos_agent_runs` hängt aber an genau einem
+`blueprint_id`. Dafür braucht es ein Laufobjekt über mehrere Assets und einen
+Dispatcher — beides bewusst nicht vorgebaut, solange kein Aufrufer existiert.
+`executableWorkflows()` hält die Aussage aktuell, welche vier heute laufen.
 
 ### 8.1 Der Assistent kennt keinen Provider
 
@@ -800,7 +834,7 @@ auf bestehende Modul-Schlüssel abgebildet, nicht als zweite Modul-Welt eingefü
 | Governance Decision | Policies, Controls, Approvals, Incidents vorhanden | benannte, gespeicherte Entscheidung mit ALLOW/REVIEW/BLOCK und Eingabeankern |
 | **Publish Gate** | Contract §7 umgesetzt: `evaluatePublishGate` im Kern, `siteos/publish-gate` + `siteos/publish-approve`, Tabelle `siteos_publish_evaluations` mit generierter Spalte `publishable` | steht vor dem ersten Publish-Pfad — anschließen, sobald `cloudflare-deployer` deployt ist |
 | Deployment-Pfad | Renderer erzeugt gehashtes Artefakt; Upload/Domain offen | Publish nur über das Gate |
-| Skills / Workflows | 7 SiteOS-Agenten, `automation_skills`/`automation_runs` | 8 Skills als Vokabular, Workflows über Assetgrenzen |
+| Skills / Workflows | 8 Skills + 8 Workflows als Vokabular über den 7 Agenten (`siteos-core/workflows/`), Läufe in `siteos_agent_runs` mit `skill`/`workflow` beschriftet | **Ausführung** der vier `portfolio`-Workflows — dafür fehlt ein Laufobjekt über mehr als ein `blueprint_id` |
 | Integrationen | `integration_connectors`, `remediation_actions`, Feature `src/features/integrations` | beidseitige Integrationen als Beobachtungs- **und** Aktionsquelle |
 | Pricing | 6 Abo-Pläne + Einmalprodukte in `shared/pricing.ts` | BASE + MODULE + SCALE als Katalogänderung |
 | Truth Layer / Status Adapter | `governance-analytics-aggregator`, `governance-risk-score`, `evidence-export` vorhanden; Zusammenführung fehlt | ein Adapter, jede Zahl mit definierter Metrik, `—` statt Platzhalter |

@@ -16,6 +16,32 @@ interface IntegrationSettingsProps {
   accessToken: string;
 }
 
+/**
+ * Zufall für den OAuth-`state`.
+ *
+ * Der `state` ist die CSRF-Absicherung des Flows — er muss unvorhersagbar
+ * sein, sonst lässt sich der Rücksprung fälschen. Vorher stand an beiden
+ * Stellen `Math.random().toString(36).substring(7)`: schwache Quelle, und
+ * über 20.000 Ziehungen gemessen nur 3 bis 9 Zeichen lang.
+ *
+ * Bewusst **kein** Rückfall auf `Math.random()`. Ein stiller Wechsel auf
+ * schwachen Zufall wäre genau die Lücke, die hier geschlossen wird. Fehlt
+ * die Krypto-API, wirft diese Funktion — beide Aufrufer fangen das bereits
+ * in ihrem `try/catch` ab und zeigen eine Fehlermeldung. Der Wurf passiert
+ * vor `window.location.href`, es wird also nicht weitergeleitet.
+ */
+function oauthState(byteLength = 32): string {
+  const source = globalThis.crypto;
+  if (!source?.getRandomValues) {
+    throw new Error(
+      'Dieser Browser stellt keine sichere Zufallsquelle bereit. Die Verbindung wurde abgebrochen.',
+    );
+  }
+  const buffer = new Uint8Array(byteLength);
+  source.getRandomValues(buffer);
+  return Array.from(buffer, (b) => b.toString(16).padStart(2, '0')).join('');
+}
+
 export function IntegrationSettings({ tenantId, accessToken }: IntegrationSettingsProps) {
   const [integrations, setIntegrations] = useState<Integration[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -52,7 +78,7 @@ export function IntegrationSettings({ tenantId, accessToken }: IntegrationSettin
   const handleConnectStripe = async () => {
     try {
       // Redirect to Stripe OAuth flow
-      const state = Math.random().toString(36).substring(7);
+      const state = oauthState();
       sessionStorage.setItem('stripe_oauth_state', state);
 
       window.location.href = `https://connect.stripe.com/oauth/authorize?client_id=${import.meta.env.VITE_STRIPE_CONNECT_ID}&state=${state}&stripe_user[email]=${encodeURIComponent(tenantId)}&response_type=code`;
@@ -64,7 +90,7 @@ export function IntegrationSettings({ tenantId, accessToken }: IntegrationSettin
   const handleConnectGoogleAnalytics = async () => {
     try {
       // Redirect to Google OAuth flow
-      const state = Math.random().toString(36).substring(7);
+      const state = oauthState();
       sessionStorage.setItem('ga_oauth_state', state);
 
       const scope = encodeURIComponent('https://www.googleapis.com/auth/analytics.readonly');

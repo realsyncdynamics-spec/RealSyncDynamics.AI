@@ -183,8 +183,15 @@ describe('State Effects', () => {
     const growthStep = getFlowStepById('pricing.checkoutGrowth');
     expect(growthStep?.stateEffect?.selectedPlan).toBe('growth');
 
-    const agencyStep = getFlowStepById('pricing.checkoutAgency');
-    expect(agencyStep?.stateEffect?.selectedPlan).toBe('agency');
+    // COMMERCIAL-SSOT: temporary production hotfix.
+    // Canonical source migration tracked in Phase 2.
+    // Der Agency-Schritt ist seit AP2 durch Enterprise ersetzt: Agency ist
+    // stillgelegt, und der Schritt fuehrte mit `external: true` in einen
+    // Stripe-Checkout, den `stripe-checkout` mit PLAN_RETIRED abweist.
+    const enterpriseStep = getFlowStepById('pricing.checkoutEnterprise');
+    expect(enterpriseStep?.stateEffect?.selectedPlan).toBe('enterprise');
+    // Der stillgelegte Schritt darf nicht wieder auftauchen.
+    expect(getFlowStepById('pricing.checkoutAgency')).toBeUndefined();
   });
 
   it('should mark checkout status transitions', () => {

@@ -21,6 +21,13 @@ jobs:
         run: npm run lint
       - name: Edge Function syntax
         run: npm run check:edge-syntax
+      # Syntaktisch fehlerfreier Code kann trotzdem beim ersten Request
+      # sterben: `gdpr-audit` rief sechs Hilfsfunktionen auf, die es nie gab,
+      # deployte sauber und antwortete dann monatelang mit HTTP 500 — der
+      # kostenlose Audit, der wichtigste CTA der Startseite. Aufgefallen ist
+      # es erst bei einem Browser-Durchlauf gegen die Live-Seite.
+      - name: Edge Function references
+        run: npm run check:edge-refs
       # Die kommerzielle Wahrheit steht in shared/pricing.ts. Alles Abgeleitete
       # — der Deno-Zwilling, die Plan-Katalog-Migration, die Kontingente —
       # muss daraus folgen und darf keine zweite Wahrheit daneben bilden.
@@ -34,6 +41,16 @@ jobs:
         run: npm run check:pricing
       - name: Kontingent-Kanonizitaet (Ratsche gegen neue Divergenzen)
         run: npm run check:limits
+      # Ein oeffentlich zugesicherter Preis ist ein Angebot und darf nur dort
+      # stehen, wo der Kaufpfad ihn einloesen kann. Dreimal stand ein Betrag
+      # oeffentlich, den `stripe-checkout` nicht einloesen konnte: Enterprise
+      # 1.249 € (Sentinel statt Stripe-Price), Agency 699 € und Partner
+      # 1.999 € (seit AP2 stillgelegt, PLAN_RETIRED). Zweimal war die Stelle
+      # per Literal-Grep nicht auffindbar — das JSON-LD steckt im
+      # HTML-Template, der Betrag im ROI-Rechner kam aus der SSoT. Deshalb
+      # prueft der Guard den Betrag, nicht den Plannamen.
+      - name: Angebots-Sicherheit (Ratsche gegen Preise ohne Kaufpfad)
+        run: npm run check:offer-prices
       - name: Unit tests
         run: npm test
       - name: Build
@@ -67,6 +84,14 @@ jobs:
       - name: Bootstrap Supabase-equivalent stubs
         run: |
           psql -v ON_ERROR_STOP=1 <<'SQL'
+          -- `extensions` MUSS vor pgcrypto angelegt werden: Migrationen und
+          -- RPCs rufen extensions.digest(...) auf. Wird pgcrypto zuerst nach
+          -- public installiert, ist ein spaeteres "WITH SCHEMA extensions"
+          -- ein stiller No-op ("already exists, skipping") — extensions.digest
+          -- existiert dann nie und DB-Tests scheitern an der Umgebung statt
+          -- an echten Befunden.
+          CREATE SCHEMA IF NOT EXISTS extensions;
+          CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA extensions;
           CREATE EXTENSION IF NOT EXISTS pgcrypto;
           CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
           CREATE EXTENSION IF NOT EXISTS vector;
@@ -77,10 +102,38 @@ jobs:
           GRANT anon TO authenticator;
           GRANT authenticated TO authenticator;
           GRANT service_role TO authenticator;
+          -- Supabases Default-Privileges — und zwar VOR den Migrationen.
+          -- In einem echten Projekt bekommt jede neue Tabelle in `public` bei
+          -- ihrer Erzeugung Rechte fuer anon/authenticated; erst darauf wirken
+          -- die REVOKEs, die einzelne Migrationen setzen. Wer die Rechte
+          -- stattdessen NACH allen Migrationen pauschal vergibt, macht genau
+          -- diese REVOKEs wieder auf (gemessen 2026-09-06: zwoelf Stueck,
+          -- darunter die sechs auf `mv_cost_*` / `mv_tenant_risk_*` und die
+          -- Spaltenrechte, die `m365_connections.credentials_enc` schuetzen).
+          -- Das CI-Schema war damit durchlaessiger als das, was die
+          -- Migrationen erzeugen — ein Test, der eine Sperre nachweist, fiel
+          -- dort um, ohne dass an der Sperre etwas falsch war.
+          ALTER DEFAULT PRIVILEGES IN SCHEMA public
+            GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO anon, authenticated;
+          ALTER DEFAULT PRIVILEGES IN SCHEMA public
+            GRANT ALL ON TABLES TO service_role;
+          ALTER DEFAULT PRIVILEGES IN SCHEMA public
+            GRANT USAGE, SELECT ON SEQUENCES TO anon, authenticated, service_role;
           CREATE SCHEMA IF NOT EXISTS auth;
           CREATE TABLE IF NOT EXISTS auth.users (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), email TEXT UNIQUE, raw_user_meta_data JSONB, created_at TIMESTAMPTZ DEFAULT now());
-          CREATE OR REPLACE FUNCTION auth.uid() RETURNS UUID LANGUAGE sql STABLE AS 'SELECT NULL::uuid';
-          CREATE OR REPLACE FUNCTION auth.role() RETURNS TEXT LANGUAGE sql STABLE AS 'SELECT $$authenticated$$::text';
+          -- auth.uid()/auth.role() MUESSEN die JWT-Claims lesen, nicht konstant
+          -- antworten. Der vorherige Stub lieferte hart NULL::uuid. Damit waere
+          -- is_tenant_member() immer false, jede RLS-Policy haette immer
+          -- gesperrt, und ein Isolationstest waere gruen geworden, ohne
+          -- irgendetwas zu pruefen — die gefaehrlichste Sorte Test.
+          -- Gleiche Semantik wie scripts/test-db/bootstrap.sql, das es lokal
+          -- bereits richtig macht.
+          CREATE OR REPLACE FUNCTION auth.uid() RETURNS UUID LANGUAGE sql STABLE AS $fn$
+            SELECT NULLIF(current_setting('request.jwt.claims', true)::jsonb ->> 'sub', '')::uuid
+          $fn$;
+          CREATE OR REPLACE FUNCTION auth.role() RETURNS TEXT LANGUAGE sql STABLE AS $fn$
+            SELECT COALESCE(NULLIF(current_setting('request.jwt.claims', true)::jsonb ->> 'role', ''), 'authenticated')
+          $fn$;
           CREATE SCHEMA IF NOT EXISTS vault;
           CREATE TABLE IF NOT EXISTS vault.secrets (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), name TEXT UNIQUE, secret TEXT, description TEXT, created_at TIMESTAMPTZ DEFAULT now(), updated_at TIMESTAMPTZ DEFAULT now());
           CREATE OR REPLACE VIEW vault.decrypted_secrets AS SELECT id, name, secret AS decrypted_secret, description, created_at, updated_at FROM vault.secrets;
@@ -105,6 +158,141 @@ jobs:
             psql -v ON_ERROR_STOP=1 -f "$f"
             echo "::endgroup::"
           done
+      # Supabase-aequivalente Default-Privileges. In einem echten Projekt haben
+      # anon/authenticated Tabellenrechte in `public` — genau deshalb ist eine
+      # Tabelle ohne RLS dort offen. Ohne diese GRANTs scheitert ein RLS-Test
+      # an "permission denied" statt an einer Policy und beweist nichts ueber
+      # die Mandantentrennung.
+      #
+      # ⚠️ NUR NOCH EIN NETZ. Den Regelfall erledigen die Default-Privileges
+      # oben, gesetzt VOR den Migrationen — so wie in Supabase. Was hier bleibt,
+      # faengt Objekte ab, die ohne jede ACL dastehen (etwa weil sie vor den
+      # Default-Privileges entstanden sind).
+      #
+      # `relacl IS NULL` heisst: Diesem Objekt hat noch niemand Rechte gegeben
+      # oder genommen. Wo eine Migration entschieden hat, bleibt ihre
+      # Entscheidung stehen — ein pauschales `GRANT ... ON ALL TABLES` an
+      # dieser Stelle haette sie ueberschrieben.
+      - name: Grant Supabase-equivalent table privileges
+        run: |
+          psql -v ON_ERROR_STOP=1 <<'SQL'
+          GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role;
+          DO $$
+          DECLARE r record;
+          BEGIN
+            FOR r IN
+              SELECT c.oid::regclass AS ref
+              FROM pg_class c
+              JOIN pg_namespace n ON n.oid = c.relnamespace
+              WHERE n.nspname = 'public'
+                AND c.relkind IN ('r', 'p', 'v', 'f', 'm')
+                AND c.relacl IS NULL
+            LOOP
+              EXECUTE format('GRANT SELECT, INSERT, UPDATE, DELETE ON %s TO anon, authenticated', r.ref);
+              EXECUTE format('GRANT ALL ON %s TO service_role', r.ref);
+            END LOOP;
+          END $$;
+          -- service_role ist der Server-Weg und umgeht RLS ohnehin; wo eine
+          -- Migration ihm bereits Rechte gegeben hat, ist das gewollt.
+          GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated, service_role;
+
+          -- MATERIALISIERTE SICHTEN: fuer anon und authenticated gesperrt.
+          --
+          -- Am 2026-09-06 gegen das Live-Projekt gemessen (pg_class.relacl):
+          -- Dort tragen ALLE ACHT Matviews in `public` genau
+          -- {postgres, service_role} — auch die beiden, die keine Migration je
+          -- angefasst hat. Auf RLS ist bei ihnen kein Verlass: Eine
+          -- materialisierte Sicht kennt keine Policies, ihr Inhalt ist die
+          -- fertige Aggregation ueber alle Mandanten. Der Zugang laeuft
+          -- deshalb ausschliesslich ueber die `v_*`-Sichten davor.
+          --
+          -- Lokal vergibt `ALTER DEFAULT PRIVILEGES ... ON TABLES` sie an
+          -- anon/authenticated mit, in Produktion nicht. Diese Zeilen ziehen
+          -- CI auf den gemessenen Produktionsstand — sonst waere das
+          -- CI-Schema durchlaessiger als das echte, und
+          -- `mv-aggregates.db.test.ts` („authenticated cannot read bare MV")
+          -- fiele um, ohne dass an der Sperre etwas falsch waere.
+          --
+          -- GRUNDSATZ: Das CI-Schema darf strenger sein als Produktion,
+          -- niemals lockerer. Ein Test, der eine Sperre nachweist, ist sonst
+          -- nichts wert.
+          DO $$
+          DECLARE r record;
+          BEGIN
+            FOR r IN
+              SELECT c.oid::regclass AS ref
+              FROM pg_class c
+              JOIN pg_namespace n ON n.oid = c.relnamespace
+              WHERE n.nspname = 'public' AND c.relkind = 'm'
+            LOOP
+              EXECUTE format('REVOKE ALL ON %s FROM anon, authenticated', r.ref);
+            END LOOP;
+          END $$;
+          SQL
+
+      # Bis hierher validierte CI nur, dass die Migrationen fehlerfrei
+      # DURCHLAUFEN — nicht, ob das entstandene Schema die Mandanten trennt.
+      # Die DB-Integrationstests sprangen mangels TEST_DB_URL still ab. Genau
+      # so konnten eine gruene Suite und offene Luecken nebeneinander bestehen.
+      #
+      # REQUIRE_DB_TESTS=1 macht das Ueberspringen hier zum Fehler: Fehlt die
+      # Datenbank, faellt der Job laut aus, statt leise nichts zu pruefen.
+      #
+      # Der db-Job installierte bisher keine Node-Abhaengigkeiten — er brauchte
+      # nur psql. Ohne node_modules zieht `npx vitest` das Paket zwar nach,
+      # scheitert dann aber daran, dass vitest.config.ts `vitest/config` und
+      # `@vitejs/plugin-react` importiert (ERR_MODULE_NOT_FOUND).
+      # Deshalb hier, und bewusst NACH den Migrationen: schlaegt eine Migration
+      # fehl, faellt der Job sofort, ohne erst zu installieren.
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '20'
+          cache: npm
+      - name: Install dependencies (fuer die DB-Tests)
+        run: npm ci
+
+      # Die Zusagen des Governance OS, die in der DATENBANK stehen und nicht
+      # im Code — jede von ihnen deckt einen Weg ab, eine Schranke zu
+      # umgehen, der mit `service_role` offenstuende:
+      #
+      #   connector-registry     Die Durchsetzbarkeits-Klasse laesst sich
+      #                          nicht faelschen (BEFORE-Trigger ueberschreibt).
+      #   publish-gate-policy    Ein Ausfall des PDP kann nicht als
+      #                          Konformitaet gespeichert werden (§7 G3).
+      #   pdp-shadow-channels    Der Beobachtungsbetrieb kann seine Zeilen
+      #                          ueberhaupt schreiben. Vor dem 2026-09-04 wies
+      #                          die CHECK-Bedingung `siteos_publish` ab — und
+      #                          weil der Insert im Hintergrund laeuft, haette
+      #                          das niemand bemerkt.
+      #
+      # JETZT DAS GANZE VERZEICHNIS, mit genau einer benannten Ausnahme.
+      #
+      # Bis zum 2026-09-06 standen hier fuenf Dateien namentlich, weil 7 der 23
+      # Dateien gegen dieses voll migrierte Schema scheiterten. Sie scheiterten
+      # nicht an Befunden, sondern an Annahmen des minimalen Harnischs: eine
+      # feste Vorgabe-Mailadresse gegen `auth.users.email UNIQUE`, ein Insert
+      # in `public.app_secrets` statt in Vault, ein leerer Produktkatalog, ein
+      # Trigger, der jedem neuen Mandanten schon ein Abo anlegt. Alle behoben;
+      # 25 von 26 Dateien laufen gegen dieses Schema. Namentlich zu listen
+      # hiesse ab jetzt, jede neue Datei zu vergessen.
+      #
+      # AUSGENOMMEN: entitlement-grants.db.test.ts. Sie bildet bewusst den
+      # Produktionsstand vom 2026-08-08 nach (`free_tier` existierte nicht,
+      # kein UNIQUE auf subscriptions.tenant_id) und bewacht die Regression
+      # eines Fallbacks, den es so nicht mehr gibt. Sie umzuschreiben hiesse,
+      # diese Regression wegzuwerfen — die Begruendung steht im Kopf der
+      # Datei. Ausgenommen und benannt, nicht still uebersprungen; ihre
+      # heutigen Zusagen deckt addon-entitlements.db.test.ts ab.
+      - name: DB-Integrationstests gegen das voll migrierte Schema
+        env:
+          TEST_DB_URL: postgresql://postgres:postgres@localhost:5432/postgres
+          REQUIRE_DB_TESTS: '1'
+        run: |
+          set -e
+          dateien=$(ls test/runtime/db/*.db.test.ts | grep -v 'entitlement-grants.db.test.ts')
+          echo "$dateien"
+          npx vitest run $dateien --no-file-parallelism
+
       - name: Verify migrations are append-only
         if: github.event_name == 'pull_request' && !contains(github.event.pull_request.title, '[hotfix]')
         run: |

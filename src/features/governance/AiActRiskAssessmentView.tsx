@@ -72,7 +72,7 @@ function Inner() {
     <div className="min-h-screen bg-obsidian-950 text-titanium-100">
       <header className="h-14 border-b border-titanium-900 bg-obsidian-900 flex items-center justify-between px-4">
         <div className="flex items-center gap-3">
-          <Link to="/app/governance" className="p-1.5 rounded-none hover:bg-obsidian-800 text-titanium-400 hover:text-titanium-200">
+          <Link to="/app/dashboard" className="p-1.5 rounded-none hover:bg-obsidian-800 text-titanium-400 hover:text-titanium-200">
             <ArrowLeft className="h-4 w-4" />
           </Link>
           <div className="flex items-center gap-2.5">
@@ -166,6 +166,23 @@ function Inner() {
               </span>
               <ChevronRight className="h-5 w-5" />
             </button>
+
+            {/* Industrial OT Vorprüfung */}
+            <Link
+              to="/app/governance/industrial-ot"
+              className="w-full border border-titanium-900 bg-obsidian-900 hover:bg-obsidian-800 text-titanium-100 text-sm font-semibold px-6 py-4 rounded-none flex items-center justify-between transition-colors"
+            >
+              <span className="flex items-center gap-3">
+                <FileText className="h-5 w-5 text-security-400" />
+                <span className="leading-tight">
+                  Industrial OT — Vorprüfung für industrielle KI
+                  <span className="block text-[11px] text-titanium-400 font-medium">
+                    Sicherheitsbauteile, kritische Infrastruktur, Beschäftigtenüberwachung · Art. 5 / 6, Anhang I/III
+                  </span>
+                </span>
+              </span>
+              <ChevronRight className="h-5 w-5" />
+            </Link>
 
             {/* Existing Assessments */}
             {assessments.length > 0 && (

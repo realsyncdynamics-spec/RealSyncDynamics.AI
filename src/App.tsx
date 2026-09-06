@@ -318,6 +318,12 @@ const GovernanceEventDetailView = lazy(() => import('./features/governance/Event
 const GovernanceAssetDetailView = lazy(() => import('./features/governance/AssetDetailView').then((m) => ({ default: m.AssetDetailView })));
 const GovernanceApprovalsView = lazy(() => import('./features/governance/ApprovalsView').then((m) => ({ default: m.ApprovalsView })));
 const GovernanceAdminLogView = lazy(() => import('./features/governance/AdminLogView').then((m) => ({ default: m.AdminLogView })));
+const GovernanceApprovalGatesView = lazy(() => import('./features/governance/ApprovalGatesView').then((m) => ({ default: m.ApprovalGatesView })));
+const GovernanceHomeView = lazy(() => import('./features/governance/GovernanceHomeView').then((m) => ({ default: m.GovernanceHomeView })));
+const GovernanceEvidenceIntegrityView = lazy(() => import('./features/governance/EvidenceIntegrityView').then((m) => ({ default: m.EvidenceIntegrityView })));
+const GovernanceConnectorRegistryView = lazy(() => import('./features/governance/ConnectorRegistryView').then((m) => ({ default: m.ConnectorRegistryView })));
+const GovernanceShadowReadinessView = lazy(() => import('./features/governance/ShadowReadinessView').then((m) => ({ default: m.ShadowReadinessView })));
+const GovernanceMicrosoft365View = lazy(() => import('./features/governance/Microsoft365View').then((m) => ({ default: m.Microsoft365View })));
 const GovernancePolicyTemplatesView = lazy(() => import('./features/governance/PolicyTemplatesView').then((m) => ({ default: m.PolicyTemplatesView })));
 const GovernanceComplianceReportView = lazy(() => import('./features/governance/ComplianceReportView').then((m) => ({ default: m.ComplianceReportView })));
 const GovernanceDpiasView = lazy(() => import('./features/governance/DpiasView').then((m) => ({ default: m.DpiasView })));
@@ -750,7 +756,7 @@ function RoutesWithTracking() {
       <Route path="/app/intelligence" element={<AppGate><ProtectedRoute><DashboardView /></ProtectedRoute></AppGate>} />
       {/* Liest tenant_users/monitored_domains — Tenant-Daten, daher auth-gegatet. */}
       <Route path="/app/risk" element={<AppGate><ProtectedRoute><RiskDashboard /></ProtectedRoute></AppGate>} />
-      {/* DashboardRouter conditionally shows FreeTierDashboard or CeoCockpitView. */}
+      {/* DashboardRouter rendert GovernanceAiWorkspace; die Plan-Unterscheidung liegt dort, nicht in der Route. */}
       <Route path="/app/dashboard" element={<AppGate><GovernanceBrowserShell><DashboardRouter /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/cockpit/brief" element={<AppGate><CeoBriefPrintView /></AppGate>} />
       <Route path="/app/seo-marketing-dashboard" element={<AppGate><GovernanceBrowserShell><SEOMarketingDashboard /></GovernanceBrowserShell></AppGate>} />
@@ -848,6 +854,12 @@ function RoutesWithTracking() {
       <Route path="/app/assets/:assetId" element={<GovernanceBrowserShell><GovernanceAssetDetailView /></GovernanceBrowserShell>} />
       <Route path="/app/approvals" element={<GovernanceBrowserShell><GovernanceApprovalsView /></GovernanceBrowserShell>} />
       <Route path="/app/admin-log" element={<GovernanceBrowserShell><GovernanceAdminLogView /></GovernanceBrowserShell>} />
+      <Route path="/app/governance/gates" element={<GovernanceBrowserShell><GovernanceApprovalGatesView /></GovernanceBrowserShell>} />
+      <Route path="/app/governance/start" element={<GovernanceBrowserShell><GovernanceHomeView /></GovernanceBrowserShell>} />
+      <Route path="/app/governance/evidence" element={<GovernanceBrowserShell><GovernanceEvidenceIntegrityView /></GovernanceBrowserShell>} />
+      <Route path="/app/governance/connectors" element={<GovernanceBrowserShell><GovernanceConnectorRegistryView /></GovernanceBrowserShell>} />
+      <Route path="/app/governance/microsoft365" element={<GovernanceBrowserShell><GovernanceMicrosoft365View /></GovernanceBrowserShell>} />
+      <Route path="/app/governance/shadow" element={<GovernanceBrowserShell><GovernanceShadowReadinessView /></GovernanceBrowserShell>} />
       <Route path="/app/policies/templates" element={<GovernanceBrowserShell><GovernancePolicyTemplatesView /></GovernanceBrowserShell>} />
       <Route path="/app/connectors" element={<GovernanceBrowserShell><GovernanceConnectorsView /></GovernanceBrowserShell>} />
       <Route path="/app/costs" element={<GovernanceBrowserShell><GovernanceCostTrackingView /></GovernanceBrowserShell>} />
@@ -1040,100 +1052,103 @@ function RoutesWithTracking() {
       <Route path="/os/welcome" element={<EnterpriseWelcomeWizardPage />} />
       <Route path="/os/datenschutz" element={<EnterpriseDatenschutzPage />} />
       <Route path="/os/impressum" element={<EnterpriseImpressumPage />} />
+      {/* Freigabe 2026-09-01 (CLAUDE.md §10): /os/app/* hatte keinen
+          Auth-Wrapper. AppGate ist additiv und schickt Unangemeldete nach
+          /welcome?next=… — derselbe Weg wie für /app/*. */}
       <Route
         path="/os/app"
         element={
-          <EnterpriseAppShell title="Home" breadcrumb={['Übersicht']}>
+          <AppGate><EnterpriseAppShell title="Home" breadcrumb={['Übersicht']}>
             <EnterpriseAppHomePage />
-          </EnterpriseAppShell>
+          </EnterpriseAppShell></AppGate>
         }
       />
       <Route
         path="/os/app/websites"
         element={
-          <EnterpriseAppShell title="Websites" breadcrumb={['Übersicht']}>
+          <AppGate><EnterpriseAppShell title="Websites" breadcrumb={['Übersicht']}>
             <EnterpriseWebsitesPage />
-          </EnterpriseAppShell>
+          </EnterpriseAppShell></AppGate>
         }
       />
       <Route
         path="/os/app/risks"
         element={
-          <EnterpriseAppShell title="Risiken" breadcrumb={['Übersicht']}>
+          <AppGate><EnterpriseAppShell title="Risiken" breadcrumb={['Übersicht']}>
             <EnterpriseRisksPage />
-          </EnterpriseAppShell>
+          </EnterpriseAppShell></AppGate>
         }
       />
       <Route
         path="/os/app/compliance"
         element={
-          <EnterpriseAppShell title="Compliance" breadcrumb={['Governance']}>
+          <AppGate><EnterpriseAppShell title="Compliance" breadcrumb={['Governance']}>
             <EnterpriseCompliancePage />
-          </EnterpriseAppShell>
+          </EnterpriseAppShell></AppGate>
         }
       />
       <Route
         path="/os/app/evidence"
         element={
-          <EnterpriseAppShell title="Evidence Vault" breadcrumb={['Governance']}>
+          <AppGate><EnterpriseAppShell title="Evidence Vault" breadcrumb={['Governance']}>
             <EnterpriseEvidencePage />
-          </EnterpriseAppShell>
+          </EnterpriseAppShell></AppGate>
         }
       />
       <Route
         path="/os/app/monitoring"
         element={
-          <EnterpriseAppShell title="Monitoring" breadcrumb={['Governance']}>
+          <AppGate><EnterpriseAppShell title="Monitoring" breadcrumb={['Governance']}>
             <EnterpriseMonitoringPage />
-          </EnterpriseAppShell>
+          </EnterpriseAppShell></AppGate>
         }
       />
       <Route
         path="/os/app/ai-usecases"
         element={
-          <EnterpriseAppShell title="AI Use Cases" breadcrumb={['Governance']}>
+          <AppGate><EnterpriseAppShell title="AI Use Cases" breadcrumb={['Governance']}>
             <EnterprisePlaceholderPage title="AI Use Case Registry" description="Die vollständige Registry aller KI-Systeme inkl. Risikoklassifizierung nach EU AI Act folgt in Phase 3." />
-          </EnterpriseAppShell>
+          </EnterpriseAppShell></AppGate>
         }
       />
       <Route
         path="/os/app/agents"
         element={
-          <EnterpriseAppShell title="Agenten" breadcrumb={['Governance']}>
+          <AppGate><EnterpriseAppShell title="Agenten" breadcrumb={['Governance']}>
             <EnterprisePlaceholderPage title="Agenten" description="Die vollständige Agent-Verwaltung mit Konfiguration, Laufzeiten und Logs folgt in Phase 3." />
-          </EnterpriseAppShell>
+          </EnterpriseAppShell></AppGate>
         }
       />
       <Route
         path="/os/app/reports"
         element={
-          <EnterpriseAppShell title="Reports" breadcrumb={['Governance']}>
+          <AppGate><EnterpriseAppShell title="Reports" breadcrumb={['Governance']}>
             <EnterprisePlaceholderPage title="Audit Reports" description="Die vollständige Report-Bibliothek mit Export- und Freigabe-Workflows folgt in Phase 3." />
-          </EnterpriseAppShell>
+          </EnterpriseAppShell></AppGate>
         }
       />
       <Route
         path="/os/app/team"
         element={
-          <EnterpriseAppShell title="Team" breadcrumb={['Organisation']}>
+          <AppGate><EnterpriseAppShell title="Team" breadcrumb={['Organisation']}>
             <EnterprisePlaceholderPage title="Team & Rollen" description="Die vollständige Team-, Rollen- und Berechtigungsverwaltung folgt in Phase 3." />
-          </EnterpriseAppShell>
+          </EnterpriseAppShell></AppGate>
         }
       />
       <Route
         path="/os/app/billing"
         element={
-          <EnterpriseAppShell title="Billing" breadcrumb={['Organisation']}>
+          <AppGate><EnterpriseAppShell title="Billing" breadcrumb={['Organisation']}>
             <EnterprisePlaceholderPage title="Billing" description="Die vollständige Abrechnungs- und Plan-Verwaltung folgt in Phase 3." />
-          </EnterpriseAppShell>
+          </EnterpriseAppShell></AppGate>
         }
       />
       <Route
         path="/os/app/settings"
         element={
-          <EnterpriseAppShell title="Einstellungen" breadcrumb={['Organisation']}>
+          <AppGate><EnterpriseAppShell title="Einstellungen" breadcrumb={['Organisation']}>
             <EnterprisePlaceholderPage title="Einstellungen" description="Die vollständigen Organisations- und Account-Einstellungen folgen in Phase 3." />
-          </EnterpriseAppShell>
+          </EnterpriseAppShell></AppGate>
         }
       />
 

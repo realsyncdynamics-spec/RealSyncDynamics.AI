@@ -5,6 +5,7 @@ import { claimPendingAudit } from '../../features/audit/pendingAudit';
 import { useTenant } from '../../core/access/TenantProvider';
 import { postEdgeFunction } from '../../lib/edgeFunction';
 import { isEdgeFunctionInProduction } from '../../config/production-edge-functions';
+import { SECTORS, type SectorId } from '../../config/sectors';
 
 /**
  * Die beiden Functions, die diesen Schritt tragen.
@@ -16,15 +17,7 @@ import { isEdgeFunctionInProduction } from '../../config/production-edge-functio
  */
 const SETUP_FUNCTIONS = ['save-company-profile', 'create-trial-subscription'] as const;
 
-type Sector = 'saas' | 'agency' | 'healthcare' | 'public_sector' | 'generic';
-
-const SECTORS = [
-  { id: 'saas' as Sector, label: 'SaaS / Tech Startup', description: 'Software-as-a-Service Produkte' },
-  { id: 'agency' as Sector, label: 'Agentur', description: 'Marketing-, Web- oder Digital-Agentur' },
-  { id: 'healthcare' as Sector, label: 'Healthcare', description: 'Medizin, Apotheken, Praxen' },
-  { id: 'public_sector' as Sector, label: 'Öffentliche Einrichtung', description: 'Behörde, öffentliche Organisation' },
-  { id: 'generic' as Sector, label: 'Sonstiges', description: 'Andere Branchen' },
-];
+type Sector = SectorId;
 
 const CONTEXT_QUESTIONS = [
   { id: 'team_size', label: 'Team-Größe', options: ['1-5 Personen', '6-20 Personen', '21-100 Personen', '100+ Personen'] },

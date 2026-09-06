@@ -5,6 +5,7 @@
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
+import { gateFeature, EntitlementError } from '../_shared/entitlements.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
@@ -53,6 +54,16 @@ Deno.serve(async (req) => {
   const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
     auth: { persistSession: false },
   });
+
+  // AP9 Welle 4: Der Bericht ist ein Export — `compliance.export` (ab Starter).
+  try {
+    await gateFeature(admin, body.tenant_id, 'compliance.export');
+  } catch (e) {
+    if (e instanceof EntitlementError) {
+      return jsonError(403, 'ENTITLEMENT_MISSING', 'Compliance-Exporte sind im aktuellen Plan nicht enthalten (compliance.export) — ab Starter.');
+    }
+    throw e;
+  }
 
   try {
     // 1. Create audit report (or find existing)

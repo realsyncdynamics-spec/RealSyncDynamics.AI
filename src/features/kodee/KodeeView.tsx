@@ -83,6 +83,8 @@ export function KodeeView() {
         prompt: text,
         provider,
         systemPrompt: KODEE_PERSONA,
+        feature: 'kodee_chat',
+        tenantId: activeTenantId,
       });
       if (!res.success) throw new Error(res.error || 'Gateway-Fehler');
       setMessages([...next, { role: 'kodee', text: res.modelOutput || '…', status: 'success' }]);

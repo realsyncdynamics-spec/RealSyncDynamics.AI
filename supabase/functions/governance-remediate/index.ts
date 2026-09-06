@@ -15,8 +15,9 @@
 // Never auto-applies. Operator copies snippet from the UI and applies
 // in their codebase, then clicks "Mark applied".
 
-import { createClient } from 'jsr:@supabase/supabase-js@2';
+import { createClient, type SupabaseClient } from 'jsr:@supabase/supabase-js@2';
 import { audit } from '../_shared/auditLog.ts';
+import { gateFeature, EntitlementError } from '../_shared/entitlements.ts';
 import { renderTemplate, KNOWN_PATTERNS, type Pattern } from '../_shared/remediation-templates.ts';
 import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 
@@ -109,6 +110,19 @@ async function handleGenerate(admin: SupabaseAdminClient, userId: string, userEm
   }
   if (!(await isOwnerOrAdmin(admin, userId, tenant_id))) {
     return jsonError(403, 'FORBIDDEN', 'must be owner or admin');
+  }
+
+  // AP9 Welle 4: Snippets erzeugen nur mit `fix.snippets` (ab Growth) —
+  // derselbe Key wie das Zugriffsregister für /app/remediation. Auflisten,
+  // „angewendet" markieren, verwerfen und ersetzen bleiben frei: Was ein
+  // Kunde schon hat, darf er weiter verwalten.
+  try {
+    await gateFeature(admin as unknown as SupabaseClient, tenant_id, 'fix.snippets');
+  } catch (e) {
+    if (e instanceof EntitlementError) {
+      return jsonError(403, 'ENTITLEMENT_MISSING', 'Fix-Snippets sind im aktuellen Plan nicht enthalten (fix.snippets) — ab Growth.');
+    }
+    throw e;
   }
 
   // Cross-tenant guard for asset_id.

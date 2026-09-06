@@ -10,4 +10,7 @@ COPY dist ./dist
 EXPOSE 3001
 ENV NODE_ENV=production
 
-CMD ["node", "dist/index.js"]
+# Der Pfad enthält apps/mcp-server/src, weil packages/evidence-chain
+# mitkompiliert wird und tsc die Ausgabe daher relativ zur Repo-Wurzel ablegt
+# (siehe tsconfig.json "rootDir").
+CMD ["node", "dist/apps/mcp-server/src/index.js"]

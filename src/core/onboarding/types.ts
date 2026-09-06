@@ -13,7 +13,12 @@ export type GovernanceDimension =
   | 'api_integration'       // API & webhook capabilities
   | 'industry_specifics';   // Industry-specific agents
 
-export type Sector = 'saas' | 'agency' | 'healthcare' | 'public_sector' | 'generic';
+// Branchen-Wertebereich liegt zentral in src/config/sectors.ts — dort steht
+// auch, warum Werte ergaenzt, aber nie entfernt werden duerfen. Alias statt
+// Re-Export, damit `Sector` auch in dieser Datei gebunden ist.
+import type { SectorId } from '../../config/sectors';
+
+export type Sector = SectorId;
 
 export interface ScanFinding {
   id: string;

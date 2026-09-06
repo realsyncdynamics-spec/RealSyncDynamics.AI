@@ -4,7 +4,7 @@ name: Drift Alert
 #
 # ## Warum es diesen Workflow gibt
 #
-# Die drei Drift-Guards funktionieren. Sie haben am 2026-08-30 nachweislich
+# Die Drift-Guards funktionieren. Sie haben am 2026-08-30 nachweislich
 # genau die Befunde gemeldet, die eine manuelle Messung am selben Tag noch
 # einmal gefunden hat — nur eben Tage früher:
 #
@@ -19,9 +19,16 @@ name: Drift Alert
 # handelt. Ein Issue landet dort, wo Arbeit ohnehin verwaltet wird, und bleibt
 # sichtbar, bis jemand es schließt.
 #
+# Seit dem 2026-09-06 haengt der `Cron Health Guard` mit an derselben
+# Zustellung. Er meldet keinen Repo-Prod-Drift, sondern registrierte
+# pg_cron-Jobs, die nicht durchlaufen — beim Anlegen 3629 Fehllaeufe an vier
+# Jobs seit dem 2026-08-12, die nirgends sichtbar waren. Anderer Befund,
+# gleiches Muster, gleicher Weg nach draußen; der Issue-Text unterscheidet
+# sich entsprechend.
+#
 # ## Warum als eigener Workflow statt als Schritt in den Guards
 #
-# `workflow_run` beobachtet die drei Guards von außen. Damit bleiben sie
+# `workflow_run` beobachtet die Guards von außen. Damit bleiben sie
 # unverändert — ihre Aufgabe ist Messen, nicht Melden. Ein Fehler in der
 # Benachrichtigung kann so auch keinen Guard rot färben und umgekehrt.
 #
@@ -34,7 +41,7 @@ name: Drift Alert
 #
 # Ein Guard, der nach einem roten Lauf wieder grün wird, räumt also selbst auf.
 #
-# ## Vierter Beobachter: „Pre-Deploy Check" auf main (seit 2026-09-05)
+# ## Beobachter „Pre-Deploy Check" auf main (seit 2026-09-05)
 #
 # Am 2026-09-02 vergaben #1178 und #1193 dieselbe Migrationsversion. Seit
 # #1203 läuft `pre-deploy-check.yml` auch bei Push nach main und wird bei
@@ -52,10 +59,12 @@ name: Drift Alert
 # auch für PR-Läufe. „Pre-Deploy Check" läuft aber bei jedem PR, der
 # Migrationen berührt. Ohne Filter würde ein roter PR-Lint ein Issue öffnen
 # und ein grüner PR-Lauf ein von main geöffnetes wieder schließen. Deshalb
-# zählt nur `head_branch == main`. Für die drei Drift-Guards ändert das
-# nichts: Ihre Scheduled-Läufe tragen ohnehin den Default-Branch. Ein
-# manueller Lauf auf einem anderen Branch erzeugt seither kein Issue mehr —
-# gewollt, denn er misst nicht den Stand, der zählt.
+# zählt nur `head_branch == main`. Dasselbe gilt für den `Cron Health
+# Guard`, der bei PRs an seinem Skript ebenfalls per `pull_request` läuft.
+# Für die Scheduled-Läufe aller Guards ändert das nichts: Sie tragen
+# ohnehin den Default-Branch. Ein manueller Lauf auf einem anderen Branch
+# erzeugt seither kein Issue mehr — gewollt, denn er misst nicht den
+# Stand, der zählt.
 
 on:
   workflow_run:
@@ -63,6 +72,7 @@ on:
       - Edge Function Drift Guard
       - Migration Drift Guard
       - Function ACL Drift Guard
+      - Cron Health Guard
       - Pre-Deploy Check
     types:
       - completed
@@ -76,8 +86,8 @@ jobs:
     name: Issue für Drift-Befund pflegen
     runs-on: ubuntu-latest
     # `skipped` und `cancelled` sind keine Befunde — nur echte Ergebnisse zählen.
-    # Und nur Läufe auf main: PR-Läufe von „Pre-Deploy Check" dürfen weder
-    # ein Issue öffnen noch eines schließen (siehe Kopf).
+    # Und nur Läufe auf main: PR-Läufe von „Pre-Deploy Check" und „Cron Health
+    # Guard" dürfen weder ein Issue öffnen noch eines schließen (siehe Kopf).
     if: >
       github.event.workflow_run.head_branch == 'main' &&
       (github.event.workflow_run.conclusion == 'failure' ||
@@ -178,7 +188,7 @@ jobs:
 
             // Der Lint meldet keinen Drift, sondern einen Stand von main, den
             // der Deploy nicht annehmen würde — deshalb ein eigener Text.
-            const body = isLint ? [
+            const lintBody = [
               `**${guard}** ist auf main fehlgeschlagen: ${link} (${when}).`,
               '',
               'Das heißt: **main ist in diesem Stand nicht deploybar.** Der Lint',
@@ -200,7 +210,44 @@ jobs:
               '3. Danach prüfen, ob der Deploy auf dem Merge-Commit grün ist',
               '',
               'Dieses Issue schließt sich selbst, sobald der Lint auf main wieder grün läuft.',
-            ].join('\n') : [
+            ].join('\n');
+
+            // Der Cron-Health-Guard meldet keinen Repo-Prod-Drift, sondern
+            // Jobs, die nicht durchlaufen. Derselbe Zustellweg, anderer Befund
+            // — ein Issue mit dem falschen Text schickt den Leser in die
+            // falsche Richtung.
+            const cron = guard === 'Cron Health Guard';
+
+            const cronBody = [
+              `Der Guard **${guard}** ist fehlgeschlagen: ${link} (${when}).`,
+              '',
+              'Das heißt: **Mindestens ein registrierter pg_cron-Job ist in seinem',
+              'letzten Lauf gescheitert.** Er steht in `cron.job`, er ist aktiv — und',
+              'er tut trotzdem nichts.',
+              '',
+              'Welche Jobs betroffen sind, mit welcher Meldung und seit wann, nennt',
+              'das Protokoll des Laufs. Der Guard gruppiert die Ausfälle nach ihrer',
+              'Meldung, weil meist **eine** fehlende Konfiguration viele Jobs',
+              'gleichzeitig lahmlegt.',
+              '',
+              '### Warum das zählt',
+              '',
+              'Ein Cron-Ausfall ist leise: Es bricht nichts, es passiert nur nichts.',
+              'Betroffen sind unter anderem der Scheduler (ab Growth verkauft), die',
+              'Governance-Sentinel-Schleife und der Memory-Decay aus RFC-003 — also',
+              'zugesagte Funktionen, nicht Nebenläufiges.',
+              '',
+              '### Was zu tun ist',
+              '',
+              '1. Protokoll des Laufs öffnen und die Meldung der betroffenen Jobs lesen',
+              '2. Fehlt ein Vault-Secret, legt es der Betreiber an:',
+              '   `docs/runbooks/cron-vault-secrets.md`',
+              '3. Ist es ein Fehler der aufgerufenen Edge Function, gehört er dorthin',
+              '',
+              'Dieses Issue schließt sich selbst, sobald der Guard wieder grün läuft.',
+            ].join('\n');
+
+            const driftBody = [
               `Der Guard **${guard}** ist fehlgeschlagen: ${link} (${when}).`,
               '',
               'Das heißt in der Regel: **Produktion weicht vom Repo ab.** Jemand hat',
@@ -229,6 +276,10 @@ jobs:
               '',
               'Dieses Issue schließt sich selbst, sobald der Guard wieder grün läuft.',
             ].join('\n');
+
+            // Drei Befundklassen, drei Texte: Deploy (Lint auf main), Cron,
+            // Drift. Die Auswahl steht hier, damit sie an einer Stelle lesbar ist.
+            const body = isLint ? lintBody : cron ? cronBody : driftBody;
 
             const { data: created } = await github.rest.issues.create({
               owner: context.repo.owner,

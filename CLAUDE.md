@@ -78,8 +78,10 @@ Menschen · Unternehmen · KI-Agenten · Daten · Entscheidungen.
 
 **Primär: Supabase Cloud (EU / Frankfurt)**
 - PostgreSQL 17 (Live-Projekt, Stand 2026-08-16)
-- **182 Edge Functions** im Repo (`supabase/functions/`, Deno/V8; `_shared` ist Bibliothek, keine Function) — **alle 182 deployt**, deckungsgleich in beide Richtungen. Nachgemessen am 2026-09-04 um 23:23 UTC per Management-API, nachdem `mcp-api-key-manager` (PR #1160) dazugekommen war; die Produktionsliste in `src/config/production-edge-functions.ts` hatte den Eintrag nicht, der Drift-Guard war deshalb rot. Zuvor gemessen am 2026-09-04 mit zwei unabhängigen Methoden (Management-API und HTTP-Probe je Slug), `comm` in beide Richtungen leer. `subscription-addons` stand hier bis dahin als „wartet auf den nächsten `deploy.yml`-Lauf“ — der Lauf war längst da, die Function antwortet mit `401`, nicht `404`. Siehe §5
-- **317 Migrations** (`supabase/migrations/`) — **317 verbucht**, neueste `20260904000300`, gemessen am 2026-09-04 um 23:39 UTC gegen `supabase_migrations.schema_migrations` nach dem grünen Deploy-Lauf 33929752213 (Merge von PR #1196, `main` @ `1c40003`); Versionen in beide Richtungen verglichen, `comm -23` und `comm -13` leer. Damit sind `20260904000300_canonical_plan_catalog` (#1196) und die beiden MCP-Migrationen `20260903120000`/`20260903120100` (#1160) verbucht. Frühere Stände dieser Zeile nannten 315/314 (17:50 UTC) bzw. 312 — jeweils der Stand vor dem folgenden Deploy. Zu den zwei nachgezogenen Out-of-Band-Migrationen siehe §5
+- **188 Edge Functions** im Repo (`supabase/functions/`, Deno/V8; `_shared` ist Bibliothek, keine Function) — gemessen am 2026-09-05 am **Merge-Baum** (`ls -d`, nicht addiert). 182 davon sind mains Bestand und **alle deployt**, deckungsgleich in beide Richtungen (mains Messung vom 2026-09-04 um 23:23 UTC per Management-API, nachdem `mcp-api-key-manager` aus PR #1160 in `src/config/production-edge-functions.ts` nachgetragen war — der Drift-Guard hatte recht). Die **sechs** aus diesem Branch warten auf den nächsten `deploy.yml`-Lauf: `governance-decide` und `integration-credentials` (P0), `governance-access` (P1-3), `evidence-anchor` (P1-6), `microsoft365-connect` und `microsoft365-audit-sync` (P2-2). Fünf davon stehen in `UNBACKED_CALLERS`; `microsoft365-audit-sync` bewusst nicht — es hat keinen Aufrufer im Frontend, sondern wird von pg_cron getriggert, und diese Liste führt Aufrufer ohne Backend, nicht Functions ohne Deploy
+- **327 Migrations** (`supabase/migrations/`) — gemessen am 2026-09-06 am Merge-Baum (`ls supabase/migrations/*.sql | wc -l`), keine doppelte Versionsnummer. 317 davon sind mains Bestand und **alle verbucht** (mains Messung vom 2026-09-04 um 23:39 UTC gegen `supabase_migrations.schema_migrations` nach dem grünen Deploy-Lauf 33929752213, `comm` in beide Richtungen leer). Die **neun** aus diesem Branch sind unverbucht: `20260824090000_pdp_snapshots_shadow`, `20260824110000_integration_credentials_hardening`, `20260824120000_org_subject_model_approval_gates`, `20260901090000_evidence_append_only_anchors`, `20260904100000_connector_registry` (P2-1), `20260904110000_publish_gate_policy_trail` (P2-3), `20260904120000_pdp_shadow_log_channels` (P2-3/P2-5) `20260905100000_microsoft365_connector` (P2-2) und `20260906100000_pdp_shadow_readiness` (Plan §7, Auswertung des Beobachtungsbetriebs). Die **zehnte unverbuchte** stammt aus PR #1221 und nicht aus dem Governance-OS-Branch: `20260906000000_reconcile_audit_evidence` — sie sortiert **vor** `20260906100000`, und keine Versionsnummer kommt doppelt vor (am Merge-Baum gezählt, nicht angenommen; genau diese Kollision hat am 2026-08-24 einen Deploy zerlegt, siehe §5). Siehe §3
+
+  > **Ein Befund vom Vorabend hat sich erledigt, und zwar richtig herum**: Hier stand am 2026-09-04 abends, mains Zeile nenne 315 Dateien bei 317 im Baum und seine unverbuchten seien drei statt einer. Das stimmte zum Zeitpunkt der Messung — inzwischen ist der Deploy gelaufen, und `main` hat um 23:39 UTC gegen das Ledger nachgemessen: 317 Dateien, 317 verbucht, in beide Richtungen verglichen. Die Differenz war also kein Fehler, sondern eine Momentaufnahme zwischen Merge und Deploy. Die Lehre bleibt trotzdem stehen, weil sie den Fall beschreibt, in dem sie *nicht* von selbst heilt: **Die Ledger-Messung altert mit jedem Merge, die Tree-Messung nicht** — wer eine Ledger-Zahl fortschreibt, ohne das Datum mitzulesen, behauptet einen Stand, den es so nicht mehr gibt.
 - RLS auf allen App-Tabellen · Realtime Subscriptions
 
 **Node/TypeScript-Services** (containerisiert — **kein Go im Repo**)
@@ -184,12 +186,38 @@ Service-Role umgeht RLS — deshalb **ausschließlich in Edge Functions**.
 > (`20260619000000`, `20260723000001`) fangen ihn mit `to_regclass`-Wächtern
 > ab und überspringen ihre Trigger und Policies mit `RAISE NOTICE`.
 >
-> **Ein Schreibpfad läuft weiterhin dagegen**: `worker/src/persistence.ts`
-> (`recordScreenshotEvidence`) insertet in `audit_evidence` und behandelt den
-> Fehler ausdrücklich als non-fatal — der Screenshot-Nachweis eines jeden
-> Audits geht also still verloren. Der Aufruf schlägt nicht fehl, er
-> protokolliert. Für ein Produkt, das Prüfpfad zusagt, ist das ein eigener
-> Befund; er ist hier vermerkt, aber nicht behoben.
+> **Behoben am 2026-09-06** durch `20260906000000_reconcile_audit_evidence.sql`
+> — additiv, idempotent, nach dem Muster von `20260822000000`. Sie legt
+> Tabelle, Indizes, RLS-Policy (`is_tenant_member`), die Append-only-Trigger,
+> den in `20260619000000` übersprungenen Aktivierungs-Trigger **und den
+> Storage-Bucket** an. Vor dem Merge vollständig gegen das Live-Schema
+> ausgeführt und zurückgerollt.
+>
+> **Zwei Korrekturen an dem, was hier vorher stand.** Beide stammen aus der
+> Messung vom 2026-09-06, beide gehen in dieselbe Richtung — die frühere
+> Fassung war zu sicher:
+>
+> 1. **Es ging nichts verloren.** Hier stand, der Screenshot-Nachweis „eines
+>    jeden Audits" gehe still verloren, weil `worker/src/persistence.ts`
+>    (`recordScreenshotEvidence`) non-fatal gegen die fehlende Tabelle
+>    insertet. Gemessen ist die ganze Worker-Pipeline in Produktion leer:
+>    `audit_jobs` 0, `scan_runs` 0, `findings` 0. Der Produktions-Auditpfad ist
+>    die Edge Function `gdpr-audit` (173 Zeilen in `gdpr_audits`); der Worker
+>    hat dort nie gelaufen. Der Satz war aus dem Code hergeleitet, nicht aus der
+>    Datenbank gelesen — genau der Fehler, den der Kasten selbst anprangert.
+> 2. **Der Bucket fehlte auch.** `storage.buckets` führte `audit-evidence`
+>    nicht. `crawler.ts` lädt den Screenshot dorthin und ruft
+>    `recordScreenshotEvidence` erst danach — der Upload wäre also schon vor dem
+>    Insert gescheitert. Wer nur die Tabelle nachgezogen hätte, hätte den Pfad
+>    nicht funktionsfähig gemacht und das für erledigt gehalten.
+>
+> **Bewusst nicht mitgenommen**: die View `v_findings_with_evidence` aus der
+> Ursprungsmigration. Sie liest `audit_findings.audit_id` und `.rule_id`;
+> Produktion führt eine andere `audit_findings` mit `audit_report_id` und
+> `control_reference`. Ein Replay wäre mit 42703 abgebrochen und hätte
+> `supabase db push` blockiert — für jede nachfolgende Migration mit. Welche
+> der beiden Definitionen gelten soll, ist eine offene Schemafrage wie bei
+> `runtime_events` in `20260822000000`.
 >
 > **Lehre, dieselbe wie in §5**: messen, nicht herleiten — und zwar
 > vollständig. Die erste Fassung dieses Kastens behauptete, `audit_evidence`
@@ -404,6 +432,58 @@ Jeder Agent braucht vier Dimensionen — fehlt eine, ist er nicht governance-fä
 > **Nächste Sitzung, bevor du misst**: Sieh in den Actions-Tab. Ein roter
 > Drift-Guard ist der schnellere Weg zum Befund als jede eigene Messung.
 >
+> #### Die DB-Integrationstests laufen seit dem 2026-09-06 vollständig in CI
+>
+> Bis dahin lief im `db`-Job **eine** Datei gegen das voll migrierte Schema,
+> später sechs. Begründet war das mit „7 der 23 Dateien scheitern dort" — und
+> das stimmte. Nachgemessen scheiterte aber **keine** an einem Befund, sondern
+> jede an einer Annahme des minimalen Harnischs (`scripts/test-db/up.sh`):
+> eine feste Vorgabe-Mailadresse gegen `auth.users.email UNIQUE`, ein Insert
+> in `public.app_secrets` statt in Vault, ein leerer Produktkatalog, ein
+> Trigger, der jedem neuen Mandanten sofort ein Free-Tier-Abo anlegt.
+>
+> **Das Schwerwiegendste daran**: `rls.db.test.ts` war eine der sieben. Die
+> Mandantentrennung ist laut §3 nicht verhandelbar — und ihr eigener Test lief
+> in keinem CI-Lauf. Er läuft jetzt; alle 25 Dateien laufen, mit genau einer
+> benannten Ausnahme (`entitlement-grants.db.test.ts`, siehe Kopf der Datei:
+> sie bildet bewusst den Produktionsstand vom 2026-08-08 nach). Der Schritt
+> nimmt das Verzeichnis, nicht eine Namensliste — sonst fehlt die nächste neue
+> Datei wieder.
+>
+> **Zwei Befunde fielen dabei ab, und beide sind grundsätzlicher als die
+> Testdateien:**
+>
+> **1. Das CI-Schema war durchlässiger als Produktion.** Ein pauschales
+> `GRANT ... ON ALL TABLES IN SCHEMA public TO anon, authenticated` lief
+> **nach** allen Migrationen und machte damit zwölf ausdrückliche `REVOKE`s
+> wieder auf — darunter die sechs auf `mv_cost_*` / `mv_tenant_risk_*` und die
+> Spaltenrechte, die `m365_connections.credentials_enc` schützen. Eine
+> materialisierte Sicht kennt keine RLS-Policies; ihr Inhalt ist die fertige
+> Aggregation über **alle** Mandanten. `mv-aggregates.db.test.ts` wies genau
+> das nach und fiel dort um, ohne dass an der Sperre etwas falsch war.
+> Behoben, indem CI die Default-Privileges jetzt **vor** den Migrationen setzt
+> (so wie Supabase) und Matviews danach ausdrücklich sperrt. Gegen das
+> Live-Projekt gemessen: dort tragen alle acht Matviews
+> `{postgres, service_role}` — CI bildet das jetzt ab.
+>
+> **Regel daraus**: Das CI-Schema darf **strenger** sein als Produktion,
+> niemals lockerer. Ein Test, der eine Sperre nachweist, ist sonst nichts wert
+> — und schlimmer: Ein Test, der Zugriff nachweist, wird dort grün, wo
+> Produktion sperrt.
+>
+> **2. Ein Test konnte die Testdatenbank dauerhaft verändern.** Jede Datei
+> läuft in einer Transaktion, die zurückgerollt wird — darauf beruht die
+> Isolation. `tenant-entitlements-callers` wandte `20260831020000`
+> unverändert an, samt deren eigenem `COMMIT;`. PostgreSQL kennt keine
+> geschachtelten Transaktionen: Das `COMMIT` schloss die **äußere**
+> Transaktion ab und hinterließ `products`, `entitlements`, `subscriptions`
+> und `entitlement_grants` dauerhaft in der Datenbank. Der nächste Lauf
+> scheiterte an „relation subscriptions already exists" — an einem Zustand,
+> den ein früherer Test hinterlassen hatte, nicht an einem Befund. Zwei
+> Dateien hatten die Klammer einzeln entfernt, eine nicht. **Regel**: Eine
+> Migration im Test nur über `applyMigration()` aus `db-helpers.ts` anwenden;
+> die entfernt `BEGIN`/`COMMIT` an einer Stelle für alle.
+>
 > ¹ **Migrations-Lücke und Versionskollision, gemessen 2026-08-24** (Ledger via
 > `supabase_migrations.schema_migrations`, Deploy-Log Run 32705231581): PR #1131
 > und PR #1124 vergaben unabhängig voneinander dieselbe Version `20260826000000`
@@ -518,11 +598,92 @@ Jeder Agent braucht vier Dimensionen — fehlt eine, ist er nicht governance-fä
   registriert ist (Migration `20260819000000`) — ohne ihn verfällt kein Memory.
   **Registriert reicht aber nicht**, und genau darauf hat dieser Satz vertraut:
   Am 2026-09-01 gegen die Live-DB gemessen ist der Job seit dem 2026-08-12
-  registriert, aktiv **und in allen 470 Läufen gescheitert** — das Vault-Secret
+  registriert, aktiv **und in jedem Lauf gescheitert** — das Vault-Secret
   `service_role_key` fehlt (siehe `20260820000000_cron_dispatch_fix.sql`).
   In Produktion verfällt heute kein Memory. Ohne Schaden, weil
   `governance_memory` leer ist, aber die Zusage steht ungedeckt.
   Prüfen also nicht an `cron.job`, sondern an `cron.job_run_details.status`.
+
+  **Und es ist nicht dieser eine Job.** Nachgemessen am 2026-09-06 über alle
+  15 registrierten pg_cron-Jobs: **vier** scheitern an genau diesem fehlenden
+  Secret, zusammen **3629 Fehlläufe** seit dem 2026-08-12 —
+  `scan-scheduler-dispatch` (2403, **noch nie** erfolgreich),
+  `governance-monitoring-hourly` (601), `memory-decay-hourly` (600),
+  `governance-monitoring-daily` (25). Damit liegt nicht nur RFC-003 still,
+  sondern auch die Sentinel-Schleife der Governance Runtime und der
+  **Scheduler, der ab Growth verkauft wird**. Die frühere Fassung nannte nur
+  `memory-decay-hourly`, weil nur danach gefragt worden war; die anderen drei
+  standen nirgends. Ein Job je Messung zu prüfen findet je Messung einen Job —
+  der Sweep findet die Klasse.
+
+  **Der Betreiberschritt bleibt beim Betreiber**: Der Service-Role-Schlüssel
+  gehört nicht in Migration, Repo oder CI (§4). Anleitung, Befund und
+  Nachprüfung: `docs/runbooks/cron-vault-secrets.md`.
+
+  **Zugestellt wird das jetzt automatisch.** `Cron Health Guard`
+  (`.github/workflows/cron-health.yml`, täglich 06:45 UTC,
+  `npm run check:cron-health`) prüft je aktivem Job den **letzten** Lauf — nicht
+  die Fehlerquote, denn `dsr-erasure-sweep` und `agent-os-runner-*` tragen
+  hunderte Altfehler aus der GUC-Zeit und laufen heute sauber. `drift-alert.yml`
+  hält daraus genau ein Issue offen. Bewusst **ohne** Ausnahmeliste: Ein
+  bekannter Ausfall, der den Guard grün lässt, ist wieder ein Befund, den
+  niemand sieht.
+
+### Enforcement-Schalter — der PDP entscheidet erst, wenn jemand ihn lässt
+
+Seit P2 hängen fünf Pfade am PDP. **Alle stehen auf Beobachtung**; das ist der
+beabsichtigte Zwischenzustand aus P0, aber eben keine Durchsetzung:
+
+| Schalter | Wirkt auf | Vorgabe | In `enforce` |
+|---|---|---|---|
+| `AI_GATEWAY_ENFORCEMENT` | `ai-gateway` | `shadow` | blockt |
+| `AGENT_PDP_ENFORCEMENT` | Agent-Runtime | `shadow` | fail **closed** |
+| `SITEOS_PUBLISH_PDP` | Publish Gate (P2-3) | `shadow` | fail **closed** (§7 G3) |
+| `GOVERNANCE_PDP_MODE` | CI/CD-Gate (P2-4) | `shadow` | verschärft nur |
+| `BOT_PDP_ENFORCEMENT` | Chat · WhatsApp · Voice (P2-5) | `shadow` | fail **closed**, per `BOT_PDP_FAILURE_MODE=allow` umstellbar |
+| `M365_PDP_ENFORCEMENT` | Microsoft 365 (P2-2) | `shadow` | **löst die Reaktion aus** — anhalten kann Klasse C nichts |
+
+**`enforce` heißt nicht überall dasselbe.** Bei den ersten vier Schaltern
+bedeutet es „die Handlung wird angehalten". Bei `M365_PDP_ENFORCEMENT`
+(Klasse C, nachgelagert) kann nichts angehalten werden — dort bedeutet es „die
+Reaktion wird ausgelöst, es entsteht ein Vorgang". Wer den Namen für dieselbe
+Zusage hält, überschätzt, was diese Anbindung kann. Ein `block` des PDP wird
+dort zu `react` **mit Vermerk** (`verdict_downgraded_from`); die Datenbank
+lässt per CHECK gar nichts anderes zu.
+
+**Vor dem Umschalten `pdp_shadow_log` auswerten** — dafür ist der
+Beobachtungsbetrieb da. Und zwar wirklich auswerten: Die Tabelle blieb für den
+Publish Gate bis zum 2026-09-04 leer, weil der Aufruf falsch war und der
+Fehler in einem `catch` verschwand. Ein leeres Shadow-Protokoll bedeutet nicht
+„keine Abweichungen", sondern zuerst „nachsehen, ob überhaupt geschrieben
+wird".
+
+**Seit dem 2026-09-06 ist das auswertbar**: `pdp_shadow_readiness()` (Migration
+`20260906100000`) und `/app/governance/shadow`. Bis dahin schrieben sechs
+Kanäle in die Tabelle und **nichts las sie** — die Aufforderung oben stand da,
+war aber nicht befolgbar. Die Auswertung geht bewusst von der **Kanalliste**
+aus, nicht von den Zeilen: Ein stummer Kanal erscheint mit `beobachtet = false`
+statt gar nicht. Ein `GROUP BY` hätte ihn verschluckt und wie einen Kanal ohne
+Befund aussehen lassen. Richtung der Abweichung (v2 strenger / lockerer) und
+unbekannte Verdikte werden getrennt gezählt; Letztere ergeben `NULL`, nicht
+`0`. **Regel**: Die Kanalliste in `pdp_shadow_known_sources()` steht doppelt —
+dort und in der CHECK-Bedingung `pdp_shadow_log_source_check`. Nie einseitig
+ändern; `test/governance/shadow-readiness.test.ts` bricht sonst.
+
+**Zur Bot-Governance (P2-5)**: Chatbot, WhatsApp und Voice laufen durch **einen**
+PEP (`_shared/pdp/botmessage.ts`, `enforceBotMessage()`) — drei eigene Auslegungen
+derselben Regel wären der Fragmentierungsbefund eine Ebene tiefer. Den Prozess
+verlassen nur Merkmale: Kanal, Bot-ID, Signalnamen und Zähler. **Nie der
+Nachrichtentext** — `bot-chat` und `whatsapp-webhook` laufen mit `verify_jwt = false`,
+der Text stammt also von einem beliebigen Fremden und wäre sonst ein Hebel auf die
+Bewertung der eigenen Anfrage. Gesichert durch `test/governance/pdp-botmessage.test.ts`
+und `test/governance/bot-pep-wiring.test.ts` (Letzterer prüft am Quelltext, dass alle
+drei Kanäle denselben PEP **vor** dem Modellaufruf rufen — dass sie sich gleich
+verhalten, ist kein Beleg dafür, dass sie dieselbe Stelle benutzen).
+
+**Offen, weil Produktentscheidung**: Eine vom PDP gesperrte Bot-Nachricht verbraucht
+trotzdem eine Einheit von `limit.bot_messages_monthly` — das Kontingent wird vor der
+Prüfung gebucht. Ob eine blockierte Anfrage berechnet wird, gehört entschieden.
 
 ### Dashboard-Module (modulare Reihenfolge)
 1. **Agent Registry** — Liste, Status, Risiko, Details
@@ -581,8 +742,8 @@ RealSyncDynamics.AI/
 ├── shared/
 │   └── pricing.ts     Single Source of Truth für Produkt-, Preis- und Berechtigungsmodell
 ├── supabase/
-│   ├── functions/     182 Edge Functions (einziger Ort für Service-Role-Keys)
-│   └── migrations/    317 Migrations
+│   ├── functions/     188 Edge Functions (einziger Ort für Service-Role-Keys)
+│   └── migrations/    327 Migrations
 ├── apps/
 │   ├── agent-runtime/ Agent Runtime (Node/TS, Docker)
 │   └── mcp-server/    MCP Governance Server — Lesezugriff für KI-Agenten auf
@@ -644,6 +805,17 @@ Root-CI/CD-Workflows verwaltet. Sie ist physisch ein eigenständiges Projekt, da
 - RLS + Migrations wie im Hauptrepo (selbe DB-Conn in `docker-compose.yml`)
 - OpenAPI-First: Endpoints mit `@app.post`, `@app.get` + Schemas in Pydantic
 - Prüfpfad: `audit_log` + `workflow_runs` (selbe Tabellen wie Root-Governance)
+- **Der PDP ist auch hier der Entscheider** (P2-4, seit 2026-09-04):
+  `app/services/pdp_client.py` ruft `governance-decide`; die CI/CD-Gate-Engine
+  faltet das Verdikt in ihre Entscheidung ein. Der PDP kann nur **verschärfen**,
+  nie lockern — ein `allow` hebt keine lokale Sperre auf.
+  `GOVERNANCE_PDP_MODE=off|shadow|enforce`, Default `shadow`.
+- **Tests hier laufen mit `pytest`, nicht mit Vitest**:
+  `cd platform/governance_backend && pip install -r requirements.txt && pytest`.
+  Stand 2026-09-04: 93 passed, 14 skipped, **7 vorbestehend rot** in
+  `test_config.py` und `test_security_headers.py` (erwarten Umgebungsvariablen
+  bzw. eine Datenbank). Gegen den unveränderten Stand gegengeprüft — wer hier
+  arbeitet, sollte sie nicht für eigene Fehler halten.
 
 ### Preise, Pläne und Berechtigungen
 
@@ -759,6 +931,7 @@ Vollständige Regeln: `docs/product/pricing-governance.md`
 | QA Smoke | `npm run qa:smoke` · Governance: `npm run qa:governance` · Load: `npm run qa:load` |
 | Edge-Function-Drift | `npm run check:edge-functions` |
 | Kontingent-Kanonizität | `npm run check:limits` |
+| Cron-Gesundheit (Prod) | `npm run check:cron-health` |
 
 ### Nach jeder Änderung
 ```bash

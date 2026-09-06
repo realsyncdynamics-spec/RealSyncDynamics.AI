@@ -78,8 +78,10 @@ Menschen · Unternehmen · KI-Agenten · Daten · Entscheidungen.
 
 **Primär: Supabase Cloud (EU / Frankfurt)**
 - PostgreSQL 17 (Live-Projekt, Stand 2026-08-16)
-- **188 Edge Functions** im Repo (`supabase/functions/`, Deno/V8; `_shared` ist Bibliothek, keine Function) — gemessen am 2026-09-05 am **Merge-Baum** (`ls -d`, nicht addiert). 182 davon sind mains Bestand und **alle deployt**, deckungsgleich in beide Richtungen (mains Messung vom 2026-09-04 um 23:23 UTC per Management-API, nachdem `mcp-api-key-manager` aus PR #1160 in `src/config/production-edge-functions.ts` nachgetragen war — der Drift-Guard hatte recht). Die **sechs** aus diesem Branch warten auf den nächsten `deploy.yml`-Lauf: `governance-decide` und `integration-credentials` (P0), `governance-access` (P1-3), `evidence-anchor` (P1-6), `microsoft365-connect` und `microsoft365-audit-sync` (P2-2). Fünf davon stehen in `UNBACKED_CALLERS`; `microsoft365-audit-sync` bewusst nicht — es hat keinen Aufrufer im Frontend, sondern wird von pg_cron getriggert, und diese Liste führt Aufrufer ohne Backend, nicht Functions ohne Deploy
-- **326 Migrations** (`supabase/migrations/`) — gemessen am 2026-09-05 am Merge-Baum (`ls supabase/migrations/*.sql | wc -l`), keine doppelte Versionsnummer. 317 davon sind mains Bestand und **alle verbucht** (mains Messung vom 2026-09-04 um 23:39 UTC gegen `supabase_migrations.schema_migrations` nach dem grünen Deploy-Lauf 33929752213, `comm` in beide Richtungen leer). Die **neun** aus diesem Branch sind unverbucht: `20260824090000_pdp_snapshots_shadow`, `20260824110000_integration_credentials_hardening`, `20260824120000_org_subject_model_approval_gates`, `20260901090000_evidence_append_only_anchors`, `20260904100000_connector_registry` (P2-1), `20260904110000_publish_gate_policy_trail` (P2-3), `20260904120000_pdp_shadow_log_channels` (P2-3/P2-5) `20260905100000_microsoft365_connector` (P2-2) und `20260906100000_pdp_shadow_readiness` (Plan §7, Auswertung des Beobachtungsbetriebs)
+- **188 Edge Functions** im Repo (`supabase/functions/`, Deno/V8; `_shared` ist Bibliothek, keine Function) — und **alle 188 sind in Produktion aktiv**. Gemessen am 2026-09-06 um 13:50 UTC gegen `main` @ `dce32782` (Merge von PR #1135) nach dem grünen Deploy-Lauf 34036663016, per Management-API; `comm` in beide Richtungen leer. Damit sind auch die sechs aus PR #1135 deployt: `governance-decide` und `integration-credentials` (P0), `governance-access` (P1-3), `evidence-anchor` (P1-6), `microsoft365-connect` und `microsoft365-audit-sync` (P2-2). Mit derselben Messung sind die **vier** zugehörigen Einträge aus `UNBACKED_CALLERS` entfernt und `PRODUCTION_EDGE_FUNCTIONS` neu erzeugt. Zwei Slugs aus dem PR standen nie in dieser Liste, aus zwei verschiedenen Gründen: `microsoft365-audit-sync` hat keinen Aufrufer im Frontend (pg_cron triggert es), `governance-decide` wird von Edge Function zu Edge Function gerufen. Die Liste führt Aufrufer **ohne Backend** — nicht Functions ohne Deploy und nicht Functions ohne Aufrufer
+- **326 Migrations** (`supabase/migrations/`) — und **alle 326 sind verbucht**, neueste `20260906100000`. Gemessen am 2026-09-06 um 13:50 UTC gegen `supabase_migrations.schema_migrations` nach demselben Deploy-Lauf, keine doppelte Versionsnummer. Die neun aus PR #1135 sind darin enthalten: `20260824090000_pdp_snapshots_shadow`, `20260824110000_integration_credentials_hardening`, `20260824120000_org_subject_model_approval_gates`, `20260901090000_evidence_append_only_anchors`, `20260904100000_connector_registry` (P2-1), `20260904110000_publish_gate_policy_trail` (P2-3), `20260904120000_pdp_shadow_log_channels` (P2-3/P2-5), `20260905100000_microsoft365_connector` (P2-2) und `20260906100000_pdp_shadow_readiness` (Plan §7, Auswertung des Beobachtungsbetriebs).
+
+  > **Der Merge-Kommentar hat es offengelassen, die Messung schliesst es.** Der Merge-Commit notierte: „Migrationen sind damit im Repo, aber noch nicht in der Produktions-DB verbucht — separat über den Drift-/Migrationspfad zu prüfen." Das stimmte im Moment des Merges. Der Deploy lief sieben Minuten später grün durch; nachgemessen ist die Lücke geschlossen. Der Satz ist damit erledigt und nicht etwa offen — wer nur den Commit liest, hielte ihn für Letzteres.
 
   > **Ein Befund vom Vorabend hat sich erledigt, und zwar richtig herum**: Hier stand am 2026-09-04 abends, mains Zeile nenne 315 Dateien bei 317 im Baum und seine unverbuchten seien drei statt einer. Das stimmte zum Zeitpunkt der Messung — inzwischen ist der Deploy gelaufen, und `main` hat um 23:39 UTC gegen das Ledger nachgemessen: 317 Dateien, 317 verbucht, in beide Richtungen verglichen. Die Differenz war also kein Fehler, sondern eine Momentaufnahme zwischen Merge und Deploy. Die Lehre bleibt trotzdem stehen, weil sie den Fall beschreibt, in dem sie *nicht* von selbst heilt: **Die Ledger-Messung altert mit jedem Merge, die Tree-Messung nicht** — wer eine Ledger-Zahl fortschreibt, ohne das Datum mitzulesen, behauptet einen Stand, den es so nicht mehr gibt.
 - RLS auf allen App-Tabellen · Realtime Subscriptions
@@ -328,6 +330,22 @@ Jeder Agent braucht vier Dimensionen — fehlt eine, ist er nicht governance-fä
 > `audit-monitor-cron` antworten alle mit `401` — die beiden Cron-Functions
 > aus ihrem eigenen Bearer-Check (`verify_jwt` ist dort aus), die übrigen
 > aus `requireUser`.
+>
+> **Nachmessung 2026-09-06, 13:50 UTC**, `main` @ `dce32782` (Merge von
+> PR #1135), nach dem grünen Deploy-Lauf 34036663016. Gleiche Methode und
+> gleiche Quelle; Mengen in beide Richtungen verglichen.
+>
+> | | Repo (`main`) | in Produktion | Lücke |
+> |---|---|---|---|
+> | Migrationen | 326 Dateien | **326** verbucht (neueste `20260906100000`) | **0** |
+> | Edge Functions | 188 (+ `_shared`) | **188** aktiv | **0** |
+>
+> `comm -23` und `comm -13` sind beide leer. Damit ist das gesamte
+> Governance OS (P0, P1, P2) in Produktion angekommen — **alle sechs
+> Enforcement-Schalter stehen dabei weiterhin auf `shadow`**: Der Merge hat
+> Code und Schema ausgerollt, keine Durchsetzung eingeschaltet. Wer aus
+> „ist deployt" auf „greift" schliesst, überschätzt diesen Stand um genau
+> den Schritt, der noch beim Eigentümer liegt.
 >
 > ¹ **Zwei Migrationen sind live, ohne dass es je eine Datei gab**:
 > `20260825204748_fix_websites_authenticated_crud_rls` (2026-08-25) und

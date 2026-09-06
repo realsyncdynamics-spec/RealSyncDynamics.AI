@@ -79,9 +79,11 @@ Menschen · Unternehmen · KI-Agenten · Daten · Entscheidungen.
 **Primär: Supabase Cloud (EU / Frankfurt)**
 - PostgreSQL 17 (Live-Projekt, Stand 2026-08-16)
 - **188 Edge Functions** im Repo (`supabase/functions/`, Deno/V8; `_shared` ist Bibliothek, keine Function) — und **alle 188 sind in Produktion aktiv**. Gemessen am 2026-09-06 um 13:50 UTC gegen `main` @ `dce32782` (Merge von PR #1135) nach dem grünen Deploy-Lauf 34036663016, per Management-API; `comm` in beide Richtungen leer. Damit sind auch die sechs aus PR #1135 deployt: `governance-decide` und `integration-credentials` (P0), `governance-access` (P1-3), `evidence-anchor` (P1-6), `microsoft365-connect` und `microsoft365-audit-sync` (P2-2). Mit derselben Messung sind die **vier** zugehörigen Einträge aus `UNBACKED_CALLERS` entfernt und `PRODUCTION_EDGE_FUNCTIONS` neu erzeugt. Zwei Slugs aus dem PR standen nie in dieser Liste, aus zwei verschiedenen Gründen: `microsoft365-audit-sync` hat keinen Aufrufer im Frontend (pg_cron triggert es), `governance-decide` wird von Edge Function zu Edge Function gerufen. Die Liste führt Aufrufer **ohne Backend** — nicht Functions ohne Deploy und nicht Functions ohne Aufrufer
-- **326 Migrations** (`supabase/migrations/`) — und **alle 326 sind verbucht**, neueste `20260906100000`. Gemessen am 2026-09-06 um 13:50 UTC gegen `supabase_migrations.schema_migrations` nach demselben Deploy-Lauf, keine doppelte Versionsnummer. Die neun aus PR #1135 sind darin enthalten: `20260824090000_pdp_snapshots_shadow`, `20260824110000_integration_credentials_hardening`, `20260824120000_org_subject_model_approval_gates`, `20260901090000_evidence_append_only_anchors`, `20260904100000_connector_registry` (P2-1), `20260904110000_publish_gate_policy_trail` (P2-3), `20260904120000_pdp_shadow_log_channels` (P2-3/P2-5), `20260905100000_microsoft365_connector` (P2-2) und `20260906100000_pdp_shadow_readiness` (Plan §7, Auswertung des Beobachtungsbetriebs).
+- **327 Migrations** (`supabase/migrations/`) — und **alle 327 sind verbucht**, neueste `20260906100000`. Gemessen am 2026-09-06 um 20:20 UTC am Merge-Baum (`ls supabase/migrations/*.sql | wc -l`) und gegen `supabase_migrations.schema_migrations`, Mengen in beide Richtungen verglichen; keine doppelte Versionsnummer. Enthalten sind die neun aus PR #1135 (`20260824090000_pdp_snapshots_shadow`, `20260824110000_integration_credentials_hardening`, `20260824120000_org_subject_model_approval_gates`, `20260901090000_evidence_append_only_anchors`, `20260904100000_connector_registry` (P2-1), `20260904110000_publish_gate_policy_trail` (P2-3), `20260904120000_pdp_shadow_log_channels` (P2-3/P2-5), `20260905100000_microsoft365_connector` (P2-2), `20260906100000_pdp_shadow_readiness`) und `20260906000000_reconcile_audit_evidence` aus PR #1221 — sie sortiert **vor** `20260906100000`. Siehe §3
 
-  > **Der Merge-Kommentar hat es offengelassen, die Messung schliesst es.** Der Merge-Commit notierte: „Migrationen sind damit im Repo, aber noch nicht in der Produktions-DB verbucht — separat über den Drift-/Migrationspfad zu prüfen." Das stimmte im Moment des Merges. Der Deploy lief sieben Minuten später grün durch; nachgemessen ist die Lücke geschlossen. Der Satz ist damit erledigt und nicht etwa offen — wer nur den Commit liest, hielte ihn für Letzteres.
+  > **Zwei Sätze, die beim Merge stehen blieben — und warum das erwähnenswert ist.** PR #1221 wurde gegen den Stand **vor** dem Merge von PR #1135 geschrieben und trug dessen Formulierungen mit („die sechs warten auf den nächsten `deploy.yml`-Lauf", „die neun sind unverbucht", dazu eine „zehnte unverbuchte"). Zum Zeitpunkt des Schreibens stimmte das; beim Merge um 20:13 UTC nicht mehr. Gemessen wurde deshalb neu, statt eine der beiden Fassungen zu übernehmen: 327 Dateien, 327 verbucht, `comm` in beide Richtungen leer, `20260906000000` darunter. **Die Lehre ist dieselbe wie unten, nur eine Ebene höher**: Nicht nur eine Ledger-Zahl altert zwischen Messung und Merge — ein ganzer Absatz tut es, wenn zwei Zweige parallel an derselben Stelle schreiben. Beim Auflösen eines Konflikts über Zahlen gilt: messen, nicht eine Seite wählen.
+
+  > **Der Merge-Kommentar hat es offengelassen, die Messung schliesst es.** Der Merge-Commit zu PR #1135 notierte: „Migrationen sind damit im Repo, aber noch nicht in der Produktions-DB verbucht — separat über den Drift-/Migrationspfad zu prüfen." Das stimmte im Moment des Merges. Der Deploy lief sieben Minuten später grün durch; nachgemessen ist die Lücke geschlossen. Der Satz ist damit erledigt und nicht etwa offen — wer nur den Commit liest, hielte ihn für Letzteres.
 
   > **Ein Befund vom Vorabend hat sich erledigt, und zwar richtig herum**: Hier stand am 2026-09-04 abends, mains Zeile nenne 315 Dateien bei 317 im Baum und seine unverbuchten seien drei statt einer. Das stimmte zum Zeitpunkt der Messung — inzwischen ist der Deploy gelaufen, und `main` hat um 23:39 UTC gegen das Ledger nachgemessen: 317 Dateien, 317 verbucht, in beide Richtungen verglichen. Die Differenz war also kein Fehler, sondern eine Momentaufnahme zwischen Merge und Deploy. Die Lehre bleibt trotzdem stehen, weil sie den Fall beschreibt, in dem sie *nicht* von selbst heilt: **Die Ledger-Messung altert mit jedem Merge, die Tree-Messung nicht** — wer eine Ledger-Zahl fortschreibt, ohne das Datum mitzulesen, behauptet einen Stand, den es so nicht mehr gibt.
 - RLS auf allen App-Tabellen · Realtime Subscriptions
@@ -188,12 +190,38 @@ Service-Role umgeht RLS — deshalb **ausschließlich in Edge Functions**.
 > (`20260619000000`, `20260723000001`) fangen ihn mit `to_regclass`-Wächtern
 > ab und überspringen ihre Trigger und Policies mit `RAISE NOTICE`.
 >
-> **Ein Schreibpfad läuft weiterhin dagegen**: `worker/src/persistence.ts`
-> (`recordScreenshotEvidence`) insertet in `audit_evidence` und behandelt den
-> Fehler ausdrücklich als non-fatal — der Screenshot-Nachweis eines jeden
-> Audits geht also still verloren. Der Aufruf schlägt nicht fehl, er
-> protokolliert. Für ein Produkt, das Prüfpfad zusagt, ist das ein eigener
-> Befund; er ist hier vermerkt, aber nicht behoben.
+> **Behoben am 2026-09-06** durch `20260906000000_reconcile_audit_evidence.sql`
+> — additiv, idempotent, nach dem Muster von `20260822000000`. Sie legt
+> Tabelle, Indizes, RLS-Policy (`is_tenant_member`), die Append-only-Trigger,
+> den in `20260619000000` übersprungenen Aktivierungs-Trigger **und den
+> Storage-Bucket** an. Vor dem Merge vollständig gegen das Live-Schema
+> ausgeführt und zurückgerollt.
+>
+> **Zwei Korrekturen an dem, was hier vorher stand.** Beide stammen aus der
+> Messung vom 2026-09-06, beide gehen in dieselbe Richtung — die frühere
+> Fassung war zu sicher:
+>
+> 1. **Es ging nichts verloren.** Hier stand, der Screenshot-Nachweis „eines
+>    jeden Audits" gehe still verloren, weil `worker/src/persistence.ts`
+>    (`recordScreenshotEvidence`) non-fatal gegen die fehlende Tabelle
+>    insertet. Gemessen ist die ganze Worker-Pipeline in Produktion leer:
+>    `audit_jobs` 0, `scan_runs` 0, `findings` 0. Der Produktions-Auditpfad ist
+>    die Edge Function `gdpr-audit` (173 Zeilen in `gdpr_audits`); der Worker
+>    hat dort nie gelaufen. Der Satz war aus dem Code hergeleitet, nicht aus der
+>    Datenbank gelesen — genau der Fehler, den der Kasten selbst anprangert.
+> 2. **Der Bucket fehlte auch.** `storage.buckets` führte `audit-evidence`
+>    nicht. `crawler.ts` lädt den Screenshot dorthin und ruft
+>    `recordScreenshotEvidence` erst danach — der Upload wäre also schon vor dem
+>    Insert gescheitert. Wer nur die Tabelle nachgezogen hätte, hätte den Pfad
+>    nicht funktionsfähig gemacht und das für erledigt gehalten.
+>
+> **Bewusst nicht mitgenommen**: die View `v_findings_with_evidence` aus der
+> Ursprungsmigration. Sie liest `audit_findings.audit_id` und `.rule_id`;
+> Produktion führt eine andere `audit_findings` mit `audit_report_id` und
+> `control_reference`. Ein Replay wäre mit 42703 abgebrochen und hätte
+> `supabase db push` blockiert — für jede nachfolgende Migration mit. Welche
+> der beiden Definitionen gelten soll, ist eine offene Schemafrage wie bei
+> `runtime_events` in `20260822000000`.
 >
 > **Lehre, dieselbe wie in §5**: messen, nicht herleiten — und zwar
 > vollständig. Die erste Fassung dieses Kastens behauptete, `audit_evidence`
@@ -346,6 +374,24 @@ Jeder Agent braucht vier Dimensionen — fehlt eine, ist er nicht governance-fä
 > Code und Schema ausgerollt, keine Durchsetzung eingeschaltet. Wer aus
 > „ist deployt" auf „greift" schliesst, überschätzt diesen Stand um genau
 > den Schritt, der noch beim Eigentümer liegt.
+>
+> **Nachmessung 2026-09-06, 20:20 UTC**, nach dem Merge von PR #1221
+> (`75f5fe7a`, Reconcile von `audit_evidence` plus Cron Health Guard) und
+> dessen Deploy. Gleiche Methode und gleiche Quelle.
+>
+> | | Repo (`main`) | in Produktion | Lücke |
+> |---|---|---|---|
+> | Migrationen | 327 Dateien | **327** verbucht (neueste `20260906100000`) | **0** |
+> | Edge Functions | 188 (+ `_shared`) | **188** aktiv | **0** |
+>
+> `comm -23` und `comm -13` sind beide leer; `20260906000000_reconcile_audit_evidence`
+> ist darunter. **Beim Nachrechnen fast selbst hereingefallen**: Der erste
+> Mengenvergleich meldete zwei Repo-Migrationen als unverbucht
+> (`20260903120000`, `20260903120100`) — beide standen sehr wohl im Ledger,
+> sie waren nur beim Übertragen der Liste verlorengegangen. Erst eine
+> gezielte Rückfrage an die Datenbank hat das geklärt. Ein Mengenvergleich
+> ist nur so gut wie die Übertragung der Menge; bei einem überraschenden
+> Befund lohnt die Gegenprobe an der Quelle, bevor man ihn aufschreibt.
 >
 > ¹ **Zwei Migrationen sind live, ohne dass es je eine Datei gab**:
 > `20260825204748_fix_websites_authenticated_crud_rls` (2026-08-25) und
@@ -590,11 +636,36 @@ Jeder Agent braucht vier Dimensionen — fehlt eine, ist er nicht governance-fä
   registriert ist (Migration `20260819000000`) — ohne ihn verfällt kein Memory.
   **Registriert reicht aber nicht**, und genau darauf hat dieser Satz vertraut:
   Am 2026-09-01 gegen die Live-DB gemessen ist der Job seit dem 2026-08-12
-  registriert, aktiv **und in allen 470 Läufen gescheitert** — das Vault-Secret
+  registriert, aktiv **und in jedem Lauf gescheitert** — das Vault-Secret
   `service_role_key` fehlt (siehe `20260820000000_cron_dispatch_fix.sql`).
   In Produktion verfällt heute kein Memory. Ohne Schaden, weil
   `governance_memory` leer ist, aber die Zusage steht ungedeckt.
   Prüfen also nicht an `cron.job`, sondern an `cron.job_run_details.status`.
+
+  **Und es ist nicht dieser eine Job.** Nachgemessen am 2026-09-06 über alle
+  15 registrierten pg_cron-Jobs: **vier** scheitern an genau diesem fehlenden
+  Secret, zusammen **3629 Fehlläufe** seit dem 2026-08-12 —
+  `scan-scheduler-dispatch` (2403, **noch nie** erfolgreich),
+  `governance-monitoring-hourly` (601), `memory-decay-hourly` (600),
+  `governance-monitoring-daily` (25). Damit liegt nicht nur RFC-003 still,
+  sondern auch die Sentinel-Schleife der Governance Runtime und der
+  **Scheduler, der ab Growth verkauft wird**. Die frühere Fassung nannte nur
+  `memory-decay-hourly`, weil nur danach gefragt worden war; die anderen drei
+  standen nirgends. Ein Job je Messung zu prüfen findet je Messung einen Job —
+  der Sweep findet die Klasse.
+
+  **Der Betreiberschritt bleibt beim Betreiber**: Der Service-Role-Schlüssel
+  gehört nicht in Migration, Repo oder CI (§4). Anleitung, Befund und
+  Nachprüfung: `docs/runbooks/cron-vault-secrets.md`.
+
+  **Zugestellt wird das jetzt automatisch.** `Cron Health Guard`
+  (`.github/workflows/cron-health.yml`, täglich 06:45 UTC,
+  `npm run check:cron-health`) prüft je aktivem Job den **letzten** Lauf — nicht
+  die Fehlerquote, denn `dsr-erasure-sweep` und `agent-os-runner-*` tragen
+  hunderte Altfehler aus der GUC-Zeit und laufen heute sauber. `drift-alert.yml`
+  hält daraus genau ein Issue offen. Bewusst **ohne** Ausnahmeliste: Ein
+  bekannter Ausfall, der den Guard grün lässt, ist wieder ein Befund, den
+  niemand sieht.
 
 ### Enforcement-Schalter — der PDP entscheidet erst, wenn jemand ihn lässt
 
@@ -710,7 +781,7 @@ RealSyncDynamics.AI/
 │   └── pricing.ts     Single Source of Truth für Produkt-, Preis- und Berechtigungsmodell
 ├── supabase/
 │   ├── functions/     188 Edge Functions (einziger Ort für Service-Role-Keys)
-│   └── migrations/    326 Migrations
+│   └── migrations/    327 Migrations
 ├── apps/
 │   ├── agent-runtime/ Agent Runtime (Node/TS, Docker)
 │   └── mcp-server/    MCP Governance Server — Lesezugriff für KI-Agenten auf
@@ -898,6 +969,7 @@ Vollständige Regeln: `docs/product/pricing-governance.md`
 | QA Smoke | `npm run qa:smoke` · Governance: `npm run qa:governance` · Load: `npm run qa:load` |
 | Edge-Function-Drift | `npm run check:edge-functions` |
 | Kontingent-Kanonizität | `npm run check:limits` |
+| Cron-Gesundheit (Prod) | `npm run check:cron-health` |
 
 ### Nach jeder Änderung
 ```bash

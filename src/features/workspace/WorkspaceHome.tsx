@@ -8,7 +8,7 @@ import { Link } from 'react-router-dom';
 import {
   AlertTriangle, ClipboardCheck, UserCheck, FileCheck2, Inbox,
   Globe, Bot, Activity, ArrowRight, Loader2, Plus, Search, ShieldCheck,
-  Bell, TrendingDown, TrendingUp, Clock, ShieldX, CheckCircle2,
+  Bell, TrendingDown, TrendingUp, Clock, ShieldX, CheckCircle2, Compass,
 } from 'lucide-react';
 import { AuthGate } from '../kodee/connections/AuthGate';
 import { useTenant } from '../../core/access/TenantProvider';
@@ -335,6 +335,7 @@ function Inner() {
           <NavCard to="/app/compliance" icon={ClipboardCheck} title="Compliance" body="DSGVO, AI Act, VVT, TOM, DSFA, DSR." />
           <NavCard to="/app/monitoring" icon={Activity} title="Monitoring" body="Live-Scans, Drift, Alerts." />
           <NavCard to="/app/risks" icon={Search} title="Risiken" body="Findings, Vorfälle, Vendor-Risiken priorisiert." />
+          <NavCard to="/flow/start-scan" icon={Compass} title="Geführter Ablauf" body="Erklärter Schritt-für-Schritt-Pfad: Scan, Ergebnis, Maßnahmen, Paket." />
         </div>
       </section>
     </div>

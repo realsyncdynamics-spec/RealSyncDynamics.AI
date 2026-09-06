@@ -559,9 +559,19 @@ GRANT SELECT, INSERT, UPDATE          ON public.data_processing_agreements TO au
 
 GRANT EXECUTE ON FUNCTION public.presence_legal_bases() TO authenticated, service_role;
 
--- anon bekommt nichts. Der Router aus Aufgabe 3 löst öffentlich erreichbare
--- Hostnamen auf — welchen Weg er dafür bekommt, entscheidet Aufgabe 3;
--- ein pauschales Leserecht für anon auf presence_sites wäre es nicht, denn
--- die Tabelle führt auch unveröffentlichte Entwürfe.
+-- ⚠️ Diese Migration erteilt `anon` bewusst nichts — sie NIMMT ihm aber auch
+-- nichts, und das ist der Unterschied, der hier zählt.
+--
+-- `ALTER DEFAULT PRIVILEGES ... TO anon, authenticated` läuft in Supabase
+-- (und in CI) VOR allen Migrationen. Jede oben erzeugte Tabelle trägt damit
+-- schon bei ihrer Erzeugung `anon=arwd`. Wer diese Stelle liest und daraus
+-- schliesst, `anon` habe keinen Zugriff, irrt: Es steht nur RLS dazwischen.
+--
+-- Zurückgenommen wird das ausdrücklich in `20260906130000` §7, wo der Befund
+-- auch belegt ist. Hier steht der Hinweis, damit niemand dieser Migration
+-- eine Zusage entnimmt, die sie nicht macht.
+--
+-- Der Router aus Aufgabe 3 braucht ohnehin kein Tabellenrecht: Er geht über
+-- die SECURITY-DEFINER-Funktion `presence_resolve_host()`.
 
 COMMIT;

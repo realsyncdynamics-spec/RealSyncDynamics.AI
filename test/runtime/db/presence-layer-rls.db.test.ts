@@ -296,7 +296,19 @@ d('Presence Layer Scope 1 — RLS und Schranken (DB)', () => {
   });
 
   it('eine veröffentlichte Site ohne Zeitpunkt wird abgewiesen', async () => {
+    // Der AVV wird vorher angenommen, damit hier wirklich die
+    // Zeitstempel-Bedingung greift und nicht die AVV-Schranke aus
+    // 20260906130000. Ohne diese Vorbereitung prüfte der Test die falsche
+    // Regel und wäre trotzdem grün — der lautlose Weg, eine Zusage zu
+    // verlieren.
     const A = await createTenantWithMember(ctx!, { tenantName: 'pub' });
+    await ctx!.client.query(
+      `INSERT INTO public.data_processing_agreements
+         (tenant_id, version, status, accepted_at, accepted_by)
+       VALUES ($1, 'v1.0', 'accepted', now(), $2)`,
+      [A.tenantId, A.userId],
+    );
+
     await expect(
       ctx!.client.query(
         `INSERT INTO public.presence_sites (tenant_id, template_id, slug, status)

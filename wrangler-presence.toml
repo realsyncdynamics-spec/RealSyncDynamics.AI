@@ -1,0 +1,56 @@
+# Presence Tenant-Router — eigenes Deployment
+#
+# Getrennt von `wrangler-workers.toml` (API-Worker unter
+# api.realsyncdynamics.ai) und von `wrangler.toml` (Pages), weil dieser
+# Worker andere Hostnamen bedient: die Mandanten-Hosts.
+#
+# Deployment:
+#   wrangler deploy --config wrangler-presence.toml
+#
+# EIN DEPLOYMENT FÜR ALLE MANDANTEN. Der Mandant steckt im Host-Header,
+# nicht in der Bereitstellung. Es wird nie ein zweiter Worker je Kunde
+# angelegt — siehe Kopf von src/workers/presence-router/index.ts.
+
+name = "realsyncdynamics-presence-router"
+main = "src/workers/presence-router/index.ts"
+compatibility_date = "2026-09-06"
+
+# ⚠️ ROUTEN SIND HIER BEWUSST NICHT EINGETRAGEN — Betreiberschritt.
+#
+# Der Router braucht zwei Dinge, die es im Repo noch nicht gibt:
+#
+#   1. Die Zone für `realsync.app`. Diese Domain ist im Repo bisher nur als
+#      Absicht vermerkt ("realsync.app (or TBD)", LAUNCH-CHECKLIST.md §91) —
+#      sie ist nicht registriert und nicht in Cloudflare eingerichtet. Eine
+#      `zone_id` hier zu erfinden würde eine Konfiguration behaupten, die es
+#      nicht gibt, und beim ersten `wrangler deploy` fehlschlagen.
+#
+#   2. Custom Domains der Mandanten. Die entstehen zur Laufzeit je Kunde und
+#      gehören deshalb ohnehin nicht in eine eingecheckte Datei, sondern
+#      werden per API an die Zone gehängt.
+#
+# Sobald die Zone steht, gehört hierher:
+#
+#   [env.production]
+#   zone_id = "<echte zone_id von realsync.app>"
+#
+#   [[env.production.routes]]
+#   pattern = "*.realsync.app/*"
+#   zone_name = "realsync.app"
+#
+# Bis dahin ist der Worker deploybar und über seine workers.dev-Adresse
+# prüfbar (`/__health`), aber an keinen Mandanten-Host gebunden.
+
+# Umgebung — beide Werte per `wrangler secret put` bzw. als Var setzen,
+# niemals hier eintragen:
+#
+#   SUPABASE_URL        Adresse des Projekts (keine Anmeldedaten)
+#   SUPABASE_ANON_KEY   öffentlicher anon-Schlüssel. Er genügt: `anon` darf
+#                       ausschliesslich presence_resolve_host() ausführen und
+#                       hat auf presence_sites kein Leserecht.
+#
+# Der Service-Role-Schlüssel gehört NICHT in diesen Worker (CLAUDE.md §3 —
+# ausschliesslich in Edge Functions).
+
+[observability]
+enabled = true

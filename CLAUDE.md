@@ -79,7 +79,7 @@ Menschen · Unternehmen · KI-Agenten · Daten · Entscheidungen.
 **Primär: Supabase Cloud (EU / Frankfurt)**
 - PostgreSQL 17 (Live-Projekt, Stand 2026-08-16)
 - **188 Edge Functions** im Repo (`supabase/functions/`, Deno/V8; `_shared` ist Bibliothek, keine Function) — gemessen am 2026-09-05 am **Merge-Baum** (`ls -d`, nicht addiert). 182 davon sind mains Bestand und **alle deployt**, deckungsgleich in beide Richtungen (mains Messung vom 2026-09-04 um 23:23 UTC per Management-API, nachdem `mcp-api-key-manager` aus PR #1160 in `src/config/production-edge-functions.ts` nachgetragen war — der Drift-Guard hatte recht). Die **sechs** aus diesem Branch warten auf den nächsten `deploy.yml`-Lauf: `governance-decide` und `integration-credentials` (P0), `governance-access` (P1-3), `evidence-anchor` (P1-6), `microsoft365-connect` und `microsoft365-audit-sync` (P2-2). Fünf davon stehen in `UNBACKED_CALLERS`; `microsoft365-audit-sync` bewusst nicht — es hat keinen Aufrufer im Frontend, sondern wird von pg_cron getriggert, und diese Liste führt Aufrufer ohne Backend, nicht Functions ohne Deploy
-- **328 Migrations** (`supabase/migrations/`) — gemessen am 2026-09-06 am Merge-Baum (`ls supabase/migrations/*.sql | wc -l`), keine doppelte Versionsnummer (`cut -d_ -f1 | sort | uniq -d` leer). 317 davon sind mains Bestand und **alle verbucht** (mains Messung vom 2026-09-04 um 23:39 UTC gegen `supabase_migrations.schema_migrations` nach dem grünen Deploy-Lauf 33929752213, `comm` in beide Richtungen leer). **Elf sind unverbucht**: neun aus dem Governance-OS-Branch — `20260824090000_pdp_snapshots_shadow`, `20260824110000_integration_credentials_hardening`, `20260824120000_org_subject_model_approval_gates`, `20260901090000_evidence_append_only_anchors`, `20260904100000_connector_registry` (P2-1), `20260904110000_publish_gate_policy_trail` (P2-3), `20260904120000_pdp_shadow_log_channels` (P2-3/P2-5), `20260905100000_microsoft365_connector` (P2-2), `20260906100000_pdp_shadow_readiness` (Plan §7) —, dazu `20260906000000_reconcile_audit_evidence` aus PR #1221 (sortiert **vor** `20260906100000`, siehe §3) und `20260906120000_presence_layer_scope1` (Presence Layer Scope 1)
+- **329 Migrations** (`supabase/migrations/`) — gemessen am 2026-09-06 am Merge-Baum (`ls supabase/migrations/*.sql | wc -l`), keine doppelte Versionsnummer (`cut -d_ -f1 | sort | uniq -d` leer). 317 davon sind mains Bestand und **alle verbucht** (mains Messung vom 2026-09-04 um 23:39 UTC gegen `supabase_migrations.schema_migrations` nach dem grünen Deploy-Lauf 33929752213, `comm` in beide Richtungen leer). **Zwölf sind unverbucht**: neun aus dem Governance-OS-Branch — `20260824090000_pdp_snapshots_shadow`, `20260824110000_integration_credentials_hardening`, `20260824120000_org_subject_model_approval_gates`, `20260901090000_evidence_append_only_anchors`, `20260904100000_connector_registry` (P2-1), `20260904110000_publish_gate_policy_trail` (P2-3), `20260904120000_pdp_shadow_log_channels` (P2-3/P2-5), `20260905100000_microsoft365_connector` (P2-2), `20260906100000_pdp_shadow_readiness` (Plan §7) —, dazu `20260906000000_reconcile_audit_evidence` aus PR #1221 (sortiert **vor** `20260906100000`, siehe §3) `20260906120000_presence_layer_scope1` und `20260906130000_presence_router_and_site_creation` (Presence Layer Scope 1)
 
   > **Diese Zeile ist beim Zusammenführen zweimal falsch gewesen, und zwar auf dieselbe Art.** PR #1221 und der Presence-Branch trugen beide „327" ein — jeder hatte an seinem eigenen Baum richtig gezählt, keiner kannte den anderen. Zusammengeführt sind es 328. Der Konflikt ist hier aufgefallen, weil beide dieselbe Zeile anfassten; hätten sie in verschiedenen Absätzen gestanden, wäre die falsche Zahl stillschweigend durchgelaufen. **Regel**: Eine Zählung am Merge-Baum ist nur so lange gültig, wie der Baum steht — nach jedem Merge neu zählen, nicht die Zahl aus dem eigenen Branch fortschreiben.
 
@@ -157,10 +157,44 @@ Service-Role umgeht RLS — deshalb **ausschließlich in Edge Functions**.
   `vendors`, `dpias`, `dsr_requests`
 - **Operations**: `incidents`, `inventory_items` (und die übrige `inventory_*`-Familie),
   `enterprise_agent_runs`, `vps_connections`
-- **Presence Layer** (Scope 1, Migration `20260906120000`): `business_profiles`,
-  `presence_sites`, `data_processing_agreements`. Gemessen am 2026-09-06 gegen das
+- **Presence Layer** (Scope 1, Migrationen `20260906120000` + `20260906130000`):
+  `business_profiles`, `presence_sites`, `data_processing_agreements`. Gemessen am 2026-09-06 gegen das
   Live-Projekt, bevor sie angelegt wurden — keine der drei existierte, und keine
   hatte einen funktionsgleichen Zwilling.
+
+  > #### ⚠️ Jede neue Tabelle in `public` startet mit `anon=arwd`
+  >
+  > **Gemessen am 2026-09-06** an den drei Presence-Tabellen, unmittelbar
+  > nachdem `20260906120000` sie angelegt hatte: Sie trugen `anon=arwd` —
+  > SELECT, INSERT, UPDATE **und** DELETE für die anonyme Rolle. Die Migration
+  > hatte das nicht vergeben; sie berechtigte ausdrücklich nur
+  > `authenticated` und hielt im Kommentar fest „anon bekommt nichts".
+  >
+  > Die Ursache ist kein Fehler in der Migration: `ALTER DEFAULT PRIVILEGES IN
+  > SCHEMA public GRANT ... ON TABLES TO anon, authenticated` läuft **vor**
+  > allen Migrationen — in CI wie in Supabase. Jede neu erzeugte Tabelle
+  > bekommt diese Rechte bei ihrer Erzeugung. Eine Migration, die danach nur
+  > `authenticated` erwähnt, nimmt `anon` nichts weg.
+  >
+  > **Dasselbe gilt für Funktionen, und dort schärfer**: `CREATE FUNCTION`
+  > erteilt `EXECUTE` an `PUBLIC`. Ein `GRANT EXECUTE ... TO authenticated`
+  > danach schränkt nichts ein. Bei `presence_publish_blockers(uuid)` war die
+  > Folge, dass eine SECURITY-DEFINER-Funktion mit `tenant_id`-Parameter für
+  > jeden aufrufbar war — sie hätte über **fremde** Mandanten Auskunft gegeben.
+  > Gefunden hat das nicht die Sitzung, sondern der Bestands-Wächter
+  > `security-regressions.db.test.ts`.
+  >
+  > **Regel daraus**: Wer `anon` oder `PUBLIC` etwas verwehren will, muss
+  > `REVOKE` schreiben. Ein `GRANT` an eine andere Rolle ist keine
+  > Beschränkung, sondern eine Bestätigung dessen, was ohnehin gilt. Und eine
+  > SECURITY-DEFINER-Funktion, die einen `tenant_id` entgegennimmt, umgeht RLS
+  > für jeden Mandanten, den der Aufrufer hinschreibt — im Zweifel
+  > SECURITY INVOKER.
+  >
+  > Für die drei Presence-Tabellen und beide Funktionen ist das in
+  > `20260906130000` §7 zurückgenommen und durch Tests bewacht. Die Frage, ob
+  > `anon` überhaupt je Default-Schreibrechte bekommen sollte, betrifft
+  > **jede** Tabelle dieses Repos und ist eine Betreiberentscheidung.
 
   > **Vier Namen aus dem Presence-Auftrag stehen hier bewusst NICHT**, weil der
   > Bestand sie schon führt: `ai_events` → `ai_runtime_events` (um `channel`,
@@ -775,7 +809,7 @@ RealSyncDynamics.AI/
 │   └── pricing.ts     Single Source of Truth für Produkt-, Preis- und Berechtigungsmodell
 ├── supabase/
 │   ├── functions/     188 Edge Functions (einziger Ort für Service-Role-Keys)
-│   ├── migrations/    328 Migrations
+│   ├── migrations/    329 Migrations
 │   └── rollbacks/     Rückwege — NIE automatisch ausgeführt, siehe §2
 ├── apps/
 │   ├── agent-runtime/ Agent Runtime (Node/TS, Docker)

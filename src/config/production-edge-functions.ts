@@ -54,10 +54,10 @@
  * Sie darf steigen, sobald jemand einen höheren Stand misst — und sie ist
  * kein Argument dafür, dass ein weiterer Deploy scheitern wird.
  */
-export const EDGE_FUNCTIONS_OBSERVED_MAX = 182;
+export const EDGE_FUNCTIONS_OBSERVED_MAX = 188;
 
 /** Datum der letzten Messung gegen das Live-Projekt. */
-export const PRODUCTION_EDGE_FUNCTIONS_MEASURED_AT = '2026-09-04T23:23Z';
+export const PRODUCTION_EDGE_FUNCTIONS_MEASURED_AT = '2026-09-06T14:57Z';
 
 /**
  * Die in Produktion aktiven Function-Slugs — alphabetisch, damit ein Diff
@@ -118,6 +118,7 @@ export const PRODUCTION_EDGE_FUNCTIONS: readonly string[] = [
   'enterprise-ai-os-evaluate',
   'enterprise-ai-os-feedback',
   'enterprise-ai-os-founding-access',
+  'evidence-anchor',
   'evidence-export',
   'evidence-vault',
   'evidence-vault-export',
@@ -128,6 +129,7 @@ export const PRODUCTION_EDGE_FUNCTIONS: readonly string[] = [
   'generate-certification-report',
   'generate-compliance-report',
   'generate-document',
+  'governance-access',
   'governance-agent',
   'governance-agents-list',
   'governance-analytics-aggregator',
@@ -136,6 +138,7 @@ export const PRODUCTION_EDGE_FUNCTIONS: readonly string[] = [
   'governance-audit-report-gen',
   'governance-connectors',
   'governance-deadline-monitor',
+  'governance-decide',
   'governance-dpias',
   'governance-dsr',
   'governance-erasure-sweeper',
@@ -156,6 +159,7 @@ export const PRODUCTION_EDGE_FUNCTIONS: readonly string[] = [
   'governance-workflow-intake',
   'health',
   'hostinger-agent-brief',
+  'integration-credentials',
   'invoice-email',
   'iso42001-control-detail',
   'iso42001-controls-library',
@@ -176,6 +180,8 @@ export const PRODUCTION_EDGE_FUNCTIONS: readonly string[] = [
   'memory-decay-worker',
   'mfa-admin-reset',
   'mfa-recovery-redeem',
+  'microsoft365-audit-sync',
+  'microsoft365-connect',
   'newsletter-confirm',
   'newsletter-subscribe',
   'nis2-deadline-calculator',
@@ -312,19 +318,13 @@ export const UNBACKED_CALLERS: readonly UnbackedCaller[] = [
   { slug: 'export-bulk-results', surface: 'features/bulk — Export', publicPath: false },
   { slug: 'iso42001-control-update', surface: 'features/governance — Control-Detail', publicPath: false },
   { slug: 'trigger-workflow', surface: 'features/workflows', publicPath: false },
-  // Governance OS P0-1 (PR #1135): Function liegt im Repo und wird mit dem
-  // naechsten deploy.yml-Lauf deployt — Eintrag nach der Neumessung entfernen.
-  { slug: 'integration-credentials', surface: 'features/integrations — Marketplace, Zugangsdaten-Siegel', publicPath: false },
-  // Governance OS P1-3 (PR #1135): Pflege des Zugriffsmodells mit Pruefpfad.
-  { slug: 'governance-access', surface: 'features/governance — Zugriffsmodell pflegen', publicPath: false },
-  // Governance OS P1-6 (PR #1135): signierte Pruefpunkte der Evidence-Kette.
-  { slug: 'evidence-anchor', surface: 'features/governance — Evidence-Anker', publicPath: false },
-  // Governance OS P2-2 (PR #1135): Einrichtung der Microsoft-365-Anbindung.
-  // Der zugehoerige Abholjob `microsoft365-audit-sync` steht hier bewusst
-  // nicht: Er hat keinen Aufrufer im Frontend, sondern wird von pg_cron
-  // getriggert. „Kein Aufrufer" und „nicht deployt" sind zwei verschiedene
-  // Aussagen; diese Liste fuehrt nur die erste zusammen mit der zweiten.
-  { slug: 'microsoft365-connect', surface: 'features/governance — Microsoft 365 einrichten', publicPath: false },
+  // Die vier Governance-OS-Aufrufer aus PR #1135 (`integration-credentials`,
+  // `governance-access`, `evidence-anchor`, `microsoft365-connect`) standen
+  // hier bis zum 2026-09-06 mit dem Vermerk „Eintrag nach der Neumessung
+  // entfernen". Der deploy.yml-Lauf nach dem Merge ist gelaufen; der
+  // Drift-Guard hat um 14:57 UTC 188 live Functions gemessen und alle vier
+  // namentlich als deployt gemeldet. Sie stehen jetzt oben in der
+  // Produktionsliste — genau der Abbau, den diese Liste vorsieht.
 ];
 
 const UNBACKED_SET = new Set(UNBACKED_CALLERS.map((c) => c.slug));

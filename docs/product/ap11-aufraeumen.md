@@ -101,6 +101,9 @@ kein Löschthema — eigener Schritt.
   mit Verweis auf die jetzt entfernte `enterprise-os/pages/PricingPage.tsx`;
   die Mock-Daten selbst bleiben und der Eintrag bleibt gültig.
 - Ältere Statusdokumente (`PRICING_ARCHITECTURE.md`, `IMPLEMENTATION_SPEC.md`,
-  `PHASE5_IMPLEMENTATION_SUMMARY.md`, `PHASE-5-PLAN.md`, `TEAM_ONBOARDING.md`,
-  `PLATFORM_MVP_IMPLEMENTATION.md`) nennen entfernte Dateien in Prosa. Nach
-  CLAUDE.md §9 sind erledigte Statusdokumente selbst Löschkandidaten.
+  `PHASE-5-PLAN.md`, `TEAM_ONBOARDING.md`) nennen entfernte Dateien in Prosa.
+  Nach CLAUDE.md §9 sind erledigte Statusdokumente selbst Löschkandidaten.
+  `PHASE5_IMPLEMENTATION_SUMMARY.md` und `PLATFORM_MVP_IMPLEMENTATION.md`
+  standen hier ebenfalls und sind am 2026-09-06 nach genau dieser Regel
+  entfernt worden — zusammen mit fünf weiteren abgeschlossenen
+  Statusdokumenten.

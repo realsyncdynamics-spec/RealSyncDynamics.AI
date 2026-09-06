@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { getSupabase } from '../../lib/supabase';
+import { useTenant } from '../../core/access/TenantProvider';
 
 interface Integration {
   id: string;
@@ -11,16 +12,19 @@ interface Integration {
   enabled: boolean;
 }
 
+// Bewusst OHNE credentials-Feld: Zugangsdaten erreichen den Browser nie —
+// die Spaltenrechte aus Migration 20260824110000 geben Clients nur noch
+// Metadaten frei (Plan P0-1, Freigabe E8).
 interface IntegrationConfig {
   id: string;
   integration_id: string;
-  credentials: Record<string, string>;
   name: string;
   enabled: boolean;
 }
 
 export function IntegrationMarketplaceView() {
   const supabase = getSupabase();
+  const { activeTenantId } = useTenant();
   const [integrations, setIntegrations] = useState<Integration[]>([]);
   const [configs, setConfigs] = useState<IntegrationConfig[]>([]);
   const [loading, setLoading] = useState(true);
@@ -50,9 +54,12 @@ export function IntegrationMarketplaceView() {
 
   async function fetchConfigs() {
     setLoading(true);
+    // Explizite Spaltenliste statt '*': Die credentials-Spalten sind fuer
+    // Clients gesperrt (Migration 20260824110000) — ein '*' wuerde am
+    // Spaltenrecht scheitern. Sichtbar sind nur Metadaten.
     const { data, error } = await supabase
       .from('integration_configs')
-      .select('*')
+      .select('id, integration_id, name, enabled, created_at')
       .eq('enabled', true)
       .order('created_at', { ascending: false });
 
@@ -67,33 +74,44 @@ export function IntegrationMarketplaceView() {
       alert('Bitte füllen Sie alle erforderlichen Felder aus');
       return;
     }
+    if (!activeTenantId) {
+      alert('Kein aktiver Workspace — bitte neu anmelden');
+      return;
+    }
 
-    const { error } = await supabase.from('integration_configs').insert({
-      integration_id: selectedIntegration.id,
-      name: configForm.name,
-      credentials: configForm.credentials,
-      enabled: true,
+    // Zugangsdaten gehen ausschliesslich an die Edge Function, die sie
+    // AES-256-GCM-versiegelt ablegt — nie direkt in die Tabelle (Plan P0-1).
+    const { data, error } = await supabase.functions.invoke('integration-credentials', {
+      body: {
+        op: 'configure',
+        tenant_id: activeTenantId,
+        integration_id: selectedIntegration.id,
+        name: configForm.name,
+        credentials: configForm.credentials,
+      },
     });
 
-    if (!error) {
+    if (!error && data?.ok) {
       setConfigForm({ name: '', credentials: {} });
       setShowConfigForm(false);
       setSelectedIntegration(null);
       fetchConfigs();
     } else {
-      alert('Fehler beim Speichern der Konfiguration');
+      alert('Fehler beim Speichern der Konfiguration — Zugangsdaten wurden nicht gespeichert');
     }
   }
 
   async function deleteConfig(configId: string) {
     if (!confirm('Wirklich löschen?')) return;
+    if (!activeTenantId) return;
 
-    const { error } = await supabase
-      .from('integration_configs')
-      .update({ enabled: false })
-      .eq('id', configId);
+    // Ueber die Edge Function, damit neben enabled=false auch das
+    // Credential-Siegel entfernt wird — keine schlummernden Zugangsdaten.
+    const { data, error } = await supabase.functions.invoke('integration-credentials', {
+      body: { op: 'remove', tenant_id: activeTenantId, config_id: configId },
+    });
 
-    if (!error) {
+    if (!error && data?.ok) {
       fetchConfigs();
     }
   }

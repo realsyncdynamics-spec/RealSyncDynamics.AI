@@ -9,6 +9,11 @@ import type { SkillKey } from '../../../lib/skills/registry';
 import type { ActionMap } from './dispatch';
 
 import {
+  classifyUseCase,
+  getAiActObligations,
+} from '../../../lib/skills/aiActRisk';
+
+import {
   classifyColumn,
   buildDataProfilingPlan,
 } from '../../../lib/skills/dataExploration';
@@ -61,6 +66,11 @@ function requireObject(args: Record<string, unknown>, key: string): Record<strin
 }
 
 export const SKILL_ACTIONS: Record<SkillKey, ActionMap> = {
+  'ai-act-risk': {
+    classify_use_case: (args) => classifyUseCase(requireString(args, 'category')),
+    get_obligations: (args) => getAiActObligations(requireString(args, 'tier')),
+  },
+
   'data-exploration': {
     classify_column: (args) =>
       classifyColumn(requireString(args, 'name'), requireArray(args, 'sample_values')),

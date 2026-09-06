@@ -98,11 +98,35 @@ export function evaluate(rows) {
   return { broken, nie, inaktiv, ok };
 }
 
-/** Gruppiert Ausfaelle nach ihrer Meldung — meist steckt eine Ursache hinter vielen Jobs. */
+/**
+ * Normalisiert eine Fehlermeldung auf ihre Ursache.
+ *
+ * Roh gruppiert die Meldung NICHT, und das war am 2026-09-06 im ersten Lauf
+ * dieses Guards zu sehen: Die vier Jobs scheitern an einem einzigen fehlenden
+ * Vault-Secret, `dispatch_cron_function` stellt aber die aufgerufene Function
+ * voran ("Cron-Dispatch \"memory-decay-worker\" abgebrochen: …"). Damit zerfiel
+ * die eine Ursache in drei Gruppen und die Ausgabe behauptete das Gegenteil
+ * dessen, wofuer die Gruppierung da ist.
+ *
+ * Zwei Normalisierungen, beide gezielt:
+ *   1. Alles ab `CONTEXT:` weg — der plpgsql-Aufrufpfad haengt an jeder
+ *      Meldung und traegt nichts zur Unterscheidung bei.
+ *   2. Den Namen der aufgerufenen Function durch einen Platzhalter ersetzen.
+ *      `"service_role_key"` bleibt ausdruecklich stehen: Das IST die Ursache,
+ *      und zwei Jobs mit verschiedenen fehlenden Secrets sind zwei Befunde.
+ */
+export function causeKey(message) {
+  return (message || '(ohne Meldung)')
+    .split(/\n\s*CONTEXT:/)[0]
+    .replace(/Cron-Dispatch\s+"[^"]*"/g, 'Cron-Dispatch <function>')
+    .trim();
+}
+
+/** Gruppiert Ausfaelle nach ihrer Ursache — meist steckt eine hinter vielen Jobs. */
 export function groupByCause(broken) {
   const nach = new Map();
   for (const r of broken) {
-    const ursache = (r.last_message || '(ohne Meldung)').trim();
+    const ursache = causeKey(r.last_message);
     if (!nach.has(ursache)) nach.set(ursache, []);
     nach.get(ursache).push(r.name);
   }
@@ -173,7 +197,7 @@ if (direkt) {
     const nie_gelaufen = r.erfolge === 0 ? '  — noch NIE erfolgreich' : `  — letzter Erfolg: ${r.letzter_erfolg}`;
     console.error(`  ${r.name}  (${r.schedule})`);
     console.error(`    letzter Lauf: ${r.last_run}  ·  ${r.fehler} Fehllaeufe insgesamt${nie_gelaufen}`);
-    console.error(`    Meldung: ${r.last_message || '(leer)'}`);
+    console.error(`    Meldung: ${causeKey(r.last_message)}`);
     console.error('');
   }
 

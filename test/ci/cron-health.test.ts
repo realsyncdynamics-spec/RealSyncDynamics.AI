@@ -16,7 +16,7 @@
  * kaputt gemeldet; eine Regel über den letzten Lauf meldet sie als repariert.
  */
 import { describe, expect, it } from 'vitest';
-import { evaluate, groupByCause, SQL } from '../../scripts/check-cron-health.mjs';
+import { causeKey, evaluate, groupByCause, SQL } from '../../scripts/check-cron-health.mjs';
 
 interface Zeile {
   name: string;
@@ -89,16 +89,54 @@ describe('evaluate teilt nach dem letzten Lauf ein', () => {
   });
 });
 
-describe('groupByCause bündelt Ausfälle mit derselben Meldung', () => {
-  it('fasst die vier Jobs des fehlenden Vault-Secrets zusammen', () => {
+/**
+ * Diese Gruppe hat der erste echte Lauf des Guards erzwungen (2026-09-06,
+ * Job 101483869051): Die vier Jobs scheitern an EINEM fehlenden Vault-Secret,
+ * die Ausgabe zeigte aber drei Gruppen — weil `dispatch_cron_function` die
+ * aufgerufene Function der Meldung voranstellt. Die Gruppierung behauptete
+ * damit das Gegenteil dessen, wofür sie da ist. Roher Meldungstext gruppiert
+ * nicht; die Normalisierung tut es.
+ */
+describe('groupByCause bündelt Ausfälle nach Ursache, nicht nach Wortlaut', () => {
+  const meldung = (fn: string) =>
+    `ERROR:  Cron-Dispatch "${fn}" abgebrochen: Vault-Secret "service_role_key" fehlt.\n` +
+    'CONTEXT:  PL/pgSQL function dispatch_cron_function(text,text,jsonb) line 12 at RAISE';
+
+  it('fasst die vier Jobs des fehlenden Secrets zu EINER Ursache zusammen', () => {
     const { broken } = evaluate([
-      job({ name: 'a', last_status: 'failed', last_message: FEHLT_SECRET, erfolge: 0 }),
-      job({ name: 'b', last_status: 'failed', last_message: FEHLT_SECRET, erfolge: 0 }),
-      job({ name: 'c', last_status: 'failed', last_message: 'ERROR: etwas anderes', erfolge: 0 }),
+      job({ name: 'scan-scheduler-dispatch', last_status: 'failed', last_message: meldung('scheduler-dispatch'), erfolge: 0 }),
+      job({ name: 'governance-monitoring-hourly', last_status: 'failed', last_message: meldung('governance-monitoring-scheduler'), erfolge: 0 }),
+      job({ name: 'governance-monitoring-daily', last_status: 'failed', last_message: meldung('governance-monitoring-scheduler'), erfolge: 0 }),
+      job({ name: 'memory-decay-hourly', last_status: 'failed', last_message: meldung('memory-decay-worker'), erfolge: 0 }),
     ]);
     const gruppen = groupByCause(broken);
-    expect(gruppen[0][1].sort()).toEqual(['a', 'b']);
-    expect(gruppen).toHaveLength(2);
+    expect(gruppen).toHaveLength(1);
+    expect(gruppen[0][1]).toHaveLength(4);
+  });
+
+  it('hält zwei verschiedene fehlende Secrets auseinander', () => {
+    // Das ist die Grenze der Normalisierung: Der Secret-Name bleibt stehen,
+    // weil er die Ursache IST — zwei fehlende Secrets sind zwei Befunde.
+    const { broken } = evaluate([
+      job({ name: 'a', last_status: 'failed', last_message: FEHLT_SECRET, erfolge: 0 }),
+      job({
+        name: 'b',
+        last_status: 'failed',
+        erfolge: 0,
+        last_message: 'ERROR:  Cron-Dispatch "x" abgebrochen: Vault-Secret "agent_os_runner_token" fehlt.',
+      }),
+    ]);
+    expect(groupByCause(broken)).toHaveLength(2);
+  });
+
+  it('schneidet den plpgsql-Aufrufpfad ab', () => {
+    expect(causeKey(meldung('memory-decay-worker'))).not.toContain('CONTEXT:');
+    expect(causeKey(meldung('memory-decay-worker'))).toContain('service_role_key');
+  });
+
+  it('verträgt eine leere Meldung', () => {
+    expect(causeKey('')).toBe('(ohne Meldung)');
+    expect(causeKey(null as unknown as string)).toBe('(ohne Meldung)');
   });
 });
 

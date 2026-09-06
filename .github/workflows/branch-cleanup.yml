@@ -19,6 +19,10 @@ jobs:
   cleanup:
     runs-on: ubuntu-latest
     steps:
+      # Voller Commit-SHA statt `@v4`: Ein beweglicher Tag laesst sich vom
+      # Action-Repo umhaengen — das ist der Lieferketten-Angriff, gegen den
+      # `test/ci/actions-pinned.test.ts` steht. Derselbe SHA wie in den
+      # uebrigen 25 Verwendungen dieses Repos.
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           fetch-depth: 0

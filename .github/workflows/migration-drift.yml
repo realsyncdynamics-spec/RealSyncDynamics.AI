@@ -25,6 +25,20 @@ jobs:
         with:
           node-version: '20'
       - uses: supabase/setup-cli@ab058987d8d6c725971f6cf9d0b5c98467e30bd1 # v1.7.1
+        # `version: latest` loest bei jedem Lauf die neueste Release ueber die
+        # GitHub-API auf. Faellt das aus ("rate limit exceeded", 2026-09-06,
+        # Lauf 34033487851), stirbt der Job VOR dem Pruefskript — und damit an
+        # einer Stelle, an der beide Zusagen dieses Guards nicht mehr greifen:
+        # das Skript behandelt eine fehlende CLI bereits als Infra-Problem und
+        # endet mit 0, und PR-Laeufe sind laut MIGRATION_DRIFT_MODE unten
+        # advisory. Ein Installationsfehler ist kein Drift und darf einen PR
+        # deshalb nicht blockieren.
+        #
+        # Bewusst NUR auf pull_request. Im taeglichen schedule-Lauf bleibt der
+        # Schritt hart: dort waere ein stiller Durchlauf ohne CLI genau der
+        # Befund, den dieser Guard verhindern soll — ein gruener Lauf, der
+        # nichts gemessen hat.
+        continue-on-error: ${{ github.event_name == 'pull_request' }}
         with:
           version: latest
       - name: Link project (best-effort; ohne Secrets uebersprungen)

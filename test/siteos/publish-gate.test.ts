@@ -5,6 +5,9 @@
 // Gate auszuhebeln — die Tests sind entsprechend als Angriffe formuliert.
 
 import { describe, it, expect } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import {
   buildSiteFromPrompt,
   evaluatePublishGate,
@@ -262,5 +265,38 @@ describe('Publish Gate am echten Bauergebnis', () => {
 
     expect({ status: result.status, blockers: result.blockers })
       .toEqual({ status: 'passed', blockers: [] });
+  });
+});
+
+/**
+ * Der PDP liefert `DecisionReason`-Objekte, der Prüfpfad speichert Sätze.
+ *
+ * `PolicyEngineState` deklariert `reasons: string[]` und nennt sie „seine
+ * deutschen Begründungen". Über `policyTrail()` landen genau diese Werte in
+ * `policy_reasons` (JSONB) — nach dem Kommentar im Quelltext „die einzige
+ * Stelle, an der der Zustand des PEP zu einer dauerhaften Aussage wird".
+ *
+ * Ohne die Abbildung auf `.text_de` stünden dort Objekte statt Text. Das
+ * bricht nichts sichtbar: Der Eintrag entsteht, er ist nur unlesbar — und
+ * eine Begründung, die niemand lesen kann, ist als Nachweis wertlos.
+ *
+ * Geprüft am Quelltext, weil `consultPolicyEngine` nicht exportiert ist und
+ * der Fehler ausschließlich an dieser einen Zuweisung hängt.
+ */
+describe('Publish Gate — PDP-Begründungen bleiben Text', () => {
+  const quelle = readFileSync(
+    join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'supabase', 'functions', 'siteos', 'handlers', 'publish-gate.ts'),
+    'utf8',
+  );
+
+  it('bildet die Begründungen des PDP auf .text_de ab', () => {
+    expect(quelle).toMatch(/result\.reasons\.map\(\(r\)\s*=>\s*r\.text_de\)/);
+  });
+
+  it('reicht die rohen DecisionReason-Objekte nicht durch', () => {
+    // Gegenprobe zur Regel oben: die Fassung ohne Abbildung darf nicht
+    // zurückkehren. Sie ist syntaktisch einwandfrei und fällt sonst nur im
+    // `deno check` auf — den die Repo-CI für Edge Functions nicht fährt.
+    expect(quelle).not.toMatch(/reasons:\s*Array\.isArray\(result\.reasons\)\s*\?\s*result\.reasons\s*:/);
   });
 });

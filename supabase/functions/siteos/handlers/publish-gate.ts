@@ -547,7 +547,13 @@ async function consultPolicyEngine(
     return {
       engine: 'consulted',
       decision: result.decision as Verdict,
-      reasons: Array.isArray(result.reasons) ? result.reasons : [],
+      // `.text_de` und nicht das ganze `DecisionReason`: `PolicyEngineState`
+      // sagt „deutsche Begruendungen" und meint Saetze, und genau die landen
+      // ueber `policyTrail()` in `policy_reasons` — dem Pruefpfad. Ohne die
+      // Abbildung stuenden dort Objekte statt Text; wer sie liest, saehe
+      // `[object Object]` statt der Begruendung. `_shared/pdp/m365event.ts`
+      // bildet an derselben Grenze bereits so ab.
+      reasons: Array.isArray(result.reasons) ? result.reasons.map((r) => r.text_de) : [],
     };
   } catch (err) {
     const detail = err instanceof Error ? err.message : 'unbekannter Fehler';

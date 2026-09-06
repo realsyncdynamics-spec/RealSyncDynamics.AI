@@ -110,3 +110,87 @@ export interface ScanError {
     details?: Record<string, unknown>;
   };
 }
+
+// ─── Beobachtung für Browser Agent X07 (§02 des Organisationsmodells) ────────
+//
+// Getrennt von ScanResult, weil es eine andere Frage beantwortet: ScanResult
+// sagt „ist diese Seite DSGVO-konform", ObserveResult sagt „funktioniert diese
+// Seite im Browser". Ein gemeinsames Format hätte beide Seiten verwässert.
+
+export interface ViewportSpec {
+  width: number;
+  height: number;
+  label?: string;
+}
+
+export interface ObserveOptions {
+  timeout?: number;
+  viewports?: ViewportSpec[];
+  /** CSS-Selektoren, die sichtbar und vollständig im Viewport liegen müssen. */
+  expect_visible?: string[];
+  user_agent?: string;
+}
+
+export interface ObserveRequest {
+  url: string;
+  options?: ObserveOptions;
+}
+
+export interface ConsoleEntry {
+  level: 'error' | 'warning';
+  text: string;
+  url: string | null;
+  line: number | null;
+}
+
+export interface FailedRequest {
+  url: string;
+  method: string;
+  /** Netzwerkfehler (z.B. `net::ERR_NAME_NOT_RESOLVED`), sonst null. */
+  failure: string | null;
+  /** HTTP-Status ab 400, sonst null. */
+  status: number | null;
+}
+
+export interface SelectorObservation {
+  selector: string;
+  found: boolean;
+  visible: boolean;
+  /** Sichtbar UND vollständig innerhalb der Viewport-Breite. */
+  within_viewport: boolean;
+  right: number | null;
+}
+
+export interface ViewportObservation {
+  label: string;
+  width: number;
+  height: number;
+  document_scroll_width: number;
+  horizontal_overflow: boolean;
+  selectors: SelectorObservation[];
+  /** Gesetzt, wenn diese Breite gar nicht geladen hat. */
+  load_error?: string;
+}
+
+export interface ObserveResult {
+  ok: true;
+  meta: {
+    url: string;
+    final_url: string | null;
+    http_status: number | null;
+    duration_ms: number;
+    observer_version: string;
+    observed_at: string;
+  };
+  console_errors: ConsoleEntry[];
+  console_warnings: ConsoleEntry[];
+  page_errors: string[];
+  failed_requests: FailedRequest[];
+  /** Navigation-Timing-API. KEIN Lighthouse — siehe Kopf von observe.ts. */
+  timings: {
+    response_start_ms: number;
+    dom_content_loaded_ms: number;
+    load_ms: number;
+  } | null;
+  viewports: ViewportObservation[];
+}

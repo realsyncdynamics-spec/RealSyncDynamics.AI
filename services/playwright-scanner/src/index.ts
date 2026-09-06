@@ -3,6 +3,9 @@
 // Endpoints:
 //   GET  /health   — Liveness + Browser-Status
 //   POST /scan     — Bearer-Auth + Rate-Limit + Playwright-Scan
+//   POST /observe  — Bearer-Auth + Rate-Limit + Browser-Zustand fuer
+//                    Browser Agent X07 (Konsole, Seitenfehler, fehlgeschlagene
+//                    Requests, Sichtbarkeit je Viewport, Navigation-Timings)
 //
 // Run local: npm run dev (tsx watch)
 // Build:     npm run build (esbuild → dist/index.js)
@@ -12,7 +15,8 @@ import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { closeBrowser, getBrowser, scan, ScanFailure } from './scanner.js';
-import type { ScanError, ScanRequest } from './types.js';
+import { observe } from './observe.js';
+import type { ObserveRequest, ScanError, ScanRequest } from './types.js';
 
 const PORT = parseInt(process.env.PORT ?? '3000', 10);
 const SCANNER_SECRET = process.env.SCANNER_SECRET ?? '';
@@ -121,6 +125,81 @@ app.post('/scan', async (c) => {
     return c.json<ScanError>({
       ok: false,
       error: { code: 'SCAN_FAILED', message: msg },
+    }, 500);
+  } finally {
+    activeScans--;
+  }
+});
+
+// ─── Observe-Endpoint (Browser Agent X07) ────────────────────────────────────
+//
+// Gleiche Auth- und Rate-Limit-Huelle wie /scan: Der Endpunkt startet einen
+// echten Browser und ist damit genauso teuer.
+app.post('/observe', async (c) => {
+  const authHeader = c.req.header('Authorization') ?? '';
+  if (!authHeader.startsWith('Bearer ') || authHeader.slice(7) !== SCANNER_SECRET) {
+    return c.json<ScanError>({
+      ok: false,
+      error: { code: 'UNAUTHORIZED', message: 'Bearer token missing or invalid' },
+    }, 401);
+  }
+
+  if (activeScans >= MAX_CONCURRENT) {
+    return c.json<ScanError>({
+      ok: false,
+      error: {
+        code: 'RATE_LIMITED',
+        message: `Max ${MAX_CONCURRENT} concurrent scans. Try again in a few seconds.`,
+        details: { active_scans: activeScans },
+      },
+    }, 429);
+  }
+
+  let body: ObserveRequest;
+  try {
+    body = await c.req.json<ObserveRequest>();
+  } catch {
+    return c.json<ScanError>({
+      ok: false,
+      error: { code: 'BAD_REQUEST', message: 'Invalid JSON body' },
+    }, 400);
+  }
+
+  if (!body.url || typeof body.url !== 'string') {
+    return c.json<ScanError>({
+      ok: false,
+      error: { code: 'BAD_REQUEST', message: 'Field "url" is required (string)' },
+    }, 400);
+  }
+  if (!/^https?:\/\//i.test(body.url)) {
+    return c.json<ScanError>({
+      ok: false,
+      error: { code: 'INVALID_URL', message: 'URL must start with http:// or https://' },
+    }, 400);
+  }
+  if (body.url.length > 2048) {
+    return c.json<ScanError>({
+      ok: false,
+      error: { code: 'INVALID_URL', message: 'URL too long (max 2048 chars)' },
+    }, 400);
+  }
+
+  activeScans++;
+  try {
+    const result = await observe(body.url, body.options ?? {});
+    return c.json(result);
+  } catch (err) {
+    if (err instanceof ScanFailure) {
+      return c.json<ScanError>({
+        ok: false,
+        error: { code: err.code, message: err.message, ...(err.details ? { details: err.details } : {}) },
+      }, 400);
+    }
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error('[playwright-scanner] observe failed:', msg);
+    return c.json<ScanError>({
+      ok: false,
+      error: { code: 'OBSERVE_FAILED', message: msg },
     }, 500);
   } finally {
     activeScans--;

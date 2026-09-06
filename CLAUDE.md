@@ -1384,6 +1384,38 @@ Datei), und die sechs Views aus Frage 2 ohne Nachfolger
 (`IntegrationMarketplaceView`, `UnknownTrackersView`, `AgentsView`,
 `ApiUsageStats`, `NewsletterForm`, `PolicyPackAutoActivator`).
 
+**2026-09-06 — Kopfzeile: „Login" wird „Zum Dashboard", sobald eine Sitzung besteht**
+
+Auf die Fragepflicht nach §10.3 hat der Eigentümer mit **„go"** geantwortet —
+gelesen wie am 2026-09-01 und 2026-09-04: Ja zur gestellten Ja/Nein-Frage.
+
+Umfang — und **nur** dieser, in `Navbar.tsx` und `LandingNavbar.tsx`:
+
+| Was | Vorher | Nachher |
+|---|---|---|
+| Beschriftung des Einstiegspunkts | fest „Login" | ohne Sitzung „Login", mit Sitzung „Zum Dashboard" |
+
+Anlass ist die Hälfte einer Änderung, die sonst stehengeblieben wäre. Seit
+`resolveCustomerDestination` einen angemeldeten Bestandskunden in den
+Arbeitsbereich führt statt in den Einrichtungs-Assistenten, hieß der Punkt
+weiterhin „Login": Er versprach eine Anmeldung, die längst besteht, und
+verschwieg, wohin er tatsächlich führt. Das Ziel war beauftragt, die
+Beschriftung nicht — deshalb die Rückfrage.
+
+Beschriftung und Ziel kommen jetzt aus **derselben** Entscheidung
+(`customerEntryLabel()` neben `resolveCustomerDestination()`, beide in
+`src/core/access/customer-destination.ts`). Zwei getrennte Bedingungen wären
+genau die Stelle, an der beide wieder auseinanderlaufen — und dass sie
+auseinandergelaufen sind, sähe man dem Knopf nicht an. Gesichert durch
+`test/core/customer-destination.test.ts`: Die letzte Prüfung dort vergleicht
+für jedes mögliche Ziel Text und Pfad gegeneinander, statt beide einzeln
+gegen eine Erwartung.
+
+Farben, Typografie, Grid, Abstände, Icon-Set, Reihenfolge der
+Navigationspunkte und alle übrigen Beschriftungen sind unberührt. Ohne
+Sitzung — also für jeden anonymen Besucher der öffentlichen Seiten — ändert
+sich nichts.
+
 #### Faustregel
 
 **Hinzufügen ja, Ändern nur nach Rückfrage, Design gar nicht.**

@@ -28,6 +28,12 @@ export const WELCOME_PATH = '/welcome';
 /** Das Arbeitsbereich-Zuhause eines angemeldeten Kunden. */
 export const CUSTOMER_HOME_PATH = '/app/dashboard';
 
+/** Beschriftung des Einstiegspunkts ohne Sitzung. */
+export const LOGIN_LINK_LABEL = 'Login';
+
+/** Beschriftung des Einstiegspunkts mit Sitzung. */
+export const WORKSPACE_LINK_LABEL = 'Zum Dashboard';
+
 export interface CustomerDestinationInput {
   /** Besteht eine Supabase-Sitzung? */
   hasSession: boolean;
@@ -120,6 +126,24 @@ export function resolveCustomerDestination(
   if (isSafeInternalPath(nextParam)) return { kind: 'next', path: nextParam };
 
   return { kind: 'workspace', path: CUSTOMER_HOME_PATH };
+}
+
+/**
+ * Beschriftung, die zu diesem Ziel gehört.
+ *
+ * Freigabe des Eigentümers vom 2026-09-06 („go" auf die Fragepflicht nach
+ * §10.3). Anlass: Seit der Einstieg für einen angemeldeten Kunden in den
+ * Arbeitsbereich führt, hieß der Punkt weiterhin „Login" — er versprach eine
+ * Anmeldung, die längst besteht, und verschwieg, wohin er tatsächlich führt.
+ *
+ * Beschriftung und Ziel stammen deshalb aus **derselben** Entscheidung. Zwei
+ * getrennte Bedingungen wären genau die Stelle, an der beide wieder
+ * auseinanderlaufen — und das Auseinanderlaufen sähe man niemandem an.
+ */
+export function customerEntryLabel(destination: CustomerDestination): string {
+  return destination.kind === 'workspace' || destination.kind === 'next'
+    ? WORKSPACE_LINK_LABEL
+    : LOGIN_LINK_LABEL;
 }
 
 /**

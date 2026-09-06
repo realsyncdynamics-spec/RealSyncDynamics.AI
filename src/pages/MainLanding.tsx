@@ -13,6 +13,12 @@ import { EnterpriseAccessSection } from '../components/landing/EnterpriseAccessS
 import { LIVE_CAPABILITIES, BUILDING_CAPABILITIES } from '../config/platform-capabilities';
 import { useStagedReveal } from '../hooks/useStagedReveal';
 import { useHeroParallax } from '../hooks/useHeroParallax';
+import { useOptionalAuth } from '../lib/useAuth';
+import {
+  resolveCustomerDestination,
+  customerEntryLabel,
+  WELCOME_PATH,
+} from '../core/access/customer-destination';
 
 const BG = 'rgb(3, 7, 18)';
 const SANS = "'Plus Jakarta Sans', 'Inter', system-ui, sans-serif";
@@ -35,6 +41,15 @@ const GOVERNANCE_STEPS = [
 ];
 
 export function MainLanding() {
+  // Kopfzeilen-Einstieg: Ziel und Beschriftung aus derselben Entscheidung wie
+  // in `Navbar`/`LandingNavbar` (Schnitt 2, Freigabe 2026-09-06). Diese Seite
+  // trägt ihre Kopfzeile selbst und wäre sonst als einzige zurückgeblieben —
+  // ausgerechnet die Seite mit dem meisten Verkehr.
+  const { isAuthenticated, isLoading } = useOptionalAuth();
+  const einstieg = resolveCustomerDestination({ hasSession: isAuthenticated, isLoading });
+  const einstiegZiel = einstieg.path ?? WELCOME_PATH;
+  const einstiegText = customerEntryLabel(einstieg);
+
   const navigate = useNavigate();
   const [domain, setDomain] = useState('');
   // Ein Observer fuer die ganze Seite (siehe useStagedReveal), Parallax nur
@@ -63,7 +78,7 @@ export function MainLanding() {
         ogDescription="RealSyncDynamics.AI verbindet DSGVO, EU AI Act, Code-Compliance, Policy-Durchsetzung und auditfähige Nachweise in einer operativen Governance-Runtime."
       />
 
-      <header className="absolute inset-x-0 top-0 z-30"><div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6 lg:px-10"><Link to="/" className="flex items-center gap-2.5"><Snowflake className="h-6 w-6 text-[#e8c98a]" strokeWidth={1.5} /><span className="text-base font-semibold tracking-tight sm:text-lg">RealSync <span className="font-normal text-white/80">Dynamics.AI</span></span></Link><nav className="hidden items-center gap-7 md:flex"><a href="#tools" className="text-sm text-white/65 transition-colors hover:text-white">Tools</a><a href="#platform" className="text-sm text-white/65 transition-colors hover:text-white">Produkt</a><a href="#evidence" className="text-sm text-white/65 transition-colors hover:text-white">Evidence</a><a href="#enterprise" className="hidden text-sm text-white/65 transition-colors hover:text-white lg:block">Enterprise</a><Link to="/ai-act" className="hidden text-sm text-white/65 transition-colors hover:text-white xl:block">EU AI Act</Link><Link to="/sicherheit" className="hidden text-sm text-white/65 transition-colors hover:text-white xl:block">Sicherheit</Link><Link to="/pricing" className="text-sm text-white/65 transition-colors hover:text-white">Preise</Link><Link to="/welcome" className="text-sm text-white/65 transition-colors hover:text-white">Login</Link><Link to="/audit" className="rounded-full bg-[#f0e6d2] px-6 py-3 text-sm font-semibold text-[#1a1714] transition hover:bg-[#f6efe4]">Kostenlos scannen</Link></nav></div></header>
+      <header className="absolute inset-x-0 top-0 z-30"><div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6 lg:px-10"><Link to="/" className="flex items-center gap-2.5"><Snowflake className="h-6 w-6 text-[#e8c98a]" strokeWidth={1.5} /><span className="text-base font-semibold tracking-tight sm:text-lg">RealSync <span className="font-normal text-white/80">Dynamics.AI</span></span></Link><nav className="hidden items-center gap-7 md:flex"><a href="#tools" className="text-sm text-white/65 transition-colors hover:text-white">Tools</a><a href="#platform" className="text-sm text-white/65 transition-colors hover:text-white">Produkt</a><a href="#evidence" className="text-sm text-white/65 transition-colors hover:text-white">Evidence</a><a href="#enterprise" className="hidden text-sm text-white/65 transition-colors hover:text-white lg:block">Enterprise</a><Link to="/ai-act" className="hidden text-sm text-white/65 transition-colors hover:text-white xl:block">EU AI Act</Link><Link to="/sicherheit" className="hidden text-sm text-white/65 transition-colors hover:text-white xl:block">Sicherheit</Link><Link to="/pricing" className="text-sm text-white/65 transition-colors hover:text-white">Preise</Link><Link to={einstiegZiel} className="text-sm text-white/65 transition-colors hover:text-white">{einstiegText}</Link><Link to="/audit" className="rounded-full bg-[#f0e6d2] px-6 py-3 text-sm font-semibold text-[#1a1714] transition hover:bg-[#f6efe4]">Kostenlos scannen</Link></nav></div></header>
 
       <main ref={revealRoot}>
         <section className="relative min-h-[880px] overflow-hidden">

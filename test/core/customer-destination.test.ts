@@ -3,8 +3,11 @@ import {
   resolveCustomerDestination,
   isSafeInternalPath,
   hasAuthCallbackArtifacts,
+  customerEntryLabel,
   WELCOME_PATH,
   CUSTOMER_HOME_PATH,
+  LOGIN_LINK_LABEL,
+  WORKSPACE_LINK_LABEL,
 } from '../../src/core/access/customer-destination';
 
 describe('resolveCustomerDestination', () => {
@@ -108,5 +111,50 @@ describe('hasAuthCallbackArtifacts', () => {
     expect(hasAuthCallbackArtifacts('?session=cs_test_123', '')).toBe(false);
     // Ein Parameter, der die Marker nur als Teilwort enthält, zählt nicht.
     expect(hasAuthCallbackArtifacts('?discount_code=abc', '')).toBe(false);
+  });
+});
+
+describe('customerEntryLabel', () => {
+  // Freigabe 2026-09-06: Beschriftung und Ziel stammen aus derselben
+  // Entscheidung. Ein Punkt, der „Login" heißt und ins Dashboard führt,
+  // verspricht eine Anmeldung, die schon besteht.
+  it('nennt den Arbeitsbereich, wenn er dorthin führt', () => {
+    const ziel = resolveCustomerDestination({ hasSession: true });
+    expect(ziel.path).toBe(CUSTOMER_HOME_PATH);
+    expect(customerEntryLabel(ziel)).toBe(WORKSPACE_LINK_LABEL);
+  });
+
+  it('nennt die Anmeldung, wenn er dorthin führt', () => {
+    for (const eingabe of [
+      { hasSession: false },
+      { hasSession: true, checkoutSessionId: 'cs_test_123' },
+      { hasSession: true, arrivedFromAuthCallback: true },
+    ]) {
+      const ziel = resolveCustomerDestination(eingabe);
+      expect(ziel.path, JSON.stringify(eingabe)).toBe(WELCOME_PATH);
+      expect(customerEntryLabel(ziel), JSON.stringify(eingabe)).toBe(LOGIN_LINK_LABEL);
+    }
+  });
+
+  it('bleibt beim bisherigen Text, solange die Sitzung aufgelöst wird', () => {
+    const ziel = resolveCustomerDestination({ hasSession: false, isLoading: true });
+    expect(customerEntryLabel(ziel)).toBe(LOGIN_LINK_LABEL);
+  });
+
+  it('Beschriftung und Ziel sagen dasselbe — für jedes Ziel', () => {
+    const faelle = [
+      { hasSession: false },
+      { hasSession: true },
+      { hasSession: true, nextParam: '/app/evidence' },
+      { hasSession: true, checkoutSessionId: 'cs_test_123' },
+      { hasSession: true, arrivedFromAuthCallback: true },
+      { hasSession: false, isLoading: true },
+    ];
+    for (const eingabe of faelle) {
+      const ziel = resolveCustomerDestination(eingabe);
+      const text = customerEntryLabel(ziel);
+      const fuehrtInDieApp = ziel.path !== null && ziel.path !== WELCOME_PATH;
+      expect(text === WORKSPACE_LINK_LABEL, JSON.stringify(eingabe)).toBe(fuehrtInDieApp);
+    }
   });
 });

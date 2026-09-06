@@ -7,6 +7,12 @@ import { BrowserExtensionSection } from '../components/sections/BrowserExtension
 import { PolicyEngineSection } from '../components/sections/PolicyEngineSection';
 import { EnterpriseEvidenceVaultSection } from '../components/sections/EnterpriseEvidenceVaultSection';
 import { AgentConnectorsSection } from '../components/sections/AgentConnectorsSection';
+import { useOptionalAuth } from '../lib/useAuth';
+import {
+  resolveCustomerDestination,
+  customerEntryLabel,
+  WELCOME_PATH,
+} from '../core/access/customer-destination';
 
 const SUGGESTIONS = [
   'Prüfe meinen AI Act Compliance Status.',
@@ -24,6 +30,14 @@ const WORK_STAGES = [
 ] as const;
 
 export function AiGovernancePage() {
+  // Kopfzeilen-Einstieg: Ziel und Beschriftung aus derselben Entscheidung wie
+  // in `Navbar`/`LandingNavbar` (Schnitt 2, Freigabe 2026-09-06). Diese Seite
+  // trägt ihre Kopfzeile selbst und wäre sonst zurückgeblieben.
+  const { isAuthenticated, isLoading } = useOptionalAuth();
+  const einstieg = resolveCustomerDestination({ hasSession: isAuthenticated, isLoading });
+  const einstiegZiel = einstieg.path ?? WELCOME_PATH;
+  const einstiegText = customerEntryLabel(einstieg);
+
   const [prompt, setPrompt] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const [mode, setMode] = useState<'Auto' | 'Research' | 'Execute'>('Auto');
@@ -54,7 +68,7 @@ export function AiGovernancePage() {
           </Link>
           <div className="flex items-center gap-3">
             <Link to="/ai-act-faq" className="hidden text-xs text-white/45 hover:text-white sm:block">EU AI Act</Link>
-            <Link to="/welcome" className="text-xs text-white/45 hover:text-white">Login</Link>
+            <Link to={einstiegZiel} className="text-xs text-white/45 hover:text-white">{einstiegText}</Link>
             <Link to="/contact-sales?intent=ai-governance" className="inline-flex items-center gap-2 rounded-lg bg-cyan-400 px-3.5 py-2 text-xs font-semibold text-[rgb(3,7,18)] hover:bg-cyan-300">Starten <ArrowRight className="h-3.5 w-3.5" /></Link>
           </div>
         </div>

@@ -4,7 +4,11 @@ import { Link, useLocation } from 'react-router-dom';
 import { Logo } from './Logo';
 import { CTA } from '../content/runtimeVocab';
 import { useOptionalAuth } from '../lib/useAuth';
-import { resolveCustomerDestination, WELCOME_PATH } from '../core/access/customer-destination';
+import {
+  resolveCustomerDestination,
+  customerEntryLabel,
+  WELCOME_PATH,
+} from '../core/access/customer-destination';
 
 const NAV_ITEMS = [
   { label: 'Produkt',         to: '/runtime' },
@@ -31,9 +35,14 @@ export function LandingNavbar() {
   // Stelle für Kopfzeile und `/welcome` gemeinsam; solange die Sitzung noch
   // aufgelöst wird, bleibt es beim bisherigen Ziel.
   const { isAuthenticated, isLoading } = useOptionalAuth();
-  const loginZiel =
-    resolveCustomerDestination({ hasSession: isAuthenticated, isLoading }).path ?? WELCOME_PATH;
+  const einstieg = resolveCustomerDestination({ hasSession: isAuthenticated, isLoading });
+  const loginZiel = einstieg.path ?? WELCOME_PATH;
+  const loginText = customerEntryLabel(einstieg);
   const zielFuer = (to: string) => (to === WELCOME_PATH ? loginZiel : to);
+  // Beschriftung und Ziel kommen aus derselben Entscheidung (Freigabe
+  // 2026-09-06): „Login" verspricht sonst eine Anmeldung, die schon besteht.
+  const textFuer = (item: { to: string; label: string }) =>
+    item.to === WELCOME_PATH ? loginText : item.label;
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 16);
@@ -70,7 +79,7 @@ export function LandingNavbar() {
                     active ? 'text-slate-900 font-semibold' : 'text-slate-500 hover:text-slate-900'
                   }`}
                 >
-                  {item.label}
+                  {textFuer(item)}
                 </Link>
               );
             })}
@@ -103,7 +112,7 @@ export function LandingNavbar() {
                 onClick={() => setIsOpen(false)}
                 className="block px-3 py-3 text-base font-medium text-slate-700 hover:bg-slate-50"
               >
-                {item.label}
+                {textFuer(item)}
               </Link>
             ))}
             <Link

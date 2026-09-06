@@ -70,6 +70,12 @@ const REQUIRED_AUTHENTICATED = [
   'bulk_scan_batch_progress',
   'compute_racpo',
   'compute_tenant_quadrant',
+  // P2-1: Ohne diese beiden zeigt /app/governance/connectors keine Klasse mehr
+  // an — und eine Seite, die Durchsetzbarkeit ausweisen soll, aber nichts
+  // ausweist, ist schlimmer als keine. Genau dieser Ausfalltyp war der
+  // ACL-Vorfall vom 2026-08-23 (Migration 20260904100000).
+  'connector_enforcement_class',
+  'connector_enforcement_summary',
   'create_api_key',
   'evidence_vault_timeline',
   'get_compliance_timeline',

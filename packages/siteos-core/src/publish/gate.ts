@@ -129,6 +129,35 @@ export interface ApprovalState {
   reason: string | null;
 }
 
+/**
+ * Ergebnis der Mandanten-Richtlinienprüfung (P2-3).
+ *
+ * WOZU: Bis hierher entschied der Publish Gate ausschließlich nach den fest
+ * verdrahteten Regeln weiter unten — Dimension, Schweregrad, zwei
+ * Blueprint-Flags. Die Richtlinien, die der Mandant selbst gepflegt hat und
+ * die der Policy Decision Point kompiliert, hatten beim Veröffentlichen
+ * **keine Wirkung**. Ein Gate, das die eigenen Regeln des Kunden nicht kennt,
+ * ist eine Insel, kein Enforcement-Punkt.
+ *
+ * WARUM ALS EINGABE UND NICHT ALS AUFRUF: Diese Datei ist abhängigkeitsfrei
+ * und seiteneffektlos — gleiche Eingabe ⇒ gleiches Ergebnis. Das ist die
+ * Voraussetzung dafür, dass eine Bewertung später nachvollzogen werden kann.
+ * Ein Netzwerkaufruf mitten in der Ableitung würde genau das zerstören. Der
+ * PDP wird deshalb im Deno-Handler befragt; hierher kommt nur sein Ergebnis.
+ *
+ * WARUM PFLICHTFELD: Wäre es optional, sähe „der PDP wurde nicht befragt"
+ * genauso aus wie „jemand hat vergessen, ihn zu befragen". Das ist die
+ * gefährlichste Fehlerklasse dieses Plans (K1: stilles Nicht-Greifen einer
+ * Regel). Der Typ zwingt jeden Aufrufer, sich zu erklären.
+ */
+export type PolicyEngineState =
+  /** Der PDP hat entschieden. `reasons` sind seine deutschen Begründungen. */
+  | { engine: 'consulted'; decision: 'allow' | 'log_only' | 'warn' | 'block' | 'require_approval'; reasons: string[] }
+  /** Bewusst nicht durchsetzend (Modus `off` oder `shadow`) — benannt, nicht verschwiegen. */
+  | { engine: 'not_enforcing'; reason: string }
+  /** Keine Antwort, Zeitüberschreitung, Fehler. Sperrt nach G3. */
+  | { engine: 'unavailable'; detail: string };
+
 export interface PublishGateInput {
   blueprint: SiteBlueprint;
   /** Befunde der Analyse — frisch erhoben, nicht aus dem Speicher gelesen. */
@@ -137,6 +166,11 @@ export interface PublishGateInput {
   evidence: EvidenceState;
   backend: BackendState;
   approval: ApprovalState;
+  /**
+   * Ergebnis der Mandanten-Richtlinien (P2-3). Pflichtfeld — siehe
+   * `PolicyEngineState`.
+   */
+  policyEngine: PolicyEngineState;
   /** Anker im Prüfpfad (G5). */
   evaluationId: string;
   evaluatedAt: string;
@@ -206,13 +240,52 @@ export function evaluatePublishGate(input: PublishGateInput): PublishGateEvaluat
     (finding) => finding.severity === 'critical' && !LEGALLY_BLOCKING.has(finding.dimension),
   );
 
-  const policyCompliant = legalFindings.length === 0 && criticalElsewhere.length === 0;
+  let policyCompliant = legalFindings.length === 0 && criticalElsewhere.length === 0;
   for (const finding of [...legalFindings, ...criticalElsewhere]) {
     blockers.push(`${finding.code} (${finding.dimension}, ${finding.severity}): ${finding.title}`);
   }
 
+  // ── Mandanten-Richtlinien (P2-3) ──────────────────────────────────
+  //
+  // Das Ergebnis des PDP wird in die VORHANDENEN Vertragsfelder gefaltet,
+  // nicht als sechstes danebengestellt: `block` senkt `policy_compliant`,
+  // `require_approval` hebt `human_approval_required`. Der Contract aus §7
+  // und die Ableitungsregel bleiben damit wörtlich unverändert — ein neues
+  // Feld hätte die generierte Spalte in der Datenbank und die
+  // Ableitungsregel auseinanderlaufen lassen (G2).
+  const policyApprovalReasons: string[] = [];
+  switch (input.policyEngine.engine) {
+    case 'consulted':
+      if (input.policyEngine.decision === 'block') {
+        policyCompliant = false;
+        blockers.push(...input.policyEngine.reasons.map((r) => `Richtlinie: ${r}`));
+      } else if (input.policyEngine.decision === 'require_approval') {
+        policyApprovalReasons.push(...input.policyEngine.reasons.map((r) => `Richtlinie: ${r}`));
+      } else if (input.policyEngine.decision === 'warn') {
+        warnings.push(...input.policyEngine.reasons.map((r) => `Richtlinie: ${r}`));
+      }
+      break;
+    case 'not_enforcing':
+      // Sichtbar machen, dass die eigenen Regeln des Mandanten hier gerade
+      // nicht binden. Wer das nicht sagt, lässt ein Gate strenger wirken,
+      // als es ist.
+      warnings.push(`Mandantenrichtlinien werden hier derzeit nicht durchgesetzt: ${input.policyEngine.reason}`);
+      break;
+    case 'unavailable':
+      // G3, wörtlich: fehlende Antwort ⇒ nicht veröffentlichbar. Bewusst mit
+      // eigener Begründung — eine Sperre wegen Ausfall darf nicht wie ein
+      // Richtlinienverstoß aussehen, sonst sucht jemand den Fehler am
+      // falschen Ende.
+      policyCompliant = false;
+      blockers.push(
+        `Die Richtlinienprüfung war nicht erreichbar (${input.policyEngine.detail}). `
+        + 'Ohne Prüfung wird nicht veröffentlicht (Regel G3).',
+      );
+      break;
+  }
+
   // ── Freigabepflicht ───────────────────────────────────────────────
-  const approvalReasons = deriveApprovalReasons(input.blueprint, input.findings);
+  const approvalReasons = [...deriveApprovalReasons(input.blueprint, input.findings), ...policyApprovalReasons];
   const approvalGranted =
     input.approval.grantedForArtifactSha256 === input.artifactSha256 &&
     input.approval.grantedBy !== null &&

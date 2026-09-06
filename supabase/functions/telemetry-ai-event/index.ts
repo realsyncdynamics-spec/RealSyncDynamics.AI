@@ -19,9 +19,17 @@ import { createClient } from 'jsr:@supabase/supabase-js@2';
 import {
   evaluatePolicies,
   type PolicyRule,
+  type PolicyVerdict,
   type RuntimeEventInput,
 } from '../_shared/policy-engine.ts';
 import { buildCorsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
+import {
+  buildSnapshot,
+  evaluateSnapshot,
+  toLegacyAiStatus,
+  type AiPolicyRowInput,
+} from '../_shared/pdp/core.ts';
+import { logShadowComparison } from '../_shared/pdp/decide.ts';
 
 const corsHeaders = buildCorsHeaders('POST, OPTIONS');
 corsHeaders['Access-Control-Allow-Headers'] = 'content-type, x-rsd-tenant-key';
@@ -181,6 +189,13 @@ Deno.serve(async (req) => {
       const verdict = evaluatePolicies(eventForEngine, policies);
       enginePolicyStatus = verdict.status;
       enginePolicyId = verdict.matched_policy_id;
+
+      // ─── PDP-v2-Shadow (Plan P0-5) ────────────────────────────────────
+      // v2 rechnet auf DENSELBEN geladenen Policy-Zeilen mit und
+      // protokolliert Divergenzen. Entscheidet weiterhin ausschliesslich
+      // die Alt-Engine — Umschaltung erst nach gemessener
+      // Deckungsgleichheit (Plan K1).
+      await runPdpShadow(admin, tenantId, policiesData, eventForEngine, verdict);
     }
   } catch (e) {
     console.error('[telemetry-ai-event] policy-engine error', e);
@@ -262,3 +277,44 @@ function buildEvidenceSummary(
   return `${subject} — Runtime Event (${p.event_type})`;
 }
 
+
+// ─── PDP-v2-Shadow-Helfer (Plan P0-5) ────────────────────────────────────────
+// Eigener try/catch: Der Shadow-Mode darf den Telemetry-Pfad unter keinen
+// Umstaenden beeinflussen — weder das Verdikt noch die Verfuegbarkeit.
+async function runPdpShadow(
+  // deno-lint-ignore no-explicit-any
+  admin: any,
+  tenantId: string,
+  policiesData: unknown[],
+  event: RuntimeEventInput,
+  verdict: PolicyVerdict,
+): Promise<void> {
+  try {
+    const snapshot = buildSnapshot(tenantId, policiesData as AiPolicyRowInput[], []);
+    const result = evaluateSnapshot(snapshot, {
+      contract: 'v1',
+      tenant_id: tenantId,
+      action: { verb: 'invoke', channel: 'telemetry', event_type: event.event_type },
+      target: { vendor: event.vendor, model: event.model, system_id: event.ai_system_id },
+      data: {
+        classification: event.data_class,
+        risk_level: event.risk_level,
+        prompt_category: event.prompt_category,
+      },
+    });
+    await logShadowComparison(admin, {
+      tenant_id: tenantId,
+      source: 'telemetry-ai-event',
+      legacy_status: verdict.status,
+      v2_status: toLegacyAiStatus(result),
+      snapshot_version: snapshot.version,
+      detail: {
+        legacy_policy: verdict.matched_policy_id ?? null,
+        v2_policy: result.primary_policy_id,
+        event_type: event.event_type,
+      },
+    });
+  } catch (e) {
+    console.error('[telemetry-ai-event] pdp shadow failed', e);
+  }
+}

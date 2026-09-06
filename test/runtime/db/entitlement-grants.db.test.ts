@@ -8,19 +8,44 @@
  *   auf die es ankommt — Konfliktauflösung per MAX(), Idempotenz über einen
  *   Unique-Index und die Frage, ob `subscriptions` unberührt bleibt.
  *
- * Der Aufbau bildet bewusst den PRODUKTIONSZUSTAND ab (gelesen am 2026-08-08):
- * Produkt `free` vorhanden, `free_tier` NICHT. Ein Test gegen den Repo-Stand
- * hätte die Regression übersehen, dass ein hart auf `free_tier` gesetzter
- * Fallback in Produktion jedem Tenant ohne Abo alle Rechte entzieht.
+ * Der Aufbau bildet den PRODUKTIONSZUSTAND VOM 2026-08-08 ab: Produkt `free`
+ * vorhanden, `free_tier` NICHT. Ein Test gegen den damaligen Repo-Stand hätte
+ * die Regression übersehen, dass ein hart auf `free_tier` gesetzter Fallback
+ * jedem Tenant ohne Abo alle Rechte entzieht.
+ *
+ * ## ⚠️ Diese Datei ist an den minimalen Harnisch gebunden — mit Absicht
+ *
+ * Am 2026-09-06 gegen das voll migrierte Schema nachgemessen: **beide oben
+ * genannten Annahmen treffen heute nicht mehr zu**, und zwar nicht, weil der
+ * Test falsch wäre, sondern weil sich das Produkt bewegt hat.
+ *
+ *   * `free_tier` existiert inzwischen als Produkt — und ein Trigger auf
+ *     `tenants` (`create_free_tier_subscription_on_tenant_insert`) legt jedem
+ *     neuen Mandanten sofort ein Free-Tier-Abo an. Der „Tenant ohne Abo",
+ *     dessen Fallback drei Tests hier prüfen, entsteht so gar nicht mehr.
+ *   * Die Fallback-Kette des heutigen Auflösers ist `free_audit` →
+ *     `free_tier` → `free`. Der Fallback landet also nicht mehr auf `free`.
+ *   * `subscriptions` trägt heute `UNIQUE (tenant_id)` (siehe die Anmerkung
+ *     bei BILLING_SCHEMA, die das Gegenteil behauptete und korrigiert ist).
+ *
+ * Diese Datei auf den heutigen Stand umzuschreiben hiesse, die Regression
+ * wegzuwerfen, die sie bewacht — welchen Satz Rechte ein Mandant ohne
+ * bezahlten Plan bekommt, ist eine Produktentscheidung und keine Frage der
+ * Testmechanik. Sie läuft deshalb weiterhin gegen `scripts/test-db/up.sh` und
+ * wird im CI-Lauf gegen das volle Schema NAMENTLICH ausgenommen (siehe
+ * `.github/workflows/ci.yml`) — ausgenommen und benannt, nicht still
+ * übersprungen.
+ *
+ * Die Zusagen des heutigen Auflösers deckt
+ * `addon-entitlements.db.test.ts` ab; sie läuft gegen beide Harnische.
  *
  * Ohne TEST_DB_URL werden die Tests übersprungen (Muster der übrigen
  * *.db.test.ts in diesem Verzeichnis).
  */
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { getDbUrl, openDb, closeDb, type DbCtx } from './db-helpers';
+import { applyMigration, getDbUrl, openDb, closeDb, type DbCtx } from './db-helpers';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const MIGRATIONS_DIR = join(__dirname, '..', '..', '..', 'supabase', 'migrations');
@@ -36,9 +61,13 @@ const FREE = '22222222-2222-2222-2222-222222222222';
 
 /**
  * Der Teil des Billing-Schemas, den die Migrationen voraussetzen und den
- * bootstrap.sql nicht mitbringt. Entspricht der Produktionsdefinition —
- * insbesondere OHNE UNIQUE(tenant_id) auf subscriptions, weil diese
- * Constraint in Produktion (noch) nicht existiert.
+ * bootstrap.sql nicht mitbringt — im Stand vom 2026-08-08.
+ *
+ * Hier stand: „insbesondere OHNE UNIQUE(tenant_id) auf subscriptions, weil
+ * diese Constraint in Produktion (noch) nicht existiert." Am 2026-09-06 gegen
+ * das voll migrierte Schema gemessen: `subscriptions_tenant_id_key` gibt es,
+ * genau ein Abo je Mandant. Der Satz bleibt als Beschreibung DIESES Harnischs
+ * richtig und war als Aussage über Produktion überholt.
  */
 const BILLING_SCHEMA = `
 CREATE TABLE public.subscriptions (
@@ -131,7 +160,7 @@ d('entitlement_grants — Einmalkäufe neben der Subscription', () => {
     ctx = await openDb();
     await ctx.client.query(BILLING_SCHEMA);
     for (const file of MIGRATIONS) {
-      await ctx.client.query(readFileSync(join(MIGRATIONS_DIR, file), 'utf8'));
+      await applyMigration(ctx, MIGRATIONS_DIR, file);
     }
     await ctx.client.query(
       `INSERT INTO public.tenants (id, name) VALUES ($1,'growth-kunde'), ($2,'free-ohne-abo')

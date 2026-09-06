@@ -26,9 +26,8 @@
  * `gold-*` anlegt, läuft auf.
  */
 
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
-import { globSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
+import { join, resolve, sep } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 const root = resolve(__dirname, '../..');
@@ -43,12 +42,35 @@ const NOCH_OFFEN = [
 ];
 
 /** Die Flächen, die ein nicht angemeldeter Besucher sieht. */
-const OEFFENTLICH = ['src/pages/**/*.tsx', 'src/components/**/*.tsx', 'src/features/billing/CheckoutPage.tsx'];
+const OEFFENTLICHE_ORDNER = ['src/pages', 'src/components'];
+const OEFFENTLICHE_EINZELDATEIEN = ['src/features/billing/CheckoutPage.tsx'];
+
+/**
+ * Rekursiver Baumlauf mit `readdirSync` statt `fs.globSync`.
+ *
+ * Die erste Fassung nutzte `globSync` — lokal grün auf Node 22, in CI rot:
+ * `fs.globSync` gibt es erst ab Node 22, und alle Workflows dieses Repos
+ * fahren `node-version: '20'`. Ein Fehler, den nur der CI-Lauf zeigen
+ * konnte. `readdirSync` ist ausserdem das Muster, das die übrigen Tests
+ * hier bereits verwenden (z. B. `test/edge/siteos-router.test.ts`).
+ */
+function tsxDateien(ordner: string): string[] {
+  const gefunden: string[] = [];
+  for (const eintrag of readdirSync(resolve(root, ordner), { withFileTypes: true })) {
+    const pfad = join(ordner, eintrag.name);
+    if (eintrag.isDirectory()) gefunden.push(...tsxDateien(pfad));
+    else if (eintrag.name.endsWith('.tsx')) gefunden.push(pfad);
+  }
+  return gefunden;
+}
 
 describe('öffentliche Ebene: ein Akzent, nicht zwei', () => {
-  const dateien = OEFFENTLICH.flatMap(muster =>
-    globSync(muster, { cwd: root }).map(String),
-  ).filter(f => !NOCH_OFFEN.includes(f.replace(/\\/g, '/')));
+  const dateien = [
+    ...OEFFENTLICHE_ORDNER.flatMap(tsxDateien),
+    ...OEFFENTLICHE_EINZELDATEIEN,
+  ]
+    .map(f => f.split(sep).join('/'))
+    .filter(f => !NOCH_OFFEN.includes(f));
 
   it('findet überhaupt Dateien', () => {
     // Ohne diese Prüfung wäre der Test bei einem kaputten Glob still grün.

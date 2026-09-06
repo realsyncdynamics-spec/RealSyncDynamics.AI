@@ -54,6 +54,24 @@ import {
 } from '../../src/components/landing/landing-theme';
 
 const root = resolve(__dirname, '../..');
+
+/**
+ * Liest den Wert einer CSS-Custom-Property aus dem `@theme`-Block.
+ *
+ * Bewusst KEIN `new RegExp(...)` aus dem erwarteten Wert: Die erste Fassung
+ * baute das Muster aus `LANDING_BG` und escapte dabei nur Klammern, keine
+ * Backslashes — CodeQL hat das zu Recht als unvollständiges Escaping
+ * gemeldet (Alert 206, hoch). Ein Test, der seinen Erwartungswert in ein
+ * Muster übersetzt, prüft ausserdem etwas anderes als er behauptet. Hier
+ * wird der Wert ausgelesen und dann **verglichen**.
+ */
+function themeWert(quelle: string, name: string): string | null {
+  const anfang = quelle.indexOf(`--${name}:`);
+  if (anfang === -1) return null;
+  const ende = quelle.indexOf(';', anfang);
+  if (ende === -1) return null;
+  return quelle.slice(anfang + name.length + 3, ende).trim();
+}
 // Die Datei, aus der Tailwind 4 die Farben tatsächlich liest.
 const themeCss = readFileSync(resolve(root, 'src/index.css'), 'utf8');
 const tailwindConfig = readFileSync(resolve(root, 'tailwind.config.ts'), 'utf8');
@@ -62,11 +80,10 @@ const mainLanding = readFileSync(resolve(root, 'src/pages/MainLanding.tsx'), 'ut
 describe('landing-theme ist die einzige Quelle der öffentlichen Palette', () => {
   it('jede Stufe der Champagner-Skala steht im @theme-Block', () => {
     for (const [step, hex] of Object.entries(CHAMPAGNE_SCALE)) {
-      // Das Paar wird gesucht, nicht nur der Wert — damit eine verschobene
-      // Stufe auffällt und nicht nur eine fehlende Farbe.
-      // Ausrichtungs-Leerzeichen im CSS sind erlaubt, ein anderer Wert nicht.
-      expect(themeCss, `champagne-${step} fehlt in @theme oder weicht ab`)
-        .toMatch(new RegExp(`--color-champagne-${step}:\\s+${hex};`));
+      // Die Stufe wird einzeln nachgeschlagen und dann verglichen — damit
+      // eine verschobene Stufe auffällt und nicht nur eine fehlende Farbe.
+      expect(themeWert(themeCss, `color-champagne-${step}`), `champagne-${step} weicht ab`)
+        .toBe(hex);
     }
   });
 
@@ -77,12 +94,12 @@ describe('landing-theme ist die einzige Quelle der öffentlichen Palette', () =>
   });
 
   it('Hintergrund und Überschriften-Familie sind Tailwind-Tokens', () => {
-    expect(themeCss).toMatch(new RegExp(`--color-obsidian-deep:\\s+${LANDING_BG.replace(/[()]/g, '\\$&')};`));
+    expect(themeWert(themeCss, 'color-obsidian-deep')).toBe(LANDING_BG);
     // `--font-serif` steht in CSS-Schreibweise mit doppelten Anführungszeichen.
-    const serifDeklaration = themeCss.match(/--font-serif:\s*([^;]+);/);
-    expect(serifDeklaration, '--font-serif fehlt im @theme-Block').not.toBeNull();
+    const serif = themeWert(themeCss, 'font-serif');
+    expect(serif, '--font-serif fehlt im @theme-Block').not.toBeNull();
     for (const family of LANDING_SERIF.split(',').map(part => part.trim().replace(/^'|'$/g, ''))) {
-      expect(serifDeklaration![1], `Serif-Familie ${family} fehlt`).toContain(family);
+      expect(serif!, `Serif-Familie ${family} fehlt`).toContain(family);
     }
   });
 

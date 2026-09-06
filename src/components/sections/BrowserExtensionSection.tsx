@@ -63,7 +63,7 @@ export function BrowserExtensionSection({
     >
       <div className="max-w-6xl mx-auto">
         <div className="mb-10 sm:mb-12">
-          <div className="text-[11px] font-mono uppercase tracking-[0.25em] text-gold-400 mb-3">
+          <div className="text-[11px] font-mono uppercase tracking-[0.25em] text-champagne mb-3">
             {eyebrow}
           </div>
           <h2 className="font-display font-bold text-2xl sm:text-4xl text-titanium-50 tracking-tight leading-tight max-w-3xl">
@@ -85,7 +85,7 @@ export function BrowserExtensionSection({
                 key={v.name}
                 className="inline-flex items-center gap-2 px-3 py-2 bg-obsidian-900/60 border border-silver-700/30 text-titanium-100 text-sm"
               >
-                <span className="font-mono text-[10px] uppercase tracking-wider text-gold-400">
+                <span className="font-mono text-[10px] uppercase tracking-wider text-champagne">
                   ✓
                 </span>
                 <span className="font-display font-bold">{v.name}</span>
@@ -101,7 +101,7 @@ export function BrowserExtensionSection({
             const Icon = d.icon;
             return (
               <article key={d.title} className="bg-obsidian-900 p-5 sm:p-6">
-                <Icon className="h-5 w-5 text-gold-400 mb-3" />
+                <Icon className="h-5 w-5 text-champagne mb-3" />
                 <h3 className="font-display font-bold text-titanium-50 text-base sm:text-lg mb-2 leading-snug">
                   {d.title}
                 </h3>
@@ -141,7 +141,7 @@ export function BrowserExtensionSection({
           </a>
           <a
             href="/contact-sales?intent=browser-extension"
-            className="inline-flex items-center justify-center gap-2 px-6 py-3 border border-silver-500 hover:border-gold-400 text-silver-100 hover:text-titanium-50 text-sm font-semibold rounded-none transition-colors"
+            className="inline-flex items-center justify-center gap-2 px-6 py-3 border border-silver-500 hover:border-champagne text-silver-100 hover:text-titanium-50 text-sm font-semibold rounded-none transition-colors"
           >
             Enterprise-Rollout anfragen
           </a>

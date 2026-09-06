@@ -83,7 +83,7 @@ export function ScannerTechStackSection({
     >
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-10 sm:mb-12">
-          <div className="text-[11px] font-mono uppercase tracking-[0.25em] text-gold-400 mb-3">
+          <div className="text-[11px] font-mono uppercase tracking-[0.25em] text-champagne mb-3">
             {eyebrow}
           </div>
           <h2 className="font-display font-bold text-2xl sm:text-4xl text-titanium-50 tracking-tight leading-tight max-w-3xl mx-auto">
@@ -103,7 +103,7 @@ export function ScannerTechStackSection({
                 className="bg-obsidian-900/80 p-5 sm:p-6 hover:bg-obsidian-900 transition-colors"
               >
                 <div className="flex items-center gap-2 mb-3">
-                  <Icon className="h-4 w-4 text-gold-400 shrink-0" />
+                  <Icon className="h-4 w-4 text-champagne shrink-0" />
                   <h3 className="font-display font-bold text-titanium-50 text-base sm:text-lg leading-snug">
                     {item.label}
                   </h3>

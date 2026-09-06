@@ -166,7 +166,7 @@ export function DokumenteBundle() {
             <div className="logo-pulse">
               <Logo size={48} iconOnly />
             </div>
-            <div className="text-[11px] font-mono uppercase tracking-[0.25em] text-gold-400">
+            <div className="text-[11px] font-mono uppercase tracking-[0.25em] text-champagne">
               Doku-Bundle · Free
             </div>
           </div>
@@ -186,7 +186,7 @@ export function DokumenteBundle() {
       <section className="px-4 sm:px-6 lg:px-8 pb-8">
         <div className="max-w-3xl mx-auto">
           <div className="bg-obsidian-900/60 border border-silver-700/30 p-5 sm:p-7 rounded-none">
-            <div className="text-[11px] font-mono uppercase tracking-[0.18em] text-gold-400 mb-4">
+            <div className="text-[11px] font-mono uppercase tracking-[0.18em] text-champagne mb-4">
               Stammdaten · Pflicht
             </div>
 
@@ -195,14 +195,14 @@ export function DokumenteBundle() {
                 <input
                   required value={company} onChange={(e) => setCompany(e.target.value)}
                   placeholder="Müller GmbH"
-                  className="w-full bg-obsidian-950 border border-silver-700/40 px-3 py-2 text-sm rounded-none outline-none focus:border-gold-400 text-titanium-50"
+                  className="w-full bg-obsidian-950 border border-silver-700/40 px-3 py-2 text-sm rounded-none outline-none focus:border-champagne text-titanium-50"
                 />
               </Field>
               <Field label="Kontakt-E-Mail *">
                 <input
                   type="email" required value={contactEmail} onChange={(e) => setContactEmail(e.target.value)}
                   placeholder="datenschutz@firma.de"
-                  className="w-full bg-obsidian-950 border border-silver-700/40 px-3 py-2 text-sm rounded-none outline-none focus:border-gold-400 text-titanium-50"
+                  className="w-full bg-obsidian-950 border border-silver-700/40 px-3 py-2 text-sm rounded-none outline-none focus:border-champagne text-titanium-50"
                 />
               </Field>
             </div>
@@ -211,7 +211,7 @@ export function DokumenteBundle() {
               <textarea
                 required rows={2} value={address} onChange={(e) => setAddress(e.target.value)}
                 placeholder="Musterstraße 1, 10115 Berlin, Deutschland"
-                className="w-full bg-obsidian-950 border border-silver-700/40 px-3 py-2 text-sm rounded-none outline-none focus:border-gold-400 text-titanium-50"
+                className="w-full bg-obsidian-950 border border-silver-700/40 px-3 py-2 text-sm rounded-none outline-none focus:border-champagne text-titanium-50"
               />
             </Field>
 
@@ -224,14 +224,14 @@ export function DokumenteBundle() {
                 <input
                   value={domain} onChange={(e) => setDomain(e.target.value)}
                   placeholder="firma.de"
-                  className="w-full bg-obsidian-950 border border-silver-700/40 px-3 py-2 text-sm rounded-none outline-none focus:border-gold-400 text-titanium-50"
+                  className="w-full bg-obsidian-950 border border-silver-700/40 px-3 py-2 text-sm rounded-none outline-none focus:border-champagne text-titanium-50"
                 />
               </Field>
               <Field label="Hosting-Provider">
                 <input
                   value={hostingProvider} onChange={(e) => setHostingProvider(e.target.value)}
                   placeholder="Hetzner Online GmbH"
-                  className="w-full bg-obsidian-950 border border-silver-700/40 px-3 py-2 text-sm rounded-none outline-none focus:border-gold-400 text-titanium-50"
+                  className="w-full bg-obsidian-950 border border-silver-700/40 px-3 py-2 text-sm rounded-none outline-none focus:border-champagne text-titanium-50"
                 />
               </Field>
             </div>
@@ -241,14 +241,14 @@ export function DokumenteBundle() {
                 <input
                   value={dpoName} onChange={(e) => setDpoName(e.target.value)}
                   placeholder="Anna Schmidt"
-                  className="w-full bg-obsidian-950 border border-silver-700/40 px-3 py-2 text-sm rounded-none outline-none focus:border-gold-400 text-titanium-50"
+                  className="w-full bg-obsidian-950 border border-silver-700/40 px-3 py-2 text-sm rounded-none outline-none focus:border-champagne text-titanium-50"
                 />
               </Field>
               <Field label="DSB-Email">
                 <input
                   type="email" value={dpoEmail} onChange={(e) => setDpoEmail(e.target.value)}
                   placeholder="dsb@firma.de"
-                  className="w-full bg-obsidian-950 border border-silver-700/40 px-3 py-2 text-sm rounded-none outline-none focus:border-gold-400 text-titanium-50"
+                  className="w-full bg-obsidian-950 border border-silver-700/40 px-3 py-2 text-sm rounded-none outline-none focus:border-champagne text-titanium-50"
                 />
               </Field>
             </div>
@@ -265,7 +265,7 @@ export function DokumenteBundle() {
       {/* Doc-Cards */}
       <section className="px-4 sm:px-6 lg:px-8 pb-12 sm:pb-16">
         <div className="max-w-3xl mx-auto">
-          <div className="text-[11px] font-mono uppercase tracking-[0.18em] text-gold-400 mb-3">
+          <div className="text-[11px] font-mono uppercase tracking-[0.18em] text-champagne mb-3">
             5 PDFs zum Download
           </div>
           <div className="space-y-3">
@@ -285,7 +285,7 @@ export function DokumenteBundle() {
 
       {/* Disclaimer */}
       <section className="px-4 sm:px-6 lg:px-8 pb-16">
-        <div className="max-w-3xl mx-auto p-5 bg-obsidian-900/60 border border-silver-700/30 border-l-2 border-l-gold-400 rounded-none">
+        <div className="max-w-3xl mx-auto p-5 bg-obsidian-900/60 border border-silver-700/30 border-l-2 border-l-champagne rounded-none">
           <p className="text-sm text-silver-300 leading-relaxed">
             Dokumente werden automatisch aus Ihren Eingaben und unseren methodischen Vorlagen
             generiert. Die Vorlagen wurden methodisch durch unsere Partnerkanzlei geprüft.
@@ -300,12 +300,12 @@ export function DokumenteBundle() {
       <footer className="border-t border-silver-700/40 px-4 sm:px-6 lg:px-8 py-4">
         <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-[10px] font-mono uppercase tracking-wider text-silver-500">
           <div className="flex items-center gap-1">
-            <Sparkles className="h-3 w-3 text-gold-400" />
+            <Sparkles className="h-3 w-3 text-champagne" />
             <span>© 2026 RealSync Dynamics · Made in Germany</span>
           </div>
           <div className="flex flex-wrap gap-x-4 gap-y-1">
-            <Link to="/cookie-scanner"        className="hover:text-titanium-50 text-gold-400">Cookie-Scanner</Link>
-            <Link to="/ai-act-workflows"      className="hover:text-titanium-50 text-gold-400">AI-Act Inventar</Link>
+            <Link to="/cookie-scanner"        className="hover:text-titanium-50 text-champagne">Cookie-Scanner</Link>
+            <Link to="/ai-act-workflows"      className="hover:text-titanium-50 text-champagne">AI-Act Inventar</Link>
             <Link to="/pricing"               className="hover:text-titanium-50">Preise</Link>
             <Link to="/legal/privacy"         className="hover:text-titanium-50">Datenschutz</Link>
             <Link to="/impressum"             className="hover:text-titanium-50">Impressum</Link>
@@ -337,9 +337,9 @@ function DocRow({
   onGenerate: () => void;
 }) {
   return (
-    <div className="flex flex-col sm:flex-row gap-3 sm:items-center justify-between p-4 sm:p-5 bg-obsidian-900/60 border border-silver-700/30 hover:border-gold-400/60 rounded-none transition-colors">
+    <div className="flex flex-col sm:flex-row gap-3 sm:items-center justify-between p-4 sm:p-5 bg-obsidian-900/60 border border-silver-700/30 hover:border-champagne/60 rounded-none transition-colors">
       <div className="flex items-start gap-3 flex-1 min-w-0">
-        <FileText className="h-4 w-4 text-gold-400 mt-0.5 shrink-0" />
+        <FileText className="h-4 w-4 text-champagne mt-0.5 shrink-0" />
         <div className="min-w-0">
           <div className="flex items-center gap-2 mb-0.5">
             <span className="font-display font-bold text-titanium-50 text-base">{doc.name}</span>

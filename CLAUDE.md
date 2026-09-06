@@ -1428,6 +1428,54 @@ Plan, der auf keiner Verkaufsfläche mehr vorkommt. Nachgezogen in
 Farben, Typografie, Grid, Icon-Set und die Reihenfolge der bestehenden
 Abschnitte sind unberührt.
 
+**Welle 2 (Frage 3, öffentliche Ebene) — am selben Tag ausgeführt.** Im
+Browser gegen den Build gemessen, nicht geschätzt: Die Startseite trug 129
+Elemente in Champagner, `/audit` — das Ziel des wichtigsten CTA — sieben in
+einem **anderen** Gold (`#f9c544`), und `/pricing`,
+`/claude-code-optimizer`, `/sicherheit` gar keinen. Ein Besucher wechselte
+beim Klick auf den Haupt-CTA die Farbwelt.
+
+111 Klassen in 23 öffentlichen Dateien umgestellt (`gold-*` → `champagne-*`),
+`src/features/` bis auf `CheckoutPage.tsx` ausgenommen — der ist eine
+ungeschützte Route und damit die direkte Fortsetzung des Trichters.
+Nachgemessen: `/`, `/audit`, `/checkout/starter` und `/ai-act` tragen jetzt
+denselben Akzent `rgb(232,201,138)`, kein Querüberlauf auf keiner Seite.
+Gesichert als Ratsche durch `test/landing/public-accent-unified.test.ts`.
+
+**Bewusst nicht umgefärbt**: Der Warnhinweis auf `/audit` („Automatisierte
+Erstanalyse — kein vollständiges Audit") bleibt Amber. Amber ist dort eine
+Warnung, keine Marke; sie in den Marken-Akzent zu ziehen hätte den Hinweis
+geschwächt.
+
+> #### ⚠️ Drei Design-Token-Speicher, alle drei wirkungslos
+>
+> Der eigentliche Grund, warum sich die Gestaltung nie vereinheitlichen
+> liess, ist nicht Nachlässigkeit — es ist, dass **jeder Versuch in eine
+> Datei ging, die nichts tut**. Gemessen am 2026-09-06:
+>
+> | Datei | Anspruch | Wirklichkeit |
+> |---|---|---|
+> | `tailwind.config.ts` | Farb-Konfiguration | Ohne `@config`-Direktiv von Tailwind 4 **nicht geladen**. Widerspricht `@theme` sogar (`petrol` #0F766E vs #14b8a6). |
+> | `src/config/design-tokens.ts` | „Single source of truth for all design decisions" | Von **null** Dateien importiert. Nennt Klassen (`gold-500`, `obsidian-950`, `titanium-100`), die es so nicht gibt. Die zwei echten Konsumenten lesen `src/styles/design-tokens.ts` — eine andere Datei. |
+> | `src/styles/context-themes.css` | Kontext-Themes (landing/flow/dashboard) | Referenziert `--cyan-400`, `--obsidian-950`, `--gold-500` — **keine davon ist definiert** (`@theme` führt sie mit `--color-`-Präfix). Definiert `--context-accent` &c. — **niemand liest sie**. Setzt für `.landing-context` ausserdem Cyan als Akzent, während die Seite Champagner trägt. |
+>
+> Wirksam ist allein der `@theme`-Block in `src/index.css`. **Wer Tokens
+> ändert, ändert sie dort — alles andere ist folgenlos und sieht trotzdem
+> nach getaner Arbeit aus.** Genau das ist in dieser Sitzung passiert und
+> wäre ohne den Blick ins CSS-Bundle nicht aufgefallen.
+>
+> Nach §14 gemeldet, nicht abgeräumt: Entfernen greift in Bestehendes ein.
+> Ebenfalls tot, aber unangetastet: `.surface-panel-interactive` in
+> `src/index.css` (0 Nutzer, glüht ausserdem cyan) und
+> `--color-gold-200`, das nie definiert wurde — `hover:text-gold-200` im
+> Checkout war wirkungslos.
+
+**Offen für Welle 3** (Dashboard, eigener Schnitt — so freigegeben): die
+Serif-Identität der Überschriften existiert nur auf `/`; `/pricing`,
+`/claude-code-optimizer` und `/sicherheit` tragen gar keinen Akzent;
+`RuntimeDashboard.tsx` und `GovernanceDashboardView.tsx` stehen noch auf
+`gold-*`.
+
 **2026-09-04 — AP11 Aufräumen: verwaiste Dateien**
 
 Auf die drei Fragen zur AP11-Liste (gemessen am Import-Graphen von `src`,

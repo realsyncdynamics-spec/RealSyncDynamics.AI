@@ -259,7 +259,7 @@ export function LiveFindingsSection({
                         <div className="max-w-6xl mx-auto">
                         
                                 <div className="text-center mb-10 sm:mb-14">
-                                          <div className="text-[11px] font-mono uppercase tracking-[0.25em] text-gold-400 mb-3">{eyebrow}</div>
+                                          <div className="text-[11px] font-mono uppercase tracking-[0.25em] text-champagne mb-3">{eyebrow}</div>
                                           <h2 className="font-display font-bold text-2xl sm:text-4xl text-titanium-50 tracking-tight leading-tight max-w-3xl mx-auto">{headline}</h2>
                                           <p className="mt-4 text-sm sm:text-base text-silver-400 leading-relaxed max-w-2xl mx-auto">{subline}</p>
                                 </div>

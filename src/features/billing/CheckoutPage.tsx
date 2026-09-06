@@ -279,7 +279,7 @@ function ShellWithMessage({
 
       <main className="flex flex-col items-center justify-center px-4 py-16 sm:py-24">
         <div className="max-w-md w-full text-center">
-          <ShieldCheck className="mx-auto h-10 w-10 text-gold-400 mb-5" />
+          <ShieldCheck className="mx-auto h-10 w-10 text-champagne mb-5" />
           <h1 className="font-display font-bold text-2xl sm:text-3xl text-titanium-50 tracking-tight mb-3">
             {title}
           </h1>
@@ -353,7 +353,7 @@ function NoUserShell({
       <main className="flex flex-col items-center justify-center px-4 py-16">
         <div className="max-w-md w-full">
           <div className="text-center mb-6">
-            <ShieldCheck className="mx-auto h-10 w-10 text-gold-400 mb-4" />
+            <ShieldCheck className="mx-auto h-10 w-10 text-champagne mb-4" />
             <h1 className="font-display font-bold text-2xl sm:text-3xl text-titanium-50 tracking-tight mb-3">
               {title}
             </h1>
@@ -372,7 +372,7 @@ function NoUserShell({
 
           <Link
             to={magicLinkHref}
-            className="mt-4 w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 border border-silver-500 hover:border-gold-400 text-silver-100 hover:text-titanium-50 text-sm font-semibold rounded-none transition-colors"
+            className="mt-4 w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 border border-silver-500 hover:border-champagne text-silver-100 hover:text-titanium-50 text-sm font-semibold rounded-none transition-colors"
           >
             Mit Magic-Link (E-Mail) anmelden
           </Link>
@@ -447,7 +447,7 @@ function ConsentGateShell({
 
       <main className="flex flex-col items-center justify-center px-4 py-12 sm:py-16">
         <div className="max-w-md w-full" data-testid={`checkout-plan-${planKey}`}>
-          <ShieldCheck className="mx-auto h-10 w-10 text-gold-400 mb-5" />
+          <ShieldCheck className="mx-auto h-10 w-10 text-champagne mb-5" />
           <h1 className="font-display font-bold text-2xl sm:text-3xl text-titanium-50 tracking-tight mb-2 text-center">
             {tier.name}
           </h1>
@@ -476,16 +476,16 @@ function ConsentGateShell({
                 type="checkbox"
                 checked={agreedToTerms}
                 onChange={(e) => onAgreedToTerms(e.target.checked)}
-                className="mt-0.5 h-4 w-4 cursor-pointer accent-gold-400"
+                className="mt-0.5 h-4 w-4 cursor-pointer accent-champagne"
                 aria-describedby="agb-consent-text"
               />
               <span id="agb-consent-text" className="text-xs sm:text-sm text-silver-200 leading-relaxed">
                 Ich habe die{' '}
-                <Link to="/legal/terms" className="text-gold-300 underline hover:text-gold-200" target="_blank" rel="noopener noreferrer">
+                <Link to="/legal/terms" className="text-champagne underline hover:text-champagne-200" target="_blank" rel="noopener noreferrer">
                   AGB
                 </Link>{' '}
                 und die{' '}
-                <Link to="/legal/privacy" className="text-gold-300 underline hover:text-gold-200" target="_blank" rel="noopener noreferrer">
+                <Link to="/legal/privacy" className="text-champagne underline hover:text-champagne-200" target="_blank" rel="noopener noreferrer">
                   Datenschutzerklärung
                 </Link>{' '}
                 gelesen und akzeptiere sie.
@@ -497,7 +497,7 @@ function ConsentGateShell({
                 type="checkbox"
                 checked={acknowledgedWithdrawal}
                 onChange={(e) => onAcknowledgedWithdrawal(e.target.checked)}
-                className="mt-0.5 h-4 w-4 cursor-pointer accent-gold-400"
+                className="mt-0.5 h-4 w-4 cursor-pointer accent-champagne"
                 aria-describedby="withdrawal-consent-text"
               />
               <span id="withdrawal-consent-text" className="text-xs sm:text-sm text-silver-200 leading-relaxed">
@@ -505,11 +505,11 @@ function ConsentGateShell({
                 14-tägigen Widerrufsfrist begonnen wird, und bestätige, dass mein Widerrufsrecht
                 mit Beginn der Vertragsausführung erlischt
                 (§§ 356 Abs. 5, 327 BGB; siehe{' '}
-                <Link to="/legal/terms" className="text-gold-300 underline hover:text-gold-200" target="_blank" rel="noopener noreferrer">
+                <Link to="/legal/terms" className="text-champagne underline hover:text-champagne-200" target="_blank" rel="noopener noreferrer">
                   AGB § 12
                 </Link>{' '}
                 und{' '}
-                <Link to="/legal/widerruf" className="text-gold-300 underline hover:text-gold-200" target="_blank" rel="noopener noreferrer">
+                <Link to="/legal/widerruf" className="text-champagne underline hover:text-champagne-200" target="_blank" rel="noopener noreferrer">
                   Widerrufsbelehrung
                 </Link>
                 ).
@@ -578,7 +578,7 @@ function ConsentGateShell({
             Angemeldet als {userEmail}
           </div>
           <div className="mt-3 text-center">
-            <Link to="/legal/avv" className="text-[11px] text-gold-300 hover:text-gold-200 underline" target="_blank" rel="noopener noreferrer">
+            <Link to="/legal/avv" className="text-[11px] text-champagne hover:text-champagne-200 underline" target="_blank" rel="noopener noreferrer">
               AVV (Auftragsverarbeitungsvertrag) einsehen
             </Link>
           </div>

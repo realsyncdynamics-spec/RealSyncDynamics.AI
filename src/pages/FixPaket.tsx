@@ -104,7 +104,7 @@ export function FixPaket() {
       <main className="px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
         <div className="max-w-3xl mx-auto">
           <div className="text-center mb-10">
-            <div className="text-[11px] font-mono uppercase tracking-[0.25em] text-gold-400 mb-3">
+            <div className="text-[11px] font-mono uppercase tracking-[0.25em] text-champagne mb-3">
               Zusätzlicher Dienst · projektbasiert
             </div>
             <h1 className="font-display font-bold text-3xl sm:text-4xl text-titanium-50 tracking-tight leading-tight mb-4">
@@ -130,7 +130,7 @@ export function FixPaket() {
                 key={b}
                 className="flex items-center gap-2 text-sm text-silver-200 bg-obsidian-900/60 border border-silver-700/30 px-3 py-2 rounded-none"
               >
-                <span className="text-gold-400 text-xs">▸</span>
+                <span className="text-champagne text-xs">▸</span>
                 {b}
               </li>
             ))}

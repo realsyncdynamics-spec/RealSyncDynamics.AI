@@ -57,7 +57,7 @@ export function UnifiedPlanCard({
   const commonCardClasses = `
     relative rounded-lg border transition-all duration-200
     ${highlight
-      ? `border-gold-400 bg-gold-400/5 shadow-lg shadow-gold-400/20 ring-2 ring-gold-400/30`
+      ? `border-champagne bg-champagne/5 shadow-lg shadow-champagne/20 ring-2 ring-champagne/30`
       : `border-titanium-800 bg-obsidian-950/40 hover:border-titanium-700 hover:shadow-md`
     }
   `;
@@ -68,7 +68,7 @@ export function UnifiedPlanCard({
       <div className={`${commonCardClasses} p-5 sm:p-6 flex flex-col`}>
         {/* Badge */}
         {highlight && (
-          <div className="mb-3 inline-flex w-fit items-center gap-1.5 px-3 py-1 bg-gold-400 text-obsidian-950 font-mono text-xs font-bold uppercase tracking-wider rounded">
+          <div className="mb-3 inline-flex w-fit items-center gap-1.5 px-3 py-1 bg-champagne-200 text-obsidian-950 font-mono text-xs font-bold uppercase tracking-wider rounded">
             Empfohlen
           </div>
         )}
@@ -85,7 +85,7 @@ export function UnifiedPlanCard({
 
         {/* Price */}
         <div className="mb-1">
-          <span className="text-3xl font-display font-bold text-gold-400">
+          <span className="text-3xl font-display font-bold text-champagne">
             {isFreePlan ? '0 €' : priceFormatted}
           </span>
           {!isFreePlan && (
@@ -102,7 +102,7 @@ export function UnifiedPlanCard({
         <ul className="space-y-1.5 flex-1 mb-4">
           {plan.features.audit_evidence.slice(0, 3).map((feature: string) => (
             <li key={feature} className="flex items-start gap-2 text-sm text-titanium-300">
-              <Check className="h-4 w-4 text-gold-400 mt-0.5 shrink-0" />
+              <Check className="h-4 w-4 text-champagne mt-0.5 shrink-0" />
               <span>{feature}</span>
             </li>
           ))}
@@ -114,7 +114,7 @@ export function UnifiedPlanCard({
             to={ctaHref}
             className={`w-full py-2.5 text-sm font-bold rounded transition-colors ${
               highlight
-                ? 'bg-gold-400 text-obsidian-950 hover:bg-gold-500'
+                ? 'bg-champagne-200 text-obsidian-950 hover:bg-champagne-100'
                 : 'bg-titanium-800 text-titanium-50 hover:bg-titanium-700'
             }`}
           >
@@ -126,7 +126,7 @@ export function UnifiedPlanCard({
             onClick={onCta}
             className={`w-full py-2.5 text-sm font-bold rounded transition-colors ${
               highlight
-                ? 'bg-gold-400 text-obsidian-950 hover:bg-gold-500'
+                ? 'bg-champagne-200 text-obsidian-950 hover:bg-champagne-100'
                 : 'bg-titanium-800 text-titanium-50 hover:bg-titanium-700'
             }`}
           >
@@ -148,7 +148,7 @@ export function UnifiedPlanCard({
         {(highlight || plan.badges?.[0]) && (
           <div className="mb-4 flex items-center gap-2">
             {highlight && (
-              <div className="inline-flex items-center gap-1 px-3 py-1 bg-gold-400 text-obsidian-950 font-mono text-xs font-bold uppercase tracking-wider rounded">
+              <div className="inline-flex items-center gap-1 px-3 py-1 bg-champagne-200 text-obsidian-950 font-mono text-xs font-bold uppercase tracking-wider rounded">
                 Empfohlen
               </div>
             )}
@@ -223,7 +223,7 @@ export function UnifiedPlanCard({
               <ul className="space-y-1">
                 {plan.features.audit_evidence.slice(0, 2).map((f: string) => (
                   <li key={f} className="flex items-start gap-2 text-xs text-titanium-400">
-                    <Check className="h-3.5 w-3.5 text-gold-400 mt-0.5 shrink-0" />
+                    <Check className="h-3.5 w-3.5 text-champagne mt-0.5 shrink-0" />
                     {f}
                   </li>
                 ))}
@@ -236,7 +236,7 @@ export function UnifiedPlanCard({
               <ul className="space-y-1">
                 {plan.features.ai_governance.slice(0, 2).map((f: string) => (
                   <li key={f} className="flex items-start gap-2 text-xs text-titanium-400">
-                    <Check className="h-3.5 w-3.5 text-gold-400 mt-0.5 shrink-0" />
+                    <Check className="h-3.5 w-3.5 text-champagne mt-0.5 shrink-0" />
                     {f}
                   </li>
                 ))}
@@ -249,7 +249,7 @@ export function UnifiedPlanCard({
               <ul className="space-y-1">
                 {plan.features.automation_ops.slice(0, 2).map((f: string) => (
                   <li key={f} className="flex items-start gap-2 text-xs text-titanium-400">
-                    <Check className="h-3.5 w-3.5 text-gold-400 mt-0.5 shrink-0" />
+                    <Check className="h-3.5 w-3.5 text-champagne mt-0.5 shrink-0" />
                     {f}
                   </li>
                 ))}
@@ -264,7 +264,7 @@ export function UnifiedPlanCard({
             to={ctaHref}
             className={`w-full py-3 text-center text-sm font-bold rounded transition-colors inline-flex items-center justify-center gap-2 ${
               highlight
-                ? 'bg-gold-400 text-obsidian-950 hover:bg-gold-500'
+                ? 'bg-champagne-200 text-obsidian-950 hover:bg-champagne-100'
                 : 'bg-titanium-800 text-titanium-50 hover:bg-titanium-700'
             }`}
           >
@@ -276,7 +276,7 @@ export function UnifiedPlanCard({
             onClick={onCta}
             className={`w-full py-3 text-center text-sm font-bold rounded transition-colors inline-flex items-center justify-center gap-2 ${
               highlight
-                ? 'bg-gold-400 text-obsidian-950 hover:bg-gold-500'
+                ? 'bg-champagne-200 text-obsidian-950 hover:bg-champagne-100'
                 : 'bg-titanium-800 text-titanium-50 hover:bg-titanium-700'
             }`}
           >

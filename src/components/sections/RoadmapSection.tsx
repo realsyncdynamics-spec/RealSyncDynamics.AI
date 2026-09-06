@@ -121,7 +121,7 @@ function statusStyle(s: Status): string {
     case 'Beta':
       return 'border-violet-400 text-violet-300';
     case 'In Entwicklung':
-      return 'border-gold-400 text-gold-400';
+      return 'border-champagne text-champagne';
     case 'Geplant':
       return 'border-silver-500 text-silver-300';
   }
@@ -135,7 +135,7 @@ export function RoadmapSection() {
     >
       <div className="max-w-5xl mx-auto">
         <div className="text-center mb-10">
-          <div className="text-[11px] font-mono uppercase tracking-[0.25em] text-gold-400 mb-3">
+          <div className="text-[11px] font-mono uppercase tracking-[0.25em] text-champagne mb-3">
             Integrationen & Runtime
           </div>
           <h2 className="font-display font-bold text-2xl sm:text-4xl text-titanium-50 tracking-tight leading-tight max-w-3xl mx-auto">
@@ -153,7 +153,7 @@ export function RoadmapSection() {
               key={it.title}
               className="p-5 sm:p-6 bg-obsidian-900/60 border border-silver-700/30 rounded-none flex gap-4"
             >
-              <it.Icon className="h-5 w-5 text-gold-400 shrink-0 mt-1" strokeWidth={1.5} />
+              <it.Icon className="h-5 w-5 text-champagne shrink-0 mt-1" strokeWidth={1.5} />
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between gap-2 mb-2">
                   <div className="font-display font-bold text-titanium-50 text-base">{it.title}</div>

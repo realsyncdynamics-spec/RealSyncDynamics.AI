@@ -66,7 +66,7 @@ export function NicheLanding({ config }: { config: NicheConfig }) {
             <div className="logo-pulse">
               <Logo size={48} iconOnly />
             </div>
-            <div className="text-[11px] font-mono uppercase tracking-[0.25em] text-gold-400">
+            <div className="text-[11px] font-mono uppercase tracking-[0.25em] text-champagne">
               {config.eyebrow}
             </div>
             <div className="inline-flex items-center gap-1.5 px-3 py-1 border border-amber-800 bg-amber-950/40 text-amber-300 text-[10px] font-mono uppercase tracking-wider">
@@ -91,7 +91,7 @@ export function NicheLanding({ config }: { config: NicheConfig }) {
             </Link>
             <Link
               to="/cookie-scanner"
-              className="inline-flex items-center justify-center gap-2 px-6 py-3.5 border border-silver-500 hover:border-gold-400 text-silver-100 hover:text-titanium-50 text-base font-semibold rounded-none transition-colors"
+              className="inline-flex items-center justify-center gap-2 px-6 py-3.5 border border-silver-500 hover:border-champagne text-silver-100 hover:text-titanium-50 text-base font-semibold rounded-none transition-colors"
             >
               Cookie-Scanner ausprobieren
             </Link>
@@ -107,7 +107,7 @@ export function NicheLanding({ config }: { config: NicheConfig }) {
       <section className="border-t border-silver-700/30 px-4 sm:px-6 lg:px-8 py-16 sm:py-20">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-10 sm:mb-12">
-            <div className="text-[11px] font-mono uppercase tracking-[0.25em] text-gold-400 mb-3">
+            <div className="text-[11px] font-mono uppercase tracking-[0.25em] text-champagne mb-3">
               Typische Risiken
             </div>
             <h2 className="font-display font-bold text-2xl sm:text-4xl text-titanium-50 tracking-tight leading-tight">
@@ -119,9 +119,9 @@ export function NicheLanding({ config }: { config: NicheConfig }) {
             {config.painCards.map((card) => (
               <div
                 key={card.title}
-                className="p-5 sm:p-6 bg-obsidian-900/60 border border-silver-700/30 hover:border-gold-400/60 rounded-none transition-colors"
+                className="p-5 sm:p-6 bg-obsidian-900/60 border border-silver-700/30 hover:border-champagne/60 rounded-none transition-colors"
               >
-                <card.Icon className="h-5 w-5 text-gold-400 mb-3" />
+                <card.Icon className="h-5 w-5 text-champagne mb-3" />
                 <h3 className="font-display font-bold text-titanium-50 text-base sm:text-lg mb-2 leading-snug">
                   {card.title}
                 </h3>
@@ -136,7 +136,7 @@ export function NicheLanding({ config }: { config: NicheConfig }) {
       <section className="border-t border-silver-700/30 px-4 sm:px-6 lg:px-8 py-16 sm:py-20">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-10 sm:mb-12">
-            <div className="text-[11px] font-mono uppercase tracking-[0.25em] text-gold-400 mb-3">
+            <div className="text-[11px] font-mono uppercase tracking-[0.25em] text-champagne mb-3">
               Audit-Inhalt
             </div>
             <h2 className="font-display font-bold text-2xl sm:text-4xl text-titanium-50 tracking-tight leading-tight">
@@ -148,9 +148,9 @@ export function NicheLanding({ config }: { config: NicheConfig }) {
             {config.checks.map((check, idx) => (
               <div
                 key={check.title}
-                className="relative p-5 sm:p-6 bg-obsidian-900/60 border border-silver-700/30 hover:border-gold-400/60 rounded-none transition-colors"
+                className="relative p-5 sm:p-6 bg-obsidian-900/60 border border-silver-700/30 hover:border-champagne/60 rounded-none transition-colors"
               >
-                <div className="absolute -top-3 left-5 inline-flex items-center justify-center w-8 h-8 bg-gold-400 text-obsidian-950 font-display font-bold text-sm tabular-nums">
+                <div className="absolute -top-3 left-5 inline-flex items-center justify-center w-8 h-8 bg-champagne-200 text-obsidian-950 font-display font-bold text-sm tabular-nums">
                   {idx + 1}
                 </div>
                 <h3 className="font-display font-bold text-titanium-50 text-base sm:text-lg mb-2 mt-2 leading-snug">
@@ -167,7 +167,7 @@ export function NicheLanding({ config }: { config: NicheConfig }) {
       <section className="border-t border-silver-700/30 px-4 sm:px-6 lg:px-8 py-16 sm:py-20">
         <div className="max-w-3xl mx-auto">
           <div className="text-center mb-8 sm:mb-10">
-            <div className="text-[11px] font-mono uppercase tracking-[0.25em] text-gold-400 mb-3">
+            <div className="text-[11px] font-mono uppercase tracking-[0.25em] text-champagne mb-3">
               FAQ
             </div>
             <h2 className="font-display font-bold text-2xl sm:text-4xl text-titanium-50 tracking-tight leading-tight">
@@ -179,13 +179,13 @@ export function NicheLanding({ config }: { config: NicheConfig }) {
             {config.faqs.map((item) => (
               <details
                 key={item.q}
-                className="group p-5 bg-obsidian-900/60 border border-silver-700/30 hover:border-gold-400/60 rounded-none transition-colors"
+                className="group p-5 bg-obsidian-900/60 border border-silver-700/30 hover:border-champagne/60 rounded-none transition-colors"
               >
                 <summary className="flex items-center justify-between gap-3 cursor-pointer list-none">
                   <span className="font-display font-bold text-titanium-50 text-base leading-snug">
                     {item.q}
                   </span>
-                  <span className="text-gold-400 text-xl leading-none transition-transform group-open:rotate-45 select-none">
+                  <span className="text-champagne text-xl leading-none transition-transform group-open:rotate-45 select-none">
                     +
                   </span>
                 </summary>
@@ -221,8 +221,8 @@ export function NicheLanding({ config }: { config: NicheConfig }) {
             <Link to="/wordpress-dsgvo"  className="hover:text-titanium-50">WordPress</Link>
             <Link to="/shopify-dsgvo"    className="hover:text-titanium-50">Shopify</Link>
             <Link to="/chatgpt-dsgvo"    className="hover:text-titanium-50">ChatGPT</Link>
-            <Link to="/cookie-scanner"   className="hover:text-titanium-50 text-gold-400">Cookie-Scanner</Link>
-            <Link to="/ai-act-workflows" className="hover:text-titanium-50 text-gold-400">AI-Act Inventar</Link>
+            <Link to="/cookie-scanner"   className="hover:text-titanium-50 text-champagne">Cookie-Scanner</Link>
+            <Link to="/ai-act-workflows" className="hover:text-titanium-50 text-champagne">AI-Act Inventar</Link>
             <Link to="/legal/privacy"    className="hover:text-titanium-50">Datenschutz</Link>
             <Link to="/impressum"        className="hover:text-titanium-50">Impressum</Link>
           </div>

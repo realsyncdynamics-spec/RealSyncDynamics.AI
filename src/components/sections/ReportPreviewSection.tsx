@@ -84,7 +84,7 @@ function AuditBundlePreview() {
                         aria-expanded={open}
                       >
                       <span className="flex items-center gap-2.5">
-                                <FileText className="h-4 w-4 text-gold-400 shrink-0" />
+                                <FileText className="h-4 w-4 text-champagne shrink-0" />
                                 <span className="font-mono text-[11px] uppercase tracking-[0.2em] text-silver-200">
                                             Audit-Bundle · PDF-Vorschau
                                 </span>
@@ -113,7 +113,7 @@ function AuditBundlePreview() {
                             <div className="bg-obsidian-950 border border-silver-800/40 p-4 sm:p-6 max-w-2xl font-mono text-[11px]">
                               {/* Cover simulation */}
                                         <div className="border-b border-silver-800/40 pb-4 mb-4">
-                                                      <div className="text-[10px] uppercase tracking-[0.25em] text-gold-400 mb-1">
+                                                      <div className="text-[10px] uppercase tracking-[0.25em] text-champagne mb-1">
                                                                       RealSyncDynamics.AI — Audit-Report
                                                       </div>
                                                       <div className="text-base font-display font-semibold text-titanium-50 leading-snug">
@@ -226,7 +226,7 @@ export function ReportPreviewSection({
                 >
                 <div className="max-w-6xl mx-auto">
                         <div className="text-center mb-10 sm:mb-12">
-                                  <div className="text-[11px] font-mono uppercase tracking-[0.25em] text-gold-400 mb-3">
+                                  <div className="text-[11px] font-mono uppercase tracking-[0.25em] text-champagne mb-3">
                                     {eyebrow}
                                   </div>
                                   <h2 className="font-display font-bold text-2xl sm:text-4xl text-titanium-50 tracking-tight leading-tight max-w-3xl mx-auto">

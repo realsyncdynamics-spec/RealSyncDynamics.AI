@@ -29,7 +29,7 @@ export function AuditCTA({
   return (
     <section className="border-t border-silver-700/30 px-4 sm:px-6 lg:px-8 py-14 sm:py-16 bg-obsidian-900/40">
       <div className="max-w-3xl mx-auto text-center">
-        <Activity className="h-5 w-5 text-gold-400 mx-auto mb-3" strokeWidth={1.5} />
+        <Activity className="h-5 w-5 text-champagne mx-auto mb-3" strokeWidth={1.5} />
         <h2 className="font-display font-bold text-2xl sm:text-3xl text-titanium-50 tracking-tight leading-tight mb-3">
           Website technisch vorprüfen
         </h2>
@@ -47,7 +47,7 @@ export function AuditCTA({
           {showSecondary && (
             <Link
               to={secondaryHref}
-              className="inline-flex items-center justify-center gap-2 px-6 py-3 border border-silver-500 hover:border-gold-400 text-silver-100 hover:text-titanium-50 text-sm font-semibold rounded-none transition-colors"
+              className="inline-flex items-center justify-center gap-2 px-6 py-3 border border-silver-500 hover:border-champagne text-silver-100 hover:text-titanium-50 text-sm font-semibold rounded-none transition-colors"
             >
               {secondaryLabel}
             </Link>

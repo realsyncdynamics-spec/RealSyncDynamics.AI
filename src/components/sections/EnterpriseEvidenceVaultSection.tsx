@@ -126,7 +126,7 @@ export function EnterpriseEvidenceVaultSection({
     >
       <div className="max-w-6xl mx-auto">
         <div className="mb-10 sm:mb-12">
-          <div className="text-[11px] font-mono uppercase tracking-[0.25em] text-gold-400 mb-3">
+          <div className="text-[11px] font-mono uppercase tracking-[0.25em] text-champagne mb-3">
             {eyebrow}
           </div>
           <h2 className="font-display font-bold text-2xl sm:text-4xl text-titanium-50 tracking-tight leading-tight max-w-3xl">
@@ -143,7 +143,7 @@ export function EnterpriseEvidenceVaultSection({
             const Icon = p.icon;
             return (
               <article key={p.title} className="bg-obsidian-900/80 p-5 sm:p-6">
-                <Icon className="h-5 w-5 text-gold-400 mb-3" />
+                <Icon className="h-5 w-5 text-champagne mb-3" />
                 <h3 className="font-display font-bold text-titanium-50 text-base sm:text-lg mb-2 leading-snug">
                   {p.title}
                 </h3>
@@ -180,7 +180,7 @@ export function EnterpriseEvidenceVaultSection({
                       </span>
                     </div>
                     <div className="text-[10px] font-mono text-silver-400">
-                      hash: <span className="text-gold-400">{i * 17}af…3b4d</span>
+                      hash: <span className="text-champagne">{i * 17}af…3b4d</span>
                     </div>
                     <div className="text-[10px] font-mono text-silver-400">
                       sig:{' '}
@@ -228,7 +228,7 @@ export function EnterpriseEvidenceVaultSection({
           </a>
           <a
             href="/legal/methodology"
-            className="inline-flex items-center justify-center gap-2 px-6 py-3 border border-silver-500 hover:border-gold-400 text-silver-100 hover:text-titanium-50 text-sm font-semibold rounded-none transition-colors"
+            className="inline-flex items-center justify-center gap-2 px-6 py-3 border border-silver-500 hover:border-champagne text-silver-100 hover:text-titanium-50 text-sm font-semibold rounded-none transition-colors"
           >
             Methodik-Doku
           </a>

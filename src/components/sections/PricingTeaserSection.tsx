@@ -25,7 +25,7 @@ export function PricingTeaserSection({ sourceTag }: PricingTeaserProps) {
     >
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-10 sm:mb-12">
-          <div className="text-[11px] font-mono uppercase tracking-[0.25em] text-gold-400 mb-3">
+          <div className="text-[11px] font-mono uppercase tracking-[0.25em] text-champagne mb-3">
             Preise
           </div>
           <h2 className="font-display font-bold text-2xl sm:text-4xl text-titanium-50 tracking-tight leading-tight">
@@ -39,12 +39,12 @@ export function PricingTeaserSection({ sourceTag }: PricingTeaserProps) {
               key={tier.id}
               className={`relative p-5 sm:p-6 bg-obsidian-900/60 border-x border-b border-t-4 rounded-none transition-colors ${TIER_ACCENT[tier.id].border} ${
                 tier.highlight
-                  ? 'border-gold-400/80'
-                  : 'border-silver-700/30 hover:border-gold-400/60'
+                  ? 'border-champagne/80'
+                  : 'border-silver-700/30 hover:border-champagne/60'
               }`}
             >
               {tier.badges?.[0] && (
-                <div className="absolute -top-3 left-5 px-2 py-0.5 bg-gold-400 text-obsidian-950 font-mono uppercase tracking-wider text-[10px] font-bold">
+                <div className="absolute -top-3 left-5 px-2 py-0.5 bg-champagne-200 text-obsidian-950 font-mono uppercase tracking-wider text-[10px] font-bold">
                   {tier.badges[0]}
                 </div>
               )}
@@ -52,7 +52,7 @@ export function PricingTeaserSection({ sourceTag }: PricingTeaserProps) {
                 {tier.name}
               </div>
               <div className="mb-1.5">
-                <span className="text-2xl font-display font-bold text-gold-400 tabular-nums">
+                <span className="text-2xl font-display font-bold text-champagne tabular-nums">
                   {tier.priceEur > 0 ? `${tier.priceEur} €` : (tier.id === 'free' ? '0 €' : 'Anfrage')}
                 </span>
                 {tier.recurring && tier.priceEur > 0 && (
@@ -65,7 +65,7 @@ export function PricingTeaserSection({ sourceTag }: PricingTeaserProps) {
               <ul className="space-y-1.5 text-sm text-silver-300">
                 {tier.bullets.slice(0, 4).map((b) => (
                   <li key={b} className="flex items-start gap-2">
-                    <span className="text-gold-400 shrink-0 leading-relaxed">+</span>
+                    <span className="text-champagne shrink-0 leading-relaxed">+</span>
                     <span className="leading-relaxed">{b}</span>
                   </li>
                 ))}
@@ -83,7 +83,7 @@ export function PricingTeaserSection({ sourceTag }: PricingTeaserProps) {
           </Link>
           <Link
             to={contactHref}
-            className="inline-flex items-center justify-center gap-2 px-6 py-3 border border-silver-500 hover:border-gold-400 text-silver-100 hover:text-titanium-50 text-sm font-semibold rounded-none transition-colors"
+            className="inline-flex items-center justify-center gap-2 px-6 py-3 border border-silver-500 hover:border-champagne text-silver-100 hover:text-titanium-50 text-sm font-semibold rounded-none transition-colors"
           >
             AI Agent fragen
           </Link>

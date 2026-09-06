@@ -76,7 +76,7 @@ export function ConsentLimitsSection({
     >
       <div className="max-w-5xl mx-auto">
         <div className="text-center mb-10 sm:mb-12">
-          <div className="text-[11px] font-mono uppercase tracking-[0.25em] text-gold-400 mb-3">
+          <div className="text-[11px] font-mono uppercase tracking-[0.25em] text-champagne mb-3">
             {eyebrow}
           </div>
           <h2 className="font-display font-bold text-2xl sm:text-4xl text-titanium-50 tracking-tight leading-tight max-w-3xl mx-auto">
@@ -134,7 +134,7 @@ export function ConsentLimitsSection({
           <p className="text-sm sm:text-base text-titanium-100 leading-relaxed">
             <strong className="text-titanium-50">Position von RealSyncDynamicsAI:</strong>{' '}
             wir sind kein reines Consent-Tool, sondern eine{' '}
-            <strong className="text-gold-400">automatisierte Compliance-Infrastruktur</strong>{' '}
+            <strong className="text-champagne">automatisierte Compliance-Infrastruktur</strong>{' '}
             mit Detection, Monitoring, Auditability und AI-Governance. Cookie-Banner sind ein
             Output-Modul davon — nicht der ganze Stack.
           </p>

@@ -93,7 +93,7 @@ export function Modal({ open, onClose, title, eyebrow, children, size = 'lg' }: 
         <header className="sticky top-0 z-10 bg-obsidian-950 border-b border-silver-700 px-6 py-4 flex items-start justify-between gap-4">
           <div className="min-w-0 flex-1">
             {eyebrow && (
-              <div className="text-[10px] font-mono uppercase tracking-[0.2em] text-gold-400 mb-1">
+              <div className="text-[10px] font-mono uppercase tracking-[0.2em] text-champagne mb-1">
                 {eyebrow}
               </div>
             )}

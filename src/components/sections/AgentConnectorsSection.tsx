@@ -73,7 +73,7 @@ export function AgentConnectorsSection({
     >
       <div className="max-w-6xl mx-auto">
         <div className="mb-10 sm:mb-12">
-          <div className="text-[11px] font-mono uppercase tracking-[0.25em] text-gold-400 mb-3">
+          <div className="text-[11px] font-mono uppercase tracking-[0.25em] text-champagne mb-3">
             {eyebrow}
           </div>
           <h2 className="font-display font-bold text-2xl sm:text-4xl text-titanium-50 tracking-tight leading-tight max-w-3xl">
@@ -93,7 +93,7 @@ export function AgentConnectorsSection({
                 className="bg-obsidian-900/80 border border-silver-700/30 p-5 sm:p-6"
               >
                 <div className="flex items-center gap-2 mb-3">
-                  <Icon className="h-5 w-5 text-gold-400" />
+                  <Icon className="h-5 w-5 text-champagne" />
                   <h3 className="font-display font-bold text-titanium-50 text-base sm:text-lg">
                     {c.title}
                   </h3>
@@ -139,7 +139,7 @@ export function AgentConnectorsSection({
           </a>
           <a
             href="/contact-sales?intent=connectors"
-            className="inline-flex items-center justify-center gap-2 px-6 py-3 border border-silver-500 hover:border-gold-400 text-silver-100 hover:text-titanium-50 text-sm font-semibold rounded-none transition-colors"
+            className="inline-flex items-center justify-center gap-2 px-6 py-3 border border-silver-500 hover:border-champagne text-silver-100 hover:text-titanium-50 text-sm font-semibold rounded-none transition-colors"
           >
             Custom-Integration anfragen
           </a>

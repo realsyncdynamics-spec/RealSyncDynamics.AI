@@ -56,7 +56,7 @@ export function SeoPageShell({
       <section className="px-4 sm:px-6 lg:px-8 pt-12 sm:pt-16 pb-6">
         <div className="max-w-3xl mx-auto text-center">
           {eyebrow && (
-            <div className="text-[11px] font-mono uppercase tracking-[0.25em] text-gold-400 mb-3">
+            <div className="text-[11px] font-mono uppercase tracking-[0.25em] text-champagne mb-3">
               {eyebrow}
             </div>
           )}

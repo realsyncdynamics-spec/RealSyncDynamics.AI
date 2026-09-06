@@ -30,7 +30,7 @@ export function EnterpriseLanding() {
       <section className="px-4 sm:px-6 lg:px-8 py-16 sm:py-24">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-10">
-            <div className="text-[11px] font-mono uppercase tracking-[0.25em] text-gold-400 mb-4">
+            <div className="text-[11px] font-mono uppercase tracking-[0.25em] text-champagne mb-4">
               Enterprise Governance
             </div>
             <h1 className="font-display font-bold text-4xl sm:text-6xl text-titanium-50 tracking-tight leading-[1.1] mb-6">
@@ -51,7 +51,7 @@ export function EnterpriseLanding() {
             </Link>
             <Link
               to="/pricing"
-              className="inline-flex items-center justify-center gap-2 border border-silver-500 hover:border-gold-400 text-silver-100 hover:text-titanium-50 px-6 py-3 text-sm font-semibold rounded-none transition-colors"
+              className="inline-flex items-center justify-center gap-2 border border-silver-500 hover:border-champagne text-silver-100 hover:text-titanium-50 px-6 py-3 text-sm font-semibold rounded-none transition-colors"
             >
               Pricing ansehen
             </Link>
@@ -64,7 +64,7 @@ export function EnterpriseLanding() {
               { label: 'Uptime SLA', value: '99.9%' },
             ].map((stat) => (
               <div key={stat.label}>
-                <div className="font-display font-bold text-3xl sm:text-4xl text-gold-400 mb-1">
+                <div className="font-display font-bold text-3xl sm:text-4xl text-champagne mb-1">
                   {stat.value}
                 </div>
                 <div className="text-[11px] font-mono uppercase tracking-wider text-titanium-400">
@@ -94,30 +94,30 @@ export function EnterpriseLanding() {
                 icon: BarChart3,
                 challenge: 'Audit Burden',
                 solution: 'Automated Evidence Vault mit Timestamped Audit Trail. Alle Scans, Findings, Fixes dokumentiert und exportierbar.',
-                color: 'text-gold-400',
+                color: 'text-champagne',
               },
               {
                 icon: Zap,
                 challenge: 'Regulatory Drift',
                 solution: 'Daily Runtime Monitoring. Neue Risiken werden erkannt, bevor sie zu Bußgeldern führen. Alert im Dashboard.',
-                color: 'text-gold-400',
+                color: 'text-champagne',
               },
               {
                 icon: Users,
                 challenge: 'Knowledge Silos',
                 solution: 'Centralized Governance Platform. Team-Collaboration, Templating, Approvals. Multi-Tenant, vollständig isoliert.',
-                color: 'text-gold-400',
+                color: 'text-champagne',
               },
               {
                 icon: Lock,
                 challenge: 'Compliance Complexity',
                 solution: 'Integrated Checklists für DSGVO, EU AI Act, BAIT, MaRisk. Auto-generates Dokumentation für Behörden.',
-                color: 'text-gold-400',
+                color: 'text-champagne',
               },
             ].map((item) => {
               const Icon = item.icon;
               return (
-                <div key={item.challenge} className="p-6 border border-titanium-800 hover:border-gold-400/50 transition-colors">
+                <div key={item.challenge} className="p-6 border border-titanium-800 hover:border-champagne/50 transition-colors">
                   <div className="flex items-start gap-4">
                     <Icon className={`h-5 w-5 ${item.color} shrink-0 mt-1`} />
                     <div>
@@ -193,10 +193,10 @@ export function EnterpriseLanding() {
             ].map((caseStudy) => (
               <div
                 key={caseStudy.company}
-                className="p-6 border border-titanium-800 hover:border-gold-400/50 transition-colors"
+                className="p-6 border border-titanium-800 hover:border-champagne/50 transition-colors"
               >
                 <div className="mb-4">
-                  <div className="text-[10px] font-mono uppercase tracking-wider text-gold-400 mb-1">
+                  <div className="text-[10px] font-mono uppercase tracking-wider text-champagne mb-1">
                     {caseStudy.industry}
                   </div>
                   <h3 className="font-display font-bold text-titanium-50 text-lg mb-4">
@@ -218,7 +218,7 @@ export function EnterpriseLanding() {
                     <p>{caseStudy.solution}</p>
                   </div>
                   <div>
-                    <div className="font-mono text-[10px] uppercase tracking-wider text-gold-400 mb-1">
+                    <div className="font-mono text-[10px] uppercase tracking-wider text-champagne mb-1">
                       Impact
                     </div>
                     <p className="font-semibold text-titanium-50">{caseStudy.impact}</p>
@@ -283,7 +283,7 @@ export function EnterpriseLanding() {
               'Dedicated Account Manager',
             ].map((feature) => (
               <div key={feature} className="flex items-start gap-3 p-4 border border-titanium-800 rounded-none">
-                <CheckCircle2 className="h-4 w-4 text-gold-400 shrink-0 mt-1" />
+                <CheckCircle2 className="h-4 w-4 text-champagne shrink-0 mt-1" />
                 <span className="text-sm text-silver-200">{feature}</span>
               </div>
             ))}

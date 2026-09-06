@@ -79,7 +79,7 @@ export function Manifest() {
       <main className="px-4 sm:px-6 py-12 sm:py-16">
         <div className="max-w-3xl mx-auto space-y-10">
           <div>
-            <div className="text-[11px] font-mono uppercase tracking-[0.25em] text-gold-400 mb-3">
+            <div className="text-[11px] font-mono uppercase tracking-[0.25em] text-champagne mb-3">
               Strategische Standortbestimmung
             </div>
             <h1 className="text-3xl sm:text-5xl font-display font-bold text-titanium-50 tracking-tight leading-tight mb-4">

@@ -31,7 +31,7 @@ CREATE TABLE IF NOT EXISTS public.agent_roles (
   tenant_id          uuid NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
   key                text NOT NULL,
   title              text NOT NULL,
-  org_unit_id        uuid NOT NULL REFERENCES public.org_units(id) ON DELETE CASCADE,
+  org_unit_id        uuid NOT NULL REFERENCES public.agent_org_units(id) ON DELETE CASCADE,
   authority_level    int  NOT NULL CHECK (authority_level BETWEEN 0 AND 4),
   decision_scope     text[] NOT NULL DEFAULT '{}',
   escalation_role_id uuid NULL REFERENCES public.agent_roles(id) ON DELETE SET NULL,

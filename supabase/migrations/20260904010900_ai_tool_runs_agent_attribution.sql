@@ -43,17 +43,17 @@ BEGIN;
 
 ALTER TABLE public.ai_tool_runs
   ADD COLUMN IF NOT EXISTS agent_id    uuid NULL REFERENCES public.agents(id)    ON DELETE SET NULL,
-  ADD COLUMN IF NOT EXISTS org_unit_id uuid NULL REFERENCES public.org_units(id) ON DELETE SET NULL;
+  ADD COLUMN IF NOT EXISTS agent_org_unit_id uuid NULL REFERENCES public.agent_org_units(id) ON DELETE SET NULL;
 
 COMMENT ON COLUMN public.ai_tool_runs.agent_id IS
   'Welcher Agent den Aufruf ausgeloest hat (ADR 0011 D2). NULL fuer Aufrufe '
   'ausserhalb der Agenten-Ebene — das ist heute der Normalfall, nicht ein Fehler.';
-COMMENT ON COLUMN public.ai_tool_runs.org_unit_id IS
+COMMENT ON COLUMN public.ai_tool_runs.agent_org_unit_id IS
   'Organisationseinheit des Aufrufs (Team/Director). Traegt die Achse fuer '
   'spaetere Budgets. Denormalisiert neben agent_id, damit die Zuordnung auch '
   'dann erhalten bleibt, wenn der Agent spaeter geloescht wird.';
 
 CREATE INDEX IF NOT EXISTS ai_tool_runs_agent_idx    ON public.ai_tool_runs (agent_id)    WHERE agent_id    IS NOT NULL;
-CREATE INDEX IF NOT EXISTS ai_tool_runs_org_unit_idx ON public.ai_tool_runs (org_unit_id) WHERE org_unit_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS ai_tool_runs_agent_org_unit_idx ON public.ai_tool_runs (agent_org_unit_id) WHERE agent_org_unit_id IS NOT NULL;
 
 COMMIT;

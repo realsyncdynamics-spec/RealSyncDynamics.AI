@@ -17,7 +17,7 @@ BEGIN;
 CREATE TABLE IF NOT EXISTS public.agent_teams (
   id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id     uuid NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
-  org_unit_id   uuid NOT NULL UNIQUE REFERENCES public.org_units(id) ON DELETE CASCADE,
+  org_unit_id   uuid NOT NULL UNIQUE REFERENCES public.agent_org_units(id) ON DELETE CASCADE,
   lead_agent_id uuid NULL REFERENCES public.agents(id) ON DELETE SET NULL,
   created_at    timestamptz NOT NULL DEFAULT now()
 );

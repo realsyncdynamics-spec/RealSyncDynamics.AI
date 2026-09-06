@@ -26,7 +26,7 @@ const MIGRATIONS = resolve(__dirname, '../../supabase/migrations');
 
 /** Die acht Tabellen aus D4, plus die zwei, die das Modell mitbringt. */
 const SCOPED_TABLES = [
-  'org_units',
+  'agent_org_units',
   'agent_roles',
   'agents',
   'agent_teams',
@@ -258,7 +258,7 @@ describe('ADR 0011 D2 — Ledger jetzt, Enforcement später', () => {
   it('ergänzt die Zuordnungsachse additiv und nullable', () => {
     const sql = code(read(file));
     expect(sql).toMatch(/ADD COLUMN IF NOT EXISTS agent_id\s+uuid NULL/);
-    expect(sql).toMatch(/ADD COLUMN IF NOT EXISTS org_unit_id uuid NULL/);
+    expect(sql).toMatch(/ADD COLUMN IF NOT EXISTS agent_org_unit_id uuid NULL/);
   });
 
   it('führt kein Budget und keine Blocking-Logik ein', () => {
@@ -275,7 +275,7 @@ describe('ADR 0011 D2 — Ledger jetzt, Enforcement später', () => {
     const added = ddl(read(file)).match(/ADD COLUMN IF NOT EXISTS (\w+)/g) ?? [];
     expect(added.map((a) => a.replace('ADD COLUMN IF NOT EXISTS ', ''))).toEqual([
       'agent_id',
-      'org_unit_id',
+      'agent_org_unit_id',
     ]);
   });
 
@@ -296,4 +296,52 @@ describe('Alle zehn Migrationen sind additiv', () => {
       expect(m).toMatch(/DROP POLICY/);
     }
   });
+});
+
+/**
+ * Der Befund vom 2026-09-06, als Prüfung.
+ *
+ * Diese Ebene hiess bis dahin `org_units`. PR #1135 hat unabhängig davon eine
+ * Tabelle desselben Namens eingeführt (`20260824120000`), und die läuft
+ * früher. `CREATE TABLE IF NOT EXISTS` fällt in so einem Fall **still** durch
+ * — kein Fehler, keine Warnung. Erst der nächste Zugriff auf eine Spalte, die
+ * es nur in der eigenen Fassung gibt, bricht ab; bei uns war das ein
+ * `COMMENT ON COLUMN`, hätte aber genauso gut eine Policy sein können, die
+ * dann still gegen die fremde Tabelle greift — mit deren Scope-Modell.
+ *
+ * Weder `npm run lint` noch die Suite noch der Migrations-Guard sahen das:
+ * Jede der beiden Migrationen ist für sich fehlerfrei, der Konflikt entsteht
+ * erst aus ihrer Reihenfolge. Gefunden hat ihn `Migration validation` — also
+ * ein echter Postgres, der beide anwendet.
+ *
+ * Warum die Prüfung nur auf diese Ebene schaut und nicht auf das ganze
+ * Verzeichnis: Dort legen 29 Paare dieselbe Tabelle zweimal an, und das ist
+ * fast überall Absicht — `*_reconcile_*`- und `*_repair`-Migrationen
+ * wiederholen eine Deklaration bewusst idempotent. „Zweimal deklariert" ist
+ * also kein Fehler; „zweimal deklariert mit anderen Spalten" wäre einer, und
+ * das ist ohne Datenbank nicht sauber zu unterscheiden. Deshalb hier die
+ * Frage, die eindeutig beantwortbar ist: Ist einer unserer Namen anderswo
+ * schon vergeben?
+ */
+describe('Die Namen dieser Ebene sind anderswo nicht vergeben', () => {
+  it.each([...SCOPED_TABLES, 'platform_operators'])(
+    'public.%s wird nur von dieser Ebene angelegt',
+    (tabelle) => {
+      const fremde = readdirSync(MIGRATIONS)
+        .filter((f) => f.endsWith('.sql') && !/^20260904010\d00_/.test(f))
+        .filter((f) =>
+          new RegExp(`CREATE TABLE (?:IF NOT EXISTS )?public\\.${tabelle}\\b`, 'i').test(
+            readFileSync(resolve(MIGRATIONS, f), 'utf8'),
+          ),
+        );
+
+      expect(
+        fremde,
+        `public.${tabelle} wird ausserhalb dieser Ebene angelegt. Die frühere ` +
+          'Migration gewinnt, die spätere fällt still durch — und alles, was auf ' +
+          'ihren Spalten steht, greift danach gegen die fremde Tabelle. Genau so ' +
+          'ist am 2026-09-06 `org_units` gegen PR #1135 gelaufen.',
+      ).toEqual([]);
+    },
+  );
 });

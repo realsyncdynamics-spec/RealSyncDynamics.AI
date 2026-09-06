@@ -7,7 +7,7 @@
 > RFC-004 (`docs/architecture/governance-intelligence-economic-control-rfc.md`),
 > `docs/architecture/agent-manager-roadmap.md`
 > **Bindet:** den Migrationsentwurf der Agenten-Organisationsebene
-> (`org_units` … `agent_escalations`)
+> (`agent_org_units` … `agent_escalations`)
 >
 > **Umgesetzt 2026-09-04** in `supabase/migrations/20260904010000` …
 > `20260904010900` (zehn Dateien, D4-Reihenfolge, beginnend bei
@@ -113,7 +113,7 @@ Store — er ersetzt den Prüfpfad nicht und darf nicht als solcher zitiert werd
 ### D4 — Migrationsreihenfolge
 
 ```text
-org_units
+agent_org_units
 → agent_roles
 → agents
 → agent_teams
@@ -214,7 +214,7 @@ Sicherheitsgrenze — siehe Befund B1.
 
 1. Jede der acht Tabellen bringt RLS, Policies und Grants in ihrer eigenen
    Migration mit (D4).
-2. `platform_operators` und `is_platform_operator()` müssen **vor** `org_units`
+2. `platform_operators` und `is_platform_operator()` müssen **vor** `agent_org_units`
    liegen — die erste Platform-Scope-Policy braucht die Funktion bereits. Die
    Reihenfolge aus D4 beginnt damit faktisch bei `platform_operators`.
 3. Die Autonomiegrenze aus D1 ist eine serverseitige Prüfung (Policy Engine),
@@ -235,7 +235,7 @@ Management-API, Quellen `pg_tables`, `pg_policy`, `information_schema.columns`,
 
 | Prüfung | Ergebnis |
 |---|---|
-| `org_units`, `agent_roles`, `agents`, `agent_teams`, `agent_tickets`, `agent_reports`, `agent_escalations`, `platform_operators` in `public` | **keine davon vorhanden** — Namensraum frei |
+| `agent_org_units`, `agent_roles`, `agents`, `agent_teams`, `agent_tickets`, `agent_reports`, `agent_escalations`, `platform_operators` in `public` | **keine davon vorhanden** — Namensraum frei (gemessen 2026-09-01; der Name `org_units` ist seit dem Merge von PR #1135 am 2026-09-06 belegt, die Ebene heisst deshalb `agent_org_units` — siehe den Kopf von `20260904010100`) |
 | `governance_approvals` (Ziel von D1) | vorhanden, 0 Zeilen |
 | `ai_tool_runs` (Ledger aus D2) | vorhanden, 0 Zeilen |
 | `ai_tool_runs`-Spalten | `tenant_id`, `tool_id`, `tool_key`, `user_id`, `input_tokens`, `output_tokens`, `cached_tokens`, `cost_usd`, `duration_ms`, `status`, `error_code`, `error_message`, `metadata`, `created_at` |

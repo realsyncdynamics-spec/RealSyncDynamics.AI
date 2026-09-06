@@ -36,7 +36,7 @@ CREATE TABLE IF NOT EXISTS public.agent_reports (
   id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id     uuid NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
   agent_id      uuid NOT NULL REFERENCES public.agents(id) ON DELETE RESTRICT,
-  org_unit_id   uuid NOT NULL REFERENCES public.org_units(id) ON DELETE CASCADE,
+  org_unit_id   uuid NOT NULL REFERENCES public.agent_org_units(id) ON DELETE CASCADE,
   period        text NOT NULL CHECK (period IN ('daily', 'weekly')),
   report_day    date NOT NULL,
   bullet_points text[] NOT NULL DEFAULT '{}',

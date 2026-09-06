@@ -39,7 +39,7 @@ BEGIN;
 -- Feste UUIDs statt gen_random_uuid(), damit die Zeilen über Umgebungen hinweg
 -- dieselbe Identität haben. Ein Ticket, das lokal auf eine andere org_unit
 -- zeigt als in Produktion, ist beim Vergleich zweier Stände wertlos.
-INSERT INTO public.org_units (id, tenant_id, parent_unit_id, unit_type, name, mission) VALUES
+INSERT INTO public.agent_org_units (id, tenant_id, parent_unit_id, unit_type, name, mission) VALUES
   ('0a7e0000-0000-4000-8000-000000000001', NULL, NULL,
    'executive', 'CEO',
    'Mandat und Rahmen der Plattform-Organisation.'),

@@ -14,7 +14,7 @@ festgehalten, weil er sich wiederholen wird.
 | Frage | Antwort | Methode |
 |---|---|---|
 | Wer liefert aus? | **Cloudflare Pages** | `server: cloudflare`, Cloudflare-IPs |
-| Welcher Commit ist live? | **`dce3278` = `main` HEAD** | Asset-Fingerabdruck, §3 |
+| Welcher Commit ist live? | **`dce3278` = `main` HEAD** | Check-Run + Asset-Fingerabdruck, §3 |
 | Ist Vercel noch Deployment-Layer? | **Nein**, seit 2026-07-28 tot | GitHub-Deployments-API, §2 |
 | Warum ist „Production" rot? | Karteileiche von Vercel, sechs Wochen alt | §2 |
 | Parallele Pipelines? | **Nein** — alle anderen sind `workflow_dispatch` | §4 |
@@ -47,10 +47,10 @@ Der Status des jüngsten Eintrags lautet `failure` mit dem Hinweis
 2026-07-23** — sechs Wochen vor dieser Messung.
 
 Entscheidend ist, was **fehlt**: Es gibt keinen einzigen neueren Eintrag. Die
-Cloudflare-Git-Integration schreibt keine GitHub-Deployments. Die Ansicht wird
-deshalb nie aktualisiert und bleibt dauerhaft auf dem letzten Vercel-Stand
-stehen — rot, weil Vercel zuletzt scheiterte, und für immer rot, weil niemand
-mehr hineinschreibt.
+Cloudflare-Git-Integration schreibt keine GitHub-Deployments, sondern
+**Check-Runs** (§3). Die Deployments-Ansicht wird deshalb nie aktualisiert und
+bleibt dauerhaft auf dem letzten Vercel-Stand stehen — rot, weil Vercel zuletzt
+scheiterte, und für immer rot, weil niemand mehr hineinschreibt.
 
 `deploy/cloudflare-pages/README.md` sagt es in Zeile 3 ausdrücklich:
 **„Ersetzt Vercel."** Das Vercel-Konto führt heute null Projekte.
@@ -63,11 +63,47 @@ mehr hineinschreibt.
 
 ---
 
-## 3. Der Live-Commit — über den Asset-Fingerabdruck
+## 3. Der Deploy-Beleg steht in den **Checks**, nicht in den Deployments
 
-Ohne Cloudflare-Token gibt es keine Deployment-Metadaten. Der belastbare Weg
-führt über die Content-Hashes von Vite: Sie hängen am Bundle-Inhalt, also am
-Quellstand.
+Der schnellste und direkteste Nachweis. Auf `main` @ `dce3278` stehen zwei
+Check-Runs mit beinahe demselben Namen — und sie sagen Gegenteiliges:
+
+| Check-Run | App | Ergebnis | Abgeschlossen |
+|---|---|---|---|
+| `Deploy to Cloudflare Pages` | GitHub Actions | **skipped** | 13:40:19 UTC |
+| `Cloudflare Pages` | **Cloudflare Workers and Pages** | **success** | **13:39:59 UTC** |
+
+Der zweite ist der echte Deploy: Er stammt von der Cloudflare-GitHub-App, nicht
+von Actions, und sein `details_url` zeigt ins Pages-Dashboard des Projekts
+`realsyncdynamics-ai`. Der Merge lag um 13:37 UTC — **die Auslieferung erfolgte
+zwei Minuten später.**
+
+```bash
+curl -s "https://api.github.com/repos/realsyncdynamics-spec/RealSyncDynamics.AI/commits/<sha>/check-runs?per_page=100" \
+  | python3 -c "import json,sys; [print(c.get('conclusion'), '|', (c.get('app') or {}).get('name'), '|', c['name']) for c in json.load(sys.stdin)['check_runs']]"
+```
+
+**Das ist die Auflösung des ganzen Falls.** Die Cloudflare-Git-Integration
+meldet sich als *Check-Run*, nicht als *Deployment*. Deshalb bleibt die
+Deployments-Ansicht auf dem letzten Vercel-Stand stehen, obwohl seither
+hunderte Male ausgeliefert wurde — die beiden Systeme schreiben in
+verschiedene Register.
+
+> **Die Verwechslungsgefahr ist eingebaut**: Auf demselben Commit steht
+> „Deploy to Cloudflare Pages" (übersprungen) direkt neben „Cloudflare Pages"
+> (erfolgreich). Wer den ersten liest, hält den Deploy für ausgefallen; wer den
+> zweiten liest, sieht ihn. Der Name allein trägt hier nicht — die **App**
+> entscheidet.
+
+---
+
+## 4. Gegenprobe über den Asset-Fingerabdruck
+
+Der Check-Run aus §3 sagt, dass Cloudflare deployt hat — er sagt nicht, **was**
+am Ende ausgeliefert wird. Ein Cache, eine Regel oder eine fremde Custom Domain
+könnte dazwischenstehen. Diese Gegenprobe misst deshalb das tatsächlich
+Ausgelieferte, und sie braucht keinen Cloudflare-Token: Die Content-Hashes von
+Vite hängen am Bundle-Inhalt, also am Quellstand.
 
 ```bash
 curl -s https://realsyncdynamicsai.de | grep -oE '(src|href)="/assets/[^"]+"'
@@ -86,15 +122,15 @@ Vier unabhängige Übereinstimmungen, darunter App-Code **und** CSS.
 **Warum das den Stand festnagelt**: Der letzte Commit, der `src/` berührt, ist
 `870ab68` — er kam mit dem Merge von PR #1135 am 2026-09-06 um 13:37 UTC nach
 `main`. Der ausgelieferte Build trägt diesen Stand, kann also **nicht älter als
-dieser Merge** sein. Die Cloudflare-Git-Integration hat nach dem Merge
-deployt, innerhalb von rund zwei Stunden.
+dieser Merge** sein — deckungsgleich mit dem Check-Run aus §3, der den Deploy
+auf 13:39:59 UTC datiert.
 
 Der Vergleich ist auch ohne die `VITE_*`-Secrets gültig — sie fließen nicht in
 diese Chunk-Hashes ein. Genau deshalb taugen sie als Commit-Fingerabdruck.
 
 ---
 
-## 4. Der Deploy-Pfad — und zwei Befunde
+## 5. Der Deploy-Pfad — und zwei Befunde
 
 Der einzige automatische Frontend-Deploy ist die **Cloudflare-Git-Integration**
 (im Dashboard konfiguriert, `npm run build`). Alle konkurrierenden Workflows
@@ -145,13 +181,15 @@ berühren die Auslieferung nicht.
 
 ---
 
-## 5. Vorgehen bei der nächsten Deployment-Frage
+## 6. Vorgehen bei der nächsten Deployment-Frage
 
 1. **Wer liefert aus?** `curl -sI https://realsyncdynamicsai.de | grep server`
 2. **Wie alt ist die rote Anzeige?** Datum des letzten Eintrags je Environment
    über die Deployments-API — vor jeder Deutung.
-3. **Welcher Commit ist live?** Asset-Hashes gegen `npx vite build` aus dem
-   fraglichen Commit.
-4. **Hat der Workflow deployt?** Nicht den Lauf ansehen, sondern die **Jobs**.
-   `skipped` bei grünem Lauf ist der Normalfall dieses Repos.
-5. **Erst danach** Routing, Plan-Taxonomie, Onboarding, Billing.
+3. **Hat Cloudflare deployt?** Check-Runs des Commits — der Eintrag der App
+   „Cloudflare Workers and Pages", **nicht** der gleichnamige Actions-Job.
+4. **Welcher Commit ist live?** Wenn der Check-Run nicht reicht: Asset-Hashes
+   gegen `npx vite build` aus dem fraglichen Commit.
+5. **Hat der Actions-Workflow deployt?** Nicht den Lauf ansehen, sondern die
+   **Jobs**. `skipped` bei grünem Lauf ist der Normalfall dieses Repos.
+6. **Erst danach** Routing, Plan-Taxonomie, Onboarding, Billing.

@@ -127,7 +127,12 @@ nicht vorher aus der Zeilenzahl geschlossen.
    `websites`/`scan_runs` füllt und ob `ai_tool_runs` Zeilen bekommt.
 3. **M0 aus der Agent-Manager-Roadmap** — Registry und Read-Layer, mit einem
    Health-Kriterium, das Ausgabe misst statt Dispatch (§3).
-4. **Erst danach** eine Rollen-/Organisationsebene. Berichts-Rollups und
+4. Die **Stammdaten** der Organisationsebene (`org_units`, `agent_roles`,
+   `agents`) sind davon unabhängig und laufen bereits — ADR 0011 und PR #1202.
+   Sie vor dem ersten Betrieb festzuziehen ist richtig, weil eine falsche
+   RLS-Struktur später nur destruktiv korrigierbar wäre.
+5. **Erst nach (1)–(3)** die **Betriebs-Tabellen** derselben Ebene
+   (`agent_tickets`, `agent_reports`, `agent_kg_*`). Berichts-Rollups und
    Ticketflüsse über einer Basis von null Beobachtungen beschreiben einen
    Betrieb, den es nicht gibt.
 

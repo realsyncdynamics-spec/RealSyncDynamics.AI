@@ -1355,6 +1355,79 @@ Farben, Typografie, Grid, Sektionsreihenfolge und Icon-Set sind unberührt.
 `/os/login` und `/os/signup` bleiben bestehen und erreichbar — sie sind nur
 kein Ziel des Flows mehr. Hergang: `docs/product/addon-booking.md` §6.
 
+**2026-09-06 — Tokenisierung der öffentlichen Palette und Rollout**
+
+Auf die Drei-Fragen-Regel nach §10.4 hat der Eigentümer dreimal mit **Ja**
+geantwortet:
+
+| Frage | Antwort |
+|---|---|
+| 1. Bestehende Beschriftungen und Fliesstexte der Startseite an die Infrastruktur angleichen | **Ja** |
+| 2. Den Landing-Look als echte Tokens aufnehmen (`champagne-*`, `obsidian-deep`, `font-serif`), optisch 1:1 | **Ja** |
+| 3. Diese Tokens auf die übrige Oberfläche ausrollen | **Ja, schrittweise** — öffentliche Ebene zuerst, Dashboard in einem eigenen Schnitt |
+
+**Was Frage 2 gelöst hat.** Gemessen am 2026-09-06 kamen `#e8c98a` und
+`rgb(3,7,18)` — die gesamte sichtbare Identität der ausgelieferten
+Startseite — in genau **zwei** Dateien vor, während **521** Dateien auf
+`petrol`/`security-blue` liefen. Der Look war nicht tokenisiert und konnte
+per Konstruktion nirgends hin propagieren. Die Werte stehen jetzt im
+`@theme`-Block von `src/index.css`; `MainLanding.tsx` liest sie, statt sie
+ein zweites Mal zu definieren. Kein Pixel hat sich geändert — im Browser
+nachgemessen: Akzent `rgb(232,201,138)`, CTA-Fläche `rgb(240,230,210)`,
+Überschriften Georgia, kein Querüberlauf auf 1280 und 390 px.
+
+**Der Befund, der dabei fast durchgerutscht wäre — und die Lehre.** Die
+Tokens standen zuerst in `tailwind.config.ts`. Typprüfung grün, Lint grün,
+4473 Tests grün, der eigens dafür geschriebene Wächter-Test grün — und im
+erzeugten CSS-Bundle **fehlte die Farbe vollständig**. Dieses Projekt läuft
+auf Tailwind 4: Maßgeblich ist allein `@theme`, und `tailwind.config.ts`
+wird mangels `@config`-Direktiv gar nicht geladen. Die beiden Dateien
+widersprechen sich sogar (`petrol` ist dort `#0F766E`, in `@theme`
+`#14b8a6`) — und die CSS-Datei gewinnt.
+
+Gefunden hat das kein Test, sondern der Blick ins Bundle und ins gerenderte
+Bild. **Ein Test, der die falsche Datei liest, ist schlimmer als kein Test:
+Er behauptet eine Absicherung, die es nicht gibt.** Dasselbe Muster wie bei
+`hero-longword` am 2026-09-01, nur eine Ebene tiefer. `tailwind.config.ts`
+trägt jetzt einen Vermerk, dass es für Farben wirkungslos ist.
+
+**Zwei weitere Zusagen waren ungedeckt.** `landing-theme.ts` behauptete seit
+dem 2026-08-09, `test/scan/landing-theme.test.ts` halte seine Werte mit
+`MainLanding.tsx` zusammen — weder der Test noch das Verzeichnis `test/scan/`
+existierten, und die Datei hatte ausserdem **null** Konsumenten. Beides ist
+aufgelöst: `test/landing/landing-theme.test.ts` prüft jetzt gegen die Datei,
+die der Compiler wirklich verarbeitet.
+
+**Ergänzungen nach §10.2 (ohne Rückfrage, mit vorhandenen Klassen und
+Tokens):** Die Startseite trug **keinen einzigen Betrag** — wer wissen
+wollte, was das Produkt kostet, musste sie verlassen. Neu sind `#fuer-wen`,
+`#preise` (aus `SELLABLE_PRICING_TIERS`, nicht hartkodiert) und `#faq`. Die
+Reihenfolge der bestehenden Abschnitte ist unangetastet; eingefügt, nicht
+umsortiert.
+
+**Unter Frage 1 behoben — zwei Infrastruktur-Brüche in der Preis-SSoT:**
+
+| Was | Vorher | Nachher |
+|---|---|---|
+| `checkoutHrefForPlan()` für Vertragspläne | `/contact-sales?plan=…` | `/contact-sales?tier=…` |
+| Erste Leistung von Enterprise | „Alles aus Agency" | „Alles aus Growth" |
+| Schluss-CTA der Startseite | nur „Preise ansehen" | „Website kostenlos scannen" (primär) + „Preise ansehen" |
+| Navigation „Preise" | `/pricing` | `#preise` |
+
+Der erste ist der schwerere: `ContactSales.tsx` liest `tier`, `source` und
+`intent` — ein `?plan=` fällt dort stillschweigend auf den Boden. Jeder
+Enterprise-Lead ging mit `tier: undefined` in die Datenbank. **Derselbe
+Fehler war am 2026-08-30 schon einmal behoben worden — aber nur an vier
+hartkodierten CTAs.** Der Generator blieb stehen und hat ihn über alle 13
+Aufrufer neu verteilt. Eine Korrektur am Symptom hält nicht, solange die
+Quelle sie nachliefert; gesichert durch `test/billing/contact-sales-param.test.ts`.
+Der zweite verwies Interessenten auf „Agency" — einen seit AP2 stillgelegten
+Plan, der auf keiner Verkaufsfläche mehr vorkommt. Nachgezogen in
+`20260906110000_canonical_plan_catalog.sql`.
+
+Farben, Typografie, Grid, Icon-Set und die Reihenfolge der bestehenden
+Abschnitte sind unberührt.
+
 **2026-09-04 — AP11 Aufräumen: verwaiste Dateien**
 
 Auf die drei Fragen zur AP11-Liste (gemessen am Import-Graphen von `src`,

@@ -10,13 +10,14 @@ import {
 } from '../config/landing-runtime-preview';
 import { HERO_HEADLINE } from '../components/governance-frontend/hero-content';
 import { EnterpriseAccessSection } from '../components/landing/EnterpriseAccessSection';
+import { LandingAudienceSection } from '../components/landing/LandingAudienceSection';
+import { LandingPricingSection } from '../components/landing/LandingPricingSection';
+import { LandingFaqSection } from '../components/landing/LandingFaqSection';
 import { LIVE_CAPABILITIES, BUILDING_CAPABILITIES } from '../config/platform-capabilities';
 import { useStagedReveal } from '../hooks/useStagedReveal';
 import { useHeroParallax } from '../hooks/useHeroParallax';
+import { LANDING_BG, LANDING_SANS } from '../components/landing/landing-theme';
 
-const BG = 'rgb(3, 7, 18)';
-const SANS = "'Plus Jakarta Sans', 'Inter', system-ui, sans-serif";
-const SERIF = "Georgia, 'Times New Roman', serif";
 
 /** Drei Säulen unter der Headline. Nur Module, die in Produktion laufen. */
 const HERO_PILLARS: readonly (readonly [string, string])[] = [
@@ -54,7 +55,7 @@ export function MainLanding() {
   };
 
   return (
-    <div className="landing-context min-h-screen bg-[rgb(3,7,18)] text-white antialiased" style={{ backgroundColor: BG, fontFamily: SANS }}>
+    <div className="landing-context min-h-screen bg-obsidian-deep text-white antialiased" style={{ backgroundColor: LANDING_BG, fontFamily: LANDING_SANS }}>
       <SEOHead
         title="RealSyncDynamics.AI — Das Governance OS für DSGVO & EU AI Act"
         description="Das Governance OS für DSGVO und EU AI Act. Website-Governance, Claude Code Optimizer, Evidence Vault, Policy Packs, auditfähiger Nachweis-Export und kontinuierliches Monitoring in einer Runtime."
@@ -63,7 +64,7 @@ export function MainLanding() {
         ogDescription="RealSyncDynamics.AI verbindet DSGVO, EU AI Act, Code-Compliance, Policy-Durchsetzung und auditfähige Nachweise in einer operativen Governance-Runtime."
       />
 
-      <header className="absolute inset-x-0 top-0 z-30"><div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6 lg:px-10"><Link to="/" className="flex items-center gap-2.5"><Snowflake className="h-6 w-6 text-[#e8c98a]" strokeWidth={1.5} /><span className="text-base font-semibold tracking-tight sm:text-lg">RealSync <span className="font-normal text-white/80">Dynamics.AI</span></span></Link><nav className="hidden items-center gap-7 md:flex"><a href="#tools" className="text-sm text-white/65 transition-colors hover:text-white">Tools</a><a href="#platform" className="text-sm text-white/65 transition-colors hover:text-white">Produkt</a><a href="#evidence" className="text-sm text-white/65 transition-colors hover:text-white">Evidence</a><a href="#enterprise" className="hidden text-sm text-white/65 transition-colors hover:text-white lg:block">Enterprise</a><Link to="/ai-act" className="hidden text-sm text-white/65 transition-colors hover:text-white xl:block">EU AI Act</Link><Link to="/sicherheit" className="hidden text-sm text-white/65 transition-colors hover:text-white xl:block">Sicherheit</Link><Link to="/pricing" className="text-sm text-white/65 transition-colors hover:text-white">Preise</Link><Link to="/welcome" className="text-sm text-white/65 transition-colors hover:text-white">Login</Link><Link to="/audit" className="rounded-full bg-[#f0e6d2] px-6 py-3 text-sm font-semibold text-[#1a1714] transition hover:bg-[#f6efe4]">Kostenlos scannen</Link></nav></div></header>
+      <header className="absolute inset-x-0 top-0 z-30"><div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6 lg:px-10"><Link to="/" className="flex items-center gap-2.5"><Snowflake className="h-6 w-6 text-champagne" strokeWidth={1.5} /><span className="text-base font-semibold tracking-tight sm:text-lg">RealSync <span className="font-normal text-white/80">Dynamics.AI</span></span></Link><nav className="hidden items-center gap-7 md:flex"><a href="#tools" className="text-sm text-white/65 transition-colors hover:text-white">Tools</a><a href="#platform" className="text-sm text-white/65 transition-colors hover:text-white">Produkt</a><a href="#evidence" className="text-sm text-white/65 transition-colors hover:text-white">Evidence</a><a href="#enterprise" className="hidden text-sm text-white/65 transition-colors hover:text-white lg:block">Enterprise</a><Link to="/ai-act" className="hidden text-sm text-white/65 transition-colors hover:text-white xl:block">EU AI Act</Link><Link to="/sicherheit" className="hidden text-sm text-white/65 transition-colors hover:text-white xl:block">Sicherheit</Link><a href="#preise" className="text-sm text-white/65 transition-colors hover:text-white">Preise</a><Link to="/welcome" className="text-sm text-white/65 transition-colors hover:text-white">Login</Link><Link to="/audit" className="rounded-full bg-champagne-200 px-6 py-3 text-sm font-semibold text-champagne-950 transition hover:bg-champagne-100">Kostenlos scannen</Link></nav></div></header>
 
       <main ref={revealRoot}>
         <section className="relative min-h-[880px] overflow-hidden">
@@ -84,7 +85,7 @@ export function MainLanding() {
             {/* Fusspunkt heller als zuvor (from-…/80 statt volldeckend): Die
                 Skyline steht sonst in einer schwarzen Wanne statt auf einem
                 Horizont. */}
-            <div className="absolute inset-0 bg-gradient-to-t from-[rgb(3,7,18)]/80 via-transparent to-black/30" />
+            <div className="absolute inset-0 bg-gradient-to-t from-obsidian-deep/80 via-transparent to-black/30" />
             {/* Vignette: zieht den Blick zur Bildmitte, ohne die Kanten zu
                 haerten. Mittelpunkt seit dem Neuausleuchten etwas tiefer (52 %
                 statt 45 %), damit der Lichtsaum am Horizont im offenen Teil
@@ -94,15 +95,15 @@ export function MainLanding() {
 
           <div className="relative z-10 mx-auto grid min-h-[880px] max-w-7xl items-center gap-10 px-6 pb-20 pt-28 lg:grid-cols-[1.05fr_.95fr] lg:px-10">
             <div className="max-w-3xl">
-              <Link to="/claude-code-optimizer" className="mb-7 inline-flex items-center gap-2.5 rounded-full border border-[#e8c98a]/35 bg-[#e8c98a]/8 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[.2em] text-[#f3d9a0] transition hover:border-[#e8c98a]/60 hover:bg-[#e8c98a]/12">
-                <span className="rounded-full bg-[#f0e6d2] px-1.5 py-0.5 text-[9px] font-semibold text-[#1a1714]">NEU</span>
+              <Link to="/claude-code-optimizer" className="mb-7 inline-flex items-center gap-2.5 rounded-full border border-champagne/35 bg-champagne/8 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[.2em] text-champagne-400 transition hover:border-champagne/60 hover:bg-champagne/12">
+                <span className="rounded-full bg-champagne-200 px-1.5 py-0.5 text-[9px] font-semibold text-champagne-950">NEU</span>
                 Claude Code Optimizer <ArrowRight className="h-3 w-3" />
               </Link>
 
               {/* H1 aus hero-content.ts — nicht hartkodieren. Siehe FE-001 dort. */}
               {/* Seit v5 zwei kurze Zeilen — die tragen `lg:text-7xl`, ohne im Wort
                   umzubrechen. Bei der dreizeiligen v4-Headline ging das nicht. */}
-              <h1 className="text-[2.6rem] leading-[.98] tracking-[-.035em] sm:text-6xl lg:text-7xl" style={{ fontFamily: SERIF, fontWeight: 500 }}>
+              <h1 className="text-[2.6rem] font-medium leading-[.98] tracking-[-.035em] sm:text-6xl lg:text-7xl font-serif">
                 {HERO_HEADLINE.map((segments, line) => (
                   <span key={line} className="block">
                     {segments.map((segment, i) => (
@@ -123,7 +124,7 @@ export function MainLanding() {
               <div className="mt-7 grid gap-6 border-t border-white/10 pt-6 sm:grid-cols-3 sm:divide-x sm:divide-white/10">
                 {HERO_PILLARS.map(([title, text], i) => (
                   <div key={title} className={i > 0 ? 'sm:pl-6' : undefined}>
-                    <p className="font-mono text-[10px] tracking-[.18em] text-[#e8c98a]">{title}</p>
+                    <p className="font-mono text-[10px] tracking-[.18em] text-champagne">{title}</p>
                     <p className="mt-2 text-sm leading-relaxed text-white/50">{text}</p>
                   </div>
                 ))}
@@ -138,14 +139,14 @@ export function MainLanding() {
               <form onSubmit={startScan} className="mt-7 max-w-2xl">
                 <div className="flex flex-col gap-2 rounded-2xl border border-white/15 bg-black/35 p-2 backdrop-blur-xl sm:flex-row">
                   <input value={domain} onChange={event => setDomain(event.target.value)} placeholder="Ihre Website — z. B. firma.de" aria-label="Website-URL für den kostenlosen Scan" className="min-w-0 flex-1 bg-transparent px-4 py-3 text-sm text-white outline-none placeholder:text-white/30" />
-                  <button type="submit" className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#f0e6d2] px-5 py-3 text-sm font-semibold text-[#1a1714] transition hover:bg-[#f6efe4]">Website kostenlos scannen <ArrowRight className="h-4 w-4" /></button>
+                  <button type="submit" className="inline-flex items-center justify-center gap-2 rounded-xl bg-champagne-200 px-5 py-3 text-sm font-semibold text-champagne-950 transition hover:bg-champagne-100">Website kostenlos scannen <ArrowRight className="h-4 w-4" /></button>
                 </div>
                 <p className="mt-2 text-[10px] text-white/35">DSGVO · EU AI Act · Sicherheit · Barrierefreiheit · SEO — kein Account nötig</p>
               </form>
 
               <div className="mt-5 flex flex-wrap gap-3">
-                <Link to="/unified-entry/transformation" className="inline-flex items-center gap-2 rounded-full border border-[#e8c98a]/45 px-7 py-3.5 font-medium text-[#fff8ee] transition hover:bg-white/5">Präsenz & App bauen <ArrowRight className="h-4 w-4" /></Link>
-                <Link to="/pricing" className="inline-flex items-center gap-2 rounded-full border border-[#e8c98a]/45 px-7 py-3.5 font-medium text-[#fff8ee] transition hover:bg-white/5">Preise ansehen</Link>
+                <Link to="/unified-entry/transformation" className="inline-flex items-center gap-2 rounded-full border border-champagne/45 px-7 py-3.5 font-medium text-champagne-50 transition hover:bg-white/5">Präsenz & App bauen <ArrowRight className="h-4 w-4" /></Link>
+                <Link to="/pricing" className="inline-flex items-center gap-2 rounded-full border border-champagne/45 px-7 py-3.5 font-medium text-champagne-50 transition hover:bg-white/5">Preise ansehen</Link>
               </div>
             </div>
 
@@ -155,7 +156,7 @@ export function MainLanding() {
               dort ist nichts messbar. Werte kommen aus landing-runtime-preview.ts.
             */}
             <div className="hidden lg:block">
-              <p className="mb-4 text-right font-mono text-[10px] tracking-[.22em] text-[#e8c98a]/80">{RUNTIME_PREVIEW_LABEL}</p>
+              <p className="mb-4 text-right font-mono text-[10px] tracking-[.22em] text-champagne/80">{RUNTIME_PREVIEW_LABEL}</p>
               <div className="space-y-3">
                 {RUNTIME_PREVIEW_CARDS.map((card, i) => (
                   <div
@@ -164,13 +165,13 @@ export function MainLanding() {
                     style={{ animationDelay: `${i * 0.9}s` }}
                   >
                     <div className="flex items-center gap-2">
-                      <span className={`h-1.5 w-1.5 rounded-full ${card.tone === 'ok' ? 'bg-emerald-400' : 'bg-[#e8c98a]'}`} />
+                      <span className={`h-1.5 w-1.5 rounded-full ${card.tone === 'ok' ? 'bg-emerald-400' : 'bg-champagne'}`} />
                       <span className="font-mono text-[9px] tracking-[.18em] text-white/45">{card.label}</span>
                     </div>
                     <div className={`mt-2 text-2xl font-semibold ${card.tone === 'ok' ? 'text-emerald-300' : 'text-white'}`}>{card.value}</div>
                     {card.ratio !== undefined && (
                       <div className="mt-2.5 h-1 w-full overflow-hidden rounded-full bg-white/10">
-                        <div className="h-full rounded-full bg-[#e8c98a]" style={{ width: `${Math.round(card.ratio * 100)}%` }} />
+                        <div className="h-full rounded-full bg-champagne" style={{ width: `${Math.round(card.ratio * 100)}%` }} />
                       </div>
                     )}
                     {card.detail && <p className="mt-2 text-[11px] leading-relaxed text-white/40">{card.detail}</p>}
@@ -184,22 +185,28 @@ export function MainLanding() {
 
         <LandingChannelTools />
 
-        <section id="platform" className="py-20 md:py-28"><div className="mx-auto max-w-7xl px-6 lg:px-10"><div className="mb-12 max-w-3xl"><p className="font-mono text-[10px] tracking-[.25em] text-[#e8c98a]">DIE PLATTFORM</p><h2 className="mt-3 text-4xl tracking-tight sm:text-5xl" style={{ fontFamily: SERIF, fontWeight: 500 }}>Eine Runtime. <span className="text-[#e8c98a]">Vollständige KI-Governance.</span></h2><p className="mt-5 leading-relaxed text-white/55">RealSyncDynamics.AI verbindet Erkennung, Risikobewertung, Policies, Enforcement und Evidence zu einem durchgängigen operativen Kontrollprozess.</p></div><div className="grid gap-px overflow-hidden rounded-2xl border border-white/10 bg-white/10 md:grid-cols-2 lg:grid-cols-3">{LIVE_CAPABILITIES.map(cap => {
+        <section id="platform" className="py-20 md:py-28"><div className="mx-auto max-w-7xl px-6 lg:px-10"><div className="mb-12 max-w-3xl"><p className="font-mono text-[10px] tracking-[.25em] text-champagne">DIE PLATTFORM</p><h2 className="mt-3 text-4xl font-medium tracking-tight sm:text-5xl font-serif">Eine Runtime. <span className="text-champagne">Vollständige KI-Governance.</span></h2><p className="mt-5 leading-relaxed text-white/55">RealSyncDynamics.AI verbindet Erkennung, Risikobewertung, Policies, Enforcement und Evidence zu einem durchgängigen operativen Kontrollprozess.</p></div><div className="grid gap-px overflow-hidden rounded-2xl border border-white/10 bg-white/10 md:grid-cols-2 lg:grid-cols-3">{LIVE_CAPABILITIES.map(cap => {
               /* Wo es eine Fachseite gibt, wird die Karte anklickbar. Sechs solcher
                  Seiten lagen bislang ohne Einstieg von der Startseite herum (§14). */
-              const body = <><h3 className="text-base font-semibold">{cap.name}</h3><p className="mt-2 text-sm leading-relaxed text-white/50">{cap.description}</p>{cap.learnMorePath && <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-[#e8c98a]">Mehr erfahren <ArrowRight className="h-3.5 w-3.5" /></span>}</>;
+              const body = <><h3 className="text-base font-semibold">{cap.name}</h3><p className="mt-2 text-sm leading-relaxed text-white/50">{cap.description}</p>{cap.learnMorePath && <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-champagne">Mehr erfahren <ArrowRight className="h-3.5 w-3.5" /></span>}</>;
               return cap.learnMorePath
-                ? <Link key={cap.id} to={cap.learnMorePath} data-reveal data-reveal-group="platform" className="block bg-[rgb(3,7,18)] p-7 transition hover:bg-white/[.03]">{body}</Link>
-                : <div key={cap.id} data-reveal data-reveal-group="platform" className="bg-[rgb(3,7,18)] p-7">{body}</div>;
+                ? <Link key={cap.id} to={cap.learnMorePath} data-reveal data-reveal-group="platform" className="block bg-obsidian-deep p-7 transition hover:bg-white/[.03]">{body}</Link>
+                : <div key={cap.id} data-reveal data-reveal-group="platform" className="bg-obsidian-deep p-7">{body}</div>;
             })}</div>{BUILDING_CAPABILITIES.length > 0 && <div className="mt-10"><p className="font-mono text-[10px] tracking-[.25em] text-white/35">IN ENTWICKLUNG</p><div className="mt-4 grid gap-4 md:grid-cols-3">{BUILDING_CAPABILITIES.map(cap => <div key={cap.id} className="rounded-xl border border-dashed border-white/15 p-5"><div className="flex items-center gap-2"><h3 className="text-sm font-medium text-white/70">{cap.name}</h3><span className="rounded-full border border-white/15 px-2 py-0.5 font-mono text-[9px] tracking-[.12em] text-white/40">GEPLANT</span></div><p className="mt-2 text-xs leading-relaxed text-white/40">{cap.description}</p>{cap.note && <p className="mt-2 text-[11px] leading-relaxed text-white/30">{cap.note}</p>}</div>)}</div><p className="mt-4 text-[11px] text-white/30">Diese Module sind noch nicht in Produktion verfügbar. Wir weisen sie aus, statt sie mitzuverkaufen.</p></div>}</div></section>
 
-        <section id="evidence" className="border-y border-white/10 bg-white/[.02] py-20 md:py-28"><div className="mx-auto max-w-7xl px-6 lg:px-10"><div className="grid gap-12 lg:grid-cols-[.8fr_1.2fr] lg:items-end"><div><p className="font-mono text-[10px] tracking-[.25em] text-[#e8c98a]">EVIDENCE &amp; TRUST</p><h2 className="mt-3 text-4xl tracking-tight sm:text-5xl" style={{ fontFamily: SERIF, fontWeight: 500 }}>Compliance, die sich <span className="text-[#e8c98a]">beweisen lässt.</span></h2><p className="mt-5 leading-relaxed text-white/55">PDFs, Logs, Zeitstempel und nachvollziehbare Prüfpfade. Jede Prüfung, jede Entscheidung und jede Änderung landet in derselben Governance-Historie.</p></div><div className="grid gap-3 sm:grid-cols-2"><TrustItem icon={ShieldCheck} title="DSGVO" text="Verarbeitung, Risiko, Policy und Nachweis im laufenden Governance-Prozess." /><TrustItem icon={Lock} title="EU AI Act" text="Risikoklassifikation, Transparenz und Dokumentation für KI-Systeme." /><TrustItem icon={FileCheck2} title="Nachweis-Export" text="Prüfungen und Entscheidungen als auditfähiger Export — für interne Kontrollen und externe Prüfer." /><TrustItem icon={Code2} title="Code Compliance" text="Claude Code prüft und unterstützt konkrete technische Remediation." /></div></div></div></section>
+        <section id="evidence" className="border-y border-white/10 bg-white/[.02] py-20 md:py-28"><div className="mx-auto max-w-7xl px-6 lg:px-10"><div className="grid gap-12 lg:grid-cols-[.8fr_1.2fr] lg:items-end"><div><p className="font-mono text-[10px] tracking-[.25em] text-champagne">EVIDENCE &amp; TRUST</p><h2 className="mt-3 text-4xl font-medium tracking-tight sm:text-5xl font-serif">Compliance, die sich <span className="text-champagne">beweisen lässt.</span></h2><p className="mt-5 leading-relaxed text-white/55">PDFs, Logs, Zeitstempel und nachvollziehbare Prüfpfade. Jede Prüfung, jede Entscheidung und jede Änderung landet in derselben Governance-Historie.</p></div><div className="grid gap-3 sm:grid-cols-2"><TrustItem icon={ShieldCheck} title="DSGVO" text="Verarbeitung, Risiko, Policy und Nachweis im laufenden Governance-Prozess." /><TrustItem icon={Lock} title="EU AI Act" text="Risikoklassifikation, Transparenz und Dokumentation für KI-Systeme." /><TrustItem icon={FileCheck2} title="Nachweis-Export" text="Prüfungen und Entscheidungen als auditfähiger Export — für interne Kontrollen und externe Prüfer." /><TrustItem icon={Code2} title="Code Compliance" text="Claude Code prüft und unterstützt konkrete technische Remediation." /></div></div></div></section>
 
-        <section className="py-20 md:py-28"><div className="mx-auto max-w-7xl px-6 lg:px-10"><div className="mb-12 max-w-3xl"><p className="font-mono text-[10px] tracking-[.25em] text-[#e8c98a]">GOVERNANCE RUNTIME</p><h2 className="mt-3 text-4xl tracking-tight sm:text-5xl" style={{ fontFamily: SERIF, fontWeight: 500 }}>Von der KI-Nutzung zur <span className="text-[#e8c98a]">kontrollierten KI-Organisation.</span></h2></div><div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{GOVERNANCE_STEPS.map(([no,title,text]) => <div key={no} data-reveal data-reveal-group="runtime" className="surface-panel rounded-2xl p-7"><span className="font-mono text-3xl text-[#e8c98a]/35">{no}</span><h3 className="mt-4 text-lg font-semibold tracking-wide">{title}</h3><p className="mt-2 text-sm leading-relaxed text-white/50">{text}</p></div>)}</div></div></section>
+        <section className="py-20 md:py-28"><div className="mx-auto max-w-7xl px-6 lg:px-10"><div className="mb-12 max-w-3xl"><p className="font-mono text-[10px] tracking-[.25em] text-champagne">GOVERNANCE RUNTIME</p><h2 className="mt-3 text-4xl font-medium tracking-tight sm:text-5xl font-serif">Von der KI-Nutzung zur <span className="text-champagne">kontrollierten KI-Organisation.</span></h2></div><div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{GOVERNANCE_STEPS.map(([no,title,text]) => <div key={no} data-reveal data-reveal-group="runtime" className="surface-panel rounded-2xl p-7"><span className="font-mono text-3xl text-champagne/35">{no}</span><h3 className="mt-4 text-lg font-semibold tracking-wide">{title}</h3><p className="mt-2 text-sm leading-relaxed text-white/50">{text}</p></div>)}</div></div></section>
+
+        <LandingAudienceSection />
 
         <EnterpriseAccessSection />
 
-        <section className="border-t border-white/10 bg-black/80 py-20 md:py-28"><div className="mx-auto max-w-3xl px-6 text-center"><p className="font-mono text-[10px] tracking-[.25em] text-[#e8c98a]">WARUM JETZT</p><h2 className="hero-shine mt-4 text-4xl tracking-tight sm:text-6xl" style={{ fontFamily: SERIF, fontWeight: 500 }}>Governance statt Checkliste.</h2><p className="mx-auto mt-5 max-w-2xl text-base leading-relaxed text-[#e8dcc4]">Eine Checkliste beruhigt bis zum nächsten Audit. Die Runtime hält den Nachweis, wenn Aufsicht, Kunde oder Board fragt. Einstieg über die neue Präsenz — bleiben über das Abo.</p><div className="mt-8 flex flex-wrap justify-center gap-3 text-xs text-white/50"><span className="rounded-full border border-white/10 px-4 py-2">DSGVO</span><span className="rounded-full border border-white/10 px-4 py-2">EU AI Act</span><span className="rounded-full border border-white/10 px-4 py-2">Policy Packs</span><span className="rounded-full border border-white/10 px-4 py-2">Evidence Vault</span><span className="rounded-full border border-white/10 px-4 py-2">Claude Code</span><span className="rounded-full border border-white/10 px-4 py-2">Nachweis-Export</span></div><div className="mt-9 flex flex-col justify-center gap-3 sm:flex-row"><Link to="/pricing" className="inline-flex items-center justify-center gap-2 rounded-full bg-[#f0e6d2] px-7 py-3.5 font-semibold text-[#1a1714] transition hover:bg-[#f6efe4]">Preise ansehen <ArrowRight className="h-4 w-4" /></Link></div></div></section>
+        <LandingPricingSection />
+
+        <LandingFaqSection />
+
+        <section className="border-t border-white/10 bg-black/80 py-20 md:py-28"><div className="mx-auto max-w-3xl px-6 text-center"><p className="font-mono text-[10px] tracking-[.25em] text-champagne">WARUM JETZT</p><h2 className="hero-shine mt-4 text-4xl font-medium tracking-tight sm:text-6xl font-serif">Governance statt Checkliste.</h2><p className="mx-auto mt-5 max-w-2xl text-base leading-relaxed text-champagne-300">Eine Checkliste beruhigt bis zum nächsten Audit. Die Runtime hält den Nachweis, wenn Aufsicht, Kunde oder Board fragt. Einstieg über die neue Präsenz — bleiben über das Abo.</p><div className="mt-8 flex flex-wrap justify-center gap-3 text-xs text-white/50"><span className="rounded-full border border-white/10 px-4 py-2">DSGVO</span><span className="rounded-full border border-white/10 px-4 py-2">EU AI Act</span><span className="rounded-full border border-white/10 px-4 py-2">Policy Packs</span><span className="rounded-full border border-white/10 px-4 py-2">Evidence Vault</span><span className="rounded-full border border-white/10 px-4 py-2">Claude Code</span><span className="rounded-full border border-white/10 px-4 py-2">Nachweis-Export</span></div><div className="mt-9 flex flex-col justify-center gap-3 sm:flex-row"><Link to="/audit" className="inline-flex items-center justify-center gap-2 rounded-full bg-champagne-200 px-7 py-3.5 font-semibold text-champagne-950 transition hover:bg-champagne-100">Website kostenlos scannen <ArrowRight className="h-4 w-4" /></Link><a href="#preise" className="inline-flex items-center justify-center gap-2 rounded-full border border-champagne/45 px-7 py-3.5 font-medium text-champagne-50 transition hover:bg-white/5">Preise ansehen</a></div></div></section>
       </main>
 
       <footer className="border-t border-white/10 py-8"><div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-6 text-xs text-white/40 sm:flex-row lg:px-10"><span>© 2026 RealSync Dynamics.AI</span><div className="flex gap-5"><Link to="/impressum">Impressum</Link><Link to="/datenschutz">Datenschutz</Link><Link to="/agb">AGB</Link></div></div></footer>
@@ -208,5 +215,5 @@ export function MainLanding() {
 }
 
 function TrustItem({ icon: Icon, title, text }: { icon: typeof ShieldCheck; title: string; text: string }) {
-  return <div data-reveal data-reveal-group="evidence" className="surface-panel rounded-2xl p-6"><Icon className="h-5 w-5 text-[#e8c98a]" /><h3 className="mt-4 font-semibold">{title}</h3><p className="mt-2 text-sm leading-relaxed text-white/50">{text}</p></div>;
+  return <div data-reveal data-reveal-group="evidence" className="surface-panel rounded-2xl p-6"><Icon className="h-5 w-5 text-champagne" /><h3 className="mt-4 font-semibold">{title}</h3><p className="mt-2 text-sm leading-relaxed text-white/50">{text}</p></div>;
 }

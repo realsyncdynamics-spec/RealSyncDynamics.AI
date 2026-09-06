@@ -872,7 +872,13 @@ export const PLANS: Plan[] = [
     addons: ['response_pack', 'voice', 'compliance_pack', 'agency_bot_pack', 'white_label'],
     features: {
       audit_evidence: [
-        'Alles aus Agency',
+        // Verwies bis zum 2026-09-06 auf „Agency" — einen Plan, der seit AP2
+        // `availability: 'legacy'` trägt und auf keiner Verkaufsfläche mehr
+        // vorkommt. Ein Interessent las damit einen Verweis auf etwas, das er
+        // nirgends nachschlagen kann. `Growth` ist die Stufe, die er auf
+        // derselben Seite tatsächlich sieht. Inhaltlich bleibt die Aussage
+        // richtig: Enterprise enthält Agency und Agency enthält Growth.
+        'Alles aus Growth',
         'Audit Center Pro mit 200 Berichten pro Monat',
         'Evidence Vault Enterprise mit 200 GB Nachweisspeicher',
       ],
@@ -2797,7 +2803,21 @@ export function checkoutHrefForPlan(
     return `/audit?source=${encodeURIComponent(source)}`;
   }
   if (resolved.purchaseMode === 'inquiry') {
-    return `/contact-sales?plan=${encodeURIComponent(key)}&source=${encodeURIComponent(source)}`;
+    // `tier`, nicht `plan`: `src/pages/ContactSales.tsx` wertet genau drei
+    // Parameter aus — `tier`, `source`, `intent`. Ein `?plan=` fällt dort
+    // stillschweigend auf den Boden; das Formular zeigte dann „Founding
+    // Access anfragen" statt „Enterprise — Founding Access", und der Lead
+    // ging ohne Plan-Zuordnung in die Datenbank (`tier: undefined`).
+    //
+    // Derselbe Fehler war am 2026-08-30 schon einmal behoben worden — aber
+    // nur an vier hartkodierten CTAs (CLAUDE.md §10). Hier, im Generator,
+    // blieb er stehen und hat sich über alle 13 Aufrufer neu verteilt. Eine
+    // Korrektur am Symptom hält nicht, solange die Quelle sie nachliefert.
+    //
+    // Übergeben wird die Plan-ID, nicht der `planKey`: Eine Anfrage hat kein
+    // Abrechnungsintervall, und ContactSales zeigt den Wert unverändert an —
+    // aus `enterprise_monthly` würde dort „Enterprise_monthly".
+    return `/contact-sales?tier=${encodeURIComponent(resolved.id)}&source=${encodeURIComponent(source)}`;
   }
   // `checkout` und `one_time` teilen denselben Einstieg: /checkout/<planKey>.
   // Ob daraus eine Subscription oder ein Einmalkauf wird, entscheidet die

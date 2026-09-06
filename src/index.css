@@ -210,6 +210,39 @@
   --font-display: "Plus Jakarta Sans", "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
   --font-mono:    "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
 
+  /* Überschriften der öffentlichen Ebene. Stand bis zum 2026-09-06 als
+     inline `style={{ fontFamily: SERIF }}` an jeder einzelnen Überschrift
+     der Startseite — von aussen nicht austauschbar und damit der Grund,
+     warum sich die Schrift nirgends sonst wiederverwenden liess. */
+  --font-serif:   Georgia, "Times New Roman", serif;
+
+  /* ── Champagner: die Palette der ausgelieferten Startseite ──────────────
+     Freigabe 2026-09-06, Frage 2 (CLAUDE.md §10.4). KEINE neue Gestaltung:
+     1:1 aus `src/pages/MainLanding.tsx` übernommen, wo diese Werte als
+     Hex-Literale standen. Gemessen am 2026-09-06 kamen `#e8c98a` und
+     `rgb(3,7,18)` in genau zwei Dateien vor, während 521 Dateien auf
+     petrol/security-blue liefen — der Look war nicht tokenisiert und konnte
+     per Konstruktion nicht in die übrige Infrastruktur propagieren.
+
+     ACHTUNG, zwei verschiedene Farben, ein Name: `--color-gold-500`
+     (#f5b324) weiter oben ist ein wärmeres Amber und gehört zum Hero-Pivot,
+     NICHT hierher. Die Namensgleichheit war der Grund, warum beide bisher
+     verwechselt wurden; deshalb heisst diese Skala `champagne`. */
+  --color-champagne-50:  #fff8ee;  /* Schrift auf Umriss-Schaltflächen */
+  --color-champagne-100: #f6efe4;  /* Hauptschaltfläche, Hover */
+  --color-champagne-200: #f0e6d2;  /* Hauptschaltfläche, Fläche */
+  --color-champagne-300: #e8dcc4;  /* Fliesstext auf dunkler Abschluss-Sektion */
+  --color-champagne-400: #f3d9a0;  /* Abzeichen-Schrift */
+  --color-champagne-500: #e8c98a;  /* Akzent — Auszeichnungen, Linien, Details */
+  --color-champagne-950: #1a1714;  /* Schrift auf Champagner-Fläche */
+  /* `text-champagne` ohne Stufe — Tailwind 4 löst den Namen ohne Suffix
+     auf diese Variable auf. Deckungsgleich mit -500. */
+  --color-champagne:     #e8c98a;
+
+  /* Hintergrund der öffentlichen Ebene. Dunkler und blaustichiger als
+     `obsidian-950`; nicht damit zusammenlegen, das ist eine andere Farbe. */
+  --color-obsidian-deep: rgb(3, 7, 18);
+
   /* Obsidian (background + surfaces) */
   --color-obsidian-50:  #f4f4f5;
   --color-obsidian-100: #d8d8da;

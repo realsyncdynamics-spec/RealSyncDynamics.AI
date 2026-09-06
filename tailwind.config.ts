@@ -12,6 +12,19 @@ export default {
         titanium: '#E2E2E2',
         'security-blue': '#0052FF',
         petrol: '#0F766E',
+
+// Die Champagner-Palette der öffentlichen Ebene steht NICHT hier,
+        // sondern im `@theme`-Block von `src/index.css`.
+        //
+        // Am 2026-09-06 zuerst hier eingetragen — und im Build wirkungslos
+        // geblieben: Diese Datei enthält kein `@config`-Direktiv und wird
+        // von Tailwind 4 deshalb gar nicht geladen. Maßgeblich ist allein
+        // `@theme`. Aufgefallen ist es erst am erzeugten CSS-Bundle, nicht
+        // an Typprüfung, Lint oder 4473 grünen Tests.
+        //
+        // Die Farben unten stehen aus demselben Grund unter Vorbehalt:
+        // `petrol` ist hier `#0F766E`, in `@theme` aber `#14b8a6` — die
+        // beiden Dateien widersprechen sich, und die CSS-Datei gewinnt.
         slate: {
           50: '#F8FAFC',
           100: '#F1F5F9',
@@ -34,6 +47,10 @@ export default {
         sans: ['Plus Jakarta Sans', 'Inter', 'sans-serif'],
         mono: ['JetBrains Mono', 'monospace'],
         display: ['Plus Jakarta Sans', 'Space Grotesk', 'sans-serif'],
+        // Überschriften der öffentlichen Ebene. Aus MainLanding.tsx übernommen
+        // (Freigabe 2026-09-06, Frage 2) — dort stand die Familie als inline
+        // `style={{ fontFamily: SERIF }}` an jeder einzelnen Überschrift.
+        serif: ['Georgia', 'Times New Roman', 'serif'],
       },
       fontSize: {
         xs: ['12px', { lineHeight: '16px' }],

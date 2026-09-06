@@ -259,33 +259,112 @@ beim Merge aus. Bis dahin ist sie in `UNBACKED_CALLERS` vermerkt — der Test
 wieder, sobald sie deployt ist. Der Client übersetzt ein 404 in „Registry-Dienst
 ist nicht verfügbar (noch nicht ausgerollt)" statt in ein nacktes `HTTP 404`.
 
-### 4.2 `website-domain-manager` — Tenant-Grenze wird nicht geprüft
+### 4.2 `website-domain-manager` — Tenant-Grenze wird nicht geprüft — **behoben 2026-09-06**
 
-Gemessen an `supabase/functions/website-domain-manager/index.ts`:
+Gemessen am Stand vor dem Fix:
 
-- läuft mit `SUPABASE_SERVICE_ROLE_KEY` (Zeile 17–19)
-- nimmt `tenant_id` und `project_id` **aus dem Request-Body** (Zeile 22–26)
-- prüft ausschließlich, ob das Paar `(project_id, tenant_id)` existiert (Z. 43–52)
-- liest **keinen** `Authorization`-Header, ruft **kein** `getUser`,
+- läuft mit `SUPABASE_SERVICE_ROLE_KEY` (Modulebene, vor jeder Prüfung)
+- nimmt `tenant_id`, `project_id` und `domain` **aus dem Request-Body**
+- prüfte ausschließlich, ob das Paar `(project_id, tenant_id)` existiert
+- las **keinen** `Authorization`-Header, rief **kein** `getUser`,
   **kein** `requireUser`, **kein** `requireTenantMembership`
 - ist in `src/config/production-edge-functions.ts` als **deployt** geführt
 
-Einordnung, gemessen statt vermutet: es gibt **keine** `supabase/config.toml`
-und in keinem Workflow ein `--no-verify-jwt`. Damit greift die
-Supabase-Voreinstellung, das Gateway verlangt ein gültiges JWT. Der Endpunkt ist
-also **nicht anonym erreichbar**.
+#### Korrektur 1: die Begründung zur Erreichbarkeit war falsch, das Ergebnis richtig
 
-Die Lücke bleibt trotzdem: geprüft wird nur *irgendein* angemeldeter Nutzer, nicht
-*Mitgliedschaft im angefragten Tenant*. Wer ein gültiges Konto und ein gültiges
-Paar `(project_id, tenant_id)` kennt, kann Domains eines fremden Tenants
-verbinden oder trennen. Das verletzt §23 („nicht vertrauen auf `tenant_id` aus
-Client").
+Hier stand: *„es gibt **keine** `supabase/config.toml`"*. Das ist falsch —
+`supabase/config.toml` existiert und vergibt für rund 40 Functions ausdrücklich
+`verify_jwt = false`. `website-domain-manager` steht **nicht** darunter, also
+greift die Voreinstellung `true`. Die Schlussfolgerung stimmte damit zufällig,
+die Herleitung nicht.
 
-Das etablierte Gegenmuster existiert im selben Repo:
-`supabase/functions/_shared/auth.ts` stellt `requireUser()` und
-`requireTenantMembership()` bereit; `governance-risk-score/index.ts:58–68`
-benutzt beide und antwortet mit `403`, wenn die Mitgliedschaft fehlt.
-`website-domain-manager` importiert keines davon.
+Nachgeholt, was von Anfang an hätte dastehen müssen — eine Messung statt einer
+Herleitung. Live gegen `ebljyceifhnlzhjfyxup`, ohne Token:
+
+```
+POST /functions/v1/website-domain-manager  →  401
+```
+
+Der Endpunkt ist **nicht anonym erreichbar**. Das ist jetzt belegt, nicht
+geschlossen.
+
+#### Korrektur 2: der Befund war schwerer, als er hier stand
+
+Hier stand, ein Angreifer brauche „ein gültiges Paar `(project_id, tenant_id)`".
+Für zwei der vier Aktionen stimmt das nicht — dort genügen die **eigenen,
+vollständig legitimen** Zugangsdaten, und es muss keine einzige fremde ID
+bekannt sein. Grund: Nach der Projektprüfung wurde `domain` aus dem Body ohne
+weitere Eingrenzung verwendet.
+
+| Aktion | Abfrage vor dem Fix | Folge |
+|---|---|---|
+| `check-ssl` | `.eq('domain', domain)` — **kein** Projekt-, kein Mandantenbezug | **Fremdlesen** mit eigenem Projekt: Existenz und Validierungsstand jeder Domain im System |
+| `validate-domain` | erster Update projektbezogen, **zweiter** nur `.eq('domain', domain)` | **Fremdschreiben** mit eigenem Projekt: `ssl_status` und `last_checked_at` auf fremder Zeile |
+| `validate-domain` | `checkDNSPropagation(domain)` lief vor jeder Besitzprüfung | ausgehender Aufruf mit fremdgewähltem Namen |
+| `connect-domain` / `disconnect-domain` | über `project_id` eingegrenzt | nur mit fremdem Paar erreichbar — der ursprünglich beschriebene Fall |
+
+Die beiden ersten Zeilen sind die eigentliche Lücke: Sie setzen keinerlei
+Vorwissen voraus. Jedes angelegte Konto mit einem eigenen Website-Projekt
+genügte.
+
+#### Fix
+
+Das etablierte Gegenmuster liegt im selben Repo: `supabase/functions/_shared/auth.ts`
+stellt `requireUser()`, `requireTenantMembership()` und `requireAuthAndTenant()`
+bereit; `governance-risk-score/index.ts` benutzt sie. Genutzt wird jetzt
+`requireAuthAndTenant` — kein neuer Wächter, kein zweiter Auslegung derselben
+Regel.
+
+| | vorher | nachher |
+|---|---|---|
+| Service-Role-Client | Modulebene, vor jeder Prüfung | ausschliesslich aus dem `AuthContext`, nach der Mitgliedschaftsprüfung |
+| `tenant_id` | aus dem Body, ungeprüft in Abfrage und `insert` | aus dem Body nur als *Behauptung* an `requireAuthAndTenant`; verwendet wird der geprüfte Wert |
+| Zugriffe auf `website_domains` | teils ohne Bezug | durchgehend `.eq('project_id', projectId)` |
+| Eindeutigkeitsprüfung der Domain | global, ununterscheidbar von einem Versehen | weiterhin global, aber als `// GLOBAL:` gekennzeichnet und begründet — `website_domains.domain` ist systemweit `UNIQUE`, die Prüfung *muss* über alle Mandanten laufen |
+| unbekannte vs. fremde Domain | verschiedene Pfade | beide `DOMAIN_NOT_FOUND` — von aussen nicht unterscheidbar |
+
+**Warum die globale Abfrage bleibt**: Sie beantwortet nur „belegt oder nicht"
+und liefert `select('id')`, keine fremden Felder. Ohne sie schlüge statt einer
+lesbaren Meldung der Datenbank-Constraint zu. Der Unterschied zu vorher ist,
+dass sie jetzt *als Entscheidung erkennbar* ist statt als Auslassung.
+
+**Gesichert durch** `test/edge/website-domain-manager-tenant-boundary.test.ts`
+(8 Fälle). Geprüft wird die **Form der Abfrage**, nicht das Verhalten: Beide
+Defekte lieferten dem ehrlichen Aufrufer das richtige Ergebnis und sahen wie
+funktionierender Code aus — ein Verhaltenstest hätte sie nicht gefunden. Der
+Test zählt die Zugriffsketten auf `website_domains` und verlangt für jede
+entweder die Projekt-Eingrenzung oder die ausdrückliche `// GLOBAL:`-Marke.
+
+Gegenprobe, dass der Test trägt: dreimal absichtlich zurückgebaut — `check-ssl`
+wieder global, `insert` wieder mit `body.tenant_id`, `// GLOBAL:`-Marke entfernt
+— jedes Mal rot, danach wiederhergestellt und wieder grün.
+
+**Noch nicht wirksam**: Die Function ist deployt, der Fix erreicht Produktion
+erst mit dem nächsten `deploy.yml`-Lauf.
+
+#### Offen, weil §10.3 und §14: der Aufrufer
+
+`src/features/website-operations/DomainManager.tsx` ist die einzige Stelle im
+Repo, die diese Function ruft. Drei Befunde, keiner davon hier behoben:
+
+1. Sie sendet **keinen** `Authorization`-Header. Das Gateway antwortet also mit
+   `401`, bevor die Function überhaupt läuft — der Aufruf kann heute nicht
+   gelingen, und zwar unabhängig von diesem Fix.
+2. Sie liest `tenant_id` aus `localStorage.getItem('tenantId')` — wörtlich das
+   in §23 untersagte Muster.
+3. `loadDomains()` ruft `/api/website-projects/:id/domains`. Einen solchen
+   Endpunkt gibt es in dieser Vite-SPA nicht.
+
+Dazu kommt: **Das gesamte Verzeichnis `src/features/website-operations/` wird
+von nichts importiert.** Nur die eigene `index.ts` re-exportiert es; kein
+Router, keine Seite, kein Test greift darauf zu. Die Oberfläche ist nicht
+erreichbar.
+
+Der Fix an der Function bricht deshalb keinen funktionierenden Aufrufer — es
+gibt keinen. Das Umschreiben des Aufrufers wäre nach §14 „Umschreiben" und
+damit fragepflichtig, und nach §10.1 stellt sich zusätzlich die Frage, ob das
+Feature überhaupt eine Route bekommen soll. **Das gehört entschieden, nicht
+nebenbei geändert.**
 
 ### 4.3 Größenordnung — ausdrücklich **nicht** als Befund, sondern als Triage-Bedarf
 
@@ -411,7 +490,7 @@ Erst danach Phase 2 (Evidence).
 | # | Punkt | Warum gestoppt |
 |---|---|---|
 | 1 | ~~`/websites`-INSERT~~ | **erledigt** — `tenant-website-register`, siehe §4.1 |
-| 2 | `website-domain-manager` | Autorisierungslücke in deployter Function — Fix gehört in einen eigenen, sichtbaren PR |
+| 2 | ~~`website-domain-manager`~~ | **erledigt** — `requireAuthAndTenant` + Projekt-Eingrenzung, siehe §4.2. Neu offen: der Aufrufer `DomainManager.tsx` und die Frage, ob `website-operations` eine Route bekommt |
 | 3 | 103 Functions ohne JWT-Prüfung | Triage nötig, Zahl ist kein Befund |
 | 4 | 103 vs. 177 deployt | Doku widerspricht sich; messen statt zitieren |
 | 5 | Consent-Modell | erst prüfen, ob Bestand erweiterbar (§16) |

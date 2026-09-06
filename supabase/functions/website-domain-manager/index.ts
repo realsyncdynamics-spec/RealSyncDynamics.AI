@@ -9,14 +9,24 @@
 //   2. validate-domain — Check DNS propagation
 //   3. disconnect-domain — Remove domain mapping
 //   4. check-ssl — Verify SSL certificate
+//
+// Sicherheitsrelevanz (DSGVO Art. 32, EU AI Act Art. 12 Prüfpfad):
+// Diese Function schreibt mit Service-Role und umgeht damit RLS. Die
+// Mandantengrenze muss sie deshalb selbst ziehen. `tenant_id` aus dem Body
+// ist eine Behauptung des Aufrufers, kein Nachweis — sie wird über
+// `requireAuthAndTenant` gegen `memberships` geprüft, bevor irgendein
+// privilegierter Zugriff stattfindet.
+//
+// Zweite Regel, die hier vorher fehlte: `domain` kommt ebenfalls aus dem Body.
+// Jede Abfrage auf `website_domains` wird deshalb zusätzlich über
+// `project_id` eingegrenzt — das Projekt ist zu diesem Zeitpunkt bereits als
+// dem geprüften Mandanten zugehörig nachgewiesen. Ohne diese Eingrenzung
+// erreicht ein Aufrufer mit vollständig eigenen, gültigen Zugangsdaten fremde
+// Zeilen, ohne eine einzige fremde ID zu kennen.
 
-import { createClient } from 'jsr:@supabase/supabase-js@2';
-import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
-
-const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
-const SRK = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-
-const admin = createClient(SUPABASE_URL, SRK, { auth: { persistSession: false } });
+import type { SupabaseClient } from 'jsr:@supabase/supabase-js@2';
+import { handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
+import { requireAuthAndTenant } from '../_shared/auth.ts';
 
 interface DomainManagementRequest {
   project_id: string;
@@ -36,17 +46,25 @@ Deno.serve(async (req) => {
   try {
     const body: DomainManagementRequest = await req.json();
 
-    if (!body.project_id || !body.tenant_id || !body.action) {
+    // Identität und Mitgliedschaft zuerst — erst danach gibt es einen
+    // Service-Role-Client. Ein unauthentifizierter Aufruf soll nicht am
+    // Umweg über eine Eingabevalidierung erkennen, welche Felder es gibt.
+    const auth = await requireAuthAndTenant(req, body.tenant_id);
+    if (auth instanceof Response) return auth;
+    const { admin, tenantId } = auth;
+
+    if (!body.project_id || !body.action) {
       return jsonError(400, 'INVALID_INPUT', 'project_id, tenant_id, action required');
     }
 
-    // Verify project exists
+    // Verify project exists — und zwar im geprüften Mandanten, nicht in dem
+    // aus dem Body.
     const { data: project } = await admin
       .from('website_projects')
-      .select('*')
+      .select('id')
       .eq('id', body.project_id)
-      .eq('tenant_id', body.tenant_id)
-      .single();
+      .eq('tenant_id', tenantId)
+      .maybeSingle();
 
     if (!project) {
       return jsonError(404, 'PROJECT_NOT_FOUND', 'project does not exist');
@@ -55,16 +73,16 @@ Deno.serve(async (req) => {
     let result;
     switch (body.action) {
       case 'connect-domain':
-        result = await connectDomain(body.project_id, body.tenant_id, body.domain || '');
+        result = await connectDomain(admin, body.project_id, tenantId, body.domain || '');
         break;
       case 'validate-domain':
-        result = await validateDomain(body.project_id, body.domain || '');
+        result = await validateDomain(admin, body.project_id, body.domain || '');
         break;
       case 'disconnect-domain':
-        result = await disconnectDomain(body.project_id, body.domain || '');
+        result = await disconnectDomain(admin, body.project_id, body.domain || '');
         break;
       case 'check-ssl':
-        result = await checkSSL(body.domain || '');
+        result = await checkSSL(admin, body.project_id, body.domain || '');
         break;
       default:
         return jsonError(400, 'INVALID_ACTION', 'unknown action');
@@ -86,6 +104,7 @@ Deno.serve(async (req) => {
 // ============================================================================
 
 async function connectDomain(
+  admin: SupabaseClient,
   projectId: string,
   tenantId: string,
   domain: string
@@ -97,12 +116,16 @@ async function connectDomain(
   const isSubdomain = domain.endsWith('realsyncdynamicsai.de');
   const domainType = isSubdomain ? 'subdomain' : 'custom';
 
-  // Check if domain already exists
+  // GLOBAL: bewusst ohne Mandanten-Eingrenzung. `website_domains.domain` ist
+  // systemweit UNIQUE — eine Domain kann nur einmal verbunden sein. Die
+  // Prüfung muss deshalb über alle Mandanten laufen, sonst schlägt statt
+  // dieser Meldung der Constraint zu. Nach aussen gibt sie nur „belegt"
+  // preis, keine fremden Felder.
   const { data: existing } = await admin
     .from('website_domains')
-    .select('*')
+    .select('id')
     .eq('domain', domain)
-    .single();
+    .maybeSingle();
 
   if (existing) {
     return {
@@ -169,9 +192,24 @@ async function connectDomain(
 }
 
 async function validateDomain(
+  admin: SupabaseClient,
   projectId: string,
   domain: string
 ): Promise<{ success: boolean; data?: unknown; error?: string; code?: string }> {
+  // Die Zeile muss zum eigenen Projekt gehören, bevor irgendetwas geschieht.
+  // Sonst löst eine fremde Domain im Body einen ausgehenden DNS-Aufruf und
+  // anschliessend einen Schreibzugriff auf die fremde Zeile aus.
+  const { data: existing } = await admin
+    .from('website_domains')
+    .select('id')
+    .eq('domain', domain)
+    .eq('project_id', projectId)
+    .maybeSingle();
+
+  if (!existing) {
+    return { success: false, error: 'Domain not found', code: 'DOMAIN_NOT_FOUND' };
+  }
+
   // Check DNS propagation
   const dnsValid = await checkDNSPropagation(domain);
 
@@ -196,7 +234,8 @@ async function validateDomain(
         ssl_status: 'pending_validation',
         last_checked_at: new Date().toISOString(),
       })
-      .eq('domain', domain);
+      .eq('domain', domain)
+      .eq('project_id', projectId);
 
     // In production, this would trigger Cloudflare SSL provisioning
     // For now, we simulate success
@@ -224,6 +263,7 @@ async function validateDomain(
 }
 
 async function disconnectDomain(
+  admin: SupabaseClient,
   projectId: string,
   domain: string
 ): Promise<{ success: boolean; data?: unknown; error?: string; code?: string }> {
@@ -248,6 +288,8 @@ async function disconnectDomain(
 }
 
 async function checkSSL(
+  admin: SupabaseClient,
+  projectId: string,
   domain: string
 ): Promise<{ success: boolean; data?: unknown; error?: string; code?: string }> {
   // In production, this would check Cloudflare certificate status
@@ -255,9 +297,10 @@ async function checkSSL(
 
   const { data: domainData } = await admin
     .from('website_domains')
-    .select('*')
+    .select('cloudflare_status, dns_validated_at')
     .eq('domain', domain)
-    .single();
+    .eq('project_id', projectId)
+    .maybeSingle();
 
   if (!domainData) {
     return {

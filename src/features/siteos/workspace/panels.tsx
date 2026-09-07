@@ -243,8 +243,11 @@ export function PagesPanel(props: {
                   className={`flex min-w-0 flex-1 items-center gap-3 rounded-lg px-3 py-2.5 text-left text-xs ${page.path === pagePath ? 'font-semibold' : ''}`}
                 >
                   <span className="grid h-6 w-6 shrink-0 place-items-center rounded-md bg-black/[.04] text-[9px] text-black/45">{i + 1}</span>
-                  <span className="min-w-0 flex-1 truncate">{page.path === '/' ? 'Startseite' : page.title}</span>
-                  <span className={`${MONO} hidden truncate sm:inline`}>{page.path}</span>
+                  {/* Zwei Zeilen: Titel und Pfad — in 260 px neben drei Aktionen bleibt sonst vom Titel nur „L…". */}
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate">{page.path === '/' ? 'Startseite' : page.title}</span>
+                    <span className={`${MONO} block truncate`}>{page.path}</span>
+                  </span>
                 </button>
                 {protection === 'legal' ? (
                   <span className="p-1.5 text-black/35" title="Rechtsseite — wird nicht umbenannt, verschoben, dupliziert oder gelöscht" aria-label="Rechtsseite, geschützt"><Lock size={12} /></span>

@@ -29,6 +29,7 @@
 
 import type { BlockKind, SiteBlock, SiteBlueprint, SitePage } from '../types.ts';
 import type { SiteBrief } from './brief.ts';
+import { recompileCompliance } from './pages.ts';
 import { briefFromBlueprint } from './refine.ts';
 import { buildBlock, slugify } from './synthesize.ts';
 
@@ -175,7 +176,14 @@ export function applyPageEdits(blueprint: SiteBlueprint, edits: PageEdit[]): Edi
     }
   }
 
-  return { blueprint: { ...blueprint, pages }, changes, rejected };
+  // Das Compliance-Profil folgt den Blöcken: Ein hinzugefügtes Formular
+  // bringt eine Rechtsgrundlage und ggf. die DSFA-Pflicht mit, ein entferntes
+  // nimmt sie. `analyzeBlueprint` und das Publish Gate lesen
+  // `compliance.dpiaRequired` aus dem Profil — bliebe es beim Stand des
+  // Erstbaus, stünde dort etwas über eine Struktur, die so nicht mehr
+  // existiert (bis 2026-09-07 war das so).
+  const next = { ...blueprint, pages };
+  return { blueprint: changes.length > 0 ? recompileCompliance(next) : next, changes, rejected };
 }
 
 function applyToPage(page: SitePage, edit: PageEdit, brief: SiteBrief, changes: EditChange[], rejected: string[]): SitePage {

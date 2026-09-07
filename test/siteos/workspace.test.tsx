@@ -125,12 +125,14 @@ describe('App Builder Workspace — Laden', () => {
     expect(api.loadLatestBlueprint).toHaveBeenCalledWith('tenant-1', blueprint.slug);
     expect(editorProps?.storedBlueprint).toBe(blueprint);
     expect(screen.getByTestId('save-state').getAttribute('data-state')).toBe('saved');
-    expect(screen.getByText(`Gespeichert · v1`)).toBeInTheDocument();
+    expect(screen.getByText(/^Gespeichert · v1/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /^Speichern$/ })).toBeDisabled();
     // Die Seitenliste kommt aus dem Blueprint, nicht aus einer festen Liste.
-    const nav = within(screen.getByTestId('left'));
+    const rows = within(screen.getByTestId('left')).getAllByTestId('page-row');
+    expect(rows.map((row) => row.getAttribute('data-path'))).toEqual(blueprint.pages.map((p) => p.path));
     for (const page of blueprint.pages) {
-      expect(nav.getByRole('button', { name: new RegExp(page.path === '/' ? 'Startseite' : page.title) })).toBeInTheDocument();
+      const row = rows.find((r) => r.getAttribute('data-path') === page.path)!;
+      expect(within(row).getAllByRole('button')[0]).toHaveTextContent(page.path === '/' ? 'Startseite' : page.title);
     }
   });
 
@@ -177,7 +179,7 @@ describe('App Builder Workspace — Speichern', () => {
       expect(block).not.toHaveProperty('processesPersonalData');
     }
 
-    await waitFor(() => expect(screen.getByText('Gespeichert · v2')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText(/^Gespeichert · v2 · \d{2}:\d{2}$/)).toBeInTheDocument());
     expect(screen.getByTestId('editor').getAttribute('data-revision')).toBe('2');
     // Nach dem Speichern verfällt eine frühere Gate-Bewertung; Prüfen ist wieder möglich.
     expect(screen.getByRole('button', { name: /Prüfen/ })).toBeEnabled();
@@ -210,7 +212,7 @@ describe('App Builder Workspace — Speichern', () => {
     await waitFor(() => expect(api.editSite).toHaveBeenCalledTimes(1));
     fireEvent.click(screen.getByRole('tab', { name: 'Konsole' }));
     await waitFor(() => expect(screen.getByText(/keine neue Version angelegt/)).toBeInTheDocument());
-    expect(screen.queryByText('Gespeichert · v2')).not.toBeInTheDocument();
+    expect(screen.queryByText(/^Gespeichert · v2/)).not.toBeInTheDocument();
   });
 });
 
@@ -384,5 +386,160 @@ describe('App Builder Workspace — rechte Spalte und Governance-Status (A-Nacht
     await waitFor(() => expect(screen.getByText('Veröffentlichbar')).toBeInTheDocument());
     const right = within(screen.getByTestId('right'));
     expect(right.getByRole('tab', { name: /^Probleme/ }).getAttribute('aria-selected')).toBe('true');
+  });
+});
+
+describe('App Builder Workspace — Seiten (Schritt B)', () => {
+  /** Erster Knopf der Zeile ist die Auswahl; die Aktionen folgen. */
+  function selectPage(path: string) {
+    const row = within(screen.getByTestId('left')).getAllByTestId('page-row').find((r) => r.getAttribute('data-path') === path)!;
+    fireEvent.click(within(row).getAllByRole('button')[0]);
+  }
+  function withPage(blueprint: SiteBlueprint, sha256: string, path: string, title: string) {
+    const home = blueprint.pages[0];
+    return { ...blueprint, pages: [...blueprint.pages, { path, title, description: `${title} — Test.`, blocks: home.blocks.map((b, i) => ({ ...b, id: `${path.slice(1)}--${b.kind}--${i}` })), noindex: false }] };
+  }
+
+  it('zeigt für Rechtsseiten ein Schloss und keine Aktionen, für die Startseite kein Löschen', async () => {
+    const { blueprint, sha256 } = await sample();
+    api.loadLatestBlueprint.mockResolvedValue(storedRow(blueprint, sha256));
+    renderWorkspace(blueprint.slug);
+    await waitFor(() => expect(screen.getByTestId('editor')).toBeInTheDocument());
+    const left = within(screen.getByTestId('left'));
+    const impressum = left.getAllByTestId('page-row').find((row) => row.getAttribute('data-path') === '/impressum')!;
+    expect(within(impressum).getByLabelText('Rechtsseite, geschützt')).toBeInTheDocument();
+    expect(within(impressum).queryByRole('button', { name: /löschen|umbenennen|duplizieren/ })).not.toBeInTheDocument();
+    const home = left.getAllByTestId('page-row').find((row) => row.getAttribute('data-path') === '/')!;
+    expect(within(home).getByRole('button', { name: /umbenennen/ })).toBeInTheDocument();
+    expect(within(home).getByRole('button', { name: /duplizieren/ })).toBeInTheDocument();
+    expect(within(home).queryByRole('button', { name: /löschen/ })).not.toBeInTheDocument();
+    const leistungen = left.getAllByTestId('page-row').find((row) => row.getAttribute('data-path') === '/leistungen')!;
+    expect(within(leistungen).getByRole('button', { name: /löschen/ })).toBeInTheDocument();
+  });
+
+  it('legt eine Seite als Absicht über siteos/edit an — mit den ungespeicherten Bearbeitungen — und öffnet sie danach', async () => {
+    const { blueprint, sha256 } = await sample();
+    api.loadLatestBlueprint.mockResolvedValue(storedRow(blueprint, sha256));
+    const next = withPage(blueprint, sha256, '/waermepumpen', 'Wärmepumpen');
+    api.editSite.mockResolvedValue({ kind: 'ok', data: { ok: true, unchanged: false, blueprint_id: 'bp-2', slug: blueprint.slug, version: 2, content_sha256: 'b'.repeat(64), prev_hash: sha256, blueprint: next, findings: [], scores: {}, changes: [
+      { code: 'block.edited', path: '/', blockId: 'x', kind: 'hero', summary: 'Hero bearbeitet.', complianceNote: null },
+      { code: 'page.created', path: '/waermepumpen', previousPath: null, summary: 'Seite „Wärmepumpen" (/waermepumpen) angelegt und in die Navigation aufgenommen.', complianceNote: null },
+    ], rejected: [] } });
+    renderWorkspace(blueprint.slug);
+    await waitFor(() => expect(screen.getByTestId('editor')).toBeInTheDocument());
+    fireEvent.click(screen.getByText('stub:edit-hero'));
+    await waitFor(() => expect(screen.getByTestId('save-state').getAttribute('data-state')).toBe('unsaved'));
+
+    const left = within(screen.getByTestId('left'));
+    fireEvent.click(left.getByRole('button', { name: /Neue Seite/ }));
+    fireEvent.change(left.getByLabelText('Titel der Seite'), { target: { value: 'Wärmepumpen' } });
+    // Der Slug folgt dem Titel in kanonischer Form — geprüft mit der Kernfunktion.
+    expect((left.getByLabelText('Slug der Seite') as HTMLInputElement).value).toBe('waermepumpen');
+    fireEvent.click(left.getByRole('button', { name: 'Seite anlegen' }));
+
+    await waitFor(() => expect(api.editSite).toHaveBeenCalledTimes(1));
+    const call = api.editSite.mock.calls[0][0] as { pages: unknown; edits: unknown[]; base_sha256: string };
+    expect(call.pages).toEqual([{ op: 'create', title: 'Wärmepumpen', slug: 'waermepumpen' }]);
+    expect(call.edits).toHaveLength(1);
+    expect(call.base_sha256).toBe(sha256);
+    await waitFor(() => expect(screen.getByTestId('editor').getAttribute('data-page')).toBe('/waermepumpen'));
+    expect(screen.getByText(/^Gespeichert · v2/)).toBeInTheDocument();
+  });
+
+  it('weist einen belegten oder reservierten Pfad schon vor dem Absenden aus — und sendet ihn nicht', async () => {
+    const { blueprint, sha256 } = await sample();
+    api.loadLatestBlueprint.mockResolvedValue(storedRow(blueprint, sha256));
+    renderWorkspace(blueprint.slug);
+    await waitFor(() => expect(screen.getByTestId('editor')).toBeInTheDocument());
+    const left = within(screen.getByTestId('left'));
+    fireEvent.click(left.getByRole('button', { name: /Neue Seite/ }));
+    fireEvent.change(left.getByLabelText('Titel der Seite'), { target: { value: 'Leistungen' } });
+    expect(left.getByText(/Diesen Pfad gibt es schon — frei wäre leistungen-2/)).toBeInTheDocument();
+    expect(left.getByRole('button', { name: 'Seite anlegen' })).toBeDisabled();
+    fireEvent.change(left.getByLabelText('Slug der Seite'), { target: { value: 'impressum' } });
+    expect(left.getByText(/reserviert/)).toBeInTheDocument();
+    fireEvent.change(left.getByLabelText('Slug der Seite'), { target: { value: 'Wärme Pumpen' } });
+    expect(left.getByText(/Vorschlag: waerme-pumpen/)).toBeInTheDocument();
+    expect(api.editSite).not.toHaveBeenCalled();
+  });
+
+  it('löscht nach Rückfrage über den Server und wechselt zur Startseite, wenn die aktuelle Seite weg ist', async () => {
+    const { blueprint, sha256 } = await sample();
+    api.loadLatestBlueprint.mockResolvedValue(storedRow(blueprint, sha256));
+    const without = { ...blueprint, pages: blueprint.pages.filter((p) => p.path !== '/leistungen') };
+    api.editSite.mockResolvedValue({ kind: 'ok', data: { ok: true, unchanged: false, blueprint_id: 'bp-2', slug: blueprint.slug, version: 2, content_sha256: 'b'.repeat(64), prev_hash: sha256, blueprint: without, findings: [], scores: {}, changes: [
+      { code: 'page.deleted', path: '/leistungen', previousPath: null, summary: 'Seite „Leistungen" (/leistungen) gelöscht.', complianceNote: null },
+    ], rejected: ['page.protected:/impressum'] } });
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
+    renderWorkspace(blueprint.slug);
+    await waitFor(() => expect(screen.getByTestId('editor')).toBeInTheDocument());
+    const left = within(screen.getByTestId('left'));
+    selectPage('/leistungen');
+    await waitFor(() => expect(screen.getByTestId('editor').getAttribute('data-page')).toBe('/leistungen'));
+    const row = left.getAllByTestId('page-row').find((r) => r.getAttribute('data-path') === '/leistungen')!;
+    fireEvent.click(within(row).getByRole('button', { name: /löschen/ }));
+    expect(confirmSpy).toHaveBeenCalled();
+    await waitFor(() => expect(api.editSite).toHaveBeenCalledTimes(1));
+    expect((api.editSite.mock.calls[0][0] as { pages: unknown }).pages).toEqual([{ op: 'delete', path: '/leistungen' }]);
+    expect(api.editSite.mock.calls[0][0]).not.toHaveProperty('edits');
+    await waitFor(() => expect(screen.getByTestId('editor').getAttribute('data-page')).toBe('/'));
+    // Abgewiesenes steht in der Konsole, nicht nirgends.
+    fireEvent.click(screen.getByRole('tab', { name: 'Konsole' }));
+    expect(screen.getByText(/Abgewiesen: page\.protected:\/impressum/)).toBeInTheDocument();
+    confirmSpy.mockRestore();
+  });
+
+  it('löscht nicht, wenn die Rückfrage verneint wird', async () => {
+    const { blueprint, sha256 } = await sample();
+    api.loadLatestBlueprint.mockResolvedValue(storedRow(blueprint, sha256));
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
+    renderWorkspace(blueprint.slug);
+    await waitFor(() => expect(screen.getByTestId('editor')).toBeInTheDocument());
+    const left = within(screen.getByTestId('left'));
+    const row = left.getAllByTestId('page-row').find((r) => r.getAttribute('data-path') === '/leistungen')!;
+    fireEvent.click(within(row).getByRole('button', { name: /löschen/ }));
+    expect(api.editSite).not.toHaveBeenCalled();
+    confirmSpy.mockRestore();
+  });
+
+  it('schickt Umbenennen und Pfadänderung als zwei Absichten und öffnet den neuen Pfad', async () => {
+    const { blueprint, sha256 } = await sample();
+    api.loadLatestBlueprint.mockResolvedValue(storedRow(blueprint, sha256));
+    const moved = { ...blueprint, pages: blueprint.pages.map((p) => (p.path === '/leistungen' ? { ...p, path: '/angebot', title: 'Angebot' } : p)) };
+    api.editSite.mockResolvedValue({ kind: 'ok', data: { ok: true, unchanged: false, blueprint_id: 'bp-2', slug: blueprint.slug, version: 2, content_sha256: 'b'.repeat(64), prev_hash: sha256, blueprint: moved, findings: [], scores: {}, changes: [
+      { code: 'page.renamed', path: '/leistungen', previousPath: null, summary: 'umbenannt', complianceNote: null },
+      { code: 'page.moved', path: '/angebot', previousPath: '/leistungen', summary: 'verschoben', complianceNote: null },
+    ], rejected: [] } });
+    renderWorkspace(blueprint.slug);
+    await waitFor(() => expect(screen.getByTestId('editor')).toBeInTheDocument());
+    const left = within(screen.getByTestId('left'));
+    selectPage('/leistungen');
+    const row = left.getAllByTestId('page-row').find((r) => r.getAttribute('data-path') === '/leistungen')!;
+    fireEvent.click(within(row).getByRole('button', { name: /umbenennen/ }));
+    fireEvent.change(left.getByLabelText('Titel der Seite'), { target: { value: 'Angebot' } });
+    fireEvent.change(left.getByLabelText('Slug der Seite'), { target: { value: 'angebot' } });
+    fireEvent.click(left.getByRole('button', { name: 'Übernehmen' }));
+    await waitFor(() => expect(api.editSite).toHaveBeenCalledTimes(1));
+    expect((api.editSite.mock.calls[0][0] as { pages: unknown }).pages).toEqual([
+      { op: 'rename', path: '/leistungen', title: 'Angebot' },
+      { op: 'slug', path: '/leistungen', slug: 'angebot' },
+    ]);
+    await waitFor(() => expect(screen.getByTestId('editor').getAttribute('data-page')).toBe('/angebot'));
+  });
+
+  it('warnt vor dem Verlassen mit ungespeicherten Änderungen — im Browser und am Zurück-Link', async () => {
+    const { blueprint, sha256 } = await sample();
+    api.loadLatestBlueprint.mockResolvedValue(storedRow(blueprint, sha256));
+    const add = vi.spyOn(window, 'addEventListener');
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
+    renderWorkspace(blueprint.slug);
+    await waitFor(() => expect(screen.getByTestId('editor')).toBeInTheDocument());
+    expect(add.mock.calls.some(([type]) => type === 'beforeunload')).toBe(false);
+    fireEvent.click(screen.getByText('stub:edit-hero'));
+    await waitFor(() => expect(add.mock.calls.some(([type]) => type === 'beforeunload')).toBe(true));
+    fireEvent.click(screen.getByRole('link', { name: 'Zur Übersicht' }));
+    expect(confirmSpy).toHaveBeenCalledWith(expect.stringMatching(/ungespeicherte Änderungen/i));
+    expect(screen.getByTestId('editor')).toBeInTheDocument();
+    add.mockRestore(); confirmSpy.mockRestore();
   });
 });

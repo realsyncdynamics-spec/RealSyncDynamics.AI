@@ -13,10 +13,14 @@
 // Governance-Status der gespeicherten Version — Zielbild
 // `docs/product/app-builder-zielbild.md` §4.
 //
+// Seiten anlegen, umbenennen, verschieben, duplizieren, löschen (Schritt B)
+// laufen als Seitenoperationen über denselben Pfad `siteos/edit` — der
+// Server entscheidet, der Browser nennt nur die Absicht.
+//
 // Was sie nicht tut: keinen Blueprint aus dem Browser speichern (die
-// Sicherheitsbasis aus #1248 bleibt), keine Seiten anlegen (PR B), keinen
-// LLM-Assistenten (PR C), nichts veröffentlichen (PR D — es gibt keinen
-// Auslieferungspfad), keine Medien (PR E). Wo etwas fehlt, steht das dran.
+// Sicherheitsbasis aus #1248 bleibt), keinen LLM-Assistenten (PR C), nichts
+// veröffentlichen (PR D — es gibt keinen Auslieferungspfad), keine Medien
+// (PR E). Wo etwas fehlt, steht das dran.
 
 import { Suspense, lazy, useCallback, useEffect, useMemo, useState, type ReactElement, type ReactNode } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
@@ -33,6 +37,7 @@ import {
   applyPageEdits,
   canonicalize,
   renderSite,
+  type PageOperation,
   type PublishGateEvaluation,
   type SiteBlueprint,
 } from '../../../../packages/siteos-core/src/index';
@@ -96,6 +101,8 @@ export default function AppBuilderWorkspacePage(): ReactElement {
   const [mobilePane, setMobilePane] = useState<MobilePane>('canvas');
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
+  /** Zeitpunkt der letzten tatsächlichen Persistenz — beim Laden der der Version. */
+  const [savedAt, setSavedAt] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [instruction, setInstruction] = useState('');
   const [gate, setGate] = useState<PublishGateEvaluation | null>(null);
@@ -146,6 +153,7 @@ export default function AppBuilderWorkspacePage(): ReactElement {
         if (cancelled) return;
         if (!row) { setLoadState('not_found'); log('error', `Kein Projekt „${slug}" in diesem Workspace.`); return; }
         setStored(row);
+        setSavedAt(row.created_at);
         setPageData({});
         setRevision((r) => r + 1);
         setPagePath(row.blueprint.pages.some((p) => p.path === '/') ? '/' : (row.blueprint.pages[0]?.path ?? '/'));
@@ -185,14 +193,24 @@ export default function AppBuilderWorkspacePage(): ReactElement {
     [previewBlueprint, sourceUrl, pagePath],
   );
 
-  // ── Speichern ────────────────────────────────────────────────────────
-  const save = async () => {
-    if (!activeTenantId || !stored || edits.length === 0 || saving) return;
+  // ── Speichern — Redaktion und Seitenoperationen, ein Weg ─────────────
+  // Seitenoperationen laufen nie nur im Browser: Sie gehen mit den
+  // ungespeicherten Bearbeitungen in **einer** Anfrage an `siteos/edit`, der
+  // Server prüft (Slug, Schutz der Rechtsseiten, Navigation) und legt eine
+  // Version an. Was er abweist, steht in der Konsole — nicht still.
+  const persist = async (ops: PageOperation[] = []) => {
+    if (!activeTenantId || !stored || saving) return;
+    if (edits.length === 0 && ops.length === 0) return;
     setSaving(true); setSaveError('');
     try {
-      const result = await editSite({ tenant_id: activeTenantId, slug: stored.blueprint.slug, base_sha256: stored.content_sha256, edits });
+      const result = await editSite({
+        tenant_id: activeTenantId, slug: stored.blueprint.slug, base_sha256: stored.content_sha256,
+        ...(edits.length > 0 ? { edits } : {}),
+        ...(ops.length > 0 ? { pages: ops } : {}),
+      });
       if (result.kind !== 'ok') throw new Error(errorMessage(result));
       const saved = result.data;
+      for (const r of saved.rejected) log('error', `Abgewiesen: ${r}`);
       if (saved.unchanged) {
         // Der Server hat nichts geschrieben — das ist kein Erfolg, sondern
         // ein leeres Ergebnis. Der Zustand bleibt, wie er ist.
@@ -208,12 +226,19 @@ export default function AppBuilderWorkspacePage(): ReactElement {
         prev_hash: saved.prev_hash ?? stored.content_sha256,
         status: 'draft',
       });
+      setSavedAt(new Date().toISOString());
       setPageData({});
       setRevision((r) => r + 1);
       setGate(null);
       log('ok', `Version ${saved.version} gespeichert und geprüft (${saved.changes.length} Änderung${saved.changes.length === 1 ? '' : 'en'}${saved.rejected.length > 0 ? `, ${saved.rejected.length} abgewiesen` : ''}).`);
       for (const change of saved.changes) log('info', `${change.summary}${change.complianceNote ? ` — ${change.complianceNote}` : ''}`);
-      for (const r of saved.rejected) log('error', `Abgewiesen: ${r}`);
+      // Nach einer Strukturänderung die passende Seite öffnen: die neue,
+      // die verschobene, oder die Startseite, wenn die aktuelle weg ist.
+      const created = saved.changes.find((c) => c.code === 'page.created' || c.code === 'page.duplicated');
+      const moved = saved.changes.find((c) => c.code === 'page.moved' && 'previousPath' in c && c.previousPath === pagePath);
+      if (created) setPagePath(created.path);
+      else if (moved) setPagePath(moved.path);
+      else if (!saved.blueprint.pages.some((p) => p.path === pagePath)) setPagePath('/');
       void loadGovernance(activeTenantId, stored.blueprint.slug);
     } catch (cause) {
       const message = cause instanceof Error ? cause.message : 'Die Änderungen konnten nicht gespeichert werden.';
@@ -221,6 +246,18 @@ export default function AppBuilderWorkspacePage(): ReactElement {
       log('error', `Speichern fehlgeschlagen: ${message}`);
     } finally { setSaving(false); }
   };
+  const save = () => persist();
+
+  // ── Ungespeichertes schützen ─────────────────────────────────────────
+  // Der Browser fragt vor Reload/Schließen, der Zurück-Link vor dem Verlassen.
+  // Der KI-Neubau fragt selbst (unten); Seitenwechsel behalten die
+  // Bearbeitung je Seite, Seitenoperationen speichern sie mit.
+  useEffect(() => {
+    if (!dirty) return;
+    const handler = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ''; };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [dirty]);
 
   // ── Prüfen (Publish Gate) ────────────────────────────────────────────
   const check = async () => {
@@ -281,8 +318,9 @@ export default function AppBuilderWorkspacePage(): ReactElement {
   }
 
   // ── Bausteine der Shell ──────────────────────────────────────────────
+  const savedClock = savedAt ? new Date(savedAt).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) : null;
   const saveLabel: Record<SaveState, string> = {
-    saved: `Gespeichert · v${stored.version}`,
+    saved: `Gespeichert · v${stored.version}${savedClock ? ` · ${savedClock}` : ''}`,
     unsaved: 'Ungespeicherte Änderungen',
     saving: 'Speichern …',
     failed: `Speichern fehlgeschlagen: ${saveError}`,
@@ -298,7 +336,12 @@ export default function AppBuilderWorkspacePage(): ReactElement {
   const topbar = (
     <header className="sticky top-0 z-50 flex h-16 items-center justify-between gap-3 border-b border-black/[.08] bg-white/95 px-3 backdrop-blur sm:px-6">
       <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
-        <Link to="/app/siteos" className="shrink-0 rounded-lg p-2 hover:bg-black/[.05]" aria-label="Zur Übersicht"><ChevronLeft size={18} /></Link>
+        <Link
+          to="/app/siteos"
+          onClick={(event) => { if (dirty && !window.confirm('Es gibt ungespeicherte Änderungen. Ohne Speichern verlassen?')) event.preventDefault(); }}
+          className="shrink-0 rounded-lg p-2 hover:bg-black/[.05]"
+          aria-label="Zur Übersicht"
+        ><ChevronLeft size={18} /></Link>
         <div className="hidden h-8 w-8 shrink-0 place-items-center rounded-lg bg-[#07111f] text-cyan-300 sm:grid"><Sparkles size={15} /></div>
         <div className="min-w-0">
           <div className="truncate text-sm font-bold">{stored.blueprint.name}</div>
@@ -474,14 +517,14 @@ export default function AppBuilderWorkspacePage(): ReactElement {
               renderRight={(parts) => rightColumn(parts.fields)}
               mobilePane={editorPane}
               renderLeft={(parts) => (
-                <ProjectNav tab={navTab} onTab={setNavTab} blueprint={localBlueprint} pagePath={pagePath} onOpenPage={setPagePath} puck={parts} />
+                <ProjectNav tab={navTab} onTab={setNavTab} blueprint={localBlueprint} pagePath={pagePath} onOpenPage={setPagePath} onPageOperations={(ops) => void persist(ops)} busy={saving || busy} puck={parts} />
               )}
             />
           </Suspense>
         ) : (
           <div className="grid min-h-[calc(100vh-4rem)] lg:grid-cols-[260px_minmax(0,1fr)_320px]">
             <aside className={`${editorPane === 'left' ? 'block' : 'hidden'} border-r border-black/[.07] bg-white p-4 lg:block`}>
-              <ProjectNav tab={navTab} onTab={setNavTab} blueprint={localBlueprint} pagePath={pagePath} onOpenPage={setPagePath} />
+              <ProjectNav tab={navTab} onTab={setNavTab} blueprint={localBlueprint} pagePath={pagePath} onOpenPage={setPagePath} onPageOperations={(ops) => void persist(ops)} busy={saving || busy} />
             </aside>
             <section className={`${editorPane === 'canvas' ? 'block' : 'hidden'} min-w-0 p-3 sm:p-5 lg:block`}>
               {canvasHeader}

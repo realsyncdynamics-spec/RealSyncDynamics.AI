@@ -13,6 +13,7 @@ export * from './blueprint/brief.ts';
 export * from './blueprint/synthesize.ts';
 export * from './blueprint/refine.ts';
 export * from './blueprint/edit.ts';
+export * from './blueprint/pages.ts';
 
 export * from './analysis/blueprint.ts';
 export * from './analysis/observation.ts';

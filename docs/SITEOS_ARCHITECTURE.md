@@ -591,12 +591,23 @@ hierher weiter — ein Builder, nicht zwei.
 | Governance | Version, Hash, Vorgänger, Herkunft, KI-Anteil, Custody (`provenance_*`, RLS), Bewertungen, Agentenläufe; Status-Chip in der Kopfzeile aus der jüngsten Bewertung der gespeicherten Version | LIVE (lesend) — `governanceStatus()` in `panels.tsx`, `test/siteos/workspace.test.tsx` |
 | Eigenschaften | Puck-Felder des gewählten Bausteins (`renderRight` des Editors), im Vorschau-Modus benannt statt leer | LIVE (Code) |
 | Assistent | Eingabe + Vorschläge → vorhandener KI-Neubau über den Erstbau (`?instruction=`), **kein LLM** | PARTIAL: ersetzt die Fassung, wendet nichts an — Actions folgen in Schritt C |
-| Seiten anlegen/umbenennen/löschen | — | PLANNED (Schritt B) |
+| Seiten anlegen · umbenennen · Pfad ändern · duplizieren · löschen | `PageOperation[]` an `siteos/edit` (Absicht, kein Blueprint); `applyPageOperations` in `blueprint/pages.ts` leitet Blöcke, Navigation, Verweise ab; Rechtsseiten geschützt (Pfad **oder** `legal-text`-Block), Startseite nicht löschbar; Slug nur kanonisch, Kollision und Reserviertes abgewiesen; jede Operation eine Version | LIVE (Code, Schritt B) — `test/siteos/page-operations.test.ts`, `workspace.test.tsx`; Function erst nach `deploy.yml` |
+| Ungespeichertes | `beforeunload` und Rückfrage am Zurück-Link bei Änderungen; Seitenoperationen speichern die Bearbeitung mit; KI-Neubau fragt | LIVE (Code) |
 | Medien · Daten · Integrationen · Code | — | PLANNED, als Platzhalter benannt |
 
 **Die Sicherheitsbasis aus §5c bleibt**: Der Browser schickt weiterhin nur
-Reihenfolge, Art und redaktionelle Felder. Der Workspace hat keinen zweiten
-Schreibpfad.
+Reihenfolge, Art und redaktionelle Felder — und seit Schritt B die
+**Absicht** einer Seitenoperation (`{ op: 'create', title }` …), nie die
+Seite selbst. Der Workspace hat keinen zweiten Schreibpfad.
+
+**Befund aus Schritt B, behoben**: `applyPageEdits` (§5c) ließ das
+Compliance-Profil (`consentCategories`, `legalBases`, `dpiaRequired`) auf
+dem Stand des Erstbaus stehen — ein per Puck hinzugefügtes Formular oder eine
+Karte änderte die Blöcke, nicht das Profil, das `analyzeBlueprint` und das
+Publish Gate lesen. Seit dem 2026-09-07 leitet `recompileCompliance()` das
+Profil nach jeder Block- und Seitenänderung neu ab; das Preset bleibt die
+Untergrenze. Gesichert in `page-operations.test.ts` („leitet das
+Compliance-Profil … neu ab").
 
 **Im Browser nachgesehen** (Chromium, Vite-Dev-Server, Supabase-Antworten
 abgefangen): Laden → `saved`, Feldänderung in Puck → `unsaved` und neue

@@ -8,7 +8,9 @@
 import { getSupabase } from '../../lib/supabase';
 import type {
   EditChange,
+  PageChange,
   PageEdit,
+  PageOperation,
   AgentKey,
   PublishGateEvaluation,
   RefinementChange,
@@ -204,7 +206,8 @@ export interface EditResponse {
   blueprint: SiteBlueprint;
   findings: RuntimeFinding[];
   scores: ScoreBreakdown;
-  changes: EditChange[];
+  /** Blockänderungen (`block.*`) und Seitenoperationen (`page.*`), in Anwendungsreihenfolge. */
+  changes: (EditChange | PageChange)[];
   rejected: string[];
   provenance_linked?: boolean;
 }
@@ -221,7 +224,13 @@ export async function editSite(args: {
   tenant_id: string;
   slug: string;
   base_sha256: string;
-  edits: PageEdit[];
+  edits?: PageEdit[];
+  /**
+   * Seitenoperationen (Schritt B): anlegen, umbenennen, Slug, duplizieren,
+   * löschen — als Absicht. Blöcke, Navigation, Verweise und der Schutz der
+   * Rechtsseiten kommen aus dem Kern (`blueprint/pages.ts`), serverseitig.
+   */
+  pages?: PageOperation[];
 }): Promise<SiteOsResult<EditResponse>> {
   const sb = getSupabase();
   const { data, error } = await sb.functions.invoke('siteos/edit', { body: args });

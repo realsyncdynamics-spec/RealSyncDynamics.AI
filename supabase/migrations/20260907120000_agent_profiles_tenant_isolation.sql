@@ -44,7 +44,7 @@
 --
 -- ## Zur Versionsnummer
 --
--- Diese Datei ist dreimal umbenannt worden, und das ist keine Nachlaessigkeit,
+-- Diese Datei ist viermal umbenannt worden, und das ist keine Nachlaessigkeit,
 -- sondern der Normalfall fuer einen Zweig, der laenger offen steht:
 --
 --   20260901000000  →  war im Ledger bereits als `canonical_plan_catalog`
@@ -53,8 +53,10 @@
 --                      waere nie angekommen, und kein Guard haette es gemeldet.
 --   20260902000200  →  lag einen Tag spaeter wieder unter dem Ledger-Stand.
 --   20260904000400  →  dasselbe noch einmal, vier Tage spaeter.
---   20260906110000  →  aktuell, ueber dem Hoechststand vom 2026-09-06
---                      (`20260906100000`, in Repo und Ledger identisch).
+--   20260906110000  →  lag am 2026-09-07 unter `20260906200000`
+--                      (`profiles_on_signup` aus #1241, inzwischen verbucht).
+--   20260907120000  →  aktuell, ueber dem Ledger-Hoechststand vom
+--                      2026-09-07 12:30 UTC (`20260906200000`).
 --
 -- Zwei Fehlerbilder, die man nicht verwechseln darf. Eine BEREITS VERBUCHTE
 -- Nummer wird stillschweigend uebersprungen — der teure Fall, weil nichts

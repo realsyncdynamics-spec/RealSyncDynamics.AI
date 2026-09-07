@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, ShieldCheck, AlertTriangle, FileUp, Fingerprint, CheckCircle2, XCircle } from 'lucide-react';
+import { ArrowLeft, ShieldCheck, AlertTriangle, FileUp, Fingerprint, CheckCircle2, XCircle, Download, FileCheck2 } from 'lucide-react';
 import { AuthGate } from '../kodee/connections/AuthGate';
 import { useTenant } from '../../core/access/TenantProvider';
 import { Button } from '../../enterprise-os/components/Button';
@@ -11,10 +11,12 @@ import {
   registerProvenance,
   verifyProvenance,
   independentlyVerifySignatures,
+  buildProvenanceBundle,
   type VerifyResponse,
   type ProvenanceError,
   type IndependentVerification,
 } from './provenanceApi';
+import { verifyBundle, type BundleReport, type ProvenanceBundle } from '../../lib/provenance/verifyBundle';
 import { AuditTrailVisualization, type CustodyEvent } from './AuditTrailVisualization';
 import { ComplianceGapReport, type ComplianceGap } from './ComplianceGapReport';
 
@@ -55,6 +57,7 @@ function ProvenanceInner() {
   const [notice, setNotice] = useState<string | null>(null);
   const [result, setResult] = useState<VerifyResponse | null>(null);
   const [independentCheck, setIndependentCheck] = useState<IndependentVerification | null>(null);
+  const [bundleReport, setBundleReport] = useState<BundleReport | null>(null);
 
   async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -88,6 +91,43 @@ function ProvenanceInner() {
       setError(errorMessage(r));
     }
     setBusy(false);
+  }
+
+  async function onExport() {
+    if (!activeTenantId || !assetRef.trim()) return;
+    setBusy(true); setError(null); setNotice(null);
+    const r = await buildProvenanceBundle(activeTenantId, assetRef.trim());
+    if (r.kind === 'ok') {
+      const blob = new Blob([JSON.stringify(r.data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `provenance-${assetRef.trim()}.json`;
+      document.body.appendChild(a); a.click(); a.remove();
+      URL.revokeObjectURL(url);
+      const signedNote = r.data.public_key ? ' inkl. öffentlichem Schlüssel — offline prüfbar' : ' (kein öffentlicher Schlüssel gesetzt)';
+      setNotice(`Bündel exportiert: ${r.data.events.length} Custody-Event(s)${signedNote}.`);
+    } else {
+      setError(errorMessage(r));
+    }
+    setBusy(false);
+  }
+
+  async function onVerifyBundleFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // erlaubt erneute Auswahl derselben Datei
+    if (!file) return;
+    setError(null); setNotice(null); setBundleReport(null);
+    try {
+      const parsed = JSON.parse(await file.text()) as ProvenanceBundle;
+      if (parsed?.format !== 'rsd-provenance-bundle' || !Array.isArray(parsed.events)) {
+        setError('Keine gültige Herkunfts-Bündel-Datei (rsd-provenance-bundle).');
+        return;
+      }
+      setBundleReport(await verifyBundle(parsed));
+    } catch {
+      setError('Datei konnte nicht gelesen werden (kein gültiges JSON).');
+    }
   }
 
   return (
@@ -161,11 +201,51 @@ function ProvenanceInner() {
                 <Button variant="secondary" onClick={onVerify} disabled={busy || !advanced || !activeTenantId || !assetRef.trim()}>
                   Verifizieren
                 </Button>
+                <Button variant="secondary" onClick={onExport} disabled={busy || !advanced || !activeTenantId || !assetRef.trim()}>
+                  <Download className="h-3.5 w-3.5" /> Bündel exportieren
+                </Button>
               </div>
 
               {notice && <div className="border border-emerald-500/40 bg-emerald-500/5 px-4 py-3 text-xs text-emerald-300">{notice}</div>}
               {error && <div className="border border-risk-critical/40 bg-risk-critical/5 px-4 py-3 text-xs text-risk-critical">{error}</div>}
             </div>
+          </CardBody>
+        </Card>
+
+        <Card>
+          <CardHeader
+            title="Exportiertes Bündel offline prüfen"
+            eyebrow="Unabhängige Prüfung"
+            subtitle="Eine exportierte Bündel-Datei wird vollständig im Browser geprüft — Kette neu berechnet, Ed25519-Signaturen gegen den im Bündel enthaltenen Schlüssel. Kein Login, kein Server-Vertrauen."
+          />
+          <CardBody>
+            <label className="inline-flex cursor-pointer items-center gap-2 border border-titanium-700 bg-obsidian-900 px-3 py-2 text-sm text-titanium-200 hover:border-security-500">
+              <FileCheck2 className="h-3.5 w-3.5" /> Bündel-Datei wählen
+              <input type="file" accept="application/json,.json" className="hidden" onChange={onVerifyBundleFile} />
+            </label>
+            {bundleReport && (
+              <div className={`mt-4 border ${bundleReport.ok ? 'border-emerald-500/40 bg-emerald-500/5' : 'border-risk-critical/50 bg-risk-critical/5'}`}>
+                <div className="flex flex-wrap items-center gap-2 border-b border-titanium-900 px-4 py-2.5">
+                  {bundleReport.ok ? <CheckCircle2 className="h-4 w-4 text-emerald-400" /> : <XCircle className="h-4 w-4 text-risk-critical" />}
+                  <span className={`font-mono text-[11px] font-semibold uppercase tracking-wider ${bundleReport.ok ? 'text-emerald-300' : 'text-risk-critical'}`}>
+                    {bundleReport.ok ? 'Bündel gültig' : 'Prüfung fehlgeschlagen'}
+                  </span>
+                  <span className="font-mono text-[10px] text-titanium-500">
+                    {bundleReport.assetRef} · {bundleReport.count} Event(s) · Signaturen {bundleReport.signaturesVerified} geprüft{bundleReport.signaturesUnverifiable > 0 ? ` · ${bundleReport.signaturesUnverifiable} unprüfbar` : ''}
+                  </span>
+                </div>
+                {bundleReport.issues.length > 0 && (
+                  <ul className="space-y-1 px-4 py-2.5">
+                    {bundleReport.issues.map((iss, idx) => (
+                      <li key={idx} className="flex items-start gap-1.5 font-mono text-[11px] text-risk-critical">
+                        <XCircle className="mt-0.5 h-3 w-3 shrink-0" />
+                        <span>seq {iss.seq} · {iss.detail}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
           </CardBody>
         </Card>
 

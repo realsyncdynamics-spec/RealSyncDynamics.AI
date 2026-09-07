@@ -1,131 +1,59 @@
 /**
- * Schritt 3 des Registrierungstrichters: `/unified-entry/register`.
+ * `/unified-entry/register` — Weiterleitung auf die eine Anmeldung.
  *
- * ## Zwei Befunde vom 2026-08-29
+ * Bis zum 2026-09-01 trug diese Seite ein eigenes Formular (E-Mail/Passwort
+ * plus Anbieter) und schickte danach direkt nach `/unified-entry/onboarding`
+ * — vorbei an `/welcome` und damit ohne Audit-Claim, Setup-Assistent und
+ * `onboarded_at`-Prüfung. Zwei Anmeldungen, zwei Zustände. Der Eigentümer
+ * hat am 2026-09-01 freigegeben, die Registrierung auf `/welcome?next=…` zu
+ * legen (CLAUDE.md §10).
  *
- * **Die Seite rief zum Registrieren `login()` auf.** Der Kommentar daneben
- * behauptete „login will also register if needed" — das stimmt nicht:
- * `signInWithPassword` legt kein Konto an. Ein neuer Besucher bekam auf einer
- * Seite mit der Überschrift „Konto erstellen" die Meldung „Invalid login
- * credentials". Die richtige Funktion (`register`) lag im selben Context und
- * wurde nur von `/optimizer/auth` benutzt.
- *
- * **Der einzige funktionierende Weg fehlte.** Gegen die Live-Instanz gemessen:
- *
- *   POST /auth/v1/signup              400  email_provider_disabled
- *   POST /auth/v1/token?grant_type=…  422  email_provider_disabled
- *   POST /auth/v1/otp                 422  otp_disabled
- *   GET  /auth/v1/authorize?provider=google  → accounts.google.com, echte ID
- *
- * E-Mail-Anmeldung, E-Mail-Registrierung und Magic Link sind im Projekt
- * abgeschaltet; Google läuft. Diese Seite bot ausschließlich E-Mail an — also
- * ausschließlich den Weg, der nicht geht, während die Anbieter-Komponente im
- * Repo lag und auf drei anderen Seiten schon eingebunden war.
- *
- * Geprüft wird am Quelltext: Die Seite ist ohne laufende Supabase-Instanz
- * nicht sinnvoll auszuführen, und genau diese Eigenschaften sollen beim
- * nächsten Umbau nicht still verlorengehen.
+ * Was hier geprüft wird: Die Seite ist nur noch eine Weiterleitung, sie
+ * verliert den Weg zurück in den Unified-Entry-Pfad nicht, und sie baut
+ * keinen zweiten Anmeldeweg auf.
  */
-
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { registerRedirectTarget } from '../../src/unified-entry/pages/RegisterPage';
 
 const source = readFileSync(
   resolve(__dirname, '../../src/unified-entry/pages/RegisterPage.tsx'),
-  'utf8'
+  'utf8',
 );
-
-/** Ohne Kommentare — dort steht die Begründung, nicht der Verstoß. */
 const code = source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
 
-describe('Registrierung legt ein Konto an', () => {
-  it('ruft register(), nicht login()', () => {
-    expect(code).toContain('await register(');
-    expect(
-      code,
-      'signInWithPassword erstellt kein Konto — auf einer Seite „Konto erstellen" ist das der falsche Aufruf.'
-    ).not.toContain('await login(');
+describe('registerRedirectTarget', () => {
+  it('führt nach /welcome und zurück in den Unified-Entry-Pfad', () => {
+    expect(registerRedirectTarget('')).toBe('/welcome?next=%2Funified-entry%2Fonboarding');
   });
 
-  it('zieht register aus dem Auth-Context', () => {
-    expect(code).toMatch(/const\s*\{[^}]*\bregister\b[^}]*\}\s*=\s*useSupabaseAuth\(\)/);
+  it('behält Abfrageparameter wie plan und track', () => {
+    const ziel = registerRedirectTarget('?plan=growth&track=keep_frontend');
+    const next = new URLSearchParams(ziel.split('?')[1]).get('next');
+    expect(next).toBe('/unified-entry/onboarding?plan=growth&track=keep_frontend');
+  });
+
+  it('erzeugt ein next, das die Whitelist auf /welcome passiert', () => {
+    // Welcome akzeptiert nur Pfade, die mit `/` beginnen und nicht mit `//`.
+    const next = new URLSearchParams(registerRedirectTarget('?x=1').split('?')[1]).get('next')!;
+    expect(next.startsWith('/')).toBe(true);
+    expect(next.startsWith('//')).toBe(false);
+  });
+
+  it('behandelt ein leeres Fragezeichen wie keine Parameter', () => {
+    expect(registerRedirectTarget('?')).toBe(registerRedirectTarget(''));
   });
 });
 
-describe('Der funktionierende Weg steht zur Wahl', () => {
-  it('bietet die Anbieter-Anmeldung an', () => {
-    expect(code).toContain('OAuthProviderButtons');
+describe('Die Seite ist eine Weiterleitung, kein zweiter Anmeldeweg', () => {
+  it('rendert Navigate auf /welcome', () => {
+    expect(code).toContain('<Navigate to={registerRedirectTarget(search)} replace />');
   });
 
-  it('führt nach der Anmeldung in den nächsten Trichterschritt', () => {
-    expect(code).toContain("redirectAfterAuthTo=\"/unified-entry/onboarding\"");
-  });
-
-  it('baut keine eigene Anbieter-Liste', () => {
-    // Zweite Liste = zweite Wahrheit. Die Flag-Steuerung der Komponente
-    // (nur eingerichtete Anbieter sichtbar) griffe hier sonst nicht.
-    for (const own of ['signInWithOAuth', "'github'", "'azure'", "'google'"]) {
-      expect(code).not.toContain(own);
+  it('führt kein eigenes Formular und keine eigene Anbieter-Liste mehr', () => {
+    for (const eigen of ['useSupabaseAuth', 'OAuthProviderButtons', 'signInWithOAuth', 'await register(', 'await login(']) {
+      expect(code, `${eigen} gehört nach /welcome, nicht hierher`).not.toContain(eigen);
     }
-  });
-
-  it('trennt Anbieter und Formular sichtbar', () => {
-    expect(code).toContain('oder mit E-Mail');
-  });
-});
-
-describe('Fehler benennen die Ursache', () => {
-  it('übersetzt den abgeschalteten E-Mail-Anbieter', () => {
-    // Der Rohtext „Email signups are disabled" stand als Fehlermeldung unter
-    // einem deutschen Formular — das liest sich wie ein Eingabefehler des
-    // Besuchers, ist aber eine Projekteinstellung.
-    expect(code).toContain('email_provider_disabled');
-    expect(code).toContain('otp_disabled');
-    expect(code).toContain('explainAuthError');
-  });
-
-  it('nennt den Weg, der funktioniert', () => {
-    expect(source).toContain('Anmeldung über einen Anbieter');
-  });
-
-  it('reicht unbekannte Fehler unverändert durch', () => {
-    // Alles wegzuübersetzen wäre der nächste Fehler: Ein echter Fehlschlag
-    // muss lesbar bleiben, sonst debuggt ihn niemand.
-    expect(code).toMatch(/return raw \|\|/);
-  });
-});
-
-describe('Bestätigungspflicht per E-Mail', () => {
-  /**
-   * Steht in Supabase „Confirm email" auf an, liefert `signUp` **keine**
-   * Session. Die Seite schickte den Besucher trotzdem weiter nach
-   * `/unified-entry/onboarding` — und dessen Wächter (`if (!user)`) wirft ihn
-   * sofort auf die Registrierung zurück. Ergebnis: ein Kreis, während die
-   * Seite „erfolgreich erstellt" behauptet.
-   *
-   * Der Fall ist heute nicht auslösbar, weil der E-Mail-Anbieter im Projekt
-   * abgeschaltet ist. Genau deshalb steht er hier: Er wird scharf in dem
-   * Moment, in dem jemand den Anbieter aktiviert — und dann soll er schon
-   * behandelt sein, statt als neuer Befund aufzuschlagen.
-   */
-  it('unterscheidet die beiden Supabase-Konfigurationen', () => {
-    expect(code).toContain('needsEmailConfirmation');
-    expect(code).toMatch(/setStep\(\s*needsEmailConfirmation \? 'verify-email' : 'confirm'\s*\)/);
-  });
-
-  it('leitet ohne Session nicht in den geschützten Bereich weiter', () => {
-    // Der Zustand 'verify-email' darf keinen Weiter-Knopf tragen: Es gibt
-    // ohne Bestätigung nichts, wohin er führen könnte.
-    const start = code.indexOf("step === 'verify-email' ? (");
-    expect(start, "Zustand 'verify-email' nicht gefunden").toBeGreaterThan(-1);
-    const block = code.slice(start, code.indexOf(') : (', start));
-    expect(block.length).toBeGreaterThan(80);
-    expect(block).not.toContain('navigate(');
-    expect(block).not.toContain('onboarding');
-  });
-
-  it('nennt den Grund, statt Erfolg zu behaupten', () => {
-    expect(source).toContain('Bestätigungslink');
   });
 });

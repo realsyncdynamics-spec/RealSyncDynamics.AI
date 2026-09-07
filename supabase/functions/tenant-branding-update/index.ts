@@ -1,31 +1,55 @@
 // Tenant Branding Management API
 //
-// Allows tenant admins to update white-label branding settings.
-// Endpoint: PATCH /functions/v1/tenant-branding-update
-// Authentication: Tenant member (admin role)
-// Body: { company_name?, brand_colors?, custom_logo_url?, ... }
+// Erlaubt Tenant-Admins, die White-Label-Einstellungen ihres Mandanten zu ändern.
+// Endpoint: POST|PATCH /functions/v1/tenant-branding-update
+// Authentication: Bearer <user JWT> — Mitglied des Tenants mit Rolle owner/admin
+// Body: { tenant_id, company_name?, brand_colors?, custom_logo_url?, ... }
 //
 // Returns: { ok: true, branding: {...} }
+//
+// AP9 Welle 3 (2026-09-01) — warum diese Function neu aufgesetzt ist:
+//
+// Vorher las sie `tenant_id` aus dem JWT-Payload, ohne Signaturprüfung, und
+// der Claim wird nirgends gesetzt — gemessen gegen Produktion tragen 0 von 6
+// Nutzern ein `tenant_id` in `app_metadata`. Jeder Aufruf endete deshalb in
+// 401 „invalid token claims". Dazu nahm sie nur PATCH an, während
+// `functions.invoke()` in `BrandingSettings.tsx` POST sendet. Das Branding
+// konnte also nie gespeichert werden.
+//
+// Jetzt: `requireUser` (echte Token-Prüfung), `tenant_id` aus dem Body,
+// Mitgliedschaft mit Rolle, und das Plan-Gate `whitelabel.reports`. Eigenes
+// Branding ist eine White-Label-Fähigkeit (Agency, Enterprise, Partner bzw.
+// Add-on White Label), keine Grundfunktion — die Rolle sagt, *wer* handelt,
+// das Entitlement, *ob der Plan es trägt*.
 
-import { createClient } from 'jsr:@supabase/supabase-js@2';
-import { jsonResponse, jsonError } from '../_shared/gateway.ts';
+import type { SupabaseClient } from 'jsr:@supabase/supabase-js@2';
+import { handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
+import { requireUser, requireTenantMembership } from '../_shared/auth.ts';
+import { gateFeature, EntitlementError } from '../_shared/entitlements.ts';
 
-const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
-const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-
-interface BrandingUpdateRequest {
+interface BrandingFields {
   company_name?: string;
   brand_colors?: { primary?: string; secondary?: string; accent?: string; background?: string; text?: string };
   custom_logo_url?: string;
   favicon_url?: string;
-  support_email?: string;
+  support_email?: string | null;
   support_phone?: string;
   support_url?: string;
   footer_text?: string;
   custom_css?: Record<string, unknown>;
 }
 
-async function validateBrandingUpdate(data: BrandingUpdateRequest): Promise<string[]> {
+interface BrandingUpdateRequest extends BrandingFields {
+  tenant_id?: string;
+}
+
+/** Nur diese Spalten dürfen über die Function geschrieben werden. */
+const BRANDING_COLUMNS: ReadonlyArray<keyof BrandingFields> = [
+  'company_name', 'brand_colors', 'custom_logo_url', 'favicon_url',
+  'support_email', 'support_phone', 'support_url', 'footer_text', 'custom_css',
+];
+
+function validateBrandingUpdate(data: BrandingFields): string[] {
   const errors: string[] = [];
 
   if (data.company_name !== undefined && (typeof data.company_name !== 'string' || data.company_name.length > 256)) {
@@ -71,25 +95,39 @@ async function validateBrandingUpdate(data: BrandingUpdateRequest): Promise<stri
     errors.push('footer_text must be a string (max 1024 chars)');
   }
 
+  if (data.custom_css !== undefined && (typeof data.custom_css !== 'object' || data.custom_css === null || Array.isArray(data.custom_css))) {
+    errors.push('custom_css must be an object');
+  }
+
   return errors;
 }
 
+async function requireWhitelabelEntitlement(admin: SupabaseClient, tenantId: string): Promise<Response | null> {
+  try {
+    await gateFeature(admin, tenantId, 'whitelabel.reports');
+    return null;
+  } catch (e) {
+    if (e instanceof EntitlementError) {
+      return jsonError(
+        403,
+        'ENTITLEMENT_MISSING',
+        'Eigenes Branding ist im aktuellen Plan nicht enthalten (whitelabel.reports) — Enterprise oder Add-on White Label.',
+      );
+    }
+    throw e;
+  }
+}
+
 Deno.serve(async (req) => {
-  if (req.method !== 'PATCH') {
-    return jsonError(405, 'BAD_REQUEST', 'PATCH only');
+  const preflight = handleOptions(req);
+  if (preflight) return preflight;
+  if (req.method !== 'PATCH' && req.method !== 'POST') {
+    return jsonError(405, 'BAD_REQUEST', 'POST or PATCH only');
   }
 
-  const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-    auth: { persistSession: false },
-  });
+  const auth = await requireUser(req);
+  if (auth instanceof Response) return auth;
 
-  // Get auth context
-  const authHeader = req.headers.get('Authorization');
-  if (!authHeader) {
-    return jsonError(401, 'UNAUTHORIZED', 'missing Authorization header');
-  }
-
-  // Parse request body
   let body: BrandingUpdateRequest;
   try {
     body = await req.json();
@@ -97,78 +135,55 @@ Deno.serve(async (req) => {
     return jsonError(400, 'BAD_REQUEST', 'invalid json');
   }
 
-  if (Object.keys(body).length === 0) {
+  const tenantId = body.tenant_id;
+  if (!tenantId || typeof tenantId !== 'string') {
+    return jsonError(400, 'BAD_REQUEST', 'tenant_id required');
+  }
+
+  // Nur bekannte Spalten übernehmen — was nicht in der Liste steht, erreicht
+  // die Tabelle nicht, egal was der Client mitschickt.
+  const fields: Record<string, unknown> = {};
+  for (const column of BRANDING_COLUMNS) {
+    if (body[column] !== undefined) fields[column] = body[column];
+  }
+  if (Object.keys(fields).length === 0) {
     return jsonError(400, 'BAD_REQUEST', 'no branding fields provided');
   }
 
-  // Validate input
-  const validationErrors = await validateBrandingUpdate(body);
+  const validationErrors = validateBrandingUpdate(fields as BrandingFields);
   if (validationErrors.length > 0) {
     return jsonError(400, 'BAD_REQUEST', validationErrors.join('; '));
   }
 
   try {
-    // Use custom claim from JWT to get tenant_id and user_id
-    // The Authorization header contains the JWT token
-    const token = authHeader.slice(7); // Remove "Bearer "
-
-    // Decode JWT (simple payload extraction, not verifying signature here)
-    const parts = token.split('.');
-    if (parts.length !== 3) {
-      return jsonError(401, 'UNAUTHORIZED', 'invalid token format');
+    // Erst die Rolle: Branding ändert nur owner/admin des Tenants.
+    const isAdmin = await requireTenantMembership(auth.admin, auth.user.id, tenantId, ['owner', 'admin']);
+    if (!isAdmin) {
+      return jsonError(403, 'FORBIDDEN', 'admin role in this tenant required');
     }
 
-    // Decode payload (add padding if needed)
-    const payload = JSON.parse(
-      new TextDecoder().decode(
-        Uint8Array.from(
-          atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')),
-          (c) => c.charCodeAt(0)
-        )
-      )
-    );
+    // Dann der Plan: White Label muss im Plan oder als Add-on enthalten sein.
+    const gate = await requireWhitelabelEntitlement(auth.admin, tenantId);
+    if (gate) return gate;
 
-    const userId = payload.sub;
-    const tenantId = payload.tenant_id;
+    const brandingUpdate: Record<string, unknown> = { ...fields };
 
-    if (!userId || !tenantId) {
-      return jsonError(401, 'UNAUTHORIZED', 'invalid token claims');
-    }
-
-    // Check if user is admin in this tenant
-    const { data: membership, error: memberErr } = await admin
-      .from('memberships')
-      .select('role')
-      .eq('user_id', userId)
-      .eq('tenant_id', tenantId)
-      .single();
-
-    if (memberErr || !membership) {
-      return jsonError(403, 'FORBIDDEN', 'not a member of this tenant');
-    }
-
-    if (!['owner', 'admin'].includes(membership.role)) {
-      return jsonError(403, 'FORBIDDEN', 'insufficient permissions (admin role required)');
-    }
-
-    // Merge brand_colors (preserve existing colors if partial update)
-    let brandingUpdate: Record<string, unknown> = { ...body };
-
-    if (body.brand_colors) {
-      const { data: currentTenant } = await admin
+    // brand_colors zusammenführen — ein Teil-Update darf die übrigen Farben
+    // nicht löschen.
+    if (fields.brand_colors) {
+      const { data: currentTenant } = await auth.admin
         .from('tenants')
         .select('brand_colors')
         .eq('id', tenantId)
         .single();
 
       brandingUpdate.brand_colors = {
-        ...(currentTenant?.brand_colors || {}),
-        ...body.brand_colors,
+        ...((currentTenant?.brand_colors as Record<string, string> | null) || {}),
+        ...(fields.brand_colors as Record<string, string>),
       };
     }
 
-    // Update tenant branding
-    const { data: updatedTenant, error: updateErr } = await admin
+    const { data: updatedTenant, error: updateErr } = await auth.admin
       .from('tenants')
       .update(brandingUpdate)
       .eq('id', tenantId)

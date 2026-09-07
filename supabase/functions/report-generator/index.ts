@@ -8,6 +8,9 @@
  */
 
 import { createClient } from 'npm:@supabase/supabase-js@2';
+import type { SupabaseClient } from 'jsr:@supabase/supabase-js@2';
+import { requireUser, requireTenantMembership } from '../_shared/auth.ts';
+import { gateFeature, EntitlementError } from '../_shared/entitlements.ts';
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -50,10 +53,13 @@ interface ComplianceData {
 }
 
 Deno.serve(async (req: Request) => {
-  const authHeader = req.headers.get('Authorization');
-  if (!authHeader?.startsWith('Bearer ')) {
-    return new Response('Unauthorized', { status: 401 });
-  }
+  // AP9 Welle 4 (2026-09-02): Vorher genügte ein Header, der mit „Bearer "
+  // begann — kein Token wurde geprüft, keine Mitgliedschaft, `tenant_id` kam
+  // aus dem Body. Jeder mit dem Anon-Key konnte Compliance-Berichte fremder
+  // Tenants erzeugen und die URLs bekommen. Jetzt: Token, Mitgliedschaft,
+  // `compliance.export` (ab Starter).
+  const auth = await requireUser(req);
+  if (auth instanceof Response) return auth;
 
   try {
     console.log('Starting report generation...');
@@ -73,6 +79,21 @@ Deno.serve(async (req: Request) => {
 
     if (!tenant_id || !title) {
       throw new Error('Missing required fields: tenant_id, title');
+    }
+    if (!(await requireTenantMembership(auth.admin, auth.user.id, tenant_id))) {
+      return new Response(JSON.stringify({ success: false, error: 'not a member of this tenant' }), {
+        status: 403, headers: { 'Content-Type': 'application/json' },
+      });
+    }
+    try {
+      await gateFeature(supabase as unknown as SupabaseClient, tenant_id, 'compliance.export');
+    } catch (e) {
+      if (e instanceof EntitlementError) {
+        return new Response(JSON.stringify({ success: false, error: 'Compliance-Exporte sind im aktuellen Plan nicht enthalten (compliance.export) — ab Starter.', code: 'ENTITLEMENT_MISSING' }), {
+          status: 403, headers: { 'Content-Type': 'application/json' },
+        });
+      }
+      throw e;
     }
 
     const complianceData = await fetchComplianceData(tenant_id, frameworks);

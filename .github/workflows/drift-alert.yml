@@ -4,7 +4,7 @@ name: Drift Alert
 #
 # ## Warum es diesen Workflow gibt
 #
-# Die drei Drift-Guards funktionieren. Sie haben am 2026-08-30 nachweislich
+# Die Drift-Guards funktionieren. Sie haben am 2026-08-30 nachweislich
 # genau die Befunde gemeldet, die eine manuelle Messung am selben Tag noch
 # einmal gefunden hat — nur eben Tage früher:
 #
@@ -19,9 +19,16 @@ name: Drift Alert
 # handelt. Ein Issue landet dort, wo Arbeit ohnehin verwaltet wird, und bleibt
 # sichtbar, bis jemand es schließt.
 #
+# Seit dem 2026-09-06 haengt der `Cron Health Guard` mit an derselben
+# Zustellung. Er meldet keinen Repo-Prod-Drift, sondern registrierte
+# pg_cron-Jobs, die nicht durchlaufen — beim Anlegen 3629 Fehllaeufe an vier
+# Jobs seit dem 2026-08-12, die nirgends sichtbar waren. Anderer Befund,
+# gleiches Muster, gleicher Weg nach draußen; der Issue-Text unterscheidet
+# sich entsprechend.
+#
 # ## Warum als eigener Workflow statt als Schritt in den Guards
 #
-# `workflow_run` beobachtet die drei Guards von außen. Damit bleiben sie
+# `workflow_run` beobachtet die Guards von außen. Damit bleiben sie
 # unverändert — ihre Aufgabe ist Messen, nicht Melden. Ein Fehler in der
 # Benachrichtigung kann so auch keinen Guard rot färben und umgekehrt.
 #
@@ -40,6 +47,7 @@ on:
       - Edge Function Drift Guard
       - Migration Drift Guard
       - Function ACL Drift Guard
+      - Cron Health Guard
     types:
       - completed
 
@@ -146,7 +154,42 @@ jobs:
               return;
             }
 
-            const body = [
+            // Der Cron-Health-Guard meldet keinen Repo-Prod-Drift, sondern
+            // Jobs, die nicht durchlaufen. Derselbe Zustellweg, anderer Befund
+            // — ein Issue mit dem falschen Text schickt den Leser in die
+            // falsche Richtung.
+            const cron = guard === 'Cron Health Guard';
+
+            const cronBody = [
+              `Der Guard **${guard}** ist fehlgeschlagen: ${link} (${when}).`,
+              '',
+              'Das heißt: **Mindestens ein registrierter pg_cron-Job ist in seinem',
+              'letzten Lauf gescheitert.** Er steht in `cron.job`, er ist aktiv — und',
+              'er tut trotzdem nichts.',
+              '',
+              'Welche Jobs betroffen sind, mit welcher Meldung und seit wann, nennt',
+              'das Protokoll des Laufs. Der Guard gruppiert die Ausfälle nach ihrer',
+              'Meldung, weil meist **eine** fehlende Konfiguration viele Jobs',
+              'gleichzeitig lahmlegt.',
+              '',
+              '### Warum das zählt',
+              '',
+              'Ein Cron-Ausfall ist leise: Es bricht nichts, es passiert nur nichts.',
+              'Betroffen sind unter anderem der Scheduler (ab Growth verkauft), die',
+              'Governance-Sentinel-Schleife und der Memory-Decay aus RFC-003 — also',
+              'zugesagte Funktionen, nicht Nebenläufiges.',
+              '',
+              '### Was zu tun ist',
+              '',
+              '1. Protokoll des Laufs öffnen und die Meldung der betroffenen Jobs lesen',
+              '2. Fehlt ein Vault-Secret, legt es der Betreiber an:',
+              '   `docs/runbooks/cron-vault-secrets.md`',
+              '3. Ist es ein Fehler der aufgerufenen Edge Function, gehört er dorthin',
+              '',
+              'Dieses Issue schließt sich selbst, sobald der Guard wieder grün läuft.',
+            ].join('\n');
+
+            const driftBody = [
               `Der Guard **${guard}** ist fehlgeschlagen: ${link} (${when}).`,
               '',
               'Das heißt in der Regel: **Produktion weicht vom Repo ab.** Jemand hat',
@@ -175,6 +218,8 @@ jobs:
               '',
               'Dieses Issue schließt sich selbst, sobald der Guard wieder grün läuft.',
             ].join('\n');
+
+            const body = cron ? cronBody : driftBody;
 
             const { data: created } = await github.rest.issues.create({
               owner: context.repo.owner,

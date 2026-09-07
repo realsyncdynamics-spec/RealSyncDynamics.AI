@@ -14,10 +14,9 @@
  * Ohne TEST_DB_URL wird übersprungen (Muster der übrigen *.db.test.ts).
  */
 import { beforeEach, afterEach, describe, expect, it } from 'vitest';
-import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { getDbUrl, openDb, closeDb, type DbCtx } from './db-helpers';
+import { applyMigration, getDbUrl, openDb, closeDb, type DbCtx } from './db-helpers';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const MIGRATIONS_DIR = join(__dirname, '..', '..', '..', 'supabase', 'migrations');
@@ -50,7 +49,11 @@ CREATE TABLE IF NOT EXISTS public.memberships (
 );
 CREATE TABLE IF NOT EXISTS public.subscriptions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  tenant_id UUID NOT NULL,
+  -- UNIQUE wie in Produktion: genau ein Abo je Mandant (CLAUDE.md, Einmal-
+  -- produkte liegen deshalb in entitlement_grants). Ohne diese Zeile wich der
+  -- Harnisch von der echten Tabelle ab — und der Upsert unten fiele hier auf
+  -- die Nase.
+  tenant_id UUID NOT NULL UNIQUE,
   stripe_price_id TEXT,
   stripe_subscription_id TEXT UNIQUE,
   plan_key TEXT NOT NULL,
@@ -120,41 +123,59 @@ INSERT INTO public.entitlements (key, kind) VALUES
   ('limit.bot_messages_monthly','limit'), ('limit.bot_voice_minutes_monthly','limit')
 ON CONFLICT (key) DO NOTHING;
 
-INSERT INTO public.products (stripe_price_id, name, default_for_plan_key) VALUES
+-- ⚠️ Der Katalog ist gegen das volle Schema NICHT leer: die kanonische
+-- Katalog-Migration führt 'growth', 'enterprise', 'free_audit' und
+-- 'governance_launch' bereits — unter anderen Stripe-Price-IDs. Ein
+-- ON CONFLICT (stripe_price_id) griff deshalb nicht und lief in das zweite
+-- UNIQUE (default_for_plan_key). Genau daran scheiterte diese Datei gegen
+-- das volle Schema; sie prüfte den Auflöser nur im minimalen Harnisch.
+--
+-- Deshalb: einfügen NUR, wenn weder Price noch Plan-Schlüssel schon vergeben
+-- sind. Wo der Katalog das Produkt führt, wird SEINES benutzt.
+INSERT INTO public.products (stripe_price_id, name, default_for_plan_key)
+SELECT v.price, v.name, v.plan
+FROM (VALUES
   ('price_growth','RealSync Growth','growth'),
   ('price_enterprise','RealSync Enterprise','enterprise'),
   ('internal_default_free','Free Audit','free_audit'),
   ('internal_addon_response_pack','Add-on: Response Pack',NULL),
   ('internal_addon_voice','Add-on: Voice',NULL),
   ('internal_default_governance_launch','Governance Launch','governance_launch')
-ON CONFLICT (stripe_price_id) DO NOTHING;
+) AS v(price, name, plan)
+WHERE NOT EXISTS (SELECT 1 FROM public.products p WHERE p.stripe_price_id = v.price)
+  AND (v.plan IS NULL
+       OR NOT EXISTS (SELECT 1 FROM public.products p WHERE p.default_for_plan_key = v.plan));
 
+-- Zuordnung über den PLAN-Schlüssel (bzw. die Add-on-Price-ID, die in beiden
+-- Welten dieselbe ist), nicht über die Price-ID des Fixtures — sonst fände
+-- der JOIN gegen das volle Schema kein Produkt.
+--
+-- ON CONFLICT DO NOTHING heisst hier: Der Katalogwert gewinnt. Das ist Absicht — die
+-- Zahlen unten sind aus dem Katalog abgeschrieben (Growth 2.000, Response
+-- Pack 5.000, Voice 500, Enterprise -1, Governance Launch 1.000), gemessen
+-- am 2026-09-06. Weichen sie eines Tages ab, schlägt der Test fehl statt
+-- still eine andere Rechnung zu prüfen.
 INSERT INTO public.product_entitlements (product_id, entitlement_id, value)
 SELECT p.id, e.id, v.val FROM (VALUES
-  ('price_growth','bots.enabled',1),
-  ('price_growth','limit.bot_messages_monthly',2000),
-  ('price_growth','policy.packs',1),
-  ('price_enterprise','bots.enabled',1),
-  ('price_enterprise','limit.bot_messages_monthly',-1),
-  ('internal_default_free','policy.packs',0),
-  ('internal_addon_response_pack','limit.bot_messages_monthly',5000),
-  ('internal_addon_voice','bots.voice',1),
-  ('internal_addon_voice','bots.enabled',1),
-  ('internal_addon_voice','limit.bot_voice_minutes_monthly',500),
-  ('internal_default_governance_launch','limit.bot_messages_monthly',1000),
-  ('internal_default_governance_launch','policy.packs',1)
-) AS v(price, ent_key, val)
-JOIN public.products p ON p.stripe_price_id = v.price
+  ('plan', 'growth','bots.enabled',1),
+  ('plan', 'growth','limit.bot_messages_monthly',2000),
+  ('plan', 'growth','policy.packs',1),
+  ('plan', 'enterprise','bots.enabled',1),
+  ('plan', 'enterprise','limit.bot_messages_monthly',-1),
+  ('plan', 'free_audit','policy.packs',0),
+  ('addon','internal_addon_response_pack','limit.bot_messages_monthly',5000),
+  ('addon','internal_addon_voice','bots.voice',1),
+  ('addon','internal_addon_voice','bots.enabled',1),
+  ('addon','internal_addon_voice','limit.bot_voice_minutes_monthly',500),
+  ('plan', 'governance_launch','limit.bot_messages_monthly',1000),
+  ('plan', 'governance_launch','policy.packs',1)
+) AS v(art, ref, ent_key, val)
+JOIN public.products p
+  ON (v.art = 'plan'  AND p.default_for_plan_key = v.ref)
+  OR (v.art = 'addon' AND p.stripe_price_id     = v.ref)
 JOIN public.entitlements e ON e.key = v.ent_key
-ON CONFLICT DO NOTHING;
+ON CONFLICT (product_id, entitlement_id) DO NOTHING;
 `;
-
-/** Migration ohne ihre eigene Transaktionsklammer — der Test hält die Klammer. */
-function migrationSql(): string {
-  return readFileSync(join(MIGRATIONS_DIR, MIGRATION), 'utf8')
-    .replace(/^BEGIN;\s*$/m, '')
-    .replace(/^COMMIT;\s*$/m, '');
-}
 
 async function alsAufrufer(ctx: DbCtx, sub: string, role: string): Promise<void> {
   await ctx.client.query(`SELECT set_config('request.jwt.claim.sub', $1, false)`, [sub]);
@@ -206,14 +227,26 @@ d('tenant_entitlements — Add-on-Grants', () => {
   beforeEach(async () => {
     ctx = await openDb();
     await ctx.client.query(SCHEMA);
-    await ctx.client.query(migrationSql());
+    await applyMigration(ctx, MIGRATIONS_DIR, MIGRATION);
     await ctx.client.query(
       `INSERT INTO public.tenants (id, name) VALUES ($1, 'growth-kunde') ON CONFLICT (id) DO NOTHING`,
       [MANDANT],
     );
+    // Gegen das volle Schema legt ein Trigger auf `tenants` bereits ein
+    // Free-Tier-Abo an (`create_free_tier_subscription_on_tenant_insert`) —
+    // produktives Verhalten, das der minimale Harnisch nicht kennt. Deshalb
+    // upserten statt einfuegen: Der Test setzt den Plan, er beansprucht nicht,
+    // der Erste zu sein.
     await ctx.client.query(
       `INSERT INTO public.subscriptions (tenant_id, plan_key, status, stripe_subscription_id)
-       VALUES ($1, 'growth', 'active', 'sub_test')`,
+       VALUES ($1, 'growth', 'active', 'sub_test')
+       ON CONFLICT (tenant_id) DO UPDATE
+         SET plan_key = EXCLUDED.plan_key,
+             status = EXCLUDED.status,
+             stripe_subscription_id = EXCLUDED.stripe_subscription_id,
+             stripe_price_id = NULL,
+             past_due_since = NULL,
+             updated_at = now()`,
       [MANDANT],
     );
     // bootstrap.sql bindet memberships.user_id an auth.users — der Nutzer

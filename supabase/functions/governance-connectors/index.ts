@@ -42,6 +42,7 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { buildCorsHeaders, handleOptions, jsonResponse } from '../_shared/gateway.ts';
 import { recordFinding } from '../_shared/findings.ts';
+import { importSecretKey, open, seal } from '../_shared/secretBox.ts';
 import {
   GITHUB_DETECTOR,
   deriveGitHubFindings,
@@ -288,21 +289,53 @@ function sanitizeConfig(raw: unknown): Record<string, unknown> | null {
 // ─────────────────────────────────────────────────────────────────────
 
 /**
- * Verschlüsselt mit AES-GCM und legt das Ergebnis in der getrennten Tabelle ab.
+ * Laedt den Siegel-Schluessel — **derselbe** wie bei `integration-credentials`
+ * und den beiden Microsoft-365-Functions.
  *
- * Der Schlüssel kommt aus `INTEGRATION_SECRET_KEY` (32 Byte, base64). Fehlt er,
- * wird **nicht** im Klartext gespeichert — dann scheitert das Anlegen. Ein
- * Klartext-Rückfall wäre die Sorte Bequemlichkeit, die §9 Regel 2 aufhebt.
+ * Diese Datei hatte ihren eigenen Schluessel (`INTEGRATION_SECRET_KEY`) und
+ * ihre eigene AES-GCM-Implementierung, weil beim Schnitt des PRs keine der
+ * beiden auf `main` existierte. Inzwischen schon. Zwei Schluesselnamen fuer
+ * dieselbe Sache waeren genau die Fragmentierung, die
+ * `20260904100000_connector_registry.sql` als Hauptbefund benennt — und
+ * betrieblich eine Falle: Der Betreiber setzt einen Schluessel, und die
+ * Haelfte der Integrationen bleibt trotzdem stumm.
+ */
+// deno-lint-ignore no-explicit-any
+async function loadSealKey(admin: any): Promise<CryptoKey | null> {
+  let b64 = Deno.env.get('INTEGRATION_CREDENTIALS_KEY') ?? null;
+  if (!b64) {
+    try {
+      const { data } = await admin.rpc('get_app_secret', {
+        secret_name: 'integration_credentials_key',
+      });
+      if (typeof data === 'string' && data.length > 0) b64 = data;
+    } catch { /* Vault optional — env ist der Primaerweg */ }
+  }
+  if (!b64) return null;
+  try {
+    return await importSecretKey(b64);
+  } catch (e) {
+    console.error('[governance-connectors] invalid seal key', e);
+    return null;
+  }
+}
+
+/**
+ * Versiegelt das Token und legt es in der getrennten Tabelle ab.
+ *
+ * Fehlt der Schluessel, wird **nicht** im Klartext gespeichert — dann
+ * scheitert das Anlegen. Ein Klartext-Rueckfall waere die Sorte
+ * Bequemlichkeit, die §9 Regel 2 aufhebt.
  */
 async function storeSecret(
   ctx: Ctx, connectorId: string, token: string, rawScopes: unknown,
 ): Promise<{ ok: boolean; error?: string }> {
-  const keyB64 = Deno.env.get('INTEGRATION_SECRET_KEY');
-  if (!keyB64) return { ok: false, error: 'INTEGRATION_SECRET_KEY is not configured' };
+  const key = await loadSealKey(ctx.admin);
+  if (!key) return { ok: false, error: 'INTEGRATION_CREDENTIALS_KEY is not configured' };
 
-  let encrypted: string;
+  let sealed: string;
   try {
-    encrypted = await encryptToken(token, keyB64);
+    sealed = await seal(key, token);
   } catch (e) {
     return { ok: false, error: `encryption failed: ${(e as Error).message}` };
   }
@@ -313,7 +346,7 @@ async function storeSecret(
     .upsert({
       connector_id: connectorId,
       tenant_id: ctx.tenantId,
-      token_encrypted: encrypted,
+      token_encrypted: sealed,
       scopes,
       rotated_at: new Date().toISOString(),
     }, { onConflict: 'connector_id' });
@@ -322,8 +355,8 @@ async function storeSecret(
 }
 
 async function loadToken(ctx: Ctx, connectorId: string): Promise<string | null> {
-  const keyB64 = Deno.env.get('INTEGRATION_SECRET_KEY');
-  if (!keyB64) return null;
+  const key = await loadSealKey(ctx.admin);
+  if (!key) return null;
 
   const { data } = await ctx.admin
     .from('integration_connector_secrets').select('token_encrypted')
@@ -332,38 +365,13 @@ async function loadToken(ctx: Ctx, connectorId: string): Promise<string | null> 
   if (!data) return null;
 
   try {
-    return await decryptToken(data.token_encrypted, keyB64);
+    const value = await open(key, data.token_encrypted);
+    // `open` liefert `unknown` — ein Siegel mit fremdem Inhalt (etwa aus
+    // einem spaeteren Format) darf nicht als Token durchgereicht werden.
+    return typeof value === 'string' && value.length > 0 ? value : null;
   } catch {
     return null;
   }
-}
-
-async function importKey(keyB64: string): Promise<CryptoKey> {
-  const raw = Uint8Array.from(atob(keyB64), (c) => c.charCodeAt(0));
-  if (raw.byteLength !== 32) throw new Error('INTEGRATION_SECRET_KEY must be 32 bytes (base64)');
-  return crypto.subtle.importKey('raw', raw, { name: 'AES-GCM' }, false, ['encrypt', 'decrypt']);
-}
-
-/** Format: base64(iv[12] ‖ ciphertext). Der IV ist je Aufruf neu. */
-async function encryptToken(plain: string, keyB64: string): Promise<string> {
-  const key = await importKey(keyB64);
-  const iv = crypto.getRandomValues(new Uint8Array(12));
-  const cipher = new Uint8Array(
-    await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, new TextEncoder().encode(plain)),
-  );
-  const joined = new Uint8Array(iv.byteLength + cipher.byteLength);
-  joined.set(iv, 0);
-  joined.set(cipher, iv.byteLength);
-  return btoa(String.fromCharCode(...joined));
-}
-
-async function decryptToken(stored: string, keyB64: string): Promise<string> {
-  const key = await importKey(keyB64);
-  const joined = Uint8Array.from(atob(stored), (c) => c.charCodeAt(0));
-  const iv = joined.slice(0, 12);
-  const cipher = joined.slice(12);
-  const plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, cipher);
-  return new TextDecoder().decode(plain);
 }
 
 // ─────────────────────────────────────────────────────────────────────

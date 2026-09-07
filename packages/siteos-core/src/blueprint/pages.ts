@@ -43,7 +43,7 @@
 
 import type { BlockKind, SiteBlock, SiteBlueprint, SitePage } from '../types.ts';
 import { getIndustryPreset } from './industries.ts';
-import { briefFromBlueprint } from './refine.ts';
+import { briefFromBlueprint } from './brief.ts';
 import { buildBlock, deriveCompliance, slugify } from './synthesize.ts';
 
 // ─────────────────────────────────────────────────────────────────────
@@ -62,6 +62,24 @@ export const RESERVED_PAGE_SLUGS: readonly string[] = Object.freeze([
 
 /** Obergrenze je Site — dieselbe wie `MAX_PAGES` im Handler `siteos/edit`. */
 export const MAX_PAGES_PER_SITE = 40;
+
+/**
+ * Die Obergrenze ist eine **Create-Invariante**, kein Zustandsurteil über das
+ * Projekt. Geprüft wird, was die Operation *ergäbe* — nicht, was schon da ist.
+ *
+ * Der Unterschied ist für Bestandsprojekte entscheidend (Owner-Entscheidung
+ * 2026-09-07): Ein Blueprint mit 47 Seiten bleibt lesbar, renderbar und
+ * bearbeitbar; Löschen ist erlaubt, damit er *bereinigt* werden kann. Nur eine
+ * 48. Seite entsteht nicht. Ein pauschales `pages.length > MAX` würde
+ * dieselben Projekte einfrieren, statt sie in die Grenze zurückzuführen.
+ *
+ * Für eine einzelne Seite ist das Ergebnis dasselbe wie zuvor
+ * (`length >= MAX` ⟺ `length + 1 > MAX`); der Unterschied wird erst bei
+ * Mehrfach-Anlagen sichtbar, wie sie ein Action-Batch erzeugt.
+ */
+export function exceedsPageLimit(blueprint: SiteBlueprint, adding: number): boolean {
+  return adding > 0 && blueprint.pages.length + adding > MAX_PAGES_PER_SITE;
+}
 export const MAX_PAGE_TITLE_LENGTH = 80;
 
 export type PageOperation =
@@ -170,7 +188,7 @@ export function recompileCompliance(bp: SiteBlueprint): SiteBlueprint {
 function createPage(bp: SiteBlueprint, operation: Extract<PageOperation, { op: 'create' }>, changes: PageChange[], rejected: string[]): SiteBlueprint {
   const title = cleanTitle(operation.title);
   if (!title) { rejected.push('title.empty'); return bp; }
-  if (bp.pages.length >= MAX_PAGES_PER_SITE) { rejected.push(`pages.limit:${MAX_PAGES_PER_SITE}`); return bp; }
+  if (exceedsPageLimit(bp, 1)) { rejected.push(`pages.limit:${MAX_PAGES_PER_SITE}`); return bp; }
 
   const slug = validatePageSlug(operation.slug ?? slugify(title), bp);
   if (!slug.ok) { rejected.push(describeSlugRejection(slug, operation.slug ?? title)); return bp; }
@@ -261,7 +279,7 @@ function duplicatePage(bp: SiteBlueprint, operation: Extract<PageOperation, { op
   const source = bp.pages.find((p) => p.path === operation.path);
   if (!source) { rejected.push(`page.unknown:${operation.path}`); return bp; }
   if (!allowedPageOperations(source).has('duplicate')) { rejected.push(`page.protected:${source.path}`); return bp; }
-  if (bp.pages.length >= MAX_PAGES_PER_SITE) { rejected.push(`pages.limit:${MAX_PAGES_PER_SITE}`); return bp; }
+  if (exceedsPageLimit(bp, 1)) { rejected.push(`pages.limit:${MAX_PAGES_PER_SITE}`); return bp; }
 
   const title = cleanTitle(operation.title ?? `${source.title} (Kopie)`);
   if (!title) { rejected.push('title.empty'); return bp; }

@@ -793,14 +793,38 @@ RealSyncDynamics.AI/
 │   └── evidence-chain Hash-Chain-Verifizierung (SPA + MCP Server)
 ├── connectors/        Externe Integrationen
 ├── deploy/ docker/ infra/ VPS-Stack (Traefik, Ollama, n8n)
-├── platform/          🏗️ **WEBSITE BUILDER MONOREPO** (siehe unten)
+├── platform/          🏗️ **WEBSITE BUILDER MONOREPO** — ruhend, nicht angeschlossen (siehe unten)
 ├── scripts/           Build-, Release-, QA-Skripte
 └── test/ tests/ e2e/  Vitest + Playwright
 ```
 
-### 🏗️ Platform-Monorepo (`platform/`) — Website Builder + Governance
+### 🏗️ Platform-Monorepo (`platform/`) — **ruhend, nicht angeschlossen**
 
-In-sich-geschlossener Microservice-Stack für **automatisierte Website-Generierung mit Compliance-Gating**:
+> #### ⚠️ Zwei Stacks, einer bedient Produktion
+>
+> **Gemessen 2026-09-07** gegen `main` @ `9587905`:
+>
+> | | AKTIVER PRODUCTION-PFAD | RUHEND / NICHT ANGESCHLOSSEN |
+> |---|---|---|
+> | Frontend | Vite 6 + React 19 SPA | `platform/nextjs_frontend`, **Next.js 15.1.3** |
+> | Backend | Supabase Edge Functions (Deno) | FastAPI auf **8001** und **8002** |
+> | Auslieferung | Cloudflare Pages via GitHub Actions | Traefik + `docker compose`, `*.localhost` |
+> | Builder | SiteOS / Puck | `platform`-Builder-Endpunkte |
+>
+> **Belege für die rechte Spalte**: kein aktiver Frontend-Consumer
+> (`grep "builder.localhost\|/api/v1/builder" src/` → 0 Treffer) · kein aktiver
+> API-Consumer · kein aktiver CI-/Deployment-Consumer
+> (`grep -rl nextjs_frontend .github/ deploy/ infra/ docker/ scripts/` → 0
+> Treffer) · kein Production-Request-Pfad · keine Tests · ein einziger Commit
+> (`02f2727`, 2026-08-17).
+>
+> **Ruhend ist nicht dasselbe wie toter Code.** Über eine Löschung ist nicht
+> entschieden, und dieser Abschnitt trifft sie nicht. Was er verhindern soll:
+> dass jemand den Stack für den Produktionsbuilder hält und dort weiterbaut.
+> Vollständiges Inventar: `docs/product/builder-einstiege-inventar.md`.
+
+In-sich-geschlossener, **lokal laufender** Microservice-Stack für
+automatisierte Website-Generierung mit Compliance-Gating:
 
 **Struktur:**
 ```
@@ -813,7 +837,7 @@ platform/
 │                             • EU-AI-Act-Konformität
 │                             • CI/CD-Gate-Engine
 │                             • Audit-Log + Telemetrie
-├── nextjs_frontend/          Next.js — Builder-Cockpit + Governance-UI
+├── nextjs_frontend/          Next.js 15 — Builder-Cockpit, RUHEND (kein Aufrufer)
 ├── migrations/               SQL-Migrations (Postgres)
 ├── docker-compose.yml        Lokale Orchestrierung (alle 4 Services)
 └── README.md                 Workflow, API-Nutzung, Start-Guide

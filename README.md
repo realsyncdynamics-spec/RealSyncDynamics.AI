@@ -77,7 +77,7 @@ RealSyncDynamics.AI/
 │   └── playwright-scanner/
 ├── packages/                      # Shared Packages
 │   └── sdk/                       # Public SDK (CJS + ESM)
-├── platform/                      # 🏗️ Monorepo: Website Builder + Governance
+├── platform/                      # 🏗️ Monorepo: Website Builder + Governance (RUHEND, nicht angeschlossen)
 │   ├── builder_orchestrator/      # AI-App-Builder mit Multi-Agent-Task-Graph (Python)
 │   ├── governance_backend/        # Governance + Risk-Engine (Python)
 │   ├── nextjs_frontend/           # Builder- + Governance-Frontend (Next.js)
@@ -85,9 +85,25 @@ RealSyncDynamics.AI/
 └── docs/                          # Dokumentation + Runbooks
 ```
 
-### Platform-Monorepo (`platform/`)
+### Platform-Monorepo (`platform/`) — ruhend, nicht angeschlossen
 
-Eine **in sich geschlossene Microservice-Suite** für Website-Automation mit Compliance-Gating:
+> **Status (gemessen 2026-09-07): DORMANT / NOT CONNECTED.**
+>
+> | | |
+> |---|---|
+> | Aktiver Frontend-Consumer | **keiner** — `grep "builder.localhost\|/api/v1/builder" src/` → 0 Treffer |
+> | Aktiver API-Consumer | **keiner** |
+> | Aktiver CI-/Deployment-Consumer | **keiner** — `grep -rl nextjs_frontend .github/ deploy/ infra/ docker/ scripts/` → 0 Treffer |
+> | Production-Request-Pfad | **keiner** — Hosts sind `*.localhost` (Traefik, `docker compose`) |
+>
+> **Der aktive Production-Pfad ist ein anderer**: Vite 6 + React 19 → Cloudflare
+> Pages, Supabase Edge Functions, SiteOS/Puck. Dieser Stack hier (Next.js
+> 15.1.3, FastAPI auf 8001/8002, Traefik/Compose) läuft ausschließlich lokal.
+>
+> „Ruhend" heißt **nicht** „toter Code": Über eine Löschung ist nicht
+> entschieden. Wer hier weiterbaut, baut neben dem Produktionspfad.
+
+Eine **in sich geschlossene Microservice-Suite** für Website-Automation mit Compliance-Gating (lokal):
 
 - **builder_orchestrator** (Port 8001, `builder.localhost`)
   - AI-Agenten-Orchestrator für Website-Generierung
@@ -103,9 +119,10 @@ Eine **in sich geschlossene Microservice-Suite** für Website-Automation mit Com
   - **Start:** `cd platform && docker compose up --build`
   - **Docs:** http://rsd.localhost/docs (OpenAPI)
 
-- **nextjs_frontend** (Port 3000, `app.localhost`)
-  - Steuerung des Builders
-  - Governance-Cockpit
+- **nextjs_frontend** (Port 3000, `app.localhost`) — **eigener Next.js-Stack, ruhend**
+  - Steuerung des Builders (lokal)
+  - Governance-Cockpit (lokal)
+  - Nicht Teil des Cloudflare-Pages-Builds; kein Aufrufer in `src/`
 
 **Weitere Details:** `platform/README.md`
 

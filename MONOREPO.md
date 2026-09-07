@@ -190,11 +190,16 @@ Website + Audit-Log
 - **Input:** Projekt-Metadata (Datentypen, Modelle, Subjekte)
 - **Output:** Risk-Tier + Required-Gates
 
-#### 4c. nextjs_frontend (Port 3000)
+#### 4c. nextjs_frontend (Port 3000) — RUHEND, nicht angeschlossen
 - **Ort:** `platform/nextjs_frontend/`
 - **Host (lokal):** `app.localhost:3000`
-- **Zweck:** Builder-Steuerung, Governance-Cockpit
-- **Note:** Unabhängiges Next.js-Projekt (kein Bezug zu Root-Vite)
+- **Zweck:** Builder-Steuerung, Governance-Cockpit — **lokal**
+- **Stack:** Next.js 15.1.3, eigene `package.json`, eigenes `tsconfig.json`, eigenes `Dockerfile`
+- **Status (gemessen 2026-09-07):** kein aktiver Frontend-Consumer, kein aktiver
+  API-Consumer, kein aktiver CI-/Deployment-Consumer, kein Production-Request-Pfad
+- **Note:** Unabhängiges Next.js-Projekt **neben** dem aktiven Production-Pfad
+  (Vite 6 + React 19 → Cloudflare Pages, Supabase Edge Functions, SiteOS/Puck).
+  Ruhend heißt nicht „toter Code" — über eine Löschung ist nicht entschieden.
 
 #### 4d. Postgres (Port 5432)
 - **Ort:** `platform/docker-compose.yml`

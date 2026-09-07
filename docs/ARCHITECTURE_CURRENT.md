@@ -97,14 +97,33 @@ RealSyncDynamics.AI/
 ├── services/                    # Runtime / evidence / scanner / agent services
 ├── packages/                    # Shared SDK and packages
 │
-├── platform/                    # Builder + governance microservice suite
-│   ├── builder_orchestrator/    # Website generation/task graph
-│   ├── governance_backend/      # Risk / governance backend
-│   ├── nextjs_frontend/         # Platform builder frontend
-│   └── docker-compose.yml
+├── platform/                    # Builder + governance suite — DORMANT / NOT CONNECTED
+│   ├── builder_orchestrator/    # Website generation/task graph (FastAPI, local only)
+│   ├── governance_backend/      # Risk / governance backend (FastAPI, local only)
+│   ├── nextjs_frontend/         # Next.js 15 — separate stack, no caller in src/
+│   └── docker-compose.yml       # Traefik + compose, *.localhost hosts
 │
 └── docs/                        # Architecture, product and operational docs
 ```
+
+### Active production path vs dormant platform stack
+
+Measured 2026-09-07 against `main`. Two stacks exist in this repository; only
+one serves production requests.
+
+| | ACTIVE PRODUCTION PATH | DORMANT / NOT CONNECTED |
+|---|---|---|
+| Frontend | Vite 6 + React 19 SPA | `platform/nextjs_frontend`, Next.js 15.1.3 |
+| Backend | Supabase Edge Functions (Deno) | FastAPI on 8001 (`builder_orchestrator`) and 8002 (`governance_backend`) |
+| Delivery | Cloudflare Pages via GitHub Actions | Traefik + `docker compose`, `*.localhost` |
+| Builder | SiteOS / Puck | `platform` builder endpoints |
+
+Evidence for the dormant column: no active frontend consumer (`grep
+"builder.localhost\|/api/v1/builder" src/` → 0 hits), no active API consumer,
+no active CI or deployment consumer (`grep -rl nextjs_frontend .github/
+deploy/ infra/ docker/ scripts/` → 0 hits), no production request path.
+
+Dormant is not the same as dead code — no deletion decision has been taken.
 
 ## 3. Landing-page product surface
 

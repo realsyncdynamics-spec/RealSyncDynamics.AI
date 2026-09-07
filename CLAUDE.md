@@ -78,10 +78,9 @@ Menschen · Unternehmen · KI-Agenten · Daten · Entscheidungen.
 
 **Primär: Supabase Cloud (EU / Frankfurt)**
 - PostgreSQL 17 (Live-Projekt, Stand 2026-08-16)
-- **189 Edge Functions** im Repo (`supabase/functions/`, Deno/V8; `_shared` ist Bibliothek, keine Function) — gemessen am 2026-09-06 am **Merge-Baum** dieses Branches gegen `main` @ `a239fa5` (`ls -d`, nicht addiert). **188 davon sind deployt**, gemessen am 2026-09-06 um 14:57 UTC durch den Edge-Function-Drift-Guard (Management-API, Lauf 34040773471). Er war rot, und zwar zu Recht: Der `deploy.yml`-Lauf nach dem Merge von PR #1135 hatte dessen sechs Functions ausgeliefert (`governance-decide`, `integration-credentials`, `governance-access`, `evidence-anchor`, `microsoft365-connect`, `microsoft365-audit-sync`), ohne dass `src/config/production-edge-functions.ts` nachgezogen war — dieselbe Klasse wie am 2026-09-04 bei `mcp-api-key-manager`. Nachgezogen in diesem Branch: die sechs stehen jetzt in der Produktionsliste, die vier davon, die in `UNBACKED_CALLERS` standen, sind dort ausgetragen, `EDGE_FUNCTIONS_OBSERVED_MAX` steht auf 188. **Nicht deployt ist allein `browser-agent-x07`** (Modell §02, ADR 0011) — neu in diesem Branch, wartet auf den nächsten `deploy.yml`-Lauf. In `UNBACKED_CALLERS` gehört er nicht: Er wird von pg_cron gerufen, nicht aus der SPA, und diese Liste führt Aufrufer ohne Backend, nicht Functions ohne Deploy
-- **338 Migrations** (`supabase/migrations/`) — gemessen am 2026-09-06 am Merge-Baum (`ls supabase/migrations/*.sql | wc -l`), **keine doppelte Versionsnummer** (am Baum gezählt, nicht angenommen; genau diese Kollision hat am 2026-08-24 einen Deploy zerlegt, siehe §5). 317 davon sind der verbuchte Bestand (Messung vom 2026-09-04 um 23:39 UTC gegen `supabase_migrations.schema_migrations` nach dem grünen Deploy-Lauf 33929752213, `comm` in beide Richtungen leer). **Einundzwanzig sind unverbucht** — mains zehn und die elf dieses Branches:
-  - aus dem Merge von PR #1135: `20260824090000_pdp_snapshots_shadow`, `20260824110000_integration_credentials_hardening`, `20260824120000_org_subject_model_approval_gates`, `20260901090000_evidence_append_only_anchors`, `20260904100000_connector_registry` (P2-1), `20260904110000_publish_gate_policy_trail` (P2-3), `20260904120000_pdp_shadow_log_channels` (P2-3/P2-5), `20260905100000_microsoft365_connector` (P2-2) und `20260906100000_pdp_shadow_readiness` (Plan §7)
-  - aus PR #1221: `20260906000000_reconcile_audit_evidence` — sortiert **vor** `20260906100000`, siehe §3
+- **189 Edge Functions** im Repo (`supabase/functions/`, Deno/V8; `_shared` ist Bibliothek, keine Function) — gemessen am 2026-09-07 am **Merge-Baum** dieses Branches gegen `main` @ `9587905` (`ls -d`, nicht addiert). **188 davon sind deployt**, gemessen am 2026-09-06 um 14:57 UTC durch den Edge-Function-Drift-Guard (Management-API, Lauf 34040773471). Er war rot, und zwar zu Recht: Der `deploy.yml`-Lauf nach dem Merge von PR #1135 hatte dessen sechs Functions ausgeliefert (`governance-decide`, `integration-credentials`, `governance-access`, `evidence-anchor`, `microsoft365-connect`, `microsoft365-audit-sync`), ohne dass `src/config/production-edge-functions.ts` nachgezogen war — dieselbe Klasse wie am 2026-09-04 bei `mcp-api-key-manager`. Nachgezogen in diesem Branch: die sechs stehen jetzt in der Produktionsliste, die vier davon, die in `UNBACKED_CALLERS` standen, sind dort ausgetragen, `EDGE_FUNCTIONS_OBSERVED_MAX` steht auf 188. **Nicht deployt ist allein `browser-agent-x07`** (Modell §02, ADR 0011) — neu in diesem Branch, wartet auf den nächsten `deploy.yml`-Lauf. In `UNBACKED_CALLERS` gehört er nicht: Er wird von pg_cron gerufen, nicht aus der SPA, und diese Liste führt Aufrufer ohne Backend, nicht Functions ohne Deploy
+- **339 Migrations** (`supabase/migrations/`) — gemessen am 2026-09-07 am Merge-Baum (`ls supabase/migrations/*.sql | wc -l`), **keine doppelte Versionsnummer** (am Baum gezählt, nicht angenommen; genau diese Kollision hat am 2026-08-24 einen Deploy zerlegt, siehe §5). **327 davon sind verbucht** — seit dem Deploy-Lauf 34057321551 (2026-09-06, 20:15 UTC, `main` @ `75f5fe7a`), gegen `schema_migrations` nachgemessen; darin sind die neun aus PR #1135 und `20260906000000_reconcile_audit_evidence` aus PR #1221 enthalten, deren Wirkung (Tabelle, Bucket, RLS, drei Trigger, Fremdschlüssel) einzeln geprüft wurde. **Zwölf sind unverbucht**:
+  - aus `main`: `20260906200000_profiles_on_signup` (PR #1241) — wartet auf den nächsten `deploy.yml`-Lauf; ihre Trigger-Funktion wurde vor dem Merge nicht nur angewendet, sondern **ausgelöst**, wie es die Regel zum PL/pgSQL-Blindfleck in §3 verlangt
   - aus diesem Branch: die **elf der Agenten-Organisationsebene** (`20260904010000`–`20260904011000`, ADR 0011; die letzte ist die Saat für Browser Agent X07)
 
   Zu den zwei nachgezogenen Out-of-Band-Migrationen siehe §5
@@ -148,6 +147,30 @@ Service-Role umgeht RLS — deshalb **ausschließlich in Edge Functions**.
 ### Kern-Tabellen (Auszug)
 
 - **Registry**: `ai_systems`, `tenants`, `profiles`
+
+  > ⚠️ **`profiles` hatte bis zum 2026-09-06 keinen Erzeugungspfad.** Gemessen
+  > gegen Produktion: 6 Nutzer, **1 Profil**. Kein Teilproblem, sondern ein
+  > geschlossener Kreis — `handle_new_auth_user` legte Mandant und
+  > Mitgliedschaft an, aber kein Profil; **keine** Migration im Repo insertete
+  > je in `profiles`; und die Tabelle trägt Policies für SELECT und UPDATE,
+  > aber **keine für INSERT**. Serverseitig kein Pfad, clientseitig kein Recht.
+  >
+  > **Die stillste Folge zuerst**: `SettingsView` und `AiResidencySettings`
+  > schreiben mit `.update() … .eq('id', …)`. Ein UPDATE ohne Treffer ist kein
+  > Fehler — PostgREST liefert `error: null`. Beide Oberflächen meldeten
+  > „gespeichert" und behielten nichts, auch nicht die
+  > **KI-Datenresidenz-Präferenz** (`ai_data_residency`, EU-lokal vs. Cloud).
+  > Dieselbe Fehlerform wie bei `public.integrations` (§5 ³): kein Fehler,
+  > kein Ergebnis. Daneben fehlte der Abschnitt `profile` in jeder
+  > `gdpr-export`-Auskunft nach Art. 15 DSGVO. Die `is_super_admin`-Prüfungen
+  > sind unschädlich — sie schlagen fail-closed aus.
+  >
+  > Behoben durch `20260906200000_profiles_on_signup.sql`: Der Trigger legt
+  > das Profil mit an, die fünf Bestandsnutzer werden nachgetragen. **Der
+  > Insert steht vor dem Mitgliedschafts-Wächter** — dahinter liefe er für
+  > keinen Bestandsnutzer, weil der Early-Return greift, sobald eine
+  > Mitgliedschaft existiert. `test/db/profiles-on-signup.test.ts` hält genau
+  > diese Reihenfolge fest.
 - **Policy Engine**: `ai_policies`, `policy_pack_catalog`, `policy_pack_controls`, `policy_pack_activations`
 - **Framework-Katalog**: `compliance_frameworks`, `framework_controls`, `custom_controls`;
   Erfüllungsstand je Tenant in `framework_implementations` und `asset_control_mappings`
@@ -761,7 +784,7 @@ RealSyncDynamics.AI/
 │   └── pricing.ts     Single Source of Truth für Produkt-, Preis- und Berechtigungsmodell
 ├── supabase/
 │   ├── functions/     189 Edge Functions (einziger Ort für Service-Role-Keys)
-│   └── migrations/    338 Migrations
+│   └── migrations/    339 Migrations
 ├── apps/
 │   ├── agent-runtime/ Agent Runtime (Node/TS, Docker)
 │   └── mcp-server/    MCP Governance Server — Lesezugriff für KI-Agenten auf

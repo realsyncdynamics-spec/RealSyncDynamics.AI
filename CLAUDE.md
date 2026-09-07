@@ -1570,6 +1570,13 @@ stillschweigend übergangen.
   Reihenfolge: Asset-Objektebene + Lebenszyklus → Publish Gate → Workflows →
   Integrationen → Pricing-Achsen. Der **Publish Gate muss vor dem ersten
   SiteOS-Publish-Pfad** stehen, nicht danach.
+- 🎯 **App Builder als Emergent-style AI App Builder**, nicht als Web-IDE
+  (Entscheid 2026-09-07): Sprache → AI Actions → validiertes Schema → Puck →
+  governed Artifact → Evaluation → Cloudflare Publish. Die KI schreibt nie
+  direkt; sie schlägt vor, der Kunde übernimmt per Knopf. Kein Terminal,
+  keine Kunden-Runtime, kein zweiter Stack. Reihenfolge A→F und Risiken:
+  `docs/product/app-builder-zielbild.md`, normativ
+  `docs/architecture/target-architecture.md` §8.2.
 - ⚠️ Migrations sauber additiv halten (RLS nicht brechen)
 - ⚠️ Tests (Vitest/Playwright) für neue Features ergänzen
 - ⚠️ Refactorings ohne Breaking Changes an öffentlichen Routen

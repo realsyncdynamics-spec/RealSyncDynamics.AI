@@ -674,6 +674,59 @@ VPS / n8n / Tools
    `bot-voice-webhook`. Kanäle sind Eingänge in dieselbe Kette, keine
    getrennten Assistenten.
 
+### 8.2 AI App Builder — Zielkette (normativ)
+
+**Seit 2026-09-07, Entscheidung des Eigentümers.** RealSync ist ein AI App
+Builder nach dem Muster von Emergent — beschreiben, bauen lassen, visuell
+iterieren — mit der Governance Runtime als Kontrollschicht. Er ist **kein**
+Replit-Klon: keine IDE, kein Terminal, keine Laufzeit je Kunde.
+
+```text
+Natürliche Sprache
+        ↓
+AI Actions                 strukturiert gegen Schema; nie HTML, nie Blueprint
+        ↓
+validiertes App Schema     SiteBlueprint, Ableitung im Kern (siteos-core)
+        ↓
+Puck / visueller Editor    Editorschicht innerhalb der Kette, nicht der Builder
+        ↓
+governed Artifact          Renderer → Dateien + artifact_sha256
+        ↓
+Evaluation                 Publish Gate (§7), PDP, Person bei Bedarf
+        ↓
+Cloudflare Publish         Pages, öffentliche URL, an die Evaluation gebunden
+```
+
+**Regeln**
+
+1. **Die KI schreibt nie direkt.** Sie schlägt strukturierte Änderungen vor;
+   Validierung und Governance liegen dazwischen; erst die ausdrückliche
+   Übernahme durch eine Person erzeugt eine neue, verkettete Version (Regel 3
+   in §8). Kein Modell-Output erreicht `siteos_blueprints` ohne diese
+   Stationen.
+2. **Eine Edit-Pipeline, zwei Eingänge.** Puck und Assistent erzeugen dieselbe
+   Anfrage (`PageEdit` an `siteos/edit`); der Server leitet Rechtsgrundlagen,
+   Drittanbieter und KI-Kennzeichnung ab. Eine zweite Pipeline für die KI
+   ist ausgeschlossen (§12).
+3. **Der Vorschlag ist sichtbar, bevor er gilt.** Der Assistent antwortet
+   mit der Liste der vorbereiteten Änderungen — einschließlich dessen, was
+   **unverändert** bleibt (Navigation, Impressum, Datenschutz) — und einem
+   Knopf „Änderungen übernehmen".
+4. **Kein Terminal, kein beliebiger Code, keine npm-Projekte, keine Runtime
+   je Kunde, kein SQL durch die KI, kein zweiter Backend-, Auth- oder
+   Deployment-Stack.** Das Artefakt ist statisch, gehasht und durchläuft das
+   Gate.
+5. **Modellwahl bleibt hinter dem Gateway** (§8.1). Der Builder spricht
+   `ai-gateway` mit einem Action-Schema; welcher Anbieter antwortet, ist
+   Router-Konfiguration.
+
+**Reihenfolge (verbindlich)**: A Workspace `/builder/:slug` → B Page
+Management (create, rename, slug, duplicate, delete; Rechtsseiten geschützt)
+→ C AI Builder (Actions, dieselbe Pipeline) → D Publish (Gate, Evaluation,
+Hash, Cloudflare, URL) → E Assets (eigener Bucket, eigene
+Security-Migration) → F E2E (Prompt bis öffentliche URL). Produktsicht,
+Delta-Report und Risiken: `docs/product/app-builder-zielbild.md`.
+
 ---
 
 ## 9. Ebene 5 — Integrations & Infrastructure
@@ -840,6 +893,7 @@ auf bestehende Modul-Schlüssel abgebildet, nicht als zweite Modul-Welt eingefü
 | Truth Layer / Status Adapter | `governance-analytics-aggregator`, `governance-risk-score`, `evidence-export` vorhanden; Zusammenführung fehlt | ein Adapter, jede Zahl mit definierter Metrik, `—` statt Platzhalter |
 | Health | `health` prüft `database` + `env` (`_shared/health.ts`) | Verbundstatus über Supabase · AI Gateway · Automation · Bot Layer · Evidence; VPS/Ollama/n8n getrennt |
 | Assistent | `ai-gateway`, `bot-chat`, `bot-voice-webhook` vorhanden | Provider Router hinter dem Gateway, Policy/Tenant/Entitlement davor |
+| AI App Builder (§8.2) | Workspace `/builder/:slug` mit Puck-Editor (PR #1248, #1254, Stand 2026-09-07); Assistent löst nur den deterministischen Neubau aus | Actions statt Neubau, Vorschau der Änderungen mit Übernehmen-Knopf, Seitenoperationen, Publish über das Gate — Schritte B–F in `docs/product/app-builder-zielbild.md` |
 | Free Baseline | vollständiger `gdpr-audit`-Flow inkl. Cron, Report-Mail, PDF, `AuditLanding`, `AuditChatHero` | Positionierung als erste Beobachtung, Anschluss an Continuous Monitoring — **kein** Neubau |
 
 ### Umsetzungsreihenfolge
@@ -884,6 +938,9 @@ in der Vite-SPA ausschließt.
 | Erfundene oder platzhaltende Kennzahlen in der Oberfläche | `—` ist ehrlich, eine plausible Zahl ohne Metrik ist eine Falschaussage über den Compliance-Zustand (§3.1). |
 | Hart verdrahteter Modellanbieter in der Experience-Ebene | Bindet eine Betriebsentscheidung an die Oberfläche und verhindert den Anbieterwechsel (§8.1). |
 | Zweiter Audit-Pfad neben `gdpr-audit` | Zweite Wahrheit über denselben Gegenstand — derselbe Fehler wie eine zweite Evidence-Kette (§5.1). |
+| IDE-Erfahrung im Builder: Terminal, Ausführung beliebigen Codes, npm-Projekte, Laufzeit je Kunde | Ein zweiter Betriebs- und Sicherheitsraum je Mandant, nicht governbar; das Zielbild ist ein AI App Builder, keine Web-IDE (§8.2). |
+| Direkter Schreibzugriff eines Modells auf Daten oder SQL | Die KI schlägt vor, eine Person übernimmt; erst dann entsteht eine Version (§8.2). |
+| Zweite Edit-Pipeline für KI-Änderungen neben `siteos/edit` | Zwei Auslegungen derselben Ableitungsregeln — der Fragmentierungsbefund der Bot-Governance eine Ebene höher (§8.2). |
 | Framework-Migration Vite → Next.js als Vorleistung | Großes technisches Projekt ohne belegten Engpass. SEO läuft über den vorhandenen Prerender-Pfad; zuerst messen, dann entscheiden (§11). |
 
 ---
@@ -898,6 +955,7 @@ in der Vite-SPA ausschließt.
 | [`docs/ARCHITECTURE.md`](../ARCHITECTURE.md) | **abgelöst** für die Zielarchitektur auf Produktebene. Der dortige Ziel-Stack (Next.js, Fastify, Prisma, Keycloak) widerspricht ADR 0001 und CLAUDE.md. Fachlich weiter gültig: Rule Engine, Evidence Layer, Findings-Normalisierung. |
 | [`docs/architecture/README.md`](./README.md) | Registry aller Architekturdokumente. Dieses Dokument steht dort. |
 | [`docs/product/pricing-governance.md`](../product/pricing-governance.md) | Verbindliche Preisregeln. §10 ist Zielbild, ersetzt sie nicht. |
+| [`docs/product/app-builder-zielbild.md`](../product/app-builder-zielbild.md) | Produktsicht des AI App Builders (§8.2): UX-Zielbild, MVP-Reihenfolge A–F, Delta-Report, offene Punkte mit Evidenzklassen. |
 | ADR [0001](../adr/0001-stay-on-supabase-gh-pages-for-v1.md) / [0002](../adr/0002-future-monorepo-migration.md) | Stack-Entscheidungen. Dieses Dokument macht keine Stack-Aussage und hebt sie nicht auf. |
 
 ---

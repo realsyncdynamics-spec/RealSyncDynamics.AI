@@ -242,3 +242,4 @@ Vom Eigentümer am 2026-09-07 festgelegt:
 | `app-builder-zielbild.md` | Produktsicht A–F; §5 nennt C als PLANNED |
 | `docs/architecture/target-architecture.md` §8.2 | normative Zielkette; dieser Contract füllt ihre zweite Stufe |
 | `docs/SITEOS_ARCHITECTURE.md` §5c | Edit-Pipeline, in die C mündet |
+| `docs/product/tech-debt-freeslug-determinismus.md` | offener Determinismus-Befund im Kern (TECH-DEBT / PARTIAL), berührt C0 |

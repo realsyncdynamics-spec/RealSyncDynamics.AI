@@ -4,6 +4,19 @@
 Bewertet am 2026-09-07 auf Anweisung (C-GATE Punkt 5). Eigenes Dokument, weil
 der Fund getrennt bewertet wird und nicht zu #1258 gehört.
 
+> **Owner-Entscheidung vom 2026-09-07**: „Jetzt **nicht** vorschnell fixen. Die
+> Sitzung hat korrekt gehandelt. Der Zweig ist nur unter einer lokalen
+> Seitenzahl-Invariante unerreichbar, und diese Invariante gilt derzeit nicht
+> global. Ein Fix allein in `pages.ts` wäre möglicherweise nur
+> Symptombehandlung. **Erst die Page-Creation-Invariante zentralisieren, danach
+> den Determinismusbeweis erneut führen.** Bis dahin PARTIAL / TECH-DEBT und
+> separat."
+>
+> Der Schritt, auf den gewartet wird, ist der Refinement-Invariant-Fix:
+> `docs/product/page-creation-invarianten.md`. Danach — und nur danach — wird
+> der Beweis neu geführt; gelingt er dann, folgt der kleine deterministische
+> Fix.
+
 ## Der Fund
 
 `packages/siteos-core/src/blueprint/pages.ts` (Branch von PR #1258) sagt in
@@ -81,9 +94,13 @@ Anweisung „nichts eigenmächtig ändern" vorsieht.
 | `refine.ts` (`applyPageAddition`) | **keine** | nur Pfadkollision | — (legt nur an) |
 
 Das ist unabhängig vom Determinismus-Fund eine Inkonsistenz: Die Obergrenze,
-die Schritt B einführt, lässt sich über den Verfeinerungspfad umgehen. Ob das
-gewollt ist (der Verfeinerungspfad ist älter) oder angeglichen gehört, ist eine
-Entscheidung — **hier nur gemeldet, nicht getroffen**.
+die Schritt B einführt, lässt sich über den Verfeinerungspfad umgehen.
+
+**Entschieden am 2026-09-07**: Das ist ein **Governance- und
+Integritätsproblem, kein normaler Tech-Debt** — der Rechtsseitenschutz darf
+nicht von der Eintrittsroute abhängen. Eigener Fix **vor** C0 und **vor** C,
+mit Befund, Zielbild und Umfang in
+`docs/product/page-creation-invarianten.md`.
 
 ## Was ein Fix bräuchte
 

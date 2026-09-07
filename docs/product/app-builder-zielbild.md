@@ -149,7 +149,9 @@ Startseite dunkler" (Theme), „Füge eine Seite für Wärmepumpen hinzu"
 |---|---|---|---|
 | **A** Builder Workspace | `/builder/:slug`, Puck, Pages, Canvas, Properties, Save, Preview, Problems, Governance | **geliefert** (Draft) | PR #1254 @ `de35e35`, 12/12 Checks grün gegen `main`, vom Eigentümer unabhängig geprüft |
 | **B** Page Management | create, rename, slug, duplicate, delete; **Legal Pages geschützt** | PLANNED — startet erst auf ausdrückliches „go" | — |
-| **C** AI Builder | „Baue mir …" → Actions, keine HTML; validiert; dieselbe Edit-Pipeline wie manuelle Änderungen | PLANNED — **vor D** | — |
+| **B+** Seiten-Invarianten | **eine** kanonische Page-Operation; `slug-validate`, `max-pages-limit`, `legal-page-protection` greifen auf **jedem** Erzeugungspfad | PLANNED — **STOP-Befund, vor C0 und C** | `docs/product/page-creation-invarianten.md` |
+| **C0** Atomare Batches | `tempId`/`pageRef`, Operationsgraph, Modi `partial` und `atomic`, Graphprüfung vor Ausführung | **freigegeben** 2026-09-07, beginnt nach B+ | `docs/product/app-builder-action-contract.md` §3a |
+| **C** AI Builder | „Baue mir …" → Actions, keine HTML; validiert; dieselbe Edit-Pipeline wie manuelle Änderungen | PLANNED — **vor D**, LLM erst nach C0 | `…action-contract.md` |
 | **D** Publish | Governance Gate, Evaluation, Artifact Hash, Cloudflare Deployment, öffentliche URL | PLANNED — Secrets und Produktions-Deployment strikt getrennt, setzt der Eigentümer | — |
 | **E** Assets | echtes Asset-System, Upload, Image Blocks, Mandantentrennung, **separate Security-Migration** | PLANNED — eigener PR, erst Bucket, dann Renderer | #1253 räumt vorher die offene Policy ab |
 | **F** E2E | Prompt → App → Edit → Save → Governance → Publish → öffentliche URL | PLANNED — Testkonto als CI-Secret, nur in Actions, setzt der Eigentümer | — |
@@ -157,6 +159,18 @@ Startseite dunkler" (Theme), „Füge eine Seite für Wärmepumpen hinzu"
 Die Reihenfolge ist Abhängigkeit, nicht Vorliebe: C erzeugt Seitenoperationen
 und braucht deshalb B; D veröffentlicht, was A–C erzeugt haben; F beweist die
 ganze Kette und braucht D.
+
+**Verbindliche technische Reihenfolge** (Owner-Freigabe 2026-09-07):
+
+```text
+#1254  →  #1257 Revalidation  →  B+ Refinement-Invariant-Fix  →  C0
+       →  Action Contract / Core Tests  →  C (AI Actions)  →  D  →  E  →  F
+```
+
+Zwei Schritte sind seit dem 2026-09-07 dazwischengeschoben, beide aus einem
+gemessenen Befund und nicht aus Vorliebe: **B+**, weil zwei Erzeugungspfade für
+Seiten unterschiedliche Schutzregeln einhalten, und **C0**, weil der Kern eine
+atomare Action-Batch heute nicht trägt. Das LLM kommt erst nach beiden.
 
 ---
 

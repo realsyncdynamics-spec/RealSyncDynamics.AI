@@ -15,6 +15,12 @@ am selben Tag ausdrücklich gestoppt:
 Dieses Dokument ist genau das. Es ist **keine** Zielbild-Änderung. Aus diesem
 Prompt wird nichts abgeleitet, solange der Konflikt offen ist.
 
+> **Herkunft dieses Dokuments**: Erstellt am 2026-09-07 auf eine kurze
+> Zustimmung, die der Eigentümer nachträglich ausdrücklich als **nicht
+> autorisiert** festgestellt hat. Der **Inhalt** ist mit der Owner-Freigabe vom
+> selben Tag zur Weiterverwendung freigegeben; die **Herkunft** bleibt als
+> unautorisiert vermerkt.
+
 ## Warum dieses Dokument existiert
 
 Ein zurückgezogener Prompt, der nirgends steht, kommt wieder — als Idee, als

@@ -12,6 +12,13 @@ jeder KI-Änderung und wird nicht umbenannt.
 Der konkurrierende Prompt „MAXIMUM CREATIVE FREEDOM" ist **NO-GO** und für
 Schritt C ohne Wirkung: `docs/product/app-builder-master-prompt-konflikt.md`.
 
+> **Herkunft dieses Dokuments**: Erstellt am 2026-09-07 auf eine kurze
+> Zustimmung, die der Eigentümer nachträglich ausdrücklich als **nicht
+> autorisiert** festgestellt hat. Der **Inhalt** ist mit der Owner-Freigabe vom
+> selben Tag zur Weiterverwendung freigegeben; die **Herkunft** bleibt als
+> unautorisiert vermerkt. Beides gehört zusammen — der Inhalt heilt die
+> Herkunft nicht.
+>
 > **Herkunft von Freigaben** (Regel vom 2026-09-07): Der Eigentümer kann in die
 > Arbeitssitzung nicht selbst schreiben. Jede Freigabe erreicht die Sitzung
 > ausschließlich über den Auftraggeber. Kurze Zustimmungen („ja", „ok", „go")
@@ -140,9 +147,27 @@ davor. Umfang, bewusst eng gehalten:
 
 **Nicht** in C0: LLM, Prompting, Gateway, neue Blocktypen, `updateSeo`.
 
-C0 ist **nicht freigegeben** — hier steht nur, was er wäre. Er wartet wie
-alles Übrige auf eine Freigabe, die ausschließlich über den Auftraggeber
-dieser Sitzung kommt.
+### C0 ist freigegeben — mit einer Bedingung davor
+
+**Owner-Freigabe vom 2026-09-07: C0 = GO**, als **eigener** Core-Schritt vor C.
+Der Umfang oben ist damit bestätigt; der Eigentümer nennt ihn ausdrücklich:
+atomare Batch-Semantik mit `tempId`/`pageRef` und serverseitiger Auflösung,
+Operationsgraph, **explizite** Modi `partial` und `atomic`, vollständige
+Graphprüfung **vor** der Ausführung.
+
+Zwei Festlegungen, die der Umfang oben noch nicht trug:
+
+- **Der bestehende `partial`-Modus bleibt für die Oberfläche verfügbar.** Er
+  wird nicht ersetzt und nicht stillgelegt.
+- **KI-Actions verwenden ausschließlich `atomic`.** Keine halbfertige
+  Persistierung — weder als Rückfall noch als Sonderfall.
+
+**Bedingung**: C0 beginnt **nicht** vor dem Refinement-Invariant-Fix
+(`docs/product/page-creation-invarianten.md`). Begründung des Eigentümers: „Es
+wird keine Action Engine auf einen Kern gesetzt, dessen Seiteninvarianten über
+einen zweiten Erzeugungspfad umgangen werden können."
+
+**Noch nicht begonnen.** Der Freeze für C bleibt bestehen.
 
 ## 4. Was es nicht gibt
 
@@ -209,7 +234,10 @@ Beleg, nicht mit Absicht.
 
 ## 6. Offen — nicht selbst zu entscheiden
 
-Beide bleiben **UNKNOWN** (bestätigt am 2026-09-07). Keine Eigenentscheidung,
+Beide bleiben **UNKNOWN** (bestätigt am 2026-09-07, erneut bekräftigt mit der
+Owner-Freigabe desselben Tages: „Keine künstliche Entscheidung, kein
+vermeintlich cleverer Default. Sie bleiben offen, bis die benötigte Evidenz
+vorliegt."). Keine Eigenentscheidung,
 keine Ableitung aus Architekturannahmen, kein naheliegender Default: UNKNOWN
 ist hier das **richtige** Ergebnis und bleibt stehen, bis Belege vorliegen.
 Sie werden auch nicht durch Umsetzung vorweggenommen:
@@ -221,12 +249,21 @@ Sie werden auch nicht durch Umsetzung vorweggenommen:
 
 ## 7. Reihenfolge
 
-Vom Eigentümer am 2026-09-07 festgelegt:
+**Verbindliche technische Reihenfolge**, vom Eigentümer am 2026-09-07 gesetzt
+und mit der Freigabe desselben Tages präzisiert:
 
 ```text
-#1254  →  #1257 Recheck gegen den tatsächlichen main-Stand  →  #1258 Audit
-       →  Action Contract  →  PR C  →  PR D  →  E  →  F
+#1254
+  →  #1257 Revalidation gegen den dann tatsächlichen main-Stand
+  →  Refinement-Invariant-Fix        (page-creation-invarianten.md)
+  →  C0                              (atomare Batches, §3a)
+  →  Action Contract / Core Tests
+  →  C (AI Actions)
 ```
+
+**Das LLM kommt erst danach.** #1258 wird separat nach seinem tatsächlichen
+Inhalt bewertet und ist kein Glied dieser Kette; PR D, E und F folgen nach C
+wie im Zielbild beschrieben.
 
 - **#1254 zuerst.** #1257 ist NO-GO vor #1254 — Reihenfolgeabhängigkeit, keine
   Vorliebe. Keine Umgehung durch Rebase oder Force-Push ohne erneute Prüfung.
@@ -242,4 +279,5 @@ Vom Eigentümer am 2026-09-07 festgelegt:
 | `app-builder-zielbild.md` | Produktsicht A–F; §5 nennt C als PLANNED |
 | `docs/architecture/target-architecture.md` §8.2 | normative Zielkette; dieser Contract füllt ihre zweite Stufe |
 | `docs/SITEOS_ARCHITECTURE.md` §5c | Edit-Pipeline, in die C mündet |
+| `docs/product/page-creation-invarianten.md` | STOP-Befund: zwei Seiten-Erzeugungspfade, eine Sicherheitslage. **Vor** C0 |
 | `docs/product/tech-debt-freeslug-determinismus.md` | offener Determinismus-Befund im Kern (TECH-DEBT / PARTIAL), berührt C0 |

@@ -7,6 +7,12 @@ Functions per Management-API gegen `ebljyceifhnlzhjfyxup`.
 **Reines Lesen.** Nichts gelöscht, nichts geändert, kein Aufräum-PR.
 Löschvorschläge erst nach Freigabe des Eigentümers.
 
+> **Herkunft dieses Dokuments**: Erstellt am 2026-09-07 auf eine kurze
+> Zustimmung, die der Eigentümer nachträglich ausdrücklich als **nicht
+> autorisiert** festgestellt hat. Der **Inhalt** ist mit der Owner-Freigabe vom
+> selben Tag zur Weiterverwendung freigegeben; die **Herkunft** bleibt als
+> unautorisiert vermerkt.
+
 **Methode**: Ein Grep-Treffer ist **kein** Beleg. Für jeden Eintrag wird die
 Routing-Frage gestellt — dieselbe Lehre wie bei den vier statt fünf Consumern
 des Einstiegs am selben Tag. Maßgeblich ist der Importgraph ab `src/main.tsx`,

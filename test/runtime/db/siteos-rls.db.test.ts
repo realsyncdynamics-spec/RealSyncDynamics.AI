@@ -66,16 +66,19 @@ d('SiteOS / RLS auf siteos_blueprints (DB)', () => {
         `UPDATE public.siteos_blueprints SET name = 'gekapert' WHERE id = $1`, [idB],
       );
       expect(upd.rowCount).toBe(0);
-
-      // Kein INSERT-Recht, auch nicht in den eigenen Mandanten: Versionen
-      // vergibt allein die Edge Function (service_role).
-      await expect(ctx!.client.query(
-        `INSERT INTO public.siteos_blueprints
-           (tenant_id, slug, name, industry, version, blueprint, content_sha256)
-         VALUES ($1, 'eigene', 'Eigene', 'sonstiges', 1, '{}'::jsonb, $2)`,
-        [A.tenantId, SHA_A],
-      )).rejects.toThrow(/row-level security|permission denied/i);
     });
+
+    // Kein INSERT-Recht, auch nicht in den eigenen Mandanten: Versionen
+    // vergibt allein die Edge Function (service_role). Der Fehler muss aus
+    // `withClaims` herauslaufen, damit der Helper auf den Savepoint
+    // zurückrollt — ein innerhalb abgefangener Fehler ließe die Transaktion
+    // abgebrochen zurück (RELEASE SAVEPOINT schlägt dann fehl).
+    await expect(ctx!.withClaims({ sub: A.userId }, () => ctx!.client.query(
+      `INSERT INTO public.siteos_blueprints
+         (tenant_id, slug, name, industry, version, blueprint, content_sha256)
+       VALUES ($1, 'eigene', 'Eigene', 'sonstiges', 1, '{}'::jsonb, $2)`,
+      [A.tenantId, SHA_A],
+    ))).rejects.toThrow(/row-level security|permission denied/i);
 
     // Der Fremdversuch hat nichts verändert.
     const check = await ctx!.client.query<{ name: string }>(`SELECT name FROM public.siteos_blueprints WHERE id = $1`, [idB]);

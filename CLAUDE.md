@@ -25,7 +25,7 @@ Agenten-Systeme und Creator-Verifikation.
 - **Evidence Vault** (90%) — Ingestion, Retrieval, Hash-Chain-Verifizierung, PDF/JSON-Export, Compliance-Hold
 - **Governance Runtime** (85%) — Sentinel-Loop, SLO-Tracking, Auto-Mapping (Asset → Control-Status), Incident-Dispatch
 - **Provenance (C2PA)** (80%) — Ed25519-Signatur, Custody-Auto-Capture, Externe Verifizierung
-- **SiteOS** (Phase 1) — AI-native Website-Ebene: AI Builder (Prompt → geprüfter Blueprint), 8 Runtime-Analysen, 5 Live-Scores, 7 asynchrone Agenten. Kern in `packages/siteos-core` (abhängigkeitsfrei, läuft in Browser/Deno/Node). **Block-Editor** (seit 2026-09-06) auf `/unified-entry/transformation`: Puck (`@puckeditor/core`, MIT), kein Eigenbau — der Client schickt nur Reihenfolge und redaktionelle Felder an `siteos/edit`, Rechtsgrundlagen, Drittanbieter und KI-Kennzeichnung leitet der Server ab (`blueprint/edit.ts`). Architektur + bewusste Abweichungen vom Auftrag: `docs/SITEOS_ARCHITECTURE.md` (Editor: §5c). **Regel**: Befund-Codes und Scoring-Gewichte sind versionsrelevant — nicht ohne Entscheidung ändern.
+- **SiteOS** (Phase 1) — AI-native Website-Ebene: AI Builder (Prompt → geprüfter Blueprint), 8 Runtime-Analysen, 5 Live-Scores, 7 asynchrone Agenten. Kern in `packages/siteos-core` (abhängigkeitsfrei, läuft in Browser/Deno/Node). **Block-Editor** (seit 2026-09-06) im **App Builder Workspace** `/builder/:slug` (seit 2026-09-07; der Erstbau auf `/unified-entry/transformation` leitet dorthin): Puck (`@puckeditor/core`, MIT), kein Eigenbau — der Client schickt nur Reihenfolge und redaktionelle Felder an `siteos/edit`, Rechtsgrundlagen, Drittanbieter und KI-Kennzeichnung leitet der Server ab (`blueprint/edit.ts`). Architektur + bewusste Abweichungen vom Auftrag: `docs/SITEOS_ARCHITECTURE.md` (Editor: §5c, Workspace: §5d). **Regel**: Befund-Codes und Scoring-Gewichte sind versionsrelevant — nicht ohne Entscheidung ändern.
 
 **Compliance-Fokus**
 - EU AI Act
@@ -915,6 +915,8 @@ Vollständige Regeln: `docs/product/pricing-governance.md`
   > `/governance/score` existieren nicht und liefern „Seite nicht gefunden" —
   > im Browser gegen die Live-Seite geprüft. Wer der Doku folgte, verlinkte
   > ins Leere.
+- `/builder/:slug` → App Builder Workspace einer Site (auth-gated, prüft selbst;
+  Slug = Kette in `siteos_blueprints`). Kein zweiter Builder: Erstbau-Routen leiten hierher.
 - `/<branche>-landing` → Branchen-LPs
 - `/preview` · `/pricing` · `/contact-sales`
 

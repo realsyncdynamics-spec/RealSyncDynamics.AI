@@ -1,90 +1,155 @@
+// Einstieg in den App Builder — /unified-entry/transformation (und
+// /app/siteos/builder, dieselbe Komponente).
+//
+// Seit dem 2026-09-07 (Zielbild `docs/product/app-builder-zielbild.md` §4)
+// ist diese Seite **Einstieg, nicht Editor**: Sie fragt „Was möchtest du
+// bauen?", lässt den Server daraus eine Site erzeugen und leitet in den
+// Workspace `/builder/:slug`. Bearbeitet wird dort — ein Builder, nicht zwei.
+//
+// ## Zwei Wege, ein Server
+//
+//   • **Beschreibung** (primär): Der Text geht unverändert als `prompt` an
+//     `siteos/builder`. Der Server leitet daraus deterministisch Branche, Ort,
+//     Seitenplan und genannte Bausteine ab (`parseBrief`, `deriveRequests`,
+//     `refineBlueprint` — regelbasiert, **ohne Sprachmodell**). Genau diese
+//     Ableitung läuft hier im Browser vorab, damit die Seite vor dem Bau
+//     sagt, was erkannt wurde — und was nicht. Was der Kern nicht erkennt,
+//     wird nicht erfunden; die freie Umsetzung einer Beschreibung durch
+//     KI-Actions ist Schritt C und wird hier nicht vorgetäuscht.
+//   • **Bestehende Website** (sekundär, bis Schritt C live ist der einzige
+//     Weg mit echten Inhalten): `siteos/discover` liest die Ausgangsseite,
+//     der Builder baut aus Titel, Leistungen und Beschreibung. Aufrufer mit
+//     `?url=` (Audit-Handoff, WowPreview, „Mit KI neu bauen" aus dem
+//     Workspace) landen weiterhin direkt in diesem Pfad.
+//
+// Der Browser schickt in beiden Fällen keinen Blueprint. Was entsteht, prüft
+// und versioniert der Server (`persist.ts`); die Kette liegt in der
+// Datenbank, der Workspace lädt sie neu.
+
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ArrowRight, Check, ChevronLeft, Globe, Loader2, Monitor, Palette, RefreshCw, Smartphone, Sparkles, Tablet, Wand2 } from 'lucide-react';
+import { ArrowRight, ChevronLeft, Globe, Loader2, MessageSquareText, RefreshCw, Sparkles } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { getSupabase } from '../../lib/supabase';
 import { useTenant } from '../../core/access/TenantProvider';
 import { useSupabaseAuth } from '../../features/supabase/SupabaseAuthContext';
 import { buildSite, errorMessage } from '../../features/siteos/siteOsApi';
-import type { SiteBlueprint } from '../../../packages/siteos-core/src/index';
-import { renderSite } from '../../../packages/siteos-core/src/render/renderer';
-import { applySiteDesignTemplate, SITE_DESIGN_TEMPLATES, type SiteDesignTemplate } from '../../../packages/siteos-core/src/render/templates';
-import { createSiteOsCheckoutSession } from '../../features/billing/checkout';
-import { SandboxedPreviewFrame } from '../../components/preview/SandboxedPreviewFrame';
+import { deriveRequests, getIndustryPreset, parseBrief } from '../../../packages/siteos-core/src/index';
 import {
   EdgeFunctionAvailabilityNotice,
   allEdgeFunctionsAvailable,
 } from '../../components/landing/EdgeFunctionAvailabilityNotice';
 
 /**
- * Die Function, auf der dieser Builder steht.
- *
- * `siteos/discover` liest die Ausgangsseite, `siteos/builder` erzeugt daraus
- * den Blueprint. Beide sind Pfade **eines** Function-Slots `siteos` — geprueft
- * wird deshalb ein Name, nicht zwei. Bearbeitet wird der Blueprint nicht hier,
- * sondern im App Builder Workspace (`/builder/:slug`), in den diese Seite nach
- * dem Erstbau weiterleitet — ein Builder, nicht zwei (Phase 2, 2026-09-07). Fehlt er, gibt es nichts zu zeigen: Die
- * Oberflaeche zeigte einen leeren Rahmen und eine Fehlermeldung in der
- * Seitenleiste, waehrend die Kopfzeile „Ihre neue Website ist bereits
- * gebaut" behauptet.
- *
- * Geprueft wird **vor** dem Aufbau, nicht danach: Anders als beim
- * Onboarding kostet ein Fehlversuch hier keine Anfrage, sondern eine Minute
- * Ladebalken mit einem Versprechen darueber.
+ * Die Function, auf der dieser Einstieg steht. `siteos/discover` und
+ * `siteos/builder` sind Pfade **eines** Function-Slots `siteos` — geprüft wird
+ * deshalb ein Name. Geprüft wird **vor** dem Ladebalken: Ein Fehlversuch
+ * kostete sonst eine Minute Ladebalken mit einem Versprechen darüber.
  */
 const BUILDER_FUNCTIONS = ['siteos'] as const;
 
 type Discovery = { source_url: string; title: string | null; description: string | null; h1: string | null; services: string[]; visible_text: string };
-type Device = 'desktop' | 'tablet' | 'mobile';
+type Mode = 'describe' | 'url';
 
-const DEVICE_WIDTH: Record<Device, string> = { desktop: '100%', tablet: '820px', mobile: '390px' };
-const SECTIONS = ['Hero', 'Leistungen', 'Über uns', 'Vorteile', 'Referenzen', 'FAQ', 'Kontakt', 'Footer'];
+const EXAMPLE = 'Erstelle mir eine moderne Website für einen Sanitärbetrieb mit Startseite, Leistungen, Über uns, Kontakt und Terminbuchung';
+const MIN_DESCRIPTION = 8;
+const MAX_DESCRIPTION = 2000;
+
+/**
+ * Was der Kern aus der Beschreibung ableiten wird — dieselben Funktionen,
+ * die der Server benutzt, also keine Vorhersage, sondern das Ergebnis.
+ */
+export function recognizeDescription(text: string): {
+  industryLabel: string;
+  confident: boolean;
+  locality: string | null;
+  pages: string[];
+  requests: string[];
+} | null {
+  const trimmed = text.trim();
+  if (trimmed.length < MIN_DESCRIPTION) return null;
+  const brief = parseBrief(trimmed, 'de');
+  const preset = getIndustryPreset(brief.industry);
+  return {
+    industryLabel: preset.label,
+    confident: brief.industryConfident,
+    locality: brief.locality,
+    pages: preset.pagePlan.filter((page) => !page.noindex).map((page) => page.title),
+    requests: deriveRequests(trimmed).map((request) => request.replace(/ hinzufügen\.$/, '')),
+  };
+}
 
 export default function PreviewSelectionPage() {
   const navigate = useNavigate();
   const { activeTenantId, loading: tenantLoading } = useTenant();
   const { isAuthenticated } = useSupabaseAuth();
   const params = useMemo(() => new URLSearchParams(window.location.search), []);
-  // Die Ausgangs-URL kommt normalerweise als Query-Parameter (WowPreview,
-  // Audit-Handoff). Die Landing-CTA verlinkt aber ohne Parameter hierher —
-  // dann muss die Domain hier abgefragt werden, statt dass der Aufbau mit
-  // leerer URL still scheitert und der Ladebalken nie endet.
+  // `?url=` kommt von Aufrufern, die eine bestehende Website meinen
+  // (Audit-Handoff, WowPreview, Workspace-Neubau). Dann läuft der URL-Pfad
+  // sofort an — wie bisher. Ohne Parameter beginnt die Seite mit der Frage.
   const initialUrl = params.get('url') || params.get('domain') || '';
+  const auditId = params.get('auditId') || params.get('auditid') || '';
+  const variant = params.get('variant') || '';
+  const available = allEdgeFunctionsAvailable(BUILDER_FUNCTIONS);
+
+  const [mode, setMode] = useState<Mode>(initialUrl ? 'url' : 'describe');
+  const [description, setDescription] = useState('');
   const [sourceUrl, setSourceUrl] = useState(initialUrl);
   const [urlInput, setUrlInput] = useState(initialUrl);
   const [urlInputError, setUrlInputError] = useState('');
-  const auditId = params.get('auditId') || params.get('auditid') || '';
-  const [discovery, setDiscovery] = useState<Discovery | null>(null);
-  const [blueprint, setBlueprint] = useState<SiteBlueprint | null>(null);
-  const [template, setTemplate] = useState<SiteDesignTemplate>((params.get('variant') as SiteDesignTemplate) || 'modern-minimal');
-  const [device, setDevice] = useState<Device>('desktop');
-  // Ohne verfuegbares Backend oder ohne Ausgangs-URL gar nicht erst in den
-  // Ladezustand starten: Der Vollbild-Ladebalken „Ihre neue Website wird
-  // gebaut" waere sonst das Erste, was ein Nutzer sieht, und er stuende dort
-  // dauerhaft.
-  const [busy, setBusy] = useState(() => Boolean(initialUrl) && allEdgeFunctionsAvailable(BUILDER_FUNCTIONS));
+  const [busy, setBusy] = useState<false | Mode>(() => (initialUrl && available ? 'url' : false));
   const [error, setError] = useState('');
-  const [instruction, setInstruction] = useState('');
 
-  const build = useCallback(async (instructionOverride = '') => {
-    // Ohne URL fragt die Oberflaeche zuerst nach der Domain — kein Spinner.
-    if (!sourceUrl) { setBusy(false); return; }
-    // Solange der Tenant noch laedt, den Ladezustand halten: der Effect ruft
-    // nach dem Laden erneut auf. Fehlt danach ein Workspace, ist das ein
-    // echter Fehler und darf nicht als ewiger Ladebalken enden.
+  const recognition = useMemo(() => recognizeDescription(description), [description]);
+
+  const toWorkspace = useCallback((slug: string, source: string | null) => {
+    const search = new URLSearchParams();
+    if (source) search.set('source', source);
+    if (variant) search.set('variant', variant);
+    const query = search.toString();
+    navigate(`/builder/${encodeURIComponent(slug)}${query ? `?${query}` : ''}`, { replace: true });
+  }, [navigate, variant]);
+
+  const requireTenant = useCallback((): string | null => {
     if (!activeTenantId) {
       if (!tenantLoading) { setBusy(false); setError('Kein aktiver Workspace gefunden. Bitte erneut anmelden oder das Onboarding abschließen.'); }
-      return;
+      return null;
     }
-    // Vor dem Ladebalken, nicht danach — siehe BUILDER_FUNCTIONS.
-    if (!allEdgeFunctionsAvailable(BUILDER_FUNCTIONS)) { setBusy(false); return; }
-    setBusy(true); setError('');
+    if (!available) { setBusy(false); return null; }
+    return activeTenantId;
+  }, [activeTenantId, tenantLoading, available]);
+
+  // ── Weg 1: Beschreibung → Builder ─────────────────────────────────────
+  const buildFromDescription = useCallback(async () => {
+    const text = description.trim().slice(0, MAX_DESCRIPTION);
+    if (text.length < MIN_DESCRIPTION) return;
+    const tenantId = requireTenant();
+    if (!tenantId) return;
+    setBusy('describe'); setError('');
+    try {
+      // Unverändert als Prompt: Der Server leitet ab, der Browser schickt
+      // weder Brief noch Blueprint. Was der Prüfpfad festhält, ist genau
+      // dieser Text (als Hash) — nicht eine hier zusammengesetzte Fassung.
+      const result = await buildSite({ tenant_id: tenantId, prompt: text, locale: 'de' });
+      if (result.kind !== 'ok' || !result.data.blueprint) throw new Error(result.kind === 'ok' ? 'Blueprint fehlt.' : errorMessage(result));
+      toWorkspace(result.data.slug, null);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Die App konnte nicht erzeugt werden.');
+      setBusy(false);
+    }
+  }, [description, requireTenant, toWorkspace]);
+
+  // ── Weg 2: bestehende Website → Discover → Builder ─────────────────────
+  const buildFromUrl = useCallback(async (instructionOverride = '') => {
+    if (!sourceUrl) { setBusy(false); return; }
+    const tenantId = requireTenant();
+    if (!tenantId) return;
+    setBusy('url'); setError('');
     try {
       const sb = getSupabase();
-      const { data: found, error: discoveryError } = await sb.functions.invoke('siteos/discover', { body: { tenant_id: activeTenantId, url: sourceUrl } });
+      const { data: found, error: discoveryError } = await sb.functions.invoke('siteos/discover', { body: { tenant_id: tenantId, url: sourceUrl } });
       if (discoveryError) throw discoveryError;
       const site = found as Discovery;
       if (!site?.source_url) throw new Error('Die Ausgangswebsite konnte nicht analysiert werden.');
-      setDiscovery(site);
       const prompt = [
         'Erstelle ein vollständiges, hochwertiges Redesign als echtes RealSync SiteOS-Projekt.',
         `Ausgangswebsite: ${site.source_url}.`,
@@ -95,26 +160,26 @@ export default function PreviewSelectionPage() {
         'SEO-fähig, DSGVO-bewusst, barrierearm, EU-AI-Act-ready und ohne fremde Tracker oder Scripts.',
         instructionOverride ? `Zusätzliche Kundenanweisung: ${instructionOverride}` : '',
       ].filter(Boolean).join('\n');
-      const result = await buildSite({ tenant_id: activeTenantId, prompt, locale: 'de', enrichment: { name: site.title ?? site.h1 ?? undefined, summary: site.description ?? site.visible_text.slice(0, 600), services: site.services } });
+      const result = await buildSite({ tenant_id: tenantId, prompt, locale: 'de', enrichment: { name: site.title ?? site.h1 ?? undefined, summary: site.description ?? site.visible_text.slice(0, 600), services: site.services } });
       if (result.kind !== 'ok' || !result.data.blueprint) throw new Error(result.kind === 'ok' ? 'Blueprint fehlt.' : errorMessage(result));
-      setBlueprint(result.data.blueprint);
-      // Übergabe an den Workspace: Die Ausgangs-URL wandert mit, damit dort
-      // „Mit KI neu bauen" und der Checkout dieselbe Quelle kennen. Die
-      // Kette selbst liegt in der Datenbank; der Workspace lädt sie neu.
-      navigate(`/builder/${encodeURIComponent(result.data.slug)}?source=${encodeURIComponent(site.source_url)}`, { replace: true });
-    } catch (cause) { setError(cause instanceof Error ? cause.message : 'Die neue Website konnte nicht erzeugt werden.'); }
-    finally { setBusy(false); }
-  }, [activeTenantId, tenantLoading, sourceUrl]);
+      // Die Ausgangs-URL wandert mit, damit der Workspace für „Mit KI neu
+      // bauen" und den Checkout dieselbe Quelle kennt.
+      toWorkspace(result.data.slug, site.source_url);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Die neue Website konnte nicht erzeugt werden.');
+      setBusy(false);
+    }
+  }, [sourceUrl, requireTenant, toWorkspace]);
 
   useEffect(() => {
     if (!isAuthenticated) { navigate(`/welcome?next=${encodeURIComponent(window.location.pathname + window.location.search)}`); return; }
     // Der Workspace schickt Anweisungen für einen KI-Neubau als Parameter
-    // hierher — derselbe Weg, den „AI anwenden" auf dieser Seite nimmt.
-    void build(params.get('instruction') ?? '');
-  }, [build, isAuthenticated, navigate, params]);
+    // hierher; Aufrufer mit `?url=` erwarten den sofortigen Aufbau.
+    if (sourceUrl) void buildFromUrl(params.get('instruction') ?? '');
+  }, [buildFromUrl, isAuthenticated, navigate, params, sourceUrl]);
 
   // Nutzereingabe der Ausgangsdomain: nachsichtig normalisieren (Protokoll
-  // ergaenzen), aber vor dem Start pruefen — eine unbrauchbare URL wuerde
+  // ergänzen), aber vor dem Start prüfen — eine unbrauchbare URL würde
   // sonst erst nach dem Ladebalken als Discovery-Fehler sichtbar.
   const submitUrl = (raw: string) => {
     const trimmed = raw.trim();
@@ -125,45 +190,124 @@ export default function PreviewSelectionPage() {
     if (!parsed.hostname.includes('.')) { setUrlInputError('Bitte eine vollständige Domain angeben, z. B. ihre-firma.de.'); return; }
     setUrlInputError('');
     const normalized = parsed.toString();
-    // Query-Parameter mitschreiben, damit Reload und geteilte Links denselben
-    // Stand zeigen wie die Eingabe.
     const search = new URLSearchParams(window.location.search);
     search.set('url', normalized);
     navigate({ search: `?${search.toString()}` }, { replace: true });
     setSourceUrl(normalized);
   };
 
-  const previewBlueprint = useMemo(() => blueprint ? applySiteDesignTemplate(blueprint, template) : null, [blueprint, template]);
-  // `showcase` haengt die Layoutschicht aus `render/presentation.ts` an.
-  // Ohne sie zeigt die Vorlagenauswahl ein rohes HTML-Dokument, und die
-  // Auswahl darueber bleibt wirkungslos: Sie tauscht nur Farb-Tokens, auf
-  // die ohne Layoutschicht nichts reagiert. Der Renderer-Default bleibt
-  // `minimal`, weil er die Grundlage der Artefakt-Hashes ist.
-  const previewHtml = useMemo(() => previewBlueprint ? renderSite(previewBlueprint, { baseUrl: sourceUrl, presentation: 'showcase' }).find(page => page.path === '/')?.html ?? '' : '', [previewBlueprint, sourceUrl]);
-
-  const checkout = async () => {
-    if (!activeTenantId || !discovery) return;
-    setBusy(true); setError('');
-    try {
-      const result = await createSiteOsCheckoutSession({ tenantId: activeTenantId, sourceUrl: discovery.source_url, siteSlug: blueprint?.slug, projectName: discovery.title ?? discovery.h1 ?? undefined });
-      if (!result.ok || !result.url) throw new Error(result.error?.message ?? 'Checkout konnte nicht vorbereitet werden.');
-      window.location.assign(result.url);
-    } catch (cause) { setError(cause instanceof Error ? cause.message : 'Checkout konnte nicht vorbereitet werden.'); setBusy(false); }
-  };
+  const canDescribe = available && description.trim().length >= MIN_DESCRIPTION && !busy;
 
   return (
     <main className="min-h-screen bg-[#f3f5f7] text-[#111827]">
       <header className="sticky top-0 z-50 flex h-16 items-center justify-between border-b border-black/[.08] bg-white/95 px-4 backdrop-blur sm:px-6">
-        <div className="flex items-center gap-3"><button onClick={() => navigate(-1)} className="rounded-lg p-2 hover:bg-black/[.05]" aria-label="Zurück"><ChevronLeft size={18}/></button><div className="grid h-8 w-8 place-items-center rounded-lg bg-[#07111f] text-cyan-300"><Sparkles size={15}/></div><div><div className="text-sm font-bold">RealSync SiteOS Builder</div><div className="text-[10px] text-black/45">{allEdgeFunctionsAvailable(BUILDER_FUNCTIONS) ? 'Ihre neue Website ist bereits gebaut' : 'Aufbau derzeit nicht verfügbar'}</div></div></div>
-        <div className="flex items-center gap-2"><span className="hidden rounded-full bg-emerald-50 px-3 py-1.5 text-[10px] font-semibold text-emerald-700 sm:inline">Live Preview</span><button onClick={() => void checkout()} disabled={!blueprint || busy} className="inline-flex items-center gap-2 rounded-lg bg-[#111827] px-4 py-2 text-xs font-bold text-white disabled:opacity-40">Fertig umsetzen <ArrowRight size={14}/></button></div>
+        <div className="flex items-center gap-3">
+          <button onClick={() => navigate(-1)} className="rounded-lg p-2 hover:bg-black/[.05]" aria-label="Zurück"><ChevronLeft size={18} /></button>
+          <div className="grid h-8 w-8 place-items-center rounded-lg bg-[#07111f] text-cyan-300"><Sparkles size={15} /></div>
+          <div>
+            <div className="text-sm font-bold">RealSync SiteOS Builder</div>
+            <div className="text-[10px] text-black/45">{available ? 'Beschreiben · bauen lassen · im Workspace bearbeiten' : 'Aufbau derzeit nicht verfügbar'}</div>
+          </div>
+        </div>
       </header>
-      <div className="grid min-h-[calc(100vh-4rem)] lg:grid-cols-[230px_minmax(0,1fr)_300px]">
-        <aside className="hidden border-r border-black/[.07] bg-white p-4 lg:block"><div className="mb-4 text-[10px] font-bold uppercase tracking-[.16em] text-black/35">Seitenstruktur</div>{SECTIONS.map((s, i) => <button key={s} className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-xs hover:bg-black/[.04]"><span className="grid h-6 w-6 place-items-center rounded-md bg-black/[.04] text-[9px] text-black/45">{i + 1}</span>{s}</button>)}<div className="mt-7 border-t border-black/[.07] pt-5"><div className="mb-3 text-[10px] font-bold uppercase tracking-[.16em] text-black/35">Design</div>{SITE_DESIGN_TEMPLATES.map(item => <button key={item.id} onClick={() => setTemplate(item.id)} className={`mb-2 flex w-full items-center justify-between rounded-lg border px-3 py-2.5 text-xs ${template === item.id ? 'border-cyan-400/40 bg-cyan-50 text-cyan-800' : 'border-black/[.07]'}`}>{item.label}{template === item.id && <Check size={14}/>}</button>)}</div></aside>
-        <section className="min-w-0 p-3 sm:p-5"><div className="mb-3 flex items-center justify-between rounded-xl border border-black/[.07] bg-white px-3 py-2 shadow-sm"><div className="min-w-0 truncate text-xs font-semibold">{discovery?.title || sourceUrl || 'Ihre neue Website'}</div><div className="flex items-center gap-1 rounded-lg bg-black/[.04] p-1"><button onClick={() => setDevice('desktop')} className={`rounded-md p-1.5 ${device === 'desktop' ? 'bg-white shadow' : ''}`}><Monitor size={14}/></button><button onClick={() => setDevice('tablet')} className={`rounded-md p-1.5 ${device === 'tablet' ? 'bg-white shadow' : ''}`}><Tablet size={14}/></button><button onClick={() => setDevice('mobile')} className={`rounded-md p-1.5 ${device === 'mobile' ? 'bg-white shadow' : ''}`}><Smartphone size={14}/></button></div></div><div className="flex min-h-[calc(100vh-10rem)] items-start justify-center overflow-auto rounded-2xl border border-black/[.08] bg-[#dfe4ea] p-3 sm:p-6"><div style={{ width: DEVICE_WIDTH[device] }} className="overflow-hidden rounded-xl bg-white shadow-2xl"><SandboxedPreviewFrame title="Ihre neu gebaute Website" html={previewHtml} className="h-[760px] w-full border-0 bg-white" /></div></div></section>
-        <aside className="border-t border-black/[.07] bg-white p-4 lg:border-l lg:border-t-0 sm:p-5"><EdgeFunctionAvailabilityNotice functions={BUILDER_FUNCTIONS} title="Der Aufbau ist derzeit nicht verfügbar" detail="Die Dienste, die Ihre Ausgangsseite lesen und daraus einen Entwurf bauen, laufen noch nicht in Produktion. Sobald sie deployt sind, arbeitet diese Oberfläche ohne weitere Änderung." className="mb-5 border-amber-500/40 bg-amber-50 [&_p:first-child]:text-amber-900 [&_p:last-child]:text-amber-800/80" /><div className="flex items-center gap-2 text-sm font-bold"><Wand2 size={17} className="text-cyan-600"/> AI Website Editor</div><p className="mt-1 text-xs leading-5 text-black/45">Die Website ist bereits generiert. Sag der KI, was geändert werden soll.</p><textarea value={instruction} onChange={e => setInstruction(e.target.value)} placeholder="z. B. Hero hochwertiger, CTA stärker, mehr Vertrauen …" className="mt-4 min-h-28 w-full resize-none rounded-xl border border-black/[.08] p-3 text-xs outline-none"/><button onClick={() => { const text = instruction.trim(); if (text) { setInstruction(''); void build(text); } }} disabled={!instruction.trim() || busy} className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-[#111827] px-3 py-2.5 text-xs font-bold text-white disabled:opacity-40"><Wand2 size={14}/> AI anwenden</button><div className="mt-5 text-[10px] font-bold uppercase tracking-[.16em] text-black/35">Schnellaktionen</div>{['Hero hochwertiger machen','Conversion verbessern','Mobile optimieren','SEO stärken'].map(action => <button key={action} onClick={() => void build(action)} disabled={busy} className="mt-2 flex w-full items-center justify-between rounded-lg border border-black/[.07] px-3 py-2.5 text-left text-xs text-black/60 hover:bg-black/[.03] disabled:opacity-40">{action}<ArrowRight size={13}/></button>)}<div className="mt-6 rounded-xl border border-emerald-200 bg-emerald-50 p-4"><div className="text-xs font-bold text-emerald-800">Governance Layer</div><div className="mt-1 text-[11px] leading-5 text-emerald-700">SEO · DSGVO · Accessibility · EU AI Act · Evidence</div></div><button onClick={() => void checkout()} disabled={!blueprint || busy} className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-cyan-500 px-4 py-3 text-xs font-bold text-[#06111f] disabled:opacity-40">Website fertig umsetzen <ArrowRight size={14}/></button>{auditId && <div className="mt-3 text-[9px] text-black/30">Audit {auditId.slice(0, 12)}…</div>}{error && <div className="mt-4 rounded-lg border border-rose-200 bg-rose-50 p-3 text-[11px] leading-5 text-rose-700">{error}</div>}</aside>
+
+      <div className="mx-auto w-full max-w-2xl px-4 py-8 sm:px-6 sm:py-12">
+        <EdgeFunctionAvailabilityNotice
+          functions={BUILDER_FUNCTIONS}
+          title="Der Aufbau ist derzeit nicht verfügbar"
+          detail="Die Dienste, die aus einer Beschreibung oder einer Ausgangsseite einen Entwurf bauen, laufen noch nicht in Produktion. Sobald sie deployt sind, arbeitet diese Seite ohne weitere Änderung."
+          className="mb-5 border-amber-500/40 bg-amber-50 [&_p:first-child]:text-amber-900 [&_p:last-child]:text-amber-800/80"
+        />
+
+        {mode === 'describe' ? (
+          <form onSubmit={(e) => { e.preventDefault(); void buildFromDescription(); }} className="rounded-2xl bg-white p-6 shadow-2xl sm:p-8">
+            <div className="grid h-12 w-12 place-items-center rounded-full bg-cyan-50 text-cyan-600"><MessageSquareText size={22} /></div>
+            <h1 className="mt-4 text-xl font-bold sm:text-2xl">Was möchtest du bauen?</h1>
+            <p className="mt-2 text-sm leading-6 text-black/55">Beschreiben Sie die Anwendung in eigenen Worten — Branche, Ort, gewünschte Seiten und Funktionen. RealSync baut daraus eine strukturierte Site, die Sie im Workspace visuell bearbeiten.</p>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value.slice(0, MAX_DESCRIPTION))}
+              autoFocus
+              rows={4}
+              maxLength={MAX_DESCRIPTION}
+              placeholder={`z. B. ${EXAMPLE}`}
+              aria-label="Was möchtest du bauen?"
+              className="mt-5 w-full resize-none rounded-xl border border-black/[.08] px-4 py-3 text-sm leading-6 outline-none focus:border-cyan-400/60"
+            />
+
+            {/* Was der Server daraus macht — vor dem Bau, aus denselben Funktionen. */}
+            <div data-testid="recognition" className="mt-4 rounded-xl border border-black/[.07] bg-[#f8fafc] p-4 text-xs leading-5">
+              <div className="text-[10px] font-bold uppercase tracking-[.16em] text-black/35">Erkannt aus Ihrer Beschreibung</div>
+              {!recognition ? (
+                <p className="mt-2 text-black/45">Sobald Sie schreiben, steht hier, was RealSync daraus ableitet — Branche, Ort, Seitenplan und genannte Bausteine.</p>
+              ) : (
+                <dl className="mt-2 grid grid-cols-[92px_minmax(0,1fr)] gap-x-3 gap-y-1">
+                  <dt className="text-black/45">Branche</dt>
+                  <dd>{recognition.confident ? recognition.industryLabel : <span className="text-amber-800">Nicht sicher erkannt — es wird die allgemeine Vorlage („{recognition.industryLabel}") verwendet.</span>}</dd>
+                  <dt className="text-black/45">Ort</dt>
+                  <dd>{recognition.locality ?? <span className="text-black/45">nicht genannt</span>}</dd>
+                  <dt className="text-black/45">Seiten</dt>
+                  <dd>{recognition.pages.join(' · ')} <span className="text-black/45">(Seitenplan der Branche)</span></dd>
+                  <dt className="text-black/45">Zusätzlich</dt>
+                  <dd>{recognition.requests.length > 0 ? recognition.requests.join(' · ') : <span className="text-black/45">keine weiteren Bausteine erkannt</span>}</dd>
+                </dl>
+              )}
+              <p className="mt-3 border-t border-black/[.06] pt-3 text-[11px] leading-5 text-black/50">
+                Regelbasiert, ohne Sprachmodell: Erkannt werden Branche, Ort und genannte Bausteine; die Seiten kommen aus dem Seitenplan der Branche. Was nicht erkannt wird, wird nicht erfunden. Seiten und Inhalte bearbeiten Sie anschließend im Workspace; die freie Umsetzung Ihrer Beschreibung durch KI-Actions folgt in einem späteren Schritt.
+              </p>
+            </div>
+
+            {error && <div className="mt-4 rounded-lg border border-rose-200 bg-rose-50 p-3 text-[11px] leading-5 text-rose-700">{error}</div>}
+
+            <button type="submit" disabled={!canDescribe} className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#111827] px-4 py-3 text-sm font-bold text-white disabled:opacity-40">
+              App bauen <ArrowRight size={15} />
+            </button>
+            <button type="button" onClick={() => { setMode('url'); setError(''); }} className="mt-4 inline-flex w-full items-center justify-center gap-2 text-xs font-semibold text-black/55 hover:text-black">
+              <Globe size={13} /> Sie haben schon eine Website? Bestehende Website neu bauen
+            </button>
+          </form>
+        ) : (
+          <form onSubmit={(e) => { e.preventDefault(); submitUrl(urlInput); }} className="rounded-2xl bg-white p-6 shadow-2xl sm:p-8">
+            <div className="grid h-12 w-12 place-items-center rounded-full bg-cyan-50 text-cyan-600"><Globe size={22} /></div>
+            <h1 className="mt-4 text-xl font-bold sm:text-2xl">Welche Website sollen wir neu bauen?</h1>
+            <p className="mt-2 text-sm leading-6 text-black/55">Geben Sie die Adresse Ihrer bestehenden Website ein. RealSync liest Titel, Leistungen und Beschreibung aus und baut daraus ein SiteOS-Redesign, das Sie im Workspace bearbeiten.</p>
+            <input
+              value={urlInput}
+              onChange={(e) => setUrlInput(e.target.value)}
+              autoFocus
+              inputMode="url"
+              autoComplete="url"
+              placeholder="ihre-firma.de"
+              aria-label="Adresse Ihrer bestehenden Website"
+              className="mt-5 w-full rounded-xl border border-black/[.08] px-4 py-3 text-sm outline-none focus:border-cyan-400/60"
+            />
+            {urlInputError && <p className="mt-2 text-xs leading-5 text-rose-600">{urlInputError}</p>}
+            {error && <div className="mt-4 rounded-lg border border-rose-200 bg-rose-50 p-3 text-[11px] leading-5 text-rose-700">{error}</div>}
+            <button type="submit" disabled={!available || Boolean(busy)} className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#111827] px-4 py-3 text-sm font-bold text-white disabled:opacity-40">
+              Website neu bauen <ArrowRight size={15} />
+            </button>
+            <button type="button" onClick={() => { setMode('describe'); setError(''); }} className="mt-4 inline-flex w-full items-center justify-center gap-2 text-xs font-semibold text-black/55 hover:text-black">
+              <MessageSquareText size={13} /> Stattdessen beschreiben, was gebaut werden soll
+            </button>
+            {auditId && <div className="mt-3 text-center text-[9px] text-black/30">Audit {auditId.slice(0, 12)}…</div>}
+          </form>
+        )}
       </div>
-      {busy && <div className="fixed inset-0 z-[60] grid place-items-center bg-[#07111f]/70 p-5 backdrop-blur-sm"><div className="w-full max-w-md rounded-2xl bg-white p-7 text-center shadow-2xl"><div className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-cyan-50 text-cyan-600"><Loader2 className="animate-spin" size={22}/></div><h2 className="mt-4 text-lg font-bold">Ihre neue Website wird gebaut</h2><p className="mt-2 text-sm leading-6 text-black/50">RealSync analysiert die bestehende Website und erzeugt daraus gerade ein vollständiges SiteOS-Redesign.</p><div className="mt-5 flex items-center justify-center gap-2 text-[10px] text-black/35"><RefreshCw size={12} className="animate-spin"/> Analyse · Blueprint · Render</div></div></div>}
-      {!sourceUrl && !busy && <div className="fixed inset-0 z-[60] grid place-items-center bg-[#07111f]/70 p-5 backdrop-blur-sm"><form onSubmit={e => { e.preventDefault(); submitUrl(urlInput); }} className="w-full max-w-md rounded-2xl bg-white p-7 shadow-2xl"><div className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-cyan-50 text-cyan-600"><Globe size={22}/></div><h2 className="mt-4 text-center text-lg font-bold">Welche Website sollen wir neu bauen?</h2><p className="mt-2 text-center text-sm leading-6 text-black/50">Geben Sie die Adresse Ihrer bestehenden Website ein. RealSync analysiert sie und erzeugt daraus ein vollständiges SiteOS-Redesign.</p><input value={urlInput} onChange={e => setUrlInput(e.target.value)} autoFocus inputMode="url" autoComplete="url" placeholder="ihre-firma.de" aria-label="Adresse Ihrer bestehenden Website" className="mt-5 w-full rounded-xl border border-black/[.08] px-4 py-3 text-sm outline-none focus:border-cyan-400/60" />{urlInputError && <p className="mt-2 text-xs leading-5 text-rose-600">{urlInputError}</p>}<button type="submit" className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#111827] px-4 py-3 text-sm font-bold text-white">Website bauen <ArrowRight size={15}/></button></form></div>}
+
+      {busy && (
+        <div className="fixed inset-0 z-[60] grid place-items-center bg-[#07111f]/70 p-5 backdrop-blur-sm" role="status" aria-live="polite">
+          <div className="w-full max-w-md rounded-2xl bg-white p-7 text-center shadow-2xl">
+            <div className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-cyan-50 text-cyan-600"><Loader2 className="animate-spin" size={22} /></div>
+            <h2 className="mt-4 text-lg font-bold">{busy === 'describe' ? 'Ihre App wird gebaut' : 'Ihre neue Website wird gebaut'}</h2>
+            <p className="mt-2 text-sm leading-6 text-black/50">
+              {busy === 'describe'
+                ? 'RealSync leitet aus Ihrer Beschreibung Branche, Seitenplan und Bausteine ab, prüft das Ergebnis und legt die erste Version an.'
+                : 'RealSync liest die bestehende Website aus, baut daraus ein SiteOS-Redesign, prüft es und legt die erste Version an.'}
+            </p>
+            <div className="mt-5 flex items-center justify-center gap-2 text-[10px] text-black/35"><RefreshCw size={12} className="animate-spin" /> {busy === 'describe' ? 'Beschreibung · Blueprint · Prüfung' : 'Analyse · Blueprint · Prüfung'}</div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

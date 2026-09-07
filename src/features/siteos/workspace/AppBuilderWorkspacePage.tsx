@@ -88,7 +88,12 @@ export default function AppBuilderWorkspacePage(): ReactElement {
   const [pagePath, setPagePath] = useState('/');
   const [mode, setMode] = useState<Mode>('edit');
   const [device, setDevice] = useState<Device>('desktop');
-  const [template, setTemplate] = useState<SiteDesignTemplate>('modern-minimal');
+  // Die Design-Vorlage aus der WowPreview kommt über den Einstieg als
+  // `?variant=` mit; unbekannte Werte fallen auf die Vorgabe zurück.
+  const [template, setTemplate] = useState<SiteDesignTemplate>(() => {
+    const wanted = params.get('variant');
+    return SITE_DESIGN_TEMPLATES.some((item) => item.id === wanted) ? (wanted as SiteDesignTemplate) : 'modern-minimal';
+  });
   const [navTab, setNavTab] = useState<NavTab>('pages');
   const [rightTab, setRightTab] = useState<RightTab>('assistant');
   const [bottomTab, setBottomTab] = useState<BottomTab>('console');

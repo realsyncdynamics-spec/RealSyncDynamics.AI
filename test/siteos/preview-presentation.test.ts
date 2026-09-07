@@ -40,7 +40,8 @@ const repoRoot = resolve(__dirname, '../..');
  */
 const PREVIEW_SURFACES = [
   'src/pages/WebsiteTransformationFlow.tsx',
-  'src/unified-entry/pages/PreviewSelectionPage.tsx',
+  // `src/unified-entry/pages/PreviewSelectionPage.tsx` ist seit 2026-09-07
+  // Einstieg ohne Vorschau — die Vorschau liegt im Workspace darunter.
   'src/unified-entry/pages/DashboardPreviewPage.tsx',
   'src/unified-entry/pages/BuildStudioPage.tsx',
   // App Builder Workspace (Phase 2, Schritt A): Vorschau der lokalen Fassung.

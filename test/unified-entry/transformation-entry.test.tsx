@@ -9,8 +9,10 @@ import { MemoryRouter } from 'react-router-dom';
  * `/unified-entry/transformation`. Vorher startete die Seite trotzdem sofort
  * den Vollbild-Ladebalken, während `build()` mangels URL still abbrach — der
  * Nutzer stand dauerhaft vor „Ihre neue Website wird gebaut", ohne je seine
- * Domain eingeben zu können. Seit der Korrektur fragt die Seite zuerst nach
- * der Domain und beginnt den Aufbau erst danach.
+ * Domain eingeben zu können. Seit der Korrektur beginnt der Aufbau erst nach
+ * einer Eingabe. Seit dem 2026-09-07 ist die erste Frage „Was möchtest du
+ * bauen?"; der URL-Weg ist der zweite und bleibt hier abgesichert: keine
+ * unbrauchbare Domain, kein Aufbau ohne Eingabe, kein Ladebalken vorab.
  */
 const invoke = vi.fn();
 vi.mock('../../src/lib/supabase', () => ({
@@ -63,9 +65,18 @@ beforeEach(() => {
   buildSite.mockReturnValue(new Promise(() => {}));
 });
 
+/** Vom Startzustand (Beschreibung) in den zweiten Weg (bestehende Website). */
+function openUrlPath() {
+  fireEvent.click(screen.getByRole('button', { name: /Bestehende Website neu bauen/ }));
+}
+
 describe('Transformation ohne url-Parameter', () => {
-  it('fragt zuerst nach der Domain statt einen endlosen Ladebalken zu zeigen', () => {
+  it('fragt zuerst, statt einen endlosen Ladebalken zu zeigen — und der URL-Weg ist einen Klick entfernt', () => {
     renderPage();
+    expect(screen.getByRole('heading', { name: 'Was möchtest du bauen?' })).toBeInTheDocument();
+    expect(screen.queryByText('Ihre neue Website wird gebaut')).not.toBeInTheDocument();
+    expect(screen.queryByText('Ihre App wird gebaut')).not.toBeInTheDocument();
+    openUrlPath();
     expect(screen.getByRole('heading', { name: /Welche Website sollen wir neu bauen\?/ })).toBeInTheDocument();
     expect(screen.queryByText('Ihre neue Website wird gebaut')).not.toBeInTheDocument();
     expect(invoke).not.toHaveBeenCalled();
@@ -73,9 +84,10 @@ describe('Transformation ohne url-Parameter', () => {
 
   it('startet den Aufbau nach der Eingabe mit ergänztem Schema', async () => {
     renderPage();
+    openUrlPath();
 
     fireEvent.change(screen.getByLabelText('Adresse Ihrer bestehenden Website'), { target: { value: 'ihre-firma.de' } });
-    fireEvent.click(screen.getByRole('button', { name: /Website bauen/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Website neu bauen/ }));
 
     await waitFor(() => expect(invoke).toHaveBeenCalled());
     expect(invoke).toHaveBeenCalledWith('siteos/discover', {
@@ -86,12 +98,13 @@ describe('Transformation ohne url-Parameter', () => {
 
   it('baut ohne brauchbare Domain nicht und erklärt warum', () => {
     renderPage();
+    openUrlPath();
 
-    fireEvent.click(screen.getByRole('button', { name: /Website bauen/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Website neu bauen/ }));
     expect(screen.getByText('Bitte geben Sie die Adresse Ihrer bestehenden Website ein.')).toBeInTheDocument();
 
     fireEvent.change(screen.getByLabelText('Adresse Ihrer bestehenden Website'), { target: { value: 'nur-ein-wort' } });
-    fireEvent.click(screen.getByRole('button', { name: /Website bauen/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Website neu bauen/ }));
     expect(screen.getByText('Bitte eine vollständige Domain angeben, z. B. ihre-firma.de.')).toBeInTheDocument();
 
     expect(invoke).not.toHaveBeenCalled();

@@ -576,6 +576,31 @@ verknüpft (Live-DB, 2026-09-07). Ein „Projekt" ist diese Kette. Der Erstbau
 (`/unified-entry/transformation`, `/app/siteos/builder`) leitet nach Erfolg
 hierher weiter — ein Builder, nicht zwei.
 
+**Der Einstieg fragt „Was möchtest du bauen?"** (seit 2026-09-07, Auftrag des
+Eigentümers). Die Seite ist Einstieg, nicht Editor: Die alte Vorschau-Shell
+mit fester Seitenstruktur, „AI Website Editor" und Schnellaktionen ist
+entfallen — sie zeigte „Ihre neue Website ist bereits gebaut", bevor etwas
+gebaut war, und der Editor liegt seit Schritt A im Workspace. Zwei Wege, ein
+Server:
+
+| Weg | Anfrage | Was der Server tut | Stand |
+|---|---|---|---|
+| **Beschreibung** (primär) | Text unverändert als `prompt` an `siteos/builder` | `parseBrief` (Branche, Ort), Seitenplan der Branche, `deriveRequests`/`refineBlueprint` (genannte Bausteine, „Seite X anlegen") — **regelbasiert, ohne Sprachmodell** | LIVE (Code): derselbe Pfad wie der anonyme Erstbau |
+| **Bestehende Website** (sekundär, per Link erreichbar; `?url=` startet ihn direkt) | `siteos/discover` → `siteos/builder` mit Titel, Leistungen, Beschreibung | wie bisher | LIVE (Code) |
+
+Die Seite zeigt **vor** dem Bau, was der Kern aus der Beschreibung ableiten
+wird (`recognizeDescription`: dieselben Funktionen wie der Server, im
+Browser) — Branche mit „nicht sicher erkannt", Ort, Seitenplan, erkannte
+Bausteine — und sagt dazu, dass nichts erfunden wird und die freie Umsetzung
+durch KI-Actions Schritt C ist. Gemessen am Beispiel des Eigentümers
+(„… Sanitärbetrieb mit Startseite, Leistungen, Über uns, Kontakt und
+Terminbuchung"): Branche Handwerk (sicher), kein Ort, Seiten Startseite ·
+Leistungen · Referenzen · Anfrage + Rechtsseiten, zusätzlich Terminbuchung
+und Über-uns-Bereich als Blöcke. „Über uns" und „Kontakt" werden **nicht**
+als eigene Seiten angelegt — das steht so in der Vorschau, statt es zu
+versprechen. `?variant=` aus der WowPreview wandert in den Workspace
+(Design-Vorlage der Leinwand).
+
 **Was der Workspace tut und woher es kommt**
 
 | Fläche | Quelle | Stand |

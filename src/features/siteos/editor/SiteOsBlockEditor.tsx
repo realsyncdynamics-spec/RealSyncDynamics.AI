@@ -56,6 +56,14 @@ export interface SiteOsBlockEditorProps {
    */
   renderLeft?: (parts: { outline: ReactNode; components: ReactNode }) => ReactNode;
   /**
+   * Eigene rechte Spalte des Gastgebers. Bekommt die Puck-Felder des
+   * ausgewählten Bausteins gereicht (samt Hinweis, was der Server beim
+   * Speichern ableitet) und ordnet sie selbst an — im Workspace als Tab
+   * „Eigenschaften" neben Assistent, Problemen und Governance. Ohne diese
+   * Funktion bleibt die Standardanordnung: Felder, dann `asideRight`.
+   */
+  renderRight?: (parts: { fields: ReactNode }) => ReactNode;
+  /**
    * Unterhalb von `lg` zeigt der Editor nur eine Spalte. Welche, bestimmt
    * der Gastgeber — ohne Angabe die Leinwand, wie bisher.
    */
@@ -138,7 +146,7 @@ export default function SiteOsBlockEditor(props: SiteOsBlockEditorProps): ReactE
   const {
     storedBlueprint, localBlueprint, template, pagePath, pageData,
     onPageDataChange, canvasWidth, asideLeft, asideRight, canvasHeader, revision,
-    renderLeft, mobilePane = 'canvas',
+    renderLeft, renderRight, mobilePane = 'canvas',
   } = props;
 
   const storedPage = storedBlueprint.pages.find((p) => p.path === pagePath) ?? storedBlueprint.pages[0];
@@ -211,10 +219,21 @@ export default function SiteOsBlockEditor(props: SiteOsBlockEditorProps): ReactE
           </section>
 
           <aside className={`${paneClass('right', mobilePane)} border-t border-black/[.07] bg-white p-4 lg:border-l lg:border-t-0 sm:p-5`}>
-            <div className={SECTION_LABEL}>Ausgewählter Baustein</div>
-            <PageEditNote pagePath={storedPage.path} pageData={pageData} />
-            <div className="text-xs [&_input]:text-xs [&_textarea]:text-xs"><Puck.Fields /></div>
-            {asideRight}
+            {renderRight ? renderRight({
+              fields: (
+                <>
+                  <PageEditNote pagePath={storedPage.path} pageData={pageData} />
+                  <div className="text-xs [&_input]:text-xs [&_textarea]:text-xs"><Puck.Fields /></div>
+                </>
+              ),
+            }) : (
+              <>
+                <div className={SECTION_LABEL}>Ausgewählter Baustein</div>
+                <PageEditNote pagePath={storedPage.path} pageData={pageData} />
+                <div className="text-xs [&_input]:text-xs [&_textarea]:text-xs"><Puck.Fields /></div>
+                {asideRight}
+              </>
+            )}
           </aside>
         </div>
       </Puck>

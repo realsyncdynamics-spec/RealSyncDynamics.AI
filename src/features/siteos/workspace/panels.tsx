@@ -1,5 +1,6 @@
-// Panels des App Builder Workspace — Projekt-Navigation, Assistent und die
-// unteren Leisten (Konsole, Probleme, Verlauf, Governance).
+// Panels des App Builder Workspace — Projekt-Navigation (links), die rechte
+// Spalte (Assistent · Eigenschaften · Probleme · Governance) und die unteren
+// Leisten (Konsole, Verlauf).
 //
 // Alles hier zeigt nur, was es gibt: Die Probleme kommen aus der statischen
 // Analyse des Kerns und den Blockern der letzten Gate-Bewertung, der Verlauf
@@ -7,7 +8,7 @@
 // Nichts wird abgeleitet, nichts erfunden (Zielarchitektur §3.1, §7 G2).
 
 import type { ReactElement, ReactNode } from 'react';
-import { AlertTriangle, Bot, CheckCircle2, ChevronRight, Info, ShieldCheck, XCircle } from 'lucide-react';
+import { AlertTriangle, Bot, CheckCircle2, ChevronRight, Info, ShieldAlert, ShieldCheck, ShieldQuestionMark, ShieldX, XCircle } from 'lucide-react';
 import type {
   PublishGateEvaluation,
   RuntimeFinding,
@@ -205,10 +206,91 @@ export function AssistantPanel(props: {
 }
 
 // ─────────────────────────────────────────────────────────────────────
+// Rechte Spalte — vier Tabs (Zielbild §4: Assistent · Properties · Problems · Governance)
+// ─────────────────────────────────────────────────────────────────────
+
+export type RightTab = 'assistant' | 'properties' | 'problems' | 'governance';
+
+export const RIGHT_TABS: ReadonlyArray<{ id: RightTab; label: string }> = [
+  { id: 'assistant', label: 'Assistent' },
+  { id: 'properties', label: 'Eigenschaften' },
+  { id: 'problems', label: 'Probleme' },
+  { id: 'governance', label: 'Governance' },
+];
+
+// ─────────────────────────────────────────────────────────────────────
+// Governance-Status der gespeicherten Version (Kopfzeile)
+// ─────────────────────────────────────────────────────────────────────
+
+export type GovernanceStatusKind = 'none' | 'publishable' | 'approval' | 'blocked';
+
+export interface GovernanceStatus {
+  kind: GovernanceStatusKind;
+  label: string;
+  /** Länger, für `title`. */
+  detail: string;
+  evaluation: EvaluationRow | null;
+}
+
+/**
+ * Leitet den Status aus der jüngsten gespeicherten Bewertung **dieser**
+ * Version ab — nicht aus der Kette insgesamt, und nie aus der lokalen,
+ * ungespeicherten Fassung. `evaluations` ist absteigend nach `evaluated_at`
+ * sortiert (`listEvaluations`), der erste Treffer ist der jüngste. Ohne
+ * Bewertung heißt es „keine", nicht „in Ordnung".
+ */
+export function governanceStatus(evaluations: EvaluationRow[], blueprintId: string): GovernanceStatus {
+  const evaluation = evaluations.find((ev) => ev.blueprint_id === blueprintId) ?? null;
+  if (!evaluation) {
+    return { kind: 'none', label: 'Keine Bewertung', detail: 'Für die gespeicherte Version liegt keine Bewertung des Publish Gates vor. „Prüfen" erzeugt eine.', evaluation };
+  }
+  if (evaluation.publishable) {
+    return { kind: 'publishable', label: 'Veröffentlichbar', detail: `Publish Gate: ${evaluation.status} · veröffentlichbar (${evaluation.evaluated_at.slice(0, 16).replace('T', ' ')}).`, evaluation };
+  }
+  if (evaluation.human_approval_required && !evaluation.approved_by) {
+    return { kind: 'approval', label: 'Freigabe nötig', detail: 'Das Publish Gate verlangt die Freigabe einer berechtigten Person.', evaluation };
+  }
+  const n = evaluation.blockers.length;
+  return { kind: 'blocked', label: n > 0 ? `Blockiert (${n})` : 'Blockiert', detail: `Publish Gate: ${evaluation.status}${n > 0 ? ` · ${n} Blocker` : ''}.`, evaluation };
+}
+
+const STATUS_CLASS: Record<GovernanceStatusKind, string> = {
+  none: 'bg-black/[.05] text-black/60',
+  publishable: 'bg-emerald-50 text-emerald-700',
+  approval: 'bg-amber-50 text-amber-800',
+  blocked: 'bg-rose-50 text-rose-700',
+};
+
+function StatusIcon({ kind }: { kind: GovernanceStatusKind }): ReactElement {
+  if (kind === 'publishable') return <ShieldCheck size={13} />;
+  if (kind === 'approval') return <ShieldAlert size={13} />;
+  if (kind === 'blocked') return <ShieldX size={13} />;
+  return <ShieldQuestionMark size={13} />;
+}
+
+/** Chip in der Kopfzeile; ein Klick öffnet den Governance-Tab. */
+export function GovernanceStatusChip({ status, onClick }: { status: GovernanceStatus; onClick: () => void }): ReactElement {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      data-testid="governance-status"
+      data-status={status.kind}
+      title={status.detail}
+      aria-label={`Governance: ${status.label}`}
+      className={`inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-[10px] font-semibold sm:px-3 sm:py-1.5 ${STATUS_CLASS[status.kind]}`}
+    >
+      <StatusIcon kind={status.kind} />
+      <span className="hidden sm:inline">{status.label}</span>
+    </button>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────
 // Untere Leisten
 // ─────────────────────────────────────────────────────────────────────
 
-export type BottomTab = 'console' | 'problems' | 'history' | 'governance';
+export type BottomTab = 'console' | 'history';
 
 export interface ConsoleEntry {
   at: string;
@@ -322,16 +404,16 @@ export function GovernancePanel(props: {
   const blocks = local.pages.flatMap((p) => p.blocks);
   const aiBlocks = blocks.filter((b) => b.aiGenerated).length;
   return (
-    <div className="grid gap-4 text-[11px] leading-5 lg:grid-cols-2">
+    <div className="grid gap-5 text-[11px] leading-5">
       <div>
         <div className={SECTION_LABEL}>Version</div>
-        <dl className="grid grid-cols-[110px_minmax(0,1fr)] gap-x-2">
+        <dl className="grid grid-cols-[92px_minmax(0,1fr)] gap-x-2">
           <dt className="text-black/45">Version</dt><dd>v{stored.version} · {stored.status}</dd>
-          <dt className="text-black/45">Hash</dt><dd className={MONO}>{stored.content_sha256}</dd>
-          <dt className="text-black/45">Vorgänger</dt><dd className={MONO}>{stored.prev_hash ?? '— (erste Version)'}</dd>
+          <dt className="text-black/45">Hash</dt><dd className={`${MONO} break-all`}>{stored.content_sha256}</dd>
+          <dt className="text-black/45">Vorgänger</dt><dd className={`${MONO} break-all`}>{stored.prev_hash ?? '— (erste Version)'}</dd>
           <dt className="text-black/45">Herkunft</dt><dd>{stored.origin_source}{stored.origin_model ? ` · ${stored.origin_model}` : ''}</dd>
           <dt className="text-black/45">KI-generiert</dt><dd>{aiBlocks} von {blocks.length} Blöcken{local.pages.some((p) => p.blocks.some((b) => b.kind === 'ai-disclosure')) ? ' · KI-Hinweis vorhanden' : ' · kein KI-Hinweis'}</dd>
-          <dt className="text-black/45">Nachweis-Ref</dt><dd className={MONO}>{assetRef}</dd>
+          <dt className="text-black/45">Nachweis-Ref</dt><dd className={`${MONO} break-all`}>{assetRef}</dd>
         </dl>
       </div>
       <div>

@@ -54,6 +54,7 @@ vi.mock('../../src/features/siteos/editor/SiteOsBlockEditor', () => ({
     const stored = props.storedBlueprint as SiteBlueprint;
     const change = props.onPageDataChange as (path: string, data: PuckPageData) => void;
     const renderLeft = props.renderLeft as (parts: { outline: React.ReactNode; components: React.ReactNode }) => React.ReactNode;
+    const renderRight = props.renderRight as (parts: { fields: React.ReactNode }) => React.ReactNode;
     return (
       <div data-testid="editor" data-revision={String(props.revision)} data-page={String(props.pagePath)} data-pane={String(props.mobilePane)}>
         <div data-testid="left">{renderLeft({ outline: <div>stub:outline</div>, components: <div>stub:components</div> })}</div>
@@ -64,7 +65,7 @@ vi.mock('../../src/features/siteos/editor/SiteOsBlockEditor', () => ({
           change('/', data);
         }}>stub:edit-hero</button>
         {props.canvasHeader as React.ReactNode}
-        <div data-testid="right">{props.asideRight as React.ReactNode}</div>
+        <div data-testid="right">{renderRight({ fields: <div>stub:fields</div> })}</div>
       </div>
     );
   },
@@ -274,7 +275,7 @@ describe('App Builder Workspace — Prüfung, Vorschau, Leisten', () => {
     renderWorkspace(blueprint.slug);
     await waitFor(() => expect(screen.getByTestId('editor')).toBeInTheDocument());
     const tabs = screen.getByRole('tablist', { name: 'Bereich' });
-    expect(within(tabs).getAllByRole('tab').map((t) => t.textContent)).toEqual(['Projekt', 'Editor', 'Assistent', 'Prüfung']);
+    expect(within(tabs).getAllByRole('tab').map((t) => t.textContent)).toEqual(['Projekt', 'Editor', 'Assistent', 'Protokoll']);
     fireEvent.click(within(tabs).getByRole('tab', { name: 'Assistent' }));
     await waitFor(() => expect(screen.getByTestId('editor').getAttribute('data-pane')).toBe('right'));
   });
@@ -297,5 +298,91 @@ describe('App Builder Workspace — Prüfung, Vorschau, Leisten', () => {
     expect(screen.getByLabelText('Anweisung an die KI')).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Mit KI neu bauen' })).toBeDisabled();
     expect(screen.queryByRole('button', { name: /Website fertig umsetzen/ })).not.toBeInTheDocument();
+  });
+});
+
+describe('App Builder Workspace — rechte Spalte und Governance-Status (A-Nachtrag)', () => {
+  function evaluationRow(over: Partial<{ blueprint_id: string; publishable: boolean; status: string; human_approval_required: boolean; approved_by: string | null; blockers: string[] }>) {
+    return {
+      id: 'ev-1', blueprint_id: 'bp-1', artifact_sha256: 'c'.repeat(64), blueprint_sha256: 'a'.repeat(64), status: 'blocked',
+      publishable: false, human_approval_required: false, blockers: [], warnings: [], approved_by: null, approved_at: null,
+      evaluated_at: '2026-09-07T10:00:00.000Z', ...over,
+    };
+  }
+
+  it('führt rechts die vier Tabs Assistent · Eigenschaften · Probleme · Governance; unten bleiben Konsole und Verlauf', async () => {
+    const { blueprint, sha256 } = await sample();
+    api.loadLatestBlueprint.mockResolvedValue(storedRow(blueprint, sha256));
+    renderWorkspace(blueprint.slug);
+    await waitFor(() => expect(screen.getByTestId('editor')).toBeInTheDocument());
+    const right = within(screen.getByTestId('right'));
+    const labels = right.getAllByRole('tab').map((t) => t.textContent?.replace(/ \(\d+\)$/, ''));
+    expect(labels).toEqual(['Assistent', 'Eigenschaften', 'Probleme', 'Governance']);
+    const bottom = within(screen.getByRole('tablist', { name: 'Leisten' }));
+    expect(bottom.getAllByRole('tab').map((t) => t.textContent)).toEqual(['Konsole', 'Verlauf']);
+    // Der Assistent ist der Startzustand; die Puck-Felder liegen im Tab „Eigenschaften".
+    expect(right.getByLabelText('Anweisung an die KI')).toBeInTheDocument();
+    expect(right.queryByText('stub:fields')).not.toBeInTheDocument();
+    fireEvent.click(right.getByRole('tab', { name: 'Eigenschaften' }));
+    expect(right.getByText('stub:fields')).toBeInTheDocument();
+    expect(right.getByText('Ausgewählter Baustein')).toBeInTheDocument();
+    fireEvent.click(right.getByRole('tab', { name: 'Governance' }));
+    expect(right.getByText(sha256)).toBeInTheDocument();
+  });
+
+  it('zeigt in der Kopfzeile „Keine Bewertung", solange keine Bewertung der gespeicherten Version vorliegt — nie „in Ordnung"', async () => {
+    const { blueprint, sha256 } = await sample();
+    api.loadLatestBlueprint.mockResolvedValue(storedRow(blueprint, sha256));
+    // Eine Bewertung einer **anderen** Version zählt nicht.
+    api.listEvaluations.mockResolvedValue([evaluationRow({ blueprint_id: 'bp-0', publishable: true, status: 'passed' })]);
+    renderWorkspace(blueprint.slug);
+    await waitFor(() => expect(screen.getByTestId('editor')).toBeInTheDocument());
+    await waitFor(() => expect(api.listEvaluations).toHaveBeenCalled());
+    const chip = screen.getByTestId('governance-status');
+    expect(chip.getAttribute('data-status')).toBe('none');
+    expect(chip).toHaveAccessibleName('Governance: Keine Bewertung');
+  });
+
+  it('leitet den Status aus der jüngsten Bewertung der gespeicherten Version ab und öffnet per Klick den Governance-Tab', async () => {
+    const { blueprint, sha256 } = await sample();
+    api.loadLatestBlueprint.mockResolvedValue(storedRow(blueprint, sha256));
+    api.listBlueprintChain.mockResolvedValue([{ id: 'bp-1', version: 1, content_sha256: sha256, prev_hash: null, status: 'draft', origin_model: null, created_at: '2026-09-06T00:00:00.000Z' }]);
+    api.listEvaluations.mockResolvedValue([
+      evaluationRow({ blockers: ['Impressum fehlt.', 'Datenschutz fehlt.'] }),
+      evaluationRow({ publishable: true, status: 'passed' }), // älter — zählt nicht
+    ]);
+    renderWorkspace(blueprint.slug);
+    await waitFor(() => expect(screen.getByTestId('governance-status').getAttribute('data-status')).toBe('blocked'));
+    const chip = screen.getByTestId('governance-status');
+    expect(chip).toHaveAccessibleName('Governance: Blockiert (2)');
+    fireEvent.click(chip);
+    const right = within(screen.getByTestId('right'));
+    expect(right.getByRole('tab', { name: 'Governance' }).getAttribute('aria-selected')).toBe('true');
+    expect(right.getByText(/Publish-Bewertungen \(2\)/)).toBeInTheDocument();
+  });
+
+  it('unterscheidet Freigabe nötig von veröffentlichbar', async () => {
+    const { blueprint, sha256 } = await sample();
+    api.loadLatestBlueprint.mockResolvedValue(storedRow(blueprint, sha256));
+    api.listEvaluations.mockResolvedValue([evaluationRow({ status: 'pending', human_approval_required: true })]);
+    renderWorkspace(blueprint.slug);
+    await waitFor(() => expect(screen.getByTestId('governance-status').getAttribute('data-status')).toBe('approval'));
+    expect(screen.getByTestId('governance-status')).toHaveAccessibleName('Governance: Freigabe nötig');
+  });
+
+  it('springt nach „Prüfen" in den Tab Probleme der rechten Spalte', async () => {
+    const { blueprint, sha256 } = await sample();
+    api.loadLatestBlueprint.mockResolvedValue(storedRow(blueprint, sha256));
+    api.evaluatePublish.mockResolvedValue({ kind: 'ok', data: { ok: true, evaluation: {
+      status: 'passed', evidence_complete: true, backend_preservation: 'preserve_all', policy_compliant: true,
+      human_approval_required: false, publishable: true, evaluated_at: '2026-09-07T10:00:00.000Z', evaluation_id: 'eval-9999-abcd',
+      artifact_sha256: 'c'.repeat(64), blockers: [], warnings: [],
+    } } });
+    renderWorkspace(blueprint.slug);
+    await waitFor(() => expect(screen.getByTestId('editor')).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: /Prüfen/ }));
+    await waitFor(() => expect(screen.getByText('Veröffentlichbar')).toBeInTheDocument());
+    const right = within(screen.getByTestId('right'));
+    expect(right.getByRole('tab', { name: /^Probleme/ }).getAttribute('aria-selected')).toBe('true');
   });
 });

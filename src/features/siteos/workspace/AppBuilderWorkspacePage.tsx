@@ -8,14 +8,17 @@
 // Was diese Seite tut: den jüngsten Stand laden, den Block-Editor aus #1248
 // darauf setzen, Bearbeitungen als `PageEdit` an `siteos/edit` schicken,
 // Vorschau über den einen Renderer zeigen, Probleme aus den vorhandenen
-// Validatoren, Verlauf und Governance aus der Datenbank.
+// Validatoren, Verlauf und Governance aus der Datenbank. Rechts vier Tabs
+// (Assistent · Eigenschaften · Probleme · Governance), in der Kopfzeile der
+// Governance-Status der gespeicherten Version — Zielbild
+// `docs/product/app-builder-zielbild.md` §4.
 //
 // Was sie nicht tut: keinen Blueprint aus dem Browser speichern (die
 // Sicherheitsbasis aus #1248 bleibt), keine Seiten anlegen (PR B), keinen
 // LLM-Assistenten (PR C), nichts veröffentlichen (PR D — es gibt keinen
 // Auslieferungspfad), keine Medien (PR E). Wo etwas fehlt, steht das dran.
 
-import { Suspense, lazy, useCallback, useEffect, useMemo, useState, type ReactElement } from 'react';
+import { Suspense, lazy, useCallback, useEffect, useMemo, useState, type ReactElement, type ReactNode } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import {
   ArrowRight, Check, ChevronLeft, Eye, Loader2, Monitor, PencilLine, Save, ShieldCheck,
@@ -41,8 +44,9 @@ import {
 } from '../siteOsApi';
 import { toPageEdit, type PuckPageData } from '../editor/blueprintPuckAdapter';
 import {
-  AssistantPanel, ConsolePanel, GovernancePanel, HistoryPanel, ProblemsPanel, ProjectNav, SECTION_LABEL,
-  type BottomTab, type ChainRow, type ConsoleEntry, type NavTab,
+  AssistantPanel, ConsolePanel, GovernancePanel, GovernanceStatusChip, HistoryPanel, ProblemsPanel, ProjectNav,
+  RIGHT_TABS, SECTION_LABEL, governanceStatus,
+  type BottomTab, type ChainRow, type ConsoleEntry, type NavTab, type RightTab,
 } from './panels';
 
 const SiteOsBlockEditor = lazy(() => import('../editor/SiteOsBlockEditor'));
@@ -56,10 +60,8 @@ export type SaveState = 'saved' | 'unsaved' | 'saving' | 'failed';
 
 const DEVICE_WIDTH: Record<Device, string> = { desktop: '100%', tablet: '820px', mobile: '390px' };
 const BOTTOM_TABS: ReadonlyArray<{ id: BottomTab; label: string }> = [
-  { id: 'problems', label: 'Probleme' },
   { id: 'console', label: 'Konsole' },
   { id: 'history', label: 'Verlauf' },
-  { id: 'governance', label: 'Governance' },
 ];
 
 export default function AppBuilderWorkspacePage(): ReactElement {
@@ -88,8 +90,9 @@ export default function AppBuilderWorkspacePage(): ReactElement {
   const [device, setDevice] = useState<Device>('desktop');
   const [template, setTemplate] = useState<SiteDesignTemplate>('modern-minimal');
   const [navTab, setNavTab] = useState<NavTab>('pages');
-  const [bottomTab, setBottomTab] = useState<BottomTab>('problems');
-  const [bottomOpen, setBottomOpen] = useState(true);
+  const [rightTab, setRightTab] = useState<RightTab>('assistant');
+  const [bottomTab, setBottomTab] = useState<BottomTab>('console');
+  const [bottomOpen, setBottomOpen] = useState(false);
   const [mobilePane, setMobilePane] = useState<MobilePane>('canvas');
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
@@ -171,6 +174,10 @@ export default function AppBuilderWorkspacePage(): ReactElement {
   );
   const findings = useMemo(() => localBlueprint ? analyzeBlueprint(localBlueprint) : [], [localBlueprint]);
   const saveState: SaveState = saving ? 'saving' : saveError ? 'failed' : dirty ? 'unsaved' : 'saved';
+  // Status der **gespeicherten** Version aus der jüngsten Bewertung — nur
+  // gelesen (`siteos_publish_evaluations`), nie aus der lokalen Fassung
+  // abgeleitet. Ohne Bewertung steht „keine" da, nicht „in Ordnung".
+  const govStatus = useMemo(() => governanceStatus(evaluations, stored?.id ?? ''), [evaluations, stored?.id]);
 
   const previewBlueprint = useMemo(() => localBlueprint ? applySiteDesignTemplate(localBlueprint, template) : null, [localBlueprint, template]);
   const previewHtml = useMemo(
@@ -223,7 +230,7 @@ export default function AppBuilderWorkspacePage(): ReactElement {
       const result = await evaluatePublish({ tenant_id: activeTenantId, blueprint_id: stored.id, base_url: sourceUrl ?? undefined });
       if (result.kind !== 'ok') throw new Error(errorMessage(result));
       setGate(result.data.evaluation);
-      setBottomTab('problems'); setBottomOpen(true);
+      setRightTab('problems'); setMobilePane('right');
       log(result.data.evaluation.publishable ? 'ok' : 'info', `Publish Gate: ${result.data.evaluation.status}${result.data.evaluation.publishable ? ' · veröffentlichbar' : ''} (${result.data.evaluation.blockers.length} Blocker).`);
       void loadGovernance(activeTenantId, stored.blueprint.slug);
     } catch (cause) {
@@ -299,6 +306,7 @@ export default function AppBuilderWorkspacePage(): ReactElement {
         </div>
       </div>
       <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+        <GovernanceStatusChip status={govStatus} onClick={() => { setRightTab('governance'); setMobilePane('right'); }} />
         <span
           data-testid="save-state"
           data-state={saveState}
@@ -348,7 +356,7 @@ export default function AppBuilderWorkspacePage(): ReactElement {
 
   const mobileTabs = (
     <div className="flex gap-1 border-b border-black/[.08] bg-white px-2 py-1.5 lg:hidden" role="tablist" aria-label="Bereich">
-      {([['left', 'Projekt'], ['canvas', mode === 'edit' ? 'Editor' : 'Vorschau'], ['right', 'Assistent'], ['panels', 'Prüfung']] as const).map(([id, label]) => (
+      {([['left', 'Projekt'], ['canvas', mode === 'edit' ? 'Editor' : 'Vorschau'], ['right', 'Assistent'], ['panels', 'Protokoll']] as const).map(([id, label]) => (
         <button key={id} role="tab" aria-selected={mobilePane === id} onClick={() => setMobilePane(id)} className={`rounded-md px-3 py-1.5 text-[11px] ${mobilePane === id ? 'bg-black/[.06] font-semibold' : 'text-black/55'}`}>{label}</button>
       ))}
     </div>
@@ -391,12 +399,46 @@ export default function AppBuilderWorkspacePage(): ReactElement {
     </AssistantPanel>
   );
 
+  // Rechte Spalte: vier Tabs (Zielbild §4). „Eigenschaften" sind die
+  // Puck-Felder des ausgewählten Bausteins — die gibt es nur im
+  // Bearbeiten-Modus; die Vorschau sagt das, statt ein leeres Feld zu zeigen.
+  const rightColumn = (fields: ReactNode | null) => (
+    <div>
+      <div className="mb-4 flex flex-wrap gap-1" role="tablist" aria-label="Werkzeuge">
+        {RIGHT_TABS.map((tab) => (
+          <button
+            key={tab.id}
+            role="tab"
+            aria-selected={rightTab === tab.id}
+            onClick={() => setRightTab(tab.id)}
+            className={`rounded-md px-2 py-1 text-[11px] ${rightTab === tab.id ? 'bg-black/[.06] font-semibold' : 'text-black/55 hover:bg-black/[.03]'}`}
+          >
+            {tab.label}{tab.id === 'problems' && findings.length > 0 ? ` (${findings.length})` : ''}
+          </button>
+        ))}
+      </div>
+      <div hidden={rightTab !== 'assistant'}>{assistant}</div>
+      {rightTab === 'properties' && (
+        fields ? (
+          <div>
+            <div className={SECTION_LABEL}>Ausgewählter Baustein</div>
+            {fields}
+          </div>
+        ) : (
+          <p className="text-[11px] leading-5 text-black/45">Eigenschaften stehen im Bearbeiten-Modus bereit — dort den Baustein in der Leinwand oder der Seitenstruktur auswählen.</p>
+        )
+      )}
+      {rightTab === 'problems' && <ProblemsPanel findings={findings} gate={gate} />}
+      {rightTab === 'governance' && <GovernancePanel stored={stored} local={localBlueprint} evaluations={evaluations} custody={custody} agentRuns={agentRuns} assetRef={assetRef} />}
+    </div>
+  );
+
   const bottomPanels = (
-    <section className="border-t border-black/[.08] bg-white" aria-label="Prüfung und Nachweise">
+    <section className="border-t border-black/[.08] bg-white" aria-label="Protokoll">
       <div className="flex flex-wrap items-center gap-1 px-3 py-1.5" role="tablist" aria-label="Leisten">
         {BOTTOM_TABS.map((tab) => (
           <button key={tab.id} role="tab" aria-selected={bottomTab === tab.id && bottomOpen} onClick={() => { setBottomTab(tab.id); setBottomOpen(true); }} className={`rounded-md px-3 py-1.5 text-[11px] ${bottomTab === tab.id && bottomOpen ? 'bg-black/[.06] font-semibold' : 'text-black/55 hover:bg-black/[.03]'}`}>
-            {tab.label}{tab.id === 'problems' && findings.length > 0 ? ` (${findings.length})` : ''}
+            {tab.label}
           </button>
         ))}
         <button onClick={() => setBottomOpen((o) => !o)} className="ml-auto rounded-md px-2 py-1 text-[11px] text-black/45 hover:bg-black/[.03]" aria-expanded={bottomOpen}>{bottomOpen ? 'Einklappen' : 'Ausklappen'}</button>
@@ -404,9 +446,7 @@ export default function AppBuilderWorkspacePage(): ReactElement {
       {bottomOpen && (
         <div className="max-h-72 overflow-auto border-t border-black/[.06] px-4 py-3">
           {bottomTab === 'console' && <ConsolePanel entries={console_} />}
-          {bottomTab === 'problems' && <ProblemsPanel findings={findings} gate={gate} />}
           {bottomTab === 'history' && <HistoryPanel chain={chain} currentId={stored.id} />}
-          {bottomTab === 'governance' && <GovernancePanel stored={stored} local={localBlueprint} evaluations={evaluations} custody={custody} agentRuns={agentRuns} assetRef={assetRef} />}
         </div>
       )}
     </section>
@@ -431,7 +471,7 @@ export default function AppBuilderWorkspacePage(): ReactElement {
               canvasWidth={DEVICE_WIDTH[device]}
               revision={revision}
               canvasHeader={canvasHeader}
-              asideRight={assistant}
+              renderRight={(parts) => rightColumn(parts.fields)}
               mobilePane={editorPane}
               renderLeft={(parts) => (
                 <ProjectNav tab={navTab} onTab={setNavTab} blueprint={localBlueprint} pagePath={pagePath} onOpenPage={setPagePath} puck={parts} />
@@ -451,7 +491,7 @@ export default function AppBuilderWorkspacePage(): ReactElement {
                 </div>
               </div>
             </section>
-            <aside className={`${editorPane === 'right' ? 'block' : 'hidden'} border-t border-black/[.07] bg-white p-4 lg:block lg:border-l lg:border-t-0 sm:p-5`}>{assistant}</aside>
+            <aside className={`${editorPane === 'right' ? 'block' : 'hidden'} border-t border-black/[.07] bg-white p-4 lg:block lg:border-l lg:border-t-0 sm:p-5`}>{rightColumn(null)}</aside>
           </div>
         )}
       </div>

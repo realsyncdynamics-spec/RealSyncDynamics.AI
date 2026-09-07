@@ -552,11 +552,23 @@ den Editor noch nicht.
 ## 5d. App Builder Workspace — `/builder/:slug` (Phase 2, Schritt A)
 
 **Stand 2026-09-07.** Der Block-Editor aus §5c ist die Editorschicht; der
-Workspace ist die Oberfläche darum: Kopfzeile (Projekt, Speicherzustand,
-Bearbeiten/Vorschau, Prüfen, Veröffentlichen), links die Projekt-Navigation
-(Seiten, Bausteine, Medien, Daten, Integrationen), Mitte die Puck-Leinwand,
-rechts der Assistent, unten Probleme · Konsole · Verlauf · Governance.
-Unterhalb von `lg` zeigt er je eine Spalte, umgeschaltet über Tabs.
+Workspace ist die Oberfläche darum: Kopfzeile (Projekt, **Governance-Status**,
+Speicherzustand, Bearbeiten/Vorschau, Prüfen, Veröffentlichen), links die
+Projekt-Navigation (Seiten, Bausteine, Medien, Daten, Integrationen), Mitte
+die Puck-Leinwand, rechts **vier Tabs** — Assistent · Eigenschaften (die
+Puck-Felder des gewählten Bausteins) · Probleme · Governance —, unten Konsole
+und Verlauf. Das ist die Anordnung aus dem Zielbild
+(`docs/product/app-builder-zielbild.md` §4); die erste Fassung hatte
+Probleme und Governance unten und die Felder ohne Tab. Unterhalb von `lg`
+zeigt er je eine Spalte, umgeschaltet über Tabs (Projekt · Editor ·
+Assistent · Protokoll).
+
+**Der Governance-Status in der Kopfzeile** ist die jüngste gespeicherte
+Bewertung **dieser** Version (`siteos_publish_evaluations`, per RLS
+gelesen): veröffentlichbar · Freigabe nötig · blockiert (mit Anzahl der
+Blocker) — oder „keine Bewertung", wenn es keine gibt. Er wird nie aus der
+lokalen Fassung abgeleitet und sagt nie „in Ordnung", wo nichts geprüft
+wurde. Eine Bewertung einer anderen Version der Kette zählt nicht.
 
 **Identifikator ist der Slug.** `siteos_blueprints` führt je `(tenant_id,
 slug)` eine append-only Kette; `website_projects` ist leer und wird nirgends
@@ -576,7 +588,8 @@ hierher weiter — ein Builder, nicht zwei.
 | Prüfen | `siteos/publish-gate` für die **gespeicherte** Version; gesperrt bei ungespeicherten Änderungen | LIVE (Code) |
 | Veröffentlichen | — | PLANNED: kein Pfad vom Artefakt zu einer Adresse; Knopf gesperrt mit Begründung |
 | Verlauf | `listBlueprintChain` | LIVE |
-| Governance | Version, Hash, Vorgänger, Herkunft, KI-Anteil, Custody (`provenance_*`, RLS), Bewertungen, Agentenläufe | LIVE (lesend) |
+| Governance | Version, Hash, Vorgänger, Herkunft, KI-Anteil, Custody (`provenance_*`, RLS), Bewertungen, Agentenläufe; Status-Chip in der Kopfzeile aus der jüngsten Bewertung der gespeicherten Version | LIVE (lesend) — `governanceStatus()` in `panels.tsx`, `test/siteos/workspace.test.tsx` |
+| Eigenschaften | Puck-Felder des gewählten Bausteins (`renderRight` des Editors), im Vorschau-Modus benannt statt leer | LIVE (Code) |
 | Assistent | Eingabe + Vorschläge → vorhandener KI-Neubau über den Erstbau (`?instruction=`), **kein LLM** | PARTIAL: ersetzt die Fassung, wendet nichts an — Actions folgen in Schritt C |
 | Seiten anlegen/umbenennen/löschen | — | PLANNED (Schritt B) |
 | Medien · Daten · Integrationen · Code | — | PLANNED, als Platzhalter benannt |

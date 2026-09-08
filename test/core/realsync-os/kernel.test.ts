@@ -41,12 +41,14 @@ describe('detectCapabilities', () => {
 });
 
 describe('createExecutionPlan', () => {
-  it('builds a website + deploy plan with approval on publish', () => {
+  it('builds a design + deploy plan with approval on publish', () => {
     const plan = createExecutionPlan(intent('Landingpage bauen und deployen'));
-    expect(plan.steps.map((step) => step.id)).toEqual(['analyse', 'design', 'build', 'qa', 'deploy']);
+    expect(plan.steps.map((step) => step.id)).toEqual([
+      'discover', 'brand', 'system', 'wireframe', 'hero', 'sections', 'responsive', 'a11y', 'seo', 'governance', 'blueprint', 'publish',
+    ]);
     expect(plan.requiresApproval).toBe(true);
     expect(plan.risk).toBe('critical');
-    expect(plan.capabilities).toContain('Website');
+    expect(plan.capabilities).toContain('Design');
     expect(plan.capabilities).toContain('Deployment');
   });
 
@@ -86,12 +88,12 @@ describe('command center loop', () => {
   });
 
   it('does not fake SiteOS success without an executor', async () => {
-    const session = openCommandSession(intent('Landingpage bauen'), ids);
+    const session = openCommandSession(intent('Prüfe meine Website auf SEO'), ids);
     approveSession(session, 'user-1', ids);
     await runUntilTerminal(session, ids);
-    const build = session.steps.find((step) => step.stepId === 'build');
-    expect(build?.notImplemented).toBe(true);
-    expect(build?.status).toBe('blocked');
+    const seo = session.steps.find((step) => step.stepId === 'seo');
+    expect(seo?.notImplemented).toBe(true);
+    expect(seo?.status).toBe('blocked');
     expect(session.phase).toBe('blocked');
     expect(session.events.some((event) => event.metadata?.notImplemented === true)).toBe(true);
   });
@@ -101,7 +103,7 @@ describe('command center loop', () => {
       status: 'succeeded',
       tool: `test.${step.action}`,
       observation: { ran: true },
-      artifacts: step.action === 'write_frontend' ? { blueprintId: 'bp-1', slug: 'acme' } : undefined,
+      artifacts: step.action === 'publish' ? { blueprintId: 'bp-1', slug: 'acme' } : undefined,
     });
 
     const session = await runIntentToCompletion(intent('Landingpage bauen und deployen'), {
@@ -113,6 +115,8 @@ describe('command center loop', () => {
     expect(session.phase).toBe('completed');
     expect(session.approved).toBe(true);
     expect(session.steps.every((step) => step.status === 'succeeded')).toBe(true);
+    expect(session.artifacts.designProject).toBeTruthy();
+    expect(session.artifacts.siteosBlueprint?.kind).toBe('siteos.blueprint');
     expect(session.artifacts.blueprintId).toBe('bp-1');
     expect(session.events.some((event) => event.stage === 'observe')).toBe(true);
     expect(session.events.some((event) => event.stage === 'verify' && event.action === 'complete_session')).toBe(true);
@@ -126,7 +130,7 @@ describe('command center loop', () => {
     approveSession(session, 'user-1', ids);
     await runUntilTerminal(session, { ...ids, executeStep });
     expect(session.phase).toBe('completed');
-    const deploy = session.steps.find((step) => step.stepId === 'deploy');
+    const deploy = session.steps.find((step) => step.stepId === 'publish' || step.stepId === 'deploy');
     expect(deploy?.status).toBe('succeeded');
   });
 });

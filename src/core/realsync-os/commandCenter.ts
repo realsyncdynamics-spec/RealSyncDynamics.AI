@@ -1,12 +1,14 @@
 import { createExecutionPlan } from './planner';
 import { DEFAULT_WEBSITE_AGENT_POLICY, evaluateToolAction } from './policyEngine';
-import { defaultExecuteStep, mergeArtifacts, type StepExecutor } from './executor';
+import { defaultExecuteStep, mergeArtifacts, withDesignKernel, type StepExecutor } from './executor';
+import { DEFAULT_DESIGN_AGENT_POLICY, designMapAction, designResourceForAction, isDesignKernelAction } from './design';
 import type {
   AgentPolicy,
   CommandCenterPhase,
   CommandSession,
   ExecutionPlan,
   Intent,
+  OsCapability,
   OsEvent,
   PlanStep,
   RiskLevel,
@@ -29,7 +31,14 @@ const TERMINAL: ReadonlySet<CommandCenterPhase> = new Set([
   'failed',
 ]);
 
+export function policyForCapabilities(capabilities: OsCapability[], override?: AgentPolicy): AgentPolicy {
+  if (override) return override;
+  if (capabilities.includes('Design')) return DEFAULT_DESIGN_AGENT_POLICY;
+  return DEFAULT_WEBSITE_AGENT_POLICY;
+}
+
 export const resourceForAction = (action: string): string => {
+  if (isDesignKernelAction(action) || action === 'publish') return designResourceForAction(action);
   if (action.includes('publish') || action === 'publish') return 'deployment';
   if (action.includes('write') || action.includes('frontend') || action.includes('design')) return 'frontend';
   if (action.includes('content')) return 'content';
@@ -38,6 +47,7 @@ export const resourceForAction = (action: string): string => {
 };
 
 export const mapAction = (action: string): string => {
+  if (isDesignKernelAction(action) || action === 'publish') return designMapAction(action);
   if (action === 'publish') return 'publish';
   if (action.includes('write') || action.includes('frontend') || action.includes('design')) return 'write';
   if (action.includes('read') || action.includes('analyze') || action.includes('discover') || action.includes('verify')) {
@@ -73,8 +83,8 @@ const emit = (
 export function openCommandSession(intent: Intent, options: CommandCenterOptions = {}): CommandSession {
   const now = options.now ?? (() => new Date().toISOString());
   const id = options.id ?? (() => crypto.randomUUID());
-  const policy = options.policy ?? DEFAULT_WEBSITE_AGENT_POLICY;
   const plan = createExecutionPlan(intent);
+  const policy = policyForCapabilities(plan.capabilities, options.policy);
 
   const session: CommandSession = {
     id: id(),
@@ -160,15 +170,20 @@ function finalize(session: CommandSession, now: () => string, id: () => string):
   }
 }
 
+function boundExecutor(options: CommandCenterOptions): StepExecutor {
+  return withDesignKernel(options.executeStep ?? defaultExecuteStep);
+}
+
 /**
  * Advances exactly one ready step. Policy is evaluated before execution.
+ * Design kernel actions cannot be bypassed by a bound SiteOS executor.
  * No step is marked succeeded unless an executor reports success.
  */
 export async function advanceSession(session: CommandSession, options: CommandCenterOptions = {}): Promise<CommandSession> {
   const now = options.now ?? (() => new Date().toISOString());
   const id = options.id ?? (() => crypto.randomUUID());
-  const policy = options.policy ?? DEFAULT_WEBSITE_AGENT_POLICY;
-  const executeStep = options.executeStep ?? defaultExecuteStep;
+  const policy = policyForCapabilities(session.plan.capabilities, options.policy);
+  const executeStep = boundExecutor(options);
 
   if (TERMINAL.has(session.phase) || session.phase === 'awaiting_approval') {
     return session;

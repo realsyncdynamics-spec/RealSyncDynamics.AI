@@ -187,7 +187,9 @@ describe('createSiteOsExecutor', () => {
     const session = approvedWebsiteSession();
     await runUntilTerminal(session, { executeStep: createSiteOsExecutor('t1', commands) });
     expect(session.phase).toBe('blocked');
-    expect(session.steps.find((step) => step.stepId === 'qa')?.notImplemented).toBe(true);
-    expect(session.steps.find((step) => step.stepId === 'build')?.status).toBe('succeeded');
+    expect(session.artifacts.designProject).toBeTruthy();
+    expect(session.steps.find((step) => step.stepId === 'blueprint')?.status).toBe('succeeded');
+    expect(session.steps.find((step) => step.stepId === 'publish')?.notImplemented).toBe(true);
+    expect(commands.buildSite).not.toHaveBeenCalled();
   });
 });

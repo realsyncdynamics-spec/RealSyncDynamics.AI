@@ -59,3 +59,12 @@ Governance is runtime behavior, not a separate post-processing report. The syste
 - Preview is not production.
 - Stripe entitlements remain the commercial source of truth; do not introduce `tenant_modules`.
 - Cloudflare remains the preferred deployment target; do not introduce Vercel.
+
+## DesignOS
+
+> DesignOS is a capability of the RealSync OS Kernel, not an independent application runtime. SiteOS remains the canonical web artifact, rendering and execution substrate. All AI-driven design mutations must pass through the RealSync OS planning, policy, approval, execution, observation and verification lifecycle.
+
+Phase A is kernel-only: semantic `DesignProject` / `DesignNode` / tokens, a design plan, deny-by-default design policy, and a pure `designToBlueprint` mapping. No editor, no second builder, no own deploy, no fake scores. Screenshot / URL / code extractors stay `NOT IMPLEMENTED` until bound.
+
+See `docs/product/designos-architecture.md`.
+

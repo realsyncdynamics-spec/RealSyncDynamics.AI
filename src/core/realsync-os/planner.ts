@@ -1,4 +1,5 @@
 import { classifyIntent, detectCapabilities } from './capabilities';
+import { classifyDesignIntent, createDesignPlanSteps } from './design';
 import type { ExecutionPlan, Intent, PlanStep, RiskLevel } from './types';
 
 const step = (
@@ -13,25 +14,24 @@ const step = (
 
 export function createExecutionPlan(intent: Intent): ExecutionPlan {
   const signals = classifyIntent(intent.text);
-  const steps: PlanStep[] = [];
+  let steps: PlanStep[] = [];
 
-  if (signals.website) {
-    steps.push(step('analyse', 'Bestehendes Projekt und Anforderungen analysieren', 'architect', 'analyze_project', 'low', false));
-    steps.push(step('design', 'Designsystem und responsive Struktur erstellen', 'designer', 'create_design_system', 'medium', false, ['analyse']));
-    steps.push(step('build', 'Frontend-Komponenten erzeugen oder ändern', 'developer', 'write_frontend', 'medium', false, ['design']));
-    steps.push(step('qa', 'Frontend testen und Accessibility prüfen', 'qa', 'verify_frontend', 'medium', false, ['build']));
-  }
-
-  if (signals.seo) {
-    steps.push(step('seo', 'Technisches SEO und AI-Visibility prüfen', 'seo', 'optimize_visibility', 'low', false, signals.website ? ['qa'] : []));
-  }
-
-  if (signals.governance) {
-    steps.push(step('governance', 'Governance, Datenschutz und AI-Act-Risiken bewerten', 'governance', 'evaluate_governance', 'high', true, steps.length ? [steps[steps.length - 1].id] : []));
-  }
-
-  if (signals.deploy) {
-    steps.push(step('deploy', 'Production Deployment vorbereiten', 'deployment', 'publish', 'critical', true, steps.length ? [steps[steps.length - 1].id] : []));
+  if (signals.design) {
+    const designIntent = classifyDesignIntent(intent.text);
+    steps = createDesignPlanSteps(designIntent, {
+      includePublish: signals.deploy,
+      includeSeo: true,
+    });
+  } else {
+    if (signals.seo) {
+      steps.push(step('seo', 'Technisches SEO und AI-Visibility prüfen', 'seo', 'optimize_visibility', 'low', false));
+    }
+    if (signals.governance) {
+      steps.push(step('governance', 'Governance, Datenschutz und AI-Act-Risiken bewerten', 'governance', 'evaluate_governance', 'high', true, steps.length ? [steps[steps.length - 1].id] : []));
+    }
+    if (signals.deploy) {
+      steps.push(step('deploy', 'Production Deployment vorbereiten', 'deployment', 'publish', 'critical', true, steps.length ? [steps[steps.length - 1].id] : []));
+    }
   }
 
   if (steps.length === 0) {

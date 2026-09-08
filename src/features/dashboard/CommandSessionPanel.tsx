@@ -7,6 +7,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import type { CommandSession, StepExecutionState } from '../../core/realsync-os';
+import { walkTree } from '../../core/realsync-os';
 
 const PHASE_LABEL: Record<CommandSession['phase'], string> = {
   received: 'Empfangen',
@@ -46,6 +47,9 @@ export function CommandSessionPanel({
 }) {
   const awaiting = session.phase === 'awaiting_approval' || session.phase === 'planned';
   const blockedUnimplemented = session.steps.some((step) => step.notImplemented);
+  const project = session.artifacts.designProject;
+  const doc = project?.documents[0];
+  const tree = doc ? walkTree(doc) : [];
 
   return (
     <section className="mt-5 space-y-4 rounded-3xl border border-slate-200 bg-slate-50 p-5">
@@ -116,6 +120,30 @@ export function CommandSessionPanel({
         </ol>
       </div>
 
+      {project && (
+        <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3">
+          <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Design kernel state</div>
+          <p className="mt-1 text-xs text-slate-500">
+            mode {project.inputMode} · v{project.version} · {project.brand.vertical ?? 'generic'} · not DOM
+          </p>
+          {tree.length > 0 && (
+            <ol className="mt-3 space-y-1 font-mono text-[11px] text-slate-600">
+              {tree.map(({ node, depth }) => (
+                <li key={node.id} style={{ paddingLeft: depth * 12 }}>
+                  {node.type}
+                  {node.props.text ? ` — ${node.props.text}` : ''}
+                </li>
+              ))}
+            </ol>
+          )}
+          {session.artifacts.siteosBlueprint && (
+            <p className="mt-3 text-xs text-slate-500">
+              SiteOS blueprint mapped ({session.artifacts.siteosBlueprint.pages[0]?.sections.length ?? 0} sections). Renderer not bound. Not published.
+            </p>
+          )}
+        </div>
+      )}
+
       {error && (
         <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>
       )}
@@ -167,11 +195,14 @@ export function CommandSessionPanel({
 function summarizeObservation(observation: Record<string, unknown>): string {
   if (typeof observation.reason === 'string') return observation.reason;
   if (typeof observation.note === 'string') return observation.note;
+  if (typeof observation.heading === 'string') return observation.heading;
+  if (typeof observation.mode === 'string') return `mode ${observation.mode}`;
   if (typeof observation.count === 'number') return `${observation.count} site(s)`;
   if (typeof observation.slug === 'string') return `slug ${observation.slug}`;
   if (observation.ran === false) return 'no queued SiteOS run';
   if (observation.publishable === false) return 'publish gate blocked';
   if (observation.publishable === true) return 'publish gate passed — deploy not executed';
+  if (typeof observation.kind === 'string') return observation.kind;
   try {
     return JSON.stringify(observation);
   } catch {

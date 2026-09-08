@@ -1,3 +1,6 @@
+import type { DesignInputMode, DesignProject } from './design/types';
+import type { SiteOsBlueprintDocument } from './adapters/siteos/designToBlueprint';
+
 export type OsStage = 'intent' | 'policy' | 'plan' | 'execute' | 'observe' | 'verify' | 'evidence';
 export type RiskLevel = 'low' | 'medium' | 'high' | 'critical';
 export type ApprovalMode = 'never' | 'on-risk' | 'always';
@@ -82,6 +85,9 @@ export type SessionArtifacts = {
   scanId?: string;
   agentRunId?: string;
   sites?: Array<{ slug: string; name: string; status: string }>;
+  designProject?: DesignProject;
+  designInputMode?: DesignInputMode;
+  siteosBlueprint?: SiteOsBlueprintDocument;
 };
 
 export type StepResultStatus = 'succeeded' | 'failed' | 'blocked' | 'not_implemented';

@@ -4,3 +4,7 @@ export * from './planner';
 export * from './policyEngine';
 export * from './executor';
 export * from './commandCenter';
+export * from './design';
+export { designToBlueprint } from './adapters/siteos/designToBlueprint';
+export { blueprintToDesign } from './adapters/siteos/blueprintToDesign';
+export type { SiteOsBlueprintDocument } from './adapters/siteos/designToBlueprint';

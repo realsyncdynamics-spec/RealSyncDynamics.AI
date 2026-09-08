@@ -46,11 +46,16 @@ await runUntilTerminal(session, { executeStep: createSiteOsExecutor(tenantId) })
 | optimize_visibility | `siteos/agents` seo | queued Run oder ehrliche Leermeldung |
 | evaluate_governance | `siteos/agents` compliance | queued Run; awaiting_approval wird nicht umgangen |
 | publish | `siteos/publish-gate` | evaluiert nur. Kein `approvePublish`, kein Deploy |
+| Design kernel actions | `designos.kernel` | semantischer Design State, nie DOM |
+| `map_siteos_blueprint` | `designos.adapter.siteos` | reines Mapping, nicht persistiert, nicht gerendert |
+
+Design-Intents (Landingpage bauen, Design, Hero, Screenshot→Design) erzeugen einen Design-Plan. `withDesignKernel` fängt diese Steps ab, auch wenn ein SiteOS-Executor gebunden ist. SiteOS bleibt Renderer/Publish-Gate.
 
 Ohne gebundenen Executor: mutierende Steps → `NOT IMPLEMENTED`. Nie No-Op-Succeed.
 
 ## Nicht enthalten
 
-- DesignOS / RealSync Build als eigene Oberfläche
+- DesignOS Editor / Canvas (Phase B)
+- Live-Bindung des gemappten Blueprints an SiteOS Preview/Scan (Phase C)
 - Continuous Operations / autonome Remediation nach Deploy
 - Canva / Microsoft / MCP Connector-Runtime

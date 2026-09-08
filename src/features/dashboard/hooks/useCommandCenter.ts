@@ -18,13 +18,7 @@ export function useCommandCenter() {
   const [error, setError] = useState<string | null>(null);
 
   const snapshot = useCallback((next: CommandSession) => {
-    setSession({
-      ...next,
-      steps: [...next.steps],
-      events: [...next.events],
-      plan: { ...next.plan, steps: [...next.plan.steps], capabilities: [...next.plan.capabilities] },
-      artifacts: { ...next.artifacts },
-    });
+    setSession(structuredClone(next));
   }, []);
 
   const open = useCallback(async (text: string) => {

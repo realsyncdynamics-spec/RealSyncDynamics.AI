@@ -357,11 +357,18 @@ export function slugify(input: string): string {
   let transliterated = '';
   for (const char of lowered) transliterated += UMLAUTS[char] ?? char;
 
+  // Der erste Schritt fasst jeden Lauf aus Nicht-Alphanumerischem zu genau
+  // einem Bindestrich zusammen — danach stehen nie zwei Bindestriche
+  // nebeneinander. Die Ränder werden deshalb ohne Quantor beschnitten:
+  // `-+$` liefe auf langen Bindestrich-Läufen quadratisch (CodeQL,
+  // js/polynomial-redos). Seit `validatePageSlug` in pages.ts erreichen
+  // fremde Titel und Slugs diese Funktion. Das Ergebnis ist für jede
+  // Eingabe dasselbe wie zuvor; `test/siteos/slugify.test.ts` hält das fest.
   const slug = transliterated
     .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
+    .replace(/^-|-$/g, '')
     .slice(0, 64)
-    .replace(/-+$/g, '');
+    .replace(/-$/, '');
 
   return slug.length > 0 ? slug : 'site';
 }

@@ -44,19 +44,28 @@ Laufzeit, ein Modell-Routing, einen Schlüsselpfad. Was doppelt ist, sind die
 
 ---
 
-## 3. Der offene Punkt, der vor der Entscheidung geklärt gehört
+## 3. Der Mandantenbezug — nachgemessen, und er entlastet die Entscheidung
 
-`CreatorDashboard` — die vom Auftrag zur kanonischen Fläche bestimmte —
-importiert **kein `useTenant`**. B und C tun es.
+**Die erste Fassung dieses Abschnitts war falsch zugeordnet.** Sie hielt fest,
+`CreatorDashboard` importiere als einzige der drei Flächen kein `useTenant`,
+und nannte die Erhebung von `/assistant` deshalb „den riskantesten Schritt des
+ganzen Umbaus". Die Beobachtung stimmte; der Schluss daraus nicht.
 
-Solange nicht geklärt ist, in welchem Mandantenkontext `/assistant` arbeitet,
-ist die Erhebung genau dieser Fläche zur primären Arbeitsfläche der riskanteste
-Schritt des ganzen Umbaus. CLAUDE.md §3 nennt Mandantentrennung „nicht
-verhandelbar".
+Nachgemessen am 2026-09-08 über **alle** Aufrufstellen des KI-Pfades:
+**keine** von ihnen trägt Mandanten- oder Nutzeridentität. Jede sendet den
+Anon-Key als Bearer-Token; `ai-gateway/index.ts:109` setzt `tenant_id`
+ohnehin **fest auf `null`**. Einzelheiten und Folgen:
+`docs/architecture/realsync-os-current-state.md` §2.
 
-**Das ist eine Messfrage, keine Geschmacksfrage** — und sie ist in Phase 0
-offen (`UNKNOWN`), weil sie einen Blick in die Laufzeit braucht, nicht nur in
-den Import-Graphen.
+**Damit ist der Mandantenbezug kein Auswahlkriterium mehr.** A, B und C sind
+gleich betroffen — er taugt nicht als Argument für oder gegen eine der drei
+Flächen.
+
+> **Folge für die Reihenfolge**: Der Punkt ist aus Schritt 0 von §7
+> herausgenommen. Er blockiert **nicht** Phase 2 (Oberflächen zusammenlegen),
+> weil das Zusammenlegen ihn weder verbessert noch verschlechtert. Er blockiert
+> **Phase 6** (Token-Ökonomie), denn ein Guthaben braucht ein Subjekt.
+> Ihn vor Phase 2 zu hängen hätte den Umbau ohne Gewinn aufgehalten.
 
 ---
 
@@ -143,7 +152,6 @@ bleiben, beide klein:
 
 | Schritt | Inhalt | Voraussetzung |
 |---|---|---|
-| 0 | Mandantenkontext von `CreatorDashboard` klären | **blockierend** |
 | 1 | Modus-Umschalter in `/assistant` (Standard/Expert) | §10-Freigabe |
 | 2 | `GovernanceAiWorkspace` als Expert-Modus einhängen | Schritt 1 |
 | 3 | `DashboardView` + Kernel-Panel in Expert-Modus | #1261, Schritt 2 |

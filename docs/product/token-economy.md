@@ -21,10 +21,30 @@ erheblicher Teil vorhanden:
 | Protokollierung jedes Aufrufs | `ai_tool_runs`, `workflow_runs` | `LIVE` (CLAUDE.md §2) |
 | Ein Durchgangspunkt für KI | Edge Function `ai-gateway` | `LIVE` |
 
-**Der letzte Punkt ist der wichtigste.** Beide Dashboard-Flächen und die
-Agent-Runtime laufen über dieselbe Edge Function. Eine Token-Ökonomie braucht
-genau das: **eine** Stelle, an der Verbrauch entsteht und gebucht werden kann.
-Sie existiert bereits und muss nicht geschaffen werden.
+**Der letzte Punkt ist der wichtigste — und die erste Fassung dieses Absatzes
+hat ihn zu freundlich gelesen.** Sie schloss: „Eine Token-Ökonomie braucht
+genau das: eine Stelle, an der Verbrauch entsteht und gebucht werden kann. Sie
+existiert bereits und muss nicht geschaffen werden."
+
+Die **Stelle** existiert. Das **Subjekt** nicht.
+
+Nachgemessen am 2026-09-08: Kein einziger Aufruf des KI-Pfades trägt
+Mandanten- oder Nutzeridentität. Alle fünf Aufrufstellen senden den Anon-Key
+als Bearer-Token; `ai-gateway/index.ts:109` setzt `tenant_id` fest auf `null`.
+Durchgesetzt wird ausschließlich nach **IP** (10/Minute, 100/Stunde, je
+Instanz im Arbeitsspeicher). Belege:
+`docs/architecture/realsync-os-current-state.md` §2.
+
+**Das ist der teuerste Posten in diesem Dokument.** Ein Guthabenmodell setzt
+voraus, dass bekannt ist, wessen Guthaben belastet wird — und genau diese
+Angabe erreicht die Function heute nicht. Der Schritt von Metering zu Ökonomie
+ist damit nicht „Restwert führen", sondern zuerst **Identität an den
+Durchgangspunkt bringen**: Session-Token statt Anon-Key, Tenant im Aufruf,
+Auswertung in der Function.
+
+Solange das offen ist, sind `limit.ai_calls_monthly`,
+`limit.ai_tokens_monthly` und `limit.llm_queries_monthly` Zahlen in
+`shared/pricing.ts` ohne durchsetzende Stelle.
 
 ---
 
@@ -32,6 +52,7 @@ Sie existiert bereits und muss nicht geschaffen werden.
 
 | Fehlend | Folge |
 |---|---|
+| **Identität am Gateway** | **Voraussetzung für alles Übrige** — siehe oben |
 | **Guthabenbegriff** | Verbrauch wird gezählt, ein Restwert nicht geführt |
 | **Nachkauf** | §12 „Purchase more" hat kein Produkt und keinen Pfad |
 | **Kundensichtbare Anzeige** | §8 „Token balance" hat keine Oberfläche |
@@ -103,6 +124,9 @@ Entitlement-System — und hier wäre es besonders verlockend, eines zu bauen.
 
 ## 6. Empfehlung
 
+0. **Zuerst Identität an den Durchgangspunkt.** Ohne Subjekt kein Guthaben,
+   keine Kontingentdurchsetzung, keine Zurechnung. Das ist der erste Schritt,
+   nicht der letzte — und er ist unabhängig von der Kostenrechnung machbar.
 1. **Nicht bauen, bevor §4 gemessen ist.** Die Kostenrechnung ist die
    Voraussetzung, nicht die Begleitung.
 2. **Die Frage aus §3 entscheiden lassen**, bevor ein Guthaben entsteht.

@@ -60,13 +60,56 @@ wie vorgeschrieben in `Deno.env` der Edge Function.
 > ist erheblich billiger als der Auftrag unterstellt — und es entkräftet die
 > Sorge aus §18, es könne ein zweiter Agent-Runtime entstehen. Er ist nicht da.
 
-**Ein echter Befund**: `CreatorDashboard` — die Fläche hinter `/assistant`,
-also die vom Auftrag zur kanonischen Fläche erhobene — importiert **kein**
-`useTenant`. Die anderen beiden Flächen tun es. Bevor `/assistant` die primäre
-Arbeitsfläche wird, muss geklärt sein, in welchem Mandantenkontext sie
-eigentlich arbeitet. Status: `UNKNOWN`, und das ist bei einer Multi-Tenancy,
-die laut CLAUDE.md §3 „nicht verhandelbar" ist, der schwerwiegendste Punkt
-dieses Dokuments.
+**Der schwerwiegendste Befund dieses Dokuments — nachgemessen am 2026-09-08**:
+
+Die erste Fassung hielt hier fest, `CreatorDashboard` importiere als einzige
+der drei Flächen kein `useTenant`, und leitete daraus einen Zweifel an
+`/assistant` ab. Die Nachmessung zeigt: **Der Befund ist richtig, die
+Zuordnung war falsch — und die Lage ist breiter.**
+
+**Kein einziger KI-Aufruf im Produkt trägt Mandanten- oder Nutzeridentität.**
+Gemessen über alle fünf Aufrufstellen (`CreatorDashboard`, `KodeeView`,
+`GovernanceAiWorkspace`, `auditCopilotApi`, `assistantQuickChatApi`):
+
+| Stelle | Beleg |
+|---|---|
+| Jeder Aufruf sendet den **Anon-Key** als Bearer-Token | `edgeClient.ts:103–104`, alle fünf Aufrufer nutzen `getSupabaseAnonKey()` |
+| **Kein** Aufrufer setzt `tenantId` | das Feld `GatewayRequest.tenantId` ist unbenutzt |
+| Selbst wenn er es täte, käme es nicht an | `ai-gateway/index.ts:109` setzt `tenant_id: null` **fest** |
+| Die Function ist sich dessen bewusst | Kommentar Z. 64: „Der Gateway hat heute keinen Tenant-Kontext — es greifen ausschließlich GLOBALE `ai_policies`" |
+
+Das ist also **kein Versehen einer Fläche**, sondern eine dokumentierte
+Eigenschaft des gesamten KI-Pfades. `verify_jwt = true` ist erfüllt (der
+Anon-Key *ist* ein gültiges Projekt-JWT), die Function läuft — sie sieht nur
+niemanden.
+
+**Was daraus folgt, und das ist der eigentliche Punkt:**
+
+1. **Kontingente sind am Gateway nicht durchsetzbar.**
+   `limit.ai_calls_monthly`, `limit.ai_tokens_monthly` und
+   `limit.llm_queries_monthly` stehen in `shared/pricing.ts` — durchgesetzt
+   wird an dieser Stelle **nichts** davon. Die Suche nach Quota-Code in der
+   Function ist leer, und das ist keine Auslassung, sondern die Folge: Ohne
+   Subjekt gibt es nichts, wogegen man durchsetzen könnte.
+2. **Durchgesetzt wird stattdessen nach IP** — `enforceRateLimit`,
+   voreingestellt 10/Minute und 100/Stunde, im Arbeitsspeicher je Instanz
+   (bei Kaltstart zurückgesetzt, im Code so vermerkt). Das ist ein
+   Missbrauchsschutz, keine Abrechnung. Ein Enterprise-Kunde mit 50
+   Arbeitsplätzen hinter **einer** NAT-Adresse teilt sich einen 10er-Eimer;
+   derselbe Kunde auf 50 Adressen bekommt das Fünfzigfache.
+3. **Die Token-Ökonomie (§12 des Auftrags) ist genau hier blockiert.** Ein
+   Guthabenmodell setzt voraus, dass bekannt ist, wessen Guthaben belastet
+   wird.
+4. **Der Anon-Key ist per Definition öffentlich** (CLAUDE.md §2). Wer die
+   Seite lädt, kann `POST /functions/v1/ai-gateway` auch ohne Konto rufen,
+   begrenzt allein durch die IP-Fenster. Das ist das Missbrauchsszenario aus
+   §30 des Auftrags — bemessen, nicht dramatisiert: begrenzt, aber real und
+   nicht einem Konto zurechenbar.
+
+**Für die Konsolidierung heißt das etwas Erfreuliches**: Der Mandantenbezug ist
+**kein** Argument für oder gegen eine der drei Flächen — alle drei sind gleich
+betroffen. Er ist eine eigene Aufgabe, eine Ebene tiefer, und sie gehört vor
+Phase 6 erledigt, nicht vor Phase 2.
 
 ---
 

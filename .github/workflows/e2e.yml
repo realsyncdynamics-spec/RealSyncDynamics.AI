@@ -13,14 +13,10 @@ jobs:
   e2e:
     name: Playwright E2E
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 20
 
     env:
-      # CI testet den PR-eigenen Build über einen lokalen Preview-Server.
-      # Die Live-Produktion ist als Ziel ungeeignet: ihr Bot-Schutz liefert
-      # dem headless-Browser 403. Für manuelle Läufe gegen Live/Staging:
-      #   TEST_BASE_URL=https://… npm run test:e2e
-      TEST_BASE_URL: ${{ secrets.TEST_BASE_URL || 'http://localhost:4173' }}
+      TEST_BASE_URL: ${{ secrets.TEST_BASE_URL || 'http://127.0.0.1:4173' }}
       STRIPE_TEST_MODE: 'true'
       TEST_EMAIL: ${{ secrets.TEST_EMAIL || '' }}
 
@@ -40,35 +36,18 @@ jobs:
       - name: Build Application
         run: npm run build
         env:
-          # Dummy-Pixel-IDs, damit die Consent-Gating-Tests in
-          # e2e/cookie-consent.spec.ts wirklich messen können. `pixels.ts` lädt
-          # die Pixel nur bei gesetzten IDs — ohne sie feuert auch nach einer
-          # Einwilligung nichts, und „vor Consent: 0 Requests" wäre trivial
-          # erfüllt, selbst wenn das Gating kaputt wäre. Die Tests erkennen das
-          # und überspringen sich dann; mit diesen Werten laufen sie scharf.
-          #
-          # Die IDs sind bewusst ungültig und gehören zu keinem echten Konto.
-          # Der Test bricht die Tracker-Requests zudem ab, bevor sie das Netz
-          # erreichen — es geht nichts an Google, Meta oder TikTok raus.
           VITE_GA4_MEASUREMENT_ID: G-E2ETEST0000
           VITE_META_PIXEL_ID: '000000000000000'
 
+      - name: Cache Playwright browsers
+        uses: actions/cache@0400d5f644dc74513175e3cd8d271410817cdde3 # v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-chromium-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            playwright-chromium-${{ runner.os }}-
+
       - name: Install Playwright Browsers
-        # `--with-deps` ruft im Hintergrund `apt-get` gegen die Ubuntu-Spiegel.
-        # Genau dort hingen am 2026-08-19 zwei Laeufe bis zum Job-Timeout: Das
-        # Log endet mitten in `apt-get update` mit `Ign:` fuer jedes Repository,
-        # danach 28 Minuten Stille, und `playwright-report/` blieb leer — es lief
-        # kein einziger Test. Auffaellig war, dass ausschliesslich die zwei Jobs
-        # mit diesem Schritt hingen, alle uebrigen liefen gruen durch.
-        #
-        # Das Runner-Image `ubuntu-latest` bringt die Systembibliotheken fuer
-        # Chromium bereits mit (Chrome ist vorinstalliert). Der apt-Lauf sichert
-        # hier also gegen ein Risiko ab, das nicht besteht — und schafft dabei
-        # ein neues.
-        #
-        # `timeout-minutes` bleibt als Netz: Haengt der Download doch einmal,
-        # faellt der Job nach sechs Minuten mit einer lesbaren Meldung aus,
-        # statt eine halbe Stunde still zu blockieren.
         timeout-minutes: 6
         run: npx playwright install chromium
 
@@ -80,7 +59,7 @@ jobs:
       - name: Wait for Preview Server
         run: |
           for i in $(seq 1 30); do
-            if curl -sf http://localhost:4173 > /dev/null; then
+            if curl -sf http://127.0.0.1:4173 > /dev/null; then
               echo "Preview-Server ist erreichbar."
               exit 0
             fi
@@ -100,4 +79,4 @@ jobs:
         with:
           name: playwright-report
           path: playwright-report/
-          retention-days: 30
+          retention-days: 14

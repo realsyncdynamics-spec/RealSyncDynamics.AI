@@ -325,6 +325,9 @@ export const UNBACKED_CALLERS: readonly UnbackedCaller[] = [
   // getriggert. „Kein Aufrufer" und „nicht deployt" sind zwei verschiedene
   // Aussagen; diese Liste fuehrt nur die erste zusammen mit der zweiten.
   { slug: 'microsoft365-connect', surface: 'features/governance — Microsoft 365 einrichten', publicPath: false },
+  // Governance Open Router: OpenAI-kompatibler Eingang (Cursor Base URL).
+  // Function liegt im Repo; Eintrag nach dem ersten deploy.yml-Lauf entfernen.
+  { slug: 'governance-router', surface: 'features/governance — Governance Router (Cursor Base URL)', publicPath: false },
 ];
 
 const UNBACKED_SET = new Set(UNBACKED_CALLERS.map((c) => c.slug));

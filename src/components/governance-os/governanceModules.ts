@@ -224,6 +224,15 @@ export const GOVERNANCE_MODULES: GovernanceModule[] = [
     description: 'Automationsläufe und Skills',
   },
   {
+    id: 'governance-router',
+    label: 'Router',
+    icon: 'Share2',
+    route: '/app/governance/router',
+    status: 'live',
+    gate: { kind: 'entitlement', key: 'ai.tool.automations' },
+    description: 'OpenAI-kompatibler Governance-Eingang für Cursor und SDKs',
+  },
+  {
     id: 'kodee',
     label: 'Kodee',
     icon: 'Terminal',

@@ -70,6 +70,7 @@ export const APP_FEATURE_ACCESS: readonly FeatureRequirement[] = [
   // ── Automate ────────────────────────────────────────────────────────────
   { route: '/app/workflows', label: 'Workflows', allOf: ['ai.tool.workflows'] },
   { route: '/app/automations', label: 'Automationen', allOf: ['ai.tool.automations'] },
+  { route: '/app/governance/router', label: 'Governance Router', allOf: ['ai.tool.automations'] },
   { route: '/app/scheduler', label: 'Scheduler', allOf: ['scheduler.enabled'] },
   { route: '/app/bulk', label: 'Bulk-Jobs', allOf: ['bulk.jobs'] },
   { route: '/app/governance/bulk-operations', label: 'Bulk-Operationen', allOf: ['bulk.jobs'] },

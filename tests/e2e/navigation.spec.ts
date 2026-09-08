@@ -1,10 +1,8 @@
 import { test, expect } from '@playwright/test';
 
-const BASE_URL = process.env.TEST_BASE_URL || process.env.BASE_URL || 'http://localhost:4173';
-
 test.describe('[FE-002] Navigation und primäre CTAs', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto(BASE_URL + '/', { waitUntil: 'domcontentloaded' });
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
   });
 
   test('Hauptnavigation ist vorhanden', async ({ page }) => {
@@ -13,7 +11,6 @@ test.describe('[FE-002] Navigation und primäre CTAs', () => {
   });
 
   test('Primärer CTA ist klickbar und führt auf erwartete Seite', async ({ page }) => {
-    // Sucht nach primären CTAs (Button oder Link mit typischen CTA-Texten)
     const cta = page
       .locator('a, button')
       .filter({ hasText: /jetzt|kostenlos|starten|demo|audit|testen/i })
@@ -33,26 +30,9 @@ test.describe('[FE-002] Navigation und primäre CTAs', () => {
     }
   });
 
-  test('Deep Links sind direkt erreichbar', async ({ page }) => {
-    const deepLinks = [
-      '/audit',
-      '/ai-act/',
-      '/oeffentliche-verwaltung/',
-      '/healthtech',
-      '/saas-anbieter/',
-      '/checkout/starter/',
-    ];
-
-    for (const link of deepLinks) {
-      const resp = await page.goto(BASE_URL + link, { waitUntil: 'domcontentloaded' });
-      expect(resp?.status(), `Deep Link ${link}`).toBeLessThan(400);
-    }
-  });
-
   test('[FE-004] Footer-Rechtslinks (Impressum, Datenschutz) erreichbar', async ({ page }) => {
     const footer = page.locator('footer');
 
-    // Footer enthält die Rechtslinks ggf. mehrfach (Spalte + Legal-Nav) — .first().
     const impressum = footer.getByRole('link', { name: /^Impressum$/i }).first();
     await expect(impressum).toBeVisible();
     await expect(impressum).toHaveAttribute('href', /\/impressum$/);

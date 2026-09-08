@@ -26,7 +26,7 @@ import { consumeUsage, UsageError } from '../_shared/usage.ts';
 import { runAiTool, AiInvokeError } from '../_shared/ai.ts';
 import {
   resolveBot, upsertConversation, insertMessage, loadRecentHistory,
-  buildBotPrompt, BotError,
+  buildBotPromptFromBot, BotError,
 } from '../_shared/bots.ts';
 import { enforceBotMessage } from '../_shared/pdp/botmessage.ts';
 
@@ -126,7 +126,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const prompt = buildBotPrompt({ persona: bot.persona, history: priorHistory, userMessage: message });
+    const prompt = buildBotPromptFromBot(bot, { history: priorHistory, userMessage: message });
 
     const ai = await runAiTool(admin, tenantId, null, 'bot_reply', prompt, {
       metadata: { bot_id: bot.id, conversation_id: conversationId, channel: 'chat' },

@@ -40,10 +40,12 @@ import {
   ArrowRight, Check, Link2, Loader2, Monitor, Smartphone, Sparkles, Tablet, Wand2, ShieldCheck, AlertTriangle,
 } from 'lucide-react';
 import {
+  applySiteDesignTemplate,
+  defaultDesignTemplate,
   renderSite,
-  type RuntimeFinding,
-  type ScoreBreakdown,
+  SITE_DESIGN_TEMPLATES,
   type SiteBlueprint,
+  type SiteDesignTemplate,
 } from '../../../packages/siteos-core/src/index';
 import { SandboxedPreviewFrame } from '../../components/preview/SandboxedPreviewFrame';
 import { resolveAuditContext } from '../../core/onboarding/funnelContext';
@@ -117,6 +119,7 @@ export default function BuildStudioPage() {
   const [instruction, setInstruction] = useState('');
   const [device, setDevice] = useState<Device>('desktop');
   const [path, setPath] = useState('/');
+  const [template, setTemplate] = useState<SiteDesignTemplate>(defaultDesignTemplate());
   const [busy, setBusy] = useState(false);
   const [stage, setStage] = useState(0);
   const [log, setLog] = useState<BuildStep[]>([]);
@@ -170,9 +173,10 @@ export default function BuildStudioPage() {
 
   const html = useMemo(() => {
     if (!blueprint) return '';
-    const pages = renderSite(blueprint, { presentation: 'showcase' });
+    const presented = applySiteDesignTemplate(blueprint, template);
+    const pages = renderSite(presented, { presentation: 'showcase' });
     return pages.find((page) => page.path === path)?.html ?? pages[0]?.html ?? '';
-  }, [blueprint, path]);
+  }, [blueprint, path, template]);
 
   // Die Serversitzung hat eine Frist: sieben Tage aus
   // `siteos_anonymous_builds.expires_at`. Sie zu verschweigen hieße, den
@@ -428,6 +432,31 @@ export default function BuildStudioPage() {
                 <span className="block truncate font-mono text-[10px] text-titanium-600">{page.path}</span>
               </button>
             ))}
+          </div>
+          <div className="mt-8">
+            <div className="mb-3 text-[10px] font-bold uppercase tracking-[.16em] text-titanium-500">Design</div>
+            <div className="space-y-2">
+              {SITE_DESIGN_TEMPLATES.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => setTemplate(item.id)}
+                  className={`w-full rounded-lg border px-3 py-2 text-left text-xs ${
+                    template === item.id
+                      ? 'border-petrol-600 bg-petrol-950/40 text-titanium-50'
+                      : 'border-titanium-800 text-titanium-400 hover:border-titanium-600'
+                  }`}
+                >
+                  <span className="flex items-center justify-between gap-2">
+                    <span className="truncate font-semibold">{item.label}</span>
+                    {item.tag === '8K' && (
+                      <span className="font-mono text-[9px] uppercase tracking-wider text-petrol-400">8K</span>
+                    )}
+                  </span>
+                  <span className="mt-1 block text-[10px] leading-4 text-titanium-500">{item.description}</span>
+                </button>
+              ))}
+            </div>
           </div>
           <button
             type="button"

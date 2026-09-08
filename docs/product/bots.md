@@ -131,6 +131,29 @@ curl -X POST "$SUPABASE_URL/functions/v1/bot-chat" \
 Edge-Function-Drift-Guard (`scripts/check-edge-function-drift.mjs`) verlangt
 dafür ein vorhandenes `index.ts` — ist erfüllt.
 
+## Produktentscheidung (2026-09-08)
+
+Frage: Everlast/EverBots weiterverkaufen, per Claude Code nachbauen, oder
+Telefon-Bot zuerst?
+
+**Entscheidung: eigene Bots auf diesem Stack. Telefon ist das Leitprodukt.**
+
+Everlast (Berlin) und EverBots gewinnen über Einfachheit, nicht über mehr
+Felder: Ziel wählen, drei Angaben, Nummer verbinden. Das ist UX, kein
+Plattformkauf. Ein Reseller-Schnitt würde Gespräche aus dem Prüfpfad tragen
+und die EU-Souveränität an GoHighLevel/US-White-Label hängen.
+
+Was wir deshalb *nicht* tun: Everlast, EverBots, Vapi oder Retell als
+White-Label weiterverkaufen. Agenturen verdienen über `white_label` und das
+`agency_bot_pack` an **unseren** Bots.
+
+Was wir von ihnen übernehmen: Ziel zuerst (`BOT_GOAL_TEMPLATES`), Wissen in
+drei Feldern (`bots.config.knowledge`), Sprechstil ohne Markdown am Telefon,
+Probe sprechen im Builder. Die Runtime bleibt `bot-chat` /
+`bot-voice-webhook`.
+
+`/app/agents/susi` ist der Telefon-Einstieg, kein Stub mehr.
+
 ## Offene operative Entscheidungen (kein Code mehr nötig)
 
 1. **Telefonie-Provider**: EU-Provider wählen (z. B. Twilio EU-Region oder

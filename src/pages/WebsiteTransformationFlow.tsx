@@ -70,7 +70,7 @@ export function WebsiteTransformationFlow() {
   const [discovery, setDiscovery] = useState<Discovery | null>(null);
   const [scan, setScan] = useState<{ scores: any; findings: any[] } | null>(null);
   const [blueprint, setBlueprint] = useState<SiteBlueprint | null>(null);
-  const [template, setTemplate] = useState<SiteDesignTemplate>('modern-minimal');
+  const [template, setTemplate] = useState<SiteDesignTemplate>('enterprise-8k');
   const [features] = useState<string[]>(FEATURES.map(([id]) => id));
 
   const previewBlueprint = useMemo(() => blueprint ? applySiteDesignTemplate(blueprint, template) : null, [blueprint, template]);

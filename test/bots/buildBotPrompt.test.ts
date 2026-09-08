@@ -66,4 +66,27 @@ describe('buildBotPrompt', () => {
     expect(out).toContain('Nutzer: M');
     expect(out).not.toContain('Nutzer:  M');
   });
+
+  it('stellt die Wissensbasis vor die neue Nachricht', () => {
+    const out = buildBotPrompt({
+      userMessage: 'Habt ihr am Samstag offen?',
+      knowledge: { hours: 'Mo–Fr 8–18', handoffPhone: '+49 40 1' },
+    });
+    expect(out).toContain('[Wissensbasis — nur diese Fakten, nichts erfinden]');
+    expect(out).toContain('Öffnungszeiten: Mo–Fr 8–18');
+    expect(out).toContain('Weiterleitung an einen Menschen: +49 40 1');
+    expect(out.indexOf('[Wissensbasis')).toBeLessThan(out.indexOf('[Neue Nachricht]'));
+  });
+
+  it('erzwingt am Telefon sprechbare Sätze ohne Markdown', () => {
+    const out = buildBotPrompt({ userMessage: 'Hallo', spoken: true });
+    expect(out).toContain('[Sprechstil]');
+    expect(out).toContain('Kein Markdown');
+  });
+
+  it('lässt Wissen und Sprechstil weg, wenn sie nicht gesetzt sind', () => {
+    const out = buildBotPrompt({ userMessage: 'x' });
+    expect(out).not.toContain('[Wissensbasis');
+    expect(out).not.toContain('[Sprechstil]');
+  });
 });

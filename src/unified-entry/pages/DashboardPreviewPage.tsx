@@ -8,7 +8,6 @@ import { renderSite } from '../../../packages/siteos-core/src/render/renderer';
 import {
   applySiteDesignTemplate,
   SITE_DESIGN_TEMPLATES,
-  type SiteDesignTemplate,
 } from '../../../packages/siteos-core/src/render/templates';
 
 type Stage = 'wow' | 'full' | 'contact' | 'offer';
@@ -34,13 +33,13 @@ type Stage = 'wow' | 'full' | 'contact' | 'offer';
  * Domain und erkannter Branche. Das ist eine echte Site, aber noch nicht die
  * mit den eigenen Texten.
  */
-const DESIGN_ORDER: readonly SiteDesignTemplate[] = ['modern-minimal', 'bento-bold', 'dark-professional'];
+const DESIGN_ORDER = ['enterprise-8k', 'editorial-trust', 'cinematic-obsidian'] as const;
 
 /** Akzentfarben nur fuer die Auswahl-UI dieser Seite — nicht fuer die Site. */
-const ACCENT: Record<SiteDesignTemplate, string> = {
-  'modern-minimal': '#22d3ee',
-  'bento-bold': '#8b5cf6',
-  'dark-professional': '#34d399',
+const ACCENT: Record<(typeof DESIGN_ORDER)[number], string> = {
+  'enterprise-8k': '#0F766E',
+  'editorial-trust': '#0F766E',
+  'cinematic-obsidian': '#7AA2FF',
 };
 
 const VARIANTS = DESIGN_ORDER.map((id) => {
@@ -48,7 +47,7 @@ const VARIANTS = DESIGN_ORDER.map((id) => {
   return { id, name: template?.label ?? id, subtitle: template?.description ?? '', accent: ACCENT[id] };
 });
 
-type Variant = SiteDesignTemplate;
+type Variant = (typeof DESIGN_ORDER)[number];
 
 /** Domain zu einem lesbaren Namen machen: `kanzlei-mueller.de` → `Kanzlei Mueller`. */
 function brandFromDomain(domain: string): string {
@@ -157,7 +156,7 @@ export function DashboardPreviewPage() {
   const trackers = Number(params.get('trackers'));
   const cookies = Number(params.get('cookies'));
   const severity = params.get('severity') ?? 'low';
-  const [variant, setVariant] = useState<Variant>('modern-minimal');
+  const [variant, setVariant] = useState<Variant>('enterprise-8k');
   const [stage, setStage] = useState<Stage>('wow');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');

@@ -8,6 +8,19 @@ export interface BotCapabilities {
   orders?: boolean;
 }
 
+/**
+ * Wissensbasis des Bots. Liegt in `bots.config.knowledge`.
+ * Der Prompt-Bau in `_shared/bots.ts` liest genau diese Schlüssel —
+ * eine Abweichung hier macht den Bot höflich, aber unwissend.
+ */
+export interface BotKnowledge {
+  goal?: string;
+  hours?: string;
+  services?: string;
+  handoffPhone?: string;
+  notes?: string;
+}
+
 export interface Bot {
   id: string;
   tenant_id: string;
@@ -95,6 +108,7 @@ export interface CreateBotArgs {
   persona?: string | null;
   greeting?: string | null;
   capabilities?: BotCapabilities;
+  config?: Record<string, unknown>;
   enabled?: boolean;
 }
 

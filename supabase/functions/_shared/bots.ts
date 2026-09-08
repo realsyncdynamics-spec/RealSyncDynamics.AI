@@ -171,8 +171,57 @@ export async function loadRecentHistory(
   return ((data as unknown as Array<{ role: string; content: string }> ?? [])).reverse();
 }
 
+export interface BotKnowledge {
+  goal?: string;
+  hours?: string;
+  services?: string;
+  handoffPhone?: string;
+  notes?: string;
+}
+
+function readString(value: unknown): string | undefined {
+  if (typeof value !== 'string') return undefined;
+  const trimmed = value.trim();
+  return trimmed === '' ? undefined : trimmed;
+}
+
+/**
+ * Liest `bots.config.knowledge`. Die Schlüssel stehen doppelt — hier und in
+ * `src/features/bots/templates.ts`. Nie einseitig ändern; sonst kennt der
+ * Builder Felder, die der Prompt verschluckt, oder umgekehrt.
+ */
+export function knowledgeFromConfig(config: Record<string, unknown> | null | undefined): BotKnowledge {
+  const raw = config && typeof config === 'object' ? config.knowledge : undefined;
+  if (!raw || typeof raw !== 'object') return {};
+  const k = raw as Record<string, unknown>;
+  return {
+    goal: readString(k.goal),
+    hours: readString(k.hours),
+    services: readString(k.services),
+    handoffPhone: readString(k.handoffPhone),
+    notes: readString(k.notes),
+  };
+}
+
+function formatKnowledge(knowledge: BotKnowledge): string | null {
+  const lines: string[] = [];
+  if (knowledge.hours) lines.push(`Öffnungszeiten: ${knowledge.hours}`);
+  if (knowledge.services) lines.push(`Leistungen: ${knowledge.services}`);
+  if (knowledge.handoffPhone) lines.push(`Weiterleitung an einen Menschen: ${knowledge.handoffPhone}`);
+  if (knowledge.notes) lines.push(`Hinweise: ${knowledge.notes}`);
+  if (knowledge.goal) lines.push(`Ziel des Bots: ${knowledge.goal}`);
+  return lines.length > 0 ? lines.join('\n') : null;
+}
+
 export interface BuildBotPromptInput {
   persona?: string | null;
+  knowledge?: BotKnowledge | null;
+  /**
+   * Telefon/Voice: kurze, sprechbare Sätze. Markdown am Telefon ist ein
+   * Hörfehler, keine Formatierung — Everlast/Retell scheitern genau daran,
+   * wenn der Prompt den Chat-Stil durchlässt.
+   */
+  spoken?: boolean;
   history?: Array<{ role: string; content: string }>;
   userMessage: string;
 }
@@ -182,7 +231,7 @@ export interface BuildBotPromptInput {
  * sie unit-testbar ist (siehe test/bots/buildBotPrompt.test.ts).
  *
  * Der tool-eigene Basis-System-Prompt (ai_tools.system_prompt) bleibt davon
- * unberührt — hier kommt nur Persona + Verlauf + neue Nachricht hinein.
+ * unberührt — hier kommt nur Persona + Wissen + Verlauf + neue Nachricht hinein.
  */
 export function buildBotPrompt(input: BuildBotPromptInput): string {
   const parts: string[] = [];
@@ -190,6 +239,17 @@ export function buildBotPrompt(input: BuildBotPromptInput): string {
   const persona = (input.persona ?? '').trim();
   if (persona) {
     parts.push(`[Unternehmens-Kontext und Persona]\n${persona}`);
+  }
+
+  const knowledge = formatKnowledge(input.knowledge ?? {});
+  if (knowledge) {
+    parts.push(`[Wissensbasis — nur diese Fakten, nichts erfinden]\n${knowledge}`);
+  }
+
+  if (input.spoken) {
+    parts.push(
+      '[Sprechstil]\nDu sprichst am Telefon. Kurze Sätze. Kein Markdown, keine Listen, keine URLs vorlesen außer auf Nachfrage. Siezen. Nach einer Rückfrage innehalten.',
+    );
   }
 
   const history = (input.history ?? []).filter((m) => m.role !== 'system' && m.content.trim());
@@ -205,4 +265,18 @@ export function buildBotPrompt(input: BuildBotPromptInput): string {
   parts.push('Antworte als Assistent auf die neue Nachricht.');
 
   return parts.join('\n\n');
+}
+
+/** Bequemer Einstieg: Persona, Wissen und Sprechstil aus der Bot-Zeile. */
+export function buildBotPromptFromBot(
+  bot: BotRow,
+  input: { history?: Array<{ role: string; content: string }>; userMessage: string },
+): string {
+  return buildBotPrompt({
+    persona: bot.persona,
+    knowledge: knowledgeFromConfig(bot.config),
+    spoken: bot.channel === 'voice',
+    history: input.history,
+    userMessage: input.userMessage,
+  });
 }

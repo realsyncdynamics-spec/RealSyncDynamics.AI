@@ -37,7 +37,7 @@ import { audit } from '../_shared/auditLog.ts';
 import { enforceBotMessage } from '../_shared/pdp/botmessage.ts';
 import {
   resolveBot, upsertConversation, insertMessage, loadRecentHistory,
-  buildBotPrompt, type BotRow,
+  buildBotPromptFromBot, type BotRow,
 } from '../_shared/bots.ts';
 import { extractInboundTextMessages, buildGraphTextMessage } from '../_shared/whatsapp.ts';
 
@@ -238,7 +238,7 @@ async function handleInbound(
     return;
   }
 
-  const prompt = buildBotPrompt({ persona: bot.persona, history: prior, userMessage: msg.text });
+  const prompt = buildBotPromptFromBot(bot, { history: prior, userMessage: msg.text });
 
   const ai = await runAiTool(admin, bot.tenant_id, null, 'bot_reply', prompt, {
     metadata: { bot_id: bot.id, conversation_id: conversationId, channel: 'whatsapp' },

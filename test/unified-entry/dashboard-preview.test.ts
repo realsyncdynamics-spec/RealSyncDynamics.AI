@@ -95,7 +95,7 @@ describe('Die Seite verspricht nur, was sie tut', () => {
     // Die alten Varianten waren Nachbauten von SITE_DESIGN_TEMPLATES. Ein
     // zweiter Satz eigener IDs würde denselben Zustand wiederherstellen.
     expect(code).toContain('SITE_DESIGN_TEMPLATES');
-    for (const id of ['modern-minimal', 'bento-bold', 'dark-professional']) {
+    for (const id of ['enterprise-8k', 'editorial-trust', 'cinematic-obsidian']) {
       expect(code, `Template-ID fehlt: ${id}`).toContain(id);
     }
   });

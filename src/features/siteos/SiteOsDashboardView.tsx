@@ -178,7 +178,7 @@ function SiteOsInner() {
                 type="text"
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
-                placeholder="Erstelle eine Website für einen Zahnarzt in Hamburg."
+                placeholder="Enterprise-Landingpage für eine Kanzlei in München. 8K-Anmutung, klare Typografie."
                 className="flex-1 border border-titanium-800 bg-obsidian-900 px-3 py-2 text-sm text-titanium-100 placeholder:text-titanium-600 focus:border-cyan-700 focus:outline-none"
               />
               <Button onClick={() => void onBuild()} disabled={busy !== null || prompt.trim() === ''}>

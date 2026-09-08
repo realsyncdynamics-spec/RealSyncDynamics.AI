@@ -27,7 +27,7 @@ import { runAiTool, AiInvokeError } from '../_shared/ai.ts';
 import { enforceBotMessage } from '../_shared/pdp/botmessage.ts';
 import {
   resolveBot, upsertConversation, insertMessage, loadRecentHistory,
-  buildBotPrompt, BotError, type BotRow,
+  buildBotPromptFromBot, BotError, type BotRow,
 } from '../_shared/bots.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
@@ -102,7 +102,7 @@ async function replyForVoice(
     return verdict.safe_reply!;
   }
 
-  const prompt = buildBotPrompt({ persona: bot.persona, history: prior, userMessage: userText });
+  const prompt = buildBotPromptFromBot(bot, { history: prior, userMessage: userText });
   const ai = await runAiTool(admin, bot.tenant_id, null, 'bot_reply', prompt, {
     metadata: { bot_id: bot.id, conversation_id: conversationId, channel: 'voice' },
   });

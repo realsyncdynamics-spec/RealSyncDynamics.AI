@@ -67,9 +67,10 @@ export function renderPresentationCss(theme: Partial<SiteTheme> | undefined): st
     '--line:color-mix(in srgb,var(--foreground) 14%,transparent);',
     '--muted:color-mix(in srgb,var(--foreground) 68%,var(--surface));',
     '--accent-soft:color-mix(in srgb,var(--accent) 14%,var(--surface));',
-    '--shadow:0 1px 2px rgba(0,0,0,.06),0 12px 32px -12px rgba(0,0,0,.28);',
-    '--gutter:clamp(1.25rem,5vw,3rem);',
-    '--maxw:1180px;',
+    '--shadow:0 1px 2px rgba(0,0,0,.04),0 24px 64px -28px rgba(0,0,0,.38);',
+    '--gutter:clamp(1.5rem,6vw,4.5rem);',
+    '--maxw:1280px;',
+    '--hair:color-mix(in srgb,var(--foreground) 8%,transparent);',
     '}',
   ].join('');
 
@@ -80,16 +81,17 @@ export function renderPresentationCss(theme: Partial<SiteTheme> | undefined): st
     // Hebt die 72ch-Begrenzung des Kern-Stylesheets auf: Die Lesebreite
     // wird auf Textblöcke verlagert (siehe `p`-Regel weiter unten), das
     // Seitenraster darf voll ausspielen.
-    'body{font-size:clamp(16px,1.02vw + 14px,18px);-webkit-font-smoothing:antialiased;}',
+    'body{font-size:clamp(16px,1.05vw + 14px,19px);-webkit-font-smoothing:antialiased;',
+    'text-rendering:optimizeLegibility;}',
     'body main{max-width:none;margin:0;padding:0;}',
     'body header,body footer{max-width:none;margin:0;padding:0;}',
     'body main>section,body main>aside{',
-    'max-width:none;margin:0;padding:clamp(3rem,7vw,5.5rem) var(--gutter);}',
+    'max-width:none;margin:0;padding:clamp(3.5rem,8vw,7rem) var(--gutter);}',
     'body main>section>*,body main>aside>*{max-width:var(--maxw);margin-left:auto;margin-right:auto;}',
-    'h1,h2,h3{letter-spacing:-.02em;margin:0 0 .6em;}',
-    'h2{font-size:clamp(1.6rem,2.6vw,2.35rem);}',
-    'h3{font-size:clamp(1.15rem,1.6vw,1.4rem);}',
-    'p{max-width:66ch;color:var(--muted);}',
+    'h1,h2,h3{letter-spacing:-.038em;margin:0 0 .6em;font-weight:650;}',
+    'h2{font-size:clamp(1.75rem,3.1vw,2.75rem);}',
+    'h3{font-size:clamp(1.15rem,1.6vw,1.45rem);}',
+    'p{max-width:62ch;color:var(--muted);}',
     'a{text-underline-offset:.18em;}',
 
     // ── Kopfbereich ────────────────────────────────────────────────
@@ -114,8 +116,16 @@ export function renderPresentationCss(theme: Partial<SiteTheme> | undefined): st
     // Platzhalter — ein Bild ohne geklärte Rechtelage wird nicht erfunden,
     // auch nicht in der Vorschau.
     '[id*="--hero--"]{position:relative;overflow:hidden;',
-    'padding-block:clamp(3.5rem,9vw,7rem)!important;',
-    'background:radial-gradient(1100px 520px at 12% -10%,var(--accent-soft),transparent 62%);}',
+    'padding-block:clamp(4.5rem,12vw,9rem)!important;',
+    'background:',
+    'radial-gradient(1200px 640px at 8% -18%,var(--accent-soft),transparent 58%),',
+    'linear-gradient(180deg,color-mix(in srgb,var(--accent) 6%,var(--surface)),var(--surface) 72%);}',
+    // Cinematic grain ohne Drittanbieter-Bild: nur CSS, keine url().
+    '[id*="--hero--"]::before{content:"";position:absolute;inset:0;pointer-events:none;',
+    'background-image:repeating-linear-gradient(-12deg,transparent 0 11px,var(--hair) 11px 12px);',
+    'opacity:.55;}',
+    '[id*="--hero--"]::after{content:"";position:absolute;inset:auto var(--gutter) 0;height:1px;',
+    'background:var(--line);pointer-events:none;}',
     // `max-width:16ch` allein genuegt nicht: Ein Firmenname ohne Leerzeichen
     // ist ein einziges Wort, und ein Wort bricht bei `overflow-wrap:normal`
     // nicht. Der Hero hat `overflow:hidden` — der Ueberhang wurde also nicht
@@ -129,20 +139,22 @@ export function renderPresentationCss(theme: Partial<SiteTheme> | undefined): st
     // zusammenfallen — gemessen sackte sie von 570px auf 226px, die
     // Ueberschrift brach dann dreizeilig mitten im Wort. `break-word` bricht
     // erst, wenn es sonst ueberliefe, und laesst die Spaltenbreite in Ruhe.
-    '[id*="--hero--"]>h1,[id*="--hero--"]>h2{',
-    'font-size:clamp(2.1rem,5.4vw,4rem);line-height:1.05;max-width:16ch;',
+    '[id*="--hero--"]>h1,[id*="--hero--"]>h2{position:relative;z-index:1;',
+    'font-size:clamp(2.35rem,6vw,4.85rem);line-height:1.02;max-width:16ch;',
     'overflow-wrap:break-word;}',
-    '[id*="--hero--"]>p{font-size:clamp(1.05rem,1.5vw,1.3rem);max-width:52ch;}',
-    '[id*="--hero--"]>a{display:inline-block;margin-top:1.75rem;',
+    '[id*="--hero--"]>p{position:relative;z-index:1;font-size:clamp(1.08rem,1.55vw,1.35rem);max-width:52ch;}',
+    '[id*="--hero--"]>a{position:relative;z-index:1;display:inline-block;margin-top:2rem;',
     'background:var(--accent);color:var(--surface);text-decoration:none;font-weight:600;',
-    'padding:.85rem 1.6rem;border-radius:var(--radius);box-shadow:var(--shadow);}',
+    'padding:.95rem 1.85rem;border-radius:var(--radius);box-shadow:var(--shadow);',
+    'letter-spacing:.01em;}',
     '[id*="--hero--"]>a:hover{filter:brightness(1.08);}',
-    '[id*="--hero--"]>[data-placeholder]{margin-top:2.5rem;width:100%;',
-    'background:linear-gradient(135deg,var(--tint-strong),var(--accent-soft));',
-    'border:1px solid var(--line);box-shadow:var(--shadow);}',
+    '[id*="--hero--"]>[data-placeholder]{position:relative;z-index:1;margin-top:2.5rem;width:100%;',
+    'background:',
+    'linear-gradient(160deg,var(--tint-strong),var(--accent-soft) 55%,color-mix(in srgb,var(--accent) 22%,var(--surface)));',
+    'border:1px solid var(--line);box-shadow:var(--shadow);min-height:18rem;}',
     // Höhe des Heroes, vom Blueprint gesteuert (`content.emphasis`).
-    '[id*="--hero--"][data-emphasis="tall"]{padding-block:clamp(5rem,13vw,9.5rem)!important;}',
-    '[id*="--hero--"][data-emphasis="compact"]{padding-block:clamp(2.25rem,5vw,3.5rem)!important;}',
+    '[id*="--hero--"][data-emphasis="tall"]{padding-block:clamp(6rem,16vw,11rem)!important;}',
+    '[id*="--hero--"][data-emphasis="compact"]{padding-block:clamp(2.5rem,6vw,4rem)!important;}',
     '@media (min-width:900px){',
     '[id*="--hero--"]{display:grid;grid-template-columns:1.05fr .95fr;',
     'gap:clamp(2rem,4vw,4rem);align-items:center;}',
@@ -154,13 +166,17 @@ export function renderPresentationCss(theme: Partial<SiteTheme> | undefined): st
 
     // ── Karten-Raster (Leistungen, Vorzüge) ────────────────────────
     '[id*="--services--"]>ul,[id*="--features--"]>ul{list-style:none;padding:0;',
-    'display:grid;gap:clamp(1rem,2vw,1.5rem);',
-    'grid-template-columns:repeat(auto-fit,minmax(min(100%,17rem),1fr));}',
+    'display:grid;gap:clamp(1rem,2.2vw,1.75rem);counter-reset:rsdCard;',
+    'grid-template-columns:repeat(auto-fit,minmax(min(100%,17.5rem),1fr));}',
     '[id*="--services--"] li,[id*="--features--"] li{background:var(--tint);',
     'border:1px solid var(--line);border-radius:var(--radius);',
-    'padding:clamp(1.25rem,2vw,1.75rem);}',
+    'padding:clamp(1.4rem,2.4vw,2rem);position:relative;overflow:hidden;}',
+    '[id*="--services--"] li::before,[id*="--features--"] li::before{',
+    'counter-increment:rsdCard;content:counter(rsdCard,decimal-leading-zero);',
+    'display:block;font-family:var(--font-display);font-size:.72rem;letter-spacing:.18em;',
+    'text-transform:uppercase;color:var(--accent);margin-bottom:.85rem;}',
     '[id*="--services--"] li strong,[id*="--features--"] li strong{',
-    'display:block;font-family:var(--font-display);font-size:1.1rem;margin-bottom:.4rem;}',
+    'display:block;font-family:var(--font-display);font-size:1.15rem;margin-bottom:.45rem;}',
     '[id*="--services--"] li span,[id*="--features--"] li span{color:var(--muted);}',
 
     // ── Über uns / Team / Stimmen ──────────────────────────────────
@@ -190,9 +206,11 @@ export function renderPresentationCss(theme: Partial<SiteTheme> | undefined): st
     'border-radius:var(--radius);box-shadow:var(--shadow);}',
 
     // ── Handlungsaufforderung ──────────────────────────────────────
-    '[id*="--cta--"]{text-align:center;background:var(--accent-soft);}',
-    '[id*="--cta--"]>a{display:inline-block;margin-top:.5rem;background:var(--accent);',
-    'color:var(--surface);text-decoration:none;font-weight:600;padding:.85rem 1.6rem;',
+    '[id*="--cta--"]{text-align:center;background:',
+    'radial-gradient(900px 280px at 50% 0%,var(--accent-soft),transparent 70%),var(--tint);}',
+    '[id*="--cta--"]>h1,[id*="--cta--"]>h2{max-width:18ch;margin-left:auto;margin-right:auto;}',
+    '[id*="--cta--"]>a{display:inline-block;margin-top:.75rem;background:var(--accent);',
+    'color:var(--surface);text-decoration:none;font-weight:600;padding:1rem 2rem;',
     'border-radius:var(--radius);box-shadow:var(--shadow);}',
 
     // ── Einwilligungsschranke (Karte, Video) ───────────────────────
@@ -209,8 +227,8 @@ export function renderPresentationCss(theme: Partial<SiteTheme> | undefined): st
 
     // ── Fuß ────────────────────────────────────────────────────────
     'body>footer{border-top:1px solid var(--line);background:var(--tint);}',
-    'body>footer>nav{max-width:var(--maxw);margin:0 auto;padding:2rem var(--gutter);}',
-    'body>footer ul{display:flex;flex-wrap:wrap;gap:1.5rem;list-style:none;padding:0;margin:0;}',
+    'body>footer>nav{max-width:var(--maxw);margin:0 auto;padding:2.75rem var(--gutter);}',
+    'body>footer ul{display:flex;flex-wrap:wrap;gap:1.75rem;list-style:none;padding:0;margin:0;}',
     'body>footer a{color:var(--muted);text-decoration:none;font-size:.9rem;}',
     'body>footer a:hover{color:var(--foreground);}',
 

@@ -1,3 +1,4 @@
+import { classifyIntent, detectCapabilities } from './capabilities';
 import type { ExecutionPlan, Intent, PlanStep, RiskLevel } from './types';
 
 const step = (
@@ -11,30 +12,25 @@ const step = (
 ): PlanStep => ({ id, title, agent, action, risk, requiresApproval, dependsOn });
 
 export function createExecutionPlan(intent: Intent): ExecutionPlan {
-  const text = intent.text.toLowerCase();
-  const website = text.includes('website') || text.includes('landingpage') || text.includes('landing page');
-  const deploy = text.includes('deploy') || text.includes('veröff') || text.includes('publish');
-  const governance = text.includes('dsgvo') || text.includes('gdpr') || text.includes('ai act') || text.includes('compliance');
-  const seo = text.includes('seo') || text.includes('google') || text.includes('sichtbarkeit');
-
+  const signals = classifyIntent(intent.text);
   const steps: PlanStep[] = [];
 
-  if (website) {
+  if (signals.website) {
     steps.push(step('analyse', 'Bestehendes Projekt und Anforderungen analysieren', 'architect', 'analyze_project', 'low', false));
     steps.push(step('design', 'Designsystem und responsive Struktur erstellen', 'designer', 'create_design_system', 'medium', false, ['analyse']));
     steps.push(step('build', 'Frontend-Komponenten erzeugen oder ändern', 'developer', 'write_frontend', 'medium', false, ['design']));
     steps.push(step('qa', 'Frontend testen und Accessibility prüfen', 'qa', 'verify_frontend', 'medium', false, ['build']));
   }
 
-  if (seo) {
-    steps.push(step('seo', 'Technisches SEO und AI-Visibility prüfen', 'seo', 'optimize_visibility', 'low', false, website ? ['qa'] : []));
+  if (signals.seo) {
+    steps.push(step('seo', 'Technisches SEO und AI-Visibility prüfen', 'seo', 'optimize_visibility', 'low', false, signals.website ? ['qa'] : []));
   }
 
-  if (governance) {
+  if (signals.governance) {
     steps.push(step('governance', 'Governance, Datenschutz und AI-Act-Risiken bewerten', 'governance', 'evaluate_governance', 'high', true, steps.length ? [steps[steps.length - 1].id] : []));
   }
 
-  if (deploy) {
+  if (signals.deploy) {
     steps.push(step('deploy', 'Production Deployment vorbereiten', 'deployment', 'publish', 'critical', true, steps.length ? [steps[steps.length - 1].id] : []));
   }
 
@@ -53,6 +49,7 @@ export function createExecutionPlan(intent: Intent): ExecutionPlan {
     steps,
     risk,
     requiresApproval: steps.some((item) => item.requiresApproval),
+    capabilities: detectCapabilities(intent.text),
     generatedAt: new Date().toISOString(),
   };
 }

@@ -2,6 +2,17 @@ export type OsStage = 'intent' | 'policy' | 'plan' | 'execute' | 'observe' | 've
 export type RiskLevel = 'low' | 'medium' | 'high' | 'critical';
 export type ApprovalMode = 'never' | 'on-risk' | 'always';
 
+export const OS_CAPABILITIES = [
+  'Website',
+  'Design',
+  'Code',
+  'SEO',
+  'Governance',
+  'Deployment',
+] as const;
+
+export type OsCapability = (typeof OS_CAPABILITIES)[number];
+
 export type ToolPermission = {
   resource: string;
   actions: string[];
@@ -43,6 +54,7 @@ export type ExecutionPlan = {
   steps: PlanStep[];
   risk: RiskLevel;
   requiresApproval: boolean;
+  capabilities: OsCapability[];
   generatedAt: string;
 };
 
@@ -60,4 +72,56 @@ export type OsEvent = {
   policyVersion?: string;
   metadata?: Record<string, unknown>;
   occurredAt: string;
+};
+
+export type SessionArtifacts = {
+  blueprintId?: string;
+  slug?: string;
+  contentSha256?: string;
+  siteUrl?: string;
+  scanId?: string;
+  agentRunId?: string;
+  sites?: Array<{ slug: string; name: string; status: string }>;
+};
+
+export type StepResultStatus = 'succeeded' | 'failed' | 'blocked' | 'not_implemented';
+
+export type StepResult = {
+  status: StepResultStatus;
+  reason?: string;
+  tool?: string;
+  observation?: Record<string, unknown>;
+  artifacts?: Partial<SessionArtifacts>;
+};
+
+export type CommandCenterPhase =
+  | 'received'
+  | 'planned'
+  | 'awaiting_approval'
+  | 'approved'
+  | 'rejected'
+  | 'running'
+  | 'blocked'
+  | 'completed'
+  | 'failed';
+
+export type StepExecutionState = {
+  stepId: string;
+  status: 'pending' | 'ready' | 'running' | 'awaiting_approval' | 'blocked' | 'succeeded' | 'failed';
+  policyReason?: string;
+  tool?: string;
+  notImplemented?: boolean;
+  observation?: Record<string, unknown>;
+};
+
+export type CommandSession = {
+  id: string;
+  intent: Intent;
+  plan: ExecutionPlan;
+  phase: CommandCenterPhase;
+  approved: boolean;
+  steps: StepExecutionState[];
+  events: OsEvent[];
+  policyVersion: string;
+  artifacts: SessionArtifacts;
 };

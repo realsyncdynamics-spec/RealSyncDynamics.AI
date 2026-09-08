@@ -108,7 +108,7 @@ Unterscheidung nicht in einer gemeinsamen Oberfläche einebnen.
 | 3 | Routen-Konsolidierung | Phase 2, Redirect-Tests |
 | 4 | Funnel / Free Scan / Auth / Trial | Funnel-Dreieck entschieden, OAuth-IDs |
 | 5 | Pricing + Entitlements | §10.4-Freigabe zu €699, Divergenz bereinigt |
-| 6 | Token-Ökonomie | **Identität am Gateway** + **Kostenrechnung** (§30) |
+| 6 | Token-Ökonomie | ~~Identität am Gateway~~ ✅ + **Kostenrechnung** (§30) |
 | 7–12 | Marketplace, Agenten, Connectors, Builder, Evidence-UX, E2E | Phasen 1–6 |
 
 **Zwei harte Sperren:**
@@ -123,7 +123,7 @@ Unterscheidung nicht in einer gemeinsamen Oberfläche einebnen.
 
 ## 6. Die Bedingungen, unter denen dieses Zielbild gilt
 
-1. **Identität am KI-Durchgangspunkt** — vor Phase 6, nicht vor Phase 2.
+1. ~~**Identität am KI-Durchgangspunkt**~~ — **erledigt am 2026-09-08.**
    Kein Aufruf des KI-Pfades trägt heute Mandant oder Nutzer (alle senden den
    Anon-Key; `ai-gateway/index.ts:109` setzt `tenant_id` fest auf `null`).
    Für das Zusammenlegen der Oberflächen ist das folgenlos — alle drei Flächen

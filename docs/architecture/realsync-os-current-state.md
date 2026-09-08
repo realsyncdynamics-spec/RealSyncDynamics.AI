@@ -106,6 +106,15 @@ niemanden.
    §30 des Auftrags — bemessen, nicht dramatisiert: begrenzt, aber real und
    nicht einem Konto zurechenbar.
 
+> **Behoben am 2026-09-08, im selben PR.** Der Aufruf trägt jetzt das
+> Sitzungstoken (`src/core/ai-gateway/session.ts`, alle vier lebenden
+> Aufrufstellen), und `resolveCaller()` in `ai-gateway/index.ts` löst daraus
+> Nutzer und Mandant auf. Anonyme Aufrufe laufen unverändert — Bedingung war,
+> dass der Free Scan auf `/audit` weiterläuft. Das Rate-Limit hängt jetzt am
+> Nutzer statt an der IP. **Kontingente werden weiterhin nicht durchgesetzt**;
+> Identität ist die Voraussetzung dafür, nicht die Sache selbst. Der Befund
+> bleibt hier stehen, weil er die Ursache erklärt.
+
 **Für die Konsolidierung heißt das etwas Erfreuliches**: Der Mandantenbezug ist
 **kein** Argument für oder gegen eine der drei Flächen — alle drei sind gleich
 betroffen. Er ist eine eigene Aufgabe, eine Ebene tiefer, und sie gehört vor

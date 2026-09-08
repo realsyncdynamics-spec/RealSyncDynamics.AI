@@ -35,7 +35,11 @@ Durchgesetzt wird ausschließlich nach **IP** (10/Minute, 100/Stunde, je
 Instanz im Arbeitsspeicher). Belege:
 `docs/architecture/realsync-os-current-state.md` §2.
 
-**Das ist der teuerste Posten in diesem Dokument.** Ein Guthabenmodell setzt
+**Das war der teuerste Posten in diesem Dokument — und ist seit dem
+2026-09-08 behoben** (`src/core/ai-gateway/session.ts`, `resolveCaller()` in
+`supabase/functions/ai-gateway/index.ts`). Der Befund bleibt hier stehen,
+weil er erklärt, warum die Kontingente bis dahin nicht durchsetzbar waren.
+Die folgende Herleitung beschreibt den Zustand **vor** dieser Änderung: Ein Guthabenmodell setzt
 voraus, dass bekannt ist, wessen Guthaben belastet wird — und genau diese
 Angabe erreicht die Function heute nicht. Der Schritt von Metering zu Ökonomie
 ist damit nicht „Restwert führen", sondern zuerst **Identität an den
@@ -52,7 +56,7 @@ Solange das offen ist, sind `limit.ai_calls_monthly`,
 
 | Fehlend | Folge |
 |---|---|
-| **Identität am Gateway** | **Voraussetzung für alles Übrige** — siehe oben |
+| ~~**Identität am Gateway**~~ | **Behoben am 2026-09-08**, siehe unten |
 | **Guthabenbegriff** | Verbrauch wird gezählt, ein Restwert nicht geführt |
 | **Nachkauf** | §12 „Purchase more" hat kein Produkt und keinen Pfad |
 | **Kundensichtbare Anzeige** | §8 „Token balance" hat keine Oberfläche |
@@ -124,9 +128,16 @@ Entitlement-System — und hier wäre es besonders verlockend, eines zu bauen.
 
 ## 6. Empfehlung
 
-0. **Zuerst Identität an den Durchgangspunkt.** Ohne Subjekt kein Guthaben,
-   keine Kontingentdurchsetzung, keine Zurechnung. Das ist der erste Schritt,
-   nicht der letzte — und er ist unabhängig von der Kostenrechnung machbar.
+0. ~~**Zuerst Identität an den Durchgangspunkt.**~~ **Erledigt am 2026-09-08.**
+   Der Aufruf trägt jetzt das Sitzungstoken des angemeldeten Nutzers;
+   `resolveCaller()` in `ai-gateway/index.ts` löst daraus Nutzer und Mandant
+   auf. Anonyme Aufrufe (Free Scan auf `/audit`) laufen unverändert weiter —
+   das war die Bedingung, nicht ein Zugeständnis.
+
+   **Was damit noch nicht erledigt ist**: Die Kontingente werden weiterhin
+   **nicht** durchgesetzt. Identität ist die Voraussetzung dafür, nicht die
+   Sache selbst. Der Rate-Limit-Schlüssel hängt jetzt am Nutzer statt an der
+   IP — das ist Missbrauchsschutz, keine Abrechnung.
 1. **Nicht bauen, bevor §4 gemessen ist.** Die Kostenrechnung ist die
    Voraussetzung, nicht die Begleitung.
 2. **Die Frage aus §3 entscheiden lassen**, bevor ein Guthaben entsteht.

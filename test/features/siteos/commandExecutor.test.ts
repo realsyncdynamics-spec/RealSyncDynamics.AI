@@ -4,7 +4,9 @@ import {
   type SiteOsCommandSurface,
 } from '../../../src/features/siteos/commandExecutor';
 import { openCommandSession, runUntilTerminal, type CommandSession } from '../../../src/core/realsync-os';
-import type { BuildResponse, SiteOverviewRow } from '../../../src/features/siteos/siteOsApi';
+import type { BuildResponse, SiteOsError, SiteOverviewRow } from '../../../src/features/siteos/siteOsApi';
+
+const unusedError = (): SiteOsError => ({ kind: 'error', message: 'not called' });
 
 const okBuild = (overrides: Partial<BuildResponse> = {}): { kind: 'ok'; data: BuildResponse } => ({
   kind: 'ok',
@@ -43,10 +45,10 @@ function surface(overrides: Partial<SiteOsCommandSurface> = {}): SiteOsCommandSu
   return {
     listSites: vi.fn(async () => []),
     listAgentRuns: vi.fn(async () => []),
-    buildSite: vi.fn(async () => ({ kind: 'error', message: 'not called' })),
-    runScan: vi.fn(async () => ({ kind: 'error', message: 'not called' })),
-    runAgent: vi.fn(async () => ({ kind: 'error', message: 'not called' })),
-    evaluatePublish: vi.fn(async () => ({ kind: 'error', message: 'not called' })),
+    buildSite: vi.fn(async () => unusedError()),
+    runScan: vi.fn(async () => unusedError()),
+    runAgent: vi.fn(async () => unusedError()),
+    evaluatePublish: vi.fn(async () => unusedError()),
     ...overrides,
   };
 }

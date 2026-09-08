@@ -97,6 +97,22 @@ function KeysInner() {
           </div>
         )}
 
+        <div className="mb-6 border border-titanium-900 bg-obsidian-900 p-4 flex items-start justify-between gap-3">
+          <div>
+            <div className="text-sm font-semibold text-titanium-50">Governance Router</div>
+            <p className="text-xs text-titanium-400 mt-1">
+              Derselbe <span className="font-mono">rsd_gov_</span>-Key steuert den OpenAI-kompatiblen
+              Eingang für Cursor (Quelle <span className="font-mono">api</span>, <span className="font-mono">sdk</span> oder <span className="font-mono">agent_runtime</span>).
+            </p>
+          </div>
+          <Link
+            to="/app/governance/router"
+            className="shrink-0 px-3 py-1.5 border border-titanium-800 text-xs font-semibold text-titanium-100 hover:bg-obsidian-800 rounded-none"
+          >
+            Einrichten
+          </Link>
+        </div>
+
         {!activeTenantId ? (
           <div className="text-titanium-500 text-sm">Wähle einen Tenant aus, um Keys zu verwalten.</div>
         ) : keys === null ? (

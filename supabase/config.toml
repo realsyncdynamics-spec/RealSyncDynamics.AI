@@ -91,6 +91,12 @@ verify_jwt = false
 [functions.governance-decide]
 verify_jwt = false
 
+# governance-router: OpenAI-kompatibler Governance Open Router für Cursor/SDKs.
+# Auth wie ingest/decide (rsd_gov_); verify_jwt muss false bleiben — Cursor
+# hat kein Supabase-JWT. tenant_id nur aus dem Key.
+[functions.governance-router]
+verify_jwt = false
+
 [functions.security-signal-ingest]
 verify_jwt = false
 

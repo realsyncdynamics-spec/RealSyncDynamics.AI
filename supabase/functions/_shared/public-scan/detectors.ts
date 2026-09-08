@@ -139,6 +139,7 @@ const CHAT_WIDGET_DETECTORS: readonly Detector[] = [
   { label: 'Userlike', hosts: [{ host: 'widget.userlike.com' }], raw: /userlike-cdn/i },
   { label: 'Botpress', hosts: [{ host: 'cdn.botpress.cloud' }] },
   { label: 'Voiceflow', hosts: [{ host: 'cdn.voiceflow.com' }] },
+  { label: 'RealSync Bot', raw: /data-rsd-bot/i },
 ];
 
 const TECHNOLOGY_DETECTORS: readonly Detector[] = [

@@ -30,6 +30,11 @@
 /*.js
   Cache-Control: public, max-age=31536000, immutable
 
+# Ungehashtes Widget-Skript. Ohne eigene Regel trüge es ein Jahr immutable —
+# ein Art.-50-Fix auf Mandantenseiten bliebe dann unsichtbar.
+/bot-widget.js
+  Cache-Control: public, max-age=300, must-revalidate, s-maxage=3600
+
 /*.css
   Cache-Control: public, max-age=31536000, immutable
 

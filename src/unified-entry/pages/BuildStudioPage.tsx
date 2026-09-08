@@ -43,10 +43,10 @@ import {
   applySiteDesignTemplate,
   defaultDesignTemplate,
   renderSite,
-  SITE_DESIGN_TEMPLATES,
   type SiteBlueprint,
   type SiteDesignTemplate,
 } from '../../../packages/siteos-core/src/index';
+import { DesignTemplatePicker } from '../../features/siteos/DesignTemplatePicker';
 import { SandboxedPreviewFrame } from '../../components/preview/SandboxedPreviewFrame';
 import { resolveAuditContext } from '../../core/onboarding/funnelContext';
 import {
@@ -72,12 +72,12 @@ const EXAMPLES: readonly string[] = [
 
 /** Schnellanweisungen. Jede davon versteht `refineBlueprint` tatsächlich. */
 const QUICK_ACTIONS: readonly string[] = [
+  'Nimm das Enterprise-8K-Design.',
   'Mach das Farbschema dunkel.',
   'Die Ecken bitte runder.',
   'Nimm grün als Akzentfarbe.',
   'Mach den Hero größer.',
   'Füge ein Kontaktformular hinzu.',
-  'Füge eine Referenzseite hinzu.',
 ];
 
 /**
@@ -435,28 +435,7 @@ export default function BuildStudioPage() {
           </div>
           <div className="mt-8">
             <div className="mb-3 text-[10px] font-bold uppercase tracking-[.16em] text-titanium-500">Design</div>
-            <div className="space-y-2">
-              {SITE_DESIGN_TEMPLATES.map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => setTemplate(item.id)}
-                  className={`w-full rounded-lg border px-3 py-2 text-left text-xs ${
-                    template === item.id
-                      ? 'border-petrol-600 bg-petrol-950/40 text-titanium-50'
-                      : 'border-titanium-800 text-titanium-400 hover:border-titanium-600'
-                  }`}
-                >
-                  <span className="flex items-center justify-between gap-2">
-                    <span className="truncate font-semibold">{item.label}</span>
-                    {item.tag === '8K' && (
-                      <span className="font-mono text-[9px] uppercase tracking-wider text-petrol-400">8K</span>
-                    )}
-                  </span>
-                  <span className="mt-1 block text-[10px] leading-4 text-titanium-500">{item.description}</span>
-                </button>
-              ))}
-            </div>
+            <DesignTemplatePicker selected={template} onSelect={setTemplate} tone="dark" />
           </div>
           <button
             type="button"

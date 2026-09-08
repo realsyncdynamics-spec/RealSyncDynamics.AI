@@ -12,6 +12,7 @@ import {
   collectSignals,
   detectAdditionalFindings,
 } from '../../supabase/functions/_shared/public-scan/detectors';
+import { botWidgetEmbedHtml } from '../../src/features/bots/widgetSnippet';
 
 function beobachtung(html: string, overrides: Partial<SiteObservation> = {}): SiteObservation {
   return {
@@ -85,6 +86,32 @@ describe('EU AI Act — Erkennung vor Beurteilung', () => {
     // Art. 50 nicht. Deshalb `medium`, nicht `high`.
     expect(chat!.severity).toBe('medium');
     expect(chat!.remediation).toMatch(/menschlich/i);
+  });
+
+  it('erkennt den eigenen Bot und schweigt, wenn der Hinweis im Markup steht', () => {
+    const html = SAUBER.replace('</body>', `${botWidgetEmbedHtml({
+      tenantId: '11111111-1111-1111-1111-111111111111',
+      botId: '22222222-2222-2222-2222-222222222222',
+      endpointBase: 'https://example.supabase.co/functions/v1',
+      widgetSrc: 'https://app.example/bot-widget.js',
+      greeting: 'Hallo',
+    })}</body>`);
+    const obs = beobachtung(html);
+    const signale = collectSignals(obs);
+
+    expect(signale.chatWidgets).toContain('RealSync Bot');
+    expect(signale.hasAiDisclosure).toBe(true);
+    expect(codes(html)).not.toContain('eu-ai-act.chat-widget-without-disclosure');
+  });
+
+  it('meldet den eigenen Bot ohne Transparenzhinweis', () => {
+    const html = SAUBER.replace('</body>', '<div data-rsd-bot data-tenant="t" data-bot="b"></div></body>');
+    const obs = beobachtung(html);
+    const signale = collectSignals(obs);
+
+    expect(signale.chatWidgets).toContain('RealSync Bot');
+    expect(signale.hasAiDisclosure).toBe(false);
+    expect(codes(html)).toContain('eu-ai-act.chat-widget-without-disclosure');
   });
 
   it('hält einen Blogtext über KI nicht für einen eingesetzten KI-Dienst', () => {

@@ -50,7 +50,13 @@ export const SITE_DESIGN_TEMPLATES: ReadonlyArray<{
   label: string;
   description: string;
   tag: Template['tag'];
-}> = DESIGN_TEMPLATES.map(({ id, label, description, tag }) => ({ id, label, description, tag }));
+  mode: Template['mode'];
+  accent: string;
+  surface: string;
+  foreground: string;
+}> = DESIGN_TEMPLATES.map(({ id, label, description, tag, mode, accent, surface, foreground }) => ({
+  id, label, description, tag, mode, accent, surface, foreground,
+}));
 
 export function designTemplateById(id: DesignTemplate): Template {
   return DESIGN_TEMPLATES.find((template) => template.id === id) ?? DESIGN_TEMPLATES[0];

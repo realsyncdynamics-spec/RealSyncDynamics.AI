@@ -110,6 +110,9 @@ export function renderPresentationCss(theme: Partial<SiteTheme> | undefined): st
     'list-style:none;margin:0;padding:0;margin-left:auto;}',
     'body>header>nav>ul a{color:var(--muted);text-decoration:none;font-size:.95rem;}',
     'body>header>nav>ul a:hover{color:var(--foreground);}',
+    'body>header>nav>ul a:last-child{background:var(--accent);color:var(--surface);',
+    'text-decoration:none;padding:.45rem .95rem;border-radius:var(--radius);font-weight:600;}',
+    'body>header>nav>ul a:last-child:hover{color:var(--surface);filter:brightness(1.08);}',
 
     // ── Hero ───────────────────────────────────────────────────────
     // Zwei Spalten ab 900px, darunter gestapelt. Das Medium bleibt ein

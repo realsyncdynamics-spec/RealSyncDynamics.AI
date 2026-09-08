@@ -7,6 +7,7 @@ import { Button } from '../../enterprise-os/components/Button';
 import { Card, CardHeader, CardBody } from '../../enterprise-os/components/Card';
 import { getBot, updateBot, deleteBot } from './api';
 import { knowledgeFromBotConfig } from './templates';
+import { botWidgetEmbedHtml, botWidgetSrc } from './widgetSnippet';
 import type { Bot, BotChannel, BotKnowledge } from './types';
 
 /** /app/bots/:botId — Bot-Builder: Ziel, Wissen, Test, Telefon-Anbindung. */
@@ -36,6 +37,7 @@ function BotBuilderInner() {
   const [testMessage, setTestMessage] = useState('');
   const [testLog, setTestLog] = useState<Array<{ role: 'user' | 'assistant'; text: string }>>([]);
   const [testing, setTesting] = useState(false);
+  const [snippetCopied, setSnippetCopied] = useState(false);
 
   useEffect(() => {
     if (!activeTenantId || !botId) return;
@@ -124,6 +126,16 @@ function BotBuilderInner() {
       setTesting(false);
     }
   }
+
+  const widgetSnippet = bot
+    ? botWidgetEmbedHtml({
+        tenantId: bot.tenant_id,
+        botId: bot.id,
+        endpointBase: FUNCTIONS_BASE,
+        widgetSrc: botWidgetSrc(typeof window === 'undefined' ? '' : window.location.origin),
+        greeting: bot.greeting,
+      })
+    : '';
 
   const input = 'w-full border border-titanium-700 bg-obsidian-900 px-3 py-2 text-sm text-titanium-100 placeholder:text-titanium-600 focus:border-security-500 focus:outline-none';
   const label = 'mb-1.5 block font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-titanium-500';
@@ -288,6 +300,35 @@ function BotBuilderInner() {
                 {!bot.enabled && (
                   <p className="text-xs text-amber-400">Der Bot ist deaktiviert — der Test-Endpoint lehnt ab.</p>
                 )}
+              </CardBody>
+            </Card>
+
+            <Card>
+              <CardHeader
+                title="Widget einbetten"
+                eyebrow="Website"
+                subtitle="Ein HTML-Schnipsel. Der Hinweis, dass das ein KI-Bot ist, steht im Markup — auch wenn JavaScript nicht läuft (Art. 50)."
+              />
+              <CardBody className="space-y-3">
+                <CodeBlock label="Einbettung" value={widgetSnippet} />
+                <p className="text-xs text-titanium-500">
+                  Die Session beginnt erst nach der ersten Nachricht. Die Vorschau im Builder
+                  injiziert dieses Skript bewusst nicht — sonst träfe jeder Entwurf `bot-chat`.
+                </p>
+                <Button
+                  variant="secondary"
+                  onClick={async () => {
+                    try {
+                      await navigator.clipboard.writeText(widgetSnippet);
+                      setSnippetCopied(true);
+                      window.setTimeout(() => setSnippetCopied(false), 2000);
+                    } catch {
+                      /* Clipboard kann in eingeschränkten Kontexten fehlen. */
+                    }
+                  }}
+                >
+                  {snippetCopied ? 'Kopiert' : 'Schnipsel kopieren'}
+                </Button>
               </CardBody>
             </Card>
 

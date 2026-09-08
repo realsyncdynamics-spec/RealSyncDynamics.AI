@@ -154,6 +154,24 @@ Probe sprechen im Builder. Die Runtime bleibt `bot-chat` /
 
 `/app/agents/susi` ist der Telefon-Einstieg, kein Stub mehr.
 
+## Website-Widget (Art. 50 sichtbar ohne JavaScript)
+
+Nach der Anlage kommt ein HTML-Schnipsel auf die Kundenseite — der Schritt,
+den Everlast hat und den der Builder bisher ausließ.
+
+- `src/features/bots/widgetSnippet.ts` erzeugt das Markup (`data-rsd-bot`,
+  `data-ai-disclosure`, sichtbarer Satz).
+- `public/bot-widget.js` ist das Laufzeit-Skript. Nachrichten gehen über
+  `textContent`, nicht `innerHTML`. `sessionStorage` erst nach der ersten
+  Nachricht (TDDDG: keine Speicherung vor Interaktion).
+- Der öffentliche Scan erkennt `data-rsd-bot`. Fehlt der Hinweis, entsteht
+  `eu-ai-act.chat-widget-without-disclosure`. Das offizielle Schnipsel
+  trägt den Hinweis statisch — ein Scan ohne ausgeführtes JavaScript muss
+  Art. 50 trotzdem sehen.
+
+Die SiteOS-Vorschau injiziert das Widget **nicht**. Sonst träfe jeder
+Entwurf im Builder `bot-chat`.
+
 ## Offene operative Entscheidungen (kein Code mehr nötig)
 
 1. **Telefonie-Provider**: EU-Provider wählen (z. B. Twilio EU-Region oder

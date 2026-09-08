@@ -40,10 +40,14 @@ describe('Enterprise-8K-Vorlagen', () => {
 });
 
 describe('8K-Vorlagen im Builder erreichbar', () => {
-  it('Build Studio bietet die Vorlagenwahl über SITE_DESIGN_TEMPLATES', () => {
-    const source = readFileSync(resolve(__dirname, '../../src/unified-entry/pages/BuildStudioPage.tsx'), 'utf8');
-    expect(source).toContain('SITE_DESIGN_TEMPLATES');
-    expect(source).toContain('applySiteDesignTemplate');
-    expect(source).toContain('defaultDesignTemplate');
+  it('Build Studio und Transformation wählen Vorlagen über DesignTemplatePicker', () => {
+    const studio = readFileSync(resolve(__dirname, '../../src/unified-entry/pages/BuildStudioPage.tsx'), 'utf8');
+    const preview = readFileSync(resolve(__dirname, '../../src/unified-entry/pages/PreviewSelectionPage.tsx'), 'utf8');
+
+    expect(studio).toContain('DesignTemplatePicker');
+    expect(studio).toContain('applySiteDesignTemplate');
+    expect(studio).toContain('defaultDesignTemplate');
+    expect(preview).toContain('DesignTemplatePicker');
+    expect(preview).toContain('applySiteDesignTemplate');
   });
 });

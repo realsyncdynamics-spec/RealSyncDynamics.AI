@@ -28,6 +28,7 @@
 
 import type { BlockKind, SiteBlock, SiteBlueprint, SitePage, SiteTheme } from '../types.ts';
 import { meetsWcagAA } from '../render/theme.ts';
+import { applySiteDesignTemplate, type SiteDesignTemplate } from '../render/templates.ts';
 import { getIndustryPreset } from './industries.ts';
 import type { SiteBrief } from './brief.ts';
 import { buildBlock, deriveCompliance, slugify } from './synthesize.ts';
@@ -228,6 +229,7 @@ export function refineBlueprint(blueprint: SiteBlueprint, instruction: string): 
   }
 
   next = applyThemeMode(next, text, changes);
+  next = applyDesignPreset(next, text, changes);
   next = applyAccent(next, instruction, text, changes);
   next = applyRadius(next, text, changes);
   next = applyFont(next, text, changes);
@@ -302,6 +304,33 @@ const SURFACES: Readonly<Record<'dark' | 'light', { surface: string; foreground:
   dark: { surface: '#0A0A0B', foreground: '#E2E2E2' },
   light: { surface: '#F7F8FA', foreground: '#111827' },
 });
+
+/**
+ * Benannte Studio-/8K-Vorlagen. Spezifischer als Hell/Dunkel: Wer
+ * „Enterprise 8K" sagt, will Petrol und den Satzspiegel, nicht nur `mode`.
+ */
+const DESIGN_PRESETS: ReadonlyArray<{ id: SiteDesignTemplate; terms: readonly string[]; label: string }> = [
+  { id: 'enterprise-8k', terms: ['enterprise 8k', 'enterprise-8k', '8k-design', '8k design'], label: 'Enterprise 8K' },
+  { id: 'cinematic-obsidian', terms: ['cinematic obsidian', 'cinematic-obsidian', 'kinoleinwand'], label: 'Cinematic Obsidian' },
+  { id: 'editorial-trust', terms: ['editorial trust', 'editorial-trust', 'magazin-satz'], label: 'Editorial Trust' },
+];
+
+function applyDesignPreset(bp: SiteBlueprint, text: string, changes: RefinementChange[]): SiteBlueprint {
+  const hit = DESIGN_PRESETS.find((preset) => preset.terms.some((term) => text.includes(term)));
+  if (!hit) return bp;
+
+  const next = applySiteDesignTemplate(bp, hit.id);
+  if (next.theme.accent === bp.theme.accent && next.theme.surface === bp.theme.surface && next.theme.mode === bp.theme.mode) {
+    return bp;
+  }
+
+  changes.push({
+    code: 'theme.preset',
+    summary: `Designvorlage ${hit.label} übernommen.`,
+    complianceNote: null,
+  });
+  return next;
+}
 
 function applyThemeMode(bp: SiteBlueprint, text: string, changes: RefinementChange[]): SiteBlueprint {
   const wantsDark = mentions(text, ['dunkel', 'dark', 'nacht', 'dunkles']);

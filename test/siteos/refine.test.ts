@@ -68,6 +68,26 @@ describe('refineBlueprint — Theme', () => {
       .blueprint.theme.fontDisplay).toMatch(/Georgia/);
     expect(refineBlueprint(base(), 'Sehr klassisch das Ganze.').changes).toEqual([]);
   });
+
+  it('übernimmt eine benannte 8K-Vorlage samt Schriften und Fläche', () => {
+    const result = refineBlueprint(base(), 'Nimm das Enterprise-8K-Design.');
+
+    expect(result.understood).toBe(true);
+    expect(result.changes.map((change) => change.code)).toContain('theme.preset');
+    expect(result.blueprint.theme.mode).toBe('light');
+    expect(result.blueprint.theme.accent).toBe('#0F766E');
+    expect(result.blueprint.theme.surface).toBe('#F8FAFC');
+    expect(result.blueprint.theme.fontDisplay).toMatch(/Avenir Next/);
+  });
+
+  it('wechselt auf Cinematic Obsidian über den Vorlagennamen', () => {
+    const result = refineBlueprint(base(), 'Nimm cinematic-obsidian.');
+
+    expect(result.understood).toBe(true);
+    expect(result.blueprint.theme.mode).toBe('dark');
+    expect(result.blueprint.theme.surface).toBe('#05060A');
+    expect(result.blueprint.theme.foreground).toBe('#E8E6E1');
+  });
 });
 
 describe('refineBlueprint — Inhalt', () => {

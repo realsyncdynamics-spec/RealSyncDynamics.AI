@@ -147,6 +147,6 @@ export const AUTOMATION_SKILLS: AutomationSkill[] = [
     ],
     output: ['Antwort', 'Quellen', 'Ticket falls nötig'],
     planRequired: 'agency',
-    cta: { label: 'Im Dashboard öffnen', href: '/assistant' },
+    cta: { label: 'Im Dashboard öffnen', href: '/app/dashboard' },
   },
 ];

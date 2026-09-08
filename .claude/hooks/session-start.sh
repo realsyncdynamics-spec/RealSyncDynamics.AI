@@ -9,4 +9,7 @@ fi
 
 cd "$CLAUDE_PROJECT_DIR"
 
-npm install --no-audit --no-fund
+# --loglevel=error: Die Ausgabe dieses Hooks landet im Sitzungskontext und
+# kostet dort in jeder Sitzung Tokens. Die Fortschrittszeilen von npm sagen
+# niemandem etwas; Fehler bleiben sichtbar (CLAUDE.md §0).
+npm install --no-audit --no-fund --loglevel=error

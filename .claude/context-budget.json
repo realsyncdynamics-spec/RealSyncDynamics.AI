@@ -1,0 +1,9 @@
+{
+  "_hinweis": "Ratsche gegen still wachsenden Sitzungskontext. Siehe scripts/check-context-budget.mjs und CLAUDE.md §0. Werte nur senken, nicht anheben, um Zuwachs zu decken.",
+  "bytesPerToken": 3.5,
+  "maxTokens": {
+    "CLAUDE.md": 10800,
+    "gesamt": 11200
+  },
+  "mcpServerHinweisAb": 4
+}

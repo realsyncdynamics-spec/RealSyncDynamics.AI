@@ -28,6 +28,14 @@ jobs:
       # es erst bei einem Browser-Durchlauf gegen die Live-Seite.
       - name: Edge Function references
         run: npm run check:edge-refs
+      # CLAUDE.md wird bei jedem Session-Start und nach jeder Kompaktierung
+      # vollstaendig in den Modellkontext geladen — sie kostet also in jeder
+      # Sitzung erneut. Bis zum 2026-09-08 war sie unbemerkt auf 88 KB
+      # (~25.000 Tokens) gewachsen, weil jede einzelne Ergaenzung fuer sich
+      # harmlos aussah. Der Guard ist eine Ratsche: Waechst der Kern, gehoert
+      # der Zuwachs nach docs/context/ — das Budget wird nicht angehoben.
+      - name: Kontext-Budget (Ratsche gegen wachsenden Sitzungskontext)
+        run: npm run check:context
       # Die kommerzielle Wahrheit steht in shared/pricing.ts. Alles Abgeleitete
       # — der Deno-Zwilling, die Plan-Katalog-Migration, die Kontingente —
       # muss daraus folgen und darf keine zweite Wahrheit daneben bilden.

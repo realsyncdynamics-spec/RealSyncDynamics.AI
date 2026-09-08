@@ -36,6 +36,7 @@
     "check:offer-prices": "node scripts/check-offer-prices.mjs",
     "check:edge-syntax": "node scripts/check-edge-function-syntax.mjs",
     "check:edge-refs": "node scripts/check-edge-function-refs.mjs",
+    "check:context": "node scripts/check-context-budget.mjs",
     "qa:skills": "tsx scripts/qa-skills-smoke.ts",
     "qa:governance": "tsx scripts/qa-governance-test.ts",
     "qa:governance-test": "tsx scripts/qa-governance-test.ts",

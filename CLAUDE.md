@@ -1094,6 +1094,26 @@ Umgesetzt: `.surface-panel` / `.hairline` und die Reveal-Regeln in
 Was **nicht** freigegeben ist und weiterhin unter §10.1 fällt: Sektionsreihenfolge,
 Grid, Typografie-Skala, Icon-Set, Farbpalette.
 
+> **Nachtrag vom 2026-09-06 — das „Nein" hat nicht gehalten, und niemand hat es
+> vermerkt.** Gemessen am Commit-Verlauf von `main`: Der Champagner-Ton
+> `#e8c98a` kam am **2026-08-21** über `e5c71bb` („design:
+> Gold-Enterprise-Landing und Governance Dashboard", PR #1115) ins Repo — **zwei
+> Tage nach** der Ablehnung oben, hartkodiert in `MainLanding.tsx` und
+> `landing-theme.ts`. Zwischen dem 2026-08-19 und dem 2026-08-23 steht in
+> diesem Abschnitt **keine** Freigabe; die Änderung ist an §10.4 vorbeigegangen.
+>
+> Seither wird der Ton ausgeliefert. Der Eintrag vom 2026-09-06 weiter unten
+> tokenisiert ihn ausdrücklich „optisch 1:1" — er ändert also nichts am Bild,
+> sondern schreibt fest, was seit sechzehn Tagen sichtbar ist.
+>
+> **Warum das hier steht und nicht stillschweigend bereinigt wurde**: Wer den
+> Abschnitt von 2026-08-19 allein liest, hält den heutigen Zustand für einen
+> Regelbruch — genau das, was dieser Freigabe-Abschnitt laut seiner eigenen
+> Einleitung verhindern soll. Wer nur den Eintrag von 2026-09-06 liest, hält
+> den Ton für neu. Beides ist falsch. Dieselbe Klasse wie die
+> Out-of-Band-Eingriffe in §5, nur im Design statt in der Datenbank: Die Regel
+> galt, die Änderung kam trotzdem, und der Prüfpfad hat sie nicht gefasst.
+
 **2026-08-23 — CTA-Hierarchie der Startseite auf den Scan-Trichter**
 
 Freigegeben durch die ausdrückliche Anweisung des Eigentümers im Auftrag

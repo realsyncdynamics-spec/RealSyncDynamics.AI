@@ -40,7 +40,7 @@ jobs:
           VITE_META_PIXEL_ID: '000000000000000'
 
       - name: Cache Playwright browsers
-        uses: actions/cache@0400d5f644dc74513175e3cd8d271410817cdde3 # v4
+        uses: actions/cache@v4
         with:
           path: ~/.cache/ms-playwright
           key: playwright-chromium-${{ runner.os }}-${{ hashFiles('package-lock.json') }}

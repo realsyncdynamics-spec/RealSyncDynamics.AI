@@ -78,7 +78,7 @@ Menschen · Unternehmen · KI-Agenten · Daten · Entscheidungen.
 
 **Primär: Supabase Cloud (EU / Frankfurt)**
 - PostgreSQL 17 (Live-Projekt, Stand 2026-08-16)
-- **188 Edge Functions** im Repo (`supabase/functions/`, Deno/V8; `_shared` ist Bibliothek, keine Function) — gemessen am 2026-09-05 am **Merge-Baum** (`ls -d`, nicht addiert). 182 davon sind mains Bestand und **alle deployt**, deckungsgleich in beide Richtungen (mains Messung vom 2026-09-04 um 23:23 UTC per Management-API, nachdem `mcp-api-key-manager` aus PR #1160 in `src/config/production-edge-functions.ts` nachgetragen war — der Drift-Guard hatte recht). Die **sechs** aus diesem Branch warten auf den nächsten `deploy.yml`-Lauf: `governance-decide` und `integration-credentials` (P0), `governance-access` (P1-3), `evidence-anchor` (P1-6), `microsoft365-connect` und `microsoft365-audit-sync` (P2-2). Fünf davon stehen in `UNBACKED_CALLERS`; `microsoft365-audit-sync` bewusst nicht — es hat keinen Aufrufer im Frontend, sondern wird von pg_cron getriggert, und diese Liste führt Aufrufer ohne Backend, nicht Functions ohne Deploy
+- **189 Edge Functions** im Repo (`supabase/functions/`, Deno/V8; `_shared` ist Bibliothek, keine Function) — gemessen am 2026-09-08 am Merge-Baum (`ls -d`, nicht addiert). **189 deployt** nach dem Lauf 34282015173 (21:51 UTC, `main` @ `2380d027`); `governance-router` ist in diesem Lauf angekommen. `comm` in beide Richtungen leer. Frühere Messung 2026-09-05 nannte 188 Dateien / 182 live — die sechs aus dem Governance-OS-Branch (`governance-decide`, `integration-credentials`, `governance-access`, `evidence-anchor`, `microsoft365-connect`, `microsoft365-audit-sync`) sind seither ebenfalls live. `microsoft365-audit-sync` hat keinen Frontend-Aufrufer (pg_cron); `UNBACKED_CALLERS` führt Aufrufer ohne Backend, nicht Functions ohne Deploy.
 - **328 Migrations** (`supabase/migrations/`) — gemessen am 2026-09-06 am Merge-Baum (`ls supabase/migrations/*.sql | wc -l`), keine doppelte Versionsnummer. 317 davon sind mains Bestand und **alle verbucht** (mains Messung vom 2026-09-04 um 23:39 UTC gegen `supabase_migrations.schema_migrations` nach dem grünen Deploy-Lauf 33929752213, `comm` in beide Richtungen leer). Die **neun** aus diesem Branch sind unverbucht: `20260824090000_pdp_snapshots_shadow`, `20260824110000_integration_credentials_hardening`, `20260824120000_org_subject_model_approval_gates`, `20260901090000_evidence_append_only_anchors`, `20260904100000_connector_registry` (P2-1), `20260904110000_publish_gate_policy_trail` (P2-3), `20260904120000_pdp_shadow_log_channels` (P2-3/P2-5) `20260905100000_microsoft365_connector` (P2-2) und `20260906100000_pdp_shadow_readiness` (Plan §7, Auswertung des Beobachtungsbetriebs). Die **zehnte unverbuchte** stammt aus PR #1221 und nicht aus dem Governance-OS-Branch: `20260906000000_reconcile_audit_evidence` — sie sortiert **vor** `20260906100000`, und keine Versionsnummer kommt doppelt vor (am Merge-Baum gezählt, nicht angenommen; genau diese Kollision hat am 2026-08-24 einen Deploy zerlegt, siehe §5). **Alle 327 sind seit dem Deploy-Lauf 34057321551 (2026-09-06, 20:15 UTC, `main` @ `75f5fe7a`) verbucht** — gegen `schema_migrations` nachgemessen, ebenso Tabelle, Bucket, RLS, drei Trigger und der Fremdschlüssel von `audit_evidence`. Die **328.** liegt seither im Repo und wartet auf den naechsten Lauf: `20260906200000_profiles_on_signup` (PR #1241). Ihre Trigger-Funktion wurde vor dem Merge nicht nur angewendet, sondern **ausgeloest** — die Regel zum PL/pgSQL-Blindfleck weiter unten verlangt genau das. Siehe §3
 
   > **Ein Befund vom Vorabend hat sich erledigt, und zwar richtig herum**: Hier stand am 2026-09-04 abends, mains Zeile nenne 315 Dateien bei 317 im Baum und seine unverbuchten seien drei statt einer. Das stimmte zum Zeitpunkt der Messung — inzwischen ist der Deploy gelaufen, und `main` hat um 23:39 UTC gegen das Ledger nachgemessen: 317 Dateien, 317 verbucht, in beide Richtungen verglichen. Die Differenz war also kein Fehler, sondern eine Momentaufnahme zwischen Merge und Deploy. Die Lehre bleibt trotzdem stehen, weil sie den Fall beschreibt, in dem sie *nicht* von selbst heilt: **Die Ledger-Messung altert mit jedem Merge, die Tree-Messung nicht** — wer eine Ledger-Zahl fortschreibt, ohne das Datum mitzulesen, behauptet einen Stand, den es so nicht mehr gibt.
@@ -391,6 +391,10 @@ Jeder Agent braucht vier Dimensionen — fehlt eine, ist er nicht governance-fä
 > `audit-monitor-cron` antworten alle mit `401` — die beiden Cron-Functions
 > aus ihrem eigenen Bearer-Check (`verify_jwt` ist dort aus), die übrigen
 > aus `requireUser`.
+>
+> **Nachmessung 2026-09-08, 21:51 UTC**, `main` @ `2380d027` (Merge von
+> PR #1269), nach dem grünen Deploy-Lauf 34282015173. Repo und Produktion:
+> **189 = 189**, inkl. `governance-router`. `comm` in beide Richtungen leer.
 >
 > ¹ **Zwei Migrationen sind live, ohne dass es je eine Datei gab**:
 > `20260825204748_fix_websites_authenticated_crud_rls` (2026-08-25) und
@@ -779,7 +783,7 @@ RealSyncDynamics.AI/
 ├── shared/
 │   └── pricing.ts     Single Source of Truth für Produkt-, Preis- und Berechtigungsmodell
 ├── supabase/
-│   ├── functions/     188 Edge Functions (einziger Ort für Service-Role-Keys)
+│   ├── functions/     189 Edge Functions (einziger Ort für Service-Role-Keys)
 │   └── migrations/    328 Migrations
 ├── apps/
 │   ├── agent-runtime/ Agent Runtime (Node/TS, Docker)

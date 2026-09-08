@@ -18,6 +18,8 @@ Das ist Sicherheitsinfrastruktur und Produktfläche, kein Modell-Reseller.
 
 Dashboard: `/app/governance/router`. Gate: `ai.tool.automations` (Starter+).
 
+Live seit Deploy-Lauf 34282015173 (2026-09-08, 21:51 UTC) auf `main` @ `2380d027`.
+
 Der öffentliche Assistent (`ai-gateway`, JWT, mandantenlos) bleibt unverändert. Die beiden Endpunkte sind nicht austauschbar — `ai-gateway` mit `verify_jwt = false` wäre unauthentifizierte Inferenz.
 
 ## Expansion mit Kundenzahl und Umsatz

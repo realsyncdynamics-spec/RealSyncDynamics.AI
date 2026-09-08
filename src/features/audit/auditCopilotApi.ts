@@ -1,5 +1,6 @@
 import { AiGatewayEdgeClient, AiGatewayEdgeError } from '../../core/ai-gateway/edgeClient';
 import { getSupabaseUrl, getSupabaseAnonKey } from '../../lib/supabaseUrl';
+import { currentAccessToken } from '../../core/ai-gateway/session';
 
 // Audit-Copilot helpers. Talk to the `ai-gateway` Edge Function via
 // `AiGatewayEdgeClient` and return structured payloads for the panel UI.
@@ -47,7 +48,7 @@ export interface AiGatewayClientDeps {
   supabaseAnonKey?: string;
 }
 
-function resolveClient(deps?: AiGatewayClientDeps): AiGatewayEdgeClient {
+async function resolveClient(deps?: AiGatewayClientDeps): Promise<AiGatewayEdgeClient> {
   if (deps?.client) return deps.client;
   // Zentrale Auflösung mit öffentlichem Produktions-Fallback (siehe
   // lib/supabaseUrl.ts), damit der Audit-Co-Pilot auch in Deploys ohne
@@ -58,7 +59,7 @@ function resolveClient(deps?: AiGatewayClientDeps): AiGatewayEdgeClient {
     throw new AiGatewayEdgeError(503, 'AI_GATEWAY_NOT_CONFIGURED',
       'Supabase-Zugangsdaten fehlen — ai-gateway nicht aufrufbar.');
   }
-  return new AiGatewayEdgeClient({ supabaseUrl: url, apiKey: key });
+  return new AiGatewayEdgeClient({ supabaseUrl: url, apiKey: key, accessToken: await currentAccessToken() });
 }
 
 const FIX_SNIPPET_SYSTEM_PROMPT = `Du bist Audit-Co-Pilot für DSGVO-/AI-Act-Compliance.
@@ -96,7 +97,7 @@ export async function generateFixSnippet(
   cms: AuditCmsTarget,
   deps?: AiGatewayClientDeps,
 ): Promise<FixSnippet> {
-  const client = resolveClient(deps);
+  const client = await resolveClient(deps);
   const input = [
     `Befund-ID: ${finding.id}`,
     `Severity: ${finding.severity}`,
@@ -132,7 +133,7 @@ export async function generateRemediationPlan(
   if (findings.length === 0) {
     throw new AiGatewayEdgeError(400, 'BAD_REQUEST', 'Mindestens ein Befund erforderlich.');
   }
-  const client = resolveClient(deps);
+  const client = await resolveClient(deps);
   const input = findings.map((f, i) => [
     `Befund ${i + 1}:`,
     `  Severity: ${f.severity}`,

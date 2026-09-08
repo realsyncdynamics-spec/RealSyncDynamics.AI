@@ -1,5 +1,6 @@
 import { AiGatewayEdgeClient, AiGatewayEdgeError } from '../../core/ai-gateway/edgeClient';
 import { getSupabaseUrl, getSupabaseAnonKey } from '../../lib/supabaseUrl';
+import { currentAccessToken } from '../../core/ai-gateway/session';
 
 // Quick-chat helper for the floating AssistentChip on public pages.
 //
@@ -100,7 +101,7 @@ export interface SendQuickChatArgs {
   history: QuickChatMessage[];
 }
 
-function resolveClient(deps?: QuickChatDeps): AiGatewayEdgeClient {
+async function resolveClient(deps?: QuickChatDeps): Promise<AiGatewayEdgeClient> {
   if (deps?.client) return deps.client;
   // Zentrale Auflösung mit öffentlichem Produktions-Fallback (siehe
   // lib/supabaseUrl.ts), damit der Assistent-Chip auch in Deploys ohne
@@ -111,7 +112,7 @@ function resolveClient(deps?: QuickChatDeps): AiGatewayEdgeClient {
     throw new AiGatewayEdgeError(503, 'AI_GATEWAY_NOT_CONFIGURED',
       'Supabase-Zugangsdaten fehlen.');
   }
-  return new AiGatewayEdgeClient({ supabaseUrl: url, apiKey: key });
+  return new AiGatewayEdgeClient({ supabaseUrl: url, apiKey: key, accessToken: await currentAccessToken() });
 }
 
 function checkRateLimit(now: number): { allowed: boolean; retryAfterMs: number } {
@@ -173,7 +174,7 @@ export async function sendQuickChat(
   // behaviour and prevents abusive retry loops).
   sendTimestamps.push(now);
 
-  const client = resolveClient(deps);
+  const client = await resolveClient(deps);
   const folded = [...args.history, { role: 'user' as const, content: args.message }]
     .slice(-QUICK_CHAT_LIMITS.historyContextTurns * 2)
     .map((m) => `${m.role === 'user' ? 'Besucher' : 'Assistent'}: ${m.content}`)

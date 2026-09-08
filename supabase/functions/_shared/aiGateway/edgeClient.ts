@@ -11,7 +11,19 @@ import type {
 
 export interface EdgeClientConfig {
   supabaseUrl: string;
+  /** anon or service_role key — always sent as `apikey`. */
   apiKey: string;
+  /**
+   * Sitzungstoken des angemeldeten Nutzers. Steht es, geht es als
+   * `Authorization: Bearer` hinaus und der Gateway sieht, WER ruft — sonst
+   * ersatzweise `apiKey`, und der Aufruf bleibt anonym wie bisher.
+   *
+   * Warum optional und nicht Pflicht: Der Free Scan auf `/audit` ruft den
+   * Gateway ohne Konto (AuditCopilotPanel auf einer Seite ohne AppGate). Ein
+   * Pflichtfeld haette genau den Trichter gebrochen, der Kunden bringt.
+   * Ohne Token verhaelt sich der Aufruf exakt wie vor dieser Aenderung.
+   */
+  accessToken?: string | null;
   fetchImpl?: typeof fetch;
   timeoutMs?: number;
 }
@@ -85,7 +97,9 @@ export class AiGatewayEdgeClient {
         headers: {
           'content-type':  'application/json',
           'apikey':         this.config.apiKey,
-          'authorization': `Bearer ${this.config.apiKey}`,
+          // Nutzertoken wenn vorhanden, sonst der Schluessel — siehe
+          // `accessToken` in EdgeClientConfig.
+          'authorization': `Bearer ${this.config.accessToken ?? this.config.apiKey}`,
         },
         body: JSON.stringify({ op, ...request } satisfies EdgeRequestBody),
       });

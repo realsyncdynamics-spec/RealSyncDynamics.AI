@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { AiGatewayEdgeClient } from '../../../core/ai-gateway/edgeClient';
 import { getSupabaseAnonKey, getSupabaseUrl } from '../../../lib/supabaseUrl';
+import { currentAccessToken } from '../../../core/ai-gateway/session';
 import { useTenant } from '../../../core/access/TenantProvider';
 import { NextBestActionCard } from './NextBestActionCard';
 
@@ -59,6 +60,8 @@ export function GovernanceAiWorkspace() {
       const client = new AiGatewayEdgeClient({
         supabaseUrl: getSupabaseUrl(),
         apiKey: getSupabaseAnonKey(),
+        // Wer ruft — damit der Gateway den Aufruf zurechnen kann.
+        accessToken: await currentAccessToken(),
       });
       const history = [...messages, { role: 'user' as const, content: message }]
         .slice(-12)

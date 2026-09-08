@@ -16,6 +16,7 @@
  */
 import { AiGatewayEdgeClient, AiGatewayEdgeError } from './edgeClient';
 import { getSupabaseUrl, getSupabaseAnonKey } from '../../lib/supabaseUrl';
+import { currentAccessToken } from './session';
 import type { ModelProfile } from './types';
 
 export type ModelProvider = 'gemini' | 'openai' | 'claude';
@@ -95,6 +96,9 @@ export async function processAIGatewayRequest(
     const client = deps?.client ?? new AiGatewayEdgeClient({
       supabaseUrl: getSupabaseUrl(),
       apiKey: getSupabaseAnonKey(),
+      // Wer ruft — damit der Gateway den Aufruf zurechnen kann. `null` bei
+      // anonymen Aufrufern; siehe `session.ts`.
+      accessToken: await currentAccessToken(),
     });
 
     const resp = await client.generate({

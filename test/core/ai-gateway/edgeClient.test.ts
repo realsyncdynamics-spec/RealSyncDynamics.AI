@@ -80,6 +80,62 @@ describe('AiGatewayEdgeClient', () => {
       expect(headers.authorization).toBe('Bearer anon-test');
     });
 
+    /**
+     * Identitaet am Durchgangspunkt.
+     *
+     * Bis zum 2026-09-08 sandte jeder Aufruf des KI-Pfades den oeffentlichen
+     * Anon-Key als Bearer-Token. Der Gateway lief damit, sah aber niemanden:
+     * keine Zurechnung, keine durchsetzbaren Kontingente, kein Guthaben.
+     *
+     * Geprueft wird beides — mit Token UND ohne. Nur der erste Fall waere zu
+     * wenig: Der Free Scan auf `/audit` ruft den Gateway ohne Konto, und wenn
+     * der anonyme Weg bricht, bricht der Trichter, der Kunden bringt.
+     */
+    it('sendet das Sitzungstoken als Bearer, den Schluessel weiterhin als apikey', async () => {
+      const fetchImpl = vi.fn(async () => jsonResponse({
+        ok: true, provider: 'lm_studio', model: 'm', profile: 'fast-local',
+        output: 'x', trace_id: 't', latency_ms: 1,
+      }));
+      const client = new AiGatewayEdgeClient({
+        supabaseUrl: 'https://example.supabase.co',
+        apiKey: 'anon-test',
+        accessToken: 'user-jwt',
+        fetchImpl,
+      });
+
+      await client.generate({
+        feature: 'f', task_type: 'chat', model_profile: 'fast-local', input: 'ping',
+      });
+
+      const headers = callOf(fetchImpl)[1].headers as Record<string, string>;
+      // `apikey` bleibt der Projektschluessel — er adressiert das Projekt,
+      // er authentifiziert niemanden.
+      expect(headers.apikey).toBe('anon-test');
+      expect(headers.authorization).toBe('Bearer user-jwt');
+    });
+
+    it('faellt ohne Token auf den Schluessel zurueck — anonym bleibt moeglich', async () => {
+      const fetchImpl = vi.fn(async () => jsonResponse({
+        ok: true, provider: 'lm_studio', model: 'm', profile: 'fast-local',
+        output: 'x', trace_id: 't', latency_ms: 1,
+      }));
+
+      for (const accessToken of [undefined, null]) {
+        fetchImpl.mockClear();
+        const client = new AiGatewayEdgeClient({
+          supabaseUrl: 'https://example.supabase.co',
+          apiKey: 'anon-test',
+          accessToken,
+          fetchImpl,
+        });
+        await client.generate({
+          feature: 'f', task_type: 'chat', model_profile: 'fast-local', input: 'ping',
+        });
+        const headers = callOf(fetchImpl)[1].headers as Record<string, string>;
+        expect(headers.authorization).toBe('Bearer anon-test');
+      }
+    });
+
     it('strips trailing slash from supabaseUrl', async () => {
       const fetchImpl = vi.fn(async () => jsonResponse({
         ok: true, provider: 'lm_studio', model: 'm', profile: 'fast-local',

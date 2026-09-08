@@ -98,7 +98,7 @@ async function getPdpAdmin(): Promise<any | null> {
  * die lokale Snapshot-Auswertung im PEP — Teil der P1-Haertung, bewusst
  * nicht still hier hineingebaut (offene Entscheidung E2 im Plan).
  */
-async function pdpCheck(feature: string, modelProfile: string): Promise<Response | DecisionResult | null> {
+async function pdpCheck(feature: string, modelProfile: string, caller: Caller | null): Promise<Response | DecisionResult | null> {
   const mode = enforcementMode();
   if (mode === 'off') return null;
   try {
@@ -106,8 +106,12 @@ async function pdpCheck(feature: string, modelProfile: string): Promise<Response
     if (!admin) return null;
     const request: DecisionRequest = {
       contract: 'v1',
-      tenant_id: null, // Gateway ist (noch) tenant-los: nur globale Policies
-      principal: { type: 'service' },
+      // Seit dem 2026-09-08 traegt der Aufruf einen Mandanten, sofern der
+      // Aufrufer angemeldet ist — damit greifen mandantenspezifische
+      // `ai_policies` und nicht mehr nur globale. Bei anonymen Aufrufen
+      // (Free Scan) bleibt es bei `null` und damit bei globalen Policies.
+      tenant_id: caller?.tenantId ?? null,
+      principal: caller ? { type: 'user', id: caller.userId } : { type: 'service' },
       action: { verb: 'invoke', channel: 'ai_gateway', event_type: 'prompt_sent' },
       target: { model: modelProfile },
       context: { feature },
@@ -140,11 +144,91 @@ async function pdpCheck(feature: string, modelProfile: string): Promise<Response
   }
 }
 
-async function enforceRateLimit(req: Request, feature: string): Promise<Response | null> {
-  const ip = clientIp(req.headers);
-  const ipHash = await sha256Hex(ip + ':' + IP_HASH_SALT);
+/**
+ * Wer ruft. `null` heisst anonym — und anonym ist ein gueltiger Zustand,
+ * kein Fehler: Der Free Scan auf `/audit` ruft den Gateway ohne Konto.
+ */
+interface Caller {
+  userId: string;
+  /** Mandant des Nutzers. `null`, wenn er (noch) keinem angehoert. */
+  tenantId: string | null;
+}
+
+/**
+ * Ermittelt den Aufrufer aus dem Bearer-Token.
+ *
+ * Bis zum 2026-09-08 gab es diese Funktion nicht, und der Gateway sah
+ * niemanden: Jeder Aufruf aus der SPA sendete den oeffentlichen Anon-Key als
+ * Bearer-Token. `verify_jwt` war damit erfuellt (der Anon-Key ist ein
+ * gueltiges Projekt-JWT), aber es gab kein Subjekt — also keine Zurechnung,
+ * keine durchsetzbaren Kontingente und kein Guthabenmodell.
+ *
+ * Bewusst **weich**: Jeder Fehlschlag endet in `null`, nie in einem 401.
+ * Der Gateway bedient weiterhin anonyme Aufrufer; diese Funktion fuegt
+ * Identitaet hinzu, wo es sie gibt, und nimmt niemandem den Zugang.
+ *
+ * Kosten: zwei Aufrufe (Token pruefen, Mitgliedschaft lesen) je Anfrage mit
+ * Token. Bewusst ohne Zwischenspeicher — ein Cache auf Identitaet ist eine
+ * eigene Entscheidung mit eigenen Fehlerbildern, und der PDP-Aufruf daneben
+ * kostet ohnehin eine Runde.
+ */
+async function resolveCaller(req: Request): Promise<Caller | null> {
+  const authHeader = req.headers.get('Authorization');
+  if (!authHeader?.startsWith('Bearer ')) return null;
+
+  const token = authHeader.slice('Bearer '.length).trim();
+  const url = Deno.env.get('SUPABASE_URL');
+  const anon = Deno.env.get('SUPABASE_ANON_KEY');
+  if (!url || !anon || !token) return null;
+
+  // Der Anon-Key selbst ist kein Nutzer. Ohne diese Abkuerzung liefe fuer
+  // jeden anonymen Aufruf ein sinnloser getUser() ins Leere.
+  if (token === anon) return null;
+
+  try {
+    const { createClient } = await import('jsr:@supabase/supabase-js@2');
+    const userClient = createClient(url, anon, {
+      global: { headers: { Authorization: authHeader } },
+      auth: { persistSession: false },
+    });
+    const { data, error } = await userClient.auth.getUser();
+    if (error || !data?.user) return null;
+
+    // Mandant ueber den nutzergebundenen Client, nicht ueber service_role:
+    // RLS auf `memberships` beantwortet damit genau die Frage „welchem
+    // Mandanten gehoert DIESER Nutzer an" — ohne erweiterte Rechte.
+    const { data: rows } = await userClient
+      .from('memberships')
+      .select('tenant_id')
+      .eq('user_id', data.user.id)
+      .limit(1);
+
+    const tenantId = rows?.[0]?.tenant_id;
+    return { userId: data.user.id, tenantId: typeof tenantId === 'string' ? tenantId : null };
+  } catch (e) {
+    console.error('[ai-gateway] caller unresolved — weiter als anonym', e);
+    return null;
+  }
+}
+
+async function enforceRateLimit(req: Request, feature: string, caller: Caller | null): Promise<Response | null> {
+  // Bekannter Nutzer wird nach Nutzer begrenzt, sonst nach IP.
+  //
+  // Warum nach NUTZER und nicht nach Mandant: Die Werte (10/Minute,
+  // 100/Stunde) sind fuer einen einzelnen Aufrufer bemessen. Auf den
+  // Mandanten geschluesselt teilten sich fuenf Kollegen einen Eimer — das
+  // waere strenger als der Zustand vorher, in dem sie an fuenf Adressen
+  // fuenf Eimer hatten. Eine Mandantengrenze ist eine Kontingentfrage und
+  // gehoert zur Token-Oekonomie, nicht in den Missbrauchsschutz.
+  //
+  // Gegenueber der IP ist der Nutzer in beide Richtungen genauer: 50
+  // Arbeitsplaetze hinter einer NAT-Adresse teilen sich keinen Eimer mehr,
+  // und derselbe Mensch bekommt durch einen Adresswechsel keinen zweiten.
+  const scopeKey = caller
+    ? `user:${caller.userId}`
+    : await sha256Hex(clientIp(req.headers) + ':' + IP_HASH_SALT);
   const decision = decideRateLimit({
-    key: `${ipHash}:${feature}`,
+    key: `${scopeKey}:${feature}`,
     feature,
     now: Date.now(),
     minuteWindows: MINUTE_WINDOWS,
@@ -226,12 +310,14 @@ async function handleOpBased(req: Request): Promise<Response> {
     return jsonError(400, 'BAD_REQUEST', 'feature, task_type, model_profile and input are required');
   }
 
-  const limited = await enforceRateLimit(req, request.feature);
+  const caller = await resolveCaller(req);
+
+  const limited = await enforceRateLimit(req, request.feature, caller);
   if (limited) return limited;
 
   // PEP: Entscheidung VOR dem Provider-Call (Plan P0-4). Eine Response ist
   // ein durchgesetzter Block; ein warn-Ergebnis wird der Antwort angehaengt.
-  const verdict = await pdpCheck(request.feature, request.model_profile);
+  const verdict = await pdpCheck(request.feature, request.model_profile, caller);
   if (verdict instanceof Response) return verdict;
   const governance = verdict && verdict.decision === 'warn'
     ? { decision: verdict.decision, reasons: verdict.reasons.map((r) => r.text_de) }
@@ -257,13 +343,15 @@ async function handleOpenAIChatCompletions(req: Request): Promise<Response> {
   const parsed = parseChatRequest(body);
   if (!parsed.ok) return jsonError(parsed.status, parsed.code, parsed.message);
 
-  const limited = await enforceRateLimit(req, parsed.request.feature);
+  const caller = await resolveCaller(req);
+
+  const limited = await enforceRateLimit(req, parsed.request.feature, caller);
   if (limited) return limited;
 
   // PEP auch auf der OpenAI-kompatiblen Schale — gleiche Entscheidung,
   // gleicher Block. warn kann hier nicht angehaengt werden (fremdes
   // Antwortformat) und wird nur geloggt.
-  const verdict = await pdpCheck(parsed.request.feature, parsed.request.model_profile);
+  const verdict = await pdpCheck(parsed.request.feature, parsed.request.model_profile, caller);
   if (verdict instanceof Response) return verdict;
 
   const gateway = await buildGateway();

@@ -28,7 +28,7 @@ import type { ModelProfile } from './types';
  */
 
 /** Ableitung aus Plan-Kontingenten, nicht aus einer eigenen Preisliste. */
-export type ExpansionStage = 'observe' | 'studio' | 'scale' | 'agency' | 'sovereign';
+export type ExpansionStage = 'observe' | 'studio' | 'growth' | 'agency' | 'sovereign';
 
 export type AiResidency = 'cloud' | 'eu_local';
 
@@ -47,7 +47,7 @@ export interface ExpansionInputs {
 export const EXPANSION_STAGES: readonly ExpansionStage[] = [
   'observe',
   'studio',
-  'scale',
+  'growth',
   'agency',
   'sovereign',
 ];
@@ -61,8 +61,8 @@ export const EXPANSION_STAGE_LABELS: Record<ExpansionStage, { title: string; det
     title: 'Studio',
     detail: 'EU-lokale Modelle. Kontingent: monatliche LLM-Anfragen.',
   },
-  scale: {
-    title: 'Scale',
+  growth: {
+    title: 'Growth',
     detail: 'Cloud-Fallback freigeschaltet. Kontingent: monatliche KI-Aufrufe.',
   },
   agency: {
@@ -114,17 +114,17 @@ export function expansionStageFromEntitlements(input: ExpansionInputs): Expansio
   const calls = input.aiCallsMonthly;
   if (calls === -1 || (typeof calls === 'number' && calls >= 50_000)) return 'sovereign';
   if (typeof calls === 'number' && calls >= 10_000) return 'agency';
-  if (typeof calls === 'number' && calls >= 2_000) return 'scale';
+  if (typeof calls === 'number' && calls >= 2_000) return 'growth';
   return 'studio';
 }
 
 /**
- * Cloud-Fallback nur ab Scale und nur wenn die Residenz nicht EU-lokal
+ * Cloud-Fallback nur ab Growth und nur wenn die Residenz nicht EU-lokal
  * erzwingt. EU-lokal gewinnt immer — auch auf Enterprise.
  */
 export function allowCloudFallback(stage: ExpansionStage, residency: AiResidency): boolean {
   if (residency === 'eu_local') return false;
-  return stage === 'scale' || stage === 'agency' || stage === 'sovereign';
+  return stage === 'growth' || stage === 'agency' || stage === 'sovereign';
 }
 
 export function quotaKeyForStage(stage: ExpansionStage): QuotaKey | null {
@@ -213,8 +213,8 @@ export function nextExpansionHint(stage: ExpansionStage): string | null {
     case 'observe':
       return 'Mit Starter (Automationen) schaltet der Router auf Studio (EU-lokal).';
     case 'studio':
-      return 'Mit Growth steigen Kontingent und Cloud-Fallback (Scale).';
-    case 'scale':
+      return 'Mit Growth steigen Kontingent und Cloud-Fallback.';
+    case 'growth':
       return 'Agency erweitert das Kontingent; Enterprise liegt auf der Vertragsstufe.';
     case 'agency':
       return 'Enterprise: vertragliche Kontingente, kein System-Cap.';

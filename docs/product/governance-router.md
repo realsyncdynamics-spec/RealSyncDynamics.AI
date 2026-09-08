@@ -14,7 +14,7 @@ Das ist Sicherheitsinfrastruktur und Produktfläche, kein Modell-Reseller.
    Produktions-Beispiel: `https://ebljyceifhnlzhjfyxup.supabase.co/functions/v1/governance-router/v1`
 
 3. API-Key: `rsd_gov_…` aus `/app/keys`, Quelle `api` (oder `sdk` / `agent_runtime`; leere `allowed_sources` gelten für alle).
-4. Modell: ein auf der aktuellen Stufe erlaubter Name (`fast-local`, `gpt-4o-mini`, ab Scale auch `gpt-4o` / `cloud-fallback`).
+4. Modell: ein auf der aktuellen Stufe erlaubter Name (`fast-local`, `gpt-4o-mini`, ab Growth auch `gpt-4o` / `cloud-fallback`).
 
 Dashboard: `/app/governance/router`. Gate: `ai.tool.automations` (Starter+).
 
@@ -28,7 +28,7 @@ Die Stufe ist **keine eigene Preisliste**. Sie wird aus den bestehenden Entitlem
 |---|---|---|---|
 | `observe` | kein `ai.tool.automations` (Free) | keine — 403 `PLAN_REQUIRED` | — |
 | `studio` | Automationen, kein/niedriges `limit.ai_calls_monthly` (Starter) | EU-lokal | `limit.llm_queries_monthly` |
-| `scale` | `ai_calls` ≥ 2000 (Growth) | plus Cloud-Fallback | `limit.ai_calls_monthly` |
+| `growth` | `ai_calls` ≥ 2000 (Growth) | plus Cloud-Fallback | `limit.ai_calls_monthly` |
 | `agency` | ≥ 10 000 | plus Cloud-Fallback | `limit.ai_calls_monthly` |
 | `sovereign` | `-1` (Enterprise) oder ≥ 50 000 (Partner) | plus Cloud-Fallback | System-Cap aus; der Vertrag begrenzt |
 

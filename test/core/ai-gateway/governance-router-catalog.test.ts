@@ -29,9 +29,9 @@ describe('expansionStageFromEntitlements', () => {
       .toBe('studio');
   });
 
-  it('scale ab 2000 (Growth)', () => {
+  it('growth ab 2000', () => {
     expect(expansionStageFromEntitlements({ hasAutomations: true, aiCallsMonthly: 2000 }))
-      .toBe('scale');
+      .toBe('growth');
   });
 
   it('agency ab 10000', () => {
@@ -48,7 +48,7 @@ describe('expansionStageFromEntitlements', () => {
 });
 
 describe('allowCloudFallback', () => {
-  const cloudStages: ExpansionStage[] = ['scale', 'agency', 'sovereign'];
+  const cloudStages: ExpansionStage[] = ['growth', 'agency', 'sovereign'];
 
   it('EU-lokal sperrt Cloud auf jeder Stufe', () => {
     for (const stage of ['observe', 'studio', ...cloudStages] as ExpansionStage[]) {
@@ -56,7 +56,7 @@ describe('allowCloudFallback', () => {
     }
   });
 
-  it('Cloud erst ab Scale, Residenz cloud', () => {
+  it('Cloud erst ab Growth, Residenz cloud', () => {
     expect(allowCloudFallback('observe', 'cloud')).toBe(false);
     expect(allowCloudFallback('studio', 'cloud')).toBe(false);
     for (const stage of cloudStages) {
@@ -66,10 +66,10 @@ describe('allowCloudFallback', () => {
 });
 
 describe('quotaKeyForStage', () => {
-  it('studio metert llm_queries, ab Scale ai_calls, observe keines', () => {
+  it('studio metert llm_queries, ab Growth ai_calls, observe keines', () => {
     expect(quotaKeyForStage('observe')).toBeNull();
     expect(quotaKeyForStage('studio')).toBe('limit.llm_queries_monthly');
-    expect(quotaKeyForStage('scale')).toBe('limit.ai_calls_monthly');
+    expect(quotaKeyForStage('growth')).toBe('limit.ai_calls_monthly');
     expect(quotaKeyForStage('agency')).toBe('limit.ai_calls_monthly');
     expect(quotaKeyForStage('sovereign')).toBe('limit.ai_calls_monthly');
   });
@@ -100,8 +100,8 @@ describe('Modell-Aliase', () => {
     expect(ids).not.toContain('claude-haiku-4-5');
   });
 
-  it('Scale mit Cloud listet Cloud-Aliase', () => {
-    const ids = modelsResponseForStage('scale', true, 0).data.map((d) => d.id);
+  it('Growth mit Cloud listet Cloud-Aliase', () => {
+    const ids = modelsResponseForStage('growth', true, 0).data.map((d) => d.id);
     expect(ids).toContain('gpt-4o');
     expect(ids).toContain('cloud-fallback');
   });
@@ -109,7 +109,7 @@ describe('Modell-Aliase', () => {
   it('Cloud-Profil ist auf Studio verboten', () => {
     expect(isProfileAllowed('cloud-fallback', 'studio', false)).toBe(false);
     expect(isProfileAllowed('fast-local', 'studio', false)).toBe(true);
-    expect(isProfileAllowed('cloud-fallback', 'scale', true)).toBe(true);
+    expect(isProfileAllowed('cloud-fallback', 'growth', true)).toBe(true);
   });
 });
 

@@ -1,4 +1,15 @@
 {
+  "permissions": {
+    "deny": [
+      "Read(./package-lock.json)",
+      "Read(./**/package-lock.json)",
+      "Read(./**/*.generated.ts)",
+      "Read(./dist/**)",
+      "Read(./coverage/**)",
+      "Read(./playwright-report/**)",
+      "Read(./test-results/**)"
+    ]
+  },
   "hooks": {
     "SessionStart": [
       {

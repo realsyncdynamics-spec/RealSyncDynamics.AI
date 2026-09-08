@@ -20,7 +20,7 @@
  */
 
 import { readFileSync, existsSync, readdirSync, statSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, relative } from 'node:path';
 
 const ROOT = process.cwd();
 const CONFIG = join(ROOT, '.claude', 'context-budget.json');
@@ -97,6 +97,72 @@ if (existsSync(CONTEXT_DIR)) {
     console.error(
       '  Ausgelagertes Wissen ohne Verweis ist verloren, nicht gespart (§14).',
     );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Projektweit: Was eine Sitzung nicht beim Start laedt, aber beim Arbeiten.
+// Eine Doku-Sammlung, die still waechst, kostet in jeder Recherche erneut —
+// nicht als Systemprompt, sondern als Suchtreffer, die jemand lesen muss.
+// Deshalb hier eine Ratsche auf Umfang, kein Verbot einzelner Dateien.
+// ---------------------------------------------------------------------------
+function mdDateien(dir, treffer = []) {
+  if (!existsSync(dir)) return treffer;
+  for (const e of readdirSync(dir, { withFileTypes: true })) {
+    if (e.name === 'node_modules' || e.name.startsWith('.')) continue;
+    const p = join(dir, e.name);
+    if (e.isDirectory()) mdDateien(p, treffer);
+    else if (e.isFile() && e.name.endsWith('.md')) treffer.push(p);
+  }
+  return treffer;
+}
+
+const repoDocs = cfg.doku;
+if (repoDocs) {
+  const dateien = mdDateien(join(ROOT, 'docs'));
+  const kb = dateien.reduce((s, p) => s + statSync(p).size, 0) / 1024;
+  const zuViele = dateien.length > repoDocs.maxDateien;
+  const zuGross = kb > repoDocs.maxKb;
+  if (zuViele || zuGross) failed = true;
+  console.log('\nDokumentation unter docs/');
+  console.log(
+    `  ${zuViele ? '✗' : '✓'} ${String(dateien.length).padStart(4)} Dateien   (Grenze ${repoDocs.maxDateien})`,
+  );
+  console.log(
+    `  ${zuGross ? '✗' : '✓'} ${fmt(Math.round(kb)).padStart(4)} KB gesamt (Grenze ${fmt(repoDocs.maxKb)})`,
+  );
+  if (zuViele || zuGross) {
+    console.error(
+      '  Erledigtes darf nach CLAUDE.md §9 ohne Rueckfrage entfernt werden —',
+    );
+    console.error(
+      '  die Git-History bleibt das Archiv. Runbooks, Specs und Templates bleiben.',
+    );
+  }
+
+  // Aufraeum-Kandidaten melden statt loeschen: Statusdokumente, auf die keine
+  // andere Datei verweist. Ob eines davon noch gebraucht wird, entscheidet der
+  // Eigentümer — der Guard macht die Liste nur sichtbar, damit sie nicht
+  // unbemerkt weiterwaechst.
+  const statusMuster = /(PHASE|WEEK|CHECKLIST|STATUS|SUMMARY|RETROSPECTIVE|KICKOFF|COMPLETION|READINESS)/i;
+  // docs/README.md ist das Erzeugnis des Index-Generators und nennt *jede*
+  // Datei — als Beleg fuer "wird gebraucht" taugt es deshalb nicht.
+  const indexDatei = join(ROOT, 'docs', 'README.md');
+  const alleTexte = dateien
+    .filter((p) => p !== indexDatei && !statusMuster.test(p))
+    .map((p) => readFileSync(p, 'utf8'))
+    .join('\n');
+  const kandidaten = dateien
+    .filter((p) => statusMuster.test(p))
+    .filter((p) => !alleTexte.includes(p.split('/').pop()))
+    .map((p) => relative(ROOT, p));
+  if (kandidaten.length > 0) {
+    console.log(
+      `\nHinweis: ${kandidaten.length} Statusdokument(e) ohne Verweis aus der uebrigen Doku:`,
+    );
+    for (const k of kandidaten.slice(0, 10)) console.log(`  - ${k}`);
+    if (kandidaten.length > 10) console.log(`  … und ${kandidaten.length - 10} weitere`);
+    console.log('  Erledigtes loeschen (CLAUDE.md §9); Runbooks/Specs/Templates behalten.');
   }
 }
 

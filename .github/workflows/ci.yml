@@ -36,6 +36,11 @@ jobs:
       # der Zuwachs nach docs/context/ — das Budget wird nicht angehoben.
       - name: Kontext-Budget (Ratsche gegen wachsenden Sitzungskontext)
         run: npm run check:context
+      # Ein handgepflegter Index veraltet still — deshalb ist docs/README.md ein
+      # Erzeugnis und CI haelt es aktuell. Ohne Index sucht jede Recherche mit
+      # grep -r ueber 2,5 MB Doku und zieht Dutzende Treffer in den Kontext.
+      - name: Doku-Index aktuell
+        run: npm run check:docs-index
       # Die kommerzielle Wahrheit steht in shared/pricing.ts. Alles Abgeleitete
       # — der Deno-Zwilling, die Plan-Katalog-Migration, die Kontingente —
       # muss daraus folgen und darf keine zweite Wahrheit daneben bilden.

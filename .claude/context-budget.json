@@ -5,5 +5,10 @@
     "CLAUDE.md": 10800,
     "gesamt": 11200
   },
-  "mcpServerHinweisAb": 4
+  "mcpServerHinweisAb": 4,
+  "doku": {
+    "_hinweis": "Ratsche gegen wachsende Doku-Sammlung: Was in docs/ liegt, kostet bei jeder Recherche. Grenzen senken, nicht anheben.",
+    "maxDateien": 222,
+    "maxKb": 2650
+  }
 }

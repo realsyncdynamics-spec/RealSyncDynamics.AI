@@ -42,12 +42,20 @@ und werden **bei Bedarf** gelesen — nicht auf Vorrat.
   — Hergang, Messung, Nachweis — gehört nach `docs/context/` und wird hier mit
   einer Zeile verlinkt. Nach dem Ergänzen `npm run check:context` ausführen.
 
-### Budget-Wächter
+### Werkzeuge
 
-`npm run check:context` misst den bei jedem Start geladenen Kontext
-(`CLAUDE.md` plus `.claude/`-Konfiguration) und schlägt bei Überschreitung des
-Budgets aus `.claude/context-budget.json` fehl. Er ist eine **Ratsche**: Wächst
-der Kern, muss ausgelagert werden — nicht das Budget erhöht.
+- **`npm run check:context`** — Ratsche: misst den bei jedem Start geladenen
+  Kontext (`CLAUDE.md` + `.claude/`) **und** den Umfang von `docs/` gegen
+  `.claude/context-budget.json`. Wächst etwas, wird ausgelagert oder gelöscht —
+  nicht das Budget erhöht. Meldet zusätzlich Statusdokumente ohne Verweis
+  (Aufräumkandidaten nach §9) und die Zahl aktiver MCP-Server.
+- **`docs/README.md`** — erzeugter Index über alle Dokumente
+  (`npm run docs:index`, in CI per `--check` aktuell gehalten). Vor einer
+  Recherche dort den Abschnitt nachschlagen, statt `grep -r` über 2,5 MB
+  laufen zu lassen. Auch diesen Index abschnittsweise lesen.
+- **Lesesperren** in `.claude/settings.json`: Lockdateien, `*.generated.ts`
+  und Buildausgaben sind für das Read-Werkzeug gesperrt — ihr Inhalt trägt
+  nichts bei und füllt den Kontext sofort. Begründung: `.claude/README.md`.
 
 
 ## 1. Projektidentität
@@ -500,6 +508,7 @@ Herleitung, Kontingent-Kanonizität und Add-on-Mechanik:
 | Kontingent-Kanonizität | `npm run check:limits` |
 | Cron-Gesundheit (Prod) | `npm run check:cron-health` |
 | Kontext-Budget | `npm run check:context` |
+| Doku-Index erzeugen | `npm run docs:index` |
 
 ### Nach jeder Änderung
 ```bash

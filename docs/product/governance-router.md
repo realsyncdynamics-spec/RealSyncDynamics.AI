@@ -37,7 +37,7 @@ EU-lokale Residenz (`/settings/ai-residency`) sperrt Cloud-Profile **auf jeder S
 ## Was der Router durchsetzt
 
 - Auth: SHA-256 gegen `governance_ingest_keys`. `tenant_id` nur aus dem Key.
-- Residenz: `resolve_ai_residency`.
+- Residenz: `resolve_ai_residency`. Fällt die RPC aus, gilt `cloud` — dieselbe Fail-open-Regel wie `_shared/ai.ts` / `runAiTool`. Ein EU-lokal-Mandant kann in diesem Ausfall Cloud sehen. Bewusst analog, kein eigener Fail-closed-Schnitt.
 - PDP: `AI_GATEWAY_ENFORCEMENT` `off|shadow|enforce`, Default `shadow`, Fail-open bei Ausfall (wie `ai-gateway`).
 - Prüfpfad: `ai_tool_runs.tool_key = governance_router`. Metadaten: Profil, Provider, Residenz, Stufe, PDP — **kein Prompt**.
 - Art. 50: `_governance.disclosure` an der Antwort.
@@ -47,6 +47,7 @@ Kein Eintrag in `pdp_shadow_log` in diesem Schnitt: die Quellenliste ist eine ge
 ## Was bewusst nicht skaliert
 
 - Kein automatisches Plan-Upgrade
-- Kein Token-Streaming (Cursor `stream: true` erhält eine Ein-Chunk-SSE-Hülle nach der fertigen Antwort)
+- Kein Token-Streaming (Cursor `stream: true` erhält eine Ein-Chunk-SSE-Hülle nach der fertigen Antwort; echte Token-Streams sind ein eigener Schnitt)
+- Residenz-RPC bleibt fail-open auf `cloud` (wie `runAiTool`); Fail-closed wäre ein eigener Schnitt
 - Kein zweiter Provider-Marktplatz
 - `ai-gateway` bleibt JWT-pflichtig

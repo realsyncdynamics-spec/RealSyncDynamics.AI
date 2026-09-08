@@ -271,7 +271,7 @@ The chain only fires when LM Studio fails, so steady-state cost is dominated by 
 
 ## Governance Open Router (nicht dieser Endpunkt)
 
-Mandantenfähiger OpenAI-Eingang für Cursor und SDKs: `governance-router`, Auth `rsd_gov_`, Stufe aus Plan-Entitlements. **Nicht** denselben Base-URL-Pfad wie `ai-gateway` verwenden — jener bleibt JWT-pflichtig und mandantenlos (AssistentChip). Vertrag: `docs/product/governance-router.md`.
+Mandantenfähiger OpenAI-Eingang für Cursor und SDKs: `governance-router`, Auth `rsd_gov_`, Stufe aus Plan-Entitlements. **Nicht** denselben Base-URL-Pfad wie `ai-gateway` verwenden — jener bleibt JWT-pflichtig und mandantenlos (AssistentChip). Residenz-RPC fällt wie `runAiTool` auf `cloud` zurück, wenn sie ausfällt. Streaming ist eine Ein-Chunk-SSE-Hülle nach der fertigen Antwort. Vertrag: `docs/product/governance-router.md`.
 
 ---
 

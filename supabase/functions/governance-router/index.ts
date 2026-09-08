@@ -121,6 +121,8 @@ async function resolveResidency(admin: SupabaseClient, tenantId: string): Promis
     p_tenant_id: tenantId,
     p_user_id: null,
   });
+  // Fail-open analog zu _shared/ai.ts: ohne RPC-Ergebnis gilt cloud.
+  // Ein EU-lokal-Mandant kann in diesem Ausfall Cloud sehen. Bewusst, kein Fail-closed.
   if (error) {
     console.error('[governance-router] resolve_ai_residency failed, defaulting to cloud', error.message);
     return 'cloud';

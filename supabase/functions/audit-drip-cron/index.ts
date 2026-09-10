@@ -21,6 +21,10 @@ Deno.serve(async (req) => {
 
   const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
   const SRK = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+  const authHeader = req.headers.get('Authorization') ?? '';
+  if (authHeader !== `Bearer ${SRK}`) {
+    return jsonResponse({ ok: false, error: 'cron only' }, 401);
+  }
   const RESEND_KEY = Deno.env.get('RESEND_API_KEY');
   const FROM = Deno.env.get('RESEND_FROM') ?? 'RealSync Dynamics <hello@realsyncdynamicsai.de>';
   const SITE = Deno.env.get('PUBLIC_SITE_URL') ?? 'https://RealSyncDynamicsAI.de';

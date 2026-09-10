@@ -5,8 +5,8 @@ import { Menu, Snowflake, X } from 'lucide-react';
 /**
  * Shared dark public header for `/` and `/branchen`.
  *
- * Nav hierarchy follows P0 Governance-OS (#1280): Produkt → Runtime → Evidence
- * → Module, with Branchen slotted in (#1279) without displacing Runtime.
+ * Evolving toward a Governance OS system-bar feel (glass, monospace status)
+ * while preserving working P0 nav targets from #1280/#1279.
  * Hash targets use `/#…` so they resolve from `/branchen` as well.
  */
 const LINKS = [
@@ -35,15 +35,24 @@ export function PublicDarkHeader({ overlay = false }: { overlay?: boolean }) {
       className={`${overlay ? 'absolute' : 'sticky bg-[rgb(3,7,18)]/95 backdrop-blur-md'} inset-x-0 top-0 z-30 border-b border-white/10`}
     >
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-6 sm:h-20 lg:px-10">
-        <Link
-          to="/"
-          className="flex min-w-0 items-center gap-2.5 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e8c98a]/60"
-        >
-          <Snowflake className="h-6 w-6 shrink-0 text-[#e8c98a]" strokeWidth={1.5} />
-          <span className="truncate text-base font-semibold tracking-tight text-white sm:text-lg">
-            RealSync <span className="font-normal text-white/80">Dynamics.AI</span>
+        <div className="flex min-w-0 items-center gap-3">
+          <Link
+            to="/"
+            className="flex min-w-0 items-center gap-2.5 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e8c98a]/60"
+          >
+            <Snowflake className="h-6 w-6 shrink-0 text-[#e8c98a]" strokeWidth={1.5} />
+            <span className="truncate text-base font-semibold tracking-tight text-white sm:text-lg">
+              RealSync <span className="font-normal text-white/80">Dynamics.AI</span>
+            </span>
+          </Link>
+          <span
+            className="hidden items-center gap-1.5 rounded-md border border-[#e8c98a]/25 bg-[#e8c98a]/8 px-2 py-1 font-mono text-[9px] tracking-[.16em] text-[#e8c98a]/90 md:inline-flex"
+            title="Product category — not a live tenant metric"
+          >
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400/90" aria-hidden="true" />
+            GOV OS
           </span>
-        </Link>
+        </div>
 
         <nav className="hidden items-center gap-5 xl:gap-6 lg:flex" aria-label="Hauptnavigation">
           {LINKS.map((item) =>
@@ -62,7 +71,7 @@ export function PublicDarkHeader({ overlay = false }: { overlay?: boolean }) {
           </Link>
         </nav>
 
-        {/* Tablet/phone: P0 Scan-CTA bleibt sichtbar neben dem Menü. */}
+        {/* Tablet/phone: Scan chip stays visible; hamburger opens system drawer. */}
         <div className="flex items-center gap-2.5 lg:hidden">
           <Link
             to="/audit"
@@ -75,7 +84,7 @@ export function PublicDarkHeader({ overlay = false }: { overlay?: boolean }) {
             className="rounded-md p-1.5 text-white/70 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e8c98a]/60"
             aria-expanded={open}
             aria-controls="public-dark-mobile-nav"
-            aria-label={open ? 'Menü schließen' : 'Menü öffnen'}
+            aria-label={open ? 'Systemmenü schließen' : 'Systemmenü öffnen'}
             onClick={() => setOpen((v) => !v)}
           >
             {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -87,7 +96,12 @@ export function PublicDarkHeader({ overlay = false }: { overlay?: boolean }) {
         <div
           id="public-dark-mobile-nav"
           className="border-t border-white/10 bg-[rgb(3,7,18)]/98 px-6 py-4 backdrop-blur-md lg:hidden"
+          role="dialog"
+          aria-label="Governance OS Navigation"
         >
+          <p className="mb-3 font-mono text-[9px] tracking-[.2em] text-[#e8c98a]/70">
+            SYSTEM DRAWER · PUBLIC
+          </p>
           <nav aria-label="Mobile Navigation" className="flex flex-col">
             {LINKS.map((item) =>
               item.to.includes('#') ? (

@@ -1,10 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { HERO_HEADLINE_TEST_SUBSTRING, HERO_HEADLINE_LINES } from '../src/components/governance-frontend/hero-content';
 import { LIVE_CAPABILITIES, BUILDING_CAPABILITIES } from '../src/config/platform-capabilities';
-import {
-  RUNTIME_PREVIEW_LABEL,
-  RUNTIME_PREVIEW_NOTE,
-} from '../src/config/landing-runtime-preview';
 
 /**
  * E2E für die öffentlichen Einstiegsseiten.
@@ -128,21 +124,19 @@ test.describe('Governance-AI-Landing (/)', () => {
       await expect(h1).toContainText(line);
     }
 
-    // P0-Hierarchie (#1280/#1282): Primär ist der Scan-Submit → `/audit`,
-    // sekundär der Umriss-Link auf das Governance OS (#platform).
-    await expect(page.getByRole('button', { name: /Kostenlosen Governance Scan starten/i }).first()).toBeVisible();
-    await expect(page.getByRole('link', { name: /Governance OS ansehen/i }).first()).toBeVisible();
+    // P0: Scan-Submit → `/audit`, secondary outline → Governance OS (#platform).
+    await expect(
+      page.getByRole('button', { name: /Kostenlosen Governance Scan starten/i }).first(),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('link', { name: /Explore the Governance OS|Governance OS ansehen/i }).first(),
+    ).toBeVisible();
   });
 
-  test('Kennzahlen im Hero sind als Beispielwerte gekennzeichnet', async ({ page }) => {
-    // Truth Layer: ein anonymer Besucher hat keinen Mandanten und damit keine
-    // belegbaren Kennzahlen. Die Karten dürfen sich nicht als Messwerte oder
-    // als "Live" ausgeben.
-    // Wortlaut aus landing-runtime-preview.ts, nicht abgeschrieben — sonst
-    // driftet der Test beim naechsten Umbau wieder weg.
-    // Label existiert in Desktop- und Mobile-Variante; nur die viewport-sichtbare zählt.
-    await expect(page.getByText(RUNTIME_PREVIEW_LABEL).first()).toBeVisible();
-    await expect(page.getByText(RUNTIME_PREVIEW_NOTE).first()).toBeVisible();
+  test('Kennzahlen / Sphere im Hero sind als Demo gekennzeichnet', async ({ page }) => {
+    // Truth Layer: anonymous visitors have no tenant — no live production counts.
+    await expect(page.getByText(/DEMO\s*\/\s*SIMULATED|BEISPIELANSICHT/i).first()).toBeVisible();
+    await expect(page.locator('[data-governance-sphere]')).toBeVisible();
     await expect(page.getByText(/^Live\b/)).toHaveCount(0);
   });
 

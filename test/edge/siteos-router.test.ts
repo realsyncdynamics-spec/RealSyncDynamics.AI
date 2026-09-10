@@ -27,7 +27,7 @@ import { resolveEndpoint, ROUTER_SLUG } from '../../supabase/functions/siteos/re
 
 /** Muss mit der Route-Map in supabase/functions/siteos/index.ts übereinstimmen. */
 const ENDPOINTS = [
-  'agents', 'builder', 'discover', 'runtime-scan',
+  'agents', 'builder', 'discover', 'edit', 'runtime-scan',
   'publish-approve', 'publish-gate',
   'build-anon', 'refine-anon', 'session', 'claim',
 ];
@@ -50,6 +50,9 @@ const HANDLER_FILES: Readonly<Record<string, string>> = Object.freeze({
   'agents': 'agents',
   'builder': 'builder',
   'discover': 'discover',
+  // Block-Editor: Redaktion → neue Version. Teilt mit `builder` die
+  // Persistenz (`siteos/persist.ts`, neben dem Router — keine Handler-Datei).
+  'edit': 'edit',
   'runtime-scan': 'runtime-scan',
   'publish-gate': 'publish-gate',
   'publish-approve': 'publish-gate',

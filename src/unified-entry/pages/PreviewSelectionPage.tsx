@@ -20,7 +20,9 @@ import {
  *
  * `siteos/discover` liest die Ausgangsseite, `siteos/builder` erzeugt daraus
  * den Blueprint. Beide sind Pfade **eines** Function-Slots `siteos` — geprueft
- * wird deshalb ein Name, nicht zwei. Fehlt er, gibt es nichts zu zeigen: Die
+ * wird deshalb ein Name, nicht zwei. Bearbeitet wird der Blueprint nicht hier,
+ * sondern im App Builder Workspace (`/builder/:slug`), in den diese Seite nach
+ * dem Erstbau weiterleitet — ein Builder, nicht zwei (Phase 2, 2026-09-07). Fehlt er, gibt es nichts zu zeigen: Die
  * Oberflaeche zeigte einen leeren Rahmen und eine Fehlermeldung in der
  * Seitenleiste, waehrend die Kopfzeile „Ihre neue Website ist bereits
  * gebaut" behauptet.
@@ -96,14 +98,20 @@ export default function PreviewSelectionPage() {
       const result = await buildSite({ tenant_id: activeTenantId, prompt, locale: 'de', enrichment: { name: site.title ?? site.h1 ?? undefined, summary: site.description ?? site.visible_text.slice(0, 600), services: site.services } });
       if (result.kind !== 'ok' || !result.data.blueprint) throw new Error(result.kind === 'ok' ? 'Blueprint fehlt.' : errorMessage(result));
       setBlueprint(result.data.blueprint);
+      // Übergabe an den Workspace: Die Ausgangs-URL wandert mit, damit dort
+      // „Mit KI neu bauen" und der Checkout dieselbe Quelle kennen. Die
+      // Kette selbst liegt in der Datenbank; der Workspace lädt sie neu.
+      navigate(`/builder/${encodeURIComponent(result.data.slug)}?source=${encodeURIComponent(site.source_url)}`, { replace: true });
     } catch (cause) { setError(cause instanceof Error ? cause.message : 'Die neue Website konnte nicht erzeugt werden.'); }
     finally { setBusy(false); }
   }, [activeTenantId, tenantLoading, sourceUrl]);
 
   useEffect(() => {
     if (!isAuthenticated) { navigate(`/welcome?next=${encodeURIComponent(window.location.pathname + window.location.search)}`); return; }
-    void build();
-  }, [build, isAuthenticated, navigate]);
+    // Der Workspace schickt Anweisungen für einen KI-Neubau als Parameter
+    // hierher — derselbe Weg, den „AI anwenden" auf dieser Seite nimmt.
+    void build(params.get('instruction') ?? '');
+  }, [build, isAuthenticated, navigate, params]);
 
   // Nutzereingabe der Ausgangsdomain: nachsichtig normalisieren (Protokoll
   // ergaenzen), aber vor dem Start pruefen — eine unbrauchbare URL wuerde

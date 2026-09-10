@@ -85,6 +85,23 @@ export function AVVTemplate({ meta }: { meta: DocMeta }) {
           Standardvertragsklauseln) oder einer Ausnahme nach Art. 49 DSGVO.
         </Text>
 
+        <Text style={baseStyles.h2}>8a. KI-gestützte Datenverarbeitung und EU AI Act</Text>
+        <Text style={baseStyles.p}>
+          Soweit der Auftragnehmer KI-gestützte Software-Tools zur Governance- und
+          Risikoanalyse bereitstellt, verarbeitet er Daten des Auftraggebers ausschließlich im
+          Einklang mit dessen Weisungen sowie den Vorgaben der EU-KI-Verordnung (Verordnung
+          (EU) 2024/1689).
+        </Text>
+        <Bullet>
+          Eingegebene personenbezogene und geschäftskritische Daten werden nicht zum Training
+          allgemeiner, grundlegender KI-Modelle (GPAI) oder für Dritte verwendet, sofern nicht
+          ausdrücklich und schriftlich vereinbart.
+        </Bullet>
+        <Bullet>
+          Synthetisch generierte oder veränderte Inhalte werden gemäß Art. 50 EU AI Act
+          (u. a. C2PA-Spezifikationen) maschinenlesbar gekennzeichnet.
+        </Bullet>
+
         <Text style={baseStyles.h2}>9. Haftung</Text>
         <Text style={baseStyles.p}>
           Es gelten die Haftungsregelungen aus Art. 82 DSGVO sowie ergänzend die Bestimmungen

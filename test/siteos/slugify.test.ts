@@ -4,9 +4,10 @@ import { slugify } from '../../packages/siteos-core/src/blueprint/synthesize';
 /**
  * `slugify` bestimmt Site-Slug und Block-IDs und damit den kanonischen Hash.
  * Die Rand-Beschneidung wurde am 2026-09-07 von `-+$` auf `-$` umgestellt
- * (CodeQL js/polynomial-redos, erreichbar über `validatePageSlug` in pages.ts).
- * Das darf das Ergebnis für keine Eingabe ändern — sonst bekäme derselbe Brief
- * einen anderen Hash. Hier steht die frühere Fassung als Vergleichsmaßstab.
+ * (CodeQL js/polynomial-redos, erreichbar über `applyPageEdits` und
+ * `validatePageSlug` in pages.ts). Das darf das Ergebnis für keine Eingabe
+ * ändern — sonst bekäme derselbe Brief einen anderen Hash. Hier steht die
+ * frühere Fassung als Vergleichsmaßstab.
  */
 function slugifyBefore(input: string): string {
   const umlauts: Record<string, string> = {

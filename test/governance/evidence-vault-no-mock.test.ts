@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 const view = readFileSync('src/features/governance/evidence/EvidenceVaultView.tsx', 'utf8');
+const app = readFileSync('src/App.tsx', 'utf8');
 
 describe('EvidenceVaultView — keine Demo-Daten im Live-Pfad', () => {
   it('seeden nicht mit atelier-nord', () => {
@@ -33,5 +34,14 @@ describe('EvidenceVaultView — keine Demo-Daten im Live-Pfad', () => {
     expect(view).toContain('Kein Prüfpfad');
     expect(view).toContain('Kein Change-Log');
     expect(view).toContain('Keine Export-Historie');
+  });
+});
+
+describe('/app/evidence ist auth-gegatet', () => {
+  it('hängt hinter AppGate, analog zum Dashboard', () => {
+    const line = app.split('\n').find((text) => text.includes('path="/app/evidence"'));
+    expect(line, 'Route /app/evidence nicht gefunden').toBeDefined();
+    expect(line).toContain('<AppGate>');
+    expect(line).toContain('EvidenceVaultView');
   });
 });

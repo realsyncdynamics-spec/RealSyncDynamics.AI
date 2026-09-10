@@ -34,6 +34,11 @@ import {
 
 const FUNCTIONS_DIR = resolve(__dirname, '../../supabase/functions');
 
+/** Startseite + shared PublicDarkHeader — Nav-Links leben im Header-Modul. */
+const landingShell = () =>
+  readFileSync(resolve(__dirname, '../../src/pages/MainLanding.tsx'), 'utf8') +
+  readFileSync(resolve(__dirname, '../../src/components/landing/PublicDarkHeader.tsx'), 'utf8');
+
 describe('Plattform-Fähigkeiten — Behauptung deckt sich mit dem Backend', () => {
   it('jede Fähigkeit benennt mindestens eine tragende Edge Function', () => {
     for (const cap of PLATFORM_CAPABILITIES) {
@@ -140,20 +145,30 @@ describe('Erreichbarkeit — fertige Seiten sind von der Startseite aus verlinkt
    * verschwendete Arbeit."
    *
    * `/ai-act` und `/sicherheit` existieren, werden prerendert und sind aus
-   * der `LandingNavbar` der übrigen öffentlichen Seiten verlinkt — nur die
-   * Startseite baut ihre Kopfzeile inline und ließ beide aus. Ein Besucher,
-   * der auf `/` landet, fand von dort keinen Weg dorthin.
-   *
-   * Der Test prüft beide Richtungen: Der Link steht auf der Startseite, und
-   * die Route existiert wirklich. Ein Link ins Leere wäre nicht besser als
-   * gar keiner.
+   * der gemeinsamen PublicDarkHeader-Nav auf `/` und `/branchen` verlinkt.
+   * Der Test liest deshalb den Landing-Shell (MainLanding + Header). Links
+   * stehen im LINKS-Array als `to: '/…'`, nicht als JSX-`to="/…"`.
    */
-  const landing = readFileSync(resolve(__dirname, '../../src/pages/MainLanding.tsx'), 'utf8');
+  const shell = landingShell();
   const app = readFileSync(resolve(__dirname, '../../src/App.tsx'), 'utf8');
 
   it.each(['/ai-act', '/sicherheit'])('%s ist verlinkt und geroutet', (path) => {
-    expect(landing, `Die Startseite verlinkt ${path} nicht.`).toContain(`to="${path}"`);
+    expect(
+      shell,
+      `Die Startseite (inkl. PublicDarkHeader) verlinkt ${path} nicht.`,
+    ).toContain(`to: '${path}'`);
     expect(app, `${path} hat keine Route — der Link ginge ins Leere.`).toContain(`path="${path}"`);
+  });
+
+  it('Branchen steht in der Public-Nav', () => {
+    expect(shell).toContain("to: '/branchen'");
+    expect(shell).toContain("label: 'Branchen'");
+  });
+
+  it('Header-CTA folgt der Governance-OS-Hierarchie', () => {
+    expect(shell).toContain('Kostenlosen Governance Scan starten');
+    expect(shell).toContain("to: '/governance-runtime'");
+    expect(shell).toContain('PublicDarkHeader');
   });
 });
 
@@ -244,6 +259,10 @@ describe('Hero-Panel — Beispiel ist als Beispiel gekennzeichnet', () => {
     resolve(__dirname, '../../src/pages/MainLanding.tsx'),
     'utf8',
   );
+  const sphereNodes = readFileSync(
+    resolve(__dirname, '../../src/components/governance-frontend/governance-sphere-nodes.ts'),
+    'utf8',
+  );
 
   it('das Panel nennt sich nicht mehr „LIVE"', () => {
     // Vorher: Kopfzeile „GOVERNANCE RUNTIME · LIVE", grüner ACTIVE-Punkt,
@@ -252,6 +271,8 @@ describe('Hero-Panel — Beispiel ist als Beispiel gekennzeichnet', () => {
     // aussehen (Truth Layer, target-architecture.md §3.1).
     expect(landing).not.toContain('GOVERNANCE RUNTIME · LIVE');
     expect(landing).toContain('RUNTIME_PREVIEW_LABEL');
+    expect(landing).toContain('GovernanceSphereHost');
+    expect(sphereNodes).toMatch(/DEMO\s*\/\s*SIMULATED/);
   });
 
   it('die Beispielwerte stehen in der Config, nicht in der Seite', () => {

@@ -448,3 +448,89 @@ tatsächliche `status`/`publishable` aus Schritt 8 samt Begründung.
 
 Ein Lauf ohne festgehaltene Hashes belegt nichts — die gesamte Aussagekraft
 hängt daran, dass `SHA_V2` an drei Stellen unabhängig wiederauftaucht.
+
+---
+
+## Anhang A — Vorab-Evidenz ausserhalb des Ausführungs-Gates
+
+**Gemessen am 2026-09-06 gegen Produktion** (`ebljyceifhnlzhjfyxup`,
+eu-central-1, PostgreSQL 17).
+
+Warum dieser Anhang existiert: Das Ausführungs-Gate oben verlangt Test-Mandant,
+Zweit-Mandant und ein echtes Benutzer-JWT, **bevor** Schritt 1 beginnt — weil
+der Lauf in fünf Tabellen schreibt. Einige Prüfpunkte schreiben aber gar
+nichts: Postgres weist eine generierte Spalte bereits beim Parsen ab, und eine
+abgewiesene HTTP-Anfrage legt keine Zeile an. Diese Punkte lassen sich deshalb
+vorab belegen, ohne das Gate zu verletzen.
+
+Was hier steht, ist ausdrücklich **kein** Runbook-Lauf. Ein Teillauf wäre kein
+günstigerer Lauf, sondern eine vermischte Evidenzlage.
+
+### A1 — §9b und §9c: die generierte Spalte ist unbeschreibbar (⛔, bestanden)
+
+| Prüfpunkt | Anweisung | Ergebnis |
+|---|---|---|
+| §9b | `UPDATE siteos_publish_evaluations SET publishable = true WHERE false` | `428C9: column "publishable" can only be updated to DEFAULT` |
+| §9c | `INSERT INTO siteos_publish_evaluations (publishable) VALUES (true)` | `428C9: cannot insert a non-DEFAULT value into column "publishable"` |
+
+Beide über die **privilegierte Management-Verbindung** ausgeführt. Damit ist
+die Zusage aus §9c — „Auch ein Schreibpfad mit `service_role` kommt nicht daran
+vorbei" — gemessen statt behauptet. `siteos_publish_evaluations` stand vor und
+nach beiden Versuchen bei 0 Zeilen; die `WHERE false`-Klausel in §9b ist
+Vorsicht, keine Notwendigkeit: Postgres bricht unabhängig von der Treffermenge
+ab. `information_schema.columns.is_generated` meldet `ALWAYS`.
+
+Nicht abgedeckt: §9a und §9d brauchen eine echte Bewertungszeile und bleiben
+am Gate.
+
+### A2 — Auth-Schranke der ausgelieferten Edge Function (⛔, bestanden)
+
+| Anfrage an `/functions/v1/siteos/…` | Antwort |
+|---|---|
+| `POST /build-anon` ohne `Authorization` | `401 UNAUTHORIZED_NO_AUTH_HEADER` |
+| `POST /build-anon` mit ungültigem Bearer | `401 UNAUTHORIZED_INVALID_JWT_FORMAT` |
+| `POST /gibt-es-nicht` ohne `Authorization` | `401` — **nicht** `404` |
+
+Der dritte Fall trägt die eigentliche Aussage: Ein unbekannter Endpunkt
+antwortet ebenfalls `401`. Die Plattform weist also ab, **bevor** der Router
+der Function läuft — `verify_jwt = true` greift tatsächlich, wie in §2c
+begründet. Keine der drei Anfragen hat eine Zeile erzeugt.
+
+Das ist nicht dasselbe wie die erste Zeile in §10: Dort geht es um einen Aufruf
+**mit** gültigem anon key, den erst die Function selbst zurückweist. Diese
+Schranke liegt eine Ebene davor und ersetzt den Punkt aus §10 nicht.
+
+### A3 — Aufbewahrung: der Verfall greift im Dauerbetrieb (📋, belegt)
+
+Der Beobachtungsdatensatz vom 2026-08-22 (`studio-vogt-architekten`, v2) ist
+am 2026-08-29 verfallen und wurde vom stündlichen Purge abgeräumt:
+
+| | |
+|---|---|
+| `siteos_anonymous_builds` | 0 Zeilen |
+| verfallen und nicht übernommen | 0 |
+| Cron `siteos-anonymous-builds-purge-hourly` | aktiv, letzter Lauf 2026-09-06 13:17 UTC, `succeeded` |
+
+Damit sind `purge_expired_anonymous_builds()` und der pg_cron-Job erstmals im
+laufenden Betrieb belegt, nicht nur im lokalen Replay. Der Datensatz wurde
+dafür weder konserviert noch künstlich verlängert — Evidenz wird dokumentiert,
+nicht erzeugt.
+
+### A4 — Stand des Infrastruktur-Gates aus §2c
+
+`#1123` ist gemergt (`db97071`, 2026-09-01). Der Worker ist damit **nicht**
+ausgeliefert: Der Lauf von `deploy-siteos-preview.yml` zu diesem Commit
+(Run `33459724778`) übersprang nach dem Guard-Schritt alle vier
+Arbeitsschritte — `CLOUDFLARE_API_TOKEN` und `CLOUDFLARE_ACCOUNT_ID` sind
+nicht gesetzt. Ein grüner Lauf dieses Workflows belegt also **nicht**, dass
+der Worker läuft; er belegt nur, dass der Guard funktioniert hat.
+
+Solange das so bleibt, gilt in §2c die zweite Zeile: `preview_id IS NULL`,
+`preview.status = "not_configured"` — 📋, kein Fehlschlag.
+
+### Was damit vorgezogen ist
+
+Zwei der siebzehn ⛔-Punkte (§9b, §9c) sind vorab bestanden und müssen im Lauf
+selbst nur noch bestätigt werden. Alle 34 ✅-Punkte und die übrigen fünfzehn
+⛔-Punkte hängen weiter am Gate, weil sie ohne Mandant, JWT und geschriebene
+Daten nicht prüfbar sind.

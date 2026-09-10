@@ -817,6 +817,37 @@ Dieses Zielbild ändert daran **jetzt nichts**. Es bindet drei Dinge fest:
   untersagt (siehe `docs/product/pricing-governance.md`); der Name kollidiert mit
   dem abgelösten Legacy-Plan und ist durch Tests gesperrt.
 
+### Die mittlere Bindung galt nicht — gemessen am 2026-09-06
+
+Der Satz oben, *„weil kein Code an Plan-Namen hängt, ist die Umstellung eine
+Katalogänderung, kein Refactoring"*, war eine Behauptung. Gemessen: **19
+Fundstellen** vergleichen eine plan-artige Grösse mit einem Plan-Namen. Drei
+davon entscheiden über den Funktionsumfang eines zahlenden Kunden:
+
+| Fundstelle | Was am Namen hängt |
+| --- | --- |
+| `src/core/billing/useScanLimits.ts` | Kontingent — `tier !== 'free'` überspringt die Zählung für jeden bezahlten Plan |
+| `supabase/functions/audit-monitor-cron/index.ts` | Monitoring-Takt — Starter alle 30 Tage, sonst täglich |
+| `src/features/governance/terminal/agents/AuditAgent.ts` | Aufbewahrung — 30 Tage im Free-Plan, sonst 2 Jahre |
+
+Die übrigen sechzehn hängen ebenfalls am Namen, entscheiden aber nichts über
+den Umfang: Kaufweg, Empfehlung, Onboarding-Ablauf, Beschriftung, eine
+befristete Aktion. Sie brechen beim Katalogumbau trotzdem — nur trifft das
+keinen Kunden.
+
+**Gesichert, nicht behoben.** Jede der drei Gate-Fundstellen zu ändern
+verschiebt Berechtigungen; das ist nach `CLAUDE.md` §10.3 eine
+Funktionsänderung mit Fragepflicht und fällt unter „keine stillschweigende
+Kürzung bei Bestandskunden". Deshalb dieselbe Ratsche wie bei den
+Kontingenten: `npm run check:plan-gates` blockiert **neue** Verstösse, der
+Bestand steht mit Einordnung und Datum in
+`scripts/plan-name-gate-baseline.json`. Ein Test hält die Grundlinie
+aussagekräftig — ein Eintrag ohne Einordnung oder ohne Begründung lässt ihn
+brechen, damit die Liste nicht zur stillen Duldung verkommt.
+
+Damit ist die Zusage in §10 von einer Behauptung zu einer Schranke geworden,
+ohne dass sich für einen einzigen Kunden etwas ändert.
+
 Modul-Namen aus §10 sind Produktachsen, keine Schlüssel. Bei Umsetzung werden sie
 auf bestehende Modul-Schlüssel abgebildet, nicht als zweite Modul-Welt eingeführt.
 
@@ -836,7 +867,7 @@ auf bestehende Modul-Schlüssel abgebildet, nicht als zweite Modul-Welt eingefü
 | Deployment-Pfad | Renderer erzeugt gehashtes Artefakt; Upload/Domain offen | Publish nur über das Gate |
 | Skills / Workflows | 8 Skills + 8 Workflows als Vokabular über den 7 Agenten (`siteos-core/workflows/`), Läufe in `siteos_agent_runs` mit `skill`/`workflow` beschriftet | **Ausführung** der vier `portfolio`-Workflows — dafür fehlt ein Laufobjekt über mehr als ein `blueprint_id` |
 | Integrationen | `integration_connectors`, `remediation_actions`, Feature `src/features/integrations` | beidseitige Integrationen als Beobachtungs- **und** Aktionsquelle |
-| Pricing | 6 Abo-Pläne + Einmalprodukte in `shared/pricing.ts` | BASE + MODULE + SCALE als Katalogänderung |
+| Pricing | 6 Abo-Pläne + Einmalprodukte in `shared/pricing.ts`; die Bindung „kein Code hängt an Plan-Namen" ist per Ratsche gesichert (`npm run check:plan-gates`) | **kein Umbau jetzt** (§10). Drei Fundstellen verletzen die Bindung noch — Kontingent, Monitoring-Takt, Aufbewahrung; sie sind benannt, nicht behoben |
 | Truth Layer / Status Adapter | `governance-analytics-aggregator`, `governance-risk-score`, `evidence-export` vorhanden; Zusammenführung fehlt | ein Adapter, jede Zahl mit definierter Metrik, `—` statt Platzhalter |
 | Health | `health` prüft `database` + `env` (`_shared/health.ts`) | Verbundstatus über Supabase · AI Gateway · Automation · Bot Layer · Evidence; VPS/Ollama/n8n getrennt |
 | Assistent | `ai-gateway`, `bot-chat`, `bot-voice-webhook` vorhanden | Provider Router hinter dem Gateway, Policy/Tenant/Entitlement davor |

@@ -171,6 +171,11 @@ const REQUIRED_PUBLIC_FUNCTIONS = new Set([
   'audit-monitor-cron',
   'audit-recheck-weekly',
   'agent-os-runner',
+  'governance-monitoring-scheduler',
+  'scheduler-dispatch',
+  'memory-decay-worker',
+  'sub-processor-notify',
+  'website-maintenance-daily-cron',
 
   // Enterprise AI OS public surfaces.
   'enterprise-ai-os-discovery-intake',

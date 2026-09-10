@@ -39,15 +39,12 @@
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { handleOptions, jsonResponse, jsonError, methodNotAllowed } from '../../_shared/gateway.ts';
-import { audit } from '../../_shared/auditLog.ts';
-import { appendCustodyEvent } from '../../_shared/provenanceCore.ts';
+import { persistBlueprintVersion } from '../persist.ts';
 import {
   analyzeBlueprint,
   buildSiteFromPrompt,
   canonicalHash,
   computeScores,
-  planAgentTasks,
-  skillForFindingCodes,
   refineBlueprint,
   type Locale,
   type RefinementChange,
@@ -148,154 +145,46 @@ export async function handle(req: Request): Promise<Response> {
           scores: computeScores(refinedFindings),
         };
 
-    // ── Version + Verkettung ─────────────────────────────────────────────
-    // Version und prev_hash werden ausschließlich hier vergeben; RLS lässt
-    // clientseitige Inserts gar nicht erst zu.
-    const { data: previous } = await admin
-      .from('siteos_blueprints').select('version, content_sha256')
-      .eq('tenant_id', tenantId).eq('slug', result.blueprint.slug)
-      .order('version', { ascending: false }).limit(1)
-      .maybeSingle<{ version: number; content_sha256: string }>();
-
-    const version = (previous?.version ?? 0) + 1;
-    const prevHash = previous?.content_sha256 ?? null;
-
-    // Unveränderter Blueprint ⇒ keine neue Version. Sonst füllt jeder
-    // Klick auf „Neu generieren" die Kette mit identischen Einträgen und
-    // entwertet den Prüfpfad.
-    if (prevHash === result.blueprintSha256) {
-      return jsonResponse({
-        ok: true,
-        unchanged: true,
-        slug: result.blueprint.slug,
-        version: previous?.version ?? 1,
-        content_sha256: result.blueprintSha256,
-        scores: result.scores,
-        findings: result.findings,
-      });
-    }
-
     const projectId = typeof body.project_id === 'string' && body.project_id.trim() !== ''
       ? body.project_id.trim()
       : null;
 
-    const { data: inserted, error: insertErr } = await admin
-      .from('siteos_blueprints')
-      .insert({
-        tenant_id: tenantId,
-        project_id: projectId,
-        slug: result.blueprint.slug,
-        name: result.blueprint.name,
-        industry: result.blueprint.industry,
-        version,
-        blueprint: result.blueprint,
-        content_sha256: result.blueprintSha256,
-        prev_hash: prevHash,
-        origin_source: 'ai-builder',
-        origin_model: model,
-        prompt_sha256: result.blueprint.origin.promptSha256,
-        status: 'draft',
-        created_by: userId,
-      })
-      .select('id').single();
-
-    if (insertErr || !inserted) {
-      console.error(JSON.stringify({ level: 'error', scope: 'siteos_blueprint_insert_failed', error: insertErr?.message }));
-      return jsonError(500, 'INTERNAL', 'could not persist blueprint');
-    }
-    const blueprintId = inserted.id as string;
-
-    // ── Scan + Scores aus der statischen Analyse ─────────────────────────
-    const { data: scan } = await admin
-      .from('siteos_runtime_scans')
-      .insert({
-        tenant_id: tenantId,
-        blueprint_id: blueprintId,
-        trigger: 'manual',
-        scope: 'blueprint',
-        status: 'completed',
-        findings: result.findings,
-        finding_count: result.findings.length,
-        severity_max: result.scores.severityMax,
-        observed_at: nowIso,
-      })
-      .select('id').single();
-
-    if (scan) {
-      await admin.from('siteos_scores').insert({
-        tenant_id: tenantId,
-        scan_id: scan.id,
-        blueprint_id: blueprintId,
-        health: result.scores.health,
-        risk: result.scores.risk,
-        compliance: result.scores.compliance,
-        performance: result.scores.performance,
-        ai_risk: result.scores.aiRisk,
-        dimensions: result.scores.dimensions,
-      });
-    }
-
-    // ── Agenten einreihen ────────────────────────────────────────────────
-    const tasks = planAgentTasks(result.findings);
-    if (tasks.length > 0) {
-      await admin.from('siteos_agent_runs').insert(tasks.map((task) => ({
-        tenant_id: tenantId,
-        blueprint_id: blueprintId,
-        scan_id: scan?.id ?? null,
-        agent: task.agent,
-        // Agenten mit Freigabepflicht warten, statt sofort zu laufen.
-        status: task.requiresApproval ? 'awaiting_approval' : 'queued',
-        finding_codes: task.findingCodes,
-        severity_max: task.severityMax,
-        requires_approval: task.requiresApproval,
-        // Beschriftung nach §8: unter welchem Skill der Lauf steht und aus
-        // welchem Anlass. Hier ist der Anlass festgelegt, nicht abgeleitet —
-        // der Builder erzeugt eine neue Fassung, das ist per Definition
-        // Website Transformation.
-        skill: skillForFindingCodes(task.findingCodes, task.agent),
-        workflow: 'website-transformation',
-      })));
-    }
-
-    // ── Nachweis: Snapshot + Herkunftskette ──────────────────────────────
-    // Best-effort in dem Sinne, dass ein Fehler protokolliert und im
-    // Ergebnis sichtbar gemacht wird — er wird nicht verschluckt.
-    const subjectRef = `siteos:blueprint:${tenantId}:${result.blueprint.slug}`;
-    let provenanceLinked = false;
-    try {
-      const custody = await appendCustodyEvent(admin, {
-        tenantId,
-        assetRef: subjectRef,
-        contentSha256: result.blueprintSha256,
-        action: version === 1 ? 'registered' : 'updated',
-        issuer: `tenant:${tenantId}`,
-        timestamp: nowIso,
-      });
-      provenanceLinked = true;
-      await audit(admin, {
-        tenant_id: tenantId, actor_user_id: userId, actor_email: userEmail,
-        action: 'provenance.auto', target_type: 'provenance_manifest', target_id: subjectRef,
-        payload: { seq: custody.seq, source: 'siteos.builder', event_hash: custody.eventHash, signed: custody.signed },
-      });
-    } catch (provErr) {
-      console.error(JSON.stringify({
-        level: 'warn', scope: 'siteos_provenance_link_failed',
-        subject_ref: subjectRef, error: (provErr as Error)?.message ?? String(provErr),
-      }));
-    }
-
-    await audit(admin, {
-      tenant_id: tenantId, actor_user_id: userId, actor_email: userEmail,
-      action: 'siteos.blueprint.create', target_type: 'siteos_blueprint', target_id: blueprintId,
-      payload: {
-        slug: result.blueprint.slug, version, industry: result.blueprint.industry,
-        content_sha256: result.blueprintSha256, finding_count: result.findings.length,
-        severity_max: result.scores.severityMax, model,
+    // Version, Verkettung, Scan, Bewertung, Agenten, Nachweis und Prüfpfad —
+    // in `persist.ts`, gemeinsam mit dem Editor-Pfad (`edit.ts`).
+    const persisted = await persistBlueprintVersion({
+      admin, tenantId, userId, userEmail,
+      blueprint: result.blueprint,
+      blueprintSha256: result.blueprintSha256,
+      findings: result.findings,
+      scores: result.scores,
+      projectId,
+      originSource: 'ai-builder',
+      originModel: model,
+      nowIso,
+      workflow: 'website-transformation',
+      auditSource: 'siteos.builder',
+      auditAction: 'siteos.blueprint.create',
+      auditPayload: {
+        model,
         // Die Anweisungsfolge gehört in den Prüfpfad: Sie erklärt, warum
         // dieser Blueprint von dem abweicht, den der Prompt allein ergäbe.
         refinements, refinement_codes: refinementLog.map((change) => change.code),
       },
     });
+    if ('error' in persisted) return jsonError(500, 'INTERNAL', persisted.error);
+
+    if (persisted.unchanged) {
+      return jsonResponse({
+        ok: true,
+        unchanged: true,
+        slug: result.blueprint.slug,
+        version: persisted.version,
+        content_sha256: persisted.contentSha256,
+        scores: result.scores,
+        findings: result.findings,
+      });
+    }
+    const { blueprintId, version, prevHash, tasks, provenanceLinked } = persisted;
 
     return jsonResponse({
       ok: true,

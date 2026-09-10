@@ -10,5 +10,16 @@
         ]
       }
     ]
+  },
+  "permissions": {
+    "deny": [
+      "Bash(npm install*)",
+      "Bash(npm ci*)",
+      "Read(.archive/**)",
+      "Read(**/*.sql.bak)",
+      "Read(**/*.bak)",
+      "Read(node_modules/**)",
+      "Read(dist/**)"
+    ]
   }
 }

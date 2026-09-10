@@ -66,16 +66,55 @@ jobs:
           CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           CF_ACTIONS_CANONICAL: ${{ vars.CLOUDFLARE_ACTIONS_DEPLOY }}
+        # Die Zusammenfassung ist hier kein Beiwerk, sondern der Punkt.
+        # Dieser Workflow heisst "Deploy to Cloudflare Pages" und meldet auf
+        # `main` regelmaessig `success`, waehrend die Jobs `deploy` und
+        # `smoke-test` uebersprungen werden — beide haengen an `cf_ready`.
+        # Das ist so gewollt (die Git-Integration liefert aus), liest sich am
+        # gruenen Haken aber wie ein erfolgter Deploy. Gemessen am 2026-09-06:
+        # Auf demselben Commit steht "Deploy to Cloudflare Pages"
+        # (uebersprungen, GitHub Actions) direkt neben "Cloudflare Pages"
+        # (erfolgreich, App "Cloudflare Workers and Pages") — wer den ersten
+        # liest, haelt den Deploy fuer ausgefallen.
+        #
+        # Der Workflow-Name bleibt bewusst unveraendert: Er kann als
+        # `required check` in einer Branch-Protection-Regel stehen, und ein
+        # umbenannter Check gilt dort als fehlend statt als bestanden. Die
+        # Klarstellung geht deshalb in die Zusammenfassung, nicht in den Namen.
         run: |
+          summary() { echo "$1" >> "$GITHUB_STEP_SUMMARY"; }
           if [ -n "$CF_API_TOKEN" ] && [ -n "$CF_ACCOUNT_ID" ]; then
             echo "ready=true" >> "$GITHUB_OUTPUT"
+            summary "## Deploy aus GitHub Actions"
+            summary ""
+            summary "Cloudflare-Zugangsdaten vorhanden — dieser Lauf deployt und prueft danach die Live-Routen."
           elif [ "$CF_ACTIONS_CANONICAL" = "true" ]; then
             echo "ready=false" >> "$GITHUB_OUTPUT"
+            summary "## Deploy fehlgeschlagen: Zugangsdaten fehlen"
+            summary ""
+            summary "\`CLOUDFLARE_ACTIONS_DEPLOY\` ist auf \`true\` gesetzt, also ist der Actions-Pfad verbindlich —"
+            summary "aber \`CLOUDFLARE_API_TOKEN\` und/oder \`CLOUDFLARE_ACCOUNT_ID\` fehlen."
             echo "::error::Cloudflare Actions deploy is required but credentials are missing."
             exit 1
           else
             echo "ready=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::Cloudflare Actions deploy skipped; native Cloudflare Git integration remains the deployment path."
+            summary "## Dieser Lauf hat NICHT deployt"
+            summary ""
+            summary "Gebaut wurde, ausgeliefert nicht. Die Jobs \`Deploy to Cloudflare Pages\` und"
+            summary "\`Smoke test live routes\` sind uebersprungen, weil keine Cloudflare-Zugangsdaten"
+            summary "hinterlegt sind. **Ein gruener Haken an diesem Workflow ist kein Deploy-Beleg.**"
+            summary ""
+            summary "Ausgeliefert wird durch die **Cloudflare-Git-Integration** (im Dashboard konfiguriert)."
+            summary "Ihr Beleg ist ein eigener Check-Run auf demselben Commit:"
+            summary ""
+            summary "| Check-Run | App | Bedeutung |"
+            summary "|---|---|---|"
+            summary "| \`Cloudflare Pages\` | Cloudflare Workers and Pages | **der echte Deploy** |"
+            summary "| \`Deploy to Cloudflare Pages\` | GitHub Actions | dieser Job — hier uebersprungen |"
+            summary ""
+            summary "Der Name traegt nicht, die App entscheidet. Hergang und Messmethode:"
+            summary "\`docs/runbooks/deployment-kette-messen.md\`."
+            echo "::notice::Kein Deploy aus diesem Lauf — die Cloudflare-Git-Integration liefert aus (Check-Run 'Cloudflare Pages')."
           fi
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
@@ -168,14 +207,86 @@ jobs:
       - name: Wait for CDN propagation
         run: sleep 15
       - name: Check critical routes
+        # Geprueft wird der INHALT, nicht der Statuscode.
+        #
+        # Die Vorgaengerfassung verglich fuenf Routen gegen HTTP 200 und
+        # konnte per Konstruktion nicht fehlschlagen: `public/_redirects`
+        # endet auf `/*  /index.html  200`, also antwortet JEDE URL mit 200.
+        # Am 2026-09-06 gegengeprueft — `/gibt-es-garantiert-nicht-xyz123`
+        # lieferte 200. Der Test waere auch dann gruen gewesen, wenn
+        # saemtliche Routen gefehlt haetten.
+        #
+        # Die beiden Klassen sind bewusst getrennt, weil sie sich verschieden
+        # verhalten muessen (am 2026-09-06 an der Live-Seite gemessen):
+        #
+        #   /pricing 192 kB · /audit 42 kB · /governance-runtime 37 kB
+        #     prerendert, je eigener <title>
+        #   / und /app  je 63 kB, IDENTISCHER <title>
+        #     /app ist nicht prerendert und liefert regulaer den SPA-Fallback,
+        #     ist vom Fallback einer unbekannten URL also nicht zu
+        #     unterscheiden. Ein "eigener Titel"-Test wuerde /app faelschlich
+        #     rot machen.
         run: |
           BASE="https://realsyncdynamicsai.de"
-          ROUTES="/ /pricing /audit /governance-runtime /app"
+          PRERENDERED="/pricing /audit /governance-runtime"
+          SHELL_ROUTES="/ /app"
           FAILED=""
-          for path in $ROUTES; do
-            code=$(curl -sS -o /dev/null -w "%{http_code}" -L --max-time 15 "${BASE}${path}" || echo "000")
-            echo "${path} → HTTP ${code}"
-            if [ "$code" != "200" ]; then FAILED="$FAILED $path($code)"; fi
+
+          title_of() {
+            curl -sS -L --max-time 15 "$1" 2>/dev/null | tr -d '\n' \
+              | grep -oE '<title>[^<]*</title>' | head -1
+          }
+
+          HOME_TITLE=$(title_of "${BASE}/")
+          if [ -z "$HOME_TITLE" ]; then
+            echo "::error::Startseite liefert keinen <title> — Auslieferung defekt oder Prerender ausgefallen."
+            exit 1
+          fi
+          echo "Startseite/Fallback: ${HOME_TITLE}"
+
+          # Kontrolle ZUERST. Ohne sie wiederholte dieser Test den alten
+          # Fehler: Wenn alle Routen denselben Inhalt lieferten, saehe der
+          # Vergleich unten trotzdem plausibel aus. Diese Zeile weist nach,
+          # dass der Test ueberhaupt unterscheiden KANN.
+          CONTROL=$(title_of "${BASE}/__smoke-control-$(date +%s)")
+          if [ "$CONTROL" != "$HOME_TITLE" ]; then
+            echo "::error::Kontrolle fehlgeschlagen: eine unbekannte URL liefert nicht den SPA-Fallback (erwartet '${HOME_TITLE}', erhalten '${CONTROL}'). Die Annahme dieses Tests gilt nicht mehr — _redirects pruefen und den Test anpassen."
+            exit 1
+          fi
+          echo "✓ Kontrolle: unbekannte URL faellt auf die Shell zurueck — der Test kann unterscheiden"
+
+          # Prerenderte Routen muessen einen EIGENEN Titel tragen. Gleicht er
+          # dem der Startseite, wurde der Fallback ausgeliefert: Die Route
+          # fehlt oder das Prerendering ist ausgefallen. Genau das sah die
+          # alte Fassung nicht.
+          for path in $PRERENDERED; do
+            t=$(title_of "${BASE}${path}")
+            if [ -z "$t" ]; then
+              echo "${path} → kein <title>"
+              FAILED="$FAILED ${path}(kein-title)"
+            elif [ "$t" = "$HOME_TITLE" ]; then
+              echo "${path} → Fallback statt eigener Seite"
+              FAILED="$FAILED ${path}(fallback)"
+            else
+              echo "${path} → ${t}"
+            fi
           done
+
+          # Shell-Routen: nicht prerendert, der Fallback ist hier korrekt.
+          # Pruefbar bleibt, dass die SPA ueberhaupt ausgeliefert wird —
+          # Wurzelelement und Einstiegs-Bundle.
+          for path in $SHELL_ROUTES; do
+            body=$(curl -sS -L --max-time 15 "${BASE}${path}" 2>/dev/null)
+            miss=""
+            echo "$body" | grep -q 'id="root"' || miss="${miss}(kein-root-div)"
+            echo "$body" | grep -qE 'src="/assets/index-[^"]+\.js"' || miss="${miss}(kein-bundle)"
+            if [ -n "$miss" ]; then
+              echo "${path} → ${miss}"
+              FAILED="$FAILED ${path}${miss}"
+            else
+              echo "${path} → SPA-Shell vollstaendig"
+            fi
+          done
+
           if [ -n "$FAILED" ]; then echo "::error::Smoke-test failed:$FAILED"; exit 1; fi
-          echo "✓ All routes returned 200"
+          echo "✓ Alle geprueften Routen liefern den erwarteten Inhalt"

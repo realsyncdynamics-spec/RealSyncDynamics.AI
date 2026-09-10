@@ -1,0 +1,63 @@
+# Migrations-Kollisions-Guard.
+#
+# Faengt den Fall ab, den weder GitHubs Mergebarkeits-Rechnung noch die
+# uebrige PR-CI sehen kann: Zwei Aenderungen, die je fuer sich richtig sind
+# und erst miteinander kollidieren.
+#
+#   2026-08-24  PR #1131 und #1124 vergaben beide 20260826000000 — der Deploy
+#               nach dem zweiten Merge scheiterte mit 42710.
+#   2026-09-06  drei solche Paare zugleich offen (CLAUDE.md §5).
+#
+# Warum das ein eigener Workflow ist und kein Schritt in ci.yml: Der Lauf
+# braucht Lesezugriff auf die uebrigen offenen PRs. Diese Berechtigung gehoert
+# eng geschnitten an den einen Job, der sie braucht, statt in den Sammel-Job.
+#
+# Der Guard aendert nichts — er liest Git und die PR-Liste.
+
+name: Migration Collision Guard
+
+on:
+  pull_request:
+    paths:
+      - 'supabase/migrations/**'
+      - 'scripts/check-migration-collisions.mjs'
+      - '.github/workflows/migration-collision.yml'
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: migration-collision-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  collisions:
+    name: Migration collisions
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      # Voller Verlauf: Der Guard vergleicht gegen den AKTUELLEN Stand des
+      # Zielzweigs, nicht gegen die PR-Basis. Genau diese Unterscheidung ist
+      # der Kern — #1131/#1124 waren gegen ihre jeweilige Basis korrekt.
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '20'
+
+      - name: Zielzweig nachladen
+        run: git fetch --no-tags origin "${{ github.event.pull_request.base.ref }}"
+
+      # Kein `npm ci`: Das Skript nutzt ausschliesslich Node-Bordmittel und
+      # das globale fetch. Ein Installationsschritt waere hier eine Minute
+      # Laufzeit und eine Fehlerquelle fuer nichts.
+      - name: Kollisionen pruefen
+        env:
+          BASE_REF: origin/${{ github.event.pull_request.base.ref }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: npm run check:migration-collisions

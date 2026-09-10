@@ -250,6 +250,11 @@ function SiteOsInner() {
                       <MiniScore label="Health" value={site.health} />
                       <MiniScore label="Compliance" value={site.compliance} />
                       <SeverityChip severity={site.severity_max} />
+                      {/* Einstieg in den App Builder Workspace — die Kette
+                          dieser Site, adressiert über ihren Slug. */}
+                      <Link to={`/builder/${encodeURIComponent(site.slug)}`} className="font-mono text-[11px] text-security-400 hover:underline">
+                        Öffnen →
+                      </Link>
                     </div>
                   </li>
                 ))}

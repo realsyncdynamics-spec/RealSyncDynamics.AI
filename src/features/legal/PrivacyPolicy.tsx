@@ -115,6 +115,34 @@ export function PrivacyPolicy() {
           </p>
         </Section>
 
+        <Section title="6a. KI-Systeme & Transparenz (Art. 50 EU AI Act)">
+          <p id="ki-systeme">
+            Innerhalb der Plattform RealSyncDynamics.AI kommen Systeme der
+            künstlichen Intelligenz (KI) zum Einsatz, unter anderem bei der
+            automatisierten Generierung von Compliance-Berichten, Audit-Protokollen
+            und Risikoanalysen. Wenn Du mit einem KI-System interagierst
+            (z. B. Chat-Widget, Report-Generator), wirst Du vor bzw. unmittelbar
+            bei Beginn der Interaktion darauf hingewiesen.
+          </p>
+          <p>
+            <strong>Synthetische Inhalte:</strong> Soweit die Plattform synthetische
+            Medien oder Inhalte erzeugt oder verändert, werden diese technisch so
+            gekennzeichnet (u. a. C2PA-Standard bzw. Metadaten-Wasserzeichen), dass
+            ihre künstliche Erzeugung maschinenlesbar nachvollzogen werden kann.
+          </p>
+          <p>
+            <strong>Menschliche Kontrolle (Human-in-the-Loop):</strong> Sämtliche
+            KI-generierten Analyse-Ergebnisse und Empfehlungen verstehen sich als
+            unterstützende Entwürfe und entbinden Dich nicht von einer
+            eigenverantwortlichen fachlichen Prüfung.
+          </p>
+          <p>
+            Zur Datenresidenz und den eingesetzten KI-Anbietern siehe Abschnitt
+            6 oben. Eine Verwendung Deiner Eingaben zum Training allgemeiner,
+            grundlegender KI-Modelle (GPAI) Dritter findet nicht statt.
+          </p>
+        </Section>
+
         <Section title="7. Speicherdauer">
           <ul className="list-disc pl-5 space-y-1.5">
             <li>Account-Daten: bis Account-Löschung.</li>

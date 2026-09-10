@@ -16,6 +16,9 @@ Zusätzlich startete `.claude/hooks/session-start.sh` in Cloud-Sessions (`CLAUDE
 4. MCP nur aktivieren, wenn die Session sie braucht.
 5. Website-Arbeit: Scope auf `src/pages` + genutzte Components. Kein Repo-Root-Glob.
 6. Lange Chats beenden; neue Session nach großen Kontext-Änderungen.
+7. Betriebsregeln zu Cron/Health (z. B. „grün ≠ wirksam“) gehören in Runbooks —
+   kanonisch: `docs/runbooks/agenten-bestandsaufnahme-2026-09-06.md` §3 — nicht
+   zurück in Root-`CLAUDE.md`.
 
 ## Wiederherstellen der langen Datei
 

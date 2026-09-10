@@ -43,6 +43,8 @@ const PREVIEW_SURFACES = [
   'src/unified-entry/pages/PreviewSelectionPage.tsx',
   'src/unified-entry/pages/DashboardPreviewPage.tsx',
   'src/unified-entry/pages/BuildStudioPage.tsx',
+  // App Builder Workspace (Phase 2, Schritt A): Vorschau der lokalen Fassung.
+  'src/features/siteos/workspace/AppBuilderWorkspacePage.tsx',
   'supabase/functions/siteos/preview.ts',
 ] as const;
 

@@ -1,5 +1,9 @@
 // Sub-Processor-Change-Notify — täglich 08:00 UTC vom pg_cron-Job aufgerufen.
 //
+// Auth: Bearer == SERVICE_ROLE_KEY (verify_jwt = false). Der alte Job
+// schickte den Anon-Key (Migration 20260507140000, Variable v_anon_key);
+// der Anon-Key ist ein gültiges JWT, deshalb reicht Gateway-JWT nicht.
+//
 // Holt pending changes (notify_at <= now, notified_at IS NULL), iteriert
 // über alle aktiven Subscriptions, sendet 30-Tage-Vorab-Notice via Resend,
 // loggt jede Notification append-only, marked Change als notified.
@@ -30,6 +34,10 @@ Deno.serve(async (req) => {
 
   const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
   const SRK = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+  const authHeader = req.headers.get('Authorization') ?? '';
+  if (authHeader !== `Bearer ${SRK}`) {
+    return jsonResponse({ ok: false, error: 'cron only' }, 401);
+  }
   const RESEND_KEY = Deno.env.get('RESEND_API_KEY');
   const FROM = Deno.env.get('RESEND_FROM') ?? 'RealSync Dynamics <hello@realsyncdynamicsai.de>';
   const SITE = Deno.env.get('PUBLIC_SITE_URL') ?? 'https://RealSyncDynamicsAI.de';

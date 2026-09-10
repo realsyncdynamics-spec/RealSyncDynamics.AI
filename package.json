@@ -33,9 +33,11 @@
     "check:cron-health": "node scripts/check-cron-health.mjs",
     "check:entitlements": "tsx scripts/check-entitlement-parity.mjs",
     "check:limits": "tsx scripts/check-limit-canonicity.mjs",
+    "check:plan-gates": "node scripts/check-plan-name-gates.mjs",
     "check:offer-prices": "node scripts/check-offer-prices.mjs",
     "check:edge-syntax": "node scripts/check-edge-function-syntax.mjs",
     "check:edge-refs": "node scripts/check-edge-function-refs.mjs",
+    "check:migration-collisions": "node scripts/check-migration-collisions.mjs",
     "qa:skills": "tsx scripts/qa-skills-smoke.ts",
     "qa:governance": "tsx scripts/qa-governance-test.ts",
     "qa:governance-test": "tsx scripts/qa-governance-test.ts",
@@ -47,10 +49,14 @@
     "perf:monthly-report": "tsx scripts/generate-performance-report.ts",
     "gen:plan-catalog": "tsx scripts/generate-plan-catalog-sql.ts",
     "stripe:diff": "tsx scripts/sync-stripe-catalog.ts",
-    "stripe:sync": "tsx scripts/sync-stripe-catalog.ts --apply"
+    "stripe:sync": "tsx scripts/sync-stripe-catalog.ts --apply",
+    "sync:main": "node scripts/sync-with-main.mjs",
+    "merge:hygiene": "node scripts/merge-hygiene.mjs",
+    "migrate:rename": "node scripts/rename-migration.mjs"
   },
   "dependencies": {
     "@google/genai": "^1.29.0",
+    "@puckeditor/core": "^0.23.0",
     "@react-pdf/renderer": "^4.5.1",
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.6.1",
@@ -77,7 +83,6 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.59.1",
-    "playwright": "^1.59.1",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@types/chrome": "^0.2.0",
@@ -91,6 +96,7 @@
     "fs-extra": "^11.3.5",
     "jsdom": "^29.1.1",
     "pg": "^8.21.0",
+    "playwright": "^1.59.1",
     "tailwindcss": "^4.1.14",
     "tsx": "^4.21.0",
     "typescript": "~5.8.2",

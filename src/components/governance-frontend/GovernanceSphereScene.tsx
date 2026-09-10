@@ -40,16 +40,20 @@ function Nodes({
         const color = attention ? ATTENTION : GOLD;
         return (
           <group key={node.id} position={pos}>
-            {/* Pick mesh — large enough for reliable canvas raycast hits. */}
+            {/* Large invisible pick volume — material.visible=false still raycasts. */}
             <mesh
               userData={{ nodeId: node.id, governanceNode: true }}
-              scale={active ? 1.15 : 1}
+              scale={active ? 1.1 : 1}
             >
-              <sphereGeometry args={[0.32, 16, 16]} />
-              <meshBasicMaterial transparent opacity={0.001} depthWrite={false} />
+              <sphereGeometry args={[0.38, 16, 16]} />
+              <meshBasicMaterial color="#ffffff" visible={false} />
             </mesh>
-            <mesh scale={active ? 1.45 : 1.2} raycast={() => null}>
-              <sphereGeometry args={[0.09, 16, 16]} />
+            {/* Visible core is also pickable as a fallback hit target. */}
+            <mesh
+              userData={{ nodeId: node.id, governanceNode: true }}
+              scale={active ? 1.45 : 1.25}
+            >
+              <sphereGeometry args={[0.11, 16, 16]} />
               <meshStandardMaterial
                 color={color}
                 emissive={color}
@@ -60,7 +64,7 @@ function Nodes({
             </mesh>
             {!reducedMotion && (
               <mesh scale={active ? 2.8 : 2.1} raycast={() => null}>
-                <sphereGeometry args={[0.09, 12, 12]} />
+                <sphereGeometry args={[0.11, 12, 12]} />
                 <meshBasicMaterial
                   color={color}
                   transparent
@@ -245,11 +249,10 @@ function PointerBridge({
       if (rect.width <= 0 || rect.height <= 0) return null;
       pointer.x = ((clientX - rect.left) / rect.width) * 2 - 1;
       pointer.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+      // World matrices must be current — ambient rotation updates every frame.
+      scene.updateMatrixWorld(true);
       raycaster.setFromCamera(pointer, camera);
-      // Prefer nearest front-facing governance node.
-      const hits = raycaster
-        .intersectObjects(collectNodeMeshes(), false)
-        .filter((h) => h.object.visible !== false);
+      const hits = raycaster.intersectObjects(collectNodeMeshes(), false);
       const id = hits[0]?.object?.userData?.nodeId;
       return typeof id === 'string' ? id : null;
     };
@@ -337,19 +340,19 @@ function PointerBridge({
       pinchDist.current = null;
     };
 
-    el.addEventListener('pointerdown', onPointerDown);
-    el.addEventListener('pointermove', onPointerMove);
-    el.addEventListener('pointerup', onPointerUp);
-    el.addEventListener('pointercancel', onPointerUp);
+    el.addEventListener('pointerdown', onPointerDown, { capture: true });
+    el.addEventListener('pointermove', onPointerMove, { capture: true });
+    el.addEventListener('pointerup', onPointerUp, { capture: true });
+    el.addEventListener('pointercancel', onPointerUp, { capture: true });
     el.addEventListener('wheel', onWheel, { passive: false });
     el.addEventListener('touchmove', onTouchMove, { passive: true });
     el.addEventListener('touchend', onTouchEnd);
 
     return () => {
-      el.removeEventListener('pointerdown', onPointerDown);
-      el.removeEventListener('pointermove', onPointerMove);
-      el.removeEventListener('pointerup', onPointerUp);
-      el.removeEventListener('pointercancel', onPointerUp);
+      el.removeEventListener('pointerdown', onPointerDown, true);
+      el.removeEventListener('pointermove', onPointerMove, true);
+      el.removeEventListener('pointerup', onPointerUp, true);
+      el.removeEventListener('pointercancel', onPointerUp, true);
       el.removeEventListener('wheel', onWheel);
       el.removeEventListener('touchmove', onTouchMove);
       el.removeEventListener('touchend', onTouchEnd);
@@ -395,7 +398,6 @@ export function GovernanceSphereScene({
       gl={{ alpha: true, antialias: true, powerPreference: 'high-performance' }}
       dpr={[1, 1.75]}
     >
-      <color attach="background" args={['transparent']} />
       <ambientLight intensity={0.55} />
       <pointLight position={[4, 3, 5]} intensity={1.1} color="#fff4e0" />
       <pointLight position={[-4, -2, -3]} intensity={0.55} color={GOLD} />

@@ -831,3 +831,51 @@ html, body {
   .hero-skyline { height: 84px; opacity: .55; }
   .hero-dawn-rim { bottom: 10%; }
 }
+
+/* ── /welcome photoreal Earth panel ─────────────────────────────────────
+   Right-column globe on desktop login. Static fallback frames the existing
+   europe-globe hero asset as a circular Earth with atmosphere shading. */
+.welcome-earth-halo {
+  position: absolute;
+  width: min(78%, 560px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgba(79, 195, 247, 0.22) 0%,
+    rgba(0, 82, 255, 0.12) 38%,
+    transparent 70%
+  );
+  filter: blur(28px);
+  pointer-events: none;
+}
+
+.welcome-earth-static {
+  position: relative;
+  width: min(78%, 520px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  overflow: hidden;
+  box-shadow:
+    0 0 48px rgba(79, 195, 247, 0.18),
+    0 0 120px rgba(0, 82, 255, 0.12),
+    inset -28px -18px 48px rgba(0, 0, 0, 0.72),
+    inset 14px 10px 28px rgba(165, 243, 252, 0.12);
+}
+
+.welcome-earth-static-shade {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 32% 28%, transparent 0%, transparent 42%, rgba(2, 4, 10, 0.35) 78%, rgba(2, 4, 10, 0.72) 100%),
+    linear-gradient(115deg, transparent 40%, rgba(0, 0, 0, 0.45) 100%);
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .welcome-earth-panel * {
+    animation: none !important;
+    transition: none !important;
+  }
+}

@@ -1,9 +1,12 @@
 // Welcome-Email Edge Function via Resend.
 //
 // POST /functions/v1/welcome-email
-// Body: { user_id: uuid }   — typically called from the auth-trigger
-//                              (handle_new_auth_user) via pg_net.http_post,
-//                              or manually from /admin tooling.
+// Body: { user_id: uuid }
+// Auth: Bearer == SERVICE_ROLE_KEY (verify_jwt = false). Der Anon-Key
+// ist ein gültiges JWT — ohne diesen Check kann jeder eine Welcome-Mail
+// an beliebige auth.users auslösen. handle_new_auth_user ruft diese
+// Function heute nicht auf; der Kommentar lag. Aufrufer: Operator-Curl
+// oder ein später verdrahteter Trigger mit Service-Role.
 //
 // 1. Looks up email + name from auth.users + profiles via service-role
 // 2. Renders a branded HTML welcome email
@@ -31,6 +34,13 @@ Deno.serve(async (req) => {
   const preflight = handleOptions(req); if (preflight) return preflight;
   if (req.method !== 'POST') return jsonError(405, 'BAD_REQUEST', 'POST only');
 
+  const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
+  const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+  const authHeader = req.headers.get('Authorization') ?? '';
+  if (authHeader !== `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`) {
+    return jsonError(401, 'UNAUTHORIZED', 'service role required');
+  }
+
   let body: { user_id?: string };
   try { body = await req.json(); } catch { return jsonError(400, 'BAD_REQUEST', 'invalid json'); }
 
@@ -39,8 +49,6 @@ Deno.serve(async (req) => {
     return jsonError(400, 'BAD_ID', 'valid user_id uuid required');
   }
 
-  const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
-  const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
   const supa = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
   // Fetch auth user

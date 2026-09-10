@@ -8,6 +8,11 @@ import { AiGatewayEdgeClient } from '../../../core/ai-gateway/edgeClient';
 import { getSupabaseAnonKey, getSupabaseUrl } from '../../../lib/supabaseUrl';
 import { useTenant } from '../../../core/access/TenantProvider';
 import { NextBestActionCard } from './NextBestActionCard';
+import {
+  formatGovernanceAiSystemPrompt,
+  loadGovernanceAiGrounding,
+  type GovernanceAiGrounding,
+} from './governanceAiContext';
 
 interface ChatMessage {
   role: 'user' | 'assistant';
@@ -38,12 +43,25 @@ export function GovernanceAiWorkspace() {
   const [sending, setSending] = useState(false);
   const [mobileNav, setMobileNav] = useState(false);
   const [context, setContext] = useState('Keine Domain ausgewählt');
+  const [grounding, setGrounding] = useState<GovernanceAiGrounding | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, sending]);
+
+  useEffect(() => {
+    if (!activeTenantId) {
+      setGrounding(null);
+      return;
+    }
+    let cancelled = false;
+    loadGovernanceAiGrounding(activeTenantId).then((next) => {
+      if (!cancelled) setGrounding(next);
+    });
+    return () => { cancelled = true; };
+  }, [activeTenantId]);
 
   const canSend = useMemo(() => input.trim().length > 0 && !sending, [input, sending]);
 
@@ -70,7 +88,7 @@ export function GovernanceAiWorkspace() {
         task_type: 'chat',
         model_profile: 'fast-local',
         input: history,
-        system_prompt: `Du bist Governance AI von RealSyncDynamics.AI. Du bist ein agentischer Arbeitsassistent für SEO, Website-Optimierung, DSGVO und EU AI Act. Antworte auf Deutsch. Unterscheide klar zwischen Analyse, Empfehlung und tatsächlicher Ausführung. Wenn eine Aktion technisch innerhalb der Plattform ausführbar ist, beschreibe den nächsten ausführbaren Schritt. Behaupte niemals, etwas ausgeführt zu haben, wenn kein Tool-Aufruf erfolgt ist. Bei Rechtsfragen: informativ bleiben, keine individuelle Rechtsberatung. Bei SEO: konkret mit technischen, Onpage-, Content-, Schema-, Performance- und Conversion-Maßnahmen arbeiten.`,
+        system_prompt: formatGovernanceAiSystemPrompt(grounding),
         max_tokens: 1200,
         temperature: 0.25,
       });
@@ -134,7 +152,12 @@ export function GovernanceAiWorkspace() {
       <main className="min-w-0 flex-1 flex flex-col h-screen">
         <header className="h-14 shrink-0 border-b border-slate-200/80 bg-white/75 backdrop-blur-xl flex items-center justify-between px-4 sm:px-6">
           <div className="flex items-center gap-2 min-w-0"><button onClick={() => setMobileNav(true)} className="lg:hidden p-2 -ml-2 text-slate-600" aria-label="Menü öffnen"><Menu className="h-5 w-5" /></button><span className="text-sm font-medium text-slate-800 truncate">Governance Dashboard</span><span className="text-slate-300">/</span><span className="text-sm text-slate-500 truncate">{tenantName}</span></div>
-          <div className="hidden sm:flex items-center gap-2 text-[11px] text-slate-500"><ShieldCheck className="h-3.5 w-3.5 text-emerald-600" /> EU · DSGVO · AI Act</div>
+          <div className="hidden sm:flex items-center gap-2 text-[11px] text-slate-500 font-mono">
+            <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
+            {grounding
+              ? `${grounding.incidents.length} Vorfälle · ${grounding.evidence.length} Nachweise · ${grounding.findings.length} Findings`
+              : 'kein Mandantenkontext'}
+          </div>
         </header>
 
         <div className="flex-1 overflow-y-auto">
@@ -143,7 +166,7 @@ export function GovernanceAiWorkspace() {
               <div className="min-h-[calc(100vh-260px)] flex flex-col items-center justify-center text-center">
                 <div className="h-14 w-14 rounded-2xl bg-white border border-slate-200 shadow-sm flex items-center justify-center mb-6"><Sparkles className="h-6 w-6 text-amber-700" /></div>
                 <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight text-slate-950">Was möchtest du heute erledigen?</h1>
-                <p className="mt-3 max-w-xl text-sm sm:text-base text-slate-500">Governance Dashboard by RealSyncDynamics.AI — Übersicht und Funktion. Der Assistent führt den nächsten Schritt.</p>
+                <p className="mt-3 max-w-xl text-sm sm:text-base text-slate-500">Der Assistent liest Vorfälle, Nachweise und Findings dieses Mandanten. Er führt keine Scans aus und erfindet keine Demo-Daten.</p>
                 <div className="mt-6 w-full flex justify-center"><NextBestActionCard /></div>
                 <div className="mt-8 grid w-full max-w-2xl grid-cols-1 sm:grid-cols-2 gap-2 text-left">{STARTERS.map((starter) => <button key={starter} onClick={() => void send(starter)} className="group rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-700 hover:border-amber-300 hover:shadow-sm transition-all"><span>{starter}</span><ArrowUp className="mt-3 h-4 w-4 rotate-45 text-slate-300 group-hover:text-amber-700" /></button>)}</div>
               </div>

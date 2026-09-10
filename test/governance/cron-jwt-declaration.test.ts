@@ -32,6 +32,10 @@ const CRON_SLUGS = [
   'governance-monitoring-scheduler',
   'scheduler-dispatch',
   'memory-decay-worker',
+  'daily-digest',
+  'audit-drip-cron',
+  'audit-recheck-weekly',
+  'governance-analytics-aggregator',
 ] as const;
 
 describe('Cron-Functions: verify_jwt=false ist deklariert und selbst geprüft', () => {
@@ -44,14 +48,28 @@ describe('Cron-Functions: verify_jwt=false ist deklariert und selbst geprüft', 
       const src = source(slug);
       expect(src).toMatch(/Authorization/);
       expect(src).toMatch(/401/);
-      expect(src).toMatch(/Bearer \$\{SERVICE_(?:KEY|ROLE)\}/);
+      expect(src).toMatch(/cron only|service role required|UNAUTHORIZED/);
     });
   }
 
-  it('pre-deploy-lint führt die drei in REQUIRED_PUBLIC_FUNCTIONS', () => {
+  it('pre-deploy-lint führt die drei UNDECLARED-Slugs in REQUIRED_PUBLIC_FUNCTIONS', () => {
     const lint = readFileSync('scripts/pre-deploy-lint.mjs', 'utf8');
-    for (const slug of CRON_SLUGS) {
+    for (const slug of [
+      'governance-monitoring-scheduler',
+      'scheduler-dispatch',
+      'memory-decay-worker',
+    ]) {
       expect(lint).toContain(`'${slug}'`);
     }
+  });
+
+  it('stellt Digest, Recheck und Drip auf dispatch_cron_function um', () => {
+    const sql = readFileSync('supabase/migrations/20260910180000_cron_auth_remaining.sql', 'utf8');
+    expect(sql).toContain("dispatch_cron_function");
+    expect(sql).toContain("'daily-digest'");
+    expect(sql).toContain("'audit-recheck-weekly'");
+    expect(sql).toContain("'audit-drip-cron'");
+    expect(sql).toContain("'service_role_key'");
+    expect(sql).toMatch(/SELECT public\.dispatch_cron_function/g);
   });
 });

@@ -1,11 +1,12 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { Sparkles, Menu, X, FileCheck2, FileBarChart2 } from 'lucide-react';
+import { Sparkles, Menu, X, FileCheck2, FileBarChart2, Search } from 'lucide-react';
 import { GovernanceAddressBar } from './GovernanceAddressBar';
 
 interface BrowserTopBarProps {
   mobileMenuOpen: boolean;
   onToggleMobile: () => void;
   onOpenAssistant: () => void;
+  onOpenCommandCenter: () => void;
   onLoadUrl: (url: string) => void;
   activeEmbedUrl?: string;
 }
@@ -14,6 +15,7 @@ export function BrowserTopBar({
   mobileMenuOpen,
   onToggleMobile,
   onOpenAssistant,
+  onOpenCommandCenter,
   onLoadUrl,
   activeEmbedUrl,
 }: BrowserTopBarProps) {
@@ -51,6 +53,18 @@ export function BrowserTopBar({
 
       {/* Rechte CTA-Buttons */}
       <div className="flex items-center gap-1.5 shrink-0">
+        <button
+          type="button"
+          onClick={onOpenCommandCenter}
+          className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-titanium-300 bg-obsidian-800 border border-titanium-800 hover:border-[#e8c98a]/40 hover:text-titanium-50 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#e8c98a]/50"
+          aria-label="Command Center öffnen"
+        >
+          <Search className="h-3.5 w-3.5 text-[#e8c98a]/80" />
+          <span className="hidden lg:inline">Suchen</span>
+          <kbd className="ml-0.5 hidden md:inline font-mono text-[9px] text-titanium-600 border border-titanium-800 px-1 py-0.5">
+            ⌘K
+          </kbd>
+        </button>
         <button
           onClick={() => navigate('/audit')}
           className="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-titanium-200 bg-obsidian-800 border border-titanium-800 hover:border-titanium-600 hover:text-titanium-50 transition-colors"

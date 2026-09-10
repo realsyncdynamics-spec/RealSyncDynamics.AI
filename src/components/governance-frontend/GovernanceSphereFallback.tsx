@@ -8,6 +8,11 @@ function stateDot(state: SphereNodeState) {
   return state === 'operational' ? 'bg-emerald-400' : 'bg-[#d4a574]';
 }
 
+/**
+ * Lightweight 2D fallback when WebGL is unavailable or reduced-motion is on.
+ * Still shows a photoreal Earth crop (not a blank wireframe disc) so the
+ * homepage contract remains visually clear.
+ */
 export function GovernanceSphereFallback({
   selectedId,
   onSelect,
@@ -19,18 +24,31 @@ export function GovernanceSphereFallback({
     <div
       className="relative mx-auto flex aspect-square w-full max-w-[420px] items-center justify-center"
       role="img"
-      aria-label="Governance Sphere — lightweight 2D overview"
+      aria-label="Governance Sphere — photoreal Earth overview"
     >
       <div
-        className="absolute inset-[12%] rounded-full border border-[#e8c98a]/25 bg-[radial-gradient(circle_at_32%_28%,rgba(243,217,160,0.16),rgba(10,16,28,0.92)_58%,#05070d_100%)] shadow-[0_0_60px_rgba(232,201,138,0.12)]"
+        className="absolute inset-[10%] overflow-hidden rounded-full border border-[#e8c98a]/25 shadow-[0_0_60px_rgba(232,201,138,0.12)]"
         aria-hidden="true"
-      />
+      >
+        <picture>
+          <source srcSet="/europe-globe.webp" type="image/webp" />
+          <img
+            src="/europe-globe.jpg"
+            alt=""
+            width={1376}
+            height={768}
+            loading="lazy"
+            decoding="async"
+            className="h-full w-full object-cover object-[62%_42%] scale-110"
+          />
+        </picture>
+        <div
+          className="absolute inset-0 bg-[radial-gradient(circle_at_32%_28%,transparent_0%,transparent_42%,rgba(2,4,10,0.35)_78%,rgba(2,4,10,0.72)_100%)]"
+          aria-hidden="true"
+        />
+      </div>
       <div
-        className="absolute inset-[6%] rounded-full border border-[#e8c98a]/15"
-        aria-hidden="true"
-      />
-      <div
-        className="absolute inset-[22%] rounded-full border border-dashed border-white/10"
+        className="absolute inset-[4%] rounded-full border border-[#e8c98a]/15"
         aria-hidden="true"
       />
 
@@ -45,8 +63,8 @@ export function GovernanceSphereFallback({
                 onClick={() => onSelect(active ? null : node)}
                 className={`w-full select-none rounded-xl border px-3 py-2.5 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e8c98a]/60 ${
                   active
-                    ? 'border-[#e8c98a]/55 bg-[#e8c98a]/12'
-                    : 'border-white/10 bg-black/35 hover:border-[#e8c98a]/35 hover:bg-black/45'
+                    ? 'border-[#e8c98a]/55 bg-[#e8c98a]/12 backdrop-blur-md'
+                    : 'border-white/10 bg-black/45 backdrop-blur-md hover:border-[#e8c98a]/35 hover:bg-black/55'
                 }`}
               >
                 <span className="flex items-center gap-2">

@@ -35,4 +35,25 @@ describe('Governance Sphere — demo contract', () => {
     expect(host).toContain('GovernanceSphereFallback');
     expect(host).toContain('SPHERE_DEMO_LABEL');
   });
+
+  it('renders photoreal Earth (day texture), not wireframe-only mesh', () => {
+    const scene = readFileSync(
+      resolve(__dirname, '../../src/components/governance-frontend/GovernanceSphereScene.tsx'),
+      'utf8',
+    );
+    const mesh = readFileSync(
+      resolve(__dirname, '../../src/components/visual/PhotorealEarthMesh.tsx'),
+      'utf8',
+    );
+    const fallback = readFileSync(
+      resolve(__dirname, '../../src/components/governance-frontend/GovernanceSphereFallback.tsx'),
+      'utf8',
+    );
+    expect(scene).toContain('PhotorealEarthMesh');
+    expect(scene).not.toMatch(/\bwireframe\b/);
+    expect(scene).not.toContain('icosahedronGeometry');
+    expect(mesh).toContain('/textures/earth-day.jpg');
+    expect(mesh).toContain('meshStandardMaterial');
+    expect(fallback).toContain('/europe-globe');
+  });
 });

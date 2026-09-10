@@ -1,6 +1,7 @@
 import { Canvas, useFrame } from '@react-three/fiber';
 import { useEffect, useMemo, useRef, useState, type MutableRefObject } from 'react';
 import * as THREE from 'three';
+import { PhotorealEarthMesh } from '../visual/PhotorealEarthMesh';
 import {
   GOVERNANCE_SPHERE_NODES,
   sphereNodePosition,
@@ -10,7 +11,7 @@ import {
 const GOLD = '#e8c98a';
 const GOLD_SOFT = '#f3d9a0';
 const ATTENTION = '#d4a574';
-const CORE = '#0b1220';
+const EARTH_RADIUS = 1.55;
 
 type SphereControls = {
   rotX: number;
@@ -247,29 +248,13 @@ function SphereCore({
 
   return (
     <group ref={group}>
-      <mesh raycast={() => null}>
-        <icosahedronGeometry args={[1.55, 2]} />
-        <meshStandardMaterial
-          color={CORE}
-          emissive="#1a1520"
-          emissiveIntensity={0.35}
-          metalness={0.72}
-          roughness={0.45}
-          wireframe
-        />
-      </mesh>
-      <mesh raycast={() => null}>
-        <sphereGeometry args={[1.48, 48, 48]} />
-        <meshStandardMaterial
-          color="#0a101c"
-          emissive="#3d3428"
-          emissiveIntensity={0.22}
-          metalness={0.6}
-          roughness={0.55}
-          transparent
-          opacity={0.88}
-        />
-      </mesh>
+      {/* Photoreal Earth body — day texture + atmosphere (not abstract mesh). */}
+      <PhotorealEarthMesh
+        radius={EARTH_RADIUS}
+        autoRotate={false}
+        reducedMotion={reducedMotion}
+        rotation={[0, 0, 0]}
+      />
       <DragSurface controls={controls} />
       <Orbits reducedMotion={reducedMotion} />
       <AmbientParticles reducedMotion={reducedMotion} />
@@ -351,10 +336,12 @@ export function GovernanceSphereScene({
       }}
     >
       <color attach="background" args={['transparent']} />
-      <ambientLight intensity={0.55} />
-      <pointLight position={[4, 3, 5]} intensity={1.1} color="#fff4e0" />
-      <pointLight position={[-4, -2, -3]} intensity={0.55} color={GOLD} />
-      <hemisphereLight args={['#2a3344', '#0a0a0b', 0.45]} />
+      {/* Sun-side key for continents / oceans; cool fill so night side isn't pure black. */}
+      <ambientLight intensity={0.32} />
+      <directionalLight position={[4.5, 1.4, 3.2]} intensity={2.05} color="#fff6e8" />
+      <directionalLight position={[-3.2, -1.2, -2.4]} intensity={0.4} color="#6ec8ff" />
+      <pointLight position={[3.5, 2.5, 4]} intensity={0.35} color="#fff4e0" />
+      <hemisphereLight args={['#3a4a62', '#0a0a0b', 0.35]} />
       <PinchZoom controls={controls} />
       <SphereCore
         controls={controls}

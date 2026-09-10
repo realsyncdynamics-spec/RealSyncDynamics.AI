@@ -3,6 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Title ~60 Zeichen, Hauptkeyword zuerst; Description 130-155 Zeichen
+         (SEO-Report 2026-08: Title zu lang, Description deutlich zu lang).
+         62 Zeichen: Keyword vollstaendig vorn, nur das Brand-Suffix koennte
+         in der SERP abgeschnitten werden. -->
     <title>RealSyncDynamics.AI — Das Governance OS für DSGVO & EU AI Act</title>
     <meta name="description" content="Das Governance OS für DSGVO und EU AI Act: AI-Systeme, Websites, Agents und Datenflüsse erfassen, Risiken bewerten, Governance durchsetzen und Nachweise führen." />
     <meta name="keywords" content="AI Governance Runtime, Runtime Compliance, Continuous AI Governance, EU AI Act Monitoring, Agentic Compliance, Evidence Infrastructure, Operational Governance Runtime, DSGVO Monitoring, TTDSG Consent Monitoring" />
@@ -21,18 +25,48 @@
     <meta name="twitter:title" content="Das Governance OS für DSGVO & EU AI Act" />
     <meta name="twitter:description" content="RealSyncDynamics.AI verbindet DSGVO, EU AI Act, Policy-Durchsetzung und auditfähige Nachweise in einer operativen Governance Runtime." />
     <meta name="twitter:image" content="https://realsyncdynamicsai.de/og-image.png" />
+    <!--
+      Security headers via meta-equivalents.
+      CSP, X-Content-Type, and Referrer-Policy improve /audit score and prevent
+      iframe-clickjacking. _headers file (Cloudflare) also enforces these.
+    -->
+    <!--
+      Hinweis: `frame-ancestors` wird in einem <meta>-CSP per Spezifikation
+      IGNORIERT. Der Clickjacking-Schutz kommt daher aus public/_headers
+      (frame-ancestors + X-Frame-Options). Diese Meta-Policy bleibt als
+      Fallback für Hosts ohne _headers-Unterstützung bestehen und muss mit
+      public/_headers inhaltlich synchron gehalten werden — beide Policies
+      gelten gleichzeitig und werden als Schnittmenge ausgewertet.
+    -->
     <meta http-equiv="Content-Security-Policy"
           content="default-src 'self' https://*.supabase.co data:; script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com https://connect.facebook.net https://www.googletagmanager.com https://www.google-analytics.com https://analytics.tiktok.com https://snap.licdn.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://cloudflareinsights.com https://*.supabase.co https://*.supabase.in https://*.ingest.de.sentry.io https://*.ingest.sentry.io https://www.facebook.com https://www.google-analytics.com https://analytics.tiktok.com https://*.tiktok.com https://px.ads.linkedin.com; base-uri 'self'; form-action 'self'; object-src 'none'" />
     <meta http-equiv="X-Content-Type-Options" content="nosniff" />
     <meta name="referrer" content="strict-origin-when-cross-origin" />
+
     <link rel="icon" type="image/svg+xml" href="/brand/logo-square-400.svg" />
     <link rel="alternate icon" type="image/png" href="/brand/logo-square-400.png" />
     <link rel="apple-touch-icon" href="/brand/logo-square-400.png" />
     <link rel="canonical" href="https://realsyncdynamicsai.de/" />
+
     <link rel="dns-prefetch" href="https://supabase.co" />
     <script type="module" src="/src/main.tsx"></script>
   </head>
   <body>
     <div id="root"></div>
+    <noscript>
+      <p>RealSync Dynamics — DSGVO-konforme KI-Compliance-Plattform.</p>
+      <ul>
+        <li><a href="/legal/privacy">Datenschutzerklärung</a></li>
+        <li><a href="/legal/impressum">Impressum</a></li>
+        <li><a href="/legal/sub-processors">Sub-Prozessoren</a></li>
+        <li><a href="/pricing">Preise</a></li>
+        <li><a href="/contact-sales">Kontakt</a></li>
+      </ul>
+    </noscript>
+    <div style="position:absolute;left:-9999px;top:-9999px;width:1px;height:1px;overflow:hidden" aria-hidden="true">
+      <a href="/legal/privacy">Datenschutz</a>
+      <a href="/legal/impressum">Impressum</a>
+      <a href="/legal/sub-processors">Sub-Prozessoren</a>
+    </div>
   </body>
 </html>

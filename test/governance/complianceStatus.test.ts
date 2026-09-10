@@ -70,14 +70,15 @@ describe('computeEvidenceHealth', () => {
   });
 
   it('penalizes failed scans by 8 points each and clamps at 0', () => {
+    // coverage 40, hashedShare 100 → 0.7*40 + 0.3*100 = 58; −16 = 42
     const withPenalty = computeEvidenceHealth({
       coveragePercent: 40,
       evidence: [{ content_hash: HASH }],
       newEvidence24h: 0,
       failedScans: 2,
     });
-    expect(withPenalty.percent).toBe(24);
-    expect(withPenalty.level).toBe('critical');
+    expect(withPenalty.percent).toBe(42);
+    expect(withPenalty.level).toBe('medium');
 
     const clamped = computeEvidenceHealth({
       coveragePercent: 10,

@@ -1,15 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import { render } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { ComplianceStatusView } from '../../../src/features/governance/dashboard/ComplianceStatusDashboard';
-import type { CockpitData } from '../../../src/features/governance/cockpit/cockpitData';
+import { ComplianceStatusView } from '../../../../src/features/governance/dashboard/ComplianceStatusDashboard';
+import type { CockpitData } from '../../../../src/features/governance/cockpit/cockpitData';
 import {
   computeEvidenceHealth,
   computeOpenMeasures,
   computeRiskIndex,
   EMPTY_SUMMARY_24H,
-} from '../../../src/features/governance/dashboard/complianceStatus';
-import { computeAuditReadiness, computeGovernanceScore, type CockpitCounts } from '../../../src/features/governance/cockpit/cockpitScore';
+} from '../../../../src/features/governance/dashboard/complianceStatus';
+import { computeAuditReadiness, computeGovernanceScore, type CockpitCounts } from '../../../../src/features/governance/cockpit/cockpitScore';
 
 const ZERO: CockpitCounts = {
   incidents: 0,

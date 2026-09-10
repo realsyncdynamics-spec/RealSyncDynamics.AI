@@ -1,8 +1,9 @@
 import { FormEvent, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowRight, Code2, FileCheck2, Lock, ShieldCheck, Snowflake } from 'lucide-react';
+import { ArrowRight, Code2, FileCheck2, Lock, ShieldCheck } from 'lucide-react';
 import { SEOHead } from '../components/SEOHead';
 import { LandingChannelTools } from '../components/landing/LandingChannelTools';
+import { PublicDarkHeader } from '../components/landing/PublicDarkHeader';
 import {
   RUNTIME_PREVIEW_LABEL,
   RUNTIME_PREVIEW_NOTE,
@@ -63,7 +64,7 @@ export function MainLanding() {
         ogDescription="RealSyncDynamics.AI verbindet DSGVO, EU AI Act, Policy-Durchsetzung und auditfähige Nachweise in einer operativen Governance Runtime."
       />
 
-      <header className="absolute inset-x-0 top-0 z-30"><div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6 lg:px-10"><Link to="/" className="flex items-center gap-2.5"><Snowflake className="h-6 w-6 text-[#e8c98a]" strokeWidth={1.5} /><span className="text-base font-semibold tracking-tight sm:text-lg">RealSync <span className="font-normal text-white/80">Dynamics.AI</span></span></Link><nav className="hidden items-center gap-7 md:flex"><a href="#platform" className="text-sm text-white/65 transition-colors hover:text-white">Produkt</a><Link to="/governance-runtime" className="text-sm text-white/65 transition-colors hover:text-white">Runtime</Link><a href="#evidence" className="text-sm text-white/65 transition-colors hover:text-white">Evidence</a><a href="#tools" className="hidden text-sm text-white/65 transition-colors hover:text-white lg:block">Module</a><Link to="/ai-act" className="hidden text-sm text-white/65 transition-colors hover:text-white xl:block">EU AI Act</Link><Link to="/sicherheit" className="hidden text-sm text-white/65 transition-colors hover:text-white xl:block">Sicherheit</Link><Link to="/pricing" className="text-sm text-white/65 transition-colors hover:text-white">Preise</Link><Link to="/welcome" className="text-sm text-white/65 transition-colors hover:text-white">Login</Link><Link to="/audit" className="rounded-full bg-[#f0e6d2] px-6 py-3 text-sm font-semibold text-[#1a1714] transition hover:bg-[#f6efe4]">Kostenlosen Governance Scan starten</Link></nav></div></header>
+      <PublicDarkHeader overlay />
 
       <main ref={revealRoot}>
         <section className="relative min-h-[880px] overflow-hidden">

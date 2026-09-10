@@ -6,7 +6,13 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTenant } from '../../../core/access/TenantProvider';
-import { fetchTenantEvents, fetchTenantEvidence, type DbGovernanceEvent, type DbGovernanceEvidence } from '../governanceApi';
+import {
+  countTenantEvidence,
+  countTenantEvidenceHashed,
+  countTenantEvidenceSince,
+  fetchTenantEvents,
+  fetchTenantEvidence,
+} from '../governanceApi';
 import { listTimeline } from '../../evidence-vault/evidenceVaultApi';
 import {
   exportAnalytics,
@@ -40,7 +46,6 @@ import {
 import { withPerformanceMonitoring } from '../withPerformanceMonitoring';
 import {
   computeVaultMetrics,
-  EMPTY_VAULT_METRICS,
   eventToAuditEntry,
   eventToChangeEntry,
   mergeTimeline,
@@ -54,7 +59,6 @@ import {
   type EvidenceItem,
   type EvidenceType,
   type Snapshot,
-  type VaultMetrics,
 } from './evidenceVaultData';
 
 function evidenceTypeConfig(type: EvidenceType): { color: string; icon: ReactNode } {
@@ -112,7 +116,7 @@ function C2paBadge() {
 
 function EmptyTab({ title, hint }: { title: string; hint: string }) {
   return (
-    <div className="py-16 flex flex-col items-center gap-2 text-center px-6">
+    <div className="py-16 flex flex-col items-center gap-2 text-center px-6" data-testid="evidence-vault-empty">
       <FileText className="h-7 w-7 text-titanium-700" />
       <p className="text-sm text-titanium-200">{title}</p>
       <p className="text-[11px] font-mono text-titanium-500 max-w-md">{hint}</p>
@@ -128,13 +132,31 @@ interface EvidenceHandlers {
   busy: string | null;
 }
 
-function TimelineTab({ items, loading, handlers }: { items: EvidenceItem[]; loading: boolean; handlers: EvidenceHandlers }) {
+function TimelineTab({
+  items,
+  loading,
+  unavailable,
+  handlers,
+}: {
+  items: EvidenceItem[];
+  loading: boolean;
+  unavailable: boolean;
+  handlers: EvidenceHandlers;
+}) {
   if (loading) {
     return (
       <div className="py-16 flex flex-col items-center gap-2 font-mono text-sm text-titanium-500">
         <Loader2 className="h-5 w-5 animate-spin" />
         Nachweise werden geladen…
       </div>
+    );
+  }
+  if (unavailable) {
+    return (
+      <EmptyTab
+        title="Nachweise nicht verfügbar"
+        hint="Die Nachweis-Quelle konnte nicht geladen werden. Das ist kein leerer Mandant."
+      />
     );
   }
   if (items.length === 0) {
@@ -186,13 +208,31 @@ function TimelineTab({ items, loading, handlers }: { items: EvidenceItem[]; load
   );
 }
 
-function SnapshotsTab({ snapshots, loading, handlers }: { snapshots: Snapshot[]; loading: boolean; handlers: EvidenceHandlers }) {
+function SnapshotsTab({
+  snapshots,
+  loading,
+  unavailable,
+  handlers,
+}: {
+  snapshots: Snapshot[];
+  loading: boolean;
+  unavailable: boolean;
+  handlers: EvidenceHandlers;
+}) {
   if (loading) {
     return (
       <div className="py-16 flex flex-col items-center gap-2 font-mono text-sm text-titanium-500">
         <Loader2 className="h-5 w-5 animate-spin" />
         Snapshots werden geladen…
       </div>
+    );
+  }
+  if (unavailable) {
+    return (
+      <EmptyTab
+        title="Snapshots nicht verfügbar"
+        hint="evidence_vault_timeline konnte nicht geladen werden. Das ist kein leerer Mandant."
+      />
     );
   }
   if (snapshots.length === 0) {
@@ -251,13 +291,29 @@ function SnapshotsTab({ snapshots, loading, handlers }: { snapshots: Snapshot[];
   );
 }
 
-function AuditTrailTab({ entries, loading }: { entries: AuditEntry[]; loading: boolean }) {
+function AuditTrailTab({
+  entries,
+  loading,
+  unavailable,
+}: {
+  entries: AuditEntry[];
+  loading: boolean;
+  unavailable: boolean;
+}) {
   if (loading) {
     return (
       <div className="py-16 flex flex-col items-center gap-2 font-mono text-sm text-titanium-500">
         <Loader2 className="h-5 w-5 animate-spin" />
         Prüfpfad wird geladen…
       </div>
+    );
+  }
+  if (unavailable) {
+    return (
+      <EmptyTab
+        title="Prüfpfad nicht verfügbar"
+        hint="Die Event-Quelle konnte nicht geladen werden. Das ist kein leerer Mandant."
+      />
     );
   }
   if (entries.length === 0) {
@@ -422,8 +478,16 @@ function _EvidenceVaultView() {
   const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
   const [audit, setAudit] = useState<AuditEntry[]>([]);
   const [changes, setChanges] = useState<ChangeEntry[]>([]);
-  const [metrics, setMetrics] = useState<VaultMetrics>(EMPTY_VAULT_METRICS);
+  const [metrics, setMetrics] = useState<{ total: number | null; hashed: number | null; thisWeek: number | null; lastCreated: string }>({
+    total: null,
+    hashed: null,
+    thisWeek: null,
+    lastCreated: '—',
+  });
   const [loading, setLoading] = useState(false);
+  const [eventsFailed, setEventsFailed] = useState(false);
+  const [evidenceFailed, setEvidenceFailed] = useState(false);
+  const [snapshotsFailed, setSnapshotsFailed] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [toast, setToast] = useState<{ msg: string; tone: 'ok' | 'error' } | null>(null);
 
@@ -433,28 +497,55 @@ function _EvidenceVaultView() {
   }
 
   useEffect(() => {
+    let cancelled = false;
     if (!activeTenantId) {
       setItems([]);
       setSnapshots([]);
       setAudit([]);
       setChanges([]);
-      setMetrics(EMPTY_VAULT_METRICS);
+      setMetrics({ total: null, hashed: null, thisWeek: null, lastCreated: '—' });
+      setEventsFailed(false);
+      setEvidenceFailed(false);
+      setSnapshotsFailed(false);
       setLoading(false);
       return;
     }
-    let cancelled = false;
+    setItems([]);
+    setSnapshots([]);
+    setAudit([]);
+    setChanges([]);
+    setMetrics({ total: null, hashed: null, thisWeek: null, lastCreated: '—' });
+    setEventsFailed(false);
+    setEvidenceFailed(false);
+    setSnapshotsFailed(false);
     setLoading(true);
-    Promise.all([
-      fetchTenantEvents(activeTenantId, 50).catch(() => [] as DbGovernanceEvent[]),
-      fetchTenantEvidence(activeTenantId, 50).catch(() => [] as DbGovernanceEvidence[]),
-      listTimeline(activeTenantId).catch(() => []),
-    ]).then(([events, evidence, timeline]) => {
+    const weekAgo = new Date(Date.now() - 7 * 86_400_000).toISOString();
+    Promise.allSettled([
+      fetchTenantEvents(activeTenantId, 100),
+      fetchTenantEvidence(activeTenantId, 100),
+      listTimeline(activeTenantId),
+      countTenantEvidence(activeTenantId),
+      countTenantEvidenceHashed(activeTenantId),
+      countTenantEvidenceSince(activeTenantId, weekAgo),
+    ]).then(([eventsResult, evidenceResult, timelineResult, totalResult, hashedResult, weekResult]) => {
       if (cancelled) return;
+      const events = eventsResult.status === 'fulfilled' ? eventsResult.value : [];
+      const evidence = evidenceResult.status === 'fulfilled' ? evidenceResult.value : [];
+      const timeline = timelineResult.status === 'fulfilled' ? timelineResult.value : [];
+      setEventsFailed(eventsResult.status === 'rejected');
+      setEvidenceFailed(evidenceResult.status === 'rejected');
+      setSnapshotsFailed(timelineResult.status === 'rejected');
       setItems(mergeTimeline(events, evidence));
       setSnapshots(timeline.map((entry) => timelineToSnapshot(entry)));
       setAudit(events.map((e) => eventToAuditEntry(e)));
       setChanges(events.map((e) => eventToChangeEntry(e)).filter((c): c is ChangeEntry => c !== null));
-      setMetrics(computeVaultMetrics(evidence));
+      const pageMetrics = computeVaultMetrics(evidence);
+      setMetrics({
+        total: totalResult.status === 'fulfilled' ? totalResult.value : null,
+        hashed: hashedResult.status === 'fulfilled' ? hashedResult.value : null,
+        thisWeek: weekResult.status === 'fulfilled' ? weekResult.value : null,
+        lastCreated: pageMetrics.lastCreated,
+      });
     }).finally(() => {
       if (!cancelled) setLoading(false);
     });
@@ -495,10 +586,10 @@ function _EvidenceVaultView() {
   };
 
   const metricTiles = [
-    { label: 'Nachweise geladen', value: String(metrics.total) },
-    { label: 'Mit Hash',          value: String(metrics.signed) },
-    { label: 'Diese Woche',       value: String(metrics.thisWeek) },
-    { label: 'Letzter Nachweis',  value: metrics.lastCreated },
+    { label: 'Nachweise gesamt', value: metrics.total === null ? '—' : metrics.total.toLocaleString('de-DE') },
+    { label: 'Mit Hash',         value: metrics.hashed === null ? '—' : metrics.hashed.toLocaleString('de-DE') },
+    { label: 'Diese Woche',      value: metrics.thisWeek === null ? '—' : metrics.thisWeek.toLocaleString('de-DE') },
+    { label: 'Letzter Nachweis', value: metrics.lastCreated },
   ];
 
   return (
@@ -554,9 +645,9 @@ function _EvidenceVaultView() {
       </div>
 
       <div className="flex-1 overflow-y-auto min-h-0">
-        {activeTab === 'timeline'   && <TimelineTab items={items} loading={loading} handlers={handlers} />}
-        {activeTab === 'snapshots'  && <SnapshotsTab snapshots={snapshots} loading={loading} handlers={handlers} />}
-        {activeTab === 'audittrail' && <AuditTrailTab entries={audit} loading={loading} />}
+        {activeTab === 'timeline'   && <TimelineTab items={items} loading={loading} unavailable={eventsFailed && evidenceFailed} handlers={handlers} />}
+        {activeTab === 'snapshots'  && <SnapshotsTab snapshots={snapshots} loading={loading} unavailable={snapshotsFailed} handlers={handlers} />}
+        {activeTab === 'audittrail' && <AuditTrailTab entries={audit} loading={loading} unavailable={eventsFailed} />}
         {activeTab === 'changes'    && <ChangeTrackingTab changes={changes} loading={loading} />}
         {activeTab === 'exports'    && <ExportsTab handlers={handlers} />}
       </div>

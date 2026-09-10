@@ -51,6 +51,17 @@ const TYPE_MAP: Record<string, VaultEvidenceType> = {
   ci_cd: 'Network Trace',
 };
 
+const MIN_DIGEST_LEN = 16;
+
+/** Gleiche Fallback-Reihenfolge wie die Timeline-Karten: hash, sonst content_hash. */
+export function resolvedEventDigest(payload: Record<string, unknown> | null | undefined): string | null {
+  const payloadHash = typeof payload?.['hash'] === 'string' ? payload['hash'] : null;
+  const contentHash = typeof payload?.['content_hash'] === 'string' ? payload['content_hash'] : null;
+  if (payloadHash && payloadHash.length >= MIN_DIGEST_LEN) return payloadHash;
+  if (contentHash && contentHash.length >= MIN_DIGEST_LEN) return contentHash;
+  return null;
+}
+
 export function formatRelativeTs(iso: string, now = new Date()): string {
   const diffMin = Math.floor((now.getTime() - new Date(iso).getTime()) / 60_000);
   if (Number.isNaN(diffMin)) return '–';
@@ -61,15 +72,6 @@ export function formatRelativeTs(iso: string, now = new Date()): string {
 }
 
 export function eventToEvidenceItem(event: DbGovernanceEvent, now = new Date()): VaultEvidenceItem {
-  const payloadHash = typeof event.payload?.['hash'] === 'string' ? event.payload['hash'] : null;
-  const contentHash =
-    typeof event.payload?.['content_hash'] === 'string' ? event.payload['content_hash'] : null;
-  const hash =
-    payloadHash && payloadHash.length >= 16
-      ? payloadHash
-      : contentHash && contentHash.length >= 16
-        ? contentHash
-        : '—';
   return {
     id: event.id,
     ts: formatRelativeTs(event.created_at, now),
@@ -82,7 +84,7 @@ export function eventToEvidenceItem(event: DbGovernanceEvent, now = new Date()):
       event.vendor ??
       event.model_name ??
       '–',
-    hash,
+    hash: resolvedEventDigest(event.payload) ?? '—',
     c2pa: event.payload?.['c2pa'] === true,
   };
 }
@@ -114,8 +116,7 @@ export function computeVaultMetrics(events: DbGovernanceEvent[], now = new Date(
   let c2pa = 0;
   let thisWeek = 0;
   for (const event of events) {
-    const hash = event.payload?.['hash'] ?? event.payload?.['content_hash'];
-    if (typeof hash === 'string' && hash.length >= 16) hashed += 1;
+    if (resolvedEventDigest(event.payload)) hashed += 1;
     if (event.payload?.['c2pa'] === true) c2pa += 1;
     const t = new Date(event.created_at).getTime();
     if (Number.isFinite(t) && now.getTime() - t <= weekMs) thisWeek += 1;

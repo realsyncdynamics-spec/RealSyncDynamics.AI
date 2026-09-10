@@ -37,6 +37,7 @@ export function ComplianceStatusDashboard() {
     }
     setLoading(true);
     setError(null);
+    setData(null);
     loadCockpitData(activeTenantId)
       .then((next) => { if (!cancelled) setData(next); })
       .catch((err) => { if (!cancelled) setError((err as Error)?.message ?? String(err)); })
@@ -76,6 +77,7 @@ export function ComplianceStatusView({
   const navigate = useNavigate();
   const isEmptyTenant = Boolean(
     data &&
+    data.partialFailures.length === 0 &&
     data.openMeasures.total === 0 &&
     data.actions.length === 0 &&
     data.evidenceHealth.percent === null &&
@@ -129,6 +131,13 @@ export function ComplianceStatusView({
       {error && (
         <div className="flex items-start gap-2 text-sm text-rose-300 bg-rose-950/40 border border-rose-900 p-3">
           <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" /> {error}
+        </div>
+      )}
+
+      {data && data.partialFailures.length > 0 && (
+        <div className="flex items-start gap-2 text-sm text-rose-300 bg-rose-950/40 border border-rose-900 p-3" data-testid="compliance-partial-failure">
+          <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+          Teil der Governance-Daten nicht verfügbar. Das ist kein leerer Mandant.
         </div>
       )}
 

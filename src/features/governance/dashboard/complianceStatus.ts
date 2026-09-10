@@ -94,12 +94,15 @@ export function computeOpenMeasures(counts: CockpitCounts): OpenMeasures {
  */
 export function computeEvidenceHealth(input: {
   coveragePercent: number | null;
-  evidence: EvidenceSignal[];
+  evidence?: EvidenceSignal[];
+  hashedCount?: number;
+  totalCount?: number;
   newEvidence24h: number;
   failedScans: number;
 }): EvidenceHealth {
-  const totalCount = input.evidence.length;
-  const hashedCount = input.evidence.filter(
+  const rows = input.evidence ?? [];
+  const totalCount = input.totalCount ?? rows.length;
+  const hashedCount = input.hashedCount ?? rows.filter(
     (row) => typeof row.content_hash === 'string' && row.content_hash.length >= 16,
   ).length;
   const hashedShare =

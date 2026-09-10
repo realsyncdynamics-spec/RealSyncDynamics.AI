@@ -20,20 +20,23 @@ describe('EvidenceVaultView — keine Demo-Daten im Live-Pfad', () => {
   });
 
   it('startet leer und lädt Events plus Snapshots ohne Mock-Fallback', () => {
-    expect(view).toContain('useState<DbGovernanceEvent[]>([])');
-    expect(view).toContain('useState<TimelineEntry[]>([])');
     expect(view).toContain('fetchTenantEvents');
+    expect(view).toContain('fetchTenantEvidence');
     expect(view).toContain('listTimeline');
+    expect(view).toContain('mergeTimeline');
+    expect(view).toContain('countTenantEvidence');
     expect(view).toContain('Promise.allSettled');
-    expect(view).toContain('computeVaultMetrics(events)');
+    expect(view).not.toContain('.catch(() => []');
   });
 
   it('zeigt leere Zustände statt Demo-Diffs und Demo-Export-Historie', () => {
-    expect(view).toContain('Keine Nachweise');
-    expect(view).toContain('Keine Snapshots');
-    expect(view).toContain('Kein Prüfpfad');
-    expect(view).toContain('Kein Change-Log');
-    expect(view).toContain('Keine Export-Historie');
+    expect(view).toContain('Noch keine Nachweise');
+    expect(view).toContain('Noch keine Snapshots');
+    expect(view).toContain('Noch kein Prüfpfad');
+    expect(view).toContain('Keine dokumentierten Änderungen');
+    expect(view).toContain('Keine Export-Historie in dieser Ansicht');
+    expect(view).toContain('Nachweise nicht verfügbar');
+    expect(view).toContain('Prüfpfad nicht verfügbar');
   });
 });
 

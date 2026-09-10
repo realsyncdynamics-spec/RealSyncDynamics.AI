@@ -9,7 +9,7 @@ import { countOpenDpias, listDpias } from '../dpiasApi';
 import { countOpenDsrs, fetchTenantDsrs } from '../dsrApi';
 import { countPendingApprovals } from '../approvalsApi';
 import { countVendorsNoDpa } from '../vendorsApi';
-import { fetchTenantAssets, fetchTenantEvidence } from '../governanceApi';
+import { countTenantEvidence, countTenantEvidenceHashed, fetchTenantAssets } from '../governanceApi';
 import type { DbGovernanceKpiSnapshot } from '../analytics/types';
 import {
   computeGovernanceScore, computeAuditReadiness,
@@ -73,10 +73,17 @@ export interface CockpitData {
   riskIndex: RiskIndex;
   openMeasures: OpenMeasures;
   summary24h: Summary24h | null;
+  /** Abgelehnte Teillader — Dashboard darf das nicht als leeren Mandanten lesen. */
+  partialFailures: string[];
 }
 
 function val<T>(r: PromiseSettledResult<T>, fb: T): T {
   return r.status === 'fulfilled' ? r.value : fb;
+}
+
+function failureOf(name: string, result: PromiseSettledResult<unknown>): string | null {
+  if (result.status !== 'rejected') return null;
+  return `${name}: ${(result.reason as Error)?.message ?? 'fehlgeschlagen'}`;
 }
 
 export async function loadCockpitData(tenantId: string): Promise<CockpitData> {
@@ -86,7 +93,7 @@ export async function loadCockpitData(tenantId: string): Promise<CockpitData> {
   const [
     incidentsCount, dpiasCount, dsrCount, approvalsCount, vendorsCount,
     latestKpi, kpiRange, incidentList, dpiaList, dsrList,
-    summary24hRaw, assets, evidence,
+    summary24hRaw, assets, evidenceTotal, evidenceHashed,
   ] = await Promise.allSettled([
     countOpenIncidents(tenantId),
     countOpenDpias(tenantId),
@@ -100,7 +107,8 @@ export async function loadCockpitData(tenantId: string): Promise<CockpitData> {
     fetchTenantDsrs(tenantId),
     fetch24hSummary(tenantId),
     fetchTenantAssets(tenantId),
-    fetchTenantEvidence(tenantId, 200),
+    countTenantEvidence(tenantId),
+    countTenantEvidenceHashed(tenantId),
   ]);
 
   const counts: CockpitCounts = {
@@ -138,12 +146,14 @@ export async function loadCockpitData(tenantId: string): Promise<CockpitData> {
 
   const summary24h = val(summary24hRaw, null);
   const assetScores = val(assets, []).map((asset) => asset.risk_score);
-  const evidenceRows = val(evidence, []).map((row) => ({ content_hash: row.content_hash }));
+  const evidenceTotalCount = val(evidenceTotal, 0);
+  const evidenceHashedCount = val(evidenceHashed, 0);
 
   const openMeasures = computeOpenMeasures(counts);
   const evidenceHealth = computeEvidenceHealth({
     coveragePercent: posture?.assetEvidencePercent ?? null,
-    evidence: evidenceRows,
+    totalCount: evidenceTotalCount,
+    hashedCount: evidenceHashedCount,
     newEvidence24h: summary24h?.new_evidence ?? 0,
     failedScans: summary24h?.failed_scans ?? 0,
   });
@@ -154,6 +164,23 @@ export async function loadCockpitData(tenantId: string): Promise<CockpitData> {
     dsrOverdue: counts.dsr.overdue,
   });
 
+  const partialFailures = [
+    failureOf('incidents', incidentsCount),
+    failureOf('dpias', dpiasCount),
+    failureOf('dsr', dsrCount),
+    failureOf('approvals', approvalsCount),
+    failureOf('vendors', vendorsCount),
+    failureOf('kpi', latestKpi),
+    failureOf('kpi-range', kpiRange),
+    failureOf('incident-list', incidentList),
+    failureOf('dpia-list', dpiaList),
+    failureOf('dsr-list', dsrList),
+    failureOf('summary-24h', summary24hRaw),
+    failureOf('assets', assets),
+    failureOf('evidence-total', evidenceTotal),
+    failureOf('evidence-hashed', evidenceHashed),
+  ].filter((item): item is string => item !== null);
+
   return {
     counts, posture,
     score: computeGovernanceScore(counts, posture),
@@ -161,6 +188,7 @@ export async function loadCockpitData(tenantId: string): Promise<CockpitData> {
     readinessTrend, actions,
     lastUpdated: snap?.captured_date ?? null,
     evidenceHealth, riskIndex, openMeasures, summary24h,
+    partialFailures,
   };
 }
 

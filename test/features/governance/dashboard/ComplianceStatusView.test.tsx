@@ -46,6 +46,7 @@ function fixture(overrides: Partial<CockpitData> = {}): CockpitData {
     riskIndex,
     openMeasures: overrides.openMeasures ?? computeOpenMeasures(counts),
     summary24h: overrides.summary24h === undefined ? null : overrides.summary24h,
+    partialFailures: overrides.partialFailures ?? [],
   };
 }
 
@@ -98,6 +99,16 @@ describe('ComplianceStatusView', () => {
     expect(queryByTestId('risk-index')).toBeNull();
     expect(queryByTestId('evidence-health')).toBeNull();
     expect(queryByTestId('open-measures')).toBeNull();
+  });
+
+  it('does not treat a partial load failure as an empty tenant', () => {
+    const { getByTestId, queryByText } = rendered({
+      data: fixture({
+        partialFailures: ['incidents: RLS'],
+      }),
+    });
+    expect(getByTestId('compliance-partial-failure')).toBeInTheDocument();
+    expect(queryByText('Noch keine Governance-Daten')).toBeNull();
   });
 
   it('lists prioritized open measures with deep links', () => {

@@ -99,6 +99,21 @@ describe('computeEvidenceHealth', () => {
     expect(health.hashedCount).toBe(1);
   });
 
+  it('prefers exact aggregate counts over a truncated evidence page', () => {
+    const health = computeEvidenceHealth({
+      coveragePercent: 80,
+      evidence: [{ content_hash: HASH }],
+      totalCount: 400,
+      hashedCount: 200,
+      newEvidence24h: 0,
+      failedScans: 0,
+    });
+    expect(health.totalCount).toBe(400);
+    expect(health.hashedCount).toBe(200);
+    // coverage 80, hashedShare 50 → 0.7*80 + 0.3*50 = 71
+    expect(health.percent).toBe(71);
+  });
+
   it('is deterministic', () => {
     const input = {
       coveragePercent: 55,

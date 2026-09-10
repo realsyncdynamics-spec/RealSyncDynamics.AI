@@ -16,6 +16,12 @@ describe('RiskCenterView — keine Demo-Daten im Live-Pfad', () => {
     expect(view).not.toContain('useState<Risk[]>(RISKS)');
   });
 
+  it('verwechselt einen Ladefehler nicht mit einem leeren Mandanten', () => {
+    expect(view).toContain('risk-center-unavailable');
+    expect(view).toContain('Risiken nicht verfügbar');
+    expect(view).not.toMatch(/catch\s*\([^)]*\)\s*=>\s*\{[^}]*setActiveRisks\(\[\]\)/s);
+  });
+
   it('leitet Kategorie-Zähler aus den geladenen Risiken ab', () => {
     expect(view).toContain('countRisksByCategory');
     expect(view).not.toContain('CATEGORY_COUNTS');

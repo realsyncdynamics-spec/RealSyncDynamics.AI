@@ -60,9 +60,11 @@ describe('eventToEvidenceItem', () => {
     expect(item.domain).toBe('https://example.de');
   });
 
-  it('ignores content_hash that is too short to be a real digest', () => {
-    const item = eventToEvidenceItem(event({ payload: { content_hash: 'short' } }));
-    expect(item.hash).toBe('—');
+  it('falls back from a short payload.hash to a valid content_hash', () => {
+    const item = eventToEvidenceItem(event({
+      payload: { hash: 'short', content_hash: 'sha256:0123456789abcdef' },
+    }));
+    expect(item.hash).toBe('sha256:0123456789abcdef');
   });
 
   it('marks C2PA only when the payload flag is true', () => {
@@ -117,7 +119,12 @@ describe('computeVaultMetrics', () => {
         payload: { content_hash: 'short' },
         created_at: '2026-08-01T12:00:00.000Z',
       }),
+      event({
+        id: 'c',
+        payload: { hash: 'short', content_hash: 'sha256:fedcba9876543210' },
+        created_at: '2026-08-01T12:00:00.000Z',
+      }),
     ], now);
-    expect(metrics).toEqual({ total: 2, hashed: 1, c2pa: 1, thisWeek: 1 });
+    expect(metrics).toEqual({ total: 3, hashed: 2, c2pa: 1, thisWeek: 1 });
   });
 });

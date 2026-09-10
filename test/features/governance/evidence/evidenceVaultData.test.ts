@@ -28,7 +28,7 @@ function event(overrides: Partial<DbGovernanceEvent> = {}): DbGovernanceEvent {
     model_name: null,
     data_types: [],
     policy_action: null,
-    payload: { url: 'https://example.de', hash: 'sha256:abc' },
+    payload: { url: 'https://example.de', hash: 'sha256:0123456789abcdef' },
     created_at: '2026-09-10T11:00:00Z',
     ...overrides,
   };
@@ -43,7 +43,7 @@ function evidence(overrides: Partial<DbGovernanceEvidence> = {}): DbGovernanceEv
     evidence_type: 'screenshot',
     title: 'Cookie-Banner Zustand',
     storage_path: null,
-    content_hash: 'sha256:fff',
+    content_hash: 'sha256:ffffffffffffffff',
     previous_hash: null,
     metadata: { domain: 'example.de' },
     created_at: '2026-09-10T11:30:00Z',
@@ -56,15 +56,21 @@ describe('evidence vault mapping', () => {
     const item = eventToEvidenceItem(event(), NOW);
     expect(item.type).toBe('Scan Report');
     expect(item.domain).toBe('https://example.de');
-    expect(item.hash).toBe('sha256:abc');
+    expect(item.hash).toBe('sha256:0123456789abcdef');
     expect(item.eventId).toBe('evt-aaaa-bbbb');
     expect(item.ts).toBe('vor 1 Std.');
   });
 
-  it('treats content_hash as signed evidence', () => {
+  it('does not invent a digest from the row id', () => {
+    const item = eventToEvidenceItem(event({ payload: { url: 'https://example.de' } }), NOW);
+    expect(item.hash).toBe('—');
+  });
+
+  it('does not treat a content_hash as a C2PA flag', () => {
     const item = evidenceToItem(evidence(), NOW);
-    expect(item.c2pa).toBe(true);
+    expect(item.c2pa).toBe(false);
     expect(item.type).toBe('Screenshot');
+    expect(item.hash).toBe('sha256:ffffffffffffffff');
   });
 
   it('merges evidence first and skips duplicate event rows', () => {

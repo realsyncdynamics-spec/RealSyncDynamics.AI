@@ -1,6 +1,6 @@
 import { FormEvent, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowRight, Code2, FileCheck2, Lock, Scan, ShieldCheck, Snowflake } from 'lucide-react';
+import { ArrowRight, Code2, FileCheck2, Lock, ShieldCheck, Snowflake } from 'lucide-react';
 import { SEOHead } from '../components/SEOHead';
 import { LandingChannelTools } from '../components/landing/LandingChannelTools';
 import {
@@ -37,19 +37,12 @@ const GOVERNANCE_STEPS = [
 export function MainLanding() {
   const navigate = useNavigate();
   const [domain, setDomain] = useState('');
-  // Ein Observer fuer die ganze Seite (siehe useStagedReveal), Parallax nur
-  // auf der Hero-Bildebene — nicht auf dem Text darueber, sonst wandert die
-  // Headline unter dem Leser weg.
   const revealRoot = useStagedReveal<HTMLElement>();
   const heroImage = useHeroParallax<HTMLDivElement>();
 
   const startScan = (event: FormEvent) => {
     event.preventDefault();
     const value = domain.trim();
-    // Ziel ist der kanonische Einstieg `/audit` — freigegeben am 2026-08-23
-    // (CLAUDE.md §10). Genau ein Scan-Einstieg, keine zwei parallelen
-    // Trichter. `/audit` liest `?domain=` und belegt sein Formular damit vor,
-    // damit die hier getippte Adresse nicht verlorengeht.
     navigate(value ? `/audit?domain=${encodeURIComponent(value)}` : '/audit');
   };
 
@@ -57,13 +50,13 @@ export function MainLanding() {
     <div className="landing-context min-h-screen bg-[rgb(3,7,18)] text-white antialiased" style={{ backgroundColor: BG, fontFamily: SANS }}>
       <SEOHead
         title="RealSyncDynamics.AI — Das Governance OS für DSGVO & EU AI Act"
-        description="Das Governance OS für DSGVO und EU AI Act. Website-Governance, Claude Code Optimizer, Evidence Vault, Policy Packs, auditfähiger Nachweis-Export und kontinuierliches Monitoring in einer Runtime."
+        description="Das Governance OS für DSGVO und EU AI Act: AI-Systeme, Websites, Agents und Datenflüsse erfassen, Risiken bewerten, Governance durchsetzen und Nachweise führen."
         canonical="/"
         ogTitle="Das Governance OS für DSGVO & EU AI Act"
-        ogDescription="RealSyncDynamics.AI verbindet DSGVO, EU AI Act, Code-Compliance, Policy-Durchsetzung und auditfähige Nachweise in einer operativen Governance-Runtime."
+        ogDescription="RealSyncDynamics.AI verbindet DSGVO, EU AI Act, Policy-Durchsetzung und auditfähige Nachweise in einer operativen Governance Runtime."
       />
 
-      <header className="absolute inset-x-0 top-0 z-30"><div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6 lg:px-10"><Link to="/" className="flex items-center gap-2.5"><Snowflake className="h-6 w-6 text-[#e8c98a]" strokeWidth={1.5} /><span className="text-base font-semibold tracking-tight sm:text-lg">RealSync <span className="font-normal text-white/80">Dynamics.AI</span></span></Link><nav className="hidden items-center gap-7 md:flex"><a href="#tools" className="text-sm text-white/65 transition-colors hover:text-white">Tools</a><a href="#platform" className="text-sm text-white/65 transition-colors hover:text-white">Produkt</a><a href="#evidence" className="text-sm text-white/65 transition-colors hover:text-white">Evidence</a><a href="#enterprise" className="hidden text-sm text-white/65 transition-colors hover:text-white lg:block">Enterprise</a><Link to="/ai-act" className="hidden text-sm text-white/65 transition-colors hover:text-white xl:block">EU AI Act</Link><Link to="/sicherheit" className="hidden text-sm text-white/65 transition-colors hover:text-white xl:block">Sicherheit</Link><Link to="/pricing" className="text-sm text-white/65 transition-colors hover:text-white">Preise</Link><Link to="/welcome" className="text-sm text-white/65 transition-colors hover:text-white">Login</Link><Link to="/audit" className="rounded-full bg-[#f0e6d2] px-6 py-3 text-sm font-semibold text-[#1a1714] transition hover:bg-[#f6efe4]">Kostenlos scannen</Link></nav></div></header>
+      <header className="absolute inset-x-0 top-0 z-30"><div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6 lg:px-10"><Link to="/" className="flex items-center gap-2.5"><Snowflake className="h-6 w-6 text-[#e8c98a]" strokeWidth={1.5} /><span className="text-base font-semibold tracking-tight sm:text-lg">RealSync <span className="font-normal text-white/80">Dynamics.AI</span></span></Link><nav className="hidden items-center gap-7 md:flex"><a href="#platform" className="text-sm text-white/65 transition-colors hover:text-white">Produkt</a><Link to="/governance-runtime" className="text-sm text-white/65 transition-colors hover:text-white">Runtime</Link><a href="#evidence" className="text-sm text-white/65 transition-colors hover:text-white">Evidence</a><a href="#tools" className="hidden text-sm text-white/65 transition-colors hover:text-white lg:block">Module</a><Link to="/ai-act" className="hidden text-sm text-white/65 transition-colors hover:text-white xl:block">EU AI Act</Link><Link to="/sicherheit" className="hidden text-sm text-white/65 transition-colors hover:text-white xl:block">Sicherheit</Link><Link to="/pricing" className="text-sm text-white/65 transition-colors hover:text-white">Preise</Link><Link to="/welcome" className="text-sm text-white/65 transition-colors hover:text-white">Login</Link><Link to="/audit" className="rounded-full bg-[#f0e6d2] px-6 py-3 text-sm font-semibold text-[#1a1714] transition hover:bg-[#f6efe4]">Kostenlosen Governance Scan starten</Link></nav></div></header>
 
       <main ref={revealRoot}>
         <section className="relative min-h-[880px] overflow-hidden">
@@ -72,36 +65,19 @@ export function MainLanding() {
               <source srcSet="/europe-globe.webp" type="image/webp" />
               <img src="/europe-globe.jpg" alt="Europa bei Nacht mit digitalen Datenströmen" width={1376} height={768} fetchPriority="high" className="h-full w-full object-cover object-right opacity-90" />
             </picture>
-            {/* Morgenlicht und Skyline liegen ueber dem Bild, aber unter den
-                Verlaeufen: So bleibt die Textspalte links lesbar, waehrend
-                rechts die Stadt gegen den aufhellenden Horizont steht. */}
             <div className="hero-dawn" aria-hidden="true" />
             <div className="hero-dawn-rim" aria-hidden="true" />
-
-            {/* Der Verlauf haelt die Textspalte lesbar, gibt den Globus rechts aber
-                frei. Vorher lag bis 95% Schwarz darueber — Europa war kaum zu sehen. */}
             <div className="absolute inset-0 bg-gradient-to-r from-black via-black/85 to-transparent" />
-            {/* Fusspunkt heller als zuvor (from-…/80 statt volldeckend): Die
-                Skyline steht sonst in einer schwarzen Wanne statt auf einem
-                Horizont. */}
             <div className="absolute inset-0 bg-gradient-to-t from-[rgb(3,7,18)]/80 via-transparent to-black/30" />
-            {/* Vignette: zieht den Blick zur Bildmitte, ohne die Kanten zu
-                haerten. Mittelpunkt seit dem Neuausleuchten etwas tiefer (52 %
-                statt 45 %), damit der Lichtsaum am Horizont im offenen Teil
-                liegt und nicht im abgedunkelten Rand. */}
             <div className="absolute inset-0" style={{ background: 'radial-gradient(126% 96% at 66% 52%, transparent 0%, transparent 44%, rgba(3,7,18,.5) 100%)' }} />
           </div>
 
           <div className="relative z-10 mx-auto grid min-h-[880px] max-w-7xl items-center gap-10 px-6 pb-20 pt-28 lg:grid-cols-[1.05fr_.95fr] lg:px-10">
             <div className="max-w-3xl">
-              <Link to="/claude-code-optimizer" className="mb-7 inline-flex items-center gap-2.5 rounded-full border border-[#e8c98a]/35 bg-[#e8c98a]/8 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[.2em] text-[#f3d9a0] transition hover:border-[#e8c98a]/60 hover:bg-[#e8c98a]/12">
-                <span className="rounded-full bg-[#f0e6d2] px-1.5 py-0.5 text-[9px] font-semibold text-[#1a1714]">NEU</span>
-                Claude Code Optimizer <ArrowRight className="h-3 w-3" />
-              </Link>
+              <p className="mb-7 inline-flex items-center gap-2.5 rounded-full border border-[#e8c98a]/35 bg-[#e8c98a]/8 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[.2em] text-[#f3d9a0]">
+                AI Governance Runtime
+              </p>
 
-              {/* H1 aus hero-content.ts — nicht hartkodieren. Siehe FE-001 dort. */}
-              {/* Seit v5 zwei kurze Zeilen — die tragen `lg:text-7xl`, ohne im Wort
-                  umzubrechen. Bei der dreizeiligen v4-Headline ging das nicht. */}
               <h1 className="text-[2.6rem] leading-[.98] tracking-[-.035em] sm:text-6xl lg:text-7xl" style={{ fontFamily: SERIF, fontWeight: 500 }}>
                 {HERO_HEADLINE.map((segments, line) => (
                   <span key={line} className="block">
@@ -112,12 +88,8 @@ export function MainLanding() {
                 ))}
               </h1>
 
-              <p className="mt-5 font-mono text-[11px] uppercase tracking-[.28em] text-white/35">
-                <Scan className="mr-2 inline h-3.5 w-3.5" />KI-Governance &amp; Code-Optimierung
-              </p>
-
               <p className="mt-5 max-w-2xl text-base leading-relaxed text-white/65 sm:text-lg">
-                RealSyncDynamics.AI überwacht Websites, KI-Systeme, Code und Nachweise kontinuierlich — Regeln, Prüfungen und Belege auf derselben Governance-Ebene.
+                AI-Systeme, Websites, Agents und Datenflüsse erfassen, Risiken bewerten, Governance durchsetzen und Nachweise führen — in einer kontinuierlichen Governance Runtime.
               </p>
 
               <div className="mt-7 grid gap-6 border-t border-white/10 pt-6 sm:grid-cols-3 sm:divide-x sm:divide-white/10">
@@ -129,31 +101,19 @@ export function MainLanding() {
                 ))}
               </div>
 
-              {/* CTA-Hierarchie (Freigabe 2026-08-23, siehe CLAUDE.md §10):
-                  Der kostenlose Scan ist Priorität 1 und steht deshalb zuerst
-                  und als einzige gefüllte Fläche. „Präsenz & App bauen" und
-                  „Preise ansehen" bleiben erhalten, treten aber als Umriss
-                  zurück — der Trichter soll einen Einstieg haben, nicht drei
-                  gleichwertige. */}
               <form onSubmit={startScan} className="mt-7 max-w-2xl">
                 <div className="flex flex-col gap-2 rounded-2xl border border-white/15 bg-black/35 p-2 backdrop-blur-xl sm:flex-row">
-                  <input value={domain} onChange={event => setDomain(event.target.value)} placeholder="Ihre Website — z. B. firma.de" aria-label="Website-URL für den kostenlosen Scan" className="min-w-0 flex-1 bg-transparent px-4 py-3 text-sm text-white outline-none placeholder:text-white/30" />
-                  <button type="submit" className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#f0e6d2] px-5 py-3 text-sm font-semibold text-[#1a1714] transition hover:bg-[#f6efe4]">Website kostenlos scannen <ArrowRight className="h-4 w-4" /></button>
+                  <input value={domain} onChange={event => setDomain(event.target.value)} placeholder="Ihre Website — z. B. firma.de" aria-label="Website-URL für den kostenlosen Governance Scan" className="min-w-0 flex-1 bg-transparent px-4 py-3 text-sm text-white outline-none placeholder:text-white/30" />
+                  <button type="submit" className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#f0e6d2] px-5 py-3 text-sm font-semibold text-[#1a1714] transition hover:bg-[#f6efe4]">Kostenlosen Governance Scan starten <ArrowRight className="h-4 w-4" /></button>
                 </div>
                 <p className="mt-2 text-[10px] text-white/35">DSGVO · EU AI Act · Sicherheit · Barrierefreiheit · SEO — kein Account nötig</p>
               </form>
 
               <div className="mt-5 flex flex-wrap gap-3">
-                <Link to="/unified-entry/transformation" className="inline-flex items-center gap-2 rounded-full border border-[#e8c98a]/45 px-7 py-3.5 font-medium text-[#fff8ee] transition hover:bg-white/5">Präsenz & App bauen <ArrowRight className="h-4 w-4" /></Link>
-                <Link to="/pricing" className="inline-flex items-center gap-2 rounded-full border border-[#e8c98a]/45 px-7 py-3.5 font-medium text-[#fff8ee] transition hover:bg-white/5">Preise ansehen</Link>
+                <a href="#platform" className="inline-flex items-center gap-2 rounded-full border border-[#e8c98a]/45 px-7 py-3.5 font-medium text-[#fff8ee] transition hover:bg-white/5">Governance OS ansehen <ArrowRight className="h-4 w-4" /></a>
               </div>
             </div>
 
-            {/*
-              Kartengruppe: zeigt, wie das Dashboard aussieht. Ausdrücklich als
-              Beispiel gekennzeichnet — ein anonymer Besucher hat keinen Tenant,
-              dort ist nichts messbar. Werte kommen aus landing-runtime-preview.ts.
-            */}
             <div className="hidden lg:block">
               <p className="mb-4 text-right font-mono text-[10px] tracking-[.22em] text-[#e8c98a]/80">{RUNTIME_PREVIEW_LABEL}</p>
               <div className="space-y-3">
@@ -185,8 +145,6 @@ export function MainLanding() {
         <LandingChannelTools />
 
         <section id="platform" className="py-20 md:py-28"><div className="mx-auto max-w-7xl px-6 lg:px-10"><div className="mb-12 max-w-3xl"><p className="font-mono text-[10px] tracking-[.25em] text-[#e8c98a]">DIE PLATTFORM</p><h2 className="mt-3 text-4xl tracking-tight sm:text-5xl" style={{ fontFamily: SERIF, fontWeight: 500 }}>Eine Runtime. <span className="text-[#e8c98a]">Vollständige KI-Governance.</span></h2><p className="mt-5 leading-relaxed text-white/55">RealSyncDynamics.AI verbindet Erkennung, Risikobewertung, Policies, Enforcement und Evidence zu einem durchgängigen operativen Kontrollprozess.</p></div><div className="grid gap-px overflow-hidden rounded-2xl border border-white/10 bg-white/10 md:grid-cols-2 lg:grid-cols-3">{LIVE_CAPABILITIES.map(cap => {
-              /* Wo es eine Fachseite gibt, wird die Karte anklickbar. Sechs solcher
-                 Seiten lagen bislang ohne Einstieg von der Startseite herum (§14). */
               const body = <><h3 className="text-base font-semibold">{cap.name}</h3><p className="mt-2 text-sm leading-relaxed text-white/50">{cap.description}</p>{cap.learnMorePath && <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-[#e8c98a]">Mehr erfahren <ArrowRight className="h-3.5 w-3.5" /></span>}</>;
               return cap.learnMorePath
                 ? <Link key={cap.id} to={cap.learnMorePath} data-reveal data-reveal-group="platform" className="block bg-[rgb(3,7,18)] p-7 transition hover:bg-white/[.03]">{body}</Link>

@@ -67,9 +67,17 @@ Deno.serve(async (req) => {
     let result;
 
     switch (body.action) {
-      case 'run-daily-maintenance':
+      case 'run-daily-maintenance': {
+        // Hintertür neben website-maintenance-daily-cron: dieselbe Aktion
+        // ohne Service-Role würde den Tageslauf für alle live-Projekte
+        // öffentlich auslösen. Einzelscans bleiben JWT-gated (Default).
+        const authHeader = req.headers.get('Authorization') ?? '';
+        if (authHeader !== `Bearer ${SRK}`) {
+          return jsonError(401, 'UNAUTHORIZED', 'cron only');
+        }
         result = await runDailyMaintenance();
         break;
+      }
 
       case 'scan-performance':
         if (!body.project_id || !body.website_url) {

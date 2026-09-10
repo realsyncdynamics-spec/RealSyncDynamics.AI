@@ -36,6 +36,8 @@ const CRON_SLUGS = [
   'audit-drip-cron',
   'audit-recheck-weekly',
   'governance-analytics-aggregator',
+  'sub-processor-notify',
+  'website-maintenance-daily-cron',
 ] as const;
 
 describe('Cron-Functions: verify_jwt=false ist deklariert und selbst geprüft', () => {
@@ -52,12 +54,14 @@ describe('Cron-Functions: verify_jwt=false ist deklariert und selbst geprüft', 
     });
   }
 
-  it('pre-deploy-lint führt die drei UNDECLARED-Slugs in REQUIRED_PUBLIC_FUNCTIONS', () => {
+  it('pre-deploy-lint führt die Cron-Slugs in REQUIRED_PUBLIC_FUNCTIONS', () => {
     const lint = readFileSync('scripts/pre-deploy-lint.mjs', 'utf8');
     for (const slug of [
       'governance-monitoring-scheduler',
       'scheduler-dispatch',
       'memory-decay-worker',
+      'sub-processor-notify',
+      'website-maintenance-daily-cron',
     ]) {
       expect(lint).toContain(`'${slug}'`);
     }
@@ -71,5 +75,24 @@ describe('Cron-Functions: verify_jwt=false ist deklariert und selbst geprüft', 
     expect(sql).toContain("'audit-drip-cron'");
     expect(sql).toContain("'service_role_key'");
     expect(sql).toMatch(/SELECT public\.dispatch_cron_function/g);
+  });
+
+  it('stellt sub-processor-notify-daily auf dispatch_cron_function um', () => {
+    const sql = readFileSync(
+      'supabase/migrations/20260910190000_cron_auth_sub_processor.sql',
+      'utf8',
+    );
+    expect(sql).toContain("dispatch_cron_function");
+    expect(sql).toContain("'sub-processor-notify'");
+    expect(sql).toContain("'sub-processor-notify-daily'");
+    expect(sql).toContain("'service_role_key'");
+  });
+
+  it('website-maintenance-agent sperrt run-daily-maintenance hinter den Service-Role-Bearer', () => {
+    const src = source('website-maintenance-agent');
+    expect(src).toMatch(/run-daily-maintenance/);
+    expect(src).toMatch(/Authorization/);
+    expect(src).toMatch(/401/);
+    expect(src).toMatch(/cron only/);
   });
 });

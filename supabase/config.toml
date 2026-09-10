@@ -334,6 +334,16 @@ verify_jwt = false
 [functions.governance-analytics-aggregator]
 verify_jwt = false
 
+# sub-processor-notify: pg_cron daily 08:00. Alter Job schickte den Anon-Key
+# (20260507140000). Anon-JWT passiert das Gateway; eigener Bearer-Check.
+[functions.sub-processor-notify]
+verify_jwt = false
+
+# website-maintenance-daily-cron: Dashboard-/Cron-Trigger. Ohne Check wäre
+# der Tageslauf über den Anon-Key auslösbar (Default JWT = true reicht nicht).
+[functions.website-maintenance-daily-cron]
+verify_jwt = false
+
 # governance-analytics-export: called from authenticated SPA clients with bearer token
 # (no explicit verify_jwt entry = defaults to true, which is correct)
 
@@ -380,6 +390,6 @@ verify_jwt = false
 # workflow-trigger, gdpr-export, gdpr-delete, tenant-invite,
 # governance-agent, governance-remediate,
 # hostinger-agent-brief, kodee*, audit-report-email, generate-document,
-# shopify-scan, skills, sub-processor-notify, evidence-vault-export,
+# shopify-scan, skills, evidence-vault-export,
 # usage-increment, ceo-brief-pdf, pitch-deck-pdf) keep the default
 # verify_jwt = true — they require an authenticated user session.

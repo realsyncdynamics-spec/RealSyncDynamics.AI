@@ -1,0 +1,6 @@
+{
+  "name": "@realsyncdynamics/runtime-web",
+  "private": true,
+  "description": "RealSync Runtime — Governance- und Control-Runtime. Produkt von RealSync Dynamics AI.",
+  "type": "module"
+}

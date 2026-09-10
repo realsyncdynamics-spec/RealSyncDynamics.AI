@@ -13,6 +13,7 @@ alle Packages, Services und Workspaces — wo sie sind, was sie tun, wie man sie
 RealSyncDynamics.AI (Monorepo-Root)
 ├── [Vite/React SPA] ← Hauptanwendung (npm run dev)
 ├── [Node/TS Services] ← Apps & Services (Docker)
+├── [Runtime Product] ← apps/runtime-web (Control-Runtime Frontend)
 ├── [Supabase Backend] ← Edge Functions + Postgres
 └── [🏗️ Platform-Monorepo] ← Website Builder (docker compose)
 ```
@@ -128,6 +129,12 @@ npm install
 docker build -t agent-runtime .
 docker run -p 3001:3001 agent-runtime
 ```
+
+### 3c. Runtime Product Frontend
+**Ort:** `apps/runtime-web/`  
+**Zweck:** Verkaufbare Product Surface **RealSync Runtime** (Governance- und Control-Runtime für KI, Software, Industrie).  
+**Unternehmen bleibt** die Root-SPA. Dieses Frontend ist das Produkt im Ökosystem.  
+**Doku:** [`apps/runtime-web/README.md`](apps/runtime-web/README.md)
 
 ### 3b. Weitere Services
 **Ort:** `services/`

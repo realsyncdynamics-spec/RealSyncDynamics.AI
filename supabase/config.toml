@@ -222,6 +222,20 @@ verify_jwt = false
 [functions.agent-os-runner]
 verify_jwt = false
 
+# Die drei folgenden laufen live mit verify_jwt=false (Drift-Guard
+# 2026-09-10, UNDECLARED_NO_JWT). Aufrufer ist pg_cron per net.http_post
+# mit Service-Role-Bearer — kein Browser-JWT. Eigener Check in der Function;
+# ohne passenden Header 401. Nur deklarieren reicht nicht: der Monitoring-
+# Scheduler hatte den Check nicht und waere sonst oeffentlich ausloesbar.
+[functions.governance-monitoring-scheduler]
+verify_jwt = false
+
+[functions.scheduler-dispatch]
+verify_jwt = false
+
+[functions.memory-decay-worker]
+verify_jwt = false
+
 # governance-erasure-sweeper: pg_cron-triggered (daily 03:00 UTC). No user JWT;
 # validates a Vault bearer token (governance_erasure_sweeper_token) itself.
 [functions.governance-erasure-sweeper]

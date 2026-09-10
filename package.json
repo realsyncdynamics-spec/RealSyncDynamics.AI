@@ -49,7 +49,10 @@
     "perf:monthly-report": "tsx scripts/generate-performance-report.ts",
     "gen:plan-catalog": "tsx scripts/generate-plan-catalog-sql.ts",
     "stripe:diff": "tsx scripts/sync-stripe-catalog.ts",
-    "stripe:sync": "tsx scripts/sync-stripe-catalog.ts --apply"
+    "stripe:sync": "tsx scripts/sync-stripe-catalog.ts --apply",
+    "sync:main": "node scripts/sync-with-main.mjs",
+    "merge:hygiene": "node scripts/merge-hygiene.mjs",
+    "migrate:rename": "node scripts/rename-migration.mjs"
   },
   "dependencies": {
     "@google/genai": "^1.29.0",

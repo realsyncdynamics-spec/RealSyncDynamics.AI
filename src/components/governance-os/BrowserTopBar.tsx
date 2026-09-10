@@ -20,27 +20,28 @@ export function BrowserTopBar({
   const navigate = useNavigate();
 
   return (
-    <header className="h-14 shrink-0 bg-obsidian-900 border-b border-titanium-900 flex items-center gap-3 px-3 sm:px-4">
-      {/* Mobile-Menü Toggle */}
+    <header className="h-14 shrink-0 bg-obsidian-900/95 border-b border-titanium-900/80 backdrop-blur-md flex items-center gap-3 px-3 sm:px-4">
+      {/* Mobile-Menü Toggle — system drawer entry */}
       <button
         onClick={onToggleMobile}
-        className="lg:hidden text-titanium-400 hover:text-titanium-100"
-        aria-label="Menü"
+        className="lg:hidden text-titanium-400 hover:text-titanium-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#e8c98a]/50"
+        aria-label={mobileMenuOpen ? 'Systemmenü schließen' : 'Systemmenü öffnen'}
+        aria-expanded={mobileMenuOpen}
       >
         {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
       </button>
 
-      {/* Logo + Produktname */}
+      {/* Logo + Produktname — OS system-bar identity */}
       <Link to="/app" className="flex items-center gap-2 shrink-0">
-        <div className="w-7 h-7 bg-gradient-to-br from-cyan-400 to-security-600 flex items-center justify-center">
+        <div className="w-7 h-7 bg-gradient-to-br from-[#e8c98a] to-[#b8955a] flex items-center justify-center">
           <Sparkles className="h-4 w-4 text-obsidian-950" />
         </div>
         <div className="hidden sm:flex flex-col leading-none">
           <span className="font-display font-bold text-[11px] text-titanium-50 tracking-tight">
-            Governance OS Browser
+            Governance OS
           </span>
-          <span className="font-mono text-[9px] text-titanium-500 tracking-wide">
-            DSGVO • EU AI Act • Evidence
+          <span className="font-mono text-[9px] text-[#e8c98a]/70 tracking-wide">
+            SYSTEM · DSGVO · EU AI Act
           </span>
         </div>
       </Link>

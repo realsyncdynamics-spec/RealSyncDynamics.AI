@@ -35,4 +35,15 @@ describe('Governance Sphere — demo contract', () => {
     expect(host).toContain('GovernanceSphereFallback');
     expect(host).toContain('SPHERE_DEMO_LABEL');
   });
+
+  it('picks 3D nodes via canvas raycast (not R3F DragSurface events)', () => {
+    const scene = readFileSync(
+      resolve(__dirname, '../../src/components/governance-frontend/GovernanceSphereScene.tsx'),
+      'utf8',
+    );
+    expect(scene).toContain('PointerBridge');
+    expect(scene).toContain('intersectObjects');
+    expect(scene).toContain('governanceNode');
+    expect(scene).not.toContain('function DragSurface');
+  });
 });

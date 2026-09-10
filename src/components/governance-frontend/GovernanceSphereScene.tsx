@@ -1,4 +1,4 @@
-import { Canvas, useFrame } from '@react-three/fiber';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { useEffect, useMemo, useRef, useState, type MutableRefObject } from 'react';
 import * as THREE from 'three';
 import {
@@ -25,14 +25,10 @@ type SphereControls = {
 function Nodes({
   selectedId,
   hoveredId,
-  onHover,
-  onSelect,
   reducedMotion,
 }: {
   selectedId: string | null;
   hoveredId: string | null;
-  onHover: (id: string | null) => void;
-  onSelect: (node: GovernanceSphereNode) => void;
   reducedMotion: boolean;
 }) {
   return (
@@ -44,28 +40,15 @@ function Nodes({
         const color = attention ? ATTENTION : GOLD;
         return (
           <group key={node.id} position={pos}>
-            {/* Invisible hit target — larger than the visible core for reliable picks. */}
+            {/* Opaque pick mesh — manual raycaster reads userData.nodeId. */}
             <mesh
-              onPointerOver={(e) => {
-                e.stopPropagation();
-                onHover(node.id);
-                document.body.style.cursor = 'pointer';
-              }}
-              onPointerOut={(e) => {
-                e.stopPropagation();
-                onHover(null);
-                document.body.style.cursor = 'grab';
-              }}
-              onPointerDown={(e) => {
-                e.stopPropagation();
-                // Select on down so orbit / miss handlers cannot clear in the same gesture.
-                onSelect(node);
-              }}
+              userData={{ nodeId: node.id, governanceNode: true }}
+              scale={active ? 1.35 : 1}
             >
-              <sphereGeometry args={[0.22, 12, 12]} />
-              <meshBasicMaterial transparent opacity={0} depthWrite={false} />
+              <sphereGeometry args={[0.16, 16, 16]} />
+              <meshBasicMaterial transparent opacity={0.01} depthWrite={false} />
             </mesh>
-            <mesh scale={active ? 1.5 : 1.25} raycast={() => null}>
+            <mesh scale={active ? 1.45 : 1.2} raycast={() => null}>
               <sphereGeometry args={[0.09, 16, 16]} />
               <meshStandardMaterial
                 color={color}
@@ -155,76 +138,19 @@ function AmbientParticles({ reducedMotion }: { reducedMotion: boolean }) {
   );
 }
 
-function DragSurface({
-  controls,
-}: {
-  controls: MutableRefObject<SphereControls>;
-}) {
-  const last = useRef({ x: 0, y: 0 });
-
-  return (
-    <mesh
-      // Slightly inside node radius so node hits win when aimed at nodes.
-      onPointerDown={(e) => {
-        e.stopPropagation();
-        controls.current.dragging = true;
-        last.current = { x: e.clientX, y: e.clientY };
-        document.body.style.cursor = 'grabbing';
-      }}
-      onPointerUp={() => {
-        controls.current.dragging = false;
-        document.body.style.cursor = 'grab';
-      }}
-      onPointerMove={(e) => {
-        const nx = e.pointer.x;
-        const ny = e.pointer.y;
-        if (!controls.current.dragging) {
-          controls.current.pointerInfluence = { x: nx, y: ny };
-          return;
-        }
-        const dx = e.clientX - last.current.x;
-        const dy = e.clientY - last.current.y;
-        last.current = { x: e.clientX, y: e.clientY };
-        controls.current.velY = dx * 0.0045;
-        controls.current.velX = dy * 0.0035;
-        controls.current.rotY += controls.current.velY;
-        controls.current.rotX += controls.current.velX;
-      }}
-      onPointerLeave={() => {
-        controls.current.dragging = false;
-        controls.current.pointerInfluence = { x: 0, y: 0 };
-        document.body.style.cursor = 'grab';
-      }}
-      onWheel={(e) => {
-        e.stopPropagation();
-        const ne = e.nativeEvent as WheelEvent | undefined;
-        const delta = ne?.deltaY ?? 0;
-        controls.current.zoom *= delta > 0 ? 0.96 : 1.04;
-      }}
-    >
-      <sphereGeometry args={[1.62, 48, 48]} />
-      <meshBasicMaterial transparent opacity={0} depthWrite={false} />
-    </mesh>
-  );
-}
-
 function SphereCore({
   controls,
   selectedId,
   hoveredId,
-  onHover,
-  onSelect,
   reducedMotion,
+  groupRef,
 }: {
   controls: MutableRefObject<SphereControls>;
   selectedId: string | null;
   hoveredId: string | null;
-  onHover: (id: string | null) => void;
-  onSelect: (node: GovernanceSphereNode) => void;
   reducedMotion: boolean;
+  groupRef: MutableRefObject<THREE.Group | null>;
 }) {
-  const group = useRef<THREE.Group>(null!);
-
   useFrame((_, delta) => {
     const c = controls.current;
     if (!reducedMotion) {
@@ -238,15 +164,16 @@ function SphereCore({
     }
     c.rotX = THREE.MathUtils.clamp(c.rotX, -0.85, 0.85);
     c.zoom = THREE.MathUtils.clamp(c.zoom, 0.72, 1.55);
-    if (group.current) {
-      group.current.rotation.x = c.rotX + c.pointerInfluence.y * 0.12;
-      group.current.rotation.y = c.rotY + c.pointerInfluence.x * 0.18;
-      group.current.scale.setScalar(c.zoom);
+    const group = groupRef.current;
+    if (group) {
+      group.rotation.x = c.rotX + c.pointerInfluence.y * 0.12;
+      group.rotation.y = c.rotY + c.pointerInfluence.x * 0.18;
+      group.scale.setScalar(c.zoom);
     }
   });
 
   return (
-    <group ref={group}>
+    <group ref={groupRef}>
       <mesh raycast={() => null}>
         <icosahedronGeometry args={[1.55, 2]} />
         <meshStandardMaterial
@@ -270,44 +197,162 @@ function SphereCore({
           opacity={0.88}
         />
       </mesh>
-      <DragSurface controls={controls} />
       <Orbits reducedMotion={reducedMotion} />
       <AmbientParticles reducedMotion={reducedMotion} />
-      <Nodes
-        selectedId={selectedId}
-        hoveredId={hoveredId}
-        onHover={onHover}
-        onSelect={onSelect}
-        reducedMotion={reducedMotion}
-      />
+      <Nodes selectedId={selectedId} hoveredId={hoveredId} reducedMotion={reducedMotion} />
     </group>
   );
 }
 
-/** Pinch zoom via native touch on the canvas element (wheel handled in-scene). */
-function PinchZoom({ controls }: { controls: MutableRefObject<SphereControls> }) {
+/**
+ * Canvas-level raycast + orbit. Avoids R3F event conflicts that swallowed
+ * node picks when a transparent DragSurface also received pointer events.
+ */
+function PointerBridge({
+  controls,
+  onSelect,
+  onHover,
+}: {
+  controls: MutableRefObject<SphereControls>;
+  onSelect: (node: GovernanceSphereNode | null) => void;
+  onHover: (id: string | null) => void;
+}) {
+  const { camera, gl, scene } = useThree();
+  const raycaster = useMemo(() => new THREE.Raycaster(), []);
+  const pointer = useMemo(() => new THREE.Vector2(), []);
+  const drag = useRef({ active: false, moved: false, lastX: 0, lastY: 0, picked: false });
+  const pinchDist = useRef<number | null>(null);
+  const onSelectRef = useRef(onSelect);
+  const onHoverRef = useRef(onHover);
+  onSelectRef.current = onSelect;
+  onHoverRef.current = onHover;
+
   useEffect(() => {
-    const el = document.querySelector('[data-governance-sphere] canvas');
-    if (!(el instanceof HTMLCanvasElement)) return;
+    const el = gl.domElement;
     el.style.touchAction = 'none';
-    let pinchDist: number | null = null;
+    el.style.cursor = 'grab';
+
+    const collectNodeMeshes = () => {
+      const meshes: THREE.Object3D[] = [];
+      scene.traverse((obj) => {
+        if (obj.userData?.governanceNode && obj.userData?.nodeId) meshes.push(obj);
+      });
+      return meshes;
+    };
+
+    const pickNodeId = (clientX: number, clientY: number): string | null => {
+      const rect = el.getBoundingClientRect();
+      if (rect.width <= 0 || rect.height <= 0) return null;
+      pointer.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+      pointer.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+      raycaster.setFromCamera(pointer, camera);
+      const hits = raycaster.intersectObjects(collectNodeMeshes(), false);
+      const id = hits[0]?.object?.userData?.nodeId;
+      return typeof id === 'string' ? id : null;
+    };
+
+    const nodeById = (id: string) =>
+      GOVERNANCE_SPHERE_NODES.find((n) => n.id === id) ?? null;
+
+    const onPointerDown = (e: PointerEvent) => {
+      if (e.button !== 0 && e.pointerType === 'mouse') return;
+      const nodeId = pickNodeId(e.clientX, e.clientY);
+      if (nodeId) {
+        const node = nodeById(nodeId);
+        if (node) onSelectRef.current(node);
+        drag.current = { active: false, moved: false, lastX: e.clientX, lastY: e.clientY, picked: true };
+        el.style.cursor = 'pointer';
+        return;
+      }
+      drag.current = {
+        active: true,
+        moved: false,
+        lastX: e.clientX,
+        lastY: e.clientY,
+        picked: false,
+      };
+      controls.current.dragging = true;
+      el.style.cursor = 'grabbing';
+      el.setPointerCapture(e.pointerId);
+    };
+
+    const onPointerMove = (e: PointerEvent) => {
+      const rect = el.getBoundingClientRect();
+      if (rect.width > 0 && rect.height > 0 && !drag.current.active) {
+        const nx = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+        const ny = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+        controls.current.pointerInfluence = { x: nx, y: ny };
+        const hoverId = pickNodeId(e.clientX, e.clientY);
+        onHoverRef.current(hoverId);
+        el.style.cursor = hoverId ? 'pointer' : 'grab';
+      }
+      if (!drag.current.active) return;
+      const dx = e.clientX - drag.current.lastX;
+      const dy = e.clientY - drag.current.lastY;
+      if (Math.abs(dx) + Math.abs(dy) > 3) drag.current.moved = true;
+      drag.current.lastX = e.clientX;
+      drag.current.lastY = e.clientY;
+      controls.current.velY = dx * 0.0045;
+      controls.current.velX = dy * 0.0035;
+      controls.current.rotY += controls.current.velY;
+      controls.current.rotX += controls.current.velX;
+    };
+
+    const onPointerUp = (e: PointerEvent) => {
+      const { moved, picked, active } = drag.current;
+      drag.current.active = false;
+      controls.current.dragging = false;
+      pinchDist.current = null;
+      try {
+        el.releasePointerCapture(e.pointerId);
+      } catch {
+        /* ignore */
+      }
+      el.style.cursor = 'grab';
+      // Empty tap clears selection — never clear after a successful node pick.
+      if (active && !moved && !picked) {
+        const nodeId = pickNodeId(e.clientX, e.clientY);
+        if (!nodeId) onSelectRef.current(null);
+      }
+      drag.current.picked = false;
+    };
+
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      controls.current.zoom *= e.deltaY > 0 ? 0.96 : 1.04;
+    };
+
     const onTouchMove = (e: TouchEvent) => {
       if (e.touches.length !== 2) return;
       const [a, b] = [e.touches[0], e.touches[1]];
       const dist = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
-      if (pinchDist != null) controls.current.zoom *= dist / pinchDist;
-      pinchDist = dist;
+      if (pinchDist.current != null) controls.current.zoom *= dist / pinchDist.current;
+      pinchDist.current = dist;
     };
+
     const onTouchEnd = () => {
-      pinchDist = null;
+      pinchDist.current = null;
     };
+
+    el.addEventListener('pointerdown', onPointerDown);
+    el.addEventListener('pointermove', onPointerMove);
+    el.addEventListener('pointerup', onPointerUp);
+    el.addEventListener('pointercancel', onPointerUp);
+    el.addEventListener('wheel', onWheel, { passive: false });
     el.addEventListener('touchmove', onTouchMove, { passive: true });
     el.addEventListener('touchend', onTouchEnd);
+
     return () => {
+      el.removeEventListener('pointerdown', onPointerDown);
+      el.removeEventListener('pointermove', onPointerMove);
+      el.removeEventListener('pointerup', onPointerUp);
+      el.removeEventListener('pointercancel', onPointerUp);
+      el.removeEventListener('wheel', onWheel);
       el.removeEventListener('touchmove', onTouchMove);
       el.removeEventListener('touchend', onTouchEnd);
     };
-  }, [controls]);
+  }, [camera, controls, gl, pointer, raycaster, scene]);
+
   return null;
 }
 
@@ -331,6 +376,7 @@ export function GovernanceSphereScene({
     pointerInfluence: { x: 0, y: 0 },
     dragging: false,
   });
+  const groupRef = useRef<THREE.Group | null>(null);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -345,24 +391,19 @@ export function GovernanceSphereScene({
       camera={{ position: [0, 0.15, 5.2], fov: 42 }}
       gl={{ alpha: true, antialias: true, powerPreference: 'high-performance' }}
       dpr={[1, 1.75]}
-      onCreated={({ gl }) => {
-        gl.domElement.style.touchAction = 'none';
-        gl.domElement.style.cursor = 'grab';
-      }}
     >
       <color attach="background" args={['transparent']} />
       <ambientLight intensity={0.55} />
       <pointLight position={[4, 3, 5]} intensity={1.1} color="#fff4e0" />
       <pointLight position={[-4, -2, -3]} intensity={0.55} color={GOLD} />
       <hemisphereLight args={['#2a3344', '#0a0a0b', 0.45]} />
-      <PinchZoom controls={controls} />
+      <PointerBridge controls={controls} onSelect={onSelect} onHover={setHoveredId} />
       <SphereCore
         controls={controls}
         selectedId={selectedId}
         hoveredId={hoveredId}
-        onHover={setHoveredId}
-        onSelect={onSelect}
         reducedMotion={reducedMotion}
+        groupRef={groupRef}
       />
     </Canvas>
   );

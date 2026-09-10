@@ -209,13 +209,28 @@ export function GovernanceScorePage() {
                       </li>
                     ))}
                   </ul>
-                  <Link
-                    to={recommendedHref}
-                    className="flex items-center justify-center gap-2 rounded-chip bg-petrol-400 text-obsidian-950 px-5 py-3 text-sm font-semibold hover:bg-petrol-300 transition-colors"
-                  >
-                    {result.recommended.id === 'enterprise' ? CTA.enterprise : CTA.startTrial}
-                    <ArrowRight className="h-4 w-4" />
-                  </Link>
+                  {/* Der empfohlene Plan kann im Sandbox-Modus auf einen externen
+                      Stripe-Test-Payment-Link zeigen — react-router `Link` kann
+                      absolute URLs nicht auflösen, daher dort ein echtes <a>. */}
+                  {recommendedHref.startsWith('http') ? (
+                    <a
+                      href={recommendedHref}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-center gap-2 rounded-chip bg-petrol-400 text-obsidian-950 px-5 py-3 text-sm font-semibold hover:bg-petrol-300 transition-colors"
+                    >
+                      {result.recommended.id === 'enterprise' ? CTA.enterprise : CTA.startTrial}
+                      <ArrowRight className="h-4 w-4" />
+                    </a>
+                  ) : (
+                    <Link
+                      to={recommendedHref}
+                      className="flex items-center justify-center gap-2 rounded-chip bg-petrol-400 text-obsidian-950 px-5 py-3 text-sm font-semibold hover:bg-petrol-300 transition-colors"
+                    >
+                      {result.recommended.id === 'enterprise' ? CTA.enterprise : CTA.startTrial}
+                      <ArrowRight className="h-4 w-4" />
+                    </Link>
+                  )}
                   <Link
                     to="/pricing"
                     className="mt-2 flex items-center justify-center gap-2 rounded-chip border border-titanium-700 text-titanium-200 px-5 py-2.5 text-sm font-medium hover:border-titanium-500 transition-colors"

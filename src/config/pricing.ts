@@ -36,6 +36,7 @@ import {
   type FeatureGroupId,
   type PlanFeatureMatrix,
 } from '@/shared/pricing';
+import { stripeTestLinkFor } from '@/config/stripeTestLinks';
 
 // Alles aus der SSoT bleibt über diese Datei erreichbar, damit Oberflächen
 // nicht zwischen zwei Import-Pfaden wählen müssen.
@@ -141,6 +142,10 @@ function flattenFeatures(matrix: PlanFeatureMatrix): string[] {
 
 function toTier(plan: Plan, interval: 'month' | 'year'): PricingTier {
   const isYearly = interval === 'year';
+  const planKey = planKeyFor(plan.id, interval);
+  // Optionaler Sandbox-Modus: Paket-CTA zeigt auf einen Stripe-Test-Payment-Link.
+  // Ohne gesetzte Env bleibt der reguläre Checkout-Pfad unverändert.
+  const testLink = stripeTestLinkFor(planKey);
   const isOneTime = plan.purchaseMode === 'one_time';
   // Einmalprodukte führen ihren Betrag in `price.oneTimeEur`; `monthlyEur`
   // ist dort 0, weil nichts wiederkehrend abgerechnet wird. Der Betrag wird
@@ -161,7 +166,7 @@ function toTier(plan: Plan, interval: 'month' | 'year'): PricingTier {
   return {
     id,
     name: isYearly ? `${plan.name} (Jährlich)` : plan.name,
-    planKey: planKeyFor(plan.id, interval),
+    planKey,
     plan,
     priceEur,
     priceOnRequest: plan.priceOnRequest === true,
@@ -179,7 +184,7 @@ function toTier(plan: Plan, interval: 'month' | 'year'): PricingTier {
     highlight: plan.highlight,
     cta: {
       label: isYearly ? `${plan.ctaLabel} (jährlich)` : plan.ctaLabel,
-      href: checkoutHrefForPlan(plan, { interval, source: 'pricing' }),
+      href: testLink ?? checkoutHrefForPlan(plan, { interval, source: 'pricing' }),
     },
     botsQuota: {
       maxBots: plan.limits.bots,

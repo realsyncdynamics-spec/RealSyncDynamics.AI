@@ -128,10 +128,10 @@ test.describe('Governance-AI-Landing (/)', () => {
       await expect(h1).toContainText(line);
     }
 
-    // Beide CTAs sind Links (<Link> bzw. <a href="#platform">), keine Buttons.
-    // Die frueher hier erwartete Button-Rolle traf auf keinen von beiden zu.
-    await expect(page.getByRole('link', { name: /Kostenlos starten/i }).first()).toBeVisible();
-    await expect(page.getByRole('link', { name: /Plattform ansehen/i }).first()).toBeVisible();
+    // P0-Hierarchie (#1280/#1282): Primär ist der Scan-Submit → `/audit`,
+    // sekundär der Umriss-Link auf das Governance OS (#platform).
+    await expect(page.getByRole('button', { name: /Kostenlosen Governance Scan starten/i }).first()).toBeVisible();
+    await expect(page.getByRole('link', { name: /Governance OS ansehen/i }).first()).toBeVisible();
   });
 
   test('Kennzahlen im Hero sind als Beispielwerte gekennzeichnet', async ({ page }) => {
@@ -140,8 +140,9 @@ test.describe('Governance-AI-Landing (/)', () => {
     // als "Live" ausgeben.
     // Wortlaut aus landing-runtime-preview.ts, nicht abgeschrieben — sonst
     // driftet der Test beim naechsten Umbau wieder weg.
-    await expect(page.getByText(RUNTIME_PREVIEW_LABEL)).toBeVisible();
-    await expect(page.getByText(RUNTIME_PREVIEW_NOTE)).toBeVisible();
+    // Label existiert in Desktop- und Mobile-Variante; nur die viewport-sichtbare zählt.
+    await expect(page.getByText(RUNTIME_PREVIEW_LABEL).first()).toBeVisible();
+    await expect(page.getByText(RUNTIME_PREVIEW_NOTE).first()).toBeVisible();
     await expect(page.getByText(/^Live\b/)).toHaveCount(0);
   });
 

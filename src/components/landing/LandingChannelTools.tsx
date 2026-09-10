@@ -62,14 +62,14 @@ const TOOLS = [
 
 export function LandingChannelTools() {
   return (
-    <section id="tools" className="relative border-y border-white/10 bg-white/[.02] py-20 md:py-28">
+    <section id="tools" className="relative border-y border-white/10 bg-white/[.02] py-24 md:py-32">
       <div className="mx-auto max-w-7xl px-6 lg:px-10">
-        <div className="mb-12 max-w-3xl">
-          <p className="font-mono text-[10px] tracking-[.25em] text-cyan-400">GOVERNANCE TOOLS</p>
-          <h2 className="mt-3 text-4xl tracking-tight sm:text-5xl" style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontWeight: 500 }}>
-            Ihre KI-Kanäle. <span className="text-cyan-400">Eine Governance-Ebene.</span>
+        <div className="mb-14 max-w-3xl">
+          <p className="font-mono text-[10px] tracking-[.25em] text-[#e8c98a]">GOVERNANCE TOOLS</p>
+          <h2 className="mt-4 text-[2rem] tracking-tight sm:text-5xl" style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontWeight: 500 }}>
+            Ihre KI-Kanäle. <span className="text-[#e8c98a]">Eine Governance-Ebene.</span>
           </h2>
-          <p className="mt-5 max-w-2xl leading-relaxed text-white/55">
+          <p className="mt-5 max-w-2xl text-base leading-relaxed text-white/55">
             Website, Code, WhatsApp und Telefon laufen nicht als isolierte Tools. Sie werden über dieselbe Governance-Runtime, Risikobewertung und Nachweis-Schicht kontrollierbar.
           </p>
         </div>
@@ -78,21 +78,21 @@ export function LandingChannelTools() {
           {TOOLS.map(({ eyebrow, title, icon: Icon, text, bullets, href, cta, capabilityId }) => {
             const live = isLive(capabilityId);
             return (
-            <article key={title} className="overflow-hidden rounded-[1.75rem] border border-cyan-400/20 bg-black/30 shadow-2xl">
-              <div className="border-b border-white/10 bg-gradient-to-r from-cyan-400/[.08] to-transparent p-6 sm:p-8">
+            <article key={title} className="surface-panel overflow-hidden rounded-2xl border border-[#e8c98a]/15 bg-black/35">
+              <div className="border-b border-white/10 bg-gradient-to-r from-[#e8c98a]/[0.08] to-transparent p-6 sm:p-8">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex items-center gap-3">
-                    <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-cyan-400/20 bg-cyan-400/10">
-                      <Icon className="h-5 w-5 text-cyan-300" />
+                    <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-[#e8c98a]/25 bg-[#e8c98a]/10">
+                      <Icon className="h-5 w-5 text-[#f3d9a0]" />
                     </span>
                     <div>
-                      <p className="font-mono text-[9px] tracking-[.2em] text-cyan-400">{eyebrow}</p>
+                      <p className="font-mono text-[9px] tracking-[.2em] text-[#e8c98a]">{eyebrow}</p>
                       <h3 className="text-xl font-semibold">{title}</h3>
                     </div>
                   </div>
                   <span className={live
-                    ? 'rounded-full border border-white/10 px-3 py-1 text-[9px] text-white/40'
-                    : 'rounded-full border border-dashed border-white/20 px-3 py-1 text-[9px] text-white/40'}>
+                    ? 'rounded-full border border-white/10 px-3 py-1 font-mono text-[9px] tracking-[.12em] text-white/40'
+                    : 'rounded-full border border-dashed border-white/20 px-3 py-1 font-mono text-[9px] tracking-[.12em] text-white/40'}>
                     {live ? 'PRODUCT' : 'IN VORBEREITUNG'}
                   </span>
                 </div>
@@ -105,8 +105,8 @@ export function LandingChannelTools() {
                 <Link
                   to={live ? href : '/warteliste'}
                   className={live
-                    ? 'inline-flex w-full items-center justify-center gap-2 rounded-xl border border-cyan-400/30 bg-cyan-400/[.06] px-5 py-3.5 text-sm font-semibold text-cyan-200 transition hover:bg-cyan-400/[.12]'
-                    : 'inline-flex w-full items-center justify-center gap-2 rounded-xl border border-white/20 px-5 py-3.5 text-sm font-semibold text-white/70 transition hover:border-white/40 hover:bg-white/5'}
+                    ? 'inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[#e8c98a]/35 bg-[#e8c98a]/[0.08] px-5 py-3.5 text-sm font-semibold text-[#f3d9a0] transition hover:bg-[#e8c98a]/[0.14] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e8c98a]/50'
+                    : 'inline-flex w-full items-center justify-center gap-2 rounded-xl border border-white/20 px-5 py-3.5 text-sm font-semibold text-white/70 transition hover:border-white/40 hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30'}
                 >
                   {live ? cta : 'Auf die Warteliste'} <ArrowRight className="h-4 w-4" />
                 </Link>
@@ -121,7 +121,7 @@ export function LandingChannelTools() {
           })}
         </div>
 
-        <p className="mt-6 text-center font-mono text-[9px] tracking-[.18em] text-white/25">ONE GOVERNANCE PLANE · WEB · CODE · POLICY · EVIDENCE</p>
+        <p className="mt-8 text-center font-mono text-[9px] tracking-[.18em] text-white/25">ONE GOVERNANCE PLANE · WEB · CODE · POLICY · EVIDENCE</p>
       </div>
     </section>
   );

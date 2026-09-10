@@ -8,6 +8,7 @@ import {
   RUNTIME_PREVIEW_LABEL,
   RUNTIME_PREVIEW_NOTE,
   RUNTIME_PREVIEW_CARDS,
+  type RuntimePreviewCard,
 } from '../config/landing-runtime-preview';
 import { HERO_HEADLINE } from '../components/governance-frontend/hero-content';
 import { EnterpriseAccessSection } from '../components/landing/EnterpriseAccessSection';
@@ -67,7 +68,7 @@ export function MainLanding() {
       <PublicDarkHeader overlay />
 
       <main ref={revealRoot}>
-        <section className="relative min-h-[880px] overflow-hidden">
+        <section className="relative min-h-[min(100svh,960px)] overflow-hidden lg:min-h-[880px]">
           <div className="absolute inset-0" ref={heroImage}>
             <picture>
               <source srcSet="/europe-globe.webp" type="image/webp" />
@@ -93,20 +94,20 @@ export function MainLanding() {
             <div className="absolute inset-0" style={{ background: 'radial-gradient(126% 96% at 66% 52%, transparent 0%, transparent 44%, rgba(3,7,18,.5) 100%)' }} />
           </div>
 
-          <div className="relative z-10 mx-auto grid min-h-[880px] max-w-7xl items-center gap-10 px-6 pb-20 pt-28 lg:grid-cols-[1.05fr_.95fr] lg:px-10">
+          <div className="relative z-10 mx-auto grid min-h-[min(100svh,960px)] max-w-7xl items-center gap-12 px-6 pb-16 pt-28 sm:pb-20 sm:pt-32 lg:min-h-[880px] lg:grid-cols-[1.08fr_.92fr] lg:gap-14 lg:px-10 lg:pb-24">
             <div className="max-w-3xl">
               {/* Eyebrow: Produktkategorie ueber der H1. Vorher stand hier ein
                   "NEU"-Badge auf den Claude Code Optimizer — ein Modul ueber
                   dem Produkt. P0-Hierarchie: erst das Governance OS, dann die
                   Module (siehe #tools). */}
-              <p className="mb-7 inline-flex items-center gap-2.5 rounded-full border border-[#e8c98a]/35 bg-[#e8c98a]/8 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[.2em] text-[#f3d9a0]">
+              <p className="mb-6 inline-flex items-center gap-2.5 rounded-full border border-[#e8c98a]/40 bg-[#e8c98a]/10 px-3.5 py-1.5 font-mono text-[10px] uppercase tracking-[.22em] text-[#f3d9a0] sm:mb-8">
                 AI Governance Runtime
               </p>
 
               {/* H1 aus hero-content.ts — nicht hartkodieren. Siehe FE-001 dort. */}
               {/* Seit v5 zwei kurze Zeilen — die tragen `lg:text-7xl`, ohne im Wort
                   umzubrechen. Bei der dreizeiligen v4-Headline ging das nicht. */}
-              <h1 className="text-[2.6rem] leading-[.98] tracking-[-.035em] sm:text-6xl lg:text-7xl" style={{ fontFamily: SERIF, fontWeight: 500 }}>
+              <h1 className="text-[2.45rem] leading-[1.02] tracking-[-.035em] sm:text-[3.5rem] sm:leading-[.98] lg:text-[4.25rem] xl:text-7xl" style={{ fontFamily: SERIF, fontWeight: 500 }}>
                 {HERO_HEADLINE.map((segments, line) => (
                   <span key={line} className="block">
                     {segments.map((segment, i) => (
@@ -116,11 +117,11 @@ export function MainLanding() {
                 ))}
               </h1>
 
-              <p className="mt-5 max-w-2xl text-base leading-relaxed text-white/65 sm:text-lg">
+              <p className="mt-6 max-w-2xl text-[0.95rem] leading-relaxed text-white/65 sm:mt-7 sm:text-lg sm:leading-[1.65]">
                 AI-Systeme, Websites, Agents und Datenflüsse erfassen, Risiken bewerten, Governance durchsetzen und Nachweise führen — in einer kontinuierlichen Governance Runtime.
               </p>
 
-              <div className="mt-7 grid gap-6 border-t border-white/10 pt-6 sm:grid-cols-3 sm:divide-x sm:divide-white/10">
+              <div className="mt-8 grid gap-5 border-t border-white/10 pt-6 sm:mt-9 sm:grid-cols-3 sm:gap-0 sm:divide-x sm:divide-white/10 sm:pt-7">
                 {HERO_PILLARS.map(([title, text], i) => (
                   <div key={title} className={i > 0 ? 'sm:pl-6' : undefined}>
                     <p className="font-mono text-[10px] tracking-[.18em] text-[#e8c98a]">{title}</p>
@@ -135,16 +136,44 @@ export function MainLanding() {
                   Fläche. Als zweite Stufe bleibt genau ein Umriss-CTA auf das
                   Governance OS (#platform) — der Trichter soll einen Einstieg
                   haben, nicht drei gleichwertige. */}
-              <form onSubmit={startScan} className="mt-7 max-w-2xl">
-                <div className="flex flex-col gap-2 rounded-2xl border border-white/15 bg-black/35 p-2 backdrop-blur-xl sm:flex-row">
-                  <input value={domain} onChange={event => setDomain(event.target.value)} placeholder="Ihre Website — z. B. firma.de" aria-label="Website-URL für den kostenlosen Governance Scan" className="min-w-0 flex-1 bg-transparent px-4 py-3 text-sm text-white outline-none placeholder:text-white/30" />
-                  <button type="submit" className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#f0e6d2] px-5 py-3 text-sm font-semibold text-[#1a1714] transition hover:bg-[#f6efe4]">Kostenlosen Governance Scan starten <ArrowRight className="h-4 w-4" /></button>
+              <form onSubmit={startScan} className="mt-8 max-w-2xl sm:mt-9">
+                <div className="flex flex-col gap-2 rounded-2xl border border-white/15 bg-black/40 p-2 shadow-[0_20px_50px_-28px_rgba(0,0,0,0.9)] backdrop-blur-xl sm:flex-row sm:items-stretch">
+                  <input
+                    value={domain}
+                    onChange={event => setDomain(event.target.value)}
+                    placeholder="Ihre Website — z. B. firma.de"
+                    aria-label="Website-URL für den kostenlosen Governance Scan"
+                    className="min-w-0 flex-1 rounded-xl bg-transparent px-4 py-3.5 text-sm text-white outline-none placeholder:text-white/30 focus-visible:ring-2 focus-visible:ring-[#e8c98a]/45"
+                  />
+                  <button
+                    type="submit"
+                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#f0e6d2] px-5 py-3.5 text-sm font-semibold text-[#1a1714] transition hover:bg-[#f6efe4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e8c98a] focus-visible:ring-offset-2 focus-visible:ring-offset-[rgb(3,7,18)]"
+                  >
+                    Kostenlosen Governance Scan starten <ArrowRight className="h-4 w-4" />
+                  </button>
                 </div>
-                <p className="mt-2 text-[10px] text-white/35">DSGVO · EU AI Act · Sicherheit · Barrierefreiheit · SEO — kein Account nötig</p>
+                <p className="mt-2.5 font-mono text-[10px] tracking-[.08em] text-white/35">DSGVO · EU AI Act · Sicherheit · Barrierefreiheit · SEO — kein Account nötig</p>
               </form>
 
-              <div className="mt-5 flex flex-wrap gap-3">
-                <a href="#platform" className="inline-flex items-center gap-2 rounded-full border border-[#e8c98a]/45 px-7 py-3.5 font-medium text-[#fff8ee] transition hover:bg-white/5">Governance OS ansehen <ArrowRight className="h-4 w-4" /></a>
+              <div className="mt-5 flex flex-wrap gap-3 sm:mt-6">
+                <a
+                  href="#platform"
+                  className="inline-flex items-center gap-2 rounded-full border border-[#e8c98a]/55 bg-[#e8c98a]/[0.06] px-7 py-3.5 font-medium text-[#f3d9a0] transition hover:border-[#e8c98a]/75 hover:bg-[#e8c98a]/12 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e8c98a]/60"
+                >
+                  Governance OS ansehen <ArrowRight className="h-4 w-4" />
+                </a>
+              </div>
+
+              {/* Mobile/tablet: kompakte Beispielansicht unter den CTAs —
+                  Desktop behält die gestaffelte Spalte rechts. */}
+              <div className="mt-10 lg:hidden">
+                <p className="mb-3 font-mono text-[10px] tracking-[.22em] text-[#e8c98a]/80">{RUNTIME_PREVIEW_LABEL}</p>
+                <div className="-mx-6 flex gap-3 overflow-x-auto px-6 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                  {RUNTIME_PREVIEW_CARDS.slice(0, 4).map((card, i) => (
+                    <RuntimePreviewCardView key={card.id} card={card} index={i} compact />
+                  ))}
+                </div>
+                <p className="mt-3 max-w-md text-[10px] leading-relaxed text-white/35">{RUNTIME_PREVIEW_NOTE}</p>
               </div>
             </div>
 
@@ -153,59 +182,206 @@ export function MainLanding() {
               Beispiel gekennzeichnet — ein anonymer Besucher hat keinen Tenant,
               dort ist nichts messbar. Werte kommen aus landing-runtime-preview.ts.
             */}
-            <div className="hidden lg:block">
-              <p className="mb-4 text-right font-mono text-[10px] tracking-[.22em] text-[#e8c98a]/80">{RUNTIME_PREVIEW_LABEL}</p>
-              <div className="space-y-3">
+            <div className="relative hidden lg:block">
+              <div className="pointer-events-none absolute -inset-8 -z-10 rounded-[2rem] bg-[radial-gradient(ellipse_at_60%_40%,rgba(232,201,138,0.08),transparent_65%)]" aria-hidden="true" />
+              <p className="mb-5 text-right font-mono text-[10px] tracking-[.22em] text-[#e8c98a]/85">{RUNTIME_PREVIEW_LABEL}</p>
+              <div className="space-y-3.5">
                 {RUNTIME_PREVIEW_CARDS.map((card, i) => (
-                  <div
-                    key={card.id}
-                    className={`${card.offset} landing-hero-card surface-panel max-w-[19rem] rounded-2xl bg-black/45 p-4`}
-                    style={{ animationDelay: `${i * 0.9}s` }}
-                  >
-                    <div className="flex items-center gap-2">
-                      <span className={`h-1.5 w-1.5 rounded-full ${card.tone === 'ok' ? 'bg-emerald-400' : 'bg-[#e8c98a]'}`} />
-                      <span className="font-mono text-[9px] tracking-[.18em] text-white/45">{card.label}</span>
-                    </div>
-                    <div className={`mt-2 text-2xl font-semibold ${card.tone === 'ok' ? 'text-emerald-300' : 'text-white'}`}>{card.value}</div>
-                    {card.ratio !== undefined && (
-                      <div className="mt-2.5 h-1 w-full overflow-hidden rounded-full bg-white/10">
-                        <div className="h-full rounded-full bg-[#e8c98a]" style={{ width: `${Math.round(card.ratio * 100)}%` }} />
-                      </div>
-                    )}
-                    {card.detail && <p className="mt-2 text-[11px] leading-relaxed text-white/40">{card.detail}</p>}
-                  </div>
+                  <RuntimePreviewCardView key={card.id} card={card} index={i} />
                 ))}
               </div>
-              <p className="mt-4 max-w-[19rem] text-[10px] leading-relaxed text-white/35 lg:ml-24">{RUNTIME_PREVIEW_NOTE}</p>
+              <p className="mt-5 max-w-[19rem] text-[10px] leading-relaxed text-white/35 lg:ml-24">{RUNTIME_PREVIEW_NOTE}</p>
             </div>
           </div>
         </section>
 
         <LandingChannelTools />
 
-        <section id="platform" className="py-20 md:py-28"><div className="mx-auto max-w-7xl px-6 lg:px-10"><div className="mb-12 max-w-3xl"><p className="font-mono text-[10px] tracking-[.25em] text-[#e8c98a]">DIE PLATTFORM</p><h2 className="mt-3 text-4xl tracking-tight sm:text-5xl" style={{ fontFamily: SERIF, fontWeight: 500 }}>Eine Runtime. <span className="text-[#e8c98a]">Vollständige KI-Governance.</span></h2><p className="mt-5 leading-relaxed text-white/55">RealSyncDynamics.AI verbindet Erkennung, Risikobewertung, Policies, Enforcement und Evidence zu einem durchgängigen operativen Kontrollprozess.</p></div><div className="grid gap-px overflow-hidden rounded-2xl border border-white/10 bg-white/10 md:grid-cols-2 lg:grid-cols-3">{LIVE_CAPABILITIES.map(cap => {
-              /* Wo es eine Fachseite gibt, wird die Karte anklickbar. Sechs solcher
-                 Seiten lagen bislang ohne Einstieg von der Startseite herum (§14). */
-              const body = <><h3 className="text-base font-semibold">{cap.name}</h3><p className="mt-2 text-sm leading-relaxed text-white/50">{cap.description}</p>{cap.learnMorePath && <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-[#e8c98a]">Mehr erfahren <ArrowRight className="h-3.5 w-3.5" /></span>}</>;
-              return cap.learnMorePath
-                ? <Link key={cap.id} to={cap.learnMorePath} data-reveal data-reveal-group="platform" className="block bg-[rgb(3,7,18)] p-7 transition hover:bg-white/[.03]">{body}</Link>
-                : <div key={cap.id} data-reveal data-reveal-group="platform" className="bg-[rgb(3,7,18)] p-7">{body}</div>;
-            })}</div>{BUILDING_CAPABILITIES.length > 0 && <div className="mt-10"><p className="font-mono text-[10px] tracking-[.25em] text-white/35">IN ENTWICKLUNG</p><div className="mt-4 grid gap-4 md:grid-cols-3">{BUILDING_CAPABILITIES.map(cap => <div key={cap.id} className="rounded-xl border border-dashed border-white/15 p-5"><div className="flex items-center gap-2"><h3 className="text-sm font-medium text-white/70">{cap.name}</h3><span className="rounded-full border border-white/15 px-2 py-0.5 font-mono text-[9px] tracking-[.12em] text-white/40">GEPLANT</span></div><p className="mt-2 text-xs leading-relaxed text-white/40">{cap.description}</p>{cap.note && <p className="mt-2 text-[11px] leading-relaxed text-white/30">{cap.note}</p>}</div>)}</div><p className="mt-4 text-[11px] text-white/30">Diese Module sind noch nicht in Produktion verfügbar. Wir weisen sie aus, statt sie mitzuverkaufen.</p></div>}</div></section>
+        <section id="platform" className="py-24 md:py-32">
+          <div className="mx-auto max-w-7xl px-6 lg:px-10">
+            <div className="mb-14 max-w-3xl">
+              <p className="font-mono text-[10px] tracking-[.25em] text-[#e8c98a]">DIE PLATTFORM</p>
+              <h2 className="mt-4 text-[2rem] tracking-tight sm:text-5xl" style={{ fontFamily: SERIF, fontWeight: 500 }}>
+                Eine Runtime. <span className="text-[#e8c98a]">Vollständige KI-Governance.</span>
+              </h2>
+              <p className="mt-5 max-w-2xl text-base leading-relaxed text-white/55">
+                RealSyncDynamics.AI verbindet Erkennung, Risikobewertung, Policies, Enforcement und Evidence zu einem durchgängigen operativen Kontrollprozess.
+              </p>
+            </div>
+            <div className="grid gap-px overflow-hidden rounded-2xl border border-white/10 bg-white/10 md:grid-cols-2 lg:grid-cols-3">
+              {LIVE_CAPABILITIES.map(cap => {
+                /* Wo es eine Fachseite gibt, wird die Karte anklickbar. Sechs solcher
+                   Seiten lagen bislang ohne Einstieg von der Startseite herum (§14). */
+                const body = (
+                  <>
+                    <h3 className="text-base font-semibold">{cap.name}</h3>
+                    <p className="mt-2 text-sm leading-relaxed text-white/50">{cap.description}</p>
+                    {cap.learnMorePath && (
+                      <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-[#e8c98a]">
+                        Mehr erfahren <ArrowRight className="h-3.5 w-3.5" />
+                      </span>
+                    )}
+                  </>
+                );
+                return cap.learnMorePath
+                  ? <Link key={cap.id} to={cap.learnMorePath} data-reveal data-reveal-group="platform" className="block bg-[rgb(3,7,18)] p-7 transition hover:bg-white/[.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#e8c98a]/50">{body}</Link>
+                  : <div key={cap.id} data-reveal data-reveal-group="platform" className="bg-[rgb(3,7,18)] p-7">{body}</div>;
+              })}
+            </div>
+            {BUILDING_CAPABILITIES.length > 0 && (
+              <div className="mt-12">
+                <p className="font-mono text-[10px] tracking-[.25em] text-white/35">IN ENTWICKLUNG</p>
+                <div className="mt-5 grid gap-4 md:grid-cols-3">
+                  {BUILDING_CAPABILITIES.map(cap => (
+                    <div key={cap.id} className="rounded-xl border border-dashed border-white/15 bg-white/[.015] p-5">
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-sm font-medium text-white/70">{cap.name}</h3>
+                        <span className="rounded-full border border-white/15 px-2 py-0.5 font-mono text-[9px] tracking-[.12em] text-white/40">GEPLANT</span>
+                      </div>
+                      <p className="mt-2 text-xs leading-relaxed text-white/40">{cap.description}</p>
+                      {cap.note && <p className="mt-2 text-[11px] leading-relaxed text-white/30">{cap.note}</p>}
+                    </div>
+                  ))}
+                </div>
+                <p className="mt-4 text-[11px] text-white/30">Diese Module sind noch nicht in Produktion verfügbar. Wir weisen sie aus, statt sie mitzuverkaufen.</p>
+              </div>
+            )}
+          </div>
+        </section>
 
-        <section id="evidence" className="border-y border-white/10 bg-white/[.02] py-20 md:py-28"><div className="mx-auto max-w-7xl px-6 lg:px-10"><div className="grid gap-12 lg:grid-cols-[.8fr_1.2fr] lg:items-end"><div><p className="font-mono text-[10px] tracking-[.25em] text-[#e8c98a]">EVIDENCE &amp; TRUST</p><h2 className="mt-3 text-4xl tracking-tight sm:text-5xl" style={{ fontFamily: SERIF, fontWeight: 500 }}>Compliance, die sich <span className="text-[#e8c98a]">beweisen lässt.</span></h2><p className="mt-5 leading-relaxed text-white/55">PDFs, Logs, Zeitstempel und nachvollziehbare Prüfpfade. Jede Prüfung, jede Entscheidung und jede Änderung landet in derselben Governance-Historie.</p></div><div className="grid gap-3 sm:grid-cols-2"><TrustItem icon={ShieldCheck} title="DSGVO" text="Verarbeitung, Risiko, Policy und Nachweis im laufenden Governance-Prozess." /><TrustItem icon={Lock} title="EU AI Act" text="Risikoklassifikation, Transparenz und Dokumentation für KI-Systeme." /><TrustItem icon={FileCheck2} title="Nachweis-Export" text="Prüfungen und Entscheidungen als auditfähiger Export — für interne Kontrollen und externe Prüfer." /><TrustItem icon={Code2} title="Code Compliance" text="Claude Code prüft und unterstützt konkrete technische Remediation." /></div></div></div></section>
+        <section id="evidence" className="border-y border-white/10 bg-white/[.02] py-24 md:py-32">
+          <div className="mx-auto max-w-7xl px-6 lg:px-10">
+            <div className="grid gap-14 lg:grid-cols-[.8fr_1.2fr] lg:items-end">
+              <div>
+                <p className="font-mono text-[10px] tracking-[.25em] text-[#e8c98a]">EVIDENCE &amp; TRUST</p>
+                <h2 className="mt-4 text-[2rem] tracking-tight sm:text-5xl" style={{ fontFamily: SERIF, fontWeight: 500 }}>
+                  Compliance, die sich <span className="text-[#e8c98a]">beweisen lässt.</span>
+                </h2>
+                <p className="mt-5 max-w-xl text-base leading-relaxed text-white/55">
+                  PDFs, Logs, Zeitstempel und nachvollziehbare Prüfpfade. Jede Prüfung, jede Entscheidung und jede Änderung landet in derselben Governance-Historie.
+                </p>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <TrustItem icon={ShieldCheck} title="DSGVO" text="Verarbeitung, Risiko, Policy und Nachweis im laufenden Governance-Prozess." />
+                <TrustItem icon={Lock} title="EU AI Act" text="Risikoklassifikation, Transparenz und Dokumentation für KI-Systeme." />
+                <TrustItem icon={FileCheck2} title="Nachweis-Export" text="Prüfungen und Entscheidungen als auditfähiger Export — für interne Kontrollen und externe Prüfer." />
+                <TrustItem icon={Code2} title="Code Compliance" text="Claude Code prüft und unterstützt konkrete technische Remediation." />
+              </div>
+            </div>
+          </div>
+        </section>
 
-        <section className="py-20 md:py-28"><div className="mx-auto max-w-7xl px-6 lg:px-10"><div className="mb-12 max-w-3xl"><p className="font-mono text-[10px] tracking-[.25em] text-[#e8c98a]">GOVERNANCE RUNTIME</p><h2 className="mt-3 text-4xl tracking-tight sm:text-5xl" style={{ fontFamily: SERIF, fontWeight: 500 }}>Von der KI-Nutzung zur <span className="text-[#e8c98a]">kontrollierten KI-Organisation.</span></h2></div><div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{GOVERNANCE_STEPS.map(([no,title,text]) => <div key={no} data-reveal data-reveal-group="runtime" className="surface-panel rounded-2xl p-7"><span className="font-mono text-3xl text-[#e8c98a]/35">{no}</span><h3 className="mt-4 text-lg font-semibold tracking-wide">{title}</h3><p className="mt-2 text-sm leading-relaxed text-white/50">{text}</p></div>)}</div></div></section>
+        <section className="py-24 md:py-32">
+          <div className="mx-auto max-w-7xl px-6 lg:px-10">
+            <div className="mb-14 max-w-3xl">
+              <p className="font-mono text-[10px] tracking-[.25em] text-[#e8c98a]">GOVERNANCE RUNTIME</p>
+              <h2 className="mt-4 text-[2rem] tracking-tight sm:text-5xl" style={{ fontFamily: SERIF, fontWeight: 500 }}>
+                Von der KI-Nutzung zur <span className="text-[#e8c98a]">kontrollierten KI-Organisation.</span>
+              </h2>
+            </div>
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              {GOVERNANCE_STEPS.map(([no, title, text]) => (
+                <div key={no} data-reveal data-reveal-group="runtime" className="surface-panel rounded-2xl p-7">
+                  <span className="font-mono text-3xl text-[#e8c98a]/40">{no}</span>
+                  <h3 className="mt-4 text-lg font-semibold tracking-wide">{title}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-white/50">{text}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
 
         <EnterpriseAccessSection />
 
-        <section className="border-t border-white/10 bg-black/80 py-20 md:py-28"><div className="mx-auto max-w-3xl px-6 text-center"><p className="font-mono text-[10px] tracking-[.25em] text-[#e8c98a]">WARUM JETZT</p><h2 className="hero-shine mt-4 text-4xl tracking-tight sm:text-6xl" style={{ fontFamily: SERIF, fontWeight: 500 }}>Governance statt Checkliste.</h2><p className="mx-auto mt-5 max-w-2xl text-base leading-relaxed text-[#e8dcc4]">Eine Checkliste beruhigt bis zum nächsten Audit. Die Runtime hält den Nachweis, wenn Aufsicht, Kunde oder Board fragt. Einstieg über die neue Präsenz — bleiben über das Abo.</p><div className="mt-8 flex flex-wrap justify-center gap-3 text-xs text-white/50"><span className="rounded-full border border-white/10 px-4 py-2">DSGVO</span><span className="rounded-full border border-white/10 px-4 py-2">EU AI Act</span><span className="rounded-full border border-white/10 px-4 py-2">Policy Packs</span><span className="rounded-full border border-white/10 px-4 py-2">Evidence Vault</span><span className="rounded-full border border-white/10 px-4 py-2">Claude Code</span><span className="rounded-full border border-white/10 px-4 py-2">Nachweis-Export</span></div><div className="mt-9 flex flex-col justify-center gap-3 sm:flex-row"><Link to="/pricing" className="inline-flex items-center justify-center gap-2 rounded-full bg-[#f0e6d2] px-7 py-3.5 font-semibold text-[#1a1714] transition hover:bg-[#f6efe4]">Preise ansehen <ArrowRight className="h-4 w-4" /></Link></div></div></section>
+        <section className="border-t border-white/10 bg-black/80 py-24 md:py-32">
+          <div className="mx-auto max-w-3xl px-6 text-center">
+            <p className="font-mono text-[10px] tracking-[.25em] text-[#e8c98a]">WARUM JETZT</p>
+            <h2 className="hero-shine mt-5 text-[2.25rem] tracking-tight sm:text-6xl" style={{ fontFamily: SERIF, fontWeight: 500 }}>
+              Governance statt Checkliste.
+            </h2>
+            <p className="mx-auto mt-6 max-w-2xl text-base leading-relaxed text-[#e8dcc4]">
+              Eine Checkliste beruhigt bis zum nächsten Audit. Die Runtime hält den Nachweis, wenn Aufsicht, Kunde oder Board fragt. Einstieg über die neue Präsenz — bleiben über das Abo.
+            </p>
+            <div className="mt-9 flex flex-wrap justify-center gap-3 text-xs text-white/50">
+              <span className="rounded-full border border-white/10 px-4 py-2">DSGVO</span>
+              <span className="rounded-full border border-white/10 px-4 py-2">EU AI Act</span>
+              <span className="rounded-full border border-white/10 px-4 py-2">Policy Packs</span>
+              <span className="rounded-full border border-white/10 px-4 py-2">Evidence Vault</span>
+              <span className="rounded-full border border-white/10 px-4 py-2">Claude Code</span>
+              <span className="rounded-full border border-white/10 px-4 py-2">Nachweis-Export</span>
+            </div>
+            <div className="mt-10 flex flex-col justify-center gap-3 sm:flex-row">
+              <Link
+                to="/pricing"
+                className="inline-flex items-center justify-center gap-2 rounded-full bg-[#f0e6d2] px-7 py-3.5 font-semibold text-[#1a1714] transition hover:bg-[#f6efe4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e8c98a] focus-visible:ring-offset-2 focus-visible:ring-offset-black"
+              >
+                Preise ansehen <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+          </div>
+        </section>
       </main>
 
-      <footer className="border-t border-white/10 py-8"><div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-6 text-xs text-white/40 sm:flex-row lg:px-10"><span>© 2026 RealSync Dynamics.AI</span><div className="flex gap-5"><Link to="/impressum">Impressum</Link><Link to="/datenschutz">Datenschutz</Link><Link to="/agb">AGB</Link></div></div></footer>
+      <footer className="border-t border-white/10 py-10">
+        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-6 text-xs text-white/40 sm:flex-row lg:px-10">
+          <span>© 2026 RealSync Dynamics.AI</span>
+          <div className="flex gap-5">
+            <Link to="/impressum" className="transition hover:text-white/70 focus-visible:outline-none focus-visible:text-white/80">Impressum</Link>
+            <Link to="/datenschutz" className="transition hover:text-white/70 focus-visible:outline-none focus-visible:text-white/80">Datenschutz</Link>
+            <Link to="/agb" className="transition hover:text-white/70 focus-visible:outline-none focus-visible:text-white/80">AGB</Link>
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
+}
+
+function RuntimePreviewCardView({
+  card,
+  index,
+  compact = false,
+}: {
+  card: RuntimePreviewCard;
+  index: number;
+  compact?: boolean;
+}) {
+  const toneOk = card.tone === 'ok';
+  return (
+    <div
+      className={[
+        'landing-hero-card surface-panel landing-hero-glass',
+        compact ? 'w-[11.5rem] shrink-0 rounded-2xl bg-black/50 p-3.5' : `${card.offset} max-w-[19.5rem] rounded-2xl bg-black/50 p-4`,
+      ].join(' ')}
+      style={{ animationDelay: `${index * 0.28}s` }}
+    >
+      <div className="flex items-center gap-2">
+        <span className={`h-1.5 w-1.5 rounded-full ${toneOk ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.55)]' : 'bg-[#e8c98a]'}`} />
+        <span className="font-mono text-[9px] tracking-[.18em] text-white/45">{card.label}</span>
+      </div>
+      <div className={`mt-2 font-semibold ${compact ? 'text-xl' : 'text-2xl'} ${toneOk ? 'text-emerald-300' : 'text-white'}`}>
+        {card.value}
+      </div>
+      {card.ratio !== undefined && (
+        <div className="mt-2.5 h-1 w-full overflow-hidden rounded-full bg-white/10">
+          <div className="h-full rounded-full bg-[#e8c98a]" style={{ width: `${Math.round(card.ratio * 100)}%` }} />
+        </div>
+      )}
+      {card.detail && !compact && (
+        <p className="mt-2 text-[11px] leading-relaxed text-white/40">{card.detail}</p>
+      )}
+      {card.detail && compact && (
+        <p className="mt-1.5 line-clamp-2 text-[10px] leading-relaxed text-white/40">{card.detail}</p>
+      )}
     </div>
   );
 }
 
 function TrustItem({ icon: Icon, title, text }: { icon: typeof ShieldCheck; title: string; text: string }) {
-  return <div data-reveal data-reveal-group="evidence" className="surface-panel rounded-2xl p-6"><Icon className="h-5 w-5 text-[#e8c98a]" /><h3 className="mt-4 font-semibold">{title}</h3><p className="mt-2 text-sm leading-relaxed text-white/50">{text}</p></div>;
+  return (
+    <div data-reveal data-reveal-group="evidence" className="surface-panel rounded-2xl p-6">
+      <Icon className="h-5 w-5 text-[#e8c98a]" />
+      <h3 className="mt-4 font-semibold">{title}</h3>
+      <p className="mt-2 text-sm leading-relaxed text-white/50">{text}</p>
+    </div>
+  );
 }

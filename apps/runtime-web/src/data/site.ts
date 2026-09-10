@@ -8,12 +8,13 @@ export const brand = {
   domain: "realsyncdynamicsai.de",
   productOf: "Ein Produkt von RealSync Dynamics AI",
   tagline: "Governance- und Control-Runtime für KI, Software und industrielle Systeme.",
-  headline: "Eine Runtime.\nSteuern Sie jedes intelligente System.",
+  problem: "Policies liegen in Dokumenten. Risiko im Quartalsbericht. Nachweis nach dem Vorfall.",
+  headline: "Eine Runtime.\nSteuerung, während das System läuft.",
   subheadline:
-    "RealSync Runtime verbindet KI, Software, Agenten und industrielle Systeme zu einer gesteuerten Control Plane — beobachtet Ereignisse, setzt Policies durch, bewertet Risiko und erzeugt nachprüfbare Nachweise.",
+    "RealSync Runtime ist die Control Plane für KI, Software und industrielle Systeme: beobachten, entscheiden, nachweisen. Kein Meldesystem. Keine Checkliste.",
   trust: ["KI", "Agenten", "Software", "Industrie"],
   ctaPrimary: "Runtime erkunden",
-  ctaSecondary: "Angebot anfordern",
+  ctaSecondary: "Richtpreise ansehen",
 };
 
 export type NavLink = {

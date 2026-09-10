@@ -71,7 +71,7 @@ export function SiteHeader() {
             <AppLink to="/signin">Anmelden</AppLink>
           </Button>
           <Button variant="primary" size="sm" asChild>
-            <AppLink to="/pricing">Angebot</AppLink>
+            <AppLink to="/pricing">Richtpreise</AppLink>
           </Button>
         </div>
         <button
@@ -173,7 +173,7 @@ function MobileNav({ onClose }: { onClose: () => void }) {
           </Button>
           <Button asChild>
             <AppLink to="/pricing" onClick={onClose}>
-              Angebot anfordern
+              Richtpreise ansehen
             </AppLink>
           </Button>
         </div>

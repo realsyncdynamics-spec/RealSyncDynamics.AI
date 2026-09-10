@@ -1,10 +1,11 @@
 /**
  * Wächter: RealSync Runtime als Produkt im Firmen-Ökosystem.
  *
- * Die Root-SPA bleibt das Governance OS (Scan, Stripe, Self-Service).
- * `/runtime` ist die Product Surface. Richtpreise (ab 4.900 €) dürfen
- * nicht auf dem Self-Service-Pricing landen, CTAs bleiben innerhalb
- * von `runtimeVocab`, Demo-Telemetrie bleibt als Demo gekennzeichnet.
+ * Jobs:
+ *   `/`                    Company (Scan, Self-Service)
+ *   `/runtime`             Product (Problem → Loop → Nutzen → Richtpreise)
+ *   `/governance-runtime`  Operative Demo des Governance OS
+ *   `/pricing`             Self-Service only
  */
 
 import { existsSync, readFileSync } from 'node:fs';
@@ -12,6 +13,7 @@ import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { CTA } from '@/src/content/runtimeVocab';
 import {
+  RUNTIME_BAND_NOTE,
   RUNTIME_PRODUCT,
   RUNTIME_SKU_DISCLAIMER,
   RUNTIME_SKUS,
@@ -33,6 +35,7 @@ describe('RealSync Runtime — Product Surface', () => {
     }
     expect(RUNTIME_SKU_DISCLAIMER.toLowerCase()).toContain('richtpreis');
     expect(RUNTIME_SKU_DISCLAIMER.toLowerCase()).toContain('kein self-service');
+    expect(RUNTIME_SKU_DISCLAIMER.toLowerCase()).toMatch(/orientierung|nicht bindend/);
   });
 
   it('Richtpreis 4.900 € steht nicht auf dem Self-Service-Pricing', () => {
@@ -46,30 +49,38 @@ describe('RealSync Runtime — Product Surface', () => {
     }
   });
 
-  it('RuntimePage liest Produktcopy und erlaubte CTAs', () => {
+  it('RuntimePage ist Product Surface, kein Demo-Dashboard', () => {
     const page = read('src/pages/RuntimePage.tsx');
     expect(page).toContain('runtimeProduct');
     expect(page).toContain('CTA.enterprise');
-    expect(page).toContain('CTA.startAudit');
+    expect(page).toContain('RUNTIME_PRODUCT.problem');
     expect(page).toContain('<h1');
     expect(page).toContain('RUNTIME_PRODUCT.enterpriseHref');
+    expect(page).not.toContain('CTA.startAudit');
+    expect(page).not.toContain('AiOperatingSystemSection');
+    expect(page).not.toContain('GovernanceGraphSection');
+    expect(page).not.toContain('AgentControlPlanePreview');
+    expect(page).not.toContain('EvidenceVaultPreview');
     expect(RUNTIME_PRODUCT.enterpriseHref).toContain('/contact-sales?intent=runtime');
     expect(RUNTIME_SURFACES.every((s) => s.to !== '/governance')).toBe(true);
     expect(RUNTIME_SURFACES.some((s) => s.to === '/governance-runtime')).toBe(true);
     expect(page).not.toMatch(/to="\/governance"/);
   });
 
-  it('Demo-Telemetrie bleibt als Demo gekennzeichnet', () => {
+  it('Demo-Telemetrie ist auf der Product Surface nur als Verweis gekennzeichnet', () => {
     const page = read('src/pages/RuntimePage.tsx');
     expect(page).toContain('RUNTIME_PRODUCT.demoLabel');
+    expect(page).toContain('RUNTIME_PRODUCT.surfacesEyebrow');
     expect(RUNTIME_PRODUCT.demoLabel.toLowerCase()).toMatch(/demo/);
     expect(RUNTIME_PRODUCT.notSafetyCritical.toLowerCase()).toMatch(/sicherheitszertifizierte/);
   });
 
-  it('AiOperatingSystemSection hat kein Seiten-h1 mehr', () => {
-    const section = read('src/components/governance/AiOperatingSystemSection.tsx');
-    expect(section).not.toMatch(/<h1[\s>]/);
-    expect(section).toMatch(/<h2[\s>]/);
+  it('/governance-runtime ist die operative Demo, nicht das Produkt', () => {
+    const preview = read('src/pages/GovernanceRuntimePage.tsx');
+    expect(preview).toContain('RUNTIME_PRODUCT.demoLabel');
+    expect(preview).toContain('to="/runtime"');
+    expect(preview).toContain('CTA.exploreRuntime');
+    expect(preview).not.toContain('/audit?source=governance-runtime');
   });
 
   it('Startseite ergänzt Runtime als Produkt, ohne den Scan-Trichter zu ersetzen', () => {
@@ -80,12 +91,15 @@ describe('RealSync Runtime — Product Surface', () => {
     expect(landing).toContain('LandingChannelTools');
   });
 
-  it('RuntimeProductBand nutzt vorhandene Landing-Tokens und CTA.enterprise', () => {
+  it('RuntimeProductBand ist ein Pointer, keine zweite Preisseite', () => {
     const band = read('src/components/landing/RuntimeProductBand.tsx');
     expect(band).toContain('landing-theme');
     expect(band).toContain('CTA.enterprise');
-    expect(band).toContain("to=\"/runtime\"");
+    expect(band).toContain('to="/runtime"');
+    expect(band).toContain('RUNTIME_BAND_NOTE');
     expect(band).not.toMatch(/4[.]900|4900/);
+    expect(band).not.toMatch(/49\s*€|199\s*€/);
+    expect(RUNTIME_BAND_NOTE.toLowerCase()).not.toMatch(/49|199|4\.900/);
   });
 
   it('Governance-Runtime-Capability führt auf /runtime', () => {

@@ -24,7 +24,10 @@ export function Hero() {
           <p className="font-mono text-[11px] uppercase tracking-[0.24em] text-accent">
             {brand.productOf}
           </p>
-          <h1 className="mt-5 whitespace-pre-line text-4xl font-medium leading-[1.05] tracking-[-0.04em] text-fg sm:text-5xl md:text-6xl lg:text-[4.4rem]">
+          <p className="mt-5 max-w-xl text-sm leading-relaxed text-muted md:text-base">
+            {brand.problem}
+          </p>
+          <h1 className="mt-4 whitespace-pre-line text-4xl font-medium leading-[1.05] tracking-[-0.04em] text-fg sm:text-5xl md:text-6xl lg:text-[4.4rem]">
             {brand.headline}
           </h1>
           <p className="mt-6 max-w-xl text-base leading-relaxed text-muted md:text-lg">

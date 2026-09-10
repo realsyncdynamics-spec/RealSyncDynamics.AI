@@ -151,7 +151,7 @@ describe('Erreichbarkeit — fertige Seiten sind von der Startseite aus verlinkt
   const landing = readFileSync(resolve(__dirname, '../../src/pages/MainLanding.tsx'), 'utf8');
   const app = readFileSync(resolve(__dirname, '../../src/App.tsx'), 'utf8');
 
-  it.each(['/ai-act', '/sicherheit'])('%s ist verlinkt und geroutet', (path) => {
+  it.each(['/ai-act', '/sicherheit', '/runtime'])('%s ist verlinkt und geroutet', (path) => {
     expect(landing, `Die Startseite verlinkt ${path} nicht.`).toContain(`to="${path}"`);
     expect(app, `${path} hat keine Route — der Link ginge ins Leere.`).toContain(`path="${path}"`);
   });

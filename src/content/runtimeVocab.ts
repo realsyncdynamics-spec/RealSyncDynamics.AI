@@ -122,6 +122,8 @@ export const CTA = {
   // Governance-OS-Positionierung — Self-Serve, kein Demo-/Sales-Zwang.
   startTrial:         '14 Tage gratis starten',
   startGovernanceAudit: 'Governance Audit starten',
+  // Product-Surface RealSync Runtime — Navigation, kein Sales-CTA.
+  exploreRuntime:       'Runtime erkunden',
 } as const;
 
 export type CtaLabel = (typeof CTA)[keyof typeof CTA];

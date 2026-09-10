@@ -131,9 +131,9 @@ docker run -p 3001:3001 agent-runtime
 ```
 
 ### 3c. Runtime Product Frontend
-**Ort:** `apps/runtime-web/`  
+**Ort:** `apps/runtime-web/` (Design-Quelle) · Root-SPA `/runtime` (native Product Surface)  
 **Zweck:** Verkaufbare Product Surface **RealSync Runtime** (Governance- und Control-Runtime für KI, Software, Industrie).  
-**Unternehmen bleibt** die Root-SPA. Dieses Frontend ist das Produkt im Ökosystem.  
+**Unternehmen bleibt** die Root-SPA. Native Einhängung: `src/pages/RuntimePage.tsx`, `src/content/runtimeProduct.ts`, Homepage-Band `RuntimeProductBand`.  
 **Doku:** [`apps/runtime-web/README.md`](apps/runtime-web/README.md)
 
 ### 3b. Weitere Services

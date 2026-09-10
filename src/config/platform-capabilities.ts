@@ -95,6 +95,7 @@ export const PLATFORM_CAPABILITIES: readonly PlatformCapability[] = [
   },
   {
     id: 'governance-runtime',
+    learnMorePath: '/runtime',
     name: 'Governance Runtime',
     description:
       'Risikobewertung, Vorfälle, Betroffenenanfragen, DSFA, Dienstleister und Freigaben in einer laufenden Kontrollschicht.',

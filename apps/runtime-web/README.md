@@ -3,20 +3,29 @@
 **Unternehmen:** RealSync Dynamics AI (`realsyncdynamicsai.de`)  
 **Produkt:** RealSync Runtime  
 **Sprache:** Deutsch (`html lang=de`)  
-**Status:** Design-Quelle / eigenständige Product Surface. Noch nicht in die Root-SPA gemountet.
+**Status:** Design-Quelle. Product Surface in der Root-SPA: `/runtime`.
 
 ## Positionierung
 
 Die Root-SPA in diesem Monorepo ist die **Firmenwebsite** (Governance OS, Scan, Stripe, Self-Service).
 
-Dieses Verzeichnis ist das **verkaufbare Produkt** im Ökosystem:
+Dieses Verzeichnis bleibt die **cinematische Design-Quelle** des verkaufbaren Produkts:
 
 - Control Loop: Beobachten → Verstehen → Bewerten → Entscheiden → Freigabe → Handeln → Prüfen → Nachweis → Lernen
 - Drei Domain Packs: KI & Agenten, Software, Industrie
-- Verkauf über Richtpreise + Angebot (kein Checkout in dieser Surface)
+- Verkauf über Richtpreise + Architektur-Review (kein Checkout in dieser Surface)
 - Engine-Namen bleiben Englisch (Event Engine, Copilot, SDK)
 
-Es überschreibt **nicht** `/src/pages/RuntimePage.tsx` (Compliance-Runtime der Root-SPA).
+Die Root-SPA hängt dasselbe Produkt nativ ein:
+
+| Surface | Ort |
+|---|---|
+| Product Landing | `src/pages/RuntimePage.tsx` (`/runtime`) |
+| Copy / SKUs | `src/content/runtimeProduct.ts` |
+| Homepage-Band | `src/components/landing/RuntimeProductBand.tsx` |
+| Nav | `Navbar` Produkt → `/runtime`; Startseite ergänzt Link `Runtime` |
+
+Dieses Tree überschreibt **nicht** den Scan-Trichter und **nicht** `/pricing`.
 
 ## Richtpreise (nicht bindend)
 
@@ -26,7 +35,7 @@ Es überschreibt **nicht** `/src/pages/RuntimePage.tsx` (Compliance-Runtime der 
 | Runtime + Domain Pack | ab 6.800 € / Monat |
 | Enterprise | auf Anfrage |
 
-Verbindliches Angebot nach Architektur-Review.
+Verbindliches Angebot nach Architektur-Review. Getrennt von Free / Monitoring / Governance.
 
 ## Inhalt
 
@@ -41,8 +50,7 @@ apps/runtime-web/
 
 ## Nächster Integrationsschritt
 
-1. Entweder als eigene App deployen (Cloudflare Pages / Subdomain `runtime.realsyncdynamicsai.de`)
-2. Oder die Surfaces nach `src/pages/` der Root-SPA portieren (`react-router-dom`)
-3. Firmen-Nav um den Einstieg „Runtime“ ergänzen, ohne die Self-Service-CTAs der Root-SPA zu ersetzen
+1. Subdomain `runtime.realsyncdynamicsai.de` für die volle cinematische Surface, oder
+2. Weitere Inner Pages aus diesem Tree nach `src/pages/` portieren
 
 Kein Auth, keine Datenbank, keine Stripe-Anbindung in diesem Tree.

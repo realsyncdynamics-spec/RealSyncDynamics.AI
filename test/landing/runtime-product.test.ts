@@ -62,7 +62,7 @@ describe('RealSync Runtime — Product Surface', () => {
     expect(page).not.toContain('AgentControlPlanePreview');
     expect(page).not.toContain('EvidenceVaultPreview');
     expect(RUNTIME_PRODUCT.enterpriseHref).toContain('/contact-sales?intent=runtime');
-    expect(RUNTIME_SURFACES.every((s) => s.to !== '/governance')).toBe(true);
+    expect(RUNTIME_SURFACES.map((s) => String(s.to))).not.toContain('/governance');
     expect(RUNTIME_SURFACES.some((s) => s.to === '/governance-runtime')).toBe(true);
     expect(page).not.toMatch(/to="\/governance"/);
   });

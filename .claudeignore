@@ -1,0 +1,63 @@
+# Claude Code — do not index / glob these paths.
+# Without this file every Cloud session walks the monorepo and burns tokens.
+
+# deps + build
+node_modules/
+**/node_modules/
+dist/
+**/dist/
+build/
+.next/
+.turbo/
+coverage/
+*.map
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# archives + bak (root is full of .sql.bak)
+.archive/
+.archive/**
+*.bak
+*.sql.bak
+AUDIT/
+AUDIT/**
+
+# heavy trees — open explicitly when needed
+docs/
+docs/**
+platform/
+platform/**
+services/
+services/**
+apps/
+apps/**
+supabase/migrations/
+supabase/functions/**/node_modules/
+
+# media + dumps
+*.png
+*.jpg
+*.jpeg
+*.webp
+*.gif
+*.mp4
+*.webm
+*.pdf
+*.zip
+*.tar
+*.gz
+*.woff
+*.woff2
+*.ttf
+
+# local / secrets
+.env
+.env.*
+!.env.example
+.wrangler/
+.vercel/
+
+# git / ci noise
+.git/
+.github/workflows/

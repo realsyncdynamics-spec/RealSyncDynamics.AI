@@ -131,21 +131,19 @@ function AmbientParticles({ reducedMotion }: { reducedMotion: boolean }) {
     return arr;
   }, []);
 
+  const geometry = useMemo(() => {
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    return geo;
+  }, [positions]);
+
   useFrame((_, delta) => {
     if (reducedMotion || !ref.current) return;
     ref.current.rotation.y += delta * 0.04;
   });
 
   return (
-    <points ref={ref}>
-      <bufferGeometry>
-        <bufferAttribute
-          attach="attributes-position"
-          count={positions.length / 3}
-          array={positions}
-          itemSize={3}
-        />
-      </bufferGeometry>
+    <points ref={ref} geometry={geometry}>
       <pointsMaterial
         color={GOLD_SOFT}
         size={0.025}

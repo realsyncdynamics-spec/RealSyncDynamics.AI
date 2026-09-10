@@ -6,6 +6,7 @@ import {
   Bell, CreditCard, Wrench, Bot, GitMerge, FileText,
   ClipboardCheck, ClipboardList, LayoutDashboard, ShieldAlert,
   MessagesSquare, Zap, Server, ShieldCheck, Layers, CalendarClock, Archive, Library,
+  Share2,
   type LucideIcon,
 } from 'lucide-react';
 import { TAB_MODULES, DOCK_MODULES, canAccessModule, minimumPlanForModule } from './governanceModules';
@@ -18,6 +19,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   Building2, BarChart3, Users, Settings, Bell, CreditCard, Wrench,
   GitMerge, FileText, ClipboardCheck, ClipboardList, LayoutDashboard,
   ShieldAlert, MessagesSquare, Zap, Server, ShieldCheck, Layers, CalendarClock, Archive, Library,
+  Share2,
 };
 
 const PLAN_LABELS: Record<string, string> = {

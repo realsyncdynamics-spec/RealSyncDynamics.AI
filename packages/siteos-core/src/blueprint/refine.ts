@@ -31,7 +31,13 @@ import { meetsWcagAA } from '../render/theme.ts';
 import { applySiteDesignTemplate, type SiteDesignTemplate } from '../render/templates.ts';
 import { getIndustryPreset } from './industries.ts';
 import type { SiteBrief } from './brief.ts';
+import { briefFromBlueprint } from './brief.ts';
+import { applyPageOperations, MAX_PAGES_PER_SITE } from './pages.ts';
 import { buildBlock, deriveCompliance, slugify } from './synthesize.ts';
+
+// Unverändert von hier exportiert: `edit.ts`, `puckConfig.tsx` und Tests
+// importieren sie seit jeher aus diesem Modul.
+export { briefFromBlueprint } from './brief.ts';
 
 /** Eine angewandte Änderung — Grundlage für Prüfpfad und Rückmeldung. */
 export interface RefinementChange {
@@ -236,7 +242,7 @@ export function refineBlueprint(blueprint: SiteBlueprint, instruction: string): 
   next = applyHeroEmphasis(next, text, changes);
   next = applyHeadline(next, instruction, text, changes);
   next = applySiteName(next, instruction, text, changes);
-  next = applyPageAddition(next, instruction, text, changes);
+  next = applyPageAddition(next, instruction, text, changes, refusals);
   next = applyBlockChange(next, text, changes);
 
   return {
@@ -484,7 +490,13 @@ function applySiteName(bp: SiteBlueprint, raw: string, text: string, changes: Re
 // Struktur
 // ─────────────────────────────────────────────────────────────────────
 
-function applyPageAddition(bp: SiteBlueprint, raw: string, text: string, changes: RefinementChange[]): SiteBlueprint {
+function applyPageAddition(
+  bp: SiteBlueprint,
+  raw: string,
+  text: string,
+  changes: RefinementChange[],
+  refusals: string[],
+): SiteBlueprint {
   if (!mentionsStem(text, ADD_STEMS)) return bp;
 
   const preset = ADDABLE_PAGES.find((page) => mentionsStem(text, page.terms));
@@ -492,49 +504,58 @@ function applyPageAddition(bp: SiteBlueprint, raw: string, text: string, changes
   if (!preset && !freeform) return bp;
 
   const title = preset ? preset.title : titleCase(freeform as string);
-  const path = preset ? preset.path : `/${slugify(title)}`;
-  if (bp.pages.some((page) => page.path === path)) return bp;
 
-  const brief = briefFromBlueprint(bp);
-  const aiGenerated = bp.origin.source === 'ai-builder';
-  const kinds: BlockKind[] = ['navigation', 'hero', 'features', 'cta', 'footer'];
-  const blocks = kinds.map((kind, index) => buildBlock(kind, index, path, brief, aiGenerated));
+  // Die Seite entsteht über die **kanonische** Seitenoperation, nicht hier.
+  // Vorher baute dieser Pfad Seiten selbst — ohne Obergrenze, ohne
+  // Slug-Prüfung, ohne die reservierten Rechtspfade. Damit hing die
+  // Sicherheitslage einer Seite an der Eintrittsroute, über die sie erzeugt
+  // wurde. Genau das ist der Befund vom 2026-09-07
+  // (`docs/product/page-creation-invarianten.md`).
+  const before = bp.compliance;
+  const result = applyPageOperations(bp, [
+    preset ? { op: 'create', title, slug: preset.path.slice(1) } : { op: 'create', title },
+  ]);
 
-  // Der KI-Hinweis sitzt wie beim Erstbau vor dem Fuß — nicht dahinter,
-  // wo er außerhalb des Inhaltsbereichs stünde.
-  if (aiGenerated) {
-    blocks.splice(blocks.length - 1, 0, aiDisclosureFrom(bp, path));
+  if (result.changes.length === 0) {
+    for (const reason of result.rejected) refusals.push(refusalFor(reason, title));
+    return bp;
   }
-
-  const page: SitePage = {
-    path,
-    title,
-    description: bp.seo.locality ? `${title} — ${bp.name} in ${bp.seo.locality}.` : `${title} — ${bp.name}.`,
-    blocks,
-    noindex: false,
-  };
-
-  // Die neue Seite muss verlinkt sein, sonst ist sie gebaut und unerreichbar.
-  const link = { label: title, href: path };
-  const withPage: SiteBlueprint = {
-    ...bp,
-    pages: [...bp.pages, page].map((existing) => ({
-      ...existing,
-      blocks: existing.blocks.map((block) =>
-        block.kind === 'navigation'
-          ? { ...block, content: { ...block.content, links: [...navLinks(block), link] } }
-          : block,
-      ),
-    })),
-  };
 
   changes.push({
     code: 'structure.page-added',
-    summary: `Seite „${title}" (${path}) angelegt und in die Navigation aufgenommen.`,
-    complianceNote: aiGenerated ? 'Die neue Seite führt den KI-Transparenzhinweis nach Art. 50 EU AI Act.' : null,
+    summary: result.changes[0].summary,
+    complianceNote: result.changes[0].complianceNote,
   });
 
-  return recompile(withPage, changes);
+  // `applyPageOperations` leitet das Profil bereits neu ab. Der Hinweis auf
+  // eine neu entstandene DSFA-Pflicht braucht trotzdem den Stand **davor**.
+  noteDpia(before, result.blueprint.compliance, changes);
+  return result.blueprint;
+}
+
+/**
+ * Übersetzt einen Ablehnungsgrund der kanonischen Seitenoperation in einen
+ * Satz für den Kunden. Abgewiesenes wird benannt, nicht still verschluckt —
+ * vorher endete jeder dieser Fälle in einem stummen `return bp`.
+ */
+function refusalFor(reason: string, title: string): string {
+  const [code] = reason.split(':');
+  if (code === 'pages.limit') {
+    return `Die Seite „${title}" wurde nicht angelegt: Eine Website führt höchstens ${MAX_PAGES_PER_SITE} Seiten.`;
+  }
+  if (code === 'slug.taken') {
+    return `Die Seite „${title}" gibt es bereits.`;
+  }
+  if (code === 'slug.reserved') {
+    return `Die Seite „${title}" wurde nicht angelegt: Der Pfad ist für Rechtstexte reserviert.`;
+  }
+  if (code === 'slug.invalid' || code === 'slug.empty') {
+    return `Die Seite „${title}" wurde nicht angelegt: Der daraus abgeleitete Pfad ist nicht zulässig.`;
+  }
+  if (code === 'title.empty') {
+    return 'Die Seite wurde nicht angelegt: Es fehlt ein Titel.';
+  }
+  return `Die Seite „${title}" wurde nicht angelegt (${reason}).`;
 }
 
 function applyBlockChange(bp: SiteBlueprint, text: string, changes: RefinementChange[]): SiteBlueprint {
@@ -638,59 +659,25 @@ function complianceNoteFor(kind: BlockKind, added: boolean): string | null {
  */
 function recompile(bp: SiteBlueprint, changes: RefinementChange[]): SiteBlueprint {
   const preset = getIndustryPreset(bp.industry);
-  const before = bp.compliance;
   const compliance = deriveCompliance(briefFromBlueprint(bp), bp.pages, preset.compliance);
-
-  if (before.dpiaRequired !== compliance.dpiaRequired && compliance.dpiaRequired) {
-    changes.push({
-      code: 'compliance.dpia-required',
-      summary: 'Datenschutz-Folgenabschätzung ist jetzt erforderlich.',
-      complianceNote: 'Art. 35 Abs. 3 lit. b DSGVO — besondere Kategorien treffen auf eine Online-Erhebung.',
-    });
-  }
-
+  noteDpia(bp.compliance, compliance, changes);
   return { ...bp, compliance };
 }
 
-/**
- * Rekonstruiert den Brief aus dem Blueprint. Nötig, weil `buildBlock` und
- * `deriveCompliance` gegen den Brief arbeiten — und weil der ursprüngliche
- * Brief nach dem Erstbau nicht mitgeführt wird. Der Blueprint trägt alle
- * Felder, die dafür gebraucht werden.
- */
-export function briefFromBlueprint(bp: SiteBlueprint): SiteBrief {
-  const blocks = bp.pages.flatMap((page) => page.blocks);
-  const services = blocks.find((block) => block.kind === 'services');
-  const items = Array.isArray(services?.content.items) ? services.content.items : [];
-
-  // Die Vorzüge müssen genauso zurückgelesen werden wie die Leistungen.
-  // Ohne das käme der rekonstruierte Brief mit `highlights: []` zurück, und
-  // der nächste `buildBlock`-Aufruf würde echte, redaktionell eingepflegte
-  // Inhalte durch einen leeren Block ersetzen — ein stiller Datenverlust
-  // beim Verfeinern, nicht beim Bauen.
-  const features = blocks.find((block) => block.kind === 'features');
-
-  return {
-    name: bp.name,
-    industry: bp.industry,
-    locality: bp.seo.locality,
-    summary: bp.seo.defaultDescription,
-    services: items
-      .map((item) => (item as { label?: unknown }).label)
-      .filter((label): label is string => typeof label === 'string'),
-    highlights: labelsOf(features?.content.items),
-    locale: bp.locales.default,
-    industryConfident: bp.industry !== 'sonstiges',
-  };
+/** Eine Stelle für den Hinweis, damit beide Wege denselben Satz erzeugen. */
+function noteDpia(
+  before: SiteBlueprint['compliance'],
+  after: SiteBlueprint['compliance'],
+  changes: RefinementChange[],
+): void {
+  if (before.dpiaRequired === after.dpiaRequired || !after.dpiaRequired) return;
+  changes.push({
+    code: 'compliance.dpia-required',
+    summary: 'Datenschutz-Folgenabschätzung ist jetzt erforderlich.',
+    complianceNote: 'Art. 35 Abs. 3 lit. b DSGVO — besondere Kategorien treffen auf eine Online-Erhebung.',
+  });
 }
 
-/** Zieht die `label`-Felder aus einer Blockliste; alles andere wird verworfen. */
-function labelsOf(items: unknown): string[] {
-  if (!Array.isArray(items)) return [];
-  return items
-    .map((item) => (item as { label?: unknown }).label)
-    .filter((label): label is string => typeof label === 'string' && label.trim().length > 0);
-}
 
 function aiDisclosureFrom(bp: SiteBlueprint, path: string): SiteBlock {
   const existing = bp.pages

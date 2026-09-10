@@ -53,7 +53,7 @@ describe('Governance Sphere — demo contract', () => {
     expect(scene).not.toMatch(/\bwireframe\b/);
     expect(scene).not.toContain('icosahedronGeometry');
     expect(mesh).toContain('/textures/earth-day.jpg');
-    expect(mesh).toContain('meshStandardMaterial');
+    expect(mesh).toContain('meshBasicMaterial');
     expect(fallback).toContain('/europe-globe');
   });
 });

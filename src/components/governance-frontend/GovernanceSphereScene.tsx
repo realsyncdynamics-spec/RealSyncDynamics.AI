@@ -308,8 +308,9 @@ export function GovernanceSphereScene({
   reducedMotion = false,
 }: GovernanceSphereSceneProps) {
   const controls = useRef<SphereControls>({
-    rotX: 0.18,
-    rotY: 0.4,
+    // Tip Europe / Africa toward camera so continents read immediately.
+    rotX: 0.22,
+    rotY: -0.35,
     velX: 0,
     velY: 0,
     zoom: 1,
@@ -335,13 +336,12 @@ export function GovernanceSphereScene({
         gl.domElement.style.cursor = 'grab';
       }}
     >
-      <color attach="background" args={['transparent']} />
-      {/* Sun-side key for continents / oceans; cool fill so night side isn't pure black. */}
-      <ambientLight intensity={0.32} />
-      <directionalLight position={[4.5, 1.4, 3.2]} intensity={2.05} color="#fff6e8" />
-      <directionalLight position={[-3.2, -1.2, -2.4]} intensity={0.4} color="#6ec8ff" />
-      <pointLight position={[3.5, 2.5, 4]} intensity={0.35} color="#fff4e0" />
-      <hemisphereLight args={['#3a4a62', '#0a0a0b', 0.35]} />
+      {/* Soft fill for gold nodes / orbits — Earth body uses unlit day map. */}
+      <ambientLight intensity={0.7} />
+      <directionalLight position={[4.5, 1.4, 3.2]} intensity={1.2} color="#fff6e8" />
+      <directionalLight position={[-3.2, -1.2, -2.4]} intensity={0.45} color="#6ec8ff" />
+      <pointLight position={[3.5, 2.5, 4]} intensity={0.55} color="#fff4e0" />
+      <hemisphereLight args={['#4a5a72', '#0a0a0b', 0.4]} />
       <PinchZoom controls={controls} />
       <SphereCore
         controls={controls}

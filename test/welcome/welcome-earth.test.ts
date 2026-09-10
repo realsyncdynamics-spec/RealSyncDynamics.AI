@@ -34,6 +34,6 @@ describe('Welcome Earth panel', () => {
     const mesh = readFileSync(resolve('src/components/visual/PhotorealEarthMesh.tsx'), 'utf8');
     expect(scene).toContain('PhotorealEarthMesh');
     expect(mesh).toContain('/textures/earth-day.jpg');
-    expect(mesh).toContain('meshStandardMaterial');
+    expect(mesh).toContain('meshBasicMaterial');
   });
 });

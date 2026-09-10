@@ -44,10 +44,14 @@ export function PhotorealEarthMesh({
   });
 
   return (
-    <group ref={group} rotation={rotation} raycast={() => null}>
+    <group ref={group} rotation={rotation}>
+      {/*
+        meshBasicMaterial: day map at full brightness (no PBR darkening).
+        Critical on mobile / software WebGL where StandardMaterial looked nearly black.
+      */}
       <mesh raycast={() => null}>
         <sphereGeometry args={[radius, 64, 64]} />
-        <meshStandardMaterial map={texture} roughness={0.72} metalness={0.08} />
+        <meshBasicMaterial map={texture} toneMapped={false} />
       </mesh>
 
       {/* Thin atmosphere rim */}
@@ -56,9 +60,10 @@ export function PhotorealEarthMesh({
         <meshBasicMaterial
           color="#4fc3f7"
           transparent
-          opacity={0.12}
+          opacity={0.18}
           side={THREE.BackSide}
           depthWrite={false}
+          toneMapped={false}
         />
       </mesh>
 
@@ -68,9 +73,10 @@ export function PhotorealEarthMesh({
         <meshBasicMaterial
           color="#1a6cff"
           transparent
-          opacity={0.06}
+          opacity={0.08}
           side={THREE.BackSide}
           depthWrite={false}
+          toneMapped={false}
         />
       </mesh>
     </group>

@@ -35,18 +35,18 @@ export function PublicDarkHeader({ overlay = false }: { overlay?: boolean }) {
       className={`${overlay ? 'absolute' : 'sticky bg-[rgb(3,7,18)]/95 backdrop-blur-md'} inset-x-0 top-0 z-30 border-b border-white/10`}
     >
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-6 sm:h-20 lg:px-10">
-        <div className="flex min-w-0 items-center gap-3">
+        <div className="flex shrink-0 items-center gap-3">
           <Link
             to="/"
-            className="flex min-w-0 items-center gap-2.5 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e8c98a]/60"
+            className="flex shrink-0 items-center gap-2.5 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e8c98a]/60"
           >
             <Snowflake className="h-6 w-6 shrink-0 text-[#e8c98a]" strokeWidth={1.5} />
-            <span className="truncate text-base font-semibold tracking-tight text-white sm:text-lg">
+            <span className="whitespace-nowrap text-base font-semibold tracking-tight text-white sm:text-lg">
               RealSync <span className="font-normal text-white/80">Dynamics.AI</span>
             </span>
           </Link>
           <span
-            className="hidden items-center gap-1.5 rounded-md border border-[#e8c98a]/25 bg-[#e8c98a]/8 px-2 py-1 font-mono text-[9px] tracking-[.16em] text-[#e8c98a]/90 md:inline-flex"
+            className="hidden items-center gap-1.5 rounded-md border border-[#e8c98a]/25 bg-[#e8c98a]/8 px-2 py-1 font-mono text-[9px] tracking-[.16em] text-[#e8c98a]/90 xl:inline-flex"
             title="Product category — not a live tenant metric"
           >
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-400/90" aria-hidden="true" />

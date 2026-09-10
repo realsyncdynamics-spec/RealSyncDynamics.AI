@@ -40,13 +40,13 @@ function Nodes({
         const color = attention ? ATTENTION : GOLD;
         return (
           <group key={node.id} position={pos}>
-            {/* Opaque pick mesh — manual raycaster reads userData.nodeId. */}
+            {/* Pick mesh — large enough for reliable canvas raycast hits. */}
             <mesh
               userData={{ nodeId: node.id, governanceNode: true }}
-              scale={active ? 1.35 : 1}
+              scale={active ? 1.15 : 1}
             >
-              <sphereGeometry args={[0.16, 16, 16]} />
-              <meshBasicMaterial transparent opacity={0.01} depthWrite={false} />
+              <sphereGeometry args={[0.32, 16, 16]} />
+              <meshBasicMaterial transparent opacity={0.001} depthWrite={false} />
             </mesh>
             <mesh scale={active ? 1.45 : 1.2} raycast={() => null}>
               <sphereGeometry args={[0.09, 16, 16]} />
@@ -246,7 +246,10 @@ function PointerBridge({
       pointer.x = ((clientX - rect.left) / rect.width) * 2 - 1;
       pointer.y = -((clientY - rect.top) / rect.height) * 2 + 1;
       raycaster.setFromCamera(pointer, camera);
-      const hits = raycaster.intersectObjects(collectNodeMeshes(), false);
+      // Prefer nearest front-facing governance node.
+      const hits = raycaster
+        .intersectObjects(collectNodeMeshes(), false)
+        .filter((h) => h.object.visible !== false);
       const id = hits[0]?.object?.userData?.nodeId;
       return typeof id === 'string' ? id : null;
     };

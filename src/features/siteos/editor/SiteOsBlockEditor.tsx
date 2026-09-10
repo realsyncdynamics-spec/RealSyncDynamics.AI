@@ -48,6 +48,31 @@ export interface SiteOsBlockEditorProps {
   canvasHeader?: ReactNode;
   /** Schlüssel, der den Editor neu aufsetzt (z. B. nach einem KI-Neubau). */
   revision: number;
+  /**
+   * Eigene linke Spalte des Gastgebers (Workspace). Bekommt die Puck-Teile
+   * gereicht, die nur innerhalb von `<Puck>` rendern können — Seitenstruktur
+   * und Bausteinschublade — und ordnet sie selbst an. Ohne diese Funktion
+   * bleibt die Standardanordnung: Struktur, Bausteine, `asideLeft`.
+   */
+  renderLeft?: (parts: { outline: ReactNode; components: ReactNode }) => ReactNode;
+  /**
+   * Eigene rechte Spalte des Gastgebers. Bekommt die Puck-Felder des
+   * ausgewählten Bausteins gereicht (samt Hinweis, was der Server beim
+   * Speichern ableitet) und ordnet sie selbst an — im Workspace als Tab
+   * „Eigenschaften" neben Assistent, Problemen und Governance. Ohne diese
+   * Funktion bleibt die Standardanordnung: Felder, dann `asideRight`.
+   */
+  renderRight?: (parts: { fields: ReactNode }) => ReactNode;
+  /**
+   * Unterhalb von `lg` zeigt der Editor nur eine Spalte. Welche, bestimmt
+   * der Gastgeber — ohne Angabe die Leinwand, wie bisher.
+   */
+  mobilePane?: 'left' | 'canvas' | 'right';
+}
+
+/** Sichtbarkeitsklassen einer Spalte: unterhalb `lg` nur die gewählte. */
+function paneClass(pane: 'left' | 'canvas' | 'right', active: 'left' | 'canvas' | 'right'): string {
+  return pane === active ? 'block lg:block' : 'hidden lg:block';
 }
 
 const CanvasCssContext = createContext<string>('');
@@ -121,6 +146,7 @@ export default function SiteOsBlockEditor(props: SiteOsBlockEditorProps): ReactE
   const {
     storedBlueprint, localBlueprint, template, pagePath, pageData,
     onPageDataChange, canvasWidth, asideLeft, asideRight, canvasHeader, revision,
+    renderLeft, renderRight, mobilePane = 'canvas',
   } = props;
 
   const storedPage = storedBlueprint.pages.find((p) => p.path === pagePath) ?? storedBlueprint.pages[0];
@@ -166,17 +192,24 @@ export default function SiteOsBlockEditor(props: SiteOsBlockEditorProps): ReactE
         onChange={(data) => onPageDataChange(pathRef.current, data as PuckPageData)}
       >
         <div className="grid min-h-[calc(100vh-4rem)] lg:grid-cols-[260px_minmax(0,1fr)_320px]">
-          <aside className="hidden border-r border-black/[.07] bg-white p-4 lg:block">
-            {/* Puck bringt die Überschriften „Seitenstruktur" und „Bausteine" selbst mit. */}
-            <div className="text-xs [&_*]:text-xs"><Puck.Outline /></div>
-            <div className="mt-6 border-t border-black/[.07] pt-5">
-              <p className="mb-3 text-[11px] leading-5 text-black/45">In die Seite ziehen. Formulare und Karten bringen Rechtsgrundlage und Einwilligung mit.</p>
-              <div className="text-xs [&_*]:text-xs"><Puck.Components /></div>
-            </div>
-            {asideLeft}
+          <aside className={`${paneClass('left', mobilePane)} border-r border-black/[.07] bg-white p-4`}>
+            {renderLeft ? renderLeft({
+              outline: <div className="text-xs [&_*]:text-xs"><Puck.Outline /></div>,
+              components: <div className="text-xs [&_*]:text-xs"><Puck.Components /></div>,
+            }) : (
+              <>
+                {/* Puck bringt die Überschriften „Seitenstruktur" und „Bausteine" selbst mit. */}
+                <div className="text-xs [&_*]:text-xs"><Puck.Outline /></div>
+                <div className="mt-6 border-t border-black/[.07] pt-5">
+                  <p className="mb-3 text-[11px] leading-5 text-black/45">In die Seite ziehen. Formulare und Karten bringen Rechtsgrundlage und Einwilligung mit.</p>
+                  <div className="text-xs [&_*]:text-xs"><Puck.Components /></div>
+                </div>
+                {asideLeft}
+              </>
+            )}
           </aside>
 
-          <section className="min-w-0 p-3 sm:p-5">
+          <section className={`${paneClass('canvas', mobilePane)} min-w-0 p-3 sm:p-5`}>
             {canvasHeader}
             <div className="flex min-h-[calc(100vh-10rem)] items-start justify-center overflow-auto rounded-2xl border border-black/[.08] bg-[#dfe4ea] p-3 sm:p-6">
               <div style={{ width: canvasWidth }} className="h-[760px] overflow-hidden rounded-xl bg-white shadow-2xl [&>div]:h-full">
@@ -185,11 +218,22 @@ export default function SiteOsBlockEditor(props: SiteOsBlockEditorProps): ReactE
             </div>
           </section>
 
-          <aside className="border-t border-black/[.07] bg-white p-4 lg:border-l lg:border-t-0 sm:p-5">
-            <div className={SECTION_LABEL}>Ausgewählter Baustein</div>
-            <PageEditNote pagePath={storedPage.path} pageData={pageData} />
-            <div className="text-xs [&_input]:text-xs [&_textarea]:text-xs"><Puck.Fields /></div>
-            {asideRight}
+          <aside className={`${paneClass('right', mobilePane)} border-t border-black/[.07] bg-white p-4 lg:border-l lg:border-t-0 sm:p-5`}>
+            {renderRight ? renderRight({
+              fields: (
+                <>
+                  <PageEditNote pagePath={storedPage.path} pageData={pageData} />
+                  <div className="text-xs [&_input]:text-xs [&_textarea]:text-xs"><Puck.Fields /></div>
+                </>
+              ),
+            }) : (
+              <>
+                <div className={SECTION_LABEL}>Ausgewählter Baustein</div>
+                <PageEditNote pagePath={storedPage.path} pageData={pageData} />
+                <div className="text-xs [&_input]:text-xs [&_textarea]:text-xs"><Puck.Fields /></div>
+                {asideRight}
+              </>
+            )}
           </aside>
         </div>
       </Puck>

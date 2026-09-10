@@ -549,6 +549,61 @@ den Editor noch nicht.
 
 ---
 
+## 5d. App Builder Workspace — `/builder/:slug` (Phase 2, Schritt A)
+
+**Stand 2026-09-07.** Der Block-Editor aus §5c ist die Editorschicht; der
+Workspace ist die Oberfläche darum: Kopfzeile (Projekt, **Governance-Status**,
+Speicherzustand, Bearbeiten/Vorschau, Prüfen, Veröffentlichen), links die
+Projekt-Navigation (Seiten, Bausteine, Medien, Daten, Integrationen), Mitte
+die Puck-Leinwand, rechts **vier Tabs** — Assistent · Eigenschaften (die
+Puck-Felder des gewählten Bausteins) · Probleme · Governance —, unten Konsole
+und Verlauf. Das ist die Anordnung aus dem Zielbild
+(`docs/product/app-builder-zielbild.md` §4); die erste Fassung hatte
+Probleme und Governance unten und die Felder ohne Tab. Unterhalb von `lg`
+zeigt er je eine Spalte, umgeschaltet über Tabs (Projekt · Editor ·
+Assistent · Protokoll).
+
+**Der Governance-Status in der Kopfzeile** ist die jüngste gespeicherte
+Bewertung **dieser** Version (`siteos_publish_evaluations`, per RLS
+gelesen): veröffentlichbar · Freigabe nötig · blockiert (mit Anzahl der
+Blocker) — oder „keine Bewertung", wenn es keine gibt. Er wird nie aus der
+lokalen Fassung abgeleitet und sagt nie „in Ordnung", wo nichts geprüft
+wurde. Eine Bewertung einer anderen Version der Kette zählt nicht.
+
+**Identifikator ist der Slug.** `siteos_blueprints` führt je `(tenant_id,
+slug)` eine append-only Kette; `website_projects` ist leer und wird nirgends
+verknüpft (Live-DB, 2026-09-07). Ein „Projekt" ist diese Kette. Der Erstbau
+(`/unified-entry/transformation`, `/app/siteos/builder`) leitet nach Erfolg
+hierher weiter — ein Builder, nicht zwei.
+
+**Was der Workspace tut und woher es kommt**
+
+| Fläche | Quelle | Stand |
+|---|---|---|
+| Laden | `siteos_blueprints` per Client, RLS (`is_tenant_member`) | LIVE — `test/runtime/db/siteos-rls.db.test.ts` |
+| Bearbeiten | Puck-Editor §5c, `PageEdit` → `siteos/edit`, `base_sha256` | LIVE (Code); Function erst nach `deploy.yml` |
+| Speicherzustand | `saved` nur nach einer vom Server angelegten Version; `unchanged` bleibt still; Fehler bleibt Fehler | LIVE — `test/siteos/workspace.test.tsx` |
+| Vorschau | derselbe Renderer (`renderSite`, `showcase`), sandboxed iframe | LIVE |
+| Probleme | `analyzeBlueprint` der lokalen Fassung + Blocker/Hinweise der letzten Gate-Bewertung | LIVE — keine erfundenen Befunde |
+| Prüfen | `siteos/publish-gate` für die **gespeicherte** Version; gesperrt bei ungespeicherten Änderungen | LIVE (Code) |
+| Veröffentlichen | — | PLANNED: kein Pfad vom Artefakt zu einer Adresse; Knopf gesperrt mit Begründung |
+| Verlauf | `listBlueprintChain` | LIVE |
+| Governance | Version, Hash, Vorgänger, Herkunft, KI-Anteil, Custody (`provenance_*`, RLS), Bewertungen, Agentenläufe; Status-Chip in der Kopfzeile aus der jüngsten Bewertung der gespeicherten Version | LIVE (lesend) — `governanceStatus()` in `panels.tsx`, `test/siteos/workspace.test.tsx` |
+| Eigenschaften | Puck-Felder des gewählten Bausteins (`renderRight` des Editors), im Vorschau-Modus benannt statt leer | LIVE (Code) |
+| Assistent | Eingabe + Vorschläge → vorhandener KI-Neubau über den Erstbau (`?instruction=`), **kein LLM** | PARTIAL: ersetzt die Fassung, wendet nichts an — Actions folgen in Schritt C |
+| Seiten anlegen/umbenennen/löschen | — | PLANNED (Schritt B) |
+| Medien · Daten · Integrationen · Code | — | PLANNED, als Platzhalter benannt |
+
+**Die Sicherheitsbasis aus §5c bleibt**: Der Browser schickt weiterhin nur
+Reihenfolge, Art und redaktionelle Felder. Der Workspace hat keinen zweiten
+Schreibpfad.
+
+**Im Browser nachgesehen** (Chromium, Vite-Dev-Server, Supabase-Antworten
+abgefangen): Laden → `saved`, Feldänderung in Puck → `unsaved` und neue
+Überschrift in der Leinwand, Speichern → `Gespeichert · v4`; die Anfrage
+trug genau ein Feld (`hero.headline`) und `base_sha256`. Bei 390 px kein
+horizontaler Überlauf in allen vier Bereichen.
+
 ## 6. Stand und Grenzen
 
 **Umgesetzt**: Domänenkern mit 201 Tests, AI Builder (Prompt → geprüfter

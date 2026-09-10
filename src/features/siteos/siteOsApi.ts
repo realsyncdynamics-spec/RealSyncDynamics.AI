@@ -261,6 +261,103 @@ export async function runAgent(tenantId: string, runId?: string): Promise<SiteOs
 
 // ── Lesepfade (RLS-gesichert) ───────────────────────────────────────────
 
+/** Die jüngste gespeicherte Version einer Site — Grundlage des Workspace. */
+export interface StoredBlueprintRow {
+  id: string;
+  version: number;
+  blueprint: SiteBlueprint;
+  content_sha256: string;
+  prev_hash: string | null;
+  status: 'draft' | 'approved' | 'deployed' | 'archived';
+  origin_source: 'ai-builder' | 'manual' | 'import';
+  origin_model: string | null;
+  created_at: string;
+}
+
+/**
+ * Lädt die jüngste Version einer Site des Mandanten. `null` heißt: Es gibt
+ * unter diesem Slug **im eigenen Mandanten** keine Zeile — RLS lässt fremde
+ * gar nicht erst zu, der Aufrufer sieht also denselben Ausgang wie bei
+ * einem nie angelegten Projekt. Das ist gewollt: Ob ein Slug bei einem
+ * anderen Mandanten existiert, ist keine Information für diesen Nutzer.
+ */
+export async function loadLatestBlueprint(tenantId: string, slug: string): Promise<StoredBlueprintRow | null> {
+  const sb = getSupabase();
+  const { data, error } = await sb
+    .from('siteos_blueprints')
+    .select('id, version, blueprint, content_sha256, prev_hash, status, origin_source, origin_model, created_at')
+    .eq('tenant_id', tenantId).eq('slug', slug)
+    .order('version', { ascending: false }).limit(1)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return (data as StoredBlueprintRow | null) ?? null;
+}
+
+/** Eine Bewertung des Publish Gates, wie die Datenbank sie führt. */
+export interface EvaluationRow {
+  id: string;
+  blueprint_id: string | null;
+  artifact_sha256: string;
+  blueprint_sha256: string;
+  status: 'passed' | 'blocked' | 'pending';
+  publishable: boolean;
+  human_approval_required: boolean;
+  blockers: string[];
+  warnings: string[];
+  approved_by: string | null;
+  approved_at: string | null;
+  evaluated_at: string;
+}
+
+/** Bewertungen zu den Versionen einer Site, jüngste zuerst. */
+export async function listEvaluations(tenantId: string, blueprintIds: string[]): Promise<EvaluationRow[]> {
+  if (blueprintIds.length === 0) return [];
+  const sb = getSupabase();
+  const { data, error } = await sb
+    .from('siteos_publish_evaluations')
+    .select('id, blueprint_id, artifact_sha256, blueprint_sha256, status, publishable, human_approval_required, blockers, warnings, approved_by, approved_at, evaluated_at')
+    .eq('tenant_id', tenantId)
+    .in('blueprint_id', blueprintIds)
+    .order('evaluated_at', { ascending: false })
+    .limit(20);
+  if (error) throw new Error(error.message);
+  return (data ?? []) as EvaluationRow[];
+}
+
+/** Ein Ereignis der Herkunftskette (Custody) einer Site. */
+export interface CustodyEventRow {
+  seq: number;
+  action: 'registered' | 'updated' | 'licensed' | 'audited';
+  actor: string;
+  content_sha256: string;
+  event_ts: string;
+  event_hash: string;
+  signature: string | null;
+}
+
+/**
+ * Herkunftskette einer Site: erst das Manifest zum `asset_ref`, dann dessen
+ * Ereignisse. Der `asset_ref` ist derselbe, den `persist.ts` schreibt
+ * (`siteos:blueprint:<tenant>:<slug>`); er wird hier nicht erraten, sondern
+ * vom Aufrufer aus denselben Teilen gebildet.
+ */
+export async function listCustodyEvents(tenantId: string, assetRef: string): Promise<CustodyEventRow[]> {
+  const sb = getSupabase();
+  const { data: manifest, error: mErr } = await sb
+    .from('provenance_manifests').select('id')
+    .eq('tenant_id', tenantId).eq('asset_ref', assetRef)
+    .limit(1).maybeSingle();
+  if (mErr) throw new Error(mErr.message);
+  if (!manifest) return [];
+  const { data, error } = await sb
+    .from('provenance_custody_events')
+    .select('seq, action, actor, content_sha256, event_ts, event_hash, signature')
+    .eq('tenant_id', tenantId).eq('manifest_id', (manifest as { id: string }).id)
+    .order('seq', { ascending: true });
+  if (error) throw new Error(error.message);
+  return (data ?? []) as CustodyEventRow[];
+}
+
 export async function listSites(tenantId: string): Promise<SiteOverviewRow[]> {
   const sb = getSupabase();
   const { data, error } = await sb.rpc('siteos_site_overview', { p_tenant_id: tenantId });

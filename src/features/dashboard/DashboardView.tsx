@@ -30,6 +30,8 @@ import {
   type TenantStatus,
 } from '../../lib/status/statusAdapter';
 import { WorkflowView } from './components/WorkflowView';
+import { CommandSessionPanel } from './CommandSessionPanel';
+import { useCommandCenter } from './hooks/useCommandCenter';
 
 interface DashboardInsight {
   id: string;
@@ -39,7 +41,6 @@ interface DashboardInsight {
   recommended_action?: string;
   created_at: string;
 }
-
 
 interface ActionCard {
   label: string;
@@ -82,6 +83,7 @@ export function DashboardView() {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'workflows'>('dashboard');
   const [command, setCommand] = useState('');
+  const commandCenter = useCommandCenter();
 
   useEffect(() => {
     if (!tenantId) {
@@ -94,8 +96,6 @@ export function DashboardView() {
     const fetchDashboardData = async () => {
       try {
         setIsLoading(true);
-        // Kennzahlen ausschließlich über den Status Adapter — er unterscheidet
-        // „nicht belegbar" (null → „—") von „gemessene Null".
         const [tenantStatus, insightsResult] = await Promise.all([
           loadTenantStatus(supabase, tenantId),
           supabase.from('dashboard_insights').select('*').eq('tenant_id', tenantId).eq('status', 'active').order('created_at', { ascending: false }).limit(5),
@@ -123,21 +123,11 @@ export function DashboardView() {
   const criticalRisks = status.criticalRisks;
 
   const runCommand = () => {
-    const value = command.trim().toLowerCase();
+    const value = command.trim();
     if (!value) return;
-    if (value.includes('website') || value.includes('seo') || value.includes('landingpage')) {
-      navigate('/unified-entry/scan');
-    } else if (value.includes('ai act') || value.includes('ki-system') || value.includes('ki system')) {
-      navigate('/app/governance/ai-act-assessment');
-    } else if (value.includes('risiko')) {
-      navigate('/app/governance/gaps');
-    } else {
-      navigate('/app/governance/ai-register');
-    }
+    void commandCenter.open(value);
   };
 
-  // Jede Kachel nennt ihre Quelle im Untertitel. Nicht belegbare Werte zeigen
-  // „—" statt einer Null, die wie ein Messwert aussieht.
   const kpiCards: KpiCard[] = [
     { label: 'Websites', value: formatMetric(status.websites), sub: 'Registrierte Domains', icon: Globe2, color: 'text-sky-600' },
     { label: 'Risiken', value: formatMetric(status.totalRisks), sub: criticalRisks ? `${criticalRisks} kritisch` : 'Keine kritischen', icon: AlertTriangle, color: 'text-red-500' },
@@ -177,11 +167,14 @@ export function DashboardView() {
       <div className="mx-auto max-w-[1500px] px-5 py-6 lg:px-7">
         <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
           <div>
-            <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-sky-100 bg-sky-50 px-3 py-1 text-xs font-semibold text-sky-700"><Sparkles size={13} /> AI Control Plane</div>
-            <h1 className="text-3xl font-bold tracking-tight md:text-4xl">Willkommen zurück 👋</h1>
-            <p className="mt-1 text-sm text-slate-500">Governance AI ist bereit. Stelle eine Frage oder starte einen Workflow.</p>
+            <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-sky-100 bg-sky-50 px-3 py-1 text-xs font-semibold text-sky-700"><Sparkles size={13} /> RealSync OS</div>
+            <h1 className="text-3xl font-bold tracking-tight md:text-4xl">Command Center</h1>
+            <p className="mt-1 text-sm text-slate-500">Was soll RealSync OS erledigen?</p>
           </div>
-          <div className="flex items-center gap-2 rounded-full border border-emerald-100 bg-white px-4 py-2 text-sm shadow-sm"><span className="h-2.5 w-2.5 rounded-full bg-emerald-500" /> Alle Systeme <span className="font-semibold text-emerald-600">Operational</span></div>
+          <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm shadow-sm">
+            <span className="h-2.5 w-2.5 rounded-full bg-slate-400" />
+            Kennzahlen aus Tenant-Status · keine Demo-Werte
+          </div>
         </div>
 
         <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
@@ -209,14 +202,51 @@ export function DashboardView() {
             <main className="min-w-0">
               <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm md:p-7">
                 <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-                  <div className="flex items-center gap-3"><div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-500 to-violet-500 text-white"><Sparkles size={20} /></div><div><h2 className="font-semibold">Governance AI Assistant <span className="ml-2 rounded-full bg-sky-50 px-2 py-0.5 text-[10px] font-bold text-sky-700">BETA</span></h2><p className="text-xs text-slate-400">Deine zentrale KI für Governance, Website und Compliance-Aufgaben.</p></div></div>
-                  <button onClick={() => navigate('/app/governance/ai-register')} className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-medium hover:bg-slate-50">AI Engine: Auto</button>
+                  <div className="flex items-center gap-3"><div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-sky-600 text-white"><Sparkles size={20} /></div><div><h2 className="font-semibold">Command Center</h2><p className="text-xs text-slate-400">Intent → Plan → Policy → Agent → Evidence. Kein Blind-Execute.</p></div></div>
                 </div>
                 <div className="rounded-3xl border-2 border-sky-300 bg-white p-3 shadow-[0_8px_35px_rgba(56,189,248,0.10)]">
-                  <textarea value={command} onChange={(event) => setCommand(event.target.value)} onKeyDown={(event) => { if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') runCommand(); }} placeholder="Was möchtest du heute analysieren, bauen oder verbessern?" className="min-h-28 w-full resize-none border-0 bg-transparent px-2 py-2 text-base outline-none placeholder:text-slate-400" />
-                  <div className="flex items-center justify-between gap-3 border-t border-slate-100 pt-3"><div className="flex flex-wrap gap-2"><button type="button" className="rounded-xl border border-slate-200 p-2 text-slate-500"><Plus size={16} /></button><span className="rounded-xl bg-slate-50 px-3 py-2 text-xs text-slate-500">@ Kontext</span><span className="rounded-xl bg-slate-50 px-3 py-2 text-xs text-slate-500">Website</span><span className="rounded-xl bg-slate-50 px-3 py-2 text-xs text-slate-500">Datei</span></div><button type="button" onClick={runCommand} disabled={!command.trim()} className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-600 text-white shadow-sm disabled:cursor-not-allowed disabled:opacity-40"><ArrowRight size={18} /></button></div>
+                  <textarea
+                    value={command}
+                    onChange={(event) => setCommand(event.target.value)}
+                    onKeyDown={(event) => { if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') runCommand(); }}
+                    placeholder="Was soll RealSync OS erledigen?"
+                    className="min-h-28 w-full resize-none border-0 bg-transparent px-2 py-2 text-base outline-none placeholder:text-slate-400"
+                  />
+                  <div className="flex items-center justify-between gap-3 border-t border-slate-100 pt-3">
+                    <div className="flex flex-wrap gap-2">
+                      <button type="button" className="rounded-xl border border-slate-200 p-2 text-slate-500"><Plus size={16} /></button>
+                      <span className="rounded-xl bg-slate-50 px-3 py-2 text-xs text-slate-500">@ Kontext</span>
+                      <span className="rounded-xl bg-slate-50 px-3 py-2 text-xs text-slate-500">Website</span>
+                      <span className="rounded-xl bg-slate-50 px-3 py-2 text-xs text-slate-500">Datei</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={runCommand}
+                      disabled={!command.trim() || commandCenter.busy}
+                      className="flex h-10 items-center justify-center rounded-xl bg-sky-600 px-4 text-sm font-semibold text-white shadow-sm disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      RUN
+                    </button>
+                  </div>
                 </div>
-                <div className="mt-4 grid gap-3 md:grid-cols-2">{prompts.map((prompt) => <button type="button" key={prompt} onClick={() => setCommand(prompt)} className="rounded-2xl border border-slate-200 p-4 text-left text-sm font-medium text-slate-700 transition hover:border-sky-300 hover:bg-sky-50/50">{prompt}</button>)}</div>
+                {commandCenter.session ? (
+                  <CommandSessionPanel
+                    session={commandCenter.session}
+                    busy={commandCenter.busy}
+                    error={commandCenter.error}
+                    onApprove={() => void commandCenter.approve()}
+                    onReject={() => commandCenter.reject('user_rejected')}
+                    onReset={commandCenter.reset}
+                  />
+                ) : (
+                  <div className="mt-4 grid gap-3 md:grid-cols-2">
+                    {prompts.map((prompt) => (
+                      <button type="button" key={prompt} onClick={() => setCommand(prompt)} className="rounded-2xl border border-slate-200 p-4 text-left text-sm font-medium text-slate-700 transition hover:border-sky-300 hover:bg-sky-50/50">
+                        {prompt}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </section>
 
               <section className="mt-6 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">

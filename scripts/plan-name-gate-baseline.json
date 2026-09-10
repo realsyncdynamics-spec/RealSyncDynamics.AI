@@ -1,0 +1,114 @@
+[
+  {
+    "datei": "src/core/billing/useScanLimits.ts",
+    "plan": "free",
+    "fundstellen": 1,
+    "art": "GATE",
+    "grund": "Kontingent haengt am Plan-Namen: `tier !== 'free'` ueberspringt die Zaehlung fuer jeden bezahlten Plan vollstaendig. Unter BASE + MODULE + SCALE waere die Scan-Anzahl eine SCALE-Achse; diese Zeile gaebe dann still allen unbegrenzt. Kanonisch waere limitOf('limit.scans_*'). Aenderung verschiebt Berechtigungen -> CLAUDE.md §10.3 Fragepflicht.",
+    "seit": "2026-09-06"
+  },
+  {
+    "datei": "supabase/functions/audit-monitor-cron/index.ts",
+    "plan": "starter",
+    "fundstellen": 1,
+    "art": "GATE",
+    "grund": "Monitoring-Takt haengt am Plan-Namen: starter alle 30 Tage, alle anderen taeglich. Eine Frequenz ist ein Kontingent und gehoert nach limitOf(). Aenderung verschiebt eine zugesagte Leistung -> Fragepflicht.",
+    "seit": "2026-09-06"
+  },
+  {
+    "datei": "src/features/governance/terminal/agents/AuditAgent.ts",
+    "plan": "free",
+    "fundstellen": 3,
+    "art": "GATE",
+    "grund": "Aufbewahrungsdauer haengt am Plan-Namen: 30 Tage im Free-Plan, sonst 2 Jahre. Aufbewahrung ist ein Kontingent und beruehrt zugleich die Evidence-Zusage. Kanonisch waere limitOf('limit.evidence_retention_*').",
+    "seit": "2026-09-06"
+  },
+  {
+    "datei": "src/enterprise-os/pages/CheckoutEntryPage.tsx",
+    "plan": "enterprise",
+    "fundstellen": 1,
+    "art": "KAUFWEG",
+    "grund": "Kein Berechtigungs-Gate, sondern Kaufweg: Enterprise wird nach /contact-sales geleitet statt in den Self-Service-Checkout. Kanonisch ausdrueckbar ueber availability === 'contract' (AP2, 2026-08-24) — eine reine Umschreibung ohne Wirkung auf Berechtigungen.",
+    "seit": "2026-09-06"
+  },
+  {
+    "datei": "src/pages/optimizer/OptimizerCheckout.tsx",
+    "plan": "free",
+    "fundstellen": 1,
+    "art": "KAUFWEG",
+    "grund": "Kein Gate: der Free-Plan hat keinen Checkout. Steht bereits neben isSelfServeCheckout(); der Plan-Name ist dort die redundante Haelfte der Bedingung.",
+    "seit": "2026-09-06"
+  },
+  {
+    "datei": "supabase/functions/create-trial-subscription/index.ts",
+    "plan": "growth",
+    "fundstellen": 1,
+    "art": "KAUFWEG",
+    "grund": "Testphase wird nur fuer Growth angelegt. Das ist eine Vertriebsentscheidung ueber ein einzelnes Produkt, kein Funktionsumfang — gehoert in den Katalog (z. B. ein trial-Feld am Plan), nicht in die Function.",
+    "seit": "2026-09-06"
+  },
+  {
+    "datei": "src/pages/WebsiteTransformationFlow.tsx",
+    "plan": "growth",
+    "fundstellen": 2,
+    "art": "EMPFEHLUNG",
+    "grund": "Empfiehlt einen Plan anhand des Risiko-Scores. Kein Gate — der Kunde bekommt nichts vorenthalten. Bricht aber trotzdem beim Katalogumbau, weil der empfohlene Name dann nicht mehr existiert.",
+    "seit": "2026-09-06"
+  },
+  {
+    "datei": "src/pages/WebsiteTransformationFlow.tsx",
+    "plan": "starter",
+    "fundstellen": 1,
+    "art": "EMPFEHLUNG",
+    "grund": "Rueckfall-Empfehlung derselben Auswahl. Siehe Eintrag zu growth in derselben Datei.",
+    "seit": "2026-09-06"
+  },
+  {
+    "datei": "shared/onboarding.ts",
+    "plan": "partner",
+    "fundstellen": 2,
+    "art": "ABLAUF",
+    "grund": "Waehlt Onboarding-Schritte: Partner ueberspringt zwei Fragen. Kein Berechtigungs-Gate, aber am Plan-Namen haengend. Kanonisch waere ein Merkmal am Plan (z. B. availability oder ein onboarding-Feld).",
+    "seit": "2026-09-06"
+  },
+  {
+    "datei": "src/lib/optimizer/tiers.ts",
+    "plan": "free",
+    "fundstellen": 1,
+    "art": "ANZEIGE",
+    "grund": "Beschriftung: 'Kostenlos' statt eines Betrags. Kein Gate. Waere ueber price.monthlyEur === 0 ausdrueckbar und damit katalogfest.",
+    "seit": "2026-09-06"
+  },
+  {
+    "datei": "src/pages/optimizer/OptimizerPricing.tsx",
+    "plan": "free",
+    "fundstellen": 2,
+    "art": "ANZEIGE",
+    "grund": "Beschriftung und CTA-Text der Free-Karte auf der Optimizer-Preisseite. Kein Gate: die Karte zeigt denselben Funktionsumfang, nur mit anderem Wortlaut. Katalogfest waere price.monthlyEur === 0 statt des Namens.",
+    "seit": "2026-09-06"
+  },
+  {
+    "datei": "src/pages/claude-code-optimizer/OptimizerKit.tsx",
+    "plan": "free",
+    "fundstellen": 1,
+    "art": "ANZEIGE",
+    "grund": "Preisbeschriftung: '0 €' gegen 'individuell' bei priceEur === 0. Kein Gate.",
+    "seit": "2026-09-06"
+  },
+  {
+    "datei": "src/pages/claude-code-optimizer/OptimizerReport.tsx",
+    "plan": "free",
+    "fundstellen": 1,
+    "art": "ANZEIGE",
+    "grund": "Laesst den plan-Parameter in der URL weg, wenn Free gewaehlt ist. Kein Gate.",
+    "seit": "2026-09-06"
+  },
+  {
+    "datei": "supabase/functions/sales-lead/index.ts",
+    "plan": "starter",
+    "fundstellen": 1,
+    "art": "KAMPAGNE",
+    "grund": "Bedingung einer Aktion ('starter_3_months_free'): greift nur, wenn Quelle, Absicht und Plan zusammenpassen. Zeitlich begrenzt und an einen benannten Plan gebunden — hier ist der Name der Gegenstand, nicht das Gate.",
+    "seit": "2026-09-06"
+  }
+]

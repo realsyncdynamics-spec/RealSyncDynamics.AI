@@ -150,7 +150,7 @@ export function WorkspaceShell({ children, title }: { children: React.ReactNode;
             {activeTenant && tenants.length <= 1 && (
               <span className="hidden sm:inline text-xs text-titanium-400 font-medium max-w-[140px] truncate">{activeTenant.name}</span>
             )}
-            <Link to="/assistant" title="Assistent" className="p-1.5 text-titanium-400 hover:text-titanium-100 hover:bg-obsidian-800 rounded-none">
+            <Link to="/app/dashboard" title="Assistent" className="p-1.5 text-titanium-400 hover:text-titanium-100 hover:bg-obsidian-800 rounded-none">
               <Sparkles className="h-4 w-4" />
             </Link>
           </div>

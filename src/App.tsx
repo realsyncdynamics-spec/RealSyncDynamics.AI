@@ -109,14 +109,8 @@ const ComplianceFrameworkSelector = lazy(() => import('./features/governance/das
 const Iso42001ComplianceHub = lazy(() => import('./features/governance/dashboard/Iso42001ComplianceHub').then((m) => ({ default: m.Iso42001ComplianceHub })));
 // BusinessDashboard zieht recharts → aus dem Landing-Critical-Path lazyen.
 const BusinessDashboard = lazy(() => import('./pages/BusinessDashboard').then((m) => ({ default: m.BusinessDashboard })));
-// CreatorDashboard ist auth-gated → lazy.
-//
-// Die Aussage stimmt erst, seit die Route sie auch gattert. Die Komponente
-// selbst bringt keinen Guard mit — kein `AuthGate`, kein `RequireAal2`, keine
-// Sitzungsprüfung. Sie hing unter `/assistant` ohne Wrapper, und dieser
-// Kommentar behauptete das Gegenteil: Wer ihn las, musste die Route für
-// geschützt halten. Der Schutz sitzt in `<AppGate>` an der Route, nicht hier.
-const CreatorDashboard = lazy(() => import('./pages/CreatorDashboard').then((m) => ({ default: m.CreatorDashboard })));
+// Der frühere parallele Chat unter /assistant ist abgelöst: /assistant und
+// /dashboard landen beide auf /app/dashboard (Governance OS + Assistent).
 // Compliance Tools (Free)
 import { AvvGenerator } from './pages/AvvGenerator';
 import { CookieScanner } from './pages/CookieScanner';
@@ -323,6 +317,7 @@ const GovernanceHomeView = lazy(() => import('./features/governance/GovernanceHo
 const GovernanceEvidenceIntegrityView = lazy(() => import('./features/governance/EvidenceIntegrityView').then((m) => ({ default: m.EvidenceIntegrityView })));
 const GovernanceConnectorRegistryView = lazy(() => import('./features/governance/ConnectorRegistryView').then((m) => ({ default: m.ConnectorRegistryView })));
 const GovernanceShadowReadinessView = lazy(() => import('./features/governance/ShadowReadinessView').then((m) => ({ default: m.ShadowReadinessView })));
+const GovernanceRouterView = lazy(() => import('./features/governance/GovernanceRouterView').then((m) => ({ default: m.GovernanceRouterView })));
 const GovernanceMicrosoft365View = lazy(() => import('./features/governance/Microsoft365View').then((m) => ({ default: m.Microsoft365View })));
 const GovernancePolicyTemplatesView = lazy(() => import('./features/governance/PolicyTemplatesView').then((m) => ({ default: m.PolicyTemplatesView })));
 const GovernanceComplianceReportView = lazy(() => import('./features/governance/ComplianceReportView').then((m) => ({ default: m.ComplianceReportView })));
@@ -599,9 +594,10 @@ function RoutesWithTracking() {
       <Route path="/enterprise-ai-os" element={<EnterpriseAiOs />} />
       <Route path="/enterprise-ai-os/founding-access" element={<EnterpriseAiOsFoundingAccess />} />
       <Route path="/dashboard/enterprise-ai-os" element={<EnterpriseAiOsDashboard />} />
-      {/* AI Command Center — kompakte Operating-Layer-UI (frontend-only, no backend) */}
-      <Route path="/command-center" element={<Navigate to="/assistant" replace />} />
-      <Route path="/ai-command-center" element={<Navigate to="/assistant" replace />} />
+      {/* AI Command Center — Aliase der Workspace-Fläche, nicht mehr eine
+          eigene Chat-Seite. /assistant und /dashboard sind dieselbe Fläche. */}
+      <Route path="/command-center" element={<Navigate to="/app/dashboard" replace />} />
+      <Route path="/ai-command-center" element={<Navigate to="/app/dashboard" replace />} />
       <Route path="/command-center/showcase" element={<AiCommandCenterShowcase />} />
       <Route path="/dashboard/enterprise-ai-os/discovery" element={<EnterpriseAiOsDiscovery />} />
       {/* Onboarding nach Stripe-Checkout */}
@@ -737,7 +733,7 @@ function RoutesWithTracking() {
       {/* Dashboard */}
       {/* ── Kanonische Workspace-Routen (/app/*) — Governance OS ──
           Wiederverwendung bestehender Views; alte Pfade redirecten unten.
-          Chat (CreatorDashboard) bleibt als Assistent unter /assistant. */}
+          Assistent und Dashboard sind dieselbe Fläche: /app/dashboard. */}
       {/* ── Governance OS Browser Shell — alle /app/* Routen ──
           GovernanceBrowserShell: TopBar + Tabs + Canvas + AssistantPanel + StatusBar.
           Auth Guards bleiben in den View-Komponenten selbst (AuthGate / RequireAal2). */}
@@ -860,6 +856,7 @@ function RoutesWithTracking() {
       <Route path="/app/governance/connectors" element={<GovernanceBrowserShell><GovernanceConnectorRegistryView /></GovernanceBrowserShell>} />
       <Route path="/app/governance/microsoft365" element={<GovernanceBrowserShell><GovernanceMicrosoft365View /></GovernanceBrowserShell>} />
       <Route path="/app/governance/shadow" element={<GovernanceBrowserShell><GovernanceShadowReadinessView /></GovernanceBrowserShell>} />
+      <Route path="/app/governance/router" element={<GovernanceBrowserShell><GovernanceRouterView /></GovernanceBrowserShell>} />
       <Route path="/app/policies/templates" element={<GovernanceBrowserShell><GovernancePolicyTemplatesView /></GovernanceBrowserShell>} />
       <Route path="/app/connectors" element={<GovernanceBrowserShell><GovernanceConnectorsView /></GovernanceBrowserShell>} />
       <Route path="/app/costs" element={<GovernanceBrowserShell><GovernanceCostTrackingView /></GovernanceBrowserShell>} />
@@ -898,15 +895,16 @@ function RoutesWithTracking() {
 
       {/* ── Redirects: konkurrierende Einstiege → kanonische Workspace-URL ──
           Alte URLs werden NICHT entfernt (keine 404 / keine toten Bookmarks).
-          Chat bleibt als Assistent unter /assistant erreichbar — seit dem
-          Absichern der Route allerdings nur angemeldet, siehe `AppGate` dort. */}
-      <Route path="/assistant" element={<AppGate><CreatorDashboard /></AppGate>} />
-      <Route path="/dashboard" element={<Navigate to="/app" replace />} />
+          /assistant und /dashboard sind dieselbe Fläche wie /app/dashboard:
+          Governance OS mit Assistent (Workspace-Chat + Sidebar). Das Ziel
+          trägt AppGate; die Aliase selbst brauchen keinen zweiten Guard. */}
+      <Route path="/assistant" element={<Navigate to="/app/dashboard" replace />} />
+      <Route path="/dashboard" element={<Navigate to="/app/dashboard" replace />} />
       <Route path="/dashboard/business" element={<BusinessDashboard />} />
       <Route path="/dashboard/audit" element={<AuditDashboardView />} />
       <Route path="/dashboard/agents" element={<AgentOsAdminPage />} />
       <Route path="/business" element={<BusinessDashboard />} />
-      {/* `/kodee` führt denselben Gateway-Aufruf wie `/assistant`
+      {/* `/kodee` führt denselben Gateway-Aufruf wie der frühere Assistent
           (`processAIGatewayRequest`) und braucht deshalb denselben Schutz:
           ohne Gate könnte jeder Besucher Modellaufrufe auslösen.
           `/kodee/connections` ist nicht betroffen — `ConnectionsView`

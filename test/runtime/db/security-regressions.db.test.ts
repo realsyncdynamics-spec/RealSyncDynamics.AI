@@ -1,10 +1,11 @@
 /**
  * Sicherheits-Regressionen — DB-Integration.
  *
- * Deckt die drei Befunde ab, die in diesem Durchgang behoben wurden:
+ * Deckt die Befunde ab, die in diesem Durchgang behoben wurden:
  *   C-02  Stripe-Upsert lief auf stripe_subscription_id statt tenant_id
  *   IDOR  get_compliance_timeline ohne Mitgliedschaftspruefung, anon-ausfuehrbar
  *   M-03  SECURITY-DEFINER-Funktionen ohne gesetzten search_path
+ *   F-08  Tabellen in public ohne Row Level Security (RLS-Abdeckung)
  *
  * Warum als DB-Test und nicht als Unit-Test: Alle drei sind Eigenschaften des
  * erzeugten Schemas, nicht des TypeScript-Codes. Ein Unit-Test kann eine
@@ -346,5 +347,97 @@ d('Schema-weite Invarianten fuer SECURITY DEFINER', () => {
         WHERE n.nspname='public' AND p.proname='get_compliance_timeline'`,
     );
     expect(rows[0]!.cfg?.some((c) => c.startsWith('search_path='))).toBe(true);
+  });
+});
+
+d('F-08 — RLS-Abdeckung jeder Tabelle in public', () => {
+  let ctx: DbCtx | null = null;
+  beforeEach(async () => { ctx = await openDb(); });
+  afterEach(async () => { await closeDb(ctx); ctx = null; });
+
+  /**
+   * BEKANNTE SCHULD — Basistabellen in public OHNE Row Level Security.
+   *
+   * Eine Tabelle ohne RLS ist in Supabase fuer anon/authenticated offen,
+   * sobald die Rolle das Tabellenrecht hat (Default in `public`). Genau das
+   * war Audit-Befund F-08: "35 Tabellen ohne RLS, anonym erreichbar". Der
+   * Grossteil ist inzwischen abgetragen; diese acht bleiben (gemessen am
+   * 2026-09-05 gegen das voll migrierte Schema, `pg_class.relrowsecurity`).
+   *
+   * Wie BEKANNTE_SCHULD/ABGETRAGEN oben ist das eine Ratsche, kein Freibrief:
+   * Die Liste darf nur SCHRUMPFEN. Wer eine Tabelle mit RLS nachruestet,
+   * streicht ihren Namen hier — der dritte Test faellt sonst um. Wer eine neue
+   * Tabelle ohne RLS anlegt, wird vom ersten Test gefangen, ohne dass jemand
+   * diese Datei pflegt.
+   *
+   * Gruppen:
+   *  - `_circuit_breakers`/`_operation_metrics`/`_rate_limits`: interne
+   *    Monitoring-Infra (20260717192000). Sollten RLS-aktiviert-ohne-Policy
+   *    sein (service-role-only), nicht RLS-aus.
+   *  - `memory_retention_policies` (RFC-003), `subscription_addons`,
+   *    `provenance_records` (SENSIBEL — Herkunftsnachweise), `seo_marketing_audit_log`,
+   *    `social_publishing_metrics_hourly`: fachliche Tabellen, RLS + Tenant-Policy
+   *    faellig (additive Migration).
+   */
+  const RLS_BEKANNTE_SCHULD = [
+    '_circuit_breakers',
+    '_operation_metrics',
+    '_rate_limits',
+    'memory_retention_policies',
+    'provenance_records',
+    'seo_marketing_audit_log',
+    'social_publishing_metrics_hourly',
+    'subscription_addons',
+  ];
+
+  // Basistabellen (relkind='r') in public ohne RLS. Partitions-KINDER
+  // (relispartition) sind ausgenommen: die Policy sitzt auf der Elterntabelle
+  // und greift beim Zugriff ueber sie (vgl. runtime_events, CLAUDE.md §5).
+  async function baseTablesWithoutRls(): Promise<string[]> {
+    const { rows } = await ctx!.client.query<{ relname: string }>(`
+      SELECT c.relname
+      FROM pg_class c
+      JOIN pg_namespace n ON n.oid = c.relnamespace
+      WHERE n.nspname = 'public'
+        AND c.relkind = 'r'
+        AND NOT c.relispartition
+        AND NOT c.relrowsecurity
+      ORDER BY c.relname
+    `);
+    return rows.map((r) => r.relname);
+  }
+
+  it('keine NEUE Tabelle in public ohne RLS', async () => {
+    // Ganz-Schema-Invariante statt Namensliste: eine neu hinzukommende Tabelle
+    // ohne RLS faellt hier automatisch auf. Nur die dokumentierte Altschuld
+    // ist ausgenommen.
+    const offenders = await baseTablesWithoutRls();
+    const neu = offenders.filter((t) => !RLS_BEKANNTE_SCHULD.includes(t));
+    expect(neu).toEqual([]);
+  });
+
+  it('partitionierte Eltern-Tabellen (relkind=p) tragen RLS', async () => {
+    // Der Blinde-Fleck-Fall: haette ein partitionierter Eltern KEINE RLS, waere
+    // ueber ihn die ganze Partitionsfamilie offen. runtime_events traegt sie.
+    const { rows } = await ctx!.client.query<{ relname: string }>(`
+      SELECT c.relname
+      FROM pg_class c
+      JOIN pg_namespace n ON n.oid = c.relnamespace
+      WHERE n.nspname = 'public'
+        AND c.relkind = 'p'
+        AND NOT c.relrowsecurity
+      ORDER BY c.relname
+    `);
+    expect(rows.map((r) => r.relname)).toEqual([]);
+  });
+
+  it('die Schuldenliste ist aktuell — kein Eintrag hat heimlich RLS bekommen oder wurde entfernt', async () => {
+    // Gegenprobe zur Ratsche (wie ABGETRAGEN oben): Die Ausnahmeliste darf nicht
+    // verrotten. Steht ein Name hier, ist aber nicht mehr offen (RLS ergaenzt
+    // ODER Tabelle geloescht), muss er gestrichen werden — sonst verdeckt die
+    // Liste, dass die Schuld schon kleiner ist.
+    const offenders = new Set(await baseTablesWithoutRls());
+    const stale = RLS_BEKANNTE_SCHULD.filter((t) => !offenders.has(t));
+    expect(stale).toEqual([]);
   });
 });

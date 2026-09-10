@@ -3,18 +3,14 @@ import { Link } from 'react-router-dom';
 import { Menu, Snowflake, X } from 'lucide-react';
 
 const LINKS = [
-  { label: 'Produkt', to: '/#platform', hash: true },
+  { label: 'Produkt', to: '/#platform' },
   { label: 'Branchen', to: '/branchen' },
-  { label: 'Evidence', to: '/#evidence', hash: true },
+  { label: 'Evidence', to: '/#evidence' },
   { label: 'EU AI Act', to: '/ai-act' },
   { label: 'Preise', to: '/pricing' },
   { label: 'Login', to: '/welcome' },
 ] as const;
 
-/**
- * Gemeinsame dunkle Public-Chrome für Startseite und /branchen.
- * Kein Theme-Wechsel — nur Navigation verdrahten.
- */
 export function PublicDarkHeader({ overlay = false }: { overlay?: boolean }) {
   const [open, setOpen] = useState(false);
 
@@ -30,8 +26,8 @@ export function PublicDarkHeader({ overlay = false }: { overlay?: boolean }) {
 
         <nav className="hidden items-center gap-6 md:flex" aria-label="Hauptnavigation">
           {LINKS.map((item) =>
-            item.to.startsWith('/#') ? (
-              <a key={item.to} href={item.to.replace(/^\//, '')} className="text-sm text-white/65 transition-colors hover:text-white">
+            item.to.includes('#') ? (
+              <a key={item.to} href={item.to} className="text-sm text-white/65 transition-colors hover:text-white">
                 {item.label}
               </a>
             ) : (
@@ -62,13 +58,8 @@ export function PublicDarkHeader({ overlay = false }: { overlay?: boolean }) {
       {open && (
         <div className="border-t border-white/10 bg-[rgb(3,7,18)] px-6 py-3 md:hidden">
           {LINKS.map((item) =>
-            item.to.startsWith('/#') ? (
-              <a
-                key={item.to}
-                href={item.to.replace(/^\//, '')}
-                className="block py-2.5 text-sm text-white/80"
-                onClick={() => setOpen(false)}
-              >
+            item.to.includes('#') ? (
+              <a key={item.to} href={item.to} className="block py-2.5 text-sm text-white/80" onClick={() => setOpen(false)}>
                 {item.label}
               </a>
             ) : (

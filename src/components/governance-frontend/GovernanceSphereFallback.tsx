@@ -41,8 +41,9 @@ export function GovernanceSphereFallback({
             <li key={node.id}>
               <button
                 type="button"
+                draggable={false}
                 onClick={() => onSelect(active ? null : node)}
-                className={`w-full rounded-xl border px-3 py-2.5 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e8c98a]/60 ${
+                className={`w-full select-none rounded-xl border px-3 py-2.5 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e8c98a]/60 ${
                   active
                     ? 'border-[#e8c98a]/55 bg-[#e8c98a]/12'
                     : 'border-white/10 bg-black/35 hover:border-[#e8c98a]/35 hover:bg-black/45'

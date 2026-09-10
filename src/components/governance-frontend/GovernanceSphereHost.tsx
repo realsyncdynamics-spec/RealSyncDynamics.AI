@@ -27,9 +27,9 @@ function useWebGlAvailable() {
   useEffect(() => {
     try {
       const canvas = document.createElement('canvas');
-      const gl =
-        canvas.getContext('webgl2', { failIfMajorPerformanceCaveat: true }) ||
-        canvas.getContext('webgl', { failIfMajorPerformanceCaveat: true });
+      // Prefer any WebGL context. Major-performance caveat would force 2D
+      // on many remote/VM GPUs even when a decorative sphere runs fine.
+      const gl = canvas.getContext('webgl2') || canvas.getContext('webgl');
       setOk(Boolean(gl));
     } catch {
       setOk(false);
@@ -145,11 +145,44 @@ export function GovernanceSphereHost() {
           </div>
         )}
 
+        {/* Always-on HTML picker — reliable hit targets + a11y alongside 3D. */}
+        {use3d && (
+          <div className="pointer-events-none absolute inset-x-0 top-3 z-10 flex justify-center px-3">
+            <div className="pointer-events-auto flex max-w-full gap-1.5 overflow-x-auto rounded-full border border-white/10 bg-black/55 p-1.5 backdrop-blur-md [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              {GOVERNANCE_SPHERE_NODES.map((node) => {
+                const active = selected?.id === node.id;
+                return (
+                  <button
+                    key={node.id}
+                    type="button"
+                    draggable={false}
+                    onClick={() => handleSelect(active ? null : node)}
+                    className={`shrink-0 select-none rounded-full px-2.5 py-1 font-mono text-[9px] tracking-[.12em] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e8c98a]/60 ${
+                      active
+                        ? 'bg-[#e8c98a]/20 text-[#f3d9a0]'
+                        : 'text-white/55 hover:bg-white/10 hover:text-white/85'
+                    }`}
+                    aria-pressed={active}
+                  >
+                    <span
+                      className={`mr-1.5 inline-block h-1.5 w-1.5 rounded-full ${
+                        node.state === 'operational' ? 'bg-emerald-400' : 'bg-[#d4a574]'
+                      }`}
+                      aria-hidden="true"
+                    />
+                    {node.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {selected && <NodePanel node={selected} onClose={() => setSelected(null)} />}
 
         {!selected && (
           <p className="pointer-events-none absolute bottom-3 left-3 right-3 font-mono text-[9px] tracking-[.12em] text-white/30 sm:right-auto sm:max-w-[16rem]">
-            Drag to rotate · Scroll / pinch to zoom · Tap a node for context
+            Drag to rotate · Scroll / pinch to zoom · Select a node for context
           </p>
         )}
       </div>

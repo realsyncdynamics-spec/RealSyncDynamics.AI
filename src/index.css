@@ -613,12 +613,12 @@ html, body {
    `prefers-reduced-motion` schaltet sie vollstaendig ab. */
 @keyframes landing-hero-float {
   0%   { transform: translate3d(0, 0, 0); }
-  50%  { transform: translate3d(0, -6px, 0); }
+  50%  { transform: translate3d(0, -5px, 0); }
   100% { transform: translate3d(0, 0, 0); }
 }
 
 .landing-hero-card {
-  animation: landing-hero-float 9s ease-in-out infinite;
+  animation: landing-hero-float 8.5s ease-in-out infinite;
   will-change: transform;
 }
 
@@ -778,22 +778,17 @@ html, body {
   z-index: -1;
 }
 
-/* ── Kaltes Morgenlicht hinter der Erdkugel ──────────────────────────────
-   Freigegeben am 2026-08-19 (Frage 1: „kaltes Morgenlicht", der warme
-   Sonnenaufgang wurde erneut abgelehnt). Das Licht steigt vom Horizont auf
-   und bleibt dabei in Cyan/Weiss — dieselbe Farbwelt wie der Rest.
-
-   `mix-blend-mode: screen` statt einer halbtransparenten Flaeche: Screen
-   hellt nur auf und kann die Sterne und Lichtpunkte im Bild nicht
-   zudecken. Eine normale Ueberlagerung wuerde sie milchig verwaschen. */
+/* ── Horizontlicht hinter der Erdkugel ───────────────────────────────────
+   An die Gold/Tan-UI der P0-Landing gebunden, kuehl und niedrig dosiert —
+   kein warmer Sonnenaufgang. Screen-Blend hellt nur auf. */
 .hero-dawn {
   position: absolute;
   inset: 0;
   pointer-events: none;
   mix-blend-mode: screen;
   background-image:
-    radial-gradient(58% 34% at 62% 88%, rgba(103, 232, 249, .34) 0%, rgba(34, 211, 238, .16) 38%, transparent 72%),
-    radial-gradient(26% 15% at 62% 92%, rgba(226, 254, 255, .5) 0%, rgba(226, 254, 255, .12) 55%, transparent 100%);
+    radial-gradient(58% 34% at 62% 88%, rgba(232, 201, 138, .22) 0%, rgba(186, 210, 220, .12) 40%, transparent 72%),
+    radial-gradient(26% 15% at 62% 92%, rgba(255, 248, 238, .42) 0%, rgba(232, 201, 138, .10) 55%, transparent 100%);
 }
 
 /* Der schmale Lichtsaum genau auf der Horizontlinie. Getrennt vom Schein
@@ -808,9 +803,9 @@ html, body {
   background-image: linear-gradient(
     90deg,
     transparent 0%,
-    rgba(103, 232, 249, .0) 22%,
-    rgba(186, 246, 255, .45) 62%,
-    rgba(103, 232, 249, .0) 88%,
+    rgba(232, 201, 138, .0) 22%,
+    rgba(243, 217, 160, .40) 62%,
+    rgba(232, 201, 138, .0) 88%,
     transparent 100%
   );
 }

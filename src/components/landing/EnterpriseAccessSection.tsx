@@ -52,24 +52,24 @@ export function EnterpriseAccessSection() {
   return (
     <section
       id="enterprise"
-      className="border-t border-white/10 py-20 md:py-28"
+      className="border-t border-white/10 py-24 md:py-32"
       aria-labelledby="enterprise-heading"
     >
       <div className="mx-auto max-w-7xl px-6 lg:px-10">
-        <div className="grid gap-12 lg:grid-cols-[.85fr_1.15fr] lg:items-start">
+        <div className="grid gap-14 lg:grid-cols-[.85fr_1.15fr] lg:items-start">
           <div>
-            <p className="font-mono text-[10px] tracking-[.25em] text-cyan-400">ENTERPRISE-ZUGANG</p>
+            <p className="font-mono text-[10px] tracking-[.25em] text-[#e8c98a]">ENTERPRISE-ZUGANG</p>
             <h2
               id="enterprise-heading"
-              className="mt-3 text-4xl tracking-tight sm:text-5xl"
+              className="mt-4 text-[2rem] tracking-tight sm:text-5xl"
               style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontWeight: 500 }}
             >
-              Governance mit <span className="text-cyan-400">Ansprechpartner.</span>
+              Governance mit <span className="text-[#e8c98a]">Ansprechpartner.</span>
             </h2>
-            <p className="mt-5 leading-relaxed text-white/55">{tier.tagline}</p>
+            <p className="mt-5 text-base leading-relaxed text-white/55">{tier.tagline}</p>
             <p className="mt-3 text-sm leading-relaxed text-white/40">{tier.subline}</p>
 
-            <div className="mt-7 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+            <div className="mt-8 flex flex-wrap items-baseline gap-x-3 gap-y-1">
               <span className="text-3xl font-semibold text-white">{tier.priceString} €</span>
               <span className="font-mono text-[11px] uppercase tracking-[.18em] text-white/40">
                 {tier.priceSuffix}
@@ -81,10 +81,10 @@ export function EnterpriseAccessSection() {
               </p>
             )}
 
-            <div className="mt-7 flex flex-wrap gap-3">
+            <div className="mt-8 flex flex-wrap gap-3">
               <Link
                 to="/contact-sales?source=landing-enterprise"
-                className="inline-flex items-center gap-2 rounded-full bg-cyan-400 px-7 py-3.5 font-semibold text-[rgb(3,7,18)] transition hover:bg-cyan-300"
+                className="inline-flex items-center gap-2 rounded-full bg-[#f0e6d2] px-7 py-3.5 font-semibold text-[#1a1714] transition hover:bg-[#f6efe4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e8c98a] focus-visible:ring-offset-2 focus-visible:ring-offset-[rgb(3,7,18)]"
               >
                 {CTA.enterprise} <ArrowRight className="h-4 w-4" />
               </Link>
@@ -93,7 +93,7 @@ export function EnterpriseAccessSection() {
                    Abgeleitet statt getippt, damit ein umbenannter Tarif die
                    Verlinkung nicht still ins Leere laufen laesst. */
                 to={`/pricing#plan-${tier.id}`}
-                className="inline-flex items-center gap-2 rounded-full border border-white/25 px-7 py-3.5 font-medium text-white transition hover:border-white/50 hover:bg-white/5"
+                className="inline-flex items-center gap-2 rounded-full border border-[#e8c98a]/40 px-7 py-3.5 font-medium text-[#f3d9a0] transition hover:border-[#e8c98a]/65 hover:bg-[#e8c98a]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e8c98a]/50"
               >
                 Leistungen im Detail
               </Link>
@@ -127,11 +127,11 @@ export function EnterpriseAccessSection() {
             />
 
             <div className="surface-panel rounded-2xl p-6 sm:col-span-2" data-reveal data-reveal-group="enterprise">
-              <p className="font-mono text-[10px] tracking-[.2em] text-cyan-300/70">IM ZUGANG ENTHALTEN</p>
+              <p className="font-mono text-[10px] tracking-[.2em] text-[#e8c98a]/80">IM ZUGANG ENTHALTEN</p>
               <ul className="mt-4 grid gap-2.5 sm:grid-cols-2">
                 {accessPoints.map((point) => (
                   <li key={point} className="flex items-start gap-2.5 text-sm leading-relaxed text-white/60">
-                    <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-cyan-400" />
+                    <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-[#e8c98a]" />
                     {point}
                   </li>
                 ))}
@@ -155,7 +155,7 @@ function AccessCard({
 }) {
   return (
     <div className="surface-panel rounded-2xl p-6" data-reveal data-reveal-group="enterprise">
-      <Icon className="h-5 w-5 text-cyan-400" strokeWidth={1.5} />
+      <Icon className="h-5 w-5 text-[#e8c98a]" strokeWidth={1.5} />
       <h3 className="mt-4 font-semibold">{title}</h3>
       <p className="mt-2 text-sm leading-relaxed text-white/50">{text}</p>
     </div>

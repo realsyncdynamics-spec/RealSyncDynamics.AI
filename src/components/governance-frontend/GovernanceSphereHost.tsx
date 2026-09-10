@@ -61,7 +61,7 @@ function NodePanel({
           type="button"
           onClick={onClose}
           className="rounded-md px-2 py-1 font-mono text-[10px] tracking-[.12em] text-white/45 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e8c98a]/50"
-          aria-label="Close node details"
+          aria-label="Knotendetails schließen"
         >
           ESC
         </button>
@@ -70,7 +70,7 @@ function NodePanel({
       {node.detail && (
         <p className="mt-2 font-mono text-[10px] tracking-[.08em] text-white/35">{node.detail}</p>
       )}
-      <p className="mt-3 font-mono text-[9px] tracking-[.14em] text-[#e8c98a]/55">DEMO DATA</p>
+      <p className="mt-3 font-mono text-[9px] tracking-[.14em] text-[#e8c98a]/55">DEMO / SIMULIERT</p>
     </aside>
   );
 }
@@ -182,7 +182,7 @@ export function GovernanceSphereHost() {
 
         {!selected && (
           <p className="pointer-events-none absolute bottom-3 left-3 right-3 font-mono text-[9px] tracking-[.12em] text-white/30 sm:right-auto sm:max-w-[16rem]">
-            Drag to rotate · Scroll / pinch to zoom · Select a node for context
+            Ziehen zum Drehen · Scrollen / Pinch zum Zoomen · Knoten wählen
           </p>
         )}
       </div>

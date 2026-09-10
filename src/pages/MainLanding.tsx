@@ -55,11 +55,11 @@ export function MainLanding() {
   return (
     <div className="landing-context min-h-screen bg-[rgb(3,7,18)] text-white antialiased" style={{ backgroundColor: BG, fontFamily: SANS }}>
       <SEOHead
-        title="RealSyncDynamics.AI — AI Governance Operating System"
-        description="Govern AI. Prove Everything. Operate with Confidence. RealSyncDynamics.AI is the AI Governance OS for DSGVO and EU AI Act — detect, govern, prove, automate."
+        title="RealSyncDynamics.AI — Das Governance OS für DSGVO & EU AI Act"
+        description="Das Governance OS für DSGVO und EU AI Act: AI-Systeme, Websites, Agents und Datenflüsse erfassen, Risiken bewerten, Governance durchsetzen und Nachweise führen."
         canonical="/"
-        ogTitle="AI Governance, Running in Real Time"
-        ogDescription="RealSyncDynamics.AI — AI Governance Operating System. Detect. Govern. Prove. Automate."
+        ogTitle="Das Governance OS für DSGVO & EU AI Act"
+        ogDescription="RealSyncDynamics.AI verbindet DSGVO, EU AI Act, Policy-Durchsetzung und auditfähige Nachweise in einer operativen Governance Runtime."
       />
 
       <PublicDarkHeader overlay />
@@ -71,12 +71,11 @@ export function MainLanding() {
               <source srcSet="/europe-globe.webp" type="image/webp" />
               <img
                 src="/europe-globe.jpg"
-                alt=""
+                alt="Europa bei Nacht mit digitalen Datenströmen"
                 width={1376}
                 height={768}
                 fetchPriority="high"
                 className="h-full w-full object-cover object-right opacity-55"
-                aria-hidden="true"
               />
             </picture>
             <div className="hero-dawn" aria-hidden="true" />
@@ -96,7 +95,7 @@ export function MainLanding() {
           <div className="relative z-10 mx-auto grid min-h-[min(100svh,960px)] max-w-7xl items-center gap-12 px-6 pb-16 pt-28 sm:pb-20 sm:pt-32 lg:min-h-[880px] lg:grid-cols-[1.05fr_.95fr] lg:gap-12 lg:px-10 lg:pb-24">
             <div className="max-w-3xl">
               <p className="mb-6 inline-flex items-center gap-2.5 rounded-full border border-[#e8c98a]/40 bg-[#e8c98a]/10 px-3.5 py-1.5 font-mono text-[10px] uppercase tracking-[.22em] text-[#f3d9a0] sm:mb-8">
-                AI Governance Operating System
+                AI Governance Runtime
               </p>
 
               <h1
@@ -122,8 +121,9 @@ export function MainLanding() {
               </p>
 
               <p className="mt-5 max-w-2xl text-[0.95rem] leading-relaxed text-white/65 sm:mt-6 sm:text-lg sm:leading-[1.65]">
-                Govern AI. Prove Everything. Operate with Confidence. Erfassen, bewerten,
-                durchsetzen und nachweisen — in einer kontinuierlichen Governance Runtime.
+                AI-Systeme, Websites, Agents und Datenflüsse erfassen, Risiken bewerten,
+                Governance durchsetzen und Nachweise führen — in einer kontinuierlichen
+                Governance Runtime.
               </p>
 
               <div className="mt-8 grid gap-5 border-t border-white/10 pt-6 sm:mt-9 sm:grid-cols-3 sm:gap-0 sm:divide-x sm:divide-white/10 sm:pt-7">
@@ -161,7 +161,7 @@ export function MainLanding() {
                   href="#platform"
                   className="inline-flex items-center gap-2 rounded-full border border-[#e8c98a]/55 bg-[#e8c98a]/[0.06] px-7 py-3.5 font-medium text-[#f3d9a0] transition hover:border-[#e8c98a]/75 hover:bg-[#e8c98a]/12 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e8c98a]/60"
                 >
-                  Explore the Governance OS <ArrowRight className="h-4 w-4" />
+                  Governance OS ansehen <ArrowRight className="h-4 w-4" />
                 </a>
               </div>
 

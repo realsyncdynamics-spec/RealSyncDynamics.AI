@@ -7,25 +7,37 @@
 
 export type HeroHeadlineSegment = {
   text: string;
-  /** true → wird in der Akzentfarbe gerendert. */
+  /** true → wird in der Akzentfarbe (cyan) gerendert. */
   accent?: boolean;
 };
 
 /**
- * Governance OS Hero — Positioning evolution (Governance Environment entry).
+ * Governance-Level Hero — Positionierung v5 (2026-08-19).
  *
- * Claim direction: Govern AI. Prove Everything. Operate with Confidence.
- * Hero lines move toward Mission-Control / OS feel without dropping the
- * product category signal “Governance”.
+ * v5 kehrt zur Positionierung „Governance OS" zurueck. „Das
+ * KI-Betriebssystem" aus v4 war die Uebersetzung einer Entwurfsvorlage und
+ * beschrieb die Kategorie zu breit: Das Produkt ist keine KI-Plattform,
+ * sondern die Governance-Schicht darueber (CLAUDE.md §1).
  *
- * ## Contract
+ * Drei kurze Zeilen. Zwei laengere wurden bei `lg:text-7xl` umbrochen und
+ * liessen „Act" als Waisenwort allein stehen; kurze Zeilen tragen die
+ * Groesse, ohne dass der Browser sie selbst bricht.
  *
- * `MainLanding` renders H1 exclusively from `HERO_HEADLINE`. E2E / FE-001
- * read the same source — change here, not in the page.
+ * ## Warum diese Datei neunmal wirkungslos war
+ *
+ * Sie nannte sich Single Source of Truth, hatte aber **keinen einzigen
+ * Produktions-Konsumenten**: Die H1 stand hartkodiert in `MainLanding.tsx`,
+ * gelesen wurde `HERO_HEADLINE` nur von den E2E-Tests. Jeder Landing-Umbau,
+ * der diese Datei nicht mitpflegte, ließ FE-001 auffliegen — neunmal.
+ *
+ * Seit v4 rendert die Startseite die H1 aus `HERO_HEADLINE`. Damit ist der
+ * Kreis geschlossen: Wer die Headline ändert, ändert sie hier, und Seite wie
+ * Test folgen automatisch.
  */
 export const HERO_HEADLINE: readonly (readonly HeroHeadlineSegment[])[] = [
-  [{ text: 'AI Governance,' }],
-  [{ text: 'Running in Real Time', accent: true }],
+  [{ text: 'Das Governance OS' }],
+  [{ text: 'für DSGVO', accent: true }],
+  [{ text: '& EU AI Act', accent: true }],
 ];
 
 /** Reine Textzeilen der H1 — für Tests und Accessible-Name-Abgleich. */
@@ -34,9 +46,9 @@ export const HERO_HEADLINE_LINES: readonly string[] = HERO_HEADLINE.map((segment
 );
 
 /** Substring für den FE-001-Check. Muss vollständig innerhalb einer Zeile liegen. */
-export const HERO_HEADLINE_TEST_SUBSTRING = 'AI Governance';
+export const HERO_HEADLINE_TEST_SUBSTRING = 'Das Governance OS';
 
-/** Motto under the H1 — Detect.Govern.Prove.Automate */
+/** Mono-Motto unter der H1 — Metadaten, ersetzt die Headline nicht. */
 export const HERO_OPERATING_LOOP = 'Detect · Govern · Prove · Automate' as const;
 
 if (!HERO_HEADLINE_LINES.some((line) => line.includes(HERO_HEADLINE_TEST_SUBSTRING))) {

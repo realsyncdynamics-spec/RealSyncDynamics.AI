@@ -146,27 +146,29 @@ describe('Erreichbarkeit — fertige Seiten sind von der Startseite aus verlinkt
    *
    * `/ai-act` und `/sicherheit` existieren, werden prerendert und sind aus
    * der gemeinsamen PublicDarkHeader-Nav auf `/` und `/branchen` verlinkt.
-   * Der Test liest deshalb den Landing-Shell (MainLanding + Header), nicht
-   * nur die Page-Datei.
+   * Der Test liest deshalb den Landing-Shell (MainLanding + Header). Links
+   * stehen im LINKS-Array als `to: '/…'`, nicht als JSX-`to="/…"`.
    */
   const shell = landingShell();
   const app = readFileSync(resolve(__dirname, '../../src/App.tsx'), 'utf8');
 
   it.each(['/ai-act', '/sicherheit'])('%s ist verlinkt und geroutet', (path) => {
-    expect(shell, `Die Startseite (inkl. PublicDarkHeader) verlinkt ${path} nicht.`).toContain(
-      `to="${path}"`,
-    );
+    expect(
+      shell,
+      `Die Startseite (inkl. PublicDarkHeader) verlinkt ${path} nicht.`,
+    ).toContain(`to: '${path}'`);
     expect(app, `${path} hat keine Route — der Link ginge ins Leere.`).toContain(`path="${path}"`);
   });
 
   it('Branchen steht in der Public-Nav', () => {
-    expect(shell).toContain('to="/branchen"');
+    expect(shell).toContain("to: '/branchen'");
     expect(shell).toContain("label: 'Branchen'");
   });
 
   it('Header-CTA folgt der Governance-OS-Hierarchie', () => {
     expect(shell).toContain('Kostenlosen Governance Scan starten');
-    expect(shell).toContain('to="/governance-runtime"');
+    expect(shell).toContain("to: '/governance-runtime'");
+    expect(shell).toContain('PublicDarkHeader');
   });
 });
 

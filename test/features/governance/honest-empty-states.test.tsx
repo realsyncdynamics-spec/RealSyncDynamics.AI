@@ -14,6 +14,9 @@ vi.mock('@/src/features/governance/incidentsApi', () => ({
 vi.mock('@/src/features/governance/governanceApi', () => ({
   fetchTenantEvents: vi.fn(async () => []),
   fetchTenantEvidence: vi.fn(async () => []),
+  countTenantEvidence: vi.fn(async () => 0),
+  countTenantEvidenceHashed: vi.fn(async () => 0),
+  countTenantEvidenceSince: vi.fn(async () => 0),
 }));
 
 vi.mock('@/src/features/evidence-vault/evidenceVaultApi', () => ({

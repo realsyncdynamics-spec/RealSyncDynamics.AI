@@ -3,7 +3,8 @@
 // Layout: TopBar → Tabs → [Canvas + GovernanceChatSidebar] → MobileBottomNav → StatusBar
 // Embedded Browser: Address-Bar-Eingabe einer echten URL öffnet EmbeddedBrowserCanvas
 // über dem Canvas; Chat-Sidebar bleibt seitlich sichtbar.
-import React, { useState } from 'react';
+// Command Center: Ctrl/Cmd+K öffnet die Befehlspalette über dem Shell-Chrome.
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BrowserTopBar } from './BrowserTopBar';
 import { GovernanceTabs } from './GovernanceTabs';
@@ -13,6 +14,12 @@ import { MobileBottomNavigation } from './MobileBottomNavigation';
 import { EmbeddedBrowserCanvas } from './EmbeddedBrowserCanvas';
 import { GovernanceChatSidebar } from './GovernanceChatSidebar';
 import { PaymentGraceBanner } from './PaymentGraceBanner';
+import { CommandCenter } from './CommandCenter';
+import {
+  buildCommandCatalog,
+  isCommandRunnable,
+  type CommandDefinition,
+} from './commandCenterCatalog';
 import { RouteEntitlementGate } from '../../core/access/RouteEntitlementGate';
 
 interface GovernanceBrowserShellProps {
@@ -24,6 +31,9 @@ export function GovernanceBrowserShell({ children }: GovernanceBrowserShellProps
   const [assistantOpen, setAssistantOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [embeddedUrl, setEmbeddedUrl] = useState<string | null>(null);
+  const [commandCenterOpen, setCommandCenterOpen] = useState(false);
+
+  const commandItems = useMemo(() => buildCommandCatalog(), []);
 
   const handleLoadUrl = (url: string) => setEmbeddedUrl(url);
   const handleCloseEmbed = () => setEmbeddedUrl(null);
@@ -32,12 +42,40 @@ export function GovernanceBrowserShell({ children }: GovernanceBrowserShellProps
     setEmbeddedUrl(null);
   };
 
+  const handleRunCommand = useCallback(
+    (item: CommandDefinition) => {
+      if (!isCommandRunnable(item)) return;
+      if (item.actionId === 'open-assistant') {
+        setAssistantOpen(true);
+        return;
+      }
+      if (item.path) {
+        navigate(item.path);
+      }
+    },
+    [navigate],
+  );
+
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (!(e.metaKey || e.ctrlKey)) return;
+      if (e.key.toLowerCase() !== 'k') return;
+      // Ignore when the event is already handled by a nested editor that
+      // legitimately wants Ctrl+K (none today in the shell chrome).
+      e.preventDefault();
+      setCommandCenterOpen((open) => !open);
+    }
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
+
   return (
     <div className="dashboard-context h-screen h-dvh flex flex-col bg-obsidian-950 text-titanium-100 overflow-hidden">
       <BrowserTopBar
         mobileMenuOpen={mobileMenuOpen}
         onToggleMobile={() => setMobileMenuOpen((v) => !v)}
         onOpenAssistant={() => setAssistantOpen((v) => !v)}
+        onOpenCommandCenter={() => setCommandCenterOpen(true)}
         onLoadUrl={handleLoadUrl}
         activeEmbedUrl={embeddedUrl ?? undefined}
       />
@@ -81,6 +119,13 @@ export function GovernanceBrowserShell({ children }: GovernanceBrowserShellProps
       <div className="hidden lg:block">
         <GovernanceStatusBar />
       </div>
+
+      <CommandCenter
+        open={commandCenterOpen}
+        onClose={() => setCommandCenterOpen(false)}
+        items={commandItems}
+        onRun={handleRunCommand}
+      />
     </div>
   );
 }

@@ -238,6 +238,10 @@ const SiteOsDashboardView = lazy(() => import('./features/siteos/SiteOsDashboard
 // seit ihrer Entstehung ohne Route im Repo — fertiger Code, den niemand
 // erreichen konnte (CLAUDE.md §14).
 const SiteOsBuilderPage = lazy(() => import('./unified-entry/pages/PreviewSelectionPage'));
+// App Builder Workspace: Topbar · Projekt-Navigation · Puck-Leinwand ·
+// Assistent · Konsole/Probleme/Verlauf/Governance. Lazy aus demselben Grund
+// wie der Editor: Puck gehört nicht in den kritischen Pfad.
+const AppBuilderWorkspacePage = lazy(() => import('./features/siteos/workspace/AppBuilderWorkspacePage'));
 // Build Studio: Prompt → vollständige Website → Live-Vorschau, ohne Konto.
 //
 // Abweichung von der Regel „Public Pages eager" (CLAUDE.md §7): Diese Seite
@@ -1189,6 +1193,12 @@ function RoutesWithTracking() {
         }
       />
       <Route path="/unified-entry/transformation" element={<SiteOsBuilderPage />} />
+      {/* App Builder Workspace (Phase 2): eine Site des Mandanten, adressiert
+          über ihren Slug — dieselbe Kette, die `siteos_blueprints` führt.
+          Der Erstbau (/unified-entry/transformation, /app/siteos/builder)
+          leitet nach Erfolg hierher; es gibt keinen zweiten Builder. Die
+          Anmeldung prüft die Seite selbst, damit `next` erhalten bleibt. */}
+      <Route path="/builder/:slug" element={<AppBuilderWorkspacePage />} />
       <Route
         path="/unified-entry/trial-offer"
         element={

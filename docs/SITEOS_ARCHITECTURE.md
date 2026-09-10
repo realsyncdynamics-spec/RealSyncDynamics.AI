@@ -70,7 +70,8 @@ packages/siteos-core/          Framework- und laufzeitfreier Kern
   src/analysis/observation.ts  Live-Prüfung (nach Deployment)
   src/render/escape.ts         Escaping + URL-Prüfung (gesamte XSS-Sicherheit)
   src/render/theme.ts          Theme → CSS (Wertprüfung) + WCAG-Kontrast
-  src/render/renderer.ts       Blueprint → HTML
+  src/render/renderer.ts       Blueprint → HTML (auch je Block: renderPageBlocks)
+  src/blueprint/edit.ts        Bearbeitungsmodell: editierbare Felder, applyPageEdits (§5c)
   src/deploy/artifact.ts       HTML → Dateibündel mit eigenem Hash
   src/scoring/scores.ts        Befunde → fünf Kennzahlen
   src/agents/registry.ts       Sieben Agenten: Zuständigkeit + Rechte
@@ -83,6 +84,8 @@ supabase/functions/
     resolve.ts                 Pfad → Endpunkt (reine Funktion, testbar)
     handlers/discover.ts       Ausgangsseite lesen
     handlers/builder.ts        Prompt → geprüfter, nachweisbarer Blueprint
+    handlers/edit.ts           Redaktion aus dem Block-Editor → neue Version (§5c)
+    persist.ts                 Version, Verkettung, Scan, Agenten, Nachweis — für builder und edit (neben dem Router, keine Handler-Datei)
     handlers/runtime-scan.ts   Acht Analysen gegen die Live-Site
     handlers/agents.ts         Asynchrone Agentenausführung
 
@@ -484,6 +487,68 @@ Deployments an genau eine `evaluation_id` (G5).
 
 ---
 
+## 5c. Block-Editor (Puck) — Redaktion ohne Baukasten-Schlupfloch
+
+Seit dem 2026-09-06 ist die Vorschau auf `/unified-entry/transformation`
+bearbeitbar: Blöcke auswählen, verschieben, hinzufügen, entfernen, Felder
+ändern — mit sofortiger Darstellung in der Leinwand. Der Editor ist **nicht
+selbst gebaut**, sondern Puck (`@puckeditor/core`, MIT, React 19). Eigen sind
+nur drei Anschlüsse (`src/features/siteos/editor/`):
+
+| Anschluss | Datei | Was er tut |
+|---|---|---|
+| Datenmodell | `blueprintPuckAdapter.ts` | `SitePage.blocks` ↔ Puck-Daten; Rückweg ist eine `PageEdit`-Anfrage, kein Blueprint |
+| Darstellung | `puckConfig.tsx`, `editorCss.ts` | jeder Block rendert über `renderBlockHtml` des Kerns; das Leinwand-Stylesheet ist Theme + Layoutschicht mit umgeschriebenen Strukturselektoren |
+| Struktur | `packages/siteos-core/src/blueprint/edit.ts` | was editierbar ist, was angeheftet bleibt, wie Änderungen angewandt werden |
+
+**Warum kein HTML-Editor.** GrapesJS (BSD-3) wurde geprüft und verworfen: Er
+editiert HTML. Der Publish Gate sieht aber nie HTML — der Server rendert das
+Artefakt selbst aus dem Blueprint (§5b). HTML-Änderungen wären weder geprüft
+noch ausgeliefert worden. Puck editiert eine Liste aus `{ type, props }`,
+und genau das ist eine Seite im Blueprint.
+
+**Warum der Client keinen Blueprint schickt.** Dieselbe Begründung wie in
+`handlers/builder.ts` für `refinements`: Ein Blueprint aus dem Browser wäre
+eine Struktur aus einer Quelle, die der Nutzer kontrolliert. `siteos/edit`
+nimmt je Seite nur die Blockfolge (vorhandene über ihre ID, neue über ihre
+Art) und je Block die redaktionellen Felder aus `EDITABLE_CONTENT`. Der
+Kern leitet ab (`applyPageEdits`):
+
+- neue Blöcke entstehen über `buildBlock` — mit Rechtsgrundlage und
+  Datenschutz-Link, wie beim Erstbau;
+- `processesPersonalData` und `thirdPartyHosts` kommen nie aus der Anfrage;
+- `aiGenerated` kippt auf `false`, sobald ein Mensch den Inhalt ändert
+  (Art. 50 EU AI Act bleibt in beide Richtungen wahr);
+- Navigation, Fuß, KI-Hinweis und Rechtstexte sind angeheftet: nicht
+  entfernbar, nicht verschiebbar, bei Weglassen wiederhergestellt;
+- was die Anfrage darüber hinaus enthält, steht in `rejected` — nicht still.
+
+Die lokale Vorschau läuft durch **dieselbe** Funktion: Die Leinwand zeigt,
+was gespeichert würde, nicht, was der Browser sich wünscht. Ein unberührter
+Rundweg ergibt den gleichen Hash (`test/siteos/editor-adapter.test.ts`).
+
+**Speichern** ist eine neue Version in derselben Kette (`siteos/persist.ts`,
+aus `builder.ts` herausgelöst): Vorgänger-Hash, Analyse, Bewertung, Agenten
+unter `content-governance`, Herkunftskette, Prüfpfad `siteos.blueprint.edit`
+mit Änderungscodes. `base_sha256` ist Pflicht — weicht der gespeicherte Stand
+ab, antwortet der Server mit 409, und nichts wird überschrieben.
+`origin_source` bleibt der der Vorversion: Ein redaktionell überarbeiteter
+KI-Bau ist im Gate weiterhin `greenfield`.
+
+**Was bewusst nicht editierbar ist**: Rechtsgrundlagen, Datenschutz-Links,
+Einwilligungskategorien, der Text des KI-Hinweises, die Rechtslinks im Fuß,
+Rechtstexte, Bilder (es gibt noch keine mit geklärter Rechtelage). Seiten
+anlegen oder löschen ist eine Bauplan-Entscheidung, keine Redaktion.
+
+**Grenzen**: Die Leinwand ist ein iframe, in das Puck die Stylesheets der
+Anwendung spiegelt; Tailwinds Grundregeln liegen in `@layer base` und
+verlieren gegen das ungeschichtete Site-Stylesheet, das ein Beobachter als
+letztes im `<head>` hält. Die Vorschau-Umschaltung zeigt daneben weiterhin
+das echte Dokument in der sandboxed Vorschau. `/build` (anonymer Pfad) nutzt
+den Editor noch nicht.
+
+---
+
 ## 6. Stand und Grenzen
 
 **Umgesetzt**: Domänenkern mit 201 Tests, AI Builder (Prompt → geprüfter
@@ -517,7 +582,10 @@ Behebung, Datenmodell mit RLS, drei Edge Functions, Dashboard unter
   §5a (`presentation: 'showcase'`) ergänzt Raster, Karten und Formulare —
   aber weiterhin genau **eine** Variante je Blocktyp. Alternativen je Block
   fehlen.
-- Visueller Drag-&-Drop-Editor (React Flow)
+- ~~Visueller Drag-&-Drop-Editor (React Flow)~~ — **seit 2026-09-06 umgesetzt**,
+  aber nicht mit React Flow und nicht selbst gebaut: Der Block-Editor auf
+  `/unified-entry/transformation` ist **Puck** (`@puckeditor/core`, MIT).
+  Siehe §5c.
 - Mehrsprachigkeit über die Modellebene hinaus (`locales` ist vorbereitet,
   Übersetzungspfad fehlt)
 - White-Label, SSO, öffentliche API, Audit-Export für SiteOS-Objekte

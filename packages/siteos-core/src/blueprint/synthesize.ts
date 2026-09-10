@@ -361,9 +361,10 @@ export function slugify(input: string): string {
   // einem Bindestrich zusammen — danach stehen nie zwei Bindestriche
   // nebeneinander. Die Ränder werden deshalb ohne Quantor beschnitten:
   // `-+$` liefe auf langen Bindestrich-Läufen quadratisch (CodeQL,
-  // js/polynomial-redos). Seit `validatePageSlug` in pages.ts erreichen
-  // fremde Titel und Slugs diese Funktion. Das Ergebnis ist für jede
-  // Eingabe dasselbe wie zuvor; `test/siteos/slugify.test.ts` hält das fest.
+  // js/polynomial-redos). Seit `applyPageEdits` und `validatePageSlug` in
+  // pages.ts erreichen fremde Pfade, Titel und Slugs diese Funktion. Das
+  // Ergebnis ist für jede Eingabe dasselbe wie zuvor;
+  // `test/siteos/slugify.test.ts` hält das fest.
   const slug = transliterated
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '')

@@ -39,6 +39,7 @@
     "worker",
     "workers",
     "apps/agent-runtime",
+    "apps/runtime-web",
     "apps/mcp-server",
     "extension",
     "platform",

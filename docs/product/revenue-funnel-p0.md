@@ -191,87 +191,112 @@ noch nicht buchbar ausgewiesen · `auditId` und `domain` überleben Weiterleitun
 
 ---
 
-## 5. Was **nicht** integriert werden konnte
+## 5. Offene Punkte — nachgemessen am 2026-09-06
 
-### 5.1 P0 — `supabase/functions/gdpr-audit/index.ts` ist im Repository unvollständig
+> **Dieser Abschnitt war überholt und ist ersetzt.** Die erste Fassung stammt
+> vom 2026-08-29 und nannte sechs offene Punkte. Vier davon sind seither
+> geschlossen worden — nicht in diesem PR, sondern in den nachfolgenden
+> Arbeiten. Ein Dokument, das Erledigtes als Blocker führt, schickt die nächste
+> Sitzung hinter Gespenstern her; deshalb steht hier der gemessene Stand und
+> darunter, was die alte Fassung behauptet hat.
+>
+> **Methode**: Repo gegen `origin/main` (`dce3278`), Produktion über die
+> Management-API gegen `RealSyncDynamicsLive` (`ebljyceifhnlzhjfyxup`),
+> Zeilenzahlen über `count(*)`.
 
-**Gemessen, nicht vermutet.** Die Datei hat 217 Zeilen und ruft sechs
-Funktionen auf, die weder in ihr definiert noch importiert sind:
+### 5.1 ~~`gdpr-audit/index.ts` unvollständig~~ — **erledigt**
 
-| Bezeichner | definiert | importiert | aufgerufen |
+Die alte Fassung war zum Zeitpunkt ihrer Messung richtig: Am 2026-08-29 hatte
+`index.ts` 217 Zeilen und rief sechs Funktionen auf, die nirgends definiert
+waren. **Die Diagnose war jedoch unvollständig.** Die Datei war nicht
+abgeschnitten — es fehlte die Datei, aus der sie importiert.
+
+Gemessen am 2026-09-06 gegen die deployte Fassung (v51, ACTIVE):
+
+| Datei | Repo (`dce3278`) | Produktion | Vergleich |
 |---|---|---|---|
-| `runChecks` | nein | nein | ja (Z. 126) |
-| `scanSubpages` | nein | nein | ja (Z. 127) |
-| `extractFacts` | nein | nein | ja (Z. 131) |
-| `scoreReport` | nein | nein | ja (Z. 156) |
-| `fetchWithTimeout` | nein | nein | ja (Z. 105) |
-| `concat` | nein | nein | ja (Z. 119) |
+| `gdpr-audit/index.ts` | 367 Zeilen | 367 Zeilen | **byte-identisch** |
+| `gdpr-audit/checks.ts` | 830 Zeilen | 830 Zeilen | **byte-identisch** |
 
-Die Datei endet mit der Überschrift `// ─── Heuristik-Checks ───` und **nichts
-danach**. Vier Importe (`isLikelyGermanJurisdiction`, `stripPolicyDeclarations`,
-`effectiveCspValue`, `detectAIDisclosure`) werden im verbleibenden Rumpf nie
-benutzt — sie gehörten zum abgeschnittenen Teil.
+`checks.ts` trägt `runChecks`, `extractFacts` und `scoreReport` sowie die
+Befund-Codes und die Score-Formel. `index.ts` importiert sie über einen
+Mehrzeilen-Import (`from './checks.ts'`), den eine `grep`-Prüfung auf
+`^import` nicht sieht — das war der Grund, warum die erste Messung die Kopplung
+übersah und auf „abgeschnitten" schloss.
 
-`git log --follow` zeigt genau einen Commit für diese Datei (`7cfc199`,
-2026-08-16, „feat(landing): make approved governance hero the live homepage",
-217 Zeilen hinzugefügt). Sie wurde also **bereits abgeschnitten eingecheckt**
-und nie ergänzt. In Produktion läuft eine vollständige Fassung — die Function
-ist deployt und `gdpr_audits` hat 159 Zeilen. Repository und Produktion gehen an
-dieser Stelle auseinander.
+Geschlossen durch `2305e3f` (Rekonstruktion), `1307d48` (Google-Fonts-Erkennung
+am Host verankert) und #1167 (Free-Scan-Vertrag wiederhergestellt).
 
-**Warum hier nicht repariert wurde**: Die fehlenden ~200 Zeilen enthalten die
-Befund-Codes, die Severity-Zuordnung und die Score-Formel. Befund-Codes sind
-laut `CLAUDE.md` versionsrelevant und laut `public-scan-funnel.md` §8 nicht
-frei erfindbar. Sie zu rekonstruieren hiesse, die Messgrundlage des gesamten
-Trichters zu raten — genau das, was §10 des Auftrags ausschliesst.
+**Lehre**: Eine fehlende Definition beweist nur, dass sie *hier* fehlt — nicht,
+dass sie verloren ist. Vor dem Schluss „Datei abgeschnitten" den vollständigen
+Importblock lesen, nicht nur die Zeilen, die mit `import` beginnen.
 
-**Was zu tun ist**: Die deployte Fassung aus dem Live-Projekt zurückholen
-(`supabase functions download gdpr-audit`) und als Ganzes einchecken. Danach
-prüfen, ob die Codes der Live-Fassung mit der Liste in
-`canonical-builder-target-matrix.md` §3 übereinstimmen — sie ist heute die
-einzige belastbare Quelle für die tatsächlich vorkommenden Kennungen und trägt
-deshalb auch `REBUILD_FIXABLE_CODES`.
+### 5.2 ~~Der Mandant bekommt die Empfehlung nicht~~ — **erledigt, aber unbenutzt**
 
-### 5.2 P0 — Der Mandant bekommt die Empfehlung nicht (Akzeptanzkriterium I)
+Der Weg existiert und ist der richtige: Die Empfehlung wird **nicht** als
+abgeleitetes Artefakt gespeichert, sondern aus dem kanonischen Datensatz neu
+gerechnet. `NextBestActionCard` löst den anstehenden Claim aus, liest die
+geclaimte `gdpr_audits`-Zeile über RLS und ruft `recommendForProfile()` darauf
+auf. Damit gibt es weiterhin genau eine Rechenvorschrift, und der Kontext hängt
+am Audit statt an einer Sitzung.
 
-**Erledigt 2026-08-30** über den Audit Claim (`claim_gdpr_audit`). Nach Login
-wird `gdpr_audits.tenant_id` gesetzt; RLS `gdpr_audits tenant_read` macht die
-Row und ihre `issues` im Dashboard sichtbar. Die NBA-Karte rechnet die
-Empfehlung aus diesem Datensatz (`canonicalRecommendation`), nicht aus einer
-zweiten Tabelle.
+**Aber**: In Produktion ist dieser Pfad noch nie gelaufen (siehe 5.3). Die
+Karte zeigt heute für jeden Mandanten nichts.
 
-Der Sitzungs-Kontext (`rsd.funnel.context` / `rsd_pending_audit`) bleibt der
-Träger *bis* zum Claim. Danach gilt die Datenbank.
+### 5.3 ~~Audit Claim fehlt~~ — **gebaut und deployt, in Produktion nie ausgeführt**
 
-### 5.3 P0 — Audit Claim
+`supabase/functions/audit-claim/` existiert, ist deployt (v3, ACTIVE,
+`verify_jwt = true`) und claimt atomar über `.is('claimed_at', null)`. Die
+Autorisierung läuft wie vorgesehen über die verifizierte E-Mail.
 
-**Erledigt 2026-08-30.** Writer: `public.claim_gdpr_audit(p_audit_id uuid)`,
-Autorisierung über verifizierte E-Mail, Einhängepunkte `Welcome.tsx` und
-`NextBestActionCard` (falls OAuth den Welcome-Handler überspringt).
+Gemessen am 2026-09-06:
 
+| Messung | Wert |
+|---|---|
+| `gdpr_audits` gesamt | **173** (2026-08-23: 159) |
+| davon `claimed_at is not null` | **0** |
+| davon `tenant_id is not null` | **0** |
+| `subscriptions` | 6 |
+| `entitlement_grants` | 0 |
 
-### 5.4 P1 — Modularer Checkout
+**Was das heisst und was nicht.** Der Writer ist vorhanden und erreichbar; die
+Zahl 0 belegt nur, dass niemand die Kette Audit → Registrierung → Dashboard
+vollständig durchlaufen hat, seit sie existiert. Bei 6 Abos insgesamt ist das
+kein Widerspruch. **Ob der Pfad funktioniert, ist damit weder bewiesen noch
+widerlegt** — er ist ungetestet gegen die Wirklichkeit.
 
-`stripe-checkout` nimmt ausschliesslich einen `plan_key`. Solange das so ist,
-führt jedes Modul über den Plan, und `purchase: 'coming_soon'` bleibt für
+Der nächste Schritt ist deshalb kein Neubau, sondern **ein Durchlauf**: ein
+echter Audit mit E-Mail, dieselbe E-Mail als Konto, Dashboard öffnen, danach
+`claimed_at` messen. Erst wenn diese Zeile ungleich 0 ist, trägt der Trichter.
+
+### 5.4 P1 — Modularer Checkout — **unverändert offen**
+
+`stripe-checkout` nimmt weiterhin ausschliesslich `tenant_id`, `plan_key`,
+`return_url` und `pilot` entgegen (v74, am Quelltext geprüft). Solange das so
+ist, führt jedes Modul über den Plan, und `purchase: 'coming_soon'` bleibt für
 `ai_frontend` die richtige Aussage. Vorbedingung ist die Preiskalkulation
 (`MODULE_PRICING_STATUS = 'provisional'`), nicht die Oberfläche.
 
-### 5.5 P1 — `tenant-audit` hängt weiter nicht im Kundenpfad
+### 5.5 P1 — `tenant-audit` hängt weiter nicht im Kundenpfad — **unverändert offen**
 
-`scan_runs` und `findings` sind unverändert leer. Die Empfehlung rechnet
-deshalb aus `gdpr_audits.issues` über den Router-State, nicht aus der
-Governance-Pipeline. Das ist heute richtig, weil die Pipeline im Kundenpfad
-nicht läuft — und es ist der Grund, warum Schritt 2 der Reihenfolge aus
-`canonical-funnel-decision.md` §6 als Nächstes ansteht.
+`scan_runs` = **0**, `findings` = **0**, `monitoring_sources` = **0**
+(gemessen 2026-09-06). Der einzige Aufrufer bleibt
+`src/features/governance/scans/scansApi.ts`; im Trichter selbst wird die
+Function nicht angestossen. Die Empfehlung rechnet deshalb aus
+`gdpr_audits.issues`, nicht aus der Governance-Pipeline — was heute richtig
+ist, weil die Pipeline im Kundenpfad nicht läuft.
 
-### 5.6 P1 — Publish Gate vor dem SiteOS-Publish
+### 5.6 ~~Publish Gate vor dem SiteOS-Publish~~ — **erledigt**
 
-Unverändert offen (`CLAUDE.md` §14, `reality-matrix.md`): Der Builder hat keinen
-Publish-Handler und kein Gate. `entryRoute` führt deshalb auf Bauen und
-Ansehen, nicht auf Ausliefern.
+Existiert seit `20260822120000_siteos_publish_gate.sql`:
+`packages/siteos-core/src/publish/gate.ts` (Kern),
+`supabase/functions/siteos/handlers/publish-gate.ts` (Handler),
+angebunden über `src/features/siteos/siteOsApi.ts`.
 
----
+Die Aussage in §2.4, `entryRoute` führe „auf Bauen und Ansehen, nicht auf
+Ausliefern", bleibt davon unberührt: Sie beschreibt, was `ai_frontend` als
+**Kaufweg** bietet, nicht ob ein Publish-Gate existiert.
+
 
 ## 6. Regeln für das Weiterbauen
 

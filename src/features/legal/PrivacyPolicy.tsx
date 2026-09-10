@@ -139,7 +139,21 @@ export function PrivacyPolicy() {
           <p>
             Zur Datenresidenz und den eingesetzten KI-Anbietern siehe Abschnitt
             6 oben. Eine Verwendung Deiner Eingaben zum Training allgemeiner,
-            grundlegender KI-Modelle (GPAI) Dritter findet nicht statt.
+            grundlegender KI-Modelle (GPAI) Dritter findet nicht statt. Wir setzen
+            die Modell-APIs der Anbieter ausschließlich in ihren kostenpflichtigen
+            Tarifen ein, für die die Anbieter ein Modelltraining auf Kundendaten
+            vertraglich ausschließen.
+          </p>
+          <p>
+            <strong>Missbrauchs-Protokolle der Anbieter:</strong> Unabhängig vom
+            Modelltraining protokollieren die eingesetzten KI-Anbieter Ein- und
+            Ausgaben für einen begrenzten Zeitraum, um Verstöße gegen ihre
+            Nutzungsbedingungen zu erkennen und gesetzliche Offenlegungspflichten zu
+            erfüllen. Diese Protokolle können Prompt-Inhalte enthalten; bei OpenAI
+            werden sie regulär bis zu 30 Tage aufbewahrt. Rechtsgrundlage ist
+            Art. 6 Abs. 1 lit. f DSGVO (Sicherheit und Missbrauchsprävention). Im
+            Modus „EU-lokal“ (Abschnitt 6) entstehen solche Protokolle bei Dritten
+            nicht, da die Verarbeitung unseren VPS nicht verlässt.
           </p>
         </Section>
 

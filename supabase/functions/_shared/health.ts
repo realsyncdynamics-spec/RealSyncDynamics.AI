@@ -66,6 +66,12 @@ export interface CheckHealthInput {
     GEMINI_API_KEY?: string;
     GOOGLE_API_KEY?: string;
     OLLAMA_URL?: string;
+    /**
+     * Bestaetigt, dass der Gemini-Key zu einem Cloud-Projekt mit aktivem
+     * Billing gehoert. Ohne dieses Flag sperrt providers.ts den Gemini-Pfad,
+     * weil die unbezahlte Quota Modelltraining auf Kundendaten erlaubt.
+     */
+    GEMINI_PAID_TIER_CONFIRMED?: string;
   };
   version: string;
   now?: () => Date;
@@ -171,5 +177,20 @@ function checkAiGateway(env: CheckHealthInput['env']): CheckResult {
   if (configured.length === 0) {
     return result('unknown', { error: 'kein Provider-Secret in der Env; Vault-Fallback nicht pruefbar', checked });
   }
+
+  // Ein hinterlegter Gemini-Key ohne Paid-Tier-Bestaetigung ist kein Ausfall,
+  // aber auch kein stiller Normalzustand: der Pfad ist gesperrt (siehe
+  // assertGeminiPaidTier in providers.ts) und das soll im Health sichtbar sein.
+  const geminiKeySet = Boolean(env.GEMINI_API_KEY) || Boolean(env.GOOGLE_API_KEY);
+  const paidTierFlag = (env.GEMINI_PAID_TIER_CONFIRMED ?? '').trim().toLowerCase();
+  const paidTierConfirmed = paidTierFlag === 'true' || paidTierFlag === '1';
+  if (geminiKeySet && !paidTierConfirmed) {
+    return result('degraded', {
+      error: 'Gemini-Key gesetzt, aber GEMINI_PAID_TIER_CONFIRMED fehlt — Gemini-Pfad gesperrt '
+           + '(unbezahlte Quota erlaubt Modelltraining auf Kundendaten, § 6a Abs. 2 AVV)',
+      checked,
+    });
+  }
+
   return result('ok', { checked });
 }

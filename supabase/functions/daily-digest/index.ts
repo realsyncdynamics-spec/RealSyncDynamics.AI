@@ -1,7 +1,7 @@
 // Daily Digest Email an den Founder.
 //
-// GET /functions/v1/daily-digest   (verify_jwt = false)
-// Optional ?email=… overrides FOUNDER_EMAIL env var.
+// GET/POST /functions/v1/daily-digest   (verify_jwt = false, eigener Bearer-Check)
+// Optional ?email=… overrides FOUNDER_EMAIL env var — nur mit Service-Role.
 //
 // Sammelt:
 //   - last 24h audits, leads, pageviews
@@ -11,7 +11,7 @@
 //
 // pg_cron-Setup:
 //   SELECT cron.schedule('daily-digest', '0 8 * * *',
-//     $$ SELECT net.http_get('https://ebljyceifhnlzhjfyxup.supabase.co/functions/v1/daily-digest') $$);
+//     $$ SELECT public.dispatch_cron_function('daily-digest', 'service_role_key') $$);
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { buildCorsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
@@ -43,6 +43,11 @@ Deno.serve(async (req) => {
 
   const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
   const SRK = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+  const authHeader = req.headers.get('Authorization') ?? '';
+  if (authHeader !== `Bearer ${SRK}`) {
+    return jsonResponse({ ok: false, error: 'cron only' }, 401, corsHeaders);
+  }
+
   const supa = createClient(SUPABASE_URL, SRK);
 
   const url = new URL(req.url);

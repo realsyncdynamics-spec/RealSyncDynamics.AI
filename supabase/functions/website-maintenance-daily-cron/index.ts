@@ -1,5 +1,7 @@
 // website-maintenance-daily-cron — Scheduled daily maintenance for all live websites
-// Cron: 0 2 * * * (Daily at 2 AM UTC)
+// Cron: 0 2 * * * (Daily at 2 AM UTC) — Dashboard-Trigger oder pg_cron.
+// Auth: Bearer == SERVICE_ROLE_KEY (verify_jwt = false). Der Anon-Key ist
+// ein gültiges JWT; ohne diesen Check wäre der Lauf öffentlich auslösbar.
 //
 // Triggers: website-maintenance-agent with action='run-daily-maintenance'
 // Scans all 'live' websites for: performance, SEO, broken links, security
@@ -21,6 +23,14 @@ Deno.serve(async (req) => {
   // Only accept POST from Supabase
   if (req.method !== 'POST') {
     return new Response('Method not allowed', { status: 405 });
+  }
+
+  const authHeader = req.headers.get('Authorization') ?? '';
+  if (authHeader !== `Bearer ${SRK}`) {
+    return new Response(JSON.stringify({ error: 'cron only' }), {
+      status: 401,
+      headers: { 'Content-Type': 'application/json' },
+    });
   }
 
   try {

@@ -37,12 +37,19 @@ const GOVERNANCE_STEPS = [
 export function MainLanding() {
   const navigate = useNavigate();
   const [domain, setDomain] = useState('');
+  // Ein Observer fuer die ganze Seite (siehe useStagedReveal), Parallax nur
+  // auf der Hero-Bildebene — nicht auf dem Text darueber, sonst wandert die
+  // Headline unter dem Leser weg.
   const revealRoot = useStagedReveal<HTMLElement>();
   const heroImage = useHeroParallax<HTMLDivElement>();
 
   const startScan = (event: FormEvent) => {
     event.preventDefault();
     const value = domain.trim();
+    // Ziel ist der kanonische Einstieg `/audit` — freigegeben am 2026-08-23
+    // (CLAUDE.md §10). Genau ein Scan-Einstieg, keine zwei parallelen
+    // Trichter. `/audit` liest `?domain=` und belegt sein Formular damit vor,
+    // damit die hier getippte Adresse nicht verlorengeht.
     navigate(value ? `/audit?domain=${encodeURIComponent(value)}` : '/audit');
   };
 
@@ -65,19 +72,39 @@ export function MainLanding() {
               <source srcSet="/europe-globe.webp" type="image/webp" />
               <img src="/europe-globe.jpg" alt="Europa bei Nacht mit digitalen Datenströmen" width={1376} height={768} fetchPriority="high" className="h-full w-full object-cover object-right opacity-90" />
             </picture>
+            {/* Morgenlicht und Skyline liegen ueber dem Bild, aber unter den
+                Verlaeufen: So bleibt die Textspalte links lesbar, waehrend
+                rechts die Stadt gegen den aufhellenden Horizont steht. */}
             <div className="hero-dawn" aria-hidden="true" />
             <div className="hero-dawn-rim" aria-hidden="true" />
+
+            {/* Der Verlauf haelt die Textspalte lesbar, gibt den Globus rechts aber
+                frei. Vorher lag bis 95% Schwarz darueber — Europa war kaum zu sehen. */}
             <div className="absolute inset-0 bg-gradient-to-r from-black via-black/85 to-transparent" />
+            {/* Fusspunkt heller als zuvor (from-…/80 statt volldeckend): Die
+                Skyline steht sonst in einer schwarzen Wanne statt auf einem
+                Horizont. */}
             <div className="absolute inset-0 bg-gradient-to-t from-[rgb(3,7,18)]/80 via-transparent to-black/30" />
+            {/* Vignette: zieht den Blick zur Bildmitte, ohne die Kanten zu
+                haerten. Mittelpunkt seit dem Neuausleuchten etwas tiefer (52 %
+                statt 45 %), damit der Lichtsaum am Horizont im offenen Teil
+                liegt und nicht im abgedunkelten Rand. */}
             <div className="absolute inset-0" style={{ background: 'radial-gradient(126% 96% at 66% 52%, transparent 0%, transparent 44%, rgba(3,7,18,.5) 100%)' }} />
           </div>
 
           <div className="relative z-10 mx-auto grid min-h-[880px] max-w-7xl items-center gap-10 px-6 pb-20 pt-28 lg:grid-cols-[1.05fr_.95fr] lg:px-10">
             <div className="max-w-3xl">
+              {/* Eyebrow: Produktkategorie ueber der H1. Vorher stand hier ein
+                  "NEU"-Badge auf den Claude Code Optimizer — ein Modul ueber
+                  dem Produkt. P0-Hierarchie: erst das Governance OS, dann die
+                  Module (siehe #tools). */}
               <p className="mb-7 inline-flex items-center gap-2.5 rounded-full border border-[#e8c98a]/35 bg-[#e8c98a]/8 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[.2em] text-[#f3d9a0]">
                 AI Governance Runtime
               </p>
 
+              {/* H1 aus hero-content.ts — nicht hartkodieren. Siehe FE-001 dort. */}
+              {/* Seit v5 zwei kurze Zeilen — die tragen `lg:text-7xl`, ohne im Wort
+                  umzubrechen. Bei der dreizeiligen v4-Headline ging das nicht. */}
               <h1 className="text-[2.6rem] leading-[.98] tracking-[-.035em] sm:text-6xl lg:text-7xl" style={{ fontFamily: SERIF, fontWeight: 500 }}>
                 {HERO_HEADLINE.map((segments, line) => (
                   <span key={line} className="block">
@@ -101,6 +128,12 @@ export function MainLanding() {
                 ))}
               </div>
 
+              {/* CTA-Hierarchie (Freigabe 2026-08-23, siehe CLAUDE.md §10;
+                  P0-Schnitt 2026-09-10): Der kostenlose Governance Scan ist
+                  Priorität 1 und steht deshalb zuerst und als einzige gefüllte
+                  Fläche. Als zweite Stufe bleibt genau ein Umriss-CTA auf das
+                  Governance OS (#platform) — der Trichter soll einen Einstieg
+                  haben, nicht drei gleichwertige. */}
               <form onSubmit={startScan} className="mt-7 max-w-2xl">
                 <div className="flex flex-col gap-2 rounded-2xl border border-white/15 bg-black/35 p-2 backdrop-blur-xl sm:flex-row">
                   <input value={domain} onChange={event => setDomain(event.target.value)} placeholder="Ihre Website — z. B. firma.de" aria-label="Website-URL für den kostenlosen Governance Scan" className="min-w-0 flex-1 bg-transparent px-4 py-3 text-sm text-white outline-none placeholder:text-white/30" />
@@ -114,6 +147,11 @@ export function MainLanding() {
               </div>
             </div>
 
+            {/*
+              Kartengruppe: zeigt, wie das Dashboard aussieht. Ausdrücklich als
+              Beispiel gekennzeichnet — ein anonymer Besucher hat keinen Tenant,
+              dort ist nichts messbar. Werte kommen aus landing-runtime-preview.ts.
+            */}
             <div className="hidden lg:block">
               <p className="mb-4 text-right font-mono text-[10px] tracking-[.22em] text-[#e8c98a]/80">{RUNTIME_PREVIEW_LABEL}</p>
               <div className="space-y-3">
@@ -145,6 +183,8 @@ export function MainLanding() {
         <LandingChannelTools />
 
         <section id="platform" className="py-20 md:py-28"><div className="mx-auto max-w-7xl px-6 lg:px-10"><div className="mb-12 max-w-3xl"><p className="font-mono text-[10px] tracking-[.25em] text-[#e8c98a]">DIE PLATTFORM</p><h2 className="mt-3 text-4xl tracking-tight sm:text-5xl" style={{ fontFamily: SERIF, fontWeight: 500 }}>Eine Runtime. <span className="text-[#e8c98a]">Vollständige KI-Governance.</span></h2><p className="mt-5 leading-relaxed text-white/55">RealSyncDynamics.AI verbindet Erkennung, Risikobewertung, Policies, Enforcement und Evidence zu einem durchgängigen operativen Kontrollprozess.</p></div><div className="grid gap-px overflow-hidden rounded-2xl border border-white/10 bg-white/10 md:grid-cols-2 lg:grid-cols-3">{LIVE_CAPABILITIES.map(cap => {
+              /* Wo es eine Fachseite gibt, wird die Karte anklickbar. Sechs solcher
+                 Seiten lagen bislang ohne Einstieg von der Startseite herum (§14). */
               const body = <><h3 className="text-base font-semibold">{cap.name}</h3><p className="mt-2 text-sm leading-relaxed text-white/50">{cap.description}</p>{cap.learnMorePath && <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-[#e8c98a]">Mehr erfahren <ArrowRight className="h-3.5 w-3.5" /></span>}</>;
               return cap.learnMorePath
                 ? <Link key={cap.id} to={cap.learnMorePath} data-reveal data-reveal-group="platform" className="block bg-[rgb(3,7,18)] p-7 transition hover:bg-white/[.03]">{body}</Link>

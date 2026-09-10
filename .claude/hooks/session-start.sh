@@ -1,12 +1,8 @@
 #!/bin/bash
 set -euo pipefail
 
-echo '{"async": true, "asyncTimeout": 600000}'
+# Kein npm install. In Claude Code Cloud (CLAUDE_CODE_REMOTE=true)
+# hat das jede Session Minuten gekostet und Kontext aufgebläht.
+# Dependencies liegen im Workspace bzw. werden einmalig lokal installiert.
 
-if [ "${CLAUDE_CODE_REMOTE:-}" != "true" ]; then
-  exit 0
-fi
-
-cd "$CLAUDE_PROJECT_DIR"
-
-npm install --no-audit --no-fund
+exit 0

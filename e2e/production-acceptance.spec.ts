@@ -102,7 +102,7 @@ test.describe('Scan-Trichter', () => {
     const feld = page.getByPlaceholder(/Ihre Website/i).first();
     await expect(feld, 'Kein Domain-Feld im Hero — der Haupt-CTA fehlt').toBeVisible();
     await feld.fill('example.com');
-    await page.getByRole('button', { name: /Website kostenlos scannen/i }).first().click();
+    await page.getByRole('button', { name: /Kostenlosen Governance Scan starten/i }).first().click();
 
     // Die getippte Adresse muss mitreisen; sonst tippt der Besucher sie zweimal.
     await expect(page).toHaveURL(/\/audit\?domain=example\.com/);

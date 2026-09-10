@@ -1,8 +1,9 @@
 import { FormEvent, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowRight, Code2, FileCheck2, Lock, Scan, ShieldCheck, Snowflake } from 'lucide-react';
+import { ArrowRight, Code2, FileCheck2, Lock, ShieldCheck } from 'lucide-react';
 import { SEOHead } from '../components/SEOHead';
 import { LandingChannelTools } from '../components/landing/LandingChannelTools';
+import { PublicDarkHeader } from '../components/landing/PublicDarkHeader';
 import {
   RUNTIME_PREVIEW_LABEL,
   RUNTIME_PREVIEW_NOTE,
@@ -57,13 +58,13 @@ export function MainLanding() {
     <div className="landing-context min-h-screen bg-[rgb(3,7,18)] text-white antialiased" style={{ backgroundColor: BG, fontFamily: SANS }}>
       <SEOHead
         title="RealSyncDynamics.AI — Das Governance OS für DSGVO & EU AI Act"
-        description="Das Governance OS für DSGVO und EU AI Act. Website-Governance, Claude Code Optimizer, Evidence Vault, Policy Packs, auditfähiger Nachweis-Export und kontinuierliches Monitoring in einer Runtime."
+        description="Das Governance OS für DSGVO und EU AI Act: AI-Systeme, Websites, Agents und Datenflüsse erfassen, Risiken bewerten, Governance durchsetzen und Nachweise führen."
         canonical="/"
         ogTitle="Das Governance OS für DSGVO & EU AI Act"
-        ogDescription="RealSyncDynamics.AI verbindet DSGVO, EU AI Act, Code-Compliance, Policy-Durchsetzung und auditfähige Nachweise in einer operativen Governance-Runtime."
+        ogDescription="RealSyncDynamics.AI verbindet DSGVO, EU AI Act, Policy-Durchsetzung und auditfähige Nachweise in einer operativen Governance Runtime."
       />
 
-      <header className="absolute inset-x-0 top-0 z-30"><div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6 lg:px-10"><Link to="/" className="flex items-center gap-2.5"><Snowflake className="h-6 w-6 text-[#e8c98a]" strokeWidth={1.5} /><span className="text-base font-semibold tracking-tight sm:text-lg">RealSync <span className="font-normal text-white/80">Dynamics.AI</span></span></Link><nav className="hidden items-center gap-7 md:flex"><a href="#tools" className="text-sm text-white/65 transition-colors hover:text-white">Tools</a><a href="#platform" className="text-sm text-white/65 transition-colors hover:text-white">Produkt</a><a href="#evidence" className="text-sm text-white/65 transition-colors hover:text-white">Evidence</a><a href="#enterprise" className="hidden text-sm text-white/65 transition-colors hover:text-white lg:block">Enterprise</a><Link to="/ai-act" className="hidden text-sm text-white/65 transition-colors hover:text-white xl:block">EU AI Act</Link><Link to="/sicherheit" className="hidden text-sm text-white/65 transition-colors hover:text-white xl:block">Sicherheit</Link><Link to="/pricing" className="text-sm text-white/65 transition-colors hover:text-white">Preise</Link><Link to="/welcome" className="text-sm text-white/65 transition-colors hover:text-white">Login</Link><Link to="/audit" className="rounded-full bg-[#f0e6d2] px-6 py-3 text-sm font-semibold text-[#1a1714] transition hover:bg-[#f6efe4]">Kostenlos scannen</Link></nav></div></header>
+      <PublicDarkHeader overlay />
 
       <main ref={revealRoot}>
         <section className="relative min-h-[880px] overflow-hidden">
@@ -94,10 +95,13 @@ export function MainLanding() {
 
           <div className="relative z-10 mx-auto grid min-h-[880px] max-w-7xl items-center gap-10 px-6 pb-20 pt-28 lg:grid-cols-[1.05fr_.95fr] lg:px-10">
             <div className="max-w-3xl">
-              <Link to="/claude-code-optimizer" className="mb-7 inline-flex items-center gap-2.5 rounded-full border border-[#e8c98a]/35 bg-[#e8c98a]/8 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[.2em] text-[#f3d9a0] transition hover:border-[#e8c98a]/60 hover:bg-[#e8c98a]/12">
-                <span className="rounded-full bg-[#f0e6d2] px-1.5 py-0.5 text-[9px] font-semibold text-[#1a1714]">NEU</span>
-                Claude Code Optimizer <ArrowRight className="h-3 w-3" />
-              </Link>
+              {/* Eyebrow: Produktkategorie ueber der H1. Vorher stand hier ein
+                  "NEU"-Badge auf den Claude Code Optimizer — ein Modul ueber
+                  dem Produkt. P0-Hierarchie: erst das Governance OS, dann die
+                  Module (siehe #tools). */}
+              <p className="mb-7 inline-flex items-center gap-2.5 rounded-full border border-[#e8c98a]/35 bg-[#e8c98a]/8 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[.2em] text-[#f3d9a0]">
+                AI Governance Runtime
+              </p>
 
               {/* H1 aus hero-content.ts — nicht hartkodieren. Siehe FE-001 dort. */}
               {/* Seit v5 zwei kurze Zeilen — die tragen `lg:text-7xl`, ohne im Wort
@@ -112,12 +116,8 @@ export function MainLanding() {
                 ))}
               </h1>
 
-              <p className="mt-5 font-mono text-[11px] uppercase tracking-[.28em] text-white/35">
-                <Scan className="mr-2 inline h-3.5 w-3.5" />KI-Governance &amp; Code-Optimierung
-              </p>
-
               <p className="mt-5 max-w-2xl text-base leading-relaxed text-white/65 sm:text-lg">
-                RealSyncDynamics.AI überwacht Websites, KI-Systeme, Code und Nachweise kontinuierlich — Regeln, Prüfungen und Belege auf derselben Governance-Ebene.
+                AI-Systeme, Websites, Agents und Datenflüsse erfassen, Risiken bewerten, Governance durchsetzen und Nachweise führen — in einer kontinuierlichen Governance Runtime.
               </p>
 
               <div className="mt-7 grid gap-6 border-t border-white/10 pt-6 sm:grid-cols-3 sm:divide-x sm:divide-white/10">
@@ -129,23 +129,22 @@ export function MainLanding() {
                 ))}
               </div>
 
-              {/* CTA-Hierarchie (Freigabe 2026-08-23, siehe CLAUDE.md §10):
-                  Der kostenlose Scan ist Priorität 1 und steht deshalb zuerst
-                  und als einzige gefüllte Fläche. „Präsenz & App bauen" und
-                  „Preise ansehen" bleiben erhalten, treten aber als Umriss
-                  zurück — der Trichter soll einen Einstieg haben, nicht drei
-                  gleichwertige. */}
+              {/* CTA-Hierarchie (Freigabe 2026-08-23, siehe CLAUDE.md §10;
+                  P0-Schnitt 2026-09-10): Der kostenlose Governance Scan ist
+                  Priorität 1 und steht deshalb zuerst und als einzige gefüllte
+                  Fläche. Als zweite Stufe bleibt genau ein Umriss-CTA auf das
+                  Governance OS (#platform) — der Trichter soll einen Einstieg
+                  haben, nicht drei gleichwertige. */}
               <form onSubmit={startScan} className="mt-7 max-w-2xl">
                 <div className="flex flex-col gap-2 rounded-2xl border border-white/15 bg-black/35 p-2 backdrop-blur-xl sm:flex-row">
-                  <input value={domain} onChange={event => setDomain(event.target.value)} placeholder="Ihre Website — z. B. firma.de" aria-label="Website-URL für den kostenlosen Scan" className="min-w-0 flex-1 bg-transparent px-4 py-3 text-sm text-white outline-none placeholder:text-white/30" />
-                  <button type="submit" className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#f0e6d2] px-5 py-3 text-sm font-semibold text-[#1a1714] transition hover:bg-[#f6efe4]">Website kostenlos scannen <ArrowRight className="h-4 w-4" /></button>
+                  <input value={domain} onChange={event => setDomain(event.target.value)} placeholder="Ihre Website — z. B. firma.de" aria-label="Website-URL für den kostenlosen Governance Scan" className="min-w-0 flex-1 bg-transparent px-4 py-3 text-sm text-white outline-none placeholder:text-white/30" />
+                  <button type="submit" className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#f0e6d2] px-5 py-3 text-sm font-semibold text-[#1a1714] transition hover:bg-[#f6efe4]">Kostenlosen Governance Scan starten <ArrowRight className="h-4 w-4" /></button>
                 </div>
                 <p className="mt-2 text-[10px] text-white/35">DSGVO · EU AI Act · Sicherheit · Barrierefreiheit · SEO — kein Account nötig</p>
               </form>
 
               <div className="mt-5 flex flex-wrap gap-3">
-                <Link to="/unified-entry/transformation" className="inline-flex items-center gap-2 rounded-full border border-[#e8c98a]/45 px-7 py-3.5 font-medium text-[#fff8ee] transition hover:bg-white/5">Präsenz & App bauen <ArrowRight className="h-4 w-4" /></Link>
-                <Link to="/pricing" className="inline-flex items-center gap-2 rounded-full border border-[#e8c98a]/45 px-7 py-3.5 font-medium text-[#fff8ee] transition hover:bg-white/5">Preise ansehen</Link>
+                <a href="#platform" className="inline-flex items-center gap-2 rounded-full border border-[#e8c98a]/45 px-7 py-3.5 font-medium text-[#fff8ee] transition hover:bg-white/5">Governance OS ansehen <ArrowRight className="h-4 w-4" /></a>
               </div>
             </div>
 

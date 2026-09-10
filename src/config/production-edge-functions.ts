@@ -10,6 +10,21 @@
  *
  * ## Stand der Messung
  *
+ * 2026-09-08T21:51Z, Deploy-Lauf 34282015173 auf `main` @ `2380d027`:
+ * **189 deployt, 189 Verzeichnisse**, `comm` in beide Richtungen leer.
+ * `governance-router` ist in diesem Lauf angekommen (Bundling + Deploy im
+ * Log, „Alle 189 Edge Functions erfolgreich deployt").
+ *
+ * Frühere Messung:
+ *
+ * 2026-09-08T17:22Z, Drift-Guard gegen das Live-Projekt: **188 deployt**,
+ * 189 Verzeichnisse im Branch (`governance-router` noch nicht deployt).
+ * Neu gegenüber der Liste vom 2026-09-04: `evidence-anchor`,
+ * `governance-access`, `governance-decide`, `integration-credentials`,
+ * `microsoft365-audit-sync`, `microsoft365-connect`.
+ *
+ * Frühere Messung:
+ *
  * 2026-09-04T23:23Z, Management-API gegen das Live-Projekt: **182 deployt,
  * 182 Verzeichnisse im Repository, `comm` in beide Richtungen leer.** Neu ist
  * `mcp-api-key-manager` (PR #1160); die Liste hier war nicht mitgezogen, der
@@ -54,10 +69,10 @@
  * Sie darf steigen, sobald jemand einen höheren Stand misst — und sie ist
  * kein Argument dafür, dass ein weiterer Deploy scheitern wird.
  */
-export const EDGE_FUNCTIONS_OBSERVED_MAX = 188;
+export const EDGE_FUNCTIONS_OBSERVED_MAX = 189;
 
 /** Datum der letzten Messung gegen das Live-Projekt. */
-export const PRODUCTION_EDGE_FUNCTIONS_MEASURED_AT = '2026-09-06T15:26Z';
+export const PRODUCTION_EDGE_FUNCTIONS_MEASURED_AT = '2026-09-08T21:51Z';
 
 /**
  * Die in Produktion aktiven Function-Slugs — alphabetisch, damit ein Diff
@@ -153,6 +168,7 @@ export const PRODUCTION_EDGE_FUNCTIONS: readonly string[] = [
   'governance-resources',
   'governance-risk-escalate',
   'governance-risk-score',
+  'governance-router',
   'governance-score-calculator',
   'governance-vendors',
   'governance-webhooks',
@@ -298,8 +314,10 @@ export const UNBACKED_CALLERS: readonly UnbackedCaller[] = [
 
   // ── Im Repo, noch nicht deployt ────────────────────────────────────────
   //
-  // Derzeit keiner. `audit-claim` stand hier bis zum 2026-09-01: Es hat
-  // keinen Aufrufer mehr, weil die Übernahme auf allen Pfaden über die RPC
+  // Derzeit keiner. `governance-router` stand hier bis zum Deploy-Lauf
+  // 34282015173 (2026-09-08, 21:51 UTC) — jetzt in der Produktionsliste.
+  // `audit-claim` stand hier bis zum 2026-09-01: Es hat keinen Aufrufer
+  // mehr, weil die Übernahme auf allen Pfaden über die RPC
   // `claim_gdpr_audit` läuft (ein Schreibweg, canonical-funnel-decision.md).
   // Deployt ist es seit dem Lauf zu `66647c9` trotzdem — gemessen am
   // 2026-09-04, siehe die Produktionsliste oben. „Kein Aufrufer" und „nicht
@@ -318,11 +336,6 @@ export const UNBACKED_CALLERS: readonly UnbackedCaller[] = [
   { slug: 'export-bulk-results', surface: 'features/bulk — Export', publicPath: false },
   { slug: 'iso42001-control-update', surface: 'features/governance — Control-Detail', publicPath: false },
   { slug: 'trigger-workflow', surface: 'features/workflows', publicPath: false },
-  // Die vier Governance-OS-Eintraege aus PR #1135 (`integration-credentials`,
-  // `governance-access`, `evidence-anchor`, `microsoft365-connect`) standen
-  // hier bis zum 2026-09-06. Sie sind deployt — gemessen im Lauf 34042302978
-  // gegen das Live-Projekt: 188 aktiv, 188 im Repo. Der Kommentar dort sagte
-  // „Eintrag nach der Neumessung entfernen"; das ist hiermit geschehen.
 ];
 
 const UNBACKED_SET = new Set(UNBACKED_CALLERS.map((c) => c.slug));

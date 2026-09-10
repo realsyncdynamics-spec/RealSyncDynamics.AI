@@ -53,9 +53,9 @@ export interface SEOConfig {
 const SITE_URL = 'https://realsyncdynamicsai.de';
 
 export const DEFAULT_SEO: SEOConfig = {
-  title: 'AI Compliance Software: DSGVO & EU AI Act | RealSyncDynamicsAI',
+  title: 'RealSyncDynamics.AI — Das Governance OS für DSGVO & EU AI Act',
   description:
-    'AI Compliance Software für DSGVO & EU AI Act: Websites, Daten und KI-Systeme kontinuierlich überwachen, Risiken erkennen, Nachweise auditierbar sichern.',
+    'Das Governance OS für DSGVO und EU AI Act: AI-Systeme, Websites, Agents und Datenflüsse erfassen, Risiken bewerten, Governance durchsetzen und Nachweise führen.',
 };
 
 // ─── JSON-LD Templates (re-used) ─────────────────────────────────────────────
@@ -249,15 +249,19 @@ function breadcrumbs(items: Array<{ name: string; url: string }>): Record<string
 export const SEO_CONFIG: Record<string, SEOConfig> = {
   // ─── Tier 1 — Hero / Top-Conversion ──────────────────────────────────────
   '/': {
-    // 62 Zeichen — Keyword vollstaendig vorn; die 60er-Grenze wird nur vom
-    // Brand-Suffix ueberschritten, das in der SERP schlimmstenfalls trunkiert.
-    title: 'AI Compliance Software: DSGVO & EU AI Act | RealSyncDynamicsAI',
+    // Governance-OS-Positionierung (P0, 2026-09-10) — identisch zu index.html
+    // und zur H1 aus hero-content.ts. 61 Zeichen: Brand vorn, das Keyword
+    // "Governance OS für DSGVO & EU AI Act" bleibt in der SERP vollstaendig.
+    // Der Hook liest og:/twitter: NUR aus dieser Map (SEOHead.tsx) — wer
+    // index.html aendert, muss hier nachziehen, sonst faellt der Prerender
+    // auf die alte Positionierung zurueck.
+    title: 'RealSyncDynamics.AI — Das Governance OS für DSGVO & EU AI Act',
     description:
-      'AI Compliance Software für DSGVO & EU AI Act: Websites, Daten und KI-Systeme kontinuierlich überwachen, Risiken erkennen, Nachweise auditierbar sichern.',
+      'Das Governance OS für DSGVO und EU AI Act: AI-Systeme, Websites, Agents und Datenflüsse erfassen, Risiken bewerten, Governance durchsetzen und Nachweise führen.',
     canonical: `${SITE_URL}/`,
-    ogTitle: 'AI Compliance Software für DSGVO & EU AI Act',
+    ogTitle: 'Das Governance OS für DSGVO & EU AI Act',
     ogDescription:
-      'RealSyncDynamics.AI überwacht Websites, Daten und KI-Systeme kontinuierlich — DSGVO-konform, AI-Act-ready und auditierbar. Souveräne Compliance aus der EU.',
+      'RealSyncDynamics.AI verbindet DSGVO, EU AI Act, Policy-Durchsetzung und auditfähige Nachweise in einer operativen Governance Runtime.',
   },
   '/pricing': {
     title: 'Preise – Runtime-native AI-Governance-Plattform | RealSyncDynamics.AI',

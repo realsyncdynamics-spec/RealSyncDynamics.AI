@@ -128,10 +128,18 @@ test.describe('Governance-AI-Landing (/)', () => {
       await expect(h1).toContainText(line);
     }
 
-    // Beide CTAs sind Links (<Link> bzw. <a href="#platform">), keine Buttons.
-    // Die frueher hier erwartete Button-Rolle traf auf keinen von beiden zu.
-    await expect(page.getByRole('link', { name: /Kostenlos starten/i }).first()).toBeVisible();
-    await expect(page.getByRole('link', { name: /Plattform ansehen/i }).first()).toBeVisible();
+    // Eyebrow ueber der H1: Produktkategorie, kein Modul-Badge (P0 2026-09-10).
+    await expect(page.getByText('AI Governance Runtime', { exact: true }).first()).toBeVisible();
+
+    // CTA-Hierarchie (P0 2026-09-10): CTA1 ist der Submit-Button des
+    // Scan-Formulars — Ziel /audit, siehe production-acceptance.spec.ts —
+    // und steht als Link mit demselben Wortlaut noch einmal im Header.
+    // CTA2 ist genau ein Umriss-Link auf die Plattform-Sektion.
+    await expect(page.getByRole('button', { name: /Kostenlosen Governance Scan starten/i }).first()).toBeVisible();
+    await expect(page.getByRole('link', { name: /Kostenlosen Governance Scan starten/i }).first()).toHaveAttribute('href', '/audit');
+    const ctaPlattform = page.getByRole('link', { name: /Governance OS ansehen/i }).first();
+    await expect(ctaPlattform).toBeVisible();
+    await expect(ctaPlattform).toHaveAttribute('href', '#platform');
   });
 
   test('Kennzahlen im Hero sind als Beispielwerte gekennzeichnet', async ({ page }) => {

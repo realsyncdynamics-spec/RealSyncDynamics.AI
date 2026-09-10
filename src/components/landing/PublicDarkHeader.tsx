@@ -7,6 +7,7 @@ const LINKS = [
   { label: 'Branchen', to: '/branchen' },
   { label: 'Evidence', to: '/#evidence' },
   { label: 'EU AI Act', to: '/ai-act' },
+  { label: 'Sicherheit', to: '/sicherheit' },
   { label: 'Preise', to: '/pricing' },
   { label: 'Login', to: '/welcome' },
 ] as const;
@@ -24,7 +25,7 @@ export function PublicDarkHeader({ overlay = false }: { overlay?: boolean }) {
           </span>
         </Link>
 
-        <nav className="hidden items-center gap-6 md:flex" aria-label="Hauptnavigation">
+        <nav className="hidden items-center gap-6 lg:flex" aria-label="Hauptnavigation">
           {LINKS.map((item) =>
             item.to.includes('#') ? (
               <a key={item.to} href={item.to} className="text-sm text-white/65 transition-colors hover:text-white">
@@ -46,7 +47,7 @@ export function PublicDarkHeader({ overlay = false }: { overlay?: boolean }) {
 
         <button
           type="button"
-          className="text-white/70 hover:text-white md:hidden"
+          className="text-white/70 hover:text-white lg:hidden"
           aria-expanded={open}
           aria-label={open ? 'Menü schließen' : 'Menü öffnen'}
           onClick={() => setOpen((v) => !v)}
@@ -56,7 +57,7 @@ export function PublicDarkHeader({ overlay = false }: { overlay?: boolean }) {
       </div>
 
       {open && (
-        <div className="border-t border-white/10 bg-[rgb(3,7,18)] px-6 py-3 md:hidden">
+        <div className="border-t border-white/10 bg-[rgb(3,7,18)] px-6 py-3 lg:hidden">
           {LINKS.map((item) =>
             item.to.includes('#') ? (
               <a key={item.to} href={item.to} className="block py-2.5 text-sm text-white/80" onClick={() => setOpen(false)}>

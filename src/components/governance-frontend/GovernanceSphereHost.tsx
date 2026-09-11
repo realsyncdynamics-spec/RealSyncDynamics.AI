@@ -47,16 +47,16 @@ function NodePanel({
 }) {
   return (
     <aside
-      className="surface-panel absolute bottom-3 left-3 right-3 z-20 overflow-hidden rounded-2xl border border-[#e8c98a]/28 bg-black/72 p-4 shadow-[0_0_40px_rgba(232,201,138,0.08)] backdrop-blur-xl sm:left-auto sm:right-3 sm:w-[min(100%,17.5rem)]"
+      className="surface-panel absolute bottom-3 left-3 right-3 z-20 overflow-hidden rounded-2xl border border-[#16d9ff]/28 bg-black/72 p-4 shadow-[0_0_40px_rgba(22,217,255,0.08)] backdrop-blur-xl sm:left-auto sm:right-3 sm:w-[min(100%,17.5rem)]"
       aria-live="polite"
     >
       <div
-        className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#e8c98a]/55 to-transparent"
+        className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#16d9ff]/55 to-transparent"
         aria-hidden="true"
       />
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="font-mono text-[9px] tracking-[.2em] text-[#e8c98a]/80">
+          <p className="font-mono text-[9px] tracking-[.2em] text-[#16d9ff]/80">
             {node.phase.toUpperCase()} · {node.state === 'operational' ? 'OPERATIONAL' : 'ATTENTION'}
           </p>
           <h3 className="mt-1 text-sm font-semibold text-white">{node.label}</h3>
@@ -64,7 +64,7 @@ function NodePanel({
         <button
           type="button"
           onClick={onClose}
-          className="rounded-md px-2 py-1 font-mono text-[10px] tracking-[.12em] text-white/45 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e8c98a]/50"
+          className="rounded-md px-2 py-1 font-mono text-[10px] tracking-[.12em] text-white/45 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#16d9ff]/50"
           aria-label="Close node details"
         >
           ESC
@@ -75,7 +75,7 @@ function NodePanel({
         <p className="mt-2 font-mono text-[10px] tracking-[.08em] text-white/35">{node.detail}</p>
       )}
       <div className="mt-3 flex items-center justify-between gap-2">
-        <p className="font-mono text-[9px] tracking-[.14em] text-[#e8c98a]/55">DEMO DATA</p>
+        <p className="font-mono text-[9px] tracking-[.14em] text-[#16d9ff]/55">DEMO DATA</p>
         <p className="font-mono text-[8px] tracking-[.16em] text-white/25">SIMULATED</p>
       </div>
     </aside>
@@ -85,7 +85,7 @@ function NodePanel({
 function SphereSkeleton() {
   return (
     <div className="flex h-full min-h-[320px] items-center justify-center" aria-hidden="true">
-      <div className="h-48 w-48 rounded-full border border-[#e8c98a]/20 bg-[radial-gradient(circle_at_35%_30%,rgba(232,201,138,0.12),transparent_65%)]" />
+      <div className="h-48 w-48 rounded-full border border-[#16d9ff]/20 bg-[radial-gradient(circle_at_35%_30%,rgba(22,217,255,0.12),transparent_65%)]" />
     </div>
   );
 }
@@ -118,7 +118,7 @@ export function GovernanceSphereHost() {
     <div className="relative w-full" data-governance-sphere>
       <div className="mb-3 flex flex-wrap items-end justify-between gap-2">
         <div>
-          <p className="font-mono text-[10px] tracking-[.22em] text-[#e8c98a]/85">
+          <p className="font-mono text-[10px] tracking-[.22em] text-[#16d9ff]/85">
             {SPHERE_DEMO_LABEL}
           </p>
           <p className="mt-1 font-mono text-[9px] tracking-[.16em] text-white/35">
@@ -132,10 +132,10 @@ export function GovernanceSphereHost() {
         </p>
       </div>
 
-      <div className="relative min-h-[340px] overflow-hidden rounded-2xl border border-white/10 bg-black/30 landing-hero-glass sm:min-h-[400px] lg:min-h-[460px]">
+      <div className="relative min-h-[340px] overflow-hidden rounded-[2rem] bg-transparent sm:min-h-[400px] lg:min-h-[460px]">
         {/* Soft FUI frame — keeps chrome cohesive without cluttering the globe */}
         <div
-          className="pointer-events-none absolute inset-0 z-[1] rounded-2xl shadow-[inset_0_0_0_1px_rgba(232,201,138,0.06),inset_0_0_80px_rgba(0,40,80,0.25)]"
+          className="pointer-events-none absolute inset-0 z-[1] rounded-2xl shadow-[inset_0_0_0_1px_rgba(22,217,255,0.06),inset_0_0_80px_rgba(0,40,80,0.25)]"
           aria-hidden="true"
         />
         {use3d ? (
@@ -160,7 +160,7 @@ export function GovernanceSphereHost() {
         {/* Always-on HTML picker — reliable hit targets + a11y alongside 3D. */}
         {use3d && (
           <div className="pointer-events-none absolute inset-x-0 top-3 z-10 flex justify-center px-3">
-            <div className="pointer-events-auto flex max-w-full gap-1.5 overflow-x-auto rounded-full border border-[#e8c98a]/15 bg-black/60 p-1.5 shadow-[0_8px_32px_rgba(0,0,0,0.35)] backdrop-blur-md [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <div className="pointer-events-auto flex max-w-full gap-1.5 overflow-x-auto rounded-full border border-[#16d9ff]/15 bg-black/60 p-1.5 shadow-[0_8px_32px_rgba(0,0,0,0.35)] backdrop-blur-md [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {GOVERNANCE_SPHERE_NODES.map((node) => {
                 const active = selected?.id === node.id;
                 return (
@@ -169,9 +169,9 @@ export function GovernanceSphereHost() {
                     type="button"
                     draggable={false}
                     onClick={() => handleSelect(active ? null : node)}
-                    className={`shrink-0 select-none rounded-full px-2.5 py-1 font-mono text-[9px] tracking-[.12em] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e8c98a]/60 ${
+                    className={`shrink-0 select-none rounded-full px-2.5 py-1 font-mono text-[9px] tracking-[.12em] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#16d9ff]/60 ${
                       active
-                        ? 'bg-[#e8c98a]/22 text-[#f3d9a0] shadow-[0_0_16px_rgba(232,201,138,0.18)]'
+                        ? 'bg-[#16d9ff]/22 text-[#9af5ff] shadow-[0_0_16px_rgba(22,217,255,0.18)]'
                         : 'text-white/55 hover:bg-white/10 hover:text-white/85'
                     }`}
                     aria-pressed={active}

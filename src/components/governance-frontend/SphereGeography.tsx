@@ -277,14 +277,11 @@ function CapitalsLayer({
   const [visible, setVisible] = useState<WorldCapital[]>([]);
   const [hovered, setHovered] = useState<WorldCapital | null>(null);
   const [selected, setSelected] = useState<WorldCapital | null>(null);
-  const [autoLabel, setAutoLabel] = useState(false);
   const lastKey = useRef('');
-  const autoLabelRef = useRef(false);
 
   useFrame(() => {
     if (reducedMotion) return;
-    const z = zoomRef.current.zoom;
-    const list = capitalsVisibleAtZoom(z, isMobile);
+    const list = capitalsVisibleAtZoom(zoomRef.current.zoom, isMobile);
     const key = `${list.length}:${list[0]?.iso2 ?? ''}:${list[list.length - 1]?.iso2 ?? ''}`;
     if (key !== lastKey.current) {
       lastKey.current = key;
@@ -293,12 +290,6 @@ function CapitalsLayer({
         setSelected(null);
       }
     }
-    // Auto-label tier-1 only in a narrow zoom band with few markers.
-    const nextAuto = !isMobile && z >= 1.12 && z < 1.35 && list.length > 0 && list.length <= 30;
-    if (nextAuto !== autoLabelRef.current) {
-      autoLabelRef.current = nextAuto;
-      setAutoLabel(nextAuto);
-    }
   });
 
   if (reducedMotion) return null;
@@ -306,10 +297,8 @@ function CapitalsLayer({
   return (
     <group>
       {visible.map((c) => {
-        const showLabel =
-          hovered?.iso2 === c.iso2 ||
-          selected?.iso2 === c.iso2 ||
-          (autoLabel && c.tier === 1);
+        // Labels only on hover/select — dots alone at distance (progressive disclosure).
+        const showLabel = hovered?.iso2 === c.iso2 || selected?.iso2 === c.iso2;
         return (
           <CapitalMarker
             key={c.iso2}

@@ -8,9 +8,9 @@ import {
   type GovernanceSphereNode,
 } from './governance-sphere-nodes';
 
-const GOLD = '#e8c98a';
-const GOLD_SOFT = '#f3d9a0';
-const ATTENTION = '#d4a574';
+const GOLD = '#16d9ff';
+const GOLD_SOFT = '#9af5ff';
+const ATTENTION = '#ffb86b';
 const EARTH_RADIUS = 1.55;
 
 type SphereControls = {

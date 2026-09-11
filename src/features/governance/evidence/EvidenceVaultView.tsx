@@ -364,13 +364,29 @@ function AuditTrailTab({
   );
 }
 
-function ChangeTrackingTab({ changes, loading }: { changes: ChangeEntry[]; loading: boolean }) {
+function ChangeTrackingTab({
+  changes,
+  loading,
+  unavailable,
+}: {
+  changes: ChangeEntry[];
+  loading: boolean;
+  unavailable: boolean;
+}) {
   if (loading) {
     return (
       <div className="py-16 flex flex-col items-center gap-2 font-mono text-sm text-titanium-500">
         <Loader2 className="h-5 w-5 animate-spin" />
         Änderungen werden geladen…
       </div>
+    );
+  }
+  if (unavailable) {
+    return (
+      <EmptyTab
+        title="Änderungen nicht verfügbar"
+        hint="Die Ereignis-Quelle konnte nicht geladen werden. Das ist kein leerer Mandant."
+      />
     );
   }
   if (changes.length === 0) {
@@ -645,10 +661,10 @@ function _EvidenceVaultView() {
       </div>
 
       <div className="flex-1 overflow-y-auto min-h-0">
-        {activeTab === 'timeline'   && <TimelineTab items={items} loading={loading} unavailable={eventsFailed && evidenceFailed} handlers={handlers} />}
+        {activeTab === 'timeline'   && <TimelineTab items={items} loading={loading} unavailable={(eventsFailed || evidenceFailed) && items.length === 0} handlers={handlers} />}
         {activeTab === 'snapshots'  && <SnapshotsTab snapshots={snapshots} loading={loading} unavailable={snapshotsFailed} handlers={handlers} />}
         {activeTab === 'audittrail' && <AuditTrailTab entries={audit} loading={loading} unavailable={eventsFailed} />}
-        {activeTab === 'changes'    && <ChangeTrackingTab changes={changes} loading={loading} />}
+        {activeTab === 'changes'    && <ChangeTrackingTab changes={changes} loading={loading} unavailable={eventsFailed} />}
         {activeTab === 'exports'    && <ExportsTab handlers={handlers} />}
       </div>
 

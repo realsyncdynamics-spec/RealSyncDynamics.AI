@@ -73,5 +73,8 @@ describe('RiskCenterView error handling', () => {
     const source = readFileSync('src/features/governance/risks/RiskCenterView.tsx', 'utf8');
     expect(source).not.toContain('setActiveRisks([]);\n        setLoadError');
     expect(source).toContain('const showUnavailableState = Boolean(loadError) && !loading && activeRisks.length === 0;');
+    expect(source).toContain('activeTenantIdRef');
+    expect(source).toContain('tenantId !== activeTenantIdRef.current');
+    expect(source).not.toContain('if (tenantId !== activeTenantId) return;');
   });
 });

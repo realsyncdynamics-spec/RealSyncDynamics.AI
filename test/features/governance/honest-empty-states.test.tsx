@@ -105,4 +105,18 @@ describe('honest empty states', () => {
     expect(document.body.textContent).not.toMatch(/atelier-nord/i);
     expect(document.body.textContent).not.toMatch(/1\.247/);
   });
+
+  it('Evidence Vault treats a single failed source as unavailable, not empty', async () => {
+    mockedFetchTenantEvents.mockRejectedValue(new Error('rls denied'));
+    mockedFetchTenantEvidence.mockResolvedValue([]);
+    render(
+      <MemoryRouter>
+        <EvidenceVaultView />
+      </MemoryRouter>,
+    );
+    await waitFor(() => {
+      expect(screen.getByText('Nachweise nicht verfügbar')).toBeInTheDocument();
+    });
+    expect(screen.queryByText('Noch keine Nachweise')).not.toBeInTheDocument();
+  });
 });

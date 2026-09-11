@@ -81,8 +81,10 @@ export function CeoBriefPrintView() {
         <h2>Gesamtbewertung</h2>
         <div className="kpi">
           <div>
-            <b>{data.score}/100</b>
-            <span className="muted">Governance-Score · {scoreLabel(data.score)}</span>
+            <b>{data.score === null ? '–' : `${data.score}/100`}</b>
+            <span className="muted">
+              {data.score === null ? 'Governance-Score nicht verfügbar' : `Governance-Score · ${scoreLabel(data.score)}`}
+            </span>
           </div>
           <div>
             <b>{data.readiness === null ? '–' : `${data.readiness}%`}</b>

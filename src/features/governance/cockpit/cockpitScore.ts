@@ -70,6 +70,19 @@ export function computeGovernanceScore(
 }
 
 /**
+ * Score nur aus erfüllten Count-Queries. Abgelehnte Zähler als 0 zu lesen
+ * würde 100 / „Sehr gut“ ergeben — das ist kein leerer Mandant.
+ */
+export function computeGovernanceScoreIfReliable(
+  countsReliable: boolean,
+  counts: CockpitCounts,
+  posture?: CockpitPosture | null,
+): number | null {
+  if (!countsReliable) return null;
+  return computeGovernanceScore(counts, posture);
+}
+
+/**
  * Audit-Readiness in Prozent. v1-Proxy = Anteil der Assets mit
  * Control-Mapping (assets_with_mappings_percent). Ohne Snapshot → null.
  */

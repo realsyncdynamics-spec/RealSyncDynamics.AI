@@ -12,7 +12,7 @@ import { countVendorsNoDpa } from '../vendorsApi';
 import { countTenantEvidence, countTenantEvidenceHashed, fetchTenantAssets } from '../governanceApi';
 import type { DbGovernanceKpiSnapshot } from '../analytics/types';
 import {
-  computeGovernanceScore, computeAuditReadiness,
+  computeGovernanceScoreIfReliable, computeAuditReadiness,
   type CockpitCounts, type CockpitPosture,
 } from './cockpitScore';
 import { prioritizeActions, type PriorityAction } from './prioritizeActions';
@@ -64,7 +64,7 @@ async function fetch24hSummary(tenantId: string): Promise<Summary24h | null> {
 export interface CockpitData {
   counts: CockpitCounts;
   posture: CockpitPosture | null;
-  score: number;
+  score: number | null;
   readiness: number | null;
   readinessTrend: { direction: 'up' | 'down' | 'flat'; percent: number } | null;
   actions: PriorityAction[];
@@ -181,9 +181,13 @@ export async function loadCockpitData(tenantId: string): Promise<CockpitData> {
     failureOf('evidence-hashed', evidenceHashed),
   ].filter((item): item is string => item !== null);
 
+  const countsReliable = [
+    incidentsCount, dpiasCount, dsrCount, approvalsCount, vendorsCount,
+  ].every((result) => result.status === 'fulfilled');
+
   return {
     counts, posture,
-    score: computeGovernanceScore(counts, posture),
+    score: computeGovernanceScoreIfReliable(countsReliable, counts, posture),
     readiness: computeAuditReadiness(posture),
     readinessTrend, actions,
     lastUpdated: snap?.captured_date ?? null,

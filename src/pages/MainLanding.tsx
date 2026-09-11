@@ -30,6 +30,7 @@ import {
 } from '../components/governance-frontend/hero-content';
 import { GovernanceSphereHost } from '../components/governance-frontend/GovernanceSphereHost';
 import { EnterpriseAccessSection } from '../components/landing/EnterpriseAccessSection';
+import { GovernanceActivationSection } from '../components/landing/GovernanceActivationSection';
 import { LIVE_CAPABILITIES, BUILDING_CAPABILITIES } from '../config/platform-capabilities';
 import { useStagedReveal } from '../hooks/useStagedReveal';
 
@@ -287,6 +288,9 @@ export function MainLanding() {
         <LandingChannelTools />
 
         <LandingDarkBand />
+
+        {/* Governance Activation marketing section — does NOT replace the / hero */}
+        <GovernanceActivationSection />
 
         <section id="platform" className="py-[92px]">
           <div className="mx-auto max-w-[1500px] px-[4vw]">

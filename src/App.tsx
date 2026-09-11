@@ -105,6 +105,10 @@ const GovernanceAiWorkspace = lazy(() => import('./features/governance/dashboard
 const SmbDashboardView = lazy(() => import('./features/smb/SmbDashboardView').then((m) => ({ default: m.SmbDashboardView })));
 // ── Modul-Hub: Capability-Übersicht des Workspaces (Aktivieren/Öffnen je Entitlement)
 const ModulesHubView = lazy(() => import('./features/modules/ModulesHubView').then((m) => ({ default: m.ModulesHubView })));
+// ── Governance Activation (P0/P1 product module — NOT onboarding)
+const GovernanceActivationView = lazy(() =>
+  import('./features/activation/GovernanceActivationView').then((m) => ({ default: m.GovernanceActivationView })),
+);
 // ── Phase 3: Advanced Governance Views
 const ComplianceFrameworkSelector = lazy(() => import('./features/governance/dashboard/ComplianceFrameworkSelector').then((m) => ({ default: m.ComplianceFrameworkSelector })));
 const Iso42001ComplianceHub = lazy(() => import('./features/governance/dashboard/Iso42001ComplianceHub').then((m) => ({ default: m.Iso42001ComplianceHub })));
@@ -768,6 +772,7 @@ function RoutesWithTracking() {
       <Route path="/app/marketplace" element={<AppGate><GovernanceBrowserShell><MarketplaceView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/overview" element={<GovernanceBrowserShell><GovernanceOsDashboard /></GovernanceBrowserShell>} />
       <Route path="/app/modules" element={<GovernanceBrowserShell><ModulesHubView /></GovernanceBrowserShell>} />
+      <Route path="/app/activation" element={<GovernanceBrowserShell><GovernanceActivationView /></GovernanceBrowserShell>} />
       <Route path="/app/home" element={<GovernanceBrowserShell><WorkspaceHome /></GovernanceBrowserShell>} />
       <Route path="/app/company" element={<GovernanceBrowserShell><CompanyView /></GovernanceBrowserShell>} />
       <Route path="/app/websites" element={<GovernanceBrowserShell><WebsiteGovernanceView /></GovernanceBrowserShell>} />

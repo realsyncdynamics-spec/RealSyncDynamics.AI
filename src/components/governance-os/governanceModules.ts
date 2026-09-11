@@ -59,6 +59,17 @@ export const GOVERNANCE_MODULES: GovernanceModule[] = [
     description: 'Capability-Übersicht: aktivieren, öffnen, upgraden',
   },
   {
+    // Governance Activation — P0/P1 Product Module (NOT Onboarding).
+    // Spec: docs/product/governance-activation.md. First slice is Preview UI.
+    id: 'activation',
+    label: 'Activation',
+    icon: 'Sparkles',
+    route: '/app/activation',
+    status: 'beta',
+    gate: { kind: 'all' },
+    description: 'Turn existing data into operational governance',
+  },
+  {
     id: 'websites',
     label: 'Websites',
     icon: 'Globe',

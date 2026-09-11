@@ -3,8 +3,13 @@ import { Link } from 'react-router-dom';
 import { PLATFORM_CAPABILITIES } from '../../config/platform-capabilities';
 import {
   LANDING_ACCENT,
+  LANDING_BUTTON_TEXT,
+  LANDING_LABEL,
+  LANDING_LINE,
   LANDING_MONO,
   LANDING_MUTED,
+  LANDING_PANEL,
+  LANDING_PANEL_RAISED,
   LANDING_SERIF,
   LANDING_TEXT,
 } from './landing-theme';
@@ -64,15 +69,15 @@ const TOOLS = [
 
 export function LandingChannelTools() {
   return (
-    <section id="tools" className="relative border-t border-white/[0.05] py-[92px]">
+    <section id="tools" className="relative border-t border-white/[0.06] py-[92px]">
       <div className="mx-auto max-w-[1500px] px-[4vw]">
         <div className="mb-12 max-w-3xl">
           <p
             className="inline-block rounded-full border px-[11px] py-[7px] text-[9px] font-medium tracking-[.23em]"
             style={{
               fontFamily: LANDING_MONO,
-              color: LANDING_ACCENT,
-              borderColor: `${LANDING_ACCENT}47`,
+              color: LANDING_LABEL,
+              borderColor: LANDING_LINE,
             }}
           >
             GOVERNANCE TOOLS
@@ -98,9 +103,10 @@ export function LandingChannelTools() {
             return (
               <article
                 key={title}
-                className="flex min-h-[280px] flex-col border border-white/12 p-[22px]"
+                className="flex min-h-[280px] flex-col border p-[22px]"
                 style={{
-                  background: 'linear-gradient(135deg, rgba(20,21,25,0.7), rgba(7,9,13,0.72))',
+                  borderColor: LANDING_LINE,
+                  background: `linear-gradient(160deg, ${LANDING_PANEL_RAISED}, ${LANDING_PANEL})`,
                 }}
               >
                 <div className="flex items-start justify-between gap-4">
@@ -108,16 +114,16 @@ export function LandingChannelTools() {
                     <span
                       className="grid h-11 w-11 shrink-0 place-items-center border"
                       style={{
-                        borderColor: `${LANDING_ACCENT}40`,
-                        backgroundColor: `${LANDING_ACCENT}1a`,
+                        borderColor: LANDING_LINE,
+                        backgroundColor: 'rgba(255,255,255,0.03)',
                       }}
                     >
-                      <Icon className="h-5 w-5" style={{ color: LANDING_ACCENT }} />
+                      <Icon className="h-5 w-5" style={{ color: LANDING_MUTED }} />
                     </span>
                     <div>
                       <p
                         className="text-[9px] tracking-[.2em]"
-                        style={{ fontFamily: LANDING_MONO, color: LANDING_ACCENT }}
+                        style={{ fontFamily: LANDING_MONO, color: LANDING_LABEL }}
                       >
                         {eyebrow}
                       </p>
@@ -133,9 +139,9 @@ export function LandingChannelTools() {
                     className="border px-3 py-1 text-[9px] tracking-[.12em]"
                     style={{
                       fontFamily: LANDING_MONO,
-                      borderColor: live ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.25)',
+                      borderColor: live ? LANDING_LINE : 'rgba(255,255,255,0.22)',
                       borderStyle: live ? 'solid' : 'dashed',
-                      color: 'rgba(255,255,255,0.4)',
+                      color: LANDING_LABEL,
                     }}
                   >
                     {live ? 'PRODUCT' : 'IN VORBEREITUNG'}
@@ -148,7 +154,12 @@ export function LandingChannelTools() {
                   {bullets.map((bullet) => (
                     <span
                       key={bullet}
-                      className="border border-white/10 bg-white/[0.025] px-3 py-1.5 text-[10px] text-white/45"
+                      className="border px-3 py-1.5 text-[10px]"
+                      style={{
+                        borderColor: LANDING_LINE,
+                        backgroundColor: 'rgba(255,255,255,0.025)',
+                        color: LANDING_LABEL,
+                      }}
                     >
                       {bullet}
                     </span>
@@ -162,18 +173,18 @@ export function LandingChannelTools() {
                       ? {
                           borderColor: 'transparent',
                           backgroundColor: LANDING_ACCENT,
-                          color: '#05070b',
+                          color: LANDING_BUTTON_TEXT,
                         }
                       : {
                           borderColor: 'rgba(255,255,255,0.35)',
-                          color: 'rgba(255,255,255,0.85)',
+                          color: 'rgba(244,246,248,0.88)',
                         }
                   }
                 >
                   {live ? cta : 'Auf die Warteliste'} <ArrowRight className="h-4 w-4" />
                 </Link>
                 {!live && (
-                  <p className="mt-3 text-[11px] leading-relaxed text-white/35">
+                  <p className="mt-3 text-[11px] leading-relaxed" style={{ color: LANDING_LABEL }}>
                     Der Bot lässt sich bereits anlegen — beantworten kann er noch nichts. Die
                     Laufzeit-Functions sind nicht in Produktion.
                   </p>
@@ -184,8 +195,8 @@ export function LandingChannelTools() {
         </div>
 
         <p
-          className="mt-8 text-center text-[9px] tracking-[.18em] text-white/25"
-          style={{ fontFamily: LANDING_MONO }}
+          className="mt-8 text-center text-[9px] tracking-[.18em]"
+          style={{ fontFamily: LANDING_MONO, color: 'rgba(255,255,255,0.22)' }}
         >
           ONE GOVERNANCE PLANE · WEB · CODE · POLICY · EVIDENCE
         </p>

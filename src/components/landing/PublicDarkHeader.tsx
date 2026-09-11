@@ -6,13 +6,16 @@ import {
   LANDING_BG,
   LANDING_BUTTON_ALT,
   LANDING_BUTTON_TEXT,
+  LANDING_GLOW_CTA,
+  LANDING_LABEL,
   LANDING_TEXT,
 } from './landing-theme';
 
 /**
  * Shared dark public header for `/` and `/branchen`.
  *
- * Dominik cyan night-map Referenz: sticky frosted bar, white nav, cyan pill CTA.
+ * Enterprise cyan scale: sticky frosted bar, white nav, cyan pill CTA only.
+ * GOV OS chip is refined (hairline, muted) — not louder.
  * Working P0 nav targets from #1280/#1279 remain — hash targets use `/#…`
  * so they resolve from `/branchen` as well. `/ai-act` + `/sicherheit`
  * stay reachable (platform-capabilities contract).
@@ -42,12 +45,12 @@ function NavItem({
 }) {
   const shared = {
     className: `text-[13px] font-medium tracking-tight transition-colors focus-visible:outline-none focus-visible:underline focus-visible:underline-offset-4${className ? ` ${className}` : ''}`,
-    style: { color: 'rgba(255,255,255,0.78)' } as CSSProperties,
+    style: { color: 'rgba(244,246,248,0.72)' } as CSSProperties,
     onMouseEnter: (e: MouseEvent<HTMLAnchorElement>) => {
       e.currentTarget.style.color = LANDING_TEXT;
     },
     onMouseLeave: (e: MouseEvent<HTMLAnchorElement>) => {
-      e.currentTarget.style.color = 'rgba(255,255,255,0.78)';
+      e.currentTarget.style.color = 'rgba(244,246,248,0.72)';
     },
   };
 
@@ -69,6 +72,7 @@ const scanCtaStyle: CSSProperties = {
   backgroundColor: LANDING_BUTTON_ALT,
   color: LANDING_BUTTON_TEXT,
   fontWeight: 600,
+  boxShadow: LANDING_GLOW_CTA,
 };
 
 export function PublicDarkHeader({ overlay = false }: { overlay?: boolean }) {
@@ -76,7 +80,7 @@ export function PublicDarkHeader({ overlay = false }: { overlay?: boolean }) {
 
   return (
     <header
-      className={`${overlay ? 'absolute bg-[rgba(5,7,11,0.35)]' : 'sticky bg-[rgba(5,7,11,0.72)]'} inset-x-0 top-0 z-30 border-b border-white/[0.06] backdrop-blur-[18px]`}
+      className={`${overlay ? 'absolute bg-[rgba(5,7,11,0.35)]' : 'sticky bg-[rgba(5,7,11,0.82)]'} inset-x-0 top-0 z-30 border-b border-white/[0.07] backdrop-blur-[18px]`}
       style={{ color: LANDING_TEXT }}
     >
       <div className="mx-auto flex h-[72px] max-w-[1500px] items-center gap-6 px-[4vw]">
@@ -95,15 +99,15 @@ export function PublicDarkHeader({ overlay = false }: { overlay?: boolean }) {
             className="hidden items-center gap-1.5 rounded-full border px-2 py-1 text-[9px] tracking-[.16em] md:inline-flex"
             style={{
               fontFamily: "'DM Mono', ui-monospace, monospace",
-              borderColor: 'rgba(0,229,255,0.35)',
-              backgroundColor: 'rgba(0,229,255,0.08)',
-              color: 'rgba(0,229,255,0.92)',
+              borderColor: 'rgba(255,255,255,0.14)',
+              backgroundColor: 'rgba(255,255,255,0.03)',
+              color: LANDING_LABEL,
             }}
             title="Product category — not a live tenant metric"
           >
             <span
               className="h-1.5 w-1.5 rounded-full"
-              style={{ backgroundColor: LANDING_ACCENT, boxShadow: `0 0 8px ${LANDING_ACCENT}` }}
+              style={{ backgroundColor: LANDING_ACCENT, opacity: 0.85 }}
               aria-hidden="true"
             />
             GOV OS
@@ -116,7 +120,7 @@ export function PublicDarkHeader({ overlay = false }: { overlay?: boolean }) {
           ))}
           <Link
             to="/audit"
-            className="max-w-[11rem] rounded-full px-[18px] py-[11px] text-center text-[11px] leading-[1.3] shadow-[0_0_28px_rgba(0,229,255,0.22)] transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00E5FF]"
+            className="max-w-[11rem] rounded-full px-[18px] py-[11px] text-center text-[11px] leading-[1.3] transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00E5FF]"
             style={scanCtaStyle}
           >
             Kostenlosen Governance Scan starten
@@ -148,14 +152,14 @@ export function PublicDarkHeader({ overlay = false }: { overlay?: boolean }) {
       {open && (
         <div
           id="public-dark-mobile-nav"
-          className="border-t border-white/[0.06] px-6 py-4 backdrop-blur-md lg:hidden"
+          className="border-t border-white/[0.07] px-6 py-4 backdrop-blur-md lg:hidden"
           style={{ backgroundColor: `${LANDING_BG}fa` }}
           role="dialog"
           aria-label="Governance OS Navigation"
         >
           <p
             className="mb-3 text-[9px] tracking-[.2em]"
-            style={{ fontFamily: "'DM Mono', ui-monospace, monospace", color: `${LANDING_ACCENT}b3` }}
+            style={{ fontFamily: "'DM Mono', ui-monospace, monospace", color: LANDING_LABEL }}
           >
             SYSTEM DRAWER · PUBLIC
           </p>

@@ -10,8 +10,11 @@ import { HeroCyanNetwork } from '../components/landing/HeroCyanNetwork';
 import {
   LANDING_ACCENT,
   LANDING_BG,
+  LANDING_BG_ELEVATED,
   LANDING_BUTTON,
   LANDING_BUTTON_TEXT,
+  LANDING_GLOW_CTA,
+  LANDING_LABEL,
   LANDING_LINE,
   LANDING_MONO,
   LANDING_MUTED,
@@ -78,15 +81,15 @@ export function MainLanding() {
         ogDescription="RealSyncDynamics.AI — AI Governance Operating System. Detect. Govern. Prove. Automate."
       />
 
-      {/* Cyan ambient wash */}
+      {/* Calibrated cyan ambient — enterprise restraint */}
       <div
-        className="pointer-events-none fixed right-[-12vw] top-[8vh] h-[48vw] w-[48vw] rounded-full opacity-[0.14] blur-[110px]"
-        style={{ background: '#00E5FF' }}
+        className="pointer-events-none fixed right-[-14vw] top-[6vh] h-[42vw] w-[42vw] rounded-full opacity-[0.07] blur-[120px]"
+        style={{ background: LANDING_ACCENT }}
         aria-hidden="true"
       />
       <div
-        className="pointer-events-none fixed left-[-20vw] top-[55vh] h-[36vw] w-[36vw] rounded-full opacity-[0.07] blur-[100px]"
-        style={{ background: '#0077aa' }}
+        className="pointer-events-none fixed left-[-22vw] top-[58vh] h-[32vw] w-[32vw] rounded-full opacity-[0.04] blur-[110px]"
+        style={{ background: '#006688' }}
         aria-hidden="true"
       />
 
@@ -108,9 +111,9 @@ export function MainLanding() {
                 className="inline-block rounded-full border px-[11px] py-[7px] text-[9px] font-medium tracking-[.23em]"
                 style={{
                   fontFamily: LANDING_MONO,
-                  color: LANDING_ACCENT,
-                  borderColor: `${LANDING_ACCENT}55`,
-                  backgroundColor: 'rgba(0,229,255,0.06)',
+                  color: LANDING_LABEL,
+                  borderColor: 'rgba(255,255,255,0.16)',
+                  backgroundColor: 'rgba(255,255,255,0.03)',
                 }}
               >
                 AI GOVERNANCE OPERATING SYSTEM
@@ -143,12 +146,12 @@ export function MainLanding() {
 
               <p
                 className="mb-5 text-[10px] tracking-[.2em]"
-                style={{ fontFamily: LANDING_MONO, color: 'rgba(0,229,255,0.75)' }}
+                style={{ fontFamily: LANDING_MONO, color: LANDING_LABEL }}
               >
                 {HERO_OPERATING_LOOP}
               </p>
 
-              <p className="max-w-[560px] text-[15px] leading-[1.7]" style={{ color: 'rgba(255,255,255,0.72)' }}>
+              <p className="max-w-[560px] text-[15px] leading-[1.7]" style={{ color: 'rgba(244,246,248,0.82)' }}>
                 Govern AI. Prove Everything. Operate with Confidence.
                 <br />
                 Erfassen, bewerten, durchsetzen und nachweisen — in einer kontinuierlichen Governance
@@ -167,11 +170,11 @@ export function MainLanding() {
                   >
                     <b
                       className="text-[8px] font-medium tracking-[.18em]"
-                      style={{ fontFamily: LANDING_MONO, color: LANDING_ACCENT }}
+                      style={{ fontFamily: LANDING_MONO, color: LANDING_LABEL }}
                     >
                       {title}
                     </b>
-                    <p className="mt-2.5 text-[11px] leading-[1.6]" style={{ color: 'rgba(255,255,255,0.55)' }}>
+                    <p className="mt-2.5 text-[11px] leading-[1.6]" style={{ color: LANDING_MUTED }}>
                       {text}
                     </p>
                   </article>
@@ -182,8 +185,12 @@ export function MainLanding() {
                 <Link
                   to="/audit"
                   data-hero-cta
-                  className="inline-flex items-center justify-center gap-2 rounded-full px-[22px] py-[14px] text-[13px] font-semibold shadow-[0_0_32px_rgba(0,229,255,0.28)] transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00E5FF]"
-                  style={{ backgroundColor: LANDING_BUTTON, color: LANDING_BUTTON_TEXT }}
+                  className="inline-flex items-center justify-center gap-2 rounded-full px-[22px] py-[14px] text-[13px] font-semibold transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00E5FF]"
+                  style={{
+                    backgroundColor: LANDING_BUTTON,
+                    color: LANDING_BUTTON_TEXT,
+                    boxShadow: LANDING_GLOW_CTA,
+                  }}
                 >
                   Kostenlosen Governance Scan starten <span aria-hidden="true">→</span>
                 </Link>
@@ -200,8 +207,8 @@ export function MainLanding() {
                 <div
                   className="flex flex-col gap-0 rounded-full border p-1 sm:flex-row sm:items-stretch"
                   style={{
-                    borderColor: 'rgba(0,229,255,0.28)',
-                    backgroundColor: 'rgba(5,7,11,0.72)',
+                    borderColor: 'rgba(255,255,255,0.16)',
+                    backgroundColor: 'rgba(5,7,11,0.78)',
                   }}
                 >
                   <input
@@ -232,7 +239,7 @@ export function MainLanding() {
               <div className="mt-10 lg:hidden">
                 <p
                   className="mb-3 text-[10px] tracking-[.22em]"
-                  style={{ fontFamily: LANDING_MONO, color: `${LANDING_ACCENT}cc` }}
+                  style={{ fontFamily: LANDING_MONO, color: LANDING_LABEL }}
                 >
                   {RUNTIME_PREVIEW_LABEL}
                 </p>
@@ -295,8 +302,8 @@ export function MainLanding() {
                 className="inline-block rounded-full border px-[11px] py-[7px] text-[9px] font-medium tracking-[.23em]"
                 style={{
                   fontFamily: LANDING_MONO,
-                  color: LANDING_ACCENT,
-                  borderColor: `${LANDING_ACCENT}47`,
+                  color: LANDING_LABEL,
+                  borderColor: LANDING_LINE,
                 }}
               >
                 DIE PLATTFORM
@@ -403,8 +410,8 @@ export function MainLanding() {
                   className="inline-block rounded-full border px-[11px] py-[7px] text-[9px] font-medium tracking-[.23em]"
                   style={{
                     fontFamily: LANDING_MONO,
-                    color: LANDING_ACCENT,
-                    borderColor: `${LANDING_ACCENT}47`,
+                    color: LANDING_LABEL,
+                    borderColor: LANDING_LINE,
                   }}
                 >
                   EVIDENCE &amp; TRUST
@@ -456,8 +463,8 @@ export function MainLanding() {
                 className="inline-block rounded-full border px-[11px] py-[7px] text-[9px] font-medium tracking-[.23em]"
                 style={{
                   fontFamily: LANDING_MONO,
-                  color: LANDING_ACCENT,
-                  borderColor: `${LANDING_ACCENT}47`,
+                  color: LANDING_LABEL,
+                  borderColor: LANDING_LINE,
                 }}
               >
                 GOVERNANCE RUNTIME
@@ -482,7 +489,7 @@ export function MainLanding() {
                 >
                   <span
                     className="text-3xl"
-                    style={{ fontFamily: LANDING_MONO, color: `${LANDING_ACCENT}59` }}
+                    style={{ fontFamily: LANDING_MONO, color: 'rgba(255,255,255,0.22)' }}
                   >
                     {no}
                   </span>
@@ -502,11 +509,14 @@ export function MainLanding() {
 
         <EnterpriseAccessSection />
 
-        <section className="border-t border-white/[0.06] bg-black/80 py-[92px]">
+        <section
+          className="border-t border-white/[0.06] py-[92px]"
+          style={{ backgroundColor: LANDING_BG_ELEVATED }}
+        >
           <div className="mx-auto max-w-3xl px-[4vw] text-center">
             <p
               className="text-[10px] tracking-[.25em]"
-              style={{ fontFamily: LANDING_MONO, color: LANDING_ACCENT }}
+              style={{ fontFamily: LANDING_MONO, color: LANDING_LABEL }}
             >
               WARUM JETZT
             </p>
@@ -516,7 +526,10 @@ export function MainLanding() {
             >
               Governance statt Checkliste.
             </h2>
-            <p className="mx-auto mt-5 max-w-2xl text-base leading-relaxed" style={{ color: 'rgba(255,255,255,0.72)' }}>
+            <p
+              className="mx-auto mt-5 max-w-2xl text-base leading-relaxed"
+              style={{ color: 'rgba(244,246,248,0.78)' }}
+            >
               Eine Checkliste beruhigt bis zum nächsten Audit. Die Runtime hält den Nachweis, wenn
               Aufsicht, Kunde oder Board fragt.
             </p>

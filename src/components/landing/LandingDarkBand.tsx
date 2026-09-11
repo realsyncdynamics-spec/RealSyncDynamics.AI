@@ -1,9 +1,11 @@
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import {
-  LANDING_ACCENT,
+  LANDING_BG_ELEVATED,
   LANDING_BUTTON,
   LANDING_BUTTON_TEXT,
+  LANDING_GLOW_CTA,
+  LANDING_LABEL,
   LANDING_MONO,
   LANDING_MUTED,
   LANDING_SERIF,
@@ -11,19 +13,20 @@ import {
 } from './landing-theme';
 
 /**
- * Dark band between tools and pricing — Dominik-Referenz
+ * Dark band between tools and pricing — enterprise charcoal layer.
  * „Detect. Govern. Prove."
  */
 export function LandingDarkBand() {
   return (
     <section
       id="runtime"
-      className="grid items-center gap-10 border-y border-white/[0.06] bg-[#070a10] px-[4vw] py-[65px] lg:grid-cols-[1.2fr_.9fr_auto]"
+      className="grid items-center gap-10 border-y border-white/[0.07] px-[4vw] py-[65px] lg:grid-cols-[1.2fr_.9fr_auto]"
+      style={{ backgroundColor: LANDING_BG_ELEVATED }}
     >
       <div>
         <p
           className="text-[9px] tracking-[.22em]"
-          style={{ fontFamily: LANDING_MONO, color: LANDING_ACCENT }}
+          style={{ fontFamily: LANDING_MONO, color: LANDING_LABEL }}
         >
           ONE OPERATIONAL PLANE
         </p>
@@ -41,7 +44,11 @@ export function LandingDarkBand() {
       <Link
         to="/governance-runtime"
         className="inline-flex items-center justify-center gap-2 rounded-full px-[18px] py-[13px] text-[11px] font-semibold transition hover:brightness-110"
-        style={{ backgroundColor: LANDING_BUTTON, color: LANDING_BUTTON_TEXT }}
+        style={{
+          backgroundColor: LANDING_BUTTON,
+          color: LANDING_BUTTON_TEXT,
+          boxShadow: LANDING_GLOW_CTA,
+        }}
       >
         Explore the Runtime <ArrowRight className="h-3.5 w-3.5" />
       </Link>

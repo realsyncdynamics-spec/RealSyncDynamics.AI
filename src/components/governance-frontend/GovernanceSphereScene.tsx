@@ -13,9 +13,9 @@ import {
 import { SphereGeography } from './SphereGeography';
 import { SphereSpaceBackground, SPHERE_SUN_POSITION } from './SphereSpaceBackground';
 
-const GOLD = '#e8c98a';
-const GOLD_SOFT = '#f3d9a0';
-const ATTENTION = '#d4a574';
+const ACCENT = '#00E5FF';
+const ACCENT_SOFT = '#67E8F9';
+const ATTENTION = '#00B8D4';
 const EARTH_RADIUS = 1.55;
 
 type SphereControls = {
@@ -56,7 +56,7 @@ function Nodes({
         const pos = sphereNodePosition(node.lat, node.lon, 1.78);
         const active = selectedId === node.id || hoveredId === node.id;
         const attention = node.state === 'attention';
-        const color = attention ? ATTENTION : GOLD;
+        const color = attention ? ATTENTION : ACCENT;
         const breath = reducedMotion ? 1 : 1 + Math.sin(pulse.current * 2.2 + pos[0]) * 0.06;
         return (
           <group key={node.id} position={pos}>
@@ -104,7 +104,7 @@ function Nodes({
               <mesh scale={3.8} raycast={() => null}>
                 <ringGeometry args={[0.1, 0.14, 48]} />
                 <meshBasicMaterial
-                  color={GOLD_SOFT}
+                  color={ACCENT_SOFT}
                   transparent
                   opacity={0.45}
                   side={THREE.DoubleSide}
@@ -133,11 +133,11 @@ function Orbits({ reducedMotion }: { reducedMotion: boolean }) {
     <>
       <mesh ref={a} rotation={[Math.PI / 2.4, 0.3, 0]} raycast={() => null}>
         <torusGeometry args={[2.05, 0.005, 8, 160]} />
-        <meshBasicMaterial color={GOLD} transparent opacity={0.32} />
+        <meshBasicMaterial color={ACCENT} transparent opacity={0.28} />
       </mesh>
       <mesh ref={b} rotation={[1.1, 0.8, 0.2]} raycast={() => null}>
         <torusGeometry args={[2.28, 0.0035, 8, 180]} />
-        <meshBasicMaterial color={GOLD_SOFT} transparent opacity={0.2} />
+        <meshBasicMaterial color={ACCENT_SOFT} transparent opacity={0.16} />
       </mesh>
       <mesh ref={c} rotation={[0.35, 0.15, 0.6]} raycast={() => null}>
         <torusGeometry args={[2.48, 0.0025, 8, 200]} />
@@ -176,11 +176,11 @@ function AmbientParticles({ reducedMotion }: { reducedMotion: boolean }) {
   return (
     <points ref={ref} geometry={geometry} raycast={() => null}>
       <pointsMaterial
-        color={GOLD_SOFT}
+        color={ACCENT_SOFT}
         size={0.022}
         sizeAttenuation
         transparent
-        opacity={0.4}
+        opacity={0.32}
         depthWrite={false}
       />
     </points>

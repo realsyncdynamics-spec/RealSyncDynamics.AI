@@ -1,23 +1,25 @@
 /**
- * Gestaltungswerke der öffentlichen Ebene (Dominik cyan night-map Referenz).
+ * Öffentliche Landing — Enterprise Cyan / Obsidian Tokens.
  *
- * ## Warum diese Datei existiert
+ * Dominik: „frontend auf enterprise design skalieren vorallem farblich“.
+ * Cyan (#00E5FF) ist der einzige Primärakzent — CTAs, aktive Zustände,
+ * Network-Glow, ein Headline-Akzent. Labels und Haarlinien bleiben kühl
+ * und gedämpft (kein Cyan-Spray auf jeder Border).
  *
- * Der Design-Freeze (`CLAUDE.md` §10) erlaubt Ergänzungen ohne Rückfrage —
- * aber ausschliesslich „mit den vorhandenen Komponenten, Klassen und
- * Tokens". Neue Seiten des Trichters (`/scan`, `/scan/ergebnis`) brauchen
- * deshalb dieselben Werte wie die Startseite, und zwar nachweislich
- * dieselben, nicht ungefähr passende.
- *
- * Tokens spiegeln die Cyan-Referenz (`#05070b` / `#00E5FF` / Playfair / Inter).
- * `MainLanding.tsx` konsumiert dieselben Konstanten.
+ * Design-Freeze: dieselben Konstanten für `/`, Trichtern und Sphere-Chrome.
  */
 
-/** Hintergrund der öffentlichen Ebene. */
+/** Tiefster Seitengrund (obsidian). */
 export const LANDING_BG = '#05070b';
+
+/** Erhöhte Band-/Sektionsfläche. */
+export const LANDING_BG_ELEVATED = '#070a10';
 
 /** Panel-/Kartenfläche. */
 export const LANDING_PANEL = '#0b0e14';
+
+/** Etwas helleres Panel (featured / hover-Basis). */
+export const LANDING_PANEL_RAISED = '#11151c';
 
 /** Fliesstext und Oberfläche. */
 export const LANDING_SANS = "'Inter', system-ui, sans-serif";
@@ -28,11 +30,14 @@ export const LANDING_SERIF = "'Playfair Display', Georgia, 'Times New Roman', se
 /** Eyebrows / Labels — DM Mono (self-hosted). */
 export const LANDING_MONO = "'DM Mono', 'JetBrains Mono', ui-monospace, monospace";
 
-/** Primärtext. */
-export const LANDING_TEXT = '#ffffff';
+/** Primärtext — near-white für Enterprise-Kontrast. */
+export const LANDING_TEXT = '#F4F6F8';
 
-/** Gedämpfter Text. */
-export const LANDING_MUTED = '#a8b0bc';
+/** Gedämpfter Fliesstext. */
+export const LANDING_MUTED = '#9AA3B0';
+
+/** Ruhige Labels / Eyebrows (kein Cyan). */
+export const LANDING_LABEL = '#7A8494';
 
 /** Primärakzent — Dominik Cyan. */
 export const LANDING_ACCENT = '#00E5FF';
@@ -49,5 +54,14 @@ export const LANDING_BUTTON_TEXT = '#05070b';
 /** Status-Grün (ok). */
 export const LANDING_GREEN = '#20d69a';
 
-/** Haarlinie. */
-export const LANDING_LINE = 'rgba(0, 229, 255, 0.18)';
+/** Warn-/Attention-Ton — kühles Cyan, kein Gold. */
+export const LANDING_WARN = '#00B8D4';
+
+/** Neutrale Haarlinie (weiß, nicht cyan). */
+export const LANDING_LINE = 'rgba(255, 255, 255, 0.10)';
+
+/** Akzent-Haarlinie nur für featured / active. */
+export const LANDING_LINE_ACCENT = 'rgba(0, 229, 255, 0.28)';
+
+/** Dezenter Cyan-Glow für CTAs (kalibriert, kein Neon-Spray). */
+export const LANDING_GLOW_CTA = '0 0 24px rgba(0, 229, 255, 0.18)';

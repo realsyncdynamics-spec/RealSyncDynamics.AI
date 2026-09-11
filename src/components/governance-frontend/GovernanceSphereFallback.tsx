@@ -3,15 +3,24 @@ import {
   type GovernanceSphereNode,
   type SphereNodeState,
 } from './governance-sphere-nodes';
+import {
+  LANDING_ACCENT,
+  LANDING_GREEN,
+  LANDING_LABEL,
+  LANDING_LINE,
+  LANDING_LINE_ACCENT,
+  LANDING_TEXT,
+  LANDING_WARN,
+} from '../landing/landing-theme';
 
-function stateDot(state: SphereNodeState) {
-  return state === 'operational' ? 'bg-emerald-400' : 'bg-[#d4a574]';
+function stateColor(state: SphereNodeState) {
+  return state === 'operational' ? LANDING_GREEN : LANDING_WARN;
 }
 
 /**
  * Lightweight 2D fallback when WebGL is unavailable or reduced-motion is on.
  * Still shows a photoreal Earth crop (not a blank wireframe disc) so the
- * homepage contract remains visually clear.
+ * homepage contract remains visually clear. Chrome uses enterprise cyan tokens.
  */
 export function GovernanceSphereFallback({
   selectedId,
@@ -27,7 +36,8 @@ export function GovernanceSphereFallback({
       aria-label="Governance Sphere — photoreal Earth overview"
     >
       <div
-        className="absolute inset-[10%] overflow-hidden rounded-full border border-[#e8c98a]/25 shadow-[0_0_60px_rgba(232,201,138,0.12)]"
+        className="absolute inset-[10%] overflow-hidden rounded-full border shadow-[0_0_48px_rgba(0,229,255,0.08)]"
+        style={{ borderColor: LANDING_LINE_ACCENT }}
         aria-hidden="true"
       >
         <picture>
@@ -48,7 +58,8 @@ export function GovernanceSphereFallback({
         />
       </div>
       <div
-        className="absolute inset-[4%] rounded-full border border-[#e8c98a]/15"
+        className="absolute inset-[4%] rounded-full border"
+        style={{ borderColor: LANDING_LINE }}
         aria-hidden="true"
       />
 
@@ -61,19 +72,28 @@ export function GovernanceSphereFallback({
                 type="button"
                 draggable={false}
                 onClick={() => onSelect(active ? null : node)}
-                className={`w-full select-none rounded-xl border px-3 py-2.5 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e8c98a]/60 ${
-                  active
-                    ? 'border-[#e8c98a]/55 bg-[#e8c98a]/12 backdrop-blur-md'
-                    : 'border-white/10 bg-black/45 backdrop-blur-md hover:border-[#e8c98a]/35 hover:bg-black/55'
-                }`}
+                className="w-full select-none rounded-xl border px-3 py-2.5 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00E5FF]/60"
+                style={{
+                  borderColor: active ? LANDING_LINE_ACCENT : LANDING_LINE,
+                  backgroundColor: active ? 'rgba(0,229,255,0.10)' : 'rgba(0,0,0,0.45)',
+                  backdropFilter: 'blur(8px)',
+                }}
               >
                 <span className="flex items-center gap-2">
-                  <span className={`h-1.5 w-1.5 rounded-full ${stateDot(node.state)}`} />
-                  <span className="font-mono text-[9px] tracking-[.16em] text-[#e8c98a]/85">
+                  <span
+                    className="h-1.5 w-1.5 rounded-full"
+                    style={{ backgroundColor: stateColor(node.state) }}
+                  />
+                  <span
+                    className="font-mono text-[9px] tracking-[.16em]"
+                    style={{ color: active ? LANDING_ACCENT : LANDING_LABEL }}
+                  >
                     {node.phase.toUpperCase()}
                   </span>
                 </span>
-                <span className="mt-1 block text-xs font-medium text-white/90">{node.label}</span>
+                <span className="mt-1 block text-xs font-medium" style={{ color: LANDING_TEXT }}>
+                  {node.label}
+                </span>
               </button>
             </li>
           );

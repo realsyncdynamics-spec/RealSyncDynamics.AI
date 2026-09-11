@@ -1,8 +1,9 @@
 /**
  * Hero visual — Europe night-map with cyan neural/network overlay.
- * Decorative only; no live KPIs. Matches Dominik cyan-map reference.
+ * Decorative only; no live KPIs. Calibrated enterprise glow (less neon spray).
  */
 import { useId } from 'react';
+import { LANDING_ACCENT, LANDING_BG } from './landing-theme';
 
 /** Approximate node graph over a Europe-framed night map (viewBox 0–1000). */
 const NODES: readonly { x: number; y: number; r?: number }[] = [
@@ -57,30 +58,29 @@ export function HeroCyanNetwork() {
       aria-hidden="true"
       data-hero-visual="cyan-network"
     >
-      {/* Night Europe map plane */}
+      {/* Night Europe map plane — deeper, cooler contrast */}
       <div
         className="absolute inset-0 scale-110 bg-cover bg-center"
         style={{
           backgroundImage: 'url(/textures/earth-night.jpg)',
           backgroundPosition: '48% 38%',
           backgroundSize: '220%',
-          filter: 'saturate(1.15) contrast(1.12) brightness(0.85)',
+          filter: 'saturate(1.05) contrast(1.18) brightness(0.72)',
         }}
       />
       {/* Soft vignette toward left copy */}
       <div
         className="absolute inset-0"
         style={{
-          background:
-            'linear-gradient(90deg, #05070b 0%, rgba(5,7,11,0.72) 28%, rgba(5,7,11,0.15) 55%, transparent 72%), linear-gradient(180deg, rgba(5,7,11,0.35) 0%, transparent 25%, transparent 70%, rgba(5,7,11,0.55) 100%)',
+          background: `linear-gradient(90deg, ${LANDING_BG} 0%, rgba(5,7,11,0.78) 28%, rgba(5,7,11,0.18) 55%, transparent 72%), linear-gradient(180deg, rgba(5,7,11,0.42) 0%, transparent 25%, transparent 70%, rgba(5,7,11,0.62) 100%)`,
         }}
       />
-      {/* Cyan atmospheric wash */}
+      {/* Calibrated cyan atmospheric wash — lower opacity */}
       <div
-        className="absolute inset-0 opacity-40 mix-blend-screen"
+        className="absolute inset-0 opacity-28 mix-blend-screen"
         style={{
           background:
-            'radial-gradient(55% 45% at 62% 42%, rgba(0,229,255,0.28) 0%, rgba(0,229,255,0.06) 42%, transparent 70%)',
+            'radial-gradient(55% 45% at 62% 42%, rgba(0,229,255,0.18) 0%, rgba(0,229,255,0.04) 42%, transparent 70%)',
         }}
       />
 
@@ -92,17 +92,17 @@ export function HeroCyanNetwork() {
       >
         <defs>
           <radialGradient id={gradId} cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stopColor="#00E5FF" stopOpacity="1" />
-            <stop offset="55%" stopColor="#00E5FF" stopOpacity="0.45" />
-            <stop offset="100%" stopColor="#00E5FF" stopOpacity="0" />
+            <stop offset="0%" stopColor={LANDING_ACCENT} stopOpacity="0.85" />
+            <stop offset="55%" stopColor={LANDING_ACCENT} stopOpacity="0.28" />
+            <stop offset="100%" stopColor={LANDING_ACCENT} stopOpacity="0" />
           </radialGradient>
           <linearGradient id={fadeId} x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="#00E5FF" stopOpacity="0" />
-            <stop offset="35%" stopColor="#00E5FF" stopOpacity="0.55" />
-            <stop offset="100%" stopColor="#00E5FF" stopOpacity="0.9" />
+            <stop offset="0%" stopColor={LANDING_ACCENT} stopOpacity="0" />
+            <stop offset="35%" stopColor={LANDING_ACCENT} stopOpacity="0.4" />
+            <stop offset="100%" stopColor={LANDING_ACCENT} stopOpacity="0.72" />
           </linearGradient>
           <filter id={`soft-${uid}`} x="-40%" y="-40%" width="180%" height="180%">
-            <feGaussianBlur stdDeviation="2.2" />
+            <feGaussianBlur stdDeviation="1.6" />
           </filter>
         </defs>
 
@@ -117,8 +117,8 @@ export function HeroCyanNetwork() {
                 x2={to.x}
                 y2={to.y}
                 stroke={`url(#${fadeId})`}
-                strokeWidth="1.4"
-                opacity="0.55"
+                strokeWidth="1.25"
+                opacity="0.48"
                 className="hero-cyan-link"
                 style={{ animationDelay: `${(i % 8) * 0.35}s` }}
               />
@@ -127,9 +127,9 @@ export function HeroCyanNetwork() {
                 y1={from.y}
                 x2={to.x}
                 y2={to.y}
-                stroke="#00E5FF"
-                strokeWidth="3"
-                opacity="0.12"
+                stroke={LANDING_ACCENT}
+                strokeWidth="2.2"
+                opacity="0.08"
                 filter={`url(#soft-${uid})`}
               />
             </g>
@@ -138,9 +138,9 @@ export function HeroCyanNetwork() {
 
         {NODES.map((n, i) => (
           <g key={`n-${i}`} className="hero-cyan-node" style={{ animationDelay: `${i * 0.18}s` }}>
-            <circle cx={n.x} cy={n.y} r={(n.r ?? 4) * 3.2} fill={`url(#${gradId})`} opacity="0.35" />
-            <circle cx={n.x} cy={n.y} r={n.r ?? 4} fill="#00E5FF" />
-            <circle cx={n.x} cy={n.y} r={(n.r ?? 4) * 0.45} fill="#ffffff" opacity="0.9" />
+            <circle cx={n.x} cy={n.y} r={(n.r ?? 4) * 2.6} fill={`url(#${gradId})`} opacity="0.28" />
+            <circle cx={n.x} cy={n.y} r={n.r ?? 4} fill={LANDING_ACCENT} />
+            <circle cx={n.x} cy={n.y} r={(n.r ?? 4) * 0.4} fill="#ffffff" opacity="0.85" />
           </g>
         ))}
       </svg>

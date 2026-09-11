@@ -7,7 +7,7 @@ import { capitalsVisibleAtZoom, WORLD_CAPITALS, type WorldCapital } from './geo/
 import { CONTINENT_LABEL_MAX_ZOOM, CONTINENT_LABELS } from './geo/continents';
 
 const BORDERS_URL = '/textures/earth-borders-110m.json';
-const CAPITAL_COLOR = '#f3d9a0';
+const CAPITAL_COLOR = '#00E5FF';
 
 type BordersPayload = {
   v: number;
@@ -250,10 +250,10 @@ function CapitalMarker({
           position={[0, 0.08, 0]}
         >
           <div
-            className="rounded-md border border-[#e8c98a]/35 bg-black/75 px-2 py-1 shadow-[0_8px_24px_rgba(0,0,0,0.45)] backdrop-blur-md"
+            className="rounded-md border border-[#00E5FF]/28 bg-black/75 px-2 py-1 shadow-[0_8px_24px_rgba(0,0,0,0.45)] backdrop-blur-md"
             data-capital-label={capital.iso2}
           >
-            <p className="whitespace-nowrap font-mono text-[10px] tracking-[0.12em] text-[#f3d9a0]">
+            <p className="whitespace-nowrap font-mono text-[10px] tracking-[0.12em] text-[#00E5FF]">
               {capital.name}
             </p>
             <p className="mt-0.5 font-mono text-[8px] tracking-[0.14em] text-white/40">

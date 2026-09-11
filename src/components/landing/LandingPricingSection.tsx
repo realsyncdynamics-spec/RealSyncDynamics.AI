@@ -5,19 +5,25 @@ import {
   LANDING_ACCENT,
   LANDING_BUTTON,
   LANDING_BUTTON_TEXT,
+  LANDING_GLOW_CTA,
+  LANDING_LABEL,
   LANDING_LINE,
+  LANDING_LINE_ACCENT,
   LANDING_MONO,
   LANDING_MUTED,
+  LANDING_PANEL,
+  LANDING_PANEL_RAISED,
   LANDING_SERIF,
   LANDING_TEXT,
 } from './landing-theme';
 
 /**
- * Pricing 3-up on the public landing — Dominik-Referenz layout.
+ * Pricing 3-up on the public landing — enterprise cyan scale.
  *
  * Feste Reihenfolge Starter / Growth (featured) / Agency aus der SSoT
  * (`shared/pricing.ts`). Agency ist wieder self_service (Stripe Live-Price
  * `price_1TfsV9…`); CTA geht auf `/checkout/agency`.
+ * Cyan nur auf featured Border + Primary-CTA.
  */
 const LANDING_PLAN_IDS = ['starter', 'growth', 'agency'] as const;
 
@@ -34,8 +40,8 @@ export function LandingPricingSection() {
           className="inline-block rounded-full border px-[11px] py-[7px] text-[9px] font-medium tracking-[.23em]"
           style={{
             fontFamily: LANDING_MONO,
-            color: LANDING_ACCENT,
-            borderColor: `${LANDING_ACCENT}47`,
+            color: LANDING_LABEL,
+            borderColor: LANDING_LINE,
           }}
         >
           PREISE
@@ -62,16 +68,19 @@ export function LandingPricingSection() {
                 key={tier.id}
                 className="flex min-h-[280px] flex-col border p-[22px]"
                 style={{
-                  borderColor: featured ? `${LANDING_ACCENT}73` : 'rgba(255,255,255,0.12)',
+                  borderColor: featured ? LANDING_LINE_ACCENT : LANDING_LINE,
                   background: featured
-                    ? 'linear-gradient(135deg, rgba(0,229,255,0.10), rgba(7,9,13,0.72))'
-                    : 'linear-gradient(135deg, rgba(20,21,25,0.7), rgba(7,9,13,0.72))',
+                    ? `linear-gradient(160deg, rgba(0,229,255,0.06), ${LANDING_PANEL_RAISED} 42%, ${LANDING_PANEL})`
+                    : `linear-gradient(160deg, ${LANDING_PANEL_RAISED}, ${LANDING_PANEL})`,
                 }}
               >
                 <div className="flex items-start justify-between gap-3">
                   <p
                     className="text-[9px] tracking-[.2em]"
-                    style={{ fontFamily: LANDING_MONO, color: LANDING_ACCENT }}
+                    style={{
+                      fontFamily: LANDING_MONO,
+                      color: featured ? LANDING_ACCENT : LANDING_LABEL,
+                    }}
                   >
                     {tier.name.toUpperCase()}
                   </p>
@@ -80,8 +89,8 @@ export function LandingPricingSection() {
                       className="rounded-full border px-2 py-0.5 text-[8px] tracking-[.14em]"
                       style={{
                         fontFamily: LANDING_MONO,
-                        borderColor: `${LANDING_ACCENT}55`,
-                        color: LANDING_ACCENT,
+                        borderColor: featured ? LANDING_LINE_ACCENT : LANDING_LINE,
+                        color: featured ? LANDING_ACCENT : LANDING_LABEL,
                       }}
                     >
                       {(tier.badges[0] ?? 'Empfohlen').toUpperCase()}
@@ -108,9 +117,9 @@ export function LandingPricingSection() {
                     <li
                       key={b}
                       className="flex items-start gap-2 text-[11px] leading-relaxed"
-                      style={{ color: '#898a91' }}
+                      style={{ color: LANDING_MUTED }}
                     >
-                      <span style={{ color: LANDING_ACCENT }}>+</span>
+                      <span style={{ color: featured ? LANDING_ACCENT : LANDING_LABEL }}>+</span>
                       <span>{b}</span>
                     </li>
                   ))}
@@ -120,11 +129,15 @@ export function LandingPricingSection() {
                   className="mt-6 inline-flex items-center justify-center gap-2 rounded-full px-[18px] py-[13px] text-[11px] font-semibold transition hover:brightness-110"
                   style={
                     featured
-                      ? { backgroundColor: LANDING_BUTTON, color: LANDING_BUTTON_TEXT }
+                      ? {
+                          backgroundColor: LANDING_BUTTON,
+                          color: LANDING_BUTTON_TEXT,
+                          boxShadow: LANDING_GLOW_CTA,
+                        }
                       : {
                           backgroundColor: 'transparent',
-                          color: '#ffffff',
-                          border: '1px solid rgba(255,255,255,0.55)',
+                          color: LANDING_TEXT,
+                          border: '1px solid rgba(255,255,255,0.45)',
                         }
                   }
                 >
@@ -139,7 +152,7 @@ export function LandingPricingSection() {
           <Link
             to="/pricing"
             className="inline-flex items-center gap-2 text-[12px] transition hover:opacity-90"
-            style={{ color: LANDING_ACCENT }}
+            style={{ color: LANDING_MUTED }}
           >
             Alle Preise und Module <ArrowRight className="h-3.5 w-3.5" />
           </Link>

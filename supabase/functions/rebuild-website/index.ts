@@ -1,8 +1,12 @@
 // rebuild-website — Orchestrator für den vollautomatischen DSGVO-Rebuild
 // einer Kunden-Homepage. Triggert nach Stripe-Checkout der Managed-Tier.
 //
-// POST /functions/v1/rebuild-website (verify_jwt = false; service-role only)
+// POST /functions/v1/rebuild-website (verify_jwt = false)
+// Auth: Bearer == SERVICE_ROLE_KEY (stripe-webhook) ODER User-JWT mit
+//   profiles.is_super_admin (Resume in /admin/rebuilds). Der Anon-Key
+//   ist ein gültiges JWT — ohne diesen Check startet jeder einen Rebuild.
 // Body: { source_url, customer_email, company?, audit_id?, tenant_id? }
+//    oder { rebuild_id } zum Resume.
 //
 // Steps siehe migration website_rebuilds + _shared/website-rebuild/types.ts.
 // Jeder Step idempotent — bei Fehler kann ein Retry via current_step
@@ -29,6 +33,9 @@ Deno.serve(async (req) => {
   const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
   const SRK = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
   const admin = createClient(SUPABASE_URL, SRK, { auth: { persistSession: false } });
+
+  const denied = await authorizeRebuild(req, admin, SRK);
+  if (denied) return denied;
 
   let body: {
     source_url?: string;
@@ -348,4 +355,31 @@ async function markStep(
 
 function jsonError(status: number, code: string, message: string, extra?: Record<string, unknown>) {
   return jsonResponse({ error: { code, message, ...extra } }, status);
+}
+
+/** Service-Role (stripe-webhook) oder Super-Admin (Resume). Anon-JWT reicht nicht. */
+async function authorizeRebuild(
+  req: Request,
+  admin: ReturnType<typeof createClient>,
+  srk: string,
+): Promise<Response | null> {
+  const auth = req.headers.get('Authorization') ?? '';
+  if (auth === `Bearer ${srk}`) return null;
+  if (!auth.startsWith('Bearer ')) {
+    return jsonError(401, 'UNAUTHORIZED', 'service role or admin required');
+  }
+  const token = auth.slice('Bearer '.length);
+  const { data: userResp, error } = await admin.auth.getUser(token);
+  if (error || !userResp.user) {
+    return jsonError(401, 'UNAUTHORIZED', 'invalid token');
+  }
+  const { data: profile } = await admin
+    .from('profiles')
+    .select('is_super_admin')
+    .eq('id', userResp.user.id)
+    .maybeSingle();
+  if (!profile?.is_super_admin) {
+    return jsonError(403, 'FORBIDDEN', 'super_admin required');
+  }
+  return null;
 }

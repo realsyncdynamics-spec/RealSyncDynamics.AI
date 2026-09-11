@@ -69,7 +69,7 @@ export function renderPage(blueprint: SiteBlueprint, page: SitePage, options: Re
   // erzeugt eine Seite mit Hero UND Services zwei H1.
   const state: RenderState = { h1Used: false };
 
-  const body = page.blocks.map((block) => renderBlock(blueprint, block, state)).join('\n');
+  const body = renderBlocksWithState(blueprint, page.blocks, state).map((b) => b.html).join('\n');
 
   return [
     '<!doctype html>',
@@ -104,6 +104,62 @@ export function renderPage(blueprint: SiteBlueprint, page: SitePage, options: Re
 
 interface RenderState {
   h1Used: boolean;
+}
+
+/** Ein gerenderter Block, wie er im Seitenrumpf steht. */
+export interface RenderedBlock {
+  id: string;
+  html: string;
+  /**
+   * Welche Überschriftenebene der Block bekommen hat. `null`, wenn der Block
+   * keine Seitenüberschrift führt (Navigation, Karte, CTA, Hinweis, Fuß)
+   * oder nichts gerendert hat (leere Referenzliste).
+   */
+  heading: 'h1' | 'h2' | null;
+}
+
+/**
+ * Rendert die Blöcke einer Seite einzeln, mit derselben H1-Buchführung wie
+ * `renderPage`: aneinandergehängt ergeben die Fragmente byte-gleich den
+ * Seitenrumpf. Gedacht für Oberflächen, die Blöcke einzeln zeigen müssen
+ * (der Block-Editor), ohne dass dort ein zweiter Renderer entsteht — der
+ * wäre die Stelle, an der Vorschau und Auslieferung auseinanderliefen.
+ */
+export function renderPageBlocks(blueprint: SiteBlueprint, page: SitePage): RenderedBlock[] {
+  return renderBlocksWithState(blueprint, page.blocks, { h1Used: false });
+}
+
+/**
+ * Rendert einen einzelnen Block mit vorgegebener Überschriftenebene. Für
+ * Vorschauen, die einen Block außerhalb seiner Seite darstellen; die Ebene
+ * kommt dann aus `renderPageBlocks` der aktuellen Seite.
+ */
+export function renderBlockHtml(blueprint: SiteBlueprint, block: SiteBlock, heading: 'h1' | 'h2'): string {
+  return renderBlock(blueprint, block, { h1Used: heading === 'h2' });
+}
+
+function renderBlocksWithState(blueprint: SiteBlueprint, blocks: SiteBlock[], state: RenderState): RenderedBlock[] {
+  return blocks.map((block) => {
+    const before = state.h1Used;
+    const html = renderBlock(blueprint, block, state);
+    // Die Ebene ergibt sich aus der Buchführung, nicht aus dem Block-Typ:
+    // Der erste Block, der eine Überschrift setzt, kippt `h1Used`.
+    const heading: RenderedBlock['heading'] = html === '' || !usesPageHeading(block)
+      ? null
+      : state.h1Used !== before ? 'h1' : 'h2';
+    return { id: block.id, html, heading };
+  });
+}
+
+/** Blocktypen, deren Überschrift über `headingTag` vergeben wird. */
+function usesPageHeading(block: SiteBlock): boolean {
+  switch (block.kind) {
+    case 'hero': case 'services': case 'features': case 'about': case 'team':
+    case 'testimonials': case 'faq': case 'contact-form': case 'booking': case 'legal-text':
+      return true;
+    default:
+      return false;
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────

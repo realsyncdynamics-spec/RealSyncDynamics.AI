@@ -259,6 +259,10 @@ describe('Hero-Panel — Beispiel ist als Beispiel gekennzeichnet', () => {
     resolve(__dirname, '../../src/pages/MainLanding.tsx'),
     'utf8',
   );
+  const sphereNodes = readFileSync(
+    resolve(__dirname, '../../src/components/governance-frontend/governance-sphere-nodes.ts'),
+    'utf8',
+  );
 
   it('das Panel nennt sich nicht mehr „LIVE"', () => {
     // Vorher: Kopfzeile „GOVERNANCE RUNTIME · LIVE", grüner ACTIVE-Punkt,
@@ -267,6 +271,8 @@ describe('Hero-Panel — Beispiel ist als Beispiel gekennzeichnet', () => {
     // aussehen (Truth Layer, target-architecture.md §3.1).
     expect(landing).not.toContain('GOVERNANCE RUNTIME · LIVE');
     expect(landing).toContain('RUNTIME_PREVIEW_LABEL');
+    expect(landing).toContain('GovernanceSphereHost');
+    expect(sphereNodes).toMatch(/DEMO\s*\/\s*SIMULATED/);
   });
 
   it('die Beispielwerte stehen in der Config, nicht in der Seite', () => {

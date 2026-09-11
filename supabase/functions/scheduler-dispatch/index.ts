@@ -8,8 +8,10 @@
 //      last_run_at setzen
 //   4. optional benachrichtigen: governance_webhooks (Slack/Teams/Generic)
 //
-// Auth: Bearer == SERVICE_ROLE_KEY (Cron-Aufruf). verify_jwt bleibt an —
-// der Service-Role-Key ist ein gültiges JWT; zusätzlich prüfen wir explizit.
+// Auth: Bearer == SERVICE_ROLE_KEY (Cron-Aufruf). verify_jwt = false —
+// wie microsoft365-audit-sync / audit-monitor-cron. Der Anon-Key ist
+// ebenfalls ein gültiges JWT; nur der exakte Service-Role-Vergleich
+// hält fremde Aufrufer draußen.
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';

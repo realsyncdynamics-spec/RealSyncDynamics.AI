@@ -99,6 +99,7 @@ import { FlowStepRoute } from './flow/FlowStepRoute';
 const SetupAssistant = lazy(() => import('./features/onboarding/SetupAssistant').then((m) => ({ default: m.SetupAssistant })));
 // ── Phase 2: Dashboard Router (Adaptive based on tier)
 const DashboardRouter = lazy(() => import('./features/governance/dashboard/DashboardRouter').then((m) => ({ default: m.DashboardRouter })));
+const GovernanceAiWorkspace = lazy(() => import('./features/governance/dashboard/GovernanceAiWorkspace').then((m) => ({ default: m.GovernanceAiWorkspace })));
 // ── SMB Experience Layer: vereinfachte Business-Ansicht für Einzelunternehmer.
 //    Konsumiert nur bestehende Services (siehe src/features/smb/README.md).
 const SmbDashboardView = lazy(() => import('./features/smb/SmbDashboardView').then((m) => ({ default: m.SmbDashboardView })));
@@ -109,8 +110,8 @@ const ComplianceFrameworkSelector = lazy(() => import('./features/governance/das
 const Iso42001ComplianceHub = lazy(() => import('./features/governance/dashboard/Iso42001ComplianceHub').then((m) => ({ default: m.Iso42001ComplianceHub })));
 // BusinessDashboard zieht recharts → aus dem Landing-Critical-Path lazyen.
 const BusinessDashboard = lazy(() => import('./pages/BusinessDashboard').then((m) => ({ default: m.BusinessDashboard })));
-// Der frühere parallele Chat unter /assistant ist abgelöst: /assistant und
-// /dashboard landen beide auf /app/dashboard (Governance OS + Assistent).
+// /assistant und /dashboard landen auf /app/dashboard (Compliance-Status).
+// Der Chat bleibt unter /app/assistant und in der Governance-Sidebar.
 // Compliance Tools (Free)
 import { AvvGenerator } from './pages/AvvGenerator';
 import { CookieScanner } from './pages/CookieScanner';
@@ -238,6 +239,10 @@ const SiteOsDashboardView = lazy(() => import('./features/siteos/SiteOsDashboard
 // seit ihrer Entstehung ohne Route im Repo — fertiger Code, den niemand
 // erreichen konnte (CLAUDE.md §14).
 const SiteOsBuilderPage = lazy(() => import('./unified-entry/pages/PreviewSelectionPage'));
+// App Builder Workspace: Topbar · Projekt-Navigation · Puck-Leinwand ·
+// Assistent · Konsole/Probleme/Verlauf/Governance. Lazy aus demselben Grund
+// wie der Editor: Puck gehört nicht in den kritischen Pfad.
+const AppBuilderWorkspacePage = lazy(() => import('./features/siteos/workspace/AppBuilderWorkspacePage'));
 // Build Studio: Prompt → vollständige Website → Live-Vorschau, ohne Konto.
 //
 // Abweichung von der Regel „Public Pages eager" (CLAUDE.md §7): Diese Seite
@@ -733,7 +738,7 @@ function RoutesWithTracking() {
       {/* Dashboard */}
       {/* ── Kanonische Workspace-Routen (/app/*) — Governance OS ──
           Wiederverwendung bestehender Views; alte Pfade redirecten unten.
-          Assistent und Dashboard sind dieselbe Fläche: /app/dashboard. */}
+          Dashboard ist Compliance-Status; Assistent liegt unter /app/assistant. */}
       {/* ── Governance OS Browser Shell — alle /app/* Routen ──
           GovernanceBrowserShell: TopBar + Tabs + Canvas + AssistantPanel + StatusBar.
           Auth Guards bleiben in den View-Komponenten selbst (AuthGate / RequireAal2). */}
@@ -752,8 +757,10 @@ function RoutesWithTracking() {
       <Route path="/app/intelligence" element={<AppGate><ProtectedRoute><DashboardView /></ProtectedRoute></AppGate>} />
       {/* Liest tenant_users/monitored_domains — Tenant-Daten, daher auth-gegatet. */}
       <Route path="/app/risk" element={<AppGate><ProtectedRoute><RiskDashboard /></ProtectedRoute></AppGate>} />
-      {/* DashboardRouter rendert GovernanceAiWorkspace; die Plan-Unterscheidung liegt dort, nicht in der Route. */}
+      {/* DashboardRouter rendert den live Compliance-Status (kein Chat-Default). */}
       <Route path="/app/dashboard" element={<AppGate><GovernanceBrowserShell><DashboardRouter /></GovernanceBrowserShell></AppGate>} />
+      <Route path="/app/assistant" element={<AppGate><GovernanceAiWorkspace /></AppGate>} />
+      <Route path="/app/cockpit" element={<AppGate><GovernanceBrowserShell><CeoCockpitView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/cockpit/brief" element={<AppGate><CeoBriefPrintView /></AppGate>} />
       <Route path="/app/seo-marketing-dashboard" element={<AppGate><GovernanceBrowserShell><SEOMarketingDashboard /></GovernanceBrowserShell></AppGate>} />
       {/* Marketplace: zubuchbare Dienste mit ihrem tatsaechlichen Zustand.
@@ -830,7 +837,7 @@ function RoutesWithTracking() {
       <Route path="/app/workflows" element={<GovernanceBrowserShell><WorkflowsView /></GovernanceBrowserShell>} />
       <Route path="/app/risks" element={<GovernanceBrowserShell><RiskCenterView /></GovernanceBrowserShell>} />
       <Route path="/app/compliance" element={<GovernanceBrowserShell><GovernanceComplianceReportView /></GovernanceBrowserShell>} />
-      <Route path="/app/evidence" element={<GovernanceBrowserShell><EvidenceVaultView /></GovernanceBrowserShell>} />
+      <Route path="/app/evidence" element={<AppGate><GovernanceBrowserShell><EvidenceVaultView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/evidence/auditor" element={<GovernanceBrowserShell><RequireAal2 action="Evidence-Export"><GovernanceAuditorConsoleView /></RequireAal2></GovernanceBrowserShell>} />
       <Route path="/app/monitoring" element={<GovernanceBrowserShell><MonitoringRuntimeView /></GovernanceBrowserShell>} />
       <Route path="/app/vendors" element={<GovernanceBrowserShell><GovernanceVendorInventoryView /></GovernanceBrowserShell>} />
@@ -895,8 +902,8 @@ function RoutesWithTracking() {
 
       {/* ── Redirects: konkurrierende Einstiege → kanonische Workspace-URL ──
           Alte URLs werden NICHT entfernt (keine 404 / keine toten Bookmarks).
-          /assistant und /dashboard sind dieselbe Fläche wie /app/dashboard:
-          Governance OS mit Assistent (Workspace-Chat + Sidebar). Das Ziel
+          /assistant und /dashboard bleiben Aliase auf /app/dashboard
+          (Compliance-Status). Chat: /app/assistant + Sidebar. Das Ziel
           trägt AppGate; die Aliase selbst brauchen keinen zweiten Guard. */}
       <Route path="/assistant" element={<Navigate to="/app/dashboard" replace />} />
       <Route path="/dashboard" element={<Navigate to="/app/dashboard" replace />} />
@@ -1189,6 +1196,12 @@ function RoutesWithTracking() {
         }
       />
       <Route path="/unified-entry/transformation" element={<SiteOsBuilderPage />} />
+      {/* App Builder Workspace (Phase 2): eine Site des Mandanten, adressiert
+          über ihren Slug — dieselbe Kette, die `siteos_blueprints` führt.
+          Der Erstbau (/unified-entry/transformation, /app/siteos/builder)
+          leitet nach Erfolg hierher; es gibt keinen zweiten Builder. Die
+          Anmeldung prüft die Seite selbst, damit `next` erhalten bleibt. */}
+      <Route path="/builder/:slug" element={<AppBuilderWorkspacePage />} />
       <Route
         path="/unified-entry/trial-offer"
         element={

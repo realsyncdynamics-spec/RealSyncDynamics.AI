@@ -191,6 +191,15 @@ Deno.serve(async (req) => {
   const preflight = handleOptions(req);
   if (preflight) return preflight;
 
+  // Eigener Bearer-Check, weil verify_jwt fuer diese Function aus ist: Der
+  // Aufrufer ist pg_cron, nicht ein Browser mit Supabase-JWT. Ohne diesen
+  // Check waere der Scheduler fuer jeden im Internet ausloesbar — live
+  // gemessen 2026-09-10 (UNDECLARED_NO_JWT, Drift-Guard).
+  const authHeader = req.headers.get('Authorization') ?? '';
+  if (authHeader !== `Bearer ${SERVICE_KEY}`) {
+    return jsonResponse({ error: 'cron only' }, 401);
+  }
+
   const sb = createClient(SUPABASE_URL, SERVICE_KEY);
 
   // Alle fälligen Quellen holen

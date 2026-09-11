@@ -9,12 +9,18 @@ import { countOpenDpias, listDpias } from '../dpiasApi';
 import { countOpenDsrs, fetchTenantDsrs } from '../dsrApi';
 import { countPendingApprovals } from '../approvalsApi';
 import { countVendorsNoDpa } from '../vendorsApi';
+import { countTenantEvidence, countTenantEvidenceHashed, fetchTenantAssets } from '../governanceApi';
 import type { DbGovernanceKpiSnapshot } from '../analytics/types';
 import {
-  computeGovernanceScore, computeAuditReadiness,
+  computeGovernanceScoreIfReliable, computeAuditReadiness,
   type CockpitCounts, type CockpitPosture,
 } from './cockpitScore';
 import { prioritizeActions, type PriorityAction } from './prioritizeActions';
+import {
+  computeEvidenceHealth, computeOpenMeasures, computeRiskIndex,
+  EMPTY_SUMMARY_24H,
+  type EvidenceHealth, type OpenMeasures, type RiskIndex, type Summary24h,
+} from '../dashboard/complianceStatus';
 
 // KPI-Snapshots über das lazy getSupabase() (NICHT über analyticsApi, das den
 // Client auf Modulebene erzeugt und ohne Env beim Import crasht). Aufrufe
@@ -34,18 +40,50 @@ async function fetchKpiSnapshotRange(tenantId: string, start: string, end: strin
   return (data || []) as DbGovernanceKpiSnapshot[];
 }
 
+async function fetch24hSummary(tenantId: string): Promise<Summary24h | null> {
+  const sb = getSupabase();
+  const { data, error } = await sb.rpc('governance_24h_summary', { p_tenant_id: tenantId });
+  if (error || data == null) return null;
+  const row = (Array.isArray(data) ? data[0] : data) as Partial<Summary24h> | undefined;
+  if (!row || typeof row !== 'object') return null;
+  return {
+    ...EMPTY_SUMMARY_24H,
+    new_risks: Number(row.new_risks) || 0,
+    resolved_risks: Number(row.resolved_risks) || 0,
+    new_evidence: Number(row.new_evidence) || 0,
+    open_alerts: Number(row.open_alerts) || 0,
+    new_alerts_24h: Number(row.new_alerts_24h) || 0,
+    critical_alerts: Number(row.critical_alerts) || 0,
+    failed_scans: Number(row.failed_scans) || 0,
+    active_sources: Number(row.active_sources) || 0,
+    pending_sources: Number(row.pending_sources) || 0,
+    next_scan_at: typeof row.next_scan_at === 'string' ? row.next_scan_at : null,
+  };
+}
+
 export interface CockpitData {
   counts: CockpitCounts;
   posture: CockpitPosture | null;
-  score: number;
+  score: number | null;
   readiness: number | null;
   readinessTrend: { direction: 'up' | 'down' | 'flat'; percent: number } | null;
   actions: PriorityAction[];
   lastUpdated: string | null;
+  evidenceHealth: EvidenceHealth;
+  riskIndex: RiskIndex;
+  openMeasures: OpenMeasures;
+  summary24h: Summary24h | null;
+  /** Abgelehnte Teillader — Dashboard darf das nicht als leeren Mandanten lesen. */
+  partialFailures: string[];
 }
 
 function val<T>(r: PromiseSettledResult<T>, fb: T): T {
   return r.status === 'fulfilled' ? r.value : fb;
+}
+
+function failureOf(name: string, result: PromiseSettledResult<unknown>): string | null {
+  if (result.status !== 'rejected') return null;
+  return `${name}: ${(result.reason as Error)?.message ?? 'fehlgeschlagen'}`;
 }
 
 export async function loadCockpitData(tenantId: string): Promise<CockpitData> {
@@ -55,6 +93,7 @@ export async function loadCockpitData(tenantId: string): Promise<CockpitData> {
   const [
     incidentsCount, dpiasCount, dsrCount, approvalsCount, vendorsCount,
     latestKpi, kpiRange, incidentList, dpiaList, dsrList,
+    summary24hRaw, assets, evidenceTotal, evidenceHashed,
   ] = await Promise.allSettled([
     countOpenIncidents(tenantId),
     countOpenDpias(tenantId),
@@ -66,6 +105,10 @@ export async function loadCockpitData(tenantId: string): Promise<CockpitData> {
     fetchTenantIncidents(tenantId),
     listDpias(tenantId),
     fetchTenantDsrs(tenantId),
+    fetch24hSummary(tenantId),
+    fetchTenantAssets(tenantId),
+    countTenantEvidence(tenantId),
+    countTenantEvidenceHashed(tenantId),
   ]);
 
   const counts: CockpitCounts = {
@@ -101,12 +144,55 @@ export async function loadCockpitData(tenantId: string): Promise<CockpitData> {
     dsrs: val(dsrList, []),
   });
 
+  const summary24h = val(summary24hRaw, null);
+  const assetScores = val(assets, []).map((asset) => asset.risk_score);
+  const evidenceTotalCount = val(evidenceTotal, 0);
+  const evidenceHashedCount = val(evidenceHashed, 0);
+
+  const openMeasures = computeOpenMeasures(counts);
+  const evidenceHealth = computeEvidenceHealth({
+    coveragePercent: posture?.assetEvidencePercent ?? null,
+    totalCount: evidenceTotalCount,
+    hashedCount: evidenceHashedCount,
+    newEvidence24h: summary24h?.new_evidence ?? 0,
+    failedScans: summary24h?.failed_scans ?? 0,
+  });
+  const riskIndex = computeRiskIndex({
+    assetScores,
+    newRisks24h: summary24h?.new_risks ?? 0,
+    openIncidents: counts.incidents,
+    dsrOverdue: counts.dsr.overdue,
+  });
+
+  const partialFailures = [
+    failureOf('incidents', incidentsCount),
+    failureOf('dpias', dpiasCount),
+    failureOf('dsr', dsrCount),
+    failureOf('approvals', approvalsCount),
+    failureOf('vendors', vendorsCount),
+    failureOf('kpi', latestKpi),
+    failureOf('kpi-range', kpiRange),
+    failureOf('incident-list', incidentList),
+    failureOf('dpia-list', dpiaList),
+    failureOf('dsr-list', dsrList),
+    failureOf('summary-24h', summary24hRaw),
+    failureOf('assets', assets),
+    failureOf('evidence-total', evidenceTotal),
+    failureOf('evidence-hashed', evidenceHashed),
+  ].filter((item): item is string => item !== null);
+
+  const countsReliable = [
+    incidentsCount, dpiasCount, dsrCount, approvalsCount, vendorsCount,
+  ].every((result) => result.status === 'fulfilled');
+
   return {
     counts, posture,
-    score: computeGovernanceScore(counts, posture),
+    score: computeGovernanceScoreIfReliable(countsReliable, counts, posture),
     readiness: computeAuditReadiness(posture),
     readinessTrend, actions,
     lastUpdated: snap?.captured_date ?? null,
+    evidenceHealth, riskIndex, openMeasures, summary24h,
+    partialFailures,
   };
 }
 
@@ -120,6 +206,9 @@ export async function cockpitIntegrityHash(data: CockpitData, generatedDate: str
     posture: data.posture,
     actions: data.actions.map((a) => ({ id: a.id, kind: a.kind, level: a.level, weight: a.weight })),
     last_updated: data.lastUpdated,
+    evidence_health: data.evidenceHealth.percent,
+    risk_index: data.riskIndex.score,
+    open_measures_total: data.openMeasures.total,
   };
   const json = JSON.stringify(stable);
   const bytes = new TextEncoder().encode(json);

@@ -1,0 +1,382 @@
+import { useFrame, useThree } from '@react-three/fiber';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import * as THREE from 'three';
+import {
+  EARTH_DAY_BOOT,
+  detectEarthQuality,
+  getEarthTextureSet,
+  preloadImage,
+  type EarthQuality,
+  type EarthTextureSet,
+} from './earthTextures';
+
+/**
+ * Shared photoreal Earth mesh — multi-layer day / night / specular / clouds + atmosphere.
+ * Used by `/welcome` (PhotorealEarthScene) and the homepage Governance Sphere.
+ */
+
+/** Boot / low-tier day map path (also kept as literal for smoke tests). */
+export const EARTH_DAY_TEXTURE = '/textures/earth-day.jpg';
+
+export interface PhotorealEarthMeshProps {
+  /** Sphere radius in scene units. */
+  radius?: number;
+  /** Auto-rotate when true (welcome panel). Governance Sphere drives rotation externally. */
+  autoRotate?: boolean;
+  reducedMotion?: boolean;
+  /** Initial orientation — tip Europe / Atlantic toward camera by default. */
+  rotation?: [number, number, number];
+  /** Optional override for adaptive quality. */
+  quality?: EarthQuality;
+  /** World-space sun direction for day/night terminator + specular. */
+  sunDirection?: THREE.Vector3;
+}
+
+function configureMap(tex: THREE.Texture, anisotropy: number, colorSpace?: THREE.ColorSpace) {
+  tex.colorSpace = colorSpace ?? THREE.SRGBColorSpace;
+  tex.anisotropy = anisotropy;
+  tex.wrapS = THREE.ClampToEdgeWrapping;
+  tex.wrapT = THREE.ClampToEdgeWrapping;
+  tex.minFilter = THREE.LinearMipmapLinearFilter;
+  tex.magFilter = THREE.LinearFilter;
+  tex.generateMipmaps = true;
+  tex.needsUpdate = true;
+}
+
+function loadTexture(url: string, anisotropy: number, colorSpace?: THREE.ColorSpace) {
+  return new Promise<THREE.Texture>((resolve, reject) => {
+    const loader = new THREE.TextureLoader();
+    loader.load(
+      url,
+      (tex) => {
+        configureMap(tex, anisotropy, colorSpace);
+        resolve(tex);
+      },
+      undefined,
+      reject,
+    );
+  });
+}
+
+/** Fresnel atmosphere rim — stronger scattering without neon cyberpunk. */
+function AtmosphereShell({
+  radius,
+  reducedMotion,
+}: {
+  radius: number;
+  reducedMotion: boolean;
+}) {
+  const mat = useMemo(() => {
+    return new THREE.ShaderMaterial({
+      transparent: true,
+      depthWrite: false,
+      side: THREE.BackSide,
+      blending: THREE.AdditiveBlending,
+      uniforms: {
+        uGlow: { value: new THREE.Color('#5eb8e8') },
+        uIntensity: { value: reducedMotion ? 0.55 : 0.9 },
+      },
+      vertexShader: /* glsl */ `
+        varying vec3 vNormal;
+        varying vec3 vView;
+        void main() {
+          vec4 mv = modelViewMatrix * vec4(position, 1.0);
+          vNormal = normalize(normalMatrix * normal);
+          vView = normalize(-mv.xyz);
+          gl_Position = projectionMatrix * mv;
+        }
+      `,
+      fragmentShader: /* glsl */ `
+        uniform vec3 uGlow;
+        uniform float uIntensity;
+        varying vec3 vNormal;
+        varying vec3 vView;
+        void main() {
+          float fresnel = pow(1.0 - abs(dot(vNormal, vView)), 2.45);
+          float rim = smoothstep(0.02, 0.92, fresnel);
+          gl_FragColor = vec4(uGlow, rim * uIntensity);
+        }
+      `,
+    });
+  }, [reducedMotion]);
+
+  useEffect(() => () => mat.dispose(), [mat]);
+
+  return (
+    <mesh scale={1.048} raycast={() => null} material={mat}>
+      <sphereGeometry args={[radius, 48, 48]} />
+    </mesh>
+  );
+}
+
+function OuterGlow({ radius }: { radius: number }) {
+  return (
+    <mesh scale={1.125} raycast={() => null}>
+      <sphereGeometry args={[radius, 32, 32]} />
+      <meshBasicMaterial
+        color="#1a5a9a"
+        transparent
+        opacity={0.08}
+        side={THREE.BackSide}
+        depthWrite={false}
+        toneMapped={false}
+      />
+    </mesh>
+  );
+}
+
+/**
+ * Photoreal multi-layer Earth.
+ * Day map stays unlit (meshBasic) so mobile / software WebGL never go black;
+ * night lights + ocean specular are additive overlays keyed to sun direction.
+ */
+export function PhotorealEarthMesh({
+  radius = 1.55,
+  autoRotate = false,
+  reducedMotion = false,
+  rotation = [0.18, -0.55, 0.08],
+  quality: qualityProp,
+  sunDirection,
+}: PhotorealEarthMeshProps) {
+  const group = useRef<THREE.Group>(null!);
+  const cloudsRef = useRef<THREE.Mesh>(null!);
+  const nightMat = useRef<THREE.ShaderMaterial>(null!);
+  const specMat = useRef<THREE.ShaderMaterial>(null!);
+  const mapsRef = useRef<THREE.Texture[]>([]);
+  const { gl, camera } = useThree();
+
+  const [quality] = useState<EarthQuality>(
+    () => qualityProp ?? detectEarthQuality({ reducedMotion }),
+  );
+  const set = useMemo(() => getEarthTextureSet(quality), [quality]);
+
+  const [dayMap, setDayMap] = useState<THREE.Texture | null>(null);
+  const [nightMap, setNightMap] = useState<THREE.Texture | null>(null);
+  const [cloudMap, setCloudMap] = useState<THREE.Texture | null>(null);
+  const [specMap, setSpecMap] = useState<THREE.Texture | null>(null);
+
+  const sun = useMemo(() => new THREE.Vector3(4.5, 1.2, 2.8).normalize(), []);
+
+  useEffect(() => {
+    let cancelled = false;
+    const maxAniso = Math.min(set.anisotropy, gl.capabilities.getMaxAnisotropy());
+    const track = (tex: THREE.Texture) => {
+      mapsRef.current.push(tex);
+      return tex;
+    };
+
+    (async () => {
+      try {
+        const boot = track(await loadTexture(EARTH_DAY_BOOT, Math.min(4, maxAniso)));
+        if (cancelled) return;
+        setDayMap(boot);
+
+        if (set.day !== EARTH_DAY_BOOT) {
+          await preloadImage(set.day).catch(() => null);
+          if (cancelled) return;
+          const hi = track(await loadTexture(set.day, maxAniso));
+          if (cancelled) return;
+          setDayMap(hi);
+        }
+
+        const jobs: Promise<void>[] = [];
+        if (set.nightEnabled && set.night) {
+          jobs.push(
+            loadTexture(set.night, Math.min(8, maxAniso)).then((t) => {
+              track(t);
+              if (!cancelled) setNightMap(t);
+            }),
+          );
+        }
+        if (set.cloudsEnabled && set.clouds) {
+          jobs.push(
+            loadTexture(set.clouds, Math.min(8, maxAniso)).then((t) => {
+              track(t);
+              if (!cancelled) setCloudMap(t);
+            }),
+          );
+        }
+        if (set.specularEnabled && set.specular) {
+          jobs.push(
+            loadTexture(set.specular, 4, THREE.NoColorSpace).then((t) => {
+              track(t);
+              if (!cancelled) setSpecMap(t);
+            }),
+          );
+        }
+        await Promise.allSettled(jobs);
+      } catch {
+        // Boot day map alone is enough for a readable globe.
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      for (const tex of mapsRef.current) tex.dispose();
+      mapsRef.current = [];
+    };
+  }, [gl, set]);
+
+  useFrame((_, delta) => {
+    const lightDir = sunDirection ?? sun;
+    if (nightMat.current) {
+      nightMat.current.uniforms.uLight.value.copy(lightDir).normalize();
+    }
+    if (specMat.current) {
+      specMat.current.uniforms.uLight.value.copy(lightDir).normalize();
+      specMat.current.uniforms.uCam.value.copy(camera.position);
+    }
+    if (autoRotate && !reducedMotion && group.current) {
+      group.current.rotation.y += delta * 0.045;
+    }
+    if (!reducedMotion && cloudsRef.current) {
+      cloudsRef.current.rotation.y += delta * 0.012;
+    }
+  });
+
+  const segments = set.segments;
+
+  return (
+    <group ref={group} rotation={rotation}>
+      <mesh raycast={() => null}>
+        <sphereGeometry args={[radius, segments[0], segments[1]]} />
+        {dayMap ? (
+          <meshBasicMaterial map={dayMap} toneMapped={false} />
+        ) : (
+          <meshBasicMaterial color="#0a1a2e" toneMapped={false} />
+        )}
+      </mesh>
+
+      {nightMap && set.nightEnabled && (
+        <mesh scale={1.002} raycast={() => null}>
+          <sphereGeometry args={[radius, segments[0], segments[1]]} />
+          <shaderMaterial
+            ref={nightMat}
+            transparent
+            depthWrite={false}
+            blending={THREE.AdditiveBlending}
+            toneMapped={false}
+            uniforms={{
+              uNight: { value: nightMap },
+              uLight: { value: sun.clone() },
+              uIntensity: { value: 1.2 },
+            }}
+            vertexShader={/* glsl */ `
+              varying vec2 vUv;
+              varying vec3 vNormalW;
+              void main() {
+                vUv = uv;
+                vNormalW = normalize(mat3(modelMatrix) * normal);
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+              }
+            `}
+            fragmentShader={/* glsl */ `
+              uniform sampler2D uNight;
+              uniform vec3 uLight;
+              uniform float uIntensity;
+              varying vec2 vUv;
+              varying vec3 vNormalW;
+              void main() {
+                float ndl = dot(normalize(vNormalW), normalize(uLight));
+                float night = smoothstep(0.08, -0.28, ndl);
+                vec3 lights = texture2D(uNight, vUv).rgb;
+                float luma = max(lights.r, max(lights.g, lights.b));
+                vec3 glow = lights * lights * 1.7 + lights * 0.4;
+                gl_FragColor = vec4(glow * uIntensity, night * luma * 0.95);
+              }
+            `}
+          />
+        </mesh>
+      )}
+
+      {specMap && set.specularEnabled && (
+        <mesh scale={1.003} raycast={() => null}>
+          <sphereGeometry args={[radius, Math.min(segments[0], 64), Math.min(segments[1], 64)]} />
+          <shaderMaterial
+            ref={specMat}
+            transparent
+            depthWrite={false}
+            blending={THREE.AdditiveBlending}
+            toneMapped={false}
+            uniforms={{
+              uSpec: { value: specMap },
+              uLight: { value: sun.clone() },
+              uCam: { value: camera.position.clone() },
+              uIntensity: { value: 0.58 },
+            }}
+            vertexShader={/* glsl */ `
+              varying vec2 vUv;
+              varying vec3 vNormalW;
+              varying vec3 vPosW;
+              void main() {
+                vUv = uv;
+                vec4 wp = modelMatrix * vec4(position, 1.0);
+                vPosW = wp.xyz;
+                vNormalW = normalize(mat3(modelMatrix) * normal);
+                gl_Position = projectionMatrix * viewMatrix * wp;
+              }
+            `}
+            fragmentShader={/* glsl */ `
+              uniform sampler2D uSpec;
+              uniform vec3 uLight;
+              uniform vec3 uCam;
+              uniform float uIntensity;
+              varying vec2 vUv;
+              varying vec3 vNormalW;
+              varying vec3 vPosW;
+              void main() {
+                float water = texture2D(uSpec, vUv).r;
+                vec3 N = normalize(vNormalW);
+                vec3 L = normalize(uLight);
+                vec3 V = normalize(uCam - vPosW);
+                vec3 H = normalize(L + V);
+                float spec = pow(max(dot(N, H), 0.0), 52.0);
+                float day = smoothstep(-0.05, 0.4, dot(N, L));
+                float a = water * spec * day * uIntensity;
+                gl_FragColor = vec4(vec3(0.78, 0.9, 1.0) * a, a);
+              }
+            `}
+          />
+        </mesh>
+      )}
+
+      {cloudMap && set.cloudsEnabled && (
+        <mesh ref={cloudsRef} scale={1.018} raycast={() => null}>
+          <sphereGeometry args={[radius, Math.min(segments[0], 64), Math.min(segments[1], 64)]} />
+          {/* White-on-black cloud map → luminance drives alpha (no black veil). */}
+          <shaderMaterial
+            transparent
+            depthWrite={false}
+            toneMapped={false}
+            uniforms={{
+              uClouds: { value: cloudMap },
+              uOpacity: { value: quality === 'high' ? 0.55 : 0.42 },
+            }}
+            vertexShader={/* glsl */ `
+              varying vec2 vUv;
+              void main() {
+                vUv = uv;
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+              }
+            `}
+            fragmentShader={/* glsl */ `
+              uniform sampler2D uClouds;
+              uniform float uOpacity;
+              varying vec2 vUv;
+              void main() {
+                vec3 c = texture2D(uClouds, vUv).rgb;
+                float a = max(c.r, max(c.g, c.b)) * uOpacity;
+                gl_FragColor = vec4(vec3(0.95, 0.97, 1.0) * c, a);
+              }
+            `}
+          />
+        </mesh>
+      )}
+
+      {set.atmosphere && <AtmosphereShell radius={radius} reducedMotion={reducedMotion} />}
+      {set.atmosphere && <OuterGlow radius={radius} />}
+    </group>
+  );
+}
+
+export type { EarthQuality, EarthTextureSet };

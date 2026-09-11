@@ -47,7 +47,8 @@ export async function fetchTenantVendors(tenantId: string): Promise<DbVendor[]> 
 
 export async function countVendorsNoDpa(tenantId: string): Promise<number> {
   const sb = getSupabase();
-  const { count } = await sb.from('vendors').select('id', { count: 'exact', head: true })
+  const { count, error } = await sb.from('vendors').select('id', { count: 'exact', head: true })
     .eq('tenant_id', tenantId).in('dpa_status', ['none', 'requested', 'expired']);
+  if (error) throw new Error(error.message);
   return count ?? 0;
 }

@@ -768,19 +768,19 @@ html, body {
   }
 }
 
-/* Night treatment for Europe hero plate — deep blacks, city-light punch */
+/* Night Europe hero plate — keep city lights punchy */
 .hero-europe-night {
-  filter: brightness(0.72) contrast(1.18) saturate(1.05);
+  filter: contrast(1.08) saturate(1.12);
 }
 
 .hero-network-arcs {
-  opacity: 0.85;
+  opacity: 0.92;
   mix-blend-mode: screen;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .hero-network-arcs {
-    opacity: 0.55;
+    opacity: 0.6;
   }
 }
 

@@ -50,25 +50,26 @@ export function MainLanding() {
         <section className="relative min-h-[min(100svh,920px)] overflow-hidden">
           <div className="absolute inset-0" ref={heroImage}>
             <picture>
-              <source srcSet="/europe-globe.webp" type="image/webp" />
+              <source srcSet="/europe-night-hero.webp" type="image/webp" />
               <img
-                src="/europe-globe.jpg"
+                src="/europe-night-hero.jpg"
                 alt=""
-                width={1376}
-                height={768}
+                width={2048}
+                height={1148}
                 fetchPriority="high"
-                className="hero-europe-night h-full w-full scale-105 object-cover object-[72%_42%]"
+                className="hero-europe-night h-full w-full scale-[1.02] object-cover object-[58%_45%]"
                 aria-hidden="true"
               />
             </picture>
             <HeroNetworkArcs className="hero-network-arcs" />
-            <div className="absolute inset-0 bg-gradient-to-r from-black via-black/75 to-black/25" />
-            <div className="absolute inset-0 bg-gradient-to-t from-[rgb(2,6,14)] via-transparent to-black/50" />
+            {/* Left readability wash — keep Europe lights visible on the right */}
+            <div className="absolute inset-0 bg-gradient-to-r from-black via-black/70 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[rgb(2,6,14)] via-transparent to-black/45" />
             <div
-              className="absolute inset-0"
+              className="pointer-events-none absolute inset-0"
               style={{
                 background:
-                  'radial-gradient(90% 70% at 68% 48%, transparent 0%, transparent 42%, rgba(2,6,14,.55) 100%)',
+                  'radial-gradient(ellipse 55% 70% at 72% 48%, transparent 0%, transparent 48%, rgba(2,6,14,.4) 100%)',
               }}
               aria-hidden="true"
             />
@@ -86,6 +87,7 @@ export function MainLanding() {
                       <span
                         key={i}
                         className={segment.accent ? 'hero-shine-accent' : 'hero-shine'}
+                        style={segment.accent ? { fontFamily: SANS, fontWeight: 600 } : undefined}
                       >
                         {segment.text}
                       </span>

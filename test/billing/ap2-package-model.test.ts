@@ -196,32 +196,28 @@ describe('Berechtigungen und Entitlements sagen dasselbe', () => {
   });
 });
 
-describe('Agency und Partner sind stillgelegt, nicht gelöscht', () => {
-  it('führt genau zwei stillgelegte Pläne', () => {
-    expect(LEGACY_PLANS.map((p) => p.id)).toEqual(['agency', 'partner']);
+describe('Partner ist stillgelegt; Agency ist wieder verkaufbar', () => {
+  it('führt genau einen stillgelegten Plan (Partner)', () => {
+    expect(LEGACY_PLANS.map((p) => p.id)).toEqual(['partner']);
   });
 
-  it('behält sie in PLAN_ORDER, damit Ränge für Bestandskunden stimmen', () => {
+  it('behält Agency und Partner in PLAN_ORDER, damit Ränge für Bestandskunden stimmen', () => {
     // Ein Agency-Kunde muss weiterhin als „höher als Growth" gelten.
-    // Verschwände Agency aus der Leiter, ergäbe jeder Rangvergleich für ihn
-    // eine falsche Antwort.
     expect(PLAN_ORDER).toContain('agency');
     expect(PLAN_ORDER).toContain('partner');
   });
 
-  it('lässt ihre Add-on-Listen unverändert', () => {
-    // `addonsFor()` liest `plan.addons`. Ein Bestandskunde darf kein Add-on
-    // verlieren, nur weil sein Plan nicht mehr verkauft wird.
+  it('lässt Partner-Add-on-Listen unverändert', () => {
     for (const plan of LEGACY_PLANS) {
       expect(addonsFor(plan.id).length, plan.id).toBeGreaterThan(0);
     }
   });
 
-  it('nimmt sie aus jedem Verkaufs-Listing heraus', () => {
+  it('nimmt Partner aus jedem Verkaufs-Listing heraus', () => {
     for (const plan of [...SALES_PLANS, ...SELF_SERVICE_PLANS]) {
       expect(plan.availability, plan.id).not.toBe('legacy');
     }
-    expect(isPlanSelectable('agency')).toBe(false);
+    expect(isPlanSelectable('agency')).toBe(true);
     expect(isPlanSelectable('partner')).toBe(false);
   });
 
@@ -233,23 +229,24 @@ describe('Agency und Partner sind stillgelegt, nicht gelöscht', () => {
     expect(SELF_SERVICE_PLANS.map((p) => p.id)).not.toContain('enterprise');
   });
 
-  it('lässt genau drei Stufen im Self-Service', () => {
-    expect(SELF_SERVICE_PLANS.map((p) => p.id)).toEqual(['free', 'starter', 'growth']);
+  it('führt Agency wieder im Self-Service (neben free/starter/growth)', () => {
+    expect(SELF_SERVICE_PLANS.map((p) => p.id)).toEqual([
+      'free', 'starter', 'growth', 'agency',
+    ]);
   });
 
   /**
-   * Die Stilllegung muss eine Regel sein, keine Anzeigeentscheidung.
-   *
-   * Agency behält `purchaseMode: 'checkout'` — seine laufenden Abos rechnen
-   * unverändert ab. Genau deshalb wäre der Plan über eine getippte URL oder
-   * einen selbst gebauten Request weiterhin käuflich, wenn ihn nur die
-   * Oberfläche versteckte. `stripe-checkout` weist ihn deshalb serverseitig
-   * ab (`PLAN_RETIRED`), und `CheckoutPage` leitet vorher um.
+   * Stilllegung bleibt eine Regel für Partner — nicht nur Anzeige.
+   * Agency ist wieder self_service und darf Checkout erreichen.
    */
-  it('hält den Kaufmodus stillgelegter Pläne, sperrt aber den Neukauf', () => {
+  it('sperrt Neukauf nur für legacy; Agency bleibt checkoutfähig', () => {
     const agency = planById('agency');
     expect(agency.purchaseMode).toBe('checkout');
-    expect(agency.availability).toBe('legacy');
+    expect(agency.availability).toBe('self_service');
+    expect(agency.price.monthlyEur).toBe(699);
+
+    const partner = planById('partner');
+    expect(partner.availability).toBe('legacy');
 
     const wächter = readFileSync(
       join('supabase', 'functions', 'stripe-checkout', 'index.ts'),

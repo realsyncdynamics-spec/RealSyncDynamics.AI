@@ -7,7 +7,6 @@ import { capitalsVisibleAtZoom, WORLD_CAPITALS, type WorldCapital } from './geo/
 import { CONTINENT_LABEL_MAX_ZOOM, CONTINENT_LABELS } from './geo/continents';
 
 const BORDERS_URL = '/textures/earth-borders-110m.json';
-const BORDER_COLOR = '#d8ecf8';
 const CAPITAL_COLOR = '#f3d9a0';
 
 type BordersPayload = {
@@ -29,8 +28,9 @@ function useIsCoarsePointer() {
   return coarse;
 }
 
-function useCountryBorders(enabled: boolean) {
-  const [positions, setPositions] = useState<Float32Array | null>(null);
+function useCountryBorderTexture(enabled: boolean) {
+  const [texture, setTexture] = useState<THREE.CanvasTexture | null>(null);
+  const ownedRef = useRef<THREE.CanvasTexture | null>(null);
 
   useEffect(() => {
     if (!enabled) return;
@@ -41,83 +41,96 @@ function useCountryBorders(enabled: boolean) {
         if (!res.ok) return;
         const json = (await res.json()) as BordersPayload;
         if (cancelled || !json?.d?.length || !json.s) return;
+
+        const width = 2048;
+        const height = 1024;
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        ctx.clearRect(0, 0, width, height);
+        ctx.strokeStyle = 'rgba(230, 245, 255, 0.98)';
+        ctx.lineWidth = 1.35;
+        ctx.lineJoin = 'round';
+        ctx.lineCap = 'round';
+
         const scale = 1 / json.s;
-        const radius = 1.585;
-        const out = new Float32Array((json.d.length / 2) * 3);
-        // d is lon,lat,lon,lat… → convert each endpoint to xyz
-        let o = 0;
-        for (let i = 0; i + 1 < json.d.length; i += 2) {
-          const lon = json.d[i] * scale;
-          const lat = json.d[i + 1] * scale;
-          const [x, y, z] = sphereNodePosition(lat, lon, radius);
-          out[o++] = x;
-          out[o++] = y;
-          out[o++] = z;
+        const toX = (lon: number) => ((lon + 180) / 360) * width;
+        const toY = (lat: number) => ((90 - lat) / 180) * height;
+
+        for (let i = 0; i + 3 < json.d.length; i += 4) {
+          const lon1 = json.d[i] * scale;
+          const lat1 = json.d[i + 1] * scale;
+          const lon2 = json.d[i + 2] * scale;
+          const lat2 = json.d[i + 3] * scale;
+          // Skip antimeridian wraps that streak across the map.
+          if (Math.abs(lon1 - lon2) > 40) continue;
+          ctx.beginPath();
+          ctx.moveTo(toX(lon1), toY(lat1));
+          ctx.lineTo(toX(lon2), toY(lat2));
+          ctx.stroke();
         }
-        if (!cancelled) setPositions(out);
+
+        if (cancelled) return;
+        const tex = new THREE.CanvasTexture(canvas);
+        tex.colorSpace = THREE.SRGBColorSpace;
+        tex.anisotropy = 4;
+        tex.needsUpdate = true;
+        ownedRef.current?.dispose();
+        ownedRef.current = tex;
+        setTexture(tex);
       } catch {
         // Borders are progressive enhancement — Earth remains useful without them.
       }
     })();
     return () => {
       cancelled = true;
+      ownedRef.current?.dispose();
+      ownedRef.current = null;
     };
   }, [enabled]);
 
-  return positions;
+  return texture;
 }
 
 function CountryBorders({
   zoomRef,
   reducedMotion,
   isMobile,
+  earthRadius,
 }: {
   zoomRef: MutableRefObject<{ zoom: number }>;
   reducedMotion: boolean;
   isMobile: boolean;
+  earthRadius: number;
 }) {
-  const positions = useCountryBorders(!reducedMotion);
-  const lineRef = useRef<THREE.LineSegments>(null!);
-  const matRef = useRef<THREE.LineBasicMaterial>(null!);
-
-  const geometry = useMemo(() => {
-    if (!positions) return null;
-    const geo = new THREE.BufferGeometry();
-    geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-    return geo;
-  }, [positions]);
+  const texture = useCountryBorderTexture(!reducedMotion);
+  const matRef = useRef<THREE.MeshBasicMaterial>(null!);
 
   useFrame(() => {
     if (!matRef.current) return;
     const z = zoomRef.current.zoom;
-    // Subtle at default; clearer when zoomed — still no clutter on mobile default.
-    const base = isMobile ? 0.28 : 0.42;
-    const boost = THREE.MathUtils.smoothstep(z, 0.95, 1.45) * (isMobile ? 0.25 : 0.35);
-    matRef.current.opacity = reducedMotion ? 0.15 : base + boost;
+    const base = isMobile ? 0.35 : 0.5;
+    const boost = THREE.MathUtils.smoothstep(z, 0.95, 1.45) * (isMobile ? 0.2 : 0.3);
+    matRef.current.opacity = reducedMotion ? 0.2 : base + boost;
   });
 
-  useEffect(() => () => geometry?.dispose(), [geometry]);
-
-  if (!geometry) return null;
+  if (!texture) return null;
 
   return (
-    <lineSegments
-      ref={lineRef}
-      geometry={geometry}
-      raycast={() => null}
-      frustumCulled={false}
-      renderOrder={5}
-    >
-      <lineBasicMaterial
+    <mesh scale={1.012} raycast={() => null} renderOrder={4}>
+      <sphereGeometry args={[earthRadius, 64, 64]} />
+      <meshBasicMaterial
         ref={matRef}
-        color={BORDER_COLOR}
+        map={texture}
         transparent
-        opacity={0.62}
+        opacity={0.55}
         depthWrite={false}
-        depthTest
         toneMapped={false}
       />
-    </lineSegments>
+    </mesh>
   );
 }
 
@@ -335,7 +348,12 @@ export function SphereGeography({
 
   return (
     <group>
-      <CountryBorders zoomRef={zoomRef} reducedMotion={reducedMotion} isMobile={isMobile} />
+      <CountryBorders
+        zoomRef={zoomRef}
+        reducedMotion={reducedMotion}
+        isMobile={isMobile}
+        earthRadius={earthRadius}
+      />
       {!reducedMotion && <ContinentLabels zoomRef={zoomRef} radius={labelRadius} />}
       <CapitalsLayer
         zoomRef={zoomRef}

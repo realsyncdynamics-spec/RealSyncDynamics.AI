@@ -1,90 +1,144 @@
-import { useState } from 'react';
+import { useState, type CSSProperties, type MouseEvent } from 'react';
 import { Link } from 'react-router-dom';
-import { Menu, Snowflake, X } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
+import {
+  LANDING_ACCENT,
+  LANDING_BG,
+  LANDING_BUTTON_ALT,
+  LANDING_BUTTON_TEXT,
+  LANDING_MONO,
+  LANDING_MUTED,
+  LANDING_TEXT,
+} from './landing-theme';
 
 /**
  * Shared dark public header for `/` and `/branchen`.
  *
- * Evolving toward a Governance OS system-bar feel (glass, monospace status)
- * while preserving working P0 nav targets from #1280/#1279.
- * Hash targets use `/#…` so they resolve from `/branchen` as well.
+ * Dominik-Referenz: sticky frosted bar, DM Mono CTA, gold brand mark.
+ * Working P0 nav targets from #1280/#1279 remain — hash targets use `/#…`
+ * so they resolve from `/branchen` as well. `/ai-act` + `/sicherheit`
+ * stay reachable (platform-capabilities contract).
  */
 const LINKS = [
-  { label: 'Produkt', to: '/#platform', className: undefined },
+  { label: 'Produkt', to: '/#product', className: undefined },
   { label: 'Runtime', to: '/governance-runtime', className: undefined },
   { label: 'Branchen', to: '/branchen', className: undefined },
   { label: 'Evidence', to: '/#evidence', className: undefined },
   { label: 'Module', to: '/#tools', className: 'hidden lg:block' },
   { label: 'EU AI Act', to: '/ai-act', className: 'hidden xl:block' },
   { label: 'Sicherheit', to: '/sicherheit', className: 'hidden xl:block' },
-  { label: 'Preise', to: '/pricing', className: undefined },
+  { label: 'Preise', to: '/#pricing', className: undefined },
   { label: 'Login', to: '/welcome', className: undefined },
 ] as const;
 
-const linkClass = (extra?: string) =>
-  `text-sm text-white/65 transition-colors hover:text-white focus-visible:outline-none focus-visible:text-white focus-visible:underline focus-visible:underline-offset-4${extra ? ` ${extra}` : ''}`;
+function NavItem({
+  to,
+  label,
+  className,
+  onNavigate,
+}: {
+  to: string;
+  label: string;
+  className?: string;
+  onNavigate?: () => void;
+}) {
+  const shared = {
+    className: `text-[12px] transition-colors focus-visible:outline-none focus-visible:underline focus-visible:underline-offset-4${className ? ` ${className}` : ''}`,
+    style: { color: LANDING_MUTED } as CSSProperties,
+    onMouseEnter: (e: MouseEvent<HTMLAnchorElement>) => {
+      e.currentTarget.style.color = LANDING_TEXT;
+    },
+    onMouseLeave: (e: MouseEvent<HTMLAnchorElement>) => {
+      e.currentTarget.style.color = LANDING_MUTED;
+    },
+  };
 
-const scanCtaClass =
-  'rounded-full bg-[#f0e6d2] text-sm font-semibold text-[#1a1714] transition hover:bg-[#f6efe4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e8c98a] focus-visible:ring-offset-2 focus-visible:ring-offset-[rgb(3,7,18)]';
+  if (to.includes('#')) {
+    return (
+      <a href={to} {...shared} onClick={onNavigate}>
+        {label}
+      </a>
+    );
+  }
+  return (
+    <Link to={to} {...shared} onClick={onNavigate}>
+      {label}
+    </Link>
+  );
+}
+
+const scanCtaStyle: CSSProperties = {
+  fontFamily: LANDING_MONO,
+  backgroundColor: LANDING_BUTTON_ALT,
+  color: LANDING_BUTTON_TEXT,
+};
 
 export function PublicDarkHeader({ overlay = false }: { overlay?: boolean }) {
   const [open, setOpen] = useState(false);
 
   return (
     <header
-      className={`${overlay ? 'absolute' : 'sticky bg-[rgb(3,7,18)]/95 backdrop-blur-md'} inset-x-0 top-0 z-30 border-b border-white/10`}
+      className={`${overlay ? 'absolute bg-[rgba(5,7,11,0.55)]' : 'sticky bg-[rgba(5,7,11,0.82)]'} inset-x-0 top-0 z-30 border-b border-white/[0.06] backdrop-blur-[18px]`}
+      style={{ color: LANDING_TEXT }}
     >
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-6 sm:h-20 lg:px-10">
+      <div className="mx-auto flex h-[76px] max-w-[1500px] items-center gap-6 px-[4vw]">
         <div className="flex min-w-0 items-center gap-3">
           <Link
             to="/"
-            className="flex min-w-0 items-center gap-2.5 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e8c98a]/60"
+            className="flex min-w-0 items-center gap-2.5 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e4cfa2]/60"
+            style={{ color: LANDING_TEXT }}
           >
-            <Snowflake className="h-6 w-6 shrink-0 text-[#e8c98a]" strokeWidth={1.5} />
-            <span className="truncate text-base font-semibold tracking-tight text-white sm:text-lg">
-              RealSync <span className="font-normal text-white/80">Dynamics.AI</span>
+            <span aria-hidden="true" className="shrink-0 text-[19px]" style={{ color: LANDING_ACCENT }}>
+              ⬢
+            </span>
+            <span className="truncate whitespace-nowrap text-[14px] font-medium tracking-tight">
+              RealSync Dynamics
+              <span style={{ color: LANDING_ACCENT }}>.AI</span>
             </span>
           </Link>
           <span
-            className="hidden items-center gap-1.5 rounded-md border border-[#e8c98a]/25 bg-[#e8c98a]/8 px-2 py-1 font-mono text-[9px] tracking-[.16em] text-[#e8c98a]/90 md:inline-flex"
+            className="hidden items-center gap-1.5 rounded-full border px-2 py-1 text-[9px] tracking-[.16em] md:inline-flex"
+            style={{
+              fontFamily: LANDING_MONO,
+              borderColor: `${LANDING_ACCENT}40`,
+              backgroundColor: `${LANDING_ACCENT}14`,
+              color: `${LANDING_ACCENT}e6`,
+            }}
             title="Product category — not a live tenant metric"
           >
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400/90" aria-hidden="true" />
+            <span className="h-1.5 w-1.5 rounded-full bg-[#20d69a]/90" aria-hidden="true" />
             GOV OS
           </span>
         </div>
 
-        <nav className="hidden items-center gap-5 xl:gap-6 lg:flex" aria-label="Hauptnavigation">
-          {LINKS.map((item) =>
-            item.to.includes('#') ? (
-              <a key={item.to} href={item.to} className={linkClass(item.className)}>
-                {item.label}
-              </a>
-            ) : (
-              <Link key={item.to} to={item.to} className={linkClass(item.className)}>
-                {item.label}
-              </Link>
-            ),
-          )}
-          <Link to="/audit" className={`${scanCtaClass} px-5 py-2.5`}>
+        <nav className="ml-auto hidden items-center gap-6 lg:flex" aria-label="Hauptnavigation">
+          {LINKS.map((item) => (
+            <NavItem key={item.to} {...item} />
+          ))}
+          <Link
+            to="/audit"
+            className="max-w-[9.5rem] rounded-full px-[18px] py-[11px] text-center text-[10px] leading-[1.3] shadow-[0_0_30px_rgba(228,207,162,0.08)] transition hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e4cfa2]"
+            style={scanCtaStyle}
+          >
             Kostenlosen Governance Scan starten
           </Link>
         </nav>
 
-        {/* Tablet/phone: Scan chip stays visible; hamburger opens system drawer. */}
-        <div className="flex items-center gap-2.5 lg:hidden">
+        <div className="ml-auto flex items-center gap-2.5 lg:hidden">
           <Link
             to="/audit"
-            className={`${scanCtaClass} hidden px-3.5 py-2 text-[13px] sm:inline-flex`}
+            className="hidden rounded-full px-3.5 py-2 text-[10px] sm:inline-flex"
+            style={scanCtaStyle}
           >
             Governance Scan
           </Link>
           <button
             type="button"
-            className="rounded-md p-1.5 text-white/70 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e8c98a]/60"
+            className="rounded-md p-1.5 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e4cfa2]/60"
+            style={{ color: LANDING_TEXT }}
             aria-expanded={open}
             aria-controls="public-dark-mobile-nav"
-            aria-label={open ? 'Systemmenü schließen' : 'Systemmenü öffnen'}
+            aria-label={open ? 'Menü schließen' : 'Menü öffnen'}
             onClick={() => setOpen((v) => !v)}
           >
             {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -95,38 +149,31 @@ export function PublicDarkHeader({ overlay = false }: { overlay?: boolean }) {
       {open && (
         <div
           id="public-dark-mobile-nav"
-          className="border-t border-white/10 bg-[rgb(3,7,18)]/98 px-6 py-4 backdrop-blur-md lg:hidden"
+          className="border-t border-white/[0.06] px-6 py-4 backdrop-blur-md lg:hidden"
+          style={{ backgroundColor: `${LANDING_BG}fa` }}
           role="dialog"
           aria-label="Governance OS Navigation"
         >
-          <p className="mb-3 font-mono text-[9px] tracking-[.2em] text-[#e8c98a]/70">
+          <p
+            className="mb-3 text-[9px] tracking-[.2em]"
+            style={{ fontFamily: LANDING_MONO, color: `${LANDING_ACCENT}b3` }}
+          >
             SYSTEM DRAWER · PUBLIC
           </p>
           <nav aria-label="Mobile Navigation" className="flex flex-col">
-            {LINKS.map((item) =>
-              item.to.includes('#') ? (
-                <a
-                  key={item.to}
-                  href={item.to}
-                  className="rounded-md py-2.5 text-sm text-white/80 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e8c98a]/50"
-                  onClick={() => setOpen(false)}
-                >
-                  {item.label}
-                </a>
-              ) : (
-                <Link
-                  key={item.to}
-                  to={item.to}
-                  className="rounded-md py-2.5 text-sm text-white/80 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e8c98a]/50"
-                  onClick={() => setOpen(false)}
-                >
-                  {item.label}
-                </Link>
-              ),
-            )}
+            {LINKS.map((item) => (
+              <NavItem
+                key={item.to}
+                to={item.to}
+                label={item.label}
+                className="py-2.5 text-sm"
+                onNavigate={() => setOpen(false)}
+              />
+            ))}
             <Link
               to="/audit"
-              className={`${scanCtaClass} mt-3 block px-4 py-3 text-center`}
+              className="mt-3 block rounded-full px-4 py-3 text-center text-[10px] leading-[1.3]"
+              style={scanCtaStyle}
               onClick={() => setOpen(false)}
             >
               Kostenlosen Governance Scan starten

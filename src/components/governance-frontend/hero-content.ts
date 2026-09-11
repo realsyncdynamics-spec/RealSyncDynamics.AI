@@ -7,16 +7,14 @@
 
 export type HeroHeadlineSegment = {
   text: string;
-  /** true → wird in der Akzentfarbe gerendert. */
+  /** true → Gold-Akzent (Playfair italic in der Referenz). */
   accent?: boolean;
 };
 
 /**
- * Governance OS Hero — Positioning evolution (Governance Environment entry).
+ * Governance OS Hero — Dominik-Referenz.
  *
  * Claim direction: Govern AI. Prove Everything. Operate with Confidence.
- * Hero lines move toward Mission-Control / OS feel without dropping the
- * product category signal “Governance”.
  *
  * ## Contract
  *
@@ -25,7 +23,8 @@ export type HeroHeadlineSegment = {
  */
 export const HERO_HEADLINE: readonly (readonly HeroHeadlineSegment[])[] = [
   [{ text: 'AI Governance,' }],
-  [{ text: 'Running in Real Time', accent: true }],
+  [{ text: 'Running in Real', accent: true }],
+  [{ text: 'Time', accent: true }],
 ];
 
 /** Reine Textzeilen der H1 — für Tests und Accessible-Name-Abgleich. */

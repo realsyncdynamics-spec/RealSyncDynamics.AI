@@ -40,6 +40,7 @@ Deno.serve(async (req) => {
       GEMINI_API_KEY: Deno.env.get('GEMINI_API_KEY'),
       GOOGLE_API_KEY: Deno.env.get('GOOGLE_API_KEY'),
       OLLAMA_URL: Deno.env.get('OLLAMA_URL'),
+      GEMINI_PAID_TIER_CONFIRMED: Deno.env.get('GEMINI_PAID_TIER_CONFIRMED'),
     },
     version: VERSION,
   });

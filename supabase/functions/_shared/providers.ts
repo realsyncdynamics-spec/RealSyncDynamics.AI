@@ -175,7 +175,38 @@ async function callAnthropic(req: ProviderRequest): Promise<ProviderResult> {
 }
 
 // ─── Google (Gemini) ────────────────────────────────────────────────────────
+//
+// Paid-Tier-Zwang: Die Gemini-API-Terms trennen scharf zwischen Paid und
+// Unpaid Services. Fuer Unpaid Services — ausdruecklich einschliesslich der
+// unbezahlten Gemini-API-Quota — nutzt Google Prompts und Antworten, um
+// "Google products and services and machine learning technologies" zu
+// verbessern, und menschliche Pruefer duerfen Ein- und Ausgaben lesen und
+// annotieren. Die Terms warnen woertlich: "Do not submit sensitive,
+// confidential, or personal information to the Unpaid Services."
+// (https://ai.google.dev/gemini-api/terms)
+//
+// Unser AVV garantiert in § 6a Abs. 2 das Gegenteil: keine Verwendung von
+// Kundendaten zum Training allgemeiner KI-Modelle. Diese Garantie haelt nur,
+// wenn der hinterlegte Key zu einem Cloud-Projekt mit aktivem Billing gehoert.
+// Am Endpunkt selbst ist der Billing-Status nicht erkennbar — deshalb wird er
+// hier explizit bestaetigt statt erraten. Ohne Bestaetigung faellt der Aufruf
+// aus, anstatt Mandantendaten in einen Trainingskorpus zu schreiben.
+function assertGeminiPaidTier(): void {
+  const flag = (Deno.env.get('GEMINI_PAID_TIER_CONFIRMED') ?? '').trim().toLowerCase();
+  if (flag === 'true' || flag === '1') return;
+
+  throw new ProviderError(
+    'Gemini ist gesperrt: GEMINI_PAID_TIER_CONFIRMED ist nicht gesetzt. '
+    + 'Die unbezahlte Gemini-API-Quota erlaubt Google, Prompts und Antworten '
+    + 'zum Modelltraining zu nutzen — das widerspricht § 6a Abs. 2 AVV. '
+    + 'Erst Billing im Google-Cloud-Projekt aktivieren, dann das Flag setzen.',
+    'PROVIDER_UNPAID_TIER_BLOCKED',
+  );
+}
+
 async function callGoogle(req: ProviderRequest): Promise<ProviderResult> {
+  assertGeminiPaidTier();
+
   const apiKey = (await getApiKey('GEMINI_API_KEY', 'gemini_api_key'))
               ?? (await getApiKey('GOOGLE_API_KEY', 'google_api_key'));
   if (!apiKey) throw new ProviderError('GEMINI_API_KEY not set (env+vault)', 'PROVIDER_NOT_CONFIGURED');

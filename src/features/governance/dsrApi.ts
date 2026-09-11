@@ -42,10 +42,12 @@ export async function fetchTenantDsrs(tenantId: string): Promise<DbDsrRequest[]>
 export async function countOpenDsrs(tenantId: string): Promise<{ total: number; overdue: number }> {
   const sb = getSupabase();
   const now = new Date().toISOString();
-  const { count: total } = await sb.from('dsr_requests').select('id', { count: 'exact', head: true })
+  const { count: total, error: totalError } = await sb.from('dsr_requests').select('id', { count: 'exact', head: true })
     .eq('tenant_id', tenantId).in('status', ['received', 'in_progress', 'pending_verification']);
-  const { count: overdue } = await sb.from('dsr_requests').select('id', { count: 'exact', head: true })
+  if (totalError) throw new Error(totalError.message);
+  const { count: overdue, error: overdueError } = await sb.from('dsr_requests').select('id', { count: 'exact', head: true })
     .eq('tenant_id', tenantId).in('status', ['received', 'in_progress', 'pending_verification', 'overdue'])
     .lt('deadline_at', now);
+  if (overdueError) throw new Error(overdueError.message);
   return { total: total ?? 0, overdue: overdue ?? 0 };
 }

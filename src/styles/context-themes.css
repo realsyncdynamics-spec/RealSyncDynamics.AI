@@ -15,7 +15,7 @@
 
 :root {
   /* Default to dashboard theme (most common in authenticated app) */
-  --context-accent: var(--security-blue-500);
+  --context-accent: var(--cyan-400);
   --context-bg: var(--obsidian-950);
   --context-text: var(--titanium-100);
   --context-secondary: var(--titanium-400);
@@ -228,7 +228,7 @@
    (Panel auf Hintergrund, Hover, Hairlines) erhalten bleiben.
    ═══════════════════════════════════════════════════════════════════════════ */
 .dashboard-context {
-  /* Flächen: tiefes Blaugrau statt Schwarz — sichtbare Tiefenstaffelung */
+  /* Flächen: tiefes Blaugrau mit blauem Unterton — sichtbare Tiefenstaffelung */
   --color-obsidian-950: #0b1120;
   --color-obsidian-900: #0f172a;
   --color-obsidian-800: #1e293b;

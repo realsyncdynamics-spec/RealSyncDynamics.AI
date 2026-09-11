@@ -1,7 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import {
+  computeAssetFlows,
   computeEvidenceHealth,
   computeOpenMeasures,
+  computeRiskDistribution,
   computeRiskIndex,
   HIGH_RISK_ASSET_THRESHOLD,
 } from '../../src/features/governance/dashboard/complianceStatus';
@@ -185,5 +187,35 @@ describe('computeRiskIndex', () => {
         dsrOverdue: 0,
       }).score,
     ).toBeNull();
+  });
+});
+
+describe('computeRiskDistribution', () => {
+  it('buckets asset scores without inventing entries', () => {
+    const buckets = computeRiskDistribution([80, 55, 40, 20, 5]);
+    expect(buckets.find((b) => b.id === 'critical')?.count).toBe(1);
+    expect(buckets.find((b) => b.id === 'high')?.count).toBe(1);
+    expect(buckets.find((b) => b.id === 'medium')?.count).toBe(1);
+    expect(buckets.find((b) => b.id === 'low')?.count).toBe(1);
+    expect(buckets.find((b) => b.id === 'passed')?.count).toBe(1);
+  });
+
+  it('returns zero counts for an empty register', () => {
+    expect(computeRiskDistribution([]).every((b) => b.count === 0)).toBe(true);
+  });
+});
+
+describe('computeAssetFlows', () => {
+  it('aggregates known asset types and high-risk counts', () => {
+    const flows = computeAssetFlows([
+      { asset_type: 'website', risk_score: 20 },
+      { asset_type: 'ai_system', risk_score: 80 },
+      { asset_type: 'ai_system', risk_score: 10 },
+      { asset_type: 'unknown_type', risk_score: 99 },
+    ]);
+    expect(flows).toEqual([
+      { type: 'website', label: 'Websites', count: 1, highRisk: 0, href: '/app/websites' },
+      { type: 'ai_system', label: 'KI-Systeme', count: 2, highRisk: 1, href: '/app/ai-systems' },
+    ]);
   });
 });

@@ -222,3 +222,76 @@ function riskLabel(score: number): string {
   if (score >= 15) return 'Gering';
   return 'Stabil';
 }
+
+/** Buckets für die Risk-Distribution (Asset-Risk-Scores). Höher = schlechter. */
+export type RiskBucketId = 'critical' | 'high' | 'medium' | 'low' | 'passed';
+
+export interface RiskBucket {
+  id: RiskBucketId;
+  label: string;
+  count: number;
+}
+
+export interface AssetFlowItem {
+  type: string;
+  label: string;
+  count: number;
+  highRisk: number;
+  href: string;
+}
+
+const RISK_BUCKETS: Array<{ id: RiskBucketId; label: string; min: number }> = [
+  { id: 'critical', label: 'Kritisch', min: 70 },
+  { id: 'high', label: 'Hoch', min: 50 },
+  { id: 'medium', label: 'Mittel', min: 30 },
+  { id: 'low', label: 'Gering', min: 15 },
+  { id: 'passed', label: 'Stabil', min: 0 },
+];
+
+const ASSET_FLOW_META: Record<string, { label: string; href: string }> = {
+  website: { label: 'Websites', href: '/app/websites' },
+  ai_system: { label: 'KI-Systeme', href: '/app/ai-systems' },
+  vendor: { label: 'Vendoren', href: '/app/vendors' },
+  model: { label: 'Modelle', href: '/app/ai-systems' },
+  agent: { label: 'Agenten', href: '/app/agents' },
+  api: { label: 'APIs', href: '/app/monitoring' },
+  dataset: { label: 'Datensätze', href: '/app/datasets' },
+  repository: { label: 'Repos', href: '/app/monitoring' },
+  workflow: { label: 'Workflows', href: '/app/workflows' },
+};
+
+/** Verteilt Asset-Risk-Scores in Ampel-Buckets. Ohne Scores → leere Zähler. */
+export function computeRiskDistribution(assetScores: number[]): RiskBucket[] {
+  const counts: Record<RiskBucketId, number> = {
+    critical: 0, high: 0, medium: 0, low: 0, passed: 0,
+  };
+  for (const score of assetScores) {
+    const bucket = RISK_BUCKETS.find((b) => score >= b.min) ?? RISK_BUCKETS[RISK_BUCKETS.length - 1];
+    counts[bucket.id] += 1;
+  }
+  return RISK_BUCKETS.map((b) => ({ id: b.id, label: b.label, count: counts[b.id] }));
+}
+
+/** Aggregiert Asset-Typen für den Flow-Bereich. Unbekannte Typen werden übersprungen. */
+export function computeAssetFlows(
+  assets: Array<{ asset_type: string; risk_score: number }>,
+): AssetFlowItem[] {
+  const byType = new Map<string, { count: number; highRisk: number }>();
+  for (const asset of assets) {
+    const meta = ASSET_FLOW_META[asset.asset_type];
+    if (!meta) continue;
+    const prev = byType.get(asset.asset_type) ?? { count: 0, highRisk: 0 };
+    prev.count += 1;
+    if (asset.risk_score >= HIGH_RISK_ASSET_THRESHOLD) prev.highRisk += 1;
+    byType.set(asset.asset_type, prev);
+  }
+  // Feste Reihenfolge: Websites und KI zuerst, dann Rest nach Count.
+  const preferred = ['website', 'ai_system', 'vendor', 'agent', 'workflow', 'dataset', 'model', 'api', 'repository'];
+  return preferred
+    .filter((type) => byType.has(type))
+    .map((type) => {
+      const meta = ASSET_FLOW_META[type];
+      const stats = byType.get(type)!;
+      return { type, label: meta.label, count: stats.count, highRisk: stats.highRisk, href: meta.href };
+    });
+}

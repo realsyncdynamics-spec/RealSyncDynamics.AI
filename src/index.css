@@ -987,12 +987,18 @@ html, body {
   }
 }
 
-/* ── Public landing Earth backdrop — scenery only ─────────────────────── */
+/* ── Public landing Earth backdrop — scenery only, Dark/Gold grade ────── */
 .hero-earth-backdrop,
 .hero-earth-backdrop canvas {
   pointer-events: none !important;
 }
 
+/* Static fallback: pull NASA blues toward cream-gold / charcoal */
 .hero-earth-static {
-  filter: saturate(1.05) contrast(1.08) brightness(0.78);
+  filter: sepia(0.42) saturate(0.55) hue-rotate(-18deg) brightness(0.72) contrast(1.12);
+}
+
+/* WebGL already uses palette=landing-gold — light polish only, avoid muddy double-sepia */
+.hero-earth-canvas {
+  filter: saturate(0.88) brightness(0.92) contrast(1.04);
 }

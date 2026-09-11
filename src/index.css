@@ -770,7 +770,7 @@ html, body {
 
 /* Night Europe hero plate — keep city lights punchy */
 .hero-europe-night {
-  filter: contrast(1.08) saturate(1.12);
+  filter: contrast(1.12) saturate(1.25) brightness(1.08);
 }
 
 .hero-network-arcs {

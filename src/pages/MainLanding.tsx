@@ -47,35 +47,27 @@ export function MainLanding() {
 
       <main ref={revealRoot}>
         {/* Full-bleed night-Earth hero — one composition, brand + headline + support + CTAs */}
-        <section className="relative min-h-[min(100svh,920px)] overflow-hidden">
+        <section className="relative min-h-[100svh] overflow-hidden">
           <div className="absolute inset-0" ref={heroImage}>
             <picture>
               <source srcSet="/europe-night-hero.webp" type="image/webp" />
               <img
                 src="/europe-night-hero.jpg"
                 alt=""
-                width={2048}
-                height={1148}
+                width={2400}
+                height={1350}
                 fetchPriority="high"
-                className="hero-europe-night h-full w-full scale-[1.02] object-cover object-[58%_45%]"
+                className="hero-europe-night h-full w-full scale-[1.04] object-cover object-[62%_42%]"
                 aria-hidden="true"
               />
             </picture>
             <HeroNetworkArcs className="hero-network-arcs" />
-            {/* Left readability wash — keep Europe lights visible on the right */}
-            <div className="absolute inset-0 bg-gradient-to-r from-black via-black/70 to-transparent" />
-            <div className="absolute inset-0 bg-gradient-to-t from-[rgb(2,6,14)] via-transparent to-black/45" />
-            <div
-              className="pointer-events-none absolute inset-0"
-              style={{
-                background:
-                  'radial-gradient(ellipse 55% 70% at 72% 48%, transparent 0%, transparent 48%, rgba(2,6,14,.4) 100%)',
-              }}
-              aria-hidden="true"
-            />
+            {/* Soft left wash for type — keep night lights open on the right */}
+            <div className="absolute inset-0 bg-gradient-to-r from-black/95 via-black/45 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[rgb(2,6,14)] via-transparent to-black/30" />
           </div>
 
-          <div className="relative z-10 mx-auto flex min-h-[min(100svh,920px)] max-w-7xl items-center px-6 pb-20 pt-28 sm:pb-24 sm:pt-32 lg:px-10">
+          <div className="relative z-10 mx-auto flex min-h-[100svh] max-w-7xl items-center px-6 pb-20 pt-28 sm:pb-24 sm:pt-32 lg:px-10">
             <div className="max-w-xl lg:max-w-2xl">
               <h1
                 className="text-[2.55rem] leading-[1.05] tracking-[-.03em] sm:text-[3.6rem] sm:leading-[1.02] lg:text-[4.25rem]"
@@ -103,7 +95,7 @@ export function MainLanding() {
                 {HERO_OPERATING_LOOP}
               </p>
 
-              <p className="mt-5 max-w-lg text-base leading-relaxed text-white/80 sm:mt-6 sm:text-lg sm:leading-[1.6]">
+              <p className="mt-5 max-w-lg text-base leading-relaxed text-white/85 sm:mt-6 sm:text-lg sm:leading-[1.6]">
                 {HERO_SUPPORT}
               </p>
 

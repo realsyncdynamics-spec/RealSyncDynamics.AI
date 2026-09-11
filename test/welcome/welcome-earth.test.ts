@@ -30,9 +30,10 @@ describe('Welcome Earth panel', () => {
     expect(host).toContain('lg:block');
   });
 
-  it('uses the local photoreal Earth day texture', () => {
+  it('uses the local photoreal Earth day texture with interactive scene', () => {
     const mesh = readFileSync(resolve('src/components/visual/PhotorealEarthMesh.tsx'), 'utf8');
     expect(scene).toContain('PhotorealEarthMesh');
+    expect(scene).toContain('InteractiveEarth');
     expect(mesh).toContain('/textures/earth-day.jpg');
     expect(mesh).toContain('meshBasicMaterial');
   });

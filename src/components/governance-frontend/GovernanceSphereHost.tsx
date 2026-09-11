@@ -47,9 +47,13 @@ function NodePanel({
 }) {
   return (
     <aside
-      className="surface-panel absolute bottom-3 left-3 right-3 z-20 rounded-2xl border border-[#e8c98a]/25 bg-black/70 p-4 backdrop-blur-xl sm:left-auto sm:right-3 sm:w-[min(100%,17.5rem)]"
+      className="surface-panel absolute bottom-3 left-3 right-3 z-20 overflow-hidden rounded-2xl border border-[#e8c98a]/28 bg-black/72 p-4 shadow-[0_0_40px_rgba(232,201,138,0.08)] backdrop-blur-xl sm:left-auto sm:right-3 sm:w-[min(100%,17.5rem)]"
       aria-live="polite"
     >
+      <div
+        className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#e8c98a]/55 to-transparent"
+        aria-hidden="true"
+      />
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="font-mono text-[9px] tracking-[.2em] text-[#e8c98a]/80">
@@ -70,7 +74,10 @@ function NodePanel({
       {node.detail && (
         <p className="mt-2 font-mono text-[10px] tracking-[.08em] text-white/35">{node.detail}</p>
       )}
-      <p className="mt-3 font-mono text-[9px] tracking-[.14em] text-[#e8c98a]/55">DEMO DATA</p>
+      <div className="mt-3 flex items-center justify-between gap-2">
+        <p className="font-mono text-[9px] tracking-[.14em] text-[#e8c98a]/55">DEMO DATA</p>
+        <p className="font-mono text-[8px] tracking-[.16em] text-white/25">SIMULATED</p>
+      </div>
     </aside>
   );
 }
@@ -126,6 +133,11 @@ export function GovernanceSphereHost() {
       </div>
 
       <div className="relative min-h-[340px] overflow-hidden rounded-2xl border border-white/10 bg-black/30 landing-hero-glass sm:min-h-[400px] lg:min-h-[460px]">
+        {/* Soft FUI frame — keeps chrome cohesive without cluttering the globe */}
+        <div
+          className="pointer-events-none absolute inset-0 z-[1] rounded-2xl shadow-[inset_0_0_0_1px_rgba(232,201,138,0.06),inset_0_0_80px_rgba(0,40,80,0.25)]"
+          aria-hidden="true"
+        />
         {use3d ? (
           <Suspense fallback={<SphereSkeleton />}>
             <div className="absolute inset-0 cursor-grab active:cursor-grabbing">
@@ -148,7 +160,7 @@ export function GovernanceSphereHost() {
         {/* Always-on HTML picker — reliable hit targets + a11y alongside 3D. */}
         {use3d && (
           <div className="pointer-events-none absolute inset-x-0 top-3 z-10 flex justify-center px-3">
-            <div className="pointer-events-auto flex max-w-full gap-1.5 overflow-x-auto rounded-full border border-white/10 bg-black/55 p-1.5 backdrop-blur-md [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <div className="pointer-events-auto flex max-w-full gap-1.5 overflow-x-auto rounded-full border border-[#e8c98a]/15 bg-black/60 p-1.5 shadow-[0_8px_32px_rgba(0,0,0,0.35)] backdrop-blur-md [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {GOVERNANCE_SPHERE_NODES.map((node) => {
                 const active = selected?.id === node.id;
                 return (
@@ -159,14 +171,16 @@ export function GovernanceSphereHost() {
                     onClick={() => handleSelect(active ? null : node)}
                     className={`shrink-0 select-none rounded-full px-2.5 py-1 font-mono text-[9px] tracking-[.12em] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e8c98a]/60 ${
                       active
-                        ? 'bg-[#e8c98a]/20 text-[#f3d9a0]'
+                        ? 'bg-[#e8c98a]/22 text-[#f3d9a0] shadow-[0_0_16px_rgba(232,201,138,0.18)]'
                         : 'text-white/55 hover:bg-white/10 hover:text-white/85'
                     }`}
                     aria-pressed={active}
                   >
                     <span
                       className={`mr-1.5 inline-block h-1.5 w-1.5 rounded-full ${
-                        node.state === 'operational' ? 'bg-emerald-400' : 'bg-[#d4a574]'
+                        node.state === 'operational'
+                          ? 'bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.7)]'
+                          : 'bg-[#d4a574] shadow-[0_0_6px_rgba(212,165,116,0.65)]'
                       }`}
                       aria-hidden="true"
                     />
@@ -181,8 +195,8 @@ export function GovernanceSphereHost() {
         {selected && <NodePanel node={selected} onClose={() => setSelected(null)} />}
 
         {!selected && (
-          <p className="pointer-events-none absolute bottom-3 left-3 right-3 font-mono text-[9px] tracking-[.12em] text-white/30 sm:right-auto sm:max-w-[16rem]">
-            Drag to rotate · Scroll / pinch to zoom · Select a node for context
+          <p className="pointer-events-none absolute bottom-3 left-3 right-3 font-mono text-[9px] tracking-[.12em] text-white/35 sm:right-auto sm:max-w-[18rem]">
+            Drag · inertia · scroll/pinch zoom · double-click reset · tap a node
           </p>
         )}
       </div>

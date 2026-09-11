@@ -8,6 +8,14 @@ gating against `limit.ai_*_monthly`, and per-call audit + cost logging.
 ```bash
 supabase secrets set ANTHROPIC_API_KEY=sk-ant-...
 supabase secrets set GEMINI_API_KEY=AIza...        # optional, for google tools
+supabase secrets set GEMINI_PAID_TIER_CONFIRMED=true  # Pflicht, sobald Gemini genutzt wird
+#   ^ Bestaetigt aktives Billing im Google-Cloud-Projekt. Ohne dieses Flag
+#     lehnt providers.ts jeden Gemini-Aufruf mit PROVIDER_UNPAID_TIER_BLOCKED ab:
+#     Die unbezahlte Gemini-API-Quota erlaubt Google laut den Gemini-API-Terms,
+#     Prompts und Antworten zum Modelltraining zu nutzen und von Menschen
+#     pruefen zu lassen ("Do not submit sensitive, confidential, or personal
+#     information to the Unpaid Services"). Das widerspricht der Garantie in
+#     § 6a Abs. 2 des AVV. Erst Billing aktivieren, dann das Flag setzen.
 supabase secrets set OPENAI_API_KEY=sk-...         # optional, for openai tools
 supabase functions deploy ai-invoke
 ```

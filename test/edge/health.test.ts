@@ -196,6 +196,43 @@ describe('checkHealth — Bausteine', () => {
     expect(summary.status).toBe('ok');
   });
 
+  it('meldet degraded, wenn ein Gemini-Key ohne Paid-Tier-Bestaetigung gesetzt ist', async () => {
+    // Begruendung: Die unbezahlte Gemini-API-Quota erlaubt Google laut den
+    // Gemini-API-Terms, Prompts und Antworten zum Modelltraining zu nutzen.
+    // providers.ts sperrt den Pfad deshalb ohne GEMINI_PAID_TIER_CONFIRMED —
+    // ein gesperrter Provider darf im Health nicht als 'ok' erscheinen.
+    const summary = await checkHealth({
+      db: dbWithTables(),
+      env: { ...FULL_ENV, GEMINI_API_KEY: 'AIza-test' },
+      version: 'test',
+    });
+
+    expect(summary.checks.ai_gateway.status).toBe('degraded');
+    expect(summary.checks.ai_gateway.error).toMatch(/GEMINI_PAID_TIER_CONFIRMED/);
+  });
+
+  it('meldet das AI Gateway als ok, wenn der Gemini-Paid-Tier bestaetigt ist', async () => {
+    const summary = await checkHealth({
+      db: dbWithTables(),
+      env: { ...FULL_ENV, GEMINI_API_KEY: 'AIza-test', GEMINI_PAID_TIER_CONFIRMED: 'true' },
+      version: 'test',
+    });
+
+    expect(summary.checks.ai_gateway.status).toBe('ok');
+  });
+
+  it('behandelt einen Nicht-Gemini-Provider unabhaengig vom Paid-Tier-Flag', async () => {
+    // Das Flag betrifft ausschliesslich den Google-Pfad; ein Anthropic-Key
+    // allein darf nicht wegen eines fehlenden Gemini-Flags degradiert werden.
+    const summary = await checkHealth({
+      db: dbWithTables(),
+      env: { ...FULL_ENV, ANTHROPIC_API_KEY: 'sk-ant-test' },
+      version: 'test',
+    });
+
+    expect(summary.checks.ai_gateway.status).toBe('ok');
+  });
+
   it('loest keinen Provider-Aufruf aus (Health darf nichts kosten)', async () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
     await checkHealth({ db: dbWithTables(), env: { ...FULL_ENV, ANTHROPIC_API_KEY: 'k' }, version: 'test' });

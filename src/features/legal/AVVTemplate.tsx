@@ -162,6 +162,18 @@ export function AVVTemplate() {
               <strong>(4)</strong> Zur Datensouveränität und zum Serverstandort der
               KI-Verarbeitung gilt § 6 dieser Vereinbarung entsprechend.
             </Para>
+            <Para>
+              <strong>(5)</strong> Der Kunde wird darauf hingewiesen, dass die eingesetzten
+              KI-Anbieter Eingaben und Ausgaben unabhängig vom Modelltraining für einen
+              begrenzten Zeitraum protokollieren, um Verstöße gegen ihre Nutzungsbedingungen
+              zu erkennen und zu verhindern („Abuse Monitoring“) sowie um gesetzliche
+              Offenlegungspflichten zu erfüllen. Diese Protokolle können Prompt- und
+              Antwortinhalte enthalten. Die Aufbewahrung ist auf den jeweils vom Anbieter
+              festgelegten Zeitraum begrenzt — bei OpenAI regulär bis zu 30 Tage. Eine
+              Verwendung dieser Protokolle zum Modelltraining findet nach Zusicherung der
+              Anbieter nicht statt. Details je Anbieter sind der Sub-Prozessoren-Liste zu
+              entnehmen.
+            </Para>
           </Section>
 
           {/* Auskunft / Löschung */}

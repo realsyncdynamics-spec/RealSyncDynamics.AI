@@ -12,11 +12,7 @@ export type HeroHeadlineSegment = {
 };
 
 /**
- * Governance OS Hero — Positioning evolution (Governance Environment entry).
- *
- * Claim direction: Govern AI. Prove Everything. Operate with Confidence.
- * Hero lines move toward Mission-Control / OS feel without dropping the
- * product category signal “Governance”.
+ * Governance OS Hero — Europe Compliance Operations positioning.
  *
  * ## Contract
  *
@@ -24,24 +20,28 @@ export type HeroHeadlineSegment = {
  * read the same source — change here, not in the page.
  */
 export const HERO_HEADLINE: readonly (readonly HeroHeadlineSegment[])[] = [
-  [{ text: 'AI Governance,' }],
-  [{ text: 'Running in Real Time', accent: true }],
+  [{ text: 'AI Compliance Operations OS' }],
+  [{ text: 'for Europe', accent: true }],
 ];
 
 /** Reine Textzeilen der H1 — für Tests und Accessible-Name-Abgleich. */
 export const HERO_HEADLINE_LINES: readonly string[] = HERO_HEADLINE.map((segments) =>
-  segments.map((s) => s.text).join('')
+  segments.map((s) => s.text).join(''),
 );
 
 /** Substring für den FE-001-Check. Muss vollständig innerhalb einer Zeile liegen. */
-export const HERO_HEADLINE_TEST_SUBSTRING = 'AI Governance';
+export const HERO_HEADLINE_TEST_SUBSTRING = 'AI Compliance Operations OS';
 
-/** Motto under the H1 — Detect.Govern.Prove.Automate */
-export const HERO_OPERATING_LOOP = 'Detect · Govern · Prove · Automate' as const;
+/** Motto under the H1 — Discover → Classify → Enforce → Prove */
+export const HERO_OPERATING_LOOP = 'DISCOVER → CLASSIFY → ENFORCE → PROVE' as const;
+
+/** Supporting sentence under the operating loop. */
+export const HERO_SUPPORT =
+  'Runtime governance for regulated AI systems. Continuous evidence. EU-native by design.' as const;
 
 if (!HERO_HEADLINE_LINES.some((line) => line.includes(HERO_HEADLINE_TEST_SUBSTRING))) {
   throw new Error(
     'hero-content.ts: HERO_HEADLINE_TEST_SUBSTRING kommt in keiner Zeile der ' +
-      'HERO_HEADLINE vor — FE-001 würde fehlschlagen.'
+      'HERO_HEADLINE vor — FE-001 würde fehlschlagen.',
   );
 }

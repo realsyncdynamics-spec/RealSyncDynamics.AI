@@ -5,8 +5,7 @@ import { Menu, Snowflake, X } from 'lucide-react';
 /**
  * Shared dark public header for `/` and `/branchen`.
  *
- * Evolving toward a Governance OS system-bar feel (glass, monospace status)
- * while preserving working P0 nav targets from #1280/#1279.
+ * Cyan Governance OS system-bar feel while preserving working P0 nav targets.
  * Hash targets use `/#…` so they resolve from `/branchen` as well.
  */
 const LINKS = [
@@ -25,28 +24,28 @@ const linkClass = (extra?: string) =>
   `text-sm text-white/65 transition-colors hover:text-white focus-visible:outline-none focus-visible:text-white focus-visible:underline focus-visible:underline-offset-4${extra ? ` ${extra}` : ''}`;
 
 const scanCtaClass =
-  'rounded-full bg-[#f0e6d2] text-sm font-semibold text-[#1a1714] transition hover:bg-[#f6efe4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e8c98a] focus-visible:ring-offset-2 focus-visible:ring-offset-[rgb(3,7,18)]';
+  'rounded-full bg-[#22d3ee] text-sm font-semibold text-[#041016] transition hover:bg-[#67e8f9] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#22d3ee] focus-visible:ring-offset-2 focus-visible:ring-offset-[rgb(2,6,14)]';
 
 export function PublicDarkHeader({ overlay = false }: { overlay?: boolean }) {
   const [open, setOpen] = useState(false);
 
   return (
     <header
-      className={`${overlay ? 'absolute' : 'sticky bg-[rgb(3,7,18)]/95 backdrop-blur-md'} inset-x-0 top-0 z-30 border-b border-white/10`}
+      className={`${overlay ? 'absolute' : 'sticky bg-[rgb(2,6,14)]/95 backdrop-blur-md'} inset-x-0 top-0 z-30 border-b border-white/10`}
     >
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-6 sm:h-20 lg:px-10">
         <div className="flex min-w-0 items-center gap-3">
           <Link
             to="/"
-            className="flex min-w-0 items-center gap-2.5 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e8c98a]/60"
+            className="flex min-w-0 items-center gap-2.5 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#22d3ee]/60"
           >
-            <Snowflake className="h-6 w-6 shrink-0 text-[#e8c98a]" strokeWidth={1.5} />
+            <Snowflake className="h-6 w-6 shrink-0 text-[#22d3ee]" strokeWidth={1.5} />
             <span className="truncate text-base font-semibold tracking-tight text-white sm:text-lg">
               RealSync <span className="font-normal text-white/80">Dynamics.AI</span>
             </span>
           </Link>
           <span
-            className="hidden items-center gap-1.5 rounded-md border border-[#e8c98a]/25 bg-[#e8c98a]/8 px-2 py-1 font-mono text-[9px] tracking-[.16em] text-[#e8c98a]/90 md:inline-flex"
+            className="hidden items-center gap-1.5 rounded-md border border-[#22d3ee]/25 bg-[#22d3ee]/8 px-2 py-1 font-mono text-[9px] tracking-[.16em] text-[#67e8f9] md:inline-flex"
             title="Product category — not a live tenant metric"
           >
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-400/90" aria-hidden="true" />
@@ -71,7 +70,6 @@ export function PublicDarkHeader({ overlay = false }: { overlay?: boolean }) {
           </Link>
         </nav>
 
-        {/* Tablet/phone: Scan chip stays visible; hamburger opens system drawer. */}
         <div className="flex items-center gap-2.5 lg:hidden">
           <Link
             to="/audit"
@@ -81,7 +79,7 @@ export function PublicDarkHeader({ overlay = false }: { overlay?: boolean }) {
           </Link>
           <button
             type="button"
-            className="rounded-md p-1.5 text-white/70 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e8c98a]/60"
+            className="rounded-md p-1.5 text-white/70 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#22d3ee]/60"
             aria-expanded={open}
             aria-controls="public-dark-mobile-nav"
             aria-label={open ? 'Systemmenü schließen' : 'Systemmenü öffnen'}
@@ -95,11 +93,11 @@ export function PublicDarkHeader({ overlay = false }: { overlay?: boolean }) {
       {open && (
         <div
           id="public-dark-mobile-nav"
-          className="border-t border-white/10 bg-[rgb(3,7,18)]/98 px-6 py-4 backdrop-blur-md lg:hidden"
+          className="border-t border-white/10 bg-[rgb(2,6,14)]/98 px-6 py-4 backdrop-blur-md lg:hidden"
           role="dialog"
           aria-label="Governance OS Navigation"
         >
-          <p className="mb-3 font-mono text-[9px] tracking-[.2em] text-[#e8c98a]/70">
+          <p className="mb-3 font-mono text-[9px] tracking-[.2em] text-[#22d3ee]/70">
             SYSTEM DRAWER · PUBLIC
           </p>
           <nav aria-label="Mobile Navigation" className="flex flex-col">
@@ -108,7 +106,7 @@ export function PublicDarkHeader({ overlay = false }: { overlay?: boolean }) {
                 <a
                   key={item.to}
                   href={item.to}
-                  className="rounded-md py-2.5 text-sm text-white/80 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e8c98a]/50"
+                  className="rounded-md py-2.5 text-sm text-white/80 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#22d3ee]/50"
                   onClick={() => setOpen(false)}
                 >
                   {item.label}
@@ -117,7 +115,7 @@ export function PublicDarkHeader({ overlay = false }: { overlay?: boolean }) {
                 <Link
                   key={item.to}
                   to={item.to}
-                  className="rounded-md py-2.5 text-sm text-white/80 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e8c98a]/50"
+                  className="rounded-md py-2.5 text-sm text-white/80 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#22d3ee]/50"
                   onClick={() => setOpen(false)}
                 >
                   {item.label}

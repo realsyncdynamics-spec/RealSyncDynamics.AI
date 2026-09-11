@@ -1,17 +1,13 @@
-import { FormEvent, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { ArrowRight, Code2, FileCheck2, Lock, ShieldCheck } from 'lucide-react';
 import { SEOHead } from '../components/SEOHead';
 import { LandingChannelTools } from '../components/landing/LandingChannelTools';
 import { PublicDarkHeader } from '../components/landing/PublicDarkHeader';
-import {
-  RUNTIME_PREVIEW_LABEL,
-  RUNTIME_PREVIEW_NOTE,
-  RUNTIME_PREVIEW_CARDS,
-} from '../config/landing-runtime-preview';
+import { HeroNetworkArcs } from '../components/landing/HeroNetworkArcs';
 import {
   HERO_HEADLINE,
   HERO_OPERATING_LOOP,
+  HERO_SUPPORT,
 } from '../components/governance-frontend/hero-content';
 import { GovernanceSphereHost } from '../components/governance-frontend/GovernanceSphereHost';
 import { EnterpriseAccessSection } from '../components/landing/EnterpriseAccessSection';
@@ -19,16 +15,10 @@ import { LIVE_CAPABILITIES, BUILDING_CAPABILITIES } from '../config/platform-cap
 import { useStagedReveal } from '../hooks/useStagedReveal';
 import { useHeroParallax } from '../hooks/useHeroParallax';
 
-const BG = 'rgb(3, 7, 18)';
+const BG = 'rgb(2, 6, 14)';
 const SANS = "'Plus Jakarta Sans', 'Inter', system-ui, sans-serif";
 const SERIF = "Georgia, 'Times New Roman', serif";
-
-/** Drei Säulen unter der Headline. Nur Module, die in Produktion laufen. */
-const HERO_PILLARS: readonly (readonly [string, string])[] = [
-  ['DSGVO-KONFORM', 'Nachweise, Prozesse und Richtlinien laufen automatisiert mit.'],
-  ['AI-ACT-BEREIT', 'Risikobewertung, Transparenz und Dokumentation je KI-System.'],
-  ['DURCHGEHEND', 'Wiederkehrende Nachprüfung, Meldungen und Belege statt Stichproben.'],
-];
+const CYAN = '#22d3ee';
 
 const GOVERNANCE_STEPS = [
   ['01', 'DISCOVER', 'KI-Systeme, Anwendungen, Datenflüsse und relevante Verarbeitungsvorgänge erfassen.'],
@@ -40,32 +30,24 @@ const GOVERNANCE_STEPS = [
 ];
 
 export function MainLanding() {
-  const navigate = useNavigate();
-  const [domain, setDomain] = useState('');
   const revealRoot = useStagedReveal<HTMLElement>();
   const heroImage = useHeroParallax<HTMLDivElement>();
 
-  const startScan = (event: FormEvent) => {
-    event.preventDefault();
-    const value = domain.trim();
-    // Kanonischer Scan-Einstieg `/audit` (CLAUDE.md §10).
-    navigate(value ? `/audit?domain=${encodeURIComponent(value)}` : '/audit');
-  };
-
   return (
-    <div className="landing-context min-h-screen bg-[rgb(3,7,18)] text-white antialiased" style={{ backgroundColor: BG, fontFamily: SANS }}>
+    <div className="landing-context min-h-screen text-white antialiased" style={{ backgroundColor: BG, fontFamily: SANS }}>
       <SEOHead
-        title="RealSyncDynamics.AI — AI Governance Operating System"
-        description="Govern AI. Prove Everything. Operate with Confidence. RealSyncDynamics.AI is the AI Governance OS for DSGVO and EU AI Act — detect, govern, prove, automate."
+        title="RealSyncDynamics.AI — AI Compliance Operations OS for Europe"
+        description="Runtime governance for regulated AI systems. Continuous evidence. EU-native by design. Discover → Classify → Enforce → Prove."
         canonical="/"
-        ogTitle="AI Governance, Running in Real Time"
-        ogDescription="RealSyncDynamics.AI — AI Governance Operating System. Detect. Govern. Prove. Automate."
+        ogTitle="AI Compliance Operations OS for Europe"
+        ogDescription="Runtime governance for regulated AI systems. Continuous evidence. EU-native by design."
       />
 
       <PublicDarkHeader overlay />
 
       <main ref={revealRoot}>
-        <section className="relative min-h-[min(100svh,960px)] overflow-hidden lg:min-h-[880px]">
+        {/* Full-bleed night-Earth hero — one composition, brand + headline + support + CTAs */}
+        <section className="relative min-h-[min(100svh,920px)] overflow-hidden">
           <div className="absolute inset-0" ref={heroImage}>
             <picture>
               <source srcSet="/europe-globe.webp" type="image/webp" />
@@ -75,32 +57,27 @@ export function MainLanding() {
                 width={1376}
                 height={768}
                 fetchPriority="high"
-                className="h-full w-full object-cover object-right opacity-55"
+                className="hero-europe-night h-full w-full scale-105 object-cover object-[72%_42%]"
                 aria-hidden="true"
               />
             </picture>
-            <div className="hero-dawn" aria-hidden="true" />
-            <div className="hero-dawn-rim" aria-hidden="true" />
-            <div className="absolute inset-0 bg-gradient-to-r from-black via-black/88 to-black/40" />
-            <div className="absolute inset-0 bg-gradient-to-t from-[rgb(3,7,18)] via-[rgb(3,7,18)]/55 to-black/40" />
+            <HeroNetworkArcs className="hero-network-arcs" />
+            <div className="absolute inset-0 bg-gradient-to-r from-black via-black/75 to-black/25" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[rgb(2,6,14)] via-transparent to-black/50" />
             <div
               className="absolute inset-0"
               style={{
                 background:
-                  'radial-gradient(120% 90% at 70% 45%, transparent 0%, transparent 40%, rgba(3,7,18,.65) 100%)',
+                  'radial-gradient(90% 70% at 68% 48%, transparent 0%, transparent 42%, rgba(2,6,14,.55) 100%)',
               }}
               aria-hidden="true"
             />
           </div>
 
-          <div className="relative z-10 mx-auto grid min-h-[min(100svh,960px)] max-w-7xl items-center gap-12 px-6 pb-16 pt-28 sm:pb-20 sm:pt-32 lg:min-h-[880px] lg:grid-cols-[1.05fr_.95fr] lg:gap-12 lg:px-10 lg:pb-24">
-            <div className="max-w-3xl">
-              <p className="mb-6 inline-flex items-center gap-2.5 rounded-full border border-[#e8c98a]/40 bg-[#e8c98a]/10 px-3.5 py-1.5 font-mono text-[10px] uppercase tracking-[.22em] text-[#f3d9a0] sm:mb-8">
-                AI Governance Operating System
-              </p>
-
+          <div className="relative z-10 mx-auto flex min-h-[min(100svh,920px)] max-w-7xl items-center px-6 pb-20 pt-28 sm:pb-24 sm:pt-32 lg:px-10">
+            <div className="max-w-xl lg:max-w-2xl">
               <h1
-                className="text-[2.45rem] leading-[1.02] tracking-[-.035em] sm:text-[3.5rem] sm:leading-[.98] lg:text-[4.1rem] xl:text-7xl"
+                className="text-[2.55rem] leading-[1.05] tracking-[-.03em] sm:text-[3.6rem] sm:leading-[1.02] lg:text-[4.25rem]"
                 style={{ fontFamily: SERIF, fontWeight: 500 }}
               >
                 {HERO_HEADLINE.map((segments, line) => (
@@ -117,95 +94,39 @@ export function MainLanding() {
                 ))}
               </h1>
 
-              <p className="mt-4 font-mono text-[11px] tracking-[.22em] text-[#e8c98a]/85 sm:text-xs">
+              <p
+                className="mt-5 font-mono text-[11px] uppercase tracking-[.28em] sm:text-xs"
+                style={{ color: CYAN }}
+              >
                 {HERO_OPERATING_LOOP}
               </p>
 
-              <p className="mt-5 max-w-2xl text-[0.95rem] leading-relaxed text-white/65 sm:mt-6 sm:text-lg sm:leading-[1.65]">
-                Govern AI. Prove Everything. Operate with Confidence. Erfassen, bewerten,
-                durchsetzen und nachweisen — in einer kontinuierlichen Governance Runtime.
+              <p className="mt-5 max-w-lg text-base leading-relaxed text-white/80 sm:mt-6 sm:text-lg sm:leading-[1.6]">
+                {HERO_SUPPORT}
               </p>
 
-              <div className="mt-8 grid gap-5 border-t border-white/10 pt-6 sm:mt-9 sm:grid-cols-3 sm:gap-0 sm:divide-x sm:divide-white/10 sm:pt-7">
-                {HERO_PILLARS.map(([title, text], i) => (
-                  <div key={title} className={i > 0 ? 'sm:pl-6' : undefined}>
-                    <p className="font-mono text-[10px] tracking-[.18em] text-[#e8c98a]">{title}</p>
-                    <p className="mt-2 text-sm leading-relaxed text-white/50">{text}</p>
-                  </div>
-                ))}
-              </div>
-
-              <form onSubmit={startScan} className="mt-8 max-w-2xl sm:mt-9">
-                <div className="landing-hero-glass flex flex-col gap-2 rounded-2xl border border-white/15 bg-black/40 p-2 backdrop-blur-xl sm:flex-row sm:items-stretch">
-                  <input
-                    value={domain}
-                    onChange={(event) => setDomain(event.target.value)}
-                    placeholder="Ihre Website — z. B. firma.de"
-                    aria-label="Website-URL für den kostenlosen Governance Scan"
-                    className="min-w-0 flex-1 rounded-xl bg-transparent px-4 py-3.5 text-sm text-white outline-none placeholder:text-white/30 focus-visible:ring-2 focus-visible:ring-[#e8c98a]/45"
-                  />
-                  <button
-                    type="submit"
-                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#f0e6d2] px-5 py-3.5 text-sm font-semibold text-[#1a1714] transition hover:bg-[#f6efe4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e8c98a] focus-visible:ring-offset-2 focus-visible:ring-offset-[rgb(3,7,18)]"
-                  >
-                    Kostenlosen Governance Scan starten <ArrowRight className="h-4 w-4" />
-                  </button>
-                </div>
-                <p className="mt-2.5 font-mono text-[10px] tracking-[.08em] text-white/35">
-                  DSGVO · EU AI Act · Sicherheit · Barrierefreiheit · SEO — kein Account nötig
-                </p>
-              </form>
-
-              <div className="mt-5 flex flex-wrap gap-3 sm:mt-6">
-                <a
-                  href="#platform"
-                  className="inline-flex items-center gap-2 rounded-full border border-[#e8c98a]/55 bg-[#e8c98a]/[0.06] px-7 py-3.5 font-medium text-[#f3d9a0] transition hover:border-[#e8c98a]/75 hover:bg-[#e8c98a]/12 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e8c98a]/60"
+              <div className="mt-9 flex flex-col gap-3 sm:mt-10 sm:flex-row sm:items-center">
+                <Link
+                  to="/audit"
+                  className="inline-flex items-center justify-center gap-2 rounded-full bg-[#22d3ee] px-7 py-3.5 text-sm font-semibold text-[#041016] transition hover:bg-[#67e8f9] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#22d3ee] focus-visible:ring-offset-2 focus-visible:ring-offset-black"
                 >
-                  Explore the Governance OS <ArrowRight className="h-4 w-4" />
-                </a>
-              </div>
-
-              {/* Compact runtime preview strip on small screens — still demo-labeled. */}
-              <div className="mt-10 lg:hidden">
-                <p className="mb-3 font-mono text-[10px] tracking-[.22em] text-[#e8c98a]/80">
-                  {RUNTIME_PREVIEW_LABEL}
-                </p>
-                <div className="-mx-6 flex gap-3 overflow-x-auto px-6 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                  {RUNTIME_PREVIEW_CARDS.slice(0, 4).map((card, i) => (
-                    <div
-                      key={card.id}
-                      className="landing-hero-card surface-panel w-[11.5rem] shrink-0 rounded-2xl bg-black/45 p-3.5"
-                      style={{ animationDelay: `${i * 0.35}s` }}
-                    >
-                      <div className="flex items-center gap-2">
-                        <span
-                          className={`h-1.5 w-1.5 rounded-full ${card.tone === 'ok' ? 'bg-emerald-400' : 'bg-[#e8c98a]'}`}
-                        />
-                        <span className="font-mono text-[9px] tracking-[.18em] text-white/45">
-                          {card.label}
-                        </span>
-                      </div>
-                      <div
-                        className={`mt-2 text-xl font-semibold ${card.tone === 'ok' ? 'text-emerald-300' : 'text-white'}`}
-                      >
-                        {card.value}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <p className="mt-3 max-w-md text-[10px] leading-relaxed text-white/35">
-                  {RUNTIME_PREVIEW_NOTE}
-                </p>
+                  Free Audit starten <ArrowRight className="h-4 w-4" />
+                </Link>
+                <Link
+                  to="/welcome"
+                  className="inline-flex items-center justify-center gap-2 rounded-full border border-white/35 bg-black/35 px-7 py-3.5 text-sm font-medium text-white backdrop-blur-sm transition hover:border-white/55 hover:bg-black/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
+                >
+                  Live Dashboard ansehen
+                </Link>
               </div>
             </div>
+          </div>
+        </section>
 
-            <div className="relative">
-              <div
-                className="pointer-events-none absolute -inset-8 -z-10 rounded-[2rem] bg-[radial-gradient(ellipse_at_55%_40%,rgba(232,201,138,0.10),transparent_65%)]"
-                aria-hidden="true"
-              />
-              <GovernanceSphereHost />
-            </div>
+        {/* Interactive Governance Sphere — below hero so first viewport stays one composition */}
+        <section className="border-t border-white/10 bg-black/40 py-16 md:py-20" aria-label="Governance Sphere">
+          <div className="mx-auto max-w-7xl px-6 lg:px-10">
+            <GovernanceSphereHost />
           </div>
         </section>
 

@@ -11,12 +11,9 @@ import { MainLanding } from '../../src/pages/MainLanding';
  * Vorgeschichte: Es gab drei Wege in dieselbe Prüfung — `/audit`,
  * `/unified-entry/scan` und kurzzeitig `/scan` mit eigenem Datensatz. Der
  * Entscheid vom 2026-08-23 hat `/audit` zum kanonischen Einstieg erklärt
- * (docs/product/canonical-funnel-decision.md), die Umstellung des
- * Landing-CTA ist in CLAUDE.md §10 freigegeben und protokolliert.
+ * (docs/product/canonical-funnel-decision.md).
  *
- * Ohne diesen Test fiele genau das beim nächsten Refactor still um: Ein
- * CTA, der wieder auf einen zweiten Trichter zeigt, sieht im Diff harmlos
- * aus und kostet den halben Funnel.
+ * Hero-Primary CTA: „Free Audit starten“ → `/audit`.
  */
 
 const AUDIT_PLATZHALTER = 'AUDIT-SEITE';
@@ -28,43 +25,34 @@ function landingRendern() {
         <Route path="/" element={<MainLanding />} />
         <Route path="/audit" element={<div>{AUDIT_PLATZHALTER}</div>} />
         <Route path="/scan" element={<div>ZWEITER-TRICHTER</div>} />
+        <Route path="/welcome" element={<div>WELCOME</div>} />
       </Routes>
     </MemoryRouter>,
   );
 }
 
 describe('Kanonischer Scan-Einstieg', () => {
-  it('führt das Scan-Formular der Startseite nach /audit', () => {
+  it('führt den Hero-Primary-CTA der Startseite nach /audit', () => {
     landingRendern();
 
-    const feld = screen.getAllByPlaceholderText(/domain|website|ihre-website/i)[0];
-    fireEvent.change(feld, { target: { value: 'beispiel.de' } });
-    fireEvent.submit(feld.closest('form') as HTMLFormElement);
+    fireEvent.click(screen.getByRole('link', { name: /free audit starten/i }));
 
     expect(screen.getByText(AUDIT_PLATZHALTER)).toBeTruthy();
   });
 
-  it('nimmt die eingegebene Domain als Abfrageparameter mit', () => {
-    // Ohne die Übergabe müsste der Besucher die Adresse ein zweites Mal
-    // tippen — der Trichter bräche an seiner engsten Stelle.
+  it('bindet den Primary-CTA hart an /audit', () => {
     const quelle = readFileSync('src/pages/MainLanding.tsx', 'utf8');
-    expect(quelle).toContain('/audit?domain=${encodeURIComponent(value)}');
+    expect(quelle).toContain('to="/audit"');
+    expect(quelle).toContain('Free Audit starten');
   });
 
   it('zeigt keinen Verweis mehr auf den zurückgezogenen Trichter /scan', () => {
-    // Absichtlich gegen die Quelle geprüft und nicht gegen das Rendering:
-    // Der Kopfbereich der Startseite ist eine einzige lange Zeile, und ein
-    // wieder eingeschleuster `to="/scan"` soll auffallen, egal ob die
-    // Schaltfläche im Test sichtbar ist.
     const quelle = readFileSync('src/pages/MainLanding.tsx', 'utf8');
     expect(quelle).not.toContain('to="/scan"');
     expect(quelle).not.toContain("'/scan'");
   });
 
   it('hält /scan als Umleitung auf /audit, statt die Adresse fallenzulassen', () => {
-    // Der öffentliche Route-Vertrag darf nicht brechen (CLAUDE.md §12):
-    // Umleitungen sind erlaubt, ersatzloses Entfernen nicht. Wer den Link
-    // geteilt oder gebookmarkt hat, landet weiterhin im Trichter.
     const quelle = readFileSync('src/App.tsx', 'utf8');
     expect(quelle).toMatch(/path="\/scan"\s+element=\{<Navigate to="\/audit" replace \/>\}/);
   });

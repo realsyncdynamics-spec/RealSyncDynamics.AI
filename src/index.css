@@ -736,8 +736,8 @@ html, body {
    (`.hero-shine-glow`), damit er die Textkontur nicht aufweicht und von
    Screenreadern nicht doppelt gelesen wird (aria-hidden am Element). */
 .hero-shine {
-  color: #fff8ee;
-  -webkit-text-fill-color: #fff8ee;
+  color: #ffffff;
+  -webkit-text-fill-color: #ffffff;
   text-shadow:
     0 0 18px rgb(0 0 0 / 0.95),
     0 1px 0 rgb(0 0 0),
@@ -746,15 +746,16 @@ html, body {
 
 @supports not ((background-clip: text) or (-webkit-background-clip: text)) {
   .hero-shine {
-    color: #fff8ee;
-    -webkit-text-fill-color: #fff8ee;
+    color: #ffffff;
+    -webkit-text-fill-color: #ffffff;
   }
 }
 
 .hero-shine-accent {
-  color: #f3d9a0;
-  -webkit-text-fill-color: #f3d9a0;
+  color: #22d3ee;
+  -webkit-text-fill-color: #22d3ee;
   text-shadow:
+    0 0 22px rgb(34 211 238 / 0.35),
     0 0 18px rgb(0 0 0 / 0.95),
     0 1px 0 rgb(0 0 0),
     0 16px 48px rgb(0 0 0);
@@ -762,8 +763,24 @@ html, body {
 
 @supports not ((background-clip: text) or (-webkit-background-clip: text)) {
   .hero-shine-accent {
-    color: #f3d9a0;
-    -webkit-text-fill-color: #f3d9a0;
+    color: #22d3ee;
+    -webkit-text-fill-color: #22d3ee;
+  }
+}
+
+/* Night treatment for Europe hero plate — deep blacks, city-light punch */
+.hero-europe-night {
+  filter: brightness(0.72) contrast(1.18) saturate(1.05);
+}
+
+.hero-network-arcs {
+  opacity: 0.85;
+  mix-blend-mode: screen;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-network-arcs {
+    opacity: 0.55;
   }
 }
 

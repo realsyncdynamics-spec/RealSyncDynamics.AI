@@ -270,7 +270,6 @@ describe('Hero-Panel — Beispiel ist als Beispiel gekennzeichnet', () => {
     // Tenant — dort ist nichts messbar, also darf dort nichts gemessen
     // aussehen (Truth Layer, target-architecture.md §3.1).
     expect(landing).not.toContain('GOVERNANCE RUNTIME · LIVE');
-    expect(landing).toContain('RUNTIME_PREVIEW_LABEL');
     expect(landing).toContain('GovernanceSphereHost');
     expect(sphereNodes).toMatch(/DEMO\s*\/\s*SIMULATED/);
   });

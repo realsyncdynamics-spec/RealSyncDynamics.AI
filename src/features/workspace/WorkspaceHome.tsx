@@ -111,6 +111,7 @@ function Inner() {
 
   const inboxTotal = counts ? counts.approvals + counts.dsr.overdue + counts.incidents : 0;
   const score = computeComplianceScore(counts);
+  const countsLoading = !counts && !error;
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 space-y-8">
@@ -138,7 +139,7 @@ function Inner() {
       )}
 
       {/* Compliance-Score (Self-Assessment, aus offenen Posten abgeleitet) */}
-      <ScoreCard score={score} loading={!counts && !error} />
+      <ScoreCard score={score} loading={countsLoading} />
 
       {/* 24h Governance Status — Kernstück des Governance OS */}
       <section>
@@ -239,9 +240,9 @@ function Inner() {
           </div>
         </div>
         <div className="divide-y divide-titanium-900">
-          <InboxRow to="/governance/approvals" label="Offene Freigaben" count={counts?.approvals} loading={!counts} icon={UserCheck} />
-          <InboxRow to="/governance/dsr" label="Überfällige Betroffenenanfragen (DSR)" count={counts?.dsr.overdue} loading={!counts} icon={ClipboardCheck} severity={!!counts?.dsr.overdue} />
-          <InboxRow to="/governance/incidents" label="Offene Vorfälle / Meldefristen" count={counts?.incidents} loading={!counts} icon={AlertTriangle} severity={!!counts?.incidents} />
+          <InboxRow to="/governance/approvals" label="Offene Freigaben" count={counts?.approvals} loading={countsLoading} icon={UserCheck} />
+          <InboxRow to="/governance/dsr" label="Überfällige Betroffenenanfragen (DSR)" count={counts?.dsr.overdue} loading={countsLoading} icon={ClipboardCheck} severity={!!counts?.dsr.overdue} />
+          <InboxRow to="/governance/incidents" label="Offene Vorfälle / Meldefristen" count={counts?.incidents} loading={countsLoading} icon={AlertTriangle} severity={!!counts?.incidents} />
         </div>
       </section>
 
@@ -249,10 +250,10 @@ function Inner() {
       <section>
         <h3 className="font-display font-semibold text-titanium-50 text-sm mb-3">Status</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-px bg-titanium-900">
-          <Tile to="/governance/incidents" icon={AlertTriangle} label="Offene Risiken" value={counts?.incidents} loading={!counts} accent="rose" />
-          <Tile to="/governance/dpias" icon={ClipboardCheck} label="Offene DSFA" value={counts?.dpias} loading={!counts} accent="cyan" />
-          <Tile to="/governance/dsr" icon={ClipboardCheck} label="DSR offen" value={counts?.dsr.total} sub={counts?.dsr.overdue ? `${counts.dsr.overdue} überfällig` : undefined} loading={!counts} accent="amber" />
-          <Tile to="/governance/vendors" icon={UserCheck} label="Vendoren ohne DPA" value={counts?.vendorsNoDpa} loading={!counts} accent="amber" />
+          <Tile to="/governance/incidents" icon={AlertTriangle} label="Offene Risiken" value={counts?.incidents} loading={countsLoading} accent="rose" />
+          <Tile to="/governance/dpias" icon={ClipboardCheck} label="Offene DSFA" value={counts?.dpias} loading={countsLoading} accent="cyan" />
+          <Tile to="/governance/dsr" icon={ClipboardCheck} label="DSR offen" value={counts?.dsr.total} sub={counts?.dsr.overdue ? `${counts.dsr.overdue} überfällig` : undefined} loading={countsLoading} accent="amber" />
+          <Tile to="/governance/vendors" icon={UserCheck} label="Vendoren ohne DPA" value={counts?.vendorsNoDpa} loading={countsLoading} accent="amber" />
         </div>
       </section>
 
@@ -441,7 +442,7 @@ function InboxRow({ to, label, count, loading, icon: Icon, severity }: { to: str
       </span>
       <span className="flex items-center gap-2">
         {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin text-titanium-600" />
-          : <span className={`font-mono text-sm tabular-nums ${count ? (severity ? 'text-rose-300' : 'text-titanium-100') : 'text-titanium-600'}`}>{count ?? 0}</span>}
+          : <span className={`font-mono text-sm tabular-nums ${count ? (severity ? 'text-rose-300' : 'text-titanium-100') : 'text-titanium-600'}`}>{count == null ? '–' : count}</span>}
         <ArrowRight className="h-3.5 w-3.5 text-titanium-600" />
       </span>
     </Link>
@@ -483,7 +484,7 @@ function Tile({ to, icon: Icon, label, value, sub, loading, accent }: { to: stri
     <Link to={to} className="bg-obsidian-900 p-5 hover:bg-obsidian-800 transition-colors">
       <Icon className={`h-5 w-5 mb-3 ${ACCENT[accent]}`} />
       <div className="font-display font-bold text-3xl tabular-nums text-titanium-50">
-        {loading ? <Loader2 className="h-6 w-6 animate-spin text-titanium-600" /> : (value ?? 0)}
+        {loading ? <Loader2 className="h-6 w-6 animate-spin text-titanium-600" /> : (value == null ? '–' : value)}
       </div>
       <div className="text-xs text-titanium-400 mt-1">{label}</div>
       {sub && <div className="text-[11px] text-rose-300 mt-0.5">{sub}</div>}

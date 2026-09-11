@@ -99,6 +99,11 @@ function Inner() {
     if (!activeTenantId) return;
     setError(null);
     setEvents(null); setAssets(null); setPolicies(null); setControls(null);
+    setPendingApprovals(0);
+    setPendingGates(0);
+    setOpenDpias(0);
+    setOpenDsrs({ total: 0, overdue: 0 });
+    setOpenIncidents(0);
     Promise.allSettled([
       fetchTenantEvents(activeTenantId),
       fetchTenantAssets(activeTenantId),
@@ -111,19 +116,19 @@ function Inner() {
       countPendingGates(activeTenantId),
     ])
       .then(([e, a, p, c, pa, od, ds, oi, pg]) => {
-        const failed = [e, a, p, c, pa, od, ds, oi, pg].find((result) => result.status === 'rejected');
-        if (failed && failed.status === 'rejected') {
-          setError((failed.reason as Error)?.message ?? 'Tenant-Daten nicht verfügbar');
+        const coreFailed = [e, a, p, c].find((result) => result.status === 'rejected');
+        if (coreFailed && coreFailed.status === 'rejected') {
+          setError((coreFailed.reason as Error)?.message ?? 'Tenant-Daten nicht verfügbar');
         }
         setEvents(e.status === 'fulfilled' ? e.value : []);
         setAssets(a.status === 'fulfilled' ? a.value : []);
         setPolicies(p.status === 'fulfilled' ? p.value : []);
         setControls(c.status === 'fulfilled' ? c.value : []);
-        if (pa.status === 'fulfilled') setPendingApprovals(pa.value);
-        if (od.status === 'fulfilled') setOpenDpias(od.value);
-        if (ds.status === 'fulfilled') setOpenDsrs(ds.value);
-        if (oi.status === 'fulfilled') setOpenIncidents(oi.value);
-        if (pg.status === 'fulfilled') setPendingGates(pg.value);
+        setPendingApprovals(pa.status === 'fulfilled' ? pa.value : 0);
+        setOpenDpias(od.status === 'fulfilled' ? od.value : 0);
+        setOpenDsrs(ds.status === 'fulfilled' ? ds.value : { total: 0, overdue: 0 });
+        setOpenIncidents(oi.status === 'fulfilled' ? oi.value : 0);
+        setPendingGates(pg.status === 'fulfilled' ? pg.value : 0);
       });
   };
 

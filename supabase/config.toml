@@ -191,12 +191,14 @@ verify_jwt = false
 [functions.telemetry-ai-event]
 verify_jwt = false
 
+# Signup-/Operator-Mailer. Anon-JWT reicht nicht — eigener Service-Role-Check.
 [functions.welcome-email]
 verify_jwt = false
 
 [functions.shopify-install]
 verify_jwt = false
 
+# Stripe-Webhook (Service-Role) + Super-Admin-Resume. Anon-JWT reicht nicht.
 [functions.rebuild-website]
 verify_jwt = false
 

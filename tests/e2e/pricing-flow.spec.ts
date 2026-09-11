@@ -158,14 +158,10 @@ test.describe('Pricing Flow', () => {
       await expect(page).not.toHaveURL(/pilot=true/);
     });
 
-    test('partner bleibt stillgelegt und führt zurück auf die Preisseite', async ({ page }) => {
-      // Partner ist legacy. Agency ist wieder self_service.
-      for (const planKey of ['partner', 'partner_yearly']) {
-        await page.goto(`${BASE_URL}/checkout/${planKey}`);
-        await page.waitForURL(/\/pricing/);
-        await expect(page).toHaveURL(/source=checkout-retired/);
-      }
-    });
+    // Partner bleibt legacy + inquiry: die Umleitung auf /contact-sales
+    // ist oben unter „partner checkout should redirect to contact-sales"
+    // abgedeckt. Ein zweiter Test auf /pricing?source=checkout-retired
+    // würde gegen die CheckoutPage-Reihenfolge (inquiry vor legacy) laufen.
 
     test('agency checkout bleibt auf dem Checkout-Pfad', async ({ page }) => {
       await page.goto(`${BASE_URL}/checkout/agency`);

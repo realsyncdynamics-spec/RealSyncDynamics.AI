@@ -5,7 +5,7 @@ import {
 } from './governance-sphere-nodes';
 
 function stateDot(state: SphereNodeState) {
-  return state === 'operational' ? 'bg-emerald-400' : 'bg-[#d4a574]';
+  return state === 'operational' ? 'bg-emerald-400' : 'bg-[#ffb86b]';
 }
 
 /**
@@ -27,7 +27,7 @@ export function GovernanceSphereFallback({
       aria-label="Governance Sphere — photoreal Earth overview"
     >
       <div
-        className="absolute inset-[10%] overflow-hidden rounded-full border border-[#e8c98a]/25 shadow-[0_0_60px_rgba(232,201,138,0.12)]"
+        className="absolute inset-[10%] overflow-hidden rounded-full border border-[#16d9ff]/25 shadow-[0_0_60px_rgba(22,217,255,0.12)]"
         aria-hidden="true"
       >
         <picture>
@@ -48,7 +48,7 @@ export function GovernanceSphereFallback({
         />
       </div>
       <div
-        className="absolute inset-[4%] rounded-full border border-[#e8c98a]/15"
+        className="absolute inset-[4%] rounded-full border border-[#16d9ff]/15"
         aria-hidden="true"
       />
 
@@ -61,15 +61,15 @@ export function GovernanceSphereFallback({
                 type="button"
                 draggable={false}
                 onClick={() => onSelect(active ? null : node)}
-                className={`w-full select-none rounded-xl border px-3 py-2.5 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e8c98a]/60 ${
+                className={`w-full select-none rounded-xl border px-3 py-2.5 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#16d9ff]/60 ${
                   active
-                    ? 'border-[#e8c98a]/55 bg-[#e8c98a]/12 backdrop-blur-md'
-                    : 'border-white/10 bg-black/45 backdrop-blur-md hover:border-[#e8c98a]/35 hover:bg-black/55'
+                    ? 'border-[#16d9ff]/55 bg-[#16d9ff]/12 backdrop-blur-md'
+                    : 'border-white/10 bg-black/45 backdrop-blur-md hover:border-[#16d9ff]/35 hover:bg-black/55'
                 }`}
               >
                 <span className="flex items-center gap-2">
                   <span className={`h-1.5 w-1.5 rounded-full ${stateDot(node.state)}`} />
-                  <span className="font-mono text-[9px] tracking-[.16em] text-[#e8c98a]/85">
+                  <span className="font-mono text-[9px] tracking-[.16em] text-[#16d9ff]/85">
                     {node.phase.toUpperCase()}
                   </span>
                 </span>

@@ -6,13 +6,15 @@ import {
   LANDING_BG,
   LANDING_BUTTON_ALT,
   LANDING_BUTTON_TEXT,
+  LANDING_MONO,
+  LANDING_MUTED,
   LANDING_TEXT,
 } from './landing-theme';
 
 /**
  * Shared dark public header for `/` and `/branchen`.
  *
- * Dominik cyan night-map Referenz: sticky frosted bar, white nav, cyan pill CTA.
+ * Dominik Dark/Gold/Cream: sticky frosted bar, gold brand mark, cream CTA.
  * Working P0 nav targets from #1280/#1279 remain — hash targets use `/#…`
  * so they resolve from `/branchen` as well. `/ai-act` + `/sicherheit`
  * stay reachable (platform-capabilities contract).
@@ -41,13 +43,13 @@ function NavItem({
   onNavigate?: () => void;
 }) {
   const shared = {
-    className: `text-[13px] font-medium tracking-tight transition-colors focus-visible:outline-none focus-visible:underline focus-visible:underline-offset-4${className ? ` ${className}` : ''}`,
-    style: { color: 'rgba(255,255,255,0.78)' } as CSSProperties,
+    className: `text-[12px] transition-colors focus-visible:outline-none focus-visible:underline focus-visible:underline-offset-4${className ? ` ${className}` : ''}`,
+    style: { color: LANDING_MUTED } as CSSProperties,
     onMouseEnter: (e: MouseEvent<HTMLAnchorElement>) => {
       e.currentTarget.style.color = LANDING_TEXT;
     },
     onMouseLeave: (e: MouseEvent<HTMLAnchorElement>) => {
-      e.currentTarget.style.color = 'rgba(255,255,255,0.78)';
+      e.currentTarget.style.color = LANDING_MUTED;
     },
   };
 
@@ -66,9 +68,9 @@ function NavItem({
 }
 
 const scanCtaStyle: CSSProperties = {
+  fontFamily: LANDING_MONO,
   backgroundColor: LANDING_BUTTON_ALT,
   color: LANDING_BUTTON_TEXT,
-  fontWeight: 600,
 };
 
 export function PublicDarkHeader({ overlay = false }: { overlay?: boolean }) {
@@ -76,17 +78,20 @@ export function PublicDarkHeader({ overlay = false }: { overlay?: boolean }) {
 
   return (
     <header
-      className={`${overlay ? 'absolute bg-[rgba(5,7,11,0.35)]' : 'sticky bg-[rgba(5,7,11,0.72)]'} inset-x-0 top-0 z-30 border-b border-white/[0.06] backdrop-blur-[18px]`}
+      className={`${overlay ? 'absolute bg-[rgba(5,7,11,0.55)]' : 'sticky bg-[rgba(5,7,11,0.82)]'} inset-x-0 top-0 z-30 border-b border-white/[0.06] backdrop-blur-[18px]`}
       style={{ color: LANDING_TEXT }}
     >
-      <div className="mx-auto flex h-[72px] max-w-[1500px] items-center gap-6 px-[4vw]">
+      <div className="mx-auto flex h-[76px] max-w-[1500px] items-center gap-6 px-[4vw]">
         <div className="flex min-w-0 items-center gap-3">
           <Link
             to="/"
-            className="flex min-w-0 items-center gap-2 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00E5FF]/60"
+            className="flex min-w-0 items-center gap-2.5 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e4cfa2]/60"
             style={{ color: LANDING_TEXT }}
           >
-            <span className="truncate whitespace-nowrap text-[15px] font-medium tracking-tight">
+            <span aria-hidden="true" className="shrink-0 text-[19px]" style={{ color: LANDING_ACCENT }}>
+              ⬢
+            </span>
+            <span className="truncate whitespace-nowrap text-[14px] font-medium tracking-tight">
               RealSync Dynamics
               <span style={{ color: LANDING_ACCENT }}>.AI</span>
             </span>
@@ -94,29 +99,25 @@ export function PublicDarkHeader({ overlay = false }: { overlay?: boolean }) {
           <span
             className="hidden items-center gap-1.5 rounded-full border px-2 py-1 text-[9px] tracking-[.16em] md:inline-flex"
             style={{
-              fontFamily: "'DM Mono', ui-monospace, monospace",
-              borderColor: 'rgba(0,229,255,0.35)',
-              backgroundColor: 'rgba(0,229,255,0.08)',
-              color: 'rgba(0,229,255,0.92)',
+              fontFamily: LANDING_MONO,
+              borderColor: `${LANDING_ACCENT}40`,
+              backgroundColor: `${LANDING_ACCENT}14`,
+              color: `${LANDING_ACCENT}e6`,
             }}
             title="Product category — not a live tenant metric"
           >
-            <span
-              className="h-1.5 w-1.5 rounded-full"
-              style={{ backgroundColor: LANDING_ACCENT, boxShadow: `0 0 8px ${LANDING_ACCENT}` }}
-              aria-hidden="true"
-            />
+            <span className="h-1.5 w-1.5 rounded-full bg-[#20d69a]/90" aria-hidden="true" />
             GOV OS
           </span>
         </div>
 
-        <nav className="ml-auto hidden items-center gap-7 lg:flex" aria-label="Hauptnavigation">
+        <nav className="ml-auto hidden items-center gap-6 lg:flex" aria-label="Hauptnavigation">
           {LINKS.map((item) => (
             <NavItem key={item.to} {...item} />
           ))}
           <Link
             to="/audit"
-            className="max-w-[11rem] rounded-full px-[18px] py-[11px] text-center text-[11px] leading-[1.3] shadow-[0_0_28px_rgba(0,229,255,0.22)] transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00E5FF]"
+            className="max-w-[9.5rem] rounded-full px-[18px] py-[11px] text-center text-[10px] leading-[1.3] shadow-[0_0_30px_rgba(228,207,162,0.08)] transition hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e4cfa2]"
             style={scanCtaStyle}
           >
             Kostenlosen Governance Scan starten
@@ -133,7 +134,7 @@ export function PublicDarkHeader({ overlay = false }: { overlay?: boolean }) {
           </Link>
           <button
             type="button"
-            className="rounded-md p-1.5 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00E5FF]/60"
+            className="rounded-md p-1.5 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e4cfa2]/60"
             style={{ color: LANDING_TEXT }}
             aria-expanded={open}
             aria-controls="public-dark-mobile-nav"
@@ -155,7 +156,7 @@ export function PublicDarkHeader({ overlay = false }: { overlay?: boolean }) {
         >
           <p
             className="mb-3 text-[9px] tracking-[.2em]"
-            style={{ fontFamily: "'DM Mono', ui-monospace, monospace", color: `${LANDING_ACCENT}b3` }}
+            style={{ fontFamily: LANDING_MONO, color: `${LANDING_ACCENT}b3` }}
           >
             SYSTEM DRAWER · PUBLIC
           </p>

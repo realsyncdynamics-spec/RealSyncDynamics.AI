@@ -29,9 +29,14 @@ describe('Governance Sphere — demo contract', () => {
     expect(phases).toEqual(new Set(['Detect', 'Govern', 'Prove', 'Automate']));
   });
 
-  it('is lazy-hosted from MainLanding with reduced-motion fallback path', () => {
+  it('keeps lazy host + reduced-motion fallback (not mounted on public MainLanding)', () => {
     const host = readFileSync(
       resolve(__dirname, '../../src/components/governance-frontend/GovernanceSphereHost.tsx'),
+      'utf8',
+    );
+    const landing = readFileSync(resolve(__dirname, '../../src/pages/MainLanding.tsx'), 'utf8');
+    const backdrop = readFileSync(
+      resolve(__dirname, '../../src/components/landing/HeroEarthBackdrop.tsx'),
       'utf8',
     );
     expect(host).toContain('lazy(');
@@ -39,6 +44,11 @@ describe('Governance Sphere — demo contract', () => {
     expect(host).toContain('GovernanceSphereFallback');
     expect(host).toContain('SPHERE_DEMO_LABEL');
     expect(host).toContain('DEMO DATA');
+    // Public landing: Earth as scenery only — no interactive sphere widget.
+    expect(landing).not.toContain('GovernanceSphereHost');
+    expect(landing).toContain('HeroEarthBackdrop');
+    expect(backdrop).toContain('pointer-events-none');
+    expect(backdrop).toContain('data-hero-visual="earth-universe"');
   });
 
   it('renders photoreal Earth (day texture), not wireframe-only mesh', () => {

@@ -839,21 +839,11 @@ html, body {
 }
 
 /* ── Glanz auf der Hero-Headline ─────────────────────────────────────────
-   Kein neuer Farbton: Der Verlauf laeuft von reinem Weiss ueber ein sehr
-   helles Cyan zurueck ins Weiss — dieselben zwei Farben, die die Seite
-   ohnehin fuehrt. Was ihn edel macht, ist nicht die Farbe, sondern der
-   schmale Lichtsaum und dass die Kante darunter leicht abdunkelt.
-
-   `background-clip: text` statt `text-shadow` auf der Fuellung: Ein
-   Schatten auf einer Serifenschrift bei 72px verschmiert die feinen
-   Haarstriche, ein Verlauf laesst sie scharf.
-
-   Der Lichtsaum liegt als eigene, absolut positionierte Kopie darunter
-   (`.hero-shine-glow`), damit er die Textkontur nicht aufweicht und von
-   Screenreadern nicht doppelt gelesen wird (aria-hidden am Element). */
+   Cream / Gold auf Dark — kein Cyan. Der Lichtsaum hebt die Serife vom
+   Earth-Backdrop ab, ohne die Haarstriche zu verschmieren. */
 .hero-shine {
-  color: #ffffff;
-  -webkit-text-fill-color: #ffffff;
+  color: #fff8ee;
+  -webkit-text-fill-color: #fff8ee;
   text-shadow:
     0 0 18px rgb(0 0 0 / 0.95),
     0 1px 0 rgb(0 0 0),
@@ -862,25 +852,25 @@ html, body {
 
 @supports not ((background-clip: text) or (-webkit-background-clip: text)) {
   .hero-shine {
-    color: #ffffff;
-    -webkit-text-fill-color: #ffffff;
+    color: #fff8ee;
+    -webkit-text-fill-color: #fff8ee;
   }
 }
 
 .hero-shine-accent {
-  color: #00e5ff;
-  -webkit-text-fill-color: #00e5ff;
+  color: #e4cfa2;
+  -webkit-text-fill-color: #e4cfa2;
   font-style: normal;
   text-shadow:
-    0 0 22px rgb(0 229 255 / 0.35),
-    0 0 18px rgb(0 0 0 / 0.85),
-    0 1px 0 rgb(0 0 0);
+    0 0 18px rgb(0 0 0 / 0.95),
+    0 1px 0 rgb(0 0 0),
+    0 16px 48px rgb(0 0 0);
 }
 
 @supports not ((background-clip: text) or (-webkit-background-clip: text)) {
   .hero-shine-accent {
-    color: #00e5ff;
-    -webkit-text-fill-color: #00e5ff;
+    color: #e4cfa2;
+    -webkit-text-fill-color: #e4cfa2;
   }
 }
 
@@ -997,29 +987,12 @@ html, body {
   }
 }
 
-/* ── Dominik cyan night-map hero network ──────────────────────────────── */
-@keyframes hero-cyan-pulse {
-  0%, 100% { opacity: 0.55; }
-  50% { opacity: 1; }
+/* ── Public landing Earth backdrop — scenery only ─────────────────────── */
+.hero-earth-backdrop,
+.hero-earth-backdrop canvas {
+  pointer-events: none !important;
 }
 
-@keyframes hero-cyan-flow {
-  0%, 100% { stroke-opacity: 0.35; }
-  50% { stroke-opacity: 0.85; }
-}
-
-.hero-cyan-node {
-  animation: hero-cyan-pulse 3.6s ease-in-out infinite;
-  transform-origin: center;
-}
-
-.hero-cyan-link {
-  animation: hero-cyan-flow 4.2s ease-in-out infinite;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .hero-cyan-node,
-  .hero-cyan-link {
-    animation: none;
-  }
+.hero-earth-static {
+  filter: saturate(1.05) contrast(1.08) brightness(0.78);
 }

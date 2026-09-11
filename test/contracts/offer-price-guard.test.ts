@@ -48,8 +48,9 @@ describe('check:offer-prices', () => {
 
   it('leitet die Beträge aus der SSoT ab, nicht aus einer eigenen Liste', () => {
     const { out } = run();
-    // Enterprise (contract) sowie Agency und Partner (legacy) — monatlich und jährlich.
-    for (const amount of ['1249', '12490', '699', '6900', '1999', '19000']) {
+    // Enterprise (contract), Partner (legacy) sowie die unverkaeuflichen
+    // Jahresvarianten von Starter, Growth und Agency.
+    for (const amount of ['790', '2490', '6900', '1249', '12490', '1999', '19000']) {
       expect(out, `Betrag ${amount} fehlt im geprüften Satz`).toContain(amount);
     }
     // Verkaufbare Pläne gehören ausdrücklich NICHT dazu: ihr Preis ist einlösbar.

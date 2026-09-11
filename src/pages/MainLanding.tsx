@@ -65,7 +65,7 @@ export function MainLanding() {
       <PublicDarkHeader overlay />
 
       <main ref={revealRoot}>
-        <section className="relative min-h-[min(100svh,960px)] overflow-hidden lg:min-h-[880px]">
+        <section className="relative min-h-[min(100svh,960px)] overflow-hidden lg:min-h-[900px]">
           <div className="absolute inset-0" ref={heroImage}>
             <picture>
               <source srcSet="/europe-globe.webp" type="image/webp" />
@@ -75,13 +75,13 @@ export function MainLanding() {
                 width={1376}
                 height={768}
                 fetchPriority="high"
-                className="h-full w-full object-cover object-right opacity-55"
+                className="h-full w-full object-cover object-right opacity-72"
                 aria-hidden="true"
               />
             </picture>
             <div className="hero-dawn" aria-hidden="true" />
             <div className="hero-dawn-rim" aria-hidden="true" />
-            <div className="absolute inset-0 bg-gradient-to-r from-black via-black/88 to-black/40" />
+            <div className="absolute inset-0 bg-gradient-to-r from-black via-black/76 to-black/18" />
             <div className="absolute inset-0 bg-gradient-to-t from-[rgb(3,7,18)] via-[rgb(3,7,18)]/55 to-black/40" />
             <div
               className="absolute inset-0"
@@ -93,9 +93,9 @@ export function MainLanding() {
             />
           </div>
 
-          <div className="relative z-10 mx-auto grid min-h-[min(100svh,960px)] max-w-7xl items-center gap-12 px-6 pb-16 pt-28 sm:pb-20 sm:pt-32 lg:min-h-[880px] lg:grid-cols-[1.05fr_.95fr] lg:gap-12 lg:px-10 lg:pb-24">
+          <div className="relative z-10 mx-auto grid min-h-[min(100svh,960px)] max-w-7xl items-center gap-12 px-6 pb-16 pt-28 sm:pb-20 sm:pt-32 lg:min-h-[880px] lg:grid-cols-[.86fr_1.14fr] lg:gap-8 lg:px-10 lg:pb-24">
             <div className="max-w-3xl">
-              <p className="mb-6 inline-flex items-center gap-2.5 rounded-full border border-[#e8c98a]/40 bg-[#e8c98a]/10 px-3.5 py-1.5 font-mono text-[10px] uppercase tracking-[.22em] text-[#f3d9a0] sm:mb-8">
+              <p className="mb-6 inline-flex items-center gap-2.5 rounded-full border border-[#16d9ff]/40 bg-[#16d9ff]/10 px-3.5 py-1.5 font-mono text-[10px] uppercase tracking-[.22em] text-[#9af5ff] sm:mb-8">
                 AI Governance Operating System
               </p>
 
@@ -117,7 +117,7 @@ export function MainLanding() {
                 ))}
               </h1>
 
-              <p className="mt-4 font-mono text-[11px] tracking-[.22em] text-[#e8c98a]/85 sm:text-xs">
+              <p className="mt-4 font-mono text-[11px] tracking-[.22em] text-[#16d9ff]/85 sm:text-xs">
                 {HERO_OPERATING_LOOP}
               </p>
 
@@ -129,7 +129,7 @@ export function MainLanding() {
               <div className="mt-8 grid gap-5 border-t border-white/10 pt-6 sm:mt-9 sm:grid-cols-3 sm:gap-0 sm:divide-x sm:divide-white/10 sm:pt-7">
                 {HERO_PILLARS.map(([title, text], i) => (
                   <div key={title} className={i > 0 ? 'sm:pl-6' : undefined}>
-                    <p className="font-mono text-[10px] tracking-[.18em] text-[#e8c98a]">{title}</p>
+                    <p className="font-mono text-[10px] tracking-[.18em] text-[#16d9ff]">{title}</p>
                     <p className="mt-2 text-sm leading-relaxed text-white/50">{text}</p>
                   </div>
                 ))}
@@ -142,11 +142,11 @@ export function MainLanding() {
                     onChange={(event) => setDomain(event.target.value)}
                     placeholder="Ihre Website — z. B. firma.de"
                     aria-label="Website-URL für den kostenlosen Governance Scan"
-                    className="min-w-0 flex-1 rounded-xl bg-transparent px-4 py-3.5 text-sm text-white outline-none placeholder:text-white/30 focus-visible:ring-2 focus-visible:ring-[#e8c98a]/45"
+                    className="min-w-0 flex-1 rounded-xl bg-transparent px-4 py-3.5 text-sm text-white outline-none placeholder:text-white/30 focus-visible:ring-2 focus-visible:ring-[#16d9ff]/45"
                   />
                   <button
                     type="submit"
-                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#f0e6d2] px-5 py-3.5 text-sm font-semibold text-[#1a1714] transition hover:bg-[#f6efe4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e8c98a] focus-visible:ring-offset-2 focus-visible:ring-offset-[rgb(3,7,18)]"
+                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#12cfe9] px-5 py-3.5 text-sm font-semibold text-[#00131a] transition hover:bg-[#58e7f7] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#16d9ff] focus-visible:ring-offset-2 focus-visible:ring-offset-[rgb(3,7,18)]"
                   >
                     Kostenlosen Governance Scan starten <ArrowRight className="h-4 w-4" />
                   </button>
@@ -159,7 +159,7 @@ export function MainLanding() {
               <div className="mt-5 flex flex-wrap gap-3 sm:mt-6">
                 <a
                   href="#platform"
-                  className="inline-flex items-center gap-2 rounded-full border border-[#e8c98a]/55 bg-[#e8c98a]/[0.06] px-7 py-3.5 font-medium text-[#f3d9a0] transition hover:border-[#e8c98a]/75 hover:bg-[#e8c98a]/12 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e8c98a]/60"
+                  className="inline-flex items-center gap-2 rounded-full border border-[#16d9ff]/55 bg-[#16d9ff]/[0.06] px-7 py-3.5 font-medium text-[#9af5ff] transition hover:border-[#16d9ff]/75 hover:bg-[#16d9ff]/12 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#16d9ff]/60"
                 >
                   Explore the Governance OS <ArrowRight className="h-4 w-4" />
                 </a>
@@ -167,7 +167,7 @@ export function MainLanding() {
 
               {/* Compact runtime preview strip on small screens — still demo-labeled. */}
               <div className="mt-10 lg:hidden">
-                <p className="mb-3 font-mono text-[10px] tracking-[.22em] text-[#e8c98a]/80">
+                <p className="mb-3 font-mono text-[10px] tracking-[.22em] text-[#16d9ff]/80">
                   {RUNTIME_PREVIEW_LABEL}
                 </p>
                 <div className="-mx-6 flex gap-3 overflow-x-auto px-6 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
@@ -179,7 +179,7 @@ export function MainLanding() {
                     >
                       <div className="flex items-center gap-2">
                         <span
-                          className={`h-1.5 w-1.5 rounded-full ${card.tone === 'ok' ? 'bg-emerald-400' : 'bg-[#e8c98a]'}`}
+                          className={`h-1.5 w-1.5 rounded-full ${card.tone === 'ok' ? 'bg-emerald-400' : 'bg-[#16d9ff]'}`}
                         />
                         <span className="font-mono text-[9px] tracking-[.18em] text-white/45">
                           {card.label}
@@ -214,12 +214,12 @@ export function MainLanding() {
         <section id="platform" className="py-24 md:py-32">
           <div className="mx-auto max-w-7xl px-6 lg:px-10">
             <div className="mb-14 max-w-3xl">
-              <p className="font-mono text-[10px] tracking-[.25em] text-[#e8c98a]">DIE PLATTFORM</p>
+              <p className="font-mono text-[10px] tracking-[.25em] text-[#16d9ff]">DIE PLATTFORM</p>
               <h2
                 className="mt-4 text-[2rem] tracking-tight sm:text-5xl"
                 style={{ fontFamily: SERIF, fontWeight: 500 }}
               >
-                Eine Runtime. <span className="text-[#e8c98a]">Vollständige KI-Governance.</span>
+                Eine Runtime. <span className="text-[#16d9ff]">Vollständige KI-Governance.</span>
               </h2>
               <p className="mt-5 max-w-2xl text-base leading-relaxed text-white/55">
                 RealSyncDynamics.AI verbindet Erkennung, Risikobewertung, Policies, Enforcement und
@@ -233,7 +233,7 @@ export function MainLanding() {
                     <h3 className="text-base font-semibold">{cap.name}</h3>
                     <p className="mt-2 text-sm leading-relaxed text-white/50">{cap.description}</p>
                     {cap.learnMorePath && (
-                      <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-[#e8c98a]">
+                      <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-[#16d9ff]">
                         Mehr erfahren <ArrowRight className="h-3.5 w-3.5" />
                       </span>
                     )}
@@ -293,14 +293,14 @@ export function MainLanding() {
           <div className="mx-auto max-w-7xl px-6 lg:px-10">
             <div className="grid gap-12 lg:grid-cols-[.8fr_1.2fr] lg:items-end">
               <div>
-                <p className="font-mono text-[10px] tracking-[.25em] text-[#e8c98a]">
+                <p className="font-mono text-[10px] tracking-[.25em] text-[#16d9ff]">
                   EVIDENCE &amp; TRUST
                 </p>
                 <h2
                   className="mt-3 text-4xl tracking-tight sm:text-5xl"
                   style={{ fontFamily: SERIF, fontWeight: 500 }}
                 >
-                  Compliance, die sich <span className="text-[#e8c98a]">beweisen lässt.</span>
+                  Compliance, die sich <span className="text-[#16d9ff]">beweisen lässt.</span>
                 </h2>
                 <p className="mt-5 leading-relaxed text-white/55">
                   PDFs, Logs, Zeitstempel und nachvollziehbare Prüfpfade. Jede Prüfung, jede
@@ -336,7 +336,7 @@ export function MainLanding() {
         <section className="py-24 md:py-32">
           <div className="mx-auto max-w-7xl px-6 lg:px-10">
             <div className="mb-12 max-w-3xl">
-              <p className="font-mono text-[10px] tracking-[.25em] text-[#e8c98a]">
+              <p className="font-mono text-[10px] tracking-[.25em] text-[#16d9ff]">
                 GOVERNANCE RUNTIME
               </p>
               <h2
@@ -344,7 +344,7 @@ export function MainLanding() {
                 style={{ fontFamily: SERIF, fontWeight: 500 }}
               >
                 Von der KI-Nutzung zur{' '}
-                <span className="text-[#e8c98a]">kontrollierten KI-Organisation.</span>
+                <span className="text-[#16d9ff]">kontrollierten KI-Organisation.</span>
               </h2>
             </div>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -355,7 +355,7 @@ export function MainLanding() {
                   data-reveal-group="runtime"
                   className="surface-panel rounded-2xl p-7"
                 >
-                  <span className="font-mono text-3xl text-[#e8c98a]/35">{no}</span>
+                  <span className="font-mono text-3xl text-[#16d9ff]/35">{no}</span>
                   <h3 className="mt-4 text-lg font-semibold tracking-wide">{title}</h3>
                   <p className="mt-2 text-sm leading-relaxed text-white/50">{text}</p>
                 </div>
@@ -368,7 +368,7 @@ export function MainLanding() {
 
         <section className="border-t border-white/10 bg-black/80 py-24 md:py-32">
           <div className="mx-auto max-w-3xl px-6 text-center">
-            <p className="font-mono text-[10px] tracking-[.25em] text-[#e8c98a]">WARUM JETZT</p>
+            <p className="font-mono text-[10px] tracking-[.25em] text-[#16d9ff]">WARUM JETZT</p>
             <h2
               className="hero-shine mt-4 text-4xl tracking-tight sm:text-6xl"
               style={{ fontFamily: SERIF, fontWeight: 500 }}
@@ -391,7 +391,7 @@ export function MainLanding() {
             <div className="mt-9 flex flex-col justify-center gap-3 sm:flex-row">
               <Link
                 to="/pricing"
-                className="inline-flex items-center justify-center gap-2 rounded-full bg-[#f0e6d2] px-7 py-3.5 font-semibold text-[#1a1714] transition hover:bg-[#f6efe4]"
+                className="inline-flex items-center justify-center gap-2 rounded-full bg-[#12cfe9] px-7 py-3.5 font-semibold text-[#00131a] transition hover:bg-[#58e7f7]"
               >
                 Preise ansehen <ArrowRight className="h-4 w-4" />
               </Link>
@@ -425,7 +425,7 @@ function TrustItem({
 }) {
   return (
     <div data-reveal data-reveal-group="evidence" className="surface-panel rounded-2xl p-6">
-      <Icon className="h-5 w-5 text-[#e8c98a]" />
+      <Icon className="h-5 w-5 text-[#16d9ff]" />
       <h3 className="mt-4 font-semibold">{title}</h3>
       <p className="mt-2 text-sm leading-relaxed text-white/50">{text}</p>
     </div>

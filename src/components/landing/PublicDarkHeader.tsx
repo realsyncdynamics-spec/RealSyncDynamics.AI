@@ -25,7 +25,7 @@ const linkClass = (extra?: string) =>
   `text-sm text-white/65 transition-colors hover:text-white focus-visible:outline-none focus-visible:text-white focus-visible:underline focus-visible:underline-offset-4${extra ? ` ${extra}` : ''}`;
 
 const scanCtaClass =
-  'rounded-full bg-[#f0e6d2] text-sm font-semibold text-[#1a1714] transition hover:bg-[#f6efe4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e8c98a] focus-visible:ring-offset-2 focus-visible:ring-offset-[rgb(3,7,18)]';
+  'rounded-full bg-[#12cfe9] text-sm font-semibold text-[#00131a] transition hover:bg-[#58e7f7] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#16d9ff] focus-visible:ring-offset-2 focus-visible:ring-offset-[rgb(3,7,18)]';
 
 export function PublicDarkHeader({ overlay = false }: { overlay?: boolean }) {
   const [open, setOpen] = useState(false);
@@ -38,15 +38,15 @@ export function PublicDarkHeader({ overlay = false }: { overlay?: boolean }) {
         <div className="flex min-w-0 items-center gap-3">
           <Link
             to="/"
-            className="flex min-w-0 items-center gap-2.5 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e8c98a]/60"
+            className="flex min-w-0 items-center gap-2.5 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#16d9ff]/60"
           >
-            <Snowflake className="h-6 w-6 shrink-0 text-[#e8c98a]" strokeWidth={1.5} />
+            <Snowflake className="h-6 w-6 shrink-0 text-[#16d9ff]" strokeWidth={1.5} />
             <span className="truncate text-base font-semibold tracking-tight text-white sm:text-lg">
               RealSync <span className="font-normal text-white/80">Dynamics.AI</span>
             </span>
           </Link>
           <span
-            className="hidden items-center gap-1.5 rounded-md border border-[#e8c98a]/25 bg-[#e8c98a]/8 px-2 py-1 font-mono text-[9px] tracking-[.16em] text-[#e8c98a]/90 md:inline-flex"
+            className="hidden items-center gap-1.5 rounded-md border border-[#16d9ff]/25 bg-[#16d9ff]/8 px-2 py-1 font-mono text-[9px] tracking-[.16em] text-[#16d9ff]/90 md:inline-flex"
             title="Product category — not a live tenant metric"
           >
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-400/90" aria-hidden="true" />
@@ -81,7 +81,7 @@ export function PublicDarkHeader({ overlay = false }: { overlay?: boolean }) {
           </Link>
           <button
             type="button"
-            className="rounded-md p-1.5 text-white/70 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e8c98a]/60"
+            className="rounded-md p-1.5 text-white/70 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#16d9ff]/60"
             aria-expanded={open}
             aria-controls="public-dark-mobile-nav"
             aria-label={open ? 'Systemmenü schließen' : 'Systemmenü öffnen'}
@@ -99,7 +99,7 @@ export function PublicDarkHeader({ overlay = false }: { overlay?: boolean }) {
           role="dialog"
           aria-label="Governance OS Navigation"
         >
-          <p className="mb-3 font-mono text-[9px] tracking-[.2em] text-[#e8c98a]/70">
+          <p className="mb-3 font-mono text-[9px] tracking-[.2em] text-[#16d9ff]/70">
             SYSTEM DRAWER · PUBLIC
           </p>
           <nav aria-label="Mobile Navigation" className="flex flex-col">
@@ -108,7 +108,7 @@ export function PublicDarkHeader({ overlay = false }: { overlay?: boolean }) {
                 <a
                   key={item.to}
                   href={item.to}
-                  className="rounded-md py-2.5 text-sm text-white/80 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e8c98a]/50"
+                  className="rounded-md py-2.5 text-sm text-white/80 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#16d9ff]/50"
                   onClick={() => setOpen(false)}
                 >
                   {item.label}
@@ -117,7 +117,7 @@ export function PublicDarkHeader({ overlay = false }: { overlay?: boolean }) {
                 <Link
                   key={item.to}
                   to={item.to}
-                  className="rounded-md py-2.5 text-sm text-white/80 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e8c98a]/50"
+                  className="rounded-md py-2.5 text-sm text-white/80 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#16d9ff]/50"
                   onClick={() => setOpen(false)}
                 >
                   {item.label}

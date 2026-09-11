@@ -58,13 +58,13 @@ export function EnterpriseAccessSection() {
       <div className="mx-auto max-w-7xl px-6 lg:px-10">
         <div className="grid gap-14 lg:grid-cols-[.85fr_1.15fr] lg:items-start">
           <div>
-            <p className="font-mono text-[10px] tracking-[.25em] text-[#e8c98a]">ENTERPRISE-ZUGANG</p>
+            <p className="font-mono text-[10px] tracking-[.25em] text-[#00E5FF]">ENTERPRISE-ZUGANG</p>
             <h2
               id="enterprise-heading"
               className="mt-4 text-[2rem] tracking-tight sm:text-5xl"
               style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontWeight: 500 }}
             >
-              Governance mit <span className="text-[#e8c98a]">Ansprechpartner.</span>
+              Governance mit <span className="text-[#00E5FF]">Ansprechpartner.</span>
             </h2>
             <p className="mt-5 text-base leading-relaxed text-white/55">{tier.tagline}</p>
             <p className="mt-3 text-sm leading-relaxed text-white/40">{tier.subline}</p>
@@ -84,7 +84,7 @@ export function EnterpriseAccessSection() {
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
                 to="/contact-sales?source=landing-enterprise"
-                className="inline-flex items-center gap-2 rounded-full bg-[#f0e6d2] px-7 py-3.5 font-semibold text-[#1a1714] transition hover:bg-[#f6efe4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e8c98a] focus-visible:ring-offset-2 focus-visible:ring-offset-[rgb(3,7,18)]"
+                className="inline-flex items-center gap-2 rounded-full bg-[#00E5FF] px-7 py-3.5 font-semibold text-[#05070b] transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00E5FF] focus-visible:ring-offset-2 focus-visible:ring-offset-[rgb(3,7,18)]"
               >
                 {CTA.enterprise} <ArrowRight className="h-4 w-4" />
               </Link>
@@ -93,7 +93,7 @@ export function EnterpriseAccessSection() {
                    Abgeleitet statt getippt, damit ein umbenannter Tarif die
                    Verlinkung nicht still ins Leere laufen laesst. */
                 to={`/pricing#plan-${tier.id}`}
-                className="inline-flex items-center gap-2 rounded-full border border-[#e8c98a]/40 px-7 py-3.5 font-medium text-[#f3d9a0] transition hover:border-[#e8c98a]/65 hover:bg-[#e8c98a]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e8c98a]/50"
+                className="inline-flex items-center gap-2 rounded-full border border-white/55 px-7 py-3.5 font-medium text-white transition hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00E5FF]/50"
               >
                 Leistungen im Detail
               </Link>
@@ -127,11 +127,11 @@ export function EnterpriseAccessSection() {
             />
 
             <div className="surface-panel rounded-2xl p-6 sm:col-span-2" data-reveal data-reveal-group="enterprise">
-              <p className="font-mono text-[10px] tracking-[.2em] text-[#e8c98a]/80">IM ZUGANG ENTHALTEN</p>
+              <p className="font-mono text-[10px] tracking-[.2em] text-[#00E5FF]/80">IM ZUGANG ENTHALTEN</p>
               <ul className="mt-4 grid gap-2.5 sm:grid-cols-2">
                 {accessPoints.map((point) => (
                   <li key={point} className="flex items-start gap-2.5 text-sm leading-relaxed text-white/60">
-                    <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-[#e8c98a]" />
+                    <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-[#00E5FF]" />
                     {point}
                   </li>
                 ))}
@@ -155,7 +155,7 @@ function AccessCard({
 }) {
   return (
     <div className="surface-panel rounded-2xl p-6" data-reveal data-reveal-group="enterprise">
-      <Icon className="h-5 w-5 text-[#e8c98a]" strokeWidth={1.5} />
+      <Icon className="h-5 w-5 text-[#00E5FF]" strokeWidth={1.5} />
       <h3 className="mt-4 font-semibold">{title}</h3>
       <p className="mt-2 text-sm leading-relaxed text-white/50">{text}</p>
     </div>

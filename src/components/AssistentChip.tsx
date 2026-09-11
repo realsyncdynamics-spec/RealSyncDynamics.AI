@@ -71,7 +71,7 @@ export function AssistentChip() {
         aria-haspopup="dialog"
         aria-hidden={heroVisible ? true : undefined}
         tabIndex={heroVisible ? -1 : 0}
-        className={`fixed left-1/2 -translate-x-1/2 z-40 inline-flex items-center gap-2 pl-2 pr-4 py-1.5 bg-obsidian-950/85 text-titanium-50 rounded-full shadow-2xl border border-titanium-800 backdrop-blur-md hover:border-titanium-600 hover:scale-[1.03] hover:shadow-[0_12px_40px_-10px_rgba(168,85,247,0.35)] transition-all duration-200 motion-reduce:transition-none motion-reduce:hover:scale-100 ${
+        className={`fixed left-1/2 -translate-x-1/2 z-40 inline-flex items-center gap-2 pl-2 pr-4 py-1.5 bg-obsidian-950/85 text-titanium-50 rounded-full shadow-2xl border border-[#00E5FF]/35 backdrop-blur-md hover:border-[#00E5FF]/70 hover:scale-[1.03] hover:shadow-[0_12px_40px_-10px_rgba(0,229,255,0.35)] transition-all duration-200 motion-reduce:transition-none motion-reduce:hover:scale-100 ${
           heroVisible
             ? 'opacity-0 translate-y-2 pointer-events-none'
             : 'opacity-100 translate-y-0'

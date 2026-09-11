@@ -1,4 +1,4 @@
-import { useFrame, useThree } from '@react-three/fiber';
+import { useFrame, useLoader, useThree } from '@react-three/fiber';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import {
@@ -73,8 +73,8 @@ function AtmosphereShell({
       side: THREE.BackSide,
       blending: THREE.AdditiveBlending,
       uniforms: {
-        uGlow: { value: new THREE.Color('#5eb8e8') },
-        uIntensity: { value: reducedMotion ? 0.55 : 0.9 },
+        uGlow: { value: new THREE.Color('#6ec8f0') },
+        uIntensity: { value: reducedMotion ? 0.65 : 1.05 },
       },
       vertexShader: /* glsl */ `
         varying vec3 vNormal;
@@ -92,7 +92,7 @@ function AtmosphereShell({
         varying vec3 vNormal;
         varying vec3 vView;
         void main() {
-          float fresnel = pow(1.0 - abs(dot(vNormal, vView)), 2.45);
+          float fresnel = pow(1.0 - abs(dot(vNormal, vView)), 2.35);
           float rim = smoothstep(0.02, 0.92, fresnel);
           gl_FragColor = vec4(uGlow, rim * uIntensity);
         }
@@ -114,9 +114,9 @@ function OuterGlow({ radius }: { radius: number }) {
     <mesh scale={1.125} raycast={() => null}>
       <sphereGeometry args={[radius, 32, 32]} />
       <meshBasicMaterial
-        color="#1a5a9a"
+        color="#2a7ab8"
         transparent
-        opacity={0.08}
+        opacity={0.1}
         side={THREE.BackSide}
         depthWrite={false}
         toneMapped={false}
@@ -129,6 +129,9 @@ function OuterGlow({ radius }: { radius: number }) {
  * Photoreal multi-layer Earth.
  * Day map stays unlit (meshBasic) so mobile / software WebGL never go black;
  * night lights + ocean specular are additive overlays keyed to sun direction.
+ *
+ * Boot day texture is loaded via R3F `useLoader` (cached, Strict-Mode safe).
+ * Higher tiers upgrade in place without disposing the live map on remount.
  */
 export function PhotorealEarthMesh({
   radius = 1.55,
@@ -142,13 +145,24 @@ export function PhotorealEarthMesh({
   const cloudsRef = useRef<THREE.Mesh>(null!);
   const nightMat = useRef<THREE.ShaderMaterial>(null!);
   const specMat = useRef<THREE.ShaderMaterial>(null!);
-  const mapsRef = useRef<THREE.Texture[]>([]);
+  const upgradeTexRef = useRef<THREE.Texture[]>([]);
   const { gl, camera } = useThree();
 
-  const [quality] = useState<EarthQuality>(
-    () => qualityProp ?? detectEarthQuality({ reducedMotion }),
-  );
+  const maxTex = gl.capabilities.maxTextureSize;
+  const [quality] = useState<EarthQuality>(() => {
+    const base = qualityProp ?? detectEarthQuality({ reducedMotion });
+    // Cap to what the GPU can actually sample (8K needs ≥8192).
+    if (base === 'high' && maxTex < 8192) return 'medium';
+    if (base === 'medium' && maxTex < 4096) return 'low';
+    return base;
+  });
   const set = useMemo(() => getEarthTextureSet(quality), [quality]);
+
+  // Cached boot map — never disposed by us (R3F loader cache owns it).
+  const bootDay = useLoader(THREE.TextureLoader, EARTH_DAY_BOOT);
+  useEffect(() => {
+    configureMap(bootDay, Math.min(4, gl.capabilities.getMaxAnisotropy()));
+  }, [bootDay, gl]);
 
   const [dayMap, setDayMap] = useState<THREE.Texture | null>(null);
   const [nightMap, setNightMap] = useState<THREE.Texture | null>(null);
@@ -156,26 +170,25 @@ export function PhotorealEarthMesh({
   const [specMap, setSpecMap] = useState<THREE.Texture | null>(null);
 
   const sun = useMemo(() => new THREE.Vector3(4.5, 1.2, 2.8).normalize(), []);
+  const activeDay = dayMap ?? bootDay;
 
+  // Progressive upgrade — do NOT dispose on effect cleanup (Strict Mode remount).
   useEffect(() => {
     let cancelled = false;
     const maxAniso = Math.min(set.anisotropy, gl.capabilities.getMaxAnisotropy());
-    const track = (tex: THREE.Texture) => {
-      mapsRef.current.push(tex);
-      return tex;
-    };
+    const owned: THREE.Texture[] = [];
 
     (async () => {
       try {
-        const boot = track(await loadTexture(EARTH_DAY_BOOT, Math.min(4, maxAniso)));
-        if (cancelled) return;
-        setDayMap(boot);
-
         if (set.day !== EARTH_DAY_BOOT) {
           await preloadImage(set.day).catch(() => null);
           if (cancelled) return;
-          const hi = track(await loadTexture(set.day, maxAniso));
-          if (cancelled) return;
+          const hi = await loadTexture(set.day, maxAniso);
+          if (cancelled) {
+            hi.dispose();
+            return;
+          }
+          owned.push(hi);
           setDayMap(hi);
         }
 
@@ -183,39 +196,61 @@ export function PhotorealEarthMesh({
         if (set.nightEnabled && set.night) {
           jobs.push(
             loadTexture(set.night, Math.min(8, maxAniso)).then((t) => {
-              track(t);
-              if (!cancelled) setNightMap(t);
+              if (cancelled) {
+                t.dispose();
+                return;
+              }
+              owned.push(t);
+              setNightMap(t);
             }),
           );
         }
         if (set.cloudsEnabled && set.clouds) {
           jobs.push(
             loadTexture(set.clouds, Math.min(8, maxAniso)).then((t) => {
-              track(t);
-              if (!cancelled) setCloudMap(t);
+              if (cancelled) {
+                t.dispose();
+                return;
+              }
+              owned.push(t);
+              setCloudMap(t);
             }),
           );
         }
         if (set.specularEnabled && set.specular) {
           jobs.push(
             loadTexture(set.specular, 4, THREE.NoColorSpace).then((t) => {
-              track(t);
-              if (!cancelled) setSpecMap(t);
+              if (cancelled) {
+                t.dispose();
+                return;
+              }
+              owned.push(t);
+              setSpecMap(t);
             }),
           );
         }
         await Promise.allSettled(jobs);
+        if (!cancelled) {
+          upgradeTexRef.current = owned;
+        }
       } catch {
-        // Boot day map alone is enough for a readable globe.
+        // Boot day alone remains readable.
       }
     })();
 
     return () => {
       cancelled = true;
-      for (const tex of mapsRef.current) tex.dispose();
-      mapsRef.current = [];
+      // Soft cancel only — dispose owned upgrades on true unmount below.
     };
   }, [gl, set]);
+
+  // Dispose upgrade textures only when the mesh unmounts for real.
+  useEffect(() => {
+    return () => {
+      for (const tex of upgradeTexRef.current) tex.dispose();
+      upgradeTexRef.current = [];
+    };
+  }, []);
 
   useFrame((_, delta) => {
     const lightDir = sunDirection ?? sun;
@@ -240,11 +275,8 @@ export function PhotorealEarthMesh({
     <group ref={group} rotation={rotation}>
       <mesh raycast={() => null}>
         <sphereGeometry args={[radius, segments[0], segments[1]]} />
-        {dayMap ? (
-          <meshBasicMaterial map={dayMap} toneMapped={false} />
-        ) : (
-          <meshBasicMaterial color="#0a1a2e" toneMapped={false} />
-        )}
+        {/* Slight warm lift so continents punch through dark HUD glass */}
+        <meshBasicMaterial map={activeDay} color="#f2f6ff" toneMapped={false} />
       </mesh>
 
       {nightMap && set.nightEnabled && (
@@ -259,7 +291,7 @@ export function PhotorealEarthMesh({
             uniforms={{
               uNight: { value: nightMap },
               uLight: { value: sun.clone() },
-              uIntensity: { value: 1.2 },
+              uIntensity: { value: 1.15 },
             }}
             vertexShader={/* glsl */ `
               varying vec2 vUv;
@@ -278,11 +310,11 @@ export function PhotorealEarthMesh({
               varying vec3 vNormalW;
               void main() {
                 float ndl = dot(normalize(vNormalW), normalize(uLight));
-                float night = smoothstep(0.08, -0.28, ndl);
+                float night = smoothstep(0.05, -0.3, ndl);
                 vec3 lights = texture2D(uNight, vUv).rgb;
                 float luma = max(lights.r, max(lights.g, lights.b));
-                vec3 glow = lights * lights * 1.7 + lights * 0.4;
-                gl_FragColor = vec4(glow * uIntensity, night * luma * 0.95);
+                vec3 glow = lights * lights * 1.8 + lights * 0.45;
+                gl_FragColor = vec4(glow * uIntensity, night * luma * 0.9);
               }
             `}
           />
@@ -302,7 +334,7 @@ export function PhotorealEarthMesh({
               uSpec: { value: specMap },
               uLight: { value: sun.clone() },
               uCam: { value: camera.position.clone() },
-              uIntensity: { value: 0.58 },
+              uIntensity: { value: 0.62 },
             }}
             vertexShader={/* glsl */ `
               varying vec2 vUv;
@@ -330,10 +362,10 @@ export function PhotorealEarthMesh({
                 vec3 L = normalize(uLight);
                 vec3 V = normalize(uCam - vPosW);
                 vec3 H = normalize(L + V);
-                float spec = pow(max(dot(N, H), 0.0), 52.0);
+                float spec = pow(max(dot(N, H), 0.0), 48.0);
                 float day = smoothstep(-0.05, 0.4, dot(N, L));
                 float a = water * spec * day * uIntensity;
-                gl_FragColor = vec4(vec3(0.78, 0.9, 1.0) * a, a);
+                gl_FragColor = vec4(vec3(0.8, 0.92, 1.0) * a, a);
               }
             `}
           />
@@ -343,14 +375,13 @@ export function PhotorealEarthMesh({
       {cloudMap && set.cloudsEnabled && (
         <mesh ref={cloudsRef} scale={1.018} raycast={() => null}>
           <sphereGeometry args={[radius, Math.min(segments[0], 64), Math.min(segments[1], 64)]} />
-          {/* White-on-black cloud map → luminance drives alpha (no black veil). */}
           <shaderMaterial
             transparent
             depthWrite={false}
             toneMapped={false}
             uniforms={{
               uClouds: { value: cloudMap },
-              uOpacity: { value: quality === 'high' ? 0.55 : 0.42 },
+              uOpacity: { value: quality === 'high' ? 0.5 : 0.38 },
             }}
             vertexShader={/* glsl */ `
               varying vec2 vUv;
@@ -366,7 +397,7 @@ export function PhotorealEarthMesh({
               void main() {
                 vec3 c = texture2D(uClouds, vUv).rgb;
                 float a = max(c.r, max(c.g, c.b)) * uOpacity;
-                gl_FragColor = vec4(vec3(0.95, 0.97, 1.0) * c, a);
+                gl_FragColor = vec4(vec3(0.96, 0.98, 1.0) * c, a);
               }
             `}
           />

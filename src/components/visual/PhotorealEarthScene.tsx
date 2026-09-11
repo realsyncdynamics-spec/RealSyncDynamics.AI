@@ -136,11 +136,18 @@ export function PhotorealEarthScene({ reducedMotion = false }: PhotorealEarthSce
     <Canvas
       className="h-full w-full"
       camera={{ position: [0, 0.15, 4.15], fov: 42 }}
-      gl={{ alpha: true, antialias: true, powerPreference: 'high-performance' }}
+      gl={{
+        alpha: true,
+        antialias: true,
+        powerPreference: 'high-performance',
+        toneMapping: THREE.NoToneMapping,
+        outputColorSpace: THREE.SRGBColorSpace,
+      }}
       dpr={[1, reducedMotion ? 1.25 : 1.85]}
       style={{ background: 'transparent' }}
       onCreated={({ gl }) => {
         gl.domElement.style.cursor = 'grab';
+        gl.toneMapping = THREE.NoToneMapping;
       }}
     >
       <SceneLights controls={controls} reducedMotion={reducedMotion} sunDir={sunDir} />

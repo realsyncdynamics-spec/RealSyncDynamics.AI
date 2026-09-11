@@ -478,11 +478,18 @@ export function GovernanceSphereScene({
     <Canvas
       className="h-full w-full touch-none"
       camera={{ position: [0, 0.15, 5.2], fov: 42 }}
-      gl={{ alpha: true, antialias: true, powerPreference: 'high-performance' }}
+      gl={{
+        alpha: true,
+        antialias: true,
+        powerPreference: 'high-performance',
+        toneMapping: THREE.NoToneMapping,
+        outputColorSpace: THREE.SRGBColorSpace,
+      }}
       dpr={[1, reducedMotion ? 1.25 : 2]}
       onCreated={({ gl }) => {
         gl.domElement.style.touchAction = 'none';
         gl.domElement.style.cursor = 'grab';
+        gl.toneMapping = THREE.NoToneMapping;
       }}
       onPointerMissed={() => onSelect(null)}
     >

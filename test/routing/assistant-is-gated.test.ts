@@ -1,10 +1,10 @@
-// `/assistant` und `/dashboard` sind dieselbe Workspace-Fläche.
+// `/assistant` und `/dashboard` bleiben Aliase auf `/app/dashboard`.
 //
-// Bis 2026-09 hing `/assistant` an `CreatorDashboard` — einer zweiten,
-// parallelen Chat-Oberfläche neben `/app/dashboard`. `/dashboard` leitete
-// bereits auf `/app` um. Beide URLs zeigen jetzt auf `/app/dashboard`
-// (Governance OS mit Assistent). Die Aliase bleiben stehen, damit Bookmarks
-// und Altlinks nicht 404 liefern; das Ziel trägt `AppGate`.
+// Bis 2026-09 hing `/assistant` an `CreatorDashboard`. Danach zeigten beide
+// URLs auf denselben Chat unter `/app/dashboard`. Der Default ist jetzt der
+// Compliance-Status; der Chat liegt unter `/app/assistant` und in der Sidebar.
+// Die Aliase bleiben stehen, damit Bookmarks nicht 404 liefern; das Ziel
+// trägt `AppGate`.
 //
 // `CreatorDashboard` ist entfernt. Ein Rückfall in `element={<CreatorDashboard />}`
 // würde wieder zwei Produktflächen erzeugen.
@@ -27,7 +27,7 @@ function routeLine(path: string): string {
   return line ?? '';
 }
 
-describe('/assistant und /dashboard sind dieselbe Fläche', () => {
+describe('/assistant und /dashboard bleiben Aliase auf /app/dashboard', () => {
   it.each(['/assistant', '/dashboard', '/command-center', '/ai-command-center'])(
     '%s leitet auf /app/dashboard um',
     (path) => {
@@ -38,6 +38,11 @@ describe('/assistant und /dashboard sind dieselbe Fläche', () => {
   it('hält das Ziel hinter AppGate', () => {
     expect(routeLine('/app/dashboard')).toContain('<AppGate>');
     expect(routeLine('/app/dashboard')).toContain('DashboardRouter');
+  });
+
+  it('legt den Chat unter /app/assistant hinter AppGate', () => {
+    expect(routeLine('/app/assistant')).toContain('<AppGate>');
+    expect(routeLine('/app/assistant')).toContain('GovernanceAiWorkspace');
   });
 
   it('mountet die abgelöste parallele Chat-Seite nicht', () => {

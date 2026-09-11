@@ -40,7 +40,7 @@ export function CeoCockpitView() {
   useEffect(() => {
     let cancelled = false;
     if (!activeTenantId) { setData(null); return; }
-    setLoading(true); setError(null);
+    setLoading(true); setError(null); setData(null);
 
     loadCockpitData(activeTenantId)
       .then((d) => { if (!cancelled) setData(d); })

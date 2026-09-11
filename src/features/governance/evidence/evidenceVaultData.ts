@@ -80,6 +80,12 @@ export function relativeTime(iso: string, now = Date.now()): string {
   return `vor ${days} Tag${days !== 1 ? 'en' : ''}`;
 }
 
+const MIN_DIGEST_LEN = 16;
+
+function digestOrDash(value: string | null | undefined): string {
+  return typeof value === 'string' && value.length >= MIN_DIGEST_LEN ? value : '—';
+}
+
 export function eventToEvidenceItem(e: DbGovernanceEvent, now = Date.now()): EvidenceItem {
   const typeMap: Record<string, EvidenceType> = {
     website_scanner: 'Scan Report',
@@ -91,10 +97,12 @@ export function eventToEvidenceItem(e: DbGovernanceEvent, now = Date.now()): Evi
     github: 'Network Trace',
     ci_cd: 'Network Trace',
   };
-  const hash =
-    (typeof e.payload?.['hash'] === 'string' && e.payload['hash']) ||
-    (typeof e.payload?.['content_hash'] === 'string' && e.payload['content_hash']) ||
-    `sha256:${e.id.slice(0, 8)}…`;
+  const hash = digestOrDash(
+    (typeof e.payload?.['hash'] === 'string' && e.payload['hash'].length >= MIN_DIGEST_LEN
+      ? e.payload['hash']
+      : null) ||
+    (typeof e.payload?.['content_hash'] === 'string' ? e.payload['content_hash'] : null),
+  );
   return {
     id: e.id,
     eventId: e.id,
@@ -121,7 +129,7 @@ export function evidenceToItem(row: DbGovernanceEvidence, now = Date.now()): Evi
     approval: 'Document',
     pull_request: 'Document',
   };
-  const hash = row.content_hash ?? (row.id ? `sha256:${row.id.slice(0, 8)}…` : '–');
+  const hash = digestOrDash(row.content_hash);
   const domain =
     (typeof row.metadata?.['url'] === 'string' && row.metadata['url']) ||
     (typeof row.metadata?.['domain'] === 'string' && row.metadata['domain']) ||
@@ -136,7 +144,7 @@ export function evidenceToItem(row: DbGovernanceEvidence, now = Date.now()): Evi
     source: row.evidence_type,
     domain,
     hash,
-    c2pa: Boolean(row.content_hash),
+    c2pa: row.metadata?.['c2pa'] === true,
   };
 }
 
@@ -215,7 +223,7 @@ export function computeVaultMetrics(
   now = Date.now(),
 ): VaultMetrics {
   const weekMs = 7 * 24 * 60 * 60 * 1000;
-  const signed = evidence.filter((row) => Boolean(row.content_hash)).length;
+  const signed = evidence.filter((row) => typeof row.content_hash === 'string' && row.content_hash.length >= MIN_DIGEST_LEN).length;
   const thisWeek = evidence.filter((row) => now - new Date(row.created_at).getTime() < weekMs).length;
   const newest = evidence[0]?.created_at;
   return {

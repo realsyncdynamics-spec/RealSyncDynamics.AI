@@ -26,7 +26,7 @@ export function BrowserTopBar({
       {/* Mobile-Menü Toggle — system drawer entry */}
       <button
         onClick={onToggleMobile}
-        className="lg:hidden text-titanium-400 hover:text-titanium-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#e8c98a]/50"
+        className="lg:hidden text-titanium-400 hover:text-titanium-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#22d3ee]/50"
         aria-label={mobileMenuOpen ? 'Systemmenü schließen' : 'Systemmenü öffnen'}
         aria-expanded={mobileMenuOpen}
       >
@@ -35,14 +35,14 @@ export function BrowserTopBar({
 
       {/* Logo + Produktname — OS system-bar identity */}
       <Link to="/app" className="flex items-center gap-2 shrink-0">
-        <div className="w-7 h-7 bg-gradient-to-br from-[#e8c98a] to-[#b8955a] flex items-center justify-center">
+        <div className="w-7 h-7 bg-gradient-to-br from-[#22d3ee] to-[#0ea5e9] flex items-center justify-center">
           <Sparkles className="h-4 w-4 text-obsidian-950" />
         </div>
         <div className="hidden sm:flex flex-col leading-none">
           <span className="font-display font-bold text-[11px] text-titanium-50 tracking-tight">
             Governance OS
           </span>
-          <span className="font-mono text-[9px] text-[#e8c98a]/70 tracking-wide">
+          <span className="font-mono text-[9px] text-[#22d3ee]/70 tracking-wide">
             SYSTEM · DSGVO · EU AI Act
           </span>
         </div>
@@ -56,10 +56,10 @@ export function BrowserTopBar({
         <button
           type="button"
           onClick={onOpenCommandCenter}
-          className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-titanium-300 bg-obsidian-800 border border-titanium-800 hover:border-[#e8c98a]/40 hover:text-titanium-50 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#e8c98a]/50"
+          className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-titanium-300 bg-obsidian-800 border border-titanium-800 hover:border-[#22d3ee]/40 hover:text-titanium-50 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#22d3ee]/50"
           aria-label="Command Center öffnen"
         >
-          <Search className="h-3.5 w-3.5 text-[#e8c98a]/80" />
+          <Search className="h-3.5 w-3.5 text-[#22d3ee]/80" />
           <span className="hidden lg:inline">Suchen</span>
           <kbd className="ml-0.5 hidden md:inline font-mono text-[9px] text-titanium-600 border border-titanium-800 px-1 py-0.5">
             ⌘K

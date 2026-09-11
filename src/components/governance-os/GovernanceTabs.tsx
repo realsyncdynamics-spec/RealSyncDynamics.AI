@@ -52,12 +52,12 @@ function LockedTabItem({ module }: { module: GovernanceModule }) {
   return (
     <Link
       to="/pricing"
-      title={`Ab ${planLabel} verfügbar`}
+      title={`Ab ${planLabel} verfügbar · ${module.status === 'beta' ? 'Beta' : module.status === 'roadmap' ? 'Roadmap' : 'Live'}`}
       className="group flex items-center gap-1.5 px-3 py-2 text-xs font-medium whitespace-nowrap border-b-2 border-transparent text-titanium-700 hover:text-titanium-500 hover:bg-obsidian-800 transition-colors"
     >
       <Icon className="h-3.5 w-3.5 shrink-0 text-titanium-800" />
       <span className="opacity-50">{module.label}</span>
-      <ModuleStatusBadge status={module.status} quietLive />
+      {/* Plan-Gate statt doppelter Badges — Maturity im title. */}
       <EntitlementBadge planLabel={planLabel} />
       <Lock className="h-2.5 w-2.5 text-titanium-800" aria-hidden />
     </Link>

@@ -10,22 +10,16 @@ describe('pricing config (Single Source of Truth)', () => {
     ]);
   });
 
-  // COMMERCIAL-SSOT: temporary production hotfix.
-  // Canonical source migration tracked in Phase 2.
-  // `starter_yearly` und `growth_yearly` fehlen hier bewusst: fuer beide steht
-  // in `public.products` nur ein Platzhalter statt einer echten Stripe-Price,
-  // `stripe-checkout` weist sie mit PRICE_NOT_CONFIGURED ab. Ein Tier waere
-  // die Grundlage jeder Angebotsflaeche — und damit ein oeffentlich
-  // zugesicherter Festpreis ohne Kaufpfad. Siehe `yearlyCheckoutUnavailable`
-  // in shared/pricing.ts; sobald ein Preis verdrahtet ist, kehren beide
-  // Eintraege an ihre alte Position zurueck.
+  // `starter_yearly`, `growth_yearly` und `agency_yearly` fehlen hier bewusst:
+  // fuer alle drei steht in `public.products` nur ein Platzhalter statt einer
+  // echten Stripe-Price (`yearlyCheckoutUnavailable`).
   it('fuehrt erst die Monatsplaene, danach die buchbaren Jahresvarianten', () => {
     const ids = PRICING_TIERS.map((tier) => tier.id);
     expect(ids).toEqual([
       'free', 'starter', 'growth', 'agency', 'enterprise', 'partner',
       // Einmalprodukte stehen nach der Abo-Leiter und vor den Jahresvarianten.
       'governance_launch',
-      'agency_yearly', 'enterprise_yearly', 'partner_yearly',
+      'enterprise_yearly', 'partner_yearly',
     ]);
   });
 
@@ -39,7 +33,10 @@ describe('pricing config (Single Source of Truth)', () => {
   });
 
   it('hat die korrekten Jahrespreise', () => {
-    expect(tierById('agency_yearly')?.priceEur).toBe(6900);
+    // agency_yearly hat keinen Angebots-Tier (yearlyCheckoutUnavailable),
+    // der Betrag bleibt aber in der SSoT für Bestandskunden.
+    expect(planById('agency').price.yearlyEur).toBe(6900);
+    expect(tierById('agency_yearly')).toBeUndefined();
     expect(tierById('enterprise_yearly')?.priceEur).toBe(12490);
     expect(tierById('partner_yearly')?.priceEur).toBe(19000);
   });
@@ -126,11 +123,11 @@ describe('pricing config (Single Source of Truth)', () => {
     ]);
   });
 
-  it('SELLABLE_PRICING_TIERS enthaelt nur die drei angebotenen Stufen', () => {
-    // Das ist die Liste fuer jede Anzeige. Seit AP2 sind Agency und Partner
-    // stillgelegt; sie anzubieten hiesse, in eine Sackgasse zu fuehren.
+  it('SELLABLE_PRICING_TIERS enthaelt die angebotenen Stufen inkl. Agency', () => {
+    // Agency ist seit Dominik-Landing 2026-09 wieder self_service (Stripe
+    // Live-Price). Partner bleibt stillgelegt.
     expect(SELLABLE_PRICING_TIERS.map((t) => t.id)).toEqual([
-      'starter', 'growth', 'enterprise',
+      'starter', 'growth', 'agency', 'enterprise',
     ]);
   });
 

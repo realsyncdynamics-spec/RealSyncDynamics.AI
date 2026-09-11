@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
-import { SELLABLE_PRICING_TIERS } from '../../config/pricing';
+import { tierById, type PricingTier } from '../../config/pricing';
 import {
   LANDING_ACCENT,
   LANDING_BUTTON,
@@ -15,12 +15,16 @@ import {
 /**
  * Pricing 3-up on the public landing — Dominik-Referenz layout.
  *
- * Beträge und Labels kommen ausschließlich aus `shared/pricing.ts` über
- * `SELLABLE_PRICING_TIERS`. Agency ist legacy und erscheint hier nicht;
- * die dritte Karte ist Enterprise (Auf Anfrage), sofern verkaufbar.
+ * Feste Reihenfolge Starter / Growth (featured) / Agency aus der SSoT
+ * (`shared/pricing.ts`). Agency ist wieder self_service (Stripe Live-Price
+ * `price_1TfsV9…`); CTA geht auf `/checkout/agency`.
  */
+const LANDING_PLAN_IDS = ['starter', 'growth', 'agency'] as const;
+
 export function LandingPricingSection() {
-  const tiers = SELLABLE_PRICING_TIERS.slice(0, 3);
+  const tiers = LANDING_PLAN_IDS.map((id) => tierById(id)).filter(
+    (t): t is PricingTier => Boolean(t),
+  );
   if (tiers.length === 0) return null;
 
   return (
@@ -46,13 +50,13 @@ export function LandingPricingSection() {
           </em>
         </h2>
         <p className="mt-[17px] max-w-[760px] text-[13px] leading-[1.7]" style={{ color: LANDING_MUTED }}>
-          Live-Tarife aus dem Produktkatalog — kein Demo-Pricing. Starter und Growth
-          starten self-service; Enterprise nach Vertrag.
+          Live-Tarife aus dem Produktkatalog — Starter, Growth und Agency starten
+          self-service über Stripe.
         </p>
 
         <div className="mt-[45px] grid gap-[14px] md:grid-cols-3">
           {tiers.map((tier) => {
-            const featured = tier.highlight;
+            const featured = tier.highlight || tier.id === 'growth';
             return (
               <article
                 key={tier.id}
@@ -71,7 +75,7 @@ export function LandingPricingSection() {
                   >
                     {tier.name.toUpperCase()}
                   </p>
-                  {tier.badges[0] && (
+                  {(tier.badges[0] || featured) && (
                     <span
                       className="rounded-full border px-2 py-0.5 text-[8px] tracking-[.14em]"
                       style={{
@@ -80,7 +84,7 @@ export function LandingPricingSection() {
                         color: LANDING_ACCENT,
                       }}
                     >
-                      {tier.badges[0].toUpperCase()}
+                      {(tier.badges[0] ?? 'Empfohlen').toUpperCase()}
                     </span>
                   )}
                 </div>
@@ -88,29 +92,31 @@ export function LandingPricingSection() {
                   className="mt-4 text-[28px] tracking-tight"
                   style={{ fontFamily: LANDING_SERIF, fontWeight: 500, color: LANDING_TEXT }}
                 >
-                  {tier.priceOnRequest ? 'Auf Anfrage' : `${tier.priceEur} €`}
-                  {!tier.priceOnRequest && (
-                    <span
-                      className="ml-2 text-[11px] tracking-[.14em]"
-                      style={{ fontFamily: LANDING_MONO, color: LANDING_MUTED }}
-                    >
-                      / Monat
-                    </span>
-                  )}
+                  {tier.priceEur} €
+                  <span
+                    className="ml-2 text-[11px] tracking-[.14em]"
+                    style={{ fontFamily: LANDING_MONO, color: LANDING_MUTED }}
+                  >
+                    / Monat
+                  </span>
                 </h3>
                 <p className="mt-2 text-[12px] leading-relaxed" style={{ color: LANDING_MUTED }}>
                   {tier.tagline}
                 </p>
                 <ul className="mt-5 flex-1 space-y-2 border-t pt-4" style={{ borderColor: LANDING_LINE }}>
                   {tier.bullets.slice(0, 4).map((b) => (
-                    <li key={b} className="flex items-start gap-2 text-[11px] leading-relaxed" style={{ color: '#898a91' }}>
+                    <li
+                      key={b}
+                      className="flex items-start gap-2 text-[11px] leading-relaxed"
+                      style={{ color: '#898a91' }}
+                    >
                       <span style={{ color: LANDING_ACCENT }}>+</span>
                       <span>{b}</span>
                     </li>
                   ))}
                 </ul>
                 <Link
-                  to={tier.cta.href.startsWith('/') ? tier.cta.href : `/pricing#plan-${tier.id}`}
+                  to={tier.cta.href.startsWith('/') ? tier.cta.href : `/checkout/${tier.id}`}
                   className="mt-6 inline-flex items-center justify-center gap-2 px-[18px] py-[13px] text-[11px] font-semibold transition hover:brightness-105"
                   style={
                     featured

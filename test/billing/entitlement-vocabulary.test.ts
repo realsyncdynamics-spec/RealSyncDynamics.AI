@@ -183,19 +183,16 @@ describe('Der Marketplace bleibt nachvollziehbar', () => {
    *                    `bots.enabled`/`bots.chat` liegen jetzt auf Starter.
    *                    `plan.limits` sagte dort seit jeher `bots: 1`.
    *
-   * Zwei Einträge wandern nach oben, weil Agency stillgelegt ist und ein
-   * Vorschlag auf einen unwählbaren Plan nichts wert wäre:
-   *
-   *   voice_bot                ab Agency → ab Enterprise
-   *   advanced_ai_governance   ab Agency → ab Enterprise
+   * Agency ist wieder Self-Service — Voice und Advanced AI Governance
+   * starten daher wieder ab Agency (nicht Enterprise).
    */
   it.each([
     ['governance_core', 'starter'],
     ['website_chat', 'starter'],
-    ['voice_bot', 'enterprise'],
+    ['voice_bot', 'agency'],
     ['whatsapp_bot', 'growth'],
     ['booking', 'growth'],
-    ['advanced_ai_governance', 'enterprise'],
+    ['advanced_ai_governance', 'agency'],
     ['additional_company', 'growth'],
     ['ai_frontend', null],
     ['additional_domain', null],
@@ -205,8 +202,7 @@ describe('Der Marketplace bleibt nachvollziehbar', () => {
   });
 
   it('schlägt nie einen stillgelegten Plan vor', () => {
-    // Agency und Partner sind seit AP2 nicht mehr wählbar. Ein Marketplace,
-    // der „verfügbar ab Agency" sagt, schickt den Kunden in eine Sackgasse.
+    // Partner bleibt seit AP2 legacy. Agency ist wieder wählbar.
     for (const modul of BOOKABLE_MODULES) {
       const vorschlag = cheapestPlanFor(modul);
       expect(vorschlag === null || isPlanSelectable(vorschlag)).toBe(true);

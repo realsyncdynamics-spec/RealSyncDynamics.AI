@@ -70,7 +70,7 @@ function Inner() {
     (async () => {
       try {
         const sb = getSupabase();
-        const [incidents, dpias, dsr, approvals, vendorsNoDpa, summaryRes] = await Promise.all([
+        const [incidents, dpias, dsr, approvals, vendorsNoDpa, summaryRes] = await Promise.allSettled([
           countOpenIncidents(activeTenantId),
           countOpenDpias(activeTenantId),
           countOpenDsrs(activeTenantId),
@@ -78,11 +78,29 @@ function Inner() {
           countVendorsNoDpa(activeTenantId),
           sb.rpc('governance_24h_summary', { p_tenant_id: activeTenantId }),
         ]);
-        if (!cancelled) {
-          setCounts({ incidents, dpias, dsr, approvals, vendorsNoDpa });
-          if (summaryRes.data && !summaryRes.error) {
-            setSummary(summaryRes.data as Summary24h);
-          }
+        if (cancelled) return;
+        if (
+          incidents.status === 'fulfilled' &&
+          dpias.status === 'fulfilled' &&
+          dsr.status === 'fulfilled' &&
+          approvals.status === 'fulfilled' &&
+          vendorsNoDpa.status === 'fulfilled'
+        ) {
+          setCounts({
+            incidents: incidents.value,
+            dpias: dpias.value,
+            dsr: dsr.value,
+            approvals: approvals.value,
+            vendorsNoDpa: vendorsNoDpa.value,
+          });
+        } else {
+          const failed = [incidents, dpias, dsr, approvals, vendorsNoDpa].find((result) => result.status === 'rejected');
+          setError(failed && failed.status === 'rejected'
+            ? ((failed.reason as Error)?.message ?? 'Kennzahlen nicht verfügbar')
+            : 'Kennzahlen nicht verfügbar');
+        }
+        if (summaryRes.status === 'fulfilled' && summaryRes.value.data && !summaryRes.value.error) {
+          setSummary(summaryRes.value.data as Summary24h);
         }
       } catch (e) {
         if (!cancelled) setError((e as Error)?.message ?? String(e));
@@ -120,7 +138,7 @@ function Inner() {
       )}
 
       {/* Compliance-Score (Self-Assessment, aus offenen Posten abgeleitet) */}
-      <ScoreCard score={score} loading={!counts} />
+      <ScoreCard score={score} loading={!counts && !error} />
 
       {/* 24h Governance Status — Kernstück des Governance OS */}
       <section>
@@ -381,9 +399,11 @@ function ScoreCard({ score, loading }: { score: number | null; loading: boolean 
         </div>
       </div>
       <div className="flex items-baseline gap-2">
-        {loading || score === null
+        {loading
           ? <Loader2 className="h-7 w-7 animate-spin text-titanium-600" />
-          : <>
+          : score === null
+            ? <span className="font-display font-bold text-4xl tabular-nums text-titanium-600">–</span>
+            : <>
               <span className={`font-display font-bold text-4xl tabular-nums ${accent}`}>{score}</span>
               <span className="text-sm text-titanium-500">/ 100</span>
               <span className="text-xs text-titanium-400 ml-2">{scoreLabel(score)}</span>

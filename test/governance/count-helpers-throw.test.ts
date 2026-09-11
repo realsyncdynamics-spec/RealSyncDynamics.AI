@@ -25,4 +25,14 @@ describe('Pflicht-Zähler dürfen RLS-/Netzfehler nicht als 0 schlucken', () => 
     expect(source).toContain('computeGovernanceScoreIfReliable');
     expect(source).toContain('countsReliable');
   });
+
+  it('caller dashboards do not let a badge-count throw blank the page', () => {
+    const home = readFileSync('src/features/workspace/WorkspaceHome.tsx', 'utf8');
+    const dash = readFileSync('src/features/governance/GovernanceDashboardView.tsx', 'utf8');
+    const entry = readFileSync('src/features/governance/GovernanceHomeView.tsx', 'utf8');
+    expect(home).toContain('Promise.allSettled');
+    expect(dash).toContain('Promise.allSettled');
+    expect(entry).toContain('Promise.allSettled');
+    expect(entry).toContain('r.status === \'fulfilled\' ? r.value : []');
+  });
 });

@@ -42,7 +42,7 @@ function useCountryBorders(enabled: boolean) {
         const json = (await res.json()) as BordersPayload;
         if (cancelled || !json?.d?.length || !json.s) return;
         const scale = 1 / json.s;
-        const radius = 1.595;
+        const radius = 1.585;
         const out = new Float32Array((json.d.length / 2) * 3);
         // d is lon,lat,lon,lat… → convert each endpoint to xyz
         let o = 0;
@@ -101,12 +101,18 @@ function CountryBorders({
   if (!geometry) return null;
 
   return (
-    <lineSegments ref={lineRef} geometry={geometry} raycast={() => null} frustumCulled>
+    <lineSegments
+      ref={lineRef}
+      geometry={geometry}
+      raycast={() => null}
+      frustumCulled={false}
+      renderOrder={5}
+    >
       <lineBasicMaterial
         ref={matRef}
         color={BORDER_COLOR}
         transparent
-        opacity={0.45}
+        opacity={0.62}
         depthWrite={false}
         depthTest
         toneMapped={false}
@@ -175,7 +181,7 @@ function CapitalMarker({
   );
 
   return (
-    <group position={pos}>
+    <group position={pos} renderOrder={7}>
       <mesh
         onPointerOver={(e) => {
           e.stopPropagation();
@@ -192,26 +198,40 @@ function CapitalMarker({
           onSelect(capital);
         }}
       >
-        <sphereGeometry args={[0.045, 8, 8]} />
+        <sphereGeometry args={[0.055, 8, 8]} />
         <meshBasicMaterial transparent opacity={0} depthWrite={false} />
       </mesh>
-      <mesh scale={active ? 1.35 : 1} raycast={() => null}>
-        <sphereGeometry args={[0.018, 8, 8]} />
+      <mesh scale={active ? 1.4 : 1} raycast={() => null} renderOrder={7}>
+        <sphereGeometry args={[0.028, 10, 10]} />
         <meshBasicMaterial
           color={CAPITAL_COLOR}
           transparent
-          opacity={active ? 0.95 : 0.7}
+          opacity={active ? 1 : 0.85}
           depthWrite={false}
+          depthTest={false}
           toneMapped={false}
         />
       </mesh>
+      {!active && (
+        <mesh scale={2.2} raycast={() => null} renderOrder={6}>
+          <sphereGeometry args={[0.028, 8, 8]} />
+          <meshBasicMaterial
+            color={CAPITAL_COLOR}
+            transparent
+            opacity={0.2}
+            depthWrite={false}
+            depthTest={false}
+            toneMapped={false}
+          />
+        </mesh>
+      )}
       {active && (
         <Html
           center
           distanceFactor={10}
           style={{ pointerEvents: 'none', userSelect: 'none' }}
           zIndexRange={[20, 0]}
-          position={[0, 0.06, 0]}
+          position={[0, 0.08, 0]}
         >
           <div
             className="rounded-md border border-[#e8c98a]/35 bg-black/75 px-2 py-1 shadow-[0_8px_24px_rgba(0,0,0,0.45)] backdrop-blur-md"
@@ -309,8 +329,9 @@ export function SphereGeography({
   reducedMotion = false,
 }: SphereGeographyProps) {
   const isMobile = useIsCoarsePointer();
-  const labelRadius = earthRadius * 1.045;
-  const capitalRadius = earthRadius * 1.028;
+  const labelRadius = earthRadius * 1.06;
+  // Capitals must sit outside DragSurface (~1.62) so hover/select works.
+  const capitalRadius = Math.max(earthRadius * 1.085, 1.68);
 
   return (
     <group>

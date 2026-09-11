@@ -1,5 +1,5 @@
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { EffectComposer, Bloom, DepthOfField } from '@react-three/postprocessing';
+import { EffectComposer, Bloom } from '@react-three/postprocessing';
 import { KernelSize } from 'postprocessing';
 import { Suspense, useEffect, useMemo, useRef, useState, type MutableRefObject } from 'react';
 import * as THREE from 'three';
@@ -455,20 +455,15 @@ function PinchZoom({ controls }: { controls: MutableRefObject<SphereControls> })
 
 function SpherePostFX({ enabled }: { enabled: boolean }) {
   if (!enabled) return null;
+  // Bloom only — DOF softens country borders / capital markers on the hero canvas.
   return (
     <EffectComposer multisampling={0}>
       <Bloom
-        intensity={0.55}
-        luminanceThreshold={0.72}
-        luminanceSmoothing={0.35}
+        intensity={0.42}
+        luminanceThreshold={0.78}
+        luminanceSmoothing={0.4}
         kernelSize={KernelSize.MEDIUM}
         mipmapBlur
-      />
-      <DepthOfField
-        focusDistance={0.012}
-        focalLength={0.035}
-        bokehScale={1.4}
-        height={480}
       />
     </EffectComposer>
   );

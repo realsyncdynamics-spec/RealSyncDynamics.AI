@@ -993,12 +993,12 @@ html, body {
   pointer-events: none !important;
 }
 
-/* Static fallback: pull NASA blues toward cream-gold / charcoal */
+/* Static fallback: pull NASA blues hard toward cream-gold / charcoal */
 .hero-earth-static {
-  filter: sepia(0.42) saturate(0.55) hue-rotate(-18deg) brightness(0.72) contrast(1.12);
+  filter: sepia(0.62) saturate(0.4) hue-rotate(-24deg) brightness(0.64) contrast(1.18);
 }
 
-/* WebGL already uses palette=landing-gold — light polish only, avoid muddy double-sepia */
+/* WebGL day shader already grades gold; light CSS polish only */
 .hero-earth-canvas {
-  filter: saturate(0.88) brightness(0.92) contrast(1.04);
+  filter: sepia(0.28) saturate(0.72) hue-rotate(-12deg) brightness(0.88) contrast(1.06);
 }

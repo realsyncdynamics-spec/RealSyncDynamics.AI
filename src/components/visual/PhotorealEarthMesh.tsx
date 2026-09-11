@@ -324,8 +324,45 @@ export function PhotorealEarthMesh({
     <group ref={group} rotation={rotation}>
       <mesh raycast={() => null}>
         <sphereGeometry args={[radius, segments[0], segments[1]]} />
-        {/* Default: cool lift for HUD glass. Landing-gold: cream day tint. */}
-        <meshBasicMaterial map={activeDay} color={dayTint} toneMapped={false} />
+        {gold ? (
+          /* Dominik Dark/Gold/Cream — desaturate oceans, cream-gold land, no NASA cyan. */
+          <shaderMaterial
+            toneMapped={false}
+            uniforms={{
+              uDay: { value: activeDay },
+            }}
+            vertexShader={/* glsl */ `
+              varying vec2 vUv;
+              void main() {
+                vUv = uv;
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+              }
+            `}
+            fragmentShader={/* glsl */ `
+              uniform sampler2D uDay;
+              varying vec2 vUv;
+              void main() {
+                vec3 c = texture2D(uDay, vUv).rgb;
+                float luma = dot(c, vec3(0.299, 0.587, 0.114));
+                // Ocean = blue-dominant pixels; land = warmer/green remainder.
+                float blueDom = c.b - max(c.r, c.g);
+                float ocean = smoothstep(0.015, 0.11, blueDom);
+                float greenLand = smoothstep(0.02, 0.14, c.g - c.b);
+                // Charcoal-slate seas (no cyan), cream-gold continents.
+                vec3 sea = vec3(0.055, 0.06, 0.07) + luma * vec3(0.14, 0.12, 0.09);
+                vec3 landWarm = vec3(luma) * vec3(1.05, 0.92, 0.68);
+                landWarm = mix(landWarm, vec3(0.78, 0.68, 0.48), 0.35 + greenLand * 0.2);
+                vec3 graded = mix(landWarm, sea, ocean);
+                // Global warm push + slight darken to sit under cream UI.
+                graded *= vec3(0.92, 0.84, 0.68);
+                graded = mix(graded, vec3(dot(graded, vec3(0.333))), 0.18);
+                gl_FragColor = vec4(graded, 1.0);
+              }
+            `}
+          />
+        ) : (
+          <meshBasicMaterial map={activeDay} color={dayTint} toneMapped={false} />
+        )}
       </mesh>
 
       {nightMap && set.nightEnabled && (

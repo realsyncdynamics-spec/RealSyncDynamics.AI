@@ -37,6 +37,7 @@ export function CeoBriefPrintView() {
   useEffect(() => {
     let cancelled = false;
     if (!activeTenantId) return;
+    setData(null);
     loadCockpitData(activeTenantId)
       .then(async (d) => {
         if (cancelled) return;

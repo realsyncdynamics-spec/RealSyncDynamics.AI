@@ -571,28 +571,44 @@ function _RiskCenterView() {
   }
 
   function reload() {
+    if (!activeTenantId) return;
+    const tenantId = activeTenantId;
+    fetchTenantIncidents(tenantId)
+      .then((incidents) => {
+        if (tenantId !== activeTenantId) return;
+        setActiveRisks(incidents.map(incidentToRisk));
+        setLoadError(null);
+      })
+      .catch((err: unknown) => {
+        if (tenantId !== activeTenantId) return;
+        setLoadError(err instanceof Error ? err.message : 'Vorfälle konnten nicht geladen werden.');
+      });
+  }
+
+  useEffect(() => {
+    let cancelled = false;
     if (!activeTenantId) {
       setActiveRisks([]);
       setLoadError(null);
       setLoading(false);
       return;
     }
+    setActiveRisks([]);
     setLoading(true);
     setLoadError(null);
     fetchTenantIncidents(activeTenantId)
       .then((incidents) => {
+        if (cancelled) return;
         setActiveRisks(incidents.map(incidentToRisk));
       })
       .catch((err: unknown) => {
-        setActiveRisks([]);
+        if (cancelled) return;
         setLoadError(err instanceof Error ? err.message : 'Vorfälle konnten nicht geladen werden.');
       })
-      .finally(() => setLoading(false));
-  }
-
-  useEffect(() => {
-    reload();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => { cancelled = true; };
   }, [activeTenantId]);
 
   async function applyTransition(risk: Risk, status: IncidentStatus) {
@@ -649,6 +665,8 @@ function _RiskCenterView() {
     }
     return list.sort((a, b) => SEVERITY_ORDER[a.severity] - SEVERITY_ORDER[b.severity]);
   }, [activeRisks, severityFilter, categoryFilter, statusFilter, search]);
+
+  const showUnavailableState = Boolean(loadError) && !loading && activeRisks.length === 0;
 
   return (
     <div className="min-h-screen bg-obsidian-950 text-titanium-100">
@@ -795,14 +813,15 @@ function _RiskCenterView() {
         </div>
 
         {/* ── Risk-Liste ── */}
-        {loading ? (
+        {loading && activeRisks.length === 0 ? (
           <div className="border border-titanium-900 bg-obsidian-900 py-16 flex flex-col items-center gap-3">
             <Loader2 className="h-8 w-8 text-titanium-600 animate-spin" />
             <p className="text-sm text-titanium-500 font-mono">Vorfälle werden geladen…</p>
           </div>
-        ) : loadError ? (
-          <div className="border border-red-900 bg-red-950/30 py-16 flex flex-col items-center gap-3">
+        ) : showUnavailableState ? (
+          <div className="border border-red-900 bg-red-950/30 py-16 flex flex-col items-center gap-3" data-testid="risk-center-unavailable">
             <AlertTriangle className="h-8 w-8 text-red-500" />
+            <p className="text-sm text-rose-200 font-semibold">Risiken nicht verfügbar</p>
             <p className="text-sm text-red-300 font-mono">{loadError}</p>
           </div>
         ) : activeRisks.length === 0 ? (

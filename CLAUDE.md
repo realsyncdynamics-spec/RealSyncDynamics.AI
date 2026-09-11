@@ -53,6 +53,10 @@ npm run build        # Vite → dist/
 
 Nach UI-Arbeit: nur betroffene Dateien ändern, kleinen PR, keine Repo-weiten Refactors.
 
+## Git / Merge
+
+Kein Direkt-Push auf `main`. Squash-only, Branch per `npm run sync:main` auf `origin/main` rebasen. Konflikte lokal lösen, nicht im GitHub-Web-Editor. Playbook: `docs/MERGE_CONFLICT_CONCEPT.md`. Hygiene: `npm run merge:hygiene`.
+
 ## MCP
 
 Website-Sessions: `.mcp.json` bleibt leer (keine Hostinger-/Perplexity-Schemas im Kontext).

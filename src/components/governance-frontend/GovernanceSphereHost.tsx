@@ -262,7 +262,7 @@ export function GovernanceSphereHost() {
         className="mt-2 ml-1 max-w-md text-[7px] leading-relaxed sm:ml-1"
         style={{ fontFamily: LANDING_MONO, color: '#5d626b' }}
       >
-        {SPHERE_DEMO_NOTE} Live metrics after first scan.
+        {SPHERE_DEMO_NOTE}
       </p>
       <p className="sr-only" style={{ color: LANDING_MUTED }}>
         Simulated system state. No production KPIs.

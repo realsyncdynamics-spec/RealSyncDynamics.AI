@@ -10,7 +10,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { TAB_MODULES, DOCK_MODULES, canAccessModule, minimumPlanForModule } from './governanceModules';
-import { ModuleStatusBadge } from './ModuleStatusBadge';
+import { EntitlementBadge, ModuleStatusBadge } from './ModuleStatusBadge';
 import type { GovernanceModule } from './governanceBrowserTypes';
 import { useActivePlan } from '../../hooks/useModuleAccess';
 
@@ -39,7 +39,8 @@ function TabItem({ module, active }: { module: GovernanceModule; active: boolean
     >
       <Icon className={`h-3.5 w-3.5 shrink-0 ${active ? 'text-cyan-400' : 'text-titanium-600 group-hover:text-titanium-300'}`} />
       <span>{module.label}</span>
-      <ModuleStatusBadge status={module.status} />
+      {/* Live ist implizit; Beta/Roadmap bleiben sichtbar. */}
+      <ModuleStatusBadge status={module.status} quietLive />
     </Link>
   );
 }
@@ -56,7 +57,9 @@ function LockedTabItem({ module }: { module: GovernanceModule }) {
     >
       <Icon className="h-3.5 w-3.5 shrink-0 text-titanium-800" />
       <span className="opacity-50">{module.label}</span>
-      <Lock className="h-2.5 w-2.5 text-titanium-800" />
+      <ModuleStatusBadge status={module.status} quietLive />
+      <EntitlementBadge planLabel={planLabel} />
+      <Lock className="h-2.5 w-2.5 text-titanium-800" aria-hidden />
     </Link>
   );
 }

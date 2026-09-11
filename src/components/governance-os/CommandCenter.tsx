@@ -137,7 +137,7 @@ export function CommandCenter({ open, onClose, items, onRun }: CommandCenterProp
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className={`w-full max-w-xl border border-titanium-700/80 bg-obsidian-900/95 shadow-2xl shadow-black/50 ring-1 ring-[#e8c98a]/15 ${
+        className={`w-full max-w-xl border border-titanium-700/80 bg-obsidian-900/95 shadow-2xl shadow-black/50 ring-1 ring-cyan-400/15 ${
           reducedMotion ? '' : 'animate-in zoom-in-95 duration-150'
         }`}
         onClick={(e) => e.stopPropagation()}
@@ -147,7 +147,7 @@ export function CommandCenter({ open, onClose, items, onRun }: CommandCenterProp
         </h2>
 
         <div className="flex items-center gap-3 border-b border-titanium-800 px-4 py-3">
-          <Search className="h-4 w-4 shrink-0 text-[#e8c98a]/80" aria-hidden />
+          <Search className="h-4 w-4 shrink-0 text-cyan-400/80" aria-hidden />
           <input
             ref={inputRef}
             value={query}
@@ -213,9 +213,9 @@ export function CommandCenter({ open, onClose, items, onRun }: CommandCenterProp
                     !runnable
                       ? 'cursor-not-allowed text-titanium-600 opacity-70'
                       : active
-                        ? 'bg-[#e8c98a]/10 text-titanium-50'
+                        ? 'bg-cyan-400/10 text-titanium-50'
                         : 'text-titanium-300 hover:bg-titanium-800/40'
-                  } ${active && runnable ? 'border-l-2 border-l-[#e8c98a]' : 'border-l-2 border-l-transparent'}`}
+                  } ${active && runnable ? 'border-l-2 border-l-cyan-400' : 'border-l-2 border-l-transparent'}`}
                 >
                   <span className="min-w-0 flex-1 truncate">
                     <span className="block truncate">{item.label}</span>
@@ -232,7 +232,7 @@ export function CommandCenter({ open, onClose, items, onRun }: CommandCenterProp
                           item.state === 'coming_soon'
                             ? 'border-titanium-800 text-titanium-500 bg-obsidian-800'
                             : item.state === 'preview'
-                              ? 'border-[#e8c98a]/40 text-[#e8c98a]/90 bg-[#e8c98a]/5'
+                              ? 'border-cyan-800 text-cyan-300/90 bg-cyan-950/40'
                               : 'border-amber-800 text-amber-300 bg-amber-950'
                         }`}
                       >

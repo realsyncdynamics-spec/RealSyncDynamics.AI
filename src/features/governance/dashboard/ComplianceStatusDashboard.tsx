@@ -7,7 +7,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
-  Activity, AlertTriangle, ArrowRight, Clock, ChevronRight, FileCheck2, Loader2,
+  AlertTriangle, ArrowRight, Clock, ChevronRight, FileCheck2, Loader2,
   Minus, Radar, Rocket, ShieldCheck, TrendingDown, TrendingUp,
 } from 'lucide-react';
 import { useTenant } from '../../../core/access/TenantProvider';
@@ -96,10 +96,10 @@ export function ComplianceStatusView({
   return (
     <div
       data-testid="compliance-status-dashboard"
-      className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-5"
+      className="max-w-7xl mx-auto px-4 sm:px-6 py-5 space-y-4"
     >
       {/* Header */}
-      <div className="flex flex-wrap items-start justify-between gap-4 border-b border-titanium-900 pb-4">
+      <div className="flex flex-wrap items-start justify-between gap-4 border-b border-titanium-900/80 pb-3.5">
         <div>
           <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-cyan-400 flex items-center gap-2">
             <span className="inline-block h-1.5 w-1.5 rounded-full bg-cyan-400 animate-pulse" aria-hidden />
@@ -108,7 +108,7 @@ export function ComplianceStatusView({
           <h1 className="font-display font-bold text-2xl text-titanium-50 tracking-tight mt-1">
             {tenantName ? `Status · ${tenantName}` : 'Compliance-Status'}
           </h1>
-          <p className="text-sm text-titanium-400 mt-1">
+          <p className="text-sm text-titanium-400 mt-1 max-w-xl">
             Score, Residualrisiko, Evidence und Audit-Readiness — aus Ihren Mandantendaten.
           </p>
         </div>
@@ -158,12 +158,17 @@ export function ComplianceStatusView({
       )}
 
       {isEmptyTenant && (
-        <div className="border border-titanium-800 bg-obsidian-900 p-6 space-y-4">
+        <div className="border border-titanium-800 bg-obsidian-900/90 p-5 sm:p-6 space-y-4">
           <div className="flex items-start gap-4">
-            <Rocket className="h-6 w-6 text-cyan-400 mt-0.5 shrink-0" />
+            <Rocket className="h-5 w-5 text-cyan-400 mt-0.5 shrink-0" />
             <div>
-              <h2 className="text-lg font-semibold text-titanium-50">Noch keine Governance-Daten</h2>
-              <p className="text-sm text-titanium-300 mt-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h2 className="text-base font-semibold text-titanium-50">Noch keine Governance-Daten</h2>
+                <span className="font-mono text-[9px] uppercase tracking-widest px-1.5 py-0.5 border border-titanium-800 text-titanium-500">
+                  Preview
+                </span>
+              </div>
+              <p className="text-sm text-titanium-400 mt-1.5">
                 Score und Ampeln bleiben leer, solange keine Assets, Evidence oder offenen Pflichten vorliegen.
                 Starten Sie mit Onboarding oder einem Website-Audit.
               </p>
@@ -192,7 +197,7 @@ export function ComplianceStatusView({
         <>
           {/* Zone 1 — Top KPI strip */}
           <section aria-label="KPI-Strip">
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-px bg-titanium-900 border border-titanium-900">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-px bg-titanium-900/90 border border-titanium-900">
               <ScoreCard
                 testId="governance-score"
                 eyebrow="Governance-Score"
@@ -206,10 +211,10 @@ export function ComplianceStatusView({
           </section>
 
           {/* Zones 2–4 — Main canvas + right rail */}
-          <div className="grid grid-cols-1 xl:grid-cols-12 gap-5">
-            <div className="xl:col-span-8 space-y-5">
+          <div className="grid grid-cols-1 xl:grid-cols-12 gap-4">
+            <div className="xl:col-span-8 space-y-4">
               {/* Zone 2 — Runtime Event Stream + Risk Distribution */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <EventStreamPanel
                   events={data.recentEvents}
                   eventsFailed={data.partialFailures.some((f) => f.startsWith('events:'))}
@@ -222,7 +227,7 @@ export function ComplianceStatusView({
               </div>
 
               {/* Zone 3 — Asset / KI flows + Policy Coverage */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <AssetFlowsPanel
                   flows={data.assetFlows}
                   assetsFailed={data.partialFailures.some((f) => f.startsWith('assets:'))}
@@ -232,11 +237,12 @@ export function ComplianceStatusView({
 
               {data.summary24h && (
                 <section data-testid="summary-24h">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Clock className="h-4 w-4 text-cyan-400" />
+                  <div className="flex items-center gap-2 mb-2.5">
+                    <Clock className="h-3.5 w-3.5 text-cyan-400" />
                     <h2 className="font-display font-semibold text-titanium-50 text-sm">Letzte 24 Stunden</h2>
+                    <div className="flex-1 h-px bg-titanium-900" />
                   </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-titanium-900 border border-titanium-900">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-titanium-900/90 border border-titanium-900">
                     <MiniStat label="Neue Risiken" value={data.summary24h.new_risks} href="/app/risks" danger={data.summary24h.new_risks > 0} />
                     <MiniStat label="Neue Evidence" value={data.summary24h.new_evidence} href="/app/evidence" />
                     <MiniStat label="Offene Alerts" value={data.summary24h.open_alerts} href="/app/alerts" danger={data.summary24h.critical_alerts > 0} />
@@ -249,7 +255,7 @@ export function ComplianceStatusView({
             </div>
 
             {/* Zone 4 — Right rail: Critical Findings / Alerts / Tasks */}
-            <aside className="xl:col-span-4 space-y-5" aria-label="Findings und Aufgaben">
+            <aside className="xl:col-span-4 space-y-4" aria-label="Findings und Aufgaben">
               <CriticalFindingsRail actions={data.actions} summary={data.summary24h} />
             </aside>
           </div>
@@ -257,14 +263,14 @@ export function ComplianceStatusView({
           {/* Zone 5 — Framework strip */}
           <FrameworkStrip />
 
-          <p className="text-[11px] text-titanium-600 font-mono">
+          <p className="text-[11px] text-titanium-600 font-mono pt-0.5">
             {data.lastUpdated
               ? `KPI-Stand: ${data.lastUpdated}`
               : 'KPI-Snapshot noch nicht verfügbar — Score aus Echtzeit-Zählern.'}
             {' · '}
-            <Link to="/app/home" className="hover:text-titanium-300 underline">Workspace</Link>
+            <Link to="/app/home" className="hover:text-cyan-400/80 transition-colors">Workspace</Link>
             {' · '}
-            <Link to="/app/overview" className="hover:text-titanium-300 underline">Module</Link>
+            <Link to="/app/overview" className="hover:text-cyan-400/80 transition-colors">Module</Link>
           </p>
         </>
       )}
@@ -282,7 +288,7 @@ function EventStreamPanel({
   eventsFailed: boolean;
 }) {
   return (
-    <Card data-testid="runtime-event-stream" className="bg-obsidian-900/80">
+    <Card data-testid="runtime-event-stream" className="bg-obsidian-900/90 border-titanium-800/90">
       <CardHeader
         eyebrow="Runtime"
         title="Event-Stream"
@@ -295,16 +301,16 @@ function EventStreamPanel({
       />
       <CardBody className="p-0">
         {eventsFailed ? (
-          <EmptyPanel caption="Event-Stream vorübergehend nicht verfügbar." />
+          <EmptyPanel caption="Event-Stream vorübergehend nicht verfügbar." tone="preview" />
         ) : events.length === 0 ? (
-          <EmptyPanel caption="Keine Runtime-Events vorhanden." />
+          <EmptyPanel caption="Keine Runtime-Events vorhanden." tone="empty" />
         ) : (
-          <ul className="divide-y divide-titanium-900 max-h-72 overflow-y-auto">
+          <ul className="divide-y divide-titanium-900/80 max-h-72 overflow-y-auto">
             {events.map((event) => (
-              <li key={event.id} className="px-5 py-3 flex items-start gap-3">
-                <Activity className={`h-3.5 w-3.5 mt-0.5 shrink-0 ${riskLevelColor(event.riskLevel)}`} />
+              <li key={event.id} className="px-4 py-2.5 flex items-start gap-3 hover:bg-obsidian-800/60 transition-colors">
+                <span className={`mt-1.5 h-1.5 w-1.5 rounded-full shrink-0 ${riskLevelDot(event.riskLevel)}`} aria-hidden />
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm text-titanium-100 truncate">{event.title}</p>
+                  <p className="text-sm text-titanium-100 truncate leading-snug">{event.title}</p>
                   <p className="text-[10px] font-mono text-titanium-500 mt-0.5 truncate">
                     {event.eventType}
                     {' · '}
@@ -336,7 +342,7 @@ function RiskDistributionPanel({
 }) {
   const max = Math.max(1, ...buckets.map((b) => b.count));
   return (
-    <Card data-testid="risk-distribution" className="bg-obsidian-900/80">
+    <Card data-testid="risk-distribution" className="bg-obsidian-900/90 border-titanium-800/90">
       <CardHeader
         eyebrow="Residualrisiko"
         title="Risk Distribution"
@@ -353,15 +359,18 @@ function RiskDistributionPanel({
       />
       <CardBody>
         {assetsFailed || assetCount === 0 ? (
-          <EmptyPanel caption={assetsFailed ? 'Verteilung nicht ladbar.' : 'Keine Verteilung — Preview wenn Assets erfasst sind.'} />
+          <EmptyPanel
+            caption={assetsFailed ? 'Verteilung nicht ladbar.' : 'Keine Verteilung — Preview wenn Assets erfasst sind.'}
+            tone={assetsFailed ? 'preview' : 'empty'}
+          />
         ) : (
-          <ul className="space-y-2.5">
+          <ul className="space-y-2">
             {buckets.map((bucket) => (
               <li key={bucket.id} className="flex items-center gap-3">
                 <span className="w-16 font-mono text-[10px] uppercase tracking-wider text-titanium-500 shrink-0">
                   {bucket.label}
                 </span>
-                <div className="flex-1 h-2 bg-titanium-900">
+                <div className="flex-1 h-1.5 bg-titanium-900/90">
                   <div
                     className={`h-full transition-all duration-500 ${bucketBarColor(bucket.id)}`}
                     style={{ width: `${Math.round((bucket.count / max) * 100)}%` }}
@@ -385,7 +394,7 @@ function AssetFlowsPanel({
   assetsFailed: boolean;
 }) {
   return (
-    <Card data-testid="asset-flows" className="bg-obsidian-900/80">
+    <Card data-testid="asset-flows" className="bg-obsidian-900/90 border-titanium-800/90">
       <CardHeader
         eyebrow="Register"
         title="Asset- & KI-Flows"
@@ -393,16 +402,16 @@ function AssetFlowsPanel({
       />
       <CardBody className="p-0">
         {assetsFailed ? (
-          <EmptyPanel caption="Asset-Flows vorübergehend nicht verfügbar." />
+          <EmptyPanel caption="Asset-Flows vorübergehend nicht verfügbar." tone="preview" />
         ) : flows.length === 0 ? (
-          <EmptyPanel caption="Keine Assets erfasst. Coming Soon: Live-Flows nach Onboarding." />
+          <EmptyPanel caption="Keine Assets erfasst. Coming Soon: Live-Flows nach Onboarding." tone="coming_soon" />
         ) : (
-          <ul className="divide-y divide-titanium-900">
+          <ul className="divide-y divide-titanium-900/80">
             {flows.map((flow) => (
               <li key={flow.type}>
                 <Link
                   to={flow.href}
-                  className="flex items-center gap-3 px-5 py-3 hover:bg-obsidian-800 transition-colors"
+                  className="flex items-center gap-3 px-4 py-2.5 hover:bg-obsidian-800/70 transition-colors"
                 >
                   <Radar className="h-3.5 w-3.5 text-cyan-400 shrink-0" />
                   <div className="min-w-0 flex-1">
@@ -426,7 +435,7 @@ function AssetFlowsPanel({
 
 function PolicyCoveragePanel({ posture }: { posture: CockpitData['posture'] }) {
   return (
-    <Card data-testid="policy-coverage" className="bg-obsidian-900/80">
+    <Card data-testid="policy-coverage" className="bg-obsidian-900/90 border-titanium-800/90">
       <CardHeader
         eyebrow="Abdeckung"
         title="Policy Coverage"
@@ -439,7 +448,7 @@ function PolicyCoveragePanel({ posture }: { posture: CockpitData['posture'] }) {
       />
       <CardBody className="space-y-3">
         {!posture ? (
-          <EmptyPanel caption="KPI-Snapshot fehlt — Coverage erscheint nach dem nächsten Snapshot." />
+          <EmptyPanel caption="KPI-Snapshot fehlt — Coverage erscheint nach dem nächsten Snapshot." tone="preview" />
         ) : (
           <>
             <CoverageRow label="Richtlinien aktiv" percent={posture.policiesEnabledPercent} />
@@ -463,7 +472,7 @@ function CriticalFindingsRail({
 
   return (
     <>
-      <Card data-testid="critical-findings" className="bg-obsidian-900/80">
+      <Card data-testid="critical-findings" className="bg-obsidian-900/90 border-titanium-800/90">
         <CardHeader
           eyebrow="Findings"
           title="Kritische Befunde"
@@ -471,17 +480,17 @@ function CriticalFindingsRail({
         />
         <CardBody className="p-0">
           {critical.length === 0 ? (
-            <div className="px-5 py-6 text-center text-sm text-titanium-400" data-testid="no-critical-findings">
+            <div className="px-4 py-5 text-center text-sm text-titanium-400" data-testid="no-critical-findings">
               <ShieldCheck className="h-5 w-5 mx-auto mb-2 text-emerald-400" />
               Keine kritischen oder hohen Befunde offen.
             </div>
           ) : (
-            <ul className="divide-y divide-titanium-900" data-testid="critical-findings-list">
+            <ul className="divide-y divide-titanium-900/80" data-testid="critical-findings-list">
               {critical.slice(0, 6).map((action) => (
                 <li key={action.id}>
                   <Link
                     to={action.href}
-                    className="flex items-start gap-3 px-5 py-3 hover:bg-obsidian-800 transition-colors"
+                    className="flex items-start gap-3 px-4 py-2.5 hover:bg-obsidian-800/70 transition-colors"
                   >
                     <StatusBadge level={action.level} />
                     <div className="min-w-0 flex-1">
@@ -499,7 +508,7 @@ function CriticalFindingsRail({
         </CardBody>
       </Card>
 
-      <Card data-testid="alerts-rail" className="bg-obsidian-900/80">
+      <Card data-testid="alerts-rail" className="bg-obsidian-900/90 border-titanium-800/90">
         <CardHeader
           eyebrow="Alerts"
           title="Offene Alerts"
@@ -512,9 +521,9 @@ function CriticalFindingsRail({
         />
         <CardBody>
           {!summary ? (
-            <EmptyPanel caption="Alert-Zähler erscheinen, sobald das 24h-Summary geliefert wird." />
+            <EmptyPanel caption="Alert-Zähler erscheinen, sobald das 24h-Summary geliefert wird." tone="preview" />
           ) : (
-            <div className="grid grid-cols-2 gap-px bg-titanium-900 border border-titanium-900">
+            <div className="grid grid-cols-2 gap-px bg-titanium-900/90 border border-titanium-900">
               <AlertStat label="Offen" value={summary.open_alerts} danger={summary.open_alerts > 0} />
               <AlertStat label="Kritisch" value={summary.critical_alerts} danger={summary.critical_alerts > 0} />
               <AlertStat label="Neu / 24h" value={summary.new_alerts_24h} />
@@ -524,7 +533,7 @@ function CriticalFindingsRail({
         </CardBody>
       </Card>
 
-      <Card data-testid="tasks-rail" className="bg-obsidian-900/80">
+      <Card data-testid="tasks-rail" className="bg-obsidian-900/90 border-titanium-800/90">
         <CardHeader
           eyebrow="Aufgaben"
           title="Nächste Schritte"
@@ -532,17 +541,17 @@ function CriticalFindingsRail({
         />
         <CardBody className="p-0">
           {actions.length === 0 ? (
-            <div className="px-5 py-6 text-center text-sm text-titanium-400" data-testid="no-open-actions">
+            <div className="px-4 py-5 text-center text-sm text-titanium-400" data-testid="no-open-actions">
               <ShieldCheck className="h-5 w-5 mx-auto mb-2 text-emerald-400" />
               Keine dringenden Pflichten offen.
             </div>
           ) : (
-            <ul className="divide-y divide-titanium-900" data-testid="priority-actions">
+            <ul className="divide-y divide-titanium-900/80" data-testid="priority-actions">
               {actions.slice(0, 8).map((action, index) => (
                 <li key={action.id}>
                   <Link
                     to={action.href}
-                    className="flex items-center gap-3 px-5 py-3 hover:bg-obsidian-800 transition-colors"
+                    className="flex items-center gap-3 px-4 py-2.5 hover:bg-obsidian-800/70 transition-colors"
                   >
                     <span className="font-mono text-xs text-titanium-600 w-4 shrink-0">{index + 1}</span>
                     <StatusBadge level={action.level} />
@@ -581,8 +590,8 @@ const FRAMEWORK_STRIP: Array<{
 ];
 
 const MATURITY_STYLE: Record<FrameworkMaturity, string> = {
-  live: 'text-emerald-400 border-emerald-900/60 bg-emerald-950/40',
-  beta: 'text-amber-400 border-amber-900/60 bg-amber-950/40',
+  live: 'text-cyan-300/90 border-cyan-900/70 bg-cyan-950/50',
+  beta: 'text-amber-300 border-amber-900/70 bg-amber-950/50',
   roadmap: 'text-titanium-500 border-titanium-800 bg-obsidian-950',
 };
 
@@ -595,27 +604,30 @@ const MATURITY_LABEL: Record<FrameworkMaturity, string> = {
 function FrameworkStrip() {
   return (
     <section data-testid="framework-strip" aria-label="Compliance-Frameworks">
-      <div className="flex items-center gap-2 mb-3">
-        <ShieldCheck className="h-4 w-4 text-cyan-400" />
+      <div className="flex items-center gap-2 mb-2.5">
+        <ShieldCheck className="h-3.5 w-3.5 text-cyan-400" />
         <h2 className="font-display font-semibold text-titanium-50 text-sm">Frameworks</h2>
         <div className="flex-1 h-px bg-titanium-900" />
         <Link to="/app/governance/frameworks" className="text-[10px] font-mono uppercase tracking-wider text-cyan-400 hover:text-cyan-300">
           Übersicht →
         </Link>
       </div>
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-px bg-titanium-900 border border-titanium-900">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-px bg-titanium-900/90 border border-titanium-900">
         {FRAMEWORK_STRIP.map((fw) => {
           const inner = (
-            <div className="bg-obsidian-900 px-3 py-3.5 h-full flex flex-col gap-2 hover:bg-obsidian-800 transition-colors">
+            <div className="bg-obsidian-900/95 px-3 py-3 h-full flex flex-col gap-2 hover:bg-obsidian-800 transition-colors">
               <span className="font-mono text-sm font-bold text-titanium-50 tracking-wide">{fw.label}</span>
               <span className={`inline-flex self-start border px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wider ${MATURITY_STYLE[fw.maturity]}`}>
                 {MATURITY_LABEL[fw.maturity]}
               </span>
+              {!fw.path && (
+                <span className="font-mono text-[9px] uppercase tracking-wider text-titanium-600">Coming Soon</span>
+              )}
             </div>
           );
           if (!fw.path) {
             return (
-              <div key={fw.id} className="opacity-70 cursor-default" title="Noch ohne eigene Route">
+              <div key={fw.id} className="opacity-60 cursor-default" title="Noch ohne eigene Route">
                 {inner}
               </div>
             );
@@ -645,30 +657,30 @@ function ScoreCard({
   hint: string;
 }) {
   return (
-    <Card className="bg-obsidian-900 flex flex-col items-center justify-center gap-3 py-6 border-0" data-testid={testId}>
+    <Card className="bg-obsidian-900/95 flex flex-col items-center justify-center gap-2.5 py-5 border-0" data-testid={testId}>
       <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-titanium-500">{eyebrow}</p>
       {score === null ? (
         <EmptyMetric value="–" caption="Score nicht verfügbar" />
       ) : (
         <>
-          <ScoreGauge score={score} size={112} tone="health" />
+          <ScoreGauge score={score} size={104} tone="health" />
           <StatusBadge level={scoreLevel(score)} label={scoreLabel(score)} />
         </>
       )}
-      <p className="px-4 text-center text-[11px] text-titanium-500">{hint}</p>
+      <p className="px-4 text-center text-[11px] text-titanium-500 leading-snug">{hint}</p>
     </Card>
   );
 }
 
 function RiskCard({ risk }: { risk: RiskIndex }) {
   return (
-    <Card className="bg-obsidian-900 flex flex-col items-center justify-center gap-3 py-6 border-0" data-testid="risk-index">
+    <Card className="bg-obsidian-900/95 flex flex-col items-center justify-center gap-2.5 py-5 border-0" data-testid="risk-index">
       <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-titanium-500">Residualrisiko</p>
       {risk.score === null ? (
         <EmptyMetric value="–" caption={risk.label} />
       ) : (
         <>
-          <ScoreGauge score={risk.score} size={112} tone="risk" label="Risiko-Index" />
+          <ScoreGauge score={risk.score} size={104} tone="risk" label="Risiko-Index" />
           <LevelBadge level={risk.level} label={risk.label} />
         </>
       )}
@@ -682,13 +694,13 @@ function RiskCard({ risk }: { risk: RiskIndex }) {
 
 function EvidenceCard({ health }: { health: EvidenceHealth }) {
   return (
-    <Card className="bg-obsidian-900 flex flex-col items-center justify-center gap-3 py-6 border-0" data-testid="evidence-health">
+    <Card className="bg-obsidian-900/95 flex flex-col items-center justify-center gap-2.5 py-5 border-0" data-testid="evidence-health">
       <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-titanium-500">Evidence-Gesundheit</p>
       {health.percent === null ? (
         <EmptyMetric value="–" caption={health.label} />
       ) : (
         <>
-          <ScoreGauge score={health.percent} size={112} tone="health" label="Health" />
+          <ScoreGauge score={health.percent} size={104} tone="health" label="Health" />
           <LevelBadge level={health.level} label={health.label} />
         </>
       )}
@@ -708,16 +720,16 @@ function ReadinessCard({
   trend: CockpitData['readinessTrend'];
 }) {
   return (
-    <Card className="bg-obsidian-900 border-0" data-testid="audit-readiness">
-      <CardBody className="flex flex-col justify-center h-full gap-3 py-6">
+    <Card className="bg-obsidian-900/95 border-0" data-testid="audit-readiness">
+      <CardBody className="flex flex-col justify-center h-full gap-2.5 py-5">
         <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-titanium-500">Audit-Readiness</p>
         <div className="flex items-baseline gap-3">
-          <span className="font-mono text-5xl font-bold text-titanium-50">
+          <span className="font-mono text-5xl font-bold text-titanium-50 tabular-nums">
             {readiness === null ? '–' : `${readiness}%`}
           </span>
           {trend && <TrendChip {...trend} />}
         </div>
-        <p className="text-xs text-titanium-400">
+        <p className="text-xs text-titanium-400 leading-snug">
           Anteil der Objekte mit Kontroll-Mapping. Indikativ, keine Bescheinigung.
         </p>
       </CardBody>
@@ -825,10 +837,25 @@ function EmptyMetric({ value, caption }: { value: string; caption: string }) {
   );
 }
 
-function EmptyPanel({ caption }: { caption: string }) {
+function EmptyPanel({
+  caption,
+  tone = 'empty',
+}: {
+  caption: string;
+  tone?: 'empty' | 'preview' | 'coming_soon';
+}) {
+  const chip =
+    tone === 'preview' ? 'Preview'
+      : tone === 'coming_soon' ? 'Coming Soon'
+        : null;
   return (
-    <div className="px-5 py-8 text-center text-sm text-titanium-400">
-      {caption}
+    <div className="px-4 py-7 text-center space-y-2">
+      {chip && (
+        <span className="inline-flex font-mono text-[9px] uppercase tracking-widest px-1.5 py-0.5 border border-titanium-800 text-titanium-500">
+          {chip}
+        </span>
+      )}
+      <p className="text-sm text-titanium-400">{caption}</p>
     </div>
   );
 }
@@ -861,6 +888,16 @@ function riskLevelColor(level: string): string {
     case 'medium': return 'text-amber-400';
     case 'low': return 'text-sky-400';
     default: return 'text-titanium-400';
+  }
+}
+
+function riskLevelDot(level: string): string {
+  switch (level) {
+    case 'critical': return 'bg-red-500';
+    case 'high': return 'bg-orange-500';
+    case 'medium': return 'bg-amber-500';
+    case 'low': return 'bg-sky-500';
+    default: return 'bg-titanium-600';
   }
 }
 

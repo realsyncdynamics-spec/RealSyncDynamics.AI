@@ -94,9 +94,10 @@ export function detectEarthQuality(opts?: {
   if ((coarse || narrow || mobileUA) && lowMem) return 'low';
   if (coarse || narrow || mobileUA) return 'medium';
 
-  // Desktop: high when we have headroom; otherwise medium (4K is already sharp).
+  // Desktop: prefer 4K medium by default; 8K only with clear headroom.
   if (lowMem) return 'medium';
-  return 'high';
+  const memOk = typeof nav.deviceMemory !== 'number' || nav.deviceMemory >= 8;
+  return memOk ? 'high' : 'medium';
 }
 
 export function getEarthTextureSet(quality: EarthQuality): EarthTextureSet {

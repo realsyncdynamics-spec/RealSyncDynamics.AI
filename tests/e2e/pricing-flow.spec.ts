@@ -2,13 +2,12 @@ import { test, expect } from '@playwright/test';
 
 const BASE_URL = process.env.TEST_BASE_URL || process.env.BASE_URL || 'http://localhost:3000';
 
-// Die Karten, die auf /pricing stehen. Seit AP2 (2026-08-24) sind es drei:
-// Agency und Partner sind stillgelegt und erscheinen in keinem Angebot mehr.
-// Ihre Detailseiten (`DETAIL_SLUGS`) bleiben erreichbar — geteilte Links und
-// Bestandskunden sollen nicht ins Leere laufen.
+// Die Karten, die auf /pricing stehen. Agency ist wieder self_service;
+// Partner bleibt stillgelegt. Enterprise bleibt als contract sichtbar.
 const CARD_IDS = [
   'starter',
   'growth',
+  'agency',
   'enterprise',
 ];
 
@@ -30,21 +29,19 @@ const DETAIL_SLUGS = [
 // um — in dieser Liste erzeugte er ein Rennen zwischen page.goto und dem
 // Redirect, das der Test mal gewann und mal verlor. Der Redirect wird unten
 // eigens geprüft statt hier ignoriert.
-// Die Plan-Keys, die einen Self-Service-Checkout erreichen. Agency ist seit
-// AP2 nicht mehr dabei: stillgelegt, führt auf die Preisseite zurück.
-// Die Jahres-Keys sind hier nicht mehr dabei: fuer `starter_yearly` und
-// `growth_yearly` ist in `public.products` kein echter Stripe-Preis
-// verdrahtet, `stripe-checkout` weist sie mit PRICE_NOT_CONFIGURED ab. Die
-// Checkout-Seite leitet sie deshalb auf den Monats-Checkout desselben Plans
-// um — eigens geprueft statt hier ignoriert.
+// Die Plan-Keys, die einen Self-Service-Checkout erreichen. Agency ist wieder
+// dabei (Dominik-Landing 2026-09). Jahres-Keys ohne verdrahteten Stripe-Preis
+// leiten auf den Monats-Checkout um.
 const CHECKOUT_PLAN_KEYS = [
   'starter',
   'growth',
+  'agency',
 ];
 
 const UNWIRED_YEARLY_REDIRECTS: Array<[string, string]> = [
   ['starter_yearly', 'starter'],
   ['growth_yearly', 'growth'],
+  ['agency_yearly', 'agency'],
 ];
 
 test.describe('Pricing Flow', () => {
@@ -161,16 +158,16 @@ test.describe('Pricing Flow', () => {
       await expect(page).not.toHaveURL(/pilot=true/);
     });
 
-    test('stillgelegte Pläne führen zurück auf die Preisseite', async ({ page }) => {
-      // Agency und Partner sind seit AP2 aus dem Verkauf. Partner läuft über
-      // `inquiry` in den Vertrieb (siehe oben); Agency behält seinen
-      // Kaufmodus `checkout`, weil laufende Abos unverändert abrechnen — die
-      // getippte URL darf trotzdem zu keinem Kauf mehr führen.
-      for (const planKey of ['agency', 'agency_yearly']) {
-        await page.goto(`${BASE_URL}/checkout/${planKey}`);
-        await page.waitForURL(/\/pricing/);
-        await expect(page).toHaveURL(/source=checkout-retired/);
-      }
+    // Partner bleibt legacy + inquiry: die Umleitung auf /contact-sales
+    // ist oben unter „partner checkout should redirect to contact-sales"
+    // abgedeckt. Ein zweiter Test auf /pricing?source=checkout-retired
+    // würde gegen die CheckoutPage-Reihenfolge (inquiry vor legacy) laufen.
+
+    test('agency checkout bleibt auf dem Checkout-Pfad', async ({ page }) => {
+      await page.goto(`${BASE_URL}/checkout/agency`);
+      await page.waitForLoadState('domcontentloaded');
+      await expect(page).toHaveURL(/\/checkout\/agency/);
+      await expect(page).not.toHaveURL(/source=checkout-retired/);
     });
   });
 

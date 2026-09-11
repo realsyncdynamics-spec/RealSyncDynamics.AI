@@ -17,7 +17,7 @@ describe('Governance Sphere geography LOD', () => {
   });
 
   it('progressively discloses capitals by zoom (desktop)', () => {
-    expect(capitalsVisibleAtZoom(1.0, false)).toHaveLength(0);
+    expect(capitalsVisibleAtZoom(0.8, false)).toHaveLength(0);
     const t1 = capitalsVisibleAtZoom(CAPITAL_ZOOM.tier1, false);
     expect(t1.length).toBeGreaterThan(10);
     expect(t1.every((c) => c.tier === 1)).toBe(true);

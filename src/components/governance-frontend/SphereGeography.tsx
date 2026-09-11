@@ -7,7 +7,7 @@ import { capitalsVisibleAtZoom, WORLD_CAPITALS, type WorldCapital } from './geo/
 import { CONTINENT_LABEL_MAX_ZOOM, CONTINENT_LABELS } from './geo/continents';
 
 const BORDERS_URL = '/textures/earth-borders-110m.json';
-const BORDER_COLOR = '#9ec8e0';
+const BORDER_COLOR = '#d8ecf8';
 const CAPITAL_COLOR = '#f3d9a0';
 
 type BordersPayload = {
@@ -42,7 +42,7 @@ function useCountryBorders(enabled: boolean) {
         const json = (await res.json()) as BordersPayload;
         if (cancelled || !json?.d?.length || !json.s) return;
         const scale = 1 / json.s;
-        const radius = 1.562;
+        const radius = 1.595;
         const out = new Float32Array((json.d.length / 2) * 3);
         // d is lon,lat,lon,lat… → convert each endpoint to xyz
         let o = 0;
@@ -91,9 +91,9 @@ function CountryBorders({
     if (!matRef.current) return;
     const z = zoomRef.current.zoom;
     // Subtle at default; clearer when zoomed — still no clutter on mobile default.
-    const base = isMobile ? 0.12 : 0.18;
-    const boost = THREE.MathUtils.smoothstep(z, 0.95, 1.45) * (isMobile ? 0.28 : 0.42);
-    matRef.current.opacity = reducedMotion ? 0.1 : base + boost;
+    const base = isMobile ? 0.28 : 0.42;
+    const boost = THREE.MathUtils.smoothstep(z, 0.95, 1.45) * (isMobile ? 0.25 : 0.35);
+    matRef.current.opacity = reducedMotion ? 0.15 : base + boost;
   });
 
   useEffect(() => () => geometry?.dispose(), [geometry]);
@@ -106,8 +106,9 @@ function CountryBorders({
         ref={matRef}
         color={BORDER_COLOR}
         transparent
-        opacity={0.2}
+        opacity={0.45}
         depthWrite={false}
+        depthTest
         toneMapped={false}
       />
     </lineSegments>

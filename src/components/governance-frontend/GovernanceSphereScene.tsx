@@ -260,12 +260,6 @@ function DragSurface({
         controls.current.pointerInfluence = { x: 0, y: 0 };
         document.body.style.cursor = 'grab';
       }}
-      onWheel={(e) => {
-        e.stopPropagation();
-        const ne = e.nativeEvent as WheelEvent | undefined;
-        const delta = ne?.deltaY ?? 0;
-        controls.current.targetZoom *= delta > 0 ? 0.94 : 1.06;
-      }}
       onDoubleClick={(e) => {
         e.stopPropagation();
         controls.current.targetZoom = 1;
@@ -422,13 +416,18 @@ function SphereCore({
   );
 }
 
-/** Pinch zoom via native touch on the canvas element (wheel handled in-scene). */
+/** Pinch + wheel zoom via native listeners on the canvas (R3F wheel alone won't prevent page scroll). */
 function PinchZoom({ controls }: { controls: MutableRefObject<SphereControls> }) {
   useEffect(() => {
     const el = document.querySelector('[data-governance-sphere] canvas');
     if (!(el instanceof HTMLCanvasElement)) return;
     el.style.touchAction = 'none';
     let pinchDist: number | null = null;
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      controls.current.targetZoom *= e.deltaY > 0 ? 0.94 : 1.06;
+    };
     const onTouchMove = (e: TouchEvent) => {
       if (e.touches.length !== 2) return;
       e.preventDefault();
@@ -442,9 +441,11 @@ function PinchZoom({ controls }: { controls: MutableRefObject<SphereControls> })
     const onTouchEnd = () => {
       pinchDist = null;
     };
+    el.addEventListener('wheel', onWheel, { passive: false });
     el.addEventListener('touchmove', onTouchMove, { passive: false });
     el.addEventListener('touchend', onTouchEnd);
     return () => {
+      el.removeEventListener('wheel', onWheel);
       el.removeEventListener('touchmove', onTouchMove);
       el.removeEventListener('touchend', onTouchEnd);
     };

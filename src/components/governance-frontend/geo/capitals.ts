@@ -151,9 +151,10 @@ export const WORLD_CAPITALS: readonly WorldCapital[] = [
 
 /** Zoom thresholds for capital tiers (sphere scale). */
 export const CAPITAL_ZOOM = {
-  tier1: 1.08,
-  tier2: 1.28,
-  tier3: 1.42,
+  /** Major hubs as dots at default distance; labels via hover/select. */
+  tier1: 0.95,
+  tier2: 1.22,
+  tier3: 1.4,
 } as const;
 
 export function capitalsVisibleAtZoom(zoom: number, isMobile: boolean): WorldCapital[] {

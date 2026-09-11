@@ -10,10 +10,11 @@ describe('RiskCenterView — keine Demo-Daten im Live-Pfad', () => {
 
   it('startet leer und ersetzt nie durch Mock bei leerer Incident-Liste', () => {
     expect(view).toContain('useState<Risk[]>([])');
-    expect(view).toContain('incidents.map(mapIncidentToRisk)');
+    expect(view).toContain('incidents.map(incidentToRisk)');
     expect(view).not.toContain('if (incidents.length > 0)');
     expect(view).not.toContain('keep mock');
     expect(view).not.toContain('useState<Risk[]>(RISKS)');
+    expect(view).toContain('Noch keine Vorfälle');
   });
 
   it('verwechselt einen Ladefehler nicht mit einem leeren Mandanten', () => {
@@ -23,7 +24,7 @@ describe('RiskCenterView — keine Demo-Daten im Live-Pfad', () => {
   });
 
   it('leitet Kategorie-Zähler aus den geladenen Risiken ab', () => {
-    expect(view).toContain('countRisksByCategory');
+    expect(view).toContain('countByCategory');
     expect(view).not.toContain('CATEGORY_COUNTS');
   });
 });

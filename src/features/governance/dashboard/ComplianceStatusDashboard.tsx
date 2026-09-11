@@ -185,8 +185,6 @@ export function ComplianceStatusView({
               testId="governance-score"
               eyebrow="Governance-Score"
               score={data.score}
-              level={scoreLevel(data.score)}
-              label={scoreLabel(data.score)}
               hint="Self-Assessment aus offenen Pflichten und KPI-Abdeckung. Keine Zertifizierung."
             />
             <RiskCard risk={data.riskIndex} />
@@ -275,22 +273,24 @@ function ScoreCard({
   testId,
   eyebrow,
   score,
-  level,
-  label,
   hint,
 }: {
   testId: string;
   eyebrow: string;
-  score: number;
-  level: ScoreLevel;
-  label: string;
+  score: number | null;
   hint: string;
 }) {
   return (
     <Card className="bg-obsidian-900 flex flex-col items-center justify-center gap-3 py-6" data-testid={testId}>
       <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-titanium-500">{eyebrow}</p>
-      <ScoreGauge score={score} size={112} tone="health" />
-      <StatusBadge level={level} label={label} />
+      {score === null ? (
+        <EmptyMetric value="–" caption="Score nicht verfügbar" />
+      ) : (
+        <>
+          <ScoreGauge score={score} size={112} tone="health" />
+          <StatusBadge level={scoreLevel(score)} label={scoreLabel(score)} />
+        </>
+      )}
       <p className="px-4 text-center text-[11px] text-titanium-500">{hint}</p>
     </Card>
   );

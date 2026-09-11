@@ -6,7 +6,7 @@
  * Ampelsystem: Kritisch / Hoch / Mittel / Niedrig
  * DSGVO · EU AI Act · TDDDG · Technische Sicherheit
  */
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTenant } from '../../../core/access/TenantProvider';
 import { fetchTenantIncidents, transitionIncident } from '../incidentsApi';
@@ -553,6 +553,8 @@ function RiskDetailModal({ risk, onClose, actions }: { risk: Risk; onClose: () =
 // ─── Haupt-View ─────────────────────────────────────────────────────────────
 function _RiskCenterView() {
   const { activeTenantId } = useTenant();
+  const activeTenantIdRef = useRef(activeTenantId);
+  activeTenantIdRef.current = activeTenantId;
   const navigate = useNavigate();
   const [activeRisks, setActiveRisks] = useState<Risk[]>([]);
   const [loading, setLoading] = useState(false);
@@ -575,12 +577,12 @@ function _RiskCenterView() {
     const tenantId = activeTenantId;
     fetchTenantIncidents(tenantId)
       .then((incidents) => {
-        if (tenantId !== activeTenantId) return;
+        if (tenantId !== activeTenantIdRef.current) return;
         setActiveRisks(incidents.map(incidentToRisk));
         setLoadError(null);
       })
       .catch((err: unknown) => {
-        if (tenantId !== activeTenantId) return;
+        if (tenantId !== activeTenantIdRef.current) return;
         setLoadError(err instanceof Error ? err.message : 'Vorfälle konnten nicht geladen werden.');
       });
   }

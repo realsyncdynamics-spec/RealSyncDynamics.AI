@@ -37,7 +37,7 @@ function fixture(overrides: Partial<CockpitData> = {}): CockpitData {
   return {
     counts,
     posture,
-    score: overrides.score ?? computeGovernanceScore(counts, posture),
+    score: overrides.score !== undefined ? overrides.score : computeGovernanceScore(counts, posture),
     readiness: overrides.readiness !== undefined ? overrides.readiness : computeAuditReadiness(posture),
     readinessTrend: overrides.readinessTrend ?? null,
     actions: overrides.actions ?? [],
@@ -105,10 +105,13 @@ describe('ComplianceStatusView', () => {
     const { getByTestId, queryByText } = rendered({
       data: fixture({
         partialFailures: ['incidents: RLS'],
+        score: null,
       }),
     });
     expect(getByTestId('compliance-partial-failure')).toBeInTheDocument();
     expect(queryByText('Noch keine Governance-Daten')).toBeNull();
+    expect(getByTestId('governance-score').textContent).toContain('Score nicht verfügbar');
+    expect(getByTestId('governance-score').textContent).not.toMatch(/Sehr gut/);
   });
 
   it('lists prioritized open measures with deep links', () => {

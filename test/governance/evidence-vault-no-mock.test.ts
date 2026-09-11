@@ -37,6 +37,8 @@ describe('EvidenceVaultView — keine Demo-Daten im Live-Pfad', () => {
     expect(view).toContain('Keine Export-Historie in dieser Ansicht');
     expect(view).toContain('Nachweise nicht verfügbar');
     expect(view).toContain('Prüfpfad nicht verfügbar');
+    expect(view).toContain('Änderungen nicht verfügbar');
+    expect(view).toContain('(eventsFailed || evidenceFailed) && items.length === 0');
   });
 });
 

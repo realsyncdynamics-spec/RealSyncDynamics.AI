@@ -128,11 +128,11 @@ function Inner() {
         setAssets(a.status === 'fulfilled' ? a.value : []);
         setPolicies(p.status === 'fulfilled' ? p.value : []);
         setControls(c.status === 'fulfilled' ? c.value : []);
-        setPendingApprovals(pa.status === 'fulfilled' ? pa.value : 0);
-        setOpenDpias(od.status === 'fulfilled' ? od.value : 0);
-        setOpenDsrs(ds.status === 'fulfilled' ? ds.value : { total: 0, overdue: 0 });
-        setOpenIncidents(oi.status === 'fulfilled' ? oi.value : 0);
-        setPendingGates(pg.status === 'fulfilled' ? pg.value : 0);
+        if (pa.status === 'fulfilled') setPendingApprovals(pa.value);
+        if (od.status === 'fulfilled') setOpenDpias(od.value);
+        if (ds.status === 'fulfilled') setOpenDsrs(ds.value);
+        if (oi.status === 'fulfilled') setOpenIncidents(oi.value);
+        if (pg.status === 'fulfilled') setPendingGates(pg.value);
       });
   };
 

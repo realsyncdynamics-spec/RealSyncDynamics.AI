@@ -542,8 +542,8 @@ test.describe('Pricing Flow', () => {
       const expectedDestinations: Record<string, string> = {
         '/checkout/free-audit': '/audit',
         '/checkout/enterprise': '/contact-sales',
-        // Partner bleibt stillgelegt; Agency ist wieder self_service.
-        '/checkout/partner': '/pricing',
+        // Partner bleibt legacy+inquiry → contact-sales (inquiry vor legacy).
+        '/checkout/partner': '/contact-sales',
       };
 
       for (const path of paths) {

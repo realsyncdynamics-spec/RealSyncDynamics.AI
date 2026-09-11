@@ -206,13 +206,16 @@ function CapitalMarker({
           onHover(null);
           document.body.style.cursor = 'grab';
         }}
-        onPointerDown={(e) => {
+        onClick={(e) => {
           e.stopPropagation();
           onSelect(capital);
         }}
+        onPointerDown={(e) => {
+          e.stopPropagation();
+        }}
       >
-        <sphereGeometry args={[0.055, 8, 8]} />
-        <meshBasicMaterial transparent opacity={0} depthWrite={false} />
+        <sphereGeometry args={[0.1, 10, 10]} />
+        <meshBasicMaterial transparent opacity={0} depthWrite={false} depthTest={false} />
       </mesh>
       <mesh scale={active ? 1.4 : 1} raycast={() => null} renderOrder={7}>
         <sphereGeometry args={[0.028, 10, 10]} />

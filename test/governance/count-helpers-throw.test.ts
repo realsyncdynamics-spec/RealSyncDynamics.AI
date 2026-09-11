@@ -35,6 +35,7 @@ describe('Pflicht-Zähler dürfen RLS-/Netzfehler nicht als 0 schlucken', () => 
     expect(dash).toContain('Promise.allSettled');
     expect(dash).toContain('setPendingApprovals(0)');
     expect(dash).toContain('coreFailed');
+    expect(dash).toContain('if (gen !== loadGen.current) return');
     expect(entry).toContain('Promise.allSettled');
     expect(entry).toContain('r.status === \'fulfilled\' ? r.value : []');
   });

@@ -64,7 +64,7 @@ export function LandingPricingSection() {
                 style={{
                   borderColor: featured ? `${LANDING_ACCENT}73` : 'rgba(255,255,255,0.12)',
                   background: featured
-                    ? 'linear-gradient(135deg, rgba(228,207,162,0.08), rgba(7,9,13,0.72))'
+                    ? 'linear-gradient(135deg, rgba(0,229,255,0.10), rgba(7,9,13,0.72))'
                     : 'linear-gradient(135deg, rgba(20,21,25,0.7), rgba(7,9,13,0.72))',
                 }}
               >
@@ -117,14 +117,14 @@ export function LandingPricingSection() {
                 </ul>
                 <Link
                   to={tier.cta.href.startsWith('/') ? tier.cta.href : `/checkout/${tier.id}`}
-                  className="mt-6 inline-flex items-center justify-center gap-2 px-[18px] py-[13px] text-[11px] font-semibold transition hover:brightness-105"
+                  className="mt-6 inline-flex items-center justify-center gap-2 rounded-full px-[18px] py-[13px] text-[11px] font-semibold transition hover:brightness-110"
                   style={
                     featured
                       ? { backgroundColor: LANDING_BUTTON, color: LANDING_BUTTON_TEXT }
                       : {
                           backgroundColor: 'transparent',
-                          color: LANDING_ACCENT,
-                          border: `1px solid ${LANDING_ACCENT}80`,
+                          color: '#ffffff',
+                          border: '1px solid rgba(255,255,255,0.55)',
                         }
                   }
                 >

@@ -1,5 +1,5 @@
 /**
- * Gestaltungswerte der öffentlichen Ebene (Dominik-Referenz / Dark–Titanium–Gold).
+ * Gestaltungswerke der öffentlichen Ebene (Dominik cyan night-map Referenz).
  *
  * ## Warum diese Datei existiert
  *
@@ -9,7 +9,7 @@
  * deshalb dieselben Werte wie die Startseite, und zwar nachweislich
  * dieselben, nicht ungefähr passende.
  *
- * Tokens spiegeln die Referenz (`#05070b` / `#e4cfa2` / Playfair / DM Mono).
+ * Tokens spiegeln die Cyan-Referenz (`#05070b` / `#00E5FF` / Playfair / Inter).
  * `MainLanding.tsx` konsumiert dieselben Konstanten.
  */
 
@@ -29,25 +29,25 @@ export const LANDING_SERIF = "'Playfair Display', Georgia, 'Times New Roman', se
 export const LANDING_MONO = "'DM Mono', 'JetBrains Mono', ui-monospace, monospace";
 
 /** Primärtext. */
-export const LANDING_TEXT = '#f2eee6';
+export const LANDING_TEXT = '#ffffff';
 
 /** Gedämpfter Text. */
-export const LANDING_MUTED = '#9a9aa1';
+export const LANDING_MUTED = '#a8b0bc';
 
-/** Akzentfarbe für Auszeichnungen, Linien und Marken-Details. */
-export const LANDING_ACCENT = '#e4cfa2';
+/** Primärakzent — Dominik Cyan. */
+export const LANDING_ACCENT = '#00E5FF';
 
-/** Flächenfarbe der Hauptschaltfläche (Cream). */
-export const LANDING_BUTTON = '#e8ddc8';
+/** Flächenfarbe der Hauptschaltfläche (Cyan). */
+export const LANDING_BUTTON = '#00E5FF';
 
-/** Alternate cream (header CTA). */
-export const LANDING_BUTTON_ALT = '#efe6d5';
+/** Alternate CTA fill (header). */
+export const LANDING_BUTTON_ALT = '#00E5FF';
 
 /** Schrift auf der Hauptschaltfläche. */
-export const LANDING_BUTTON_TEXT = '#1a1917';
+export const LANDING_BUTTON_TEXT = '#05070b';
 
 /** Status-Grün (ok). */
 export const LANDING_GREEN = '#20d69a';
 
 /** Haarlinie. */
-export const LANDING_LINE = 'rgba(220, 210, 190, 0.18)';
+export const LANDING_LINE = 'rgba(0, 229, 255, 0.18)';

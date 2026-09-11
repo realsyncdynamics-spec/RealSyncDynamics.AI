@@ -156,17 +156,17 @@ export function LandingChannelTools() {
                 </div>
                 <Link
                   to={live ? href : '/warteliste'}
-                  className="inline-flex w-full items-center justify-center gap-2 border px-5 py-3.5 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e4cfa2]/50"
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-full border px-5 py-3.5 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00E5FF]/50"
                   style={
                     live
                       ? {
-                          borderColor: `${LANDING_ACCENT}59`,
-                          backgroundColor: `${LANDING_ACCENT}14`,
-                          color: LANDING_ACCENT,
+                          borderColor: 'transparent',
+                          backgroundColor: LANDING_ACCENT,
+                          color: '#05070b',
                         }
                       : {
-                          borderColor: 'rgba(255,255,255,0.2)',
-                          color: 'rgba(255,255,255,0.7)',
+                          borderColor: 'rgba(255,255,255,0.35)',
+                          color: 'rgba(255,255,255,0.85)',
                         }
                   }
                 >

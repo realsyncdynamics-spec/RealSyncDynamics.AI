@@ -852,8 +852,8 @@ html, body {
    (`.hero-shine-glow`), damit er die Textkontur nicht aufweicht und von
    Screenreadern nicht doppelt gelesen wird (aria-hidden am Element). */
 .hero-shine {
-  color: #fff8ee;
-  -webkit-text-fill-color: #fff8ee;
+  color: #ffffff;
+  -webkit-text-fill-color: #ffffff;
   text-shadow:
     0 0 18px rgb(0 0 0 / 0.95),
     0 1px 0 rgb(0 0 0),
@@ -862,25 +862,25 @@ html, body {
 
 @supports not ((background-clip: text) or (-webkit-background-clip: text)) {
   .hero-shine {
-    color: #fff8ee;
-    -webkit-text-fill-color: #fff8ee;
+    color: #ffffff;
+    -webkit-text-fill-color: #ffffff;
   }
 }
 
 .hero-shine-accent {
-  color: #e4cfa2;
-  -webkit-text-fill-color: #e4cfa2;
+  color: #00e5ff;
+  -webkit-text-fill-color: #00e5ff;
   font-style: normal;
   text-shadow:
-    0 0 18px rgb(0 0 0 / 0.95),
-    0 1px 0 rgb(0 0 0),
-    0 16px 48px rgb(0 0 0);
+    0 0 22px rgb(0 229 255 / 0.35),
+    0 0 18px rgb(0 0 0 / 0.85),
+    0 1px 0 rgb(0 0 0);
 }
 
 @supports not ((background-clip: text) or (-webkit-background-clip: text)) {
   .hero-shine-accent {
-    color: #e4cfa2;
-    -webkit-text-fill-color: #e4cfa2;
+    color: #00e5ff;
+    -webkit-text-fill-color: #00e5ff;
   }
 }
 
@@ -994,5 +994,32 @@ html, body {
   .welcome-earth-panel * {
     animation: none !important;
     transition: none !important;
+  }
+}
+
+/* ── Dominik cyan night-map hero network ──────────────────────────────── */
+@keyframes hero-cyan-pulse {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 1; }
+}
+
+@keyframes hero-cyan-flow {
+  0%, 100% { stroke-opacity: 0.35; }
+  50% { stroke-opacity: 0.85; }
+}
+
+.hero-cyan-node {
+  animation: hero-cyan-pulse 3.6s ease-in-out infinite;
+  transform-origin: center;
+}
+
+.hero-cyan-link {
+  animation: hero-cyan-flow 4.2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-cyan-node,
+  .hero-cyan-link {
+    animation: none;
   }
 }

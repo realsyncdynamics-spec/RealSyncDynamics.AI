@@ -40,7 +40,7 @@ export function LandingDarkBand() {
       </p>
       <Link
         to="/governance-runtime"
-        className="inline-flex items-center justify-center gap-2 px-[18px] py-[13px] text-[11px] font-semibold transition hover:brightness-105"
+        className="inline-flex items-center justify-center gap-2 rounded-full px-[18px] py-[13px] text-[11px] font-semibold transition hover:brightness-110"
         style={{ backgroundColor: LANDING_BUTTON, color: LANDING_BUTTON_TEXT }}
       >
         Explore the Runtime <ArrowRight className="h-3.5 w-3.5" />

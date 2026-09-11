@@ -73,28 +73,36 @@ function AtmosphereShell({
       side: THREE.BackSide,
       blending: THREE.AdditiveBlending,
       uniforms: {
-        uGlow: { value: new THREE.Color('#6ec8f0') },
-        uIntensity: { value: reducedMotion ? 0.65 : 1.05 },
+        uGlow: { value: new THREE.Color('#7ad0f5') },
+        uWarm: { value: new THREE.Color('#ffb078') },
+        uIntensity: { value: reducedMotion ? 0.7 : 1.18 },
       },
       vertexShader: /* glsl */ `
         varying vec3 vNormal;
         varying vec3 vView;
+        varying vec3 vWorld;
         void main() {
           vec4 mv = modelViewMatrix * vec4(position, 1.0);
           vNormal = normalize(normalMatrix * normal);
           vView = normalize(-mv.xyz);
+          vWorld = (modelMatrix * vec4(position, 1.0)).xyz;
           gl_Position = projectionMatrix * mv;
         }
       `,
       fragmentShader: /* glsl */ `
         uniform vec3 uGlow;
+        uniform vec3 uWarm;
         uniform float uIntensity;
         varying vec3 vNormal;
         varying vec3 vView;
+        varying vec3 vWorld;
         void main() {
-          float fresnel = pow(1.0 - abs(dot(vNormal, vView)), 2.35);
-          float rim = smoothstep(0.02, 0.92, fresnel);
-          gl_FragColor = vec4(uGlow, rim * uIntensity);
+          float fresnel = pow(1.0 - abs(dot(vNormal, vView)), 2.2);
+          float rim = smoothstep(0.02, 0.94, fresnel);
+          // Slight warm limb toward -X / -Y (sunrise side of the scene).
+          float warmSide = smoothstep(-0.2, 0.85, normalize(vWorld).x * -0.55 + normalize(vWorld).y * -0.35);
+          vec3 col = mix(uGlow, uWarm, warmSide * 0.55);
+          gl_FragColor = vec4(col, rim * uIntensity);
         }
       `,
     });
@@ -103,20 +111,20 @@ function AtmosphereShell({
   useEffect(() => () => mat.dispose(), [mat]);
 
   return (
-    <mesh scale={1.048} raycast={() => null} material={mat}>
-      <sphereGeometry args={[radius, 48, 48]} />
+    <mesh scale={1.052} raycast={() => null} material={mat}>
+      <sphereGeometry args={[radius, 64, 64]} />
     </mesh>
   );
 }
 
 function OuterGlow({ radius }: { radius: number }) {
   return (
-    <mesh scale={1.125} raycast={() => null}>
+    <mesh scale={1.14} raycast={() => null}>
       <sphereGeometry args={[radius, 32, 32]} />
       <meshBasicMaterial
-        color="#2a7ab8"
+        color="#2f82c4"
         transparent
-        opacity={0.1}
+        opacity={0.12}
         side={THREE.BackSide}
         depthWrite={false}
         toneMapped={false}

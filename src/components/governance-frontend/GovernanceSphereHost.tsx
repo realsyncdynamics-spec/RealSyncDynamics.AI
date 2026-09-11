@@ -253,7 +253,7 @@ export function GovernanceSphereHost() {
             className="px-0.5 py-2.5 text-[8px]"
             style={{ fontFamily: LANDING_MONO, color: '#737984' }}
           >
-            Ziehen zum Drehen · Scroll/Pinch Zoom · Doppelklick Reset · Knoten tippen
+            Ziehen · Zoom für Länder & Hauptstädte · Doppelklick Reset · Knoten tippen
           </p>
         )}
       </div>

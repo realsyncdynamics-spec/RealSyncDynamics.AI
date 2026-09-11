@@ -92,4 +92,40 @@ describe('Governance Sphere — demo contract', () => {
     expect(getEarthTextureSet('high').cloudsEnabled).toBe(true);
     expect(getEarthTextureSet('low').nightEnabled).toBe(false);
   });
+
+  it('ships geography + space backdrop (borders, capitals, planets, sunrise)', () => {
+    const scene = readFileSync(
+      resolve(__dirname, '../../src/components/governance-frontend/GovernanceSphereScene.tsx'),
+      'utf8',
+    );
+    const geo = readFileSync(
+      resolve(__dirname, '../../src/components/governance-frontend/SphereGeography.tsx'),
+      'utf8',
+    );
+    const space = readFileSync(
+      resolve(__dirname, '../../src/components/governance-frontend/SphereSpaceBackground.tsx'),
+      'utf8',
+    );
+    const capitals = readFileSync(
+      resolve(__dirname, '../../src/components/governance-frontend/geo/capitals.ts'),
+      'utf8',
+    );
+    expect(scene).toContain('SphereGeography');
+    expect(scene).toContain('SphereSpaceBackground');
+    expect(scene).toMatch(/Bloom|EffectComposer/);
+    expect(geo).toContain('earth-borders-110m.json');
+    expect(geo).toContain('Hauptstadt');
+    expect(space).toContain('mars');
+    expect(space).toContain('jupiter');
+    expect(space).toContain('saturn');
+    expect(space).toContain('neptune');
+    expect(space).toContain('pluto');
+    expect(space).toContain('uranus');
+    expect(space).toMatch(/RisingSun|SUN_POS|sunrise/i);
+    expect(capitals).toContain('Berlin');
+    expect(capitals).toContain('Brüssel');
+    expect(existsSync(resolve(__dirname, '../../public/textures/earth-borders-110m.json'))).toBe(
+      true,
+    );
+  });
 });

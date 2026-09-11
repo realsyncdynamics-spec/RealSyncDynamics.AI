@@ -13,4 +13,6 @@ Used by `PhotorealEarthMesh` (Governance Sphere + `/welcome`).
 
 **Attribution:** Earth surface & cloud maps © Solar System Scope (CC BY 4.0), based on NASA Blue Marble / elevation data.
 
-Adaptive loading: boot with 2K day → upgrade to 4K (mobile/medium) or 8K (desktop high). Night, clouds, and specular load after first paint.
+| `earth-borders-110m.json` | — | Country border line segments derived from [world-atlas](https://github.com/topojson/world-atlas) `countries-110m` (Natural Earth) | Natural Earth / BSD-3 (world-atlas) |
+
+Adaptive loading: boot with 2K day → upgrade to 4K (mobile/medium) or 8K (desktop high). Night, clouds, and specular load after first paint. Borders load async for the Governance Sphere geography layer.

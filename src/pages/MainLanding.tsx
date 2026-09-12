@@ -110,9 +110,16 @@ export function MainLanding() {
             </div>
 
             <h1
-              className="mt-[28px] mb-5 text-[clamp(44px,6.2vw,78px)] leading-[0.95] tracking-[-.04em]"
+              className="relative mt-[28px] mb-5 text-[clamp(44px,6.2vw,78px)] leading-[0.95] tracking-[-.04em]"
               style={{ fontFamily: LANDING_SERIF, fontWeight: 500 }}
             >
+              <span className="hero-shine-glow" aria-hidden="true">
+                {HERO_HEADLINE.map((segments, line) => (
+                  <span key={`glow-${line}`} className="block">
+                    {segments.map((segment) => segment.text).join('')}
+                  </span>
+                ))}
+              </span>
               {HERO_HEADLINE.map((segments, line) => (
                 <span key={line} className="block">
                   {segments.map((segment, i) =>

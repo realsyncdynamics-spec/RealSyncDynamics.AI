@@ -39,7 +39,9 @@
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { handleOptions, jsonResponse, jsonError, methodNotAllowed } from '../../_shared/gateway.ts';
+import { EntitlementError, gateFeature } from '../../_shared/entitlements.ts';
 import { persistBlueprintVersion } from '../persist.ts';
+import { gateSiteCreate } from '../site-entitlements.ts';
 import {
   analyzeBlueprint,
   buildSiteFromPrompt,
@@ -105,6 +107,15 @@ export async function handle(req: Request): Promise<Response> {
   if (!member) return jsonError(403, 'FORBIDDEN', 'not a member of this tenant');
 
   try {
+    await gateFeature(admin, tenantId, 'siteos.builder');
+  } catch (e) {
+    if (e instanceof EntitlementError) {
+      return jsonError(e.code === 'INTERNAL' ? 500 : 403, e.code, e.message);
+    }
+    throw e;
+  }
+
+  try {
     const nowIso = new Date().toISOString();
 
     // Das Modell wird nur zur Dokumentation der Herkunft mitgeführt. Die
@@ -144,6 +155,12 @@ export async function handle(req: Request): Promise<Response> {
           findings: refinedFindings,
           scores: computeScores(refinedFindings),
         };
+
+    // limit.sites — new slug only; version bumps of an existing site pass.
+    {
+      const denied = await gateSiteCreate(admin, tenantId, result.blueprint.slug);
+      if (denied) return denied;
+    }
 
     const projectId = typeof body.project_id === 'string' && body.project_id.trim() !== ''
       ? body.project_id.trim()

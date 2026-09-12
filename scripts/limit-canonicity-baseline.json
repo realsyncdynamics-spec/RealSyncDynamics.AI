@@ -78,6 +78,17 @@
   },
   {
     "plan": "enterprise",
+    "feld": "sites",
+    "key": "limit.sites",
+    "preisseite": 25,
+    "berechtigung": -1,
+    "richtung": "kuerzung",
+    "availability": "contract",
+    "grund": "Vertragsplan: die kanonische Quelle ist der individuelle Vertrag, nicht die oeffentliche Preisseite. Solange kein Vertragsdatensatz existiert, ist der Wert unbestimmt — weder Preisseite noch Berechtigung darf als Wahrheit gesetzt werden.",
+    "kanonische_quelle": "vertrag"
+  },
+  {
+    "plan": "enterprise",
     "feld": "automationRunsPerMonth",
     "key": "limit.automation_runs_monthly",
     "preisseite": 2000,

@@ -15,7 +15,7 @@ import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { PLAN_ORDER, isPlanSelectable, planGrants, type EntitlementKey } from '../../shared/pricing';
 
-const GATES: ReadonlyArray<{ fn: string; key: EntitlementKey }> = [
+const GATES: ReadonlyArray<{ fn: string; key: EntitlementKey; source?: string }> = [
   { fn: 'appointment-book', key: 'bots.appointments' },
   { fn: 'order-intake', key: 'bots.orders' },
   { fn: 'telegram-webhook', key: 'bots.multi_channel' },
@@ -49,21 +49,43 @@ const GATES: ReadonlyArray<{ fn: string; key: EntitlementKey }> = [
   { fn: 'bulk-scan', key: 'bulk.jobs' },
   { fn: 'evidence-vault', key: 'evidence.advanced' },
   { fn: 'workflow-trigger', key: 'ai.tool.workflows' },
+  // SiteOS Builder monetization — handlers live under the siteos router.
+  { fn: 'siteos', key: 'siteos.builder', source: 'handlers/builder.ts' },
+  { fn: 'siteos', key: 'limit.sites', source: 'site-entitlements.ts' },
+  { fn: 'siteos', key: 'siteos.publish', source: 'site-entitlements.ts' },
 ];
 
-function quelle(fn: string): string {
-  return readFileSync(`supabase/functions/${fn}/index.ts`, 'utf8');
+function quelle(fn: string, source?: string): string {
+  const path = source
+    ? `supabase/functions/${fn}/${source}`
+    : `supabase/functions/${fn}/index.ts`;
+  return readFileSync(path, 'utf8');
 }
 
 describe('Kostenverursachende Functions prüfen ihr Entitlement', () => {
-  it.each(GATES.map((g) => [g.fn, g.key] as const))('%s gated auf %s', (fn, key) => {
-    const src = quelle(fn);
-    expect(src, `${fn} importiert den Wächter nicht`).toMatch(/from ['"]\.\.\/_shared\/entitlements\.ts['"]/);
-    // Beide Anführungszeichen-Stile, ohne dynamische RegExp (CodeQL: unvollständiges Escaping).
-    const zitiert = src.includes(`'${key}'`) || src.includes(`"${key}"`);
-    expect(zitiert, `${fn} prüft ${key} nicht`).toBe(true);
-    expect(src).toMatch(/gateFeature\(|requireFeature\(|hasFeature\(/);
-  });
+  it.each(GATES.map((g) => [g.fn, g.key, g.source] as const))(
+    '%s gated auf %s',
+    (fn, key, source) => {
+      const src = quelle(fn, source);
+      if (fn === 'siteos') {
+        // Router handlers import the shared site-entitlements helper or
+        // _shared/entitlements directly — both are the one watcher.
+        expect(
+          src.includes("_shared/entitlements.ts") || src.includes('site-entitlements.ts'),
+          `${fn}/${source ?? 'index.ts'} importiert keinen Entitlement-Wächter`,
+        ).toBe(true);
+      } else {
+        expect(src, `${fn} importiert den Wächter nicht`).toMatch(/from ['"]\.\.\/_shared\/entitlements\.ts['"]/);
+      }
+      const zitiert = src.includes(`'${key}'`) || src.includes(`"${key}"`);
+      expect(zitiert, `${fn} prüft ${key} nicht`).toBe(true);
+      if (fn !== 'siteos' || source !== 'site-entitlements.ts') {
+        expect(src).toMatch(/gateFeature\(|requireFeature\(|hasFeature\(|gateSiteCreate\(|gateSitePublish\(/);
+      } else {
+        expect(src).toMatch(/requireFeature\(|requireQuota\(/);
+      }
+    },
+  );
 
   it.each(GATES.map((g) => g.key))('%s wird von einem wählbaren Plan gewährt', (key) => {
     const verkauft = PLAN_ORDER.some((p) => isPlanSelectable(p) && planGrants(p, key));

@@ -40,11 +40,12 @@ describe('implementation-status registry', () => {
 
   it('MainLanding + roadmap render from the registry', () => {
     const landing = readFileSync(resolve('src/pages/MainLanding.tsx'), 'utf8');
+    const spine = readFileSync(resolve('src/components/landing/LandingOsSpine.tsx'), 'utf8');
     const roadmap = readFileSync(
       resolve('src/components/landing/LandingRoadmapSection.tsx'),
       'utf8',
     );
-    expect(landing).toContain('PLATFORM_LIVE_ITEMS');
+    expect(landing + spine).toContain('PLATFORM_LIVE_ITEMS');
     expect(landing).toContain('LandingRoadmapSection');
     expect(landing).not.toContain('Vollständige KI-Governance');
     expect(roadmap).toContain('PREVIEW_IMPLEMENTATION');
@@ -63,7 +64,7 @@ describe('implementation-status registry', () => {
       resolve('src/components/governance-frontend/hero-content.ts'),
       'utf8',
     );
-    expect(hero).toContain('Running in Real Time');
-    expect(hero).not.toMatch(/\{\s*text:\s*'Time'/);
+    expect(hero).toContain('KI-Nutzung');
+    expect(hero).toContain('HERO_HEADLINE_LINES.length > 2');
   });
 });

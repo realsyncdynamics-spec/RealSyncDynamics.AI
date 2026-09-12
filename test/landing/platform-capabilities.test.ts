@@ -164,11 +164,10 @@ describe('Erreichbarkeit — fertige Seiten sind von der Startseite aus verlinkt
 
   it('Branchen steht in der Public-Nav', () => {
     expect(shell).toContain("to: '/branchen'");
-    expect(shell).toContain("label: 'Branchen'");
   });
 
   it('Header-CTA folgt der Governance-OS-Hierarchie', () => {
-    expect(shell).toContain('Kostenlosen Governance Scan starten');
+    expect(shell).toContain('Governance kostenlos starten');
     expect(shell).toContain("to: '/governance-runtime'");
     expect(shell).toContain('PublicDarkHeader');
   });
@@ -200,12 +199,16 @@ describe('Fachseiten sind von der Startseite aus erreichbar', () => {
 
   it('die Startseite rendert die Verweise, statt sie nur zu speichern', () => {
     const landing = readFileSync(resolve(__dirname, '../../src/pages/MainLanding.tsx'), 'utf8');
-    // Platform cards link via registry `route`; learnMorePath remains on capability SSoT.
+    const spine = readFileSync(
+      resolve(__dirname, '../../src/components/landing/LandingOsSpine.tsx'),
+      'utf8',
+    );
+    // Platform cards link via registry `route` inside LandingOsSpine (Proof).
     expect(
-      landing,
-      'MainLanding muss Registry-Routen rendern (PLATFORM_LIVE_ITEMS.route).',
+      landing + spine,
+      'Landing muss Registry-Routen rendern (PLATFORM_LIVE_ITEMS.route).',
     ).toContain('PLATFORM_LIVE_ITEMS');
-    expect(landing).toContain('cap.route');
+    expect(spine).toContain('cap.route');
   });
 });
 

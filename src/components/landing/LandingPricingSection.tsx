@@ -58,6 +58,14 @@ export function LandingPricingSection() {
           Monatliche Self-Service-Tarife — Starter €79 · Growth €249 · Agency €699.
           Jahresabrechnung: Coming Soon (noch nicht in Stripe verdrahtet).
         </p>
+        <p
+          className="mt-3 max-w-[720px] text-[11px] leading-relaxed tracking-[.02em]"
+          style={{ fontFamily: LANDING_MONO, color: LANDING_ACCENT }}
+        >
+          Upgrade-Leiter: Einzel-Domain → Starter · SaaS → Growth · Agentur → Agency ·
+          DSB/Enterprise → Anfrage (/contact-sales). Partner ist Legacy/Inquiry — kein
+          Self-Serve „Scale“.
+        </p>
 
         <div className="mt-[36px] grid gap-[12px] md:grid-cols-3">
           {tiers.map((tier) => {

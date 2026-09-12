@@ -16,6 +16,11 @@ import { LegalDisclaimer } from '../components/LegalDisclaimer';
 import { ReportPreviewSection } from '../components/sections/ReportPreviewSection';
 import { AuditChatHero } from '../components/audit/AuditChatHero';
 import { AuditCopilotPanel } from '../components/audit/AuditCopilotPanel';
+import {
+  buildPostScanChoices,
+  PostScanChoiceRow,
+} from '../components/audit/PostScanChoiceRow';
+import { Top3RisksPreview } from '../components/audit/Top3RisksPreview';
 
 // Über `getSupabaseUrl()` statt direkt aus `import.meta.env`: Der Helfer fällt
 // auf die Produktions-Projekt-URL zurück, wenn `VITE_SUPABASE_URL` im Build
@@ -665,6 +670,25 @@ function ReportView({ report, onRetry }: { report: Report; onRetry: () => void }
         </p>
       </div>
 
+      <Top3RisksPreview issues={report.issues} score={report.score} />
+
+      <PostScanChoiceRow
+        choices={buildPostScanChoices({
+          auditId: report.audit_id,
+          domain: report.domain,
+          score: report.score,
+          severity: report.severity,
+          hasFindings: report.issues.length > 0,
+          findings: report.issues.map((i) => ({
+            id: i.id,
+            severity: i.severity,
+            title: i.title,
+            detail: i.detail,
+            paragraph_ref: i.paragraph_ref,
+          })),
+        })}
+      />
+
       <TrialCtaBlock report={report} />
 
       {report.issues.length > 0 && <GuidedPlanBlock report={report} />}
@@ -759,30 +783,7 @@ function ReportView({ report, onRetry }: { report: Report; onRetry: () => void }
           )}
       </div>
 
-      {/* Nächster Schritt CTA */}
-      <div className="border border-titanium-900 bg-obsidian-900 p-4">
-        <p className="font-mono text-[9px] uppercase tracking-widest text-titanium-600 mb-3">Nächster Schritt</p>
-        <div className="flex flex-col sm:flex-row gap-2">
-          <Link
-            to={`/pricing?source=audit_cta_monitoring&audit=${report.audit_id}`}
-            className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-cyan-400 text-obsidian-950 text-xs font-bold hover:bg-cyan-300 transition-colors"
-          >
-            <Activity className="h-3.5 w-3.5" /> Monitoring aktivieren
-          </Link>
-          <Link
-            to={`/pricing?source=audit_cta_evidence&audit=${report.audit_id}`}
-            className="inline-flex items-center justify-center gap-2 px-4 py-2 border border-titanium-700 text-titanium-100 text-xs font-bold hover:border-titanium-400 transition-colors"
-          >
-            <FileText className="h-3.5 w-3.5" /> Evidence Vault
-          </Link>
-          <Link
-            to={`/pricing?plan=starter&audit_id=${report.audit_id}&source=audit_cta`}
-            className="inline-flex items-center justify-center gap-2 px-4 py-2 border border-titanium-700 text-titanium-100 text-xs font-bold hover:border-titanium-400 transition-colors"
-          >
-            <FileText className="h-3.5 w-3.5" /> 14 Tage gratis starten →
-          </Link>
-        </div>
-      </div>
+      {/* Nächster Schritt — ersetzt durch PostScanChoiceRow (oben); Legacy-Preis-CTAs unten belassen */}
 
       <MonitoringActivationBlock report={report} />
 

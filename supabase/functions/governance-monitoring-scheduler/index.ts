@@ -1,14 +1,18 @@
 /**
  * governance-monitoring-scheduler — Governance OS Continuous Monitoring
  *
+ * Auth: Bearer == CRON_GOVERNANCE_MONITORING_KEY (Function secret).
+ * pg_cron sends that via Vault `cron_governance_monitoring_key`
+ * (dispatch_cron_function). Fail-closed if the env is empty. Never compare
+ * inbound Authorization to SUPABASE_SERVICE_ROLE_KEY.
+ *
  * Cron-Schedule (pg_cron, täglich 02:00 + stündlich für hourly-Quellen):
  *   SELECT cron.schedule(
  *     'governance-monitoring-daily',
  *     '0 2 * * *',
- *     $$ SELECT net.http_post(
- *       url := current_setting('app.supabase_url') || '/functions/v1/governance-monitoring-scheduler',
- *       headers := jsonb_build_object('Authorization', 'Bearer ' || current_setting('app.service_role_key'))
- *     ) $$
+ *     $$ SELECT public.dispatch_cron_function(
+ *          'governance-monitoring-scheduler',
+ *          'cron_governance_monitoring_key') $$
  *   );
  *
  * Was dieser Job tut:
@@ -191,12 +195,11 @@ Deno.serve(async (req) => {
   const preflight = handleOptions(req);
   if (preflight) return preflight;
 
-  // Eigener Bearer-Check, weil verify_jwt fuer diese Function aus ist: Der
-  // Aufrufer ist pg_cron, nicht ein Browser mit Supabase-JWT. Ohne diesen
-  // Check waere der Scheduler fuer jeden im Internet ausloesbar — live
-  // gemessen 2026-09-10 (UNDECLARED_NO_JWT, Drift-Guard).
+  // Drift-Guard: verify_jwt=false, also eigener Bearer-Check. Credential ist
+  // der dedizierte Cron-Key (nicht der service_role JWT). Leerer Key → 401.
+  const CRON_KEY = Deno.env.get('CRON_GOVERNANCE_MONITORING_KEY') ?? '';
   const authHeader = req.headers.get('Authorization') ?? '';
-  if (authHeader !== `Bearer ${SERVICE_KEY}`) {
+  if (!CRON_KEY || authHeader !== `Bearer ${CRON_KEY}`) {
     return jsonResponse({ error: 'cron only' }, 401);
   }
 

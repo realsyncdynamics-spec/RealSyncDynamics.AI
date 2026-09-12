@@ -8,10 +8,11 @@
 //      last_run_at setzen
 //   4. optional benachrichtigen: governance_webhooks (Slack/Teams/Generic)
 //
-// Auth: Bearer == SERVICE_ROLE_KEY (Cron-Aufruf). verify_jwt = false —
-// wie microsoft365-audit-sync / audit-monitor-cron. Der Anon-Key ist
-// ebenfalls ein gültiges JWT; nur der exakte Service-Role-Vergleich
-// hält fremde Aufrufer draußen.
+// Auth: Bearer == CRON_SCHEDULER_DISPATCH_KEY (Function secret). pg_cron
+// sends Vault `cron_scheduler_dispatch_key` via dispatch_cron_function.
+// verify_jwt = false; fail-closed if CRON_KEY is empty. Never compare
+// inbound Authorization to SUPABASE_SERVICE_ROLE_KEY (service_role is only
+// used after auth for PostgREST/admin).
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
@@ -77,11 +78,14 @@ Deno.serve(async (req) => {
   if (preflight) return preflight;
   if (req.method !== 'POST') return jsonError(405, 'METHOD_NOT_ALLOWED', 'POST only');
 
-  const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+  const CRON_KEY = Deno.env.get('CRON_SCHEDULER_DISPATCH_KEY') ?? '';
   const authHeader = req.headers.get('Authorization') ?? '';
-  if (authHeader !== `Bearer ${SERVICE_ROLE}`) return jsonError(401, 'UNAUTHORIZED', 'cron only');
+  if (!CRON_KEY || authHeader !== `Bearer ${CRON_KEY}`) {
+    return jsonError(401, 'UNAUTHORIZED', 'cron only');
+  }
 
   const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
+  const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
   const admin = createClient(SUPABASE_URL, SERVICE_ROLE, { auth: { persistSession: false } });
 
   const nowMs = Date.now();

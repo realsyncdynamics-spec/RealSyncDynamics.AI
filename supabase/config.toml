@@ -225,10 +225,13 @@ verify_jwt = false
 verify_jwt = false
 
 # Die drei folgenden laufen live mit verify_jwt=false (Drift-Guard
-# 2026-09-10, UNDECLARED_NO_JWT). Aufrufer ist pg_cron per net.http_post
-# mit Service-Role-Bearer — kein Browser-JWT. Eigener Check in der Function;
-# ohne passenden Header 401. Nur deklarieren reicht nicht: der Monitoring-
-# Scheduler hatte den Check nicht und waere sonst oeffentlich ausloesbar.
+# 2026-09-10, UNDECLARED_NO_JWT). Aufrufer ist pg_cron: Bearer CRON_* keys
+# aus Vault (cron_governance_monitoring_key / cron_scheduler_dispatch_key /
+# cron_memory_decay_key), gemappt auf Function secrets
+# CRON_GOVERNANCE_MONITORING_KEY / CRON_SCHEDULER_DISPATCH_KEY /
+# CRON_MEMORY_DECAY_KEY. Eigener Check in der Function (fail-closed);
+# ohne passenden Header 401. Kein Browser-JWT; service_role JWT ist kein
+# Inbound-Credential.
 [functions.governance-monitoring-scheduler]
 verify_jwt = false
 

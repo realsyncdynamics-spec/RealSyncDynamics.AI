@@ -165,8 +165,10 @@ ADR 0011 misst am 2026-09-01, dass die Tabellennamen frei sind. Es misst nicht,
 ob die Ebene, die sie beschreiben sollen, in Betrieb ist. Das steht in der
 [Bestandsaufnahme vom 2026-09-06](../runbooks/agenten-bestandsaufnahme-2026-09-06.md):
 
-- `scan-scheduler-dispatch` scheitert seit 2026-08-12 am fehlenden Vault-Secret
-  `service_role_key`; `websites`, `scan_runs`, `monitoring_sources` sind leer.
+- `scan-scheduler-dispatch` scheiterte seit 2026-08-12 am fehlenden /
+  falschen Cron-Credential (heute: Vault `cron_scheduler_dispatch_key` →
+  Function Secret `CRON_SCHEDULER_DISPATCH_KEY`); `websites`, `scan_runs`,
+  `monitoring_sources` sind leer.
 - Der `agent-os-runner` läuft seit 2026-09-01 grün, iteriert alle sechs Tenants
   und evaluiert **null** SLOs. `agent_observations`, `agent_events`,
   `governance_alerts`, `ai_tool_runs`: null Zeilen.
@@ -180,9 +182,14 @@ der nächste Schritt) beschreibt eine Struktur; `agent_tickets` und
 bis die Kette oben Eingangsdaten hat.
 
 **Vorbedingung für die Betriebs-Tabellen** (nicht für die Stammdaten-Tabellen):
+die drei Vault-Cron-Keys + Function Secrets laut
+[`cron-vault-secrets.md`](../runbooks/cron-vault-secrets.md) — kein
+`service_role` JWT als Inbound-Bearer.
 
 ```sql
-SELECT vault.create_secret('<service-role-key>', 'service_role_key');
+SELECT vault.create_secret('<cron-key>', 'cron_scheduler_dispatch_key');
+SELECT vault.create_secret('<cron-key>', 'cron_governance_monitoring_key');
+SELECT vault.create_secret('<cron-key>', 'cron_memory_decay_key');
 ```
 
 Ein Betreiberschritt, nicht aus dem Repo möglich.

@@ -152,13 +152,18 @@ describe('Kritische Issues aus Scan-Ergebnis', () => {
   });
 });
 
-describe('Auth — Cron darf nur mit Service-Role ticken', () => {
-  it('weist Aufrufe ohne passenden Bearer mit 401 ab', () => {
+describe('Auth — Cron darf nur mit CRON_GOVERNANCE_MONITORING_KEY ticken', () => {
+  it('weist Aufrufe ohne passenden Bearer mit 401 ab (fail-closed)', () => {
     const src = readFileSync(
       'supabase/functions/governance-monitoring-scheduler/index.ts',
       'utf8',
     );
+    expect(src).toContain('CRON_GOVERNANCE_MONITORING_KEY');
     expect(src).toContain("error: 'cron only'");
+    expect(src).toMatch(/!CRON_KEY\s*\|\|/);
     expect(src).toMatch(/jsonResponse\(\{ error: 'cron only' \}, 401\)/);
+    expect(src).not.toMatch(
+      /authHeader\s*!==\s*`Bearer \$\{SERVICE_KEY\}`/,
+    );
   });
 });

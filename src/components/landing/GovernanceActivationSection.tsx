@@ -38,7 +38,7 @@ export function GovernanceActivationSection() {
   return (
     <section
       id="governance-activation"
-      className="border-b border-[#e4cfa2]/10 py-[92px]"
+      className="border-b border-[#d0c3a4]/10 py-[92px]"
       aria-label="Governance Activation"
     >
       <div className="mx-auto max-w-[1500px] px-[4vw]">
@@ -71,14 +71,14 @@ export function GovernanceActivationSection() {
           <div className="mt-8 flex flex-wrap gap-3">
             <OsEntryLink
               to="/app/activation"
-              className="inline-flex items-center gap-2 rounded-full px-[18px] py-[12px] text-[11px] font-semibold transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e4cfa2]"
+              className="inline-flex items-center gap-2 rounded-full px-[18px] py-[12px] text-[11px] font-semibold transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d0c3a4]"
               style={{ backgroundColor: LANDING_BUTTON, color: LANDING_BUTTON_TEXT }}
             >
               Governance Activation starten <ArrowRight className="h-3.5 w-3.5" />
             </OsEntryLink>
             <a
               href="#governance-activation-how"
-              className="inline-flex items-center gap-2 rounded-full border px-[18px] py-[12px] text-[11px] font-semibold transition hover:bg-[#e4cfa2]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e4cfa2]/60"
+              className="inline-flex items-center gap-2 rounded-full border px-[18px] py-[12px] text-[11px] font-semibold transition hover:bg-[#d0c3a4]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d0c3a4]/60"
               style={{
                 borderColor: `${LANDING_ACCENT}80`,
                 color: LANDING_TEXT,
@@ -91,7 +91,7 @@ export function GovernanceActivationSection() {
 
         <div
           id="governance-activation-how"
-          className="grid gap-px overflow-hidden border border-[#e4cfa2]/15 bg-[#e4cfa2]/08 md:grid-cols-3"
+          className="grid gap-px overflow-hidden border border-[#d0c3a4]/15 bg-[#d0c3a4]/08 md:grid-cols-3"
         >
           {ACTIVATION_STEPS.map((step) => (
             <div key={step.index} className="p-7" style={{ backgroundColor: LANDING_BG }}>

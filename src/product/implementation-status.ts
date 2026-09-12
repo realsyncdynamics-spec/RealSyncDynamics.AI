@@ -48,10 +48,38 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     name: 'Public Landing',
     status: 'live',
     group: 'surface',
-    description: 'Dark/Gold Marketing-Startseite mit Photoreal-Earth-Hero und Scan-Einstieg.',
+    description:
+      'Sovereign Night (Dark/Gold/Cream) Marketing-Startseite mit interaktiver Photoreal-Earth (8K desktop / 4K mobile) und Scan-Einstieg.',
     route: '/',
-    evidence: ['src/pages/MainLanding.tsx', 'test/landing/platform-capabilities.test.ts'],
+    evidence: [
+      'src/pages/MainLanding.tsx',
+      'src/components/landing/HeroEarthBackdrop.tsx',
+      'src/components/landing/HeroEarthBackdropScene.tsx',
+      'test/landing/platform-capabilities.test.ts',
+    ],
     showOnRoadmap: false,
+  },
+  {
+    id: 'design-landing-ledger',
+    name: 'Evidence Ledger Landing (Design)',
+    status: 'preview',
+    group: 'visual',
+    description:
+      'Alternatives Design-Chrome (Steel/Ice/Blue) unter /design/ledger — Preview, ersetzt nicht Live-/.',
+    route: '/design/ledger',
+    evidence: ['src/pages/design/DesignLedgerLanding.tsx', 'src/App.tsx'],
+    showOnRoadmap: true,
+  },
+  {
+    id: 'design-landing-tribunal',
+    name: 'Tribunal Landing (Design)',
+    status: 'preview',
+    group: 'visual',
+    description:
+      'Alternatives Paper-OS-Design (Ink/Burgundy) unter /design/tribunal — Preview, ersetzt nicht Live-/.',
+    route: '/design/tribunal',
+    evidence: ['src/pages/design/DesignTribunalLanding.tsx', 'src/App.tsx'],
+    showOnRoadmap: true,
   },
   {
     id: 'welcome',

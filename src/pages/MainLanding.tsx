@@ -63,7 +63,7 @@ export function MainLanding() {
         backgroundColor: LANDING_BG,
         color: LANDING_TEXT,
         fontFamily: LANDING_SANS,
-        backgroundImage: 'radial-gradient(circle at 70% 15%, #111823 0, #05070b 34%, #04060a 100%)',
+        backgroundImage: 'radial-gradient(circle at 70% 15%, #0c121c 0, #02040a 34%, #010308 100%)',
       }}
     >
       <SEOHead
@@ -75,13 +75,13 @@ export function MainLanding() {
       />
 
       <div
-        className="pointer-events-none fixed right-[-18vw] top-[10vh] h-[40vw] w-[40vw] rounded-full opacity-[0.08] blur-[100px]"
-        style={{ background: '#b49a6b' }}
+        className="pointer-events-none fixed right-[-18vw] top-[10vh] h-[40vw] w-[40vw] rounded-full opacity-[0.07] blur-[100px]"
+        style={{ background: '#9a8b6a' }}
         aria-hidden="true"
       />
       <div
-        className="pointer-events-none fixed left-[-25vw] top-[45vh] h-[40vw] w-[40vw] rounded-full opacity-[0.08] blur-[100px]"
-        style={{ background: '#236e91' }}
+        className="pointer-events-none fixed left-[-25vw] top-[45vh] h-[40vw] w-[40vw] rounded-full opacity-[0.07] blur-[100px]"
+        style={{ background: '#1a4a62' }}
         aria-hidden="true"
       />
 
@@ -90,13 +90,13 @@ export function MainLanding() {
       <main ref={revealRoot} className="relative z-10">
         <section
           id="product"
-          className="relative isolate min-h-[min(92vh,900px)] overflow-hidden border-b border-[#e4cfa2]/10 lg:min-h-[min(90vh,860px)]"
+          className="relative isolate min-h-[min(92vh,900px)] overflow-hidden border-b border-[#d0c3a4]/10 lg:min-h-[min(90vh,860px)]"
         >
-          <div className="pointer-events-none absolute inset-0 -z-10">
+          <div className="absolute inset-0 -z-10">
             <HeroEarthBackdrop />
           </div>
 
-          <div className="relative mx-auto flex max-w-[880px] flex-col items-center px-[4vw] pb-[44px] pt-[28px] text-center lg:pb-[48px] lg:pt-[32px]">
+          <div className="relative mx-auto flex max-w-[880px] flex-col items-center px-[4vw] pb-[44px] pt-[28px] text-center pointer-events-none lg:pb-[48px] lg:pt-[32px]">
             <div
               className="inline-block rounded-full border px-[12px] py-[7px] font-medium tracking-[.22em]"
               style={{
@@ -111,7 +111,7 @@ export function MainLanding() {
 
             <p
               className="mt-3.5 tracking-[.14em]"
-              style={{ fontFamily: LANDING_MONO, fontSize: LANDING_EYEBROW, color: '#b6a77f' }}
+              style={{ fontFamily: LANDING_MONO, fontSize: LANDING_EYEBROW, color: '#b8ad91' }}
             >
               {HERO_EN_KICKER}
             </p>
@@ -150,21 +150,21 @@ export function MainLanding() {
 
             <p
               className="mb-2.5 tracking-[.12em] lg:mb-3"
-              style={{ fontFamily: LANDING_MONO, fontSize: LANDING_EYEBROW, color: '#b6a77f' }}
+              style={{ fontFamily: LANDING_MONO, fontSize: LANDING_EYEBROW, color: '#b8ad91' }}
             >
               {HERO_OPERATING_LOOP}
             </p>
 
             <p
               className="mb-2.5 max-w-[560px] font-medium leading-[1.45]"
-              style={{ color: '#e8dfd2', fontSize: LANDING_BODY }}
+              style={{ color: '#efe8dc', fontSize: LANDING_BODY }}
             >
               {SCAN_FUNNEL_MESSAGE}
             </p>
 
             <p
               className="max-w-[560px] leading-[1.55]"
-              style={{ color: 'rgba(242,238,230,0.82)', fontSize: LANDING_BODY }}
+              style={{ color: 'rgba(246,242,233,0.88)', fontSize: LANDING_BODY }}
             >
               {HERO_SUBLINE}
             </p>
@@ -174,7 +174,7 @@ export function MainLanding() {
                 <li
                   key={outcome}
                   className="flex gap-2.5 leading-snug"
-                  style={{ color: '#cfc8ba', fontSize: LANDING_BODY }}
+                  style={{ color: '#d6cfbf', fontSize: LANDING_BODY }}
                 >
                   <span style={{ color: LANDING_ACCENT }} aria-hidden>
                     —
@@ -186,23 +186,23 @@ export function MainLanding() {
 
             <p
               className="mb-5 max-w-[540px] leading-relaxed"
-              style={{ fontFamily: LANDING_MONO, fontSize: LANDING_EYEBROW, color: '#9a9178' }}
+              style={{ fontFamily: LANDING_MONO, fontSize: LANDING_EYEBROW, color: '#8f8772' }}
             >
               {HERO_EU_LINE}
             </p>
 
-            <form id="scan" onSubmit={startScan} className="w-full max-w-[660px]">
+            <form id="scan" onSubmit={startScan} className="pointer-events-auto w-full max-w-[660px]">
               <p
                 className="mb-2.5 px-1 leading-snug"
-                style={{ color: '#e8dfd2', fontSize: LANDING_BODY }}
+                style={{ color: '#efe8dc', fontSize: LANDING_BODY }}
               >
                 {HERO_SCAN_PROMISE_LINE}
               </p>
               <div
                 className="flex flex-col gap-0 rounded-full border p-1.5 sm:flex-row sm:items-stretch"
                 style={{
-                  borderColor: 'rgba(228,207,162,0.22)',
-                  backgroundColor: 'rgba(7,9,13,0.72)',
+                  borderColor: 'rgba(208,195,164,0.24)',
+                  backgroundColor: 'rgba(4,6,10,0.78)',
                 }}
               >
                 <input
@@ -211,13 +211,13 @@ export function MainLanding() {
                   type="url"
                   placeholder="Ihre Website –"
                   aria-label="Ihre Website"
-                  className="min-w-0 flex-1 bg-transparent px-5 py-3.5 text-center text-[#f2eee6] outline-none placeholder:text-[#9a9aa1]/70 focus-visible:ring-2 focus-visible:ring-[#e4cfa2]/45 sm:rounded-full sm:text-left lg:py-4"
+                  className="min-w-0 flex-1 bg-transparent px-5 py-3.5 text-center text-[#f6f2e9] outline-none placeholder:text-[#a3a3aa]/70 focus-visible:ring-2 focus-visible:ring-[#d0c3a4]/45 sm:rounded-full sm:text-left lg:py-4"
                   style={{ fontSize: LANDING_BODY }}
                 />
                 <button
                   type="submit"
                   data-hero-cta
-                  className="inline-flex items-center justify-center gap-2 rounded-full px-[22px] py-[13px] text-[13px] font-semibold shadow-[0_0_0_1px_rgba(228,207,162,0.35)] transition hover:brightness-[1.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e4cfa2] lg:py-[14px]"
+                  className="inline-flex items-center justify-center gap-2 rounded-full px-[22px] py-[13px] text-[14px] font-semibold shadow-[0_0_0_1px_rgba(208,195,164,0.35)] transition hover:brightness-[1.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d0c3a4] lg:py-[14px]"
                   style={{ backgroundColor: LANDING_BUTTON, color: LANDING_BUTTON_TEXT }}
                 >
                   {HERO_SCAN_CTA_LABEL} <span aria-hidden="true">→</span>
@@ -225,7 +225,7 @@ export function MainLanding() {
               </div>
               <p
                 className="mt-2.5 px-1 leading-snug"
-                style={{ color: '#e8dfd2', fontSize: LANDING_EYEBROW }}
+                style={{ color: '#efe8dc', fontSize: LANDING_EYEBROW }}
               >
                 {HERO_SCAN_CTA_PROMISE}
               </p>
@@ -237,18 +237,18 @@ export function MainLanding() {
               </p>
             </form>
 
-            <div className="mt-5 flex flex-col items-center gap-2.5 sm:flex-row sm:justify-center lg:mt-6">
+            <div className="pointer-events-auto mt-5 flex flex-col items-center gap-2.5 sm:flex-row sm:justify-center lg:mt-6">
               <OsEntryLink
                 to="/app/evidence"
-                className="inline-flex items-center justify-center gap-2 rounded-full border px-[22px] py-[12px] text-[14px] font-medium transition hover:bg-[#e4cfa2]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e4cfa2]/60"
-                style={{ borderColor: `${LANDING_ACCENT}80`, color: '#e8dfd2' }}
+                className="inline-flex items-center justify-center gap-2 rounded-full border px-[22px] py-[12px] text-[14px] font-medium transition hover:bg-[#d0c3a4]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d0c3a4]/60"
+                style={{ borderColor: `${LANDING_ACCENT}80`, color: '#efe8dc' }}
               >
                 Evidence-Preview <span aria-hidden="true">→</span>
               </OsEntryLink>
               <OsEntryLink
                 to="/app/activation"
-                className="inline-flex items-center justify-center gap-2 rounded-full border px-[22px] py-[12px] text-[14px] font-medium transition hover:bg-[#e4cfa2]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e4cfa2]/60"
-                style={{ borderColor: `${LANDING_ACCENT}55`, color: '#cbb892' }}
+                className="inline-flex items-center justify-center gap-2 rounded-full border px-[22px] py-[12px] text-[14px] font-medium transition hover:bg-[#d0c3a4]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d0c3a4]/60"
+                style={{ borderColor: `${LANDING_ACCENT}55`, color: '#c4b796' }}
               >
                 Guided Activation <span aria-hidden="true">→</span>
               </OsEntryLink>
@@ -263,7 +263,7 @@ export function MainLanding() {
         <LandingRoadmapSection />
 
         {/* Three CTA levels — never a generic demo booking as primary */}
-        <section className="border-t border-[#e4cfa2]/10 bg-black/80 py-[64px] lg:py-[72px]">
+        <section className="border-t border-[#d0c3a4]/10 bg-black/85 py-[64px] lg:py-[72px]">
           <div className="mx-auto max-w-3xl px-[4vw] text-center">
             <p
               className="text-[10px] tracking-[.25em]"
@@ -279,7 +279,7 @@ export function MainLanding() {
             </h2>
             <p
               className="mx-auto mt-4 max-w-xl text-[14px] leading-relaxed"
-              style={{ color: 'rgba(242,238,230,0.72)' }}
+              style={{ color: 'rgba(246,242,233,0.78)' }}
             >
               {CONTINUOUS_COMPLIANCE_NARRATIVE} Der Free-Scan ist Acquisition — danach Governance
               Activation und Workspace.
@@ -294,33 +294,33 @@ export function MainLanding() {
               </Link>
               <OsEntryLink
                 to="/app/evidence"
-                className="inline-flex items-center justify-center gap-2 rounded-full border px-7 py-3.5 font-medium transition hover:bg-[#e4cfa2]/10"
-                style={{ borderColor: `${LANDING_ACCENT}80`, color: '#e8dfd2' }}
+                className="inline-flex items-center justify-center gap-2 rounded-full border px-7 py-3.5 font-medium transition hover:bg-[#d0c3a4]/10"
+                style={{ borderColor: `${LANDING_ACCENT}80`, color: '#efe8dc' }}
               >
                 Evidence-Preview / Beispiel-Report
               </OsEntryLink>
               <Link
                 to="/contact-sales?source=landing-cta&intent=enterprise"
-                className="inline-flex items-center justify-center gap-2 rounded-full border px-7 py-3.5 font-medium transition hover:bg-[#e4cfa2]/10"
-                style={{ borderColor: `${LANDING_ACCENT}80`, color: '#e8dfd2' }}
+                className="inline-flex items-center justify-center gap-2 rounded-full border px-7 py-3.5 font-medium transition hover:bg-[#d0c3a4]/10"
+                style={{ borderColor: `${LANDING_ACCENT}80`, color: '#efe8dc' }}
               >
                 Enterprise / Guided Activation
               </Link>
             </div>
             <p className="mt-4 text-[11px]" style={{ color: LANDING_MUTED }}>
               Guided Activation auch über{' '}
-              <OsEntryLink to="/app/activation" className="underline decoration-[#e4cfa2]/40">
+              <OsEntryLink to="/app/activation" className="underline decoration-[#d0c3a4]/40">
                 /app/activation
               </OsEntryLink>
               {' '}
               — Primär-CTA ist nie eine generische Demo-Buchung.
             </p>
             <p className="mt-2 text-[11px]" style={{ color: LANDING_MUTED }}>
-              <Link to="/faq" className="underline decoration-[#e4cfa2]/40 underline-offset-2">
+              <Link to="/faq" className="underline decoration-[#d0c3a4]/40 underline-offset-2">
                 FAQ
               </Link>
               {' · '}
-              <Link to="/#pricing" className="underline decoration-[#e4cfa2]/40 underline-offset-2">
+              <Link to="/#pricing" className="underline decoration-[#d0c3a4]/40 underline-offset-2">
                 Preise
               </Link>
             </p>
@@ -329,7 +329,7 @@ export function MainLanding() {
       </main>
 
       <footer
-        className="relative z-10 flex flex-col items-center justify-center gap-4 border-t border-[#e4cfa2]/12 px-[4vw] py-[28px] text-[11px] sm:flex-row sm:justify-between"
+        className="relative z-10 flex flex-col items-center justify-center gap-4 border-t border-[#d0c3a4]/12 px-[4vw] py-[28px] text-[11px] sm:flex-row sm:justify-between"
         style={{ color: 'rgba(255,255,255,0.55)' }}
       >
         <span>© 2026 RealSync Dynamics.AI</span>
@@ -343,7 +343,7 @@ export function MainLanding() {
             { label: 'Roadmap', to: '/roadmap' },
           ].map((item, idx, arr) => (
             <span key={item.to} className="inline-flex items-center gap-x-3">
-              <Link to={item.to} className="hover:text-[#f2eee6]">
+              <Link to={item.to} className="hover:text-[#f6f2e9]">
                 {item.label}
               </Link>
               {idx < arr.length - 1 && (

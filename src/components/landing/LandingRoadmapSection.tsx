@@ -93,7 +93,7 @@ function RoadmapCard({ item }: { item: ImplementationItem }) {
     return (
       <Link
         to={item.route}
-        className="block border p-5 transition hover:bg-[#e4cfa2]/05"
+        className="block border p-5 transition hover:bg-[#d0c3a4]/05"
         style={{ borderColor: LANDING_LINE, backgroundColor: 'rgba(7,9,13,0.55)' }}
       >
         {body}
@@ -117,7 +117,7 @@ function RoadmapCard({ item }: { item: ImplementationItem }) {
 
 export function LandingRoadmapSection() {
   return (
-    <section id="roadmap" className="border-t border-[#e4cfa2]/10 py-[72px] lg:py-[80px]">
+    <section id="roadmap" className="border-t border-[#d0c3a4]/10 py-[72px] lg:py-[80px]">
       <div className="mx-auto max-w-[1500px] px-[4vw]">
         <p
           className="inline-block rounded-full border px-[11px] py-[7px] text-[9px] font-medium tracking-[.23em]"

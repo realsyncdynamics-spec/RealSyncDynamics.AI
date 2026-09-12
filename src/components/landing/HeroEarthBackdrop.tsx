@@ -1,9 +1,9 @@
 /**
  * Public landing hero backdrop — full-bleed photoreal Earth (desktop fill).
  *
- * Scenery only: no Governance Sphere HUD, drag globe, DEMO chrome, or cream
- * sun disc. Static Europe night plane is always under the WebGL layer so the
- * planet never collapses to a black/cream void on first paint.
+ * Interactive 3D globe (orbit / modest zoom / border hover) on the canvas only.
+ * No Governance Sphere HUD, DEMO chrome, or cream sun disc.
+ * Static Europe night plane remains under the WebGL layer for first paint.
  */
 import { Suspense, useEffect, useState } from 'react';
 import { HeroEarthBackdropScene } from './HeroEarthBackdropScene';
@@ -38,7 +38,10 @@ function useWebGlAvailable(): boolean {
 /** Night-Europe photoreal plane — always present as the planet base layer. */
 function StaticEarthPlane({ className = '' }: { className?: string }) {
   return (
-    <div className={`hero-earth-static absolute inset-0 ${className}`.trim()} aria-hidden="true">
+    <div
+      className={`hero-earth-static pointer-events-none absolute inset-0 ${className}`.trim()}
+      aria-hidden="true"
+    >
       <picture>
         <source srcSet="/europe-globe.webp" type="image/webp" />
         <img
@@ -57,7 +60,7 @@ function StaticEarthPlane({ className = '' }: { className?: string }) {
         style={{
           background: [
             'linear-gradient(105deg, transparent 10%, rgba(5,7,11,0.12) 48%, rgba(5,7,11,0.42) 78%, rgba(5,7,11,0.62) 100%)',
-            'radial-gradient(40% 34% at 16% 56%, rgba(228,207,162,0.08) 0%, transparent 64%)',
+            'radial-gradient(40% 34% at 16% 56%, rgba(208,195,164,0.08) 0%, transparent 64%)',
           ].join(', '),
         }}
       />
@@ -73,13 +76,13 @@ function Starfield() {
       style={{
         backgroundImage: [
           'radial-gradient(1px 1px at 8% 12%, rgba(242,238,230,0.35), transparent)',
-          'radial-gradient(1px 1px at 18% 28%, rgba(228,207,162,0.28), transparent)',
+          'radial-gradient(1px 1px at 18% 28%, rgba(208,195,164,0.28), transparent)',
           'radial-gradient(1.5px 1.5px at 32% 8%, rgba(239,230,213,0.3), transparent)',
-          'radial-gradient(1px 1px at 55% 18%, rgba(228,207,162,0.22), transparent)',
+          'radial-gradient(1px 1px at 55% 18%, rgba(208,195,164,0.22), transparent)',
           'radial-gradient(1px 1px at 72% 10%, rgba(242,238,230,0.26), transparent)',
-          'radial-gradient(1px 1px at 88% 22%, rgba(228,207,162,0.18), transparent)',
+          'radial-gradient(1px 1px at 88% 22%, rgba(208,195,164,0.18), transparent)',
           'radial-gradient(1.5px 1.5px at 12% 55%, rgba(242,238,230,0.2), transparent)',
-          'radial-gradient(1px 1px at 42% 70%, rgba(228,207,162,0.18), transparent)',
+          'radial-gradient(1px 1px at 42% 70%, rgba(208,195,164,0.18), transparent)',
           'radial-gradient(1px 1px at 78% 62%, rgba(239,230,213,0.2), transparent)',
           'radial-gradient(1px 1px at 94% 78%, rgba(242,238,230,0.14), transparent)',
         ].join(','),
@@ -105,7 +108,7 @@ function WarmRimLight() {
           height: 'min(48vw, 560px)',
           borderRadius: '50%',
           background:
-            'radial-gradient(ellipse at 72% 48%, rgba(228,207,162,0.28) 0%, rgba(180,140,80,0.1) 36%, transparent 68%)',
+            'radial-gradient(ellipse at 72% 48%, rgba(208,195,164,0.28) 0%, rgba(180,140,80,0.1) 36%, transparent 68%)',
           filter: 'blur(22px)',
           opacity: 0.65,
         }}
@@ -117,22 +120,54 @@ function WarmRimLight() {
 export function HeroEarthBackdrop() {
   const reducedMotion = usePrefersReducedMotion();
   const webgl = useWebGlAvailable();
-  const use3d = webgl && !reducedMotion;
+  // Defer WebGL one tick so first paint + sticky CTA stay actionable (E2E).
+  const [sceneReady, setSceneReady] = useState(false);
+  useEffect(() => {
+    if (!webgl || reducedMotion) return;
+    let cancelled = false;
+    const boot = () => {
+      if (!cancelled) setSceneReady(true);
+    };
+    const ric = (
+      window as Window & {
+        requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number;
+        cancelIdleCallback?: (id: number) => void;
+      }
+    ).requestIdleCallback;
+    if (typeof ric === 'function') {
+      const id = ric(boot, { timeout: 900 });
+      return () => {
+        cancelled = true;
+        (
+          window as Window & { cancelIdleCallback?: (id: number) => void }
+        ).cancelIdleCallback?.(id);
+      };
+    }
+    const t = window.setTimeout(boot, 120);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(t);
+    };
+  }, [webgl, reducedMotion]);
+  const use3d = webgl && !reducedMotion && sceneReady;
 
   return (
     <div
-      className="hero-earth-backdrop pointer-events-none absolute inset-0 overflow-hidden"
-      aria-hidden="true"
+      className="hero-earth-backdrop absolute inset-0 overflow-hidden"
       data-hero-visual="earth-universe"
       data-earth-palette="landing-gold"
       data-hero-lighting="night-rim"
+      data-landing-earth={use3d ? 'interactive' : 'static'}
+      aria-hidden={use3d ? undefined : true}
+      aria-label={use3d ? 'Interaktive Erdkugel — ziehen zum Drehen, Rad zum Zoomen' : undefined}
+      role={use3d ? 'img' : undefined}
     >
       {/* Deep space base */}
       <div
-        className="absolute inset-0"
+        className="pointer-events-none absolute inset-0"
         style={{
           background:
-            'radial-gradient(ellipse at 28% 48%, #0c0e12 0%, #08090d 42%, #05070b 72%, #04060a 100%)',
+            'radial-gradient(ellipse at 28% 48%, #080a10 0%, #05070c 42%, #02040a 72%, #010308 100%)',
         }}
       />
       <Starfield />
@@ -142,18 +177,18 @@ export function HeroEarthBackdrop() {
       <StaticEarthPlane />
 
       {use3d && (
-        <div className="absolute inset-0">
+        <div className="hero-earth-canvas absolute inset-0" data-landing-earth>
           <Suspense fallback={null}>
-            <div className="hero-earth-canvas absolute inset-[-6%_-4%] scale-[1.22]">
+            <div className="absolute inset-[-6%_-4%] scale-[1.22]">
               <HeroEarthBackdropScene reducedMotion={reducedMotion} />
             </div>
           </Suspense>
         </div>
       )}
 
-      {/* Light veil for type — planet remains the visual anchor */}
+      {/* Light veil for type — planet remains the visual anchor; never blocks canvas */}
       <div
-        className="absolute inset-0"
+        className="pointer-events-none absolute inset-0"
         style={{
           background: [
             'radial-gradient(ellipse 40% 28% at 50% 22%, rgba(5,7,11,0.22) 0%, rgba(5,7,11,0.06) 55%, transparent 78%)',

@@ -839,39 +839,39 @@ html, body {
 }
 
 /* ── Glanz auf der Hero-Headline ─────────────────────────────────────────
-   Cream/gold — kein Papierweiss (#fff). Dominik: Ohne Weiss. */
+   Cream/gold — kein Papierweiss (#fff). Sovereign Night institutional. */
 .hero-shine {
-  color: #f2eee6;
-  -webkit-text-fill-color: #f2eee6;
+  color: #f6f2e9;
+  -webkit-text-fill-color: #f6f2e9;
   text-shadow:
-    0 0 1px rgba(228, 207, 162, 0.55),
-    0 0 12px rgba(228, 207, 162, 0.22),
+    0 0 1px rgba(208, 195, 164, 0.5),
+    0 0 12px rgba(208, 195, 164, 0.2),
     0 1px 0 rgb(0 0 0 / 0.75),
     0 12px 36px rgb(0 0 0 / 0.8);
 }
 
 @supports not ((background-clip: text) or (-webkit-background-clip: text)) {
   .hero-shine {
-    color: #f2eee6;
-    -webkit-text-fill-color: #f2eee6;
+    color: #f6f2e9;
+    -webkit-text-fill-color: #f6f2e9;
   }
 }
 
 .hero-shine-accent {
-  color: #e4cfa2;
-  -webkit-text-fill-color: #e4cfa2;
+  color: #d0c3a4;
+  -webkit-text-fill-color: #d0c3a4;
   font-style: normal;
   text-shadow:
-    0 0 1px rgba(239, 230, 213, 0.55),
-    0 0 14px rgba(228, 207, 162, 0.28),
+    0 0 1px rgba(232, 221, 200, 0.5),
+    0 0 14px rgba(208, 195, 164, 0.26),
     0 1px 0 rgb(0 0 0 / 0.65),
     0 12px 36px rgb(0 0 0 / 0.75);
 }
 
 @supports not ((background-clip: text) or (-webkit-background-clip: text)) {
   .hero-shine-accent {
-    color: #e4cfa2;
-    -webkit-text-fill-color: #e4cfa2;
+    color: #d0c3a4;
+    -webkit-text-fill-color: #d0c3a4;
   }
 }
 
@@ -881,8 +881,8 @@ html, body {
   inset: -6% -4%;
   pointer-events: none;
   z-index: -1;
-  color: #e4cfa2;
-  -webkit-text-fill-color: #e4cfa2;
+  color: #d0c3a4;
+  -webkit-text-fill-color: #d0c3a4;
   font-family: inherit;
   font-weight: inherit;
   font-size: inherit;
@@ -1037,10 +1037,14 @@ html, body {
   }
 }
 
-/* ── Public landing Earth backdrop — scenery only, Dark/Gold night rim ── */
-.hero-earth-backdrop,
-.hero-earth-backdrop canvas {
-  pointer-events: none !important;
+/* ── Public landing Earth — canvas receives pointer; decorative layers do not ── */
+.hero-earth-backdrop {
+  pointer-events: none;
+}
+
+.hero-earth-backdrop [data-landing-earth],
+.hero-earth-backdrop [data-landing-earth] canvas {
+  pointer-events: auto;
 }
 
 /* Static fallback: night Europe crop — keep land/city lights readable */

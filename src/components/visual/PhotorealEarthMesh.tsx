@@ -43,13 +43,13 @@ export interface PhotorealEarthMeshProps {
 const LANDING_GOLD = {
   /** Subtle warm multiply — never near-white cream that washes continents. */
   dayTint: '#cfc8bc',
-  atmosphereGlow: '#e4cfa2',
+  atmosphereGlow: '#d0c3a4',
   atmosphereWarm: '#ffe0b0',
-  outerGlow: '#d4b07a',
+  outerGlow: '#c4b07a',
   specular: new THREE.Vector3(0.95, 0.82, 0.55),
   clouds: new THREE.Vector3(0.96, 0.9, 0.78),
   /** Dense city-light network — Europe night must dominate the hero. */
-  nightIntensity: 2.55,
+  nightIntensity: 2.65,
 } as const;
 
 function configureMap(tex: THREE.Texture, anisotropy: number, colorSpace?: THREE.ColorSpace) {

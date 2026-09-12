@@ -62,7 +62,7 @@ const TOOLS = [
 
 export function LandingChannelTools() {
   return (
-    <section id="tools" className="relative border-t border-[#e4cfa2]/10 py-[64px] lg:py-[72px]">
+    <section id="tools" className="relative border-t border-[#d0c3a4]/10 py-[64px] lg:py-[72px]">
       <div className="mx-auto max-w-[1500px] px-[4vw]">
         <div className="mb-8 max-w-3xl">
           <p
@@ -138,9 +138,9 @@ export function LandingChannelTools() {
                     className="border px-2.5 py-1 text-[8px] tracking-[.12em]"
                     style={{
                       fontFamily: LANDING_MONO,
-                      borderColor: live ? 'rgba(228,207,162,0.35)' : 'rgba(228,207,162,0.45)',
+                      borderColor: live ? 'rgba(208,195,164,0.35)' : 'rgba(208,195,164,0.45)',
                       borderStyle: live ? 'solid' : 'dashed',
-                      color: 'rgba(228,207,162,0.85)',
+                      color: 'rgba(208,195,164,0.85)',
                     }}
                   >
                     {STATUS_LABEL[status]}
@@ -166,7 +166,7 @@ export function LandingChannelTools() {
                 </div>
                 <Link
                   to={live ? href : status === 'preview' ? href : '/warteliste'}
-                  className="inline-flex w-full items-center justify-center gap-2 border px-5 py-3 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e4cfa2]/50"
+                  className="inline-flex w-full items-center justify-center gap-2 border px-5 py-3 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d0c3a4]/50"
                   style={
                     live
                       ? {
@@ -175,7 +175,7 @@ export function LandingChannelTools() {
                           color: LANDING_ACCENT,
                         }
                       : {
-                          borderColor: 'rgba(228,207,162,0.28)',
+                          borderColor: 'rgba(208,195,164,0.28)',
                           borderStyle: 'dashed',
                           color: 'rgba(232,221,200,0.75)',
                         }

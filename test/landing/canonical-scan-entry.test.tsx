@@ -28,7 +28,7 @@ function landingRendern() {
 }
 
 describe('Kanonischer Scan-Einstieg', () => {
-  it('führt Kostenlosen Governance Scan der Startseite nach /audit', () => {
+  it('führt Free Audit der Startseite nach /audit', () => {
     landingRendern();
 
     const form = document.querySelector('#scan') as HTMLFormElement;

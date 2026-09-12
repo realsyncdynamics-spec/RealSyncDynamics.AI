@@ -60,14 +60,18 @@ describe('implementation-status registry', () => {
     }
   });
 
-  it('hero headline is Dominik Dark/Gold lock (AI Governance, Running in Real Time)', () => {
+  it('hero headline is Europe-OS lock (AI Compliance Operations OS for Europe)', () => {
     const hero = readFileSync(
       resolve('src/components/governance-frontend/hero-content.ts'),
       'utf8',
     );
-    expect(hero).toContain('AI Governance');
-    expect(hero).toContain('Running in Real');
-    expect(hero).toContain("HERO_HEADLINE_TEST_SUBSTRING = 'AI Governance'");
-    expect(hero).not.toContain('AI Compliance Operations OS');
+    expect(hero).toContain('AI Compliance');
+    expect(hero).toContain('Operations OS');
+    expect(hero).toContain('Europe');
+    expect(hero).toContain("HERO_HEADLINE_TEST_SUBSTRING = 'AI Compliance'");
+    expect(hero).toContain('Free Audit starten');
+    expect(hero).toContain('Live Dashboard ansehen');
+    expect(hero).toContain('Discover → Classify → Enforce → Prove');
+    expect(hero).not.toContain('Running in Real');
   });
 });

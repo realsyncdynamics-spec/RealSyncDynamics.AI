@@ -27,7 +27,8 @@ describe('Landing ↔ Infrastruktur', () => {
     expect(header).toContain('to="/audit"');
     expect(header).toContain("to: '/governance-runtime'");
     expect(header).toContain("to: '/welcome'");
-    expect(header).toContain('Kostenlosen Governance Scan starten');
+    expect(header).toContain('HERO_SCAN_CTA_LABEL');
+    expect(header).toContain("from '../governance-frontend/hero-content'");
     expect(navShell).toContain('/audit');
   });
 

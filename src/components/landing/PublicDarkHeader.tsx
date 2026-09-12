@@ -1,6 +1,7 @@
 import { useState, type CSSProperties, type MouseEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
+import { HERO_SCAN_CTA_LABEL } from '../governance-frontend/hero-content';
 import {
   LANDING_ACCENT,
   LANDING_BG,
@@ -129,7 +130,7 @@ export function PublicDarkHeader({ overlay = false }: { overlay?: boolean }) {
             className="landing-cta-glow max-w-[9.5rem] rounded-full px-[18px] py-[11px] text-center text-[10px] leading-[1.3] transition hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e4cfa2]"
             style={scanCtaStyle}
           >
-            Kostenlosen Governance Scan starten
+            {HERO_SCAN_CTA_LABEL}
           </Link>
         </nav>
 
@@ -139,7 +140,7 @@ export function PublicDarkHeader({ overlay = false }: { overlay?: boolean }) {
             className="hidden rounded-full px-3.5 py-2 text-[10px] sm:inline-flex"
             style={scanCtaStyle}
           >
-            Governance Scan
+            Free Audit
           </Link>
           <button
             type="button"
@@ -210,7 +211,7 @@ export function PublicDarkHeader({ overlay = false }: { overlay?: boolean }) {
               style={scanCtaStyle}
               onClick={() => setOpen(false)}
             >
-              Kostenlosen Governance Scan starten
+              {HERO_SCAN_CTA_LABEL}
             </Link>
             <ul className="mt-4 flex flex-wrap gap-3 border-t border-white/[0.06] pt-3">
               {LANDING_TRUST_MARKS.map((mark) => (

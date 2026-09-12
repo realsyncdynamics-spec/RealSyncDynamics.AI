@@ -31,6 +31,7 @@ import {
   HERO_HEADLINE,
   HERO_OPERATING_LOOP,
   HERO_SCAN_BADGE,
+  HERO_SCAN_CTA_LABEL,
   HERO_SOCIAL_FRAMEWORKS,
   HERO_SOCIAL_PROOF,
   HERO_SUBLINE,
@@ -102,11 +103,11 @@ export function MainLanding() {
       }}
     >
       <SEOHead
-        title="RealSyncDynamics.AI — AI Governance Runtime"
-        description="AI Governance, Running in Real Time. Governance OS für DSGVO und EU AI Act — Detect, Govern, Prove, Automate."
+        title="RealSyncDynamics.AI — AI Compliance Operations OS for Europe"
+        description="AI Compliance Operations OS for Europe. Governance OS für DSGVO und EU AI Act — Discover, Classify, Enforce, Prove."
         canonical="/"
-        ogTitle="AI Governance, Running in Real Time"
-        ogDescription="RealSyncDynamics.AI — AI Governance Operating System. Detect. Govern. Prove. Automate."
+        ogTitle="AI Compliance Operations OS for Europe"
+        ogDescription="RealSyncDynamics.AI — AI Compliance Operations OS for Europe. Free Audit starten. Continuous evidence."
       />
 
       {/* Ambient blurs + grid overlay (Dominik reference) */}
@@ -290,7 +291,7 @@ export function MainLanding() {
                       className="landing-cta-glow inline-flex items-center justify-center gap-2 rounded-full px-[18px] py-[13px] text-[11px] font-semibold transition hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e4cfa2]"
                       style={{ backgroundColor: LANDING_BUTTON, color: LANDING_BUTTON_TEXT }}
                     >
-                      Kostenlosen Governance Scan starten <span aria-hidden="true">→</span>
+                      {HERO_SCAN_CTA_LABEL} <span aria-hidden="true">→</span>
                     </button>
                   </div>
                 </div>
@@ -302,20 +303,21 @@ export function MainLanding() {
                 </p>
               </form>
 
+              {/* Hero CTA pair: Free Audit (above) + Live Dashboard — cream/gold, not cyan */}
               <div className="mt-6 flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:gap-5">
                 <Link
-                  to="/contact-sales?source=landing-hero"
+                  to="/app"
                   className="inline-flex items-center gap-2 rounded-full border px-[17px] py-[11px] text-[11px] transition hover:bg-[#e4cfa2]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e4cfa2]/60"
                   style={{ borderColor: `${LANDING_ACCENT}80`, color: '#e8dfd2' }}
                 >
-                  {CTA.enterprise} <span aria-hidden="true">→</span>
+                  {HERO_DASHBOARD_CTA_LABEL} <span aria-hidden="true">→</span>
                 </Link>
                 <Link
-                  to="/app"
+                  to="/contact-sales?source=landing-hero"
                   className="text-[11px] tracking-wide underline-offset-4 transition hover:underline focus-visible:outline-none focus-visible:underline"
                   style={{ color: LANDING_MUTED }}
                 >
-                  {HERO_DASHBOARD_CTA_LABEL}
+                  {CTA.enterprise}
                 </Link>
               </div>
 
@@ -614,14 +616,14 @@ export function MainLanding() {
                 className="inline-flex items-center justify-center gap-2 px-7 py-3.5 font-semibold transition hover:brightness-105"
                 style={{ backgroundColor: LANDING_BUTTON, color: LANDING_BUTTON_TEXT }}
               >
-                Kostenlosen Governance Scan starten <ArrowRight className="h-4 w-4" />
+                {HERO_SCAN_CTA_LABEL} <ArrowRight className="h-4 w-4" />
               </Link>
               <Link
-                to="/pricing"
+                to="/app"
                 className="inline-flex items-center justify-center gap-2 border px-7 py-3.5 font-medium transition hover:bg-[#e4cfa2]/10"
                 style={{ borderColor: `${LANDING_ACCENT}66`, color: LANDING_ACCENT }}
               >
-                Preise ansehen
+                {HERO_DASHBOARD_CTA_LABEL}
               </Link>
             </div>
           </div>

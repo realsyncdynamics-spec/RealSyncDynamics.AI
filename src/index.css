@@ -1053,43 +1053,71 @@ html, body {
 .hero-earth-backdrop [data-landing-earth] canvas,
 .hero-earth-stars,
 .hero-earth-planets,
-.hero-earth-moon {
+.hero-earth-moon,
+.hero-earth-gold-network {
   pointer-events: none;
 }
 
-/* Static fallback: night Europe crop — keep land/city lights readable.
-   Upper sky is opened so CSS starfield/planets are not buried under the
-   baked-in void of europe-globe. */
+/* Static fallback: Europe night fills right — left/upper void for stars.
+   Mild grade mutes baked cyan network toward gold; SVG gold arcs sit on top. */
 .hero-earth-static {
-  filter: saturate(1.05) brightness(0.92) contrast(1.1);
+  filter: saturate(0.92) brightness(0.9) contrast(1.12) sepia(0.12);
   -webkit-mask-image:
-    radial-gradient(ellipse 78% 72% at 52% 72%, #000 0%, #000 42%, transparent 72%),
-    linear-gradient(180deg, transparent 0%, transparent 8%, #000 38%, #000 100%);
+    radial-gradient(ellipse 88% 92% at 78% 52%, #000 0%, #000 48%, transparent 78%),
+    linear-gradient(90deg, transparent 0%, #000 18%, #000 100%);
   mask-image:
-    radial-gradient(ellipse 78% 72% at 52% 72%, #000 0%, #000 42%, transparent 72%),
-    linear-gradient(180deg, transparent 0%, transparent 8%, #000 38%, #000 100%);
+    radial-gradient(ellipse 88% 92% at 78% 52%, #000 0%, #000 48%, transparent 78%),
+    linear-gradient(90deg, transparent 0%, #000 18%, #000 100%);
   -webkit-mask-composite: source-in;
   mask-composite: intersect;
 }
 
-/* Deep-space scenery sits above Earth but only paints the open sky */
+.hero-earth-static-img {
+  /* Shift residual cyan network toward warm gold without cream-washing cities */
+  filter: hue-rotate(-8deg) saturate(1.05);
+}
+
+.hero-earth-gold-network {
+  z-index: 1;
+  mix-blend-mode: screen;
+  opacity: 0.92;
+}
+
+.hero-gold-arc {
+  stroke-dasharray: 6 10;
+  animation: hero-gold-flow 9s linear infinite;
+}
+
+@keyframes hero-gold-flow {
+  to {
+    stroke-dashoffset: -48;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-gold-arc {
+    animation: none !important;
+  }
+}
+
+/* Deep-space scenery: left + upper void around Europe (right continent) */
 .hero-earth-space-scenery {
   z-index: 2;
   -webkit-mask-image: linear-gradient(
-    180deg,
+    105deg,
     #000 0%,
     #000 22%,
-    rgba(0, 0, 0, 0.75) 36%,
-    rgba(0, 0, 0, 0.25) 52%,
-    transparent 68%
+    rgba(0, 0, 0, 0.7) 38%,
+    rgba(0, 0, 0, 0.2) 55%,
+    transparent 72%
   );
   mask-image: linear-gradient(
-    180deg,
+    105deg,
     #000 0%,
     #000 22%,
-    rgba(0, 0, 0, 0.75) 36%,
-    rgba(0, 0, 0, 0.25) 52%,
-    transparent 68%
+    rgba(0, 0, 0, 0.7) 38%,
+    rgba(0, 0, 0, 0.2) 55%,
+    transparent 72%
   );
 }
 

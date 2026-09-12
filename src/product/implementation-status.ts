@@ -49,7 +49,7 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     status: 'live',
     group: 'surface',
     description:
-      'Dominik Dark/Gold Hero (AI Governance, Running in Real Time) — cream copy on photoreal Earth backdrop with starfield + distant Mars/Jupiter/Saturn; monetization cues (value subline, Kostenlos scan glow, Enterprise anfragen, Growth/Agency feature chips); scan → /audit; Starter/Growth/Agency pricing. No Sphere HUD.',
+      'Dominik Europe-OS Hero (AI Compliance Operations OS for Europe) — cream copy on night-Europe Earth backdrop (city lights + gold network, starfield + Mars/Jupiter/Saturn); Free Audit starten → /audit + Live Dashboard → /app; value subline; Enterprise in header; Starter/Growth/Agency pricing. No Sphere HUD.',
     route: '/',
     evidence: [
       'src/pages/MainLanding.tsx',
@@ -230,7 +230,7 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     status: 'live',
     group: 'visual',
     description:
-      'Public `/` full-bleed HeroEarthBackdrop (8K day+night scenery, CSS starfield + distant Mars/Jupiter/Saturn, occasional Moon, pointer-events-none) — Earth behind Dominik copy, no Sphere widget, no continent HUD.',
+      'Public `/` full-bleed HeroEarthBackdrop — Europe-night framing (continent right), city lights + gold route network, CSS starfield + distant Mars/Jupiter/Saturn, occasional Moon, pointer-events-none — Earth behind Dominik copy, no Sphere widget, no continent HUD.',
     route: '/',
     evidence: [
       'src/components/landing/HeroEarthBackdrop.tsx',

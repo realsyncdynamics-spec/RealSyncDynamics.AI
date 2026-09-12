@@ -1,6 +1,6 @@
 /**
  * Public landing SECTION for Governance Activation.
- * Does NOT replace the live `/` hero (“AI Governance, Running in Real Time”).
+ * Does NOT replace the live `/` hero (“AI Compliance Operations OS for Europe”).
  * Copy: docs/product/governance-activation.md
  */
 import { ArrowRight } from 'lucide-react';

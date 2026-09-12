@@ -263,6 +263,11 @@ export interface PlanLimits {
   answersPerMonth: number;
   /** Überwachte Domains / Assets */
   domains: number;
+  /**
+   * SiteOS-Websites je Mandant (distinct `slug` in `siteos_blueprints`).
+   * Free Audit = 0 (Preview ohne Persistenz/Publish). Starter 1 · Growth 3 · Agency 10.
+   */
+  sites: number;
   /** Automationsläufe pro Monat */
   automationRunsPerMonth: number;
   /** Benutzer-Sitze */
@@ -314,6 +319,17 @@ export interface PlanPermissions {
   provenanceSigning: boolean;
   /** Priorisierter Support / SLA */
   prioritySupport: boolean;
+  /**
+   * SiteOS Builder: Tenant-Sites anlegen/übernehmen (Create/Claim).
+   * Anon-/build-Preview bleibt ohne diese Berechtigung erreichbar.
+   */
+  siteosBuilder: boolean;
+  /**
+   * SiteOS Publish-Pfad (Gate/Approve). Free Audit = aus.
+   * Öffentliches Deploy bleibt Preview, bis der Deploy-Pfad live ist —
+   * diese Flag freischaltet nur die bezahlte Publish-Berechtigung.
+   */
+  siteosPublish: boolean;
 }
 
 export type SupportLevel = 'community' | 'email' | 'priority' | 'dedicated';
@@ -485,6 +501,8 @@ const NO_PERMISSIONS: PlanPermissions = {
   bulkOperations: false,
   provenanceSigning: false,
   prioritySupport: false,
+  siteosBuilder: false,
+  siteosPublish: false,
 };
 
 function permissions(overrides: Partial<PlanPermissions>): PlanPermissions {
@@ -515,6 +533,7 @@ export const PLANS: Plan[] = [
       bots: 0,
       answersPerMonth: 0,
       domains: 1,
+      sites: 0,
       automationRunsPerMonth: 0,
       seats: 1,
       apiCallsPerMonth: 0,
@@ -544,6 +563,7 @@ export const PLANS: Plan[] = [
       ],
       automation_ops: [
         'Kein Account, kein Setup erforderlich',
+        'SiteOS Builder: Preview unter /build — kein Publish, keine Tenant-Site',
       ],
       multi_tenant_reseller: [],
     },
@@ -571,6 +591,7 @@ export const PLANS: Plan[] = [
       bots: 1,
       answersPerMonth: 500,
       domains: 1,
+      sites: 1,
       automationRunsPerMonth: 25,
       seats: 1,
       apiCallsPerMonth: 0,
@@ -595,6 +616,8 @@ export const PLANS: Plan[] = [
     permissions: permissions({
       evidenceVault: true,
       auditExport: true,
+      siteosBuilder: true,
+      siteosPublish: true,
     }),
     support: 'email',
     // AP2: Starter ist der einzige Plan **ohne** WhatsApp-Kanal — und damit
@@ -620,6 +643,7 @@ export const PLANS: Plan[] = [
         'E-Mail-Alert bei neuen Findings',
         '25 Automationsläufe pro Monat',
         '1 Governance-Bot mit 500 Antworten (Website)',
+        '1 SiteOS-Website (Create/Claim); Publish-Berechtigung — öffentliches Deploy Preview',
       ],
       multi_tenant_reseller: [],
     },
@@ -647,6 +671,7 @@ export const PLANS: Plan[] = [
       bots: 2,
       answersPerMonth: 2_000,
       domains: 3,
+      sites: 3,
       automationRunsPerMonth: 100,
       seats: 5,
       // AP2: API, Bulk-Jobs und Schlüssel wandern von Agency nach Growth.
@@ -683,6 +708,8 @@ export const PLANS: Plan[] = [
       scheduler: true,
       bulkOperations: true,
       provenanceSigning: true,
+      siteosBuilder: true,
+      siteosPublish: true,
     }),
     support: 'priority',
     // `whatsapp` entfällt hier: Growth *enthält* den Kanal bereits. Ein
@@ -712,6 +739,7 @@ export const PLANS: Plan[] = [
         '10 Bulk-Jobs pro Monat, 3 API-Schlüssel',
         '100 Automationsläufe pro Monat',
         '2 Governance-Bots mit 2.000 Antworten (Website, WhatsApp, Telegram)',
+        '3 SiteOS-Websites; Publish-Berechtigung — öffentliches Deploy Preview',
       ],
       multi_tenant_reseller: [],
     },
@@ -742,6 +770,7 @@ export const PLANS: Plan[] = [
       bots: 10,
       answersPerMonth: 25_000,
       domains: 10,
+      sites: 10,
       automationRunsPerMonth: 500,
       seats: 15,
       apiCallsPerMonth: 50_000,
@@ -772,6 +801,8 @@ export const PLANS: Plan[] = [
       bulkOperations: true,
       provenanceSigning: true,
       prioritySupport: true,
+      siteosBuilder: true,
+      siteosPublish: true,
     }),
     support: 'priority',
     addons: ['response_pack', 'whatsapp', 'voice', 'compliance_pack', 'agency_bot_pack', 'white_label'],
@@ -794,6 +825,7 @@ export const PLANS: Plan[] = [
         'REST-API und Webhooks für CI/CD',
         '500 Automationsläufe pro Monat',
         '10 Governance-Bots mit 25.000 Antworten (alle Kanäle inkl. Voice)',
+        '10 SiteOS-Websites; Publish-Berechtigung — öffentliches Deploy Preview',
       ],
       multi_tenant_reseller: [
         'White-Label-Berichte mit eigenem Branding',
@@ -831,6 +863,8 @@ export const PLANS: Plan[] = [
       bots: 20,
       answersPerMonth: 50_000,
       domains: 25,
+      // Anzeige auf der Preisseite; autorisiert ist -1 (Vertrag) in PLAN_ENTITLEMENTS.
+      sites: 25,
       automationRunsPerMonth: 2_000,
       seats: 50,
       apiCallsPerMonth: 250_000,
@@ -864,6 +898,8 @@ export const PLANS: Plan[] = [
       bulkOperations: true,
       provenanceSigning: true,
       prioritySupport: true,
+      siteosBuilder: true,
+      siteosPublish: true,
     }),
     support: 'dedicated',
     // `whatsapp` entfällt wie bei Growth: Der Kanal ist im Plan enthalten
@@ -920,6 +956,7 @@ export const PLANS: Plan[] = [
       bots: 50,
       answersPerMonth: 100_000,
       domains: 100,
+      sites: 50,
       automationRunsPerMonth: 10_000,
       seats: 100,
       apiCallsPerMonth: 1_000_000,
@@ -953,6 +990,8 @@ export const PLANS: Plan[] = [
       bulkOperations: true,
       provenanceSigning: true,
       prioritySupport: true,
+      siteosBuilder: true,
+      siteosPublish: true,
     }),
     support: 'dedicated',
     addons: ['response_pack', 'whatsapp', 'voice', 'compliance_pack', 'agency_bot_pack', 'white_label'],
@@ -1015,6 +1054,7 @@ export const PLANS: Plan[] = [
       bots: 1,
       answersPerMonth: 1_000,
       domains: 1,
+      sites: 1,
       automationRunsPerMonth: 10,
       seats: 3,
       // Kein API-Zugriff in diesem Produkt (`permissions.api === false`).
@@ -1038,6 +1078,9 @@ export const PLANS: Plan[] = [
     permissions: permissions({
       evidenceVault: true,
       auditExport: true,
+      siteosBuilder: true,
+      // Einmalkauf: Create ja, Publish bleibt am Abo (Starter+).
+      siteosPublish: false,
     }),
     support: 'email',
     addons: [],
@@ -1771,6 +1814,7 @@ export const ENTITLEMENT_KEYS = [
   'limit.evidence_storage_gb',
   'limit.llm_queries_monthly',
   'limit.monthly_registrations',
+  'limit.sites',
   'limit.team_seats',
   'limit.whatsapp_conversations_monthly',
   'limit.workflow_runs_monthly',
@@ -1786,6 +1830,8 @@ export const ENTITLEMENT_KEYS = [
   'public-sector.mode',
   'reports.export',
   'scheduler.enabled',
+  'siteos.builder',
+  'siteos.publish',
   'sla.priority',
   'sso.enabled',
   'team.members',
@@ -1848,7 +1894,10 @@ export const PLAN_ENTITLEMENTS: Readonly<
     'evidence.basic_vault': 1,
     'governance.ai_register': 1,
     'governance.dsgvo_directory': 1,
+    'limit.sites': 0,
     'reports.export': 0,
+    'siteos.builder': 0,
+    'siteos.publish': 0,
     'website.scan': 1,
     'website.scan_monthly_limit': -1,
   },
@@ -1871,9 +1920,12 @@ export const PLAN_ENTITLEMENTS: Readonly<
     'limit.compliance_exports_monthly': 2,
     'limit.domains': 1,
     'limit.llm_queries_monthly': 100,
+    'limit.sites': 1,
     'limit.team_seats': 1,
     'monitoring.monthly': 1,
     'policy.packs': 1,
+    'siteos.builder': 1,
+    'siteos.publish': 1,
     'website.scan': 1,
     'website.scan_monthly_limit': -1,
   },
@@ -1913,6 +1965,7 @@ export const PLAN_ENTITLEMENTS: Readonly<
     'limit.compliance_exports_monthly': 12,
     'limit.domains': 3,
     'limit.llm_queries_monthly': 500,
+    'limit.sites': 3,
     'limit.team_seats': 5,
     'limit.whatsapp_conversations_monthly': 500,
     'limit.workflow_runs_monthly': 100,
@@ -1923,6 +1976,8 @@ export const PLAN_ENTITLEMENTS: Readonly<
     'policy.packs': 1,
     'provenance.advanced': 1,
     'scheduler.enabled': 1,
+    'siteos.builder': 1,
+    'siteos.publish': 1,
     'team.members': 1,
     'webhooks.enabled': 1,
     'website.scan': 1,
@@ -1969,6 +2024,7 @@ export const PLAN_ENTITLEMENTS: Readonly<
     'limit.compliance_exports_monthly': 100,
     'limit.domains': 10,
     'limit.llm_queries_monthly': -1,
+    'limit.sites': 10,
     'limit.team_seats': 15,
     'limit.whatsapp_conversations_monthly': 2500,
     'limit.workflow_runs_monthly': 1000,
@@ -1980,6 +2036,8 @@ export const PLAN_ENTITLEMENTS: Readonly<
     'policy.packs': 1,
     'provenance.advanced': 1,
     'scheduler.enabled': 1,
+    'siteos.builder': 1,
+    'siteos.publish': 1,
     'sla.priority': 1,
     'team.members': 1,
     'webhooks.enabled': 1,
@@ -2029,6 +2087,7 @@ export const PLAN_ENTITLEMENTS: Readonly<
     'limit.compliance_exports_monthly': -1,
     'limit.domains': -1,
     'limit.llm_queries_monthly': -1,
+    'limit.sites': -1,
     'limit.team_seats': -1,
     'limit.whatsapp_conversations_monthly': -1,
     'limit.workflow_runs_monthly': -1,
@@ -2041,6 +2100,8 @@ export const PLAN_ENTITLEMENTS: Readonly<
     'policy.packs': 1,
     'provenance.advanced': 1,
     'scheduler.enabled': 1,
+    'siteos.builder': 1,
+    'siteos.publish': 1,
     'sla.priority': 1,
     'sso.enabled': 1,
     'team.members': 1,
@@ -2091,6 +2152,7 @@ export const PLAN_ENTITLEMENTS: Readonly<
     'limit.compliance_exports_monthly': 500,
     'limit.domains': 50,
     'limit.llm_queries_monthly': -1,
+    'limit.sites': 50,
     'limit.team_seats': 50,
     'limit.whatsapp_conversations_monthly': -1,
     'limit.workflow_runs_monthly': 2500,
@@ -2103,6 +2165,8 @@ export const PLAN_ENTITLEMENTS: Readonly<
     'policy.packs': 1,
     'provenance.advanced': 1,
     'scheduler.enabled': 1,
+    'siteos.builder': 1,
+    'siteos.publish': 1,
     'sla.priority': 1,
     'team.members': 1,
     'webhooks.enabled': 1,
@@ -2124,9 +2188,12 @@ export const PLAN_ENTITLEMENTS: Readonly<
     'limit.compliance_exports_monthly': 5,
     'limit.domains': 1,
     'limit.evidence_storage_gb': 5,
+    'limit.sites': 1,
     'limit.team_seats': 3,
     'policy.packs': 1,
     'reports.export': 1,
+    'siteos.builder': 1,
+    'siteos.publish': 0,
     'website.scan': 1,
   },
 };

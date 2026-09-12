@@ -59,6 +59,7 @@ const PAARE = {
   bots: 'limit.bots',
   answersPerMonth: 'limit.bot_messages_monthly',
   domains: 'limit.domains',
+  sites: 'limit.sites',
   automationRunsPerMonth: 'limit.automation_runs_monthly',
   seats: 'limit.team_seats',
   apiCallsPerMonth: 'limit.api_calls_monthly',

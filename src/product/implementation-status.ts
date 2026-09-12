@@ -270,12 +270,14 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     status: 'preview',
     group: 'channels',
     description:
-      'SiteOS Builder unter /build mit Governance-OS-Chrome — Publish/Domain und Governance-Tiefe bleiben Preview.',
+      'SiteOS Builder unter /build — Preview. Create/Claim plan-gated (limit.sites / siteos.builder); Publish-Berechtigung ab Starter, öffentliches Deploy bleibt Preview.',
     route: '/build',
     evidence: [
       'src/unified-entry/pages/BuildStudioPage.tsx',
       'packages/siteos-core',
       'src/config/public-nav.ts',
+      'shared/pricing.ts',
+      'supabase/functions/siteos/site-entitlements.ts',
     ],
     showOnRoadmap: true,
   },

@@ -134,7 +134,7 @@ test.describe('Governance-AI-Landing (/)', () => {
   });
 
   test.skip('Kennzahlen / Sphere im Hero sind als Demo gekennzeichnet', async ({ page }) => {
-    // Europe-OS hero: no Sphere DEMO HUD on `/` — interactive Earth / network only.
+    // Public `/`: interactive Earth backdrop — no Sphere DEMO HUD / KPIs.
     await expect(page.locator('[data-governance-sphere]')).toHaveCount(0);
     await expect(page.getByText(/DEMO\s*\/\s*SIMULATED|BEISPIELANSICHT/i)).toHaveCount(0);
   });

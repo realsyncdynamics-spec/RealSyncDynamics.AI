@@ -49,12 +49,12 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     status: 'live',
     group: 'surface',
     description:
-      'Europe-OS Hero: AI Compliance Operations OS for Europe — Free Audit + Live Dashboard, Europe-Network-Map rechts (kein Sphere-HUD).',
+      'Europe-OS Hero-Copy (AI Compliance Operations OS for Europe — Free Audit + Live Dashboard) über Sovereign Night: interaktive Photoreal-Earth full-bleed (kein Europe-Panel, kein Sphere-HUD).',
     route: '/',
     evidence: [
       'src/pages/MainLanding.tsx',
       'src/components/governance-frontend/hero-content.ts',
-      'src/components/landing/EuropeNetworkOverlay.tsx',
+      'src/components/landing/HeroEarthBackdrop.tsx',
       'test/landing/platform-capabilities.test.ts',
     ],
     showOnRoadmap: false,
@@ -215,17 +215,17 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
   },
   {
     id: 'hero-earth-scenery',
-    name: 'Europe Network Hero',
+    name: 'Photoreal Earth Hero',
     status: 'live',
     group: 'visual',
     description:
-      'Rechts gerahmte Europe-Network-Map (Gold-Routen auf Graphite) mit optional interaktivem Photoreal-Earth — kein Sphere-HUD, keine Fake-KPIs.',
+      'Interaktive photoreal Weltkugel auf / (8K Desktop / 4K Mobile, Orbit/Drag, Zoom, Ländergrenzen on hover). Full-bleed hinter Hero-Copy — kein Europe-Crop-Panel, kein Sphere-HUD, keine Fake-KPIs.',
     route: '/',
     evidence: [
       'src/components/landing/HeroEarthBackdrop.tsx',
-      'src/components/landing/EuropeNetworkOverlay.tsx',
       'src/components/landing/HeroEarthBackdropScene.tsx',
-      'public/europe-globe.webp',
+      'src/components/visual/earthTextures.ts',
+      'PR #1338',
     ],
     showOnRoadmap: false,
   },

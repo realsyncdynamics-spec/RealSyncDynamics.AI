@@ -270,14 +270,31 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     status: 'preview',
     group: 'channels',
     description:
-      'SiteOS Builder unter /build — Preview. Create/Claim plan-gated (limit.sites / siteos.builder); Publish-Berechtigung ab Starter, öffentliches Deploy bleibt Preview.',
+      'Two-pane Studio unter /build (App Builder + Frontend Designer). Create/Claim plan-gated (limit.sites / siteos.builder); Publish-Berechtigung ab Starter, öffentliches Deploy/Domain bleibt Preview.',
     route: '/build',
     evidence: [
       'src/unified-entry/pages/BuildStudioPage.tsx',
+      'src/features/siteos/builderEntitlements.ts',
+      'src/features/siteos/BuilderUpgradePanel.tsx',
       'packages/siteos-core',
       'src/config/public-nav.ts',
       'shared/pricing.ts',
       'supabase/functions/siteos/site-entitlements.ts',
+    ],
+    showOnRoadmap: true,
+  },
+  {
+    id: 'builder-entitlement-gate',
+    name: 'Builder-Plan-Freischaltung',
+    status: 'preview',
+    group: 'billing',
+    description:
+      'Studio liest siteos.builder / siteos.publish / limit.sites via useEntitlements (Monetisierungs-PR). Publish bleibt Preview; kein Fake-Abo.',
+    route: '/build',
+    evidence: [
+      'src/features/siteos/builderEntitlements.ts',
+      'shared/pricing.ts',
+      'test/siteos/builder-entitlements.test.ts',
     ],
     showOnRoadmap: true,
   },

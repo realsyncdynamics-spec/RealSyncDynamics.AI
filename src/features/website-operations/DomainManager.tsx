@@ -1,12 +1,17 @@
 /**
  * Domain Manager
- * Connect, validate, and manage domains for website projects
+ * Connect, validate, and manage domains for website projects.
+ *
+ * Calls website-domain-manager Edge Function with session auth.
+ * Lists domains from website_domains (RLS). Never fakes "active".
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
 import { Badge } from '../../components/ui/Badge';
+import { getSupabase } from '../../lib/supabase';
+import { getSupabaseUrl } from '../../lib/supabaseUrl';
 import './DomainManager.css';
 
 interface Domain {
@@ -21,34 +26,76 @@ interface Domain {
 
 interface DomainManagerProps {
   projectId: string;
+  tenantId: string;
   onDomainConnected?: (domain: Domain) => void;
 }
 
-export function DomainManager({ projectId, onDomainConnected }: DomainManagerProps) {
+async function callDomainManager(body: Record<string, unknown>) {
+  const sb = getSupabase();
+  const { data: sessionData } = await sb.auth.getSession();
+  const token = sessionData.session?.access_token;
+  if (!token) {
+    throw new Error('Nicht angemeldet — Domain-Bindung erfordert Check-in.');
+  }
+
+  const response = await fetch(`${getSupabaseUrl()}/functions/v1/website-domain-manager`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(body),
+  });
+
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const msg =
+      payload?.error?.message ||
+      payload?.message ||
+      payload?.error ||
+      `Domain-Operation fehlgeschlagen (${response.status})`;
+    throw new Error(typeof msg === 'string' ? msg : 'Domain-Operation fehlgeschlagen');
+  }
+  return payload;
+}
+
+export function DomainManager({ projectId, tenantId, onDomainConnected }: DomainManagerProps) {
   const [domains, setDomains] = useState<Domain[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showAddDomain, setShowAddDomain] = useState(false);
   const [newDomain, setNewDomain] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [validationError, setValidationError] = useState('');
+  const [listError, setListError] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadDomains();
-  }, [projectId]);
-
-  async function loadDomains() {
+  const loadDomains = useCallback(async () => {
+    setListError(null);
     try {
-      const response = await fetch(`/api/website-projects/${projectId}/domains`);
-      if (response.ok) {
-        const data = await response.json();
-        setDomains(data.domains || []);
+      const sb = getSupabase();
+      const { data, error } = await sb
+        .from('website_domains')
+        .select('id, domain, domain_type, cloudflare_status, ssl_status, is_primary, connected_at')
+        .eq('project_id', projectId)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        setDomains([]);
+        setListError(error.message);
+        return;
       }
+      setDomains((data ?? []) as Domain[]);
     } catch (err) {
-      console.error('Failed to load domains:', err);
+      setDomains([]);
+      setListError(err instanceof Error ? err.message : 'Domains konnten nicht geladen werden');
     } finally {
       setIsLoading(false);
     }
-  }
+  }, [projectId]);
+
+  useEffect(() => {
+    setIsLoading(true);
+    void loadDomains();
+  }, [loadDomains]);
 
   async function connectDomain(e: React.FormEvent) {
     e.preventDefault();
@@ -61,30 +108,19 @@ export function DomainManager({ projectId, onDomainConnected }: DomainManagerPro
 
     setIsSubmitting(true);
     try {
-      const response = await fetch('/functions/v1/website-domain-manager', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          project_id: projectId,
-          tenant_id: localStorage.getItem('tenantId'),
-          action: 'connect-domain',
-          domain: newDomain,
-        }),
+      const result = await callDomainManager({
+        project_id: projectId,
+        tenant_id: tenantId,
+        action: 'connect-domain',
+        domain: newDomain.trim().toLowerCase(),
       });
 
-      if (!response.ok) {
-        const error = await response.json();
-        setValidationError(error.message || 'Failed to connect domain');
-        return;
-      }
-
-      const result = await response.json();
       await loadDomains();
       setNewDomain('');
       setShowAddDomain(false);
 
-      if (onDomainConnected) {
-        onDomainConnected(result.data);
+      if (onDomainConnected && result?.data) {
+        onDomainConnected(result.data as Domain);
       }
     } catch (err) {
       setValidationError(err instanceof Error ? err.message : 'Unknown error');
@@ -95,20 +131,15 @@ export function DomainManager({ projectId, onDomainConnected }: DomainManagerPro
 
   async function validateDomain(domain: string) {
     try {
-      await fetch('/functions/v1/website-domain-manager', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          project_id: projectId,
-          tenant_id: localStorage.getItem('tenantId'),
-          action: 'validate-domain',
-          domain,
-        }),
+      await callDomainManager({
+        project_id: projectId,
+        tenant_id: tenantId,
+        action: 'validate-domain',
+        domain,
       });
-
       await loadDomains();
     } catch (err) {
-      console.error('Validation failed:', err);
+      setValidationError(err instanceof Error ? err.message : 'Validation failed');
     }
   }
 
@@ -116,20 +147,15 @@ export function DomainManager({ projectId, onDomainConnected }: DomainManagerPro
     if (!confirm(`Disconnect ${domain}?`)) return;
 
     try {
-      await fetch('/functions/v1/website-domain-manager', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          project_id: projectId,
-          tenant_id: localStorage.getItem('tenantId'),
-          action: 'disconnect-domain',
-          domain,
-        }),
+      await callDomainManager({
+        project_id: projectId,
+        tenant_id: tenantId,
+        action: 'disconnect-domain',
+        domain,
       });
-
       await loadDomains();
     } catch (err) {
-      console.error('Disconnect failed:', err);
+      setValidationError(err instanceof Error ? err.message : 'Disconnect failed');
     }
   }
 
@@ -137,10 +163,20 @@ export function DomainManager({ projectId, onDomainConnected }: DomainManagerPro
     <div className="domain-manager">
       <div className="domain-header">
         <h3>Domains</h3>
-        <button className="btn-secondary" onClick={() => setShowAddDomain(true)}>
-          + Add Domain
+        <button type="button" className="btn-secondary" onClick={() => setShowAddDomain(true)}>
+          + Domain verbinden
         </button>
       </div>
+
+      {listError && (
+        <div className="error-message" role="status">
+          Preview / Lesefehler: {listError}. Edge Function kann trotzdem versucht werden.
+        </div>
+      )}
+
+      {validationError && !showAddDomain && (
+        <div className="error-message">{validationError}</div>
+      )}
 
       {isLoading ? (
         <div className="loading">Loading domains...</div>
@@ -152,7 +188,7 @@ export function DomainManager({ projectId, onDomainConnected }: DomainManagerPro
                 <div>
                   <h4>{domain.domain}</h4>
                   <p className="type">
-                    {domain.domain_type === 'subdomain' ? '🌐 Managed' : '🔗 Custom'}
+                    {domain.domain_type === 'subdomain' ? 'Managed Subdomain' : 'Custom Domain'}
                   </p>
                 </div>
                 {domain.is_primary && <Badge variant="success">Primary</Badge>}
@@ -176,8 +212,9 @@ export function DomainManager({ projectId, onDomainConnected }: DomainManagerPro
               {domain.cloudflare_status === 'validating' && (
                 <div className="domain-actions">
                   <button
+                    type="button"
                     className="btn-small"
-                    onClick={() => validateDomain(domain.domain)}
+                    onClick={() => void validateDomain(domain.domain)}
                   >
                     Retry Validation
                   </button>
@@ -195,8 +232,9 @@ export function DomainManager({ projectId, onDomainConnected }: DomainManagerPro
                     Visit Site
                   </a>
                   <button
+                    type="button"
                     className="btn-small btn-small--danger"
-                    onClick={() => disconnectDomain(domain.domain)}
+                    onClick={() => void disconnectDomain(domain.domain)}
                   >
                     Disconnect
                   </button>
@@ -213,39 +251,37 @@ export function DomainManager({ projectId, onDomainConnected }: DomainManagerPro
         </div>
       ) : (
         <Card className="empty-state">
-          <p>No domains connected yet</p>
-          <button className="btn-primary" onClick={() => setShowAddDomain(true)}>
-            Connect your first domain
+          <p>Noch keine Custom Domain verbunden</p>
+          <button type="button" className="btn-primary" onClick={() => setShowAddDomain(true)}>
+            Domain verbinden
           </button>
         </Card>
       )}
 
-      {/* Add Domain Modal */}
       {showAddDomain && (
         <div className="modal-overlay" onClick={() => setShowAddDomain(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <h3>Add Domain</h3>
+            <h3>Custom Domain verbinden</h3>
 
-            <form onSubmit={connectDomain}>
+            <form onSubmit={(e) => void connectDomain(e)}>
               <div className="input-group">
                 <Input
                   label="Domain"
-                  placeholder="example.com or subdomain.realsyncdynamicsai.de"
+                  placeholder="example.com oder subdomain.realsyncdynamicsai.de"
                   value={newDomain}
                   onChange={(e) => setNewDomain(e.target.value)}
                 />
               </div>
 
-              {validationError && (
-                <div className="error-message">{validationError}</div>
-              )}
+              {validationError && <div className="error-message">{validationError}</div>}
 
               <div className="info-box">
                 <p>
-                  <strong>Subdomains:</strong> Use realsyncdynamicsai.de subdomains for instant activation.
+                  <strong>Subdomains:</strong> *.realsyncdynamicsai.de für schnelle Aktivierung.
                 </p>
                 <p>
-                  <strong>Custom domains:</strong> Bring your own domain (requires DNS update).
+                  <strong>Custom domains:</strong> DNS-Update erforderlich. Status bleibt
+                  validating, bis Cloudflare bestätigt — kein Fake-Connected.
                 </p>
               </div>
 
@@ -255,10 +291,10 @@ export function DomainManager({ projectId, onDomainConnected }: DomainManagerPro
                   className="btn-secondary"
                   onClick={() => setShowAddDomain(false)}
                 >
-                  Cancel
+                  Abbrechen
                 </button>
                 <button type="submit" className="btn-primary" disabled={isSubmitting}>
-                  {isSubmitting ? 'Connecting...' : 'Connect Domain'}
+                  {isSubmitting ? 'Verbinden…' : 'Domain verbinden'}
                 </button>
               </div>
             </form>
@@ -272,13 +308,13 @@ export function DomainManager({ projectId, onDomainConnected }: DomainManagerPro
 function getStatusIcon(status: string): string {
   switch (status) {
     case 'active':
-      return '✅';
+      return '✓';
     case 'validating':
-      return '⏳';
+      return '…';
     case 'pending':
-      return '⏸️';
+      return '·';
     case 'failed':
-      return '❌';
+      return '✕';
     default:
       return '•';
   }
@@ -291,7 +327,7 @@ function getSSLIcon(status: string): string {
     case 'pending_validation':
       return '🔓';
     case 'expired':
-      return '⚠️';
+      return '!';
     default:
       return '•';
   }

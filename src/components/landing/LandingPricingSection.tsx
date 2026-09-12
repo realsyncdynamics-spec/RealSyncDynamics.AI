@@ -140,7 +140,7 @@ export function LandingPricingSection() {
           })}
         </div>
 
-        <div className="mt-8 text-center">
+        <div className="mt-8 text-center space-y-2">
           <Link
             to="/pricing"
             className="inline-flex items-center gap-2 text-[12px] transition hover:opacity-90"
@@ -148,6 +148,12 @@ export function LandingPricingSection() {
           >
             Alle Preise und Module <ArrowRight className="h-3.5 w-3.5" />
           </Link>
+          <p
+            className="text-[10px] tracking-[.08em]"
+            style={{ fontFamily: LANDING_MONO, color: LANDING_MUTED }}
+          >
+            Monatlich live · Yearly Coming Soon · Enterprise auf Anfrage (/contact-sales)
+          </p>
         </div>
       </div>
     </section>

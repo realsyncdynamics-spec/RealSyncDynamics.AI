@@ -73,6 +73,8 @@ import { CookieConsentSdk } from './pages/CookieConsentSdk';
 import { AuditPro } from './pages/AuditPro';
 import { DsgvoToolVergleich } from './pages/DsgvoToolVergleich';
 import { ContactSales } from './pages/ContactSales';
+import { KontaktPage } from './pages/KontaktPage';
+import { LogoutPage } from './pages/LogoutPage';
 import { EnterpriseAiOs } from './pages/EnterpriseAiOs';
 import { EnterpriseAiOsFoundingAccess } from './pages/EnterpriseAiOsFoundingAccess';
 import { EnterpriseAiOsDashboard } from './pages/EnterpriseAiOsDashboard';
@@ -597,6 +599,8 @@ function RoutesWithTracking() {
       <Route path="/audit-pro" element={<AuditPro />} />
       <Route path="/dsgvo-tool-vergleich" element={<DsgvoToolVergleich />} />
       <Route path="/contact-sales" element={<ContactSales />} />
+      <Route path="/kontakt" element={<KontaktPage />} />
+      <Route path="/contact" element={<Navigate to="/kontakt" replace />} />
       <Route path="/enterprise" element={<EnterpriseLanding />} />
       {/* Enterprise AI OS — Founding Access + Dashboard */}
       <Route path="/enterprise-ai-os" element={<EnterpriseAiOs />} />
@@ -1045,6 +1049,14 @@ function RoutesWithTracking() {
       <Route path="/signin" element={<Navigate to="/welcome" replace />} />
       <Route path="/signup" element={<Navigate to="/welcome" replace />} />
       <Route path="/register" element={<Navigate to="/welcome" replace />} />
+      <Route path="/logout" element={<LogoutPage />} />
+      <Route path="/signout" element={<LogoutPage />} />
+      {/* Canonical app dashboard aliases */}
+      <Route path="/app/home" element={<Navigate to="/app/dashboard" replace />} />
+      <Route path="/governance/dashboard" element={<Navigate to="/app/dashboard" replace />} />
+      <Route path="/domain-check" element={<Navigate to="/audit" replace />} />
+      <Route path="/domain-checker" element={<Navigate to="/audit" replace />} />
+      <Route path="/websites" element={<Navigate to="/welcome?next=/app/websites" replace />} />
 
       {/* ── Enterprise OS Prototype — neues Designsystem + IA (Phase 1 Foundation) ──
           Eigenständiger Klick-Prototyp mit Mockdaten unter /os, /os/app/*.

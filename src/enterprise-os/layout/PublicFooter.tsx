@@ -3,44 +3,48 @@ import { Link } from 'react-router-dom';
 import { ShieldCheck, Lock, MapPin } from 'lucide-react';
 import { Logo } from '../../components/Logo';
 import { openCookieSettings } from '../../components/CookieConsent';
+import { PUBLIC_FOOTER_LINKS } from '../../config/public-nav';
 
+/**
+ * Enterprise-OS public footer — wired to canonical /app and legal routes.
+ * (Prototype /os/* paths are no longer advertised as production destinations.)
+ */
 const COLUMNS: { title: string; links: { label: string; to: string }[] }[] = [
   {
     title: 'Plattform',
     links: [
-      { label: 'Executive Dashboard', to: '/os/app' },
-      { label: 'Compliance Command Center', to: '/os/app/compliance' },
-      { label: 'Evidence Vault', to: '/os/app/evidence' },
-      { label: 'Risk Graph', to: '/os/app/risks' },
-      { label: 'Monitoring', to: '/os/app/monitoring' },
-      { label: 'AI Use Case Registry', to: '/os/app/ai-usecases' },
+      { label: 'Dashboard', to: '/welcome?next=/app/dashboard' },
+      { label: 'Governance Runtime', to: '/governance-runtime' },
+      { label: 'Websites / Domains', to: '/welcome?next=/app/websites' },
+      { label: 'Builder', to: '/welcome?next=/build' },
+      { label: 'Bots', to: '/app/bots' },
+      { label: 'Scanner', to: '/audit' },
     ],
   },
   {
     title: 'Lösungen',
     links: [
-      { label: 'DSGVO Audit', to: '/os/audit' },
-      { label: 'EU AI Act Governance', to: '/os/ai-act' },
-      { label: 'Agenturen / White Label', to: '/os/agencies' },
-      { label: 'Pricing', to: '/os/pricing' },
+      { label: 'DSGVO Audit', to: '/audit' },
+      { label: 'EU AI Act', to: '/ai-act' },
+      { label: 'Branchen', to: '/branchen' },
+      { label: 'Preise', to: '/pricing' },
+      { label: 'Roadmap', to: '/roadmap' },
     ],
   },
   {
     title: 'Rechtliches & Sicherheit',
     links: [
-      { label: 'Datenschutz', to: '/legal/privacy' },
-      { label: 'Impressum', to: '/legal/impressum' },
+      ...PUBLIC_FOOTER_LINKS.map((l) => ({ label: l.label, to: l.to })),
       { label: 'Sub-Prozessoren (Art. 28)', to: '/legal/sub-processors' },
-      { label: 'Allgemeine Bedingungen', to: '/legal/terms' },
-      { label: 'Widerruf', to: '/legal/widerruf' },
-      { label: 'Security & Compliance', to: '/security' },
+      { label: 'Security', to: '/sicherheit' },
     ],
   },
   {
     title: 'Konto',
     links: [
-      { label: 'Login', to: '/os/login' },
-      { label: 'Registrieren', to: '/os/signup' },
+      { label: 'Login / Check-in', to: '/welcome' },
+      { label: 'Dashboard', to: '/app/dashboard' },
+      { label: 'Logout / Check-out', to: '/logout' },
     ],
   },
 ];

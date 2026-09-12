@@ -49,12 +49,12 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     status: 'live',
     group: 'surface',
     description:
-      'Dominik Dark/Gold Hero (AI Governance, Running in Real Time) — left copy + right GovernanceSphereHost DEMO-HUD; cream CTAs; Starter/Growth/Agency pricing.',
+      'Dominik Dark/Gold Hero (AI Governance, Running in Real Time) — left copy + right HeroEuropeSunrise (Europe + sunrise); cream CTAs; Starter/Growth/Agency pricing.',
     route: '/',
     evidence: [
       'src/pages/MainLanding.tsx',
       'src/components/governance-frontend/hero-content.ts',
-      'src/components/governance-frontend/GovernanceSphereHost.tsx',
+      'src/components/landing/HeroEuropeSunrise.tsx',
       'test/landing/platform-capabilities.test.ts',
     ],
     showOnRoadmap: false,

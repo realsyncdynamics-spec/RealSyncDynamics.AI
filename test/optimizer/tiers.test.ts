@@ -63,8 +63,16 @@ describe('formatTierPrice', () => {
     const bronze = OPTIMIZER_TIERS.find((t) => t.id === 'bronze')!; // → starter €79
     expect(formatTierPrice(bronze)).toBe('€79 / Monat');
   });
-  it('nutzt für Enterprise (Diamant) den realen Preis aus der Pricing-Config', () => {
-    const diamant = OPTIMIZER_TIERS.find((t) => t.id === 'diamant')!; // → enterprise €1249
-    expect(formatTierPrice(diamant)).toBe('€1249 / Monat');
+  it('zeigt für Enterprise (Diamant) keinen Fake-Festpreis', () => {
+    const diamant = OPTIMIZER_TIERS.find((t) => t.id === 'diamant')!; // → enterprise inquiry
+    expect(formatTierPrice(diamant)).toBe('Individuell');
+  });
+  it('zeigt für Partner (Platin) keinen Fake-Festpreis', () => {
+    const platin = OPTIMIZER_TIERS.find((t) => t.id === 'platin')!;
+    expect(formatTierPrice(platin)).toBe('Individuell');
+  });
+  it('zeigt Agency (Gold) als Self-Service-Preis', () => {
+    const gold = OPTIMIZER_TIERS.find((t) => t.id === 'gold')!;
+    expect(formatTierPrice(gold)).toBe('€699 / Monat');
   });
 });

@@ -20,14 +20,13 @@ import {
   SELLABLE_PRICING_TIERS, formatPriceEur, checkoutHrefForPlan,
 } from '../../config/pricing';
 
-// COMMERCIAL-SSOT: temporary production hotfix.
-// Canonical source migration tracked in Phase 2.
 // Die Upgrade-Leiter des Dashboards, aus der SSoT abgeleitet statt gepflegt.
-// `SELLABLE_PRICING_TIERS` enthaelt genau die heute abschliessbaren Plaene —
-// stillgelegte (Agency, Partner) fallen damit automatisch heraus.
+// `SELLABLE_PRICING_TIERS` enthält die heute abschließbaren Pläne —
+// Partner (legacy) fällt heraus; Agency ist wieder self_service.
 const UPGRADE_TIER_BLURBS: Record<string, string> = {
   starter: 'DSGVO-Monitoring · Evidence Vault · DSE-Generator',
   growth: 'KI-Governance · Continuous Monitoring · Fix-Snippets',
+  agency: 'Multi-Domain · White-Label · API / Scheduler / Bulk Jobs',
   enterprise: 'Multi-Tenant · SSO · Governance nach Vereinbarung',
 };
 
@@ -472,21 +471,8 @@ function Body({
         </div>
       </div>
 
-      {/* Upgrade-CTAs */}
+      {/* Upgrade-CTAs — Starter / Growth / Agency / Enterprise aus SSoT */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        {/*
-          COMMERCIAL-SSOT: temporary production hotfix.
-          Canonical source migration tracked in Phase 2.
-
-          Die Leiter kam aus einem Literal und zeigte zuletzt auf
-          `/checkout/agency` — einen Plan, den AP2 stillgelegt hat und den
-          `stripe-checkout` mit PLAN_RETIRED abweist. Der Nutzer landete also
-          aus dem Dashboard heraus in einer Sackgasse.
-
-          Statt das Literal zu korrigieren, wird die Leiter jetzt aus
-          SELLABLE_PRICING_TIERS abgeleitet: Preis, Ziel und Trial-Hinweis
-          stammen aus der SSoT und können nicht erneut auseinanderlaufen.
-        */}
         {UPGRADE_TIERS.map((plan) => (
           <a
             key={plan.tier}

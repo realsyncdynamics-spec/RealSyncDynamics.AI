@@ -664,9 +664,9 @@ export const PLANS: Plan[] = [
     permissions: permissions({
       evidenceVault: true,
       auditExport: true,
-      // AP2 — Zielzustand §1.1: Diese Fähigkeiten lagen ausschließlich auf
-      // Agency. Da Agency als Self-Service entfällt, brauchen sie ein
-      // Zuhause, sonst gehen sie mit dem Plan verloren.
+      // AP2 — Zielzustand §1.1: Diese Fähigkeiten lagen ursprünglich nur
+      // auf Agency. Growth trägt sie jetzt mit, damit Ein-Mandanten-
+      // Teams API/Webhooks ohne Agency-Upgrade nutzen können.
       api: true,
       webhooks: true,
       scheduler: true,

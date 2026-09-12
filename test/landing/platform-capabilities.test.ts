@@ -167,7 +167,7 @@ describe('Erreichbarkeit — fertige Seiten sind von der Startseite aus verlinkt
   });
 
   it('Header-CTA folgt der Governance-OS-Hierarchie', () => {
-    expect(shell).toContain('Governance kostenlos starten');
+    expect(shell).toContain('Free Audit starten');
     expect(shell).toContain("to: '/governance-runtime'");
     expect(shell).toContain('PublicDarkHeader');
   });

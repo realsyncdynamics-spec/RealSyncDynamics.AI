@@ -64,7 +64,7 @@ describe('implementation-status registry', () => {
       resolve('src/components/governance-frontend/hero-content.ts'),
       'utf8',
     );
-    expect(hero).toContain('KI-Nutzung');
+    expect(hero).toContain('Europe');
     expect(hero).toContain('HERO_HEADLINE_LINES.length > 2');
   });
 });

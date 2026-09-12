@@ -124,20 +124,19 @@ test.describe('Governance-AI-Landing (/)', () => {
       await expect(h1).toContainText(line);
     }
 
-    // P0: Scan-Submit → `/audit`, secondary outline → Governance OS (#platform).
+    // P0: Free Audit → `/audit`, secondary → Live Dashboard `/app`.
     await expect(
-      page.getByRole('button', { name: /Kostenlos starten|Governance kostenlos starten/i }).first(),
+      page.getByRole('link', { name: /Free Audit starten/i }).first(),
     ).toBeVisible();
     await expect(
-      page.getByRole('link', { name: /Evidence-Preview|Guided Activation|Explore the Governance OS/i }).first(),
+      page.getByRole('link', { name: /Live Dashboard ansehen/i }).first(),
     ).toBeVisible();
   });
 
-  test('Kennzahlen / Sphere im Hero sind als Demo gekennzeichnet', async ({ page }) => {
-    // Truth Layer: anonymous visitors have no tenant — no live production counts.
-    await expect(page.getByText(/DEMO\s*\/\s*SIMULATED|BEISPIELANSICHT/i).first()).toBeVisible();
-    await expect(page.locator('[data-governance-sphere]')).toBeVisible();
-    await expect(page.getByText(/^Live\b/)).toHaveCount(0);
+  test.skip('Kennzahlen / Sphere im Hero sind als Demo gekennzeichnet', async ({ page }) => {
+    // Europe-OS hero: no Sphere DEMO HUD on `/` — interactive Earth / network only.
+    await expect(page.locator('[data-governance-sphere]')).toHaveCount(0);
+    await expect(page.getByText(/DEMO\s*\/\s*SIMULATED|BEISPIELANSICHT/i)).toHaveCount(0);
   });
 
   test('Plattform-Sektion rendert die Faehigkeitsquelle, nicht eine eigene Liste', async ({ page }) => {

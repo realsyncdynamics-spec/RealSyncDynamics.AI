@@ -6,18 +6,22 @@ import {
 } from '../../src/components/audit/Top3RisksPreview';
 import {
   CONTINUOUS_COMPLIANCE_NARRATIVE,
+  HERO_DASHBOARD_CTA_LABEL,
+  HERO_OPERATING_LOOP,
   HERO_SCAN_CTA_LABEL,
   HERO_SCAN_CTA_LONG,
   HERO_SCAN_PROMISE_LINE,
   SCAN_FUNNEL_MESSAGE,
 } from '../../src/components/governance-frontend/hero-content';
-import { PUBLIC_CTA, PUBLIC_NAV_GROUPS } from '../../src/config/public-nav';
+import { PUBLIC_CTA, PUBLIC_NAV_GROUPS, PUBLIC_PRIMARY_NAV } from '../../src/config/public-nav';
 import { getImplementation } from '../../src/product/implementation-status';
 
 describe('scan funnel copy SSOT', () => {
   it('hero CTA promises a result, never Demo/testen', () => {
-    expect(HERO_SCAN_CTA_LABEL).toBe('Kostenlos starten');
-    expect(HERO_SCAN_CTA_LONG).toBe('Governance kostenlos starten');
+    expect(HERO_SCAN_CTA_LABEL).toBe('Free Audit starten');
+    expect(HERO_SCAN_CTA_LONG).toBe('Free Audit starten');
+    expect(HERO_DASHBOARD_CTA_LABEL).toBe('Live Dashboard ansehen');
+    expect(HERO_OPERATING_LOOP).toBe('DISCOVER → CLASSIFY → ENFORCE → PROVE');
     expect(HERO_SCAN_PROMISE_LINE.toLowerCase()).not.toContain('demo');
     expect(HERO_SCAN_CTA_LABEL.toLowerCase()).not.toContain('testen');
     expect(SCAN_FUNNEL_MESSAGE).toBe(
@@ -47,6 +51,10 @@ describe('public nav ecosystem IA', () => {
     expect(PUBLIC_NAV_GROUPS.map((g) => g.id)).toEqual(
       expect.arrayContaining(['produkt', 'loesungen', 'ressourcen', 'unternehmen', 'preise']),
     );
+  });
+
+  it('Europe-OS primary strip is Produkt | Evidence | Preise', () => {
+    expect(PUBLIC_PRIMARY_NAV.map((i) => i.label)).toEqual(['Produkt', 'Evidence', 'Preise']);
   });
 
   it('marks Agent Governance as Preview', () => {

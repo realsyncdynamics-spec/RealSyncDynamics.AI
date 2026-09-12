@@ -35,8 +35,8 @@ export const LANDING_TEXT = '#f6f2e9';
 /** Gedämpfter Text. */
 export const LANDING_MUTED = '#a3a3aa';
 
-/** Akzentfarbe — institutionelles Gold (weniger Gelb als Schmuck-Gold). */
-export const LANDING_ACCENT = '#d0c3a4';
+/** Akzentfarbe — warmes Mockup-Gold (Europe + Netzwerk + Cream-CTAs). */
+export const LANDING_ACCENT = '#e4cfa2';
 
 /** Flächenfarbe der Hauptschaltfläche (Cream). */
 export const LANDING_BUTTON = '#e8ddc8';
@@ -51,18 +51,18 @@ export const LANDING_BUTTON_TEXT = '#1a1917';
 export const LANDING_GREEN = '#20d69a';
 
 /** Haarlinie. */
-export const LANDING_LINE = 'rgba(208, 195, 164, 0.18)';
+export const LANDING_LINE = 'rgba(228, 207, 162, 0.18)';
 
 /**
- * Fluid type scales — hero-first hierarchy for Sovereign Night Earth landing.
- * Cap stays viewport-safe; DE H1 (≤2 lines) must still fit viewport width.
+ * Fluid type scales — Europe-OS hero (large sans, left copy + right map).
+ * H1 must dominate the first viewport without orphan words.
  */
-export const LANDING_H1 = 'clamp(2rem, 1.2rem + 3.4vw, 3.25rem)'; // ~32–52px
+export const LANDING_H1 = 'clamp(2.15rem, 1.25rem + 3.6vw, 3.75rem)'; // ~34–60px — two lines, no wrap
 export const LANDING_H2 = 'clamp(1.8125rem, 1.15rem + 2.3vw, 2.75rem)'; // ~29–44px
 export const LANDING_H2_LG = 'clamp(1.9rem, 1.2rem + 2.5vw, 2.875rem)'; // section display
-/** Body / motto / scan promise under H1 */
+/** Body / subline under H1 */
 export const LANDING_BODY = 'clamp(1rem, 0.92rem + 0.35vw, 1.125rem)'; // ~16–18px
-/** Mono loop / eyebrows */
-export const LANDING_EYEBROW = '0.6875rem'; // 11px
+/** Mono loop / eyebrows — small caps feel */
+export const LANDING_EYEBROW = '0.75rem'; // 12px
 /** Meta / kicker / fine print */
 export const LANDING_META = '0.625rem'; // 10px

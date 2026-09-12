@@ -49,12 +49,12 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     status: 'live',
     group: 'surface',
     description:
-      'Sovereign Night (Dark/Gold/Cream) Marketing-Startseite mit interaktiver Photoreal-Earth (8K desktop / 4K mobile) und Scan-Einstieg.',
+      'Europe-OS Hero: AI Compliance Operations OS for Europe — Free Audit + Live Dashboard, Europe-Network-Map rechts (kein Sphere-HUD).',
     route: '/',
     evidence: [
       'src/pages/MainLanding.tsx',
-      'src/components/landing/HeroEarthBackdrop.tsx',
-      'src/components/landing/HeroEarthBackdropScene.tsx',
+      'src/components/governance-frontend/hero-content.ts',
+      'src/components/landing/EuropeNetworkOverlay.tsx',
       'test/landing/platform-capabilities.test.ts',
     ],
     showOnRoadmap: false,
@@ -100,7 +100,7 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     route: '/audit',
     evidence: ['src/pages/AuditLanding.tsx', 'test/landing/canonical-scan-entry.test.tsx'],
     showOnPlatform: true,
-    ctaLabel: 'Governance kostenlos starten',
+    ctaLabel: 'Free Audit starten',
   },
   {
     id: 'app-shell',
@@ -215,17 +215,17 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
   },
   {
     id: 'hero-earth-scenery',
-    name: 'Photoreal Earth Hero',
+    name: 'Europe Network Hero',
     status: 'live',
     group: 'visual',
     description:
-      'Interaktive photoreal Weltkugel auf / (8K Desktop / 4K Mobile, Orbit/Drag, Zoom, Ländergrenzen on hover). Scenery = kein Governance-Sphere-HUD, keine Fake-KPIs — nicht die alte Sphere.',
+      'Rechts gerahmte Europe-Network-Map (Gold-Routen auf Graphite) mit optional interaktivem Photoreal-Earth — kein Sphere-HUD, keine Fake-KPIs.',
     route: '/',
     evidence: [
       'src/components/landing/HeroEarthBackdrop.tsx',
+      'src/components/landing/EuropeNetworkOverlay.tsx',
       'src/components/landing/HeroEarthBackdropScene.tsx',
-      'src/components/visual/earthTextures.ts',
-      'PR #1338',
+      'public/europe-globe.webp',
     ],
     showOnRoadmap: false,
   },

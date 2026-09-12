@@ -253,19 +253,14 @@ function breadcrumbs(items: Array<{ name: string; url: string }>): Record<string
 export const SEO_CONFIG: Record<string, SEOConfig> = {
   // ─── Tier 1 — Hero / Top-Conversion ──────────────────────────────────────
   '/': {
-    // Governance-OS-Positionierung (P0, 2026-09-10) — identisch zu index.html
-    // und zur H1 aus hero-content.ts. 61 Zeichen: Brand vorn, das Keyword
-    // "Governance OS für DSGVO & EU AI Act" bleibt in der SERP vollstaendig.
-    // Der Hook liest og:/twitter: NUR aus dieser Map (SEOHead.tsx) — wer
-    // index.html aendert, muss hier nachziehen, sonst faellt der Prerender
-    // auf die alte Positionierung zurueck.
-    title: 'RealSyncDynamics.AI — Das Governance OS für DSGVO & EU AI Act',
+    // Europe-OS hero lock — matches hero-content.ts H1.
+    title: 'RealSyncDynamics.AI — AI Compliance Operations OS for Europe',
     description:
-      'Das Governance OS für DSGVO und EU AI Act: AI-Systeme, Websites, Agents und Datenflüsse erfassen, Risiken bewerten, Governance durchsetzen und Nachweise führen.',
+      'Runtime governance for regulated AI systems. Continuous evidence. EU-native by design. Free Audit starten — Acquisition-Scan, dann Governance OS.',
     canonical: `${SITE_URL}/`,
-    ogTitle: 'Das Governance OS für DSGVO & EU AI Act',
+    ogTitle: 'AI Compliance Operations OS for Europe',
     ogDescription:
-      'RealSyncDynamics.AI verbindet DSGVO, EU AI Act, Policy-Durchsetzung und auditfähige Nachweise in einer operativen Governance Runtime.',
+      'Runtime governance for regulated AI systems. Continuous evidence. EU-native by design.',
   },
   '/pricing': {
     title: 'Preise – Runtime-native AI-Governance-Plattform | RealSyncDynamics.AI',

@@ -17,7 +17,15 @@ export function CheckoutSuccess() {
 
   useEffect(() => {
     async function verifyCheckout() {
+      // Unauthenticated return from Stripe → check-in, then dashboard.
+      if (!auth.isLoading && !auth.user?.id) {
+        const next = `/checkout/success?${searchParams.toString()}`;
+        navigate(`/welcome?next=${encodeURIComponent(next)}`, { replace: true });
+        return;
+      }
+
       if (!sessionId || !auth.user?.id || !tenantState.activeTenantId) {
+        if (auth.isLoading || tenantState.loading) return;
         setError('Missing session or tenant info');
         setLoading(false);
         return;
@@ -34,8 +42,8 @@ export function CheckoutSuccess() {
         // Get fresh session token
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) {
-          setError('No active session');
-          setLoading(false);
+          const next = `/checkout/success?${searchParams.toString()}`;
+          navigate(`/welcome?next=${encodeURIComponent(next)}`, { replace: true });
           return;
         }
 
@@ -65,9 +73,7 @@ export function CheckoutSuccess() {
         const { subscription } = await response.json();
 
         // Freigabe 2026-09-01 (CLAUDE.md §10): Nach dem Kauf landet jeder
-        // Kunde am selben Ort wie nach /welcome — /app/dashboard, wo die
-        // Karte „Dein nächster Schritt" aus dem übernommenen Audit rechnet.
-        // Vorher: /app/billing, einer von vier verschiedenen Landeplätzen.
+        // Kunde am selben Ort wie nach /welcome — /app/dashboard.
         setTimeout(() => {
           navigate(`/app/dashboard?subscription=${subscription.id}&plan=${planKey || 'unknown'}`);
         }, 2000);
@@ -77,8 +83,8 @@ export function CheckoutSuccess() {
       }
     }
 
-    verifyCheckout();
-  }, [sessionId, auth, tenantState, planKey, navigate]);
+    void verifyCheckout();
+  }, [sessionId, auth, tenantState, planKey, navigate, searchParams]);
 
   if (error) {
     return (
@@ -87,10 +93,10 @@ export function CheckoutSuccess() {
           <h1 className="text-2xl font-bold text-titanium-50 mb-4">Checkout Failed</h1>
           <p className="text-titanium-300 mb-6">{error}</p>
           <button
-            onClick={() => navigate('/app/billing')}
+            onClick={() => navigate('/app/dashboard')}
             className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-card transition-colors"
           >
-            Go to Billing
+            Go to Dashboard
           </button>
           <button
             onClick={() => navigate('/pricing')}
@@ -107,7 +113,6 @@ export function CheckoutSuccess() {
     <div className="min-h-screen flex items-center justify-center bg-obsidian-900">
       <div className="max-w-md w-full mx-4 p-8 bg-obsidian-800 border border-titanium-700 rounded-card text-center">
         <div className="mb-6">
-          {/* Animated checkmark */}
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-900/30 border border-green-600/50 animate-pulse">
             <svg className="w-8 h-8 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -119,16 +124,16 @@ export function CheckoutSuccess() {
         <p className="text-titanium-300 mb-2">
           Your subscription to <span className="font-semibold">{planKey || 'plan'}</span> is now active.
         </p>
-        <p className="text-sm text-titanium-400 mb-6">Redirecting to your dashboard...</p>
+        <p className="text-sm text-titanium-400 mb-6">
+          {loading ? 'Redirecting to your dashboard...' : 'Almost there…'}
+        </p>
 
-        {/* Loading indicator */}
         <div className="flex justify-center gap-1">
           <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
           <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
           <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
         </div>
 
-        {/* Manual navigation fallback */}
         <button
           onClick={() => navigate('/app/dashboard')}
           className="w-full mt-6 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-card transition-colors"

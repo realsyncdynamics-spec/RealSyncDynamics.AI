@@ -15,6 +15,7 @@ import type { ScanRun } from '../../../types/governance/scan-run';
 import type { FindingSeverity } from '../../../types/governance/finding';
 import { withPerformanceMonitoring } from '../withPerformanceMonitoring';
 import { getSupabase } from '../../../lib/supabase';
+import { TenantCustomDomainPanel } from '../../website-operations/TenantCustomDomainPanel';
 
 interface WebsiteRow {
   id: string;
@@ -420,6 +421,10 @@ function _WebsiteGovernanceView() {
               />
             ))}
           </div>
+        )}
+
+        {!signedOut && activeTenantId && (
+          <TenantCustomDomainPanel tenantId={activeTenantId} />
         )}
       </main>
 

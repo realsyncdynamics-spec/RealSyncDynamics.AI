@@ -133,11 +133,16 @@ test.describe('Governance-AI-Landing (/)', () => {
     ).toBeVisible();
   });
 
-  test('Kennzahlen / Sphere im Hero sind als Demo gekennzeichnet', async ({ page }) => {
-    // Truth Layer: anonymous visitors have no tenant — no live production counts.
-    await expect(page.getByText(/DEMO\s*\/\s*SIMULATED|BEISPIELANSICHT/i).first()).toBeVisible();
-    await expect(page.locator('[data-governance-sphere]')).toBeVisible();
+  test('Hero-Visual ist Europa + Sunrise, kein Sphere-HUD', async ({ page }) => {
+    // Scenery only — no interactive Governance Sphere / DEMO chrome on `/`.
+    await expect(page.locator('[data-hero-visual="europe-sunrise"]')).toBeVisible();
+    await expect(page.locator('[data-governance-sphere]')).toHaveCount(0);
     await expect(page.getByText(/^Live\b/)).toHaveCount(0);
+    // Mobile Beispiel-Streifen bleibt ehrlich beschriftet, falls sichtbar.
+    const beispiel = page.getByText(/BEISPIELANSICHT/i);
+    if ((await beispiel.count()) > 0) {
+      await expect(beispiel.first()).toBeVisible();
+    }
   });
 
   test('Plattform-Sektion rendert die Faehigkeitsquelle, nicht eine eigene Liste', async ({ page }) => {

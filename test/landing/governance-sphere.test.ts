@@ -29,7 +29,7 @@ describe('Governance Sphere — demo contract', () => {
     expect(phases).toEqual(new Set(['Detect', 'Govern', 'Prove', 'Automate']));
   });
 
-  it('is lazy-hosted from MainLanding with reduced-motion fallback path', () => {
+  it('keeps lazy host + reduced-motion fallback (not mounted on public MainLanding)', () => {
     const host = readFileSync(
       resolve(__dirname, '../../src/components/governance-frontend/GovernanceSphereHost.tsx'),
       'utf8',
@@ -40,12 +40,17 @@ describe('Governance Sphere — demo contract', () => {
     expect(host).toContain('GovernanceSphereFallback');
     expect(host).toContain('SPHERE_DEMO_LABEL');
     expect(host).toContain('DEMO DATA');
-    // Public `/`: Dominik left copy + right GovernanceSphereHost (DEMO-labeled).
-    expect(landing).toContain('GovernanceSphereHost');
+    // Public `/`: Dominik left copy + Europe sunrise scenery (no Sphere HUD).
+    expect(landing).toContain('HeroEuropeSunrise');
+    expect(landing).not.toContain('GovernanceSphereHost');
     expect(landing).not.toContain('HeroEarthBackdrop');
   });
 
-  it('HeroEarthBackdrop remains available as preview scenery (not mounted on /)', () => {
+  it('HeroEuropeSunrise is the live `/` scenery; interactive Earth stays off `/`', () => {
+    const europe = readFileSync(
+      resolve(__dirname, '../../src/components/landing/HeroEuropeSunrise.tsx'),
+      'utf8',
+    );
     const backdrop = readFileSync(
       resolve(__dirname, '../../src/components/landing/HeroEarthBackdrop.tsx'),
       'utf8',
@@ -54,8 +59,13 @@ describe('Governance Sphere — demo contract', () => {
       resolve(__dirname, '../../src/components/landing/HeroEarthBackdropScene.tsx'),
       'utf8',
     );
+    expect(europe).toContain('data-hero-visual="europe-sunrise"');
+    expect(europe).toContain('/europe-globe');
+    expect(europe).toContain('hero-sunrise');
+    expect(europe).not.toContain('GovernanceSphereHost');
+    expect(europe).not.toContain('SPHERE_DEMO_LABEL');
+    expect(europe).not.toContain('GOVERNANCE_SPHERE_NODES');
     expect(backdrop).toContain('data-hero-visual="earth-universe"');
-    expect(backdrop).toContain('data-landing-earth');
     expect(backdrop).not.toContain('GovernanceSphereHost');
     expect(scene).toContain('PhotorealEarthMesh');
     expect(scene).not.toContain('GOVERNANCE_SPHERE_NODES');

@@ -21,10 +21,10 @@ describe('implementation-status registry', () => {
     }
   });
 
-  it('keeps yearly billing off live; sphere is live on / again', () => {
+  it('keeps yearly billing off live; Europe scenery live on /; sphere not on /', () => {
     expect(isImplementationLive('pricing-yearly')).toBe(false);
-    expect(isImplementationLive('governance-sphere-interactive')).toBe(true);
-    expect(isImplementationLive('hero-earth-scenery')).toBe(false);
+    expect(isImplementationLive('governance-sphere-interactive')).toBe(false);
+    expect(isImplementationLive('hero-earth-scenery')).toBe(true);
     expect(isImplementationLive('free-audit')).toBe(true);
   });
 

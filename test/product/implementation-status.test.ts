@@ -73,12 +73,18 @@ describe('implementation-status registry', () => {
     expect(hero).toContain('Live Dashboard ansehen');
     expect(hero).toContain('DISCOVER → CLASSIFY → ENFORCE → PROVE');
     expect(hero).toContain('Runtime governance for regulated AI systems');
-    expect(hero).toContain('01 — AI GOVERNANCE');
+    expect(hero).toContain('AI GOVERNANCE · RUNNING IN REAL TIME');
+    expect(hero).toContain('EU-CENTRAL');
+    expect(hero).toContain('EVIDENCE-CHAIN');
+    expect(hero).toContain('AI-ACT-KLASSIFIKATION');
+    expect(hero).toContain('PROVENANCE');
+    expect(hero).toContain('C2PA');
+    expect(hero).not.toContain('99.9');
+    expect(hero).not.toContain('UPTIME');
     expect(hero).not.toContain('Running in Real');
-    // Europe is the gold last line; claim words stay locked
     expect(hero).toContain("text: 'Europe'");
     expect(hero).toContain('accent: true');
     expect(hero).toMatch(/AI Compliance/);
-    expect(hero).toMatch(/Operations OS/);
+    expect(hero).toMatch(/Operations OS for/);
   });
 });

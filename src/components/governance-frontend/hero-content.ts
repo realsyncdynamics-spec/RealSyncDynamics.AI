@@ -1,35 +1,28 @@
 /**
- * Single Source of Truth für die Hero-Headline der Startseite.
+ * Single Source of Truth für Hero-Copy der Startseite.
  *
- * Die Headline wird von der öffentlichen Startseite und dem FE-001-Check
- * gemeinsam verwendet. Änderungen deshalb ausschließlich hier vornehmen.
+ * Structure/copy lock: Dominik bundler `class=hero reveal` (HTML drop-in) —
+ * Dark/Gold/Cream chrome only. Never import Complianty light / cyan tokens,
+ * `.hero-kpis` fake SLA numbers, or Demo dashboard chrome from that HTML.
+ *
+ * `MainLanding` renders H1 exclusively from `HERO_HEADLINE`. E2E / FE-001
+ * read the same source — change here, not in the page.
  */
 
 export type HeroHeadlineSegment = {
   text: string;
-  /** true → Gold-Akzent („for“ / „Europe“). */
+  /** true → Gold-Akzent (em Europe). */
   accent?: boolean;
 };
 
 /**
- * Europe-OS Hero — Dominik 1:1 luxury mock lock.
- *
  * Claim words (locked): AI Compliance Operations OS for Europe.
  *
- * ## Contract
- *
- * `MainLanding` renders H1 exclusively from `HERO_HEADLINE`. E2E / FE-001
- * read the same source — change here, not in the page.
- *
- * Break (mock): AI Compliance / Operations OS for / Europe —
- * gold on “for” + last-line Europe.
+ * Break (bundler hero): AI Compliance / Operations OS for / em Europe.
  */
 export const HERO_HEADLINE: readonly (readonly HeroHeadlineSegment[])[] = [
   [{ text: 'AI Compliance' }],
-  [
-    { text: 'Operations OS ' },
-    { text: 'for', accent: true },
-  ],
+  [{ text: 'Operations OS for' }],
   [{ text: 'Europe', accent: true }],
 ];
 
@@ -41,11 +34,21 @@ export const HERO_HEADLINE_LINES: readonly string[] = HERO_HEADLINE.map((segment
 /** Substring für den FE-001-Check. Muss vollständig innerhalb einer Zeile liegen. */
 export const HERO_HEADLINE_TEST_SUBSTRING = 'AI Compliance';
 
-/** Mock eyebrow above the H1 — mono meta, not a competing claim. */
-export const HERO_EYEBROW =
-  '01 — AI GOVERNANCE • RUNNING IN REAL TIME — EU-CENTRAL' as const;
+/**
+ * Bundler kicker — three mono cells, not one long dash string.
+ * Render as: 01 · AI GOVERNANCE · RUNNING IN REAL TIME · EU-CENTRAL
+ */
+export const HERO_KICKER = {
+  index: '01',
+  claim: 'AI GOVERNANCE · RUNNING IN REAL TIME',
+  region: 'EU-CENTRAL',
+} as const;
 
-/** Operating loop under the H1 (mock lock, all-caps). */
+/** @deprecated Prefer HERO_KICKER parts — kept for secondary surfaces. */
+export const HERO_EYEBROW =
+  `${HERO_KICKER.index} — ${HERO_KICKER.claim} — ${HERO_KICKER.region}` as const;
+
+/** Operating loop under the H1 (bundler lock). */
 export const HERO_OPERATING_LOOP = 'DISCOVER → CLASSIFY → ENFORCE → PROVE' as const;
 
 /**
@@ -60,12 +63,12 @@ export const SCAN_FUNNEL_MESSAGE =
 export const CONTINUOUS_COMPLIANCE_NARRATIVE =
   'RealSync erkennt, bewertet, steuert und dokumentiert Compliance kontinuierlich.' as const;
 
-/** Primary value line under the loop — mock lock. */
+/** Lede under the loop — bundler lock. */
 export const HERO_SUBLINE =
   'Runtime governance for regulated AI systems. Continuous evidence. EU-native by design.' as const;
 
 /**
- * Monetization urgency — kept for secondary surfaces; not hero chrome.
+ * Monetization urgency — secondary surfaces only; not hero chrome.
  * Does not replace HERO_HEADLINE or HERO_SUBLINE.
  */
 export const HERO_VALUE_SUBLINE = 'Vermeide EU AI Act-Bußgelder.' as const;
@@ -73,7 +76,7 @@ export const HERO_VALUE_SUBLINE = 'Vermeide EU AI Act-Bußgelder.' as const;
 /** Honest scan badge on the primary cream CTA (not a fake speed claim). */
 export const HERO_SCAN_BADGE = 'Kostenlos' as const;
 
-/** Framework social proof — below the fold / secondary, not hero chrome. */
+/** Framework social proof — secondary; hero uses HERO_PROOF_CHIPS. */
 export const HERO_SOCIAL_PROOF =
   'Gebaut für regulierte KI in der EU.' as const;
 
@@ -85,9 +88,20 @@ export const HERO_OUTCOMES: readonly string[] = [
   'Audit-Evidence laufend erzeugen, nicht kurz vor der Prüfung sammeln',
 ] as const;
 
-/** Secondary detail under HERO_SUBLINE — mock lock. */
+/** EU line under the lede — bundler lock. */
 export const HERO_EU_LINE =
   'Gebaut für EU AI Act, DSGVO und europäische Nachweispflichten.' as const;
+
+/**
+ * Proof chips under the CTA row — labels only, never fake counts / SLA %.
+ * Bundler lock (Dark/Gold chrome).
+ */
+export const HERO_PROOF_CHIPS = [
+  'EVIDENCE-CHAIN',
+  'AI-ACT-KLASSIFIKATION',
+  'PROVENANCE',
+  'C2PA',
+] as const;
 
 /** Live `/` hero CTAs — Free Audit + Live Dashboard (cream/gold, not cyan). */
 export const HERO_SCAN_CTA_LABEL = 'Free Audit starten' as const;

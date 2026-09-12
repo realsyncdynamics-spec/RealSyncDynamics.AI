@@ -138,6 +138,7 @@ test.describe('Governance-AI-Landing (/)', () => {
       page.getByText(/Runtime governance for regulated AI systems/i).first(),
     ).toBeVisible();
     await expect(page.getByText(/EU-CENTRAL/i).first()).toBeVisible();
+    await expect(page.getByText(/EVIDENCE-CHAIN/i).first()).toBeVisible();
   });
 
   test('Hero-Visual ist Earth Backdrop, kein Sphere-HUD', async ({ page }) => {

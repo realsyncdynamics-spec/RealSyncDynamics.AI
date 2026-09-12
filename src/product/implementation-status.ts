@@ -49,7 +49,7 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     status: 'live',
     group: 'surface',
     description:
-      'Europe-OS Hero — Dominik 1:1 mock: eyebrow + H1 (AI Compliance / Operations OS for / gold Europe) + DISCOVER loop + runtime/EU lines + Free Audit & Live Dashboard in fold; night-Europe limb + gold network; header Produkt · Evidence · Preise · Login. Assistent off `/`. No Sphere HUD.',
+      'Europe-OS Hero — bundler structure SSOT (Dark/Gold): kicker 01·AI GOVERNANCE·EU-CENTRAL; H1 AI Compliance / Operations OS for / gold Europe; DISCOVER loop; lede + EU line; Free Audit + Live Dashboard; proof chips (labels only); night-Europe limb + gold network; header Produkt · Evidence · Preise · Login. No cyan, no fake KPIs, Assistent off `/`.',
     route: '/',
     evidence: [
       'src/pages/MainLanding.tsx',

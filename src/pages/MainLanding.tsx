@@ -21,9 +21,10 @@ import {
 import {
   HERO_DASHBOARD_CTA_LABEL,
   HERO_EU_LINE,
-  HERO_EYEBROW,
   HERO_HEADLINE,
+  HERO_KICKER,
   HERO_OPERATING_LOOP,
+  HERO_PROOF_CHIPS,
   HERO_SCAN_CTA_LABEL,
   HERO_SUBLINE,
 } from '../components/governance-frontend/hero-content';
@@ -77,7 +78,8 @@ export function MainLanding() {
       <main ref={revealRoot} className="relative z-10">
         <section
           id="product"
-          className="relative isolate flex min-h-[calc(100svh-76px)] overflow-hidden border-b border-[#e4cfa2]/10"
+          className="hero relative isolate flex min-h-[calc(100svh-76px)] overflow-hidden border-b border-[#e4cfa2]/10"
+          data-reveal
         >
           {/* Europe night full-bleed — pointer-events none; no Sphere HUD */}
           <div className="pointer-events-none absolute inset-0 -z-10" aria-hidden="true">
@@ -85,20 +87,29 @@ export function MainLanding() {
           </div>
 
           <div className="relative mx-auto flex w-full max-w-[1500px] flex-1 items-center px-[4vw] py-10 lg:py-12">
-            {/* Dominik 1:1: eyebrow → H1 (Europe last/gold) → loop → body → CTAs */}
+            {/* Bundler hero structure (Dark/Gold): kicker → H1 → loop → lede → EU → CTAs → proof */}
             <div className="hero-copy relative z-10 max-w-[40rem] lg:max-w-[44rem]">
               <p
-                className="text-[9px] font-medium tracking-[0.18em]"
+                className="hero-kicker flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[9px] font-medium tracking-[0.16em]"
                 style={{ fontFamily: LANDING_MONO, color: '#8a867c' }}
+                aria-label={`${HERO_KICKER.index}. ${HERO_KICKER.claim}. ${HERO_KICKER.region}`}
               >
-                {HERO_EYEBROW}
+                <span style={{ color: LANDING_ACCENT }}>{HERO_KICKER.index}</span>
+                <span aria-hidden="true" style={{ color: `${LANDING_ACCENT}66` }}>
+                  ·
+                </span>
+                <span>{HERO_KICKER.claim}</span>
+                <span aria-hidden="true" style={{ color: `${LANDING_ACCENT}66` }}>
+                  ·
+                </span>
+                <span>{HERO_KICKER.region}</span>
               </p>
 
               <h1
                 className="mt-4 font-semibold leading-[1.05] tracking-[-0.03em]"
                 style={{
                   fontFamily: LANDING_SANS,
-                  fontSize: 'clamp(2.4rem, 4.4vw, 3.75rem)',
+                  fontSize: 'clamp(2.35rem, 4.2vw, 3.65rem)',
                   color: LANDING_TEXT,
                 }}
               >
@@ -111,7 +122,7 @@ export function MainLanding() {
                       style={
                         isEurope
                           ? {
-                              marginTop: '0.08em',
+                              marginTop: '0.06em',
                               fontSize: '1.12em',
                               letterSpacing: '-0.035em',
                             }
@@ -185,6 +196,27 @@ export function MainLanding() {
                   {HERO_DASHBOARD_CTA_LABEL}
                 </OsEntryLink>
               </div>
+
+              {/* Proof chips — labels only; never fake KPI / SLA counts from bundler HTML */}
+              <ul
+                className="mt-7 flex flex-wrap items-center gap-x-4 gap-y-2"
+                aria-label="Governance-Nachweise"
+              >
+                {HERO_PROOF_CHIPS.map((chip) => (
+                  <li
+                    key={chip}
+                    className="inline-flex items-center gap-1.5 text-[8px] tracking-[0.16em]"
+                    style={{ fontFamily: LANDING_MONO, color: '#8a867c' }}
+                  >
+                    <span
+                      className="h-1 w-1 rounded-full"
+                      style={{ backgroundColor: LANDING_ACCENT }}
+                      aria-hidden="true"
+                    />
+                    {chip}
+                  </li>
+                ))}
+              </ul>
             </div>
           </div>
         </section>

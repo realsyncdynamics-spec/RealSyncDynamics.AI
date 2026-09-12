@@ -2,15 +2,14 @@
  * Public landing hero backdrop — full-bleed photoreal Earth (desktop fill).
  *
  * Passive scenery behind Dominik copy: pointer-events none so CTAs stay
- * clickable. Europe-night framing (continent right / background) + gold route
- * network; WebGL may idle-drift. No drag HUD, no Sphere DEMO chrome, no
- * continent UI labels. Static Europe night plane under WebGL for first paint.
+ * clickable. Europe-night plate (limb framing) + gold route network — static
+ * so UK/FR/DE/IT stay first-recognize (no Americas drift). No Sphere DEMO
+ * chrome, no continent UI labels.
  *
  * Deep-space layer: CSS starfield + distant Mars/Jupiter/Saturn discs, plus an
  * occasional drifting Moon (reduced-motion: faint static moon, no drift).
  */
-import { Suspense, useEffect, useState } from 'react';
-import { HeroEarthBackdropScene } from './HeroEarthBackdropScene';
+import { useEffect, useState } from 'react';
 
 function usePrefersReducedMotion(): boolean {
   const [reduced, setReduced] = useState(false);
@@ -23,20 +22,6 @@ function usePrefersReducedMotion(): boolean {
     return () => mq.removeEventListener('change', update);
   }, []);
   return reduced;
-}
-
-function useWebGlAvailable(): boolean {
-  const [ok, setOk] = useState(false);
-  useEffect(() => {
-    try {
-      const canvas = document.createElement('canvas');
-      const gl = canvas.getContext('webgl2') || canvas.getContext('webgl');
-      setOk(Boolean(gl));
-    } catch {
-      setOk(false);
-    }
-  }, []);
-  return ok;
 }
 
 /**
@@ -121,7 +106,7 @@ function StaticEarthPlane({ className = '' }: { className?: string }) {
           height={768}
           decoding="async"
           fetchPriority="high"
-          className="hero-earth-static-img h-full w-full scale-[1.12] object-cover object-[78%_42%] opacity-100"
+          className="hero-earth-static-img h-full w-full scale-[1.18] object-cover object-[82%_38%] opacity-100"
         />
       </picture>
       <GoldNetworkOverlay />
@@ -367,38 +352,10 @@ function WarmRimLight() {
 }
 
 export function HeroEarthBackdrop() {
+  // Europe-lock: use the photoreal Europe night plate + gold network only.
+  // WebGL idle framing has repeatedly drifted to the Americas on `/` — static
+  // plate keeps UK/FR/DE/IT as the first-recognize continent (Dominik PNG).
   const reducedMotion = usePrefersReducedMotion();
-  const webgl = useWebGlAvailable();
-  // Defer WebGL one tick so first paint + sticky CTA stay actionable (E2E).
-  const [sceneReady, setSceneReady] = useState(false);
-  useEffect(() => {
-    if (!webgl || reducedMotion) return;
-    let cancelled = false;
-    const boot = () => {
-      if (!cancelled) setSceneReady(true);
-    };
-    const ric = (
-      window as Window & {
-        requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number;
-        cancelIdleCallback?: (id: number) => void;
-      }
-    ).requestIdleCallback;
-    if (typeof ric === 'function') {
-      const id = ric(boot, { timeout: 900 });
-      return () => {
-        cancelled = true;
-        (
-          window as Window & { cancelIdleCallback?: (id: number) => void }
-        ).cancelIdleCallback?.(id);
-      };
-    }
-    const t = window.setTimeout(boot, 120);
-    return () => {
-      cancelled = true;
-      window.clearTimeout(t);
-    };
-  }, [webgl, reducedMotion]);
-  const use3d = webgl && !reducedMotion && sceneReady;
 
   return (
     <div
@@ -408,7 +365,7 @@ export function HeroEarthBackdrop() {
       data-hero-lighting="europe-night"
       data-hero-scenery="europe-night-gold-network"
       data-hero-framing="europe-right"
-      data-landing-earth={use3d ? 'scenery' : 'static'}
+      data-landing-earth="static"
       aria-hidden="true"
     >
       {/* Deep space base — void around Europe for stars / planets / moon */}
@@ -421,19 +378,8 @@ export function HeroEarthBackdrop() {
       />
       <WarmRimLight />
 
-      {/* Photoreal Europe night — continent right; left/upper void for space.
-          Always under WebGL so planet never blanks. */}
+      {/* Photoreal Europe night on the limb — city lights + gold arcs */}
       <StaticEarthPlane />
-
-      {use3d && (
-        <div className="hero-earth-canvas absolute inset-0" data-landing-earth>
-          <Suspense fallback={null}>
-            <div className="absolute inset-0">
-              <HeroEarthBackdropScene reducedMotion={reducedMotion} />
-            </div>
-          </Suspense>
-        </div>
-      )}
 
       {/* Night-space scenery ABOVE Earth, masked to left/upper void —
           never covers Dominik H1 column (left veil stays on top). */}

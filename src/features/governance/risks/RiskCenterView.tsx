@@ -198,7 +198,7 @@ function CategoryBarChart({ risks }: { risks: Risk[] }) {
       <div className="flex flex-col gap-2.5">
         {CATEGORIES.map((cat) => {
           const count = counts[cat];
-          const pct   = Math.round((count / max) * 100);
+          const pct = Math.round((count / max) * 100);
           return (
             <div key={cat} className="flex flex-col gap-0.5">
               <div className="flex items-center justify-between">
@@ -591,8 +591,8 @@ function _RiskCenterView() {
     let cancelled = false;
     if (!activeTenantId) {
       setActiveRisks([]);
-      setLoadError(null);
       setLoading(false);
+      setLoadError(null);
       return;
     }
     setActiveRisks([]);
@@ -605,7 +605,7 @@ function _RiskCenterView() {
       })
       .catch((err: unknown) => {
         if (cancelled) return;
-        setLoadError(err instanceof Error ? err.message : 'Vorfälle konnten nicht geladen werden.');
+        setLoadError(err instanceof Error ? err.message : 'Risiken nicht verfügbar');
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -615,7 +615,7 @@ function _RiskCenterView() {
 
   async function applyTransition(risk: Risk, status: IncidentStatus) {
     if (!risk.incidentId) {
-      showToast('Dieser Eintrag hat keinen Incident-Bezug — Status wird nicht persistiert.', 'error');
+      showToast('Ohne Incident-Bezug kann der Status nicht persistiert werden.', 'error');
       return;
     }
     setBusyId(risk.id);
@@ -827,7 +827,10 @@ function _RiskCenterView() {
             <p className="text-sm text-red-300 font-mono">{loadError}</p>
           </div>
         ) : activeRisks.length === 0 ? (
-          <div className="border border-titanium-900 bg-obsidian-900 py-16 flex flex-col items-center gap-3 text-center px-6">
+          <div
+            className="border border-titanium-900 bg-obsidian-900 py-16 flex flex-col items-center gap-3 text-center px-6"
+            data-testid="risk-center-empty"
+          >
             <ShieldCheck className="h-8 w-8 text-titanium-700" />
             <p className="text-sm text-titanium-200 font-display">Noch keine Vorfälle</p>
             <p className="text-[12px] text-titanium-500 font-mono max-w-md">

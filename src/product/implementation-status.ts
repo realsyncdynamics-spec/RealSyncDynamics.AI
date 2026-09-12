@@ -270,12 +270,29 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     status: 'preview',
     group: 'channels',
     description:
-      'SiteOS Builder unter /build mit Governance-OS-Chrome — Publish/Domain und Governance-Tiefe bleiben Preview.',
+      'Two-pane Studio unter /build (App Builder + Frontend Designer), Auth-Gate und Upgrade-Panel — Publish/Domain und Live-Orchestrierung bleiben Preview.',
     route: '/build',
     evidence: [
       'src/unified-entry/pages/BuildStudioPage.tsx',
+      'src/features/siteos/builderEntitlements.ts',
+      'src/features/siteos/BuilderUpgradePanel.tsx',
       'packages/siteos-core',
       'src/config/public-nav.ts',
+    ],
+    showOnRoadmap: true,
+  },
+  {
+    id: 'builder-entitlement-gate',
+    name: 'Builder-Plan-Freischaltung',
+    status: 'preview',
+    group: 'billing',
+    description:
+      'Studio liest appBuilder/frontendDesigner und sites/builderRunsPerMonth aus der Pricing-SSoT (Monetisierungs-PR). Bis die Keys liegen: ehrliche Preview-Banner, kein Fake-Abo.',
+    route: '/build',
+    evidence: [
+      'src/features/siteos/builderEntitlements.ts',
+      'shared/pricing.ts',
+      'test/siteos/builder-entitlements.test.ts',
     ],
     showOnRoadmap: true,
   },

@@ -18,6 +18,9 @@ import {
 /** Boot / low-tier day map path (also kept as literal for smoke tests). */
 export const EARTH_DAY_TEXTURE = '/textures/earth-day.jpg';
 
+/** Visual grade for shared Earth mesh. `landing-gold` = public Dark/Gold/Cream only. */
+export type EarthPalette = 'default' | 'landing-gold';
+
 export interface PhotorealEarthMeshProps {
   /** Sphere radius in scene units. */
   radius?: number;
@@ -30,7 +33,24 @@ export interface PhotorealEarthMeshProps {
   quality?: EarthQuality;
   /** World-space sun direction for day/night terminator + specular. */
   sunDirection?: THREE.Vector3;
+  /**
+   * Color grade. Default keeps NASA-style blue for `/welcome` + Governance Sphere.
+   * `landing-gold` retints atmosphere/ocean/land toward Dominik Dark/Gold/Cream.
+   */
+  palette?: EarthPalette;
 }
+
+const LANDING_GOLD = {
+  /** Subtle warm multiply — never near-white cream that washes continents. */
+  dayTint: '#cfc8bc',
+  atmosphereGlow: '#e4cfa2',
+  atmosphereWarm: '#ffe0b0',
+  outerGlow: '#d4b07a',
+  specular: new THREE.Vector3(0.95, 0.82, 0.55),
+  clouds: new THREE.Vector3(0.96, 0.9, 0.78),
+  /** Dense city-light network — Europe night must dominate the hero. */
+  nightIntensity: 2.55,
+} as const;
 
 function configureMap(tex: THREE.Texture, anisotropy: number, colorSpace?: THREE.ColorSpace) {
   tex.colorSpace = colorSpace ?? THREE.SRGBColorSpace;
@@ -62,10 +82,15 @@ function loadTexture(url: string, anisotropy: number, colorSpace?: THREE.ColorSp
 function AtmosphereShell({
   radius,
   reducedMotion,
+  palette,
+  sunDirection,
 }: {
   radius: number;
   reducedMotion: boolean;
+  palette: EarthPalette;
+  sunDirection?: THREE.Vector3;
 }) {
+  const gold = palette === 'landing-gold';
   const mat = useMemo(() => {
     return new THREE.ShaderMaterial({
       transparent: true,
@@ -73,50 +98,78 @@ function AtmosphereShell({
       side: THREE.BackSide,
       blending: THREE.AdditiveBlending,
       uniforms: {
-        uGlow: { value: new THREE.Color('#6ec8f0') },
-        uIntensity: { value: reducedMotion ? 0.65 : 1.05 },
+        uGlow: {
+          value: new THREE.Color(gold ? LANDING_GOLD.atmosphereGlow : '#7ad0f5'),
+        },
+        uWarm: {
+          value: new THREE.Color(gold ? LANDING_GOLD.atmosphereWarm : '#ffb078'),
+        },
+        uSun: {
+          value: (sunDirection ?? new THREE.Vector3(-0.75, -0.35, 0.4)).clone().normalize(),
+        },
+        uIntensity: { value: reducedMotion ? (gold ? 0.55 : 0.7) : gold ? 0.88 : 1.18 },
+        uGold: { value: gold ? 1.0 : 0.0 },
       },
       vertexShader: /* glsl */ `
         varying vec3 vNormal;
         varying vec3 vView;
+        varying vec3 vNormalW;
         void main() {
           vec4 mv = modelViewMatrix * vec4(position, 1.0);
           vNormal = normalize(normalMatrix * normal);
           vView = normalize(-mv.xyz);
+          vNormalW = normalize(mat3(modelMatrix) * normal);
           gl_Position = projectionMatrix * mv;
         }
       `,
       fragmentShader: /* glsl */ `
         uniform vec3 uGlow;
+        uniform vec3 uWarm;
+        uniform vec3 uSun;
         uniform float uIntensity;
+        uniform float uGold;
         varying vec3 vNormal;
         varying vec3 vView;
+        varying vec3 vNormalW;
         void main() {
-          float fresnel = pow(1.0 - abs(dot(vNormal, vView)), 2.35);
-          float rim = smoothstep(0.02, 0.92, fresnel);
-          gl_FragColor = vec4(uGlow, rim * uIntensity);
+          float fresnel = pow(1.0 - abs(dot(vNormal, vView)), 2.15);
+          float rim = smoothstep(0.02, 0.9, fresnel);
+          float sunSide = smoothstep(-0.25, 0.8, dot(normalize(vNormalW), normalize(uSun)));
+          float warmMix = mix(0.28, 0.62, uGold) * sunSide;
+          vec3 col = mix(uGlow, uWarm, warmMix);
+          // Dense gold limb chrome — readable terminator, not cream wash.
+          col = mix(col, col * vec3(1.1, 0.94, 0.68), uGold * sunSide * 0.4);
+          float alpha = rim * uIntensity * mix(1.0, 0.78 + sunSide * 0.4, uGold);
+          gl_FragColor = vec4(col, alpha);
         }
       `,
     });
-  }, [reducedMotion]);
+  }, [reducedMotion, gold, sunDirection]);
+
+  useEffect(() => {
+    if (sunDirection && mat.uniforms.uSun) {
+      mat.uniforms.uSun.value.copy(sunDirection).normalize();
+    }
+  }, [mat, sunDirection]);
 
   useEffect(() => () => mat.dispose(), [mat]);
 
   return (
-    <mesh scale={1.048} raycast={() => null} material={mat}>
-      <sphereGeometry args={[radius, 48, 48]} />
+    <mesh scale={1.052} raycast={() => null} material={mat}>
+      <sphereGeometry args={[radius, 64, 64]} />
     </mesh>
   );
 }
 
-function OuterGlow({ radius }: { radius: number }) {
+function OuterGlow({ radius, palette }: { radius: number; palette: EarthPalette }) {
+  const gold = palette === 'landing-gold';
   return (
-    <mesh scale={1.125} raycast={() => null}>
+    <mesh scale={1.16} raycast={() => null}>
       <sphereGeometry args={[radius, 32, 32]} />
       <meshBasicMaterial
-        color="#2a7ab8"
+        color={gold ? LANDING_GOLD.outerGlow : '#2f82c4'}
         transparent
-        opacity={0.1}
+        opacity={gold ? 0.12 : 0.12}
         side={THREE.BackSide}
         depthWrite={false}
         toneMapped={false}
@@ -140,13 +193,16 @@ export function PhotorealEarthMesh({
   rotation = [0.18, -0.55, 0.08],
   quality: qualityProp,
   sunDirection,
+  palette = 'default',
 }: PhotorealEarthMeshProps) {
   const group = useRef<THREE.Group>(null!);
   const cloudsRef = useRef<THREE.Mesh>(null!);
+  const dayMat = useRef<THREE.ShaderMaterial>(null!);
   const nightMat = useRef<THREE.ShaderMaterial>(null!);
   const specMat = useRef<THREE.ShaderMaterial>(null!);
   const upgradeTexRef = useRef<THREE.Texture[]>([]);
   const { gl, camera } = useThree();
+  const gold = palette === 'landing-gold';
 
   const maxTex = gl.capabilities.maxTextureSize;
   const [quality] = useState<EarthQuality>(() => {
@@ -254,6 +310,9 @@ export function PhotorealEarthMesh({
 
   useFrame((_, delta) => {
     const lightDir = sunDirection ?? sun;
+    if (dayMat.current?.uniforms?.uLight) {
+      dayMat.current.uniforms.uLight.value.copy(lightDir).normalize();
+    }
     if (nightMat.current) {
       nightMat.current.uniforms.uLight.value.copy(lightDir).normalize();
     }
@@ -271,13 +330,73 @@ export function PhotorealEarthMesh({
 
   const segments = set.segments;
 
+  const dayTint = gold ? LANDING_GOLD.dayTint : '#f2f6ff';
+  const nightIntensity = gold ? LANDING_GOLD.nightIntensity : 1.15;
+  const specColor = gold ? LANDING_GOLD.specular : new THREE.Vector3(0.8, 0.92, 1.0);
+  const cloudColor = gold ? LANDING_GOLD.clouds : new THREE.Vector3(0.96, 0.98, 1.0);
+  const specIntensity = gold ? 0.28 : 0.62;
+  const cloudOpacity = gold
+    ? quality === 'high'
+      ? 0.22
+      : 0.16
+    : quality === 'high'
+      ? 0.5
+      : 0.38;
+
   return (
     <group ref={group} rotation={rotation}>
       <mesh raycast={() => null}>
         <sphereGeometry args={[radius, segments[0], segments[1]]} />
-        {/* Slight warm lift so continents punch through dark HUD glass */}
-        <meshBasicMaterial map={activeDay} color="#f2f6ff" toneMapped={false} />
+        {/*
+          Photoreal day map for all palettes. Landing-gold uses a warm cream
+          tint + terminator darken via lights — not a custom cream-wash shader
+          that can collapse to a black/cream disc on software WebGL.
+        */}
+        <meshBasicMaterial
+          map={activeDay}
+          color={dayTint}
+          toneMapped={false}
+        />
       </mesh>
+
+      {/* Soft day/night limb for landing-gold — keeps terminator without washing continents */}
+      {gold && (
+        <mesh scale={1.001} raycast={() => null}>
+          <sphereGeometry args={[radius, segments[0], segments[1]]} />
+          <shaderMaterial
+            ref={dayMat}
+            transparent
+            depthWrite={false}
+            toneMapped={false}
+            uniforms={{
+              uLight: { value: (sunDirection ?? sun).clone().normalize() },
+            }}
+            vertexShader={/* glsl */ `
+              varying vec3 vNormalW;
+              void main() {
+                vNormalW = normalize(mat3(modelMatrix) * normal);
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+              }
+            `}
+            fragmentShader={/* glsl */ `
+              uniform vec3 uLight;
+              varying vec3 vNormalW;
+              void main() {
+                vec3 N = normalize(vNormalW);
+                vec3 L = normalize(uLight);
+                float ndl = dot(N, L);
+                float night = 1.0 - smoothstep(-0.18, 0.45, ndl);
+                float term = 1.0 - smoothstep(0.0, 0.32, abs(ndl));
+                // Darken night; stronger amber terminator chrome.
+                vec3 amber = vec3(1.05, 0.74, 0.32);
+                float a = night * 0.68 + term * 0.22;
+                vec3 col = mix(vec3(0.015, 0.015, 0.02), amber * 0.55, term * 0.7);
+                gl_FragColor = vec4(col, a);
+              }
+            `}
+          />
+        </mesh>
+      )}
 
       {nightMap && set.nightEnabled && (
         <mesh scale={1.002} raycast={() => null}>
@@ -291,7 +410,8 @@ export function PhotorealEarthMesh({
             uniforms={{
               uNight: { value: nightMap },
               uLight: { value: sun.clone() },
-              uIntensity: { value: 1.15 },
+              uIntensity: { value: nightIntensity },
+              uWarm: { value: gold ? 1.0 : 0.0 },
             }}
             vertexShader={/* glsl */ `
               varying vec2 vUv;
@@ -306,15 +426,19 @@ export function PhotorealEarthMesh({
               uniform sampler2D uNight;
               uniform vec3 uLight;
               uniform float uIntensity;
+              uniform float uWarm;
               varying vec2 vUv;
               varying vec3 vNormalW;
               void main() {
                 float ndl = dot(normalize(vNormalW), normalize(uLight));
-                float night = smoothstep(0.05, -0.3, ndl);
+                float night = smoothstep(0.22, -0.12, ndl);
                 vec3 lights = texture2D(uNight, vUv).rgb;
                 float luma = max(lights.r, max(lights.g, lights.b));
-                vec3 glow = lights * lights * 1.8 + lights * 0.45;
-                gl_FragColor = vec4(glow * uIntensity, night * luma * 0.9);
+                vec3 glow = lights * lights * 3.2 + lights * 1.15;
+                // Landing gold: dense amber city network — still photoreal, not cyan.
+                glow = mix(glow, vec3(glow.r * 1.35, glow.g * 0.98, glow.b * 0.38), uWarm);
+                float side = mix(1.0, 1.12, uWarm);
+                gl_FragColor = vec4(glow * uIntensity, night * luma * side);
               }
             `}
           />
@@ -334,7 +458,8 @@ export function PhotorealEarthMesh({
               uSpec: { value: specMap },
               uLight: { value: sun.clone() },
               uCam: { value: camera.position.clone() },
-              uIntensity: { value: 0.62 },
+              uIntensity: { value: specIntensity },
+              uSpecColor: { value: specColor },
             }}
             vertexShader={/* glsl */ `
               varying vec2 vUv;
@@ -353,6 +478,7 @@ export function PhotorealEarthMesh({
               uniform vec3 uLight;
               uniform vec3 uCam;
               uniform float uIntensity;
+              uniform vec3 uSpecColor;
               varying vec2 vUv;
               varying vec3 vNormalW;
               varying vec3 vPosW;
@@ -365,7 +491,7 @@ export function PhotorealEarthMesh({
                 float spec = pow(max(dot(N, H), 0.0), 48.0);
                 float day = smoothstep(-0.05, 0.4, dot(N, L));
                 float a = water * spec * day * uIntensity;
-                gl_FragColor = vec4(vec3(0.8, 0.92, 1.0) * a, a);
+                gl_FragColor = vec4(uSpecColor * a, a);
               }
             `}
           />
@@ -381,7 +507,8 @@ export function PhotorealEarthMesh({
             toneMapped={false}
             uniforms={{
               uClouds: { value: cloudMap },
-              uOpacity: { value: quality === 'high' ? 0.5 : 0.38 },
+              uOpacity: { value: cloudOpacity },
+              uCloudColor: { value: cloudColor },
             }}
             vertexShader={/* glsl */ `
               varying vec2 vUv;
@@ -393,19 +520,27 @@ export function PhotorealEarthMesh({
             fragmentShader={/* glsl */ `
               uniform sampler2D uClouds;
               uniform float uOpacity;
+              uniform vec3 uCloudColor;
               varying vec2 vUv;
               void main() {
                 vec3 c = texture2D(uClouds, vUv).rgb;
                 float a = max(c.r, max(c.g, c.b)) * uOpacity;
-                gl_FragColor = vec4(vec3(0.96, 0.98, 1.0) * c, a);
+                gl_FragColor = vec4(uCloudColor * c, a);
               }
             `}
           />
         </mesh>
       )}
 
-      {set.atmosphere && <AtmosphereShell radius={radius} reducedMotion={reducedMotion} />}
-      {set.atmosphere && <OuterGlow radius={radius} />}
+      {set.atmosphere && (
+        <AtmosphereShell
+          radius={radius}
+          reducedMotion={reducedMotion}
+          palette={palette}
+          sunDirection={sunDirection ?? sun}
+        />
+      )}
+      {set.atmosphere && <OuterGlow radius={radius} palette={palette} />}
     </group>
   );
 }

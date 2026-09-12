@@ -74,6 +74,7 @@ export const CAPABILITIES_MEASURED_AT = '2026-08-23';
 export const PLATFORM_CAPABILITIES: readonly PlatformCapability[] = [
   {
     id: 'gdpr-audit',
+    learnMorePath: '/audit',
     name: 'DSGVO- & Tracking-Audit',
     description:
       'Website-Scan auf Cookies, Tracker, Drittanbieter und Einwilligungspflicht — mit Bericht als PDF und wiederkehrender Nachprüfung.',
@@ -95,6 +96,7 @@ export const PLATFORM_CAPABILITIES: readonly PlatformCapability[] = [
   },
   {
     id: 'governance-runtime',
+    learnMorePath: '/governance-runtime',
     name: 'Governance Runtime',
     description:
       'Risikobewertung, Vorfälle, Betroffenenanfragen, DSFA, Dienstleister und Freigaben in einer laufenden Kontrollschicht.',
@@ -106,6 +108,7 @@ export const PLATFORM_CAPABILITIES: readonly PlatformCapability[] = [
   },
   {
     id: 'evidence-export',
+    learnMorePath: '/evidence-vault',
     name: 'Nachweis-Export',
     description:
       'Prüfungen, Entscheidungen und Änderungen als auditfähigen Export — für interne Kontrollen und externe Prüfer.',
@@ -116,6 +119,7 @@ export const PLATFORM_CAPABILITIES: readonly PlatformCapability[] = [
     id: 'bots',
     // Nicht „WhatsApp- & Telefonbot": `bot-chat` bedient auch den Website-Chat.
     // Der frühere Name legte nahe, der Website-Bot sei davon nicht betroffen.
+    learnMorePath: '/chatbot/start',
     name: 'Bot-Laufzeit — Chat, WhatsApp, Telefon',
     description:
       'Kundenkommunikation über Chat und Sprache auf derselben Governance-Ebene — mit Prüfpfad je Gespräch.',
@@ -129,6 +133,7 @@ export const PLATFORM_CAPABILITIES: readonly PlatformCapability[] = [
   },
   {
     id: 'ai-gateway',
+    learnMorePath: '/claude-code-optimizer',
     name: 'AI Gateway',
     description:
       'Jeder Modellaufruf läuft über eine kontrollierte Schicht mit Protokollierung, Kostenerfassung und EU-Option.',

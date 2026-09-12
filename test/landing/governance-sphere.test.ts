@@ -29,9 +29,14 @@ describe('Governance Sphere — demo contract', () => {
     expect(phases).toEqual(new Set(['Detect', 'Govern', 'Prove', 'Automate']));
   });
 
-  it('is lazy-hosted from MainLanding with reduced-motion fallback path', () => {
+  it('keeps lazy host + reduced-motion fallback (not mounted on public MainLanding)', () => {
     const host = readFileSync(
       resolve(__dirname, '../../src/components/governance-frontend/GovernanceSphereHost.tsx'),
+      'utf8',
+    );
+    const landing = readFileSync(resolve(__dirname, '../../src/pages/MainLanding.tsx'), 'utf8');
+    const backdrop = readFileSync(
+      resolve(__dirname, '../../src/components/landing/HeroEarthBackdrop.tsx'),
       'utf8',
     );
     expect(host).toContain('lazy(');
@@ -39,6 +44,11 @@ describe('Governance Sphere — demo contract', () => {
     expect(host).toContain('GovernanceSphereFallback');
     expect(host).toContain('SPHERE_DEMO_LABEL');
     expect(host).toContain('DEMO DATA');
+    // Public landing: Earth as scenery only — no interactive sphere widget.
+    expect(landing).not.toContain('GovernanceSphereHost');
+    expect(landing).toContain('HeroEarthBackdrop');
+    expect(backdrop).toContain('pointer-events-none');
+    expect(backdrop).toContain('data-hero-visual="earth-universe"');
   });
 
   it('renders photoreal Earth (day texture), not wireframe-only mesh', () => {
@@ -91,5 +101,41 @@ describe('Governance Sphere — demo contract', () => {
     expect(getEarthTextureSet('high').day).toBe('/textures/earth-day-8k.jpg');
     expect(getEarthTextureSet('high').cloudsEnabled).toBe(true);
     expect(getEarthTextureSet('low').nightEnabled).toBe(false);
+  });
+
+  it('ships geography + space backdrop (borders, capitals, planets, sunrise)', () => {
+    const scene = readFileSync(
+      resolve(__dirname, '../../src/components/governance-frontend/GovernanceSphereScene.tsx'),
+      'utf8',
+    );
+    const geo = readFileSync(
+      resolve(__dirname, '../../src/components/governance-frontend/SphereGeography.tsx'),
+      'utf8',
+    );
+    const space = readFileSync(
+      resolve(__dirname, '../../src/components/governance-frontend/SphereSpaceBackground.tsx'),
+      'utf8',
+    );
+    const capitals = readFileSync(
+      resolve(__dirname, '../../src/components/governance-frontend/geo/capitals.ts'),
+      'utf8',
+    );
+    expect(scene).toContain('SphereGeography');
+    expect(scene).toContain('SphereSpaceBackground');
+    expect(scene).toMatch(/Bloom|EffectComposer/);
+    expect(geo).toContain('earth-borders-110m.json');
+    expect(geo).toContain('Hauptstadt');
+    expect(space).toContain('mars');
+    expect(space).toContain('jupiter');
+    expect(space).toContain('saturn');
+    expect(space).toContain('neptune');
+    expect(space).toContain('pluto');
+    expect(space).toContain('uranus');
+    expect(space).toMatch(/RisingSun|SUN_POS|sunrise/i);
+    expect(capitals).toContain('Berlin');
+    expect(capitals).toContain('Brüssel');
+    expect(existsSync(resolve(__dirname, '../../public/textures/earth-borders-110m.json'))).toBe(
+      true,
+    );
   });
 });

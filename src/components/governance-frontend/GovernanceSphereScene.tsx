@@ -1,12 +1,17 @@
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { useEffect, useMemo, useRef, useState, type MutableRefObject } from 'react';
+import { EffectComposer, Bloom } from '@react-three/postprocessing';
+import { KernelSize } from 'postprocessing';
+import { Suspense, useEffect, useMemo, useRef, useState, type MutableRefObject } from 'react';
 import * as THREE from 'three';
 import { PhotorealEarthMesh } from '../visual/PhotorealEarthMesh';
+import { detectEarthQuality } from '../visual/earthTextures';
 import {
   GOVERNANCE_SPHERE_NODES,
   sphereNodePosition,
   type GovernanceSphereNode,
 } from './governance-sphere-nodes';
+import { SphereGeography } from './SphereGeography';
+import { SphereSpaceBackground, SPHERE_SUN_POSITION } from './SphereSpaceBackground';
 
 const GOLD = '#e8c98a';
 const GOLD_SOFT = '#f3d9a0';
@@ -255,12 +260,6 @@ function DragSurface({
         controls.current.pointerInfluence = { x: 0, y: 0 };
         document.body.style.cursor = 'grab';
       }}
-      onWheel={(e) => {
-        e.stopPropagation();
-        const ne = e.nativeEvent as WheelEvent | undefined;
-        const delta = ne?.deltaY ?? 0;
-        controls.current.targetZoom *= delta > 0 ? 0.94 : 1.06;
-      }}
       onDoubleClick={(e) => {
         e.stopPropagation();
         controls.current.targetZoom = 1;
@@ -276,7 +275,7 @@ function DragSurface({
   );
 }
 
-function PointerLights({
+function SunriseLights({
   controls,
   reducedMotion,
   sunDir,
@@ -287,29 +286,32 @@ function PointerLights({
 }) {
   const key = useRef<THREE.DirectionalLight>(null!);
   const fill = useRef<THREE.PointLight>(null!);
+  const baseSun = useMemo(() => SPHERE_SUN_POSITION.clone().normalize(), []);
 
   useFrame(() => {
     const p = controls.current.pointer;
-    const influence = reducedMotion ? 0 : 1;
-    const lx = 4.2 + p.x * 1.4 * influence;
-    const ly = 1.3 + p.y * 0.9 * influence;
-    const lz = 3.0;
+    const influence = reducedMotion ? 0 : 0.55;
+    // Sunrise baseline + slight pointer parallax — keeps terminator cinematic.
+    const lx = SPHERE_SUN_POSITION.x + p.x * 1.1 * influence;
+    const ly = SPHERE_SUN_POSITION.y + p.y * 0.7 * influence;
+    const lz = SPHERE_SUN_POSITION.z;
     if (key.current) {
       key.current.position.set(lx, ly, lz);
-      sunDir.set(lx, ly, lz).normalize();
     }
+    sunDir.set(lx, ly, lz).normalize();
+    if (Math.abs(sunDir.lengthSq()) < 0.01) sunDir.copy(baseSun);
     if (fill.current) {
-      fill.current.position.set(-2.8 - p.x * 0.6 * influence, 1.8, 3.2);
+      fill.current.position.set(-2.4 - p.x * 0.5 * influence, 2.0, 3.4);
     }
   });
 
   return (
     <>
-      <ambientLight intensity={0.55} />
-      <directionalLight ref={key} position={[4.5, 1.4, 3.2]} intensity={1.35} color="#fff6e8" />
-      <directionalLight position={[-3.2, -1.2, -2.4]} intensity={0.4} color="#6ec8ff" />
-      <pointLight ref={fill} position={[3.2, 2.2, 4]} intensity={0.5} color="#fff4e0" />
-      <hemisphereLight args={['#4a5a72', '#0a0a0b', 0.35]} />
+      <ambientLight intensity={0.42} color="#c8d4e8" />
+      <directionalLight ref={key} position={SPHERE_SUN_POSITION.toArray()} intensity={1.55} color="#ffe0b8" />
+      <directionalLight position={[2.8, 1.6, -3.2]} intensity={0.28} color="#6ec8ff" />
+      <pointLight ref={fill} position={[3.2, 2.2, 4]} intensity={0.35} color="#fff4e0" />
+      <hemisphereLight args={['#5a6e88', '#1a0a08', 0.42]} />
     </>
   );
 }
@@ -333,7 +335,7 @@ function CameraParallax({
     const p = controls.current.pointerInfluence;
     const target = base
       .clone()
-      .add(new THREE.Vector3(p.x * 0.22, p.y * 0.14, (controls.current.zoom - 1) * -0.35));
+      .add(new THREE.Vector3(p.x * 0.28, p.y * 0.16, (controls.current.zoom - 1) * -0.42));
     camera.position.lerp(target, 0.08);
     camera.lookAt(0, 0, 0);
   });
@@ -399,6 +401,7 @@ function SphereCore({
         rotation={[0, 0, 0]}
         sunDirection={sunDir}
       />
+      <SphereGeography zoomRef={controls} earthRadius={EARTH_RADIUS} reducedMotion={reducedMotion} />
       <DragSurface controls={controls} />
       <Orbits reducedMotion={reducedMotion} />
       <AmbientParticles reducedMotion={reducedMotion} />
@@ -413,13 +416,18 @@ function SphereCore({
   );
 }
 
-/** Pinch zoom via native touch on the canvas element (wheel handled in-scene). */
+/** Pinch + wheel zoom via native listeners on the canvas (R3F wheel alone won't prevent page scroll). */
 function PinchZoom({ controls }: { controls: MutableRefObject<SphereControls> }) {
   useEffect(() => {
     const el = document.querySelector('[data-governance-sphere] canvas');
     if (!(el instanceof HTMLCanvasElement)) return;
     el.style.touchAction = 'none';
     let pinchDist: number | null = null;
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      controls.current.targetZoom *= e.deltaY > 0 ? 0.94 : 1.06;
+    };
     const onTouchMove = (e: TouchEvent) => {
       if (e.touches.length !== 2) return;
       e.preventDefault();
@@ -433,14 +441,32 @@ function PinchZoom({ controls }: { controls: MutableRefObject<SphereControls> })
     const onTouchEnd = () => {
       pinchDist = null;
     };
+    el.addEventListener('wheel', onWheel, { passive: false });
     el.addEventListener('touchmove', onTouchMove, { passive: false });
     el.addEventListener('touchend', onTouchEnd);
     return () => {
+      el.removeEventListener('wheel', onWheel);
       el.removeEventListener('touchmove', onTouchMove);
       el.removeEventListener('touchend', onTouchEnd);
     };
   }, [controls]);
   return null;
+}
+
+function SpherePostFX({ enabled }: { enabled: boolean }) {
+  if (!enabled) return null;
+  // Bloom only — DOF softens country borders / capital markers on the hero canvas.
+  return (
+    <EffectComposer multisampling={0}>
+      <Bloom
+        intensity={0.42}
+        luminanceThreshold={0.78}
+        luminanceSmoothing={0.4}
+        kernelSize={KernelSize.MEDIUM}
+        mipmapBlur
+      />
+    </EffectComposer>
+  );
 }
 
 export interface GovernanceSphereSceneProps {
@@ -465,8 +491,11 @@ export function GovernanceSphereScene({
     pointer: { x: 0, y: 0 },
     dragging: false,
   });
-  const sunDir = useMemo(() => new THREE.Vector3(4.5, 1.4, 3.2).normalize(), []);
+  const sunDir = useMemo(() => SPHERE_SUN_POSITION.clone().normalize(), []);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const quality = useMemo(() => detectEarthQuality({ reducedMotion }), [reducedMotion]);
+  const showPlanets = quality !== 'low';
+  const enablePostFx = !reducedMotion && quality === 'high';
 
   useEffect(() => {
     return () => {
@@ -485,7 +514,7 @@ export function GovernanceSphereScene({
         toneMapping: THREE.NoToneMapping,
         outputColorSpace: THREE.SRGBColorSpace,
       }}
-      dpr={[1, reducedMotion ? 1.25 : 2]}
+      dpr={[1, reducedMotion ? 1.25 : quality === 'low' ? 1.5 : 2]}
       onCreated={({ gl }) => {
         gl.domElement.style.touchAction = 'none';
         gl.domElement.style.cursor = 'grab';
@@ -493,7 +522,15 @@ export function GovernanceSphereScene({
       }}
       onPointerMissed={() => onSelect(null)}
     >
-      <PointerLights controls={controls} reducedMotion={reducedMotion} sunDir={sunDir} />
+      <color attach="background" args={['#03050a']} />
+      <Suspense fallback={null}>
+        <SphereSpaceBackground
+          controls={controls}
+          reducedMotion={reducedMotion}
+          showPlanets={showPlanets}
+        />
+      </Suspense>
+      <SunriseLights controls={controls} reducedMotion={reducedMotion} sunDir={sunDir} />
       <CameraParallax controls={controls} reducedMotion={reducedMotion} />
       <PinchZoom controls={controls} />
       <SphereCore
@@ -505,6 +542,7 @@ export function GovernanceSphereScene({
         reducedMotion={reducedMotion}
         sunDir={sunDir}
       />
+      <SpherePostFX enabled={enablePostFx} />
     </Canvas>
   );
 }

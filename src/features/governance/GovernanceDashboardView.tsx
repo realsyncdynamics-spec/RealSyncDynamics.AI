@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ArrowLeft, Activity, AlertTriangle, ShieldCheck, Compass, Database,
@@ -94,26 +94,35 @@ function Inner() {
   const [creatingPolicy, setCreatingPolicy] = useState(false);
   const [inspectorSelection, setInspectorSelection] = useState<InspectorSelection | null>(null);
   const closeInspector = useCallback(() => setInspectorSelection(null), []);
+  const loadGen = useRef(0);
 
   const reload = () => {
     if (!activeTenantId) return;
+    const gen = ++loadGen.current;
+    const tenantId = activeTenantId;
     setError(null);
     setEvents(null); setAssets(null); setPolicies(null); setControls(null);
+    setPendingApprovals(0);
+    setPendingGates(0);
+    setOpenDpias(0);
+    setOpenDsrs({ total: 0, overdue: 0 });
+    setOpenIncidents(0);
     Promise.allSettled([
-      fetchTenantEvents(activeTenantId),
-      fetchTenantAssets(activeTenantId),
-      fetchTenantPolicies(activeTenantId),
+      fetchTenantEvents(tenantId),
+      fetchTenantAssets(tenantId),
+      fetchTenantPolicies(tenantId),
       fetchFrameworkControls(),
-      countPendingApprovals(activeTenantId),
-      countOpenDpias(activeTenantId),
-      countOpenDsrs(activeTenantId),
-      countOpenIncidents(activeTenantId),
-      countPendingGates(activeTenantId),
+      countPendingApprovals(tenantId),
+      countOpenDpias(tenantId),
+      countOpenDsrs(tenantId),
+      countOpenIncidents(tenantId),
+      countPendingGates(tenantId),
     ])
       .then(([e, a, p, c, pa, od, ds, oi, pg]) => {
-        const failed = [e, a, p, c, pa, od, ds, oi, pg].find((result) => result.status === 'rejected');
-        if (failed && failed.status === 'rejected') {
-          setError((failed.reason as Error)?.message ?? 'Tenant-Daten nicht verfügbar');
+        if (gen !== loadGen.current) return;
+        const coreFailed = [e, a, p, c].find((result) => result.status === 'rejected');
+        if (coreFailed && coreFailed.status === 'rejected') {
+          setError((coreFailed.reason as Error)?.message ?? 'Tenant-Daten nicht verfügbar');
         }
         setEvents(e.status === 'fulfilled' ? e.value : []);
         setAssets(a.status === 'fulfilled' ? a.value : []);
@@ -127,7 +136,11 @@ function Inner() {
       });
   };
 
-  useEffect(() => { reload(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [activeTenantId]);
+  useEffect(() => {
+    reload();
+    return () => { loadGen.current += 1; };
+    /* eslint-disable-next-line react-hooks/exhaustive-deps */
+  }, [activeTenantId]);
 
   const empty =
     activeTenantId &&

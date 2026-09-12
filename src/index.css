@@ -199,6 +199,122 @@
   unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
 }
 
+/* Playfair Display — Dominik-Landing headlines (self-hosted, DSGVO/CSP). */
+@font-face {
+  font-family: 'Playfair Display';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/fonts/playfair-display-latin-500-normal.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Playfair Display';
+  font-style: italic;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/fonts/playfair-display-latin-500-italic.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Playfair Display';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/fonts/playfair-display-latin-600-normal.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Playfair Display';
+  font-style: italic;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/fonts/playfair-display-latin-600-italic.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Playfair Display';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/fonts/playfair-display-latin-ext-500-normal.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Playfair Display';
+  font-style: italic;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/fonts/playfair-display-latin-ext-500-italic.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Playfair Display';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/fonts/playfair-display-latin-ext-600-normal.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Playfair Display';
+  font-style: italic;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/fonts/playfair-display-latin-ext-600-italic.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+/* DM Mono — Dominik-Landing eyebrows / labels (self-hosted). */
+@font-face {
+  font-family: 'DM Mono';
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url('/fonts/dm-mono-latin-300-normal.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'DM Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/dm-mono-latin-400-normal.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'DM Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/fonts/dm-mono-latin-500-normal.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'DM Mono';
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url('/fonts/dm-mono-latin-ext-300-normal.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'DM Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/dm-mono-latin-ext-400-normal.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'DM Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/fonts/dm-mono-latin-ext-500-normal.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
 @theme {
   /* Hard-Edge Industrial DNA — see AGENTS.md.
      Design-Vereinheitlichung (2026-06): Plus Jakarta Sans (die Landing-Schrift)
@@ -723,64 +839,105 @@ html, body {
 }
 
 /* ── Glanz auf der Hero-Headline ─────────────────────────────────────────
-   Kein neuer Farbton: Der Verlauf laeuft von reinem Weiss ueber ein sehr
-   helles Cyan zurueck ins Weiss — dieselben zwei Farben, die die Seite
-   ohnehin fuehrt. Was ihn edel macht, ist nicht die Farbe, sondern der
-   schmale Lichtsaum und dass die Kante darunter leicht abdunkelt.
-
-   `background-clip: text` statt `text-shadow` auf der Fuellung: Ein
-   Schatten auf einer Serifenschrift bei 72px verschmiert die feinen
-   Haarstriche, ein Verlauf laesst sie scharf.
-
-   Der Lichtsaum liegt als eigene, absolut positionierte Kopie darunter
-   (`.hero-shine-glow`), damit er die Textkontur nicht aufweicht und von
-   Screenreadern nicht doppelt gelesen wird (aria-hidden am Element). */
+   Cream/gold — kein Papierweiss (#fff). Dominik: Ohne Weiss. */
 .hero-shine {
-  color: #fff8ee;
-  -webkit-text-fill-color: #fff8ee;
+  color: #f2eee6;
+  -webkit-text-fill-color: #f2eee6;
   text-shadow:
-    0 0 18px rgb(0 0 0 / 0.95),
-    0 1px 0 rgb(0 0 0),
-    0 16px 48px rgb(0 0 0);
+    0 0 1px rgba(228, 207, 162, 0.55),
+    0 0 12px rgba(228, 207, 162, 0.22),
+    0 1px 0 rgb(0 0 0 / 0.75),
+    0 12px 36px rgb(0 0 0 / 0.8);
 }
 
 @supports not ((background-clip: text) or (-webkit-background-clip: text)) {
   .hero-shine {
-    color: #fff8ee;
-    -webkit-text-fill-color: #fff8ee;
+    color: #f2eee6;
+    -webkit-text-fill-color: #f2eee6;
   }
 }
 
 .hero-shine-accent {
-  color: #f3d9a0;
-  -webkit-text-fill-color: #f3d9a0;
+  color: #e4cfa2;
+  -webkit-text-fill-color: #e4cfa2;
+  font-style: normal;
   text-shadow:
-    0 0 18px rgb(0 0 0 / 0.95),
-    0 1px 0 rgb(0 0 0),
-    0 16px 48px rgb(0 0 0);
+    0 0 1px rgba(239, 230, 213, 0.55),
+    0 0 14px rgba(228, 207, 162, 0.28),
+    0 1px 0 rgb(0 0 0 / 0.65),
+    0 12px 36px rgb(0 0 0 / 0.75);
 }
 
 @supports not ((background-clip: text) or (-webkit-background-clip: text)) {
   .hero-shine-accent {
-    color: #f3d9a0;
-    -webkit-text-fill-color: #f3d9a0;
+    color: #e4cfa2;
+    -webkit-text-fill-color: #e4cfa2;
   }
 }
 
-/* Weicher Lichthof hinter der Headline. Sehr niedrig dosiert: Er soll den
-   Text vom Bild abheben, nicht leuchten. */
+/* Soft gold bloom behind H1 — very restrained so Earth stays visible. */
 .hero-shine-glow {
   position: absolute;
-  inset: 0;
+  inset: -6% -4%;
   pointer-events: none;
-  filter: blur(28px);
-  opacity: .35;
   z-index: -1;
+  color: #e4cfa2;
+  -webkit-text-fill-color: #e4cfa2;
+  font-family: inherit;
+  font-weight: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  letter-spacing: inherit;
+  text-align: center;
+  filter: blur(18px);
+  opacity: 0.14;
+  user-select: none;
 }
 
-/* ── Horizontlicht hinter der Erdkugel ───────────────────────────────────
-   An die Gold/Tan-UI der P0-Landing gebunden, kuehl und niedrig dosiert —
-   kein warmer Sonnenaufgang. Screen-Blend hellt nur auf. */
+/* ── Warm rim behind Earth (public landing only) ─────────────────────────
+   Subtle limb glow only — never a cream sun disc over continents. */
+.hero-sunrise {
+  pointer-events: none;
+}
+
+.hero-sunrise-core {
+  animation: none;
+}
+
+.hero-sunrise-shaft {
+  animation: none;
+}
+
+@keyframes hero-sunrise-pulse {
+  0%,
+  100% {
+    opacity: 0.4;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(1.01);
+  }
+}
+
+@keyframes hero-sunrise-shaft {
+  0%,
+  100% {
+    opacity: 0.25;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-sunrise-core,
+  .hero-sunrise-shaft {
+    animation: none !important;
+  }
+}
+
+/* Legacy dawn helpers (unused on current MainLanding; keep for other pages) */
 .hero-dawn {
   position: absolute;
   inset: 0;
@@ -878,4 +1035,20 @@ html, body {
     animation: none !important;
     transition: none !important;
   }
+}
+
+/* ── Public landing Earth backdrop — scenery only, Dark/Gold night rim ── */
+.hero-earth-backdrop,
+.hero-earth-backdrop canvas {
+  pointer-events: none !important;
+}
+
+/* Static fallback: night Europe crop — keep land/city lights readable */
+.hero-earth-static {
+  filter: saturate(1.05) brightness(0.92) contrast(1.1);
+}
+
+/* WebGL mesh already grades gold; avoid sepia wash that hides continents */
+.hero-earth-canvas {
+  filter: none;
 }

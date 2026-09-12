@@ -9,7 +9,10 @@ import { countOpenDpias, listDpias } from '../dpiasApi';
 import { countOpenDsrs, fetchTenantDsrs } from '../dsrApi';
 import { countPendingApprovals } from '../approvalsApi';
 import { countVendorsNoDpa } from '../vendorsApi';
-import { countTenantEvidence, countTenantEvidenceHashed, fetchTenantAssets } from '../governanceApi';
+import {
+  countTenantEvidence, countTenantEvidenceHashed, fetchTenantAssets, fetchTenantEvents,
+  type DbGovernanceEvent,
+} from '../governanceApi';
 import type { DbGovernanceKpiSnapshot } from '../analytics/types';
 import {
   computeGovernanceScoreIfReliable, computeAuditReadiness,
@@ -17,9 +20,10 @@ import {
 } from './cockpitScore';
 import { prioritizeActions, type PriorityAction } from './prioritizeActions';
 import {
-  computeEvidenceHealth, computeOpenMeasures, computeRiskIndex,
-  EMPTY_SUMMARY_24H,
-  type EvidenceHealth, type OpenMeasures, type RiskIndex, type Summary24h,
+  computeAssetFlows, computeEvidenceHealth, computeOpenMeasures, computeRiskDistribution,
+  computeRiskIndex, EMPTY_SUMMARY_24H,
+  type AssetFlowItem, type EvidenceHealth, type OpenMeasures, type RiskBucket,
+  type RiskIndex, type Summary24h,
 } from '../dashboard/complianceStatus';
 
 // KPI-Snapshots über das lazy getSupabase() (NICHT über analyticsApi, das den
@@ -61,6 +65,16 @@ async function fetch24hSummary(tenantId: string): Promise<Summary24h | null> {
   };
 }
 
+/** Schlanke Runtime-Events für den Command-Center-Stream (kein Payload). */
+export interface CockpitRuntimeEvent {
+  id: string;
+  title: string;
+  eventType: string;
+  riskLevel: string;
+  source: string;
+  createdAt: string;
+}
+
 export interface CockpitData {
   counts: CockpitCounts;
   posture: CockpitPosture | null;
@@ -73,8 +87,25 @@ export interface CockpitData {
   riskIndex: RiskIndex;
   openMeasures: OpenMeasures;
   summary24h: Summary24h | null;
+  /** Runtime-Event-Stream (neueste zuerst). Leer = keine Events oder Lade-Fehler. */
+  recentEvents: CockpitRuntimeEvent[];
+  /** Verteilung der Asset-Risk-Scores. Alle Zähler 0 wenn keine Assets. */
+  riskDistribution: RiskBucket[];
+  /** Asset-/KI-Flows nach Typ. Leer wenn keine Assets. */
+  assetFlows: AssetFlowItem[];
   /** Abgelehnte Teillader — Dashboard darf das nicht als leeren Mandanten lesen. */
   partialFailures: string[];
+}
+
+function toRuntimeEvent(event: DbGovernanceEvent): CockpitRuntimeEvent {
+  return {
+    id: event.id,
+    title: event.title,
+    eventType: event.event_type,
+    riskLevel: event.risk_level,
+    source: event.event_source,
+    createdAt: event.created_at,
+  };
 }
 
 function val<T>(r: PromiseSettledResult<T>, fb: T): T {
@@ -93,7 +124,7 @@ export async function loadCockpitData(tenantId: string): Promise<CockpitData> {
   const [
     incidentsCount, dpiasCount, dsrCount, approvalsCount, vendorsCount,
     latestKpi, kpiRange, incidentList, dpiaList, dsrList,
-    summary24hRaw, assets, evidenceTotal, evidenceHashed,
+    summary24hRaw, assets, evidenceTotal, evidenceHashed, eventsRaw,
   ] = await Promise.allSettled([
     countOpenIncidents(tenantId),
     countOpenDpias(tenantId),
@@ -109,6 +140,7 @@ export async function loadCockpitData(tenantId: string): Promise<CockpitData> {
     fetchTenantAssets(tenantId),
     countTenantEvidence(tenantId),
     countTenantEvidenceHashed(tenantId),
+    fetchTenantEvents(tenantId, 12),
   ]);
 
   const counts: CockpitCounts = {
@@ -145,9 +177,11 @@ export async function loadCockpitData(tenantId: string): Promise<CockpitData> {
   });
 
   const summary24h = val(summary24hRaw, null);
-  const assetScores = val(assets, []).map((asset) => asset.risk_score);
+  const assetRows = val(assets, []);
+  const assetScores = assetRows.map((asset) => asset.risk_score);
   const evidenceTotalCount = val(evidenceTotal, 0);
   const evidenceHashedCount = val(evidenceHashed, 0);
+  const recentEvents = val(eventsRaw, []).map(toRuntimeEvent);
 
   const openMeasures = computeOpenMeasures(counts);
   const evidenceHealth = computeEvidenceHealth({
@@ -163,6 +197,8 @@ export async function loadCockpitData(tenantId: string): Promise<CockpitData> {
     openIncidents: counts.incidents,
     dsrOverdue: counts.dsr.overdue,
   });
+  const riskDistribution = computeRiskDistribution(assetScores);
+  const assetFlows = computeAssetFlows(assetRows);
 
   const partialFailures = [
     failureOf('incidents', incidentsCount),
@@ -179,6 +215,7 @@ export async function loadCockpitData(tenantId: string): Promise<CockpitData> {
     failureOf('assets', assets),
     failureOf('evidence-total', evidenceTotal),
     failureOf('evidence-hashed', evidenceHashed),
+    failureOf('events', eventsRaw),
   ].filter((item): item is string => item !== null);
 
   const countsReliable = [
@@ -192,6 +229,7 @@ export async function loadCockpitData(tenantId: string): Promise<CockpitData> {
     readinessTrend, actions,
     lastUpdated: snap?.captured_date ?? null,
     evidenceHealth, riskIndex, openMeasures, summary24h,
+    recentEvents, riskDistribution, assetFlows,
     partialFailures,
   };
 }

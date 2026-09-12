@@ -3,9 +3,9 @@
 
 Diese Datei muss **kurz bleiben** (≤ ~150 Zeilen). Lange Ledger, Deploy-Zahlen und Audit-Kästen gehören **nicht** hierher — sie verbrennen Tokens in jeder Cloud-Session.
 
-Ausführlicher Ist-Stand: `docs/ARCHITECTURE_CURRENT.md`
-Altes Lang-Briefing (nur bei Bedarf öffnen): Commit vor diesem Slim-Cut auf `main`
-Token-Regeln: `docs/claude/CONTEXT_POLICY.md`
+Nur bei Bedarf öffnen (nie ganz reinziehen): `docs/ARCHITECTURE_CURRENT.md`,
+`docs/claude/CONTEXT_POLICY.md`. Budget-Ratsche: `npm run check:context` (CI) —
+Budget nicht anheben.
 
 ---
 
@@ -40,8 +40,9 @@ Public Marketing = Light-Theme (Slate + Petrol), siehe `AGENTS.md`. App/Dashboar
 
 - Keine Secrets, keine Service-Role, keine Admin-Calls im Browser
 - Keine destruktiven Migrations
-- CLAUDE.md nicht wieder mit Messprotokollen aufblasen
+- CLAUDE.md nicht wieder mit Messprotokollen aufblasen (`check:context`)
 - Kein `npm install` als Session-Hook in Cloud (siehe `.claude/hooks/session-start.sh`)
+- Lockfiles / `*.generated.ts` / Reports nicht per Read öffnen (`.claude/settings.json`)
 
 ## Befehle (lokal / wenn nötig)
 

@@ -1,11 +1,25 @@
-import { Link } from 'react-router-dom';
+import { FormEvent, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { SEOHead } from '../../components/SEOHead';
 import { Snowflake, ArrowRight, ArrowLeft, Scan } from 'lucide-react';
 
 const BG = 'rgb(3, 7, 18)';
 const FONT_STACK = "'Plus Jakarta Sans', 'Inter', system-ui, sans-serif";
 
+/**
+ * Product entry `/scan/start` — wires to the canonical public scan at `/audit`.
+ * No fake-success alert; the live funnel is AuditLanding.
+ */
 export function ScanStartPage() {
+  const navigate = useNavigate();
+  const [url, setUrl] = useState('');
+
+  function startScan(e?: FormEvent) {
+    e?.preventDefault();
+    const value = url.trim();
+    navigate(value ? `/audit?domain=${encodeURIComponent(value)}` : '/audit');
+  }
+
   return (
     <div className="min-h-screen text-white antialiased" style={{ backgroundColor: BG, fontFamily: FONT_STACK }}>
       <SEOHead />
@@ -36,16 +50,21 @@ export function ScanStartPage() {
               Geben Sie eine Website-URL ein und wir prüfen diese automatisiert auf DSGVO-, EU AI Act- und Code-Compliance. Erhalten Sie einen detaillierten Bericht in Echtzeit — komplett kostenlos.
             </p>
 
-            <div className="bg-white/[0.02] border border-white/10 rounded-2xl p-6 sm:p-8 mb-8 sm:mb-10">
+            <form onSubmit={startScan} className="bg-white/[0.02] border border-white/10 rounded-2xl p-6 sm:p-8 mb-8 sm:mb-10">
               <div className="text-left">
-                <label className="block text-sm font-semibold mb-3 text-white/90">Website-URL eingeben</label>
+                <label htmlFor="scan-start-url" className="block text-sm font-semibold mb-3 text-white/90">
+                  Website-URL eingeben
+                </label>
                 <input
+                  id="scan-start-url"
                   type="url"
+                  value={url}
+                  onChange={(e) => setUrl(e.target.value)}
                   placeholder="https://example.com"
                   className="w-full px-4 py-3 sm:py-3.5 rounded-lg bg-white/5 border border-white/10 text-white placeholder-white/40 focus:outline-none focus:border-cyan-400/50 focus:bg-white/[0.08] transition-colors text-sm sm:text-base"
                 />
               </div>
-            </div>
+            </form>
           </div>
 
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center mb-8">
@@ -57,16 +76,17 @@ export function ScanStartPage() {
               Zurück
             </Link>
             <button
-              onClick={() => alert('Scan-Funktion wird in der nächsten Phase implementiert.')}
+              type="button"
+              onClick={() => startScan()}
               className="inline-flex items-center justify-center gap-2 px-6 sm:px-7 py-3 sm:py-3.5 text-xs sm:text-sm font-semibold text-[rgb(3,7,18)] bg-cyan-400 hover:bg-cyan-300 transition-colors rounded-lg"
             >
-              Scan starten
+              Governance Scan starten
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>
 
           <p className="text-center text-xs sm:text-sm text-white/50 font-mono">
-            Benötigt weder Account noch Anmeldung
+            Weiterleitung auf /audit · kein Account nötig
           </p>
         </div>
       </section>

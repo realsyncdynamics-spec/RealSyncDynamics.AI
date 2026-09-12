@@ -6,8 +6,8 @@
     "preisseite": 25000,
     "berechtigung": 10000,
     "richtung": "ausweitung",
-    "availability": "legacy",
-    "grund": "Stillgelegter Plan, aber oeffentlich verkauft gewesen: die Preisseite ist kanonisch. Korrektur wirkt ausschliesslich auf Bestandskunden.",
+    "availability": "self_service",
+    "grund": "Self-Service-Plan (Agency wieder verkaufbar): die Preisseite ist kanonisch. Korrektur wirkt auf Neu- und Bestandskunden.",
     "kanonische_quelle": "preisseite"
   },
   {
@@ -17,8 +17,8 @@
     "preisseite": 50000,
     "berechtigung": 25000,
     "richtung": "ausweitung",
-    "availability": "legacy",
-    "grund": "Stillgelegter Plan, aber oeffentlich verkauft gewesen: die Preisseite ist kanonisch. Korrektur wirkt ausschliesslich auf Bestandskunden.",
+    "availability": "self_service",
+    "grund": "Self-Service-Plan (Agency wieder verkaufbar): die Preisseite ist kanonisch. Korrektur wirkt auf Neu- und Bestandskunden.",
     "kanonische_quelle": "preisseite"
   },
   {
@@ -28,8 +28,8 @@
     "preisseite": 50,
     "berechtigung": 100,
     "richtung": "kuerzung",
-    "availability": "legacy",
-    "grund": "Stillgelegter Plan, aber oeffentlich verkauft gewesen: die Preisseite ist kanonisch. Korrektur wirkt ausschliesslich auf Bestandskunden.",
+    "availability": "self_service",
+    "grund": "Self-Service-Plan (Agency wieder verkaufbar): die Preisseite ist kanonisch. Korrektur wirkt auf Neu- und Bestandskunden.",
     "kanonische_quelle": "preisseite"
   },
   {
@@ -39,8 +39,8 @@
     "preisseite": 100,
     "berechtigung": 50,
     "richtung": "ausweitung",
-    "availability": "legacy",
-    "grund": "Stillgelegter Plan, aber oeffentlich verkauft gewesen: die Preisseite ist kanonisch. Korrektur wirkt ausschliesslich auf Bestandskunden.",
+    "availability": "self_service",
+    "grund": "Self-Service-Plan (Agency wieder verkaufbar): die Preisseite ist kanonisch. Korrektur wirkt auf Neu- und Bestandskunden.",
     "kanonische_quelle": "preisseite"
   },
   {

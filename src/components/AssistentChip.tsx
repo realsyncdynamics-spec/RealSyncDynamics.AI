@@ -71,7 +71,7 @@ export function AssistentChip() {
         aria-haspopup="dialog"
         aria-hidden={heroVisible ? true : undefined}
         tabIndex={heroVisible ? -1 : 0}
-        className={`fixed left-1/2 -translate-x-1/2 z-40 inline-flex items-center gap-2 pl-2 pr-4 py-1.5 bg-obsidian-950/85 text-titanium-50 rounded-full shadow-2xl border border-titanium-800 backdrop-blur-md hover:border-titanium-600 hover:scale-[1.03] hover:shadow-[0_12px_40px_-10px_rgba(168,85,247,0.35)] transition-all duration-200 motion-reduce:transition-none motion-reduce:hover:scale-100 ${
+        className={`fixed left-1/2 -translate-x-1/2 z-40 inline-flex items-center gap-2 pl-2 pr-4 py-1.5 rounded-full backdrop-blur-md transition-all duration-200 motion-reduce:transition-none motion-reduce:hover:scale-100 hover:scale-[1.03] ${
           heroVisible
             ? 'opacity-0 translate-y-2 pointer-events-none'
             : 'opacity-100 translate-y-0'
@@ -80,13 +80,24 @@ export function AssistentChip() {
         }`}
         style={{
           bottom: 'calc(env(safe-area-inset-bottom, 0px) + 16px)',
-          boxShadow: '0 10px 40px -10px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.04)',
+          backgroundColor: 'rgba(10, 11, 14, 0.92)',
+          color: '#e8ddc8',
+          border: '1px solid rgba(228, 207, 162, 0.35)',
+          boxShadow: '0 10px 40px -10px rgba(0,0,0,0.7), 0 0 0 1px rgba(228,207,162,0.06)',
         }}
       >
-        <span className="inline-flex w-8 h-8 items-center justify-center rounded-full bg-obsidian-900 ring-1 ring-titanium-700">
-          <Mic className="h-4 w-4 text-titanium-100" />
+        <span
+          className="inline-flex h-8 w-8 items-center justify-center rounded-full"
+          style={{
+            backgroundColor: '#12141a',
+            boxShadow: 'inset 0 0 0 1px rgba(228, 207, 162, 0.28)',
+          }}
+        >
+          <Mic className="h-4 w-4" style={{ color: '#e4cfa2' }} />
         </span>
-        <span className="text-sm font-medium tracking-tight">Assistent</span>
+        <span className="text-sm font-medium tracking-tight" style={{ color: '#e8ddc8' }}>
+          Assistent
+        </span>
       </button>
 
       <AgentWidget mode="anon" open={open} onClose={() => setOpen(false)} />

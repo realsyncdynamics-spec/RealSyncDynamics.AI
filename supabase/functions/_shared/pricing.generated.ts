@@ -719,20 +719,25 @@ export const PLANS: Plan[] = [
   },
 
   // ── Agency — 699 € ──────────────────────────────────────────────────────
+  // Wieder im Self-Service (Dominik-Landing-Referenz 2026-09): Stripe-Price
+  // `price_1TfsV9REjTWueUcGxJIBHYgC` ist in products verdrahtet (Migration
+  // 20260624000001). Partner bleibt legacy.
   {
     id: 'agency',
     planKey: 'agency',
     yearlyPlanKey: 'agency_yearly',
     name: 'Agency',
-    outcomeHeadline: 'Governance für viele Kunden gleichzeitig — automatisiert und mit Ihrem Logo.',
+    outcomeHeadline: 'Für Agenturen und mehrere Kunden.',
     technicalSubheadline: 'Scheduler, Bulk Jobs und REST-API über fünf Rahmenwerke, mit White-Label-Berichten und signiertem Herkunftsnachweis.',
     price: { monthlyEur: 699, yearlyEur: 6900, oneTimeEur: null },
+    // Jahres-Preis in Stripe nicht verdrahtet — siehe `yearlyCheckoutUnavailable`.
+    yearlyCheckoutUnavailable: true,
     currency: 'EUR',
     purchaseMode: 'checkout',
-    availability: 'legacy',
+    availability: 'self_service',
     highlight: false,
     badges: ['Für Agenturen'],
-    ctaLabel: '14 Tage kostenlos testen',
+    ctaLabel: 'Agency starten',
     limits: {
       bots: 10,
       answersPerMonth: 25_000,
@@ -795,14 +800,8 @@ export const PLANS: Plan[] = [
         'Bis zu 10 Domains unter einem Konto',
       ],
     },
-    // COMMERCIAL-SSOT: temporary production hotfix.
-    // Canonical source migration tracked in Phase 2.
-    // Kein Trial mehr: Agency ist seit AP2 stillgelegt (`availability: 'legacy'`),
-    // `stripe-checkout` weist neue Abschluesse mit PLAN_RETIRED ab. Ein
-    // Trial-Versprechen waere damit nicht einloesbar — und die aus der SSoT
-    // abgeleitete Trial-Fussnote fuehrte Agency bis hierher weiter mit auf.
-    // Laufende Agency-Abos und -Trials sind davon unberuehrt; `trialDays`
-    // steuert ausschliesslich NEUE Checkout-Sessions.
+    // Kein Trial: Agency startet direkt über Checkout (Stripe Live-Price
+    // vorhanden). `trialDays` steuert nur NEUE Checkout-Sessions.
     trialDays: 0,
   },
 

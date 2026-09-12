@@ -46,6 +46,15 @@ function fixture(overrides: Partial<CockpitData> = {}): CockpitData {
     riskIndex,
     openMeasures: overrides.openMeasures ?? computeOpenMeasures(counts),
     summary24h: overrides.summary24h === undefined ? null : overrides.summary24h,
+    recentEvents: overrides.recentEvents ?? [],
+    riskDistribution: overrides.riskDistribution ?? [
+      { id: 'critical', label: 'Kritisch', count: 0 },
+      { id: 'high', label: 'Hoch', count: 0 },
+      { id: 'medium', label: 'Mittel', count: 0 },
+      { id: 'low', label: 'Gering', count: 0 },
+      { id: 'passed', label: 'Stabil', count: 0 },
+    ],
+    assetFlows: overrides.assetFlows ?? [],
     partialFailures: overrides.partialFailures ?? [],
   };
 }
@@ -86,7 +95,14 @@ describe('ComplianceStatusView', () => {
     expect(getByTestId('evidence-health')).toBeInTheDocument();
     expect(getByTestId('audit-readiness')).toBeInTheDocument();
     expect(getByTestId('open-measures')).toBeInTheDocument();
+    expect(getByTestId('runtime-event-stream')).toBeInTheDocument();
+    expect(getByTestId('risk-distribution')).toBeInTheDocument();
+    expect(getByTestId('asset-flows')).toBeInTheDocument();
+    expect(getByTestId('policy-coverage')).toBeInTheDocument();
+    expect(getByTestId('critical-findings')).toBeInTheDocument();
+    expect(getByTestId('framework-strip')).toBeInTheDocument();
     expect(getByText('Status · Acme GmbH')).toBeInTheDocument();
+    expect(getByText('Governance Command Center')).toBeInTheDocument();
     expect(queryByPlaceholderText(/nachricht/i)).toBeNull();
   });
 
@@ -169,5 +185,62 @@ describe('ComplianceStatusView', () => {
     const failed = rendered({ error: 'RPC timeout', data: null });
     expect(failed.getByText('RPC timeout')).toBeInTheDocument();
     expect(failed.queryByTestId('governance-score')).toBeNull();
+  });
+
+  it('shows honest empty states for missing stream, coverage and alerts', () => {
+    const { getByTestId, getByText } = rendered({
+      data: fixture({
+        counts: { ...ZERO, incidents: 1 },
+        recentEvents: [],
+        assetFlows: [],
+        posture: null,
+        summary24h: null,
+      }),
+    });
+    expect(getByTestId('runtime-event-stream').textContent).toMatch(/Keine Runtime-Events/);
+    expect(getByTestId('policy-coverage').textContent).toMatch(/KPI-Snapshot fehlt/);
+    expect(getByTestId('alerts-rail').textContent).toMatch(/24h-Summary/);
+    expect(getByText('DSGVO')).toBeInTheDocument();
+    expect(getByText('TISAX')).toBeInTheDocument();
+    expect(getByText('DORA')).toBeInTheDocument();
+  });
+
+  it('renders real runtime events and asset flows when provided', () => {
+    const { getByTestId } = rendered({
+      data: fixture({
+        counts: { ...ZERO, incidents: 1 },
+        recentEvents: [{
+          id: 'ev-1',
+          title: 'Policy-Warnung Cookie-Banner',
+          eventType: 'policy_violation',
+          riskLevel: 'high',
+          source: 'website_scanner',
+          createdAt: new Date().toISOString(),
+        }],
+        assetFlows: [{
+          type: 'ai_system',
+          label: 'KI-Systeme',
+          count: 3,
+          highRisk: 1,
+          href: '/app/ai-systems',
+        }],
+        riskDistribution: [
+          { id: 'critical', label: 'Kritisch', count: 1 },
+          { id: 'high', label: 'Hoch', count: 2 },
+          { id: 'medium', label: 'Mittel', count: 0 },
+          { id: 'low', label: 'Gering', count: 0 },
+          { id: 'passed', label: 'Stabil', count: 1 },
+        ],
+        riskIndex: computeRiskIndex({
+          assetScores: [80, 55, 55, 10],
+          newRisks24h: 0,
+          openIncidents: 1,
+          dsrOverdue: 0,
+        }),
+      }),
+    });
+    expect(getByTestId('runtime-event-stream').textContent).toContain('Policy-Warnung Cookie-Banner');
+    expect(getByTestId('asset-flows').textContent).toContain('KI-Systeme');
+    expect(getByTestId('risk-distribution').textContent).toContain('Kritisch');
   });
 });

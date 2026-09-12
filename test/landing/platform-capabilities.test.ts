@@ -34,10 +34,11 @@ import {
 
 const FUNCTIONS_DIR = resolve(__dirname, '../../supabase/functions');
 
-/** Startseite + shared PublicDarkHeader — Nav-Links leben im Header-Modul. */
+/** Startseite + PublicDarkHeader + public-nav SSOT — Nav-Links leben in public-nav. */
 const landingShell = () =>
   readFileSync(resolve(__dirname, '../../src/pages/MainLanding.tsx'), 'utf8') +
-  readFileSync(resolve(__dirname, '../../src/components/landing/PublicDarkHeader.tsx'), 'utf8');
+  readFileSync(resolve(__dirname, '../../src/components/landing/PublicDarkHeader.tsx'), 'utf8') +
+  readFileSync(resolve(__dirname, '../../src/config/public-nav.ts'), 'utf8');
 
 describe('Plattform-Fähigkeiten — Behauptung deckt sich mit dem Backend', () => {
   it('jede Fähigkeit benennt mindestens eine tragende Edge Function', () => {
@@ -98,11 +99,12 @@ describe('Plattform-Fähigkeiten — Behauptung deckt sich mit dem Backend', () 
   it('die Startseite rendert aus dieser Quelle, nicht aus einer eigenen Liste', () => {
     const landing = resolve(__dirname, '../../src/pages/MainLanding.tsx');
     const source = readFileSync(landing, 'utf8');
+    // Public #platform grid reads product implementation-status (honest live slice).
+    // Backend capability SSoT remains platform-capabilities.ts for edge-function mapping.
     expect(
       source,
-      'MainLanding.tsx importiert die Fähigkeitsquelle nicht — dann kann die ' +
-        'Landing wieder Module bewerben, die kein Backend haben.',
-    ).toContain('platform-capabilities');
+      'MainLanding.tsx muss die Product-Registry nutzen — sonst laufen Claims wieder auseinander.',
+    ).toMatch(/PLATFORM_LIVE_ITEMS|implementation-status/);
   });
 
   it('Messdatum ist gesetzt und plausibel', () => {
@@ -146,8 +148,8 @@ describe('Erreichbarkeit — fertige Seiten sind von der Startseite aus verlinkt
    *
    * `/ai-act` und `/sicherheit` existieren, werden prerendert und sind aus
    * der gemeinsamen PublicDarkHeader-Nav auf `/` und `/branchen` verlinkt.
-   * Der Test liest deshalb den Landing-Shell (MainLanding + Header). Links
-   * stehen im LINKS-Array als `to: '/…'`, nicht als JSX-`to="/…"`.
+   * Der Test liest deshalb den Landing-Shell (MainLanding + Header + public-nav).
+   * Links stehen in `public-nav.ts` als `to: '/…'`.
    */
   const shell = landingShell();
   const app = readFileSync(resolve(__dirname, '../../src/App.tsx'), 'utf8');
@@ -198,11 +200,12 @@ describe('Fachseiten sind von der Startseite aus erreichbar', () => {
 
   it('die Startseite rendert die Verweise, statt sie nur zu speichern', () => {
     const landing = readFileSync(resolve(__dirname, '../../src/pages/MainLanding.tsx'), 'utf8');
+    // Platform cards link via registry `route`; learnMorePath remains on capability SSoT.
     expect(
       landing,
-      'MainLanding wertet `learnMorePath` nicht aus — dann bleiben die ' +
-        'Fachseiten unerreichbar, obwohl die Quelle sie kennt.',
-    ).toContain('learnMorePath');
+      'MainLanding muss Registry-Routen rendern (PLATFORM_LIVE_ITEMS.route).',
+    ).toContain('PLATFORM_LIVE_ITEMS');
+    expect(landing).toContain('cap.route');
   });
 });
 
@@ -269,9 +272,12 @@ describe('Hero-Panel — Beispiel ist als Beispiel gekennzeichnet', () => {
     // darunter vier hartkodierte Zahlen. Ein anonymer Besucher hat keinen
     // Tenant — dort ist nichts messbar, also darf dort nichts gemessen
     // aussehen (Truth Layer, target-architecture.md §3.1).
+    // Public `/` uses a non-interactive Earth backdrop — no sphere HUD / KPIs.
     expect(landing).not.toContain('GOVERNANCE RUNTIME · LIVE');
-    expect(landing).toContain('RUNTIME_PREVIEW_LABEL');
-    expect(landing).toContain('GovernanceSphereHost');
+    expect(landing).not.toContain('GovernanceSphereHost');
+    expect(landing).not.toContain('HeroCyanNetwork');
+    expect(landing).toContain('HeroEarthBackdrop');
+    expect(landing).not.toContain('RUNTIME_PREVIEW_CARDS');
     expect(sphereNodes).toMatch(/DEMO\s*\/\s*SIMULATED/);
   });
 

@@ -360,20 +360,15 @@ export const pricingPlans: PricingPlan[] = [
     },
   },
   {
-    // COMMERCIAL-SSOT: temporary production hotfix.
-    // Canonical source migration tracked in Phase 2.
-    // Seit AP2 stillgelegt (`availability: 'legacy'`): `stripe-checkout` weist
-    // neue Abschluesse mit PLAN_RETIRED ab und `/checkout/agency` leitet auf
-    // die Preisseite zurueck. Deshalb kein Festpreis, kein Trial und kein
-    // Checkout-Link mehr. Bestandskunden rechnen unveraendert weiter ab; der
-    // Eintrag bleibt bestehen, damit ihre Plan-Detailseite erreichbar ist.
+    // Agency wieder self_service (Dominik-Landing 2026-09): Monatspreis 699 €
+    // über Stripe Live-Price; Jahresvariante bleibt unverdrahtet.
     slug: 'agency',
     name: 'Agency',
-    price: 0,
-    priceString: 'Nicht mehr im Verkauf',
-    interval: 'individuell',
+    price: 699,
+    priceString: '699',
+    interval: 'mtl.',
     recommended: false,
-    shortDescription: 'Die Profi-Suite für Datenschutzbeauftragte, Kanzleien und Agenturen, die mehrere Kunden professionell prüfen, dokumentieren und betreuen möchten.',
+    shortDescription: 'Für Agenturen und mehrere Kunden — White-Label, API und Automatisierung.',
     targetAudience: 'Für externe Datenschutzbeauftragte, Datenschutzkanzleien, Webagenturen, IT-Dienstleister und Compliance-Berater.',
     whatCustomerGets: [
       'Alle Growth-Features plus:',
@@ -390,10 +385,10 @@ export const pricingPlans: PricingPlan[] = [
       '500 automatisierte Läufe pro Monat',
     ],
     cta: {
-      label: 'Enterprise anfragen',
-      href: '/contact-sales?intent=enterprise',
+      label: 'Agency starten',
+      href: '/checkout/agency',
     },
-    checkoutPath: '/contact-sales?intent=enterprise',
+    checkoutPath: '/checkout/agency',
     problemsSolved: [
       'Viele Kunden müssen regelmäßig geprüft werden',
       'Reports sollen professionell und mit eigenem Branding ausgegeben werden',
@@ -671,21 +666,16 @@ export const pricingPlans: PricingPlan[] = [
     ],
   },
   {
-    // COMMERCIAL-SSOT: temporary production hotfix.
-    // Canonical source migration tracked in Phase 2.
-    // Seit AP2 stillgelegt (`availability: 'legacy'`): `stripe-checkout` weist
-    // neue Abschluesse mit PLAN_RETIRED ab und `/checkout/agency_yearly` leitet auf
-    // die Preisseite zurueck. Deshalb kein Festpreis, kein Trial und kein
-    // Checkout-Link mehr. Bestandskunden rechnen unveraendert weiter ab; der
-    // Eintrag bleibt bestehen, damit ihre Plan-Detailseite erreichbar ist.
+    // Agency-Jahresvariante: kein Stripe-Jahrespreis verdrahtet
+    // (`yearlyCheckoutUnavailable`). Monats-Agency (699 €) bleibt verkaufbar.
     slug: 'agency_yearly',
     name: 'Agency (Jährlich)',
     price: 0,
-    priceString: 'Nicht mehr im Verkauf',
-    interval: 'individuell',
+    priceString: 'In Vorbereitung',
+    interval: 'jährl.',
     recommended: false,
     badge: 'Sparen Sie 2 Monate',
-    shortDescription: 'Agency mit Jahresabrechnung — seit AP2 nicht mehr im Verkauf. Bestehende Jahresabos laufen unverändert weiter; Neukunden mit Bedarf an Branchenbibliotheken, White-Label und API-Zugriff wenden sich an den Vertrieb.',
+    shortDescription: 'Agency mit Jahresabrechnung ist derzeit nicht buchbar — der Jahres-Zahlungsweg ist nicht hinterlegt. Agency ist unverändert monatlich zu 699 € verfügbar.',
     targetAudience: 'Für Datenschutzkanzleien, Agenturen und Compliance-Berater, die Mandanten langfristig betreuen und Jahresbudgets bevorzugen.',
     whatCustomerGets: [
       'Alles aus Agency (monatlich)',
@@ -694,10 +684,10 @@ export const pricingPlans: PricingPlan[] = [
       'Branchenbibliothek + White-Label für das ganze Jahr',
     ],
     cta: {
-      label: 'Enterprise anfragen',
-      href: '/contact-sales?intent=enterprise',
+      label: 'Agency monatlich buchen',
+      href: '/checkout/agency',
     },
-    checkoutPath: '/contact-sales?intent=enterprise',
+    checkoutPath: '/checkout/agency',
     problemsSolved: [
       'Mandanten-Betreuung ist auf Jahre angelegt, nicht auf Monate',
       'Compliance-Budget soll planbar fürs ganze Jahr sein',
@@ -724,8 +714,8 @@ export const pricingPlans: PricingPlan[] = [
     ],
     detailedSections: [
       {
-        title: 'Warum die Jahresvariante?',
-        content: 'Die Jahresabrechnung bündelt 12 Monate Agency zum Preis von 10 Monaten. Für Kanzleien und Agenturen, die Mandate über Jahresverträge abrechnen, passt die Laufzeit damit zum eigenen Geschäftsmodell. Der Funktionsumfang ist identisch zur monatlichen Variante.',
+        title: 'Warum steht hier kein Jahrespreis?',
+        content: 'Die Jahresabrechnung für Agency ist derzeit nicht buchbar — es ist kein Jahres-Zahlungsweg hinterlegt. Statt einen Betrag zuzusichern, den der Kauf nicht einlösen kann, weisen wir die Variante als in Vorbereitung aus. Agency ist unverändert monatlich zu 699 € verfügbar, mit identischem Funktionsumfang. Bestehende Jahresabos sind davon nicht betroffen und laufen unverändert weiter.',
       },
     ],
   },

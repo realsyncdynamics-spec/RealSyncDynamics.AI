@@ -9,7 +9,12 @@
 
 The platform target model has **five layers** — see
 [`target-architecture.md`](./target-architecture.md), the canonical target
-architecture:
+architecture.
+
+**Product module (additive):** Governance Activation — the activation layer
+between enterprise data and running governance. Product SSoT:
+[`docs/product/governance-activation.md`](../product/governance-activation.md).
+Does not rewrite this architecture index or `target-architecture.md`.
 
 | Layer | Name | Description |
 |---|---|---|

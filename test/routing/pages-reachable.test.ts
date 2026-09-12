@@ -61,6 +61,8 @@ const KNOWN_UNREACHABLE: Readonly<Record<string, string>> = {
     'Variante der Builder-Vorschau ohne Route.',
   'src/unified-entry/pages/WowPreviewEntryPage.tsx':
     'Einstiegsvariante der Builder-Vorschau, ohne Route.',
+  'src/pages/DemoLoginPage.tsx':
+    'Abgelöst: /demo-login leitet auf /welcome (kanonische OTP/OAuth-Anmeldung).',
 };
 
 function resolveSpecifier(fromFile: string, spec: string): string | null {

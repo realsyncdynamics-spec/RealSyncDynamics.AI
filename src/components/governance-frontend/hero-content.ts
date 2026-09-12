@@ -53,6 +53,21 @@ export const CONTINUOUS_COMPLIANCE_NARRATIVE =
 export const HERO_SUBLINE =
   'Govern AI. Prove Everything. Operate with Confidence.' as const;
 
+/**
+ * Monetization value line under the live H1 — financial/regulatory urgency.
+ * Does not replace HERO_HEADLINE or HERO_SUBLINE.
+ */
+export const HERO_VALUE_SUBLINE = 'Vermeide EU AI Act-Bußgelder.' as const;
+
+/** Honest scan badge on the primary cream CTA (not a fake speed claim). */
+export const HERO_SCAN_BADGE = 'Kostenlos' as const;
+
+/** Framework social proof under the hero — standards, not fake logos/counts. */
+export const HERO_SOCIAL_PROOF =
+  'Gebaut für regulierte KI in der EU.' as const;
+
+export const HERO_SOCIAL_FRAMEWORKS = ['DSGVO', 'EU AI Act', 'C2PA'] as const;
+
 export const HERO_OUTCOMES: readonly string[] = [
   'AI Inventory ohne Excel und Schattennutzung',
   'Policies durchsetzen statt nur dokumentieren',

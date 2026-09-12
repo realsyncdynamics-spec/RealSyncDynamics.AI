@@ -124,13 +124,14 @@ test.describe('Governance-AI-Landing (/)', () => {
       await expect(h1).toContainText(line);
     }
 
-    // P0: Scan-Submit → `/audit`, secondary outline → Governance OS.
+    // P0: Scan-Submit → `/audit`, secondary → Enterprise anfragen (not Demo/Pilot).
     await expect(
       page.getByRole('button', { name: /Kostenlosen Governance Scan starten/i }).first(),
     ).toBeVisible();
     await expect(
-      page.getByRole('link', { name: /Explore the Governance OS|Governance OS ansehen/i }).first(),
+      page.getByRole('link', { name: /Enterprise anfragen/i }).first(),
     ).toBeVisible();
+    await expect(page.getByText(/Vermeide EU AI Act-Bußgelder/i).first()).toBeVisible();
   });
 
   test('Hero-Visual ist Earth Backdrop, kein Sphere-HUD', async ({ page }) => {

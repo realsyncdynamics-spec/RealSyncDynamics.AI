@@ -46,11 +46,18 @@ export const LANDING_BUTTON_ALT = '#efe6d5';
 /** Schrift auf der Hauptschaltfläche. */
 export const LANDING_BUTTON_TEXT = '#1a1917';
 
+/** Soft cream/gold glow for primary scan CTA (monetization lead-magnet). */
+export const LANDING_CTA_GLOW =
+  '0 0 24px rgba(232, 221, 200, 0.28), 0 0 48px rgba(228, 207, 162, 0.12)';
+
 /** Status-Grün (ok). */
 export const LANDING_GREEN = '#20d69a';
 
 /** Haarlinie. */
 export const LANDING_LINE = 'rgba(220, 210, 190, 0.18)';
+
+/** Thin header trust marks — honest standards only, no SLA/uptime claims. */
+export const LANDING_TRUST_MARKS = ['DSGVO', 'EU AI Act', 'Evidence-ready'] as const;
 
 /**
  * Fluid type scales — shared by public sections + OS chrome.

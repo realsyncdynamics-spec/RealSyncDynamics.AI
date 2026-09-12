@@ -9,8 +9,8 @@ import { useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { PhotorealEarthMesh } from '../visual/PhotorealEarthMesh';
 
-/** Sunrise sun — lower-left behind Earth; lights globe + headline plane. */
-export const LANDING_SUN_POSITION = new THREE.Vector3(-4.6, -1.55, 2.15);
+/** Sunrise sun — lower-left, peeks beside Earth; lights globe + headline plane. */
+export const LANDING_SUN_POSITION = new THREE.Vector3(-3.4, -1.15, 3.2);
 
 function RisingSun({ reducedMotion }: { reducedMotion: boolean }) {
   const core = useRef<THREE.Mesh>(null!);
@@ -40,25 +40,25 @@ function RisingSun({ reducedMotion }: { reducedMotion: boolean }) {
       <pointLight color="#ff9a4a" intensity={1.35} distance={20} decay={2} position={[0.35, -0.55, 0.2]} />
 
       <mesh ref={core} raycast={() => null}>
-        <sphereGeometry args={[0.72, 32, 32]} />
-        <meshBasicMaterial color="#fff6e0" toneMapped={false} />
+        <sphereGeometry args={[0.95, 32, 32]} />
+        <meshBasicMaterial color="#fff8e8" toneMapped={false} />
       </mesh>
-      <mesh ref={corona} scale={1.65} raycast={() => null}>
-        <sphereGeometry args={[0.72, 24, 24]} />
+      <mesh ref={corona} scale={1.85} raycast={() => null}>
+        <sphereGeometry args={[0.95, 24, 24]} />
         <meshBasicMaterial
           color="#ffc078"
           transparent
-          opacity={0.48}
+          opacity={0.62}
           depthWrite={false}
           toneMapped={false}
         />
       </mesh>
-      <mesh ref={haze} scale={3.6} raycast={() => null}>
-        <sphereGeometry args={[0.72, 20, 20]} />
+      <mesh ref={haze} scale={4.4} raycast={() => null}>
+        <sphereGeometry args={[0.95, 20, 20]} />
         <meshBasicMaterial
           color="#ff8a42"
           transparent
-          opacity={0.16}
+          opacity={0.22}
           depthWrite={false}
           side={THREE.BackSide}
           toneMapped={false}
@@ -68,14 +68,14 @@ function RisingSun({ reducedMotion }: { reducedMotion: boolean }) {
       <mesh
         ref={flare}
         rotation={[0, 0.15, 0.42]}
-        position={[1.4, -0.45, 1.1]}
+        position={[1.6, -0.35, 1.4]}
         raycast={() => null}
       >
-        <planeGeometry args={[6.2, 0.85]} />
+        <planeGeometry args={[7.5, 1.15]} />
         <meshBasicMaterial
           color="#ffb060"
           transparent
-          opacity={0.12}
+          opacity={0.18}
           depthWrite={false}
           side={THREE.DoubleSide}
           toneMapped={false}
@@ -131,19 +131,20 @@ export function HeroEarthBackdropScene({ reducedMotion = false }: HeroEarthBackd
       onCreated={({ gl }) => {
         gl.domElement.style.pointerEvents = 'none';
         gl.toneMapping = THREE.NoToneMapping;
+        gl.setClearColor(0x000000, 0);
       }}
     >
-      <color attach="background" args={['#00000000']} />
-      <ambientLight intensity={0.1} color="#efe6d5" />
+      {/* Transparent clear — do not use invalid 8-digit hex on <color> */}
+      <ambientLight intensity={0.08} color="#efe6d5" />
       {/* Key from sunrise — warm gold, drives terminator via sunDirection sync */}
       <directionalLight
         position={[sun.x, sun.y, sun.z]}
-        intensity={2.05}
+        intensity={2.35}
         color="#fff1d6"
       />
-      <directionalLight position={[-1.2, -2.4, 0.8]} intensity={0.35} color="#ff9a55" />
+      <directionalLight position={[-1.2, -2.4, 0.8]} intensity={0.55} color="#ff9a55" />
       {/* Soft night fill — never cool cyan */}
-      <directionalLight position={[2.6, 0.6, -1.8]} intensity={0.12} color="#b49a6b" />
+      <directionalLight position={[2.6, 0.6, -1.8]} intensity={0.1} color="#b49a6b" />
       <RisingSun reducedMotion={reducedMotion} />
       <SlowEarth reducedMotion={reducedMotion} />
     </Canvas>

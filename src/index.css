@@ -842,14 +842,15 @@ html, body {
    Warm sunrise rim + soft gold bloom — lights the H1 the way the sun
    lights the Earth. Cream / Gold on Dark; kein Cyan, kein Neon. */
 .hero-shine {
-  color: #fff8ee;
-  -webkit-text-fill-color: #fff8ee;
+  color: #fffaf0;
+  -webkit-text-fill-color: #fffaf0;
   text-shadow:
-    0 0 1px rgba(255, 241, 214, 0.55),
-    0 0 18px rgba(255, 192, 120, 0.28),
-    0 0 42px rgba(228, 207, 162, 0.18),
-    0 1px 0 rgb(0 0 0 / 0.85),
-    0 14px 40px rgb(0 0 0 / 0.9);
+    0 0 2px rgba(255, 246, 224, 0.85),
+    0 0 14px rgba(255, 200, 120, 0.45),
+    0 0 36px rgba(255, 176, 96, 0.32),
+    0 0 64px rgba(228, 207, 162, 0.2),
+    0 1px 0 rgb(0 0 0 / 0.75),
+    0 14px 40px rgb(0 0 0 / 0.85);
 }
 
 @supports not ((background-clip: text) or (-webkit-background-clip: text)) {
@@ -860,15 +861,16 @@ html, body {
 }
 
 .hero-shine-accent {
-  color: #f0d9a8;
-  -webkit-text-fill-color: #f0d9a8;
+  color: #f5d9a0;
+  -webkit-text-fill-color: #f5d9a0;
   font-style: normal;
   text-shadow:
-    0 0 1px rgba(255, 246, 224, 0.7),
-    0 0 22px rgba(255, 176, 96, 0.38),
-    0 0 48px rgba(228, 207, 162, 0.22),
-    0 1px 0 rgb(0 0 0 / 0.75),
-    0 14px 40px rgb(0 0 0 / 0.85);
+    0 0 2px rgba(255, 250, 236, 0.95),
+    0 0 18px rgba(255, 186, 110, 0.55),
+    0 0 40px rgba(255, 160, 70, 0.35),
+    0 0 72px rgba(228, 207, 162, 0.25),
+    0 1px 0 rgb(0 0 0 / 0.65),
+    0 14px 40px rgb(0 0 0 / 0.8);
 }
 
 @supports not ((background-clip: text) or (-webkit-background-clip: text)) {
@@ -892,8 +894,8 @@ html, body {
   line-height: inherit;
   letter-spacing: inherit;
   text-align: center;
-  filter: blur(28px);
-  opacity: 0.42;
+  filter: blur(34px);
+  opacity: 0.55;
   user-select: none;
 }
 

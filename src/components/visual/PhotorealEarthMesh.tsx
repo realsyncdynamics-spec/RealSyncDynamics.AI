@@ -388,14 +388,14 @@ export function PhotorealEarthMesh({
                 vec3 N = normalize(vNormalW);
                 vec3 L = normalize(uLight);
                 float ndl = dot(N, L);
-                float day = smoothstep(-0.22, 0.42, ndl);
+                float day = smoothstep(-0.28, 0.38, ndl);
                 float night = 1.0 - day;
-                float term = 1.0 - smoothstep(0.0, 0.55, abs(ndl));
-                vec3 amber = vec3(1.0, 0.72, 0.38);
-                graded *= mix(0.1, 1.18, day);
-                graded += amber * term * 0.28 * (0.35 + day * 0.65);
+                float term = 1.0 - smoothstep(0.0, 0.48, abs(ndl));
+                vec3 amber = vec3(1.05, 0.68, 0.28);
+                graded *= mix(0.06, 1.28, day);
+                graded += amber * term * 0.42 * (0.4 + day * 0.7);
                 // Soft night charcoal so city lights can read on top.
-                graded = mix(graded, graded * vec3(0.08, 0.07, 0.06), night * 0.85);
+                graded = mix(graded, graded * vec3(0.05, 0.045, 0.04), night * 0.92);
                 gl_FragColor = vec4(graded, 1.0);
               }
             `}

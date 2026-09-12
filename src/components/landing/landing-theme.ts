@@ -53,9 +53,15 @@ export const LANDING_GREEN = '#20d69a';
 export const LANDING_LINE = 'rgba(220, 210, 190, 0.18)';
 
 /**
- * Fluid type scales — balanced for 768→1440+.
- * Previous clamp(42px, 5.8vw, 72px) orphaned “Time” and overpowered the Earth.
+ * Fluid type scales — hero-first hierarchy for Dark/Gold/Cream Earth landing.
+ * Cap stays below the old 72px orphan; DE H1 (≤2 lines) must still fit viewport width.
  */
-export const LANDING_H1 = 'clamp(1.75rem, 1.1rem + 2.4vw, 2.75rem)'; // ~28–44px
-export const LANDING_H2 = 'clamp(1.6rem, 1rem + 1.8vw, 2.375rem)'; // ~26–38px
-export const LANDING_H2_LG = 'clamp(1.7rem, 1.05rem + 2vw, 2.5rem)'; // section display
+export const LANDING_H1 = 'clamp(1.875rem, 1.15rem + 3.2vw, 3.125rem)'; // ~30–50px
+export const LANDING_H2 = 'clamp(1.75rem, 1.1rem + 2.2vw, 2.625rem)'; // ~28–42px
+export const LANDING_H2_LG = 'clamp(1.85rem, 1.15rem + 2.4vw, 2.75rem)'; // section display
+/** Body / motto / scan promise under H1 */
+export const LANDING_BODY = 'clamp(0.9375rem, 0.88rem + 0.28vw, 1.0625rem)'; // ~15–17px
+/** Mono loop / eyebrows */
+export const LANDING_EYEBROW = '0.6875rem'; // 11px
+/** Meta / kicker / fine print */
+export const LANDING_META = '0.625rem'; // 10px

@@ -5,9 +5,8 @@ import { readFileSync } from 'node:fs';
  * UNDECLARED_NO_JWT — Drift-Guard 2026-09-10.
  *
  * Drei Cron-Functions liefen live mit verify_jwt=false, ohne Stanza in
- * config.toml. Zwei prüfen den Service-Role-Bearer selbst; der
- * Monitoring-Scheduler tat das nicht — bei ausgeschaltetem Gateway-JWT
- * wäre er für jeden im Internet auslösbar.
+ * config.toml. Das Cron-Trio prüft jetzt dedizierte CRON_* Keys (fail-closed);
+ * die übrigen Cron-Functions behalten ihren jeweiligen Bearer-Check.
  *
  * Wer verify_jwt abschaltet, übernimmt die Auth. Der Test hält beides:
  * die Deklaration und den Bearer-Check.
@@ -50,9 +49,25 @@ describe('Cron-Functions: verify_jwt=false ist deklariert und selbst geprüft', 
       const src = source(slug);
       expect(src).toMatch(/Authorization/);
       expect(src).toMatch(/401/);
-      expect(src).toMatch(/cron only|service role required|UNAUTHORIZED/);
+      expect(src).toMatch(/cron only|UNAUTHORIZED|invalid bearer/);
+      expect(src).not.toContain('service role required');
     });
   }
+
+  it('Cron-Trio nutzt CRON_* Keys, nicht service_role JWT als Inbound', () => {
+    for (const [slug, env] of [
+      ['governance-monitoring-scheduler', 'CRON_GOVERNANCE_MONITORING_KEY'],
+      ['scheduler-dispatch', 'CRON_SCHEDULER_DISPATCH_KEY'],
+      ['memory-decay-worker', 'CRON_MEMORY_DECAY_KEY'],
+    ] as const) {
+      const src = source(slug);
+      expect(src).toContain(`Deno.env.get('${env}')`);
+      expect(src).toMatch(/!CRON_KEY\s*\|\|/);
+      expect(src).not.toMatch(
+        /authHeader\s*!==\s*`Bearer \$\{(SERVICE_KEY|SERVICE_ROLE)\}`/,
+      );
+    }
+  });
 
   it('pre-deploy-lint führt die Cron-Slugs in REQUIRED_PUBLIC_FUNCTIONS', () => {
     const lint = readFileSync('scripts/pre-deploy-lint.mjs', 'utf8');

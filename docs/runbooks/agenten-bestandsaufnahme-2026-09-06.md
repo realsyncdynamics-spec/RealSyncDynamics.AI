@@ -20,7 +20,7 @@ weiter oben in der Kette die Eingangsdaten fehlen:
 
 | # | Glied | Zustand am 2026-09-06 |
 |---|---|---|
-| 1 | `scan-scheduler-dispatch` (pg_cron, alle 15 min) | **rot** seit 2026-08-12 — Vault-Secret `service_role_key` fehlt |
+| 1 | `scan-scheduler-dispatch` (pg_cron, alle 15 min) | **rot** seit 2026-08-12 — Vault-Secret `cron_scheduler_dispatch_key` (bzw. Abgleich) fehlte / war noch `service_role_key` |
 | 2 | `websites`, `scan_runs` | **0 Zeilen** — es wird kein Scan eingeplant, also entsteht kein Scan |
 | 3 | `monitoring_sources` | **0 Zeilen** — ohne Scans keine Quelle unter SLO |
 | 4 | `agent-os-runner` (stündlich) | **grün** seit 2026-09-01, iteriert alle 6 Tenants, `monitoring_slos_evaluated: 0` |
@@ -40,30 +40,34 @@ Fehlläufe gesamt, gruppiert über die vollständige `cron.job_run_details`:
 |---|---|---|---|---|
 | `agent-os-runner-hourly` | 🟢 **behoben** | grün seit 2026-09-01 | 2 212 (2026-05-29 → 2026-09-01) | `agent_os_runner_token`, angelegt 2026-09-01 |
 | `agent-os-runner-daily` | 🟢 **behoben** | grün seit 2026-09-01 | 92 | dito |
-| `scan-scheduler-dispatch` | 🔴 rot | 2026-08-12 | 1 687+ | `service_role_key` |
-| `governance-monitoring-hourly` | 🔴 rot | 2026-08-12 | 422+ | `service_role_key` |
-| `memory-decay-hourly` | 🔴 rot | 2026-08-12 | 411+ | `service_role_key` |
-| `governance-monitoring-daily` | 🔴 rot | 2026-08-12 | 18+ | `service_role_key` |
+| `scan-scheduler-dispatch` | 🔴 rot | 2026-08-12 | 1 687+ | `cron_scheduler_dispatch_key` |
+| `governance-monitoring-hourly` | 🔴 rot | 2026-08-12 | 422+ | `cron_governance_monitoring_key` |
+| `memory-decay-hourly` | 🔴 rot | 2026-08-12 | 411+ | `cron_memory_decay_key` |
+| `governance-monitoring-daily` | 🔴 rot | 2026-08-12 | 18+ | `cron_governance_monitoring_key` |
 
 Die übrigen neun Jobs laufen durchgehend grün. Das Muster ist eindeutig: Jeder
-Job, für den ein eigenes Vault-Secret existiert, arbeitet; die vier
-verbleibenden roten Jobs hängen alle am selben fehlenden Eintrag.
+Job, für den ein eigenes Vault-Secret existiert und der Empfänger denselben
+Wert als Function Secret kennt, arbeitet.
 
 Diagnose und Dispatch-Reparatur stehen bereits in
-`supabase/migrations/20260820000000_cron_dispatch_fix.sql` (2026-08-20). Deren
-Kopfkommentar hält fest, dass zwei Secrets nur vom Betreiber angelegt werden
-können — der Service-Role-Key gehört nicht in eine Migration und nicht in die
-Git-History. Eines davon (`agent_os_runner_token`) ist inzwischen angelegt, das
-zweite nicht.
+`supabase/migrations/20260820000000_cron_dispatch_fix.sql` (2026-08-20). Der
+aktuelle Auth-Vertrag für das Cron-Trio steht in
+[`cron-vault-secrets.md`](./cron-vault-secrets.md): dedizierte `cron_*` Vault-
+Namen → `CRON_*` Function Secrets. Der `service_role` JWT ist kein
+Inbound-Credential für diese drei Functions.
 
-**Offener Betreiberschritt** (Supabase-SQL-Editor, nicht aus dem Repo möglich):
+**Offener Betreiberschritt** (Supabase-SQL-Editor + Function Secrets, nicht aus
+dem Repo möglich):
 
 ```sql
-SELECT vault.create_secret('<service-role-key>', 'service_role_key');
+SELECT vault.create_secret('<cron-key>', 'cron_scheduler_dispatch_key');
+SELECT vault.create_secret('<cron-key>', 'cron_governance_monitoring_key');
+SELECT vault.create_secret('<cron-key>', 'cron_memory_decay_key');
 ```
 
-Danach laufen die vier Jobs ohne Code-Änderung an — `app_functions_base_url()`
-und die Dispatch-Funktion lesen den Vault bereits.
+Danach Function Secrets `CRON_SCHEDULER_DISPATCH_KEY` /
+`CRON_GOVERNANCE_MONITORING_KEY` / `CRON_MEMORY_DECAY_KEY` setzen. Die Jobs
+greifen beim nächsten Tick.
 
 ---
 

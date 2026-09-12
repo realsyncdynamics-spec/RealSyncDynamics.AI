@@ -1,14 +1,18 @@
 /**
  * memory-decay-worker — RFC-003 Decay-Loop (Cron)
  *
+ * Auth: Bearer == CRON_MEMORY_DECAY_KEY (Function secret). pg_cron sends
+ * Vault `cron_memory_decay_key` via dispatch_cron_function. Fail-closed if
+ * the env is empty. Never compare inbound Authorization to
+ * SUPABASE_SERVICE_ROLE_KEY (service_role is only used after auth for RPCs).
+ *
  * Cron-Schedule (pg_cron, stündlich):
  *   SELECT cron.schedule(
  *     'memory-decay-hourly',
  *     '0 * * * *',
- *     $$ SELECT net.http_post(
- *       url := current_setting('app.supabase_url') || '/functions/v1/memory-decay-worker',
- *       headers := jsonb_build_object('Authorization', 'Bearer ' || current_setting('app.service_role_key'))
- *     ) $$
+ *     $$ SELECT public.dispatch_cron_function(
+ *          'memory-decay-worker',
+ *          'cron_memory_decay_key') $$
  *   );
  *
  * Was dieser Job tut:
@@ -78,11 +82,12 @@ Deno.serve(async (req) => {
   const preflight = handleOptions(req, corsHeaders);
   if (preflight) return preflight;
 
-  // Nur Service-Role darf ticken — die RPCs sind ohnehin auf service_role
-  // beschränkt, aber wir lehnen fremde Tokens früh und explizit ab.
+  // Drift-Guard: verify_jwt=false, dedizierter Cron-Key (nicht service_role).
+  // Leerer Key → 401. RPCs bleiben service_role-only auf der DB-Seite.
+  const CRON_KEY = Deno.env.get('CRON_MEMORY_DECAY_KEY') ?? '';
   const authHeader = req.headers.get('Authorization') ?? '';
-  if (authHeader !== `Bearer ${SERVICE_KEY}`) {
-    return jsonResponse({ error: 'service role required' }, 401, corsHeaders);
+  if (!CRON_KEY || authHeader !== `Bearer ${CRON_KEY}`) {
+    return jsonResponse({ error: 'cron only' }, 401, corsHeaders);
   }
 
   const runId = crypto.randomUUID();

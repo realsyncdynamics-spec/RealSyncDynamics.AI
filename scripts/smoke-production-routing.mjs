@@ -16,7 +16,7 @@
 //
 // pages.dev ist immer erforderlich. Der Apex ist standardmäßig ADVISORY
 // (bekannter, dashboard-seitiger Custom-Domain-Blocker — siehe
-// REALSYNC_LIVE_ROUTING_STATUS.md). Mit SMOKE_STRICT_APEX=1 wird der Apex
+// .archive/root-docs/REALSYNC_LIVE_ROUTING_STATUS.md). Mit SMOKE_STRICT_APEX=1 wird der Apex
 // ebenfalls blockierend geprüft (für CI nach erfolgter Domain-Bindung).
 // ─────────────────────────────────────────────────────────────────────────────
 

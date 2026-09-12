@@ -10,5 +10,13 @@
     "_hinweis": "Ratsche gegen wachsende Doku-Sammlung: Was in docs/ liegt, kostet bei jeder Recherche. Grenzen senken, nicht anheben.",
     "maxDateien": 235,
     "maxKb": 2700
+  },
+  "root": {
+    "_hinweis": "Ratsche gegen Doku-Ablage im Repo-Root: jede Root-Datei landet bei Globs/Greps jeder Session im Kontext. Status-/Phase-/Runbook-Dokumente gehören nach .archive/root-docs/ (Read-Deny + .claudeignore).",
+    "maxMdDateien": 8,
+    "maxMdKb": 60,
+    "htmlErlaubt": [
+      "index.html"
+    ]
   }
 }

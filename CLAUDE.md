@@ -32,7 +32,7 @@ Default für Landing-/Marketing-Arbeit. **Nur diese Pfade lesen/schreiben:**
 - `src/index.css`, `tailwind.config.ts`, `src/config/seo.ts`
 - `packages/siteos-core` nur wenn der Builder betroffen ist
 
-**Nicht anfassen und nicht globben:** `supabase/`, `platform/`, `services/`, `apps/`, `docs/` (außer explizit genannt), Root-`*.sql.bak`, `.archive/`.
+**Nicht anfassen und nicht globben:** `supabase/`, `platform/`, `services/`, `apps/`, `docs/` (außer explizit genannt), Root-`*.sql.bak`, `.archive/` (dort liegen u. a. die alten Root-Status-/Phase-Dokumente unter `root-docs/` — nur gezielt greppen, nie einlesen).
 
 Public Marketing = Light-Theme (Slate + Petrol), siehe `AGENTS.md`. App/Dashboard bleibt dunkel. Design-Freeze: bestehende Tokens/Komponenten nicht umstylen ohne Freigabe.
 

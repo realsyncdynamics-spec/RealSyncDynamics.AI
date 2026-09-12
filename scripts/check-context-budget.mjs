@@ -134,6 +134,44 @@ if (repoDocs) {
   }
 }
 
+// Repo-Root: jede Datei dort trifft Globs und Greps jeder Session. Am
+// 2026-09-12 lagen 64 Markdown-Dateien (~870 KB, ~250k Tokens) plus ein
+// 66-KB-HTML-Prototyp im Root. Status-/Phase-/Runbook-Dokumente gehören nach
+// .archive/root-docs/ (Read-Deny + .claudeignore), nicht zurück in den Root.
+const rootCfg = cfg.root;
+if (rootCfg) {
+  const rootEntries = readdirSync(ROOT, { withFileTypes: true }).filter((e) =>
+    e.isFile(),
+  );
+  const rootMd = rootEntries.filter((e) => e.name.endsWith('.md'));
+  const rootMdKb =
+    rootMd.reduce((s, e) => s + statSync(join(ROOT, e.name)).size, 0) / 1024;
+  const htmlErlaubt = new Set(rootCfg.htmlErlaubt ?? []);
+  const rootHtml = rootEntries
+    .filter((e) => e.name.endsWith('.html') && !htmlErlaubt.has(e.name))
+    .map((e) => e.name);
+  const zuVieleMd = rootMd.length > rootCfg.maxMdDateien;
+  const zuGrossMd = rootMdKb > rootCfg.maxMdKb;
+  if (zuVieleMd || zuGrossMd || rootHtml.length > 0) failed = true;
+  console.log('\nRepo-Root');
+  console.log(
+    `  ${zuVieleMd ? '✗' : '✓'} ${String(rootMd.length).padStart(4)} Markdown-Dateien (Grenze ${rootCfg.maxMdDateien})`,
+  );
+  console.log(
+    `  ${zuGrossMd ? '✗' : '✓'} ${fmt(Math.round(rootMdKb)).padStart(4)} KB Markdown   (Grenze ${fmt(rootCfg.maxMdKb)})`,
+  );
+  if (rootHtml.length > 0) {
+    console.error(
+      `  ✗ HTML im Root außerhalb der Erlaubnisliste: ${rootHtml.join(', ')} → .archive/root-docs/`,
+    );
+  }
+  if (zuVieleMd || zuGrossMd) {
+    console.error(
+      '  Neue Root-Dokumente nach .archive/root-docs/ (Alt) oder docs/ (lebend) verschieben.',
+    );
+  }
+}
+
 const mcpPath = join(ROOT, '.mcp.json');
 if (existsSync(mcpPath)) {
   const server = Object.keys(

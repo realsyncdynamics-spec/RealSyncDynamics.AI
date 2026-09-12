@@ -80,15 +80,36 @@ https://ebljyceifhnlzhjfyxup.supabase.co/functions/v1/stripe-webhook
 
 Disable everything else — extra events cost replay-budget and increase the surface for signature failures.
 
+## Post-checkout → dashboard → domain bind
+
+Happy path after hosted Checkout succeeds:
+
+1. Stripe `success_url` → `/checkout/success?session_id=…&plan_key=…`
+2. `CheckoutSuccess` uses the shared Supabase client (persisted session), waits for tenant, calls `stripe-checkout-verify`, invalidates entitlements cache, refreshes `TenantProvider`
+3. Redirect → `/app/dashboard?subscription=…&plan=…` (or `/welcome?next=/checkout/success?…` if auth missing — no second login)
+4. Dashboard post-checkout CTA → `/app/websites` (DomainManager Preview)
+5. Cancel → `/checkout/cancelled` → CTA `/#pricing`
+
+Check-in: `/welcome`. Check-out: BrowserTopBar **Abmelden** → `signOut()` → `/`.
+
+### Domain bind (Preview)
+
+- UI: `DomainManager` on `/app/websites` (ensures a `website_projects` row)
+- API: `website-domain-manager` with JWT + membership check
+- Custom domains stay `pending`/`validating` until Cloudflare Vault/ops is live — do **not** treat public DNS resolve as live activation
+
+Still blocked for live custom DNS: Cloudflare secrets in Vault + production migration apply + webhook confirmation (same blockers as Stripe section below).
+
 ## Manual end-to-end test (10 min)
 
-1. Open `/pricing` (logged out)
-2. Click **Starter** — redirects to `/welcome?next=/checkout/starter`
+1. Open `/pricing` (logged out) or landing `/#pricing`
+2. Click **Starter** — redirects to `/checkout/starter`; if logged out → `/welcome?next=/checkout/starter`
 3. Sign up with a test mail or Google OAuth
 4. After welcome → redirected to `/checkout/starter`
 5. Expect Stripe hosted checkout (URL = `checkout.stripe.com/c/pay/cs_live_…`)
 6. Complete with `4242 4242 4242 4242` (test mode only) or a real card if live
-7. After redirect, confirm:
+7. Land on `/checkout/success` then `/app/dashboard?subscription=…&plan=starter`
+8. Confirm:
    ```sql
    SELECT id, status, stripe_subscription_id, current_period_end
    FROM public.subscriptions
@@ -96,12 +117,13 @@ Disable everything else — extra events cost replay-budget and increase the sur
    ORDER BY created_at DESC LIMIT 1;
    ```
    Expect: `status = 'active'`, non-null `stripe_subscription_id`, `current_period_end` in the future.
-8. Confirm webhook delivery in Supabase Edge logs:
+9. Confirm webhook delivery in Supabase Edge logs:
    ```
    stripe-webhook · checkout.session.completed · 200
    ```
+10. Open `/app/websites` → attach domain (Preview banner visible)
 
-If step 7 succeeds but step 8 doesn't, the subscription was written through the success-redirect path. That works for a single test but leaves you blind to renewal events — the webhook MUST verify.
+If step 8 succeeds but step 9 doesn't, the subscription was written through a secondary path or delayed webhook. Renewal events still require the webhook.
 
 ## Failure modes
 

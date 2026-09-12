@@ -99,6 +99,13 @@ let cacheKey = '';
 let cacheData: CacheEntry | null = null;
 let cacheTimestamp = 0;
 
+/** Drop the module cache after checkout/webhook so /app sees fresh plan keys. */
+export function invalidateEntitlementsCache(): void {
+  cacheKey = '';
+  cacheData = null;
+  cacheTimestamp = 0;
+}
+
 /**
  * Nächsthöherer Plan in kanonischer Reihenfolge — Basis für Upgrade-CTAs.
  * `null`, wenn der Kunde bereits im höchsten Plan ist.

@@ -199,7 +199,8 @@ export function CheckoutPage() {
   }
 
   if (auth.status === 'no_user') {
-    const checkoutPath = `/checkout/${validPlan}`;
+    // Preserve query (e.g. ?pilot=true) so Welcome returns to the same checkout URL.
+    const checkoutPath = `/checkout/${validPlan}${isPilot ? '?pilot=true' : ''}`;
     return (
       <NoUserShell
         title={`Anmelden, um ${tier.name} zu buchen`}
@@ -212,13 +213,14 @@ export function CheckoutPage() {
   }
 
   if (auth.status === 'no_tenant') {
+    const checkoutPath = `/checkout/${validPlan}${isPilot ? '?pilot=true' : ''}`;
     return (
       <ShellWithMessage
         title="Workspace einrichten"
         body={`Eingeloggt als ${auth.userEmail}, aber noch kein Workspace vorhanden. Im nächsten Schritt richten wir Ihren Tenant ein, dann können Sie ${tier.name} buchen.`}
         cta={{
           label: 'Workspace einrichten',
-          to: `/welcome?next=${encodeURIComponent(`/checkout/${validPlan}`)}`,
+          to: `/welcome?next=${encodeURIComponent(checkoutPath)}`,
         }}
         backTo={`/pricing/${validPlan}`}
       />

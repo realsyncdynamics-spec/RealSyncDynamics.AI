@@ -33,10 +33,10 @@ export function CheckoutCancelledPage() {
 
           <div className="mt-8 flex flex-wrap items-center gap-3">
             <Link
-              to="/pricing"
+              to="/#pricing"
               className="surface-mono inline-flex items-center gap-2 px-4 py-2 font-mono text-[11px] uppercase tracking-wide"
             >
-              Pläne ansehen <ArrowRight className="h-3.5 w-3.5" />
+              Zu den Preisen <ArrowRight className="h-3.5 w-3.5" />
             </Link>
             <Link
               to="/audit"

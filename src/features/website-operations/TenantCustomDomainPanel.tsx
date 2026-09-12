@@ -195,6 +195,7 @@ export function TenantCustomDomainPanel({ tenantId }: TenantCustomDomainPanelPro
               <DomainManager
                 projectId={selected.id}
                 tenantId={tenantId}
+                previewMode
               />
             )}
           </>

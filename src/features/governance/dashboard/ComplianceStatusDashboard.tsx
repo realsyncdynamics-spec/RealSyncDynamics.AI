@@ -5,9 +5,9 @@
 // Daten aus denselben RLS-Quellen wie das CEO-Cockpit. Keine Mock-Fallbacks.
 
 import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
-  Activity, AlertTriangle, ArrowRight, Clock, ChevronRight, FileCheck2, Loader2,
+  Activity, AlertTriangle, ArrowRight, Clock, ChevronRight, FileCheck2, Globe2, Loader2,
   Minus, Radar, Rocket, ShieldCheck, TrendingDown, TrendingUp,
 } from 'lucide-react';
 import { useTenant } from '../../../core/access/TenantProvider';
@@ -83,6 +83,10 @@ export function ComplianceStatusView({
   error,
 }: ComplianceStatusViewProps) {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const postCheckoutPlan = searchParams.get('plan');
+  const postCheckoutSub = searchParams.get('subscription');
+  const showPostCheckout = Boolean(postCheckoutPlan || postCheckoutSub);
   const isEmptyTenant = Boolean(
     data &&
     data.partialFailures.length === 0 &&
@@ -127,6 +131,38 @@ export function ComplianceStatusView({
           </Link>
         </div>
       </div>
+
+      {showPostCheckout && activeTenantId && (
+        <div
+          className="border border-cyan-900/60 bg-cyan-950/20 p-5 space-y-3"
+          data-testid="post-checkout-domain-cta"
+        >
+          <div className="flex items-start gap-3">
+            <Globe2 className="h-5 w-5 text-cyan-400 mt-0.5 shrink-0" />
+            <div>
+              <h2 className="text-sm font-semibold text-titanium-50">
+                Abo aktiv{postCheckoutPlan ? ` · ${postCheckoutPlan}` : ''}
+              </h2>
+              <p className="text-sm text-titanium-300 mt-1">
+                Nächster Schritt: Kunden-Domain unter Websites verbinden.
+                Custom-DNS ist Preview, bis Cloudflare/Vault live ist — kein Fake-„active“.
+              </p>
+              {postCheckoutSub && (
+                <p className="mt-2 font-mono text-[10px] text-titanium-600">
+                  subscription={postCheckoutSub}
+                </p>
+              )}
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => navigate('/app/websites')}
+            className="inline-flex items-center justify-center gap-2 bg-cyan-400 hover:bg-cyan-300 text-obsidian-950 px-4 py-2 text-sm font-semibold font-mono uppercase tracking-wider"
+          >
+            Domain verbinden <ArrowRight className="h-4 w-4" />
+          </button>
+        </div>
+      )}
 
       {!activeTenantId && (
         <div className="py-12 text-center text-titanium-400">
@@ -183,6 +219,13 @@ export function ComplianceStatusView({
               className="inline-flex items-center justify-center gap-2 border border-titanium-700 hover:border-titanium-500 text-titanium-200 px-4 py-2 text-sm font-semibold font-mono uppercase tracking-wider"
             >
               Website-Audit
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate('/app/websites')}
+              className="inline-flex items-center justify-center gap-2 border border-titanium-700 hover:border-titanium-500 text-titanium-200 px-4 py-2 text-sm font-semibold font-mono uppercase tracking-wider"
+            >
+              Domain verbinden
             </button>
           </div>
         </div>

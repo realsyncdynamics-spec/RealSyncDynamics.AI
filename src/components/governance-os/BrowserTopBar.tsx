@@ -1,6 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { Sparkles, Menu, X, FileCheck2, FileBarChart2, Search } from 'lucide-react';
+import { Sparkles, Menu, X, FileCheck2, FileBarChart2, Search, LogOut } from 'lucide-react';
 import { GovernanceAddressBar } from './GovernanceAddressBar';
+import { useSupabaseAuth } from '../../features/supabase/SupabaseAuthContext';
 
 interface BrowserTopBarProps {
   mobileMenuOpen: boolean;
@@ -20,6 +21,13 @@ export function BrowserTopBar({
   activeEmbedUrl,
 }: BrowserTopBarProps) {
   const navigate = useNavigate();
+  const { logout, isAuthenticated } = useSupabaseAuth();
+
+  async function handleSignOut() {
+    await logout();
+    // Full navigation clears in-memory tenant/entitlement state.
+    window.location.href = '/';
+  }
 
   return (
     <header className="h-14 shrink-0 bg-obsidian-900/95 border-b border-titanium-900/80 backdrop-blur-md flex items-center gap-3 px-3 sm:px-4">
@@ -92,6 +100,17 @@ export function BrowserTopBar({
           <Sparkles className="h-3.5 w-3.5" />
           <span className="hidden sm:inline">Assistent</span>
         </button>
+        {isAuthenticated && (
+          <button
+            type="button"
+            onClick={() => void handleSignOut()}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-titanium-400 bg-obsidian-800 border border-titanium-800 hover:border-red-800 hover:text-red-300 transition-colors"
+            aria-label="Abmelden"
+          >
+            <LogOut className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Abmelden</span>
+          </button>
+        )}
       </div>
     </header>
   );

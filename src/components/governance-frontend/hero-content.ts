@@ -7,7 +7,7 @@
 
 export type HeroHeadlineSegment = {
   text: string;
-  /** true → Gold-Akzent (Playfair italic in der Referenz). */
+  /** true → Gold-Akzent („Europe“). */
   accent?: boolean;
 };
 
@@ -20,10 +20,11 @@ export type HeroHeadlineSegment = {
  *
  * `MainLanding` renders H1 exclusively from `HERO_HEADLINE`. E2E / FE-001
  * read the same source — change here, not in the page.
+ *
+ * Two lines only — never orphan “for Europe” under “OS”.
  */
 export const HERO_HEADLINE: readonly (readonly HeroHeadlineSegment[])[] = [
-  [{ text: 'AI Compliance' }],
-  [{ text: 'Operations OS' }],
+  [{ text: 'AI Compliance Operations OS' }],
   [
     { text: 'for ' },
     { text: 'Europe', accent: true },
@@ -32,18 +33,18 @@ export const HERO_HEADLINE: readonly (readonly HeroHeadlineSegment[])[] = [
 
 /** Reine Textzeilen der H1 — für Tests und Accessible-Name-Abgleich. */
 export const HERO_HEADLINE_LINES: readonly string[] = HERO_HEADLINE.map((segments) =>
-  segments.map((s) => s.text).join('')
+  segments.map((s) => s.text).join(''),
 );
 
 /** Substring für den FE-001-Check. Muss vollständig innerhalb einer Zeile liegen. */
 export const HERO_HEADLINE_TEST_SUBSTRING = 'AI Compliance';
 
-/** Motto under the H1 — mock operating loop (Discover → Classify → Enforce → Prove). */
-export const HERO_OPERATING_LOOP = 'Discover → Classify → Enforce → Prove' as const;
+/** Operating loop — single kicker under / above the H1 (mock lock). */
+export const HERO_OPERATING_LOOP = 'DISCOVER → CLASSIFY → ENFORCE → PROVE' as const;
 
 /**
  * Secondary / funnel / design-preview copy — not the live `/` H1 chrome.
- * Legacy Dominik phrase retained for funnel messaging only.
+ * Same words as the live claim for SEO / legacy imports.
  */
 export const HERO_EN_KICKER = 'AI Compliance Operations OS for Europe' as const;
 
@@ -53,11 +54,12 @@ export const SCAN_FUNNEL_MESSAGE =
 export const CONTINUOUS_COMPLIANCE_NARRATIVE =
   'RealSync erkennt, bewertet, steuert und dokumentiert Compliance kontinuierlich.' as const;
 
+/** One value line under the H1 — mock lock. Competing motto/EU lines stay demoted. */
 export const HERO_SUBLINE =
-  'Govern AI. Prove Everything. Operate with Confidence.' as const;
+  'Runtime governance for regulated AI systems. Continuous evidence. EU-native by design.' as const;
 
 /**
- * Monetization value line under the live H1 — financial/regulatory urgency.
+ * Monetization urgency — kept for secondary surfaces; not in the hero fold.
  * Does not replace HERO_HEADLINE or HERO_SUBLINE.
  */
 export const HERO_VALUE_SUBLINE = 'Vermeide EU AI Act-Bußgelder.' as const;
@@ -65,7 +67,7 @@ export const HERO_VALUE_SUBLINE = 'Vermeide EU AI Act-Bußgelder.' as const;
 /** Honest scan badge on the primary cream CTA (not a fake speed claim). */
 export const HERO_SCAN_BADGE = 'Kostenlos' as const;
 
-/** Framework social proof under the hero — standards, not fake logos/counts. */
+/** Framework social proof — below the fold / secondary, not hero chrome. */
 export const HERO_SOCIAL_PROOF =
   'Gebaut für regulierte KI in der EU.' as const;
 
@@ -96,4 +98,12 @@ if (!HERO_HEADLINE_LINES.some((line) => line.includes(HERO_HEADLINE_TEST_SUBSTRI
     'hero-content.ts: HERO_HEADLINE_TEST_SUBSTRING kommt in keiner Zeile der ' +
       'HERO_HEADLINE vor — FE-001 würde fehlschlagen.',
   );
+}
+
+if (HERO_HEADLINE_LINES.length > 2) {
+  throw new Error('hero-content.ts: H1 must stay ≤ 2 lines (no orphan “for Europe”).');
+}
+
+if (!HERO_HEADLINE_LINES.some((line) => line.includes('Europe'))) {
+  throw new Error('hero-content.ts: Europe must remain in the H1.');
 }

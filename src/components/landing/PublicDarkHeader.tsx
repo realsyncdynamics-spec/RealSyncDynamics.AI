@@ -17,25 +17,32 @@ import {
 /**
  * Shared dark public header for `/` and `/branchen`.
  *
- * Dominik-Referenz: sticky frosted bar, DM Mono CTA, gold brand mark.
- * Working P0 nav targets from #1280/#1279 remain — hash targets use `/#…`
- * so they resolve from `/branchen` as well. `/ai-act` + `/sicherheit`
- * stay reachable (platform-capabilities contract).
- *
- * Monetization: Preise slightly emphasized; Enterprise → inquiry path;
- * optional honest trust strip (no fake SLA / ISO-company claims).
+ * Enterprise strip (desktop): Preise · Enterprise · Login + Free Audit.
+ * Fuller IA (Produkt, Runtime, Evidence, …) lives in the mobile drawer and
+ * in `public-nav.ts` — no invented pages, no junk-drawer desktop bar.
  */
-const LINKS = [
-  { label: 'Produkt', to: '/#product', className: undefined, emphasize: false },
-  { label: 'Runtime', to: '/governance-runtime', className: undefined, emphasize: false },
-  { label: 'Branchen', to: '/branchen', className: undefined, emphasize: false },
-  { label: 'Evidence', to: '/#evidence', className: undefined, emphasize: false },
-  { label: 'Module', to: '/#tools', className: 'hidden lg:block', emphasize: false },
-  { label: 'EU AI Act', to: '/ai-act', className: 'hidden xl:block', emphasize: false },
-  { label: 'Sicherheit', to: '/sicherheit', className: 'hidden xl:block', emphasize: false },
-  { label: 'Preise', to: '/#pricing', className: undefined, emphasize: true },
-  { label: 'Enterprise', to: '/#enterprise', className: undefined, emphasize: false },
-  { label: 'Login', to: '/welcome', className: undefined, emphasize: false },
+
+/** Calm desktop strip — Dominik enterprise mock. */
+const PRIMARY_LINKS = [
+  { label: 'Preise', to: '/#pricing', emphasize: true },
+  { label: 'Enterprise', to: '/#enterprise', emphasize: false },
+  { label: 'Login', to: '/welcome', emphasize: false },
+] as const;
+
+/**
+ * Drawer / secondary IA — keeps platform-capabilities reachability
+ * (`/ai-act`, `/sicherheit`, `/branchen`, `/governance-runtime`) without
+ * crowding the first viewport.
+ */
+const DRAWER_LINKS = [
+  { label: 'Produkt', to: '/#product', emphasize: false },
+  { label: 'Runtime', to: '/governance-runtime', emphasize: false },
+  { label: 'Branchen', to: '/branchen', emphasize: false },
+  { label: 'Evidence', to: '/#evidence', emphasize: false },
+  { label: 'Module', to: '/#tools', emphasize: false },
+  { label: 'EU AI Act', to: '/ai-act', emphasize: false },
+  { label: 'Sicherheit', to: '/sicherheit', emphasize: false },
+  ...PRIMARY_LINKS,
 ] as const;
 
 function NavItem({
@@ -53,7 +60,7 @@ function NavItem({
 }) {
   const baseColor = emphasize ? LANDING_ACCENT : LANDING_MUTED;
   const shared = {
-    className: `text-[12px] transition-colors focus-visible:outline-none focus-visible:underline focus-visible:underline-offset-4${emphasize ? ' font-medium tracking-wide' : ''}${className ? ` ${className}` : ''}`,
+    className: `text-[13px] transition-colors focus-visible:outline-none focus-visible:underline focus-visible:underline-offset-4${emphasize ? ' font-medium tracking-wide' : ''}${className ? ` ${className}` : ''}`,
     style: { color: baseColor } as CSSProperties,
     onMouseEnter: (e: MouseEvent<HTMLAnchorElement>) => {
       e.currentTarget.style.color = LANDING_TEXT;
@@ -106,28 +113,15 @@ export function PublicDarkHeader({ overlay = false }: { overlay?: boolean }) {
               <span style={{ color: LANDING_ACCENT }}>.AI</span>
             </span>
           </Link>
-          <span
-            className="hidden items-center gap-1.5 rounded-full border px-2 py-1 text-[9px] tracking-[.16em] md:inline-flex"
-            style={{
-              fontFamily: LANDING_MONO,
-              borderColor: `${LANDING_ACCENT}40`,
-              backgroundColor: `${LANDING_ACCENT}14`,
-              color: `${LANDING_ACCENT}e6`,
-            }}
-            title="Product category — not a live tenant metric"
-          >
-            <span className="h-1.5 w-1.5 rounded-full bg-[#20d69a]/90" aria-hidden="true" />
-            GOV OS
-          </span>
         </div>
 
-        <nav className="ml-auto hidden items-center gap-5 xl:gap-6 lg:flex" aria-label="Hauptnavigation">
-          {LINKS.map((item) => (
+        <nav className="ml-auto hidden items-center gap-7 lg:flex" aria-label="Hauptnavigation">
+          {PRIMARY_LINKS.map((item) => (
             <NavItem key={item.to + item.label} {...item} />
           ))}
           <Link
             to="/audit"
-            className="landing-cta-glow max-w-[9.5rem] rounded-full px-[18px] py-[11px] text-center text-[10px] leading-[1.3] transition hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e4cfa2]"
+            className="landing-cta-glow rounded-full px-[20px] py-[11px] text-center text-[11px] leading-[1.3] transition hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e4cfa2]"
             style={scanCtaStyle}
           >
             {HERO_SCAN_CTA_LABEL}
@@ -156,30 +150,6 @@ export function PublicDarkHeader({ overlay = false }: { overlay?: boolean }) {
         </div>
       </div>
 
-      {/* Honest trust strip — standards only, no fake uptime/SLA */}
-      <div
-        className="hidden border-t border-white/[0.04] lg:block"
-        style={{ backgroundColor: 'rgba(5,7,11,0.45)' }}
-        aria-label="Vertrauenssignale"
-      >
-        <ul className="mx-auto flex max-w-[1500px] items-center gap-5 px-[4vw] py-1.5">
-          {LANDING_TRUST_MARKS.map((mark) => (
-            <li
-              key={mark}
-              className="inline-flex items-center gap-1.5 text-[8px] tracking-[.16em]"
-              style={{ fontFamily: LANDING_MONO, color: '#7a7a82' }}
-            >
-              <span
-                className="h-1 w-1 rounded-full"
-                style={{ backgroundColor: LANDING_GREEN }}
-                aria-hidden="true"
-              />
-              {mark}
-            </li>
-          ))}
-        </ul>
-      </div>
-
       {open && (
         <div
           id="public-dark-mobile-nav"
@@ -192,10 +162,10 @@ export function PublicDarkHeader({ overlay = false }: { overlay?: boolean }) {
             className="mb-3 text-[9px] tracking-[.2em]"
             style={{ fontFamily: LANDING_MONO, color: `${LANDING_ACCENT}b3` }}
           >
-            SYSTEM DRAWER · PUBLIC
+            NAVIGATION
           </p>
           <nav aria-label="Mobile Navigation" className="flex flex-col">
-            {LINKS.map((item) => (
+            {DRAWER_LINKS.map((item) => (
               <NavItem
                 key={item.to + item.label}
                 to={item.to}
@@ -207,7 +177,7 @@ export function PublicDarkHeader({ overlay = false }: { overlay?: boolean }) {
             ))}
             <Link
               to="/audit"
-              className="mt-3 block rounded-full px-4 py-3 text-center text-[10px] leading-[1.3]"
+              className="mt-3 block rounded-full px-4 py-3 text-center text-[11px] leading-[1.3]"
               style={scanCtaStyle}
               onClick={() => setOpen(false)}
             >

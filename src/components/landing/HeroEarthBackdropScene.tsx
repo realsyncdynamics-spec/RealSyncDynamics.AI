@@ -215,13 +215,11 @@ function SceneryEarth({
 }) {
   const wrap = useRef<THREE.Group>(null!);
 
-  useFrame((_, delta) => {
-    // Locked Europe framing — only a whisper of drift so routes stay readable.
-    if (!reducedMotion) {
-      spin.current.rotY += delta * 0.004;
-      // Clamp drift so Europe never spins off-frame.
-      if (spin.current.rotY > -0.28) spin.current.rotY = -0.55;
-    }
+  useFrame(({ clock }) => {
+    // Locked Europe framing — gentle sway only; never free-spin to the Americas.
+    const base = -0.48;
+    const sway = reducedMotion ? 0 : Math.sin(clock.elapsedTime * 0.12) * 0.045;
+    spin.current.rotY = base + sway;
     if (wrap.current) {
       wrap.current.rotation.y = spin.current.rotY;
     }

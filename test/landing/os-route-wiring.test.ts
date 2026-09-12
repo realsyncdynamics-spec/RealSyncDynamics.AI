@@ -60,9 +60,11 @@ describe('Landing ↔ Infrastruktur', () => {
 
   it('Dominik landing CTAs zeigen Audit + Earth backdrop, keine Demo-Buchung', () => {
     expect(mainLanding).toContain('HeroEarthBackdrop');
-    expect(mainLanding).toContain("navigate(value ? `/audit?domain=");
     expect(mainLanding).toContain('to="/audit"');
+    expect(mainLanding).toContain('id="scan"');
     expect(mainLanding).toContain('PLATFORM_LIVE_ITEMS');
+    expect(mainLanding).toContain('HERO_SCAN_CTA_LABEL');
+    expect(mainLanding).toContain('HERO_DASHBOARD_CTA_LABEL');
     expect(mainLanding).not.toContain('Demo buchen');
     expect(mainLanding).not.toContain('GovernanceSphereHost');
     expect(mainLanding).not.toContain('HeroEuropeSunrise');

@@ -125,14 +125,12 @@ function StaticEarthPlane({ className = '' }: { className?: string }) {
         />
       </picture>
       <GoldNetworkOverlay />
-      {/* Soft left veil for type — keep Europe city lights readable on the right */}
+      {/* Soft left veil for type — no muddy gold wash over Europe */}
       <div
         className="pointer-events-none absolute inset-0"
         style={{
-          background: [
-            'linear-gradient(90deg, rgba(5,7,11,0.55) 0%, rgba(5,7,11,0.18) 28%, transparent 52%)',
-            'radial-gradient(42% 36% at 18% 42%, rgba(208,195,164,0.06) 0%, transparent 64%)',
-          ].join(', '),
+          background:
+            'linear-gradient(90deg, rgba(5,7,11,0.62) 0%, rgba(5,7,11,0.22) 26%, transparent 48%)',
         }}
       />
     </div>
@@ -353,15 +351,15 @@ function WarmRimLight() {
       <div
         className="absolute"
         style={{
-          left: '58%',
-          top: '18%',
-          width: 'min(38vw, 420px)',
-          height: 'min(48vw, 520px)',
+          left: '62%',
+          top: '22%',
+          width: 'min(28vw, 320px)',
+          height: 'min(36vw, 400px)',
           borderRadius: '50%',
           background:
-            'radial-gradient(ellipse at 40% 48%, rgba(208,195,164,0.18) 0%, rgba(180,140,80,0.07) 36%, transparent 68%)',
-          filter: 'blur(28px)',
-          opacity: 0.55,
+            'radial-gradient(ellipse at 40% 48%, rgba(208,195,164,0.1) 0%, rgba(180,140,80,0.04) 40%, transparent 70%)',
+          filter: 'blur(32px)',
+          opacity: 0.4,
         }}
       />
     </div>
@@ -453,8 +451,8 @@ export function HeroEarthBackdrop() {
         className="pointer-events-none absolute inset-0"
         style={{
           background: [
-            'radial-gradient(ellipse 48% 40% at 22% 28%, rgba(5,7,11,0.42) 0%, rgba(5,7,11,0.12) 55%, transparent 78%)',
-            'linear-gradient(180deg, rgba(5,7,11,0.22) 0%, transparent 16%, transparent 70%, rgba(5,7,11,0.4) 100%)',
+            'linear-gradient(90deg, rgba(5,7,11,0.35) 0%, rgba(5,7,11,0.08) 32%, transparent 52%)',
+            'linear-gradient(180deg, rgba(5,7,11,0.18) 0%, transparent 14%, transparent 72%, rgba(5,7,11,0.35) 100%)',
           ].join(', '),
         }}
       />

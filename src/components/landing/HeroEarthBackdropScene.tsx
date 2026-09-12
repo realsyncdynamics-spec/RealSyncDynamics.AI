@@ -99,14 +99,14 @@ function SceneryEarth({
   });
 
   return (
-    <group ref={wrap} position={[0.12, -1.55, 0.05]} scale={2.85} rotation={[0.22, 0, 0]}>
+    <group ref={wrap} position={[0.05, -2.05, -0.4]} scale={1.72} rotation={[0.12, 0, 0]}>
       <PhotorealEarthMesh
         key={quality}
         radius={EARTH_RADIUS}
         autoRotate={false}
         reducedMotion={reducedMotion}
         sunDirection={sunDir}
-        rotation={[0, -0.35, 0]}
+        rotation={[0, -0.42, 0]}
         palette="landing-gold"
         quality={quality}
       />
@@ -116,11 +116,11 @@ function SceneryEarth({
 
 function CameraLock() {
   const { camera } = useThree();
-  const base = useMemo(() => new THREE.Vector3(0, 0.55, 4.1), []);
+  const base = useMemo(() => new THREE.Vector3(0, 0.35, 5.2), []);
 
   useFrame(() => {
     camera.position.copy(base);
-    camera.lookAt(0, -0.85, 0);
+    camera.lookAt(0, -0.55, 0);
   });
 
   return null;
@@ -162,7 +162,7 @@ export function HeroEarthBackdropScene({ reducedMotion = false }: HeroEarthBackd
   return (
     <Canvas
       className="h-full w-full"
-      camera={{ position: [0, 0.55, 4.1], fov: 38 }}
+      camera={{ position: [0, 0.35, 5.2], fov: 36 }}
       gl={{
         alpha: true,
         antialias: !isAutomation(),

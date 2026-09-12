@@ -172,8 +172,8 @@ export function HeroEarthBackdrop() {
       <Starfield />
       <WarmRimLight />
 
-      {/* Photoreal Europe night — first paint; fades when WebGL scenery mounts */}
-      <StaticEarthPlane className={use3d ? 'opacity-0 transition-opacity duration-700' : ''} />
+      {/* Photoreal Europe night — always under WebGL so planet never blanks */}
+      <StaticEarthPlane />
 
       {use3d && (
         <div className="hero-earth-canvas absolute inset-0" data-landing-earth>

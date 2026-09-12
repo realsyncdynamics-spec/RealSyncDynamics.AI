@@ -71,11 +71,10 @@ describe('Kostenverursachende Functions prüfen ihr Entitlement', () => {
   });
 });
 
-describe('Cron-Functions nehmen nur Service-Role an', () => {
+describe('Cron-Functions: Inbound-Auth', () => {
   it.each([
     'api-webhook-deliver',
     'compliance-remediation-execute',
-    'scheduler-dispatch',
     // Welle 3: intern, schreiben per Service-Role in fremde Tenants.
     'governance-risk-escalate',
     'compliance-alert-trigger',
@@ -89,6 +88,17 @@ describe('Cron-Functions nehmen nur Service-Role an', () => {
       expect(src).toMatch(/401/);
     },
   );
+
+  it('scheduler-dispatch nutzt CRON_SCHEDULER_DISPATCH_KEY (nicht service_role JWT)', () => {
+    const src = quelle('scheduler-dispatch');
+    expect(src).toContain('CRON_SCHEDULER_DISPATCH_KEY');
+    expect(src).toMatch(/!CRON_KEY\s*\|\|/);
+    expect(src).toMatch(/Bearer \$\{CRON_KEY\}/);
+    expect(src).toMatch(/401/);
+    expect(src).not.toMatch(
+      /authHeader\s*!==\s*`Bearer \$\{SERVICE_ROLE\}`/,
+    );
+  });
 });
 
 describe('Welle 3 — was neben dem Gate repariert wurde', () => {

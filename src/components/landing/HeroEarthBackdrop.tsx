@@ -108,33 +108,34 @@ function Starfield() {
 function SunriseGlow() {
   return (
     <div className="hero-sunrise pointer-events-none absolute inset-0" aria-hidden="true">
-      {/* Core sun disc — lower-left rising behind scaled Earth */}
+      {/* Hard sun disc — must read as a rising sun, not a vague wash */}
       <div
         className="hero-sunrise-core absolute"
         style={{
-          left: '2%',
-          bottom: '6%',
-          width: 'min(68vw, 780px)',
-          height: 'min(68vw, 780px)',
+          left: '4%',
+          bottom: '10%',
+          width: 'min(42vw, 460px)',
+          height: 'min(42vw, 460px)',
           borderRadius: '50%',
           background:
-            'radial-gradient(circle, rgba(255,250,236,0.95) 0%, rgba(255,210,140,0.72) 16%, rgba(255,160,70,0.42) 36%, rgba(228,140,60,0.16) 54%, transparent 70%)',
-          filter: 'blur(1px)',
-          mixBlendMode: 'screen',
+            'radial-gradient(circle, #fffaf0 0%, #ffe6b8 12%, #ffc078 28%, #ff9a4a 48%, rgba(255,138,66,0.35) 62%, transparent 74%)',
+          boxShadow:
+            '0 0 60px 20px rgba(255,200,120,0.55), 0 0 140px 48px rgba(255,154,85,0.35), 0 0 220px 80px rgba(228,140,60,0.18)',
+          opacity: 0.92,
         }}
       />
-      {/* Secondary corona bloom */}
+      {/* Wide corona behind Earth */}
       <div
         className="absolute"
         style={{
-          left: '-4%',
-          bottom: '0%',
-          width: 'min(90vw, 980px)',
-          height: 'min(70vw, 720px)',
+          left: '-8%',
+          bottom: '-4%',
+          width: 'min(95vw, 1100px)',
+          height: 'min(75vw, 820px)',
           borderRadius: '50%',
           background:
-            'radial-gradient(circle, rgba(255,176,96,0.45) 0%, rgba(255,138,66,0.18) 40%, transparent 68%)',
-          filter: 'blur(28px)',
+            'radial-gradient(circle, rgba(255,210,140,0.55) 0%, rgba(255,160,70,0.28) 34%, rgba(180,120,50,0.1) 55%, transparent 70%)',
+          filter: 'blur(36px)',
           mixBlendMode: 'screen',
         }}
       />
@@ -143,20 +144,20 @@ function SunriseGlow() {
         className="absolute inset-0 mix-blend-screen"
         style={{
           background: [
-            'radial-gradient(60% 52% at 20% 74%, rgba(255,186,110,0.48) 0%, rgba(228,207,162,0.2) 36%, transparent 66%)',
-            'radial-gradient(48% 40% at 42% 42%, rgba(255,241,214,0.28) 0%, transparent 62%)',
-            'radial-gradient(80% 46% at 50% 22%, rgba(255,232,196,0.2) 0%, transparent 58%)',
-            'linear-gradient(22deg, rgba(255,154,85,0.28) 0%, rgba(255,200,120,0.1) 28%, transparent 52%)',
+            'radial-gradient(60% 52% at 18% 76%, rgba(255,186,110,0.55) 0%, rgba(228,207,162,0.22) 36%, transparent 66%)',
+            'radial-gradient(48% 40% at 42% 40%, rgba(255,241,214,0.32) 0%, transparent 62%)',
+            'radial-gradient(80% 46% at 50% 20%, rgba(255,232,196,0.24) 0%, transparent 58%)',
+            'linear-gradient(22deg, rgba(255,154,85,0.32) 0%, rgba(255,200,120,0.12) 28%, transparent 52%)',
           ].join(', '),
         }}
       />
       {/* Soft light shaft toward centered H1 */}
       <div
-        className="hero-sunrise-shaft absolute inset-x-0 top-[4%] mx-auto h-[48%] max-w-[820px] mix-blend-screen"
+        className="hero-sunrise-shaft absolute inset-x-0 top-[2%] mx-auto h-[52%] max-w-[860px] mix-blend-screen"
         style={{
           background:
-            'radial-gradient(ellipse 78% 100% at 50% 100%, rgba(255,236,200,0.42) 0%, rgba(255,192,120,0.18) 40%, transparent 72%)',
-          filter: 'blur(14px)',
+            'radial-gradient(ellipse 78% 100% at 50% 100%, rgba(255,236,200,0.5) 0%, rgba(255,192,120,0.22) 40%, transparent 72%)',
+          filter: 'blur(12px)',
         }}
       />
     </div>
@@ -200,18 +201,37 @@ export function HeroEarthBackdrop() {
         )}
       </div>
 
-      {/* Front sunrise — screen-blend so the sun still reads if WebGL flakes */}
+      {/* Front sunrise — must peek past Earth limb as a visible rising sun */}
       <div
-        className="pointer-events-none absolute inset-0 mix-blend-screen"
+        className="pointer-events-none absolute inset-0"
         aria-hidden="true"
-        style={{
-          background: [
-            'radial-gradient(circle at 14% 78%, rgba(255,250,236,0.55) 0%, rgba(255,200,120,0.28) 14%, rgba(255,150,70,0.12) 28%, transparent 46%)',
-            'radial-gradient(ellipse 55% 40% at 28% 70%, rgba(255,176,96,0.22) 0%, transparent 60%)',
-            'radial-gradient(ellipse 70% 35% at 48% 30%, rgba(255,232,196,0.14) 0%, transparent 55%)',
-          ].join(', '),
-        }}
-      />
+        style={{ mixBlendMode: 'screen' }}
+      >
+        <div
+          className="absolute"
+          style={{
+            left: '6%',
+            bottom: '14%',
+            width: 'min(28vw, 300px)',
+            height: 'min(28vw, 300px)',
+            borderRadius: '50%',
+            background:
+              'radial-gradient(circle, rgba(255,252,244,0.95) 0%, rgba(255,220,150,0.7) 22%, rgba(255,170,80,0.35) 48%, transparent 70%)',
+            boxShadow: '0 0 80px 30px rgba(255,186,110,0.45)',
+            filter: 'blur(2px)',
+          }}
+        />
+        <div
+          className="absolute inset-0"
+          style={{
+            background: [
+              'radial-gradient(circle at 12% 76%, rgba(255,250,236,0.4) 0%, rgba(255,200,120,0.22) 12%, transparent 36%)',
+              'radial-gradient(ellipse 55% 40% at 26% 68%, rgba(255,176,96,0.28) 0%, transparent 60%)',
+              'radial-gradient(ellipse 70% 35% at 48% 28%, rgba(255,232,196,0.18) 0%, transparent 55%)',
+            ].join(', '),
+          }}
+        />
+      </div>
 
       {/* Readability veil — keep cream type legible; leave sunrise corridor open */}
       <div

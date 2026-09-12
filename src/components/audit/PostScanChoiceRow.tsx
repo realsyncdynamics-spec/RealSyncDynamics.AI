@@ -92,7 +92,7 @@ export function buildPostScanChoices(input: {
       id: 'activation',
       title: 'KI-Use-Cases und EU-AI-Act-Pflichten erfassen',
       description:
-        'Guided Activation im Governance OS — Org + Scope, kein Sales-Call-First.',
+        'Guided Activation im Governance OS — Org + Scope, Self-Service Activation.',
       to: `/welcome?next=${activationNext}&source=post_scan_activation&audit_id=${encodeURIComponent(auditId)}`,
       badge: 'live',
       icon: Scale,

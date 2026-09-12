@@ -20,7 +20,7 @@ Position: Control/Policy/Audit/Evidence-Layer über Modelle und Agenten — **ke
 
 **Operating loop:** Detect → Analyze → Govern → Remediate → Evidence → Monitor  
 
-**Product spine:** SCAN → DISCOVER → RISK → GOVERN → AUTOMATE → EVIDENCE → MONITOR → AUDIT → SCALE  
+**Product spine:** SCAN → DISCOVER → RISK → GOVERN → AUTOMATE → EVIDENCE → MONITOR → AUDIT → EXPAND  
 
 Scan = **Acquisition only**. Danach: Risiken → Score → Governance Activation → Workspace / Policies / Remediation / Evidence / Monitoring.
 

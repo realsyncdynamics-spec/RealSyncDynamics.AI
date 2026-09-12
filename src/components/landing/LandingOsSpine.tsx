@@ -1,7 +1,7 @@
 /**
  * Landing OS spine — continuous compliance product architecture.
  *
- * SCAN → DISCOVER → RISK → GOVERN → AUTOMATE → EVIDENCE → MONITOR → AUDIT → SCALE
+ * SCAN → DISCOVER → RISK → GOVERN → AUTOMATE → EVIDENCE → MONITOR → AUDIT → EXPAND
  * Scan is acquisition only. Not a tool catalog.
  *
  * Spec: docs/product/scan-funnel.md
@@ -83,10 +83,10 @@ const SPINE_STEPS: readonly {
     body: 'Prüfpfad für DSB, Auditor und Board — exportierbar, nachvollziehbar.',
   },
   {
-    id: 'scale',
+    id: 'expand',
     step: '09',
-    title: 'SCALE',
-    body: 'Agency Multi-Tenant und Enterprise Activation — Partner/Scale auf Anfrage.',
+    title: 'EXPAND',
+    body: 'Agency Multi-Tenant und Enterprise Activation — Partner auf Anfrage.',
   },
 ];
 

@@ -2,8 +2,11 @@
  * Domain Manager
  * Connect, validate, and manage domains for website projects.
  *
- * Calls website-domain-manager Edge Function with session auth.
+ * Calls website-domain-manager Edge Function with JWT + tenant membership.
  * Lists domains from website_domains (RLS). Never fakes "active".
+ *
+ * Live Cloudflare DNS for custom domains still depends on Vault / ops —
+ * this UI ships as Preview and must not claim a live custom domain.
  */
 
 import { useState, useEffect, useCallback } from 'react';
@@ -27,10 +30,17 @@ interface Domain {
 interface DomainManagerProps {
   projectId: string;
   tenantId: string;
+  /** When true, show Preview banner — custom domain DNS is not claimed live. */
+  previewMode?: boolean;
   onDomainConnected?: (domain: Domain) => void;
 }
 
-async function callDomainManager(body: Record<string, unknown>) {
+async function callDomainManager(body: Record<string, unknown>): Promise<{
+  success?: boolean;
+  data?: Domain & { instructions?: string; status?: string };
+  error?: { message?: string };
+  message?: string;
+}> {
   const sb = getSupabase();
   const { data: sessionData } = await sb.auth.getSession();
   const token = sessionData.session?.access_token;
@@ -59,7 +69,12 @@ async function callDomainManager(body: Record<string, unknown>) {
   return payload;
 }
 
-export function DomainManager({ projectId, tenantId, onDomainConnected }: DomainManagerProps) {
+export function DomainManager({
+  projectId,
+  tenantId,
+  previewMode = true,
+  onDomainConnected,
+}: DomainManagerProps) {
   const [domains, setDomains] = useState<Domain[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showAddDomain, setShowAddDomain] = useState(false);
@@ -67,6 +82,7 @@ export function DomainManager({ projectId, tenantId, onDomainConnected }: Domain
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [validationError, setValidationError] = useState('');
   const [listError, setListError] = useState<string | null>(null);
+  const [lastInstructions, setLastInstructions] = useState<string | null>(null);
 
   const loadDomains = useCallback(async () => {
     setListError(null);
@@ -76,6 +92,7 @@ export function DomainManager({ projectId, tenantId, onDomainConnected }: Domain
         .from('website_domains')
         .select('id, domain, domain_type, cloudflare_status, ssl_status, is_primary, connected_at')
         .eq('project_id', projectId)
+        .eq('tenant_id', tenantId)
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -90,7 +107,7 @@ export function DomainManager({ projectId, tenantId, onDomainConnected }: Domain
     } finally {
       setIsLoading(false);
     }
-  }, [projectId]);
+  }, [projectId, tenantId]);
 
   useEffect(() => {
     setIsLoading(true);
@@ -100,6 +117,7 @@ export function DomainManager({ projectId, tenantId, onDomainConnected }: Domain
   async function connectDomain(e: React.FormEvent) {
     e.preventDefault();
     setValidationError('');
+    setLastInstructions(null);
 
     if (!newDomain.trim()) {
       setValidationError('Domain is required');
@@ -119,7 +137,11 @@ export function DomainManager({ projectId, tenantId, onDomainConnected }: Domain
       setNewDomain('');
       setShowAddDomain(false);
 
-      if (onDomainConnected && result?.data) {
+      if (result.data?.instructions) {
+        setLastInstructions(String(result.data.instructions));
+      }
+
+      if (onDomainConnected && result.data) {
         onDomainConnected(result.data as Domain);
       }
     } catch (err) {
@@ -162,15 +184,34 @@ export function DomainManager({ projectId, tenantId, onDomainConnected }: Domain
   return (
     <div className="domain-manager">
       <div className="domain-header">
-        <h3>Domains</h3>
+        <h3>Kunden-Domain</h3>
         <button type="button" className="btn-secondary" onClick={() => setShowAddDomain(true)}>
           + Domain verbinden
         </button>
       </div>
 
+      {previewMode && (
+        <div
+          className="info-box"
+          style={{ marginBottom: '1rem' }}
+          data-testid="domain-bind-preview-banner"
+        >
+          <p>
+            <strong>Preview:</strong> Domain-Eintrag und DNS-Anweisungen werden gespeichert.
+            Live-Cloudflare/Custom-DNS bleibt ops-seitig (Vault / Migration) — kein Fake-„active“.
+          </p>
+        </div>
+      )}
+
       {listError && (
         <div className="error-message" role="status">
           Preview / Lesefehler: {listError}. Edge Function kann trotzdem versucht werden.
+        </div>
+      )}
+
+      {lastInstructions && (
+        <div className="info-box" style={{ marginBottom: '1rem' }}>
+          <p className="font-mono text-xs">{lastInstructions}</p>
         </div>
       )}
 
@@ -209,7 +250,7 @@ export function DomainManager({ projectId, tenantId, onDomainConnected }: Domain
                 </div>
               </div>
 
-              {domain.cloudflare_status === 'validating' && (
+              {(domain.cloudflare_status === 'validating' || domain.cloudflare_status === 'pending') && (
                 <div className="domain-actions">
                   <button
                     type="button"
@@ -217,6 +258,13 @@ export function DomainManager({ projectId, tenantId, onDomainConnected }: Domain
                     onClick={() => void validateDomain(domain.domain)}
                   >
                     Retry Validation
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-small btn-small--danger"
+                    onClick={() => void disconnectDomain(domain.domain)}
+                  >
+                    Disconnect
                   </button>
                 </div>
               )}
@@ -251,7 +299,7 @@ export function DomainManager({ projectId, tenantId, onDomainConnected }: Domain
         </div>
       ) : (
         <Card className="empty-state">
-          <p>Noch keine Custom Domain verbunden</p>
+          <p>Noch keine Kunden-Domain verbunden</p>
           <button type="button" className="btn-primary" onClick={() => setShowAddDomain(true)}>
             Domain verbinden
           </button>
@@ -261,7 +309,7 @@ export function DomainManager({ projectId, tenantId, onDomainConnected }: Domain
       {showAddDomain && (
         <div className="modal-overlay" onClick={() => setShowAddDomain(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <h3>Custom Domain verbinden</h3>
+            <h3>Domain verbinden</h3>
 
             <form onSubmit={(e) => void connectDomain(e)}>
               <div className="input-group">
@@ -281,7 +329,8 @@ export function DomainManager({ projectId, tenantId, onDomainConnected }: Domain
                 </p>
                 <p>
                   <strong>Custom domains:</strong> DNS-Update erforderlich. Status bleibt
-                  validating, bis Cloudflare bestätigt — kein Fake-Connected.
+                  validating, bis Cloudflare bestätigt — kein Fake-Connected. Preview bis
+                  Vault/ops live ist.
                 </p>
               </div>
 
@@ -323,9 +372,9 @@ function getStatusIcon(status: string): string {
 function getSSLIcon(status: string): string {
   switch (status) {
     case 'active':
-      return '🔒';
+      return 'OK';
     case 'pending_validation':
-      return '🔓';
+      return '…';
     case 'expired':
       return '!';
     default:

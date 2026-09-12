@@ -1,61 +1,53 @@
--- Stripe-Real-Price-IDs fuer die 4 Pricing-Tiers (Free / Starter / Growth / Agency / Enterprise).
+-- Stripe Live Price IDs — acct_1TYVIyREjTWueUcG (RealSync Dynamics IA, livemode)
 --
--- IMPORTANT: Vor Apply die echten Stripe-Price-IDs aus dem Stripe-Dashboard
--- (Products) eintragen. Free + Enterprise brauchen keine Stripe-Price (Free
--- = Kein Charge, Enterprise = manual invoicing via /contact-sales).
+-- Canonical mapping (Dominik 2026-09-12). Prefer migration
+-- `20260912055500_stripe_live_catalog_price_ids.sql` over hand-running this.
 --
--- Schema-Stand 2026-05-10 (verifiziert via Supabase MCP):
---   public.products columns: id (uuid), stripe_price_id (text),
---                            name (text), default_for_plan_key (text),
---                            created_at (timestamptz)
---   KEINE Spalten: currency, is_active, recurring, etc.
---
--- Anwendungsweg:
---   1. Stripe-Dashboard (Test-Mode oder Live): 3 Products + Prices anlegen
---      - Starter: 79 € / Monat recurring
---      - Growth:  249 € / Monat recurring
---      - Agency:  699 € / Monat recurring
---   2. Diese Datei kopieren -> price_REPLACE_*_ID durch echte IDs ersetzen
---   3. Im Supabase-SQL-Editor ausfuehren (oder als Migration committen)
---
--- Idempotent dank ON CONFLICT (stripe_price_id) DO NOTHING.
+-- Self-service checkout: starter / growth / agency ONLY.
+-- Enterprise price exists but purchaseMode=inquiry — no self-service.
+-- Partner (legacy Scale) mapped for Bestand / webhook only.
+-- No yearly prices in Stripe — yearly rows must stay non-price_* sentinels.
 
--- ─── Starter (79 €/Monat) ────────────────────────────────────────────────────
+-- Starter €79 / month · prod_UY1ICcksf2MsnR
 INSERT INTO public.products (stripe_price_id, name, default_for_plan_key)
-VALUES ('price_REPLACE_STARTER_ID', 'Starter', 'starter')
-ON CONFLICT (stripe_price_id) DO NOTHING;
+VALUES ('price_1TfsV8REjTWueUcGCdOO6bT2', 'Starter', 'starter')
+ON CONFLICT (stripe_price_id) DO UPDATE
+  SET name = EXCLUDED.name, default_for_plan_key = EXCLUDED.default_for_plan_key;
 
--- ─── Growth (249 €/Monat) ────────────────────────────────────────────────────
+-- Growth €249 / month · prod_UY1Ikvjy7sGXtl
 INSERT INTO public.products (stripe_price_id, name, default_for_plan_key)
-VALUES ('price_REPLACE_GROWTH_ID', 'Growth', 'growth')
-ON CONFLICT (stripe_price_id) DO NOTHING;
+VALUES ('price_1TfsV4REjTWueUcGsGSfjudu', 'Growth', 'growth')
+ON CONFLICT (stripe_price_id) DO UPDATE
+  SET name = EXCLUDED.name, default_for_plan_key = EXCLUDED.default_for_plan_key;
 
--- ─── Agency (699 €/Monat) ────────────────────────────────────────────────────
+-- Agency €699 / month · prod_UY1IwxkhfYlwb9
 INSERT INTO public.products (stripe_price_id, name, default_for_plan_key)
-VALUES ('price_REPLACE_AGENCY_ID', 'Agency', 'agency')
-ON CONFLICT (stripe_price_id) DO NOTHING;
+VALUES ('price_1TfsV9REjTWueUcGxJIBHYgC', 'Agency', 'agency')
+ON CONFLICT (stripe_price_id) DO UPDATE
+  SET name = EXCLUDED.name, default_for_plan_key = EXCLUDED.default_for_plan_key;
 
--- ─── Free (kein Stripe-Charge, Sentinel) ─────────────────────────────────────
--- Wenn 'free' Plan-Key im Code-Pfad genutzt wird, sorgt der Sentinel-Eintrag
--- dafuer dass die Edge-Function NICHT in Stripe-API-Call laeuft.
+-- Enterprise €1249 / month · prod_UxG9V9clbqV7qw — inquiry only
 INSERT INTO public.products (stripe_price_id, name, default_for_plan_key)
-VALUES ('internal_default_free_audit', 'Free Audit (sentinel)', 'free')
-ON CONFLICT (stripe_price_id) DO NOTHING;
+VALUES ('price_1TxLdLREjTWueUcGRaXie8Vs', 'Enterprise (inquiry · no self-service checkout)', 'enterprise')
+ON CONFLICT (stripe_price_id) DO UPDATE
+  SET name = EXCLUDED.name, default_for_plan_key = EXCLUDED.default_for_plan_key;
 
--- ─── Enterprise (manual invoicing, Sentinel) ─────────────────────────────────
+-- Partner / Scale €1999 / month · prod_UnU98kpW1Tz49g — legacy
 INSERT INTO public.products (stripe_price_id, name, default_for_plan_key)
-VALUES ('internal_default_enterprise', 'Enterprise (sentinel · manual invoicing)', 'enterprise')
-ON CONFLICT (stripe_price_id) DO NOTHING;
+VALUES ('price_1TntAwREjTWueUcGh3FKldMF', 'Partner (legacy Scale)', 'partner')
+ON CONFLICT (stripe_price_id) DO UPDATE
+  SET name = EXCLUDED.name, default_for_plan_key = EXCLUDED.default_for_plan_key;
 
--- ─── Verifikation nach dem Insert ────────────────────────────────────────────
+-- Governance Launch €349 one-time · prod_V3tCqxqCh4g0mb
+INSERT INTO public.products (stripe_price_id, name, default_for_plan_key)
+VALUES ('price_1U3lQNREjTWueUcG6LX7WIQU', 'Governance Launch (einmalig)', 'governance_launch')
+ON CONFLICT (stripe_price_id) DO UPDATE
+  SET name = EXCLUDED.name, default_for_plan_key = EXCLUDED.default_for_plan_key;
+
+-- Verify:
 -- SELECT default_for_plan_key, stripe_price_id, name
 -- FROM public.products
--- WHERE default_for_plan_key IN ('free','starter','growth','agency','enterprise')
+-- WHERE default_for_plan_key IN (
+--   'starter','growth','agency','enterprise','partner','governance_launch'
+-- )
 -- ORDER BY default_for_plan_key;
---
--- Erwartete 5 Rows:
---   agency      price_1...
---   enterprise  internal_default_enterprise
---   free        internal_default_free_audit
---   growth      price_1...
---   starter     price_1...

@@ -61,12 +61,20 @@ export async function createCheckoutSession(
 }
 
 /**
- * Redirects user to Stripe Customer Portal for subscription management
+ * Redirects user to Stripe Customer Portal for subscription management.
+ * Body must match stripe-portal Edge Function: `{ tenant_id, return_url? }`.
  */
-export async function openCustomerPortal(sessionId: string): Promise<string> {
+export async function openCustomerPortal(
+  tenantId: string,
+  returnUrl?: string,
+): Promise<string> {
   const sb = getSupabase();
   const { data, error } = await sb.functions.invoke('stripe-portal', {
-    body: { session_id: sessionId },
+    body: {
+      tenant_id: tenantId,
+      return_url: returnUrl
+        ?? (typeof window !== 'undefined' ? `${window.location.origin}/app/billing` : undefined),
+    },
   });
 
   if (error) {
@@ -104,11 +112,13 @@ export function getPlanById(planId: TierId) {
 }
 
 /**
- * Check if a plan has a fixed price (vs. custom/enterprise pricing)
+ * Check if a plan has a fixed self-service price (vs. inquiry / price-on-request).
  */
 export function isPlanFixedPrice(planId: TierId): boolean {
   const plan = getPlanById(planId);
-  return plan ? plan.priceEur > 0 : false;
+  if (!plan) return false;
+  if (plan.priceOnRequest || plan.plan.purchaseMode === 'inquiry') return false;
+  return plan.priceEur > 0;
 }
 
 /**

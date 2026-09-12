@@ -53,16 +53,12 @@ describe('Company Configuration (UG/GmbH Ready)', () => {
 
 // ─── Pricing Tier Tests ──────────────────────────────────────────────────────
 
-describe('Pricing Tiers (6-Tier Model + Yearly Variants)', () => {
-  // COMMERCIAL-SSOT: temporary production hotfix.
-  // Canonical source migration tracked in Phase 2.
-  // Neun statt zwoelf: `starter_yearly`, `growth_yearly` und `agency_yearly`
-  // erzeugen kein Tier, weil fuer sie in `public.products` kein echter
-  // Stripe-Preis verdrahtet ist (`yearlyCheckoutUnavailable`). Ein Tier
-  // waere die Grundlage einer oeffentlichen Angebotsflaeche — und damit
-  // ein zugesicherter Festpreis, den `stripe-checkout` nicht einloest.
-  it('should have 9 tiers (6 base + 2 yearly variants + 1 one-time)', () => {
-    expect(PRICING_TIERS).toHaveLength(9);
+describe('Pricing Tiers (6-Tier Model, monthly only in Live Stripe)', () => {
+  // Live Stripe (acct_1TYVIyREjTWueUcG) has NO yearly prices. All plans set
+  // `yearlyCheckoutUnavailable`, so PRICING_TIERS is 6 monthly + 1 one-time.
+  it('should have 7 tiers (6 base + 1 one-time, no yearly)', () => {
+    expect(PRICING_TIERS).toHaveLength(7);
+    expect(PRICING_TIERS.every((t) => !t.isYearly)).toBe(true);
   });
 
   it('should have 5 public tiers sorted by price ascending', () => {
@@ -73,10 +69,12 @@ describe('Pricing Tiers (6-Tier Model + Yearly Variants)', () => {
     expect(PUBLIC_PRICING_TIERS.map((t) => t.id)).toEqual(baseIds);
   });
 
-  it('should have enterprise tier as paid tier at 1249€', () => {
+  it('should have enterprise tier as inquiry (list price stored, not sellable)', () => {
     const enterprise = tierById('enterprise');
     expect(enterprise?.id).toBe('enterprise');
     expect(enterprise?.priceEur).toBe(1249);
+    expect(enterprise?.priceOnRequest).toBe(true);
+    expect(enterprise?.plan.purchaseMode).toBe('inquiry');
     expect(enterprise?.name).toBe('Enterprise');
   });
 
@@ -154,10 +152,13 @@ describe('Stripe Integration', () => {
     expect(starter?.priceEur).toBe(79);
   });
 
-  it('should identify fixed-price plans', () => {
+  it('should identify fixed-price self-service plans', () => {
     expect(isPlanFixedPrice('free')).toBe(false); // €0
     expect(isPlanFixedPrice('starter')).toBe(true); // €79
-    expect(isPlanFixedPrice('enterprise')).toBe(true); // €1.249 (self-service)
+    expect(isPlanFixedPrice('growth')).toBe(true); // €249
+    expect(isPlanFixedPrice('agency')).toBe(true); // €699
+    expect(isPlanFixedPrice('enterprise')).toBe(false); // inquiry / priceOnRequest
+    expect(isPlanFixedPrice('partner')).toBe(false); // inquiry / legacy
   });
 
   it('should generate Stripe product metadata', () => {

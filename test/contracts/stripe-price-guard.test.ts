@@ -39,19 +39,22 @@ describe('stripe-checkout akzeptiert nur echte Stripe-Preise', () => {
     expect(SOURCE).not.toContain("!p.stripe_price_id.startsWith('internal_default_')");
   });
 
-  // Exakt die Werte, die am 2026-08-30 in `public.products` standen.
+  // Exakt die Live-Prices aus acct_1TYVIyREjTWueUcG (Dominik 2026-09-12).
   const LIVE_VALUES: Array<[string, string, boolean]> = [
     ['starter', 'price_1TfsV8REjTWueUcGCdOO6bT2', true],
     ['growth', 'price_1TfsV4REjTWueUcGsGSfjudu', true],
     ['agency', 'price_1TfsV9REjTWueUcGxJIBHYgC', true],
     ['governance_launch', 'price_1U3lQNREjTWueUcG6LX7WIQU', true],
+    // Enterprise Price existiert live — aber purchaseMode=inquiry, kein Checkout.
+    ['enterprise', 'price_1TxLdLREjTWueUcGRaXie8Vs', true],
+    ['partner', 'price_1TntAwREjTWueUcGh3FKldMF', true],
     // Platzhalter — sehen wie eine Price aus, sind aber keine.
     ['starter_yearly', 'STRIPE_PRICE_STARTER_YEARLY_XXX', false],
     ['growth_yearly', 'STRIPE_PRICE_GROWTH_YEARLY_XXX', false],
     ['agency_yearly', 'STRIPE_PRICE_AGENCY_YEARLY_XXX', false],
     ['partner_yearly', 'STRIPE_PRICE_SCALE_YEARLY_XXX', false],
+    ['enterprise_yearly', 'STRIPE_PRICE_ENTERPRISE_YEARLY_XXX', false],
     // Sentinels mit abweichendem Präfix und ein leerer Wert.
-    ['enterprise', 'internal_default_enterprise', false],
     ['free_tier', 'internal_free_tier', false],
     ['free_audit', '', false],
   ];
@@ -82,6 +85,7 @@ describe('stripe-checkout akzeptiert nur echte Stripe-Preise', () => {
     const YEARLY_TO_PLAN: Record<string, PlanId> = {
       starter_yearly: 'starter',
       growth_yearly: 'growth',
+      agency_yearly: 'agency',
     };
 
     for (const [yearlyKey, planId] of Object.entries(YEARLY_TO_PLAN)) {
@@ -112,6 +116,15 @@ describe('stripe-checkout akzeptiert nur echte Stripe-Preise', () => {
         expect(tier!.priceEur).toBeGreaterThan(0);
         expect(tier!.priceOnRequest).toBe(false);
       }
+    });
+
+    it('Enterprise behält Live-Price in products, bleibt aber inquiry (kein Self-Service)', () => {
+      const enterprise = PLANS.find((p) => p.id === 'enterprise')!;
+      expect(enterprise.purchaseMode).toBe('inquiry');
+      expect(enterprise.priceOnRequest).toBe(true);
+      expect(enterprise.yearlyCheckoutUnavailable).toBe(true);
+      expect(SOURCE).toContain('ENTERPRISE_SELF_SERVICE_BLOCKED');
+      expect(isLiveStripePrice('price_1TxLdLREjTWueUcGRaXie8Vs')).toBe(true);
     });
   });
 });

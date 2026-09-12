@@ -11,9 +11,11 @@
  *
  * Preis/Plan stammen aus der kanonischen Pricing-Config, damit an der
  * Kasse exakt derselbe Preis erscheint wie auf der Karte.
+ *
+ * Live-Stripe (acct_1TYVIyREjTWueUcG): nur Monats-Prices. Yearly = Coming Soon.
  */
 
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Check, ArrowRight, Info, ShieldCheck } from 'lucide-react';
 
@@ -24,13 +26,10 @@ import {
 } from '../../lib/optimizer/tiers';
 import { setPostCheckoutReturn } from '../../lib/optimizer/state';
 
-type Billing = 'monthly' | 'yearly';
-
 export function OptimizerCheckout() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const tierId = params.get('tier') as OptimizerTierId | null;
-  const [billing, setBilling] = useState<Billing>('monthly');
 
   const tier = useMemo(() => (tierId ? optimizerTierById(tierId) : undefined), [tierId]);
   const realTier = tier ? tierById(tier.planKey) : undefined;
@@ -79,22 +78,25 @@ export function OptimizerCheckout() {
         dem <span className="text-titanium-200 font-semibold">{realTier.name}</span>-Plan.
       </p>
 
-      {/* Abrechnungs-Toggle */}
+      {/* Abrechnungs-Toggle — yearly prices do not exist in Stripe live */}
       <div className="inline-flex border border-titanium-900 rounded-none mb-6 overflow-hidden" role="group" aria-label="Abrechnungszeitraum">
-        {(['monthly', 'yearly'] as Billing[]).map((b) => (
-          <button
-            key={b}
-            type="button"
-            aria-pressed={billing === b}
-            onClick={() => setBilling(b)}
-            className={
-              'px-4 py-2 text-sm font-bold transition-colors ' +
-              (billing === b ? 'bg-obsidian-800 text-titanium-50' : 'bg-obsidian-900 text-titanium-400 hover:text-titanium-200')
-            }
-          >
-            {b === 'monthly' ? 'Monatlich' : 'Jährlich'}
-          </button>
-        ))}
+        <button
+          type="button"
+          aria-pressed="true"
+          className="px-4 py-2 text-sm font-bold bg-obsidian-800 text-titanium-50"
+        >
+          Monatlich
+        </button>
+        <button
+          type="button"
+          aria-pressed={false}
+          aria-disabled="true"
+          disabled
+          title="Jährliche Preise sind in Stripe noch nicht verdrahtet"
+          className="px-4 py-2 text-sm font-bold bg-obsidian-950 text-titanium-600 cursor-not-allowed"
+        >
+          Jährlich · Coming Soon
+        </button>
       </div>
 
       {/* Zusammenfassung */}
@@ -112,19 +114,18 @@ export function OptimizerCheckout() {
           </li>
         </ul>
 
-        {billing === 'yearly' && (
-          <p className="mt-4 flex items-start gap-2 text-xs text-brass-300">
-            <Info className="h-3.5 w-3.5 shrink-0 mt-0.5" aria-hidden />
-            Jährliche Abrechnung folgt in Kürze — die Buchung startet vorerst monatlich.
-          </p>
-        )}
+        <p className="mt-4 flex items-start gap-2 text-xs text-titanium-500">
+          <Info className="h-3.5 w-3.5 shrink-0 mt-0.5" aria-hidden />
+          Jahresabrechnung: Coming Soon — in Stripe existieren aktuell keine Yearly-Prices. Checkout läuft nur monatlich.
+        </p>
       </div>
 
-      {/* Übergabe an kanonischen Checkout */}
+      {/* Übergabe an kanonischen Checkout — immer Monats-planKey */}
       <button
         type="button"
         onClick={() => {
           // Nach erfolgreicher Zahlung zurück in den Optimizer-Flow.
+          // Niemals `_yearly`: keine Yearly-Prices in Live-Stripe.
           setPostCheckoutReturn('/optimizer/dashboard');
           navigate(`/checkout/${tier.planKey}`);
         }}

@@ -21,6 +21,8 @@ import { DemoTourProvider } from './core/demo/DemoTourContext';
 // ── Public entry: Governance-OS Workspace Preview (replaces Marketing Landing on /)
 // ── Public entry: MainLanding (Unternehmenshauptseite, Earth-at-Night) auf /
 import { MainLanding } from './pages/MainLanding';
+import { DesignLedgerLanding } from './pages/design/DesignLedgerLanding';
+import { DesignTribunalLanding } from './pages/design/DesignTribunalLanding';
 // ── Product Entry Points (/scan/start, /chatbot/start, /phonebot/start)
 import { ScanStartPage } from './pages/product-entry-points/ScanStartPage';
 import { ChatbotStartPage } from './pages/product-entry-points/ChatbotStartPage';
@@ -500,6 +502,10 @@ function RoutesWithTracking() {
       {/* Public — Startseite ist die Governance-OS-Workspace-Vorschau;
           die Marketing-Landing bleibt unter /landing erreichbar. */}
       <Route path="/" element={<MainLanding />} />
+
+      {/* Design previews — do NOT replace live `/`. Honest Preview surfaces. */}
+      <Route path="/design/ledger" element={<DesignLedgerLanding />} />
+      <Route path="/design/tribunal" element={<DesignTribunalLanding />} />
 
       {/* Der kanonische Scan-Einstieg ist `/audit` (siehe
           docs/product/canonical-funnel-decision.md). `/scan` gab es kurzzeitig

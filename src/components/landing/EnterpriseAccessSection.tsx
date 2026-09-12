@@ -106,7 +106,7 @@ export function EnterpriseAccessSection() {
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
                 to="/contact-sales?source=landing-enterprise"
-                className="inline-flex items-center gap-2 rounded-full px-7 py-3.5 font-semibold transition hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e4cfa2] focus-visible:ring-offset-2 focus-visible:ring-offset-[rgb(3,7,18)]"
+                className="inline-flex items-center gap-2 rounded-full px-7 py-3.5 font-semibold transition hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d0c3a4] focus-visible:ring-offset-2 focus-visible:ring-offset-[rgb(3,7,18)]"
                 style={{ backgroundColor: LANDING_BUTTON, color: LANDING_BUTTON_TEXT }}
               >
                 {CTA.enterprise} <ArrowRight className="h-4 w-4" />
@@ -116,7 +116,7 @@ export function EnterpriseAccessSection() {
                    Abgeleitet statt getippt, damit ein umbenannter Tarif die
                    Verlinkung nicht still ins Leere laufen laesst. */
                 to={`/pricing#plan-${tier.id}`}
-                className="inline-flex items-center gap-2 rounded-full border px-7 py-3.5 font-medium transition hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e4cfa2]/50"
+                className="inline-flex items-center gap-2 rounded-full border px-7 py-3.5 font-medium transition hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d0c3a4]/50"
                 style={{ borderColor: `${LANDING_ACCENT}80`, color: '#e8dfd2' }}
               >
                 Leistungen im Detail

@@ -153,7 +153,7 @@ export function LandingOsSpine() {
     <>
       <section
         id="spine"
-        className="border-b border-[#e4cfa2]/10 py-[64px] lg:py-[72px]"
+        className="border-b border-[#d0c3a4]/10 py-[64px] lg:py-[72px]"
         aria-label="Product architecture"
       >
         <div id="tools" className="sr-only" aria-hidden="true" />
@@ -173,7 +173,7 @@ export function LandingOsSpine() {
             </p>
           </div>
 
-          <ol className="grid gap-px overflow-hidden border border-[#e4cfa2]/15 bg-[#e4cfa2]/08 sm:grid-cols-2 lg:grid-cols-3">
+          <ol className="grid gap-px overflow-hidden border border-[#d0c3a4]/15 bg-[#d0c3a4]/08 sm:grid-cols-2 lg:grid-cols-3">
             {SPINE_STEPS.map((step) => (
               <li
                 key={step.id}
@@ -200,8 +200,8 @@ export function LandingOsSpine() {
 
       <section
         id="proof"
-        className="border-b border-[#e4cfa2]/10 py-[64px] lg:py-[72px]"
-        style={{ backgroundColor: 'rgba(228,207,162,0.03)' }}
+        className="border-b border-[#d0c3a4]/10 py-[64px] lg:py-[72px]"
+        style={{ backgroundColor: 'rgba(208,195,164,0.03)' }}
         aria-label="Evidence timeline and proof"
       >
         <div className="mx-auto max-w-[1500px] px-[4vw]">
@@ -251,7 +251,7 @@ export function LandingOsSpine() {
                 <li
                   key={node.phase}
                   className="flex flex-1 items-stretch border-b sm:border-b-0 sm:border-r last:border-0"
-                  style={{ borderColor: 'rgba(228,207,162,0.15)' }}
+                  style={{ borderColor: 'rgba(208,195,164,0.15)' }}
                 >
                   <div className="px-3 py-3">
                     <p
@@ -315,7 +315,7 @@ export function LandingOsSpine() {
                 <li
                   key={s.step}
                   className="border px-3 py-3"
-                  style={{ borderColor: 'rgba(228,207,162,0.18)' }}
+                  style={{ borderColor: 'rgba(208,195,164,0.18)' }}
                 >
                   <span
                     className="text-[9px] tracking-[.14em]"
@@ -349,7 +349,7 @@ export function LandingOsSpine() {
 
           <div
             id="platform"
-            className="grid gap-px overflow-hidden border border-[#e4cfa2]/15 bg-[#e4cfa2]/08 md:grid-cols-2 lg:grid-cols-3"
+            className="grid gap-px overflow-hidden border border-[#d0c3a4]/15 bg-[#d0c3a4]/08 md:grid-cols-2 lg:grid-cols-3"
           >
             {proofs.map((cap) => {
               const body = (
@@ -392,7 +392,7 @@ export function LandingOsSpine() {
                   }
                   data-reveal
                   data-reveal-group="platform"
-                  className="block p-6 transition hover:bg-[#e4cfa2]/5"
+                  className="block p-6 transition hover:bg-[#d0c3a4]/5"
                   style={{ backgroundColor: LANDING_BG }}
                 >
                   {body}
@@ -421,7 +421,7 @@ export function LandingOsSpine() {
             </OsEntryLink>
             <OsEntryLink
               to="/app/activation"
-              className="inline-flex items-center gap-2 rounded-full border px-[18px] py-[12px] text-[11px] font-semibold transition hover:bg-[#e4cfa2]/10"
+              className="inline-flex items-center gap-2 rounded-full border px-[18px] py-[12px] text-[11px] font-semibold transition hover:bg-[#d0c3a4]/10"
               style={{ borderColor: `${LANDING_ACCENT}80`, color: '#e8dfd2' }}
             >
               Governance Activation
@@ -430,7 +430,7 @@ export function LandingOsSpine() {
         </div>
       </section>
 
-      <section id="fuer-wen" className="border-b border-[#e4cfa2]/10 py-[64px] lg:py-[72px]">
+      <section id="fuer-wen" className="border-b border-[#d0c3a4]/10 py-[64px] lg:py-[72px]">
         <div className="mx-auto max-w-[1500px] px-[4vw]">
           <div className="mb-10 max-w-3xl">
             <SectionEyebrow>FÜR WEN</SectionEyebrow>

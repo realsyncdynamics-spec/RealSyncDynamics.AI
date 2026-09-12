@@ -19,7 +19,7 @@ export function LandingDarkBand() {
   return (
     <section
       id="runtime"
-      className="grid items-center gap-6 border-y border-[#e4cfa2]/10 bg-[#070a10] px-[4vw] py-[48px] lg:grid-cols-[1.15fr_1fr_auto] lg:gap-8 lg:py-[52px]"
+      className="grid items-center gap-6 border-y border-[#d0c3a4]/10 bg-[#070a10] px-[4vw] py-[48px] lg:grid-cols-[1.15fr_1fr_auto] lg:gap-8 lg:py-[52px]"
     >
       <div>
         <p
@@ -54,7 +54,7 @@ export function LandingDarkBand() {
         </Link>
         <Link
           to="/welcome?next=%2Fapp%2Fdashboard"
-          className="inline-flex items-center justify-center gap-2 rounded-full border px-[18px] py-[12px] text-[11px] font-semibold transition hover:bg-[#e4cfa2]/10"
+          className="inline-flex items-center justify-center gap-2 rounded-full border px-[18px] py-[12px] text-[11px] font-semibold transition hover:bg-[#d0c3a4]/10"
           style={{ borderColor: `${LANDING_ACCENT}80`, color: LANDING_TEXT }}
         >
           Zum Compliance Dashboard

@@ -28,7 +28,7 @@ export function LandingPricingSection() {
   if (tiers.length === 0) return null;
 
   return (
-    <section id="pricing" className="border-t border-[#e4cfa2]/10 py-[64px] lg:py-[72px]">
+    <section id="pricing" className="border-t border-[#d0c3a4]/10 py-[64px] lg:py-[72px]">
       <div className="mx-auto max-w-[1500px] px-[4vw]">
         <p
           className="inline-block rounded-full border px-[11px] py-[7px] text-[9px] font-medium tracking-[.23em]"
@@ -77,7 +77,7 @@ export function LandingPricingSection() {
                 style={{
                   borderColor: featured ? `${LANDING_ACCENT}73` : 'rgba(255,255,255,0.12)',
                   background: featured
-                    ? 'linear-gradient(135deg, rgba(228,207,162,0.10), rgba(7,9,13,0.72))'
+                    ? 'linear-gradient(135deg, rgba(208,195,164,0.10), rgba(7,9,13,0.72))'
                     : 'linear-gradient(135deg, rgba(20,21,25,0.7), rgba(7,9,13,0.72))',
                 }}
               >
@@ -138,7 +138,7 @@ export function LandingPricingSection() {
                       : {
                           backgroundColor: 'transparent',
                           color: '#e8ddc8',
-                          border: '1px solid rgba(228,207,162,0.55)',
+                          border: '1px solid rgba(208,195,164,0.55)',
                         }
                   }
                 >

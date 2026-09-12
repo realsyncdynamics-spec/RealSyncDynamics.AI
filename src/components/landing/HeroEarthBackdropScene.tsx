@@ -19,7 +19,7 @@ function LimbLight() {
   return (
     <group position={LANDING_SUN_POSITION.toArray() as [number, number, number]}>
       <pointLight color="#ffe0b0" intensity={1.85} distance={32} decay={2} />
-      <pointLight color="#e4cfa2" intensity={0.7} distance={22} decay={2} position={[0.5, -0.25, 0.35]} />
+      <pointLight color="#d0c3a4" intensity={0.7} distance={22} decay={2} position={[0.5, -0.25, 0.35]} />
     </group>
   );
 }

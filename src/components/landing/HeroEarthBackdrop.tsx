@@ -57,7 +57,7 @@ function StaticEarthPlane({ className = '' }: { className?: string }) {
         style={{
           background: [
             'linear-gradient(105deg, transparent 10%, rgba(5,7,11,0.12) 48%, rgba(5,7,11,0.42) 78%, rgba(5,7,11,0.62) 100%)',
-            'radial-gradient(40% 34% at 16% 56%, rgba(228,207,162,0.08) 0%, transparent 64%)',
+            'radial-gradient(40% 34% at 16% 56%, rgba(208,195,164,0.08) 0%, transparent 64%)',
           ].join(', '),
         }}
       />
@@ -73,13 +73,13 @@ function Starfield() {
       style={{
         backgroundImage: [
           'radial-gradient(1px 1px at 8% 12%, rgba(242,238,230,0.35), transparent)',
-          'radial-gradient(1px 1px at 18% 28%, rgba(228,207,162,0.28), transparent)',
+          'radial-gradient(1px 1px at 18% 28%, rgba(208,195,164,0.28), transparent)',
           'radial-gradient(1.5px 1.5px at 32% 8%, rgba(239,230,213,0.3), transparent)',
-          'radial-gradient(1px 1px at 55% 18%, rgba(228,207,162,0.22), transparent)',
+          'radial-gradient(1px 1px at 55% 18%, rgba(208,195,164,0.22), transparent)',
           'radial-gradient(1px 1px at 72% 10%, rgba(242,238,230,0.26), transparent)',
-          'radial-gradient(1px 1px at 88% 22%, rgba(228,207,162,0.18), transparent)',
+          'radial-gradient(1px 1px at 88% 22%, rgba(208,195,164,0.18), transparent)',
           'radial-gradient(1.5px 1.5px at 12% 55%, rgba(242,238,230,0.2), transparent)',
-          'radial-gradient(1px 1px at 42% 70%, rgba(228,207,162,0.18), transparent)',
+          'radial-gradient(1px 1px at 42% 70%, rgba(208,195,164,0.18), transparent)',
           'radial-gradient(1px 1px at 78% 62%, rgba(239,230,213,0.2), transparent)',
           'radial-gradient(1px 1px at 94% 78%, rgba(242,238,230,0.14), transparent)',
         ].join(','),
@@ -105,7 +105,7 @@ function WarmRimLight() {
           height: 'min(48vw, 560px)',
           borderRadius: '50%',
           background:
-            'radial-gradient(ellipse at 72% 48%, rgba(228,207,162,0.28) 0%, rgba(180,140,80,0.1) 36%, transparent 68%)',
+            'radial-gradient(ellipse at 72% 48%, rgba(208,195,164,0.28) 0%, rgba(180,140,80,0.1) 36%, transparent 68%)',
           filter: 'blur(22px)',
           opacity: 0.65,
         }}
@@ -132,7 +132,7 @@ export function HeroEarthBackdrop() {
         className="absolute inset-0"
         style={{
           background:
-            'radial-gradient(ellipse at 28% 48%, #0c0e12 0%, #08090d 42%, #05070b 72%, #04060a 100%)',
+            'radial-gradient(ellipse at 28% 48%, #080a10 0%, #05070c 42%, #02040a 72%, #010308 100%)',
         }}
       />
       <Starfield />

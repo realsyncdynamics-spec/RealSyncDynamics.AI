@@ -620,7 +620,7 @@ export default function BuildStudioPage() {
               setPath={setPath}
               busy={busy}
               onThemeAction={submitInstruction}
-              publishOk={publishOk || previewUntilSsot}
+              publishOk={publishOk}
             />
           )}
         </aside>

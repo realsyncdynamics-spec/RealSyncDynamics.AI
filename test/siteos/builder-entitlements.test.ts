@@ -165,6 +165,8 @@ describe('Build studio — CTA + yearly regression', () => {
     expect(studioSrc).toMatch(/kein Live-Deploy|kein erfolgreiches Deploy/i);
     expect(strip(studioSrc)).not.toMatch(/Abo aktiv/);
     expect(strip(studioSrc)).not.toMatch(/Deploy erfolgreich|erfolgreich veröffentlicht/i);
+    expect(studioSrc).not.toMatch(/publishOk\s*\|\|\s*previewUntilSsot/);
+    expect(studioSrc).toMatch(/publishOk=\{publishOk\}/);
   });
 
   it('yearly checkout remains unavailable on paid self-service plans', () => {

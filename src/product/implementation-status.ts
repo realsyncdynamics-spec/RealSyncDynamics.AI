@@ -270,7 +270,7 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     status: 'preview',
     group: 'channels',
     description:
-      'Two-pane Studio unter /build (App Builder + Frontend Designer), Auth-Gate und Upgrade-Panel — Publish/Domain und Live-Orchestrierung bleiben Preview.',
+      'Two-pane Studio unter /build (App Builder + Frontend Designer). Create/Claim plan-gated (limit.sites / siteos.builder); Publish-Berechtigung ab Starter, öffentliches Deploy/Domain bleibt Preview.',
     route: '/build',
     evidence: [
       'src/unified-entry/pages/BuildStudioPage.tsx',
@@ -278,6 +278,8 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
       'src/features/siteos/BuilderUpgradePanel.tsx',
       'packages/siteos-core',
       'src/config/public-nav.ts',
+      'shared/pricing.ts',
+      'supabase/functions/siteos/site-entitlements.ts',
     ],
     showOnRoadmap: true,
   },

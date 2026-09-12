@@ -37,6 +37,7 @@ import { appendCustodyEvent } from '../../_shared/provenanceCore.ts';
 import { checkAnonRateLimit } from '../../_shared/anonRateLimit.ts';
 import { completeAnonAudit, extractPayloadKeys, reserveAnonAudit } from '../../_shared/anonAudit.ts';
 import { createPreviewId } from '../../../../src/lib/preview-sandbox.ts';
+import { gateSiteCreate } from '../site-entitlements.ts';
 import {
   publishPreview,
   readPreviewTarget,
@@ -408,6 +409,12 @@ export async function handleClaim(req: Request): Promise<Response> {
   // Zusage nach aussen (Art. 5 Abs. 1 lit. e DSGVO); wer sie hier umgeht,
   // hebt sie überall auf.
   if (isExpired(session)) return jsonError(410, 'GONE', 'build session expired');
+
+  // Plan gate: siteos.builder + limit.sites (new slug only).
+  {
+    const denied = await gateSiteCreate(admin, tenantId, session.row.slug);
+    if (denied) return denied;
+  }
 
   try {
     const nowIso = new Date().toISOString();

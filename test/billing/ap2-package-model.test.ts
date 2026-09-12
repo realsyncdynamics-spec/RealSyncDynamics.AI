@@ -82,10 +82,18 @@ const NEU_DURCH_AP2: Readonly<Record<string, readonly string[]>> = {
  * ausschließlich auf der Fremdleiter; `/app/workflows` und `workflow-trigger`
  * waren damit für jeden zahlenden Kunden gesperrt
  * (20260904000200_workflows_current_plans.sql).
+ *
+ * SiteOS Builder (20260912170000): Create/Publish-Entitlements + limit.sites.
  */
 const NEU_NACH_AP2: Readonly<Record<string, readonly string[]>> = {
-  starter: [],
-  growth: ['ai.tool.workflows', 'limit.workflow_runs_monthly'],
+  starter: ['limit.sites', 'siteos.builder', 'siteos.publish'],
+  growth: [
+    'ai.tool.workflows',
+    'limit.sites',
+    'limit.workflow_runs_monthly',
+    'siteos.builder',
+    'siteos.publish',
+  ],
 };
 
 describe('AP2 nimmt keinem Plan etwas weg', () => {

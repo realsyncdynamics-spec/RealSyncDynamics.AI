@@ -34,6 +34,7 @@ const PAARE: Record<string, string> = {
   bots: 'limit.bots',
   answersPerMonth: 'limit.bot_messages_monthly',
   domains: 'limit.domains',
+  sites: 'limit.sites',
   automationRunsPerMonth: 'limit.automation_runs_monthly',
   seats: 'limit.team_seats',
   apiCallsPerMonth: 'limit.api_calls_monthly',
@@ -170,7 +171,7 @@ describe('Kontingente — plan.limits gegen PLAN_ENTITLEMENTS', () => {
     // dem System nicht vor. Deshalb darf auf diesen acht Feldern kein Gate
     // entstehen, solange die Quelle nicht aufgelöst ist.
     const ent = grundlinie.filter((e) => e.plan === 'enterprise');
-    expect(ent).toHaveLength(8);
+    expect(ent).toHaveLength(9);
     for (const e of ent) {
       expect(e.berechtigung).toBe(-1);
       expect(e.kanonische_quelle).toBe('vertrag');
@@ -235,7 +236,7 @@ describe('Kontingente — plan.limits gegen PLAN_ENTITLEMENTS', () => {
     // Die Zahl ist die Arbeitsmenge für Schritt 1 aus §7: acht Felder, deren
     // Wert erst bestimmbar ist, wenn es einen Ort für Vertragswerte gibt.
     const unaufgeloest = grundlinie.filter((e) => e.kanonische_quelle === 'vertrag');
-    expect(unaufgeloest).toHaveLength(8);
+    expect(unaufgeloest).toHaveLength(9);
     expect(new Set(unaufgeloest.map((e) => e.plan))).toEqual(new Set(['enterprise']));
   });
 

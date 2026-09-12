@@ -10,16 +10,14 @@ describe('pricing config (Single Source of Truth)', () => {
     ]);
   });
 
-  // `starter_yearly`, `growth_yearly` und `agency_yearly` fehlen hier bewusst:
-  // fuer alle drei steht in `public.products` nur ein Platzhalter statt einer
-  // echten Stripe-Price (`yearlyCheckoutUnavailable`).
-  it('fuehrt erst die Monatsplaene, danach die buchbaren Jahresvarianten', () => {
+  // `starter_yearly`, `growth_yearly`, `agency_yearly`, `enterprise_yearly`,
+  // `partner_yearly` fehlen hier bewusst: in Live-Stripe existieren KEINE
+  // Yearly-Prices (`yearlyCheckoutUnavailable` auf allen Plänen).
+  it('fuehrt erst die Monatsplaene, danach Einmalprodukte — ohne Yearly-Tiers', () => {
     const ids = PRICING_TIERS.map((tier) => tier.id);
     expect(ids).toEqual([
       'free', 'starter', 'growth', 'agency', 'enterprise', 'partner',
-      // Einmalprodukte stehen nach der Abo-Leiter und vor den Jahresvarianten.
       'governance_launch',
-      'enterprise_yearly', 'partner_yearly',
     ]);
   });
 
@@ -32,13 +30,13 @@ describe('pricing config (Single Source of Truth)', () => {
     expect(planById('partner').price.monthlyEur).toBe(1999);
   });
 
-  it('hat die korrekten Jahrespreise', () => {
-    // agency_yearly hat keinen Angebots-Tier (yearlyCheckoutUnavailable),
-    // der Betrag bleibt aber in der SSoT für Bestandskunden.
+  it('hat die korrekten Jahrespreise in der SSoT, ohne Yearly-Tiers', () => {
     expect(planById('agency').price.yearlyEur).toBe(6900);
+    expect(planById('enterprise').price.yearlyEur).toBe(12490);
+    expect(planById('partner').price.yearlyEur).toBe(19000);
     expect(tierById('agency_yearly')).toBeUndefined();
-    expect(tierById('enterprise_yearly')?.priceEur).toBe(12490);
-    expect(tierById('partner_yearly')?.priceEur).toBe(19000);
+    expect(tierById('enterprise_yearly')).toBeUndefined();
+    expect(tierById('partner_yearly')).toBeUndefined();
   });
 
   // Der Betrag bleibt in der SSoT — er ist ja richtig, nur nicht einloesbar.
@@ -49,8 +47,10 @@ describe('pricing config (Single Source of Truth)', () => {
     expect(planById('growth').price.yearlyEur).toBe(2490);
     expect(planById('starter').yearlyCheckoutUnavailable).toBe(true);
     expect(planById('growth').yearlyCheckoutUnavailable).toBe(true);
+    expect(planById('agency').yearlyCheckoutUnavailable).toBe(true);
     expect(tierById('starter_yearly')).toBeUndefined();
     expect(tierById('growth_yearly')).toBeUndefined();
+    expect(tierById('agency_yearly')).toBeUndefined();
   });
 
   // Bestandsschutz: der Jahres-Key loest weiterhin auf, nur eben auf das
@@ -70,7 +70,8 @@ describe('pricing config (Single Source of Truth)', () => {
 
   it('bildet Altdaten `scale` transparent auf Partner ab', () => {
     expect(tierByPlanKey('scale')?.id).toBe('partner');
-    expect(tierByPlanKey('scale_yearly')?.id).toBe('partner_yearly');
+    // Ohne Yearly-Tier fällt scale_yearly auf das Monats-Partner-Tier zurück.
+    expect(tierByPlanKey('scale_yearly')?.plan.id).toBe('partner');
     expect(tierByPlanKey('free')?.id).toBe('free');
     expect(tierByPlanKey('voellig-unbekannt')).toBeUndefined();
   });

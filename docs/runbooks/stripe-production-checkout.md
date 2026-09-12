@@ -31,6 +31,19 @@ preview without writing.
 
 Table: `public.products`
 
+Live catalog (`acct_1TYVIyREjTWueUcG`, livemode) — migration `20260912055500_stripe_live_catalog_price_ids.sql`:
+
+| plan_key | stripe_price_id | notes |
+|---|---|---|
+| `starter` | `price_1TfsV8REjTWueUcGCdOO6bT2` | €79/mo · self-service |
+| `growth` | `price_1TfsV4REjTWueUcGsGSfjudu` | €249/mo · self-service |
+| `agency` | `price_1TfsV9REjTWueUcGxJIBHYgC` | €699/mo · self-service |
+| `enterprise` | `price_1TxLdLREjTWueUcGRaXie8Vs` | €1249/mo · **inquiry only** |
+| `partner` | `price_1TntAwREjTWueUcGh3FKldMF` | €1999/mo · legacy Scale |
+| `governance_launch` | `price_1U3lQNREjTWueUcG6LX7WIQU` | €349 one-time |
+
+No yearly prices exist in Stripe. Yearly `default_for_plan_key` rows keep non-`price_*` sentinels.
+
 ```sql
 SELECT
   default_for_plan_key,
@@ -40,10 +53,13 @@ SELECT
     ELSE 'MISSING'
   END AS status
 FROM public.products
-ORDER BY created_at;
+WHERE default_for_plan_key IN (
+  'starter','growth','agency','enterprise','partner','governance_launch'
+)
+ORDER BY default_for_plan_key;
 ```
 
-Expect `OK` for every active plan key. `MISSING` = price was seeded with a sentinel and never replaced with the live Stripe Price ID. The CheckoutPage renders `missing_price_id` for that plan.
+Expect `OK` for the six keys above. Self-service Checkout Sessions are minted only for starter/growth/agency.
 
 ## Webhook endpoint
 

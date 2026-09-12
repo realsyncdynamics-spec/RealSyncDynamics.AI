@@ -806,12 +806,10 @@ export const PLANS: Plan[] = [
   },
 
   // ── Enterprise — Preis auf Anfrage ──────────────────────────────────────
-  // COMMERCIAL-SSOT: temporary production hotfix.
-  // Canonical source migration tracked in Phase 2.
-  // Enterprise wird manuell fakturiert (products.default_for_plan_key='enterprise'
-  // traegt bewusst nur einen Sentinel, keine echte Stripe-Price). Ein oeffentlich
-  // zugesicherter Festpreis von 1.249 € war damit ein Angebot, das der
-  // Self-Service-Checkout nicht erfuellen kann. Deshalb: inquiry + priceOnRequest.
+  // Live Stripe Price `price_1TxLdLREjTWueUcGRaXie8Vs` existiert
+  // (prod_UxG9V9clbqV7qw) und ist in public.products verdrahtet — aber nur
+  // für Katalog / Bestand / manueller Rechnungslauf. Self-Service-Checkout
+  // bleibt gesperrt: inquiry + priceOnRequest + ENTERPRISE_SELF_SERVICE_BLOCKED.
   {
     id: 'enterprise',
     planKey: 'enterprise',
@@ -821,6 +819,8 @@ export const PLANS: Plan[] = [
     technicalSubheadline: 'Multi-Tenant-Runtime für bis zu 5 Organisationen, zentrale Rechteverwaltung und individuell dimensionierte Scheduler- und Automation-Kontingente.',
     price: { monthlyEur: 1_249, yearlyEur: 12_490, oneTimeEur: null },
     priceOnRequest: true,
+    // Keine Jahres-Prices in Stripe — siehe Dominik Live-Katalog 2026-09-12.
+    yearlyCheckoutUnavailable: true,
     currency: 'EUR',
     purchaseMode: 'inquiry',
     availability: 'contract',
@@ -906,6 +906,8 @@ export const PLANS: Plan[] = [
     outcomeHeadline: 'Verkaufen Sie Governance als eigenes Produkt — bis zu 50 Mandanten unter Ihrer Marke.',
     technicalSubheadline: 'Vollständig mandantengetrennte Runtime mit White-Label-Subdomain, eigenem Branding und voller API.',
     price: { monthlyEur: 1_999, yearlyEur: 19_000, oneTimeEur: null },
+    // Keine Jahres-Prices in Stripe (Dominik Live-Katalog 2026-09-12).
+    yearlyCheckoutUnavailable: true,
     currency: 'EUR',
     purchaseMode: 'inquiry',
     availability: 'legacy',

@@ -166,7 +166,7 @@ function DesktopDropdown({
         <div
           id={menuId}
           role="menu"
-          className="absolute left-0 top-full z-40 min-w-[240px] border border-[#e4cfa2]/18 py-2 shadow-[0_18px_40px_rgba(0,0,0,0.45)]"
+          className="absolute left-0 top-full z-40 max-h-[70vh] min-w-[280px] overflow-y-auto border border-[#e4cfa2]/18 py-2 shadow-[0_18px_40px_rgba(0,0,0,0.45)]"
           style={{ backgroundColor: `${LANDING_BG}f5`, backdropFilter: 'blur(16px)' }}
         >
           {group.to && (
@@ -179,6 +179,48 @@ function DesktopDropdown({
           )}
           {group.children.map((leaf) => (
             <LeafRow key={leaf.to + leaf.label} leaf={leaf} onNavigate={() => setOpen(false)} />
+          ))}
+          {group.sections?.map((section) => (
+            <div key={section.label} className="mt-1 border-t border-[#e4cfa2]/10 pt-1">
+              <div className="flex items-center justify-between gap-2 px-3 py-1.5">
+                {section.to ? (
+                  <Link
+                    to={section.to}
+                    className="text-[10px] tracking-[.14em] transition hover:opacity-90"
+                    style={{ fontFamily: LANDING_MONO, color: LANDING_ACCENT }}
+                    onClick={() => setOpen(false)}
+                  >
+                    {section.label}
+                  </Link>
+                ) : (
+                  <span
+                    className="text-[10px] tracking-[.14em]"
+                    style={{ fontFamily: LANDING_MONO, color: LANDING_ACCENT }}
+                  >
+                    {section.label}
+                  </span>
+                )}
+                {badgeLabel(section.badge) && (
+                  <span
+                    className="rounded-full border px-1.5 py-0.5 text-[8px] tracking-[.12em]"
+                    style={{
+                      fontFamily: LANDING_MONO,
+                      borderColor: `${LANDING_ACCENT}55`,
+                      color: LANDING_ACCENT,
+                    }}
+                  >
+                    {badgeLabel(section.badge)}
+                  </span>
+                )}
+              </div>
+              {section.children.map((leaf) => (
+                <LeafRow
+                  key={leaf.to + leaf.label}
+                  leaf={leaf}
+                  onNavigate={() => setOpen(false)}
+                />
+              ))}
+            </div>
           ))}
         </div>
       )}
@@ -274,10 +316,10 @@ export function PublicDarkHeader({ overlay = false }: { overlay?: boolean }) {
           <AccountNav />
           <Link
             to={PUBLIC_CTA.to}
-            className="max-w-[9.5rem] rounded-full px-[18px] py-[11px] text-center text-[10px] leading-[1.3] shadow-[0_0_30px_rgba(228,207,162,0.08)] transition hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e4cfa2]"
+            className="max-w-[12rem] rounded-full px-[16px] py-[11px] text-center text-[10px] leading-[1.3] shadow-[0_0_30px_rgba(228,207,162,0.08)] transition hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e4cfa2]"
             style={scanCtaStyle}
           >
-            {PUBLIC_CTA.label}
+            {PUBLIC_CTA.label} →
           </Link>
         </nav>
 
@@ -347,6 +389,26 @@ export function PublicDarkHeader({ overlay = false }: { overlay?: boolean }) {
                     ))}
                   </div>
                 )}
+                {group.sections?.map((section) => (
+                  <div key={section.label} className="mt-3">
+                    <p
+                      className="mb-1 text-[9px] tracking-[.16em]"
+                      style={{ fontFamily: LANDING_MONO, color: LANDING_ACCENT }}
+                    >
+                      {section.label}
+                      {badgeLabel(section.badge) ? ` · ${badgeLabel(section.badge)}` : ''}
+                    </p>
+                    <div className="flex flex-col border-l border-[#e4cfa2]/15 pl-3">
+                      {section.children.map((leaf) => (
+                        <LeafRow
+                          key={leaf.to + leaf.label}
+                          leaf={leaf}
+                          onNavigate={() => setOpen(false)}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                ))}
               </div>
             ))}
             <div className="border-t border-[#e4cfa2]/12 pt-3">

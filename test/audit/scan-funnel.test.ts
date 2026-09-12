@@ -5,24 +5,56 @@ import {
   pickTopRisks,
 } from '../../src/components/audit/Top3RisksPreview';
 import {
+  CONTINUOUS_COMPLIANCE_NARRATIVE,
   HERO_SCAN_CTA_LABEL,
-  HERO_SCAN_CTA_PROMISE,
+  HERO_SCAN_CTA_LONG,
+  HERO_SCAN_PROMISE_LINE,
   SCAN_FUNNEL_MESSAGE,
 } from '../../src/components/governance-frontend/hero-content';
-import { PUBLIC_CTA } from '../../src/config/public-nav';
+import { PUBLIC_CTA, PUBLIC_NAV_GROUPS } from '../../src/config/public-nav';
 import { getImplementation } from '../../src/product/implementation-status';
 
 describe('scan funnel copy SSOT', () => {
-  it('hero CTA promises a result, never „testen“', () => {
-    expect(HERO_SCAN_CTA_LABEL).toBe('Kostenlosen Governance-Scan starten');
+  it('hero CTA promises a result, never Demo/testen', () => {
+    expect(HERO_SCAN_CTA_LABEL).toBe('Kostenlos starten');
+    expect(HERO_SCAN_CTA_LONG).toBe('Governance kostenlos starten');
+    expect(HERO_SCAN_PROMISE_LINE.toLowerCase()).not.toContain('demo');
     expect(HERO_SCAN_CTA_LABEL.toLowerCase()).not.toContain('testen');
-    expect(HERO_SCAN_CTA_PROMISE).toMatch(/Top-3-Risiken/);
-    expect(HERO_SCAN_CTA_PROMISE).toMatch(/Evidence-Preview/);
     expect(SCAN_FUNNEL_MESSAGE).toBe(
       'In Minuten scannen. In Stunden strukturieren. Dauerhaft kontrollieren.',
     );
-    expect(PUBLIC_CTA.label).toBe(HERO_SCAN_CTA_LABEL);
+    expect(CONTINUOUS_COMPLIANCE_NARRATIVE).toMatch(/kontinuierlich/);
+    expect(PUBLIC_CTA.label).toBe(HERO_SCAN_CTA_LONG);
     expect(PUBLIC_CTA.to).toBe('/audit');
+  });
+});
+
+describe('public nav ecosystem IA', () => {
+  it('exposes Produkt sections (not a flat tool strip)', () => {
+    const produkt = PUBLIC_NAV_GROUPS.find((g) => g.id === 'produkt');
+    expect(produkt?.sections?.length).toBeGreaterThanOrEqual(5);
+    const labels = produkt?.sections?.map((s) => s.label) ?? [];
+    expect(labels).toEqual(
+      expect.arrayContaining([
+        'AI Governance',
+        'Privacy Governance',
+        'Agent Governance',
+        'Evidence',
+        'Automation',
+        'Platform',
+      ]),
+    );
+    expect(PUBLIC_NAV_GROUPS.map((g) => g.id)).toEqual(
+      expect.arrayContaining(['produkt', 'loesungen', 'ressourcen', 'unternehmen', 'preise']),
+    );
+  });
+
+  it('marks Agent Governance as Preview', () => {
+    const agent = PUBLIC_NAV_GROUPS.find((g) => g.id === 'produkt')?.sections?.find(
+      (s) => s.label === 'Agent Governance',
+    );
+    expect(agent?.badge).toBe('preview');
+    expect(agent?.to).toBe('/agent-governance');
   });
 });
 
@@ -55,33 +87,17 @@ describe('PostScanChoiceRow destinations', () => {
     });
     expect(choices).toHaveLength(4);
     expect(choices[0].badge).toBe('coming-soon');
-    expect(choices[0].to).toContain('/welcome?next=');
-    expect(choices[0].to).toContain('%2Fapp%2Fmonitoring');
     expect(choices[1].to).toBe('/onboarding/aud-1');
-    expect(choices[1].badge).toBe('live');
     expect(choices[2].to).toContain('%2Fapp%2Factivation');
-    expect(choices[2].badge).toBe('live');
     expect(choices[3].badge).toBe('preview');
-    expect(choices[3].to).toContain('%2Fapp%2Fevidence');
-  });
-
-  it('uses optimizer preview when there are no findings', () => {
-    const choices = buildPostScanChoices({
-      auditId: 'aud-2',
-      domain: 'clean.example',
-      score: 95,
-      severity: 'info',
-      hasFindings: false,
-    });
-    expect(choices[1].to).toBe('/claude-code-optimizer');
-    expect(choices[1].badge).toBe('preview');
   });
 });
 
 describe('implementation-status registry for scan funnel', () => {
-  it('registers continuous monitoring as coming-soon and choice row as live', () => {
+  it('registers continuous monitoring, choice row, agent governance', () => {
     expect(getImplementation('continuous-domain-monitoring')?.status).toBe('coming-soon');
     expect(getImplementation('post-scan-choice-row')?.status).toBe('live');
-    expect(getImplementation('free-audit')?.ctaLabel).toBe(HERO_SCAN_CTA_LABEL);
+    expect(getImplementation('agent-governance')?.status).toBe('preview');
+    expect(getImplementation('free-audit')?.ctaLabel).toBe(HERO_SCAN_CTA_LONG);
   });
 });

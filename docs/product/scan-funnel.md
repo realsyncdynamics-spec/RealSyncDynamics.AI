@@ -1,65 +1,63 @@
-# Public Scan Funnel — Positioning (nicht Cookie-Scanner)
+# Public Scan Funnel & Landing IA
 
 **Stand:** 2026-09-12  
 **SSoT Runtime-Claims:** `src/product/implementation-status.ts`  
-**Kanonischer Scan:** `/audit?domain=` (kein paralleler Scanner)
+**Kanonischer Acquisition-Scan:** `/audit?domain=` (kein paralleler Scanner; Scan ≠ Produkt)
 
 ---
 
-## Positionierung (lock)
+## Narrative (lock)
 
-| TAKE | DO NOT TAKE |
-|---|---|
-| URL first, kein Login fürs erste Ergebnis | Optik eines Website-DSGVO-/Cookie-Scanners |
-| Sofort nutzbarer Befund + klarer nächster Schritt | Complianty-Preisband 19–149 € |
-| Agency Multi-Tenant Reports später | Architektur erklären, bevor ein Risiko bewiesen ist |
-| Continuous Monitoring als Grund zu bleiben | Cyan Complianty-Klon; Preise senken |
+> RealSync erkennt, bewertet, steuert und dokumentiert Compliance kontinuierlich.
 
-**Message:** In Minuten scannen. In Stunden strukturieren. Dauerhaft kontrollieren.
+Nicht „wähle einen Check / hier sind viele Tools.“  
+Position: Control/Policy/Audit/Evidence-Layer über Modelle und Agenten — **kein** Chatbot, **kein** Cookie-/Website-DSGVO-Scanner. Kein Complianty Visual Clone (kein Cyan/White/Purple).
 
-RealSyncDynamics.AI bleibt **AI Governance OS** (Scan → Build → Automate → Govern),
-preislich oberhalb eines Cookie-Scanners (Starter €79 / Growth €249 / Agency €699 /
-Enterprise Anfrage — `shared/pricing.ts`). Partner/Scale = Legacy/Inquiry, kein
-Self-Serve „Scale“.
+**Hero (DE):** Erkenne, steuere und belege jede KI-Nutzung in deinem Unternehmen.  
+**Subline:** Eine Governance- und Evidence-Schicht über ChatGPT, Claude, Agenten und internen AI-Workflows.  
+**Slogan:** In Minuten scannen. In Stunden strukturieren. Dauerhaft kontrollieren.  
+**EN kicker:** Govern every AI system in one control layer.
 
----
+**Operating loop:** Detect → Analyze → Govern → Remediate → Evidence → Monitor  
 
-## Zwei Pfade
+**Product spine:** SCAN → DISCOVER → RISK → GOVERN → AUTOMATE → EVIDENCE → MONITOR → AUDIT → SCALE  
 
-1. **Self-Service** — Website-/SaaS-Teams: Hero-URL → `/audit` → Top-3 + Choice Row.
-2. **Guided Activation (Enterprise)** — bestehendes `/app/activation` über
-   `/welcome?next=/app/activation` (kein Sales-Call-First-Onboarding).
+Scan = **Acquisition only**. Danach: Risiken → Score → Governance Activation → Workspace / Policies / Remediation / Evidence / Monitoring.
 
 ---
 
-## Funnel
+## Header IA (Complianty pattern, unsere Inhalte)
 
-```
-/  (URL + Result-CTA)  →  /audit?domain=  →  Score + Top-3 + Evidence-Preview
-                                              →  Choice Row (4 Optionen)
-                                              →  Account nur bei Save / Share / Monitor
-```
+| Group | Inhalt | Hinweis |
+|---|---|---|
+| Produkt ▾ | Runtime + AI / Privacy / Agent Governance + Evidence + Automation + Platform | Sections mit Live/Preview-Badges |
+| Lösungen ▾ | Unternehmen, Agenturen, DPO, AI Teams, Enterprise, Entwickler | Echte Routen |
+| Ressourcen ▾ | AI Act / DSGVO Guides, Docs, API, Security, Roadmap | Nur reale Routen |
+| Unternehmen | About, Kontakt, Sicherheit, Impressum | |
+| Preise | Starter/Growth/Agency + Enterprise Anfrage | Preise unverändert |
+| Login | `/welcome` | |
+| Primary CTA | `Governance kostenlos starten →` | nie Demo |
 
-### Hero CTA (DE)
+Agent Governance = **Preview** (Hub `/agent-governance`; Kernel-Slice #1331).
 
-- Button: `Kostenlosen Governance-Scan starten` (Ergebnis versprechen, nie „testen“)
-- Unter der Form: `URL eingeben — Top-3-Risiken und Evidence-Preview erhalten. Kein Account nötig.`
+---
 
-### Choice Row (nach Scan)
+## Post-scan Choice Row
 
-| # | Aktion | Ziel | Status |
-|---|---|---|---|
-| 1 | Diese Domain überwachen | `/welcome?next=/app/monitoring` | Coming Soon |
-| 2 | Fix-Plan mit Code-Empfehlungen | `/onboarding/:auditId` (bei Findings) bzw. Optimizer Preview | Live / Preview |
-| 3 | KI-Use-Cases & EU-AI-Act-Pflichten | `/welcome?next=/app/activation` | Live |
-| 4 | Report exportieren | `/welcome?next=/app/evidence` (+ Share/Docs auf Seite) | Preview |
+1. Diese Domain überwachen → Coming Soon  
+2. Fix-Plan → `/onboarding/:id` Live (sonst Optimizer Preview)  
+3. KI-Use-Cases / EU-AI-Act → `/app/activation` Live  
+4. Report export → Evidence Preview + `/welcome`
 
-Wiederverwendete Oberflächen: `AuditLanding` / `ReportView`, `gdpr-audit` Score+Issues,
-`GuidedPlanBlock` → `/onboarding/:id`, Governance Activation, Evidence unter `/app/evidence`.
+---
+
+## Proof
+
+Evidence **timeline** (nicht nur Score): Scan → Risk → Policy → Control → Evidence sealed → Hash.  
+Labeled Preview ohne Fake-Timestamps/KPIs. Agent-Wedge: Action Request → … → Evidence.
 
 ---
 
 ## Out of scope
 
-Chrome Extension, neue Stripe-Produkte, Complianty Visual Clone, zweites Dashboard,
-Sphere auf `/` remounten.
+Chrome Extension, neue Stripe-Produkte, Sphere auf `/`, Preise senken, Complianty-Look.

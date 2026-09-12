@@ -126,10 +126,10 @@ test.describe('Governance-AI-Landing (/)', () => {
 
     // P0: Scan-Submit → `/audit`, secondary outline → Governance OS (#platform).
     await expect(
-      page.getByRole('button', { name: /Kostenlosen Governance[- ]?Scan starten/i }).first(),
+      page.getByRole('button', { name: /Kostenlos starten|Governance kostenlos starten/i }).first(),
     ).toBeVisible();
     await expect(
-      page.getByRole('link', { name: /Explore the Governance OS|Governance OS ansehen/i }).first(),
+      page.getByRole('link', { name: /Evidence-Preview|Guided Activation|Explore the Governance OS/i }).first(),
     ).toBeVisible();
   });
 

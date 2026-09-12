@@ -72,7 +72,7 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     route: '/audit',
     evidence: ['src/pages/AuditLanding.tsx', 'test/landing/canonical-scan-entry.test.tsx'],
     showOnPlatform: true,
-    ctaLabel: 'Kostenlosen Governance-Scan starten',
+    ctaLabel: 'Governance kostenlos starten',
   },
   {
     id: 'app-shell',
@@ -377,6 +377,21 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
       'docs/product/scan-funnel.md',
     ],
     showOnRoadmap: false,
+  },
+  {
+    id: 'agent-governance',
+    name: 'Agent Governance',
+    status: 'preview',
+    group: 'runtime',
+    description:
+      'Action Request → Policy → Risk → Permission → Evidence — Hub live; Kernel-Slice Preview (#1331).',
+    route: '/agent-governance',
+    evidence: [
+      'src/pages/content/AgentGovernancePage.tsx',
+      'src/components/landing/LandingOsSpine.tsx',
+      'PR #1331',
+    ],
+    showOnRoadmap: true,
   },
   {
     id: 'framework-tisax-dora',

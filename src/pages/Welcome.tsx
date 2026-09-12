@@ -444,7 +444,7 @@ export function Welcome() {
                     <button
                       type="submit"
                       disabled={!email || busy}
-                      className="inline-flex items-center gap-2 rounded-none bg-white px-6 py-3 text-sm font-semibold text-obsidian-950 transition-colors hover:bg-titanium-200 disabled:cursor-not-allowed disabled:bg-titanium-800 disabled:text-titanium-600"
+                      className="inline-flex items-center gap-2 rounded-none bg-[#e8ddc8] px-6 py-3 text-sm font-semibold text-obsidian-950 transition-colors hover:bg-[#f0e6d4] disabled:cursor-not-allowed disabled:bg-titanium-800 disabled:text-titanium-600"
                     >
                       {busy
                         ? (<><Loader2 className="h-4 w-4 animate-spin" /> Sende Magic-Link …</>)
@@ -490,7 +490,7 @@ export function Welcome() {
                     <button
                       onClick={generateKey}
                       disabled={busy || !tenantId}
-                      className="inline-flex items-center gap-2 rounded-none bg-indigo-500 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-indigo-600 disabled:bg-titanium-800 disabled:text-titanium-600"
+                      className="inline-flex items-center gap-2 rounded-none bg-[#e8ddc8] px-6 py-3 text-sm font-semibold text-obsidian-950 transition-colors hover:bg-[#f0e6d4] disabled:bg-titanium-800 disabled:text-titanium-600"
                     >
                       {busy
                         ? (<><Loader2 className="h-4 w-4 animate-spin" /> Generiere …</>)
@@ -522,7 +522,7 @@ export function Welcome() {
                       </div>
                       <button
                         onClick={() => setStep(3)}
-                        className="inline-flex items-center gap-2 rounded-none bg-white px-6 py-3 text-sm font-semibold text-obsidian-950 transition-colors hover:bg-titanium-200"
+                        className="inline-flex items-center gap-2 rounded-none bg-[#e8ddc8] px-6 py-3 text-sm font-semibold text-obsidian-950 transition-colors hover:bg-[#f0e6d4]"
                       >
                         Weiter zu Setup <ArrowRight className="h-4 w-4" />
                       </button>
@@ -578,7 +578,7 @@ export function Welcome() {
                       <button
                         onClick={submitAuditDomain}
                         disabled={!domain || busy}
-                        className="inline-flex items-center gap-2 rounded-none bg-indigo-500 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-indigo-600 disabled:bg-titanium-800 disabled:text-titanium-600"
+                        className="inline-flex items-center gap-2 rounded-none bg-[#e8ddc8] px-6 py-3 text-sm font-semibold text-obsidian-950 transition-colors hover:bg-[#f0e6d4] disabled:bg-titanium-800 disabled:text-titanium-600"
                       >
                         {busy
                           ? (<><Loader2 className="h-4 w-4 animate-spin" /> Audit wird gestartet …</>)
@@ -594,7 +594,7 @@ export function Welcome() {
                     <button
                       type="button"
                       onClick={finalizeAndNavigate}
-                      className="inline-flex items-center gap-2 rounded-none bg-emerald-500 px-6 py-3 text-sm font-semibold text-obsidian-950 transition-colors hover:bg-emerald-600"
+                      className="inline-flex items-center gap-2 rounded-none bg-[#e8ddc8] px-6 py-3 text-sm font-semibold text-obsidian-950 transition-colors hover:bg-[#f0e6d4]"
                     >
                       Setup abschließen <CheckCircle2 className="h-4 w-4" />
                     </button>

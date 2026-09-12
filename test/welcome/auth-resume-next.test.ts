@@ -90,6 +90,17 @@ describe('Prototype auth leaks closed', () => {
     expect(APP).toMatch(/path="\/demo-login"[^>]*Navigate to="\/welcome/);
     expect(REDIRECTS).toMatch(/\/demo-login\s+\/welcome\s+301/);
   });
+
+  it('aliases /auth* to /welcome and /account|/activate into the app', () => {
+    expect(APP).toMatch(/path="\/auth"[^>]*Navigate to="\/welcome"/);
+    expect(APP).toMatch(/path="\/auth\/login"[^>]*Navigate to="\/welcome"/);
+    expect(APP).toMatch(/path="\/auth\/register"[^>]*Navigate to="\/welcome"/);
+    expect(APP).toMatch(/path="\/account"[^>]*Navigate to="\/app\/dashboard"/);
+    expect(APP).toMatch(/path="\/activate"[^>]*Navigate to="\/app\/activation"/);
+    expect(REDIRECTS).toMatch(/\/auth\s+\/welcome\s+301/);
+    expect(REDIRECTS).toMatch(/\/account\s+\/app\/dashboard\s+301/);
+    expect(REDIRECTS).toMatch(/\/activate\s+\/app\/activation\s+301/);
+  });
 });
 
 describe('Canonical dashboard only', () => {

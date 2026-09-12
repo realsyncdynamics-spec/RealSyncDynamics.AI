@@ -1051,6 +1051,11 @@ function RoutesWithTracking() {
       <Route path="/signin" element={<Navigate to="/welcome" replace />} />
       <Route path="/signup" element={<Navigate to="/welcome" replace />} />
       <Route path="/register" element={<Navigate to="/welcome" replace />} />
+      <Route path="/auth" element={<Navigate to="/welcome" replace />} />
+      <Route path="/auth/login" element={<Navigate to="/welcome" replace />} />
+      <Route path="/auth/register" element={<Navigate to="/welcome" replace />} />
+      <Route path="/account" element={<Navigate to="/app/dashboard" replace />} />
+      <Route path="/activate" element={<Navigate to="/app/activation" replace />} />
       <Route path="/logout" element={<LogoutPage />} />
       <Route path="/signout" element={<LogoutPage />} />
       {/* Canonical app dashboard aliases */}

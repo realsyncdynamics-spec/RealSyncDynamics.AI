@@ -1,112 +1,51 @@
 /**
  * Non-interactive photoreal Earth for the public landing hero backdrop.
- * Cinematic sunrise — scenery only. Desktop framing: lit day side + sun
- * fill the viewport (no dark night-blob / empty black bands).
+ * Night-forward Europe framing + slow auto-rotate. Scenery only —
+ * no sun disc, no HUD, no drag.
  */
 import { Canvas, useFrame } from '@react-three/fiber';
 import { useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { PhotorealEarthMesh } from '../visual/PhotorealEarthMesh';
 
-/** Sunrise sun — behind/left of Earth limb so day side fills the desktop frame. */
-export const LANDING_SUN_POSITION = new THREE.Vector3(-2.2, 0.15, 3.35);
+/**
+ * Sun sits behind/left of the limb so Europe faces night city lights while
+ * a warm terminator rim remains — not a cream wash over the planet.
+ */
+export const LANDING_SUN_POSITION = new THREE.Vector3(-3.4, 0.55, -1.85);
 
-function RisingSun({ reducedMotion }: { reducedMotion: boolean }) {
-  const core = useRef<THREE.Mesh>(null!);
-  const corona = useRef<THREE.Mesh>(null!);
-  const haze = useRef<THREE.Mesh>(null!);
-  const flare = useRef<THREE.Mesh>(null!);
-
-  useFrame(({ clock }) => {
-    if (reducedMotion) return;
-    const t = clock.elapsedTime;
-    const pulse = 1 + Math.sin(t * 0.38) * 0.03;
-    if (core.current) core.current.scale.setScalar(pulse);
-    if (corona.current) corona.current.scale.setScalar(pulse * 1.012);
-    if (haze.current) {
-      const mat = haze.current.material as THREE.MeshBasicMaterial;
-      mat.opacity = 0.2 + Math.sin(t * 0.32) * 0.03;
-    }
-    if (flare.current) {
-      const mat = flare.current.material as THREE.MeshBasicMaterial;
-      mat.opacity = 0.14 + Math.sin(t * 0.26) * 0.025;
-    }
-  });
-
+/** Soft key only — no visible RisingSun mesh / CSS sun disc. */
+function LimbLight() {
   return (
     <group position={LANDING_SUN_POSITION.toArray() as [number, number, number]}>
-      <pointLight color="#fff1d6" intensity={3.4} distance={42} decay={2} />
-      <pointLight color="#ff9a4a" intensity={1.8} distance={24} decay={2} position={[0.4, -0.4, 0.15]} />
-
-      <mesh ref={core} raycast={() => null}>
-        <sphereGeometry args={[1.15, 32, 32]} />
-        <meshBasicMaterial color="#ffe6b8" toneMapped={false} />
-      </mesh>
-      <mesh ref={corona} scale={1.9} raycast={() => null}>
-        <sphereGeometry args={[1.15, 24, 24]} />
-        <meshBasicMaterial
-          color="#ffc078"
-          transparent
-          opacity={0.72}
-          depthWrite={false}
-          toneMapped={false}
-        />
-      </mesh>
-      <mesh ref={haze} scale={4.8} raycast={() => null}>
-        <sphereGeometry args={[1.15, 20, 20]} />
-        <meshBasicMaterial
-          color="#ff8a42"
-          transparent
-          opacity={0.28}
-          depthWrite={false}
-          side={THREE.BackSide}
-          toneMapped={false}
-        />
-      </mesh>
-      <mesh
-        ref={flare}
-        rotation={[0, 0.12, 0.38]}
-        position={[1.8, -0.2, 1.2]}
-        raycast={() => null}
-      >
-        <planeGeometry args={[9, 1.4]} />
-        <meshBasicMaterial
-          color="#ffb060"
-          transparent
-          opacity={0.22}
-          depthWrite={false}
-          side={THREE.DoubleSide}
-          toneMapped={false}
-        />
-      </mesh>
+      <pointLight color="#ffe0b0" intensity={1.15} distance={28} decay={2} />
+      <pointLight color="#e4cfa2" intensity={0.45} distance={18} decay={2} position={[0.6, -0.3, 0.4]} />
     </group>
   );
 }
 
 function SlowEarth({ reducedMotion }: { reducedMotion: boolean }) {
   const wrap = useRef<THREE.Group>(null!);
-  // Direction from Earth toward the sun (world space) for terminator.
   const sunDir = useMemo(() => LANDING_SUN_POSITION.clone().normalize(), []);
 
   useFrame((_, delta) => {
-    // Near-freeze — keep the lit Europe/Atlantic frame Dominik needs.
     if (reducedMotion || !wrap.current) return;
-    wrap.current.rotation.y += delta * 0.004;
+    // Slow cinematic spin — continents and city lights must stay readable.
+    wrap.current.rotation.y += delta * 0.028;
   });
 
   return (
     /*
-     * Frame: Europe / Atlantic toward camera, sun on the left limb.
      * Oversized + shifted so the sphere crops past viewport edges —
-     * no empty black bands on desktop.
+     * Earth fills the hero; no empty black bands on desktop.
+     * Initial yaw tips Europe / Atlantic night lights toward camera.
      */
-    <group ref={wrap} position={[0.15, -0.55, 0.2]} scale={2.35}>
+    <group ref={wrap} position={[0.05, -0.35, 0.15]} scale={2.42}>
       <PhotorealEarthMesh
         autoRotate={false}
         reducedMotion={reducedMotion}
         sunDirection={sunDir}
-        // Tip Europe/NW Africa into the lit sunrise quadrant (not Americas night).
-        rotation={[0.22, 0.72, 0.06]}
+        rotation={[0.2, -0.42, 0.05]}
         palette="landing-gold"
       />
     </group>
@@ -123,7 +62,7 @@ export function HeroEarthBackdropScene({ reducedMotion = false }: HeroEarthBackd
   return (
     <Canvas
       className="h-full w-full"
-      camera={{ position: [0, 0.08, 3.85], fov: 42 }}
+      camera={{ position: [0, 0.05, 3.75], fov: 40 }}
       gl={{
         alpha: true,
         antialias: true,
@@ -140,11 +79,12 @@ export function HeroEarthBackdropScene({ reducedMotion = false }: HeroEarthBackd
         gl.setClearColor(0x000000, 0);
       }}
     >
-      <ambientLight intensity={0.22} color="#efe6d5" />
-      <directionalLight position={[sun.x, sun.y, sun.z]} intensity={2.85} color="#fff1d6" />
-      <directionalLight position={[-1.6, -1.8, 1.2]} intensity={0.75} color="#ff9a55" />
-      <directionalLight position={[2.2, 0.8, -1.4]} intensity={0.14} color="#b49a6b" />
-      <RisingSun reducedMotion={reducedMotion} />
+      {/* Low ambient so night lights + continents read as a real planet */}
+      <ambientLight intensity={0.12} color="#d8c9a8" />
+      <directionalLight position={[sun.x, sun.y, sun.z]} intensity={1.35} color="#fff1d6" />
+      <directionalLight position={[2.4, 0.6, 1.8]} intensity={0.22} color="#8a9bb0" />
+      <directionalLight position={[-1.2, -1.4, 2.0]} intensity={0.18} color="#b49a6b" />
+      <LimbLight />
       <SlowEarth reducedMotion={reducedMotion} />
     </Canvas>
   );

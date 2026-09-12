@@ -71,8 +71,9 @@ function NavItem({
 
 const scanCtaStyle: CSSProperties = {
   fontFamily: LANDING_MONO,
-  backgroundColor: LANDING_BUTTON,
+  backgroundColor: LANDING_BUTTON, // #e8ddc8 cream — never #fff
   color: LANDING_BUTTON_TEXT,
+  boxShadow: '0 0 0 1px rgba(228, 207, 162, 0.35)',
 };
 
 export function PublicDarkHeader({ overlay = false }: { overlay?: boolean }) {

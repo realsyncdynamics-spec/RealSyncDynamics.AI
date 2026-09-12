@@ -92,14 +92,15 @@ export function MainLanding() {
       <main ref={revealRoot} className="relative z-10">
         <section
           id="product"
-          className="relative isolate min-h-[min(88vh,820px)] overflow-hidden border-b border-[#e4cfa2]/10 lg:min-h-[min(86vh,780px)]"
+          className="relative isolate min-h-[min(92vh,900px)] overflow-hidden border-b border-[#e4cfa2]/10 lg:min-h-[min(90vh,860px)]"
         >
-          {/* Full-bleed Earth + universe — scenery only, no interaction */}
+          {/* Full-bleed photoreal Earth — scenery only, no interaction */}
           <div className="pointer-events-none absolute inset-0 -z-10">
             <HeroEarthBackdrop />
           </div>
 
-          <div className="relative mx-auto flex max-w-[900px] flex-col items-center px-[4vw] pb-[52px] pt-[36px] text-center lg:pb-[58px] lg:pt-[40px]">
+          {/* Dense centered stack over the globe — no empty black bands */}
+          <div className="relative mx-auto flex max-w-[920px] flex-col items-center px-[4vw] pb-[48px] pt-[28px] text-center lg:pb-[52px] lg:pt-[32px]">
             <div
               className="inline-block rounded-full border px-[11px] py-[6px] text-[9px] font-medium tracking-[.23em]"
               style={{
@@ -202,7 +203,7 @@ export function MainLanding() {
                 <button
                   type="submit"
                   data-hero-cta
-                  className="inline-flex items-center justify-center gap-2 rounded-full px-[18px] py-[11px] text-[11px] font-semibold transition hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e4cfa2] lg:py-[12px]"
+                  className="inline-flex items-center justify-center gap-2 rounded-full px-[18px] py-[11px] text-[11px] font-semibold shadow-[0_0_0_1px_rgba(228,207,162,0.35)] transition hover:brightness-[1.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e4cfa2] lg:py-[12px]"
                   style={{ backgroundColor: LANDING_BUTTON, color: LANDING_BUTTON_TEXT }}
                 >
                   Kostenlosen Governance Scan starten <span aria-hidden="true">→</span>

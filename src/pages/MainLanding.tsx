@@ -27,6 +27,9 @@ import {
 import {
   HERO_HEADLINE,
   HERO_OPERATING_LOOP,
+  HERO_SCAN_CTA_LABEL,
+  HERO_SCAN_CTA_PROMISE,
+  SCAN_FUNNEL_MESSAGE,
 } from '../components/governance-frontend/hero-content';
 import { EnterpriseAccessSection } from '../components/landing/EnterpriseAccessSection';
 import {
@@ -158,13 +161,19 @@ export function MainLanding() {
             </p>
 
             <p
+              className="mb-2 max-w-[540px] text-[13px] font-medium leading-[1.45] lg:text-[14px]"
+              style={{ color: '#e8dfd2' }}
+            >
+              {SCAN_FUNNEL_MESSAGE}
+            </p>
+
+            <p
               className="max-w-[520px] text-[13px] leading-[1.55] lg:text-[14px]"
               style={{ color: 'rgba(242,238,230,0.78)' }}
             >
               Govern AI. Prove Everything. Operate with Confidence.
               <br />
-              Erfassen, bewerten und nachweisen — in der Governance Runtime, die heute
-              erreichbar ist.
+              Kein Cookie-Scanner — AI Governance OS: Scan → Build → Automate → Govern.
             </p>
 
             <div
@@ -212,24 +221,39 @@ export function MainLanding() {
                   className="inline-flex items-center justify-center gap-2 rounded-full px-[18px] py-[11px] text-[11px] font-semibold shadow-[0_0_0_1px_rgba(228,207,162,0.35)] transition hover:brightness-[1.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e4cfa2] lg:py-[12px]"
                   style={{ backgroundColor: LANDING_BUTTON, color: LANDING_BUTTON_TEXT }}
                 >
-                  Kostenlosen Governance Scan starten <span aria-hidden="true">→</span>
+                  {HERO_SCAN_CTA_LABEL} <span aria-hidden="true">→</span>
                 </button>
               </div>
               <p
-                className="mt-1.5 px-1 text-[8px] tracking-[.08em]"
+                className="mt-2 px-1 text-[11px] leading-snug"
+                style={{ color: '#e8dfd2' }}
+              >
+                {HERO_SCAN_CTA_PROMISE}
+              </p>
+              <p
+                className="mt-1 px-1 text-[8px] tracking-[.08em]"
                 style={{ fontFamily: LANDING_MONO, color: '#6e7077' }}
               >
-                DSGVO · EU AI Act · Sicherheit · Barrierefreiheit · SEO kein Account nötig
+                Self-Service Website/SaaS · Guided Activation Enterprise · kein Account fürs erste Ergebnis
               </p>
             </form>
 
-            <Link
-              to="/welcome?next=/app/dashboard"
-              className="mt-4 inline-flex items-center justify-center gap-2 rounded-full border px-[20px] py-[11px] text-[13px] font-medium transition hover:bg-[#e4cfa2]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e4cfa2]/60 lg:mt-5"
-              style={{ borderColor: `${LANDING_ACCENT}80`, color: '#e8dfd2' }}
-            >
-              Explore the Governance OS <span aria-hidden="true">→</span>
-            </Link>
+            <div className="mt-4 flex flex-col items-center gap-2 sm:flex-row sm:justify-center lg:mt-5">
+              <Link
+                to="/welcome?next=/app/dashboard"
+                className="inline-flex items-center justify-center gap-2 rounded-full border px-[20px] py-[11px] text-[13px] font-medium transition hover:bg-[#e4cfa2]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e4cfa2]/60"
+                style={{ borderColor: `${LANDING_ACCENT}80`, color: '#e8dfd2' }}
+              >
+                Explore the Governance OS <span aria-hidden="true">→</span>
+              </Link>
+              <OsEntryLink
+                to="/app/activation"
+                className="inline-flex items-center justify-center gap-2 rounded-full border px-[20px] py-[11px] text-[13px] font-medium transition hover:bg-[#e4cfa2]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e4cfa2]/60"
+                style={{ borderColor: `${LANDING_ACCENT}55`, color: '#cbb892' }}
+              >
+                Guided Activation <span aria-hidden="true">→</span>
+              </OsEntryLink>
+            </div>
           </div>
         </section>
 
@@ -493,14 +517,14 @@ export function MainLanding() {
                 className="inline-flex items-center justify-center gap-2 rounded-full px-7 py-3.5 font-semibold transition hover:brightness-105"
                 style={{ backgroundColor: LANDING_BUTTON, color: LANDING_BUTTON_TEXT }}
               >
-                Kostenlosen Governance Scan starten <ArrowRight className="h-4 w-4" />
+                {HERO_SCAN_CTA_LABEL} <ArrowRight className="h-4 w-4" />
               </Link>
               <OsEntryLink
                 to="/app/activation"
                 className="inline-flex items-center justify-center gap-2 rounded-full border px-7 py-3.5 font-medium transition hover:bg-[#e4cfa2]/10"
                 style={{ borderColor: `${LANDING_ACCENT}80`, color: '#e8dfd2' }}
               >
-                Governance Activation
+                Guided Activation
               </OsEntryLink>
               <Link
                 to="/#pricing"

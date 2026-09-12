@@ -33,6 +33,20 @@ export const HERO_HEADLINE_TEST_SUBSTRING = 'AI Governance';
 /** Motto under the H1 — Detect.Govern.Prove.Automate */
 export const HERO_OPERATING_LOOP = 'Detect · Govern · Prove · Automate' as const;
 
+/**
+ * Public scan-funnel message (Complianty-inspired timing, not a cookie scanner).
+ * Scan → structure → continuous control — AI Governance OS ladder.
+ */
+export const SCAN_FUNNEL_MESSAGE =
+  'In Minuten scannen. In Stunden strukturieren. Dauerhaft kontrollieren.' as const;
+
+/** Short hero button — must promise a result, never „testen“. */
+export const HERO_SCAN_CTA_LABEL = 'Kostenlosen Governance-Scan starten' as const;
+
+/** Result promise under the URL form (DE, cream tone on Dark/Gold landing). */
+export const HERO_SCAN_CTA_PROMISE =
+  'URL eingeben — Top-3-Risiken und Evidence-Preview erhalten. Kein Account nötig.' as const;
+
 if (!HERO_HEADLINE_LINES.some((line) => line.includes(HERO_HEADLINE_TEST_SUBSTRING))) {
   throw new Error(
     'hero-content.ts: HERO_HEADLINE_TEST_SUBSTRING kommt in keiner Zeile der ' +

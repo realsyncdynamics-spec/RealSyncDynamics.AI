@@ -31,3 +31,8 @@ Flipping `status` moves an item between Live / Preview / Coming Soon in the UI.
 - `npm run check:landing-claims` (CI: CTA Enforcement workflow) fails if landing
   copy asserts forbidden live claims or treats a non-live registry item as live
   without a Preview / Coming Soon marker.
+
+## Related
+
+- Public scan funnel positioning: `docs/product/scan-funnel.md`
+- Longer historical scan notes: `docs/product/public-scan-funnel.md`

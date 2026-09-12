@@ -72,7 +72,7 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     route: '/audit',
     evidence: ['src/pages/AuditLanding.tsx', 'test/landing/canonical-scan-entry.test.tsx'],
     showOnPlatform: true,
-    ctaLabel: 'Kostenlosen Governance Scan starten',
+    ctaLabel: 'Kostenlosen Governance-Scan starten',
   },
   {
     id: 'app-shell',
@@ -347,6 +347,36 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     description: 'Yearly Prices sind in Stripe nicht verdrahtet (yearlyCheckoutUnavailable).',
     evidence: ['shared/pricing.ts'],
     showOnRoadmap: true,
+  },
+  {
+    id: 'continuous-domain-monitoring',
+    name: 'Dauerhafte Domain-Überwachung',
+    status: 'coming-soon',
+    group: 'compliance',
+    description:
+      'Post-Scan „Diese Domain überwachen“ — Cron/monitored_domains partiell; öffentlicher Funnel Coming Soon.',
+    route: '/app/monitoring',
+    evidence: [
+      'src/components/audit/PostScanChoiceRow.tsx',
+      'supabase/functions/audit-monitor-cron',
+      'docs/product/scan-funnel.md',
+    ],
+    showOnRoadmap: true,
+  },
+  {
+    id: 'post-scan-choice-row',
+    name: 'Post-Scan Choice Row',
+    status: 'live',
+    group: 'surface',
+    description:
+      'Vier ehrliche Next Steps nach /audit (Monitor Coming Soon, Fix-Plan, Activation, Export Preview).',
+    route: '/audit',
+    evidence: [
+      'src/components/audit/PostScanChoiceRow.tsx',
+      'src/components/audit/Top3RisksPreview.tsx',
+      'docs/product/scan-funnel.md',
+    ],
+    showOnRoadmap: false,
   },
   {
     id: 'framework-tisax-dora',

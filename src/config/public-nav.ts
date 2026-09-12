@@ -174,8 +174,9 @@ export const PUBLIC_FOOTER_LINKS: PublicNavLeaf[] = [
 ];
 
 export const PUBLIC_CTA = {
-  label: 'Kostenlosen Governance Scan starten',
-  shortLabel: 'Governance Scan',
+  /** Result-promise CTA — never „testen“. Full promise lives under the hero form. */
+  label: 'Kostenlosen Governance-Scan starten',
+  shortLabel: 'Governance-Scan',
   to: '/audit',
 } as const;
 

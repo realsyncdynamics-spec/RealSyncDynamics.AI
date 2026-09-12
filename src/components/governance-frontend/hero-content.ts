@@ -1,59 +1,58 @@
 /**
- * Single Source of Truth für Hero + Scan-Funnel-Copy der Startseite.
+ * Single Source of Truth für die Hero-Headline der Startseite.
  *
- * Locked to Dominik Europe-OS mockup (graphite / gold / cream).
- * Änderungen ausschließlich hier — FE-001 und Scan-Funnel-Tests lesen mit.
+ * Die Headline wird von der öffentlichen Startseite und dem FE-001-Check
+ * gemeinsam verwendet. Änderungen deshalb ausschließlich hier vornehmen.
  */
 
 export type HeroHeadlineSegment = {
   text: string;
-  /** true → Gold-Akzent („Europe“). */
+  /** true → Gold-Akzent (Playfair italic in der Referenz). */
   accent?: boolean;
 };
 
 /**
- * Europe-OS H1 — two lines, large sans.
- * Line 1 white; line 2 leads with gold “Europe”.
+ * Governance OS Hero — Dominik-Referenz.
+ *
+ * Claim direction: Govern AI. Prove Everything. Operate with Confidence.
+ *
+ * ## Contract
+ *
+ * `MainLanding` renders H1 exclusively from `HERO_HEADLINE`. E2E / FE-001
+ * read the same source — change here, not in the page.
  */
 export const HERO_HEADLINE: readonly (readonly HeroHeadlineSegment[])[] = [
-  [{ text: 'AI Compliance Operations OS' }],
-  [
-    { text: 'for ' },
-    { text: 'Europe', accent: true },
-  ],
+  [{ text: 'AI Governance,' }],
+  [{ text: 'Running in Real', accent: true }],
+  [{ text: 'Time', accent: true }],
 ];
 
 /** Reine Textzeilen der H1 — für Tests und Accessible-Name-Abgleich. */
 export const HERO_HEADLINE_LINES: readonly string[] = HERO_HEADLINE.map((segments) =>
-  segments.map((s) => s.text).join(''),
+  segments.map((s) => s.text).join('')
 );
 
 /** Substring für den FE-001-Check. Muss vollständig innerhalb einer Zeile liegen. */
-export const HERO_HEADLINE_TEST_SUBSTRING = 'Europe';
+export const HERO_HEADLINE_TEST_SUBSTRING = 'AI Governance';
 
-/** Optional EN kicker — unused in Europe-OS hero (kept for SEO/legacy imports). */
-export const HERO_EN_KICKER = 'AI Compliance Operations OS for Europe' as const;
-
-/** Operating loop under the H1 — small caps + arrows (mockup lock). */
-export const HERO_OPERATING_LOOP =
-  'DISCOVER → CLASSIFY → ENFORCE → PROVE' as const;
+/** Motto under the H1 — Detect.Govern.Prove.Automate */
+export const HERO_OPERATING_LOOP = 'Detect · Govern · Prove · Automate' as const;
 
 /**
- * Locked page slogan — timing ladder (scan → structure → continuous control).
- * Kept for spine / secondary surfaces; hero uses HERO_SUBLINE.
+ * Secondary / funnel / design-preview copy — not the live `/` H1 chrome.
+ * Live `/` CTA is the restored Dominik string in MainLanding + PublicDarkHeader.
  */
+export const HERO_EN_KICKER = 'AI Governance, Running in Real Time' as const;
+
 export const SCAN_FUNNEL_MESSAGE =
   'In Minuten scannen. In Stunden strukturieren. Dauerhaft kontrollieren.' as const;
 
-/** Continuous-compliance narrative — not “choose a check / many tools”. */
 export const CONTINUOUS_COMPLIANCE_NARRATIVE =
   'RealSync erkennt, bewertet, steuert und dokumentiert Compliance kontinuierlich.' as const;
 
-/** Hero subline — two sentences, mockup lock. */
 export const HERO_SUBLINE =
-  'Runtime governance for regulated AI systems. Continuous evidence. EU-native by design.' as const;
+  'Govern AI. Prove Everything. Operate with Confidence.' as const;
 
-/** Outcomes — not shown in Europe-OS hero (spine / elsewhere). */
 export const HERO_OUTCOMES: readonly string[] = [
   'AI Inventory ohne Excel und Schattennutzung',
   'Policies durchsetzen statt nur dokumentieren',
@@ -63,19 +62,11 @@ export const HERO_OUTCOMES: readonly string[] = [
 export const HERO_EU_LINE =
   'Gebaut für EU AI Act, DSGVO und europäische Nachweispflichten.' as const;
 
-/**
- * Primary CTA — Free Audit starten (acquisition → /audit).
- * One primary only — never a second “Governance kostenlos starten” in the hero.
- */
+/** Funnel / design CTAs — acquisition path `/audit` (not Pilot/Demo/Sales). */
 export const HERO_SCAN_CTA_LABEL = 'Free Audit starten' as const;
-
-/** Header / footer long form — same lock as hero primary. */
 export const HERO_SCAN_CTA_LONG = 'Free Audit starten' as const;
-
-/** Secondary hero CTA → /app (ComplianceStatusDashboard via AppGate). */
 export const HERO_DASHBOARD_CTA_LABEL = 'Live Dashboard ansehen' as const;
 
-/** Legacy promise lines — kept for AuditLanding / spine; not hero chrome. */
 export const HERO_SCAN_PROMISE_LINE =
   'Finde deine Compliance-Risiken — kostenlos analysieren' as const;
 
@@ -87,8 +78,4 @@ if (!HERO_HEADLINE_LINES.some((line) => line.includes(HERO_HEADLINE_TEST_SUBSTRI
     'hero-content.ts: HERO_HEADLINE_TEST_SUBSTRING kommt in keiner Zeile der ' +
       'HERO_HEADLINE vor — FE-001 würde fehlschlagen.',
   );
-}
-
-if (HERO_HEADLINE_LINES.length > 2) {
-  throw new Error('hero-content.ts: H1 must stay ≤ 2 lines (no orphan words).');
 }

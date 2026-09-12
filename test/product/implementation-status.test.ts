@@ -21,9 +21,10 @@ describe('implementation-status registry', () => {
     }
   });
 
-  it('keeps yearly billing and interactive sphere off live', () => {
+  it('keeps yearly billing off live; sphere is live on / again', () => {
     expect(isImplementationLive('pricing-yearly')).toBe(false);
-    expect(isImplementationLive('governance-sphere-interactive')).toBe(false);
+    expect(isImplementationLive('governance-sphere-interactive')).toBe(true);
+    expect(isImplementationLive('hero-earth-scenery')).toBe(false);
     expect(isImplementationLive('free-audit')).toBe(true);
   });
 
@@ -59,12 +60,14 @@ describe('implementation-status registry', () => {
     }
   });
 
-  it('hero headline stays ≤ 2 lines', () => {
+  it('hero headline is Dominik Dark/Gold lock (AI Governance, Running in Real Time)', () => {
     const hero = readFileSync(
       resolve('src/components/governance-frontend/hero-content.ts'),
       'utf8',
     );
-    expect(hero).toContain('Europe');
-    expect(hero).toContain('HERO_HEADLINE_LINES.length > 2');
+    expect(hero).toContain('AI Governance');
+    expect(hero).toContain('Running in Real');
+    expect(hero).toContain("HERO_HEADLINE_TEST_SUBSTRING = 'AI Governance'");
+    expect(hero).not.toContain('AI Compliance Operations OS');
   });
 });

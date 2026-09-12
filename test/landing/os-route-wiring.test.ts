@@ -2,7 +2,8 @@
  * Landing CTAs müssen auf echte Infrastruktur zeigen — keine toten Buttons,
  * keine Fake-Erfolgsalerts, keine erfundenen /scan-Entry-Points wenn /audit kanonisch ist.
  *
- * Nav destinations live in public-nav.ts (PublicDarkHeader submenus).
+ * Dominik Dark/Gold `/`: PublicDarkHeader LINKS + MainLanding form → /audit.
+ * Ecosystem IA remains in public-nav.ts for deeper menus / future chrome.
  */
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -11,7 +12,6 @@ import { PUBLIC_NAV_GROUPS } from '../../src/config/public-nav';
 
 const root = resolve(__dirname, '../..');
 const mainLanding = readFileSync(resolve(root, 'src/pages/MainLanding.tsx'), 'utf8');
-const spine = readFileSync(resolve(root, 'src/components/landing/LandingOsSpine.tsx'), 'utf8');
 const header = readFileSync(resolve(root, 'src/components/landing/PublicDarkHeader.tsx'), 'utf8');
 const publicNav = readFileSync(resolve(root, 'src/config/public-nav.ts'), 'utf8');
 const channel = readFileSync(resolve(root, 'src/components/landing/LandingChannelTools.tsx'), 'utf8');
@@ -20,23 +20,23 @@ const scanStart = readFileSync(
   'utf8',
 );
 const app = readFileSync(resolve(root, 'src/App.tsx'), 'utf8');
-const navShell = header + publicNav;
+const navShell = header + publicNav + mainLanding;
 
 describe('Landing ↔ Infrastruktur', () => {
   it('Header-Scan bleibt kanonisch /audit', () => {
-    expect(navShell).toContain("to: '/audit'");
-    expect(navShell).toContain("to: '/governance-runtime'");
-    expect(navShell).toContain("to: '/welcome'");
-    expect(header).toContain('PUBLIC_CTA');
+    expect(header).toContain('to="/audit"');
+    expect(header).toContain("to: '/governance-runtime'");
+    expect(header).toContain("to: '/welcome'");
+    expect(header).toContain('Kostenlosen Governance Scan starten');
+    expect(navShell).toContain('/audit');
   });
 
-  it('Produkt-IA hat Ecosystem-Sections mit echten Routen', () => {
+  it('Produkt-IA hat Ecosystem-Sections mit echten Routen (public-nav SSOT)', () => {
     expect(publicNav).toContain('sections:');
     expect(publicNav).toContain('Agent Governance');
     expect(publicNav).toContain('/agent-governance');
     expect(publicNav).toContain('/welcome?next=/app/evidence');
-    expect(header).toContain('PUBLIC_NAV_GROUPS');
-    expect(header).toContain('group.sections');
+    expect(PUBLIC_NAV_GROUPS.some((g) => g.id === 'produkt')).toBe(true);
   });
 
   it('every Produkt leaf hits a real path (no bare #)', () => {
@@ -57,17 +57,17 @@ describe('Landing ↔ Infrastruktur', () => {
     expect(app).toMatch(/path="\/app\/activation"[^>]*AppGate/);
   });
 
-  it('Landing spine + CTAs zeigen Activation und Evidence', () => {
-    const shell = mainLanding + spine;
-    expect(mainLanding).toContain('LandingOsSpine');
-    expect(shell).toContain('/app/evidence');
-    expect(shell).toContain('/app/activation');
+  it('Dominik landing CTAs zeigen Audit + Sphere, keine Demo-Buchung', () => {
+    expect(mainLanding).toContain('GovernanceSphereHost');
+    expect(mainLanding).toContain("navigate(value ? `/audit?domain=");
     expect(mainLanding).toContain('to="/audit"');
+    expect(mainLanding).toContain('PLATFORM_LIVE_ITEMS');
     expect(mainLanding).not.toContain('Demo buchen');
+    expect(mainLanding).not.toContain('HeroEarthBackdrop');
   });
 
-  it('Channel-Tools-Datei bleibt ehrlich (nicht auf / gemountet als Katalog)', () => {
-    expect(mainLanding).not.toContain('LandingChannelTools');
+  it('Channel-Tools auf / sind ehrlich verdrahtet (keine Fake-Alerts)', () => {
+    expect(mainLanding).toContain('LandingChannelTools');
     expect(channel).toContain('/chatbot/start');
     expect(channel).not.toContain('alert(');
   });

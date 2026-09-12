@@ -29,47 +29,37 @@ describe('Governance Sphere — demo contract', () => {
     expect(phases).toEqual(new Set(['Detect', 'Govern', 'Prove', 'Automate']));
   });
 
-  it('keeps lazy host + reduced-motion fallback (not mounted on public MainLanding)', () => {
+  it('is lazy-hosted from MainLanding with reduced-motion fallback path', () => {
     const host = readFileSync(
       resolve(__dirname, '../../src/components/governance-frontend/GovernanceSphereHost.tsx'),
       'utf8',
     );
     const landing = readFileSync(resolve(__dirname, '../../src/pages/MainLanding.tsx'), 'utf8');
-    const backdrop = readFileSync(
-      resolve(__dirname, '../../src/components/landing/HeroEarthBackdrop.tsx'),
-      'utf8',
-    );
     expect(host).toContain('lazy(');
     expect(host).toContain('prefers-reduced-motion');
     expect(host).toContain('GovernanceSphereFallback');
     expect(host).toContain('SPHERE_DEMO_LABEL');
     expect(host).toContain('DEMO DATA');
-    // Public landing: interactive photoreal Earth — not Governance Sphere HUD.
-    expect(landing).not.toContain('GovernanceSphereHost');
-    expect(landing).toContain('HeroEarthBackdrop');
-    expect(backdrop).toContain('data-hero-visual="earth-universe"');
-    expect(backdrop).toContain('data-landing-earth');
-    expect(backdrop).not.toContain('GovernanceSphereHost');
-    // Decorative layers stay non-interactive; canvas hit-target is explicit.
-    expect(backdrop).toMatch(/hero-earth-static pointer-events-none|pointer-events-none absolute inset-0/);
+    // Public `/`: Dominik left copy + right GovernanceSphereHost (DEMO-labeled).
+    expect(landing).toContain('GovernanceSphereHost');
+    expect(landing).not.toContain('HeroEarthBackdrop');
   });
 
-  it('landing Earth scene is interactive 8K-capable without Sphere HUD', () => {
+  it('HeroEarthBackdrop remains available as preview scenery (not mounted on /)', () => {
+    const backdrop = readFileSync(
+      resolve(__dirname, '../../src/components/landing/HeroEarthBackdrop.tsx'),
+      'utf8',
+    );
     const scene = readFileSync(
       resolve(__dirname, '../../src/components/landing/HeroEarthBackdropScene.tsx'),
       'utf8',
     );
+    expect(backdrop).toContain('data-hero-visual="earth-universe"');
+    expect(backdrop).toContain('data-landing-earth');
+    expect(backdrop).not.toContain('GovernanceSphereHost');
     expect(scene).toContain('PhotorealEarthMesh');
-    expect(scene).toContain('detectEarthQuality');
-    expect(scene).toContain('SphereGeography');
-    expect(scene).toContain("layers={['borders', 'continents']}");
-    expect(scene).toContain('DragOrbitSurface');
-    expect(scene).toContain('ModestZoom');
-    expect(scene).toContain('frameloop="demand"');
-    expect(scene).toContain('useProgressiveEarthQuality');
     expect(scene).not.toContain('GOVERNANCE_SPHERE_NODES');
     expect(scene).not.toContain('SPHERE_DEMO_LABEL');
-    expect(scene).not.toContain('Coming Soon');
   });
 
   it('renders photoreal Earth (day texture), not wireframe-only mesh', () => {

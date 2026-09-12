@@ -49,12 +49,12 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     status: 'live',
     group: 'surface',
     description:
-      'Europe-OS Hero-Copy (AI Compliance Operations OS for Europe — Free Audit + Live Dashboard) über Sovereign Night: interaktive Photoreal-Earth full-bleed (kein Europe-Panel, kein Sphere-HUD).',
+      'Dominik Dark/Gold Hero (AI Governance, Running in Real Time) — left copy + right GovernanceSphereHost DEMO-HUD; cream CTAs; Starter/Growth/Agency pricing.',
     route: '/',
     evidence: [
       'src/pages/MainLanding.tsx',
       'src/components/governance-frontend/hero-content.ts',
-      'src/components/landing/HeroEarthBackdrop.tsx',
+      'src/components/governance-frontend/GovernanceSphereHost.tsx',
       'test/landing/platform-capabilities.test.ts',
     ],
     showOnRoadmap: false,
@@ -216,18 +216,16 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
   {
     id: 'hero-earth-scenery',
     name: 'Photoreal Earth Hero',
-    status: 'live',
+    status: 'preview',
     group: 'visual',
     description:
-      'Interaktive photoreal Weltkugel auf / (8K Desktop / 4K Mobile, Orbit/Drag, Zoom, Ländergrenzen on hover). Full-bleed hinter Hero-Copy — kein Europe-Crop-Panel, kein Sphere-HUD, keine Fake-KPIs.',
-    route: '/',
+      'Photoreal Earth backdrop components exist (HeroEarthBackdrop) but are not the live `/` hero — `/` uses GovernanceSphereHost again.',
     evidence: [
       'src/components/landing/HeroEarthBackdrop.tsx',
       'src/components/landing/HeroEarthBackdropScene.tsx',
       'src/components/visual/earthTextures.ts',
-      'PR #1338',
     ],
-    showOnRoadmap: false,
+    showOnRoadmap: true,
   },
   {
     id: 'pricing-monthly',
@@ -376,15 +374,17 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
   {
     id: 'governance-sphere-interactive',
     name: 'Interactive Governance Sphere',
-    status: 'coming-soon',
+    status: 'live',
     group: 'visual',
     description:
-      'Interaktive Sphere mit DEMO-HUD — Code vorhanden, nicht auf öffentlichem / gemountet.',
+      'Interaktive Sphere mit DEMO/SIMULATED-HUD auf öffentlichem `/` (GovernanceSphereHost) — keine Fake-Live-KPIs.',
+    route: '/',
     evidence: [
       'src/components/governance-frontend/GovernanceSphereHost.tsx',
+      'src/pages/MainLanding.tsx',
       'test/landing/governance-sphere.test.ts',
     ],
-    showOnRoadmap: true,
+    showOnRoadmap: false,
   },
   {
     id: 'pricing-yearly',

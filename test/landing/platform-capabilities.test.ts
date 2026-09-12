@@ -167,7 +167,7 @@ describe('Erreichbarkeit — fertige Seiten sind von der Startseite aus verlinkt
   });
 
   it('Header-CTA folgt der Governance-OS-Hierarchie', () => {
-    expect(shell).toContain('Free Audit starten');
+    expect(shell).toContain('Kostenlosen Governance Scan starten');
     expect(shell).toContain("to: '/governance-runtime'");
     expect(shell).toContain('PublicDarkHeader');
   });
@@ -275,12 +275,11 @@ describe('Hero-Panel — Beispiel ist als Beispiel gekennzeichnet', () => {
     // darunter vier hartkodierte Zahlen. Ein anonymer Besucher hat keinen
     // Tenant — dort ist nichts messbar, also darf dort nichts gemessen
     // aussehen (Truth Layer, target-architecture.md §3.1).
-    // Public `/` uses a non-interactive Earth backdrop — no sphere HUD / KPIs.
+    // Public `/`: Dominik left/right hero with GovernanceSphereHost DEMO-HUD.
     expect(landing).not.toContain('GOVERNANCE RUNTIME · LIVE');
-    expect(landing).not.toContain('GovernanceSphereHost');
-    expect(landing).not.toContain('HeroCyanNetwork');
-    expect(landing).toContain('HeroEarthBackdrop');
-    expect(landing).not.toContain('RUNTIME_PREVIEW_CARDS');
+    expect(landing).toContain('RUNTIME_PREVIEW_LABEL');
+    expect(landing).toContain('GovernanceSphereHost');
+    expect(landing).not.toContain('HeroEarthBackdrop');
     expect(sphereNodes).toMatch(/DEMO\s*\/\s*SIMULATED/);
   });
 

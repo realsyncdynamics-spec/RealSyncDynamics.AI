@@ -49,12 +49,12 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     status: 'live',
     group: 'surface',
     description:
-      'Dominik Dark/Gold Hero (AI Governance, Running in Real Time) — left copy + right HeroEuropeSunrise (Europe + sunrise); cream CTAs; Starter/Growth/Agency pricing.',
+      'Dominik Dark/Gold Hero (AI Governance, Running in Real Time) — cream copy on photoreal Earth backdrop; scan → /audit; Starter/Growth/Agency pricing. No Sphere HUD.',
     route: '/',
     evidence: [
       'src/pages/MainLanding.tsx',
       'src/components/governance-frontend/hero-content.ts',
-      'src/components/landing/HeroEuropeSunrise.tsx',
+      'src/components/landing/HeroEarthBackdrop.tsx',
       'test/landing/platform-capabilities.test.ts',
     ],
     showOnRoadmap: false,
@@ -215,16 +215,17 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
   },
   {
     id: 'hero-earth-scenery',
-    name: 'Europe + Sunrise Hero Scenery',
+    name: 'Photoreal Earth Hero Backdrop',
     status: 'live',
     group: 'visual',
     description:
-      'Public `/` right-column scenery: Europe (europe-globe) + Dark/Gold sunrise — not an interactive whole-Earth orbit globe, no Sphere HUD.',
+      'Public `/` full-bleed HeroEarthBackdrop (8K day+night scenery, pointer-events-none) — Earth behind Dominik copy, no Sphere widget, no continent HUD.',
     route: '/',
     evidence: [
-      'src/components/landing/HeroEuropeSunrise.tsx',
+      'src/components/landing/HeroEarthBackdrop.tsx',
+      'src/components/landing/HeroEarthBackdropScene.tsx',
       'src/pages/MainLanding.tsx',
-      'public/europe-globe.webp',
+      'src/components/visual/earthTextures.ts',
     ],
     showOnRoadmap: false,
   },
@@ -378,7 +379,7 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     status: 'preview',
     group: 'visual',
     description:
-      'GovernanceSphereHost (DEMO/SIMULATED-HUD, orbit Earth) exists as component — not mounted on public `/` (Europe+sunrise scenery instead).',
+      'GovernanceSphereHost (DEMO/SIMULATED-HUD, orbit Earth) exists as component — not mounted on public `/` (Earth backdrop scenery instead).',
     evidence: [
       'src/components/governance-frontend/GovernanceSphereHost.tsx',
       'test/landing/governance-sphere.test.ts',

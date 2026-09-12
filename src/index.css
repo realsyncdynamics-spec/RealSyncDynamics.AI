@@ -1047,14 +1047,11 @@ html, body {
   }
 }
 
-/* ── Public landing Earth — canvas receives pointer; decorative layers do not ── */
-.hero-earth-backdrop {
-  pointer-events: none;
-}
-
+/* ── Public landing Earth — passive full-bleed backdrop; CTAs stay clickable ── */
+.hero-earth-backdrop,
 .hero-earth-backdrop [data-landing-earth],
 .hero-earth-backdrop [data-landing-earth] canvas {
-  pointer-events: auto;
+  pointer-events: none;
 }
 
 /* Static fallback: night Europe crop — keep land/city lights readable */

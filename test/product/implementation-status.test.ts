@@ -21,7 +21,7 @@ describe('implementation-status registry', () => {
     }
   });
 
-  it('keeps yearly billing off live; Europe scenery live on /; sphere not on /', () => {
+  it('keeps yearly billing off live; Earth backdrop live on /; sphere not on /', () => {
     expect(isImplementationLive('pricing-yearly')).toBe(false);
     expect(isImplementationLive('governance-sphere-interactive')).toBe(false);
     expect(isImplementationLive('hero-earth-scenery')).toBe(true);

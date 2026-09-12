@@ -1,9 +1,10 @@
 /**
  * Public landing hero backdrop — full-bleed photoreal Earth (desktop fill).
  *
- * Interactive 3D globe (orbit / modest zoom / border hover) on the canvas only.
- * No Governance Sphere HUD, DEMO chrome, or cream sun disc.
- * Static Europe night plane remains under the WebGL layer for first paint.
+ * Passive scenery behind Dominik copy: pointer-events none so CTAs stay
+ * clickable. WebGL day/night mesh may idle-rotate; no drag HUD, no Sphere
+ * DEMO chrome, no continent UI labels. Static Europe night plane under WebGL
+ * for first paint.
  */
 import { Suspense, useEffect, useState } from 'react';
 import { HeroEarthBackdropScene } from './HeroEarthBackdropScene';
@@ -157,10 +158,8 @@ export function HeroEarthBackdrop() {
       data-hero-visual="earth-universe"
       data-earth-palette="landing-gold"
       data-hero-lighting="night-rim"
-      data-landing-earth={use3d ? 'interactive' : 'static'}
-      aria-hidden={use3d ? undefined : true}
-      aria-label={use3d ? 'Interaktive Erdkugel — ziehen zum Drehen, Rad zum Zoomen' : undefined}
-      role={use3d ? 'img' : undefined}
+      data-landing-earth={use3d ? 'scenery' : 'static'}
+      aria-hidden="true"
     >
       {/* Deep space base */}
       <div

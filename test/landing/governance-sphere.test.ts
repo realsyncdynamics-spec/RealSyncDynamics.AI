@@ -40,17 +40,13 @@ describe('Governance Sphere — demo contract', () => {
     expect(host).toContain('GovernanceSphereFallback');
     expect(host).toContain('SPHERE_DEMO_LABEL');
     expect(host).toContain('DEMO DATA');
-    // Public `/`: Dominik left copy + Europe sunrise scenery (no Sphere HUD).
-    expect(landing).toContain('HeroEuropeSunrise');
+    // Public `/`: Dominik cream copy on HeroEarthBackdrop (no Sphere HUD).
+    expect(landing).toContain('HeroEarthBackdrop');
     expect(landing).not.toContain('GovernanceSphereHost');
-    expect(landing).not.toContain('HeroEarthBackdrop');
+    expect(landing).not.toContain('HeroEuropeSunrise');
   });
 
-  it('HeroEuropeSunrise is the live `/` scenery; interactive Earth stays off `/`', () => {
-    const europe = readFileSync(
-      resolve(__dirname, '../../src/components/landing/HeroEuropeSunrise.tsx'),
-      'utf8',
-    );
+  it('HeroEarthBackdrop is the live `/` scenery; Sphere stays off `/`', () => {
     const backdrop = readFileSync(
       resolve(__dirname, '../../src/components/landing/HeroEarthBackdrop.tsx'),
       'utf8',
@@ -59,14 +55,12 @@ describe('Governance Sphere — demo contract', () => {
       resolve(__dirname, '../../src/components/landing/HeroEarthBackdropScene.tsx'),
       'utf8',
     );
-    expect(europe).toContain('data-hero-visual="europe-sunrise"');
-    expect(europe).toContain('/europe-globe');
-    expect(europe).toContain('hero-sunrise');
-    expect(europe).not.toContain('GovernanceSphereHost');
-    expect(europe).not.toContain('SPHERE_DEMO_LABEL');
-    expect(europe).not.toContain('GOVERNANCE_SPHERE_NODES');
+    const landing = readFileSync(resolve(__dirname, '../../src/pages/MainLanding.tsx'), 'utf8');
+    expect(landing).toContain('HeroEarthBackdrop');
     expect(backdrop).toContain('data-hero-visual="earth-universe"');
+    expect(backdrop).toContain('data-landing-earth');
     expect(backdrop).not.toContain('GovernanceSphereHost');
+    expect(backdrop).not.toContain('SPHERE_DEMO_LABEL');
     expect(scene).toContain('PhotorealEarthMesh');
     expect(scene).not.toContain('GOVERNANCE_SPHERE_NODES');
     expect(scene).not.toContain('SPHERE_DEMO_LABEL');

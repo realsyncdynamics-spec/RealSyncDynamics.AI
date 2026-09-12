@@ -43,7 +43,7 @@ export function BrowserTopBar({
       </button>
 
       {/* Logo + Produktname — OS system-bar identity */}
-      <Link to="/app" className="flex items-center gap-2 shrink-0">
+      <Link to="/app/dashboard" className="flex items-center gap-2 shrink-0">
         <div className="w-7 h-7 bg-[#e4cfa2] flex items-center justify-center">
           <Sparkles className="h-4 w-4 text-obsidian-950" />
         </div>

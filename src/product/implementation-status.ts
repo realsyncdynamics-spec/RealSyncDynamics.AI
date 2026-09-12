@@ -129,12 +129,15 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     status: 'live',
     group: 'runtime',
     description:
-      'ComplianceStatusDashboard unter /app/dashboard — Dark/Gold Chrome, Agent OS Intent, ehrliche Empty States.',
+      'ComplianceStatusDashboard unter /app/dashboard — Dark/Gold Chrome, ehrliche Empty States, Bootstrap-Nächste-Schritte (Domain/Audit/Activation), Framework-Strip mit LIVE/BETA/ROADMAP.',
     route: '/app/dashboard',
     evidence: [
       'src/features/governance/dashboard/ComplianceStatusDashboard.tsx',
+      'src/features/governance/dashboard/workspaceBootstrapSteps.ts',
       'src/features/governance/agent-os/AgentOsPanel.tsx',
       'src/components/governance-os/BrowserTopBar.tsx',
+      'src/components/governance-os/governanceModules.ts',
+      'test/features/governance/dashboard/dashboard-chrome-wiring.test.ts',
     ],
     showOnPlatform: true,
   },
@@ -464,7 +467,8 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     name: 'TISAX / DORA Frameworks',
     status: 'coming-soon',
     group: 'compliance',
-    description:       'Framework-Reifegrade im Command Center als Roadmap markiert.',
+    description:
+      'Framework-Strip markiert TISAX/DORA als Roadmap ohne eigene Route — kein Fake-LIVE, kein Policy-Packs-Alias.',
     evidence: ['src/features/governance/dashboard/ComplianceStatusDashboard.tsx'],
     showOnRoadmap: true,
   },

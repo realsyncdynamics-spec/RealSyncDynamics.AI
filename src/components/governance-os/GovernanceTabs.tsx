@@ -66,8 +66,19 @@ export function GovernanceTabs() {
   const { plan } = useActivePlan();
   const [dockOpen, setDockOpen] = useState(false);
 
-  const isActive = (route: string) =>
-    route === '/app' ? pathname === '/app' : pathname.startsWith(route);
+  const isActive = (route: string) => {
+    if (route === '/app/dashboard' || route === '/app') {
+      return (
+        pathname === '/app' ||
+        pathname === '/app/dashboard' ||
+        pathname === '/app/overview'
+      );
+    }
+    if (route === '/app/home') {
+      return pathname === '/app/home';
+    }
+    return pathname.startsWith(route);
+  };
 
   // Accessible tabs shown normally; inaccessible shown as locked ghost tabs
   const accessibleTabs = TAB_MODULES.filter((m) => canAccessModule(m, plan));

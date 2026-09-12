@@ -370,6 +370,7 @@ export function Welcome() {
                 )}
               </div>
 
+              {isPostCheckoutWizard && (
               <div className="mb-12 flex items-center justify-center gap-3 lg:justify-start">
                 {[1, 2, 3].map((s) => {
                   const isCompleted = step > s;
@@ -392,6 +393,7 @@ export function Welcome() {
                   );
                 })}
               </div>
+              )}
 
               {error && (
                 <div className="mb-8 flex items-start gap-3 rounded-none border border-red-900 bg-red-950/30 p-4">

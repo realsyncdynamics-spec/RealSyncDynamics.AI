@@ -52,6 +52,7 @@
     "stripe:sync": "tsx scripts/sync-stripe-catalog.ts --apply",
     "sync:main": "node scripts/sync-with-main.mjs",
     "merge:hygiene": "node scripts/merge-hygiene.mjs",
+    "check:landing-claims": "node scripts/check-landing-claims.mjs",
     "migrate:rename": "node scripts/rename-migration.mjs"
   },
   "dependencies": {

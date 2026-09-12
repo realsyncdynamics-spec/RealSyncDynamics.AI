@@ -18,8 +18,8 @@ export const LANDING_SUN_POSITION = new THREE.Vector3(-2.85, 0.35, 1.55);
 function LimbLight() {
   return (
     <group position={LANDING_SUN_POSITION.toArray() as [number, number, number]}>
-      <pointLight color="#ffe0b0" intensity={1.55} distance={30} decay={2} />
-      <pointLight color="#e4cfa2" intensity={0.55} distance={20} decay={2} position={[0.5, -0.25, 0.35]} />
+      <pointLight color="#ffe0b0" intensity={1.85} distance={32} decay={2} />
+      <pointLight color="#e4cfa2" intensity={0.7} distance={22} decay={2} position={[0.5, -0.25, 0.35]} />
     </group>
   );
 }
@@ -75,10 +75,10 @@ export function HeroEarthBackdropScene({ reducedMotion = false }: HeroEarthBackd
         gl.setClearColor(0x000000, 0);
       }}
     >
-      <ambientLight intensity={0.2} color="#d8c9a8" />
-      <directionalLight position={[sun.x, sun.y, sun.z]} intensity={1.85} color="#fff1d6" />
-      <directionalLight position={[2.4, 0.6, 1.8]} intensity={0.28} color="#8a9bb0" />
-      <directionalLight position={[-1.2, -1.4, 2.0]} intensity={0.22} color="#b49a6b" />
+      <ambientLight intensity={0.16} color="#d8c9a8" />
+      <directionalLight position={[sun.x, sun.y, sun.z]} intensity={2.05} color="#fff1d6" />
+      <directionalLight position={[2.4, 0.6, 1.8]} intensity={0.32} color="#8a9bb0" />
+      <directionalLight position={[-1.2, -1.4, 2.0]} intensity={0.28} color="#b49a6b" />
       <LimbLight />
       <SlowEarth reducedMotion={reducedMotion} />
     </Canvas>

@@ -99,15 +99,15 @@ function WarmRimLight() {
       <div
         className="absolute"
         style={{
-          left: '-4%',
-          top: '28%',
-          width: 'min(26vw, 300px)',
-          height: 'min(40vw, 460px)',
+          left: '-2%',
+          top: '22%',
+          width: 'min(32vw, 380px)',
+          height: 'min(48vw, 560px)',
           borderRadius: '50%',
           background:
-            'radial-gradient(ellipse at 70% 50%, rgba(228,207,162,0.16) 0%, rgba(180,140,80,0.06) 40%, transparent 68%)',
-          filter: 'blur(26px)',
-          opacity: 0.5,
+            'radial-gradient(ellipse at 72% 48%, rgba(228,207,162,0.28) 0%, rgba(180,140,80,0.1) 36%, transparent 68%)',
+          filter: 'blur(22px)',
+          opacity: 0.65,
         }}
       />
     </div>

@@ -51,3 +51,11 @@ export const LANDING_GREEN = '#20d69a';
 
 /** Haarlinie. */
 export const LANDING_LINE = 'rgba(220, 210, 190, 0.18)';
+
+/**
+ * Fluid type scales — balanced for 768→1440+.
+ * Previous clamp(42px, 5.8vw, 72px) orphaned “Time” and overpowered the Earth.
+ */
+export const LANDING_H1 = 'clamp(1.75rem, 1.1rem + 2.4vw, 2.75rem)'; // ~28–44px
+export const LANDING_H2 = 'clamp(1.6rem, 1rem + 1.8vw, 2.375rem)'; // ~26–38px
+export const LANDING_H2_LG = 'clamp(1.7rem, 1.05rem + 2vw, 2.5rem)'; // section display

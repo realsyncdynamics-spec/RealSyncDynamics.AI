@@ -41,14 +41,15 @@ export interface PhotorealEarthMeshProps {
 }
 
 const LANDING_GOLD = {
-  dayTint: '#e8ddc8',
+  /** Subtle warm multiply — never near-white cream that washes continents. */
+  dayTint: '#cfc8bc',
   atmosphereGlow: '#e4cfa2',
   atmosphereWarm: '#ffe0b0',
-  outerGlow: '#c4a06a',
+  outerGlow: '#d4b07a',
   specular: new THREE.Vector3(0.95, 0.82, 0.55),
   clouds: new THREE.Vector3(0.96, 0.9, 0.78),
-  /** Bright city lights — Europe night network must read as a real planet. */
-  nightIntensity: 2.05,
+  /** Dense city-light network — Europe night must dominate the hero. */
+  nightIntensity: 2.55,
 } as const;
 
 function configureMap(tex: THREE.Texture, anisotropy: number, colorSpace?: THREE.ColorSpace) {
@@ -106,7 +107,7 @@ function AtmosphereShell({
         uSun: {
           value: (sunDirection ?? new THREE.Vector3(-0.75, -0.35, 0.4)).clone().normalize(),
         },
-        uIntensity: { value: reducedMotion ? (gold ? 0.48 : 0.7) : gold ? 0.72 : 1.18 },
+        uIntensity: { value: reducedMotion ? (gold ? 0.55 : 0.7) : gold ? 0.88 : 1.18 },
         uGold: { value: gold ? 1.0 : 0.0 },
       },
       vertexShader: /* glsl */ `
@@ -131,14 +132,15 @@ function AtmosphereShell({
         varying vec3 vView;
         varying vec3 vNormalW;
         void main() {
-          float fresnel = pow(1.0 - abs(dot(vNormal, vView)), 2.35);
-          float rim = smoothstep(0.04, 0.92, fresnel);
-          // Subtle warm limb — never a cream disc over the planet.
-          float sunSide = smoothstep(-0.2, 0.75, dot(normalize(vNormalW), normalize(uSun)));
-          float warmMix = mix(0.28, 0.48, uGold) * sunSide;
+          float fresnel = pow(1.0 - abs(dot(vNormal, vView)), 2.15);
+          float rim = smoothstep(0.02, 0.9, fresnel);
+          float sunSide = smoothstep(-0.25, 0.8, dot(normalize(vNormalW), normalize(uSun)));
+          float warmMix = mix(0.28, 0.62, uGold) * sunSide;
           vec3 col = mix(uGlow, uWarm, warmMix);
-          col = mix(col, col * vec3(1.06, 0.94, 0.72), uGold * sunSide * 0.28);
-          gl_FragColor = vec4(col, rim * uIntensity * mix(1.0, 0.7 + sunSide * 0.28, uGold));
+          // Dense gold limb chrome — readable terminator, not cream wash.
+          col = mix(col, col * vec3(1.1, 0.94, 0.68), uGold * sunSide * 0.4);
+          float alpha = rim * uIntensity * mix(1.0, 0.78 + sunSide * 0.4, uGold);
+          gl_FragColor = vec4(col, alpha);
         }
       `,
     });
@@ -167,7 +169,7 @@ function OuterGlow({ radius, palette }: { radius: number; palette: EarthPalette 
       <meshBasicMaterial
         color={gold ? LANDING_GOLD.outerGlow : '#2f82c4'}
         transparent
-        opacity={gold ? 0.08 : 0.12}
+        opacity={gold ? 0.12 : 0.12}
         side={THREE.BackSide}
         depthWrite={false}
         toneMapped={false}
@@ -380,13 +382,15 @@ export function PhotorealEarthMesh({
               uniform vec3 uLight;
               varying vec3 vNormalW;
               void main() {
-                float ndl = dot(normalize(vNormalW), normalize(uLight));
-                float night = 1.0 - smoothstep(-0.2, 0.4, ndl);
-                float term = 1.0 - smoothstep(0.0, 0.35, abs(ndl));
-                // Darken night side; warm amber on the terminator only.
-                vec3 amber = vec3(1.0, 0.72, 0.35);
-                float a = night * 0.72 + term * 0.12;
-                vec3 col = mix(vec3(0.02, 0.02, 0.03), amber * 0.35, term * 0.55);
+                vec3 N = normalize(vNormalW);
+                vec3 L = normalize(uLight);
+                float ndl = dot(N, L);
+                float night = 1.0 - smoothstep(-0.18, 0.45, ndl);
+                float term = 1.0 - smoothstep(0.0, 0.32, abs(ndl));
+                // Darken night; stronger amber terminator chrome.
+                vec3 amber = vec3(1.05, 0.74, 0.32);
+                float a = night * 0.68 + term * 0.22;
+                vec3 col = mix(vec3(0.015, 0.015, 0.02), amber * 0.55, term * 0.7);
                 gl_FragColor = vec4(col, a);
               }
             `}
@@ -427,13 +431,13 @@ export function PhotorealEarthMesh({
               varying vec3 vNormalW;
               void main() {
                 float ndl = dot(normalize(vNormalW), normalize(uLight));
-                float night = smoothstep(0.18, -0.18, ndl);
+                float night = smoothstep(0.22, -0.12, ndl);
                 vec3 lights = texture2D(uNight, vUv).rgb;
                 float luma = max(lights.r, max(lights.g, lights.b));
-                vec3 glow = lights * lights * 2.8 + lights * 0.95;
-                // Landing gold: amber city network — still photoreal, not cyan.
-                glow = mix(glow, vec3(glow.r * 1.28, glow.g * 0.95, glow.b * 0.4), uWarm);
-                float side = mix(1.0, 1.05, uWarm);
+                vec3 glow = lights * lights * 3.2 + lights * 1.15;
+                // Landing gold: dense amber city network — still photoreal, not cyan.
+                glow = mix(glow, vec3(glow.r * 1.35, glow.g * 0.98, glow.b * 0.38), uWarm);
+                float side = mix(1.0, 1.12, uWarm);
                 gl_FragColor = vec4(glow * uIntensity, night * luma * side);
               }
             `}

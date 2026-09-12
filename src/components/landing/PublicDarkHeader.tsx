@@ -18,6 +18,7 @@ import {
  * Evidence / Module open real OS surfaces (`/app/evidence`, `/app/modules`);
  * public visitors go via `/welcome?next=…`. Runtime stays the public
  * `/governance-runtime` page. Scan CTA remains canonical `/audit`.
+ * Roadmap anchors the automated product registry on `/#roadmap`.
  */
 type NavLink =
   | { label: string; to: string; className?: string; osEntry?: false }
@@ -28,6 +29,7 @@ const LINKS: readonly NavLink[] = [
   { label: 'Runtime', to: '/governance-runtime' },
   { label: 'Branchen', to: '/branchen' },
   { label: 'Evidence', to: '/app/evidence', osEntry: true },
+  { label: 'Roadmap', to: '/#roadmap', className: 'hidden lg:block' },
   { label: 'Module', to: '/app/modules', className: 'hidden lg:block', osEntry: true },
   { label: 'EU AI Act', to: '/ai-act', className: 'hidden xl:block' },
   { label: 'Sicherheit', to: '/sicherheit', className: 'hidden xl:block' },

@@ -1,57 +1,119 @@
 /**
- * Builder entitlement adapter + upgrade copy — studio consumes pricing SSoT,
- * never invents a second ladder or plan-name gates.
+ * Builder entitlement adapter — consumes siteos.builder / siteos.publish /
+ * limit.sites only (Monetisierung SSoT). No second price ladder.
  */
 
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { planById } from '../../shared/pricing';
 import {
+  ENTITLEMENT_KEYS,
+  planById,
+  planGrants,
+} from '../../shared/pricing';
+import {
+  SITEOS_BUILDER_KEY,
+  SITEOS_PUBLISH_KEY,
+  SITEOS_SITES_LIMIT_KEY,
   builderUpgradeHref,
   canOpenAppBuilder,
+  canPublishSite,
   canUseFrontendDesigner,
-  isWithinBuilderRuns,
   isWithinSiteCap,
   resolveBuilderEntitlements,
+  siteosSsotReady,
   studioPreviewUntilSsot,
 } from '../../src/features/siteos/builderEntitlements';
 import { CI_FORBIDDEN_CTA } from '../../src/content/runtimeVocab';
 
 const ROOT = resolve(__dirname, '../..');
 
-describe('builderEntitlements — thin SSoT adapter', () => {
-  it('marks ssotReady false until permissions.appBuilder exists', () => {
+describe('builderEntitlements — siteos.* keys', () => {
+  it('uses canonical entitlement key constants', () => {
+    expect(SITEOS_BUILDER_KEY).toBe('siteos.builder');
+    expect(SITEOS_PUBLISH_KEY).toBe('siteos.publish');
+    expect(SITEOS_SITES_LIMIT_KEY).toBe('limit.sites');
+  });
+
+  it('ssotReady tracks whether siteos.builder is in ENTITLEMENT_KEYS', () => {
+    const inKeys = (ENTITLEMENT_KEYS as readonly string[]).includes('siteos.builder');
+    expect(siteosSsotReady()).toBe(inKeys);
+  });
+
+  it('resolves from useEntitlements feature map without inventing permissions', () => {
+    const snap = resolveBuilderEntitlements('free', {
+      'siteos.builder': 1,
+      'siteos.publish': 0,
+      'limit.sites': 1,
+    });
+    // Live features win even if SSoT on this branch is still pending.
+    expect(snap.builder).toBe(true);
+    expect(snap.publish).toBe(false);
+    expect(snap.sites).toBe(1);
+  });
+
+  it('gates studio on siteos.builder once SSoT is ready', () => {
     const free = resolveBuilderEntitlements('free');
     const starter = resolveBuilderEntitlements('starter');
-    const hasKey = Object.prototype.hasOwnProperty.call(
-      planById('starter').permissions,
-      'appBuilder',
-    );
-    if (!hasKey) {
-      expect(free.ssotReady).toBe(false);
-      expect(starter.ssotReady).toBe(false);
+    if (!siteosSsotReady()) {
       expect(canOpenAppBuilder(free)).toBe(false);
       expect(canOpenAppBuilder(starter)).toBe(false);
       expect(studioPreviewUntilSsot(starter)).toBe(true);
-    } else {
-      expect(free.ssotReady).toBe(true);
-      expect(canOpenAppBuilder(free)).toBe(false);
-      expect(canOpenAppBuilder(starter)).toBe(true);
-      expect(studioPreviewUntilSsot(starter)).toBe(false);
+      return;
     }
+    expect(canOpenAppBuilder(free)).toBe(false);
+    expect(canOpenAppBuilder(starter)).toBe(true);
+    expect(canUseFrontendDesigner(starter)).toBe(true);
+    expect(canUseFrontendDesigner(free)).toBe(false);
+    expect(studioPreviewUntilSsot(starter)).toBe(false);
+    expect(planGrants('starter', 'siteos.builder')).toBe(true);
+    expect(planGrants('free_audit', 'siteos.builder')).toBe(false);
   });
 
-  it('never uses plan-name string compares in the adapter source', () => {
+  it('Frontend Designer follows siteos.builder (no separate permission)', () => {
     const src = readFileSync(
       resolve(ROOT, 'src/features/siteos/builderEntitlements.ts'),
       'utf8',
     );
-    // Strip block comments so documentation examples do not false-positive.
+    const code = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
+    expect(code).not.toMatch(/frontendDesigner/);
+    expect(code).not.toMatch(/builderRunsPerMonth/);
+    expect(code).not.toMatch(/appBuilder/);
+    expect(canUseFrontendDesigner(resolveBuilderEntitlements('starter'))).toBe(
+      canOpenAppBuilder(resolveBuilderEntitlements('starter')),
+    );
+  });
+
+  it('publish gate uses siteos.publish and never fakes deploy', () => {
+    if (!siteosSsotReady()) {
+      expect(canPublishSite(resolveBuilderEntitlements('starter'))).toBe(false);
+      return;
+    }
+    expect(canPublishSite(resolveBuilderEntitlements('free'))).toBe(false);
+    expect(canPublishSite(resolveBuilderEntitlements('starter'))).toBe(true);
+    // governance_launch: builder yes, publish no (when SSoT present)
+    const launch = resolveBuilderEntitlements('governance_launch');
+    if (launch.ssotReady) {
+      expect(launch.builder).toBe(true);
+      expect(launch.publish).toBe(false);
+    }
+  });
+
+  it('site cap uses limit.sites only', () => {
+    const snap = resolveBuilderEntitlements('starter', { 'limit.sites': 1 });
+    expect(isWithinSiteCap(snap, 0)).toBe(true);
+    expect(isWithinSiteCap({ ...snap, ssotReady: true, sites: 1 }, 1)).toBe(false);
+    expect(isWithinSiteCap({ ...snap, ssotReady: true, sites: -1 }, 99)).toBe(true);
+  });
+
+  it('never uses plan-name string compares in adapter code', () => {
+    const src = readFileSync(
+      resolve(ROOT, 'src/features/siteos/builderEntitlements.ts'),
+      'utf8',
+    );
     const code = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
     expect(code).not.toMatch(/plan\s*===\s*['"]agency['"]/);
     expect(code).not.toMatch(/planId\s*===\s*['"]agency['"]/);
-    expect(code).not.toMatch(/if\s*\(\s*plan\s*===\s*['"]starter['"]/);
   });
 
   it('does not invent a second price ladder', () => {
@@ -71,38 +133,10 @@ describe('builderEntitlements — thin SSoT adapter', () => {
     expect(href).not.toContain('yearly');
     expect(href).not.toContain('interval=year');
   });
-
-  it('limit helpers stay honest when SSoT caps exist', () => {
-    const snap = resolveBuilderEntitlements('starter');
-    if (!snap.ssotReady) {
-      expect(isWithinBuilderRuns(snap, 999)).toBe(true);
-      expect(isWithinSiteCap(snap, 999)).toBe(true);
-      return;
-    }
-    expect(isWithinBuilderRuns(snap, snap.builderRunsPerMonth)).toBe(false);
-    expect(isWithinSiteCap(snap, snap.sites)).toBe(false);
-    expect(isWithinBuilderRuns(snap, 0)).toBe(snap.builderRunsPerMonth !== 0);
-  });
-
-  it('frontendDesigner follows SSoT when present', () => {
-    const growth = resolveBuilderEntitlements('growth');
-    const starter = resolveBuilderEntitlements('starter');
-    if (!growth.ssotReady) {
-      expect(canUseFrontendDesigner(growth)).toBe(false);
-      return;
-    }
-    expect(canUseFrontendDesigner(starter)).toBe(
-      (planById('starter').permissions as { frontendDesigner?: boolean })
-        .frontendDesigner === true,
-    );
-    expect(canUseFrontendDesigner(growth)).toBe(
-      (planById('growth').permissions as { frontendDesigner?: boolean })
-        .frontendDesigner === true,
-    );
-  });
 });
 
 describe('Build studio — CTA + yearly regression', () => {
+  const strip = (s: string) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
   const studioSrc = readFileSync(
     resolve(ROOT, 'src/unified-entry/pages/BuildStudioPage.tsx'),
     'utf8',
@@ -113,30 +147,24 @@ describe('Build studio — CTA + yearly regression', () => {
   );
 
   it('locked studio and upgrade panel avoid forbidden CTA phrases', () => {
-    const strip = (s: string) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
-    const studioCode = strip(studioSrc);
-    const panelCode = strip(panelSrc);
     for (const phrase of CI_FORBIDDEN_CTA) {
-      expect(studioCode.toLowerCase()).not.toContain(phrase.toLowerCase());
-      expect(panelCode.toLowerCase()).not.toContain(phrase.toLowerCase());
+      expect(strip(studioSrc).toLowerCase()).not.toContain(phrase.toLowerCase());
+      expect(strip(panelSrc).toLowerCase()).not.toContain(phrase.toLowerCase());
     }
   });
 
   it('upgrade panel offers Plan freischalten or Enterprise anfragen only', () => {
     expect(panelSrc).toContain('Plan freischalten');
     expect(panelSrc).toContain('Enterprise anfragen');
-    const panelCode = panelSrc.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
-    for (const phrase of CI_FORBIDDEN_CTA) {
-      expect(panelCode.toLowerCase()).not.toContain(phrase.toLowerCase());
-    }
+    expect(panelSrc).not.toMatch(/runs_exhausted/);
+    expect(panelSrc).not.toMatch(/designer_locked/);
   });
 
   it('studio stays Preview for publish and does not fake deploy success', () => {
     expect(studioSrc).toMatch(/Preview · kein Publish/);
     expect(studioSrc).toMatch(/kein Live-Deploy|kein erfolgreiches Deploy/i);
-    const studioCode = studioSrc.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
-    expect(studioCode).not.toMatch(/Abo aktiv/);
-    expect(studioCode).not.toMatch(/Deploy erfolgreich|erfolgreich veröffentlicht/i);
+    expect(strip(studioSrc)).not.toMatch(/Abo aktiv/);
+    expect(strip(studioSrc)).not.toMatch(/Deploy erfolgreich|erfolgreich veröffentlicht/i);
   });
 
   it('yearly checkout remains unavailable on paid self-service plans', () => {
@@ -153,6 +181,7 @@ describe('Build studio — CTA + yearly regression', () => {
   it('renders upgrade panel when entitlement missing (not a 500)', () => {
     expect(studioSrc).toContain('BuilderUpgradePanel');
     expect(studioSrc).toContain('no_entitlement');
-    expect(studioSrc).toContain('runs_exhausted');
+    expect(studioSrc).toContain("canAccess('siteos.builder')");
+    expect(studioSrc).not.toContain('runs_exhausted');
   });
 });

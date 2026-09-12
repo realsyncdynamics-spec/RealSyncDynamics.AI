@@ -1,118 +1,168 @@
 /**
- * Thin read-only adapter — consumes builder entitlements from the pricing SSoT.
+ * Thin read-only adapter — SiteOS builder entitlements.
  *
- * Monetisierung owns `shared/pricing.ts` (appBuilder / frontendDesigner,
- * sites, builderRunsPerMonth). This module never invents a second price
- * ladder and never branches on plan-name string compares — only
- * plan.permissions / plan.limits.
+ * Canonical keys (Monetisierung SSoT / PR #1357):
+ *   - `siteos.builder`  — open /build, create/claim sites
+ *   - `siteos.publish`  — publish-gate / approve (public deploy stays Preview)
+ *   - `limit.sites`     — distinct SiteOS slugs (0/1/3/10/…)
  *
- * Until those keys land in the SSoT, `ssotReady` is false and the studio
- * stays Preview without pretending the customer already paid.
+ * Never invent `builderRunsPerMonth` or a `frontendDesigner` permission.
+ * Frontend Designer follows `siteos.builder`.
+ * Never edit shared/pricing.ts from this PR — consume only.
  */
 
 import {
+  ENTITLEMENT_KEYS,
   checkoutHrefForPlan,
-  minimumPlanForPermission,
+  hasPermission,
+  limitOf,
   planById,
+  planEntitlementValue,
+  planGrants,
   resolvePlan,
-  withinLimit,
+  type EntitlementKey,
   type Plan,
   type PlanId,
+  type PlanKey,
 } from '@/shared/pricing';
 
-/** Optional fields expected from Monetisierung's pricing PR. */
-type BuilderPermissionFields = {
-  appBuilder?: boolean;
-  frontendDesigner?: boolean;
-};
+/** Entitlement vocabulary — string constants, not plan-name branches. */
+export const SITEOS_BUILDER_KEY = 'siteos.builder' as EntitlementKey;
+export const SITEOS_PUBLISH_KEY = 'siteos.publish' as EntitlementKey;
+export const SITEOS_SITES_LIMIT_KEY = 'limit.sites' as EntitlementKey;
 
-type BuilderLimitFields = {
-  sites?: number;
-  builderRunsPerMonth?: number;
+/** Optional plan.permissions fields once Monetisierung lands. */
+type SiteOsPermissionFields = {
+  siteosBuilder?: boolean;
+  siteosPublish?: boolean;
 };
 
 export interface BuilderEntitlementSnapshot {
-  /** True once `permissions.appBuilder` exists on the resolved plan. */
+  /** True once `siteos.builder` exists in ENTITLEMENT_KEYS / PLAN_ENTITLEMENTS. */
   ssotReady: boolean;
-  appBuilder: boolean;
-  frontendDesigner: boolean;
-  /** SiteOS site cap. Separate from monitored `domains` assets. */
+  builder: boolean;
+  publish: boolean;
+  /** Distinct SiteOS site cap (`limit.sites`). `-1` = unlimited. */
   sites: number;
-  builderRunsPerMonth: number;
   planId: PlanId | null;
   planName: string | null;
+  planKey: string | null;
 }
 
-function asBuilderPermissions(plan: Plan): BuilderPermissionFields {
-  return plan.permissions as Plan['permissions'] & BuilderPermissionFields;
+/** Runtime feature map from `useEntitlements()` / `tenant_entitlements()`. */
+export type EntitlementFeatureMap = Record<string, boolean | number>;
+
+export function siteosSsotReady(): boolean {
+  return (ENTITLEMENT_KEYS as readonly string[]).includes(SITEOS_BUILDER_KEY);
 }
 
-function asBuilderLimits(plan: Plan): BuilderLimitFields {
-  return plan.limits as Plan['limits'] & BuilderLimitFields;
+function featureOn(features: EntitlementFeatureMap | null | undefined, key: string): boolean {
+  if (!features) return false;
+  const val = features[key];
+  return val === true || val === -1 || (typeof val === 'number' && val > 0);
+}
+
+function featureLimit(
+  features: EntitlementFeatureMap | null | undefined,
+  key: string,
+): number | null {
+  if (!features) return null;
+  const val = features[key];
+  return typeof val === 'number' ? val : null;
 }
 
 /**
- * Resolve builder entitlements from a plan id/key/object.
- * Missing SSoT keys ⇒ not entitled (ssotReady false), never a fake grant.
+ * Resolve from live tenant features (preferred) plus plan SSoT fallback.
+ *
+ * Order: `useEntitlements` feature map → `planGrants` / `hasPermission` /
+ * `limitOf` once SSoT keys exist. Missing SSoT ⇒ ssotReady false, never a
+ * fake paid grant.
  */
 export function resolveBuilderEntitlements(
   plan: Plan | PlanId | string | null | undefined,
+  features?: EntitlementFeatureMap | null,
 ): BuilderEntitlementSnapshot {
   const resolved = resolvePlan(plan);
+  const ssotReady = siteosSsotReady();
+  const planKey = resolved?.planKey ?? null;
+
   if (!resolved) {
     return {
-      ssotReady: false,
-      appBuilder: false,
-      frontendDesigner: false,
-      sites: 0,
-      builderRunsPerMonth: 0,
+      ssotReady,
+      builder: featureOn(features, SITEOS_BUILDER_KEY),
+      publish: featureOn(features, SITEOS_PUBLISH_KEY),
+      sites: featureLimit(features, SITEOS_SITES_LIMIT_KEY) ?? 0,
       planId: null,
       planName: null,
+      planKey: null,
     };
   }
 
-  const permissions = asBuilderPermissions(resolved);
-  const limits = asBuilderLimits(resolved);
-  const ssotReady = Object.prototype.hasOwnProperty.call(resolved.permissions, 'appBuilder');
+  const perms = resolved.permissions as Plan['permissions'] & SiteOsPermissionFields;
+
+  let builder = featureOn(features, SITEOS_BUILDER_KEY);
+  let publish = featureOn(features, SITEOS_PUBLISH_KEY);
+  let sites = featureLimit(features, SITEOS_SITES_LIMIT_KEY);
+
+  if (ssotReady) {
+    if (!builder) {
+      builder =
+        planGrants(planKey as PlanKey, SITEOS_BUILDER_KEY) ||
+        perms.siteosBuilder === true ||
+        hasPermission(resolved, 'siteosBuilder' as Parameters<typeof hasPermission>[1]);
+    }
+    if (!publish) {
+      publish =
+        planGrants(planKey as PlanKey, SITEOS_PUBLISH_KEY) ||
+        perms.siteosPublish === true ||
+        hasPermission(resolved, 'siteosPublish' as Parameters<typeof hasPermission>[1]);
+    }
+    if (sites === null) {
+      const fromEnt = planEntitlementValue(planKey as PlanKey, SITEOS_SITES_LIMIT_KEY);
+      if (typeof fromEnt === 'number') {
+        sites = fromEnt;
+      } else if (Object.prototype.hasOwnProperty.call(resolved.limits, 'sites')) {
+        sites = limitOf(resolved, 'sites' as Parameters<typeof limitOf>[1]);
+      } else {
+        sites = 0;
+      }
+    }
+  } else if (sites === null) {
+    sites = 0;
+  }
 
   return {
     ssotReady,
-    appBuilder: permissions.appBuilder === true,
-    frontendDesigner: permissions.frontendDesigner === true,
-    sites: typeof limits.sites === 'number' ? limits.sites : 0,
-    builderRunsPerMonth:
-      typeof limits.builderRunsPerMonth === 'number' ? limits.builderRunsPerMonth : 0,
+    builder,
+    publish,
+    sites: sites ?? 0,
     planId: resolved.id,
     planName: resolved.name,
+    planKey,
   };
 }
 
-/** Studio open when SSoT grants appBuilder. */
+/** Studio open when `siteos.builder` is granted (live features or SSoT). */
 export function canOpenAppBuilder(snapshot: BuilderEntitlementSnapshot): boolean {
-  return snapshot.ssotReady && snapshot.appBuilder;
+  return snapshot.builder;
 }
 
-/** Visual designer pane when SSoT grants frontendDesigner. */
+/** Frontend Designer shares `siteos.builder` — no separate permission. */
 export function canUseFrontendDesigner(snapshot: BuilderEntitlementSnapshot): boolean {
-  return snapshot.ssotReady && snapshot.frontendDesigner;
+  return snapshot.builder;
+}
+
+/** Publish-gate / approve — public deploy remains Preview regardless. */
+export function canPublishSite(snapshot: BuilderEntitlementSnapshot): boolean {
+  return snapshot.publish;
 }
 
 /**
- * While Monetisierung has not merged builder keys, the studio may open as
- * Preview for signed-in users — never as a paid entitlement.
+ * Soft Preview only when the SSoT vocabulary is not on this branch yet and
+ * the tenant also has no live `siteos.builder` grant. Never a fake paid plan.
  */
 export function studioPreviewUntilSsot(snapshot: BuilderEntitlementSnapshot): boolean {
-  return !snapshot.ssotReady;
-}
-
-export function isWithinBuilderRuns(
-  snapshot: BuilderEntitlementSnapshot,
-  usedThisMonth: number,
-): boolean {
-  if (!snapshot.ssotReady) return true; // no hard meter until SSoT defines the cap
-  if (snapshot.builderRunsPerMonth === -1) return true;
-  if (snapshot.builderRunsPerMonth <= 0) return false;
-  return usedThisMonth < snapshot.builderRunsPerMonth;
+  return !snapshot.ssotReady && !snapshot.builder;
 }
 
 export function isWithinSiteCap(
@@ -126,44 +176,18 @@ export function isWithinSiteCap(
 }
 
 /**
- * Upgrade target: cheapest plan that grants appBuilder once the field exists;
- * otherwise Starter checkout (documented Monetisierung entry plan).
+ * Upgrade target: Starter monthly checkout (first plan with siteos.builder).
+ * Never invent yearly checkout.
  */
-export function builderUpgradeHref(currentPlan?: Plan | PlanId | string | null): string {
-  const resolved = resolvePlan(currentPlan);
-  try {
-    // minimumPlanForPermission typing may lag until Monetisierung lands.
-    const min = minimumPlanForPermission(
-      'appBuilder' as Parameters<typeof minimumPlanForPermission>[0],
-    );
-    if (min) {
-      return checkoutHrefForPlan(planById(min), { source: 'build-studio-upgrade' });
-    }
-  } catch {
-    // Field not in PermissionKey yet — fall through.
-  }
-
-  // Next self-service step from free → starter; paid users still get Starter
-  // only when they lack the key (SSoT pending). Never invent yearly checkout.
-  if (!resolved || resolved.id === 'free') {
-    return checkoutHrefForPlan(planById('starter'), { source: 'build-studio-upgrade' });
-  }
+export function builderUpgradeHref(_currentPlan?: Plan | PlanId | string | null): string {
   return checkoutHrefForPlan(planById('starter'), { source: 'build-studio-upgrade' });
 }
 
-/** Limit-hit copy helper — uses withinLimit when the SSoT field exists. */
-export function builderRunsExhausted(
-  plan: Plan | PlanId | string | null | undefined,
-  used: number,
-): boolean {
-  const resolved = resolvePlan(plan);
-  if (!resolved) return true;
-  if (!Object.prototype.hasOwnProperty.call(resolved.limits, 'builderRunsPerMonth')) {
-    return false;
+/** Helper for `useEntitlements().canAccess('siteos.builder')` upgrade URLs. */
+export function upgradeHrefFromAccess(upgradeUrl?: string): string {
+  if (upgradeUrl && upgradeUrl.includes('/checkout/')) {
+    // Prefer monthly path; strip accidental yearly if present.
+    return upgradeUrl.replace(/_yearly/g, '').replace(/interval=year/g, 'interval=month');
   }
-  return !withinLimit(
-    resolved,
-    'builderRunsPerMonth' as Parameters<typeof withinLimit>[1],
-    used,
-  );
+  return builderUpgradeHref();
 }

@@ -287,7 +287,7 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     status: 'preview',
     group: 'billing',
     description:
-      'Studio liest appBuilder/frontendDesigner und sites/builderRunsPerMonth aus der Pricing-SSoT (Monetisierungs-PR). Bis die Keys liegen: ehrliche Preview-Banner, kein Fake-Abo.',
+      'Studio liest siteos.builder / siteos.publish / limit.sites via useEntitlements (Monetisierungs-PR). Publish bleibt Preview; kein Fake-Abo.',
     route: '/build',
     evidence: [
       'src/features/siteos/builderEntitlements.ts',

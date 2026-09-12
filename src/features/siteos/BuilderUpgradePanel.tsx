@@ -1,6 +1,6 @@
 /**
- * Dark / Gold / Cream upgrade surface for /build when appBuilder is missing.
- * Self-service checkout or Enterprise anfragen only — no outbound contact CTAs.
+ * Dark / Gold / Cream upgrade surface for /build when `siteos.builder` is missing
+ * or `limit.sites` is exhausted. Self-service checkout or Enterprise anfragen only.
  */
 
 import { Link } from 'react-router-dom';
@@ -14,8 +14,8 @@ import {
 
 export interface BuilderUpgradePanelProps {
   snapshot: BuilderEntitlementSnapshot;
-  reason: 'no_entitlement' | 'runs_exhausted' | 'sites_exhausted' | 'designer_locked';
-  /** Optional override (e.g. next plan after current). */
+  reason: 'no_entitlement' | 'sites_exhausted' | 'publish_locked';
+  /** Optional override (e.g. from useEntitlements().canAccess). */
   upgradeHref?: string;
 }
 
@@ -23,26 +23,21 @@ const COPY: Record<BuilderUpgradePanelProps['reason'], { title: string; body: st
   no_entitlement: {
     title: 'App Builder ist in Ihrem Plan nicht enthalten',
     body:
-      'Der DSGVO Web App Builder gehört ab Starter zur Governance Runtime. ' +
-      'Ohne Freischaltung bleibt das Studio gesperrt — kein Fehler, kein Fake-Zugang.',
-  },
-  runs_exhausted: {
-    title: 'Monatliches Builder-Kontingent erreicht',
-    body:
-      'Weitere Builder-Läufe sind in diesem Abrechnungszeitraum nicht freigeschaltet. ' +
-      'Upgrade erhöht das Kontingent — wir simulieren keinen erfolgreichen Lauf.',
+      'Der DSGVO Web App Builder gehört ab Starter zur Governance Runtime ' +
+      '(Berechtigung siteos.builder). Ohne Freischaltung bleibt das Studio gesperrt — ' +
+      'kein Fehler, kein Fake-Zugang.',
   },
   sites_exhausted: {
     title: 'Site-Kontingent erreicht',
     body:
-      'Ihr Plan erlaubt keine weitere SiteOS-Site. Upgrade hebt die Grenze an. ' +
+      'Ihr Plan erlaubt keine weitere SiteOS-Site (limit.sites). Upgrade hebt die Grenze an. ' +
       'Überwachte Domains (Monitoring) sind ein separates Kontingent.',
   },
-  designer_locked: {
-    title: 'Frontend Designer ab Growth',
+  publish_locked: {
+    title: 'Veröffentlichung nicht freigeschaltet',
     body:
-      'Der visuelle Canvas (Layout, Typo, Dark/Gold/Cream-Tokens) ist ab Growth freigeschaltet. ' +
-      'App Builder bleibt nutzbar, sofern Ihr Plan ihn enthält.',
+      'Publish-Freigabe (siteos.publish) fehlt in Ihrem Plan. Öffentliches Deploy bleibt ' +
+      `${STATUS_LABEL.preview} — wir simulieren keinen erfolgreichen Deploy.`,
   },
 };
 
@@ -80,8 +75,9 @@ export function BuilderUpgradePanel({
               {' '}
               · Sites {snapshot.sites === -1 ? '∞' : snapshot.sites}
               {' · '}
-              Läufe/Monat{' '}
-              {snapshot.builderRunsPerMonth === -1 ? '∞' : snapshot.builderRunsPerMonth}
+              Builder {snapshot.builder ? 'an' : 'aus'}
+              {' · '}
+              Publish {snapshot.publish ? 'an' : 'aus'}
             </>
           )}
         </p>

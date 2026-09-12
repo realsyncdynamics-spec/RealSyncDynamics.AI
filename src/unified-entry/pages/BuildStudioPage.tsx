@@ -1,8 +1,9 @@
 /**
  * /build — App Builder + Frontend Designer Studio (Governance OS).
  *
- * Monetisierung owns builder keys in shared/pricing.ts. This page consumes
- * them via `builderEntitlements` and never invents a second price ladder.
+ * Consumes Monetisierung keys only: `siteos.builder`, `siteos.publish`,
+ * `limit.sites` (via useEntitlements + builderEntitlements adapter).
+ * Frontend Designer follows siteos.builder. No invented run caps.
  *
  * Honesty:
  * - Publish / custom domain / live orchestrator = Preview / Coming Soon
@@ -26,7 +27,6 @@ import {
   Check,
   LayoutTemplate,
   Loader2,
-  Lock,
   MessageSquare,
   Monitor,
   Palette,
@@ -53,10 +53,10 @@ import {
 } from '../../features/siteos/buildSession';
 import {
   canOpenAppBuilder,
-  canUseFrontendDesigner,
-  isWithinBuilderRuns,
+  canPublishSite,
   resolveBuilderEntitlements,
   studioPreviewUntilSsot,
+  upgradeHrefFromAccess,
 } from '../../features/siteos/builderEntitlements';
 import { BuilderUpgradePanel } from '../../features/siteos/BuilderUpgradePanel';
 import { useEntitlements } from '../../core/billing/useEntitlements';
@@ -109,32 +109,6 @@ const STAGES: readonly string[] = [
   'Frontend gerendert',
 ];
 
-const RUNS_STORAGE_KEY = 'rsd.siteos.builder-runs.v1';
-
-function readLocalRunCount(): number {
-  try {
-    const raw = localStorage.getItem(RUNS_STORAGE_KEY);
-    if (!raw) return 0;
-    const parsed = JSON.parse(raw) as { month?: string; count?: number };
-    const month = new Date().toISOString().slice(0, 7);
-    if (parsed.month !== month) return 0;
-    return typeof parsed.count === 'number' ? parsed.count : 0;
-  } catch {
-    return 0;
-  }
-}
-
-function bumpLocalRunCount(): number {
-  const month = new Date().toISOString().slice(0, 7);
-  const next = readLocalRunCount() + 1;
-  try {
-    localStorage.setItem(RUNS_STORAGE_KEY, JSON.stringify({ month, count: next }));
-  } catch {
-    /* ignore quota */
-  }
-  return next;
-}
-
 function BuildOsChrome({ subtitle }: { subtitle?: string }) {
   return (
     <header className="flex flex-wrap items-center justify-between gap-3 border-b border-titanium-900 bg-obsidian-950/95 px-4 py-3">
@@ -182,12 +156,22 @@ export default function BuildStudioPage() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const { isAuthenticated, isLoading: authLoading } = useSupabaseAuth();
-  const { tier, loading: entitlementsLoading } = useEntitlements();
+  const {
+    tier,
+    loading: entitlementsLoading,
+    features,
+    canAccess,
+  } = useEntitlements();
 
-  const entitlements = useMemo(() => resolveBuilderEntitlements(tier), [tier]);
+  const entitlements = useMemo(
+    () => resolveBuilderEntitlements(tier, features),
+    [tier, features],
+  );
   const previewUntilSsot = studioPreviewUntilSsot(entitlements);
   const entitled = canOpenAppBuilder(entitlements);
-  const designerOk = canUseFrontendDesigner(entitlements) || previewUntilSsot;
+  const publishOk = canPublishSite(entitlements);
+  const builderAccess = canAccess('siteos.builder');
+  const upgradeHref = upgradeHrefFromAccess(builderAccess.upgradeUrl);
 
   const [state, setState] = useState<BuildState | null>(null);
   const blueprint = state?.blueprint ?? null;
@@ -212,14 +196,8 @@ export default function BuildStudioPage() {
   const [stage, setStage] = useState(0);
   const [log, setLog] = useState<BuildStep[]>([]);
   const [error, setError] = useState('');
-  const [runsUsed, setRunsUsed] = useState(0);
-  const [limitHit, setLimitHit] = useState<'runs' | null>(null);
 
   const startedRef = useRef(false);
-
-  useEffect(() => {
-    setRunsUsed(readLocalRunCount());
-  }, []);
 
   const adopt = useCallback((next: BuildState) => {
     setState(next);
@@ -252,7 +230,7 @@ export default function BuildStudioPage() {
   useEffect(() => {
     if (authLoading || entitlementsLoading) return;
     if (!isAuthenticated) return;
-    if (!entitled && !previewUntilSsot) return;
+    if (!entitled && entitlements.ssotReady) return;
     if (startedRef.current) return;
     startedRef.current = true;
 
@@ -267,7 +245,7 @@ export default function BuildStudioPage() {
     entitlementsLoading,
     isAuthenticated,
     entitled,
-    previewUntilSsot,
+    entitlements.ssotReady,
     params,
     run,
   ]);
@@ -314,20 +292,15 @@ export default function BuildStudioPage() {
     return <Navigate to={`/welcome?next=${encodeURIComponent('/build')}`} replace />;
   }
 
-  if (!entitled && !previewUntilSsot) {
+  if (!entitled && entitlements.ssotReady) {
     return (
       <div className="min-h-screen bg-obsidian-950 text-titanium-50">
         <BuildOsChrome subtitle="App Builder · Freischaltung erforderlich" />
-        <BuilderUpgradePanel snapshot={entitlements} reason="no_entitlement" />
-      </div>
-    );
-  }
-
-  if (limitHit === 'runs') {
-    return (
-      <div className="min-h-screen bg-obsidian-950 text-titanium-50">
-        <BuildOsChrome subtitle="App Builder · Kontingent erreicht" />
-        <BuilderUpgradePanel snapshot={entitlements} reason="runs_exhausted" />
+        <BuilderUpgradePanel
+          snapshot={entitlements}
+          reason="no_entitlement"
+          upgradeHref={upgradeHref}
+        />
       </div>
     );
   }
@@ -339,13 +312,7 @@ export default function BuildStudioPage() {
       setError('Bitte beschreiben Sie in einem Satz, was entstehen soll.');
       return;
     }
-    if (!isWithinBuilderRuns(entitlements, runsUsed)) {
-      setLimitHit('runs');
-      return;
-    }
     setLog([]);
-    const nextCount = bumpLocalRunCount();
-    setRunsUsed(nextCount);
     void run(() => startBuild(text, brand));
   };
 
@@ -582,7 +549,6 @@ export default function BuildStudioPage() {
               onClick={() => setPane('designer')}
               icon={<Palette size={13} />}
               label="Frontend Designer"
-              locked={!designerOk}
             />
           </div>
 
@@ -607,6 +573,11 @@ export default function BuildStudioPage() {
           {!claimable && (
             <span className="inline-flex items-center gap-1.5 border border-amber-700 px-2.5 py-1 text-[10px] text-amber-400 font-mono uppercase tracking-wider">
               <AlertTriangle size={11} /> Nur lokal — nicht übernehmbar
+            </span>
+          )}
+          {entitlements.ssotReady && !publishOk && (
+            <span className="inline-flex items-center gap-1.5 border border-titanium-700 px-2.5 py-1 text-[10px] text-titanium-500 font-mono uppercase tracking-wider">
+              Publish {STATUS_LABEL.preview}
             </span>
           )}
 
@@ -642,16 +613,15 @@ export default function BuildStudioPage() {
               path={path}
               setPath={setPath}
             />
-          ) : designerOk ? (
+          ) : (
             <FrontendDesignerPane
               blueprint={blueprint}
               path={path}
               setPath={setPath}
               busy={busy}
               onThemeAction={submitInstruction}
+              publishOk={publishOk || previewUntilSsot}
             />
-          ) : (
-            <BuilderUpgradePanel snapshot={entitlements} reason="designer_locked" />
           )}
         </aside>
 
@@ -720,7 +690,7 @@ function SsotPendingBanner() {
       className="border-b border-[#e4cfa2]/25 bg-[#e4cfa2]/5 px-4 py-2 text-center font-mono text-[10px] text-[#e4cfa2]"
       data-testid="builder-ssot-pending-banner"
     >
-      Plan-Freischaltung (appBuilder / sites) folgt dem Monetisierungs-PR — Studio läuft als{' '}
+      Plan-Freischaltung (siteos.builder / limit.sites) folgt dem Monetisierungs-PR — Studio läuft als{' '}
       {STATUS_LABEL.preview}, kein bezahltes Entitlement vorgetäuscht.
     </div>
   );
@@ -731,13 +701,11 @@ function PaneTab({
   onClick,
   icon,
   label,
-  locked,
 }: {
   active: boolean;
   onClick: () => void;
   icon: ReactNode;
   label: string;
-  locked?: boolean;
 }) {
   return (
     <button
@@ -751,7 +719,7 @@ function PaneTab({
           : 'text-titanium-500 hover:text-titanium-200'
       }`}
     >
-      {locked ? <Lock size={11} /> : icon}
+      {icon}
       {label}
     </button>
   );
@@ -908,12 +876,14 @@ function FrontendDesignerPane({
   setPath,
   busy,
   onThemeAction,
+  publishOk,
 }: {
   blueprint: SiteBlueprint;
   path: string;
   setPath: (p: string) => void;
   busy: boolean;
   onThemeAction: (instruction: string) => void;
+  publishOk: boolean;
 }) {
   const page = blueprint.pages.find((p) => p.path === path) ?? blueprint.pages[0];
   const theme = blueprint.theme;
@@ -1011,8 +981,11 @@ function FrontendDesignerPane({
       )}
 
       <p className="mt-6 font-mono text-[10px] leading-4 text-titanium-600">
-        Veröffentlichung und Custom Domain: {STATUS_LABEL.preview}. Kein
-        erfolgreiches Deploy wird simuliert.
+        Veröffentlichung und Custom Domain: {STATUS_LABEL.preview}
+        {publishOk
+          ? ' — siteos.publish freigeschaltet, öffentliches Deploy bleibt Preview.'
+          : ' — siteos.publish fehlt; kein Fake-Deploy.'}{' '}
+        Kein erfolgreiches Deploy wird simuliert.
       </p>
     </div>
   );

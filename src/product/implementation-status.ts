@@ -49,9 +49,14 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     status: 'live',
     group: 'surface',
     description:
-      'Sovereign Night (Dark/Gold/Cream) Marketing-Startseite mit Photoreal-Earth-Hero und Scan-Einstieg.',
+      'Sovereign Night (Dark/Gold/Cream) Marketing-Startseite mit interaktiver Photoreal-Earth (8K desktop / 4K mobile) und Scan-Einstieg.',
     route: '/',
-    evidence: ['src/pages/MainLanding.tsx', 'test/landing/platform-capabilities.test.ts'],
+    evidence: [
+      'src/pages/MainLanding.tsx',
+      'src/components/landing/HeroEarthBackdrop.tsx',
+      'src/components/landing/HeroEarthBackdropScene.tsx',
+      'test/landing/platform-capabilities.test.ts',
+    ],
     showOnRoadmap: false,
   },
   {

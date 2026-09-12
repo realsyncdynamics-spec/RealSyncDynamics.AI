@@ -1037,10 +1037,14 @@ html, body {
   }
 }
 
-/* ── Public landing Earth backdrop — scenery only, Dark/Gold night rim ── */
-.hero-earth-backdrop,
-.hero-earth-backdrop canvas {
-  pointer-events: none !important;
+/* ── Public landing Earth — canvas receives pointer; decorative layers do not ── */
+.hero-earth-backdrop {
+  pointer-events: none;
+}
+
+.hero-earth-backdrop [data-landing-earth],
+.hero-earth-backdrop [data-landing-earth] canvas {
+  pointer-events: auto;
 }
 
 /* Static fallback: night Europe crop — keep land/city lights readable */

@@ -92,11 +92,11 @@ export function MainLanding() {
           id="product"
           className="relative isolate min-h-[min(92vh,900px)] overflow-hidden border-b border-[#d0c3a4]/10 lg:min-h-[min(90vh,860px)]"
         >
-          <div className="pointer-events-none absolute inset-0 -z-10">
+          <div className="absolute inset-0 -z-10">
             <HeroEarthBackdrop />
           </div>
 
-          <div className="relative mx-auto flex max-w-[880px] flex-col items-center px-[4vw] pb-[44px] pt-[28px] text-center lg:pb-[48px] lg:pt-[32px]">
+          <div className="relative mx-auto flex max-w-[880px] flex-col items-center px-[4vw] pb-[44px] pt-[28px] text-center pointer-events-none lg:pb-[48px] lg:pt-[32px]">
             <div
               className="inline-block rounded-full border px-[12px] py-[7px] font-medium tracking-[.22em]"
               style={{
@@ -191,7 +191,7 @@ export function MainLanding() {
               {HERO_EU_LINE}
             </p>
 
-            <form id="scan" onSubmit={startScan} className="w-full max-w-[660px]">
+            <form id="scan" onSubmit={startScan} className="pointer-events-auto w-full max-w-[660px]">
               <p
                 className="mb-2.5 px-1 leading-snug"
                 style={{ color: '#efe8dc', fontSize: LANDING_BODY }}
@@ -237,7 +237,7 @@ export function MainLanding() {
               </p>
             </form>
 
-            <div className="mt-5 flex flex-col items-center gap-2.5 sm:flex-row sm:justify-center lg:mt-6">
+            <div className="pointer-events-auto mt-5 flex flex-col items-center gap-2.5 sm:flex-row sm:justify-center lg:mt-6">
               <OsEntryLink
                 to="/app/evidence"
                 className="inline-flex items-center justify-center gap-2 rounded-full border px-[22px] py-[12px] text-[14px] font-medium transition hover:bg-[#d0c3a4]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d0c3a4]/60"

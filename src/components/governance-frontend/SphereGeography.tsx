@@ -100,11 +100,13 @@ function CountryBorders({
   reducedMotion,
   isMobile,
   earthRadius,
+  hoverBoostRef,
 }: {
   zoomRef: MutableRefObject<{ zoom: number }>;
   reducedMotion: boolean;
   isMobile: boolean;
   earthRadius: number;
+  hoverBoostRef?: MutableRefObject<boolean>;
 }) {
   const texture = useCountryBorderTexture(!reducedMotion);
   const matRef = useRef<THREE.MeshBasicMaterial>(null!);
@@ -114,7 +116,8 @@ function CountryBorders({
     const z = zoomRef.current.zoom;
     const base = isMobile ? 0.35 : 0.5;
     const boost = THREE.MathUtils.smoothstep(z, 0.95, 1.45) * (isMobile ? 0.2 : 0.3);
-    matRef.current.opacity = reducedMotion ? 0.2 : base + boost;
+    const hover = hoverBoostRef?.current ? (isMobile ? 0.12 : 0.22) : 0;
+    matRef.current.opacity = reducedMotion ? 0.2 : Math.min(0.95, base + boost + hover);
   });
 
   if (!texture) return null;
@@ -317,42 +320,65 @@ function CapitalsLayer({
   );
 }
 
+export type SphereGeographyLayer = 'borders' | 'continents' | 'capitals';
+
 export interface SphereGeographyProps {
   /** Shared controls — reads `.zoom` each frame for LOD. */
   zoomRef: MutableRefObject<{ zoom: number }>;
   earthRadius?: number;
   reducedMotion?: boolean;
+  /**
+   * Default: borders + continents + capitals (Governance Sphere).
+   * Landing interactive Earth: borders + continents only — no capital HUD.
+   */
+  layers?: readonly SphereGeographyLayer[];
+  /** Pointer-over-globe flag — brightens country borders on hover. */
+  hoverBoostRef?: MutableRefObject<boolean>;
 }
+
+const DEFAULT_LAYERS: readonly SphereGeographyLayer[] = ['borders', 'continents', 'capitals'];
 
 /**
  * Countries (borders), continents (labels), capitals (progressive disclosure).
- * Pure geography — no invented risk scores.
+ * Pure geography — no invented risk scores / fake KPIs.
  */
 export function SphereGeography({
   zoomRef,
   earthRadius = 1.55,
   reducedMotion = false,
+  layers = DEFAULT_LAYERS,
+  hoverBoostRef,
 }: SphereGeographyProps) {
   const isMobile = useIsCoarsePointer();
   const labelRadius = earthRadius * 1.06;
   // Capitals must sit outside DragSurface (~1.62) so hover/select works.
   const capitalRadius = Math.max(earthRadius * 1.085, 1.68);
+  const showBorders = layers.includes('borders');
+  const showContinents = layers.includes('continents');
+  const showCapitals = layers.includes('capitals');
 
   return (
     <group>
-      <CountryBorders
-        zoomRef={zoomRef}
-        reducedMotion={reducedMotion}
-        isMobile={isMobile}
-        earthRadius={earthRadius}
-      />
-      {!reducedMotion && <ContinentLabels zoomRef={zoomRef} radius={labelRadius} />}
-      <CapitalsLayer
-        zoomRef={zoomRef}
-        radius={capitalRadius}
-        isMobile={isMobile}
-        reducedMotion={reducedMotion}
-      />
+      {showBorders && (
+        <CountryBorders
+          zoomRef={zoomRef}
+          reducedMotion={reducedMotion}
+          isMobile={isMobile}
+          earthRadius={earthRadius}
+          hoverBoostRef={hoverBoostRef}
+        />
+      )}
+      {showContinents && !reducedMotion && (
+        <ContinentLabels zoomRef={zoomRef} radius={labelRadius} />
+      )}
+      {showCapitals && (
+        <CapitalsLayer
+          zoomRef={zoomRef}
+          radius={capitalRadius}
+          isMobile={isMobile}
+          reducedMotion={reducedMotion}
+        />
+      )}
     </group>
   );
 }

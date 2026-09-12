@@ -276,10 +276,12 @@ describe('Hero-Panel — Beispiel ist als Beispiel gekennzeichnet', () => {
     // darunter vier hartkodierte Zahlen. Ein anonymer Besucher hat keinen
     // Tenant — dort ist nichts messbar, also darf dort nichts gemessen
     // aussehen (Truth Layer, target-architecture.md §3.1).
-    // Public `/`: Dominik cream copy on Earth backdrop (no Sphere HUD / Europe column).
+    // Public `/`: Europe-OS cream copy on Earth backdrop (no Sphere HUD / fake KPIs).
     expect(landing).not.toContain('GOVERNANCE RUNTIME · LIVE');
-    expect(landing).toContain('RUNTIME_PREVIEW_LABEL');
     expect(landing).toContain('HeroEarthBackdrop');
+    expect(landing).toContain('HERO_SCAN_CTA_LABEL');
+    expect(landing).toContain('HERO_DASHBOARD_CTA_LABEL');
+    expect(landing).toContain('data-hero-cta');
     expect(landing).not.toContain('GovernanceSphereHost');
     expect(landing).not.toContain('HeroEuropeSunrise');
     expect(sphereNodes).toMatch(/DEMO\s*\/\s*SIMULATED/);

@@ -24,17 +24,26 @@ export function OsEntryLink({
   className,
   style,
   onClick,
+  'data-hero-cta': dataHeroCta,
 }: {
   to: string;
   children: ReactNode;
   className?: string;
   style?: CSSProperties;
   onClick?: () => void;
+  /** When set, AssistentChip fades while this CTA is in view. */
+  'data-hero-cta'?: boolean | string;
 }) {
   const { isAuthenticated, isLoading } = useOptionalAuth();
   const href = isLoading ? to : osEntryPath(to, isAuthenticated);
   return (
-    <Link to={href} className={className} style={style} onClick={onClick}>
+    <Link
+      to={href}
+      className={className}
+      style={style}
+      onClick={onClick}
+      {...(dataHeroCta !== undefined ? { 'data-hero-cta': dataHeroCta === true ? '' : dataHeroCta } : {})}
+    >
       {children}
     </Link>
   );

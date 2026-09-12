@@ -2,15 +2,14 @@
  * Public landing hero backdrop — full-bleed photoreal Earth (desktop fill).
  *
  * Passive scenery behind Dominik copy: pointer-events none so CTAs stay
- * clickable. Europe-night framing (continent right / background) + gold route
- * network; WebGL may idle-drift. No drag HUD, no Sphere DEMO chrome, no
- * continent UI labels. Static Europe night plane under WebGL for first paint.
+ * clickable. Europe-night plate (limb framing) + gold route network — static
+ * so UK/FR/DE/IT stay first-recognize (no Americas drift). No Sphere DEMO
+ * chrome, no continent UI labels.
  *
  * Deep-space layer: CSS starfield + distant Mars/Jupiter/Saturn discs, plus an
  * occasional drifting Moon (reduced-motion: faint static moon, no drift).
  */
-import { Suspense, useEffect, useState } from 'react';
-import { HeroEarthBackdropScene } from './HeroEarthBackdropScene';
+import { useEffect, useState } from 'react';
 
 function usePrefersReducedMotion(): boolean {
   const [reduced, setReduced] = useState(false);
@@ -23,20 +22,6 @@ function usePrefersReducedMotion(): boolean {
     return () => mq.removeEventListener('change', update);
   }, []);
   return reduced;
-}
-
-function useWebGlAvailable(): boolean {
-  const [ok, setOk] = useState(false);
-  useEffect(() => {
-    try {
-      const canvas = document.createElement('canvas');
-      const gl = canvas.getContext('webgl2') || canvas.getContext('webgl');
-      setOk(Boolean(gl));
-    } catch {
-      setOk(false);
-    }
-  }, []);
-  return ok;
 }
 
 /**
@@ -121,18 +106,16 @@ function StaticEarthPlane({ className = '' }: { className?: string }) {
           height={768}
           decoding="async"
           fetchPriority="high"
-          className="hero-earth-static-img h-full w-full scale-[1.08] object-cover object-[72%_48%] opacity-100"
+          className="hero-earth-static-img h-full w-full scale-[1.18] object-cover object-[82%_38%] opacity-100"
         />
       </picture>
       <GoldNetworkOverlay />
-      {/* Soft left veil for type — keep Europe city lights readable on the right */}
+      {/* Soft left veil for type — no muddy gold wash over Europe */}
       <div
         className="pointer-events-none absolute inset-0"
         style={{
-          background: [
-            'linear-gradient(90deg, rgba(5,7,11,0.55) 0%, rgba(5,7,11,0.18) 28%, transparent 52%)',
-            'radial-gradient(42% 36% at 18% 42%, rgba(208,195,164,0.06) 0%, transparent 64%)',
-          ].join(', '),
+          background:
+            'linear-gradient(90deg, rgba(5,7,11,0.62) 0%, rgba(5,7,11,0.22) 26%, transparent 48%)',
         }}
       />
     </div>
@@ -353,15 +336,15 @@ function WarmRimLight() {
       <div
         className="absolute"
         style={{
-          left: '58%',
-          top: '18%',
-          width: 'min(38vw, 420px)',
-          height: 'min(48vw, 520px)',
+          left: '62%',
+          top: '22%',
+          width: 'min(28vw, 320px)',
+          height: 'min(36vw, 400px)',
           borderRadius: '50%',
           background:
-            'radial-gradient(ellipse at 40% 48%, rgba(208,195,164,0.18) 0%, rgba(180,140,80,0.07) 36%, transparent 68%)',
-          filter: 'blur(28px)',
-          opacity: 0.55,
+            'radial-gradient(ellipse at 40% 48%, rgba(208,195,164,0.1) 0%, rgba(180,140,80,0.04) 40%, transparent 70%)',
+          filter: 'blur(32px)',
+          opacity: 0.4,
         }}
       />
     </div>
@@ -369,38 +352,10 @@ function WarmRimLight() {
 }
 
 export function HeroEarthBackdrop() {
+  // Europe-lock: use the photoreal Europe night plate + gold network only.
+  // WebGL idle framing has repeatedly drifted to the Americas on `/` — static
+  // plate keeps UK/FR/DE/IT as the first-recognize continent (Dominik PNG).
   const reducedMotion = usePrefersReducedMotion();
-  const webgl = useWebGlAvailable();
-  // Defer WebGL one tick so first paint + sticky CTA stay actionable (E2E).
-  const [sceneReady, setSceneReady] = useState(false);
-  useEffect(() => {
-    if (!webgl || reducedMotion) return;
-    let cancelled = false;
-    const boot = () => {
-      if (!cancelled) setSceneReady(true);
-    };
-    const ric = (
-      window as Window & {
-        requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number;
-        cancelIdleCallback?: (id: number) => void;
-      }
-    ).requestIdleCallback;
-    if (typeof ric === 'function') {
-      const id = ric(boot, { timeout: 900 });
-      return () => {
-        cancelled = true;
-        (
-          window as Window & { cancelIdleCallback?: (id: number) => void }
-        ).cancelIdleCallback?.(id);
-      };
-    }
-    const t = window.setTimeout(boot, 120);
-    return () => {
-      cancelled = true;
-      window.clearTimeout(t);
-    };
-  }, [webgl, reducedMotion]);
-  const use3d = webgl && !reducedMotion && sceneReady;
 
   return (
     <div
@@ -410,7 +365,7 @@ export function HeroEarthBackdrop() {
       data-hero-lighting="europe-night"
       data-hero-scenery="europe-night-gold-network"
       data-hero-framing="europe-right"
-      data-landing-earth={use3d ? 'scenery' : 'static'}
+      data-landing-earth="static"
       aria-hidden="true"
     >
       {/* Deep space base — void around Europe for stars / planets / moon */}
@@ -423,19 +378,8 @@ export function HeroEarthBackdrop() {
       />
       <WarmRimLight />
 
-      {/* Photoreal Europe night — continent right; left/upper void for space.
-          Always under WebGL so planet never blanks. */}
+      {/* Photoreal Europe night on the limb — city lights + gold arcs */}
       <StaticEarthPlane />
-
-      {use3d && (
-        <div className="hero-earth-canvas absolute inset-0" data-landing-earth>
-          <Suspense fallback={null}>
-            <div className="absolute inset-0">
-              <HeroEarthBackdropScene reducedMotion={reducedMotion} />
-            </div>
-          </Suspense>
-        </div>
-      )}
 
       {/* Night-space scenery ABOVE Earth, masked to left/upper void —
           never covers Dominik H1 column (left veil stays on top). */}
@@ -453,8 +397,8 @@ export function HeroEarthBackdrop() {
         className="pointer-events-none absolute inset-0"
         style={{
           background: [
-            'radial-gradient(ellipse 48% 40% at 22% 28%, rgba(5,7,11,0.42) 0%, rgba(5,7,11,0.12) 55%, transparent 78%)',
-            'linear-gradient(180deg, rgba(5,7,11,0.22) 0%, transparent 16%, transparent 70%, rgba(5,7,11,0.4) 100%)',
+            'linear-gradient(90deg, rgba(5,7,11,0.35) 0%, rgba(5,7,11,0.08) 32%, transparent 52%)',
+            'linear-gradient(180deg, rgba(5,7,11,0.18) 0%, transparent 14%, transparent 72%, rgba(5,7,11,0.35) 100%)',
           ].join(', '),
         }}
       />

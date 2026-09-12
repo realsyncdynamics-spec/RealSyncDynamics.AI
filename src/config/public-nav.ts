@@ -389,13 +389,14 @@ export const PUBLIC_CTA = {
 } as const;
 
 /**
- * Europe-OS mockup strip — visible top-level links on PublicDarkHeader.
- * Produkt / Evidence / Preise / Login. Mega-menu IA stays in PUBLIC_NAV_GROUPS.
+ * Europe-OS mock strip — visible top-level links on PublicDarkHeader.
+ * Produkt / Evidence / Preise / Login (+ Free Audit CTA). Fuller IA in drawer.
  */
 export const PUBLIC_PRIMARY_NAV: readonly PublicNavLeaf[] = [
   { label: 'Produkt', to: '/#product' },
-  { label: 'Evidence', to: '/evidence' },
+  { label: 'Evidence', to: '/#evidence' },
   { label: 'Preise', to: '/#pricing' },
+  { label: 'Login', to: '/welcome' },
 ] as const;
 
 export const PUBLIC_ACCOUNT = {

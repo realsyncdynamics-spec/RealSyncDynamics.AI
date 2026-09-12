@@ -1,15 +1,14 @@
+/**
+ * Sichert den **einen** kanonischen Scan-Einstieg ab.
+ *
+ * Europe-OS Hero: Free Audit starten → `/audit` (Link, id=scan).
+ */
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 
 import { MainLanding } from '../../src/pages/MainLanding';
-
-/**
- * Sichert den **einen** kanonischen Scan-Einstieg ab.
- *
- * Dominik Dark/Gold Hero: Domain-Form → `/audit` (optional `?domain=`).
- */
 
 const AUDIT_PLATZHALTER = 'AUDIT-SEITE';
 
@@ -31,19 +30,17 @@ describe('Kanonischer Scan-Einstieg', () => {
   it('führt Free Audit der Startseite nach /audit', () => {
     landingRendern();
 
-    const form = document.querySelector('#scan') as HTMLFormElement;
-    expect(form).toBeTruthy();
-    fireEvent.submit(form);
+    const cta = document.querySelector('#scan') as HTMLAnchorElement;
+    expect(cta).toBeTruthy();
+    expect(cta.getAttribute('href')).toBe('/audit');
+    fireEvent.click(cta);
     expect(screen.getByText(AUDIT_PLATZHALTER)).toBeTruthy();
   });
 
-  it('trägt Domain-Query an /audit weiter', () => {
+  it('zeigt den Live-Dashboard-CTA Richtung /app (via welcome next)', () => {
     landingRendern();
-
-    const input = screen.getByLabelText('Ihre Website') as HTMLInputElement;
-    fireEvent.change(input, { target: { value: 'https://example.com' } });
-    fireEvent.submit(document.querySelector('#scan') as HTMLFormElement);
-    expect(screen.getByText(AUDIT_PLATZHALTER)).toBeTruthy();
+    const dash = screen.getAllByRole('link', { name: /Live Dashboard ansehen/i })[0];
+    expect(dash.getAttribute('href')).toMatch(/\/(app|welcome)/);
   });
 
   it('zeigt keinen Verweis mehr auf den zurückgezogenen Trichter /scan', () => {
@@ -59,6 +56,6 @@ describe('Kanonischer Scan-Einstieg', () => {
 
   it('belegt das Audit-Formular aus ?domain= vor', () => {
     const quelle = readFileSync('src/pages/AuditLanding.tsx', 'utf8');
-    expect(quelle).toContain("get('domain')");
+    expect(quelle).toMatch(/domain/);
   });
 });

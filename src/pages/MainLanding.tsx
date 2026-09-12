@@ -1,5 +1,4 @@
-import { FormEvent, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { ArrowRight, Code2, FileCheck2, Lock, ShieldCheck } from 'lucide-react';
 import { SEOHead } from '../components/SEOHead';
 import { LandingChannelTools } from '../components/landing/LandingChannelTools';
@@ -7,13 +6,12 @@ import { LandingDarkBand } from '../components/landing/LandingDarkBand';
 import { LandingPricingSection } from '../components/landing/LandingPricingSection';
 import { LandingRoadmapSection } from '../components/landing/LandingRoadmapSection';
 import { PublicDarkHeader } from '../components/landing/PublicDarkHeader';
+import { OsEntryLink } from '../components/landing/OsEntryLink';
 import {
   LANDING_ACCENT,
   LANDING_BG,
   LANDING_BUTTON,
   LANDING_BUTTON_TEXT,
-  LANDING_GREEN,
-  LANDING_LINE,
   LANDING_MONO,
   LANDING_MUTED,
   LANDING_SANS,
@@ -21,55 +19,22 @@ import {
   LANDING_TEXT,
 } from '../components/landing/landing-theme';
 import {
-  RUNTIME_PREVIEW_LABEL,
-  RUNTIME_PREVIEW_NOTE,
-  RUNTIME_PREVIEW_CARDS,
-} from '../config/landing-runtime-preview';
-import {
   HERO_DASHBOARD_CTA_LABEL,
   HERO_EU_LINE,
   HERO_HEADLINE,
+  HERO_KICKER,
   HERO_OPERATING_LOOP,
-  HERO_SCAN_BADGE,
+  HERO_PROOF_CHIPS,
   HERO_SCAN_CTA_LABEL,
-  HERO_SOCIAL_FRAMEWORKS,
-  HERO_SOCIAL_PROOF,
   HERO_SUBLINE,
-  HERO_VALUE_SUBLINE,
 } from '../components/governance-frontend/hero-content';
 import { HeroEarthBackdrop } from '../components/landing/HeroEarthBackdrop';
 import { EnterpriseAccessSection } from '../components/landing/EnterpriseAccessSection';
-import { CTA } from '../content/runtimeVocab';
 import {
   PLATFORM_LIVE_ITEMS,
   STATUS_LABEL,
 } from '../product/implementation-status';
 import { useStagedReveal } from '../hooks/useStagedReveal';
-
-/** Value-grid chips — exclusive plan badges use real Growth/Agency names only. */
-type HeroPillar = {
-  title: string;
-  text: string;
-  /** Exclusive tier hint — never Professional. */
-  plan?: 'Growth' | 'Agency';
-};
-
-const HERO_PILLARS: readonly HeroPillar[] = [
-  {
-    title: 'DSGVO-KONFORM',
-    text: 'Nachweise, Prozesse und Richtlinien laufen automatisiert mit.',
-  },
-  {
-    title: 'AI-ACT-BEREIT',
-    text: 'Risikobewertung, Transparenz und Dokumentation je KI-System.',
-    plan: 'Growth',
-  },
-  {
-    title: 'EVIDENCE-CHAIN',
-    text: 'Wiederkehrende Nachprüfung, Meldungen und Belege statt Stichproben.',
-    plan: 'Agency',
-  },
-];
 
 const GOVERNANCE_STEPS = [
   ['01', 'DISCOVER', 'KI-Systeme, Anwendungen, Datenflüsse und relevante Verarbeitungsvorgänge erfassen.'],
@@ -81,16 +46,7 @@ const GOVERNANCE_STEPS = [
 ];
 
 export function MainLanding() {
-  const navigate = useNavigate();
-  const [domain, setDomain] = useState('');
   const revealRoot = useStagedReveal<HTMLElement>();
-
-  const startScan = (event: FormEvent) => {
-    event.preventDefault();
-    const value = domain.trim();
-    // Kanonischer Scan-Einstieg `/audit` (CLAUDE.md §10).
-    navigate(value ? `/audit?domain=${encodeURIComponent(value)}` : '/audit');
-  };
 
   return (
     <div
@@ -99,37 +55,21 @@ export function MainLanding() {
         backgroundColor: LANDING_BG,
         color: LANDING_TEXT,
         fontFamily: LANDING_SANS,
-        backgroundImage: 'radial-gradient(circle at 70% 15%, #111823 0, #05070b 34%, #04060a 100%)',
+        backgroundImage: 'radial-gradient(circle at 78% 28%, #111823 0, #05070b 38%, #04060a 100%)',
       }}
     >
       <SEOHead
         title="RealSyncDynamics.AI — AI Compliance Operations OS for Europe"
-        description="AI Compliance Operations OS for Europe. Governance OS für DSGVO und EU AI Act — Discover, Classify, Enforce, Prove."
+        description="AI Compliance Operations OS for Europe. Runtime governance for regulated AI systems. Continuous evidence. EU-native by design."
         canonical="/"
         ogTitle="AI Compliance Operations OS for Europe"
         ogDescription="RealSyncDynamics.AI — AI Compliance Operations OS for Europe. Free Audit starten. Continuous evidence."
       />
 
-      {/* Ambient blurs + grid overlay (Dominik reference) */}
+      {/* Restrained ambient — scenery stays behind type, no muddy gold wash */}
       <div
-        className="pointer-events-none fixed right-[-18vw] top-[10vh] h-[40vw] w-[40vw] rounded-full opacity-[0.08] blur-[100px]"
+        className="pointer-events-none fixed right-[-12vw] top-[18vh] h-[34vw] w-[34vw] rounded-full opacity-[0.05] blur-[110px]"
         style={{ background: '#b49a6b' }}
-        aria-hidden="true"
-      />
-      <div
-        className="pointer-events-none fixed left-[-25vw] top-[45vh] h-[40vw] w-[40vw] rounded-full opacity-[0.08] blur-[100px]"
-        style={{ background: '#236e91' }}
-        aria-hidden="true"
-      />
-      <div
-        className="pointer-events-none fixed inset-0 opacity-[0.16]"
-        style={{
-          backgroundImage:
-            'linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.02) 1px, transparent 1px)',
-          backgroundSize: '80px 80px',
-          maskImage: 'linear-gradient(to bottom, #000, transparent 85%)',
-          WebkitMaskImage: 'linear-gradient(to bottom, #000, transparent 85%)',
-        }}
         aria-hidden="true"
       />
 
@@ -138,253 +78,145 @@ export function MainLanding() {
       <main ref={revealRoot} className="relative z-10">
         <section
           id="product"
-          className="relative isolate min-h-[min(92vh,900px)] overflow-hidden border-b border-[#e4cfa2]/10 lg:min-h-[min(90vh,860px)]"
+          className="hero relative isolate flex min-h-[calc(100svh-76px)] overflow-hidden border-b border-[#e4cfa2]/10"
+          data-reveal
         >
-          {/* Sovereign Night: photoreal Earth full-bleed behind Dominik copy — no Sphere HUD */}
+          {/* Europe night full-bleed — pointer-events none; no Sphere HUD */}
           <div className="pointer-events-none absolute inset-0 -z-10" aria-hidden="true">
             <HeroEarthBackdrop />
           </div>
 
-          <div className="relative mx-auto max-w-[1500px] px-[4vw] pb-[82px] pt-[72px]">
-            <div className="hero-copy max-w-3xl">
-              <div
-                className="inline-block rounded-full border px-[11px] py-[7px] text-[9px] font-medium tracking-[.23em]"
-                style={{
-                  fontFamily: LANDING_MONO,
-                  color: LANDING_ACCENT,
-                  borderColor: `${LANDING_ACCENT}47`,
-                }}
+          <div className="relative mx-auto flex w-full max-w-[1500px] flex-1 items-center px-[4vw] py-10 lg:py-12">
+            {/* Bundler hero structure (Dark/Gold): kicker → H1 → loop → lede → EU → CTAs → proof */}
+            <div className="hero-copy relative z-10 max-w-[40rem] lg:max-w-[44rem]">
+              <p
+                className="hero-kicker flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[9px] font-medium tracking-[0.16em]"
+                style={{ fontFamily: LANDING_MONO, color: '#8a867c' }}
+                aria-label={`${HERO_KICKER.index}. ${HERO_KICKER.claim}. ${HERO_KICKER.region}`}
               >
-                AI GOVERNANCE OPERATING SYSTEM
-              </div>
+                <span style={{ color: LANDING_ACCENT }}>{HERO_KICKER.index}</span>
+                <span aria-hidden="true" style={{ color: `${LANDING_ACCENT}66` }}>
+                  ·
+                </span>
+                <span>{HERO_KICKER.claim}</span>
+                <span aria-hidden="true" style={{ color: `${LANDING_ACCENT}66` }}>
+                  ·
+                </span>
+                <span>{HERO_KICKER.region}</span>
+              </p>
 
               <h1
-                className="mt-[30px] mb-3 text-[clamp(48px,6vw,82px)] leading-[0.93] tracking-[-.04em]"
-                style={{ fontFamily: LANDING_SERIF, fontWeight: 500 }}
+                className="mt-4 font-semibold leading-[1.05] tracking-[-0.03em]"
+                style={{
+                  fontFamily: LANDING_SANS,
+                  fontSize: 'clamp(2.35rem, 4.2vw, 3.65rem)',
+                  color: LANDING_TEXT,
+                }}
               >
-                {HERO_HEADLINE.map((segments, line) => (
-                  <span key={line} className="block">
-                    {segments.map((segment, i) =>
-                      segment.accent ? (
-                        <em
-                          key={i}
-                          className="hero-shine-accent"
-                          style={{ color: LANDING_ACCENT, fontStyle: 'normal' }}
-                        >
-                          {segment.text}
-                        </em>
-                      ) : (
-                        <span key={i} className="hero-shine">
-                          {segment.text}
-                        </span>
-                      ),
-                    )}
-                  </span>
-                ))}
+                {HERO_HEADLINE.map((segments, line) => {
+                  const isEurope = line === HERO_HEADLINE.length - 1;
+                  return (
+                    <span
+                      key={line}
+                      className="block"
+                      style={
+                        isEurope
+                          ? {
+                              marginTop: '0.06em',
+                              fontSize: '1.12em',
+                              letterSpacing: '-0.035em',
+                            }
+                          : undefined
+                      }
+                    >
+                      {segments.map((segment, i) =>
+                        segment.accent ? (
+                          <em
+                            key={i}
+                            className="hero-shine-accent not-italic"
+                            style={{ color: LANDING_ACCENT, fontStyle: 'normal' }}
+                          >
+                            {segment.text}
+                          </em>
+                        ) : (
+                          <span key={i} className="hero-shine">
+                            {segment.text}
+                          </span>
+                        ),
+                      )}
+                    </span>
+                  );
+                })}
               </h1>
 
               <p
-                className="mb-3 text-[15px] font-medium leading-snug tracking-[-0.01em]"
-                style={{ color: LANDING_ACCENT }}
-              >
-                {HERO_VALUE_SUBLINE}
-              </p>
-
-              <p
-                className="mb-4 text-[10px] tracking-[.2em]"
-                style={{ fontFamily: LANDING_MONO, color: '#b6a77f' }}
+                className="mt-5 text-[10px] font-medium tracking-[0.22em]"
+                style={{ fontFamily: LANDING_MONO, color: '#9a9178' }}
               >
                 {HERO_OPERATING_LOOP}
               </p>
 
-              <p className="max-w-[640px] text-[14px] leading-[1.7]" style={{ color: '#e8dfd2' }}>
+              <p
+                className="mt-5 max-w-[34rem] text-[15px] leading-[1.55] sm:text-[16px]"
+                style={{ color: 'rgba(246,242,233,0.88)' }}
+              >
                 {HERO_SUBLINE}
-                <br />
-                Erfassen, bewerten, durchsetzen und nachweisen — in einer kontinuierlichen Governance
-                Runtime.
               </p>
               <p
-                className="mt-2 max-w-[640px] text-[12px] leading-relaxed"
+                className="mt-2.5 max-w-[34rem] text-[12px] leading-relaxed"
                 style={{ color: LANDING_MUTED }}
               >
                 {HERO_EU_LINE}
               </p>
 
-              <div
-                className="value-grid my-[38px] mb-[26px] grid gap-0 border-y sm:grid-cols-3"
-                style={{ borderColor: LANDING_LINE }}
-                role="list"
-              >
-                {HERO_PILLARS.map((pillar, i) => (
-                  <a
-                    key={pillar.title}
-                    href="/#pricing"
-                    role="listitem"
-                    className={`group block py-[18px] pr-5 transition-colors hover:bg-white/[0.03] focus-visible:bg-white/[0.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e4cfa2]/50 ${i > 0 ? 'sm:border-l sm:pl-5' : ''}`}
-                    style={{ borderColor: LANDING_LINE }}
-                  >
-                    <div className="flex flex-wrap items-center gap-2">
-                      <b
-                        className="text-[8px] font-medium tracking-[.18em]"
-                        style={{ fontFamily: LANDING_MONO, color: LANDING_ACCENT }}
-                      >
-                        {pillar.title}
-                      </b>
-                      {pillar.plan && (
-                        <span
-                          className="rounded-sm border px-1.5 py-0.5 text-[8px] tracking-[.12em] opacity-80 transition group-hover:opacity-100"
-                          style={{
-                            fontFamily: LANDING_MONO,
-                            borderColor: `${LANDING_ACCENT}55`,
-                            color: LANDING_ACCENT,
-                          }}
-                        >
-                          {pillar.plan}
-                        </span>
-                      )}
-                    </div>
-                    <p className="mt-2.5 text-[11px] leading-[1.6]" style={{ color: '#b5b5bc' }}>
-                      {pillar.text}
-                    </p>
-                    {pillar.plan && (
-                      <p
-                        className="mt-2 text-[9px] tracking-[.08em]"
-                        style={{ fontFamily: LANDING_MONO, color: `${LANDING_ACCENT}99` }}
-                      >
-                        Enthalten in {pillar.plan}
-                      </p>
-                    )}
-                  </a>
-                ))}
-              </div>
-
-              <form id="scan" onSubmit={startScan} className="max-w-[620px]">
-                <div className="relative">
-                  <span
-                    className="absolute -top-2.5 left-5 z-10 rounded-full border px-2 py-0.5 text-[8px] font-medium tracking-[.14em]"
-                    style={{
-                      fontFamily: LANDING_MONO,
-                      borderColor: `${LANDING_ACCENT}66`,
-                      backgroundColor: LANDING_BG,
-                      color: LANDING_ACCENT,
-                    }}
-                  >
-                    {HERO_SCAN_BADGE}
-                  </span>
-                  <div
-                    className="landing-scan-glow flex flex-col gap-0 rounded-full border p-1.5 sm:flex-row sm:items-stretch"
-                    style={{
-                      borderColor: 'rgba(228,207,162,0.38)',
-                      backgroundColor: 'rgba(7,9,13,0.78)',
-                    }}
-                  >
-                    <input
-                      value={domain}
-                      onChange={(event) => setDomain(event.target.value)}
-                      type="url"
-                      placeholder="Ihre Website –"
-                      aria-label="Ihre Website"
-                      className="min-w-0 flex-1 bg-transparent px-5 py-3.5 text-[12px] text-white outline-none placeholder:text-white/30 focus-visible:ring-2 focus-visible:ring-[#e4cfa2]/45 sm:rounded-full"
-                    />
-                    <button
-                      type="submit"
-                      className="landing-cta-glow inline-flex items-center justify-center gap-2 rounded-full px-[18px] py-[13px] text-[11px] font-semibold transition hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e4cfa2]"
-                      style={{ backgroundColor: LANDING_BUTTON, color: LANDING_BUTTON_TEXT }}
-                    >
-                      {HERO_SCAN_CTA_LABEL} <span aria-hidden="true">→</span>
-                    </button>
-                  </div>
-                </div>
-                <p
-                  className="mt-2 text-[8px] tracking-[.08em]"
-                  style={{ fontFamily: LANDING_MONO, color: '#6e7077' }}
-                >
-                  DSGVO · EU AI Act · Sicherheit · Barrierefreiheit · SEO · kein Account nötig
-                </p>
-              </form>
-
-              {/* Hero CTA pair: Free Audit (above) + Live Dashboard — cream/gold, not cyan */}
-              <div className="mt-6 flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:gap-5">
+              <div className="mt-8 flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:gap-3.5">
                 <Link
+                  to="/audit"
+                  id="scan"
+                  data-hero-cta
+                  className="landing-cta-glow inline-flex items-center justify-center gap-2 rounded-full px-[26px] py-[14px] text-[14px] font-semibold transition hover:brightness-[1.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e4cfa2]"
+                  style={{
+                    background:
+                      'linear-gradient(180deg, #f0e6d4 0%, #e8ddc8 48%, #dcc9a8 100%)',
+                    color: LANDING_BUTTON_TEXT,
+                  }}
+                >
+                  {HERO_SCAN_CTA_LABEL} <span aria-hidden="true">→</span>
+                </Link>
+                <OsEntryLink
                   to="/app"
-                  className="inline-flex items-center gap-2 rounded-full border px-[17px] py-[11px] text-[11px] transition hover:bg-[#e4cfa2]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e4cfa2]/60"
-                  style={{ borderColor: `${LANDING_ACCENT}80`, color: '#e8dfd2' }}
+                  data-hero-cta
+                  className="inline-flex items-center justify-center gap-2 rounded-full border px-[24px] py-[13px] text-[14px] font-medium transition hover:bg-[#e4cfa2]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e4cfa2]/60"
+                  style={{
+                    borderColor: 'rgba(232,221,200,0.4)',
+                    backgroundColor: 'transparent',
+                    color: LANDING_TEXT,
+                  }}
                 >
-                  {HERO_DASHBOARD_CTA_LABEL} <span aria-hidden="true">→</span>
-                </Link>
-                <Link
-                  to="/contact-sales?source=landing-hero"
-                  className="text-[11px] tracking-wide underline-offset-4 transition hover:underline focus-visible:outline-none focus-visible:underline"
-                  style={{ color: LANDING_MUTED }}
-                >
-                  {CTA.enterprise}
-                </Link>
+                  {HERO_DASHBOARD_CTA_LABEL}
+                </OsEntryLink>
               </div>
 
-              <div
-                className="mt-8 flex flex-wrap items-center gap-x-4 gap-y-2 border-t pt-5"
-                style={{ borderColor: LANDING_LINE }}
-                aria-label="Framework-Standards"
+              {/* Proof chips — labels only; never fake KPI / SLA counts from bundler HTML */}
+              <ul
+                className="mt-7 flex flex-wrap items-center gap-x-4 gap-y-2"
+                aria-label="Governance-Nachweise"
               >
-                <p className="text-[11px] leading-snug" style={{ color: LANDING_MUTED }}>
-                  {HERO_SOCIAL_PROOF}
-                </p>
-                <ul className="flex flex-wrap items-center gap-3">
-                  {HERO_SOCIAL_FRAMEWORKS.map((name) => (
-                    <li
-                      key={name}
-                      className="inline-flex items-center gap-1.5 text-[9px] tracking-[.14em]"
-                      style={{ fontFamily: LANDING_MONO, color: '#9a9aa1' }}
-                    >
-                      <span
-                        className="h-1.5 w-1.5 rounded-full"
-                        style={{ backgroundColor: LANDING_GREEN }}
-                        aria-hidden="true"
-                      />
-                      {name}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              {/* Compact runtime preview strip on small screens — still demo-labeled. */}
-              <div className="mt-10 lg:hidden">
-                <p
-                  className="mb-3 text-[10px] tracking-[.22em]"
-                  style={{ fontFamily: LANDING_MONO, color: `${LANDING_ACCENT}cc` }}
-                >
-                  {RUNTIME_PREVIEW_LABEL}
-                </p>
-                <div className="-mx-[4vw] flex gap-3 overflow-x-auto px-[4vw] pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                  {RUNTIME_PREVIEW_CARDS.slice(0, 4).map((card, i) => (
-                    <div
-                      key={card.id}
-                      className="landing-hero-card surface-panel w-[11.5rem] shrink-0 bg-black/45 p-3.5"
-                      style={{ animationDelay: `${i * 0.35}s` }}
-                    >
-                      <div className="flex items-center gap-2">
-                        <span
-                          className={`h-1.5 w-1.5 rounded-full ${card.tone === 'ok' ? 'bg-[#20d69a]' : 'bg-[#e4cfa2]'}`}
-                        />
-                        <span
-                          className="text-[9px] tracking-[.18em] text-white/45"
-                          style={{ fontFamily: LANDING_MONO }}
-                        >
-                          {card.label}
-                        </span>
-                      </div>
-                      <div
-                        className={`mt-2 text-xl font-semibold ${card.tone === 'ok' ? 'text-[#20d69a]' : 'text-white'}`}
-                      >
-                        {card.value}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <p className="mt-3 max-w-md text-[10px] leading-relaxed text-white/35">
-                  {RUNTIME_PREVIEW_NOTE}
-                </p>
-              </div>
+                {HERO_PROOF_CHIPS.map((chip) => (
+                  <li
+                    key={chip}
+                    className="inline-flex items-center gap-1.5 text-[8px] tracking-[0.16em]"
+                    style={{ fontFamily: LANDING_MONO, color: '#8a867c' }}
+                  >
+                    <span
+                      className="h-1 w-1 rounded-full"
+                      style={{ backgroundColor: LANDING_ACCENT }}
+                      aria-hidden="true"
+                    />
+                    {chip}
+                  </li>
+                ))}
+              </ul>
             </div>
           </div>
         </section>

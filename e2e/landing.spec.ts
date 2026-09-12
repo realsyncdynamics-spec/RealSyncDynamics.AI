@@ -124,17 +124,21 @@ test.describe('Governance-AI-Landing (/)', () => {
       await expect(h1).toContainText(line);
     }
 
-    // P0: Free Audit → `/audit`, Live Dashboard → `/app` (Enterprise stays in header / quieter link).
+    // P0: Free Audit → `/audit`, Live Dashboard → `/app` (Enterprise stays in header).
     await expect(
-      page.getByRole('button', { name: /Free Audit starten/i }).first(),
+      page.getByRole('link', { name: /Free Audit starten/i }).first(),
     ).toBeVisible();
     await expect(
       page.getByRole('link', { name: /Live Dashboard ansehen/i }).first(),
     ).toBeVisible();
-    await expect(page.getByText(/Vermeide EU AI Act-Bußgelder/i).first()).toBeVisible();
     await expect(
-      page.getByText(/Discover\s*→\s*Classify\s*→\s*Enforce\s*→\s*Prove/i).first(),
+      page.getByText(/DISCOVER\s*→\s*CLASSIFY\s*→\s*ENFORCE\s*→\s*PROVE/i).first(),
     ).toBeVisible();
+    await expect(
+      page.getByText(/Runtime governance for regulated AI systems/i).first(),
+    ).toBeVisible();
+    await expect(page.getByText(/EU-CENTRAL/i).first()).toBeVisible();
+    await expect(page.getByText(/EVIDENCE-CHAIN/i).first()).toBeVisible();
   });
 
   test('Hero-Visual ist Earth Backdrop, kein Sphere-HUD', async ({ page }) => {

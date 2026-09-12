@@ -22,12 +22,13 @@ Flipping `status` moves an item between Live / Preview / Coming Soon in the UI.
 1. Do not claim `vollständig` / `voll funktionsfähig` / `complete runtime` on `/`.
 2. Preview / coming-soon items must show a badge — never as unqualified PRODUCT.
 3. No fake KPIs. No yearly Stripe prices until Stripe prices exist.
-4. Interactive Governance Sphere stays off public `/`. Hero visual is photoreal
-   Earth as full-bleed backdrop (`hero-earth-scenery` / HeroEarthBackdrop) —
-   Europe night (right) + gold route network, deep-space starfield + distant
-   Mars/Jupiter/Saturn (occasional Moon) — no Sphere HUD, no continent UI chrome,
-   pointer-events-none behind Dominik copy. Live H1: AI Compliance Operations OS
-   for Europe; CTAs Free Audit starten + Live Dashboard ansehen.
+4. Interactive Governance Sphere stays off public `/`. Hero structure follows
+   Dominik bundler `hero reveal` copy-block (Dark/Gold/Cream only — reject
+   Complianty light, cyan buttons, `.hero-kpis` fake SLA). Europe on the limb
+   + gold network. H1: AI Compliance / Operations OS for / Europe (gold).
+   Fold: kicker · H1 · DISCOVER loop · lede · EU line · Free Audit + Live
+   Dashboard · proof chips (labels only). Header: Produkt · Evidence · Preise ·
+   Login. Assistent chip hidden on `/`.
 5. Canonical dashboard remains `/app` → ComplianceStatusDashboard.
    Auth: `/welcome` is the gate; `?next=` resumes after login (including
    already-signed-in `getSession`). `GovernanceBrowserShell` always wraps

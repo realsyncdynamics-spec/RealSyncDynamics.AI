@@ -695,18 +695,12 @@ function _RiskCenterView() {
         </div>
         <div className="flex items-center gap-2">
           <span className="font-mono text-[11px] text-titanium-600 border border-titanium-900 px-2 py-1">
-            {loading ? 'Laden …' : loadError ? 'Risiken nicht verfügbar' : `Stand: ${asOfLabel(activeRisks)}`}
+            Stand: {asOfLabel(activeRisks)}
           </span>
         </div>
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
-
-        {loadError && (
-          <div className="flex items-start gap-2 text-sm text-rose-300 bg-rose-950/40 border border-rose-900 p-3">
-            <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" /> {loadError}
-          </div>
-        )}
 
         {/* ── Metrics Row ── */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">

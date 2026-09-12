@@ -120,7 +120,36 @@ function WarmRimLight() {
 export function HeroEarthBackdrop() {
   const reducedMotion = usePrefersReducedMotion();
   const webgl = useWebGlAvailable();
-  const use3d = webgl && !reducedMotion;
+  // Defer WebGL one tick so first paint + sticky CTA stay actionable (E2E).
+  const [sceneReady, setSceneReady] = useState(false);
+  useEffect(() => {
+    if (!webgl || reducedMotion) return;
+    let cancelled = false;
+    const boot = () => {
+      if (!cancelled) setSceneReady(true);
+    };
+    const ric = (
+      window as Window & {
+        requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number;
+        cancelIdleCallback?: (id: number) => void;
+      }
+    ).requestIdleCallback;
+    if (typeof ric === 'function') {
+      const id = ric(boot, { timeout: 900 });
+      return () => {
+        cancelled = true;
+        (
+          window as Window & { cancelIdleCallback?: (id: number) => void }
+        ).cancelIdleCallback?.(id);
+      };
+    }
+    const t = window.setTimeout(boot, 120);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(t);
+    };
+  }, [webgl, reducedMotion]);
+  const use3d = webgl && !reducedMotion && sceneReady;
 
   return (
     <div

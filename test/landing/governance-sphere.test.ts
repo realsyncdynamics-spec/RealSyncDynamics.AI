@@ -65,6 +65,8 @@ describe('Governance Sphere — demo contract', () => {
     expect(scene).toContain("layers={['borders', 'continents']}");
     expect(scene).toContain('DragOrbitSurface');
     expect(scene).toContain('ModestZoom');
+    expect(scene).toContain('frameloop="demand"');
+    expect(scene).toContain('useProgressiveEarthQuality');
     expect(scene).not.toContain('GOVERNANCE_SPHERE_NODES');
     expect(scene).not.toContain('SPHERE_DEMO_LABEL');
     expect(scene).not.toContain('Coming Soon');

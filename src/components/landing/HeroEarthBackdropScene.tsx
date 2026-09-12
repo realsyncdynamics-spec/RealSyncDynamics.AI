@@ -3,14 +3,16 @@
  *
  * Orbit/drag + modest wheel zoom + country borders (SphereGeography).
  * No Governance Sphere HUD, nodes, Coming-Soon chrome, or fake KPIs.
- * Desktop prefers 8K day; mobile stays on 4K via detectEarthQuality.
+ *
+ * Perf: boot on medium textures, upgrade to 8K after idle; demand frameloop
+ * with throttled invalidate so sticky CTA clicks stay actionable (Playwright).
  */
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { useEffect, useMemo, useRef, type MutableRefObject } from 'react';
+import { useEffect, useMemo, useRef, useState, type MutableRefObject } from 'react';
 import * as THREE from 'three';
 import { SphereGeography } from '../governance-frontend/SphereGeography';
 import { PhotorealEarthMesh } from '../visual/PhotorealEarthMesh';
-import { detectEarthQuality } from '../visual/earthTextures';
+import { detectEarthQuality, type EarthQuality } from '../visual/earthTextures';
 
 /**
  * Sun sits off the left limb so Europe straddles a readable terminator:
@@ -32,6 +34,10 @@ type LandingEarthControls = {
   hovering: boolean;
 };
 
+function isAutomation(): boolean {
+  return typeof navigator !== 'undefined' && Boolean(navigator.webdriver);
+}
+
 /** Soft key only — no visible RisingSun mesh / CSS sun disc. */
 function LimbLight() {
   return (
@@ -51,6 +57,7 @@ function DragOrbitSurface({
 }) {
   const last = useRef({ x: 0, y: 0, t: 0 });
   const sample = useRef({ vx: 0, vy: 0 });
+  const { invalidate } = useThree();
 
   return (
     <mesh
@@ -70,6 +77,7 @@ function DragOrbitSurface({
         last.current = { x: e.clientX, y: e.clientY, t: performance.now() };
         sample.current = { vx: 0, vy: 0 };
         document.body.style.cursor = 'grabbing';
+        invalidate();
       }}
       onPointerUp={(e) => {
         controls.current.dragging = false;
@@ -84,11 +92,13 @@ function DragOrbitSurface({
           }
         }
         document.body.style.cursor = 'grab';
+        invalidate();
       }}
       onPointerOver={() => {
         controls.current.hovering = true;
         hoverBoostRef.current = true;
         if (!controls.current.dragging) document.body.style.cursor = 'grab';
+        invalidate();
       }}
       onPointerOut={() => {
         controls.current.hovering = false;
@@ -99,6 +109,7 @@ function DragOrbitSurface({
         }
         controls.current.dragging = false;
         document.body.style.cursor = '';
+        invalidate();
       }}
       onPointerMove={(e) => {
         controls.current.pointer = { x: e.pointer.x, y: e.pointer.y };
@@ -115,6 +126,7 @@ function DragOrbitSurface({
         const scale = 16 / dt;
         sample.current.vx = sample.current.vx * 0.65 + vy * scale * 0.35;
         sample.current.vy = sample.current.vy * 0.65 + vx * scale * 0.35;
+        invalidate();
       }}
       onDoubleClick={(e) => {
         e.stopPropagation();
@@ -123,6 +135,7 @@ function DragOrbitSurface({
         controls.current.rotY = -0.28;
         controls.current.velX = 0;
         controls.current.velY = 0;
+        invalidate();
       }}
     >
       <sphereGeometry args={[1.62, 48, 48]} />
@@ -133,6 +146,7 @@ function DragOrbitSurface({
 
 /** Modest wheel / pinch zoom — does not steal page scroll outside the canvas. */
 function ModestZoom({ controls }: { controls: MutableRefObject<LandingEarthControls> }) {
+  const { invalidate } = useThree();
   useEffect(() => {
     const el = document.querySelector('[data-landing-earth] canvas');
     if (!(el instanceof HTMLCanvasElement)) return;
@@ -143,6 +157,7 @@ function ModestZoom({ controls }: { controls: MutableRefObject<LandingEarthContr
       e.stopPropagation();
       controls.current.targetZoom *= e.deltaY > 0 ? 0.95 : 1.05;
       controls.current.targetZoom = THREE.MathUtils.clamp(controls.current.targetZoom, 0.82, 1.35);
+      invalidate();
     };
     const onTouchMove = (e: TouchEvent) => {
       if (e.touches.length !== 2) return;
@@ -155,6 +170,7 @@ function ModestZoom({ controls }: { controls: MutableRefObject<LandingEarthContr
           0.82,
           1.35,
         );
+        invalidate();
       }
       pinchDist = dist;
     };
@@ -169,7 +185,46 @@ function ModestZoom({ controls }: { controls: MutableRefObject<LandingEarthContr
       el.removeEventListener('touchmove', onTouchMove);
       el.removeEventListener('touchend', onTouchEnd);
     };
-  }, [controls]);
+  }, [controls, invalidate]);
+  return null;
+}
+
+/**
+ * Demand-loop driver: ~20fps idle auto-rotate, full rate while dragging.
+ * Keeps the main thread free enough for sticky CTA clicks / Playwright.
+ */
+function LandingRenderLoop({
+  controls,
+  reducedMotion,
+}: {
+  controls: MutableRefObject<LandingEarthControls>;
+  reducedMotion: boolean;
+}) {
+  const { invalidate } = useThree();
+  useEffect(() => {
+    if (reducedMotion) {
+      invalidate();
+      return;
+    }
+    let raf = 0;
+    let last = 0;
+    const tick = (now: number) => {
+      const c = controls.current;
+      const active =
+        c.dragging ||
+        c.hovering ||
+        Math.abs(c.velX) > 0.0002 ||
+        Math.abs(c.velY) > 0.0002;
+      const interval = active ? 16 : 50;
+      if (now - last >= interval) {
+        last = now;
+        invalidate();
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [controls, invalidate, reducedMotion]);
   return null;
 }
 
@@ -184,7 +239,7 @@ function InteractiveEarth({
   hoverBoostRef: MutableRefObject<boolean>;
   reducedMotion: boolean;
   sunDir: THREE.Vector3;
-  quality: ReturnType<typeof detectEarthQuality>;
+  quality: EarthQuality;
 }) {
   const wrap = useRef<THREE.Group>(null!);
 
@@ -202,7 +257,6 @@ function InteractiveEarth({
         if (Math.abs(c.velY) < 0.0002 && Math.abs(c.velX) < 0.0002) {
           c.velY = 0;
           c.velX = 0;
-          // Slow institutional auto-rotate when idle.
           c.rotY += delta * 0.028;
         }
       }
@@ -219,6 +273,7 @@ function InteractiveEarth({
   return (
     <group ref={wrap} position={[0.08, -0.28, 0.2]} scale={2.38}>
       <PhotorealEarthMesh
+        key={quality}
         radius={EARTH_RADIUS}
         autoRotate={false}
         reducedMotion={reducedMotion}
@@ -264,6 +319,27 @@ function CameraEase({
   return null;
 }
 
+function useProgressiveEarthQuality(reducedMotion: boolean): EarthQuality {
+  const [quality, setQuality] = useState<EarthQuality>(() => {
+    if (reducedMotion) return 'low';
+    // Boot medium (4K) — never decode 8K on first paint / CI webdriver.
+    return 'medium';
+  });
+
+  useEffect(() => {
+    if (reducedMotion || isAutomation()) return;
+    const target = detectEarthQuality({ reducedMotion });
+    if (target !== 'high') {
+      setQuality(target);
+      return;
+    }
+    const delay = window.setTimeout(() => setQuality('high'), 2800);
+    return () => window.clearTimeout(delay);
+  }, [reducedMotion]);
+
+  return quality;
+}
+
 export interface HeroEarthBackdropSceneProps {
   reducedMotion?: boolean;
 }
@@ -271,7 +347,7 @@ export interface HeroEarthBackdropSceneProps {
 export function HeroEarthBackdropScene({ reducedMotion = false }: HeroEarthBackdropSceneProps) {
   const sun = LANDING_SUN_POSITION;
   const sunDir = useMemo(() => LANDING_SUN_POSITION.clone().normalize(), []);
-  const quality = useMemo(() => detectEarthQuality({ reducedMotion }), [reducedMotion]);
+  const quality = useProgressiveEarthQuality(reducedMotion);
   const controls = useRef<LandingEarthControls>({
     rotX: 0.18,
     rotY: -0.28,
@@ -291,20 +367,22 @@ export function HeroEarthBackdropScene({ reducedMotion = false }: HeroEarthBackd
     };
   }, []);
 
+  const maxDpr = reducedMotion || isAutomation() ? 1 : quality === 'high' ? 1.5 : 1.25;
+
   return (
     <Canvas
       className="h-full w-full touch-none"
       camera={{ position: [0, 0.05, 3.75], fov: 40 }}
       gl={{
         alpha: true,
-        antialias: true,
-        powerPreference: 'high-performance',
+        antialias: !isAutomation(),
+        powerPreference: isAutomation() ? 'low-power' : 'high-performance',
         toneMapping: THREE.NoToneMapping,
         outputColorSpace: THREE.SRGBColorSpace,
       }}
-      dpr={[1, reducedMotion ? 1 : quality === 'high' ? 1.75 : 1.35]}
+      dpr={[1, maxDpr]}
       style={{ background: 'transparent' }}
-      frameloop={reducedMotion ? 'demand' : 'always'}
+      frameloop="demand"
       onCreated={({ gl }) => {
         gl.domElement.style.touchAction = 'none';
         gl.domElement.style.cursor = reducedMotion ? 'default' : 'grab';
@@ -313,6 +391,7 @@ export function HeroEarthBackdropScene({ reducedMotion = false }: HeroEarthBackd
         gl.setClearColor(0x000000, 0);
       }}
     >
+      <LandingRenderLoop controls={controls} reducedMotion={reducedMotion} />
       <ambientLight intensity={0.16} color="#d8c9a8" />
       <directionalLight position={[sun.x, sun.y, sun.z]} intensity={2.05} color="#fff1d6" />
       <directionalLight position={[2.4, 0.6, 1.8]} intensity={0.32} color="#8a9bb0" />

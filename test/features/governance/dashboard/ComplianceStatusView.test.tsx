@@ -174,7 +174,7 @@ describe('ComplianceStatusView', () => {
       activeTenantId: null,
       data: null,
     });
-    expect(getByText(/Bitte anmelden/)).toBeInTheDocument();
+    expect(getByText(/Workspace fehlt oder wird noch geladen/)).toBeInTheDocument();
   });
 
   it('surfaces loader and error without inventing metrics', () => {

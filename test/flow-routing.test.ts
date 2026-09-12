@@ -185,11 +185,11 @@ describe('State Effects', () => {
 
     const agencyStep = getFlowStepById('pricing.checkoutAgency');
     expect(agencyStep?.stateEffect?.selectedPlan).toBe('agency');
-    expect(agencyStep?.primary.to).toBe('/checkout/agency');
+    expect(agencyStep?.primary?.to).toBe('/checkout/agency');
 
     const enterpriseStep = getFlowStepById('pricing.checkoutEnterprise');
     expect(enterpriseStep?.stateEffect?.selectedPlan).toBe('enterprise');
-    expect(enterpriseStep?.primary.to).toContain('/contact-sales');
+    expect(enterpriseStep?.primary?.to).toContain('/contact-sales');
   });
 
   it('should mark checkout status transitions', () => {

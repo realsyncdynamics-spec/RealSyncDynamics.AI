@@ -124,19 +124,24 @@ test.describe('Governance-AI-Landing (/)', () => {
       await expect(h1).toContainText(line);
     }
 
-    // P0: Scan-Submit → `/audit`, secondary → Enterprise anfragen (not Demo/Pilot).
+    // P0: Free Audit → `/audit`, Live Dashboard → `/app` (Enterprise stays in header / quieter link).
     await expect(
-      page.getByRole('button', { name: /Kostenlosen Governance Scan starten/i }).first(),
+      page.getByRole('button', { name: /Free Audit starten/i }).first(),
     ).toBeVisible();
     await expect(
-      page.getByRole('link', { name: /Enterprise anfragen/i }).first(),
+      page.getByRole('link', { name: /Live Dashboard ansehen/i }).first(),
     ).toBeVisible();
     await expect(page.getByText(/Vermeide EU AI Act-Bußgelder/i).first()).toBeVisible();
+    await expect(
+      page.getByText(/Discover\s*→\s*Classify\s*→\s*Enforce\s*→\s*Prove/i).first(),
+    ).toBeVisible();
   });
 
   test('Hero-Visual ist Earth Backdrop, kein Sphere-HUD', async ({ page }) => {
-    // Full-bleed photoreal Earth — no interactive Governance Sphere / DEMO chrome on `/`.
+    // Europe-night scenery + gold network — no interactive Governance Sphere / DEMO chrome on `/`.
     await expect(page.locator('[data-hero-visual="earth-universe"]')).toBeVisible();
+    await expect(page.locator('[data-hero-framing="europe-right"]')).toBeVisible();
+    await expect(page.locator('[data-hero-scenery="europe-night-gold-network"]')).toBeVisible();
     await expect(page.locator('[data-hero-visual="europe-sunrise"]')).toHaveCount(0);
     await expect(page.locator('[data-governance-sphere]')).toHaveCount(0);
     await expect(page.getByText(/^Live\b/)).toHaveCount(0);

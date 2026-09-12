@@ -12,9 +12,9 @@ export type HeroHeadlineSegment = {
 };
 
 /**
- * Governance OS Hero — Dominik-Referenz.
+ * Europe-OS Hero — Dominik Grok Imagine mock lock (copy + scenery brief).
  *
- * Claim direction: Govern AI. Prove Everything. Operate with Confidence.
+ * Claim direction: AI Compliance Operations OS for Europe.
  *
  * ## Contract
  *
@@ -22,9 +22,12 @@ export type HeroHeadlineSegment = {
  * read the same source — change here, not in the page.
  */
 export const HERO_HEADLINE: readonly (readonly HeroHeadlineSegment[])[] = [
-  [{ text: 'AI Governance,' }],
-  [{ text: 'Running in Real', accent: true }],
-  [{ text: 'Time', accent: true }],
+  [{ text: 'AI Compliance' }],
+  [{ text: 'Operations OS' }],
+  [
+    { text: 'for ' },
+    { text: 'Europe', accent: true },
+  ],
 ];
 
 /** Reine Textzeilen der H1 — für Tests und Accessible-Name-Abgleich. */
@@ -33,16 +36,16 @@ export const HERO_HEADLINE_LINES: readonly string[] = HERO_HEADLINE.map((segment
 );
 
 /** Substring für den FE-001-Check. Muss vollständig innerhalb einer Zeile liegen. */
-export const HERO_HEADLINE_TEST_SUBSTRING = 'AI Governance';
+export const HERO_HEADLINE_TEST_SUBSTRING = 'AI Compliance';
 
-/** Motto under the H1 — Detect.Govern.Prove.Automate */
-export const HERO_OPERATING_LOOP = 'Detect · Govern · Prove · Automate' as const;
+/** Motto under the H1 — mock operating loop (Discover → Classify → Enforce → Prove). */
+export const HERO_OPERATING_LOOP = 'Discover → Classify → Enforce → Prove' as const;
 
 /**
  * Secondary / funnel / design-preview copy — not the live `/` H1 chrome.
- * Live `/` CTA is the restored Dominik string in MainLanding + PublicDarkHeader.
+ * Legacy Dominik phrase retained for funnel messaging only.
  */
-export const HERO_EN_KICKER = 'AI Governance, Running in Real Time' as const;
+export const HERO_EN_KICKER = 'AI Compliance Operations OS for Europe' as const;
 
 export const SCAN_FUNNEL_MESSAGE =
   'In Minuten scannen. In Stunden strukturieren. Dauerhaft kontrollieren.' as const;
@@ -77,7 +80,7 @@ export const HERO_OUTCOMES: readonly string[] = [
 export const HERO_EU_LINE =
   'Gebaut für EU AI Act, DSGVO und europäische Nachweispflichten.' as const;
 
-/** Funnel / design CTAs — acquisition path `/audit` (not Pilot/Demo/Sales). */
+/** Live `/` hero CTAs — Free Audit + Live Dashboard (cream/gold, not cyan). */
 export const HERO_SCAN_CTA_LABEL = 'Free Audit starten' as const;
 export const HERO_SCAN_CTA_LONG = 'Free Audit starten' as const;
 export const HERO_DASHBOARD_CTA_LABEL = 'Live Dashboard ansehen' as const;

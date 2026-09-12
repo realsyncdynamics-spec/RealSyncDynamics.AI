@@ -2,9 +2,9 @@
  * Public landing hero backdrop — full-bleed photoreal Earth (desktop fill).
  *
  * Passive scenery behind Dominik copy: pointer-events none so CTAs stay
- * clickable. WebGL day/night mesh may idle-rotate; no drag HUD, no Sphere
- * DEMO chrome, no continent UI labels. Static Europe night plane under WebGL
- * for first paint.
+ * clickable. Europe-night framing (continent right / background) + gold route
+ * network; WebGL may idle-drift. No drag HUD, no Sphere DEMO chrome, no
+ * continent UI labels. Static Europe night plane under WebGL for first paint.
  *
  * Deep-space layer: CSS starfield + distant Mars/Jupiter/Saturn discs, plus an
  * occasional drifting Moon (reduced-motion: faint static moon, no drift).
@@ -39,12 +39,78 @@ function useWebGlAvailable(): boolean {
   return ok;
 }
 
-/** Night-Europe photoreal plane — always present as the planet base layer. */
+/**
+ * Gold route/network overlay for static first-paint — aligns with Europe on
+ * the right. No labels / KPI chips; pointer-events none via host.
+ */
+function GoldNetworkOverlay() {
+  return (
+    <svg
+      className="hero-earth-gold-network pointer-events-none absolute inset-0 h-full w-full"
+      viewBox="0 0 1376 768"
+      preserveAspectRatio="xMidYMid slice"
+      aria-hidden="true"
+      data-hero-scenery="gold-network"
+    >
+      <defs>
+        <linearGradient id="hero-gold-flow" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#f2e6c8" stopOpacity="0.15" />
+          <stop offset="45%" stopColor="#e4cfa2" stopOpacity="0.85" />
+          <stop offset="100%" stopColor="#b49a6b" stopOpacity="0.25" />
+        </linearGradient>
+        <filter id="hero-gold-glow" x="-20%" y="-20%" width="140%" height="140%">
+          <feGaussianBlur stdDeviation="1.4" result="blur" />
+          <feMerge>
+            <feMergeNode in="blur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+      </defs>
+      <g
+        fill="none"
+        stroke="url(#hero-gold-flow)"
+        strokeWidth="1.15"
+        filter="url(#hero-gold-glow)"
+        opacity="0.9"
+      >
+        <path d="M720 290 C780 250, 860 240, 940 270" className="hero-gold-arc" />
+        <path d="M760 320 C820 300, 900 310, 980 350" className="hero-gold-arc" />
+        <path d="M700 340 C760 380, 840 400, 920 390" className="hero-gold-arc" />
+        <path d="M780 280 C820 340, 860 400, 900 460" className="hero-gold-arc" />
+        <path d="M680 300 C740 280, 800 320, 850 380" className="hero-gold-arc" />
+        <path d="M820 260 C880 280, 940 320, 1000 300" className="hero-gold-arc" />
+        <path d="M740 360 C800 340, 880 360, 960 420" className="hero-gold-arc" />
+        <path d="M860 300 C900 360, 940 400, 1020 380" className="hero-gold-arc" />
+        <path d="M720 420 C800 400, 880 440, 960 480" className="hero-gold-arc" />
+        <path d="M660 280 C720 240, 800 220, 880 250" className="hero-gold-arc" />
+        <path d="M900 340 C940 300, 1000 280, 1080 310" className="hero-gold-arc" />
+        <path d="M780 400 C840 440, 900 470, 980 460" className="hero-gold-arc" />
+      </g>
+      <g fill="#f2e6c8" filter="url(#hero-gold-glow)">
+        <circle cx="720" cy="290" r="2.4" opacity="0.95" />
+        <circle cx="780" cy="280" r="2.2" opacity="0.9" />
+        <circle cx="860" cy="300" r="2.6" opacity="0.95" />
+        <circle cx="940" cy="270" r="2.1" opacity="0.85" />
+        <circle cx="900" cy="390" r="2.3" opacity="0.9" />
+        <circle cx="820" cy="360" r="2.0" opacity="0.85" />
+        <circle cx="980" cy="350" r="2.2" opacity="0.88" />
+        <circle cx="760" cy="340" r="1.9" opacity="0.8" />
+        <circle cx="1000" cy="300" r="2.0" opacity="0.82" />
+        <circle cx="920" cy="460" r="1.8" opacity="0.78" />
+        <circle cx="680" cy="300" r="2.1" opacity="0.86" />
+        <circle cx="1080" cy="310" r="1.7" opacity="0.75" />
+      </g>
+    </svg>
+  );
+}
+
+/** Night-Europe photoreal plane — continent fills right; left void for copy. */
 function StaticEarthPlane({ className = '' }: { className?: string }) {
   return (
     <div
       className={`hero-earth-static pointer-events-none absolute inset-0 ${className}`.trim()}
       aria-hidden="true"
+      data-hero-framing="europe-right"
     >
       <picture>
         <source srcSet="/europe-globe.webp" type="image/webp" />
@@ -55,16 +121,17 @@ function StaticEarthPlane({ className = '' }: { className?: string }) {
           height={768}
           decoding="async"
           fetchPriority="high"
-          className="h-full w-full scale-[1.35] object-cover object-[50%_58%] opacity-100"
+          className="hero-earth-static-img h-full w-full scale-[1.08] object-cover object-[72%_48%] opacity-100"
         />
       </picture>
-      {/* Soft readability only — no cream sunrise wash */}
+      <GoldNetworkOverlay />
+      {/* Soft left veil for type — keep Europe city lights readable on the right */}
       <div
         className="pointer-events-none absolute inset-0"
         style={{
           background: [
-            'linear-gradient(105deg, transparent 10%, rgba(5,7,11,0.12) 48%, rgba(5,7,11,0.42) 78%, rgba(5,7,11,0.62) 100%)',
-            'radial-gradient(40% 34% at 16% 56%, rgba(208,195,164,0.08) 0%, transparent 64%)',
+            'linear-gradient(90deg, rgba(5,7,11,0.55) 0%, rgba(5,7,11,0.18) 28%, transparent 52%)',
+            'radial-gradient(42% 36% at 18% 42%, rgba(208,195,164,0.06) 0%, transparent 64%)',
           ].join(', '),
         }}
       />
@@ -286,15 +353,15 @@ function WarmRimLight() {
       <div
         className="absolute"
         style={{
-          left: '-2%',
-          top: '22%',
-          width: 'min(32vw, 380px)',
-          height: 'min(48vw, 560px)',
+          left: '58%',
+          top: '18%',
+          width: 'min(38vw, 420px)',
+          height: 'min(48vw, 520px)',
           borderRadius: '50%',
           background:
-            'radial-gradient(ellipse at 72% 48%, rgba(208,195,164,0.28) 0%, rgba(180,140,80,0.1) 36%, transparent 68%)',
-          filter: 'blur(22px)',
-          opacity: 0.65,
+            'radial-gradient(ellipse at 40% 48%, rgba(208,195,164,0.18) 0%, rgba(180,140,80,0.07) 36%, transparent 68%)',
+          filter: 'blur(28px)',
+          opacity: 0.55,
         }}
       />
     </div>
@@ -340,23 +407,24 @@ export function HeroEarthBackdrop() {
       className="hero-earth-backdrop absolute inset-0 overflow-hidden"
       data-hero-visual="earth-universe"
       data-earth-palette="landing-gold"
-      data-hero-lighting="night-rim"
-      data-hero-scenery="starfield-planets"
+      data-hero-lighting="europe-night"
+      data-hero-scenery="europe-night-gold-network"
+      data-hero-framing="europe-right"
       data-landing-earth={use3d ? 'scenery' : 'static'}
       aria-hidden="true"
     >
-      {/* Deep space base — visible where Earth plane is masked open */}
+      {/* Deep space base — void around Europe for stars / planets / moon */}
       <div
         className="pointer-events-none absolute inset-0"
         style={{
           background:
-            'radial-gradient(ellipse at 28% 48%, #080a10 0%, #05070c 42%, #02040a 72%, #010308 100%)',
+            'radial-gradient(ellipse at 68% 52%, #080a10 0%, #05070c 38%, #02040a 68%, #010308 100%)',
         }}
       />
       <WarmRimLight />
 
-      {/* Photoreal Europe night — always under WebGL so planet never blanks.
-          Upper sky is CSS-masked open so starfield/planets are not buried. */}
+      {/* Photoreal Europe night — continent right; left/upper void for space.
+          Always under WebGL so planet never blanks. */}
       <StaticEarthPlane />
 
       {use3d && (
@@ -369,7 +437,7 @@ export function HeroEarthBackdrop() {
         </div>
       )}
 
-      {/* Night-space scenery ABOVE Earth layers, masked to upper/side sky only —
+      {/* Night-space scenery ABOVE Earth, masked to left/upper void —
           never covers Dominik H1 column (left veil stays on top). */}
       <div
         className="hero-earth-space-scenery pointer-events-none absolute inset-0"
@@ -380,13 +448,13 @@ export function HeroEarthBackdrop() {
         <OccasionalMoon reducedMotion={reducedMotion} />
       </div>
 
-      {/* Light veil for type — keep Earth readable as the visual anchor */}
+      {/* Type veil — left column only; Europe city lights stay the visual anchor */}
       <div
         className="pointer-events-none absolute inset-0"
         style={{
           background: [
-            'radial-gradient(ellipse 55% 32% at 28% 18%, rgba(5,7,11,0.38) 0%, rgba(5,7,11,0.1) 55%, transparent 78%)',
-            'linear-gradient(180deg, rgba(5,7,11,0.28) 0%, transparent 14%, transparent 62%, rgba(5,7,11,0.45) 100%)',
+            'radial-gradient(ellipse 48% 40% at 22% 28%, rgba(5,7,11,0.42) 0%, rgba(5,7,11,0.12) 55%, transparent 78%)',
+            'linear-gradient(180deg, rgba(5,7,11,0.22) 0%, transparent 16%, transparent 70%, rgba(5,7,11,0.4) 100%)',
           ].join(', '),
         }}
       />

@@ -270,6 +270,10 @@ describe('Hero-Panel — Beispiel ist als Beispiel gekennzeichnet', () => {
     resolve(__dirname, '../../src/components/governance-frontend/governance-sphere-nodes.ts'),
     'utf8',
   );
+  const workspacePreview = readFileSync(
+    resolve(__dirname, '../../src/components/landing/WorkspacePreviewSection.tsx'),
+    'utf8',
+  );
 
   it('das Panel nennt sich nicht mehr „LIVE"', () => {
     // Vorher: Kopfzeile „GOVERNANCE RUNTIME · LIVE", grüner ACTIVE-Punkt,
@@ -278,7 +282,11 @@ describe('Hero-Panel — Beispiel ist als Beispiel gekennzeichnet', () => {
     // aussehen (Truth Layer, target-architecture.md §3.1).
     // Public `/`: Europe-OS cream copy on Earth backdrop (no Sphere HUD / fake KPIs).
     expect(landing).not.toContain('GOVERNANCE RUNTIME · LIVE');
-    expect(landing).toContain('HeroEarthBackdrop');
+    expect(landing).toContain('EuropeReliefBackdrop');
+    // Die Beispieldaten stehen seit dem Titan-Redesign in der
+    // Workspace-Vorschau — samt unentfernbarer Kennzeichnung.
+    expect(workspacePreview).toContain('DEMO · BEISPIELDATEN');
+    expect(workspacePreview).toContain('BEISPIELANSICHT');
     expect(landing).toContain('HERO_SCAN_CTA_LABEL');
     expect(landing).toContain('HERO_DASHBOARD_CTA_LABEL');
     expect(landing).toContain('data-hero-cta');

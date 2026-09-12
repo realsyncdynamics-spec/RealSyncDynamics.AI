@@ -2,11 +2,11 @@
  * Public landing hero backdrop — full-bleed photoreal Earth (desktop fill).
  *
  * Scenery only: no Governance Sphere HUD, drag globe, DEMO chrome, or cream
- * sun disc. Subtle warm rim light is OK; the planet must dominate.
+ * sun disc. Static Europe night plane is always under the WebGL layer so the
+ * planet never collapses to a black/cream void on first paint.
  */
-import { lazy, Suspense, useEffect, useState } from 'react';
-
-const HeroEarthBackdropScene = lazy(() => import('./HeroEarthBackdropScene'));
+import { Suspense, useEffect, useState } from 'react';
+import { HeroEarthBackdropScene } from './HeroEarthBackdropScene';
 
 function usePrefersReducedMotion(): boolean {
   const [reduced, setReduced] = useState(false);
@@ -22,7 +22,7 @@ function usePrefersReducedMotion(): boolean {
 }
 
 function useWebGlAvailable(): boolean {
-  const [ok, setOk] = useState(true);
+  const [ok, setOk] = useState(false);
   useEffect(() => {
     try {
       const canvas = document.createElement('canvas');
@@ -35,10 +35,10 @@ function useWebGlAvailable(): boolean {
   return ok;
 }
 
-/** Night-Europe static plane — same product on mobile / no-WebGL / reduced motion. */
-function StaticEarthPlane() {
+/** Night-Europe photoreal plane — always present as the planet base layer. */
+function StaticEarthPlane({ className = '' }: { className?: string }) {
   return (
-    <div className="hero-earth-static absolute inset-0" aria-hidden="true">
+    <div className={`hero-earth-static absolute inset-0 ${className}`.trim()} aria-hidden="true">
       <picture>
         <source srcSet="/europe-globe.webp" type="image/webp" />
         <img
@@ -47,17 +47,17 @@ function StaticEarthPlane() {
           width={1376}
           height={768}
           decoding="async"
-          fetchPriority="low"
-          className="h-full w-full scale-[1.45] object-cover object-[48%_42%] opacity-100"
+          fetchPriority="high"
+          className="h-full w-full scale-[1.48] object-cover object-[48%_40%] opacity-100"
         />
       </picture>
-      {/* Soft readability gradient only — no cream sunrise wash */}
+      {/* Soft readability only — no cream sunrise wash */}
       <div
         className="pointer-events-none absolute inset-0"
         style={{
           background: [
-            'linear-gradient(105deg, transparent 12%, rgba(5,7,11,0.18) 48%, rgba(5,7,11,0.5) 78%, rgba(5,7,11,0.68) 100%)',
-            'radial-gradient(42% 36% at 18% 58%, rgba(228,207,162,0.1) 0%, transparent 62%)',
+            'linear-gradient(105deg, transparent 10%, rgba(5,7,11,0.12) 48%, rgba(5,7,11,0.42) 78%, rgba(5,7,11,0.62) 100%)',
+            'radial-gradient(40% 34% at 16% 56%, rgba(228,207,162,0.08) 0%, transparent 64%)',
           ].join(', '),
         }}
       />
@@ -68,7 +68,7 @@ function StaticEarthPlane() {
 function Starfield() {
   return (
     <div
-      className="hero-earth-stars pointer-events-none absolute inset-0 opacity-45"
+      className="hero-earth-stars pointer-events-none absolute inset-0 opacity-40"
       aria-hidden="true"
       style={{
         backgroundImage: [
@@ -97,27 +97,17 @@ function WarmRimLight() {
   return (
     <div className="hero-sunrise pointer-events-none absolute inset-0" aria-hidden="true">
       <div
-        className="absolute inset-0"
-        style={{
-          background: [
-            'radial-gradient(ellipse 55% 48% at 8% 52%, rgba(36,26,16,0.55) 0%, transparent 58%)',
-            'radial-gradient(ellipse 70% 50% at 82% 28%, rgba(12,14,18,0.5) 0%, transparent 55%)',
-          ].join(', '),
-        }}
-      />
-      {/* Thin limb glow — atmosphere hint, not a sun */}
-      <div
         className="absolute"
         style={{
           left: '-4%',
           top: '28%',
-          width: 'min(28vw, 320px)',
-          height: 'min(42vw, 480px)',
+          width: 'min(26vw, 300px)',
+          height: 'min(40vw, 460px)',
           borderRadius: '50%',
           background:
-            'radial-gradient(ellipse at 70% 50%, rgba(228,207,162,0.22) 0%, rgba(180,140,80,0.08) 38%, transparent 68%)',
-          filter: 'blur(28px)',
-          opacity: 0.55,
+            'radial-gradient(ellipse at 70% 50%, rgba(228,207,162,0.16) 0%, rgba(180,140,80,0.06) 40%, transparent 68%)',
+          filter: 'blur(26px)',
+          opacity: 0.5,
         }}
       />
     </div>
@@ -127,7 +117,6 @@ function WarmRimLight() {
 export function HeroEarthBackdrop() {
   const reducedMotion = usePrefersReducedMotion();
   const webgl = useWebGlAvailable();
-  // Same photoreal Earth on mobile and desktop — static only when WebGL / motion blocked.
   const use3d = webgl && !reducedMotion;
 
   return (
@@ -138,7 +127,7 @@ export function HeroEarthBackdrop() {
       data-earth-palette="landing-gold"
       data-hero-lighting="night-rim"
     >
-      {/* Deep space base — planet must own the frame */}
+      {/* Deep space base */}
       <div
         className="absolute inset-0"
         style={{
@@ -149,26 +138,27 @@ export function HeroEarthBackdrop() {
       <Starfield />
       <WarmRimLight />
 
-      <div className="absolute inset-0">
-        {use3d ? (
-          <Suspense fallback={<StaticEarthPlane />}>
+      {/* Always-on photoreal Europe night — planet never disappears */}
+      <StaticEarthPlane />
+
+      {use3d && (
+        <div className="absolute inset-0">
+          <Suspense fallback={null}>
             <div className="hero-earth-canvas absolute inset-[-6%_-4%] scale-[1.22]">
               <HeroEarthBackdropScene reducedMotion={reducedMotion} />
             </div>
           </Suspense>
-        ) : (
-          <StaticEarthPlane />
-        )}
-      </div>
+        </div>
+      )}
 
-      {/* Readability veil — keep type legible without burying the planet */}
+      {/* Light veil for type — planet remains the visual anchor */}
       <div
         className="absolute inset-0"
         style={{
           background: [
-            'radial-gradient(ellipse 42% 30% at 50% 24%, rgba(5,7,11,0.28) 0%, rgba(5,7,11,0.08) 55%, transparent 78%)',
-            'linear-gradient(180deg, rgba(5,7,11,0.28) 0%, transparent 14%, transparent 78%, rgba(5,7,11,0.55) 100%)',
-            'linear-gradient(90deg, transparent 0%, transparent 82%, rgba(5,7,11,0.22) 100%)',
+            'radial-gradient(ellipse 40% 28% at 50% 22%, rgba(5,7,11,0.22) 0%, rgba(5,7,11,0.06) 55%, transparent 78%)',
+            'linear-gradient(180deg, rgba(5,7,11,0.22) 0%, transparent 12%, transparent 80%, rgba(5,7,11,0.5) 100%)',
+            'linear-gradient(90deg, transparent 0%, transparent 84%, rgba(5,7,11,0.18) 100%)',
           ].join(', '),
         }}
       />

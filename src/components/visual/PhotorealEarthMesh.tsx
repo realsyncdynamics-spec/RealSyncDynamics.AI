@@ -345,62 +345,54 @@ export function PhotorealEarthMesh({
     <group ref={group} rotation={rotation}>
       <mesh raycast={() => null}>
         <sphereGeometry args={[radius, segments[0], segments[1]]} />
-        {gold ? (
-          /* Landing gold — photoreal day/night with restrained warm grade (no cream wash). */
+        {/*
+          Photoreal day map for all palettes. Landing-gold uses a warm cream
+          tint + terminator darken via lights — not a custom cream-wash shader
+          that can collapse to a black/cream disc on software WebGL.
+        */}
+        <meshBasicMaterial
+          map={activeDay}
+          color={dayTint}
+          toneMapped={false}
+        />
+      </mesh>
+
+      {/* Soft day/night limb for landing-gold — keeps terminator without washing continents */}
+      {gold && (
+        <mesh scale={1.001} raycast={() => null}>
+          <sphereGeometry args={[radius, segments[0], segments[1]]} />
           <shaderMaterial
             ref={dayMat}
+            transparent
+            depthWrite={false}
             toneMapped={false}
             uniforms={{
-              uDay: { value: activeDay },
               uLight: { value: (sunDirection ?? sun).clone().normalize() },
             }}
             vertexShader={/* glsl */ `
-              varying vec2 vUv;
               varying vec3 vNormalW;
               void main() {
-                vUv = uv;
                 vNormalW = normalize(mat3(modelMatrix) * normal);
                 gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
               }
             `}
             fragmentShader={/* glsl */ `
-              uniform sampler2D uDay;
               uniform vec3 uLight;
-              varying vec2 vUv;
               varying vec3 vNormalW;
               void main() {
-                vec3 c = texture2D(uDay, vUv).rgb;
-                float luma = dot(c, vec3(0.299, 0.587, 0.114));
-                float blueDom = c.b - max(c.r, c.g);
-                float ocean = smoothstep(0.012, 0.1, blueDom);
-                float greenLand = smoothstep(0.015, 0.12, c.g - c.b);
-                // Keep terrain readable — soft gold grade, not a cream disc.
-                vec3 sea = mix(c * vec3(0.45, 0.5, 0.55), vec3(0.04, 0.05, 0.07), 0.72);
-                sea += luma * vec3(0.06, 0.05, 0.04);
-                vec3 land = mix(c, c * vec3(1.02, 0.94, 0.78), 0.42);
-                land = mix(land, vec3(luma) * vec3(0.95, 0.86, 0.68), 0.22 + greenLand * 0.12);
-                vec3 graded = mix(land, sea, ocean);
-                graded *= vec3(0.88, 0.84, 0.76);
-
-                vec3 N = normalize(vNormalW);
-                vec3 L = normalize(uLight);
-                float ndl = dot(N, L);
-                float day = smoothstep(-0.22, 0.42, ndl);
-                float night = 1.0 - day;
-                float term = 1.0 - smoothstep(0.0, 0.36, abs(ndl));
-                vec3 amber = vec3(1.05, 0.78, 0.42);
-                graded *= mix(0.22, 1.12, day);
-                graded += amber * term * 0.18 * (0.4 + day * 0.5);
-                // Night still dark enough for city lights, but land silhouette remains.
-                graded = mix(graded, graded * vec3(0.14, 0.12, 0.1), night * 0.78);
-                gl_FragColor = vec4(graded, 1.0);
+                float ndl = dot(normalize(vNormalW), normalize(uLight));
+                float night = 1.0 - smoothstep(-0.2, 0.4, ndl);
+                float term = 1.0 - smoothstep(0.0, 0.35, abs(ndl));
+                // Darken night side; warm amber on the terminator only.
+                vec3 amber = vec3(1.0, 0.72, 0.35);
+                float a = night * 0.72 + term * 0.12;
+                vec3 col = mix(vec3(0.02, 0.02, 0.03), amber * 0.35, term * 0.55);
+                gl_FragColor = vec4(col, a);
               }
             `}
           />
-        ) : (
-          <meshBasicMaterial map={activeDay} color={dayTint} toneMapped={false} />
-        )}
-      </mesh>
+        </mesh>
+      )}
 
       {nightMap && set.nightEnabled && (
         <mesh scale={1.002} raycast={() => null}>

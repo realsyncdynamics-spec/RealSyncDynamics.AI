@@ -875,10 +875,10 @@ html, body {
   }
 }
 
-/* Soft gold bloom behind H1 — restrained so Earth stays visible. */
+/* Soft gold bloom behind H1 — very restrained so Earth stays visible. */
 .hero-shine-glow {
   position: absolute;
-  inset: -8% -6%;
+  inset: -6% -4%;
   pointer-events: none;
   z-index: -1;
   color: #e4cfa2;
@@ -889,8 +889,8 @@ html, body {
   line-height: inherit;
   letter-spacing: inherit;
   text-align: center;
-  filter: blur(28px);
-  opacity: 0.28;
+  filter: blur(18px);
+  opacity: 0.14;
   user-select: none;
 }
 
@@ -1045,10 +1045,10 @@ html, body {
 
 /* Static fallback: night Europe crop — keep land/city lights readable */
 .hero-earth-static {
-  filter: saturate(0.92) brightness(0.88) contrast(1.12);
+  filter: saturate(1.05) brightness(0.92) contrast(1.1);
 }
 
 /* WebGL mesh already grades gold; avoid sepia wash that hides continents */
 .hero-earth-canvas {
-  filter: saturate(1.02) contrast(1.06) brightness(1.0);
+  filter: none;
 }

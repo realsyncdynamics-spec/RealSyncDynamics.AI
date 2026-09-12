@@ -30,16 +30,10 @@ function SlowEarth({ reducedMotion }: { reducedMotion: boolean }) {
 
   useFrame((_, delta) => {
     if (reducedMotion || !wrap.current) return;
-    // Slow cinematic spin — continents and city lights must stay readable.
     wrap.current.rotation.y += delta * 0.028;
   });
 
   return (
-    /*
-     * Oversized + shifted so the sphere crops past viewport edges —
-     * Earth fills the hero; no empty black bands on desktop.
-     * Initial yaw tips Europe / Atlantic toward camera across the terminator.
-     */
     <group ref={wrap} position={[0.08, -0.28, 0.2]} scale={2.38}>
       <PhotorealEarthMesh
         autoRotate={false}
@@ -47,6 +41,8 @@ function SlowEarth({ reducedMotion }: { reducedMotion: boolean }) {
         sunDirection={sunDir}
         rotation={[0.18, -0.28, 0.04]}
         palette="landing-gold"
+        // Force night lights + specular on the public hero (desktop + mobile).
+        quality="medium"
       />
     </group>
   );
@@ -70,7 +66,7 @@ export function HeroEarthBackdropScene({ reducedMotion = false }: HeroEarthBackd
         toneMapping: THREE.NoToneMapping,
         outputColorSpace: THREE.SRGBColorSpace,
       }}
-      dpr={[1, reducedMotion ? 1 : 1.5]}
+      dpr={[1, reducedMotion ? 1 : 1.35]}
       style={{ background: 'transparent', pointerEvents: 'none' }}
       frameloop={reducedMotion ? 'demand' : 'always'}
       onCreated={({ gl }) => {
@@ -79,7 +75,6 @@ export function HeroEarthBackdropScene({ reducedMotion = false }: HeroEarthBackd
         gl.setClearColor(0x000000, 0);
       }}
     >
-      {/* Balanced ambient so day land + night lights both read */}
       <ambientLight intensity={0.2} color="#d8c9a8" />
       <directionalLight position={[sun.x, sun.y, sun.z]} intensity={1.85} color="#fff1d6" />
       <directionalLight position={[2.4, 0.6, 1.8]} intensity={0.28} color="#8a9bb0" />

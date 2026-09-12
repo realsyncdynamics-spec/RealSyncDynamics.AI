@@ -678,6 +678,34 @@ export default function BuildStudioPage() {
               )}
             </div>
           )}
+
+          {/* Speicherort ist eine Tatsachenbehauptung über Kundendaten.
+              Servermodus: siteos_anonymous_builds, Claim verschiebt.
+              Rückfall: lokal, Übernehmen gesperrt. */}
+          <div className="mt-5 border border-titanium-800 bg-obsidian-900 p-4 text-[11px] leading-5 text-titanium-400">
+            {claimable ? (
+              <>
+                Der Entwurf ist serverseitig gespeichert und gehört noch keinem Workspace. Mit
+                „Website übernehmen" wird er Ihrem Workspace zugeordnet, versioniert und in den
+                Prüfpfad aufgenommen — verschoben, nicht neu erzeugt. Domain und
+                Veröffentlichung folgen danach.
+              </>
+            ) : (
+              <>
+                Der Entwurf liegt nur in diesem Browser: Der Dienst für gespeicherte Entwürfe
+                war beim Bau nicht erreichbar. Ansehen und Ändern funktioniert, Übernehmen
+                nicht — dafür muss der Entwurf serverseitig liegen. Erzeugen Sie ihn erneut,
+                sobald der Dienst wieder läuft.
+              </>
+            )}
+            {claimable && expiryNote !== '' && <p className="mt-2">{expiryNote}</p>}
+            {state.claimed && (
+              <p className="mt-2 text-[#e4cfa2]">
+                Dieser Entwurf gehört bereits einem Workspace. „Website übernehmen" führt zu
+                derselben Website — es entsteht keine zweite.
+              </p>
+            )}
+          </div>
         </section>
       </div>
     </div>

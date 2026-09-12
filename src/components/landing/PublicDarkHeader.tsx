@@ -6,9 +6,11 @@ import {
   LANDING_BG,
   LANDING_BUTTON_ALT,
   LANDING_BUTTON_TEXT,
+  LANDING_GREEN,
   LANDING_MONO,
   LANDING_MUTED,
   LANDING_TEXT,
+  LANDING_TRUST_MARKS,
 } from './landing-theme';
 
 /**
@@ -18,38 +20,45 @@ import {
  * Working P0 nav targets from #1280/#1279 remain — hash targets use `/#…`
  * so they resolve from `/branchen` as well. `/ai-act` + `/sicherheit`
  * stay reachable (platform-capabilities contract).
+ *
+ * Monetization: Preise slightly emphasized; Enterprise → inquiry path;
+ * optional honest trust strip (no fake SLA / ISO-company claims).
  */
 const LINKS = [
-  { label: 'Produkt', to: '/#product', className: undefined },
-  { label: 'Runtime', to: '/governance-runtime', className: undefined },
-  { label: 'Branchen', to: '/branchen', className: undefined },
-  { label: 'Evidence', to: '/#evidence', className: undefined },
-  { label: 'Module', to: '/#tools', className: 'hidden lg:block' },
-  { label: 'EU AI Act', to: '/ai-act', className: 'hidden xl:block' },
-  { label: 'Sicherheit', to: '/sicherheit', className: 'hidden xl:block' },
-  { label: 'Preise', to: '/#pricing', className: undefined },
-  { label: 'Login', to: '/welcome', className: undefined },
+  { label: 'Produkt', to: '/#product', className: undefined, emphasize: false },
+  { label: 'Runtime', to: '/governance-runtime', className: undefined, emphasize: false },
+  { label: 'Branchen', to: '/branchen', className: undefined, emphasize: false },
+  { label: 'Evidence', to: '/#evidence', className: undefined, emphasize: false },
+  { label: 'Module', to: '/#tools', className: 'hidden lg:block', emphasize: false },
+  { label: 'EU AI Act', to: '/ai-act', className: 'hidden xl:block', emphasize: false },
+  { label: 'Sicherheit', to: '/sicherheit', className: 'hidden xl:block', emphasize: false },
+  { label: 'Preise', to: '/#pricing', className: undefined, emphasize: true },
+  { label: 'Enterprise', to: '/#enterprise', className: undefined, emphasize: false },
+  { label: 'Login', to: '/welcome', className: undefined, emphasize: false },
 ] as const;
 
 function NavItem({
   to,
   label,
   className,
+  emphasize,
   onNavigate,
 }: {
   to: string;
   label: string;
   className?: string;
+  emphasize?: boolean;
   onNavigate?: () => void;
 }) {
+  const baseColor = emphasize ? LANDING_ACCENT : LANDING_MUTED;
   const shared = {
-    className: `text-[12px] transition-colors focus-visible:outline-none focus-visible:underline focus-visible:underline-offset-4${className ? ` ${className}` : ''}`,
-    style: { color: LANDING_MUTED } as CSSProperties,
+    className: `text-[12px] transition-colors focus-visible:outline-none focus-visible:underline focus-visible:underline-offset-4${emphasize ? ' font-medium tracking-wide' : ''}${className ? ` ${className}` : ''}`,
+    style: { color: baseColor } as CSSProperties,
     onMouseEnter: (e: MouseEvent<HTMLAnchorElement>) => {
       e.currentTarget.style.color = LANDING_TEXT;
     },
     onMouseLeave: (e: MouseEvent<HTMLAnchorElement>) => {
-      e.currentTarget.style.color = LANDING_MUTED;
+      e.currentTarget.style.color = baseColor;
     },
   };
 
@@ -111,13 +120,13 @@ export function PublicDarkHeader({ overlay = false }: { overlay?: boolean }) {
           </span>
         </div>
 
-        <nav className="ml-auto hidden items-center gap-6 lg:flex" aria-label="Hauptnavigation">
+        <nav className="ml-auto hidden items-center gap-5 xl:gap-6 lg:flex" aria-label="Hauptnavigation">
           {LINKS.map((item) => (
-            <NavItem key={item.to} {...item} />
+            <NavItem key={item.to + item.label} {...item} />
           ))}
           <Link
             to="/audit"
-            className="max-w-[9.5rem] rounded-full px-[18px] py-[11px] text-center text-[10px] leading-[1.3] shadow-[0_0_30px_rgba(228,207,162,0.08)] transition hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e4cfa2]"
+            className="landing-cta-glow max-w-[9.5rem] rounded-full px-[18px] py-[11px] text-center text-[10px] leading-[1.3] transition hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e4cfa2]"
             style={scanCtaStyle}
           >
             Kostenlosen Governance Scan starten
@@ -146,6 +155,30 @@ export function PublicDarkHeader({ overlay = false }: { overlay?: boolean }) {
         </div>
       </div>
 
+      {/* Honest trust strip — standards only, no fake uptime/SLA */}
+      <div
+        className="hidden border-t border-white/[0.04] lg:block"
+        style={{ backgroundColor: 'rgba(5,7,11,0.45)' }}
+        aria-label="Vertrauenssignale"
+      >
+        <ul className="mx-auto flex max-w-[1500px] items-center gap-5 px-[4vw] py-1.5">
+          {LANDING_TRUST_MARKS.map((mark) => (
+            <li
+              key={mark}
+              className="inline-flex items-center gap-1.5 text-[8px] tracking-[.16em]"
+              style={{ fontFamily: LANDING_MONO, color: '#7a7a82' }}
+            >
+              <span
+                className="h-1 w-1 rounded-full"
+                style={{ backgroundColor: LANDING_GREEN }}
+                aria-hidden="true"
+              />
+              {mark}
+            </li>
+          ))}
+        </ul>
+      </div>
+
       {open && (
         <div
           id="public-dark-mobile-nav"
@@ -163,9 +196,10 @@ export function PublicDarkHeader({ overlay = false }: { overlay?: boolean }) {
           <nav aria-label="Mobile Navigation" className="flex flex-col">
             {LINKS.map((item) => (
               <NavItem
-                key={item.to}
+                key={item.to + item.label}
                 to={item.to}
                 label={item.label}
+                emphasize={item.emphasize}
                 className="py-2.5 text-sm"
                 onNavigate={() => setOpen(false)}
               />
@@ -178,6 +212,22 @@ export function PublicDarkHeader({ overlay = false }: { overlay?: boolean }) {
             >
               Kostenlosen Governance Scan starten
             </Link>
+            <ul className="mt-4 flex flex-wrap gap-3 border-t border-white/[0.06] pt-3">
+              {LANDING_TRUST_MARKS.map((mark) => (
+                <li
+                  key={mark}
+                  className="inline-flex items-center gap-1.5 text-[8px] tracking-[.14em]"
+                  style={{ fontFamily: LANDING_MONO, color: '#7a7a82' }}
+                >
+                  <span
+                    className="h-1 w-1 rounded-full"
+                    style={{ backgroundColor: LANDING_GREEN }}
+                    aria-hidden="true"
+                  />
+                  {mark}
+                </li>
+              ))}
+            </ul>
           </nav>
         </div>
       )}

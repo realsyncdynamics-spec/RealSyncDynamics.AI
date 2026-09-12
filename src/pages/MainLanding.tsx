@@ -12,6 +12,7 @@ import {
   LANDING_BG,
   LANDING_BUTTON,
   LANDING_BUTTON_TEXT,
+  LANDING_GREEN,
   LANDING_LINE,
   LANDING_MONO,
   LANDING_MUTED,
@@ -25,22 +26,48 @@ import {
   RUNTIME_PREVIEW_CARDS,
 } from '../config/landing-runtime-preview';
 import {
+  HERO_DASHBOARD_CTA_LABEL,
+  HERO_EU_LINE,
   HERO_HEADLINE,
   HERO_OPERATING_LOOP,
+  HERO_SCAN_BADGE,
+  HERO_SOCIAL_FRAMEWORKS,
+  HERO_SOCIAL_PROOF,
+  HERO_SUBLINE,
+  HERO_VALUE_SUBLINE,
 } from '../components/governance-frontend/hero-content';
 import { HeroEarthBackdrop } from '../components/landing/HeroEarthBackdrop';
 import { EnterpriseAccessSection } from '../components/landing/EnterpriseAccessSection';
+import { CTA } from '../content/runtimeVocab';
 import {
   PLATFORM_LIVE_ITEMS,
   STATUS_LABEL,
 } from '../product/implementation-status';
 import { useStagedReveal } from '../hooks/useStagedReveal';
 
-/** Drei Säulen unter der Headline. Nur Module, die in Produktion laufen. */
-const HERO_PILLARS: readonly (readonly [string, string])[] = [
-  ['DSGVO-KONFORM', 'Nachweise, Prozesse und Richtlinien laufen automatisiert mit.'],
-  ['AI-ACT-BEREIT', 'Risikobewertung, Transparenz und Dokumentation je KI-System.'],
-  ['DURCHGEHEND', 'Wiederkehrende Nachprüfung, Meldungen und Belege statt Stichproben.'],
+/** Value-grid chips — exclusive plan badges use real Growth/Agency names only. */
+type HeroPillar = {
+  title: string;
+  text: string;
+  /** Exclusive tier hint — never Professional. */
+  plan?: 'Growth' | 'Agency';
+};
+
+const HERO_PILLARS: readonly HeroPillar[] = [
+  {
+    title: 'DSGVO-KONFORM',
+    text: 'Nachweise, Prozesse und Richtlinien laufen automatisiert mit.',
+  },
+  {
+    title: 'AI-ACT-BEREIT',
+    text: 'Risikobewertung, Transparenz und Dokumentation je KI-System.',
+    plan: 'Growth',
+  },
+  {
+    title: 'EVIDENCE-CHAIN',
+    text: 'Wiederkehrende Nachprüfung, Meldungen und Belege statt Stichproben.',
+    plan: 'Agency',
+  },
 ];
 
 const GOVERNANCE_STEPS = [
@@ -131,7 +158,7 @@ export function MainLanding() {
               </div>
 
               <h1
-                className="mt-[30px] mb-5 text-[clamp(48px,6vw,82px)] leading-[0.93] tracking-[-.04em]"
+                className="mt-[30px] mb-3 text-[clamp(48px,6vw,82px)] leading-[0.93] tracking-[-.04em]"
                 style={{ fontFamily: LANDING_SERIF, fontWeight: 500 }}
               >
                 {HERO_HEADLINE.map((segments, line) => (
@@ -156,81 +183,167 @@ export function MainLanding() {
               </h1>
 
               <p
-                className="mb-6 text-[10px] tracking-[.2em]"
+                className="mb-3 text-[15px] font-medium leading-snug tracking-[-0.01em]"
+                style={{ color: LANDING_ACCENT }}
+              >
+                {HERO_VALUE_SUBLINE}
+              </p>
+
+              <p
+                className="mb-4 text-[10px] tracking-[.2em]"
                 style={{ fontFamily: LANDING_MONO, color: '#b6a77f' }}
               >
                 {HERO_OPERATING_LOOP}
               </p>
 
               <p className="max-w-[640px] text-[14px] leading-[1.7]" style={{ color: '#e8dfd2' }}>
-                Govern AI. Prove Everything. Operate with Confidence.
+                {HERO_SUBLINE}
                 <br />
                 Erfassen, bewerten, durchsetzen und nachweisen — in einer kontinuierlichen Governance
                 Runtime.
+              </p>
+              <p
+                className="mt-2 max-w-[640px] text-[12px] leading-relaxed"
+                style={{ color: LANDING_MUTED }}
+              >
+                {HERO_EU_LINE}
               </p>
 
               <div
                 className="value-grid my-[38px] mb-[26px] grid gap-0 border-y sm:grid-cols-3"
                 style={{ borderColor: LANDING_LINE }}
+                role="list"
               >
-                {HERO_PILLARS.map(([title, text], i) => (
-                  <article
-                    key={title}
-                    className={`py-[18px] pr-5 ${i > 0 ? 'sm:border-l sm:pl-5' : ''}`}
+                {HERO_PILLARS.map((pillar, i) => (
+                  <a
+                    key={pillar.title}
+                    href="/#pricing"
+                    role="listitem"
+                    className={`group block py-[18px] pr-5 transition-colors hover:bg-white/[0.03] focus-visible:bg-white/[0.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e4cfa2]/50 ${i > 0 ? 'sm:border-l sm:pl-5' : ''}`}
                     style={{ borderColor: LANDING_LINE }}
                   >
-                    <b
-                      className="text-[8px] font-medium tracking-[.18em]"
-                      style={{ fontFamily: LANDING_MONO, color: LANDING_ACCENT }}
-                    >
-                      {title}
-                    </b>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <b
+                        className="text-[8px] font-medium tracking-[.18em]"
+                        style={{ fontFamily: LANDING_MONO, color: LANDING_ACCENT }}
+                      >
+                        {pillar.title}
+                      </b>
+                      {pillar.plan && (
+                        <span
+                          className="rounded-sm border px-1.5 py-0.5 text-[8px] tracking-[.12em] opacity-80 transition group-hover:opacity-100"
+                          style={{
+                            fontFamily: LANDING_MONO,
+                            borderColor: `${LANDING_ACCENT}55`,
+                            color: LANDING_ACCENT,
+                          }}
+                        >
+                          {pillar.plan}
+                        </span>
+                      )}
+                    </div>
                     <p className="mt-2.5 text-[11px] leading-[1.6]" style={{ color: '#b5b5bc' }}>
-                      {text}
+                      {pillar.text}
                     </p>
-                  </article>
+                    {pillar.plan && (
+                      <p
+                        className="mt-2 text-[9px] tracking-[.08em]"
+                        style={{ fontFamily: LANDING_MONO, color: `${LANDING_ACCENT}99` }}
+                      >
+                        Enthalten in {pillar.plan}
+                      </p>
+                    )}
+                  </a>
                 ))}
               </div>
 
               <form id="scan" onSubmit={startScan} className="max-w-[620px]">
-                <div
-                  className="flex flex-col gap-0 rounded-full border p-1.5 sm:flex-row sm:items-stretch"
-                  style={{
-                    borderColor: 'rgba(228,207,162,0.28)',
-                    backgroundColor: 'rgba(7,9,13,0.78)',
-                  }}
-                >
-                  <input
-                    value={domain}
-                    onChange={(event) => setDomain(event.target.value)}
-                    type="url"
-                    placeholder="Ihre Website –"
-                    aria-label="Ihre Website"
-                    className="min-w-0 flex-1 bg-transparent px-5 py-3.5 text-[12px] text-white outline-none placeholder:text-white/30 focus-visible:ring-2 focus-visible:ring-[#e4cfa2]/45 sm:rounded-full"
-                  />
-                  <button
-                    type="submit"
-                    className="inline-flex items-center justify-center gap-2 rounded-full px-[18px] py-[13px] text-[11px] font-semibold transition hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e4cfa2]"
-                    style={{ backgroundColor: LANDING_BUTTON, color: LANDING_BUTTON_TEXT }}
+                <div className="relative">
+                  <span
+                    className="absolute -top-2.5 left-5 z-10 rounded-full border px-2 py-0.5 text-[8px] font-medium tracking-[.14em]"
+                    style={{
+                      fontFamily: LANDING_MONO,
+                      borderColor: `${LANDING_ACCENT}66`,
+                      backgroundColor: LANDING_BG,
+                      color: LANDING_ACCENT,
+                    }}
                   >
-                    Kostenlosen Governance Scan starten <span aria-hidden="true">→</span>
-                  </button>
+                    {HERO_SCAN_BADGE}
+                  </span>
+                  <div
+                    className="landing-scan-glow flex flex-col gap-0 rounded-full border p-1.5 sm:flex-row sm:items-stretch"
+                    style={{
+                      borderColor: 'rgba(228,207,162,0.38)',
+                      backgroundColor: 'rgba(7,9,13,0.78)',
+                    }}
+                  >
+                    <input
+                      value={domain}
+                      onChange={(event) => setDomain(event.target.value)}
+                      type="url"
+                      placeholder="Ihre Website –"
+                      aria-label="Ihre Website"
+                      className="min-w-0 flex-1 bg-transparent px-5 py-3.5 text-[12px] text-white outline-none placeholder:text-white/30 focus-visible:ring-2 focus-visible:ring-[#e4cfa2]/45 sm:rounded-full"
+                    />
+                    <button
+                      type="submit"
+                      className="landing-cta-glow inline-flex items-center justify-center gap-2 rounded-full px-[18px] py-[13px] text-[11px] font-semibold transition hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e4cfa2]"
+                      style={{ backgroundColor: LANDING_BUTTON, color: LANDING_BUTTON_TEXT }}
+                    >
+                      Kostenlosen Governance Scan starten <span aria-hidden="true">→</span>
+                    </button>
+                  </div>
                 </div>
                 <p
                   className="mt-2 text-[8px] tracking-[.08em]"
                   style={{ fontFamily: LANDING_MONO, color: '#6e7077' }}
                 >
-                  DSGVO · EU AI Act · Sicherheit · Barrierefreiheit · SEO kein Account nötig
+                  DSGVO · EU AI Act · Sicherheit · Barrierefreiheit · SEO · kein Account nötig
                 </p>
               </form>
 
-              <a
-                href="#runtime"
-                className="mt-6 inline-flex items-center gap-2 rounded-full border px-[17px] py-[11px] text-[11px] transition hover:bg-[#e4cfa2]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e4cfa2]/60"
-                style={{ borderColor: `${LANDING_ACCENT}80`, color: '#e8dfd2' }}
+              <div className="mt-6 flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:gap-5">
+                <Link
+                  to="/contact-sales?source=landing-hero"
+                  className="inline-flex items-center gap-2 rounded-full border px-[17px] py-[11px] text-[11px] transition hover:bg-[#e4cfa2]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e4cfa2]/60"
+                  style={{ borderColor: `${LANDING_ACCENT}80`, color: '#e8dfd2' }}
+                >
+                  {CTA.enterprise} <span aria-hidden="true">→</span>
+                </Link>
+                <Link
+                  to="/app"
+                  className="text-[11px] tracking-wide underline-offset-4 transition hover:underline focus-visible:outline-none focus-visible:underline"
+                  style={{ color: LANDING_MUTED }}
+                >
+                  {HERO_DASHBOARD_CTA_LABEL}
+                </Link>
+              </div>
+
+              <div
+                className="mt-8 flex flex-wrap items-center gap-x-4 gap-y-2 border-t pt-5"
+                style={{ borderColor: LANDING_LINE }}
+                aria-label="Framework-Standards"
               >
-                Explore the Governance OS <span aria-hidden="true">→</span>
-              </a>
+                <p className="text-[11px] leading-snug" style={{ color: LANDING_MUTED }}>
+                  {HERO_SOCIAL_PROOF}
+                </p>
+                <ul className="flex flex-wrap items-center gap-3">
+                  {HERO_SOCIAL_FRAMEWORKS.map((name) => (
+                    <li
+                      key={name}
+                      className="inline-flex items-center gap-1.5 text-[9px] tracking-[.14em]"
+                      style={{ fontFamily: LANDING_MONO, color: '#9a9aa1' }}
+                    >
+                      <span
+                        className="h-1.5 w-1.5 rounded-full"
+                        style={{ backgroundColor: LANDING_GREEN }}
+                        aria-hidden="true"
+                      />
+                      {name}
+                    </li>
+                  ))}
+                </ul>
+              </div>
 
               {/* Compact runtime preview strip on small screens — still demo-labeled. */}
               <div className="mt-10 lg:hidden">

@@ -49,7 +49,7 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     status: 'live',
     group: 'surface',
     description:
-      'Dominik Dark/Gold Hero (AI Governance, Running in Real Time) — cream copy on photoreal Earth backdrop with starfield + distant Mars/Jupiter/Saturn; scan → /audit; Starter/Growth/Agency pricing. No Sphere HUD.',
+      'Dominik Dark/Gold Hero (AI Governance, Running in Real Time) — cream copy on photoreal Earth backdrop with starfield + distant Mars/Jupiter/Saturn; monetization cues (value subline, Kostenlos scan glow, Enterprise anfragen, Growth/Agency feature chips); scan → /audit; Starter/Growth/Agency pricing. No Sphere HUD.',
     route: '/',
     evidence: [
       'src/pages/MainLanding.tsx',

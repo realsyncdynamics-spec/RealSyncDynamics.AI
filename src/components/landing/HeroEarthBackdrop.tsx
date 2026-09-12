@@ -161,14 +161,14 @@ export function HeroEarthBackdrop() {
         )}
       </div>
 
-      {/* Readability veil — keep type legible without punching cream holes */}
+      {/* Readability veil — keep type legible without burying the planet */}
       <div
         className="absolute inset-0"
         style={{
           background: [
-            'radial-gradient(ellipse 48% 36% at 50% 28%, rgba(5,7,11,0.42) 0%, rgba(5,7,11,0.14) 55%, transparent 78%)',
-            'linear-gradient(180deg, rgba(5,7,11,0.35) 0%, transparent 16%, transparent 76%, rgba(5,7,11,0.62) 100%)',
-            'linear-gradient(90deg, transparent 0%, transparent 78%, rgba(5,7,11,0.32) 100%)',
+            'radial-gradient(ellipse 42% 30% at 50% 24%, rgba(5,7,11,0.28) 0%, rgba(5,7,11,0.08) 55%, transparent 78%)',
+            'linear-gradient(180deg, rgba(5,7,11,0.28) 0%, transparent 14%, transparent 78%, rgba(5,7,11,0.55) 100%)',
+            'linear-gradient(90deg, transparent 0%, transparent 82%, rgba(5,7,11,0.22) 100%)',
           ].join(', '),
         }}
       />

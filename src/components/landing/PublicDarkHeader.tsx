@@ -18,7 +18,7 @@ import {
   type PublicNavGroup,
   type PublicNavLeaf,
 } from '../../config/public-nav';
-import { useSupabaseAuth } from '../../features/supabase/SupabaseAuthContext';
+import { useOptionalAuth } from './OsEntryLink';
 
 /**
  * Shared dark public header for `/` and `/branchen`.
@@ -187,7 +187,7 @@ function DesktopDropdown({
 }
 
 function AccountNav({ onNavigate }: { onNavigate?: () => void }) {
-  const { isAuthenticated, isLoading } = useSupabaseAuth();
+  const { isAuthenticated, isLoading } = useOptionalAuth();
 
   if (isLoading) {
     return (

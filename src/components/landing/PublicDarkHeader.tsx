@@ -1,6 +1,7 @@
 import { useState, type CSSProperties, type MouseEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
+import { osEntryPath, useOptionalAuth } from './OsEntryLink';
 import {
   LANDING_ACCENT,
   LANDING_BG,
@@ -14,34 +15,35 @@ import {
 /**
  * Shared dark public header for `/` and `/branchen`.
  *
- * Dominik Dark/Gold/Cream: sticky frosted bar, gold brand mark, cream CTA.
- * Working P0 nav targets from #1280/#1279 remain — hash targets use `/#…`
- * so they resolve from `/branchen` as well. `/ai-act` + `/sicherheit`
- * stay reachable (platform-capabilities contract).
+ * Evidence / Module open real OS surfaces (`/app/evidence`, `/app/modules`);
+ * public visitors go via `/welcome?next=…`. Runtime stays the public
+ * `/governance-runtime` page. Scan CTA remains canonical `/audit`.
  */
-const LINKS = [
-  { label: 'Produkt', to: '/#product', className: undefined },
-  { label: 'Runtime', to: '/governance-runtime', className: undefined },
-  { label: 'Branchen', to: '/branchen', className: undefined },
-  { label: 'Evidence', to: '/#evidence', className: undefined },
-  { label: 'Module', to: '/#tools', className: 'hidden lg:block' },
+type NavLink =
+  | { label: string; to: string; className?: string; osEntry?: false }
+  | { label: string; to: string; className?: string; osEntry: true };
+
+const LINKS: readonly NavLink[] = [
+  { label: 'Produkt', to: '/#product' },
+  { label: 'Runtime', to: '/governance-runtime' },
+  { label: 'Branchen', to: '/branchen' },
+  { label: 'Evidence', to: '/app/evidence', osEntry: true },
+  { label: 'Module', to: '/app/modules', className: 'hidden lg:block', osEntry: true },
   { label: 'EU AI Act', to: '/ai-act', className: 'hidden xl:block' },
   { label: 'Sicherheit', to: '/sicherheit', className: 'hidden xl:block' },
-  { label: 'Preise', to: '/#pricing', className: undefined },
-  { label: 'Login', to: '/welcome', className: undefined },
-] as const;
+  { label: 'Preise', to: '/#pricing' },
+  { label: 'Login', to: '/welcome' },
+];
 
 function NavItem({
   to,
   label,
   className,
+  osEntry,
   onNavigate,
-}: {
-  to: string;
-  label: string;
-  className?: string;
-  onNavigate?: () => void;
-}) {
+}: NavLink & { onNavigate?: () => void }) {
+  const { isAuthenticated, isLoading } = useOptionalAuth();
+  const href = osEntry && !isLoading ? osEntryPath(to, isAuthenticated) : to;
   const shared = {
     className: `text-[12px] transition-colors focus-visible:outline-none focus-visible:underline focus-visible:underline-offset-4${className ? ` ${className}` : ''}`,
     style: { color: LANDING_MUTED } as CSSProperties,
@@ -53,15 +55,15 @@ function NavItem({
     },
   };
 
-  if (to.includes('#')) {
+  if (href.includes('#')) {
     return (
-      <a href={to} {...shared} onClick={onNavigate}>
+      <a href={href} {...shared} onClick={onNavigate}>
         {label}
       </a>
     );
   }
   return (
-    <Link to={to} {...shared} onClick={onNavigate}>
+    <Link to={href} {...shared} onClick={onNavigate}>
       {label}
     </Link>
   );

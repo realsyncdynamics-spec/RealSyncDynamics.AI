@@ -7,6 +7,8 @@ import { LandingDarkBand } from '../components/landing/LandingDarkBand';
 import { LandingPricingSection } from '../components/landing/LandingPricingSection';
 import { PublicDarkHeader } from '../components/landing/PublicDarkHeader';
 import { HeroEarthBackdrop } from '../components/landing/HeroEarthBackdrop';
+import { GovernanceActivationSection } from '../components/landing/GovernanceActivationSection';
+import { OsEntryLink } from '../components/landing/OsEntryLink';
 import {
   LANDING_ACCENT,
   LANDING_BG,
@@ -214,19 +216,21 @@ export function MainLanding() {
               </p>
             </form>
 
-            <a
-              href="#runtime"
+            <Link
+              to="/governance-runtime"
               className="mt-4 inline-flex items-center justify-center gap-2 rounded-full border px-[20px] py-[11px] text-[13px] font-medium transition hover:bg-[#e4cfa2]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e4cfa2]/60 lg:mt-5"
               style={{ borderColor: `${LANDING_ACCENT}80`, color: '#e8dfd2' }}
             >
-              Explore the Governance OS <span aria-hidden="true">→</span>
-            </a>
+              Explore the Governance Runtime <span aria-hidden="true">→</span>
+            </Link>
           </div>
         </section>
 
         <LandingChannelTools />
 
         <LandingDarkBand />
+
+        <GovernanceActivationSection />
 
         <section id="platform" className="py-[92px]">
           <div className="mx-auto max-w-[1500px] px-[4vw]">
@@ -362,6 +366,22 @@ export function MainLanding() {
                   PDFs, Logs, Zeitstempel und nachvollziehbare Prüfpfade. Jede Prüfung, jede
                   Entscheidung und jede Änderung landet in derselben Governance-Historie.
                 </p>
+                <div className="mt-8 flex flex-wrap gap-3">
+                  <OsEntryLink
+                    to="/app/evidence"
+                    className="inline-flex items-center gap-2 rounded-full px-[18px] py-[12px] text-[11px] font-semibold transition hover:brightness-110"
+                    style={{ backgroundColor: LANDING_BUTTON, color: LANDING_BUTTON_TEXT }}
+                  >
+                    Evidence öffnen <ArrowRight className="h-3.5 w-3.5" />
+                  </OsEntryLink>
+                  <Link
+                    to="/evidence-vault"
+                    className="inline-flex items-center gap-2 rounded-full border px-[18px] py-[12px] text-[11px] font-semibold transition hover:bg-[#e4cfa2]/10"
+                    style={{ borderColor: `${LANDING_ACCENT}80`, color: '#e8dfd2' }}
+                  >
+                    Fachseite Evidence Vault
+                  </Link>
+                </div>
               </div>
               <div className="grid gap-3 sm:grid-cols-2">
                 <TrustItem
@@ -389,7 +409,7 @@ export function MainLanding() {
           </div>
         </section>
 
-        <section id="runtime" className="py-[92px]">
+        <section id="operating-loop" className="py-[92px]">
           <div className="mx-auto max-w-[1500px] px-[4vw]">
             <div className="mb-12 max-w-3xl">
               <p
@@ -411,6 +431,22 @@ export function MainLanding() {
                   kontrollierten KI-Organisation.
                 </em>
               </h2>
+              <div className="mt-8 flex flex-wrap gap-3">
+                <Link
+                  to="/governance-runtime"
+                  className="inline-flex items-center gap-2 rounded-full px-[18px] py-[12px] text-[11px] font-semibold transition hover:brightness-110"
+                  style={{ backgroundColor: LANDING_BUTTON, color: LANDING_BUTTON_TEXT }}
+                >
+                  Runtime-Fachseite <ArrowRight className="h-3.5 w-3.5" />
+                </Link>
+                <OsEntryLink
+                  to="/app/modules"
+                  className="inline-flex items-center gap-2 rounded-full border px-[18px] py-[12px] text-[11px] font-semibold transition hover:bg-[#e4cfa2]/10"
+                  style={{ borderColor: `${LANDING_ACCENT}80`, color: '#e8dfd2' }}
+                >
+                  Module im Workspace öffnen
+                </OsEntryLink>
+              </div>
             </div>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {GOVERNANCE_STEPS.map(([no, title, text]) => (
@@ -468,8 +504,15 @@ export function MainLanding() {
               >
                 Kostenlosen Governance Scan starten <ArrowRight className="h-4 w-4" />
               </Link>
+              <OsEntryLink
+                to="/app/activation"
+                className="inline-flex items-center justify-center gap-2 rounded-full border px-7 py-3.5 font-medium transition hover:bg-[#e4cfa2]/10"
+                style={{ borderColor: `${LANDING_ACCENT}80`, color: '#e8dfd2' }}
+              >
+                Governance Activation
+              </OsEntryLink>
               <Link
-                to="/pricing"
+                to="/#pricing"
                 className="inline-flex items-center justify-center gap-2 rounded-full border px-7 py-3.5 font-medium transition hover:bg-[#e4cfa2]/10"
                 style={{ borderColor: `${LANDING_ACCENT}80`, color: '#e8dfd2' }}
               >

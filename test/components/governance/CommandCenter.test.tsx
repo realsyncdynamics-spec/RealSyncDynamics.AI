@@ -64,7 +64,7 @@ describe('CommandCenter', () => {
       <CommandCenter open onClose={() => {}} items={ITEMS} onRun={() => {}} />,
     );
     expect(screen.getByRole('dialog', { name: 'Command Center' })).toBeInTheDocument();
-    expect(screen.getByLabelText('Was möchtest du tun?')).toBeInTheDocument();
+    expect(screen.getByLabelText('Was möchtest du erledigen?')).toBeInTheDocument();
     expect(screen.getByRole('option', { name: /Evidence/ })).toBeInTheDocument();
   });
 
@@ -84,7 +84,7 @@ describe('CommandCenter', () => {
       <CommandCenter open onClose={onClose} items={ITEMS} onRun={onRun} />,
     );
 
-    fireEvent.change(screen.getByLabelText('Was möchtest du tun?'), {
+    fireEvent.change(screen.getByLabelText('Was möchtest du erledigen?'), {
       target: { value: 'Einstell' },
     });
     expect(screen.getByRole('option', { name: /Einstellungen/ })).toBeInTheDocument();
@@ -103,7 +103,7 @@ describe('CommandCenter', () => {
       <CommandCenter open onClose={() => {}} items={ITEMS} onRun={onRun} />,
     );
 
-    fireEvent.change(screen.getByLabelText('Was möchtest du tun?'), {
+    fireEvent.change(screen.getByLabelText('Was möchtest du erledigen?'), {
       target: { value: 'DSFA' },
     });
     const option = screen.getByRole('option', { name: /DSFA/ });

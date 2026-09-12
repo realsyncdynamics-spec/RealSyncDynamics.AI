@@ -42,7 +42,15 @@ export const resourceForAction = (action: string): string => {
   if (action.includes('publish') || action === 'publish') return 'deployment';
   if (action.includes('write') || action.includes('frontend') || action.includes('design')) return 'frontend';
   if (action.includes('content')) return 'content';
-  if (action.includes('governance')) return 'project';
+  if (
+    action.includes('governance') ||
+    action.includes('compliance') ||
+    action.includes('remediation') ||
+    action.includes('evidence') ||
+    action.includes('closing_report')
+  ) {
+    return 'project';
+  }
   return 'project';
 };
 
@@ -50,7 +58,16 @@ export const mapAction = (action: string): string => {
   if (isDesignKernelAction(action) || action === 'publish') return designMapAction(action);
   if (action === 'publish') return 'publish';
   if (action.includes('write') || action.includes('frontend') || action.includes('design')) return 'write';
-  if (action.includes('read') || action.includes('analyze') || action.includes('discover') || action.includes('verify')) {
+  if (
+    action.includes('read') ||
+    action.includes('analyze') ||
+    action.includes('discover') ||
+    action.includes('verify') ||
+    action.includes('list_') ||
+    action.includes('define_') ||
+    action.includes('create_compliance') ||
+    action.includes('assess_')
+  ) {
     return 'read';
   }
   return 'read';

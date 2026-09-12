@@ -47,9 +47,13 @@ export function classifyIntent(text: string): IntentSignals {
     governance:
       t.includes('dsgvo') ||
       t.includes('gdpr') ||
+      t.includes('datenschutz') ||
       t.includes('ai act') ||
+      t.includes('eu ai') ||
+      t.includes('ki-verordnung') ||
       t.includes('compliance') ||
-      t.includes('governance'),
+      t.includes('governance') ||
+      (t.includes('prüfe') && (t.includes('ki') || t.includes('ai') || t.includes('anwendung'))),
     deploy:
       t.includes('deploy') ||
       t.includes('veröff') ||

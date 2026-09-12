@@ -18,6 +18,8 @@ export interface CommandCenterProps {
   onClose: () => void;
   items: CommandDefinition[];
   onRun: (item: CommandDefinition) => void;
+  /** Free-text Agent OS intent (e.g. DSGVO/AI Act). Optional — when set, Enter submits intent if no runnable command is selected or query is free text. */
+  onSubmitIntent?: (text: string) => void;
 }
 
 function usePrefersReducedMotion(): boolean {
@@ -32,7 +34,7 @@ function usePrefersReducedMotion(): boolean {
   return reduced;
 }
 
-export function CommandCenter({ open, onClose, items, onRun }: CommandCenterProps) {
+export function CommandCenter({ open, onClose, items, onRun, onSubmitIntent }: CommandCenterProps) {
   const [query, setQuery] = useState('');
   const [activeIndex, setActiveIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -70,9 +72,16 @@ export function CommandCenter({ open, onClose, items, onRun }: CommandCenterProp
 
     function runActive() {
       const item = filtered[activeIndex];
-      if (!item || !isCommandRunnable(item)) return;
-      onRun(item);
-      onClose();
+      if (item && isCommandRunnable(item)) {
+        onRun(item);
+        onClose();
+        return;
+      }
+      const text = query.trim();
+      if (onSubmitIntent && text) {
+        onSubmitIntent(text);
+        onClose();
+      }
     }
 
     function onKeyDown(e: KeyboardEvent) {
@@ -117,7 +126,7 @@ export function CommandCenter({ open, onClose, items, onRun }: CommandCenterProp
 
     window.addEventListener('keydown', onKeyDown, true);
     return () => window.removeEventListener('keydown', onKeyDown, true);
-  }, [open, filtered, activeIndex, onClose, onRun]);
+  }, [open, filtered, activeIndex, onClose, onRun, onSubmitIntent, query]);
 
   if (!open) return null;
 
@@ -152,8 +161,8 @@ export function CommandCenter({ open, onClose, items, onRun }: CommandCenterProp
             ref={inputRef}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Was möchtest du tun?"
-            aria-label="Was möchtest du tun?"
+            placeholder="Was möchtest du erledigen?"
+            aria-label="Was möchtest du erledigen?"
             aria-controls={listId}
             aria-autocomplete="list"
             aria-activedescendant={
@@ -180,7 +189,9 @@ export function CommandCenter({ open, onClose, items, onRun }: CommandCenterProp
         >
           {filtered.length === 0 && (
             <p className="px-4 py-8 text-center text-xs text-titanium-500">
-              Keine Treffer für „{query}“
+              {onSubmitIntent && query.trim()
+                ? `Enter: Intent „${query.trim()}“ im Agent OS öffnen`
+                : `Keine Treffer für „${query}“`}
             </p>
           )}
           {filtered.map((item, idx) => {
@@ -253,7 +264,8 @@ export function CommandCenter({ open, onClose, items, onRun }: CommandCenterProp
             <ArrowDown className="h-3 w-3" aria-hidden /> Navigieren
           </span>
           <span className="flex items-center gap-1">
-            <CornerDownLeft className="h-3 w-3" aria-hidden /> Ausführen
+            <CornerDownLeft className="h-3 w-3" aria-hidden />{' '}
+            {onSubmitIntent ? 'Befehl / Intent' : 'Ausführen'}
           </span>
           <span className="ml-auto text-titanium-700">Esc schließen</span>
         </div>

@@ -51,7 +51,7 @@ function StaticEarthPlane({ className = '' }: { className?: string }) {
           height={768}
           decoding="async"
           fetchPriority="high"
-          className="h-full w-full scale-[1.72] object-cover object-[52%_38%] opacity-100"
+          className="h-full w-full scale-[2.05] object-cover object-[55%_42%] opacity-100"
         />
       </picture>
       {/* Soft readability only — no cream sunrise wash */}

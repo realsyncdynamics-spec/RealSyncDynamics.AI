@@ -6,6 +6,9 @@ name: CTA Enforcement
 # Quelle der Wahrheit: src/content/runtimeVocab.ts → CI_FORBIDDEN_CTA.
 # Diese Liste hier muss damit synchron bleiben.
 #
+# Zusätzlich: Landing-Claim-Hygiene gegen src/product/implementation-status.ts
+# (keine „vollständig / complete runtime“-Live-Behauptungen für Preview).
+#
 # Bewusst PRÄZISE (Mehrwort-Phrasen): bare „Pilot"/„Beratung" werden NICHT
 # geprüft, weil sie legitime Kontexte haben („Pilotkunden", der Pflicht-
 # Disclaimer „ersetzt keine Rechtsberatung", Positionierung „Tools statt
@@ -18,6 +21,8 @@ on:
       - 'src/pages/**'
       - 'src/components/**'
       - 'src/content/runtimeVocab.ts'
+      - 'src/product/implementation-status.ts'
+      - 'scripts/check-landing-claims.mjs'
       - '.github/workflows/cta-enforcement.yml'
   workflow_dispatch:
 
@@ -49,3 +54,6 @@ jobs:
           fi
 
           echo "✓ Keine verbotenen CTA-Phrasen im öffentlichen Frontend."
+
+      - name: Landing claims vs implementation-status registry
+        run: node scripts/check-landing-claims.mjs

@@ -839,17 +839,15 @@ html, body {
 }
 
 /* ── Glanz auf der Hero-Headline ─────────────────────────────────────────
-   Warm sunrise cream/gold — kein Papierweiss (#fff). Dominik: Ohne Weiss. */
+   Cream/gold — kein Papierweiss (#fff). Dominik: Ohne Weiss. */
 .hero-shine {
   color: #f2eee6;
   -webkit-text-fill-color: #f2eee6;
   text-shadow:
-    0 0 2px rgba(228, 207, 162, 0.7),
-    0 0 14px rgba(255, 186, 110, 0.4),
-    0 0 36px rgba(228, 160, 80, 0.28),
-    0 0 64px rgba(180, 140, 70, 0.18),
+    0 0 1px rgba(228, 207, 162, 0.55),
+    0 0 12px rgba(228, 207, 162, 0.22),
     0 1px 0 rgb(0 0 0 / 0.75),
-    0 14px 40px rgb(0 0 0 / 0.85);
+    0 12px 36px rgb(0 0 0 / 0.8);
 }
 
 @supports not ((background-clip: text) or (-webkit-background-clip: text)) {
@@ -864,12 +862,10 @@ html, body {
   -webkit-text-fill-color: #e4cfa2;
   font-style: normal;
   text-shadow:
-    0 0 2px rgba(239, 230, 213, 0.75),
-    0 0 18px rgba(255, 176, 96, 0.48),
-    0 0 40px rgba(228, 160, 70, 0.3),
-    0 0 72px rgba(180, 140, 70, 0.2),
+    0 0 1px rgba(239, 230, 213, 0.55),
+    0 0 14px rgba(228, 207, 162, 0.28),
     0 1px 0 rgb(0 0 0 / 0.65),
-    0 14px 40px rgb(0 0 0 / 0.8);
+    0 12px 36px rgb(0 0 0 / 0.75);
 }
 
 @supports not ((background-clip: text) or (-webkit-background-clip: text)) {
@@ -879,58 +875,58 @@ html, body {
   }
 }
 
-/* Weicher Lichthof hinter der Headline — sunrise bloom, nicht Neon. */
+/* Soft gold bloom behind H1 — very restrained so Earth stays visible. */
 .hero-shine-glow {
   position: absolute;
-  inset: -8% -6%;
+  inset: -6% -4%;
   pointer-events: none;
   z-index: -1;
-  color: #ffc078;
-  -webkit-text-fill-color: #ffc078;
+  color: #e4cfa2;
+  -webkit-text-fill-color: #e4cfa2;
   font-family: inherit;
   font-weight: inherit;
   font-size: inherit;
   line-height: inherit;
   letter-spacing: inherit;
   text-align: center;
-  filter: blur(34px);
-  opacity: 0.55;
+  filter: blur(18px);
+  opacity: 0.14;
   user-select: none;
 }
 
-/* ── Sunrise behind the scaled Earth (public landing only) ───────────────
-   Warm gold/amber disc + shaft toward the H1. Scenery, not a product widget. */
+/* ── Warm rim behind Earth (public landing only) ─────────────────────────
+   Subtle limb glow only — never a cream sun disc over continents. */
 .hero-sunrise {
   pointer-events: none;
 }
 
 .hero-sunrise-core {
-  animation: hero-sunrise-pulse 9s ease-in-out infinite;
+  animation: none;
 }
 
 .hero-sunrise-shaft {
-  animation: hero-sunrise-shaft 11s ease-in-out infinite;
+  animation: none;
 }
 
 @keyframes hero-sunrise-pulse {
   0%,
   100% {
-    opacity: 0.88;
+    opacity: 0.4;
     transform: scale(1);
   }
   50% {
-    opacity: 1;
-    transform: scale(1.04);
+    opacity: 0.5;
+    transform: scale(1.01);
   }
 }
 
 @keyframes hero-sunrise-shaft {
   0%,
   100% {
-    opacity: 0.62;
+    opacity: 0.25;
   }
   50% {
-    opacity: 0.82;
+    opacity: 0.35;
   }
 }
 
@@ -1041,18 +1037,18 @@ html, body {
   }
 }
 
-/* ── Public landing Earth backdrop — scenery only, Dark/Gold sunrise ──── */
+/* ── Public landing Earth backdrop — scenery only, Dark/Gold night rim ── */
 .hero-earth-backdrop,
 .hero-earth-backdrop canvas {
   pointer-events: none !important;
 }
 
-/* Static fallback: pull NASA blues hard toward cream-gold / charcoal + sunrise */
+/* Static fallback: night Europe crop — keep land/city lights readable */
 .hero-earth-static {
-  filter: sepia(0.68) saturate(0.45) hue-rotate(-28deg) brightness(0.7) contrast(1.2);
+  filter: saturate(1.05) brightness(0.92) contrast(1.1);
 }
 
-/* WebGL day shader already grades gold + terminator; keep highlights readable */
+/* WebGL mesh already grades gold; avoid sepia wash that hides continents */
 .hero-earth-canvas {
-  filter: sepia(0.18) saturate(0.85) hue-rotate(-8deg) brightness(1.02) contrast(1.08);
+  filter: none;
 }

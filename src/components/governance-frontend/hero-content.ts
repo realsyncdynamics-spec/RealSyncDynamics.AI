@@ -14,17 +14,12 @@ export type HeroHeadlineSegment = {
 /**
  * Governance OS Hero — Dominik-Referenz.
  *
- * Claim direction: Govern AI. Prove Everything. Operate with Confidence.
- *
- * ## Contract
- *
- * `MainLanding` renders H1 exclusively from `HERO_HEADLINE`. E2E / FE-001
- * read the same source — change here, not in the page.
+ * Two lines max on desktop — no orphan “Time”. Fluid type on MainLanding
+ * (`LANDING_H1`) keeps the wrap balanced across viewports.
  */
 export const HERO_HEADLINE: readonly (readonly HeroHeadlineSegment[])[] = [
   [{ text: 'AI Governance,' }],
-  [{ text: 'Running in Real', accent: true }],
-  [{ text: 'Time', accent: true }],
+  [{ text: 'Running in Real Time', accent: true }],
 ];
 
 /** Reine Textzeilen der H1 — für Tests und Accessible-Name-Abgleich. */
@@ -43,4 +38,8 @@ if (!HERO_HEADLINE_LINES.some((line) => line.includes(HERO_HEADLINE_TEST_SUBSTRI
     'hero-content.ts: HERO_HEADLINE_TEST_SUBSTRING kommt in keiner Zeile der ' +
       'HERO_HEADLINE vor — FE-001 würde fehlschlagen.'
   );
+}
+
+if (HERO_HEADLINE_LINES.length > 2) {
+  throw new Error('hero-content.ts: H1 must stay ≤ 2 lines (no orphan “Time”).');
 }

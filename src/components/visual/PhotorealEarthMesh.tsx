@@ -41,13 +41,15 @@ export interface PhotorealEarthMeshProps {
 }
 
 const LANDING_GOLD = {
-  dayTint: '#e8ddc8',
+  /** Subtle warm multiply — never near-white cream that washes continents. */
+  dayTint: '#cfc8bc',
   atmosphereGlow: '#e4cfa2',
   atmosphereWarm: '#ffe0b0',
-  outerGlow: '#c4a06a',
+  outerGlow: '#d4b07a',
   specular: new THREE.Vector3(0.95, 0.82, 0.55),
   clouds: new THREE.Vector3(0.96, 0.9, 0.78),
-  nightIntensity: 0.62,
+  /** Dense city-light network — Europe night must dominate the hero. */
+  nightIntensity: 2.55,
 } as const;
 
 function configureMap(tex: THREE.Texture, anisotropy: number, colorSpace?: THREE.ColorSpace) {
@@ -105,7 +107,7 @@ function AtmosphereShell({
         uSun: {
           value: (sunDirection ?? new THREE.Vector3(-0.75, -0.35, 0.4)).clone().normalize(),
         },
-        uIntensity: { value: reducedMotion ? (gold ? 0.62 : 0.7) : gold ? 1.05 : 1.18 },
+        uIntensity: { value: reducedMotion ? (gold ? 0.55 : 0.7) : gold ? 0.88 : 1.18 },
         uGold: { value: gold ? 1.0 : 0.0 },
       },
       vertexShader: /* glsl */ `
@@ -130,15 +132,15 @@ function AtmosphereShell({
         varying vec3 vView;
         varying vec3 vNormalW;
         void main() {
-          float fresnel = pow(1.0 - abs(dot(vNormal, vView)), 2.2);
-          float rim = smoothstep(0.02, 0.94, fresnel);
-          // Warm limb toward the sun (sunrise atmosphere).
-          float sunSide = smoothstep(-0.15, 0.85, dot(normalize(vNormalW), normalize(uSun)));
-          float warmMix = mix(0.35, 0.78, uGold) * sunSide;
+          float fresnel = pow(1.0 - abs(dot(vNormal, vView)), 2.15);
+          float rim = smoothstep(0.02, 0.9, fresnel);
+          float sunSide = smoothstep(-0.25, 0.8, dot(normalize(vNormalW), normalize(uSun)));
+          float warmMix = mix(0.28, 0.62, uGold) * sunSide;
           vec3 col = mix(uGlow, uWarm, warmMix);
-          // Gold palette: amber boost on the lit limb.
-          col = mix(col, col * vec3(1.12, 0.92, 0.62), uGold * sunSide * 0.45);
-          gl_FragColor = vec4(col, rim * uIntensity * mix(1.0, 0.75 + sunSide * 0.45, uGold));
+          // Dense gold limb chrome — readable terminator, not cream wash.
+          col = mix(col, col * vec3(1.1, 0.94, 0.68), uGold * sunSide * 0.4);
+          float alpha = rim * uIntensity * mix(1.0, 0.78 + sunSide * 0.4, uGold);
+          gl_FragColor = vec4(col, alpha);
         }
       `,
     });
@@ -167,7 +169,7 @@ function OuterGlow({ radius, palette }: { radius: number; palette: EarthPalette 
       <meshBasicMaterial
         color={gold ? LANDING_GOLD.outerGlow : '#2f82c4'}
         transparent
-        opacity={gold ? 0.14 : 0.12}
+        opacity={gold ? 0.12 : 0.12}
         side={THREE.BackSide}
         depthWrite={false}
         toneMapped={false}
@@ -332,11 +334,11 @@ export function PhotorealEarthMesh({
   const nightIntensity = gold ? LANDING_GOLD.nightIntensity : 1.15;
   const specColor = gold ? LANDING_GOLD.specular : new THREE.Vector3(0.8, 0.92, 1.0);
   const cloudColor = gold ? LANDING_GOLD.clouds : new THREE.Vector3(0.96, 0.98, 1.0);
-  const specIntensity = gold ? 0.38 : 0.62;
+  const specIntensity = gold ? 0.28 : 0.62;
   const cloudOpacity = gold
     ? quality === 'high'
-      ? 0.32
-      : 0.24
+      ? 0.22
+      : 0.16
     : quality === 'high'
       ? 0.5
       : 0.38;
@@ -345,66 +347,56 @@ export function PhotorealEarthMesh({
     <group ref={group} rotation={rotation}>
       <mesh raycast={() => null}>
         <sphereGeometry args={[radius, segments[0], segments[1]]} />
-        {gold ? (
-          /* Dominik Dark/Gold/Cream — sunrise-lit day map, warm terminator, no NASA cyan. */
+        {/*
+          Photoreal day map for all palettes. Landing-gold uses a warm cream
+          tint + terminator darken via lights — not a custom cream-wash shader
+          that can collapse to a black/cream disc on software WebGL.
+        */}
+        <meshBasicMaterial
+          map={activeDay}
+          color={dayTint}
+          toneMapped={false}
+        />
+      </mesh>
+
+      {/* Soft day/night limb for landing-gold — keeps terminator without washing continents */}
+      {gold && (
+        <mesh scale={1.001} raycast={() => null}>
+          <sphereGeometry args={[radius, segments[0], segments[1]]} />
           <shaderMaterial
             ref={dayMat}
+            transparent
+            depthWrite={false}
             toneMapped={false}
             uniforms={{
-              uDay: { value: activeDay },
               uLight: { value: (sunDirection ?? sun).clone().normalize() },
             }}
             vertexShader={/* glsl */ `
-              varying vec2 vUv;
               varying vec3 vNormalW;
               void main() {
-                vUv = uv;
                 vNormalW = normalize(mat3(modelMatrix) * normal);
                 gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
               }
             `}
             fragmentShader={/* glsl */ `
-              uniform sampler2D uDay;
               uniform vec3 uLight;
-              varying vec2 vUv;
               varying vec3 vNormalW;
               void main() {
-                vec3 c = texture2D(uDay, vUv).rgb;
-                float luma = dot(c, vec3(0.299, 0.587, 0.114));
-                // Ocean = blue-dominant pixels; land = warmer/green remainder.
-                float blueDom = c.b - max(c.r, c.g);
-                float ocean = smoothstep(0.015, 0.11, blueDom);
-                float greenLand = smoothstep(0.02, 0.14, c.g - c.b);
-                // Charcoal-slate seas (no cyan), cream-gold continents.
-                vec3 sea = vec3(0.055, 0.06, 0.07) + luma * vec3(0.14, 0.12, 0.09);
-                vec3 landWarm = vec3(luma) * vec3(1.05, 0.92, 0.68);
-                landWarm = mix(landWarm, vec3(0.78, 0.68, 0.48), 0.35 + greenLand * 0.2);
-                vec3 graded = mix(landWarm, sea, ocean);
-                // Global warm push + slight darken to sit under cream UI.
-                graded *= vec3(0.92, 0.84, 0.68);
-                graded = mix(graded, vec3(dot(graded, vec3(0.333))), 0.18);
-
-                // Sunrise lighting — lit continents face the sun; night side falls off.
-                // Brightness floor keeps the day side gold-readable on desktop Homepad.
                 vec3 N = normalize(vNormalW);
                 vec3 L = normalize(uLight);
                 float ndl = dot(N, L);
-                float day = smoothstep(-0.35, 0.32, ndl);
-                float night = 1.0 - day;
-                float term = 1.0 - smoothstep(0.0, 0.42, abs(ndl));
-                vec3 amber = vec3(1.12, 0.74, 0.32);
-                graded *= mix(0.14, 1.42, day);
-                graded += amber * term * 0.55 * (0.45 + day * 0.75);
-                // Soft night charcoal so city lights can read on top.
-                graded = mix(graded, graded * vec3(0.07, 0.06, 0.05), night * 0.82);
-                gl_FragColor = vec4(graded, 1.0);
+                float night = 1.0 - smoothstep(-0.18, 0.45, ndl);
+                float term = 1.0 - smoothstep(0.0, 0.32, abs(ndl));
+                // Darken night; stronger amber terminator chrome.
+                vec3 amber = vec3(1.05, 0.74, 0.32);
+                float a = night * 0.68 + term * 0.22;
+                vec3 col = mix(vec3(0.015, 0.015, 0.02), amber * 0.55, term * 0.7);
+                gl_FragColor = vec4(col, a);
               }
             `}
           />
-        ) : (
-          <meshBasicMaterial map={activeDay} color={dayTint} toneMapped={false} />
-        )}
-      </mesh>
+        </mesh>
+      )}
 
       {nightMap && set.nightEnabled && (
         <mesh scale={1.002} raycast={() => null}>
@@ -439,14 +431,13 @@ export function PhotorealEarthMesh({
               varying vec3 vNormalW;
               void main() {
                 float ndl = dot(normalize(vNormalW), normalize(uLight));
-                float night = smoothstep(0.05, -0.3, ndl);
+                float night = smoothstep(0.22, -0.12, ndl);
                 vec3 lights = texture2D(uNight, vUv).rgb;
                 float luma = max(lights.r, max(lights.g, lights.b));
-                vec3 glow = lights * lights * 1.8 + lights * 0.45;
-                // Landing gold: shift city lights toward amber, dim blue channels.
-                glow = mix(glow, vec3(glow.r * 1.15, glow.g * 0.85, glow.b * 0.35), uWarm);
-                // Darker night side overall when gold-graded.
-                float side = mix(0.9, 0.55, uWarm);
+                vec3 glow = lights * lights * 3.2 + lights * 1.15;
+                // Landing gold: dense amber city network — still photoreal, not cyan.
+                glow = mix(glow, vec3(glow.r * 1.35, glow.g * 0.98, glow.b * 0.38), uWarm);
+                float side = mix(1.0, 1.12, uWarm);
                 gl_FragColor = vec4(glow * uIntensity, night * luma * side);
               }
             `}

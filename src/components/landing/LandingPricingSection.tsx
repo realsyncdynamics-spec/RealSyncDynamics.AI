@@ -5,6 +5,7 @@ import {
   LANDING_ACCENT,
   LANDING_BUTTON,
   LANDING_BUTTON_TEXT,
+  LANDING_H2,
   LANDING_LINE,
   LANDING_MONO,
   LANDING_MUTED,
@@ -15,9 +16,8 @@ import {
 /**
  * Pricing 3-up on the public landing — Dominik-Referenz layout.
  *
- * Feste Reihenfolge Starter / Growth (featured) / Agency aus der SSoT
- * (`shared/pricing.ts`). Agency ist wieder self_service (Stripe Live-Price
- * `price_1TfsV9…`); CTA geht auf `/checkout/agency`.
+ * Monthly Starter / Growth / Agency from SSoT. Yearly = coming-soon
+ * (implementation-status `pricing-yearly`).
  */
 const LANDING_PLAN_IDS = ['starter', 'growth', 'agency'] as const;
 
@@ -28,7 +28,7 @@ export function LandingPricingSection() {
   if (tiers.length === 0) return null;
 
   return (
-    <section id="pricing" className="border-t border-[#e4cfa2]/10 py-[92px]">
+    <section id="pricing" className="border-t border-[#e4cfa2]/10 py-[64px] lg:py-[72px]">
       <div className="mx-auto max-w-[1500px] px-[4vw]">
         <p
           className="inline-block rounded-full border px-[11px] py-[7px] text-[9px] font-medium tracking-[.23em]"
@@ -41,30 +41,35 @@ export function LandingPricingSection() {
           PREISE
         </p>
         <h2
-          className="mt-[22px] text-[clamp(40px,5vw,65px)] leading-none tracking-[-.035em]"
-          style={{ fontFamily: LANDING_SERIF, fontWeight: 500, color: LANDING_TEXT }}
+          className="mt-[18px] leading-[1.05] tracking-[-.03em]"
+          style={{
+            fontFamily: LANDING_SERIF,
+            fontWeight: 500,
+            fontSize: LANDING_H2,
+            color: LANDING_TEXT,
+          }}
         >
           Pläne für die{' '}
           <em className="not-italic" style={{ color: LANDING_ACCENT }}>
             Governance Runtime.
           </em>
         </h2>
-        <p className="mt-[17px] max-w-[760px] text-[13px] leading-[1.7]" style={{ color: LANDING_MUTED }}>
-          Live-Tarife aus dem Produktkatalog — Starter, Growth und Agency starten
-          self-service über Stripe.
+        <p className="mt-[14px] max-w-[640px] text-[13px] leading-[1.65]" style={{ color: LANDING_MUTED }}>
+          Monatliche Self-Service-Tarife — Starter €79 · Growth €249 · Agency €699.
+          Jahresabrechnung: Coming Soon (noch nicht in Stripe verdrahtet).
         </p>
 
-        <div className="mt-[45px] grid gap-[14px] md:grid-cols-3">
+        <div className="mt-[36px] grid gap-[12px] md:grid-cols-3">
           {tiers.map((tier) => {
             const featured = tier.highlight || tier.id === 'growth';
             return (
               <article
                 key={tier.id}
-                className="flex min-h-[280px] flex-col border p-[22px]"
+                className="flex min-h-[260px] flex-col border p-[20px]"
                 style={{
                   borderColor: featured ? `${LANDING_ACCENT}73` : 'rgba(255,255,255,0.12)',
                   background: featured
-                    ? 'linear-gradient(135deg, rgba(0,229,255,0.10), rgba(7,9,13,0.72))'
+                    ? 'linear-gradient(135deg, rgba(228,207,162,0.10), rgba(7,9,13,0.72))'
                     : 'linear-gradient(135deg, rgba(20,21,25,0.7), rgba(7,9,13,0.72))',
                 }}
               >

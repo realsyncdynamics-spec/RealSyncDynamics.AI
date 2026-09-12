@@ -1,5 +1,9 @@
 import { executeDesignStep } from './design/execute';
 import { isDesignKernelAction } from './design/designPolicy';
+import {
+  complianceArtifactObservation,
+  isComplianceKernelAction,
+} from './complianceArtifacts';
 import type { CommandSession, PlanStep, SessionArtifacts, StepResult } from './types';
 
 export type StepExecutorContext = {
@@ -17,6 +21,7 @@ const KERNEL_LOCAL_ACTIONS = new Set([
 
 /**
  * Default executor: DesignOS kernel steps mutate semantic design state.
+ * Compliance artifact steps produce honest Preview observations (no fake KPIs).
  * Anything that would render, scan or deploy via SiteOS is NOT IMPLEMENTED
  * until a SiteOS executor is bound. Never fake a run.
  */
@@ -37,6 +42,14 @@ export function defaultExecuteStep(ctx: StepExecutorContext): StepResult {
         intent: session.intent.text,
         capabilities: session.plan.capabilities,
       },
+    };
+  }
+
+  if (isComplianceKernelAction(step.action)) {
+    return {
+      status: 'succeeded',
+      tool: 'agent-os.compliance.preview',
+      observation: complianceArtifactObservation(step.action, session.intent.text),
     };
   }
 

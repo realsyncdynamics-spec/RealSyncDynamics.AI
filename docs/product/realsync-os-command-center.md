@@ -4,6 +4,13 @@
 **Stand:** 2026-09-08  
 **Status:** Kernel + Command-Center-Loop an `/app/intelligence` gebunden. SiteOS ist der Executor.
 
+## Agent OS first slice
+
+Siehe `docs/product/realsync-agent-os.md`. Compliance-Intents (DSGVO / EU AI Act)
+öffnen eine 10-Artefakt-Session über denselben Kernel (`openCommandSession`).
+Kanonische Fläche bleibt `/app` (ComplianceStatusDashboard) — kein zweites Dashboard.
+Ctrl+K kann Free-Text-Intents an `/app/dashboard` weiterreichen.
+
 ## Loop
 
 ```

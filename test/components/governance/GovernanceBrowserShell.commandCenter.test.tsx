@@ -108,7 +108,7 @@ describe('GovernanceBrowserShell — Command Center', () => {
     renderShell('/app/home');
     fireEvent.keyDown(window, { key: 'k', ctrlKey: true });
 
-    fireEvent.change(screen.getByLabelText('Was möchtest du tun?'), {
+    fireEvent.change(screen.getByLabelText('Was möchtest du erledigen?'), {
       target: { value: 'Evidence' },
     });
     fireEvent.keyDown(window, { key: 'Enter' });

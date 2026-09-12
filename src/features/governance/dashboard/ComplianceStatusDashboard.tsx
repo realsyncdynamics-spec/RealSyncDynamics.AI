@@ -28,6 +28,7 @@ import {
   type RiskBucketId,
   type RiskIndex,
 } from './complianceStatus';
+import { AgentOsPanel } from '../agent-os/AgentOsPanel';
 
 export function ComplianceStatusDashboard() {
   const { activeTenantId, tenants } = useTenant();
@@ -56,6 +57,11 @@ export function ComplianceStatusDashboard() {
   return (
     <>
       <TrialBanner />
+      {activeTenantId && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-6">
+          <AgentOsPanel />
+        </div>
+      )}
       <ComplianceStatusView
         tenantName={tenantName}
         activeTenantId={activeTenantId}

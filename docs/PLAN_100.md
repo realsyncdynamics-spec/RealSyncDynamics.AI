@@ -38,7 +38,7 @@ RealSyncDynamics.AI betreibt DSGVO, EU AI Act, Evidence, Monitoring und Automati
 11. ⬜ Plan-/Tier-Namen vereinheitlichen (Single Source of Truth `src/config/pricing.ts`, keine Abweichungen in Doku/UI).
 12. ⬜ **Ein** Dashboard: Governance-OS-Views (Risk, Alerts, Monitoring, DPIAs, Incidents, Approvals) unter einer kohärenten Navigation bündeln.
 13. ⬜ App-Struktur entwirren: `src/enterprise-os` vs. `src/features` vs. `src/lib/enterprise-ai-os` — eine klare Schichtung, dokumentiert.
-14. ⬜ `governance-os-complete.html` (66 KB Prototyp) entweder in die SPA überführen oder archivieren — keine doppelte Wahrheit.
+14. ✅ `governance-os-complete.html` (66 KB Prototyp) archiviert nach `.archive/root-docs/` — keine doppelte Wahrheit im Root.
 15. ⬜ Edge-Functions-Landschaft (90+) inventarisieren: aktiv / experimentell / tot — Liste mit Owner & Status.
 16. ⬜ Tote/experimentelle Functions deprecaten (klar markieren, aus Routing nehmen) statt löschen-und-hoffen.
 17. ⬜ Doppelte Migrations (mehrere `20260624000000_*`) bereinigen, Timestamp-Konvention erzwingen.

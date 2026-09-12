@@ -71,12 +71,14 @@ describe('implementation-status registry', () => {
     expect(hero).toContain("HERO_HEADLINE_TEST_SUBSTRING = 'AI Compliance'");
     expect(hero).toContain('Free Audit starten');
     expect(hero).toContain('Live Dashboard ansehen');
-    expect(hero).toContain('Discover → Classify → Enforce → Prove');
+    expect(hero).toContain('DISCOVER → CLASSIFY → ENFORCE → PROVE');
     expect(hero).toContain('Runtime governance for regulated AI systems');
+    expect(hero).toContain('01 — AI GOVERNANCE');
     expect(hero).not.toContain('Running in Real');
-    // Two-line H1 — Europe alone on line 2 (gold)
-    expect(hero).toContain("text: 'AI Compliance Operations OS for'");
+    // Europe is the gold last line; claim words stay locked
     expect(hero).toContain("text: 'Europe'");
     expect(hero).toContain('accent: true');
+    expect(hero).toMatch(/AI Compliance/);
+    expect(hero).toMatch(/Operations OS/);
   });
 });

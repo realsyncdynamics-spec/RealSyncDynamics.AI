@@ -5,7 +5,6 @@ import { HERO_SCAN_CTA_LABEL } from '../governance-frontend/hero-content';
 import {
   LANDING_ACCENT,
   LANDING_BG,
-  LANDING_BUTTON_ALT,
   LANDING_BUTTON_TEXT,
   LANDING_GREEN,
   LANDING_MONO,
@@ -88,7 +87,7 @@ function NavItem({
 
 const scanCtaStyle: CSSProperties = {
   fontFamily: LANDING_MONO,
-  backgroundColor: LANDING_BUTTON_ALT,
+  background: 'linear-gradient(180deg, #f0e6d4 0%, #e8ddc8 48%, #dcc9a8 100%)',
   color: LANDING_BUTTON_TEXT,
 };
 

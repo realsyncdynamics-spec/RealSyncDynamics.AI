@@ -20,6 +20,8 @@ import {
 } from '../components/landing/landing-theme';
 import {
   HERO_DASHBOARD_CTA_LABEL,
+  HERO_EU_LINE,
+  HERO_EYEBROW,
   HERO_HEADLINE,
   HERO_OPERATING_LOOP,
   HERO_SCAN_CTA_LABEL,
@@ -83,38 +85,61 @@ export function MainLanding() {
           </div>
 
           <div className="relative mx-auto flex w-full max-w-[1500px] flex-1 items-center px-[4vw] py-10 lg:py-12">
-            {/* Fold lock (Dominik 1:1): H1 → loop → body → CTA pair */}
-            <div className="hero-copy relative z-10 max-w-[38rem] lg:max-w-[42rem]">
-              <h1
-                className="text-[clamp(2.1rem,3.8vw,3.35rem)] leading-[1.05] tracking-[-0.035em]"
-                style={{ fontFamily: LANDING_SERIF, fontWeight: 500 }}
+            {/* Dominik 1:1: eyebrow → H1 (Europe last/gold) → loop → body → CTAs */}
+            <div className="hero-copy relative z-10 max-w-[40rem] lg:max-w-[44rem]">
+              <p
+                className="text-[9px] font-medium tracking-[0.18em]"
+                style={{ fontFamily: LANDING_MONO, color: '#8a867c' }}
               >
-                {HERO_HEADLINE.map((segments, line) => (
-                  <span
-                    key={line}
-                    className={`block ${line === 0 ? 'whitespace-nowrap' : ''}`}
-                  >
-                    {segments.map((segment, i) =>
-                      segment.accent ? (
-                        <em
-                          key={i}
-                          className="hero-shine-accent not-italic"
-                          style={{ color: LANDING_ACCENT, fontStyle: 'normal' }}
-                        >
-                          {segment.text}
-                        </em>
-                      ) : (
-                        <span key={i} className="hero-shine">
-                          {segment.text}
-                        </span>
-                      ),
-                    )}
-                  </span>
-                ))}
+                {HERO_EYEBROW}
+              </p>
+
+              <h1
+                className="mt-4 font-semibold leading-[1.05] tracking-[-0.03em]"
+                style={{
+                  fontFamily: LANDING_SANS,
+                  fontSize: 'clamp(2.4rem, 4.4vw, 3.75rem)',
+                  color: LANDING_TEXT,
+                }}
+              >
+                {HERO_HEADLINE.map((segments, line) => {
+                  const isEurope = line === HERO_HEADLINE.length - 1;
+                  return (
+                    <span
+                      key={line}
+                      className="block"
+                      style={
+                        isEurope
+                          ? {
+                              marginTop: '0.08em',
+                              fontSize: '1.12em',
+                              letterSpacing: '-0.035em',
+                            }
+                          : undefined
+                      }
+                    >
+                      {segments.map((segment, i) =>
+                        segment.accent ? (
+                          <em
+                            key={i}
+                            className="hero-shine-accent not-italic"
+                            style={{ color: LANDING_ACCENT, fontStyle: 'normal' }}
+                          >
+                            {segment.text}
+                          </em>
+                        ) : (
+                          <span key={i} className="hero-shine">
+                            {segment.text}
+                          </span>
+                        ),
+                      )}
+                    </span>
+                  );
+                })}
               </h1>
 
               <p
-                className="mt-5 text-[11px] font-medium tracking-[0.2em]"
+                className="mt-5 text-[10px] font-medium tracking-[0.22em]"
                 style={{ fontFamily: LANDING_MONO, color: '#9a9178' }}
               >
                 {HERO_OPERATING_LOOP}
@@ -122,9 +147,15 @@ export function MainLanding() {
 
               <p
                 className="mt-5 max-w-[34rem] text-[15px] leading-[1.55] sm:text-[16px]"
-                style={{ color: 'rgba(246,242,233,0.78)' }}
+                style={{ color: 'rgba(246,242,233,0.88)' }}
               >
                 {HERO_SUBLINE}
+              </p>
+              <p
+                className="mt-2.5 max-w-[34rem] text-[12px] leading-relaxed"
+                style={{ color: LANDING_MUTED }}
+              >
+                {HERO_EU_LINE}
               </p>
 
               <div className="mt-8 flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:gap-3.5">
@@ -133,7 +164,11 @@ export function MainLanding() {
                   id="scan"
                   data-hero-cta
                   className="landing-cta-glow inline-flex items-center justify-center gap-2 rounded-full px-[26px] py-[14px] text-[14px] font-semibold transition hover:brightness-[1.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e4cfa2]"
-                  style={{ backgroundColor: LANDING_BUTTON, color: LANDING_BUTTON_TEXT }}
+                  style={{
+                    background:
+                      'linear-gradient(180deg, #f0e6d4 0%, #e8ddc8 48%, #dcc9a8 100%)',
+                    color: LANDING_BUTTON_TEXT,
+                  }}
                 >
                   {HERO_SCAN_CTA_LABEL} <span aria-hidden="true">→</span>
                 </Link>
@@ -142,8 +177,8 @@ export function MainLanding() {
                   data-hero-cta
                   className="inline-flex items-center justify-center gap-2 rounded-full border px-[24px] py-[13px] text-[14px] font-medium transition hover:bg-[#e4cfa2]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e4cfa2]/60"
                   style={{
-                    borderColor: 'rgba(232,221,200,0.55)',
-                    backgroundColor: 'rgba(8,10,14,0.55)',
+                    borderColor: 'rgba(232,221,200,0.4)',
+                    backgroundColor: 'transparent',
                     color: LANDING_TEXT,
                   }}
                 >

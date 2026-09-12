@@ -7,24 +7,29 @@
 
 export type HeroHeadlineSegment = {
   text: string;
-  /** true → Gold-Akzent („Europe“). */
+  /** true → Gold-Akzent („for“ / „Europe“). */
   accent?: boolean;
 };
 
 /**
  * Europe-OS Hero — Dominik 1:1 luxury mock lock.
  *
- * Claim: AI Compliance Operations OS for Europe.
+ * Claim words (locked): AI Compliance Operations OS for Europe.
  *
  * ## Contract
  *
  * `MainLanding` renders H1 exclusively from `HERO_HEADLINE`. E2E / FE-001
  * read the same source — change here, not in the page.
  *
- * Two lines: line 1 ends with “for”; line 2 is gold **Europe** alone.
+ * Break (mock): AI Compliance / Operations OS for / Europe —
+ * gold on “for” + last-line Europe.
  */
 export const HERO_HEADLINE: readonly (readonly HeroHeadlineSegment[])[] = [
-  [{ text: 'AI Compliance Operations OS for' }],
+  [{ text: 'AI Compliance' }],
+  [
+    { text: 'Operations OS ' },
+    { text: 'for', accent: true },
+  ],
   [{ text: 'Europe', accent: true }],
 ];
 
@@ -36,8 +41,12 @@ export const HERO_HEADLINE_LINES: readonly string[] = HERO_HEADLINE.map((segment
 /** Substring für den FE-001-Check. Muss vollständig innerhalb einer Zeile liegen. */
 export const HERO_HEADLINE_TEST_SUBSTRING = 'AI Compliance';
 
-/** Operating loop — single line under the H1 (mock lock, title case). */
-export const HERO_OPERATING_LOOP = 'Discover → Classify → Enforce → Prove' as const;
+/** Mock eyebrow above the H1 — mono meta, not a competing claim. */
+export const HERO_EYEBROW =
+  '01 — AI GOVERNANCE • RUNNING IN REAL TIME — EU-CENTRAL' as const;
+
+/** Operating loop under the H1 (mock lock, all-caps). */
+export const HERO_OPERATING_LOOP = 'DISCOVER → CLASSIFY → ENFORCE → PROVE' as const;
 
 /**
  * Secondary / funnel / design-preview copy — not the live `/` H1 chrome.
@@ -51,12 +60,12 @@ export const SCAN_FUNNEL_MESSAGE =
 export const CONTINUOUS_COMPLIANCE_NARRATIVE =
   'RealSync erkennt, bewertet, steuert und dokumentiert Compliance kontinuierlich.' as const;
 
-/** One value line under the H1 — mock lock. Competing motto/EU lines stay demoted. */
+/** Primary value line under the loop — mock lock. */
 export const HERO_SUBLINE =
   'Runtime governance for regulated AI systems. Continuous evidence. EU-native by design.' as const;
 
 /**
- * Monetization urgency — kept for secondary surfaces; not in the hero fold.
+ * Monetization urgency — kept for secondary surfaces; not hero chrome.
  * Does not replace HERO_HEADLINE or HERO_SUBLINE.
  */
 export const HERO_VALUE_SUBLINE = 'Vermeide EU AI Act-Bußgelder.' as const;
@@ -76,6 +85,7 @@ export const HERO_OUTCOMES: readonly string[] = [
   'Audit-Evidence laufend erzeugen, nicht kurz vor der Prüfung sammeln',
 ] as const;
 
+/** Secondary detail under HERO_SUBLINE — mock lock. */
 export const HERO_EU_LINE =
   'Gebaut für EU AI Act, DSGVO und europäische Nachweispflichten.' as const;
 
@@ -97,10 +107,13 @@ if (!HERO_HEADLINE_LINES.some((line) => line.includes(HERO_HEADLINE_TEST_SUBSTRI
   );
 }
 
-if (HERO_HEADLINE_LINES.length > 2) {
-  throw new Error('hero-content.ts: H1 must stay ≤ 2 lines (Europe alone on line 2).');
+if (HERO_HEADLINE_LINES[HERO_HEADLINE_LINES.length - 1] !== 'Europe') {
+  throw new Error('hero-content.ts: last H1 line must be gold Europe alone.');
 }
 
-if (HERO_HEADLINE_LINES[1] !== 'Europe') {
-  throw new Error('hero-content.ts: line 2 must be gold Europe alone.');
+const lockedClaim = HERO_HEADLINE_LINES.join(' ').replace(/\s+/g, ' ').trim();
+if (lockedClaim !== 'AI Compliance Operations OS for Europe') {
+  throw new Error(
+    `hero-content.ts: locked claim drift — got "${lockedClaim}"`,
+  );
 }

@@ -26,6 +26,19 @@ describe('GovernanceBrowserShell auth gate', () => {
     const line = APP.split('\n').find((l) => l.includes('path="/app/dashboard"')) ?? '';
     expect(line).toContain('<AppGate>');
   });
+
+  it('gates non-shell /app leftovers (builder, claim, legal-rag, telegram)', () => {
+    for (const path of [
+      '/app/siteos/builder',
+      '/app/siteos/claim',
+      '/app/legal-rag',
+      '/app/settings/integrations/telegram',
+      '/app/governance/recommendation',
+    ]) {
+      const line = APP.split('\n').find((l) => l.includes(`path="${path}"`)) ?? '';
+      expect(line, path).toContain('<AppGate>');
+    }
+  });
 });
 
 describe('ComplianceStatusDashboard empty tenant copy', () => {

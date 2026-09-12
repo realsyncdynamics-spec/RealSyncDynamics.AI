@@ -215,17 +215,18 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
   },
   {
     id: 'hero-earth-scenery',
-    name: 'Photoreal Earth Hero',
-    status: 'preview',
+    name: 'Europe + Sunrise Hero Scenery',
+    status: 'live',
     group: 'visual',
     description:
-      'Photoreal Earth backdrop components exist (HeroEarthBackdrop) but are not the live `/` hero — `/` uses GovernanceSphereHost again.',
+      'Public `/` right-column scenery: Europe (europe-globe) + Dark/Gold sunrise — not an interactive whole-Earth orbit globe, no Sphere HUD.',
+    route: '/',
     evidence: [
-      'src/components/landing/HeroEarthBackdrop.tsx',
-      'src/components/landing/HeroEarthBackdropScene.tsx',
-      'src/components/visual/earthTextures.ts',
+      'src/components/landing/HeroEuropeSunrise.tsx',
+      'src/pages/MainLanding.tsx',
+      'public/europe-globe.webp',
     ],
-    showOnRoadmap: true,
+    showOnRoadmap: false,
   },
   {
     id: 'pricing-monthly',
@@ -374,17 +375,15 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
   {
     id: 'governance-sphere-interactive',
     name: 'Interactive Governance Sphere',
-    status: 'live',
+    status: 'preview',
     group: 'visual',
     description:
-      'Interaktive Sphere mit DEMO/SIMULATED-HUD auf öffentlichem `/` (GovernanceSphereHost) — keine Fake-Live-KPIs.',
-    route: '/',
+      'GovernanceSphereHost (DEMO/SIMULATED-HUD, orbit Earth) exists as component — not mounted on public `/` (Europe+sunrise scenery instead).',
     evidence: [
       'src/components/governance-frontend/GovernanceSphereHost.tsx',
-      'src/pages/MainLanding.tsx',
       'test/landing/governance-sphere.test.ts',
     ],
-    showOnRoadmap: false,
+    showOnRoadmap: true,
   },
   {
     id: 'pricing-yearly',

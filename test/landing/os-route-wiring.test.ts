@@ -57,12 +57,13 @@ describe('Landing ↔ Infrastruktur', () => {
     expect(app).toMatch(/path="\/app\/activation"[^>]*AppGate/);
   });
 
-  it('Dominik landing CTAs zeigen Audit + Sphere, keine Demo-Buchung', () => {
-    expect(mainLanding).toContain('GovernanceSphereHost');
+  it('Dominik landing CTAs zeigen Audit + Europe scenery, keine Demo-Buchung', () => {
+    expect(mainLanding).toContain('HeroEuropeSunrise');
     expect(mainLanding).toContain("navigate(value ? `/audit?domain=");
     expect(mainLanding).toContain('to="/audit"');
     expect(mainLanding).toContain('PLATFORM_LIVE_ITEMS');
     expect(mainLanding).not.toContain('Demo buchen');
+    expect(mainLanding).not.toContain('GovernanceSphereHost');
     expect(mainLanding).not.toContain('HeroEarthBackdrop');
   });
 

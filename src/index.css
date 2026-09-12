@@ -895,39 +895,39 @@ html, body {
   z-index: -1;
 }
 
-/* ── Warm rim behind Earth (public landing only) ─────────────────────────
-   Subtle limb glow only — never a cream sun disc over continents. */
+/* ── Europe sunrise limb (public `/` right column) ───────────────────────
+   Slow elegant pulse — contained to the hero visual, not a cream wash. */
 .hero-sunrise {
   pointer-events: none;
 }
 
 .hero-sunrise-core {
-  animation: none;
+  animation: hero-sunrise-pulse 14s ease-in-out infinite;
 }
 
 .hero-sunrise-shaft {
-  animation: none;
+  animation: hero-sunrise-shaft 18s ease-in-out infinite;
 }
 
 @keyframes hero-sunrise-pulse {
   0%,
   100% {
-    opacity: 0.4;
-    transform: scale(1);
+    opacity: 0.78;
+    transform: scale(1) translateY(4%);
   }
   50% {
-    opacity: 0.5;
-    transform: scale(1.01);
+    opacity: 0.95;
+    transform: scale(1.035) translateY(0%);
   }
 }
 
 @keyframes hero-sunrise-shaft {
   0%,
   100% {
-    opacity: 0.25;
+    opacity: 0.45;
   }
   50% {
-    opacity: 0.35;
+    opacity: 0.7;
   }
 }
 
@@ -936,6 +936,15 @@ html, body {
   .hero-sunrise-shaft {
     animation: none !important;
   }
+}
+
+/* Europe disc — mute cyan night-map / purple nebula toward gold-graphite */
+.hero-europe-globe-img {
+  filter: saturate(0.72) sepia(0.38) hue-rotate(-12deg) brightness(0.92) contrast(1.12);
+}
+
+.hero-europe-sunrise {
+  pointer-events: none;
 }
 
 /* Legacy dawn helpers (unused on current MainLanding; keep for other pages) */

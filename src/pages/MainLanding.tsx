@@ -28,7 +28,7 @@ import {
   HERO_HEADLINE,
   HERO_OPERATING_LOOP,
 } from '../components/governance-frontend/hero-content';
-import { GovernanceSphereHost } from '../components/governance-frontend/GovernanceSphereHost';
+import { HeroEuropeSunrise } from '../components/landing/HeroEuropeSunrise';
 import { EnterpriseAccessSection } from '../components/landing/EnterpriseAccessSection';
 import {
   PLATFORM_LIVE_ITEMS,
@@ -267,7 +267,7 @@ export function MainLanding() {
           </div>
 
           <div className="hero-visual relative">
-            <GovernanceSphereHost />
+            <HeroEuropeSunrise />
           </div>
         </section>
 

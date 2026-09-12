@@ -275,10 +275,11 @@ describe('Hero-Panel — Beispiel ist als Beispiel gekennzeichnet', () => {
     // darunter vier hartkodierte Zahlen. Ein anonymer Besucher hat keinen
     // Tenant — dort ist nichts messbar, also darf dort nichts gemessen
     // aussehen (Truth Layer, target-architecture.md §3.1).
-    // Public `/`: Dominik left/right hero with GovernanceSphereHost DEMO-HUD.
+    // Public `/`: Dominik left/right hero with Europe+sunrise scenery (no Sphere HUD).
     expect(landing).not.toContain('GOVERNANCE RUNTIME · LIVE');
     expect(landing).toContain('RUNTIME_PREVIEW_LABEL');
-    expect(landing).toContain('GovernanceSphereHost');
+    expect(landing).toContain('HeroEuropeSunrise');
+    expect(landing).not.toContain('GovernanceSphereHost');
     expect(landing).not.toContain('HeroEarthBackdrop');
     expect(sphereNodes).toMatch(/DEMO\s*\/\s*SIMULATED/);
   });

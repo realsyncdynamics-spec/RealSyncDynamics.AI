@@ -221,10 +221,10 @@ describe('Billing Workflows', () => {
     expect(free.cta.href).not.toContain('/checkout');
   });
 
-  it('starter plan should redirect to checkout with trial', () => {
+  it('starter plan should redirect to checkout without pilot CTA', () => {
     const starter = tierById('starter')!;
     expect(starter.cta.href).toContain('/checkout/starter');
-    expect(starter.cta.href).toContain('pilot=true');
+    expect(starter.cta.href).not.toContain('pilot=true');
   });
 
   it('growth plan should be highlighted as recommended', () => {

@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../lib/useAuth';
 import { useTenant } from '../../core/access/TenantProvider';
 import { getSupabase } from '../../lib/supabase';
+import { safeInternalPath } from '../../lib/safeInternalPath';
 import { Building2, Users, Briefcase, User, ArrowRight, CheckCircle2, AlertCircle } from 'lucide-react';
 
 type OrgType = 'freelancer' | 'sme' | 'agency' | 'enterprise';
@@ -43,6 +44,8 @@ const ORG_TYPES: Array<{ id: OrgType; label: string; description: string; icon: 
 
 export function SetupAssistant() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const resumeNext = safeInternalPath(searchParams.get('next'));
   const { user } = useAuth();
   const { activeTenantId, refresh } = useTenant();
   const [step, setStep] = useState<Step>('org-type');
@@ -52,6 +55,8 @@ export function SetupAssistant() {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>();
+
+  const finishTarget = resumeNext ?? '/app/dashboard';
 
   if (!user || !activeTenantId) {
     return <div className="text-center py-12">Loading...</div>;
@@ -95,9 +100,9 @@ export function SetupAssistant() {
       // Move to success step
       setStep('welcome');
 
-      // Auto-redirect after 2 seconds
+      // Auto-redirect after 2 seconds — honor ?next= (e.g. checkout resume)
       setTimeout(() => {
-        navigate('/app/dashboard', { replace: true });
+        navigate(finishTarget, { replace: true });
       }, 2000);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Unknown error occurred');
@@ -120,11 +125,11 @@ export function SetupAssistant() {
 
       if (!updateError) {
         await refresh();
-        navigate('/app/dashboard', { replace: true });
+        navigate(finishTarget, { replace: true });
       }
     } catch (e) {
       console.error('Skip error:', e);
-      navigate('/app/dashboard', { replace: true });
+      navigate(finishTarget, { replace: true });
     } finally {
       setLoading(false);
     }

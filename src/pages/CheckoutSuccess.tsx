@@ -69,7 +69,7 @@ export function CheckoutSuccess() {
       if (!response.ok) {
         return {
           ok: false,
-          error: data?.error?.message || data?.message || 'Failed to verify checkout',
+          error: data?.error?.message || data?.message || 'Checkout konnte nicht verifiziert werden',
         };
       }
       return data;
@@ -77,7 +77,7 @@ export function CheckoutSuccess() {
 
     async function verifyCheckout() {
       if (!sessionId) {
-        setError('Missing checkout session');
+        setError('Checkout-Session fehlt');
         setLoading(false);
         return;
       }
@@ -93,7 +93,7 @@ export function CheckoutSuccess() {
       }
 
       if (!isSupabaseConfigured()) {
-        setError('Supabase is not configured');
+        setError('Supabase ist nicht konfiguriert');
         setLoading(false);
         return;
       }
@@ -125,7 +125,7 @@ export function CheckoutSuccess() {
           last = await verifyOnce(accessToken, tenantId);
           if (cancelled) return;
           if (!last.ok) {
-            setError(last.error || 'Failed to verify checkout');
+            setError(last.error || 'Checkout konnte nicht verifiziert werden');
             setLoading(false);
             return;
           }
@@ -152,7 +152,7 @@ export function CheckoutSuccess() {
         }, 1200);
       } catch (err) {
         if (cancelled) return;
-        setError((err as Error).message || 'Network error');
+        setError((err as Error).message || 'Netzwerkfehler');
         setLoading(false);
       }
     }
@@ -178,21 +178,21 @@ export function CheckoutSuccess() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-obsidian-900">
         <div className="max-w-md w-full mx-4 p-8 bg-obsidian-800 border border-titanium-700 rounded-card">
-          <h1 className="text-2xl font-bold text-titanium-50 mb-4">Checkout Incomplete</h1>
+          <h1 className="text-2xl font-bold text-titanium-50 mb-4">Checkout unvollständig</h1>
           <p className="text-titanium-300 mb-6">{error}</p>
           <button
             type="button"
             onClick={() => navigate('/app/dashboard')}
             className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-card transition-colors"
           >
-            Go to Dashboard
+            Zum Dashboard
           </button>
           <button
             type="button"
-            onClick={() => navigate('/#pricing')}
+            onClick={() => navigate('/pricing')}
             className="w-full mt-2 px-4 py-2 bg-obsidian-700 hover:bg-obsidian-600 text-titanium-200 font-medium rounded-card border border-titanium-700 transition-colors"
           >
-            Back to Pricing
+            Zurück zur Preisübersicht
           </button>
         </div>
       </div>
@@ -210,13 +210,15 @@ export function CheckoutSuccess() {
           </div>
         </div>
 
-        <h1 className="text-2xl font-bold text-titanium-50 mb-2">Payment Successful!</h1>
+        <h1 className="text-2xl font-bold text-titanium-50 mb-2">Zahlung erfolgreich</h1>
         <p className="text-titanium-300 mb-2">
-          Your subscription to{' '}
-          <span className="font-semibold font-mono">{verifiedPlan || planKey || 'plan'}</span> is
-          activating.
+          Ihr Abo{' '}
+          <span className="font-semibold font-mono">{verifiedPlan || planKey || 'plan'}</span> wird
+          aktiviert.
         </p>
-        <p className="text-sm text-titanium-400 mb-6">{loading ? statusText : 'Redirecting to your dashboard…'}</p>
+        <p className="text-sm text-titanium-400 mb-6">
+          {loading ? statusText : 'Weiterleitung zum Dashboard …'}
+        </p>
 
         <div className="flex justify-center gap-1">
           <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
@@ -229,7 +231,7 @@ export function CheckoutSuccess() {
           onClick={() => navigate('/app/dashboard')}
           className="w-full mt-6 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-card transition-colors"
         >
-          Go to Dashboard Now
+          Jetzt zum Dashboard
         </button>
         <Link
           to="/app/websites"

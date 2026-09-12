@@ -26,9 +26,14 @@ Flipping `status` moves an item between Live / Preview / Coming Soon in the UI.
    Earth as full-bleed backdrop (`hero-earth-scenery` / HeroEarthBackdrop) —
    no Sphere HUD, no continent UI chrome, pointer-events-none behind Dominik copy.
 5. Canonical dashboard remains `/app` → ComplianceStatusDashboard.
+   Auth: `/welcome` is the gate; `?next=` resumes after login (including
+   already-signed-in `getSession`). `GovernanceBrowserShell` always wraps
+   `AppGate` so sibling `/app/*` shell routes are not anonymous empties.
 6. RealSync Agent OS™ first slice is **preview** on that same `/app` surface
    (`docs/product/realsync-agent-os.md`) — never a second dashboard, never live
    mesh specialists beyond Compliance.
+7. Stripe checkout E2E stays **preview** until Vault secrets (`STRIPE_*`,
+   webhook signing) are set in Supabase Dashboard — code path is wired.
 
 ## Automation
 

@@ -8,25 +8,30 @@ import { Logo } from '../components/Logo';
 import { PhotorealEarthGlobe } from '../components/visual/PhotorealEarthGlobe';
 import { getSupabase, isSupabaseConfigured } from '../lib/supabase';
 import { claimPendingAudit } from '../core/onboarding/claimAudit';
+import { safeInternalPath } from '../lib/safeInternalPath';
 
 /**
- * /welcome — Onboarding-Setup-Wizard nach Stripe-Checkout.
+ * /welcome — Canonical auth gate (OTP + OAuth) and post-checkout setup wizard.
  *
- * Step 1 — Email eingeben → Magic-Link wird per Supabase signInWithOtp versendet.
- * Step 2 — Nach Magic-Link-Klick ist der User signed-in (auto_tenant_on_signup
- *          legt Tenant + Owner-Membership an); wir generieren clientseitig einen
- *          rsd_live_*-Key, hashen mit SHA-256 und speichern via RLS in api_keys.
- *          Plaintext wird einmalig angezeigt.
- * Step 3 — Cookie-SDK: Snippet mit echtem Key. Audit-Pro: Domain-Submit triggert
- *          die gdpr-audit Edge-Function.
+ * Modes:
+ * - Login/register (no `session=`): after sign-in, honor `?next=` or resume
+ *   SetupAssistant /app/dashboard — do NOT force the API-key wizard.
+ * - Post-checkout (`session=cs_…`): Step 2–3 wizard (API key + domain/snippet).
  *
- * URL: /welcome?session=cs_...&product=...
+ * Step 1 — Email OTP / OAuth. auto_tenant_on_signup creates tenant + owner.
+ * Step 2 — Client-side rsd_live_* key → SHA-256 → api_keys (RLS).
+ * Step 3 — Cookie-SDK snippet or Audit-Pro domain → gdpr-audit.
+ *
+ * URL: /welcome?session=cs_...&product=...&next=/checkout/starter
  */
 export function Welcome() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const sessionId = params.get('session');
   const product = params.get('product') ?? 'RealSync Dynamics';
+  /** Post-checkout wizard only when Stripe success handed us a session id. */
+  const isPostCheckoutWizard = Boolean(sessionId);
+  const resumeNext = safeInternalPath(params.get('next'));
   const [step, setStep] = useState<number>(1);
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
@@ -38,6 +43,8 @@ export function Welcome() {
   const [busy, setBusy] = useState(false);
   const [tenantId, setTenantId] = useState<string | null>(null);
   const [auditQueued, setAuditQueued] = useState(false);
+  /** Signed-in return path resolving (skip wizard UI flash). */
+  const [resolvingReturn, setResolvingReturn] = useState(false);
 
   // OAuth-Provider-Fehler abfangen, falls der User mit ?error=... oder
   // #error=... auf /welcome zurueck navigiert (z.B. access_denied,
@@ -59,36 +66,47 @@ export function Welcome() {
     window.history.replaceState({}, '', cleaned);
   }, []);
 
-  // Detect signed-in state on mount + on auth changes (post-magic-link return)
+  // Detect signed-in state on mount + on auth changes (post-magic-link return).
+  // Critical: getSession() must honor ?next= the same way SIGNED_IN does —
+  // otherwise a logged-in user opening /welcome?next=/checkout/starter stays
+  // stuck on the wizard and never resumes checkout.
   useEffect(() => {
     if (!isSupabaseConfigured()) return;
     const sb = getSupabase();
     let cancelled = false;
 
+    const resumeAfterAuth = (userEmail: string | undefined) => {
+      setEmail((prev) => prev || userEmail || '');
+      void claimPendingAudit().catch(() => null);
+
+      const nextParam = safeInternalPath(
+        new URLSearchParams(window.location.search).get('next'),
+      );
+      if (nextParam) {
+        navigate(nextParam, { replace: true });
+        return;
+      }
+
+      // Post-checkout: enter API-key wizard. Plain login: resolve tenant then
+      // SetupAssistant or /app/dashboard — do not force the wizard.
+      if (sessionId) {
+        setStep((prev) => (prev === 1 ? 2 : prev));
+        return;
+      }
+      setResolvingReturn(true);
+      setStep((prev) => (prev === 1 ? 2 : prev));
+    };
+
     sb.auth.getSession().then(({ data }) => {
       if (cancelled) return;
       if (data.session?.user) {
-        setEmail((prev) => prev || data.session?.user.email || '');
-        setStep((prev) => (prev === 1 ? 2 : prev));
+        resumeAfterAuth(data.session.user.email);
       }
     });
 
     const { data: subscription } = sb.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN' && session?.user) {
-        setEmail((prev) => prev || session.user.email || '');
-        setStep((prev) => (prev === 1 ? 2 : prev));
-
-        void claimPendingAudit().catch(() => null);
-
-        // Nach Login: ?next= auslesen und weiterleiten (z.B. /checkout/starter?pilot=true)
-        // Dieselbe Whitelist wie in finalizeAndNavigate: nur Pfade, die mit
-        // `/` beginnen und nicht mit `//` — sonst wäre `?next=//fremde.seite`
-        // ein Open Redirect direkt nach der Anmeldung.
-        const nextParam = new URLSearchParams(window.location.search).get('next');
-        if (nextParam && nextParam.startsWith('/') && !nextParam.startsWith('//')) {
-          navigate(nextParam, { replace: true });
-          return;
-        }
+        resumeAfterAuth(session.user.email);
       }
     });
 
@@ -96,7 +114,7 @@ export function Welcome() {
       cancelled = true;
       subscription.subscription.unsubscribe();
     };
-  }, []);
+  }, [navigate, sessionId]);
 
   // Resolve owner-tenant for the signed-in user once we hit step 2+
   useEffect(() => {
@@ -242,7 +260,9 @@ export function Welcome() {
 
   const isCookieSdk = product.includes('Cookie-SDK');
 
-  // Check if user is free tier and not yet onboarded → redirect to setup-assistant
+  // After tenant resolve: resume ?next=, run post-checkout wizard, or send
+  // returning users to SetupAssistant / dashboard. Never steal a checkout
+  // resume into setup-assistant without preserving next.
   useEffect(() => {
     if (!isSupabaseConfigured() || step < 2 || !tenantId) return;
     const sb = getSupabase();
@@ -250,6 +270,14 @@ export function Welcome() {
 
     void (async () => {
       try {
+        const nextParam = safeInternalPath(
+          new URLSearchParams(window.location.search).get('next'),
+        );
+        if (nextParam) {
+          navigate(nextParam, { replace: true });
+          return;
+        }
+
         const { data: tenant } = await sb
           .from('tenants')
           .select('onboarded_at')
@@ -257,33 +285,32 @@ export function Welcome() {
           .single();
         if (cancelled) return;
 
-        // If tenant exists and hasn't been onboarded, redirect to setup-assistant
+        if (sessionId) {
+          // Post-checkout wizard stays on this page.
+          setResolvingReturn(false);
+          return;
+        }
+
         if (tenant && !tenant.onboarded_at) {
           navigate('/setup-assistant', { replace: true });
+          return;
         }
+        navigate('/app/dashboard', { replace: true });
       } catch {
-        // Silently continue if tenant lookup fails
+        if (!cancelled && !sessionId) {
+          navigate('/app/dashboard', { replace: true });
+        }
       }
     })();
     return () => { cancelled = true; };
-  }, [step, tenantId, navigate]);
+  }, [step, tenantId, navigate, sessionId]);
 
-  // Final "Setup abschließen" CTA — mark wizard complete, then navigate to dashboard.
-  // Post-Checkout-Flow: ALLE Benutzer gehen zu /app/dashboard (Workspace-Home),
-  // um das Governance-OS zu sehen. Keine Umleitung zu Produktseiten; diese sind
-  // über die Dashboard-Navigation erreichbar.
-  // ?next=<safe-path> hat Vorrang (z.B. für interruptive Checkouts).
-  // Sicherheits-Whitelist: nur Pfade die mit / starten und KEIN //
-  // (Open-Redirect-Schutz) werden akzeptiert.
+  // Final "Setup abschließen" CTA — mark wizard complete, then navigate.
+  // ?next=<safe-path> wins (interruptive checkouts); else /app/dashboard.
   const finalizeAndNavigate = async () => {
-    const nextParam = new URLSearchParams(window.location.search).get('next');
-    const safeNext =
-      nextParam && nextParam.startsWith('/') && !nextParam.startsWith('//')
-        ? nextParam
-        : null;
-    // Post-Checkout oder generischer Login: BEIDE gehen zu /app/dashboard.
-    // Das ist das zentrale Workspace-Home, von dem aus alle Features erreichbar sind.
-    const target = safeNext ?? '/app/dashboard';
+    const target =
+      safeInternalPath(new URLSearchParams(window.location.search).get('next')) ??
+      '/app/dashboard';
     if (isSupabaseConfigured()) {
       try {
         const sb = getSupabase();
@@ -294,6 +321,14 @@ export function Welcome() {
     }
     navigate(target);
   };
+
+  if (resolvingReturn && step >= 2 && !isPostCheckoutWizard) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-obsidian-950 text-titanium-400">
+        <Loader2 className="h-5 w-5 animate-spin" aria-label="Sitzung wird fortgesetzt" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-obsidian-950 text-titanium-100">
@@ -327,12 +362,15 @@ export function Welcome() {
                       Willkommen zurück.
                     </h1>
                     <p className="text-base leading-relaxed text-titanium-400">
-                      Account bestätigen → API-Key generieren → Snippet einbauen oder Domain prüfen.
+                      {resumeNext
+                        ? 'Anmelden und danach direkt fortsetzen.'
+                        : 'Mit Magic-Link oder OAuth anmelden — dann weiter ins Governance OS.'}
                     </p>
                   </>
                 )}
               </div>
 
+              {isPostCheckoutWizard && (
               <div className="mb-12 flex items-center justify-center gap-3 lg:justify-start">
                 {[1, 2, 3].map((s) => {
                   const isCompleted = step > s;
@@ -355,6 +393,7 @@ export function Welcome() {
                   );
                 })}
               </div>
+              )}
 
               {error && (
                 <div className="mb-8 flex items-start gap-3 rounded-none border border-red-900 bg-red-950/30 p-4">
@@ -405,7 +444,7 @@ export function Welcome() {
                     <button
                       type="submit"
                       disabled={!email || busy}
-                      className="inline-flex items-center gap-2 rounded-none bg-white px-6 py-3 text-sm font-semibold text-obsidian-950 transition-colors hover:bg-titanium-200 disabled:cursor-not-allowed disabled:bg-titanium-800 disabled:text-titanium-600"
+                      className="inline-flex items-center gap-2 rounded-none bg-[#e8ddc8] px-6 py-3 text-sm font-semibold text-obsidian-950 transition-colors hover:bg-[#f0e6d4] disabled:cursor-not-allowed disabled:bg-titanium-800 disabled:text-titanium-600"
                     >
                       {busy
                         ? (<><Loader2 className="h-4 w-4 animate-spin" /> Sende Magic-Link …</>)
@@ -451,7 +490,7 @@ export function Welcome() {
                     <button
                       onClick={generateKey}
                       disabled={busy || !tenantId}
-                      className="inline-flex items-center gap-2 rounded-none bg-indigo-500 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-indigo-600 disabled:bg-titanium-800 disabled:text-titanium-600"
+                      className="inline-flex items-center gap-2 rounded-none bg-[#e8ddc8] px-6 py-3 text-sm font-semibold text-obsidian-950 transition-colors hover:bg-[#f0e6d4] disabled:bg-titanium-800 disabled:text-titanium-600"
                     >
                       {busy
                         ? (<><Loader2 className="h-4 w-4 animate-spin" /> Generiere …</>)
@@ -483,7 +522,7 @@ export function Welcome() {
                       </div>
                       <button
                         onClick={() => setStep(3)}
-                        className="inline-flex items-center gap-2 rounded-none bg-white px-6 py-3 text-sm font-semibold text-obsidian-950 transition-colors hover:bg-titanium-200"
+                        className="inline-flex items-center gap-2 rounded-none bg-[#e8ddc8] px-6 py-3 text-sm font-semibold text-obsidian-950 transition-colors hover:bg-[#f0e6d4]"
                       >
                         Weiter zu Setup <ArrowRight className="h-4 w-4" />
                       </button>
@@ -539,7 +578,7 @@ export function Welcome() {
                       <button
                         onClick={submitAuditDomain}
                         disabled={!domain || busy}
-                        className="inline-flex items-center gap-2 rounded-none bg-indigo-500 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-indigo-600 disabled:bg-titanium-800 disabled:text-titanium-600"
+                        className="inline-flex items-center gap-2 rounded-none bg-[#e8ddc8] px-6 py-3 text-sm font-semibold text-obsidian-950 transition-colors hover:bg-[#f0e6d4] disabled:bg-titanium-800 disabled:text-titanium-600"
                       >
                         {busy
                           ? (<><Loader2 className="h-4 w-4 animate-spin" /> Audit wird gestartet …</>)
@@ -555,7 +594,7 @@ export function Welcome() {
                     <button
                       type="button"
                       onClick={finalizeAndNavigate}
-                      className="inline-flex items-center gap-2 rounded-none bg-emerald-500 px-6 py-3 text-sm font-semibold text-obsidian-950 transition-colors hover:bg-emerald-600"
+                      className="inline-flex items-center gap-2 rounded-none bg-[#e8ddc8] px-6 py-3 text-sm font-semibold text-obsidian-950 transition-colors hover:bg-[#f0e6d4]"
                     >
                       Setup abschließen <CheckCircle2 className="h-4 w-4" />
                     </button>

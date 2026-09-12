@@ -86,9 +86,14 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     name: 'Welcome / Login',
     status: 'live',
     group: 'surface',
-    description: 'Anmeldung, Magic-Link und Setup — Einstieg in das Governance OS.',
+    description:
+      'OTP/OAuth unter /welcome — ?next= Resume nach Login (auch getSession); Post-Checkout-Wizard nur mit session=.',
     route: '/welcome',
-    evidence: ['src/pages/Welcome.tsx', 'test/welcome/welcome-earth.test.ts'],
+    evidence: [
+      'src/pages/Welcome.tsx',
+      'src/lib/safeInternalPath.ts',
+      'test/welcome/auth-resume-next.test.ts',
+    ],
     showOnRoadmap: false,
   },
   {
@@ -107,9 +112,15 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     name: 'Governance OS /app',
     status: 'live',
     group: 'runtime',
-    description: 'Authentifiziertes App-Shell mit Command Center unter /app/dashboard.',
+    description:
+      'Authentifiziertes App-Shell: GovernanceBrowserShell gategt alle Shell-Routen via AppGate; Command Center unter /app/dashboard.',
     route: '/app',
-    evidence: ['src/App.tsx', 'src/components/governance-os/governanceModules.ts'],
+    evidence: [
+      'src/App.tsx',
+      'src/components/governance-os/GovernanceBrowserShell.tsx',
+      'src/features/auth/AppGate.tsx',
+      'test/routing/app-shell-auth-gate.test.ts',
+    ],
     showOnPlatform: true,
   },
   {
@@ -305,9 +316,14 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     status: 'preview',
     group: 'billing',
     description:
-      'Checkout-Seiten und Edge Functions sind verdrahtet; produktionsreifer E2E-Pfad noch offen.',
+      'Checkout-Seiten + stripe-checkout/webhook/portal verdrahtet; E2E production-ready erst nach Vault-Secrets (STRIPE_*, Webhook).',
     route: '/checkout/starter',
-    evidence: ['src/features/billing/CheckoutPage.tsx', 'PR #1327'],
+    evidence: [
+      'src/features/billing/CheckoutPage.tsx',
+      'supabase/functions/stripe-checkout',
+      'test/billing/checkoutPage.test.tsx',
+      'PR #1327',
+    ],
     showOnRoadmap: true,
   },
   {
@@ -316,11 +332,13 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     status: 'live',
     group: 'activation',
     description:
-      'Org+Scope Activation unter /app/activation — erreichbar über /welcome?next=….',
+      'Org+Scope Activation unter /app/activation — Resume über /welcome?next= (getSession + SIGNED_IN).',
     route: '/app/activation',
     evidence: [
       'src/features/activation',
+      'src/pages/Welcome.tsx',
       'src/components/landing/GovernanceActivationSection.tsx',
+      'test/welcome/auth-resume-next.test.ts',
       'PR #1326',
     ],
     showOnRoadmap: false,

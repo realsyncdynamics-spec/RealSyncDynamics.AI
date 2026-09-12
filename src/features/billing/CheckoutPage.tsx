@@ -180,7 +180,7 @@ export function CheckoutPage() {
     return (
       <ShellWithMessage
         title="Unbekanntes Paket"
-        body={`"${planKey}" ist kein bekannter Plan. Verfügbar: starter / growth / agency / scale (monatlich oder jährlich).`}
+        body={`"${planKey}" ist kein bekannter Plan. Verfügbar monatlich: starter (79 €) / growth (249 €) / agency (699 €). Enterprise nur auf Anfrage.`}
         cta={{ label: 'Zur Preisübersicht', to: '/pricing' }}
         backTo="/pricing"
       />
@@ -204,7 +204,7 @@ export function CheckoutPage() {
     return (
       <NoUserShell
         title={`Anmelden, um ${tier.name} zu buchen`}
-        body="Wählen Sie einen Login-Weg. Nach Anmeldung sind Sie sofort wieder hier — der Checkout startet automatisch."
+        body="Wählen Sie einen Login-Weg. Nach der Anmeldung kehren Sie hierher zurück — Zustimmung und Bestätigen starten den Checkout."
         oauthRedirect={checkoutPath}
         magicLinkHref={`/welcome?next=${encodeURIComponent(checkoutPath)}`}
         backTo={`/pricing/${validPlan}`}

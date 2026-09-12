@@ -116,12 +116,10 @@ export function PricingPage() {
             Governance Score ermitteln — der Plan folgt daraus <ArrowRight className="h-4 w-4" />
           </Link>
 
-          {/* Trial klar sichtbar — nur die Self-Service-Plaene starten mit
-              ?pilot=true in den Testmodus (siehe CheckoutPage). Enterprise und
-              Partner werden angefragt und haben keinen Self-Service-Trial. */}
+          {/* Self-Service-Pläne: monatlich kündbar. Kein ?pilot=true an CTAs. */}
           <p className="mt-5 inline-flex items-center gap-2 text-[11px] font-mono uppercase tracking-[0.18em] text-titanium-300">
             <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
-            {TRIAL_PLAN_LIST}: {TRIAL_DAYS} Tage kostenlos testen · keine Kosten bis Tag {TRIAL_DAYS + 1} · monatlich kündbar
+            {TRIAL_PLAN_LIST}: monatlich kündbar · Starter 79 € · Growth 249 € · Agency 699 €
           </p>
         </div>
       </section>
@@ -335,7 +333,7 @@ function TierCard({ tier, selected = false }: { tier: PricingTier; selected?: bo
   // die Sitzung aus /onboarding) und ging genau an dieser Karte verloren:
   // `tier.cta.href` kommt aus der Config und kannte ihn nicht. Der Checkout
   // und der Claim nach der Anmeldung brauchen ihn aber. Ergänzen, nicht neu
-  // zusammensetzen — `source`, `interval` und `pilot` bleiben erhalten.
+  // zusammensetzen — `source` und `interval` bleiben erhalten.
   const [params] = useSearchParams();
   const auditContext = resolveAuditContext(params, params.get('audit') ?? undefined);
   const ctaHref = tier.cta.href.startsWith('http')

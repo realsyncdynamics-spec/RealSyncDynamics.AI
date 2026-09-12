@@ -2793,8 +2793,8 @@ export function checkoutHrefForPlan(
   // Ob daraus eine Subscription oder ein Einmalkauf wird, entscheidet die
   // Edge Function `stripe-checkout` anhand von `plan.purchaseMode` — der
   // Kaufmodus darf nicht über die URL manipulierbar sein.
-  const trial = resolved.trialDays > 0 ? '&pilot=true' : '';
-  return `/checkout/${key}?source=${encodeURIComponent(source)}${trial}`;
+  // Kein ?pilot=true an öffentlichen CTAs (Pilot/Demo-CTAs verboten).
+  return `/checkout/${key}?source=${encodeURIComponent(source)}`;
 }
 
 // ── Anzeige-Formatierung ──────────────────────────────────────────────────

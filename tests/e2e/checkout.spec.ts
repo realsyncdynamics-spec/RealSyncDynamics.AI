@@ -10,7 +10,7 @@ test.describe('[CO] Checkout', () => {
       page.getByRole('heading', { name: /Anmelden, um Starter zu buchen/i }),
     ).toBeVisible();
     await expect(
-      page.getByText(/sofort wieder hier — der Checkout startet automatisch/i),
+      page.getByText(/Zustimmung und Bestätigen starten den Checkout/i),
     ).toBeVisible();
   });
 

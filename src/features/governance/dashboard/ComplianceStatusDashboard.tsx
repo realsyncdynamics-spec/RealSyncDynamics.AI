@@ -163,7 +163,13 @@ export function ComplianceStatusView({
   const [searchParams] = useSearchParams();
   const postCheckoutPlan = searchParams.get('plan');
   const postCheckoutSub = searchParams.get('subscription');
-  const showPostCheckout = Boolean(postCheckoutPlan || postCheckoutSub);
+  const postCheckoutSync = searchParams.get('sync');
+  const showPostCheckout = Boolean(postCheckoutPlan || postCheckoutSub || postCheckoutSync);
+  // Stripe paid ≠ entitlements synced. Never claim "Abo aktiv" while sync=pending.
+  const postCheckoutSyncPending =
+    postCheckoutSync === 'pending' ||
+    postCheckoutSub === 'pending' ||
+    postCheckoutSub === 'pending_sync';
   const isEmptyTenant = Boolean(
     data &&
     data.partialFailures.length === 0 &&
@@ -209,7 +215,49 @@ export function ComplianceStatusView({
         </div>
       </div>
 
-      {showPostCheckout && activeTenantId && (
+      {showPostCheckout && activeTenantId && postCheckoutSyncPending && (
+        <div
+          className="border border-amber-700/40 bg-amber-950/20 p-5 space-y-3"
+          data-testid="post-checkout-sync-pending"
+        >
+          <div className="flex items-start gap-3">
+            <Globe2 className="h-5 w-5 text-amber-300 mt-0.5 shrink-0" />
+            <div>
+              <h2 className="text-sm font-semibold text-titanium-50">
+                Zahlung eingegangen · Abo-Sync ausstehend
+                {postCheckoutPlan ? ` · ${postCheckoutPlan}` : ''}
+              </h2>
+              <p className="text-sm text-titanium-300 mt-1">
+                Stripe hat die Zahlung bestätigt. Freischaltung wartet noch auf den
+                Webhook-Sync — kein Fake-„Abo aktiv“. Status unter Abrechnung prüfen
+                oder Checkout-Erfolg erneut laden.
+              </p>
+              {postCheckoutSub && postCheckoutSub !== 'pending' && postCheckoutSub !== 'pending_sync' && (
+                <p className="mt-2 font-mono text-[10px] text-titanium-600">
+                  subscription={postCheckoutSub}
+                </p>
+              )}
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => navigate('/app/billing')}
+              className="inline-flex items-center justify-center gap-2 bg-[#e8ddc8] hover:bg-[#f0e6d4] text-obsidian-950 px-4 py-2 text-sm font-semibold font-mono uppercase tracking-wider"
+            >
+              Abrechnung prüfen <ArrowRight className="h-4 w-4" />
+            </button>
+            <Link
+              to="/pricing"
+              className="inline-flex items-center justify-center gap-2 border border-titanium-700 text-titanium-200 px-4 py-2 text-sm font-medium hover:border-[#e4cfa2] hover:text-[#e4cfa2]"
+            >
+              Pläne
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {showPostCheckout && activeTenantId && !postCheckoutSyncPending && (
         <div
           className="border border-[#e4cfa2]/25 bg-[#e4cfa2]/5 p-5 space-y-3"
           data-testid="post-checkout-domain-cta"

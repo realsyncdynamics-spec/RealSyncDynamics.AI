@@ -59,9 +59,12 @@ function fixture(overrides: Partial<CockpitData> = {}): CockpitData {
   };
 }
 
-function rendered(props: Partial<Parameters<typeof ComplianceStatusView>[0]> = {}) {
+function rendered(
+  props: Partial<Parameters<typeof ComplianceStatusView>[0]> = {},
+  initialEntry = '/app/dashboard',
+) {
   const result = render(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={[initialEntry]}>
       <ComplianceStatusView
         tenantName="Acme GmbH"
         activeTenantId="tenant-1"
@@ -242,5 +245,26 @@ describe('ComplianceStatusView', () => {
     expect(getByTestId('runtime-event-stream').textContent).toContain('Policy-Warnung Cookie-Banner');
     expect(getByTestId('asset-flows').textContent).toContain('KI-Systeme');
     expect(getByTestId('risk-distribution').textContent).toContain('Kritisch');
+  });
+
+  it('shows sync-pending banner instead of Abo aktiv when sync=pending', () => {
+    const { getByTestId, queryByTestId, getByText, queryByRole } = rendered(
+      { data: fixture() },
+      '/app/dashboard?plan=starter&subscription=sub_test&sync=pending',
+    );
+    expect(getByTestId('post-checkout-sync-pending')).toBeInTheDocument();
+    expect(getByText(/Zahlung eingegangen · Abo-Sync ausstehend/)).toBeInTheDocument();
+    expect(queryByTestId('post-checkout-domain-cta')).toBeNull();
+    expect(queryByRole('heading', { name: /Abo aktiv/ })).toBeNull();
+  });
+
+  it('shows Abo aktiv domain CTA only when sync is complete', () => {
+    const { getByTestId, queryByTestId } = rendered(
+      { data: fixture() },
+      '/app/dashboard?plan=starter&subscription=sub_live',
+    );
+    expect(getByTestId('post-checkout-domain-cta')).toBeInTheDocument();
+    expect(getByTestId('post-checkout-domain-cta').textContent).toContain('Abo aktiv');
+    expect(queryByTestId('post-checkout-sync-pending')).toBeNull();
   });
 });

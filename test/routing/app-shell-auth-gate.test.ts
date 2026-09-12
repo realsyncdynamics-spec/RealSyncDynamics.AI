@@ -46,4 +46,9 @@ describe('ComplianceStatusDashboard empty tenant copy', () => {
     expect(DASHBOARD).not.toContain('Bitte anmelden, um den Compliance-Status zu sehen');
     expect(DASHBOARD).toContain('Workspace fehlt oder wird noch geladen');
   });
+
+  it('does not claim Abo aktiv while post-checkout sync is pending', () => {
+    expect(DASHBOARD).toContain('post-checkout-sync-pending');
+    expect(DASHBOARD).toContain('Zahlung eingegangen · Abo-Sync ausstehend');
+  });
 });

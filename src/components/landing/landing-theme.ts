@@ -54,8 +54,8 @@ export const LANDING_GREEN = '#20d69a';
 export const LANDING_LINE = 'rgba(228, 207, 162, 0.18)';
 
 /**
- * Fluid type scales — Europe-OS hero (large sans, left copy + right map).
- * H1 must dominate the first viewport without orphan words.
+ * Fluid type scales — hero-first hierarchy for Sovereign Night Earth landing.
+ * H1 (Europe-OS, ≤2 lines) must dominate without orphan words / viewport overflow.
  */
 export const LANDING_H1 = 'clamp(2.15rem, 1.25rem + 3.6vw, 3.75rem)'; // ~34–60px — two lines, no wrap
 export const LANDING_H2 = 'clamp(1.8125rem, 1.15rem + 2.3vw, 2.75rem)'; // ~29–44px

@@ -6,7 +6,6 @@ import { LandingRoadmapSection } from '../components/landing/LandingRoadmapSecti
 import { LandingOsSpine } from '../components/landing/LandingOsSpine';
 import { PublicDarkHeader } from '../components/landing/PublicDarkHeader';
 import { HeroEarthBackdrop } from '../components/landing/HeroEarthBackdrop';
-import { EuropeNetworkOverlay } from '../components/landing/EuropeNetworkOverlay';
 import { OsEntryLink } from '../components/landing/OsEntryLink';
 import {
   LANDING_ACCENT,
@@ -49,8 +48,7 @@ export function MainLanding() {
         backgroundColor: LANDING_BG,
         color: LANDING_TEXT,
         fontFamily: LANDING_SANS,
-        backgroundImage:
-          'radial-gradient(ellipse at 72% 18%, #12161f 0%, #06080e 42%, #02040a 78%)',
+        backgroundImage: 'radial-gradient(circle at 70% 15%, #0c121c 0, #02040a 34%, #010308 100%)',
       }}
     >
       <SEOHead
@@ -62,12 +60,12 @@ export function MainLanding() {
       />
 
       <div
-        className="pointer-events-none fixed right-[-12vw] top-[8vh] h-[44vw] w-[44vw] rounded-full opacity-[0.09] blur-[110px]"
+        className="pointer-events-none fixed right-[-18vw] top-[10vh] h-[40vw] w-[40vw] rounded-full opacity-[0.07] blur-[100px]"
         style={{ background: '#9a8b6a' }}
         aria-hidden="true"
       />
       <div
-        className="pointer-events-none fixed left-[-22vw] top-[50vh] h-[36vw] w-[36vw] rounded-full opacity-[0.06] blur-[100px]"
+        className="pointer-events-none fixed left-[-25vw] top-[45vh] h-[40vw] w-[40vw] rounded-full opacity-[0.07] blur-[100px]"
         style={{ background: '#1a4a62' }}
         aria-hidden="true"
       />
@@ -77,118 +75,91 @@ export function MainLanding() {
       <main ref={revealRoot} className="relative z-10">
         <section
           id="product"
-          className="relative isolate min-h-[min(92vh,920px)] overflow-hidden border-b border-[#e4cfa2]/10 lg:min-h-[min(90vh,880px)]"
+          className="relative isolate min-h-[min(92vh,900px)] overflow-hidden border-b border-[#e4cfa2]/10 lg:min-h-[min(90vh,860px)]"
         >
-          {/* Graphite field — full bleed; Europe map sits in the right column */}
-          <div
-            className="pointer-events-none absolute inset-0 -z-10"
-            style={{
-              background: [
-                'radial-gradient(ellipse 55% 70% at 78% 48%, #141820 0%, transparent 62%)',
-                'linear-gradient(105deg, #02040a 0%, #05070c 48%, #0a0d14 100%)',
-              ].join(', '),
-            }}
-            aria-hidden="true"
-          />
+          {/* Full-bleed Sovereign Night Earth — world globe, not Europe panel */}
+          <div className="absolute inset-0 -z-10">
+            <HeroEarthBackdrop />
+          </div>
 
-          <div className="relative mx-auto grid min-h-[inherit] max-w-[1440px] grid-cols-1 items-center gap-8 px-[4vw] py-10 lg:grid-cols-2 lg:gap-6 lg:py-12 xl:gap-10">
-            {/* Left — copy + CTAs (mockup lock) */}
-            <div className="relative z-10 flex max-w-[640px] flex-col items-start text-left lg:max-w-[680px] lg:pr-4">
-              <h1
-                className="relative w-full leading-[1.05] tracking-[-0.035em]"
+          <div className="relative mx-auto flex max-w-[920px] flex-col items-center px-[4vw] pb-[48px] pt-[36px] text-center pointer-events-none lg:pb-[56px] lg:pt-[44px]">
+            <h1
+              className="relative w-full max-w-[22ch] leading-[1.05] tracking-[-0.035em] sm:max-w-none"
+              style={{
+                fontFamily: LANDING_SANS,
+                fontWeight: 650,
+                fontSize: LANDING_H1,
+                color: LANDING_TEXT,
+              }}
+            >
+              <span className="hero-shine-glow" aria-hidden="true">
+                {HERO_HEADLINE.map((segments, line) => (
+                  <span key={`glow-${line}`} className="block">
+                    {segments.map((segment) => segment.text).join('')}
+                  </span>
+                ))}
+              </span>
+              {HERO_HEADLINE.map((segments, line) => (
+                <span key={line} className="block">
+                  {segments.map((segment, i) =>
+                    segment.accent ? (
+                      <em
+                        key={i}
+                        className="hero-shine-accent not-italic"
+                        style={{ color: LANDING_ACCENT, fontStyle: 'normal' }}
+                      >
+                        {segment.text}
+                      </em>
+                    ) : (
+                      <span key={i} className="hero-shine">
+                        {segment.text}
+                      </span>
+                    ),
+                  )}
+                </span>
+              ))}
+            </h1>
+
+            <p
+              className="mt-5 tracking-[0.18em]"
+              style={{
+                fontFamily: LANDING_MONO,
+                fontSize: LANDING_EYEBROW,
+                color: '#9a9178',
+                textTransform: 'uppercase',
+              }}
+            >
+              {HERO_OPERATING_LOOP}
+            </p>
+
+            <p
+              className="mt-5 max-w-[34rem] leading-[1.55]"
+              style={{ color: 'rgba(246,242,233,0.82)', fontSize: LANDING_BODY }}
+            >
+              {HERO_SUBLINE}
+            </p>
+
+            <div className="pointer-events-auto mt-8 flex w-full max-w-[520px] flex-col gap-3 sm:flex-row sm:items-center sm:justify-center sm:gap-3.5">
+              <Link
+                to="/audit"
+                id="scan"
+                data-hero-cta
+                className="inline-flex items-center justify-center gap-2 rounded-full px-[26px] py-[14px] text-[14px] font-semibold shadow-[0_0_0_1px_rgba(228,207,162,0.35)] transition hover:brightness-[1.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e4cfa2]"
+                style={{ backgroundColor: LANDING_BUTTON, color: LANDING_BUTTON_TEXT }}
+              >
+                {HERO_SCAN_CTA_LABEL} <span aria-hidden="true">→</span>
+              </Link>
+              <OsEntryLink
+                to="/app"
+                className="inline-flex items-center justify-center gap-2 rounded-full border px-[24px] py-[13px] text-[14px] font-medium transition hover:bg-[#e4cfa2]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e4cfa2]/60"
                 style={{
-                  fontFamily: LANDING_SANS,
-                  fontWeight: 650,
-                  fontSize: LANDING_H1,
+                  borderColor: 'rgba(242,238,230,0.45)',
+                  backgroundColor: 'rgba(8,10,14,0.55)',
                   color: LANDING_TEXT,
                 }}
               >
-                {HERO_HEADLINE.map((segments, line) => (
-                  <span key={line} className="block whitespace-nowrap">
-                    {segments.map((segment, i) =>
-                      segment.accent ? (
-                        <em
-                          key={i}
-                          className="hero-shine-accent not-italic"
-                          style={{ color: LANDING_ACCENT, fontStyle: 'normal' }}
-                        >
-                          {segment.text}
-                        </em>
-                      ) : (
-                        <span key={i} className="hero-shine">
-                          {segment.text}
-                        </span>
-                      ),
-                    )}
-                  </span>
-                ))}
-              </h1>
-
-              <p
-                className="mt-5 tracking-[0.18em]"
-                style={{
-                  fontFamily: LANDING_MONO,
-                  fontSize: LANDING_EYEBROW,
-                  color: '#9a9178',
-                  textTransform: 'uppercase',
-                }}
-              >
-                {HERO_OPERATING_LOOP}
-              </p>
-
-              <p
-                className="mt-5 max-w-[34rem] leading-[1.55]"
-                style={{ color: 'rgba(246,242,233,0.78)', fontSize: LANDING_BODY }}
-              >
-                {HERO_SUBLINE}
-              </p>
-
-              <div className="mt-8 flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:gap-3.5">
-                <Link
-                  to="/audit"
-                  id="scan"
-                  data-hero-cta
-                  className="inline-flex items-center justify-center gap-2 rounded-full px-[26px] py-[14px] text-[14px] font-semibold shadow-[0_0_0_1px_rgba(208,195,164,0.35)] transition hover:brightness-[1.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e4cfa2]"
-                  style={{ backgroundColor: LANDING_BUTTON, color: LANDING_BUTTON_TEXT }}
-                >
-                  {HERO_SCAN_CTA_LABEL} <span aria-hidden="true">→</span>
-                </Link>
-                <OsEntryLink
-                  to="/app"
-                  className="inline-flex items-center justify-center gap-2 rounded-full border px-[24px] py-[13px] text-[14px] font-medium transition hover:bg-[#e4cfa2]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e4cfa2]/60"
-                  style={{
-                    borderColor: 'rgba(242,238,230,0.45)',
-                    backgroundColor: 'rgba(8,10,14,0.55)',
-                    color: LANDING_TEXT,
-                  }}
-                >
-                  {HERO_DASHBOARD_CTA_LABEL}
-                </OsEntryLink>
-              </div>
-            </div>
-
-            {/* Right — Europe network map (framed Earth + gold routes) */}
-            <div className="relative z-0 flex min-h-[320px] w-full items-center justify-center lg:min-h-[560px] lg:justify-end">
-              <div
-                className="relative aspect-[5/4] w-full max-w-[720px] overflow-hidden lg:aspect-auto lg:h-[min(72vh,640px)] lg:max-w-none lg:w-[min(100%,640px)]"
-                data-hero-panel="europe-network"
-              >
-                <div className="absolute inset-[-8%_-4%] lg:inset-[-4%_-2%]">
-                  <HeroEarthBackdrop />
-                </div>
-                <EuropeNetworkOverlay className="z-[2] opacity-90 mix-blend-screen" />
-                {/* Soft depth of field — mockup blur at top/bottom edges */}
-                <div
-                  className="pointer-events-none absolute inset-0 z-[3]"
-                  style={{
-                    background: [
-                      'linear-gradient(180deg, rgba(2,4,10,0.55) 0%, transparent 18%, transparent 78%, rgba(2,4,10,0.7) 100%)',
-                      'linear-gradient(90deg, rgba(2,4,10,0.45) 0%, transparent 22%, transparent 100%)',
-                    ].join(', '),
-                  }}
-                  aria-hidden="true"
-                />
-              </div>
+                {HERO_DASHBOARD_CTA_LABEL}
+              </OsEntryLink>
             </div>
           </div>
         </section>

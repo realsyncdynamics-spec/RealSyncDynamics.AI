@@ -4,9 +4,11 @@
 // Body: { user_id: uuid }
 // Auth: Bearer == SERVICE_ROLE_KEY (verify_jwt = false). Der Anon-Key
 // ist ein gültiges JWT — ohne diesen Check kann jeder eine Welcome-Mail
-// an beliebige auth.users auslösen. handle_new_auth_user ruft diese
-// Function heute nicht auf; der Kommentar lag. Aufrufer: Operator-Curl
-// oder ein später verdrahteter Trigger mit Service-Role.
+// an beliebige auth.users auslösen.
+//
+// Aufrufer: AFTER INSERT auf auth.users (try_dispatch_welcome_email,
+// 20260911140000) — fail-open, wenn Vault-Secret service_role_key fehlt.
+// handle_new_auth_user bleibt unbeteiligt. Operator-Curl mit Service-Role.
 //
 // 1. Looks up email + name from auth.users + profiles via service-role
 // 2. Renders a branded HTML welcome email

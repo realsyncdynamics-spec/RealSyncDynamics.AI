@@ -218,9 +218,15 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     name: 'Photoreal Earth Hero',
     status: 'live',
     group: 'visual',
-    description: 'Nicht-interaktive, langsam rotierende Erde als Hero-Scenery auf /.',
+    description:
+      'Interaktive photoreal Weltkugel auf / (8K Desktop / 4K Mobile, Orbit/Drag, Zoom, Ländergrenzen on hover). Scenery = kein Governance-Sphere-HUD, keine Fake-KPIs — nicht die alte Sphere.',
     route: '/',
-    evidence: ['src/components/landing/HeroEarthBackdrop.tsx', 'PR #1325'],
+    evidence: [
+      'src/components/landing/HeroEarthBackdrop.tsx',
+      'src/components/landing/HeroEarthBackdropScene.tsx',
+      'src/components/visual/earthTextures.ts',
+      'PR #1338',
+    ],
     showOnRoadmap: false,
   },
   {

@@ -10,10 +10,18 @@ build/
 .next/
 .turbo/
 coverage/
+playwright-report/
+test-results/
 *.map
 package-lock.json
+**/package-lock.json
 yarn.lock
+**/yarn.lock
 pnpm-lock.yaml
+**/pnpm-lock.yaml
+
+# generated — accidental Read empties the window
+**/*.generated.ts
 
 # archives + bak (root is full of .sql.bak)
 .archive/

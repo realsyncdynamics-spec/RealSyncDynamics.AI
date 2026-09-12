@@ -98,8 +98,9 @@ export function LandingChannelTools() {
             return (
               <article
                 key={title}
-                className="flex min-h-[280px] flex-col border border-white/12 p-[22px]"
+                className="flex min-h-[280px] flex-col p-[22px]"
                 style={{
+                  border: `1px solid ${LANDING_ACCENT}33`,
                   background: 'linear-gradient(135deg, rgba(20,21,25,0.7), rgba(7,9,13,0.72))',
                 }}
               >
@@ -148,7 +149,12 @@ export function LandingChannelTools() {
                   {bullets.map((bullet) => (
                     <span
                       key={bullet}
-                      className="border border-white/10 bg-white/[0.025] px-3 py-1.5 text-[10px] text-white/45"
+                      className="px-3 py-1.5 text-[10px]"
+                      style={{
+                        border: `1px solid ${LANDING_ACCENT}40`,
+                        backgroundColor: 'rgba(0,0,0,0.35)',
+                        color: 'rgba(242,238,230,0.7)',
+                      }}
                     >
                       {bullet}
                     </span>
@@ -156,17 +162,17 @@ export function LandingChannelTools() {
                 </div>
                 <Link
                   to={live ? href : '/warteliste'}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-full border px-5 py-3.5 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00E5FF]/50"
+                  className="inline-flex w-full items-center justify-center gap-2 border px-5 py-3.5 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e4cfa2]/50"
                   style={
                     live
                       ? {
-                          borderColor: 'transparent',
-                          backgroundColor: LANDING_ACCENT,
-                          color: '#05070b',
+                          borderColor: `${LANDING_ACCENT}59`,
+                          backgroundColor: `${LANDING_ACCENT}14`,
+                          color: LANDING_ACCENT,
                         }
                       : {
-                          borderColor: 'rgba(255,255,255,0.35)',
-                          color: 'rgba(255,255,255,0.85)',
+                          borderColor: 'rgba(255,255,255,0.2)',
+                          color: 'rgba(255,255,255,0.7)',
                         }
                   }
                 >

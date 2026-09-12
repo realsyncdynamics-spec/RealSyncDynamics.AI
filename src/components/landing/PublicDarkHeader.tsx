@@ -19,50 +19,95 @@ import {
  * so they resolve from `/branchen` as well. `/ai-act` + `/sicherheit`
  * stay reachable (platform-capabilities contract).
  */
-const LINKS = [
-  { label: 'Produkt', to: '/#product', className: undefined },
-  { label: 'Runtime', to: '/governance-runtime', className: undefined },
-  { label: 'Branchen', to: '/branchen', className: undefined },
-  { label: 'Evidence', to: '/#evidence', className: undefined },
+type NavLink = {
+  label: string;
+  to: string;
+  className?: string;
+  /**
+   * `pill`  → hervorgehobener Preis-Einstieg (Monetarisierung sichtbar).
+   * `badge` → Enterprise-Pfad mit kleinem B2B-Chip.
+   * Nur im Desktop-Nav; der Drawer rendert alle Einträge als Liste.
+   */
+  variant?: 'pill' | 'badge';
+};
+
+const LINKS: readonly NavLink[] = [
+  { label: 'Produkt', to: '/#product' },
+  { label: 'Runtime', to: '/governance-runtime' },
+  { label: 'Branchen', to: '/branchen' },
+  { label: 'Evidence', to: '/#evidence' },
   { label: 'Module', to: '/#tools', className: 'hidden lg:block' },
   { label: 'EU AI Act', to: '/ai-act', className: 'hidden xl:block' },
   { label: 'Sicherheit', to: '/sicherheit', className: 'hidden xl:block' },
-  { label: 'Preise', to: '/#pricing', className: undefined },
-  { label: 'Login', to: '/welcome', className: undefined },
-] as const;
+  { label: 'Enterprise', to: '/enterprise', className: 'hidden xl:inline-flex', variant: 'badge' },
+  { label: 'Preise', to: '/#pricing', variant: 'pill' },
+  { label: 'Login', to: '/welcome' },
+];
 
 function NavItem({
   to,
   label,
   className,
+  variant,
   onNavigate,
 }: {
   to: string;
   label: string;
   className?: string;
+  variant?: 'pill' | 'badge';
   onNavigate?: () => void;
 }) {
-  const shared = {
-    className: `text-[12px] transition-colors focus-visible:outline-none focus-visible:underline focus-visible:underline-offset-4${className ? ` ${className}` : ''}`,
-    style: { color: LANDING_MUTED } as CSSProperties,
-    onMouseEnter: (e: MouseEvent<HTMLAnchorElement>) => {
-      e.currentTarget.style.color = LANDING_TEXT;
-    },
-    onMouseLeave: (e: MouseEvent<HTMLAnchorElement>) => {
-      e.currentTarget.style.color = LANDING_MUTED;
-    },
-  };
+  const focus = 'transition-colors focus-visible:outline-none focus-visible:underline focus-visible:underline-offset-4';
+  const suffix = className ? ` ${className}` : '';
+
+  const shared =
+    variant === 'pill'
+      ? {
+          className: `${focus} rounded-full border px-3 py-1.5 text-[11px] font-medium hover:bg-[#e4cfa2]/10${suffix}`,
+          style: { color: LANDING_ACCENT, borderColor: `${LANDING_ACCENT}66` } as CSSProperties,
+        }
+      : {
+          className: `${focus} ${variant === 'badge' ? 'inline-flex items-center gap-1.5 ' : ''}text-[12px]${suffix}`,
+          style: { color: LANDING_MUTED } as CSSProperties,
+          onMouseEnter: (e: MouseEvent<HTMLAnchorElement>) => {
+            e.currentTarget.style.color = LANDING_TEXT;
+          },
+          onMouseLeave: (e: MouseEvent<HTMLAnchorElement>) => {
+            e.currentTarget.style.color = LANDING_MUTED;
+          },
+        };
+
+  const content =
+    variant === 'badge' ? (
+      <>
+        {label}
+        <span
+          className="rounded-full border px-1.5 py-[2px] text-[7px] tracking-[.16em]"
+          style={{
+            fontFamily: LANDING_MONO,
+            borderColor: `${LANDING_ACCENT}66`,
+            backgroundColor: `${LANDING_ACCENT}14`,
+            color: LANDING_ACCENT,
+          }}
+          aria-hidden="true"
+        >
+          B2B
+        </span>
+      </>
+    ) : (
+      label
+    );
 
   if (to.includes('#')) {
     return (
       <a href={to} {...shared} onClick={onNavigate}>
-        {label}
+        {content}
       </a>
     );
   }
   return (
     <Link to={to} {...shared} onClick={onNavigate}>
-      {label}
+      {content}
     </Link>
   );
 }

@@ -1150,3 +1150,41 @@ html, body {
     animation: none !important;
   }
 }
+
+/* ── Monetarisierungs-Akzente Hero (`/`) ────────────────────────────────
+   Dezentes Leuchten am primären Scan-CTA und ein ruhiger Puls am Status-
+   Punkt der Trust-Leiste. Bewusst ohne neue Farbe: beides nutzt den
+   bestehenden Gold-Akzent bzw. das vorhandene Status-Grün. */
+@keyframes landing-cta-glow {
+  0%, 100% {
+    box-shadow:
+      0 0 0 0 rgba(228, 207, 162, 0),
+      0 0 24px -6px rgba(228, 207, 162, 0.35);
+  }
+  50% {
+    box-shadow:
+      0 0 0 4px rgba(228, 207, 162, 0.10),
+      0 0 34px -4px rgba(228, 207, 162, 0.55);
+  }
+}
+
+.landing-cta-glow {
+  animation: landing-cta-glow 3.2s ease-in-out infinite;
+}
+
+@keyframes landing-status-dot {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(32, 214, 154, 0.45); }
+  70%      { box-shadow: 0 0 0 5px rgba(32, 214, 154, 0); }
+}
+
+.landing-status-dot {
+  animation: landing-status-dot 2.4s ease-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-cta-glow {
+    animation: none;
+    box-shadow: 0 0 28px -6px rgba(228, 207, 162, 0.45);
+  }
+  .landing-status-dot { animation: none; }
+}

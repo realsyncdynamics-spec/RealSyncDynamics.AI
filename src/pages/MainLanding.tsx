@@ -1,18 +1,22 @@
 import { FormEvent, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowRight, Code2, FileCheck2, Lock, ShieldCheck } from 'lucide-react';
+import { ArrowRight, Code2, FileCheck2, Lock, ShieldAlert, ShieldCheck } from 'lucide-react';
 import { SEOHead } from '../components/SEOHead';
 import { LandingChannelTools } from '../components/landing/LandingChannelTools';
 import { LandingDarkBand } from '../components/landing/LandingDarkBand';
 import { LandingPricingSection } from '../components/landing/LandingPricingSection';
 import { LandingRoadmapSection } from '../components/landing/LandingRoadmapSection';
 import { PublicDarkHeader } from '../components/landing/PublicDarkHeader';
+import { TrustTopBar } from '../components/landing/TrustTopBar';
+import { HeroFeatureAnchors } from '../components/landing/HeroFeatureAnchors';
+import { LandingSocialProof } from '../components/landing/LandingSocialProof';
+import { CTA } from '../content/runtimeVocab';
+import { getPlanBySlug } from '../content/pricingContent';
 import {
   LANDING_ACCENT,
   LANDING_BG,
   LANDING_BUTTON,
   LANDING_BUTTON_TEXT,
-  LANDING_LINE,
   LANDING_MONO,
   LANDING_MUTED,
   LANDING_SANS,
@@ -27,6 +31,10 @@ import {
 import {
   HERO_HEADLINE,
   HERO_OPERATING_LOOP,
+  HERO_SCAN_CTA_BADGE,
+  HERO_SCAN_INPUT_PLACEHOLDER,
+  HERO_VALUE_SUBLINE,
+  HERO_VALUE_SUBLINE_DETAIL,
 } from '../components/governance-frontend/hero-content';
 import { HeroEarthBackdrop } from '../components/landing/HeroEarthBackdrop';
 import { EnterpriseAccessSection } from '../components/landing/EnterpriseAccessSection';
@@ -36,11 +44,20 @@ import {
 } from '../product/implementation-status';
 import { useStagedReveal } from '../hooks/useStagedReveal';
 
-/** Drei Säulen unter der Headline. Nur Module, die in Produktion laufen. */
-const HERO_PILLARS: readonly (readonly [string, string])[] = [
-  ['DSGVO-KONFORM', 'Nachweise, Prozesse und Richtlinien laufen automatisiert mit.'],
-  ['AI-ACT-BEREIT', 'Risikobewertung, Transparenz und Dokumentation je KI-System.'],
-  ['DURCHGEHEND', 'Wiederkehrende Nachprüfung, Meldungen und Belege statt Stichproben.'],
+/**
+ * Freemium-Leiter unter dem Scan-Feld: macht den Weg vom Gratis-Ergebnis
+ * zur Bezahlversion sichtbar. Plan-Name aus dem Katalog, nicht getippt.
+ */
+const STARTER_NAME = getPlanBySlug('starter')?.name ?? 'Starter';
+
+const FREEMIUM_LADDER: readonly (readonly [string, string, string])[] = [
+  ['01 · GRATIS', 'Instant Audit', 'Top-3-Risiken und Evidence-Preview — ohne Account.'],
+  [
+    `02 · AB ${STARTER_NAME.toUpperCase()}`,
+    'Tiefenanalyse',
+    'Laufendes Monitoring, Regel-Hinweise und auditfähiger Nachweis-Export.',
+  ],
+  ['03 · ENTERPRISE', 'Vertrag & SLA', 'SSO, Custom-DPA, 99,9 % Uptime-SLA und fester Ansprechpartner.'],
 ];
 
 const GOVERNANCE_STEPS = [
@@ -105,6 +122,7 @@ export function MainLanding() {
         aria-hidden="true"
       />
 
+      <TrustTopBar />
       <PublicDarkHeader />
 
       <main ref={revealRoot} className="relative z-10">
@@ -162,6 +180,21 @@ export function MainLanding() {
                 {HERO_OPERATING_LOOP}
               </p>
 
+              {/* Monetarisierungs-Subline: regulatorischer Wert direkt unter der H1. */}
+              <p className="mb-5 flex max-w-[640px] items-start gap-2.5 text-[15px] font-semibold leading-snug text-[#fff8ee]">
+                <ShieldAlert
+                  className="mt-0.5 h-4 w-4 shrink-0"
+                  style={{ color: LANDING_ACCENT }}
+                  aria-hidden="true"
+                />
+                <span>
+                  {HERO_VALUE_SUBLINE}{' '}
+                  <span className="font-normal" style={{ color: '#c9c2b4' }}>
+                    {HERO_VALUE_SUBLINE_DETAIL}
+                  </span>
+                </span>
+              </p>
+
               <p className="max-w-[640px] text-[14px] leading-[1.7]" style={{ color: '#e8dfd2' }}>
                 Govern AI. Prove Everything. Operate with Confidence.
                 <br />
@@ -169,30 +202,21 @@ export function MainLanding() {
                 Runtime.
               </p>
 
-              <div
-                className="value-grid my-[38px] mb-[26px] grid gap-0 border-y sm:grid-cols-3"
-                style={{ borderColor: LANDING_LINE }}
-              >
-                {HERO_PILLARS.map(([title, text], i) => (
-                  <article
-                    key={title}
-                    className={`py-[18px] pr-5 ${i > 0 ? 'sm:border-l sm:pl-5' : ''}`}
-                    style={{ borderColor: LANDING_LINE }}
-                  >
-                    <b
-                      className="text-[8px] font-medium tracking-[.18em]"
-                      style={{ fontFamily: LANDING_MONO, color: LANDING_ACCENT }}
-                    >
-                      {title}
-                    </b>
-                    <p className="mt-2.5 text-[11px] leading-[1.6]" style={{ color: '#b5b5bc' }}>
-                      {text}
-                    </p>
-                  </article>
-                ))}
-              </div>
+              <HeroFeatureAnchors />
 
-              <form id="scan" onSubmit={startScan} className="max-w-[620px]">
+              {/* Freemium-Audit: Lead-Magnet direkt im sichtbaren Bereich. */}
+              <form id="scan" onSubmit={startScan} className="relative max-w-[620px]">
+                <span
+                  className="absolute -top-2.5 right-6 z-10 rounded-full border px-2.5 py-[3px] text-[7.5px] tracking-[.18em]"
+                  style={{
+                    fontFamily: LANDING_MONO,
+                    borderColor: `${LANDING_ACCENT}66`,
+                    backgroundColor: LANDING_BG,
+                    color: LANDING_ACCENT,
+                  }}
+                >
+                  {HERO_SCAN_CTA_BADGE}
+                </span>
                 <div
                   className="flex flex-col gap-0 rounded-full border p-1.5 sm:flex-row sm:items-stretch"
                   style={{
@@ -203,14 +227,16 @@ export function MainLanding() {
                   <input
                     value={domain}
                     onChange={(event) => setDomain(event.target.value)}
-                    type="url"
-                    placeholder="Ihre Website –"
-                    aria-label="Ihre Website"
+                    type="text"
+                    inputMode="url"
+                    autoComplete="url"
+                    placeholder={HERO_SCAN_INPUT_PLACEHOLDER}
+                    aria-label="AI-Modell, Website oder System-URL"
                     className="min-w-0 flex-1 bg-transparent px-5 py-3.5 text-[12px] text-white outline-none placeholder:text-white/30 focus-visible:ring-2 focus-visible:ring-[#e4cfa2]/45 sm:rounded-full"
                   />
                   <button
                     type="submit"
-                    className="inline-flex items-center justify-center gap-2 rounded-full px-[18px] py-[13px] text-[11px] font-semibold transition hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e4cfa2]"
+                    className="landing-cta-glow inline-flex items-center justify-center gap-2 rounded-full px-[18px] py-[13px] text-[11px] font-semibold transition hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e4cfa2]"
                     style={{ backgroundColor: LANDING_BUTTON, color: LANDING_BUTTON_TEXT }}
                   >
                     Kostenlosen Governance Scan starten <span aria-hidden="true">→</span>
@@ -220,17 +246,48 @@ export function MainLanding() {
                   className="mt-2 text-[8px] tracking-[.08em]"
                   style={{ fontFamily: LANDING_MONO, color: '#6e7077' }}
                 >
-                  DSGVO · EU AI Act · Sicherheit · Barrierefreiheit · SEO kein Account nötig
+                  DSGVO · EU AI Act · Sicherheit · Barrierefreiheit · SEO · kein Account nötig
                 </p>
               </form>
 
-              <a
-                href="#runtime"
-                className="mt-6 inline-flex items-center gap-2 rounded-full border px-[17px] py-[11px] text-[11px] transition hover:bg-[#e4cfa2]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e4cfa2]/60"
-                style={{ borderColor: `${LANDING_ACCENT}80`, color: '#e8dfd2' }}
+              <ol
+                className="mt-5 grid max-w-[620px] gap-px overflow-hidden rounded-lg border border-white/10 bg-white/10 sm:grid-cols-3"
+                aria-label="Vom Gratis-Scan zum Enterprise-Vertrag"
               >
-                Explore the Governance OS <span aria-hidden="true">→</span>
-              </a>
+                {FREEMIUM_LADDER.map(([step, title, text]) => (
+                  <li key={step} className="p-3.5" style={{ backgroundColor: 'rgba(5,7,11,0.9)' }}>
+                    <span
+                      className="text-[7.5px] tracking-[.18em]"
+                      style={{ fontFamily: LANDING_MONO, color: LANDING_ACCENT }}
+                    >
+                      {step}
+                    </span>
+                    <b className="mt-1 block text-[11px] font-semibold" style={{ color: LANDING_TEXT }}>
+                      {title}
+                    </b>
+                    <p className="mt-1 text-[10px] leading-[1.55]" style={{ color: LANDING_MUTED }}>
+                      {text}
+                    </p>
+                  </li>
+                ))}
+              </ol>
+
+              <div className="mt-6 flex flex-wrap items-center gap-3">
+                <Link
+                  to="/contact-sales?source=landing-hero-enterprise"
+                  className="inline-flex items-center gap-2 rounded-full border px-[17px] py-[11px] text-[11px] font-medium transition hover:bg-[#e4cfa2]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e4cfa2]/60"
+                  style={{ borderColor: LANDING_ACCENT, color: LANDING_ACCENT }}
+                >
+                  {CTA.enterprise} <ArrowRight className="h-3.5 w-3.5" />
+                </Link>
+                <a
+                  href="#runtime"
+                  className="inline-flex items-center gap-2 px-1 py-[11px] text-[11px] underline-offset-4 transition hover:underline focus-visible:outline-none focus-visible:underline"
+                  style={{ color: '#e8dfd2' }}
+                >
+                  Explore the Governance OS <span aria-hidden="true">→</span>
+                </a>
+              </div>
 
               {/* Compact runtime preview strip on small screens — still demo-labeled. */}
               <div className="mt-10 lg:hidden">
@@ -273,6 +330,8 @@ export function MainLanding() {
             </div>
           </div>
         </section>
+
+        <LandingSocialProof />
 
         <LandingChannelTools />
 

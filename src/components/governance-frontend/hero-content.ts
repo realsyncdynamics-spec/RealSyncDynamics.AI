@@ -79,3 +79,17 @@ if (!HERO_HEADLINE_LINES.some((line) => line.includes(HERO_HEADLINE_TEST_SUBSTRI
       'HERO_HEADLINE vor — FE-001 würde fehlschlagen.',
   );
 }
+
+/**
+ * Monetarisierungs-Ebene im Hero (2026-09): regulatorischer Wert direkt unter
+ * der H1, Freemium-Signal am Scan-Feld. Die H1 selbst bleibt unverändert
+ * (FE-001-Kontrakt oben). Bußgeldrahmen: Art. 99 Abs. 3 EU AI Act.
+ */
+export const HERO_VALUE_SUBLINE = 'Vermeide EU-AI-Act-Bußgelder.' as const;
+
+export const HERO_VALUE_SUBLINE_DETAIL =
+  'Bis zu 35 Mio. € oder 7 % des Jahresumsatzes stehen im Raum — die Runtime hält den Nachweis, bevor jemand fragt.' as const;
+
+export const HERO_SCAN_INPUT_PLACEHOLDER = 'AI-Modell, Website oder System-URL eingeben' as const;
+
+export const HERO_SCAN_CTA_BADGE = 'GRATIS · ERGEBNIS IN ~2 MIN' as const;

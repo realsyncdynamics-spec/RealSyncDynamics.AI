@@ -4,7 +4,7 @@ import { Menu, X } from 'lucide-react';
 import {
   LANDING_ACCENT,
   LANDING_BG,
-  LANDING_BUTTON_ALT,
+  LANDING_BUTTON,
   LANDING_BUTTON_TEXT,
   LANDING_MONO,
   LANDING_MUTED,
@@ -69,7 +69,7 @@ function NavItem({
 
 const scanCtaStyle: CSSProperties = {
   fontFamily: LANDING_MONO,
-  backgroundColor: LANDING_BUTTON_ALT,
+  backgroundColor: LANDING_BUTTON,
   color: LANDING_BUTTON_TEXT,
 };
 
@@ -78,7 +78,7 @@ export function PublicDarkHeader({ overlay = false }: { overlay?: boolean }) {
 
   return (
     <header
-      className={`${overlay ? 'absolute bg-[rgba(5,7,11,0.55)]' : 'sticky bg-[rgba(5,7,11,0.82)]'} inset-x-0 top-0 z-30 border-b border-white/[0.06] backdrop-blur-[18px]`}
+      className={`${overlay ? 'absolute bg-[rgba(5,7,11,0.55)]' : 'sticky bg-[rgba(5,7,11,0.82)]'} inset-x-0 top-0 z-30 border-b border-[#e4cfa2]/12 backdrop-blur-[18px]`}
       style={{ color: LANDING_TEXT }}
     >
       <div className="mx-auto flex h-[76px] max-w-[1500px] items-center gap-6 px-[4vw]">
@@ -149,7 +149,7 @@ export function PublicDarkHeader({ overlay = false }: { overlay?: boolean }) {
       {open && (
         <div
           id="public-dark-mobile-nav"
-          className="border-t border-white/[0.06] px-6 py-4 backdrop-blur-md lg:hidden"
+          className="border-t border-[#e4cfa2]/12 px-6 py-4 backdrop-blur-md lg:hidden"
           style={{ backgroundColor: `${LANDING_BG}fa` }}
           role="dialog"
           aria-label="Governance OS Navigation"

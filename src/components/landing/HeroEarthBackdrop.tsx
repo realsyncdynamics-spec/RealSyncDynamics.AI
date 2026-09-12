@@ -121,12 +121,12 @@ function SunriseGlow() {
         className="hero-sunrise-core absolute"
         style={{
           left: '2%',
-          top: '28%',
+          top: '18%',
           width: 'min(48vw, 560px)',
           height: 'min(48vw, 560px)',
           borderRadius: '50%',
           background:
-            'radial-gradient(circle, #fffaf0 0%, #ffe6b8 10%, #ffc078 24%, #ff9a4a 42%, rgba(255,138,66,0.4) 58%, transparent 72%)',
+            'radial-gradient(circle, #ffe6b8 0%, #ffd090 12%, #ffc078 26%, #ff9a4a 44%, rgba(255,138,66,0.4) 58%, transparent 72%)',
           boxShadow:
             '0 0 80px 28px rgba(255,200,120,0.65), 0 0 180px 60px rgba(255,154,85,0.4), 0 0 280px 100px rgba(228,140,60,0.22)',
           opacity: 0.95,
@@ -217,12 +217,12 @@ export function HeroEarthBackdrop() {
           className="absolute"
           style={{
             left: '3%',
-            top: '32%',
+            top: '20%',
             width: 'min(34vw, 380px)',
             height: 'min(34vw, 380px)',
             borderRadius: '50%',
             background:
-              'radial-gradient(circle, rgba(255,252,244,1) 0%, rgba(255,220,150,0.82) 18%, rgba(255,170,80,0.42) 42%, transparent 68%)',
+              'radial-gradient(circle, rgba(255,230,184,0.98) 0%, rgba(255,200,130,0.78) 18%, rgba(255,160,70,0.4) 42%, transparent 68%)',
             boxShadow: '0 0 100px 40px rgba(255,186,110,0.55)',
             filter: 'blur(1px)',
           }}
@@ -231,9 +231,9 @@ export function HeroEarthBackdrop() {
           className="absolute inset-0"
           style={{
             background: [
-              'radial-gradient(circle at 10% 42%, rgba(255,250,236,0.5) 0%, rgba(255,200,120,0.28) 14%, transparent 38%)',
-              'radial-gradient(ellipse 60% 48% at 30% 48%, rgba(255,176,96,0.32) 0%, transparent 58%)',
-              'radial-gradient(ellipse 80% 40% at 50% 22%, rgba(255,232,196,0.22) 0%, transparent 52%)',
+              'radial-gradient(circle at 10% 38%, rgba(255,230,184,0.48) 0%, rgba(255,186,110,0.26) 14%, transparent 38%)',
+              'radial-gradient(ellipse 60% 48% at 30% 42%, rgba(255,176,96,0.32) 0%, transparent 58%)',
+              'radial-gradient(ellipse 80% 40% at 50% 18%, rgba(232,221,200,0.2) 0%, transparent 52%)',
             ].join(', '),
           }}
         />

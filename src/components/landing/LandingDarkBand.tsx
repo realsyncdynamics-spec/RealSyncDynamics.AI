@@ -18,7 +18,7 @@ export function LandingDarkBand() {
   return (
     <section
       id="runtime"
-      className="grid items-center gap-10 border-y border-white/[0.06] bg-[#070a10] px-[4vw] py-[65px] lg:grid-cols-[1.2fr_.9fr_auto]"
+      className="grid items-center gap-10 border-y border-[#e4cfa2]/10 bg-[#070a10] px-[4vw] py-[65px] lg:grid-cols-[1.2fr_.9fr_auto]"
     >
       <div>
         <p

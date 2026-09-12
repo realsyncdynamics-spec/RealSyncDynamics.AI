@@ -8,11 +8,8 @@ import { useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { PhotorealEarthMesh } from '../visual/PhotorealEarthMesh';
 
-/**
- * Sunrise sun — left limb, slightly in front of the horizon so the disc
- * peeks past the Earth and the day side faces the camera.
- */
-export const LANDING_SUN_POSITION = new THREE.Vector3(-2.55, -0.35, 3.6);
+/** Sunrise sun — behind/left of Earth limb so day side fills the desktop frame. */
+export const LANDING_SUN_POSITION = new THREE.Vector3(-2.2, 0.15, 3.35);
 
 function RisingSun({ reducedMotion }: { reducedMotion: boolean }) {
   const core = useRef<THREE.Mesh>(null!);
@@ -43,7 +40,7 @@ function RisingSun({ reducedMotion }: { reducedMotion: boolean }) {
 
       <mesh ref={core} raycast={() => null}>
         <sphereGeometry args={[1.15, 32, 32]} />
-        <meshBasicMaterial color="#fffaf0" toneMapped={false} />
+        <meshBasicMaterial color="#ffe6b8" toneMapped={false} />
       </mesh>
       <mesh ref={corona} scale={1.9} raycast={() => null}>
         <sphereGeometry args={[1.15, 24, 24]} />

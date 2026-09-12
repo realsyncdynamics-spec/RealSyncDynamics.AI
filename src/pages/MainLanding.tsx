@@ -90,7 +90,7 @@ export function MainLanding() {
       <main ref={revealRoot} className="relative z-10">
         <section
           id="product"
-          className="relative isolate min-h-[min(88vh,820px)] overflow-hidden border-b border-white/[0.06] lg:min-h-[min(86vh,780px)]"
+          className="relative isolate min-h-[min(88vh,820px)] overflow-hidden border-b border-[#e4cfa2]/10 lg:min-h-[min(86vh,780px)]"
         >
           {/* Full-bleed Earth + universe — scenery only, no interaction */}
           <div className="pointer-events-none absolute inset-0 -z-10">
@@ -195,7 +195,7 @@ export function MainLanding() {
                   type="url"
                   placeholder="Ihre Website –"
                   aria-label="Ihre Website"
-                  className="min-w-0 flex-1 bg-transparent px-4 py-3 text-center text-[13px] text-[#f2eee6] outline-none placeholder:text-white/30 focus-visible:ring-2 focus-visible:ring-[#e4cfa2]/45 sm:rounded-full sm:text-left lg:py-3.5"
+                  className="min-w-0 flex-1 bg-transparent px-4 py-3 text-center text-[13px] text-[#f2eee6] outline-none placeholder:text-[#9a9aa1]/70 focus-visible:ring-2 focus-visible:ring-[#e4cfa2]/45 sm:rounded-full sm:text-left lg:py-3.5"
                 />
                 <button
                   type="submit"
@@ -255,7 +255,7 @@ export function MainLanding() {
                 Evidence zu einem durchgängigen operativen Kontrollprozess.
               </p>
             </div>
-            <div className="grid gap-px overflow-hidden border border-white/10 bg-white/10 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-px overflow-hidden border border-[#e4cfa2]/15 bg-[#e4cfa2]/08 md:grid-cols-2 lg:grid-cols-3">
               {LIVE_CAPABILITIES.map((cap) => {
                 const body = (
                   <>
@@ -281,7 +281,7 @@ export function MainLanding() {
                     to={cap.learnMorePath}
                     data-reveal
                     data-reveal-group="platform"
-                    className="block p-7 transition hover:bg-white/[.03]"
+                    className="block p-7 transition hover:bg-[#e4cfa2]/5"
                     style={{ backgroundColor: LANDING_BG }}
                   >
                     {body}
@@ -302,31 +302,31 @@ export function MainLanding() {
             {BUILDING_CAPABILITIES.length > 0 && (
               <div className="mt-10">
                 <p
-                  className="text-[10px] tracking-[.25em] text-white/35"
+                  className="text-[10px] tracking-[.25em] text-[#9a9aa1]/70"
                   style={{ fontFamily: LANDING_MONO }}
                 >
                   IN ENTWICKLUNG
                 </p>
                 <div className="mt-4 grid gap-4 md:grid-cols-3">
                   {BUILDING_CAPABILITIES.map((cap) => (
-                    <div key={cap.id} className="border border-dashed border-white/15 p-5">
+                    <div key={cap.id} className="border border-dashed border-[#e4cfa2]/25 p-5">
                       <div className="flex items-center gap-2">
-                        <h3 className="text-sm font-medium text-white/70">{cap.name}</h3>
+                        <h3 className="text-sm font-medium text-[#e8ddc8]/90">{cap.name}</h3>
                         <span
-                          className="border border-white/15 px-2 py-0.5 text-[9px] tracking-[.12em] text-white/40"
+                          className="border border-[#e4cfa2]/22 px-2 py-0.5 text-[9px] tracking-[.12em] text-[#9a9aa1]"
                           style={{ fontFamily: LANDING_MONO }}
                         >
                           GEPLANT
                         </span>
                       </div>
-                      <p className="mt-2 text-xs leading-relaxed text-white/40">{cap.description}</p>
+                      <p className="mt-2 text-xs leading-relaxed text-[#9a9aa1]">{cap.description}</p>
                       {cap.note && (
-                        <p className="mt-2 text-[11px] leading-relaxed text-white/30">{cap.note}</p>
+                        <p className="mt-2 text-[11px] leading-relaxed text-[#9a9aa1]/80">{cap.note}</p>
                       )}
                     </div>
                   ))}
                 </div>
-                <p className="mt-4 text-[11px] text-white/30">
+                <p className="mt-4 text-[11px] text-[#9a9aa1]/80">
                   Diese Module sind noch nicht in Produktion verfügbar. Wir weisen sie aus, statt sie
                   mitzuverkaufen.
                 </p>
@@ -335,7 +335,7 @@ export function MainLanding() {
           </div>
         </section>
 
-        <section id="evidence" className="border-y border-white/[0.06] bg-white/[.02] py-[92px]">
+        <section id="evidence" className="border-y border-[#e4cfa2]/10 py-[92px]" style={{ backgroundColor: 'rgba(228,207,162,0.03)' }}>
           <div className="mx-auto max-w-[1500px] px-[4vw]">
             <div className="grid gap-12 lg:grid-cols-[.8fr_1.2fr] lg:items-end">
               <div>
@@ -442,7 +442,7 @@ export function MainLanding() {
 
         <EnterpriseAccessSection />
 
-        <section className="border-t border-white/[0.06] bg-black/80 py-[92px]">
+        <section className="border-t border-[#e4cfa2]/10 bg-black/80 py-[92px]">
           <div className="mx-auto max-w-3xl px-[4vw] text-center">
             <p
               className="text-[10px] tracking-[.25em]"
@@ -470,7 +470,7 @@ export function MainLanding() {
               </Link>
               <Link
                 to="/pricing"
-                className="inline-flex items-center justify-center gap-2 rounded-full border px-7 py-3.5 font-medium transition hover:bg-white/5"
+                className="inline-flex items-center justify-center gap-2 rounded-full border px-7 py-3.5 font-medium transition hover:bg-[#e4cfa2]/10"
                 style={{ borderColor: `${LANDING_ACCENT}80`, color: '#e8dfd2' }}
               >
                 Preise ansehen
@@ -481,24 +481,24 @@ export function MainLanding() {
       </main>
 
       <footer
-        className="relative z-10 flex flex-col items-center justify-center gap-4 border-t border-white/[0.08] px-[4vw] py-[28px] text-[11px] sm:flex-row sm:justify-between"
+        className="relative z-10 flex flex-col items-center justify-center gap-4 border-t border-[#e4cfa2]/12 px-[4vw] py-[28px] text-[11px] sm:flex-row sm:justify-between"
         style={{ color: 'rgba(255,255,255,0.55)' }}
       >
         <span>© 2026 RealSync Dynamics.AI</span>
         <nav aria-label="Rechtliches" className="flex flex-wrap items-center justify-center gap-x-3 gap-y-2">
-          <Link to="/impressum" className="hover:text-white">
+          <Link to="/impressum" className="hover:text-[#f2eee6]">
             Impressum
           </Link>
-          <span aria-hidden="true" className="text-white/25">
+          <span aria-hidden="true" className="text-[#9a9aa1]/55">
             |
           </span>
-          <Link to="/datenschutz" className="hover:text-white">
+          <Link to="/datenschutz" className="hover:text-[#f2eee6]">
             Datenschutz
           </Link>
-          <span aria-hidden="true" className="text-white/25">
+          <span aria-hidden="true" className="text-[#9a9aa1]/55">
             |
           </span>
-          <Link to="/agb" className="hover:text-white">
+          <Link to="/agb" className="hover:text-[#f2eee6]">
             AGB
           </Link>
         </nav>

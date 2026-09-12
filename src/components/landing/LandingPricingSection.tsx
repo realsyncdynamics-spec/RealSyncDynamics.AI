@@ -28,7 +28,7 @@ export function LandingPricingSection() {
   if (tiers.length === 0) return null;
 
   return (
-    <section id="pricing" className="border-t border-white/[0.06] py-[92px]">
+    <section id="pricing" className="border-t border-[#e4cfa2]/10 py-[92px]">
       <div className="mx-auto max-w-[1500px] px-[4vw]">
         <p
           className="inline-block rounded-full border px-[11px] py-[7px] text-[9px] font-medium tracking-[.23em]"
@@ -123,8 +123,8 @@ export function LandingPricingSection() {
                       ? { backgroundColor: LANDING_BUTTON, color: LANDING_BUTTON_TEXT }
                       : {
                           backgroundColor: 'transparent',
-                          color: '#ffffff',
-                          border: '1px solid rgba(255,255,255,0.55)',
+                          color: '#e8ddc8',
+                          border: '1px solid rgba(228,207,162,0.55)',
                         }
                   }
                 >

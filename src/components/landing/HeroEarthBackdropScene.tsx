@@ -130,9 +130,9 @@ function DragOrbitSurface({
       }}
       onDoubleClick={(e) => {
         e.stopPropagation();
-        controls.current.targetZoom = 1;
-        controls.current.rotX = 0.18;
-        controls.current.rotY = -0.28;
+        controls.current.targetZoom = 1.08;
+        controls.current.rotX = 0.22;
+        controls.current.rotY = -0.18;
         controls.current.velX = 0;
         controls.current.velY = 0;
         invalidate();
@@ -270,8 +270,9 @@ function InteractiveEarth({
     }
   });
 
+  // Europe-forward framing for the right-column hero panel
   return (
-    <group ref={wrap} position={[0.08, -0.28, 0.2]} scale={2.38}>
+    <group ref={wrap} position={[0.22, -0.12, 0.35]} scale={2.72}>
       <PhotorealEarthMesh
         key={quality}
         radius={EARTH_RADIUS}
@@ -349,8 +350,8 @@ export function HeroEarthBackdropScene({ reducedMotion = false }: HeroEarthBackd
   const sunDir = useMemo(() => LANDING_SUN_POSITION.clone().normalize(), []);
   const quality = useProgressiveEarthQuality(reducedMotion);
   const controls = useRef<LandingEarthControls>({
-    rotX: 0.18,
-    rotY: -0.28,
+    rotX: 0.22,
+    rotY: -0.18,
     velX: 0,
     velY: 0,
     zoom: 1,

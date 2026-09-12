@@ -51,7 +51,7 @@ function StaticEarthPlane({ className = '' }: { className?: string }) {
           height={768}
           decoding="async"
           fetchPriority="high"
-          className="h-full w-full scale-[1.48] object-cover object-[48%_40%] opacity-100"
+          className="h-full w-full scale-[1.72] object-cover object-[52%_38%] opacity-100"
         />
       </picture>
       {/* Soft readability only — no cream sunrise wash */}
@@ -186,14 +186,13 @@ export function HeroEarthBackdrop() {
         </div>
       )}
 
-      {/* Light veil for type — planet remains the visual anchor; never blocks canvas */}
+      {/* Soft graphite veil — Europe panel stays readable; never blocks canvas */}
       <div
         className="pointer-events-none absolute inset-0"
         style={{
           background: [
-            'radial-gradient(ellipse 40% 28% at 50% 22%, rgba(5,7,11,0.22) 0%, rgba(5,7,11,0.06) 55%, transparent 78%)',
-            'linear-gradient(180deg, rgba(5,7,11,0.22) 0%, transparent 12%, transparent 80%, rgba(5,7,11,0.5) 100%)',
-            'linear-gradient(90deg, transparent 0%, transparent 84%, rgba(5,7,11,0.18) 100%)',
+            'radial-gradient(ellipse 58% 52% at 54% 46%, transparent 0%, rgba(2,4,10,0.18) 62%, rgba(2,4,10,0.55) 100%)',
+            'linear-gradient(180deg, rgba(2,4,10,0.35) 0%, transparent 16%, transparent 82%, rgba(2,4,10,0.55) 100%)',
           ].join(', '),
         }}
       />

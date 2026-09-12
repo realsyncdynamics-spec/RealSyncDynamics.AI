@@ -1,23 +1,26 @@
 /**
  * Single Source of Truth für Hero + Scan-Funnel-Copy der Startseite.
  *
- * Die Headline wird von der öffentlichen Startseite und dem FE-001-Check
- * gemeinsam verwendet. Änderungen deshalb ausschließlich hier vornehmen.
+ * Locked to Dominik Europe-OS mockup (graphite / gold / cream).
+ * Änderungen ausschließlich hier — FE-001 und Scan-Funnel-Tests lesen mit.
  */
 
 export type HeroHeadlineSegment = {
   text: string;
-  /** true → Gold-Akzent (Playfair italic in der Referenz). */
+  /** true → Gold-Akzent („Europe“). */
   accent?: boolean;
 };
 
 /**
- * Dominik core message (DE) — two lines, no orphan words.
- * Control/Policy/Audit/Evidence layer — not a chatbot, not a cookie scanner.
+ * Europe-OS H1 — two lines, large sans.
+ * Line 1 white; line 2 leads with gold “Europe”.
  */
 export const HERO_HEADLINE: readonly (readonly HeroHeadlineSegment[])[] = [
-  [{ text: 'Erkenne, steuere und belege' }],
-  [{ text: 'jede KI-Nutzung in deinem Unternehmen.', accent: true }],
+  [{ text: 'AI Compliance Operations OS' }],
+  [
+    { text: 'for ' },
+    { text: 'Europe', accent: true },
+  ],
 ];
 
 /** Reine Textzeilen der H1 — für Tests und Accessible-Name-Abgleich. */
@@ -26,18 +29,18 @@ export const HERO_HEADLINE_LINES: readonly string[] = HERO_HEADLINE.map((segment
 );
 
 /** Substring für den FE-001-Check. Muss vollständig innerhalb einer Zeile liegen. */
-export const HERO_HEADLINE_TEST_SUBSTRING = 'KI-Nutzung';
+export const HERO_HEADLINE_TEST_SUBSTRING = 'Europe';
 
-/** English kicker above the DE H1 when needed. */
-export const HERO_EN_KICKER = 'Govern every AI system in one control layer.' as const;
+/** Optional EN kicker — unused in Europe-OS hero (kept for SEO/legacy imports). */
+export const HERO_EN_KICKER = 'AI Compliance Operations OS for Europe' as const;
 
-/** Motto under the H1 — continuous compliance loop */
+/** Operating loop under the H1 — small caps + arrows (mockup lock). */
 export const HERO_OPERATING_LOOP =
-  'Detect → Analyze → Govern → Remediate → Evidence → Monitor' as const;
+  'DISCOVER → CLASSIFY → ENFORCE → PROVE' as const;
 
 /**
- * Locked page slogan (Complianty-inspired timing, not a cookie scanner).
- * Scan → structure → continuous control — AI Governance OS ladder.
+ * Locked page slogan — timing ladder (scan → structure → continuous control).
+ * Kept for spine / secondary surfaces; hero uses HERO_SUBLINE.
  */
 export const SCAN_FUNNEL_MESSAGE =
   'In Minuten scannen. In Stunden strukturieren. Dauerhaft kontrollieren.' as const;
@@ -46,11 +49,11 @@ export const SCAN_FUNNEL_MESSAGE =
 export const CONTINUOUS_COMPLIANCE_NARRATIVE =
   'RealSync erkennt, bewertet, steuert und dokumentiert Compliance kontinuierlich.' as const;
 
-/** Hero subline — layer over models/workflows, not a chatbot. */
+/** Hero subline — two sentences, mockup lock. */
 export const HERO_SUBLINE =
-  'Eine Governance- und Evidence-Schicht über ChatGPT, Claude, Agenten und internen AI-Workflows.' as const;
+  'Runtime governance for regulated AI systems. Continuous evidence. EU-native by design.' as const;
 
-/** Outcomes — not feature chips. */
+/** Outcomes — not shown in Europe-OS hero (spine / elsewhere). */
 export const HERO_OUTCOMES: readonly string[] = [
   'AI Inventory ohne Excel und Schattennutzung',
   'Policies durchsetzen statt nur dokumentieren',
@@ -61,18 +64,21 @@ export const HERO_EU_LINE =
   'Gebaut für EU AI Act, DSGVO und europäische Nachweispflichten.' as const;
 
 /**
- * Hero form: promise line + short button.
- * Scan is acquisition only — product continues in Activation / workspace.
+ * Primary CTA — Free Audit starten (acquisition → /audit).
+ * One primary only — never a second “Governance kostenlos starten” in the hero.
  */
+export const HERO_SCAN_CTA_LABEL = 'Free Audit starten' as const;
+
+/** Header / footer long form — same lock as hero primary. */
+export const HERO_SCAN_CTA_LONG = 'Free Audit starten' as const;
+
+/** Secondary hero CTA → /app (ComplianceStatusDashboard via AppGate). */
+export const HERO_DASHBOARD_CTA_LABEL = 'Live Dashboard ansehen' as const;
+
+/** Legacy promise lines — kept for AuditLanding / spine; not hero chrome. */
 export const HERO_SCAN_PROMISE_LINE =
   'Finde deine Compliance-Risiken — kostenlos analysieren' as const;
 
-export const HERO_SCAN_CTA_LABEL = 'Kostenlos starten' as const;
-
-/** Longer header/footer CTA — never Demo/testen. */
-export const HERO_SCAN_CTA_LONG = 'Governance kostenlos starten' as const;
-
-/** Result promise under the URL form (DE, cream). */
 export const HERO_SCAN_CTA_PROMISE =
   'URL eingeben — Top-3-Risiken und Evidence-Preview. Danach Activation, nicht nur der Score.' as const;
 

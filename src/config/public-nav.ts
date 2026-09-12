@@ -383,10 +383,20 @@ export const PUBLIC_FOOTER_LINKS: PublicNavLeaf[] = [
 
 export const PUBLIC_CTA = {
   /** Acquisition CTA — never „Demo“ / „testen“. Scan is entry, not the product. */
-  label: 'Governance kostenlos starten',
-  shortLabel: 'Kostenlos starten',
+  label: 'Free Audit starten',
+  shortLabel: 'Free Audit starten',
   to: '/audit',
 } as const;
+
+/**
+ * Europe-OS mockup strip — visible top-level links on PublicDarkHeader.
+ * Produkt / Evidence / Preise / Login. Mega-menu IA stays in PUBLIC_NAV_GROUPS.
+ */
+export const PUBLIC_PRIMARY_NAV: readonly PublicNavLeaf[] = [
+  { label: 'Produkt', to: '/#product' },
+  { label: 'Evidence', to: '/evidence' },
+  { label: 'Preise', to: '/#pricing' },
+] as const;
 
 export const PUBLIC_ACCOUNT = {
   login: { label: 'Login', to: '/welcome' },

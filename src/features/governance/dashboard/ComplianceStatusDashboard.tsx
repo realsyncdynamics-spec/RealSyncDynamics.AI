@@ -29,6 +29,13 @@ import {
   type RiskIndex,
 } from './complianceStatus';
 import { AgentOsPanel } from '../agent-os/AgentOsPanel';
+import { listScanRuns, listWebsitesForTenant } from '../scans/scansApi';
+import { loadGovernanceActivation } from '../../activation/activationApi';
+import {
+  computeWorkspaceBootstrapSteps,
+  type ActivationBootstrapStatus,
+  type BootstrapStep,
+} from './workspaceBootstrapSteps';
 
 export function ComplianceStatusDashboard() {
   const { activeTenantId, tenants } = useTenant();
@@ -36,12 +43,14 @@ export function ComplianceStatusDashboard() {
   const [data, setData] = useState<CockpitData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [bootstrapSteps, setBootstrapSteps] = useState<BootstrapStep[]>([]);
 
   useEffect(() => {
     let cancelled = false;
     if (!activeTenantId) {
       setData(null);
       setLoading(false);
+      setBootstrapSteps([]);
       return;
     }
     setLoading(true);
@@ -51,6 +60,30 @@ export function ComplianceStatusDashboard() {
       .then((next) => { if (!cancelled) setData(next); })
       .catch((err) => { if (!cancelled) setError((err as Error)?.message ?? String(err)); })
       .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [activeTenantId]);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!activeTenantId) {
+      setBootstrapSteps([]);
+      return;
+    }
+    void (async () => {
+      const [websites, scans, activation] = await Promise.all([
+        listWebsitesForTenant(activeTenantId).then((rows) => rows.length).catch(() => null),
+        listScanRuns(activeTenantId, { limit: 1 }).then((rows) => rows.length).catch(() => null),
+        loadGovernanceActivation(activeTenantId)
+          .then((row): ActivationBootstrapStatus => (row?.status ?? 'none'))
+          .catch(() => null),
+      ]);
+      if (cancelled) return;
+      setBootstrapSteps(computeWorkspaceBootstrapSteps({
+        websiteCount: websites,
+        scanCount: scans,
+        activationStatus: activation,
+      }));
+    })();
     return () => { cancelled = true; };
   }, [activeTenantId]);
 
@@ -69,6 +102,7 @@ export function ComplianceStatusDashboard() {
         data={data}
         loading={loading}
         error={error}
+        bootstrapSteps={bootstrapSteps}
       />
     </>
   );
@@ -90,7 +124,7 @@ function DashboardControlPlane() {
           <h2 className="mt-1 text-base font-semibold text-titanium-50">AI Control Plane</h2>
           <p className="mt-1 text-xs text-titanium-400">Direkter Zugriff auf Bots, Agenten und die produktiven SiteOS-Build-Flows.</p>
         </div>
-        <Link to="/app/overview" className="text-[10px] font-mono uppercase tracking-wider text-[#e4cfa2] hover:text-titanium-50">Alle Module →</Link>
+        <Link to="/app/modules" className="text-[10px] font-mono uppercase tracking-wider text-[#e4cfa2] hover:text-titanium-50">Alle Module →</Link>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-px bg-titanium-900">
         {tools.map(({ href, label, text, icon: Icon, accent }) => (
@@ -114,6 +148,7 @@ export interface ComplianceStatusViewProps {
   data: CockpitData | null;
   loading: boolean;
   error: string | null;
+  bootstrapSteps?: BootstrapStep[];
 }
 
 export function ComplianceStatusView({
@@ -122,6 +157,7 @@ export function ComplianceStatusView({
   data,
   loading,
   error,
+  bootstrapSteps = [],
 }: ComplianceStatusViewProps) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -200,7 +236,7 @@ export function ComplianceStatusView({
             onClick={() => navigate('/app/websites')}
             className="inline-flex items-center justify-center gap-2 bg-[#e8ddc8] hover:bg-[#f0e6d4] text-obsidian-950 px-4 py-2 text-sm font-semibold font-mono uppercase tracking-wider"
           >
-            Domain verbinden <ArrowRight className="h-4 w-4" />
+            Domain hinterlegen <ArrowRight className="h-4 w-4" />
           </button>
         </div>
       )}
@@ -241,40 +277,54 @@ export function ComplianceStatusView({
       )}
 
       {isEmptyTenant && (
-        <div className="border border-titanium-800 bg-obsidian-900 p-6 space-y-4">
+        <div className="border border-titanium-800 bg-obsidian-900 p-6 space-y-4" data-testid="empty-tenant-cta">
           <div className="flex items-start gap-4">
             <Rocket className="h-6 w-6 text-[#e4cfa2] mt-0.5 shrink-0" />
             <div>
               <h2 className="text-lg font-semibold text-titanium-50">Noch keine Governance-Daten</h2>
               <p className="text-sm text-titanium-300 mt-1">
-                Score und Ampeln bleiben leer, solange keine Assets, Evidence oder offenen Pflichten vorliegen.
-                Starten Sie mit Onboarding oder einem Website-Audit.
+                Score und Ampeln bleiben leer, solange keine Domain, kein Scan und keine Evidence vorliegen.
+                Zuerst Domain hinterlegen — keine Fake-Scores.
               </p>
             </div>
           </div>
           <div className="flex flex-col sm:flex-row gap-3">
             <button
               type="button"
-              onClick={() => navigate('/app/onboarding')}
+              data-testid="cta-domain-hinterlegen"
+              onClick={() => navigate('/app/websites')}
               className="inline-flex items-center justify-center gap-2 bg-[#e8ddc8] hover:bg-[#f0e6d4] text-obsidian-950 px-4 py-2 text-sm font-semibold font-mono uppercase tracking-wider"
             >
-              Onboarding starten
+              Domain hinterlegen
             </button>
             <button
               type="button"
+              data-testid="cta-audit-starten"
               onClick={() => navigate('/audit?source=dashboard')}
               className="inline-flex items-center justify-center gap-2 border border-titanium-700 hover:border-titanium-500 text-titanium-200 px-4 py-2 text-sm font-semibold font-mono uppercase tracking-wider"
             >
-              Website-Audit
+              Audit starten
             </button>
             <button
               type="button"
-              onClick={() => navigate('/app/websites')}
+              data-testid="cta-activation"
+              onClick={() => navigate('/app/activation')}
               className="inline-flex items-center justify-center gap-2 border border-titanium-700 hover:border-titanium-500 text-titanium-200 px-4 py-2 text-sm font-semibold font-mono uppercase tracking-wider"
             >
-              Domain verbinden
+              Activation
             </button>
           </div>
+        </div>
+      )}
+
+      {isEmptyTenant && (
+        <div className="grid grid-cols-1 xl:grid-cols-12 gap-5">
+          <div className="xl:col-span-8 space-y-5">
+            <FrameworkStrip />
+          </div>
+          <aside className="xl:col-span-4 space-y-5" aria-label="Nächste Schritte">
+            <BootstrapTasksRail steps={bootstrapSteps} />
+          </aside>
         </div>
       )}
 
@@ -340,7 +390,11 @@ export function ComplianceStatusView({
 
             {/* Zone 4 — Right rail: Critical Findings / Alerts / Tasks */}
             <aside className="xl:col-span-4 space-y-5" aria-label="Findings und Aufgaben">
-              <CriticalFindingsRail actions={data.actions} summary={data.summary24h} />
+              <CriticalFindingsRail
+                actions={data.actions}
+                summary={data.summary24h}
+                bootstrapSteps={bootstrapSteps}
+              />
             </aside>
           </div>
 
@@ -352,9 +406,9 @@ export function ComplianceStatusView({
               ? `KPI-Stand: ${data.lastUpdated}`
               : 'KPI-Snapshot noch nicht verfügbar — Score aus Echtzeit-Zählern.'}
             {' · '}
-            <Link to="/app/home" className="hover:text-titanium-300 underline">Workspace</Link>
+            <Link to="/app/dashboard" className="hover:text-titanium-300 underline">Workspace</Link>
             {' · '}
-            <Link to="/app/overview" className="hover:text-titanium-300 underline">Module</Link>
+            <Link to="/app/modules" className="hover:text-titanium-300 underline">Module</Link>
           </p>
         </>
       )}
@@ -545,9 +599,11 @@ function PolicyCoveragePanel({ posture }: { posture: CockpitData['posture'] }) {
 function CriticalFindingsRail({
   actions,
   summary,
+  bootstrapSteps,
 }: {
   actions: CockpitData['actions'];
   summary: CockpitData['summary24h'];
+  bootstrapSteps: BootstrapStep[];
 }) {
   const critical = actions.filter((a) => a.level === 'critical' || a.level === 'high');
 
@@ -614,43 +670,82 @@ function CriticalFindingsRail({
         </CardBody>
       </Card>
 
-      <Card data-testid="tasks-rail" className="bg-obsidian-900/80">
-        <CardHeader
-          eyebrow="Aufgaben"
-          title="Nächste Schritte"
-          subtitle="Nach Schweregrad und Fristnähe."
-        />
-        <CardBody className="p-0">
-          {actions.length === 0 ? (
-            <div className="px-5 py-6 text-center text-sm text-titanium-400" data-testid="no-open-actions">
-              <ShieldCheck className="h-5 w-5 mx-auto mb-2 text-emerald-400" />
-              Keine dringenden Pflichten offen.
-            </div>
-          ) : (
-            <ul className="divide-y divide-titanium-900" data-testid="priority-actions">
-              {actions.slice(0, 8).map((action, index) => (
-                <li key={action.id}>
-                  <Link
-                    to={action.href}
-                    className="flex items-center gap-3 px-5 py-3 hover:bg-obsidian-800 transition-colors"
-                  >
-                    <span className="font-mono text-xs text-titanium-600 w-4 shrink-0">{index + 1}</span>
-                    <StatusBadge level={action.level} />
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-semibold text-titanium-50 truncate">{action.title}</p>
-                      <p className="text-xs text-titanium-400 flex items-center gap-1.5 mt-0.5">
-                        <Clock className="h-3 w-3" /> {action.detail}
-                      </p>
-                    </div>
-                    <ChevronRight className="h-4 w-4 text-titanium-600 shrink-0" />
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
-        </CardBody>
-      </Card>
+      <BootstrapTasksRail steps={actions.length === 0 ? bootstrapSteps : []} actions={actions} />
     </>
+  );
+}
+
+function BootstrapTasksRail({
+  steps,
+  actions = [],
+}: {
+  steps: BootstrapStep[];
+  actions?: CockpitData['actions'];
+}) {
+  const showBootstrap = actions.length === 0 && steps.length > 0;
+  const showActions = actions.length > 0;
+
+  return (
+    <Card data-testid="tasks-rail" className="bg-obsidian-900/80">
+      <CardHeader
+        eyebrow="Aufgaben"
+        title="Nächste Schritte"
+        subtitle={showBootstrap
+          ? 'Aus Workspace-Status (Domain, Scan, Activation).'
+          : 'Nach Schweregrad und Fristnähe.'}
+      />
+      <CardBody className="p-0">
+        {showActions ? (
+          <ul className="divide-y divide-titanium-900" data-testid="priority-actions">
+            {actions.slice(0, 8).map((action, index) => (
+              <li key={action.id}>
+                <Link
+                  to={action.href}
+                  className="flex items-center gap-3 px-5 py-3 hover:bg-obsidian-800 transition-colors"
+                >
+                  <span className="font-mono text-xs text-titanium-600 w-4 shrink-0">{index + 1}</span>
+                  <StatusBadge level={action.level} />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-titanium-50 truncate">{action.title}</p>
+                    <p className="text-xs text-titanium-400 flex items-center gap-1.5 mt-0.5">
+                      <Clock className="h-3 w-3" /> {action.detail}
+                    </p>
+                  </div>
+                  <ChevronRight className="h-4 w-4 text-titanium-600 shrink-0" />
+                </Link>
+              </li>
+            ))}
+          </ul>
+        ) : showBootstrap ? (
+          <ul className="divide-y divide-titanium-900" data-testid="bootstrap-next-steps">
+            {steps.map((step, index) => (
+              <li key={step.id}>
+                <Link
+                  to={step.href}
+                  data-testid={`bootstrap-step-${step.id}`}
+                  className="flex items-center gap-3 px-5 py-3 hover:bg-obsidian-800 transition-colors"
+                >
+                  <span className="font-mono text-xs text-titanium-600 w-4 shrink-0">{index + 1}</span>
+                  <StatusBadge level={step.level} />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-titanium-50 truncate">{step.title}</p>
+                    <p className="text-xs text-titanium-400 flex items-center gap-1.5 mt-0.5">
+                      <Clock className="h-3 w-3" /> {step.detail}
+                    </p>
+                  </div>
+                  <ChevronRight className="h-4 w-4 text-titanium-600 shrink-0" />
+                </Link>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <div className="px-5 py-6 text-center text-sm text-titanium-400" data-testid="no-open-actions">
+            <ShieldCheck className="h-5 w-5 mx-auto mb-2 text-emerald-400" />
+            Keine dringenden Pflichten offen.
+          </div>
+        )}
+      </CardBody>
+    </Card>
   );
 }
 
@@ -666,7 +761,8 @@ const FRAMEWORK_STRIP: Array<{
   { id: 'eu-ai-act', label: 'EU AI Act', path: '/app/governance/ai-act-assessment', maturity: 'beta' },
   { id: 'iso', label: 'ISO', path: '/app/governance/iso27001', maturity: 'beta' },
   { id: 'nis2', label: 'NIS2', path: '/app/governance/nis2-incidents', maturity: 'beta' },
-  { id: 'tisax', label: 'TISAX', path: '/app/policy-packs', maturity: 'roadmap' },
+  // Honest Roadmap: no dedicated TISAX/DORA surface yet — not Policy Packs.
+  { id: 'tisax', label: 'TISAX', path: null, maturity: 'roadmap' },
   { id: 'dora', label: 'DORA', path: null, maturity: 'roadmap' },
 ];
 
@@ -705,13 +801,18 @@ function FrameworkStrip() {
           );
           if (!fw.path) {
             return (
-              <div key={fw.id} className="opacity-70 cursor-default" title="Noch ohne eigene Route">
+              <div
+                key={fw.id}
+                className="opacity-70 cursor-default"
+                title="Roadmap — noch ohne eigene Route"
+                data-testid={`framework-${fw.id}-roadmap`}
+              >
                 {inner}
               </div>
             );
           }
           return (
-            <Link key={fw.id} to={fw.path} className="block">
+            <Link key={fw.id} to={fw.path} className="block" data-testid={`framework-${fw.id}`}>
               {inner}
             </Link>
           );

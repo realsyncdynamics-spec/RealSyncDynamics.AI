@@ -44,16 +44,20 @@ describe('commandCenterCatalog', () => {
 
   it('resolves high-value action destinations to real routes', () => {
     const audit = catalog.find((c) => c.id === 'nav-audit-start');
+    const domain = catalog.find((c) => c.id === 'nav-domain-register');
     const scans = catalog.find((c) => c.id === 'nav-scans');
     const pricing = catalog.find((c) => c.id === 'nav-pricing');
     const team = catalog.find((c) => c.id === 'nav-team-invite');
     const settings = catalog.find((c) => c.id === 'mod-settings');
+    const assistantPage = catalog.find((c) => c.id === 'nav-assistant-workspace');
 
     expect(resolveCommandPath(audit!)).toBe('/audit');
+    expect(resolveCommandPath(domain!)).toBe('/app/websites');
     expect(resolveCommandPath(scans!)).toBe('/app/scans');
     expect(resolveCommandPath(pricing!)).toBe('/pricing');
     expect(resolveCommandPath(team!)).toBe('/app/team');
     expect(resolveCommandPath(settings!)).toBe('/app/settings');
+    expect(resolveCommandPath(assistantPage!)).toBe('/app/assistant');
   });
 
   it('exposes the assistant as a non-navigation action', () => {

@@ -2,7 +2,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { Home, Globe, FileCheck2, Cpu, AlertCircle } from 'lucide-react';
 
 const BOTTOM_TABS = [
-  { icon: Home,        label: 'Übersicht',  route: '/app' },
+  { icon: Home,        label: 'Übersicht',  route: '/app/dashboard' },
   { icon: Globe,       label: 'Websites',   route: '/app/websites' },
   { icon: FileCheck2,  label: 'Nachweise',  route: '/app/evidence' },
   { icon: Cpu,         label: 'KI-Systeme', route: '/app/ai-systems' },
@@ -12,8 +12,17 @@ const BOTTOM_TABS = [
 export function MobileBottomNavigation() {
   const { pathname } = useLocation();
 
-  const isActive = (route: string) =>
-    route === '/app' ? pathname === '/app' : pathname.startsWith(route);
+  const isActive = (route: string) => {
+    if (route === '/app/dashboard') {
+      return (
+        pathname === '/app' ||
+        pathname === '/app/dashboard' ||
+        pathname === '/app/home' ||
+        pathname === '/app/overview'
+      );
+    }
+    return pathname.startsWith(route);
+  };
 
   return (
     <nav className="lg:hidden h-12 shrink-0 bg-obsidian-900 border-t border-titanium-900 flex">

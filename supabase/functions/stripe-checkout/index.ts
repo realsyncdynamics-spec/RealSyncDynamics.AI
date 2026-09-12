@@ -192,7 +192,8 @@ Deno.serve(async (req) => {
   const SITE = Deno.env.get('PUBLIC_SITE_URL') ?? 'https://realsyncdynamicsai.de';
   const base = req.headers.get('origin') ?? body.return_url ?? SITE;
   const successUrl = `${base}/checkout/success?session_id={CHECKOUT_SESSION_ID}&plan_key=${encodeURIComponent(body.plan_key!)}`;
-  const cancelUrl  = `${base}/pricing?checkout=cancelled`;
+  // Cancel lands on the dedicated abort screen (CTA back to /#pricing), not /pricing?checkout=.
+  const cancelUrl  = `${base}/checkout/cancelled`;
 
   // Einmalkauf vs. Abo. Der Modus stammt AUSSCHLIESSLICH aus der Pricing-SSoT
   // (`plan.purchaseMode`) und niemals aus dem Request-Body — sonst könnte ein

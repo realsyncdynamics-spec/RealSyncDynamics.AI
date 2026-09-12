@@ -1,10 +1,9 @@
 /**
  * Plan Selector — Interactive tier card grid with Checkout CTA
  *
- * Displays SELLABLE_PRICING_TIERS (Starter, Growth, Enterprise) with feature
- * comparison, highlight states, and CTA buttons. Agency und Partner sind seit
- * AP2 stillgelegt und stehen deshalb nicht zur Auswahl — bestehende Abos
- * darauf laufen unverändert weiter.
+ * Displays SELLABLE_PRICING_TIERS (Starter, Growth, Agency, Enterprise).
+ * Partner bleibt seit AP2 legacy und steht nicht zur Auswahl.
+ * Starter/Growth/Agency starten Stripe Checkout; Enterprise ist inquiry.
  */
 
 import React from 'react';

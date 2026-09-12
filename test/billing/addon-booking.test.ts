@@ -139,7 +139,7 @@ describe('Buchbarkeit folgt plan.addons, nicht availableFor', () => {
     expect(addonBookableOnPlan('whatsapp', 'free')).toBe(false);
   });
 
-  it('Bestandskunden auf Agency behalten ihre Add-ons, obwohl der Plan stillgelegt ist', () => {
+  it('Bestandskunden auf Agency behalten ihre Add-ons (Agency wieder self_service)', () => {
     const agency = planById('agency');
     for (const id of agency.addons) {
       expect(addonBookableOnPlan(id, 'agency')).toBe(true);

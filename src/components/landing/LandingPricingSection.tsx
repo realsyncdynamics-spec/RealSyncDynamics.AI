@@ -130,6 +130,7 @@ export function LandingPricingSection() {
                 </ul>
                 <Link
                   to={tier.cta.href.startsWith('/') ? tier.cta.href : `/checkout/${tier.id}`}
+                  data-testid={`landing-pricing-cta-${tier.id}`}
                   className="mt-6 inline-flex items-center justify-center gap-2 rounded-full px-[18px] py-[13px] text-[11px] font-semibold transition hover:brightness-110"
                   style={
                     featured

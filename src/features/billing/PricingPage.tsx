@@ -126,7 +126,7 @@ export function PricingPage() {
         </div>
       </section>
 
-      {/* Tier-Cards — drei Stufen seit AP2 (Starter, Growth, Enterprise) */}
+      {/* Tier-Cards — Starter / Growth / Agency / Enterprise (Partner legacy) */}
       <section className="px-4 sm:px-6 lg:px-8 pb-16 sm:pb-20">
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 items-stretch">
@@ -263,30 +263,21 @@ export function PricingPage() {
                 q: 'Was ist "Auto-Remediation" genau?',
                 a: 'Für erkannte Probleme liefern wir konkrete technische Fixes: Script-Tags mit type="text/plain" und data-consent-Attribut, Consent-Banner-Code-Snippets, Google-Fonts-Self-Hosting-Script, YouTube-NoCookie-Umstellung. Kein LLM-generiertes "schreib eine Datenschutzerklärung", sondern strukturierte Regel-Engine → Template-System.',
               },
-              // COMMERCIAL-SSOT: temporary production hotfix.
-              // Canonical source migration tracked in Phase 2.
-              // Diese drei Antworten beschrieben den Agency-Kauf als lebenden
-              // Vorgang („nach dem Kauf", „nach der Zahlung", „im Grundpreis
-              // enthalten") — auf der Preisseite, also genau dort, wo jemand
-              // entscheidet. Agency ist seit AP2 stillgelegt; ein neuer Kauf
-              // kommt nicht mehr zustande. Die Antworten gelten weiter fuer
-              // Bestandskunden und sagen das jetzt auch. Ersetzt wird kein
-              // Plan: wer die Leistung neu braucht, laeuft ueber Enterprise.
               {
-                q: 'Ich habe ein bestehendes Agency-Paket — was gilt für mich?',
-                a: 'Agency wird seit dem Paketumbau nicht mehr neu verkauft. Bestehende Agency-Abos laufen unverändert weiter: gleicher Funktionsumfang, gleicher Preis, gleiche Abrechnung. Im Dashboard finden Sie wie bisher Ihren API-Key, das White-Label-Konfigurations-Panel (Logo, Farben, eigene Domain) und Ihre Kundenseiten. Neu einsteigende Agenturen und Kanzleien mit Multi-Tenant- und White-Label-Bedarf besprechen Umfang und Konditionen über /contact-sales im Rahmen von Enterprise.',
+                q: 'Was unterscheidet Agency von Growth?',
+                a: 'Agency richtet sich an Agenturen und Dienstleister: bis zu 10 Domains, White-Label-Berichte, Scheduler, Bulk Jobs und REST-API. Growth bleibt der Ein-Mandanten-Plan mit täglichem Monitoring und Risk Register. Agency startet self-service über Stripe Checkout (699 €/Monat). Multi-Org mit SSO und vertraglichem SLA läuft über Enterprise (/contact-sales).',
               },
               {
-                q: 'Was bedeutet "Priority Support" in meinem Agency-Paket?',
-                a: 'Priority Support bedeutet: dedizierter Ansprechpartner per E-Mail mit garantierter Antwort innerhalb von 8 Stunden (Werktage). Für kritische Compliance-Fragen (aktiver Aufsichtsbehörden-Kontakt) eskalieren wir auf 4-Stunden-Response. Kontakt: support@realsyncdynamicsai.de mit Betreff [AGENCY]. Für Bestandskunden gilt das unverändert.',
+                q: 'Was bedeutet "Priority Support" im Agency-Paket?',
+                a: 'Priority Support bedeutet: dedizierter Ansprechpartner per E-Mail mit garantierter Antwort innerhalb von 8 Stunden (Werktage). Für kritische Compliance-Fragen (aktiver Aufsichtsbehörden-Kontakt) eskalieren wir auf 4-Stunden-Response. Kontakt: support@realsyncdynamicsai.de mit Betreff [AGENCY].',
               },
               {
-                q: 'Wie viele Kundenseiten kann ich in meinem Agency-Paket verwalten?',
-                a: '10 Kundenseiten (Domains) sind enthalten; weitere Domains können einzeln hinzugebucht werden. Jede Domain bekommt ihr eigenes Monitoring-Dashboard, White-Label-Report und API-Endpunkt. Die Multi-Tenant-Struktur ist vollständig isoliert — jeder Kunde sieht nur seine eigenen Daten. Das gilt unverändert für bestehende Agency-Abos.',
+                q: 'Wie viele Kundenseiten kann ich im Agency-Paket verwalten?',
+                a: '10 Kundenseiten (Domains) sind enthalten; weitere Domains können einzeln hinzugebucht werden. Jede Domain bekommt ihr eigenes Monitoring-Dashboard, White-Label-Report und API-Endpunkt.',
               },
               {
                 q: 'Gibt es einen AVV (Auftragsverarbeitungsvertrag)?',
-                a: 'Ja. Als Auftragsverarbeiter stellen wir Ihnen und Ihren Kunden einen EU-konformen AVV bereit. Er ist ab Buchung automatisch aktiv und kann unter /legal/avv eingesehen und heruntergeladen werden. Für Kunden mit eigenen Endkunden — bestehende Agency-Abos ebenso wie Enterprise — stellen wir zusätzlich eine anpassbare AVV-Vorlage bereit.',
+                a: 'Ja. Als Auftragsverarbeiter stellen wir Ihnen und Ihren Kunden einen EU-konformen AVV bereit. Er ist ab Buchung automatisch aktiv und kann unter /legal/avv eingesehen und heruntergeladen werden.',
               },
               {
                 q: 'Wie kündige ich?',

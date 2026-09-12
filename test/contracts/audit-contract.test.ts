@@ -9,16 +9,12 @@ import { PRICING_TIERS, tierById, type TierId } from '../../src/config/pricing';
 import { PLAN_CONFIG, diffPricingTiersAgainstPlanConfig, planForTier } from '../../src/lib/billing/planConfig';
 
 describe('PRICING_TIERS — Single Source of Truth', () => {
-  // COMMERCIAL-SSOT: temporary production hotfix.
-  // Canonical source migration tracked in Phase 2.
-  // Neun statt zwoelf: `starter_yearly`, `growth_yearly` und `agency_yearly`
-  // erzeugen kein Tier, weil fuer sie in `public.products` kein echter
-  // Stripe-Preis verdrahtet ist (`yearlyCheckoutUnavailable`). Ein Tier
-  // waere die Grundlage einer oeffentlichen Angebotsflaeche — und damit
-  // ein zugesicherter Festpreis, den `stripe-checkout` nicht einloest.
-  it('has all 9 tier ids (6 base + 2 yearly variants + 1 one-time)', () => {
+  // Live Stripe has no yearly prices — all yearlyCheckoutUnavailable.
+  it('has all 7 tier ids (6 base + 1 one-time, no yearly)', () => {
     const ids = PRICING_TIERS.map((t) => t.id).sort();
-    expect(ids).toEqual(['agency', 'enterprise', 'enterprise_yearly', 'free', 'governance_launch', 'growth', 'partner', 'partner_yearly', 'starter']);
+    expect(ids).toEqual([
+      'agency', 'enterprise', 'free', 'governance_launch', 'growth', 'partner', 'starter',
+    ]);
   });
 
   it('Starter price is 79 €', () => {

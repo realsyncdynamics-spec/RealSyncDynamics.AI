@@ -248,6 +248,7 @@ export const FLOW_STEPS: Record<string, FlowStep> = {
     secondary: { label: 'Zurück', to: flow('pricing-intro') },
     extraActions: [
       { label: 'Growth wählen', to: flow('checkout/growth') },
+      { label: 'Agency wählen', to: flow('checkout/agency') },
       { label: 'Enterprise anfragen', to: flow('checkout/enterprise') },
     ],
   },
@@ -296,13 +297,30 @@ export const FLOW_STEPS: Record<string, FlowStep> = {
     ],
   },
 
-  // COMMERCIAL-SSOT: temporary production hotfix.
-  // Canonical source migration tracked in Phase 2.
-  // Dieser Schritt hiess bis AP2 „Agency buchen" und fuehrte mit
-  // `external: true` in den echten Stripe-Checkout — fuer einen Plan, den
-  // `stripe-checkout` seither mit PLAN_RETIRED abweist. Der Flow fuehrte den
-  // Nutzer also durch eine vollstaendige Kaufstrecke in eine Sackgasse.
-  // Die Zielgruppe (mehrere Mandanten, White-Label) laeuft ueber Enterprise.
+  // Agency ist wieder self_service (Dominik-Landing 2026-09): Live-Price
+  // `price_1TfsV9REjTWueUcGxJIBHYgC` in public.products. Partner bleibt legacy.
+  'pricing.checkoutAgency': {
+    id: 'pricing.checkoutAgency',
+    slug: 'checkout/agency',
+    label: 'Agency buchen',
+    fromPage: 'Paket auswählen',
+    title: 'Paket „Agency“',
+    clicked: 'Du hast das Paket „Agency“ ausgewählt.',
+    explanation:
+      'Agency richtet sich an Agenturen und Dienstleister: bis zu 10 Domains, ' +
+      'White-Label-Berichte, Scheduler, Bulk Jobs und REST-API. Über den Button ' +
+      'unten startest du den sicheren Stripe-Checkout. Nach erfolgreicher Zahlung ' +
+      'landest du automatisch in deinem Dashboard.',
+    stage: 'checkout',
+    stateEffect: { selectedPlan: 'agency', checkoutStatus: 'started' },
+    primary: { label: 'Checkout starten (Agency)', to: '/checkout/agency', external: true, hint: 'Öffnet den echten Stripe-Checkout.' },
+    secondary: { label: 'Zurück zur Paketwahl', to: flow('choose-plan') },
+    extraActions: [
+      { label: 'Zahlung erfolgreich?', to: flow('checkout-success') },
+      { label: 'Abgebrochen?', to: flow('checkout-cancelled') },
+    ],
+  },
+
   'pricing.checkoutEnterprise': {
     id: 'pricing.checkoutEnterprise',
     slug: 'checkout/enterprise',
@@ -311,10 +329,9 @@ export const FLOW_STEPS: Record<string, FlowStep> = {
     title: 'Paket „Enterprise“',
     clicked: 'Du hast das Paket „Enterprise“ ausgewählt.',
     explanation:
-      'Enterprise ist für Organisationen und Agenturen mit mehreren Mandanten: ' +
-      'Multi-Tenant-Verwaltung, White-Label-Berichte und erweiterte Nachweise. ' +
-      'Umfang, Kapazität und Preis werden vertraglich vereinbart — deshalb führt ' +
-      'der Button unten nicht in einen Checkout, sondern zum Vertrieb.',
+      'Enterprise ist für Organisationen mit mehreren Mandanten: Multi-Tenant-Verwaltung, ' +
+      'SSO und erweiterte Nachweise. Umfang, Kapazität und Preis werden vertraglich ' +
+      'vereinbart — deshalb führt der Button unten nicht in einen Checkout, sondern zum Vertrieb.',
     stage: 'checkout',
     stateEffect: { selectedPlan: 'enterprise', checkoutStatus: 'started' },
     primary: { label: 'Enterprise anfragen', to: '/contact-sales?intent=enterprise', external: true, hint: 'Öffnet das Kontaktformular des Vertriebs.' },

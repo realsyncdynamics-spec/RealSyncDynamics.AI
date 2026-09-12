@@ -3,7 +3,7 @@
  * and read-only Product Evolution integrity strip.
  * Mounted on the canonical ComplianceStatusDashboard (/app), not a second app.
  */
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import {
   AlertTriangle,
@@ -23,11 +23,13 @@ import {
   maturityBadgeDe,
   type FindingActionId,
   type CommandSession,
+  type MeshAgent,
   type StepExecutionState,
 } from '../../../core/realsync-os';
 import { STATUS_LABEL, type ImplementationStatus } from '../../../product/implementation-status';
 import { useEntitlements } from '../../../core/billing/useEntitlements';
 import { planById } from '@/shared/pricing';
+import { OS_CREAM_BTN } from '../../../components/governance-os/osChrome';
 
 const COMPLIANCE_PROMPTS = [
   'Prüfe meine KI-Anwendung auf DSGVO und EU AI Act.',
@@ -51,7 +53,7 @@ function stepIcon(state: StepExecutionState) {
   if (state.status === 'succeeded') return <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />;
   if (state.status === 'failed') return <XCircle className="h-3.5 w-3.5 text-rose-400" />;
   if (state.status === 'blocked') return <ShieldAlert className="h-3.5 w-3.5 text-amber-400" />;
-  if (state.status === 'running') return <Loader2 className="h-3.5 w-3.5 animate-spin text-[#e8c98a]" />;
+  if (state.status === 'running') return <Loader2 className="h-3.5 w-3.5 animate-spin text-[#e4cfa2]" />;
   if (state.status === 'awaiting_approval') return <AlertTriangle className="h-3.5 w-3.5 text-amber-400" />;
   return <CircleDashed className="h-3.5 w-3.5 text-titanium-600" />;
 }
@@ -61,7 +63,7 @@ function badgeClass(maturity: ImplementationStatus | 'spec_only'): string {
     case 'live':
       return 'border-emerald-700 text-emerald-300 bg-emerald-950/40';
     case 'preview':
-      return 'border-[#e8c98a]/40 text-[#e8c98a] bg-[#e8c98a]/5';
+      return 'border-[#e4cfa2]/40 text-[#e4cfa2] bg-[#e4cfa2]/5';
     case 'coming-soon':
       return 'border-titanium-800 text-titanium-500 bg-obsidian-800';
     case 'spec_only':
@@ -117,16 +119,17 @@ export function AgentOsPanel() {
       aria-label="RealSync Agent OS"
     >
       <div className="flex flex-wrap items-start justify-between gap-3 border-b border-titanium-900 px-5 py-4">
-        <div>
-          <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#e8c98a] flex items-center gap-2">
-            <Sparkles className="h-3 w-3" aria-hidden />
+        <div className="min-w-0 max-w-2xl">
+          <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#e4cfa2] flex items-center gap-2">
+            <Sparkles className="h-3 w-3 shrink-0" aria-hidden />
             RealSync Agent OS™ · Vorschau
           </p>
-          <h2 className="mt-1 font-display text-lg font-semibold text-titanium-50">
+          <h2 className="mt-1 font-display font-semibold text-titanium-50 text-[clamp(1.125rem,1rem+0.8vw,1.375rem)]">
             Was möchtest du erledigen?
           </h2>
-          <p className="mt-1 text-xs text-titanium-400">
+          <p className="mt-1 text-xs text-titanium-400 leading-relaxed">
             Intent → Policy → Freigabe → Aktion → Evidence. Kein Chatbot · kein Blind-Execute.
+            Nur Compliance ist Preview-ausführbar.
           </p>
         </div>
         <span className={`font-mono text-[9px] uppercase tracking-widest px-2 py-1 border ${badgeClass('preview')}`}>
@@ -135,28 +138,37 @@ export function AgentOsPanel() {
       </div>
 
       <div className="space-y-5 px-5 py-5">
-        <div className="border border-titanium-800 bg-obsidian-950/60 p-3">
+        {/* Intent row — one clear job: type → open session */}
+        <div
+          data-testid="agent-os-intent-row"
+          className="border border-titanium-800 bg-obsidian-950/60"
+        >
+          <label htmlFor="agent-os-intent" className="sr-only">
+            Was möchtest du erledigen?
+          </label>
           <textarea
+            id="agent-os-intent"
             value={intent}
             onChange={(e) => setIntent(e.target.value)}
             onKeyDown={(e) => {
               if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') runIntent();
             }}
-            rows={3}
+            rows={2}
             placeholder="z. B. Prüfe meine KI-Anwendung auf DSGVO und EU AI Act."
             aria-label="Was möchtest du erledigen?"
-            className="w-full resize-none bg-transparent text-sm text-titanium-100 placeholder:text-titanium-600 focus:outline-none"
+            className="w-full resize-none bg-transparent px-3 pt-3 text-sm text-titanium-100 placeholder:text-titanium-600 focus:outline-none"
           />
-          <div className="mt-2 flex flex-wrap items-center justify-between gap-2 border-t border-titanium-900 pt-3">
-            <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-t border-titanium-900 px-3 py-2.5">
+            <div className="flex flex-wrap gap-1.5 min-w-0">
               {COMPLIANCE_PROMPTS.map((prompt) => (
                 <button
                   key={prompt}
                   type="button"
                   onClick={() => setIntent(prompt)}
-                  className="border border-titanium-800 px-2.5 py-1 font-mono text-[10px] text-titanium-400 hover:border-[#e8c98a]/40 hover:text-[#e8c98a]"
+                  className="border border-titanium-800 px-2 py-1 font-mono text-[10px] text-titanium-400 hover:border-[#e4cfa2]/40 hover:text-[#e4cfa2] max-w-[16rem] truncate"
+                  title={prompt}
                 >
-                  {prompt.length > 42 ? `${prompt.slice(0, 42)}…` : prompt}
+                  {prompt.length > 36 ? `${prompt.slice(0, 36)}…` : prompt}
                 </button>
               ))}
             </div>
@@ -164,14 +176,14 @@ export function AgentOsPanel() {
               type="button"
               onClick={runIntent}
               disabled={!intent.trim() || commandCenter.busy}
-              className="inline-flex items-center gap-2 bg-[#e8c98a] px-4 py-2 text-xs font-semibold uppercase tracking-wider text-obsidian-950 disabled:cursor-not-allowed disabled:opacity-40"
+              className={`inline-flex items-center gap-2 shrink-0 px-4 py-2 text-xs font-semibold uppercase tracking-wider disabled:cursor-not-allowed disabled:opacity-40 ${OS_CREAM_BTN}`}
             >
               {commandCenter.busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
               Intent öffnen
             </button>
           </div>
           {commandCenter.error && (
-            <p className="mt-3 text-xs text-rose-300" role="alert">
+            <p className="border-t border-titanium-900 px-3 py-2 text-xs text-rose-300" role="alert">
               {commandCenter.error}
             </p>
           )}
@@ -279,7 +291,7 @@ function ComplianceSessionView({
             type="button"
             onClick={onApprove}
             disabled={busy}
-            className="bg-[#e8c98a] px-4 py-2 text-xs font-semibold uppercase tracking-wider text-obsidian-950 disabled:opacity-40"
+            className={`px-4 py-2 text-xs font-semibold uppercase tracking-wider disabled:opacity-40 ${OS_CREAM_BTN}`}
           >
             {busy ? 'Führt aus…' : 'Plan freigeben'}
           </button>
@@ -342,8 +354,8 @@ function FindingCard({
                 onClick={() => onAction(action.id)}
                 className={`border px-3 py-1.5 text-xs font-medium ${
                   choice?.action === action.id
-                    ? 'border-[#e8c98a] text-[#e8c98a] bg-[#e8c98a]/10'
-                    : 'border-titanium-700 text-titanium-200 hover:border-[#e8c98a]/50'
+                    ? 'border-[#e4cfa2] text-[#e4cfa2] bg-[#e4cfa2]/10'
+                    : 'border-titanium-700 text-titanium-200 hover:border-[#e4cfa2]/50'
                 }`}
               >
                 {action.label}
@@ -369,31 +381,68 @@ function FindingCard({
   );
 }
 
+function MeshAgentCard({ agent }: { agent: MeshAgent }) {
+  const badge =
+    agent.runnable && agent.maturity === 'preview'
+      ? 'Preview · ausführbar'
+      : maturityBadgeDe(agent.maturity);
+
+  return (
+    <li
+      className={`flex items-start justify-between gap-2 border px-3 py-2.5 ${
+        agent.runnable
+          ? 'border-[#e4cfa2]/30 bg-[#e4cfa2]/5'
+          : 'border-titanium-900 bg-obsidian-950/50'
+      }`}
+    >
+      <div className="min-w-0">
+        <p className="text-xs font-medium text-titanium-100 truncate">{agent.label}</p>
+        <p className="mt-0.5 font-mono text-[10px] text-titanium-600 truncate">{agent.role}</p>
+      </div>
+      <span className={`shrink-0 font-mono text-[9px] uppercase tracking-widest px-1.5 py-0.5 border ${badgeClass(agent.maturity)}`}>
+        {badge}
+      </span>
+    </li>
+  );
+}
+
 function MeshRoster() {
   const agents = listMeshAgents();
+  const { preview, comingSoon } = useMemo(() => {
+    const previewAgents: MeshAgent[] = [];
+    const soon: MeshAgent[] = [];
+    for (const agent of agents) {
+      if (agent.maturity === 'preview') previewAgents.push(agent);
+      else soon.push(agent);
+    }
+    return { preview: previewAgents, comingSoon: soon };
+  }, [agents]);
+
   return (
     <div data-testid="agent-os-mesh-roster">
-      <div className="mb-3 flex items-center gap-2">
-        <Bot className="h-4 w-4 text-[#e8c98a]" />
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        <Bot className="h-4 w-4 text-[#e4cfa2]" />
         <h3 className="text-sm font-semibold text-titanium-50">Specialist Mesh</h3>
         <span className="font-mono text-[10px] text-titanium-600">
-          Orchestrator → Mesh · nur Compliance preview-runnable
+          Orchestrator → Mesh · Compliance Preview · rest Coming Soon
         </span>
       </div>
+
+      <p className="mb-2 font-mono text-[10px] uppercase tracking-[0.18em] text-[#e4cfa2]">
+        Preview
+      </p>
+      <ul className="mb-4 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2">
+        {preview.map((agent) => (
+          <MeshAgentCard key={agent.id} agent={agent} />
+        ))}
+      </ul>
+
+      <p className="mb-2 font-mono text-[10px] uppercase tracking-[0.18em] text-titanium-600">
+        Coming Soon — nicht ausführbar
+      </p>
       <ul className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2">
-        {agents.map((agent) => (
-          <li
-            key={agent.id}
-            className="flex items-start justify-between gap-2 border border-titanium-900 bg-obsidian-950/50 px-3 py-2.5"
-          >
-            <div className="min-w-0">
-              <p className="text-xs font-medium text-titanium-100 truncate">{agent.label}</p>
-              <p className="mt-0.5 font-mono text-[10px] text-titanium-600 truncate">{agent.role}</p>
-            </div>
-            <span className={`shrink-0 font-mono text-[9px] uppercase tracking-widest px-1.5 py-0.5 border ${badgeClass(agent.maturity)}`}>
-              {maturityBadgeDe(agent.maturity)}
-            </span>
-          </li>
+        {comingSoon.map((agent) => (
+          <MeshAgentCard key={agent.id} agent={agent} />
         ))}
       </ul>
     </div>
@@ -409,7 +458,7 @@ function ProductIntegrityPanel() {
     <div data-testid="agent-os-integrity-panel" className="border border-titanium-900 bg-obsidian-950/40 p-4">
       <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
         <div>
-          <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#e8c98a]">Product Evolution</p>
+          <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#e4cfa2]">Product Evolution</p>
           <h3 className="text-sm font-semibold text-titanium-50">Integrity Panel · read-only</h3>
         </div>
         <span className={`font-mono text-[9px] uppercase tracking-widest px-1.5 py-0.5 border ${badgeClass('preview')}`}>

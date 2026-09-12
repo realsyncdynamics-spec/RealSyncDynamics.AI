@@ -90,11 +90,12 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     status: 'live',
     group: 'runtime',
     description:
-      'ComplianceStatusDashboard unter /app/dashboard — erreichbar; UI-Polish noch in Arbeit.',
+      'ComplianceStatusDashboard unter /app/dashboard — Dark/Gold Chrome, Agent OS Intent, ehrliche Empty States.',
     route: '/app/dashboard',
     evidence: [
-      'src/components/governance-os/ComplianceStatusDashboard.tsx',
-      'PR #1320 (polish draft)',
+      'src/features/governance/dashboard/ComplianceStatusDashboard.tsx',
+      'src/features/governance/agent-os/AgentOsPanel.tsx',
+      'src/components/governance-os/BrowserTopBar.tsx',
     ],
     showOnPlatform: true,
   },
@@ -219,9 +220,14 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     name: 'DSGVO Web App Builder',
     status: 'preview',
     group: 'channels',
-    description: 'SiteOS Workspace unter /build — Governance-Tiefe noch Preview.',
+    description:
+      'SiteOS Builder unter /build mit Governance-OS-Chrome — Publish/Domain und Governance-Tiefe bleiben Preview.',
     route: '/build',
-    evidence: ['packages/siteos-core', 'src/pages', 'src/config/public-nav.ts'],
+    evidence: [
+      'src/unified-entry/pages/BuildStudioPage.tsx',
+      'packages/siteos-core',
+      'src/config/public-nav.ts',
+    ],
     showOnRoadmap: true,
   },
   {
@@ -319,12 +325,19 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
   {
     id: 'command-center-polish',
     name: 'Command Center Polish',
-    status: 'preview',
+    status: 'live',
     group: 'runtime',
-    description: 'Chrome-/UX-Polish für das bestehende /app/dashboard — Draft PR.',
+    description:
+      'Dark/Gold/Cream Chrome für /app + /build, ehrliche StatusBar, Agent-OS Intent-Row und Mesh Preview/Coming-Soon — erreichbar.',
     route: '/app/dashboard',
-    evidence: ['PR #1320'],
-    showOnRoadmap: true,
+    evidence: [
+      'src/components/governance-os/osChrome.ts',
+      'src/components/governance-os/BrowserTopBar.tsx',
+      'src/components/governance-os/GovernanceStatusBar.tsx',
+      'src/features/governance/agent-os/AgentOsPanel.tsx',
+      'src/unified-entry/pages/BuildStudioPage.tsx',
+    ],
+    showOnRoadmap: false,
   },
   {
     id: 'governance-sphere-interactive',
@@ -398,8 +411,8 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     name: 'TISAX / DORA Frameworks',
     status: 'coming-soon',
     group: 'compliance',
-    description: 'Framework-Reifegrade im Command Center als Roadmap markiert.',
-    evidence: ['src/components/governance-os/ComplianceStatusDashboard.tsx'],
+    description:       'Framework-Reifegrade im Command Center als Roadmap markiert.',
+    evidence: ['src/features/governance/dashboard/ComplianceStatusDashboard.tsx'],
     showOnRoadmap: true,
   },
   {

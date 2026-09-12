@@ -25,15 +25,15 @@ export function MobileBottomNavigation() {
             to={route}
             className={`relative flex-1 flex flex-col items-center justify-center gap-0.5 transition-colors ${
               active
-                ? 'text-cyan-400 bg-obsidian-800'
+                ? 'text-[#e4cfa2] bg-obsidian-800'
                 : 'text-titanium-600 hover:text-titanium-300 hover:bg-obsidian-800'
             }`}
           >
             <Icon className="h-4 w-4 shrink-0" />
-            <span className={`font-mono text-[8px] uppercase tracking-widest leading-none ${active ? 'text-cyan-400' : 'text-titanium-700'}`}>
+            <span className={`font-mono text-[8px] uppercase tracking-widest leading-none ${active ? 'text-[#e4cfa2]' : 'text-titanium-700'}`}>
               {label}
             </span>
-            {active && <span className="absolute bottom-0 w-8 h-0.5 bg-cyan-400" />}
+            {active && <span className="absolute bottom-0 w-8 h-0.5 bg-[#e4cfa2]" />}
           </Link>
         );
       })}

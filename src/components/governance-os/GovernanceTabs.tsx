@@ -33,11 +33,11 @@ function TabItem({ module, active }: { module: GovernanceModule; active: boolean
       to={module.route}
       className={`group flex items-center gap-1.5 px-3 py-2 text-xs font-medium whitespace-nowrap border-b-2 transition-colors ${
         active
-          ? 'border-cyan-400 text-titanium-50 bg-obsidian-800'
+          ? 'border-[#e4cfa2] text-titanium-50 bg-obsidian-800'
           : 'border-transparent text-titanium-400 hover:text-titanium-100 hover:bg-obsidian-800'
       }`}
     >
-      <Icon className={`h-3.5 w-3.5 shrink-0 ${active ? 'text-cyan-400' : 'text-titanium-600 group-hover:text-titanium-300'}`} />
+      <Icon className={`h-3.5 w-3.5 shrink-0 ${active ? 'text-[#e4cfa2]' : 'text-titanium-600 group-hover:text-titanium-300'}`} />
       <span>{module.label}</span>
       <ModuleStatusBadge status={module.status} />
     </Link>

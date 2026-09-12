@@ -55,9 +55,9 @@
   --context-radius-input: 0.125rem; /* 4px, rounded-sm */
 }
 
-/* Dashboard Context — authoritative, hard-edge, blue-accented */
+/* Dashboard Context — same Dark/Gold OS chrome as public landing */
 .dashboard-context {
-  --context-accent: var(--security-blue-500);
+  --context-accent: #e4cfa2;
   --context-bg: var(--obsidian-950);
   --context-text: var(--titanium-100);
   --context-secondary: var(--titanium-400);

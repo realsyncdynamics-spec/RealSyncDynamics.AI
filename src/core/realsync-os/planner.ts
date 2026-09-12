@@ -1,5 +1,6 @@
 import { classifyIntent, detectCapabilities } from './capabilities';
 import { classifyDesignIntent, createDesignPlanSteps } from './design';
+import { createCompliancePlanSteps, isComplianceIntent } from './complianceArtifacts';
 import type { ExecutionPlan, Intent, PlanStep, RiskLevel } from './types';
 
 const step = (
@@ -22,6 +23,9 @@ export function createExecutionPlan(intent: Intent): ExecutionPlan {
       includePublish: signals.deploy,
       includeSeo: true,
     });
+  } else if (isComplianceIntent(intent.text) && !signals.seo && !signals.deploy) {
+    // Agent OS first slice: pure compliance intents → 10-step artifact session.
+    steps = createCompliancePlanSteps();
   } else {
     if (signals.seo) {
       steps.push(step('seo', 'Technisches SEO und AI-Visibility prüfen', 'seo', 'optimize_visibility', 'low', false));
@@ -43,12 +47,15 @@ export function createExecutionPlan(intent: Intent): ExecutionPlan {
     : steps.some((item) => item.risk === 'high') ? 'high'
       : steps.some((item) => item.risk === 'medium') ? 'medium' : 'low';
 
+  const complianceSession = steps.some((item) => item.agent === 'compliance' && item.id === 'aufgabe');
+
   return {
     id: crypto.randomUUID(),
     intentId: intent.id,
     steps,
     risk,
-    requiresApproval: steps.some((item) => item.requiresApproval),
+    // Compliance artifact sessions always gate on plan approval (HITL default).
+    requiresApproval: complianceSession || steps.some((item) => item.requiresApproval),
     capabilities: detectCapabilities(intent.text),
     generatedAt: new Date().toISOString(),
   };

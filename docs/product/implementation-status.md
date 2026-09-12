@@ -24,6 +24,9 @@ Flipping `status` moves an item between Live / Preview / Coming Soon in the UI.
 3. No fake KPIs. No yearly Stripe prices until Stripe prices exist.
 4. Interactive Governance Sphere stays off public `/` (scenery Earth only).
 5. Canonical dashboard remains `/app` → ComplianceStatusDashboard.
+6. RealSync Agent OS™ first slice is **preview** on that same `/app` surface
+   (`docs/product/realsync-agent-os.md`) — never a second dashboard, never live
+   mesh specialists beyond Compliance.
 
 ## Automation
 

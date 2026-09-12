@@ -30,6 +30,14 @@ vi.mock('../../../src/components/governance-os/GovernanceAddressBar', () => ({
 vi.mock('../../../src/core/access/RouteEntitlementGate', () => ({
   RouteEntitlementGate: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
+vi.mock('../../../src/features/supabase/SupabaseAuthContext', () => ({
+  useSupabaseAuth: () => ({
+    isAuthenticated: true,
+    isLoading: false,
+    user: { id: 'test-user' },
+    logout: vi.fn().mockResolvedValue(undefined),
+  }),
+}));
 
 import { GovernanceBrowserShell } from '../../../src/components/governance-os/GovernanceBrowserShell';
 

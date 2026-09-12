@@ -19,7 +19,15 @@
       "Read(**/*.sql.bak)",
       "Read(**/*.bak)",
       "Read(node_modules/**)",
-      "Read(dist/**)"
+      "Read(dist/**)",
+      "Read(package-lock.json)",
+      "Read(**/package-lock.json)",
+      "Read(**/yarn.lock)",
+      "Read(**/pnpm-lock.yaml)",
+      "Read(**/*.generated.ts)",
+      "Read(coverage/**)",
+      "Read(playwright-report/**)",
+      "Read(test-results/**)"
     ]
   }
 }

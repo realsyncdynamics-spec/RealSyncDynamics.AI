@@ -277,3 +277,10 @@
   .dgov .preview-pill { display: none; }
   .dgov .hero-kpis { grid-template-columns: minmax(0, 1fr); }
 }
+/* Bugbot review: hover rule for `a` outranks `.cta-pill`; keep dark text on the gold pill. */
+.dgov .cta-pill:hover { color: #14100b; }
+.dgov[data-theme="night"] .cta-pill:hover { color: #041016; }
+/* Bugbot review: with animations disabled the `.reveal` entrance never runs — show the hero directly. */
+@media (prefers-reduced-motion: reduce) {
+  .dgov .reveal { opacity: 1; transform: none; }
+}

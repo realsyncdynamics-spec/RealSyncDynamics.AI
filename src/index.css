@@ -1050,7 +1050,10 @@ html, body {
 /* ── Public landing Earth — passive full-bleed backdrop; CTAs stay clickable ── */
 .hero-earth-backdrop,
 .hero-earth-backdrop [data-landing-earth],
-.hero-earth-backdrop [data-landing-earth] canvas {
+.hero-earth-backdrop [data-landing-earth] canvas,
+.hero-earth-stars,
+.hero-earth-planets,
+.hero-earth-moon {
   pointer-events: none;
 }
 
@@ -1062,4 +1065,55 @@ html, body {
 /* WebGL mesh already grades gold; avoid sepia wash that hides continents */
 .hero-earth-canvas {
   filter: none;
+}
+
+/* Distant CSS planets sit in the dark sky above Earth curvature */
+.hero-planet {
+  z-index: 1;
+  will-change: opacity;
+}
+
+/* Occasional Moon — long cycle: enter / drift / leave (right sky, clear of H1) */
+@keyframes hero-moon-drift {
+  0%,
+  12% {
+    opacity: 0;
+    transform: translate3d(8vw, 2vh, 0);
+  }
+  22% {
+    opacity: 0.55;
+    transform: translate3d(2vw, 0, 0);
+  }
+  48% {
+    opacity: 0.62;
+    transform: translate3d(-10vw, -1.5vh, 0);
+  }
+  62% {
+    opacity: 0.2;
+    transform: translate3d(-18vw, -2vh, 0);
+  }
+  72%,
+  100% {
+    opacity: 0;
+    transform: translate3d(-22vw, -2.5vh, 0);
+  }
+}
+
+.hero-earth-moon-drift {
+  top: 6%;
+  right: 18%;
+  width: clamp(16px, 2vw, 26px);
+  height: clamp(16px, 2vw, 26px);
+  z-index: 1;
+  animation: hero-moon-drift 72s ease-in-out infinite;
+}
+
+.hero-earth-moon-drift .hero-earth-moon-disc {
+  inset: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-earth-moon-drift {
+    animation: none !important;
+  }
 }

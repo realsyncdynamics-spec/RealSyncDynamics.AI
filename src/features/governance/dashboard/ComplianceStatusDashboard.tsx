@@ -208,9 +208,15 @@ export function ComplianceStatusView({
       {!activeTenantId && (
         <div className="py-12 text-center text-titanium-400">
           <ShieldCheck className="h-8 w-8 mx-auto mb-3 text-titanium-600" />
-          <p className="text-sm">Bitte anmelden, um den Compliance-Status zu sehen.</p>
-          <Link to="/welcome" className="mt-4 inline-flex items-center gap-2 text-[#e4cfa2] text-sm font-semibold">
-            Zum Login <ArrowRight className="h-4 w-4" />
+          <p className="text-sm">Workspace fehlt oder wird noch geladen.</p>
+          <p className="mt-1 text-xs text-titanium-500">
+            Ohne Tenant können keine Compliance-Daten geladen werden.
+          </p>
+          <Link
+            to="/welcome?next=/app/dashboard"
+            className="mt-4 inline-flex items-center gap-2 text-[#e4cfa2] text-sm font-semibold"
+          >
+            Workspace einrichten <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
       )}

@@ -21,11 +21,17 @@ import {
   type CommandDefinition,
 } from './commandCenterCatalog';
 import { RouteEntitlementGate } from '../../core/access/RouteEntitlementGate';
+import { AppGate } from '../../features/auth/AppGate';
 
 interface GovernanceBrowserShellProps {
   children: React.ReactNode;
 }
 
+/**
+ * Browser shell for /app/* — always behind AppGate so ungated sibling
+ * routes cannot render an anonymous empty shell that looks broken.
+ * Routes that already wrap AppGate outside are double-gated (harmless).
+ */
 export function GovernanceBrowserShell({ children }: GovernanceBrowserShellProps) {
   const navigate = useNavigate();
   const [assistantOpen, setAssistantOpen] = useState(false);
@@ -79,63 +85,65 @@ export function GovernanceBrowserShell({ children }: GovernanceBrowserShellProps
   }, []);
 
   return (
-    <div className="dashboard-context h-screen h-dvh flex flex-col bg-obsidian-950 text-titanium-100 overflow-hidden">
-      <BrowserTopBar
-        mobileMenuOpen={mobileMenuOpen}
-        onToggleMobile={() => setMobileMenuOpen((v) => !v)}
-        onOpenAssistant={() => setAssistantOpen((v) => !v)}
-        onOpenCommandCenter={() => setCommandCenterOpen(true)}
-        onLoadUrl={handleLoadUrl}
-        activeEmbedUrl={embeddedUrl ?? undefined}
-      />
+    <AppGate>
+      <div className="dashboard-context h-screen h-dvh flex flex-col bg-obsidian-950 text-titanium-100 overflow-hidden">
+        <BrowserTopBar
+          mobileMenuOpen={mobileMenuOpen}
+          onToggleMobile={() => setMobileMenuOpen((v) => !v)}
+          onOpenAssistant={() => setAssistantOpen((v) => !v)}
+          onOpenCommandCenter={() => setCommandCenterOpen(true)}
+          onLoadUrl={handleLoadUrl}
+          activeEmbedUrl={embeddedUrl ?? undefined}
+        />
 
-      {/* Zahlungshinweis über den Tabs: Während der Grace Period ändert sich
-          sonst nichts, und der Kunde stünde am achten Tag ohne Vorwarnung vor
-          einem eingeschränkten Konto. Rendert sich selbst weg, wenn kein
-          Zahlungsverzug vorliegt. */}
-      <PaymentGraceBanner />
+        {/* Zahlungshinweis über den Tabs: Während der Grace Period ändert sich
+            sonst nichts, und der Kunde stünde am achten Tag ohne Vorwarnung vor
+            einem eingeschränkten Konto. Rendert sich selbst weg, wenn kein
+            Zahlungsverzug vorliegt. */}
+        <PaymentGraceBanner />
 
-      <div className="hidden lg:block">
-        <GovernanceTabs />
-      </div>
+        <div className="hidden lg:block">
+          <GovernanceTabs />
+        </div>
 
-      {/* Ein Gate für jede Route der Shell: RouteEntitlementGate liest das
-          Zugriffsregister (core/access/featureAccess.ts) gegen die wirksamen
-          Entitlements — dieselbe Quelle wie der Server, inklusive Grace
-          Period und Add-on-Grants. Freie Flächen passieren unverändert. */}
-      <div className="flex flex-1 overflow-hidden min-h-0">
-        {embeddedUrl ? (
-          <EmbeddedBrowserCanvas
-            url={embeddedUrl}
-            onClose={handleCloseEmbed}
-            onScan={handleScan}
+        {/* Ein Gate für jede Route der Shell: RouteEntitlementGate liest das
+            Zugriffsregister (core/access/featureAccess.ts) gegen die wirksamen
+            Entitlements — dieselbe Quelle wie der Server, inklusive Grace
+            Period und Add-on-Grants. Freie Flächen passieren unverändert. */}
+        <div className="flex flex-1 overflow-hidden min-h-0">
+          {embeddedUrl ? (
+            <EmbeddedBrowserCanvas
+              url={embeddedUrl}
+              onClose={handleCloseEmbed}
+              onScan={handleScan}
+            />
+          ) : (
+            <GovernanceCanvas>
+              <RouteEntitlementGate>{children}</RouteEntitlementGate>
+            </GovernanceCanvas>
+          )}
+
+          {/* Claude.ai-style Agent Sidebar: 380px open, 32px collapsed strip */}
+          <GovernanceChatSidebar
+            open={assistantOpen}
+            onClose={() => setAssistantOpen((v) => !v)}
           />
-        ) : (
-          <GovernanceCanvas>
-            <RouteEntitlementGate>{children}</RouteEntitlementGate>
-          </GovernanceCanvas>
-        )}
+        </div>
 
-        {/* Claude.ai-style Agent Sidebar: 380px open, 32px collapsed strip */}
-        <GovernanceChatSidebar
-          open={assistantOpen}
-          onClose={() => setAssistantOpen((v) => !v)}
+        <MobileBottomNavigation />
+
+        <div className="hidden lg:block">
+          <GovernanceStatusBar />
+        </div>
+
+        <CommandCenter
+          open={commandCenterOpen}
+          onClose={() => setCommandCenterOpen(false)}
+          items={commandItems}
+          onRun={handleRunCommand}
+          onSubmitIntent={handleSubmitIntent}
         />
       </div>
-
-      <MobileBottomNavigation />
-
-      <div className="hidden lg:block">
-        <GovernanceStatusBar />
-      </div>
-
-      <CommandCenter
-        open={commandCenterOpen}
-        onClose={() => setCommandCenterOpen(false)}
-        items={commandItems}
-        onRun={handleRunCommand}
-        onSubmitIntent={handleSubmitIntent}
-      />
-    </div>
+    </AppGate>
   );
 }

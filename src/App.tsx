@@ -105,6 +105,9 @@ const GovernanceAiWorkspace = lazy(() => import('./features/governance/dashboard
 const SmbDashboardView = lazy(() => import('./features/smb/SmbDashboardView').then((m) => ({ default: m.SmbDashboardView })));
 // ── Modul-Hub: Capability-Übersicht des Workspaces (Aktivieren/Öffnen je Entitlement)
 const ModulesHubView = lazy(() => import('./features/modules/ModulesHubView').then((m) => ({ default: m.ModulesHubView })));
+const GovernanceActivationView = lazy(() =>
+  import('./features/activation/GovernanceActivationView').then((m) => ({ default: m.GovernanceActivationView })),
+);
 // ── Phase 3: Advanced Governance Views
 const ComplianceFrameworkSelector = lazy(() => import('./features/governance/dashboard/ComplianceFrameworkSelector').then((m) => ({ default: m.ComplianceFrameworkSelector })));
 const Iso42001ComplianceHub = lazy(() => import('./features/governance/dashboard/Iso42001ComplianceHub').then((m) => ({ default: m.Iso42001ComplianceHub })));
@@ -767,7 +770,8 @@ function RoutesWithTracking() {
           Liest die Entitlements des Mandanten, daher auth-gegatet. */}
       <Route path="/app/marketplace" element={<AppGate><GovernanceBrowserShell><MarketplaceView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/overview" element={<GovernanceBrowserShell><GovernanceOsDashboard /></GovernanceBrowserShell>} />
-      <Route path="/app/modules" element={<GovernanceBrowserShell><ModulesHubView /></GovernanceBrowserShell>} />
+      <Route path="/app/modules" element={<AppGate><GovernanceBrowserShell><ModulesHubView /></GovernanceBrowserShell></AppGate>} />
+      <Route path="/app/activation" element={<AppGate><GovernanceBrowserShell><GovernanceActivationView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/home" element={<GovernanceBrowserShell><WorkspaceHome /></GovernanceBrowserShell>} />
       <Route path="/app/company" element={<GovernanceBrowserShell><CompanyView /></GovernanceBrowserShell>} />
       <Route path="/app/websites" element={<GovernanceBrowserShell><WebsiteGovernanceView /></GovernanceBrowserShell>} />
@@ -827,7 +831,7 @@ function RoutesWithTracking() {
           selbst, damit der Rücksprung an genau diese Stelle erhalten
           bleibt — `ProtectedRoute` führt ohne `next` nach /demo-login. */}
       <Route path="/app/siteos/claim" element={<SiteOsClaimView />} />
-      <Route path="/app/bots" element={<GovernanceBrowserShell><BotsView /></GovernanceBrowserShell>} />
+      <Route path="/app/bots" element={<AppGate><GovernanceBrowserShell><BotsView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/bots/inbox" element={<GovernanceBrowserShell><BotInboxView /></GovernanceBrowserShell>} />
       <Route path="/app/bots/whatsapp" element={<GovernanceBrowserShell><WhatsAppChannelsView /></GovernanceBrowserShell>} />
       <Route path="/app/bots/:botId" element={<GovernanceBrowserShell><BotBuilderView /></GovernanceBrowserShell>} />

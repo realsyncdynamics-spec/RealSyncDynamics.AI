@@ -59,6 +59,16 @@ export const GOVERNANCE_MODULES: GovernanceModule[] = [
     description: 'Capability-Übersicht: aktivieren, öffnen, upgraden',
   },
   {
+    // Spec: docs/product/governance-activation.md. Org+Scope persist; Blueprint/Extraction Preview.
+    id: 'activation',
+    label: 'Activation',
+    icon: 'Sparkles',
+    route: '/app/activation',
+    status: 'beta',
+    gate: { kind: 'all' },
+    description: 'Turn existing data into operational governance',
+  },
+  {
     id: 'websites',
     label: 'Websites',
     icon: 'Globe',

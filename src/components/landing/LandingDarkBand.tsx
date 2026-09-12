@@ -38,13 +38,22 @@ export function LandingDarkBand() {
         Eine Runtime für KI-Risiken, Policies, Evidence, Herkunftsnachweise und
         automatisierte Kontrollen.
       </p>
-      <Link
-        to="/governance-runtime"
-        className="inline-flex items-center justify-center gap-2 rounded-full px-[18px] py-[13px] text-[11px] font-semibold transition hover:brightness-110"
-        style={{ backgroundColor: LANDING_BUTTON, color: LANDING_BUTTON_TEXT }}
-      >
-        Explore the Runtime <ArrowRight className="h-3.5 w-3.5" />
-      </Link>
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+        <Link
+          to="/governance-runtime"
+          className="inline-flex items-center justify-center gap-2 rounded-full px-[18px] py-[13px] text-[11px] font-semibold transition hover:brightness-110"
+          style={{ backgroundColor: LANDING_BUTTON, color: LANDING_BUTTON_TEXT }}
+        >
+          Runtime öffnen <ArrowRight className="h-3.5 w-3.5" />
+        </Link>
+        <Link
+          to="/welcome?next=%2Fapp%2Fdashboard"
+          className="inline-flex items-center justify-center gap-2 rounded-full border px-[18px] py-[13px] text-[11px] font-semibold transition hover:bg-[#e4cfa2]/10"
+          style={{ borderColor: `${LANDING_ACCENT}80`, color: LANDING_TEXT }}
+        >
+          Zum Compliance Dashboard
+        </Link>
+      </div>
     </section>
   );
 }

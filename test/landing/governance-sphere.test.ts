@@ -62,8 +62,11 @@ describe('Governance Sphere — demo contract', () => {
     expect(backdrop).not.toContain('GovernanceSphereHost');
     expect(backdrop).not.toContain('SPHERE_DEMO_LABEL');
     expect(scene).toContain('PhotorealEarthMesh');
+    expect(scene).not.toContain('SphereGeography');
     expect(scene).not.toContain('GOVERNANCE_SPHERE_NODES');
     expect(scene).not.toContain('SPHERE_DEMO_LABEL');
+    expect(scene).not.toContain('CONTINENT_LABELS');
+    expect(scene).not.toMatch(/DragOrbit|ModestZoom/);
   });
 
   it('renders photoreal Earth (day texture), not wireframe-only mesh', () => {

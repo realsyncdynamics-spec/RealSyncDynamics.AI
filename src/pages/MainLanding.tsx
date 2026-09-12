@@ -224,11 +224,11 @@ export function MainLanding() {
             </form>
 
             <Link
-              to="/governance-runtime"
+              to="/welcome?next=/app/dashboard"
               className="mt-4 inline-flex items-center justify-center gap-2 rounded-full border px-[20px] py-[11px] text-[13px] font-medium transition hover:bg-[#e4cfa2]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e4cfa2]/60 lg:mt-5"
               style={{ borderColor: `${LANDING_ACCENT}80`, color: '#e8dfd2' }}
             >
-              Explore the Governance Runtime <span aria-hidden="true">→</span>
+              Explore the Governance OS <span aria-hidden="true">→</span>
             </Link>
           </div>
         </section>
@@ -520,21 +520,25 @@ export function MainLanding() {
       >
         <span>© 2026 RealSync Dynamics.AI</span>
         <nav aria-label="Rechtliches" className="flex flex-wrap items-center justify-center gap-x-3 gap-y-2">
-          <Link to="/impressum" className="hover:text-[#f2eee6]">
-            Impressum
-          </Link>
-          <span aria-hidden="true" className="text-[#9a9aa1]/55">
-            |
-          </span>
-          <Link to="/datenschutz" className="hover:text-[#f2eee6]">
-            Datenschutz
-          </Link>
-          <span aria-hidden="true" className="text-[#9a9aa1]/55">
-            |
-          </span>
-          <Link to="/agb" className="hover:text-[#f2eee6]">
-            AGB
-          </Link>
+          {[
+            { label: 'Impressum', to: '/impressum' },
+            { label: 'AGB', to: '/agb' },
+            { label: 'Datenschutz', to: '/datenschutz' },
+            { label: 'Widerruf', to: '/legal/widerruf' },
+            { label: 'Kontakt', to: '/kontakt' },
+            { label: 'Roadmap', to: '/roadmap' },
+          ].map((item, idx, arr) => (
+            <span key={item.to} className="inline-flex items-center gap-x-3">
+              <Link to={item.to} className="hover:text-[#f2eee6]">
+                {item.label}
+              </Link>
+              {idx < arr.length - 1 && (
+                <span aria-hidden="true" className="text-[#9a9aa1]/55">
+                  |
+                </span>
+              )}
+            </span>
+          ))}
         </nav>
       </footer>
     </div>

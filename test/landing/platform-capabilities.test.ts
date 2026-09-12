@@ -34,10 +34,11 @@ import {
 
 const FUNCTIONS_DIR = resolve(__dirname, '../../supabase/functions');
 
-/** Startseite + shared PublicDarkHeader — Nav-Links leben im Header-Modul. */
+/** Startseite + PublicDarkHeader + public-nav SSOT — Nav-Links leben in public-nav. */
 const landingShell = () =>
   readFileSync(resolve(__dirname, '../../src/pages/MainLanding.tsx'), 'utf8') +
-  readFileSync(resolve(__dirname, '../../src/components/landing/PublicDarkHeader.tsx'), 'utf8');
+  readFileSync(resolve(__dirname, '../../src/components/landing/PublicDarkHeader.tsx'), 'utf8') +
+  readFileSync(resolve(__dirname, '../../src/config/public-nav.ts'), 'utf8');
 
 describe('Plattform-Fähigkeiten — Behauptung deckt sich mit dem Backend', () => {
   it('jede Fähigkeit benennt mindestens eine tragende Edge Function', () => {
@@ -147,8 +148,8 @@ describe('Erreichbarkeit — fertige Seiten sind von der Startseite aus verlinkt
    *
    * `/ai-act` und `/sicherheit` existieren, werden prerendert und sind aus
    * der gemeinsamen PublicDarkHeader-Nav auf `/` und `/branchen` verlinkt.
-   * Der Test liest deshalb den Landing-Shell (MainLanding + Header). Links
-   * stehen im LINKS-Array als `to: '/…'`, nicht als JSX-`to="/…"`.
+   * Der Test liest deshalb den Landing-Shell (MainLanding + Header + public-nav).
+   * Links stehen in `public-nav.ts` als `to: '/…'`.
    */
   const shell = landingShell();
   const app = readFileSync(resolve(__dirname, '../../src/App.tsx'), 'utf8');

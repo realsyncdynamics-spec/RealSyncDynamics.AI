@@ -24,8 +24,8 @@ const TOOLS = [
     icon: MessageCircle,
     text: 'WhatsApp-Kundenkommunikation über den Bot-Builder — Persona, Flows, Governance-Anbindung.',
     bullets: ['WhatsApp-Kanal', 'Termin- & Anfrageflows', 'Governance-Anbindung'],
-    href: '/app/bots?channel=whatsapp',
-    cta: 'WhatsApp Bot konfigurieren',
+    href: '/chatbot/start',
+    cta: 'WhatsApp Bot starten',
     registryId: 'channel-bots',
   },
   {
@@ -34,8 +34,8 @@ const TOOLS = [
     icon: Phone,
     text: 'KI-Telefonassistent über den Bot-Builder — Voice-Kanal, Handoff, auditierbare Gespräche.',
     bullets: ['Voice-Kanal', 'Human Handoff', 'Auditierbare Gespräche'],
-    href: '/app/bots?channel=voice',
-    cta: 'Telefonbot konfigurieren',
+    href: '/phonebot/start',
+    cta: 'Telefonbot starten',
     registryId: 'channel-bots',
   },
   {
@@ -44,8 +44,8 @@ const TOOLS = [
     icon: Globe2,
     text: 'SiteOS-/Website-Flows mit Governance-Hooks — Preview, nicht als vollständige Produktions-Runtime verkauft.',
     bullets: ['SiteOS Flows', 'Policy Hooks', 'Preview'],
-    href: '/handwerk-website',
-    cta: 'Website neu bauen',
+    href: '/build',
+    cta: 'Builder öffnen',
     registryId: 'web-builder',
   },
   {

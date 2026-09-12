@@ -36,4 +36,15 @@ https://www.realsyncdynamicsai.de/* https://realsyncdynamicsai.de/:splat 301
 /command-center     /app/dashboard  301
 /ai-command-center  /app/dashboard  301
 
+# Public IA aliases (header/footer chrome) — edge 301 for full page loads.
+# SPA Navigate in App.tsx covers client navigation.
+/login              /welcome  301
+/signin             /welcome  301
+/signup             /welcome  301
+/register           /welcome  301
+/signout            /logout  301
+/contact            /kontakt  301
+/domain-check       /audit  301
+/domain-checker     /audit  301
+
 /*  /index.html  200

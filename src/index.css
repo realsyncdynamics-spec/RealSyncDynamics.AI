@@ -1053,7 +1053,7 @@ html, body {
   filter: sepia(0.68) saturate(0.45) hue-rotate(-28deg) brightness(0.7) contrast(1.2);
 }
 
-/* WebGL day shader already grades gold + terminator; light CSS polish only */
+/* WebGL day shader already grades gold + terminator; keep highlights readable */
 .hero-earth-canvas {
-  filter: sepia(0.22) saturate(0.78) hue-rotate(-10deg) brightness(0.94) contrast(1.05);
+  filter: sepia(0.18) saturate(0.85) hue-rotate(-8deg) brightness(1.02) contrast(1.08);
 }

@@ -839,21 +839,23 @@ html, body {
 }
 
 /* ── Glanz auf der Hero-Headline ─────────────────────────────────────────
-   Cream / Gold auf Dark — kein Cyan. Der Lichtsaum hebt die Serife vom
-   Earth-Backdrop ab, ohne die Haarstriche zu verschmieren. */
+   Warm sunrise cream/gold — kein Papierweiss (#fff). Dominik: Ohne Weiss. */
 .hero-shine {
-  color: #fff8ee;
-  -webkit-text-fill-color: #fff8ee;
+  color: #f2eee6;
+  -webkit-text-fill-color: #f2eee6;
   text-shadow:
-    0 0 18px rgb(0 0 0 / 0.95),
-    0 1px 0 rgb(0 0 0),
-    0 16px 48px rgb(0 0 0);
+    0 0 2px rgba(228, 207, 162, 0.7),
+    0 0 14px rgba(255, 186, 110, 0.4),
+    0 0 36px rgba(228, 160, 80, 0.28),
+    0 0 64px rgba(180, 140, 70, 0.18),
+    0 1px 0 rgb(0 0 0 / 0.75),
+    0 14px 40px rgb(0 0 0 / 0.85);
 }
 
 @supports not ((background-clip: text) or (-webkit-background-clip: text)) {
   .hero-shine {
-    color: #fff8ee;
-    -webkit-text-fill-color: #fff8ee;
+    color: #f2eee6;
+    -webkit-text-fill-color: #f2eee6;
   }
 }
 
@@ -862,9 +864,12 @@ html, body {
   -webkit-text-fill-color: #e4cfa2;
   font-style: normal;
   text-shadow:
-    0 0 18px rgb(0 0 0 / 0.95),
-    0 1px 0 rgb(0 0 0),
-    0 16px 48px rgb(0 0 0);
+    0 0 2px rgba(239, 230, 213, 0.75),
+    0 0 18px rgba(255, 176, 96, 0.48),
+    0 0 40px rgba(228, 160, 70, 0.3),
+    0 0 72px rgba(180, 140, 70, 0.2),
+    0 1px 0 rgb(0 0 0 / 0.65),
+    0 14px 40px rgb(0 0 0 / 0.8);
 }
 
 @supports not ((background-clip: text) or (-webkit-background-clip: text)) {
@@ -874,20 +879,69 @@ html, body {
   }
 }
 
-/* Weicher Lichthof hinter der Headline. Sehr niedrig dosiert: Er soll den
-   Text vom Bild abheben, nicht leuchten. */
+/* Weicher Lichthof hinter der Headline — sunrise bloom, nicht Neon. */
 .hero-shine-glow {
   position: absolute;
-  inset: 0;
+  inset: -8% -6%;
   pointer-events: none;
-  filter: blur(28px);
-  opacity: .35;
   z-index: -1;
+  color: #ffc078;
+  -webkit-text-fill-color: #ffc078;
+  font-family: inherit;
+  font-weight: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  letter-spacing: inherit;
+  text-align: center;
+  filter: blur(34px);
+  opacity: 0.55;
+  user-select: none;
 }
 
-/* ── Horizontlicht hinter der Erdkugel ───────────────────────────────────
-   An die Gold/Tan-UI der P0-Landing gebunden, kuehl und niedrig dosiert —
-   kein warmer Sonnenaufgang. Screen-Blend hellt nur auf. */
+/* ── Sunrise behind the scaled Earth (public landing only) ───────────────
+   Warm gold/amber disc + shaft toward the H1. Scenery, not a product widget. */
+.hero-sunrise {
+  pointer-events: none;
+}
+
+.hero-sunrise-core {
+  animation: hero-sunrise-pulse 9s ease-in-out infinite;
+}
+
+.hero-sunrise-shaft {
+  animation: hero-sunrise-shaft 11s ease-in-out infinite;
+}
+
+@keyframes hero-sunrise-pulse {
+  0%,
+  100% {
+    opacity: 0.88;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.04);
+  }
+}
+
+@keyframes hero-sunrise-shaft {
+  0%,
+  100% {
+    opacity: 0.62;
+  }
+  50% {
+    opacity: 0.82;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-sunrise-core,
+  .hero-sunrise-shaft {
+    animation: none !important;
+  }
+}
+
+/* Legacy dawn helpers (unused on current MainLanding; keep for other pages) */
 .hero-dawn {
   position: absolute;
   inset: 0;
@@ -987,18 +1041,18 @@ html, body {
   }
 }
 
-/* ── Public landing Earth backdrop — scenery only, Dark/Gold grade ────── */
+/* ── Public landing Earth backdrop — scenery only, Dark/Gold sunrise ──── */
 .hero-earth-backdrop,
 .hero-earth-backdrop canvas {
   pointer-events: none !important;
 }
 
-/* Static fallback: pull NASA blues hard toward cream-gold / charcoal */
+/* Static fallback: pull NASA blues hard toward cream-gold / charcoal + sunrise */
 .hero-earth-static {
-  filter: sepia(0.62) saturate(0.4) hue-rotate(-24deg) brightness(0.64) contrast(1.18);
+  filter: sepia(0.68) saturate(0.45) hue-rotate(-28deg) brightness(0.7) contrast(1.2);
 }
 
-/* WebGL day shader already grades gold; light CSS polish only */
+/* WebGL day shader already grades gold + terminator; keep highlights readable */
 .hero-earth-canvas {
-  filter: sepia(0.28) saturate(0.72) hue-rotate(-12deg) brightness(0.88) contrast(1.06);
+  filter: sepia(0.18) saturate(0.85) hue-rotate(-8deg) brightness(1.02) contrast(1.08);
 }

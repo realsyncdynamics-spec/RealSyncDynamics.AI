@@ -43,11 +43,11 @@ export interface PhotorealEarthMeshProps {
 const LANDING_GOLD = {
   dayTint: '#e8ddc8',
   atmosphereGlow: '#e4cfa2',
-  atmosphereWarm: '#efe6d5',
-  outerGlow: '#b49a6b',
-  specular: new THREE.Vector3(0.9, 0.82, 0.62),
-  clouds: new THREE.Vector3(0.94, 0.9, 0.82),
-  nightIntensity: 0.55,
+  atmosphereWarm: '#ffe0b0',
+  outerGlow: '#c4a06a',
+  specular: new THREE.Vector3(0.95, 0.82, 0.55),
+  clouds: new THREE.Vector3(0.96, 0.9, 0.78),
+  nightIntensity: 0.62,
 } as const;
 
 function configureMap(tex: THREE.Texture, anisotropy: number, colorSpace?: THREE.ColorSpace) {
@@ -81,10 +81,12 @@ function AtmosphereShell({
   radius,
   reducedMotion,
   palette,
+  sunDirection,
 }: {
   radius: number;
   reducedMotion: boolean;
   palette: EarthPalette;
+  sunDirection?: THREE.Vector3;
 }) {
   const gold = palette === 'landing-gold';
   const mat = useMemo(() => {
@@ -100,38 +102,53 @@ function AtmosphereShell({
         uWarm: {
           value: new THREE.Color(gold ? LANDING_GOLD.atmosphereWarm : '#ffb078'),
         },
-        uIntensity: { value: reducedMotion ? (gold ? 0.55 : 0.7) : gold ? 0.92 : 1.18 },
+        uSun: {
+          value: (sunDirection ?? new THREE.Vector3(-0.75, -0.35, 0.4)).clone().normalize(),
+        },
+        uIntensity: { value: reducedMotion ? (gold ? 0.62 : 0.7) : gold ? 1.05 : 1.18 },
+        uGold: { value: gold ? 1.0 : 0.0 },
       },
       vertexShader: /* glsl */ `
         varying vec3 vNormal;
         varying vec3 vView;
-        varying vec3 vWorld;
+        varying vec3 vNormalW;
         void main() {
           vec4 mv = modelViewMatrix * vec4(position, 1.0);
           vNormal = normalize(normalMatrix * normal);
           vView = normalize(-mv.xyz);
-          vWorld = (modelMatrix * vec4(position, 1.0)).xyz;
+          vNormalW = normalize(mat3(modelMatrix) * normal);
           gl_Position = projectionMatrix * mv;
         }
       `,
       fragmentShader: /* glsl */ `
         uniform vec3 uGlow;
         uniform vec3 uWarm;
+        uniform vec3 uSun;
         uniform float uIntensity;
+        uniform float uGold;
         varying vec3 vNormal;
         varying vec3 vView;
-        varying vec3 vWorld;
+        varying vec3 vNormalW;
         void main() {
           float fresnel = pow(1.0 - abs(dot(vNormal, vView)), 2.2);
           float rim = smoothstep(0.02, 0.94, fresnel);
-          // Slight warm limb toward -X / -Y (sunrise side of the scene).
-          float warmSide = smoothstep(-0.2, 0.85, normalize(vWorld).x * -0.55 + normalize(vWorld).y * -0.35);
-          vec3 col = mix(uGlow, uWarm, warmSide * 0.55);
-          gl_FragColor = vec4(col, rim * uIntensity);
+          // Warm limb toward the sun (sunrise atmosphere).
+          float sunSide = smoothstep(-0.15, 0.85, dot(normalize(vNormalW), normalize(uSun)));
+          float warmMix = mix(0.35, 0.78, uGold) * sunSide;
+          vec3 col = mix(uGlow, uWarm, warmMix);
+          // Gold palette: amber boost on the lit limb.
+          col = mix(col, col * vec3(1.12, 0.92, 0.62), uGold * sunSide * 0.45);
+          gl_FragColor = vec4(col, rim * uIntensity * mix(1.0, 0.75 + sunSide * 0.45, uGold));
         }
       `,
     });
-  }, [reducedMotion, gold]);
+  }, [reducedMotion, gold, sunDirection]);
+
+  useEffect(() => {
+    if (sunDirection && mat.uniforms.uSun) {
+      mat.uniforms.uSun.value.copy(sunDirection).normalize();
+    }
+  }, [mat, sunDirection]);
 
   useEffect(() => () => mat.dispose(), [mat]);
 
@@ -145,12 +162,12 @@ function AtmosphereShell({
 function OuterGlow({ radius, palette }: { radius: number; palette: EarthPalette }) {
   const gold = palette === 'landing-gold';
   return (
-    <mesh scale={1.14} raycast={() => null}>
+    <mesh scale={1.16} raycast={() => null}>
       <sphereGeometry args={[radius, 32, 32]} />
       <meshBasicMaterial
         color={gold ? LANDING_GOLD.outerGlow : '#2f82c4'}
         transparent
-        opacity={gold ? 0.1 : 0.12}
+        opacity={gold ? 0.14 : 0.12}
         side={THREE.BackSide}
         depthWrite={false}
         toneMapped={false}
@@ -178,6 +195,7 @@ export function PhotorealEarthMesh({
 }: PhotorealEarthMeshProps) {
   const group = useRef<THREE.Group>(null!);
   const cloudsRef = useRef<THREE.Mesh>(null!);
+  const dayMat = useRef<THREE.ShaderMaterial>(null!);
   const nightMat = useRef<THREE.ShaderMaterial>(null!);
   const specMat = useRef<THREE.ShaderMaterial>(null!);
   const upgradeTexRef = useRef<THREE.Texture[]>([]);
@@ -290,6 +308,9 @@ export function PhotorealEarthMesh({
 
   useFrame((_, delta) => {
     const lightDir = sunDirection ?? sun;
+    if (dayMat.current?.uniforms?.uLight) {
+      dayMat.current.uniforms.uLight.value.copy(lightDir).normalize();
+    }
     if (nightMat.current) {
       nightMat.current.uniforms.uLight.value.copy(lightDir).normalize();
     }
@@ -325,22 +346,28 @@ export function PhotorealEarthMesh({
       <mesh raycast={() => null}>
         <sphereGeometry args={[radius, segments[0], segments[1]]} />
         {gold ? (
-          /* Dominik Dark/Gold/Cream — desaturate oceans, cream-gold land, no NASA cyan. */
+          /* Dominik Dark/Gold/Cream — sunrise-lit day map, warm terminator, no NASA cyan. */
           <shaderMaterial
+            ref={dayMat}
             toneMapped={false}
             uniforms={{
               uDay: { value: activeDay },
+              uLight: { value: (sunDirection ?? sun).clone().normalize() },
             }}
             vertexShader={/* glsl */ `
               varying vec2 vUv;
+              varying vec3 vNormalW;
               void main() {
                 vUv = uv;
+                vNormalW = normalize(mat3(modelMatrix) * normal);
                 gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
               }
             `}
             fragmentShader={/* glsl */ `
               uniform sampler2D uDay;
+              uniform vec3 uLight;
               varying vec2 vUv;
+              varying vec3 vNormalW;
               void main() {
                 vec3 c = texture2D(uDay, vUv).rgb;
                 float luma = dot(c, vec3(0.299, 0.587, 0.114));
@@ -356,6 +383,20 @@ export function PhotorealEarthMesh({
                 // Global warm push + slight darken to sit under cream UI.
                 graded *= vec3(0.92, 0.84, 0.68);
                 graded = mix(graded, vec3(dot(graded, vec3(0.333))), 0.18);
+
+                // Sunrise lighting — lit continents face the sun; night side falls off.
+                // Brightness floor keeps the day side gold-readable on desktop Homepad.
+                vec3 N = normalize(vNormalW);
+                vec3 L = normalize(uLight);
+                float ndl = dot(N, L);
+                float day = smoothstep(-0.35, 0.32, ndl);
+                float night = 1.0 - day;
+                float term = 1.0 - smoothstep(0.0, 0.42, abs(ndl));
+                vec3 amber = vec3(1.12, 0.74, 0.32);
+                graded *= mix(0.14, 1.42, day);
+                graded += amber * term * 0.55 * (0.45 + day * 0.75);
+                // Soft night charcoal so city lights can read on top.
+                graded = mix(graded, graded * vec3(0.07, 0.06, 0.05), night * 0.82);
                 gl_FragColor = vec4(graded, 1.0);
               }
             `}
@@ -501,7 +542,12 @@ export function PhotorealEarthMesh({
       )}
 
       {set.atmosphere && (
-        <AtmosphereShell radius={radius} reducedMotion={reducedMotion} palette={palette} />
+        <AtmosphereShell
+          radius={radius}
+          reducedMotion={reducedMotion}
+          palette={palette}
+          sunDirection={sunDirection ?? sun}
+        />
       )}
       {set.atmosphere && <OuterGlow radius={radius} palette={palette} />}
     </group>

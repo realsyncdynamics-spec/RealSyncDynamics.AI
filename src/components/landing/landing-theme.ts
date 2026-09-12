@@ -40,8 +40,8 @@ export const LANDING_ACCENT = '#e4cfa2';
 /** Flächenfarbe der Hauptschaltfläche (Cream). */
 export const LANDING_BUTTON = '#e8ddc8';
 
-/** Alternate cream (header CTA). */
-export const LANDING_BUTTON_ALT = '#efe6d5';
+/** Alternate cream (header CTA) — kept darker than paper-white. */
+export const LANDING_BUTTON_ALT = '#e8ddc8';
 
 /** Schrift auf der Hauptschaltfläche. */
 export const LANDING_BUTTON_TEXT = '#1a1917';

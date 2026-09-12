@@ -64,7 +64,7 @@ const TOOLS = [
 
 export function LandingChannelTools() {
   return (
-    <section id="tools" className="relative border-t border-white/[0.05] py-[92px]">
+    <section id="tools" className="relative border-t border-[#e4cfa2]/10 py-[92px]">
       <div className="mx-auto max-w-[1500px] px-[4vw]">
         <div className="mb-12 max-w-3xl">
           <p
@@ -134,9 +134,9 @@ export function LandingChannelTools() {
                     className="border px-3 py-1 text-[9px] tracking-[.12em]"
                     style={{
                       fontFamily: LANDING_MONO,
-                      borderColor: live ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.25)',
+                      borderColor: live ? 'rgba(228,207,162,0.22)' : 'rgba(228,207,162,0.4)',
                       borderStyle: live ? 'solid' : 'dashed',
-                      color: 'rgba(255,255,255,0.4)',
+                      color: 'rgba(228,207,162,0.7)',
                     }}
                   >
                     {live ? 'PRODUCT' : 'IN VORBEREITUNG'}
@@ -171,15 +171,15 @@ export function LandingChannelTools() {
                           color: LANDING_ACCENT,
                         }
                       : {
-                          borderColor: 'rgba(255,255,255,0.2)',
-                          color: 'rgba(255,255,255,0.7)',
+                          borderColor: 'rgba(228,207,162,0.28)',
+                          color: 'rgba(232,221,200,0.75)',
                         }
                   }
                 >
                   {live ? cta : 'Auf die Warteliste'} <ArrowRight className="h-4 w-4" />
                 </Link>
                 {!live && (
-                  <p className="mt-3 text-[11px] leading-relaxed text-white/35">
+                  <p className="mt-3 text-[11px] leading-relaxed" style={{ color: 'rgba(154,154,161,0.85)' }}>
                     Der Bot lässt sich bereits anlegen — beantworten kann er noch nichts. Die
                     Laufzeit-Functions sind nicht in Produktion.
                   </p>
@@ -190,8 +190,8 @@ export function LandingChannelTools() {
         </div>
 
         <p
-          className="mt-8 text-center text-[9px] tracking-[.18em] text-white/25"
-          style={{ fontFamily: LANDING_MONO }}
+          className="mt-8 text-center text-[9px] tracking-[.18em]"
+          style={{ fontFamily: LANDING_MONO, color: 'rgba(154,154,161,0.55)' }}
         >
           ONE GOVERNANCE PLANE · WEB · CODE · POLICY · EVIDENCE
         </p>

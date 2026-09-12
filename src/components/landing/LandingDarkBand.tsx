@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import {
   LANDING_ACCENT,
+  LANDING_BODY,
   LANDING_BUTTON,
   LANDING_BUTTON_TEXT,
   LANDING_H2,
@@ -40,21 +41,21 @@ export function LandingDarkBand() {
           Detect. Govern. Prove.
         </h2>
       </div>
-      <p className="max-w-md text-[13px] leading-[1.65]" style={{ color: LANDING_MUTED }}>
+      <p className="max-w-md leading-[1.65]" style={{ color: LANDING_MUTED, fontSize: LANDING_BODY }}>
         Runtime für KI-Risiken, Policies und Evidence — für Module mit Status LIVE.
         Preview und Next stehen auf der Roadmap.
       </p>
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
         <Link
           to="/governance-runtime"
-          className="inline-flex items-center justify-center gap-2 rounded-full px-[18px] py-[12px] text-[11px] font-semibold transition hover:brightness-110"
+          className="inline-flex items-center justify-center gap-2 rounded-full px-[18px] py-[12px] text-[12px] font-semibold transition hover:brightness-110"
           style={{ backgroundColor: LANDING_BUTTON, color: LANDING_BUTTON_TEXT }}
         >
           Runtime öffnen <ArrowRight className="h-3.5 w-3.5" />
         </Link>
         <Link
           to="/welcome?next=%2Fapp%2Fdashboard"
-          className="inline-flex items-center justify-center gap-2 rounded-full border px-[18px] py-[12px] text-[11px] font-semibold transition hover:bg-[#e4cfa2]/10"
+          className="inline-flex items-center justify-center gap-2 rounded-full border px-[18px] py-[12px] text-[12px] font-semibold transition hover:bg-[#e4cfa2]/10"
           style={{ borderColor: `${LANDING_ACCENT}80`, color: LANDING_TEXT }}
         >
           Zum Compliance Dashboard

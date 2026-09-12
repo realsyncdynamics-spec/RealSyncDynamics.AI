@@ -9,6 +9,7 @@ import {
 } from '../../product/implementation-status';
 import {
   LANDING_ACCENT,
+  LANDING_BODY,
   LANDING_H2,
   LANDING_LINE,
   LANDING_MONO,
@@ -143,7 +144,7 @@ export function LandingRoadmapSection() {
             Was als Nächstes kommt.
           </em>
         </h2>
-        <p className="mt-3 max-w-[640px] text-[13px] leading-[1.65]" style={{ color: LANDING_MUTED }}>
+        <p className="mt-3 max-w-[640px] leading-[1.65]" style={{ color: LANDING_MUTED, fontSize: LANDING_BODY }}>
           Automatisiert aus dem Product-Registry. Statuswechsel aktualisieren diese Liste —
           ohne doppelte Marketing-Claims.
         </p>

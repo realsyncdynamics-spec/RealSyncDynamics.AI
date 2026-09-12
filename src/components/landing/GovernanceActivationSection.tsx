@@ -8,8 +8,10 @@ import { OsEntryLink } from './OsEntryLink';
 import {
   LANDING_ACCENT,
   LANDING_BG,
+  LANDING_BODY,
   LANDING_BUTTON,
   LANDING_BUTTON_TEXT,
+  LANDING_H2,
   LANDING_MONO,
   LANDING_MUTED,
   LANDING_SERIF,
@@ -38,13 +40,13 @@ export function GovernanceActivationSection() {
   return (
     <section
       id="governance-activation"
-      className="border-b border-[#e4cfa2]/10 py-[92px]"
+      className="border-b border-[#e4cfa2]/10 py-[64px] lg:py-[72px]"
       aria-label="Governance Activation"
     >
       <div className="mx-auto max-w-[1500px] px-[4vw]">
-        <div className="mb-14 max-w-3xl">
+        <div className="mb-10 max-w-3xl">
           <p
-            className="inline-block rounded-full border px-[11px] py-[7px] text-[9px] font-medium tracking-[.23em]"
+            className="inline-block rounded-full border px-[11px] py-[7px] text-[10px] font-medium tracking-[.23em]"
             style={{
               fontFamily: LANDING_MONO,
               color: LANDING_ACCENT,
@@ -54,31 +56,39 @@ export function GovernanceActivationSection() {
             GOVERNANCE ACTIVATION
           </p>
           <h2
-            className="mt-[22px] text-[clamp(36px,4.8vw,58px)] leading-none tracking-[-.035em]"
-            style={{ fontFamily: LANDING_SERIF, fontWeight: 500, color: LANDING_TEXT }}
+            className="mt-[18px] leading-[1.05] tracking-[-.03em]"
+            style={{
+              fontFamily: LANDING_SERIF,
+              fontWeight: 500,
+              fontSize: LANDING_H2,
+              color: LANDING_TEXT,
+            }}
           >
             Von Bestandschaos zu{' '}
             <em className="not-italic" style={{ color: LANDING_ACCENT }}>
               aktiver Governance.
             </em>
           </h2>
-          <p className="mt-[17px] max-w-[760px] text-[13px] leading-[1.7]" style={{ color: LANDING_MUTED }}>
+          <p
+            className="mt-[14px] max-w-[640px] leading-[1.65]"
+            style={{ color: LANDING_MUTED, fontSize: LANDING_BODY }}
+          >
             Governance Activation ist keine Setup-Wizard-Show. Organization und Scope werden im
             Workspace gespeichert. Blueprint-Engine und Document Extraction folgen — bis dahin
             klar als Coming Soon.
           </p>
 
-          <div className="mt-8 flex flex-wrap gap-3">
+          <div className="mt-7 flex flex-wrap gap-3">
             <OsEntryLink
               to="/app/activation"
-              className="inline-flex items-center gap-2 rounded-full px-[18px] py-[12px] text-[11px] font-semibold transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e4cfa2]"
+              className="inline-flex items-center gap-2 rounded-full px-[18px] py-[12px] text-[12px] font-semibold transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e4cfa2]"
               style={{ backgroundColor: LANDING_BUTTON, color: LANDING_BUTTON_TEXT }}
             >
               Governance Activation starten <ArrowRight className="h-3.5 w-3.5" />
             </OsEntryLink>
             <a
               href="#governance-activation-how"
-              className="inline-flex items-center gap-2 rounded-full border px-[18px] py-[12px] text-[11px] font-semibold transition hover:bg-[#e4cfa2]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e4cfa2]/60"
+              className="inline-flex items-center gap-2 rounded-full border px-[18px] py-[12px] text-[12px] font-semibold transition hover:bg-[#e4cfa2]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e4cfa2]/60"
               style={{
                 borderColor: `${LANDING_ACCENT}80`,
                 color: LANDING_TEXT,
@@ -94,7 +104,7 @@ export function GovernanceActivationSection() {
           className="grid gap-px overflow-hidden border border-[#e4cfa2]/15 bg-[#e4cfa2]/08 md:grid-cols-3"
         >
           {ACTIVATION_STEPS.map((step) => (
-            <div key={step.index} className="p-7" style={{ backgroundColor: LANDING_BG }}>
+            <div key={step.index} className="p-6" style={{ backgroundColor: LANDING_BG }}>
               <div
                 className="text-[10px] tracking-[.22em]"
                 style={{ fontFamily: LANDING_MONO, color: `${LANDING_ACCENT}cc` }}

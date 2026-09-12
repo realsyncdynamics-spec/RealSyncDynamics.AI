@@ -3,6 +3,7 @@ import { ArrowRight } from 'lucide-react';
 import { tierById, type PricingTier } from '../../config/pricing';
 import {
   LANDING_ACCENT,
+  LANDING_BODY,
   LANDING_BUTTON,
   LANDING_BUTTON_TEXT,
   LANDING_H2,
@@ -54,7 +55,7 @@ export function LandingPricingSection() {
             Governance Runtime.
           </em>
         </h2>
-        <p className="mt-[14px] max-w-[640px] text-[13px] leading-[1.65]" style={{ color: LANDING_MUTED }}>
+        <p className="mt-[14px] max-w-[640px] leading-[1.65]" style={{ color: LANDING_MUTED, fontSize: LANDING_BODY }}>
           Monatliche Self-Service-Tarife — Starter €79 · Growth €249 · Agency €699.
           Jahresabrechnung: Coming Soon (noch nicht in Stripe verdrahtet).
         </p>

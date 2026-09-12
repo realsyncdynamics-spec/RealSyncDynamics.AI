@@ -15,9 +15,12 @@ import {
   LANDING_BG,
   LANDING_BUTTON,
   LANDING_BUTTON_TEXT,
+  LANDING_BODY,
+  LANDING_EYEBROW,
   LANDING_H1,
   LANDING_H2,
   LANDING_LINE,
+  LANDING_META,
   LANDING_MONO,
   LANDING_MUTED,
   LANDING_SANS,
@@ -106,11 +109,12 @@ export function MainLanding() {
           </div>
 
           {/* Dense centered stack over the globe — no empty black bands */}
-          <div className="relative mx-auto flex max-w-[820px] flex-col items-center px-[4vw] pb-[40px] pt-[24px] text-center lg:pb-[44px] lg:pt-[28px]">
+          <div className="relative mx-auto flex max-w-[900px] flex-col items-center px-[4vw] pb-[44px] pt-[28px] text-center lg:pb-[48px] lg:pt-[32px]">
             <div
-              className="inline-block rounded-full border px-[11px] py-[6px] text-[9px] font-medium tracking-[.23em]"
+              className="inline-block rounded-full border px-[12px] py-[6px] font-medium tracking-[.22em]"
               style={{
                 fontFamily: LANDING_MONO,
+                fontSize: LANDING_META,
                 color: LANDING_ACCENT,
                 borderColor: `${LANDING_ACCENT}47`,
               }}
@@ -119,7 +123,7 @@ export function MainLanding() {
             </div>
 
             <h1
-              className="relative mt-[12px] mb-2.5 max-w-[18ch] leading-[1.08] tracking-[-.03em] lg:mt-[14px] lg:mb-3"
+              className="relative mt-[14px] mb-3 max-w-[22ch] leading-[1.06] tracking-[-.035em] lg:mt-[16px] lg:mb-3.5"
               style={{ fontFamily: LANDING_SERIF, fontWeight: 500, fontSize: LANDING_H1 }}
             >
               <span className="hero-shine-glow" aria-hidden="true">
@@ -151,15 +155,15 @@ export function MainLanding() {
             </h1>
 
             <p
-              className="mb-3 text-[10px] tracking-[.2em] lg:mb-3.5"
-              style={{ fontFamily: LANDING_MONO, color: '#b6a77f' }}
+              className="mb-3.5 tracking-[.18em] lg:mb-4"
+              style={{ fontFamily: LANDING_MONO, fontSize: LANDING_EYEBROW, color: '#b6a77f' }}
             >
               {HERO_OPERATING_LOOP}
             </p>
 
             <p
-              className="max-w-[520px] text-[13px] leading-[1.55] lg:text-[14px]"
-              style={{ color: 'rgba(242,238,230,0.78)' }}
+              className="max-w-[560px] leading-[1.6]"
+              style={{ color: 'rgba(242,238,230,0.82)', fontSize: LANDING_BODY }}
             >
               Govern AI. Prove Everything. Operate with Confidence.
               <br />
@@ -168,29 +172,29 @@ export function MainLanding() {
             </p>
 
             <div
-              className="value-grid my-[14px] mb-[12px] grid w-full max-w-[680px] gap-0 border-y sm:grid-cols-3 lg:my-[16px] lg:mb-[14px]"
+              className="value-grid my-[16px] mb-[14px] grid w-full max-w-[720px] gap-0 border-y sm:grid-cols-3 lg:my-[18px] lg:mb-[16px]"
               style={{ borderColor: LANDING_LINE }}
             >
               {HERO_PILLARS.map(([title, text], i) => (
                 <article
                   key={title}
-                  className={`px-3 py-[12px] sm:px-5 lg:py-[14px] ${i > 0 ? 'sm:border-l' : ''}`}
+                  className={`px-3 py-[14px] sm:px-5 lg:py-[16px] ${i > 0 ? 'sm:border-l' : ''}`}
                   style={{ borderColor: LANDING_LINE }}
                 >
                   <b
-                    className="text-[8px] font-medium tracking-[.18em]"
-                    style={{ fontFamily: LANDING_MONO, color: LANDING_ACCENT }}
+                    className="font-medium tracking-[.16em]"
+                    style={{ fontFamily: LANDING_MONO, fontSize: LANDING_META, color: LANDING_ACCENT }}
                   >
                     {title}
                   </b>
-                  <p className="mt-1.5 text-[11px] leading-[1.5]" style={{ color: '#898a91' }}>
+                  <p className="mt-2 text-[12px] leading-[1.55] lg:text-[13px]" style={{ color: '#898a91' }}>
                     {text}
                   </p>
                 </article>
               ))}
             </div>
 
-            <form id="scan" onSubmit={startScan} className="w-full max-w-[620px]">
+            <form id="scan" onSubmit={startScan} className="w-full max-w-[640px]">
               <div
                 className="flex flex-col gap-0 rounded-full border p-1 sm:flex-row sm:items-stretch"
                 style={{
@@ -204,20 +208,20 @@ export function MainLanding() {
                   type="url"
                   placeholder="Ihre Website –"
                   aria-label="Ihre Website"
-                  className="min-w-0 flex-1 bg-transparent px-4 py-3 text-center text-[13px] text-[#f2eee6] outline-none placeholder:text-[#9a9aa1]/70 focus-visible:ring-2 focus-visible:ring-[#e4cfa2]/45 sm:rounded-full sm:text-left lg:py-3.5"
+                  className="min-w-0 flex-1 bg-transparent px-4 py-3.5 text-center text-[14px] text-[#f2eee6] outline-none placeholder:text-[#9a9aa1]/70 focus-visible:ring-2 focus-visible:ring-[#e4cfa2]/45 sm:rounded-full sm:text-left lg:py-4"
                 />
                 <button
                   type="submit"
                   data-hero-cta
-                  className="inline-flex items-center justify-center gap-2 rounded-full px-[18px] py-[11px] text-[11px] font-semibold shadow-[0_0_0_1px_rgba(228,207,162,0.35)] transition hover:brightness-[1.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e4cfa2] lg:py-[12px]"
+                  className="inline-flex items-center justify-center gap-2 rounded-full px-[20px] py-[12px] text-[12px] font-semibold shadow-[0_0_0_1px_rgba(228,207,162,0.35)] transition hover:brightness-[1.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e4cfa2] lg:py-[13px]"
                   style={{ backgroundColor: LANDING_BUTTON, color: LANDING_BUTTON_TEXT }}
                 >
                   Kostenlosen Governance Scan starten <span aria-hidden="true">→</span>
                 </button>
               </div>
               <p
-                className="mt-1.5 px-1 text-[8px] tracking-[.08em]"
-                style={{ fontFamily: LANDING_MONO, color: '#6e7077' }}
+                className="mt-2 px-1 tracking-[.08em]"
+                style={{ fontFamily: LANDING_MONO, fontSize: LANDING_META, color: '#6e7077' }}
               >
                 DSGVO · EU AI Act · Sicherheit · Barrierefreiheit · SEO kein Account nötig
               </p>
@@ -225,7 +229,7 @@ export function MainLanding() {
 
             <Link
               to="/governance-runtime"
-              className="mt-4 inline-flex items-center justify-center gap-2 rounded-full border px-[20px] py-[11px] text-[13px] font-medium transition hover:bg-[#e4cfa2]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e4cfa2]/60 lg:mt-5"
+              className="mt-5 inline-flex items-center justify-center gap-2 rounded-full border px-[22px] py-[12px] text-[14px] font-medium transition hover:bg-[#e4cfa2]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e4cfa2]/60 lg:mt-6"
               style={{ borderColor: `${LANDING_ACCENT}80`, color: '#e8dfd2' }}
             >
               Explore the Governance Runtime <span aria-hidden="true">→</span>
@@ -261,7 +265,7 @@ export function MainLanding() {
                   Module, die live erreichbar sind.
                 </em>
               </h2>
-              <p className="mt-[14px] max-w-[640px] text-[13px] leading-[1.65]" style={{ color: LANDING_MUTED }}>
+              <p className="mt-[14px] max-w-[640px] leading-[1.65]" style={{ color: LANDING_MUTED, fontSize: LANDING_BODY }}>
                 Nur Capabilities mit Status LIVE aus dem Product-Registry. Preview und Coming Soon
                 stehen unter{' '}
                 <a href="#roadmap" className="underline decoration-[#e4cfa2]/40 underline-offset-2">
@@ -352,7 +356,7 @@ export function MainLanding() {
                     beweisen lässt.
                   </em>
                 </h2>
-                <p className="mt-4 max-w-md text-[13px] leading-relaxed" style={{ color: LANDING_MUTED }}>
+                <p className="mt-4 max-w-md leading-relaxed" style={{ color: LANDING_MUTED, fontSize: LANDING_BODY }}>
                   PDFs, Logs und Prüfpfade — wo Evidence-Module live sind. Keine Fake-Metriken.
                 </p>
                 <div className="mt-8 flex flex-wrap gap-3">
@@ -483,7 +487,7 @@ export function MainLanding() {
             >
               Governance statt Checkliste.
             </h2>
-            <p className="mx-auto mt-4 max-w-xl text-[14px] leading-relaxed" style={{ color: 'rgba(242,238,230,0.72)' }}>
+            <p className="mx-auto mt-4 max-w-xl leading-relaxed" style={{ color: 'rgba(242,238,230,0.72)', fontSize: LANDING_BODY }}>
               Eine Checkliste beruhigt bis zum nächsten Audit. Die Runtime hält den Nachweis, wenn
               Aufsicht, Kunde oder Board fragt — für die Module, die heute live sind.
             </p>

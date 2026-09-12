@@ -7,6 +7,7 @@ import {
 } from '../../product/implementation-status';
 import {
   LANDING_ACCENT,
+  LANDING_BODY,
   LANDING_H2,
   LANDING_MONO,
   LANDING_MUTED,
@@ -89,7 +90,7 @@ export function LandingChannelTools() {
               Eine Governance-Ebene.
             </em>
           </h2>
-          <p className="mt-[14px] max-w-[640px] text-[13px] leading-[1.65]" style={{ color: LANDING_MUTED }}>
+          <p className="mt-[14px] max-w-[640px] leading-[1.65]" style={{ color: LANDING_MUTED, fontSize: LANDING_BODY }}>
             Live-Module führen in den Konfigurator. Preview-Module sind als solche gekennzeichnet.
           </p>
         </div>

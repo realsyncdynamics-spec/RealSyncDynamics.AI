@@ -156,13 +156,13 @@ function DistantPlanets() {
         style={{
           top: '7%',
           right: '11%',
-          width: 'clamp(10px, 1.35vw, 18px)',
-          height: 'clamp(10px, 1.35vw, 18px)',
+          width: 'clamp(14px, 1.7vw, 22px)',
+          height: 'clamp(14px, 1.7vw, 22px)',
           borderRadius: '50%',
           background:
             'radial-gradient(circle at 32% 30%, #e08a62 0%, #c45a3a 38%, #7a2e1c 78%, #3a1410 100%)',
-          boxShadow: '0 0 10px 2px rgba(180, 70, 40, 0.35)',
-          opacity: 0.78,
+          boxShadow: '0 0 12px 2px rgba(180, 70, 40, 0.4)',
+          opacity: 0.88,
         }}
       />
 
@@ -173,15 +173,15 @@ function DistantPlanets() {
         style={{
           top: '4%',
           right: '26%',
-          width: 'clamp(28px, 3.6vw, 48px)',
-          height: 'clamp(28px, 3.6vw, 48px)',
+          width: 'clamp(34px, 4.2vw, 56px)',
+          height: 'clamp(34px, 4.2vw, 56px)',
           borderRadius: '50%',
           background: [
-            'radial-gradient(circle at 34% 28%, rgba(255,240,210,0.35) 0%, transparent 42%)',
+            'radial-gradient(circle at 34% 28%, rgba(255,240,210,0.4) 0%, transparent 42%)',
             'repeating-linear-gradient(180deg, #e8d2b0 0 14%, #c4a078 14% 22%, #d8bc94 22% 34%, #a87848 34% 42%, #d0b490 42% 56%, #b89060 56% 68%, #e0c8a0 68% 82%, #9a7048 82% 100%)',
           ].join(', '),
-          boxShadow: '0 0 16px 3px rgba(180, 140, 80, 0.28)',
-          opacity: 0.72,
+          boxShadow: '0 0 18px 4px rgba(180, 140, 80, 0.35)',
+          opacity: 0.86,
         }}
       />
 
@@ -192,9 +192,9 @@ function DistantPlanets() {
         style={{
           top: '14%',
           right: '4%',
-          width: 'clamp(22px, 2.8vw, 36px)',
-          height: 'clamp(22px, 2.8vw, 36px)',
-          opacity: 0.7,
+          width: 'clamp(26px, 3.2vw, 42px)',
+          height: 'clamp(26px, 3.2vw, 42px)',
+          opacity: 0.84,
         }}
       >
         <div
@@ -342,7 +342,7 @@ export function HeroEarthBackdrop() {
       data-landing-earth={use3d ? 'scenery' : 'static'}
       aria-hidden="true"
     >
-      {/* Deep space base */}
+      {/* Deep space base — visible where Earth plane is masked open */}
       <div
         className="pointer-events-none absolute inset-0"
         style={{
@@ -350,12 +350,10 @@ export function HeroEarthBackdrop() {
             'radial-gradient(ellipse at 28% 48%, #080a10 0%, #05070c 42%, #02040a 72%, #010308 100%)',
         }}
       />
-      <Starfield />
-      <DistantPlanets />
-      <OccasionalMoon reducedMotion={reducedMotion} />
       <WarmRimLight />
 
-      {/* Photoreal Europe night — always under WebGL so planet never blanks */}
+      {/* Photoreal Europe night — always under WebGL so planet never blanks.
+          Upper sky is CSS-masked open so starfield/planets are not buried. */}
       <StaticEarthPlane />
 
       {use3d && (
@@ -367,6 +365,17 @@ export function HeroEarthBackdrop() {
           </Suspense>
         </div>
       )}
+
+      {/* Night-space scenery ABOVE Earth layers, masked to upper/side sky only —
+          never covers Dominik H1 column (left veil stays on top). */}
+      <div
+        className="hero-earth-space-scenery pointer-events-none absolute inset-0"
+        data-hero-scenery-layer="sky"
+      >
+        <Starfield />
+        <DistantPlanets />
+        <OccasionalMoon reducedMotion={reducedMotion} />
+      </div>
 
       {/* Light veil for type — keep Earth readable as the visual anchor */}
       <div

@@ -48,7 +48,7 @@ const LANDING_GOLD = {
   specular: new THREE.Vector3(0.95, 0.82, 0.55),
   clouds: new THREE.Vector3(0.96, 0.9, 0.78),
   /** Bright city lights — Europe night network must read as a real planet. */
-  nightIntensity: 1.35,
+  nightIntensity: 2.05,
 } as const;
 
 function configureMap(tex: THREE.Texture, anisotropy: number, colorSpace?: THREE.ColorSpace) {
@@ -385,14 +385,14 @@ export function PhotorealEarthMesh({
                 vec3 N = normalize(vNormalW);
                 vec3 L = normalize(uLight);
                 float ndl = dot(N, L);
-                float day = smoothstep(-0.28, 0.38, ndl);
+                float day = smoothstep(-0.22, 0.42, ndl);
                 float night = 1.0 - day;
-                float term = 1.0 - smoothstep(0.0, 0.38, abs(ndl));
+                float term = 1.0 - smoothstep(0.0, 0.36, abs(ndl));
                 vec3 amber = vec3(1.05, 0.78, 0.42);
-                graded *= mix(0.08, 1.08, day);
-                graded += amber * term * 0.22 * (0.35 + day * 0.55);
-                // Deep night so city lights dominate the facing hemisphere.
-                graded = mix(graded, graded * vec3(0.04, 0.035, 0.03), night * 0.92);
+                graded *= mix(0.22, 1.12, day);
+                graded += amber * term * 0.18 * (0.4 + day * 0.5);
+                // Night still dark enough for city lights, but land silhouette remains.
+                graded = mix(graded, graded * vec3(0.14, 0.12, 0.1), night * 0.78);
                 gl_FragColor = vec4(graded, 1.0);
               }
             `}
@@ -435,13 +435,13 @@ export function PhotorealEarthMesh({
               varying vec3 vNormalW;
               void main() {
                 float ndl = dot(normalize(vNormalW), normalize(uLight));
-                float night = smoothstep(0.12, -0.22, ndl);
+                float night = smoothstep(0.18, -0.18, ndl);
                 vec3 lights = texture2D(uNight, vUv).rgb;
                 float luma = max(lights.r, max(lights.g, lights.b));
-                vec3 glow = lights * lights * 2.35 + lights * 0.7;
+                vec3 glow = lights * lights * 2.8 + lights * 0.95;
                 // Landing gold: amber city network — still photoreal, not cyan.
-                glow = mix(glow, vec3(glow.r * 1.22, glow.g * 0.92, glow.b * 0.42), uWarm);
-                float side = mix(0.95, 0.92, uWarm);
+                glow = mix(glow, vec3(glow.r * 1.28, glow.g * 0.95, glow.b * 0.4), uWarm);
+                float side = mix(1.0, 1.05, uWarm);
                 gl_FragColor = vec4(glow * uIntensity, night * luma * side);
               }
             `}

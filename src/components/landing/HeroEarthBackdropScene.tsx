@@ -9,17 +9,17 @@ import * as THREE from 'three';
 import { PhotorealEarthMesh } from '../visual/PhotorealEarthMesh';
 
 /**
- * Sun sits behind/left of the limb so Europe faces night city lights while
- * a warm terminator rim remains — not a cream wash over the planet.
+ * Sun sits off the left limb so Europe straddles a readable terminator:
+ * day continents + night city lights — not a cream wash, not a black void.
  */
-export const LANDING_SUN_POSITION = new THREE.Vector3(-3.4, 0.55, -1.85);
+export const LANDING_SUN_POSITION = new THREE.Vector3(-2.85, 0.35, 1.55);
 
 /** Soft key only — no visible RisingSun mesh / CSS sun disc. */
 function LimbLight() {
   return (
     <group position={LANDING_SUN_POSITION.toArray() as [number, number, number]}>
-      <pointLight color="#ffe0b0" intensity={1.15} distance={28} decay={2} />
-      <pointLight color="#e4cfa2" intensity={0.45} distance={18} decay={2} position={[0.6, -0.3, 0.4]} />
+      <pointLight color="#ffe0b0" intensity={1.55} distance={30} decay={2} />
+      <pointLight color="#e4cfa2" intensity={0.55} distance={20} decay={2} position={[0.5, -0.25, 0.35]} />
     </group>
   );
 }
@@ -38,14 +38,14 @@ function SlowEarth({ reducedMotion }: { reducedMotion: boolean }) {
     /*
      * Oversized + shifted so the sphere crops past viewport edges —
      * Earth fills the hero; no empty black bands on desktop.
-     * Initial yaw tips Europe / Atlantic night lights toward camera.
+     * Initial yaw tips Europe / Atlantic toward camera across the terminator.
      */
-    <group ref={wrap} position={[0.05, -0.35, 0.15]} scale={2.42}>
+    <group ref={wrap} position={[0.08, -0.28, 0.2]} scale={2.38}>
       <PhotorealEarthMesh
         autoRotate={false}
         reducedMotion={reducedMotion}
         sunDirection={sunDir}
-        rotation={[0.2, -0.42, 0.05]}
+        rotation={[0.18, -0.28, 0.04]}
         palette="landing-gold"
       />
     </group>
@@ -79,11 +79,11 @@ export function HeroEarthBackdropScene({ reducedMotion = false }: HeroEarthBackd
         gl.setClearColor(0x000000, 0);
       }}
     >
-      {/* Low ambient so night lights + continents read as a real planet */}
-      <ambientLight intensity={0.12} color="#d8c9a8" />
-      <directionalLight position={[sun.x, sun.y, sun.z]} intensity={1.35} color="#fff1d6" />
-      <directionalLight position={[2.4, 0.6, 1.8]} intensity={0.22} color="#8a9bb0" />
-      <directionalLight position={[-1.2, -1.4, 2.0]} intensity={0.18} color="#b49a6b" />
+      {/* Balanced ambient so day land + night lights both read */}
+      <ambientLight intensity={0.2} color="#d8c9a8" />
+      <directionalLight position={[sun.x, sun.y, sun.z]} intensity={1.85} color="#fff1d6" />
+      <directionalLight position={[2.4, 0.6, 1.8]} intensity={0.28} color="#8a9bb0" />
+      <directionalLight position={[-1.2, -1.4, 2.0]} intensity={0.22} color="#b49a6b" />
       <LimbLight />
       <SlowEarth reducedMotion={reducedMotion} />
     </Canvas>

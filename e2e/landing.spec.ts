@@ -133,9 +133,10 @@ test.describe('Governance-AI-Landing (/)', () => {
     ).toBeVisible();
   });
 
-  test('Hero-Visual ist Europa + Sunrise, kein Sphere-HUD', async ({ page }) => {
-    // Scenery only — no interactive Governance Sphere / DEMO chrome on `/`.
-    await expect(page.locator('[data-hero-visual="europe-sunrise"]')).toBeVisible();
+  test('Hero-Visual ist Earth Backdrop, kein Sphere-HUD', async ({ page }) => {
+    // Full-bleed photoreal Earth — no interactive Governance Sphere / DEMO chrome on `/`.
+    await expect(page.locator('[data-hero-visual="earth-universe"]')).toBeVisible();
+    await expect(page.locator('[data-hero-visual="europe-sunrise"]')).toHaveCount(0);
     await expect(page.locator('[data-governance-sphere]')).toHaveCount(0);
     await expect(page.getByText(/^Live\b/)).toHaveCount(0);
     // Mobile Beispiel-Streifen bleibt ehrlich beschriftet, falls sichtbar.

@@ -1,9 +1,10 @@
 /**
  * Public landing hero backdrop — full-bleed photoreal Earth (desktop fill).
  *
- * Interactive 3D globe (orbit / modest zoom / border hover) on the canvas only.
- * No Governance Sphere HUD, DEMO chrome, or cream sun disc.
- * Static Europe night plane remains under the WebGL layer for first paint.
+ * Passive scenery behind Dominik copy: pointer-events none so CTAs stay
+ * clickable. WebGL day/night mesh may idle-rotate; no drag HUD, no Sphere
+ * DEMO chrome, no continent UI labels. Static Europe night plane under WebGL
+ * for first paint.
  */
 import { Suspense, useEffect, useState } from 'react';
 import { HeroEarthBackdropScene } from './HeroEarthBackdropScene';
@@ -51,7 +52,7 @@ function StaticEarthPlane({ className = '' }: { className?: string }) {
           height={768}
           decoding="async"
           fetchPriority="high"
-          className="h-full w-full scale-[1.48] object-cover object-[48%_40%] opacity-100"
+          className="h-full w-full scale-[1.35] object-cover object-[50%_58%] opacity-100"
         />
       </picture>
       {/* Soft readability only — no cream sunrise wash */}
@@ -157,10 +158,8 @@ export function HeroEarthBackdrop() {
       data-hero-visual="earth-universe"
       data-earth-palette="landing-gold"
       data-hero-lighting="night-rim"
-      data-landing-earth={use3d ? 'interactive' : 'static'}
-      aria-hidden={use3d ? undefined : true}
-      aria-label={use3d ? 'Interaktive Erdkugel — ziehen zum Drehen, Rad zum Zoomen' : undefined}
-      role={use3d ? 'img' : undefined}
+      data-landing-earth={use3d ? 'scenery' : 'static'}
+      aria-hidden="true"
     >
       {/* Deep space base */}
       <div
@@ -173,27 +172,26 @@ export function HeroEarthBackdrop() {
       <Starfield />
       <WarmRimLight />
 
-      {/* Always-on photoreal Europe night — planet never disappears */}
+      {/* Photoreal Europe night — always under WebGL so planet never blanks */}
       <StaticEarthPlane />
 
       {use3d && (
         <div className="hero-earth-canvas absolute inset-0" data-landing-earth>
           <Suspense fallback={null}>
-            <div className="absolute inset-[-6%_-4%] scale-[1.22]">
+            <div className="absolute inset-0">
               <HeroEarthBackdropScene reducedMotion={reducedMotion} />
             </div>
           </Suspense>
         </div>
       )}
 
-      {/* Light veil for type — planet remains the visual anchor; never blocks canvas */}
+      {/* Light veil for type — keep Earth readable as the visual anchor */}
       <div
         className="pointer-events-none absolute inset-0"
         style={{
           background: [
-            'radial-gradient(ellipse 40% 28% at 50% 22%, rgba(5,7,11,0.22) 0%, rgba(5,7,11,0.06) 55%, transparent 78%)',
-            'linear-gradient(180deg, rgba(5,7,11,0.22) 0%, transparent 12%, transparent 80%, rgba(5,7,11,0.5) 100%)',
-            'linear-gradient(90deg, transparent 0%, transparent 84%, rgba(5,7,11,0.18) 100%)',
+            'radial-gradient(ellipse 55% 32% at 28% 18%, rgba(5,7,11,0.38) 0%, rgba(5,7,11,0.1) 55%, transparent 78%)',
+            'linear-gradient(180deg, rgba(5,7,11,0.28) 0%, transparent 14%, transparent 62%, rgba(5,7,11,0.45) 100%)',
           ].join(', '),
         }}
       />

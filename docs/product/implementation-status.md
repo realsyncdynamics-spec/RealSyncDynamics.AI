@@ -24,11 +24,12 @@ Flipping `status` moves an item between Live / Preview / Coming Soon in the UI.
 3. No fake KPIs. No yearly Stripe prices until Stripe prices exist.
 4. Interactive Governance Sphere stays off public `/`. Hero visual is photoreal
    Earth as full-bleed backdrop (`hero-earth-scenery` / HeroEarthBackdrop) —
-   Europe night (right, first-recognize continent) + gold route network, deep-space
+   Europe on the limb (UK/FR/DE/IT city lights) + gold route network, deep-space
    starfield + distant planets — no Sphere HUD, no muddy gold wash over type,
-   pointer-events-none behind cream copy. Live H1 (≤2 lines, gold Europe):
-   AI Compliance Operations OS for Europe. Fold: kicker + H1 + one value line +
-   Free Audit starten + Live Dashboard ansehen. Header: Preise · Enterprise · Login.
+   pointer-events-none behind cream copy. Live H1: line 1 “AI Compliance
+   Operations OS for”, line 2 gold Europe. Fold: H1 + Discover loop + value line
+   + Free Audit starten + Live Dashboard ansehen. Header: Produkt · Evidence ·
+   Preise · Login. Assistent chip hidden on `/`.
 5. Canonical dashboard remains `/app` → ComplianceStatusDashboard.
    Auth: `/welcome` is the gate; `?next=` resumes after login (including
    already-signed-in `getSession`). `GovernanceBrowserShell` always wraps

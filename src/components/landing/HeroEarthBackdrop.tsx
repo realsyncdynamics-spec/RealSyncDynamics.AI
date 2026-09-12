@@ -121,7 +121,7 @@ function StaticEarthPlane({ className = '' }: { className?: string }) {
           height={768}
           decoding="async"
           fetchPriority="high"
-          className="hero-earth-static-img h-full w-full scale-[1.08] object-cover object-[72%_48%] opacity-100"
+          className="hero-earth-static-img h-full w-full scale-[1.12] object-cover object-[78%_42%] opacity-100"
         />
       </picture>
       <GoldNetworkOverlay />

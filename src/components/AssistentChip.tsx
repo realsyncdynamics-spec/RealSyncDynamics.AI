@@ -24,6 +24,7 @@ import { AgentWidget } from '../features/governance/AgentWidget/AgentWidget';
 const HIDDEN_PREFIXES = ['/dashboard', '/app', '/checkout', '/audit'];
 
 function shouldHide(pathname: string): boolean {
+  if (pathname === '/') return true; // Hero fold owns attention — no Assistent on headline
   if (HIDDEN_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`))) return true;
   // Legacy: hide on /governance/* subroutes (but not /governance itself) for backwards compatibility
   if (pathname !== '/governance' && pathname.startsWith('/governance/')) return true;

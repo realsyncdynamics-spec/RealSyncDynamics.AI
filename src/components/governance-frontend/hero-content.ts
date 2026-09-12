@@ -12,23 +12,20 @@ export type HeroHeadlineSegment = {
 };
 
 /**
- * Europe-OS Hero — Dominik Grok Imagine mock lock (copy + scenery brief).
+ * Europe-OS Hero — Dominik 1:1 luxury mock lock.
  *
- * Claim direction: AI Compliance Operations OS for Europe.
+ * Claim: AI Compliance Operations OS for Europe.
  *
  * ## Contract
  *
  * `MainLanding` renders H1 exclusively from `HERO_HEADLINE`. E2E / FE-001
  * read the same source — change here, not in the page.
  *
- * Two lines only — never orphan “for Europe” under “OS”.
+ * Two lines: line 1 ends with “for”; line 2 is gold **Europe** alone.
  */
 export const HERO_HEADLINE: readonly (readonly HeroHeadlineSegment[])[] = [
-  [{ text: 'AI Compliance Operations OS' }],
-  [
-    { text: 'for ' },
-    { text: 'Europe', accent: true },
-  ],
+  [{ text: 'AI Compliance Operations OS for' }],
+  [{ text: 'Europe', accent: true }],
 ];
 
 /** Reine Textzeilen der H1 — für Tests und Accessible-Name-Abgleich. */
@@ -39,8 +36,8 @@ export const HERO_HEADLINE_LINES: readonly string[] = HERO_HEADLINE.map((segment
 /** Substring für den FE-001-Check. Muss vollständig innerhalb einer Zeile liegen. */
 export const HERO_HEADLINE_TEST_SUBSTRING = 'AI Compliance';
 
-/** Operating loop — single kicker under / above the H1 (mock lock). */
-export const HERO_OPERATING_LOOP = 'DISCOVER → CLASSIFY → ENFORCE → PROVE' as const;
+/** Operating loop — single line under the H1 (mock lock, title case). */
+export const HERO_OPERATING_LOOP = 'Discover → Classify → Enforce → Prove' as const;
 
 /**
  * Secondary / funnel / design-preview copy — not the live `/` H1 chrome.
@@ -101,9 +98,9 @@ if (!HERO_HEADLINE_LINES.some((line) => line.includes(HERO_HEADLINE_TEST_SUBSTRI
 }
 
 if (HERO_HEADLINE_LINES.length > 2) {
-  throw new Error('hero-content.ts: H1 must stay ≤ 2 lines (no orphan “for Europe”).');
+  throw new Error('hero-content.ts: H1 must stay ≤ 2 lines (Europe alone on line 2).');
 }
 
-if (!HERO_HEADLINE_LINES.some((line) => line.includes('Europe'))) {
-  throw new Error('hero-content.ts: Europe must remain in the H1.');
+if (HERO_HEADLINE_LINES[1] !== 'Europe') {
+  throw new Error('hero-content.ts: line 2 must be gold Europe alone.');
 }

@@ -17,22 +17,22 @@ import {
 /**
  * Shared dark public header for `/` and `/branchen`.
  *
- * Enterprise strip (desktop): Preise · Enterprise · Login + Free Audit.
- * Fuller IA (Produkt, Runtime, Evidence, …) lives in the mobile drawer and
- * in `public-nav.ts` — no invented pages, no junk-drawer desktop bar.
+ * Dominik 1:1 mock strip: Produkt · Evidence · Preise · Login + Free Audit.
+ * Fuller IA lives in the mobile drawer — no junk-drawer desktop bar.
  */
 
-/** Calm desktop strip — Dominik enterprise mock. */
+/** Calm desktop strip — matches Dominik luxury mock. */
 const PRIMARY_LINKS = [
+  { label: 'Produkt', to: '/#product', emphasize: false },
+  { label: 'Evidence', to: '/#evidence', emphasize: false },
   { label: 'Preise', to: '/#pricing', emphasize: true },
-  { label: 'Enterprise', to: '/#enterprise', emphasize: false },
   { label: 'Login', to: '/welcome', emphasize: false },
 ] as const;
 
 /**
  * Drawer / secondary IA — keeps platform-capabilities reachability
- * (`/ai-act`, `/sicherheit`, `/branchen`, `/governance-runtime`) without
- * crowding the first viewport.
+ * (`/ai-act`, `/sicherheit`, `/branchen`, `/governance-runtime`, Enterprise)
+ * without crowding the first viewport.
  */
 const DRAWER_LINKS = [
   { label: 'Produkt', to: '/#product', emphasize: false },
@@ -42,7 +42,9 @@ const DRAWER_LINKS = [
   { label: 'Module', to: '/#tools', emphasize: false },
   { label: 'EU AI Act', to: '/ai-act', emphasize: false },
   { label: 'Sicherheit', to: '/sicherheit', emphasize: false },
-  ...PRIMARY_LINKS,
+  { label: 'Preise', to: '/#pricing', emphasize: true },
+  { label: 'Enterprise', to: '/#enterprise', emphasize: false },
+  { label: 'Login', to: '/welcome', emphasize: false },
 ] as const;
 
 function NavItem({

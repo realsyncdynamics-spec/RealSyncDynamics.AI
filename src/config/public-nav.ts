@@ -389,12 +389,13 @@ export const PUBLIC_CTA = {
 } as const;
 
 /**
- * Europe-OS enterprise strip — visible top-level links on PublicDarkHeader.
- * Preise / Enterprise / Login (+ Free Audit CTA). Fuller IA in drawer + PUBLIC_NAV_GROUPS.
+ * Europe-OS mock strip — visible top-level links on PublicDarkHeader.
+ * Produkt / Evidence / Preise / Login (+ Free Audit CTA). Fuller IA in drawer.
  */
 export const PUBLIC_PRIMARY_NAV: readonly PublicNavLeaf[] = [
+  { label: 'Produkt', to: '/#product' },
+  { label: 'Evidence', to: '/#evidence' },
   { label: 'Preise', to: '/#pricing' },
-  { label: 'Enterprise', to: '/#enterprise' },
   { label: 'Login', to: '/welcome' },
 ] as const;
 

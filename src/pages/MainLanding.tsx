@@ -83,21 +83,17 @@ export function MainLanding() {
           </div>
 
           <div className="relative mx-auto flex w-full max-w-[1500px] flex-1 items-center px-[4vw] py-10 lg:py-12">
-            {/* Fold lock: kicker → H1 → value → CTA pair. No brochure stack. */}
-            <div className="hero-copy relative z-10 max-w-[36rem] lg:max-w-[40rem]">
-              <p
-                className="text-[10px] font-medium tracking-[0.22em]"
-                style={{ fontFamily: LANDING_MONO, color: '#9a9178' }}
-              >
-                {HERO_OPERATING_LOOP}
-              </p>
-
+            {/* Fold lock (Dominik 1:1): H1 → loop → body → CTA pair */}
+            <div className="hero-copy relative z-10 max-w-[38rem] lg:max-w-[42rem]">
               <h1
-                className="mt-5 text-[clamp(2.35rem,4.6vw,3.85rem)] leading-[1.05] tracking-[-0.035em]"
+                className="text-[clamp(2.1rem,3.8vw,3.35rem)] leading-[1.05] tracking-[-0.035em]"
                 style={{ fontFamily: LANDING_SERIF, fontWeight: 500 }}
               >
                 {HERO_HEADLINE.map((segments, line) => (
-                  <span key={line} className="block">
+                  <span
+                    key={line}
+                    className={`block ${line === 0 ? 'whitespace-nowrap' : ''}`}
+                  >
                     {segments.map((segment, i) =>
                       segment.accent ? (
                         <em
@@ -116,6 +112,13 @@ export function MainLanding() {
                   </span>
                 ))}
               </h1>
+
+              <p
+                className="mt-5 text-[11px] font-medium tracking-[0.2em]"
+                style={{ fontFamily: LANDING_MONO, color: '#9a9178' }}
+              >
+                {HERO_OPERATING_LOOP}
+              </p>
 
               <p
                 className="mt-5 max-w-[34rem] text-[15px] leading-[1.55] sm:text-[16px]"

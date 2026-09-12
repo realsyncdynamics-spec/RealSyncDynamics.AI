@@ -199,9 +199,15 @@ function GoldEuropeNetwork({ radius, reducedMotion }: { radius: number; reducedM
 }
 
 /**
- * Europe fills the right / background — left void for Dominik copy + stars.
- * Night-dominant city lights; gold network rides the mesh.
+ * Europe on the limb — UK/FR/DE/IT city lights readable on the right crescent.
+ * Deep void left for copy. Gold network rides the mesh.
+ *
+ * Orientation note: sphereNodePosition puts lon 0 near -X at rotY=0, so
+ * Americas face +Z by default. Base Y ≈ -1.72 brings Central Europe to +Z
+ * (camera). A small offset keeps the continent on the limb, not flat-on.
  */
+const EUROPE_LIMB_ROTY = -1.58;
+
 function SceneryEarth({
   spin,
   reducedMotion,
@@ -216,10 +222,9 @@ function SceneryEarth({
   const wrap = useRef<THREE.Group>(null!);
 
   useFrame(({ clock }) => {
-    // Locked Europe framing — gentle sway only; never free-spin to the Americas.
-    const base = -0.48;
-    const sway = reducedMotion ? 0 : Math.sin(clock.elapsedTime * 0.12) * 0.045;
-    spin.current.rotY = base + sway;
+    // Locked Europe-on-limb — gentle sway only; never free-spin to the Americas.
+    const sway = reducedMotion ? 0 : Math.sin(clock.elapsedTime * 0.11) * 0.03;
+    spin.current.rotY = EUROPE_LIMB_ROTY + sway;
     if (wrap.current) {
       wrap.current.rotation.y = spin.current.rotY;
     }
@@ -228,9 +233,9 @@ function SceneryEarth({
   return (
     <group
       ref={wrap}
-      position={[1.55, -0.15, -0.55]}
-      scale={1.48}
-      rotation={[0.08, 0, -0.06]}
+      position={[1.95, -0.45, -0.2]}
+      scale={1.68}
+      rotation={[0.22, 0, -0.02]}
     >
       <PhotorealEarthMesh
         key={quality}
@@ -238,7 +243,7 @@ function SceneryEarth({
         autoRotate={false}
         reducedMotion={reducedMotion}
         sunDirection={sunDir}
-        rotation={[0.12, -0.08, 0.05]}
+        rotation={[0.28, 0.08, 0.02]}
         palette="landing-gold"
         quality={quality}
       />
@@ -249,12 +254,12 @@ function SceneryEarth({
 
 function CameraLock() {
   const { camera } = useThree();
-  const base = useMemo(() => new THREE.Vector3(-0.35, 0.28, 4.6), []);
+  const base = useMemo(() => new THREE.Vector3(-0.7, 0.15, 4.2), []);
 
   useFrame(() => {
     camera.position.copy(base);
-    // Look slightly right so Europe dominates the right half; left stays void.
-    camera.lookAt(1.05, -0.05, 0);
+    // Look toward the limb so Europe dominates the right crescent.
+    camera.lookAt(1.5, -0.28, 0);
   });
 
   return null;
@@ -289,15 +294,15 @@ export function HeroEarthBackdropScene({ reducedMotion = false }: HeroEarthBackd
   const sun = LANDING_SUN_POSITION;
   const sunDir = useMemo(() => LANDING_SUN_POSITION.clone().normalize(), []);
   const quality = useProgressiveEarthQuality(reducedMotion);
-  // Europe toward camera (+Z-ish after wrap Y); start framed on the continent.
-  const spin = useRef<ScenerySpin>({ rotY: -0.48 });
+  // Europe on the limb (UK/FR/DE/IT) — never Americas-facing default.
+  const spin = useRef<ScenerySpin>({ rotY: EUROPE_LIMB_ROTY });
 
   const maxDpr = reducedMotion || isAutomation() ? 1 : quality === 'high' ? 1.5 : 1.25;
 
   return (
     <Canvas
       className="h-full w-full"
-      camera={{ position: [-0.35, 0.28, 4.6], fov: 38 }}
+      camera={{ position: [-0.7, 0.15, 4.2], fov: 36 }}
       gl={{
         alpha: true,
         antialias: !isAutomation(),

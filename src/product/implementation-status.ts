@@ -49,7 +49,7 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     status: 'live',
     group: 'surface',
     description:
-      'Europe-OS Hero — AI Compliance Operations OS for Europe (2-line H1, gold Europe); kicker + value line + Free Audit / Live Dashboard in the first viewport; night-Europe Earth (city lights + gold network) behind cream copy; calm header (Preise · Enterprise · Login). No Sphere HUD, no brochure stack.',
+      'Europe-OS Hero — AI Compliance Operations OS for / Europe (gold alone); Discover→Classify→Enforce→Prove; runtime value line; Free Audit + Live Dashboard in the first viewport; night-Europe limb (UK/FR/DE/IT) + gold network; calm header (Produkt · Evidence · Preise · Login). No Assistent on `/`, no Sphere HUD.',
     route: '/',
     evidence: [
       'src/pages/MainLanding.tsx',

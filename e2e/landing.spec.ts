@@ -132,7 +132,7 @@ test.describe('Governance-AI-Landing (/)', () => {
       page.getByRole('link', { name: /Live Dashboard ansehen/i }).first(),
     ).toBeVisible();
     await expect(
-      page.getByText(/DISCOVER\s*→\s*CLASSIFY\s*→\s*ENFORCE\s*→\s*PROVE/i).first(),
+      page.getByText(/Discover\s*→\s*Classify\s*→\s*Enforce\s*→\s*Prove/i).first(),
     ).toBeVisible();
     await expect(
       page.getByText(/Runtime governance for regulated AI systems/i).first(),

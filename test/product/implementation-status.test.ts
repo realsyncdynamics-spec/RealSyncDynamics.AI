@@ -71,11 +71,12 @@ describe('implementation-status registry', () => {
     expect(hero).toContain("HERO_HEADLINE_TEST_SUBSTRING = 'AI Compliance'");
     expect(hero).toContain('Free Audit starten');
     expect(hero).toContain('Live Dashboard ansehen');
-    expect(hero).toContain('DISCOVER → CLASSIFY → ENFORCE → PROVE');
+    expect(hero).toContain('Discover → Classify → Enforce → Prove');
     expect(hero).toContain('Runtime governance for regulated AI systems');
     expect(hero).not.toContain('Running in Real');
-    // Two-line H1 — Europe must not be orphaned under “OS”
-    expect(hero).toMatch(/AI Compliance Operations OS/);
+    // Two-line H1 — Europe alone on line 2 (gold)
+    expect(hero).toContain("text: 'AI Compliance Operations OS for'");
     expect(hero).toContain("text: 'Europe'");
+    expect(hero).toContain('accent: true');
   });
 });

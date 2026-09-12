@@ -52,7 +52,7 @@ function StaticEarthPlane({ className = '' }: { className?: string }) {
           height={768}
           decoding="async"
           fetchPriority="high"
-          className="h-full w-full scale-[1.48] object-cover object-[48%_40%] opacity-100"
+          className="h-full w-full scale-[1.35] object-cover object-[50%_58%] opacity-100"
         />
       </picture>
       {/* Soft readability only — no cream sunrise wash */}
@@ -185,14 +185,13 @@ export function HeroEarthBackdrop() {
         </div>
       )}
 
-      {/* Light veil for type — planet remains the visual anchor; never blocks canvas */}
+      {/* Light veil for type — keep Earth readable as the visual anchor */}
       <div
         className="pointer-events-none absolute inset-0"
         style={{
           background: [
-            'radial-gradient(ellipse 40% 28% at 50% 22%, rgba(5,7,11,0.22) 0%, rgba(5,7,11,0.06) 55%, transparent 78%)',
-            'linear-gradient(180deg, rgba(5,7,11,0.22) 0%, transparent 12%, transparent 80%, rgba(5,7,11,0.5) 100%)',
-            'linear-gradient(90deg, transparent 0%, transparent 84%, rgba(5,7,11,0.18) 100%)',
+            'radial-gradient(ellipse 55% 32% at 28% 18%, rgba(5,7,11,0.38) 0%, rgba(5,7,11,0.1) 55%, transparent 78%)',
+            'linear-gradient(180deg, rgba(5,7,11,0.28) 0%, transparent 14%, transparent 62%, rgba(5,7,11,0.45) 100%)',
           ].join(', '),
         }}
       />

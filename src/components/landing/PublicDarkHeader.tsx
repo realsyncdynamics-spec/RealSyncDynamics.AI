@@ -100,7 +100,7 @@ function LeafRow({
   );
 
   const cls =
-    'block rounded-sm px-3 py-2.5 transition hover:bg-[#d0c3a4]/08 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#d0c3a4]/50';
+    'block rounded-sm px-3 py-2.5 transition hover:bg-[#e4cfa2]/08 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#e4cfa2]/50';
 
   if (leaf.to.includes('#')) {
     return (
@@ -164,11 +164,11 @@ function ProduktDropdown() {
         <div
           id={menuId}
           role="menu"
-          className="absolute left-0 top-full z-40 max-h-[70vh] min-w-[280px] overflow-y-auto border border-[#d0c3a4]/18 py-2 shadow-[0_18px_40px_rgba(0,0,0,0.45)]"
+          className="absolute left-0 top-full z-40 max-h-[70vh] min-w-[280px] overflow-y-auto border border-[#e4cfa2]/18 py-2 shadow-[0_18px_40px_rgba(0,0,0,0.45)]"
           style={{ backgroundColor: `${LANDING_BG}f5`, backdropFilter: 'blur(16px)' }}
         >
           {group.to && (
-            <div className="mb-1 border-b border-[#d0c3a4]/10 px-1 pb-1">
+            <div className="mb-1 border-b border-[#e4cfa2]/10 px-1 pb-1">
               <LeafRow
                 leaf={{ label: `Alle · ${group.label}`, to: group.to }}
                 onNavigate={() => setOpen(false)}
@@ -179,7 +179,7 @@ function ProduktDropdown() {
             <LeafRow key={leaf.to + leaf.label} leaf={leaf} onNavigate={() => setOpen(false)} />
           ))}
           {group.sections?.map((section) => (
-            <div key={section.label} className="mt-1 border-t border-[#d0c3a4]/10 pt-1">
+            <div key={section.label} className="mt-1 border-t border-[#e4cfa2]/10 pt-1">
               <div className="flex items-center justify-between gap-2 px-3 py-1.5">
                 {section.to ? (
                   <Link
@@ -274,13 +274,13 @@ export function PublicDarkHeader({ overlay = false }: { overlay?: boolean }) {
 
   return (
     <header
-      className={`${overlay ? 'absolute bg-[rgba(2,4,10,0.55)]' : 'sticky bg-[rgba(2,4,10,0.82)]'} inset-x-0 top-0 z-30 border-b border-[#d0c3a4]/12 backdrop-blur-[18px]`}
+      className={`${overlay ? 'absolute bg-[rgba(2,4,10,0.55)]' : 'sticky bg-[rgba(2,4,10,0.82)]'} inset-x-0 top-0 z-30 border-b border-[#e4cfa2]/12 backdrop-blur-[18px]`}
       style={{ color: LANDING_TEXT }}
     >
       <div className="mx-auto flex h-[72px] max-w-[1500px] items-center gap-6 px-[4vw]">
         <Link
           to="/"
-          className="flex min-w-0 items-center gap-2 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d0c3a4]/60"
+          className="flex min-w-0 items-center gap-2 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e4cfa2]/60"
           style={{ color: LANDING_TEXT }}
         >
           <span className="truncate whitespace-nowrap text-[15px] font-medium tracking-tight">
@@ -297,7 +297,7 @@ export function PublicDarkHeader({ overlay = false }: { overlay?: boolean }) {
           <Link
             to={PUBLIC_CTA.to}
             data-hero-cta
-            className="rounded-full px-[18px] py-[11px] text-center text-[11px] font-semibold leading-[1.3] shadow-[0_0_30px_rgba(208,195,164,0.1)] transition hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d0c3a4]"
+            className="rounded-full px-[18px] py-[11px] text-center text-[11px] font-semibold leading-[1.3] shadow-[0_0_30px_rgba(208,195,164,0.1)] transition hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e4cfa2]"
             style={scanCtaStyle}
           >
             {PUBLIC_CTA.label}
@@ -314,7 +314,7 @@ export function PublicDarkHeader({ overlay = false }: { overlay?: boolean }) {
           </Link>
           <button
             type="button"
-            className="rounded-md p-1.5 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d0c3a4]/60"
+            className="rounded-md p-1.5 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e4cfa2]/60"
             style={{ color: LANDING_TEXT }}
             aria-expanded={open}
             aria-controls="public-dark-mobile-nav"
@@ -329,7 +329,7 @@ export function PublicDarkHeader({ overlay = false }: { overlay?: boolean }) {
       {open && (
         <div
           id="public-dark-mobile-nav"
-          className="max-h-[80vh] overflow-y-auto border-t border-[#d0c3a4]/12 px-6 py-4 backdrop-blur-md lg:hidden"
+          className="max-h-[80vh] overflow-y-auto border-t border-[#e4cfa2]/12 px-6 py-4 backdrop-blur-md lg:hidden"
           style={{ backgroundColor: `${LANDING_BG}fa` }}
           role="dialog"
           aria-label="Governance OS Navigation"
@@ -345,11 +345,11 @@ export function PublicDarkHeader({ overlay = false }: { overlay?: boolean }) {
                 onNavigate={() => setOpen(false)}
               />
             ))}
-            <div className="border-t border-[#d0c3a4]/12 pt-3">
+            <div className="border-t border-[#e4cfa2]/12 pt-3">
               <AccountNav onNavigate={() => setOpen(false)} />
             </div>
             {PUBLIC_NAV_GROUPS.filter((g) => g.id !== 'preise').map((group) => (
-              <div key={group.id} className="border-t border-[#d0c3a4]/10 pt-3">
+              <div key={group.id} className="border-t border-[#e4cfa2]/10 pt-3">
                 {group.to ? (
                   <NavLink
                     to={group.to}
@@ -364,7 +364,7 @@ export function PublicDarkHeader({ overlay = false }: { overlay?: boolean }) {
                   </p>
                 )}
                 {group.children.length > 0 && (
-                  <div className="mt-1 flex flex-col border-l border-[#d0c3a4]/15 pl-3">
+                  <div className="mt-1 flex flex-col border-l border-[#e4cfa2]/15 pl-3">
                     {group.children.map((leaf) => (
                       <LeafRow
                         key={leaf.to + leaf.label}
@@ -383,7 +383,7 @@ export function PublicDarkHeader({ overlay = false }: { overlay?: boolean }) {
                       {section.label}
                       {badgeLabel(section.badge) ? ` · ${badgeLabel(section.badge)}` : ''}
                     </p>
-                    <div className="flex flex-col border-l border-[#d0c3a4]/15 pl-3">
+                    <div className="flex flex-col border-l border-[#e4cfa2]/15 pl-3">
                       {section.children.map((leaf) => (
                         <LeafRow
                           key={leaf.to + leaf.label}

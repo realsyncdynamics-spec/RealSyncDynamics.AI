@@ -77,7 +77,7 @@ export function MainLanding() {
       <main ref={revealRoot} className="relative z-10">
         <section
           id="product"
-          className="relative isolate min-h-[min(92vh,920px)] overflow-hidden border-b border-[#d0c3a4]/10 lg:min-h-[min(90vh,880px)]"
+          className="relative isolate min-h-[min(92vh,920px)] overflow-hidden border-b border-[#e4cfa2]/10 lg:min-h-[min(90vh,880px)]"
         >
           {/* Graphite field — full bleed; Europe map sits in the right column */}
           <div
@@ -93,9 +93,9 @@ export function MainLanding() {
 
           <div className="relative mx-auto grid min-h-[inherit] max-w-[1440px] grid-cols-1 items-center gap-8 px-[4vw] py-10 lg:grid-cols-2 lg:gap-6 lg:py-12 xl:gap-10">
             {/* Left — copy + CTAs (mockup lock) */}
-            <div className="relative z-10 flex max-w-[560px] flex-col items-start text-left lg:max-w-[620px] lg:pr-4">
+            <div className="relative z-10 flex max-w-[640px] flex-col items-start text-left lg:max-w-[680px] lg:pr-4">
               <h1
-                className="relative w-full max-w-[18ch] leading-[1.05] tracking-[-0.035em]"
+                className="relative w-full leading-[1.05] tracking-[-0.035em]"
                 style={{
                   fontFamily: LANDING_SANS,
                   fontWeight: 650,
@@ -104,7 +104,7 @@ export function MainLanding() {
                 }}
               >
                 {HERO_HEADLINE.map((segments, line) => (
-                  <span key={line} className="block">
+                  <span key={line} className="block whitespace-nowrap">
                     {segments.map((segment, i) =>
                       segment.accent ? (
                         <em
@@ -148,14 +148,14 @@ export function MainLanding() {
                   to="/audit"
                   id="scan"
                   data-hero-cta
-                  className="inline-flex items-center justify-center gap-2 rounded-full px-[26px] py-[14px] text-[14px] font-semibold shadow-[0_0_0_1px_rgba(208,195,164,0.35)] transition hover:brightness-[1.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d0c3a4]"
+                  className="inline-flex items-center justify-center gap-2 rounded-full px-[26px] py-[14px] text-[14px] font-semibold shadow-[0_0_0_1px_rgba(208,195,164,0.35)] transition hover:brightness-[1.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e4cfa2]"
                   style={{ backgroundColor: LANDING_BUTTON, color: LANDING_BUTTON_TEXT }}
                 >
                   {HERO_SCAN_CTA_LABEL} <span aria-hidden="true">→</span>
                 </Link>
                 <OsEntryLink
                   to="/app"
-                  className="inline-flex items-center justify-center gap-2 rounded-full border px-[24px] py-[13px] text-[14px] font-medium transition hover:bg-[#d0c3a4]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d0c3a4]/60"
+                  className="inline-flex items-center justify-center gap-2 rounded-full border px-[24px] py-[13px] text-[14px] font-medium transition hover:bg-[#e4cfa2]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e4cfa2]/60"
                   style={{
                     borderColor: 'rgba(242,238,230,0.45)',
                     backgroundColor: 'rgba(8,10,14,0.55)',
@@ -199,7 +199,7 @@ export function MainLanding() {
 
         <LandingRoadmapSection />
 
-        <section className="border-t border-[#d0c3a4]/10 bg-black/80 py-[64px] lg:py-[72px]">
+        <section className="border-t border-[#e4cfa2]/10 bg-black/80 py-[64px] lg:py-[72px]">
           <div className="mx-auto max-w-3xl px-[4vw] text-center">
             <p
               className="text-[10px] tracking-[.25em]"
@@ -230,25 +230,25 @@ export function MainLanding() {
               </Link>
               <OsEntryLink
                 to="/app"
-                className="inline-flex items-center justify-center gap-2 rounded-full border px-7 py-3.5 font-medium transition hover:bg-[#d0c3a4]/10"
+                className="inline-flex items-center justify-center gap-2 rounded-full border px-7 py-3.5 font-medium transition hover:bg-[#e4cfa2]/10"
                 style={{ borderColor: `${LANDING_ACCENT}80`, color: '#e8dfd2' }}
               >
                 {HERO_DASHBOARD_CTA_LABEL}
               </OsEntryLink>
               <OsEntryLink
                 to="/app/evidence"
-                className="inline-flex items-center justify-center gap-2 rounded-full border px-7 py-3.5 font-medium transition hover:bg-[#d0c3a4]/10"
+                className="inline-flex items-center justify-center gap-2 rounded-full border px-7 py-3.5 font-medium transition hover:bg-[#e4cfa2]/10"
                 style={{ borderColor: `${LANDING_ACCENT}80`, color: '#e8dfd2' }}
               >
                 Evidence-Preview
               </OsEntryLink>
             </div>
             <p className="mt-4 text-[11px]" style={{ color: LANDING_MUTED }}>
-              <Link to="/faq" className="underline decoration-[#d0c3a4]/40 underline-offset-2">
+              <Link to="/faq" className="underline decoration-[#e4cfa2]/40 underline-offset-2">
                 FAQ
               </Link>
               {' · '}
-              <Link to="/#pricing" className="underline decoration-[#d0c3a4]/40 underline-offset-2">
+              <Link to="/#pricing" className="underline decoration-[#e4cfa2]/40 underline-offset-2">
                 Preise
               </Link>
             </p>
@@ -257,7 +257,7 @@ export function MainLanding() {
       </main>
 
       <footer
-        className="relative z-10 flex flex-col items-center justify-center gap-4 border-t border-[#d0c3a4]/12 px-[4vw] py-[28px] text-[11px] sm:flex-row sm:justify-between"
+        className="relative z-10 flex flex-col items-center justify-center gap-4 border-t border-[#e4cfa2]/12 px-[4vw] py-[28px] text-[11px] sm:flex-row sm:justify-between"
         style={{ color: 'rgba(255,255,255,0.55)' }}
       >
         <span>© 2026 RealSync Dynamics.AI</span>

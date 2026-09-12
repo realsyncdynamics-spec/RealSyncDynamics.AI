@@ -156,7 +156,7 @@ function ModestZoom({ controls }: { controls: MutableRefObject<LandingEarthContr
       e.preventDefault();
       e.stopPropagation();
       controls.current.targetZoom *= e.deltaY > 0 ? 0.95 : 1.05;
-      controls.current.targetZoom = THREE.MathUtils.clamp(controls.current.targetZoom, 0.82, 1.35);
+      controls.current.targetZoom = THREE.MathUtils.clamp(controls.current.targetZoom, 0.95, 1.28);
       invalidate();
     };
     const onTouchMove = (e: TouchEvent) => {
@@ -167,8 +167,8 @@ function ModestZoom({ controls }: { controls: MutableRefObject<LandingEarthContr
       if (pinchDist != null) {
         controls.current.targetZoom = THREE.MathUtils.clamp(
           controls.current.targetZoom * (dist / pinchDist),
-          0.82,
-          1.35,
+          0.95,
+          1.28,
         );
         invalidate();
       }
@@ -245,7 +245,7 @@ function InteractiveEarth({
 
   useFrame((_, delta) => {
     const c = controls.current;
-    c.targetZoom = THREE.MathUtils.clamp(c.targetZoom, 0.82, 1.35);
+    c.targetZoom = THREE.MathUtils.clamp(c.targetZoom, 0.95, 1.28);
     c.zoom = THREE.MathUtils.damp(c.zoom, c.targetZoom, 8, delta);
 
     if (!reducedMotion) {
@@ -257,11 +257,13 @@ function InteractiveEarth({
         if (Math.abs(c.velY) < 0.0002 && Math.abs(c.velX) < 0.0002) {
           c.velY = 0;
           c.velX = 0;
-          c.rotY += delta * 0.028;
+          // Gentle Europe-locked sway — never spin to Americas/Asia.
+          c.rotY += Math.sin(performance.now() * 0.00025) * delta * 0.012;
         }
       }
     }
-    c.rotX = THREE.MathUtils.clamp(c.rotX, -0.75, 0.75);
+    c.rotX = THREE.MathUtils.clamp(c.rotX, -0.35, 0.45);
+    c.rotY = THREE.MathUtils.clamp(c.rotY, -0.42, 0.08);
 
     if (wrap.current) {
       wrap.current.rotation.x = c.rotX;
@@ -354,8 +356,8 @@ export function HeroEarthBackdropScene({ reducedMotion = false }: HeroEarthBackd
     rotY: -0.18,
     velX: 0,
     velY: 0,
-    zoom: 1,
-    targetZoom: 1,
+    zoom: 1.08,
+    targetZoom: 1.08,
     pointer: { x: 0, y: 0 },
     dragging: false,
     hovering: false,

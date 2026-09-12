@@ -23,7 +23,8 @@ Flipping `status` moves an item between Live / Preview / Coming Soon in the UI.
 2. Preview / coming-soon items must show a badge — never as unqualified PRODUCT.
 3. No fake KPIs. No yearly Stripe prices until Stripe prices exist.
 4. Interactive Governance Sphere stays off public `/`. Hero visual is photoreal
-   Earth as full-bleed backdrop (`hero-earth-scenery` / HeroEarthBackdrop) —
+   Earth as full-bleed backdrop (`hero-earth-scenery` / HeroEarthBackdrop) with
+   deep-space starfield + distant Mars/Jupiter/Saturn (occasional Moon) —
    no Sphere HUD, no continent UI chrome, pointer-events-none behind Dominik copy.
 5. Canonical dashboard remains `/app` → ComplianceStatusDashboard.
    Auth: `/welcome` is the gate; `?next=` resumes after login (including

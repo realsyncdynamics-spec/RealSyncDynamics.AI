@@ -59,6 +59,12 @@ describe('Governance Sphere — demo contract', () => {
     expect(landing).toContain('HeroEarthBackdrop');
     expect(backdrop).toContain('data-hero-visual="earth-universe"');
     expect(backdrop).toContain('data-landing-earth');
+    expect(backdrop).toContain('data-hero-scenery="starfield-planets"');
+    expect(backdrop).toContain('data-planet="mars"');
+    expect(backdrop).toContain('data-planet="jupiter"');
+    expect(backdrop).toContain('data-planet="saturn"');
+    expect(backdrop).toContain('data-hero-scenery="moon"');
+    expect(backdrop).toContain('pointer-events-none');
     expect(backdrop).not.toContain('GovernanceSphereHost');
     expect(backdrop).not.toContain('SPHERE_DEMO_LABEL');
     expect(scene).toContain('PhotorealEarthMesh');

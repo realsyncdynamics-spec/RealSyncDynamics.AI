@@ -49,7 +49,7 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     status: 'live',
     group: 'surface',
     description:
-      'Dominik Dark/Gold Hero (AI Governance, Running in Real Time) — cream copy on photoreal Earth backdrop; scan → /audit; Starter/Growth/Agency pricing. No Sphere HUD.',
+      'Dominik Dark/Gold Hero (AI Governance, Running in Real Time) — cream copy on photoreal Earth backdrop with starfield + distant Mars/Jupiter/Saturn; scan → /audit; Starter/Growth/Agency pricing. No Sphere HUD.',
     route: '/',
     evidence: [
       'src/pages/MainLanding.tsx',
@@ -230,13 +230,14 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     status: 'live',
     group: 'visual',
     description:
-      'Public `/` full-bleed HeroEarthBackdrop (8K day+night scenery, pointer-events-none) — Earth behind Dominik copy, no Sphere widget, no continent HUD.',
+      'Public `/` full-bleed HeroEarthBackdrop (8K day+night scenery, CSS starfield + distant Mars/Jupiter/Saturn, occasional Moon, pointer-events-none) — Earth behind Dominik copy, no Sphere widget, no continent HUD.',
     route: '/',
     evidence: [
       'src/components/landing/HeroEarthBackdrop.tsx',
       'src/components/landing/HeroEarthBackdropScene.tsx',
       'src/pages/MainLanding.tsx',
       'src/components/visual/earthTextures.ts',
+      'src/index.css#hero-earth-backdrop',
     ],
     showOnRoadmap: false,
   },

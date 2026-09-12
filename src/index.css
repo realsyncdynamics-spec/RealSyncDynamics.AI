@@ -1050,16 +1050,103 @@ html, body {
 /* ── Public landing Earth — passive full-bleed backdrop; CTAs stay clickable ── */
 .hero-earth-backdrop,
 .hero-earth-backdrop [data-landing-earth],
-.hero-earth-backdrop [data-landing-earth] canvas {
+.hero-earth-backdrop [data-landing-earth] canvas,
+.hero-earth-stars,
+.hero-earth-planets,
+.hero-earth-moon {
   pointer-events: none;
 }
 
-/* Static fallback: night Europe crop — keep land/city lights readable */
+/* Static fallback: night Europe crop — keep land/city lights readable.
+   Upper sky is opened so CSS starfield/planets are not buried under the
+   baked-in void of europe-globe. */
 .hero-earth-static {
   filter: saturate(1.05) brightness(0.92) contrast(1.1);
+  -webkit-mask-image:
+    radial-gradient(ellipse 78% 72% at 52% 72%, #000 0%, #000 42%, transparent 72%),
+    linear-gradient(180deg, transparent 0%, transparent 8%, #000 38%, #000 100%);
+  mask-image:
+    radial-gradient(ellipse 78% 72% at 52% 72%, #000 0%, #000 42%, transparent 72%),
+    linear-gradient(180deg, transparent 0%, transparent 8%, #000 38%, #000 100%);
+  -webkit-mask-composite: source-in;
+  mask-composite: intersect;
+}
+
+/* Deep-space scenery sits above Earth but only paints the open sky */
+.hero-earth-space-scenery {
+  z-index: 2;
+  -webkit-mask-image: linear-gradient(
+    180deg,
+    #000 0%,
+    #000 22%,
+    rgba(0, 0, 0, 0.75) 36%,
+    rgba(0, 0, 0, 0.25) 52%,
+    transparent 68%
+  );
+  mask-image: linear-gradient(
+    180deg,
+    #000 0%,
+    #000 22%,
+    rgba(0, 0, 0, 0.75) 36%,
+    rgba(0, 0, 0, 0.25) 52%,
+    transparent 68%
+  );
 }
 
 /* WebGL mesh already grades gold; avoid sepia wash that hides continents */
 .hero-earth-canvas {
   filter: none;
+  z-index: 1;
+}
+
+/* Distant CSS planets sit in the dark sky above Earth curvature */
+.hero-planet {
+  z-index: 1;
+  will-change: opacity;
+}
+
+/* Occasional Moon — long cycle: enter / drift / leave (right sky, clear of H1) */
+@keyframes hero-moon-drift {
+  0%,
+  12% {
+    opacity: 0;
+    transform: translate3d(8vw, 2vh, 0);
+  }
+  22% {
+    opacity: 0.55;
+    transform: translate3d(2vw, 0, 0);
+  }
+  48% {
+    opacity: 0.62;
+    transform: translate3d(-10vw, -1.5vh, 0);
+  }
+  62% {
+    opacity: 0.2;
+    transform: translate3d(-18vw, -2vh, 0);
+  }
+  72%,
+  100% {
+    opacity: 0;
+    transform: translate3d(-22vw, -2.5vh, 0);
+  }
+}
+
+.hero-earth-moon-drift {
+  top: 6%;
+  right: 18%;
+  width: clamp(16px, 2vw, 26px);
+  height: clamp(16px, 2vw, 26px);
+  z-index: 1;
+  /* Negative delay so first paint can catch the Moon mid-pass */
+  animation: hero-moon-drift 72s ease-in-out -18s infinite;
+}
+
+.hero-earth-moon-drift .hero-earth-moon-disc {
+  inset: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-earth-moon-drift {
+    animation: none !important;
+  }
 }

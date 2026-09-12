@@ -8,12 +8,10 @@ import { MainLanding } from '../../src/pages/MainLanding';
 /**
  * Sichert den **einen** kanonischen Scan-Einstieg ab.
  *
- * Europe-OS Hero: Primary CTA „Free Audit starten“ → `/audit`.
- * Domain-Capture bleibt auf der AuditLanding-Seite.
+ * Dominik Dark/Gold Hero: Domain-Form → `/audit` (optional `?domain=`).
  */
 
 const AUDIT_PLATZHALTER = 'AUDIT-SEITE';
-const APP_PLATZHALTER = 'APP-DASHBOARD';
 
 function landingRendern() {
   return render(
@@ -22,7 +20,7 @@ function landingRendern() {
         <Route path="/" element={<MainLanding />} />
         <Route path="/audit" element={<div>{AUDIT_PLATZHALTER}</div>} />
         <Route path="/scan" element={<div>ZWEITER-TRICHTER</div>} />
-        <Route path="/app" element={<div>{APP_PLATZHALTER}</div>} />
+        <Route path="/app" element={<div>APP-DASHBOARD</div>} />
         <Route path="/welcome" element={<div>WELCOME</div>} />
       </Routes>
     </MemoryRouter>,
@@ -30,21 +28,22 @@ function landingRendern() {
 }
 
 describe('Kanonischer Scan-Einstieg', () => {
-  it('führt Free Audit starten der Startseite nach /audit', () => {
+  it('führt Kostenlosen Governance Scan der Startseite nach /audit', () => {
     landingRendern();
 
-    const cta = document.querySelector('#scan') as HTMLAnchorElement;
-    expect(cta).toBeTruthy();
-    expect(cta.getAttribute('href')).toBe('/audit');
-    fireEvent.click(cta);
+    const form = document.querySelector('#scan') as HTMLFormElement;
+    expect(form).toBeTruthy();
+    fireEvent.submit(form);
     expect(screen.getByText(AUDIT_PLATZHALTER)).toBeTruthy();
   });
 
-  it('zeigt Live Dashboard ansehen Richtung /app (Welcome-Gate für Gäste)', () => {
-    const quelle = readFileSync('src/pages/MainLanding.tsx', 'utf8');
-    expect(quelle).toContain('to="/app"');
-    expect(quelle).toContain('HERO_DASHBOARD_CTA_LABEL');
-    expect(quelle).toContain('OsEntryLink');
+  it('trägt Domain-Query an /audit weiter', () => {
+    landingRendern();
+
+    const input = screen.getByLabelText('Ihre Website') as HTMLInputElement;
+    fireEvent.change(input, { target: { value: 'https://example.com' } });
+    fireEvent.submit(document.querySelector('#scan') as HTMLFormElement);
+    expect(screen.getByText(AUDIT_PLATZHALTER)).toBeTruthy();
   });
 
   it('zeigt keinen Verweis mehr auf den zurückgezogenen Trichter /scan', () => {

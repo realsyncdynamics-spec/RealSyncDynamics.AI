@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { HERO_HEADLINE_TEST_SUBSTRING, HERO_HEADLINE_LINES } from '../src/components/governance-frontend/hero-content';
-import { LIVE_CAPABILITIES, BUILDING_CAPABILITIES } from '../src/config/platform-capabilities';
+import { PLATFORM_LIVE_ITEMS } from '../src/product/implementation-status';
 
 /**
  * E2E für die öffentlichen Einstiegsseiten.
@@ -124,38 +124,29 @@ test.describe('Governance-AI-Landing (/)', () => {
       await expect(h1).toContainText(line);
     }
 
-    // P0: Free Audit → `/audit`, secondary → Live Dashboard `/app`.
+    // P0: Scan-Submit → `/audit`, secondary outline → Governance OS.
     await expect(
-      page.getByRole('link', { name: /Free Audit starten/i }).first(),
+      page.getByRole('button', { name: /Kostenlosen Governance Scan starten/i }).first(),
     ).toBeVisible();
     await expect(
-      page.getByRole('link', { name: /Live Dashboard ansehen/i }).first(),
+      page.getByRole('link', { name: /Explore the Governance OS|Governance OS ansehen/i }).first(),
     ).toBeVisible();
   });
 
-  test.skip('Kennzahlen / Sphere im Hero sind als Demo gekennzeichnet', async ({ page }) => {
-    // Public `/`: interactive Earth backdrop — no Sphere DEMO HUD / KPIs.
-    await expect(page.locator('[data-governance-sphere]')).toHaveCount(0);
-    await expect(page.getByText(/DEMO\s*\/\s*SIMULATED|BEISPIELANSICHT/i)).toHaveCount(0);
+  test('Kennzahlen / Sphere im Hero sind als Demo gekennzeichnet', async ({ page }) => {
+    // Truth Layer: anonymous visitors have no tenant — no live production counts.
+    await expect(page.getByText(/DEMO\s*\/\s*SIMULATED|BEISPIELANSICHT/i).first()).toBeVisible();
+    await expect(page.locator('[data-governance-sphere]')).toBeVisible();
+    await expect(page.getByText(/^Live\b/)).toHaveCount(0);
   });
 
   test('Plattform-Sektion rendert die Faehigkeitsquelle, nicht eine eigene Liste', async ({ page }) => {
     const platform = page.locator('#platform');
     await expect(platform.getByRole('heading', { name: /^Eine Runtime\./i })).toBeVisible();
 
-    // Die frueher hier erwarteten Labels ('Policy Engine', 'Runtime
-    // Monitoring') waren aus einer Marketingliste abgeschrieben, die es nicht
-    // mehr gibt. Gepruef wird jetzt gegen platform-capabilities.ts: Was dort
-    // steht, muss auf der Seite stehen — und umgekehrt.
-    for (const cap of LIVE_CAPABILITIES) {
+    // Registry SSoT: nur LIVE items mit showOnPlatform.
+    for (const cap of PLATFORM_LIVE_ITEMS) {
       await expect(platform.getByText(cap.name, { exact: true })).toBeVisible();
-    }
-
-    for (const cap of BUILDING_CAPABILITIES) {
-      await expect(platform.getByText(cap.name, { exact: true })).toBeVisible();
-    }
-    if (BUILDING_CAPABILITIES.length > 0) {
-      await expect(platform.getByText('IN ENTWICKLUNG')).toBeVisible();
     }
   });
 

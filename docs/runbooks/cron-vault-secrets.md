@@ -26,6 +26,11 @@ für PostgREST/Admin genutzt werden — nie als Inbound-Credential.
 `verify_jwt = false` bleibt (Drift-Guard). Ohne passenden Cron-Bearer bleibt die
 Function nicht öffentlich aufrufbar.
 
+Git-Align: `20260912180000_cron_trio_dedicated_keys.sql` schreibt die vier
+Job-Kommandos auf die `cron_*` Vault-Namen (Upsert per Jobname). Ältere
+Migrationen (`20260820000000` …) bleiben historisch auf `service_role_key` —
+nach Apply dieser Migration muss `cron.job.command` die `cron_*` Namen tragen.
+
 ---
 
 ## Historischer Befund (2026-09-06)
@@ -57,9 +62,11 @@ Das ist kein Nebenläufiges, sondern zugesagte Funktion:
 - **`memory-decay-worker`** — der temporale Verfall aus RFC-003. Ohne ihn
   verfällt kein Memory.
 
-## Behebung / Abgleich
+## Behebung / Abgleich (Dominik — Dashboard)
 
-Im SQL-Editor des Produktionsprojekts (Werte **nicht** in Issues/PRs/Chats):
+Im SQL-Editor / Vault und unter Function Secrets des Produktionsprojekts
+(Werte **nicht** in Issues/PRs/Chats). Nur anlegen, wenn der Eintrag fehlt —
+bereits live gesetzte `cron_*` Keys nicht überschreiben.
 
 ```sql
 -- Nur anlegen, wenn der Eintrag fehlt. Werte nicht aus dem Repo übernehmen.
@@ -68,11 +75,13 @@ select vault.create_secret('<cron-key>', 'cron_governance_monitoring_key');
 select vault.create_secret('<cron-key>', 'cron_memory_decay_key');
 ```
 
-Dieselben Werte als Function Secrets setzen:
+Dieselben Werte als Function Secrets setzen (Namen only):
 
-- `CRON_SCHEDULER_DISPATCH_KEY`
-- `CRON_GOVERNANCE_MONITORING_KEY`
-- `CRON_MEMORY_DECAY_KEY`
+| Vault (pg_cron) | Function Secret (Edge) |
+|---|---|
+| `cron_scheduler_dispatch_key` | `CRON_SCHEDULER_DISPATCH_KEY` |
+| `cron_governance_monitoring_key` | `CRON_GOVERNANCE_MONITORING_KEY` |
+| `cron_memory_decay_key` | `CRON_MEMORY_DECAY_KEY` |
 
 `dispatch_cron_function` liest den Vault-Namen zur Laufzeit über
 `public.get_app_secret(...)`. Die Edge Function liest das Function Secret.

@@ -79,4 +79,21 @@ describe('Cron-Trio: dedizierter CRON_* Key, fail-closed', () => {
     expect(block).toContain('CRON_MEMORY_DECAY_KEY');
     expect(block).not.toMatch(/Service-Role-Bearer/);
   });
+
+  it('Migration 20260912180000 stellt Trio-Jobs auf Vault cron_* um', () => {
+    const sql = readFileSync(
+      'supabase/migrations/20260912180000_cron_trio_dedicated_keys.sql',
+      'utf8',
+    );
+    expect(sql).toContain("'cron_scheduler_dispatch_key'");
+    expect(sql).toContain("'cron_governance_monitoring_key'");
+    expect(sql).toContain("'cron_memory_decay_key'");
+    expect(sql).toContain("'scan-scheduler-dispatch'");
+    expect(sql).toContain("'governance-monitoring-daily'");
+    expect(sql).toContain("'governance-monitoring-hourly'");
+    expect(sql).toContain("'memory-decay-hourly'");
+    expect(sql).toContain('dispatch_cron_function');
+    // Kein Re-Wire auf den kompromittierten Inbound-Vertrag.
+    expect(sql).not.toMatch(/'service_role_key'/);
+  });
 });

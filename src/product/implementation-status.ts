@@ -316,6 +316,75 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     evidence: ['src/components/governance-os/ComplianceStatusDashboard.tsx'],
     showOnRoadmap: true,
   },
+  {
+    id: 'agent-os-command-center',
+    name: 'RealSync Agent OS™ — Command Center Slice',
+    status: 'preview',
+    group: 'runtime',
+    description:
+      'Intent „Was möchtest du erledigen?“ auf /app — Compliance 10-Artefakt-Session via realsync-os Kernel. Kein zweites Dashboard.',
+    route: '/app/dashboard',
+    evidence: [
+      'docs/product/realsync-agent-os.md',
+      'src/features/governance/agent-os/AgentOsPanel.tsx',
+      'src/core/realsync-os/complianceArtifacts.ts',
+      'test/core/realsync-os/agent-os-slice.test.ts',
+    ],
+    showOnRoadmap: true,
+  },
+  {
+    id: 'agent-os-mesh-compliance',
+    name: 'Agent OS — Compliance Specialist',
+    status: 'preview',
+    group: 'runtime',
+    description:
+      'Einziger Mesh-Agent mit Preview-Lauf; SiteOS evaluate_governance wenn gebunden. Production bleibt approval-pflichtig.',
+    route: '/app/dashboard',
+    evidence: ['src/core/realsync-os/agentMesh.ts', 'src/core/realsync-os/planner.ts'],
+    showOnRoadmap: true,
+  },
+  {
+    id: 'agent-os-mesh-specialists',
+    name: 'Agent OS — Specialist Mesh (non-compliance)',
+    status: 'coming-soon',
+    group: 'runtime',
+    description:
+      'Product, Marketing, Sales, Growth, QA, Pricing, Evidence, Security, DevOps, … — Roster sichtbar, nicht ausführbar.',
+    evidence: ['src/core/realsync-os/agentMesh.ts', 'docs/product/realsync-agent-os.md'],
+    showOnRoadmap: true,
+  },
+  {
+    id: 'agent-os-chrome-side-panel',
+    name: 'Agent OS — Chrome Side Panel',
+    status: 'coming-soon',
+    group: 'runtime',
+    description: 'Analyze Page / GDPR / AI Act / Evidence — Spec only, keine Fake-Extension.',
+    evidence: ['docs/product/realsync-agent-os.md'],
+    showOnRoadmap: true,
+  },
+  {
+    id: 'agent-os-hostinger-workers',
+    name: 'Agent OS — Hostinger Worker Runtime',
+    status: 'coming-soon',
+    group: 'runtime',
+    description: 'Zukünftige Worker-Runtime; Cloudflare Edge bleibt Deploy-Pfad.',
+    evidence: ['docs/product/realsync-agent-os.md'],
+    showOnRoadmap: true,
+  },
+  {
+    id: 'agent-os-product-evolution',
+    name: 'Agent OS — Product Evolution Integrity Loop',
+    status: 'preview',
+    group: 'runtime',
+    description:
+      'Read-only Integrity Panel (Pricing/Entitlements). Dominik approved — kein Auto-Merge von PRs.',
+    route: '/app/dashboard',
+    evidence: [
+      'src/features/governance/agent-os/AgentOsPanel.tsx',
+      'src/core/billing/useEntitlements.ts',
+    ],
+    showOnRoadmap: true,
+  },
 ] as const;
 
 export const LIVE_IMPLEMENTATION = IMPLEMENTATION_ITEMS.filter((i) => i.status === 'live');

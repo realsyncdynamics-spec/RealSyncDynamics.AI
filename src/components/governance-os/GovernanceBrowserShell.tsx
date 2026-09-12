@@ -56,6 +56,15 @@ export function GovernanceBrowserShell({ children }: GovernanceBrowserShellProps
     [navigate],
   );
 
+  const handleSubmitIntent = useCallback(
+    (text: string) => {
+      const trimmed = text.trim();
+      if (!trimmed) return;
+      navigate('/app/dashboard', { state: { agentOsIntent: trimmed } });
+    },
+    [navigate],
+  );
+
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
       if (!(e.metaKey || e.ctrlKey)) return;
@@ -125,6 +134,7 @@ export function GovernanceBrowserShell({ children }: GovernanceBrowserShellProps
         onClose={() => setCommandCenterOpen(false)}
         items={commandItems}
         onRun={handleRunCommand}
+        onSubmitIntent={handleSubmitIntent}
       />
     </div>
   );

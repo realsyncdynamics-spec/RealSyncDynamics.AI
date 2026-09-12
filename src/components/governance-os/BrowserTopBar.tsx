@@ -2,6 +2,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Sparkles, Menu, X, FileCheck2, FileBarChart2, Search, LogOut } from 'lucide-react';
 import { GovernanceAddressBar } from './GovernanceAddressBar';
 import { useSupabaseAuth } from '../../features/supabase/SupabaseAuthContext';
+import { OS_CREAM_BTN, OS_FOCUS_RING } from './osChrome';
 
 interface BrowserTopBarProps {
   mobileMenuOpen: boolean;
@@ -34,7 +35,7 @@ export function BrowserTopBar({
       {/* Mobile-Menü Toggle — system drawer entry */}
       <button
         onClick={onToggleMobile}
-        className="lg:hidden text-titanium-400 hover:text-titanium-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#22d3ee]/50"
+        className={`lg:hidden text-titanium-400 hover:text-titanium-100 focus-visible:outline-none ${OS_FOCUS_RING}`}
         aria-label={mobileMenuOpen ? 'Systemmenü schließen' : 'Systemmenü öffnen'}
         aria-expanded={mobileMenuOpen}
       >
@@ -43,14 +44,14 @@ export function BrowserTopBar({
 
       {/* Logo + Produktname — OS system-bar identity */}
       <Link to="/app" className="flex items-center gap-2 shrink-0">
-        <div className="w-7 h-7 bg-gradient-to-br from-[#22d3ee] to-[#0ea5e9] flex items-center justify-center">
+        <div className="w-7 h-7 bg-[#e4cfa2] flex items-center justify-center">
           <Sparkles className="h-4 w-4 text-obsidian-950" />
         </div>
         <div className="hidden sm:flex flex-col leading-none">
           <span className="font-display font-bold text-[11px] text-titanium-50 tracking-tight">
             Governance OS
           </span>
-          <span className="font-mono text-[9px] text-[#22d3ee]/70 tracking-wide">
+          <span className="font-mono text-[9px] text-[#e4cfa2]/80 tracking-wide">
             SYSTEM · DSGVO · EU AI Act
           </span>
         </div>
@@ -64,10 +65,10 @@ export function BrowserTopBar({
         <button
           type="button"
           onClick={onOpenCommandCenter}
-          className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-titanium-300 bg-obsidian-800 border border-titanium-800 hover:border-[#22d3ee]/40 hover:text-titanium-50 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#22d3ee]/50"
+          className={`hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-titanium-300 bg-obsidian-800 border border-titanium-800 hover:border-[#e4cfa2]/40 hover:text-titanium-50 transition-colors focus-visible:outline-none ${OS_FOCUS_RING}`}
           aria-label="Command Center öffnen"
         >
-          <Search className="h-3.5 w-3.5 text-[#22d3ee]/80" />
+          <Search className="h-3.5 w-3.5 text-[#e4cfa2]/80" />
           <span className="hidden lg:inline">Suchen</span>
           <kbd className="ml-0.5 hidden md:inline font-mono text-[9px] text-titanium-600 border border-titanium-800 px-1 py-0.5">
             ⌘K
@@ -95,7 +96,7 @@ export function BrowserTopBar({
         </button>
         <button
           onClick={onOpenAssistant}
-          className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-cyan-300 bg-obsidian-800 border border-cyan-900 hover:border-cyan-700 hover:bg-obsidian-700 transition-colors"
+          className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium ${OS_CREAM_BTN} transition-colors`}
         >
           <Sparkles className="h-3.5 w-3.5" />
           <span className="hidden sm:inline">Assistent</span>

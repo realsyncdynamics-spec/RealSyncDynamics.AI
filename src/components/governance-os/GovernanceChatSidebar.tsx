@@ -1,7 +1,7 @@
 // GovernanceChatSidebar — RealSyncDynamicsAI command workspace
 //
 // UX model: xAI-style single assistant surface, adapted to the existing
-// RealSyncDynamicsAI obsidian/cyan design language. The assistant is the
+// RealSyncDynamicsAI Dark/Gold/Cream OS chrome. The assistant is the
 // primary command surface; product-specific actions are exposed through a
 // compact + menu instead of competing primary CTAs.
 import React, { useCallback, useRef, useState } from 'react';
@@ -154,11 +154,11 @@ export function GovernanceChatSidebar({ open, onClose }: GovernanceChatSidebarPr
     <aside className="hidden lg:flex w-[380px] shrink-0 flex-col bg-obsidian-900 border-l border-titanium-900 h-full overflow-hidden">
       <div className="h-12 shrink-0 flex items-center justify-between px-4 border-b border-titanium-900">
         <div className="flex items-center gap-2">
-          <Sparkles className="h-4 w-4 text-cyan-400" />
+          <Sparkles className="h-4 w-4 text-[#e4cfa2]" />
           <span className="font-mono text-xs font-semibold tracking-widest text-titanium-100 uppercase">RealSync AI</span>
         </div>
         <div className="flex items-center gap-1">
-          <button onClick={() => setCommandMenuOpen((v) => !v)} className="p-1.5 text-titanium-500 hover:text-cyan-400 hover:bg-obsidian-800 transition-colors" aria-label="Werkzeuge öffnen" title="Werkzeuge">
+          <button onClick={() => setCommandMenuOpen((v) => !v)} className="p-1.5 text-titanium-500 hover:text-[#e4cfa2] hover:bg-obsidian-800 transition-colors" aria-label="Werkzeuge öffnen" title="Werkzeuge">
             <Plus className="h-4 w-4" />
           </button>
           <button onClick={() => setActiveConversationId(null)} className="p-1.5 text-titanium-500 hover:text-titanium-200 hover:bg-obsidian-800 transition-colors" aria-label="Neue Konversation" title="Neue Konversation">
@@ -176,7 +176,7 @@ export function GovernanceChatSidebar({ open, onClose }: GovernanceChatSidebarPr
           <div className="grid gap-1 mt-1">
             {COMMAND_ACTIONS.map(({ label, description, icon: Icon, to }) => (
               <button key={label} onClick={() => navigate(to)} className="flex items-center gap-3 rounded-lg px-2.5 py-2.5 text-left hover:bg-obsidian-800 transition-colors">
-                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-md bg-cyan-400/10 border border-cyan-400/20"><Icon className="h-4 w-4 text-cyan-400" /></span>
+                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-md bg-[#e4cfa2]/10 border border-[#e4cfa2]/20"><Icon className="h-4 w-4 text-[#e4cfa2]" /></span>
                 <span className="min-w-0"><span className="block text-xs font-medium text-titanium-100">{label}</span><span className="block text-[10px] text-titanium-600 truncate">{description}</span></span>
               </button>
             ))}
@@ -187,7 +187,7 @@ export function GovernanceChatSidebar({ open, onClose }: GovernanceChatSidebarPr
       <div className="relative shrink-0 border-b border-titanium-900">
         <button onClick={() => setAgentDropdownOpen((v) => !v)} className="w-full h-9 flex items-center justify-between px-4 text-xs text-titanium-200 hover:bg-obsidian-800 transition-colors">
           <div className="flex items-center gap-2">
-            <ShieldCheck className="h-3.5 w-3.5 text-cyan-400" />
+            <ShieldCheck className="h-3.5 w-3.5 text-[#e4cfa2]" />
             <span className="font-mono">{currentAgent.label}</span>
             <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 bg-teal-400 block" /><span className="font-mono text-[10px] text-teal-400">EU-lokal</span></span>
           </div>
@@ -219,7 +219,7 @@ export function GovernanceChatSidebar({ open, onClose }: GovernanceChatSidebarPr
                 <div className="flex-1 min-w-0"><div className="flex items-center justify-between gap-2"><span className="text-xs text-titanium-100 truncate font-medium">{conv.title}</span><span className="font-mono text-[9px] text-titanium-600 shrink-0">{conv.timestamp}</span></div><span className="font-mono text-[10px] text-titanium-500 truncate block">{conv.agent}</span></div>
               </button>
             ))}
-            <button onClick={() => setActiveConversationId(null)} className="w-full flex items-center gap-2 px-4 py-2.5 text-xs text-cyan-400 hover:bg-obsidian-800 transition-colors border-t border-titanium-900"><Plus className="h-3.5 w-3.5" /><span className="font-mono">Neue Konversation</span></button>
+            <button onClick={() => setActiveConversationId(null)} className="w-full flex items-center gap-2 px-4 py-2.5 text-xs text-[#e4cfa2] hover:bg-obsidian-800 transition-colors border-t border-titanium-900"><Plus className="h-3.5 w-3.5" /><span className="font-mono">Neue Konversation</span></button>
           </div>
         )}
       </div>
@@ -238,7 +238,7 @@ export function GovernanceChatSidebar({ open, onClose }: GovernanceChatSidebarPr
       <div className="shrink-0 border-t border-titanium-900 px-4 py-2.5 bg-obsidian-950">
         <div className="flex items-center gap-2 mb-2">
           <span className="font-mono text-[9px] uppercase tracking-widest text-titanium-600">Kontext</span>
-          <span className="bg-obsidian-800 border border-titanium-800 px-2 py-0.5 text-[10px] font-mono text-cyan-400">{context.label}</span>
+          <span className="bg-obsidian-800 border border-titanium-800 px-2 py-0.5 text-[10px] font-mono text-[#e4cfa2]">{context.label}</span>
         </div>
         <div className="flex flex-wrap gap-1.5">
           {context.quickActions.map((action) => (
@@ -248,11 +248,11 @@ export function GovernanceChatSidebar({ open, onClose }: GovernanceChatSidebarPr
       </div>
 
       <div className="shrink-0 border-t border-titanium-900 px-4 pt-3 pb-3 bg-obsidian-950">
-        <div className="rounded-2xl border border-titanium-800 bg-obsidian-900 focus-within:border-cyan-500/60 focus-within:ring-1 focus-within:ring-cyan-500/20 transition-colors overflow-hidden">
+        <div className="rounded-2xl border border-titanium-800 bg-obsidian-900 focus-within:border-[#e4cfa2]/60 focus-within:ring-1 focus-within:ring-[#e4cfa2]/20 transition-colors overflow-hidden">
           <textarea ref={textareaRef} value={inputValue} onChange={handleInputChange} onKeyDown={handleKeyDown} placeholder="Was möchtest du erstellen, prüfen oder automatisieren?" rows={2} className="w-full min-h-[54px] max-h-[120px] resize-none bg-transparent px-3.5 pt-3 text-sm text-titanium-100 placeholder-titanium-600 outline-none font-mono" />
           <div className="flex items-center justify-between px-2 pb-2">
-            <button onClick={() => setCommandMenuOpen((v) => !v)} className="grid h-8 w-8 place-items-center rounded-full text-titanium-500 hover:text-cyan-400 hover:bg-obsidian-800 transition-colors" aria-label="Tools hinzufügen" title="Tools"><Plus className="h-4 w-4" /></button>
-            <div className="flex items-center gap-1.5"><span className="font-mono text-[9px] text-titanium-600">EU-lokal · Governance aktiv</span><button onClick={handleSend} disabled={!inputValue.trim() || isLoading} className="grid h-8 w-8 place-items-center rounded-full bg-cyan-400 text-[rgb(3,7,18)] hover:bg-cyan-300 disabled:opacity-30 disabled:cursor-not-allowed transition-colors" aria-label="Senden"><Send className="h-3.5 w-3.5" /></button></div>
+            <button onClick={() => setCommandMenuOpen((v) => !v)} className="grid h-8 w-8 place-items-center rounded-full text-titanium-500 hover:text-[#e4cfa2] hover:bg-obsidian-800 transition-colors" aria-label="Tools hinzufügen" title="Tools"><Plus className="h-4 w-4" /></button>
+            <div className="flex items-center gap-1.5"><span className="font-mono text-[9px] text-titanium-600">EU-lokal · Governance aktiv</span><button onClick={handleSend} disabled={!inputValue.trim() || isLoading} className="grid h-8 w-8 place-items-center rounded-full bg-[#e8ddc8] text-[rgb(3,7,18)] hover:bg-[#f0e6d4] disabled:opacity-30 disabled:cursor-not-allowed transition-colors" aria-label="Senden"><Send className="h-3.5 w-3.5" /></button></div>
           </div>
         </div>
         <p className="mt-1.5 text-center font-mono text-[9px] text-titanium-600">↵ senden · keine Rechtsberatung</p>

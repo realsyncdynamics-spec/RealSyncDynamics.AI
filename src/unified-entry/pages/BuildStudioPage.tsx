@@ -35,7 +35,7 @@
 // bleibt.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   ArrowRight, Check, Link2, Loader2, Monitor, Smartphone, Sparkles, Tablet, Wand2, ShieldCheck, AlertTriangle,
 } from 'lucide-react';
@@ -55,6 +55,46 @@ import {
   type BuildState,
   type BuildStep,
 } from '../../features/siteos/buildSession';
+import { STATUS_LABEL } from '../../product/implementation-status';
+import { OS_CREAM_BTN, OS_H1 } from '../../components/governance-os/osChrome';
+
+/** Shared OS chrome strip — same Dark/Gold language as / and /app. */
+function BuildOsChrome({ subtitle }: { subtitle?: string }) {
+  return (
+    <header className="flex flex-wrap items-center justify-between gap-3 border-b border-titanium-900 bg-obsidian-950/95 px-4 py-3">
+      <div className="flex min-w-0 items-center gap-3">
+        <Link to="/" className="grid h-8 w-8 place-items-center bg-[#e4cfa2] text-obsidian-950 shrink-0" aria-label="RealSync Startseite">
+          <Sparkles size={15} />
+        </Link>
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="font-display text-sm font-semibold text-titanium-50">Governance OS</span>
+            <span className="font-mono text-[9px] uppercase tracking-widest px-1.5 py-0.5 border border-[#e4cfa2]/40 text-[#e4cfa2] bg-[#e4cfa2]/5">
+              {STATUS_LABEL.preview}
+            </span>
+          </div>
+          <p className="font-mono text-[10px] text-titanium-500 truncate">
+            {subtitle ?? 'Builder · /build · Vorschau ohne Veröffentlichung'}
+          </p>
+        </div>
+      </div>
+      <nav className="flex items-center gap-2 shrink-0">
+        <Link
+          to="/app"
+          className="font-mono text-[10px] uppercase tracking-wider text-titanium-400 hover:text-[#e4cfa2] border border-titanium-800 px-2.5 py-1.5"
+        >
+          Command Center
+        </Link>
+        <Link
+          to="/"
+          className="font-mono text-[10px] uppercase tracking-wider text-titanium-500 hover:text-titanium-200 px-2 py-1.5"
+        >
+          Startseite
+        </Link>
+      </nav>
+    </header>
+  );
+}
 
 type Device = 'desktop' | 'tablet' | 'mobile';
 
@@ -233,14 +273,17 @@ export default function BuildStudioPage() {
   // ── Einstieg: Prompt ────────────────────────────────────────────────
   if (!blueprint && !busy) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-obsidian-950 via-slate-900 to-obsidian-950 px-6 py-16 text-titanium-50">
-        <div className="mx-auto max-w-3xl">
-          <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-titanium-800 px-3 py-1 text-xs text-titanium-400">
-            <Sparkles size={13} className="text-petrol-500" /> Kein Konto nötig
-          </div>
-          <h1 className="text-4xl font-bold">Was möchten Sie erstellen?</h1>
+      <div className="min-h-screen bg-obsidian-950 text-titanium-50">
+        <BuildOsChrome />
+        <div className="mx-auto max-w-3xl px-6 py-12">
+          <p className="mb-3 font-mono text-[10px] uppercase tracking-[0.2em] text-[#e4cfa2]">
+            Builder · Kein Konto nötig · Preview
+          </p>
+          <h1 className="font-display font-semibold text-titanium-50" style={{ fontSize: OS_H1 }}>
+            Was möchten Sie erstellen?
+          </h1>
           {auditContext.domain && (
-            <div className="mt-4 rounded-lg border border-petrol-800 bg-petrol-950/30 px-4 py-3 text-sm text-titanium-200">
+            <div className="mt-4 border border-[#e4cfa2]/25 bg-[#e4cfa2]/5 px-4 py-3 text-sm text-titanium-200">
               <div className="font-semibold text-titanium-100">
                 Neubau für {auditContext.domain}
               </div>
@@ -252,10 +295,11 @@ export default function BuildStudioPage() {
               </p>
             </div>
           )}
-          <p className="mt-4 text-lg text-titanium-300">
+          <p className="mt-4 text-sm text-titanium-400 leading-relaxed max-w-2xl">
             Beschreiben Sie Ihre Website in eigenen Worten. RealSync baut daraus ein
             vollständiges Frontend mit Seitenstruktur, Inhalten, Rechtstexten und
-            Prüfergebnis — und zeigt es Ihnen sofort.
+            Prüfergebnis — und zeigt es Ihnen sofort. Veröffentlichung und Domain bleiben
+            hinter Übernahme (Coming Soon / Preview).
           </p>
 
           <form onSubmit={submitPrompt} className="mt-8 space-y-4">
@@ -268,7 +312,7 @@ export default function BuildStudioPage() {
                 value={brand}
                 onChange={(e) => setBrand(e.target.value)}
                 placeholder="z. B. Studio Vogt Architekten"
-                className="mt-2 w-full rounded-lg border border-titanium-700 bg-obsidian-800 px-4 py-3 text-titanium-50 placeholder-titanium-500 transition-colors focus:border-petrol-600 focus:outline-none focus:ring-1 focus:ring-petrol-600"
+                className="mt-2 w-full border border-titanium-700 bg-obsidian-900 px-4 py-3 text-titanium-50 placeholder-titanium-500 transition-colors focus:border-[#e4cfa2]/60 focus:outline-none"
               />
               <p className="mt-1 text-xs text-titanium-500">
                 Ohne Angabe steht zunächst ein Platzhalter im Kopf der Website — Sie können ihn
@@ -286,30 +330,30 @@ export default function BuildStudioPage() {
               rows={5}
               autoFocus
               placeholder="z. B. Hochwertige Website für ein Architekturbüro in Leipzig. Dunkel, minimalistisch, viel Weißraum. Drei Projekte, Teamseite, Kontaktformular und Terminbuchung."
-              className="w-full resize-none rounded-lg border border-titanium-700 bg-obsidian-800 px-4 py-4 text-titanium-50 placeholder-titanium-500 transition-colors focus:border-petrol-600 focus:outline-none focus:ring-1 focus:ring-petrol-600"
+              className="w-full resize-none border border-titanium-700 bg-obsidian-900 px-4 py-4 text-titanium-50 placeholder-titanium-500 transition-colors focus:border-[#e4cfa2]/60 focus:outline-none"
             />
 
             {error && (
-              <div className="rounded-lg border border-red-700 bg-red-900/20 px-4 py-3 text-sm text-red-300">{error}</div>
+              <div className="border border-red-700 bg-red-900/20 px-4 py-3 text-sm text-red-300">{error}</div>
             )}
 
             <button
               type="submit"
-              className="w-full rounded-lg bg-petrol-600 px-6 py-4 font-semibold text-white transition-colors hover:bg-petrol-700"
+              className={`w-full px-6 py-3.5 text-sm font-semibold uppercase tracking-wider transition-colors ${OS_CREAM_BTN}`}
             >
               Website erstellen
             </button>
           </form>
 
           <div className="mt-8">
-            <div className="mb-3 text-xs font-semibold uppercase tracking-[.16em] text-titanium-500">Beispiele</div>
+            <div className="mb-3 font-mono text-[10px] font-semibold uppercase tracking-[.16em] text-titanium-500">Beispiele</div>
             <div className="space-y-2">
               {EXAMPLES.map((example) => (
                 <button
                   key={example}
                   type="button"
                   onClick={() => setDraft(example)}
-                  className="w-full rounded-lg border border-titanium-800 px-4 py-3 text-left text-sm text-titanium-300 transition-colors hover:border-petrol-700 hover:text-titanium-100"
+                  className="w-full border border-titanium-800 px-4 py-3 text-left text-sm text-titanium-300 transition-colors hover:border-[#e4cfa2]/40 hover:text-titanium-100"
                 >
                   {example}
                 </button>
@@ -321,8 +365,8 @@ export default function BuildStudioPage() {
             Sie haben bereits eine Website?{' '}
             <button
               type="button"
-              onClick={() => navigate('/unified-entry/scan')}
-              className="text-petrol-400 underline underline-offset-4 hover:text-petrol-300"
+              onClick={() => navigate('/audit')}
+              className="text-[#e4cfa2] underline underline-offset-4 hover:text-[#f0e6d4]"
             >
               Bestehende Website analysieren
             </button>
@@ -335,22 +379,28 @@ export default function BuildStudioPage() {
   // ── Aufbau ──────────────────────────────────────────────────────────
   if (busy && !blueprint) {
     return (
-      <div className="grid min-h-screen place-items-center bg-gradient-to-br from-obsidian-950 via-slate-900 to-obsidian-950 px-6 text-titanium-50">
-        <div className="w-full max-w-md">
-          <div className="mb-6 flex items-center gap-3">
-            <Loader2 size={20} className="animate-spin text-petrol-500" />
-            <span className="font-semibold">Ihre Website wird gebaut</span>
+      <div className="min-h-screen bg-obsidian-950 text-titanium-50">
+        <BuildOsChrome subtitle="Builder · Entwurf wird erzeugt…" />
+        <div className="grid place-items-center px-6 py-20">
+          <div className="w-full max-w-md">
+            <div className="mb-6 flex items-center gap-3">
+              <Loader2 size={20} className="animate-spin text-[#e4cfa2]" />
+              <span className="font-semibold">Ihre Website wird gebaut</span>
+            </div>
+            <ul className="space-y-3">
+              {STAGES.map((label, index) => (
+                <li key={label} className={`flex items-center gap-3 text-sm ${index < stage ? 'text-titanium-200' : 'text-titanium-600'}`}>
+                  <span className={`grid h-5 w-5 place-items-center border ${index < stage ? 'border-[#e4cfa2] bg-[#e4cfa2]/15 text-[#e4cfa2]' : 'border-titanium-700'}`}>
+                    {index < stage ? <Check size={12} /> : null}
+                  </span>
+                  {label}
+                </li>
+              ))}
+            </ul>
+            <p className="mt-6 font-mono text-[10px] text-titanium-600">
+              Fortschritt ist UI-Status — keine Fake-Produktmetrik.
+            </p>
           </div>
-          <ul className="space-y-3">
-            {STAGES.map((label, index) => (
-              <li key={label} className={`flex items-center gap-3 text-sm ${index < stage ? 'text-titanium-200' : 'text-titanium-600'}`}>
-                <span className={`grid h-5 w-5 place-items-center rounded-full border ${index < stage ? 'border-petrol-600 bg-petrol-600/20 text-petrol-400' : 'border-titanium-700'}`}>
-                  {index < stage ? <Check size={12} /> : null}
-                </span>
-                {label}
-              </li>
-            ))}
-          </ul>
         </div>
       </div>
     );
@@ -370,18 +420,19 @@ export default function BuildStudioPage() {
   // ── Studio ──────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-obsidian-950 text-titanium-50">
-      <header className="sticky top-0 z-40 flex flex-wrap items-center justify-between gap-3 border-b border-titanium-800 bg-obsidian-950/90 px-4 py-3 backdrop-blur">
+      <BuildOsChrome subtitle={`${blueprint.name} · ${blueprint.pages.length} Seiten · Entwurf ${hash.slice(0, 12)}…`} />
+      <header className="sticky top-0 z-40 flex flex-wrap items-center justify-between gap-3 border-b border-titanium-900 bg-obsidian-950/90 px-4 py-3 backdrop-blur">
         <div className="flex min-w-0 items-center gap-3">
-          <span className="grid h-8 w-8 place-items-center rounded-lg bg-petrol-600/15 text-petrol-400"><Sparkles size={15} /></span>
+          <span className="grid h-8 w-8 place-items-center bg-[#e4cfa2]/15 text-[#e4cfa2]"><Sparkles size={15} /></span>
           <div className="min-w-0">
             <div className="truncate text-sm font-bold">{blueprint.name}</div>
-            <div className="text-[10px] text-titanium-500">
-              {blueprint.pages.length} Seiten · Entwurf {hash.slice(0, 12)}…
+            <div className="font-mono text-[10px] text-titanium-500">
+              Preview · kein Publish · kein Domain-Anschluss
             </div>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1 rounded-lg bg-obsidian-800 p-1">
+          <div className="flex items-center gap-1 bg-obsidian-800 p-1 border border-titanium-800">
             {([['desktop', Monitor], ['tablet', Tablet], ['mobile', Smartphone]] as const).map(([key, Icon]) => (
               <button
                 key={key}
@@ -389,14 +440,14 @@ export default function BuildStudioPage() {
                 onClick={() => setDevice(key)}
                 aria-label={key}
                 aria-pressed={device === key}
-                className={`rounded-md p-1.5 ${device === key ? 'bg-titanium-800 text-titanium-50' : 'text-titanium-500'}`}
+                className={`p-1.5 ${device === key ? 'bg-titanium-800 text-titanium-50' : 'text-titanium-500'}`}
               >
                 <Icon size={14} />
               </button>
             ))}
           </div>
           {!claimable && (
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-700 px-2.5 py-1 text-[10px] text-amber-400">
+            <span className="inline-flex items-center gap-1.5 border border-amber-700 px-2.5 py-1 text-[10px] text-amber-400 font-mono uppercase tracking-wider">
               <AlertTriangle size={11} /> Nur lokal — nicht übernehmbar
             </span>
           )}
@@ -405,7 +456,7 @@ export default function BuildStudioPage() {
             onClick={() => navigate('/app/siteos/claim')}
             disabled={!claimable}
             title={claimable ? undefined : 'Dieser Entwurf liegt nur in diesem Browser und hat serverseitig keine Sitzung. Übernehmen ist erst möglich, wenn der Dienst für gespeicherte Entwürfe wieder erreichbar ist.'}
-            className="inline-flex items-center gap-2 rounded-lg bg-petrol-600 px-4 py-2 text-xs font-bold text-white hover:bg-petrol-700 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-petrol-600"
+            className={`inline-flex items-center gap-2 px-4 py-2 text-xs font-bold uppercase tracking-wider disabled:cursor-not-allowed disabled:opacity-40 ${OS_CREAM_BTN}`}
           >
             Website übernehmen <ArrowRight size={14} />
           </button>
@@ -422,7 +473,7 @@ export default function BuildStudioPage() {
                 key={page.path}
                 type="button"
                 onClick={() => setPath(page.path)}
-                className={`w-full rounded-lg px-3 py-2 text-left text-xs lg:mb-1 ${path === page.path ? 'bg-titanium-800 text-titanium-50' : 'text-titanium-400 hover:bg-obsidian-800'}`}
+                className={`w-full px-3 py-2 text-left text-xs lg:mb-1 ${path === page.path ? 'bg-titanium-800 text-titanium-50' : 'text-titanium-400 hover:bg-obsidian-800'}`}
               >
                 <span className="block truncate">{page.title}</span>
                 <span className="block truncate font-mono text-[10px] text-titanium-600">{page.path}</span>
@@ -432,14 +483,14 @@ export default function BuildStudioPage() {
           <button
             type="button"
             onClick={restart}
-            className="mt-6 w-full rounded-lg border border-titanium-800 px-3 py-2 text-xs text-titanium-400 hover:text-titanium-200"
+            className="mt-6 w-full border border-titanium-800 px-3 py-2 text-xs text-titanium-400 hover:text-titanium-200"
           >
             Neu beginnen
           </button>
         </aside>
 
         <section className="min-w-0 p-3 sm:p-5">
-          <div className="flex min-h-[70vh] justify-center overflow-auto rounded-xl border border-titanium-800 bg-obsidian-900 p-3 sm:p-5">
+          <div className="flex min-h-[70vh] justify-center overflow-auto border border-titanium-800 bg-obsidian-900 p-3 sm:p-5">
             <div style={{ width: DEVICE_WIDTH[device] }} className="overflow-hidden rounded-lg bg-white shadow-2xl transition-all">
               <SandboxedPreviewFrame
                 title={`Vorschau ${blueprint.name} — ${path}`}
@@ -456,7 +507,7 @@ export default function BuildStudioPage() {
         </section>
 
         <aside className="border-t border-titanium-800 p-4 lg:border-l lg:border-t-0 sm:p-5">
-          <div className="flex items-center gap-2 text-sm font-bold"><Wand2 size={16} className="text-petrol-400" /> Weiter ändern</div>
+          <div className="flex items-center gap-2 text-sm font-bold"><Wand2 size={16} className="text-[#e4cfa2]" /> Weiter ändern</div>
           <p className="mt-1 text-xs leading-5 text-titanium-400">
             Sagen Sie, was anders sein soll. Die bestehende Website wird geändert — sie wird
             nicht neu erfunden.
@@ -473,12 +524,12 @@ export default function BuildStudioPage() {
               onChange={(e) => setInstruction(e.target.value)}
               rows={3}
               placeholder="z. B. Mach den Hero größer."
-              className="w-full resize-none rounded-lg border border-titanium-700 bg-obsidian-800 p-3 text-xs text-titanium-50 placeholder-titanium-600 focus:border-petrol-600 focus:outline-none"
+              className="w-full resize-none border border-titanium-700 bg-obsidian-800 p-3 text-xs text-titanium-50 placeholder-titanium-600 focus:border-[#e4cfa2]/60 focus:outline-none"
             />
             <button
               type="submit"
               disabled={!instruction.trim() || busy}
-              className="mt-2 w-full rounded-lg bg-titanium-800 px-3 py-2.5 text-xs font-bold text-titanium-50 disabled:opacity-40"
+              className="mt-2 w-full border border-titanium-700 bg-titanium-800 px-3 py-2.5 text-xs font-bold text-titanium-50 disabled:opacity-40"
             >
               Änderung anwenden
             </button>
@@ -492,7 +543,7 @@ export default function BuildStudioPage() {
                 type="button"
                 disabled={busy}
                 onClick={() => submitInstruction(action)}
-                className="rounded-full border border-titanium-800 px-3 py-1.5 text-[11px] text-titanium-400 hover:border-petrol-700 hover:text-titanium-100 disabled:opacity-40"
+                className="border border-titanium-800 px-3 py-1.5 text-[11px] text-titanium-400 hover:border-[#e4cfa2]/40 hover:text-titanium-100 disabled:opacity-40"
               >
                 {action}
               </button>
@@ -508,13 +559,13 @@ export default function BuildStudioPage() {
           {state.preview.status === 'stored' && state.preview.url && (
             <div className="mt-6">
               <div className="mb-2 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[.16em] text-titanium-500">
-                <Link2 size={12} className="text-petrol-400" /> Vorschau teilen
+                <Link2 size={12} className="text-[#e4cfa2]" /> Vorschau teilen
               </div>
               <a
                 href={state.preview.url}
                 target="_blank"
                 rel="noreferrer noopener"
-                className="block break-all rounded-lg border border-titanium-800 px-3 py-2 font-mono text-[10px] text-titanium-300 hover:border-petrol-700 hover:text-titanium-100"
+                className="block break-all border border-titanium-800 px-3 py-2 font-mono text-[10px] text-titanium-300 hover:border-[#e4cfa2]/40 hover:text-titanium-100"
               >
                 {state.preview.url}
               </a>
@@ -538,13 +589,13 @@ export default function BuildStudioPage() {
               <div className="mb-2 text-[10px] font-bold uppercase tracking-[.16em] text-titanium-500">Verlauf</div>
               <ul className="space-y-2">
                 {log.map((step) => (
-                  <li key={`${step.at}-${step.instruction}`} className="rounded-lg border border-titanium-800 p-3 text-[11px] leading-5">
+                  <li key={`${step.at}-${step.instruction}`} className="border border-titanium-800 p-3 text-[11px] leading-5">
                     <div className="text-titanium-300">„{step.instruction}"</div>
                     {step.changes.map((change) => (
                       <div key={change.code} className="mt-1 text-titanium-500">
                         · {change.summary}
                         {change.complianceNote && (
-                          <span className="mt-1 block text-petrol-400">{change.complianceNote}</span>
+                          <span className="mt-1 block text-[#e4cfa2]">{change.complianceNote}</span>
                         )}
                       </div>
                     ))}
@@ -566,11 +617,11 @@ export default function BuildStudioPage() {
 
           {/* Governance-Stand des aktuellen Entwurfs. Zahlen, keine Siegel. */}
           {scores && (
-            <div className="mt-6 rounded-xl border border-titanium-800 p-4">
-              <div className="flex items-center gap-2 text-xs font-bold"><ShieldCheck size={14} className="text-petrol-400" /> Prüfstand des Entwurfs</div>
+            <div className="mt-6 border border-titanium-800 p-4">
+              <div className="flex items-center gap-2 text-xs font-bold"><ShieldCheck size={14} className="text-[#e4cfa2]" /> Prüfstand des Entwurfs</div>
               <dl className="mt-3 grid grid-cols-2 gap-2 text-[11px]">
                 {([['Health', scores.health], ['Compliance', scores.compliance], ['SEO', scores.dimensions.seo], ['Barrierefreiheit', scores.dimensions.accessibility]] as const).map(([label, value]) => (
-                  <div key={label} className="rounded-lg bg-obsidian-800 px-3 py-2">
+                  <div key={label} className="bg-obsidian-800 px-3 py-2">
                     <dt className="text-titanium-500">{label}</dt>
                     <dd className="font-mono text-sm text-titanium-100">{value}</dd>
                   </div>
@@ -593,7 +644,7 @@ export default function BuildStudioPage() {
               `siteos_anonymous_builds` und wird beim Claim nur verschoben, im
               Rückfall gibt es ihn serverseitig gar nicht. Ein fester Satz wäre
               in genau einem der beiden Fälle falsch. */}
-          <div className="mt-5 rounded-xl border border-titanium-800 bg-obsidian-900 p-4 text-[11px] leading-5 text-titanium-400">
+          <div className="mt-5 border border-titanium-800 bg-obsidian-900 p-4 text-[11px] leading-5 text-titanium-400">
             {claimable ? (
               <>
                 Der Entwurf ist serverseitig gespeichert und gehört noch keinem Workspace. Mit
@@ -611,7 +662,7 @@ export default function BuildStudioPage() {
             )}
             {claimable && expiryNote !== '' && <p className="mt-2">{expiryNote}</p>}
             {state.claimed && (
-              <p className="mt-2 text-petrol-400">
+              <p className="mt-2 text-[#e4cfa2]">
                 Dieser Entwurf gehört bereits einem Workspace. „Website übernehmen" führt zu
                 derselben Website — es entsteht keine zweite.
               </p>
@@ -619,7 +670,7 @@ export default function BuildStudioPage() {
           </div>
 
           {error && (
-            <div className="mt-4 rounded-lg border border-red-700 bg-red-900/20 p-3 text-[11px] text-red-300">{error}</div>
+            <div className="mt-4 border border-red-700 bg-red-900/20 p-3 text-[11px] text-red-300">{error}</div>
           )}
         </aside>
       </div>

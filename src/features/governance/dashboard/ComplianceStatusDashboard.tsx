@@ -111,11 +111,11 @@ export function ComplianceStatusView({
       {/* Header */}
       <div className="flex flex-wrap items-start justify-between gap-4 border-b border-titanium-900 pb-4">
         <div>
-          <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-cyan-400 flex items-center gap-2">
-            <span className="inline-block h-1.5 w-1.5 rounded-full bg-cyan-400 animate-pulse" aria-hidden />
+          <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#e4cfa2] flex items-center gap-2">
+            <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#e4cfa2] animate-pulse" aria-hidden />
             Governance Command Center
           </p>
-          <h1 className="font-display font-bold text-2xl text-titanium-50 tracking-tight mt-1">
+          <h1 className="font-display font-bold text-titanium-50 tracking-tight mt-1 text-[clamp(1.25rem,1rem+1.2vw,1.75rem)]">
             {tenantName ? `Status · ${tenantName}` : 'Compliance-Status'}
           </h1>
           <p className="text-sm text-titanium-400 mt-1">
@@ -140,11 +140,11 @@ export function ComplianceStatusView({
 
       {showPostCheckout && activeTenantId && (
         <div
-          className="border border-cyan-900/60 bg-cyan-950/20 p-5 space-y-3"
+          className="border border-[#e4cfa2]/25 bg-[#e4cfa2]/5 p-5 space-y-3"
           data-testid="post-checkout-domain-cta"
         >
           <div className="flex items-start gap-3">
-            <Globe2 className="h-5 w-5 text-cyan-400 mt-0.5 shrink-0" />
+            <Globe2 className="h-5 w-5 text-[#e4cfa2] mt-0.5 shrink-0" />
             <div>
               <h2 className="text-sm font-semibold text-titanium-50">
                 Abo aktiv{postCheckoutPlan ? ` · ${postCheckoutPlan}` : ''}
@@ -163,7 +163,7 @@ export function ComplianceStatusView({
           <button
             type="button"
             onClick={() => navigate('/app/websites')}
-            className="inline-flex items-center justify-center gap-2 bg-cyan-400 hover:bg-cyan-300 text-obsidian-950 px-4 py-2 text-sm font-semibold font-mono uppercase tracking-wider"
+            className="inline-flex items-center justify-center gap-2 bg-[#e8ddc8] hover:bg-[#f0e6d4] text-obsidian-950 px-4 py-2 text-sm font-semibold font-mono uppercase tracking-wider"
           >
             Domain verbinden <ArrowRight className="h-4 w-4" />
           </button>
@@ -174,7 +174,7 @@ export function ComplianceStatusView({
         <div className="py-12 text-center text-titanium-400">
           <ShieldCheck className="h-8 w-8 mx-auto mb-3 text-titanium-600" />
           <p className="text-sm">Bitte anmelden, um den Compliance-Status zu sehen.</p>
-          <Link to="/welcome" className="mt-4 inline-flex items-center gap-2 text-cyan-400 text-sm font-semibold">
+          <Link to="/welcome" className="mt-4 inline-flex items-center gap-2 text-[#e4cfa2] text-sm font-semibold">
             Zum Login <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
@@ -202,7 +202,7 @@ export function ComplianceStatusView({
       {isEmptyTenant && (
         <div className="border border-titanium-800 bg-obsidian-900 p-6 space-y-4">
           <div className="flex items-start gap-4">
-            <Rocket className="h-6 w-6 text-cyan-400 mt-0.5 shrink-0" />
+            <Rocket className="h-6 w-6 text-[#e4cfa2] mt-0.5 shrink-0" />
             <div>
               <h2 className="text-lg font-semibold text-titanium-50">Noch keine Governance-Daten</h2>
               <p className="text-sm text-titanium-300 mt-1">
@@ -215,7 +215,7 @@ export function ComplianceStatusView({
             <button
               type="button"
               onClick={() => navigate('/app/onboarding')}
-              className="inline-flex items-center justify-center gap-2 bg-cyan-400 hover:bg-cyan-300 text-obsidian-950 px-4 py-2 text-sm font-semibold font-mono uppercase tracking-wider"
+              className="inline-flex items-center justify-center gap-2 bg-[#e8ddc8] hover:bg-[#f0e6d4] text-obsidian-950 px-4 py-2 text-sm font-semibold font-mono uppercase tracking-wider"
             >
               Onboarding starten
             </button>
@@ -282,7 +282,7 @@ export function ComplianceStatusView({
               {data.summary24h && (
                 <section data-testid="summary-24h">
                   <div className="flex items-center gap-2 mb-3">
-                    <Clock className="h-4 w-4 text-cyan-400" />
+                    <Clock className="h-4 w-4 text-[#e4cfa2]" />
                     <h2 className="font-display font-semibold text-titanium-50 text-sm">Letzte 24 Stunden</h2>
                   </div>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-titanium-900 border border-titanium-900">
@@ -337,7 +337,7 @@ function EventStreamPanel({
         title="Event-Stream"
         subtitle="Neueste Governance-Events aus dem Mandanten."
         action={(
-          <Link to="/app/monitoring" className="text-[10px] font-mono uppercase tracking-wider text-cyan-400 hover:text-cyan-300">
+          <Link to="/app/monitoring" className="text-[10px] font-mono uppercase tracking-wider text-[#e4cfa2] hover:text-[#e4cfa2]">
             Monitoring →
           </Link>
         )}
@@ -395,7 +395,7 @@ function RiskDistributionPanel({
             ? 'Noch keine Assets mit Risk-Score.'
             : `${assetCount} Assets nach Risk-Score.`}
         action={(
-          <Link to="/app/risks" className="text-[10px] font-mono uppercase tracking-wider text-cyan-400 hover:text-cyan-300">
+          <Link to="/app/risks" className="text-[10px] font-mono uppercase tracking-wider text-[#e4cfa2] hover:text-[#e4cfa2]">
             Risiken →
           </Link>
         )}
@@ -453,7 +453,7 @@ function AssetFlowsPanel({
                   to={flow.href}
                   className="flex items-center gap-3 px-5 py-3 hover:bg-obsidian-800 transition-colors"
                 >
-                  <Radar className="h-3.5 w-3.5 text-cyan-400 shrink-0" />
+                  <Radar className="h-3.5 w-3.5 text-[#e4cfa2] shrink-0" />
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-semibold text-titanium-50">{flow.label}</p>
                     <p className="text-[10px] font-mono text-titanium-500 mt-0.5">
@@ -481,7 +481,7 @@ function PolicyCoveragePanel({ posture }: { posture: CockpitData['posture'] }) {
         title="Policy Coverage"
         subtitle="Aus dem letzten KPI-Snapshot — keine Schätzung."
         action={(
-          <Link to="/app/policy-packs" className="text-[10px] font-mono uppercase tracking-wider text-cyan-400 hover:text-cyan-300">
+          <Link to="/app/policy-packs" className="text-[10px] font-mono uppercase tracking-wider text-[#e4cfa2] hover:text-[#e4cfa2]">
             Packs →
           </Link>
         )}
@@ -554,7 +554,7 @@ function CriticalFindingsRail({
           title="Offene Alerts"
           subtitle={summary ? 'Aus dem 24h-Summary.' : '24h-Summary noch nicht verfügbar.'}
           action={(
-            <Link to="/app/alerts" className="text-[10px] font-mono uppercase tracking-wider text-cyan-400 hover:text-cyan-300">
+            <Link to="/app/alerts" className="text-[10px] font-mono uppercase tracking-wider text-[#e4cfa2] hover:text-[#e4cfa2]">
               Alle →
             </Link>
           )}
@@ -645,10 +645,10 @@ function FrameworkStrip() {
   return (
     <section data-testid="framework-strip" aria-label="Compliance-Frameworks">
       <div className="flex items-center gap-2 mb-3">
-        <ShieldCheck className="h-4 w-4 text-cyan-400" />
+        <ShieldCheck className="h-4 w-4 text-[#e4cfa2]" />
         <h2 className="font-display font-semibold text-titanium-50 text-sm">Frameworks</h2>
         <div className="flex-1 h-px bg-titanium-900" />
-        <Link to="/app/governance/frameworks" className="text-[10px] font-mono uppercase tracking-wider text-cyan-400 hover:text-cyan-300">
+        <Link to="/app/governance/frameworks" className="text-[10px] font-mono uppercase tracking-wider text-[#e4cfa2] hover:text-[#e4cfa2]">
           Übersicht →
         </Link>
       </div>
@@ -846,7 +846,7 @@ function CoverageRow({ label, percent }: { label: string; percent: number }) {
         <span className="font-mono text-sm font-bold text-titanium-50">{pct}%</span>
       </div>
       <div className="mt-2 h-1.5 bg-titanium-900 w-full">
-        <div className="h-full bg-cyan-400 transition-all duration-500" style={{ width: `${pct}%` }} />
+        <div className="h-full bg-[#e4cfa2] transition-all duration-500" style={{ width: `${pct}%` }} />
       </div>
     </div>
   );

@@ -56,10 +56,10 @@ export function GovernanceAddressBar({ onLoadUrl, activeUrl }: GovernanceAddress
 
   return (
     <div className={`flex-1 flex items-center gap-2 bg-obsidian-950 border px-3 py-1.5 max-w-xl transition-colors ${
-      focused ? 'border-cyan-600' : 'border-titanium-800'
+      focused ? 'border-[#e4cfa2]/60' : 'border-titanium-800'
     }`}>
       {isUrl
-        ? <Globe className="h-3.5 w-3.5 text-cyan-500 shrink-0" />
+        ? <Globe className="h-3.5 w-3.5 text-[#e4cfa2] shrink-0" />
         : <Search className="h-3.5 w-3.5 text-titanium-600 shrink-0" />
       }
       <input

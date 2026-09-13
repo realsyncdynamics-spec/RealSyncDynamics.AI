@@ -3,14 +3,14 @@ import { ArrowRight, Building2, Headset, KeyRound, ShieldCheck } from 'lucide-re
 import { tierById } from '../../config/pricing';
 import { CTA } from '../../content/runtimeVocab';
 import {
-  LANDING_ACCENT,
-  LANDING_BUTTON,
-  LANDING_BUTTON_TEXT,
-  LANDING_MONO,
-  LANDING_MUTED,
-  LANDING_SERIF,
-  LANDING_TEXT,
-} from './landing-theme';
+  GA_DISPLAY,
+  GA_GOLD_LITE,
+  GA_MONO,
+  GA_MUTED,
+  GA_TEXT,
+  GA_GOLD_FACE,
+  GA_GOLD_FACE_SHADOW,
+} from './governance-ai-theme';
 
 /**
  * Enterprise-Zugang auf der Startseite.
@@ -61,7 +61,7 @@ export function EnterpriseAccessSection() {
   return (
     <section
       id="enterprise"
-      className="border-t border-white/10 py-24 md:py-32"
+      className="ga-band relative z-[1] border-t border-white/10 py-24 md:py-32"
       aria-labelledby="enterprise-heading"
     >
       <div className="mx-auto max-w-7xl px-6 lg:px-10">
@@ -69,30 +69,30 @@ export function EnterpriseAccessSection() {
           <div>
             <p
               className="text-[10px] tracking-[.25em]"
-              style={{ fontFamily: LANDING_MONO, color: LANDING_ACCENT }}
+              style={{ fontFamily: GA_MONO, color: GA_GOLD_LITE }}
             >
               ENTERPRISE-ZUGANG
             </p>
             <h2
               id="enterprise-heading"
               className="mt-4 text-[2rem] tracking-tight sm:text-5xl"
-              style={{ fontFamily: LANDING_SERIF, fontWeight: 500, color: LANDING_TEXT }}
+              style={{ fontFamily: GA_DISPLAY, fontWeight: 500, color: GA_TEXT }}
             >
               Governance mit{' '}
-              <span style={{ color: LANDING_ACCENT }}>Ansprechpartner.</span>
+              <span style={{ color: GA_GOLD_LITE }}>Ansprechpartner.</span>
             </h2>
-            <p className="mt-5 text-base leading-relaxed" style={{ color: LANDING_MUTED }}>
+            <p className="mt-5 text-base leading-relaxed" style={{ color: GA_MUTED }}>
               {tier.tagline}
             </p>
             <p className="mt-3 text-sm leading-relaxed text-white/40">{tier.subline}</p>
 
             <div className="mt-8 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-              <span className="text-3xl font-semibold" style={{ color: LANDING_TEXT }}>
+              <span className="text-3xl font-semibold" style={{ color: GA_TEXT }}>
                 {tier.priceString} €
               </span>
               <span
                 className="text-[11px] uppercase tracking-[.18em] text-white/40"
-                style={{ fontFamily: LANDING_MONO }}
+                style={{ fontFamily: GA_MONO }}
               >
                 {tier.priceSuffix}
               </span>
@@ -107,7 +107,7 @@ export function EnterpriseAccessSection() {
               <Link
                 to="/contact-sales?source=landing-enterprise"
                 className="inline-flex items-center gap-2 rounded-full px-7 py-3.5 font-semibold transition hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d0c3a4] focus-visible:ring-offset-2 focus-visible:ring-offset-[rgb(3,7,18)]"
-                style={{ backgroundColor: LANDING_BUTTON, color: LANDING_BUTTON_TEXT }}
+                style={{ background: GA_GOLD_FACE, color: '#14100b', boxShadow: GA_GOLD_FACE_SHADOW }}
               >
                 {CTA.enterprise} <ArrowRight className="h-4 w-4" />
               </Link>
@@ -117,7 +117,7 @@ export function EnterpriseAccessSection() {
                    Verlinkung nicht still ins Leere laufen laesst. */
                 to={`/pricing#plan-${tier.id}`}
                 className="inline-flex items-center gap-2 rounded-full border px-7 py-3.5 font-medium transition hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d0c3a4]/50"
-                style={{ borderColor: `${LANDING_ACCENT}80`, color: '#e8dfd2' }}
+                style={{ borderColor: `${GA_GOLD_LITE}80`, color: '#e8dfd2' }}
               >
                 Leistungen im Detail
               </Link>
@@ -153,7 +153,7 @@ export function EnterpriseAccessSection() {
             <div className="surface-panel rounded-2xl p-6 sm:col-span-2" data-reveal data-reveal-group="enterprise">
               <p
                 className="text-[10px] tracking-[.2em]"
-                style={{ fontFamily: LANDING_MONO, color: `${LANDING_ACCENT}cc` }}
+                style={{ fontFamily: GA_MONO, color: `${GA_GOLD_LITE}cc` }}
               >
                 IM ZUGANG ENTHALTEN
               </p>
@@ -162,7 +162,7 @@ export function EnterpriseAccessSection() {
                   <li key={point} className="flex items-start gap-2.5 text-sm leading-relaxed text-white/60">
                     <span
                       className="mt-2 h-1 w-1 shrink-0 rounded-full"
-                      style={{ backgroundColor: LANDING_ACCENT }}
+                      style={{ backgroundColor: GA_GOLD_LITE }}
                     />
                     {point}
                   </li>
@@ -187,11 +187,11 @@ function AccessCard({
 }) {
   return (
     <div className="surface-panel rounded-2xl p-6" data-reveal data-reveal-group="enterprise">
-      <Icon className="h-5 w-5" style={{ color: LANDING_ACCENT }} strokeWidth={1.5} />
-      <h3 className="mt-4 font-semibold" style={{ color: LANDING_TEXT }}>
+      <Icon className="h-5 w-5" style={{ color: GA_GOLD_LITE }} strokeWidth={1.5} />
+      <h3 className="mt-4 font-semibold" style={{ color: GA_TEXT }}>
         {title}
       </h3>
-      <p className="mt-2 text-sm leading-relaxed" style={{ color: LANDING_MUTED }}>
+      <p className="mt-2 text-sm leading-relaxed" style={{ color: GA_MUTED }}>
         {text}
       </p>
     </div>

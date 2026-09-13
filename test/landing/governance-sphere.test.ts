@@ -40,13 +40,17 @@ describe('Governance Sphere — demo contract', () => {
     expect(host).toContain('GovernanceSphereFallback');
     expect(host).toContain('SPHERE_DEMO_LABEL');
     expect(host).toContain('DEMO DATA');
-    // Public `/`: Dominik cream copy on HeroEarthBackdrop (no Sphere HUD).
-    expect(landing).toContain('HeroEarthBackdrop');
+    // Public `/`: Titan-Relief als Szenerie (kein Sphere-HUD).
+    expect(landing).toContain('EuropeReliefBackdrop');
     expect(landing).not.toContain('GovernanceSphereHost');
     expect(landing).not.toContain('HeroEuropeSunrise');
   });
 
-  it('HeroEarthBackdrop is the live `/` scenery; Sphere stays off `/`', () => {
+  // `HeroEarthBackdrop` ist seit dem Titan-Redesign nicht mehr die Szenerie
+  // von `/` (dort steht `EuropeReliefBackdrop`), bleibt aber als Komponente
+  // im Repo. Der Wächter gilt weiter: Wenn sie wieder eingesetzt wird, darf
+  // sie kein Sphere-HUD mitbringen.
+  it('EuropeReliefBackdrop is the `/` scenery; Earth backdrop stays Sphere-free', () => {
     const backdrop = readFileSync(
       resolve(__dirname, '../../src/components/landing/HeroEarthBackdrop.tsx'),
       'utf8',
@@ -56,7 +60,8 @@ describe('Governance Sphere — demo contract', () => {
       'utf8',
     );
     const landing = readFileSync(resolve(__dirname, '../../src/pages/MainLanding.tsx'), 'utf8');
-    expect(landing).toContain('HeroEarthBackdrop');
+    expect(landing).toContain('EuropeReliefBackdrop');
+    expect(landing).not.toContain('HeroEarthBackdrop');
     expect(backdrop).toContain('data-hero-visual="earth-universe"');
     expect(backdrop).toContain('data-landing-earth');
     expect(backdrop).toContain('data-hero-scenery="europe-night-gold-network"');

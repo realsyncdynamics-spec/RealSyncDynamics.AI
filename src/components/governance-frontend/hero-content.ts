@@ -21,9 +21,8 @@ export type HeroHeadlineSegment = {
  * Break (bundler hero): AI Compliance / Operations OS for / em Europe.
  */
 export const HERO_HEADLINE: readonly (readonly HeroHeadlineSegment[])[] = [
-  [{ text: 'AI Compliance' }],
-  [{ text: 'Operations OS for' }],
-  [{ text: 'Europe', accent: true }],
+  [{ text: 'AI Compliance Operations OS' }],
+  [{ text: 'for Europe', accent: true }],
 ];
 
 /** Reine Textzeilen der H1 — für Tests und Accessible-Name-Abgleich. */
@@ -121,8 +120,8 @@ if (!HERO_HEADLINE_LINES.some((line) => line.includes(HERO_HEADLINE_TEST_SUBSTRI
   );
 }
 
-if (HERO_HEADLINE_LINES[HERO_HEADLINE_LINES.length - 1] !== 'Europe') {
-  throw new Error('hero-content.ts: last H1 line must be gold Europe alone.');
+if (HERO_HEADLINE_LINES[HERO_HEADLINE_LINES.length - 1] !== 'for Europe') {
+  throw new Error('hero-content.ts: last H1 line must be gold "for Europe".');
 }
 
 const lockedClaim = HERO_HEADLINE_LINES.join(' ').replace(/\s+/g, ' ').trim();

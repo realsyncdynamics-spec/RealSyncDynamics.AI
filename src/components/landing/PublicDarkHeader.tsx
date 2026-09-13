@@ -135,12 +135,8 @@ export function PublicDarkHeader({
             className="flex min-w-0 items-center gap-2.5 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e4cfa2]/60"
             style={{ color: LANDING_TEXT }}
           >
-            <span aria-hidden="true" className="shrink-0 text-[19px]" style={{ color: accent }}>
-              ⬢
-            </span>
-            <span className="truncate whitespace-nowrap text-[14px] font-medium tracking-tight">
-              RealSync Dynamics
-              <span style={{ color: accent }}>.AI</span>
+            <span className="truncate whitespace-nowrap text-[14px] font-bold tracking-tight">
+              Realsyncdynamicsai.de
             </span>
           </Link>
         </div>

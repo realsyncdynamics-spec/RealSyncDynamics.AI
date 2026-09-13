@@ -209,9 +209,9 @@ export function EuropeReliefBackdrop() {
       data-hero-scenery="titan-chrome-gold-network"
       style={{
         background:
-          'radial-gradient(34% 60% at 38% -10%, rgba(255,255,255,.7) 0%, rgba(220,223,228,.32) 34%, transparent 64%),' +
-          'radial-gradient(90% 70% at 82% 14%, rgba(150,155,162,.28) 0%, transparent 60%),' +
-          'linear-gradient(180deg, #6a6e74 0%, #4a4e54 18%, #2e3135 52%, #16171a 100%)',
+          'radial-gradient(34% 60% at 38% -10%, rgba(255,255,255,.3) 0%, rgba(200,200,200,.15) 34%, transparent 64%),' +
+          'radial-gradient(90% 70% at 82% 14%, rgba(120,120,120,.15) 0%, transparent 60%),' +
+          'linear-gradient(180deg, #262626 0%, #1f1f1f 40%, #1a1a1a 100%)',
       }}
     >
       {/* Bürststruktur: feine horizontale Linien über der Titanfläche. */}

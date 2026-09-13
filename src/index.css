@@ -1240,17 +1240,123 @@ html, body {
    Alles hier ist Dekoration und schaltet sich bei `prefers-reduced-motion`
    vollständig ab — die Seite bleibt ohne jede Animation vollständig lesbar. */
 
+/* ── Governance-AI-Landing: die beiden Varianten ───────────────────────────
+   Beide Paletten stehen hier nebeneinander, damit man sie vergleichen kann,
+   statt sie über Komponenten verstreut zu suchen. Die TS-Konstanten in
+   `governance-ai-theme.ts` zeigen ausschließlich auf diese Variablen.
+
+   titan — gebürstetes Titan, Europa als Chromrelief, Champagner-Gold, Sans.
+   night — Schwarz, Europa als Nachtfoto, Cyan, Serif.
+
+   Ohne Attribut gilt Titan: Wenn das Skript nicht läuft, sieht der Besucher
+   die Standardvariante und nicht eine Seite ohne Farben. */
+
+[data-ga-theme] {
+  --ga-green: #35d0a8;
+  --ga-h1-scale: clamp(2.5rem, 1rem + 4.6vw, 5rem);
+}
+
+[data-ga-theme='titan'],
+.landing-context:not([data-ga-theme]) {
+  --ga-display: 'Inter Tight', 'Inter', system-ui, sans-serif;
+  --ga-h1-weight: 600;
+  --ga-h1-tracking: -0.045em;
+
+  --ga-void: #0f1012;
+  --ga-deep: #1c1e21;
+  --ga-mid: #2a2d31;
+  --ga-panel: rgba(24, 26, 29, 0.72);
+
+  --ga-text: #f3f5f8;
+  --ga-muted: #a3acb8;
+  --ga-titan: #8a929c;
+  --ga-silver: #d9dee5;
+
+  --ga-accent: #c9a24a;
+  --ga-accent-lite: #e6c98a;
+  --ga-accent-deep: #8a6a24;
+  --ga-accent-border: rgba(201, 162, 74, 0.42);
+
+  --ga-line: rgba(217, 222, 229, 0.16);
+  --ga-line-soft: rgba(217, 222, 229, 0.09);
+
+  --ga-pill-face: linear-gradient(180deg, #f2dca4 0%, #d3ad55 48%, #a8842c 100%);
+  --ga-pill-ink: #14100b;
+  --ga-pill-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.6), inset 0 -2px 0 rgba(0, 0, 0, 0.18),
+    0 0 0 1px rgba(255, 236, 190, 0.35), 0 12px 30px rgba(0, 0, 0, 0.45),
+    0 0 30px rgba(211, 173, 85, 0.22);
+
+  --ga-ghost-face: rgba(18, 28, 38, 0.66);
+  --ga-ghost-face-hover: rgba(214, 220, 228, 0.16);
+  --ga-ghost-border: rgba(214, 220, 228, 0.4);
+  --ga-ghost-border-hover: #d9dee5;
+  --ga-chip-face: rgba(18, 28, 38, 0.6);
+
+  --ga-h1-face: linear-gradient(180deg, #ffffff 0%, #e9ecf0 48%, #b7bcc4 100%);
+  --ga-h1-accent: linear-gradient(180deg, #f4e0b0 0%, #d3ad55 50%, #a8842c 100%);
+  --ga-h2-accent: linear-gradient(116deg, #f7ecd6 0%, #e6c98a 34%, #c9a24a 64%, #8a6a24 88%);
+
+  --ga-band: linear-gradient(180deg, rgba(24, 26, 29, 0.62), rgba(18, 19, 22, 0.74));
+  --ga-band-alt: linear-gradient(180deg, rgba(18, 19, 22, 0.74), rgba(26, 28, 31, 0.62));
+}
+
+[data-ga-theme='night'] {
+  /* Playfair trägt hier die Headline — die Nachtvariante lebt vom Kontrast
+     zwischen Serif-Schnitt und fotografischer Fläche. */
+  --ga-display: 'Playfair Display', Georgia, 'Times New Roman', serif;
+  --ga-h1-weight: 400;
+  --ga-h1-tracking: -0.02em;
+
+  --ga-void: #04070a;
+  --ga-deep: #070b10;
+  --ga-mid: #0d141b;
+  --ga-panel: rgba(7, 12, 18, 0.74);
+
+  --ga-text: #eef4f8;
+  --ga-muted: #93a3b1;
+  --ga-titan: #74848f;
+  --ga-silver: #cfdae2;
+
+  --ga-accent: #22c3e6;
+  --ga-accent-lite: #7fe3f5;
+  --ga-accent-deep: #0e8aa6;
+  --ga-accent-border: rgba(34, 195, 230, 0.42);
+
+  --ga-line: rgba(160, 200, 215, 0.16);
+  --ga-line-soft: rgba(160, 200, 215, 0.09);
+
+  --ga-pill-face: linear-gradient(180deg, #7fe3f5 0%, #22c3e6 52%, #0e9fbf 100%);
+  --ga-pill-ink: #04161c;
+  --ga-pill-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.45), 0 0 0 1px rgba(127, 227, 245, 0.3),
+    0 10px 30px rgba(0, 0, 0, 0.55), 0 0 34px rgba(34, 195, 230, 0.3);
+
+  --ga-ghost-face: rgba(6, 14, 20, 0.62);
+  --ga-ghost-face-hover: rgba(34, 195, 230, 0.14);
+  --ga-ghost-border: rgba(190, 215, 226, 0.38);
+  --ga-ghost-border-hover: #7fe3f5;
+  --ga-chip-face: rgba(6, 14, 20, 0.6);
+
+  --ga-h1-face: linear-gradient(180deg, #ffffff 0%, #eaf2f6 55%, #cfdae2 100%);
+  --ga-h1-accent: linear-gradient(180deg, #a9ecfa 0%, #22c3e6 55%, #0e8aa6 100%);
+  --ga-h2-accent: linear-gradient(116deg, #eafcff 0%, #7fe3f5 32%, #22c3e6 62%, #0e8aa6 86%);
+
+  --ga-band: linear-gradient(180deg, rgba(5, 9, 13, 0.62), rgba(3, 5, 8, 0.78));
+  --ga-band-alt: linear-gradient(180deg, rgba(3, 5, 8, 0.78), rgba(6, 11, 16, 0.62));
+}
+
 /* Sektionsbänder: Das Europa-Relief liegt fest hinter der ganzen Seite. Ohne
    diese halbtransparenten Bänder läuft es ungedämpft unter Fließtext und
    Karten durch und frisst den Kontrast. Der leichte Blur trennt Vorder- von
    Hintergrund, ohne das Relief zuzudecken. */
 .ga-band {
-  background: linear-gradient(180deg, rgba(24, 26, 29, 0.62), rgba(18, 19, 22, 0.74));
+  background: var(--ga-band);
   backdrop-filter: blur(2px);
 }
 
 .ga-band-alt {
-  background: linear-gradient(180deg, rgba(18, 19, 22, 0.74), rgba(26, 28, 31, 0.62));
+  background: var(--ga-band-alt);
   backdrop-filter: blur(2px);
 }
 
@@ -1279,7 +1385,7 @@ html, body {
   height: 3px;
   width: 18%;
   border-radius: 2px;
-  background: linear-gradient(90deg, transparent, #e6c98a, transparent);
+  background: linear-gradient(90deg, transparent, var(--ga-accent-lite), transparent);
   filter: blur(0.4px);
   animation: ga-current 6s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
@@ -1315,7 +1421,7 @@ html, body {
   transition: opacity 300ms cubic-bezier(0.2, 0.8, 0.2, 1);
   background: radial-gradient(
     240px 160px at var(--ga-mx, 50%) var(--ga-my, 0%),
-    rgba(230, 201, 138, 0.14),
+    var(--ga-sheen, rgba(230, 201, 138, 0.14)),
     transparent 70%
   );
 }
@@ -1330,7 +1436,7 @@ html, body {
   inset-inline: 0;
   top: 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(230, 201, 138, 0.75), transparent);
+  background: linear-gradient(90deg, transparent, var(--ga-accent-lite), transparent);
   transform: scaleX(0);
   transition: transform 400ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }

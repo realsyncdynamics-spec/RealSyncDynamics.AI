@@ -1,34 +1,37 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { COMPLIANCE_NODES, HUB_NODE } from './governance-nodes';
+import type { GaTheme } from './use-ga-theme';
 import { prefersReducedMotion } from './prefers-reduced-motion';
 
 /**
- * Fester Hintergrund der Startseite — gebürstetes Titan mit Europa als
- * Chrom-Relief und goldenen Datenströmen.
+ * Fester Hintergrund der Startseite — in zwei Ausprägungen.
  *
- * ## Aufbau (hinten nach vorn)
+ * ## Genau eine Europa-Darstellung je Variante
  *
- * 1. Titanplatte    — Verlaufsfläche mit Lichtkante oben und Bürststruktur
- * 2. Carbon-Gewebe  — Grundtextur der linken Hälfte (unter der Textspalte)
- * 3. Foto-Ebene     — `public/europe-globe.webp`, entsättigt, rechts maskiert
- * 4. 3D-Platte      — geneigtes Titan-Raster + Europa-Relief + stehende Pins
- * 5. Atmosphäre     — Abdunklung oben/unten, seitlicher Scrim für Textkontrast
+ *   titan — gebürstetes Titan, Carbon-Gewebe, Europa als Chromrelief auf
+ *           geneigter Platte mit goldenen Datenströmen und stehenden Pins
+ *   night — Schwarz, Europa als fotografische Nachtaufnahme mit Stadtlichtern
+ *
+ * Beide Ebenen gleichzeitig zu zeigen war ein Fehler der ersten Fassung: Das
+ * Foto bringt sein eigenes Europa mit, das Relief legte sich versetzt und in
+ * anderem Maßstab darüber. Man sah Europa doppelt, und das las sich als
+ * Defekt. Jede Variante zeigt den Kontinent deshalb genau einmal.
  *
  * ## Statisch, nicht animiert
  *
- * Bewusst ohne Lichtdrift oder Dauerbewegung („kein dynamischer Hintergrund
- * mehr, fest"). Einzige Bewegung ist eine dezente Zeiger-Parallaxe von ±3°
- * auf der Platte — und die entfällt bei `prefers-reduced-motion`.
+ * Ohne Lichtdrift oder Dauerbewegung („kein dynamischer Hintergrund mehr,
+ * fest"). Einzige Bewegung ist eine Zeiger-Parallaxe von ±3° auf der Platte,
+ * und die entfällt bei `prefers-reduced-motion`.
  *
  * ## Geometrie
  *
- * Lädt `public/europe-relief.json` (≈35 kB, vorprojiziert von
- * `scripts/generate-europe-relief.mjs`). Kein d3, kein topojson-client, kein
- * CDN-Request — auf einer Seite, die DSGVO-Konformität verkauft, wäre ein
- * Third-Party-Fetch für Dekoration das falsche Signal.
+ * Die Titan-Variante lädt `public/europe-relief.json` (≈36 kB, vorprojiziert
+ * von `scripts/generate-europe-relief.mjs`). Kein d3, kein topojson-client,
+ * kein CDN-Request — auf einer Seite, die DSGVO-Konformität verkauft, wäre
+ * ein Third-Party-Fetch für Dekoration das falsche Signal.
  *
- * Schlägt der Fetch fehl, bleibt die Titan-/Carbon-/Foto-Komposition stehen
- * und nur das Relief entfällt. Die Seite ist nie von der Karte abhängig.
+ * Schlägt der Fetch fehl, bleibt die Titanfläche stehen und nur das Relief
+ * entfällt. Die Seite ist nie von der Karte abhängig.
  */
 
 type ReliefData = {
@@ -76,26 +79,38 @@ const BASE_ROTATE_X = 58;
 const BASE_ROTATE_Z = -16;
 
 /**
- * Kantenlänge der geneigten Platte in vw und der Anteil, den die Karte
- * darauf einnimmt.
+ * Maße der geneigten Platte.
  *
- * Die Platte trägt das Titan-Raster und muss über den Bildrand hinausgehen,
- * damit das Raster nicht als Rechteck endet. Die Karte darf das nicht: Bei
- * den 215vw des Prototyps lag Mitteleuropa jenseits des Bildrands, sichtbar
- * blieben nur Chromflächen ohne erkennbaren Kontinent. `rotateX` staucht die
- * Höhe zusätzlich auf cos(58°) ≈ 0,53 — die Karte wirkt also flacher als
- * breit und braucht entsprechend Platz.
+ * ## Warum die Platte in Pixeln gedeckelt ist
+ *
+ * Platte und Perspektive müssen zusammen skalieren. Stand die Platte in `vw`
+ * und die Perspektive auf festen 1500px, wuchs die Fläche mit dem Fenster,
+ * während der Fluchtpunkt stehenblieb: Bei 1440px war das Ergebnis brauchbar
+ * (dort war es eingestellt), bei 1900px kippte die Projektion, und bei 2560px
+ * maß die Platte 15817 × 32236px — die hintere Kante lief in den Fluchtpunkt,
+ * und quer durchs Bild stand ein flacher grauer Keil.
+ *
+ * Deshalb: Platte in `vw`, aber nach oben begrenzt, und die Perspektive in
+ * derselben Einheit. Damit ist die Komposition über alle Fensterbreiten
+ * dieselbe, statt nur bei einer zufällig zu stimmen.
  */
-const PLATE_VW = 132;
+const PLATE_SIZE = 'min(132vw, 1560px)';
+const PLATE_HALF = 'min(66vw, 780px)';
+const PERSPECTIVE = 'min(104vw, 1500px)';
 const MAP_INSET = '24%';
 
-export function EuropeReliefBackdrop() {
+export function EuropeReliefBackdrop({ theme }: { theme: GaTheme }) {
+  const night = theme === 'night';
   const [relief, setRelief] = useState<ReliefData | null>(null);
   const plateRef = useRef<HTMLDivElement | null>(null);
 
   // Relief erst laden, wenn der Hauptthread frei ist: Der Hero und seine
   // CTAs müssen sofort klickbar sein, die Karte ist Dekoration.
   useEffect(() => {
+    // Die Nachtvariante zeigt Europa als Foto — das Relief wird dort nicht
+    // gebraucht und auch nicht geladen.
+    if (night) return;
+
     let cancelled = false;
     const controller = new AbortController();
 
@@ -123,7 +138,7 @@ export function EuropeReliefBackdrop() {
       if (supportsIdle) window.cancelIdleCallback(handle);
       else window.clearTimeout(handle);
     };
-  }, []);
+  }, [night]);
 
   // Zeiger-Parallaxe, gedrosselt auf einen Frame.
   useEffect(() => {
@@ -204,17 +219,23 @@ export function EuropeReliefBackdrop() {
     <div
       className="pointer-events-none fixed inset-0 z-0 overflow-hidden"
       aria-hidden="true"
-      data-hero-visual="europe-relief-titan"
+      data-hero-visual={night ? 'europe-night-photo' : 'europe-relief-titan'}
       data-hero-framing="europe-right"
-      data-hero-scenery="titan-chrome-gold-network"
+      data-hero-scenery={night ? 'europe-night-citylights' : 'titan-chrome-gold-network'}
       style={{
-        background:
-          'radial-gradient(34% 60% at 38% -10%, rgba(255,255,255,.7) 0%, rgba(220,223,228,.32) 34%, transparent 64%),' +
-          'radial-gradient(90% 70% at 82% 14%, rgba(150,155,162,.28) 0%, transparent 60%),' +
-          'linear-gradient(180deg, #6a6e74 0%, #4a4e54 18%, #2e3135 52%, #16171a 100%)',
+        background: night
+          ? 'radial-gradient(70% 60% at 62% 40%, #070d14 0%, #04070a 58%, #010305 100%)'
+          : // Lichtkante oben Mitte-links wie in der Bildreferenz, darunter eine
+            // durchgehende Metallfläche im Mittelton. Der Verlauf lief vorher bis
+            // #16171a durch — ab Bildmitte war die Fläche praktisch schwarz und
+            // von „gebürstetem Titan" nichts mehr zu sehen.
+            'radial-gradient(46% 52% at 44% -6%, rgba(255,255,255,.78) 0%, rgba(226,229,234,.34) 32%, transparent 62%),' +
+            'radial-gradient(80% 60% at 86% 24%, rgba(188,194,202,.26) 0%, transparent 62%),' +
+            'linear-gradient(176deg, #85898f 0%, #6d7278 22%, #565b61 52%, #44484e 78%, #34383d 100%)',
       }}
     >
       {/* Bürststruktur: feine horizontale Linien über der Titanfläche. */}
+      {!night && (
       <div
         className="absolute inset-0 opacity-[.35] mix-blend-overlay"
         style={{
@@ -223,6 +244,7 @@ export function EuropeReliefBackdrop() {
             'repeating-linear-gradient(180deg, rgba(0,0,0,.08) 0 1px, transparent 1px 7px)',
         }}
       />
+      )}
 
       {/* Konstruktionsraster in Viertelspalten + Satzspiegel-Kanten. */}
       <div
@@ -234,20 +256,22 @@ export function EuropeReliefBackdrop() {
       />
       <div className="absolute inset-y-0 left-[4vw] right-[4vw] border-x border-[rgba(214,220,228,.08)]" />
 
-      {/* Warmer Horizont — die Lichtquelle der Komposition. */}
+      {/* Lichtstimmung: warmer Horizont in Titan, kühler Schimmer in der Nacht. */}
       <div
         className="absolute inset-0"
         style={{
-          background:
-            'radial-gradient(54% 48% at 56% 50%, rgba(232,189,146,.24) 0%, transparent 62%),' +
-            'linear-gradient(180deg, rgba(214,220,228,.08) 0%, transparent 9%),' +
-            'radial-gradient(72% 46% at 50% 26%, rgba(232,189,146,.12) 0%, transparent 66%)',
+          background: night
+            ? 'radial-gradient(48% 44% at 64% 42%, rgba(34,195,230,.10) 0%, transparent 66%)'
+            : 'radial-gradient(54% 48% at 56% 50%, rgba(232,189,146,.24) 0%, transparent 62%),' +
+              'linear-gradient(180deg, rgba(214,220,228,.08) 0%, transparent 9%),' +
+              'radial-gradient(72% 46% at 50% 26%, rgba(232,189,146,.12) 0%, transparent 66%)',
         }}
       />
 
-      {/* Carbon-Gewebe unter der Textspalte. */}
+      {/* Carbon-Gewebe unter der Textspalte — Titan-Grundtextur. */}
+      {!night && (
       <div
-        className="absolute inset-0 opacity-[.55]"
+        className="absolute inset-0 opacity-[.34]"
         style={{
           backgroundColor: '#14161a',
           backgroundImage:
@@ -264,27 +288,32 @@ export function EuropeReliefBackdrop() {
             'linear-gradient(96deg, #000 0%, #000 40%, rgba(0,0,0,.5) 62%, transparent 86%)',
         }}
       />
+      )}
 
-      {/* Fotorealistische Europa-Nacht aus dem Repo-Asset, in Titan getont. */}
-      <div
-        className="absolute -right-[4%] -top-[8%] h-[116%] w-[96%] opacity-[.94]"
-        style={{
-          backgroundImage: "url('/europe-globe.webp')",
-          backgroundSize: 'cover',
-          backgroundPosition: '62% 44%',
-          filter: 'grayscale(.9) contrast(1.2) brightness(1.1)',
-          maskImage:
-            'linear-gradient(96deg, transparent 0%, rgba(0,0,0,.5) 14%, #000 34%, #000 100%)',
-          WebkitMaskImage:
-            'linear-gradient(96deg, transparent 0%, rgba(0,0,0,.5) 14%, #000 34%, #000 100%)',
-        }}
-      />
+      {/* Nachtvariante: Europa als Foto — die einzige Kartendarstellung
+          dieser Fassung, in Originalfarben statt entsättigt. */}
+      {night && (
+        <div
+          className="absolute -right-[2%] -top-[6%] h-[112%] w-[86%]"
+          style={{
+            backgroundImage: "url('/europe-globe.webp')",
+            backgroundSize: 'cover',
+            backgroundPosition: '58% 42%',
+            filter: 'contrast(1.08) saturate(1.05) brightness(1.02)',
+            maskImage:
+              'linear-gradient(94deg, transparent 0%, rgba(0,0,0,.35) 16%, #000 42%, #000 100%)',
+            WebkitMaskImage:
+              'linear-gradient(94deg, transparent 0%, rgba(0,0,0,.35) 16%, #000 42%, #000 100%)',
+          }}
+        />
+      )}
 
-      {/* 3D-Platte: Relief beginnt erst rechts der Textspalte. */}
+      {/* 3D-Platte mit dem Chromrelief — nur in der Titan-Variante. */}
+      {!night && (
       <div
         className="absolute inset-0"
         style={{
-          perspective: '1500px',
+          perspective: PERSPECTIVE,
           perspectiveOrigin: '58% 34%',
           maskImage: 'linear-gradient(96deg, rgba(0,0,0,.6) 0%, rgba(0,0,0,.85) 16%, #000 34%)',
           WebkitMaskImage:
@@ -295,9 +324,9 @@ export function EuropeReliefBackdrop() {
           ref={plateRef}
           className="absolute left-[70%] top-[52%]"
           style={{
-            height: `${PLATE_VW}vw`,
-            width: `${PLATE_VW}vw`,
-            margin: `${-PLATE_VW / 2}vw 0 0 ${-PLATE_VW / 2}vw`,
+            height: PLATE_SIZE,
+            width: PLATE_SIZE,
+            margin: `calc(${PLATE_HALF} * -1) 0 0 calc(${PLATE_HALF} * -1)`,
             transformStyle: 'preserve-3d',
             transform: `rotateX(${BASE_ROTATE_X}deg) rotateZ(${BASE_ROTATE_Z}deg) translateZ(-40px) scale(.9)`,
           }}
@@ -450,23 +479,28 @@ export function EuropeReliefBackdrop() {
           )}
         </div>
       </div>
+      )}
 
       {/* Atmosphäre oben/unten. */}
       <div
         className="absolute inset-0"
         style={{
-          background:
-            'linear-gradient(180deg, rgba(11,19,28,.55) 0%, rgba(11,19,28,0) 24%,' +
-            ' rgba(11,19,28,.06) 58%, rgba(11,19,28,.8) 100%)',
+          background: night
+            ? 'linear-gradient(180deg, rgba(2,5,8,.62) 0%, rgba(2,5,8,0) 26%,' +
+              ' rgba(2,5,8,.08) 58%, rgba(2,5,8,.88) 100%)'
+            : 'linear-gradient(180deg, rgba(16,18,21,.42) 0%, rgba(16,18,21,0) 26%,' +
+              ' rgba(16,18,21,.04) 62%, rgba(16,18,21,.52) 100%)',
         }}
       />
       {/* Seitlicher Scrim — hält den Textkontrast links. */}
       <div
         className="absolute inset-0"
         style={{
-          background:
-            'linear-gradient(100deg, rgba(18,19,22,.42) 0%, rgba(18,19,22,.26) 30%,' +
-            ' transparent 50%, transparent 100%)',
+          background: night
+            ? 'linear-gradient(98deg, rgba(2,5,8,.88) 0%, rgba(2,5,8,.66) 32%,' +
+              ' rgba(2,5,8,.2) 52%, transparent 72%)'
+            : 'linear-gradient(100deg, rgba(14,16,19,.9) 0%, rgba(14,16,19,.78) 24%,' +
+              ' rgba(14,16,19,.44) 42%, rgba(14,16,19,.12) 58%, transparent 74%)',
         }}
       />
     </div>

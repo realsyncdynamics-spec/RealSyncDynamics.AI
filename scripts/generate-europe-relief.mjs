@@ -98,6 +98,62 @@ function geometryRings(geometry, arcs) {
   return [];
 }
 
+
+// ── Zuschnitt am Fenster ────────────────────────────────────────────────
+// Ohne Zuschnitt reicht ein einziger Punkt im Fenster, damit das ganze Land
+// gezeichnet wird — mit allem, was weit draußen liegt. Konkret kamen so
+// Grönland (Mittelpunkt weit außerhalb der Leinwand, Fläche 922k),
+// Russlands Ferner Osten (4968k) und Frankreichs Überseegebiete (619k) ins
+// Bild und lagen als große, flache Chromflächen über der Karte. Auf einer
+// Europakarte gehören sie nicht ins Bild.
+//
+// Sutherland–Hodgman gegen das Rechteck des Fensters, in Längen-/Breitengrad
+// gerechnet: Jede Ringkante wird an der Fensterkante abgeschnitten, statt
+// den Ring ganz zu verwerfen. Küstenlinien enden dadurch sauber am Rand.
+
+const CLIP = { lonMin: -30, lonMax: 50, latMin: 34, latMax: 72 };
+
+const INSIDE = {
+  left:   ([lon]) => lon >= CLIP.lonMin,
+  right:  ([lon]) => lon <= CLIP.lonMax,
+  bottom: ([, lat]) => lat >= CLIP.latMin,
+  top:    ([, lat]) => lat <= CLIP.latMax,
+};
+
+/** Schnittpunkt der Kante a→b mit der jeweiligen Fensterkante. */
+function intersect(a, b, edge) {
+  const [ax, ay] = a;
+  const [bx, by] = b;
+  if (edge === 'left' || edge === 'right') {
+    const x = edge === 'left' ? CLIP.lonMin : CLIP.lonMax;
+    return [x, ay + ((by - ay) * (x - ax)) / (bx - ax)];
+  }
+  const y = edge === 'bottom' ? CLIP.latMin : CLIP.latMax;
+  return [ax + ((bx - ax) * (y - ay)) / (by - ay), y];
+}
+
+function clipRing(ring) {
+  let output = ring;
+  for (const edge of ['left', 'right', 'bottom', 'top']) {
+    const input = output;
+    output = [];
+    if (input.length === 0) break;
+    let previous = input[input.length - 1];
+    for (const current of input) {
+      const currentIn = INSIDE[edge](current);
+      const previousIn = INSIDE[edge](previous);
+      if (currentIn) {
+        if (!previousIn) output.push(intersect(previous, current, edge));
+        output.push(current);
+      } else if (previousIn) {
+        output.push(intersect(previous, current, edge));
+      }
+      previous = current;
+    }
+  }
+  return output;
+}
+
 // ── Mercator mit fitExtent ──────────────────────────────────────────────
 
 const rad = (deg) => (deg * Math.PI) / 180;
@@ -131,7 +187,9 @@ const round = (n) => Math.round(n * 10) / 10;
  *  unter der radialen Maske ohnehin unsichtbar, blähen die Datei aber auf. */
 function ringsToPath(rings) {
   const parts = [];
-  for (const ring of rings) {
+  for (const raw of rings) {
+    if (raw.length < 3) continue;
+    const ring = clipRing(raw);
     if (ring.length < 3) continue;
 
     const projected = ring.map(([lon, lat]) => project(lon, lat));

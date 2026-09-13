@@ -370,9 +370,9 @@ export function MainLanding() {
         <WorkspacePreviewSection />
         <RuntimeLayersSection />
         <PlatformCapabilitiesSection />
+        <LandingRoadmapSection />
         <LandingChannelTools />
         <LandingPricingSection />
-        <LandingRoadmapSection />
         <EnterpriseAccessSection />
 
         <section

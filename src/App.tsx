@@ -22,6 +22,7 @@ import { DemoTourProvider } from './core/demo/DemoTourContext';
 import { MainLanding } from './pages/MainLanding';
 import { DesignLedgerLanding } from './pages/design/DesignLedgerLanding';
 import { DesignTribunalLanding } from './pages/design/DesignTribunalLanding';
+import { DesignGovernanceLanding } from './pages/design/DesignGovernanceLanding';
 // ── Product Entry Points (/scan/start, /chatbot/start, /phonebot/start)
 import { ScanStartPage } from './pages/product-entry-points/ScanStartPage';
 import { ChatbotStartPage } from './pages/product-entry-points/ChatbotStartPage';
@@ -502,6 +503,7 @@ function RoutesWithTracking() {
       {/* Design previews — do NOT replace live `/`. Honest Preview surfaces. */}
       <Route path="/design/ledger" element={<DesignLedgerLanding />} />
       <Route path="/design/tribunal" element={<DesignTribunalLanding />} />
+      <Route path="/design/governance" element={<DesignGovernanceLanding />} />
 
       {/* Der kanonische Scan-Einstieg ist `/audit` (siehe
           docs/product/canonical-funnel-decision.md). `/scan` gab es kurzzeitig

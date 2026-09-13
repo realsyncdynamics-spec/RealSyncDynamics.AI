@@ -843,7 +843,7 @@ function RoutesWithTracking() {
       <Route path="/app/security-signals" element={<GovernanceBrowserShell><SecuritySignalsView /></GovernanceBrowserShell>} />
       <Route path="/app/legal-rag" element={<AppGate><LegalRagView /></AppGate>} />
       <Route path="/app/workflows" element={<GovernanceBrowserShell><WorkflowsView /></GovernanceBrowserShell>} />
-      <Route path="/app/risks" element={<GovernanceBrowserShell><RiskCenterView /></GovernanceBrowserShell>} />
+      <Route path="/app/risks" element={<AppGate><GovernanceBrowserShell><RiskCenterView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/compliance" element={<GovernanceBrowserShell><GovernanceComplianceReportView /></GovernanceBrowserShell>} />
       <Route path="/app/evidence" element={<AppGate><GovernanceBrowserShell><EvidenceVaultView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/evidence/auditor" element={<GovernanceBrowserShell><RequireAal2 action="Evidence-Export"><GovernanceAuditorConsoleView /></RequireAal2></GovernanceBrowserShell>} />

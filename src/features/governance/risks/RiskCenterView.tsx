@@ -702,7 +702,7 @@ function _RiskCenterView() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
 
-        {loadError && (
+        {loadError && activeRisks.length > 0 && (
           <div className="flex items-start gap-2 text-sm text-rose-300 bg-rose-950/40 border border-rose-900 p-3">
             <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" /> {loadError}
           </div>

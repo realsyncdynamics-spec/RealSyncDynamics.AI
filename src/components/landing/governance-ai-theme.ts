@@ -1,19 +1,24 @@
 /**
- * Governance-AI-Landing — Design-Tokens der TITAN-Variante.
+ * Governance-AI-Landing — Design-Tokens.
  *
- * ## Verhältnis zu `landing-theme.ts`
+ * ## Zwei Varianten, ein Attribut
  *
- * `landing-theme.ts` bleibt die Basis für alle öffentlichen Flächen
- * (`/branchen`, `/scan`, …) und ist unverändert. Diese Datei setzt
- * ausschließlich die Palette der Startseite darüber: gebürstetes Titan
- * statt Nachtblau, Champagner-Gold (`#c9a24a`) statt Cream (`#e4cfa2`),
- * Inter Tight als Display-Schnitt statt Playfair.
+ * Die Startseite tritt in zwei Ausprägungen auf, zwischen denen der Besucher
+ * umschaltet (`data-ga-theme` auf dem Seiten-Wrapper, siehe `ThemeSwitch`):
  *
- * Die Werte stammen 1:1 aus dem finalen Design-Prototyp
- * (`The Governance AI.html`, Titan-Variante) — der Champagner-Ton war
- * Dominiks letzte Farbentscheidung („Gold zu kühlem Champagner-Gold …
- * wirkt institutioneller"), nicht das ältere Orange-Bronze früherer
- * Iterationen.
+ *   titan  — gebürstetes Titan, Europa als Chromrelief mit Goldströmen,
+ *            Inter Tight als Display-Schnitt. Standard beim ersten Aufruf.
+ *   night  — Schwarz, Europa als fotografische Nachtaufnahme, Cyan-Akzent,
+ *            Playfair Display als Display-Schnitt.
+ *
+ * ## Warum hier keine Hex-Werte mehr stehen
+ *
+ * Die Konstanten zeigen auf CSS-Variablen statt auf feste Farben. Dadurch
+ * schaltet ein einziges Attribut die ganze Seite um — die Komponenten
+ * behalten ihre bestehenden `style`-Angaben und werden trotzdem
+ * themefähig. Die tatsächlichen Werte beider Paletten stehen gebündelt in
+ * `src/index.css` unter `[data-ga-theme]`; wer eine Farbe ändern will,
+ * ändert sie dort an genau einer Stelle für beide Varianten.
  *
  * Keine Preise, keine Copy, keine Limits — alles inhaltliche kommt aus den
  * SSoT-Dateien (`hero-content.ts`, `pricing.ts`, `implementation-status.ts`,
@@ -24,49 +29,47 @@
 export { LANDING_SANS as GA_SANS, LANDING_MONO as GA_MONO } from './landing-theme';
 
 /** Display-Schnitt: Inter Tight, self-hosted (siehe `src/index.css`). */
-export const GA_DISPLAY = "'Inter Tight', 'Inter', system-ui, sans-serif";
+export const GA_DISPLAY = 'var(--ga-display)';
 
 // ── Flächen ─────────────────────────────────────────────────────────────
-export const GA_VOID = '#0f1012';
-export const GA_DEEP = '#1c1e21';
-export const GA_MID = '#2a2d31';
-export const GA_PANEL = 'rgba(24, 26, 29, 0.72)';
+export const GA_VOID = 'var(--ga-void)';
+export const GA_DEEP = 'var(--ga-deep)';
+export const GA_MID = 'var(--ga-mid)';
+export const GA_PANEL = 'var(--ga-panel)';
 
 // ── Text ────────────────────────────────────────────────────────────────
-export const GA_TEXT = '#f3f5f8';
-export const GA_MUTED = '#a3acb8';
-export const GA_TITAN = '#8a929c';
-export const GA_SILVER = '#d9dee5';
+export const GA_TEXT = 'var(--ga-text)';
+export const GA_MUTED = 'var(--ga-muted)';
+export const GA_TITAN = 'var(--ga-titan)';
+export const GA_SILVER = 'var(--ga-silver)';
 
 // ── Akzent: Champagner-Gold ─────────────────────────────────────────────
-export const GA_GOLD = '#c9a24a';
-export const GA_GOLD_LITE = '#e6c98a';
-export const GA_GOLD_DEEP = '#8a6a24';
+export const GA_GOLD = 'var(--ga-accent)';
+export const GA_GOLD_LITE = 'var(--ga-accent-lite)';
+export const GA_GOLD_DEEP = 'var(--ga-accent-deep)';
 
 /** Status-Grün — ausschließlich für Betriebssignale, nie als Akzentfarbe. */
-export const GA_GREEN = '#35d0a8';
+export const GA_GREEN = 'var(--ga-green)';
 
 // ── Linien ──────────────────────────────────────────────────────────────
-export const GA_LINE = 'rgba(217, 222, 229, 0.16)';
-export const GA_LINE_SOFT = 'rgba(217, 222, 229, 0.09)';
+export const GA_LINE = 'var(--ga-line)';
+export const GA_LINE_SOFT = 'var(--ga-line-soft)';
 
 // ── Verläufe ────────────────────────────────────────────────────────────
 
 /** Goldsiegel-Fläche der Primär-Pills (Header-CTA, Hero, Enterprise). */
-export const GA_GOLD_FACE = 'linear-gradient(180deg, #f2dca4 0%, #d3ad55 48%, #a8842c 100%)';
+export const GA_GOLD_FACE = 'var(--ga-pill-face)';
 
-export const GA_GOLD_FACE_SHADOW =
-  'inset 0 1px 0 rgba(255,255,255,.6), inset 0 -2px 0 rgba(0,0,0,.18), 0 0 0 1px rgba(255,236,190,.35), 0 12px 30px rgba(0,0,0,.45), 0 0 30px rgba(211,173,85,.22)';
+export const GA_GOLD_FACE_SHADOW = 'var(--ga-pill-shadow)';
 
 /** Silber-Verlauf der H1 — hell oben, Titan unten. */
-export const GA_SILVER_TEXT = 'linear-gradient(180deg, #ffffff 0%, #e9ecf0 48%, #b7bcc4 100%)';
+export const GA_SILVER_TEXT = 'var(--ga-h1-face)';
 
 /** Gold-Verlauf für Akzentworte in der H1 („for Europe"). */
-export const GA_GOLD_TEXT = 'linear-gradient(180deg, #f4e0b0 0%, #d3ad55 50%, #a8842c 100%)';
+export const GA_GOLD_TEXT = 'var(--ga-h1-accent)';
 
 /** Gold-Verlauf für Akzentworte in H2 — helle Stopps links, Tiefe rechts. */
-export const GA_GOLD_TEXT_H2 =
-  'linear-gradient(116deg, #f7ecd6 0%, #e6c98a 34%, #c9a24a 64%, #8a6a24 88%)';
+export const GA_GOLD_TEXT_H2 = 'var(--ga-h2-accent)';
 
 export const GA_EASE = 'cubic-bezier(0.2, 0.8, 0.2, 1)';
 
@@ -81,13 +84,13 @@ export const GA_LEDE = 'clamp(1.05rem, .95rem + .45vw, 1.25rem)';
  * dem Build.
  */
 export const GA_PILL_PRIMARY =
-  'group relative inline-flex items-center justify-center gap-2 overflow-hidden rounded-full px-[28px] py-[15px] text-[14px] font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e6c98a] hover:brightness-[1.06]';
+  'group relative inline-flex items-center justify-center gap-2 overflow-hidden rounded-full px-[28px] py-[15px] text-[14px] font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ga-accent-lite)] hover:brightness-[1.06]';
 
 export const GA_PILL_GHOST =
-  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full border border-[rgba(214,220,228,0.4)] bg-[rgba(18,28,38,0.66)] px-[26px] py-[14px] text-[14px] font-medium text-[#f3f5f8] backdrop-blur-[8px] transition hover:border-[#d9dee5] hover:bg-[rgba(214,220,228,0.16)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d9dee5]/60';
+  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full border border-[var(--ga-ghost-border)] bg-[var(--ga-ghost-face)] px-[26px] py-[14px] text-[14px] font-medium text-[var(--ga-text)] backdrop-blur-[8px] transition hover:border-[var(--ga-ghost-border-hover)] hover:bg-[var(--ga-ghost-face-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ga-silver)]/60';
 
 export const GA_EYEBROW_PILL =
-  'inline-flex items-center gap-2.5 whitespace-nowrap rounded-full border border-[rgba(201,162,74,0.42)] bg-[rgba(18,28,38,0.6)] px-[13px] py-[7px] text-[11px] tracking-[.2em] text-[#e6c98a] backdrop-blur-[6px]';
+  'inline-flex items-center gap-2.5 whitespace-nowrap rounded-full border border-[var(--ga-accent-border)] bg-[var(--ga-chip-face)] px-[13px] py-[7px] text-[11px] tracking-[.2em] text-[var(--ga-accent-lite)] backdrop-blur-[6px]';
 
 /** Hairline-Grid der Enterprise-/Kennzahlen-Raster (1px-Fugen über Bg). */
-export const GA_HAIRLINE_GRID = 'gap-px border bg-[rgba(217,222,229,0.09)]';
+export const GA_HAIRLINE_GRID = 'gap-px border bg-[var(--ga-line-soft)]';

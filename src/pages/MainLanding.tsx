@@ -18,6 +18,7 @@ import { RuntimeLayersSection } from '../components/landing/RuntimeLayersSection
 import { SectionEyebrow, SectionHeading } from '../components/landing/GovernanceSectionChrome';
 import { WorkspacePreviewSection } from '../components/landing/WorkspacePreviewSection';
 import { prefersReducedMotion } from '../components/landing/prefers-reduced-motion';
+import { useGaTheme } from '../components/landing/use-ga-theme';
 import {
   GA_DISPLAY,
   GA_GOLD_FACE,
@@ -124,6 +125,7 @@ function useEvidenceSeal() {
 }
 
 export function MainLanding() {
+  const { theme, setTheme } = useGaTheme();
   const seal = useEvidenceSeal();
 
   // Goldschimmer der Karten folgt dem Zeiger (siehe `.ga-card` in index.css).
@@ -145,6 +147,7 @@ export function MainLanding() {
   return (
     <div
       className="landing-context relative min-h-screen antialiased"
+      data-ga-theme={theme}
       style={{
         backgroundColor: GA_VOID,
         color: GA_TEXT,
@@ -160,10 +163,10 @@ export function MainLanding() {
         ogDescription="RealSyncDynamics.AI — AI Compliance Operations OS for Europe. Free Audit starten. Continuous evidence."
       />
 
-      <EuropeReliefBackdrop />
+      <EuropeReliefBackdrop theme={theme} />
 
       <div className="relative z-10 flex min-h-screen flex-col">
-        <GovernanceStatusBar />
+        <GovernanceStatusBar theme={theme} onThemeChange={setTheme} />
         <PublicDarkHeader tone="titan" />
 
         <main className="mx-auto flex w-full max-w-[1500px] flex-1 items-center overflow-x-clip px-[4vw] pb-[clamp(40px,5vw,80px)] pt-[clamp(48px,7vw,108px)]">
@@ -205,10 +208,11 @@ export function MainLanding() {
             </div>
 
             <h1
-              className="m-0 max-w-[22ch] text-balance leading-[.98] tracking-[-.045em]"
+              className="m-0 max-w-[22ch] text-balance leading-[.98]"
               style={{
                 fontFamily: GA_DISPLAY,
-                fontWeight: 600,
+                fontWeight: 'var(--ga-h1-weight)' as unknown as number,
+                letterSpacing: 'var(--ga-h1-tracking)',
                 fontSize: GA_H1,
                 backgroundImage: GA_SILVER_TEXT,
                 backgroundClip: 'text',

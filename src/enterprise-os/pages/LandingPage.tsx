@@ -21,6 +21,15 @@ import { Badge, StatusBadge } from '../components/Badge';
 import { Card } from '../components/Card';
 import { ScoreGauge } from '../components/ScoreGauge';
 import { SCORES, RISKS, WEBSITES } from '../mock/data';
+// SSoT für Headline/Loop/CTA-Labels — dieselbe Quelle wie `MainLanding.tsx`
+// (Live-`/`). Verhindert Text-Drift zwischen den beiden Hero-Flächen; siehe
+// PR-Review zu #1369.
+import {
+  HERO_DASHBOARD_CTA_LABEL,
+  HERO_HEADLINE,
+  HERO_OPERATING_LOOP,
+  HERO_SCAN_CTA_LABEL,
+} from '../../components/governance-frontend/hero-content';
 
 const MODULES = [
   {
@@ -101,16 +110,28 @@ export function LandingPage() {
             </div>
 
             <h1 className="max-w-4xl text-5xl font-semibold leading-[0.96] tracking-[-0.045em] text-white sm:text-6xl lg:text-[76px]">
-              AI Compliance
-              <br />
-              Operations OS <span className="text-[#FFB347]">for Europe</span>
+              {HERO_HEADLINE.map((segments, line) => (
+                <span key={line} className="block">
+                  {segments.map((segment, index) =>
+                    segment.accent ? (
+                      <span key={index} className="text-[#FFB347]">
+                        {segment.text}
+                      </span>
+                    ) : (
+                      <span key={index}>{segment.text}</span>
+                    ),
+                  )}
+                </span>
+              ))}
             </h1>
 
             <div className="mt-8 flex flex-wrap items-center gap-x-4 gap-y-2 font-mono text-[11px] font-medium uppercase tracking-[0.24em] text-white/65 sm:text-xs">
-              <span>Discover</span><span className="text-[#FFB347]">→</span>
-              <span>Classify</span><span className="text-[#FFB347]">→</span>
-              <span>Enforce</span><span className="text-[#FFB347]">→</span>
-              <span>Prove</span>
+              {HERO_OPERATING_LOOP.split(' → ').map((word, index, words) => (
+                <React.Fragment key={word}>
+                  <span>{word}</span>
+                  {index < words.length - 1 && <span className="text-[#FFB347]">→</span>}
+                </React.Fragment>
+              ))}
             </div>
 
             <p className="mt-8 max-w-2xl text-base leading-7 text-white/70 sm:text-lg sm:leading-8">
@@ -120,12 +141,12 @@ export function LandingPage() {
             <div className="mt-9 flex flex-col gap-3 sm:flex-row">
               <Link to="/os/audit">
                 <Button variant="primary" size="lg" className="min-w-[220px] shadow-[0_8px_40px_rgba(255,179,71,0.24)]">
-                  Free Audit starten <ArrowRight className="ml-2 h-4 w-4" />
+                  {HERO_SCAN_CTA_LABEL} <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </Link>
               <Link to="/os/app">
                 <Button variant="secondary" size="lg" className="min-w-[220px] border-white/35 bg-white/10 text-white backdrop-blur-md hover:bg-white/15">
-                  Live Dashboard ansehen
+                  {HERO_DASHBOARD_CTA_LABEL}
                 </Button>
               </Link>
             </div>

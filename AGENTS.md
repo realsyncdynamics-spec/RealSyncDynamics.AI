@@ -1,3 +1,15 @@
+## Base44 Dev Environment
+
+- **Compose:** `docker compose -f docker-compose.base44.yml up -d`
+- **Service:** single `web` container (node:22) running `npm ci && npm run dev` (Vite 6 on port 3000)
+- **Source:** bind-mounted at `/app`; edits hot-reload via Vite HMR
+- **Backend:** Supabase (external/hosted). The app falls back to production Supabase URL + anon key (`src/lib/supabaseUrl.ts`) when `VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON_KEY` are unset, so no external secrets are required to boot. Landing pages and public routes render without auth.
+- **No local DB/cache** needed — all data is in Supabase.
+- **Verify:** `curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/` → 200
+- **Host allowlist:** Vite >= 6.1 picks up `__VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS` from the environment (set by the platform).
+
+---
+
 # RealSync Lead Architect Persona
 
 ## Rolle

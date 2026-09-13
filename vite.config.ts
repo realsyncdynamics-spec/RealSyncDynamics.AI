@@ -23,15 +23,32 @@ export default defineConfig(({mode}) => {
                           output: {
                                   manualChunks(id) {
                                           // Split heavy vendor libs only; keep React & core together
-                                          // to avoid breaking context providers
+                                          // to avoid breaking context providers.
+                                          // Do NOT split react / react-dom / react-router — Context breaks.
                                           if (id.includes('node_modules/recharts')) {
                                                   return 'vendor-recharts';
                                           }
                                           if (id.includes('node_modules/@supabase/supabase-js')) {
                                                   return 'vendor-supabase';
                                           }
-                                          // Keep React, React Router, and app code together in main chunk
-                                          // Context providers (src/core/) must stay in entry chunk
+                                          if (
+                                                  id.includes('node_modules/three') ||
+                                                  id.includes('node_modules/@react-three/')
+                                          ) {
+                                                  return 'vendor-three';
+                                          }
+                                          if (
+                                                  id.includes('node_modules/framer-motion') ||
+                                                  id.includes('node_modules/motion/')
+                                          ) {
+                                                  return 'vendor-motion';
+                                          }
+                                          if (id.includes('node_modules/@react-pdf/')) {
+                                                  return 'vendor-pdf';
+                                          }
+                                          if (id.includes('node_modules/@puckeditor/')) {
+                                                  return 'vendor-puck';
+                                          }
                                   },
                           },
                   },

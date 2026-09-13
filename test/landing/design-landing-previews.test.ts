@@ -8,19 +8,22 @@ import { describe, expect, it } from 'vitest';
 const root = resolve(__dirname, '../..');
 
 describe('design landing previews', () => {
-  it('registers /design/ledger and /design/tribunal without replacing /', () => {
+  it('registers /design/ledger, /design/tribunal and /design/governance without replacing /', () => {
     const app = readFileSync(resolve(root, 'src/App.tsx'), 'utf8');
     expect(app).toMatch(/path="\/"\s+element=\{<MainLanding/);
     expect(app).toContain('path="/design/ledger"');
     expect(app).toContain('path="/design/tribunal"');
+    expect(app).toContain('path="/design/governance"');
     expect(app).toContain('DesignLedgerLanding');
     expect(app).toContain('DesignTribunalLanding');
+    expect(app).toContain('DesignGovernanceLanding');
   });
 
   it('uses existing audit funnel and allowed CTAs only', () => {
     for (const file of [
       'src/pages/design/DesignLedgerLanding.tsx',
       'src/pages/design/DesignTribunalLanding.tsx',
+      'src/pages/design/DesignGovernanceLanding.tsx',
     ]) {
       const src = readFileSync(resolve(root, file), 'utf8');
       expect(src).toContain('/audit?domain=');
@@ -34,12 +37,14 @@ describe('design landing previews', () => {
     }
   });
 
-  it('registers both design surfaces as preview in implementation-status', () => {
+  it('registers all design surfaces as preview in implementation-status', () => {
     const reg = readFileSync(resolve(root, 'src/product/implementation-status.ts'), 'utf8');
     expect(reg).toContain("id: 'design-landing-ledger'");
     expect(reg).toContain("id: 'design-landing-tribunal'");
+    expect(reg).toContain("id: 'design-landing-governance'");
     expect(reg).toContain("route: '/design/ledger'");
     expect(reg).toContain("route: '/design/tribunal'");
+    expect(reg).toContain("route: '/design/governance'");
     expect(reg).toMatch(/id: 'public-landing'[\s\S]*?status: 'live'/);
   });
 });

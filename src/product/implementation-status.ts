@@ -82,6 +82,17 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     showOnRoadmap: true,
   },
   {
+    id: 'design-landing-governance',
+    name: 'The Governance AI Landing (Design)',
+    status: 'preview',
+    group: 'visual',
+    description:
+      'Alternatives Enterprise-Chrome (Titan/Bronze, Europa-Relief, Titan/Nacht-Theme) unter /design/governance — Preview, ersetzt nicht Live-/.',
+    route: '/design/governance',
+    evidence: ['src/pages/design/DesignGovernanceLanding.tsx', 'src/App.tsx'],
+    showOnRoadmap: true,
+  },
+  {
     id: 'welcome',
     name: 'Welcome / Login',
     status: 'live',

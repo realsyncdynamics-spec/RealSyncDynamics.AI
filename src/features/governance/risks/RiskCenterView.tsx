@@ -695,7 +695,7 @@ function _RiskCenterView() {
         </div>
         <div className="flex items-center gap-2">
           <span className="font-mono text-[11px] text-titanium-600 border border-titanium-900 px-2 py-1">
-            {loading ? 'Laden …' : loadError ? 'Risiken nicht verfügbar' : `Stand: ${asOfLabel(activeRisks)}`}
+            {loading ? 'Laden …' : loadError ? 'Stand: nicht verfügbar' : `Stand: ${asOfLabel(activeRisks)}`}
           </span>
         </div>
       </header>

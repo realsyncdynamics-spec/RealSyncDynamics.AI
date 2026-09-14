@@ -5,9 +5,11 @@
  *
  * Issue #1381 §8 setzt zehn Abnahme-Gates für eine Dashboard-Aktion. Das
  * wichtigste Ergebnis der Inventur war nicht, dass vieles fehlt, sondern dass
- * man es einer Fläche nicht ansieht: `/app/agents` führt einen echten,
- * abgerechneten Run aus und schreibt nach `enterprise_agent_runs`.
- * `/app/automations` sieht genauso aus — Karten mit Button.
+ * man es einer Fläche nicht ansieht: `/app/agents` und `/app/automations`
+ * zeigen beide Karten mit Button — die eine führt aus und rechnet ab, die
+ * andere endet in einem 500er. Beide Einordnungen musste ich korrigieren,
+ * nachdem ich sie gegen Code und Produktionsdatenbank geprüft hatte statt
+ * gegen Kommentare.
  *
  * Die erste Fassung dieses Inventars hat `/app/automations` als
  * NOT_IMPLEMENTED geführt, mit der Begründung, es gebe „keine Engine und keine

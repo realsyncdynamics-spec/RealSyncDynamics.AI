@@ -38,18 +38,37 @@ import {
  * SiteOS-Compliance-Agenten bereits eine echte Ausführung.
  */
 
-type ScanRun = Awaited<ReturnType<typeof listScanRuns>>[number];
+/** Nur die Felder des Scan-Laufs, die dieser Executor liest. */
+type ComplianceScanRun = {
+  id: string;
+  status: string;
+  finding_count: number;
+  severity_max: string | null;
+  started_at: string | null;
+  completed_at: string | null;
+  created_at: string;
+};
 
 /**
  * Die gelesenen Quellen als Oberfläche — gleiches Muster wie
- * `SiteOsCommandSurface` in `features/siteos/commandExecutor.ts`. Der Test
- * setzt sie ein, ohne Modul-Mocking.
+ * `SiteOsCommandSurface` in `features/siteos/commandExecutor.ts`, nur enger
+ * geschnitten: beschrieben ist, was dieser Executor tatsächlich anfasst, nicht
+ * die volle Signatur der API. Die echten Funktionen erfüllen sie, und eine
+ * Test-Vorlage muss nicht zwanzig Felder erfinden, von denen keines gelesen
+ * wird — erfundene Vollständigkeit ist auch eine Behauptung.
  */
 export type ComplianceDataSurface = {
-  listWebsitesForTenant: typeof listWebsitesForTenant;
-  listScanRuns: typeof listScanRuns;
-  listFindingsForScan: typeof listFindingsForScan;
-  getScanReport: typeof getScanReport;
+  listWebsitesForTenant: (tenantId: string) => Promise<ReadonlyArray<{ domain: string }>>;
+  listScanRuns: (
+    tenantId: string,
+    opts?: { limit?: number },
+  ) => Promise<ReadonlyArray<ComplianceScanRun>>;
+  listFindingsForScan: (
+    scanRunId: string,
+  ) => Promise<ReadonlyArray<{ status: string; severity: string; summary: string }>>;
+  getScanReport: (
+    scanRunId: string,
+  ) => Promise<{ all_findings: ReadonlyArray<unknown>; evidence_catalog: ReadonlyArray<unknown> } | null>;
 };
 
 const LIVE_DATA: ComplianceDataSurface = {
@@ -83,8 +102,8 @@ export function createComplianceExecutor(
   data: ComplianceDataSurface = LIVE_DATA,
 ): StepExecutor {
   // Drei Schritte brauchen denselben jüngsten Lauf — einmal holen, nicht dreimal.
-  let latestRun: Promise<ScanRun | null> | null = null;
-  const newestRun = (): Promise<ScanRun | null> => {
+  let latestRun: Promise<ComplianceScanRun | null> | null = null;
+  const newestRun = (): Promise<ComplianceScanRun | null> => {
     latestRun ??= data.listScanRuns(tenantId, { limit: 1 }).then((runs) => runs[0] ?? null);
     return latestRun;
   };

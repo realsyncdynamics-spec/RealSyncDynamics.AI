@@ -2,10 +2,9 @@ import React from 'react';
 import { Construction } from 'lucide-react';
 import { EmptyState } from '../components/States';
 
-// These routes historically pointed at this placeholder shell even though
-// production-ready Governance surfaces already exist elsewhere in the app.
-// Keep the legacy route stable, but render the real surface instead of a
-// "coming soon" state. The fallback remains for genuinely future pages.
+// These legacy /os/app/* routes historically pointed at a placeholder shell
+// even though functional Governance surfaces already exist in the main app.
+// Keep the legacy routes stable while rendering the real implementation.
 import { AiSystemRegistryView } from '@/features/governance/ai-registry/AiSystemRegistryView';
 import { GovernanceAgentsCenterView } from '@/features/governance/agents/AgentsCenterView';
 import { GovernanceAuditExportView } from '@/features/governance/audit/AuditExportView';
@@ -17,6 +16,15 @@ interface PlaceholderPageProps {
   title: string;
   description: string;
 }
+
+const LIVE_SURFACES = new Set([
+  'AI Use Case Registry',
+  'Agenten',
+  'Audit Reports',
+  'Team & Rollen',
+  'Billing',
+  'Einstellungen',
+]);
 
 function FunctionalSurface({ title }: { title: string }) {
   switch (title) {
@@ -38,15 +46,13 @@ function FunctionalSurface({ title }: { title: string }) {
 }
 
 export function PlaceholderPage({ title, description }: PlaceholderPageProps) {
-  const surface = <FunctionalSurface title={title} />;
-
-  if (surface.props.children) {
+  if (LIVE_SURFACES.has(title)) {
     return (
       <div className="flex flex-col gap-4" data-functional-surface={title}>
         <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 px-3 py-2 font-mono text-[10px] uppercase tracking-wider text-emerald-300">
           Live Surface · legacy route
         </div>
-        {surface}
+        <FunctionalSurface title={title} />
       </div>
     );
   }

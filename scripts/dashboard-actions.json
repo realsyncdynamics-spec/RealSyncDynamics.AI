@@ -1,0 +1,111 @@
+{
+  "zweck": "Inventar der verkaufsrelevanten Dashboard-Aktionen (Issue #1381, Phase 1). Jede Zeile nennt Route, Komponente, Handler, Backend und Zustand — belegt am Code, nicht behauptet. Gepflegt von scripts/check-dashboard-actions.mjs.",
+  "abdeckung": "P0-Flächen aus Issue #1381: Bots, Agent Runtime, Automation Builder, Frontend/Landing Builder, Web App Builder, Domains. Sekundäre Dashboard-Module folgen (P1).",
+  "zustaende": {
+    "IMPLEMENTED": "Führt aus, persistiert und zeigt das Ergebnis. Entitlement und Limit werden serverseitig geprüft, wo die Aktion kostenpflichtig ist.",
+    "PARTIAL": "Führt wirklich aus und persistiert, aber mindestens ein Abnahme-Gate aus Issue #1381 §8 fehlt. Das fehlende Gate steht in `luecke`.",
+    "CLIENT_ONLY": "Führt aus und behält das Ergebnis, aber ausschliesslich im Browser. Kein serverseitiger Pfad, keine Mandantenbindung — nach Gerätewechsel oder geleertem Speicher weg.",
+    "NOT_IMPLEMENTED": "Kein Ausführungspfad. Die Fläche darf nichts behaupten, was sie nicht tut.",
+    "BLOCKED": "Kanonische Infrastruktur fehlt (z. B. Preis/Entitlement). Wird nicht erfunden — siehe Issue #1381 §12."
+  },
+  "aktionen": [
+    {
+      "id": "bots.create",
+      "route": "/app/bots",
+      "komponente": "src/features/bots/BotsView.tsx",
+      "aktion": "Bot erstellen",
+      "handler": "src/features/bots/BotsView.tsx",
+      "backend": "src/features/bots/api.ts",
+      "persistenz": "bots",
+      "entitlement": "bots.enabled",
+      "status": "PARTIAL",
+      "luecke": "Gate 3: Das Entitlement wird nur im Client geprüft (BotsView.tsx:31 hasFeature('bots.enabled')). Serverseitig hängt der Schutz allein an RLS auf der Tabelle; ein Mandant ohne Bot-Entitlement wird nicht serverseitig abgewiesen. Ausserdem kein Limit (limit.bots) und keine Usage-Erfassung.",
+      "beleg": "BotsView.tsx:116 onClick={handleCreate} · api.ts:33-45 createBot schreibt nach bots und liest die Zeile zurück",
+      "seit": "2026-09-14"
+    },
+    {
+      "id": "agent.run",
+      "route": "/app/agents",
+      "komponente": "src/features/governance/agents/AgentsCenterView.tsx",
+      "aktion": "Agent-Run starten",
+      "handler": "src/features/governance/agents/agentsApi.ts",
+      "backend": "supabase/functions/enterprise-ai-os-agents-run/index.ts",
+      "persistenz": "enterprise_agent_runs",
+      "entitlement": "metered (siehe Edge Function)",
+      "status": "IMPLEMENTED",
+      "luecke": "",
+      "beleg": "agentsApi.ts:105 functions.invoke('enterprise-ai-os-agents-run') · Edge Function:27 importiert recordUsage aus _shared/usage.ts, :29 'Metered entitlement for agent executions', :104 Insert nach enterprise_agent_runs",
+      "seit": "2026-09-14"
+    },
+    {
+      "id": "automation.run",
+      "route": "/app/automations",
+      "komponente": "src/features/automations/AutomationSkillsView.tsx",
+      "aktion": "Automatisierungs-Skill nutzen",
+      "handler": "src/features/automations/AutomationSkillCard.tsx",
+      "backend": null,
+      "persistenz": null,
+      "entitlement": null,
+      "status": "NOT_IMPLEMENTED",
+      "luecke": "Es gibt keine Engine und keine Tabelle. Der CTA ist ein <Link> auf eine bestehende Route; AutomationSkillRunner.tsx enthält null Backend-Aufrufe. Damit fehlen aus Issue #1381 §8 die Gates 4 bis 7 vollständig — der Automation Builder aus §4 existiert als Produkt noch nicht.",
+      "beleg": "src/content/automationSkills.ts:3-6 'REINE KONFIGURATION — keine Engine, keine DB. … Phase 1 fuehrt keine echten Backend-Runs aus' · AutomationSkillCard.tsx:68 <Link to={skill.cta.href}>",
+      "seit": "2026-09-14"
+    },
+    {
+      "id": "builder.landing.save",
+      "route": "/build",
+      "komponente": "src/unified-entry/pages/BuildStudioPage.tsx",
+      "aktion": "Landing-Projekt bauen und behalten",
+      "handler": "src/features/siteos/buildSession.ts",
+      "backend": null,
+      "persistenz": "localStorage",
+      "entitlement": null,
+      "status": "CLIENT_ONLY",
+      "luecke": "Gate 5: Die Build-Session liegt nur im localStorage des Browsers (buildSession.ts:290/308). Sie übersteht F5 im selben Browser, ist aber kein mandantengebundenes Projekt — anderer Rechner, anderer Browser oder geleerter Speicher heisst: weg. Kein Eintrag in Supabase, keine Zuordnung zum Tenant.",
+      "beleg": "buildSession.ts:290 localStorage.getItem · :308 localStorage.setItem · keine functions.invoke- oder .from()-Aufrufe in der Datei",
+      "seit": "2026-09-14"
+    },
+    {
+      "id": "builder.webapp.publish",
+      "route": "/app/siteos/builder",
+      "komponente": "src/unified-entry/pages/PreviewSelectionPage.tsx",
+      "aktion": "Projekt bauen und veröffentlichen",
+      "handler": "src/features/siteos/siteOsApi.ts",
+      "backend": "src/features/siteos/siteOsApi.ts",
+      "persistenz": "siteos (Edge Functions + Tabellen)",
+      "entitlement": "siteos.* (Publish-Gate serverseitig)",
+      "status": "IMPLEMENTED",
+      "luecke": "",
+      "beleg": "siteOsApi.ts:177 buildSite · :424 evaluatePublish ruft functions.invoke('siteos/publish-gate') · elf functions.invoke- und sieben .from()-Aufrufe in der Datei · PreviewSelectionPage importiert features/billing/checkout für den Kauf",
+      "seit": "2026-09-14"
+    },
+    {
+      "id": "domain.add",
+      "route": "/app/websites",
+      "komponente": "src/features/governance/websites/WebsiteGovernanceView.tsx",
+      "aktion": "Domain hinzufügen",
+      "handler": "src/features/governance/scans/scansApi.ts",
+      "backend": "src/features/governance/scans/scansApi.ts",
+      "persistenz": "websites",
+      "entitlement": "RLS websites_tenant_insert",
+      "status": "PARTIAL",
+      "luecke": "Gate 3: Geschrieben wird echt, und die RLS-Policy websites_tenant_insert (Migration 20260825204748) lässt angemeldete Mandantsmitglieder einfügen. Es gibt aber keine Prüfung gegen limit.domains — ein Mandant kann mehr Domains anlegen, als sein Plan vorsieht. Der Kommentar über addWebsiteForTenant behauptet ausserdem eine 'service-role-only insert policy', die es seit dieser Migration nicht mehr gibt.",
+      "beleg": "WebsiteGovernanceView.tsx:11 importiert addWebsiteForTenant · :168 'Domain hinzufügen' · supabase/migrations/20260825204748_fix_websites_authenticated_crud_rls.sql:28 CREATE POLICY websites_tenant_insert",
+      "seit": "2026-09-14"
+    },
+    {
+      "id": "domain.scan",
+      "route": "/app/websites",
+      "komponente": "src/features/governance/websites/WebsiteGovernanceView.tsx",
+      "aktion": "Scan starten",
+      "handler": "src/features/governance/scans/scansApi.ts",
+      "backend": "src/features/governance/scans/scansApi.ts",
+      "persistenz": "scan_runs, findings",
+      "entitlement": "Scan-Kontingent",
+      "status": "PARTIAL",
+      "luecke": "Gate 3: triggerTenantAudit ruft die Edge Function tenant-audit, die nach scan_runs und findings schreibt und Limit-, Timeout- und Berechtigungsfehler ehrlich meldet. Ob das Scan-Kontingent serverseitig oder nur über src/core/billing/useScanLimits.ts im Client erzwungen wird, ist noch nicht belegt — deshalb PARTIAL und nicht IMPLEMENTED.",
+      "beleg": "scansApi.ts:176 triggerTenantAudit ruft /functions/v1/tenant-audit · behandelt 401/403/429/504 mit eigenen Meldungen · schreibt laut Funktionskommentar nach scan_runs + findings",
+      "seit": "2026-09-14"
+    }
+  ]
+}

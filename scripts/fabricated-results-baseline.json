@@ -85,13 +85,6 @@
       "seit": "2026-09-14"
     },
     {
-      "datei": "src/features/governance/analytics/ExportModal.tsx",
-      "fundstellen": 1,
-      "art": "BEFUND",
-      "grund": "Fortschrittsbalken lief per Zufall auf 90 %, waehrend der Server keinen Fortschritt meldet. Behoben in PR #1374.",
-      "seit": "2026-09-14"
-    },
-    {
       "datei": "src/features/governance/BulkOperationsView.tsx",
       "fundstellen": 1,
       "art": "BEFUND",
@@ -117,6 +110,13 @@
       "fundstellen": 1,
       "art": "BEFUND",
       "grund": "Signing Secret clientseitig gewuerfelt. Die Route zeigt seit PR #1374 auf /app/webhooks; die Datei ist verwaist und wartet auf die Loesch-Freigabe (CLAUDE.md §10).",
+      "seit": "2026-09-14"
+    },
+    {
+      "datei": "src/features/governance/analytics/ExportModal.tsx",
+      "fundstellen": 1,
+      "art": "BEFUND",
+      "grund": "Fortschrittsbalken lief per Zufall auf 90 %, waehrend der Server keinen Fortschritt meldet. Behoben in PR #1374.",
       "seit": "2026-09-14"
     },
     {
@@ -222,6 +222,13 @@
       "fundstellen": 1,
       "art": "BEFUND",
       "grund": "Stiller Rueckfall auf schwachen Zufall bei der Erzeugung des API-Keys `rsd_live_…`. Behoben in PR #1377.",
+      "seit": "2026-09-14"
+    },
+    {
+      "datei": "src/pages/design/DesignGovernanceLanding.tsx",
+      "fundstellen": 1,
+      "art": "DEMO",
+      "grund": "Hash-Illustration `randomHash()` auf der Design-Vorschau /design/governance. Die Seite ist durchgaengig gekennzeichnet — Dateikopf 'Not live /. Honest Preview', Titel 'The Governance AI (Preview)', Footer 'Design Preview (nicht Live-/)' — und in implementation-status.ts als preview registriert. Kommt mit PR #1380; der Eintrag steht vorab, damit die Ratsche beim Merge nicht rot wird.",
       "seit": "2026-09-14"
     },
     {

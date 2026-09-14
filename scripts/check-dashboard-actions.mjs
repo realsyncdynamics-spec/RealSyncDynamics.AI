@@ -40,9 +40,25 @@
 
 import { readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
-const ROOT = new URL('..', import.meta.url).pathname;
+/**
+ * Projektwurzel aus der Modul-URL.
+ *
+ * Warum nicht einfach `new URL('..', import.meta.url).pathname`: Vitest laedt
+ * diese Datei durch die Vite-Pipeline, und dann traegt `import.meta.url` ein
+ * `/@fs`-Praefix (`file:///@fs/home/runner/...`). Unter reinem `node` faellt
+ * das nicht auf, in CI schon — der erste Lauf dieser Ratsche ist genau daran
+ * gescheitert: ENOENT auf `/@fs/.../scripts/dashboard-actions.json`.
+ *
+ * Exportiert, damit die Regression testbar ist, ohne Vite nachzubauen.
+ */
+export function projektWurzelAus(metaUrl) {
+  const verzeichnis = fileURLToPath(new URL('.', metaUrl));
+  return join(verzeichnis.replace(/^[/\\]@fs[/\\]/, '/'), '..');
+}
+
+const ROOT = projektWurzelAus(import.meta.url);
 const INVENTAR = join(ROOT, 'scripts/dashboard-actions.json');
 
 const ZUSTAENDE = ['IMPLEMENTED', 'PARTIAL', 'BROKEN', 'CLIENT_ONLY', 'NOT_IMPLEMENTED', 'BLOCKED'];

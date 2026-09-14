@@ -7,11 +7,19 @@
  * wichtigste Ergebnis der Inventur war nicht, dass vieles fehlt, sondern dass
  * man es einer Fläche nicht ansieht: `/app/agents` führt einen echten,
  * abgerechneten Run aus und schreibt nach `enterprise_agent_runs`.
- * `/app/automations` sieht genauso aus — Karten mit Button — und führt gar
- * nichts aus; der CTA ist ein `<Link>`, und die Content-Datei sagt es offen:
- * „REINE KONFIGURATION — keine Engine, keine DB."
+ * `/app/automations` sieht genauso aus — Karten mit Button.
  *
- * Die Ratsche macht den Unterschied nachprüfbar, statt ihn zu behaupten.
+ * Die erste Fassung dieses Inventars hat `/app/automations` als
+ * NOT_IMPLEMENTED geführt, mit der Begründung, es gebe „keine Engine und keine
+ * Tabelle". Das war falsch, und zwar aus dem Grund, den die Ratsche eigentlich
+ * ausschliessen soll: übernommen aus einem veralteten Quellkommentar
+ * (`src/content/automationSkills.ts:3-6`), statt am Code geprüft. Tatsächlich
+ * existieren vier Tabellen, zwei Edge Functions, ein Entitlement-Gate und ein
+ * Verbrauchszähler. Der Pfad ist vorhanden — er ist unterbrochen.
+ *
+ * Daher der Zustand BROKEN: „kein Backend" und „Backend, das nichts liefert"
+ * sind verschiedene Befunde. Eine Ratsche, die beide gleich benennt, deckt den
+ * zweiten nie auf.
  */
 import { describe, expect, it } from 'vitest';
 import { ladeInventar, pruefe } from '../../scripts/check-dashboard-actions.mjs';
@@ -111,5 +119,16 @@ describe('Die Ratsche weist Falschbehauptungen zurück', () => {
 
   it('erkennt einen unbekannten Zustand', () => {
     expect(probe({ status: 'FERTIG' })[0].text).toContain('Unbekannter Zustand');
+  });
+
+  it('nimmt BROKEN ohne Backend nicht ab', () => {
+    // BROKEN heisst: der Pfad ist da und tot. Wer ihn nicht zeigen kann,
+    // meint NOT_IMPLEMENTED und soll das auch schreiben.
+    const befunde = probe({ status: 'BROKEN', backend: null, luecke: 'Pfad bricht ab' });
+    expect(befunde.some((b) => b.text.includes('ohne Backend'))).toBe(true);
+  });
+
+  it('nimmt BROKEN mit belegtem Backend und benannter Lücke an', () => {
+    expect(probe({ status: 'BROKEN', luecke: 'Antwort-Vertrag passt nicht' })).toEqual([]);
   });
 });

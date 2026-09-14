@@ -4,6 +4,7 @@
   "zustaende": {
     "IMPLEMENTED": "Führt aus, persistiert und zeigt das Ergebnis. Entitlement und Limit werden serverseitig geprüft, wo die Aktion kostenpflichtig ist.",
     "PARTIAL": "Führt wirklich aus und persistiert, aber mindestens ein Abnahme-Gate aus Issue #1381 §8 fehlt. Das fehlende Gate steht in `luecke`.",
+    "BROKEN": "Es gibt einen echten Backend-Pfad, aber er liefert im aktuellen Stand kein Ergebnis — fehlende Bindung, unpassender Antwort-Vertrag oder toter Zweig. Der Grund steht in `luecke`. Abgrenzung zu NOT_IMPLEMENTED: dort fehlt der Pfad, hier ist er vorhanden und geschlossen.",
     "CLIENT_ONLY": "Führt aus und behält das Ergebnis, aber ausschliesslich im Browser. Kein serverseitiger Pfad, keine Mandantenbindung — nach Gerätewechsel oder geleertem Speicher weg.",
     "NOT_IMPLEMENTED": "Kein Ausführungspfad. Die Fläche darf nichts behaupten, was sie nicht tut.",
     "BLOCKED": "Kanonische Infrastruktur fehlt (z. B. Preis/Entitlement). Wird nicht erfunden — siehe Issue #1381 §12."
@@ -42,13 +43,13 @@
       "route": "/app/automations",
       "komponente": "src/features/automations/AutomationSkillsView.tsx",
       "aktion": "Automatisierungs-Skill nutzen",
-      "handler": "src/features/automations/AutomationSkillCard.tsx",
-      "backend": null,
-      "persistenz": null,
-      "entitlement": null,
-      "status": "NOT_IMPLEMENTED",
-      "luecke": "Es gibt keine Engine und keine Tabelle. Der CTA ist ein <Link> auf eine bestehende Route; AutomationSkillRunner.tsx enthält null Backend-Aufrufe. Damit fehlen aus Issue #1381 §8 die Gates 4 bis 7 vollständig — der Automation Builder aus §4 existiert als Produkt noch nicht.",
-      "beleg": "src/content/automationSkills.ts:3-6 'REINE KONFIGURATION — keine Engine, keine DB. … Phase 1 fuehrt keine echten Backend-Runs aus' · AutomationSkillCard.tsx:68 <Link to={skill.cta.href}>",
+      "handler": "src/features/automations/AutomationSkillRunner.tsx",
+      "backend": "supabase/functions/automation-trigger/index.ts",
+      "persistenz": "automation_runs, automation_run_events, automation_outputs (Migration 20260614100000_automation_skills.sql, je mit tenant-read RLS)",
+      "entitlement": "ai.tool.automations via gateFeature (automation-trigger:74) und limit.automation_runs_monthly als Quota-Pruefung (:82-90); gezaehlt wird erst im Callback (automation-callback:129)",
+      "status": "BROKEN",
+      "luecke": "Engine, Schema, Gate und Zaehler existieren — der Pfad ist an drei Stellen unterbrochen. (1) Der einzige direkt lauffaehige Skill 'dsgvo-audit' ist mit n8n_workflow_id NULL geseedet (Migration 20260614100000_automation_skills.sql:37); automation-trigger:70 bricht deshalb immer mit 409 NOT_BOUND ab, bevor ueberhaupt ein automation_runs-Satz entsteht. (2) Der Antwort-Vertrag passt nicht: der Runner liest body.result (AutomationSkillRunner.tsx:71), der Trigger liefert { ok, run_id, n8n_execution_id } ohne result — selbst ein erfolgreicher Lauf setzte result auf undefined und zeigte nichts an. Der Doc-Kommentar des Runners (:30-33) beschreibt eine synchrone gdpr-audit-Ausfuehrung, die es in dieser Function nicht gibt. (3) Kein Run-Verlauf: automation_outputs wird von keiner Oberflaeche gelesen, das Ergebnis lebt nur im React-State — nach F5 ist es weg. Damit fehlen aus Issue #1381 §8 die Gates 5 bis 7. Alle uebrigen Skill-CTAs sind <Link>, nicht ausfuehrend.",
+      "beleg": "AutomationSkillRunner.tsx:54 fetch('/functions/v1/automation-trigger') · AutomationSkillCard.tsx:14 DIRECT_RUN_SKILLS = new Set(['dsgvo-audit']) · automation-trigger/index.ts:70 'skill has no n8n_workflow_id — not wired up yet' · automation-trigger/index.ts:158 return jsonResponse({ ok: true, run_id, n8n_execution_id })",
       "seit": "2026-09-14"
     },
     {

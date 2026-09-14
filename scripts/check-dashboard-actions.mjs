@@ -15,14 +15,19 @@
 //
 //   - Jede genannte Route existiert wirklich in src/App.tsx.
 //   - Jede genannte Datei existiert.
-//   - Wer IMPLEMENTED oder PARTIAL sagt, muss ein Backend nennen, und die
-//     Datei muss einen echten Aufruf enthalten (functions.invoke oder
+//   - Wer IMPLEMENTED, PARTIAL oder BROKEN sagt, muss ein Backend nennen, und
+//     die Datei muss einen echten Aufruf enthalten (functions.invoke oder
 //     .from()). Ein Inventar-Eintrag allein macht keine Funktion.
 //   - Wer NOT_IMPLEMENTED oder CLIENT_ONLY sagt, darf kein Backend nennen.
 //     Sonst ist die Einordnung falsch, nicht der Code. CLIENT_ONLY heisst:
 //     tut etwas, aber nur im Browser — /build war genau dieser Fall, und die
 //     Ratsche hat ihn beim ersten Lauf aufgedeckt.
-//   - Wer PARTIAL oder NOT_IMPLEMENTED sagt, muss die Lücke benennen.
+//   - BROKEN ist der Fall, den die erste Inventur selbst falsch eingeordnet
+//     hat: /app/automations sah nach einer reinen Attrappe aus, hat aber einen
+//     vollstaendigen Server-Pfad — er ist nur an drei Stellen unterbrochen.
+//     "Kein Backend" und "Backend, das nichts liefert" sind verschiedene
+//     Befunde und brauchen verschiedene Worte.
+//   - Wer nicht IMPLEMENTED ist, muss die Lücke benennen.
 //   - Wer IMPLEMENTED sagt, darf keine Lücke offen lassen.
 //
 // Damit kann eine neue Dashboard-Aktion nicht mehr als fertig gelten, ohne
@@ -40,7 +45,7 @@ import { pathToFileURL } from 'node:url';
 const ROOT = new URL('..', import.meta.url).pathname;
 const INVENTAR = join(ROOT, 'scripts/dashboard-actions.json');
 
-const ZUSTAENDE = ['IMPLEMENTED', 'PARTIAL', 'CLIENT_ONLY', 'NOT_IMPLEMENTED', 'BLOCKED'];
+const ZUSTAENDE = ['IMPLEMENTED', 'PARTIAL', 'BROKEN', 'CLIENT_ONLY', 'NOT_IMPLEMENTED', 'BLOCKED'];
 /** Ein Aufruf, der die Grenze zum Server überschreitet. */
 const BACKEND_AUFRUF = /functions\.invoke\s*\(|\.from\s*\(\s*['"]|\/functions\/v1\//;
 
@@ -72,7 +77,9 @@ export function pruefe(inventar = ladeInventar(), app = readFileSync(join(ROOT, 
       }
     }
 
-    const ausfuehrend = a.status === 'IMPLEMENTED' || a.status === 'PARTIAL';
+    // BROKEN steht hier bewusst mit drin: Wer sagt, ein Pfad sei vorhanden
+    // aber tot, muss ihn zeigen koennen. Sonst ist es NOT_IMPLEMENTED.
+    const ausfuehrend = a.status === 'IMPLEMENTED' || a.status === 'PARTIAL' || a.status === 'BROKEN';
 
     if (ausfuehrend) {
       if (!a.backend) {

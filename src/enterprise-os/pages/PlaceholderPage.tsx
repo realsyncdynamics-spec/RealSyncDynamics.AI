@@ -17,14 +17,18 @@ interface PlaceholderPageProps {
   description: string;
 }
 
-const LIVE_SURFACES = new Set([
+export const LIVE_SURFACES = [
   'AI Use Case Registry',
   'Agenten',
   'Audit Reports',
   'Team & Rollen',
   'Billing',
   'Einstellungen',
-]);
+] as const;
+
+export function isLiveLegacySurface(title: string): boolean {
+  return (LIVE_SURFACES as readonly string[]).includes(title);
+}
 
 function FunctionalSurface({ title }: { title: string }) {
   switch (title) {
@@ -46,7 +50,7 @@ function FunctionalSurface({ title }: { title: string }) {
 }
 
 export function PlaceholderPage({ title, description }: PlaceholderPageProps) {
-  if (LIVE_SURFACES.has(title)) {
+  if (isLiveLegacySurface(title)) {
     return (
       <div className="flex flex-col gap-4" data-functional-surface={title}>
         <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 px-3 py-2 font-mono text-[10px] uppercase tracking-wider text-emerald-300">

@@ -3,7 +3,8 @@ import { useTenant } from '../../../core/access/TenantProvider';
 import { useSupabaseAuth } from '../../../features/supabase/SupabaseAuthContext';
 import { getSupabase, isSupabaseConfigured } from '../../../lib/supabase';
 import { triageAnalyze, formatTriageMessage, formatTriageAgentBox } from './agents/TriageAgent';
-import { createCheckoutSession, formatUpgradeMessage } from './agents/PaymentAgent';
+import { formatUpgradeMessage } from './agents/PaymentAgent';
+import { createCheckoutSession } from '../../billing/checkout';
 import { generateAudit, formatAuditMessage, formatAuditAgentBox } from './agents/AuditAgent';
 import type { AuditFactSheet } from './agents/AuditAgent';
 import { triggerTenantAudit, getScanReport } from '../scans/scansApi';
@@ -388,22 +389,49 @@ Session: ${sessionId?.slice(0, 8)}`,
             }
           }
         } else if (parsed.type === 'upgrade') {
-          // Payment Agent: Upgrade subscription
+          // Payment Agent: echte Stripe-Session über die Edge Function
+          // `stripe-checkout`. Vorher wurde hier lokal eine URL
+          // zusammengebaut (`checkout.realsync.ai/...`), die nirgendwo
+          // hinführte, und der Preis kam aus einer zweiten Tabelle im
+          // Frontend — drei von vier Werten wichen von `shared/pricing.ts` ab.
           const tier = parsed.args.tier as string;
-          try {
-            const checkout = createCheckoutSession(tier);
-            const upgradeMessages = formatUpgradeMessage(tier, checkout.checkoutUrl);
-            responses.push(...upgradeMessages);
-            setContext({ ...context, pendingUpgrade: true });
-          } catch (err) {
-            const errorMsg: TerminalMessage = {
+          if (!activeTenantId) {
+            responses.push({
               id: crypto.randomUUID(),
               role: 'agent',
-              content: `❌ Invalid tier: ${tier}. Valid options: starter, growth, agency, scale`,
+              content: '❌ Kein aktiver Workspace. Bitte zuerst einen Mandanten wählen.',
               timestamp: new Date(),
               type: 'error',
-            };
-            responses.push(errorMsg);
+            });
+          } else {
+            let result: Awaited<ReturnType<typeof createCheckoutSession>>;
+            try {
+              result = await createCheckoutSession(activeTenantId, tier);
+            } catch (err) {
+              result = {
+                ok: false,
+                error: {
+                  code: 'NETWORK',
+                  message: err instanceof Error ? err.message : 'Checkout konnte nicht vorbereitet werden.',
+                },
+              };
+            }
+
+            if (result.ok && result.url) {
+              responses.push(...formatUpgradeMessage(tier, result.url));
+              setContext({ ...context, pendingUpgrade: true });
+            } else {
+              // `createCheckoutSession` unterscheidet bereits unbekannten Plan,
+              // Free-Plan ohne Checkout und Pläne, die nur über den Vertrieb
+              // laufen. Diese Auskunft ist besser als jede eigene.
+              responses.push({
+                id: crypto.randomUUID(),
+                role: 'agent',
+                content: `❌ ${result.error?.message ?? 'Checkout konnte nicht vorbereitet werden.'}`,
+                timestamp: new Date(),
+                type: 'error',
+              });
+            }
           }
         } else if (parsed.type === 'audit') {
           // Audit Agent: Generate compliance audit
@@ -505,13 +533,16 @@ Session: ${sessionId?.slice(0, 8)}`,
           // Invoice payment fallback
           const tier = parsed.args.tier as string | undefined;
           if (tier) {
+            // Vorher meldete dieser Zweig „Invoice will be sent to your
+            // registered email address" — ohne einen einzigen Aufruf. Es
+            // entstand keine Rechnung und es ging keine Mail raus.
             const invoiceMsg: TerminalMessage = {
               id: crypto.randomUUID(),
               role: 'agent',
-              content: `📨 Sending invoice request for ${tier.toUpperCase()} tier...
-Invoice will be sent to your registered email address.
-Payment terms: Due within 7 days
-Reference your invoice number for payment.`,
+              content: `Kauf auf Rechnung läuft nicht über das Terminal.
+Anfrage: /contact-sales
+Laufende Abrechnung und Belege: /app/billing
+Sofort per Karte: /upgrade ${tier}`,
               timestamp: new Date(),
               type: 'info',
             };

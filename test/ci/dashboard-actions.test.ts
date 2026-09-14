@@ -22,7 +22,7 @@
  * zweiten nie auf.
  */
 import { describe, expect, it } from 'vitest';
-import { ladeInventar, pruefe } from '../../scripts/check-dashboard-actions.mjs';
+import { ladeInventar, projektWurzelAus, pruefe } from '../../scripts/check-dashboard-actions.mjs';
 
 const inventar = ladeInventar() as {
   zustaende: Record<string, string>;
@@ -72,6 +72,26 @@ describe('Inventar und Code stimmen überein', () => {
       expect(a.beleg.length, a.id).toBeGreaterThan(29);
       expect(a.seit, a.id).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     }
+  });
+});
+
+describe('Die Ratsche findet ihre eigenen Dateien', () => {
+  // Der erste CI-Lauf dieser Ratsche ist hier gescheitert: unter reinem `node`
+  // lief sie, unter Vitest nicht. Vite reicht das Modul mit einem
+  // `/@fs`-Präfix in `import.meta.url` herein, und die Wurzel zeigte damit auf
+  // einen Pfad, den es nicht gibt — ENOENT auf das Inventar selbst.
+  it('schneidet das /@fs-Präfix der Vite-Pipeline ab', () => {
+    expect(projektWurzelAus('file:///@fs/home/runner/work/Repo/Repo/scripts/x.mjs'))
+      .toBe('/home/runner/work/Repo/Repo');
+  });
+
+  it('lässt eine gewöhnliche file:-URL unverändert', () => {
+    expect(projektWurzelAus('file:///home/runner/work/Repo/Repo/scripts/x.mjs'))
+      .toBe('/home/runner/work/Repo/Repo');
+  });
+
+  it('findet das Inventar tatsächlich', () => {
+    expect(inventar.aktionen.length).toBeGreaterThan(0);
   });
 });
 

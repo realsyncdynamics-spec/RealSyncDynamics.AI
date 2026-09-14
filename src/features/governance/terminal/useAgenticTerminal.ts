@@ -5,6 +5,8 @@ import { getSupabase, isSupabaseConfigured } from '../../../lib/supabase';
 import { triageAnalyze, formatTriageMessage, formatTriageAgentBox } from './agents/TriageAgent';
 import { createCheckoutSession, formatUpgradeMessage } from './agents/PaymentAgent';
 import { generateAudit, formatAuditMessage, formatAuditAgentBox } from './agents/AuditAgent';
+import type { AuditFactSheet } from './agents/AuditAgent';
+import { triggerTenantAudit, getScanReport } from '../scans/scansApi';
 import { useTerminalSessionPersistence } from './useTerminalSessionPersistence';
 import type { ScanResult } from './agents/TriageAgent';
 
@@ -27,6 +29,17 @@ export interface TerminalContext {
   pendingUpgrade?: boolean;
   registrationEmail?: string;
   lastAuditId?: string;
+}
+
+/** `severity_max` des Scan-Laufs auf die Anzeige-Stufe abbilden. Ohne
+ *  Findings gibt es kein Risiko-Niveau — `none` ist die ehrliche Angabe,
+ *  `low` wäre bereits eine Behauptung. */
+const SCAN_RISK_LEVELS = ['critical', 'high', 'medium', 'low', 'info'] as const;
+
+function toRiskLevel(severityMax: string | null): ScanResult['riskLevel'] {
+  return (SCAN_RISK_LEVELS as readonly string[]).includes(severityMax ?? '')
+    ? (severityMax as ScanResult['riskLevel'])
+    : 'none';
 }
 
 const WHITELISTED_COMMANDS = ['scan', 'upgrade', 'audit', 'register', 'pay', 'help', 'status', 'history', 'invite', 'members', 'approve'];
@@ -321,32 +334,59 @@ Session: ${sessionId?.slice(0, 8)}`,
           };
           responses.push(historyMsg);
         } else if (parsed.type === 'scan') {
-          // Triage Agent: Scan website
+          // Triage Agent: echter Scan über die `tenant-audit` Edge Function.
+          // Vorher stand hier ein `mockScan` — Findings-Zahl, Risiko-Stufe und
+          // Anzahl klassifizierter KI-Systeme kamen aus `Math.random()`. Der
+          // Nutzer bekam für seine eigene Domain einen Würfelwurf als
+          // Risikoeinstufung, und die daraus abgeleitete Tarif-Empfehlung
+          // ebenso. Jetzt wird wirklich gescannt: das Ergebnis landet in
+          // `scan_runs` + `findings` und ist danach unter /app/websites und
+          // /app/audit wiederauffindbar.
           const url = parsed.args.url as string;
-          const mockScan: ScanResult = {
-            scanId: crypto.randomUUID(),
-            url,
-            findingsCount: Math.floor(Math.random() * 25),
-            riskLevel: ['critical', 'high', 'medium', 'low'][Math.floor(Math.random() * 4)] as any,
-            systemsClassified: Math.floor(Math.random() * 10),
-            findings: [],
-          };
+          if (!activeTenantId) {
+            responses.push({
+              id: crypto.randomUUID(),
+              role: 'agent',
+              content: '❌ Kein aktiver Workspace. Bitte zuerst einen Mandanten wählen.',
+              timestamp: new Date(),
+              type: 'error',
+            });
+          } else {
+            try {
+              const run = await triggerTenantAudit(activeTenantId, url);
+              const scan: ScanResult = {
+                scanId: run.scan_run_id,
+                url,
+                findingsCount: run.finding_count,
+                riskLevel: toRiskLevel(run.severity_max),
+                systemsClassified: null,
+                findings: [],
+              };
 
-          const recommendation = triageAnalyze(mockScan);
-          const triageMessages = formatTriageMessage(mockScan, recommendation);
-          responses.push(...triageMessages);
+              const recommendation = triageAnalyze(scan);
+              responses.push(...formatTriageMessage(scan, recommendation));
 
-          const agentBox = formatTriageAgentBox(recommendation);
-          const agentMsg: TerminalMessage = {
-            id: crypto.randomUUID(),
-            role: 'agent',
-            content: agentBox,
-            timestamp: new Date(),
-            type: 'info',
-          };
-          responses.push(agentMsg);
+              responses.push({
+                id: crypto.randomUUID(),
+                role: 'agent',
+                content: formatTriageAgentBox(recommendation),
+                timestamp: new Date(),
+                type: 'info',
+              });
 
-          setContext({ ...context, scanId: mockScan.scanId });
+              setContext({ ...context, scanId: run.scan_run_id });
+            } catch (err) {
+              // `triggerTenantAudit` unterscheidet bereits Limit, Timeout,
+              // fehlende Berechtigung und nicht erreichbaren Dienst.
+              responses.push({
+                id: crypto.randomUUID(),
+                role: 'agent',
+                content: `❌ ${err instanceof Error ? err.message : 'Scan fehlgeschlagen.'}`,
+                timestamp: new Date(),
+                type: 'error',
+              });
+            }
+          }
         } else if (parsed.type === 'upgrade') {
           // Payment Agent: Upgrade subscription
           const tier = parsed.args.tier as string;
@@ -378,19 +418,40 @@ Session: ${sessionId?.slice(0, 8)}`,
             };
             responses.push(errorMsg);
           } else {
-            const audit = generateAudit(scanId || context.scanId || 'unknown', 'free');
-            const auditMessages = formatAuditMessage(audit, 'free');
-            responses.push(...auditMessages);
+            // Kennzahlen aus dem echten Scan-Lauf lesen, statt sie zu erfinden.
+            const targetScanId = scanId || context.scanId || '';
+            let facts: AuditFactSheet | null = null;
+            try {
+              const report = await getScanReport(targetScanId);
+              if (report) {
+                const severityCounts: Record<string, number> = {};
+                for (const finding of report.all_findings) {
+                  const severity = String(finding.severity ?? 'unbekannt');
+                  severityCounts[severity] = (severityCounts[severity] ?? 0) + 1;
+                }
+                facts = {
+                  scanRunId: targetScanId,
+                  findingCount: report.all_findings.length,
+                  severityCounts,
+                  evidenceCount: report.evidence_catalog.length,
+                };
+              }
+            } catch {
+              // Kein Report lesbar — formatAuditMessage sagt das ausdrücklich,
+              // statt Nullen zu zeigen, die wie ein Messergebnis aussehen.
+              facts = null;
+            }
 
-            const agentBox = formatAuditAgentBox('free', audit.auditId);
-            const agentMsg: TerminalMessage = {
+            const audit = generateAudit(targetScanId, 'free');
+            responses.push(...formatAuditMessage(audit, 'free', facts));
+
+            responses.push({
               id: crypto.randomUUID(),
               role: 'agent',
-              content: agentBox,
+              content: formatAuditAgentBox('free', audit.auditId),
               timestamp: new Date(),
               type: 'info',
-            };
-            responses.push(agentMsg);
+            });
             setContext({ ...context, lastAuditId: audit.auditId });
           }
         } else if (parsed.type === 'register') {
@@ -552,7 +613,10 @@ Format: /approve audit_abc12345`,
         setIsExecuting(false);
       }
     },
-    [sessionId, logCommand]
+    // `activeTenantId` gehoert dazu, seit /scan einen echten, mandanten-
+    // gebundenen Scan ausloest: ohne die Abhaengigkeit wuerde nach einem
+    // Workspace-Wechsel der alte Mandant gescannt.
+    [sessionId, logCommand, activeTenantId]
   );
 
   useEffect(() => {

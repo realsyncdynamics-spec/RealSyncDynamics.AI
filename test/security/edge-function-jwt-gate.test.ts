@@ -69,6 +69,12 @@ describe('Bereits remediierte Functions bleiben geschlossen', () => {
     'governance-risk-score',
     'governance-agents-list',
     'enterprise-ai-os-discovery-pending',
+    // 2026-09-14: Der Agent-Runner lief ohne jede Eingangspruefung und nahm
+    // die tenantId aus dem Request-Body in einen Service-Role-Client. Die
+    // eigentliche Pruefung liegt jetzt in
+    // functions/enterprise-ai-os-agents-run/auth.ts; diese Zeile haelt das
+    // Plattform-Gate davor fest.
+    'enterprise-ai-os-agents-run',
   ];
 
   for (const fn of remediiert) {

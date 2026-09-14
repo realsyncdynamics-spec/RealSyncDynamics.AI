@@ -2,13 +2,21 @@
 // Executes a governance agent from the registry and persists results
 //
 // POST /functions/v1/enterprise-ai-os-agents-run
-// Authorization: Bearer <user JWT> (optional, uses anon key if not provided)
+// Authorization: Bearer <user JWT>  — PFLICHT, siehe ./auth.ts
 // Body: {
 //   agentId: string (one of: 'ai-discovery-agent', 'risk-classification-agent', etc)
-//   tenantId?: string
+//   tenantId: string (uuid) — wird gegen die Mitgliedschaft des Aufrufers geprueft
 //   actor?: string (defaults to 'system')
 //   payload?: Record<string, unknown>
 // }
+//
+// Der Aufrufer wird IMMER authentifiziert und seine Mitgliedschaft im
+// genannten Tenant serverseitig geprueft, bevor irgendein Service-Role-Zugriff
+// passiert. Die geprueften Werte sind die einzige Quelle fuer tenant_id in
+// Reads, Inserts und Usage — body.tenantId wird danach nicht mehr gelesen.
+//
+// Fehlerbilder: 401 ohne gueltiges JWT, 400 ohne/ungueltige tenantId,
+// 403 wenn der User kein Mitglied dieses Tenants ist.
 //
 // Response: {
 //   agentId: string
@@ -25,6 +33,7 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 import { recordUsage } from '../_shared/usage.ts';
+import { resolveTenantAccess } from './auth.ts';
 
 // Metered entitlement for agent executions (see migration
 // 20260721000000_agent_runs_metering.sql). Every executed run (status !==
@@ -33,7 +42,8 @@ const AGENT_RUNS_ENTITLEMENT = 'limit.agent_runs_monthly';
 
 interface AgentRunRequest {
   agentId: string;
-  tenantId?: string;
+  /** Bereits geprueft — kommt aus resolveTenantAccess, nicht aus dem Body. */
+  tenantId: string;
   actor?: string;
   payload?: Record<string, unknown>;
 }
@@ -127,7 +137,7 @@ async function executeAgent(req: AgentRunRequest): Promise<AgentRunResponse> {
     // Meter the run for billing. Only count runs that actually executed
     // (status !== 'error') and belong to a tenant. Metering must never break
     // the agent response, so failures are swallowed into metadata.
-    if (tenantId && result.status !== 'error') {
+    if (result.status !== 'error') {
       try {
         await recordUsage(supabase, tenantId, AGENT_RUNS_ENTITLEMENT, 1, {
           agent_id: agentId,
@@ -204,7 +214,7 @@ async function executeDiscoveryAgent(ctx: ExecuteAgentContext): Promise<AgentRun
     const { data: aiSystems } = await supabase
       .from('ai_systems')
       .select('*')
-      .eq('tenant_id', tenantId || null)
+      .eq('tenant_id', tenantId)
       .limit(100);
 
     const findings = aiSystems?.map((system: any) => ({
@@ -507,23 +517,66 @@ Deno.serve(async (req) => {
   }
 
   if (req.method !== 'POST') {
-    return jsonError({ error: 'Method not allowed' }, 405, corsHeaders);
+    return jsonError(405, 'BAD_REQUEST', 'Method not allowed');
+  }
+
+  let body: Record<string, unknown>;
+  try {
+    body = (await req.json()) as Record<string, unknown>;
+  } catch {
+    return jsonError(400, 'BAD_REQUEST', 'invalid json');
+  }
+
+  // Zugriffspruefung VOR jedem Service-Role-Zugriff. Der User-Client traegt
+  // den Anon-Key plus den Bearer des Aufrufers — er kann nur das, was der
+  // Aufrufer darf. Die Mitgliedschaft wird mit dem Admin-Client abgefragt,
+  // eingegrenzt auf genau dieses Paar (user_id, tenant_id); das ist dieselbe
+  // Form wie in tenant-audit und vermeidet RLS-Rekursion auf memberships.
+  const authHeader = req.headers.get('authorization');
+  const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? '';
+  const ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
+  const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+
+  const access = await resolveTenantAccess(
+    { authHeader, bodyTenantId: body.tenantId },
+    {
+      async getUserId(jwt) {
+        const userClient = createClient(SUPABASE_URL, ANON_KEY, {
+          global: { headers: { Authorization: `Bearer ${jwt}` } },
+          auth: { autoRefreshToken: false, persistSession: false },
+        });
+        const { data, error } = await userClient.auth.getUser();
+        if (error || !data?.user) return null;
+        return data.user.id;
+      },
+      async isMember(userId, tenantId) {
+        const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
+          auth: { autoRefreshToken: false, persistSession: false },
+        });
+        const { data, error } = await admin
+          .from('memberships').select('user_id')
+          .eq('tenant_id', tenantId).eq('user_id', userId).maybeSingle();
+        if (error) throw new Error(error.message);
+        return Boolean(data);
+      },
+    },
+  );
+
+  if (!access.ok) {
+    return jsonError(access.status, access.code, access.message);
   }
 
   try {
-    const body = await req.json();
-    const input = body as AgentRunRequest;
-
-    const result = await executeAgent(input);
+    // tenantId kommt aus der Pruefung, nicht aus dem Body.
+    const result = await executeAgent({
+      agentId: typeof body.agentId === 'string' ? body.agentId : '',
+      tenantId: access.tenantId,
+      actor: typeof body.actor === 'string' ? body.actor : undefined,
+      payload: (body.payload ?? {}) as Record<string, unknown>,
+    });
     return jsonResponse(result, 200, corsHeaders);
   } catch (err) {
     console.error('Handler error:', err);
-    return jsonError(
-      {
-        error: err instanceof Error ? err.message : 'Unknown error',
-      },
-      400,
-      corsHeaders
-    );
+    return jsonError(400, 'INTERNAL', err instanceof Error ? err.message : 'Unknown error');
   }
 });

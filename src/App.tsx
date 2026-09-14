@@ -308,7 +308,6 @@ const ComplianceRoadmapView = lazy(() => import('./features/governance/Complianc
 // ── Phase 5B: Custom Frameworks & Integrations (3 new views)
 const CustomFrameworkBuilderView = lazy(() => import('./features/governance/frameworks/CustomFrameworkBuilder').then((m) => ({ default: m.CustomFrameworkBuilder })));
 const CustomFrameworkView = lazy(() => import('./features/governance/CustomFrameworkView').then((m) => ({ default: m.CustomFrameworkView })));
-const IntegrationsView = lazy(() => import('./features/governance/IntegrationsView').then((m) => ({ default: m.IntegrationsView })));
 // ── Phase 5C: Analytics, Bulk Operations, Collaboration (5 new views)
 const ComplianceAnalyticsView = lazy(() => import('./features/governance/ComplianceAnalyticsView').then((m) => ({ default: m.ComplianceAnalyticsView })));
 const BulkOperationsView = lazy(() => import('./features/governance/BulkOperationsView').then((m) => ({ default: m.BulkOperationsView })));
@@ -816,7 +815,11 @@ function RoutesWithTracking() {
       {/* Phase 5B: Custom Frameworks & Integrations */}
       <Route path="/app/governance/custom-framework-builder" element={<GovernanceBrowserShell><CustomFrameworkBuilderView /></GovernanceBrowserShell>} />
       <Route path="/app/governance/custom-frameworks" element={<GovernanceBrowserShell><CustomFrameworkView /></GovernanceBrowserShell>} />
-      <Route path="/app/governance/integrations" element={<GovernanceBrowserShell><IntegrationsView /></GovernanceBrowserShell>} />
+      {/* 2026-09-14: /app/governance/integrations war eine zweite Webhook-Oberfläche,
+          die Endpoints nur im React-State hielt, das Signing Secret clientseitig
+          würfelte und „Test payload sent!" meldete, ohne je zu senden. Die echte
+          Webhook-Runtime (Endpoints, Deliveries, Retry) liegt unter /app/webhooks. */}
+      <Route path="/app/governance/integrations" element={<Navigate to="/app/webhooks" replace />} />
       {/* Phase 5C: Analytics, Bulk Operations, Collaboration */}
       <Route path="/app/governance/compliance-analytics" element={<GovernanceBrowserShell><ComplianceAnalyticsView /></GovernanceBrowserShell>} />
       <Route path="/app/governance/bulk-operations" element={<GovernanceBrowserShell><BulkOperationsView /></GovernanceBrowserShell>} />

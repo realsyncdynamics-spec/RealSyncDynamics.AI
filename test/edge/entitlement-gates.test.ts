@@ -253,3 +253,47 @@ describe('Der Kunde kann sich nicht selbst freischalten', () => {
     expect(revoke).not.toContain('requireWebhooksEntitlement');
   });
 });
+
+describe('Welle 5 — Tenant-Grenze am website-operations-agent', () => {
+  // Die Function schrieb mit dem Service-Role-Client in `website_projects` und
+  // rief Anthropic auf, nachdem sie von `tenant_id` aus dem Body nur geprueft
+  // hatte, ob dieser Tenant existiert. Wer die Function erreichte, konnte in
+  // einen fremden Tenant schreiben und auf dessen Rechnung Tokens verbrauchen.
+  it('prueft Mitgliedschaft, bevor irgendetwas geschrieben oder generiert wird', () => {
+    const src = quelle('website-operations-agent');
+    expect(src).toContain("from '../_shared/auth.ts'");
+    expect(src).toContain('requireAuthAndTenant(req, body.tenant_id)');
+
+    // Reihenfolge ist der eigentliche Schutz: Guard vor dem ersten
+    // Service-Role-Schreibzugriff und vor dem Modellaufruf.
+    const guard = src.indexOf('requireAuthAndTenant(');
+    expect(guard).toBeGreaterThan(-1);
+    expect(guard).toBeLessThan(src.indexOf(".from('website_projects')"));
+    expect(guard).toBeLessThan(src.indexOf('generateWebsiteWithAI('));
+    expect(guard).toBeLessThan(src.indexOf('api.anthropic.com'));
+  });
+
+  it('macht die blosse Existenz eines Tenants nicht mehr zum Freifahrtschein', () => {
+    const src = quelle('website-operations-agent');
+    expect(src).not.toContain('TENANT_NOT_FOUND');
+  });
+
+  it('gibt den persistierten Datensatz zurueck statt eines behaupteten Erfolgs', () => {
+    const src = quelle('website-operations-agent');
+    // Der Response traegt die Zeile, die das UPDATE zurueckgemeldet hat.
+    expect(src).toContain('project: persisted ?? null');
+    expect(src).toMatch(/\.eq\('id', project\.id\)\s*\n\s*\.select\(/);
+  });
+
+  it('der Wizard ruft die Function ueber den Session-Token auf, nicht ueber die User-ID', () => {
+    const src = readFileSync('src/features/website-operations/CreateWebsiteWizard.tsx', 'utf8');
+    expect(src).toContain('sb.functions.invoke(');
+    expect(src).toContain("'website-operations-agent'");
+    // Eine User-ID ist kein Token, und `/functions/v1/...` ist nicht der
+    // Supabase-Host, sondern die Pages-Domain.
+    expect(src).not.toContain('Bearer ${user?.id}');
+    expect(src).not.toContain("fetch('/functions/v1/website-operations-agent'");
+    // Der Endpunkt `/api/website-projects` existiert im Repo nicht.
+    expect(src).not.toContain("fetch('/api/website-projects'");
+  });
+});

@@ -53,9 +53,11 @@ ${processorNames.map(p => `<span class="processor-marker">${p}</span>`).join('\n
 </div>
 `;
 // Gleiche Behandlung wie die drei Bloecke darunter: fehlt die Zieldatei, wird
-// uebersprungen statt abgebrochen. Ohne das bricht `npm run build` mit ENOENT,
-// weil generate:legal-pages vor dem Prerender laeuft und die Route-Dateien
-// dann noch nicht existieren.
+// uebersprungen statt abgebrochen. Das greift jetzt nur noch, wenn der
+// Prerender selbst ausgefallen ist (prerender:safe ist non-fatal, z. B. wenn
+// Chromium in der Pages-Build-Sandbox nicht startbar). Dann steht die Site ohnehin
+// beim SPA-Shell, und ein harter Abbruch wuerde den Deploy rot machen, statt
+// den Stand von vorher zu halten.
 try {
   let html = readFileSync(subProcessorsPath, 'utf8');
   html = html.replace('</body>', processorInjection + '\n</body>');
@@ -97,7 +99,7 @@ try {
 }
 
 // Kein Erfolg behaupten, der nicht stattgefunden hat: die Zieldateien entstehen
-// erst im Prerender-Schritt. Laeuft dieses Script davor, ist injected === 0.
+// im Prerender-Schritt. Bleibt der aus, ist injected === 0.
 if (injected === 4) {
   console.log('\n✓ Alle 4 Marker injiziert.');
 } else {

@@ -64,7 +64,7 @@ radius first".
 
 Patch `public/sitemap.xml` to include `/integrations/shopify` and
 `/dashboard/business` at `priority >= 0.6`, then re-deploy with
-`npm run build:full` (which runs `vite build && npm run prerender`).
+`npm run build:full` (which runs `vite build`, `prerender`, `generate:legal-pages`).
 `scripts/prerender.mjs` writes `dist/integrations/shopify/index.html`,
 which GitHub Pages then serves with status 200.
 

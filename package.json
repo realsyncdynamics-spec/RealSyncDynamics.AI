@@ -5,9 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite --port=3000 --host=0.0.0.0",
-    "build:base": "vite build && npm run generate:legal-pages",
-    "build": "npm run build:base && npm run prerender:safe",
-    "build:full": "npm run build:base && npm run prerender",
+    "build:base": "vite build",
+    "build": "npm run build:base && npm run prerender:safe && npm run generate:legal-pages",
+    "build:full": "npm run build:base && npm run prerender && npm run generate:legal-pages",
     "generate:legal-pages": "node scripts/generate-static-legal-pages.mjs",
     "prerender": "node scripts/prerender.mjs",
     "prerender:safe": "node scripts/prerender.mjs || echo '[prerender] uebersprungen (non-fatal) — Build laeuft ohne Prerender weiter'",

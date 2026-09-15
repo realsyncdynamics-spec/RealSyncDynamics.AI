@@ -73,12 +73,14 @@ describe('AnthropicAdapter.generate', () => {
     expect(out.usage?.output_tokens).toBe(8);
   });
 
-  it('omits temperature for Claude 4.x model ids (Anthropic deprecation)', async () => {
-    const f = fakeFetch();
-    const a = new AnthropicAdapter({ apiKey: 'k', model: 'claude-haiku-4-5-20251001', fetchImpl: f });
-    await a.generate(req({ temperature: 0.5 }));
-    const body = JSON.parse(((f as unknown as ReturnType<typeof vi.fn>).mock.calls[0][1] as RequestInit).body as string);
-    expect('temperature' in body).toBe(false);
+  it('omits temperature for Claude 4+ model ids, including newer major versions', async () => {
+    for (const model of ['claude-haiku-4-5-20251001', 'claude-sonnet-5', 'claude-opus-5']) {
+      const f = fakeFetch();
+      const a = new AnthropicAdapter({ apiKey: 'k', model, fetchImpl: f });
+      await a.generate(req({ temperature: 0.5 }));
+      const body = JSON.parse(((f as unknown as ReturnType<typeof vi.fn>).mock.calls[0][1] as RequestInit).body as string);
+      expect('temperature' in body).toBe(false);
+    }
   });
 
   it('does pass temperature for legacy model ids', async () => {

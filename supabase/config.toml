@@ -267,7 +267,9 @@ verify_jwt = true
 verify_jwt = false
 
 [functions.enterprise-ai-os-agents-run]
-verify_jwt = false
+# Auth ist Pflicht: der Handler prueft zusaetzlich User und Tenant-
+# Mitgliedschaft (siehe functions/enterprise-ai-os-agents-run/auth.ts).
+verify_jwt = true
 
 [functions.enterprise-ai-os-evaluate]
 verify_jwt = false

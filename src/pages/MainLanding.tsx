@@ -50,6 +50,8 @@ import {
   HERO_SUBLINE,
   HERO_VALUE_SUBLINE,
 } from '../components/governance-frontend/hero-content';
+import { entryPlanForFeature, PLAN_ENTRY_ORDER } from '../components/landing/plan-entry';
+import { getPlanBySlug } from '../content/pricingContent';
 
 /**
  * Startseite — „The Governance AI", Titan-Variante.
@@ -76,7 +78,36 @@ import {
  * früher stand, ist bewusst entfallen — die Eingabe passiert auf `/audit`.
  */
 
-const HERO_PROOF_CHIPS = ['EVIDENCE-CHAIN', 'AI-ACT-KLASSIFIKATION', 'PROVENANCE · C2PA'] as const;
+/**
+ * Proof-Chips unter dem CTA-Paar: jeder Chip ist ein Modul aus dem
+ * Preiskatalog und führt auf die Plan-Detailseite seines Einstiegsplans.
+ * Das Badge („AB GROWTH") kommt aus `pricingContent` — verschiebt sich ein
+ * Modul im Katalog, folgt die Startseite, ohne dass hier jemand tippt.
+ * Die Labels sind Kontrakt (`implementation-status.test.ts`).
+ */
+const HERO_PROOF_CHIPS: readonly { label: string; featureSlug: string }[] = [
+  { label: 'EVIDENCE-CHAIN', featureSlug: 'evidence-vault' },
+  { label: 'AI-ACT-KLASSIFIKATION', featureSlug: 'ai-risk-register' },
+  { label: 'PROVENANCE · C2PA', featureSlug: 'c2pa-herkunftsnachweis' },
+];
+
+/**
+ * Freemium-Leiter: macht den Weg vom kostenlosen Ergebnis zur Bezahlversion
+ * sichtbar, ohne einen zweiten Scan-Einstieg zu öffnen (rein informativ,
+ * keine Links — der Scan führt weiterhin ausschliesslich über `#scan`).
+ * Plan-Name aus dem Katalog; keine SLA-/Uptime-Zusagen.
+ */
+const STARTER_NAME = getPlanBySlug(PLAN_ENTRY_ORDER[0])?.name ?? 'Starter';
+
+const FREEMIUM_LADDER: readonly (readonly [string, string, string])[] = [
+  ['01 · GRATIS', 'Free Audit', 'Top-3-Risiken und Evidence-Preview — ohne Account.'],
+  [
+    `02 · AB ${STARTER_NAME.toUpperCase()}`,
+    'Tiefenanalyse',
+    'Laufendes Monitoring, Regel-Hinweise und auditfähiger Nachweis-Export.',
+  ],
+  ['03 · ENTERPRISE', 'Vertrag & Betrieb', 'SSO, Custom-DPA und vertraglich zugesagte Reaktionszeit.'],
+];
 
 /** Die sechs Policy Packs. TISAX/DORA sind Roadmap — gestrichelt gesetzt. */
 const POLICY_PACKS: readonly (readonly [string, boolean])[] = [
@@ -295,26 +326,97 @@ export function MainLanding() {
             </p>
 
             <div className="mt-[30px] flex flex-wrap gap-2.5">
-              {HERO_PROOF_CHIPS.map((chip) => (
-                <span
-                  key={chip}
-                  className="flex items-center gap-2.5 whitespace-nowrap rounded-full border px-3.5 py-[7px] pl-[11px] text-[11px] tracking-[.1em] backdrop-blur-[6px]"
-                  style={{
-                    borderColor: GA_LINE_SOFT,
-                    backgroundColor: 'rgba(18,28,38,.6)',
-                    fontFamily: GA_MONO,
-                    color: GA_MUTED,
-                  }}
-                >
-                  <i
-                    className="h-[5px] w-[5px] rounded-full not-italic"
-                    style={{ backgroundColor: GA_GREEN }}
-                    aria-hidden="true"
-                  />
-                  {chip}
-                </span>
-              ))}
+              {HERO_PROOF_CHIPS.map((chip) => {
+                const plan = entryPlanForFeature(chip.featureSlug);
+                const exclusive = plan !== undefined && plan.slug !== PLAN_ENTRY_ORDER[0];
+                const tipId = `hero-chip-tip-${chip.featureSlug}`;
+                const chipStyle = {
+                  borderColor: GA_LINE_SOFT,
+                  backgroundColor: 'rgba(18,28,38,.6)',
+                  fontFamily: GA_MONO,
+                  color: GA_MUTED,
+                } as const;
+                const body = (
+                  <>
+                    <i
+                      className="h-[5px] w-[5px] rounded-full not-italic"
+                      style={{ backgroundColor: GA_GREEN }}
+                      aria-hidden="true"
+                    />
+                    {chip.label}
+                    {plan && exclusive && (
+                      <b
+                        className="rounded-full border px-1.5 py-[2px] text-[8px] font-medium tracking-[.14em]"
+                        style={{ borderColor: `${GA_GOLD_LITE}66`, color: GA_GOLD_LITE }}
+                      >
+                        AB {plan.name.toUpperCase()}
+                      </b>
+                    )}
+                  </>
+                );
+
+                if (!plan) {
+                  return (
+                    <span
+                      key={chip.featureSlug}
+                      className="flex items-center gap-2.5 whitespace-nowrap rounded-full border px-3.5 py-[7px] pl-[11px] text-[11px] tracking-[.1em] backdrop-blur-[6px]"
+                      style={chipStyle}
+                    >
+                      {body}
+                    </span>
+                  );
+                }
+
+                return (
+                  <Link
+                    key={chip.featureSlug}
+                    to={`/pricing/${plan.slug}`}
+                    aria-describedby={tipId}
+                    className="group relative hover:z-30 focus-within:z-30 flex items-center gap-2.5 whitespace-nowrap rounded-full border px-3.5 py-[7px] pl-[11px] text-[11px] tracking-[.1em] backdrop-blur-[6px] transition hover:border-[#e6c98a]/40 hover:bg-[rgba(24,36,48,.85)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e6c98a]/60"
+                    style={chipStyle}
+                  >
+                    {body}
+                    <span
+                      id={tipId}
+                      role="tooltip"
+                      className="pointer-events-none absolute left-0 top-full z-20 mt-2 w-max max-w-[240px] whitespace-normal rounded-md border px-3 py-2 text-[11px] normal-case leading-snug tracking-normal opacity-0 shadow-[0_18px_40px_-20px_rgba(0,0,0,.95)] transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
+                      style={{
+                        borderColor: `${GA_GOLD_LITE}40`,
+                        backgroundColor: '#14171c',
+                        color: GA_TEXT,
+                        fontFamily: GA_SANS,
+                      }}
+                    >
+                      Enthalten ab <b style={{ color: GA_GOLD_LITE }}>{plan.name}</b> · {plan.priceString}{' '}
+                      {plan.interval}
+                    </span>
+                  </Link>
+                );
+              })}
             </div>
+
+            <ol
+              className="mt-5 grid max-w-[640px] gap-px overflow-hidden rounded-xl border sm:grid-cols-3"
+              style={{ borderColor: GA_LINE_SOFT, backgroundColor: GA_LINE_SOFT }}
+              aria-label="Vom Free Audit zum Enterprise-Vertrag"
+            >
+              {FREEMIUM_LADDER.map(([step, title, text]) => (
+                <li key={step} className="p-3.5" style={{ backgroundColor: 'rgba(18,28,38,.6)' }}>
+                  <span
+                    className="text-[9px] tracking-[.18em]"
+                    style={{ fontFamily: GA_MONO, color: GA_GOLD_LITE }}
+                  >
+                    {step}
+                  </span>
+                  <b className="mt-1 block text-[12px] font-semibold" style={{ color: GA_TEXT }}>
+                    {title}
+                  </b>
+                  <p className="mt-1 text-[11px] leading-[1.55]" style={{ color: GA_MUTED }}>
+                    {text}
+                  </p>
+                </li>
+              ))}
+            </ol>
 
             <p
               className="mt-7 flex flex-wrap items-center gap-x-4 gap-y-2.5 text-[11px] tracking-[.12em]"

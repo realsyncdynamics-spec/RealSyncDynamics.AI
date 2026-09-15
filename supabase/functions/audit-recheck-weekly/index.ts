@@ -1,5 +1,11 @@
 // Audit-Recheck-Weekly — täglich 07:00 UTC vom pg_cron-Job aufgerufen.
 //
+// Auth: Bearer == CRON_AUDIT_RECHECK_KEY (Function Secret). pg_cron sendet den Wert
+// aus Vault `cron_audit_recheck_key` über dispatch_cron_function. verify_jwt = false;
+// fail-closed, wenn das Secret leer ist. Der eingehende Authorization-
+// Header wird NIE gegen SUPABASE_SERVICE_ROLE_KEY geprüft — die
+// Service-Role dient nur dem Zugriff NACH der Authentisierung.
+//
 // Re-Scannt fällige Subscriptions (audit_recheck_subscriptions.next_run_at <= now,
 // active = true), vergleicht neuen Score mit last_score, schickt
 // Drift-Alert per Email wenn Score deutlich abgesunken (<= -10) oder
@@ -40,8 +46,9 @@ Deno.serve(async (req) => {
 
   const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
   const SRK = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+  const CRON_KEY = Deno.env.get('CRON_AUDIT_RECHECK_KEY') ?? '';
   const authHeader = req.headers.get('Authorization') ?? '';
-  if (authHeader !== `Bearer ${SRK}`) {
+  if (!CRON_KEY || authHeader !== `Bearer ${CRON_KEY}`) {
     return jsonResponse({ ok: false, error: 'cron only' }, 401, corsHeaders);
   }
   const RESEND_KEY = Deno.env.get('RESEND_API_KEY');

@@ -1,5 +1,11 @@
 // Audit-Email-Drip-Cron — täglich 09:00 UTC.
 //
+// Auth: Bearer == CRON_AUDIT_DRIP_KEY (Function Secret). pg_cron sendet den Wert
+// aus Vault `cron_audit_drip_key` über dispatch_cron_function. verify_jwt = false;
+// fail-closed, wenn das Secret leer ist. Der eingehende Authorization-
+// Header wird NIE gegen SUPABASE_SERVICE_ROLE_KEY geprüft — die
+// Service-Role dient nur dem Zugriff NACH der Authentisierung.
+//
 // Holt fällige Drip-Rows (Tag 3 / 14 / 30 nach Audit-Erstellung), sendet
 // pro Step die zugehörige Email via Resend, advanced den Drip-State.
 // Bei Fehler bleibt next_send_at gleich → automatischer Retry am nächsten Tag.
@@ -21,8 +27,9 @@ Deno.serve(async (req) => {
 
   const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
   const SRK = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+  const CRON_KEY = Deno.env.get('CRON_AUDIT_DRIP_KEY') ?? '';
   const authHeader = req.headers.get('Authorization') ?? '';
-  if (authHeader !== `Bearer ${SRK}`) {
+  if (!CRON_KEY || authHeader !== `Bearer ${CRON_KEY}`) {
     return jsonResponse({ ok: false, error: 'cron only' }, 401);
   }
   const RESEND_KEY = Deno.env.get('RESEND_API_KEY');

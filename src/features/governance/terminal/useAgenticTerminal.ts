@@ -3,8 +3,11 @@ import { useTenant } from '../../../core/access/TenantProvider';
 import { useSupabaseAuth } from '../../../features/supabase/SupabaseAuthContext';
 import { getSupabase, isSupabaseConfigured } from '../../../lib/supabase';
 import { triageAnalyze, formatTriageMessage, formatTriageAgentBox } from './agents/TriageAgent';
-import { createCheckoutSession, formatUpgradeMessage } from './agents/PaymentAgent';
+import { formatUpgradeMessage } from './agents/PaymentAgent';
+import { createCheckoutSession } from '../../billing/checkout';
 import { generateAudit, formatAuditMessage, formatAuditAgentBox } from './agents/AuditAgent';
+import type { AuditFactSheet } from './agents/AuditAgent';
+import { triggerTenantAudit, getScanReport } from '../scans/scansApi';
 import { useTerminalSessionPersistence } from './useTerminalSessionPersistence';
 import type { ScanResult } from './agents/TriageAgent';
 
@@ -27,6 +30,17 @@ export interface TerminalContext {
   pendingUpgrade?: boolean;
   registrationEmail?: string;
   lastAuditId?: string;
+}
+
+/** `severity_max` des Scan-Laufs auf die Anzeige-Stufe abbilden. Ohne
+ *  Findings gibt es kein Risiko-Niveau — `none` ist die ehrliche Angabe,
+ *  `low` wäre bereits eine Behauptung. */
+const SCAN_RISK_LEVELS = ['critical', 'high', 'medium', 'low', 'info'] as const;
+
+function toRiskLevel(severityMax: string | null): ScanResult['riskLevel'] {
+  return (SCAN_RISK_LEVELS as readonly string[]).includes(severityMax ?? '')
+    ? (severityMax as ScanResult['riskLevel'])
+    : 'none';
 }
 
 const WHITELISTED_COMMANDS = ['scan', 'upgrade', 'audit', 'register', 'pay', 'help', 'status', 'history', 'invite', 'members', 'approve'];
@@ -321,49 +335,103 @@ Session: ${sessionId?.slice(0, 8)}`,
           };
           responses.push(historyMsg);
         } else if (parsed.type === 'scan') {
-          // Triage Agent: Scan website
+          // Triage Agent: echter Scan über die `tenant-audit` Edge Function.
+          // Vorher stand hier ein `mockScan` — Findings-Zahl, Risiko-Stufe und
+          // Anzahl klassifizierter KI-Systeme kamen aus `Math.random()`. Der
+          // Nutzer bekam für seine eigene Domain einen Würfelwurf als
+          // Risikoeinstufung, und die daraus abgeleitete Tarif-Empfehlung
+          // ebenso. Jetzt wird wirklich gescannt: das Ergebnis landet in
+          // `scan_runs` + `findings` und ist danach unter /app/websites und
+          // /app/audit wiederauffindbar.
           const url = parsed.args.url as string;
-          const mockScan: ScanResult = {
-            scanId: crypto.randomUUID(),
-            url,
-            findingsCount: Math.floor(Math.random() * 25),
-            riskLevel: ['critical', 'high', 'medium', 'low'][Math.floor(Math.random() * 4)] as any,
-            systemsClassified: Math.floor(Math.random() * 10),
-            findings: [],
-          };
-
-          const recommendation = triageAnalyze(mockScan);
-          const triageMessages = formatTriageMessage(mockScan, recommendation);
-          responses.push(...triageMessages);
-
-          const agentBox = formatTriageAgentBox(recommendation);
-          const agentMsg: TerminalMessage = {
-            id: crypto.randomUUID(),
-            role: 'agent',
-            content: agentBox,
-            timestamp: new Date(),
-            type: 'info',
-          };
-          responses.push(agentMsg);
-
-          setContext({ ...context, scanId: mockScan.scanId });
-        } else if (parsed.type === 'upgrade') {
-          // Payment Agent: Upgrade subscription
-          const tier = parsed.args.tier as string;
-          try {
-            const checkout = createCheckoutSession(tier);
-            const upgradeMessages = formatUpgradeMessage(tier, checkout.checkoutUrl);
-            responses.push(...upgradeMessages);
-            setContext({ ...context, pendingUpgrade: true });
-          } catch (err) {
-            const errorMsg: TerminalMessage = {
+          if (!activeTenantId) {
+            responses.push({
               id: crypto.randomUUID(),
               role: 'agent',
-              content: `❌ Invalid tier: ${tier}. Valid options: starter, growth, agency, scale`,
+              content: '❌ Kein aktiver Workspace. Bitte zuerst einen Mandanten wählen.',
               timestamp: new Date(),
               type: 'error',
-            };
-            responses.push(errorMsg);
+            });
+          } else {
+            try {
+              const run = await triggerTenantAudit(activeTenantId, url);
+              const scan: ScanResult = {
+                scanId: run.scan_run_id,
+                url,
+                findingsCount: run.finding_count,
+                riskLevel: toRiskLevel(run.severity_max),
+                systemsClassified: null,
+                findings: [],
+              };
+
+              const recommendation = triageAnalyze(scan);
+              responses.push(...formatTriageMessage(scan, recommendation));
+
+              responses.push({
+                id: crypto.randomUUID(),
+                role: 'agent',
+                content: formatTriageAgentBox(recommendation),
+                timestamp: new Date(),
+                type: 'info',
+              });
+
+              setContext({ ...context, scanId: run.scan_run_id });
+            } catch (err) {
+              // `triggerTenantAudit` unterscheidet bereits Limit, Timeout,
+              // fehlende Berechtigung und nicht erreichbaren Dienst.
+              responses.push({
+                id: crypto.randomUUID(),
+                role: 'agent',
+                content: `❌ ${err instanceof Error ? err.message : 'Scan fehlgeschlagen.'}`,
+                timestamp: new Date(),
+                type: 'error',
+              });
+            }
+          }
+        } else if (parsed.type === 'upgrade') {
+          // Payment Agent: echte Stripe-Session über die Edge Function
+          // `stripe-checkout`. Vorher wurde hier lokal eine URL
+          // zusammengebaut (`checkout.realsync.ai/...`), die nirgendwo
+          // hinführte, und der Preis kam aus einer zweiten Tabelle im
+          // Frontend — drei von vier Werten wichen von `shared/pricing.ts` ab.
+          const tier = parsed.args.tier as string;
+          if (!activeTenantId) {
+            responses.push({
+              id: crypto.randomUUID(),
+              role: 'agent',
+              content: '❌ Kein aktiver Workspace. Bitte zuerst einen Mandanten wählen.',
+              timestamp: new Date(),
+              type: 'error',
+            });
+          } else {
+            let result: Awaited<ReturnType<typeof createCheckoutSession>>;
+            try {
+              result = await createCheckoutSession(activeTenantId, tier);
+            } catch (err) {
+              result = {
+                ok: false,
+                error: {
+                  code: 'NETWORK',
+                  message: err instanceof Error ? err.message : 'Checkout konnte nicht vorbereitet werden.',
+                },
+              };
+            }
+
+            if (result.ok && result.url) {
+              responses.push(...formatUpgradeMessage(tier, result.url));
+              setContext({ ...context, pendingUpgrade: true });
+            } else {
+              // `createCheckoutSession` unterscheidet bereits unbekannten Plan,
+              // Free-Plan ohne Checkout und Pläne, die nur über den Vertrieb
+              // laufen. Diese Auskunft ist besser als jede eigene.
+              responses.push({
+                id: crypto.randomUUID(),
+                role: 'agent',
+                content: `❌ ${result.error?.message ?? 'Checkout konnte nicht vorbereitet werden.'}`,
+                timestamp: new Date(),
+                type: 'error',
+              });
+            }
           }
         } else if (parsed.type === 'audit') {
           // Audit Agent: Generate compliance audit
@@ -378,19 +446,40 @@ Session: ${sessionId?.slice(0, 8)}`,
             };
             responses.push(errorMsg);
           } else {
-            const audit = generateAudit(scanId || context.scanId || 'unknown', 'free');
-            const auditMessages = formatAuditMessage(audit, 'free');
-            responses.push(...auditMessages);
+            // Kennzahlen aus dem echten Scan-Lauf lesen, statt sie zu erfinden.
+            const targetScanId = scanId || context.scanId || '';
+            let facts: AuditFactSheet | null = null;
+            try {
+              const report = await getScanReport(targetScanId);
+              if (report) {
+                const severityCounts: Record<string, number> = {};
+                for (const finding of report.all_findings) {
+                  const severity = String(finding.severity ?? 'unbekannt');
+                  severityCounts[severity] = (severityCounts[severity] ?? 0) + 1;
+                }
+                facts = {
+                  scanRunId: targetScanId,
+                  findingCount: report.all_findings.length,
+                  severityCounts,
+                  evidenceCount: report.evidence_catalog.length,
+                };
+              }
+            } catch {
+              // Kein Report lesbar — formatAuditMessage sagt das ausdrücklich,
+              // statt Nullen zu zeigen, die wie ein Messergebnis aussehen.
+              facts = null;
+            }
 
-            const agentBox = formatAuditAgentBox('free', audit.auditId);
-            const agentMsg: TerminalMessage = {
+            const audit = generateAudit(targetScanId, 'free');
+            responses.push(...formatAuditMessage(audit, 'free', facts));
+
+            responses.push({
               id: crypto.randomUUID(),
               role: 'agent',
-              content: agentBox,
+              content: formatAuditAgentBox('free', audit.auditId),
               timestamp: new Date(),
               type: 'info',
-            };
-            responses.push(agentMsg);
+            });
             setContext({ ...context, lastAuditId: audit.auditId });
           }
         } else if (parsed.type === 'register') {
@@ -444,13 +533,16 @@ Session: ${sessionId?.slice(0, 8)}`,
           // Invoice payment fallback
           const tier = parsed.args.tier as string | undefined;
           if (tier) {
+            // Vorher meldete dieser Zweig „Invoice will be sent to your
+            // registered email address" — ohne einen einzigen Aufruf. Es
+            // entstand keine Rechnung und es ging keine Mail raus.
             const invoiceMsg: TerminalMessage = {
               id: crypto.randomUUID(),
               role: 'agent',
-              content: `📨 Sending invoice request for ${tier.toUpperCase()} tier...
-Invoice will be sent to your registered email address.
-Payment terms: Due within 7 days
-Reference your invoice number for payment.`,
+              content: `Kauf auf Rechnung läuft nicht über das Terminal.
+Anfrage: /contact-sales
+Laufende Abrechnung und Belege: /app/billing
+Sofort per Karte: /upgrade ${tier}`,
               timestamp: new Date(),
               type: 'info',
             };
@@ -552,7 +644,10 @@ Format: /approve audit_abc12345`,
         setIsExecuting(false);
       }
     },
-    [sessionId, logCommand]
+    // `activeTenantId` gehoert dazu, seit /scan einen echten, mandanten-
+    // gebundenen Scan ausloest: ohne die Abhaengigkeit wuerde nach einem
+    // Workspace-Wechsel der alte Mandant gescannt.
+    [sessionId, logCommand, activeTenantId]
   );
 
   useEffect(() => {

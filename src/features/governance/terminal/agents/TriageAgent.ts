@@ -11,8 +11,12 @@ export interface ScanResult {
   scanId: string;
   url: string;
   findingsCount: number;
-  riskLevel: 'critical' | 'high' | 'medium' | 'low';
-  systemsClassified: number;
+  /** `severity_max` des Scan-Laufs. `none`, solange keine Findings vorliegen —
+   *  das ist etwas anderes als `low` und wird auch so angezeigt. */
+  riskLevel: 'critical' | 'high' | 'medium' | 'low' | 'info' | 'none';
+  /** Anzahl klassifizierter KI-Systeme, oder `null`, wenn der Lauf das nicht
+   *  erhebt. Dann bleibt die Zeile weg, statt eine 0 zu behaupten. */
+  systemsClassified: number | null;
   findings: ScanFinding[];
 }
 
@@ -70,14 +74,20 @@ export function formatTriageMessage(scan: ScanResult, recommendation: TriageReco
   const messages: TerminalMessage[] = [];
 
   // Summary message
+  const summaryLines = [
+    '📋 Scan Summary',
+    `URL: ${scan.url}`,
+    `Findings: ${scan.findingsCount}`,
+    `Risk Level: ${scan.riskLevel.toUpperCase()}`,
+  ];
+  if (scan.systemsClassified !== null) {
+    summaryLines.push(`AI Systems: ${scan.systemsClassified}`);
+  }
+
   const summaryMsg: TerminalMessage = {
     id: crypto.randomUUID(),
     role: 'agent',
-    content: `📋 Scan Summary
-URL: ${scan.url}
-Findings: ${scan.findingsCount}
-Risk Level: ${scan.riskLevel.toUpperCase()}
-AI Systems: ${scan.systemsClassified}`,
+    content: summaryLines.join('\n'),
     timestamp: new Date(),
     type: 'info',
   };

@@ -16,9 +16,12 @@
 # deploy/cloudflare-pages/README.md). Deshalb haengt das Prerendering jetzt
 # genau dort dran — KEINE Dashboard-Aenderung noetig:
 #
-#   build:base  = vite build + Legal-Pages          (ohne Prerender)
-#   build       = build:base + prerender:safe       ← Dashboard/Git-Integration
-#   build:full  = build:base + prerender (strikt)   ← GitHub Actions
+#   build:base  = vite build                                  (ohne Prerender)
+#   build       = build:base + prerender:safe + Legal-Pages   ← Dashboard/Git-Integration
+#   build:full  = build:base + prerender (strikt) + Legal-Pages ← GitHub Actions
+#
+# Legal-Pages laeuft hinter dem Prerender, weil es in die prerenderten
+# dist/<route>.html schreibt — davor existieren die Dateien noch nicht.
 #
 # `prerender:safe` ist bewusst non-fatal: schlaegt Chromium in der Pages-
 # Build-Sandbox fehl, laeuft der Build normal weiter und die Site bleibt beim

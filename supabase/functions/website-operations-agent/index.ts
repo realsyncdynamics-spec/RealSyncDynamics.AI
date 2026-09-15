@@ -1,20 +1,20 @@
 // website-operations-agent — AI-powered website creation orchestrator
-// Generates professional websites from industry + company info using Claude AI
+// Generates professional websites from industry + company info using approved server-side runtime only.
 //
 // POST /functions/v1/website-operations-agent
 // Body: { tenant_id, industry, company_name, description?, services?, images?, style_preferences?, existing_html? }
 //
 // Workflow:
-//   1. Validate input + match template
-//   2. AI: Generate website structure (hero, sections, content)
-//   3. AI: Generate HTML/CSS/SEO
+//   1. Validate input + authenticate tenant context
+//   2. Create website project entry
+//   3. Generate website via approved server-side AI provider path
 //   4. Compliance: DSGVO + EU AI Act checks
-//   5. Create website_projects entry
+//   5. Persist generated website + audit trail
 //   6. Return generated website + preview URL
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
-import { withErrorHandling, generateRequestId, logOperation } from '../_shared/middleware.ts';
+import { logOperation } from '../_shared/middleware.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SRK = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -59,12 +59,15 @@ Deno.serve(async (req) => {
   try {
     const body: WebsiteGenerationRequest = await req.json();
 
-    // Validation
     if (!body.tenant_id || !body.industry || !body.company_name) {
       return jsonError(400, 'INVALID_INPUT', 'tenant_id, industry, company_name required');
     }
 
-    // 1. Verify tenant exists
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return jsonError(401, 'UNAUTHORIZED', 'missing authorization header');
+    }
+
     const { data: tenant, error: tenantErr } = await admin
       .from('tenants')
       .select('id')
@@ -75,7 +78,6 @@ Deno.serve(async (req) => {
       return jsonError(404, 'TENANT_NOT_FOUND', 'tenant does not exist');
     }
 
-    // 2. Create website project entry
     const { data: project, error: projectErr } = await admin
       .from('website_projects')
       .insert({
@@ -104,11 +106,9 @@ Deno.serve(async (req) => {
       return jsonError(500, 'DB_INSERT', 'failed to create project');
     }
 
-    // 3. Generate website using AI
     const website = await generateWebsiteWithAI(body, project.id);
 
     if (!website.success) {
-      // Log error but don't fail entirely
       await admin.from('deployment_logs').insert({
         project_id: project.id,
         tenant_id: body.tenant_id,
@@ -118,9 +118,10 @@ Deno.serve(async (req) => {
         message: website.error,
         triggered_by: 'automation',
       });
+
+      return jsonError(502, 'PROVIDER_UNAVAILABLE', website.error || 'ai generation failed');
     }
 
-    // 4. Run compliance checks
     const complianceResult = await runComplianceChecks(
       website.html || '',
       project.id,
@@ -128,7 +129,6 @@ Deno.serve(async (req) => {
       website.aiDisclosures || []
     );
 
-    // 5. Store generated content
     await admin
       .from('website_projects')
       .update({
@@ -146,7 +146,6 @@ Deno.serve(async (req) => {
       })
       .eq('id', project.id);
 
-    // 6. Log deployment event
     await admin.from('deployment_logs').insert({
       project_id: project.id,
       tenant_id: body.tenant_id,
@@ -159,6 +158,16 @@ Deno.serve(async (req) => {
         compliance_score: complianceResult.score,
       },
       triggered_by: 'automation',
+    });
+
+    logOperation('info', 'website-operations-agent completed', {
+      functionName: 'website-operations-agent',
+      tenantId: body.tenant_id,
+      requestId: crypto.randomUUID(),
+      userId: 'server-side',
+    }, {
+      project_id: project.id,
+      compliance_score: complianceResult.score,
     });
 
     const response: GeneratedWebsite = {
@@ -177,10 +186,6 @@ Deno.serve(async (req) => {
     return jsonError(500, 'INTERNAL_ERROR', err instanceof Error ? err.message : 'Unknown error');
   }
 });
-
-// ============================================================================
-// AI Website Generation using Claude
-// ============================================================================
 
 interface AIGenerationResult {
   success: boolean;
@@ -254,12 +259,7 @@ Return ONLY the JSON object, nothing else.`;
       body: JSON.stringify({
         model: 'claude-3-5-sonnet-20241022',
         max_tokens: 4096,
-        messages: [
-          {
-            role: 'user',
-            content: prompt,
-          },
-        ],
+        messages: [{ role: 'user', content: prompt }],
       }),
     });
 
@@ -287,7 +287,6 @@ Return ONLY the JSON object, nothing else.`;
       };
     }
 
-    // Parse JSON response
     const generated = JSON.parse(content) as {
       html: string;
       css: string;
@@ -316,10 +315,6 @@ Return ONLY the JSON object, nothing else.`;
   }
 }
 
-// ============================================================================
-// Compliance Checking (DSGVO + EU AI Act)
-// ============================================================================
-
 interface ComplianceResult {
   score: number;
   findings: Array<{
@@ -339,7 +334,6 @@ async function runComplianceChecks(
   const findings: ComplianceResult['findings'] = [];
   let score = 100;
 
-  // 1. Check for cookie consent
   if (!html.includes('cookie') && !html.includes('consent')) {
     findings.push({
       category: 'cookies',
@@ -350,7 +344,6 @@ async function runComplianceChecks(
     score -= 20;
   }
 
-  // 2. Check for privacy policy
   if (!html.includes('datenschutz') && !html.includes('privacy')) {
     findings.push({
       category: 'legal_pages',
@@ -361,7 +354,6 @@ async function runComplianceChecks(
     score -= 15;
   }
 
-  // 3. Check for Impressum (legal requirement for German businesses)
   if (!html.includes('impressum') && !html.includes('legal')) {
     findings.push({
       category: 'legal_pages',
@@ -372,7 +364,6 @@ async function runComplianceChecks(
     score -= 15;
   }
 
-  // 4. AI Disclosure
   if (!aiDisclosures.length) {
     findings.push({
       category: 'ai_disclosure',
@@ -383,7 +374,6 @@ async function runComplianceChecks(
     score -= 10;
   }
 
-  // 5. Tracking/Analytics
   if (html.includes('google-analytics') || html.includes('ga.js')) {
     findings.push({
       category: 'tracking',
@@ -394,7 +384,6 @@ async function runComplianceChecks(
     score -= 5;
   }
 
-  // 6. External resources
   const externalCount = (html.match(/https?:\/\/(?!realsyncdynamics)/gi) || []).length;
   if (externalCount > 5) {
     findings.push({
@@ -406,7 +395,6 @@ async function runComplianceChecks(
     score -= 5;
   }
 
-  // Store compliance report
   await admin.from('website_compliance_reports').insert({
     project_id: projectId,
     tenant_id: tenantId,

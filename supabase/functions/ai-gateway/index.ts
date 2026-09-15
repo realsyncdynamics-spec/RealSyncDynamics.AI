@@ -36,11 +36,49 @@ import {
 import { sha256Hex } from '../_shared/hash.ts';
 import { buildCorsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 import { decide } from '../_shared/pdp/decide.ts';
+import { createClient } from 'jsr:@supabase/supabase-js@2';
+import {
+  resolveTenantAccess,
+  quotaWouldExceed,
+  type TenantAccess,
+} from '../_shared/tenantAccess.ts';
+import { getCurrentTotal, recordUsage } from '../_shared/usage.ts';
 import type { DecisionRequest, DecisionResult } from '../_shared/pdp/core.ts';
 
 const corsHeaders = buildCorsHeaders('GET, POST, OPTIONS');
 
 const ALLOWED_OPS = new Set(['health', 'generate', 'extract_json', 'embed']);
+
+// Verbrauchsschluessel — dieselben, die _shared/ai.ts fuer den anderen
+// AI-Pfad bucht. Kein neuer Namensraum.
+const CALLS_KEY  = 'limit.ai_calls_monthly';
+const TOKENS_KEY = 'limit.ai_tokens_monthly';
+
+/**
+ * Features, die ohne Anmeldung laufen duerfen.
+ *
+ * Das ist KEINE neue Entscheidung, sondern der festgeschriebene Ist-Zustand:
+ * der Audit-Co-Pilot auf der oeffentlichen Seite /audit und der
+ * Assistenten-Chip rufen den Gateway heute bewusst ohne Mandant auf. Der
+ * Vertragstest test/features/governance/AgentWidget/auditCopilotAnonTools.test.ts
+ * fordert dafuer sogar ausdruecklich "kein tenant-Leak im Body".
+ *
+ * Fuer diese drei bleibt es beim IP-Rate-Limit: kein Mandant, also auch kein
+ * Kontingent und keine Verbrauchsbuchung — es gibt niemanden, dem sie
+ * zuzuordnen waere.
+ *
+ * Die Liste gilt NUR fuer Aufrufe aus dem Browser. Edge Functions, die den
+ * Gateway serverseitig aufrufen, sind der eigene Fall `internerAufruf()`
+ * weiter unten und brauchen hier keinen Eintrag.
+ *
+ * Wer hier etwas ergaenzt, oeffnet eine Flaeche, die auf Betreiberkosten
+ * laeuft. Das ist eine Produktentscheidung, keine technische.
+ */
+const ANON_FEATURES = new Set([
+  'audit_copilot.fix_snippet',
+  'audit_copilot.remediation_plan',
+  'assistant_chip_quick_chat',
+]);
 
 // Per-instance rate-limit windows. Cleared on cold-start which is fine:
 // a bad actor has no cheap way to trigger a cold-start.
@@ -173,6 +211,179 @@ async function enforceRateLimit(req: Request, feature: string): Promise<Response
   );
 }
 
+// ─── Zugriff und Verbrauch ─────────────────────────────────────────────────
+//
+// Bis hierher lief der Gateway ohne Eingangspruefung: kein Nutzer, kein
+// Tenant, kein Verbrauch. `verify_jwt = true` steht zwar in der config, aber
+// der Anon-Key ist ein gueltiges JWT und liegt im Frontend-Bundle — wer ihn
+// hat, konnte die Provider-Credits des Betreibers verbrauchen. Gebremst hat
+// nur das IP-Rate-Limit.
+//
+// Der Tenant kommt aus dem Header `X-Tenant-Id`, nicht aus dem Body: die
+// OpenAI-kompatible Schale hat ein fremdes Body-Format, in dem kein Platz
+// dafuer waere. Ein Weg fuer beide Routen ist besser als zwei.
+
+/** Einmal pro Aufruf gebaut; Admin-Rechte nur fuer Mitgliedschaft und Usage. */
+function adminClient() {
+  return createClient(
+    Deno.env.get('SUPABASE_URL') ?? '',
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+    { auth: { autoRefreshToken: false, persistSession: false } },
+  );
+}
+
+async function resolveAccess(req: Request): Promise<TenantAccess> {
+  const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? '';
+  const ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
+
+  return await resolveTenantAccess(
+    {
+      authHeader: req.headers.get('authorization'),
+      tenantId: req.headers.get('x-tenant-id'),
+    },
+    {
+      async getUserId(jwt) {
+        const userClient = createClient(SUPABASE_URL, ANON_KEY, {
+          global: { headers: { Authorization: `Bearer ${jwt}` } },
+          auth: { autoRefreshToken: false, persistSession: false },
+        });
+        const { data, error } = await userClient.auth.getUser();
+        if (error || !data?.user) return null;
+        return data.user.id;
+      },
+      async isMember(userId, tenantId) {
+        const { data, error } = await adminClient()
+          .from('memberships').select('user_id')
+          .eq('tenant_id', tenantId).eq('user_id', userId).maybeSingle();
+        if (error) throw new Error(error.message);
+        return Boolean(data);
+      },
+    },
+  );
+}
+
+/**
+ * Reicht das Monatskontingent fuer einen weiteren Aufruf?
+ *
+ * Geprueft wird VOR dem Provider-Aufruf, gebucht DANACH — sonst zaehlte ein
+ * Aufruf mit, der am Provider noch scheitert. Dieselbe Trennung wie in
+ * automation-trigger.
+ *
+ * Faellt die Pruefung selbst aus, laeuft der Aufruf weiter: ein Ausfall der
+ * Verbrauchszaehlung darf keine Kundenfunktion abschalten. Das ist bewusst
+ * die andere Richtung als bei der Zugriffspruefung.
+ */
+/**
+ * Ruft hier eine andere Edge Function dieses Projekts?
+ *
+ * Erkennungsmerkmal ist der Service-Role-Key als Bearer. Er verlaesst den
+ * Server nie, waehrend der Anon-Key im Frontend-Bundle liegt — nur deshalb
+ * laesst sich ein interner Aufruf ueberhaupt von einem fremden
+ * unterscheiden. Dasselbe Merkmal nutzen welcome-email und
+ * rebuild-website; der Vertragstest dazu haelt fest, warum das
+ * Plattform-JWT dafuer nicht reicht.
+ *
+ * Der Vergleich laeuft ueber die volle Laenge, nicht mit `startsWith`.
+ */
+function internerAufruf(req: Request): boolean {
+  const srk = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+  if (!srk) return false;
+  const header = req.headers.get('authorization') ?? '';
+  if (!header.startsWith('Bearer ')) return false;
+  return header.slice(7).trim() === srk;
+}
+
+/** Ein Tenant wird nur als UUID akzeptiert — wie in _shared/tenantAccess.ts. */
+const TENANT_UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Ermittelt den Mandanten, sofern dieser Aufruf einen braucht.
+ *
+ * Drei Faelle, in dieser Reihenfolge:
+ *
+ *   1. Interner Aufruf (Service-Role-Bearer) — vertrauenswuerdig. Nennt er
+ *      einen Mandanten, wird auf diesen gebucht; nennt er keinen, laeuft er
+ *      wie bisher ohne Buchung weiter. Eine Mitgliedschaftspruefung gibt es
+ *      hier nicht: es gibt keinen Nutzer, dessen Mitgliedschaft zu pruefen
+ *      waere, und der Aufrufer ist bereits der Server selbst.
+ *   2. Anonymes Feature aus dem Browser — weiter ohne Mandant.
+ *   3. Alles andere — Sitzung und Mandant sind Pflicht.
+ *
+ * `null` heisst: weiter ohne Mandant. Eine `Response` heisst abgelehnt.
+ * Sonst steht der geprüfte Zugriff fest.
+ */
+async function mandantFuer(
+  req: Request,
+  feature: string,
+): Promise<Extract<TenantAccess, { ok: true }> | Response | null> {
+  if (internerAufruf(req)) {
+    const genannt = (req.headers.get('x-tenant-id') ?? '').trim();
+    if (!genannt) return null;
+    if (!TENANT_UUID_RE.test(genannt)) {
+      return jsonError(400, 'INVALID_TENANT', 'tenant id must be a valid UUID');
+    }
+    return { ok: true, userId: 'service_role', tenantId: genannt };
+  }
+  if (ANON_FEATURES.has(feature)) return null;
+  const access = await resolveAccess(req);
+  if (!access.ok) return jsonError(access.status, access.code, access.message);
+  return access;
+}
+
+async function quotaBlocked(tenantId: string): Promise<Response | null> {
+  try {
+    const admin = adminClient();
+    const [current, entResp] = await Promise.all([
+      getCurrentTotal(admin, tenantId, CALLS_KEY),
+      admin.rpc('tenant_entitlements', { p_tenant_id: tenantId }),
+    ]);
+    // deno-lint-ignore no-explicit-any
+    const limits = Object.fromEntries(((entResp.data ?? []) as any[]).map((r) => [r.key, r.value as number]));
+    if (quotaWouldExceed({ current, limit: limits[CALLS_KEY] })) {
+      return jsonError(402, 'QUOTA_EXCEEDED',
+        `monthly AI call quota reached (${current}/${limits[CALLS_KEY]})`);
+    }
+    return null;
+  } catch (e) {
+    console.error('ai-gateway quota check failed', (e as Error).message);
+    return null;
+  }
+}
+
+/**
+ * Bucht den Verbrauch nach einem erfolgreichen Provider-Aufruf.
+ *
+ * Nur Aufrufe und Token. `limit.ai_cost_monthly_cents` wird NICHT gebucht:
+ * die Kosten pro Token stehen in der Tabelle `ai_tools`
+ * (cost_input_per_million_usd), also pro Tool — der Gateway hat keine
+ * Tool-Zeile und damit keinen Preis. Einen zu erfinden waere eine erfundene
+ * Zahl in einer Abrechnung.
+ *
+ * Schlaegt das Buchen fehl, bleibt die Antwort trotzdem gueltig: der Aufruf
+ * ist beim Provider bereits bezahlt, ihn dem Kunden vorzuenthalten macht ihn
+ * nicht billiger.
+ */
+async function bucheVerbrauch(
+  tenantId: string,
+  userId: string,
+  feature: string,
+  usage: { total_tokens?: number; input_tokens?: number; output_tokens?: number } | undefined,
+): Promise<void> {
+  const tokens = usage?.total_tokens
+    ?? ((usage?.input_tokens ?? 0) + (usage?.output_tokens ?? 0));
+  const meta = { feature, user_id: userId, source: 'ai-gateway' };
+  try {
+    const admin = adminClient();
+    await Promise.all([
+      recordUsage(admin, tenantId, CALLS_KEY, 1, meta),
+      ...(tokens > 0 ? [recordUsage(admin, tenantId, TOKENS_KEY, tokens, meta)] : []),
+    ]);
+  } catch (e) {
+    console.error('ai-gateway recordUsage failed', (e as Error).message);
+  }
+}
+
 Deno.serve(async (req) => {
   const preflight = handleOptions(req, corsHeaders);
   if (preflight) return preflight;
@@ -180,6 +391,10 @@ Deno.serve(async (req) => {
   const route = routeOf(req.url);
 
   try {
+    // Die Zugriffspruefung sitzt in den Handlern, nicht hier: welcher
+    // Mandant noetig ist, haengt vom angefragten Feature ab, und das steht
+    // erst nach dem Parsen des Body fest.
+
     // OpenAI-compatible shell
     if (route === '/v1/models' && req.method === 'GET') {
       return jsonResponse(modelsResponse());
@@ -237,9 +452,28 @@ async function handleOpBased(req: Request): Promise<Response> {
     ? { decision: verdict.decision, reasons: verdict.reasons.map((r) => r.text_de) }
     : undefined;
 
-  if (op === 'generate')     return jsonResponse({ ok: true, ...(await gateway.generate(request)), ...(governance ? { governance } : {}) });
-  if (op === 'extract_json') return jsonResponse({ ok: true, ...(await gateway.extractJson(request)), ...(governance ? { governance } : {}) });
-  if (op === 'embed')        return jsonResponse({ ok: true, ...(await gateway.embed(request)), ...(governance ? { governance } : {}) });
+  // Mandant, sofern dieses Feature einen braucht. Danach Kontingent VOR
+  // dem Provider-Aufruf.
+  const mandant = await mandantFuer(req, request.feature);
+  if (mandant instanceof Response) return mandant;
+  if (mandant) {
+    const blocked = await quotaBlocked(mandant.tenantId);
+    if (blocked) return blocked;
+  }
+
+  const antwort = op === 'generate'     ? await gateway.generate(request)
+                : op === 'extract_json' ? await gateway.extractJson(request)
+                : op === 'embed'        ? await gateway.embed(request)
+                : null;
+  if (antwort === null) return jsonError(400, 'BAD_REQUEST', `unknown op: ${op}`);
+
+  // Verbrauch NACH dem erfolgreichen Aufruf. Anonyme Aufrufe haben keinen
+  // Mandanten, dem er zuzuordnen waere.
+  if (mandant) {
+    await bucheVerbrauch(mandant.tenantId, mandant.userId, request.feature, antwort.usage);
+  }
+
+  return jsonResponse({ ok: true, ...antwort, ...(governance ? { governance } : {}) });
 
   return jsonError(400, 'BAD_REQUEST', `unknown op: ${op}`);
 }
@@ -269,10 +503,20 @@ async function handleOpenAIChatCompletions(req: Request): Promise<Response> {
   const gateway = await buildGateway();
   if (gateway instanceof Response) return gateway;
 
+  const mandant = await mandantFuer(req, parsed.request.feature);
+  if (mandant instanceof Response) return mandant;
+  if (mandant) {
+    const blocked = await quotaBlocked(mandant.tenantId);
+    if (blocked) return blocked;
+  }
+
   try {
     const response = parsed.wantsJson
       ? await gateway.extractJson(parsed.request)
       : await gateway.generate(parsed.request);
+    if (mandant) {
+      await bucheVerbrauch(mandant.tenantId, mandant.userId, parsed.request.feature, response.usage);
+    }
     return jsonResponse(formatChatResponse(response, parsed.request.model_profile));
   } catch (error) {
     const mapped = mapInferenceError(error);

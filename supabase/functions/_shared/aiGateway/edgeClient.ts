@@ -11,7 +11,23 @@ import type {
 
 export interface EdgeClientConfig {
   supabaseUrl: string;
+  /** anon key — geht als `apikey`-Header an das Supabase-Gateway. */
   apiKey: string;
+  /**
+   * Bearer, an dem die ai-gateway Function den Aufrufer erkennt.
+   *
+   * Fuer Edge Functions ist das der Service-Role-Key: er verlaesst den
+   * Server nie und weist den Aufruf als internen aus. Vorher stand hier
+   * der Anon-Key — der liegt im Frontend-Bundle, also war ein interner
+   * Aufruf von einem fremden nicht zu unterscheiden. Muster wie in
+   * welcome-email und rebuild-website.
+   */
+  accessToken?: string;
+  /**
+   * Mandant, fuer den gerechnet wird. Geht als `X-Tenant-Id`. Ohne ihn
+   * laeuft der Aufruf ohne Kontingent und ohne Verbrauchsbuchung.
+   */
+  tenantId?: string;
   fetchImpl?: typeof fetch;
   timeoutMs?: number;
 }
@@ -85,7 +101,8 @@ export class AiGatewayEdgeClient {
         headers: {
           'content-type':  'application/json',
           'apikey':         this.config.apiKey,
-          'authorization': `Bearer ${this.config.apiKey}`,
+          'authorization': `Bearer ${this.config.accessToken ?? this.config.apiKey}`,
+          ...(this.config.tenantId ? { 'x-tenant-id': this.config.tenantId } : {}),
         },
         body: JSON.stringify({ op, ...request } satisfies EdgeRequestBody),
       });

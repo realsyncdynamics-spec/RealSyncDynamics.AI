@@ -18,6 +18,58 @@ import type {
 // embed() throws ProviderUnsupported. The router should not route
 // embedding requests here.
 
+/**
+ * Akzeptiert dieses Modell die Sampling-Parameter (`temperature`, `top_p`,
+ * `top_k`)?
+ *
+ * ## Warum das eine eigene Funktion ist
+ *
+ * Vorher stand hier `!/^claude-(opus|sonnet|haiku)-4/.test(model)`, mit dem
+ * Kommentar "Anthropic deprecated temperature for Claude 4.x+ models". Diese
+ * Regel ist in BEIDE Richtungen falsch:
+ *
+ *   - Sie unterdrueckt den Parameter fuer Haiku 4.5 — das Standardmodell
+ *     dieses Adapters. Haiku 4.5 akzeptiert ihn. Ein Aufrufer, der
+ *     `temperature` setzt, bekam ihn also still verworfen. Dasselbe gilt
+ *     fuer Opus 4.6 und Sonnet 4.6.
+ *   - Sie unterdrueckt ihn NICHT fuer `claude-opus-5`, `claude-sonnet-5`
+ *     oder die Fable-Familie, weil die Regex ein "-4" verlangt. Genau dort
+ *     sind die Sampling-Parameter entfernt und die API antwortet mit
+ *     HTTP 400. Der Fehler schlaegt also erst zu, wenn jemand das Modell
+ *     wechselt — und dann sofort bei jedem Aufruf.
+ *
+ * Die Grenze verlaeuft bei 4.6: bis einschliesslich dahin werden die
+ * Parameter akzeptiert, ab 4.7 sind sie entfernt.
+ *
+ * ## Verhalten bei Unbekanntem
+ *
+ * Unbekannte Familien und nicht parsbare Ids gelten als "unterstuetzt
+ * nicht". Das ist die sichere Richtung: ein weggelassener Parameter kostet
+ * hoechstens Steuerbarkeit, ein faelschlich gesendeter bricht den Aufruf
+ * mit 400. Neue Modelle muessen hier bewusst eingetragen werden.
+ *
+ * Die Modell-Id selbst bleibt Sache der Konfiguration — diese Funktion
+ * liest sie nur, sie schlaegt keine vor und aendert keine.
+ */
+export function supportsSamplingParams(modelId: string): boolean {
+  const id = modelId.trim().toLowerCase();
+
+  // Alte Namensform (claude-3-5-sonnet-…, claude-3-opus-…): Familie steht
+  // hinter der Version. Alles, was so heisst, ist Claude 3.x und nimmt die
+  // Parameter an.
+  if (/^claude-\d/.test(id)) return true;
+
+  // Neue Form: claude-<familie>-<major>[-<minor>][-<datum>].
+  // Der Minor ist ein- bis zweistellig; ein laengerer Zahlenblock ist ein
+  // Datumssuffix, kein Minor — sonst laese man claude-sonnet-4-20250514
+  // als Version 4.20250514.
+  const teile = /^claude-(opus|sonnet|haiku)-(\d+)(?:-(\d{1,2}))?(?:-\d{3,})?$/.exec(id);
+  if (!teile) return false;
+
+  const version = Number(teile[2]) * 100 + Number(teile[3] ?? 0);
+  return version <= 406;
+}
+
 export interface AnthropicConfig {
   apiKey: string;
   /** Model id, e.g. 'claude-haiku-4-5-20251001'. */
@@ -163,9 +215,10 @@ export class AnthropicAdapter implements AiProviderAdapter {
         },
       ];
     }
-    // Anthropic deprecated `temperature` for Claude 4.x+ models; passing
-    // it returns 400 invalid_request_error. Only set it for older ids.
-    if (!/^claude-(opus|sonnet|haiku)-4/.test(this.config.model)) {
+    // Sampling-Parameter nur an Modelle, die sie annehmen — siehe
+    // supportsSamplingParams(). Kommen spaeter top_p oder top_k dazu,
+    // gehoeren sie in denselben Block.
+    if (supportsSamplingParams(this.config.model)) {
       body.temperature = request.temperature ?? 0.2;
     }
     return body;

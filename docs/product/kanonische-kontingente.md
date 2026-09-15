@@ -372,8 +372,8 @@ Nebenwirkung eines grünen CI-Laufs treffen — genau die Vermischung von Audit
 und Reparatur, die vermieden werden soll. Bis dahin verhindert die Ratsche das
 Einzige, was ohne Entscheidung passieren kann: **neue** Divergenzen.
 
-Die Grundlinie steht in `scripts/limit-canonicity-baseline.json` — 21 Zeilen,
-jede mit Plan, Feld, beiden Werten, Richtung und Grund.
+Die Grundlinie steht in `scripts/limit-canonicity-baseline.json` — 10 Zeilen,
+jede mit Plan, Feld, beiden Werten, Richtung und Grund. Stand: §7.
 
 Beide Richtungen sind mutationsgeprüft: eine künstlich eingebaute Divergenz
 (`growth.domains` 3→4) und eine künstlich behobene (`starter.seats` 1→3)
@@ -399,6 +399,19 @@ Datenbereinigung → Gates → Tests.**
 4. **Erst danach Gates**: `team_seats`, `compliance_exports_monthly`,
    `domains`/`bots`, `webhooks.enabled` — und für Enterprise nur auf Feldern,
    deren Quelle aufgelöst ist.
+
+### Stand (2026-09-15)
+
+| Klasse | Stand |
+|---|---|
+| A (9) | offen — Architekturentscheid; neun seit `limit.sites` |
+| B (3) | erledigt 2026-09-01, `20260903050000` |
+| C (1) | offen — Bestandsfrage §1.3 |
+| D (9) | erledigt 2026-09-15, `20260915100000` |
+
+Agency ist wieder `self_service`. Für D ändert das nur die Reichweite (auch
+Neukunden), für C ist es der Fall aus B — der Testfall prüft aber nur
+`starter`/`growth`. Unentschieden.
 
 Der Grund für die Reihenfolge steht in der Entscheidung selbst: Sonst entsteht
 technisch korrektes Enforcement gegen eine Zahl, die niemand als verbindlich

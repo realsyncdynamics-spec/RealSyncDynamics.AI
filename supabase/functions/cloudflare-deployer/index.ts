@@ -13,6 +13,7 @@
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
+import { requireAuthAndTenant } from '../_shared/auth.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SRK = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -43,20 +44,38 @@ Deno.serve(async (req) => {
   try {
     const body: DeploymentRequest = await req.json();
 
-    if (!body.project_id || !body.tenant_id || !body.action) {
-      return jsonError(400, 'INVALID_INPUT', 'project_id, tenant_id, action required');
+    if (!body.project_id || !body.action) {
+      return jsonError(400, 'INVALID_INPUT', 'project_id, action required');
     }
+
+    // 1. Wer ruft, und darf er fuer diesen Mandanten?
+    //
+    // Diese Function haelt CF_API_TOKEN und fuehrt damit Deployment- und
+    // Domain-Operationen aus. Vorher stand hier keine Pruefung: `tenant_id`
+    // und `project_id` kamen aus dem Body und wurden nur auf Vorhandensein
+    // geprueft. Das vorgelagerte siteos/publish-gate schuetzt sie nicht — es
+    // ist eine eigene Function und diese hier direkt aufrufbar.
+    //
+    // `requireAuthAndTenant` ist der gemeinsame Resolver aus _shared/auth.ts.
+    const auth = await requireAuthAndTenant(req, body.tenant_id);
+    if (auth instanceof Response) return auth;
+    const tenantId = auth.tenantId;
 
     if (!CF_API_TOKEN || !CF_ACCOUNT_ID) {
       return jsonError(500, 'CLOUDFLARE_NOT_CONFIGURED', 'Cloudflare credentials missing');
     }
 
-    // Verify project exists
+    // 2. Gehoert das Projekt diesem Mandanten?
+    //
+    // Die Bindung an `tenant_id` ist die eigentliche Sperre: alle fuenf
+    // Aktionen liegen hinter diesem Load. Ein fremdes Projekt liefert keine
+    // Zeile, und die Kette bricht ab, bevor Cloudflare beruehrt wird.
     const { data: project } = await admin
       .from('website_projects')
       .select('*')
       .eq('id', body.project_id)
-      .single();
+      .eq('tenant_id', tenantId)
+      .maybeSingle();
 
     if (!project) {
       return jsonError(404, 'PROJECT_NOT_FOUND', 'project does not exist');
@@ -84,11 +103,11 @@ Deno.serve(async (req) => {
     }
 
     if (!result.success) {
-      await logDeploymentEvent(body.project_id, body.tenant_id, body.action, 'failed', result.error);
+      await logDeploymentEvent(body.project_id, tenantId, body.action, 'failed', result.error);
       return jsonError(500, result.code || 'DEPLOYMENT_FAILED', result.error);
     }
 
-    await logDeploymentEvent(body.project_id, body.tenant_id, body.action, 'success', 'OK');
+    await logDeploymentEvent(body.project_id, tenantId, body.action, 'success', 'OK');
 
     return jsonResponse(200, { success: true, data: result.data });
   } catch (err) {

@@ -106,7 +106,7 @@ const FREEMIUM_LADDER: readonly (readonly [string, string, string])[] = [
     'Tiefenanalyse',
     'Laufendes Monitoring, Regel-Hinweise und auditfähiger Nachweis-Export.',
   ],
-  ['03 · ENTERPRISE', 'Vertrag & Betrieb', 'SSO, Custom-DPA und fester Ansprechpartner.'],
+  ['03 · ENTERPRISE', 'Vertrag & Betrieb', 'SSO, Custom-DPA und vertraglich zugesagte Reaktionszeit.'],
 ];
 
 /** Die sechs Policy Packs. TISAX/DORA sind Roadmap — gestrichelt gesetzt. */
@@ -372,7 +372,7 @@ export function MainLanding() {
                     key={chip.featureSlug}
                     to={`/pricing/${plan.slug}`}
                     aria-describedby={tipId}
-                    className="group relative flex items-center gap-2.5 whitespace-nowrap rounded-full border px-3.5 py-[7px] pl-[11px] text-[11px] tracking-[.1em] backdrop-blur-[6px] transition hover:border-[#e6c98a]/40 hover:bg-[rgba(24,36,48,.85)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e6c98a]/60"
+                    className="group relative hover:z-30 focus-within:z-30 flex items-center gap-2.5 whitespace-nowrap rounded-full border px-3.5 py-[7px] pl-[11px] text-[11px] tracking-[.1em] backdrop-blur-[6px] transition hover:border-[#e6c98a]/40 hover:bg-[rgba(24,36,48,.85)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e6c98a]/60"
                     style={chipStyle}
                   >
                     {body}

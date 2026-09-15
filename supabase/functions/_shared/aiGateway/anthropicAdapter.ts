@@ -157,3 +157,4 @@ export class AnthropicAdapter implements AiProviderAdapter {
     return body;
   }
 }
+\n\nfunction isClaude4OrNewer(model: string): boolean {\n  const match = /^claude-(?:opus|sonnet|haiku)-(\\d+)(?:[-.]|$)/i.exec(model.trim());\n  return match ? Number(match[1]) >= 4 : false;\n}\n

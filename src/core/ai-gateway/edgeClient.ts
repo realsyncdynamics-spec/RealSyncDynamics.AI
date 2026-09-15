@@ -23,8 +23,25 @@ import type {
 export interface EdgeClientConfig {
   /** Supabase project base URL, e.g. `https://<ref>.supabase.co`. */
   supabaseUrl: string;
-  /** anon or service_role key — used as `apikey` + `Authorization: Bearer`. */
+  /** anon key — geht als `apikey`-Header an das Supabase-Gateway. */
   apiKey: string;
+  /**
+   * Zugriffstoken der angemeldeten Sitzung. Geht als
+   * `Authorization: Bearer` und ist das, woran die Function den Nutzer
+   * erkennt.
+   *
+   * Vorher stand hier der Anon-Key — der ist ein gueltiges JWT und liegt im
+   * Frontend-Bundle, also konnte jeder, der ihn hat, auf Kosten des
+   * Betreibers inferieren. Fehlt das Token, antwortet die Function mit 401;
+   * das ist Absicht und besser als ein stiller Lauf ohne Mandant.
+   */
+  accessToken?: string;
+  /**
+   * Mandant, fuer den gerechnet wird. Geht als `X-Tenant-Id`. Ohne ihn
+   * liesse sich der Aufruf weder einem Kontingent zuordnen noch abrechnen,
+   * deshalb antwortet die Function dann mit 400.
+   */
+  tenantId?: string;
   /** Defaults to global `fetch`. Injected in tests. */
   fetchImpl?: typeof fetch;
   /** Request timeout. */
@@ -99,9 +116,13 @@ export class AiGatewayEdgeClient {
         method: 'POST',
         signal: controller.signal,
         headers: {
-          'content-type':  'application/json',
-          'apikey':         this.config.apiKey,
-          'authorization': `Bearer ${this.config.apiKey}`,
+          'content-type': 'application/json',
+          'apikey':       this.config.apiKey,
+          // Die Sitzung des Nutzers, nicht der Anon-Key. Fehlt sie, faellt
+          // der Aufruf bewusst auf den Anon-Key zurueck und die Function
+          // lehnt ihn mit 401 ab — sichtbar, statt still auf Betriebskosten.
+          'authorization': `Bearer ${this.config.accessToken ?? this.config.apiKey}`,
+          ...(this.config.tenantId ? { 'x-tenant-id': this.config.tenantId } : {}),
         },
         body: JSON.stringify({ op, ...request } satisfies EdgeRequestBody),
       });

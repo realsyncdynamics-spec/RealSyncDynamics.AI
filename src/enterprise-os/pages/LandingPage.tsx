@@ -21,6 +21,15 @@ import { Badge, StatusBadge } from '../components/Badge';
 import { Card } from '../components/Card';
 import { ScoreGauge } from '../components/ScoreGauge';
 import { SCORES, RISKS, WEBSITES } from '../mock/data';
+// SSoT für Headline/Loop/CTA-Labels — dieselbe Quelle wie `MainLanding.tsx`
+// (Live-`/`). Verhindert Text-Drift zwischen den beiden Hero-Flächen; siehe
+// PR-Review zu #1369.
+import {
+  HERO_DASHBOARD_CTA_LABEL,
+  HERO_HEADLINE,
+  HERO_OPERATING_LOOP,
+  HERO_SCAN_CTA_LABEL,
+} from '../../components/governance-frontend/hero-content';
 
 const MODULES = [
   {
@@ -77,96 +86,74 @@ export function LandingPage() {
 
   return (
     <div className="min-h-screen bg-obsidian-950 text-titanium-100">
-      <PublicNav />
+      <PublicNav overlay />
 
-      {/* HERO */}
-      <section className="relative overflow-hidden border-b border-titanium-800 bg-puzzle-grid">
-        <div className="mx-auto grid max-w-7xl grid-cols-1 gap-12 px-4 py-16 sm:px-6 lg:grid-cols-2 lg:items-center lg:py-24 lg:px-8">
-          <div>
-            <Badge icon={<Sparkles className="h-3 w-3 text-security-400" />} className="mb-6">
-              Governance OS · DSGVO + EU AI Act
-            </Badge>
-            <h1 className="font-display text-4xl font-bold leading-tight text-titanium-50 sm:text-5xl lg:text-6xl">
-              Das Betriebssystem für digitale Compliance
+      {/* HERO — visual direction based on the supplied 16:9 Europe governance reference */}
+      <section className="relative isolate min-h-[760px] overflow-hidden border-b border-titanium-800 bg-[#0A0A0B]">
+        <img
+          src="/europe-globe.webp"
+          alt=""
+          aria-hidden="true"
+          className="absolute inset-0 h-full w-full object-cover object-center opacity-95"
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#0A0A0B]/95 via-[#0A0A0B]/72 to-[#0A0A0B]/12" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0A0A0B]/80 via-transparent to-[#0A0A0B]/20" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_72%_46%,rgba(255,179,71,0.16),transparent_32%)]" />
+
+        <div className="relative mx-auto flex min-h-[760px] max-w-7xl items-center px-4 pb-20 pt-32 sm:px-6 lg:px-8">
+          <div className="max-w-4xl">
+            <div className="mb-7 inline-flex items-center gap-2 border border-white/15 bg-black/25 px-3 py-2 backdrop-blur-sm">
+              <Sparkles className="h-3.5 w-3.5 text-[#FFB347]" />
+              <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.22em] text-white/70">
+                AI Governance Operations OS · Europe
+              </span>
+            </div>
+
+            <h1 className="max-w-4xl text-5xl font-semibold leading-[0.96] tracking-[-0.045em] text-white sm:text-6xl lg:text-[76px]">
+              {HERO_HEADLINE.map((segments, line) => (
+                <span key={line} className="block">
+                  {segments.map((segment, index) =>
+                    segment.accent ? (
+                      <span key={index} className="text-[#FFB347]">
+                        {segment.text}
+                      </span>
+                    ) : (
+                      <span key={index}>{segment.text}</span>
+                    ),
+                  )}
+                </span>
+              ))}
             </h1>
-            <p className="mt-5 max-w-xl text-base leading-relaxed text-titanium-400 sm:text-lg">
-              RealSync Dynamics AI ist kein Scanner, der einmalig prüft — sondern ein Governance OS, das DSGVO, EU AI Act,
-              Website-Compliance und KI-Risiken kontinuierlich überwacht, dokumentiert und automatisiert.
+
+            <div className="mt-8 flex flex-wrap items-center gap-x-4 gap-y-2 font-mono text-[11px] font-medium uppercase tracking-[0.24em] text-white/65 sm:text-xs">
+              {HERO_OPERATING_LOOP.split(' → ').map((word, index, words) => (
+                <React.Fragment key={word}>
+                  <span>{word}</span>
+                  {index < words.length - 1 && <span className="text-[#FFB347]">→</span>}
+                </React.Fragment>
+              ))}
+            </div>
+
+            <p className="mt-8 max-w-2xl text-base leading-7 text-white/70 sm:text-lg sm:leading-8">
+              Runtime Governance für regulierte KI-Systeme. Kontinuierliche Evidence für DSGVO und EU AI Act — EU-native by design.
             </p>
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <Link to="/os/pricing">
-                <Button variant="primary" size="lg" className="w-full sm:w-auto">
-                  14 Tage kostenlos starten <ArrowRight className="ml-2 h-4 w-4" />
+
+            <div className="mt-9 flex flex-col gap-3 sm:flex-row">
+              <Link to="/os/audit">
+                <Button variant="primary" size="lg" className="min-w-[220px] shadow-[0_8px_40px_rgba(255,179,71,0.24)]">
+                  {HERO_SCAN_CTA_LABEL} <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </Link>
               <Link to="/os/app">
-                <Button variant="secondary" size="lg" className="w-full sm:w-auto">
-                  Plattform live ansehen
+                <Button variant="secondary" size="lg" className="min-w-[220px] border-white/35 bg-white/10 text-white backdrop-blur-md hover:bg-white/15">
+                  {HERO_DASHBOARD_CTA_LABEL}
                 </Button>
               </Link>
             </div>
-            <div className="mt-10 grid grid-cols-2 gap-3 sm:grid-cols-4">
-              {TRUST_POINTS.map((point) => (
-                <div key={point.label} className="flex items-center gap-2 border border-titanium-800 bg-obsidian-900/60 px-3 py-2">
-                  <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-risk-passed" />
-                  <span className="font-mono text-[10px] uppercase tracking-wider text-titanium-400">{point.label}</span>
-                </div>
-              ))}
-            </div>
-          </div>
 
-          {/* Live dashboard preview */}
-          <div className="relative">
-            <div className="border border-titanium-700 bg-obsidian-900 shadow-2xl">
-              <div className="flex items-center gap-2 border-b border-titanium-800 bg-obsidian-800 px-4 py-2.5">
-                <span className="h-2.5 w-2.5 rounded-full bg-risk-critical/70" />
-                <span className="h-2.5 w-2.5 rounded-full bg-risk-medium/70" />
-                <span className="h-2.5 w-2.5 rounded-full bg-risk-passed/70" />
-                <span className="ml-3 font-mono text-[10px] uppercase tracking-wider text-titanium-500">
-                  app.realsyncdynamicsai.de/app
-                </span>
-              </div>
-              <div className="space-y-4 p-5">
-                <div className="grid grid-cols-3 gap-3">
-                  <Card className="flex flex-col items-center justify-center gap-2 py-4">
-                    <ScoreGauge score={SCORES.overall} label="Gesamt" size={72} />
-                  </Card>
-                  <Card className="flex flex-col items-center justify-center gap-2 py-4">
-                    <ScoreGauge score={SCORES.dsgvo} label="DSGVO" size={72} />
-                  </Card>
-                  <Card className="flex flex-col items-center justify-center gap-2 py-4">
-                    <ScoreGauge score={SCORES.aiAct} label="AI Act" size={72} />
-                  </Card>
-                </div>
-                <Card className="p-3">
-                  <p className="mb-2 font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-titanium-600">
-                    Aktuelle Risiken
-                  </p>
-                  <div className="space-y-2">
-                    {previewRisks.map((risk) => (
-                      <div key={risk.id} className="flex items-center justify-between gap-3 border border-titanium-800 bg-obsidian-800/60 px-3 py-2">
-                        <span className="truncate text-xs text-titanium-200">{risk.title}</span>
-                        <StatusBadge level={risk.level} />
-                      </div>
-                    ))}
-                  </div>
-                </Card>
-                <Card className="p-3">
-                  <p className="mb-2 font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-titanium-600">
-                    Websites
-                  </p>
-                  <div className="space-y-1.5">
-                    {WEBSITES.slice(0, 3).map((site) => (
-                      <div key={site.id} className="flex items-center justify-between text-xs">
-                        <span className="text-titanium-300">{site.domain}</span>
-                        <span className="font-mono tabular text-titanium-500">{site.score}</span>
-                      </div>
-                    ))}
-                  </div>
-                </Card>
-              </div>
+            <div className="mt-10 flex flex-wrap gap-5 text-[11px] text-white/55">
+              <span>DSGVO</span><span>EU AI Act</span><span>Evidence Vault</span><span>AI Agents</span><span>SiteOS</span>
             </div>
-            <div className="absolute -bottom-6 -right-6 -z-10 h-40 w-40 bg-security-500/10 blur-3xl" />
           </div>
         </div>
       </section>

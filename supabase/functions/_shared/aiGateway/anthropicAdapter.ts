@@ -69,7 +69,10 @@ export function supportsSamplingParams(model: string): boolean {
   if (/^claude-\d/.test(id)) return true;
   if (id.startsWith('claude-instant')) return true;
 
-  const m = /^claude-(opus|sonnet|haiku|fable|mythos)-(\d+)(?:[-.](\d+))?/.exec(id);
+  // The minor group takes at most two digits and must not be followed by
+  // another one, so an 8-digit date suffix is not read as a minor version:
+  // claude-sonnet-4-20250514 is Sonnet 4, not Sonnet 4.20250514.
+  const m = /^claude-(opus|sonnet|haiku|fable|mythos)-(\d+)(?:[-.](\d{1,2})(?!\d))?/.exec(id);
   if (!m) return false;
 
   const [, family, majorRaw, minorRaw] = m;

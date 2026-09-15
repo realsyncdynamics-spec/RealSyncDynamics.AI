@@ -172,6 +172,11 @@ const SAMPLING_SUPPORTED = [
   'claude-3.5-sonnet',
   // boundary: last generation before the removal
   'claude-opus-4-6',
+  // a date suffix must not be read as a minor version — these are
+  // Sonnet 4 and Opus 4, not 4.20250514
+  'claude-sonnet-4-20250514',
+  'claude-opus-4-20250514',
+  'claude-sonnet-4',
 ];
 
 const SAMPLING_REMOVED = [

@@ -108,7 +108,14 @@ Deno.serve(async (req) => {
     const website = await generateWebsiteWithAI(body, project.id);
 
     if (!website.success) {
-      // Log error but don't fail entirely
+      // Fail closed. Vorher lief der Ablauf hier weiter, und zwar bis zum Ende:
+      // Schritt 4 pruefte die Compliance gegen `website.html || ''`, Schritt 5
+      // schrieb das Projekt mit `generated_html: undefined` auf
+      // `status: 'preview'`, Schritt 6 legte ein Deployment-Log mit
+      // `status: 'success'` und dem Titel "Website Generated" an. Der Aufrufer
+      // bekam 200 mit leerem HTML. Ein ausgefallener Provider war damit von
+      // einem geglueckten Lauf weder an der Antwort noch am Log zu
+      // unterscheiden.
       await admin.from('deployment_logs').insert({
         project_id: project.id,
         tenant_id: body.tenant_id,
@@ -118,6 +125,8 @@ Deno.serve(async (req) => {
         message: website.error,
         triggered_by: 'automation',
       });
+
+      return jsonError(502, 'PROVIDER_UNAVAILABLE', website.error || 'ai generation failed');
     }
 
     // 4. Run compliance checks

@@ -26,6 +26,40 @@ const TRIO = [
   },
 ] as const;
 
+/**
+ * Die vier Rest-Jobs. Sie liefen bis `20260915110500` mit dem Vault-Eintrag
+ * `service_role_key` als Inbound-Bearer — ausdrücklich als Zwischenzustand
+ * (siehe Kopf von `20260912180000`). Gemessen am 2026-09-15 trug dieser
+ * Zwischenzustand nicht: alle vier antworteten mit 401. Seitdem gilt für sie
+ * derselbe Vertrag wie für das Trio.
+ */
+const REST = [
+  {
+    slug: 'audit-recheck-weekly',
+    env: 'CRON_AUDIT_RECHECK_KEY',
+    vault: 'cron_audit_recheck_key',
+    job: 'audit-recheck-daily',
+  },
+  {
+    slug: 'daily-digest',
+    env: 'CRON_DAILY_DIGEST_KEY',
+    vault: 'cron_daily_digest_key',
+    job: 'daily-digest',
+  },
+  {
+    slug: 'sub-processor-notify',
+    env: 'CRON_SUB_PROCESSOR_NOTIFY_KEY',
+    vault: 'cron_sub_processor_notify_key',
+    job: 'sub-processor-notify-daily',
+  },
+  {
+    slug: 'audit-drip-cron',
+    env: 'CRON_AUDIT_DRIP_KEY',
+    vault: 'cron_audit_drip_key',
+    job: 'audit-email-drip-daily',
+  },
+] as const;
+
 function source(slug: string): string {
   return readFileSync(`supabase/functions/${slug}/index.ts`, 'utf8');
 }
@@ -95,5 +129,54 @@ describe('Cron-Trio: dedizierter CRON_* Key, fail-closed', () => {
     expect(sql).toContain('dispatch_cron_function');
     // Kein Re-Wire auf den kompromittierten Inbound-Vertrag.
     expect(sql).not.toMatch(/'service_role_key'/);
+  });
+});
+
+describe('Cron-Rest-Jobs: kein service_role_key mehr im Cron-Pfad', () => {
+  for (const { slug, env, vault } of REST) {
+    const src = () => source(slug);
+
+    it(`${slug} liest ${env} und vergleicht Bearer dagegen`, () => {
+      expect(src()).toContain(`Deno.env.get('${env}')`);
+      expect(src()).toMatch(/authHeader\s*!==\s*`Bearer \$\{CRON_KEY\}`/);
+      expect(src()).toContain(vault);
+    });
+
+    it(`${slug}: leerer Key → 401 (fail-closed)`, () => {
+      expect(src()).toMatch(/!CRON_KEY\s*\|\|/);
+      expect(src()).toMatch(/401/);
+      expect(src()).toMatch(/cron only/);
+    });
+
+    it(`${slug}: inbound Auth vergleicht nicht gegen SERVICE_ROLE`, () => {
+      // Der Service-Role-Schlüssel gilt seit 2026-09-10 als kompromittiert.
+      // Nach der Authentisierung darf er für PostgREST bleiben — als
+      // Inbound-Credential nie.
+      expect(src()).not.toMatch(
+        /authHeader\s*!==\s*`Bearer \$\{(SRK|SERVICE_KEY|SERVICE_ROLE|SUPABASE_SERVICE_ROLE_KEY)\}`/,
+      );
+    });
+  }
+
+  it('Migration 20260915110500 stellt alle vier Jobs auf Vault cron_* um', () => {
+    const sql = readFileSync(
+      'supabase/migrations/20260915110500_cron_rest_dedicated_keys.sql',
+      'utf8',
+    );
+    for (const { vault, job } of REST) {
+      expect(sql).toContain(`'${vault}'`);
+      expect(sql).toContain(`'${job}'`);
+    }
+    expect(sql).toContain('dispatch_cron_function');
+    // Kein Rückfall auf den kompromittierten Inbound-Vertrag.
+    expect(sql).not.toMatch(/'service_role_key'/);
+  });
+
+  it('Runbook führt alle sieben Paarungen Vault → Function Secret', () => {
+    const runbook = readFileSync('docs/runbooks/cron-vault-secrets.md', 'utf8');
+    for (const { env, vault } of [...TRIO, ...REST]) {
+      expect(runbook).toContain(vault);
+      expect(runbook).toContain(env);
+    }
   });
 });

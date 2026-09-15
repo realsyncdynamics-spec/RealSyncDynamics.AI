@@ -1,8 +1,15 @@
 // Sub-Processor-Change-Notify — täglich 08:00 UTC vom pg_cron-Job aufgerufen.
 //
-// Auth: Bearer == SERVICE_ROLE_KEY (verify_jwt = false). Der alte Job
-// schickte den Anon-Key (Migration 20260507140000, Variable v_anon_key);
-// der Anon-Key ist ein gültiges JWT, deshalb reicht Gateway-JWT nicht.
+// Auth: Bearer == CRON_SUB_PROCESSOR_NOTIFY_KEY (Function Secret). pg_cron sendet den Wert
+// aus Vault `cron_sub_processor_notify_key` über dispatch_cron_function. verify_jwt = false;
+// fail-closed, wenn das Secret leer ist. Der eingehende Authorization-
+// Header wird NIE gegen SUPABASE_SERVICE_ROLE_KEY geprüft — die
+// Service-Role dient nur dem Zugriff NACH der Authentisierung.
+//
+// Historie: Der ursprüngliche Job schickte den Anon-Key (Migration
+// 20260507140000, Variable v_anon_key) — ein gültiges JWT, deshalb reicht
+// Gateway-JWT nicht. 20260910190000 stellte auf den Service-Role-Bearer um,
+// 20260915110500 auf den dedizierten Cron-Key oben.
 //
 // Holt pending changes (notify_at <= now, notified_at IS NULL), iteriert
 // über alle aktiven Subscriptions, sendet 30-Tage-Vorab-Notice via Resend,
@@ -34,8 +41,9 @@ Deno.serve(async (req) => {
 
   const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
   const SRK = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+  const CRON_KEY = Deno.env.get('CRON_SUB_PROCESSOR_NOTIFY_KEY') ?? '';
   const authHeader = req.headers.get('Authorization') ?? '';
-  if (authHeader !== `Bearer ${SRK}`) {
+  if (!CRON_KEY || authHeader !== `Bearer ${CRON_KEY}`) {
     return jsonResponse({ ok: false, error: 'cron only' }, 401);
   }
   const RESEND_KEY = Deno.env.get('RESEND_API_KEY');

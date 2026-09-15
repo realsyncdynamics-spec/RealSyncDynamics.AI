@@ -166,12 +166,14 @@ interface GatewayResult {
 async function callGateway(system: string, user: string): Promise<GatewayResult> {
   const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
   const ANON = Deno.env.get('SUPABASE_ANON_KEY')!;
+  // Bearer = Service-Role: weist den Aufruf beim Gateway als internen aus.
+  const SRK = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ANON;
 
   const resp = await fetch(`${SUPABASE_URL}/functions/v1/ai-gateway`, {
     method: 'POST',
     headers: {
       'content-type': 'application/json',
-      'authorization': `Bearer ${ANON}`,
+      'authorization': `Bearer ${SRK}`,
       'apikey': ANON,
     },
     body: JSON.stringify({

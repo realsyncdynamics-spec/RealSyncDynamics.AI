@@ -263,6 +263,14 @@ verify_jwt = false
 [functions.enterprise-ai-os-discovery-pending]
 verify_jwt = true
 
+# F-06 remediation (2026-09-15): previously no entry at all and no auth in the
+# handler — tenant_id came from the request body and was only checked for
+# existence, so any caller could write into a foreign tenant with the service
+# role and spend that tenant's model budget. Now requires JWT + membership
+# (requireAuthAndTenant); platform gate enabled.
+[functions.website-operations-agent]
+verify_jwt = true
+
 [functions.enterprise-ai-os-agents-list]
 verify_jwt = false
 

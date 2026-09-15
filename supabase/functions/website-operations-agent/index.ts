@@ -15,6 +15,7 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 import { withErrorHandling, generateRequestId, logOperation } from '../_shared/middleware.ts';
+import { requireAuthAndTenant } from '../_shared/auth.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SRK = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -39,6 +40,8 @@ interface WebsiteGenerationRequest {
 }
 
 interface GeneratedWebsite {
+  /** Der persistierte Projektdatensatz — Quelle fuer die Oberflaeche. */
+  project: Record<string, unknown> | null;
   project_id: string;
   html: string;
   css: string;
@@ -64,16 +67,14 @@ Deno.serve(async (req) => {
       return jsonError(400, 'INVALID_INPUT', 'tenant_id, industry, company_name required');
     }
 
-    // 1. Verify tenant exists
-    const { data: tenant, error: tenantErr } = await admin
-      .from('tenants')
-      .select('id')
-      .eq('id', body.tenant_id)
-      .single();
-
-    if (tenantErr || !tenant) {
-      return jsonError(404, 'TENANT_NOT_FOUND', 'tenant does not exist');
-    }
+    // 1. Auth + Tenant Boundary — vor jedem Service-Role-Schreibzugriff und
+    // vor jedem Modellaufruf. `tenant_id` kommt aus dem Body und ist damit
+    // eine Behauptung des Aufrufers, kein Nachweis: ohne diese Pruefung
+    // koennte ein Aufrufer in einen fremden Tenant schreiben und auf dessen
+    // Rechnung Tokens verbrauchen. Derselbe Waechter wie in
+    // website-domain-manager und den uebrigen Tenant-Functions.
+    const auth = await requireAuthAndTenant(req, body.tenant_id);
+    if (auth instanceof Response) return auth;
 
     // 2. Create website project entry
     const { data: project, error: projectErr } = await admin
@@ -128,8 +129,10 @@ Deno.serve(async (req) => {
       website.aiDisclosures || []
     );
 
-    // 5. Store generated content
-    await admin
+    // 5. Store generated content — der Rueckgabewert ist der persistierte
+    // Stand, nicht das, was wir zu schreiben glaubten. Die Oberflaeche zeigt
+    // damit die Zeile, die auch nach einem Reload in der Datenbank steht.
+    const { data: persisted } = await admin
       .from('website_projects')
       .update({
         status: 'preview',
@@ -144,7 +147,9 @@ Deno.serve(async (req) => {
         compliance_score: complianceResult.score,
         compliance_findings: complianceResult.findings,
       })
-      .eq('id', project.id);
+      .eq('id', project.id)
+      .select('id, name, industry, status, compliance_score, preview_url, deployment_url, last_deployed_at, created_at')
+      .single();
 
     // 6. Log deployment event
     await admin.from('deployment_logs').insert({
@@ -162,6 +167,7 @@ Deno.serve(async (req) => {
     });
 
     const response: GeneratedWebsite = {
+      project: persisted ?? null,
       project_id: project.id,
       html: website.html || '',
       css: website.css || '',

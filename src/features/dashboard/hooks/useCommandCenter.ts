@@ -9,6 +9,7 @@ import {
   type CommandSession,
 } from '../../../core/realsync-os';
 import { createSiteOsExecutor } from '../../siteos/commandExecutor';
+import { createComplianceExecutor } from '../../governance/agent-os/complianceExecutor';
 
 export function useCommandCenter() {
   const supabase = getSupabase();
@@ -61,7 +62,14 @@ export function useCommandCenter() {
     try {
       approveSession(session, session.intent.actorId);
       snapshot(session);
-      await runUntilTerminal(session, { executeStep: createSiteOsExecutor(activeTenantId) });
+      // Compliance zuerst: der SiteOS-Executor kennt für die zehn
+      // Compliance-Aktionen keine Zuordnung und würde die Session beim ersten
+      // Schritt mit `not_implemented` blockieren. `evaluate_governance` reicht
+      // der Compliance-Executor bewusst durch — dafür gibt es den echten
+      // SiteOS-Agenten.
+      await runUntilTerminal(session, {
+        executeStep: createComplianceExecutor(activeTenantId, createSiteOsExecutor(activeTenantId)),
+      });
       snapshot(session);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Plan konnte nicht ausgeführt werden');

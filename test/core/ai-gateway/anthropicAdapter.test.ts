@@ -1,5 +1,11 @@
 import { describe, it, expect, vi } from 'vitest';
-import { AnthropicAdapter } from '../../../src/core/ai-gateway/providers/anthropicAdapter';
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import {
+  AnthropicAdapter,
+  supportsSamplingParams,
+} from '../../../src/core/ai-gateway/providers/anthropicAdapter';
 import type { AiGatewayRequest } from '../../../src/core/ai-gateway/types';
 
 function req(over: Partial<AiGatewayRequest> = {}): AiGatewayRequest {
@@ -26,6 +32,11 @@ function fakeFetch(opts: { ok?: boolean; status?: number; body?: unknown } = {})
     status,
     json: async () => body,
   } as unknown as Response)) as unknown as typeof fetch;
+}
+
+function bodyOf(f: typeof fetch): Record<string, unknown> {
+  const init = (f as unknown as ReturnType<typeof vi.fn>).mock.calls[0][1] as RequestInit;
+  return JSON.parse(init.body as string) as Record<string, unknown>;
 }
 
 describe('AnthropicAdapter.health', () => {
@@ -73,20 +84,18 @@ describe('AnthropicAdapter.generate', () => {
     expect(out.usage?.output_tokens).toBe(8);
   });
 
-  it('omits temperature for Claude 4.x model ids (Anthropic deprecation)', async () => {
+  it('omits temperature on a model that removed sampling (would be HTTP 400)', async () => {
     const f = fakeFetch();
-    const a = new AnthropicAdapter({ apiKey: 'k', model: 'claude-haiku-4-5-20251001', fetchImpl: f });
+    const a = new AnthropicAdapter({ apiKey: 'k', model: 'claude-opus-4-7', fetchImpl: f });
     await a.generate(req({ temperature: 0.5 }));
-    const body = JSON.parse(((f as unknown as ReturnType<typeof vi.fn>).mock.calls[0][1] as RequestInit).body as string);
-    expect('temperature' in body).toBe(false);
+    expect('temperature' in bodyOf(f)).toBe(false);
   });
 
-  it('does pass temperature for legacy model ids', async () => {
+  it('passes temperature on a model that still supports sampling', async () => {
     const f = fakeFetch();
-    const a = new AnthropicAdapter({ apiKey: 'k', model: 'claude-3-5-sonnet-20241022', fetchImpl: f });
+    const a = new AnthropicAdapter({ apiKey: 'k', model: 'claude-haiku-4-5-20251001', fetchImpl: f });
     await a.generate(req({ temperature: 0.7 }));
-    const body = JSON.parse(((f as unknown as ReturnType<typeof vi.fn>).mock.calls[0][1] as RequestInit).body as string);
-    expect(body.temperature).toBe(0.7);
+    expect(bodyOf(f).temperature).toBe(0.7);
   });
 
   it('throws when the API returns an error envelope', async () => {
@@ -139,5 +148,126 @@ describe('AnthropicAdapter.embed', () => {
   it('throws — Anthropic offers no embeddings API', async () => {
     const a = new AnthropicAdapter({ apiKey: 'k', model: 'claude-haiku-4-5' });
     await expect(a.embed(req({ task_type: 'embed' }))).rejects.toThrow(/no embeddings API/);
+  });
+});
+
+// ── Sampling-parameter compatibility ──────────────────────────────
+//
+// Anthropic removed `temperature` / `top_p` / `top_k` with the 4.7
+// generation. Sending one to such a model fails the request with HTTP 400;
+// omitting one where it is supported silently drops the caller's intent.
+// Every Anthropic model id actually configured anywhere in this repository
+// is pinned below, plus the current cloud ids the gateway can be pointed at.
+
+const SAMPLING_SUPPORTED = [
+  // configured in this repo today
+  'claude-sonnet-4-6',
+  'claude-sonnet-4-6-20250514',
+  'claude-haiku-4-5',
+  'claude-haiku-4-5-20251001',
+  'claude-opus-4-1-20250805',
+  'claude-opus-4',
+  'claude-3-5-sonnet-20241022',
+  'claude-3-5-sonnet',
+  'claude-3.5-sonnet',
+  // boundary: last generation before the removal
+  'claude-opus-4-6',
+];
+
+const SAMPLING_REMOVED = [
+  // configured in this repo today
+  'claude-opus-4-7',
+  // current cloud ids the gateway may be pointed at
+  'claude-opus-4-8',
+  'claude-opus-5',
+  'claude-sonnet-5',
+  'claude-fable-5',
+  'claude-fable-5-1',
+  'claude-mythos-5-1',
+  // unknown / future ids default to "removed": a dropped sampling default
+  // is recoverable, a rejected request is not
+  'claude-haiku-5',
+  'claude-something-new',
+  'gpt-4o',
+];
+
+describe('supportsSamplingParams', () => {
+  it.each(SAMPLING_SUPPORTED)('allows sampling for %s', (model) => {
+    expect(supportsSamplingParams(model)).toBe(true);
+  });
+
+  it.each(SAMPLING_REMOVED)('suppresses sampling for %s', (model) => {
+    expect(supportsSamplingParams(model)).toBe(false);
+  });
+
+  it('is case- and whitespace-insensitive', () => {
+    expect(supportsSamplingParams('  CLAUDE-Haiku-4-5  ')).toBe(true);
+    expect(supportsSamplingParams('  Claude-Opus-5  ')).toBe(false);
+  });
+});
+
+describe('AnthropicAdapter sampling params per configured model', () => {
+  it.each(SAMPLING_SUPPORTED)('sends temperature to %s', async (model) => {
+    const f = fakeFetch();
+    const a = new AnthropicAdapter({ apiKey: 'k', model, fetchImpl: f });
+    await a.generate(req({ temperature: 0.3 }));
+    expect(bodyOf(f).temperature).toBe(0.3);
+  });
+
+  it.each(SAMPLING_REMOVED)('never sends temperature to %s', async (model) => {
+    const f = fakeFetch();
+    const a = new AnthropicAdapter({ apiKey: 'k', model, fetchImpl: f });
+    await a.generate(req({ temperature: 0.3 }));
+    expect('temperature' in bodyOf(f)).toBe(false);
+  });
+
+  it('defaults to 0.2 on a sampling model when the caller sets none', async () => {
+    const f = fakeFetch();
+    const a = new AnthropicAdapter({ apiKey: 'k', model: 'claude-sonnet-4-6', fetchImpl: f });
+    await a.generate(req());
+    expect(bodyOf(f).temperature).toBe(0.2);
+  });
+
+  // The regression this suite exists for: extractJson() pins temperature to 0
+  // for deterministic JSON. The old `^claude-(opus|sonnet|haiku)-4` heuristic
+  // classified every configured 4.x model as "no sampling" and dropped it.
+  it('lets extractJson pin temperature to 0 on a sampling model', async () => {
+    const f = fakeFetch({ body: {
+      id: 'msg', model: 'claude-sonnet-4-6',
+      content: [{ type: 'text', text: '{"ok":true}' }],
+      usage: { input_tokens: 3, output_tokens: 3 },
+    }});
+    const a = new AnthropicAdapter({ apiKey: 'k', model: 'claude-sonnet-4-6', fetchImpl: f });
+    await a.extractJson(req({ task_type: 'extract_json' }));
+    expect(bodyOf(f).temperature).toBe(0);
+  });
+
+  it('still extracts JSON on a model that cannot take temperature', async () => {
+    const f = fakeFetch({ body: {
+      id: 'msg', model: 'claude-opus-5',
+      content: [{ type: 'text', text: '{"ok":true}' }],
+      usage: { input_tokens: 3, output_tokens: 3 },
+    }});
+    const a = new AnthropicAdapter({ apiKey: 'k', model: 'claude-opus-5', fetchImpl: f });
+    const out = await a.extractJson<{ ok: boolean }>(req({ task_type: 'extract_json' }));
+    expect(out.output).toEqual({ ok: true });
+    expect('temperature' in bodyOf(f)).toBe(false);
+  });
+});
+
+// The Edge Function bundle cannot import from src/, so the adapter is kept as
+// two byte-compatible mirrors. Vitest only exercises the src/ copy — this
+// guard fails when the Deno copy drifts away from it.
+describe('anthropicAdapter mirror parity', () => {
+  it('keeps supportsSamplingParams identical in the Deno mirror', () => {
+    const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
+    const extract = (p: string) => {
+      const body = readFileSync(path.join(root, p), 'utf8');
+      const m = /export function supportsSamplingParams[\s\S]*?\n}\n/.exec(body);
+      if (!m) throw new Error(`supportsSamplingParams not found in ${p}`);
+      return m[0];
+    };
+    expect(extract('supabase/functions/_shared/aiGateway/anthropicAdapter.ts'))
+      .toBe(extract('src/core/ai-gateway/providers/anthropicAdapter.ts'));
   });
 });

@@ -146,3 +146,65 @@ describe('decideAccess', () => {
     expect(cheapestPlanForKeys(['bots.voice'])).toBe('agency');
   });
 });
+
+/**
+ * Ratsche: Ein Registereintrag muss auch wirken.
+ *
+ * `RouteEntitlementGate` laeuft ausschliesslich innerhalb der
+ * `GovernanceBrowserShell` (siehe `GovernanceBrowserShell.tsx`). Eine Route,
+ * die in `App.tsx` an einem anderen Wrapper haengt — `AppGate`, gar keinem —,
+ * konsultiert dieses Register nie. Ein Eintrag dafuer waere ein Gate, das
+ * niemanden sperrt, und sieht in der Datei trotzdem aus wie Schutz.
+ *
+ * Am 2026-09-15 gemessen: alle damaligen 27 Eintraege lagen unter der Shell.
+ * Diese Pruefung haelt das fest, damit der naechste Eintrag nicht still
+ * wirkungslos bleibt.
+ */
+describe('Register-Eintraege wirken auch', () => {
+  const appSource = readFileSync('src/App.tsx', 'utf8');
+
+  function elementFor(route: string): string | null {
+    const treffer = new RegExp(
+      `<Route\\s+path="${route.replace(/[/\\-]/g, '\\$&')}"[^>]*element=\\{([\\s\\S]{0,80})`,
+    ).exec(appSource);
+    return treffer ? treffer[1] : null;
+  }
+
+  it.each(APP_FEATURE_ACCESS.map((r) => [r.route] as const))(
+    '%s wird unter der GovernanceBrowserShell ausgeliefert',
+    (route) => {
+      const element = elementFor(route);
+      expect(element, `Route ${route} steht im Register, aber nicht in App.tsx`).not.toBeNull();
+      expect(
+        element,
+        `Route ${route} haengt nicht an der GovernanceBrowserShell — das Gate greift dort nicht`,
+      ).toContain('GovernanceBrowserShell');
+    },
+  );
+});
+
+describe('Website-Builder — die neue Bezahlgrenze', () => {
+  const req = requirementForPath('/app/siteos');
+
+  it('ist im Register und verlangt siteos.builder', () => {
+    expect(req?.allOf).toEqual(['siteos.builder']);
+  });
+
+  it('sperrt Free Audit aus, laesst Starter und aufwaerts hinein', () => {
+    // Achtung, zwei Vokabulare: `PlanId` ist 'free', `PlanKey' ist
+    // 'free_audit'. `planGrants` will den Key, die Leiter nennt die Id.
+    for (const planId of PLAN_ORDER) {
+      if (!isPlanSelectable(planId)) continue;
+      const plan = planById(planId);
+      const erlaubt = decideAccess(req!, (key) => planGrants(plan.planKey, key as never)).allowed;
+      expect(erlaubt, `${planId} (Key ${plan.planKey})`).toBe(planId !== 'free');
+    }
+  });
+
+  it('gilt nicht fuer die Flaechen ausserhalb der Shell', () => {
+    // /builder/:slug und /app/siteos/builder haengen an anderen Wrappern.
+    // Dass `requirementForPath` sie nicht trifft, ist hier ausdrueckliche
+    // Absicht und keine Luecke im Praefix-Matching.
+    expect(requirementForPath('/builder/meine-seite')).toBeNull();
+  });
+});

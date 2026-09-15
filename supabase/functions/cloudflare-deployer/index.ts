@@ -13,6 +13,7 @@
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
+import { requireAuthAndTenant } from '../_shared/auth.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SRK = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -47,15 +48,19 @@ Deno.serve(async (req) => {
       return jsonError(400, 'INVALID_INPUT', 'project_id, tenant_id, action required');
     }
 
+    const auth = await requireAuthAndTenant(req, body.tenant_id);
+    if (auth instanceof Response) return auth;
+
     if (!CF_API_TOKEN || !CF_ACCOUNT_ID) {
       return jsonError(500, 'CLOUDFLARE_NOT_CONFIGURED', 'Cloudflare credentials missing');
     }
 
     // Verify project exists
-    const { data: project } = await admin
+    const { data: project } = await auth.admin
       .from('website_projects')
       .select('*')
       .eq('id', body.project_id)
+      .eq('tenant_id', auth.tenantId)
       .single();
 
     if (!project) {
@@ -84,11 +89,11 @@ Deno.serve(async (req) => {
     }
 
     if (!result.success) {
-      await logDeploymentEvent(body.project_id, body.tenant_id, body.action, 'failed', result.error);
+      await logDeploymentEvent(body.project_id, auth.tenantId, body.action, 'failed', result.error);
       return jsonError(500, result.code || 'DEPLOYMENT_FAILED', result.error);
     }
 
-    await logDeploymentEvent(body.project_id, body.tenant_id, body.action, 'success', 'OK');
+    await logDeploymentEvent(body.project_id, auth.tenantId, body.action, 'success', 'OK');
 
     return jsonResponse(200, { success: true, data: result.data });
   } catch (err) {

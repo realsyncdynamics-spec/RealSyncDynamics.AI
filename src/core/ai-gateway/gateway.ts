@@ -17,6 +17,7 @@
 import { AiGatewayEdgeClient, AiGatewayEdgeError } from './edgeClient';
 import { getSupabaseUrl, getSupabaseAnonKey } from '../../lib/supabaseUrl';
 import { edgeFunctionUrl, fnFetchInit } from '../../lib/fn-proxy';
+import { getSupabase } from '../../lib/supabase';
 import type { ModelProfile } from './types';
 
 export type ModelProvider = 'gemini' | 'openai' | 'claude';
@@ -76,6 +77,21 @@ export interface GatewayDeps {
   client?: Pick<AiGatewayEdgeClient, 'generate'> & Partial<Pick<AiGatewayEdgeClient, 'stream'>>;
 }
 
+/**
+ * Zugriffstoken der laufenden Sitzung, oder `undefined`.
+ *
+ * Wirft nicht: ein fehlendes Token ist kein Programmfehler, sondern ein
+ * abgemeldeter Nutzer. Die Ablehnung kommt von der Function.
+ */
+async function zugriffstoken(): Promise<string | undefined> {
+  try {
+    const { data } = await getSupabase().auth.getSession();
+    return data.session?.access_token;
+  } catch {
+    return undefined;
+  }
+}
+
 export async function processAIGatewayRequest(
   req: GatewayRequest,
   deps?: GatewayDeps,
@@ -97,11 +113,16 @@ export async function processAIGatewayRequest(
   }
 
   try {
+    // Die Sitzung geht als Bearer mit — daran erkennt die Function den
+    // Nutzer. Fehlt sie, antwortet sie mit 401; diese Entscheidung faellt
+    // bewusst dort und nicht hier, damit es dafuer nur eine Stelle gibt.
     const client = deps?.client ?? new AiGatewayEdgeClient({
       supabaseUrl: getSupabaseUrl(),
       apiKey: getSupabaseAnonKey(),
       endpoint: edgeFunctionUrl('ai-gateway'),
       fetchImpl: (input, init) => fetch(input, fnFetchInit(String(input), init)),
+      accessToken: await zugriffstoken(),
+      tenantId: req.tenantId ?? undefined,
     });
 
     const resp = await client.generate({

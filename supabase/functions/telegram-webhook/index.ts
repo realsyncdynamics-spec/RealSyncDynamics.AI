@@ -113,7 +113,14 @@ async function routeToAgent(
   command: string,
   text: string,
 ): Promise<string> {
-  const gatewayClient = new AiGatewayEdgeClient({ supabaseUrl: SUPABASE_URL, apiKey: SRK });
+  // Der Tenant steht hier fest — als Header geht er in Kontingent und
+  // Verbrauchsbuchung des Gateways ein, nicht nur in den Body.
+  const gatewayClient = new AiGatewayEdgeClient({
+    supabaseUrl: SUPABASE_URL,
+    apiKey: SRK,
+    accessToken: SRK,
+    tenantId: tenantId,
+  });
 
   const featureMap: Record<string, string> = {
     '/audit':      'compliance_audit',

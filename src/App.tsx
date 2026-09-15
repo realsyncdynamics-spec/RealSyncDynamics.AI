@@ -161,6 +161,7 @@ import { DataGuardAlternative } from './pages/DataGuardAlternative';
 import { BorlabsAlternative } from './pages/BorlabsAlternative';
 import { CookiebotAlternative } from './pages/CookiebotAlternative';
 import { ProlianceAlternative } from './pages/ProlianceAlternative';
+import { CaralegalAlternative } from './pages/CaralegalAlternative';
 import { InsuranceLanding } from './pages/InsuranceLanding';
 import { EcommerceLanding } from './pages/EcommerceLanding';
 import { About } from './pages/About';
@@ -648,6 +649,7 @@ function RoutesWithTracking() {
       <Route path="/borlabs-alternative" element={<BorlabsAlternative />} />
       <Route path="/cookiebot-alternative" element={<CookiebotAlternative />} />
       <Route path="/proliance-alternative" element={<ProlianceAlternative />} />
+      <Route path="/caralegal-alternative" element={<CaralegalAlternative />} />
       {/* More Industry-Doorways */}
       <Route path="/versicherungen" element={<InsuranceLanding />} />
       <Route path="/insurance" element={<InsuranceLanding />} />

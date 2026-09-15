@@ -657,15 +657,43 @@ function friendlyError(err: unknown, fallback: string): string {
   return msg || fallback;
 }
 
+/**
+ * Zufall für den API-Key.
+ *
+ * Der Rückgabewert wird zu `rsd_live_…` und ist damit ein Geheimnis mit
+ * Zugriff auf den Mandanten — der Server sieht nur noch dessen SHA-256.
+ * Vorher fiel diese Funktion still auf `Math.random()` zurück, wenn
+ * `crypto.getRandomValues` fehlte: ein vorhersagbarer Schlüssel, der wie ein
+ * sicherer aussieht und sich nicht mehr von einem echten unterscheiden lässt.
+ *
+ * Dieselbe Entscheidung ist für den OAuth-`state` bereits getroffen (siehe
+ * `features/seo-marketing-dashboard/IntegrationSettings.tsx`): kein Rückfall,
+ * sondern ein Wurf. `generateKey()` fängt ihn in seinem `try/catch` ab und
+ * zeigt eine Fehlermeldung — es entsteht kein halber Schlüssel und kein
+ * Datenbankeintrag.
+ */
 function randString(len: number): string {
+  const source = globalThis.crypto;
+  if (!source?.getRandomValues) {
+    throw new Error(
+      'Dieser Browser stellt keine sichere Zufallsquelle bereit. Es wurde kein API-Key erzeugt.',
+    );
+  }
+
   const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  // 256 ist kein Vielfaches von 62: per Modulo gefaltet kämen die ersten acht
+  // Zeichen des Alphabets häufiger vor als die übrigen. Bytes ab dieser
+  // Grenze werden deshalb verworfen statt gefaltet.
+  const limit = 256 - (256 % alphabet.length);
+
   let out = '';
   const buf = new Uint8Array(len);
-  if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
-    crypto.getRandomValues(buf);
-    for (let i = 0; i < len; i++) out += alphabet[buf[i] % alphabet.length];
-  } else {
-    for (let i = 0; i < len; i++) out += alphabet[Math.floor(Math.random() * alphabet.length)];
+  while (out.length < len) {
+    source.getRandomValues(buf);
+    for (let i = 0; i < buf.length && out.length < len; i++) {
+      if (buf[i] >= limit) continue;
+      out += alphabet[buf[i] % alphabet.length];
+    }
   }
   return out;
 }

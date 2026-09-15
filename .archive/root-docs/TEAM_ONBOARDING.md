@@ -50,9 +50,10 @@ Pull Request → Review → Merge
 
 ### Daily Workflow
 ```bash
-# Update main branch
-git fetch origin main
-git rebase origin/main
+# Update feature branch onto current main (required, not optional)
+npm run sync:main
+# after tests: npm run sync:main -- --push
+# conflict playbook: docs/MERGE_CONFLICT_CONCEPT.md
 
 # Create feature branch
 git checkout -b feature/your-feature

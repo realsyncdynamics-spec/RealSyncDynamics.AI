@@ -91,6 +91,12 @@ verify_jwt = false
 [functions.governance-decide]
 verify_jwt = false
 
+# governance-router: OpenAI-kompatibler Governance Open Router für Cursor/SDKs.
+# Auth wie ingest/decide (rsd_gov_); verify_jwt muss false bleiben — Cursor
+# hat kein Supabase-JWT. tenant_id nur aus dem Key.
+[functions.governance-router]
+verify_jwt = false
+
 [functions.security-signal-ingest]
 verify_jwt = false
 
@@ -185,12 +191,14 @@ verify_jwt = false
 [functions.telemetry-ai-event]
 verify_jwt = false
 
+# Signup-/Operator-Mailer. Anon-JWT reicht nicht — eigener Service-Role-Check.
 [functions.welcome-email]
 verify_jwt = false
 
 [functions.shopify-install]
 verify_jwt = false
 
+# Stripe-Webhook (Service-Role) + Super-Admin-Resume. Anon-JWT reicht nicht.
 [functions.rebuild-website]
 verify_jwt = false
 
@@ -214,6 +222,23 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.agent-os-runner]
+verify_jwt = false
+
+# Die drei folgenden laufen live mit verify_jwt=false (Drift-Guard
+# 2026-09-10, UNDECLARED_NO_JWT). Aufrufer ist pg_cron: Bearer CRON_* keys
+# aus Vault (cron_governance_monitoring_key / cron_scheduler_dispatch_key /
+# cron_memory_decay_key), gemappt auf Function secrets
+# CRON_GOVERNANCE_MONITORING_KEY / CRON_SCHEDULER_DISPATCH_KEY /
+# CRON_MEMORY_DECAY_KEY. Eigener Check in der Function (fail-closed);
+# ohne passenden Header 401. Kein Browser-JWT; service_role JWT ist kein
+# Inbound-Credential.
+[functions.governance-monitoring-scheduler]
+verify_jwt = false
+
+[functions.scheduler-dispatch]
+verify_jwt = false
+
+[functions.memory-decay-worker]
 verify_jwt = false
 
 # governance-erasure-sweeper: pg_cron-triggered (daily 03:00 UTC). No user JWT;
@@ -314,6 +339,16 @@ verify_jwt = false
 [functions.governance-analytics-aggregator]
 verify_jwt = false
 
+# sub-processor-notify: pg_cron daily 08:00. Alter Job schickte den Anon-Key
+# (20260507140000). Anon-JWT passiert das Gateway; eigener Bearer-Check.
+[functions.sub-processor-notify]
+verify_jwt = false
+
+# website-maintenance-daily-cron: Dashboard-/Cron-Trigger. Ohne Check wäre
+# der Tageslauf über den Anon-Key auslösbar (Default JWT = true reicht nicht).
+[functions.website-maintenance-daily-cron]
+verify_jwt = false
+
 # governance-analytics-export: called from authenticated SPA clients with bearer token
 # (no explicit verify_jwt entry = defaults to true, which is correct)
 
@@ -360,6 +395,6 @@ verify_jwt = false
 # workflow-trigger, gdpr-export, gdpr-delete, tenant-invite,
 # governance-agent, governance-remediate,
 # hostinger-agent-brief, kodee*, audit-report-email, generate-document,
-# shopify-scan, skills, sub-processor-notify, evidence-vault-export,
+# shopify-scan, skills, evidence-vault-export,
 # usage-increment, ceo-brief-pdf, pitch-deck-pdf) keep the default
 # verify_jwt = true — they require an authenticated user session.

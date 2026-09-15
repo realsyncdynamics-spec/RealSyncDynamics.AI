@@ -40,7 +40,8 @@ export const approveDpia  = (id: string)                     => call<ApproveResu
 
 export async function countOpenDpias(tenantId: string): Promise<number> {
   const sb = getSupabase();
-  const { count } = await sb.from('dpias').select('id', { count: 'exact', head: true })
+  const { count, error } = await sb.from('dpias').select('id', { count: 'exact', head: true })
     .eq('tenant_id', tenantId).in('status', ['draft', 'in_review']);
+  if (error) throw new Error(error.message);
   return count ?? 0;
 }

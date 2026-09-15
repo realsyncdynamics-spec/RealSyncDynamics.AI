@@ -48,13 +48,16 @@ describe('check:offer-prices', () => {
 
   it('leitet die Beträge aus der SSoT ab, nicht aus einer eigenen Liste', () => {
     const { out } = run();
-    // Enterprise (contract) sowie Agency und Partner (legacy) — monatlich und jährlich.
-    for (const amount of ['1249', '12490', '699', '6900', '1999', '19000']) {
+    // Ohne Self-Service-Kaufpfad: Enterprise (contract), Partner (legacy),
+    // sowie Jahresvarianten ohne Stripe-Preis (inkl. agency yearly 6900).
+    // Monatliches Agency 699 € ist wieder sellable und darf hier NICHT stehen.
+    for (const amount of ['1249', '12490', '6900', '1999', '19000']) {
       expect(out, `Betrag ${amount} fehlt im geprüften Satz`).toContain(amount);
     }
     // Verkaufbare Pläne gehören ausdrücklich NICHT dazu: ihr Preis ist einlösbar.
     expect(out).not.toContain('79 € (starter)');
     expect(out).not.toContain('249 € (growth)');
+    expect(out).not.toContain('699 € (agency)');
   }, GUARD_TIMEOUT_MS);
 
   it('schlägt an, wenn ein neuer Betrag ohne Kaufpfad öffentlich auftaucht', () => {

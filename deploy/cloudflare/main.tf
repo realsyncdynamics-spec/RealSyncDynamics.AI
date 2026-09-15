@@ -123,7 +123,7 @@ resource "cloudflare_ruleset" "security_headers" {
       # Beim Ergänzen: Meta-CSP und Header-CSP inhaltlich identisch halten
       # (plus `frame-ancestors`). Beide werden zur restriktivsten Schnittmenge
       # kombiniert; abweichende Policies blockieren sonst Assets. Siehe
-      # README.md und COMPLIANCE_AUDIT_2026-07.md (M-3).
+      # README.md und .archive/root-docs/COMPLIANCE_AUDIT_2026-07.md (M-3).
     }
   }
 }

@@ -105,15 +105,23 @@ function Inner() {
   const [counts, setCounts] = useState({ gates: 0, approvals: 0 });
 
   const reload = useCallback(async () => {
-    if (!activeTenantId) { setRoles([]); return; }
+    if (!activeTenantId) {
+      setRoles([]);
+      setCounts({ gates: 0, approvals: 0 });
+      return;
+    }
     setRoles(null);
-    const [r, g, a] = await Promise.all([
+    setCounts({ gates: 0, approvals: 0 });
+    const [r, g, a] = await Promise.allSettled([
       myGovernanceRoles(activeTenantId),
       countPendingGates(activeTenantId),
       countPendingApprovals(activeTenantId),
     ]);
-    setRoles(r);
-    setCounts({ gates: g, approvals: a });
+    setRoles(r.status === 'fulfilled' ? r.value : []);
+    setCounts({
+      gates: g.status === 'fulfilled' ? g.value : 0,
+      approvals: a.status === 'fulfilled' ? a.value : 0,
+    });
   }, [activeTenantId]);
 
   useEffect(() => { void reload(); }, [reload]);

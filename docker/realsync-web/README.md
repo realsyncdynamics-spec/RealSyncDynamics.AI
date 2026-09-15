@@ -282,4 +282,4 @@ A: Ja — zusätzliche `docker compose` Ordner (z. B. `docker/realsync-staging/`
 - [Traefik Dokumentation](https://doc.traefik.io/traefik/)
 - [Docker Compose Doku](https://docs.docker.com/compose/)
 - [Vite Production Deployment](https://vitejs.dev/guide/static-deploy.html)
-- [RealSync Deployment Validation](../../DEPLOYMENT_VALIDATION.md)
+- [RealSync Deployment Validation](../../.archive/root-docs/DEPLOYMENT_VALIDATION.md)

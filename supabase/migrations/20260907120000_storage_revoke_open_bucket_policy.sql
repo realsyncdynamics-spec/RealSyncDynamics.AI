@@ -1,0 +1,60 @@
+-- Storage — offene Policy auf den Buckets `bilder` und `dokumente` entfernen.
+--
+-- ## Befund (gemessen 2026-09-07 gegen das Live-Projekt ebljyceifhnlzhjfyxup)
+--
+--   pg_policies, schemaname = 'storage', tablename = 'objects':
+--     policyname : vault buckets full access
+--     cmd        : ALL
+--     roles      : {public}
+--     qual       : (bucket_id = ANY (ARRAY['dokumente','bilder']))
+--     with_check : (bucket_id = ANY (ARRAY['dokumente','bilder']))
+--
+--   storage.buckets: beide Buckets angelegt am 2026-07-15, public = false,
+--   ohne file_size_limit, ohne allowed_mime_types. Objekte: 0 und 0.
+--
+-- `public` ist in Postgres die Rolle, die jede Rolle enthaelt — also auch
+-- `anon`. Die Policy erlaubt damit jedem Aufrufer ohne Anmeldung Lesen,
+-- Anlegen, Aendern und Loeschen in beiden Buckets, ohne Mandanten- oder
+-- Nutzerbezug. Dass `public = false` am Bucket steht, aendert daran nichts:
+-- Dieses Flag steuert nur den unauthentifizierten Direkt-URL-Zugriff, nicht
+-- die Storage-API, die ueber RLS auf storage.objects laeuft.
+--
+-- ## Herkunft
+--
+-- Keine Migration im Repo legt diese Buckets oder diese Policy an
+-- (`grep -rn "vault buckets full access" supabase docs` leer;
+-- `grep` nach `'bilder'` / `'dokumente'` als Bucket-Name in
+-- supabase/functions, src, workers, platform, scripts leer). Beides ist
+-- out-of-band in Produktion entstanden — derselbe Befundtyp wie der
+-- ACL-Vorfall vom 2026-08-23 und `onboarding-orchestrator` (CLAUDE.md §5).
+--
+-- ## Was diese Migration tut
+--
+-- Sie entfernt genau diese eine Policy. Sonst nichts:
+--   * Die Buckets bleiben bestehen — sie sind leer, aber ein DROP waere
+--     destruktiv und ist eine Entscheidung des Eigentuemers (CLAUDE.md §3).
+--   * Es wird keine Ersatz-Policy angelegt. Nichts im Repo greift auf die
+--     Buckets zu; eine Policy ohne Nutzer waere ein Zugriffsrecht, das
+--     niemand braucht. Der App Builder (Phase 2) bekommt einen eigenen,
+--     mandantenskopierten Bucket in einem eigenen PR (Schritt E) und
+--     benutzt diese beiden Buckets ausdruecklich nicht.
+--
+-- Nach dem Entfernen greift auf storage.objects fuer diese Buckets keine
+-- Policy mehr — RLS ist auf storage.objects aktiv, also ist das Ergebnis
+-- „kein Zugriff fuer Client-Rollen"; service_role bleibt unberuehrt.
+--
+-- Idempotent: `IF EXISTS`. In der CI-Datenbank (scripts/test-db) existiert
+-- storage.objects als Stub; dort ist die Policy nie vorhanden, der Schritt
+-- ist ein No-op.
+--
+-- ## Wirksamkeit
+--
+-- Diese Datei aendert Produktion erst mit dem naechsten gruenen
+-- `deploy.yml`-Lauf nach dem Merge — und der Merge erfolgt erst nach
+-- ausdruecklicher Freigabe des Eigentuemers. Danach nachmessen:
+--
+--   select count(*) from pg_policies
+--    where schemaname = 'storage' and tablename = 'objects'
+--      and policyname = 'vault buckets full access';   -- erwartet: 0
+
+DROP POLICY IF EXISTS "vault buckets full access" ON storage.objects;

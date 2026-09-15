@@ -41,10 +41,10 @@ export const CONTEXT_COLORS = {
     text: 'white',
   },
 
-  /** Dashboard/workspace — authoritative, secure, professional */
+  /** Dashboard/workspace — same visual language as the public frontend */
   dashboard: {
-    /** Security-Blue #0052FF — trust, authority, compliance */
-    accent: 'security-blue-500',
+    /** Cyan — the primary RealSync frontend/runtime accent */
+    accent: 'cyan-400',
     /** Obsidian-950 — consistent dark enterprise UI */
     background: 'obsidian-950',
     /** Titanium-100 — light text on dark background */

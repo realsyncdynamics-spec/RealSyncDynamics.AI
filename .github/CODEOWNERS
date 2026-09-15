@@ -1,0 +1,22 @@
+# Review-Pflicht greift erst, wenn am Branch-Ruleset
+# „Require review from Code Owners“ aktiv ist.
+# Default-Owner: Repo-Account. Teams ersetzen die Zeilen, sobald sie existieren.
+
+* @realsyncdynamics-spec
+
+# Hot-Files — serialisieren, nicht parallel umbauen
+/src/App.tsx @realsyncdynamics-spec
+/index.html @realsyncdynamics-spec
+/CLAUDE.md @realsyncdynamics-spec
+/shared/pricing.ts @realsyncdynamics-spec
+/src/config/pricing.ts @realsyncdynamics-spec
+/src/index.css @realsyncdynamics-spec
+/src/pages/MainLanding.tsx @realsyncdynamics-spec
+/package.json @realsyncdynamics-spec
+/package-lock.json @realsyncdynamics-spec
+/supabase/migrations/ @realsyncdynamics-spec
+
+# Merge-Betrieb
+/.github/CODEOWNERS @realsyncdynamics-spec
+/.github/workflows/merge-hygiene.yml @realsyncdynamics-spec
+/docs/MERGE_CONFLICT_CONCEPT.md @realsyncdynamics-spec

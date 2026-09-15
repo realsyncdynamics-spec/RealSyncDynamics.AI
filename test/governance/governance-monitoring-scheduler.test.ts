@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { readFileSync } from 'node:fs';
 
 // ── nextScanAt — Intervall-Berechnung ─────────────────────────────────────
 // Spiegelt die Logik aus supabase/functions/governance-monitoring-scheduler/index.ts
@@ -148,5 +149,21 @@ describe('Kritische Issues aus Scan-Ergebnis', () => {
 
   it('leere Liste → keine Alerts', () => {
     expect(filterCriticalIssues([])).toHaveLength(0);
+  });
+});
+
+describe('Auth — Cron darf nur mit CRON_GOVERNANCE_MONITORING_KEY ticken', () => {
+  it('weist Aufrufe ohne passenden Bearer mit 401 ab (fail-closed)', () => {
+    const src = readFileSync(
+      'supabase/functions/governance-monitoring-scheduler/index.ts',
+      'utf8',
+    );
+    expect(src).toContain('CRON_GOVERNANCE_MONITORING_KEY');
+    expect(src).toContain("error: 'cron only'");
+    expect(src).toMatch(/!CRON_KEY\s*\|\|/);
+    expect(src).toMatch(/jsonResponse\(\{ error: 'cron only' \}, 401\)/);
+    expect(src).not.toMatch(
+      /authHeader\s*!==\s*`Bearer \$\{SERVICE_KEY\}`/,
+    );
   });
 });

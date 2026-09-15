@@ -40,7 +40,7 @@ export function CeoCockpitView() {
   useEffect(() => {
     let cancelled = false;
     if (!activeTenantId) { setData(null); return; }
-    setLoading(true); setError(null);
+    setLoading(true); setError(null); setData(null);
 
     loadCockpitData(activeTenantId)
       .then((d) => { if (!cancelled) setData(d); })
@@ -140,8 +140,17 @@ export function CeoCockpitView() {
           {/* Zone 1 — Hero: Score + Readiness */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-px bg-titanium-900">
             <Card className="md:col-span-1 flex flex-col items-center justify-center gap-3 py-6 bg-obsidian-900">
-              <ScoreGauge score={data.score} size={128} label="Governance-Score" />
-              <StatusBadge level={scoreLevel(data.score)} label={scoreLabel(data.score)} />
+              {data.score === null ? (
+                <>
+                  <p className="font-mono text-5xl font-bold text-titanium-600">–</p>
+                  <p className="text-xs text-titanium-400">Score nicht verfügbar</p>
+                </>
+              ) : (
+                <>
+                  <ScoreGauge score={data.score} size={128} label="Governance-Score" />
+                  <StatusBadge level={scoreLevel(data.score)} label={scoreLabel(data.score)} />
+                </>
+              )}
             </Card>
 
             <Card className="md:col-span-1 bg-obsidian-900">

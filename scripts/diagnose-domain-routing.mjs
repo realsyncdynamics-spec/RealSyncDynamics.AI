@@ -120,7 +120,7 @@ async function main() {
       }
     }
   }
-  console.log('\nHinweis: Diagnose-Report (read-only). Edge-Befunde → REALSYNC_DOMAIN_EDGE_DIAGNOSIS.md');
+  console.log('\nHinweis: Diagnose-Report (read-only). Edge-Befunde → .archive/root-docs/REALSYNC_DOMAIN_EDGE_DIAGNOSIS.md');
 }
 
 main().catch((e) => { console.error(e); process.exit(1); });

@@ -14,7 +14,7 @@
 // nie auf der Prod-DB angewendet wurde. Genau der blieb bisher unsichtbar:
 // 118 von 243 Migrationen hatten die Produktion nie erreicht, weil `db push`
 // an Richtung 1 abbrach, und dieser Guard schaute nur in Richtung 1.
-// Siehe DEBUG_ROOT_CAUSE_2026-08-02.md.
+// Siehe .archive/root-docs/DEBUG_ROOT_CAUSE_2026-08-02.md.
 //
 // Richtung 2 ist ALTERSBASIERT und dadurch PR-sicher: eine frisch im PR
 // hinzugefuegte Migration ist naturgemaess noch nicht angewendet und wird

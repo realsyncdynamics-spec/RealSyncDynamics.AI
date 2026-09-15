@@ -1,7 +1,7 @@
 /**
  * Vertragstests für die Pageview-Pseudonymisierung (`_shared/visitor-hash.ts`).
  *
- * Belegt den Fix zu T-1 aus COMPLIANCE_AUDIT_2026-07.md:
+ * Belegt den Fix zu T-1 aus .archive/root-docs/COMPLIANCE_AUDIT_2026-07.md:
  *   - session_hash rotierte NICHT täglich (sha256(ip+ua), kein Tagesbestandteil)
  *   - beide Hashes waren ungesalzen und damit über den kleinen Eingaberaum
  *     (IPv4 + gängige User-Agents) praktisch umkehrbar

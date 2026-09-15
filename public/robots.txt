@@ -17,9 +17,8 @@ Disallow: /outreach
 Disallow: /risk-dashboard
 Disallow: /setup
 Disallow: /welcome
-# /assistant fuehrt CreatorDashboard (Chat, Prompts, Billing) und ist seit dem
-# Absichern der Route auth-gegatet. Die beiden Aliase leiten dorthin um und
-# haben damit denselben Wert fuer Crawler: keinen.
+# /assistant, /command-center und /ai-command-center leiten auf
+# /app/dashboard um (dieselbe Workspace-Flaeche). Fuer Crawler: kein Index.
 Disallow: /assistant
 Disallow: /command-center
 Disallow: /ai-command-center

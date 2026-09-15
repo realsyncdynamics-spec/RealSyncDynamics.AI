@@ -581,10 +581,10 @@ gezeigt, die nie liefen:
 |---|---|---|---|---|---|
 | `agent-os-runner-hourly` | stündlich | 2.271 | **0** | 2026-05-29 | `agent_os_runner_token` |
 | `agent-os-runner-daily` | täglich | 94 | **0** | 2026-05-30 | `agent_os_runner_token` |
-| `scan-scheduler-dispatch` | alle 15 min | 1.923 | **0** | 2026-08-12 | `service_role_key` |
-| `governance-monitoring-hourly` | stündlich | 481 | **0** | 2026-08-12 | `service_role_key` |
-| `memory-decay-hourly` | stündlich | 470 | **0** | 2026-08-12 | `service_role_key` |
-| `governance-monitoring-daily` | täglich | 20 | **0** | 2026-08-12 | `service_role_key` |
+| `scan-scheduler-dispatch` | alle 15 min | 1.923 | **0** | 2026-08-12 | `cron_scheduler_dispatch_key` |
+| `governance-monitoring-hourly` | stündlich | 481 | **0** | 2026-08-12 | `cron_governance_monitoring_key` |
+| `memory-decay-hourly` | stündlich | 470 | **0** | 2026-08-12 | `cron_memory_decay_key` |
+| `governance-monitoring-daily` | täglich | 20 | **0** | 2026-08-12 | `cron_governance_monitoring_key` |
 
 **5.259 Läufe, kein einziger Erfolg.** Dasselbe Muster wie `gdpr-audit`:
 kaputt seit der Geburt, sauber deployt, nie bemerkt.
@@ -608,10 +608,14 @@ Feature ungenutzt wäre, sondern weil sein Scheduler nie zum Zug kam.
 
 #### Eine Hälfte war im Code lösbar — und das wurde übersehen
 
-Die Migration von 2026-08-20 hat **beide** Secrets gleich behandelt. Für
-`service_role_key` zu Recht: Die drei Empfänger vergleichen den Bearer gegen
-`Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')`, der Wert ist vorgegeben und
-gehört nicht in die Git-History.
+Die Migration von 2026-08-20 hat **beide** Secrets gleich behandelt. Für das
+Cron-Trio gilt inzwischen ein anderer Vertrag: Die drei Empfänger vergleichen
+den Bearer gegen dedizierte Function Secrets
+(`CRON_SCHEDULER_DISPATCH_KEY` / `CRON_GOVERNANCE_MONITORING_KEY` /
+`CRON_MEMORY_DECAY_KEY`), gemappt aus Vault
+(`cron_scheduler_dispatch_key` / `cron_governance_monitoring_key` /
+`cron_memory_decay_key`). Der `service_role` JWT ist **kein** Inbound-Credential
+mehr (Drift-Guard bleibt: `verify_jwt=false` + eigener Bearer-Check, fail-closed).
 
 Bei `agent_os_runner_token` stimmt das nicht. Sender und Empfänger lesen
 **dieselbe Vault-Zeile**: `dispatch_cron_function` über `get_app_secret`, und
@@ -633,12 +637,18 @@ Tick.
 
 #### Was der Betreiber tun muss
 
-Vier Jobs bleiben, und sie brauchen ein Geheimnis, das nicht aus dem Repo
-kommen kann:
+Vier Jobs bleiben, und sie brauchen die drei dedizierten Cron-Secrets (Werte
+nicht aus dem Repo):
 
 ```sql
-SELECT vault.create_secret('<service-role-key>', 'service_role_key');
+SELECT vault.create_secret('<cron-key>', 'cron_scheduler_dispatch_key');
+SELECT vault.create_secret('<cron-key>', 'cron_governance_monitoring_key');
+SELECT vault.create_secret('<cron-key>', 'cron_memory_decay_key');
 ```
+
+Function Secrets parallel setzen: `CRON_SCHEDULER_DISPATCH_KEY`,
+`CRON_GOVERNANCE_MONITORING_KEY`, `CRON_MEMORY_DECAY_KEY`. Details:
+[`docs/runbooks/cron-vault-secrets.md`](../runbooks/cron-vault-secrets.md).
 
 Danach laufen `scan-scheduler-dispatch`, `governance-monitoring-hourly/-daily`
 und `memory-decay-hourly` ohne weiteren Eingriff wieder an.

@@ -136,6 +136,46 @@ export function AVVTemplate() {
             </Para>
           </Section>
 
+          {/* KI-gestützte Verarbeitung / EU AI Act */}
+          <Section title="§ 6a — KI-gestützte Datenverarbeitung und EU AI Act Compliance">
+            <Para>
+              <strong>(1)</strong> RealSync stellt dem Kunden KI-gestützte Software-Tools zur
+              Governance- und Risikoanalyse bereit. Im Rahmen der Auftragserfüllung verarbeitet
+              RealSync Daten des Kunden ausschließlich im Einklang mit den Weisungen des Kunden,
+              den Bestimmungen der DSGVO sowie den geltenden Vorgaben der EU-KI-Verordnung
+              (Verordnung (EU) 2024/1689, „EU AI Act“).
+            </Para>
+            <Para>
+              <strong>(2)</strong> RealSync garantiert, dass eingegebene personenbezogene Daten
+              sowie geschäftskritische Daten des Kunden nicht zur Weiterentwicklung oder zum
+              Training allgemeiner, grundlegender KI-Modelle (GPAI) oder für Dritte verwendet
+              werden, es sei denn, dies wurde zwischen den Parteien ausdrücklich und schriftlich
+              vereinbart.
+            </Para>
+            <Para>
+              <strong>(3)</strong> RealSync stellt sicher, dass die bereitgestellte Plattform die
+              technischen Voraussetzungen erfüllt, um synthetisch generierte Inhalte und
+              Ausgaben gemäß den Anforderungen von Art. 50 EU AI Act (u. a. C2PA-Spezifikationen)
+              maschinenlesbar zu kennzeichnen.
+            </Para>
+            <Para>
+              <strong>(4)</strong> Zur Datensouveränität und zum Serverstandort der
+              KI-Verarbeitung gilt § 6 dieser Vereinbarung entsprechend.
+            </Para>
+            <Para>
+              <strong>(5)</strong> Der Kunde wird darauf hingewiesen, dass die eingesetzten
+              KI-Anbieter Eingaben und Ausgaben unabhängig vom Modelltraining für einen
+              begrenzten Zeitraum protokollieren, um Verstöße gegen ihre Nutzungsbedingungen
+              zu erkennen und zu verhindern („Abuse Monitoring“) sowie um gesetzliche
+              Offenlegungspflichten zu erfüllen. Diese Protokolle können Prompt- und
+              Antwortinhalte enthalten. Die Aufbewahrung ist auf den jeweils vom Anbieter
+              festgelegten Zeitraum begrenzt — bei OpenAI regulär bis zu 30 Tage. Eine
+              Verwendung dieser Protokolle zum Modelltraining findet nach Zusicherung der
+              Anbieter nicht statt. Details je Anbieter sind der Sub-Prozessoren-Liste zu
+              entnehmen.
+            </Para>
+          </Section>
+
           {/* Auskunft / Löschung */}
           <Section title="§ 7 — Rechte betroffener Personen">
             <Para>

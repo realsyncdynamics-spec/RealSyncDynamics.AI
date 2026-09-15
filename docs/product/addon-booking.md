@@ -158,7 +158,7 @@ Marketplace ihm alles gewährten. Die fünf `/app/admin/*`-Unterseiten und
 | `order-intake` | prüfte nur `bot.capabilities.orders` | zusätzlich `bots.orders` |
 | `telegram-webhook` | kein Gate vor dem KI-Gateway | `bots.multi_channel` für alle Token-kostenden Pfade; Verbinden bleibt frei |
 | `governance-webhooks` | nur Rolle | `webhooks.enabled` beim Anlegen und Einschalten; Ausschalten und Widerruf frei |
-| `api-webhook-deliver` | **keinerlei Prüfung** | nur Service-Role-Bearer (wie `scheduler-dispatch`) |
+| `api-webhook-deliver` | **keinerlei Prüfung** | nur Service-Role-Bearer (wie `audit-monitor-cron`) |
 | `compliance-remediation-execute` | **keinerlei Prüfung** | nur Service-Role-Bearer |
 
 **Welle 3 (2026-09-01)** — die letzten Keys, die die Reality Map als

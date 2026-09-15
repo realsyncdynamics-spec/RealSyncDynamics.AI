@@ -192,7 +192,8 @@ Deno.serve(async (req) => {
   const SITE = Deno.env.get('PUBLIC_SITE_URL') ?? 'https://realsyncdynamicsai.de';
   const base = req.headers.get('origin') ?? body.return_url ?? SITE;
   const successUrl = `${base}/checkout/success?session_id={CHECKOUT_SESSION_ID}&plan_key=${encodeURIComponent(body.plan_key!)}`;
-  const cancelUrl  = `${base}/pricing?checkout=cancelled`;
+  // Cancel lands on the dedicated abort screen (CTA back to /#pricing), not /pricing?checkout=.
+  const cancelUrl  = `${base}/checkout/cancelled`;
 
   // Einmalkauf vs. Abo. Der Modus stammt AUSSCHLIESSLICH aus der Pricing-SSoT
   // (`plan.purchaseMode`) und niemals aus dem Request-Body — sonst könnte ein
@@ -256,11 +257,12 @@ Deno.serve(async (req) => {
       success_url: successUrl,
       cancel_url: cancelUrl,
       allow_promotion_codes: true,
-      // Kleinunternehmer gem. § 19 UStG: keine USt-Ausweisung, daher kein
-      // Stripe-Tax-Berechnung und keine USt-IdNr.-Abfrage beim Checkout.
-      // Bei Wechsel zur Regelbesteuerung: automatic_tax aktivieren, Preise auf
-      // tax_behavior='exclusive' setzen und Tax-Registrierung in Stripe
-      // hinterlegen.
+      // Stripe Tax: Regelbesteuerung aktiv. Stripe berechnet die USt anhand
+      // der Kundenadresse und der hinterlegten Tax-Registrierungen.
+      automatic_tax: { enabled: true },
+      billing_address_collection: 'required',
+      tax_id_collection: { enabled: true },
+      customer_update: { address: 'auto', name: 'auto' },
     });
 
     return jsonResponse({ ok: true, url: session.url, session_id: session.id });

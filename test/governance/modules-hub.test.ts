@@ -145,10 +145,9 @@ describe('Aktivierungs-Leiter (aus den Entitlement-Keys abgeleitet)', () => {
     expect(lockReason(eintrag('whatsapp-bot'))).toBe('Enthalten ab Growth');
   });
 
-  it('Telefon-Agent ab Enterprise — nicht ab dem stillgelegten Agency', () => {
-    // bots.voice liegt auch in Agency und Partner; beide sind seit AP2 nicht
-    // mehr wählbar. Die frühere Fassung nannte „Ab Agency".
-    expect(lockReason(eintrag('telefon-agent'))).toBe('Enthalten ab Enterprise');
+  it('Telefon-Agent ab Agency', () => {
+    // Agency ist wieder Self-Service; bots.voice startet dort.
+    expect(lockReason(eintrag('telefon-agent'))).toBe('Enthalten ab Agency');
   });
 
   it('Risk ab Growth, Monitoring ab Starter', () => {

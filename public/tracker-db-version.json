@@ -1,11 +1,11 @@
 {
-  "version": "2026.09.0",
-  "updated_at": "2026-09-03",
-  "easylist_last_modified": "Thu, 03 Sep 2026 06:04:43 GMT",
+  "version": "2026.09.1",
+  "updated_at": "2026-09-10",
+  "easylist_last_modified": "Thu, 10 Sep 2026 05:53:18 GMT",
   "sources": [
     "EasyList",
     "Disconnect.me",
     "DACH-Custom"
   ],
-  "next_update": "2026-09-10"
+  "next_update": "2026-09-17"
 }

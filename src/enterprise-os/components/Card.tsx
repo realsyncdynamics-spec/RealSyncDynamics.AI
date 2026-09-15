@@ -4,12 +4,13 @@ interface CardProps {
   children: React.ReactNode;
   className?: string;
   as?: 'div' | 'section' | 'article';
+  'data-testid'?: string;
 }
 
-export function Card({ children, className = '', as = 'div' }: CardProps) {
+export function Card({ children, className = '', as = 'div', ...rest }: CardProps) {
   const Tag = as;
   return (
-    <Tag className={`border border-titanium-800 bg-obsidian-800/60 ${className}`}>
+    <Tag className={`border border-titanium-800 bg-obsidian-800/60 ${className}`} {...rest}>
       {children}
     </Tag>
   );

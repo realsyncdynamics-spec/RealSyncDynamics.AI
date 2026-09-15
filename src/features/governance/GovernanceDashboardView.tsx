@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ArrowLeft, Activity, AlertTriangle, ShieldCheck, Compass, Database,
@@ -20,14 +20,13 @@ import {
   SELLABLE_PRICING_TIERS, formatPriceEur, checkoutHrefForPlan,
 } from '../../config/pricing';
 
-// COMMERCIAL-SSOT: temporary production hotfix.
-// Canonical source migration tracked in Phase 2.
 // Die Upgrade-Leiter des Dashboards, aus der SSoT abgeleitet statt gepflegt.
-// `SELLABLE_PRICING_TIERS` enthaelt genau die heute abschliessbaren Plaene —
-// stillgelegte (Agency, Partner) fallen damit automatisch heraus.
+// `SELLABLE_PRICING_TIERS` enthält die heute abschließbaren Pläne —
+// Partner (legacy) fällt heraus; Agency ist wieder self_service.
 const UPGRADE_TIER_BLURBS: Record<string, string> = {
   starter: 'DSGVO-Monitoring · Evidence Vault · DSE-Generator',
   growth: 'KI-Governance · Continuous Monitoring · Fix-Snippets',
+  agency: 'Multi-Domain · White-Label · API / Scheduler / Bulk Jobs',
   enterprise: 'Multi-Tenant · SSO · Governance nach Vereinbarung',
 };
 
@@ -94,31 +93,53 @@ function Inner() {
   const [creatingPolicy, setCreatingPolicy] = useState(false);
   const [inspectorSelection, setInspectorSelection] = useState<InspectorSelection | null>(null);
   const closeInspector = useCallback(() => setInspectorSelection(null), []);
+  const loadGen = useRef(0);
 
   const reload = () => {
     if (!activeTenantId) return;
+    const gen = ++loadGen.current;
+    const tenantId = activeTenantId;
     setError(null);
     setEvents(null); setAssets(null); setPolicies(null); setControls(null);
-    Promise.all([
-      fetchTenantEvents(activeTenantId),
-      fetchTenantAssets(activeTenantId),
-      fetchTenantPolicies(activeTenantId),
+    setPendingApprovals(0);
+    setPendingGates(0);
+    setOpenDpias(0);
+    setOpenDsrs({ total: 0, overdue: 0 });
+    setOpenIncidents(0);
+    Promise.allSettled([
+      fetchTenantEvents(tenantId),
+      fetchTenantAssets(tenantId),
+      fetchTenantPolicies(tenantId),
       fetchFrameworkControls(),
-      countPendingApprovals(activeTenantId),
-      countOpenDpias(activeTenantId),
-      countOpenDsrs(activeTenantId),
-      countOpenIncidents(activeTenantId),
-      countPendingGates(activeTenantId),
+      countPendingApprovals(tenantId),
+      countOpenDpias(tenantId),
+      countOpenDsrs(tenantId),
+      countOpenIncidents(tenantId),
+      countPendingGates(tenantId),
     ])
       .then(([e, a, p, c, pa, od, ds, oi, pg]) => {
-        setEvents(e); setAssets(a); setPolicies(p); setControls(c);
-        setPendingApprovals(pa); setOpenDpias(od); setOpenDsrs(ds); setOpenIncidents(oi);
-        setPendingGates(pg);
-      })
-      .catch((err: Error) => setError(err.message));
+        if (gen !== loadGen.current) return;
+        const coreFailed = [e, a, p, c].find((result) => result.status === 'rejected');
+        if (coreFailed && coreFailed.status === 'rejected') {
+          setError((coreFailed.reason as Error)?.message ?? 'Tenant-Daten nicht verfügbar');
+        }
+        setEvents(e.status === 'fulfilled' ? e.value : []);
+        setAssets(a.status === 'fulfilled' ? a.value : []);
+        setPolicies(p.status === 'fulfilled' ? p.value : []);
+        setControls(c.status === 'fulfilled' ? c.value : []);
+        if (pa.status === 'fulfilled') setPendingApprovals(pa.value);
+        if (od.status === 'fulfilled') setOpenDpias(od.value);
+        if (ds.status === 'fulfilled') setOpenDsrs(ds.value);
+        if (oi.status === 'fulfilled') setOpenIncidents(oi.value);
+        if (pg.status === 'fulfilled') setPendingGates(pg.value);
+      });
   };
 
-  useEffect(() => { reload(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [activeTenantId]);
+  useEffect(() => {
+    reload();
+    return () => { loadGen.current += 1; };
+    /* eslint-disable-next-line react-hooks/exhaustive-deps */
+  }, [activeTenantId]);
 
   const empty =
     activeTenantId &&
@@ -232,7 +253,7 @@ function Inner() {
           <div className="flex items-center gap-2 text-titanium-500 text-sm py-12 justify-center">
             <Loader2 className="h-4 w-4 animate-spin" /> Lade Tenant-Daten…
           </div>
-        ) : empty ? (
+        ) : empty && !error ? (
           <EmptyState onAddAsset={() => setCreatingAsset(true)} />
         ) : (
           <Body
@@ -450,21 +471,8 @@ function Body({
         </div>
       </div>
 
-      {/* Upgrade-CTAs */}
+      {/* Upgrade-CTAs — Starter / Growth / Agency / Enterprise aus SSoT */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        {/*
-          COMMERCIAL-SSOT: temporary production hotfix.
-          Canonical source migration tracked in Phase 2.
-
-          Die Leiter kam aus einem Literal und zeigte zuletzt auf
-          `/checkout/agency` — einen Plan, den AP2 stillgelegt hat und den
-          `stripe-checkout` mit PLAN_RETIRED abweist. Der Nutzer landete also
-          aus dem Dashboard heraus in einer Sackgasse.
-
-          Statt das Literal zu korrigieren, wird die Leiter jetzt aus
-          SELLABLE_PRICING_TIERS abgeleitet: Preis, Ziel und Trial-Hinweis
-          stammen aus der SSoT und können nicht erneut auseinanderlaufen.
-        */}
         {UPGRADE_TIERS.map((plan) => (
           <a
             key={plan.tier}

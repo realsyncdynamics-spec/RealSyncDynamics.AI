@@ -34,7 +34,7 @@ import {
   __test,
 } from '../../../../src/features/governance/scans/scansApi';
 
-const { normaliseDomain } = __test;
+const { normaliseDomain, auditTargetUrl } = __test;
 
 beforeEach(() => {
   calls.length = 0;
@@ -58,6 +58,16 @@ describe('normaliseDomain', () => {
     expect(normaliseDomain('not a domain')).toBeNull();
     expect(normaliseDomain('http://')).toBeNull();
     expect(normaliseDomain('only-one-label')).toBeNull();
+  });
+});
+
+describe('auditTargetUrl', () => {
+  it('prefixes https when the registry stored only the host', () => {
+    expect(auditTargetUrl('realsyncdynamicsai.de')).toBe('https://realsyncdynamicsai.de');
+  });
+  it('keeps an existing scheme', () => {
+    expect(auditTargetUrl('https://realsyncdynamicsai.de')).toBe('https://realsyncdynamicsai.de');
+    expect(auditTargetUrl('http://example.com')).toBe('http://example.com');
   });
 });
 

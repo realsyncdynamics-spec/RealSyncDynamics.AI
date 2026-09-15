@@ -250,9 +250,8 @@ export const PUBLIC_PRICING_TIERS: PricingTier[] = PRICING_TIERS.filter(
  *   SELLABLE_PRICING_TIERS  „was kann man heute kaufen?" — jede Anzeige,
  *                            jede Auswahl, jedes Raster.
  *
- * Wer ein Raster rendert, nimmt diese Liste. Agency und Partner sind seit
- * AP2 stillgelegt; sie anzubieten hieße, in eine Sackgasse zu führen
- * (`CLAUDE.md` §14).
+ * Wer ein Raster rendert, nimmt diese Liste. Partner ist seit AP2
+ * stillgelegt; Agency ist wieder self_service (Landing-Referenz 2026-09).
  */
 export const SELLABLE_PRICING_TIERS: PricingTier[] = PUBLIC_PRICING_TIERS.filter(
   (tier) => tier.plan.availability !== 'legacy',

@@ -11,8 +11,7 @@ import { aiGatewayConfig } from './config';
 //
 // NOTE: this lives at `router.ts` (not `gateway.ts` as the original spec
 // proposed) because the legacy `gateway.ts` in this directory is still
-// used by KodeeView + CreatorDashboard. The two coexist until the
-// integration PR replaces them.
+// used by KodeeView. The two coexist until the integration PR replaces them.
 //
 // Fallback chain (linear, ordered):
 //

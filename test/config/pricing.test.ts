@@ -10,22 +10,14 @@ describe('pricing config (Single Source of Truth)', () => {
     ]);
   });
 
-  // COMMERCIAL-SSOT: temporary production hotfix.
-  // Canonical source migration tracked in Phase 2.
-  // `starter_yearly` und `growth_yearly` fehlen hier bewusst: fuer beide steht
-  // in `public.products` nur ein Platzhalter statt einer echten Stripe-Price,
-  // `stripe-checkout` weist sie mit PRICE_NOT_CONFIGURED ab. Ein Tier waere
-  // die Grundlage jeder Angebotsflaeche — und damit ein oeffentlich
-  // zugesicherter Festpreis ohne Kaufpfad. Siehe `yearlyCheckoutUnavailable`
-  // in shared/pricing.ts; sobald ein Preis verdrahtet ist, kehren beide
-  // Eintraege an ihre alte Position zurueck.
-  it('fuehrt erst die Monatsplaene, danach die buchbaren Jahresvarianten', () => {
+  // `starter_yearly`, `growth_yearly`, `agency_yearly`, `enterprise_yearly`,
+  // `partner_yearly` fehlen hier bewusst: in Live-Stripe existieren KEINE
+  // Yearly-Prices (`yearlyCheckoutUnavailable` auf allen Plänen).
+  it('fuehrt erst die Monatsplaene, danach Einmalprodukte — ohne Yearly-Tiers', () => {
     const ids = PRICING_TIERS.map((tier) => tier.id);
     expect(ids).toEqual([
       'free', 'starter', 'growth', 'agency', 'enterprise', 'partner',
-      // Einmalprodukte stehen nach der Abo-Leiter und vor den Jahresvarianten.
       'governance_launch',
-      'agency_yearly', 'enterprise_yearly', 'partner_yearly',
     ]);
   });
 
@@ -38,10 +30,13 @@ describe('pricing config (Single Source of Truth)', () => {
     expect(planById('partner').price.monthlyEur).toBe(1999);
   });
 
-  it('hat die korrekten Jahrespreise', () => {
-    expect(tierById('agency_yearly')?.priceEur).toBe(6900);
-    expect(tierById('enterprise_yearly')?.priceEur).toBe(12490);
-    expect(tierById('partner_yearly')?.priceEur).toBe(19000);
+  it('hat die korrekten Jahrespreise in der SSoT, ohne Yearly-Tiers', () => {
+    expect(planById('agency').price.yearlyEur).toBe(6900);
+    expect(planById('enterprise').price.yearlyEur).toBe(12490);
+    expect(planById('partner').price.yearlyEur).toBe(19000);
+    expect(tierById('agency_yearly')).toBeUndefined();
+    expect(tierById('enterprise_yearly')).toBeUndefined();
+    expect(tierById('partner_yearly')).toBeUndefined();
   });
 
   // Der Betrag bleibt in der SSoT — er ist ja richtig, nur nicht einloesbar.
@@ -52,8 +47,10 @@ describe('pricing config (Single Source of Truth)', () => {
     expect(planById('growth').price.yearlyEur).toBe(2490);
     expect(planById('starter').yearlyCheckoutUnavailable).toBe(true);
     expect(planById('growth').yearlyCheckoutUnavailable).toBe(true);
+    expect(planById('agency').yearlyCheckoutUnavailable).toBe(true);
     expect(tierById('starter_yearly')).toBeUndefined();
     expect(tierById('growth_yearly')).toBeUndefined();
+    expect(tierById('agency_yearly')).toBeUndefined();
   });
 
   // Bestandsschutz: der Jahres-Key loest weiterhin auf, nur eben auf das
@@ -73,7 +70,8 @@ describe('pricing config (Single Source of Truth)', () => {
 
   it('bildet Altdaten `scale` transparent auf Partner ab', () => {
     expect(tierByPlanKey('scale')?.id).toBe('partner');
-    expect(tierByPlanKey('scale_yearly')?.id).toBe('partner_yearly');
+    // Ohne Yearly-Tier fällt scale_yearly auf das Monats-Partner-Tier zurück.
+    expect(tierByPlanKey('scale_yearly')?.plan.id).toBe('partner');
     expect(tierByPlanKey('free')?.id).toBe('free');
     expect(tierByPlanKey('voellig-unbekannt')).toBeUndefined();
   });
@@ -126,11 +124,11 @@ describe('pricing config (Single Source of Truth)', () => {
     ]);
   });
 
-  it('SELLABLE_PRICING_TIERS enthaelt nur die drei angebotenen Stufen', () => {
-    // Das ist die Liste fuer jede Anzeige. Seit AP2 sind Agency und Partner
-    // stillgelegt; sie anzubieten hiesse, in eine Sackgasse zu fuehren.
+  it('SELLABLE_PRICING_TIERS enthaelt die angebotenen Stufen inkl. Agency', () => {
+    // Agency ist seit Dominik-Landing 2026-09 wieder self_service (Stripe
+    // Live-Price). Partner bleibt stillgelegt.
     expect(SELLABLE_PRICING_TIERS.map((t) => t.id)).toEqual([
-      'starter', 'growth', 'enterprise',
+      'starter', 'growth', 'agency', 'enterprise',
     ]);
   });
 

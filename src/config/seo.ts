@@ -53,9 +53,9 @@ export interface SEOConfig {
 const SITE_URL = 'https://realsyncdynamicsai.de';
 
 export const DEFAULT_SEO: SEOConfig = {
-  title: 'AI Compliance Software: DSGVO & EU AI Act | RealSyncDynamicsAI',
+  title: 'RealSyncDynamics.AI — Das Governance OS für DSGVO & EU AI Act',
   description:
-    'AI Compliance Software für DSGVO & EU AI Act: Websites, Daten und KI-Systeme kontinuierlich überwachen, Risiken erkennen, Nachweise auditierbar sichern.',
+    'Das Governance OS für DSGVO und EU AI Act: AI-Systeme, Websites, Agents und Datenflüsse erfassen, Risiken bewerten, Governance durchsetzen und Nachweise führen.',
 };
 
 // ─── JSON-LD Templates (re-used) ─────────────────────────────────────────────
@@ -107,20 +107,24 @@ const PRICING_PRODUCT_JSONLD = {
         billingDuration: 'P1M',
       },
     },
-    // COMMERCIAL-SSOT: temporary production hotfix.
-    // Canonical source migration tracked in Phase 2.
-    // Agency ist seit AP2 stillgelegt (`availability: 'legacy'`) und
-    // `/checkout/agency` leitet auf die Preisseite zurueck. Ein
-    // schema.org-Offer ist ein maschinenlesbares Angebot — fuer einen Plan,
-    // den niemand mehr abschliessen kann, gehoert es entfernt und nicht
-    // durch einen anderen Plan ersetzt. Bestandskunden behalten ihr Abo.
+    {
+      '@type': 'Offer',
+      name: 'Agency',
+      price: '699',
+      priceCurrency: 'EUR',
+      url: `${SITE_URL}/checkout/agency`,
+      priceSpecification: {
+        '@type': 'UnitPriceSpecification',
+        price: '699',
+        priceCurrency: 'EUR',
+        billingDuration: 'P1M',
+      },
+    },
     {
       '@type': 'Offer',
       name: 'Enterprise',
       priceCurrency: 'EUR',
       url: `${SITE_URL}/contact-sales?intent=enterprise`,
-      // COMMERCIAL-SSOT: temporary production hotfix.
-      // Canonical source migration tracked in Phase 2.
       // Kein Festpreis in schema.org-Offer: Enterprise wird vertraglich
       // vereinbart und manuell fakturiert. Ein `price` hier waere ein
       // maschinenlesbares Angebot, das der Checkout nicht erfuellt.
@@ -249,20 +253,19 @@ function breadcrumbs(items: Array<{ name: string; url: string }>): Record<string
 export const SEO_CONFIG: Record<string, SEOConfig> = {
   // ─── Tier 1 — Hero / Top-Conversion ──────────────────────────────────────
   '/': {
-    // 62 Zeichen — Keyword vollstaendig vorn; die 60er-Grenze wird nur vom
-    // Brand-Suffix ueberschritten, das in der SERP schlimmstenfalls trunkiert.
-    title: 'AI Compliance Software: DSGVO & EU AI Act | RealSyncDynamicsAI',
+    // Europe-OS hero lock — matches hero-content.ts H1.
+    title: 'RealSyncDynamics.AI — AI Compliance Operations OS for Europe',
     description:
-      'AI Compliance Software für DSGVO & EU AI Act: Websites, Daten und KI-Systeme kontinuierlich überwachen, Risiken erkennen, Nachweise auditierbar sichern.',
+      'Runtime governance for regulated AI systems. Continuous evidence. EU-native by design. Free Audit starten — Acquisition-Scan, dann Governance OS.',
     canonical: `${SITE_URL}/`,
-    ogTitle: 'AI Compliance Software für DSGVO & EU AI Act',
+    ogTitle: 'AI Compliance Operations OS for Europe',
     ogDescription:
-      'RealSyncDynamics.AI überwacht Websites, Daten und KI-Systeme kontinuierlich — DSGVO-konform, AI-Act-ready und auditierbar. Souveräne Compliance aus der EU.',
+      'Runtime governance for regulated AI systems. Continuous evidence. EU-native by design.',
   },
   '/pricing': {
     title: 'Preise – Runtime-native AI-Governance-Plattform | RealSyncDynamics.AI',
     description:
-      'Free Audit (0 €), Starter (79 €), Growth (249 €), Enterprise (auf Anfrage). Runtime-native Governance: kontinuierliche Telemetrie, Policy-Engine, kryptografisch nachvollziehbare Evidenz. EU-Hosting, AVV inklusive.',
+      'Free Audit (0 €), Starter (79 €), Growth (249 €), Agency (699 €), Enterprise (auf Anfrage). Runtime-native Governance: kontinuierliche Telemetrie, Policy-Engine, kryptografisch nachvollziehbare Evidenz. EU-Hosting, AVV inklusive.',
     canonical: `${SITE_URL}/pricing`,
     jsonLd: [
       PRICING_PRODUCT_JSONLD,

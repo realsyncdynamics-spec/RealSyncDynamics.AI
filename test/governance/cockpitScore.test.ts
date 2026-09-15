@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   computeGovernanceScore,
+  computeGovernanceScoreIfReliable,
   computePenaltyScore,
   computeAuditReadiness,
   scoreLevel,
@@ -46,6 +47,13 @@ describe('computeGovernanceScore', () => {
     const p: CockpitPosture = { policiesEnabledPercent: 73, assetEvidencePercent: 41, assetMappingsPercent: 60 };
     const c: CockpitCounts = { ...ZERO, incidents: 2, dpias: 1 };
     expect(computeGovernanceScore(c, p)).toBe(computeGovernanceScore(c, p));
+  });
+});
+
+describe('computeGovernanceScoreIfReliable', () => {
+  it('returns null when count sources failed instead of scoring fallback zeros as 100', () => {
+    expect(computeGovernanceScoreIfReliable(false, ZERO, null)).toBeNull();
+    expect(computeGovernanceScoreIfReliable(true, ZERO, null)).toBe(100);
   });
 });
 

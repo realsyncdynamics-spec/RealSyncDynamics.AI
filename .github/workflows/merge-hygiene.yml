@@ -1,0 +1,124 @@
+name: Merge Hygiene
+
+# Hält PRs mergebar: Konflikte labeln, Hot-File-Kollisionen kommentieren,
+# Migrations-Timestamps gegen main prüfen. Konzept: docs/MERGE_CONFLICT_CONCEPT.md
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    branches: [main]
+  merge_group:
+    branches: [main]
+  schedule:
+    - cron: '*/30 * * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: merge-hygiene-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  conflict-state:
+    if: github.event_name != 'merge_group'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Resolve PR list
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "schedule" ] || [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            gh pr list --repo "${{ github.repository }}" --state open --json number --jq '.[].number' > "$RUNNER_TEMP/prs.txt"
+          else
+            echo "${{ github.event.pull_request.number }}" > "$RUNNER_TEMP/prs.txt"
+          fi
+          test -s "$RUNNER_TEMP/prs.txt"
+
+      - name: Label conflicts and stale rebases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          repo="${{ github.repository }}"
+
+          ensure_label() {
+            gh label create "$1" --repo "$repo" --color "$2" --description "$3" 2>/dev/null || true
+          }
+          ensure_label "conflicts" "B60205" "PR hat Merge-Konflikte gegen main"
+          ensure_label "needs-rebase" "FBCA04" "Branch liegt hinter main"
+          ensure_label "hot-file" "5319E7" "Hot-File überlappt mit anderem offenen PR"
+
+          failed=0
+          while read -r n; do
+            [ -z "$n" ] && continue
+            mergeable="UNKNOWN"
+            state="UNKNOWN"
+            for _ in 1 2 3 4 5 6; do
+              payload="$(gh pr view "$n" --repo "$repo" --json mergeable,mergeStateStatus)"
+              mergeable="$(printf '%s' "$payload" | jq -r .mergeable)"
+              state="$(printf '%s' "$payload" | jq -r .mergeStateStatus)"
+              if [ "$mergeable" != "UNKNOWN" ] && [ "$state" != "UNKNOWN" ]; then
+                break
+              fi
+              sleep 3
+            done
+
+            echo "PR #$n mergeable=$mergeable state=$state"
+
+            gh pr edit "$n" --repo "$repo" --remove-label conflicts 2>/dev/null || true
+            gh pr edit "$n" --repo "$repo" --remove-label needs-rebase 2>/dev/null || true
+
+            if [ "$mergeable" = "CONFLICTING" ] || [ "$state" = "DIRTY" ]; then
+              gh pr edit "$n" --repo "$repo" --add-label conflicts
+              echo "::error::PR #$n hat Konflikte gegen main. npm run sync:main"
+              if [ "${{ github.event_name }}" != "schedule" ]; then
+                failed=1
+              fi
+            elif [ "$state" = "BEHIND" ]; then
+              gh pr edit "$n" --repo "$repo" --add-label needs-rebase
+            fi
+          done < "$RUNNER_TEMP/prs.txt"
+
+          exit "$failed"
+
+  hygiene:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' || github.event_name == 'merge_group'
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '20'
+
+      - name: Fetch main
+        run: git fetch origin main --no-tags
+
+      - name: Run merge hygiene
+        id: hygiene
+        env:
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          set +e
+          node scripts/merge-hygiene.mjs --json > "$RUNNER_TEMP/hygiene.json"
+          code=$?
+          node scripts/merge-hygiene.mjs
+          echo "exit=$code" >> "$GITHUB_OUTPUT"
+          set -e
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            node scripts/upsert-merge-hygiene-comment.mjs "$RUNNER_TEMP/hygiene.json"
+          fi
+          if [ "$code" -eq 2 ]; then
+            echo "::error::Migrations-Kollision oder append-only verletzt. docs/MERGE_CONFLICT_CONCEPT.md"
+            exit 2
+          fi

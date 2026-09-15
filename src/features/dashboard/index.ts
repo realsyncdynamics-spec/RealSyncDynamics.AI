@@ -1,4 +1,6 @@
 export { DashboardView } from './DashboardView';
+export { CommandSessionPanel } from './CommandSessionPanel';
+export { useCommandCenter } from './hooks/useCommandCenter';
 export { ScoreCard } from './components/ScoreCard';
 export { RiskSummary } from './components/RiskSummary';
 export { InsightsPanel } from './components/InsightsPanel';

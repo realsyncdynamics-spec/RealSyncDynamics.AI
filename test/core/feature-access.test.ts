@@ -142,6 +142,7 @@ describe('decideAccess', () => {
 
   it('kennt für Voice den Add-on-Weg', () => {
     expect(addonsCovering(['bots.voice']).map((a) => a.id)).toContain('voice');
-    expect(cheapestPlanForKeys(['bots.voice'])).toBe('enterprise');
+    // Agency ist wieder Self-Service — Voice ist ab Agency enthalten.
+    expect(cheapestPlanForKeys(['bots.voice'])).toBe('agency');
   });
 });

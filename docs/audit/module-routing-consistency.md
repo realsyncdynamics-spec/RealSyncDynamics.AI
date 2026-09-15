@@ -100,7 +100,7 @@ unsichtbar, da die Tab-Navigation aus `governanceModules.ts` gespeist wird.
 | `meeting-compliance` | Workflow ansehen | `/app/automations?skill=meeting` | 98 | ja, aber Mismatch |
 | `screenshot-feedback` | Workflow ansehen | `/app/automations?skill=feedback` | 116 | ja, aber Mismatch |
 | `lead-risk` | Skill aktivieren | `/audit` | 133 | — |
-| `support-skill` | Im Dashboard öffnen | `/assistant` | 150 | — |
+| `support-skill` | Im Dashboard öffnen | `/app/dashboard` | 150 | — |
 
 `AutomationSkillsView.tsx` (Z. 26–27) liest `searchParams.get('skill')` und vergleicht ihn
 gegen `skill.id` (Z. 128–131), um die Karte zu highlighten (`ring-ai-cyan-500/60`).

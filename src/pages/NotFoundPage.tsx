@@ -19,14 +19,14 @@ export function NotFoundPage() {
       <div className="flex flex-wrap gap-3 justify-center">
         <Link
           to="/"
-          className="inline-flex items-center gap-2 px-5 py-2.5 bg-cyan-400 text-obsidian-950 font-semibold text-sm hover:bg-cyan-300 transition-colors"
+          className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#e8ddc8] text-obsidian-950 font-semibold text-sm hover:bg-[#f0e6d4] transition-colors"
         >
           <Home className="h-4 w-4" />
           Zur Startseite
         </Link>
         <Link
           to="/pricing"
-          className="inline-flex items-center gap-2 px-5 py-2.5 border border-titanium-800 text-titanium-200 text-sm hover:border-titanium-600 transition-colors"
+          className="inline-flex items-center gap-2 px-5 py-2.5 border border-[#e4cfa2]/40 text-[#e4cfa2] text-sm hover:border-[#e4cfa2] transition-colors"
         >
           Preise ansehen <ArrowRight className="h-4 w-4" />
         </Link>

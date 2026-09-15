@@ -1,0 +1,5 @@
+# Lockfiles nicht textuell auto-mergen — sonst entsteht ein kaputter Baum.
+# Auflösung: npm install, danach die neue Datei committen.
+# Siehe docs/MERGE_CONFLICT_CONCEPT.md
+package-lock.json merge=binary
+**/package-lock.json merge=binary

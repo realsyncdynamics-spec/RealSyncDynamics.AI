@@ -24,7 +24,7 @@ zusammengefasst nach "Skill auswählen → aktivieren → Ergebnis erhalten".
 fest definierte Skill-Set aus `src/content/automationSkills.ts`. Jeder
 "Skill aktivieren"/"Workflow ansehen"/"Im Dashboard öffnen"-Button verlinkt
 auf eine **bereits vorhandene** Route (z. B. `/audit`, `/dokumente-bundle`,
-`/assistant`). Es werden noch keine echten Backend-Runs ausgeführt.
+`/app/dashboard`). Es werden noch keine echten Backend-Runs ausgeführt.
 
 **Phase 2 (Datenmodell + Edge Functions, dieser Stand):** das Backend für
 echte Läufe ist angelegt — `automation_skills`/`automation_runs`/
@@ -60,7 +60,7 @@ auf `automation_runs`) umstellen. Die UI-Struktur bleibt dabei identisch.
 | Meeting Compliance Skill | Meetings | Beta | Silver | `/app/automations?skill=meeting` |
 | Screenshot Feedback Skill | Support | Beta | Silver | `/app/automations?skill=feedback` |
 | Lead Risk Skill | Vertrieb | Verfügbar | Bronze | `/audit` |
-| Support Skill | Support | Geplant | Gold | `/assistant` |
+| Support Skill | Support | Geplant | Gold | `/app/dashboard` |
 
 ### 1. DSGVO Audit Skill
 Prüft Website, Tracker, Consent, Header und Pflichtseiten.

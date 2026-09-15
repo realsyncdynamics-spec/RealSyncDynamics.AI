@@ -13,13 +13,12 @@
  */
 
 import { getSupabase } from '../../../lib/supabase';
+import { getSupabaseUrl } from '../../../lib/supabaseUrl';
 import type { Finding, FindingStatus } from '../../../types/governance/finding';
 import { FINDING_NEXT_STATUS } from '../../../types/governance/finding';
 import type { ScanRun } from '../../../types/governance/scan-run';
 import type { ReportPayload } from '../../../types/governance/report';
 import { buildReportPayload } from '../../../lib/governance/reportMapping';
-
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
 
 /**
  * List a tenant's most recent scan_runs. Default limit 50; UI
@@ -83,7 +82,7 @@ export async function getScanReport(
   return buildReportPayload(scan, findings, { topN: opts.topN ?? 10 });
 }
 
-// ─── Website registry ───────────────────────────────────────────────
+// ─── Website registry ───────────────────────────────
 
 export interface TenantWebsite {
   id:         string;
@@ -144,13 +143,25 @@ function normaliseDomain(raw: string): string | null {
   return s;
 }
 
+/**
+ * tenant-audit verlangt eine absolute http(s)-URL. Die Registry speichert
+ * nur den Host. Ohne Schema würde die Function 400 INVALID_URL liefern.
+ */
+export function auditTargetUrl(raw: string): string {
+  const value = (raw ?? '').trim();
+  if (!value) return value;
+  if (/^https?:\/\//i.test(value)) return value;
+  return `https://${value}`;
+}
+
 /** Exported for unit tests. */
-export const __test = { normaliseDomain };
+export const __test = { normaliseDomain, auditTargetUrl };
 
 // ─── Tenant-scoped scan trigger (via tenant-audit Edge Function) ────
 
 function scanErrorForStatus(status: number): string {
   if (status === 401 || status === 403) return 'Keine Berechtigung für diesen Scan.';
+  if (status === 405) return 'Scan-Dienst nicht unter dieser Adresse erreichbar (HTTP 405).';
   if (status === 429) return 'Scan-Limit erreicht. Bitte später erneut versuchen.';
   if (status === 504) return 'Der Scan hat zu lange gedauert (Timeout).';
   if (status >= 500)  return 'Der Scan-Dienst ist derzeit nicht verfügbar.';
@@ -172,23 +183,26 @@ export async function triggerTenantAudit(
   const accessToken = sess?.session?.access_token;
   if (!accessToken) throw new Error('Bitte einloggen, um einen Scan zu starten.');
 
+  const target = auditTargetUrl(url);
+  const endpoint = `${getSupabaseUrl()}/functions/v1/tenant-audit`;
+
   let r: Response;
   try {
-    r = await fetch(`${SUPABASE_URL}/functions/v1/tenant-audit`, {
+    r = await fetch(endpoint, {
       method:  'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${accessToken}`,
         'X-Tenant-Id':   tenantId,
       },
-      body: JSON.stringify({ url, website_id: opts.website_id }),
+      body: JSON.stringify({ url: target, website_id: opts.website_id }),
     });
   } catch {
     throw new Error('Scan-Dienst nicht erreichbar. Bitte Verbindung prüfen und erneut versuchen.');
   }
 
   // Die Edge Function antwortet bei Gateway-Timeouts und 5xx teils mit leerem
-  // Body — r.json() würde dann „Unexpected end of JSON input" ins UI werfen.
+  // Body — r.json() würde dann „Unexpected end of JSON input“ ins UI werfen.
   const raw = await r.text().catch(() => '');
   let body: {
     ok?: boolean;
@@ -204,7 +218,7 @@ export async function triggerTenantAudit(
       throw new Error(
         r.ok
           ? 'Ungültige Antwort vom Scan-Dienst erhalten.'
-          : `Scan fehlgeschlagen (HTTP ${r.status}).`,
+          : scanErrorForStatus(r.status),
       );
     }
   }
@@ -219,7 +233,7 @@ export async function triggerTenantAudit(
   };
 }
 
-// ─── Finding status transitions ─────────────────────────────────────
+// ─── Finding status transitions ─────────────────────────────
 
 /**
  * Update a finding's status. Validates the transition against

@@ -10,7 +10,6 @@ import { RequireAal2 } from './core/access/RequireAal2';
 import { SupabaseAuthProvider } from './features/supabase/SupabaseAuthContext';
 import { ProtectedRoute } from './features/demo/ProtectedRoute';
 import { AppGate } from './features/auth/AppGate';
-import { DemoLoginPage } from './pages/DemoLoginPage';
 import { DemoGovernanceDashboard } from './pages/DemoGovernanceDashboard';
 import { DemoLandingPage } from './pages/DemoLandingPage';
 import { DemoTourStartPage } from './pages/DemoTourStartPage';
@@ -21,6 +20,8 @@ import { DemoTourProvider } from './core/demo/DemoTourContext';
 // ── Public entry: Governance-OS Workspace Preview (replaces Marketing Landing on /)
 // ── Public entry: MainLanding (Unternehmenshauptseite, Earth-at-Night) auf /
 import { MainLanding } from './pages/MainLanding';
+import { DesignLedgerLanding } from './pages/design/DesignLedgerLanding';
+import { DesignTribunalLanding } from './pages/design/DesignTribunalLanding';
 // ── Product Entry Points (/scan/start, /chatbot/start, /phonebot/start)
 import { ScanStartPage } from './pages/product-entry-points/ScanStartPage';
 import { ChatbotStartPage } from './pages/product-entry-points/ChatbotStartPage';
@@ -73,6 +74,8 @@ import { CookieConsentSdk } from './pages/CookieConsentSdk';
 import { AuditPro } from './pages/AuditPro';
 import { DsgvoToolVergleich } from './pages/DsgvoToolVergleich';
 import { ContactSales } from './pages/ContactSales';
+import { KontaktPage } from './pages/KontaktPage';
+import { LogoutPage } from './pages/LogoutPage';
 import { EnterpriseAiOs } from './pages/EnterpriseAiOs';
 import { EnterpriseAiOsFoundingAccess } from './pages/EnterpriseAiOsFoundingAccess';
 import { EnterpriseAiOsDashboard } from './pages/EnterpriseAiOsDashboard';
@@ -99,24 +102,22 @@ import { FlowStepRoute } from './flow/FlowStepRoute';
 const SetupAssistant = lazy(() => import('./features/onboarding/SetupAssistant').then((m) => ({ default: m.SetupAssistant })));
 // ── Phase 2: Dashboard Router (Adaptive based on tier)
 const DashboardRouter = lazy(() => import('./features/governance/dashboard/DashboardRouter').then((m) => ({ default: m.DashboardRouter })));
+const GovernanceAiWorkspace = lazy(() => import('./features/governance/dashboard/GovernanceAiWorkspace').then((m) => ({ default: m.GovernanceAiWorkspace })));
 // ── SMB Experience Layer: vereinfachte Business-Ansicht für Einzelunternehmer.
 //    Konsumiert nur bestehende Services (siehe src/features/smb/README.md).
 const SmbDashboardView = lazy(() => import('./features/smb/SmbDashboardView').then((m) => ({ default: m.SmbDashboardView })));
 // ── Modul-Hub: Capability-Übersicht des Workspaces (Aktivieren/Öffnen je Entitlement)
 const ModulesHubView = lazy(() => import('./features/modules/ModulesHubView').then((m) => ({ default: m.ModulesHubView })));
+const GovernanceActivationView = lazy(() =>
+  import('./features/activation/GovernanceActivationView').then((m) => ({ default: m.GovernanceActivationView })),
+);
 // ── Phase 3: Advanced Governance Views
 const ComplianceFrameworkSelector = lazy(() => import('./features/governance/dashboard/ComplianceFrameworkSelector').then((m) => ({ default: m.ComplianceFrameworkSelector })));
 const Iso42001ComplianceHub = lazy(() => import('./features/governance/dashboard/Iso42001ComplianceHub').then((m) => ({ default: m.Iso42001ComplianceHub })));
 // BusinessDashboard zieht recharts → aus dem Landing-Critical-Path lazyen.
 const BusinessDashboard = lazy(() => import('./pages/BusinessDashboard').then((m) => ({ default: m.BusinessDashboard })));
-// CreatorDashboard ist auth-gated → lazy.
-//
-// Die Aussage stimmt erst, seit die Route sie auch gattert. Die Komponente
-// selbst bringt keinen Guard mit — kein `AuthGate`, kein `RequireAal2`, keine
-// Sitzungsprüfung. Sie hing unter `/assistant` ohne Wrapper, und dieser
-// Kommentar behauptete das Gegenteil: Wer ihn las, musste die Route für
-// geschützt halten. Der Schutz sitzt in `<AppGate>` an der Route, nicht hier.
-const CreatorDashboard = lazy(() => import('./pages/CreatorDashboard').then((m) => ({ default: m.CreatorDashboard })));
+// /assistant und /dashboard landen auf /app/dashboard (Compliance-Status).
+// Der Chat bleibt unter /app/assistant und in der Governance-Sidebar.
 // Compliance Tools (Free)
 import { AvvGenerator } from './pages/AvvGenerator';
 import { CookieScanner } from './pages/CookieScanner';
@@ -244,6 +245,10 @@ const SiteOsDashboardView = lazy(() => import('./features/siteos/SiteOsDashboard
 // seit ihrer Entstehung ohne Route im Repo — fertiger Code, den niemand
 // erreichen konnte (CLAUDE.md §14).
 const SiteOsBuilderPage = lazy(() => import('./unified-entry/pages/PreviewSelectionPage'));
+// App Builder Workspace: Topbar · Projekt-Navigation · Puck-Leinwand ·
+// Assistent · Konsole/Probleme/Verlauf/Governance. Lazy aus demselben Grund
+// wie der Editor: Puck gehört nicht in den kritischen Pfad.
+const AppBuilderWorkspacePage = lazy(() => import('./features/siteos/workspace/AppBuilderWorkspacePage'));
 // Build Studio: Prompt → vollständige Website → Live-Vorschau, ohne Konto.
 //
 // Abweichung von der Regel „Public Pages eager" (CLAUDE.md §7): Diese Seite
@@ -323,6 +328,7 @@ const GovernanceHomeView = lazy(() => import('./features/governance/GovernanceHo
 const GovernanceEvidenceIntegrityView = lazy(() => import('./features/governance/EvidenceIntegrityView').then((m) => ({ default: m.EvidenceIntegrityView })));
 const GovernanceConnectorRegistryView = lazy(() => import('./features/governance/ConnectorRegistryView').then((m) => ({ default: m.ConnectorRegistryView })));
 const GovernanceShadowReadinessView = lazy(() => import('./features/governance/ShadowReadinessView').then((m) => ({ default: m.ShadowReadinessView })));
+const GovernanceRouterView = lazy(() => import('./features/governance/GovernanceRouterView').then((m) => ({ default: m.GovernanceRouterView })));
 const GovernanceMicrosoft365View = lazy(() => import('./features/governance/Microsoft365View').then((m) => ({ default: m.Microsoft365View })));
 const GovernancePolicyTemplatesView = lazy(() => import('./features/governance/PolicyTemplatesView').then((m) => ({ default: m.PolicyTemplatesView })));
 const GovernanceComplianceReportView = lazy(() => import('./features/governance/ComplianceReportView').then((m) => ({ default: m.ComplianceReportView })));
@@ -379,8 +385,6 @@ const RateLimitingAnalytics = lazy(() => import('./features/api/RateLimitingAnal
 const SettingsView = lazy(() => import('./features/settings/SettingsView').then((m) => ({ default: m.SettingsView })));
 const SecuritySettings = lazy(() => import('./features/settings/SecuritySettings').then((m) => ({ default: m.SecuritySettings })));
 const TenantAdminConsole = lazy(() => import('./features/tenants/TenantAdminConsole').then((m) => ({ default: m.TenantAdminConsole })));
-const WorkspaceHome = lazy(() => import('./features/workspace/WorkspaceHome').then((m) => ({ default: m.WorkspaceHome })));
-const GovernanceOsDashboard = lazy(() => import('./features/governance/dashboard/GovernanceOsDashboard').then((m) => ({ default: m.GovernanceOsDashboard })));
 const CeoCockpitView = lazy(() => import('./features/governance/cockpit/CeoCockpitView').then((m) => ({ default: m.CeoCockpitView })));
 const CeoBriefPrintView = lazy(() => import('./features/governance/cockpit/CeoBriefPrintView').then((m) => ({ default: m.CeoBriefPrintView })));
 const WorkspaceEmbed = lazy(() => import('./features/workspace/WorkspaceEmbed').then((m) => ({ default: m.WorkspaceEmbed })));
@@ -417,8 +421,7 @@ const EnterpriseLandingPage = lazy(() => import('./enterprise-os/pages/LandingPa
 const EnterpriseAppShell = lazy(() => import('./enterprise-os/layout/AppShell').then((m) => ({ default: m.AppShell })));
 const EnterpriseAppHomePage = lazy(() => import('./enterprise-os/pages/AppHomePage').then((m) => ({ default: m.AppHomePage })));
 const EnterprisePlaceholderPage = lazy(() => import('./enterprise-os/pages/PlaceholderPage').then((m) => ({ default: m.PlaceholderPage })));
-// Phase 2 — Public Pages (Pricing, Audit, AI Governance, Agenturen, Auth, Legal, Checkout)
-const EnterpriseAuthPage = lazy(() => import('./enterprise-os/pages/AuthPage').then((m) => ({ default: m.AuthPage })));
+// Phase 2 — Public Pages (Pricing, Audit, AI Governance, Agenturen, Legal, Checkout)
 const EnterpriseAuditLandingPage = lazy(() => import('./enterprise-os/pages/AuditLandingPage').then((m) => ({ default: m.AuditLandingPage })));
 const EnterpriseAiGovernancePage = lazy(() => import('./enterprise-os/pages/AiGovernancePage').then((m) => ({ default: m.AiGovernancePage })));
 const EnterpriseAgenciesPage = lazy(() => import('./enterprise-os/pages/AgenciesPage').then((m) => ({ default: m.AgenciesPage })));
@@ -476,9 +479,9 @@ function RoutesWithTracking() {
       <SEOHead />
       <Suspense fallback={<LazyFallback />}>
         <Routes>
-          {/* Demo Routes — Mock Auth + Governance Dashboard */}
+          {/* Demo Routes — mock surfaces. /demo-login → canonical /welcome. */}
           <Route path="/demo-landing" element={<DemoLandingPage />} />
-          <Route path="/demo-login" element={<DemoLoginPage />} />
+      <Route path="/demo-login" element={<Navigate to="/welcome?next=/app/dashboard" replace />} />
           <Route
             path="/demo-app"
             element={
@@ -496,6 +499,10 @@ function RoutesWithTracking() {
       {/* Public — Startseite ist die Governance-OS-Workspace-Vorschau;
           die Marketing-Landing bleibt unter /landing erreichbar. */}
       <Route path="/" element={<MainLanding />} />
+
+      {/* Design previews — do NOT replace live `/`. Honest Preview surfaces. */}
+      <Route path="/design/ledger" element={<DesignLedgerLanding />} />
+      <Route path="/design/tribunal" element={<DesignTribunalLanding />} />
 
       {/* Der kanonische Scan-Einstieg ist `/audit` (siehe
           docs/product/canonical-funnel-decision.md). `/scan` gab es kurzzeitig
@@ -595,14 +602,17 @@ function RoutesWithTracking() {
       <Route path="/audit-pro" element={<AuditPro />} />
       <Route path="/dsgvo-tool-vergleich" element={<DsgvoToolVergleich />} />
       <Route path="/contact-sales" element={<ContactSales />} />
+      <Route path="/kontakt" element={<KontaktPage />} />
+      <Route path="/contact" element={<Navigate to="/kontakt" replace />} />
       <Route path="/enterprise" element={<EnterpriseLanding />} />
       {/* Enterprise AI OS — Founding Access + Dashboard */}
       <Route path="/enterprise-ai-os" element={<EnterpriseAiOs />} />
       <Route path="/enterprise-ai-os/founding-access" element={<EnterpriseAiOsFoundingAccess />} />
       <Route path="/dashboard/enterprise-ai-os" element={<EnterpriseAiOsDashboard />} />
-      {/* AI Command Center — kompakte Operating-Layer-UI (frontend-only, no backend) */}
-      <Route path="/command-center" element={<Navigate to="/assistant" replace />} />
-      <Route path="/ai-command-center" element={<Navigate to="/assistant" replace />} />
+      {/* AI Command Center — Aliase der Workspace-Fläche, nicht mehr eine
+          eigene Chat-Seite. /assistant und /dashboard sind dieselbe Fläche. */}
+      <Route path="/command-center" element={<Navigate to="/app/dashboard" replace />} />
+      <Route path="/ai-command-center" element={<Navigate to="/app/dashboard" replace />} />
       <Route path="/command-center/showcase" element={<AiCommandCenterShowcase />} />
       <Route path="/dashboard/enterprise-ai-os/discovery" element={<EnterpriseAiOsDiscovery />} />
       {/* Onboarding nach Stripe-Checkout */}
@@ -658,7 +668,7 @@ function RoutesWithTracking() {
       <Route path="/integrations/stripe/callback" element={<StripeOAuthCallback />} />
       <Route path="/shopify/success" element={<ShopifySuccessPage />} />
       <Route path="/shopify/error" element={<ShopifyErrorPage />} />
-      <Route path="/app/settings/integrations/telegram" element={<TelegramIntegrationPage />} />
+      <Route path="/app/settings/integrations/telegram" element={<AppGate><TelegramIntegrationPage /></AppGate>} />
       <Route path="/developers" element={<Developers />} />
       <Route path="/ai-act-governance" element={<AiActGovernancePage />} />
       <Route path="/agent-governance" element={<AgentGovernancePage />} />
@@ -738,7 +748,7 @@ function RoutesWithTracking() {
       {/* Dashboard */}
       {/* ── Kanonische Workspace-Routen (/app/*) — Governance OS ──
           Wiederverwendung bestehender Views; alte Pfade redirecten unten.
-          Chat (CreatorDashboard) bleibt als Assistent unter /assistant. */}
+          Dashboard ist Compliance-Status; Assistent liegt unter /app/assistant. */}
       {/* ── Governance OS Browser Shell — alle /app/* Routen ──
           GovernanceBrowserShell: TopBar + Tabs + Canvas + AssistantPanel + StatusBar.
           Auth Guards bleiben in den View-Komponenten selbst (AuthGate / RequireAal2). */}
@@ -757,18 +767,21 @@ function RoutesWithTracking() {
       <Route path="/app/intelligence" element={<AppGate><ProtectedRoute><DashboardView /></ProtectedRoute></AppGate>} />
       {/* Liest tenant_users/monitored_domains — Tenant-Daten, daher auth-gegatet. */}
       <Route path="/app/risk" element={<AppGate><ProtectedRoute><RiskDashboard /></ProtectedRoute></AppGate>} />
-      {/* DashboardRouter rendert GovernanceAiWorkspace; die Plan-Unterscheidung liegt dort, nicht in der Route. */}
+      {/* DashboardRouter rendert den live Compliance-Status (kein Chat-Default). */}
       <Route path="/app/dashboard" element={<AppGate><GovernanceBrowserShell><DashboardRouter /></GovernanceBrowserShell></AppGate>} />
+      <Route path="/app/assistant" element={<AppGate><GovernanceAiWorkspace /></AppGate>} />
+      <Route path="/app/cockpit" element={<AppGate><GovernanceBrowserShell><CeoCockpitView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/cockpit/brief" element={<AppGate><CeoBriefPrintView /></AppGate>} />
       <Route path="/app/seo-marketing-dashboard" element={<AppGate><GovernanceBrowserShell><SEOMarketingDashboard /></GovernanceBrowserShell></AppGate>} />
       {/* Marketplace: zubuchbare Dienste mit ihrem tatsaechlichen Zustand.
           Liest die Entitlements des Mandanten, daher auth-gegatet. */}
       <Route path="/app/marketplace" element={<AppGate><GovernanceBrowserShell><MarketplaceView /></GovernanceBrowserShell></AppGate>} />
-      <Route path="/app/overview" element={<GovernanceBrowserShell><GovernanceOsDashboard /></GovernanceBrowserShell>} />
-      <Route path="/app/modules" element={<GovernanceBrowserShell><ModulesHubView /></GovernanceBrowserShell>} />
-      <Route path="/app/home" element={<GovernanceBrowserShell><WorkspaceHome /></GovernanceBrowserShell>} />
+      <Route path="/app/overview" element={<Navigate to="/app/dashboard" replace />} />
+      <Route path="/app/modules" element={<AppGate><GovernanceBrowserShell><ModulesHubView /></GovernanceBrowserShell></AppGate>} />
+      <Route path="/app/activation" element={<AppGate><GovernanceBrowserShell><GovernanceActivationView /></GovernanceBrowserShell></AppGate>} />
+      <Route path="/app/home" element={<Navigate to="/app/dashboard" replace />} />
       <Route path="/app/company" element={<GovernanceBrowserShell><CompanyView /></GovernanceBrowserShell>} />
-      <Route path="/app/websites" element={<GovernanceBrowserShell><WebsiteGovernanceView /></GovernanceBrowserShell>} />
+      <Route path="/app/websites" element={<AppGate><GovernanceBrowserShell><WebsiteGovernanceView /></GovernanceBrowserShell></AppGate>} />
       {/* Phase 2 Governance Views: Multi-Framework Compliance */}
       <Route path="/app/governance/ai-register" element={<GovernanceBrowserShell><AiRegisterView /></GovernanceBrowserShell>} />
       <Route path="/app/governance/dsgvo-directory" element={<GovernanceBrowserShell><DsgvoDirectoryView /></GovernanceBrowserShell>} />
@@ -793,7 +806,7 @@ function RoutesWithTracking() {
       <Route path="/app/governance/remediation-plans" element={<GovernanceBrowserShell><RemediationPlanViewNew /></GovernanceBrowserShell>} />
       <Route path="/app/governance/audit-reports" element={<GovernanceBrowserShell><AuditReportAdvancedViewNew /></GovernanceBrowserShell>} />
       <Route path="/app/governance/api-keys" element={<GovernanceBrowserShell><GovernanceApiKeysView /></GovernanceBrowserShell>} />
-      <Route path="/app/governance/recommendation" element={<GovernanceWorkflowRecommendation />} />
+      <Route path="/app/governance/recommendation" element={<AppGate><GovernanceWorkflowRecommendation /></AppGate>} />
       {/* Phase 3: Advanced Governance Views */}
       <Route path="/app/governance/frameworks" element={<AppGate><ComplianceFrameworkSelector /></AppGate>} />
       <Route path="/app/governance/iso-42001-hub" element={<AppGate><GovernanceBrowserShell><Iso42001ComplianceHub /></GovernanceBrowserShell></AppGate>} />
@@ -820,22 +833,20 @@ function RoutesWithTracking() {
       <Route path="/app/evidence-vault" element={<GovernanceBrowserShell><EvidenceVaultAdvancedView /></GovernanceBrowserShell>} />
       <Route path="/app/policy-packs" element={<GovernanceBrowserShell><PolicyPacksView /></GovernanceBrowserShell>} />
       <Route path="/app/siteos" element={<GovernanceBrowserShell><SiteOsDashboardView /></GovernanceBrowserShell>} />
-      <Route path="/app/siteos/builder" element={<SiteOsBuilderPage />} />
-      {/* Übernahme des anonymen Entwurfs. Die Anmeldung prüft die View
-          selbst, damit der Rücksprung an genau diese Stelle erhalten
-          bleibt — `ProtectedRoute` führt ohne `next` nach /demo-login. */}
-      <Route path="/app/siteos/claim" element={<SiteOsClaimView />} />
-      <Route path="/app/bots" element={<GovernanceBrowserShell><BotsView /></GovernanceBrowserShell>} />
+      <Route path="/app/siteos/builder" element={<AppGate><SiteOsBuilderPage /></AppGate>} />
+      {/* Claim: AppGate + View-eigener Resume nach /welcome?next=. */}
+      <Route path="/app/siteos/claim" element={<AppGate><SiteOsClaimView /></AppGate>} />
+      <Route path="/app/bots" element={<AppGate><GovernanceBrowserShell><BotsView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/bots/inbox" element={<GovernanceBrowserShell><BotInboxView /></GovernanceBrowserShell>} />
       <Route path="/app/bots/whatsapp" element={<GovernanceBrowserShell><WhatsAppChannelsView /></GovernanceBrowserShell>} />
       <Route path="/app/bots/:botId" element={<GovernanceBrowserShell><BotBuilderView /></GovernanceBrowserShell>} />
       <Route path="/app/monitoring/legacy" element={<GovernanceBrowserShell><MonitoringSurface embedded /></GovernanceBrowserShell>} />
       <Route path="/app/security-signals" element={<GovernanceBrowserShell><SecuritySignalsView /></GovernanceBrowserShell>} />
-      <Route path="/app/legal-rag" element={<LegalRagView />} />
+      <Route path="/app/legal-rag" element={<AppGate><LegalRagView /></AppGate>} />
       <Route path="/app/workflows" element={<GovernanceBrowserShell><WorkflowsView /></GovernanceBrowserShell>} />
-      <Route path="/app/risks" element={<GovernanceBrowserShell><RiskCenterView /></GovernanceBrowserShell>} />
+      <Route path="/app/risks" element={<AppGate><GovernanceBrowserShell><RiskCenterView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/compliance" element={<GovernanceBrowserShell><GovernanceComplianceReportView /></GovernanceBrowserShell>} />
-      <Route path="/app/evidence" element={<GovernanceBrowserShell><EvidenceVaultView /></GovernanceBrowserShell>} />
+      <Route path="/app/evidence" element={<AppGate><GovernanceBrowserShell><EvidenceVaultView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/evidence/auditor" element={<GovernanceBrowserShell><RequireAal2 action="Evidence-Export"><GovernanceAuditorConsoleView /></RequireAal2></GovernanceBrowserShell>} />
       <Route path="/app/monitoring" element={<GovernanceBrowserShell><MonitoringRuntimeView /></GovernanceBrowserShell>} />
       <Route path="/app/vendors" element={<GovernanceBrowserShell><GovernanceVendorInventoryView /></GovernanceBrowserShell>} />
@@ -861,6 +872,7 @@ function RoutesWithTracking() {
       <Route path="/app/governance/connectors" element={<GovernanceBrowserShell><GovernanceConnectorRegistryView /></GovernanceBrowserShell>} />
       <Route path="/app/governance/microsoft365" element={<GovernanceBrowserShell><GovernanceMicrosoft365View /></GovernanceBrowserShell>} />
       <Route path="/app/governance/shadow" element={<GovernanceBrowserShell><GovernanceShadowReadinessView /></GovernanceBrowserShell>} />
+      <Route path="/app/governance/router" element={<GovernanceBrowserShell><GovernanceRouterView /></GovernanceBrowserShell>} />
       <Route path="/app/policies/templates" element={<GovernanceBrowserShell><GovernancePolicyTemplatesView /></GovernanceBrowserShell>} />
       <Route path="/app/connectors" element={<GovernanceBrowserShell><GovernanceConnectorsView /></GovernanceBrowserShell>} />
       <Route path="/app/costs" element={<GovernanceBrowserShell><GovernanceCostTrackingView /></GovernanceBrowserShell>} />
@@ -899,15 +911,16 @@ function RoutesWithTracking() {
 
       {/* ── Redirects: konkurrierende Einstiege → kanonische Workspace-URL ──
           Alte URLs werden NICHT entfernt (keine 404 / keine toten Bookmarks).
-          Chat bleibt als Assistent unter /assistant erreichbar — seit dem
-          Absichern der Route allerdings nur angemeldet, siehe `AppGate` dort. */}
-      <Route path="/assistant" element={<AppGate><CreatorDashboard /></AppGate>} />
-      <Route path="/dashboard" element={<Navigate to="/app" replace />} />
+          /assistant und /dashboard bleiben Aliase auf /app/dashboard
+          (Compliance-Status). Chat: /app/assistant + Sidebar. Das Ziel
+          trägt AppGate; die Aliase selbst brauchen keinen zweiten Guard. */}
+      <Route path="/assistant" element={<Navigate to="/app/dashboard" replace />} />
+      <Route path="/dashboard" element={<Navigate to="/app/dashboard" replace />} />
       <Route path="/dashboard/business" element={<BusinessDashboard />} />
       <Route path="/dashboard/audit" element={<AuditDashboardView />} />
       <Route path="/dashboard/agents" element={<AgentOsAdminPage />} />
       <Route path="/business" element={<BusinessDashboard />} />
-      {/* `/kodee` führt denselben Gateway-Aufruf wie `/assistant`
+      {/* `/kodee` führt denselben Gateway-Aufruf wie der frühere Assistent
           (`processAIGatewayRequest`) und braucht deshalb denselben Schutz:
           ohne Gate könnte jeder Besucher Modellaufrufe auslösen.
           `/kodee/connections` ist nicht betroffen — `ConnectionsView`
@@ -1038,6 +1051,19 @@ function RoutesWithTracking() {
       <Route path="/signin" element={<Navigate to="/welcome" replace />} />
       <Route path="/signup" element={<Navigate to="/welcome" replace />} />
       <Route path="/register" element={<Navigate to="/welcome" replace />} />
+      <Route path="/auth" element={<Navigate to="/welcome" replace />} />
+      <Route path="/auth/login" element={<Navigate to="/welcome" replace />} />
+      <Route path="/auth/register" element={<Navigate to="/welcome" replace />} />
+      <Route path="/account" element={<Navigate to="/app/dashboard" replace />} />
+      <Route path="/activate" element={<Navigate to="/app/activation" replace />} />
+      <Route path="/logout" element={<LogoutPage />} />
+      <Route path="/signout" element={<LogoutPage />} />
+      {/* Canonical app dashboard aliases */}
+      <Route path="/app/home" element={<Navigate to="/app/dashboard" replace />} />
+      <Route path="/governance/dashboard" element={<Navigate to="/app/dashboard" replace />} />
+      <Route path="/domain-check" element={<Navigate to="/audit" replace />} />
+      <Route path="/domain-checker" element={<Navigate to="/audit" replace />} />
+      <Route path="/websites" element={<Navigate to="/welcome?next=/app/websites" replace />} />
 
       {/* ── Enterprise OS Prototype — neues Designsystem + IA (Phase 1 Foundation) ──
           Eigenständiger Klick-Prototyp mit Mockdaten unter /os, /os/app/*.
@@ -1048,8 +1074,8 @@ function RoutesWithTracking() {
       <Route path="/os/audit" element={<EnterpriseAuditLandingPage />} />
       <Route path="/os/ai-act" element={<EnterpriseAiGovernancePage />} />
       <Route path="/os/agencies" element={<EnterpriseAgenciesPage />} />
-      <Route path="/os/login" element={<EnterpriseAuthPage mode="login" />} />
-      <Route path="/os/signup" element={<EnterpriseAuthPage mode="signup" />} />
+      <Route path="/os/login" element={<Navigate to="/welcome?next=/app/dashboard" replace />} />
+      <Route path="/os/signup" element={<Navigate to="/welcome?next=/app/dashboard" replace />} />
       <Route path="/os/checkout" element={<EnterpriseCheckoutEntryPage />} />
       <Route path="/os/welcome" element={<EnterpriseWelcomeWizardPage />} />
       <Route path="/os/datenschutz" element={<EnterpriseDatenschutzPage />} />
@@ -1193,6 +1219,12 @@ function RoutesWithTracking() {
         }
       />
       <Route path="/unified-entry/transformation" element={<SiteOsBuilderPage />} />
+      {/* App Builder Workspace (Phase 2): eine Site des Mandanten, adressiert
+          über ihren Slug — dieselbe Kette, die `siteos_blueprints` führt.
+          Der Erstbau (/unified-entry/transformation, /app/siteos/builder)
+          leitet nach Erfolg hierher; es gibt keinen zweiten Builder. Die
+          Anmeldung prüft die Seite selbst, damit `next` erhalten bleibt. */}
+      <Route path="/builder/:slug" element={<AppBuilderWorkspacePage />} />
       <Route
         path="/unified-entry/trial-offer"
         element={

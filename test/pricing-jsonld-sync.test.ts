@@ -24,8 +24,9 @@ import { PRICING_TIERS } from '../src/config/pricing';
  * Punkt 3 hing vorher am Anzeigetext (`priceString === 'individuell'`) statt
  * am Datenfeld und griff deshalb nicht, als Enterprise auf „Auf Anfrage"
  * umgestellt wurde — der Festpreis von 1.249 € blieb im JSON-LD stehen und
- * wurde auf jeder Seite maschinenlesbar ausgeliefert. Punkt 4 ist neu: Agency
- * und Partner sind seit AP2 stillgelegt und dürfen nicht als Angebot gelten.
+ * wurde auf jeder Seite maschinenlesbar ausgeliefert. Punkt 4: stillgelegte
+ * Pläne (`availability: 'legacy'`, aktuell Partner) dürfen nicht als Angebot
+ * gelten. Agency ist wieder self_service und muss als Offer erscheinen.
  */
 
 const __dirname = dirname(fileURLToPath(import.meta.url));

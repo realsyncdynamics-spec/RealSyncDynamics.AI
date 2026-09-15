@@ -1,18 +1,10 @@
 import { test, expect } from '@playwright/test';
 import { HERO_HEADLINE_TEST_SUBSTRING } from '../../src/components/governance-frontend/hero-content';
 
-const BASE_URL = process.env.TEST_BASE_URL || process.env.BASE_URL || 'http://localhost:4173';
-
 /** Regex-sicher escapen — der Substring ist Text, keine Regex-Syntax. */
 const escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 const publicRoutes = [
-  // `heading`: stabiler Substring der jeweiligen Hero-Headline (bestätigt,
-  // dass die richtige Seite rendert — nicht nur HTTP 200 via SPA-Fallback).
-  // FE-001: Die Erwartung kommt aus hero-content.ts — derselben Quelle, aus
-  // der die H1 gerendert wird. Headline-Änderungen ziehen den Test damit
-  // automatisch mit (zwischen 13.08. und 16.08. brach FE-001 dreimal, weil
-  // Landing-Umbauten den Test vergassen).
   { id: 'FE-001', path: '/', label: 'Startseite', heading: new RegExp(escapeRegex(HERO_HEADLINE_TEST_SUBSTRING), 'i') },
   { id: 'FE-003', path: '/audit', label: 'Audit', heading: /Kostenloser DSGVO- und Tracking-Audit/i },
   { id: 'FE-004', path: '/ai-act/', label: 'AI Act', heading: /AI Act compliance without a consulting engagement/i },
@@ -27,18 +19,17 @@ for (const route of publicRoutes) {
     const errors: string[] = [];
     page.on('pageerror', (err) => errors.push(err.message));
 
-    const response = await page.goto(BASE_URL + route.path, {
-      waitUntil: 'networkidle',
-      timeout: 30000,
+    const response = await page.goto(route.path, {
+      waitUntil: 'domcontentloaded',
+      timeout: 20000,
     });
 
     expect(response?.status(), `HTTP-Status für ${route.path}`).toBeLessThan(400);
     expect(errors, `JS-Fehler auf ${route.path}`).toHaveLength(0);
 
-    // Korrekte Seite gerendert (Hero-Headline sichtbar).
     await expect(
       page.getByRole('heading', { name: route.heading }).first(),
       `Hero-Headline für ${route.path}`,
-    ).toBeVisible({ timeout: 10000 });
+    ).toBeVisible();
   });
 }

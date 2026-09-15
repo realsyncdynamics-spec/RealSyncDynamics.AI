@@ -82,6 +82,6 @@ export async function countPendingApprovals(tenant_id: string): Promise<number> 
     .select('id', { count: 'exact', head: true })
     .eq('tenant_id', tenant_id)
     .eq('status', 'pending');
-  if (error) return 0;
+  if (error) throw new Error(error.message);
   return count ?? 0;
 }

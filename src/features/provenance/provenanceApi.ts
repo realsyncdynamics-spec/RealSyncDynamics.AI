@@ -8,6 +8,7 @@
 import { getSupabase } from '../../lib/supabase';
 import type { TrustOutput } from '../../types/models';
 import { importEd25519PublicKeySpki, verifyEd25519 } from '../../lib/provenance/signature';
+import type { ProvenanceBundle, BundleEvent } from '../../lib/provenance/verifyBundle';
 
 export type SignatureAlg = 'ed25519' | 'hmac-sha256';
 
@@ -155,4 +156,42 @@ export async function independentlyVerifySignatures(
   }
 
   return { publicKeyAvailable: true, checkedCount: signed.length, verifiedCount, failedSeqs };
+}
+
+/**
+ * Baut ein portables, OFFLINE prüfbares Herkunfts-Bündel (Custody-Kette + der
+ * mitgelieferte öffentliche Schlüssel). Liest RLS-sicher direkt. Der Empfänger
+ * prüft es ohne App-Zugang mit verifyBundle() — Schlüssel steckt im Bündel.
+ */
+export async function buildProvenanceBundle(tenantId: string, assetRef: string): Promise<ProvenanceResult<ProvenanceBundle>> {
+  const sb = getSupabase();
+  const { data: manifest, error: mErr } = await sb
+    .from('provenance_manifests').select('id')
+    .eq('tenant_id', tenantId).eq('asset_ref', assetRef).maybeSingle();
+  if (mErr) return { kind: 'error', message: mErr.message };
+  if (!manifest) return { kind: 'not_found', message: 'Kein Herkunftsnachweis für dieses Asset.' };
+
+  const { data: events, error: eErr } = await sb
+    .from('provenance_custody_events')
+    .select('seq, action, actor, content_sha256, event_ts, prev_hash, event_hash, signature, signature_alg')
+    .eq('manifest_id', (manifest as { id: string }).id)
+    .order('seq', { ascending: true });
+  if (eErr) return { kind: 'error', message: eErr.message };
+
+  const pk = await getProvenancePublicKey();
+  const publicKey = pk.kind === 'ok' && pk.data.alg === 'ed25519' && pk.data.public_key_spki_b64
+    ? { alg: 'ed25519' as const, key_id: pk.data.key_id ?? 'rsd-ed25519-1', spki_b64: pk.data.public_key_spki_b64 }
+    : null;
+
+  return {
+    kind: 'ok',
+    data: {
+      format: 'rsd-provenance-bundle',
+      version: 1,
+      asset_ref: assetRef,
+      exported_at: new Date().toISOString(),
+      public_key: publicKey,
+      events: (events ?? []) as BundleEvent[],
+    },
+  };
 }

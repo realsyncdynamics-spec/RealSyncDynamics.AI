@@ -15,7 +15,7 @@ Damit das Projekt auch mit hunderten Komponenten und Ansichten skalierbar und ma
   - \`/features/workspace/\` (Chat, Prompts)
   - \`/features/billing/\`, \`/features/settings/\`
 - \`/src/components/\`: Allgemeine / Globale UI Komponenten (Landingpage-Sections, Buttons).
-- \`/src/pages/\`: Reines Routing und Struktur, welche die Features auf den Bildschirmen zu einer Ansicht orchestriert (z.B. \`CreatorDashboard.tsx\`).
+- \`/src/pages/\`: Reines Routing und Struktur, welche die Features auf den Bildschirmen zu einer Ansicht orchestriert (z.B. \`MainLanding.tsx\`).
 
 ## 🚀 Status
 - **V1.0 (MVP) - Feature Complete**: Copilot (Web & App), Multi-Model Gateway, Entitlements-Basis, Extension ↔ Gateway Integration, UI/UX Mockups für alle SaaS-Module.

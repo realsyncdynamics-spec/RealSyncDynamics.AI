@@ -47,7 +47,8 @@ export async function fetchTenantIncidents(tenantId: string): Promise<DbIncident
 
 export async function countOpenIncidents(tenantId: string): Promise<number> {
   const sb = getSupabase();
-  const { count } = await sb.from('incidents').select('id', { count: 'exact', head: true })
+  const { count, error } = await sb.from('incidents').select('id', { count: 'exact', head: true })
     .eq('tenant_id', tenantId).not('status', 'in', '("resolved","reported_to_authority")');
+  if (error) throw new Error(error.message);
   return count ?? 0;
 }

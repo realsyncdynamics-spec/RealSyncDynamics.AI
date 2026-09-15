@@ -114,6 +114,70 @@ export async function fetchTenantEvents(tenantId: string, limit = 50): Promise<D
   return (data ?? []) as DbGovernanceEvent[];
 }
 
+export async function countTenantEvents(tenantId: string): Promise<number> {
+  const sb = getSupabase();
+  const { count, error } = await sb
+    .from('governance_events')
+    .select('id', { count: 'exact', head: true })
+    .eq('tenant_id', tenantId);
+  if (error) throw new Error(error.message);
+  return count ?? 0;
+}
+
+export async function countTenantEventsSince(tenantId: string, sinceIso: string): Promise<number> {
+  const sb = getSupabase();
+  const { count, error } = await sb
+    .from('governance_events')
+    .select('id', { count: 'exact', head: true })
+    .eq('tenant_id', tenantId)
+    .gte('created_at', sinceIso);
+  if (error) throw new Error(error.message);
+  return count ?? 0;
+}
+
+export async function countTenantEventsC2pa(tenantId: string): Promise<number> {
+  const sb = getSupabase();
+  const { count, error } = await sb
+    .from('governance_events')
+    .select('id', { count: 'exact', head: true })
+    .eq('tenant_id', tenantId)
+    .contains('payload', { c2pa: true });
+  if (error) throw new Error(error.message);
+  return count ?? 0;
+}
+
+export async function countTenantEvidence(tenantId: string): Promise<number> {
+  const sb = getSupabase();
+  const { count, error } = await sb
+    .from('governance_evidence')
+    .select('id', { count: 'exact', head: true })
+    .eq('tenant_id', tenantId);
+  if (error) throw new Error(error.message);
+  return count ?? 0;
+}
+
+export async function countTenantEvidenceHashed(tenantId: string): Promise<number> {
+  const sb = getSupabase();
+  const { count, error } = await sb
+    .from('governance_evidence')
+    .select('id', { count: 'exact', head: true })
+    .eq('tenant_id', tenantId)
+    .not('content_hash', 'is', null);
+  if (error) throw new Error(error.message);
+  return count ?? 0;
+}
+
+export async function countTenantEvidenceSince(tenantId: string, sinceIso: string): Promise<number> {
+  const sb = getSupabase();
+  const { count, error } = await sb
+    .from('governance_evidence')
+    .select('id', { count: 'exact', head: true })
+    .eq('tenant_id', tenantId)
+    .gte('created_at', sinceIso);
+  if (error) throw new Error(error.message);
+  return count ?? 0;
+}
+
 export async function fetchTenantAssets(tenantId: string): Promise<DbGovernanceAsset[]> {
   const sb = getSupabase();
   const { data, error } = await sb

@@ -37,6 +37,7 @@ import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { handleOptions, jsonResponse, jsonError, methodNotAllowed } from '../../_shared/gateway.ts';
 import { audit } from '../../_shared/auditLog.ts';
 import { appendCustodyEvent } from '../../_shared/provenanceCore.ts';
+import { gateSitePublish } from '../site-entitlements.ts';
 import {
   analyzeBlueprint,
   buildDeploymentArtifact,
@@ -93,6 +94,11 @@ export async function handle(req: Request): Promise<Response> {
   if (parsed instanceof Response) return parsed;
   const { ctx, body } = parsed;
 
+  {
+    const denied = await gateSitePublish(ctx.admin, ctx.tenantId);
+    if (denied) return denied;
+  }
+
   const blueprintId = String(body.blueprint_id ?? '').trim();
   if (!blueprintId) return jsonError(400, 'BAD_REQUEST', 'blueprint_id required');
 
@@ -114,6 +120,11 @@ export async function handleApprove(req: Request): Promise<Response> {
   const parsed = await authorize(req);
   if (parsed instanceof Response) return parsed;
   const { ctx, body } = parsed;
+
+  {
+    const denied = await gateSitePublish(ctx.admin, ctx.tenantId);
+    if (denied) return denied;
+  }
 
   // Eine Freigabe ist eine Zurechnung, keine Einstellung (G4). Wer sie
   // erteilt, muss dazu berechtigt sein und einen Grund nennen.

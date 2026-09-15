@@ -4,7 +4,7 @@
 // pre-aggregated KPI metrics for fast dashboard loads.
 //
 // Invoked by: Supabase Cron (via pg_cron)
-// Authorization: service_role (automatic)
+// Authorization: Bearer == SERVICE_ROLE_KEY (verify_jwt = false)
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { corsHeaders, handleOptions, jsonResponse } from '../_shared/gateway.ts';
@@ -169,6 +169,11 @@ Deno.serve(async (req) => {
 
   const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
   const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+
+  const authHeader = req.headers.get('Authorization') ?? '';
+  if (!SUPABASE_SERVICE_ROLE_KEY || authHeader !== `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`) {
+    return jsonResponse({ error: 'cron only' }, 401);
+  }
 
   if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
     return jsonResponse({ error: 'Missing environment variables' }, 500);

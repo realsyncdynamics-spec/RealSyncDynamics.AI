@@ -55,9 +55,9 @@ Returns:
 
    ```bash
    curl -X POST 'https://ebljyceifhnlzhjfyxup.supabase.co/functions/v1/welcome-email' \
-     -H "Authorization: Bearer <SUPABASE_ANON_KEY>" \
+     -H "Authorization: Bearer <SUPABASE_SERVICE_ROLE_KEY>" \
      -H "Content-Type: application/json" \
-     -d '{"to":"YOUR_EMAIL@realsyncdynamicsai.de","name":"Test"}'
+     -d '{"user_id":"<auth.users.id>"}'
    ```
 
    Check inbox. If 200 but no mail: check Resend dashboard → Logs.

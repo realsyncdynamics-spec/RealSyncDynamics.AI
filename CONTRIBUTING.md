@@ -58,15 +58,22 @@ supabase db reset
 
 ### Conflict resolution
 
+Full protocol: `docs/MERGE_CONFLICT_CONCEPT.md`. Daily command: `npm run sync:main`.
+
 Two branches that both add a migration with timestamps `20260501120000` and
 `20260501130000` rebase cleanly. Two branches with the **same** timestamp
 collide. The newer PR renames its file to a later timestamp during rebase:
 
 ```bash
-mv supabase/migrations/<colliding>.sql supabase/migrations/$(date +%Y%m%d%H%M%S)_<name>.sql
+npm run migrate:rename -- supabase/migrations/<colliding>.sql
 ```
 
-This preserves history and ordering on `main`.
+This preserves history and ordering on `main`. CI (`merge-hygiene`) fails the
+PR if the timestamp already exists on `main` or if a merged migration file
+is edited (unless the title contains `[hotfix]`).
+
+PRs that touch the same hot-file as another open PR get the `hot-file` label.
+Merge the older PR first, then `npm run sync:main -- --push`.
 
 ### Deploying
 
@@ -115,7 +122,7 @@ Deployed manually: `supabase functions deploy <name>`.
 `npm run build` — Vite production build.
 Migration job in CI validates `supabase db reset` works against a fresh DB.
 
-PRs need both jobs (`build`, `db`) to be green before merge.
+PRs need `build`, `db`, and Merge Hygiene green before merge.
 
 ## Reviewing
 

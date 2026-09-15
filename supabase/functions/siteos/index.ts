@@ -2,6 +2,7 @@
 //
 //   POST /functions/v1/siteos/discover      Ausgangsseite lesen
 //   POST /functions/v1/siteos/builder       Prompt → geprüfter Blueprint
+//   POST /functions/v1/siteos/edit          Redaktion → neue Version (Block-Editor)
 //   POST /functions/v1/siteos/runtime-scan  die acht Laufzeit-Analysen
 //   POST /functions/v1/siteos/agents        die sieben asynchronen Agenten
 //   POST /functions/v1/siteos/publish-gate     Freigabebewertung (§7)
@@ -40,6 +41,7 @@ import { resolveEndpoint } from './resolve.ts';
 import { handle as agents } from './handlers/agents.ts';
 import { handle as builder } from './handlers/builder.ts';
 import { handle as discover } from './handlers/discover.ts';
+import { handle as edit } from './handlers/edit.ts';
 import { handle as runtimeScan } from './handlers/runtime-scan.ts';
 import { handle as publishGate, handleApprove as publishApprove } from './handlers/publish-gate.ts';
 import { handleBuildAnon, handleClaim, handleGetSession, handleRefineAnon } from './handlers/anonymous.ts';
@@ -48,6 +50,9 @@ const routes: Record<string, (req: Request) => Response | Promise<Response>> = {
   'agents': agents,
   'builder': builder,
   'discover': discover,
+  // Block-Editor: Reihenfolge und redaktionelle Felder, Merkmale leitet der
+  // Server ab (siteos-core/blueprint/edit.ts). Persistenz wie beim Builder.
+  'edit': edit,
   'runtime-scan': runtimeScan,
   // Publish Gate (Zielarchitektur §7). Zwei Pfade, ein Slot — dieselbe
   // Begründung wie oben, und beide teilen Auswertung und Persistenz.

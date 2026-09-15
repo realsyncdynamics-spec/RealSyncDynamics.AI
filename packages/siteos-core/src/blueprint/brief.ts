@@ -14,7 +14,7 @@
 // FAQ). Es darf ihn nicht ersetzen: `mergeBrief` lässt nur Felder zu, die
 // keine Compliance-Wirkung haben.
 
-import type { IndustryKey, Locale } from '../types.ts';
+import type { IndustryKey, Locale, SiteBlueprint } from '../types.ts';
 import { INDUSTRY_PRESETS } from './industries.ts';
 
 export interface SiteBrief {
@@ -208,4 +208,53 @@ const SERVICE_DEFAULTS: Readonly<Partial<Record<IndustryKey, string[]>>> = Objec
 
 function defaultServices(industry: IndustryKey): string[] {
   return SERVICE_DEFAULTS[industry] ?? ['Beratung', 'Umsetzung', 'Betreuung'];
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Rückweg: Blueprint → Brief
+//
+// Liegt hier und nicht in `refine.ts`, weil der Brief hier zu Hause ist —
+// und weil `pages.ts` die Funktion braucht. Stünde sie weiterhin in
+// `refine.ts`, entstünde mit dem kanonischen Seitenpfad ein Importzyklus
+// `refine → pages → refine`.
+// ─────────────────────────────────────────────────────────────────────
+
+/**
+ * Rekonstruiert den Brief aus dem Blueprint. Nötig, weil `buildBlock` und
+ * `deriveCompliance` gegen den Brief arbeiten — und weil der ursprüngliche
+ * Brief nach dem Erstbau nicht mitgeführt wird. Der Blueprint trägt alle
+ * Felder, die dafür gebraucht werden.
+ */
+export function briefFromBlueprint(bp: SiteBlueprint): SiteBrief {
+  const blocks = bp.pages.flatMap((page) => page.blocks);
+  const services = blocks.find((block) => block.kind === 'services');
+  const items = Array.isArray(services?.content.items) ? services.content.items : [];
+
+  // Die Vorzüge müssen genauso zurückgelesen werden wie die Leistungen.
+  // Ohne das käme der rekonstruierte Brief mit `highlights: []` zurück, und
+  // der nächste `buildBlock`-Aufruf würde echte, redaktionell eingepflegte
+  // Inhalte durch einen leeren Block ersetzen — ein stiller Datenverlust
+  // beim Verfeinern, nicht beim Bauen.
+  const features = blocks.find((block) => block.kind === 'features');
+
+  return {
+    name: bp.name,
+    industry: bp.industry,
+    locality: bp.seo.locality,
+    summary: bp.seo.defaultDescription,
+    services: items
+      .map((item) => (item as { label?: unknown }).label)
+      .filter((label): label is string => typeof label === 'string'),
+    highlights: labelsOf(features?.content.items),
+    locale: bp.locales.default,
+    industryConfident: bp.industry !== 'sonstiges',
+  };
+}
+
+/** Zieht die `label`-Felder aus einer Blockliste; alles andere wird verworfen. */
+function labelsOf(items: unknown): string[] {
+  if (!Array.isArray(items)) return [];
+  return items
+    .map((item) => (item as { label?: unknown }).label)
+    .filter((label): label is string => typeof label === 'string' && label.trim().length > 0);
 }

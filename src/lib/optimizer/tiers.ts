@@ -84,7 +84,11 @@ export function realPriceEur(tier: OptimizerTier): number {
 /** Preis-Anzeige aus der realen Config: "Kostenlos" / "Individuell" / "€79 / Monat". */
 export function formatTierPrice(tier: OptimizerTier): string {
   if (tier.planKey === 'free') return 'Kostenlos';
-  const price = realPriceEur(tier);
-  // priceEur=0 bei Enterprise bedeutet „individuell", nicht kostenlos.
+  const real = tierById(tier.planKey);
+  // Enterprise/Partner: kein Self-Service-Festpreis — nie €1249 als Angebot zeigen.
+  if (real?.priceOnRequest || real?.plan.purchaseMode === 'inquiry') {
+    return 'Individuell';
+  }
+  const price = real?.priceEur ?? 0;
   return price === 0 ? 'Individuell' : `€${price} / Monat`;
 }

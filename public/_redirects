@@ -27,4 +27,32 @@ https://www.realsyncdynamicsai.de/* https://realsyncdynamicsai.de/:splat 301
 # kanonische kostenlose DSGVO-Scan, also der inhaltliche Nachfolger.
 /dsgvo-website  /audit  301
 
+# Workspace-Aliase: Assistent und Dashboard sind dieselbe Fläche
+# (/app/dashboard). Exakte Pfade, damit /dashboard/business und
+# /dashboard/audit unberührt bleiben. Client-Navigation greift über
+# die SPA-Routen in App.tsx; diese 301s gelten für den vollen Aufruf.
+/assistant          /app/dashboard  301
+/dashboard          /app/dashboard  301
+/command-center     /app/dashboard  301
+/ai-command-center  /app/dashboard  301
+
+# Public IA aliases (header/footer chrome) — edge 301 for full page loads.
+# SPA Navigate in App.tsx covers client navigation.
+/login              /welcome  301
+/signin             /welcome  301
+/signup             /welcome  301
+/register           /welcome  301
+/signout            /logout  301
+/auth               /welcome  301
+/auth/login         /welcome  301
+/auth/register      /welcome  301
+/account            /app/dashboard  301
+/activate           /app/activation  301
+/os/login           /welcome  301
+/os/signup          /welcome  301
+/demo-login         /welcome  301
+/contact            /kontakt  301
+/domain-check       /audit  301
+/domain-checker     /audit  301
+
 /*  /index.html  200

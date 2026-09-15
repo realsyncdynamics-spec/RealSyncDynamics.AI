@@ -3,6 +3,7 @@ import type {
   AiGatewayResponse,
   ModelProfile,
 } from './types.ts';
+import { resolveModelProfile, type GovernanceMeta } from './governanceRouterCatalog.ts';
 
 // Deno mirror of src/core/ai-gateway/openaiCompat.ts. Keep in sync.
 
@@ -14,17 +15,22 @@ export const KNOWN_PROFILES: readonly ModelProfile[] = [
   'cloud-fallback',
 ];
 
-export function routeOf(reqUrl: string): string {
+export function routeOfSlug(reqUrl: string, slug: string): string {
   const u = new URL(reqUrl);
-  const idx = u.pathname.indexOf('/ai-gateway');
+  const marker = `/${slug}`;
+  const idx = u.pathname.indexOf(marker);
   if (idx < 0) return u.pathname;
-  return u.pathname.slice(idx + '/ai-gateway'.length) || '/';
+  return u.pathname.slice(idx + marker.length) || '/';
+}
+
+export function routeOf(reqUrl: string): string {
+  return routeOfSlug(reqUrl, 'ai-gateway');
 }
 
 // ── /v1/models response ───────────────────────────────────────────
 
 export interface OpenAIModelEntry {
-  id: ModelProfile;
+  id: string;
   object: 'model';
   owned_by: string;
   created: number;
@@ -62,15 +68,16 @@ export interface OpenAIChatRequest {
   temperature?: number;
   response_format?: { type?: 'text' | 'json_object' };
   user?: string;
+  stream?: boolean;
 }
 
 export type ParseChatResult =
-  | { ok: true; request: AiGatewayRequest; wantsJson: boolean }
+  | { ok: true; request: AiGatewayRequest; wantsJson: boolean; requestedModel: string }
   | { ok: false; status: number; code: string; message: string };
 
 export function parseChatRequest(body: OpenAIChatRequest): ParseChatResult {
-  const profile = body.model as ModelProfile | undefined;
-  if (!profile || !(KNOWN_PROFILES as readonly string[]).includes(profile)) {
+  const profile = resolveModelProfile(body.model);
+  if (!profile) {
     return {
       ok: false,
       status: 400,
@@ -108,7 +115,7 @@ export function parseChatRequest(body: OpenAIChatRequest): ParseChatResult {
     user_id:       body.user ?? null,
   };
 
-  return { ok: true, request, wantsJson };
+  return { ok: true, request, wantsJson, requestedModel: body.model as string };
 }
 
 // ── /v1/chat/completions response formatting ──────────────────────
@@ -135,22 +142,24 @@ export interface OpenAIChatResponse {
     trace_id: string;
     latency_ms: number;
   };
+  _governance?: GovernanceMeta;
 }
 
 export function formatChatResponse(
   response: AiGatewayResponse<unknown>,
   profile: ModelProfile,
   now: number = Date.now(),
+  extras?: { requestedModel?: string; governance?: GovernanceMeta },
 ): OpenAIChatResponse {
   const content = typeof response.output === 'string'
     ? response.output
     : JSON.stringify(response.output);
 
-  return {
+  const out: OpenAIChatResponse = {
     id:      `chatcmpl-${response.trace_id}`,
     object:  'chat.completion',
     created: Math.floor(now / 1000),
-    model:   profile,
+    model:   extras?.requestedModel ?? profile,
     choices: [{
       index:         0,
       message:       { role: 'assistant', content },
@@ -169,6 +178,27 @@ export function formatChatResponse(
       latency_ms: response.latency_ms,
     },
   };
+  if (extras?.governance) out._governance = extras.governance;
+  return out;
+}
+
+export function formatChatSse(completion: OpenAIChatResponse): string {
+  const base = {
+    id: completion.id,
+    object: 'chat.completion.chunk' as const,
+    created: completion.created,
+    model: completion.model,
+  };
+  const content = completion.choices[0]?.message.content ?? '';
+  const first = {
+    ...base,
+    choices: [{ index: 0, delta: { role: 'assistant' as const, content }, finish_reason: null }],
+  };
+  const last = {
+    ...base,
+    choices: [{ index: 0, delta: {}, finish_reason: 'stop' as const }],
+  };
+  return `data: ${JSON.stringify(first)}\n\ndata: ${JSON.stringify(last)}\n\ndata: [DONE]\n\n`;
 }
 
 // ── Error mapping ─────────────────────────────────────────────────

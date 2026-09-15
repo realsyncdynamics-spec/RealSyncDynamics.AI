@@ -302,7 +302,7 @@ export function EmbeddedBrowserCanvas({
         </span>
         <button
           onClick={() => handleScan(url)}
-          className="flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-medium text-obsidian-950 bg-cyan-400 hover:bg-cyan-300 transition-colors"
+          className="flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-medium text-[#1a1917] bg-[#e8ddc8] hover:bg-[#f0e6d4] transition-colors"
         >
           <ScanLine className="h-3 w-3" />
           Scan starten
@@ -325,7 +325,7 @@ export function EmbeddedBrowserCanvas({
       <div className="flex-1 relative bg-white">
         {loading && !loadError && (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-obsidian-950 gap-3 z-10">
-            <Loader2 className="h-5 w-5 text-cyan-400 animate-spin" />
+            <Loader2 className="h-5 w-5 text-[#e4cfa2] animate-spin" />
             <span className="font-mono text-[11px] text-titanium-500">
               Lädt {displayHost}…
             </span>
@@ -347,7 +347,7 @@ export function EmbeddedBrowserCanvas({
             <div className="flex gap-2">
               <button
                 onClick={() => handleScan(url)}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-obsidian-950 bg-cyan-400 hover:bg-cyan-300 transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-[#1a1917] bg-[#e8ddc8] hover:bg-[#f0e6d4] transition-colors"
               >
                 <ScanLine className="h-3.5 w-3.5" />
                 Trotzdem scannen

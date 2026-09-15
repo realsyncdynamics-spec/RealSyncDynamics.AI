@@ -1,9 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import {
   routeOf,
+  routeOfSlug,
   modelsResponse,
   parseChatRequest,
   formatChatResponse,
+  formatChatSse,
   mapInferenceError,
   KNOWN_PROFILES,
 } from '../../../src/core/ai-gateway/openaiCompat';
@@ -24,6 +26,15 @@ describe('routeOf', () => {
   it('returns the raw path when the route does not pass through ai-gateway', () => {
     expect(routeOf('https://x.supabase.co/functions/v1/other-func/v1/models'))
       .toBe('/functions/v1/other-func/v1/models');
+  });
+});
+
+describe('routeOfSlug', () => {
+  it('schneidet den Function-Slug aus, analog zu routeOf', () => {
+    expect(routeOfSlug('https://x.supabase.co/functions/v1/governance-router/v1/models', 'governance-router'))
+      .toBe('/v1/models');
+    expect(routeOfSlug('https://x.supabase.co/functions/v1/governance-router/v1/chat/completions', 'governance-router'))
+      .toBe('/v1/chat/completions');
   });
 });
 
@@ -155,6 +166,18 @@ describe('parseChatRequest', () => {
     expect(r.ok).toBe(true);
     if (r.ok) expect(r.request.feature).toBe('openai_compat');
   });
+
+  it('löst Cursor-Aliase auf bestehende Profile auf', () => {
+    const mini = parseChatRequest({ model: 'gpt-4o-mini', messages: [{ role: 'user', content: 'hi' }] });
+    expect(mini.ok).toBe(true);
+    if (mini.ok) {
+      expect(mini.request.model_profile).toBe('fast-local');
+      expect(mini.requestedModel).toBe('gpt-4o-mini');
+    }
+    const cloud = parseChatRequest({ model: 'gpt-4o', messages: [{ role: 'user', content: 'hi' }] });
+    expect(cloud.ok).toBe(true);
+    if (cloud.ok) expect(cloud.request.model_profile).toBe('cloud-fallback');
+  });
 });
 
 describe('formatChatResponse', () => {
@@ -204,6 +227,43 @@ describe('formatChatResponse', () => {
       trace_id:   'trace-abc-123',
       latency_ms: 412,
     });
+  });
+
+  it('hängt _governance an und spiegelt den angefragten Modellnamen', () => {
+    const out = formatChatResponse(fakeResponse(), 'fast-local', 1_700_000_000_000, {
+      requestedModel: 'gpt-4o-mini',
+      governance: {
+        disclosure: 'x',
+        residency: 'cloud',
+        expansion_stage: 'studio',
+        pdp: { mode: 'shadow', decision: null },
+        processors: ['RealSyncDynamicsAI Governance Router (EU)'],
+      },
+    });
+    expect(out.model).toBe('gpt-4o-mini');
+    expect(out._governance?.expansion_stage).toBe('studio');
+    expect(out._governance?.disclosure).toBe('x');
+  });
+});
+
+describe('formatChatSse', () => {
+  it('liefert eine Ein-Chunk-SSE-Hülle mit [DONE]', () => {
+    const completion = formatChatResponse(
+      {
+        provider: 'lm_studio',
+        model: 'qwen',
+        profile: 'fast-local',
+        output: 'Hallo',
+        trace_id: 't1',
+        latency_ms: 1,
+      },
+      'fast-local',
+    );
+    const sse = formatChatSse(completion);
+    expect(sse).toContain('data: ');
+    expect(sse).toContain('"object":"chat.completion.chunk"');
+    expect(sse).toContain('Hallo');
+    expect(sse.trim().endsWith('data: [DONE]')).toBe(true);
   });
 });
 

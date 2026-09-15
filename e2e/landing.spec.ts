@@ -1,10 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { HERO_HEADLINE_TEST_SUBSTRING, HERO_HEADLINE_LINES } from '../src/components/governance-frontend/hero-content';
-import { LIVE_CAPABILITIES, BUILDING_CAPABILITIES } from '../src/config/platform-capabilities';
-import {
-  RUNTIME_PREVIEW_LABEL,
-  RUNTIME_PREVIEW_NOTE,
-} from '../src/config/landing-runtime-preview';
+import { PLATFORM_LIVE_ITEMS } from '../src/product/implementation-status';
 
 /**
  * E2E für die öffentlichen Einstiegsseiten.
@@ -128,40 +124,43 @@ test.describe('Governance-AI-Landing (/)', () => {
       await expect(h1).toContainText(line);
     }
 
-    // Beide CTAs sind Links (<Link> bzw. <a href="#platform">), keine Buttons.
-    // Die frueher hier erwartete Button-Rolle traf auf keinen von beiden zu.
-    await expect(page.getByRole('link', { name: /Kostenlos starten/i }).first()).toBeVisible();
-    await expect(page.getByRole('link', { name: /Plattform ansehen/i }).first()).toBeVisible();
+    // P0: Free Audit → `/audit`, Live Dashboard → `/app` (Enterprise stays in header).
+    await expect(
+      page.getByRole('link', { name: /Free Audit starten/i }).first(),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('link', { name: /Live Dashboard ansehen/i }).first(),
+    ).toBeVisible();
+    await expect(
+      page.getByText(/DISCOVER\s*→\s*CLASSIFY\s*→\s*ENFORCE\s*→\s*PROVE/i).first(),
+    ).toBeVisible();
+    await expect(
+      page.getByText(/Runtime governance for regulated AI systems/i).first(),
+    ).toBeVisible();
+    await expect(page.getByText(/EU-CENTRAL/i).first()).toBeVisible();
+    await expect(page.getByText(/EVIDENCE-CHAIN/i).first()).toBeVisible();
   });
 
-  test('Kennzahlen im Hero sind als Beispielwerte gekennzeichnet', async ({ page }) => {
-    // Truth Layer: ein anonymer Besucher hat keinen Mandanten und damit keine
-    // belegbaren Kennzahlen. Die Karten dürfen sich nicht als Messwerte oder
-    // als "Live" ausgeben.
-    // Wortlaut aus landing-runtime-preview.ts, nicht abgeschrieben — sonst
-    // driftet der Test beim naechsten Umbau wieder weg.
-    await expect(page.getByText(RUNTIME_PREVIEW_LABEL)).toBeVisible();
-    await expect(page.getByText(RUNTIME_PREVIEW_NOTE)).toBeVisible();
-    await expect(page.getByText(/^Live\b/)).toHaveCount(0);
+  test('Hero-Visual ist das Titan-Relief, kein Sphere-HUD', async ({ page }) => {
+    // Gebürstetes Titan + Europa-Chromrelief mit Goldnetz — kein interaktiver
+    // Governance-Sphere-HUD und kein DEMO-Chrome auf `/`.
+    await expect(page.locator('[data-hero-visual="europe-relief-titan"]')).toBeAttached();
+    await expect(page.locator('[data-hero-framing="europe-right"]')).toBeAttached();
+    await expect(page.locator('[data-hero-scenery="titan-chrome-gold-network"]')).toBeAttached();
+    await expect(page.locator('[data-hero-visual="europe-sunrise"]')).toHaveCount(0);
+    await expect(page.locator('[data-governance-sphere]')).toHaveCount(0);
+    // Die Workspace-Vorschau muss als Beispiel gekennzeichnet bleiben.
+    await expect(page.getByText(/DEMO · BEISPIELDATEN/i).first()).toBeVisible();
+    await expect(page.getByText(/BEISPIELANSICHT/i).first()).toBeVisible();
   });
 
   test('Plattform-Sektion rendert die Faehigkeitsquelle, nicht eine eigene Liste', async ({ page }) => {
     const platform = page.locator('#platform');
-    await expect(platform.getByRole('heading', { name: /^Eine Runtime\./i })).toBeVisible();
+    await expect(platform.getByRole('heading', { name: /Module, die live erreichbar sind/i })).toBeVisible();
 
-    // Die frueher hier erwarteten Labels ('Policy Engine', 'Runtime
-    // Monitoring') waren aus einer Marketingliste abgeschrieben, die es nicht
-    // mehr gibt. Gepruef wird jetzt gegen platform-capabilities.ts: Was dort
-    // steht, muss auf der Seite stehen — und umgekehrt.
-    for (const cap of LIVE_CAPABILITIES) {
+    // Registry SSoT: nur LIVE items mit showOnPlatform.
+    for (const cap of PLATFORM_LIVE_ITEMS) {
       await expect(platform.getByText(cap.name, { exact: true })).toBeVisible();
-    }
-
-    for (const cap of BUILDING_CAPABILITIES) {
-      await expect(platform.getByText(cap.name, { exact: true })).toBeVisible();
-    }
-    if (BUILDING_CAPABILITIES.length > 0) {
-      await expect(platform.getByText('IN ENTWICKLUNG')).toBeVisible();
     }
   });
 

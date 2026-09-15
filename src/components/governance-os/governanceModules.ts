@@ -33,19 +33,21 @@ export const GOVERNANCE_MODULES: GovernanceModule[] = [
     id: 'overview',
     label: 'Übersicht',
     icon: 'Home',
-    route: '/app',
+    // Canonical Command Center — /app alone only redirects; tab must land on the live surface.
+    route: '/app/dashboard',
     status: 'live',
     gate: { kind: 'all' },
-    description: 'Zentrale Governance-Übersicht',
+    description: 'Zentrale Governance-Übersicht (ComplianceStatusDashboard)',
   },
   {
     id: 'home',
     label: 'Workspace',
     icon: 'LayoutDashboard',
+    // Alias redirect → /app/dashboard (no second dashboard).
     route: '/app/home',
     status: 'live',
     gate: { kind: 'all' },
-    description: 'Echtzeit-Workspace mit Live-Daten (Auth erforderlich)',
+    description: 'Alias auf das Command Center (Auth erforderlich)',
   },
   {
     id: 'modules',
@@ -57,6 +59,16 @@ export const GOVERNANCE_MODULES: GovernanceModule[] = [
     // Capabilities — mit Aktivierungspfad über das zentrale Billing.
     gate: { kind: 'all' },
     description: 'Capability-Übersicht: aktivieren, öffnen, upgraden',
+  },
+  {
+    // Spec: docs/product/governance-activation.md. Org+Scope persist; Blueprint/Extraction Preview.
+    id: 'activation',
+    label: 'Activation',
+    icon: 'Sparkles',
+    route: '/app/activation',
+    status: 'beta',
+    gate: { kind: 'all' },
+    description: 'Turn existing data into operational governance',
   },
   {
     id: 'websites',
@@ -222,6 +234,15 @@ export const GOVERNANCE_MODULES: GovernanceModule[] = [
     status: 'live',
     gate: { kind: 'module', module: 'automation_engine' },
     description: 'Automationsläufe und Skills',
+  },
+  {
+    id: 'governance-router',
+    label: 'Router',
+    icon: 'Share2',
+    route: '/app/governance/router',
+    status: 'live',
+    gate: { kind: 'entitlement', key: 'ai.tool.automations' },
+    description: 'OpenAI-kompatibler Governance-Eingang für Cursor und SDKs',
   },
   {
     id: 'kodee',

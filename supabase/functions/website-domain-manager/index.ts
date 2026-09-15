@@ -2,6 +2,7 @@
 // Connect, validate, disconnect domains with Cloudflare integration
 //
 // POST /functions/v1/website-domain-manager
+// Authorization: Bearer <user JWT>
 // Body: { project_id, tenant_id, action, domain? }
 //
 // Actions:
@@ -9,9 +10,14 @@
 //   2. validate-domain — Check DNS propagation
 //   3. disconnect-domain — Remove domain mapping
 //   4. check-ssl — Verify SSL certificate
+//
+// Custom domains stay Preview until Cloudflare Vault/ops is live:
+// validate-domain must NOT mark custom domains as cloudflare_status=active
+// based on a public DNS lookup alone.
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
+import { handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
+import { requireAuthAndTenant } from '../_shared/auth.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SRK = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -40,7 +46,10 @@ Deno.serve(async (req) => {
       return jsonError(400, 'INVALID_INPUT', 'project_id, tenant_id, action required');
     }
 
-    // Verify project exists
+    const auth = await requireAuthAndTenant(req, body.tenant_id);
+    if (auth instanceof Response) return auth;
+
+    // Verify project exists for this tenant
     const { data: project } = await admin
       .from('website_projects')
       .select('*')
@@ -74,7 +83,7 @@ Deno.serve(async (req) => {
       return jsonError(500, result.code || 'DOMAIN_OPERATION_FAILED', result.error);
     }
 
-    return jsonResponse(200, { success: true, data: result.data });
+    return jsonResponse({ ok: true, success: true, data: result.data });
   } catch (err) {
     console.error('Error in website-domain-manager:', err);
     return jsonError(500, 'INTERNAL_ERROR', err instanceof Error ? err.message : 'Unknown error');
@@ -172,24 +181,31 @@ async function validateDomain(
   projectId: string,
   domain: string
 ): Promise<{ success: boolean; data?: unknown; error?: string; code?: string }> {
-  // Check DNS propagation
+  const isManagedSubdomain = domain.endsWith('realsyncdynamicsai.de');
   const dnsValid = await checkDNSPropagation(domain);
 
-  const status = dnsValid ? 'active' : 'validating';
+  // Preview policy: only managed subdomains may become `active` from a DNS check.
+  // Custom domains stay `validating` / `pending` until Cloudflare Vault/ops wires live DNS.
+  let status: string;
+  if (isManagedSubdomain && dnsValid) {
+    status = 'active';
+  } else if (dnsValid) {
+    status = 'validating';
+  } else {
+    status = 'validating';
+  }
 
-  // Update domain status
   await admin
     .from('website_domains')
     .update({
       cloudflare_status: status,
-      dns_validated_at: dnsValid ? new Date().toISOString() : null,
+      dns_validated_at: dnsValid && isManagedSubdomain ? new Date().toISOString() : null,
       last_checked_at: new Date().toISOString(),
     })
     .eq('domain', domain)
     .eq('project_id', projectId);
 
-  if (dnsValid) {
-    // Trigger SSL certificate issuance
+  if (isManagedSubdomain && dnsValid) {
     await admin
       .from('website_domains')
       .update({
@@ -198,8 +214,6 @@ async function validateDomain(
       })
       .eq('domain', domain);
 
-    // In production, this would trigger Cloudflare SSL provisioning
-    // For now, we simulate success
     return {
       success: true,
       data: {
@@ -207,7 +221,7 @@ async function validateDomain(
         status: 'active',
         dns_valid: true,
         ssl_status: 'pending',
-        message: 'Domain validated. SSL certificate will be issued within 5 minutes.',
+        message: 'Managed subdomain validated. SSL certificate will be issued within 5 minutes.',
       },
     };
   }
@@ -217,8 +231,11 @@ async function validateDomain(
     data: {
       domain,
       status: 'validating',
-      dns_valid: false,
-      message: 'DNS not yet propagated. Please check your DNS settings and try again in a few minutes.',
+      dns_valid: dnsValid,
+      preview: !isManagedSubdomain,
+      message: isManagedSubdomain
+        ? 'DNS not yet propagated. Please check your DNS settings and try again in a few minutes.'
+        : 'Custom domain recorded (Preview). Live Cloudflare activation requires Vault/ops — status stays validating.',
     },
   };
 }

@@ -70,7 +70,7 @@ const WHATSAPP_TIERS: WhatsAppPricingTier[] = [
       'Standard-Support (24h Response)',
     ],
     recommended: true,
-    cta: { label: 'Kostenlos testen', href: '/checkout/growth?channel=whatsapp&source=pricing&pilot=true' },
+    cta: { label: 'Growth buchen', href: '/checkout/growth?channel=whatsapp&source=pricing' },
   },
   {
     id: 'enterprise-wa',
@@ -178,7 +178,7 @@ export function WhatsAppPricingPage() {
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Link
-            to="/checkout/growth?channel=whatsapp&source=pricing&pilot=true"
+            to="/checkout/growth?channel=whatsapp&source=pricing"
             className="px-8 py-3 bg-security-600 hover:bg-security-700 text-white font-semibold rounded-lg transition-colors inline-block text-center"
           >
             14 Tage kostenlos testen
@@ -359,7 +359,7 @@ export function WhatsAppPricingPage() {
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Link
-            to="/checkout/growth?channel=whatsapp&source=pricing&pilot=true"
+            to="/checkout/growth?channel=whatsapp&source=pricing"
             className="px-8 py-3 bg-security-600 hover:bg-security-700 text-white font-semibold rounded-lg transition-colors inline-block text-center"
           >
             Kostenlos starten

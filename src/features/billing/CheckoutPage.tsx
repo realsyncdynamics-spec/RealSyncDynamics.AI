@@ -74,11 +74,11 @@ export function CheckoutPage() {
       window.location.href = `/contact-sales?plan=${encodeURIComponent(plan.planKey)}&source=checkout-redirect`;
       return;
     }
-    // Stillgelegte Pläne (seit AP2: Agency, Partner) behalten ihren
-    // Kaufmodus, weil ihre laufenden Abos unverändert abrechnen — die
-    // *Neuwahl* ist trotzdem beendet. Ohne diese Weiche bliebe der Plan
-    // über die getippte URL käuflich, obwohl er in keiner Oberfläche mehr
-    // erscheint. Der Server weist ihn ohnehin ab (`stripe-checkout`,
+    // Stillgelegte Pläne (Partner) behalten ihren Kaufmodus, weil ihre
+    // laufenden Abos unverändert abrechnen — die *Neuwahl* ist trotzdem
+    // beendet. Agency ist wieder self_service und läuft über Checkout.
+    // Ohne diese Weiche bliebe ein legacy-Plan über die getippte URL
+    // käuflich. Der Server weist ihn ohnehin ab (`stripe-checkout`,
     // `PLAN_RETIRED`); diese Umleitung erspart dem Besucher die Fehlermeldung.
     if (plan.availability === 'legacy') {
       window.location.href = '/pricing?source=checkout-retired';
@@ -180,7 +180,7 @@ export function CheckoutPage() {
     return (
       <ShellWithMessage
         title="Unbekanntes Paket"
-        body={`"${planKey}" ist kein bekannter Plan. Verfügbar: starter / growth / agency / scale (monatlich oder jährlich).`}
+        body={`"${planKey}" ist kein bekannter Plan. Verfügbar monatlich: starter (79 €) / growth (249 €) / agency (699 €). Enterprise nur auf Anfrage.`}
         cta={{ label: 'Zur Preisübersicht', to: '/pricing' }}
         backTo="/pricing"
       />
@@ -199,11 +199,12 @@ export function CheckoutPage() {
   }
 
   if (auth.status === 'no_user') {
-    const checkoutPath = `/checkout/${validPlan}`;
+    // Preserve query (e.g. ?pilot=true) so Welcome returns to the same checkout URL.
+    const checkoutPath = `/checkout/${validPlan}${isPilot ? '?pilot=true' : ''}`;
     return (
       <NoUserShell
         title={`Anmelden, um ${tier.name} zu buchen`}
-        body="Wählen Sie einen Login-Weg. Nach Anmeldung sind Sie sofort wieder hier — der Checkout startet automatisch."
+        body="Wählen Sie einen Login-Weg. Nach der Anmeldung kehren Sie hierher zurück — Zustimmung und Bestätigen starten den Checkout."
         oauthRedirect={checkoutPath}
         magicLinkHref={`/welcome?next=${encodeURIComponent(checkoutPath)}`}
         backTo={`/pricing/${validPlan}`}
@@ -212,13 +213,14 @@ export function CheckoutPage() {
   }
 
   if (auth.status === 'no_tenant') {
+    const checkoutPath = `/checkout/${validPlan}${isPilot ? '?pilot=true' : ''}`;
     return (
       <ShellWithMessage
         title="Workspace einrichten"
         body={`Eingeloggt als ${auth.userEmail}, aber noch kein Workspace vorhanden. Im nächsten Schritt richten wir Ihren Tenant ein, dann können Sie ${tier.name} buchen.`}
         cta={{
           label: 'Workspace einrichten',
-          to: `/welcome?next=${encodeURIComponent(`/checkout/${validPlan}`)}`,
+          to: `/welcome?next=${encodeURIComponent(checkoutPath)}`,
         }}
         backTo={`/pricing/${validPlan}`}
       />

@@ -26,7 +26,7 @@ interface SupabaseAuthContextType {
   session: Session | null;
 }
 
-const SupabaseAuthContext = createContext<SupabaseAuthContextType | null>(null);
+export const SupabaseAuthContext = createContext<SupabaseAuthContextType | null>(null);
 
 // URL und anon-Key werden zentral über `supabaseUrl.ts` aufgelöst und greifen
 // auf die öffentlichen Produktions-Projektwerte zurück, falls

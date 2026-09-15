@@ -88,15 +88,12 @@ describe('pricingContent', () => {
       expect(enterprise).toBeDefined();
     });
 
-    // COMMERCIAL-SSOT: temporary production hotfix.
-    // Canonical source migration tracked in Phase 2.
     // Plaene ohne Self-Service-Checkout fuehren bewusst NICHT auf
-    // /checkout/<slug>, sondern auf /contact-sales. Zwei Gruende: Enterprise
-    // wird vertraglich vereinbart und manuell fakturiert (`inquiry`), Agency
-    // und Partner sind seit AP2 stillgelegt (`availability: 'legacy'`). In
-    // beiden Faellen lehnt `stripe-checkout` den Abschluss ab — ein
-    // Checkout-Link waere ein Kaufpfad ins Leere.
-    const INQUIRY_ONLY_SLUGS = ['enterprise', 'agency', 'agency_yearly', 'partner', 'partner_yearly'];
+    // /checkout/<slug>, sondern auf /contact-sales. Enterprise wird
+    // vertraglich vereinbart (`inquiry`); Partner und Agency-Jahresvariante
+    // sind nicht self-service-checkoutfähig. Agency monatlich ist wieder
+    // verkaufbar.
+    const INQUIRY_ONLY_SLUGS = ['enterprise', 'partner', 'partner_yearly'];
 
     // Dritte Kategorie: Der Plan ist verkaeuflich, nur seine JAHRESvariante
     // hat keinen verdrahteten Stripe-Preis. Hier waere `/contact-sales`
@@ -107,6 +104,7 @@ describe('pricingContent', () => {
     const UNWIRED_YEARLY: Record<string, string> = {
       starter_yearly: '/checkout/starter',
       growth_yearly: '/checkout/growth',
+      agency_yearly: '/checkout/agency',
     };
 
     it('Self-Service-Plaene verlinken auf /checkout/{slug}', () => {
@@ -353,7 +351,7 @@ describe('pricingContent', () => {
     // Betrag aus.
     const NO_PUBLIC_PRICE = [
       'free-audit', 'enterprise',
-      'agency', 'agency_yearly', 'partner', 'partner_yearly',
+      'agency_yearly', 'partner', 'partner_yearly',
       'starter_yearly', 'growth_yearly',
     ];
 
@@ -365,13 +363,19 @@ describe('pricingContent', () => {
       });
     });
 
-    it('stillgelegte Pläne weisen keinen Festpreis aus', () => {
-      for (const slug of ['agency', 'agency_yearly', 'partner', 'partner_yearly']) {
+    it('stillgelegte Partner-Pläne weisen keinen Festpreis aus', () => {
+      for (const slug of ['partner', 'partner_yearly']) {
         const plan = getPlanBySlug(slug);
         expect(plan, `Plan ${slug} fehlt`).toBeDefined();
         expect(plan?.price).toBe(0);
         expect(plan?.priceString).not.toMatch(/\d/);
       }
+    });
+
+    it('agency weist den Live-Monatspreis 699 aus', () => {
+      const agency = getPlanBySlug('agency');
+      expect(agency?.price).toBe(699);
+      expect(agency?.priceString).toMatch(/699/);
     });
 
     it('free-audit should have price 0', () => {

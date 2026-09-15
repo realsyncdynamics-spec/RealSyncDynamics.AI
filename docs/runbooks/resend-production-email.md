@@ -34,9 +34,9 @@ For receipt-required mail (e.g. DPO contact), use `dpo@realsyncdynamicsai.de` wi
 ### Welcome mail
 ```bash
 curl -X POST 'https://ebljyceifhnlzhjfyxup.supabase.co/functions/v1/welcome-email' \
-  -H "Authorization: Bearer <SUPABASE_ANON_KEY>" \
+  -H "Authorization: Bearer <SUPABASE_SERVICE_ROLE_KEY>" \
   -H "Content-Type: application/json" \
-  -d '{"to":"<your-mailbox>","name":"Smoke Test"}'
+  -d '{"user_id":"<auth.users.id>"}'
 ```
 Expect 200 + delivery within 10s.
 

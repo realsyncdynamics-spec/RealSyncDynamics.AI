@@ -5,27 +5,33 @@ import {
 } from 'lucide-react';
 import { OAuthProviderButtons } from '../features/auth/OAuthProviderButtons';
 import { Logo } from '../components/Logo';
+import { PhotorealEarthGlobe } from '../components/visual/PhotorealEarthGlobe';
 import { getSupabase, isSupabaseConfigured } from '../lib/supabase';
 import { claimPendingAudit } from '../core/onboarding/claimAudit';
+import { safeInternalPath } from '../lib/safeInternalPath';
 
 /**
- * /welcome — Onboarding-Setup-Wizard nach Stripe-Checkout.
+ * /welcome — Canonical auth gate (OTP + OAuth) and post-checkout setup wizard.
  *
- * Step 1 — Email eingeben → Magic-Link wird per Supabase signInWithOtp versendet.
- * Step 2 — Nach Magic-Link-Klick ist der User signed-in (auto_tenant_on_signup
- *          legt Tenant + Owner-Membership an); wir generieren clientseitig einen
- *          rsd_live_*-Key, hashen mit SHA-256 und speichern via RLS in api_keys.
- *          Plaintext wird einmalig angezeigt.
- * Step 3 — Cookie-SDK: Snippet mit echtem Key. Audit-Pro: Domain-Submit triggert
- *          die gdpr-audit Edge-Function.
+ * Modes:
+ * - Login/register (no `session=`): after sign-in, honor `?next=` or resume
+ *   SetupAssistant /app/dashboard — do NOT force the API-key wizard.
+ * - Post-checkout (`session=cs_…`): Step 2–3 wizard (API key + domain/snippet).
  *
- * URL: /welcome?session=cs_...&product=...
+ * Step 1 — Email OTP / OAuth. auto_tenant_on_signup creates tenant + owner.
+ * Step 2 — Client-side rsd_live_* key → SHA-256 → api_keys (RLS).
+ * Step 3 — Cookie-SDK snippet or Audit-Pro domain → gdpr-audit.
+ *
+ * URL: /welcome?session=cs_...&product=...&next=/checkout/starter
  */
 export function Welcome() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const sessionId = params.get('session');
   const product = params.get('product') ?? 'RealSync Dynamics';
+  /** Post-checkout wizard only when Stripe success handed us a session id. */
+  const isPostCheckoutWizard = Boolean(sessionId);
+  const resumeNext = safeInternalPath(params.get('next'));
   const [step, setStep] = useState<number>(1);
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
@@ -37,6 +43,8 @@ export function Welcome() {
   const [busy, setBusy] = useState(false);
   const [tenantId, setTenantId] = useState<string | null>(null);
   const [auditQueued, setAuditQueued] = useState(false);
+  /** Signed-in return path resolving (skip wizard UI flash). */
+  const [resolvingReturn, setResolvingReturn] = useState(false);
 
   // OAuth-Provider-Fehler abfangen, falls der User mit ?error=... oder
   // #error=... auf /welcome zurueck navigiert (z.B. access_denied,
@@ -58,36 +66,47 @@ export function Welcome() {
     window.history.replaceState({}, '', cleaned);
   }, []);
 
-  // Detect signed-in state on mount + on auth changes (post-magic-link return)
+  // Detect signed-in state on mount + on auth changes (post-magic-link return).
+  // Critical: getSession() must honor ?next= the same way SIGNED_IN does —
+  // otherwise a logged-in user opening /welcome?next=/checkout/starter stays
+  // stuck on the wizard and never resumes checkout.
   useEffect(() => {
     if (!isSupabaseConfigured()) return;
     const sb = getSupabase();
     let cancelled = false;
 
+    const resumeAfterAuth = (userEmail: string | undefined) => {
+      setEmail((prev) => prev || userEmail || '');
+      void claimPendingAudit().catch(() => null);
+
+      const nextParam = safeInternalPath(
+        new URLSearchParams(window.location.search).get('next'),
+      );
+      if (nextParam) {
+        navigate(nextParam, { replace: true });
+        return;
+      }
+
+      // Post-checkout: enter API-key wizard. Plain login: resolve tenant then
+      // SetupAssistant or /app/dashboard — do not force the wizard.
+      if (sessionId) {
+        setStep((prev) => (prev === 1 ? 2 : prev));
+        return;
+      }
+      setResolvingReturn(true);
+      setStep((prev) => (prev === 1 ? 2 : prev));
+    };
+
     sb.auth.getSession().then(({ data }) => {
       if (cancelled) return;
       if (data.session?.user) {
-        setEmail((prev) => prev || data.session?.user.email || '');
-        setStep((prev) => (prev === 1 ? 2 : prev));
+        resumeAfterAuth(data.session.user.email);
       }
     });
 
     const { data: subscription } = sb.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN' && session?.user) {
-        setEmail((prev) => prev || session.user.email || '');
-        setStep((prev) => (prev === 1 ? 2 : prev));
-
-        void claimPendingAudit().catch(() => null);
-
-        // Nach Login: ?next= auslesen und weiterleiten (z.B. /checkout/starter?pilot=true)
-        // Dieselbe Whitelist wie in finalizeAndNavigate: nur Pfade, die mit
-        // `/` beginnen und nicht mit `//` — sonst wäre `?next=//fremde.seite`
-        // ein Open Redirect direkt nach der Anmeldung.
-        const nextParam = new URLSearchParams(window.location.search).get('next');
-        if (nextParam && nextParam.startsWith('/') && !nextParam.startsWith('//')) {
-          navigate(nextParam, { replace: true });
-          return;
-        }
+        resumeAfterAuth(session.user.email);
       }
     });
 
@@ -95,7 +114,7 @@ export function Welcome() {
       cancelled = true;
       subscription.subscription.unsubscribe();
     };
-  }, []);
+  }, [navigate, sessionId]);
 
   // Resolve owner-tenant for the signed-in user once we hit step 2+
   useEffect(() => {
@@ -241,7 +260,9 @@ export function Welcome() {
 
   const isCookieSdk = product.includes('Cookie-SDK');
 
-  // Check if user is free tier and not yet onboarded → redirect to setup-assistant
+  // After tenant resolve: resume ?next=, run post-checkout wizard, or send
+  // returning users to SetupAssistant / dashboard. Never steal a checkout
+  // resume into setup-assistant without preserving next.
   useEffect(() => {
     if (!isSupabaseConfigured() || step < 2 || !tenantId) return;
     const sb = getSupabase();
@@ -249,6 +270,14 @@ export function Welcome() {
 
     void (async () => {
       try {
+        const nextParam = safeInternalPath(
+          new URLSearchParams(window.location.search).get('next'),
+        );
+        if (nextParam) {
+          navigate(nextParam, { replace: true });
+          return;
+        }
+
         const { data: tenant } = await sb
           .from('tenants')
           .select('onboarded_at')
@@ -256,33 +285,32 @@ export function Welcome() {
           .single();
         if (cancelled) return;
 
-        // If tenant exists and hasn't been onboarded, redirect to setup-assistant
+        if (sessionId) {
+          // Post-checkout wizard stays on this page.
+          setResolvingReturn(false);
+          return;
+        }
+
         if (tenant && !tenant.onboarded_at) {
           navigate('/setup-assistant', { replace: true });
+          return;
         }
+        navigate('/app/dashboard', { replace: true });
       } catch {
-        // Silently continue if tenant lookup fails
+        if (!cancelled && !sessionId) {
+          navigate('/app/dashboard', { replace: true });
+        }
       }
     })();
     return () => { cancelled = true; };
-  }, [step, tenantId, navigate]);
+  }, [step, tenantId, navigate, sessionId]);
 
-  // Final "Setup abschließen" CTA — mark wizard complete, then navigate to dashboard.
-  // Post-Checkout-Flow: ALLE Benutzer gehen zu /app/dashboard (Workspace-Home),
-  // um das Governance-OS zu sehen. Keine Umleitung zu Produktseiten; diese sind
-  // über die Dashboard-Navigation erreichbar.
-  // ?next=<safe-path> hat Vorrang (z.B. für interruptive Checkouts).
-  // Sicherheits-Whitelist: nur Pfade die mit / starten und KEIN //
-  // (Open-Redirect-Schutz) werden akzeptiert.
+  // Final "Setup abschließen" CTA — mark wizard complete, then navigate.
+  // ?next=<safe-path> wins (interruptive checkouts); else /app/dashboard.
   const finalizeAndNavigate = async () => {
-    const nextParam = new URLSearchParams(window.location.search).get('next');
-    const safeNext =
-      nextParam && nextParam.startsWith('/') && !nextParam.startsWith('//')
-        ? nextParam
-        : null;
-    // Post-Checkout oder generischer Login: BEIDE gehen zu /app/dashboard.
-    // Das ist das zentrale Workspace-Home, von dem aus alle Features erreichbar sind.
-    const target = safeNext ?? '/app/dashboard';
+    const target =
+      safeInternalPath(new URLSearchParams(window.location.search).get('next')) ??
+      '/app/dashboard';
     if (isSupabaseConfigured()) {
       try {
         const sb = getSupabase();
@@ -294,285 +322,303 @@ export function Welcome() {
     navigate(target);
   };
 
+  if (resolvingReturn && step >= 2 && !isPostCheckoutWizard) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-obsidian-950 text-titanium-400">
+        <Loader2 className="h-5 w-5 animate-spin" aria-label="Sitzung wird fortgesetzt" />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-obsidian-950 text-titanium-100">
-      <header className="h-14 border-b border-titanium-900 bg-obsidian-900 flex items-center px-4">
-        <Link to="/" className="p-1.5 rounded-none hover:bg-obsidian-800 text-titanium-400 hover:text-titanium-200 mr-3">
-          <ArrowLeft className="h-4 w-4" />
-        </Link>
-        <Logo size={24} />
-      </header>
+      <div className="grid min-h-screen grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(380px,0.95fr)]">
+        <div className="flex min-h-screen flex-col">
+          <header className="flex h-14 shrink-0 items-center border-b border-titanium-900 bg-obsidian-900 px-4">
+            <Link to="/" className="mr-3 rounded-none p-1.5 text-titanium-400 hover:bg-obsidian-800 hover:text-titanium-200">
+              <ArrowLeft className="h-4 w-4" />
+            </Link>
+            <Logo size={24} />
+          </header>
 
-      <main className="px-4 sm:px-6 py-12 sm:py-16">
-        <div className="max-w-2xl mx-auto">
-          <div className="mb-12 text-center">
-            {sessionId ? (
-              <>
-                <div className="inline-flex items-center gap-2 px-3 py-1 border border-emerald-900 bg-emerald-950/30 text-emerald-300 text-xs font-bold uppercase tracking-wider rounded-none mb-5">
-                  <CheckCircle2 className="h-3 w-3" /> Kauf bestätigt · {product}
-                </div>
-                <h1 className="text-3xl sm:text-4xl font-display font-bold text-titanium-50 tracking-tight mb-3">
-                  Willkommen. Drei Klicks bis zum Setup.
-                </h1>
-                <p className="text-titanium-400 text-base leading-relaxed">
-                  Account bestätigen → API-Key generieren → Snippet einbauen oder Domain prüfen.
-                </p>
-              </>
-            ) : (
-              <>
-                <h1 className="text-3xl sm:text-4xl font-display font-bold text-titanium-50 tracking-tight mb-3">
-                  Willkommen zurück.
-                </h1>
-                <p className="text-titanium-400 text-base leading-relaxed">
-                  Account bestätigen → API-Key generieren → Snippet einbauen oder Domain prüfen.
-                </p>
-              </>
-            )}
-          </div>
-
-          <div className="flex items-center justify-center gap-3 mb-12">
-            {[1, 2, 3].map((s) => {
-              const isCompleted = step > s;
-              const isCurrent = step === s;
-              return (
-                <div key={s} className="flex items-center gap-3">
-                  <div
-                    className={`w-8 h-8 flex items-center justify-center text-sm font-mono border-2 transition-colors ${
-                      isCompleted
-                        ? 'border-brass-500 bg-brass-500 text-obsidian-950'
-                        : isCurrent
-                          ? 'border-ai-cyan-500 bg-ai-cyan-500/15 text-ai-cyan-300'
-                          : 'border-titanium-800 text-titanium-500'
-                    }`}
-                  >
-                    {isCompleted ? <Check className="h-4 w-4" /> : s}
-                  </div>
-                  {s < 3 && <div className={`w-12 h-px ${isCompleted ? 'bg-brass-500' : 'bg-titanium-800'}`} />}
-                </div>
-              );
-            })}
-          </div>
-
-          {error && (
-            <div className="mb-8 p-4 bg-red-950/30 border border-red-900 rounded-none flex items-start gap-3">
-              <AlertTriangle className="h-4 w-4 text-red-400 shrink-0 mt-0.5" />
-              <p className="text-sm text-red-200">{error}</p>
-            </div>
-          )}
-
-          {/* Step 1 — Account: OAuth-Provider zuerst, Magic-Link als Fallback */}
-          {step === 1 && !magicSent && (
-            <div className="space-y-5">
-              <OAuthProviderButtons
-                redirectAfterAuthTo={params.get('next') ?? undefined}
-              />
-              <div className="flex items-center gap-3">
-                <div className="flex-1 h-px bg-titanium-700/40" />
-                <span className="text-[10px] font-mono uppercase tracking-wider text-titanium-500">
-                  oder mit E-Mail-Magic-Link
-                </span>
-                <div className="flex-1 h-px bg-titanium-700/40" />
-              </div>
-              <form onSubmit={submitAccount} className="space-y-5">
-              <div>
-                <label className="text-[10px] font-mono uppercase tracking-[0.2em] text-titanium-500">
-                  E-Mail (für Magic-Link-Login)
-                </label>
-                <input
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="vorname.name@firma.de"
-                  className="mt-2 w-full bg-obsidian-900 border border-titanium-800 text-titanium-50 px-4 py-3 text-sm rounded-none focus:border-ai-cyan-500 outline-none placeholder:text-titanium-600"
-                />
-              </div>
-              <div>
-                <label className="text-[10px] font-mono uppercase tracking-[0.2em] text-titanium-500">
-                  Name (optional)
-                </label>
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Vor- + Nachname"
-                  className="mt-2 w-full bg-obsidian-900 border border-titanium-800 text-titanium-50 px-4 py-3 text-sm rounded-none focus:border-ai-cyan-500 outline-none placeholder:text-titanium-600"
-                />
-              </div>
-              <button
-                type="submit"
-                disabled={!email || busy}
-                className="inline-flex items-center gap-2 bg-white text-obsidian-950 hover:bg-titanium-200 disabled:bg-titanium-800 disabled:text-titanium-600 disabled:cursor-not-allowed px-6 py-3 text-sm font-semibold rounded-none transition-colors"
-              >
-                {busy
-                  ? (<><Loader2 className="h-4 w-4 animate-spin" /> Sende Magic-Link …</>)
-                  : (<>Magic-Link senden <ArrowRight className="h-4 w-4" /></>)}
-              </button>
-            </form>
-            </div>
-          )}
-
-          {step === 1 && magicSent && (
-            <div className="p-6 bg-obsidian-900 border border-emerald-700 rounded-none space-y-3">
-              <div className="flex items-center gap-3">
-                <Mail className="h-5 w-5 text-emerald-400" />
-                <h2 className="font-display font-bold text-lg text-titanium-50">Magic-Link gesendet</h2>
-              </div>
-              <p className="text-sm text-titanium-300 leading-relaxed">
-                Wir haben einen Login-Link an <strong className="text-titanium-50">{email}</strong> gesendet.
-                Öffne ihn auf diesem Gerät — du landest automatisch hier zurück und gehst zu Schritt 2.
-              </p>
-              <p className="text-xs text-titanium-500">
-                Keine E-Mail bekommen?{' '}
-                <button
-                  type="button"
-                  onClick={() => { setMagicSent(false); }}
-                  className="text-emerald-400 hover:text-emerald-300 underline-offset-2 hover:underline"
-                >
-                  E-Mail-Adresse korrigieren und erneut senden
-                </button>
-              </p>
-            </div>
-          )}
-
-          {/* Step 2 — API Key */}
-          {step === 2 && (
-            <div className="space-y-5">
-              <h2 className="font-display font-bold text-xl text-titanium-50 tracking-tight">API-Key generieren</h2>
-              <p className="text-sm text-titanium-400">
-                Dein API-Key authentifiziert API-Calls und Webhooks. Speichere ihn sicher — nach diesem
-                Bildschirm kannst du den Plaintext nicht mehr abrufen.
-              </p>
-
-              {!apiKey ? (
-                <button
-                  onClick={generateKey}
-                  disabled={busy || !tenantId}
-                  className="inline-flex items-center gap-2 bg-indigo-500 hover:bg-indigo-600 disabled:bg-titanium-800 disabled:text-titanium-600 text-white px-6 py-3 text-sm font-semibold rounded-none transition-colors"
-                >
-                  {busy
-                    ? (<><Loader2 className="h-4 w-4 animate-spin" /> Generiere …</>)
-                    : (<>Jetzt generieren <ArrowRight className="h-4 w-4" /></>)}
-                </button>
-              ) : (
-                <div className="space-y-4">
-                  <div className="p-4 bg-obsidian-900 border border-emerald-700 rounded-none">
-                    <div className="text-[10px] font-mono uppercase tracking-[0.2em] text-emerald-300 mb-2">
-                      Dein API-Key — einmal anzeigbar
+          <main className="flex flex-1 flex-col justify-center px-4 py-12 sm:px-6 sm:py-16">
+            <div className="mx-auto w-full max-w-xl">
+              <div className="mb-12 text-center lg:text-left">
+                {sessionId ? (
+                  <>
+                    <div className="mb-5 inline-flex items-center gap-2 rounded-none border border-emerald-900 bg-emerald-950/30 px-3 py-1 text-xs font-bold uppercase tracking-wider text-emerald-300">
+                      <CheckCircle2 className="h-3 w-3" /> Kauf bestätigt · {product}
                     </div>
-                    <div className="flex items-center gap-3">
-                      <code className="flex-1 font-mono text-sm text-emerald-300 break-all">{apiKey}</code>
-                      <button
-                        onClick={copyKey}
-                        className="p-2 border border-titanium-700 hover:border-emerald-500 text-titanium-300 hover:text-emerald-300 rounded-none"
-                        aria-label="Kopieren"
+                    <h1 className="mb-3 font-display text-3xl font-bold tracking-tight text-titanium-50 sm:text-4xl">
+                      Willkommen. Drei Klicks bis zum Setup.
+                    </h1>
+                    <p className="text-base leading-relaxed text-titanium-400">
+                      Account bestätigen → API-Key generieren → Snippet einbauen oder Domain prüfen.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <h1 className="mb-3 font-display text-3xl font-bold tracking-tight text-titanium-50 sm:text-4xl">
+                      Willkommen zurück.
+                    </h1>
+                    <p className="text-base leading-relaxed text-titanium-400">
+                      {resumeNext
+                        ? 'Anmelden und danach direkt fortsetzen.'
+                        : 'Mit Magic-Link oder OAuth anmelden — dann weiter ins Governance OS.'}
+                    </p>
+                  </>
+                )}
+              </div>
+
+              {isPostCheckoutWizard && (
+              <div className="mb-12 flex items-center justify-center gap-3 lg:justify-start">
+                {[1, 2, 3].map((s) => {
+                  const isCompleted = step > s;
+                  const isCurrent = step === s;
+                  return (
+                    <div key={s} className="flex items-center gap-3">
+                      <div
+                        className={`flex h-8 w-8 items-center justify-center border-2 font-mono text-sm transition-colors ${
+                          isCompleted
+                            ? 'border-brass-500 bg-brass-500 text-obsidian-950'
+                            : isCurrent
+                              ? 'border-ai-cyan-500 bg-ai-cyan-500/15 text-ai-cyan-300'
+                              : 'border-titanium-800 text-titanium-500'
+                        }`}
                       >
-                        {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                        {isCompleted ? <Check className="h-4 w-4" /> : s}
+                      </div>
+                      {s < 3 && <div className={`h-px w-12 ${isCompleted ? 'bg-brass-500' : 'bg-titanium-800'}`} />}
+                    </div>
+                  );
+                })}
+              </div>
+              )}
+
+              {error && (
+                <div className="mb-8 flex items-start gap-3 rounded-none border border-red-900 bg-red-950/30 p-4">
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-400" />
+                  <p className="text-sm text-red-200">{error}</p>
+                </div>
+              )}
+
+              {/* Step 1 — Account: OAuth-Provider zuerst, Magic-Link als Fallback */}
+              {step === 1 && !magicSent && (
+                <div className="space-y-5">
+                  <OAuthProviderButtons
+                    redirectAfterAuthTo={params.get('next') ?? undefined}
+                  />
+                  <div className="flex items-center gap-3">
+                    <div className="h-px flex-1 bg-titanium-700/40" />
+                    <span className="font-mono text-[10px] uppercase tracking-wider text-titanium-500">
+                      oder mit E-Mail-Magic-Link
+                    </span>
+                    <div className="h-px flex-1 bg-titanium-700/40" />
+                  </div>
+                  <form onSubmit={submitAccount} className="space-y-5">
+                    <div>
+                      <label className="font-mono text-[10px] uppercase tracking-[0.2em] text-titanium-500">
+                        E-Mail (für Magic-Link-Login)
+                      </label>
+                      <input
+                        type="email"
+                        required
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="vorname.name@firma.de"
+                        className="mt-2 w-full rounded-none border border-titanium-800 bg-obsidian-900 px-4 py-3 text-sm text-titanium-50 outline-none placeholder:text-titanium-600 focus:border-ai-cyan-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="font-mono text-[10px] uppercase tracking-[0.2em] text-titanium-500">
+                        Name (optional)
+                      </label>
+                      <input
+                        type="text"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        placeholder="Vor- + Nachname"
+                        className="mt-2 w-full rounded-none border border-titanium-800 bg-obsidian-900 px-4 py-3 text-sm text-titanium-50 outline-none placeholder:text-titanium-600 focus:border-ai-cyan-500"
+                      />
+                    </div>
+                    <button
+                      type="submit"
+                      disabled={!email || busy}
+                      className="inline-flex items-center gap-2 rounded-none bg-[#e8ddc8] px-6 py-3 text-sm font-semibold text-obsidian-950 transition-colors hover:bg-[#f0e6d4] disabled:cursor-not-allowed disabled:bg-titanium-800 disabled:text-titanium-600"
+                    >
+                      {busy
+                        ? (<><Loader2 className="h-4 w-4 animate-spin" /> Sende Magic-Link …</>)
+                        : (<>Magic-Link senden <ArrowRight className="h-4 w-4" /></>)}
+                    </button>
+                  </form>
+                </div>
+              )}
+
+              {step === 1 && magicSent && (
+                <div className="space-y-3 rounded-none border border-emerald-700 bg-obsidian-900 p-6">
+                  <div className="flex items-center gap-3">
+                    <Mail className="h-5 w-5 text-emerald-400" />
+                    <h2 className="font-display text-lg font-bold text-titanium-50">Magic-Link gesendet</h2>
+                  </div>
+                  <p className="text-sm leading-relaxed text-titanium-300">
+                    Wir haben einen Login-Link an <strong className="text-titanium-50">{email}</strong> gesendet.
+                    Öffne ihn auf diesem Gerät — du landest automatisch hier zurück und gehst zu Schritt 2.
+                  </p>
+                  <p className="text-xs text-titanium-500">
+                    Keine E-Mail bekommen?{' '}
+                    <button
+                      type="button"
+                      onClick={() => { setMagicSent(false); }}
+                      className="text-emerald-400 underline-offset-2 hover:text-emerald-300 hover:underline"
+                    >
+                      E-Mail-Adresse korrigieren und erneut senden
+                    </button>
+                  </p>
+                </div>
+              )}
+
+              {/* Step 2 — API Key */}
+              {step === 2 && (
+                <div className="space-y-5">
+                  <h2 className="font-display text-xl font-bold tracking-tight text-titanium-50">API-Key generieren</h2>
+                  <p className="text-sm text-titanium-400">
+                    Dein API-Key authentifiziert API-Calls und Webhooks. Speichere ihn sicher — nach diesem
+                    Bildschirm kannst du den Plaintext nicht mehr abrufen.
+                  </p>
+
+                  {!apiKey ? (
+                    <button
+                      onClick={generateKey}
+                      disabled={busy || !tenantId}
+                      className="inline-flex items-center gap-2 rounded-none bg-[#e8ddc8] px-6 py-3 text-sm font-semibold text-obsidian-950 transition-colors hover:bg-[#f0e6d4] disabled:bg-titanium-800 disabled:text-titanium-600"
+                    >
+                      {busy
+                        ? (<><Loader2 className="h-4 w-4 animate-spin" /> Generiere …</>)
+                        : (<>Jetzt generieren <ArrowRight className="h-4 w-4" /></>)}
+                    </button>
+                  ) : (
+                    <div className="space-y-4">
+                      <div className="rounded-none border border-emerald-700 bg-obsidian-900 p-4">
+                        <div className="mb-2 font-mono text-[10px] uppercase tracking-[0.2em] text-emerald-300">
+                          Dein API-Key — einmal anzeigbar
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <code className="flex-1 break-all font-mono text-sm text-emerald-300">{apiKey}</code>
+                          <button
+                            onClick={copyKey}
+                            className="rounded-none border border-titanium-700 p-2 text-titanium-300 hover:border-emerald-500 hover:text-emerald-300"
+                            aria-label="Kopieren"
+                          >
+                            {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                          </button>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-3 rounded-none border border-amber-900 bg-amber-950/20 p-3">
+                        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
+                        <p className="text-xs text-amber-200">
+                          Speichere den Key in einem sicheren Secrets-Manager (1Password, Vault, AWS Secrets-Manager).
+                          Bei Verlust: neuen Key generieren, alten widerrufen.
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => setStep(3)}
+                        className="inline-flex items-center gap-2 rounded-none bg-[#e8ddc8] px-6 py-3 text-sm font-semibold text-obsidian-950 transition-colors hover:bg-[#f0e6d4]"
+                      >
+                        Weiter zu Setup <ArrowRight className="h-4 w-4" />
                       </button>
                     </div>
+                  )}
+                </div>
+              )}
+
+              {/* Step 3 — Setup */}
+              {step === 3 && (
+                <div className="space-y-5">
+                  <h2 className="font-display text-xl font-bold tracking-tight text-titanium-50">
+                    {isCookieSdk ? 'Snippet einbauen' : 'Domain prüfen'}
+                  </h2>
+
+                  {isCookieSdk ? (
+                    <>
+                      <p className="text-sm text-titanium-400">
+                        Füge das folgende Snippet im &lt;head&gt; deiner Site ein, vor allem anderen JavaScript:
+                      </p>
+                      <div className="rounded-none border border-titanium-700 bg-obsidian-950 p-4">
+                        <code className="break-all font-mono text-xs leading-relaxed text-emerald-300">
+                          {`<script src="https://RealSyncDynamicsAI.de/sdk/cookie-consent.js" data-rsd-key="${apiKey ?? 'YOUR_KEY'}"></script>`}
+                        </code>
+                      </div>
+                      <p className="text-xs text-titanium-500">
+                        Stack-agnostisch: WordPress, Shopify, React, Vue, Next, Astro, statisch.
+                      </p>
+                    </>
+                  ) : auditQueued ? (
+                    <div className="flex items-start gap-3 rounded-none border border-emerald-700 bg-obsidian-900 p-4">
+                      <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-400" />
+                      <div>
+                        <div className="mb-1 font-display font-bold text-titanium-50">Audit gestartet</div>
+                        <p className="text-sm leading-relaxed text-titanium-300">
+                          Wir analysieren <strong className="text-titanium-50">{domain}</strong>. Ergebnisse landen
+                          in deiner Inbox ({email}) — Tiefenscan binnen 5 Werktagen als signiertes PDF.
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <p className="text-sm text-titanium-400">
+                        Trage die Domain ein, die wir im Audit-Pro-Tiefenscan analysieren sollen:
+                      </p>
+                      <input
+                        type="text"
+                        value={domain}
+                        onChange={(e) => setDomain(e.target.value)}
+                        placeholder="https://example.com"
+                        className="w-full rounded-none border border-titanium-800 bg-obsidian-900 px-4 py-3 text-sm text-titanium-50 outline-none placeholder:text-titanium-600 focus:border-ai-cyan-500"
+                      />
+                      <button
+                        onClick={submitAuditDomain}
+                        disabled={!domain || busy}
+                        className="inline-flex items-center gap-2 rounded-none bg-[#e8ddc8] px-6 py-3 text-sm font-semibold text-obsidian-950 transition-colors hover:bg-[#f0e6d4] disabled:bg-titanium-800 disabled:text-titanium-600"
+                      >
+                        {busy
+                          ? (<><Loader2 className="h-4 w-4 animate-spin" /> Audit wird gestartet …</>)
+                          : (<>Audit starten <ArrowRight className="h-4 w-4" /></>)}
+                      </button>
+                      <p className="text-xs text-titanium-500">
+                        Der Tiefenscan-Bericht kommt innerhalb von 5 Werktagen per E-Mail — als signiertes PDF.
+                      </p>
+                    </>
+                  )}
+
+                  <div className="flex flex-col gap-3 pt-2 sm:flex-row">
+                    <button
+                      type="button"
+                      onClick={finalizeAndNavigate}
+                      className="inline-flex items-center gap-2 rounded-none bg-[#e8ddc8] px-6 py-3 text-sm font-semibold text-obsidian-950 transition-colors hover:bg-[#f0e6d4]"
+                    >
+                      Setup abschließen <CheckCircle2 className="h-4 w-4" />
+                    </button>
+                    <Link
+                      to="/legal/methodology"
+                      className="inline-flex items-center gap-2 rounded-none border border-titanium-700 px-6 py-3 text-sm font-semibold text-titanium-200 transition-colors hover:border-titanium-500"
+                    >
+                      Methodik einsehen
+                    </Link>
                   </div>
-                  <div className="p-3 bg-amber-950/20 border border-amber-900 rounded-none flex items-start gap-3">
-                    <AlertTriangle className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
-                    <p className="text-xs text-amber-200">
-                      Speichere den Key in einem sicheren Secrets-Manager (1Password, Vault, AWS Secrets-Manager).
-                      Bei Verlust: neuen Key generieren, alten widerrufen.
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => setStep(3)}
-                    className="inline-flex items-center gap-2 bg-white text-obsidian-950 hover:bg-titanium-200 px-6 py-3 text-sm font-semibold rounded-none transition-colors"
-                  >
-                    Weiter zu Setup <ArrowRight className="h-4 w-4" />
-                  </button>
+                </div>
+              )}
+
+              {sessionId && (
+                <div className="mt-12 border-t border-titanium-900 pt-8 font-mono text-[11px] text-titanium-600">
+                  session: {sessionId.slice(0, 24)}…
                 </div>
               )}
             </div>
-          )}
-
-          {/* Step 3 — Setup */}
-          {step === 3 && (
-            <div className="space-y-5">
-              <h2 className="font-display font-bold text-xl text-titanium-50 tracking-tight">
-                {isCookieSdk ? 'Snippet einbauen' : 'Domain prüfen'}
-              </h2>
-
-              {isCookieSdk ? (
-                <>
-                  <p className="text-sm text-titanium-400">
-                    Füge das folgende Snippet im &lt;head&gt; deiner Site ein, vor allem anderen JavaScript:
-                  </p>
-                  <div className="p-4 bg-obsidian-950 border border-titanium-700 rounded-none">
-                    <code className="font-mono text-xs text-emerald-300 break-all leading-relaxed">
-                      {`<script src="https://RealSyncDynamicsAI.de/sdk/cookie-consent.js" data-rsd-key="${apiKey ?? 'YOUR_KEY'}"></script>`}
-                    </code>
-                  </div>
-                  <p className="text-xs text-titanium-500">
-                    Stack-agnostisch: WordPress, Shopify, React, Vue, Next, Astro, statisch.
-                  </p>
-                </>
-              ) : auditQueued ? (
-                <div className="p-4 bg-obsidian-900 border border-emerald-700 rounded-none flex items-start gap-3">
-                  <CheckCircle2 className="h-5 w-5 text-emerald-400 shrink-0 mt-0.5" />
-                  <div>
-                    <div className="font-display font-bold text-titanium-50 mb-1">Audit gestartet</div>
-                    <p className="text-sm text-titanium-300 leading-relaxed">
-                      Wir analysieren <strong className="text-titanium-50">{domain}</strong>. Ergebnisse landen
-                      in deiner Inbox ({email}) — Tiefenscan binnen 5 Werktagen als signiertes PDF.
-                    </p>
-                  </div>
-                </div>
-              ) : (
-                <>
-                  <p className="text-sm text-titanium-400">
-                    Trage die Domain ein, die wir im Audit-Pro-Tiefenscan analysieren sollen:
-                  </p>
-                  <input
-                    type="text"
-                    value={domain}
-                    onChange={(e) => setDomain(e.target.value)}
-                    placeholder="https://example.com"
-                    className="w-full bg-obsidian-900 border border-titanium-800 text-titanium-50 px-4 py-3 text-sm rounded-none focus:border-ai-cyan-500 outline-none placeholder:text-titanium-600"
-                  />
-                  <button
-                    onClick={submitAuditDomain}
-                    disabled={!domain || busy}
-                    className="inline-flex items-center gap-2 bg-indigo-500 hover:bg-indigo-600 disabled:bg-titanium-800 disabled:text-titanium-600 text-white px-6 py-3 text-sm font-semibold rounded-none transition-colors"
-                  >
-                    {busy
-                      ? (<><Loader2 className="h-4 w-4 animate-spin" /> Audit wird gestartet …</>)
-                      : (<>Audit starten <ArrowRight className="h-4 w-4" /></>)}
-                  </button>
-                  <p className="text-xs text-titanium-500">
-                    Der Tiefenscan-Bericht kommt innerhalb von 5 Werktagen per E-Mail — als signiertes PDF.
-                  </p>
-                </>
-              )}
-
-              <div className="flex flex-col sm:flex-row gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={finalizeAndNavigate}
-                  className="inline-flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-obsidian-950 px-6 py-3 text-sm font-semibold rounded-none transition-colors"
-                >
-                  Setup abschließen <CheckCircle2 className="h-4 w-4" />
-                </button>
-                <Link
-                  to="/legal/methodology"
-                  className="inline-flex items-center gap-2 border border-titanium-700 text-titanium-200 hover:border-titanium-500 px-6 py-3 text-sm font-semibold rounded-none transition-colors"
-                >
-                  Methodik einsehen
-                </Link>
-              </div>
-            </div>
-          )}
-
-          {sessionId && (
-            <div className="mt-12 pt-8 border-t border-titanium-900 text-[11px] font-mono text-titanium-600">
-              session: {sessionId.slice(0, 24)}…
-            </div>
-          )}
+          </main>
         </div>
-      </main>
+
+        <PhotorealEarthGlobe />
+      </div>
     </div>
   );
 }
@@ -611,15 +657,43 @@ function friendlyError(err: unknown, fallback: string): string {
   return msg || fallback;
 }
 
+/**
+ * Zufall für den API-Key.
+ *
+ * Der Rückgabewert wird zu `rsd_live_…` und ist damit ein Geheimnis mit
+ * Zugriff auf den Mandanten — der Server sieht nur noch dessen SHA-256.
+ * Vorher fiel diese Funktion still auf `Math.random()` zurück, wenn
+ * `crypto.getRandomValues` fehlte: ein vorhersagbarer Schlüssel, der wie ein
+ * sicherer aussieht und sich nicht mehr von einem echten unterscheiden lässt.
+ *
+ * Dieselbe Entscheidung ist für den OAuth-`state` bereits getroffen (siehe
+ * `features/seo-marketing-dashboard/IntegrationSettings.tsx`): kein Rückfall,
+ * sondern ein Wurf. `generateKey()` fängt ihn in seinem `try/catch` ab und
+ * zeigt eine Fehlermeldung — es entsteht kein halber Schlüssel und kein
+ * Datenbankeintrag.
+ */
 function randString(len: number): string {
+  const source = globalThis.crypto;
+  if (!source?.getRandomValues) {
+    throw new Error(
+      'Dieser Browser stellt keine sichere Zufallsquelle bereit. Es wurde kein API-Key erzeugt.',
+    );
+  }
+
   const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  // 256 ist kein Vielfaches von 62: per Modulo gefaltet kämen die ersten acht
+  // Zeichen des Alphabets häufiger vor als die übrigen. Bytes ab dieser
+  // Grenze werden deshalb verworfen statt gefaltet.
+  const limit = 256 - (256 % alphabet.length);
+
   let out = '';
   const buf = new Uint8Array(len);
-  if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
-    crypto.getRandomValues(buf);
-    for (let i = 0; i < len; i++) out += alphabet[buf[i] % alphabet.length];
-  } else {
-    for (let i = 0; i < len; i++) out += alphabet[Math.floor(Math.random() * alphabet.length)];
+  while (out.length < len) {
+    source.getRandomValues(buf);
+    for (let i = 0; i < buf.length && out.length < len; i++) {
+      if (buf[i] >= limit) continue;
+      out += alphabet[buf[i] % alphabet.length];
+    }
   }
   return out;
 }

@@ -6,6 +6,7 @@ import {
   Bell, CreditCard, Wrench, Bot, GitMerge, FileText,
   ClipboardCheck, ClipboardList, LayoutDashboard, ShieldAlert,
   MessagesSquare, Zap, Server, ShieldCheck, Layers, CalendarClock, Archive, Library,
+  Share2, Sparkles,
   type LucideIcon,
 } from 'lucide-react';
 import { TAB_MODULES, DOCK_MODULES, canAccessModule, minimumPlanForModule } from './governanceModules';
@@ -18,6 +19,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   Building2, BarChart3, Users, Settings, Bell, CreditCard, Wrench,
   GitMerge, FileText, ClipboardCheck, ClipboardList, LayoutDashboard,
   ShieldAlert, MessagesSquare, Zap, Server, ShieldCheck, Layers, CalendarClock, Archive, Library,
+  Share2, Sparkles,
 };
 
 const PLAN_LABELS: Record<string, string> = {
@@ -31,11 +33,11 @@ function TabItem({ module, active }: { module: GovernanceModule; active: boolean
       to={module.route}
       className={`group flex items-center gap-1.5 px-3 py-2 text-xs font-medium whitespace-nowrap border-b-2 transition-colors ${
         active
-          ? 'border-cyan-400 text-titanium-50 bg-obsidian-800'
+          ? 'border-[#e4cfa2] text-titanium-50 bg-obsidian-800'
           : 'border-transparent text-titanium-400 hover:text-titanium-100 hover:bg-obsidian-800'
       }`}
     >
-      <Icon className={`h-3.5 w-3.5 shrink-0 ${active ? 'text-cyan-400' : 'text-titanium-600 group-hover:text-titanium-300'}`} />
+      <Icon className={`h-3.5 w-3.5 shrink-0 ${active ? 'text-[#e4cfa2]' : 'text-titanium-600 group-hover:text-titanium-300'}`} />
       <span>{module.label}</span>
       <ModuleStatusBadge status={module.status} />
     </Link>
@@ -64,8 +66,19 @@ export function GovernanceTabs() {
   const { plan } = useActivePlan();
   const [dockOpen, setDockOpen] = useState(false);
 
-  const isActive = (route: string) =>
-    route === '/app' ? pathname === '/app' : pathname.startsWith(route);
+  const isActive = (route: string) => {
+    if (route === '/app/dashboard' || route === '/app') {
+      return (
+        pathname === '/app' ||
+        pathname === '/app/dashboard' ||
+        pathname === '/app/overview'
+      );
+    }
+    if (route === '/app/home') {
+      return pathname === '/app/home';
+    }
+    return pathname.startsWith(route);
+  };
 
   // Accessible tabs shown normally; inaccessible shown as locked ghost tabs
   const accessibleTabs = TAB_MODULES.filter((m) => canAccessModule(m, plan));

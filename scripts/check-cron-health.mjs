@@ -288,6 +288,18 @@ export function evaluateAntworten(zeilen) {
   };
 }
 
+/**
+ * Beschriftung einer Antwortzeile.
+ *
+ * `status` ist entweder ein Statuscode oder der Platzhalter fuer eine Anfrage,
+ * auf die nie eine Antwort kam. `HTTP (keine Antwort)` las sich in der ersten
+ * Fassung wie ein Fehler in der Ausgabe selbst — der Fall braucht eigene Worte.
+ */
+export function beschreibeStatus(status) {
+  const s = String(status);
+  return /^\d+$/.test(s) ? `HTTP ${s}` : 'ohne Antwort (Zeitueberschreitung)';
+}
+
 // ── Ausfuehrung ──────────────────────────────────────────────────────────────
 // Nur wenn direkt gestartet: der Test importiert evaluate/groupByCause.
 
@@ -401,7 +413,7 @@ if (direkt) {
       ` (${antwort.summeGut} erfolgreich, ${antwort.dispatchLaeufe} Dispatch-Laeufe):\n`,
     );
     for (const a of antwort.schlecht) {
-      console.error(`  ${a.anzahl}× HTTP ${a.status}   ${a.von} … ${a.bis}`);
+      console.error(`  ${a.anzahl}× ${beschreibeStatus(a.status)}   ${a.von} … ${a.bis}`);
       console.error(`      ${String(a.beispiel ?? '').replace(/\s+/g, ' ').slice(0, 160)}\n`);
     }
     console.error(

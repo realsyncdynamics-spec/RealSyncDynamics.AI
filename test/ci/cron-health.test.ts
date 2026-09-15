@@ -17,6 +17,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import {
+  beschreibeStatus,
   causeKey,
   erwarteterAbstandMinuten,
   evaluate,
@@ -272,6 +273,19 @@ describe('Klasse C — Antwort-Ebene', () => {
       { art: 'dispatch', status: null, anzahl: 4, von: null, bis: null, beispiel: null },
     ]);
     expect(a.summeSchlecht).toBe(4);
+  });
+});
+
+describe('Beschriftung der Antwortzeilen', () => {
+  it('nennt Statuscodes als HTTP-Code', () => {
+    expect(beschreibeStatus('401')).toBe('HTTP 401');
+    expect(beschreibeStatus('503')).toBe('HTTP 503');
+  });
+
+  it('gibt der ausgebliebenen Antwort eigene Worte', () => {
+    // „HTTP (keine Antwort)" las sich wie ein Fehler in der Ausgabe selbst.
+    expect(beschreibeStatus('(keine Antwort)')).toBe('ohne Antwort (Zeitueberschreitung)');
+    expect(beschreibeStatus(null)).not.toContain('HTTP');
   });
 });
 

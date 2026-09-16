@@ -1,13 +1,12 @@
-import { SuspenseBoundary } from '../components/SuspenseBoundary';
+import { RouteGate } from '../components/RouteGate';
 import { lazyPage } from '../lib/lazy-page';
 
 const AetherOSLanding = lazyPage(() => import('./AetherOSLanding'), 'AetherOSLanding');
 
-/** Route-Element für /aetheros — Framer + Three erst hier. */
 export function AetherOSLandingRoute() {
   return (
-    <SuspenseBoundary label="AetherOS wird geladen …" variant="page">
+    <RouteGate label="AetherOS wird geladen …" variant="page">
       <AetherOSLanding />
-    </SuspenseBoundary>
+    </RouteGate>
   );
 }

@@ -221,8 +221,8 @@ describe('Hero-Panel — Beispiel ist als Beispiel gekennzeichnet', () => {
     expect(landing).not.toContain('GovernanceSphereHost');
     expect(workspacePreview).toContain('DEMO · BEISPIELDATEN');
     expect(workspacePreview).toContain('BEISPIELANSICHT');
-    expect(landing).toContain('id="scan"');
-    expect(landing).toContain('data-hero-cta');
+    expect(landing).toContain('id="audit-cta"');
+    expect(landing).toContain('data-hero-cta="audit"');
     expect(landing).not.toContain('HeroEuropeSunrise');
     expect(sphereNodes).toMatch(/DEMO\s*\/\s*SIMULATED/);
   });

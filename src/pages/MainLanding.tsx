@@ -154,7 +154,7 @@ export function MainLanding() {
             <p className="mt-3 text-[15px] font-medium" style={{ color: GA_GOLD_LITE }}>{HERO_VALUE_SUBLINE}</p>
             <p className="mt-3 max-w-[36rem] text-[13.5px] leading-[1.6]" style={{ color: GA_MUTED }}>{HERO_EU_LINE}</p>
             <div className="mt-[34px] flex w-full flex-col gap-3.5 sm:flex-row sm:items-center">
-              <Link to="/audit" id="scan" data-hero-cta className="ga-pill-sheen relative inline-flex items-center justify-center gap-2 overflow-hidden whitespace-nowrap rounded-full px-[28px] py-[15px] text-[14px] font-semibold" style={{ background: GA_GOLD_FACE, color: '#14100b', boxShadow: GA_GOLD_FACE_SHADOW }}>
+              <Link to="/audit" id="audit-cta" data-hero-cta="audit" className="ga-pill-sheen relative inline-flex items-center justify-center gap-2 overflow-hidden whitespace-nowrap rounded-full px-[28px] py-[15px] text-[14px] font-semibold" style={{ background: GA_GOLD_FACE, color: '#14100b', boxShadow: GA_GOLD_FACE_SHADOW }}>
                 {HERO_SCAN_CTA_LABEL}
                 <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </Link>

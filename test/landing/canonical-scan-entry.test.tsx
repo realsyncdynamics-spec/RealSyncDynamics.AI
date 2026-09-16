@@ -1,7 +1,7 @@
 /**
  * Sichert den **einen** kanonischen Scan-Einstieg ab.
  *
- * Governance-OS Preview-Hero: Formular `#scan` → `/audit` (optional `?domain=`).
+ * Governance-OS Preview-Hero: CTA `#audit-cta` → `/audit`.
  */
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
@@ -30,7 +30,7 @@ describe('Kanonischer Scan-Einstieg', () => {
   it('führt den Governance-Scan der Startseite nach /audit', () => {
     landingRendern();
 
-    const cta = document.querySelector('#scan') as HTMLAnchorElement;
+    const cta = document.querySelector('#audit-cta') as HTMLAnchorElement;
     expect(cta).toBeTruthy();
     expect(cta.tagName).toBe('A');
     fireEvent.click(cta);
@@ -41,7 +41,7 @@ describe('Kanonischer Scan-Einstieg', () => {
     landingRendern();
 
     expect(screen.queryByLabelText(/Ihre Website/i)).toBeNull();
-    expect(document.querySelector('#scan')?.tagName).toBe('A');
+    expect(document.querySelector('#audit-cta')?.tagName).toBe('A');
   });
 
   it('zeigt den Governance-OS-CTA auf der Startseite', () => {

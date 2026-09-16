@@ -1,7 +1,7 @@
 import { SuspenseBoundary } from '../components/SuspenseBoundary';
 import { lazyPage } from '../lib/lazy-page';
 
-const AetherOSLanding = lazyPage(() => import('./AetherOSLanding'));
+const AetherOSLanding = lazyPage(() => import('./AetherOSLanding'), 'AetherOSLanding');
 
 /** Route-Element für /aetheros — Framer + Three erst hier. */
 export function AetherOSLandingRoute() {

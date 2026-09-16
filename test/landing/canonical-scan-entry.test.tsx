@@ -1,7 +1,7 @@
 /**
  * Sichert den **einen** kanonischen Scan-Einstieg ab.
  *
- * Europe-OS Hero: Free Audit starten → `/audit` (Link, id=scan).
+ * Governance-OS Preview-Hero: Formular `#scan` → `/audit` (optional `?domain=`).
  */
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
@@ -27,20 +27,28 @@ function landingRendern() {
 }
 
 describe('Kanonischer Scan-Einstieg', () => {
-  it('führt Free Audit der Startseite nach /audit', () => {
+  it('führt den Governance-Scan der Startseite nach /audit', () => {
     landingRendern();
 
-    const cta = document.querySelector('#scan') as HTMLAnchorElement;
-    expect(cta).toBeTruthy();
-    expect(cta.getAttribute('href')).toBe('/audit');
-    fireEvent.click(cta);
+    const form = document.querySelector('#scan') as HTMLFormElement;
+    expect(form).toBeTruthy();
+    expect(form.tagName).toBe('FORM');
+    fireEvent.submit(form);
     expect(screen.getByText(AUDIT_PLATZHALTER)).toBeTruthy();
   });
 
-  it('zeigt den Live-Dashboard-CTA Richtung /app (via welcome next)', () => {
+  it('reicht eine Domain als ?domain= an /audit weiter', () => {
     landingRendern();
-    const dash = screen.getAllByRole('link', { name: /Live Dashboard ansehen/i })[0];
-    expect(dash.getAttribute('href')).toMatch(/\/(app|welcome)/);
+
+    const input = screen.getByLabelText(/Ihre Website/i);
+    fireEvent.change(input, { target: { value: 'firma.de' } });
+    fireEvent.submit(document.querySelector('#scan') as HTMLFormElement);
+    expect(screen.getByText(AUDIT_PLATZHALTER)).toBeTruthy();
+  });
+
+  it('zeigt den Governance-OS-CTA auf der Startseite', () => {
+    landingRendern();
+    expect(screen.getAllByText(/Explore the Governance OS/i).length).toBeGreaterThan(0);
   });
 
   it('zeigt keinen Verweis mehr auf den zurückgezogenen Trichter /scan', () => {

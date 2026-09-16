@@ -28,7 +28,6 @@ import {
   HERO_HEADLINE,
   HERO_OPERATING_LOOP,
 } from '../components/governance-frontend/hero-content';
-import { GovernanceSphereHost } from '../components/governance-frontend/GovernanceSphereHost';
 import { EnterpriseAccessSection } from '../components/landing/EnterpriseAccessSection';
 import {
   PLATFORM_LIVE_ITEMS,
@@ -107,7 +106,7 @@ export function MainLanding() {
       <main ref={revealRoot} className="relative z-10">
         <section
           id="product"
-          className="mx-auto grid min-h-[700px] max-w-[1500px] items-center gap-[4vw] px-[4vw] pb-[82px] pt-[72px] lg:grid-cols-[minmax(0,1fr)_minmax(380px,0.9fr)]"
+          className="mx-auto grid min-h-[700px] max-w-[1100px] items-center gap-[4vw] px-[4vw] pb-[82px] pt-[72px]"
         >
           <div className="hero-copy max-w-3xl">
             <div
@@ -252,10 +251,6 @@ export function MainLanding() {
               </div>
               <p className="mt-3 max-w-md text-[10px] leading-relaxed text-white/35">{RUNTIME_PREVIEW_NOTE}</p>
             </div>
-          </div>
-
-          <div className="hero-visual relative">
-            <GovernanceSphereHost />
           </div>
         </section>
 

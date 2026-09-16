@@ -1,21 +1,17 @@
 # Abnahme — RealSyncDynamics.AI Web App Builder
 
 **Branch:** `feat/bolt-diy-builder-integration`  
-**HEAD:** `ec6a921d9ad5a8270b0aa729314a385ef3d6536b`  
-**Basis:** `ed973602` (Phase 2)  
+**Basis-HEAD vor dieser Lieferung:** `e3c3f06d63806569fe48db48bdf1cc8612a72ab1`  
 **Snapshot:** `backup/pre-bolt-diy-2026-09-16` auf `main@7449166d`  
-**Kein Merge nach main. Kein Production-Deploy.**
+**Kein Merge nach main. Kein Production-Deploy. Keine angewendete Production-Migration.**
 
-Siehe Abschlussbericht in der Liefernotiz. Diese Datei hält den SHA und die Blocker fest.
+## Code fertig, Production-Lauf BLOCKED ohne Infra-Mutation
 
-## Blocker (nicht gemockt)
-
-1. Durable Server-Persistenz des Dateibaums: Edge Function `siteos/code-persist` existiert nicht. `siteos_blueprints` bleibt Puck-only. Client-Store ist tenant-isoliert und überlebt Reload in demselben Browser.
-2. Token-SSE im RealSync AI-Gateway: bestehendes `processAIGatewayRequest` ist Request/Response. Parser ist streaming-fähig.
-3. WebContainer / COOP-COEP: bewusst deaktiviert.
-4. Production-E2E auf realsyncdynamicsai.de: Deploy-Freigabe fehlt.
-5. Policy-Worker / KV: unverändert gesperrt.
+1. **Server-Persistenz** — Code: `app_builder_projects` Migration + `siteos/code-persist` + `persist-api` + Isolationstests. Freigabe fehlt: Migration anwenden + `siteos` Function deployen. Erst danach Production E2E W/X.
+2. **Gateway-Streaming** — Code: `generateStream` auf OpenAI/Anthropic/LM Studio, Router, `op: stream` NDJSON, OpenAI-compat `stream: true`. Freigabe fehlt: `ai-gateway` Function deployen. Erst danach Production Y gegen die Edge.
+3. **WebContainer / COOP-COEP** — bewusst deaktiviert.
+4. **Policy-Worker / KV** — unverändert gesperrt.
 
 ## Kernpfad (kein Mock)
 
-User-Prompt → Auth → Tenant → Entitlement → Gateway → Parser → Gate → FileStore → srcDoc-Preview → Prüfpfad.
+User-Prompt → Auth → Tenant → Entitlement → Context-Pack → RealSync AI Gateway (`app_builder_code`) → Token-Stream → Parser → Gate → FileStore → srcDoc-Preview → `siteos/code-persist`.

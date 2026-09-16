@@ -38,6 +38,12 @@ export class BoltEngine {
   async hydrate(files: Record<string, string>): Promise<void> {
     this.store.clear();
     for (const [path, content] of Object.entries(files)) {
+      const action: FileAction = { type: 'file', filePath: path, content };
+      const gate = evaluateAction(this.ctx, action, `hydrate-${path}`, 'minimal');
+      if (gate.decision !== 'allow') {
+        this.audit.push(auditFromGate(this.ctx, gate, 'builder.hydrate.blocked', path));
+        continue;
+      }
       await this.store.write(path, content);
     }
   }

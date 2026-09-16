@@ -9,7 +9,13 @@ import { htmlFromFiles, sandboxTokens } from './bolt/preview';
 import { classifyPrompt } from './bolt/governance-gate';
 import { diagnoseFiles, type Diagnostic } from './bolt/diagnostics';
 import { repairPrompt } from './bolt/error-recovery';
-import { generateViaRealSyncGateway } from './gateway';
+import { generateViaRealSyncGatewayStream } from './gateway';
+import {
+  deleteBuilderProject,
+  listBuilderProjects,
+  loadBuilderProject,
+  saveBuilderProject,
+} from './persist/persist-api';
 import {
   deleteProject,
   filesFromRecords,
@@ -50,6 +56,30 @@ function newProject(tenantId: string, title: string, slug: string): BuilderProje
   };
 }
 
+function toLocal(row: {
+  id: string;
+  tenantId: string;
+  slug: string;
+  title: string;
+  files: Record<string, string>;
+  merkle: string;
+  audit: AuditRecord[];
+  messages: BuilderProject['messages'];
+  updatedAt: string;
+}): BuilderProject {
+  return {
+    id: row.id,
+    tenantId: row.tenantId,
+    slug: row.slug,
+    title: row.title,
+    files: row.files,
+    merkle: row.merkle,
+    audit: row.audit,
+    messages: row.messages,
+    updatedAt: row.updatedAt,
+  };
+}
+
 export function BoltWorkbench({
   ctx,
   projectSlug,
@@ -72,21 +102,41 @@ export function BoltWorkbench({
   const [pane, setPane] = useState<Pane>('preview');
   const [isolation, setIsolation] = useState<'static' | 'interactive'>('interactive');
   const [previewKey, setPreviewKey] = useState(0);
+  const [serverPersist, setServerPersist] = useState<'idle' | 'ok' | 'blocked'>('idle');
+  const [lastChange, setLastChange] = useState<string | undefined>();
 
   const refreshList = useCallback(() => {
-    setProjects(listProjects(ctx.tenantId));
+    void (async () => {
+      const remote = await listBuilderProjects(ctx.tenantId);
+      if (remote.kind === 'ok') {
+        setProjects(remote.data);
+        setServerPersist('ok');
+        return;
+      }
+      setProjects(listProjects(ctx.tenantId));
+      if (remote.code === 'UNKNOWN_ENDPOINT' || remote.status === 404) setServerPersist('blocked');
+    })();
   }, [ctx.tenantId]);
 
   useEffect(() => {
     engineRef.current = new BoltEngine(ctx);
-    const listed = listProjects(ctx.tenantId);
-    setProjects(listed);
-    const match = listed.find((p) => p.slug === projectSlug) ?? listed[0];
-    if (match) {
-      const loaded = loadProject(ctx.tenantId, match.id);
-      if (loaded) {
-        setProject(loaded);
-        void engineRef.current.hydrate(loaded.files).then(async () => {
+    void (async () => {
+      const remote = await listBuilderProjects(ctx.tenantId);
+      let listed: ProjectMeta[] = listProjects(ctx.tenantId);
+      if (remote.kind === 'ok') {
+        listed = remote.data;
+        setServerPersist('ok');
+      } else if (remote.code === 'UNKNOWN_ENDPOINT' || remote.status === 404) {
+        setServerPersist('blocked');
+      }
+      setProjects(listed);
+      const match = listed.find((p) => p.slug === projectSlug) ?? listed[0];
+      if (match) {
+        const loadedRemote = await loadBuilderProject(ctx.tenantId, match.id);
+        const loaded = loadedRemote.kind === 'ok' ? toLocal(loadedRemote.data) : loadProject(ctx.tenantId, match.id);
+        if (loaded) {
+          setProject(loaded);
+          await engineRef.current.hydrate(loaded.files);
           const snap = await engineRef.current.store.snapshot();
           setResult({
             messageId: 'hydrate',
@@ -97,14 +147,14 @@ export function BoltWorkbench({
             blocked: false,
           });
           setActivePath(Object.keys(loaded.files)[0] ?? null);
-        });
-        return;
+          return;
+        }
       }
-    }
-    setProject(newProject(ctx.tenantId, projectSlug, projectSlug));
-    setResult(null);
-    setActivePath(null);
-    setStream('');
+      setProject(newProject(ctx.tenantId, projectSlug, projectSlug));
+      setResult(null);
+      setActivePath(null);
+      setStream('');
+    })();
   }, [ctx, projectSlug]);
 
   useEffect(() => {
@@ -133,10 +183,9 @@ export function BoltWorkbench({
     if (current) setDraft(current.content);
   }, [current?.path, current?.sha256]);
 
-  function persist(next: BuilderProject, snapFiles: Record<string, string>, audit: AuditRecord[], merkle: string) {
+  async function persist(next: BuilderProject, snapFiles: Record<string, string>, audit: AuditRecord[], merkle: string) {
     const stored: BuilderProject = {
       ...next,
-      id: next.id === 'draft' ? (globalThis.crypto?.randomUUID?.() ?? `p-${Date.now()}`) : next.id,
       tenantId: ctx.tenantId,
       slug: next.slug || projectSlug,
       files: snapFiles,
@@ -144,8 +193,28 @@ export function BoltWorkbench({
       audit: audit.slice(-80),
       updatedAt: new Date().toISOString(),
     };
-    saveProject(stored);
-    setProject(stored);
+    saveProject({
+      ...stored,
+      id: stored.id === 'draft' ? (globalThis.crypto?.randomUUID?.() ?? `p-${Date.now()}`) : stored.id,
+    });
+    const remote = await saveBuilderProject(ctx.tenantId, {
+      slug: stored.slug,
+      title: stored.title || projectSlug,
+      files: snapFiles,
+      merkle,
+      audit: stored.audit,
+      messages: stored.messages,
+    });
+    if (remote.kind === 'ok') {
+      const row = toLocal(remote.data);
+      setProject(row);
+      saveProject(row);
+      setServerPersist('ok');
+    } else {
+      setProject(stored.id === 'draft' ? { ...stored, id: stored.slug } : stored);
+      if (remote.code === 'UNKNOWN_ENDPOINT' || remote.status === 404) setServerPersist('blocked');
+      setError(remote.message);
+    }
     refreshList();
   }
 
@@ -163,7 +232,7 @@ export function BoltWorkbench({
         ? [{ role: 'assistant' as const, text: assistantText.slice(0, 800), at: new Date().toISOString() }]
         : []),
     ].slice(-24);
-    persist(
+    await persist(
       { ...project, messages, title: project.title || projectSlug },
       filesFromRecords(Object.values(res.snapshot.files)),
       res.audit,
@@ -195,12 +264,18 @@ export function BoltWorkbench({
       }
       setStream('RealSync AI Gateway …');
       const currentFiles = engineRef.current.store.list().map((f) => ({ path: f.path, content: f.content }));
-      const gen = await generateViaRealSyncGateway({
-        prompt: nextPrompt,
-        tenantId: ctx.tenantId,
-        files: currentFiles,
-        repair,
-      });
+      const gen = await generateViaRealSyncGatewayStream(
+        {
+          prompt: nextPrompt,
+          tenantId: ctx.tenantId,
+          files: currentFiles,
+          repair,
+          diagnostics,
+          lastChange,
+          riskClass: risk,
+        },
+        (full) => setStream(full),
+      );
       if (!gen.ok) {
         setError(gen.error);
         setStream('');
@@ -209,6 +284,7 @@ export function BoltWorkbench({
       }
       setStream(gen.text);
       const res = await engineRef.current.ingest(`m-${Date.now()}`, gen.text, nextPrompt);
+      setLastChange(nextPrompt.slice(0, 200));
       await applyEngine(res, gen.text);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
@@ -241,10 +317,12 @@ export function BoltWorkbench({
   }
 
   function openListed(id: string) {
-    const loaded = loadProject(ctx.tenantId, id);
-    if (!loaded) return;
-    engineRef.current = new BoltEngine(ctx);
-    void engineRef.current.hydrate(loaded.files).then(async () => {
+    void (async () => {
+      const remote = await loadBuilderProject(ctx.tenantId, id);
+      const loaded = remote.kind === 'ok' ? toLocal(remote.data) : loadProject(ctx.tenantId, id);
+      if (!loaded) return;
+      engineRef.current = new BoltEngine(ctx);
+      await engineRef.current.hydrate(loaded.files);
       const snap = await engineRef.current.store.snapshot();
       setProject(loaded);
       setResult({
@@ -257,13 +335,16 @@ export function BoltWorkbench({
       });
       setActivePath(Object.keys(loaded.files)[0] ?? null);
       setPane('preview');
-    });
+    })();
   }
 
   function removeListed(id: string) {
-    deleteProject(ctx.tenantId, id);
-    refreshList();
-    if (project.id === id) createNew();
+    void (async () => {
+      const remote = await deleteBuilderProject(ctx.tenantId, id);
+      if (remote.kind !== 'ok') deleteProject(ctx.tenantId, id);
+      refreshList();
+      if (project.id === id) createNew();
+    })();
   }
 
   const risk = classifyPrompt(prompt);
@@ -272,7 +353,13 @@ export function BoltWorkbench({
     <div className="grid min-h-[calc(100dvh-52px)] grid-rows-[auto_minmax(0,1fr)] bg-[#0A0A0B] text-[#E2E2E2]" data-testid="bolt-workbench">
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 px-3 py-2">
         <span className="font-mono text-[10px] tracking-[0.16em] text-white/45 uppercase" data-testid="persist-state">
-          {project.id === 'draft' ? 'Entwurf' : `Gespeichert · ${(project.merkle || '—').slice(0, 8)}`}
+          {project.id === 'draft'
+            ? 'Entwurf'
+            : serverPersist === 'ok'
+              ? `Server · ${(project.merkle || '—').slice(0, 8)}`
+              : serverPersist === 'blocked'
+                ? `Browser-Cache · Server nicht ausgerollt · ${(project.merkle || '—').slice(0, 8)}`
+                : `Gespeichert · ${(project.merkle || '—').slice(0, 8)}`}
         </span>
         <span className="font-mono text-[10px] text-white/45" data-testid="gate-tally">
           ALLOW {tally.allow} · HOLD {tally.hold} · BLOCK {tally.block}
@@ -383,7 +470,7 @@ export function BoltWorkbench({
               <pre className="max-h-32 overflow-auto font-mono text-[11px] leading-5 text-white/55 whitespace-pre-wrap">{stream}</pre>
             ) : null}
             <p className="font-mono text-[10px] text-white/35">
-              Antwort über das bestehende RealSync AI-Gateway. Token-SSE folgt, sobald das Gateway es anbietet — kein Mock-Stream.
+              Antwort über das RealSync AI-Gateway (`app_builder_code`), Token-Stream, kein Browser-Key.
             </p>
           </form>
           <div className="min-h-0 overflow-auto p-3">

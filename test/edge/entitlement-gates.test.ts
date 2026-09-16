@@ -51,6 +51,7 @@ const GATES: ReadonlyArray<{ fn: string; key: EntitlementKey; source?: string }>
   { fn: 'workflow-trigger', key: 'ai.tool.workflows' },
   // SiteOS Builder monetization — handlers live under the siteos router.
   { fn: 'siteos', key: 'siteos.builder', source: 'handlers/builder.ts' },
+  { fn: 'siteos', key: 'siteos.builder', source: 'handlers/code-persist.ts' },
   { fn: 'siteos', key: 'limit.sites', source: 'site-entitlements.ts' },
   { fn: 'siteos', key: 'siteos.publish', source: 'site-entitlements.ts' },
 ];

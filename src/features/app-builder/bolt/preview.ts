@@ -48,14 +48,29 @@ export function htmlFromFiles(files: FileRecord[], isolation: PreviewIsolation =
 function inlineLocal(html: string, files: FileRecord[]): string {
   let out = html;
   for (const f of files) {
-    if (f.path.endsWith('.css')) {
-      out = out.replace(
-        new RegExp(`<link[^>]+href=["']${escapeReg(f.path)}["'][^>]*>`, 'i'),
-        `<style>${f.content}</style>`,
-      );
+    const names = uniqueNames(f.path);
+    for (const name of names) {
+      const esc = escapeReg(name);
+      if (f.path.endsWith('.css')) {
+        out = out.replace(
+          new RegExp(`<link[^>]+href=["'](?:\\./)?${esc}["'][^>]*>`, 'gi'),
+          `<style>${f.content}</style>`,
+        );
+      }
+      if (f.path.endsWith('.js')) {
+        out = out.replace(
+          new RegExp(`<script([^>]*?)\\ssrc=["'](?:\\./)?${esc}["']([^>]*)>\\s*</script>`, 'gi'),
+          `<script$1$2>${f.content}</script>`,
+        );
+      }
     }
   }
   return out;
+}
+
+function uniqueNames(path: string): string[] {
+  const base = path.split('/').pop() ?? path;
+  return [...new Set([path, path.replace(/^\.\//, ''), base])];
 }
 
 function escapeHtml(s: string): string {

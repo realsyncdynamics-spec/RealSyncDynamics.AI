@@ -12,3 +12,5 @@ export * from './demo-generator';
 export * from './diagnostics';
 export * from './project-store';
 export * from './system-prompt';
+export * from './context-pack';
+export * from './runtime-capability';

@@ -23,7 +23,7 @@ export default function BoltCodeBuilderPage(): ReactElement {
     [entitlements.tier, entitlements.features],
   );
   const access = entitlements.canAccess('siteos.builder');
-  const entitled = canOpenAppBuilder(snapshot) || access.allowed;
+  const entitled = canOpenAppBuilder(snapshot);
 
   const ctx: GovernanceContext | null = useMemo(() => {
     if (!isAuthenticated || !activeTenantId) return null;

@@ -164,8 +164,9 @@ describe('bolt engine — ingest', () => {
     await engine.ingest('m', sample, 'hi');
     const del = await engine.deleteFile('index.html');
     expect(del.snapshot.files['index.html']).toBeUndefined();
-    const locked = new BoltEngine({ ...ctx, authenticated: false });
+    const locked = new BoltEngine(ctx);
     await locked.hydrate({ 'index.html': '<h1>x</h1>' });
+    locked.setCtx({ ...ctx, authenticated: false });
     const blocked = await locked.deleteFile('index.html');
     expect(blocked.blocked).toBe(true);
     expect(blocked.snapshot.files['index.html']).toBeDefined();
@@ -206,6 +207,17 @@ describe('bolt engine — ingest', () => {
     expect(result.blocked).toBe(true);
     expect(result.runs[0]?.gate.control).toBe('secret.scan');
   });
+
+  it('hydrate re-scans secrets and skips leaking files', async () => {
+    const engine = new BoltEngine(ctx);
+    await engine.hydrate({
+      'index.html': '<h1>ok</h1>',
+      'leak.ts': 'const k = "sk-ant-abcdefghijklmnopqrstuvwxyz"',
+    });
+    const snap = await engine.store.snapshot();
+    expect(Object.keys(snap.files)).toEqual(['index.html']);
+    expect(engine.audit.some((a) => a.control === 'secret.scan')).toBe(true);
+  });
 });
 
 describe('bolt engine — diagnostics and preview', () => {
@@ -241,6 +253,19 @@ describe('bolt engine — diagnostics and preview', () => {
     ]);
     expect(html.includes('lt;img src=x')).toBe(true);
     expect(html.includes('<img src=x')).toBe(false);
+  });
+
+  it('inlines local script src like CSS', () => {
+    const html = htmlFromFiles(
+      [
+        { path: 'index.html', content: '<head><link href="styles.css" rel="stylesheet"></head><body><script src="app.js"></script></body>', sha256: 'c'.repeat(64), updatedAt: '', revision: 1 },
+        { path: 'styles.css', content: 'body{margin:0}', sha256: 'd'.repeat(64), updatedAt: '', revision: 1 },
+        { path: 'app.js', content: 'window.__ok=1', sha256: 'e'.repeat(64), updatedAt: '', revision: 1 },
+      ],
+      'interactive',
+    );
+    expect(html).toMatch(/<style>body\{margin:0\}<\/style>/);
+    expect(html).toMatch(/<script>window\.__ok=1<\/script>/);
   });
 });
 

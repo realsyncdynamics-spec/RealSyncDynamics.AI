@@ -29,7 +29,7 @@ describe('Governance Sphere — demo contract', () => {
     expect(phases).toEqual(new Set(['Detect', 'Govern', 'Prove', 'Automate']));
   });
 
-  it('keeps lazy host + reduced-motion fallback and mounts it on public MainLanding', () => {
+  it('keeps lazy host + reduced-motion fallback and keeps Sphere off public MainLanding', () => {
     const host = readFileSync(
       resolve(__dirname, '../../src/components/governance-frontend/GovernanceSphereHost.tsx'),
       'utf8',
@@ -40,12 +40,12 @@ describe('Governance Sphere — demo contract', () => {
     expect(host).toContain('GovernanceSphereFallback');
     expect(host).toContain('SPHERE_DEMO_LABEL');
     expect(host).toContain('DEMO DATA');
-    expect(landing).toContain('GovernanceSphereHost');
+    expect(landing).not.toContain('GovernanceSphereHost');
     expect(landing).not.toContain('EuropeReliefBackdrop');
     expect(landing).not.toContain('HeroEuropeSunrise');
   });
 
-  it('Earth backdrop stays Sphere-free; public `/` uses GovernanceSphereHost', () => {
+  it('Earth backdrop stays Sphere-free; public `/` does not mount GovernanceSphereHost', () => {
     const backdrop = readFileSync(
       resolve(__dirname, '../../src/components/landing/HeroEarthBackdrop.tsx'),
       'utf8',
@@ -55,7 +55,7 @@ describe('Governance Sphere — demo contract', () => {
       'utf8',
     );
     const landing = readFileSync(resolve(__dirname, '../../src/pages/MainLanding.tsx'), 'utf8');
-    expect(landing).toContain('GovernanceSphereHost');
+    expect(landing).not.toContain('GovernanceSphereHost');
     expect(landing).not.toContain('EuropeReliefBackdrop');
     expect(landing).not.toContain('HeroEarthBackdrop');
     expect(backdrop).toContain('data-hero-visual="earth-universe"');
@@ -163,8 +163,6 @@ describe('Governance Sphere — demo contract', () => {
     expect(space).toMatch(/RisingSun|SUN_POS|sunrise/i);
     expect(capitals).toContain('Berlin');
     expect(capitals).toContain('Brüssel');
-    expect(existsSync(resolve(__dirname, '../../public/textures/earth-borders-110m.json'))).toBe(
-      true,
-    );
+    expect(existsSync(resolve(__dirname, '../../public/textures/earth-borders-110m.json'))).toBe(true);
   });
 });

@@ -29,7 +29,7 @@ describe('Governance Sphere — demo contract', () => {
     expect(phases).toEqual(new Set(['Detect', 'Govern', 'Prove', 'Automate']));
   });
 
-  it('keeps lazy host + reduced-motion fallback (not mounted on public MainLanding)', () => {
+  it('keeps lazy host + reduced-motion fallback and mounts it on public MainLanding', () => {
     const host = readFileSync(
       resolve(__dirname, '../../src/components/governance-frontend/GovernanceSphereHost.tsx'),
       'utf8',
@@ -40,17 +40,12 @@ describe('Governance Sphere — demo contract', () => {
     expect(host).toContain('GovernanceSphereFallback');
     expect(host).toContain('SPHERE_DEMO_LABEL');
     expect(host).toContain('DEMO DATA');
-    // Public `/`: Titan-Relief als Szenerie (kein Sphere-HUD).
-    expect(landing).toContain('EuropeReliefBackdrop');
-    expect(landing).not.toContain('GovernanceSphereHost');
+    expect(landing).toContain('GovernanceSphereHost');
+    expect(landing).not.toContain('EuropeReliefBackdrop');
     expect(landing).not.toContain('HeroEuropeSunrise');
   });
 
-  // `HeroEarthBackdrop` ist seit dem Titan-Redesign nicht mehr die Szenerie
-  // von `/` (dort steht `EuropeReliefBackdrop`), bleibt aber als Komponente
-  // im Repo. Der Wächter gilt weiter: Wenn sie wieder eingesetzt wird, darf
-  // sie kein Sphere-HUD mitbringen.
-  it('EuropeReliefBackdrop is the `/` scenery; Earth backdrop stays Sphere-free', () => {
+  it('Earth backdrop stays Sphere-free; public `/` uses GovernanceSphereHost', () => {
     const backdrop = readFileSync(
       resolve(__dirname, '../../src/components/landing/HeroEarthBackdrop.tsx'),
       'utf8',
@@ -60,7 +55,8 @@ describe('Governance Sphere — demo contract', () => {
       'utf8',
     );
     const landing = readFileSync(resolve(__dirname, '../../src/pages/MainLanding.tsx'), 'utf8');
-    expect(landing).toContain('EuropeReliefBackdrop');
+    expect(landing).toContain('GovernanceSphereHost');
+    expect(landing).not.toContain('EuropeReliefBackdrop');
     expect(landing).not.toContain('HeroEarthBackdrop');
     expect(backdrop).toContain('data-hero-visual="earth-universe"');
     expect(backdrop).toContain('data-landing-earth');

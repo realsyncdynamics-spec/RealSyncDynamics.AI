@@ -45,7 +45,7 @@ describe('implementation-status registry', () => {
     );
     expect(landing).toContain('PLATFORM_LIVE_ITEMS');
     expect(landing).toContain('LandingRoadmapSection');
-    expect(landing).toContain('GovernanceSphereHost');
+    expect(landing).not.toContain('GovernanceSphereHost');
     expect(roadmap).toContain('PREVIEW_IMPLEMENTATION');
     expect(roadmap).toContain('COMING_SOON_IMPLEMENTATION');
   });

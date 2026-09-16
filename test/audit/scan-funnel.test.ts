@@ -111,6 +111,7 @@ describe('implementation-status registry for scan funnel', () => {
     expect(getImplementation('continuous-domain-monitoring')?.status).toBe('coming-soon');
     expect(getImplementation('post-scan-choice-row')?.status).toBe('live');
     expect(getImplementation('agent-governance')?.status).toBe('preview');
-    expect(getImplementation('free-audit')?.ctaLabel).toBe(HERO_SCAN_CTA_LONG);
+    expect(getImplementation('free-audit')?.route).toBe('/audit');
+    expect(getImplementation('free-audit')?.status).toBe('live');
   });
 });

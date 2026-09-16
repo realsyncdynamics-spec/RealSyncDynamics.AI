@@ -6,6 +6,14 @@ import { classifyPrompt, evaluateAction } from '../../src/features/app-builder/b
 import { BoltEngine } from '../../src/features/app-builder/bolt/engine';
 import { generateBoltArtifact } from '../../src/features/app-builder/bolt/demo-generator';
 import { htmlFromFiles } from '../../src/features/app-builder/bolt/preview';
+import { diagnoseFiles } from '../../src/features/app-builder/bolt/diagnostics';
+import {
+  deleteProject,
+  listProjects,
+  loadProject,
+  saveProject,
+  setProjectStorage,
+} from '../../src/features/app-builder/bolt/project-store';
 import type { FileAction, GovernanceContext, ShellAction } from '../../src/features/app-builder/bolt/types';
 
 const ctx: GovernanceContext = {
@@ -76,13 +84,16 @@ describe('bolt engine — store', () => {
 });
 
 describe('bolt engine — governance', () => {
-  it('is fail-closed without auth or tenant', () => {
+  it('is fail-closed without auth, tenant, or entitlement', () => {
     const file: FileAction = { type: 'file', filePath: 'a.ts', content: 'x' };
     expect(evaluateAction({ ...ctx, authenticated: false }, file, '1', 'minimal').control).toBe(
       'auth.session',
     );
     expect(evaluateAction({ ...ctx, tenantVerified: false }, file, '1', 'minimal').control).toBe(
       'tenant.verified',
+    );
+    expect(evaluateAction({ ...ctx, entitlementBuilder: false }, file, '1', 'minimal').control).toBe(
+      'entitlement.siteos.builder',
     );
   });
 
@@ -132,5 +143,133 @@ describe('bolt engine — ingest', () => {
     const result = await engine.ingest('m', sample, 'hi');
     expect(Object.keys(result.snapshot.files)).toHaveLength(0);
     expect(result.blocked).toBe(true);
+  });
+
+  it('keeps the file tree across follow-up prompts', async () => {
+    const engine = new BoltEngine(ctx);
+    await engine.ingest('m1', sample, 'Erste Seite');
+    const follow = `<boltArtifact title="Table">
+<boltAction type="file" filePath="customers.html">
+<table><tr><td>Ada</td></tr></table>
+</boltAction>
+</boltArtifact>`;
+    const second = await engine.ingest('m2', follow, 'Füge eine Kundentabelle hinzu.');
+    expect(second.snapshot.files['index.html']).toBeDefined();
+    expect(second.snapshot.files['customers.html']).toBeDefined();
+    expect(second.snapshot.files['customers.html'].content).toMatch(/Ada/);
+  });
+
+  it('deletes a file only when the gate allows it', async () => {
+    const engine = new BoltEngine(ctx);
+    await engine.ingest('m', sample, 'hi');
+    const del = await engine.deleteFile('index.html');
+    expect(del.snapshot.files['index.html']).toBeUndefined();
+    const locked = new BoltEngine({ ...ctx, authenticated: false });
+    await locked.hydrate({ 'index.html': '<h1>x</h1>' });
+    const blocked = await locked.deleteFile('index.html');
+    expect(blocked.blocked).toBe(true);
+    expect(blocked.snapshot.files['index.html']).toBeDefined();
+  });
+
+  it('holds high-risk prompts before any file write', async () => {
+    const engine = new BoltEngine(ctx);
+    const result = await engine.ingest(
+      'hr',
+      `<boltArtifact title="x"><boltAction type="file" filePath="index.html"><h1>score</h1></boltAction></boltArtifact>`,
+      'credit scoring dashboard',
+    );
+    expect(Object.keys(result.snapshot.files)).toHaveLength(0);
+    expect(result.runs.some((r) => r.gate.decision === 'require_approval')).toBe(true);
+    expect(result.runs.some((r) => r.gate.control === 'ai-act.high-risk-gate')).toBe(true);
+  });
+
+  it('blocks production commands and does not execute them', async () => {
+    const engine = new BoltEngine(ctx);
+    const result = await engine.ingest(
+      'prod',
+      `<boltArtifact title="x"><boltAction type="shell">wrangler deploy</boltAction></boltArtifact>`,
+      'deploy to production',
+    );
+    expect(Object.keys(result.snapshot.files)).toHaveLength(0);
+    expect(result.blocked).toBe(true);
+    expect(result.runs[0]?.gate.control).toBe('backstop.no-prod-infra');
+  });
+
+  it('blocks secrets inside generated file content', async () => {
+    const engine = new BoltEngine(ctx);
+    const result = await engine.ingest(
+      'sec',
+      `<boltArtifact title="x"><boltAction type="file" filePath="app.ts">const k = "sk-ant-abcdefghijklmnopqrstuvwxyz"</boltAction></boltArtifact>`,
+      'api client',
+    );
+    expect(Object.keys(result.snapshot.files)).toHaveLength(0);
+    expect(result.blocked).toBe(true);
+    expect(result.runs[0]?.gate.control).toBe('secret.scan');
+  });
+});
+
+describe('bolt engine — diagnostics and preview', () => {
+  it('flags unbalanced html', () => {
+    const d = diagnoseFiles([
+      { path: 'index.html', content: '<div><section>x</div>', sha256: 'a'.repeat(64), updatedAt: '', revision: 1 },
+    ]);
+    expect(d.some((x) => x.severity === 'error')).toBe(true);
+  });
+
+  it('preview html changes after a follow-up file write', async () => {
+    const engine = new BoltEngine(ctx);
+    await engine.ingest(
+      'a',
+      `<boltArtifact title="A"><boltAction type="file" filePath="index.html"><h1>Eins</h1></boltAction></boltArtifact>`,
+      'eins',
+    );
+    const first = htmlFromFiles(Object.values((await engine.store.snapshot()).files));
+    await engine.ingest(
+      'b',
+      `<boltArtifact title="B"><boltAction type="file" filePath="index.html"><h1>Zwei</h1></boltAction></boltArtifact>`,
+      'zwei',
+    );
+    const second = htmlFromFiles(Object.values((await engine.store.snapshot()).files));
+    expect(first).toMatch(/Eins/);
+    expect(second).toMatch(/Zwei/);
+    expect(first).not.toBe(second);
+  });
+
+  it('escapes raw file fallback so markup is not injected', () => {
+    const html = htmlFromFiles([
+      { path: 'notes.md', content: '<img src=x onerror=alert(1)>', sha256: 'b'.repeat(64), updatedAt: '', revision: 1 },
+    ]);
+    expect(html.includes('lt;img src=x')).toBe(true);
+    expect(html.includes('<img src=x')).toBe(false);
+  });
+});
+
+describe('bolt engine — tenant isolation', () => {
+  it('tenant A never receives tenant B projects', () => {
+    const mem = new Map<string, string>();
+    setProjectStorage({
+      getItem: (k) => mem.get(k) ?? null,
+      setItem: (k, v) => {
+        mem.set(k, v);
+      },
+    });
+    const base = {
+      slug: 'crm',
+      files: { 'index.html': '<h1>A</h1>' },
+      merkle: 'm',
+      audit: [],
+      messages: [],
+      updatedAt: new Date().toISOString(),
+    };
+    saveProject({ ...base, id: 'p-a', tenantId: 'tenant-a', title: 'A' });
+    saveProject({ ...base, id: 'p-b', tenantId: 'tenant-b', title: 'B' });
+    expect(listProjects('tenant-a')).toHaveLength(1);
+    expect(listProjects('tenant-a')[0].title).toBe('A');
+    expect(loadProject('tenant-a', 'p-b')).toBeNull();
+    expect(loadProject('tenant-b', 'p-a')).toBeNull();
+    deleteProject('tenant-a', 'p-a');
+    expect(listProjects('tenant-a')).toHaveLength(0);
+    expect(listProjects('tenant-b')).toHaveLength(1);
+    setProjectStorage(null);
   });
 });

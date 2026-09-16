@@ -9,7 +9,7 @@ Die produktionsreife Builder-Mechanik von bolt.diy (Code-Gen-Protokoll, Dateien,
 
 ```
 Prompt
-  → (später) RealSync AI-Gateway, nie Browser-Keys
+  → RealSync AI-Gateway (Browser ohne Keys)
   → bolt.diy Parser
   → Governance-Gate (fail-closed)
   → FileStore  |  Shell gehalten
@@ -27,27 +27,17 @@ Snapshot- und Arbeitsbranch. `main` unberührt.
 
 Dieses Dokument plus Ist-Zustand.
 
-### 2 — Engine-Adapter (diese Lieferung)
+### 2 — Engine-Adapter (erledigt)
 
-Neues Modul `src/features/app-builder/bolt/`:
+Modul `src/features/app-builder/bolt/`.
 
-- Parser (Protokoll von bolt.diy, ohne Remix)
-- FileStore, Path-Guard, Secret-Scan
-- ActionRunner ohne WebContainer
-- Governance-Gate
-- Preview aus dem Dateibaum (CSP)
-- Prüfpfad-Records
-- Tests
+### 3 — Workspace (diese Lieferung)
 
-**Nicht** in dieser Phase: App.tsx-Route, Puck ersetzen, Orchestrator abschalten, Gateway verdrahten, Migrationen.
+`BoltWorkbench` als zusätzlicher Modus unter `/builder/:slug/code`. Puck bleibt Default unter `/builder/:slug`. AI nur über das bestehende Gateway. Client-Persistenz tenant-isoliert. Keine neue Tabelle.
 
-### 3 — Workspace (nächster sicherer Schritt)
+### 4 — Runtime (Freigabe nötig)
 
-`BoltWorkbench` als zusätzlicher Modus in `/builder/:slug` (Edit | Preview | Code). Puck bleibt Default. AI nur über das bestehende Gateway. Evidence-Write über vorhandene APIs, keine neue Tabelle in diesem Schritt.
-
-### 4 — Runtime (Freigabe)
-
-WebContainer nur nach bewusster COOP/COEP-Entscheidung. Orchestrator bleibt Registrar (`register_project`). Kein wrangler/KV.
+WebContainer nur nach bewusster COOP/COEP-Entscheidung. Durable Server-Persistenz braucht eine noch nicht vorhandene Edge Function `siteos/code-persist` — nicht erfunden, nicht gemockt. Orchestrator bleibt Registrar. Kein wrangler/KV. Kein Merge nach `main` ohne Freigabe.
 
 ## Gate-Vertrag
 
@@ -76,4 +66,4 @@ WebContainer nur nach bewusster COOP/COEP-Entscheidung. Orchestrator bleibt Regi
 
 ## Rollback
 
-`git switch main` bzw. Snapshot-Branch. Modul ist additiv. Ohne Route-Verdrahtung ändert sich die Live-App nicht.
+`git switch main` bzw. Snapshot-Branch. Modul ist additiv.

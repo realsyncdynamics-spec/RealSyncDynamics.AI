@@ -9,3 +9,6 @@ export * from './error-recovery';
 export * from './preview';
 export * from './engine';
 export * from './demo-generator';
+export * from './diagnostics';
+export * from './project-store';
+export * from './system-prompt';

@@ -1,4 +1,4 @@
-# App Builder — bolt.diy Engine (Phase 2)
+# App Builder — bolt.diy Engine
 
 Additive. Überschreibt Puck, Auth, Tenant, Orchestrator **nicht**.
 
@@ -6,13 +6,19 @@ Additive. Überschreibt Puck, Auth, Tenant, Orchestrator **nicht**.
 - Herkunft: stackblitz-labs/bolt.diy (MIT) — siehe `bolt/VENDOR.md`
 - Plan: `docs/builder/BOLT_DIY_INTEGRATION_PLAN.md`
 
-## Verdrahtung (Phase 3, nicht in dieser Lieferung)
+## Verdrahtung
 
-`App.tsx` bleibt unverändert. Nächster Schritt, nach Review:
+| Pfad | Oberfläche |
+|---|---|
+| `/builder/:slug` | SiteOS / Puck (unverändert) |
+| `/builder/:slug/code` | RealSyncDynamics.AI Web App Builder |
 
-1. `BoltWorkbench` lazy neben `AppBuilderWorkspacePage`
-2. Im Workspace einen dritten Modus `code` neben `edit` | `preview`
-3. AI-Stream nur über das bestehende Gateway
-4. Evidence-Write über vorhandene Vault-APIs, keine neue Migration
+Ablauf:
+
+1. Session (Supabase Auth) und Mandant (`TenantProvider`) — `tenant_id` nie aus der URL.
+2. Entitlement `siteos.builder` über `useEntitlements` / `canOpenAppBuilder`.
+3. Prompt → RealSync AI Gateway (`processAIGatewayRequest`, keine Browser-Keys).
+4. bolt.diy Parser → Governance-Gate → FileStore → sandboxed srcDoc-Preview.
+5. Persistenz: tenant-namespacedter Browser-Store. Server-Persistenz in `siteos_blueprints` ist **nicht** verdrahtet — die Tabelle trägt Puck-Blueprints, keine Dateibäume. Edge Function `siteos/code-persist` fehlt (externer Blocker, kein Mock).
 
 WebContainer, COOP/COEP, wrangler, KV: gesperrt bis explizite Infra-Freigabe.

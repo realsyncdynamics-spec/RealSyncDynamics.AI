@@ -8,6 +8,7 @@
 
 import type { FileRecord } from './types';
 
+
 export type PreviewIsolation = 'static' | 'interactive';
 
 export function sandboxTokens(isolation: PreviewIsolation): string {
@@ -17,7 +18,7 @@ export function sandboxTokens(isolation: PreviewIsolation): string {
 }
 
 export function withPreviewCsp(html: string, isolation: PreviewIsolation): string {
-  const js = isolation === 'interactive' ? '' : " script-src 'none';";
+  const js = isolation === 'interactive' ? " script-src 'unsafe-inline';" : " script-src 'none';";
   const csp = `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data:; style-src 'unsafe-inline';${js} base-uri 'none'; form-action 'none';">`;
   if (/<head[\s>]/i.test(html)) return html.replace(/<head([^>]*)>/i, `<head$1>${csp}`);
   return `<!doctype html><html><head>${csp}<meta charset="utf-8"></head><body>${html}</body></html>`;
@@ -58,7 +59,20 @@ function inlineLocal(html: string, files: FileRecord[]): string {
 }
 
 function escapeHtml(s: string): string {
-  return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] ?? c));
+  return s.replace(/[&<>"']/g, (c) => {
+    switch (c) {
+      case '&':
+        return '&' + 'amp;';
+      case '<':
+        return '&' + 'lt;';
+      case '>':
+        return '&' + 'gt;';
+      case '"':
+        return '&' + 'quot;';
+      default:
+        return '&#39;';
+    }
+  });
 }
 
 function escapeReg(s: string): string {

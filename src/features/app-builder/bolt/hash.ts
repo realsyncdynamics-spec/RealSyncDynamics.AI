@@ -1,13 +1,12 @@
-/** SHA-256 hex, works in the browser (subtle) and in Node tests. */
+/** SHA-256 hex via Web Crypto. Node 19+ and browsers both expose crypto.subtle. */
 
 export async function sha256Hex(text: string): Promise<string> {
-  const encoded = new TextEncoder().encode(text);
-  if (globalThis.crypto?.subtle) {
-    const buf = await globalThis.crypto.subtle.digest('SHA-256', encoded);
-    return bytesToHex(new Uint8Array(buf));
+  const subtle = globalThis.crypto?.subtle;
+  if (!subtle) {
+    throw new Error('SHA-256 requires Web Crypto (crypto.subtle)');
   }
-  const { createHash } = await import('node:crypto');
-  return createHash('sha256').update(text).digest('hex');
+  const buf = await subtle.digest('SHA-256', new TextEncoder().encode(text));
+  return bytesToHex(new Uint8Array(buf));
 }
 
 export function bytesToHex(bytes: Uint8Array): string {

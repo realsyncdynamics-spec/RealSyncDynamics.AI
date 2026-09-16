@@ -30,20 +30,18 @@ describe('Kanonischer Scan-Einstieg', () => {
   it('führt den Governance-Scan der Startseite nach /audit', () => {
     landingRendern();
 
-    const form = document.querySelector('#scan') as HTMLFormElement;
-    expect(form).toBeTruthy();
-    expect(form.tagName).toBe('FORM');
-    fireEvent.submit(form);
+    const cta = document.querySelector('#scan') as HTMLAnchorElement;
+    expect(cta).toBeTruthy();
+    expect(cta.tagName).toBe('A');
+    fireEvent.click(cta);
     expect(screen.getByText(AUDIT_PLATZHALTER)).toBeTruthy();
   });
 
-  it('reicht eine Domain als ?domain= an /audit weiter', () => {
+  it('nutzt auf der Startseite keinen zweiten Formular-Trichter mehr', () => {
     landingRendern();
 
-    const input = screen.getByLabelText(/Ihre Website/i);
-    fireEvent.change(input, { target: { value: 'firma.de' } });
-    fireEvent.submit(document.querySelector('#scan') as HTMLFormElement);
-    expect(screen.getByText(AUDIT_PLATZHALTER)).toBeTruthy();
+    expect(screen.queryByLabelText(/Ihre Website/i)).toBeNull();
+    expect(document.querySelector('#scan')?.tagName).toBe('A');
   });
 
   it('zeigt den Governance-OS-CTA auf der Startseite', () => {

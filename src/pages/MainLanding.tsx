@@ -64,29 +64,26 @@ const POLICY_PACKS: readonly (readonly [string, boolean])[] = [
   ['DORA', false],
 ];
 
-const HEX = '0123456789abcdef';
-const randomHex = (length: number) =>
-  Array.from({ length }, () => HEX[Math.floor(Math.random() * 16)]).join('');
+function EvidenceSealTicker() {
+  const [age, setAge] = useState(4);
 
-function useEvidenceSeal() {
-  const [seal, setSeal] = useState({ age: 4, height: 1284, hash: `0x${randomHex(4)}…${randomHex(4)}` });
   useEffect(() => {
     if (prefersReducedMotion()) return;
     const interval = window.setInterval(() => {
-      setSeal((current) => {
-        const age = current.age + 1;
-        if (age <= 14 + Math.random() * 10) return { ...current, age };
-        return { age: 0, height: current.height + 1, hash: `0x${randomHex(4)}…${randomHex(4)}` };
-      });
+      setAge((current) => (current >= 24 ? 0 : current + 1));
     }, 1000);
     return () => window.clearInterval(interval);
   }, []);
-  return seal;
+
+  return (
+    <p className="mt-7 text-[11px] tracking-[.12em]" style={{ fontFamily: GA_MONO, color: GA_TITAN }}>
+      LETZTER NACHWEIS VERANKERT <b style={{ color: GA_GOLD_LITE }}>vor {age} s</b>
+    </p>
+  );
 }
 
 export function MainLanding() {
   const { theme, setTheme } = useGaTheme();
-  const seal = useEvidenceSeal();
 
   useEffect(() => {
     if (prefersReducedMotion()) return;
@@ -161,7 +158,7 @@ export function MainLanding() {
                 {HERO_SCAN_CTA_LABEL}
                 <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </Link>
-              <OsEntryLink to="/app" data-hero-cta className={GA_PILL_GHOST}>
+              <OsEntryLink to="/app" className={GA_PILL_GHOST}>
                 {HERO_DASHBOARD_CTA_LABEL}
               </OsEntryLink>
             </div>
@@ -173,9 +170,7 @@ export function MainLanding() {
                 </span>
               ))}
             </div>
-            <p className="mt-7 text-[11px] tracking-[.12em]" style={{ fontFamily: GA_MONO, color: GA_TITAN }}>
-              LETZTER NACHWEIS VERANKERT <b style={{ color: GA_GOLD_LITE }}>vor {seal.age} s</b>
-            </p>
+            <EvidenceSealTicker />
             <div className="mt-[34px] flex flex-wrap gap-2 border-t pt-[22px]" style={{ borderColor: GA_LINE_SOFT }}>
               {POLICY_PACKS.map(([name, live]) => (
                 <span key={name} className="rounded border px-3 py-[7px] text-[11px]" style={{ fontFamily: GA_MONO, borderColor: GA_LINE, borderStyle: live ? 'solid' : 'dashed', color: live ? GA_SILVER : GA_TITAN }}>

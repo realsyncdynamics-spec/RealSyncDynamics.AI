@@ -62,6 +62,7 @@ describe('Landing ↔ Infrastruktur', () => {
     expect(mainLanding).toContain('to="/audit"');
     expect(mainLanding).toContain('id="scan"');
     expect(mainLanding).toContain('data-hero-cta');
+    expect(mainLanding.match(/data-hero-cta/g)?.length).toBe(1);
     expect(platform).toContain('PLATFORM_LIVE_ITEMS');
     expect(mainLanding).toContain('PlatformCapabilitiesSection');
     expect(mainLanding).not.toContain('Demo buchen');

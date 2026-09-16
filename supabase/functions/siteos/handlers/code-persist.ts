@@ -4,20 +4,24 @@
 // Auth: Authorization: Bearer <user JWT>
 // Body: { op: 'list'|'load'|'save'|'delete', tenant_id, ... }
 //
-// Tenant from the body is a CLAIM. Membership is verified against
-// public.memberships. All queries are scoped to the verified tenant.
-// A forged tenant_id cannot read or write another tenant's rows.
+// tenant_id in the body is a CLAIM, never authority. Membership is
+// resolved with the shared requireAuthAndTenant helper (JWT → user →
+// public.memberships). After that, every query uses the verified
+// tenantId. A forged tenant_id cannot read or write another tenant's rows.
 //
-// Distinct from siteos_blueprints (Puck). Writes via service_role only.
+// Distinct from siteos_blueprints (Puck). Writes via service_role only
+// AFTER membership is confirmed. No Cloudflare KV.
 
-import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { handleOptions, jsonResponse, jsonError, methodNotAllowed } from '../../_shared/gateway.ts';
+import { requireAuthAndTenant, type AuthContext } from '../../_shared/auth.ts';
 import { EntitlementError, gateFeature } from '../../_shared/entitlements.ts';
 
 const OPS = new Set(['list', 'load', 'save', 'delete']);
 const MAX_FILES = 80;
 const MAX_FILE_BYTES = 200_000;
 const MAX_PROJECT_BYTES = 1_500_000;
+
+type Admin = AuthContext['admin'];
 
 interface ProjectRow {
   id: string;
@@ -74,9 +78,6 @@ export async function handle(req: Request): Promise<Response> {
   if (preflight) return preflight;
   if (req.method !== 'POST') return methodNotAllowed();
 
-  const authHeader = req.headers.get('Authorization');
-  if (!authHeader?.startsWith('Bearer ')) return jsonError(401, 'UNAUTHORIZED', 'missing bearer token');
-
   let body: Record<string, unknown>;
   try {
     body = await req.json();
@@ -87,30 +88,11 @@ export async function handle(req: Request): Promise<Response> {
   const op = String(body.op ?? '').trim();
   if (!OPS.has(op)) return jsonError(400, 'BAD_REQUEST', 'op must be list|load|save|delete');
 
-  const claimedTenant = String(body.tenant_id ?? '').trim();
-  if (!claimedTenant) return jsonError(400, 'BAD_REQUEST', 'tenant_id required');
-
-  const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
-  const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
-  const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-
-  const userClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-    global: { headers: { Authorization: authHeader } },
-    auth: { persistSession: false },
-  });
-  const { data: userResp, error: userErr } = await userClient.auth.getUser();
-  if (userErr || !userResp.user) return jsonError(401, 'UNAUTHORIZED', 'invalid token');
-  const userId = userResp.user.id;
-
-  const admin = createClient(SUPABASE_URL, SERVICE_ROLE, { auth: { persistSession: false } });
-
-  const { data: member } = await admin
-    .from('memberships').select('user_id')
-    .eq('tenant_id', claimedTenant).eq('user_id', userId).maybeSingle();
-  if (!member) return jsonError(403, 'FORBIDDEN', 'not a member of this tenant');
-
-  // Verified tenant — body.tenant_id is ignored from here on.
-  const tenantId = claimedTenant;
+  // Claim from the body is verified against memberships. After this,
+  // body.tenant_id is not consulted — only auth.tenantId.
+  const auth = await requireAuthAndTenant(req, typeof body.tenant_id === 'string' ? body.tenant_id : null);
+  if (auth instanceof Response) return auth;
+  const { tenantId, user, admin } = auth;
 
   try {
     await gateFeature(admin, tenantId, 'siteos.builder');
@@ -124,10 +106,10 @@ export async function handle(req: Request): Promise<Response> {
   if (op === 'list') return listProjects(admin, tenantId);
   if (op === 'load') return loadProject(admin, tenantId, String(body.id ?? '').trim());
   if (op === 'delete') return archiveProject(admin, tenantId, String(body.id ?? '').trim());
-  return saveProject(admin, tenantId, userId, body);
+  return saveProject(admin, tenantId, user.id, body);
 }
 
-async function listProjects(admin: ReturnType<typeof createClient>, tenantId: string): Promise<Response> {
+async function listProjects(admin: Admin, tenantId: string): Promise<Response> {
   const { data, error } = await admin
     .from('app_builder_projects')
     .select('id, slug, title, merkle, version, status, updated_at, files')
@@ -164,11 +146,7 @@ interface ProjectListRow {
   files: Record<string, string> | null;
 }
 
-async function loadProject(
-  admin: ReturnType<typeof createClient>,
-  tenantId: string,
-  id: string,
-): Promise<Response> {
+async function loadProject(admin: Admin, tenantId: string, id: string): Promise<Response> {
   if (!id) return jsonError(400, 'BAD_REQUEST', 'id required');
   const { data, error } = await admin
     .from('app_builder_projects')
@@ -181,11 +159,7 @@ async function loadProject(
   return jsonResponse({ ok: true, project: publicRecord(data) });
 }
 
-async function archiveProject(
-  admin: ReturnType<typeof createClient>,
-  tenantId: string,
-  id: string,
-): Promise<Response> {
+async function archiveProject(admin: Admin, tenantId: string, id: string): Promise<Response> {
   if (!id) return jsonError(400, 'BAD_REQUEST', 'id required');
   const { data, error } = await admin
     .from('app_builder_projects')
@@ -207,7 +181,7 @@ async function archiveProject(
 }
 
 async function saveProject(
-  admin: ReturnType<typeof createClient>,
+  admin: Admin,
   tenantId: string,
   userId: string,
   body: Record<string, unknown>,

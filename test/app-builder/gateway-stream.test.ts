@@ -92,5 +92,7 @@ describe('ai-gateway stream op is registered', () => {
     expect(src).toMatch(/'stream'/);
     expect(src).toMatch(/generateStream/);
     expect(src).toMatch(/application\/x-ndjson/);
+    expect(src).toMatch(/body\.stream === true/);
+    expect(src).toMatch(/streamOpenAiCompat/);
   });
 });

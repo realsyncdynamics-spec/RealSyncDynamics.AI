@@ -1,6 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
+import { MemoryRouter, Route, Routes, useLocation, useParams, Link } from 'react-router-dom';
 import { analyzeBlueprint, buildSiteFromPrompt, canonicalHash, type SiteBlueprint } from '../../packages/siteos-core/src/index';
 import { pageToPuckData, type PuckPageData } from '../../src/features/siteos/editor/blueprintPuckAdapter';
 
@@ -78,6 +78,19 @@ function LocationProbe() {
   return <div data-testid="location">{loc.pathname}{loc.search}</div>;
 }
 
+function CodePageStub() {
+  const { slug = '' } = useParams<{ slug: string }>();
+  const loc = useLocation();
+  return (
+    <div>
+      <div data-testid="location">{loc.pathname}{loc.search}</div>
+      <Link to={`/builder/${slug}${loc.search}`} data-testid="back-to-puck">
+        Zurück zu SiteOS / Puck
+      </Link>
+    </div>
+  );
+}
+
 async function sample() {
   const { blueprint } = await buildSiteFromPrompt('Erstelle eine Website für einen Zahnarzt in Hamburg.', {
     locale: 'de', model: 'test-model', createdAt: '2026-09-06T00:00:00.000Z',
@@ -96,7 +109,7 @@ function renderWorkspace(slug: string, search = '') {
   return render(
     <MemoryRouter initialEntries={[`/builder/${slug}${search}`]}>
       <Routes>
-        <Route path="/builder/:slug/code" element={<LocationProbe />} />
+        <Route path="/builder/:slug/code" element={<CodePageStub />} />
         <Route path="/builder/:slug" element={<AppBuilderWorkspacePage />} />
         <Route path="/welcome" element={<LocationProbe />} />
         <Route path="/unified-entry/transformation" element={<LocationProbe />} />
@@ -409,6 +422,21 @@ describe('App Builder Workspace — Code-Link ohne Puck-Regression', () => {
     fireEvent.click(screen.getByTestId('open-code-builder'));
     await waitFor(() => expect(screen.getByTestId('location').textContent).toBe(`/builder/${blueprint.slug}/code`));
     expect(screen.queryByTestId('editor')).not.toBeInTheDocument();
+  });
+
+  it('kehrt vom Code-Builder zur Puck-Route zurück', async () => {
+    const { blueprint, sha256 } = await sample();
+    api.loadLatestBlueprint.mockResolvedValue(storedRow(blueprint, sha256));
+    renderWorkspace(blueprint.slug);
+    await waitFor(() => expect(screen.getByTestId('editor')).toBeInTheDocument());
+    fireEvent.click(screen.getByTestId('open-code-builder'));
+    await waitFor(() => expect(screen.getByTestId('back-to-puck')).toBeInTheDocument());
+    fireEvent.click(screen.getByTestId('back-to-puck'));
+    await waitFor(() => expect(screen.getByTestId('editor')).toBeInTheDocument());
+    expect(screen.getByTestId('open-code-builder')).toHaveAttribute(
+      'href',
+      `/builder/${blueprint.slug}/code`,
+    );
   });
 
   it('hält Speichern, Laden und Publish-Gate nach der Code-Route unverändert', async () => {

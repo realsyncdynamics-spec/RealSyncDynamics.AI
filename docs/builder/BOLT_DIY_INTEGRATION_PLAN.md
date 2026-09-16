@@ -37,7 +37,7 @@ Modul `src/features/app-builder/bolt/`.
 
 ### 4 — Runtime (Freigabe nötig)
 
-WebContainer nur nach bewusster COOP/COEP-Entscheidung. Durable Server-Persistenz braucht eine noch nicht vorhandene Edge Function `siteos/code-persist` — nicht erfunden, nicht gemockt. Orchestrator bleibt Registrar. Kein wrangler/KV. Kein Merge nach `main` ohne Freigabe.
+WebContainer nur nach bewusster COOP-COEP-Entscheidung. Durable Server-Persistenz ist als Code fertig (`siteos/code-persist` + Migration `app_builder_projects`) — anwenden und die Function `siteos` deployen ist eine Production-Mutation und bleibt gesperrt, bis sie ausdrücklich freigegeben wird. Orchestrator bleibt Registrar. Kein wrangler/KV. Kein Merge nach `main` ohne Freigabe.
 
 ## Gate-Vertrag
 

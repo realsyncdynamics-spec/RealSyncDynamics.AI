@@ -105,6 +105,7 @@ export default function BoltCodeBuilderPage(): ReactElement {
         </div>
         <Link
           to={`/builder/${encodeURIComponent(slug)}${location.search}`}
+          data-testid="back-to-puck"
           className="inline-flex min-h-11 items-center border border-white/15 px-3 text-xs"
         >
           Zurück zu SiteOS / Puck

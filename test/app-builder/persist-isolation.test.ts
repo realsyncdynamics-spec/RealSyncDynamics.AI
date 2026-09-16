@@ -137,29 +137,63 @@ describe('code-persist handler source — isolation invariants', () => {
     resolve(__dirname, '../../supabase/functions/siteos/handlers/code-persist.ts'),
     'utf8',
   );
+  const authSrc = readFileSync(
+    resolve(__dirname, '../../supabase/functions/_shared/auth.ts'),
+    'utf8',
+  );
 
-  it('verifies membership before any query', () => {
-    expect(src).toMatch(/from\('memberships'\)/);
-    expect(src).toMatch(/not a member of this tenant/);
-    const memberAt = src.indexOf("from('memberships')");
+  it('uses requireAuthAndTenant before any project query', () => {
+    expect(src).toMatch(/requireAuthAndTenant/);
+    const authAt = src.indexOf('requireAuthAndTenant');
     const tableAt = src.indexOf("from('app_builder_projects')");
-    expect(memberAt).toBeGreaterThan(-1);
-    expect(tableAt).toBeGreaterThan(memberAt);
+    expect(authAt).toBeGreaterThan(-1);
+    expect(tableAt).toBeGreaterThan(authAt);
   });
 
-  it('scopes every table access to the verified tenant_id', () => {
-    const hits = [...src.matchAll(/from\('app_builder_projects'\)([\s\S]{0,280})/g)];
+  it('shared auth helper verifies membership against public.memberships', () => {
+    expect(authSrc).toMatch(/from\('memberships'\)/);
+    expect(authSrc).toMatch(/not a member of the requested tenant/);
+    expect(authSrc).toMatch(/eq\('tenant_id', tenantId\)/);
+    expect(authSrc).toMatch(/eq\('user_id', userId\)/);
+  });
+
+  it('does not query siteos_blueprints', () => {
+    expect(src).not.toMatch(/from\('siteos_blueprints'\)/);
+    expect(src).toMatch(/from\('app_builder_projects'\)/);
+  });
+
+  it('scopes every table access to the verified tenantId', () => {
+    const hits = [...src.matchAll(/from\('app_builder_projects'\)([\s\S]{0,320})/g)];
     expect(hits.length).toBeGreaterThan(3);
     for (const h of hits) {
-      const scoped = /eq\('tenant_id', tenantId\)/.test(h[1]) || /tenant_id:\s*tenantId/.test(src);
+      const scoped = /eq\('tenant_id', tenantId\)/.test(h[1]) || /insert\(insert\)/.test(h[1]);
       expect(scoped).toBe(true);
     }
     expect(src).toMatch(/tenant_id:\s*tenantId/);
-    expect(src).toMatch(/eq\('tenant_id', tenantId\)/);
+    expect(src).not.toMatch(/claimedTenant/);
+    expect(src).not.toMatch(/eq\('tenant_id', String\(body\.tenant_id/);
   });
 
   it('does not insert the client tenant_id as authority', () => {
-    expect(src).toMatch(/const tenantId = claimedTenant/);
+    expect(src).toMatch(/const \{ tenantId, user, admin \} = auth/);
     expect(src).toMatch(/gateFeature\(admin, tenantId, 'siteos\.builder'\)/);
+    const gateAt = src.indexOf("gateFeature(admin, tenantId, 'siteos.builder')");
+    const insertAt = src.indexOf('.insert(insert)');
+    expect(gateAt).toBeGreaterThan(-1);
+    expect(insertAt).toBeGreaterThan(gateAt);
+  });
+});
+
+describe('persist-api client — production path', () => {
+  const src = readFileSync(
+    resolve(__dirname, '../../src/features/app-builder/persist/persist-api.ts'),
+    'utf8',
+  );
+
+  it('invokes siteos/code-persist, never siteos_blueprints', () => {
+    expect(src).toMatch(/functions\.invoke\('siteos\/code-persist'/);
+    expect(src).not.toMatch(/siteos_blueprints/);
+    expect(src).not.toMatch(/siteos\/edit/);
+    expect(src).not.toMatch(/siteos\/builder/);
   });
 });

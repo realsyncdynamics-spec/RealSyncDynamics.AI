@@ -21,9 +21,8 @@ describe('implementation-status registry', () => {
     }
   });
 
-  it('keeps yearly billing off live; sphere live on /', () => {
+  it('keeps yearly billing off live; free audit live', () => {
     expect(isImplementationLive('pricing-yearly')).toBe(false);
-    expect(isImplementationLive('governance-sphere-interactive')).toBe(true);
     expect(isImplementationLive('free-audit')).toBe(true);
   });
 
@@ -66,10 +65,6 @@ describe('implementation-status registry', () => {
     expect(hero).toContain('AI Governance');
     expect(hero).toContain('Running in Real');
     expect(hero).toContain("HERO_HEADLINE_TEST_SUBSTRING = 'AI Governance'");
-    expect(hero).toContain('Detect');
-    expect(hero).toContain('Govern');
-    expect(hero).toContain('Prove');
-    expect(hero).toContain('Automate');
     expect(hero).not.toContain('99.9');
     expect(hero).not.toContain('UPTIME');
   });

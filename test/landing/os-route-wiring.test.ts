@@ -58,8 +58,8 @@ describe('Landing ↔ Infrastruktur', () => {
     expect(app).toMatch(/path="\/app\/activation"[^>]*AppGate/);
   });
 
-  it('Dominik landing CTAs zeigen Audit + Sphere, keine Demo-Buchung', () => {
-    expect(mainLanding).toContain('GovernanceSphereHost');
+  it('Dominik landing CTAs zeigen Audit, keine Demo-Buchung, keine Sphere auf /', () => {
+    expect(mainLanding).not.toContain('GovernanceSphereHost');
     expect(mainLanding).toContain('to="/audit"');
     expect(mainLanding).toContain('id="scan"');
     expect(mainLanding).toContain('PLATFORM_LIVE_ITEMS');

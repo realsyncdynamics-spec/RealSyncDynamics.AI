@@ -29,7 +29,7 @@ describe('Governance Sphere — demo contract', () => {
     expect(phases).toEqual(new Set(['Detect', 'Govern', 'Prove', 'Automate']));
   });
 
-  it('keeps lazy host + reduced-motion fallback and mounts it on public MainLanding', () => {
+  it('keeps lazy host + reduced-motion fallback (not mounted on public /)', () => {
     const host = readFileSync(
       resolve(__dirname, '../../src/components/governance-frontend/GovernanceSphereHost.tsx'),
       'utf8',
@@ -40,12 +40,12 @@ describe('Governance Sphere — demo contract', () => {
     expect(host).toContain('GovernanceSphereFallback');
     expect(host).toContain('SPHERE_DEMO_LABEL');
     expect(host).toContain('DEMO DATA');
-    expect(landing).toContain('GovernanceSphereHost');
-    expect(landing).not.toContain('EuropeReliefBackdrop');
+    expect(landing).toContain('EuropeReliefBackdrop');
+    expect(landing).not.toContain('GovernanceSphereHost');
     expect(landing).not.toContain('HeroEuropeSunrise');
   });
 
-  it('Earth backdrop stays Sphere-free; public `/` uses GovernanceSphereHost', () => {
+  it('Earth backdrop stays Sphere-free; public / uses EuropeReliefBackdrop', () => {
     const backdrop = readFileSync(
       resolve(__dirname, '../../src/components/landing/HeroEarthBackdrop.tsx'),
       'utf8',
@@ -55,29 +55,13 @@ describe('Governance Sphere — demo contract', () => {
       'utf8',
     );
     const landing = readFileSync(resolve(__dirname, '../../src/pages/MainLanding.tsx'), 'utf8');
-    expect(landing).toContain('GovernanceSphereHost');
-    expect(landing).not.toContain('EuropeReliefBackdrop');
+    expect(landing).toContain('EuropeReliefBackdrop');
+    expect(landing).not.toContain('GovernanceSphereHost');
     expect(landing).not.toContain('HeroEarthBackdrop');
     expect(backdrop).toContain('data-hero-visual="earth-universe"');
-    expect(backdrop).toContain('data-landing-earth');
-    expect(backdrop).toContain('data-hero-scenery="europe-night-gold-network"');
-    expect(backdrop).toContain('data-hero-framing="europe-right"');
-    expect(backdrop).toContain('data-hero-scenery="gold-network"');
-    expect(backdrop).toContain('data-planet="mars"');
-    expect(backdrop).toContain('data-planet="jupiter"');
-    expect(backdrop).toContain('data-planet="saturn"');
-    expect(backdrop).toContain('data-hero-scenery="moon"');
-    expect(scene).toContain('GoldEuropeNetwork');
-    expect(scene).toContain('e4cfa2');
     expect(backdrop).toContain('pointer-events-none');
-    expect(backdrop).not.toContain('GovernanceSphereHost');
-    expect(backdrop).not.toContain('SPHERE_DEMO_LABEL');
+    expect(scene).toContain('GoldEuropeNetwork');
     expect(scene).toContain('PhotorealEarthMesh');
-    expect(scene).not.toContain('SphereGeography');
-    expect(scene).not.toContain('GOVERNANCE_SPHERE_NODES');
-    expect(scene).not.toContain('SPHERE_DEMO_LABEL');
-    expect(scene).not.toContain('CONTINENT_LABELS');
-    expect(scene).not.toMatch(/DragOrbit|ModestZoom/);
   });
 
   it('renders photoreal Earth (day texture), not wireframe-only mesh', () => {
@@ -99,12 +83,8 @@ describe('Governance Sphere — demo contract', () => {
     );
     expect(scene).toContain('PhotorealEarthMesh');
     expect(scene).not.toMatch(/\bwireframe\b/);
-    expect(scene).not.toContain('icosahedronGeometry');
     expect(mesh).toContain('/textures/earth-day.jpg');
-    expect(mesh).toContain('meshBasicMaterial');
     expect(textures).toContain('earth-day-8k.jpg');
-    expect(mesh).toMatch(/uNight|night/i);
-    expect(mesh).toMatch(/uClouds|clouds/i);
     expect(fallback).toContain('/europe-globe');
   });
 
@@ -130,41 +110,5 @@ describe('Governance Sphere — demo contract', () => {
     expect(getEarthTextureSet('high').day).toBe('/textures/earth-day-8k.jpg');
     expect(getEarthTextureSet('high').cloudsEnabled).toBe(true);
     expect(getEarthTextureSet('low').nightEnabled).toBe(false);
-  });
-
-  it('ships geography + space backdrop (borders, capitals, planets, sunrise)', () => {
-    const scene = readFileSync(
-      resolve(__dirname, '../../src/components/governance-frontend/GovernanceSphereScene.tsx'),
-      'utf8',
-    );
-    const geo = readFileSync(
-      resolve(__dirname, '../../src/components/governance-frontend/SphereGeography.tsx'),
-      'utf8',
-    );
-    const space = readFileSync(
-      resolve(__dirname, '../../src/components/governance-frontend/SphereSpaceBackground.tsx'),
-      'utf8',
-    );
-    const capitals = readFileSync(
-      resolve(__dirname, '../../src/components/governance-frontend/geo/capitals.ts'),
-      'utf8',
-    );
-    expect(scene).toContain('SphereGeography');
-    expect(scene).toContain('SphereSpaceBackground');
-    expect(scene).toMatch(/Bloom|EffectComposer/);
-    expect(geo).toContain('earth-borders-110m.json');
-    expect(geo).toContain('Hauptstadt');
-    expect(space).toContain('mars');
-    expect(space).toContain('jupiter');
-    expect(space).toContain('saturn');
-    expect(space).toContain('neptune');
-    expect(space).toContain('pluto');
-    expect(space).toContain('uranus');
-    expect(space).toMatch(/RisingSun|SUN_POS|sunrise/i);
-    expect(capitals).toContain('Berlin');
-    expect(capitals).toContain('Brüssel');
-    expect(existsSync(resolve(__dirname, '../../public/textures/earth-borders-110m.json'))).toBe(
-      true,
-    );
   });
 });

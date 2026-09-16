@@ -21,10 +21,9 @@ describe('implementation-status registry', () => {
     }
   });
 
-  it('keeps yearly billing off live; Earth backdrop live on /; sphere not on /', () => {
+  it('keeps yearly billing off live; sphere live on /', () => {
     expect(isImplementationLive('pricing-yearly')).toBe(false);
-    expect(isImplementationLive('governance-sphere-interactive')).toBe(false);
-    expect(isImplementationLive('hero-earth-scenery')).toBe(true);
+    expect(isImplementationLive('governance-sphere-interactive')).toBe(true);
     expect(isImplementationLive('free-audit')).toBe(true);
   });
 
@@ -41,14 +40,13 @@ describe('implementation-status registry', () => {
 
   it('MainLanding + roadmap render from the registry', () => {
     const landing = readFileSync(resolve('src/pages/MainLanding.tsx'), 'utf8');
-    const spine = readFileSync(resolve('src/components/landing/LandingOsSpine.tsx'), 'utf8');
     const roadmap = readFileSync(
       resolve('src/components/landing/LandingRoadmapSection.tsx'),
       'utf8',
     );
-    expect(landing + spine).toContain('PLATFORM_LIVE_ITEMS');
+    expect(landing).toContain('PLATFORM_LIVE_ITEMS');
     expect(landing).toContain('LandingRoadmapSection');
-    expect(landing).not.toContain('Vollständige KI-Governance');
+    expect(landing).toContain('GovernanceSphereHost');
     expect(roadmap).toContain('PREVIEW_IMPLEMENTATION');
     expect(roadmap).toContain('COMING_SOON_IMPLEMENTATION');
   });
@@ -60,31 +58,19 @@ describe('implementation-status registry', () => {
     }
   });
 
-  it('hero headline is Europe-OS lock (AI Compliance Operations OS for Europe)', () => {
+  it('hero headline is Governance OS preview lock', () => {
     const hero = readFileSync(
       resolve('src/components/governance-frontend/hero-content.ts'),
       'utf8',
     );
-    expect(hero).toContain('AI Compliance');
-    expect(hero).toContain('Operations OS');
-    expect(hero).toContain('Europe');
-    expect(hero).toContain("HERO_HEADLINE_TEST_SUBSTRING = 'AI Compliance'");
-    expect(hero).toContain('Free Audit starten');
-    expect(hero).toContain('Live Dashboard ansehen');
-    expect(hero).toContain('DISCOVER → CLASSIFY → ENFORCE → PROVE');
-    expect(hero).toContain('Runtime governance for regulated AI systems');
-    expect(hero).toContain('AI GOVERNANCE · RUNNING IN REAL TIME');
-    expect(hero).toContain('EU-CENTRAL');
-    expect(hero).toContain('EVIDENCE-CHAIN');
-    expect(hero).toContain('AI-ACT-KLASSIFIKATION');
-    expect(hero).toContain('PROVENANCE');
-    expect(hero).toContain('C2PA');
+    expect(hero).toContain('AI Governance');
+    expect(hero).toContain('Running in Real');
+    expect(hero).toContain("HERO_HEADLINE_TEST_SUBSTRING = 'AI Governance'");
+    expect(hero).toContain('Detect');
+    expect(hero).toContain('Govern');
+    expect(hero).toContain('Prove');
+    expect(hero).toContain('Automate');
     expect(hero).not.toContain('99.9');
     expect(hero).not.toContain('UPTIME');
-    expect(hero).not.toContain('Running in Real');
-    expect(hero).toContain("text: 'Europe'");
-    expect(hero).toContain('accent: true');
-    expect(hero).toMatch(/AI Compliance/);
-    expect(hero).toMatch(/Operations OS for/);
   });
 });

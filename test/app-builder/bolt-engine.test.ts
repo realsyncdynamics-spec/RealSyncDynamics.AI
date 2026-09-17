@@ -208,6 +208,24 @@ describe('bolt engine — ingest', () => {
     expect(result.runs[0]?.gate.control).toBe('secret.scan');
   });
 
+  it('does not write a truncated boltAction without a close tag', async () => {
+    const engine = new BoltEngine(ctx);
+    await engine.ingest(
+      'base',
+      `<boltArtifact title="base"><boltAction type="file" filePath="index.html"><h1>Baseline</h1></boltAction></boltArtifact>`,
+      'Kleine Vorschau-Seite',
+    );
+    const merkle = (await engine.store.snapshot()).merkle;
+    const cut = await engine.ingest(
+      'cut',
+      `<boltArtifact title="cut"><boltAction type="file" filePath="partial.html">\n<html><body>UNCOMPLETE\n`,
+      'Kleine Vorschau-Seite',
+    );
+    expect(cut.snapshot.files['partial.html']).toBeUndefined();
+    expect(cut.runs).toHaveLength(0);
+    expect(cut.snapshot.merkle).toBe(merkle);
+  });
+
   it('hydrate re-scans secrets and skips leaking files', async () => {
     const engine = new BoltEngine(ctx);
     await engine.hydrate({

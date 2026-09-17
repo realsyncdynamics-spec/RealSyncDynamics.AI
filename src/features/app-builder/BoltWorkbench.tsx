@@ -3,7 +3,7 @@
  * Puck remains the visual editor at /builder/:slug. This surface is additive.
  */
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
-import { FileCode2, Loader2, Play, Plus, RefreshCw, ShieldOff, Trash2, Wrench } from 'lucide-react';
+import { FileCode2, Loader2, Play, Plus, RefreshCw, ShieldOff, Square, Trash2, Wrench } from 'lucide-react';
 import { BoltEngine } from './bolt/engine';
 import { htmlFromFiles, sandboxTokens } from './bolt/preview';
 import { classifyPrompt } from './bolt/governance-gate';
@@ -88,6 +88,7 @@ export function BoltWorkbench({
   projectSlug: string;
 }): ReactElement {
   const engineRef = useRef(new BoltEngine(ctx));
+  const abortRef = useRef<AbortController | null>(null);
   const [projects, setProjects] = useState<ProjectMeta[]>([]);
   const [project, setProject] = useState<BuilderProject>(() =>
     newProject(ctx.tenantId, projectSlug, projectSlug),
@@ -242,6 +243,9 @@ export function BoltWorkbench({
 
   async function run(nextPrompt: string, repair?: string) {
     if (busy) return;
+    abortRef.current?.abort();
+    const ac = new AbortController();
+    abortRef.current = ac;
     setBusy(true);
     setError(null);
     setStream('');
@@ -259,6 +263,7 @@ export function BoltWorkbench({
       if (gated) {
         setStream('Governance-Gate — kein Modellaufruf.');
         const res = await engineRef.current.ingest(`m-${Date.now()}`, GATE_PROBE, nextPrompt);
+        if (ac.signal.aborted) return;
         await applyEngine(res, 'Gate geschlossen. Kein Modellaufruf.');
         return;
       }
@@ -274,23 +279,49 @@ export function BoltWorkbench({
           lastChange,
           riskClass: risk,
         },
-        (full) => setStream(full),
+        (full) => {
+          if (!ac.signal.aborted) setStream(full);
+        },
+        ac.signal,
       );
+      if (ac.signal.aborted || ('aborted' in gen && gen.aborted)) {
+        setError('Abgebrochen. Es wurde nichts geschrieben.');
+        setStream('');
+        setPane('audit');
+        return;
+      }
       if (!gen.ok) {
         setError(gen.error);
         setStream('');
         setPane('audit');
         return;
       }
+      if (ac.signal.aborted) {
+        setError('Abgebrochen. Es wurde nichts geschrieben.');
+        setStream('');
+        setPane('audit');
+        return;
+      }
       setStream(gen.text);
       const res = await engineRef.current.ingest(`m-${Date.now()}`, gen.text, nextPrompt);
+      if (ac.signal.aborted) return;
       setLastChange(nextPrompt.slice(0, 200));
       await applyEngine(res, gen.text);
     } catch (err) {
+      if (ac.signal.aborted) {
+        setError('Abgebrochen. Es wurde nichts geschrieben.');
+        setStream('');
+        return;
+      }
       setError(err instanceof Error ? err.message : String(err));
     } finally {
+      if (abortRef.current === ac) abortRef.current = null;
       setBusy(false);
     }
+  }
+
+  function cancelRun() {
+    abortRef.current?.abort();
   }
 
   async function saveCurrent() {
@@ -464,6 +495,16 @@ export function BoltWorkbench({
                 {busy ? <Loader2 className="size-4 animate-spin" /> : <Play className="size-4" />}
                 Ausführen
               </button>
+              {busy ? (
+                <button
+                  type="button"
+                  onClick={cancelRun}
+                  className="inline-flex min-h-11 items-center gap-2 border border-[#E24A4A]/60 px-4 text-sm text-[#E24A4A]"
+                >
+                  <Square className="size-3.5 fill-current" />
+                  Abbrechen
+                </button>
+              ) : null}
             </div>
             {error ? <p className="text-sm text-[#E24A4A]">{error}</p> : null}
             {stream ? (

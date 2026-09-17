@@ -69,7 +69,11 @@ export async function generateViaRealSyncGatewayStream(
     riskClass?: string;
   },
   onDelta: (full: string) => void,
-): Promise<{ ok: true; text: string; model?: string } | { ok: false; error: string }> {
+  signal?: AbortSignal,
+): Promise<{ ok: true; text: string; model?: string } | { ok: false; error: string; aborted?: boolean }> {
+  if (signal?.aborted) {
+    return { ok: false, error: 'Abgebrochen. Es wurde nichts geschrieben.', aborted: true };
+  }
   if (!args.tenantId) {
     return { ok: false, error: 'Kein verifizierter Mandant.' };
   }
@@ -84,8 +88,13 @@ export async function generateViaRealSyncGatewayStream(
       timeoutMs: BUILDER_TIMEOUT_MS,
       maxTokens: BUILDER_MAX_TOKENS,
     },
-    onDelta,
+    (full) => {
+      if (!signal?.aborted) onDelta(full);
+    },
   );
+  if (signal?.aborted) {
+    return { ok: false, error: 'Abgebrochen. Es wurde nichts geschrieben.', aborted: true };
+  }
   if (!res.success || !res.modelOutput) {
     return { ok: false, error: res.error ?? 'Gateway ohne Ausgabe' };
   }

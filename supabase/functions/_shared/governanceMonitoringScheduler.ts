@@ -29,6 +29,9 @@ export function parseSchedulerRequestBody(raw: string): SchedulerRequestBody {
   if ('source_id' in parsed && typeof parsed.source_id !== 'string') {
     throw new Error('invalid json');
   }
+  if (typeof parsed.source_id === 'string' && parsed.source_id.trim().length === 0) {
+    throw new Error('invalid json');
+  }
   if ('frequency_filter' in parsed && !isFrequency(parsed.frequency_filter)) {
     throw new Error('invalid json');
   }

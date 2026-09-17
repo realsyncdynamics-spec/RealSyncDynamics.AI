@@ -180,6 +180,7 @@ describe('Scheduler-Filter und Prüfpfad', () => {
   it('rejects malformed JSON instead of falling back to a full run', () => {
     expect(() => parseSchedulerRequestBody('{"source_id":')).toThrow(/invalid|Unexpected/i);
     expect(() => parseSchedulerRequestBody('{"source_id":123}')).toThrow(/invalid/i);
+    expect(() => parseSchedulerRequestBody('{"source_id":"   "}')).toThrow(/invalid/i);
     expect(() => parseSchedulerRequestBody('{"frequency_filter":"yearly"}')).toThrow(/invalid/i);
     expect(() => parseSchedulerRequestBody('{"source_id":"src-1","unexpected":true}')).toThrow(/invalid/i);
     expect(() => parseSchedulerRequestBody('   ')).toThrow(/invalid|Unexpected/i);

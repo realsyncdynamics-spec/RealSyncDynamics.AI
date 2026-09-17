@@ -13,7 +13,7 @@ export interface SchedulerEventRow {
 }
 
 export function isOmittedSchedulerBody(raw: string): boolean {
-  return raw.trim().length === 0;
+  return raw.length === 0;
 }
 
 export function parseSchedulerRequestBody(raw: string): SchedulerRequestBody {
@@ -39,6 +39,13 @@ export function parseSchedulerRequestBody(raw: string): SchedulerRequestBody {
     source_id: typeof parsed.source_id === 'string' ? parsed.source_id : undefined,
     frequency_filter: isFrequency(parsed.frequency_filter) ? parsed.frequency_filter : undefined,
   };
+}
+
+export function resolveSchedulerRequestBody(method: 'GET' | 'POST', rawBody: string): SchedulerRequestBody {
+  if (method === 'GET' || isOmittedSchedulerBody(rawBody)) {
+    return {};
+  }
+  return parseSchedulerRequestBody(rawBody);
 }
 
 export function buildSourceSelection(body: SchedulerRequestBody, nowIso: string) {

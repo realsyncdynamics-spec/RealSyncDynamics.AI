@@ -6,6 +6,7 @@ import {
   buildSourceSelection,
   isOmittedSchedulerBody,
   parseSchedulerRequestBody,
+  resolveSchedulerRequestBody,
   scanDurationMs,
 } from '../../supabase/functions/_shared/governanceMonitoringScheduler';
 
@@ -196,8 +197,10 @@ describe('Scheduler-Filter und Prüfpfad', () => {
     expect(() => parseSchedulerRequestBody('{"frequency_filter":"yearly"}')).toThrow(/invalid scheduler payload/i);
     expect(() => parseSchedulerRequestBody('{"source_id":"src-1","unexpected":true}')).toThrow(/invalid scheduler payload/i);
     expect(() => parseSchedulerRequestBody('   ')).toThrow(/Unexpected/i);
+    expect(() => resolveSchedulerRequestBody('POST', '   ')).toThrow(/Unexpected/i);
     expect(isOmittedSchedulerBody('')).toBe(true);
-    expect(isOmittedSchedulerBody('   ')).toBe(true);
+    expect(isOmittedSchedulerBody('   ')).toBe(false);
+    expect(resolveSchedulerRequestBody('POST', '')).toEqual({});
     const src = readFileSync(
       'supabase/functions/governance-monitoring-scheduler/index.ts',
       'utf8',

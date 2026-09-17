@@ -44,8 +44,7 @@ import {
   buildDueFilter,
   buildGovernanceEventRow,
   buildSourceSelection,
-  isOmittedSchedulerBody,
-  parseSchedulerRequestBody,
+  resolveSchedulerRequestBody,
   scanDurationMs,
   type SchedulerRequestBody,
 } from '../_shared/governanceMonitoringScheduler.ts';
@@ -223,17 +222,13 @@ Deno.serve(async (req) => {
   let body: SchedulerRequestBody = {};
   if (req.method === 'POST') {
     const rawBody = await req.text();
-    if (isOmittedSchedulerBody(rawBody)) {
-      body = {};
-    } else {
-      try {
-        body = parseSchedulerRequestBody(rawBody);
-      } catch (error) {
-        return jsonResponse(
-          { error: error instanceof SyntaxError ? 'invalid json' : 'invalid scheduler payload' },
-          400,
-        );
-      }
+    try {
+      body = resolveSchedulerRequestBody(req.method, rawBody);
+    } catch (error) {
+      return jsonResponse(
+        { error: error instanceof SyntaxError ? 'invalid json' : 'invalid scheduler payload' },
+        400,
+      );
     }
   }
 

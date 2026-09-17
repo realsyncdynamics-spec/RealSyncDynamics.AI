@@ -213,7 +213,7 @@ Deno.serve(async (req) => {
       .eq('id', selection.source_id)
       .in('status', [...selection.statuses]);
   } else {
-    query = query.eq('status', selection.statuses[0]);
+    query = query.in('status', [...selection.statuses]);
     if (selection.dueBefore) {
       query = query.or(`next_scan_at.is.null,next_scan_at.lte.${selection.dueBefore}`);
     }

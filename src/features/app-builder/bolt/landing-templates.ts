@@ -1,6 +1,6 @@
 /** Exclusive landing seeds. HTML/CSS/local JS only — no CDN, no React. */
 
-export type LandingTemplateId = "atelier" | "access" | "manifest";
+export type LandingTemplateId = "atelier" | "access" | "manifest" | "split";
 
 function landingArtifact(title: string, html: string, css: string, js: string): string {
   return `<boltArtifact title="${title}">
@@ -257,6 +257,107 @@ input { flex:1; min-height:44px; border:0; background:transparent; color:var(--f
 
 const MANIFEST_JS = ATELIER_JS;
 
+const SPLIT_HTML = `<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>A/B — Exclusive Launch</title>
+  <meta name="description" content="Lokaler A/B-Test. Kein Pixel, kein Server." />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <p class="badge" id="exp-badge">Zuweisung …</p>
+  <main>
+    <section data-variant="a" hidden>
+      <p class="eye">Variante A · Atelier</p>
+      <h1>Nicht für den Feed gebaut.</h1>
+      <p class="lede">Eine Seite, eine Handlung. Wer nicht gemeint ist, scrollt vorbei.</p>
+      <form id="waitlist-a">
+        <input name="email" type="email" required placeholder="name@firma.eu" aria-label="E-Mail" />
+        <button type="submit">Zugang anfragen</button>
+      </form>
+    </section>
+    <section data-variant="b" hidden>
+      <p class="eye">Variante B · Access</p>
+      <h1>Zwölf Zugänge. Dann ist Schluss.</h1>
+      <p class="lede">Keine öffentliche Registrierung. Wer den Satz kennt, schreibt.</p>
+      <form id="waitlist-b">
+        <input name="email" type="email" required placeholder="name@firma.eu" aria-label="E-Mail" />
+        <button type="submit">Anfragen</button>
+      </form>
+    </section>
+    <p class="hint" id="form-status">50/50 in diesem Fenster. Kein Tracking, kein Workspace-Mandant.</p>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>
+`;
+
+const SPLIT_CSS = `:root { --bg:#0A0A0B; --fg:#E8E6E1; --mute:#8A8680; --accent:#C4A574; --line:#2A2926; --blue:#0052FF; }
+* { box-sizing: border-box; }
+html, body { margin:0; background:var(--bg); color:var(--fg); }
+body { font-family: ui-sans-serif, "IBM Plex Sans", system-ui, sans-serif; min-height:100dvh; }
+.badge {
+  font-family: ui-monospace, Menlo, monospace; font-size:11px; letter-spacing:0.16em;
+  text-transform:uppercase; margin:0; padding:16px 8vw; border-bottom:1px solid var(--line); color:var(--mute);
+}
+html[data-variant="a"] .badge { color: var(--accent); }
+html[data-variant="b"] .badge { color: var(--blue); }
+main { padding: 14vh 8vw 18vh; max-width: 720px; }
+.eye { font-family: ui-monospace, Menlo, monospace; font-size:11px; letter-spacing:0.18em; text-transform:uppercase; color:var(--mute); }
+html[data-variant="a"] .eye { color: var(--accent); }
+html[data-variant="b"] .eye { color: var(--blue); }
+h1 { font-weight:400; font-size:clamp(36px, 7vw, 76px); line-height:0.95; letter-spacing:-0.03em; margin: 12px 0 20px;
+  font-family: "Iowan Old Style", Palatino, Georgia, serif; }
+.lede { color:var(--mute); font-size:18px; line-height:1.5; max-width:32ch; }
+form { display:flex; margin-top:36px; border:1px solid var(--line); max-width:480px; }
+input { flex:1; min-height:48px; border:0; background:transparent; color:var(--fg); padding:0 14px; font-size:16px; }
+button {
+  min-height:48px; padding:0 18px; border:0; cursor:pointer;
+  font-family: ui-monospace, Menlo, monospace; font-size:11px; letter-spacing:0.12em; text-transform:uppercase;
+}
+html[data-variant="a"] button { background: var(--fg); color: var(--bg); }
+html[data-variant="b"] button { background: var(--blue); color: #fff; }
+.hint { margin-top:16px; font-size:12px; color:var(--mute); }
+.hint.ok { color:#7DCEA0; }
+.hint.err { color:#E24A4A; }
+`;
+
+const SPLIT_JS = `function pickVariant() {
+  const forced = (location.hash || "").replace("#", "").toLowerCase();
+  if (forced === "a" || forced === "b") return forced;
+  const n = crypto.getRandomValues(new Uint8Array(1))[0];
+  return n % 2 === 0 ? "a" : "b";
+}
+const variant = pickVariant();
+document.documentElement.dataset.variant = variant;
+const badge = document.getElementById("exp-badge");
+if (badge) {
+  badge.textContent = "Variante " + variant.toUpperCase() + " · 50/50 lokal · kein Pixel · Hash #a oder #b erzwingt";
+}
+document.querySelectorAll("[data-variant]").forEach((node) => {
+  node.hidden = node.getAttribute("data-variant") !== variant;
+});
+function bind(form) {
+  const status = document.getElementById("form-status");
+  form?.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const email = String(new FormData(form).get("email") || "").trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      status.textContent = "Bitte eine gültige Arbeitsmail.";
+      status.className = "hint err";
+      return;
+    }
+    status.textContent = "Variante " + variant.toUpperCase() + " · notiert, kein Server.";
+    status.className = "hint ok";
+    form.reset();
+  });
+}
+bind(document.getElementById("waitlist-a"));
+bind(document.getElementById("waitlist-b"));
+`;
+
 export const LANDING_TEMPLATES: Record<
   LandingTemplateId,
   { title: string; prompt: string; artifact: string }
@@ -275,6 +376,11 @@ export const LANDING_TEMPLATES: Record<
     title: "Manifest",
     prompt: "Editorial Manifest für ein Governance-Produkt. Beweiszeile, eine CTA.",
     artifact: landingArtifact("Manifest", MANIFEST_HTML, MANIFEST_CSS, MANIFEST_JS),
+  },
+  split: {
+    title: "A/B-Test",
+    prompt: "Lokaler A/B-Test zweier exklusiver Landings. 50/50 im Fenster, kein Pixel, kein Mandanten-Slot.",
+    artifact: landingArtifact("A/B-Test", SPLIT_HTML, SPLIT_CSS, SPLIT_JS),
   },
 };
 

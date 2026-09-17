@@ -237,6 +237,10 @@ describe('bolt engine — ingest', () => {
       expect(res.snapshot.files['styles.css']).toBeTruthy();
       expect(res.snapshot.files['app.js']).toBeTruthy();
       expect(res.snapshot.files['index.html'].content).toMatch(/<!DOCTYPE html>/);
+      if (id === 'split') {
+        expect(res.snapshot.files['index.html'].content).toMatch(/data-variant="a"/);
+        expect(res.snapshot.files['app.js'].content).toMatch(/getRandomValues/);
+      }
     }
   });
 

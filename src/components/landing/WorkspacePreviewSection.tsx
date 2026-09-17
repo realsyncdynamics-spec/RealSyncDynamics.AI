@@ -141,6 +141,7 @@ export function WorkspacePreviewSection() {
       className="ga-band relative z-[1] border-t px-[4vw] py-[clamp(60px,6vw,92px)]"
       style={{ borderColor: GA_LINE_SOFT }}
     >
+      <div id="evidence" className="sr-only" aria-hidden="true" />
       <div className="mx-auto w-full max-w-[1500px]">
         <SectionIndex number="01" label="WORKSPACE" />
         <SectionEyebrow>IHR WORKSPACE</SectionEyebrow>

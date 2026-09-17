@@ -527,7 +527,7 @@ function RoutesWithTracking() {
       <Route path="/agents"     element={<AgentsPage />} />
       <Route path="/evidence"   element={<EvidencePage />} />
       <Route path="/digitale-souveraenitaet" element={<DigitalSovereignty />} />
-      <Route path="/digital-sovereignty"     element={<DigitalSovereignty />} />
+      <Route path="/digital-sovereignty"     element={<Navigate to="/digitale-souveraenitaet" replace />} />
       <Route path="/governance-score"              element={<GovernanceScorePage />} />
       <Route path="/governance-complexity-score"   element={<GovernanceScorePage />} />
       <Route path="/ai-act"     element={<AiActPage />} />
@@ -586,7 +586,7 @@ function RoutesWithTracking() {
       <Route path="/newsletter/confirm" element={<NewsletterConfirm />} />
       <Route path="/case-studies" element={<CaseStudies />} />
       <Route path="/ressourcen" element={<Resources />} />
-      <Route path="/resources" element={<Resources />} />
+      <Route path="/resources" element={<Navigate to="/ressourcen" replace />} />
       <Route path="/blog" element={<Blog />} />
       <Route path="/roadmap" element={<Roadmap />} />
       <Route path="/governance-runtime" element={<GovernanceRuntimePage />} />

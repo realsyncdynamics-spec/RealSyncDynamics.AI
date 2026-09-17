@@ -81,7 +81,7 @@ export function SeoPageShell({
           <div className="flex flex-wrap gap-4">
             <Link to="/audit" className="hover:text-titanium-300">Audit</Link>
             <Link to="/pricing" className="hover:text-titanium-300">Preise</Link>
-            <Link to="/resources" className="hover:text-titanium-300">Ressourcen</Link>
+            <Link to="/ressourcen" className="hover:text-titanium-300">Ressourcen</Link>
             <Link to="/blog" className="hover:text-titanium-300">Blog</Link>
             <Link to="/legal/methodology" className="hover:text-titanium-300">Methodik</Link>
             <Link to="/legal/privacy" className="hover:text-titanium-300">Datenschutz</Link>

@@ -59,7 +59,7 @@ export function MatomoDsgvoKonfiguration() {
     'jsonld-bc-matomo',
     breadcrumbLd([
       { name: 'Home', url: 'https://RealSyncDynamicsAI.de/' },
-      { name: 'Ressourcen', url: 'https://RealSyncDynamicsAI.de/resources' },
+      { name: 'Ressourcen', url: 'https://RealSyncDynamicsAI.de/ressourcen' },
       { name: 'Matomo DSGVO-freundlich konfigurieren', url: 'https://RealSyncDynamicsAI.de/resources/matomo-dsgvo-konfiguration' },
     ]),
   );
@@ -69,7 +69,7 @@ export function MatomoDsgvoKonfiguration() {
       eyebrow="Ressourcen · Tracking & Analytics"
       h1="Matomo DSGVO-freundlich konfigurieren"
       breadcrumbs={[
-        { name: 'Ressourcen', href: '/resources' },
+        { name: 'Ressourcen', href: '/ressourcen' },
         { name: 'Matomo DSGVO-freundlich konfigurieren' },
       ]}
     >

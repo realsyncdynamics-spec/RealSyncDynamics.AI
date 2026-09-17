@@ -735,12 +735,6 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
       { name: 'Ressourcen', url: '/ressourcen' },
     ]),
   },
-  '/resources': {
-    title: 'Resources — Whitepapers, Checklists, Guides | RealSyncDynamics.AI',
-    description:
-      'Practical material on GDPR + EU AI Act: BAIT/MaRisk guide, Schrems II explainer, GDPR AI checklist, tool comparisons. Stand 2026, no marketing fluff.',
-    canonical: `${SITE_URL}/ressourcen`,
-  },
   '/audit-pro': {
     title: 'Audit Pro — Vollständiger DSGVO + AI-Act-Audit | RealSyncDynamics.AI',
     description:

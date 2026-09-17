@@ -52,6 +52,8 @@ https://www.realsyncdynamicsai.de/* https://realsyncdynamicsai.de/:splat 301
 /os/signup          /welcome  301
 /demo-login         /welcome  301
 /contact            /kontakt  301
+/resources          /ressourcen  301
+/digital-sovereignty  /digitale-souveraenitaet  301
 /domain-check       /audit  301
 /domain-checker     /audit  301
 

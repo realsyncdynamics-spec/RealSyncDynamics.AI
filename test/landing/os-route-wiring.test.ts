@@ -10,6 +10,7 @@ import { PUBLIC_NAV_GROUPS } from '../../src/config/public-nav';
 const root = resolve(__dirname, '../..');
 const mainLanding = readFileSync(resolve(root, 'src/pages/MainLanding.tsx'), 'utf8');
 const header = readFileSync(resolve(root, 'src/components/landing/PublicDarkHeader.tsx'), 'utf8');
+const workspace = readFileSync(resolve(root, 'src/components/landing/WorkspacePreviewSection.tsx'), 'utf8');
 const publicNav = readFileSync(resolve(root, 'src/config/public-nav.ts'), 'utf8');
 const channel = readFileSync(resolve(root, 'src/components/landing/LandingChannelTools.tsx'), 'utf8');
 const platform = readFileSync(resolve(root, 'src/components/landing/PlatformCapabilitiesSection.tsx'), 'utf8');
@@ -23,10 +24,15 @@ const navShell = header + publicNav + mainLanding;
 describe('Landing ↔ Infrastruktur', () => {
   it('Header-Scan bleibt kanonisch /audit', () => {
     expect(header).toContain('to="/audit"');
+    expect(header).toContain('/#evidence');
     expect(header).toContain('/governance-runtime');
     expect(header).toContain('/welcome');
     expect(header).toContain('HERO_SCAN_CTA_LABEL');
     expect(navShell).toContain('/audit');
+  });
+
+  it('Evidence-Navigation der Startseite zeigt auf einen realen Anker', () => {
+    expect(workspace).toContain('id="evidence"');
   });
 
   it('Produkt-IA hat Ecosystem-Sections mit echten Routen (public-nav SSOT)', () => {

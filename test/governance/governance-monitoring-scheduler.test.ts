@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import {
   buildGovernanceEventRow,
   buildSourceSelection,
+  isOmittedSchedulerBody,
   parseSchedulerRequestBody,
   scanDurationMs,
 } from '../../supabase/functions/_shared/governanceMonitoringScheduler';
@@ -180,7 +181,11 @@ describe('Scheduler-Filter und Prüfpfad', () => {
     expect(() => parseSchedulerRequestBody('{"source_id":123}')).toThrow(/invalid/i);
     expect(() => parseSchedulerRequestBody('{"frequency_filter":"yearly"}')).toThrow(/invalid/i);
     expect(() => parseSchedulerRequestBody('{"source_id":"src-1","unexpected":true}')).toThrow(/invalid/i);
-    expect(parseSchedulerRequestBody('   ')).toEqual({});
+    expect(() => parseSchedulerRequestBody('   ')).toThrow(/invalid|Unexpected/i);
+    expect(isOmittedSchedulerBody('', null)).toBe(true);
+    expect(isOmittedSchedulerBody('', '0')).toBe(true);
+    expect(isOmittedSchedulerBody('', '3')).toBe(false);
+    expect(isOmittedSchedulerBody('   ', null)).toBe(false);
     const src = readFileSync(
       'supabase/functions/governance-monitoring-scheduler/index.ts',
       'utf8',

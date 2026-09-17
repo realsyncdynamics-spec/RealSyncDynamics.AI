@@ -12,8 +12,11 @@ export interface SchedulerEventRow {
   asset_id: string | null;
 }
 
+export function isOmittedSchedulerBody(raw: string, contentLength: string | null): boolean {
+  return raw.length === 0 && (contentLength === null || contentLength === '0');
+}
+
 export function parseSchedulerRequestBody(raw: string): SchedulerRequestBody {
-  if (!raw.trim()) return {};
   const parsed = JSON.parse(raw) as Record<string, unknown>;
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
     throw new Error('invalid json');

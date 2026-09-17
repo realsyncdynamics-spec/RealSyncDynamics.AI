@@ -43,6 +43,7 @@ import {
 import {
   buildGovernanceEventRow,
   buildSourceSelection,
+  isOmittedSchedulerBody,
   parseSchedulerRequestBody,
   scanDurationMs,
 } from '../_shared/governanceMonitoringScheduler.ts';
@@ -200,11 +201,14 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: 'cron only' }, 401);
   }
 
+  const rawBody = await req.text();
   let body = {};
-  try {
-    body = parseSchedulerRequestBody(await req.text());
-  } catch {
-    return jsonResponse({ error: 'invalid json' }, 400);
+  if (!isOmittedSchedulerBody(rawBody, req.headers.get('content-length'))) {
+    try {
+      body = parseSchedulerRequestBody(rawBody);
+    } catch {
+      return jsonResponse({ error: 'invalid json' }, 400);
+    }
   }
 
   const sb = createClient(SUPABASE_URL, SERVICE_KEY);

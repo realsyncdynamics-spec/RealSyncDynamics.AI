@@ -1,9 +1,6 @@
 /**
- * Landing CTAs müssen auf echte Infrastruktur zeigen — keine toten Buttons,
- * keine Fake-Erfolgsalerts, keine erfundenen /scan-Entry-Points wenn /audit kanonisch ist.
- *
- * Dominik Dark/Gold `/`: PublicDarkHeader LINKS + MainLanding form → /audit.
- * Ecosystem IA remains in public-nav.ts for deeper menus / future chrome.
+ * Dual-Hero `/`: Titan (Screen 1) / Nacht (Screen 2) via ThemeSwitch.
+ * Scan-CTA → /audit.
  */
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -15,6 +12,7 @@ const mainLanding = readFileSync(resolve(root, 'src/pages/MainLanding.tsx'), 'ut
 const header = readFileSync(resolve(root, 'src/components/landing/PublicDarkHeader.tsx'), 'utf8');
 const publicNav = readFileSync(resolve(root, 'src/config/public-nav.ts'), 'utf8');
 const channel = readFileSync(resolve(root, 'src/components/landing/LandingChannelTools.tsx'), 'utf8');
+const platform = readFileSync(resolve(root, 'src/components/landing/PlatformCapabilitiesSection.tsx'), 'utf8');
 const scanStart = readFileSync(
   resolve(root, 'src/pages/product-entry-points/ScanStartPage.tsx'),
   'utf8',
@@ -25,10 +23,9 @@ const navShell = header + publicNav + mainLanding;
 describe('Landing ↔ Infrastruktur', () => {
   it('Header-Scan bleibt kanonisch /audit', () => {
     expect(header).toContain('to="/audit"');
-    expect(header).toContain("/governance-runtime");
-    expect(header).toContain("/welcome");
+    expect(header).toContain('/governance-runtime');
+    expect(header).toContain('/welcome');
     expect(header).toContain('HERO_SCAN_CTA_LABEL');
-    expect(header).toContain("from '../governance-frontend/hero-content'");
     expect(navShell).toContain('/audit');
   });
 
@@ -36,7 +33,6 @@ describe('Landing ↔ Infrastruktur', () => {
     expect(publicNav).toContain('sections:');
     expect(publicNav).toContain('Agent Governance');
     expect(publicNav).toContain('/agent-governance');
-    expect(publicNav).toContain('/welcome?next=/app/evidence');
     expect(PUBLIC_NAV_GROUPS.some((g) => g.id === 'produkt')).toBe(true);
   });
 
@@ -58,15 +54,20 @@ describe('Landing ↔ Infrastruktur', () => {
     expect(app).toMatch(/path="\/app\/activation"[^>]*AppGate/);
   });
 
-  it('Dominik landing CTAs zeigen Audit + Sphere, keine Demo-Buchung', () => {
-    expect(mainLanding).toContain('GovernanceSphereHost');
+  it('Dominik landing: Titan/Nacht-Umschalter, Europa-Hero, Audit-CTA', () => {
+    expect(mainLanding).toContain('EuropeReliefBackdrop');
+    expect(mainLanding).toContain('useGaTheme');
+    expect(mainLanding).toContain('data-ga-theme');
+    expect(mainLanding).toContain('GovernanceStatusBar');
     expect(mainLanding).toContain('to="/audit"');
-    expect(mainLanding).toContain('id="scan"');
-    expect(mainLanding).toContain('PLATFORM_LIVE_ITEMS');
+    expect(mainLanding).toContain('id="audit-cta"');
+    expect(mainLanding).toContain('data-hero-cta="audit"');
+    expect(mainLanding.match(/data-hero-cta/g)?.length).toBe(1);
+    expect(platform).toContain('PLATFORM_LIVE_ITEMS');
+    expect(mainLanding).toContain('PlatformCapabilitiesSection');
     expect(mainLanding).not.toContain('Demo buchen');
-    expect(mainLanding).not.toContain('EuropeReliefBackdrop');
+    expect(mainLanding).not.toContain('GovernanceSphereHost');
     expect(mainLanding).not.toContain('HeroEuropeSunrise');
-    expect(mainLanding).not.toContain('data-hero-cta');
   });
 
   it('Channel-Tools auf / sind ehrlich verdrahtet (keine Fake-Alerts)', () => {

@@ -9,9 +9,7 @@ export default defineConfig(({mode}) => {
     return {
           base,
           plugins: [react(), tailwindcss()],
-          define: {
-                  // Never inject secrets into bundle. Use Edge Functions instead.
-          },
+          define: {},
           resolve: {
                   alias: {
                             '@': path.resolve(__dirname, '.'),
@@ -22,22 +20,30 @@ export default defineConfig(({mode}) => {
                   rollupOptions: {
                           output: {
                                   manualChunks(id) {
-                                          // Split heavy vendor libs only; keep React & core together
-                                          // to avoid breaking context providers
                                           if (id.includes('node_modules/recharts')) {
                                                   return 'vendor-recharts';
                                           }
                                           if (id.includes('node_modules/@supabase/supabase-js')) {
                                                   return 'vendor-supabase';
                                           }
-                                          // Keep React, React Router, and app code together in main chunk
-                                          // Context providers (src/core/) must stay in entry chunk
+                                          if (id.includes('node_modules/framer-motion')) {
+                                                  return 'vendor-framer-motion';
+                                          }
+                                          if (id.includes('node_modules/motion/')) {
+                                                  return 'vendor-motion';
+                                          }
+                                          if (
+                                            id.includes('node_modules/three') ||
+                                            id.includes('node_modules/@react-three/') ||
+                                            id.includes('node_modules/postprocessing')
+                                          ) {
+                                                  return 'vendor-three';
+                                          }
                                   },
                           },
                   },
           },
           server: {
-                  // HMR is disabled in AI Studio via DISABLE_HMR env var.
             hmr: process.env.DISABLE_HMR !== 'true',
           },
     };

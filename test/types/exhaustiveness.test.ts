@@ -1,15 +1,16 @@
 /**
- * Compile-time exhaustiveness for catalog unions and the AI result tag.
- * If ENTITLEMENT_KEYS grows, Record<EntitlementKey, …> call sites must follow.
+ * Compiler-as-change-sensor: catalog maps, boundary parse, AI result tag.
+ * No Auth rewrite. No wholesale string→PlanId replacement.
  */
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { ENTITLEMENT_KEYS, type EntitlementKey } from '../../shared/pricing';
-import { entitlementLabel } from '../../src/core/access/entitlementLabels';
+import { ENTITLEMENT_KEYS, PLAN_ORDER, type EntitlementKey, type PlanId } from '../../shared/pricing';
+import { entitlementLabel, ENTITLEMENT_LABELS } from '../../src/core/access/entitlementLabels';
 import { assertNever } from '../../src/lib/assertNever';
+import { parsePlanId } from '../../src/lib/parsePlanId';
 
 describe('assertNever', () => {
-  it('is unreachable for a completed PlanId-style switch', () => {
+  it('is the leftover sink of a completed PlanId-shaped switch', () => {
     type Bit = 'a' | 'b';
     function label(bit: Bit): string {
       switch (bit) {
@@ -18,7 +19,7 @@ describe('assertNever', () => {
         case 'b':
           return 'B';
         default:
-          return assertNever(bit);
+          return assertNever(bit, 'Bit');
       }
     }
     expect(label('a')).toBe('A');
@@ -26,8 +27,19 @@ describe('assertNever', () => {
   });
 });
 
-describe('EntitlementKey catalog', () => {
-  it('entitlementLabel never invents a second name for an unknown key', () => {
+describe('catalog exhaustiveness', () => {
+  it('ENTITLEMENT_LABELS covers every EntitlementKey', () => {
+    const missing = ENTITLEMENT_KEYS.filter((k) => !(k in ENTITLEMENT_LABELS));
+    expect(missing, `unlabeled keys: ${missing.join(', ')}`).toEqual([]);
+  });
+
+  it('ENTITLEMENT_LABELS has no extra keys', () => {
+    const catalog = new Set<string>(ENTITLEMENT_KEYS);
+    const extra = Object.keys(ENTITLEMENT_LABELS).filter((k) => !catalog.has(k));
+    expect(extra).toEqual([]);
+  });
+
+  it('entitlementLabel falls back to the raw key outside the catalog', () => {
     expect(entitlementLabel('not.a.real.key')).toBe('not.a.real.key');
   });
 
@@ -37,13 +49,27 @@ describe('EntitlementKey catalog', () => {
       expect(entitlementLabel(key).length).toBeGreaterThan(0);
     }
   });
+});
 
-  it('KEY_LABELS only names keys that exist in ENTITLEMENT_KEYS', () => {
-    const src = readFileSync('src/core/access/entitlementLabels.ts', 'utf8');
-    const named = [...src.matchAll(/'([a-z0-9_.]+)':\s*'/g)].map((m) => m[1]);
-    const catalog = new Set<string>(ENTITLEMENT_KEYS);
-    const unknown = named.filter((k) => !catalog.has(k));
-    expect(unknown, `labels for keys outside SSoT: ${unknown.join(', ')}`).toEqual([]);
+describe('parsePlanId — untrusted boundary only', () => {
+  it('accepts every PLAN_ORDER id', () => {
+    for (const id of PLAN_ORDER) {
+      expect(parsePlanId(id)).toBe(id);
+    }
+  });
+
+  it('rejects scale and free_audit — those are PlanKey aliases, not PlanId', () => {
+    expect(parsePlanId('scale')).toBeNull();
+    expect(parsePlanId('free_audit')).toBeNull();
+    expect(parsePlanId('starter_yearly')).toBeNull();
+    expect(parsePlanId('')).toBeNull();
+    expect(parsePlanId(null)).toBeNull();
+  });
+
+  it('narrows a trusted PlanId for core use', () => {
+    const parsed = parsePlanId('starter');
+    const id: PlanId | null = parsed;
+    expect(id).toBe('starter');
   });
 });
 

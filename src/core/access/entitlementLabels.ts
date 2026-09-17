@@ -1,22 +1,29 @@
 /**
  * Lesbare Namen der Entitlement-Keys — nur für die Anzeige.
  *
- * Wer hier fehlt, wird mit seinem Key gezeigt, nicht verschwiegen. Die
- * Berechtigung selbst entscheidet `tenant_entitlements()`; diese Datei
- * beschriftet nur.
+ * `satisfies Record<EntitlementKey, string>` zwingt jede neue SSoT-Key-
+ * Aufnahme, hier eine Beschriftung nachzuziehen. entitlementLabel() bleibt
+ * für untrusted strings offen und fällt auf den Key zurück.
  */
 import type { EntitlementKey } from '@/shared/pricing';
 
-const KEY_LABELS: Partial<Record<EntitlementKey, string>> = {
+export const ENTITLEMENT_LABELS = {
   'ai.tool.automations': 'Automations-Skills',
   'ai.tool.bot_reply': 'KI-Antworten der Bots',
+  'ai.tool.code_explain': 'Code erklären',
+  'ai.tool.log_analyze': 'Log-Analyse',
   'ai.tool.vps_action_advisor': 'Kodee Risiko-Advisor',
   'ai.tool.vps_status': 'Kodee Server-Status',
   'ai.tool.workflows': 'Workflow-Engine',
+  'ai_classification.limited': 'KI-Klassifizierung (begrenzt)',
   'alerts.email': 'E-Mail-Alerts bei neuen Findings',
   'api.access': 'API-Zugriff',
+  'asset.register': 'Asset-Register',
+  'asset.verify': 'Asset-Verifikation',
+  'barcode.issue': 'Barcode ausstellen',
   'bots.appointments': 'Terminbuchung über Bots',
   'bots.chat': 'Website-Chat',
+  'bots.count': 'Anzahl Governance-Bots',
   'bots.enabled': 'Governance-Bots',
   'bots.human_handoff': 'Übergabe an Menschen',
   'bots.multi_channel': 'Ein Bot, mehrere Kanäle',
@@ -34,7 +41,11 @@ const KEY_LABELS: Partial<Record<EntitlementKey, string>> = {
   'governance.ai_register': 'KI-Register',
   'governance.dsgvo_directory': 'Verarbeitungsverzeichnis',
   'governance.risk_register': 'Risikoregister',
+  'limit.active_assets': 'Aktive Assets',
+  'limit.agent_runs_monthly': 'Agenten-Läufe pro Monat',
   'limit.ai_calls_monthly': 'KI-Aufrufe pro Monat',
+  'limit.ai_cost_monthly_cents': 'KI-Kosten pro Monat',
+  'limit.ai_tokens_monthly': 'KI-Tokens pro Monat',
   'limit.api_calls_monthly': 'API-Aufrufe pro Monat',
   'limit.automation_runs_monthly': 'Automationsläufe pro Monat',
   'limit.bot_messages_monthly': 'Bot-Antworten pro Monat',
@@ -44,6 +55,8 @@ const KEY_LABELS: Partial<Record<EntitlementKey, string>> = {
   'limit.compliance_exports_monthly': 'Compliance-Exporte pro Monat',
   'limit.domains': 'Überwachte Domains',
   'limit.evidence_storage_gb': 'Evidence-Speicher (GB)',
+  'limit.llm_queries_monthly': 'LLM-Abfragen pro Monat',
+  'limit.monthly_registrations': 'Registrierungen pro Monat',
   'limit.sites': 'SiteOS-Websites',
   'limit.team_seats': 'Team-Plätze',
   'limit.whatsapp_conversations_monthly': 'WhatsApp-Konversationen pro Monat',
@@ -51,10 +64,13 @@ const KEY_LABELS: Partial<Record<EntitlementKey, string>> = {
   'monitoring.daily': 'Tägliches Monitoring',
   'monitoring.drift': 'Drift-Erkennung',
   'monitoring.monthly': 'Monatliches Monitoring',
+  'org.governance': 'Organisations-Governance',
   'policy.iso27001': 'Policy Pack ISO 27001',
   'policy.nis2': 'Policy Pack NIS2',
   'policy.packs': 'Policy Packs',
   'provenance.advanced': 'Herkunftsnachweis (erweitert)',
+  'provenance.basic': 'Herkunftsnachweis',
+  'public-sector.mode': 'Öffentlicher Sektor',
   'reports.export': 'Berichte exportieren',
   'scheduler.enabled': 'Scheduler',
   'siteos.builder': 'SiteOS Builder',
@@ -62,12 +78,14 @@ const KEY_LABELS: Partial<Record<EntitlementKey, string>> = {
   'sla.priority': 'Priorisierter Support',
   'sso.enabled': 'SSO',
   'team.members': 'Team-Mitglieder',
+  'watermark.apply': 'Wasserzeichen',
   'webhooks.enabled': 'Webhooks',
   'website.scan': 'Website-Scan',
+  'website.scan_monthly_limit': 'Website-Scans pro Monat',
   'whitelabel.dashboard': 'White-Label-Dashboard',
   'whitelabel.reports': 'White-Label-Berichte',
-};
+} satisfies Record<EntitlementKey, string>;
 
 export function entitlementLabel(key: string): string {
-  return KEY_LABELS[key as EntitlementKey] ?? key;
+  return ENTITLEMENT_LABELS[key as EntitlementKey] ?? key;
 }

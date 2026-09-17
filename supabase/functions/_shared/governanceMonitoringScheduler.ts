@@ -13,7 +13,7 @@ export interface SchedulerEventRow {
 }
 
 export function isOmittedSchedulerBody(raw: string): boolean {
-  return raw.length === 0;
+  return raw.trim().length === 0;
 }
 
 export function parseSchedulerRequestBody(raw: string): SchedulerRequestBody {

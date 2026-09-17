@@ -28,7 +28,7 @@ function payload(over: Record<string, unknown> = {}) {
     slug: 'crm',
     title: 'CRM A',
     files: { 'index.html': '<h1>Nordlicht</h1>' },
-    merkle: 'a'.repeat(64),
+    merkle: '',
     audit: [] as [],
     messages: [] as [],
     ...over,
@@ -71,9 +71,9 @@ describe('persist contract', () => {
 });
 
 describe('MemoryProjectStore — server-side tenant isolation', () => {
-  it('Tenant B cannot load, mutate, delete, or read Tenant A files', () => {
+  it('Tenant B cannot load, mutate, delete, or read Tenant A files', async () => {
     const store = new MemoryProjectStore();
-    const saved = store.save(tenantA, payload());
+    const saved = await store.save(tenantA, payload());
     expect(isDenial(saved)).toBe(false);
     if (isDenial(saved)) return;
     const idA = saved.id;
@@ -82,8 +82,8 @@ describe('MemoryProjectStore — server-side tenant isolation', () => {
     expect(isDenial(loadB) || loadB === null || (loadB as { ok?: false }).ok === false).toBe(true);
     if (isDenial(loadB)) expect(loadB.status).toBe(404);
 
-    const saveB = store.save(tenantB, {
-      ...payload({ title: 'hijack', merkle: 'b'.repeat(64), files: { 'index.html': 'stolen' } }),
+    const saveB = await store.save(tenantB, {
+      ...payload({ title: 'hijack', files: { 'index.html': 'stolen' } }),
       id: idA,
     });
     expect(isDenial(saveB)).toBe(false);
@@ -110,9 +110,9 @@ describe('MemoryProjectStore — server-side tenant isolation', () => {
     }
   });
 
-  it('save with a forged tenantId still lands in the verified tenant', () => {
+  it('save with a forged tenantId still lands in the verified tenant', async () => {
     const store = new MemoryProjectStore();
-    const saved = store.save(tenantA, payload({ tenantId: 'tenant-b' } as never));
+    const saved = await store.save(tenantA, payload({ tenantId: 'tenant-b' } as never));
     expect(isDenial(saved)).toBe(false);
     if (!isDenial(saved)) expect(saved.tenantId).toBe('tenant-a');
     expect(isDenial(store.list(tenantB)) ? true : (store.list(tenantB) as { length: number }).length === 0).toBe(
@@ -120,10 +120,10 @@ describe('MemoryProjectStore — server-side tenant isolation', () => {
     );
   });
 
-  it('identical merkle does not append a version', () => {
+  it('identical merkle does not append a version', async () => {
     const store = new MemoryProjectStore();
-    const first = store.save(tenantA, payload());
-    const second = store.save(tenantA, payload());
+    const first = await store.save(tenantA, payload());
+    const second = await store.save(tenantA, payload());
     expect(isDenial(first) || isDenial(second)).toBe(false);
     if (!isDenial(first) && !isDenial(second)) {
       expect(second.id).toBe(first.id);

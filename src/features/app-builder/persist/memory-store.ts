@@ -12,6 +12,7 @@ import type {
   ProjectListItem,
 } from './contract';
 import { authorizePersist, bindTenant, validateFiles } from './contract';
+import { merkleOfFiles } from '../bolt/hash';
 
 export class MemoryProjectStore {
   #byTenant = new Map<string, BuilderProjectRecord[]>();
@@ -56,22 +57,27 @@ export class MemoryProjectStore {
     return row ?? { ok: false, status: 404, code: 'NOT_FOUND', message: 'project not found' };
   }
 
-  save(
+  async save(
     authz: PersistAuthz,
     incoming: Omit<BuilderProjectRecord, 'id' | 'tenantId' | 'createdBy' | 'version' | 'prevHash' | 'createdAt' | 'updatedAt' | 'status'> &
       Partial<Pick<BuilderProjectRecord, 'id' | 'status'>>,
-  ): BuilderProjectRecord | PersistDenial {
+  ): Promise<BuilderProjectRecord | PersistDenial> {
     const denied = this.gate(authz, 'save');
     if (denied) return denied;
     const bound = bindTenant(authz, incoming);
     const filesOk = validateFiles(bound.files);
     if (!filesOk.ok) return filesOk;
+    const files = bound.files ?? {};
+    const computed = await merkleOfFiles(files);
+    if (bound.merkle && bound.merkle !== computed) {
+      return { ok: false, status: 400, code: 'BAD_REQUEST', message: 'merkle does not match files' };
+    }
     const now = new Date().toISOString();
     const existing = this.rows(authz.tenantId).filter(
       (p) => p.slug === bound.slug && p.tenantId === authz.tenantId && p.status !== 'archived',
     );
     const latest = existing.sort((a, b) => b.version - a.version)[0];
-    if (latest && latest.merkle === bound.merkle) {
+    if (latest && latest.merkle === computed) {
       return latest;
     }
     const row: BuilderProjectRecord = {
@@ -80,12 +86,12 @@ export class MemoryProjectStore {
       createdBy: authz.actorId,
       slug: bound.slug,
       title: bound.title,
-      files: bound.files,
-      merkle: bound.merkle,
+      files,
+      merkle: computed,
       audit: bound.audit.slice(-80),
       messages: bound.messages.slice(-24),
       version: (latest?.version ?? 0) + 1,
-      prevHash: latest?.merkle ?? null,
+      prevHash: latest?.merkle && latest.merkle.length === 64 ? latest.merkle : null,
       status: 'draft',
       createdAt: latest?.createdAt ?? now,
       updatedAt: now,

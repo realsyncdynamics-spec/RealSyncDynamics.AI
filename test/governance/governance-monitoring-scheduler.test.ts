@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
+import {
+  buildGovernanceEventRow,
+  buildSourceSelection,
+  scanDurationMs,
+} from '../../supabase/functions/_shared/governanceMonitoringScheduler';
 
 // ── nextScanAt — Intervall-Berechnung ─────────────────────────────────────
 // Spiegelt die Logik aus supabase/functions/governance-monitoring-scheduler/index.ts
@@ -21,36 +26,6 @@ describe('nextScanAt — Scan-Intervalle', () => {
     const diff = t.getTime() - Date.now();
     expect(diff).toBeGreaterThan(3_590_000);
     expect(diff).toBeLessThan(3_610_000);
-  });
-
-  describe('Scheduler-Filter und Prüfpfad', () => {
-    const src = readFileSync(
-      'supabase/functions/governance-monitoring-scheduler/index.ts',
-      'utf8',
-    );
-
-    it('beachtet frequency_filter für den stündlichen Cron-Lauf', () => {
-      expect(src).toContain('frequency_filter');
-      expect(src).toContain(".eq('scan_frequency', body.frequency_filter)");
-    });
-
-    it('unterstützt source_id für gezielte Rechecks statt Vollscan', () => {
-      expect(src).toContain('source_id');
-      expect(src).toContain(".eq('id', body.source_id)");
-      expect(src).toContain('limit(body.source_id ? 1 : 50)');
-    });
-
-    it('schreibt Governance-Events mit gültigem event_source und verlinktem Asset', () => {
-      expect(src).toContain("event_source: 'agent_runtime'");
-      expect(src).toContain('asset_id:     assetId');
-      expect(src).toContain("payload:      { source_id: sourceId, ...payload }");
-    });
-
-    it('erfasst pro Scan duration_ms für Metriken und Reporting', () => {
-      expect(src).toContain('const scanStartedAt = Date.now()');
-      expect(src).toContain('const duration_ms = Date.now() - scanStartedAt');
-      expect(src).toContain('duration_ms,');
-    });
   });
 
   it('daily = ~24 Stunden in der Zukunft', () => {
@@ -195,5 +170,51 @@ describe('Auth — Cron darf nur mit CRON_GOVERNANCE_MONITORING_KEY ticken', () 
     expect(src).not.toMatch(
       /authHeader\s*!==\s*`Bearer \$\{SERVICE_KEY\}`/,
     );
+  });
+});
+
+describe('Scheduler-Filter und Prüfpfad', () => {
+  it('beachtet frequency_filter für den stündlichen Cron-Lauf', () => {
+    const out = buildSourceSelection({ frequency_filter: 'hourly' }, '2026-09-17T00:00:00.000Z');
+    expect(out).toMatchObject({
+      limit: 50,
+      source_id: null,
+      dueBefore: '2026-09-17T00:00:00.000Z',
+      frequency_filter: 'hourly',
+    });
+    expect(out.statuses).toEqual(['active']);
+  });
+
+  it('unterstützt source_id für gezielte Rechecks statt Vollscan', () => {
+    const out = buildSourceSelection({ source_id: 'src-1', frequency_filter: 'hourly' }, '2026-09-17T00:00:00.000Z');
+    expect(out).toEqual({
+      limit: 1,
+      source_id: 'src-1',
+      statuses: ['active', 'error'],
+      dueBefore: null,
+      frequency_filter: null,
+    });
+  });
+
+  it('schreibt Governance-Events mit gültigem event_source und verlinktem Asset', () => {
+    expect(buildGovernanceEventRow({
+      tenantId: 'tenant-1',
+      sourceId: 'source-7',
+      assetId: 'asset-9',
+      eventType: 'SCAN_COMPLETED',
+      payload: { duration_ms: 123, score: 88 },
+    })).toEqual({
+      tenant_id: 'tenant-1',
+      event_type: 'SCAN_COMPLETED',
+      event_source: 'agent_runtime',
+      risk_level: 'low',
+      payload: { source_id: 'source-7', duration_ms: 123, score: 88 },
+      asset_id: 'asset-9',
+    });
+  });
+
+  it('erfasst pro Scan duration_ms für Metriken und Reporting', () => {
+    expect(scanDurationMs(1_000, 1_123)).toBe(123);
+    expect(scanDurationMs(5_000, 4_900)).toBe(0);
   });
 });

@@ -40,6 +40,12 @@ import {
   wirksameKadenz,
   type Kadenz,
 } from '../_shared/monitoring-cadence.ts';
+import {
+  buildGovernanceEventRow,
+  buildSourceSelection,
+  scanDurationMs,
+  type SchedulerRequestBody,
+} from '../_shared/governanceMonitoringScheduler.ts';
 
 const SUPABASE_URL  = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_KEY   = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -65,11 +71,6 @@ interface ScanResponse {
   cookie_count?: number;
   issues?: Array<{ risk: string; issue: string }>;
   error?: string;
-}
-
-interface RequestBody {
-  source_id?: string;
-  frequency_filter?: Kadenz;
 }
 
 // ── Plan-Gate ───────────────────────────────────────────────────────────────
@@ -156,14 +157,9 @@ async function emitEvent(
   eventType: string,
   payload: Record<string, unknown>,
 ) {
-  await sb.from('governance_events').insert({
-    tenant_id:    tenantId,
-    event_type:   eventType,
-    event_source: 'agent_runtime',
-    risk_level:   'low',
-    payload:      { source_id: sourceId, ...payload },
-    asset_id:     assetId,
-  });
+  await sb.from('governance_events').insert(
+    buildGovernanceEventRow({ tenantId, sourceId, assetId, eventType, payload }),
+  );
 }
 
 async function createAlert(
@@ -204,26 +200,30 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: 'cron only' }, 401);
   }
 
-  let body: RequestBody = {};
+  let body: SchedulerRequestBody = {};
   try { body = await req.json(); } catch { /* empty body OK */ }
 
   const sb = createClient(SUPABASE_URL, SERVICE_KEY);
 
   const nowIso = new Date().toISOString();
+  const selection = buildSourceSelection(body, nowIso);
   let query = sb.from('monitoring_sources').select('*');
-  if (body.source_id) {
-    query = query.eq('id', body.source_id);
-  } else {
+  if (selection.source_id) {
     query = query
-      .eq('status', 'active')
-      .or(`next_scan_at.is.null,next_scan_at.lte.${nowIso}`);
-    if (body.frequency_filter) {
-      query = query.eq('scan_frequency', body.frequency_filter);
+      .eq('id', selection.source_id)
+      .in('status', [...selection.statuses]);
+  } else {
+    query = query.eq('status', selection.statuses[0]);
+    if (selection.dueBefore) {
+      query = query.or(`next_scan_at.is.null,next_scan_at.lte.${selection.dueBefore}`);
+    }
+    if (selection.frequency_filter) {
+      query = query.eq('scan_frequency', selection.frequency_filter);
     }
   }
 
   // Alle fälligen Quellen holen
-  const { data: sources, error: fetchErr } = await query.limit(body.source_id ? 1 : 50);
+  const { data: sources, error: fetchErr } = await query.limit(selection.limit);
 
   if (fetchErr) {
     return jsonResponse({ error: fetchErr.message }, 500);
@@ -275,7 +275,7 @@ Deno.serve(async (req) => {
     // Scan ausführen
     const scanStartedAt = Date.now();
     const result = await scanSource(source);
-    const duration_ms = Date.now() - scanStartedAt;
+    const duration_ms = scanDurationMs(scanStartedAt, Date.now());
 
     if (result.error) {
       // SCAN_FAILED

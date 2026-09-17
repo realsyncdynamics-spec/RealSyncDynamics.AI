@@ -10,6 +10,7 @@ import { classifyPrompt } from './bolt/governance-gate';
 import { diagnoseFiles, type Diagnostic } from './bolt/diagnostics';
 import { repairPrompt } from './bolt/error-recovery';
 import { generateViaRealSyncGatewayStream } from './gateway';
+import { LANDING_TEMPLATES, type LandingTemplateId } from './bolt/landing-templates';
 import {
   deleteBuilderProject,
   listBuilderProjects,
@@ -33,9 +34,9 @@ const GATE_PROBE =
   '<boltArtifact title="gate"><boltAction type="file" filePath="index.html">held</boltAction></boltArtifact>';
 
 const FOLLOW_UPS = [
-  'Füge eine Kundentabelle hinzu.',
-  'Baue eine Detailansicht.',
-  'Ändere das Dashboard auf Dark Mode.',
+  'Verdichte den Hero auf einen Satz und eine CTA.',
+  'Ergänze drei Beweiszeilen unter dem Hero.',
+  'Setze einen Impressums-Hinweis vor Go-Live in den Footer.',
 ];
 
 function slugify(s: string): string {
@@ -93,7 +94,9 @@ export function BoltWorkbench({
   const [project, setProject] = useState<BuilderProject>(() =>
     newProject(ctx.tenantId, projectSlug, projectSlug),
   );
-  const [prompt, setPrompt] = useState('Erstelle eine moderne CRM-Web-App mit Dashboard.');
+  const [prompt, setPrompt] = useState(
+    'Exklusive Landingpage für einen Invite-only Launch: ein Satz, eine Handlung, kein Dashboard.',
+  );
   const [busy, setBusy] = useState(false);
   const [stream, setStream] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -324,6 +327,37 @@ export function BoltWorkbench({
     abortRef.current?.abort();
   }
 
+  async function applyTemplate(id: LandingTemplateId) {
+    if (busy) return;
+    const tpl = LANDING_TEMPLATES[id];
+    setPrompt(tpl.prompt);
+    setBusy(true);
+    setError(null);
+    setStream('');
+    try {
+      engineRef.current.setCtx(ctx);
+      const risk = classifyPrompt(tpl.prompt);
+      const gated =
+        !ctx.authenticated ||
+        !ctx.tenantVerified ||
+        !ctx.entitlementBuilder ||
+        risk === 'high' ||
+        risk === 'unacceptable';
+      if (gated) {
+        setStream('Governance-Gate — kein Modellaufruf.');
+        const res = await engineRef.current.ingest(`m-${Date.now()}`, GATE_PROBE, tpl.prompt);
+        await applyEngine(res, 'Gate geschlossen. Kein Modellaufruf.');
+        return;
+      }
+      const res = await engineRef.current.ingest(`tpl-${id}`, tpl.artifact, tpl.prompt);
+      await applyEngine(res, tpl.artifact);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function saveCurrent() {
     if (!current) return;
     const res = await engineRef.current.writeFile(current.path, draft);
@@ -344,7 +378,7 @@ export function BoltWorkbench({
     setActivePath(null);
     setStream('');
     setError(null);
-    setPrompt('Erstelle eine moderne CRM-Web-App mit Dashboard.');
+    setPrompt('Exklusive Landingpage für einen Invite-only Launch: ein Satz, eine Handlung, kein Dashboard.');
   }
 
   function openListed(id: string) {
@@ -476,6 +510,17 @@ export function BoltWorkbench({
               className="min-h-20 w-full resize-y border border-white/15 bg-[#101114] px-3 py-2 text-sm outline-none focus:border-[#0052FF]"
             />
             <div className="flex flex-wrap gap-2">
+              {(Object.keys(LANDING_TEMPLATES) as LandingTemplateId[]).map((id) => (
+                <button
+                  key={id}
+                  type="button"
+                  disabled={busy}
+                  onClick={() => void applyTemplate(id)}
+                  className="min-h-11 border border-[#0052FF]/50 px-3 text-xs text-[#7AA2FF] disabled:opacity-40"
+                >
+                  {LANDING_TEMPLATES[id].title}
+                </button>
+              ))}
               {FOLLOW_UPS.map((follow) => (
                 <button
                   key={follow}

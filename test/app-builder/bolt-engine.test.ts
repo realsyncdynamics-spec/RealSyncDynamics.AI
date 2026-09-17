@@ -7,6 +7,7 @@ import { BoltEngine } from '../../src/features/app-builder/bolt/engine';
 import { generateBoltArtifact } from '../../src/features/app-builder/bolt/demo-generator';
 import { htmlFromFiles } from '../../src/features/app-builder/bolt/preview';
 import { diagnoseFiles } from '../../src/features/app-builder/bolt/diagnostics';
+import { LANDING_TEMPLATES } from '../../src/features/app-builder/bolt/landing-templates';
 import {
   deleteProject,
   listProjects,
@@ -224,6 +225,19 @@ describe('bolt engine — ingest', () => {
     expect(cut.snapshot.files['partial.html']).toBeUndefined();
     expect(cut.runs).toHaveLength(0);
     expect(cut.snapshot.merkle).toBe(merkle);
+  });
+
+  it('exclusive landing templates produce index.html, styles.css, app.js', async () => {
+    for (const id of Object.keys(LANDING_TEMPLATES) as (keyof typeof LANDING_TEMPLATES)[]) {
+      const engine = new BoltEngine(ctx);
+      const tpl = LANDING_TEMPLATES[id];
+      const res = await engine.ingest(`tpl-${id}`, tpl.artifact, tpl.prompt);
+      expect(res.blocked).toBe(false);
+      expect(res.snapshot.files['index.html']).toBeTruthy();
+      expect(res.snapshot.files['styles.css']).toBeTruthy();
+      expect(res.snapshot.files['app.js']).toBeTruthy();
+      expect(res.snapshot.files['index.html'].content).toMatch(/<!DOCTYPE html>/);
+    }
   });
 
   it('hydrate re-scans secrets and skips leaking files', async () => {

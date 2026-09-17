@@ -236,7 +236,10 @@ Deno.serve(async (req) => {
   }
 
   // Alle fälligen Quellen holen
-  const { data: sources, error: fetchErr } = await query.limit(selection.limit);
+  const { data: sources, error: fetchErr } = await query
+    .order('next_scan_at', { ascending: true, nullsFirst: true })
+    .order('id', { ascending: true })
+    .limit(selection.limit);
 
   if (fetchErr) {
     return jsonResponse({ error: fetchErr.message }, 500);

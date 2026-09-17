@@ -205,6 +205,12 @@ describe('Scheduler-Filter und Prüfpfad', () => {
     expect(buildDueFilter(out.dueBefore!)).toBe(
       'next_scan_at.is.null,next_scan_at.lte.2026-09-17T00%3A00%3A00.000Z',
     );
+    const src = readFileSync(
+      'supabase/functions/governance-monitoring-scheduler/index.ts',
+      'utf8',
+    );
+    expect(src).toContain(".order('next_scan_at', { ascending: true, nullsFirst: true })");
+    expect(src).toContain(".order('id', { ascending: true })");
   });
 
   it('unterstützt source_id für gezielte Rechecks statt Vollscan', () => {

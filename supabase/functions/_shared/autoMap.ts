@@ -152,7 +152,7 @@ export function proposeControlStatuses(profile: AssetProfile, controls: ControlR
       continue;
     }
     if (isLegal && c.framework === 'LEGAL') {
-      out.push({ ...c, status: 'gap', rationale: 'Legal-Industry — Vertraulichkeit und Privileg-Management erforderlich.' });
+      out.push({ ...c, status: 'gap', rationale: 'Rechtsbranche — Vertraulichkeit und Privileg-Management erforderlich.' });
       seen.add(k);
       continue;
     }

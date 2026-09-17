@@ -15,6 +15,7 @@
 import { handleOptions, jsonResponse, jsonError, methodNotAllowed } from '../../_shared/gateway.ts';
 import { requireAuthAndTenant, type AuthContext } from '../../_shared/auth.ts';
 import { EntitlementError, gateFeature } from '../../_shared/entitlements.ts';
+import { merkleOfFiles } from '../../_shared/merkle.ts';
 
 const OPS = new Set(['list', 'load', 'save', 'delete']);
 const MAX_FILES = 80;
@@ -192,7 +193,12 @@ async function saveProject(
   const files = (body.files ?? {}) as Record<string, string>;
   const filesErr = validateFiles(files);
   if (filesErr) return jsonError(400, 'BAD_REQUEST', filesErr);
-  const merkle = String(body.merkle ?? '');
+  const computed = await merkleOfFiles(files);
+  const claimed = String(body.merkle ?? '');
+  if (claimed && claimed !== computed) {
+    return jsonError(400, 'MERKLE_MISMATCH', 'client merkle does not match file tree');
+  }
+  const merkle = computed;
   const audit = Array.isArray(body.audit) ? body.audit.slice(-80) : [];
   const messages = Array.isArray(body.messages) ? body.messages.slice(-24) : [];
 

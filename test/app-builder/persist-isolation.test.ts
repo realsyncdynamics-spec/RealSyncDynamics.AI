@@ -182,6 +182,15 @@ describe('code-persist handler source — isolation invariants', () => {
     expect(gateAt).toBeGreaterThan(-1);
     expect(insertAt).toBeGreaterThan(gateAt);
   });
+
+  it('recomputes merkle and rejects a mismatched client hash', () => {
+    expect(src).toMatch(/merkleOfFiles/);
+    expect(src).toMatch(/MERKLE_MISMATCH/);
+    const merkleAt = src.indexOf('merkleOfFiles');
+    const insertAt = src.indexOf('.insert(insert)');
+    expect(merkleAt).toBeGreaterThan(-1);
+    expect(insertAt).toBeGreaterThan(merkleAt);
+  });
 });
 
 describe('persist-api client — production path', () => {

@@ -20,3 +20,12 @@ export async function merkleOf(pathsToSha: Record<string, string>): Promise<stri
   const joined = keys.map((k) => `${k}:${pathsToSha[k]}`).join('\n');
   return sha256Hex(joined);
 }
+
+/** Merkle root over path → file contents (hashes each file first). */
+export async function merkleOfFiles(files: Record<string, string>): Promise<string> {
+  const hashes: Record<string, string> = {};
+  for (const path of Object.keys(files)) {
+    hashes[path] = await sha256Hex(files[path] ?? '');
+  }
+  return merkleOf(hashes);
+}

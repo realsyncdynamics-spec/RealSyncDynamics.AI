@@ -37,10 +37,13 @@ import { sha256Hex } from '../_shared/hash.ts';
 import { buildCorsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 import { decide } from '../_shared/pdp/decide.ts';
 import type { DecisionRequest, DecisionResult } from '../_shared/pdp/core.ts';
+import { requireAuthAndTenant } from '../_shared/auth.ts';
+import { EntitlementError, gateFeature } from '../_shared/entitlements.ts';
 
 const corsHeaders = buildCorsHeaders('GET, POST, OPTIONS');
 
 const ALLOWED_OPS = new Set(['health', 'generate', 'extract_json', 'embed', 'stream']);
+const BUILDER_FEATURE = 'app_builder_code';
 
 // Per-instance rate-limit windows. Cleared on cold-start which is fine:
 // a bad actor has no cheap way to trigger a cold-start.
@@ -173,6 +176,32 @@ async function enforceRateLimit(req: Request, feature: string): Promise<Response
   );
 }
 
+async function requireBuilderIfNeeded(
+  req: Request,
+  feature: string,
+  tenantClaim: unknown,
+): Promise<Response | null> {
+  if (feature !== BUILDER_FEATURE) return null;
+  const auth = await requireAuthAndTenant(
+    req,
+    typeof tenantClaim === 'string' ? tenantClaim : null,
+  );
+  if (auth instanceof Response) return auth;
+  try {
+    await gateFeature(auth.admin, auth.tenantId, 'siteos.builder');
+  } catch (e) {
+    if (e instanceof EntitlementError) {
+      return jsonError(
+        e.code === 'INTERNAL' ? 500 : 403,
+        e.code === 'FORBIDDEN' ? 'ENTITLEMENT' : e.code,
+        e.message,
+      );
+    }
+    throw e;
+  }
+  return null;
+}
+
 Deno.serve(async (req) => {
   const preflight = handleOptions(req, corsHeaders);
   if (preflight) return preflight;
@@ -225,6 +254,9 @@ async function handleOpBased(req: Request): Promise<Response> {
   if (!request.feature || !request.task_type || !request.model_profile || !request.input) {
     return jsonError(400, 'BAD_REQUEST', 'feature, task_type, model_profile and input are required');
   }
+
+  const builderGate = await requireBuilderIfNeeded(req, request.feature, request.tenant_id);
+  if (builderGate) return builderGate;
 
   const limited = await enforceRateLimit(req, request.feature);
   if (limited) return limited;

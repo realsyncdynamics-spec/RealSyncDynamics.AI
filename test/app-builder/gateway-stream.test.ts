@@ -95,4 +95,17 @@ describe('ai-gateway stream op is registered', () => {
     expect(src).toMatch(/body\.stream === true/);
     expect(src).toMatch(/streamOpenAiCompat/);
   });
+
+  it('gates app_builder_code with membership and siteos.builder before the provider', () => {
+    const src = readFileSync(resolve(__dirname, '../../supabase/functions/ai-gateway/index.ts'), 'utf8');
+    expect(src).toMatch(/BUILDER_FEATURE = 'app_builder_code'/);
+    expect(src).toMatch(/requireAuthAndTenant/);
+    expect(src).toMatch(/gateFeature\(auth\.admin, auth\.tenantId, 'siteos\.builder'\)/);
+    const gateAt = src.indexOf('requireBuilderIfNeeded');
+    const generateAt = src.indexOf('gateway.generate');
+    const streamAt = src.indexOf('streamNdjson');
+    expect(gateAt).toBeGreaterThan(-1);
+    expect(generateAt).toBeGreaterThan(gateAt);
+    expect(streamAt).toBeGreaterThan(gateAt);
+  });
 });

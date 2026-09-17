@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import {
+  buildDueFilter,
   buildGovernanceEventRow,
   buildSourceSelection,
   isOmittedSchedulerBody,
@@ -200,6 +201,9 @@ describe('Scheduler-Filter und Prüfpfad', () => {
       frequency_filter: 'hourly',
     });
     expect(out.statuses).toEqual(['active']);
+    expect(buildDueFilter(out.dueBefore!)).toBe(
+      'next_scan_at.is.null,next_scan_at.lte.2026-09-17T00%3A00%3A00.000Z',
+    );
   });
 
   it('unterstützt source_id für gezielte Rechecks statt Vollscan', () => {

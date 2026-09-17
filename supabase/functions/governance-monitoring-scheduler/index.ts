@@ -41,6 +41,7 @@ import {
   type Kadenz,
 } from '../_shared/monitoring-cadence.ts';
 import {
+  buildDueFilter,
   buildGovernanceEventRow,
   buildSourceSelection,
   isOmittedSchedulerBody,
@@ -226,7 +227,7 @@ Deno.serve(async (req) => {
   } else {
     query = query.in('status', [...selection.statuses]);
     if (selection.dueBefore) {
-      query = query.or(`next_scan_at.is.null,next_scan_at.lte.${selection.dueBefore}`);
+      query = query.or(buildDueFilter(selection.dueBefore));
     }
     if (selection.frequency_filter) {
       query = query.eq('scan_frequency', selection.frequency_filter);

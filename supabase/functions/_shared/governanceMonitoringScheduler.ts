@@ -58,6 +58,10 @@ export function buildSourceSelection(body: SchedulerRequestBody, nowIso: string)
   };
 }
 
+export function buildDueFilter(dueBefore: string): string {
+  return `next_scan_at.is.null,next_scan_at.lte.${encodeURIComponent(dueBefore)}`;
+}
+
 export function buildGovernanceEventRow(input: {
   tenantId: string;
   sourceId: string;

@@ -4,6 +4,9 @@ on:
   workflow_dispatch:
   pull_request:
     branches: [main]
+    # Default types omit ready_for_review. Without it, skipping drafts
+    # would mean marking a PR ready never starts CI.
+    types: [opened, synchronize, reopened, ready_for_review]
   merge_group:
     branches: [main]
   push:
@@ -11,6 +14,7 @@ on:
 
 jobs:
   build:
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
@@ -64,6 +68,7 @@ jobs:
         run: npm run build
 
   db:
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     name: Migration validation
     services:

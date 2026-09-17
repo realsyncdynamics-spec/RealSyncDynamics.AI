@@ -383,14 +383,14 @@ export const PUBLIC_FOOTER_LINKS: PublicNavLeaf[] = [
 
 export const PUBLIC_CTA = {
   /** Acquisition CTA — never „Demo“ / „testen“. Scan is entry, not the product. */
-  label: 'Free Audit starten',
-  shortLabel: 'Free Audit starten',
+  label: 'Kostenlosen Governance Scan starten',
+  shortLabel: 'Governance Scan',
   to: '/audit',
 } as const;
 
 /**
- * Europe-OS mock strip — visible top-level links on PublicDarkHeader.
- * Produkt / Evidence / Preise / Login (+ Free Audit CTA). Fuller IA in drawer.
+ * Visible top-level links on PublicDarkHeader.
+ * Produkt / Evidence / Preise / Login (+ Governance Scan CTA). Fuller IA in drawer.
  */
 export const PUBLIC_PRIMARY_NAV: readonly PublicNavLeaf[] = [
   { label: 'Produkt', to: '/#product' },

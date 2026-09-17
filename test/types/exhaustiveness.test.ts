@@ -52,10 +52,11 @@ describe('catalog exhaustiveness', () => {
 });
 
 describe('parsePlanId — untrusted boundary only', () => {
-  it('accepts every PLAN_ORDER id', () => {
+  it('accepts every ladder PlanId plus governance_launch', () => {
     for (const id of PLAN_ORDER) {
       expect(parsePlanId(id)).toBe(id);
     }
+    expect(parsePlanId('governance_launch')).toBe('governance_launch');
   });
 
   it('rejects scale and free_audit — those are PlanKey aliases, not PlanId', () => {

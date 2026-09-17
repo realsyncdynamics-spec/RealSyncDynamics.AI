@@ -32,7 +32,7 @@
  */
 
 import { createClient, type SupabaseClient } from 'jsr:@supabase/supabase-js@2';
-import { corsHeaders, handleOptions, jsonResponse } from '../_shared/gateway.ts';
+import { buildCorsHeaders, handleOptions, jsonResponse, methodNotAllowed } from '../_shared/gateway.ts';
 import { loadEntitlementsForTenant, hasFeature, type Entitlements } from '../_shared/entitlements.ts';
 import {
   erlaubteKadenz,
@@ -52,6 +52,7 @@ import {
 
 const SUPABASE_URL  = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_KEY   = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+const corsHeaders = buildCorsHeaders('GET, POST, OPTIONS');
 
 // ── Typen ────────────────────────────────────────────────────────────────────
 interface MonitoringSource {
@@ -205,8 +206,11 @@ async function createAlert(
 // ── Hauptlogik ───────────────────────────────────────────────────────────────
 
 Deno.serve(async (req) => {
-  const preflight = handleOptions(req);
+  const preflight = handleOptions(req, corsHeaders);
   if (preflight) return preflight;
+  if (req.method !== 'GET' && req.method !== 'POST') {
+    return methodNotAllowed(corsHeaders);
+  }
 
   // Drift-Guard: verify_jwt=false, also eigener Bearer-Check. Credential ist
   // der dedizierte Cron-Key (nicht der service_role JWT). Leerer Key → 401.
@@ -216,13 +220,17 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: 'cron only' }, 401);
   }
 
-  const rawBody = await req.text();
   let body: SchedulerRequestBody = {};
-  if (!isOmittedSchedulerBody(rawBody)) {
-    try {
-      body = parseSchedulerRequestBody(rawBody);
-    } catch {
-      return jsonResponse({ error: 'invalid json' }, 400);
+  if (req.method === 'POST') {
+    const rawBody = await req.text();
+    if (isOmittedSchedulerBody(rawBody)) {
+      body = {};
+    } else {
+      try {
+        body = parseSchedulerRequestBody(rawBody);
+      } catch {
+        return jsonResponse({ error: 'invalid json' }, 400);
+      }
     }
   }
 

@@ -176,6 +176,18 @@ describe('Auth — Cron darf nur mit CRON_GOVERNANCE_MONITORING_KEY ticken', () 
   });
 });
 
+describe('HTTP-Methode', () => {
+  it('prüft HTTP-Methoden vor einer optionalen POST-Payload-Validierung', () => {
+    const src = readFileSync(
+      'supabase/functions/governance-monitoring-scheduler/index.ts',
+      'utf8',
+    );
+    expect(src).toContain("if (req.method !== 'GET' && req.method !== 'POST')");
+    expect(src).toContain('return methodNotAllowed(corsHeaders);');
+    expect(src).toContain("if (req.method === 'POST') {");
+  });
+});
+
 describe('Scheduler-Filter und Prüfpfad', () => {
   it('rejects malformed JSON instead of falling back to a full run', () => {
     expect(() => parseSchedulerRequestBody('{"source_id":')).toThrow(/invalid|Unexpected/i);

@@ -4,8 +4,7 @@ Additive. Überschreibt Puck, Auth, Tenant, Orchestrator **nicht**.
 
 - Protokoll + Mechanik: `./bolt/`
 - Herkunft: stackblitz-labs/bolt.diy (MIT) — siehe `bolt/VENDOR.md`
-- Plan: `docs/builder/BOLT_DIY_INTEGRATION_PLAN.md`
-- Runtime-Grenzen: `docs/builder/RUNTIME_CAPABILITY.md`
+- Freeze / Abnahme: `docs/builder/BOLT_DIY_ABNAHME.md`
 
 ## Verdrahtung
 

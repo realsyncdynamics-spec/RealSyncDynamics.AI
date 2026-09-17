@@ -132,7 +132,7 @@ Deno.serve(async (req) => {
 
     // 4. Run compliance checks
     const complianceResult = await runComplianceChecks(
-      website.html || '',
+      website.html,
       project.id,
       tenantId,
       website.aiDisclosures || []
@@ -173,8 +173,8 @@ Deno.serve(async (req) => {
 
     const response: GeneratedWebsite = {
       project_id: project.id,
-      html: website.html || '',
-      css: website.css || '',
+      html: website.html,
+      css: website.css,
       sections: website.sections,
       seo_metadata: website.seo,
       compliance_status: complianceResult.score >= 75 ? 'compliant' : 'review_needed',
@@ -192,15 +192,24 @@ Deno.serve(async (req) => {
 // AI Website Generation using Claude
 // ============================================================================
 
-interface AIGenerationResult {
-  success: boolean;
-  html?: string;
-  css?: string;
-  sections: string[];
-  seo: Record<string, unknown>;
-  aiDisclosures: string[];
-  error?: string;
-}
+type AIGenerationResult =
+  | {
+      success: true;
+      html: string;
+      css: string;
+      sections: string[];
+      seo: Record<string, unknown>;
+      aiDisclosures: string[];
+    }
+  | {
+      success: false;
+      html: '';
+      css: '';
+      sections: string[];
+      seo: Record<string, unknown>;
+      aiDisclosures: string[];
+      error: string;
+    };
 
 async function generateWebsiteWithAI(
   req: WebsiteGenerationRequest,
@@ -277,6 +286,8 @@ Return ONLY the JSON object, nothing else.`;
       const errorBody = await response.text();
       return {
         success: false,
+        html: '',
+        css: '',
         sections: [],
         seo: {},
         aiDisclosures: [],
@@ -290,6 +301,8 @@ Return ONLY the JSON object, nothing else.`;
     if (!content) {
       return {
         success: false,
+        html: '',
+        css: '',
         sections: [],
         seo: {},
         aiDisclosures: [],
@@ -318,6 +331,8 @@ Return ONLY the JSON object, nothing else.`;
     console.error('AI generation error:', err);
     return {
       success: false,
+      html: '',
+      css: '',
       sections: ['hero', 'services', 'contact'],
       seo: {},
       aiDisclosures: [],

@@ -47,6 +47,7 @@ import {
   isOmittedSchedulerBody,
   parseSchedulerRequestBody,
   scanDurationMs,
+  type SchedulerRequestBody,
 } from '../_shared/governanceMonitoringScheduler.ts';
 
 const SUPABASE_URL  = Deno.env.get('SUPABASE_URL')!;
@@ -203,7 +204,7 @@ Deno.serve(async (req) => {
   }
 
   const rawBody = await req.text();
-  let body = {};
+  let body: SchedulerRequestBody = {};
   if (!isOmittedSchedulerBody(rawBody)) {
     try {
       body = parseSchedulerRequestBody(rawBody);

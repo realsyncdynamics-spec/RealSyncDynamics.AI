@@ -7,6 +7,7 @@ import type {
 } from './types';
 import type { SkillRegistry } from './registry';
 import type { PermissionChecker } from './permissions';
+import { diffCapabilities } from './permissions';
 import type { ExecutionTracer } from './observability';
 import type { EventBus } from './events';
 import type { ApprovalGateService } from './approvals';
@@ -16,6 +17,7 @@ import {
 } from './approvals';
 import type { HandlerContext, HandlerRegistry } from './handlers';
 import { defaultHasher } from './handlers';
+import { effectiveAlongPath } from './delegation/graph';
 
 export type ExecutionOutcome =
   | {
@@ -40,7 +42,8 @@ export type ExecutionError =
   | 'handler_not_found'
   | 'permission_denied'
   | 'handler_threw'
-  | 'invalid_input';
+  | 'invalid_input'
+  | 'delegation_denied';
 
 export interface ExecutorDeps {
   registry: SkillRegistry;
@@ -49,33 +52,11 @@ export interface ExecutorDeps {
   tracer: ExecutionTracer;
   events: EventBus;
   gates: ApprovalGateService;
-  /** Injectable for tests. Defaults to `crypto.randomUUID()`. */
   id?: () => string;
-  /** Injectable for tests. Defaults to `() => new Date()`. */
   clock?: () => Date;
-  /** Injectable for tests. Defaults to FNV-1a over stable JSON. */
   hash?: (value: unknown) => string;
 }
 
-/**
- * Phase 1.1 executor. Synchronous skill orchestration:
- *
- *   1. Look up skill in registry  → error_code:'skill_not_found' if missing
- *   2. Look up handler           → error_code:'handler_not_found' if missing
- *   3. Validate input            → error_code:'invalid_input' if not plain
- *   4. Check capabilities        → error_code:'permission_denied' if denied
- *   5. Open approval gate iff !auto_approve  → outcome:'awaiting_approval'
- *   6. Run handler               → outcome:'completed' | error_code:'handler_threw'
- *
- * Every successful path persists an ExecutionRecord and emits structured
- * events. Permission denials are recorded in the audit trail (as a failed
- * execution) so a sweep over `runtime_events` is sufficient for forensics.
- *
- * What this is NOT (intentionally):
- *   - parallel/streaming execution
- *   - sub-agent / skill-to-skill calls
- *   - retry logic (lives in the Phase-2 workflow engine)
- */
 export class Executor {
   readonly #deps: Required<ExecutorDeps>;
 
@@ -121,6 +102,62 @@ export class Executor {
 
     await tracer.start(base);
     await this.#emit('execution.started', input, execution_id, { input_hash });
+
+    const govard = consumeGovard(input);
+    if (!govard.ok) {
+      await this.#finish(execution_id, 'failed', 'delegation_denied');
+      await this.#emit('delegation.rejected', input, execution_id, {
+        reason: govard.reason,
+        detail: govard.detail,
+      });
+      return { status: 'failed', execution_id, error_code: 'delegation_denied' };
+    }
+
+    if (input.delegation_chain && input.delegation_chain.length > 0) {
+      if (!input.command_id || !input.evaluation_hash || !input.root_agent) {
+        await this.#finish(execution_id, 'failed', 'delegation_denied');
+        await this.#emit('delegation.rejected', input, execution_id, {
+          reason: 'missing_command',
+          detail: 'delegation_chain requires command_id, evaluation_hash, root_agent',
+        });
+        return { status: 'failed', execution_id, error_code: 'delegation_denied' };
+      }
+      const hashMismatch = input.delegation_chain.some(
+        (e) => e.evaluation_hash !== input.evaluation_hash || e.command_id !== input.command_id,
+      );
+      if (hashMismatch) {
+        await this.#finish(execution_id, 'failed', 'delegation_denied');
+        await this.#emit('delegation.rejected', input, execution_id, {
+          reason: 'evaluation_mismatch',
+          detail: 'edge command_id/evaluation_hash != execution input',
+        });
+        return { status: 'failed', execution_id, error_code: 'delegation_denied' };
+      }
+      const fold = effectiveAlongPath(input.root_agent, input.delegation_chain, this.#deps.clock());
+      if (!fold.ok) {
+        await this.#finish(execution_id, 'failed', 'delegation_denied');
+        await this.#emit('delegation.rejected', input, execution_id, {
+          reason: fold.reason,
+          detail: fold.detail,
+        });
+        return { status: 'failed', execution_id, error_code: 'delegation_denied' };
+      }
+      const missing = diffCapabilities(fold.effective_capabilities, skill.capabilities);
+      if (missing.length > 0) {
+        await this.#finish(execution_id, 'failed', 'delegation_denied');
+        await this.#emit('delegation.rejected', input, execution_id, {
+          reason: 'authority_expansion',
+          detail: 'skill capabilities exceed folded path',
+          missing,
+        });
+        return { status: 'failed', execution_id, error_code: 'delegation_denied' };
+      }
+      await this.#emit('delegation.created', input, execution_id, {
+        command_id: input.command_id,
+        evaluation_hash: input.evaluation_hash,
+        effective: fold.effective_capabilities,
+      });
+    }
 
     const decision = await permissions.check({
       tenant_id: input.tenant_id,
@@ -215,6 +252,17 @@ export class Executor {
   }
 }
 
+function consumeGovard(input: ExecutionInput): { ok: true } | { ok: false; reason: string; detail: string } {
+  if (!input.govard_decision) return { ok: true };
+  if (input.govard_decision === 'DENY') {
+    return { ok: false, reason: 'govard_deny', detail: 'GOVARD DENY is authoritative' };
+  }
+  if (input.govard_decision === 'APPROVAL' && input.approval_granted !== true) {
+    return { ok: false, reason: 'approval_pending', detail: 'GOVARD APPROVAL without human grant' };
+  }
+  return { ok: true };
+}
+
 function isValidInput(input: ExecutionInput): boolean {
   if (!input || typeof input !== 'object') return false;
   if (!input.tenant_id || !input.agent_id || !input.skill_id) return false;
@@ -228,6 +276,5 @@ function defaultId(): string {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
     return crypto.randomUUID();
   }
-  // Vanishingly unlikely fallback. Tests inject their own.
   return `exec_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
 }

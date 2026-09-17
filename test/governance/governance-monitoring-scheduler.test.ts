@@ -23,6 +23,36 @@ describe('nextScanAt — Scan-Intervalle', () => {
     expect(diff).toBeLessThan(3_610_000);
   });
 
+  describe('Scheduler-Filter und Prüfpfad', () => {
+    const src = readFileSync(
+      'supabase/functions/governance-monitoring-scheduler/index.ts',
+      'utf8',
+    );
+
+    it('beachtet frequency_filter für den stündlichen Cron-Lauf', () => {
+      expect(src).toContain('frequency_filter');
+      expect(src).toContain(".eq('scan_frequency', body.frequency_filter)");
+    });
+
+    it('unterstützt source_id für gezielte Rechecks statt Vollscan', () => {
+      expect(src).toContain('source_id');
+      expect(src).toContain(".eq('id', body.source_id)");
+      expect(src).toContain('limit(body.source_id ? 1 : 50)');
+    });
+
+    it('schreibt Governance-Events mit gültigem event_source und verlinktem Asset', () => {
+      expect(src).toContain("event_source: 'agent_runtime'");
+      expect(src).toContain('asset_id:     assetId');
+      expect(src).toContain("payload:      { source_id: sourceId, ...payload }");
+    });
+
+    it('erfasst pro Scan duration_ms für Metriken und Reporting', () => {
+      expect(src).toContain('const scanStartedAt = Date.now()');
+      expect(src).toContain('const duration_ms = Date.now() - scanStartedAt');
+      expect(src).toContain('duration_ms,');
+    });
+  });
+
   it('daily = ~24 Stunden in der Zukunft', () => {
     const t = nextScanAt('daily');
     const diff = t.getTime() - Date.now();

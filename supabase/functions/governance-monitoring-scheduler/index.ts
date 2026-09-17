@@ -48,12 +48,14 @@ const SERVICE_KEY   = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 interface MonitoringSource {
   id: string;
   tenant_id: string;
+  asset_id: string | null;
   type: string;
   name: string;
   url: string | null;
   scan_frequency: 'hourly' | 'daily' | 'weekly' | 'monthly';
   current_score: number | null;
   previous_score: number | null;
+  scan_count: number;
 }
 
 interface ScanResponse {
@@ -65,12 +67,10 @@ interface ScanResponse {
   error?: string;
 }
 
-const FREQUENCY_INTERVAL: Record<string, string> = {
-  hourly:  '1 hour',
-  daily:   '24 hours',
-  weekly:  '7 days',
-  monthly: '30 days',
-};
+interface RequestBody {
+  source_id?: string;
+  frequency_filter?: Kadenz;
+}
 
 // ── Plan-Gate ───────────────────────────────────────────────────────────────
 //
@@ -152,16 +152,17 @@ async function emitEvent(
   sb: ReturnType<typeof createClient>,
   tenantId: string,
   sourceId: string,
+  assetId: string | null,
   eventType: string,
   payload: Record<string, unknown>,
 ) {
   await sb.from('governance_events').insert({
     tenant_id:    tenantId,
     event_type:   eventType,
-    event_source: 'monitoring-scheduler',
+    event_source: 'agent_runtime',
     risk_level:   'low',
-    payload,
-    asset_id:     sourceId,
+    payload:      { source_id: sourceId, ...payload },
+    asset_id:     assetId,
   });
 }
 
@@ -203,15 +204,26 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: 'cron only' }, 401);
   }
 
+  let body: RequestBody = {};
+  try { body = await req.json(); } catch { /* empty body OK */ }
+
   const sb = createClient(SUPABASE_URL, SERVICE_KEY);
 
+  const nowIso = new Date().toISOString();
+  let query = sb.from('monitoring_sources').select('*');
+  if (body.source_id) {
+    query = query.eq('id', body.source_id);
+  } else {
+    query = query
+      .eq('status', 'active')
+      .or(`next_scan_at.is.null,next_scan_at.lte.${nowIso}`);
+    if (body.frequency_filter) {
+      query = query.eq('scan_frequency', body.frequency_filter);
+    }
+  }
+
   // Alle fälligen Quellen holen
-  const { data: sources, error: fetchErr } = await sb
-    .from('monitoring_sources')
-    .select('*')
-    .eq('status', 'active')
-    .or('next_scan_at.is.null,next_scan_at.lte.' + new Date().toISOString())
-    .limit(50);
+  const { data: sources, error: fetchErr } = await query.limit(body.source_id ? 1 : 50);
 
   if (fetchErr) {
     return jsonResponse({ error: fetchErr.message }, 500);
@@ -221,7 +233,7 @@ Deno.serve(async (req) => {
     return jsonResponse({ processed: 0, message: 'Keine fälligen Quellen' });
   }
 
-  const results: Array<{ id: string; name: string; status: string; score?: number }> = [];
+  const results: Array<{ id: string; name: string; status: string; score?: number; duration_ms?: number }> = [];
   const entitlementsFuer = entitlementCache(sb);
 
   for (const source of sources as MonitoringSource[]) {
@@ -233,7 +245,7 @@ Deno.serve(async (req) => {
       // Kein Überwachungs-Entitlement. Der Prüfpfad hält fest, dass der Lauf
       // ausgelassen wurde — stilles Überspringen wäre in einem
       // Governance-Produkt der falsche Umgang damit.
-      await emitEvent(sb, source.tenant_id, source.id, 'SCAN_SKIPPED', {
+      await emitEvent(sb, source.tenant_id, source.id, source.asset_id, 'SCAN_SKIPPED', {
         source_name: source.name,
         reason: 'plan_without_monitoring',
       });
@@ -252,7 +264,7 @@ Deno.serve(async (req) => {
     const driftErlaubt = hasFeature(ent, 'monitoring.drift');
 
     // SCAN_STARTED
-    await emitEvent(sb, source.tenant_id, source.id, 'SCAN_STARTED', {
+    await emitEvent(sb, source.tenant_id, source.id, source.asset_id, 'SCAN_STARTED', {
       source_name: source.name,
       source_type: source.type,
       url: source.url,
@@ -261,13 +273,16 @@ Deno.serve(async (req) => {
     });
 
     // Scan ausführen
+    const scanStartedAt = Date.now();
     const result = await scanSource(source);
+    const duration_ms = Date.now() - scanStartedAt;
 
     if (result.error) {
       // SCAN_FAILED
-      await emitEvent(sb, source.tenant_id, source.id, 'SCAN_FAILED', {
+      await emitEvent(sb, source.tenant_id, source.id, source.asset_id, 'SCAN_FAILED', {
         error: result.error,
         source_name: source.name,
+        duration_ms,
       });
 
       await sb.from('monitoring_sources').update({
@@ -285,7 +300,7 @@ Deno.serve(async (req) => {
         metadata: { source_url: source.url },
       });
 
-      results.push({ id: source.id, name: source.name, status: 'error' });
+      results.push({ id: source.id, name: source.name, status: 'error', duration_ms });
       continue;
     }
 
@@ -295,12 +310,13 @@ Deno.serve(async (req) => {
       : null;
 
     // SCAN_COMPLETED
-    await emitEvent(sb, source.tenant_id, source.id, 'SCAN_COMPLETED', {
+    await emitEvent(sb, source.tenant_id, source.id, source.asset_id, 'SCAN_COMPLETED', {
       source_name:  source.name,
       score:        newScore,
       score_delta:  scoreDelta,
       trackers:     result.trackers ?? [],
       cookie_count: result.cookie_count ?? 0,
+      duration_ms,
     });
 
     // Score-Drift-Alert bei Verschlechterung > 10 Punkte.
@@ -341,10 +357,10 @@ Deno.serve(async (req) => {
       next_scan_at:   nextScanAt(kadenz),
       previous_score: source.current_score,
       current_score:  newScore,
-      scan_count:     (source as MonitoringSource & { scan_count: number }).scan_count + 1,
+      scan_count:     source.scan_count + 1,
     }).eq('id', source.id);
 
-    results.push({ id: source.id, name: source.name, status: 'ok', score: newScore ?? undefined });
+    results.push({ id: source.id, name: source.name, status: 'ok', score: newScore ?? undefined, duration_ms });
   }
 
   return jsonResponse({ processed: results.length, results });

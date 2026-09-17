@@ -75,9 +75,25 @@ function hasSpecialCategoryData(dataTypes: string[]): boolean {
   });
 }
 
-function isHealthcareIndustry(industry?: string): boolean {
+function matchesIndustry(industry: string | undefined, indicators: Set<string>): boolean {
   if (!industry) return false;
-  return HEALTHCARE_INDICATORS.has(industry.toLowerCase());
+  const normalized = industry.toLowerCase();
+  for (const indicator of indicators) {
+    if (normalized.includes(indicator)) return true;
+  }
+  return false;
+}
+
+function isHealthcareIndustry(industry?: string): boolean {
+  return matchesIndustry(industry, HEALTHCARE_INDICATORS);
+}
+
+function isFinanceIndustry(industry?: string): boolean {
+  return matchesIndustry(industry, FINANCE_INDICATORS);
+}
+
+function isLegalIndustry(industry?: string): boolean {
+  return matchesIndustry(industry, LEGAL_INDICATORS);
 }
 
 export function proposeControlStatuses(profile: AssetProfile, controls: ControlRef[]): AutoProposal[] {
@@ -88,6 +104,8 @@ export function proposeControlStatuses(profile: AssetProfile, controls: ControlR
   const pii = hasPersonalData(profile.dataTypes);
   const specialData = hasSpecialCategoryData(profile.dataTypes);
   const isHealthcare = isHealthcareIndustry(profile.tenantIndustry);
+  const isFinance = isFinanceIndustry(profile.tenantIndustry);
+  const isLegal = isLegalIndustry(profile.tenantIndustry);
 
   for (const c of controls) {
     const k = key(c);
@@ -125,6 +143,16 @@ export function proposeControlStatuses(profile: AssetProfile, controls: ControlR
     // Industry-spezifische Controls
     if (isHealthcare && c.framework === 'HEALTHCARE') {
       out.push({ ...c, status: 'gap', rationale: 'Healthcare-Industry — regulatorische Compliance erforderlich.' });
+      seen.add(k);
+      continue;
+    }
+    if (isFinance && c.framework === 'FINANCE') {
+      out.push({ ...c, status: 'gap', rationale: 'Finanzbranche — branchenspezifische Compliance erforderlich.' });
+      seen.add(k);
+      continue;
+    }
+    if (isLegal && c.framework === 'LEGAL') {
+      out.push({ ...c, status: 'gap', rationale: 'Legal-Industry — Vertraulichkeit und Privileg-Management erforderlich.' });
       seen.add(k);
       continue;
     }

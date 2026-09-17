@@ -119,6 +119,48 @@ describe('autoMap — Phase 2 Edge-Cases', () => {
       ];
       expect(() => proposeControlStatuses(profile, controls)).not.toThrow();
     });
+
+    it('should match healthcare industry labels by substring, not only exact value', () => {
+      const profile: AssetProfile = {
+        assetType: 'ai_system',
+        aiActClass: 'high',
+        dataTypes: ['patient_records'],
+        tenantIndustry: 'healthcare_provider',
+      };
+      const controls: ControlRef[] = [
+        { framework: 'HEALTHCARE', control_code: 'HC_GDPR_PLUS' },
+      ];
+      const proposals = proposeControlStatuses(profile, controls);
+      expect(proposals.find((p) => p.framework === 'HEALTHCARE')).toBeDefined();
+    });
+
+    it('should recommend finance controls for finance tenants', () => {
+      const profile: AssetProfile = {
+        assetType: 'api',
+        aiActClass: 'minimal',
+        dataTypes: ['payment_events'],
+        tenantIndustry: 'banking-platform',
+      };
+      const controls: ControlRef[] = [
+        { framework: 'FINANCE', control_code: 'FIN_GRC' },
+      ];
+      const proposals = proposeControlStatuses(profile, controls);
+      expect(proposals.find((p) => p.framework === 'FINANCE')?.status).toBe('gap');
+    });
+
+    it('should recommend legal controls for legal tenants', () => {
+      const profile: AssetProfile = {
+        assetType: 'dataset',
+        aiActClass: 'minimal',
+        dataTypes: ['client_matters'],
+        tenantIndustry: 'legal_ops',
+      };
+      const controls: ControlRef[] = [
+        { framework: 'LEGAL', control_code: 'LEGAL_PRIVILEGE' },
+      ];
+      const proposals = proposeControlStatuses(profile, controls);
+      expect(proposals.find((p) => p.framework === 'LEGAL')?.status).toBe('gap');
+    });
   });
 
   describe('Non-Destructive Reconciliation', () => {

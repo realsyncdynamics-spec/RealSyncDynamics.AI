@@ -33,6 +33,8 @@ export interface GatewayRequest {
   tenantId?: string | null;
   timeoutMs?: number;
   maxTokens?: number;
+  /** Client-only: stop consuming the stream. Never sent to the Edge Function. */
+  signal?: AbortSignal;
 }
 
 export interface GatewayResult {
@@ -175,6 +177,9 @@ export async function processAIGatewayStream(
       timeout_ms: req.timeoutMs ?? 90_000,
       max_tokens: req.maxTokens ?? 4096,
     })) {
+      if (req.signal?.aborted) {
+        return { success: false, error: 'Abgebrochen. Es wurde nichts geschrieben.' };
+      }
       if (chunk.event === 'delta' && chunk.text) {
         text += chunk.text;
         onDelta(text);

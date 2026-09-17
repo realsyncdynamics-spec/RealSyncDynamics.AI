@@ -87,6 +87,7 @@ export async function generateViaRealSyncGatewayStream(
       tenantId: args.tenantId,
       timeoutMs: BUILDER_TIMEOUT_MS,
       maxTokens: BUILDER_MAX_TOKENS,
+      signal,
     },
     (full) => {
       if (!signal?.aborted) onDelta(full);

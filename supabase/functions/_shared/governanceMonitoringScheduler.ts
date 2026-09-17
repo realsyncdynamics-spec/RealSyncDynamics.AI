@@ -18,6 +18,11 @@ export function parseSchedulerRequestBody(raw: string): SchedulerRequestBody {
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
     throw new Error('invalid json');
   }
+  for (const key of Object.keys(parsed)) {
+    if (key !== 'source_id' && key !== 'frequency_filter') {
+      throw new Error('invalid json');
+    }
+  }
   if ('source_id' in parsed && typeof parsed.source_id !== 'string') {
     throw new Error('invalid json');
   }

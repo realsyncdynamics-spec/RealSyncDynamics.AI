@@ -212,6 +212,9 @@ Deno.serve(async (req) => {
     query = query
       .eq('id', selection.source_id)
       .in('status', [...selection.statuses]);
+    if (selection.frequency_filter) {
+      query = query.eq('scan_frequency', selection.frequency_filter);
+    }
   } else {
     query = query.in('status', [...selection.statuses]);
     if (selection.dueBefore) {

@@ -19,7 +19,7 @@ export function buildSourceSelection(body: SchedulerRequestBody, nowIso: string)
       source_id: body.source_id,
       statuses: ['active', 'error'] as const,
       dueBefore: null,
-      frequency_filter: null,
+      frequency_filter: body.frequency_filter ?? null,
     };
   }
 

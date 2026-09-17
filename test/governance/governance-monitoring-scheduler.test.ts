@@ -192,7 +192,7 @@ describe('Scheduler-Filter und Prüfpfad', () => {
       source_id: 'src-1',
       statuses: ['active', 'error'],
       dueBefore: null,
-      frequency_filter: null,
+      frequency_filter: 'hourly',
     });
   });
 

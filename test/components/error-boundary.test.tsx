@@ -8,7 +8,7 @@ afterEach(() => {
 });
 
 describe('ErrorBoundary', () => {
-  it('fängt Renderfehler von Kind-Komponenten ab', () => {
+  it('renders fallback UI when a child throws during render', () => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
 
     function Boom(): React.ReactNode {

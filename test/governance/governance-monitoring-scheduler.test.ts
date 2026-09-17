@@ -254,5 +254,6 @@ describe('Scheduler-Filter und Prüfpfad', () => {
     expect(src).toContain('async function rescheduleSource(');
     expect(src).toContain("await rescheduleSource(sb, source.id, 'daily');");
     expect(src).toContain("await rescheduleSource(sb, source.id, kadenz, {");
+    expect(src).toContain('scan_count: source.scan_count + 1,');
   });
 });

@@ -315,6 +315,7 @@ Deno.serve(async (req) => {
       await rescheduleSource(sb, source.id, kadenz, {
         status: 'error',
         last_error: result.error,
+        scan_count: source.scan_count + 1,
       });
 
       await createAlert(sb, source.tenant_id, source.id, {

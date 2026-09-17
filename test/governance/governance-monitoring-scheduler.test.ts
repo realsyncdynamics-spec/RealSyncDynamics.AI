@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import {
   buildGovernanceEventRow,
   buildSourceSelection,
+  parseSchedulerRequestBody,
   scanDurationMs,
 } from '../../supabase/functions/_shared/governanceMonitoringScheduler';
 
@@ -174,6 +175,16 @@ describe('Auth — Cron darf nur mit CRON_GOVERNANCE_MONITORING_KEY ticken', () 
 });
 
 describe('Scheduler-Filter und Prüfpfad', () => {
+  it('rejects malformed JSON instead of falling back to a full run', () => {
+    expect(() => parseSchedulerRequestBody('{"source_id":')).toThrow(/invalid|Unexpected/i);
+    expect(parseSchedulerRequestBody('   ')).toEqual({});
+    const src = readFileSync(
+      'supabase/functions/governance-monitoring-scheduler/index.ts',
+      'utf8',
+    );
+    expect(src).toContain("return jsonResponse({ error: 'invalid json' }, 400);");
+  });
+
   it('beachtet frequency_filter für den stündlichen Cron-Lauf', () => {
     const out = buildSourceSelection({ frequency_filter: 'hourly' }, '2026-09-17T00:00:00.000Z');
     expect(out).toMatchObject({

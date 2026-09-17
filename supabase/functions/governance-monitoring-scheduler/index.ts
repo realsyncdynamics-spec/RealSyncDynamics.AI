@@ -43,8 +43,8 @@ import {
 import {
   buildGovernanceEventRow,
   buildSourceSelection,
+  parseSchedulerRequestBody,
   scanDurationMs,
-  type SchedulerRequestBody,
 } from '../_shared/governanceMonitoringScheduler.ts';
 
 const SUPABASE_URL  = Deno.env.get('SUPABASE_URL')!;
@@ -200,8 +200,12 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: 'cron only' }, 401);
   }
 
-  let body: SchedulerRequestBody = {};
-  try { body = await req.json(); } catch { /* empty body OK */ }
+  let body = {};
+  try {
+    body = parseSchedulerRequestBody(await req.text());
+  } catch {
+    return jsonResponse({ error: 'invalid json' }, 400);
+  }
 
   const sb = createClient(SUPABASE_URL, SERVICE_KEY);
 

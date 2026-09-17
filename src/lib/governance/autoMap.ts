@@ -89,11 +89,11 @@ function hasSpecialCategoryData(dataTypes: string[]): boolean {
 
 function matchesIndustry(industry: string | undefined, indicators: Set<string>): boolean {
   if (!industry) return false;
-  const normalized = industry.toLowerCase();
-  for (const indicator of indicators) {
-    if (normalized.includes(indicator)) return true;
-  }
-  return false;
+  const tokens = industry
+    .toLowerCase()
+    .split(/[^a-z0-9äöüß]+/i)
+    .filter(Boolean);
+  return tokens.some((token) => indicators.has(token));
 }
 
 function isHealthcareIndustry(industry?: string): boolean {

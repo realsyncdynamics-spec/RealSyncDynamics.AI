@@ -161,6 +161,20 @@ describe('autoMap — Phase 2 Edge-Cases', () => {
       const proposals = proposeControlStatuses(profile, controls);
       expect(proposals.find((p) => p.framework === 'LEGAL')?.status).toBe('gap');
     });
+
+    it('should avoid false positives from partial industry words', () => {
+      const profile: AssetProfile = {
+        assetType: 'api',
+        aiActClass: 'minimal',
+        dataTypes: ['telemetry'],
+        tenantIndustry: 'foodbank_services',
+      };
+      const controls: ControlRef[] = [
+        { framework: 'FINANCE', control_code: 'FIN_GRC' },
+      ];
+      const proposals = proposeControlStatuses(profile, controls);
+      expect(proposals.find((p) => p.framework === 'FINANCE')).toBeUndefined();
+    });
   });
 
   describe('Non-Destructive Reconciliation', () => {

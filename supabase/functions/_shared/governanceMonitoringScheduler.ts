@@ -12,6 +12,18 @@ export interface SchedulerEventRow {
   asset_id: string | null;
 }
 
+export function parseSchedulerRequestBody(raw: string): SchedulerRequestBody {
+  if (!raw.trim()) return {};
+  const parsed = JSON.parse(raw) as Record<string, unknown>;
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    throw new Error('invalid json');
+  }
+  return {
+    source_id: typeof parsed.source_id === 'string' ? parsed.source_id : undefined,
+    frequency_filter: isFrequency(parsed.frequency_filter) ? parsed.frequency_filter : undefined,
+  };
+}
+
 export function buildSourceSelection(body: SchedulerRequestBody, nowIso: string) {
   if (body.source_id) {
     return {
@@ -51,4 +63,8 @@ export function buildGovernanceEventRow(input: {
 
 export function scanDurationMs(startedAt: number, finishedAt: number): number {
   return Math.max(0, finishedAt - startedAt);
+}
+
+function isFrequency(value: unknown): value is NonNullable<SchedulerRequestBody['frequency_filter']> {
+  return value === 'hourly' || value === 'daily' || value === 'weekly' || value === 'monthly';
 }

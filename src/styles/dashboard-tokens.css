@@ -1,0 +1,11 @@
+/* Command Center token source.
+   Scoped to the live dashboard surface so Landing and SiteOS cannot inherit.
+   Lab drafts overlay these variables; merge is manual. Lab never writes this file. */
+
+[data-testid="compliance-status-dashboard"] {
+  --dash-title-size: 22px;
+  --dash-title-size-sm: 28px;
+  --dash-kpi-min-height: 120px;
+  /* Industrial lock. Values other than 0px fail the impact gate. */
+  --dash-radius: 0px;
+}

@@ -43,9 +43,14 @@ describe('implementation-status registry', () => {
       resolve('src/components/landing/LandingRoadmapSection.tsx'),
       'utf8',
     );
-    expect(landing).toContain('PLATFORM_LIVE_ITEMS');
+    const platform = readFileSync(
+      resolve('src/components/landing/PlatformCapabilitiesSection.tsx'),
+      'utf8',
+    );
+    expect(landing).toContain('PlatformCapabilitiesSection');
+    expect(platform).toContain('PLATFORM_LIVE_ITEMS');
     expect(landing).toContain('LandingRoadmapSection');
-    expect(landing).toContain('GovernanceSphereHost');
+    expect(landing).toContain('EuropeReliefBackdrop');
     expect(roadmap).toContain('PREVIEW_IMPLEMENTATION');
     expect(roadmap).toContain('COMING_SOON_IMPLEMENTATION');
   });

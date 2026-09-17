@@ -129,6 +129,19 @@ function nextScanAt(kadenz: Kadenz): string {
   return naechsterLauf(kadenz, Date.now());
 }
 
+async function rescheduleSource(
+  sb: ReturnType<typeof createClient>,
+  sourceId: string,
+  kadenz: Kadenz,
+  updates: Record<string, unknown> = {},
+) {
+  await sb.from('monitoring_sources').update({
+    last_scan_at: new Date().toISOString(),
+    next_scan_at: nextScanAt(kadenz),
+    ...updates,
+  }).eq('id', sourceId);
+}
+
 async function scanSource(source: MonitoringSource): Promise<ScanResponse> {
   if (!source.url) return { error: 'Keine URL konfiguriert' };
 
@@ -269,9 +282,7 @@ Deno.serve(async (req) => {
       // Lauf die Auswahl von 50 füllen und bezahlte Quellen verdrängen.
       // `status` bleibt `active`: Der Kunde hat die Quelle nicht abgeschaltet,
       // sein Plan trägt sie nur nicht. Nach einem Upgrade läuft sie weiter.
-      await sb.from('monitoring_sources').update({
-        next_scan_at: nextScanAt('daily'),
-      }).eq('id', source.id);
+      await rescheduleSource(sb, source.id, 'daily');
       results.push({ id: source.id, name: source.name, status: 'skipped' });
       continue;
     }
@@ -301,12 +312,10 @@ Deno.serve(async (req) => {
         duration_ms,
       });
 
-      await sb.from('monitoring_sources').update({
-        status:       'error',
-        last_error:   result.error,
-        last_scan_at: new Date().toISOString(),
-        next_scan_at: nextScanAt(kadenz),
-      }).eq('id', source.id);
+      await rescheduleSource(sb, source.id, kadenz, {
+        status: 'error',
+        last_error: result.error,
+      });
 
       await createAlert(sb, source.tenant_id, source.id, {
         severity: 'high',
@@ -366,15 +375,13 @@ Deno.serve(async (req) => {
     }
 
     // Monitoring-Quelle aktualisieren
-    await sb.from('monitoring_sources').update({
-      status:         'active',
-      last_error:     null,
-      last_scan_at:   new Date().toISOString(),
-      next_scan_at:   nextScanAt(kadenz),
+    await rescheduleSource(sb, source.id, kadenz, {
+      status: 'active',
+      last_error: null,
       previous_score: source.current_score,
-      current_score:  newScore,
-      scan_count:     source.scan_count + 1,
-    }).eq('id', source.id);
+      current_score: newScore,
+      scan_count: source.scan_count + 1,
+    });
 
     results.push({ id: source.id, name: source.name, status: 'ok', score: newScore ?? undefined, duration_ms });
   }

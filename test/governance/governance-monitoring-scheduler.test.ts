@@ -245,4 +245,14 @@ describe('Scheduler-Filter und Prüfpfad', () => {
     expect(scanDurationMs(1_000, 1_123)).toBe(123);
     expect(scanDurationMs(5_000, 4_900)).toBe(0);
   });
+
+  it('verschiebt bearbeitete Quellen in allen Pfaden mit konsistentem Backoff', () => {
+    const src = readFileSync(
+      'supabase/functions/governance-monitoring-scheduler/index.ts',
+      'utf8',
+    );
+    expect(src).toContain('async function rescheduleSource(');
+    expect(src).toContain("await rescheduleSource(sb, source.id, 'daily');");
+    expect(src).toContain("await rescheduleSource(sb, source.id, kadenz, {");
+  });
 });

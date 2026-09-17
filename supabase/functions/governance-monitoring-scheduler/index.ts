@@ -203,7 +203,7 @@ Deno.serve(async (req) => {
 
   const rawBody = await req.text();
   let body = {};
-  if (!isOmittedSchedulerBody(rawBody, req.headers.get('content-length'))) {
+  if (!isOmittedSchedulerBody(rawBody)) {
     try {
       body = parseSchedulerRequestBody(rawBody);
     } catch {

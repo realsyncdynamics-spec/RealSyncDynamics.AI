@@ -182,10 +182,8 @@ describe('Scheduler-Filter und Prüfpfad', () => {
     expect(() => parseSchedulerRequestBody('{"frequency_filter":"yearly"}')).toThrow(/invalid/i);
     expect(() => parseSchedulerRequestBody('{"source_id":"src-1","unexpected":true}')).toThrow(/invalid/i);
     expect(() => parseSchedulerRequestBody('   ')).toThrow(/invalid|Unexpected/i);
-    expect(isOmittedSchedulerBody('', null)).toBe(true);
-    expect(isOmittedSchedulerBody('', '0')).toBe(true);
-    expect(isOmittedSchedulerBody('', '3')).toBe(true);
-    expect(isOmittedSchedulerBody('   ', null)).toBe(false);
+    expect(isOmittedSchedulerBody('')).toBe(true);
+    expect(isOmittedSchedulerBody('   ')).toBe(false);
     const src = readFileSync(
       'supabase/functions/governance-monitoring-scheduler/index.ts',
       'utf8',

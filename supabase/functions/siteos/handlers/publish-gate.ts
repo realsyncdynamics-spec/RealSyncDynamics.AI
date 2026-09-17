@@ -558,7 +558,16 @@ async function consultPolicyEngine(
     return {
       engine: 'consulted',
       decision: result.decision as Verdict,
-      reasons: Array.isArray(result.reasons) ? result.reasons : [],
+      // `.text_de` herausziehen, nicht das Objekt durchreichen: Der PDP
+      // liefert `DecisionReason`-Objekte, `PolicyEngineState.reasons` ist
+      // `string[]` und heisst laut Typ "seine deutschen Begruendungen".
+      // Ueber `policyTrail()` landen genau diese Werte in `policy_reasons`
+      // — ein durchgereichtes Objekt sperrt nichts und stuerzt nicht ab, es
+      // macht den Eintrag nur unlesbar. Dieselbe Zuordnung wie in
+      // `_shared/pdp/m365event.ts` und `_shared/pdp/botmessage.ts`.
+      reasons: Array.isArray(result.reasons)
+        ? result.reasons.map((r) => (typeof r === 'string' ? r : r?.text_de ?? '')).filter(Boolean)
+        : [],
     };
   } catch (err) {
     const detail = err instanceof Error ? err.message : 'unbekannter Fehler';

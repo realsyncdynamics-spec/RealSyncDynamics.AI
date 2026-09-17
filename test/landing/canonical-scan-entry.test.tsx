@@ -1,7 +1,7 @@
 /**
  * Sichert den **einen** kanonischen Scan-Einstieg ab.
  *
- * Europe-OS Hero: Free Audit starten → `/audit` (Link, id=scan).
+ * Governance-OS Preview-Hero: CTA `#audit-cta` → `/audit`.
  */
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
@@ -27,20 +27,26 @@ function landingRendern() {
 }
 
 describe('Kanonischer Scan-Einstieg', () => {
-  it('führt Free Audit der Startseite nach /audit', () => {
+  it('führt den Governance-Scan der Startseite nach /audit', () => {
     landingRendern();
 
-    const cta = document.querySelector('#scan') as HTMLAnchorElement;
+    const cta = document.querySelector('#audit-cta') as HTMLAnchorElement;
     expect(cta).toBeTruthy();
-    expect(cta.getAttribute('href')).toBe('/audit');
+    expect(cta.tagName).toBe('A');
     fireEvent.click(cta);
     expect(screen.getByText(AUDIT_PLATZHALTER)).toBeTruthy();
   });
 
-  it('zeigt den Live-Dashboard-CTA Richtung /app (via welcome next)', () => {
+  it('nutzt auf der Startseite keinen zweiten Formular-Trichter mehr', () => {
     landingRendern();
-    const dash = screen.getAllByRole('link', { name: /Live Dashboard ansehen/i })[0];
-    expect(dash.getAttribute('href')).toMatch(/\/(app|welcome)/);
+
+    expect(screen.queryByLabelText(/Ihre Website/i)).toBeNull();
+    expect(document.querySelector('#audit-cta')?.tagName).toBe('A');
+  });
+
+  it('zeigt den Governance-OS-CTA auf der Startseite', () => {
+    landingRendern();
+    expect(screen.getAllByText(/Explore the Governance OS/i).length).toBeGreaterThan(0);
   });
 
   it('zeigt keinen Verweis mehr auf den zurückgezogenen Trichter /scan', () => {

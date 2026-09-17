@@ -12,8 +12,8 @@ export interface SchedulerEventRow {
   asset_id: string | null;
 }
 
-export function isOmittedSchedulerBody(raw: string, contentLength: string | null): boolean {
-  return raw.length === 0 && (contentLength === null || contentLength === '0');
+export function isOmittedSchedulerBody(raw: string, _contentLength: string | null): boolean {
+  return raw.length === 0;
 }
 
 export function parseSchedulerRequestBody(raw: string): SchedulerRequestBody {

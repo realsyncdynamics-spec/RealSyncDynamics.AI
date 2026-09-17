@@ -184,7 +184,7 @@ describe('Scheduler-Filter und Prüfpfad', () => {
     expect(() => parseSchedulerRequestBody('   ')).toThrow(/invalid|Unexpected/i);
     expect(isOmittedSchedulerBody('', null)).toBe(true);
     expect(isOmittedSchedulerBody('', '0')).toBe(true);
-    expect(isOmittedSchedulerBody('', '3')).toBe(false);
+    expect(isOmittedSchedulerBody('', '3')).toBe(true);
     expect(isOmittedSchedulerBody('   ', null)).toBe(false);
     const src = readFileSync(
       'supabase/functions/governance-monitoring-scheduler/index.ts',

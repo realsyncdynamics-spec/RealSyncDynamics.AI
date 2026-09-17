@@ -177,6 +177,8 @@ describe('Auth — Cron darf nur mit CRON_GOVERNANCE_MONITORING_KEY ticken', () 
 describe('Scheduler-Filter und Prüfpfad', () => {
   it('rejects malformed JSON instead of falling back to a full run', () => {
     expect(() => parseSchedulerRequestBody('{"source_id":')).toThrow(/invalid|Unexpected/i);
+    expect(() => parseSchedulerRequestBody('{"source_id":123}')).toThrow(/invalid/i);
+    expect(() => parseSchedulerRequestBody('{"frequency_filter":"yearly"}')).toThrow(/invalid/i);
     expect(parseSchedulerRequestBody('   ')).toEqual({});
     const src = readFileSync(
       'supabase/functions/governance-monitoring-scheduler/index.ts',

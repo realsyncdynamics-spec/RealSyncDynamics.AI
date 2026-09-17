@@ -190,19 +190,19 @@ describe('HTTP-Methode', () => {
 
 describe('Scheduler-Filter und Prüfpfad', () => {
   it('rejects malformed JSON instead of falling back to a full run', () => {
-    expect(() => parseSchedulerRequestBody('{"source_id":')).toThrow(/invalid|Unexpected/i);
-    expect(() => parseSchedulerRequestBody('{"source_id":123}')).toThrow(/invalid/i);
-    expect(() => parseSchedulerRequestBody('{"source_id":"   "}')).toThrow(/invalid/i);
-    expect(() => parseSchedulerRequestBody('{"frequency_filter":"yearly"}')).toThrow(/invalid/i);
-    expect(() => parseSchedulerRequestBody('{"source_id":"src-1","unexpected":true}')).toThrow(/invalid/i);
-    expect(() => parseSchedulerRequestBody('   ')).toThrow(/invalid|Unexpected/i);
+    expect(() => parseSchedulerRequestBody('{"source_id":')).toThrow(/Unexpected/i);
+    expect(() => parseSchedulerRequestBody('{"source_id":123}')).toThrow(/invalid scheduler payload/i);
+    expect(() => parseSchedulerRequestBody('{"source_id":"   "}')).toThrow(/invalid scheduler payload/i);
+    expect(() => parseSchedulerRequestBody('{"frequency_filter":"yearly"}')).toThrow(/invalid scheduler payload/i);
+    expect(() => parseSchedulerRequestBody('{"source_id":"src-1","unexpected":true}')).toThrow(/invalid scheduler payload/i);
+    expect(() => parseSchedulerRequestBody('   ')).toThrow(/Unexpected/i);
     expect(isOmittedSchedulerBody('')).toBe(true);
     expect(isOmittedSchedulerBody('   ')).toBe(true);
     const src = readFileSync(
       'supabase/functions/governance-monitoring-scheduler/index.ts',
       'utf8',
     );
-    expect(src).toContain("return jsonResponse({ error: 'invalid json' }, 400);");
+    expect(src).toContain("error instanceof SyntaxError ? 'invalid json' : 'invalid scheduler payload'");
   });
 
   it('beachtet frequency_filter für den stündlichen Cron-Lauf', () => {

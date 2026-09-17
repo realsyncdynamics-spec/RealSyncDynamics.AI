@@ -19,21 +19,21 @@ export function isOmittedSchedulerBody(raw: string): boolean {
 export function parseSchedulerRequestBody(raw: string): SchedulerRequestBody {
   const parsed = JSON.parse(raw) as Record<string, unknown>;
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-    throw new Error('invalid json');
+    throw new Error('invalid scheduler payload');
   }
   for (const key of Object.keys(parsed)) {
     if (key !== 'source_id' && key !== 'frequency_filter') {
-      throw new Error('invalid json');
+      throw new Error('invalid scheduler payload');
     }
   }
   if ('source_id' in parsed && typeof parsed.source_id !== 'string') {
-    throw new Error('invalid json');
+    throw new Error('invalid scheduler payload');
   }
   if (typeof parsed.source_id === 'string' && parsed.source_id.trim().length === 0) {
-    throw new Error('invalid json');
+    throw new Error('invalid scheduler payload');
   }
   if ('frequency_filter' in parsed && !isFrequency(parsed.frequency_filter)) {
-    throw new Error('invalid json');
+    throw new Error('invalid scheduler payload');
   }
   return {
     source_id: typeof parsed.source_id === 'string' ? parsed.source_id : undefined,

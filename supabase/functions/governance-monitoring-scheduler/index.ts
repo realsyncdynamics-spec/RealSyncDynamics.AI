@@ -228,8 +228,11 @@ Deno.serve(async (req) => {
     } else {
       try {
         body = parseSchedulerRequestBody(rawBody);
-      } catch {
-        return jsonResponse({ error: 'invalid json' }, 400);
+      } catch (error) {
+        return jsonResponse(
+          { error: error instanceof SyntaxError ? 'invalid json' : 'invalid scheduler payload' },
+          400,
+        );
       }
     }
   }

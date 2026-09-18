@@ -9,3 +9,18 @@
   /* Industrial lock. Values other than 0px fail the impact gate. */
   --dash-radius: 0px;
 }
+
+[data-testid="compliance-status-dashboard"] h1.dash-command-title {
+  font-size: var(--dash-title-size);
+  letter-spacing: -0.02em;
+}
+
+@media (min-width: 640px) {
+  [data-testid="compliance-status-dashboard"] h1.dash-command-title {
+    font-size: var(--dash-title-size-sm);
+  }
+}
+
+[data-testid="compliance-status-dashboard"] .dash-kpi-card {
+  min-height: var(--dash-kpi-min-height);
+}

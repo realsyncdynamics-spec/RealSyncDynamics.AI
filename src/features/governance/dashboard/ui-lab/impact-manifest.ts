@@ -60,15 +60,15 @@ export const DASHBOARD_TOKENS: readonly DashboardToken[] = [
     max: 160,
     bindings: [
       {
-        file: 'src/features/governance/dashboard/command-center-density.css',
-        symbol: 'KPI min-height',
-        kind: 'selector',
+        file: 'src/styles/dashboard-tokens.css',
+        symbol: '.dash-kpi-card',
+        kind: 'var',
         testIds: KPI_TEST_IDS,
       },
       {
         file: 'src/features/governance/dashboard/ComplianceStatusDashboard.tsx',
         symbol: 'ScoreCard / RiskCard / EvidenceCard / ReadinessCard',
-        kind: 'selector',
+        kind: 'var',
         testIds: KPI_TEST_IDS,
       },
     ],
@@ -87,14 +87,14 @@ export const DASHBOARD_TOKENS: readonly DashboardToken[] = [
     max: 28,
     bindings: [
       {
-        file: 'src/features/governance/dashboard/command-center-density.css',
-        symbol: 'h1',
-        kind: 'selector',
+        file: 'src/styles/dashboard-tokens.css',
+        symbol: 'h1.dash-command-title',
+        kind: 'var',
       },
       {
         file: 'src/features/governance/dashboard/ComplianceStatusDashboard.tsx',
-        symbol: 'h1.text-[clamp(...)]',
-        kind: 'override',
+        symbol: 'h1.dash-command-title',
+        kind: 'var',
       },
     ],
     surfaces: [COMMAND_CENTER],
@@ -111,14 +111,9 @@ export const DASHBOARD_TOKENS: readonly DashboardToken[] = [
     max: 36,
     bindings: [
       {
-        file: 'src/features/governance/dashboard/command-center-density.css',
-        symbol: 'h1 @media (min-width: 640px)',
-        kind: 'selector',
-      },
-      {
-        file: 'src/features/governance/dashboard/ComplianceStatusDashboard.tsx',
-        symbol: 'h1.text-[clamp(...)]',
-        kind: 'override',
+        file: 'src/styles/dashboard-tokens.css',
+        symbol: 'h1.dash-command-title @media (min-width: 640px)',
+        kind: 'var',
       },
     ],
     surfaces: [COMMAND_CENTER],

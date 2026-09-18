@@ -6,13 +6,13 @@ Principle: attach to production components. Do not build a second frontend.
 ## Source of truth
 
 `src/styles/dashboard-tokens.css` declares scoped variables on
-`[data-testid="compliance-status-dashboard"]`.
+`[data-testid="compliance-status-dashboard"]` and binds them:
 
-`src/features/governance/dashboard/command-center-density.css` binds those
-variables to the Command Center title and the four KPI cards. It must not
-contain new literals.
+- `h1.dash-command-title` → `--dash-title-size` / `--dash-title-size-sm`
+- `.dash-kpi-card` → `--dash-kpi-min-height`
 
-Landing (`MainLanding`) and SiteOS stay out of this graph.
+`command-center-density.css` is retired. Landing (`MainLanding`) and SiteOS
+stay out of this graph.
 
 ## Export
 
@@ -30,10 +30,9 @@ Do not append a second block.
 | Status | Meaning |
 | --- | --- |
 | unmapped | token not in the graph → blocked |
-| selector | density.css still owns the binding → medium |
-| override | Tailwind clamp on `h1` can fight the token → medium |
+| var | production class consumes `var(--dash-*)` |
+| four-kpi-equal-height | all four test ids share one token → medium |
 | hard-edge-zero-radius | `--dash-radius` other than `0px` → blocked |
-| four-kpi-equal-height | all four test ids share one token |
 
 Merge only when `report.mergeable` is true. High-risk rows need an explicit
 review note. Blocked rows never ship.
@@ -48,9 +47,4 @@ review note. Blocked rows never ship.
 
 ## Next
 
-1. Move KPI `min-height` onto the card components (`var()` in class/style).
-2. Remove the clamp utility from the Command Center `h1` or make it consume
-   the tokens.
-3. Delete leftover selector rules from `command-center-density.css` once every
-   binding is `var`.
-4. Only then consider a workbench overlay.
+Workbench overlay on the same production components. No second design system.

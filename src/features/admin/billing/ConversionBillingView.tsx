@@ -12,6 +12,7 @@ import {
 import type { Session } from '@supabase/supabase-js';
 import { AuthGate } from '../../kodee/connections/AuthGate';
 import { getSupabase } from '../../../lib/supabase';
+import { getConversionBillingFixture } from './conversionFixture';
 import { loadConversionBilling } from './loadConversionBilling';
 import { checkoutPathForPlan, openPortalForTenant } from './recheckoutActions';
 import type {
@@ -21,12 +22,28 @@ import type {
 } from './conversionTypes';
 import { formatEurFromCents, shortId } from './conversionTypes';
 
+function wantsFixturePreview(): boolean {
+  return typeof window !== 'undefined'
+    && new URLSearchParams(window.location.search).get('fixture') === '1';
+}
+
 export function ConversionBillingView() {
+  // DEV-only: allow /admin/billing?fixture=1 without AuthGate so ops can
+  // verify the Growth 249 € stub panels locally without a super_admin session.
+  if (import.meta.env.DEV && wantsFixturePreview()) {
+    return <Inner session={null} forceFixture />;
+  }
   return <AuthGate>{(session) => <Inner session={session} />}</AuthGate>;
 }
 
-function Inner({ session }: { session: Session }) {
-  const [allowed, setAllowed] = useState<boolean | null>(null);
+function Inner({
+  session,
+  forceFixture = false,
+}: {
+  session: Session | null;
+  forceFixture?: boolean;
+}) {
+  const [allowed, setAllowed] = useState<boolean | null>(forceFixture ? true : null);
   const [snapshot, setSnapshot] = useState<ConversionBillingSnapshot | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -34,6 +51,15 @@ function Inner({ session }: { session: Session }) {
   const [busyKey, setBusyKey] = useState<string | null>(null);
 
   useEffect(() => {
+    if (forceFixture) {
+      void load();
+      return;
+    }
+    if (!session) {
+      setAllowed(false);
+      setLoading(false);
+      return;
+    }
     const sb = getSupabase();
     (async () => {
       const { data: prof } = await sb
@@ -47,18 +73,16 @@ function Inner({ session }: { session: Session }) {
       else setLoading(false);
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session.user.id]);
+  }, [session?.user.id, forceFixture]);
 
   async function load() {
     setLoading(true);
     setError(null);
     setActionError(null);
     try {
-      const forceFixture =
-        typeof window !== 'undefined'
-        && new URLSearchParams(window.location.search).get('fixture') === '1';
-      const data = forceFixture
-        ? (await import('./conversionFixture')).getConversionBillingFixture()
+      const useFixture = forceFixture || wantsFixturePreview();
+      const data = useFixture
+        ? getConversionBillingFixture()
         : await loadConversionBilling({ includeFixtureFallback: true });
       setSnapshot(data);
     } catch (e) {

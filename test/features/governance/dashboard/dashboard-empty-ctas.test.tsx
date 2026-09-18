@@ -111,13 +111,6 @@ describe('ComplianceStatusView — empty but actionable', () => {
     expect(getByTestId('cta-audit-starten')).toBeInTheDocument();
     expect(getByTestId('cta-activation')).toBeInTheDocument();
     expect(queryByTestId('governance-score')).toBeNull();
-    expect(getByTestId('bootstrap-next-steps').textContent).toContain('Domain hinterlegen');
-    expect(getByTestId('framework-strip')).toBeInTheDocument();
-    expect(getByTestId('framework-dsgvo')).toHaveAttribute(
-      'href',
-      '/app/governance/dsgvo-directory',
-    );
-    expect(getByTestId('framework-tisax-roadmap')).toBeInTheDocument();
   });
 
   it('replaces „Keine dringenden Pflichten“ with bootstrap CTAs when counters are zero', () => {

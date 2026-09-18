@@ -3,7 +3,9 @@ import type {
   AiGatewayResponse,
   AiProviderAdapter,
   AiProviderHealth,
+  AiStreamChunk,
 } from '../types';
+import { parseOpenAiSse } from '../streamParse';
 
 // LM Studio adapter — implements AiProviderAdapter against LM Studio's
 // OpenAI-compatible HTTP surface (/v1/models, /v1/chat/completions,
@@ -112,6 +114,57 @@ export class LMStudioAdapter implements AiProviderAdapter {
           total_tokens:  json?.usage?.total_tokens,
         },
         trace_id:   request.trace_id ?? cryptoRandomUUID(),
+        latency_ms: Date.now() - started,
+      };
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
+  async *generateStream(request: AiGatewayRequest): AsyncIterable<AiStreamChunk> {
+    const started = Date.now();
+    const model = await this.resolveModel();
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), request.timeout_ms ?? 8_000);
+    try {
+      const res = await this.fetchImpl(`${this.config.baseUrl}/chat/completions`, {
+        method: 'POST',
+        headers: this.headers(),
+        signal: controller.signal,
+        body: JSON.stringify({
+          model,
+          stream: true,
+          messages: [
+            ...(request.system_prompt ? [{ role: 'system', content: request.system_prompt }] : []),
+            { role: 'user', content: request.input },
+          ],
+          temperature: request.temperature ?? 0.2,
+          max_tokens: request.max_tokens ?? 1200,
+        }),
+      });
+      if (!res.ok) {
+        let message = `LM Studio HTTP ${res.status}`;
+        try {
+          const json = (await res.json()) as { error?: { message?: string } };
+          if (json?.error?.message) message = json.error.message;
+        } catch {
+          /* keep */
+        }
+        throw new Error(message);
+      }
+      if (!res.body) throw new Error('LM Studio stream empty');
+      let usage: AiStreamChunk['usage'];
+      for await (const ev of parseOpenAiSse(res.body)) {
+        if (ev.usage) usage = ev.usage;
+        if (ev.text) yield { event: 'delta', text: ev.text, provider: 'lm_studio', model };
+      }
+      yield {
+        event: 'done',
+        provider: 'lm_studio',
+        model,
+        profile: request.model_profile,
+        usage,
+        trace_id: request.trace_id ?? cryptoRandomUUID(),
         latency_ms: Date.now() - started,
       };
     } finally {

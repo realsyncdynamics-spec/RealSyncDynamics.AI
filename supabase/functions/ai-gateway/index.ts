@@ -17,6 +17,7 @@
 // functions in `_shared/aiGateway/openaiCompat.ts` (which is unit-tested
 // from the frontend side via its `src/core/ai-gateway/openaiCompat.ts`
 // mirror).
+// 2026-09-18: gezieltes Production-Redeploy (siteos + ai-gateway), nicht die Flotte.
 
 import type { AiGatewayRequest } from '../_shared/aiGateway/types.ts';
 import { createServerGatewayFromEnv } from '../_shared/aiGateway/serverFromEnv.ts';

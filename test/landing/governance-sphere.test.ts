@@ -29,7 +29,7 @@ describe('Governance Sphere — demo contract', () => {
     expect(phases).toEqual(new Set(['Detect', 'Govern', 'Prove', 'Automate']));
   });
 
-  it('keeps lazy host + reduced-motion fallback (not mounted on public /)', () => {
+  it('is lazy-hosted from MainLanding with reduced-motion fallback path', () => {
     const host = readFileSync(
       resolve(__dirname, '../../src/components/governance-frontend/GovernanceSphereHost.tsx'),
       'utf8',
@@ -40,28 +40,7 @@ describe('Governance Sphere — demo contract', () => {
     expect(host).toContain('GovernanceSphereFallback');
     expect(host).toContain('SPHERE_DEMO_LABEL');
     expect(host).toContain('DEMO DATA');
-    expect(landing).toContain('EuropeReliefBackdrop');
-    expect(landing).not.toContain('GovernanceSphereHost');
-    expect(landing).not.toContain('HeroEuropeSunrise');
-  });
-
-  it('Earth backdrop stays Sphere-free; public / uses EuropeReliefBackdrop', () => {
-    const backdrop = readFileSync(
-      resolve(__dirname, '../../src/components/landing/HeroEarthBackdrop.tsx'),
-      'utf8',
-    );
-    const scene = readFileSync(
-      resolve(__dirname, '../../src/components/landing/HeroEarthBackdropScene.tsx'),
-      'utf8',
-    );
-    const landing = readFileSync(resolve(__dirname, '../../src/pages/MainLanding.tsx'), 'utf8');
-    expect(landing).toContain('EuropeReliefBackdrop');
-    expect(landing).not.toContain('GovernanceSphereHost');
-    expect(landing).not.toContain('HeroEarthBackdrop');
-    expect(backdrop).toContain('data-hero-visual="earth-universe"');
-    expect(backdrop).toContain('pointer-events-none');
-    expect(scene).toContain('GoldEuropeNetwork');
-    expect(scene).toContain('PhotorealEarthMesh');
+    expect(landing).toContain('GovernanceSphereHost');
   });
 
   it('renders photoreal Earth (day texture), not wireframe-only mesh', () => {
@@ -83,8 +62,12 @@ describe('Governance Sphere — demo contract', () => {
     );
     expect(scene).toContain('PhotorealEarthMesh');
     expect(scene).not.toMatch(/\bwireframe\b/);
+    expect(scene).not.toContain('icosahedronGeometry');
     expect(mesh).toContain('/textures/earth-day.jpg');
+    expect(mesh).toContain('meshBasicMaterial');
     expect(textures).toContain('earth-day-8k.jpg');
+    expect(mesh).toMatch(/uNight|night/i);
+    expect(mesh).toMatch(/uClouds|clouds/i);
     expect(fallback).toContain('/europe-globe');
   });
 

@@ -1,6 +1,6 @@
 /**
- * Dual-Hero `/`: Titan (Screen 1) / Nacht (Screen 2) via ThemeSwitch.
- * Scan-CTA → /audit.
+ * Dominik Dark/Gold `/` with Governance Sphere + canonical /audit funnel.
+ * AppGate / chunk-split security from #1363 stays intact on app routes.
  */
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -12,7 +12,6 @@ const mainLanding = readFileSync(resolve(root, 'src/pages/MainLanding.tsx'), 'ut
 const header = readFileSync(resolve(root, 'src/components/landing/PublicDarkHeader.tsx'), 'utf8');
 const publicNav = readFileSync(resolve(root, 'src/config/public-nav.ts'), 'utf8');
 const channel = readFileSync(resolve(root, 'src/components/landing/LandingChannelTools.tsx'), 'utf8');
-const platform = readFileSync(resolve(root, 'src/components/landing/PlatformCapabilitiesSection.tsx'), 'utf8');
 const scanStart = readFileSync(
   resolve(root, 'src/pages/product-entry-points/ScanStartPage.tsx'),
   'utf8',
@@ -54,19 +53,17 @@ describe('Landing ↔ Infrastruktur', () => {
     expect(app).toMatch(/path="\/app\/activation"[^>]*AppGate/);
   });
 
-  it('Dominik landing: Titan/Nacht-Umschalter, Europa-Hero, Audit-CTA', () => {
-    expect(mainLanding).toContain('EuropeReliefBackdrop');
-    expect(mainLanding).toContain('useGaTheme');
-    expect(mainLanding).toContain('data-ga-theme');
-    expect(mainLanding).toContain('GovernanceStatusBar');
-    expect(mainLanding).toContain('to="/audit"');
+  it('Dominik landing: Dark/Gold Sphere hero + Audit-CTA', () => {
+    expect(mainLanding).toContain('GovernanceSphereHost');
+    expect(mainLanding).toContain('LANDING_ACCENT');
+    expect(mainLanding).toContain('PLATFORM_LIVE_ITEMS');
     expect(mainLanding).toContain('id="audit-cta"');
     expect(mainLanding).toContain('data-hero-cta="audit"');
     expect(mainLanding.match(/data-hero-cta/g)?.length).toBe(1);
-    expect(platform).toContain('PLATFORM_LIVE_ITEMS');
-    expect(mainLanding).toContain('PlatformCapabilitiesSection');
+    expect(mainLanding).toContain('/audit?domain=${encodeURIComponent(value)}');
     expect(mainLanding).not.toContain('Demo buchen');
-    expect(mainLanding).not.toContain('GovernanceSphereHost');
+    expect(mainLanding).not.toContain('EuropeReliefBackdrop');
+    expect(mainLanding).not.toContain('useGaTheme');
     expect(mainLanding).not.toContain('HeroEuropeSunrise');
   });
 

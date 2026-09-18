@@ -46,7 +46,7 @@ export const LANDING_BUTTON_ALT = '#efe6d5';
 /** Schrift auf der Hauptschaltfläche. */
 export const LANDING_BUTTON_TEXT = '#1a1917';
 
-/** Soft cream/gold glow for primary scan CTA (monetization lead-magnet). */
+/** Soft cream/gold glow for primary scan CTA. */
 export const LANDING_CTA_GLOW =
   '0 0 24px rgba(232, 221, 200, 0.28), 0 0 48px rgba(228, 207, 162, 0.12)';
 

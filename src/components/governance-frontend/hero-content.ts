@@ -1,25 +1,41 @@
 /**
- * SSOT Hero-Copy — Live-/ restored to Dominik Governance OS preview.
- * H1: AI Governance, Running in Real Time.
+ * Single Source of Truth für die Hero-Headline der Startseite.
+ *
+ * Dominik Dark/Gold Referenz (Sept 2026): „AI Governance, Running in Real Time“.
+ * Live `/` und FE-001 lesen dieselbe Quelle — Änderungen nur hier.
  */
 
 export type HeroHeadlineSegment = {
   text: string;
+  /** true → Gold-Akzent (Playfair italic in der Referenz). */
   accent?: boolean;
 };
 
+/**
+ * Governance OS Hero — Dominik-Referenz.
+ *
+ * Claim direction: Govern AI. Prove Everything. Operate with Confidence.
+ *
+ * ## Contract
+ *
+ * `MainLanding` renders H1 exclusively from `HERO_HEADLINE`. E2E / FE-001
+ * read the same source — change here, not in the page.
+ */
 export const HERO_HEADLINE: readonly (readonly HeroHeadlineSegment[])[] = [
   [{ text: 'AI Governance,' }],
   [{ text: 'Running in Real', accent: true }],
   [{ text: 'Time', accent: true }],
 ];
 
+/** Reine Textzeilen der H1 — für Tests und Accessible-Name-Abgleich. */
 export const HERO_HEADLINE_LINES: readonly string[] = HERO_HEADLINE.map((segments) =>
   segments.map((s) => s.text).join(''),
 );
 
+/** Substring für den FE-001-Check. Muss vollständig innerhalb einer Zeile liegen. */
 export const HERO_HEADLINE_TEST_SUBSTRING = 'AI Governance';
 
+/** Motto under the H1 — Detect.Govern.Prove.Automate */
 export const HERO_OPERATING_LOOP = 'Detect · Govern · Prove · Automate' as const;
 
 export const HERO_KICKER = {
@@ -31,6 +47,7 @@ export const HERO_KICKER = {
 export const HERO_EYEBROW =
   `${HERO_KICKER.index} — ${HERO_KICKER.claim} — ${HERO_KICKER.region}` as const;
 
+/** Secondary / funnel / design-preview copy — not alternate live H1. */
 export const HERO_EN_KICKER = 'AI Governance, Running in Real Time' as const;
 
 export const SCAN_FUNNEL_MESSAGE =
@@ -66,6 +83,7 @@ export const HERO_PROOF_CHIPS = [
   'C2PA',
 ] as const;
 
+/** Live `/` Dominik CTA copy (also header). */
 export const HERO_SCAN_CTA_LABEL = 'Kostenlosen Governance Scan starten' as const;
 export const HERO_SCAN_CTA_LONG = 'Kostenlosen Governance Scan starten' as const;
 export const HERO_DASHBOARD_CTA_LABEL = 'Explore the Governance OS' as const;
@@ -78,6 +96,7 @@ export const HERO_SCAN_CTA_PROMISE =
 
 if (!HERO_HEADLINE_LINES.some((line) => line.includes(HERO_HEADLINE_TEST_SUBSTRING))) {
   throw new Error(
-    'hero-content.ts: HERO_HEADLINE_TEST_SUBSTRING kommt in keiner Zeile der HERO_HEADLINE vor.',
+    'hero-content.ts: HERO_HEADLINE_TEST_SUBSTRING kommt in keiner Zeile der ' +
+      'HERO_HEADLINE vor — FE-001 würde fehlschlagen.',
   );
 }

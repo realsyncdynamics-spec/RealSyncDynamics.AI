@@ -12,14 +12,11 @@ import {
   LANDING_TEXT,
 } from './landing-theme';
 
-/**
- * Replit Nr.1 SSOT header — gold diamond mark · REALSYNCDYNAMICS.AI
- * · Produkt / Evidence / Preise · Free Audit → /audit
- */
 const LINKS = [
   { label: 'Produkt', to: '/#product' },
   { label: 'Evidence', to: '/#evidence' },
   { label: 'Preise', to: '/#pricing' },
+  { label: 'Login', to: '/welcome' },
 ] as const;
 
 function NavItem({
@@ -65,51 +62,22 @@ const scanCtaStyle: CSSProperties = {
   boxShadow: '0 0 28px rgba(214, 173, 104, 0.22)',
 };
 
-function DiamondMark() {
-  return (
-    <svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden="true">
-      <rect
-        x="14"
-        y="2.5"
-        width="16.26"
-        height="16.26"
-        rx="1.2"
-        transform="rotate(45 14 2.5)"
-        stroke={LANDING_ACCENT}
-        strokeWidth="1.4"
-      />
-      <path
-        d="M14 8.2v11.6M8.2 14h11.6"
-        stroke={LANDING_ACCENT}
-        strokeWidth="1.15"
-        strokeLinecap="square"
-      />
-    </svg>
-  );
-}
-
 export function PublicDarkHeader({ overlay = false }: { overlay?: boolean }) {
   const [open, setOpen] = useState(false);
 
   return (
     <header
-      className={`${overlay ? 'absolute bg-[rgba(10,10,11,0.35)]' : 'sticky bg-[rgba(10,10,11,0.82)]'} inset-x-0 top-0 z-30 border-b border-white/[0.06] backdrop-blur-[18px]`}
+      className={`${overlay ? 'absolute bg-transparent' : 'sticky bg-[rgba(10,10,11,0.82)]'} inset-x-0 top-0 z-30 border-b border-white/[0.06] backdrop-blur-[18px]`}
       style={{ color: LANDING_TEXT }}
     >
       <div className="mx-auto flex h-[72px] max-w-[1280px] items-center gap-6 px-[4vw]">
         <Link
           to="/"
-          className="flex min-w-0 items-center gap-2.5 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d6ad68]/60"
+          className="flex min-w-0 items-center rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d6ad68]/60"
           style={{ color: LANDING_TEXT }}
         >
-          <span className="grid h-7 w-7 shrink-0 place-items-center">
-            <DiamondMark />
-          </span>
-          <span
-            className="truncate text-[12px] font-semibold tracking-[0.14em]"
-            style={{ fontFamily: LANDING_MONO }}
-          >
-            REALSYNCDYNAMICS.AI
+          <span className="truncate text-[15px] font-medium tracking-[-0.01em]">
+            Realsyncdynamicsai.de
           </span>
         </Link>
 
@@ -122,7 +90,7 @@ export function PublicDarkHeader({ overlay = false }: { overlay?: boolean }) {
             className="inline-flex items-center gap-1.5 rounded-full px-[18px] py-[10px] text-[11px] font-semibold transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d6ad68]"
             style={scanCtaStyle}
           >
-            {HERO_SCAN_CTA_LABEL} <span aria-hidden="true">→</span>
+            {HERO_SCAN_CTA_LABEL}
           </Link>
         </nav>
 
@@ -172,7 +140,7 @@ export function PublicDarkHeader({ overlay = false }: { overlay?: boolean }) {
               style={scanCtaStyle}
               onClick={() => setOpen(false)}
             >
-              {HERO_SCAN_CTA_LABEL} →
+              {HERO_SCAN_CTA_LABEL}
             </Link>
           </nav>
         </div>

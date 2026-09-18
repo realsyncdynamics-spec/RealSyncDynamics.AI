@@ -1,20 +1,22 @@
 /**
- * SSOT Hero-Copy — Replit visual reference (Dark/Gold Europe-network).
+ * SSOT Hero-Copy — metal Europe-network board (realsyncdynamicsai.de).
  *
- * H1: „AI Compliance Operations OS für Europa.“
- * Serif/gold emphasis exclusively on „Operations OS“.
+ * H1: „AI Compliance Operations OS for Europe“
+ * Gold emphasis exclusively on „for Europe“.
  */
 
 export type HeroHeadlineSegment = {
   text: string;
-  /** true → amber/gold serif emphasis (Operations OS only). */
+  /** true → amber/gold serif emphasis (for Europe only). */
   accent?: boolean;
 };
 
 export const HERO_HEADLINE: readonly (readonly HeroHeadlineSegment[])[] = [
   [{ text: 'AI Compliance' }],
-  [{ text: 'Operations OS', accent: true }],
-  [{ text: 'für Europa.' }],
+  [
+    { text: 'Operations OS ' },
+    { text: 'for Europe', accent: true },
+  ],
 ];
 
 export const HERO_HEADLINE_LINES: readonly string[] = HERO_HEADLINE.map((segments) =>
@@ -29,13 +31,13 @@ export const HERO_KICKER = {
   region: 'EU',
 } as const;
 
-export const HERO_EYEBROW = `→ ${HERO_KICKER.claim}` as const;
+export const HERO_EYEBROW = '' as const;
 
-/** Operating loop under the H1 — German Discover chain (Replit). */
+/** Operating loop under the H1. */
 export const HERO_OPERATING_LOOP =
-  'Entdecken. Klassifizieren. Durchsetzen. Beweisen.' as const;
+  'DISCOVER → CLASSIFY → ENFORCE → PROVE' as const;
 
-export const HERO_EN_KICKER = 'AI Compliance Operations OS für Europa.' as const;
+export const HERO_EN_KICKER = 'AI Compliance Operations OS for Europe' as const;
 
 export const SCAN_FUNNEL_MESSAGE =
   'In Minuten scannen. In Stunden strukturieren. Dauerhaft kontrollieren.' as const;
@@ -44,7 +46,7 @@ export const CONTINUOUS_COMPLIANCE_NARRATIVE =
   'RealSyncDynamics verbindet Ihre Systeme, Policies und Nachweise in einer lebenden Operations-Schicht.' as const;
 
 export const HERO_SUBLINE =
-  'Die laufende Governance-Schicht für regulierte KI-Systeme — EU-native by design.' as const;
+  'Runtime governance for regulated AI systems. Continuous evidence. EU-native by design.' as const;
 
 export const HERO_VALUE_SUBLINE = 'Vermeide EU AI Act-Bußgelder.' as const;
 
@@ -63,7 +65,6 @@ export const HERO_OUTCOMES: readonly string[] = [
 export const HERO_EU_LINE =
   'Gebaut für EU AI Act, DSGVO und europäische Nachweispflichten.' as const;
 
-/** Trust row — Replit SSOT (labels only). */
 export const HERO_PROOF_CHIPS = [
   'EU AI ACT READY',
   'ISO 42001 ALIGNED',
@@ -71,12 +72,9 @@ export const HERO_PROOF_CHIPS = [
   'AUDIT TRAIL NATIVE',
 ] as const;
 
-/** Header primary CTA. */
 export const HERO_SCAN_CTA_LABEL = 'Free Audit starten' as const;
-/** Hero primary CTA (long form). */
-export const HERO_SCAN_CTA_LONG = 'Kostenlosen Audit starten' as const;
-/** Hero secondary CTA. */
-export const HERO_DASHBOARD_CTA_LABEL = 'Live Evidence ansehen' as const;
+export const HERO_SCAN_CTA_LONG = 'Free Audit starten' as const;
+export const HERO_DASHBOARD_CTA_LABEL = 'Live Dashboard ansehen' as const;
 
 export const HERO_SCAN_PROMISE_LINE =
   'Finde deine Compliance-Risiken — kostenlos analysieren' as const;

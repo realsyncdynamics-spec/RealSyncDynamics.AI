@@ -4,8 +4,8 @@ import {
   ArrowLeft, Mail, CheckCircle2, AlertTriangle, Loader2, Send,
 } from 'lucide-react';
 import { normalizePlanKey, planByKey, type PlanKey } from '@/shared/pricing';
-
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
+import { ensureCsrfCookie } from '../lib/csrf';
+import { edgeFunctionUrl, fnFetchInit, shouldUseFnProxy } from '../lib/fn-proxy';
 
 interface FormState {
   name: string;
@@ -158,7 +158,11 @@ export function ContactSales() {
       : (inboundSource ?? 'direct');
 
     try {
-      const resp = await fetch(`${SUPABASE_URL}/functions/v1/sales-lead`, {
+      // Production hosts: same-origin `/api/fn/sales-lead` + CSRF.
+      // Localhost: direct `${getSupabaseUrl()}/functions/v1/sales-lead`.
+      if (shouldUseFnProxy()) await ensureCsrfCookie();
+      const url = edgeFunctionUrl('sales-lead');
+      const resp = await fetch(url, fnFetchInit(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -177,7 +181,7 @@ export function ContactSales() {
           intent: intent ?? undefined,
           path: '/contact-sales',
         }),
-      });
+      }));
       const body = await resp.json().catch(() => ({}));
       if (!resp.ok) {
         const code = body.error?.code ? ` (${body.error.code})` : '';

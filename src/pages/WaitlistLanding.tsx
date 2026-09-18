@@ -21,6 +21,7 @@ import {
   SCAN_CTA,
 } from '../components/landing/LandingShell';
 import { WaitlistForm, WAITLIST_ENDPOINT } from '../components/landing/WaitlistForm';
+import { getSupabaseUrl } from '../lib/supabaseUrl';
 
 /**
  * WaitlistLanding — /warteliste (Alias /waitlist).
@@ -310,10 +311,9 @@ function useWaitlistCount(): number | null {
   const [count, setCount] = useState<number | null>(null);
 
   useEffect(() => {
-    // Env lazy im Effect lesen — als Modul-Konstante waere sie schon vor dem
-    // ersten Render eingefroren und in Tests nicht mehr stubbar.
-    const baseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
-    if (!baseUrl) return;
+    // GET is not proxied by /api/fn (POST-only). Use getSupabaseUrl so a
+    // deploy without VITE_SUPABASE_URL still hits the production project.
+    const baseUrl = getSupabaseUrl();
     const controller = new AbortController();
     fetch(`${baseUrl}${WAITLIST_ENDPOINT}?mode=waitlist`, { signal: controller.signal })
       .then((res) => (res.ok ? res.json() : null))

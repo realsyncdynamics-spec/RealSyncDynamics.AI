@@ -12,6 +12,7 @@
 //   POST /functions/v1/siteos/session          Sitzung lesen, ohne Konto
 //   POST /functions/v1/siteos/claim            Sitzung -> Mandant (idempotent)
 //   POST /functions/v1/siteos/code-persist     Web-App-Builder Dateibaum (nicht Puck)
+// 2026-09-18: gezieltes Production-Redeploy (siteos + ai-gateway), nicht die Flotte.
 //
 // ## Warum ein Router und nicht vier Functions
 //

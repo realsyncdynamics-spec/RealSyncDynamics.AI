@@ -1,6 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
+import { MemoryRouter, Route, Routes, useLocation, useParams, Link } from 'react-router-dom';
 import { analyzeBlueprint, buildSiteFromPrompt, canonicalHash, type SiteBlueprint } from '../../packages/siteos-core/src/index';
 import { pageToPuckData, type PuckPageData } from '../../src/features/siteos/editor/blueprintPuckAdapter';
 
@@ -78,6 +78,19 @@ function LocationProbe() {
   return <div data-testid="location">{loc.pathname}{loc.search}</div>;
 }
 
+function CodePageStub() {
+  const { slug = '' } = useParams<{ slug: string }>();
+  const loc = useLocation();
+  return (
+    <div>
+      <div data-testid="location">{loc.pathname}{loc.search}</div>
+      <Link to={`/builder/${slug}${loc.search}`} data-testid="back-to-puck">
+        Zurück zu SiteOS / Puck
+      </Link>
+    </div>
+  );
+}
+
 async function sample() {
   const { blueprint } = await buildSiteFromPrompt('Erstelle eine Website für einen Zahnarzt in Hamburg.', {
     locale: 'de', model: 'test-model', createdAt: '2026-09-06T00:00:00.000Z',
@@ -96,6 +109,7 @@ function renderWorkspace(slug: string, search = '') {
   return render(
     <MemoryRouter initialEntries={[`/builder/${slug}${search}`]}>
       <Routes>
+        <Route path="/builder/:slug/code" element={<CodePageStub />} />
         <Route path="/builder/:slug" element={<AppBuilderWorkspacePage />} />
         <Route path="/welcome" element={<LocationProbe />} />
         <Route path="/unified-entry/transformation" element={<LocationProbe />} />
@@ -384,5 +398,79 @@ describe('App Builder Workspace — rechte Spalte und Governance-Status (A-Nacht
     await waitFor(() => expect(screen.getByText('Veröffentlichbar')).toBeInTheDocument());
     const right = within(screen.getByTestId('right'));
     expect(right.getByRole('tab', { name: /^Probleme/ }).getAttribute('aria-selected')).toBe('true');
+  });
+});
+
+describe('App Builder Workspace — Code-Link ohne Puck-Regression', () => {
+  it('öffnet Puck weiterhin unter /builder/:slug', async () => {
+    const { blueprint, sha256 } = await sample();
+    api.loadLatestBlueprint.mockResolvedValue(storedRow(blueprint, sha256));
+    renderWorkspace(blueprint.slug);
+    await waitFor(() => expect(screen.getByTestId('editor')).toBeInTheDocument());
+    expect(screen.queryByTestId('bolt-workbench')).not.toBeInTheDocument();
+    expect(screen.getByTestId('open-code-builder')).toHaveAttribute(
+      'href',
+      `/builder/${blueprint.slug}/code`,
+    );
+  });
+
+  it('navigiert über den Code-Link zu /builder/:slug/code und verlässt Puck', async () => {
+    const { blueprint, sha256 } = await sample();
+    api.loadLatestBlueprint.mockResolvedValue(storedRow(blueprint, sha256));
+    renderWorkspace(blueprint.slug);
+    await waitFor(() => expect(screen.getByTestId('editor')).toBeInTheDocument());
+    fireEvent.click(screen.getByTestId('open-code-builder'));
+    await waitFor(() => expect(screen.getByTestId('location').textContent).toBe(`/builder/${blueprint.slug}/code`));
+    expect(screen.queryByTestId('editor')).not.toBeInTheDocument();
+  });
+
+  it('kehrt vom Code-Builder zur Puck-Route zurück', async () => {
+    const { blueprint, sha256 } = await sample();
+    api.loadLatestBlueprint.mockResolvedValue(storedRow(blueprint, sha256));
+    renderWorkspace(blueprint.slug);
+    await waitFor(() => expect(screen.getByTestId('editor')).toBeInTheDocument());
+    fireEvent.click(screen.getByTestId('open-code-builder'));
+    await waitFor(() => expect(screen.getByTestId('back-to-puck')).toBeInTheDocument());
+    fireEvent.click(screen.getByTestId('back-to-puck'));
+    await waitFor(() => expect(screen.getByTestId('editor')).toBeInTheDocument());
+    expect(screen.getByTestId('open-code-builder')).toHaveAttribute(
+      'href',
+      `/builder/${blueprint.slug}/code`,
+    );
+  });
+
+  it('hält Speichern, Laden und Publish-Gate nach der Code-Route unverändert', async () => {
+    const { blueprint, sha256 } = await sample();
+    api.loadLatestBlueprint.mockResolvedValue(storedRow(blueprint, sha256));
+    api.editSite.mockResolvedValue({
+      kind: 'ok',
+      data: {
+        ok: true, unchanged: false, blueprint_id: 'bp-2', slug: blueprint.slug, version: 2,
+        content_sha256: 'b'.repeat(64), prev_hash: sha256, blueprint, findings: [], scores: {},
+        changes: [{ code: 'block.edited', path: '/', blockId: 'root--hero--1', kind: 'hero', summary: 'Hero bearbeitet.', complianceNote: null }],
+        rejected: [],
+      },
+    });
+    api.evaluatePublish.mockResolvedValue({
+      kind: 'ok',
+      data: {
+        ok: true,
+        evaluation: {
+          status: 'blocked', evidence_complete: true, backend_preservation: 'preserve_all',
+          policy_compliant: false, human_approval_required: false, publishable: false,
+          evaluated_at: '2026-09-07T10:00:00.000Z', evaluation_id: 'eval-code-1',
+          artifact_sha256: 'c'.repeat(64), blockers: ['Impressum fehlt.'], warnings: [],
+        },
+      },
+    });
+    renderWorkspace(blueprint.slug);
+    await waitFor(() => expect(screen.getByTestId('editor')).toBeInTheDocument());
+    fireEvent.click(screen.getByText('stub:edit-hero'));
+    fireEvent.click(screen.getByRole('button', { name: /^Speichern$/ }));
+    await waitFor(() => expect(api.editSite).toHaveBeenCalledTimes(1));
+    fireEvent.click(screen.getByRole('button', { name: /Prüfen/ }));
+    await waitFor(() => expect(api.evaluatePublish).toHaveBeenCalled());
+    expect(screen.getByText('Impressum fehlt.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Veröffentlichen/ })).toBeDisabled();
   });
 });

@@ -249,6 +249,7 @@ const SiteOsBuilderPage = lazy(() => import('./unified-entry/pages/PreviewSelect
 // Assistent · Konsole/Probleme/Verlauf/Governance. Lazy aus demselben Grund
 // wie der Editor: Puck gehört nicht in den kritischen Pfad.
 const AppBuilderWorkspacePage = lazy(() => import('./features/siteos/workspace/AppBuilderWorkspacePage'));
+const BoltCodeBuilderPage = lazy(() => import('./features/app-builder/BoltCodeBuilderPage'));
 // Build Studio: Prompt → vollständige Website → Live-Vorschau, ohne Konto.
 //
 // Abweichung von der Regel „Public Pages eager" (CLAUDE.md §7): Diese Seite
@@ -843,7 +844,7 @@ function RoutesWithTracking() {
       <Route path="/app/security-signals" element={<GovernanceBrowserShell><SecuritySignalsView /></GovernanceBrowserShell>} />
       <Route path="/app/legal-rag" element={<AppGate><LegalRagView /></AppGate>} />
       <Route path="/app/workflows" element={<GovernanceBrowserShell><WorkflowsView /></GovernanceBrowserShell>} />
-      <Route path="/app/risks" element={<GovernanceBrowserShell><RiskCenterView /></GovernanceBrowserShell>} />
+      <Route path="/app/risks" element={<AppGate><GovernanceBrowserShell><RiskCenterView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/compliance" element={<GovernanceBrowserShell><GovernanceComplianceReportView /></GovernanceBrowserShell>} />
       <Route path="/app/evidence" element={<AppGate><GovernanceBrowserShell><EvidenceVaultView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/evidence/auditor" element={<GovernanceBrowserShell><RequireAal2 action="Evidence-Export"><GovernanceAuditorConsoleView /></RequireAal2></GovernanceBrowserShell>} />
@@ -1217,11 +1218,10 @@ function RoutesWithTracking() {
         }
       />
       <Route path="/unified-entry/transformation" element={<SiteOsBuilderPage />} />
-      {/* App Builder Workspace (Phase 2): eine Site des Mandanten, adressiert
-          über ihren Slug — dieselbe Kette, die `siteos_blueprints` führt.
-          Der Erstbau (/unified-entry/transformation, /app/siteos/builder)
-          leitet nach Erfolg hierher; es gibt keinen zweiten Builder. Die
-          Anmeldung prüft die Seite selbst, damit `next` erhalten bleibt. */}
+      {/* App Builder Workspace: Puck bleibt der visuelle Editor unter /builder/:slug.
+          Die Code-Workbench ist additiv unter /builder/:slug/code — kein zweites Produkt.
+          Anmeldung prüft die jeweilige Seite selbst, damit `next` erhalten bleibt. */}
+      <Route path="/builder/:slug/code" element={<BoltCodeBuilderPage />} />
       <Route path="/builder/:slug" element={<AppBuilderWorkspacePage />} />
       <Route
         path="/unified-entry/trial-offer"

@@ -31,6 +31,10 @@ export interface GatewayRequest {
   feature?: string;
   /** Optionaler Mandantenbezug fuer die Gateway-Telemetrie. */
   tenantId?: string | null;
+  timeoutMs?: number;
+  maxTokens?: number;
+  /** Client-only: stop consuming the stream. Never sent to the Edge Function. */
+  signal?: AbortSignal;
 }
 
 export interface GatewayResult {
@@ -68,7 +72,7 @@ const UNAVAILABLE_HINT =
  * Fehlerlogik ohne Netzwerk pruefbar ist. In Produktionscode nicht setzen.
  */
 export interface GatewayDeps {
-  client?: Pick<AiGatewayEdgeClient, 'generate'>;
+  client?: Pick<AiGatewayEdgeClient, 'generate'> & Partial<Pick<AiGatewayEdgeClient, 'stream'>>;
 }
 
 export async function processAIGatewayRequest(
@@ -104,6 +108,8 @@ export async function processAIGatewayRequest(
       model_profile: profile,
       input,
       system_prompt: req.systemPrompt,
+      timeout_ms: req.timeoutMs,
+      max_tokens: req.maxTokens,
     });
 
     const usage = resp.usage;
@@ -115,6 +121,80 @@ export async function processAIGatewayRequest(
       tokensUsed:
         usage?.total_tokens ?? (usage?.input_tokens ?? 0) + (usage?.output_tokens ?? 0),
     };
+  } catch (error: unknown) {
+    if (error instanceof AiGatewayEdgeError) {
+      return { success: false, error: `${error.code}: ${error.message}` };
+    }
+    const message = error instanceof Error ? error.message : String(error);
+    return { success: false, error: message || 'Gateway Error' };
+  }
+}
+
+/**
+ * Token stream over the same Edge Function (`op: 'stream'`).
+ * Deltas are provider tokens. Keys never enter the browser.
+ */
+export async function processAIGatewayStream(
+  req: GatewayRequest,
+  onDelta: (full: string) => void,
+  deps?: GatewayDeps,
+): Promise<GatewayResult> {
+  const profile = PROFILE_BY_PROVIDER[req.provider];
+  if (!profile) {
+    return {
+      success: false,
+      error: `Provider „${req.provider}" ist im AI-Gateway nicht konfiguriert. ${UNAVAILABLE_HINT}`,
+    };
+  }
+
+  const input = req.context
+    ? `Hier ist der Inhalt einer Webseite:\n"""\n${req.context}\n"""\n\nFrage/Aufgabe des Nutzers:\n${req.prompt}`
+    : req.prompt;
+
+  try {
+    const client = deps?.client ?? new AiGatewayEdgeClient({
+      supabaseUrl: getSupabaseUrl(),
+      apiKey: getSupabaseAnonKey(),
+      timeoutMs: req.timeoutMs ?? 90_000,
+    });
+    if (typeof client.stream !== 'function') {
+      const fallback = await processAIGatewayRequest(req, deps);
+      if (fallback.success && fallback.modelOutput) onDelta(fallback.modelOutput);
+      return fallback;
+    }
+
+    let text = '';
+    let provider: string | undefined;
+    let model: string | undefined;
+    let tokensUsed: number | undefined;
+    for await (const chunk of client.stream({
+      tenant_id: req.tenantId ?? null,
+      feature: req.feature ?? 'ai_gateway_chat',
+      task_type: 'chat',
+      model_profile: profile,
+      input,
+      system_prompt: req.systemPrompt,
+      timeout_ms: req.timeoutMs ?? 90_000,
+      max_tokens: req.maxTokens ?? 4096,
+    })) {
+      if (req.signal?.aborted) {
+        return { success: false, error: 'Abgebrochen. Es wurde nichts geschrieben.' };
+      }
+      if (chunk.event === 'delta' && chunk.text) {
+        text += chunk.text;
+        onDelta(text);
+      }
+      if (chunk.event === 'done') {
+        provider = chunk.provider;
+        model = chunk.model;
+        tokensUsed = chunk.usage?.total_tokens
+          ?? (chunk.usage?.input_tokens ?? 0) + (chunk.usage?.output_tokens ?? 0);
+      }
+    }
+    if (!text.trim()) {
+      return { success: false, error: 'Gateway ohne Ausgabe' };
+    }
+    return { success: true, provider, model, modelOutput: text, tokensUsed };
   } catch (error: unknown) {
     if (error instanceof AiGatewayEdgeError) {
       return { success: false, error: `${error.code}: ${error.message}` };

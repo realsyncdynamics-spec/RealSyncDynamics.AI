@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 const view = readFileSync('src/features/governance/risks/RiskCenterView.tsx', 'utf8');
+const app = readFileSync('src/App.tsx', 'utf8');
 
 describe('RiskCenterView — keine Demo-Daten im Live-Pfad', () => {
   it('seeden nicht mit atelier-nord', () => {
@@ -26,5 +27,14 @@ describe('RiskCenterView — keine Demo-Daten im Live-Pfad', () => {
   it('leitet Kategorie-Zähler aus den geladenen Risiken ab', () => {
     expect(view).toContain('countByCategory');
     expect(view).not.toContain('CATEGORY_COUNTS');
+  });
+});
+
+describe('/app/risks ist auth-gegatet', () => {
+  it('hängt hinter AppGate, analog zum Evidence Vault', () => {
+    const route = app.match(/<Route\s+path="\/app\/risks"(?!-)[\s\S]*?\/>/);
+    expect(route, 'Route /app/risks nicht gefunden').toBeTruthy();
+    expect(route?.[0]).toContain('<AppGate>');
+    expect(route?.[0]).toContain('RiskCenterView');
   });
 });

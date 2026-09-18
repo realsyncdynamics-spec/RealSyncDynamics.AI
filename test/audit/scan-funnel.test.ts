@@ -18,10 +18,10 @@ import { getImplementation } from '../../src/product/implementation-status';
 
 describe('scan funnel copy SSOT', () => {
   it('hero CTA promises a result, never Demo/testen', () => {
-    expect(HERO_SCAN_CTA_LABEL).toBe('Free Audit starten');
-    expect(HERO_SCAN_CTA_LONG).toBe('Free Audit starten');
-    expect(HERO_DASHBOARD_CTA_LABEL).toBe('Live Dashboard ansehen');
-    expect(HERO_OPERATING_LOOP).toBe('DISCOVER → CLASSIFY → ENFORCE → PROVE');
+    expect(HERO_SCAN_CTA_LABEL).toBe('Kostenlosen Governance Scan starten');
+    expect(HERO_SCAN_CTA_LONG).toBe('Kostenlosen Governance Scan starten');
+    expect(HERO_DASHBOARD_CTA_LABEL).toBe('Explore the Governance OS');
+    expect(HERO_OPERATING_LOOP).toBe('Detect · Govern · Prove · Automate');
     expect(HERO_SCAN_PROMISE_LINE.toLowerCase()).not.toContain('demo');
     expect(HERO_SCAN_CTA_LABEL.toLowerCase()).not.toContain('testen');
     expect(SCAN_FUNNEL_MESSAGE).toBe(
@@ -111,6 +111,7 @@ describe('implementation-status registry for scan funnel', () => {
     expect(getImplementation('continuous-domain-monitoring')?.status).toBe('coming-soon');
     expect(getImplementation('post-scan-choice-row')?.status).toBe('live');
     expect(getImplementation('agent-governance')?.status).toBe('preview');
-    expect(getImplementation('free-audit')?.ctaLabel).toBe(HERO_SCAN_CTA_LONG);
+    expect(getImplementation('free-audit')?.route).toBe('/audit');
+    expect(getImplementation('free-audit')?.status).toBe('live');
   });
 });

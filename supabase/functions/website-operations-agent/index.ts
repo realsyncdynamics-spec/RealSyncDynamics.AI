@@ -15,6 +15,7 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 import { withErrorHandling, generateRequestId, logOperation } from '../_shared/middleware.ts';
+import { requireAuthAndTenant } from '../_shared/auth.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SRK = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -60,26 +61,35 @@ Deno.serve(async (req) => {
     const body: WebsiteGenerationRequest = await req.json();
 
     // Validation
-    if (!body.tenant_id || !body.industry || !body.company_name) {
-      return jsonError(400, 'INVALID_INPUT', 'tenant_id, industry, company_name required');
+    if (!body.industry || !body.company_name) {
+      return jsonError(400, 'INVALID_INPUT', 'industry, company_name required');
     }
 
-    // 1. Verify tenant exists
-    const { data: tenant, error: tenantErr } = await admin
-      .from('tenants')
-      .select('id')
-      .eq('id', body.tenant_id)
-      .single();
-
-    if (tenantErr || !tenant) {
-      return jsonError(404, 'TENANT_NOT_FOUND', 'tenant does not exist');
-    }
+    // 1. Wer ruft, und darf er fuer diesen Mandanten?
+    //
+    // Vorher stand hier nur eine Existenzpruefung ("verify tenant exists"):
+    // jede existierende tenant_id aus dem Body wurde akzeptiert. Da diese
+    // Function mit dem Default `verify_jwt = true` laeuft und der Anon-Key ein
+    // gueltiges JWT ist, das im Frontend-Bundle liegt, konnte damit jeder
+    // einen fremden Mandanten benennen — Provider-Kosten auf Betreiberrechnung
+    // und `website_projects`-Zeilen unter fremdem Mandanten inklusive.
+    //
+    // `requireAuthAndTenant` ist der gemeinsame Resolver aus _shared/auth.ts,
+    // den u. a. website-domain-manager schon nutzt. Existenz wird dabei nicht
+    // mehr separat geprueft: eine Mitgliedschaft setzt den Mandanten voraus,
+    // und ein 403 statt 404 verraet nebenbei nicht, welche Mandanten es gibt.
+    //
+    // Reihenfolge ist Absicht: Diese Pruefung steht vor der ersten
+    // Datenbankabfrage, vor dem ersten Write und vor dem Provider-Aufruf.
+    const auth = await requireAuthAndTenant(req, body.tenant_id);
+    if (auth instanceof Response) return auth;
+    const tenantId = auth.tenantId;
 
     // 2. Create website project entry
     const { data: project, error: projectErr } = await admin
       .from('website_projects')
       .insert({
-        tenant_id: body.tenant_id,
+        tenant_id: tenantId,
         name: body.company_name,
         industry: body.industry,
         description: body.description || null,
@@ -111,7 +121,7 @@ Deno.serve(async (req) => {
       // Log error but don't fail entirely
       await admin.from('deployment_logs').insert({
         project_id: project.id,
-        tenant_id: body.tenant_id,
+        tenant_id: tenantId,
         event_type: 'build',
         status: 'warning',
         title: 'AI Generation Warning',
@@ -124,7 +134,7 @@ Deno.serve(async (req) => {
     const complianceResult = await runComplianceChecks(
       website.html || '',
       project.id,
-      body.tenant_id,
+      tenantId,
       website.aiDisclosures || []
     );
 
@@ -149,7 +159,7 @@ Deno.serve(async (req) => {
     // 6. Log deployment event
     await admin.from('deployment_logs').insert({
       project_id: project.id,
-      tenant_id: body.tenant_id,
+      tenant_id: tenantId,
       event_type: 'build',
       status: 'success',
       title: 'Website Generated',

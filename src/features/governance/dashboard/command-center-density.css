@@ -1,0 +1,16 @@
+/* Preview-Dichte für das Live-Dashboard — Werte bleiben RLS. */
+[data-testid="compliance-status-dashboard"] h1 {
+  font-size: 22px;
+  letter-spacing: -0.02em;
+}
+@media (min-width: 640px) {
+  [data-testid="compliance-status-dashboard"] h1 {
+    font-size: 28px;
+  }
+}
+[data-testid="governance-score"],
+[data-testid="risk-index"],
+[data-testid="evidence-health"],
+[data-testid="audit-readiness"] {
+  min-height: 120px;
+}

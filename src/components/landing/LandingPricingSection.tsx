@@ -30,7 +30,7 @@ export function LandingPricingSection() {
   return (
     <section
       id="pricing"
-      className="ga-band relative z-[1] border-t border-[#d0c3a4]/10 py-[64px] lg:py-[72px]"
+      className="ga-band-alt relative z-[1] border-t border-[#d0c3a4]/10 py-[64px] lg:py-[72px]"
     >
       <div className="mx-auto max-w-[1500px] px-[4vw]">
         <p

@@ -303,9 +303,40 @@ export function CheckoutSuccess() {
     );
   }
 
+  // While verify is in flight: confirming chrome only — never green "Abo aktiv".
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-obsidian-900">
+        <div
+          className="max-w-md w-full mx-4 p-8 bg-obsidian-800 border border-titanium-700 rounded-card text-center"
+          data-testid="checkout-verifying"
+        >
+          <div className="mb-6">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-obsidian-700 border border-titanium-600 animate-pulse">
+              <svg className="w-8 h-8 text-titanium-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+          </div>
+          <h1 className="text-2xl font-bold text-titanium-50 mb-2">Zahlung wird bestätigt</h1>
+          <p className="text-titanium-300 mb-2">
+            Checkout wird mit Stripe und unserem Abo-Sync abgeglichen.
+            Freischaltung erst nach erfolgreicher Verifikation.
+          </p>
+          <p className="text-sm text-titanium-400 mb-6 font-mono">{statusText}</p>
+          <div className="flex justify-center gap-1">
+            <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+            <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+            <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-obsidian-900">
-      <div className="max-w-md w-full mx-4 p-8 bg-obsidian-800 border border-titanium-700 rounded-card text-center">
+      <div className="max-w-md w-full mx-4 p-8 bg-obsidian-800 border border-titanium-700 rounded-card text-center" data-testid="checkout-synced">
         <div className="mb-6">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-900/30 border border-green-600/50 animate-pulse">
             <svg className="w-8 h-8 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -317,11 +348,11 @@ export function CheckoutSuccess() {
         <h1 className="text-2xl font-bold text-titanium-50 mb-2">Zahlung erfolgreich</h1>
         <p className="text-titanium-300 mb-2">
           Ihr Abo{' '}
-          <span className="font-semibold font-mono">{verifiedPlan || planKey || 'plan'}</span> wird
-          aktiviert.
+          <span className="font-semibold font-mono">{verifiedPlan || planKey || 'plan'}</span>
+          {' '}ist freigeschaltet.
         </p>
         <p className="text-sm text-titanium-400 mb-6">
-          {loading ? statusText : 'Weiterleitung zum Dashboard …'}
+          Weiterleitung zum Dashboard …
         </p>
 
         <div className="flex justify-center gap-1">

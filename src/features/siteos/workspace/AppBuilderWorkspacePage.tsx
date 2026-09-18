@@ -21,7 +21,7 @@
 import { Suspense, lazy, useCallback, useEffect, useMemo, useState, type ReactElement, type ReactNode } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import {
-  ArrowRight, Check, ChevronLeft, Eye, Loader2, Monitor, PencilLine, Save, ShieldCheck,
+  ArrowRight, Check, ChevronLeft, Code2, Eye, Loader2, Monitor, PencilLine, Save, ShieldCheck,
   Smartphone, Sparkles, Tablet, Upload,
 } from 'lucide-react';
 import { useTenant } from '../../../core/access/TenantProvider';
@@ -327,6 +327,7 @@ export default function AppBuilderWorkspacePage(): ReactElement {
         <div className="hidden items-center gap-1 rounded-lg bg-black/[.04] p-1 sm:flex" role="group" aria-label="Ansicht">
           <button onClick={() => setMode('edit')} aria-pressed={mode === 'edit'} className={`inline-flex items-center gap-1 rounded-md px-2 py-1.5 text-[11px] ${mode === 'edit' ? 'bg-white shadow' : ''}`}><PencilLine size={13} /> Bearbeiten</button>
           <button onClick={() => setMode('preview')} aria-pressed={mode === 'preview'} className={`inline-flex items-center gap-1 rounded-md px-2 py-1.5 text-[11px] ${mode === 'preview' ? 'bg-white shadow' : ''}`}><Eye size={13} /> Vorschau</button>
+          <Link to={`/builder/${encodeURIComponent(slug)}/code${location.search}`} className="inline-flex items-center gap-1 rounded-md px-2 py-1.5 text-[11px]" data-testid="open-code-builder"><Code2 size={14} /> Code</Link>
         </div>
         <button
           onClick={() => void check()}
@@ -369,6 +370,7 @@ export default function AppBuilderWorkspacePage(): ReactElement {
         <div className="flex items-center gap-1 rounded-lg bg-black/[.04] p-1 sm:hidden" role="group" aria-label="Ansicht">
           <button onClick={() => setMode('edit')} aria-pressed={mode === 'edit'} className={`rounded-md p-1.5 ${mode === 'edit' ? 'bg-white shadow' : ''}`} aria-label="Bearbeiten"><PencilLine size={14} /></button>
           <button onClick={() => setMode('preview')} aria-pressed={mode === 'preview'} className={`rounded-md p-1.5 ${mode === 'preview' ? 'bg-white shadow' : ''}`} aria-label="Vorschau"><Eye size={14} /></button>
+          <Link to={`/builder/${encodeURIComponent(slug)}/code${location.search}`} className="rounded-md p-1.5" aria-label="Code-Builder" data-testid="open-code-builder-mobile"><Code2 size={14} /></Link>
         </div>
         <div className="flex items-center gap-1 rounded-lg bg-black/[.04] p-1" role="group" aria-label="Gerät">
           <button onClick={() => setDevice('desktop')} className={`rounded-md p-1.5 ${device === 'desktop' ? 'bg-white shadow' : ''}`} aria-label="Desktop" aria-pressed={device === 'desktop'}><Monitor size={14} /></button>

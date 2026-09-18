@@ -1,4 +1,4 @@
-import type { AiGatewayRequest, AiGatewayResponse, AiProviderAdapter, ModelProfile } from './types.ts';
+import type { AiGatewayRequest, AiGatewayResponse, AiProviderAdapter, AiStreamChunk, ModelProfile } from './types.ts';
 import { LMStudioAdapter } from './lmStudioAdapter.ts';
 import { AnthropicAdapter, type AnthropicConfig } from './anthropicAdapter.ts';
 import { OpenAIAdapter, type OpenAIConfig } from './openaiAdapter.ts';
@@ -81,6 +81,49 @@ export class ServerAiGateway {
 
   embed(request: AiGatewayRequest) {
     return this.resolveAdapter(request.model_profile).embed(this.withDefaults(request));
+  }
+
+  async *generateStream(request: AiGatewayRequest): AsyncIterable<AiStreamChunk> {
+    const req = this.withDefaults(request);
+    const primary = this.resolveAdapter(req.model_profile);
+    try {
+      yield* this.streamFrom(primary, req);
+      return;
+    } catch (err) {
+      if (!isTransportLevelFailure(err)) throw err;
+      let lastErr: unknown = err;
+      for (const fb of this.fallbackChain) {
+        if (fb === primary) continue;
+        try {
+          yield* this.streamFrom(fb, req);
+          return;
+        } catch (fbErr) {
+          lastErr = fbErr;
+          if (!isTransportLevelFailureOrApiError(fbErr)) throw fbErr;
+        }
+      }
+      throw lastErr;
+    }
+  }
+
+  private async *streamFrom(adapter: AiProviderAdapter, req: AiGatewayRequest): AsyncIterable<AiStreamChunk> {
+    if (typeof adapter.generateStream === 'function') {
+      yield* adapter.generateStream(req);
+      return;
+    }
+    const resp = await adapter.generate(req);
+    if (resp.output) {
+      yield { event: 'delta', text: resp.output, provider: resp.provider, model: resp.model };
+    }
+    yield {
+      event: 'done',
+      provider: resp.provider,
+      model: resp.model,
+      profile: resp.profile,
+      usage: resp.usage,
+      trace_id: resp.trace_id,
+      latency_ms: resp.latency_ms,
+    };
   }
 
   hasCloudFallback(): boolean { return this.fallbackChain.length > 0; }

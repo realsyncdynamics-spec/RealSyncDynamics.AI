@@ -1,28 +1,18 @@
 /**
  * Preview from the in-memory file tree.
  *
- * Uses the same isolation idea as RealSync `SandboxedPreviewFrame`:
- * srcDoc + sandbox tokens. No network, no same-origin. Interactive JS
- * is opt-in and still sandboxed.
+ * Isolation and CSP come from `src/lib/preview-sandbox.ts` — one source
+ * with SandboxedPreviewFrame. This file only inlines local CSS/JS into
+ * index.html. No network, no same-origin, no WebContainer.
  */
 
 import type { FileRecord } from './types';
+import {
+  withPreviewCsp,
+  type PreviewIsolation,
+} from '../../../lib/preview-sandbox';
 
-
-export type PreviewIsolation = 'static' | 'interactive';
-
-export function sandboxTokens(isolation: PreviewIsolation): string {
-  return isolation === 'interactive'
-    ? 'allow-scripts allow-forms'
-    : '';
-}
-
-export function withPreviewCsp(html: string, isolation: PreviewIsolation): string {
-  const js = isolation === 'interactive' ? " script-src 'unsafe-inline';" : " script-src 'none';";
-  const csp = `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data:; style-src 'unsafe-inline';${js} base-uri 'none'; form-action 'none';">`;
-  if (/<head[\s>]/i.test(html)) return html.replace(/<head([^>]*)>/i, `<head$1>${csp}`);
-  return `<!doctype html><html><head>${csp}<meta charset="utf-8"></head><body>${html}</body></html>`;
-}
+export { sandboxTokens, withPreviewCsp, type PreviewIsolation } from '../../../lib/preview-sandbox';
 
 export function htmlFromFiles(files: FileRecord[], isolation: PreviewIsolation = 'static'): string {
   const index = files.find((f) => f.path === 'index.html' || f.path.endsWith('/index.html'));

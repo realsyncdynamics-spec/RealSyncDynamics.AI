@@ -10,17 +10,16 @@
   --dash-radius: 0px;
 }
 
-/* Class bind (preferred) and testid bind (works if class is missing). */
 [data-testid="compliance-status-dashboard"] h1.dash-command-title,
 [data-testid="compliance-status-dashboard"] h1 {
-  font-size: var(--dash-title-size);
+  font-size: var(--dash-title-size) !important;
   letter-spacing: -0.02em;
 }
 
 @media (min-width: 640px) {
   [data-testid="compliance-status-dashboard"] h1.dash-command-title,
   [data-testid="compliance-status-dashboard"] h1 {
-    font-size: var(--dash-title-size-sm);
+    font-size: var(--dash-title-size-sm) !important;
   }
 }
 

@@ -17,7 +17,7 @@
 // HTTPS POST to the same Supabase project's own /functions/v1/ai-gateway.
 
 import type {
-  AiGatewayRequest, AiGatewayResponse, ModelProfile,
+  AiGatewayRequest, AiGatewayResponse, AiStreamChunk, ModelProfile,
 } from './types';
 
 export interface EdgeClientConfig {
@@ -31,7 +31,7 @@ export interface EdgeClientConfig {
   timeoutMs?: number;
 }
 
-export type EdgeOp = 'generate' | 'extract_json' | 'embed';
+export type EdgeOp = 'generate' | 'extract_json' | 'embed' | 'stream';
 
 export interface EdgeRequestBody extends AiGatewayRequest {
   op: EdgeOp;
@@ -88,6 +88,67 @@ export class AiGatewayEdgeClient {
 
   embed(request: AiGatewayRequest): Promise<AiGatewayResponse<number[]>> {
     return this.invoke<number[]>('embed', request);
+  }
+
+  async *stream(request: AiGatewayRequest): AsyncIterable<AiStreamChunk> {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), this.config.timeoutMs ?? 90_000);
+    try {
+      const res = await this.fetchImpl(this.endpoint, {
+        method: 'POST',
+        signal: controller.signal,
+        headers: {
+          'content-type': 'application/json',
+          'apikey': this.config.apiKey,
+          'authorization': `Bearer ${this.config.apiKey}`,
+        },
+        body: JSON.stringify({ op: 'stream', ...request } satisfies EdgeRequestBody),
+      });
+      if (!res.body) {
+        throw new AiGatewayEdgeError(res.status, 'BAD_ENVELOPE', `gateway stream empty (HTTP ${res.status})`);
+      }
+      if (!res.ok) {
+        let code = 'UPSTREAM';
+        let message = `gateway HTTP ${res.status}`;
+        try {
+          const envelope = (await res.json()) as EdgeErrorEnvelope;
+          if (envelope && envelope.ok === false) {
+            code = envelope.error.code;
+            message = envelope.error.message;
+          }
+        } catch {
+          /* keep */
+        }
+        throw new AiGatewayEdgeError(res.status, code, message);
+      }
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buf = '';
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+        const lines = buf.split('\n');
+        buf = lines.pop() ?? '';
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed) continue;
+          let parsed: (AiStreamChunk & { ok?: boolean }) | EdgeErrorEnvelope;
+          try {
+            parsed = JSON.parse(trimmed) as typeof parsed;
+          } catch {
+            continue;
+          }
+          if ((parsed as EdgeErrorEnvelope).ok === false) {
+            const err = parsed as EdgeErrorEnvelope;
+            throw new AiGatewayEdgeError(502, err.error.code, err.error.message);
+          }
+          yield parsed as AiStreamChunk;
+        }
+      }
+    } finally {
+      clearTimeout(timeout);
+    }
   }
 
   private async invoke<T>(op: EdgeOp, request: AiGatewayRequest): Promise<AiGatewayResponse<T>> {

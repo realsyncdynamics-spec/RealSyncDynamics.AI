@@ -11,6 +11,7 @@ import {
   Minus, Radar, Rocket, ShieldCheck, Sparkles, TrendingDown, TrendingUp,
 } from 'lucide-react';
 import { useTenant } from '../../../core/access/TenantProvider';
+import { useEntitlements } from '../../../core/billing/useEntitlements';
 import { Card, CardHeader, CardBody } from '../../../enterprise-os/components/Card';
 import { ScoreGauge } from '../../../enterprise-os/components/ScoreGauge';
 import { Button } from '../../../enterprise-os/components/Button';
@@ -39,6 +40,7 @@ import {
 
 export function ComplianceStatusDashboard() {
   const { activeTenantId, tenants } = useTenant();
+  const { tier, loading: entitlementsLoading } = useEntitlements();
   const tenantName = tenants.find((t) => t.tenantId === activeTenantId)?.name ?? null;
   const [data, setData] = useState<CockpitData | null>(null);
   const [loading, setLoading] = useState(false);
@@ -103,6 +105,8 @@ export function ComplianceStatusDashboard() {
         loading={loading}
         error={error}
         bootstrapSteps={bootstrapSteps}
+        livePlanId={tier}
+        entitlementsLoading={entitlementsLoading}
       />
     </>
   );
@@ -149,6 +153,14 @@ export interface ComplianceStatusViewProps {
   loading: boolean;
   error: string | null;
   bootstrapSteps?: BootstrapStep[];
+  /**
+   * Live plan from tenant_entitlements / subscriptions (useEntitlements.tier).
+   * Required to claim "Abo aktiv" — URL ?plan= alone is not enough (fail-closed).
+   * `null` while entitlements still load → treat like sync pending.
+   */
+  livePlanId?: string | null;
+  /** True while entitlements are still loading after post-checkout redirect. */
+  entitlementsLoading?: boolean;
 }
 
 export function ComplianceStatusView({
@@ -158,6 +170,8 @@ export function ComplianceStatusView({
   loading,
   error,
   bootstrapSteps = [],
+  livePlanId = null,
+  entitlementsLoading = false,
 }: ComplianceStatusViewProps) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -165,11 +179,21 @@ export function ComplianceStatusView({
   const postCheckoutSub = searchParams.get('subscription');
   const postCheckoutSync = searchParams.get('sync');
   const showPostCheckout = Boolean(postCheckoutPlan || postCheckoutSub || postCheckoutSync);
-  // Stripe paid ≠ entitlements synced. Never claim "Abo aktiv" while sync=pending.
-  const postCheckoutSyncPending =
+  // Stripe paid ≠ entitlements synced. Never claim "Abo aktiv" while sync=pending
+  // OR while live plan is still free / unknown (URL params alone are not proof).
+  const urlSaysPending =
     postCheckoutSync === 'pending' ||
     postCheckoutSub === 'pending' ||
     postCheckoutSub === 'pending_sync';
+  const FREE_PLAN_IDS = new Set(['free', 'free_audit']);
+  const livePlanUnlocked =
+    typeof livePlanId === 'string' &&
+    livePlanId.length > 0 &&
+    !FREE_PLAN_IDS.has(livePlanId);
+  const postCheckoutSyncPending =
+    urlSaysPending ||
+    (showPostCheckout && (entitlementsLoading || !livePlanUnlocked));
+  const postCheckoutUnlocked = showPostCheckout && !postCheckoutSyncPending && livePlanUnlocked;
   const isEmptyTenant = Boolean(
     data &&
     data.partialFailures.length === 0 &&
@@ -257,7 +281,7 @@ export function ComplianceStatusView({
         </div>
       )}
 
-      {showPostCheckout && activeTenantId && !postCheckoutSyncPending && (
+      {postCheckoutUnlocked && activeTenantId && (
         <div
           className="border border-[#e4cfa2]/25 bg-[#e4cfa2]/5 p-5 space-y-3"
           data-testid="post-checkout-domain-cta"
@@ -266,7 +290,7 @@ export function ComplianceStatusView({
             <Globe2 className="h-5 w-5 text-[#e4cfa2] mt-0.5 shrink-0" />
             <div>
               <h2 className="text-sm font-semibold text-titanium-50">
-                Abo aktiv{postCheckoutPlan ? ` · ${postCheckoutPlan}` : ''}
+                Abo aktiv{livePlanId ? ` · ${livePlanId}` : postCheckoutPlan ? ` · ${postCheckoutPlan}` : ''}
               </h2>
               <p className="text-sm text-titanium-300 mt-1">
                 Nächster Schritt: Kunden-Domain unter Websites verbinden.

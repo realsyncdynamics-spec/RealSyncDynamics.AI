@@ -1,0 +1,12 @@
+{
+  "name": "@realsync/connection-contract",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Universal Connection Contract — OpenAPI discovery to governed capabilities. Discovery only; no execute.",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  }
+}

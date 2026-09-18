@@ -249,7 +249,7 @@ describe('ComplianceStatusView', () => {
 
   it('shows sync-pending banner instead of Abo aktiv when sync=pending', () => {
     const { getByTestId, queryByTestId, getByText, queryByRole } = rendered(
-      { data: fixture() },
+      { data: fixture(), livePlanId: 'starter' },
       '/app/dashboard?plan=starter&subscription=sub_test&sync=pending',
     );
     expect(getByTestId('post-checkout-sync-pending')).toBeInTheDocument();
@@ -258,13 +258,32 @@ describe('ComplianceStatusView', () => {
     expect(queryByRole('heading', { name: /Abo aktiv/ })).toBeNull();
   });
 
-  it('shows Abo aktiv domain CTA only when sync is complete', () => {
+  it('shows Abo aktiv domain CTA only when sync is complete AND live plan is paid', () => {
     const { getByTestId, queryByTestId } = rendered(
-      { data: fixture() },
+      { data: fixture(), livePlanId: 'starter', entitlementsLoading: false },
       '/app/dashboard?plan=starter&subscription=sub_live',
     );
     expect(getByTestId('post-checkout-domain-cta')).toBeInTheDocument();
     expect(getByTestId('post-checkout-domain-cta').textContent).toContain('Abo aktiv');
     expect(queryByTestId('post-checkout-sync-pending')).toBeNull();
+  });
+
+  it('fail-closed: URL plan alone never claims Abo aktiv while live plan is free', () => {
+    const { getByTestId, queryByTestId, queryByRole } = rendered(
+      { data: fixture(), livePlanId: 'free', entitlementsLoading: false },
+      '/app/dashboard?plan=starter&subscription=sub_live',
+    );
+    expect(getByTestId('post-checkout-sync-pending')).toBeInTheDocument();
+    expect(queryByTestId('post-checkout-domain-cta')).toBeNull();
+    expect(queryByRole('heading', { name: /Abo aktiv/ })).toBeNull();
+  });
+
+  it('fail-closed: entitlements still loading → sync-pending, not Abo aktiv', () => {
+    const { getByTestId, queryByTestId } = rendered(
+      { data: fixture(), livePlanId: null, entitlementsLoading: true },
+      '/app/dashboard?plan=starter&subscription=sub_live',
+    );
+    expect(getByTestId('post-checkout-sync-pending')).toBeInTheDocument();
+    expect(queryByTestId('post-checkout-domain-cta')).toBeNull();
   });
 });

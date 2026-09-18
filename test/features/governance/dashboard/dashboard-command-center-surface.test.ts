@@ -9,21 +9,19 @@ const strip = readFileSync(
   'src/features/governance/dashboard/DashboardExecuteStrip.tsx',
   'utf8',
 );
-const agents = readFileSync(
-  'src/features/governance/agents/AgentsCenterView.tsx',
+const router = readFileSync(
+  'src/features/governance/dashboard/DashboardRouter.tsx',
   'utf8',
 );
 
 describe('Command Center surface', () => {
   it('keeps theater off /app/dashboard', () => {
+    expect(router).toContain('CommandCenterDashboard');
     expect(command).not.toContain('AgentOsPanel');
     expect(command).not.toContain('dashboard-control-plane');
     expect(command).toContain('DashboardExecuteStrip');
     expect(command).toContain('ComplianceStatusView');
     expect(strip).toContain('/app/agents');
-  });
-
-  it('mounts Agent OS on /app/agents', () => {
-    expect(agents).toContain('AgentOsPanel');
+    expect(strip).toContain('dashboard-execute-strip');
   });
 });

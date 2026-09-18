@@ -3,7 +3,9 @@ import type {
   AiGatewayResponse,
   AiProviderAdapter,
   AiProviderHealth,
+  AiStreamChunk,
 } from '../types';
+import { parseAnthropicSse } from '../streamParse';
 
 // Anthropic adapter — implements AiProviderAdapter against the Anthropic
 // Messages API (POST /v1/messages). Pure HTTP, no SDK dependency. Works
@@ -107,6 +109,51 @@ export class AnthropicAdapter implements AiProviderAdapter {
             (json.usage?.output_tokens ?? 0),
         },
         trace_id:   request.trace_id ?? cryptoRandomUUID(),
+        latency_ms: Date.now() - started,
+      };
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
+  async *generateStream(request: AiGatewayRequest): AsyncIterable<AiStreamChunk> {
+    const started = Date.now();
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), request.timeout_ms ?? 8_000);
+    try {
+      const body = this.buildBody(request);
+      body.stream = true;
+      const res = await this.fetchImpl(`${this.baseUrl}/v1/messages`, {
+        method: 'POST',
+        headers: this.headers(),
+        signal: controller.signal,
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        let message = `Anthropic HTTP ${res.status}`;
+        try {
+          const json = (await res.json()) as AnthropicMessagesResponse;
+          if (json?.error?.message) message = json.error.message;
+        } catch {
+          /* keep */
+        }
+        throw new Error(message);
+      }
+      if (!res.body) throw new Error('Anthropic stream empty');
+      let usage: AiStreamChunk['usage'];
+      let model = this.config.model;
+      for await (const ev of parseAnthropicSse(res.body)) {
+        if (ev.model) model = ev.model;
+        if (ev.usage) usage = { ...usage, ...ev.usage };
+        if (ev.text) yield { event: 'delta', text: ev.text, provider: 'anthropic', model };
+      }
+      yield {
+        event: 'done',
+        provider: 'anthropic',
+        model,
+        profile: request.model_profile,
+        usage,
+        trace_id: request.trace_id ?? cryptoRandomUUID(),
         latency_ms: Date.now() - started,
       };
     } finally {

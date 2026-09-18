@@ -79,6 +79,30 @@ export const APP_FEATURE_ACCESS: readonly FeatureRequirement[] = [
   { route: '/app/governance/remediation-plans', label: 'Behebungspläne', allOf: ['fix.snippets'] },
   { route: '/app/terminal', label: 'Kodee', allOf: ['ai.tool.vps_status'] },
 
+  // ── Build ───────────────────────────────────────────────────────────────
+  //
+  // Nur `/app/siteos` steht hier, und das ist kein Versehen. Ein Eintrag in
+  // diesem Register wirkt ausschliesslich dort, wo `RouteEntitlementGate`
+  // laeuft — und das tut es nur innerhalb der `GovernanceBrowserShell`.
+  //
+  // Die uebrigen Builder-Flaechen haengen an anderen Wrappern und wuerden von
+  // einem Eintrag hier NICHT gesperrt (gemessen 2026-09-15 an `src/App.tsx`):
+  //
+  //   /app/siteos/builder   AppGate — nur Anmeldung, keine Berechtigung
+  //   /app/siteos/claim     AppGate — dito
+  //   /builder/:slug        gar kein Wrapper; die Seite prueft selbst nur
+  //                         `isAuthenticated` und leitet sonst nach /welcome
+  //   /build                bewusst anonym (Erstbau ohne Konto)
+  //
+  // Ein Eintrag fuer diese Routen waere ein Gate, das nie greift — genau die
+  // Sorte Platzhalter, die dieses Register nicht enthalten soll. Sie brauchen
+  // zuerst eine Routing-Entscheidung, keinen Registereintrag.
+  //
+  // `siteos.builder` ist eine echte Bezahlgrenze: Free Audit hat 0, Starter
+  // und aufwaerts 1. (`siteos.publish` trennt zusaetzlich Starter von Growth —
+  // dafuer gibt es heute keine eigene Route.)
+  { route: '/app/siteos', label: 'Website-Builder', allOf: ['siteos.builder'] },
+
   // ── Govern ──────────────────────────────────────────────────────────────
   { route: '/app/monitoring', label: 'Monitoring', allOf: ['monitoring.monthly'] },
   { route: '/app/security-signals', label: 'Security Signals', allOf: ['monitoring.monthly'] },

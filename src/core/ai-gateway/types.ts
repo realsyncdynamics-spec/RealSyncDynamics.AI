@@ -67,10 +67,23 @@ export interface AiProviderHealth {
   error?: string;
 }
 
+export interface AiStreamChunk {
+  event: 'delta' | 'done';
+  text?: string;
+  provider?: ProviderId;
+  model?: string;
+  profile?: ModelProfile;
+  usage?: AiGatewayUsage;
+  trace_id?: string;
+  latency_ms?: number;
+}
+
 export interface AiProviderAdapter {
   id: ProviderId;
   health(): Promise<AiProviderHealth>;
   generate(request: AiGatewayRequest): Promise<AiGatewayResponse<string>>;
   extractJson<T>(request: AiGatewayRequest): Promise<AiGatewayResponse<T>>;
   embed(request: AiGatewayRequest): Promise<AiGatewayResponse<number[]>>;
+  /** Optional token stream. Adapters without it fall back to generate(). */
+  generateStream?(request: AiGatewayRequest): AsyncIterable<AiStreamChunk>;
 }

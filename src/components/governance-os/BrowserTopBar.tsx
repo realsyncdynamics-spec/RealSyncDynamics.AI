@@ -34,10 +34,12 @@ export function BrowserTopBar({
     <header className="h-14 shrink-0 bg-obsidian-900/95 border-b border-titanium-900/80 backdrop-blur-md flex items-center gap-3 px-3 sm:px-4">
       {/* Mobile-Menü Toggle — system drawer entry */}
       <button
+        type="button"
         onClick={onToggleMobile}
         className={`lg:hidden text-titanium-400 hover:text-titanium-100 focus-visible:outline-none ${OS_FOCUS_RING}`}
         aria-label={mobileMenuOpen ? 'Systemmenü schließen' : 'Systemmenü öffnen'}
         aria-expanded={mobileMenuOpen}
+        aria-controls={mobileMenuOpen ? 'governance-mobile-menu' : undefined}
       >
         {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
       </button>

@@ -141,24 +141,22 @@ test.describe('Governance-AI-Landing (/)', () => {
     await expect(page.getByText(/EVIDENCE-CHAIN/i).first()).toBeVisible();
   });
 
-  test('Hero-Visual ist Earth Backdrop, kein Sphere-HUD', async ({ page }) => {
-    // Europe-night scenery + gold network — no interactive Governance Sphere / DEMO chrome on `/`.
-    await expect(page.locator('[data-hero-visual="earth-universe"]')).toBeVisible();
-    await expect(page.locator('[data-hero-framing="europe-right"]')).toBeVisible();
-    await expect(page.locator('[data-hero-scenery="europe-night-gold-network"]')).toBeVisible();
+  test('Hero-Visual ist das Titan-Relief, kein Sphere-HUD', async ({ page }) => {
+    // Gebürstetes Titan + Europa-Chromrelief mit Goldnetz — kein interaktiver
+    // Governance-Sphere-HUD und kein DEMO-Chrome auf `/`.
+    await expect(page.locator('[data-hero-visual="europe-relief-titan"]')).toBeAttached();
+    await expect(page.locator('[data-hero-framing="europe-right"]')).toBeAttached();
+    await expect(page.locator('[data-hero-scenery="titan-chrome-gold-network"]')).toBeAttached();
     await expect(page.locator('[data-hero-visual="europe-sunrise"]')).toHaveCount(0);
     await expect(page.locator('[data-governance-sphere]')).toHaveCount(0);
-    await expect(page.getByText(/^Live\b/)).toHaveCount(0);
-    // Mobile Beispiel-Streifen bleibt ehrlich beschriftet, falls sichtbar.
-    const beispiel = page.getByText(/BEISPIELANSICHT/i);
-    if ((await beispiel.count()) > 0) {
-      await expect(beispiel.first()).toBeVisible();
-    }
+    // Die Workspace-Vorschau muss als Beispiel gekennzeichnet bleiben.
+    await expect(page.getByText(/DEMO · BEISPIELDATEN/i).first()).toBeVisible();
+    await expect(page.getByText(/BEISPIELANSICHT/i).first()).toBeVisible();
   });
 
   test('Plattform-Sektion rendert die Faehigkeitsquelle, nicht eine eigene Liste', async ({ page }) => {
     const platform = page.locator('#platform');
-    await expect(platform.getByRole('heading', { name: /^Eine Runtime\./i })).toBeVisible();
+    await expect(platform.getByRole('heading', { name: /Module, die live erreichbar sind/i })).toBeVisible();
 
     // Registry SSoT: nur LIVE items mit showOnPlatform.
     for (const cap of PLATFORM_LIVE_ITEMS) {

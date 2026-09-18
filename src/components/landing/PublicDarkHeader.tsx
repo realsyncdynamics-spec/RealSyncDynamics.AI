@@ -12,6 +12,7 @@ import {
   LANDING_TEXT,
   LANDING_TRUST_MARKS,
 } from './landing-theme';
+import { GA_GOLD_FACE, GA_GOLD_LITE } from './governance-ai-theme';
 
 /**
  * Shared dark public header for `/` and `/branchen`.
@@ -91,12 +92,40 @@ const scanCtaStyle: CSSProperties = {
   color: LANDING_BUTTON_TEXT,
 };
 
-export function PublicDarkHeader({ overlay = false }: { overlay?: boolean }) {
+/**
+ * Titan-Variante der Startseite: Champagner-Gold statt Cream, Goldsiegel-Pill
+ * statt Cream-Fläche, Titan-Grund statt Nachtblau. Additiv — `/branchen` und
+ * alle anderen Flächen bekommen unverändert die Default-Tonung.
+ */
+const titanCtaStyle: CSSProperties = {
+  fontFamily: LANDING_MONO,
+  background: GA_GOLD_FACE,
+  color: '#14100b',
+  boxShadow: 'inset 0 1px 0 rgba(255,255,255,.6), inset 0 -2px 0 rgba(0,0,0,.18), 0 8px 22px rgba(0,0,0,.4)',
+};
+
+export function PublicDarkHeader({
+  overlay = false,
+  tone = 'default',
+}: {
+  overlay?: boolean;
+  tone?: 'default' | 'titan';
+}) {
   const [open, setOpen] = useState(false);
+  const titan = tone === 'titan';
+  const accent = titan ? GA_GOLD_LITE : LANDING_ACCENT;
+  const ctaStyle = titan ? titanCtaStyle : scanCtaStyle;
+  const surface = titan
+    ? overlay
+      ? 'absolute bg-[rgba(15,16,18,0.55)]'
+      : 'sticky bg-[rgba(15,16,18,0.86)]'
+    : overlay
+      ? 'absolute bg-[rgba(5,7,11,0.55)]'
+      : 'sticky bg-[rgba(5,7,11,0.82)]';
 
   return (
     <header
-      className={`${overlay ? 'absolute bg-[rgba(5,7,11,0.55)]' : 'sticky bg-[rgba(5,7,11,0.82)]'} inset-x-0 top-0 z-30 border-b border-white/[0.06] backdrop-blur-[18px]`}
+      className={`${surface} inset-x-0 top-0 z-30 border-b border-white/[0.06] backdrop-blur-[18px]`}
       style={{ color: LANDING_TEXT }}
     >
       <div className="mx-auto flex h-[76px] max-w-[1500px] items-center gap-6 px-[4vw]">
@@ -106,12 +135,12 @@ export function PublicDarkHeader({ overlay = false }: { overlay?: boolean }) {
             className="flex min-w-0 items-center gap-2.5 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e4cfa2]/60"
             style={{ color: LANDING_TEXT }}
           >
-            <span aria-hidden="true" className="shrink-0 text-[19px]" style={{ color: LANDING_ACCENT }}>
+            <span aria-hidden="true" className="shrink-0 text-[19px]" style={{ color: accent }}>
               ⬢
             </span>
             <span className="truncate whitespace-nowrap text-[14px] font-medium tracking-tight">
               RealSync Dynamics
-              <span style={{ color: LANDING_ACCENT }}>.AI</span>
+              <span style={{ color: accent }}>.AI</span>
             </span>
           </Link>
         </div>
@@ -123,7 +152,7 @@ export function PublicDarkHeader({ overlay = false }: { overlay?: boolean }) {
           <Link
             to="/audit"
             className="landing-cta-glow rounded-full px-[20px] py-[11px] text-center text-[11px] leading-[1.3] transition hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e4cfa2]"
-            style={scanCtaStyle}
+            style={ctaStyle}
           >
             {HERO_SCAN_CTA_LABEL}
           </Link>
@@ -133,7 +162,7 @@ export function PublicDarkHeader({ overlay = false }: { overlay?: boolean }) {
           <Link
             to="/audit"
             className="hidden rounded-full px-3.5 py-2 text-[10px] sm:inline-flex"
-            style={scanCtaStyle}
+            style={ctaStyle}
           >
             Free Audit
           </Link>
@@ -161,7 +190,7 @@ export function PublicDarkHeader({ overlay = false }: { overlay?: boolean }) {
         >
           <p
             className="mb-3 text-[9px] tracking-[.2em]"
-            style={{ fontFamily: LANDING_MONO, color: `${LANDING_ACCENT}b3` }}
+            style={{ fontFamily: LANDING_MONO, color: `${accent}b3` }}
           >
             NAVIGATION
           </p>
@@ -179,7 +208,7 @@ export function PublicDarkHeader({ overlay = false }: { overlay?: boolean }) {
             <Link
               to="/audit"
               className="mt-3 block rounded-full px-4 py-3 text-center text-[11px] leading-[1.3]"
-              style={scanCtaStyle}
+              style={ctaStyle}
               onClick={() => setOpen(false)}
             >
               {HERO_SCAN_CTA_LABEL}

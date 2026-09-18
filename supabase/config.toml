@@ -349,6 +349,12 @@ verify_jwt = false
 [functions.website-maintenance-daily-cron]
 verify_jwt = false
 
+# website-operations-agent: braucht eine echte Nutzersitzung. Kein Eintrag =
+# Default true, und das ist hier richtig — das Plattform-Gate laesst den
+# Anon-Key aber durch, deshalb prueft der Handler zusaetzlich Nutzer und
+# Mitgliedschaft ueber requireAuthAndTenant, bevor er schreibt oder den
+# Provider ruft.
+
 # governance-analytics-export: called from authenticated SPA clients with bearer token
 # (no explicit verify_jwt entry = defaults to true, which is correct)
 

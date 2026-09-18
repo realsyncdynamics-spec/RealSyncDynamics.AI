@@ -1,506 +1,211 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Code2, FileCheck2, Lock, ShieldCheck } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { SEOHead } from '../components/SEOHead';
+import { EnterpriseAccessSection } from '../components/landing/EnterpriseAccessSection';
+import { EuropeReliefBackdrop } from '../components/landing/EuropeReliefBackdrop';
+import { GovernanceFooter } from '../components/landing/GovernanceFooter';
+import { GovernanceLoopBand } from '../components/landing/GovernanceLoopBand';
+import { GovernanceStatusBar } from '../components/landing/GovernanceStatusBar';
+import { OsEntryLink } from '../components/landing/OsEntryLink';
 import { LandingChannelTools } from '../components/landing/LandingChannelTools';
-import { LandingDarkBand } from '../components/landing/LandingDarkBand';
 import { LandingPricingSection } from '../components/landing/LandingPricingSection';
 import { LandingRoadmapSection } from '../components/landing/LandingRoadmapSection';
+import { PlatformCapabilitiesSection } from '../components/landing/PlatformCapabilitiesSection';
 import { PublicDarkHeader } from '../components/landing/PublicDarkHeader';
-import { OsEntryLink } from '../components/landing/OsEntryLink';
+import { RegulatoryTicker } from '../components/landing/RegulatoryTicker';
+import { RuntimeLayersSection } from '../components/landing/RuntimeLayersSection';
+import { SectionEyebrow, SectionHeading } from '../components/landing/GovernanceSectionChrome';
+import { WorkspacePreviewSection } from '../components/landing/WorkspacePreviewSection';
+import { prefersReducedMotion } from '../components/landing/prefers-reduced-motion';
+import { useGaTheme } from '../components/landing/use-ga-theme';
 import {
-  LANDING_ACCENT,
-  LANDING_BG,
-  LANDING_BUTTON,
-  LANDING_BUTTON_TEXT,
-  LANDING_MONO,
-  LANDING_MUTED,
-  LANDING_SANS,
-  LANDING_SERIF,
-  LANDING_TEXT,
-} from '../components/landing/landing-theme';
+  GA_DISPLAY,
+  GA_GOLD_FACE,
+  GA_GOLD_FACE_SHADOW,
+  GA_GOLD_LITE,
+  GA_GOLD_TEXT,
+  GA_GREEN,
+  GA_H1,
+  GA_LEDE,
+  GA_LINE,
+  GA_LINE_SOFT,
+  GA_MONO,
+  GA_MUTED,
+  GA_PILL_GHOST,
+  GA_SANS,
+  GA_SILVER,
+  GA_SILVER_TEXT,
+  GA_TEXT,
+  GA_TITAN,
+  GA_VOID,
+} from '../components/landing/governance-ai-theme';
 import {
+  CONTINUOUS_COMPLIANCE_NARRATIVE,
   HERO_DASHBOARD_CTA_LABEL,
   HERO_EU_LINE,
   HERO_HEADLINE,
-  HERO_KICKER,
   HERO_OPERATING_LOOP,
-  HERO_PROOF_CHIPS,
   HERO_SCAN_CTA_LABEL,
   HERO_SUBLINE,
+  HERO_VALUE_SUBLINE,
 } from '../components/governance-frontend/hero-content';
-import { HeroEarthBackdrop } from '../components/landing/HeroEarthBackdrop';
-import { EnterpriseAccessSection } from '../components/landing/EnterpriseAccessSection';
-import {
-  PLATFORM_LIVE_ITEMS,
-  STATUS_LABEL,
-} from '../product/implementation-status';
-import { useStagedReveal } from '../hooks/useStagedReveal';
 
-const GOVERNANCE_STEPS = [
-  ['01', 'DISCOVER', 'KI-Systeme, Anwendungen, Datenflüsse und relevante Verarbeitungsvorgänge erfassen.'],
-  ['02', 'ASSESS', 'Risiken bewerten und Systeme gegen Governance-, DSGVO- und EU-AI-Act-Kriterien prüfen.'],
-  ['03', 'GOVERN', 'Verbindliche Policies, Verantwortlichkeiten und Kontrollanforderungen zentral definieren.'],
-  ['04', 'ENFORCE', 'Governance-Regeln operativ durchsetzen und Abweichungen kontrolliert behandeln.'],
-  ['05', 'EVIDENCE', 'Prüfungen, Entscheidungen, Änderungen und Kontrollen nachvollziehbar dokumentieren.'],
-  ['06', 'AUDIT', 'Eine konsistente Governance-Historie für Management, interne Kontrollen und Audits bereitstellen.'],
+// PLATFORM_LIVE_ITEMS / implementation-status — rendered by PlatformCapabilitiesSection
+
+const HERO_PROOF_CHIPS = ['EVIDENCE-CHAIN', 'AI-ACT-KLASSIFIKATION', 'PROVENANCE · C2PA'] as const;
+
+const POLICY_PACKS: readonly (readonly [string, boolean])[] = [
+  ['DSGVO', true],
+  ['EU AI ACT', true],
+  ['ISO 27001', true],
+  ['NIS2', true],
+  ['TISAX', false],
+  ['DORA', false],
 ];
 
+function EvidenceSealTicker() {
+  const [age, setAge] = useState(4);
+
+  useEffect(() => {
+    if (prefersReducedMotion()) return;
+    const interval = window.setInterval(() => {
+      setAge((current) => (current >= 24 ? 0 : current + 1));
+    }, 1000);
+    return () => window.clearInterval(interval);
+  }, []);
+
+  return (
+    <p className="mt-7 text-[11px] tracking-[.12em]" style={{ fontFamily: GA_MONO, color: GA_TITAN }}>
+      LETZTER NACHWEIS VERANKERT <b style={{ color: GA_GOLD_LITE }}>vor {age} s</b>
+    </p>
+  );
+}
+
 export function MainLanding() {
-  const revealRoot = useStagedReveal<HTMLElement>();
+  const { theme, setTheme } = useGaTheme();
+
+  useEffect(() => {
+    if (prefersReducedMotion()) return;
+    const onMove = (event: PointerEvent) => {
+      const target = (event.target as Element | null)?.closest?.('.ga-card') as HTMLElement | null;
+      if (!target) return;
+      const rect = target.getBoundingClientRect();
+      target.style.setProperty('--ga-mx', `${(((event.clientX - rect.left) / rect.width) * 100).toFixed(1)}%`);
+      target.style.setProperty('--ga-my', `${(((event.clientY - rect.top) / rect.height) * 100).toFixed(1)}%`);
+    };
+    window.addEventListener('pointermove', onMove, { passive: true });
+    return () => window.removeEventListener('pointermove', onMove);
+  }, []);
 
   return (
     <div
       className="landing-context relative min-h-screen antialiased"
-      style={{
-        backgroundColor: LANDING_BG,
-        color: LANDING_TEXT,
-        fontFamily: LANDING_SANS,
-        backgroundImage: 'radial-gradient(circle at 78% 28%, #111823 0, #05070b 38%, #04060a 100%)',
-      }}
+      data-ga-theme={theme}
+      data-landing-variant={theme === 'night' ? 'screen-2-nacht' : 'screen-1-titan'}
+      style={{ backgroundColor: GA_VOID, color: GA_TEXT, fontFamily: GA_SANS, fontFeatureSettings: '"ss01", "cv11"' }}
     >
       <SEOHead
         title="RealSyncDynamics.AI — AI Compliance Operations OS for Europe"
-        description="AI Compliance Operations OS for Europe. Runtime governance for regulated AI systems. Continuous evidence. EU-native by design."
+        description="AI Compliance Operations OS for Europe. Governance OS fuer DSGVO und EU AI Act."
         canonical="/"
         ogTitle="AI Compliance Operations OS for Europe"
-        ogDescription="RealSyncDynamics.AI — AI Compliance Operations OS for Europe. Free Audit starten. Continuous evidence."
+        ogDescription="RealSyncDynamics.AI — Free Audit starten. Continuous evidence."
       />
-
-      {/* Restrained ambient — scenery stays behind type, no muddy gold wash */}
-      <div
-        className="pointer-events-none fixed right-[-12vw] top-[18vh] h-[34vw] w-[34vw] rounded-full opacity-[0.05] blur-[110px]"
-        style={{ background: '#b49a6b' }}
-        aria-hidden="true"
-      />
-
-      <PublicDarkHeader />
-
-      <main ref={revealRoot} className="relative z-10">
-        <section
-          id="product"
-          className="hero relative isolate flex min-h-[calc(100svh-76px)] overflow-hidden border-b border-[#e4cfa2]/10"
-          data-reveal
-        >
-          {/* Europe night full-bleed — pointer-events none; no Sphere HUD */}
-          <div className="pointer-events-none absolute inset-0 -z-10" aria-hidden="true">
-            <HeroEarthBackdrop />
-          </div>
-
-          <div className="relative mx-auto flex w-full max-w-[1500px] flex-1 items-center px-[4vw] py-10 lg:py-12">
-            {/* Bundler hero structure (Dark/Gold): kicker → H1 → loop → lede → EU → CTAs → proof */}
-            <div className="hero-copy relative z-10 max-w-[40rem] lg:max-w-[44rem]">
-              <p
-                className="hero-kicker flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[9px] font-medium tracking-[0.16em]"
-                style={{ fontFamily: LANDING_MONO, color: '#8a867c' }}
-                aria-label={`${HERO_KICKER.index}. ${HERO_KICKER.claim}. ${HERO_KICKER.region}`}
-              >
-                <span style={{ color: LANDING_ACCENT }}>{HERO_KICKER.index}</span>
-                <span aria-hidden="true" style={{ color: `${LANDING_ACCENT}66` }}>
-                  ·
+      <EuropeReliefBackdrop theme={theme} />
+      <div className="relative z-10 flex min-h-screen flex-col">
+        <GovernanceStatusBar theme={theme} onThemeChange={setTheme} />
+        <PublicDarkHeader tone={theme === 'night' ? 'default' : 'titan'} />
+        <main className="mx-auto flex w-full max-w-[1500px] flex-1 items-center overflow-x-clip px-[4vw] pb-[clamp(40px,5vw,80px)] pt-[clamp(48px,7vw,108px)]">
+          <div className="relative max-w-[640px]">
+            <h1
+              className="m-0 max-w-[22ch] text-balance leading-[.98]"
+              style={{
+                fontFamily: GA_DISPLAY,
+                fontWeight: 'var(--ga-h1-weight)' as unknown as number,
+                letterSpacing: 'var(--ga-h1-tracking)',
+                fontSize: GA_H1,
+                backgroundImage: GA_SILVER_TEXT,
+                backgroundClip: 'text',
+                WebkitBackgroundClip: 'text',
+                color: 'transparent',
+              }}
+            >
+              {HERO_HEADLINE.map((segments, line) => (
+                <span key={line} className="block">
+                  {segments.map((segment, index) =>
+                    segment.accent ? (
+                      <em key={index} className="not-italic" style={{ backgroundImage: GA_GOLD_TEXT, backgroundClip: 'text', WebkitBackgroundClip: 'text', color: 'transparent' }}>
+                        {segment.text}
+                      </em>
+                    ) : (
+                      <span key={index}>{segment.text}</span>
+                    ),
+                  )}
                 </span>
-                <span>{HERO_KICKER.claim}</span>
-                <span aria-hidden="true" style={{ color: `${LANDING_ACCENT}66` }}>
-                  ·
+              ))}
+            </h1>
+            <p className="mt-[26px] text-[11.5px] uppercase tracking-[.3em]" style={{ fontFamily: GA_MONO, color: '#c2c8d0' }}>
+              {HERO_OPERATING_LOOP}
+            </p>
+            <p className="mt-5 max-w-[36rem] text-pretty leading-[1.5]" style={{ fontSize: GA_LEDE, color: '#d3d9e1' }}>
+              {HERO_SUBLINE}
+            </p>
+            <p className="mt-3 text-[15px] font-medium" style={{ color: GA_GOLD_LITE }}>{HERO_VALUE_SUBLINE}</p>
+            <p className="mt-3 max-w-[36rem] text-[13.5px] leading-[1.6]" style={{ color: GA_MUTED }}>{HERO_EU_LINE}</p>
+            <div className="mt-[34px] flex w-full flex-col gap-3.5 sm:flex-row sm:items-center">
+              <Link to="/audit" id="audit-cta" data-hero-cta="audit" className="ga-pill-sheen relative inline-flex items-center justify-center gap-2 overflow-hidden whitespace-nowrap rounded-full px-[28px] py-[15px] text-[14px] font-semibold" style={{ background: GA_GOLD_FACE, color: '#14100b', boxShadow: GA_GOLD_FACE_SHADOW }}>
+                {HERO_SCAN_CTA_LABEL}
+                <ArrowRight className="h-4 w-4" aria-hidden="true" />
+              </Link>
+              <OsEntryLink to="/app" className={GA_PILL_GHOST}>
+                {HERO_DASHBOARD_CTA_LABEL}
+              </OsEntryLink>
+            </div>
+            <div className="mt-[30px] flex flex-wrap gap-2.5">
+              {HERO_PROOF_CHIPS.map((chip) => (
+                <span key={chip} className="flex items-center gap-2.5 rounded-full border px-3.5 py-[7px] text-[11px]" style={{ borderColor: GA_LINE_SOFT, fontFamily: GA_MONO, color: GA_MUTED }}>
+                  <i className="h-[5px] w-[5px] rounded-full not-italic" style={{ backgroundColor: GA_GREEN }} aria-hidden="true" />
+                  {chip}
                 </span>
-                <span>{HERO_KICKER.region}</span>
-              </p>
-
-              <h1
-                className="mt-4 font-semibold leading-[1.05] tracking-[-0.03em]"
-                style={{
-                  fontFamily: LANDING_SANS,
-                  fontSize: 'clamp(2.35rem, 4.2vw, 3.65rem)',
-                  color: LANDING_TEXT,
-                }}
-              >
-                {HERO_HEADLINE.map((segments, line) => {
-                  const isEurope = line === HERO_HEADLINE.length - 1;
-                  return (
-                    <span
-                      key={line}
-                      className="block"
-                      style={
-                        isEurope
-                          ? {
-                              marginTop: '0.06em',
-                              fontSize: '1.12em',
-                              letterSpacing: '-0.035em',
-                            }
-                          : undefined
-                      }
-                    >
-                      {segments.map((segment, i) =>
-                        segment.accent ? (
-                          <em
-                            key={i}
-                            className="hero-shine-accent not-italic"
-                            style={{ color: LANDING_ACCENT, fontStyle: 'normal' }}
-                          >
-                            {segment.text}
-                          </em>
-                        ) : (
-                          <span key={i} className="hero-shine">
-                            {segment.text}
-                          </span>
-                        ),
-                      )}
-                    </span>
-                  );
-                })}
-              </h1>
-
-              <p
-                className="mt-5 text-[10px] font-medium tracking-[0.22em]"
-                style={{ fontFamily: LANDING_MONO, color: '#9a9178' }}
-              >
-                {HERO_OPERATING_LOOP}
-              </p>
-
-              <p
-                className="mt-5 max-w-[34rem] text-[15px] leading-[1.55] sm:text-[16px]"
-                style={{ color: 'rgba(246,242,233,0.88)' }}
-              >
-                {HERO_SUBLINE}
-              </p>
-              <p
-                className="mt-2.5 max-w-[34rem] text-[12px] leading-relaxed"
-                style={{ color: LANDING_MUTED }}
-              >
-                {HERO_EU_LINE}
-              </p>
-
-              <div className="mt-8 flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:gap-3.5">
-                <Link
-                  to="/audit"
-                  id="scan"
-                  data-hero-cta
-                  className="landing-cta-glow inline-flex items-center justify-center gap-2 rounded-full px-[26px] py-[14px] text-[14px] font-semibold transition hover:brightness-[1.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e4cfa2]"
-                  style={{
-                    background:
-                      'linear-gradient(180deg, #f0e6d4 0%, #e8ddc8 48%, #dcc9a8 100%)',
-                    color: LANDING_BUTTON_TEXT,
-                  }}
-                >
-                  {HERO_SCAN_CTA_LABEL} <span aria-hidden="true">→</span>
-                </Link>
-                <OsEntryLink
-                  to="/app"
-                  data-hero-cta
-                  className="inline-flex items-center justify-center gap-2 rounded-full border px-[24px] py-[13px] text-[14px] font-medium transition hover:bg-[#e4cfa2]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e4cfa2]/60"
-                  style={{
-                    borderColor: 'rgba(232,221,200,0.4)',
-                    backgroundColor: 'transparent',
-                    color: LANDING_TEXT,
-                  }}
-                >
-                  {HERO_DASHBOARD_CTA_LABEL}
-                </OsEntryLink>
-              </div>
-
-              {/* Proof chips — labels only; never fake KPI / SLA counts from bundler HTML */}
-              <ul
-                className="mt-7 flex flex-wrap items-center gap-x-4 gap-y-2"
-                aria-label="Governance-Nachweise"
-              >
-                {HERO_PROOF_CHIPS.map((chip) => (
-                  <li
-                    key={chip}
-                    className="inline-flex items-center gap-1.5 text-[8px] tracking-[0.16em]"
-                    style={{ fontFamily: LANDING_MONO, color: '#8a867c' }}
-                  >
-                    <span
-                      className="h-1 w-1 rounded-full"
-                      style={{ backgroundColor: LANDING_ACCENT }}
-                      aria-hidden="true"
-                    />
-                    {chip}
-                  </li>
-                ))}
-              </ul>
+              ))}
             </div>
-          </div>
-        </section>
-
-        <LandingChannelTools />
-
-        <LandingDarkBand />
-
-        <section id="platform" className="py-[92px]">
-          <div className="mx-auto max-w-[1500px] px-[4vw]">
-            <div className="mb-14 max-w-3xl">
-              <p
-                className="inline-block rounded-full border px-[11px] py-[7px] text-[9px] font-medium tracking-[.23em]"
-                style={{
-                  fontFamily: LANDING_MONO,
-                  color: LANDING_ACCENT,
-                  borderColor: `${LANDING_ACCENT}47`,
-                }}
-              >
-                DIE PLATTFORM
-              </p>
-              <h2
-                className="mt-[22px] text-[clamp(40px,5vw,65px)] leading-none tracking-[-.035em]"
-                style={{ fontFamily: LANDING_SERIF, fontWeight: 500 }}
-              >
-                Eine Runtime.{' '}
-                <em className="not-italic" style={{ color: LANDING_ACCENT }}>
-                  Module, die live erreichbar sind.
-                </em>
-              </h2>
-              <p className="mt-[17px] max-w-[760px] text-[13px] leading-[1.7]" style={{ color: LANDING_MUTED }}>
-                Nur Capabilities mit Status LIVE aus dem Product-Registry. Preview und Coming Soon
-                stehen unter{' '}
-                <a href="#roadmap" className="underline decoration-[#e4cfa2]/40 underline-offset-2">
-                  Roadmap
-                </a>
-                .
-              </p>
-            </div>
-            <div className="grid gap-px overflow-hidden border border-white/10 bg-white/10 md:grid-cols-2 lg:grid-cols-3">
-              {PLATFORM_LIVE_ITEMS.map((cap) => {
-                const body = (
-                  <>
-                    <div className="flex items-start justify-between gap-2">
-                      <h3 className="text-base font-semibold" style={{ color: LANDING_TEXT }}>
-                        {cap.name}
-                      </h3>
-                      <span
-                        className="shrink-0 border px-2 py-0.5 text-[8px] tracking-[.12em]"
-                        style={{
-                          fontFamily: LANDING_MONO,
-                          borderColor: `${LANDING_ACCENT}40`,
-                          color: LANDING_ACCENT,
-                        }}
-                      >
-                        {STATUS_LABEL.live}
-                      </span>
-                    </div>
-                    <p className="mt-2 text-sm leading-relaxed" style={{ color: LANDING_MUTED }}>
-                      {cap.description}
-                    </p>
-                    {cap.route && (
-                      <span
-                        className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium"
-                        style={{ color: LANDING_ACCENT }}
-                      >
-                        Öffnen <ArrowRight className="h-3.5 w-3.5" />
-                      </span>
-                    )}
-                  </>
-                );
-                return cap.route ? (
-                  <Link
-                    key={cap.id}
-                    to={cap.route}
-                    data-reveal
-                    data-reveal-group="platform"
-                    className="block p-7 transition hover:bg-white/[.03]"
-                    style={{ backgroundColor: LANDING_BG }}
-                  >
-                    {body}
-                  </Link>
-                ) : (
-                  <div
-                    key={cap.id}
-                    data-reveal
-                    data-reveal-group="platform"
-                    className="p-7"
-                    style={{ backgroundColor: LANDING_BG }}
-                  >
-                    {body}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </section>
-
-        <section id="evidence" className="border-y border-white/[0.06] bg-white/[.02] py-[92px]">
-          <div className="mx-auto max-w-[1500px] px-[4vw]">
-            <div className="grid gap-12 lg:grid-cols-[.8fr_1.2fr] lg:items-end">
-              <div>
-                <p
-                  className="inline-block rounded-full border px-[11px] py-[7px] text-[9px] font-medium tracking-[.23em]"
-                  style={{
-                    fontFamily: LANDING_MONO,
-                    color: LANDING_ACCENT,
-                    borderColor: `${LANDING_ACCENT}47`,
-                  }}
-                >
-                  EVIDENCE &amp; TRUST
-                </p>
-                <h2
-                  className="mt-[22px] text-[clamp(40px,5vw,65px)] leading-none tracking-[-.035em]"
-                  style={{ fontFamily: LANDING_SERIF, fontWeight: 500 }}
-                >
-                  Compliance, die sich{' '}
-                  <em className="not-italic" style={{ color: LANDING_ACCENT }}>
-                    beweisen lässt.
-                  </em>
-                </h2>
-                <p className="mt-5 leading-relaxed" style={{ color: LANDING_MUTED }}>
-                  PDFs, Logs, Zeitstempel und nachvollziehbare Prüfpfade. Jede Prüfung, jede
-                  Entscheidung und jede Änderung landet in derselben Governance-Historie.
-                </p>
-              </div>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <TrustItem
-                  icon={ShieldCheck}
-                  title="DSGVO"
-                  text="Verarbeitung, Risiko, Policy und Nachweis im laufenden Governance-Prozess."
-                />
-                <TrustItem
-                  icon={Lock}
-                  title="EU AI Act"
-                  text="Risikoklassifikation, Transparenz und Dokumentation für KI-Systeme."
-                />
-                <TrustItem
-                  icon={FileCheck2}
-                  title="Nachweis-Export"
-                  text="Prüfungen und Entscheidungen als auditfähiger Export — für interne Kontrollen und externe Prüfer."
-                />
-                <TrustItem
-                  icon={Code2}
-                  title="Code Compliance"
-                  text="Claude Code prüft und unterstützt konkrete technische Remediation."
-                />
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section className="py-[92px]">
-          <div className="mx-auto max-w-[1500px] px-[4vw]">
-            <div className="mb-12 max-w-3xl">
-              <p
-                className="inline-block rounded-full border px-[11px] py-[7px] text-[9px] font-medium tracking-[.23em]"
-                style={{
-                  fontFamily: LANDING_MONO,
-                  color: LANDING_ACCENT,
-                  borderColor: `${LANDING_ACCENT}47`,
-                }}
-              >
-                GOVERNANCE RUNTIME
-              </p>
-              <h2
-                className="mt-[22px] text-[clamp(40px,5vw,65px)] leading-none tracking-[-.035em]"
-                style={{ fontFamily: LANDING_SERIF, fontWeight: 500 }}
-              >
-                Von der KI-Nutzung zur{' '}
-                <em className="not-italic" style={{ color: LANDING_ACCENT }}>
-                  kontrollierten KI-Organisation.
-                </em>
-              </h2>
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {GOVERNANCE_STEPS.map(([no, title, text]) => (
-                <div
-                  key={no}
-                  data-reveal
-                  data-reveal-group="runtime"
-                  className="surface-panel p-7"
-                >
-                  <span
-                    className="text-3xl"
-                    style={{ fontFamily: LANDING_MONO, color: `${LANDING_ACCENT}59` }}
-                  >
-                    {no}
-                  </span>
-                  <h3 className="mt-4 text-lg font-semibold tracking-wide" style={{ color: LANDING_TEXT }}>
-                    {title}
-                  </h3>
-                  <p className="mt-2 text-sm leading-relaxed" style={{ color: LANDING_MUTED }}>
-                    {text}
-                  </p>
-                </div>
+            <EvidenceSealTicker />
+            <div className="mt-[34px] flex flex-wrap gap-2 border-t pt-[22px]" style={{ borderColor: GA_LINE_SOFT }}>
+              {POLICY_PACKS.map(([name, live]) => (
+                <span key={name} className="rounded border px-3 py-[7px] text-[11px]" style={{ fontFamily: GA_MONO, borderColor: GA_LINE, borderStyle: live ? 'solid' : 'dashed', color: live ? GA_SILVER : GA_TITAN }}>
+                  {name}
+                </span>
               ))}
             </div>
           </div>
-        </section>
-
-        <LandingPricingSection />
-
+        </main>
+        <RegulatoryTicker />
+        <GovernanceLoopBand />
+        <WorkspacePreviewSection />
+        <RuntimeLayersSection />
+        <PlatformCapabilitiesSection />
         <LandingRoadmapSection />
-
+        <LandingChannelTools />
+        <LandingPricingSection />
         <EnterpriseAccessSection />
-
-        <section className="border-t border-white/[0.06] bg-black/80 py-[92px]">
-          <div className="mx-auto max-w-3xl px-[4vw] text-center">
-            <p
-              className="text-[10px] tracking-[.25em]"
-              style={{ fontFamily: LANDING_MONO, color: LANDING_ACCENT }}
-            >
-              WARUM JETZT
+        <section id="next" className="ga-band relative z-[1] border-t px-[4vw] py-[clamp(60px,6vw,92px)]" style={{ borderColor: GA_LINE_SOFT }}>
+          <div className="mx-auto max-w-[780px] text-center">
+            <SectionEyebrow>NAECHSTER SCHRITT</SectionEyebrow>
+            <SectionHeading centered>Scan. Dashboard. Evidence.</SectionHeading>
+            <p className="mx-auto mt-4 max-w-[660px] text-[14px] leading-[1.7]" style={{ color: GA_MUTED }}>
+              {CONTINUOUS_COMPLIANCE_NARRATIVE}
             </p>
-            <h2
-              className="hero-shine mt-4 text-[clamp(40px,5vw,60px)] tracking-tight"
-              style={{ fontFamily: LANDING_SERIF, fontWeight: 500 }}
-            >
-              Governance statt Checkliste.
-            </h2>
-            <p className="mx-auto mt-5 max-w-2xl text-base leading-relaxed" style={{ color: '#e8dcc4' }}>
-              Eine Checkliste beruhigt bis zum nächsten Audit. Die Runtime hält den Nachweis, wenn
-              Aufsicht, Kunde oder Board fragt.
-            </p>
-            <div className="mt-9 flex flex-col justify-center gap-3 sm:flex-row">
-              <Link
-                to="/audit"
-                className="inline-flex items-center justify-center gap-2 px-7 py-3.5 font-semibold transition hover:brightness-105"
-                style={{ backgroundColor: LANDING_BUTTON, color: LANDING_BUTTON_TEXT }}
-              >
-                {HERO_SCAN_CTA_LABEL} <ArrowRight className="h-4 w-4" />
+            <div className="mt-[34px] flex flex-wrap justify-center gap-3.5">
+              <Link to="/audit" className="ga-pill-sheen rounded-full px-[28px] py-[15px] text-[14px] font-semibold" style={{ background: GA_GOLD_FACE, color: '#14100b', boxShadow: GA_GOLD_FACE_SHADOW }}>
+                {HERO_SCAN_CTA_LABEL}
               </Link>
-              <Link
-                to="/app"
-                className="inline-flex items-center justify-center gap-2 border px-7 py-3.5 font-medium transition hover:bg-[#e4cfa2]/10"
-                style={{ borderColor: `${LANDING_ACCENT}66`, color: LANDING_ACCENT }}
-              >
-                {HERO_DASHBOARD_CTA_LABEL}
-              </Link>
+              <Link to="/app" className={GA_PILL_GHOST}>{HERO_DASHBOARD_CTA_LABEL}</Link>
             </div>
           </div>
         </section>
-      </main>
-
-      <footer
-        className="relative z-10 flex flex-col items-center justify-between gap-4 border-t border-white/[0.07] px-[4vw] py-[30px] text-[9px] sm:flex-row"
-        style={{ fontFamily: LANDING_MONO, color: '#62666e' }}
-      >
-        <span>© 2026 RealSync Dynamics.AI</span>
-        <div className="flex gap-5">
-          <Link to="/impressum" className="hover:text-[#f2eee6]">
-            Impressum
-          </Link>
-          <Link to="/datenschutz" className="hover:text-[#f2eee6]">
-            Datenschutz
-          </Link>
-          <Link to="/agb" className="hover:text-[#f2eee6]">
-            AGB
-          </Link>
-        </div>
-      </footer>
-    </div>
-  );
-}
-
-function TrustItem({
-  icon: Icon,
-  title,
-  text,
-}: {
-  icon: typeof ShieldCheck;
-  title: string;
-  text: string;
-}) {
-  return (
-    <div data-reveal data-reveal-group="evidence" className="surface-panel p-6">
-      <Icon className="h-5 w-5" style={{ color: LANDING_ACCENT }} />
-      <h3 className="mt-4 font-semibold" style={{ color: LANDING_TEXT }}>
-        {title}
-      </h3>
-      <p className="mt-2 text-sm leading-relaxed" style={{ color: LANDING_MUTED }}>
-        {text}
-      </p>
+        <GovernanceFooter />
+      </div>
     </div>
   );
 }

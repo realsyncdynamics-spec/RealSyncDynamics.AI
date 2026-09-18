@@ -5,18 +5,17 @@ import { Logo } from '../../components/Logo';
 import { Button } from '../components/Button';
 
 const LINKS = [
-  { label: 'Plattform', to: '/os/app' },
-  { label: 'DSGVO Audit', to: '/os/audit' },
+  { label: 'Produkt', to: '/os/app' },
+  { label: 'Evidence', to: '/os/app/evidence' },
+  { label: 'Preise', to: '/os/pricing' },
   { label: 'AI Governance', to: '/os/ai-act' },
-  { label: 'Agenturen', to: '/os/agencies' },
-  { label: 'Pricing', to: '/os/pricing' },
 ];
 
-export function PublicNav() {
+export function PublicNav({ overlay = false }: { overlay?: boolean }) {
   const [open, setOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-50 border-b border-titanium-800 bg-obsidian-950/90 backdrop-blur-md">
+    <header className={`${overlay ? "absolute inset-x-0 top-0 z-50 border-b border-white/10 bg-black/10" : "sticky top-0 z-50 border-b border-titanium-800 bg-obsidian-950/90"} backdrop-blur-md`}>
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <Link to="/os" className="shrink-0">
           <Logo size={28} />

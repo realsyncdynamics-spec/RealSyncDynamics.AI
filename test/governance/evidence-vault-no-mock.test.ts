@@ -44,9 +44,9 @@ describe('EvidenceVaultView — keine Demo-Daten im Live-Pfad', () => {
 
 describe('/app/evidence ist auth-gegatet', () => {
   it('hängt hinter AppGate, analog zum Dashboard', () => {
-    const line = app.split('\n').find((text) => text.includes('path="/app/evidence"'));
-    expect(line, 'Route /app/evidence nicht gefunden').toBeDefined();
-    expect(line).toContain('<AppGate>');
-    expect(line).toContain('EvidenceVaultView');
+    const route = app.match(/<Route\s+path="\/app\/evidence"(?!-)[\s\S]*?\/>/);
+    expect(route, 'Route /app/evidence nicht gefunden').toBeTruthy();
+    expect(route?.[0]).toContain('<AppGate>');
+    expect(route?.[0]).toContain('EvidenceVaultView');
   });
 });

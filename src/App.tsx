@@ -309,7 +309,6 @@ const ComplianceRoadmapView = lazy(() => import('./features/governance/Complianc
 // ── Phase 5B: Custom Frameworks & Integrations (3 new views)
 const CustomFrameworkBuilderView = lazy(() => import('./features/governance/frameworks/CustomFrameworkBuilder').then((m) => ({ default: m.CustomFrameworkBuilder })));
 const CustomFrameworkView = lazy(() => import('./features/governance/CustomFrameworkView').then((m) => ({ default: m.CustomFrameworkView })));
-const IntegrationsView = lazy(() => import('./features/governance/IntegrationsView').then((m) => ({ default: m.IntegrationsView })));
 // ── Phase 5C: Analytics, Bulk Operations, Collaboration (5 new views)
 const ComplianceAnalyticsView = lazy(() => import('./features/governance/ComplianceAnalyticsView').then((m) => ({ default: m.ComplianceAnalyticsView })));
 const BulkOperationsView = lazy(() => import('./features/governance/BulkOperationsView').then((m) => ({ default: m.BulkOperationsView })));
@@ -415,12 +414,11 @@ const SEOMarketingDashboard = lazy(() => import('./features/seo-marketing-dashbo
 // ── OAuth Callbacks (public, no auth required)
 import { StripeOAuthCallback } from './pages/integrations/StripeOAuthCallback';
 import { CheckoutSuccess } from './pages/CheckoutSuccess';
-// ── Enterprise OS Prototype (/os, /os/app/*) — Phase 1 Foundation:
-// neues Designsystem + Enterprise-Shell, Mockdaten, kein Backend-Zugriff. ──
+// ── Enterprise OS (/os) — eigenstaendige Public Pages im Enterprise-Designsystem.
+// Der fruehere App-Prototyp unter /os/app/* ist auf die kanonische /app/*-Runtime
+// umgelegt (siehe ./enterprise-os/legacyRouteMap); seine Flaechen sind entfernt. ──
+import { LEGACY_OS_APP_ROUTES } from './enterprise-os/legacyRouteMap';
 const EnterpriseLandingPage = lazy(() => import('./enterprise-os/pages/LandingPage').then((m) => ({ default: m.LandingPage })));
-const EnterpriseAppShell = lazy(() => import('./enterprise-os/layout/AppShell').then((m) => ({ default: m.AppShell })));
-const EnterpriseAppHomePage = lazy(() => import('./enterprise-os/pages/AppHomePage').then((m) => ({ default: m.AppHomePage })));
-const EnterprisePlaceholderPage = lazy(() => import('./enterprise-os/pages/PlaceholderPage').then((m) => ({ default: m.PlaceholderPage })));
 // Phase 2 — Public Pages (Pricing, Audit, AI Governance, Agenturen, Legal, Checkout)
 const EnterpriseAuditLandingPage = lazy(() => import('./enterprise-os/pages/AuditLandingPage').then((m) => ({ default: m.AuditLandingPage })));
 const EnterpriseAiGovernancePage = lazy(() => import('./enterprise-os/pages/AiGovernancePage').then((m) => ({ default: m.AiGovernancePage })));
@@ -431,12 +429,6 @@ const EnterpriseCheckoutEntryPage = lazy(() => import('./enterprise-os/pages/Che
 const EnterpriseCheckoutPageWrapper = lazy(() => import('./enterprise-os/pages/CheckoutPageWrapper').then((m) => ({ default: m.CheckoutPageWrapper })));
 const EnterpriseWelcomeWizardPage = lazy(() => import('./enterprise-os/pages/WelcomeWizardPage').then((m) => ({ default: m.WelcomeWizardPage })));
 
-// Phase 4 — App Workspace (Websites, Risiken, Compliance, Evidence, Monitoring)
-const EnterpriseWebsitesPage = lazy(() => import('./enterprise-os/pages/WebsitesPage').then((m) => ({ default: m.WebsitesPage })));
-const EnterpriseRisksPage = lazy(() => import('./enterprise-os/pages/RisksPage').then((m) => ({ default: m.RisksPage })));
-const EnterpriseCompliancePage = lazy(() => import('./enterprise-os/pages/CompliancePage').then((m) => ({ default: m.CompliancePage })));
-const EnterpriseEvidencePage = lazy(() => import('./enterprise-os/pages/EvidencePage').then((m) => ({ default: m.EvidencePage })));
-const EnterpriseMonitoringPage = lazy(() => import('./enterprise-os/pages/MonitoringPage').then((m) => ({ default: m.MonitoringPage })));
 
 const AutomationAgentPage = lazy(() => import('./features/agents/AutomationAgentPage').then((m) => ({ default: m.AutomationAgentPage })));
 const SupportAgentPage = lazy(() => import('./features/agents/SupportAgentPage').then((m) => ({ default: m.SupportAgentPage })));
@@ -817,7 +809,11 @@ function RoutesWithTracking() {
       {/* Phase 5B: Custom Frameworks & Integrations */}
       <Route path="/app/governance/custom-framework-builder" element={<GovernanceBrowserShell><CustomFrameworkBuilderView /></GovernanceBrowserShell>} />
       <Route path="/app/governance/custom-frameworks" element={<GovernanceBrowserShell><CustomFrameworkView /></GovernanceBrowserShell>} />
-      <Route path="/app/governance/integrations" element={<GovernanceBrowserShell><IntegrationsView /></GovernanceBrowserShell>} />
+      {/* 2026-09-14: /app/governance/integrations war eine zweite Webhook-Oberfläche,
+          die Endpoints nur im React-State hielt, das Signing Secret clientseitig
+          würfelte und „Test payload sent!" meldete, ohne je zu senden. Die echte
+          Webhook-Runtime (Endpoints, Deliveries, Retry) liegt unter /app/webhooks. */}
+      <Route path="/app/governance/integrations" element={<Navigate to="/app/webhooks" replace />} />
       {/* Phase 5C: Analytics, Bulk Operations, Collaboration */}
       <Route path="/app/governance/compliance-analytics" element={<GovernanceBrowserShell><ComplianceAnalyticsView /></GovernanceBrowserShell>} />
       <Route path="/app/governance/bulk-operations" element={<GovernanceBrowserShell><BulkOperationsView /></GovernanceBrowserShell>} />
@@ -1079,105 +1075,17 @@ function RoutesWithTracking() {
       <Route path="/os/welcome" element={<EnterpriseWelcomeWizardPage />} />
       <Route path="/os/datenschutz" element={<EnterpriseDatenschutzPage />} />
       <Route path="/os/impressum" element={<EnterpriseImpressumPage />} />
-      {/* Freigabe 2026-09-01 (CLAUDE.md §10): /os/app/* hatte keinen
-          Auth-Wrapper. AppGate ist additiv und schickt Unangemeldete nach
-          /welcome?next=… — derselbe Weg wie für /app/*. */}
-      <Route
-        path="/os/app"
-        element={
-          <AppGate><EnterpriseAppShell title="Home" breadcrumb={['Übersicht']}>
-            <EnterpriseAppHomePage />
-          </EnterpriseAppShell></AppGate>
-        }
-      />
-      <Route
-        path="/os/app/websites"
-        element={
-          <AppGate><EnterpriseAppShell title="Websites" breadcrumb={['Übersicht']}>
-            <EnterpriseWebsitesPage />
-          </EnterpriseAppShell></AppGate>
-        }
-      />
-      <Route
-        path="/os/app/risks"
-        element={
-          <AppGate><EnterpriseAppShell title="Risiken" breadcrumb={['Übersicht']}>
-            <EnterpriseRisksPage />
-          </EnterpriseAppShell></AppGate>
-        }
-      />
-      <Route
-        path="/os/app/compliance"
-        element={
-          <AppGate><EnterpriseAppShell title="Compliance" breadcrumb={['Governance']}>
-            <EnterpriseCompliancePage />
-          </EnterpriseAppShell></AppGate>
-        }
-      />
-      <Route
-        path="/os/app/evidence"
-        element={
-          <AppGate><EnterpriseAppShell title="Evidence Vault" breadcrumb={['Governance']}>
-            <EnterpriseEvidencePage />
-          </EnterpriseAppShell></AppGate>
-        }
-      />
-      <Route
-        path="/os/app/monitoring"
-        element={
-          <AppGate><EnterpriseAppShell title="Monitoring" breadcrumb={['Governance']}>
-            <EnterpriseMonitoringPage />
-          </EnterpriseAppShell></AppGate>
-        }
-      />
-      <Route
-        path="/os/app/ai-usecases"
-        element={
-          <AppGate><EnterpriseAppShell title="AI Use Cases" breadcrumb={['Governance']}>
-            <EnterprisePlaceholderPage title="AI Use Case Registry" description="Die vollständige Registry aller KI-Systeme inkl. Risikoklassifizierung nach EU AI Act folgt in Phase 3." />
-          </EnterpriseAppShell></AppGate>
-        }
-      />
-      <Route
-        path="/os/app/agents"
-        element={
-          <AppGate><EnterpriseAppShell title="Agenten" breadcrumb={['Governance']}>
-            <EnterprisePlaceholderPage title="Agenten" description="Die vollständige Agent-Verwaltung mit Konfiguration, Laufzeiten und Logs folgt in Phase 3." />
-          </EnterpriseAppShell></AppGate>
-        }
-      />
-      <Route
-        path="/os/app/reports"
-        element={
-          <AppGate><EnterpriseAppShell title="Reports" breadcrumb={['Governance']}>
-            <EnterprisePlaceholderPage title="Audit Reports" description="Die vollständige Report-Bibliothek mit Export- und Freigabe-Workflows folgt in Phase 3." />
-          </EnterpriseAppShell></AppGate>
-        }
-      />
-      <Route
-        path="/os/app/team"
-        element={
-          <AppGate><EnterpriseAppShell title="Team" breadcrumb={['Organisation']}>
-            <EnterprisePlaceholderPage title="Team & Rollen" description="Die vollständige Team-, Rollen- und Berechtigungsverwaltung folgt in Phase 3." />
-          </EnterpriseAppShell></AppGate>
-        }
-      />
-      <Route
-        path="/os/app/billing"
-        element={
-          <AppGate><EnterpriseAppShell title="Billing" breadcrumb={['Organisation']}>
-            <EnterprisePlaceholderPage title="Billing" description="Die vollständige Abrechnungs- und Plan-Verwaltung folgt in Phase 3." />
-          </EnterpriseAppShell></AppGate>
-        }
-      />
-      <Route
-        path="/os/app/settings"
-        element={
-          <AppGate><EnterpriseAppShell title="Einstellungen" breadcrumb={['Organisation']}>
-            <EnterprisePlaceholderPage title="Einstellungen" description="Die vollständigen Organisations- und Account-Einstellungen folgen in Phase 3." />
-          </EnterpriseAppShell></AppGate>
-        }
-      />
+      {/* Der Prototyp-Workspace unter /os/app/* ist entfernt: zwoelf Routen auf
+          Mockdaten (erfundener Mandant, erfundene Scores, simulierte Chromium-
+          Laufzeit) ohne Backend-Zugriff. Zwei Oberflaechen fuer dieselbe Funktion
+          heissen, dass eine davon Ergebnisse nur behauptet. Es bleibt genau eine
+          Runtime: /app/* inklusive AppGate, RequireAal2 und Entitlement-Gates.
+          Die alten Pfade leiten granular weiter, damit Lesezeichen ihre konkrete
+          Zielseite behalten. Mapping: src/enterprise-os/legacyRouteMap.ts
+          (uebernommen aus PR #1373). */}
+      {LEGACY_OS_APP_ROUTES.map(([legacyPath, canonicalPath]) => (
+        <Route key={legacyPath} path={legacyPath} element={<Navigate to={canonicalPath} replace />} />
+      ))}
 
       {/* Unified Entry.
           Der Einstieg ist seit dem Umbau auf die Build-Reihenfolge das Studio:

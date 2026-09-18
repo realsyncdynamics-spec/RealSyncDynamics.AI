@@ -4,7 +4,7 @@ Additive. Überschreibt Puck, Auth, Tenant, Orchestrator **nicht**.
 
 - Protokoll + Mechanik: `./bolt/`
 - Herkunft: stackblitz-labs/bolt.diy (MIT) — siehe `bolt/VENDOR.md`
-- Freeze / Abnahme: `docs/builder/BOLT_DIY_ABNAHME.md`
+- Freeze: kein Merge nach `main`, kein Production-Deploy, keine Production-Migration. PR #1429 nur Review. srcDoc = HTML/CSS/local JS.
 
 ## Verdrahtung
 

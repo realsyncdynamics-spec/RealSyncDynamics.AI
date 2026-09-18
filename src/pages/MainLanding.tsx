@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { ArrowDownRight, ArrowRight, Network, Layers, ShieldCheck, RefreshCw } from 'lucide-react';
+import { ArrowRight, Network, Layers, ShieldCheck, RefreshCw } from 'lucide-react';
 import { SEOHead } from '../components/SEOHead';
 import { LandingChannelTools } from '../components/landing/LandingChannelTools';
 import { LandingPricingSection } from '../components/landing/LandingPricingSection';
@@ -18,7 +18,6 @@ import {
   LANDING_BUTTON,
   LANDING_BUTTON_TEXT,
   LANDING_H1,
-  LANDING_LINE,
   LANDING_MONO,
   LANDING_MUTED,
   LANDING_SANS,
@@ -28,19 +27,12 @@ import {
 import {
   CONTINUOUS_COMPLIANCE_NARRATIVE,
   HERO_DASHBOARD_CTA_LABEL,
-  HERO_EYEBROW,
   HERO_HEADLINE,
   HERO_OPERATING_LOOP,
-  HERO_PROOF_CHIPS,
   HERO_SCAN_CTA_LABEL,
   HERO_SCAN_CTA_LONG,
   HERO_SUBLINE,
 } from '../components/governance-frontend/hero-content';
-
-/**
- * Replit SSOT public `/` — Dark/Gold Europe-network (static), not interactive sphere.
- * KPI strip mirrors Replit chrome as illustrative demo values (not live production metrics).
- */
 
 const KPI_STRIP = [
   { label: 'SYSTEME IM SCOPE', value: '1.284', meta: 'demo' },
@@ -89,17 +81,16 @@ export function MainLanding() {
       }}
     >
       <SEOHead
-        title="RealSyncDynamics.AI — AI Compliance Operations OS für Europa"
-        description="AI Compliance Operations OS für Europa. Entdecken. Klassifizieren. Durchsetzen. Beweisen. Free Audit starten."
+        title="RealSyncDynamics.AI — AI Compliance Operations OS for Europe"
+        description="Runtime governance for regulated AI systems. Continuous evidence. EU-native by design. Free Audit starten."
         canonical="/"
-        ogTitle="AI Compliance Operations OS für Europa"
-        ogDescription="RealSyncDynamics.AI — Governance-Infrastruktur für Europa. Free Audit starten."
+        ogTitle="AI Compliance Operations OS for Europe"
+        ogDescription="Discover → Classify → Enforce → Prove. Free Audit starten."
       />
 
       <PublicDarkHeader overlay />
 
       <main ref={revealRoot} className="relative z-10">
-        {/* ── Hero ── */}
         <section
           id="product"
           className="relative min-h-[min(100svh,880px)] overflow-hidden border-b border-white/[0.06]"
@@ -107,14 +98,7 @@ export function MainLanding() {
           <EuropeNetworkHero />
 
           <div className="relative z-10 mx-auto flex min-h-[min(100svh,880px)] max-w-[1280px] flex-col justify-center px-[4vw] pb-16 pt-28 sm:pb-20 sm:pt-32">
-            <div className="max-w-xl lg:max-w-[34rem]">
-              <p
-                className="mb-6 text-[10px] font-medium tracking-[0.22em]"
-                style={{ fontFamily: LANDING_MONO, color: LANDING_ACCENT }}
-              >
-                {HERO_EYEBROW}
-              </p>
-
+            <div className="max-w-xl lg:max-w-[36rem]">
               <h1
                 className="leading-[0.98] tracking-[-0.035em]"
                 style={{ fontSize: LANDING_H1, fontWeight: 600 }}
@@ -130,7 +114,6 @@ export function MainLanding() {
                             fontFamily: LANDING_SERIF,
                             fontWeight: 500,
                             color: LANDING_ACCENT_SOFT,
-                            fontStyle: 'italic',
                           }}
                         >
                           {segment.text}
@@ -145,8 +128,14 @@ export function MainLanding() {
                 ))}
               </h1>
 
-              <p className="mt-6 max-w-md text-[15px] leading-[1.65]" style={{ color: '#c8c4bc' }}>
-                <span style={{ color: LANDING_TEXT }}>{HERO_OPERATING_LOOP}</span>{' '}
+              <p
+                className="mt-7 text-[11px] tracking-[0.18em]"
+                style={{ fontFamily: LANDING_MONO, color: LANDING_MUTED }}
+              >
+                {HERO_OPERATING_LOOP}
+              </p>
+
+              <p className="mt-4 max-w-md text-[15px] leading-[1.65]" style={{ color: '#c8c4bc' }}>
                 {HERO_SUBLINE}
               </p>
 
@@ -165,35 +154,17 @@ export function MainLanding() {
                   {HERO_SCAN_CTA_LONG} <ArrowRight className="h-4 w-4" />
                 </Link>
                 <Link
-                  to="/evidence"
-                  className="inline-flex items-center gap-2 rounded-full border px-6 py-3.5 text-[13px] font-medium transition hover:bg-[#d6ad68]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d6ad68]/50"
-                  style={{ borderColor: `${LANDING_ACCENT}66`, color: LANDING_TEXT }}
+                  to="/app/dashboard"
+                  className="inline-flex items-center gap-2 rounded-full border px-6 py-3.5 text-[13px] font-medium transition hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d6ad68]/50"
+                  style={{ borderColor: 'rgba(255,255,255,0.22)', color: LANDING_TEXT }}
                 >
-                  {HERO_DASHBOARD_CTA_LABEL} <ArrowDownRight className="h-4 w-4" />
+                  {HERO_DASHBOARD_CTA_LABEL}
                 </Link>
               </div>
-
-              {/* Trust row */}
-              <ul
-                className="mt-12 flex flex-wrap gap-x-5 gap-y-2 border-t pt-6"
-                style={{ borderColor: LANDING_LINE }}
-                aria-label="Compliance-Standards"
-              >
-                {HERO_PROOF_CHIPS.map((chip) => (
-                  <li
-                    key={chip}
-                    className="text-[10px] tracking-[0.16em]"
-                    style={{ fontFamily: LANDING_MONO, color: LANDING_MUTED }}
-                  >
-                    {chip}
-                  </li>
-                ))}
-              </ul>
             </div>
           </div>
         </section>
 
-        {/* ── KPI strip (Replit chrome — illustrative demo values) ── */}
         <section
           aria-label="Illustrative operating metrics"
           className="border-b border-white/[0.06] bg-[#0e0e10]/90"
@@ -223,11 +194,10 @@ export function MainLanding() {
             ))}
           </div>
           <p className="sr-only">
-            Kennzahlen sind illustrative Demo-Werte der Replit-Referenz, keine Live-Produktionsmetriken.
+            Kennzahlen sind illustrative Demo-Werte, keine Live-Produktionsmetriken.
           </p>
         </section>
 
-        {/* ── Das Betriebssystem ── */}
         <section id="runtime" className="border-b border-white/[0.06] py-[72px] lg:py-[88px]">
           <div className="mx-auto grid max-w-[1280px] gap-12 px-[4vw] lg:grid-cols-[0.95fr_1.05fr] lg:gap-16">
             <div>
@@ -289,7 +259,6 @@ export function MainLanding() {
 
         <LandingChannelTools />
 
-        {/* Live platform modules — registry-backed */}
         <section id="platform" className="border-t border-white/[0.06] py-[72px]">
           <div className="mx-auto max-w-[1280px] px-[4vw]">
             <p
@@ -374,7 +343,7 @@ export function MainLanding() {
               exportierbar für Aufsicht, Board und Audit.
             </p>
             <Link
-              to="/evidence"
+              to="/app/dashboard"
               className="mt-7 inline-flex items-center gap-2 text-[13px] font-medium"
               style={{ color: LANDING_ACCENT_SOFT }}
             >

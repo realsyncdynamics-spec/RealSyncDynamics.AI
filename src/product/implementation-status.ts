@@ -40,7 +40,7 @@ export interface ImplementationItem {
 }
 
 /** Bump when statuses are re-measured. */
-export const IMPLEMENTATION_MEASURED_AT = '2026-09-12';
+export const IMPLEMENTATION_MEASURED_AT = '2026-09-18';
 
 export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
   {
@@ -336,18 +336,21 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
   {
     id: 'stripe-checkout-e2e',
     name: 'Stripe Checkout E2E',
-    status: 'preview',
+    status: 'live',
     group: 'billing',
     description:
-      'Checkout-Seiten + stripe-checkout/webhook/portal verdrahtet; E2E production-ready erst nach Vault-Secrets (STRIPE_*, Webhook).',
+      'Checkout/Webhook/Portal verdrahtet; Vault Stripe-Secrets provisioniert; Self-Service monatlich für starter/growth/agency; Jahresabrechnung Coming Soon; Enterprise per Anfrage.',
     route: '/checkout/starter',
     evidence: [
       'src/features/billing/CheckoutPage.tsx',
       'supabase/functions/stripe-checkout',
+      'supabase/functions/stripe-webhook',
+      'supabase/functions/stripe-portal',
+      'supabase/migrations/20260913000000_stripe_live_catalog_tax_inclusive_price_ids.sql',
       'test/billing/checkoutPage.test.tsx',
       'PR #1327',
     ],
-    showOnRoadmap: true,
+    showOnRoadmap: false,
   },
   {
     id: 'governance-activation',

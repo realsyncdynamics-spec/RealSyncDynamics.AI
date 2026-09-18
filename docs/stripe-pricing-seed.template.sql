@@ -1,15 +1,7 @@
--- Stripe Live Price IDs — acct_1TYVIyREjTWueUcG (RealSync Dynamics IA, livemode)
---
--- Canonical mapping (Dominik 2026-09-13). Prefer migration
--- `20260913000000_stripe_live_catalog_tax_inclusive_price_ids.sql` over hand-running this.
---
--- UEm* Price IDs are canonical: ACTIVE, tax inclusive.
--- Previous TfsV / TxLdL / TntAw / U3lQN IDs are inactive — do not re-seed them.
---
--- Self-service checkout: starter / growth / agency ONLY.
--- Enterprise price exists but purchaseMode=inquiry — no self-service.
--- Partner (legacy Scale) mapped for Bestand / webhook only.
--- No yearly prices in Stripe — yearly rows must stay non-price_* sentinels.
+-- Stripe Live Price IDs — acct_1TYVIyREjTWueUcG (livemode)
+-- Canonical: migration 20260913000000 (UEm* = ACTIVE, tax inclusive).
+-- Prefer that migration over hand-running this. Do not re-seed inactive TfsV/… IDs.
+-- Self-service: starter/growth/agency only. Enterprise=inquiry. No yearly prices.
 
 -- Starter €79 / month
 INSERT INTO public.products (stripe_price_id, name, default_for_plan_key)

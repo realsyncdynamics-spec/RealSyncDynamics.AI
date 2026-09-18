@@ -185,7 +185,7 @@ export function ComplianceStatusView({
     postCheckoutSync === 'pending' ||
     postCheckoutSub === 'pending' ||
     postCheckoutSub === 'pending_sync';
-  const FREE_PLAN_IDS = new Set(['free', 'free_audit', 'free_tier']);
+  const FREE_PLAN_IDS = new Set(['free', 'free_audit']);
   const livePlanUnlocked =
     typeof livePlanId === 'string' &&
     livePlanId.length > 0 &&

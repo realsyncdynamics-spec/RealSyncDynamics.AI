@@ -5,7 +5,7 @@ import { HERO_SCAN_CTA_LABEL } from '../governance-frontend/hero-content';
 import {
   LANDING_ACCENT,
   LANDING_BG,
-  LANDING_BUTTON_ALT,
+  LANDING_BUTTON,
   LANDING_BUTTON_TEXT,
   LANDING_MONO,
   LANDING_MUTED,
@@ -13,23 +13,12 @@ import {
 } from './landing-theme';
 
 /**
- * Shared dark public header for `/` and `/branchen`.
- *
- * Dominik-Referenz: sticky frosted bar, DM Mono CTA, gold brand mark.
- * Working P0 nav targets from #1280/#1279 remain — hash targets use `/#…`
- * so they resolve from `/branchen` as well. `/ai-act` + `/sicherheit`
- * stay reachable (platform-capabilities contract).
+ * Replit SSOT header — REALSYNCDYNAMICS.AI · Produkt / Evidence / Preise · Free Audit.
  */
 const LINKS = [
-  { label: 'Produkt', to: '/#product', className: undefined },
-  { label: 'Runtime', to: '/governance-runtime', className: undefined },
-  { label: 'Branchen', to: '/branchen', className: undefined },
-  { label: 'Evidence', to: '/#evidence', className: undefined },
-  { label: 'Module', to: '/#tools', className: 'hidden lg:block' },
-  { label: 'EU AI Act', to: '/ai-act', className: 'hidden xl:block' },
-  { label: 'Sicherheit', to: '/sicherheit', className: 'hidden xl:block' },
-  { label: 'Preise', to: '/#pricing', className: undefined },
-  { label: 'Login', to: '/welcome', className: undefined },
+  { label: 'Produkt', to: '/#product' },
+  { label: 'Evidence', to: '/#evidence' },
+  { label: 'Preise', to: '/#pricing' },
 ] as const;
 
 function NavItem({
@@ -44,7 +33,7 @@ function NavItem({
   onNavigate?: () => void;
 }) {
   const shared = {
-    className: `text-[12px] transition-colors focus-visible:outline-none focus-visible:underline focus-visible:underline-offset-4${className ? ` ${className}` : ''}`,
+    className: `text-[13px] transition-colors focus-visible:outline-none focus-visible:underline focus-visible:underline-offset-4${className ? ` ${className}` : ''}`,
     style: { color: LANDING_MUTED } as CSSProperties,
     onMouseEnter: (e: MouseEvent<HTMLAnchorElement>) => {
       e.currentTarget.style.color = LANDING_TEXT;
@@ -70,8 +59,9 @@ function NavItem({
 
 const scanCtaStyle: CSSProperties = {
   fontFamily: LANDING_MONO,
-  backgroundColor: LANDING_BUTTON_ALT,
+  backgroundColor: LANDING_BUTTON,
   color: LANDING_BUTTON_TEXT,
+  boxShadow: '0 0 28px rgba(214, 173, 104, 0.22)',
 };
 
 export function PublicDarkHeader({ overlay = false }: { overlay?: boolean }) {
@@ -79,63 +69,57 @@ export function PublicDarkHeader({ overlay = false }: { overlay?: boolean }) {
 
   return (
     <header
-      className={`${overlay ? 'absolute bg-[rgba(5,7,11,0.55)]' : 'sticky bg-[rgba(5,7,11,0.82)]'} inset-x-0 top-0 z-30 border-b border-white/[0.06] backdrop-blur-[18px]`}
+      className={`${overlay ? 'absolute bg-[rgba(10,10,11,0.35)]' : 'sticky bg-[rgba(10,10,11,0.82)]'} inset-x-0 top-0 z-30 border-b border-white/[0.06] backdrop-blur-[18px]`}
       style={{ color: LANDING_TEXT }}
     >
-      <div className="mx-auto flex h-[76px] max-w-[1500px] items-center gap-6 px-[4vw]">
-        <div className="flex min-w-0 items-center gap-3">
-          <Link
-            to="/"
-            className="flex min-w-0 items-center gap-2.5 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e4cfa2]/60"
-            style={{ color: LANDING_TEXT }}
-          >
-            <span aria-hidden="true" className="shrink-0 text-[19px]" style={{ color: LANDING_ACCENT }}>
-              ⬢
-            </span>
-            <span className="truncate whitespace-nowrap text-[14px] font-medium tracking-tight">
-              RealSync Dynamics
-              <span style={{ color: LANDING_ACCENT }}>.AI</span>
-            </span>
-          </Link>
+      <div className="mx-auto flex h-[72px] max-w-[1280px] items-center gap-6 px-[4vw]">
+        <Link
+          to="/"
+          className="flex min-w-0 items-center gap-2.5 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d6ad68]/60"
+          style={{ color: LANDING_TEXT }}
+        >
           <span
-            className="hidden items-center gap-1.5 rounded-full border px-2 py-1 text-[9px] tracking-[.16em] md:inline-flex"
-            style={{
-              fontFamily: LANDING_MONO,
-              borderColor: `${LANDING_ACCENT}40`,
-              backgroundColor: `${LANDING_ACCENT}14`,
-              color: `${LANDING_ACCENT}e6`,
-            }}
-            title="Product category — not a live tenant metric"
+            aria-hidden="true"
+            className="grid h-7 w-7 shrink-0 place-items-center border"
+            style={{ borderColor: LANDING_ACCENT, color: LANDING_ACCENT }}
           >
-            <span className="h-1.5 w-1.5 rounded-full bg-[#20d69a]/90" aria-hidden="true" />
-            GOV OS
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <path d="M1 1h12v12H1V1Z" stroke="currentColor" strokeWidth="1.2" />
+              <path d="M1 1l12 12M13 1L1 13" stroke="currentColor" strokeWidth="1.2" />
+            </svg>
           </span>
-        </div>
+          <span
+            className="truncate text-[12px] font-semibold tracking-[0.14em]"
+            style={{ fontFamily: LANDING_MONO }}
+          >
+            REALSYNCDYNAMICS.AI
+          </span>
+        </Link>
 
-        <nav className="ml-auto hidden items-center gap-6 lg:flex" aria-label="Hauptnavigation">
+        <nav className="ml-auto hidden items-center gap-7 md:flex" aria-label="Hauptnavigation">
           {LINKS.map((item) => (
             <NavItem key={item.to} {...item} />
           ))}
           <Link
             to="/audit"
-            className="max-w-[9.5rem] rounded-full px-[18px] py-[11px] text-center text-[10px] leading-[1.3] shadow-[0_0_30px_rgba(228,207,162,0.08)] transition hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e4cfa2]"
+            className="inline-flex items-center gap-1.5 rounded-full px-[18px] py-[10px] text-[11px] font-semibold transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d6ad68]"
             style={scanCtaStyle}
           >
-            {HERO_SCAN_CTA_LABEL}
+            {HERO_SCAN_CTA_LABEL} <span aria-hidden="true">→</span>
           </Link>
         </nav>
 
-        <div className="ml-auto flex items-center gap-2.5 lg:hidden">
+        <div className="ml-auto flex items-center gap-2 md:hidden">
           <Link
             to="/audit"
-            className="hidden rounded-full px-3.5 py-2 text-[10px] sm:inline-flex"
+            className="rounded-full px-3.5 py-2 text-[10px] font-semibold"
             style={scanCtaStyle}
           >
-            Governance Scan
+            Free Audit
           </Link>
           <button
             type="button"
-            className="rounded-md p-1.5 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e4cfa2]/60"
+            className="rounded-md p-1.5 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d6ad68]/60"
             style={{ color: LANDING_TEXT }}
             aria-expanded={open}
             aria-controls="public-dark-mobile-nav"
@@ -150,17 +134,11 @@ export function PublicDarkHeader({ overlay = false }: { overlay?: boolean }) {
       {open && (
         <div
           id="public-dark-mobile-nav"
-          className="border-t border-white/[0.06] px-6 py-4 backdrop-blur-md lg:hidden"
+          className="border-t border-white/[0.06] px-6 py-4 backdrop-blur-md md:hidden"
           style={{ backgroundColor: `${LANDING_BG}fa` }}
           role="dialog"
-          aria-label="Governance OS Navigation"
+          aria-label="Navigation"
         >
-          <p
-            className="mb-3 text-[9px] tracking-[.2em]"
-            style={{ fontFamily: LANDING_MONO, color: `${LANDING_ACCENT}b3` }}
-          >
-            SYSTEM DRAWER · PUBLIC
-          </p>
           <nav aria-label="Mobile Navigation" className="flex flex-col">
             {LINKS.map((item) => (
               <NavItem
@@ -173,11 +151,11 @@ export function PublicDarkHeader({ overlay = false }: { overlay?: boolean }) {
             ))}
             <Link
               to="/audit"
-              className="mt-3 block rounded-full px-4 py-3 text-center text-[10px] leading-[1.3]"
+              className="mt-3 block rounded-full px-4 py-3 text-center text-[11px] font-semibold"
               style={scanCtaStyle}
               onClick={() => setOpen(false)}
             >
-              {HERO_SCAN_CTA_LABEL}
+              {HERO_SCAN_CTA_LABEL} →
             </Link>
           </nav>
         </div>

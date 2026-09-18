@@ -1,5 +1,5 @@
 /**
- * Dominik Dark/Gold `/` with Governance Sphere + canonical /audit funnel.
+ * Replit Dark/Gold `/` — Europe-network hero + Free Audit → /audit.
  * AppGate / chunk-split security from #1363 stays intact on app routes.
  */
 import { readFileSync } from 'node:fs';
@@ -22,8 +22,6 @@ const navShell = header + publicNav + mainLanding;
 describe('Landing ↔ Infrastruktur', () => {
   it('Header-Scan bleibt kanonisch /audit', () => {
     expect(header).toContain('to="/audit"');
-    expect(header).toContain('/governance-runtime');
-    expect(header).toContain('/welcome');
     expect(header).toContain('HERO_SCAN_CTA_LABEL');
     expect(navShell).toContain('/audit');
   });
@@ -53,18 +51,18 @@ describe('Landing ↔ Infrastruktur', () => {
     expect(app).toMatch(/path="\/app\/activation"[^>]*AppGate/);
   });
 
-  it('Dominik landing: Dark/Gold Sphere hero + Audit-CTA', () => {
-    expect(mainLanding).toContain('GovernanceSphereHost');
-    expect(mainLanding).toContain('LANDING_ACCENT');
+  it('Replit landing: Europe-network hero + Free Audit CTA', () => {
+    expect(mainLanding).toContain('EuropeNetworkHero');
     expect(mainLanding).toContain('PLATFORM_LIVE_ITEMS');
     expect(mainLanding).toContain('id="audit-cta"');
     expect(mainLanding).toContain('data-hero-cta="audit"');
     expect(mainLanding.match(/data-hero-cta/g)?.length).toBe(1);
-    expect(mainLanding).toContain('/audit?domain=${encodeURIComponent(value)}');
+    expect(mainLanding).toContain('to="/audit"');
+    expect(mainLanding).toContain('DAS BETRIEBSSYSTEM');
     expect(mainLanding).not.toContain('Demo buchen');
-    expect(mainLanding).not.toContain('EuropeReliefBackdrop');
-    expect(mainLanding).not.toContain('useGaTheme');
+    expect(mainLanding).not.toContain('GovernanceSphereHost');
     expect(mainLanding).not.toContain('HeroEuropeSunrise');
+    expect(mainLanding).not.toContain('useGaTheme');
   });
 
   it('Channel-Tools auf / sind ehrlich verdrahtet (keine Fake-Alerts)', () => {

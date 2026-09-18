@@ -29,7 +29,7 @@ describe('Governance Sphere — demo contract', () => {
     expect(phases).toEqual(new Set(['Detect', 'Govern', 'Prove', 'Automate']));
   });
 
-  it('is lazy-hosted from MainLanding with reduced-motion fallback path', () => {
+  it('is lazy-hosted with reduced-motion fallback path (not mounted on public /)', () => {
     const host = readFileSync(
       resolve(__dirname, '../../src/components/governance-frontend/GovernanceSphereHost.tsx'),
       'utf8',
@@ -40,7 +40,8 @@ describe('Governance Sphere — demo contract', () => {
     expect(host).toContain('GovernanceSphereFallback');
     expect(host).toContain('SPHERE_DEMO_LABEL');
     expect(host).toContain('DEMO DATA');
-    expect(landing).toContain('GovernanceSphereHost');
+    expect(landing).not.toContain('GovernanceSphereHost');
+    expect(landing).toContain('EuropeNetworkHero');
   });
 
   it('renders photoreal Earth (day texture), not wireframe-only mesh', () => {

@@ -1,63 +1,50 @@
 /**
- * Single Source of Truth für die Hero-Headline der Startseite.
+ * SSOT Hero-Copy — Replit visual reference (Dark/Gold Europe-network).
  *
- * Dominik Dark/Gold Referenz (Sept 2026): „AI Governance, Running in Real Time“.
- * Live `/` und FE-001 lesen dieselbe Quelle — Änderungen nur hier.
+ * H1: „AI Compliance Operations OS für Europa.“
+ * Serif/gold emphasis exclusively on „Operations OS“.
  */
 
 export type HeroHeadlineSegment = {
   text: string;
-  /** true → Gold-Akzent (Playfair italic in der Referenz). */
+  /** true → amber/gold serif emphasis (Operations OS only). */
   accent?: boolean;
 };
 
-/**
- * Governance OS Hero — Dominik-Referenz.
- *
- * Claim direction: Govern AI. Prove Everything. Operate with Confidence.
- *
- * ## Contract
- *
- * `MainLanding` renders H1 exclusively from `HERO_HEADLINE`. E2E / FE-001
- * read the same source — change here, not in the page.
- */
 export const HERO_HEADLINE: readonly (readonly HeroHeadlineSegment[])[] = [
-  [{ text: 'AI Governance,' }],
-  [{ text: 'Running in Real', accent: true }],
-  [{ text: 'Time', accent: true }],
+  [{ text: 'AI Compliance' }],
+  [{ text: 'Operations OS', accent: true }],
+  [{ text: 'für Europa.' }],
 ];
 
-/** Reine Textzeilen der H1 — für Tests und Accessible-Name-Abgleich. */
 export const HERO_HEADLINE_LINES: readonly string[] = HERO_HEADLINE.map((segments) =>
   segments.map((s) => s.text).join(''),
 );
 
-/** Substring für den FE-001-Check. Muss vollständig innerhalb einer Zeile liegen. */
-export const HERO_HEADLINE_TEST_SUBSTRING = 'AI Governance';
-
-/** Motto under the H1 — Detect.Govern.Prove.Automate */
-export const HERO_OPERATING_LOOP = 'Detect · Govern · Prove · Automate' as const;
+export const HERO_HEADLINE_TEST_SUBSTRING = 'AI Compliance';
 
 export const HERO_KICKER = {
   index: '01',
-  claim: 'AI GOVERNANCE · RUNNING IN REAL TIME',
-  region: 'EU-CENTRAL',
+  claim: 'GOVERNANCE-INFRASTRUKTUR FÜR EUROPA',
+  region: 'EU',
 } as const;
 
-export const HERO_EYEBROW =
-  `${HERO_KICKER.index} — ${HERO_KICKER.claim} — ${HERO_KICKER.region}` as const;
+export const HERO_EYEBROW = `→ ${HERO_KICKER.claim}` as const;
 
-/** Secondary / funnel / design-preview copy — not alternate live H1. */
-export const HERO_EN_KICKER = 'AI Governance, Running in Real Time' as const;
+/** Operating loop under the H1 — German Discover chain (Replit). */
+export const HERO_OPERATING_LOOP =
+  'Entdecken. Klassifizieren. Durchsetzen. Beweisen.' as const;
+
+export const HERO_EN_KICKER = 'AI Compliance Operations OS für Europa.' as const;
 
 export const SCAN_FUNNEL_MESSAGE =
   'In Minuten scannen. In Stunden strukturieren. Dauerhaft kontrollieren.' as const;
 
 export const CONTINUOUS_COMPLIANCE_NARRATIVE =
-  'RealSync erkennt, bewertet, steuert und dokumentiert Compliance kontinuierlich.' as const;
+  'RealSyncDynamics verbindet Ihre Systeme, Policies und Nachweise in einer lebenden Operations-Schicht.' as const;
 
 export const HERO_SUBLINE =
-  'Govern AI. Prove Everything. Operate with Confidence.' as const;
+  'Die laufende Governance-Schicht für regulierte KI-Systeme — EU-native by design.' as const;
 
 export const HERO_VALUE_SUBLINE = 'Vermeide EU AI Act-Bußgelder.' as const;
 
@@ -65,7 +52,7 @@ export const HERO_SCAN_BADGE = 'Kostenlos' as const;
 
 export const HERO_SOCIAL_PROOF = 'Gebaut für regulierte KI in der EU.' as const;
 
-export const HERO_SOCIAL_FRAMEWORKS = ['DSGVO', 'EU AI Act', 'C2PA'] as const;
+export const HERO_SOCIAL_FRAMEWORKS = ['DSGVO', 'EU AI Act', 'ISO 42001'] as const;
 
 export const HERO_OUTCOMES: readonly string[] = [
   'AI Inventory ohne Excel und Schattennutzung',
@@ -76,17 +63,20 @@ export const HERO_OUTCOMES: readonly string[] = [
 export const HERO_EU_LINE =
   'Gebaut für EU AI Act, DSGVO und europäische Nachweispflichten.' as const;
 
+/** Trust row — Replit SSOT (labels only). */
 export const HERO_PROOF_CHIPS = [
-  'EVIDENCE-CHAIN',
-  'AI-ACT-KLASSIFIKATION',
-  'PROVENANCE',
-  'C2PA',
+  'EU AI ACT READY',
+  'ISO 42001 ALIGNED',
+  'DSGVO FIRST',
+  'AUDIT TRAIL NATIVE',
 ] as const;
 
-/** Live `/` Dominik CTA copy (also header). */
-export const HERO_SCAN_CTA_LABEL = 'Kostenlosen Governance Scan starten' as const;
-export const HERO_SCAN_CTA_LONG = 'Kostenlosen Governance Scan starten' as const;
-export const HERO_DASHBOARD_CTA_LABEL = 'Explore the Governance OS' as const;
+/** Header primary CTA. */
+export const HERO_SCAN_CTA_LABEL = 'Free Audit starten' as const;
+/** Hero primary CTA (long form). */
+export const HERO_SCAN_CTA_LONG = 'Kostenlosen Audit starten' as const;
+/** Hero secondary CTA. */
+export const HERO_DASHBOARD_CTA_LABEL = 'Live Evidence ansehen' as const;
 
 export const HERO_SCAN_PROMISE_LINE =
   'Finde deine Compliance-Risiken — kostenlos analysieren' as const;

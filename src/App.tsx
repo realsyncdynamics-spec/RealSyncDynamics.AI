@@ -529,7 +529,7 @@ function RoutesWithTracking() {
       <Route path="/digitale-souveraenitaet" element={<DigitalSovereignty />} />
       <Route path="/digital-sovereignty"     element={<Navigate to="/digitale-souveraenitaet" replace />} />
       <Route path="/governance-score"              element={<GovernanceScorePage />} />
-      <Route path="/governance-complexity-score"   element={<GovernanceScorePage />} />
+      <Route path="/governance-complexity-score"   element={<Navigate to="/governance-score" replace />} />
       <Route path="/ai-act"     element={<AiActPage />} />
       <Route path="/ai-governance" element={<Navigate to="/ai-act" replace />} />
       <Route path="/ai-dsgvo-bot" element={<AiDsgvoBotPage />} />

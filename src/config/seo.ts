@@ -386,6 +386,66 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
       { name: 'Governance Complexity Score', url: '/governance-score' },
     ]),
   },
+  '/ai-act-governance': {
+    title: 'AI Act Governance — EU-AI-Act-Pflichten operativ steuern | RealSyncDynamics.AI',
+    description:
+      'EU-AI-Act-Pflichten als Runtime statt Excel: Risikoklassifizierung, Obligation-Engine, Annex-IV-Dokumentation und Post-Market-Monitoring.',
+    canonical: `${SITE_URL}/ai-act-governance`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'AI Act Governance', url: '/ai-act-governance' },
+    ]),
+  },
+  '/agent-governance': {
+    title: 'Agent Governance — KI-Agenten mit Scope und Prüfpfad | RealSyncDynamics.AI',
+    description:
+      'Wie KI-Agenten mit Scope, Permissions, Approval-Gates, Risk-Budgets und Prüfpfad in produktive Compliance-Workflows eingebunden werden.',
+    canonical: `${SITE_URL}/agent-governance`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'Agent Governance', url: '/agent-governance' },
+    ]),
+  },
+  '/governance-graph': {
+    title: 'Governance Graph — Beziehungen statt isolierte Findings | RealSyncDynamics.AI',
+    description:
+      'Der Governance Graph verbindet Websites, KI-Systeme, Vendors, Policies und Nachweise zu einem konsistenten Modell für Blast-Radius und Compliance-Lineage.',
+    canonical: `${SITE_URL}/governance-graph`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'Governance Graph', url: '/governance-graph' },
+    ]),
+  },
+  '/evidence-vault': {
+    title: 'Evidence Vault — revisionssichere Nachweise für Audits | RealSyncDynamics.AI',
+    description:
+      'Hash-gechainte, signierte Evidence-Records für regulator-fähige Audit-Pakete: unveränderlich, zeitverankert und exportierbar.',
+    canonical: `${SITE_URL}/evidence-vault`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'Evidence Vault', url: '/evidence-vault' },
+    ]),
+  },
+  '/policy-engine': {
+    title: 'Policy Engine — Policy as Code für DSGVO und AI Act | RealSyncDynamics.AI',
+    description:
+      'Policy as Code statt PDF: YAML-Authoring, Rego-Execution, Multi-Framework-Mapping und Inline-Enforcement für Governance-Runtime und KI-Systeme.',
+    canonical: `${SITE_URL}/policy-engine`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'Policy Engine', url: '/policy-engine' },
+    ]),
+  },
+  '/deployment-governance': {
+    title: 'Deployment Governance — Compliance-Gates an der CI/CD-Grenze | RealSyncDynamics.AI',
+    description:
+      'Tracker-, Vendor- und KI-Modell-Änderungen vor dem Merge erkennen, Risk-Delta berechnen und Governance-Gates an der CI/CD-Grenze steuern.',
+    canonical: `${SITE_URL}/deployment-governance`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'Deployment Governance', url: '/deployment-governance' },
+    ]),
+  },
   '/digitale-souveraenitaet': {
     title: 'Digitale Souveränität als Betriebsmodell | RealSyncDynamics.AI',
     description:

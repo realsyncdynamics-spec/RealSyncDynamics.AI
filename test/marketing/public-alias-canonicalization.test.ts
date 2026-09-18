@@ -13,6 +13,7 @@ describe('Public route aliases stay canonicalized', () => {
   it.each([
     ['/resources', '/ressourcen'],
     ['/digital-sovereignty', '/digitale-souveraenitaet'],
+    ['/governance-complexity-score', '/governance-score'],
   ])('%s redirects in App.tsx to %s', (alias, canonical) => {
     expect(app).toMatch(
       new RegExp(`path="${alias.replace('/', '\\/')}"\\s+element=\\{<Navigate to="${canonical.replace('/', '\\/')}" replace \\/>\\}`),
@@ -22,6 +23,7 @@ describe('Public route aliases stay canonicalized', () => {
   it.each([
     ['/resources', '/ressourcen'],
     ['/digital-sovereignty', '/digitale-souveraenitaet'],
+    ['/governance-complexity-score', '/governance-score'],
   ])('%s has an edge 301 to %s', (alias, canonical) => {
     expect(redirects).toMatch(new RegExp(`^${alias}\\s+${canonical}\\s+301$`, 'm'));
     expect(redirects.indexOf(alias)).toBeLessThan(redirects.indexOf('/*  /index.html'));

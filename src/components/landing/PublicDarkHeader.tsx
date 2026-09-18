@@ -13,7 +13,8 @@ import {
 } from './landing-theme';
 
 /**
- * Replit SSOT header — REALSYNCDYNAMICS.AI · Produkt / Evidence / Preise · Free Audit.
+ * Replit Nr.1 SSOT header — gold diamond mark · REALSYNCDYNAMICS.AI
+ * · Produkt / Evidence / Preise · Free Audit → /audit
  */
 const LINKS = [
   { label: 'Produkt', to: '/#product' },
@@ -64,6 +65,29 @@ const scanCtaStyle: CSSProperties = {
   boxShadow: '0 0 28px rgba(214, 173, 104, 0.22)',
 };
 
+function DiamondMark() {
+  return (
+    <svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden="true">
+      <rect
+        x="14"
+        y="2.5"
+        width="16.26"
+        height="16.26"
+        rx="1.2"
+        transform="rotate(45 14 2.5)"
+        stroke={LANDING_ACCENT}
+        strokeWidth="1.4"
+      />
+      <path
+        d="M14 8.2v11.6M8.2 14h11.6"
+        stroke={LANDING_ACCENT}
+        strokeWidth="1.15"
+        strokeLinecap="square"
+      />
+    </svg>
+  );
+}
+
 export function PublicDarkHeader({ overlay = false }: { overlay?: boolean }) {
   const [open, setOpen] = useState(false);
 
@@ -78,15 +102,8 @@ export function PublicDarkHeader({ overlay = false }: { overlay?: boolean }) {
           className="flex min-w-0 items-center gap-2.5 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d6ad68]/60"
           style={{ color: LANDING_TEXT }}
         >
-          <span
-            aria-hidden="true"
-            className="grid h-7 w-7 shrink-0 place-items-center border"
-            style={{ borderColor: LANDING_ACCENT, color: LANDING_ACCENT }}
-          >
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-              <path d="M1 1h12v12H1V1Z" stroke="currentColor" strokeWidth="1.2" />
-              <path d="M1 1l12 12M13 1L1 13" stroke="currentColor" strokeWidth="1.2" />
-            </svg>
+          <span className="grid h-7 w-7 shrink-0 place-items-center">
+            <DiamondMark />
           </span>
           <span
             className="truncate text-[12px] font-semibold tracking-[0.14em]"

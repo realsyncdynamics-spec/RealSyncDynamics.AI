@@ -30,6 +30,7 @@ const ENDPOINTS = [
   'agents', 'builder', 'discover', 'edit', 'runtime-scan',
   'publish-approve', 'publish-gate',
   'build-anon', 'refine-anon', 'session', 'claim',
+  'code-persist',
 ];
 
 /**
@@ -62,6 +63,7 @@ const HANDLER_FILES: Readonly<Record<string, string>> = Object.freeze({
   'refine-anon': 'anonymous',
   'session': 'anonymous',
   'claim': 'anonymous',
+  'code-persist': 'code-persist',
 });
 
 describe('siteos Router — resolveEndpoint', () => {

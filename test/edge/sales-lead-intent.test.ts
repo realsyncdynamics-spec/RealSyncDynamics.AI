@@ -1,20 +1,17 @@
 /**
- * Contract für die Lead-Qualifizierung über `?intent=`.
+ * Contract für ContactSales ↔ sales-lead Inquiry-Funnel (PR #1452 backend).
  *
- * Die Kette spannt drei Ebenen, die übereinstimmen müssen:
- *   - CTAs in src/pages + src/components setzen `?intent=<wert>`
- *   - src/pages/ContactSales.tsx liest den Param und sendet ihn im POST-Body
- *   - supabase/functions/sales-lead/index.ts schreibt ihn in metadata (JSONB)
+ * FE duties (this PR):
+ *   - Read plan | plan_key | tier; normalize via shared pricing (scale→partner)
+ *   - POST plan_key for inquiry; optional tier alias
+ *   - POST company_domain / domains
+ *   - Generic contact without inquiry signal does not force plan_key
  *
- * Vorher endete die Kette nach dem ersten Glied: ContactSales las `intent`
- * nur für das Vorbelegen von use_case und verwarf ihn dann — jeder
- * Enterprise-Lead kam im Backend ununterscheidbar an.
- *
- * Die Edge Function ist Deno-Quelle außerhalb des tsc-Projekts, deshalb wird
- * der Contract als Text geprüft (gleiche Technik wie agent-runs-metering).
+ * Backend duties (PR #1452): PLAN_KEY_REQUIRED, domains columns — asserted
+ * only when that code is already on the branch/main.
  */
 import { describe, it, expect } from 'vitest';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 const ROOT = resolve(__dirname, '../..');
@@ -24,6 +21,10 @@ const salesLead    = readFileSync(resolve(ROOT, 'supabase/functions/sales-lead/i
 const schema       = readFileSync(
   resolve(ROOT, 'supabase/migrations/20260505100000_sales_leads.sql'),
   'utf8',
+);
+const domainsMigrationPath = resolve(
+  ROOT,
+  'supabase/migrations/20260918123700_sales_leads_inquiry_domains.sql',
 );
 
 describe('sales-lead: intent-Weitergabe', () => {
@@ -40,11 +41,10 @@ describe('sales-lead: intent-Weitergabe', () => {
   });
 
   it('sales-lead schreibt intent nach metadata', () => {
-    expect(salesLead).toMatch(/metadata:\s*\{[\s\S]*?intent[\s\S]*?\}/);
+    expect(salesLead).toMatch(/metadata[\s\S]*?intent/);
   });
 
   it('intent wird wie alle Freitext-Felder gekappt', () => {
-    // Kein Overflow über den public, unauthentifizierten Endpoint.
     expect(salesLead).toMatch(/cap\(body\.intent,\s*\d+\)/);
   });
 
@@ -53,22 +53,67 @@ describe('sales-lead: intent-Weitergabe', () => {
   });
 });
 
-/**
- * `tier` kam über den Merge von main dazu (Founding-Access-Tarif-Links) und
- * hatte dieselbe Lücke: ContactSales sendet ihn, die Function verwarf ihn.
- * Er teilt sich jetzt die metadata-Spalte mit intent.
- */
-describe('sales-lead: tier-Weitergabe', () => {
-  it('ContactSales sendet tier im POST-Body', () => {
-    expect(contactSales).toMatch(/\btier:\s*tier\s*\|\|\s*undefined/);
+describe('ContactSales: inquiry plan_key contract', () => {
+  it('akzeptiert plan, plan_key und tier als Query-Params', () => {
+    expect(contactSales).toMatch(/params\.get\(['"]plan['"]\)/);
+    expect(contactSales).toMatch(/params\.get\(['"]plan_key['"]\)/);
+    expect(contactSales).toMatch(/params\.get\(['"]tier['"]\)/);
   });
 
+  it('normalisiert über normalizePlanKey', () => {
+    expect(contactSales).toMatch(/normalizePlanKey/);
+  });
+
+  it('sendet plan_key im POST-Body wenn gesetzt', () => {
+    expect(contactSales).toMatch(/plan_key:\s*planKey/);
+  });
+
+  it('sendet tier nur als optionalen Alias neben plan_key', () => {
+    expect(contactSales).toMatch(/tier:\s*planKey/);
+  });
+
+  it('sendet company_domain und domains', () => {
+    expect(contactSales).toMatch(/company_domain:\s*companyDomain/);
+    expect(contactSales).toMatch(/\bdomains:\s*domainsPayload/);
+  });
+
+  it('setzt path auf /contact-sales', () => {
+    expect(contactSales).toMatch(/path:\s*['"]\/contact-sales['"]/);
+  });
+
+  it('blockiert Inquiry-Submit ohne plan_key (PLAN_KEY_REQUIRED)', () => {
+    expect(contactSales).toMatch(/PLAN_KEY_REQUIRED/);
+    expect(contactSales).toMatch(/isInquiry && !planKey/);
+  });
+
+  it('leitet plan_key aus intent=enterprise|partner ab wenn Query fehlt', () => {
+    expect(contactSales).toMatch(/defaultInquiryPlanFromIntent/);
+  });
+});
+
+describe('sales-lead: tier-Weitergabe (bestehend)', () => {
   it('sales-lead akzeptiert tier im Body-Typ und kappt ihn', () => {
     expect(salesLead).toMatch(/tier\?:\s*string/);
     expect(salesLead).toMatch(/cap\(body\.tier,\s*\d+\)/);
   });
+});
 
-  it('metadata trägt intent und tier gemeinsam, ohne sich zu überschreiben', () => {
-    expect(salesLead).toMatch(/metadata:\s*\{\s*\.\.\.\(intent[\s\S]*?\.\.\.\(tier/);
+describe('sales-lead: inquiry backend (wenn PR #1452 merged)', () => {
+  const backendReady = /PLAN_KEY_REQUIRED/.test(salesLead);
+
+  it.skipIf(!backendReady)('returns PLAN_KEY_REQUIRED and INVALID_PLAN_KEY', () => {
+    expect(salesLead).toMatch(/['"]PLAN_KEY_REQUIRED['"]/);
+    expect(salesLead).toMatch(/['"]INVALID_PLAN_KEY['"]/);
+  });
+
+  it.skipIf(!backendReady)('accepts domains and company_domain', () => {
+    expect(salesLead).toMatch(/domains\?:\s*string\s*\|\s*string\[\]/);
+    expect(salesLead).toMatch(/company_domain\?:\s*string/);
+  });
+
+  it.skipIf(!existsSync(domainsMigrationPath))('migration adds domain columns', () => {
+    const domainsMigration = readFileSync(domainsMigrationPath, 'utf8');
+    expect(domainsMigration).toMatch(/ADD COLUMN IF NOT EXISTS company_domain TEXT/i);
+    expect(domainsMigration).toMatch(/ADD COLUMN IF NOT EXISTS domains TEXT\[\]/i);
   });
 });

@@ -112,3 +112,10 @@ describe('/pay im Terminal', () => {
     expect(HOOK).toContain('/app/billing');
   });
 });
+
+describe('SSoT alias scale → partner', () => {
+  it('löst scale über planByKey auf (kein zweites Mapping im PaymentAgent)', () => {
+    expect(planByKey('scale')?.id).toBe(planByKey('partner')?.id);
+    expect(code(PAYMENT_AGENT)).not.toContain("scale:");
+  });
+});

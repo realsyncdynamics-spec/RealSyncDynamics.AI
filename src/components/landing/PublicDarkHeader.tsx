@@ -5,70 +5,41 @@ import { HERO_SCAN_CTA_LABEL } from '../governance-frontend/hero-content';
 import {
   LANDING_ACCENT,
   LANDING_BG,
+  LANDING_BUTTON,
   LANDING_BUTTON_TEXT,
-  LANDING_GREEN,
   LANDING_MONO,
   LANDING_MUTED,
   LANDING_TEXT,
-  LANDING_TRUST_MARKS,
 } from './landing-theme';
-import { GA_GOLD_FACE, GA_GOLD_LITE } from './governance-ai-theme';
 
 /**
- * Shared dark public header for `/` and `/branchen`.
- *
- * Dominik 1:1 mock strip: Produkt · Evidence · Preise · Login + Free Audit.
- * Fuller IA lives in the mobile drawer — no junk-drawer desktop bar.
+ * Replit SSOT header — REALSYNCDYNAMICS.AI · Produkt / Evidence / Preise · Free Audit.
  */
-
-/** Calm desktop strip — matches Dominik luxury mock. */
-const PRIMARY_LINKS = [
-  { label: 'Produkt', to: '/#product', emphasize: false },
-  { label: 'Evidence', to: '/#evidence', emphasize: false },
-  { label: 'Preise', to: '/#pricing', emphasize: true },
-  { label: 'Login', to: '/welcome', emphasize: false },
-] as const;
-
-/**
- * Drawer / secondary IA — keeps platform-capabilities reachability
- * (`/ai-act`, `/sicherheit`, `/branchen`, `/governance-runtime`, Enterprise)
- * without crowding the first viewport.
- */
-const DRAWER_LINKS = [
-  { label: 'Produkt', to: '/#product', emphasize: false },
-  { label: 'Runtime', to: '/governance-runtime', emphasize: false },
-  { label: 'Branchen', to: '/branchen', emphasize: false },
-  { label: 'Evidence', to: '/#evidence', emphasize: false },
-  { label: 'Module', to: '/#tools', emphasize: false },
-  { label: 'EU AI Act', to: '/ai-act', emphasize: false },
-  { label: 'Sicherheit', to: '/sicherheit', emphasize: false },
-  { label: 'Preise', to: '/#pricing', emphasize: true },
-  { label: 'Enterprise', to: '/#enterprise', emphasize: false },
-  { label: 'Login', to: '/welcome', emphasize: false },
+const LINKS = [
+  { label: 'Produkt', to: '/#product' },
+  { label: 'Evidence', to: '/#evidence' },
+  { label: 'Preise', to: '/#pricing' },
 ] as const;
 
 function NavItem({
   to,
   label,
   className,
-  emphasize,
   onNavigate,
 }: {
   to: string;
   label: string;
   className?: string;
-  emphasize?: boolean;
   onNavigate?: () => void;
 }) {
-  const baseColor = emphasize ? LANDING_ACCENT : LANDING_MUTED;
   const shared = {
-    className: `text-[13px] transition-colors focus-visible:outline-none focus-visible:underline focus-visible:underline-offset-4${emphasize ? ' font-medium tracking-wide' : ''}${className ? ` ${className}` : ''}`,
-    style: { color: baseColor } as CSSProperties,
+    className: `text-[13px] transition-colors focus-visible:outline-none focus-visible:underline focus-visible:underline-offset-4${className ? ` ${className}` : ''}`,
+    style: { color: LANDING_MUTED } as CSSProperties,
     onMouseEnter: (e: MouseEvent<HTMLAnchorElement>) => {
       e.currentTarget.style.color = LANDING_TEXT;
     },
     onMouseLeave: (e: MouseEvent<HTMLAnchorElement>) => {
-      e.currentTarget.style.color = baseColor;
+      e.currentTarget.style.color = LANDING_MUTED;
     },
   };
 
@@ -88,87 +59,67 @@ function NavItem({
 
 const scanCtaStyle: CSSProperties = {
   fontFamily: LANDING_MONO,
-  background: 'linear-gradient(180deg, #f0e6d4 0%, #e8ddc8 48%, #dcc9a8 100%)',
+  backgroundColor: LANDING_BUTTON,
   color: LANDING_BUTTON_TEXT,
+  boxShadow: '0 0 28px rgba(214, 173, 104, 0.22)',
 };
 
-/**
- * Titan-Variante der Startseite: Champagner-Gold statt Cream, Goldsiegel-Pill
- * statt Cream-Fläche, Titan-Grund statt Nachtblau. Additiv — `/branchen` und
- * alle anderen Flächen bekommen unverändert die Default-Tonung.
- */
-const titanCtaStyle: CSSProperties = {
-  fontFamily: LANDING_MONO,
-  background: GA_GOLD_FACE,
-  color: '#14100b',
-  boxShadow: 'inset 0 1px 0 rgba(255,255,255,.6), inset 0 -2px 0 rgba(0,0,0,.18), 0 8px 22px rgba(0,0,0,.4)',
-};
-
-export function PublicDarkHeader({
-  overlay = false,
-  tone = 'default',
-}: {
-  overlay?: boolean;
-  tone?: 'default' | 'titan';
-}) {
+export function PublicDarkHeader({ overlay = false }: { overlay?: boolean }) {
   const [open, setOpen] = useState(false);
-  const titan = tone === 'titan';
-  const accent = titan ? GA_GOLD_LITE : LANDING_ACCENT;
-  const ctaStyle = titan ? titanCtaStyle : scanCtaStyle;
-  const surface = titan
-    ? overlay
-      ? 'absolute bg-[rgba(15,16,18,0.55)]'
-      : 'sticky bg-[rgba(15,16,18,0.86)]'
-    : overlay
-      ? 'absolute bg-[rgba(5,7,11,0.55)]'
-      : 'sticky bg-[rgba(5,7,11,0.82)]';
 
   return (
     <header
-      className={`${surface} inset-x-0 top-0 z-30 border-b border-white/[0.06] backdrop-blur-[18px]`}
+      className={`${overlay ? 'absolute bg-[rgba(10,10,11,0.35)]' : 'sticky bg-[rgba(10,10,11,0.82)]'} inset-x-0 top-0 z-30 border-b border-white/[0.06] backdrop-blur-[18px]`}
       style={{ color: LANDING_TEXT }}
     >
-      <div className="mx-auto flex h-[76px] max-w-[1500px] items-center gap-6 px-[4vw]">
-        <div className="flex min-w-0 items-center gap-3">
-          <Link
-            to="/"
-            className="flex min-w-0 items-center gap-2.5 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e4cfa2]/60"
-            style={{ color: LANDING_TEXT }}
+      <div className="mx-auto flex h-[72px] max-w-[1280px] items-center gap-6 px-[4vw]">
+        <Link
+          to="/"
+          className="flex min-w-0 items-center gap-2.5 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d6ad68]/60"
+          style={{ color: LANDING_TEXT }}
+        >
+          <span
+            aria-hidden="true"
+            className="grid h-7 w-7 shrink-0 place-items-center border"
+            style={{ borderColor: LANDING_ACCENT, color: LANDING_ACCENT }}
           >
-            <span aria-hidden="true" className="shrink-0 text-[19px]" style={{ color: accent }}>
-              ⬢
-            </span>
-            <span className="truncate whitespace-nowrap text-[14px] font-medium tracking-tight">
-              RealSync Dynamics
-              <span style={{ color: accent }}>.AI</span>
-            </span>
-          </Link>
-        </div>
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <path d="M1 1h12v12H1V1Z" stroke="currentColor" strokeWidth="1.2" />
+              <path d="M1 1l12 12M13 1L1 13" stroke="currentColor" strokeWidth="1.2" />
+            </svg>
+          </span>
+          <span
+            className="truncate text-[12px] font-semibold tracking-[0.14em]"
+            style={{ fontFamily: LANDING_MONO }}
+          >
+            REALSYNCDYNAMICS.AI
+          </span>
+        </Link>
 
-        <nav className="ml-auto hidden items-center gap-7 lg:flex" aria-label="Hauptnavigation">
-          {PRIMARY_LINKS.map((item) => (
-            <NavItem key={item.to + item.label} {...item} />
+        <nav className="ml-auto hidden items-center gap-7 md:flex" aria-label="Hauptnavigation">
+          {LINKS.map((item) => (
+            <NavItem key={item.to} {...item} />
           ))}
           <Link
             to="/audit"
-            className="landing-cta-glow rounded-full px-[20px] py-[11px] text-center text-[11px] leading-[1.3] transition hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e4cfa2]"
-            style={ctaStyle}
+            className="inline-flex items-center gap-1.5 rounded-full px-[18px] py-[10px] text-[11px] font-semibold transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d6ad68]"
+            style={scanCtaStyle}
           >
-            {HERO_SCAN_CTA_LABEL}
+            {HERO_SCAN_CTA_LABEL} <span aria-hidden="true">→</span>
           </Link>
         </nav>
 
-        <div className="ml-auto flex items-center gap-2.5 lg:hidden">
+        <div className="ml-auto flex items-center gap-2 md:hidden">
           <Link
             to="/audit"
-            className="hidden rounded-full px-3.5 py-2 text-[10px] sm:inline-flex"
-            style={ctaStyle}
+            className="rounded-full px-3.5 py-2 text-[10px] font-semibold"
+            style={scanCtaStyle}
           >
             Free Audit
           </Link>
           <button
             type="button"
-            className="rounded-md p-1.5 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e4cfa2]/60"
+            className="rounded-md p-1.5 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d6ad68]/60"
             style={{ color: LANDING_TEXT }}
             aria-expanded={open}
             aria-controls="public-dark-mobile-nav"
@@ -183,52 +134,29 @@ export function PublicDarkHeader({
       {open && (
         <div
           id="public-dark-mobile-nav"
-          className="border-t border-white/[0.06] px-6 py-4 backdrop-blur-md lg:hidden"
+          className="border-t border-white/[0.06] px-6 py-4 backdrop-blur-md md:hidden"
           style={{ backgroundColor: `${LANDING_BG}fa` }}
           role="dialog"
-          aria-label="Governance OS Navigation"
+          aria-label="Navigation"
         >
-          <p
-            className="mb-3 text-[9px] tracking-[.2em]"
-            style={{ fontFamily: LANDING_MONO, color: `${accent}b3` }}
-          >
-            NAVIGATION
-          </p>
           <nav aria-label="Mobile Navigation" className="flex flex-col">
-            {DRAWER_LINKS.map((item) => (
+            {LINKS.map((item) => (
               <NavItem
-                key={item.to + item.label}
+                key={item.to}
                 to={item.to}
                 label={item.label}
-                emphasize={item.emphasize}
                 className="py-2.5 text-sm"
                 onNavigate={() => setOpen(false)}
               />
             ))}
             <Link
               to="/audit"
-              className="mt-3 block rounded-full px-4 py-3 text-center text-[11px] leading-[1.3]"
-              style={ctaStyle}
+              className="mt-3 block rounded-full px-4 py-3 text-center text-[11px] font-semibold"
+              style={scanCtaStyle}
               onClick={() => setOpen(false)}
             >
-              {HERO_SCAN_CTA_LABEL}
+              {HERO_SCAN_CTA_LABEL} →
             </Link>
-            <ul className="mt-4 flex flex-wrap gap-3 border-t border-white/[0.06] pt-3">
-              {LANDING_TRUST_MARKS.map((mark) => (
-                <li
-                  key={mark}
-                  className="inline-flex items-center gap-1.5 text-[8px] tracking-[.14em]"
-                  style={{ fontFamily: LANDING_MONO, color: '#7a7a82' }}
-                >
-                  <span
-                    className="h-1 w-1 rounded-full"
-                    style={{ backgroundColor: LANDING_GREEN }}
-                    aria-hidden="true"
-                  />
-                  {mark}
-                </li>
-              ))}
-            </ul>
           </nav>
         </div>
       )}

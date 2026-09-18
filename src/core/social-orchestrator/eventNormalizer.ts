@@ -142,23 +142,20 @@ function isSafeRegion(region: string | undefined): boolean {
   return /^[a-z]{2}(?:-[a-z0-9]{1,8})?$/i.test(region);
 }
 
-// SHA-256 → hex. Uses Web Crypto if available (browser, Deno, modern
-// Node), falls back to require('crypto') in the Node test runner.
+// SHA-256 → hex via Web Crypto. The social orchestrator ships in the
+// browser bundle, so avoid a Node-only fallback that Vite would
+// externalize.
 async function sha256Hex(input: string): Promise<string> {
-  const cryptoObj: Crypto | null = typeof globalThis !== 'undefined'
-    ? ((globalThis as Record<string, unknown>).crypto as Crypto | undefined) ?? null
-    : null;
-  if (cryptoObj?.subtle?.digest) {
-    const buf = await cryptoObj.subtle.digest('SHA-256', new TextEncoder().encode(input));
-    const bytes = new Uint8Array(buf);
-    let out = '';
-    for (const b of bytes) out += b.toString(16).padStart(2, '0');
-    return out;
+  const cryptoObj = globalThis.crypto;
+  if (!cryptoObj?.subtle?.digest) {
+    throw new Error('Web Crypto SHA-256 is unavailable in this runtime.');
   }
-  // Node fallback (vitest in jsdom usually has subtle, but defend).
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const nodeCrypto = await import('node:crypto');
-  return nodeCrypto.createHash('sha256').update(input).digest('hex');
+
+  const buf = await cryptoObj.subtle.digest('SHA-256', new TextEncoder().encode(input));
+  const bytes = new Uint8Array(buf);
+  let out = '';
+  for (const b of bytes) out += b.toString(16).padStart(2, '0');
+  return out;
 }
 
 /** Derive a ULID-shape suffix from a hex string (deterministic, not

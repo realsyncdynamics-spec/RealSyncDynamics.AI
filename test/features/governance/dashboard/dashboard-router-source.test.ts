@@ -3,10 +3,13 @@ import { describe, expect, it } from 'vitest';
 
 const router = readFileSync('src/features/governance/dashboard/DashboardRouter.tsx', 'utf8');
 const app = readFileSync('src/App.tsx', 'utf8');
+const command = readFileSync('src/features/governance/dashboard/CommandCenterDashboard.tsx', 'utf8');
 
 describe('DashboardRouter — Compliance-Status ist Default', () => {
-  it('mountet ComplianceStatusDashboard, nicht den ungebundenen Chat', () => {
-    expect(router).toContain('ComplianceStatusDashboard');
+  it('mountet CommandCenterDashboard auf der bestehenden View, nicht den Chat', () => {
+    expect(router).toContain('CommandCenterDashboard');
+    expect(command).toContain('ComplianceStatusView');
+    expect(command).not.toContain('AgentOsPanel');
     expect(router).not.toContain('GovernanceAiWorkspace');
     expect(router).not.toMatch(/return\s+<GovernanceAiWorkspace/);
   });

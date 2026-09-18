@@ -98,6 +98,15 @@ describe('ContactSales: inquiry plan_key contract', () => {
   it('leitet plan_key aus intent=enterprise|partner ab wenn Query fehlt', () => {
     expect(contactSales).toMatch(/defaultInquiryPlanFromIntent/);
   });
+
+  it('ruft sales-lead über edgeFunctionUrl + fnFetchInit auf (kein raw VITE_SUPABASE_URL)', () => {
+    expect(contactSales).toMatch(/edgeFunctionUrl\(['"]sales-lead['"]\)/);
+    expect(contactSales).toMatch(/fnFetchInit\(/);
+    expect(contactSales).toMatch(/ensureCsrfCookie\(/);
+    expect(contactSales).toMatch(/shouldUseFnProxy\(/);
+    expect(contactSales).not.toMatch(/import\.meta\.env\.VITE_SUPABASE_URL/);
+    expect(contactSales).not.toMatch(/\$\{SUPABASE_URL\}\/functions\/v1\/sales-lead/);
+  });
 });
 
 describe('sales-lead: tier-Weitergabe (bestehend)', () => {
@@ -169,4 +178,24 @@ describe('sales-lead: inquiry plan_key + domains', () => {
     expect(checkout).toMatch(/['"]INQUIRY_ONLY['"]/);
     expect(checkout).toMatch(/purchaseMode\s*===\s*['"]inquiry['"]/);
   });
+});
+
+describe('public sales-lead clients: CSRF proxy path', () => {
+  const clients = [
+    'src/pages/ContactSales.tsx',
+    'src/pages/FixPaket.tsx',
+    'src/pages/CookieScanner.tsx',
+    'src/components/landing/WaitlistForm.tsx',
+    'src/components/MethodologyBooking.tsx',
+  ];
+
+  for (const rel of clients) {
+    it(`${rel} posts via edgeFunctionUrl('sales-lead') + fnFetchInit`, () => {
+      const src = readFileSync(resolve(ROOT, rel), 'utf8');
+      expect(src).toMatch(/edgeFunctionUrl\(['"]sales-lead['"]\)/);
+      expect(src).toMatch(/fnFetchInit\(/);
+      expect(src).toMatch(/ensureCsrfCookie\(/);
+      expect(src).not.toMatch(/\$\{[^}]*SUPABASE_URL[^}]*\}\/functions\/v1\/sales-lead/);
+    });
+  }
 });

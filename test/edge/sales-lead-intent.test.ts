@@ -1,12 +1,13 @@
 /**
  * Contract für die Lead-Qualifizierung über `?intent=` / `plan_key` / domains.
  *
- * Die Kette spannt drei Ebenen, die übereinstimmen müssen:
- *   - CTAs in src/pages + src/components setzen `?intent=<wert>`
- *   - src/pages/ContactSales.tsx liest den Param und sendet ihn im POST-Body
- *   - supabase/functions/sales-lead/index.ts schreibt ihn in metadata (JSONB)
+ * FE (ContactSales, bereits auf main via #1453):
+ *   - Read plan | plan_key | tier; normalize via shared pricing (scale→partner)
+ *   - POST plan_key for inquiry; optional tier alias
+ *   - POST company_domain / domains
+ *   - Generic contact without inquiry signal does not force plan_key
  *
- * Inquiry-Funnel (Enterprise/Partner):
+ * Backend (dieses PR #1452):
  *   - plan_key via normalizePlanKey (scale→partner)
  *   - domains / company_domain → first-class columns + metadata mirror
  *   - inquiry purchaseMode → source normalized to contact-sales
@@ -53,7 +54,6 @@ describe('sales-lead: intent-Weitergabe', () => {
   });
 
   it('intent wird wie alle Freitext-Felder gekappt', () => {
-    // Kein Overflow über den public, unauthentifizierten Endpoint.
     expect(salesLead).toMatch(/cap\(body\.intent,\s*\d+\)/);
   });
 
@@ -62,16 +62,45 @@ describe('sales-lead: intent-Weitergabe', () => {
   });
 });
 
-/**
- * `tier` kam über den Merge von main dazu (Founding-Access-Tarif-Links) und
- * hatte dieselbe Lücke: ContactSales sendet ihn, die Function verwarf ihn.
- * Er teilt sich jetzt die metadata-Spalte mit intent.
- */
-describe('sales-lead: tier-Weitergabe', () => {
-  it('ContactSales sendet tier im POST-Body', () => {
-    expect(contactSales).toMatch(/\btier:\s*tier\s*\|\|\s*undefined/);
+describe('ContactSales: inquiry plan_key contract', () => {
+  it('akzeptiert plan, plan_key und tier als Query-Params', () => {
+    expect(contactSales).toMatch(/params\.get\(['"]plan['"]\)/);
+    expect(contactSales).toMatch(/params\.get\(['"]plan_key['"]\)/);
+    expect(contactSales).toMatch(/params\.get\(['"]tier['"]\)/);
   });
 
+  it('normalisiert über normalizePlanKey', () => {
+    expect(contactSales).toMatch(/normalizePlanKey/);
+  });
+
+  it('sendet plan_key im POST-Body wenn gesetzt', () => {
+    expect(contactSales).toMatch(/plan_key:\s*planKey/);
+  });
+
+  it('sendet tier nur als optionalen Alias neben plan_key', () => {
+    expect(contactSales).toMatch(/tier:\s*planKey/);
+  });
+
+  it('sendet company_domain und domains', () => {
+    expect(contactSales).toMatch(/company_domain:\s*companyDomain/);
+    expect(contactSales).toMatch(/\bdomains:\s*domainsPayload/);
+  });
+
+  it('setzt path auf /contact-sales', () => {
+    expect(contactSales).toMatch(/path:\s*['"]\/contact-sales['"]/);
+  });
+
+  it('blockiert Inquiry-Submit ohne plan_key (PLAN_KEY_REQUIRED)', () => {
+    expect(contactSales).toMatch(/PLAN_KEY_REQUIRED/);
+    expect(contactSales).toMatch(/isInquiry && !planKey/);
+  });
+
+  it('leitet plan_key aus intent=enterprise|partner ab wenn Query fehlt', () => {
+    expect(contactSales).toMatch(/defaultInquiryPlanFromIntent/);
+  });
+});
+
+describe('sales-lead: tier-Weitergabe (bestehend)', () => {
   it('sales-lead akzeptiert tier im Body-Typ und kappt ihn', () => {
     expect(salesLead).toMatch(/tier\?:\s*string/);
     expect(salesLead).toMatch(/cap\(body\.tier,\s*\d+\)/);

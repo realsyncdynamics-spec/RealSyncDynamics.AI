@@ -43,20 +43,8 @@ export function SecuritySettings() {
     const { data: { user } } = await sb.auth.getUser();
     setUserId(user?.id ?? null);
     if (user?.id) {
-      let nextIsSuperAdmin = false;
-      const { data: operators, error: operatorsErr } = await sb
-        .from('platform_operators')
-        .select('user_id')
-        .eq('user_id', user.id)
-        .eq('active', true)
-        .limit(1);
-      if (!operatorsErr) {
-        nextIsSuperAdmin = (operators ?? []).length > 0;
-      } else if ((operatorsErr as { code?: string }).code === '42P01') {
-        const { data: profile } = await sb.from('profiles').select('is_super_admin').eq('id', user.id).maybeSingle();
-        nextIsSuperAdmin = !!profile?.is_super_admin;
-      }
-      setIsSuperAdmin(nextIsSuperAdmin);
+      const { data: profile } = await sb.from('profiles').select('is_super_admin').eq('id', user.id).maybeSingle();
+      setIsSuperAdmin(!!profile?.is_super_admin);
     } else {
       setIsSuperAdmin(false);
     }
@@ -166,7 +154,7 @@ export function SecuritySettings() {
               {(status?.factors?.length ?? 0) > 0 && (
                 <ul className="mt-2 space-y-1">
                   {status?.factors.map((factor) => (
-                    <li key={factor.id} className="font-mono text-[11px] text-titanium-500">
+                    <li key={factor.id} className="font-mono text-[11px] text-titanium-300">
                       {factor.friendlyName ?? 'TOTP'} · {factor.status}
                     </li>
                   ))}

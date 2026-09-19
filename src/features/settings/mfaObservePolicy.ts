@@ -7,3 +7,8 @@ export function shouldShowMfaObserveBanner(role: string | null | undefined, isSu
 export function effectiveMfaEnforced(persistedMfaEnforced: boolean, isPublicSector: boolean): boolean {
   return isPublicSector || persistedMfaEnforced;
 }
+
+export function requiresAal2ForUnenroll(currentLevel: string | null, factorStatuses: string[]): boolean {
+  const hasVerified = factorStatuses.includes('verified');
+  return hasVerified && currentLevel !== 'aal2';
+}

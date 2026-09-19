@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { effectiveMfaEnforced, shouldShowMfaObserveBanner } from '../../../src/features/settings/mfaObservePolicy';
+import {
+  effectiveMfaEnforced,
+  requiresAal2ForUnenroll,
+  shouldShowMfaObserveBanner,
+} from '../../../src/features/settings/mfaObservePolicy';
 
 describe('MFA observe policy', () => {
   it('zeigt Observe-Banner nur für privilegierte Rollen oder super_admin', () => {
@@ -15,5 +19,11 @@ describe('MFA observe policy', () => {
     expect(effectiveMfaEnforced(false, true)).toBe(true);
     expect(effectiveMfaEnforced(false, false)).toBe(false);
     expect(effectiveMfaEnforced(true, false)).toBe(true);
+  });
+
+  it('Unenroll braucht AAL2 nur wenn verifizierter Faktor vorhanden ist', () => {
+    expect(requiresAal2ForUnenroll('aal1', ['verified'])).toBe(true);
+    expect(requiresAal2ForUnenroll('aal2', ['verified'])).toBe(false);
+    expect(requiresAal2ForUnenroll('aal1', ['unverified'])).toBe(false);
   });
 });

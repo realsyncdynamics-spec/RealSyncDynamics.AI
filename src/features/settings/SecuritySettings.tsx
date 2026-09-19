@@ -10,7 +10,7 @@ import {
   regenerateRecoveryCodes, redeemRecoveryCode, logAal2Intent, mfaErrorMessage,
   type MfaStatus, type EnrollResult,
 } from '../../core/access/mfa';
-import { effectiveMfaEnforced, shouldShowMfaObserveBanner } from './mfaObservePolicy';
+import { effectiveMfaEnforced, requiresAal2ForUnenroll, shouldShowMfaObserveBanner } from './mfaObservePolicy';
 
 export function SecuritySettings() {
   const { activeTenantId, tenants } = useTenant();
@@ -44,8 +44,11 @@ export function SecuritySettings() {
     setUserId(user?.id ?? null);
     if (user?.id) {
       const { data: observeData, error: observeErr } = await sb.functions.invoke('mfa-observe-status', { body: {} });
-      if (observeErr) throw observeErr;
-      setIsSuperAdmin(!!(observeData as { is_super_admin?: boolean } | null)?.is_super_admin);
+      if (observeErr) {
+        setIsSuperAdmin(false);
+      } else {
+        setIsSuperAdmin(!!(observeData as { is_super_admin?: boolean } | null)?.is_super_admin);
+      }
     } else {
       setIsSuperAdmin(false);
     }
@@ -81,8 +84,10 @@ export function SecuritySettings() {
     await refresh();
   });
   const removeFactor = () => run(async () => {
-    const hasVerifiedFactor = (status?.factors ?? []).some((factor) => factor.status === 'verified');
-    if (hasVerifiedFactor && status?.currentLevel !== 'aal2') {
+    if (requiresAal2ForUnenroll(
+      status?.currentLevel ?? null,
+      (status?.factors ?? []).map((factor) => factor.status),
+    )) {
       throw new Error('Zum Entfernen von MFA wird eine AAL2-Session benötigt. Alternativ Recovery-Code einlösen.');
     }
     await removeAllTotpFactors();

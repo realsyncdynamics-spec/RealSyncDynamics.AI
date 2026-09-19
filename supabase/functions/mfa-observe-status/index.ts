@@ -1,10 +1,11 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { handleOptions, jsonResponse } from '../_shared/gateway.ts';
+import { resolveObserveStatusResponse } from '../_shared/mfaObserveStatus.ts';
 
 Deno.serve(async (req) => {
   const preflight = handleOptions(req);
   if (preflight) return preflight;
-  if (req.method !== 'POST') return jsonResponse({ error: 'POST only' }, 405);
+  if (req.method !== 'POST') return jsonResponse({ error: 'method_not_allowed', allowed_method: 'POST' }, 405);
 
   const auth = req.headers.get('Authorization');
   if (!auth?.startsWith('Bearer ')) return jsonResponse({ error: 'missing_authorization' }, 401);
@@ -17,7 +18,10 @@ Deno.serve(async (req) => {
     global: { headers: { Authorization: auth } }, auth: { persistSession: false },
   });
   const { data: userResp, error: userErr } = await userClient.auth.getUser();
-  if (userErr || !userResp.user) return jsonResponse({ error: 'invalid_token' }, 401);
+  if (userErr || !userResp.user) {
+    const out = resolveObserveStatusResponse({ hasValidUser: false, profileLookupFailed: false, isSuperAdmin: false });
+    return jsonResponse(out.body, out.status);
+  }
 
   const admin = createClient(SUPABASE_URL, SRK, { auth: { persistSession: false } });
   const { data: profile, error: profileErr } = await admin
@@ -25,7 +29,15 @@ Deno.serve(async (req) => {
     .select('is_super_admin')
     .eq('id', userResp.user.id)
     .maybeSingle();
-  if (profileErr) return jsonResponse({ error: 'profile_lookup_failed' }, 500);
+  if (profileErr) {
+    const out = resolveObserveStatusResponse({ hasValidUser: true, profileLookupFailed: true, isSuperAdmin: false });
+    return jsonResponse(out.body, out.status);
+  }
 
-  return jsonResponse({ is_super_admin: !!profile?.is_super_admin });
+  const out = resolveObserveStatusResponse({
+    hasValidUser: true,
+    profileLookupFailed: false,
+    isSuperAdmin: !!profile?.is_super_admin,
+  });
+  return jsonResponse(out.body, out.status);
 });

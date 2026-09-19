@@ -4,6 +4,6 @@ export function shouldShowMfaObserveBanner(role: string | null | undefined, isSu
   return isSuperAdmin || (!!role && PRIVILEGED_TENANT_ROLES.has(role));
 }
 
-export function effectiveMfaEnforced(isPublicSector: boolean, persistedMfaEnforced: boolean): boolean {
+export function effectiveMfaEnforced(persistedMfaEnforced: boolean, isPublicSector: boolean): boolean {
   return isPublicSector || persistedMfaEnforced;
 }

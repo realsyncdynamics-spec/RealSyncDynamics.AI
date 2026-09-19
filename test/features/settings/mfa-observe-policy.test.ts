@@ -12,8 +12,8 @@ describe('MFA observe policy', () => {
   });
 
   it('Public-Sector erzwingt mfa_enforced in der UI unabhängig vom gespeicherten Flag', () => {
-    expect(effectiveMfaEnforced(true, false)).toBe(true);
-    expect(effectiveMfaEnforced(false, false)).toBe(false);
     expect(effectiveMfaEnforced(false, true)).toBe(true);
+    expect(effectiveMfaEnforced(false, false)).toBe(false);
+    expect(effectiveMfaEnforced(true, false)).toBe(true);
   });
 });

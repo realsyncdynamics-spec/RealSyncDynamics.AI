@@ -18,6 +18,7 @@ export function SecuritySettings() {
   const role = activeTenant?.role ?? null;
   const isPublicSector = activeTenant?.isPublicSector ?? false;
   const isAdmin = role === 'owner' || role === 'admin';
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
 
   const [userId, setUserId] = useState<string | null>(null);
   const [status, setStatus] = useState<MfaStatus | null>(null);
@@ -34,13 +35,17 @@ export function SecuritySettings() {
   const [redeemCode, setRedeemCode] = useState('');
 
   const [enforceAll, setEnforceAll] = useState(false);
-  const observeBannerVisible = shouldShowMfaObserveBanner(role, false);
-  const enforcedInUi = effectiveMfaEnforced(isPublicSector, enforceAll);
+  const observeBannerVisible = shouldShowMfaObserveBanner(role, isSuperAdmin);
+  const enforcedInUi = effectiveMfaEnforced(enforceAll, isPublicSector);
 
   async function refresh() {
     const sb = getSupabase();
     const { data: { user } } = await sb.auth.getUser();
     setUserId(user?.id ?? null);
+    setIsSuperAdmin(!!(
+      (user?.app_metadata as Record<string, unknown> | undefined)?.is_super_admin
+      ?? (user?.user_metadata as Record<string, unknown> | undefined)?.is_super_admin
+    ));
     setStatus(await getMfaStatus());
     if (activeTenantId) {
       const { data } = await sb.from('tenant_security_settings')

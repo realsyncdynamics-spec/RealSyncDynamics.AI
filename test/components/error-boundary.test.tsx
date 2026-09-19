@@ -11,7 +11,7 @@ describe('ErrorBoundary', () => {
   it('renders fallback UI when a child throws during render', () => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
 
-    function Boom(): React.ReactNode {
+    function Boom(): never {
       throw new Error('boom-test');
     }
 

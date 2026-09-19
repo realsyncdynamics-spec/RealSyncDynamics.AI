@@ -24,10 +24,11 @@ Maßgeblich ist `/` (`MainLanding`). Alles unten ist an dieser Datei und an
 - **Kopf** ist `PublicDarkHeader`. Einen geteilten Fuß gibt es nicht:
   `MainLanding` trägt ihren Footer inline. `GovernanceFooter` hat keinen
   Importeur.
-- **Lebende Bausteine** der Startseite sind genau fünf: `PublicDarkHeader`,
-  `EuropeNetworkHero`, `LandingChannelTools`, `LandingPricingSection`,
-  `EnterpriseAccessSection`. Die übrigen 23 Dateien in
-  `components/landing/` hängen an nichts (siehe unten).
+- **Was lebt, steht in `MainLanding`**, nicht in diesem Dokument: Eine
+  feste Komponentenliste hier wäre binnen Tagen falsch — am 2026-09-19 waren
+  vier Landing-PRs gleichzeitig offen. Der aktuelle Stand kommt aus
+  `npm run check:dead` (siehe unten), die Importliste von `MainLanding` ist
+  die Wahrheit.
 - **Kanten bleiben hart.** Die Startseite nutzt `rounded-full` für Pills,
   sonst nichts — `--radius-{xs..3xl}` sind in `@theme` auf 0 gezwungen. Die
   Trust-Radien `rounded-chip` / `-card` / `-panel` (10–14px) kommen auf der
@@ -38,14 +39,21 @@ Maßgeblich ist `/` (`MainLanding`). Alles unten ist an dieser Datei und an
 - **Inhalte** kommen aus den SSoT-Dateien (`hero-content.ts`, `pricing.ts`,
   `implementation-status.ts`, `public-nav.ts`), nicht aus der Komponente.
 
-**23 von 32 Landing-Dateien sind verwaist.** Nichts im Repo importiert sie —
-weder die App noch Tests noch Skripte. Darunter die komplette Maschinerie für
+**Ein großer Teil von `components/landing/` hängt an nichts.** Bei der
+Messung am 2026-09-19 waren es 23 von 32 Dateien — weder App noch Tests noch
+Skripte importierten sie. Die Zahl bewegt sich mit jedem Landing-PR; `npm run
+check:dead` nennt den jeweils aktuellen Stand.
+
+Dauerhaft ist der Befund dahinter: Dort liegt die komplette Maschinerie für
 einen Farbmodus-Schalter (`ThemeSwitch`, `GovernanceStatusBar`,
 `use-ga-theme`, `governance-ai-theme`) samt ihrer Paletten unter
-`[data-ga-theme]` in `src/index.css`, und die gesamte Abschnitts-Familie
+`[data-ga-theme]` in `src/index.css`, und eine ganze Abschnitts-Familie
 (`LandingOsSpine`, `PlatformCapabilitiesSection`, `RuntimeLayersSection`,
 `RegulatoryTicker`, `WorkspacePreviewSection`, `GovernanceLoopBand`,
 `GovernanceFooter`, `LandingRoadmapSection`).
+
+**Vor dem Wiederverwenden prüfen, ob die Datei noch hängt.** Eine Datei in
+`components/landing/` zu finden heißt nicht, dass sie gerendert wird.
 
 Praktische Folge: Der zweite Goldwert `#c9a24a` aus `--ga-accent` ist damit
 kein konkurrierender Token, sondern Teil dieser toten Fläche. Es gibt genau

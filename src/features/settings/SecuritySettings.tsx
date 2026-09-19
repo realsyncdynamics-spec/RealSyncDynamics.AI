@@ -66,7 +66,7 @@ export function SecuritySettings() {
       setEnforceAll(false);
     }
   }
-  useEffect(() => { refresh().catch((e) => setError(String(e))); /* eslint-disable-next-line */ }, [activeTenantId, superAdminLoadedForUserId]);
+  useEffect(() => { refresh().catch((e) => setError(String(e))); /* eslint-disable-next-line */ }, [activeTenantId]);
 
   async function run(fn: () => Promise<void>) {
     setBusy(true); setError(null);

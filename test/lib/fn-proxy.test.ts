@@ -29,5 +29,11 @@ describe('fn proxy allowlist', () => {
   it('keeps the allowlist explicit', () => {
     expect(FN_PROXY_ALLOW).toContain('ai-gateway');
     expect(FN_PROXY_ALLOW).toContain('siteos/code-persist');
+    expect(FN_PROXY_ALLOW).toContain('sales-lead');
+  });
+
+  it('builds a direct sales-lead URL on localhost', () => {
+    expect(edgeFunctionUrl('sales-lead')).toMatch(/\/functions\/v1\/sales-lead$/);
+    expect(edgeFunctionUrl('sales-lead')).not.toContain('/api/fn/');
   });
 });

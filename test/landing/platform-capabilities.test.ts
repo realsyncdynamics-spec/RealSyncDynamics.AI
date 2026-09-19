@@ -217,8 +217,9 @@ describe('Hero-Panel — Beispiel ist als Beispiel gekennzeichnet', () => {
 
   it('das Panel nennt sich nicht mehr „LIVE“', () => {
     expect(landing).not.toContain('GOVERNANCE RUNTIME · LIVE');
-    expect(landing).toContain('EuropeReliefBackdrop');
+    expect(landing).toContain('EuropeNetworkHero');
     expect(landing).not.toContain('GovernanceSphereHost');
+    expect(landing).toContain('data-demo-kpis');
     expect(workspacePreview).toContain('DEMO · BEISPIELDATEN');
     expect(workspacePreview).toContain('BEISPIELANSICHT');
     expect(landing).toContain('id="audit-cta"');

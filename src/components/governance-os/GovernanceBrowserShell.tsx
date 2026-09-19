@@ -98,7 +98,7 @@ export function GovernanceBrowserShell({ children }: GovernanceBrowserShellProps
 
   return (
     <AppGate>
-      <div className="dashboard-context h-screen h-dvh flex flex-col bg-obsidian-950 text-titanium-100 overflow-hidden">
+      <div className="os-chrome dashboard-context h-screen h-dvh flex flex-col bg-obsidian-950 text-titanium-100 overflow-hidden">
         <BrowserTopBar
           mobileMenuOpen={mobileMenuOpen}
           onToggleMobile={() => setMobileMenuOpen((v) => !v)}

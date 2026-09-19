@@ -334,7 +334,9 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
   '/runtime': {
     title: 'Runtime — Governance-Übersicht | RealSync',
     description:
-      'Governance-Runtime: kontinuierliche Beobachtung, Compliance-Agenten, ',
+      'Governance-Runtime: kontinuierliche Beobachtung, Compliance-Agenten, '
+      + 'überprüfbare Evidence-Reports, dokumentierte Policies. Demo-Surface '
+      + 'für Pilot-Evaluierung.',
     canonical: `${SITE_URL}/runtime`,
     ogTitle: 'Governance Runtime — Kontinuierliche Compliance-Überwachung',
     ogDescription:
@@ -379,7 +381,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
   '/governance-score': {
     title: 'Governance Complexity Score — passende Governance-Abdeckung | RealSyncDynamics.AI',
     description:
-      'Ermitteln Sie Ihren Governance Complexity Score aus Branche, Datenkategorien, KI-Nutzung, Drittanbietern, Tracking und Dokumentationspflichten — und finden Sie die passende Governance-Abdeckung statt einer Anzahl Webseiten.',
+      'Ermitteln Sie Ihren Governance Complexity Score aus Branche, Datenkategorien, KI-Nutzung, Drittanbietern, Tracking und Dokumentationspflichten — und sehen Sie die passende Governance-Abdeckung statt einer Anzahl Webseiten.',
     canonical: `${SITE_URL}/governance-score`,
     jsonLd: breadcrumbs([
       { name: 'Home', url: '/' },

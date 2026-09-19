@@ -138,43 +138,88 @@ function fileFor(component: string): string | null {
 }
 
 /**
- * Der Title, den `usePageMeta` für diese Seite setzt — direkt in der
- * Komponente. Seiten, die den Hook über ContentPageLayout beziehen, geben
+ * Ein Feld aus dem `usePageMeta`-Aufruf einer Komponente.
+ *
+ * Löst `'…' + '…'`-Konkatenation auf. Nur das erste Literal zu lesen wäre
+ * genau der Fehler, den dieser Test verhindern soll: `/runtime` setzt seine
+ * Description über drei Zeilen zusammen, und eine Fassung, die nach dem
+ * ersten Teil abbricht, endet mitten im Satz — als Meta-Description
+ * unbrauchbar und beim Lesen des Codes nicht als Fragment erkennbar.
+ *
+ * Escapes werden generisch aufgelöst. Nur `\'` zu ersetzen wäre dieselbe
+ * Halbheit: ein `\\` bliebe doppelt stehen.
+ */
+function metaField(src: string, field: 'title' | 'description'): string | null {
+  const call = src.match(/usePageMeta\(\{([\s\S]*?)\n\s*\}\);/);
+  if (!call) return null;
+  const raw = call[1].match(
+    new RegExp(`\\b${field}:\\s*((?:'(?:[^'\\\\]|\\\\.)*'\\s*\\+?\\s*)+)`),
+  );
+  if (!raw) return null;
+  return [...raw[1].matchAll(/'((?:[^'\\]|\\.)*)'/g)]
+    .map((m) => m[1].replace(/\\(.)/g, '$1'))
+    .join('');
+}
+
+/**
+ * Title und Description, die `usePageMeta` für diese Seite setzt — direkt in
+ * der Komponente. Seiten, die den Hook über ContentPageLayout beziehen, geben
  * ihren Text als Props weiter und werden hier nicht erfasst; für die greift
  * die Doppelung-Prüfung oben.
  */
-function hookTitleOf(path: string): string | null {
+function hookMetaOf(
+  path: string,
+): { title: string; description: string | null } | null {
   const component = componentFor(path);
   if (!component) return null;
   const file = fileFor(component);
   if (!file) return null;
   const src = readFileSync(file, 'utf8');
-  const m = src.match(/usePageMeta\(\{\s*title:\s*'((?:[^'\\]|\\.)*)'/);
-  // Escapes des String-Literals generisch aufloesen. Nur `\'` zu ersetzen
-  // waere dieselbe Halbheit: ein `\\` am Ende bliebe stehen und ein
-  // maskierter Backslash vor einem Apostroph wuerde falsch gelesen.
-  return m ? m[1].replace(/\\(.)/g, '$1') : null;
+  const title = metaField(src, 'title');
+  if (title === null) return null;
+  return { title, description: metaField(src, 'description') };
 }
 
 describe('SEO_CONFIG und usePageMeta widersprechen sich nicht', () => {
   const withHook = indexedPaths
-    .map((path) => ({ path, hookTitle: hookTitleOf(path) }))
-    .filter((e): e is { path: string; hookTitle: string } => e.hookTitle !== null);
+    .map((path) => ({ path, hook: hookMetaOf(path) }))
+    .filter(
+      (e): e is { path: string; hook: { title: string; description: string | null } } =>
+        e.hook !== null,
+    );
+
+  const drift =
+    'Der Hook gewinnt gegen <SEOHead />, weil sein Effect später läuft. ' +
+    'Der Eintrag in SEO_CONFIG muss denselben Text führen — sonst pflegt ' +
+    'man hier einen Text, den die Seite nie ausliefert.';
 
   it('es gibt Seiten mit beiden Mechanismen zu prüfen', () => {
     expect(withHook.length).toBeGreaterThan(0);
   });
 
-  it.each(withHook.map((e) => [e.path, e.hookTitle]))(
+  it.each(withHook.map((e) => [e.path, e.hook.title]))(
     '%s — SEO_CONFIG führt denselben Title wie usePageMeta',
     (path, hookTitle) => {
+      expect(getSeoForPath(path).title, `${path}: Title weicht ab. ${drift}`).toBe(
+        hookTitle,
+      );
+    },
+  );
+
+  // Description separat: der Title war schon gleichgezogen, während die
+  // Description von /runtime nach dem ersten Teil-Literal abbrach. Eine
+  // Prüfung, die nur Titles vergleicht, lässt genau das durch.
+  const withDescription = withHook.filter((e) => e.hook.description !== null);
+
+  it.each(withDescription.map((e) => [e.path, e.hook.description as string]))(
+    '%s — SEO_CONFIG führt dieselbe Description wie usePageMeta',
+    (path, hookDescription) => {
       expect(
-        getSeoForPath(path).title,
-        `${path} setzt seinen Title über usePageMeta. Der Hook gewinnt gegen ` +
-          '<SEOHead />, weil sein Effect später läuft. Der Eintrag in ' +
-          'SEO_CONFIG muss denselben Text führen — sonst pflegt man hier einen ' +
-          'Text, den die Seite nie ausliefert.',
-      ).toBe(hookTitle);
+        getSeoForPath(path).description,
+        `${path}: Description weicht ab. ${drift} Mehrzeilige ` +
+          "'…' + '…'-Konkatenation vollständig übernehmen, nicht nur das " +
+          'erste Literal.',
+      ).toBe(hookDescription);
     },
   );
 });

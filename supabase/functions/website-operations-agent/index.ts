@@ -117,8 +117,8 @@ Deno.serve(async (req) => {
     // 3. Generate website using AI
     const website = await generateWebsiteWithAI(body, project.id);
 
-    if (!website.success) {
-      // Log error but don't fail entirely
+    // Discriminant: success is a literal. html/css exist only on the true branch.
+    if (website.success === false) {
       await admin.from('deployment_logs').insert({
         project_id: project.id,
         tenant_id: tenantId,
@@ -130,12 +130,18 @@ Deno.serve(async (req) => {
       });
     }
 
+    const html = website.success === true ? website.html : '';
+    const css = website.success === true ? website.css : '';
+    const sections = website.sections;
+    const seo = website.seo;
+    const aiDisclosures = website.aiDisclosures;
+
     // 4. Run compliance checks
     const complianceResult = await runComplianceChecks(
-      website.html || '',
+      html,
       project.id,
       tenantId,
-      website.aiDisclosures || []
+      aiDisclosures,
     );
 
     // 5. Store generated content
@@ -145,11 +151,11 @@ Deno.serve(async (req) => {
         status: 'preview',
         configuration: {
           ...project.configuration,
-          generated_html: website.html,
-          generated_css: website.css,
-          sections: website.sections,
-          seo_metadata: website.seo,
-          ai_disclosures: website.aiDisclosures,
+          generated_html: html,
+          generated_css: css,
+          sections,
+          seo_metadata: seo,
+          ai_disclosures: aiDisclosures,
         },
         compliance_score: complianceResult.score,
         compliance_findings: complianceResult.findings,
@@ -165,7 +171,7 @@ Deno.serve(async (req) => {
       title: 'Website Generated',
       message: `Generated website for ${body.company_name}`,
       details: {
-        sections: website.sections,
+        sections,
         compliance_score: complianceResult.score,
       },
       triggered_by: 'automation',
@@ -173,10 +179,10 @@ Deno.serve(async (req) => {
 
     const response: GeneratedWebsite = {
       project_id: project.id,
-      html: website.html || '',
-      css: website.css || '',
-      sections: website.sections,
-      seo_metadata: website.seo,
+      html,
+      css,
+      sections,
+      seo_metadata: seo,
       compliance_status: complianceResult.score >= 75 ? 'compliant' : 'review_needed',
       preview_url: `https://${project.id}.preview.realsyncdynamics.pages.dev`,
     };
@@ -192,19 +198,26 @@ Deno.serve(async (req) => {
 // AI Website Generation using Claude
 // ============================================================================
 
-interface AIGenerationResult {
-  success: boolean;
-  html?: string;
-  css?: string;
-  sections: string[];
-  seo: Record<string, unknown>;
-  aiDisclosures: string[];
-  error?: string;
-}
+type AIGenerationResult =
+  | {
+      success: true;
+      html: string;
+      css: string;
+      sections: string[];
+      seo: Record<string, unknown>;
+      aiDisclosures: string[];
+    }
+  | {
+      success: false;
+      sections: string[];
+      seo: Record<string, unknown>;
+      aiDisclosures: string[];
+      error: string;
+    };
 
 async function generateWebsiteWithAI(
   req: WebsiteGenerationRequest,
-  projectId: string
+  projectId: string,
 ): Promise<AIGenerationResult> {
   const industryTemplates: Record<string, string> = {
     'tattoo-studio': 'professional portfolio with gallery, artist profiles, and booking CTA',
@@ -297,7 +310,6 @@ Return ONLY the JSON object, nothing else.`;
       };
     }
 
-    // Parse JSON response
     const generated = JSON.parse(content) as {
       html: string;
       css: string;
@@ -344,12 +356,11 @@ async function runComplianceChecks(
   html: string,
   projectId: string,
   tenantId: string,
-  aiDisclosures: string[]
+  aiDisclosures: string[],
 ): Promise<ComplianceResult> {
   const findings: ComplianceResult['findings'] = [];
   let score = 100;
 
-  // 1. Check for cookie consent
   if (!html.includes('cookie') && !html.includes('consent')) {
     findings.push({
       category: 'cookies',
@@ -360,7 +371,6 @@ async function runComplianceChecks(
     score -= 20;
   }
 
-  // 2. Check for privacy policy
   if (!html.includes('datenschutz') && !html.includes('privacy')) {
     findings.push({
       category: 'legal_pages',
@@ -371,7 +381,6 @@ async function runComplianceChecks(
     score -= 15;
   }
 
-  // 3. Check for Impressum (legal requirement for German businesses)
   if (!html.includes('impressum') && !html.includes('legal')) {
     findings.push({
       category: 'legal_pages',
@@ -382,7 +391,6 @@ async function runComplianceChecks(
     score -= 15;
   }
 
-  // 4. AI Disclosure
   if (!aiDisclosures.length) {
     findings.push({
       category: 'ai_disclosure',
@@ -393,7 +401,6 @@ async function runComplianceChecks(
     score -= 10;
   }
 
-  // 5. Tracking/Analytics
   if (html.includes('google-analytics') || html.includes('ga.js')) {
     findings.push({
       category: 'tracking',
@@ -404,7 +411,6 @@ async function runComplianceChecks(
     score -= 5;
   }
 
-  // 6. External resources
   const externalCount = (html.match(/https?:\/\/(?!realsyncdynamics)/gi) || []).length;
   if (externalCount > 5) {
     findings.push({
@@ -416,7 +422,6 @@ async function runComplianceChecks(
     score -= 5;
   }
 
-  // Store compliance report
   await admin.from('website_compliance_reports').insert({
     project_id: projectId,
     tenant_id: tenantId,

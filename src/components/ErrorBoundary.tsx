@@ -1,6 +1,4 @@
 import React, { type ReactNode } from 'react';
-import * as Sentry from '@sentry/react';
-
 export type ErrorBoundaryVariant = 'page' | 'panel';
 
 type Props = {
@@ -63,11 +61,15 @@ export class ErrorBoundary extends React.Component<Props, State> {
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error('ErrorBoundary:', error, errorInfo);
-    try {
-      Sentry.captureException(error, { extra: { componentStack: errorInfo.componentStack } });
-    } catch {
-      /* Sentry optional */
-    }
+    // Dynamic import — static @sentry/react here broke production chunks
+    // (Cannot set properties of undefined (setting 'Activity')).
+    void import('@sentry/react')
+      .then((Sentry) => {
+        Sentry.captureException(error, { extra: { componentStack: errorInfo.componentStack } });
+      })
+      .catch(() => {
+        /* Sentry optional */
+      });
     this.props.onError?.(error, errorInfo);
   }
 

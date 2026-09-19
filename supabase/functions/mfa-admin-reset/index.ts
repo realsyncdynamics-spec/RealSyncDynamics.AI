@@ -45,6 +45,7 @@ Deno.serve(async (req) => {
     // Autorisierung: Plattform-Operator (ADR 0011, falls Tabelle vorhanden)
     // ODER legacy profiles.is_super_admin ODER owner/admin des Tenants.
     let isPlatformOperator = false;
+    let useLegacySuperAdminFallback = false;
     const { data: operatorRows, error: operatorErr } = await admin
       .from('platform_operators')
       .select('user_id')
@@ -53,12 +54,17 @@ Deno.serve(async (req) => {
       .limit(1);
     if (!operatorErr) {
       isPlatformOperator = (operatorRows ?? []).length > 0;
-    } else if ((operatorErr as { code?: string }).code !== '42P01') {
+    } else if ((operatorErr as { code?: string }).code === '42P01') {
+      useLegacySuperAdminFallback = true;
+    } else {
       return jsonResponse({ error: 'forbidden' }, 403);
     }
 
-    const { data: caller } = await admin.from('profiles').select('is_super_admin').eq('id', user.id).maybeSingle();
-    const isSuperAdmin = isPlatformOperator || !!caller?.is_super_admin;
+    let isSuperAdmin = isPlatformOperator;
+    if (useLegacySuperAdminFallback) {
+      const { data: caller } = await admin.from('profiles').select('is_super_admin').eq('id', user.id).maybeSingle();
+      isSuperAdmin = !!caller?.is_super_admin;
+    }
 
     if (!isSuperAdmin) {
       const { data: m } = await admin

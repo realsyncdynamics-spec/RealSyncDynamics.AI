@@ -67,7 +67,7 @@ export function RequireAal2({ action, children, mode = 'enforce' }: Props) {
           <ShieldAlert className="h-4 w-4 shrink-0 mt-0.5" />
           <p className="text-sm">
             Observe-Modus: Dieser Bereich{action ? ` (${action})` : ''} verlangt bald AAL2.
-            Bitte MFA unter <Link to="/settings/security" className="underline">/settings/security</Link> einrichten.
+            Bitte MFA in den <Link to="/settings/security" className="underline">Sicherheitseinstellungen</Link> einrichten.
           </p>
         </div>
         {children}

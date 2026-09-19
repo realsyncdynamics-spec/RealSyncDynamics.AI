@@ -110,7 +110,7 @@ describe('ComplianceStatusView', () => {
   });
 
   it('shows dashes instead of fake scores when the tenant is empty', () => {
-    const { getByText, queryByTestId } = rendered({
+    const { getByText, queryByTestId, getByTestId } = rendered({
       data: fixture(),
     });
     expect(getByText('Noch keine Governance-Daten')).toBeInTheDocument();
@@ -118,6 +118,40 @@ describe('ComplianceStatusView', () => {
     expect(queryByTestId('risk-index')).toBeNull();
     expect(queryByTestId('evidence-health')).toBeNull();
     expect(queryByTestId('open-measures')).toBeNull();
+    // Compliance KPI row still renders — null → "—", never invented scores.
+    expect(getByTestId('compliance-kpi-row')).toBeInTheDocument();
+    expect(getByTestId('compliance-score-overall').textContent).toContain('—');
+    expect(getByTestId('compliance-critical-findings').textContent).toContain('—');
+  });
+
+  it('renders measured compliance KPIs including valid zero', () => {
+    const { getByTestId } = rendered({
+      data: fixture({ counts: { ...ZERO, incidents: 1 } }),
+      complianceKpi: {
+        score_overall: 0,
+        score_breakdown: {
+          score_gdpr: 0,
+          score_nis2: null,
+          score_dsa: null,
+          score_ai_act: null,
+          policy_compliance: null,
+          vendor_risk: null,
+          incident_response: null,
+          data_governance: null,
+        },
+        riskTrendDirection: 'stable',
+        criticalFindings: 0,
+        newIncidents: 0,
+        resolvedIncidents: null,
+        upcomingDeadlines: null,
+        policies: { documented: null, pending: null },
+        vendors: { active: null, highRisk: null },
+      },
+    });
+    expect(getByTestId('compliance-score-overall').textContent).toMatch(/0%/);
+    expect(getByTestId('compliance-critical-findings').textContent).toContain('Critical findings0');
+    expect(getByTestId('compliance-new-incidents').textContent).toContain('New incidents (24h)0');
+    expect(getByTestId('compliance-risk-trend').textContent).toMatch(/Stable/);
   });
 
   it('does not treat a partial load failure as an empty tenant', () => {

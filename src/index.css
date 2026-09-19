@@ -1490,3 +1490,40 @@ html, body {
     display: none;
   }
 }
+
+/* ── Governance OS chrome — Cream/Gold SSOT bridge ───────────────────────
+   Authoritative values mirror landing-theme.ts → osChrome.ts (OS_*).
+   Scoped to product shell only — never import Preview Cobalt/Burgundy here. */
+.os-chrome,
+.dashboard-context {
+  --os-bg: #05070b;
+  --os-panel: #0b0e14;
+  --os-text: #f2eee6;
+  --os-gold: #e4cfa2;
+  --os-cream: #e8ddc8;
+  --os-focus-ring: rgba(228, 207, 162, 0.5);
+  /* Product accent stays gold — do not point at cyan / ai-cyan. */
+  --context-accent: #e4cfa2;
+}
+
+/* Registry-driven status chips (ModuleStatusBadge / PreviewChip). */
+.badge-live {
+  background-color: color-mix(in srgb, #064e3b 70%, #05070b);
+  color: #6ee7b7;
+  border: 1px solid #065f46;
+}
+.badge-beta {
+  background-color: color-mix(in srgb, #78350f 55%, #05070b);
+  color: #fcd34d;
+  border: 1px solid #92400e;
+}
+.badge-roadmap {
+  background-color: #12141a;
+  color: #9a9aa1;
+  border: 1px solid #1a1d23;
+}
+.badge-preview {
+  background-color: color-mix(in srgb, #78350f 55%, #05070b);
+  color: #fcd34d;
+  border: 1px solid #92400e;
+}

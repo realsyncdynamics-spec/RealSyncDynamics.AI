@@ -131,16 +131,28 @@ describe('graceDaysRemaining — was die Oberfläche anzeigt', () => {
 });
 
 describe('Der Webhook hält den Zeitstempel fest', () => {
+  // Upsert + past_due_since guard live in the shared sync helper
+  // (webhook + checkout-verify both call syncSubscriptionFromStripe).
+  const sync = readFileSync(
+    'supabase/functions/_shared/stripe-subscription-sync.ts',
+    'utf8',
+  );
   const webhook = readFileSync('supabase/functions/stripe-webhook/index.ts', 'utf8');
 
+  it('delegates subscription sync to the shared helper', () => {
+    expect(webhook).toContain('syncSubscriptionFromStripe');
+  });
+
   it('setzt past_due_since beim Wechsel nach past_due', () => {
-    expect(webhook).toContain('past_due_since: pastDueSince');
-    expect(webhook).toContain("sub.status === 'past_due'");
+    expect(sync).toContain('past_due_since: pastDueSince');
+    expect(sync).toContain("sub.status === 'past_due'");
   });
 
   it('behält einen vorhandenen Zeitstempel, statt ihn neu zu setzen', () => {
     // Sonst verlängerte jeder weitere Zustellversuch die Frist stillschweigend
     // und sie liefe nie ab.
-    expect(webhook).toMatch(/vorhanden\?\.past_due_since[\s\S]{0,60}\?\?\s*new Date\(\)/);
+    expect(sync).toMatch(/past_due_since[\s\S]{0,120}\?\?\s*new Date\(\)/);
+    expect(sync).toContain('past_due_since');
+    expect(sync).toMatch(/vorhanden/);
   });
 });

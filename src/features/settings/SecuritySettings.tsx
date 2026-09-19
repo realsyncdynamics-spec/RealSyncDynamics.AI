@@ -43,8 +43,20 @@ export function SecuritySettings() {
     const { data: { user } } = await sb.auth.getUser();
     setUserId(user?.id ?? null);
     if (user?.id) {
-      const { data: profile } = await sb.from('profiles').select('is_super_admin').eq('id', user.id).maybeSingle();
-      setIsSuperAdmin(!!profile?.is_super_admin);
+      let nextIsSuperAdmin = false;
+      const { data: operators, error: operatorsErr } = await sb
+        .from('platform_operators')
+        .select('user_id')
+        .eq('user_id', user.id)
+        .eq('active', true)
+        .limit(1);
+      if (!operatorsErr) {
+        nextIsSuperAdmin = (operators ?? []).length > 0;
+      } else if ((operatorsErr as { code?: string }).code === '42P01') {
+        const { data: profile } = await sb.from('profiles').select('is_super_admin').eq('id', user.id).maybeSingle();
+        nextIsSuperAdmin = !!profile?.is_super_admin;
+      }
+      setIsSuperAdmin(nextIsSuperAdmin);
     } else {
       setIsSuperAdmin(false);
     }
@@ -98,7 +110,7 @@ export function SecuritySettings() {
     if (!activeTenantId) return;
     const sb = getSupabase();
     const { error: e } = await sb.from('tenant_security_settings')
-      .upsert({ tenant_id: activeTenantId, mfa_enforced: next, enforce_mfa_all: next }, { onConflict: 'tenant_id' });
+      .upsert({ tenant_id: activeTenantId, mfa_enforced: next }, { onConflict: 'tenant_id' });
     if (e) throw e;
     setEnforceAll(next);
   });

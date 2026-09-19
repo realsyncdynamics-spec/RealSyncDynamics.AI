@@ -63,7 +63,11 @@ export function RequireAal2({ action, children, mode = 'enforce' }: Props) {
     if (outcome === 'allow') return <>{children}</>;
     return (
       <div className="space-y-4">
-        <div className="border border-amber-500/40 bg-amber-500/10 text-amber-100 p-4 flex items-start gap-2">
+        <div
+          role="alert"
+          aria-live="polite"
+          className="border border-amber-500/40 bg-amber-500/10 text-amber-100 p-4 flex items-start gap-2"
+        >
           <ShieldAlert className="h-4 w-4 shrink-0 mt-0.5" />
           <p className="text-sm">
             Observe-Modus: Dieser Bereich{action ? ` (${action})` : ''} verlangt bald AAL2.

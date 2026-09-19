@@ -30,7 +30,9 @@ const DesignTribunalLanding = lazy(() => import('./pages/design/DesignTribunalLa
 const ScanStartPage = lazy(() => import('./pages/product-entry-points/ScanStartPage').then((m) => ({ default: m.ScanStartPage })));
 const ChatbotStartPage = lazy(() => import('./pages/product-entry-points/ChatbotStartPage').then((m) => ({ default: m.ChatbotStartPage })));
 const PhonebotStartPage = lazy(() => import('./pages/product-entry-points/PhonebotStartPage').then((m) => ({ default: m.PhonebotStartPage })));
-const AetherOSLanding = lazy(() => import('./pages/AetherOSLanding').then((m) => ({ default: m.AetherOSLanding })));
+const AetherOSLandingRoute = lazy(() =>
+  import('./pages/AetherOSLandingRoute').then((m) => ({ default: m.AetherOSLandingRoute })),
+);
 const RealSyncDynamicsLanding = lazy(() => import('./marketing/landing/RealSyncDynamicsLanding').then((m) => ({ default: m.RealSyncDynamicsLanding })));
 const EnterpriseKonfigurator = lazy(() => import('./pages/EnterpriseKonfigurator'));
 const PublicWorkspacePreview = lazy(() => import('./pages/PublicWorkspacePreview').then((m) => ({ default: m.PublicWorkspacePreview })));
@@ -492,7 +494,7 @@ function RoutesWithTracking() {
       <Route path="/scan/start" element={<ScanStartPage />} />
       <Route path="/chatbot/start" element={<ChatbotStartPage />} />
       <Route path="/phonebot/start" element={<PhonebotStartPage />} />
-      <Route path="/aetheros" element={<AetherOSLanding />} />
+      <Route path="/aetheros" element={<AetherOSLandingRoute />} />
       <Route path="/preview" element={<PublicWorkspacePreview />} />
       <Route path="/landing" element={<Landing />} />
       <Route path="/landingpages" element={<LandingPagesOverview />} />

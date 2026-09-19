@@ -29,7 +29,7 @@ Deno.serve(async (req) => {
     .select('is_super_admin')
     .eq('id', userResp.user.id)
     .maybeSingle();
-  if (profileErr) {
+  if (profileErr || !profile) {
     const out = resolveObserveStatusResponse({ hasValidUser: true, profileLookupFailed: true, isSuperAdmin: false });
     return jsonResponse(out.body, out.status);
   }

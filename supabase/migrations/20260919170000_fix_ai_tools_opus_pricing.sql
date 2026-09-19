@@ -26,6 +26,28 @@
 -- Nicht-destruktiv: aendert ausschliesslich zwei numerische Spalten der Zeilen,
 -- die den falschen Wert tragen. Bereits korrigierte Zeilen bleiben unberuehrt
 -- (idempotent). Keine Schemaaenderung, keine Loeschung.
+--
+-- Kein Rueckstand zu korrigieren
+-- ------------------------------
+-- Diese Migration wirkt nur vorwaerts. Bereits gebuchte Werte in
+-- ai_tool_runs.cost_usd, in gesettelten tenant_cost_ledger-Zeilen und in den
+-- append-only Usage-Events auf limit.ai_cost_monthly_cents koennte ein UPDATE
+-- auf ai_tools nicht rueckrechnen.
+--
+-- Das ist hier folgenlos, weil es keine solchen Zeilen gibt. Geprueft gegen
+-- Produktion am 2026-09-19:
+--
+--   ai_tool_runs gesamt ............................. 1
+--   davon vps_status ................................ 0
+--   aufgelaufene vps_status-Kosten .................. $0
+--   tenant_cost_ledger-Zeilen mit Opus-model_ref .... 0
+--   usage_events auf limit.ai_cost_monthly_cents .... 0
+--
+-- vps_status wurde seit Anlage des Tools nie ausgefuehrt. Ein Backfill haette
+-- keine Zeile zu treffen, und ein Korrektur-INSERT in den append-only Ledger
+-- wuerde eine Bewegung erfinden, die es nie gab. Genau deshalb ist jetzt der
+-- richtige Zeitpunkt: die Migration schliesst das Fenster, BEVOR die erste
+-- fehlerhafte Buchung entsteht.
 
 UPDATE public.ai_tools
    SET cost_input_per_million_usd  = 5.00,

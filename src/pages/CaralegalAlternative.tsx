@@ -106,7 +106,13 @@ const PILLARS: Pillar[] = [
   },
 ];
 
-/** Badge-Klassen je Status — literale Tailwind-Strings (purge-safe). */
+/**
+ * Badge-Klassen je Status — literale Tailwind-Strings (purge-safe).
+ *
+ * Statuslabel, Säulen-Index und Messdatum sind Metadaten und tragen deshalb
+ * `font-mono` (AGENTS.md: „Monospace-Schriften für technische Daten und
+ * Metadaten", ausdrücklich auch im Light-Theme).
+ */
 const STATUS_BADGE: Record<string, string> = {
   live: 'border-emerald-900 bg-emerald-950/40 text-emerald-300',
   preview: 'border-sky-900 bg-sky-950/40 text-sky-300',
@@ -135,7 +141,7 @@ function CapabilityRow({ capability }: { capability: PillarCapability }) {
         label
       )}
       <span
-        className={`inline-flex items-center px-1.5 py-0.5 border text-[10px] font-bold uppercase tracking-wider rounded-none ${STATUS_BADGE[item.status]}`}
+        className={`inline-flex items-center px-1.5 py-0.5 border font-mono text-[10px] font-bold uppercase tracking-wider rounded-none ${STATUS_BADGE[item.status]}`}
       >
         {STATUS_LABEL[item.status]}
       </span>
@@ -152,7 +158,7 @@ function PillarCard({ pillar }: { pillar: Pillar }) {
           <pillar.Icon className="h-4 w-4 text-white" />
         </div>
         <div>
-          <div className="text-[10px] font-bold uppercase tracking-wider text-titanium-500">
+          <div className="font-mono text-[10px] font-bold uppercase tracking-wider text-titanium-500">
             {pillar.step}
           </div>
           <h3 className="font-display font-bold text-titanium-50 text-lg leading-tight">
@@ -232,7 +238,8 @@ export function CaralegalAlternative() {
         </h2>
         <p className="text-sm text-titanium-400 mb-4">
           Jede Fähigkeit trägt ihren tatsächlichen Stand aus der Produkt-Registry — nicht
-          den Wunschzettel. Gemessen am {IMPLEMENTATION_MEASURED_AT}.
+          den Wunschzettel. Gemessen am{' '}
+          <span className="font-mono">{IMPLEMENTATION_MEASURED_AT}</span>.
         </p>
         <div className="grid sm:grid-cols-2 gap-4">
           {PILLARS.map((p) => (
@@ -247,7 +254,7 @@ export function CaralegalAlternative() {
             <Activity className="h-4 w-4 text-amber-300" />
             <h3 className="font-display font-bold text-titanium-50">
               Die fünfte Säule — Monitor —{' '}
-              <span className="text-amber-300">{STATUS_LABEL[monitoring.status]}</span>
+              <span className="font-mono text-amber-300">{STATUS_LABEL[monitoring.status]}</span>
             </h3>
           </div>
           <p className="text-sm text-titanium-300 leading-relaxed">

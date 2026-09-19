@@ -4,6 +4,7 @@
  */
 import * as Sentry from '@sentry/react';
 import { browserTracingIntegration } from '@sentry/react';
+import { redactAuthInUrl } from './auth-session';
 
 const DSN = import.meta.env.VITE_SENTRY_DSN as string | undefined;
 const ENV = import.meta.env.MODE;
@@ -80,7 +81,25 @@ export function initSentry(): void {
           if (v.value) v.value = v.value.replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, '[email]');
         }
       }
+      if (event.request?.url) {
+        event.request.url = redactAuthInUrl(event.request.url);
+      }
+      if (event.request?.headers) {
+        delete event.request.headers.Authorization;
+        delete event.request.headers.authorization;
+        delete event.request.headers.Cookie;
+        delete event.request.headers.cookie;
+      }
       return event;
+    },
+    beforeBreadcrumb(breadcrumb) {
+      if (breadcrumb.data && typeof breadcrumb.data.url === 'string') {
+        breadcrumb.data.url = redactAuthInUrl(breadcrumb.data.url);
+      }
+      if (typeof breadcrumb.message === 'string') {
+        breadcrumb.message = redactAuthInUrl(breadcrumb.message);
+      }
+      return breadcrumb;
     },
     initialScope: {
       tags: {

@@ -7,7 +7,6 @@ import {
 } from '../../product/implementation-status';
 import {
   LANDING_ACCENT,
-  LANDING_H2,
   LANDING_MONO,
   LANDING_MUTED,
   LANDING_SERIF,
@@ -15,7 +14,7 @@ import {
 } from './landing-theme';
 
 /**
- * Channel tools — status from product registry (not a parallel marketing list).
+ * Channel tools — Dominik Dark/Gold chrome; status from product registry.
  */
 const TOOLS = [
   {
@@ -62,12 +61,9 @@ const TOOLS = [
 
 export function LandingChannelTools() {
   return (
-    <section
-      id="tools"
-      className="ga-band relative z-[1] border-t border-[#d0c3a4]/10 py-[64px] lg:py-[72px]"
-    >
+    <section id="tools" className="relative border-t border-white/[0.05] py-[92px]">
       <div className="mx-auto max-w-[1500px] px-[4vw]">
-        <div className="mb-8 max-w-3xl">
+        <div className="mb-12 max-w-3xl">
           <p
             className="inline-block rounded-full border px-[11px] py-[7px] text-[9px] font-medium tracking-[.23em]"
             style={{
@@ -79,25 +75,20 @@ export function LandingChannelTools() {
             GOVERNANCE TOOLS
           </p>
           <h2
-            className="mt-[18px] leading-[1.05] tracking-[-.03em]"
-            style={{
-              fontFamily: LANDING_SERIF,
-              fontWeight: 500,
-              fontSize: LANDING_H2,
-              color: LANDING_TEXT,
-            }}
+            className="mt-[22px] text-[clamp(40px,5vw,65px)] leading-none tracking-[-.035em]"
+            style={{ fontFamily: LANDING_SERIF, fontWeight: 500, color: LANDING_TEXT }}
           >
             Ihre KI-Kanäle.{' '}
             <em className="not-italic" style={{ color: LANDING_ACCENT }}>
               Eine Governance-Ebene.
             </em>
           </h2>
-          <p className="mt-[14px] max-w-[640px] text-[13px] leading-[1.65]" style={{ color: LANDING_MUTED }}>
+          <p className="mt-[17px] max-w-[760px] text-[13px] leading-[1.7]" style={{ color: LANDING_MUTED }}>
             Live-Module führen in den Konfigurator. Preview-Module sind als solche gekennzeichnet.
           </p>
         </div>
 
-        <div className="grid gap-[12px] sm:grid-cols-2">
+        <div className="grid gap-[14px] sm:grid-cols-2">
           {TOOLS.map(({ eyebrow, title, icon: Icon, text, bullets, href, cta, registryId }) => {
             const live = isImplementationLive(registryId);
             const item = getImplementation(registryId);
@@ -105,16 +96,15 @@ export function LandingChannelTools() {
             return (
               <article
                 key={title}
-                className="flex min-h-[240px] flex-col p-[20px]"
+                className="flex min-h-[280px] flex-col border border-white/12 p-[22px]"
                 style={{
-                  border: `1px solid ${LANDING_ACCENT}33`,
                   background: 'linear-gradient(135deg, rgba(20,21,25,0.7), rgba(7,9,13,0.72))',
                 }}
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex items-center gap-3">
                     <span
-                      className="grid h-10 w-10 shrink-0 place-items-center border"
+                      className="grid h-11 w-11 shrink-0 place-items-center border"
                       style={{
                         borderColor: `${LANDING_ACCENT}40`,
                         backgroundColor: `${LANDING_ACCENT}1a`,
@@ -130,7 +120,7 @@ export function LandingChannelTools() {
                         {eyebrow}
                       </p>
                       <h3
-                        className="text-lg tracking-tight"
+                        className="text-xl tracking-tight"
                         style={{ fontFamily: LANDING_SERIF, fontWeight: 500, color: LANDING_TEXT }}
                       >
                         {title}
@@ -138,38 +128,33 @@ export function LandingChannelTools() {
                     </div>
                   </div>
                   <span
-                    className="border px-2.5 py-1 text-[8px] tracking-[.12em]"
+                    className="border px-3 py-1 text-[9px] tracking-[.12em]"
                     style={{
                       fontFamily: LANDING_MONO,
-                      borderColor: live ? 'rgba(208,195,164,0.35)' : 'rgba(208,195,164,0.45)',
+                      borderColor: live ? `${LANDING_ACCENT}40` : 'rgba(255,255,255,0.25)',
                       borderStyle: live ? 'solid' : 'dashed',
-                      color: 'rgba(208,195,164,0.85)',
+                      color: live ? LANDING_ACCENT : 'rgba(255,255,255,0.4)',
                     }}
                   >
                     {STATUS_LABEL[status]}
                   </span>
                 </div>
-                <p className="mt-4 flex-1 text-[13px] leading-relaxed" style={{ color: LANDING_MUTED }}>
+                <p className="mt-5 flex-1 text-[13px] leading-relaxed" style={{ color: LANDING_MUTED }}>
                   {text}
                 </p>
-                <div className="mt-4 mb-4 flex flex-wrap gap-2">
+                <div className="mt-5 mb-5 flex flex-wrap gap-2">
                   {bullets.map((bullet) => (
                     <span
                       key={bullet}
-                      className="px-2.5 py-1 text-[10px]"
-                      style={{
-                        border: `1px solid ${LANDING_ACCENT}40`,
-                        backgroundColor: 'rgba(0,0,0,0.35)',
-                        color: 'rgba(242,238,230,0.7)',
-                      }}
+                      className="border border-white/10 bg-white/[0.025] px-3 py-1.5 text-[10px] text-white/45"
                     >
                       {bullet}
                     </span>
                   ))}
                 </div>
                 <Link
-                  to={live ? href : status === 'preview' ? href : '/warteliste'}
-                  className="inline-flex w-full items-center justify-center gap-2 border px-5 py-3 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d0c3a4]/50"
+                  to={live ? href : '/warteliste'}
+                  className="inline-flex w-full items-center justify-center gap-2 border px-5 py-3.5 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e4cfa2]/50"
                   style={
                     live
                       ? {
@@ -178,19 +163,24 @@ export function LandingChannelTools() {
                           color: LANDING_ACCENT,
                         }
                       : {
-                          borderColor: 'rgba(208,195,164,0.28)',
-                          borderStyle: 'dashed',
-                          color: 'rgba(232,221,200,0.75)',
+                          borderColor: 'rgba(255,255,255,0.2)',
+                          color: 'rgba(255,255,255,0.7)',
                         }
                   }
                 >
-                  {live ? cta : status === 'preview' ? `${cta} (Preview)` : 'Auf die Warteliste'}{' '}
-                  <ArrowRight className="h-4 w-4" />
+                  {live ? cta : 'Auf die Warteliste'} <ArrowRight className="h-4 w-4" />
                 </Link>
               </article>
             );
           })}
         </div>
+
+        <p
+          className="mt-8 text-center text-[9px] tracking-[.18em] text-white/25"
+          style={{ fontFamily: LANDING_MONO }}
+        >
+          ONE GOVERNANCE PLANE · WEB · CODE · POLICY · EVIDENCE
+        </p>
       </div>
     </section>
   );

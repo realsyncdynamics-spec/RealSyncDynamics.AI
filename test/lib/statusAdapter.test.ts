@@ -9,8 +9,10 @@
 import { describe, it, expect } from 'vitest';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import {
+  EMPTY_COMPLIANCE_KPI_ROW,
   EMPTY_TENANT_STATUS,
   formatMetric,
+  loadComplianceKpiRow,
   loadTenantStatus,
 } from '../../src/lib/status/statusAdapter';
 
@@ -19,8 +21,8 @@ const TENANT = '11111111-1111-1111-1111-111111111111';
 type TableResult = { data?: unknown; count?: number | null; error?: { message: string } | null };
 
 /**
- * Minimaler Supabase-Stub. Bildet nur die im Adapter benutzte Kette ab:
- * from().select().eq() → thenable, plus order().limit() und maybeSingle().
+ * Minimaler Supabase-Stub. Bildet die im Adapter benutzte Kette ab:
+ * from().select().eq()… → thenable, plus order/limit/maybeSingle/gte/not/lte.
  */
 function stubClient(tables: Record<string, TableResult>): SupabaseClient {
   const from = (table: string) => {
@@ -30,13 +32,16 @@ function stubClient(tables: Record<string, TableResult>): SupabaseClient {
       count: result.count ?? null,
       error: result.error ?? null,
     };
-    const chain = {
-      eq: () => chain,
-      order: () => chain,
-      limit: () => Promise.resolve(payload),
-      maybeSingle: () => Promise.resolve(payload),
-      then: (resolve: (value: typeof payload) => unknown) => Promise.resolve(payload).then(resolve),
-    };
+    const chain: Record<string, unknown> = {};
+    const self = () => chain;
+    chain.eq = self;
+    chain.gte = self;
+    chain.lte = self;
+    chain.not = self;
+    chain.order = self;
+    chain.limit = () => Promise.resolve(payload);
+    chain.maybeSingle = () => Promise.resolve(payload);
+    chain.then = (resolve: (value: typeof payload) => unknown) => Promise.resolve(payload).then(resolve);
     return { select: () => chain };
   };
   return { from } as unknown as SupabaseClient;
@@ -139,5 +144,75 @@ describe('loadTenantStatus', () => {
     for (const value of Object.values(EMPTY_TENANT_STATUS)) {
       expect(value).toBeNull();
     }
+  });
+});
+
+describe('loadComplianceKpiRow', () => {
+  it('lässt score_overall und trend null, wenn kein History-Eintrag existiert', async () => {
+    const client = stubClient({
+      compliance_score_history: { data: [] },
+      risk_dashboard_summary: { data: null },
+      incidents: { count: 0 },
+      dpias: { data: [] },
+      governance_policies: { data: [] },
+      vendors: { data: [] },
+    });
+
+    const row = await loadComplianceKpiRow(client, TENANT);
+
+    expect(row.score_overall).toBeNull();
+    expect(row.riskTrendDirection).toBeNull();
+    expect(row.criticalFindings).toBeNull();
+    expect(row.newIncidents).toBe(0);
+    expect(row.resolvedIncidents).toBe(0);
+    expect(row.upcomingDeadlines).toEqual([]);
+    expect(row.policies).toEqual({ documented: 0, pending: 0 });
+    expect(row.vendors).toEqual({ active: 0, highRisk: 0 });
+  });
+
+  it('mappt Score + Breakdown und lässt fehlgeschlagene Incident-Zählung null', async () => {
+    const client = stubClient({
+      compliance_score_history: {
+        data: [{
+          score_overall: 81.4,
+          trend_direction: 'improving',
+          score_gdpr: 90,
+          score_nis2: null,
+          score_dsa: 70,
+          score_ai_act: 66,
+          policy_compliance: 80,
+          vendor_risk: null,
+          incident_response: 55,
+          data_governance: 60,
+        }],
+      },
+      risk_dashboard_summary: { data: { critical_risks_count: 2 } },
+      incidents: { error: { message: 'RLS denied' } },
+      dpias: { error: { message: 'missing' } },
+      governance_policies: { error: { message: 'missing' } },
+      vendors: { error: { message: 'missing' } },
+    });
+
+    const row = await loadComplianceKpiRow(client, TENANT);
+
+    expect(row.score_overall).toBe(81);
+    expect(row.riskTrendDirection).toBe('improving');
+    expect(row.score_breakdown.score_gdpr).toBe(90);
+    expect(row.score_breakdown.score_nis2).toBeNull();
+    expect(row.score_breakdown.vendor_risk).toBeNull();
+    expect(row.criticalFindings).toBe(2);
+    expect(row.newIncidents).toBeNull();
+    expect(row.resolvedIncidents).toBeNull();
+    expect(row.upcomingDeadlines).toBeNull();
+    expect(row.policies).toEqual({ documented: null, pending: null });
+    expect(row.vendors).toEqual({ active: null, highRisk: null });
+  });
+
+  it('EMPTY_COMPLIANCE_KPI_ROW erfindet keine Zahlen', () => {
+    expect(EMPTY_COMPLIANCE_KPI_ROW.score_overall).toBeNull();
+    expect(EMPTY_COMPLIANCE_KPI_ROW.criticalFindings).toBeNull();
+    expect(EMPTY_COMPLIANCE_KPI_ROW.newIncidents).toBeNull();
+    expect(EMPTY_COMPLIANCE_KPI_ROW.riskTrendDirection).toBeNull();
+    expect(EMPTY_COMPLIANCE_KPI_ROW.upcomingDeadlines).toBeNull();
   });
 });

@@ -1527,3 +1527,47 @@ html, body {
   color: #fcd34d;
   border: 1px solid #92400e;
 }
+
+/* ── Startseite: zwei Farbmodi, ein Attribut ─────────────────────────────
+   Beide Fassungen der Referenz, umschaltbar über `data-landing-mode` auf
+   dem Seiten-Wrapper (siehe `landing-mode.ts` / `LandingModeSwitch`).
+
+     gold — gebürstetes Titan, Europa mit Goldströmen. Vorgabe, Markenbild.
+     cyan — Schwarz, Europa als Nachtaufnahme, Cyan-Akzent.
+
+   Layout, Typografie und Copy sind in beiden identisch — es ist dieselbe
+   Seite in zwei Tonungen, nicht zwei Seiten. Die Werte stehen hier an genau
+   einer Stelle; `landing-mode.ts` zeigt nur darauf.
+
+   Die Hex-Werte der Gold-Fassung spiegeln `landing-theme.ts` — das bleibt
+   die Quelle für alle Flächen, die NICHT umschalten (Roadmap, OS-Chrome).
+   Wer Gold ändert, ändert es in beiden. */
+[data-landing-mode] {
+  --rsd-accent: #d6ad68;
+  --rsd-accent-soft: #e8c98a;
+  --rsd-accent-lite: #e4cfa2;
+  --rsd-bg: #0a0a0b;
+  --rsd-panel: #121214;
+  --rsd-btn-ink: #0a0a0b;
+  --rsd-line: rgba(214, 173, 104, 0.22);
+  --rsd-glow: 0 0 32px rgba(214, 173, 104, 0.28);
+  --rsd-veil: #0a0a0b;
+  /* Deckung der Aufnahme: Gold arbeitet mit dem gefilterten Chromrelief,
+     Nacht zeigt das Foto direkter. */
+  --rsd-shot-opacity: 0.55;
+  --rsd-shot-filter: sepia(0.5) saturate(1.5) hue-rotate(-14deg) contrast(1.08);
+}
+
+[data-landing-mode='cyan'] {
+  --rsd-accent: #22c3e6;
+  --rsd-accent-soft: #7fe3f5;
+  --rsd-accent-lite: #a9ecfa;
+  --rsd-bg: #04070a;
+  --rsd-panel: #0a1016;
+  --rsd-btn-ink: #04161c;
+  --rsd-line: rgba(127, 227, 245, 0.22);
+  --rsd-glow: 0 0 32px rgba(34, 195, 230, 0.3);
+  --rsd-veil: #04070a;
+  --rsd-shot-opacity: 0.72;
+  --rsd-shot-filter: saturate(1.12) contrast(1.06) brightness(1.02);
+}

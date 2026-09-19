@@ -1,8 +1,24 @@
 /**
  * Static Europe network hero graphic — Replit SSOT.
- * Illustrative map + amber node mesh. NOT an interactive globe/sphere.
+ * Illustrative map + node mesh. NOT an interactive globe/sphere.
+ *
+ * Die Tonung folgt dem Farbmodus der Seite (`landing-mode.ts`): Gold über
+ * einem warm gefilterten Chromrelief, Cyan über der ungefilterten
+ * Nachtaufnahme. Dieselbe Aufnahme, dieselben Knoten — nur die Farbe
+ * wechselt.
+ *
+ * Die Knotenfarben stehen als `style`, nicht als `fill`/`stroke`-Attribut:
+ * `var()` ist in SVG-Präsentationsattributen nicht verlässlich, in der
+ * CSS-Deklaration dagegen schon.
  */
-import { LANDING_ACCENT, LANDING_ACCENT_SOFT } from './landing-theme';
+import {
+  MODE_ACCENT,
+  MODE_ACCENT_SOFT,
+  MODE_SHOT_FILTER,
+  MODE_SHOT_OPACITY,
+  modeAccent,
+  modeVeil,
+} from './landing-mode';
 
 /** Approximate node positions (% of box) over Europe framing. */
 const NODES: readonly { x: number; y: number; r?: number }[] = [
@@ -52,19 +68,21 @@ export function EuropeNetworkHero() {
           alt=""
           width={1376}
           height={768}
-          className="absolute inset-0 h-full w-full scale-[1.08] object-cover object-[68%_42%] opacity-[0.55]"
+          className="absolute inset-0 h-full w-full scale-[1.08] object-cover object-[68%_42%]"
+          style={{ opacity: MODE_SHOT_OPACITY, filter: MODE_SHOT_FILTER }}
           decoding="async"
         />
       </picture>
 
-      {/* Charcoal veil — keeps left copy readable; map glows on the right */}
+      {/* Veil — keeps left copy readable; map glows on the right */}
       <div
         className="absolute inset-0"
         style={{
-          background:
-            'linear-gradient(105deg, #0a0a0b 0%, #0a0a0bcc 32%, #0a0a0b66 52%, transparent 72%),' +
-            'linear-gradient(180deg, #0a0a0b88 0%, transparent 28%, transparent 70%, #0a0a0bee 100%),' +
-            `radial-gradient(55% 50% at 72% 42%, ${LANDING_ACCENT}33 0%, transparent 62%)`,
+          background: [
+            `linear-gradient(105deg, ${modeVeil(100)} 0%, ${modeVeil(80)} 32%, ${modeVeil(40)} 52%, transparent 72%)`,
+            `linear-gradient(180deg, ${modeVeil(53)} 0%, transparent 28%, transparent 70%, ${modeVeil(93)} 100%)`,
+            `radial-gradient(55% 50% at 72% 42%, ${modeAccent(20)} 0%, transparent 62%)`,
+          ].join(','),
         }}
       />
 
@@ -93,7 +111,7 @@ export function EuropeNetworkHero() {
               y1={from.y}
               x2={to.x}
               y2={to.y}
-              stroke={LANDING_ACCENT_SOFT}
+              style={{ stroke: MODE_ACCENT_SOFT }}
               strokeWidth="0.18"
               opacity="0.55"
               filter="url(#eu-net-glow)"
@@ -106,10 +124,16 @@ export function EuropeNetworkHero() {
               cx={n.x}
               cy={n.y}
               r={(n.r ?? 2.2) * 1.8}
-              fill={LANDING_ACCENT}
+              style={{ fill: MODE_ACCENT }}
               opacity="0.12"
             />
-            <circle cx={n.x} cy={n.y} r={n.r ?? 2.2} fill={LANDING_ACCENT_SOFT} opacity="0.9" />
+            <circle
+              cx={n.x}
+              cy={n.y}
+              r={n.r ?? 2.2}
+              style={{ fill: MODE_ACCENT_SOFT }}
+              opacity="0.9"
+            />
           </g>
         ))}
       </svg>

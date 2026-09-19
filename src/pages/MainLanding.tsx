@@ -5,6 +5,17 @@ import { LandingChannelTools } from '../components/landing/LandingChannelTools';
 import { LandingPricingSection } from '../components/landing/LandingPricingSection';
 import { PublicDarkHeader } from '../components/landing/PublicDarkHeader';
 import { EuropeNetworkHero } from '../components/landing/EuropeNetworkHero';
+import { LandingModeSwitch } from '../components/landing/LandingModeSwitch';
+import {
+  MODE_ACCENT,
+  MODE_ACCENT_SOFT,
+  MODE_BG,
+  MODE_BUTTON_INK,
+  MODE_GLOW,
+  MODE_LINE,
+  modeAccent,
+  useLandingMode,
+} from '../components/landing/landing-mode';
 import { EnterpriseAccessSection } from '../components/landing/EnterpriseAccessSection';
 import {
   PLATFORM_LIVE_ITEMS,
@@ -18,7 +29,6 @@ import {
   LANDING_BUTTON,
   LANDING_BUTTON_TEXT,
   LANDING_H1,
-  LANDING_LINE,
   LANDING_MONO,
   LANDING_MUTED,
   LANDING_SANS,
@@ -78,12 +88,14 @@ const OS_STEPS = [
 
 export function MainLanding() {
   const revealRoot = useStagedReveal<HTMLElement>();
+  const { mode, setMode } = useLandingMode();
 
   return (
     <div
       className="landing-context relative min-h-screen antialiased"
+      data-landing-mode={mode}
       style={{
-        backgroundColor: LANDING_BG,
+        backgroundColor: MODE_BG,
         color: LANDING_TEXT,
         fontFamily: LANDING_SANS,
       }}
@@ -96,7 +108,7 @@ export function MainLanding() {
         ogDescription="RealSyncDynamics.AI — Governance-Infrastruktur für Europa. Free Audit starten."
       />
 
-      <PublicDarkHeader overlay />
+      <PublicDarkHeader overlay modeSwitch={<LandingModeSwitch mode={mode} onChange={setMode} />} />
 
       <main ref={revealRoot} className="relative z-10">
         {/* ── Hero ── */}
@@ -110,7 +122,7 @@ export function MainLanding() {
             <div className="max-w-xl lg:max-w-[34rem]">
               <p
                 className="mb-6 text-[10px] font-medium tracking-[0.22em]"
-                style={{ fontFamily: LANDING_MONO, color: LANDING_ACCENT }}
+                style={{ fontFamily: LANDING_MONO, color: MODE_ACCENT }}
               >
                 {HERO_EYEBROW}
               </p>
@@ -129,7 +141,7 @@ export function MainLanding() {
                           style={{
                             fontFamily: LANDING_SERIF,
                             fontWeight: 500,
-                            color: LANDING_ACCENT_SOFT,
+                            color: MODE_ACCENT_SOFT,
                             fontStyle: 'italic',
                           }}
                         >
@@ -155,19 +167,19 @@ export function MainLanding() {
                   id="audit-cta"
                   data-hero-cta="audit"
                   to="/audit"
-                  className="inline-flex items-center gap-2 rounded-full px-6 py-3.5 text-[13px] font-semibold transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d6ad68]"
+                  className="inline-flex items-center gap-2 rounded-full px-6 py-3.5 text-[13px] font-semibold transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--rsd-accent,#d6ad68)]"
                   style={{
-                    backgroundColor: LANDING_BUTTON,
-                    color: LANDING_BUTTON_TEXT,
-                    boxShadow: '0 0 32px rgba(214, 173, 104, 0.28)',
+                    backgroundColor: MODE_ACCENT,
+                    color: MODE_BUTTON_INK,
+                    boxShadow: MODE_GLOW,
                   }}
                 >
                   {HERO_SCAN_CTA_LONG} <ArrowRight className="h-4 w-4" />
                 </Link>
                 <Link
                   to="/evidence"
-                  className="inline-flex items-center gap-2 rounded-full border px-6 py-3.5 text-[13px] font-medium transition hover:bg-[#d6ad68]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d6ad68]/50"
-                  style={{ borderColor: `${LANDING_ACCENT}66`, color: LANDING_TEXT }}
+                  className="inline-flex items-center gap-2 rounded-full border px-6 py-3.5 text-[13px] font-medium transition hover:bg-[var(--rsd-accent,#d6ad68)]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--rsd-accent,#d6ad68)]/50"
+                  style={{ borderColor: modeAccent(40), color: LANDING_TEXT }}
                 >
                   {HERO_DASHBOARD_CTA_LABEL} <ArrowDownRight className="h-4 w-4" />
                 </Link>
@@ -176,7 +188,7 @@ export function MainLanding() {
               {/* Trust row */}
               <ul
                 className="mt-12 flex flex-wrap gap-x-5 gap-y-2 border-t pt-6"
-                style={{ borderColor: LANDING_LINE }}
+                style={{ borderColor: MODE_LINE }}
                 aria-label="Compliance-Standards"
               >
                 {HERO_PROOF_CHIPS.map((chip) => (

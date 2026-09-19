@@ -11,9 +11,10 @@ export interface MfaStatus {
   pendingCount: number;
   currentLevel: string | null;
   nextLevel: string | null;
+  factors: TotpFactorRef[];
 }
 
-interface TotpFactorRef { id: string; status: string }
+interface TotpFactorRef { id: string; status: string; friendlyName: string | null }
 
 // `listFactors().data.totp` enthält in supabase-js NUR verifizierte Faktoren.
 // Unverifizierte (abgebrochene Enrollments) existieren serverseitig weiter und
@@ -23,7 +24,13 @@ async function listAllTotpFactors(): Promise<TotpFactorRef[]> {
   const { data } = await sb.auth.mfa.listFactors();
   return ((data?.all ?? []) as Array<{ id: string; status: string; factor_type: string }>)
     .filter((f) => f.factor_type === 'totp')
-    .map((f) => ({ id: f.id, status: f.status }));
+    .map((f) => ({
+      id: f.id,
+      status: f.status,
+      friendlyName: typeof (f as { friendly_name?: unknown }).friendly_name === 'string'
+        ? (f as { friendly_name?: string }).friendly_name ?? null
+        : null,
+    }));
 }
 
 export async function getMfaStatus(): Promise<MfaStatus> {
@@ -43,6 +50,7 @@ export async function getMfaStatus(): Promise<MfaStatus> {
     pendingCount: totp.length - verified.length,
     currentLevel,
     nextLevel,
+    factors: totp,
   };
 }
 

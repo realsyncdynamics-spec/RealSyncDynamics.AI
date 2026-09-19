@@ -42,10 +42,12 @@ export function SecuritySettings() {
     const sb = getSupabase();
     const { data: { user } } = await sb.auth.getUser();
     setUserId(user?.id ?? null);
-    setIsSuperAdmin(!!(
-      (user?.app_metadata as Record<string, unknown> | undefined)?.is_super_admin
-      ?? (user?.user_metadata as Record<string, unknown> | undefined)?.is_super_admin
-    ));
+    if (user?.id) {
+      const { data: observeData } = await sb.functions.invoke('mfa-observe-status', { body: {} });
+      setIsSuperAdmin(!!(observeData as { is_super_admin?: boolean } | null)?.is_super_admin);
+    } else {
+      setIsSuperAdmin(false);
+    }
     setStatus(await getMfaStatus());
     if (activeTenantId) {
       const { data } = await sb.from('tenant_security_settings')

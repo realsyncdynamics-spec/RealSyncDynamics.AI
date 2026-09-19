@@ -30,6 +30,7 @@ export function SecuritySettings() {
   const [showSecret, setShowSecret] = useState(false);
   const [recoveryCodes, setRecoveryCodes] = useState<string[] | null>(null);
   const [copied, setCopied] = useState(false);
+  const [superAdminLoadedForUserId, setSuperAdminLoadedForUserId] = useState<string | null>(null);
 
   const [redeemMode, setRedeemMode] = useState(false);
   const [redeemCode, setRedeemCode] = useState('');
@@ -43,14 +44,18 @@ export function SecuritySettings() {
     const { data: { user } } = await sb.auth.getUser();
     setUserId(user?.id ?? null);
     if (user?.id) {
-      const { data: observeData, error: observeErr } = await sb.functions.invoke('mfa-observe-status', { body: {} });
-      if (observeErr) {
-        setIsSuperAdmin(false);
-      } else {
-        setIsSuperAdmin(!!(observeData as { is_super_admin?: boolean } | null)?.is_super_admin);
+      if (superAdminLoadedForUserId !== user.id) {
+        const { data: observeData, error: observeErr } = await sb.functions.invoke('mfa-observe-status', { body: {} });
+        if (observeErr) {
+          setIsSuperAdmin(false);
+        } else {
+          setIsSuperAdmin(!!(observeData as { is_super_admin?: boolean } | null)?.is_super_admin);
+        }
+        setSuperAdminLoadedForUserId(user.id);
       }
     } else {
       setIsSuperAdmin(false);
+      setSuperAdminLoadedForUserId(null);
     }
     setStatus(await getMfaStatus());
     if (activeTenantId) {
@@ -61,7 +66,7 @@ export function SecuritySettings() {
       setEnforceAll(false);
     }
   }
-  useEffect(() => { refresh().catch((e) => setError(String(e))); /* eslint-disable-next-line */ }, [activeTenantId]);
+  useEffect(() => { refresh().catch((e) => setError(String(e))); /* eslint-disable-next-line */ }, [activeTenantId, superAdminLoadedForUserId]);
 
   async function run(fn: () => Promise<void>) {
     setBusy(true); setError(null);

@@ -28,6 +28,7 @@ describe('getMfaStatus', () => {
         all: [
           { id: 'f1', status: 'verified', factor_type: 'totp', friendly_name: 'Laptop Token' },
           { id: 'f2', status: 'unverified', factor_type: 'totp', friendly_name: null },
+          { id: 'f3', status: 'verified', factor_type: 'totp', friendly_name: 42 },
           { id: 'sms1', status: 'verified', factor_type: 'phone' },
         ],
       },
@@ -36,13 +37,14 @@ describe('getMfaStatus', () => {
 
     const status = await getMfaStatus();
     expect(status.hasVerifiedTotp).toBe(true);
-    expect(status.factorCount).toBe(2);
+    expect(status.factorCount).toBe(3);
     expect(status.pendingCount).toBe(1);
     expect(status.currentLevel).toBe('aal1');
     expect(status.nextLevel).toBe('aal2');
     expect(status.factors).toEqual([
       { id: 'f1', status: 'verified', friendlyName: 'Laptop Token' },
       { id: 'f2', status: 'unverified', friendlyName: null },
+      { id: 'f3', status: 'verified', friendlyName: null },
     ]);
   });
 });

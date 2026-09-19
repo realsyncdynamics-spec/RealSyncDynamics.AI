@@ -43,7 +43,8 @@ export function SecuritySettings() {
     const { data: { user } } = await sb.auth.getUser();
     setUserId(user?.id ?? null);
     if (user?.id) {
-      const { data: observeData } = await sb.functions.invoke('mfa-observe-status', { body: {} });
+      const { data: observeData, error: observeErr } = await sb.functions.invoke('mfa-observe-status', { body: {} });
+      if (observeErr) throw observeErr;
       setIsSuperAdmin(!!(observeData as { is_super_admin?: boolean } | null)?.is_super_admin);
     } else {
       setIsSuperAdmin(false);
@@ -101,7 +102,7 @@ export function SecuritySettings() {
     if (!activeTenantId) return;
     const sb = getSupabase();
     const { error: e } = await sb.from('tenant_security_settings')
-      .upsert({ tenant_id: activeTenantId, mfa_enforced: next }, { onConflict: 'tenant_id' });
+      .upsert({ tenant_id: activeTenantId, mfa_enforced: next, enforce_mfa_all: next }, { onConflict: 'tenant_id' });
     if (e) throw e;
     setEnforceAll(next);
   });

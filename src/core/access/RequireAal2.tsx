@@ -60,6 +60,7 @@ export function RequireAal2({ action, children, mode = 'enforce' }: Props) {
   const outcome: Aal2Outcome = aal2Decision({ hasSession, required, currentLevel, nextLevel });
 
   if (mode === 'observe') {
+    if (!hasSession) return <>{children}</>;
     if (outcome === 'allow') return <>{children}</>;
     return (
       <div className="space-y-4">

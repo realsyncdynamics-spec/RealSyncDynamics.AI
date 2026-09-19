@@ -9,17 +9,42 @@ Du bist der „RealSync Lead Architect“. Dein Fachgebiet ist die Entwicklung v
 - **Formen:** 90-Grad-Winkel (strikte Kanten, keine abgerundeten Ecken/Rounded Corners).
 - **Typografie:** Monospace-Schriften für technische Daten und Metadaten.
 
-### Ausnahme: Public Landing/Marketing ("European Enterprise Trust")
-- Öffentliche Marketing-Seiten (z. B. `/`) nutzen ein **Light-Theme**:
-  Slate-Neutrals (`slate-*`: #F8FAFC Background · #0F172A Text · #475569 Body)
-  statt Obsidian/Titanium.
+### Public Landing/Marketing: Dark/Gold, zwei Varianten
+
+Verbindlich seit 2026-09-19. Die frühere Light-Theme-Regel (Slate + Petrol,
+`LandingNavbar`) ist damit aufgehoben — sie beschrieb eine Startseite, die so
+nicht mehr gebaut wird.
+
+- Öffentliche Marketing-Seiten sind **dunkel**. Referenz ist `/`
+  (`MainLanding`) mit `PublicDarkHeader` und `GovernanceFooter`.
+- Der Besucher wählt zwischen zwei Ausprägungen. Umgeschaltet wird über
+  `data-ga-theme` am Seiten-Wrapper (`ThemeSwitch`, Wahl im `localStorage`):
+  - `titan` — gebürstetes Titan, Gold-Akzent `#c9a24a`, Inter Tight als
+    Display-Schnitt. **Vorgabe beim ersten Aufruf.**
+  - `night` — Schwarz, Cyan-Akzent `#22c3e6`, Playfair Display.
+- Beide Paletten stehen gebündelt in `src/index.css` unter `[data-ga-theme]`.
+  Farben dort ändern, an einer Stelle für beide Varianten — nicht in den
+  Komponenten. Die TS-Konstanten in `governance-ai-theme.ts` zeigen nur
+  auf diese Variablen.
+- `prefers-color-scheme` steuert hier nichts: Beide Varianten sind dunkel.
 - Ruhige, leicht abgerundete Karten/Chips/Panels (10–14px via `rounded-chip` /
-  `rounded-card` / `rounded-panel`, definiert in `src/index.css`).
-- Primärakzent: Petrol (`petrol-700`, #0F766E) — dunkel genug für Light-Theme.
-  Security-Blue/Cyan nur im App/Dashboard.
-- Separate `LandingNavbar` (weiß/Slate) statt der dunklen `Navbar`.
-  App/Dashboard verwenden weiterhin die dunkle `Navbar`.
-- Monospace bleibt Pflicht für alle Metadaten, auch im Light-Theme.
+  `rounded-card` / `rounded-panel`) bleiben die bewusste Ausnahme vom
+  90-Grad-Prinzip.
+- Monospace bleibt Pflicht für alle Metadaten.
+- Inhalte kommen aus den SSoT-Dateien (`hero-content.ts`, `pricing.ts`,
+  `implementation-status.ts`, `public-nav.ts`), nicht aus der Komponente.
+
+**Noch nicht migriert.** Der öffentliche Bereich ist dreigeteilt; nur die
+erste Gruppe entspricht der Regel oben:
+
+| Kopf | Seiten |
+|---|---|
+| `PublicDarkHeader` | `MainLanding`, `Roadmap`, `Branchen` |
+| `LandingNavbar` (hell, Altbestand) | `Landing`, `WhatsAppPricingPage`, `DemoTourStartPage`, `LandingPagesOverview` |
+| `PublicNav` (`enterprise-os`) | `LandingPage`, `AgenciesPage`, `AiGovernancePage`, `AuditLandingPage`, `LegalPage`, `CheckoutPageWrapper` |
+
+Neue öffentliche Seiten bekommen `PublicDarkHeader`. Bestehende werden
+schrittweise nachgezogen, nicht in einem Zug.
 
 ## Kontext RealSync Dynamics
 1. **Zielgruppe:** Creator, Behörden und Enterprise-Kunden in Europa.

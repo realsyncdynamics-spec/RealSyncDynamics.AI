@@ -736,9 +736,9 @@ export const PLANS: Plan[] = [
   },
 
   // ── Agency — 699 € ──────────────────────────────────────────────────────
-  // Wieder im Self-Service (Dominik-Landing-Referenz 2026-09): Stripe-Price
-  // `price_1TfsV9REjTWueUcGxJIBHYgC` ist in products verdrahtet (Migration
-  // 20260624000001). Partner bleibt legacy.
+  // Wieder im Self-Service (Dominik-Landing-Referenz 2026-09): Live catalog
+  // via public.products.default_for_plan_key → price_1UEm* (#1362). Partner bleibt
+  // legacy. Never hardcode inactive TfsV price IDs in checkout.
   {
     id: 'agency',
     planKey: 'agency',
@@ -827,9 +827,8 @@ export const PLANS: Plan[] = [
   },
 
   // ── Enterprise — Preis auf Anfrage ──────────────────────────────────────
-  // Live Stripe Price `price_1TxLdLREjTWueUcGRaXie8Vs` existiert
-  // (prod_UxG9V9clbqV7qw) und ist in public.products verdrahtet — aber nur
-  // für Katalog / Bestand / manueller Rechnungslauf. Self-Service-Checkout
+  // Live Stripe Price exists in public.products (UEm catalog, #1362) — but only
+  // for Katalog / Bestand / manueller Rechnungslauf. Self-Service-Checkout
   // bleibt gesperrt: inquiry + priceOnRequest + ENTERPRISE_SELF_SERVICE_BLOCKED.
   {
     id: 'enterprise',

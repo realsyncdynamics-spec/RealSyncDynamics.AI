@@ -9,7 +9,9 @@ export default defineConfig(({mode}) => {
     return {
           base,
           plugins: [react(), tailwindcss()],
-          define: {},
+          define: {
+                  // Never inject secrets into bundle. Use Edge Functions instead.
+          },
           resolve: {
                   alias: {
                             '@': path.resolve(__dirname, '.'),
@@ -20,12 +22,16 @@ export default defineConfig(({mode}) => {
                   rollupOptions: {
                           output: {
                                   manualChunks(id) {
+                                          // Split heavy vendor libs only; keep React & core together
+                                          // to avoid breaking context providers.
+                                          // Do NOT split react / react-dom / react-router — Context breaks.
                                           if (id.includes('node_modules/recharts')) {
                                                   return 'vendor-recharts';
                                           }
                                           if (id.includes('node_modules/@supabase/supabase-js')) {
                                                   return 'vendor-supabase';
                                           }
+                                          // Main already split framer-motion vs motion (#1415); keep that.
                                           if (id.includes('node_modules/framer-motion')) {
                                                   return 'vendor-framer-motion';
                                           }
@@ -39,11 +45,18 @@ export default defineConfig(({mode}) => {
                                           ) {
                                                   return 'vendor-three';
                                           }
+                                          if (id.includes('node_modules/@react-pdf/')) {
+                                                  return 'vendor-pdf';
+                                          }
+                                          if (id.includes('node_modules/@puckeditor/')) {
+                                                  return 'vendor-puck';
+                                          }
                                   },
                           },
                   },
           },
           server: {
+                  // HMR is disabled in AI Studio via DISABLE_HMR env var.
             hmr: process.env.DISABLE_HMR !== 'true',
           },
     };

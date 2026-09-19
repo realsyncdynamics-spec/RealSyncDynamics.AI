@@ -1,52 +1,75 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+/**
+ * Replit SSOT `/` — Dark/Gold Europe-network (static), Free Audit CTAs.
+ */
+import { render, screen } from '@testing-library/react';
 import { createElement } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { MainLanding } from '../../src/pages/MainLanding';
+import {
+  HERO_DASHBOARD_CTA_LABEL,
+  HERO_HEADLINE_TEST_SUBSTRING,
+  HERO_PROOF_CHIPS,
+  HERO_SCAN_CTA_LABEL,
+  HERO_SCAN_CTA_LONG,
+} from '../../src/components/governance-frontend/hero-content';
 
 const root = resolve(__dirname, '../..');
 const landing = readFileSync(resolve(root, 'src/pages/MainLanding.tsx'), 'utf8');
-const themeHook = readFileSync(resolve(root, 'src/components/landing/use-ga-theme.ts'), 'utf8');
-const backdrop = readFileSync(resolve(root, 'src/components/landing/EuropeReliefBackdrop.tsx'), 'utf8');
-const status = readFileSync(resolve(root, 'src/components/landing/GovernanceStatusBar.tsx'), 'utf8');
+const theme = readFileSync(resolve(root, 'src/components/landing/landing-theme.ts'), 'utf8');
+const header = readFileSync(resolve(root, 'src/components/landing/PublicDarkHeader.tsx'), 'utf8');
+const network = readFileSync(resolve(root, 'src/components/landing/EuropeNetworkHero.tsx'), 'utf8');
 
-describe('Landing dual frontend — Titan / Nacht', () => {
-  it('exposes both themes and persists the choice', () => {
-    expect(themeHook).toContain("'titan'");
-    expect(themeHook).toContain("'night'");
-    expect(themeHook).toContain('rsd-landing-theme');
-    expect(themeHook).toContain("DEFAULT_THEME: GaTheme = 'titan'");
+describe('Landing Replit Dark/Gold — Europe-network', () => {
+  it('keeps Dark/Gold amber tokens', () => {
+    expect(theme).toContain('#0a0a0b');
+    expect(theme).toContain('#d6ad68');
+    expect(theme).toContain('#e8c98a');
+    expect(theme).toContain('Playfair Display');
   });
 
-  it('wires the switch on the public homepage', () => {
-    expect(landing).toContain('useGaTheme');
-    expect(landing).toContain('data-ga-theme');
-    expect(landing).toContain('EuropeReliefBackdrop');
-    expect(landing).toContain('GovernanceStatusBar');
-    expect(status).toContain('ThemeSwitch');
+  it('uses static Europe network — not interactive sphere', () => {
+    expect(landing).toContain('EuropeNetworkHero');
     expect(landing).not.toContain('GovernanceSphereHost');
+    expect(landing).not.toContain('useGaTheme');
+    expect(landing).not.toContain('EuropeReliefBackdrop');
+    expect(network).toContain('europe-network-static');
+    expect(network).toContain('data-hero-interactive="false"');
+    expect(network).toContain('/europe-globe.webp');
   });
 
-  it('renders one Europe visual per theme', () => {
-    expect(backdrop).toContain("theme === 'night'");
-    expect(backdrop).toContain('/europe-globe.webp');
-    expect(backdrop).toContain('europe-night-photo');
-    expect(backdrop).toContain('europe-relief-titan');
+  it('locks Replit header chrome', () => {
+    expect(header).toContain('REALSYNCDYNAMICS.AI');
+    expect(header).toContain('Produkt');
+    expect(header).toContain('Evidence');
+    expect(header).toContain('Preise');
+    expect(header).toContain('HERO_SCAN_CTA_LABEL');
+    expect(header).toContain('to="/audit"');
   });
 
-  it('switches the rendered hero visual at runtime', () => {
-    render(
-      createElement(MemoryRouter, null, createElement(MainLanding)),
-    );
+  it('renders Replit H1 + CTAs + trust chips', () => {
+    render(createElement(MemoryRouter, null, createElement(MainLanding)));
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toMatch(/AI Compliance/);
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toMatch(/Operations OS/);
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toMatch(/für Europa/);
+    expect(screen.getAllByText(HERO_SCAN_CTA_LONG).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(HERO_DASHBOARD_CTA_LABEL).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(HERO_SCAN_CTA_LABEL).length).toBeGreaterThan(0);
+    for (const chip of HERO_PROOF_CHIPS) {
+      expect(screen.getAllByText(chip).length).toBeGreaterThan(0);
+    }
+    expect(HERO_HEADLINE_TEST_SUBSTRING).toBe('AI Compliance');
+  });
 
-    expect(document.querySelector('[data-ga-theme="titan"]')).toBeTruthy();
-    expect(document.querySelector('[data-hero-visual="europe-relief-titan"]')).toBeTruthy();
-
-    fireEvent.click(screen.getByRole('radio', { name: /nacht/i }));
-
-    expect(document.querySelector('[data-ga-theme="night"]')).toBeTruthy();
-    expect(document.querySelector('[data-hero-visual="europe-night-photo"]')).toBeTruthy();
+  it('ships KPI strip + Das Betriebssystem below the fold', () => {
+    expect(landing).toContain('SYSTEME IM SCOPE');
+    expect(landing).toContain('DAS BETRIEBSSYSTEM');
+    expect(landing).toContain('Discover');
+    expect(landing).toContain('Classify');
+    expect(landing).toContain('Enforce');
+    expect(landing).toContain('Prove');
+    expect(landing).toContain('data-demo-kpis');
   });
 });

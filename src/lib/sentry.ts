@@ -1,45 +1,98 @@
 /**
- * Sentry initialization — runs only when VITE_SENTRY_DSN is set.
- *
- * To activate:
- *   1. Create a Sentry project (free tier: 5k errors/month)
- *   2. Copy the DSN
- *   3. Set VITE_SENTRY_DSN in GitHub Actions repo secrets
- *   4. Re-run deploy-pages workflow
- *
- * No-op when DSN is missing — safe to keep imported in main.tsx.
- *
- * Privacy notes (DSGVO):
- *   - We mask all text content (PII protection) by default
- *   - IP addresses are NOT collected (sendDefaultPii: false)
- *   - Replays disabled until we have explicit user consent toggle
+ * Sentry — no-op ohne VITE_SENTRY_DSN.
+ * DSN muss ingest.de.sentry.io sein (Sub-Processor EU / Frankfurt).
  */
 import * as Sentry from '@sentry/react';
+import { browserTracingIntegration } from '@sentry/react';
 import { redactAuthInUrl } from './auth-session';
 
 const DSN = import.meta.env.VITE_SENTRY_DSN as string | undefined;
-const ENV = import.meta.env.MODE; // 'production' | 'development'
+const ENV = import.meta.env.MODE;
+const SHA = (import.meta.env.VITE_COMMIT_SHA as string | undefined)?.slice(0, 12);
+const TRACES = Number.parseFloat(import.meta.env.VITE_SENTRY_TRACES_SAMPLE_RATE ?? '');
+
+function tracesSampleRate(): number {
+  if (Number.isFinite(TRACES) && TRACES >= 0 && TRACES <= 1) return TRACES;
+  return ENV === 'production' ? 0.08 : 0;
+}
+
+/** True only when the DSN host is the EU ingest endpoint (exact or subdomain). */
+function isEuSentryDsn(dsn: string): boolean {
+  try {
+    const host = new URL(dsn).hostname.toLowerCase();
+    return host === 'ingest.de.sentry.io' || host.endsWith('.ingest.de.sentry.io');
+  } catch {
+    return false;
+  }
+}
+
+function stripUrl(raw?: string): string | undefined {
+  if (!raw) return raw;
+  try {
+    const u = new URL(raw);
+    u.search = '';
+    u.hash = '';
+    return u.toString();
+  } catch {
+    return raw.split('?')[0];
+  }
+}
 
 export function initSentry(): void {
   if (!DSN || !DSN.startsWith('https://')) return;
+  if (!isEuSentryDsn(DSN) && ENV === 'production') {
+    console.warn('[sentry] DSN is not ingest.de.sentry.io — skip init in production');
+    return;
+  }
 
   Sentry.init({
     dsn: DSN,
     environment: ENV,
+    release: SHA ? `realsync-web@${SHA}` : undefined,
     sendDefaultPii: false,
-    tracesSampleRate: 0.1,
+    tracesSampleRate: tracesSampleRate(),
+    profilesSampleRate: 0,
     replaysSessionSampleRate: 0,
     replaysOnErrorSampleRate: 0,
+    integrations: [browserTracingIntegration({ enableInp: true })],
+    tracePropagationTargets: [
+      'localhost',
+      /^https:\/\/([^/]*\.)?realsyncdynamicsai\.de(?:\/|$)/i,
+      /^https:\/\/[a-z0-9-]+\.supabase\.co(?:\/|$)/i,
+    ],
+    allowUrls: [
+      /^https?:\/\/([^/]*\.)?realsyncdynamicsai\.de(?:\/|$)/i,
+      /^https?:\/\/localhost(?::\d+)?(?:\/|$)/i,
+    ],
+    denyUrls: [
+      /(?:^|\/)extensions\//i,
+      /^chrome:\/\//i,
+      /^moz-extension:\/\//i,
+      /(?:^|\/)gtag\/js(?:\?|$)/i,
+      /^https?:\/\/([^/]*\.)?googletagmanager\.com(?:\/|$)/i,
+      /^https?:\/\/([^/]*\.)?connect\.facebook\.net(?:\/|$)/i,
+    ],
     ignoreErrors: [
-      // Browser-noise we don't care about
       'ResizeObserver loop limit exceeded',
       'Non-Error promise rejection captured',
       'NetworkError when attempting to fetch',
+      'Load failed',
+      'ChunkLoadError',
+      'Failed to fetch dynamically imported module',
+      'Importing a module script failed',
     ],
     beforeSend(event) {
-      // Strip user email + IP from any error context
-      if (event.user) {
-        event.user = { id: event.user.id };
+      if (event.user) event.user = {};
+      if (event.request) {
+        delete event.request.cookies;
+        delete event.request.headers;
+        if (event.request.url) event.request.url = stripUrl(event.request.url);
+        if (event.request.query_string) event.request.query_string = '';
+      }
+      if (event.exception?.values) {
+        for (const v of event.exception.values) {
+          if (v.value) v.value = v.value.replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, '[email]');
+        }
       }
       if (event.request?.url) {
         event.request.url = redactAuthInUrl(event.request.url);
@@ -61,5 +114,15 @@ export function initSentry(): void {
       }
       return breadcrumb;
     },
+    initialScope: {
+      tags: {
+        app: 'realsync-web',
+        region: 'eu',
+      },
+    },
   });
+}
+
+export function sentryEnabled(): boolean {
+  return Boolean(DSN && DSN.startsWith('https://'));
 }

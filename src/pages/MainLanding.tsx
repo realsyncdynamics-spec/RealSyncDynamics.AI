@@ -1,17 +1,23 @@
-import { FormEvent, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { ArrowRight, Code2, FileCheck2, Lock, ShieldCheck } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { ArrowDownRight, ArrowRight, Network, Layers, ShieldCheck, RefreshCw } from 'lucide-react';
 import { SEOHead } from '../components/SEOHead';
 import { LandingChannelTools } from '../components/landing/LandingChannelTools';
-import { LandingDarkBand } from '../components/landing/LandingDarkBand';
 import { LandingPricingSection } from '../components/landing/LandingPricingSection';
-import { LandingRoadmapSection } from '../components/landing/LandingRoadmapSection';
 import { PublicDarkHeader } from '../components/landing/PublicDarkHeader';
+import { EuropeNetworkHero } from '../components/landing/EuropeNetworkHero';
+import { EnterpriseAccessSection } from '../components/landing/EnterpriseAccessSection';
+import {
+  PLATFORM_LIVE_ITEMS,
+  STATUS_LABEL,
+} from '../product/implementation-status';
+import { useStagedReveal } from '../hooks/useStagedReveal';
 import {
   LANDING_ACCENT,
+  LANDING_ACCENT_SOFT,
   LANDING_BG,
   LANDING_BUTTON,
   LANDING_BUTTON_TEXT,
+  LANDING_H1,
   LANDING_LINE,
   LANDING_MONO,
   LANDING_MUTED,
@@ -20,47 +26,58 @@ import {
   LANDING_TEXT,
 } from '../components/landing/landing-theme';
 import {
-  RUNTIME_PREVIEW_LABEL,
-  RUNTIME_PREVIEW_NOTE,
-  RUNTIME_PREVIEW_CARDS,
-} from '../config/landing-runtime-preview';
-import {
+  CONTINUOUS_COMPLIANCE_NARRATIVE,
+  HERO_DASHBOARD_CTA_LABEL,
+  HERO_EYEBROW,
   HERO_HEADLINE,
   HERO_OPERATING_LOOP,
+  HERO_PROOF_CHIPS,
+  HERO_SCAN_CTA_LABEL,
+  HERO_SCAN_CTA_LONG,
+  HERO_SUBLINE,
 } from '../components/governance-frontend/hero-content';
-import { GovernanceSphereHost } from '../components/governance-frontend/GovernanceSphereHost';
-import { EnterpriseAccessSection } from '../components/landing/EnterpriseAccessSection';
-import {
-  PLATFORM_LIVE_ITEMS,
-  STATUS_LABEL,
-} from '../product/implementation-status';
-import { useStagedReveal } from '../hooks/useStagedReveal';
 
-const HERO_PILLARS: readonly (readonly [string, string])[] = [
-  ['DSGVO-KONFORM', 'Nachweise, Prozesse und Richtlinien laufen automatisiert mit.'],
-  ['AI-ACT-BEREIT', 'Risikobewertung, Transparenz und Dokumentation je KI-System.'],
-  ['DURCHGEHEND', 'Wiederkehrende Nachpruefung, Meldungen und Belege statt Stichproben.'],
-];
+/**
+ * Replit SSOT public `/` — Dark/Gold Europe-network (static), not interactive sphere.
+ * KPI strip mirrors Replit chrome as illustrative demo values (not live production metrics).
+ */
 
-const GOVERNANCE_STEPS = [
-  ['01', 'DISCOVER', 'KI-Systeme, Anwendungen, Datenfluesse und relevante Verarbeitungsvorgaenge erfassen.'],
-  ['02', 'ASSESS', 'Risiken bewerten und Systeme gegen Governance-, DSGVO- und EU-AI-Act-Kriterien pruefen.'],
-  ['03', 'GOVERN', 'Verbindliche Policies, Verantwortlichkeiten und Kontrollanforderungen zentral definieren.'],
-  ['04', 'ENFORCE', 'Governance-Regeln operativ durchsetzen und Abweichungen kontrolliert behandeln.'],
-  ['05', 'EVIDENCE', 'Pruefungen, Entscheidungen, Aenderungen und Kontrollen nachvollziehbar dokumentieren.'],
-  ['06', 'AUDIT', 'Eine konsistente Governance-Historie fuer Management, interne Kontrollen und Audits bereitstellen.'],
-];
+const KPI_STRIP = [
+  { label: 'SYSTEME IM SCOPE', value: '1.284', meta: 'demo' },
+  { label: 'EVIDENCE EVENTS', value: '48.902', meta: '+12%' },
+  { label: 'KONTROLLABDECKUNG', value: '93,7', meta: '%' },
+  { label: 'LETZTER PROOF', value: 'vor 02:14', meta: 'min' },
+] as const;
+
+const OS_STEPS = [
+  {
+    n: '01',
+    title: 'Discover',
+    text: 'Alle KI-Systeme, Modelle und Abhängigkeiten in einem verlässlichen Inventar.',
+    Icon: Network,
+  },
+  {
+    n: '02',
+    title: 'Classify',
+    text: 'Risiko, Zweck und regulatorischen Status automatisch zuordnen — mit menschlicher Freigabe.',
+    Icon: Layers,
+  },
+  {
+    n: '03',
+    title: 'Enforce',
+    text: 'Kontrollen als laufende Regeln in Ihre Toolchain bringen, nicht als PDF im Ordner.',
+    Icon: ShieldCheck,
+  },
+  {
+    n: '04',
+    title: 'Prove',
+    text: 'Jede Entscheidung, Kontrolle und Ausnahme revisionssicher nachweisen.',
+    Icon: RefreshCw,
+  },
+] as const;
 
 export function MainLanding() {
-  const navigate = useNavigate();
-  const [domain, setDomain] = useState('');
   const revealRoot = useStagedReveal<HTMLElement>();
-
-  const startScan = (event: FormEvent) => {
-    event.preventDefault();
-    const value = domain.trim();
-    navigate(value ? `/audit?domain=${encodeURIComponent(value)}` : '/audit');
-  };
 
   return (
     <div
@@ -69,313 +86,331 @@ export function MainLanding() {
         backgroundColor: LANDING_BG,
         color: LANDING_TEXT,
         fontFamily: LANDING_SANS,
-        backgroundImage: 'radial-gradient(circle at 70% 15%, #111823 0, #05070b 34%, #04060a 100%)',
       }}
     >
       <SEOHead
-        title="RealSyncDynamics.AI — AI Governance Runtime"
-        description="AI Governance, Running in Real Time. Governance OS fuer DSGVO und EU AI Act — Detect, Govern, Prove, Automate."
+        title="RealSyncDynamics.AI — AI Compliance Operations OS für Europa"
+        description="AI Compliance Operations OS für Europa. Entdecken. Klassifizieren. Durchsetzen. Beweisen. Free Audit starten."
         canonical="/"
-        ogTitle="AI Governance, Running in Real Time"
-        ogDescription="RealSyncDynamics.AI — AI Governance Operating System. Detect. Govern. Prove. Automate."
+        ogTitle="AI Compliance Operations OS für Europa"
+        ogDescription="RealSyncDynamics.AI — Governance-Infrastruktur für Europa. Free Audit starten."
       />
 
-      <div
-        className="pointer-events-none fixed right-[-18vw] top-[10vh] h-[40vw] w-[40vw] rounded-full opacity-[0.08] blur-[100px]"
-        style={{ background: '#b49a6b' }}
-        aria-hidden="true"
-      />
-      <div
-        className="pointer-events-none fixed left-[-25vw] top-[45vh] h-[40vw] w-[40vw] rounded-full opacity-[0.08] blur-[100px]"
-        style={{ background: '#236e91' }}
-        aria-hidden="true"
-      />
-      <div
-        className="pointer-events-none fixed inset-0 opacity-[0.16]"
-        style={{
-          backgroundImage:
-            'linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.02) 1px, transparent 1px)',
-          backgroundSize: '80px 80px',
-          maskImage: 'linear-gradient(to bottom, #000, transparent 85%)',
-          WebkitMaskImage: 'linear-gradient(to bottom, #000, transparent 85%)',
-        }}
-        aria-hidden="true"
-      />
-
-      <PublicDarkHeader />
+      <PublicDarkHeader overlay />
 
       <main ref={revealRoot} className="relative z-10">
+        {/* ── Hero ── */}
         <section
           id="product"
-          className="mx-auto grid min-h-[700px] max-w-[1500px] items-center gap-[4vw] px-[4vw] pb-[82px] pt-[72px] lg:grid-cols-[minmax(0,1fr)_minmax(380px,0.9fr)]"
+          className="relative min-h-[min(100svh,880px)] overflow-hidden border-b border-white/[0.06]"
         >
-          <div className="hero-copy max-w-3xl">
-            <div
-              className="inline-block rounded-full border px-[11px] py-[7px] text-[9px] font-medium tracking-[.23em]"
-              style={{
-                fontFamily: LANDING_MONO,
-                color: LANDING_ACCENT,
-                borderColor: `${LANDING_ACCENT}47`,
-              }}
-            >
-              AI GOVERNANCE OPERATING SYSTEM
-            </div>
+          <EuropeNetworkHero />
 
-            <h1
-              className="mt-[30px] mb-5 text-[clamp(48px,6vw,82px)] leading-[0.93] tracking-[-.04em]"
-              style={{ fontFamily: LANDING_SERIF, fontWeight: 500 }}
-            >
-              {HERO_HEADLINE.map((segments, line) => (
-                <span key={line} className="block">
-                  {segments.map((segment, i) =>
-                    segment.accent ? (
-                      <em
-                        key={i}
-                        className="hero-shine-accent"
-                        style={{ color: LANDING_ACCENT, fontStyle: 'normal' }}
-                      >
-                        {segment.text}
-                      </em>
-                    ) : (
-                      <span key={i} className="hero-shine">
-                        {segment.text}
-                      </span>
-                    ),
-                  )}
-                </span>
-              ))}
-            </h1>
+          <div className="relative z-10 mx-auto flex min-h-[min(100svh,880px)] max-w-[1280px] flex-col justify-center px-[4vw] pb-16 pt-28 sm:pb-20 sm:pt-32">
+            <div className="max-w-xl lg:max-w-[34rem]">
+              <p
+                className="mb-6 text-[10px] font-medium tracking-[0.22em]"
+                style={{ fontFamily: LANDING_MONO, color: LANDING_ACCENT }}
+              >
+                {HERO_EYEBROW}
+              </p>
 
-            <p
-              className="mb-6 text-[10px] tracking-[.2em]"
-              style={{ fontFamily: LANDING_MONO, color: '#b6a77f' }}
-            >
-              {HERO_OPERATING_LOOP}
-            </p>
+              <h1
+                className="leading-[0.98] tracking-[-0.035em]"
+                style={{ fontSize: LANDING_H1, fontWeight: 600 }}
+              >
+                {HERO_HEADLINE.map((segments, line) => (
+                  <span key={line} className="block">
+                    {segments.map((segment, i) =>
+                      segment.accent ? (
+                        <em
+                          key={i}
+                          className="not-italic"
+                          style={{
+                            fontFamily: LANDING_SERIF,
+                            fontWeight: 500,
+                            color: LANDING_ACCENT_SOFT,
+                            fontStyle: 'italic',
+                          }}
+                        >
+                          {segment.text}
+                        </em>
+                      ) : (
+                        <span key={i} style={{ color: LANDING_TEXT }}>
+                          {segment.text}
+                        </span>
+                      ),
+                    )}
+                  </span>
+                ))}
+              </h1>
 
-            <p className="max-w-[640px] text-[14px] leading-[1.7]" style={{ color: '#b5b5bc' }}>
-              Govern AI. Prove Everything. Operate with Confidence.
-              <br />
-              Erfassen, bewerten, durchsetzen und nachweisen — in einer kontinuierlichen Governance Runtime.
-            </p>
+              <p className="mt-6 max-w-md text-[15px] leading-[1.65]" style={{ color: '#c8c4bc' }}>
+                <span style={{ color: LANDING_TEXT }}>{HERO_OPERATING_LOOP}</span>{' '}
+                {HERO_SUBLINE}
+              </p>
 
-            <div
-              className="value-grid my-[38px] mb-[26px] grid gap-0 border-y sm:grid-cols-3"
-              style={{ borderColor: LANDING_LINE }}
-            >
-              {HERO_PILLARS.map(([title, text], i) => (
-                <article
-                  key={title}
-                  className={`py-[18px] pr-5 ${i > 0 ? 'sm:border-l sm:pl-5' : ''}`}
-                  style={{ borderColor: LANDING_LINE }}
+              <div className="mt-9 flex flex-wrap items-center gap-3">
+                <Link
+                  id="audit-cta"
+                  data-hero-cta="audit"
+                  to="/audit"
+                  className="inline-flex items-center gap-2 rounded-full px-6 py-3.5 text-[13px] font-semibold transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d6ad68]"
+                  style={{
+                    backgroundColor: LANDING_BUTTON,
+                    color: LANDING_BUTTON_TEXT,
+                    boxShadow: '0 0 32px rgba(214, 173, 104, 0.28)',
+                  }}
                 >
-                  <b
-                    className="text-[8px] font-medium tracking-[.18em]"
+                  {HERO_SCAN_CTA_LONG} <ArrowRight className="h-4 w-4" />
+                </Link>
+                <Link
+                  to="/evidence"
+                  className="inline-flex items-center gap-2 rounded-full border px-6 py-3.5 text-[13px] font-medium transition hover:bg-[#d6ad68]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d6ad68]/50"
+                  style={{ borderColor: `${LANDING_ACCENT}66`, color: LANDING_TEXT }}
+                >
+                  {HERO_DASHBOARD_CTA_LABEL} <ArrowDownRight className="h-4 w-4" />
+                </Link>
+              </div>
+
+              {/* Trust row */}
+              <ul
+                className="mt-12 flex flex-wrap gap-x-5 gap-y-2 border-t pt-6"
+                style={{ borderColor: LANDING_LINE }}
+                aria-label="Compliance-Standards"
+              >
+                {HERO_PROOF_CHIPS.map((chip) => (
+                  <li
+                    key={chip}
+                    className="text-[10px] tracking-[0.16em]"
+                    style={{ fontFamily: LANDING_MONO, color: LANDING_MUTED }}
+                  >
+                    {chip}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        {/* ── KPI strip (Replit chrome — illustrative demo values) ── */}
+        <section
+          aria-label="Illustrative operating metrics"
+          className="border-b border-white/[0.06] bg-[#0e0e10]/90"
+          data-demo-kpis="true"
+        >
+          <div className="mx-auto grid max-w-[1280px] grid-cols-2 gap-px sm:grid-cols-4">
+            {KPI_STRIP.map((kpi) => (
+              <div key={kpi.label} className="px-[4vw] py-7 sm:px-8">
+                <p
+                  className="text-[9px] tracking-[0.2em]"
+                  style={{ fontFamily: LANDING_MONO, color: LANDING_MUTED }}
+                >
+                  {kpi.label}
+                </p>
+                <p className="mt-2 flex items-baseline gap-2">
+                  <span className="text-[1.65rem] font-semibold tracking-tight" style={{ color: LANDING_TEXT }}>
+                    {kpi.value}
+                  </span>
+                  <span
+                    className="text-[10px] tracking-[0.12em]"
                     style={{ fontFamily: LANDING_MONO, color: LANDING_ACCENT }}
                   >
-                    {title}
-                  </b>
-                  <p className="mt-2.5 text-[11px] leading-[1.6]" style={{ color: '#898a91' }}>
-                    {text}
-                  </p>
-                </article>
-              ))}
+                    {kpi.meta}
+                  </span>
+                </p>
+              </div>
+            ))}
+          </div>
+          <p className="sr-only">
+            Kennzahlen sind illustrative Demo-Werte der Replit-Referenz, keine Live-Produktionsmetriken.
+          </p>
+        </section>
+
+        {/* ── Das Betriebssystem ── */}
+        <section id="runtime" className="border-b border-white/[0.06] py-[72px] lg:py-[88px]">
+          <div className="mx-auto grid max-w-[1280px] gap-12 px-[4vw] lg:grid-cols-[0.95fr_1.05fr] lg:gap-16">
+            <div>
+              <p
+                className="text-[10px] tracking-[0.22em]"
+                style={{ fontFamily: LANDING_MONO, color: LANDING_ACCENT }}
+              >
+                01 — DAS BETRIEBSSYSTEM
+              </p>
+              <h2
+                className="mt-4 max-w-md text-[clamp(1.75rem,1.1rem+2vw,2.5rem)] leading-[1.12] tracking-[-0.03em]"
+                style={{ fontWeight: 600, color: LANDING_TEXT }}
+              >
+                Compliance, die mit Ihrem Modell Schritt hält.
+              </h2>
+              <p className="mt-5 max-w-md text-[14px] leading-[1.7]" style={{ color: LANDING_MUTED }}>
+                Regulierte KI ist kein einmaliges Projekt. {CONTINUOUS_COMPLIANCE_NARRATIVE}
+              </p>
+              <Link
+                to="/governance-runtime"
+                className="mt-7 inline-flex items-center gap-2 text-[13px] font-medium transition hover:brightness-110"
+                style={{ color: LANDING_ACCENT_SOFT }}
+              >
+                So entsteht der Proof <ArrowRight className="h-4 w-4" />
+              </Link>
             </div>
 
-            <form id="scan" onSubmit={startScan} className="max-w-[620px]">
-              <div
-                className="flex flex-col gap-0 border p-1 sm:flex-row sm:items-stretch"
-                style={{
-                  borderColor: LANDING_LINE,
-                  backgroundColor: 'rgba(7,9,13,0.72)',
-                }}
-              >
-                <input
-                  value={domain}
-                  onChange={(event) => setDomain(event.target.value)}
-                  type="url"
-                  placeholder="Ihre Website — z. B. firma.de"
-                  aria-label="Ihre Website"
-                  className="min-w-0 flex-1 bg-transparent px-3.5 py-3.5 text-[12px] text-white outline-none placeholder:text-white/30 focus-visible:ring-2 focus-visible:ring-[#e4cfa2]/45"
-                />
-                <button
-                  type="submit"
-                  className="inline-flex items-center justify-center gap-2 px-[18px] py-[13px] text-[11px] font-semibold transition hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e4cfa2]"
-                  style={{ backgroundColor: LANDING_BUTTON, color: LANDING_BUTTON_TEXT }}
-                >
-                  Kostenlosen Governance Scan starten <span aria-hidden="true">→</span>
-                </button>
-              </div>
-              <p
-                className="mt-2 text-[8px] tracking-[.08em]"
-                style={{ fontFamily: LANDING_MONO, color: '#6e7077' }}
-              >
-                DSGVO · EU AI Act · Sicherheit · Barrierefreiheit · SEO — kein Account nötig
-              </p>
-            </form>
-
-            <a
-              href="#platform"
-              className="mt-6 inline-flex items-center gap-2 rounded-full border px-[17px] py-[11px] text-[11px] transition hover:bg-[#e4cfa2]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e4cfa2]/60"
-              style={{ borderColor: `${LANDING_ACCENT}80`, color: '#e8dfd2' }}
-            >
-              Explore the Governance OS <span aria-hidden="true">→</span>
-            </a>
-
-            <div className="mt-10 lg:hidden">
-              <p
-                className="mb-3 text-[10px] tracking-[.22em]"
-                style={{ fontFamily: LANDING_MONO, color: `${LANDING_ACCENT}cc` }}
-              >
-                {RUNTIME_PREVIEW_LABEL}
-              </p>
-              <div className="-mx-[4vw] flex gap-3 overflow-x-auto px-[4vw] pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                {RUNTIME_PREVIEW_CARDS.slice(0, 4).map((card, i) => (
-                  <div
-                    key={card.id}
-                    className="landing-hero-card surface-panel w-[11.5rem] shrink-0 bg-black/45 p-3.5"
-                    style={{ animationDelay: `${i * 0.35}s` }}
+            <div className="divide-y divide-white/[0.07] border-y border-white/[0.07]">
+              {OS_STEPS.map(({ n, title, text, Icon }) => (
+                <div key={n} className="flex items-start gap-4 py-5 sm:gap-5">
+                  <span
+                    className="mt-0.5 grid h-10 w-10 shrink-0 place-items-center border"
+                    style={{ borderColor: `${LANDING_ACCENT}55`, color: LANDING_ACCENT }}
                   >
-                    <div className="flex items-center gap-2">
+                    <Icon className="h-4 w-4" strokeWidth={1.5} />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="flex items-baseline gap-2">
                       <span
-                        className={`h-1.5 w-1.5 rounded-full ${card.tone === 'ok' ? 'bg-[#20d69a]' : 'bg-[#e4cfa2]'}`}
-                      />
-                      <span className="text-[9px] tracking-[.18em] text-white/45" style={{ fontFamily: LANDING_MONO }}>
-                        {card.label}
+                        className="text-[10px] tracking-[0.16em]"
+                        style={{ fontFamily: LANDING_MONO, color: LANDING_ACCENT }}
+                      >
+                        {n}
                       </span>
-                    </div>
-                    <div className={`mt-2 text-xl font-semibold ${card.tone === 'ok' ? 'text-[#20d69a]' : 'text-white'}`}>
-                      {card.value}
-                    </div>
+                      <span className="text-[15px] font-semibold" style={{ color: LANDING_TEXT }}>
+                        {title}
+                      </span>
+                    </p>
+                    <p className="mt-1.5 text-[13px] leading-relaxed" style={{ color: LANDING_MUTED }}>
+                      {text}
+                    </p>
                   </div>
-                ))}
-              </div>
-              <p className="mt-3 max-w-md text-[10px] leading-relaxed text-white/35">{RUNTIME_PREVIEW_NOTE}</p>
-            </div>
-          </div>
-
-          <div className="hero-visual relative">
-            <GovernanceSphereHost />
-          </div>
-        </section>
-
-        <LandingChannelTools />
-        <LandingDarkBand />
-
-        <section id="platform" className="py-[92px]">
-          <div className="mx-auto max-w-[1500px] px-[4vw]">
-            <div className="mb-14 max-w-3xl">
-              <p
-                className="inline-block rounded-full border px-[11px] py-[7px] text-[9px] font-medium tracking-[.23em]"
-                style={{ fontFamily: LANDING_MONO, color: LANDING_ACCENT, borderColor: `${LANDING_ACCENT}47` }}
-              >
-                DIE PLATTFORM
-              </p>
-              <h2 className="mt-[22px] text-[clamp(40px,5vw,65px)] leading-none tracking-[-.035em]" style={{ fontFamily: LANDING_SERIF, fontWeight: 500 }}>
-                Eine Runtime.{' '}
-                <em className="not-italic" style={{ color: LANDING_ACCENT }}>
-                  Module, die live erreichbar sind.
-                </em>
-              </h2>
-              <p className="mt-[17px] max-w-[760px] text-[13px] leading-[1.7]" style={{ color: LANDING_MUTED }}>
-                Nur Capabilities mit Status LIVE aus dem Product-Registry. Preview und Coming Soon stehen unter{' '}
-                <a href="#roadmap" className="underline decoration-[#e4cfa2]/40 underline-offset-2">Roadmap</a>.
-              </p>
-            </div>
-            <div className="grid gap-px overflow-hidden border border-white/10 bg-white/10 md:grid-cols-2 lg:grid-cols-3">
-              {PLATFORM_LIVE_ITEMS.map((cap) => {
-                const body = (
-                  <>
-                    <div className="flex items-start justify-between gap-2">
-                      <h3 className="text-base font-semibold" style={{ color: LANDING_TEXT }}>{cap.name}</h3>
-                      <span className="shrink-0 border px-2 py-0.5 text-[8px] tracking-[.12em]" style={{ fontFamily: LANDING_MONO, borderColor: `${LANDING_ACCENT}40`, color: LANDING_ACCENT }}>
-                        {STATUS_LABEL.live}
-                      </span>
-                    </div>
-                    <p className="mt-2 text-sm leading-relaxed" style={{ color: LANDING_MUTED }}>{cap.description}</p>
-                    {cap.route && (
-                      <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium" style={{ color: LANDING_ACCENT }}>
-                        Oeffnen <ArrowRight className="h-3.5 w-3.5" />
-                      </span>
-                    )}
-                  </>
-                );
-                return cap.route ? (
-                  <Link key={cap.id} to={cap.route} data-reveal data-reveal-group="platform" className="block p-7 transition hover:bg-white/[.03]" style={{ backgroundColor: LANDING_BG }}>{body}</Link>
-                ) : (
-                  <div key={cap.id} data-reveal data-reveal-group="platform" className="p-7" style={{ backgroundColor: LANDING_BG }}>{body}</div>
-                );
-              })}
-            </div>
-          </div>
-        </section>
-
-        <section id="evidence" className="border-y border-white/[0.06] bg-white/[.02] py-[92px]">
-          <div className="mx-auto max-w-[1500px] px-[4vw]">
-            <div className="grid gap-12 lg:grid-cols-[.8fr_1.2fr] lg:items-end">
-              <div>
-                <p className="inline-block rounded-full border px-[11px] py-[7px] text-[9px] font-medium tracking-[.23em]" style={{ fontFamily: LANDING_MONO, color: LANDING_ACCENT, borderColor: `${LANDING_ACCENT}47` }}>
-                  EVIDENCE & TRUST
-                </p>
-                <h2 className="mt-[22px] text-[clamp(40px,5vw,65px)] leading-none tracking-[-.035em]" style={{ fontFamily: LANDING_SERIF, fontWeight: 500 }}>
-                  Compliance, die sich{' '}
-                  <em className="not-italic" style={{ color: LANDING_ACCENT }}>beweisen laesst.</em>
-                </h2>
-                <p className="mt-5 leading-relaxed" style={{ color: LANDING_MUTED }}>
-                  PDFs, Logs, Zeitstempel und nachvollziehbare Pruefpfade. Jede Pruefung, jede Entscheidung und jede Aenderung landet in derselben Governance-Historie.
-                </p>
-              </div>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <TrustItem icon={ShieldCheck} title="DSGVO" text="Verarbeitung, Risiko, Policy und Nachweis im laufenden Governance-Prozess." />
-                <TrustItem icon={Lock} title="EU AI Act" text="Risikoklassifikation, Transparenz und Dokumentation fuer KI-Systeme." />
-                <TrustItem icon={FileCheck2} title="Nachweis-Export" text="Pruefungen und Entscheidungen als auditfaehiger Export — fuer interne Kontrollen und externe Pruefer." />
-                <TrustItem icon={Code2} title="Code Compliance" text="Claude Code prueft und unterstuetzt konkrete technische Remediation." />
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section id="runtime" className="py-[92px]">
-          <div className="mx-auto max-w-[1500px] px-[4vw]">
-            <div className="mb-12 max-w-3xl">
-              <p className="inline-block rounded-full border px-[11px] py-[7px] text-[9px] font-medium tracking-[.23em]" style={{ fontFamily: LANDING_MONO, color: LANDING_ACCENT, borderColor: `${LANDING_ACCENT}47` }}>
-                GOVERNANCE RUNTIME
-              </p>
-              <h2 className="mt-[22px] text-[clamp(40px,5vw,65px)] leading-none tracking-[-.035em]" style={{ fontFamily: LANDING_SERIF, fontWeight: 500 }}>
-                Von der KI-Nutzung zur{' '}
-                <em className="not-italic" style={{ color: LANDING_ACCENT }}>kontrollierten KI-Organisation.</em>
-              </h2>
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {GOVERNANCE_STEPS.map(([no, title, text]) => (
-                <div key={no} data-reveal data-reveal-group="runtime" className="surface-panel p-7">
-                  <span className="text-3xl" style={{ fontFamily: LANDING_MONO, color: `${LANDING_ACCENT}59` }}>{no}</span>
-                  <h3 className="mt-4 text-lg font-semibold tracking-wide" style={{ color: LANDING_TEXT }}>{title}</h3>
-                  <p className="mt-2 text-sm leading-relaxed" style={{ color: LANDING_MUTED }}>{text}</p>
+                  <ArrowRight className="mt-2 h-4 w-4 shrink-0 opacity-40" style={{ color: LANDING_ACCENT }} />
                 </div>
               ))}
             </div>
           </div>
         </section>
 
+        <LandingChannelTools />
+
+        {/* Live platform modules — registry-backed */}
+        <section id="platform" className="border-t border-white/[0.06] py-[72px]">
+          <div className="mx-auto max-w-[1280px] px-[4vw]">
+            <p
+              className="text-[10px] tracking-[0.22em]"
+              style={{ fontFamily: LANDING_MONO, color: LANDING_ACCENT }}
+            >
+              LIVE MODULE
+            </p>
+            <h2
+              className="mt-3 text-[clamp(1.75rem,1.1rem+2vw,2.5rem)] tracking-[-0.03em]"
+              style={{ fontWeight: 600 }}
+            >
+              Module, die live erreichbar sind.
+            </h2>
+            <div className="mt-10 grid gap-px overflow-hidden border border-white/10 bg-white/10 md:grid-cols-2 lg:grid-cols-3">
+              {PLATFORM_LIVE_ITEMS.map((cap) => {
+                const body = (
+                  <>
+                    <div className="flex items-start justify-between gap-2">
+                      <h3 className="text-base font-semibold" style={{ color: LANDING_TEXT }}>
+                        {cap.name}
+                      </h3>
+                      <span
+                        className="shrink-0 border px-2 py-0.5 text-[8px] tracking-[0.12em]"
+                        style={{
+                          fontFamily: LANDING_MONO,
+                          borderColor: `${LANDING_ACCENT}40`,
+                          color: LANDING_ACCENT,
+                        }}
+                      >
+                        {STATUS_LABEL.live}
+                      </span>
+                    </div>
+                    <p className="mt-2 text-sm leading-relaxed" style={{ color: LANDING_MUTED }}>
+                      {cap.description}
+                    </p>
+                  </>
+                );
+                return cap.route ? (
+                  <Link
+                    key={cap.id}
+                    to={cap.route}
+                    data-reveal
+                    data-reveal-group="platform"
+                    className="block p-7 transition hover:bg-white/[.03]"
+                    style={{ backgroundColor: LANDING_BG }}
+                  >
+                    {body}
+                  </Link>
+                ) : (
+                  <div
+                    key={cap.id}
+                    data-reveal
+                    data-reveal-group="platform"
+                    className="p-7"
+                    style={{ backgroundColor: LANDING_BG }}
+                  >
+                    {body}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+
+        <section id="evidence" className="border-t border-white/[0.06] py-[72px]">
+          <div className="mx-auto max-w-[1280px] px-[4vw]">
+            <p
+              className="text-[10px] tracking-[0.22em]"
+              style={{ fontFamily: LANDING_MONO, color: LANDING_ACCENT }}
+            >
+              EVIDENCE
+            </p>
+            <h2
+              className="mt-3 max-w-xl text-[clamp(1.75rem,1.1rem+2vw,2.5rem)] tracking-[-0.03em]"
+              style={{ fontWeight: 600 }}
+            >
+              Compliance, die sich beweisen lässt.
+            </h2>
+            <p className="mt-4 max-w-2xl text-[14px] leading-relaxed" style={{ color: LANDING_MUTED }}>
+              Prüfungen, Entscheidungen und Änderungen landen in derselben Governance-Historie —
+              exportierbar für Aufsicht, Board und Audit.
+            </p>
+            <Link
+              to="/evidence"
+              className="mt-7 inline-flex items-center gap-2 text-[13px] font-medium"
+              style={{ color: LANDING_ACCENT_SOFT }}
+            >
+              {HERO_DASHBOARD_CTA_LABEL} <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
+        </section>
+
         <LandingPricingSection />
-        <LandingRoadmapSection />
         <EnterpriseAccessSection />
 
-        <section className="border-t border-white/[0.06] bg-black/80 py-[92px]">
+        <section className="border-t border-white/[0.06] bg-black/60 py-[80px]">
           <div className="mx-auto max-w-3xl px-[4vw] text-center">
-            <p className="text-[10px] tracking-[.25em]" style={{ fontFamily: LANDING_MONO, color: LANDING_ACCENT }}>WARUM JETZT</p>
-            <h2 className="hero-shine mt-4 text-[clamp(40px,5vw,60px)] tracking-tight" style={{ fontFamily: LANDING_SERIF, fontWeight: 500 }}>
+            <h2
+              className="text-[clamp(2rem,1.2rem+2.5vw,3rem)] tracking-tight"
+              style={{ fontWeight: 600 }}
+            >
               Governance statt Checkliste.
             </h2>
-            <p className="mx-auto mt-5 max-w-2xl text-base leading-relaxed" style={{ color: '#e8dcc4' }}>
-              Eine Checkliste beruhigt bis zum naechsten Audit. Die Runtime haelt den Nachweis, wenn Aufsicht, Kunde oder Board fragt.
+            <p className="mx-auto mt-5 max-w-xl text-[15px] leading-relaxed" style={{ color: '#c8c4bc' }}>
+              Eine Checkliste beruhigt bis zum nächsten Audit. Die Runtime hält den Nachweis, wenn
+              Aufsicht, Kunde oder Board fragt.
             </p>
             <div className="mt-9 flex flex-col justify-center gap-3 sm:flex-row">
-              <Link to="/audit" className="inline-flex items-center justify-center gap-2 px-7 py-3.5 font-semibold transition hover:brightness-105" style={{ backgroundColor: LANDING_BUTTON, color: LANDING_BUTTON_TEXT }}>
-                Kostenlosen Governance Scan starten <ArrowRight className="h-4 w-4" />
+              <Link
+                to="/audit"
+                className="inline-flex items-center justify-center gap-2 rounded-full px-7 py-3.5 text-[13px] font-semibold transition hover:brightness-110"
+                style={{ backgroundColor: LANDING_BUTTON, color: LANDING_BUTTON_TEXT }}
+              >
+                {HERO_SCAN_CTA_LABEL} <ArrowRight className="h-4 w-4" />
               </Link>
-              <Link to="/pricing" className="inline-flex items-center justify-center gap-2 border px-7 py-3.5 font-medium transition hover:bg-[#e4cfa2]/10" style={{ borderColor: `${LANDING_ACCENT}66`, color: LANDING_ACCENT }}>
+              <Link
+                to="/pricing"
+                className="inline-flex items-center justify-center gap-2 rounded-full border px-7 py-3.5 text-[13px] font-medium"
+                style={{ borderColor: `${LANDING_ACCENT}66`, color: LANDING_ACCENT }}
+              >
                 Preise ansehen
               </Link>
             </div>
@@ -383,32 +418,23 @@ export function MainLanding() {
         </section>
       </main>
 
-      <footer className="relative z-10 flex flex-col items-center justify-between gap-4 border-t border-white/[0.07] px-[4vw] py-[30px] text-[9px] sm:flex-row" style={{ fontFamily: LANDING_MONO, color: '#62666e' }}>
+      <footer
+        className="relative z-10 flex flex-col items-center justify-between gap-4 border-t border-white/[0.07] px-[4vw] py-[28px] text-[9px] sm:flex-row"
+        style={{ fontFamily: LANDING_MONO, color: '#62666e' }}
+      >
         <span>© 2026 RealSync Dynamics.AI</span>
         <div className="flex gap-5">
-          <Link to="/impressum" className="hover:text-[#f2eee6]">Impressum</Link>
-          <Link to="/datenschutz" className="hover:text-[#f2eee6]">Datenschutz</Link>
-          <Link to="/agb" className="hover:text-[#f2eee6]">AGB</Link>
+          <Link to="/impressum" className="hover:text-[#f2eee6]">
+            Impressum
+          </Link>
+          <Link to="/datenschutz" className="hover:text-[#f2eee6]">
+            Datenschutz
+          </Link>
+          <Link to="/agb" className="hover:text-[#f2eee6]">
+            AGB
+          </Link>
         </div>
       </footer>
-    </div>
-  );
-}
-
-function TrustItem({
-  icon: Icon,
-  title,
-  text,
-}: {
-  icon: typeof ShieldCheck;
-  title: string;
-  text: string;
-}) {
-  return (
-    <div data-reveal data-reveal-group="evidence" className="surface-panel p-6">
-      <Icon className="h-5 w-5" style={{ color: LANDING_ACCENT }} />
-      <h3 className="mt-4 font-semibold" style={{ color: LANDING_TEXT }}>{title}</h3>
-      <p className="mt-2 text-sm leading-relaxed" style={{ color: LANDING_MUTED }}>{text}</p>
     </div>
   );
 }

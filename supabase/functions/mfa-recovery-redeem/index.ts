@@ -42,25 +42,22 @@ Deno.serve(async (req) => {
     const codeHash = await sha256HexRecoveryCode(code);
 
     // Passenden, unbenutzten Code des Nutzers finden.
-    const { data: rows } = await admin
+    const { data: row } = await admin
       .from('mfa_recovery_codes')
       .select('id,user_id,code_hash,used_at')
       .eq('user_id', user.id)
-      .limit(100);
+      .eq('code_hash', codeHash)
+      .is('used_at', null)
+      .maybeSingle();
 
-    const row = findConsumableRecoveryCode((rows ?? []) as Array<{
-      id: string;
-      user_id: string;
-      code_hash: string;
-      used_at: string | null;
-    }>, user.id, codeHash);
+    const matched = row ? findConsumableRecoveryCode([row], user.id, codeHash) : null;
 
-    if (!row) return jsonResponse({ error: 'invalid_code' }, 401);
+    if (!matched) return jsonResponse({ error: 'invalid_code' }, 401);
 
     // Code verbrauchen.
     const { data: consumed, error: consumeErr } = await admin.from('mfa_recovery_codes')
       .update({ used_at: new Date().toISOString() })
-      .eq('id', row.id)
+      .eq('id', matched.id)
       .eq('user_id', user.id)
       .is('used_at', null)
       .select('id')

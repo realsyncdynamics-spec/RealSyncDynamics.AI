@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { ShieldAlert, KeyRound, Loader2, AlertTriangle } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { getSupabase, isSupabaseConfigured } from '../../lib/supabase';
 import { useTenant } from './TenantProvider';
 import { getMfaStatus, stepUpTotp, mfaErrorMessage } from './mfa';
@@ -66,7 +67,7 @@ export function RequireAal2({ action, children, mode = 'enforce' }: Props) {
           <ShieldAlert className="h-4 w-4 shrink-0 mt-0.5" />
           <p className="text-sm">
             Observe-Modus: Dieser Bereich{action ? ` (${action})` : ''} verlangt bald AAL2.
-            Bitte MFA unter <a href="/settings/security" className="underline">/settings/security</a> einrichten.
+            Bitte MFA unter <Link to="/settings/security" className="underline">/settings/security</Link> einrichten.
           </p>
         </div>
         {children}

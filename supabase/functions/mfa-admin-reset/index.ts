@@ -51,7 +51,11 @@ Deno.serve(async (req) => {
       .eq('user_id', user.id)
       .eq('active', true)
       .limit(1);
-    if (!operatorErr) isPlatformOperator = (operatorRows ?? []).length > 0;
+    if (!operatorErr) {
+      isPlatformOperator = (operatorRows ?? []).length > 0;
+    } else if ((operatorErr as { code?: string }).code !== '42P01') {
+      return jsonResponse({ error: 'forbidden' }, 403);
+    }
 
     const { data: caller } = await admin.from('profiles').select('is_super_admin').eq('id', user.id).maybeSingle();
     const isSuperAdmin = isPlatformOperator || !!caller?.is_super_admin;

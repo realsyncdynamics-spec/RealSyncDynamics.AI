@@ -25,9 +25,7 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
-
-/** Muss zu `PRIORITY_MIN` in scripts/prerender.mjs passen. */
-const PRERENDER_PRIORITY_MIN = 0.6;
+import { PRERENDER_PRIORITY_MIN } from '../../scripts/lib/prerender-policy.mjs';
 
 const root = resolve(__dirname, '../..');
 const keywords = readFileSync(resolve(root, 'src/marketing/landing/seo-keywords.ts'), 'utf8');

@@ -276,9 +276,9 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     ],
   },
   '/claude-code-optimizer': {
-    title: 'Claude Code Optimizer — DSGVO- & AI-Act-Audit direkt im Code | RealSyncDynamics.AI',
+    title: 'Claude Code Optimizer — Website scannen, Fehler beheben, überwachen',
     description:
-      'Der Claude Code Optimizer prüft Ihr Repository auf Datenschutz- und AI-Act-Verstöße, liefert einfügbaren Fix-Code und sichert jeden Merge als auditfähige Evidenz. 14 Tage kostenlos testen.',
+      'Der Claude Code Optimizer scannt deine Website auf DSGVO-, Tracking- und Code-Compliance-Fehler, erklärt jeden Befund und optimiert Schritt für Schritt.',
     canonical: `${SITE_URL}/claude-code-optimizer`,
     jsonLd: breadcrumbs([
       { name: 'Home', url: '/' },
@@ -296,9 +296,9 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     ]),
   },
   '/audit': {
-    title: 'Kostenloser DSGVO-Audit — URL-Scan in 60 Sekunden | RealSyncDynamics.AI',
+    title: 'Kostenloser DSGVO-Audit — Tracking-, Consent- und Compliance-Check',
     description:
-      'Sofortiger Compliance-Score (0-100) für jede URL. Top-Risiken sichtbar, Mini-PDF-Report, kein Account. Echter Playwright-Browser misst Pre-Consent-Tracker.',
+      'Technische Vorprüfung für Websites: Consent, Tracking, Drittanbieter-Skripte und mögliche DSGVO-/TDDDG-Risiken analysieren.',
     canonical: `${SITE_URL}/audit`,
     jsonLd: breadcrumbs([
       { name: 'Home', url: '/' },
@@ -332,9 +332,11 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     ]),
   },
   '/runtime': {
-    title: 'Runtime — Kontinuierliche Compliance-Überwachung | RealSyncDynamics.AI',
+    title: 'Runtime — Governance-Übersicht | RealSync',
     description:
-      'Governance-Runtime mit kontinuierlicher Überwachung: Compliance-Agenten, überprüfbare Evidence-Reports, dokumentierte Policies und Incident-Tracking. Demo-Surface für Pilot-Evaluierung.',
+      'Governance-Runtime: kontinuierliche Beobachtung, Compliance-Agenten, '
+      + 'überprüfbare Evidence-Reports, dokumentierte Policies. Demo-Surface '
+      + 'für Pilot-Evaluierung.',
     canonical: `${SITE_URL}/runtime`,
     ogTitle: 'Governance Runtime — Kontinuierliche Compliance-Überwachung',
     ogDescription:
@@ -345,9 +347,9 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     ]),
   },
   '/ai-act': {
-    title: 'AI Act Governance — Klassifikation & Risiko-Assessment | RealSyncDynamics.AI',
+    title: 'AI Act Governance — Klassifikation, Oversight, Policies | RealSync',
     description:
-      'EU AI Act ohne Beratung: AI-Systeme klassifizieren (minimal/limited/high/prohibited), Hochrisiko-Profile, Agent-Oversight und Policy Engine — alle Findings in der Evidence Chain.',
+      'EU AI Act ohne Beratung: AI-Systeme klassifizieren, Risk-Profile pflegen, Agenten überwachen, Policies erzwingen.',
     canonical: `${SITE_URL}/ai-act`,
     ogTitle: 'AI Act Governance — Klassifikation & Compliance',
     ogDescription:
@@ -379,7 +381,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
   '/governance-score': {
     title: 'Governance Complexity Score — passende Governance-Abdeckung | RealSyncDynamics.AI',
     description:
-      'Ermitteln Sie Ihren Governance Complexity Score aus Branche, Datenkategorien, KI-Nutzung, Drittanbietern, Tracking und Dokumentationspflichten — und finden Sie die passende Governance-Abdeckung statt einer Anzahl Webseiten.',
+      'Ermitteln Sie Ihren Governance Complexity Score aus Branche, Datenkategorien, KI-Nutzung, Drittanbietern, Tracking und Dokumentationspflichten — und sehen Sie die passende Governance-Abdeckung statt einer Anzahl Webseiten.',
     canonical: `${SITE_URL}/governance-score`,
     jsonLd: breadcrumbs([
       { name: 'Home', url: '/' },
@@ -1021,6 +1023,403 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     description:
       'Market analysis: Cookiebot, OneTrust, Usercentrics, iubenda, DataGuard compared. Pricing, features, DACH suitability, AI Act readiness — as of 2026.',
     canonical: `${SITE_URL}/marktanalyse`,
+  },
+
+  // ─── Tier 4 — Content, Tools, Trust & Docs ───────────────────────────────
+  // Diese 38 Pfade standen in public/sitemap.xml, hatten aber keinen eigenen
+  // Eintrag. Alias-Pfade (/api, /ueber-uns, /release-notes) zeigen per canonical
+  // auf die primaere URL, analog zur Alias-Strategie im Datei-Kopf.
+  //
+  // ACHTUNG — zweiter Meta-Mechanismus: 16 dieser Seiten setzen Title und
+  // Description bereits selbst ueber `usePageMeta` (src/lib/usePageMeta.ts),
+  // teils direkt, teils ueber src/pages/content/ContentPageLayout.tsx. Der Hook
+  // gewinnt: <SEOHead /> steht in App.tsx VOR <RoutesWithTracking />, sein
+  // Effect laeuft also zuerst, der Seiten-Effect ueberschreibt danach.
+  //
+  // Title und Description dieser 16 Eintraege sind deshalb woertlich der Text,
+  // den die Seite ausliefert — nicht abweichende Zweitfassungen. Zwei Quellen
+  // mit zwei Texten waeren eine Drift-Falle. Was sie beitragen, ist das, was der
+  // Hook NICHT kann: canonical und JSON-LD (BreadcrumbList).
+  // test/landing/sitemap-seo-coverage.test.ts haelt beide Seiten gleich.
+
+  // ── Ueber uns / Unternehmen ──
+  '/about': {
+    title: 'Über uns — EU-Datensouveränität als Default | RealSyncDynamics.AI',
+    description:
+      'Warum wir RealSyncDynamics.AI bauen: EU-Datensouveränität als Standard statt Premium-Feature. Team, Haltung und der Weg zum Governance OS.',
+    canonical: `${SITE_URL}/about`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'Über uns', url: '/about' },
+    ]),
+  },
+  '/ueber-uns': {
+    title: 'Über uns — EU-Datensouveränität als Default | RealSyncDynamics.AI',
+    description:
+      'Warum wir RealSyncDynamics.AI bauen: EU-Datensouveränität als Standard statt Premium-Feature. Team, Haltung und der Weg zum Governance OS.',
+    canonical: `${SITE_URL}/about`,
+  },
+  '/trust': {
+    title: 'Trust Center — RealSyncDynamics.AI',
+    description:
+      'Sicherheit, EU-Hosting, Encryption, Audit-Logs, RBAC, Retention und Immutable Evidence — die Trust-Grundlagen der Governance-Plattform.',
+    canonical: `${SITE_URL}/trust`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'Trust Center', url: '/trust' },
+    ]),
+  },
+  '/status': {
+    title: 'System-Status und Wartungsfenster | RealSyncDynamics.AI',
+    description:
+      'Aktueller Betriebsstatus der Governance-Runtime, laufende Störungen und geplante Wartungsfenster. Transparenz über Verfügbarkeit in Echtzeit.',
+    canonical: `${SITE_URL}/status`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'Status', url: '/status' },
+    ]),
+  },
+  '/changelog': {
+    title: 'Changelog — was sich in der Runtime geändert hat | RealSyncDynamics.AI',
+    description:
+      'Chronologischer Changelog der Governance-Runtime: neue Routen, Scanner-Erweiterungen, Policy-Änderungen und Fixes — mit Datum und Wirkung.',
+    canonical: `${SITE_URL}/changelog`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'Changelog', url: '/changelog' },
+    ]),
+  },
+  '/release-notes': {
+    title: 'Release Notes — Änderungen an der Runtime | RealSyncDynamics.AI',
+    description:
+      'Chronologischer Changelog der Governance-Runtime: neue Routen, Scanner-Erweiterungen, Policy-Änderungen und Fixes — mit Datum und Wirkung.',
+    canonical: `${SITE_URL}/changelog`,
+  },
+  '/pilot-readiness': {
+    title: 'Pilot Readiness — RealSyncDynamics.AI',
+    description:
+      'Live-Status der Pilot-Vorbereitung: Daten-Befüllung, Stripe, Resend, Governance-Agent, Security.',
+    canonical: `${SITE_URL}/pilot-readiness`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'Pilot Readiness', url: '/pilot-readiness' },
+    ]),
+  },
+  '/enterprise-konfigurator': {
+    title: 'Enterprise-Konfigurator — Vertrag zusammenstellen | RealSyncDynamics.AI',
+    description:
+      'Enterprise-Umfang selbst zusammenstellen: Module, Mandanten, SLA und Sonderanforderungen erfassen — als Grundlage für ein vertragliches Angebot.',
+    canonical: `${SITE_URL}/enterprise-konfigurator`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'Enterprise-Konfigurator', url: '/enterprise-konfigurator' },
+    ]),
+  },
+  '/branchen': {
+    title: 'Branchen-Übersicht — Governance je Sektor | RealSyncDynamics.AI',
+    description:
+      'Welche Governance-Pflichten je Branche greifen: Healthcare, FinTech, HR, E-Commerce, Public Sector und Legal — mit Einstieg in die passende Landing.',
+    canonical: `${SITE_URL}/branchen`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'Branchen', url: '/branchen' },
+    ]),
+  },
+
+  // ── Produkt-Content: die Runtime erklärt ──
+  '/governance-runtime': {
+    title: 'Governance Runtime für AI, Web und Compliance',
+    description:
+      'Event-driven Compliance Runtime für AI-Systeme, Websites, Agents, Policies, Evidence Vault und Framework-Mapping.',
+    canonical: `${SITE_URL}/governance-runtime`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'Governance Runtime', url: '/governance-runtime' },
+    ]),
+  },
+  '/agent-governance': {
+    title: 'Agenten regieren — nicht nur ausführen lassen. | RealSyncDynamics.AI',
+    description:
+      'Wie RealSyncDynamics.AI Agenten mit Scope, Permissions, Approval-Gates, Audit-Trails und Risk-Budgets in produktive Workflows einsetzt.',
+    canonical: `${SITE_URL}/agent-governance`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'Agent Governance', url: '/agent-governance' },
+    ]),
+  },
+  '/ai-act-governance': {
+    title: 'EU AI Act Governance ohne Excel. | RealSyncDynamics.AI',
+    description:
+      'Technische Umsetzung der EU-AI-Act-Pflichten: Risikoklassifizierung nach Annex III, Obligation-Engine, Annex-IV-Generator, Post-Market-Monitoring.',
+    canonical: `${SITE_URL}/ai-act-governance`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'AI-Act-Governance', url: '/ai-act-governance' },
+    ]),
+  },
+  '/policy-engine': {
+    title: 'Policy als Code, nicht als PDF. | RealSyncDynamics.AI',
+    description:
+      'Zwei Schichten: YAML zur Authoring, Rego zur Execution. Eval-Lifecycle, Multi-Framework-Mapping, Inline-Enforcement für AI-Runtime-SDKs.',
+    canonical: `${SITE_URL}/policy-engine`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'Policy Engine', url: '/policy-engine' },
+    ]),
+  },
+  '/governance-graph': {
+    title: 'Beziehungen statt Findings. | RealSyncDynamics.AI',
+    description:
+      'Der Governance Graph verbindet Websites, KI-Systeme, Vendors, Policies und Evidence zu einem konsistenten Modell — der eigentliche Burggraben.',
+    canonical: `${SITE_URL}/governance-graph`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'Governance Graph', url: '/governance-graph' },
+    ]),
+  },
+  '/deployment-governance': {
+    title: 'Governance an der CI/CD-Grenze. | RealSyncDynamics.AI',
+    description:
+      'Wie RealSyncDynamicsAI Tracker-, Vendor- und KI-Modell-Änderungen pre-merge erkennt, Risk-Delta berechnet und das Gate steuert.',
+    canonical: `${SITE_URL}/deployment-governance`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'Deployment Governance', url: '/deployment-governance' },
+    ]),
+  },
+  '/evidence': {
+    title: 'Evidence — Audit-Kette | RealSync',
+    description:
+      'Evidence-Vault-Vorschau: jeder Befund, jede Agent-Aktion, jeder Policy-Snapshot mit SHA-256 gehasht und verankert. Demo-Surface — keine Kundendaten, keine pauschale Rechtsgarantie.',
+    canonical: `${SITE_URL}/evidence`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'Evidence', url: '/evidence' },
+    ]),
+  },
+  '/evidence-vault': {
+    title: 'Belege, die einer Re-Berechnung standhalten. | RealSyncDynamics.AI',
+    description:
+      'Hash-gechainte, Ed25519-signierte, RFC-3161-getimestampte Evidence-Records — die Grundlage für regulator-fähige Audit-Pakete.',
+    canonical: `${SITE_URL}/evidence-vault`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'Evidence Vault', url: '/evidence-vault' },
+    ]),
+  },
+  '/automations': {
+    title: 'Automatisierungs-Skills — sofort nutzbare Workflows',
+    description:
+      'Vordefinierte Compliance- und Vertriebs-Workflows zum Aktivieren: DSGVO-Audit, Dokumenten-Generator, Meeting-Compliance, Feedback-Tickets, Lead-Risk-Scan und Support.',
+    canonical: `${SITE_URL}/automations`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'Automations', url: '/automations' },
+    ]),
+  },
+
+  // ── Tools (Free Tier, ohne Account) ──
+  '/avv-generator': {
+    title: 'AVV-Generator — Art. 28 DSGVO in 3 Schritten | RealSyncDynamics.AI',
+    description:
+      'Auftragsverarbeitungsvertrag nach Art. 28 DSGVO in drei Schritten erstellen. Kostenlos, ohne Account, direkt als Dokument zum Weiterverwenden.',
+    canonical: `${SITE_URL}/avv-generator`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'AVV-Generator', url: '/avv-generator' },
+    ]),
+  },
+  '/datenschutz-generator': {
+    title: 'Datenschutzerklärung-Generator — Art. 13 DSGVO | RealSyncDynamics.AI',
+    description:
+      'DSGVO-konforme Datenschutzerklärung in drei Schritten: alle Pflichtfelder nach Art. 13 geführt erfassen. Kostenlos, ohne Anmeldung, sofort nutzbar.',
+    canonical: `${SITE_URL}/datenschutz-generator`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'Datenschutz-Generator', url: '/datenschutz-generator' },
+    ]),
+  },
+  '/tom-generator': {
+    title: 'TOM-Generator — Art. 32 DSGVO exportfertig | RealSyncDynamics.AI',
+    description:
+      'Technische und organisatorische Maßnahmen strukturiert dokumentieren und als exportfertiges Dokument nach Art. 32 DSGVO ausgeben — ohne Account.',
+    canonical: `${SITE_URL}/tom-generator`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'TOM-Generator', url: '/tom-generator' },
+    ]),
+  },
+  '/vvt-wizard': {
+    title: 'VVT-Wizard — Verarbeitungsverzeichnis Art. 30 | RealSyncDynamics.AI',
+    description:
+      'Verarbeitungsverzeichnis nach Art. 30 DSGVO strukturiert erfassen: Datenkategorien, Empfänger, Zwecke und Fristen — als PDF exportierbar.',
+    canonical: `${SITE_URL}/vvt-wizard`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'VVT-Wizard', url: '/vvt-wizard' },
+    ]),
+  },
+  '/datenpanne-meldung': {
+    title: 'Datenpanne melden — 72-Stunden-Frist Art. 33 | RealSyncDynamics.AI',
+    description:
+      'Die 72-Stunden-Frist nach Art. 33 DSGVO läuft ab Kenntnisnahme, nicht ab Eintritt. Frist berechnen und zuständige Aufsichtsbehörde bestimmen.',
+    canonical: `${SITE_URL}/datenpanne-meldung`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'Datenpanne melden', url: '/datenpanne-meldung' },
+    ]),
+  },
+  '/ai-act-klassifikator': {
+    title: 'AI-Act-Klassifikator — Risikoklasse bestimmen | RealSyncDynamics.AI',
+    description:
+      'Risikoklasse eines KI-Systems nach EU AI Act bestimmen: System beschreiben, Querschnittsfragen beantworten, begründete Einordnung erhalten.',
+    canonical: `${SITE_URL}/ai-act-klassifikator`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'AI-Act-Klassifikator', url: '/ai-act-klassifikator' },
+    ]),
+  },
+  '/ai-act-workflows': {
+    title: 'AI-Act-Workflows — Doku-Pflichten je Use-Case | RealSyncDynamics.AI',
+    description:
+      'Dokumentationspflichten für Ihre KI-Use-Cases klären — inklusive der Querschnittsthemen Tracker, Security und Drittlandtransfer. Ohne Account.',
+    canonical: `${SITE_URL}/ai-act-workflows`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'AI-Act-Workflows', url: '/ai-act-workflows' },
+    ]),
+  },
+  '/dokumente-bundle': {
+    title: 'Dokumente-Bundle — Pflichtdokumente auf einmal | RealSyncDynamics.AI',
+    description:
+      'Die DSGVO-Pflichtdokumente in einem Durchgang erzeugen: Stammdaten einmal erfassen, Datenschutzerklärung, AVV und TOM konsistent ausgeben.',
+    canonical: `${SITE_URL}/dokumente-bundle`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'Dokumente-Bundle', url: '/dokumente-bundle' },
+    ]),
+  },
+  '/cookie-consent-sdk': {
+    title: 'Cookie-Consent-SDK — kein Dark Pattern | RealSyncDynamics.AI',
+    description:
+      'Cookie-Banner mit drei gleichberechtigten Buttons: Accept, Reject, Customize. Kein Cookie vor Consent, kein Dark Pattern, Open-Source-kompatibel.',
+    canonical: `${SITE_URL}/cookie-consent-sdk`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'Cookie-Consent-SDK', url: '/cookie-consent-sdk' },
+    ]),
+  },
+
+  // ── SEO-Doorways: regulatorische Suchanfragen ──
+  '/cookie-compliance': {
+    title: 'Cookie-Compliance prüfen — § 25 TDDDG | RealSyncDynamics.AI',
+    description:
+      'Cookie-Compliance prüfen: kein Tracker-Load vor Consent, sauberes Double-Opt-In, korrekte Einwilligungsdokumentation nach § 25 TDDDG und DSGVO.',
+    canonical: `${SITE_URL}/cookie-compliance`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'Cookie-Compliance', url: '/cookie-compliance' },
+    ]),
+  },
+  '/pre-consent-tracking': {
+    title: 'Pre-Consent Tracking prüfen — DSGVO- und TDDDG-Risiken erkennen',
+    description:
+      'Erkennen Sie mögliche Tracking-Risiken vor Einwilligung: Cookies, Pixel, externe Skripte und Consent-Verhalten technisch vorprüfen.',
+    canonical: `${SITE_URL}/pre-consent-tracking`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'Pre-Consent-Tracking', url: '/pre-consent-tracking' },
+    ]),
+  },
+  '/google-analytics-consent': {
+    title: 'Google Analytics Consent prüfen — Tracking vor Einwilligung erkennen',
+    description:
+      'Prüfen Sie technische Hinweise darauf, ob Google Analytics oder ähnliche Tracking-Dienste vor wirksamer Einwilligung geladen werden.',
+    canonical: `${SITE_URL}/google-analytics-consent`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'Google Analytics und Consent', url: '/google-analytics-consent' },
+    ]),
+  },
+  '/eu-ai-act-check': {
+    title: 'EU-AI-Act-Check — Enforcement-Timeline 2026 | RealSyncDynamics.AI',
+    description:
+      'Warum der EU AI Act jetzt relevant wird: Enforcement-Timeline, Fristen je Risikoklasse und was Betreiber bis zum Stichtag belegen können müssen.',
+    canonical: `${SITE_URL}/eu-ai-act-check`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'EU-AI-Act-Check', url: '/eu-ai-act-check' },
+    ]),
+  },
+  '/bait-compliance': {
+    title: 'BAIT-Compliance — bankaufsichtskonform auditierbar | RealSyncDynamics.AI',
+    description:
+      'BAIT operativ belegen: AT 7.2 Identitäts- und Berechtigungsmanagement, AT 9 IT-Sicherheitsmanagement — bankaufsichtskonform auditierbar dokumentiert.',
+    canonical: `${SITE_URL}/bait-compliance`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'BAIT-Compliance', url: '/bait-compliance' },
+    ]),
+  },
+  '/marisk-audit': {
+    title: 'MaRisk-Audit — KI als operationelles Risiko | RealSyncDynamics.AI',
+    description:
+      'KI als operationelles Risiko nach MaRisk abbilden: BTO 1.4 Modellvalidierung und BT 3 Internes Kontrollsystem mit laufenden Nachweisen unterlegen.',
+    canonical: `${SITE_URL}/marisk-audit`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'MaRisk-Audit', url: '/marisk-audit' },
+    ]),
+  },
+
+  // ── Entwickler & Integrationen ──
+  '/api-docs': {
+    title: 'API-Referenz — tenant-scoped Keys, Rate-Limits | RealSyncDynamics.AI',
+    description:
+      'API-Referenz der Governance-Runtime: Key-Erzeugung, tenant-scoped Zugriff und Rate-Limits je Plan — von Starter 60/min bis Enterprise.',
+    canonical: `${SITE_URL}/api-docs`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'API-Referenz', url: '/api-docs' },
+    ]),
+  },
+  '/api': {
+    title: 'API-Referenz — tenant-scoped Keys, Rate-Limits | RealSyncDynamics.AI',
+    description:
+      'API-Referenz der Governance-Runtime: Key-Erzeugung, tenant-scoped Zugriff und Rate-Limits je Plan — von Starter 60/min bis Enterprise.',
+    canonical: `${SITE_URL}/api-docs`,
+  },
+  '/docs': {
+    title: 'Docs — Architecture, Tech Security, Integrations | RealSync',
+    description:
+      'Technische Tiefe: Architektur, Tech-Security, Scanner-Stack, Integrationen und System-Level-Controls der RealSync Runtime.',
+    canonical: `${SITE_URL}/docs`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'Docs', url: '/docs' },
+    ]),
+  },
+  '/docs/governance': {
+    title: 'Governance Runtime — API Reference · RealSyncDynamics.AI',
+    description:
+      'API-Referenz für die Governance Runtime: Telemetry-Ingestion, Policy-Engine, Evidence-Vault, Browser-Extension und SDK.',
+    canonical: `${SITE_URL}/docs/governance`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'Docs', url: '/docs' },
+      { name: 'Governance Runtime', url: '/docs/governance' },
+    ]),
+  },
+  '/integrations/shopify': {
+    title: 'Shopify Integration — RealSyncDynamics.AI',
+    description:
+      'Compliance Monitoring für Shopify-Storefronts: Tracker-, Consent- und Header-Erkennung, Drift-Alerts nach Theme-/App-Änderungen. Keine automatischen Änderungen am Store.',
+    canonical: `${SITE_URL}/integrations/shopify`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'Integrationen', url: '/integrations' },
+      { name: 'Shopify', url: '/integrations/shopify' },
+    ]),
   },
 };
 

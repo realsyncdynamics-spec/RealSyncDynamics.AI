@@ -22,6 +22,7 @@ import { mkdir, readFile, writeFile, access } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
+import { resolvePriorityMin } from './lib/prerender-policy.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..');
@@ -32,7 +33,7 @@ const PORT = parseInt(process.env.PRERENDER_PORT ?? '4173', 10);
 const BASE_URL = `http://localhost:${PORT}`;
 const TIMEOUT = parseInt(process.env.PRERENDER_TIMEOUT ?? '15000', 10);
 const CONCURRENCY = parseInt(process.env.PRERENDER_CONCURRENCY ?? '4', 10);
-const PRIORITY_MIN = parseFloat(process.env.PRERENDER_PRIORITY_MIN ?? '0.6');
+const PRIORITY_MIN = resolvePriorityMin();
 // Wall-Clock-Obergrenze fuer den GESAMTEN Lauf. Wichtig fuer die Cloudflare-
 // Pages-Build-Sandbox: dort kann der Chromium-Download haengen statt sauber
 // zu scheitern, und ein Hang wuerde den kompletten Deploy ins Timeout ziehen.

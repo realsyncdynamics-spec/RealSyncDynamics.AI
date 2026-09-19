@@ -11,7 +11,8 @@
  * 1. Suchmaschinen finden sie nicht über die Sitemap.
  * 2. `scripts/prerender.mjs` liest seine Routenliste **aus der Sitemap**
  *    (`loadRoutes()`), und rendert nur, was dort mit `priority >=
- *    PRERENDER_PRIORITY_MIN` (Vorgabe 0.6) steht. Ein Crawler, der die Seite
+ *    PRERENDER_PRIORITY_MIN` steht — der Wert kommt aus
+ *    `scripts/lib/prerender-policy.mjs`. Ein Crawler, der die Seite
  *    doch erreicht, bekam die leere SPA-Hülle.
  *
  * Für ein Repo, das SEO ausdrücklich über Prerendering löst (CLAUDE.md §2),
@@ -22,9 +23,7 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
-
-/** Muss zu `PRIORITY_MIN` in scripts/prerender.mjs passen. */
-const PRERENDER_PRIORITY_MIN = 0.6;
+import { PRERENDER_PRIORITY_MIN } from '../../scripts/lib/prerender-policy.mjs';
 
 const root = resolve(__dirname, '../..');
 const app = readFileSync(resolve(root, 'src/App.tsx'), 'utf8');

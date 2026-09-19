@@ -71,28 +71,74 @@ jobs:
     if: github.event_name != 'pull_request' || !github.event.pull_request.draft
     runs-on: ubuntu-latest
     name: Migration validation
-    services:
-      postgres:
-        image: pgvector/pgvector:pg15
-        env:
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: postgres
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+    # KEIN `services:`-Block mehr — bewusst.
+    #
+    # Einen Service-Container zieht der Runner VOR dem ersten Step, in einer
+    # Phase ohne jede Wiederholung. Am 2026-09-18 ist genau daran ein
+    # Migrations-PR haengengeblieben: Step 2 „Initialize containers" scheiterte
+    # am Docker-Hub-Pull, die Steps 5/9/10 wurden SKIPPED, und der Job liess
+    # sich ohne Schreibrecht auf den Workflow nicht neu starten (403). Der
+    # Befund stand damit unter einem roten Check, der nichts ueber die
+    # Migrationen aussagte.
+    #
+    # Als eigener Step ist der Pull wiederholbar, und ein Fehlschlag traegt den
+    # Namen seiner Ursache statt „Initialize containers".
     env:
       PGHOST: localhost
       PGUSER: postgres
       PGPASSWORD: postgres
       PGDATABASE: postgres
+      # Tag UND Digest: der Tag bleibt lesbar, der Digest bindet den Inhalt
+      # fest — dieselbe Konvention wie die per SHA gepinnten Actions.
+      # Auffrischen:
+      #   docker buildx imagetools inspect pgvector/pgvector:pg15 | head -2
+      POSTGRES_IMAGE: pgvector/pgvector:pg15@sha256:a947c45cdc5906a1bc951f20a8709e321256343ee0f251e4ae00b5e7def4e6da
+      POSTGRES_CONTAINER: ci-postgres
     steps:
+      # Zuerst starten, dann auschecken: der Checkout mit fetch-depth 0 laeuft
+      # waehrend Postgres initialisiert, das Warten unten kostet danach kaum
+      # noch Zeit.
+      - name: Postgres starten (Pull mit Wiederholung)
+        run: |
+          set -euo pipefail
+          for versuch in 1 2 3 4; do
+            if docker pull "$POSTGRES_IMAGE"; then
+              geholt=1
+              break
+            fi
+            if [ "$versuch" = 4 ]; then
+              echo "::warning::Pull von $POSTGRES_IMAGE fehlgeschlagen (Versuch 4/4)"
+              break
+            fi
+            wartezeit=$((versuch * versuch * 5))
+            echo "::warning::Pull von $POSTGRES_IMAGE fehlgeschlagen (Versuch $versuch/4) — neuer Versuch in ${wartezeit}s"
+            sleep "$wartezeit"
+          done
+          if [ "${geholt:-0}" != 1 ]; then
+            echo "::error::Image $POSTGRES_IMAGE nach vier Versuchen nicht erreichbar — Registry-Stoerung, kein Befund an den Migrationen."
+            exit 1
+          fi
+          docker run --detach --name "$POSTGRES_CONTAINER" \
+            --env POSTGRES_PASSWORD=postgres \
+            --env POSTGRES_DB=postgres \
+            --publish 5432:5432 \
+            "$POSTGRES_IMAGE"
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           fetch-depth: 0
+      - name: Auf Postgres warten
+        run: |
+          set -euo pipefail
+          for _ in $(seq 1 60); do
+            if docker exec "$POSTGRES_CONTAINER" pg_isready -U postgres -d postgres >/dev/null 2>&1; then
+              echo "Postgres ist bereit."
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "::error::Postgres war nach 120s nicht bereit."
+          docker logs "$POSTGRES_CONTAINER" || true
+          exit 1
       - name: Bootstrap Supabase-equivalent stubs
         run: |
           psql -v ON_ERROR_STOP=1 <<'SQL'

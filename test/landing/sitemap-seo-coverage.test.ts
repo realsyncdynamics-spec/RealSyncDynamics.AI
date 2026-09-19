@@ -114,10 +114,20 @@ function collectTsx(dir: string): string[] {
 
 const tsxFiles = collectTsx(resolve(root, 'src'));
 
+/**
+ * Alle Regex-Metazeichen maskieren, bevor ein Pfad in ein Pattern wandert.
+ * `/` allein zu escapen genügt nicht: im RegExp-Konstruktor ist `/` gar kein
+ * Metazeichen, während `.`, `?`, `(`, `[` und vor allem `\` ungeschützt
+ * blieben — ein Pfad wie `/faq?x` hätte das Pattern still verbogen.
+ */
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 /** Komponentenname für eine Route aus App.tsx. */
 function componentFor(path: string): string | null {
   const m = app.match(
-    new RegExp(`<Route\\s+path="${path.replace(/\//g, '\\/')}"\\s+element=\\{<(\\w+)`),
+    new RegExp(`<Route\\s+path="${escapeRegExp(path)}"\\s+element=\\{<(\\w+)`),
   );
   return m ? m[1] : null;
 }
@@ -140,7 +150,10 @@ function hookTitleOf(path: string): string | null {
   if (!file) return null;
   const src = readFileSync(file, 'utf8');
   const m = src.match(/usePageMeta\(\{\s*title:\s*'((?:[^'\\]|\\.)*)'/);
-  return m ? m[1].replace(/\\'/g, "'") : null;
+  // Escapes des String-Literals generisch aufloesen. Nur `\'` zu ersetzen
+  // waere dieselbe Halbheit: ein `\\` am Ende bliebe stehen und ein
+  // maskierter Backslash vor einem Apostroph wuerde falsch gelesen.
+  return m ? m[1].replace(/\\(.)/g, '$1') : null;
 }
 
 describe('SEO_CONFIG und usePageMeta widersprechen sich nicht', () => {

@@ -26,9 +26,26 @@
  * Sitemap ist die explizite Aussage „diese URL soll in den Index". Wer eine
  * URL dort einträgt, trifft genau diese Entscheidung und schuldet ihr damit
  * auch einen eigenen Title.
+ *
+ * ## Der zweite Mechanismus
+ *
+ * `SEO_CONFIG` ist nicht die einzige Stelle, die Meta-Tags setzt. 35
+ * Komponenten rufen `usePageMeta` (src/lib/usePageMeta.ts) und schreiben
+ * Title, Description und OG-Tags imperativ ins `document.head` — teils direkt,
+ * teils über `src/pages/content/ContentPageLayout.tsx`.
+ *
+ * Bei doppelter Deckung gewinnt der Hook: `<SEOHead />` steht in `App.tsx` vor
+ * `<RoutesWithTracking />`, sein Effect läuft also zuerst und wird vom
+ * Seiten-Effect überschrieben. Was `SEOHead` beiträgt, bleibt trotzdem
+ * wirksam — `canonical` und JSON-LD setzt `usePageMeta` nicht.
+ *
+ * Gefährlich ist nicht die Doppelung selbst, sondern die stille Divergenz:
+ * Wer den Text in `SEO_CONFIG` pflegt und den Hook übersieht, ändert nichts
+ * an dem, was ausgeliefert wird — und glaubt das Gegenteil. Der letzte Test
+ * hier hält beide Fassungen deshalb wörtlich gleich.
  */
 
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
@@ -36,6 +53,7 @@ import { DEFAULT_SEO, getSeoForPath } from '../../src/config/seo';
 
 const root = resolve(__dirname, '../..');
 const sitemap = readFileSync(resolve(root, 'public/sitemap.xml'), 'utf8');
+const app = readFileSync(resolve(root, 'src/App.tsx'), 'utf8');
 
 const SITE_URL = 'https://realsyncdynamicsai.de';
 
@@ -83,4 +101,67 @@ describe('Sitemap-URLs haben eigene Meta-Tags', () => {
       ).toBe(1);
     }
   });
+});
+
+/** Alle .tsx unter src/, damit die Komponente zu einer Route gefunden wird. */
+function collectTsx(dir: string): string[] {
+  return readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
+    const full = resolve(dir, e.name);
+    if (e.isDirectory()) return collectTsx(full);
+    return e.name.endsWith('.tsx') ? [full] : [];
+  });
+}
+
+const tsxFiles = collectTsx(resolve(root, 'src'));
+
+/** Komponentenname für eine Route aus App.tsx. */
+function componentFor(path: string): string | null {
+  const m = app.match(
+    new RegExp(`<Route\\s+path="${path.replace(/\//g, '\\/')}"\\s+element=\\{<(\\w+)`),
+  );
+  return m ? m[1] : null;
+}
+
+/** Datei der Komponente — Dateiname entspricht im Repo dem Export. */
+function fileFor(component: string): string | null {
+  return tsxFiles.find((f) => f.endsWith(`/${component}.tsx`)) ?? null;
+}
+
+/**
+ * Der Title, den `usePageMeta` für diese Seite setzt — direkt in der
+ * Komponente. Seiten, die den Hook über ContentPageLayout beziehen, geben
+ * ihren Text als Props weiter und werden hier nicht erfasst; für die greift
+ * die Doppelung-Prüfung oben.
+ */
+function hookTitleOf(path: string): string | null {
+  const component = componentFor(path);
+  if (!component) return null;
+  const file = fileFor(component);
+  if (!file) return null;
+  const src = readFileSync(file, 'utf8');
+  const m = src.match(/usePageMeta\(\{\s*title:\s*'((?:[^'\\]|\\.)*)'/);
+  return m ? m[1].replace(/\\'/g, "'") : null;
+}
+
+describe('SEO_CONFIG und usePageMeta widersprechen sich nicht', () => {
+  const withHook = indexedPaths
+    .map((path) => ({ path, hookTitle: hookTitleOf(path) }))
+    .filter((e): e is { path: string; hookTitle: string } => e.hookTitle !== null);
+
+  it('es gibt Seiten mit beiden Mechanismen zu prüfen', () => {
+    expect(withHook.length).toBeGreaterThan(0);
+  });
+
+  it.each(withHook.map((e) => [e.path, e.hookTitle]))(
+    '%s — SEO_CONFIG führt denselben Title wie usePageMeta',
+    (path, hookTitle) => {
+      expect(
+        getSeoForPath(path).title,
+        `${path} setzt seinen Title über usePageMeta. Der Hook gewinnt gegen ` +
+          '<SEOHead />, weil sein Effect später läuft. Der Eintrag in ' +
+          'SEO_CONFIG muss denselben Text führen — sonst pflegt man hier einen ' +
+          'Text, den die Seite nie ausliefert.',
+      ).toBe(hookTitle);
+    },
+  );
 });

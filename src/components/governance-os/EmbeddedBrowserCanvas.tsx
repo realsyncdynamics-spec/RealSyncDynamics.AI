@@ -4,7 +4,6 @@ import {
   AlertTriangle, Loader2,
 } from 'lucide-react';
 import { getSupabase } from '../../lib/supabase';
-import { useAuth } from '../../lib/useAuth';
 import { useCurrentTenant } from '../../lib/useCurrentTenant';
 import { useBrowserSession } from '../../lib/useBrowserSession';
 
@@ -17,9 +16,12 @@ interface EmbeddedBrowserCanvasProps {
   toolName?: string;
 }
 
+// Der Akteur wird serverseitig aus der Sitzung bestimmt, nicht hier gesetzt:
+// browser-action-log prueft Nutzer und Mitgliedschaft ueber requireAuthAndTenant
+// und schreibt actor_id aus dem verifizierten JWT. Ohne Sitzung wird nicht
+// protokolliert — ein anonymer Eintrag im Pruefpfad waere kein Nachweis.
 async function logBrowserAction(payload: {
   tenantId: string;
-  actorId?: string;
   sessionId: string;
   workflowId?: string;
   runId?: string;
@@ -38,25 +40,25 @@ async function logBrowserAction(payload: {
   metadata?: Record<string, unknown>;
 }) {
   try {
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-    if (!supabaseUrl) {
-      console.warn('Supabase URL not configured');
+    const supabase = getSupabase();
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) {
+      console.warn('Browser action not logged: no user session');
       return null;
     }
 
-    const response = await fetch(`${supabaseUrl}/functions/v1/browser-action-log`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
+    // functions.invoke haengt das User-JWT der Sitzung als Bearer an.
+    const { data, error } = await supabase.functions.invoke<{ id?: string }>(
+      'browser-action-log',
+      { body: payload },
+    );
 
-    if (!response.ok) {
-      console.warn(`Browser action logging returned ${response.status}`);
+    if (error) {
+      console.warn('Browser action logging failed:', error.message);
       return null;
     }
 
-    const result = await response.json();
-    return result.id;
+    return data?.id ?? null;
   } catch (err) {
     console.error('Failed to log browser action:', err);
     return null;
@@ -77,7 +79,6 @@ export function EmbeddedBrowserCanvas({
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const startTimeRef = useRef<number>(Date.now());
 
-  const auth = useAuth();
   const tenant = useCurrentTenant();
   const sessionId = useBrowserSession();
 
@@ -112,7 +113,6 @@ export function EmbeddedBrowserCanvas({
       setEvidenceLogged(true);
       logBrowserAction({
         tenantId: tenant.id,
-        actorId: auth?.user?.id,
         sessionId,
         workflowId,
         runId,
@@ -142,7 +142,6 @@ export function EmbeddedBrowserCanvas({
     if (tenant?.id && sessionId) {
       logBrowserAction({
         tenantId: tenant.id,
-        actorId: auth?.user?.id,
         sessionId,
         workflowId,
         runId,
@@ -169,7 +168,6 @@ export function EmbeddedBrowserCanvas({
     if (tenant?.id && sessionId) {
       logBrowserAction({
         tenantId: tenant.id,
-        actorId: auth?.user?.id,
         sessionId,
         workflowId,
         runId,
@@ -191,7 +189,6 @@ export function EmbeddedBrowserCanvas({
     if (tenant?.id && sessionId) {
       logBrowserAction({
         tenantId: tenant.id,
-        actorId: auth?.user?.id,
         sessionId,
         workflowId,
         runId,
@@ -209,7 +206,6 @@ export function EmbeddedBrowserCanvas({
     if (tenant?.id && sessionId) {
       logBrowserAction({
         tenantId: tenant.id,
-        actorId: auth?.user?.id,
         sessionId,
         workflowId,
         runId,
@@ -230,7 +226,6 @@ export function EmbeddedBrowserCanvas({
     if (tenant?.id && sessionId) {
       logBrowserAction({
         tenantId: tenant.id,
-        actorId: auth?.user?.id,
         sessionId,
         workflowId,
         runId,

@@ -22,28 +22,37 @@ export default defineConfig(({mode}) => {
                   rollupOptions: {
                           output: {
                                   manualChunks(id) {
-                                          // Split heavy vendor libs only; keep React & core together
-                                          // to avoid breaking context providers.
-                                          // Do NOT split react / react-dom / react-router — Context breaks.
-                                          if (id.includes('node_modules/recharts')) {
-                                                  return 'vendor-recharts';
+                                          // Keep React family in ONE chunk. Splitting them (or circular
+                                          // vendor chunks that race with React init) causes:
+                                          // Cannot set properties of undefined (setting 'Activity')
+                                          // on React 19.2 SharedInternals.
+                                          if (
+                                            id.includes('/node_modules/react/') ||
+                                            id.includes('/node_modules/react-dom/') ||
+                                            id.includes('/node_modules/scheduler/') ||
+                                            id.includes('/node_modules/react-router/') ||
+                                            id.includes('/node_modules/react-router-dom/')
+                                          ) {
+                                                  return 'vendor-react';
                                           }
                                           if (id.includes('node_modules/@supabase/supabase-js')) {
                                                   return 'vendor-supabase';
                                           }
-                                          // Main already split framer-motion vs motion (#1415); keep that.
                                           if (id.includes('node_modules/framer-motion')) {
                                                   return 'vendor-framer-motion';
                                           }
                                           if (id.includes('node_modules/motion/')) {
                                                   return 'vendor-motion';
                                           }
+                                          // recharts + three were circular (vendor-recharts <-> vendor-three).
+                                          // One viz chunk avoids the init race that broke Activity.
                                           if (
+                                            id.includes('node_modules/recharts') ||
                                             id.includes('node_modules/three') ||
                                             id.includes('node_modules/@react-three/') ||
                                             id.includes('node_modules/postprocessing')
                                           ) {
-                                                  return 'vendor-three';
+                                                  return 'vendor-viz';
                                           }
                                           if (id.includes('node_modules/@react-pdf/')) {
                                                   return 'vendor-pdf';

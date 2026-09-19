@@ -12,7 +12,7 @@ describe('ErrorBoundary', () => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
 
     function Boom(): React.ReactNode {
-      throw new Error('boom');
+      throw new Error('boom-test');
     }
 
     render(
@@ -21,8 +21,7 @@ describe('ErrorBoundary', () => {
       </ErrorBoundary>,
     );
 
-    expect(screen.getByRole('heading', { name: 'Error' })).toBeInTheDocument();
-    expect(screen.getByText('An error occurred while rendering the app.')).toBeInTheDocument();
-    expect(screen.getByText(/boom/)).toBeInTheDocument();
+    expect(screen.getByRole('alert')).toHaveAttribute('data-error-boundary', 'page');
+    expect(screen.getByRole('alert')).toHaveTextContent('Darstellung fehlgeschlagen');
   });
 });

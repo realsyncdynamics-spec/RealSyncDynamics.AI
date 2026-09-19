@@ -58,12 +58,14 @@ Deno.serve(async (req) => {
     if (!row) return jsonResponse({ error: 'invalid_code' }, 401);
 
     // Code verbrauchen.
-    await admin.from('mfa_recovery_codes')
+    const { data: consumed, error: consumeErr } = await admin.from('mfa_recovery_codes')
       .update({ used_at: new Date().toISOString() })
       .eq('id', row.id)
       .eq('user_id', user.id)
       .is('used_at', null)
-      .then(() => {}, () => {});
+      .select('id')
+      .maybeSingle();
+    if (consumeErr || !consumed) return jsonResponse({ error: 'invalid_code' }, 401);
 
     // TOTP-Faktoren des Nutzers entfernen → Neu-Enrollment nötig.
     // deno-lint-ignore no-explicit-any

@@ -6,6 +6,7 @@
  * dass kein Betrag entsteht, der nicht aus der Antwort stammt.
  */
 import { describe, expect, it } from 'vitest';
+import { ENTITLEMENT_KEYS } from '../../shared/pricing';
 import {
   entitlementLabel,
   formatEntitlementValue,
@@ -104,6 +105,12 @@ describe('includedEntitlements', () => {
     expect(rows.map((r) => r.key)).toEqual(['limit.bot_messages_monthly', 'limit.domains', 'policy.packs']);
     expect(rows[0].display).toBe('unbegrenzt');
     expect(rows[1].display).toBe('3');
+  });
+
+  it('beschriftet jeden kanonischen Entitlement-Key', () => {
+    for (const key of ENTITLEMENT_KEYS) {
+      expect(entitlementLabel(key)).not.toBe(key);
+    }
   });
 
   it('zeigt einen unbekannten Key statt ihn zu verschweigen', () => {

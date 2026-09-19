@@ -7,16 +7,23 @@
  */
 import type { EntitlementKey } from '@/shared/pricing';
 
-const KEY_LABELS: Partial<Record<EntitlementKey, string>> = {
+const KEY_LABELS = {
   'ai.tool.automations': 'Automations-Skills',
   'ai.tool.bot_reply': 'KI-Antworten der Bots',
+  'ai.tool.code_explain': 'Code-Erklärungen',
+  'ai.tool.log_analyze': 'Log-Analyse',
   'ai.tool.vps_action_advisor': 'Kodee Risiko-Advisor',
   'ai.tool.vps_status': 'Kodee Server-Status',
   'ai.tool.workflows': 'Workflow-Engine',
+  'ai_classification.limited': 'Begrenzte KI-Klassifizierung',
   'alerts.email': 'E-Mail-Alerts bei neuen Findings',
   'api.access': 'API-Zugriff',
+  'asset.register': 'Asset-Register',
+  'asset.verify': 'Asset-Verifizierung',
+  'barcode.issue': 'Barcode-Ausgabe',
   'bots.appointments': 'Terminbuchung über Bots',
   'bots.chat': 'Website-Chat',
+  'bots.count': 'Bot-Anzahl',
   'bots.enabled': 'Governance-Bots',
   'bots.human_handoff': 'Übergabe an Menschen',
   'bots.multi_channel': 'Ein Bot, mehrere Kanäle',
@@ -34,7 +41,11 @@ const KEY_LABELS: Partial<Record<EntitlementKey, string>> = {
   'governance.ai_register': 'KI-Register',
   'governance.dsgvo_directory': 'Verarbeitungsverzeichnis',
   'governance.risk_register': 'Risikoregister',
+  'limit.active_assets': 'Aktive Assets',
+  'limit.agent_runs_monthly': 'Agentenläufe pro Monat',
   'limit.ai_calls_monthly': 'KI-Aufrufe pro Monat',
+  'limit.ai_cost_monthly_cents': 'KI-Kostenbudget pro Monat',
+  'limit.ai_tokens_monthly': 'KI-Tokens pro Monat',
   'limit.api_calls_monthly': 'API-Aufrufe pro Monat',
   'limit.automation_runs_monthly': 'Automationsläufe pro Monat',
   'limit.bot_messages_monthly': 'Bot-Antworten pro Monat',
@@ -44,6 +55,8 @@ const KEY_LABELS: Partial<Record<EntitlementKey, string>> = {
   'limit.compliance_exports_monthly': 'Compliance-Exporte pro Monat',
   'limit.domains': 'Überwachte Domains',
   'limit.evidence_storage_gb': 'Evidence-Speicher (GB)',
+  'limit.llm_queries_monthly': 'LLM-Abfragen pro Monat',
+  'limit.monthly_registrations': 'Registrierungen pro Monat',
   'limit.sites': 'SiteOS-Websites',
   'limit.team_seats': 'Team-Plätze',
   'limit.whatsapp_conversations_monthly': 'WhatsApp-Konversationen pro Monat',
@@ -51,10 +64,13 @@ const KEY_LABELS: Partial<Record<EntitlementKey, string>> = {
   'monitoring.daily': 'Tägliches Monitoring',
   'monitoring.drift': 'Drift-Erkennung',
   'monitoring.monthly': 'Monatliches Monitoring',
+  'org.governance': 'Organisations-Governance',
   'policy.iso27001': 'Policy Pack ISO 27001',
   'policy.nis2': 'Policy Pack NIS2',
   'policy.packs': 'Policy Packs',
   'provenance.advanced': 'Herkunftsnachweis (erweitert)',
+  'provenance.basic': 'Herkunftsnachweis',
+  'public-sector.mode': 'Public-Sector-Modus',
   'reports.export': 'Berichte exportieren',
   'scheduler.enabled': 'Scheduler',
   'siteos.builder': 'SiteOS Builder',
@@ -62,11 +78,13 @@ const KEY_LABELS: Partial<Record<EntitlementKey, string>> = {
   'sla.priority': 'Priorisierter Support',
   'sso.enabled': 'SSO',
   'team.members': 'Team-Mitglieder',
+  'watermark.apply': 'Wasserzeichen anwenden',
   'webhooks.enabled': 'Webhooks',
   'website.scan': 'Website-Scan',
+  'website.scan_monthly_limit': 'Website-Scans pro Monat',
   'whitelabel.dashboard': 'White-Label-Dashboard',
   'whitelabel.reports': 'White-Label-Berichte',
-};
+} satisfies Record<EntitlementKey, string>;
 
 export function entitlementLabel(key: string): string {
   return KEY_LABELS[key as EntitlementKey] ?? key;

@@ -13,7 +13,7 @@ vi.mock('../../../src/components/governance-os/GovernanceTabs', () => ({
 // haette der Desktop-Fall ueberhaupt keinen Navigationsweg, und der Test
 // unten wuerde ein Verhalten pruefen, das es so nicht mehr gibt.
 vi.mock('../../../src/components/governance-os/GovernanceSidebar', () => ({
-  GovernanceSidebar: () => <Link to="/app/evidence">Nachweise (Seitenleiste)</Link>,
+  GovernanceSidebar: () => <Link to="/app/evidence">Nachweise öffnen</Link>,
 }));
 vi.mock('../../../src/components/governance-os/GovernanceCanvas', () => ({
   GovernanceCanvas: ({ children }: { children: React.ReactNode }) => (
@@ -136,7 +136,7 @@ describe('GovernanceBrowserShell — Command Center', () => {
     expect(screen.getByTestId('embedded-page')).toBeInTheDocument();
     // Modulwechsel ueber die Seitenleiste — der Weg, den der Desktop seit
     // dem Wegfall der oberen Tab-Leiste tatsaechlich nimmt.
-    fireEvent.click(screen.getByRole('link', { name: 'Nachweise (Seitenleiste)' }));
+    fireEvent.click(screen.getByRole('link', { name: 'Nachweise öffnen' }));
     expect(screen.queryByTestId('embedded-page')).not.toBeInTheDocument();
     expect(screen.getByTestId('location')).toHaveTextContent('/app/evidence');
   });

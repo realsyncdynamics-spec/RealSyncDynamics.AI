@@ -145,7 +145,7 @@ function WebsiteCard({ row, onScan, scanning }: {
         <button
           onClick={() => onScan(row)}
           disabled={scanning}
-          className="flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-mono border border-titanium-800 text-titanium-400 hover:border-teal-700 hover:text-teal-400 transition-colors disabled:opacity-40"
+          className="flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-mono border border-titanium-800 text-titanium-400 hover:border-[#e4cfa2]/60 hover:text-[#e4cfa2] transition-colors disabled:opacity-40"
         >
           <RefreshCw className={`h-2.5 w-2.5 ${scanning ? 'animate-spin' : ''}`} />
           Scannen
@@ -174,7 +174,7 @@ function AddDomainModal({
           onChange={(e) => setValue(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter' && value.trim()) { onAdd(value.trim()); } }}
           placeholder="z.B. www.mein-unternehmen.de"
-          className="w-full bg-obsidian-950 border border-titanium-800 px-3 py-2 text-sm font-mono text-titanium-100 placeholder-titanium-700 outline-none focus:border-teal-600"
+          className="w-full bg-obsidian-950 border border-titanium-800 px-3 py-2 text-sm font-mono text-titanium-100 placeholder-titanium-700 outline-none focus:border-[#e4cfa2]"
         />
         <div className="flex items-center gap-2 justify-end">
           <button onClick={onClose} className="px-3 py-1.5 text-xs font-mono text-titanium-500 border border-titanium-800 hover:text-titanium-300">
@@ -182,7 +182,7 @@ function AddDomainModal({
           </button>
           <button
             onClick={() => value.trim() && onAdd(value.trim())}
-            className="px-3 py-1.5 text-xs font-mono bg-teal-600 text-white hover:bg-teal-500"
+            className="px-3 py-1.5 text-xs font-mono bg-[#e8ddc8] text-[#1a1917] hover:bg-[#f0e6d4]"
           >
             Hinzufügen
           </button>
@@ -306,8 +306,8 @@ function _WebsiteGovernanceView() {
     <div className="min-h-screen bg-obsidian-950 text-titanium-100">
       <header className="h-14 border-b border-titanium-900 bg-obsidian-900 flex items-center justify-between px-4 shrink-0">
         <div className="flex items-center gap-2.5 min-w-0">
-          <div className="w-8 h-8 bg-gradient-to-br from-teal-700 to-blue-800 flex items-center justify-center shrink-0">
-            <Globe className="h-4 w-4 text-white" />
+          <div className="w-8 h-8 bg-obsidian-800 border border-[#e4cfa2]/30 flex items-center justify-center shrink-0">
+            <Globe className="h-4 w-4 text-[#e4cfa2]" />
           </div>
           <div className="leading-tight min-w-0">
             <div className="font-display font-bold text-sm tracking-tight text-titanium-50">Websites</div>
@@ -322,7 +322,7 @@ function _WebsiteGovernanceView() {
           <button
             onClick={() => setAddOpen(true)}
             disabled={signedOut}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono border border-titanium-800 text-titanium-400 hover:border-teal-700 hover:text-teal-400 transition-colors disabled:opacity-40"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono border border-titanium-800 text-titanium-400 hover:border-[#e4cfa2]/60 hover:text-[#e4cfa2] transition-colors disabled:opacity-40"
           >
             <Plus className="h-3.5 w-3.5" />
             Domain hinzufügen
@@ -370,15 +370,15 @@ function _WebsiteGovernanceView() {
         </div>
 
         {signedOut ? (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
+          <div className="flex flex-col items-center justify-center py-16 text-center" data-testid="websites-empty-signed-out">
             <LogIn className="h-8 w-8 mb-3 text-titanium-700" />
             <p className="font-mono text-sm text-titanium-300">Anmelden, um Ihre Domains zu sehen.</p>
             <p className="mt-2 max-w-md text-xs text-titanium-600">
-              Nach dem Login erscheinen hier das Unternehmen Ihres Mandanten und die registrierten Domains — keine Beispieldaten.
+              Nach dem Login erscheinen hier das Unternehmen Ihres Mandanten und die registrierten Domains — keine Beispieldaten und keine Fake-KPIs.
             </p>
             <a
               href="/welcome"
-              className="mt-5 px-4 py-2 text-xs font-mono border border-teal-700 text-teal-400 hover:bg-teal-950/40"
+              className="mt-5 px-4 py-2 text-xs font-mono border border-[#e4cfa2]/50 text-[#e4cfa2] hover:bg-[#e4cfa2]/10"
             >
               Anmelden
             </a>
@@ -388,18 +388,21 @@ function _WebsiteGovernanceView() {
             Domains werden geladen…
           </div>
         ) : empty ? (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
+          <div className="flex flex-col items-center justify-center py-16 text-center" data-testid="websites-empty">
             <Globe className="h-8 w-8 mb-3 text-titanium-700" />
             {company && (
               <p className="font-display text-lg text-titanium-50 mb-1">{company}</p>
             )}
             <p className="font-mono text-sm text-titanium-400">Noch keine Domain hinterlegt.</p>
+            <p className="mt-2 max-w-md text-xs text-titanium-600">
+              Domains und Scan-Zähler bleiben leer (0), bis Sie eine Domain hinzufügen — keine Demo-Scores.
+            </p>
             {domainHint && (
-              <p className="mt-2 font-mono text-xs text-teal-400">Vorschlag aus dem Konto: {domainHint}</p>
+              <p className="mt-2 font-mono text-xs text-[#e4cfa2]">Vorschlag aus dem Konto: {domainHint}</p>
             )}
             <button
               onClick={() => setAddOpen(true)}
-              className="mt-5 flex items-center gap-1.5 px-4 py-2 text-xs font-mono bg-teal-600 text-white hover:bg-teal-500"
+              className="mt-5 flex items-center gap-1.5 px-4 py-2 text-xs font-mono bg-[#e8ddc8] text-[#1a1917] hover:bg-[#f0e6d4]"
             >
               <Plus className="h-3.5 w-3.5" />
               {domainHint ? `${domainHint} übernehmen` : 'Erste Domain hinzufügen'}

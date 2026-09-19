@@ -12,6 +12,14 @@ import {
 } from 'lucide-react';
 import { useTenant } from '../../../core/access/TenantProvider';
 import { useEntitlements } from '../../../core/billing/useEntitlements';
+import { getSupabase } from '../../../lib/supabase';
+import {
+  EMPTY_COMPLIANCE_KPI_ROW,
+  formatMetric,
+  loadComplianceKpiRow,
+  type ComplianceKpiRow,
+  type RiskTrendDirection,
+} from '../../../lib/status/statusAdapter';
 import { Card, CardHeader, CardBody } from '../../../enterprise-os/components/Card';
 import { ScoreGauge } from '../../../enterprise-os/components/ScoreGauge';
 import { Button } from '../../../enterprise-os/components/Button';
@@ -43,6 +51,7 @@ export function ComplianceStatusDashboard() {
   const { tier, loading: entitlementsLoading } = useEntitlements();
   const tenantName = tenants.find((t) => t.tenantId === activeTenantId)?.name ?? null;
   const [data, setData] = useState<CockpitData | null>(null);
+  const [complianceKpi, setComplianceKpi] = useState<ComplianceKpiRow>(EMPTY_COMPLIANCE_KPI_ROW);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [bootstrapSteps, setBootstrapSteps] = useState<BootstrapStep[]>([]);
@@ -51,6 +60,7 @@ export function ComplianceStatusDashboard() {
     let cancelled = false;
     if (!activeTenantId) {
       setData(null);
+      setComplianceKpi(EMPTY_COMPLIANCE_KPI_ROW);
       setLoading(false);
       setBootstrapSteps([]);
       return;
@@ -58,8 +68,17 @@ export function ComplianceStatusDashboard() {
     setLoading(true);
     setError(null);
     setData(null);
-    loadCockpitData(activeTenantId)
-      .then((next) => { if (!cancelled) setData(next); })
+    setComplianceKpi(EMPTY_COMPLIANCE_KPI_ROW);
+    const sb = getSupabase();
+    Promise.all([
+      loadCockpitData(activeTenantId),
+      loadComplianceKpiRow(sb, activeTenantId),
+    ])
+      .then(([cockpit, kpi]) => {
+        if (cancelled) return;
+        setData(cockpit);
+        setComplianceKpi(kpi);
+      })
       .catch((err) => { if (!cancelled) setError((err as Error)?.message ?? String(err)); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
@@ -102,6 +121,7 @@ export function ComplianceStatusDashboard() {
         tenantName={tenantName}
         activeTenantId={activeTenantId}
         data={data}
+        complianceKpi={complianceKpi}
         loading={loading}
         error={error}
         bootstrapSteps={bootstrapSteps}
@@ -114,9 +134,9 @@ export function ComplianceStatusDashboard() {
 
 function DashboardControlPlane() {
   const tools = [
-    { href: '/app/bots', label: 'AI Agents & Bots', text: 'Bots anlegen, Kanäle und Fähigkeiten verwalten.', icon: Bot, accent: 'text-cyan-300' },
-    { href: '/app/agents', label: 'Agent Runtime', text: 'Enterprise-Agenten starten und Runs überwachen.', icon: Sparkles, accent: 'text-violet-300' },
-    { href: '/build', label: 'Frontend & Landing Builder', text: 'Prompt → Website → Vorschau mit SiteOS.', icon: LayoutTemplate, accent: 'text-sky-300' },
+    { href: '/app/bots', label: 'AI Agents & Bots', text: 'Bots anlegen, Kanäle und Fähigkeiten verwalten.', icon: Bot, accent: 'text-[#e4cfa2]' },
+    { href: '/app/agents', label: 'Agent Runtime', text: 'Enterprise-Agenten starten und Runs überwachen.', icon: Sparkles, accent: 'text-[#e8ddc8]' },
+    { href: '/build', label: 'Frontend & Landing Builder', text: 'Prompt → Website → Vorschau mit SiteOS.', icon: LayoutTemplate, accent: 'text-[#e4cfa2]' },
     { href: '/app/siteos/builder', label: 'Web App Builder', text: 'SiteOS-Workspace für bestehende Projekte öffnen.', icon: Globe2, accent: 'text-emerald-300' },
   ];
 
@@ -150,6 +170,7 @@ export interface ComplianceStatusViewProps {
   tenantName: string | null;
   activeTenantId: string | null;
   data: CockpitData | null;
+  complianceKpi?: ComplianceKpiRow;
   loading: boolean;
   error: string | null;
   bootstrapSteps?: BootstrapStep[];
@@ -167,6 +188,7 @@ export function ComplianceStatusView({
   tenantName,
   activeTenantId,
   data,
+  complianceKpi = EMPTY_COMPLIANCE_KPI_ROW,
   loading,
   error,
   bootstrapSteps = [],
@@ -348,6 +370,10 @@ export function ComplianceStatusView({
         </div>
       )}
 
+      {activeTenantId && !loading && (
+        <ComplianceKpiStrip kpi={complianceKpi} />
+      )}
+
       {isEmptyTenant && (
         <div className="border border-titanium-800 bg-obsidian-900 p-6 space-y-4" data-testid="empty-tenant-cta">
           <div className="flex items-start gap-4">
@@ -402,7 +428,7 @@ export function ComplianceStatusView({
 
       {data && !isEmptyTenant && (
         <>
-          {/* Zone 1 — Top KPI strip */}
+          {/* Zone 1 — Top KPI strip (cockpit-derived; separate from score history row) */}
           <section aria-label="KPI-Strip">
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-px bg-titanium-900 border border-titanium-900">
               <ScoreCard
@@ -891,6 +917,129 @@ function FrameworkStrip() {
         })}
       </div>
     </section>
+  );
+}
+
+/* ─── Compliance KPI row (score history + table digests) ───────────────── */
+
+function ComplianceKpiStrip({ kpi }: { kpi: ComplianceKpiRow }) {
+  const breakdownBits = [
+    { key: 'GDPR', value: kpi.score_breakdown.score_gdpr },
+    { key: 'NIS2', value: kpi.score_breakdown.score_nis2 },
+    { key: 'DSA', value: kpi.score_breakdown.score_dsa },
+    { key: 'AI Act', value: kpi.score_breakdown.score_ai_act },
+  ].filter((b) => b.value !== null);
+
+  return (
+    <section aria-label="Compliance-KPI" data-testid="compliance-kpi-row">
+      <div className="flex items-center justify-between gap-3 mb-3">
+        <div>
+          <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#e4cfa2]">Compliance</p>
+          <h2 className="text-sm font-semibold text-titanium-50 mt-0.5">Score · Trend · Findings · Incidents</h2>
+        </div>
+        <p className="text-[10px] font-mono text-titanium-600 hidden sm:block">
+          Quellen: compliance_score_history · risk_dashboard_summary · incidents
+        </p>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-px bg-titanium-900 border border-titanium-900">
+        <KpiMetricCard
+          testId="compliance-score-overall"
+          label="Score overall"
+          value={kpi.score_overall}
+          suffix="%"
+          hint={
+            breakdownBits.length > 0
+              ? breakdownBits.map((b) => `${b.key} ${formatMetric(b.value)}`).join(' · ')
+              : 'Kein Score-Snapshot — keine erfundenen Werte.'
+          }
+        />
+        <TrendMetricCard direction={kpi.riskTrendDirection} />
+        <KpiMetricCard
+          testId="compliance-critical-findings"
+          label="Critical findings"
+          value={kpi.criticalFindings}
+          hint="Kritische Risiken aus risk_dashboard_summary."
+          danger={kpi.criticalFindings !== null && kpi.criticalFindings > 0}
+        />
+        <KpiMetricCard
+          testId="compliance-new-incidents"
+          label="New incidents (24h)"
+          value={kpi.newIncidents}
+          hint="Neu eröffnete Incidents der letzten 24 Stunden."
+          danger={kpi.newIncidents !== null && kpi.newIncidents > 0}
+        />
+      </div>
+    </section>
+  );
+}
+
+function KpiMetricCard({
+  testId,
+  label,
+  value,
+  suffix = '',
+  hint,
+  danger = false,
+}: {
+  testId: string;
+  label: string;
+  value: number | null;
+  suffix?: string;
+  hint: string;
+  danger?: boolean;
+}) {
+  return (
+    <div className="bg-obsidian-900 px-5 py-5" data-testid={testId}>
+      <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-titanium-500">{label}</p>
+      {value === null ? (
+        <div className="mt-3">
+          <p className="font-mono text-4xl font-bold text-titanium-600">—</p>
+          <p className="mt-2 text-[11px] text-titanium-500">Unbekannt — keine Messung</p>
+        </div>
+      ) : (
+        <div className="mt-3">
+          <p className={`font-mono text-4xl font-bold tabular-nums ${danger ? 'text-red-400' : 'text-titanium-50'}`}>
+            {formatMetric(value, suffix)}
+          </p>
+          <p className="mt-2 text-[11px] text-titanium-500">{hint}</p>
+        </div>
+      )}
+      {value === null && <p className="mt-1 text-[11px] text-titanium-600">{hint}</p>}
+    </div>
+  );
+}
+
+function TrendMetricCard({ direction }: { direction: RiskTrendDirection | null }) {
+  const label =
+    direction === 'improving' ? 'Improving'
+      : direction === 'declining' ? 'Declining'
+        : direction === 'stable' ? 'Stable'
+          : null;
+  const Icon =
+    direction === 'improving' ? TrendingUp
+      : direction === 'declining' ? TrendingDown
+        : Minus;
+  const tone =
+    direction === 'improving' ? 'text-emerald-400'
+      : direction === 'declining' ? 'text-orange-400'
+        : direction === 'stable' ? 'text-[#e4cfa2]'
+          : 'text-titanium-600';
+
+  return (
+    <div className="bg-obsidian-900 px-5 py-5" data-testid="compliance-risk-trend">
+      <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-titanium-500">Risk trend</p>
+      {direction === null || label === null ? (
+        <div className="mt-3">
+          <p className="font-mono text-4xl font-bold text-titanium-600">—</p>
+          <p className="mt-2 text-[11px] text-titanium-500">Kein Trend in compliance_score_history</p>
+        </div>
+      ) : (
+        <div className="mt-3 flex items-center gap-2">
+          <Icon className={`h-7 w-7 ${tone}`} />
+          <span className={`font-mono text-2xl font-bold ${tone}`}>{label}</span>
+        </div>
+      )}
+    </div>
   );
 }
 

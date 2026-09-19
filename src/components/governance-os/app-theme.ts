@@ -1,94 +1,34 @@
 /**
- * Gestaltungswerte der App-Oberflaeche — Cyan/Blau, aus dem Handoff-Entwurf
- * „RealSync Dynamics AI — Web + Mobile Prototyp".
+ * Rastermasse, Radien und Bewegung der App-Oberflaeche — der Teil des
+ * Handoff-Entwurfs („RealSync Dynamics AI — Web + Mobile Prototyp"), der im
+ * Repo noch fehlte.
  *
- * ## Warum eine eigene Datei neben `landing-theme.ts`
+ * ## Warum hier keine Farben stehen
  *
- * Die oeffentliche Startseite traegt Gold auf Anthrazit (`landing-theme.ts`),
- * die App traegt Blau/Cyan auf Marineblau. Das ist kein Versehen, sondern die
- * Trennlinie: Marketing wirbt, die App arbeitet. Zwei Dateien halten diese
- * Trennung sichtbar — wer hier einen Goldwert eintraegt, merkt es.
+ * Der Entwurf ist in Blau/Cyan gehalten. Das Repo hat die gegenteilige
+ * Entscheidung getroffen und sie an zwei Stellen festgeschrieben:
+ * `osChrome.ts` fuehrt die Landing-Palette als `OS_*` fuer `/app` und
+ * `/build` weiter („No cyan/purple product chrome"), und `index.css`
+ * spiegelt sie in `.os-chrome` / `.dashboard-context` („Product accent stays
+ * gold — do not point at cyan / ai-cyan").
+ *
+ * Eine zweite Akzentpalette hier haette diese Regel nicht aufgehoben,
+ * sondern nur unterlaufen: Die Seitenleiste haette Cyan getragen, TopBar,
+ * Tabs, Statusleiste und Command Center daneben weiter Gold. Farben kommen
+ * deshalb aus `osChrome.ts`, und nur daher.
+ *
+ * Diese Datei traegt, was der Entwurf beisteuert und was dort fehlt: die
+ * Rastermasse der Shell, die Radienstaffel, die Bewegungskurve — alles
+ * farbneutral und damit unabhaengig davon, welche Palette gilt.
  *
  * ## Was diese Datei nicht ist
  *
- * Der Entwurf ist **UI-Spezifikation, kein Datenmodell**. Farben, Abstaende
- * und Radien sind verbindlich; die Zahlen, die im Prototyp daneben stehen
- * (acht Systeme `s1`–`s8`, Score-Formeln, simulierte Hash-Ketten), sind es
- * ausdruecklich nicht. Die Ansichten ziehen ihre Daten weiter ueber
- * `useTenant`, `fetchTenantAssets` und `evidenceVaultApi`.
+ * Der Entwurf ist UI-Spezifikation, kein Datenmodell. Die Zahlen, die im
+ * Prototyp danebenstehen (acht Systeme `s1`–`s8`, Score-Formeln, simulierte
+ * Hash-Ketten), sind ausdruecklich nicht uebernommen. Die Ansichten ziehen
+ * ihre Daten weiter ueber `useTenant`, `fetchTenantAssets` und
+ * `evidenceVaultApi`.
  */
-
-// ── Flaechen ────────────────────────────────────────────────────────────────
-
-/** Grundflaeche der App. */
-export const APP_BG = '#070B14';
-/** Erhoehte Flaeche: Sidebar, Header, Karten. */
-export const APP_SURFACE = '#0D1322';
-/** Aktiver Zustand — Nav-Item, Tabellenzeile unter dem Zeiger. */
-export const APP_SURFACE_ACTIVE = '#14203A';
-/** Gedaempfte Flaeche fuer Segmente und Chips. */
-export const APP_SURFACE_MUTED = '#1D2B48';
-/** Nur der Landing-Hero des Entwurfs — dunkler als die App. */
-export const APP_HERO_BG = '#02050B';
-
-// ── Schrift ─────────────────────────────────────────────────────────────────
-
-export const APP_TEXT = '#F2F5FA';
-export const APP_TEXT_SECONDARY = '#C9D1E0';
-export const APP_MUTED = '#8A95AC';
-/** Fussnoten, Platzhalter, abgeschaltete Beschriftungen. */
-export const APP_FAINT = '#5A6684';
-
-// ── Linien ──────────────────────────────────────────────────────────────────
-
-export const APP_LINE = '#1F2B48';
-/** Staerker: Umrandung von Eingaben und Sekundaer-Schaltflaechen. */
-export const APP_LINE_STRONG = '#2E3C5E';
-
-// ── Akzente ─────────────────────────────────────────────────────────────────
-
-/** Primaerfarbe — Schaltflaechen, aktiver Nav-Zustand. */
-export const APP_PRIMARY = '#1E5AFF';
-export const APP_PRIMARY_HOVER = '#1641C4';
-export const APP_PRIMARY_LIGHT = '#7FA0FF';
-/** Zweitfarbe — Kennzeichnungen, Hashes, Fortschritt. */
-export const APP_CYAN = '#00B8D4';
-export const APP_CYAN_LIGHT = '#4FD4E8';
-
-// ── Zustaende ───────────────────────────────────────────────────────────────
-
-export const APP_SUCCESS = '#10B981';
-export const APP_WARNING = '#F5A524';
-export const APP_DANGER = '#E5484D';
-export const APP_VIOLET = '#7C5CFF';
-
-/**
- * Durchsetzbarkeits-Klassen A–D.
- *
- * Die Zuordnung Klasse → Farbe gehoert hierher, nicht in die Ansichten: Auf
- * dem Dashboard, in der Systemliste und in der Klassifizierung muss dieselbe
- * Klasse dieselbe Farbe tragen, sonst liest man drei verschiedene Aussagen.
- * Die Klassen selbst kommen aus `shared/enforcement-classes.ts`.
- */
-export const APP_CLASS_COLORS: Readonly<Record<'A' | 'B' | 'C' | 'D', string>> = {
-  A: APP_SUCCESS,
-  B: APP_CYAN,
-  C: APP_WARNING,
-  D: APP_DANGER,
-};
-
-// ── Typografie ──────────────────────────────────────────────────────────────
-
-/** Fliesstext und Bedienelemente. */
-export const APP_SANS = "'Inter', system-ui, sans-serif";
-/** Ueberschriften — enger gesetzt als Inter. */
-export const APP_DISPLAY = "'Inter Tight', 'Inter', system-ui, sans-serif";
-/** Hashes, Klassenkuerzel, Zeitstempel, Operating Loop. */
-export const APP_MONO = "'JetBrains Mono', ui-monospace, monospace";
-/** Ausschliesslich die H1 des Landing-Heros. */
-export const APP_SERIF = "'Newsreader', Georgia, serif";
-/** Inter-Stilsaetze des Entwurfs: einstoeckiges a, gerade Ziffern. */
-export const APP_FONT_FEATURES = '"ss01", "cv11"';
 
 // ── Radien ──────────────────────────────────────────────────────────────────
 
@@ -103,17 +43,21 @@ export const APP_RADIUS_LG = 16;
 /** Status-Pillen. */
 export const APP_RADIUS_PILL = 9999;
 
-// ── Rastermasse der Shell ────────────────────────────────────────────────────
+// ── Rastermasse der Shell ───────────────────────────────────────────────────
 
 /** Breite der Seitenleiste ab `lg`. */
 export const APP_SIDEBAR_WIDTH = 248;
+/** Hoehe eines Navigationseintrags in der Seitenleiste. */
+export const APP_NAV_ITEM_HEIGHT = 38;
 /** Hoehe der Kopfzeile. */
 export const APP_HEADER_HEIGHT = 56;
 /** Hoehe der Kopfzeile auf Mobilgeraeten. */
 export const APP_HEADER_HEIGHT_MOBILE = 58;
 
+// ── Bewegung ────────────────────────────────────────────────────────────────
+
 /**
- * Bewegung. Der Entwurf schreibt eine einzige Kurve vor — keine Federn, kein
+ * Der Entwurf schreibt eine einzige Kurve vor — keine Federn, kein
  * Hover-Zoom. 200 ms ist der Standard, 600 ms nur das Versiegeln der
  * Hash-Kette.
  */
@@ -123,3 +67,52 @@ export const APP_DURATION_SEAL_MS = 600;
 
 /** Abgeschaltete Bedienelemente. */
 export const APP_DISABLED_OPACITY = 0.45;
+
+// ── Durchsetzbarkeits-Klassen A–D ───────────────────────────────────────────
+
+/**
+ * Klasse → Tailwind-Klassenfragment.
+ *
+ * Die Zuordnung gehoert hierher und nicht in die Ansichten: Dashboard,
+ * Systemliste und Klassifizierung zeigen dieselbe Klasse; traegt sie dort
+ * drei Farben, liest man drei Aussagen. Die Klassen selbst kommen aus
+ * `shared/enforcement-classes.ts`.
+ *
+ * Tailwind-Klassen statt Hex-Werte — dem Muster von
+ * `lib/governance/severityPalette.ts` folgend, das fuer Finding-Severity
+ * dieselbe Aufgabe loest. Die Farbfamilien sind von dort uebernommen, damit
+ * ein Nutzer, der Befunde und Klassen nebeneinander sieht, nicht zwei
+ * Farbsprachen lernen muss. `sky` steht, wo der Entwurf Cyan vorsieht: Es
+ * traegt dieselbe Aussage, ohne die Cyan-Sperre des App-Chrome zu brechen.
+ */
+export interface EnforcementClassStyle {
+  /** Vollstaendige Badge-Klasse (border + bg + text). */
+  badge: string;
+  /** Nur die Textfarbe — fuer Inline-Zaehler und Legenden. */
+  text: string;
+  /** Flaeche fuer den gestapelten Balken. */
+  bar: string;
+}
+
+export const APP_CLASS_STYLES: Readonly<Record<'A' | 'B' | 'C' | 'D', EnforcementClassStyle>> = {
+  A: {
+    badge: 'border-emerald-500/40 bg-emerald-500/10 text-emerald-200',
+    text: 'text-emerald-300',
+    bar: 'bg-emerald-500',
+  },
+  B: {
+    badge: 'border-sky-500/40 bg-sky-500/10 text-sky-200',
+    text: 'text-sky-300',
+    bar: 'bg-sky-500',
+  },
+  C: {
+    badge: 'border-amber-500/40 bg-amber-500/10 text-amber-200',
+    text: 'text-amber-300',
+    bar: 'bg-amber-500',
+  },
+  D: {
+    badge: 'border-rose-500/40 bg-rose-500/10 text-rose-200',
+    text: 'text-rose-300',
+    bar: 'bg-rose-500',
+  },
+};

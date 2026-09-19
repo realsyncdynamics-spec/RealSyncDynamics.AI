@@ -12,19 +12,13 @@ import { TAB_MODULES, canAccessModule, minimumPlanForModule } from './governance
 import { ModuleStatusBadge } from './ModuleStatusBadge';
 import type { GovernanceModule } from './governanceBrowserTypes';
 import { useActivePlan } from '../../hooks/useModuleAccess';
+import { OS_ACCENT_BG, OS_ACCENT_TEXT, OS_CREAM_TEXT, OS_FOCUS_RING } from './osChrome';
 import {
-  APP_BG,
-  APP_CYAN,
-  APP_FAINT,
-  APP_LINE,
-  APP_MONO,
-  APP_MUTED,
-  APP_PRIMARY,
+  APP_DURATION_MS,
+  APP_EASING,
+  APP_NAV_ITEM_HEIGHT,
   APP_RADIUS_MD,
   APP_SIDEBAR_WIDTH,
-  APP_SURFACE,
-  APP_SURFACE_ACTIVE,
-  APP_TEXT,
 } from './app-theme';
 
 /**
@@ -34,15 +28,23 @@ import {
  * bleibt es beim Burger-Menue und der Tab-Bar unten: Eine 248px-Spalte
  * neben einem 390px-Fenster laesst fuer den Inhalt nichts uebrig.
  *
+ * ## Aus dem Entwurf kommt das Raster, nicht die Farbe
+ *
+ * Breite, Zeilenhoehe, Radius und Bewegungskurve folgen dem Entwurf
+ * (`app-theme.ts`). Die Farben kommen aus `osChrome.ts` — dieselbe Quelle,
+ * aus der TopBar, Tabs, Statusleiste und Command Center lesen. Der Entwurf
+ * ist in Cyan gehalten; `osChrome` und `index.css` schreiben fuer `/app`
+ * ausdruecklich Gold fest. Eine cyanfarbene Seitenleiste neben goldenem
+ * Chrome haette diese Regel nicht geaendert, nur gebrochen.
+ *
  * ## Die Liste wird nicht gepflegt, sie wird gelesen
  *
  * Der Entwurf zeigt sieben feste Eintraege. Diese Komponente nimmt
  * stattdessen `TAB_MODULES` — dieselbe Registry, aus der die Tab-Leiste
- * liest. Das ist keine Abweichung um ihrer selbst willen: Eine zweite,
- * handgepflegte Liste waere genau die Stelle, an der beim naechsten Modul
- * die Navigation auseinanderlaeuft, und sie haette weder Status-Badge noch
- * Plan-Gate. Wer ein Modul auf `roadmap` zurueckstuft, nimmt es damit auch
- * hier automatisch aus der Leiste.
+ * liest. Eine zweite, handgepflegte Liste waere genau die Stelle, an der
+ * beim naechsten Modul die Navigation auseinanderlaeuft, und sie haette
+ * weder Status-Badge noch Plan-Gate. Wer ein Modul auf `roadmap`
+ * zurueckstuft, nimmt es damit auch hier automatisch aus der Leiste.
  *
  * Gesperrte Module bleiben sichtbar, tragen aber ein Schloss und den
  * Mindest-Plan — verschwiegene Module lassen sich nicht buchen.
@@ -62,6 +64,12 @@ const PLAN_LABELS: Record<string, string> = {
   agency: 'Agency',
   enterprise: 'Enterprise',
 };
+
+/** Bewegung nach Entwurf — eine Kurve, keine Federn, kein Hover-Zoom. */
+const MOTION = {
+  transitionTimingFunction: APP_EASING,
+  transitionDuration: `${APP_DURATION_MS}ms`,
+} as const;
 
 /** `/app/dashboard` traegt mehrere historische Adressen. */
 function isActiveRoute(route: string, pathname: string): boolean {
@@ -83,19 +91,25 @@ function SidebarItem({
   const Icon: LucideIcon = ICON_MAP[module.icon] ?? Home;
   const minPlan = locked ? PLAN_LABELS[minimumPlanForModule(module)] ?? 'Enterprise' : null;
 
+  const tone = active
+    ? 'bg-obsidian-800 text-titanium-50'
+    : locked
+      ? 'text-titanium-600 hover:bg-obsidian-800'
+      : 'text-titanium-400 hover:text-titanium-100 hover:bg-obsidian-800';
+
   return (
     <Link
       to={module.route}
       aria-current={active ? 'page' : undefined}
       title={locked && minPlan ? `${module.label} — ab ${minPlan}` : module.description}
-      className="group flex h-[38px] items-center gap-2.5 px-2.5 text-[13px] transition-colors"
-      style={{
-        borderRadius: APP_RADIUS_MD,
-        backgroundColor: active ? APP_SURFACE_ACTIVE : 'transparent',
-        color: active ? APP_TEXT : locked ? APP_FAINT : APP_MUTED,
-      }}
+      className={`group flex items-center gap-2.5 px-2.5 text-[13px] transition-colors focus-visible:outline-none ${OS_FOCUS_RING} ${tone}`}
+      style={{ ...MOTION, height: APP_NAV_ITEM_HEIGHT, borderRadius: APP_RADIUS_MD }}
     >
-      <Icon className="h-[18px] w-[18px] shrink-0" style={{ color: active ? APP_CYAN : undefined }} />
+      <Icon
+        className={`h-[18px] w-[18px] shrink-0 ${
+          active ? OS_ACCENT_TEXT : 'text-titanium-600 group-hover:text-titanium-300'
+        }`}
+      />
       <span className="min-w-0 flex-1 truncate">{module.label}</span>
       {locked ? (
         <Lock className="h-3 w-3 shrink-0" aria-label={minPlan ? `ab ${minPlan}` : 'gesperrt'} />
@@ -113,27 +127,14 @@ export function GovernanceSidebar() {
   return (
     <nav
       aria-label="Modulnavigation"
-      className="hidden shrink-0 flex-col overflow-y-auto border-r px-3 py-4 lg:flex"
-      style={{
-        width: APP_SIDEBAR_WIDTH,
-        backgroundColor: APP_SURFACE,
-        borderColor: APP_LINE,
-      }}
+      className="hidden shrink-0 flex-col overflow-y-auto border-r border-titanium-800 bg-obsidian-900 px-3 py-4 lg:flex"
+      style={{ width: APP_SIDEBAR_WIDTH }}
     >
       <div className="flex items-center gap-2.5 px-1 pb-4">
-        <span
-          className="grid h-7 w-7 shrink-0 place-items-center"
-          style={{
-            borderRadius: APP_RADIUS_MD,
-            background: `linear-gradient(135deg, ${APP_PRIMARY}, ${APP_CYAN})`,
-          }}
-        >
-          <ShieldCheck className="h-4 w-4" style={{ color: '#FFFFFF' }} aria-hidden="true" />
+        <span className={`grid h-7 w-7 shrink-0 place-items-center ${OS_ACCENT_BG}`}>
+          <ShieldCheck className="h-4 w-4" style={{ color: OS_CREAM_TEXT }} aria-hidden="true" />
         </span>
-        <span
-          className="truncate text-[10px] uppercase tracking-[0.14em]"
-          style={{ fontFamily: APP_MONO, color: APP_MUTED }}
-        >
+        <span className="truncate font-mono text-[10px] uppercase tracking-[0.14em] text-titanium-500">
           Governance OS
         </span>
       </div>
@@ -150,22 +151,14 @@ export function GovernanceSidebar() {
       </div>
 
       <div
-        className="mt-auto border p-3"
-        style={{ borderRadius: APP_RADIUS_MD, borderColor: APP_LINE, backgroundColor: APP_BG }}
+        className="mt-auto border border-titanium-800 bg-obsidian-950 p-3"
+        style={{ borderRadius: APP_RADIUS_MD }}
       >
-        <p
-          className="text-[9px] uppercase tracking-[0.16em]"
-          style={{ fontFamily: APP_MONO, color: APP_FAINT }}
-        >
-          Plan
-        </p>
-        <p className="mt-1 text-[13px]" style={{ color: APP_TEXT }}>
-          {PLAN_LABELS[plan] ?? 'Free'}
-        </p>
+        <p className="font-mono text-[9px] uppercase tracking-[0.16em] text-titanium-600">Plan</p>
+        <p className="mt-1 text-[13px] text-titanium-100">{PLAN_LABELS[plan] ?? 'Free'}</p>
         <Link
           to="/app/billing"
-          className="mt-2 inline-block text-[12px] underline-offset-2 hover:underline"
-          style={{ color: APP_CYAN }}
+          className={`mt-2 inline-block text-[12px] underline-offset-2 hover:underline ${OS_ACCENT_TEXT}`}
         >
           Plan wechseln
         </Link>

@@ -1,25 +1,24 @@
 /**
- * App-Tokens — Cyan/Blau, getrennt von der Gold-Landing.
+ * App-Raster — und die Grenze, an der es aufhoert.
  *
- * Der Test haelt zwei Dinge fest, die beim naechsten Umbau sonst still
- * verrutschen: dass die App-Palette nicht in die Marketing-Palette laeuft
- * (und umgekehrt), und dass jede Durchsetzbarkeits-Klasse genau eine Farbe
- * hat — auf dem Dashboard, in der Systemliste und in der Klassifizierung
- * dieselbe, sonst liest man drei verschiedene Aussagen.
+ * `app-theme.ts` traegt nur, was der Handoff-Entwurf beisteuert und im Repo
+ * fehlte: Rastermasse, Radien, Bewegung. Farben kommen aus `osChrome.ts`.
+ * Der Test haelt genau das fest, weil es sonst beim naechsten Griff zum
+ * Entwurf wieder verrutscht: Dort ist alles Cyan, und eine zweite
+ * Akzentpalette im App-Chrome laesst sich in zwei Minuten einbauen und in
+ * zwei Monaten nicht mehr herausloesen.
  */
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
-  APP_BG,
-  APP_CLASS_COLORS,
-  APP_CYAN,
-  APP_DISPLAY,
+  APP_CLASS_STYLES,
+  APP_DURATION_MS,
+  APP_EASING,
   APP_HEADER_HEIGHT,
-  APP_MONO,
-  APP_PRIMARY,
+  APP_NAV_ITEM_HEIGHT,
+  APP_RADIUS_MD,
   APP_SIDEBAR_WIDTH,
-  APP_SURFACE,
 } from '../../src/components/governance-os/app-theme';
 import { ENFORCEMENT_CLASSES } from '../../shared/enforcement-classes';
 
@@ -28,55 +27,81 @@ const appTheme = readFileSync(
   resolve(root, 'src/components/governance-os/app-theme.ts'),
   'utf8',
 );
-const landingTheme = readFileSync(
-  resolve(root, 'src/components/landing/landing-theme.ts'),
+const sidebar = readFileSync(
+  resolve(root, 'src/components/governance-os/GovernanceSidebar.tsx'),
   'utf8',
 );
 
-describe('App-Tokens', () => {
-  it('traegt die Farbwerte des Entwurfs', () => {
-    expect(APP_BG).toBe('#070B14');
-    expect(APP_SURFACE).toBe('#0D1322');
-    expect(APP_PRIMARY).toBe('#1E5AFF');
-    expect(APP_CYAN).toBe('#00B8D4');
-  });
+/** Farbwerte des Entwurfs, die im App-Chrome nichts zu suchen haben. */
+const ENTWURF_CYAN = ['#00B8D4', '#4FD4E8', '#1E5AFF', '#1641C4', '#7FA0FF'];
 
-  it('traegt die Rastermasse der Shell', () => {
+describe('App-Raster', () => {
+  it('traegt die Rastermasse des Entwurfs', () => {
     expect(APP_SIDEBAR_WIDTH).toBe(248);
+    expect(APP_NAV_ITEM_HEIGHT).toBe(38);
     expect(APP_HEADER_HEIGHT).toBe(56);
+    expect(APP_RADIUS_MD).toBe(8);
   });
 
-  it('nennt die Schriftfamilien des Entwurfs', () => {
-    expect(APP_DISPLAY).toContain('Inter Tight');
-    expect(APP_MONO).toContain('JetBrains Mono');
+  it('traegt die Bewegungskurve des Entwurfs', () => {
+    expect(APP_EASING).toBe('cubic-bezier(.2,.8,.2,1)');
+    expect(APP_DURATION_MS).toBe(200);
   });
+});
 
-  it('jede Durchsetzbarkeits-Klasse hat genau eine Farbe', () => {
-    const klassen = Object.keys(ENFORCEMENT_CLASSES).sort();
-    expect(Object.keys(APP_CLASS_COLORS).sort()).toEqual(klassen);
-
-    const farben = Object.values(APP_CLASS_COLORS);
+describe('Farbgrenze — osChrome bleibt SSoT', () => {
+  it('app-theme definiert ueberhaupt keine Farbwerte', () => {
+    // Kein Hex, nirgends. Die Regel ist absichtlich haerter als noetig:
+    // „nur ein Akzent" waere Auslegungssache, „kein Hex" ist es nicht.
+    const hex = appTheme.match(/#[0-9A-Fa-f]{3,8}\b/g) ?? [];
     expect(
-      new Set(farben).size,
-      'Zwei Klassen teilen sich eine Farbe — dann ist die Klasse am Balken nicht mehr ablesbar.',
-    ).toBe(farben.length);
+      hex,
+      `app-theme.ts definiert Farbwerte (${hex.join(', ')}). Farben gehoeren in osChrome.ts.`,
+    ).toEqual([]);
+  });
 
-    for (const [klasse, farbe] of Object.entries(APP_CLASS_COLORS)) {
-      expect(farbe, `Klasse ${klasse} hat keinen Hex-Wert`).toMatch(/^#[0-9A-Fa-f]{6}$/);
+  it('die Seitenleiste traegt keine Cyan-Werte des Entwurfs', () => {
+    for (const wert of ENTWURF_CYAN) {
+      expect(
+        sidebar.toLowerCase(),
+        `GovernanceSidebar traegt ${wert} — das App-Chrome ist auf Gold festgelegt ` +
+          '(osChrome.ts, index.css).',
+      ).not.toContain(wert.toLowerCase());
     }
   });
 
-  it('App- und Landing-Palette bleiben getrennt', () => {
-    // Gold gehoert der oeffentlichen Seite, Blau/Cyan der App. Wer hier
-    // mischt, hebt die Trennung auf, die den beiden Flaechen ihre Rolle gibt.
-    for (const gold of ['#d6ad68', '#e8c98a', '#e4cfa2']) {
-      expect(appTheme.toLowerCase(), `Goldwert ${gold} in den App-Tokens`).not.toContain(gold);
-    }
-    for (const blau of ['#1e5aff', '#00b8d4']) {
-      expect(
-        landingTheme.toLowerCase(),
-        `App-Akzent ${blau} in den Landing-Tokens`,
-      ).not.toContain(blau);
+  it('die Seitenleiste liest ihre Akzente aus osChrome', () => {
+    expect(sidebar).toContain("from './osChrome'");
+    expect(sidebar).toContain('OS_ACCENT_TEXT');
+  });
+});
+
+describe('Durchsetzbarkeits-Klassen', () => {
+  it('jede Klasse aus der SSoT hat genau einen Stil', () => {
+    expect(Object.keys(APP_CLASS_STYLES).sort()).toEqual(Object.keys(ENFORCEMENT_CLASSES).sort());
+  });
+
+  it('die Klassen sind voneinander unterscheidbar', () => {
+    const balken = Object.values(APP_CLASS_STYLES).map((s) => s.bar);
+    expect(
+      new Set(balken).size,
+      'Zwei Klassen teilen sich eine Farbe — dann ist die Klasse am Balken nicht ablesbar.',
+    ).toBe(balken.length);
+  });
+
+  it('die Stile sind Tailwind-Klassen, keine Hex-Werte', () => {
+    // Folgt `lib/governance/severityPalette.ts`: „Tailwind-Klassen, nicht Hex
+    // — die Plattform nutzt ausschliesslich bg-*-500/10, border-*-500/40,
+    // text-*-200 Patterns."
+    for (const [klasse, stil] of Object.entries(APP_CLASS_STYLES)) {
+      for (const [feld, wert] of Object.entries(stil)) {
+        expect(wert, `Klasse ${klasse}, Feld ${feld} ist leer`).not.toBe('');
+        expect(wert, `Klasse ${klasse}, Feld ${feld} enthaelt einen Hex-Wert`).not.toMatch(/#[0-9A-Fa-f]{3,8}/);
+      }
+      expect(stil.badge, `Klasse ${klasse}: Badge ohne Rahmen`).toMatch(/\bborder-/);
+      expect(stil.badge, `Klasse ${klasse}: Badge ohne Flaeche`).toMatch(/\bbg-/);
+      expect(stil.text, `Klasse ${klasse}: Textfarbe fehlt`).toMatch(/\btext-/);
+      expect(stil.bar, `Klasse ${klasse}: Balkenflaeche fehlt`).toMatch(/\bbg-/);
     }
   });
 });

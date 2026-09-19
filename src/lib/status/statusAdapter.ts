@@ -12,12 +12,15 @@
 //
 // Es wird bewusst KEIN neuer Endpunkt eingeführt. Der Adapter liest die
 // vorhandenen tenant-gefilterten Tabellen und den vorhandenen /health-
-// Endpunkt.
+// Endpunkt. Edge-Function-HTTP-Meta (`{ok, counts, timestamp_utc}`) ist
+// keine KPI-Quelle.
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { getSupabaseUrl } from '../supabaseUrl';
 
 /** `null` bedeutet ausdrücklich „nicht belegbar", nicht „null Stück". */
 export type MetricValue = number | null;
+
+export type RiskTrendDirection = 'improving' | 'stable' | 'declining';
 
 export interface TenantStatus {
   /** Aus compliance_score_history (jüngster Eintrag). */
@@ -35,11 +38,67 @@ export interface TenantStatus {
 }
 
 export interface ScoreDetail {
-  trend_direction: 'improving' | 'stable' | 'declining' | null;
+  trend_direction: RiskTrendDirection | null;
   score_gdpr: MetricValue;
   score_nis2: MetricValue;
   score_ai_act: MetricValue;
 }
+
+/**
+ * Command-Center Compliance-KPI-Vertrag (RSD Dashboard).
+ * Jedes Feld `null` = unbekannt; `0` = gemessen leer.
+ */
+export interface ComplianceKpiBreakdown {
+  score_gdpr: MetricValue;
+  score_nis2: MetricValue;
+  score_dsa: MetricValue;
+  score_ai_act: MetricValue;
+  policy_compliance: MetricValue;
+  vendor_risk: MetricValue;
+  incident_response: MetricValue;
+  data_governance: MetricValue;
+}
+
+export interface ComplianceDeadlineItem {
+  id: string;
+  title: string;
+  due_at: string;
+}
+
+export interface ComplianceKpiRow {
+  score_overall: MetricValue;
+  score_breakdown: ComplianceKpiBreakdown;
+  riskTrendDirection: RiskTrendDirection | null;
+  criticalFindings: MetricValue;
+  newIncidents: MetricValue;
+  resolvedIncidents: MetricValue;
+  upcomingDeadlines: ComplianceDeadlineItem[] | null;
+  policies: { documented: MetricValue; pending: MetricValue };
+  vendors: { active: MetricValue; highRisk: MetricValue };
+}
+
+const EMPTY_BREAKDOWN: ComplianceKpiBreakdown = {
+  score_gdpr: null,
+  score_nis2: null,
+  score_dsa: null,
+  score_ai_act: null,
+  policy_compliance: null,
+  vendor_risk: null,
+  incident_response: null,
+  data_governance: null,
+};
+
+export const EMPTY_COMPLIANCE_KPI_ROW: ComplianceKpiRow = {
+  score_overall: null,
+  score_breakdown: EMPTY_BREAKDOWN,
+  riskTrendDirection: null,
+  criticalFindings: null,
+  newIncidents: null,
+  resolvedIncidents: null,
+  upcomingDeadlines: null,
+  policies: { documented: null, pending: null },
+  vendors: { active: null, highRisk: null },
+};
 
 export const EMPTY_TENANT_STATUS: TenantStatus = {
   compliancePercent: null,
@@ -60,6 +119,18 @@ export const EMPTY_TENANT_STATUS: TenantStatus = {
 export function formatMetric(value: MetricValue, suffix = ''): string {
   if (value === null || !Number.isFinite(value)) return '—';
   return `${value}${suffix}`;
+}
+
+function asMetric(value: unknown): MetricValue {
+  if (value === null || value === undefined) return null;
+  const n = typeof value === 'number' ? value : Number(value);
+  if (!Number.isFinite(n)) return null;
+  return n;
+}
+
+function asTrend(value: unknown): RiskTrendDirection | null {
+  if (value === 'improving' || value === 'stable' || value === 'declining') return value;
+  return null;
 }
 
 /**
@@ -131,6 +202,123 @@ export async function loadTenantStatus(
         score_ai_act: scoreRow.score_ai_act ?? null,
       }
       : null,
+  };
+}
+
+/**
+ * Compliance-KPI-Zeile für `/app/dashboard` (Command Center).
+ * Liest Tabellen / Digest-Zeilen — nicht Edge-Function-HTTP-Meta.
+ */
+export async function loadComplianceKpiRow(
+  supabase: SupabaseClient,
+  tenantId: string,
+): Promise<ComplianceKpiRow> {
+  const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  const until30d = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+  const nowIso = new Date().toISOString();
+
+  const [
+    score,
+    risks,
+    newIncidents,
+    resolvedIncidents,
+    deadlines,
+    policies,
+    vendors,
+  ] = await Promise.all([
+    supabase
+      .from('compliance_score_history')
+      .select(
+        'score_overall, trend_direction, score_gdpr, score_nis2, score_dsa, score_ai_act, policy_compliance, vendor_risk, incident_response, data_governance',
+      )
+      .eq('tenant_id', tenantId)
+      .order('recorded_at', { ascending: false })
+      .limit(1),
+    supabase
+      .from('risk_dashboard_summary')
+      .select('critical_risks_count')
+      .eq('tenant_id', tenantId)
+      .maybeSingle(),
+    supabase
+      .from('incidents')
+      .select('id', { count: 'exact', head: true })
+      .eq('tenant_id', tenantId)
+      .gte('created_at', since24h),
+    supabase
+      .from('incidents')
+      .select('id', { count: 'exact', head: true })
+      .eq('tenant_id', tenantId)
+      .eq('status', 'resolved')
+      .gte('resolved_at', since24h),
+    supabase
+      .from('dpias')
+      .select('id, title, review_due_at')
+      .eq('tenant_id', tenantId)
+      .not('review_due_at', 'is', null)
+      .gte('review_due_at', nowIso)
+      .lte('review_due_at', until30d)
+      .order('review_due_at', { ascending: true })
+      .limit(20),
+    supabase
+      .from('governance_policies')
+      .select('id, enabled')
+      .eq('tenant_id', tenantId),
+    supabase
+      .from('vendors')
+      .select('id, risk_level')
+      .eq('tenant_id', tenantId),
+  ]);
+
+  const scoreRow = score.error ? null : score.data?.[0] ?? null;
+  const riskRow = risks.error ? null : risks.data ?? null;
+
+  const upcomingDeadlines: ComplianceDeadlineItem[] | null = deadlines.error
+    ? null
+    : (deadlines.data ?? [])
+        .filter((row): row is { id: string; title: string; review_due_at: string } =>
+          typeof row?.id === 'string' &&
+          typeof row?.title === 'string' &&
+          typeof row?.review_due_at === 'string',
+        )
+        .map((row) => ({ id: row.id, title: row.title, due_at: row.review_due_at }));
+
+  let documented: MetricValue = null;
+  let pending: MetricValue = null;
+  if (!policies.error) {
+    const rows = policies.data ?? [];
+    documented = rows.filter((p) => p.enabled === true).length;
+    pending = rows.filter((p) => p.enabled !== true).length;
+  }
+
+  let active: MetricValue = null;
+  let highRisk: MetricValue = null;
+  if (!vendors.error) {
+    const rows = vendors.data ?? [];
+    active = rows.length;
+    highRisk = rows.filter((v) => v.risk_level === 'high' || v.risk_level === 'critical').length;
+  }
+
+  return {
+    score_overall: scoreRow?.score_overall != null ? Math.round(Number(scoreRow.score_overall)) : null,
+    score_breakdown: scoreRow
+      ? {
+          score_gdpr: asMetric(scoreRow.score_gdpr),
+          score_nis2: asMetric(scoreRow.score_nis2),
+          score_dsa: asMetric(scoreRow.score_dsa),
+          score_ai_act: asMetric(scoreRow.score_ai_act),
+          policy_compliance: asMetric(scoreRow.policy_compliance),
+          vendor_risk: asMetric(scoreRow.vendor_risk),
+          incident_response: asMetric(scoreRow.incident_response),
+          data_governance: asMetric(scoreRow.data_governance),
+        }
+      : { ...EMPTY_BREAKDOWN },
+    riskTrendDirection: scoreRow ? asTrend(scoreRow.trend_direction) : null,
+    criticalFindings: riskRow ? asMetric(riskRow.critical_risks_count) : null,
+    newIncidents: newIncidents.error ? null : (newIncidents.count ?? 0),
+    resolvedIncidents: resolvedIncidents.error ? null : (resolvedIncidents.count ?? 0),
+    upcomingDeadlines,
+    policies: { documented, pending },
+    vendors: { active, highRisk },
   };
 }
 

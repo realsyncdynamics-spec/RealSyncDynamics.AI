@@ -388,6 +388,7 @@ const AuditDashboardView = lazy(() => import('./features/audit/AuditDashboardVie
 const LeadsView = lazy(() => import('./features/admin/LeadsView').then((m) => ({ default: m.LeadsView })));
 const SystemHealthView = lazy(() => import('./features/admin/SystemHealthView').then((m) => ({ default: m.SystemHealthView })));
 const CustomersView = lazy(() => import('./features/admin/CustomersView').then((m) => ({ default: m.CustomersView })));
+const ConversionBillingView = lazy(() => import('./features/admin/billing/ConversionBillingView').then((m) => ({ default: m.ConversionBillingView })));
 const OnboardingView = lazy(() => import('./features/admin/OnboardingView').then((m) => ({ default: m.OnboardingView })));
 const RebuildsView = lazy(() => import('./features/admin/RebuildsView').then((m) => ({ default: m.RebuildsView })));
 // ── Tenant Admin Panel (Phase 1) ──
@@ -1003,6 +1004,7 @@ function RoutesWithTracking() {
       <Route path="/admin/system" element={<SystemHealthView />} />
       <Route path="/admin/social" element={<AdminSocialPreviewPage />} />
       <Route path="/admin/customers" element={<CustomersView />} />
+      <Route path="/admin/billing" element={<ConversionBillingView />} />
       <Route path="/admin/onboarding" element={<OnboardingView />} />
       <Route path="/admin/rebuilds" element={<RebuildsView />} />
       {/* Legal */}

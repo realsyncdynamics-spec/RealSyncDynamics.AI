@@ -22,12 +22,21 @@ const theme = readFileSync(resolve(root, 'src/components/landing/landing-theme.t
 const header = readFileSync(resolve(root, 'src/components/landing/PublicDarkHeader.tsx'), 'utf8');
 const network = readFileSync(resolve(root, 'src/components/landing/EuropeNetworkHero.tsx'), 'utf8');
 
-describe('Landing Replit Dark/Gold — Europe-network', () => {
-  it('keeps Dark/Gold amber tokens', () => {
-    expect(theme).toContain('#0a0a0b');
-    expect(theme).toContain('#d6ad68');
-    expect(theme).toContain('#e8c98a');
+describe('Landing Design-Lock v2 — True Black / Cyan / Gold-VIP', () => {
+  it('traegt die Tokens des Design-Lock v2', () => {
+    // Freigabe Dominik, 2026-09-13. Cyan traegt die Handlung, Gold die
+    // VIP-Stufe — beide nebeneinander sind Absicht, kein Rest aus v1.
+    expect(theme, 'True Black fehlt').toContain('#000000');
+    expect(theme, 'Cyan-Akzent fehlt').toContain('#22c3e6');
+    expect(theme, 'City-Light-Gold (LANDING_ACCENT_VIP) fehlt').toContain('#f2c98a');
     expect(theme).toContain('Playfair Display');
+  });
+
+  it('traegt die Goldwerte aus v1 nicht mehr als Hauptakzent', () => {
+    // #e8c98a / #e4cfa2 bleiben als weiche Akzente bestehen; das alte
+    // Primaergold und der alte Grundton duerfen nicht zurueckkommen.
+    expect(theme, 'v1-Primaergold #d6ad68 ist zurueck').not.toContain('#d6ad68');
+    expect(theme, 'v1-Grundton #0a0a0b ist zurueck').not.toContain('#0a0a0b');
   });
 
   it('uses static Europe network — not interactive sphere', () => {

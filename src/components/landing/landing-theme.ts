@@ -1,26 +1,38 @@
 /**
- * Gestaltungswerte — Replit Dark/Gold Europe-network reference.
- * Deep charcoal, off-white type, amber/gold accents. Minimal cyan.
+ * Gestaltungswerte der oeffentlichen Seiten — Design-Lock v2 (2026-09-13):
+ * „Hollywood Enterprise VIP" — True Black · Cyan `#22c3e6` (Aktion) ·
+ * City-Light Gold `#f2c98a` (VIP-Stufe). Freigabe: Dominik.
+ *
+ * Cyan traegt die Handlung (CTA, Linien, Netz), Gold die Wertigkeit
+ * (Enterprise-Sektion, Agency-Tarif, Hover-Glow). Beide nebeneinander sind
+ * Absicht, kein Rest aus v1 — deshalb bleiben `LANDING_ACCENT_SOFT` und
+ * `LANDING_ACCENT_LITE` auf ihren Goldwerten.
+ *
+ * Achtung: `governance-os/osChrome.ts` re-exportiert dreizehn dieser
+ * Konstanten als `OS_*` fuer `/app` und `/build`. Solange diese Kopplung
+ * besteht, zieht jede Aenderung hier das App-Chrome mit.
  */
 
-export const LANDING_BG = '#0a0a0b';
-export const LANDING_PANEL = '#121214';
+export const LANDING_BG = '#000000';
+export const LANDING_PANEL = 'rgba(4, 8, 14, 0.72)';
 export const LANDING_SANS = "'Inter', system-ui, sans-serif";
 export const LANDING_SERIF = "'Playfair Display', Georgia, 'Times New Roman', serif";
-export const LANDING_MONO = "'DM Mono', 'JetBrains Mono', ui-monospace, monospace";
-export const LANDING_TEXT = '#f2eee6';
-export const LANDING_MUTED = '#9a9aa1';
-/** Primary amber/gold accent (~Replit #d6ad68 / #e8c98a). */
-export const LANDING_ACCENT = '#d6ad68';
+export const LANDING_MONO = "'JetBrains Mono', 'DM Mono', ui-monospace, monospace";
+export const LANDING_TEXT = '#f4f6f8';
+export const LANDING_MUTED = '#8a9bb0';
+/** Handlungsakzent — Cyan. CTA, Linien, Netz. */
+export const LANDING_ACCENT = '#22c3e6';
+/** VIP-Stufe — City-Light Gold. Enterprise-Sektion, Agency-Tarif, Hover-Glow. */
+export const LANDING_ACCENT_VIP = '#f2c98a';
 export const LANDING_ACCENT_SOFT = '#e8c98a';
 export const LANDING_ACCENT_LITE = '#e4cfa2';
-export const LANDING_BUTTON = '#d6ad68';
-export const LANDING_BUTTON_ALT = '#e8c98a';
-export const LANDING_BUTTON_TEXT = '#0a0a0b';
+export const LANDING_BUTTON = '#22c3e6';
+export const LANDING_BUTTON_ALT = '#4fd7f0';
+export const LANDING_BUTTON_TEXT = '#041016';
 export const LANDING_CTA_GLOW =
-  '0 0 24px rgba(214, 173, 104, 0.28), 0 0 48px rgba(232, 201, 138, 0.12)';
-export const LANDING_GREEN = '#20d69a';
-export const LANDING_LINE = 'rgba(214, 173, 104, 0.22)';
+  '0 0 0 1px rgba(127, 227, 245, 0.35), 0 0 34px rgba(34, 195, 230, 0.35)';
+export const LANDING_GREEN = '#35d0a8';
+export const LANDING_LINE = 'rgba(34, 195, 230, 0.16)';
 export const LANDING_TRUST_MARKS = [
   'EU AI ACT READY',
   'ISO 42001 ALIGNED',
@@ -28,7 +40,7 @@ export const LANDING_TRUST_MARKS = [
   'AUDIT TRAIL NATIVE',
 ] as const;
 
-export const LANDING_H1 = 'clamp(2.5rem, 1.2rem + 4.2vw, 4.25rem)';
+export const LANDING_H1 = 'clamp(2.8rem, 1rem + 5vw, 5.8rem)';
 export const LANDING_H2 = 'clamp(1.8125rem, 1.15rem + 2.3vw, 2.75rem)';
 export const LANDING_H2_LG = 'clamp(1.9rem, 1.2rem + 2.5vw, 2.875rem)';
 export const LANDING_BODY = 'clamp(1rem, 0.92rem + 0.35vw, 1.125rem)';

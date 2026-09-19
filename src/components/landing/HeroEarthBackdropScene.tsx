@@ -1,7 +1,8 @@
 /**
  * Passive photoreal Earth scenery for the public landing hero backdrop.
  *
- * Europe-night framing (right / background) with gold route network arcs —
+ * Europe-night framing (right / background) with cyan route network arcs
+ * over gold city lights (Design-Lock v2) —
  * matches Dominik Grok Imagine mock scenery. Deep space void left for copy.
  * No Sphere HUD, continent UI labels, drag orbit, or fake KPIs.
  * Gentle idle drift only — canvas is pointer-events-none via CSS/host.
@@ -43,7 +44,7 @@ const EUROPE_NETWORK_HUBS: readonly { id: string; lat: number; lon: number }[] =
   { id: 'prague', lat: 50.08, lon: 14.44 },
 ];
 
-/** Curated gold routes — arcs across Europe, not a dense fake mesh. */
+/** Curated cyan routes — arcs across Europe, not a dense fake mesh. */
 const EUROPE_ROUTES: readonly [string, string][] = [
   ['london', 'paris'],
   ['paris', 'berlin'],
@@ -79,8 +80,8 @@ function LimbLight() {
     <group position={LANDING_SUN_POSITION.toArray() as [number, number, number]}>
       <pointLight color="#ffe0b0" intensity={1.15} distance={32} decay={2} />
       <pointLight
-        color="#d0c3a4"
-        intensity={0.45}
+        color="#22c3e6"
+        intensity={0.35}
         distance={22}
         decay={2}
         position={[0.5, -0.25, 0.35]}
@@ -174,7 +175,7 @@ function GoldEuropeNetwork({ radius, reducedMotion }: { radius: number; reducedM
         <Line
           key={key}
           points={points}
-          color="#e4cfa2"
+          color="#22c3e6"
           lineWidth={1.15}
           transparent
           opacity={0.62}
@@ -186,7 +187,7 @@ function GoldEuropeNetwork({ radius, reducedMotion }: { radius: number; reducedM
         <mesh key={id} position={pos.toArray() as [number, number, number]} raycast={() => null}>
           <sphereGeometry args={[0.018, 10, 10]} />
           <meshBasicMaterial
-            color="#f2e6c8"
+            color="#bff1fb"
             transparent
             opacity={0.9}
             depthWrite={false}
@@ -244,7 +245,7 @@ function SceneryEarth({
         reducedMotion={reducedMotion}
         sunDirection={sunDir}
         rotation={[0.28, 0.08, 0.02]}
-        palette="landing-gold"
+        palette="landing-vip"
         quality={quality}
       />
       <GoldEuropeNetwork radius={EARTH_RADIUS} reducedMotion={reducedMotion} />
@@ -323,10 +324,10 @@ export function HeroEarthBackdropScene({ reducedMotion = false }: HeroEarthBackd
     >
       <LandingRenderLoop reducedMotion={reducedMotion} />
       {/* Dim ambient — night Europe + city lights must dominate */}
-      <ambientLight intensity={0.08} color="#d8c9a8" />
+      <ambientLight intensity={0.08} color="#9fb4c8" />
       <directionalLight position={[sun.x, sun.y, sun.z]} intensity={1.15} color="#fff1d6" />
-      <directionalLight position={[2.8, 0.4, 1.2]} intensity={0.22} color="#8a9bb0" />
-      <directionalLight position={[-0.8, -1.2, 2.2]} intensity={0.35} color="#b49a6b" />
+      <directionalLight position={[2.8, 0.4, 1.2]} intensity={0.22} color="#22c3e6" />
+      <directionalLight position={[-0.8, -1.2, 2.2]} intensity={0.3} color="#5aa8c4" />
       <LimbLight />
       <CameraLock />
       <SceneryEarth

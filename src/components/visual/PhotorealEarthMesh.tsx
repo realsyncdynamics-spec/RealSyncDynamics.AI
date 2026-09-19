@@ -18,8 +18,11 @@ import {
 /** Boot / low-tier day map path (also kept as literal for smoke tests). */
 export const EARTH_DAY_TEXTURE = '/textures/earth-day.jpg';
 
-/** Visual grade for shared Earth mesh. `landing-gold` = public Dark/Gold/Cream only. */
-export type EarthPalette = 'default' | 'landing-gold';
+/**
+ * Visual grade for shared Earth mesh. `landing-gold` = public Dark/Gold/Cream,
+ * `landing-vip` = Design-Lock v2 (Cyan-Atmosphaere, Gold-Stadtlichter).
+ */
+export type EarthPalette = 'default' | 'landing-gold' | 'landing-vip';
 
 export interface PhotorealEarthMeshProps {
   /** Sphere radius in scene units. */
@@ -35,7 +38,8 @@ export interface PhotorealEarthMeshProps {
   sunDirection?: THREE.Vector3;
   /**
    * Color grade. Default keeps NASA-style blue for `/welcome` + Governance Sphere.
-   * `landing-gold` retints atmosphere/ocean/land toward Dominik Dark/Gold/Cream.
+   * `landing-gold` retints atmosphere/ocean/land toward Dominik Dark/Gold/Cream,
+   * `landing-vip` dreht dieselbe Warm-Logik auf Cyan — die Stadtlichter bleiben Gold.
    */
   palette?: EarthPalette;
 }
@@ -50,6 +54,21 @@ const LANDING_GOLD = {
   clouds: new THREE.Vector3(0.96, 0.9, 0.78),
   /** Dense city-light network — Europe night must dominate the hero. */
   nightIntensity: 2.65,
+} as const;
+
+/**
+ * Design-Lock v2 „Hollywood Enterprise VIP" — Cyan-Atmosphaere ueber
+ * goldenen Stadtlichtern. Die Nachtlichter bleiben bewusst warm: Der
+ * Gold-Ton ist der VIP-Akzent des Referenzbildes, das Cyan die Handlung.
+ */
+const LANDING_VIP = {
+  dayTint: '#c9d2dc',
+  atmosphereGlow: '#22c3e6',
+  atmosphereWarm: '#7fe3f5',
+  outerGlow: '#0e8aa6',
+  specular: new THREE.Vector3(0.55, 0.85, 0.95),
+  clouds: new THREE.Vector3(0.9, 0.95, 1.0),
+  nightIntensity: 2.4,
 } as const;
 
 function configureMap(tex: THREE.Texture, anisotropy: number, colorSpace?: THREE.ColorSpace) {
@@ -91,6 +110,9 @@ function AtmosphereShell({
   sunDirection?: THREE.Vector3;
 }) {
   const gold = palette === 'landing-gold';
+  const vip = palette === 'landing-vip';
+  const P = vip ? LANDING_VIP : LANDING_GOLD;
+  const warm = gold || vip;
   const mat = useMemo(() => {
     return new THREE.ShaderMaterial({
       transparent: true,
@@ -99,16 +121,16 @@ function AtmosphereShell({
       blending: THREE.AdditiveBlending,
       uniforms: {
         uGlow: {
-          value: new THREE.Color(gold ? LANDING_GOLD.atmosphereGlow : '#7ad0f5'),
+          value: new THREE.Color(warm ? P.atmosphereGlow : '#7ad0f5'),
         },
         uWarm: {
-          value: new THREE.Color(gold ? LANDING_GOLD.atmosphereWarm : '#ffb078'),
+          value: new THREE.Color(warm ? P.atmosphereWarm : '#ffb078'),
         },
         uSun: {
           value: (sunDirection ?? new THREE.Vector3(-0.75, -0.35, 0.4)).clone().normalize(),
         },
-        uIntensity: { value: reducedMotion ? (gold ? 0.55 : 0.7) : gold ? 0.88 : 1.18 },
-        uGold: { value: gold ? 1.0 : 0.0 },
+        uIntensity: { value: reducedMotion ? (warm ? 0.55 : 0.7) : warm ? 0.88 : 1.18 },
+        uGold: { value: warm ? 1.0 : 0.0 },
       },
       vertexShader: /* glsl */ `
         varying vec3 vNormal;
@@ -163,13 +185,16 @@ function AtmosphereShell({
 
 function OuterGlow({ radius, palette }: { radius: number; palette: EarthPalette }) {
   const gold = palette === 'landing-gold';
+  const vip = palette === 'landing-vip';
+  const P = vip ? LANDING_VIP : LANDING_GOLD;
+  const warm = gold || vip;
   return (
     <mesh scale={1.16} raycast={() => null}>
       <sphereGeometry args={[radius, 32, 32]} />
       <meshBasicMaterial
-        color={gold ? LANDING_GOLD.outerGlow : '#2f82c4'}
+        color={warm ? P.outerGlow : '#2f82c4'}
         transparent
-        opacity={gold ? 0.12 : 0.12}
+        opacity={warm ? 0.12 : 0.12}
         side={THREE.BackSide}
         depthWrite={false}
         toneMapped={false}
@@ -203,6 +228,9 @@ export function PhotorealEarthMesh({
   const upgradeTexRef = useRef<THREE.Texture[]>([]);
   const { gl, camera } = useThree();
   const gold = palette === 'landing-gold';
+  const vip = palette === 'landing-vip';
+  const P = vip ? LANDING_VIP : LANDING_GOLD;
+  const warm = gold || vip;
 
   const maxTex = gl.capabilities.maxTextureSize;
   const [quality] = useState<EarthQuality>(() => {
@@ -330,12 +358,12 @@ export function PhotorealEarthMesh({
 
   const segments = set.segments;
 
-  const dayTint = gold ? LANDING_GOLD.dayTint : '#f2f6ff';
-  const nightIntensity = gold ? LANDING_GOLD.nightIntensity : 1.15;
-  const specColor = gold ? LANDING_GOLD.specular : new THREE.Vector3(0.8, 0.92, 1.0);
-  const cloudColor = gold ? LANDING_GOLD.clouds : new THREE.Vector3(0.96, 0.98, 1.0);
-  const specIntensity = gold ? 0.28 : 0.62;
-  const cloudOpacity = gold
+  const dayTint = warm ? P.dayTint : '#f2f6ff';
+  const nightIntensity = warm ? P.nightIntensity : 1.15;
+  const specColor = warm ? P.specular : new THREE.Vector3(0.8, 0.92, 1.0);
+  const cloudColor = warm ? P.clouds : new THREE.Vector3(0.96, 0.98, 1.0);
+  const specIntensity = warm ? 0.28 : 0.62;
+  const cloudOpacity = warm
     ? quality === 'high'
       ? 0.22
       : 0.16
@@ -359,8 +387,8 @@ export function PhotorealEarthMesh({
         />
       </mesh>
 
-      {/* Soft day/night limb for landing-gold — keeps terminator without washing continents */}
-      {gold && (
+      {/* Soft day/night limb for landing-gold / landing-vip — keeps terminator without washing continents */}
+      {warm && (
         <mesh scale={1.001} raycast={() => null}>
           <sphereGeometry args={[radius, segments[0], segments[1]]} />
           <shaderMaterial
@@ -370,6 +398,7 @@ export function PhotorealEarthMesh({
             toneMapped={false}
             uniforms={{
               uLight: { value: (sunDirection ?? sun).clone().normalize() },
+              uVip: { value: vip ? 1.0 : 0.0 },
             }}
             vertexShader={/* glsl */ `
               varying vec3 vNormalW;
@@ -380,6 +409,7 @@ export function PhotorealEarthMesh({
             `}
             fragmentShader={/* glsl */ `
               uniform vec3 uLight;
+              uniform float uVip;
               varying vec3 vNormalW;
               void main() {
                 vec3 N = normalize(vNormalW);
@@ -387,8 +417,9 @@ export function PhotorealEarthMesh({
                 float ndl = dot(N, L);
                 float night = 1.0 - smoothstep(-0.18, 0.45, ndl);
                 float term = 1.0 - smoothstep(0.0, 0.32, abs(ndl));
-                // Darken night; stronger amber terminator chrome.
-                vec3 amber = vec3(1.05, 0.74, 0.32);
+                // Darken night; stronger terminator chrome — amber fuer
+                // landing-gold, Cyan fuer landing-vip.
+                vec3 amber = mix(vec3(1.05, 0.74, 0.32), vec3(0.13, 0.76, 0.90), uVip);
                 float a = night * 0.68 + term * 0.22;
                 vec3 col = mix(vec3(0.015, 0.015, 0.02), amber * 0.55, term * 0.7);
                 gl_FragColor = vec4(col, a);
@@ -411,7 +442,7 @@ export function PhotorealEarthMesh({
               uNight: { value: nightMap },
               uLight: { value: sun.clone() },
               uIntensity: { value: nightIntensity },
-              uWarm: { value: gold ? 1.0 : 0.0 },
+              uWarm: { value: warm ? 1.0 : 0.0 },
             }}
             vertexShader={/* glsl */ `
               varying vec2 vUv;

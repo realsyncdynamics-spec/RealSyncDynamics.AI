@@ -1,13 +1,14 @@
 /**
- * SSOT Hero-Copy — Replit visual reference (Dark/Gold Europe-network).
+ * SSOT Hero-Copy — Design-Lock v2: True Black / Cyan / Gold-VIP
+ * (`components/landing/landing-theme.ts`).
  *
  * H1: „AI Compliance Operations OS für Europa.“
- * Serif/gold emphasis exclusively on „Operations OS“.
+ * Serif-Betonung ausschliesslich auf „Operations OS“.
  */
 
 export type HeroHeadlineSegment = {
   text: string;
-  /** true → amber/gold serif emphasis (Operations OS only). */
+  /** true → Serif-Betonung im Akzent (nur „Operations OS“). */
   accent?: boolean;
 };
 

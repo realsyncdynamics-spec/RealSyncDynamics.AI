@@ -15,21 +15,14 @@ export function ExportModal({ open, onOpenChange }: ExportModalProps) {
   const [includeCharts, setIncludeCharts] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [progress, setProgress] = useState(0);
 
   const handleExport = async () => {
     if (!activeTenantId) return;
 
     setLoading(true);
     setError(null);
-    setProgress(0);
 
     try {
-      // Simulate progress
-      const progressInterval = setInterval(() => {
-        setProgress((p) => Math.min(p + Math.random() * 30, 90));
-      }, 200);
-
       const request: AnalyticsExportRequest = {
         format,
         tenantId: activeTenantId,
@@ -41,9 +34,6 @@ export function ExportModal({ open, onOpenChange }: ExportModalProps) {
       };
 
       const response = await exportKpiData(request);
-
-      clearInterval(progressInterval);
-      setProgress(100);
 
       // Create download link
       const link = document.createElement('a');
@@ -58,7 +48,6 @@ export function ExportModal({ open, onOpenChange }: ExportModalProps) {
         onOpenChange(false);
         setFormat('csv');
         setIncludeCharts(true);
-        setProgress(0);
       }, 500);
     } catch (err) {
       console.error('Export failed:', err);
@@ -67,7 +56,6 @@ export function ExportModal({ open, onOpenChange }: ExportModalProps) {
           ? err.message
           : 'Failed to export data. Please try again.'
       );
-      setProgress(0);
     } finally {
       setLoading(false);
     }
@@ -154,19 +142,13 @@ export function ExportModal({ open, onOpenChange }: ExportModalProps) {
             </div>
           )}
 
-          {/* Progress */}
-          {loading && progress > 0 && (
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-titanium-400">Preparing export...</span>
-                <span className="text-sm text-titanium-500">{Math.round(progress)}%</span>
-              </div>
-              <div className="w-full h-2 bg-obsidian-800 rounded overflow-hidden">
-                <div
-                  className="h-full bg-titanium-600 rounded transition-all duration-300"
-                  style={{ width: `${progress}%` }}
-                />
-              </div>
+          {/* Laufender Export. Der Server meldet keinen Fortschritt, also zeigt
+              die Oberfläche auch keinen — vorher lief hier ein Balken auf 90 %,
+              der aus Math.random() kam und nichts über den Export aussagte. */}
+          {loading && (
+            <div className="flex items-center gap-2">
+              <Loader className="w-4 h-4 animate-spin text-titanium-400" />
+              <span className="text-sm text-titanium-400">Export wird erstellt…</span>
             </div>
           )}
         </div>

@@ -44,23 +44,6 @@ function TabItem({ module, active }: { module: GovernanceModule; active: boolean
   );
 }
 
-function LockedTabItem({ module }: { module: GovernanceModule }) {
-  const Icon: LucideIcon = ICON_MAP[module.icon] ?? Home;
-  const minPlan = minimumPlanForModule(module);
-  const planLabel = PLAN_LABELS[minPlan] ?? minPlan;
-  return (
-    <Link
-      to="/pricing"
-      title={`Ab ${planLabel} verfügbar`}
-      className="group flex items-center gap-1.5 px-3 py-2 text-xs font-medium whitespace-nowrap border-b-2 border-transparent text-titanium-700 hover:text-titanium-500 hover:bg-obsidian-800 transition-colors"
-    >
-      <Icon className="h-3.5 w-3.5 shrink-0 text-titanium-800" />
-      <span className="opacity-50">{module.label}</span>
-      <Lock className="h-2.5 w-2.5 text-titanium-800" />
-    </Link>
-  );
-}
-
 export function GovernanceTabs() {
   const { pathname } = useLocation();
   const { plan } = useActivePlan();
@@ -80,58 +63,93 @@ export function GovernanceTabs() {
     return pathname.startsWith(route);
   };
 
-  // Accessible tabs shown normally; inaccessible shown as locked ghost tabs
+  // Primary strip: accessible only. Locked + roadmap live under „Mehr"
+  // to keep tab density manageable without changing IA.
   const accessibleTabs = TAB_MODULES.filter((m) => canAccessModule(m, plan));
   const lockedTabs = TAB_MODULES.filter((m) => !canAccessModule(m, plan));
+  const moreCount = lockedTabs.length + DOCK_MODULES.length;
 
   return (
     <div className="relative shrink-0 bg-obsidian-900 border-b border-titanium-900">
-      {/* flex-wrap statt overflow-x-auto: alle Module ohne Schiebeleiste
-          sichtbar (Vorgabe Eigentümer 2026-08-23) — bricht in weitere Zeilen um. */}
       <div className="flex flex-wrap">
         {accessibleTabs.map((mod) => (
           <TabItem key={mod.id} module={mod} active={isActive(mod.route)} />
         ))}
 
-        {/* Locked tabs — ghosted, link to /pricing */}
-        {lockedTabs.map((mod) => (
-          <LockedTabItem key={mod.id} module={mod} />
-        ))}
-
-        {/* Roadmap-Module im More-Menü */}
-        {DOCK_MODULES.length > 0 && (
+        {moreCount > 0 && (
           <div className="relative ml-auto shrink-0">
             <button
               onClick={() => setDockOpen((v) => !v)}
               className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-titanium-500 hover:text-titanium-200 hover:bg-obsidian-800 transition-colors border-b-2 border-transparent"
+              aria-expanded={dockOpen}
+              aria-haspopup="menu"
             >
               <MoreHorizontal className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Mehr</span>
+              {moreCount > 0 && (
+                <span className="font-mono text-[9px] text-titanium-600">{moreCount}</span>
+              )}
             </button>
             {dockOpen && (
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setDockOpen(false)} />
-                <div className="absolute right-0 top-full z-20 bg-obsidian-900 border border-titanium-800 shadow-xl min-w-[220px]">
-                  <div className="px-3 py-2 border-b border-titanium-900">
-                    <span className="font-mono text-[9px] uppercase tracking-widest text-titanium-600">Roadmap Module</span>
-                  </div>
-                  {DOCK_MODULES.map((mod) => {
-                    const Icon: LucideIcon = ICON_MAP[mod.icon] ?? Home;
-                    const allowed = canAccessModule(mod, plan);
-                    return (
-                      <Link
-                        key={mod.id}
-                        to={allowed ? mod.route : '/pricing'}
-                        onClick={() => setDockOpen(false)}
-                        className="flex items-center gap-2.5 px-3 py-2.5 text-xs text-titanium-400 hover:bg-obsidian-800 hover:text-titanium-100 transition-colors"
-                      >
-                        <Icon className="h-3.5 w-3.5 text-titanium-600" />
-                        <span className="flex-1">{mod.label}</span>
-                        <ModuleStatusBadge status={mod.status} />
-                        {!allowed && <Lock className="h-2.5 w-2.5 text-titanium-700" />}
-                      </Link>
-                    );
-                  })}
+                <div
+                  role="menu"
+                  className="absolute right-0 top-full z-20 bg-obsidian-900 border border-titanium-800 shadow-xl min-w-[240px] max-h-[70vh] overflow-y-auto"
+                >
+                  {lockedTabs.length > 0 && (
+                    <>
+                      <div className="px-3 py-2 border-b border-titanium-900">
+                        <span className="font-mono text-[9px] uppercase tracking-widest text-titanium-600">
+                          Nicht im Plan
+                        </span>
+                      </div>
+                      {lockedTabs.map((mod) => {
+                        const Icon: LucideIcon = ICON_MAP[mod.icon] ?? Home;
+                        const minPlan = minimumPlanForModule(mod);
+                        const planLabel = PLAN_LABELS[minPlan] ?? minPlan;
+                        return (
+                          <Link
+                            key={mod.id}
+                            to="/pricing"
+                            title={`Ab ${planLabel} verfügbar`}
+                            onClick={() => setDockOpen(false)}
+                            className="flex items-center gap-2.5 px-3 py-2.5 text-xs text-titanium-500 hover:bg-obsidian-800 hover:text-titanium-300 transition-colors"
+                          >
+                            <Icon className="h-3.5 w-3.5 text-titanium-700" />
+                            <span className="flex-1 opacity-80">{mod.label}</span>
+                            <Lock className="h-2.5 w-2.5 text-titanium-700" />
+                          </Link>
+                        );
+                      })}
+                    </>
+                  )}
+                  {DOCK_MODULES.length > 0 && (
+                    <>
+                      <div className="px-3 py-2 border-b border-t border-titanium-900">
+                        <span className="font-mono text-[9px] uppercase tracking-widest text-titanium-600">
+                          Roadmap Module
+                        </span>
+                      </div>
+                      {DOCK_MODULES.map((mod) => {
+                        const Icon: LucideIcon = ICON_MAP[mod.icon] ?? Home;
+                        const allowed = canAccessModule(mod, plan);
+                        return (
+                          <Link
+                            key={mod.id}
+                            to={allowed ? mod.route : '/pricing'}
+                            onClick={() => setDockOpen(false)}
+                            className="flex items-center gap-2.5 px-3 py-2.5 text-xs text-titanium-400 hover:bg-obsidian-800 hover:text-titanium-100 transition-colors"
+                          >
+                            <Icon className="h-3.5 w-3.5 text-titanium-600" />
+                            <span className="flex-1">{mod.label}</span>
+                            <ModuleStatusBadge status={mod.status} />
+                            {!allowed && <Lock className="h-2.5 w-2.5 text-titanium-700" />}
+                          </Link>
+                        );
+                      })}
+                    </>
+                  )}
                 </div>
               </>
             )}

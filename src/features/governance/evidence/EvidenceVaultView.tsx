@@ -163,7 +163,7 @@ function TimelineTab({
     return (
       <EmptyTab
         title="Noch keine Nachweise"
-        hint="Die Timeline zeigt nur Herkunftsnachweise dieses Mandanten. Keine Demo-Daten."
+        hint="Die Timeline zeigt nur Herkunftsnachweise dieses Mandanten. Keine Demo-Daten und keine Fake-Scores — 0 ist ein gültiger leerer Stand."
       />
     );
   }
@@ -623,7 +623,7 @@ function _EvidenceVaultView() {
           <button
             onClick={() => runExport('Evidence-Vault', 'csv', 'hdr-export')}
             disabled={busy === 'hdr-export'}
-            className="flex items-center gap-2 border border-teal-800 hover:border-teal-600 bg-teal-950/40 hover:bg-teal-950 px-3 py-1.5 text-[11px] font-mono text-teal-300 hover:text-teal-100 transition-colors disabled:opacity-50"
+            className="flex items-center gap-2 border border-[#e4cfa2]/40 hover:border-[#e4cfa2] bg-[#e4cfa2]/10 hover:bg-[#e4cfa2]/15 px-3 py-1.5 text-[11px] font-mono text-[#e4cfa2] transition-colors disabled:opacity-50"
           >
             {busy === 'hdr-export' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
             Evidence exportieren
@@ -651,7 +651,7 @@ function _EvidenceVaultView() {
             className={[
               'px-4 py-2.5 text-[12px] font-mono uppercase tracking-wider border-b-2 transition-colors',
               activeTab === tab.id
-                ? 'border-teal-400 text-titanium-50'
+                ? 'border-[#e4cfa2] text-titanium-50'
                 : 'border-transparent text-titanium-500 hover:text-titanium-200',
             ].join(' ')}
           >
@@ -670,7 +670,7 @@ function _EvidenceVaultView() {
 
       {toast && (
         <div className={`fixed bottom-6 right-6 z-50 flex items-center gap-2 px-4 py-2.5 border font-mono text-xs shadow-lg ${
-          toast.tone === 'error' ? 'bg-red-950 border-red-800 text-red-200' : 'bg-obsidian-800 border-teal-700 text-teal-300'
+          toast.tone === 'error' ? 'bg-red-950 border-red-800 text-red-200' : 'bg-obsidian-800 border-[#e4cfa2]/40 text-[#e4cfa2]'
         }`}>
           {toast.tone === 'error' ? <AlertTriangle className="h-3.5 w-3.5" /> : <CheckCircle className="h-3.5 w-3.5" />}
           {toast.msg}

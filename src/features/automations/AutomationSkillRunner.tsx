@@ -28,9 +28,18 @@ const SEVERITY_CLS: Record<string, string> = {
 };
 
 /**
- * Direct-Execution-Runner für den DSGVO Audit Skill — ruft `automation-trigger`
- * auf, die den Run synchron gegen `gdpr-audit` ausführt (kein n8n nötig) und
- * das Ergebnis als automation_outputs speichert.
+ * Direct-Execution-Runner für den DSGVO Audit Skill — ruft `automation-trigger`.
+ *
+ * ACHTUNG, der Vertrag stimmt derzeit nicht: Diese Komponente liest unten
+ * `body.result`, `automation-trigger` antwortet aber mit
+ * `{ ok, run_id, n8n_execution_id }` und fuehrt den Skill asynchron ueber n8n
+ * aus, nicht synchron gegen `gdpr-audit`. Solange der Skill `dsgvo-audit`
+ * zudem ohne `n8n_workflow_id` geseedet ist, bricht der Trigger bereits mit
+ * 409 NOT_BOUND ab. Der Button fuehrt also einen echten Serveraufruf aus, kann
+ * aber im aktuellen Stand kein Ergebnis anzeigen.
+ *
+ * Bewertung und Belege: scripts/dashboard-actions.json, "automation.run"
+ * (Zustand BROKEN). Nicht "reparieren", indem hier ein Ergebnis erfunden wird.
  */
 export function AutomationSkillRunner({ tenantId }: { tenantId: string }) {
   const [url, setUrl] = useState('');

@@ -17,6 +17,7 @@
 // functions in `_shared/aiGateway/openaiCompat.ts` (which is unit-tested
 // from the frontend side via its `src/core/ai-gateway/openaiCompat.ts`
 // mirror).
+// 2026-09-18: gezieltes Production-Redeploy (siteos + ai-gateway), nicht die Flotte.
 
 import type { AiGatewayRequest } from '../_shared/aiGateway/types.ts';
 import { createServerGatewayFromEnv } from '../_shared/aiGateway/serverFromEnv.ts';
@@ -37,10 +38,13 @@ import { sha256Hex } from '../_shared/hash.ts';
 import { buildCorsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 import { decide } from '../_shared/pdp/decide.ts';
 import type { DecisionRequest, DecisionResult } from '../_shared/pdp/core.ts';
+import { requireAuthAndTenant } from '../_shared/auth.ts';
+import { EntitlementError, gateFeature } from '../_shared/entitlements.ts';
 
 const corsHeaders = buildCorsHeaders('GET, POST, OPTIONS');
 
-const ALLOWED_OPS = new Set(['health', 'generate', 'extract_json', 'embed']);
+const ALLOWED_OPS = new Set(['health', 'generate', 'extract_json', 'embed', 'stream']);
+const BUILDER_FEATURE = 'app_builder_code';
 
 // Per-instance rate-limit windows. Cleared on cold-start which is fine:
 // a bad actor has no cheap way to trigger a cold-start.
@@ -173,6 +177,32 @@ async function enforceRateLimit(req: Request, feature: string): Promise<Response
   );
 }
 
+async function requireBuilderIfNeeded(
+  req: Request,
+  feature: string,
+  tenantClaim: unknown,
+): Promise<Response | null> {
+  if (feature !== BUILDER_FEATURE) return null;
+  const auth = await requireAuthAndTenant(
+    req,
+    typeof tenantClaim === 'string' ? tenantClaim : null,
+  );
+  if (auth instanceof Response) return auth;
+  try {
+    await gateFeature(auth.admin, auth.tenantId, 'siteos.builder');
+  } catch (e) {
+    if (e instanceof EntitlementError) {
+      return jsonError(
+        e.code === 'INTERNAL' ? 500 : 403,
+        e.code === 'FORBIDDEN' ? 'ENTITLEMENT' : e.code,
+        e.message,
+      );
+    }
+    throw e;
+  }
+  return null;
+}
+
 Deno.serve(async (req) => {
   const preflight = handleOptions(req, corsHeaders);
   if (preflight) return preflight;
@@ -226,6 +256,9 @@ async function handleOpBased(req: Request): Promise<Response> {
     return jsonError(400, 'BAD_REQUEST', 'feature, task_type, model_profile and input are required');
   }
 
+  const builderGate = await requireBuilderIfNeeded(req, request.feature, request.tenant_id);
+  if (builderGate) return builderGate;
+
   const limited = await enforceRateLimit(req, request.feature);
   if (limited) return limited;
 
@@ -240,6 +273,7 @@ async function handleOpBased(req: Request): Promise<Response> {
   if (op === 'generate')     return jsonResponse({ ok: true, ...(await gateway.generate(request)), ...(governance ? { governance } : {}) });
   if (op === 'extract_json') return jsonResponse({ ok: true, ...(await gateway.extractJson(request)), ...(governance ? { governance } : {}) });
   if (op === 'embed')        return jsonResponse({ ok: true, ...(await gateway.embed(request)), ...(governance ? { governance } : {}) });
+  if (op === 'stream')       return streamNdjson(gateway, request, governance);
 
   return jsonError(400, 'BAD_REQUEST', `unknown op: ${op}`);
 }
@@ -270,6 +304,9 @@ async function handleOpenAIChatCompletions(req: Request): Promise<Response> {
   if (gateway instanceof Response) return gateway;
 
   try {
+    if (body.stream === true) {
+      return streamOpenAiCompat(gateway, parsed.request);
+    }
     const response = parsed.wantsJson
       ? await gateway.extractJson(parsed.request)
       : await gateway.generate(parsed.request);
@@ -289,5 +326,81 @@ async function buildGateway() {
   });
   if (!built.ok) return jsonError(built.status, built.code, built.message);
   return built.gateway;
+}
+
+function streamNdjson(
+  gateway: { generateStream: (req: AiGatewayRequest) => AsyncIterable<{ event: string; text?: string; provider?: string; model?: string; profile?: string; usage?: unknown; trace_id?: string; latency_ms?: number }> },
+  request: AiGatewayRequest,
+  governance: { decision: string; reasons: string[] } | undefined,
+): Response {
+  const encoder = new TextEncoder();
+  const stream = new ReadableStream<Uint8Array>({
+    async start(controller) {
+      const send = (obj: unknown) => controller.enqueue(encoder.encode(`${JSON.stringify(obj)}\n`));
+      try {
+        for await (const chunk of gateway.generateStream(request)) {
+          send({ ok: true, ...chunk, ...(governance && chunk.event === 'done' ? { governance } : {}) });
+        }
+      } catch (error) {
+        const mapped = mapInferenceError(error);
+        send({ ok: false, error: { code: mapped.code, message: mapped.message } });
+      } finally {
+        controller.close();
+      }
+    },
+  });
+  return new Response(stream, {
+    status: 200,
+    headers: {
+      ...corsHeaders,
+      'content-type': 'application/x-ndjson; charset=utf-8',
+      'cache-control': 'no-store',
+    },
+  });
+}
+
+function streamOpenAiCompat(
+  gateway: { generateStream: (req: AiGatewayRequest) => AsyncIterable<{ event: string; text?: string; model?: string; trace_id?: string }> },
+  request: AiGatewayRequest,
+): Response {
+  const encoder = new TextEncoder();
+  const id = `chatcmpl-${request.trace_id ?? crypto.randomUUID()}`;
+  const stream = new ReadableStream<Uint8Array>({
+    async start(controller) {
+      const send = (obj: unknown) => controller.enqueue(encoder.encode(`data: ${JSON.stringify(obj)}\n\n`));
+      try {
+        for await (const chunk of gateway.generateStream(request)) {
+          if (chunk.event === 'delta' && chunk.text) {
+            send({
+              id,
+              object: 'chat.completion.chunk',
+              choices: [{ index: 0, delta: { content: chunk.text }, finish_reason: null }],
+            });
+          }
+          if (chunk.event === 'done') {
+            send({
+              id,
+              object: 'chat.completion.chunk',
+              choices: [{ index: 0, delta: {}, finish_reason: 'stop' }],
+            });
+          }
+        }
+        controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+      } catch (error) {
+        const mapped = mapInferenceError(error);
+        send({ error: { code: mapped.code, message: mapped.message } });
+      } finally {
+        controller.close();
+      }
+    },
+  });
+  return new Response(stream, {
+    status: 200,
+    headers: {
+      ...corsHeaders,
+      'content-type': 'text/event-stream; charset=utf-8',
+      'cache-control': 'no-cache',
+    },
+  });
 }
 

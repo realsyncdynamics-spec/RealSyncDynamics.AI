@@ -255,3 +255,40 @@ describe('Der Kunde kann sich nicht selbst freischalten', () => {
     expect(revoke).not.toContain('requireWebhooksEntitlement');
   });
 });
+
+describe('Welle 5 — der Aufrufer des website-operations-agent', () => {
+  // Die Tenant-Grenze selbst liegt seit #1392 in
+  // `test/security/website-operations-agent-auth.test.ts` — Resolver,
+  // Reihenfolge und Wegfall der Existenzpruefung sind dort abgedeckt und
+  // werden hier nicht doppelt behauptet. Offen blieb der Weg davor und
+  // danach: wie die Oberflaeche die Function erreicht, und woher ihr
+  // Erfolgszustand kommt.
+  it('gibt den persistierten Datensatz zurueck statt eines behaupteten Erfolgs', () => {
+    const src = quelle('website-operations-agent');
+    // Der Response traegt die Zeile, die das UPDATE zurueckgemeldet hat.
+    expect(src).toContain('project: persisted ?? null');
+    expect(src).toMatch(/\.eq\('id', project\.id\)\s*\n\s*\.select\(/);
+  });
+
+  it('gibt den Erfolg als Body zurueck, nicht als Status', () => {
+    const src = quelle('website-operations-agent');
+    // `jsonResponse(body, status)` gegen `jsonError(status, code, message)`:
+    // der Dreher liess den Erfolgsfall werfen und mit 500 antworten,
+    // nachdem bereits geschrieben und generiert worden war.
+    expect(src).toContain('jsonResponse(response, 200)');
+    expect(src).not.toMatch(/jsonResponse\(\s*\d/);
+  });
+
+  it('der Wizard ruft die Function ueber den Session-Token auf, nicht ueber die User-ID', () => {
+    const src = readFileSync('src/features/website-operations/CreateWebsiteWizard.tsx', 'utf8');
+    expect(src).toContain('sb.functions.invoke(');
+    expect(src).toContain("'website-operations-agent'");
+    // Eine User-ID ist kein Token, und `/functions/v1/...` ist nicht der
+    // Supabase-Host, sondern die Pages-Domain — dort greift der Catch-all
+    // auf `index.html`, was mit HTTP 200 antwortet.
+    expect(src).not.toContain('Bearer ${user?.id}');
+    expect(src).not.toContain("fetch('/functions/v1/website-operations-agent'");
+    // Der Endpunkt `/api/website-projects` existiert in diesem Stack nicht.
+    expect(src).not.toContain("fetch('/api/website-projects'");
+  });
+});

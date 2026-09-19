@@ -14,9 +14,11 @@
  * geprüfte Wert. `actor_id` kommt aus der verifizierten Sitzung, nie aus dem
  * Body — ein Aufrufer kann keinen fremden Akteur benennen.
  *
- * Vorher lief die Function mit `verify_jwt = false` und ohne Eingangsprüfung:
- * jeder mit der URL konnte Evidence-Zeilen samt frei gewähltem
- * `evidence_hash` in beliebige Mandanten schreiben.
+ * Vorher lief die Function ohne jede Eingangsprüfung: jeder mit der URL
+ * konnte Evidence-Zeilen samt frei gewähltem `evidence_hash` in beliebige
+ * Mandanten schreiben. Sie bleibt in config.toml als `verify_jwt = false`
+ * deklariert (Live-Zustand, Drift-Guard); das Plattform-Gate ließe den
+ * Anon-Key ohnehin durch — die Prüfung hier ist die eigentliche Sperre.
  *
  * POST /functions/v1/browser-action-log
  * Authorization: Bearer <User-JWT>

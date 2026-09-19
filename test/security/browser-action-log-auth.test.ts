@@ -97,18 +97,24 @@ describe('browser-action-log: Mandant und Akteur stammen aus der Pruefung', () =
 describe('browser-action-log: Plattform-Gate bleibt konsistent', () => {
   const toml = readFileSync(resolve(ROOT, 'supabase/config.toml'), 'utf8');
 
-  it('steht nicht auf verify_jwt = false', () => {
+  it('bleibt deklariert verify_jwt = false, solange die Function live so laeuft', () => {
+    // Der Edge-Function-Drift-Guard prueft Repo gegen Live: eine entfernte
+    // Deklaration bei live false ist UNDECLARED_NO_JWT. Das Gate schuetzt
+    // ohnehin nicht (Anon-Key ist ein gueltiges JWT) — die Sicherheit liegt
+    // im Handler, wie bei welcome-email (#1297). Wer auf Default true
+    // umstellt, deployt zuerst und passt diesen Test dann an.
     const kopf = '[functions.browser-action-log]';
     const start = toml.indexOf(kopf);
-    if (start === -1) return; // kein Eintrag: Default true, korrekt
+    expect(start, 'Eintrag fehlt in config.toml').toBeGreaterThanOrEqual(0);
     const rest = toml.slice(start + kopf.length);
     const next = rest.search(/\n\[/);
     const stanza = rest.slice(0, next === -1 ? rest.length : next);
-    expect(stanza).not.toMatch(/verify_jwt\s*=\s*false/);
+    expect(stanza).toMatch(/verify_jwt\s*=\s*false/);
   });
 
   it('die Absicht ist in der config dokumentiert', () => {
     expect(toml).toContain('browser-action-log: braucht eine echte Nutzersitzung');
+    expect(toml).toContain('requireAuthAndTenant');
   });
 });
 

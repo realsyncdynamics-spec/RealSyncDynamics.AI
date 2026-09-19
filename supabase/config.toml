@@ -136,12 +136,20 @@ verify_jwt = false
 [functions.cookie-scan-deep]
 verify_jwt = false
 
-# browser-action-log: braucht eine echte Nutzersitzung. Kein Eintrag = Default
-# true. Der fruehere Kommentar hier behauptete, RLS pruefe den Mandanten — die
-# Function schreibt aber mit Service Role, und Service Role umgeht RLS. Deshalb
-# prueft der Handler Nutzer und Mitgliedschaft ueber requireAuthAndTenant,
-# bevor er nach browser_actions schreibt (EmbeddedBrowserCanvas sendet das
-# User-JWT).
+# browser-action-log: braucht eine echte Nutzersitzung. Der fruehere Kommentar
+# hier behauptete, RLS pruefe den Mandanten — die Function schreibt aber mit
+# Service Role, und Service Role umgeht RLS. Deshalb prueft der Handler Nutzer
+# und Mitgliedschaft ueber requireAuthAndTenant, bevor er nach browser_actions
+# schreibt (EmbeddedBrowserCanvas sendet das User-JWT).
+#
+# Bleibt deklariert false, weil die Function live so laeuft und der
+# Edge-Function-Drift-Guard Repo gegen Live prueft (UNDECLARED_NO_JWT). Das
+# Plattform-Gate laesst den Anon-Key ohnehin durch, die Sicherheit liegt im
+# Handler — dasselbe Muster wie welcome-email (#1297). Umstellung auf den
+# Default true: erst `supabase functions deploy browser-action-log` ohne
+# diesen Eintrag, dann den Eintrag hier entfernen.
+[functions.browser-action-log]
+verify_jwt = false
 
 # AI Gateway — provider-neutral inference endpoint.
 #

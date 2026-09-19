@@ -136,11 +136,12 @@ verify_jwt = false
 [functions.cookie-scan-deep]
 verify_jwt = false
 
-# Browser-action-log — governance observability. Called from browser without JWT
-# (EmbeddedBrowserCanvas). Auth + tenant-scope checked inside the function via
-# service_role calls to Supabase (browser passes tenantId, which is validated by RLS).
-[functions.browser-action-log]
-verify_jwt = false
+# browser-action-log: braucht eine echte Nutzersitzung. Kein Eintrag = Default
+# true. Der fruehere Kommentar hier behauptete, RLS pruefe den Mandanten — die
+# Function schreibt aber mit Service Role, und Service Role umgeht RLS. Deshalb
+# prueft der Handler Nutzer und Mitgliedschaft ueber requireAuthAndTenant,
+# bevor er nach browser_actions schreibt (EmbeddedBrowserCanvas sendet das
+# User-JWT).
 
 # AI Gateway — provider-neutral inference endpoint.
 #

@@ -24,6 +24,7 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { callProvider, ProviderError } from '../_shared/providers.ts';
 import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
+import { buildCalibrationPromptBlock, buildCalibrationSnapshot } from './calibration.ts';
 
 // 12-Industries-Rotation. Index = (day_of_year - 1) mod 12.
 const INDUSTRIES: Array<{ industry: string; default_sector: string }> = [
@@ -56,6 +57,8 @@ interface GapPayload {
   ceo_profile?: string | null;
   sources?: Array<{ title?: string; url?: string; note?: string }>;
 }
+
+const MARKET_SCANNER_PROMPT_VERSION = 'market_scanner_v2_relative_calibration';
 
 Deno.serve(async (req) => {
   const preflight = handleOptions(req); if (preflight) return preflight;
@@ -99,13 +102,27 @@ Deno.serve(async (req) => {
   const startedAt = Date.now();
   const { data: runRow, error: runErr } = await admin
     .from('research_runs')
-    .insert({ industry, depth, status: 'running' })
+    .insert({ industry, depth, status: 'running', prompt_version: MARKET_SCANNER_PROMPT_VERSION })
     .select('id').single();
   if (runErr) return jsonError(500, 'INTERNAL', `research_runs insert: ${runErr.message}`);
   const runId = runRow!.id as string;
 
   try {
-    const systemPrompt = buildSystemPrompt(depth);
+    const { data: baselineRows, error: baselineErr } = await admin
+      .from('market_gaps')
+      .select('urgency_score,revenue_potential,build_complexity')
+      .order('scanned_at', { ascending: false })
+      .limit(180);
+    if (baselineErr) throw new Error(`market_gaps baseline read: ${baselineErr.message}`);
+
+    const calibrationSnapshot = buildCalibrationSnapshot((baselineRows ?? []).map((row) => ({
+      urgency_score: row.urgency_score,
+      revenue_potential: row.revenue_potential,
+      build_complexity: row.build_complexity,
+    })));
+    const calibrationPrompt = buildCalibrationPromptBlock(calibrationSnapshot);
+
+    const systemPrompt = buildSystemPrompt(depth, calibrationPrompt);
     const userPrompt   = buildUserPrompt(industry, sector);
 
     const result = await callProvider({
@@ -134,6 +151,7 @@ Deno.serve(async (req) => {
       ceo_profile: gap.ceo_profile ?? null,
       sources: gap.sources ?? [],
       raw_research: result.text.slice(0, 50_000),
+      prompt_version: MARKET_SCANNER_PROMPT_VERSION,
     }).select('id').single();
     if (gapErr) throw new Error(`market_gaps insert: ${gapErr.message}`);
     const gapId = gapRow!.id as string;
@@ -141,13 +159,22 @@ Deno.serve(async (req) => {
     let briefsCreated = 0;
     if (gap.revenue_potential === 'high' || gap.revenue_potential === 'very_high') {
       const brief = buildCeoBrief(gap);
-      const { error: briefErr } = await admin.from('ceo_briefs').insert({
+      const { data: briefRow, error: briefErr } = await admin.from('ceo_briefs').insert({
         market_gap_id: gapId,
         title: brief.title,
         body_md: brief.body_md,
         target_profile: gap.ceo_profile ?? null,
-      });
+        metadata: { prompt_version: MARKET_SCANNER_PROMPT_VERSION },
+      }).select('id').single();
       if (briefErr) throw new Error(`ceo_briefs insert: ${briefErr.message}`);
+      const briefId = briefRow!.id as string;
+      const { error: outreachErr } = await admin.from('outreach_contacts').insert({
+        market_gap_id: gapId,
+        ceo_brief_id: briefId,
+        status: 'new',
+        notes: `Auto-created by market-scanner (${MARKET_SCANNER_PROMPT_VERSION}) for outreach triage.`,
+      });
+      if (outreachErr) throw new Error(`outreach_contacts insert: ${outreachErr.message}`);
       briefsCreated = 1;
     }
 
@@ -174,7 +201,7 @@ Deno.serve(async (req) => {
   }
 });
 
-function buildSystemPrompt(depth: 'surface' | 'deep'): string {
+function buildSystemPrompt(depth: 'surface' | 'deep', calibrationPrompt: string): string {
   return [
     'Du bist Senior-Markt-Analyst für SaaS-Geschäftsmodelle im DACH-Raum.',
     'Aufgabe: Identifiziere EINE konkrete, monetarisierbare Markt-Lücke in der angegebenen Branche.',
@@ -206,6 +233,10 @@ function buildSystemPrompt(depth: 'surface' | 'deep'): string {
     depth === 'deep'
       ? 'Recherche-Tiefe: deep. Nutze dein Branchenwissen + Awareness von 2024-2026 News (Regulatorik, KI-Adoption, Förderprogramme).'
       : 'Recherche-Tiefe: surface. Schnell-Scan auf Basis deines Trainings.',
+    '',
+    `Prompt-Version: ${MARKET_SCANNER_PROMPT_VERSION}.`,
+    'Bewerte relative statt absolut: Vergleiche die neue Lücke gegen den bisher gefundenen Bestand.',
+    calibrationPrompt,
   ].join('\n');
 }
 
@@ -295,4 +326,3 @@ function buildCeoBrief(gap: GapPayload): { title: string; body_md: string } {
   ].filter(Boolean).join('\n');
   return { title, body_md };
 }
-

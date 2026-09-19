@@ -14,7 +14,7 @@ POST /functions/v1/browser-action-log
 Authorization: Bearer <User-JWT>
 ```
 
-The platform gate runs with the default `verify_jwt = true`. That alone lets the anon key through, so the handler additionally verifies the user and their membership in `tenantId` via `requireAuthAndTenant` (`_shared/auth.ts`) before it writes. `actor_id` is taken from the verified session, never from the body.
+The function is declared `verify_jwt = false` in `config.toml` (matching its live state; the platform gate would let the anon key through anyway). The handler verifies the user and their membership in `tenantId` via `requireAuthAndTenant` (`_shared/auth.ts`) before it writes. `actor_id` is taken from the verified session, never from the body.
 
 ## Request
 

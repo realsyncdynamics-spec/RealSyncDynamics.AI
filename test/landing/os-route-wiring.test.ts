@@ -9,6 +9,8 @@ import { PUBLIC_NAV_GROUPS } from '../../src/config/public-nav';
 
 const root = resolve(__dirname, '../..');
 const mainLanding = readFileSync(resolve(root, 'src/pages/MainLanding.tsx'), 'utf8');
+// Hero-Markup liegt seit der Titan-Umsetzung in HeroTitanium.
+const titanHero = readFileSync(resolve(root, 'src/components/landing/HeroTitanium.tsx'), 'utf8');
 const header = readFileSync(resolve(root, 'src/components/landing/PublicDarkHeader.tsx'), 'utf8');
 const publicNav = readFileSync(resolve(root, 'src/config/public-nav.ts'), 'utf8');
 const channel = readFileSync(resolve(root, 'src/components/landing/LandingChannelTools.tsx'), 'utf8');
@@ -52,10 +54,10 @@ describe('Landing ↔ Infrastruktur', () => {
   });
 
   it('Replit landing: Europe-network hero + Free Audit CTA', () => {
-    expect(mainLanding).toContain('EuropeNetworkHero');
+    expect(titanHero).toContain('EuropeNetworkHero');
     expect(mainLanding).toContain('PLATFORM_LIVE_ITEMS');
-    expect(mainLanding).toContain('id="audit-cta"');
-    expect(mainLanding).toContain('data-hero-cta="audit"');
+    expect(titanHero).toContain('id="audit-cta"');
+    expect(titanHero).toContain('data-hero-cta="audit"');
     expect(mainLanding.match(/data-hero-cta/g)?.length).toBe(1);
     expect(mainLanding).toContain('to="/audit"');
     expect(mainLanding).toContain('DAS BETRIEBSSYSTEM');

@@ -494,6 +494,16 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
       { name: 'Proliance Alternative', url: '/proliance-alternative' },
     ]),
   },
+  '/caralegal-alternative': {
+    title: 'caralegal Alternative — technische Governance-Runtime neben dem DSMS | RealSyncDynamics.AI',
+    description:
+      'caralegal ist ein DSMS für die Datenschutzorganisation. RealSyncDynamics.AI ist die technische Compliance-Runtime daneben: Detect, Govern, Enforce, Prove — Befund, Policy-Entscheidung, Nachweis.',
+    canonical: `${SITE_URL}/caralegal-alternative`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'caralegal Alternative', url: '/caralegal-alternative' },
+    ]),
+  },
 
   // ─── Tier 3 — Branchen-Landings ──────────────────────────────────────────
   '/healthtech': {

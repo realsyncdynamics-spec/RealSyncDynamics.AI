@@ -72,6 +72,21 @@ describe('Farbmodus — zwei Paletten, ein Attribut', () => {
     expect(modeSwitch).toContain('role="radio"');
     expect(modeSwitch).toContain('aria-checked={active}');
   });
+
+  it('die Radiogroup liefert die Tastaturbedienung, die sie ankuendigt', () => {
+    // Wer `role="radiogroup"` ansagt, muss das Muster auch bedienen koennen,
+    // sonst ist die Ansage gegenueber Hilfstechnologie eine Luege.
+    // Roving Tabindex: die Gruppe ist EIN Tabstopp, nicht zwei.
+    expect(modeSwitch).toContain('tabIndex={active ? 0 : -1}');
+    expect(modeSwitch).toContain('onKeyDown');
+    for (const key of ['ArrowRight', 'ArrowLeft', 'ArrowUp', 'ArrowDown', 'Home', 'End']) {
+      expect(modeSwitch, `${key} wird nicht behandelt`).toContain(`'${key}'`);
+    }
+    // Der Fokus zieht mit der Wahl mit — sonst stuende er auf einem Knopf,
+    // der nicht mehr der gewaehlte ist.
+    expect(modeSwitch).toContain('.focus()');
+    expect(modeSwitch).toContain('event.preventDefault()');
+  });
 });
 
 describe('Farbmodus — die Flaechen lesen die Variablen', () => {

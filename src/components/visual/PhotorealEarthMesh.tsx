@@ -166,7 +166,10 @@ function AtmosphereShell({
         }
       `,
     });
-  }, [reducedMotion, gold, sunDirection]);
+    // `palette` statt `gold`: Das Material haengt ueber `warm`/`P` an allen
+    // drei Paletten. Mit `gold` allein bliebe beim Wechsel
+    // landing-gold → landing-vip das alte Material stehen.
+  }, [reducedMotion, palette, sunDirection]);
 
   useEffect(() => {
     if (sunDirection && mat.uniforms.uSun) {

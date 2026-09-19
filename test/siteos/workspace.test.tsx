@@ -468,6 +468,8 @@ describe('App Builder Workspace — Code-Link ohne Puck-Regression', () => {
     fireEvent.click(screen.getByText('stub:edit-hero'));
     fireEvent.click(screen.getByRole('button', { name: /^Speichern$/ }));
     await waitFor(() => expect(api.editSite).toHaveBeenCalledTimes(1));
+    // Nach Speichern erst freigeben — sonst klickt der Test auf disabled Prüfen (Race).
+    await waitFor(() => expect(screen.getByRole('button', { name: /Prüfen/ })).toBeEnabled());
     fireEvent.click(screen.getByRole('button', { name: /Prüfen/ }));
     await waitFor(() => expect(api.evaluatePublish).toHaveBeenCalled());
     expect(screen.getByText('Impressum fehlt.')).toBeInTheDocument();

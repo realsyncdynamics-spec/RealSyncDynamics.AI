@@ -1,26 +1,18 @@
-// RequireAal2 (P0c, ADR 0006) — Hard-Enforce-Guard für privilegierte Bereiche.
-//
-// Erzwingt AAL2 (Supabase-native TOTP) für privilegierte Rollen/Tenants. KEIN
-// Eigenbau-MFA — nutzt ausschließlich `core/access/mfa.ts`. Entscheidungslogik
-// liegt rein in `aal2-policy.ts` (testbar). Dieser Guard rendert nur die UI.
-//
-// Komposition: sitzt INNERHALB des Login-Pfads. Ohne Session → `allow`
-// (der vorhandene AuthGate der Views zeigt den Login). Dadurch keine
-// Verwechslung „nicht eingeloggt" ↔ „MFA fehlt" und keine Endlosschleife.
 import React, { useCallback, useEffect, useState } from 'react';
 import { ShieldAlert, KeyRound, Loader2, AlertTriangle } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { getSupabase, isSupabaseConfigured } from '../../lib/supabase';
 import { useTenant } from './TenantProvider';
 import { getMfaStatus, stepUpTotp, mfaErrorMessage } from './mfa';
 import { requiresAal2, aal2Decision, type Aal, type Aal2Outcome } from './aal2-policy';
 
 interface Props {
-  /** Aktionslabel für Anzeige + Telemetrie (z. B. "Team-Verwaltung"). */
   action?: string;
   children: React.ReactNode;
+  mode?: 'enforce' | 'observe';
 }
 
-export function RequireAal2({ action, children }: Props) {
+export function RequireAal2({ action, children, mode = 'enforce' }: Props) {
   const { tenants, activeTenantId, loading: tenantLoading } = useTenant();
   const activeTenant = tenants.find((t) => t.tenantId === activeTenantId) ?? null;
   const role = activeTenant?.role ?? null;
@@ -52,12 +44,10 @@ export function RequireAal2({ action, children }: Props) {
     let active = true;
     void refresh();
     if (!isSupabaseConfigured()) return;
-    // Reagiert auf MFA-Bestätigung / Login-Wechsel → Level neu lesen.
     const { data: sub } = getSupabase().auth.onAuthStateChange(() => { if (active) void refresh(); });
     return () => { active = false; sub.subscription.unsubscribe(); };
   }, [refresh]);
 
-  // Solange Tenant-/AAL-Daten laden: nicht voreilig blocken.
   if (tenantLoading || !ready) {
     return (
       <div className="min-h-[40vh] flex items-center justify-center text-titanium-500 text-sm gap-2">
@@ -68,6 +58,27 @@ export function RequireAal2({ action, children }: Props) {
 
   const required = requiresAal2(role, isPublicSector);
   const outcome: Aal2Outcome = aal2Decision({ hasSession, required, currentLevel, nextLevel });
+
+  if (mode === 'observe') {
+    if (!hasSession) return <>{children}</>;
+    if (outcome === 'allow') return <>{children}</>;
+    return (
+      <div className="space-y-4">
+        <div
+          role="alert"
+          aria-live="polite"
+          className="border border-amber-500/40 bg-amber-500/10 text-amber-100 p-4 flex items-start gap-2"
+        >
+          <ShieldAlert className="h-4 w-4 shrink-0 mt-0.5" />
+          <p className="text-sm">
+            Observe-Modus: Dieser Bereich{action ? ` (${action})` : ''} verlangt bald AAL2.
+            Bitte MFA in den <Link to="/settings/security" className="underline">Sicherheitseinstellungen</Link> einrichten.
+          </p>
+        </div>
+        {children}
+      </div>
+    );
+  }
 
   if (outcome === 'allow') return <>{children}</>;
 

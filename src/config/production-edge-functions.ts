@@ -195,6 +195,7 @@ export const PRODUCTION_EDGE_FUNCTIONS: readonly string[] = [
   'memory-confidence-trigger',
   'memory-decay-worker',
   'mfa-admin-reset',
+  'mfa-observe-status',
   'mfa-recovery-redeem',
   'microsoft365-audit-sync',
   'microsoft365-connect',

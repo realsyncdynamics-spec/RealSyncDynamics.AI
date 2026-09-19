@@ -33,6 +33,9 @@ describe('Landing Replit Dark/Gold — Europe-network', () => {
   it('uses static Europe network — not interactive sphere', () => {
     expect(landing).toContain('EuropeNetworkHero');
     expect(landing).not.toContain('GovernanceSphereHost');
+    // Der Farbmodus laeuft ueber `useLandingMode` (Gold/Cyan, nur Tonung).
+    // `useGaTheme` ist die alte OS-Variante mit eigener Typografie und
+    // eigenem Layout — die gehoert nicht auf die Startseite.
     expect(landing).not.toContain('useGaTheme');
     expect(landing).not.toContain('EuropeReliefBackdrop');
     expect(network).toContain('europe-network-static');

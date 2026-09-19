@@ -86,21 +86,29 @@ export const APP_FEATURE_ACCESS: readonly FeatureRequirement[] = [
   // laeuft — und das tut es nur innerhalb der `GovernanceBrowserShell`.
   //
   // Die uebrigen Builder-Flaechen haengen an anderen Wrappern und wuerden von
-  // einem Eintrag hier NICHT gesperrt (gemessen 2026-09-15 an `src/App.tsx`):
+  // einem Eintrag hier NICHT gesperrt (gemessen 2026-09-19 an `src/App.tsx`):
   //
   //   /app/siteos/builder   AppGate — nur Anmeldung, keine Berechtigung
   //   /app/siteos/claim     AppGate — dito
-  //   /builder/:slug        gar kein Wrapper; die Seite prueft selbst nur
-  //                         `isAuthenticated` und leitet sonst nach /welcome
-  //   /build                bewusst anonym (Erstbau ohne Konto)
+  //   /builder/:slug        kein Wrapper; die Seite schickt Nicht-Angemeldete
+  //                         selbst nach /welcome
+  //   /unified-entry/transformation
+  //                         kein Wrapper, nicht einmal AppGate. Mountet
+  //                         dieselbe Seite wie /app/siteos/builder und prueft
+  //                         `isAuthenticated` erst im Klick-Handler —
+  //                         gerendert wird sie fuer jeden.
+  //   /build                kein Wrapper, aber nicht ungeschuetzt:
+  //                         BuildStudioPage prueft selbst Anmeldung und
+  //                         `canOpenAppBuilder(entitlements)`.
   //
   // Ein Eintrag fuer diese Routen waere ein Gate, das nie greift — genau die
   // Sorte Platzhalter, die dieses Register nicht enthalten soll. Sie brauchen
   // zuerst eine Routing-Entscheidung, keinen Registereintrag.
   //
   // `siteos.builder` ist eine echte Bezahlgrenze: Free Audit hat 0, Starter
-  // und aufwaerts 1. (`siteos.publish` trennt zusaetzlich Starter von Growth —
-  // dafuer gibt es heute keine eigene Route.)
+  // und aufwaerts 1. `siteos.publish` trennt dagegen NICHT Starter von Growth
+  // — die SSoT gibt Starter beides (1/1). Ohne Publish stehen nur Free Audit
+  // und das Einmalprodukt `governance_launch` da.
   { route: '/app/siteos', label: 'Website-Builder', allOf: ['siteos.builder'] },
 
   // ── Govern ──────────────────────────────────────────────────────────────

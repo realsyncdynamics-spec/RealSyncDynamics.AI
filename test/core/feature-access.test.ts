@@ -193,18 +193,41 @@ describe('Website-Builder — die neue Bezahlgrenze', () => {
   it('sperrt Free Audit aus, laesst Starter und aufwaerts hinein', () => {
     // Achtung, zwei Vokabulare: `PlanId` ist 'free', `PlanKey' ist
     // 'free_audit'. `planGrants` will den Key, die Leiter nennt die Id.
+    //
+    // Ohne `isPlanSelectable`-Filter, und das ist Absicht: Partner ist
+    // `availability: 'legacy'` und faellt sonst heraus. Bestandskunden
+    // stehen aber weiterhin auf dem Plan — naehme ihnen jemand
+    // `siteos.builder`, liefe diese Pruefung mit Filter still gruen durch.
+    // Es geht hier um die Entitlements bestehender Plaene, nicht nur um die,
+    // die heute noch verkauft werden.
     for (const planId of PLAN_ORDER) {
-      if (!isPlanSelectable(planId)) continue;
       const plan = planById(planId);
       const erlaubt = decideAccess(req!, (key) => planGrants(plan.planKey, key as never)).allowed;
       expect(erlaubt, `${planId} (Key ${plan.planKey})`).toBe(planId !== 'free');
     }
   });
 
-  it('gilt nicht fuer die Flaechen ausserhalb der Shell', () => {
-    // /builder/:slug und /app/siteos/builder haengen an anderen Wrappern.
-    // Dass `requirementForPath` sie nicht trifft, ist hier ausdrueckliche
-    // Absicht und keine Luecke im Praefix-Matching.
+  it('greift nicht auf den Flaechen ausserhalb der Shell', () => {
+    // Zwei verschiedene Gruende, die sich leicht verwechseln lassen.
+    //
+    // `/builder/:slug` liegt unter keinem Praefix des Registers:
     expect(requirementForPath('/builder/meine-seite')).toBeNull();
+
+    // `/app/siteos/builder` dagegen wird vom Eintrag `/app/siteos` sehr wohl
+    // getroffen — `matchesPrefix` ist ein Segment-Praefix. Wirkungslos ist
+    // der Eintrag dort trotzdem, aber aus dem anderen Grund: App.tsx haengt
+    // die Route in `AppGate`, und `RouteEntitlementGate` laeuft nur unter der
+    // `GovernanceBrowserShell`.
+    expect(requirementForPath('/app/siteos/builder')?.allOf).toEqual(['siteos.builder']);
+
+    const appSource = readFileSync('src/App.tsx', 'utf8');
+    const treffer = /<Route\s+path="\/app\/siteos\/builder"[^>]*element=\{([\s\S]{0,80})/
+      .exec(appSource);
+    expect(treffer?.[1], '/app/siteos/builder steht nicht in App.tsx').toBeTruthy();
+    expect(
+      treffer![1],
+      'Die Route haengt jetzt unter der Shell — dann greift das Register dort, '
+        + 'und der Kommentar in featureAccess.ts gehoert angepasst',
+    ).not.toContain('GovernanceBrowserShell');
   });
 });

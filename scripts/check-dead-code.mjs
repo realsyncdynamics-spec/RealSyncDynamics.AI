@@ -51,6 +51,17 @@ const APP_ENTRIES = ['src/main.tsx', 'src/App.tsx'];
 /** Alles ausserhalb von `src/`, das auf `src/` zeigen darf. */
 const EXTRA_ROOTS = ['test', 'tests', 'e2e', 'scripts', 'workers', 'worker', 'packages', 'shared'];
 
+/**
+ * Tests liegen nicht nur in `test/`, sondern auch mitten in `src/` — als
+ * `*.test.ts` neben der Datei oder in einem `__tests__/`-Ordner. Sie sind
+ * ebenso Einstiegspunkte: Was nur ein solcher Test importiert, ist nicht
+ * verwaist, sondern getestet und nicht ausgeliefert.
+ *
+ * Ohne diese Zeile meldete das Skript am 2026-09-19 zehn Testdateien selbst
+ * als tot — und alles, was nur an ihnen hing, gleich mit.
+ */
+const TEST_FILE = /(?:\.(?:test|spec)\.[jt]sx?$)|(?:[\\/]__tests__[\\/])/;
+
 function resolveImport(fromFile, spec) {
   let base;
   if (spec.startsWith('@/')) base = resolve(ROOT, spec.slice(2));
@@ -83,9 +94,11 @@ function collectFiles(dir, out = []) {
   return out;
 }
 
+const allSrcFiles = collectFiles(SRC);
 const queue = APP_ENTRIES.map((e) => join(ROOT, e)).filter((p) => existsSync(p));
 if (!APP_ONLY) {
   for (const root of EXTRA_ROOTS) queue.push(...collectFiles(join(ROOT, root)));
+  queue.push(...allSrcFiles.filter((f) => TEST_FILE.test(relative(ROOT, f))));
 }
 
 const reached = new Set();
@@ -106,7 +119,7 @@ while (queue.length > 0) {
   }
 }
 
-const allSrc = collectFiles(SRC);
+const allSrc = allSrcFiles;
 const dead = allSrc
   .filter((f) => !reached.has(f) && !f.endsWith('.d.ts'))
   .map((f) => relative(ROOT, f))

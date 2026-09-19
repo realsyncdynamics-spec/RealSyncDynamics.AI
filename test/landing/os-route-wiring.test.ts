@@ -11,6 +11,12 @@ const root = resolve(__dirname, '../..');
 const mainLanding = readFileSync(resolve(root, 'src/pages/MainLanding.tsx'), 'utf8');
 // Hero-Markup liegt seit der Titan-Umsetzung in HeroTitanium.
 const titanHero = readFileSync(resolve(root, 'src/components/landing/HeroTitanium.tsx'), 'utf8');
+// Die Runtime-Stationen sitzen seit der Entwurfsumsetzung in einer eigenen
+// Sektion, nicht mehr als „DAS BETRIEBSSYSTEM" inline in MainLanding.
+const runtimeStations = readFileSync(
+  resolve(root, 'src/components/landing/GovernanceRuntimeSection.tsx'),
+  'utf8',
+);
 const header = readFileSync(resolve(root, 'src/components/landing/PublicDarkHeader.tsx'), 'utf8');
 const publicNav = readFileSync(resolve(root, 'src/config/public-nav.ts'), 'utf8');
 const channel = readFileSync(resolve(root, 'src/components/landing/LandingChannelTools.tsx'), 'utf8');
@@ -63,7 +69,8 @@ describe('Landing ↔ Infrastruktur', () => {
     expect(titanHero.match(/data-hero-cta/g)?.length).toBe(1);
     expect(mainLanding).not.toContain('data-hero-cta');
     expect(mainLanding).toContain('to="/audit"');
-    expect(mainLanding).toContain('DAS BETRIEBSSYSTEM');
+    expect(mainLanding).toContain('GovernanceRuntimeSection');
+    expect(runtimeStations).toContain('GOVERNANCE RUNTIME');
     expect(mainLanding).not.toContain('Demo buchen');
     expect(mainLanding).not.toContain('GovernanceSphereHost');
     expect(mainLanding).not.toContain('HeroEuropeSunrise');

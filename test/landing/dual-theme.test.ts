@@ -27,6 +27,10 @@ const runtimePanel = readFileSync(
   resolve(root, 'src/components/landing/RuntimePreviewPanel.tsx'),
   'utf8',
 );
+const runtimeStations = readFileSync(
+  resolve(root, 'src/components/landing/GovernanceRuntimeSection.tsx'),
+  'utf8',
+);
 
 describe('Landing Replit Dark/Gold — Europe-network', () => {
   it('keeps Dark/Gold amber tokens', () => {
@@ -92,11 +96,16 @@ describe('Landing Replit Dark/Gold — Europe-network', () => {
     expect(landing).not.toContain('SYSTEME IM SCOPE');
     expect(runtimePanel).toMatch(/DEMO\s*\/\s*SIMULATED/);
     expect(runtimePanel).toContain('RUNTIME_PREVIEW_CARDS');
-    expect(landing).toContain('DAS BETRIEBSSYSTEM');
-    expect(landing).toContain('Discover');
-    expect(landing).toContain('Classify');
-    expect(landing).toContain('Enforce');
-    expect(landing).toContain('Prove');
+    // Der Entwurf zeigt an dieser Stelle die sechs Stationen der Governance
+    // Runtime, nicht die frühere Vierer-Kette „DAS BETRIEBSSYSTEM".
+    // Die Kurzform bleibt im Hero (HERO_OPERATING_LOOP) — beide stehen so
+    // im Entwurf, sie haben nur unterschiedliche Auflösung.
+    expect(landing).toContain('GovernanceRuntimeSection');
+    expect(landing).not.toContain('DAS BETRIEBSSYSTEM');
+    expect(runtimeStations).toContain('GOVERNANCE RUNTIME');
+    for (const station of ['DISCOVER', 'ASSESS', 'GOVERN', 'ENFORCE', 'EVIDENCE', 'AUDIT']) {
+      expect(runtimeStations, `Station ${station} fehlt`).toContain(`'${station}'`);
+    }
     expect(runtimePanel).toContain('data-demo-kpis');
   });
 });

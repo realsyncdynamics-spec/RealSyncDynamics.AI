@@ -1,11 +1,5 @@
 import { Link } from 'react-router-dom';
-import {
-  ArrowRight,
-  Network,
-  Layers,
-  ShieldCheck,
-  RefreshCw,
-} from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { SEOHead } from '../components/SEOHead';
 import { LandingChannelTools } from '../components/landing/LandingChannelTools';
 import { LandingPricingSection } from '../components/landing/LandingPricingSection';
@@ -13,6 +7,7 @@ import { PublicDarkHeader } from '../components/landing/PublicDarkHeader';
 import { HeroTitanium } from '../components/landing/HeroTitanium';
 import { RuntimePreviewPanel } from '../components/landing/RuntimePreviewPanel';
 import { LandingDarkBand } from '../components/landing/LandingDarkBand';
+import { GovernanceRuntimeSection } from '../components/landing/GovernanceRuntimeSection';
 import { LandingRoadmapSection } from '../components/landing/LandingRoadmapSection';
 import { EnterpriseAccessSection } from '../components/landing/EnterpriseAccessSection';
 import { PLATFORM_LIVE_ITEMS, STATUS_LABEL } from '../product/implementation-status';
@@ -29,7 +24,6 @@ import {
   LANDING_TEXT,
 } from '../components/landing/landing-theme';
 import {
-  CONTINUOUS_COMPLIANCE_NARRATIVE,
   HERO_DASHBOARD_CTA_LABEL,
   HERO_SCAN_CTA_LABEL,
 } from '../components/governance-frontend/hero-content';
@@ -38,33 +32,6 @@ import {
  * Replit SSOT public `/` — Dark/Gold Europe-network (static), not interactive sphere.
  * KPI strip mirrors Replit chrome as illustrative demo values (not live production metrics).
  */
-
-const OS_STEPS = [
-  {
-    n: '01',
-    title: 'Discover',
-    text: 'Alle KI-Systeme, Modelle und Abhängigkeiten in einem verlässlichen Inventar.',
-    Icon: Network,
-  },
-  {
-    n: '02',
-    title: 'Classify',
-    text: 'Risiko, Zweck und regulatorischen Status automatisch zuordnen — mit menschlicher Freigabe.',
-    Icon: Layers,
-  },
-  {
-    n: '03',
-    title: 'Enforce',
-    text: 'Kontrollen als laufende Regeln in Ihre Toolchain bringen, nicht als PDF im Ordner.',
-    Icon: ShieldCheck,
-  },
-  {
-    n: '04',
-    title: 'Prove',
-    text: 'Jede Entscheidung, Kontrolle und Ausnahme revisionssicher nachweisen.',
-    Icon: RefreshCw,
-  },
-] as const;
 
 export function MainLanding() {
   const revealRoot = useStagedReveal<HTMLElement>();
@@ -92,66 +59,6 @@ export function MainLanding() {
         <HeroTitanium />
 
         <RuntimePreviewPanel />
-
-        {/* ── Das Betriebssystem ── */}
-        <section id="runtime" className="border-b border-white/[0.06] py-[72px] lg:py-[88px]">
-          <div className="mx-auto grid max-w-[1280px] gap-12 px-[4vw] lg:grid-cols-[0.95fr_1.05fr] lg:gap-16">
-            <div>
-              <p
-                className="text-[10px] tracking-[0.22em]"
-                style={{ fontFamily: LANDING_MONO, color: LANDING_ACCENT }}
-              >
-                01 — DAS BETRIEBSSYSTEM
-              </p>
-              <h2
-                className="mt-4 max-w-md text-[clamp(1.75rem,1.1rem+2vw,2.5rem)] leading-[1.12] tracking-[-0.03em]"
-                style={{ fontWeight: 600, color: LANDING_TEXT }}
-              >
-                Compliance, die mit Ihrem Modell Schritt hält.
-              </h2>
-              <p className="mt-5 max-w-md text-[14px] leading-[1.7]" style={{ color: LANDING_MUTED }}>
-                Regulierte KI ist kein einmaliges Projekt. {CONTINUOUS_COMPLIANCE_NARRATIVE}
-              </p>
-              <Link
-                to="/governance-runtime"
-                className="mt-7 inline-flex items-center gap-2 text-[13px] font-medium transition hover:brightness-110"
-                style={{ color: LANDING_ACCENT_SOFT }}
-              >
-                So entsteht der Proof <ArrowRight className="h-4 w-4" />
-              </Link>
-            </div>
-
-            <div className="divide-y divide-white/[0.07] border-y border-white/[0.07]">
-              {OS_STEPS.map(({ n, title, text, Icon }) => (
-                <div key={n} className="flex items-start gap-4 py-5 sm:gap-5">
-                  <span
-                    className="mt-0.5 grid h-10 w-10 shrink-0 place-items-center border"
-                    style={{ borderColor: `${LANDING_ACCENT}55`, color: LANDING_ACCENT }}
-                  >
-                    <Icon className="h-4 w-4" strokeWidth={1.5} />
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <p className="flex items-baseline gap-2">
-                      <span
-                        className="text-[10px] tracking-[0.16em]"
-                        style={{ fontFamily: LANDING_MONO, color: LANDING_ACCENT }}
-                      >
-                        {n}
-                      </span>
-                      <span className="text-[15px] font-semibold" style={{ color: LANDING_TEXT }}>
-                        {title}
-                      </span>
-                    </p>
-                    <p className="mt-1.5 text-[13px] leading-relaxed" style={{ color: LANDING_MUTED }}>
-                      {text}
-                    </p>
-                  </div>
-                  <ArrowRight className="mt-2 h-4 w-4 shrink-0 opacity-40" style={{ color: LANDING_ACCENT }} />
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
 
         <LandingChannelTools />
 
@@ -250,6 +157,8 @@ export function MainLanding() {
             </Link>
           </div>
         </section>
+
+        <GovernanceRuntimeSection />
 
         <LandingRoadmapSection />
         <LandingPricingSection />

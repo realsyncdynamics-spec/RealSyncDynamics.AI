@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <meta name="design_doc_mode" content="canvas">
+  <template id="__bundler_thumbnail" data-bg-color="#070B14"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><rect width="200" height="200" fill="#070B14"></rect><path d="M100 46l40 15v32c0 30-40 50-40 50s-40-20-40-50V61z" fill="none" stroke="#1E5AFF" stroke-width="8" stroke-linejoin="round"></path><path d="M84 100l12 12 22-24" fill="none" stroke="#00B8D4" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"></path></svg></template>
+  <link rel="stylesheet" href="_ds/realsyncdynamics-design-system-97bc273e-9efd-41da-b292-172c7909488d/colors_and_type.css">
+  <link rel="stylesheet" href="_ds/realsyncdynamics-design-system-97bc273e-9efd-41da-b292-172c7909488d/ui_kits/webapp/webapp.css">
+  <script src="_ds/realsyncdynamics-design-system-97bc273e-9efd-41da-b292-172c7909488d/_ds_bundle.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,300;6..72,400&amp;display=swap">
+  <style>
+    body{margin:0;background:#070B14;color:#F2F5FA;font-family:'Inter',-apple-system,sans-serif;font-feature-settings:"ss01","cv11"}
+    a{color:#4FD4E8;text-decoration:none}a:hover{color:#00B8D4}
+    input{font-family:inherit}
+    @keyframes rsSeal{0%{stroke-dashoffset:150}80%{stroke-dashoffset:8}100%{stroke-dashoffset:0}}
+    @keyframes rsSpin{to{transform:rotate(360deg)}}
+    @keyframes rsIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  </style>
+</helmet>
+
+<div style="min-height:100vh;padding:28px 32px 64px;box-sizing:border-box;background-color:#070B14;background-image:radial-gradient(rgba(255,255,255,.05) 1px,transparent 1px);background-size:24px 24px;display:flex;flex-direction:column;gap:20px">
+
+  <div style="display:flex;gap:40px;align-items:flex-start;width:max-content">
+
+  <!-- ============================ WEB ============================ -->
+  <div style="flex:none;width:1280px;height:820px;border-radius:12px;overflow:hidden;border:1px solid #1F2B48;box-shadow:0 4px 12px rgba(0,0,0,.4),0 24px 64px rgba(0,0,0,.5)">
+  <div data-screen-label="Web" style="min-height:100%;height:100%;background:#070B14;color:#F2F5FA;font-family:'Inter',-apple-system,sans-serif;display:flex;flex-direction:column;box-sizing:border-box">
+
+    <!-- LANDING -->
+    <sc-if value="{{ isLanding }}" hint-placeholder-val="{{ true }}">
+      <div style="position:relative;flex:1;overflow:hidden;background:#02050B;perspective:1400px">
+        <div style="position:absolute;top:-6%;right:-10%;width:78%;height:118%;background:url('assets/europe-map-v2.png') center / cover no-repeat;transform:rotateY(-14deg) rotateX(6deg) scale(1.06);transform-origin:70% 50%;filter:saturate(1.15) contrast(1.08);opacity:.95"></div>
+        <div style="position:absolute;top:-6%;right:-10%;width:78%;height:118%;background:url('assets/europe-map-v2.png') center / cover no-repeat;transform:rotateY(-14deg) rotateX(6deg) scale(1.10) translateZ(-120px);transform-origin:70% 50%;filter:blur(14px) brightness(.55);opacity:.55;mix-blend-mode:screen"></div>
+        <div style="position:absolute;inset:0;background:radial-gradient(ellipse 60% 80% at 78% 55%,rgba(30,90,255,.18) 0%,rgba(30,90,255,0) 60%)"></div>
+        <div style="position:absolute;inset:0;background:linear-gradient(90deg,#02050B 0%,#02050B 34%,rgba(2,5,11,.72) 50%,rgba(2,5,11,.1) 68%,rgba(2,5,11,.35) 100%)"></div>
+        <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(2,5,11,.7) 0%,rgba(2,5,11,0) 22%,rgba(2,5,11,0) 70%,#02050B 100%)"></div>
+        <div style="position:absolute;inset:0;background-image:radial-gradient(rgba(255,255,255,.035) 1px,transparent 1px);background-size:32px 32px;mask-image:linear-gradient(90deg,#000 0%,transparent 55%);-webkit-mask-image:linear-gradient(90deg,#000 0%,transparent 55%)"></div>
+        <div style="position:relative;display:flex;align-items:center;justify-content:space-between;padding:26px 48px">
+          <div style="font:600 20px/1 'Inter Tight',sans-serif;letter-spacing:-.01em">RealSync Dynamics<span style="color:#00B8D4">.AI</span></div>
+          <div style="display:flex;align-items:center;gap:6px">
+            <sc-for list="{{ navChips }}" as="c" hint-placeholder-count="9">
+              <button onClick="{{ c.go }}" style="height:34px;padding:0 11px;border-radius:6px;border:1px solid {{ c.border }};background:{{ c.bg }};color:{{ c.color }};font:{{ c.weight }} 13px/1 'Inter',sans-serif;cursor:pointer;white-space:nowrap">{{ c.label }}</button>
+            </sc-for>
+            <button onClick="{{ toggleLang }}" style="height:34px;padding:0 10px;border-radius:6px;border:1px solid #1F2B48;background:transparent;color:#8A95AC;font:500 11px/1 'JetBrains Mono',monospace;cursor:pointer;margin:0 8px">{{ langToggleLabel }}</button>
+            <button onClick="{{ goAudit }}" style="height:40px;padding:0 18px;border-radius:8px;border:1px solid rgba(255,255,255,.14);background:linear-gradient(180deg,#2B66FF,#1E5AFF);color:#fff;font:600 14px/1 'Inter',sans-serif;cursor:pointer;white-space:nowrap;flex-shrink:0;box-shadow:0 1px 0 rgba(255,255,255,.12) inset,0 8px 24px rgba(30,90,255,.3)" style-hover="background:#1641C4">{{ t.cta }}</button>
+          </div>
+        </div><div style="position:relative;padding:56px 48px 0;max-width:940px">
+          <div style="display:inline-flex;align-items:center;gap:10px;height:28px;padding:0 12px;border-radius:4px;border:1px solid rgba(0,184,212,.35);background:rgba(0,184,212,.08);font:600 11px/1 'Inter',sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#4FD4E8;margin-bottom:28px;white-space:nowrap"><span style="width:6px;height:6px;border-radius:9999px;background:#00B8D4;box-shadow:0 0 8px #00B8D4"></span>EU AI Act · DSGVO · ISO 42001</div>
+          <h1 style="margin:0;font:400 80px/1.0 'Newsreader',Georgia,serif;letter-spacing:-.02em;color:#EEF1F6;white-space:nowrap;text-shadow:0 2px 40px rgba(0,0,0,.6)">{{ t.heroA }}<br>{{ t.heroB }} <span style="color:#00B8D4">{{ t.heroC }}</span></h1>
+          <div style="display:flex;align-items:center;gap:14px;margin-top:36px;font:600 13px/1 'JetBrains Mono',monospace;letter-spacing:.18em;color:#4FD4E8">
+            <span>DISCOVER</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14 M12 5l7 7-7 7"></path></svg>
+            <span>CLASSIFY</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14 M12 5l7 7-7 7"></path></svg>
+            <span>ENFORCE</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14 M12 5l7 7-7 7"></path></svg>
+            <span>PROVE</span>
+          </div>
+          <div style="display:flex;gap:14px;margin-top:40px">
+            <button onClick="{{ goAudit }}" style="height:52px;padding:0 26px;border-radius:8px;border:1px solid rgba(255,255,255,.14);background:linear-gradient(180deg,#2B66FF,#1E5AFF);color:#fff;font:600 15px/1 'Inter',sans-serif;cursor:pointer;display:flex;align-items:center;gap:12px;white-space:nowrap;box-shadow:0 1px 0 rgba(255,255,255,.12) inset,0 12px 32px rgba(30,90,255,.32)" style-hover="background:#1641C4">{{ t.cta }}<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14 M12 5l7 7-7 7"></path></svg></button>
+            <button onClick="{{ goDashboard }}" style="height:52px;padding:0 26px;border-radius:8px;border:1px solid #2E3C5E;background:rgba(13,19,34,.7);color:#F2F5FA;font:600 15px/1 'Inter',sans-serif;cursor:pointer;white-space:nowrap;backdrop-filter:blur(12px) saturate(140%)" style-hover="border-color:#4FD4E8">{{ t.cta2 }}</button>
+          </div>
+        </div>
+        
+      </div>
+    </sc-if>
+
+    <!-- LOGIN -->
+    <sc-if value="{{ isLogin }}" hint-placeholder-val="{{ false }}">
+      <div style="flex:1;display:grid;grid-template-columns:1fr 1fr;min-height:0">
+        <div style="padding:64px;display:flex;flex-direction:column;justify-content:center;gap:24px;max-width:460px;margin:0 auto;width:100%;box-sizing:border-box">
+          <button onClick="{{ goLanding }}" style="align-self:flex-start;background:none;border:0;color:#8A95AC;font:500 13px/1 'Inter',sans-serif;cursor:pointer;padding:0">← RealSync Dynamics.AI</button>
+          <div>
+            <h2 style="margin:0;font:600 32px/1.15 'Inter Tight',sans-serif;letter-spacing:-.015em">{{ t.loginTitle }}</h2>
+            <p style="margin:10px 0 0;font:400 15px/1.55 'Inter',sans-serif;color:#8A95AC">{{ t.loginSub }}</p>
+          </div>
+          <sc-if value="{{ loginIdle }}" hint-placeholder-val="{{ true }}">
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <label style="font:600 11px/1.4 'Inter',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#8A95AC">E-Mail</label>
+              <input value="{{ loginEmail }}" onChange="{{ setLoginEmail }}" placeholder="name@unternehmen.de" style="height:44px;padding:0 14px;border-radius:4px;border:1px solid #2E3C5E;background:#0D1322;color:#F2F5FA;font:400 15px/1 'Inter',sans-serif;outline:none;box-sizing:border-box">
+            </div>
+            <button onClick="{{ sendLink }}" style="height:44px;border-radius:8px;border:0;background:#1E5AFF;color:#fff;font:600 15px/1 'Inter',sans-serif;cursor:pointer" style-hover="background:#1641C4">{{ t.loginBtn }}</button>
+            <div style="font:400 13px/1.5 'Inter',sans-serif;color:#5A6684">{{ t.loginNote }}</div>
+          </sc-if>
+          <sc-if value="{{ loginSent }}" hint-placeholder-val="{{ false }}">
+            <div style="padding:20px;border-radius:8px;border:1px solid #1F2B48;background:#0D1322;display:flex;gap:14px;align-items:flex-start">
+              <div style="width:36px;height:36px;border-radius:8px;background:rgba(16,185,129,.12);display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg></div>
+              <div><div style="font:600 15px/1.35 'Inter',sans-serif">{{ t.linkSent }}</div><div style="margin-top:4px;font:400 13px/1.5 'Inter',sans-serif;color:#8A95AC">{{ loginEmail }}</div></div>
+            </div>
+            <button onClick="{{ completeLogin }}" style="height:44px;border-radius:8px;border:0;background:#1E5AFF;color:#fff;font:600 15px/1 'Inter',sans-serif;cursor:pointer">{{ t.openDash }}</button>
+          </sc-if>
+        </div>
+        <div style="background:#0D1322;border-left:1px solid #1F2B48;display:flex;flex-direction:column;justify-content:center;padding:64px;gap:20px">
+          <div style="font:600 11px/1.4 'Inter',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#00B8D4">Trust · Runtime</div>
+          <div style="font:600 28px/1.2 'Inter Tight',sans-serif;letter-spacing:-.015em;max-width:420px">{{ t.loginQuote }}</div>
+          <div style="font:500 12px/1.6 'JetBrains Mono',monospace;color:#5A6684">Supabase EU (Frankfurt) · Magic Link · Ed25519 · SHA-256 Hash-Chain</div>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- FREE AUDIT -->
+    <sc-if value="{{ isAudit }}" hint-placeholder-val="{{ false }}">
+      <div style="flex:1;display:grid;grid-template-columns:320px 1fr;min-height:0">
+        <div style="background:#0D1322;border-right:1px solid #1F2B48;padding:32px 28px;display:flex;flex-direction:column;gap:28px">
+          <button onClick="{{ goLanding }}" style="align-self:flex-start;background:none;border:0;color:#8A95AC;font:500 13px/1 'Inter',sans-serif;cursor:pointer;padding:0">← RealSync Dynamics.AI</button>
+          <div><div style="font:600 11px/1.4 'Inter',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#00B8D4">Free Audit · 0 €</div><div style="margin-top:8px;font:600 22px/1.25 'Inter Tight',sans-serif;letter-spacing:-.01em">{{ t.auditTitle }}</div></div>
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <sc-for list="{{ auditSteps }}" as="s" hint-placeholder-count="5">
+              <div style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:8px;background:{{ s.bg }}">
+                <div style="width:24px;height:24px;border-radius:9999px;display:flex;align-items:center;justify-content:center;font:600 11px/1 'JetBrains Mono',monospace;background:{{ s.dotBg }};color:{{ s.dotFg }};border:1px solid {{ s.dotBorder }}">{{ s.n }}</div>
+                <div style="font:500 14px/1.3 'Inter',sans-serif;color:{{ s.color }}">{{ s.label }}</div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="margin-top:auto;font:400 12px/1.6 'Inter',sans-serif;color:#5A6684">{{ t.auditFoot }}</div>
+        </div>
+        <div style="padding:56px 64px;display:flex;flex-direction:column;gap:28px;overflow:auto">
+          <sc-if value="{{ auditStep0 }}" hint-placeholder-val="{{ true }}">
+            <h2 style="margin:0;font:600 32px/1.15 'Inter Tight',sans-serif;letter-spacing:-.015em">{{ t.q0 }}</h2>
+            <p style="margin:-12px 0 0;font:400 15px/1.55 'Inter',sans-serif;color:#8A95AC">{{ t.q0hint }}</p>
+            <div style="display:flex;flex-direction:column;gap:16px;max-width:520px">
+              <input value="{{ auditOrg }}" onChange="{{ setAuditOrg }}" placeholder="Unternehmen GmbH" style="height:48px;padding:0 16px;border-radius:4px;border:1px solid #2E3C5E;background:#0D1322;color:#F2F5FA;font:400 16px/1 'Inter',sans-serif;outline:none">
+              <input value="{{ auditUrl }}" onChange="{{ setAuditUrl }}" placeholder="https://unternehmen.de" style="height:48px;padding:0 16px;border-radius:4px;border:1px solid #2E3C5E;background:#0D1322;color:#F2F5FA;font:400 16px/1 'JetBrains Mono',monospace;outline:none">
+            </div>
+          </sc-if>
+          <sc-if value="{{ auditStep1 }}" hint-placeholder-val="{{ false }}">
+            <h2 style="margin:0;font:600 32px/1.15 'Inter Tight',sans-serif;letter-spacing:-.015em">{{ t.q1 }}</h2>
+            <p style="margin:-12px 0 0;font:400 15px/1.55 'Inter',sans-serif;color:#8A95AC">{{ t.q1hint }}</p>
+            <div style="display:flex;flex-wrap:wrap;gap:10px;max-width:640px">
+              <sc-for list="{{ fwChips }}" as="c" hint-placeholder-count="4">
+                <button onClick="{{ c.toggle }}" style="height:44px;padding:0 18px;border-radius:8px;border:1px solid {{ c.border }};background:{{ c.bg }};color:{{ c.color }};font:500 14px/1 'Inter',sans-serif;cursor:pointer">{{ c.label }}</button>
+              </sc-for>
+            </div>
+          </sc-if>
+          <sc-if value="{{ auditStep2 }}" hint-placeholder-val="{{ false }}">
+            <h2 style="margin:0;font:600 32px/1.15 'Inter Tight',sans-serif;letter-spacing:-.015em">{{ t.q2 }}</h2>
+            <p style="margin:-12px 0 0;font:400 15px/1.55 'Inter',sans-serif;color:#8A95AC">{{ t.q2hint }}</p>
+            <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;max-width:680px">
+              <sc-for list="{{ sysChips }}" as="c" hint-placeholder-count="6">
+                <button onClick="{{ c.toggle }}" style="min-height:64px;padding:12px 16px;border-radius:8px;border:1px solid {{ c.border }};background:{{ c.bg }};color:{{ c.color }};font:500 14px/1.3 'Inter',sans-serif;cursor:pointer;text-align:left;display:flex;flex-direction:column;gap:4px"><span>{{ c.label }}</span><span style="font:500 11px/1.4 'JetBrains Mono',monospace;color:#8A95AC">{{ c.cls }}</span></button>
+              </sc-for>
+            </div>
+          </sc-if>
+          <sc-if value="{{ auditStep3 }}" hint-placeholder-val="{{ false }}">
+            <h2 style="margin:0;font:600 32px/1.15 'Inter Tight',sans-serif;letter-spacing:-.015em">{{ t.q3 }}</h2>
+            <p style="margin:-12px 0 0;font:400 15px/1.55 'Inter',sans-serif;color:#8A95AC">{{ t.q3hint }}</p>
+            <div style="display:flex;flex-direction:column;gap:10px;max-width:520px">
+              <sc-for list="{{ roleChips }}" as="c" hint-placeholder-count="4">
+                <button onClick="{{ c.toggle }}" style="height:52px;padding:0 18px;border-radius:8px;border:1px solid {{ c.border }};background:{{ c.bg }};color:{{ c.color }};font:500 15px/1 'Inter',sans-serif;cursor:pointer;text-align:left">{{ c.label }}</button>
+              </sc-for>
+            </div>
+          </sc-if>
+          <sc-if value="{{ auditRunning }}" hint-placeholder-val="{{ false }}">
+            <h2 style="margin:0;font:600 32px/1.15 'Inter Tight',sans-serif;letter-spacing:-.015em">{{ t.running }}</h2>
+            <div style="max-width:620px;display:flex;flex-direction:column;gap:20px">
+              <div style="height:6px;border-radius:9999px;background:#14203A;overflow:hidden"><div style="height:100%;width:{{ auditPct }}%;background:linear-gradient(90deg,#1E5AFF,#00B8D4);transition:width 200ms cubic-bezier(.2,.8,.2,1)"></div></div>
+              <div style="display:flex;flex-direction:column;gap:8px;font:500 13px/1.6 'JetBrains Mono',monospace">
+                <sc-for list="{{ auditLog }}" as="l" hint-placeholder-count="4">
+                  <div style="display:flex;gap:12px;color:{{ l.color }}"><span style="color:#5A6684">{{ l.ts }}</span><span>{{ l.msg }}</span></div>
+                </sc-for>
+              </div>
+            </div>
+          </sc-if>
+          <sc-if value="{{ auditDone }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;gap:40px;align-items:flex-start">
+              <div style="width:180px;height:180px;flex-shrink:0;position:relative">
+                <svg width="180" height="180" viewBox="0 0 180 180"><circle cx="90" cy="90" r="78" fill="none" stroke="#14203A" stroke-width="10"></circle><circle cx="90" cy="90" r="78" fill="none" stroke="{{ auditScoreColor }}" stroke-width="10" stroke-linecap="round" stroke-dasharray="{{ auditDash }}" transform="rotate(-90 90 90)"></circle></svg>
+                <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center"><div style="font:600 48px/1 'Inter Tight',sans-serif;letter-spacing:-.03em">{{ auditScore }}</div><div style="font:600 11px/1.4 'Inter',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#8A95AC;margin-top:4px">Score</div></div>
+              </div>
+              <div style="flex:1;display:flex;flex-direction:column;gap:20px">
+                <div><div style="font:600 11px/1.4 'Inter',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#00B8D4">{{ auditOrgLabel }}</div><h2 style="margin:6px 0 0;font:600 32px/1.15 'Inter Tight',sans-serif;letter-spacing:-.015em">{{ t.resultTitle }}</h2></div>
+                <div style="display:flex;flex-direction:column;gap:8px">
+                  <sc-for list="{{ auditRisks }}" as="r" hint-placeholder-count="3">
+                    <div style="display:flex;gap:12px;padding:12px 14px;border-radius:8px;border:1px solid #1F2B48;background:#0D1322;align-items:flex-start">
+                      <div style="width:8px;height:8px;border-radius:9999px;background:{{ r.color }};margin-top:6px;flex-shrink:0"></div>
+                      <div><div style="font:600 14px/1.35 'Inter',sans-serif">{{ r.title }}</div><div style="font:400 13px/1.5 'Inter',sans-serif;color:#8A95AC;margin-top:2px">{{ r.ref }}</div></div>
+                    </div>
+                  </sc-for>
+                </div>
+                <div style="padding:16px 18px;border-radius:8px;background:rgba(30,90,255,.14);border:1px solid rgba(30,90,255,.35);display:flex;justify-content:space-between;align-items:center;gap:16px">
+                  <div><div style="font:600 11px/1.4 'Inter',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#7FA0FF">{{ t.recPlan }}</div><div style="font:600 17px/1.35 'Inter Tight',sans-serif;margin-top:4px">{{ recPlanName }} · {{ recPlanPrice }}</div><div style="font:400 13px/1.5 'Inter',sans-serif;color:#C9D1E0;margin-top:2px">{{ recPlanReason }}</div></div>
+                  <button onClick="{{ goPricing }}" style="height:40px;padding:0 16px;border-radius:8px;border:1px solid #4D79FF;background:transparent;color:#F2F5FA;font:600 13px/1 'Inter',sans-serif;cursor:pointer;white-space:nowrap">{{ t.navPricing }}</button>
+                </div>
+              </div>
+            </div>
+          </sc-if>
+          <div style="margin-top:auto;display:flex;justify-content:space-between;align-items:center;padding-top:24px;border-top:1px solid #1F2B48">
+            <button onClick="{{ auditBack }}" style="height:44px;padding:0 16px;border-radius:8px;border:1px solid #2E3C5E;background:transparent;color:#C9D1E0;font:600 14px/1 'Inter',sans-serif;cursor:pointer;visibility:{{ auditBackVis }}">{{ t.back }}</button>
+            <button onClick="{{ auditNext }}" style="height:44px;padding:0 20px;border-radius:8px;border:0;background:#1E5AFF;color:#fff;font:600 14px/1 'Inter',sans-serif;cursor:pointer;display:flex;align-items:center;gap:10px;opacity:{{ auditNextOpacity }}" style-hover="background:#1641C4">{{ auditNextLabel }}<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14 M12 5l7 7-7 7"></path></svg></button>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- PRICING -->
+    <sc-if value="{{ isPricing }}" hint-placeholder-val="{{ false }}">
+      <div style="flex:1;overflow:auto;padding:0 0 48px">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:22px 48px;border-bottom:1px solid #1F2B48">
+          <button onClick="{{ goLanding }}" style="background:none;border:0;color:#F2F5FA;font:600 18px/1 'Inter Tight',sans-serif;cursor:pointer;padding:0">RealSync Dynamics<span style="color:#00B8D4">.AI</span></button>
+          <div style="display:flex;align-items:center;gap:6px;margin-left:24px;margin-right:auto">
+            <sc-for list="{{ navChips }}" as="c" hint-placeholder-count="9">
+              <button onClick="{{ c.go }}" style="height:30px;padding:0 10px;border-radius:6px;border:1px solid {{ c.border }};background:{{ c.bg }};color:{{ c.color }};font:{{ c.weight }} 12px/1 'Inter',sans-serif;cursor:pointer;white-space:nowrap">{{ c.label }}</button>
+            </sc-for>
+            <button onClick="{{ toggleLang }}" style="height:30px;padding:0 9px;border-radius:6px;border:1px solid #1F2B48;background:transparent;color:#8A95AC;font:500 11px/1 'JetBrains Mono',monospace;cursor:pointer">{{ langToggleLabel }}</button>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;background:#0D1322;border:1px solid #1F2B48;border-radius:8px;padding:3px">
+            <button onClick="{{ setMonthly }}" style="height:30px;padding:0 14px;border-radius:6px;border:0;background:{{ monthlyBg }};color:{{ monthlyFg }};font:600 13px/1 'Inter',sans-serif;cursor:pointer">{{ t.monthly }}</button>
+            <button onClick="{{ setYearly }}" style="height:30px;padding:0 14px;border-radius:6px;border:0;background:{{ yearlyBg }};color:{{ yearlyFg }};font:600 13px/1 'Inter',sans-serif;cursor:pointer">{{ t.yearly }} · −17 %</button>
+          </div>
+        </div>
+        <div style="padding:48px 48px 0;max-width:1100px">
+          <div style="font:600 11px/1.4 'Inter',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#00B8D4">{{ t.navPricing }}</div>
+          <h2 style="margin:8px 0 0;font:600 40px/1.1 'Inter Tight',sans-serif;letter-spacing:-.02em;text-wrap:balance">{{ t.pricingTitle }}</h2>
+          <p style="margin:12px 0 0;font:400 15px/1.55 'Inter',sans-serif;color:#8A95AC;max-width:560px">{{ t.pricingSub }}</p>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;padding:32px 48px 0">
+          <sc-for list="{{ plans }}" as="p" hint-placeholder-count="5">
+            <div style="border-radius:16px;border:1px solid {{ p.border }};background:{{ p.bg }};padding:22px 20px;display:flex;flex-direction:column;gap:14px;position:relative;min-height:380px">
+              <div style="display:flex;justify-content:space-between;align-items:center"><div style="font:600 17px/1.2 'Inter Tight',sans-serif">{{ p.name }}</div><div style="font:600 10px/1 'Inter',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#7FA0FF;visibility:{{ p.popularVis }}">{{ t.popular }}</div></div>
+              <div><span style="font:600 30px/1 'Inter Tight',sans-serif;letter-spacing:-.02em">{{ p.price }}</span><span style="font:400 13px/1 'Inter',sans-serif;color:#8A95AC"> {{ p.per }}</span></div>
+              <div style="font:400 13px/1.5 'Inter',sans-serif;color:#8A95AC;min-height:40px">{{ p.who }}</div>
+              <div style="display:flex;flex-direction:column;gap:8px;flex:1">
+                <sc-for list="{{ p.features }}" as="f" hint-placeholder-count="4">
+                  <div style="display:flex;gap:8px;align-items:flex-start;font:400 13px/1.45 'Inter',sans-serif;color:#C9D1E0"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#00B8D4" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:3px"><path d="M20 6 9 17l-5-5"></path></svg><span>{{ f }}</span></div>
+                </sc-for>
+              </div>
+              <button onClick="{{ p.choose }}" style="height:40px;border-radius:8px;border:1px solid {{ p.btnBorder }};background:{{ p.btnBg }};color:{{ p.btnFg }};font:600 13px/1 'Inter',sans-serif;cursor:pointer">{{ p.ctaLabel }}</button>
+            </div>
+          </sc-for>
+        </div>
+        <div style="padding:20px 48px 0;font:400 12px/1.6 'Inter',sans-serif;color:#5A6684">{{ t.pricingFoot }}</div>
+      </div>
+    </sc-if>
+
+    <!-- APP SHELL -->
+    <sc-if value="{{ isApp }}" hint-placeholder-val="{{ false }}">
+      <div style="flex:1;display:grid;grid-template-columns:248px 1fr;min-height:0">
+        <div style="background:#0D1322;border-right:1px solid #1F2B48;display:flex;flex-direction:column;padding:16px 12px;gap:4px">
+          <button onClick="{{ goLanding }}" style="display:flex;align-items:center;gap:10px;padding:6px 8px 18px;background:none;border:0;cursor:pointer;color:#F2F5FA;text-align:left">
+            <div style="width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#1E5AFF 0%,#00B8D4 100%);display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z M9 12l2 2 4-4"></path></svg></div>
+            <div><div style="font:600 14px/1.1 'Inter Tight',sans-serif">RealSync Dynamics AI</div><div style="font:500 10px/1.4 'JetBrains Mono',monospace;color:#5A6684;margin-top:2px">{{ tenantName }}</div></div>
+          </button>
+          <sc-for list="{{ navItems }}" as="n" hint-placeholder-count="7">
+            <button onClick="{{ n.go }}" style="display:flex;align-items:center;gap:10px;height:38px;padding:0 10px;border-radius:8px;border:0;background:{{ n.bg }};color:{{ n.color }};font:500 13px/1 'Inter',sans-serif;cursor:pointer;text-align:left" style-hover="background:#14203A">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{ n.icon }}"></path></svg><span style="flex:1">{{ n.label }}</span><span style="font:600 10px/1 'JetBrains Mono',monospace;color:#5A6684">{{ n.badge }}</span>
+            </button>
+          </sc-for>
+          <div style="margin-top:auto;padding:12px;border-radius:8px;border:1px solid #1F2B48;background:#070B14;display:flex;flex-direction:column;gap:6px">
+            <div style="font:600 11px/1.4 'Inter',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#8A95AC">Plan · {{ currentPlanName }}</div>
+            <div style="font:400 12px/1.5 'Inter',sans-serif;color:#C9D1E0">{{ t.planNote }}</div>
+            <button onClick="{{ goPricing }}" style="height:32px;border-radius:8px;border:1px solid #2E3C5E;background:transparent;color:#F2F5FA;font:600 12px/1 'Inter',sans-serif;cursor:pointer">{{ t.upgrade }}</button>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;min-height:0;min-width:0">
+          <div style="height:56px;border-bottom:1px solid #1F2B48;display:flex;align-items:center;padding:0 24px;gap:16px;background:#0D1322">
+            <div style="font:600 15px/1 'Inter Tight',sans-serif">{{ screenTitle }}</div>
+            <div style="font:400 13px/1 'Inter',sans-serif;color:#5A6684">{{ screenSub }}</div>
+            <div style="margin-left:auto;display:flex;align-items:center;gap:10px">
+              <div style="display:flex;align-items:center;gap:4px">
+                <sc-for list="{{ marketingChips }}" as="c" hint-placeholder-count="3">
+                  <button onClick="{{ c.go }}" style="height:28px;padding:0 10px;border-radius:6px;border:1px solid {{ c.border }};background:{{ c.bg }};color:{{ c.color }};font:500 12px/1 'Inter',sans-serif;cursor:pointer;white-space:nowrap">{{ c.label }}</button>
+                </sc-for>
+                <button onClick="{{ toggleLang }}" style="height:28px;padding:0 9px;border-radius:6px;border:1px solid #1F2B48;background:transparent;color:#8A95AC;font:500 11px/1 'JetBrains Mono',monospace;cursor:pointer">{{ langToggleLabel }}</button>
+              </div>
+              <div style="display:flex;align-items:center;gap:6px;height:28px;padding:0 10px;border-radius:9999px;background:rgba(16,185,129,.12);color:#10B981;font:600 11px/1 'Inter',sans-serif;letter-spacing:.04em"><span style="width:6px;height:6px;border-radius:9999px;background:#10B981"></span>RUNTIME LIVE</div>
+              <div style="font:500 11px/1 'JetBrains Mono',monospace;color:#8A95AC;padding:0 10px;height:28px;display:flex;align-items:center;border:1px solid #1F2B48;border-radius:9999px">EU · Frankfurt</div>
+              <div style="width:30px;height:30px;border-radius:9999px;background:#1D2B48;display:flex;align-items:center;justify-content:center;font:600 11px/1 'Inter',sans-serif;color:#C9D1E0">DK</div>
+            </div>
+          </div>
+          <div style="flex:1;overflow:auto;padding:24px;display:flex;flex-direction:column;gap:20px;min-height:0">
+
+            <!-- DASHBOARD -->
+            <sc-if value="{{ isDashboard }}" hint-placeholder-val="{{ false }}">
+              <div style="display:grid;grid-template-columns:280px repeat(4,minmax(0,1fr));gap:12px">
+                <div style="grid-row:span 2;border-radius:8px;border:1px solid #1F2B48;background:#0D1322;padding:20px;display:flex;flex-direction:column;align-items:center;gap:14px">
+                  <div style="align-self:flex-start;font:600 11px/1.4 'Inter',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#8A95AC">{{ t.complianceScore }}</div>
+                  <div style="width:160px;height:160px;position:relative">
+                    <svg width="160" height="160" viewBox="0 0 160 160"><circle cx="80" cy="80" r="68" fill="none" stroke="#14203A" stroke-width="10"></circle><circle cx="80" cy="80" r="68" fill="none" stroke="{{ scoreColor }}" stroke-width="10" stroke-linecap="round" stroke-dasharray="{{ scoreDash }}" transform="rotate(-90 80 80)" style="transition:stroke-dasharray 600ms cubic-bezier(.2,.8,.2,1)"></circle></svg>
+                    <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center"><div style="font:600 44px/1 'Inter Tight',sans-serif;letter-spacing:-.03em">{{ score }}</div><div style="font:500 11px/1.4 'JetBrains Mono',monospace;color:#8A95AC;margin-top:4px">{{ scoreDelta }}</div></div>
+                  </div>
+                  <div style="width:100%;display:flex;flex-direction:column;gap:10px">
+                    <sc-for list="{{ frameworks }}" as="f" hint-placeholder-count="3">
+                      <div style="display:flex;flex-direction:column;gap:5px"><div style="display:flex;justify-content:space-between;font:500 12px/1 'Inter',sans-serif;color:#C9D1E0"><span>{{ f.name }}</span><span style="font-family:'JetBrains Mono',monospace">{{ f.pct }} %</span></div><div style="height:4px;border-radius:9999px;background:#14203A"><div style="height:100%;width:{{ f.pct }}%;border-radius:9999px;background:{{ f.color }}"></div></div></div>
+                    </sc-for>
+                  </div>
+                </div>
+                <sc-for list="{{ kpis }}" as="k" hint-placeholder-count="4">
+                  <button onClick="{{ k.go }}" style="border-radius:8px;border:1px solid #1F2B48;background:#0D1322;padding:16px;display:flex;flex-direction:column;gap:8px;text-align:left;cursor:pointer;color:#F2F5FA" style-hover="border-color:#2E3C5E">
+                    <div style="font:600 11px/1.4 'Inter',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#8A95AC">{{ k.label }}</div>
+                    <div style="font:600 30px/1 'Inter Tight',sans-serif;letter-spacing:-.02em;color:{{ k.color }}">{{ k.value }}</div>
+                    <div style="font:400 12px/1.4 'Inter',sans-serif;color:#8A95AC">{{ k.sub }}</div>
+                  </button>
+                </sc-for>
+                <div style="grid-column:span 2;border-radius:8px;border:1px solid #1F2B48;background:#0D1322;padding:16px;display:flex;flex-direction:column;gap:12px">
+                  <div style="font:600 11px/1.4 'Inter',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#8A95AC">{{ t.enforceClasses }}</div>
+                  <div style="display:flex;height:10px;border-radius:9999px;overflow:hidden;gap:2px">
+                    <sc-for list="{{ classDist }}" as="c" hint-placeholder-count="4"><div style="width:{{ c.pct }}%;background:{{ c.color }}"></div></sc-for>
+                  </div>
+                  <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px">
+                    <sc-for list="{{ classDist }}" as="c" hint-placeholder-count="4">
+                      <div style="display:flex;gap:8px;align-items:flex-start"><span style="width:8px;height:8px;border-radius:2px;background:{{ c.color }};margin-top:4px;flex-shrink:0"></span><div><div style="font:600 13px/1.2 'Inter',sans-serif">{{ c.k }} · {{ c.n }}</div><div style="font:400 11px/1.4 'Inter',sans-serif;color:#8A95AC">{{ c.title }}</div></div></div>
+                    </sc-for>
+                  </div>
+                </div>
+                <div style="grid-column:span 2;border-radius:8px;border:1px solid #1F2B48;background:#0D1322;padding:16px;display:flex;flex-direction:column;gap:10px">
+                  <div style="display:flex;justify-content:space-between;align-items:center"><div style="font:600 11px/1.4 'Inter',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#8A95AC">{{ t.lastEvidence }}</div><button onClick="{{ goEvidence }}" style="background:none;border:0;color:#4FD4E8;font:500 12px/1 'Inter',sans-serif;cursor:pointer;padding:0">{{ t.all }} →</button></div>
+                  <sc-for list="{{ recentEvidence }}" as="e" hint-placeholder-count="3">
+                    <div style="display:flex;gap:10px;align-items:center;font:400 12px/1.4 'Inter',sans-serif;color:#C9D1E0"><span style="font:500 11px/1 'JetBrains Mono',monospace;color:#00B8D4">#{{ e.seq }}</span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ e.event }}</span><span style="font:500 11px/1 'JetBrains Mono',monospace;color:#5A6684">{{ e.short }}</span></div>
+                  </sc-for>
+                </div>
+              </div>
+              <div style="border-radius:8px;border:1px solid #1F2B48;background:#0D1322;padding:16px;display:flex;flex-direction:column;gap:12px">
+                <div style="display:flex;justify-content:space-between;align-items:center"><div style="font:600 11px/1.4 'Inter',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#8A95AC">{{ t.attention }}</div><button onClick="{{ goDiscover }}" style="background:none;border:0;color:#4FD4E8;font:500 12px/1 'Inter',sans-serif;cursor:pointer;padding:0">{{ t.inventory }} →</button></div>
+                <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px">
+                  <sc-for list="{{ attention }}" as="a" hint-placeholder-count="3">
+                    <button onClick="{{ a.go }}" style="border-radius:8px;border:1px solid #1F2B48;background:#070B14;padding:14px;display:flex;flex-direction:column;gap:6px;text-align:left;cursor:pointer;color:#F2F5FA" style-hover="border-color:#2E3C5E">
+                      <div style="display:flex;justify-content:space-between;align-items:center"><span style="font:600 14px/1.2 'Inter',sans-serif">{{ a.name }}</span><span style="height:20px;padding:0 8px;border-radius:9999px;font:600 10px/20px 'Inter',sans-serif;letter-spacing:.06em;text-transform:uppercase;background:{{ a.tagBg }};color:{{ a.tagFg }}">{{ a.tag }}</span></div>
+                      <div style="font:400 12px/1.5 'Inter',sans-serif;color:#8A95AC">{{ a.why }}</div>
+                    </button>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-if>
+
+            <!-- DISCOVER -->
+            <sc-if value="{{ isDiscover }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                <sc-for list="{{ classFilters }}" as="f" hint-placeholder-count="5">
+                  <button onClick="{{ f.set }}" style="height:32px;padding:0 12px;border-radius:9999px;border:1px solid {{ f.border }};background:{{ f.bg }};color:{{ f.color }};font:500 12px/1 'Inter',sans-serif;cursor:pointer">{{ f.label }}</button>
+                </sc-for>
+                <div style="margin-left:auto;font:500 12px/1 'JetBrains Mono',monospace;color:#5A6684">{{ discoverCount }}</div>
+              </div>
+              <div style="border-radius:8px;border:1px solid #1F2B48;background:#0D1322;overflow:hidden">
+                <div style="display:grid;grid-template-columns:2fr 1.2fr 1fr 1.3fr 1fr 1fr;padding:10px 16px;border-bottom:1px solid #1F2B48;font:600 11px/1.4 'Inter',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#8A95AC"><span>System</span><span>{{ t.type }}</span><span>{{ t.enfClass }}</span><span>{{ t.riskTier }}</span><span>Art. 50</span><span>Status</span></div>
+                <sc-for list="{{ systemRows }}" as="s" hint-placeholder-count="8">
+                  <button onClick="{{ s.select }}" style="width:100%;display:grid;grid-template-columns:2fr 1.2fr 1fr 1.3fr 1fr 1fr;align-items:center;padding:12px 16px;border:0;border-bottom:1px solid #1F2B48;background:{{ s.rowBg }};color:#F2F5FA;text-align:left;cursor:pointer;font:400 13px/1.4 'Inter',sans-serif" style-hover="background:#14203A">
+                    <span style="display:flex;flex-direction:column;gap:2px"><span style="font-weight:600">{{ s.name }}</span><span style="font:400 11px/1.4 'Inter',sans-serif;color:#8A95AC">{{ s.owner }}</span></span>
+                    <span style="color:#C9D1E0">{{ s.typeLabel }}</span>
+                    <span><span style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:22px;border-radius:4px;background:{{ s.clsBg }};color:{{ s.clsFg }};font:600 12px/1 'JetBrains Mono',monospace">{{ s.cls }}</span></span>
+                    <span><span style="display:inline-flex;height:22px;padding:0 8px;border-radius:9999px;align-items:center;font:600 10px/1 'Inter',sans-serif;letter-spacing:.06em;text-transform:uppercase;background:{{ s.tierBg }};color:{{ s.tierFg }}">{{ s.tierLabel }}</span></span>
+                    <span style="color:{{ s.art50Color }};font-weight:500">{{ s.art50 }}</span>
+                    <span style="color:#C9D1E0">{{ s.status }}</span>
+                  </button>
+                </sc-for>
+              </div>
+            </sc-if>
+
+            <!-- CLASSIFY -->
+            <sc-if value="{{ isClassify }}" hint-placeholder-val="{{ false }}">
+              <div style="display:grid;grid-template-columns:300px 1fr;gap:16px;min-height:0">
+                <div style="display:flex;flex-direction:column;gap:4px">
+                  <sc-for list="{{ systemRows }}" as="s" hint-placeholder-count="8">
+                    <button onClick="{{ s.select }}" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;border:1px solid {{ s.listBorder }};background:{{ s.listBg }};color:#F2F5FA;text-align:left;cursor:pointer" style-hover="border-color:#2E3C5E">
+                      <span style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:22px;border-radius:4px;background:{{ s.clsBg }};color:{{ s.clsFg }};font:600 12px/1 'JetBrains Mono',monospace;flex-shrink:0">{{ s.cls }}</span>
+                      <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px"><span style="font:600 13px/1.2 'Inter',sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ s.name }}</span><span style="font:400 11px/1.3 'Inter',sans-serif;color:{{ s.tierFg }}">{{ s.tierLabel }}</span></span>
+                    </button>
+                  </sc-for>
+                </div>
+                <div style="border-radius:8px;border:1px solid #1F2B48;background:#0D1322;padding:24px;display:flex;flex-direction:column;gap:24px">
+                  <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px">
+                    <div><div style="font:600 11px/1.4 'Inter',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#00B8D4">{{ sel.typeLabel }} · {{ t.enfClass }} {{ sel.cls }}</div><h2 style="margin:6px 0 0;font:600 26px/1.15 'Inter Tight',sans-serif;letter-spacing:-.015em">{{ sel.name }}</h2><div style="margin-top:6px;font:400 13px/1.5 'Inter',sans-serif;color:#8A95AC;max-width:560px">{{ sel.reason }}</div></div>
+                    <button onClick="{{ goEnforce }}" style="height:36px;padding:0 14px;border-radius:8px;border:1px solid #2E3C5E;background:transparent;color:#F2F5FA;font:600 12px/1 'Inter',sans-serif;cursor:pointer;white-space:nowrap">{{ t.toEnforce }} →</button>
+                  </div>
+                  <div style="display:flex;flex-direction:column;gap:10px">
+                    <div style="font:600 11px/1.4 'Inter',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#8A95AC">EU AI Act · {{ t.riskTier }}</div>
+                    <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px">
+                      <sc-for list="{{ tierOptions }}" as="o" hint-placeholder-count="4">
+                        <button onClick="{{ o.set }}" style="min-height:84px;padding:12px;border-radius:8px;border:1px solid {{ o.border }};background:{{ o.bg }};color:#F2F5FA;text-align:left;cursor:pointer;display:flex;flex-direction:column;gap:6px" style-hover="border-color:#2E3C5E">
+                          <span style="display:flex;align-items:center;gap:8px"><span style="width:8px;height:8px;border-radius:9999px;background:{{ o.color }}"></span><span style="font:600 13px/1.2 'Inter',sans-serif">{{ o.label }}</span></span>
+                          <span style="font:400 11px/1.4 'Inter',sans-serif;color:#8A95AC">{{ o.ref }}</span>
+                        </button>
+                      </sc-for>
+                    </div>
+                  </div>
+                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                    <div style="border-radius:8px;border:1px solid #1F2B48;background:#070B14;padding:14px;display:flex;flex-direction:column;gap:8px">
+                      <div style="font:600 11px/1.4 'Inter',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#8A95AC">Annex III</div>
+                      <div style="font:500 14px/1.4 'Inter',sans-serif">{{ sel.annex }}</div>
+                      <div style="font:400 12px/1.5 'Inter',sans-serif;color:#8A95AC">{{ sel.annexNote }}</div>
+                    </div>
+                    <button onClick="{{ toggleArt50 }}" style="border-radius:8px;border:1px solid {{ art50Border }};background:{{ art50Bg }};padding:14px;display:flex;flex-direction:column;gap:8px;text-align:left;cursor:pointer;color:#F2F5FA">
+                      <div style="display:flex;justify-content:space-between;align-items:center"><span style="font:600 11px/1.4 'Inter',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#8A95AC">Art. 50 · {{ t.transparency }}</span><span style="width:36px;height:20px;border-radius:9999px;background:{{ art50Track }};position:relative;transition:background 200ms"><span style="position:absolute;top:2px;left:{{ art50Knob }}px;width:16px;height:16px;border-radius:9999px;background:#fff;transition:left 200ms cubic-bezier(.2,.8,.2,1)"></span></span></div>
+                      <div style="font:500 14px/1.4 'Inter',sans-serif">{{ art50Label }}</div>
+                      <div style="font:400 12px/1.5 'Inter',sans-serif;color:#8A95AC">{{ t.art50Note }}</div>
+                    </button>
+                  </div>
+                  <div style="display:flex;flex-direction:column;gap:8px">
+                    <div style="font:600 11px/1.4 'Inter',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#8A95AC">{{ t.obligations }}</div>
+                    <sc-for list="{{ obligations }}" as="ob" hint-placeholder-count="4">
+                      <div style="display:flex;gap:10px;align-items:flex-start;font:400 13px/1.5 'Inter',sans-serif;color:#C9D1E0"><span style="font:500 11px/1.6 'JetBrains Mono',monospace;color:#00B8D4;white-space:nowrap">{{ ob.art }}</span><span>{{ ob.text }}</span></div>
+                    </sc-for>
+                  </div>
+                </div>
+              </div>
+            </sc-if>
+
+            <!-- ENFORCE -->
+            <sc-if value="{{ isEnforce }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;gap:12px;align-items:stretch">
+                <sc-for list="{{ enforceStats }}" as="k" hint-placeholder-count="4">
+                  <div style="flex:1;border-radius:8px;border:1px solid #1F2B48;background:#0D1322;padding:14px 16px;display:flex;flex-direction:column;gap:6px"><div style="font:600 11px/1.4 'Inter',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#8A95AC">{{ k.label }}</div><div style="font:600 26px/1 'Inter Tight',sans-serif;letter-spacing:-.02em;color:{{ k.color }}">{{ k.value }}</div></div>
+                </sc-for>
+              </div>
+              <sc-if value="{{ hasToast }}" hint-placeholder-val="{{ false }}">
+                <div style="border-radius:8px;border:1px solid rgba(245,165,36,.4);background:rgba(245,165,36,.12);padding:12px 16px;display:flex;gap:12px;align-items:flex-start;animation:rsIn 200ms cubic-bezier(.2,.8,.2,1)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F5A524" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:1px"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z M12 9v4 M12 17h.01"></path></svg><div style="font:400 13px/1.5 'Inter',sans-serif;color:#F2F5FA">{{ toast }}</div><button onClick="{{ closeToast }}" style="margin-left:auto;background:none;border:0;color:#8A95AC;cursor:pointer;font:500 12px/1 'Inter',sans-serif">✕</button></div>
+              </sc-if>
+              <div style="display:flex;flex-direction:column;gap:8px">
+                <sc-for list="{{ policies }}" as="p" hint-placeholder-count="7">
+                  <div style="border-radius:8px;border:1px solid #1F2B48;background:#0D1322;padding:14px 16px;display:grid;grid-template-columns:1.4fr 1fr auto;gap:16px;align-items:center">
+                    <div style="display:flex;flex-direction:column;gap:4px;min-width:0"><div style="font:600 14px/1.3 'Inter',sans-serif">{{ p.title }}</div><div style="font:400 12px/1.5 'Inter',sans-serif;color:#8A95AC">{{ p.rule }}</div></div>
+                    <div style="display:flex;align-items:center;gap:8px;min-width:0"><span style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:22px;border-radius:4px;background:{{ p.clsBg }};color:{{ p.clsFg }};font:600 12px/1 'JetBrains Mono',monospace;flex-shrink:0">{{ p.cls }}</span><span style="font:400 12px/1.4 'Inter',sans-serif;color:#C9D1E0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ p.system }}</span></div>
+                    <div style="display:flex;gap:4px;background:#070B14;border:1px solid #1F2B48;border-radius:8px;padding:3px">
+                      <sc-for list="{{ p.options }}" as="o" hint-placeholder-count="6">
+                        <button onClick="{{ o.set }}" title="{{ o.hint }}" style="height:28px;padding:0 10px;border-radius:6px;border:0;background:{{ o.bg }};color:{{ o.color }};font:600 11px/1 'JetBrains Mono',monospace;cursor:pointer;opacity:{{ o.opacity }};text-decoration:{{ o.deco }}">{{ o.label }}</button>
+                      </sc-for>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+              <div style="font:400 12px/1.6 'Inter',sans-serif;color:#5A6684">{{ t.enforceFoot }}</div>
+            </sc-if>
+
+            <!-- EVIDENCE -->
+            <sc-if value="{{ isEvidence }}" hint-placeholder-val="{{ false }}">
+              <div style="display:grid;grid-template-columns:1fr 300px;gap:16px;min-height:0">
+                <div style="border-radius:8px;border:1px solid #1F2B48;background:#0D1322;overflow:hidden">
+                  <div style="display:grid;grid-template-columns:60px 150px 1fr 200px 90px;padding:10px 16px;border-bottom:1px solid #1F2B48;font:600 11px/1.4 'Inter',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#8A95AC"><span>Seq</span><span>{{ t.time }}</span><span>Event</span><span>SHA-256</span><span>Prev</span></div>
+                  <sc-for list="{{ evidenceRows }}" as="e" hint-placeholder-count="8">
+                    <div style="display:grid;grid-template-columns:60px 150px 1fr 200px 90px;align-items:center;padding:11px 16px;border-bottom:1px solid #1F2B48;font:400 13px/1.4 'Inter',sans-serif;background:{{ e.bg }};animation:rsIn 200ms cubic-bezier(.2,.8,.2,1)">
+                      <span style="font:600 12px/1 'JetBrains Mono',monospace;color:#00B8D4">#{{ e.seq }}</span>
+                      <span style="font:500 11px/1 'JetBrains Mono',monospace;color:#8A95AC">{{ e.ts }}</span>
+                      <span style="display:flex;flex-direction:column;gap:2px;min-width:0"><span style="font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ e.event }}</span><span style="font:400 11px/1.3 'Inter',sans-serif;color:#5A6684">{{ e.actor }}</span></span>
+                      <span style="font:500 11px/1 'JetBrains Mono',monospace;color:#C9D1E0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ e.hash }}</span>
+                      <span style="font:500 11px/1 'JetBrains Mono',monospace;color:#5A6684">{{ e.prev }}</span>
+                    </div>
+                  </sc-for>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:12px">
+                  <div style="border-radius:8px;border:1px solid #1F2B48;background:#0D1322;padding:20px;display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center">
+                    <div style="width:88px;height:88px;position:relative;display:flex;align-items:center;justify-content:center">
+                      <sc-if value="{{ verifyRunning }}" hint-placeholder-val="{{ false }}"><svg width="88" height="88" viewBox="0 0 88 88" style="position:absolute;inset:0"><circle cx="44" cy="44" r="38" fill="none" stroke="#14203A" stroke-width="4"></circle><circle cx="44" cy="44" r="38" fill="none" stroke="#00B8D4" stroke-width="4" stroke-linecap="round" stroke-dasharray="150" stroke-dashoffset="150" transform="rotate(-90 44 44)" style="animation:rsSeal 600ms ease-out forwards"></circle></svg></sc-if>
+                      <sc-if value="{{ verifyOk }}" hint-placeholder-val="{{ false }}"><svg width="88" height="88" viewBox="0 0 88 88" style="position:absolute;inset:0"><circle cx="44" cy="44" r="38" fill="none" stroke="#10B981" stroke-width="4"></circle></svg></sc-if>
+                      <sc-if value="{{ verifyIdle }}" hint-placeholder-val="{{ true }}"><svg width="88" height="88" viewBox="0 0 88 88" style="position:absolute;inset:0"><circle cx="44" cy="44" r="38" fill="none" stroke="#1D2B48" stroke-width="4" stroke-dasharray="4 6"></circle></svg></sc-if>
+                      <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="{{ verifyIconColor }}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z M9 12l2 2 4-4"></path></svg>
+                    </div>
+                    <div><div style="font:600 15px/1.3 'Inter Tight',sans-serif">{{ verifyTitle }}</div><div style="margin-top:4px;font:400 12px/1.5 'Inter',sans-serif;color:#8A95AC">{{ verifySub }}</div></div>
+                    <button onClick="{{ verifyChain }}" style="width:100%;height:40px;border-radius:8px;border:0;background:#1E5AFF;color:#fff;font:600 13px/1 'Inter',sans-serif;cursor:pointer" style-hover="background:#1641C4">{{ t.verifyBtn }}</button>
+                  </div>
+                  <div style="border-radius:8px;border:1px solid #1F2B48;background:#0D1322;padding:16px;display:flex;flex-direction:column;gap:10px">
+                    <div style="font:600 11px/1.4 'Inter',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#8A95AC">Chain Head</div>
+                    <div style="font:500 11px/1.6 'JetBrains Mono',monospace;color:#C9D1E0;word-break:break-all">{{ chainHead }}</div>
+                    <div style="display:flex;flex-direction:column;gap:6px;font:400 12px/1.4 'Inter',sans-serif;color:#8A95AC">
+                      <div style="display:flex;justify-content:space-between"><span>{{ t.entries }}</span><span style="font-family:'JetBrains Mono',monospace;color:#F2F5FA">{{ evidenceCount }}</span></div>
+                      <div style="display:flex;justify-content:space-between"><span>Signatur</span><span style="font-family:'JetBrains Mono',monospace;color:#F2F5FA">Ed25519</span></div>
+                      <div style="display:flex;justify-content:space-between"><span>Storage</span><span style="font-family:'JetBrains Mono',monospace;color:#F2F5FA">EU · append-only</span></div>
+                    </div>
+                    <button onClick="{{ goReports }}" style="height:36px;border-radius:8px;border:1px solid #2E3C5E;background:transparent;color:#F2F5FA;font:600 12px/1 'Inter',sans-serif;cursor:pointer">{{ t.exportBundle }}</button>
+                  </div>
+                </div>
+              </div>
+            </sc-if>
+
+            <!-- REPORTS -->
+            <sc-if value="{{ isReports }}" hint-placeholder-val="{{ false }}">
+              <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px">
+                <sc-for list="{{ reports }}" as="r" hint-placeholder-count="4">
+                  <div style="border-radius:8px;border:1px solid #1F2B48;background:#0D1322;padding:20px;display:flex;flex-direction:column;gap:14px">
+                    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px"><div><div style="font:600 11px/1.4 'Inter',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:{{ r.accent }}">{{ r.fw }}</div><div style="margin-top:6px;font:600 17px/1.3 'Inter Tight',sans-serif">{{ r.title }}</div></div><span style="height:22px;padding:0 8px;border-radius:9999px;display:inline-flex;align-items:center;font:600 10px/1 'Inter',sans-serif;letter-spacing:.06em;text-transform:uppercase;background:{{ r.stBg }};color:{{ r.stFg }};white-space:nowrap">{{ r.status }}</span></div>
+                    <div style="font:400 13px/1.5 'Inter',sans-serif;color:#8A95AC">{{ r.desc }}</div>
+                    <div style="height:4px;border-radius:9999px;background:#14203A;overflow:hidden"><div style="height:100%;width:{{ r.pct }}%;background:{{ r.accent }};transition:width 200ms"></div></div>
+                    <div style="display:flex;gap:8px;align-items:center;margin-top:auto">
+                      <button onClick="{{ r.gen }}" style="height:36px;padding:0 14px;border-radius:8px;border:0;background:{{ r.btnBg }};color:{{ r.btnFg }};font:600 12px/1 'Inter',sans-serif;cursor:pointer">{{ r.btn }}</button>
+                      <sc-if value="{{ r.ready }}" hint-placeholder-val="{{ false }}">
+                        <button style="height:36px;padding:0 12px;border-radius:8px;border:1px solid #2E3C5E;background:transparent;color:#F2F5FA;font:600 12px/1 'Inter',sans-serif;cursor:pointer">PDF</button>
+                        <button style="height:36px;padding:0 12px;border-radius:8px;border:1px solid #2E3C5E;background:transparent;color:#F2F5FA;font:600 12px/1 'Inter',sans-serif;cursor:pointer">JSON + Sig</button>
+                        <span style="margin-left:auto;font:500 11px/1 'JetBrains Mono',monospace;color:#5A6684">{{ r.meta }}</span>
+                      </sc-if>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+
+          </div>
+        </div>
+      </div>
+    </sc-if>
+  </div>
+  </div>
+
+  <!-- ============================ MOBILE ============================ -->
+  <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" dark="{{ true }}" width="{{ mobW }}" height="{{ mobH }}" style="flex:none;width:390px;height:844px" hint-size="390px,844px">
+  <div data-screen-label="Mobile" style="height:100%;background:#070B14;color:#F2F5FA;font-family:'Inter',-apple-system,sans-serif;display:flex;flex-direction:column;box-sizing:border-box;overflow:hidden;position:relative">
+    <sc-if value="{{ menuOpen }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;inset:0;z-index:20;background:rgba(2,5,11,.96);padding:62px 20px 40px;display:flex;flex-direction:column;gap:8px;animation:rsIn 200ms cubic-bezier(.2,.8,.2,1)">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><div style="font:600 16px/1 'Inter Tight',sans-serif">RealSync Dynamics<span style="color:#00B8D4">.AI</span></div><button onClick="{{ toggleMenu }}" style="height:40px;width:40px;border-radius:8px;border:1px solid #2E3C5E;background:transparent;color:#F2F5FA;cursor:pointer;font:500 16px/1 'Inter',sans-serif">✕</button></div>
+        <sc-for list="{{ screenChips }}" as="c" hint-placeholder-count="10">
+          <button onClick="{{ c.go }}" style="height:48px;padding:0 14px;border-radius:8px;border:1px solid {{ c.border }};background:{{ c.bg }};color:{{ c.color }};font:{{ c.weight }} 15px/1 'Inter',sans-serif;cursor:pointer;text-align:left">{{ c.label }}</button>
+        </sc-for>
+        <button onClick="{{ toggleLang }}" style="margin-top:auto;height:44px;border-radius:8px;border:1px solid #1F2B48;background:transparent;color:#8A95AC;font:500 13px/1 'JetBrains Mono',monospace;cursor:pointer">{{ langToggleLabel }}</button>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isLanding }}" hint-placeholder-val="{{ true }}">
+      <div style="flex:1;position:relative;overflow:hidden;background:#02050B;perspective:900px">
+        <div style="position:absolute;top:-4%;left:-20%;width:150%;height:70%;background:url('assets/europe-map-v2.png') 45% 20% / cover no-repeat;transform:rotateX(18deg) scale(1.05);transform-origin:50% 0%;filter:saturate(1.15) contrast(1.08)"></div>
+        <div style="position:absolute;inset:0;background:radial-gradient(ellipse 80% 50% at 50% 25%,rgba(30,90,255,.22) 0%,rgba(30,90,255,0) 65%)"></div>
+        <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(2,5,11,.55) 0%,rgba(2,5,11,.1) 18%,rgba(2,5,11,.85) 46%,#02050B 62%)"></div>
+        <div style="position:relative;display:flex;flex-direction:column;height:100%;padding:62px 22px 32px;box-sizing:border-box">
+          <div style="display:flex;justify-content:space-between;align-items:center"><div style="font:600 16px/1 'Inter Tight',sans-serif">RealSync Dynamics<span style="color:#00B8D4">.AI</span></div><button onClick="{{ toggleMenu }}" style="height:40px;width:40px;border-radius:8px;border:1px solid #2E3C5E;background:rgba(13,19,34,.7);color:#F2F5FA;cursor:pointer;display:flex;align-items:center;justify-content:center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16 M4 12h16 M4 17h16"></path></svg></button></div>
+          <div style="margin-top:auto;display:flex;flex-direction:column;gap:18px">
+            <div style="display:inline-flex;align-self:flex-start;align-items:center;gap:8px;height:26px;padding:0 10px;border-radius:4px;border:1px solid rgba(0,184,212,.35);background:rgba(0,184,212,.08);font:600 10px/1 'Inter',sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#4FD4E8;white-space:nowrap"><span style="width:6px;height:6px;border-radius:9999px;background:#00B8D4;box-shadow:0 0 8px #00B8D4"></span>EU AI Act · DSGVO</div>
+            <h1 style="margin:0;font:400 44px/1.02 'Newsreader',Georgia,serif;letter-spacing:-.02em;color:#EEF1F6;text-wrap:balance">{{ t.heroA }} {{ t.heroB }} <span style="color:#00B8D4;white-space:nowrap">{{ t.heroC }}</span></h1>
+            <div style="font:600 11px/1 'JetBrains Mono',monospace;letter-spacing:.16em;color:#4FD4E8">DISCOVER → CLASSIFY → ENFORCE → PROVE</div>
+            <button onClick="{{ goAudit }}" style="height:52px;border-radius:8px;border:1px solid rgba(255,255,255,.14);background:linear-gradient(180deg,#2B66FF,#1E5AFF);color:#fff;font:600 15px/1 'Inter',sans-serif;cursor:pointer;white-space:nowrap;box-shadow:0 1px 0 rgba(255,255,255,.12) inset,0 10px 28px rgba(30,90,255,.32)">{{ t.cta }}</button>
+            <button onClick="{{ goDashboard }}" style="height:52px;border-radius:8px;border:1px solid #2E3C5E;background:rgba(13,19,34,.7);color:#F2F5FA;font:600 15px/1 'Inter',sans-serif;cursor:pointer">{{ t.cta2 }}</button>
+            <div style="display:flex;gap:16px;font:600 10px/1.4 'Inter',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#8A95AC;flex-wrap:wrap"><span>DSGVO</span><span>EU AI Act</span><span>ISO 42001</span><span>EU-Hosting</span></div>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isLogin }}" hint-placeholder-val="{{ false }}">
+      <div style="flex:1;padding:70px 22px 40px;display:flex;flex-direction:column;gap:22px;box-sizing:border-box">
+        <button onClick="{{ goLanding }}" style="align-self:flex-start;background:none;border:0;color:#8A95AC;font:500 14px/1 'Inter',sans-serif;cursor:pointer;padding:0;height:44px">← {{ t.back }}</button>
+        <div><h2 style="margin:0;font:600 28px/1.15 'Inter Tight',sans-serif;letter-spacing:-.015em">{{ t.loginTitle }}</h2><p style="margin:8px 0 0;font:400 14px/1.55 'Inter',sans-serif;color:#8A95AC">{{ t.loginSub }}</p></div>
+        <sc-if value="{{ loginIdle }}" hint-placeholder-val="{{ true }}">
+          <input value="{{ loginEmail }}" onChange="{{ setLoginEmail }}" placeholder="name@unternehmen.de" style="height:48px;padding:0 14px;border-radius:4px;border:1px solid #2E3C5E;background:#0D1322;color:#F2F5FA;font:400 16px/1 'Inter',sans-serif;outline:none">
+          <button onClick="{{ sendLink }}" style="height:48px;border-radius:8px;border:0;background:#1E5AFF;color:#fff;font:600 15px/1 'Inter',sans-serif;cursor:pointer">{{ t.loginBtn }}</button>
+          <div style="font:400 12px/1.5 'Inter',sans-serif;color:#5A6684">{{ t.loginNote }}</div>
+        </sc-if>
+        <sc-if value="{{ loginSent }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:16px;border-radius:8px;border:1px solid #1F2B48;background:#0D1322;display:flex;gap:12px;align-items:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg><div><div style="font:600 14px/1.35 'Inter',sans-serif">{{ t.linkSent }}</div><div style="font:400 12px/1.5 'Inter',sans-serif;color:#8A95AC">{{ loginEmail }}</div></div></div>
+          <button onClick="{{ completeLogin }}" style="height:48px;border-radius:8px;border:0;background:#1E5AFF;color:#fff;font:600 15px/1 'Inter',sans-serif;cursor:pointer">{{ t.openDash }}</button>
+        </sc-if>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isAudit }}" hint-placeholder-val="{{ false }}">
+      <div style="flex:1;display:flex;flex-direction:column;min-height:0">
+        <div style="padding:62px 22px 12px;display:flex;flex-direction:column;gap:12px">
+          <div style="display:flex;justify-content:space-between;align-items:center"><button onClick="{{ goLanding }}" style="background:none;border:0;color:#8A95AC;font:500 14px/1 'Inter',sans-serif;cursor:pointer;padding:0;height:44px">← {{ t.back }}</button><span style="font:600 11px/1 'JetBrains Mono',monospace;color:#00B8D4">{{ auditStepLabel }}</span></div>
+          <div style="display:flex;gap:4px"><sc-for list="{{ auditSteps }}" as="s" hint-placeholder-count="5"><div style="flex:1;height:3px;border-radius:9999px;background:{{ s.dotBorder }}"></div></sc-for></div>
+        </div>
+        <div style="flex:1;overflow:auto;padding:8px 22px 16px;display:flex;flex-direction:column;gap:16px">
+          <sc-if value="{{ auditStep0 }}" hint-placeholder-val="{{ true }}">
+            <h2 style="margin:0;font:600 26px/1.15 'Inter Tight',sans-serif;letter-spacing:-.015em">{{ t.q0 }}</h2>
+            <p style="margin:-6px 0 0;font:400 14px/1.5 'Inter',sans-serif;color:#8A95AC">{{ t.q0hint }}</p>
+            <input value="{{ auditOrg }}" onChange="{{ setAuditOrg }}" placeholder="Unternehmen GmbH" style="height:48px;padding:0 14px;border-radius:4px;border:1px solid #2E3C5E;background:#0D1322;color:#F2F5FA;font:400 16px/1 'Inter',sans-serif;outline:none">
+            <input value="{{ auditUrl }}" onChange="{{ setAuditUrl }}" placeholder="https://unternehmen.de" style="height:48px;padding:0 14px;border-radius:4px;border:1px solid #2E3C5E;background:#0D1322;color:#F2F5FA;font:400 15px/1 'JetBrains Mono',monospace;outline:none">
+          </sc-if>
+          <sc-if value="{{ auditStep1 }}" hint-placeholder-val="{{ false }}">
+            <h2 style="margin:0;font:600 26px/1.15 'Inter Tight',sans-serif;letter-spacing:-.015em">{{ t.q1 }}</h2>
+            <div style="display:flex;flex-wrap:wrap;gap:8px"><sc-for list="{{ fwChips }}" as="c" hint-placeholder-count="4"><button onClick="{{ c.toggle }}" style="height:44px;padding:0 16px;border-radius:8px;border:1px solid {{ c.border }};background:{{ c.bg }};color:{{ c.color }};font:500 14px/1 'Inter',sans-serif;cursor:pointer">{{ c.label }}</button></sc-for></div>
+          </sc-if>
+          <sc-if value="{{ auditStep2 }}" hint-placeholder-val="{{ false }}">
+            <h2 style="margin:0;font:600 26px/1.15 'Inter Tight',sans-serif;letter-spacing:-.015em">{{ t.q2 }}</h2>
+            <div style="display:flex;flex-direction:column;gap:8px"><sc-for list="{{ sysChips }}" as="c" hint-placeholder-count="6"><button onClick="{{ c.toggle }}" style="min-height:52px;padding:10px 14px;border-radius:8px;border:1px solid {{ c.border }};background:{{ c.bg }};color:{{ c.color }};font:500 14px/1.3 'Inter',sans-serif;cursor:pointer;text-align:left;display:flex;justify-content:space-between;align-items:center;gap:8px"><span>{{ c.label }}</span><span style="font:500 11px/1 'JetBrains Mono',monospace;color:#8A95AC">{{ c.cls }}</span></button></sc-for></div>
+          </sc-if>
+          <sc-if value="{{ auditStep3 }}" hint-placeholder-val="{{ false }}">
+            <h2 style="margin:0;font:600 26px/1.15 'Inter Tight',sans-serif;letter-spacing:-.015em">{{ t.q3 }}</h2>
+            <div style="display:flex;flex-direction:column;gap:8px"><sc-for list="{{ roleChips }}" as="c" hint-placeholder-count="4"><button onClick="{{ c.toggle }}" style="height:52px;padding:0 16px;border-radius:8px;border:1px solid {{ c.border }};background:{{ c.bg }};color:{{ c.color }};font:500 15px/1 'Inter',sans-serif;cursor:pointer;text-align:left">{{ c.label }}</button></sc-for></div>
+          </sc-if>
+          <sc-if value="{{ auditRunning }}" hint-placeholder-val="{{ false }}">
+            <h2 style="margin:0;font:600 26px/1.15 'Inter Tight',sans-serif;letter-spacing:-.015em">{{ t.running }}</h2>
+            <div style="height:6px;border-radius:9999px;background:#14203A;overflow:hidden"><div style="height:100%;width:{{ auditPct }}%;background:linear-gradient(90deg,#1E5AFF,#00B8D4);transition:width 200ms"></div></div>
+            <div style="display:flex;flex-direction:column;gap:8px;font:500 12px/1.6 'JetBrains Mono',monospace"><sc-for list="{{ auditLog }}" as="l" hint-placeholder-count="4"><div style="display:flex;gap:10px;color:{{ l.color }}"><span style="color:#5A6684">{{ l.ts }}</span><span>{{ l.msg }}</span></div></sc-for></div>
+          </sc-if>
+          <sc-if value="{{ auditDone }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;align-items:center;gap:18px">
+              <div style="width:110px;height:110px;position:relative;flex-shrink:0"><svg width="110" height="110" viewBox="0 0 180 180"><circle cx="90" cy="90" r="78" fill="none" stroke="#14203A" stroke-width="12"></circle><circle cx="90" cy="90" r="78" fill="none" stroke="{{ auditScoreColor }}" stroke-width="12" stroke-linecap="round" stroke-dasharray="{{ auditDash }}" transform="rotate(-90 90 90)"></circle></svg><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:600 32px/1 'Inter Tight',sans-serif;letter-spacing:-.03em">{{ auditScore }}</div></div>
+              <div><div style="font:600 11px/1.4 'Inter',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#00B8D4">{{ auditOrgLabel }}</div><h2 style="margin:4px 0 0;font:600 22px/1.15 'Inter Tight',sans-serif;letter-spacing:-.015em">{{ t.resultTitle }}</h2></div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:8px"><sc-for list="{{ auditRisks }}" as="r" hint-placeholder-count="3"><div style="display:flex;gap:10px;padding:12px;border-radius:8px;border:1px solid #1F2B48;background:#0D1322;align-items:flex-start"><div style="width:8px;height:8px;border-radius:9999px;background:{{ r.color }};margin-top:6px;flex-shrink:0"></div><div><div style="font:600 13px/1.35 'Inter',sans-serif">{{ r.title }}</div><div style="font:400 12px/1.5 'Inter',sans-serif;color:#8A95AC">{{ r.ref }}</div></div></div></sc-for></div>
+            <div style="padding:14px;border-radius:8px;background:rgba(30,90,255,.14);border:1px solid rgba(30,90,255,.35)"><div style="font:600 11px/1.4 'Inter',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#7FA0FF">{{ t.recPlan }}</div><div style="font:600 16px/1.35 'Inter Tight',sans-serif;margin-top:4px">{{ recPlanName }} · {{ recPlanPrice }}</div><div style="font:400 12px/1.5 'Inter',sans-serif;color:#C9D1E0;margin-top:2px">{{ recPlanReason }}</div></div>
+          </sc-if>
+        </div>
+        <div style="padding:12px 22px 44px;display:flex;gap:10px;border-top:1px solid #1F2B48">
+          <button onClick="{{ auditBack }}" style="height:48px;padding:0 16px;border-radius:8px;border:1px solid #2E3C5E;background:transparent;color:#C9D1E0;font:600 14px/1 'Inter',sans-serif;cursor:pointer;visibility:{{ auditBackVis }}">{{ t.back }}</button>
+          <button onClick="{{ auditNext }}" style="flex:1;height:48px;border-radius:8px;border:0;background:#1E5AFF;color:#fff;font:600 15px/1 'Inter',sans-serif;cursor:pointer;opacity:{{ auditNextOpacity }}">{{ auditNextLabel }}</button>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isPricing }}" hint-placeholder-val="{{ false }}">
+      <div style="flex:1;display:flex;flex-direction:column;min-height:0">
+        <div style="padding:62px 22px 12px;display:flex;flex-direction:column;gap:14px">
+          <div style="display:flex;justify-content:space-between;align-items:center"><button onClick="{{ goLanding }}" style="background:none;border:0;color:#8A95AC;font:500 14px/1 'Inter',sans-serif;cursor:pointer;padding:0;height:44px">← {{ t.back }}</button>
+            <div style="display:flex;gap:4px;background:#0D1322;border:1px solid #1F2B48;border-radius:8px;padding:3px"><button onClick="{{ setMonthly }}" style="height:32px;padding:0 12px;border-radius:6px;border:0;background:{{ monthlyBg }};color:{{ monthlyFg }};font:600 12px/1 'Inter',sans-serif;cursor:pointer">{{ t.monthly }}</button><button onClick="{{ setYearly }}" style="height:32px;padding:0 12px;border-radius:6px;border:0;background:{{ yearlyBg }};color:{{ yearlyFg }};font:600 12px/1 'Inter',sans-serif;cursor:pointer">{{ t.yearly }}</button></div></div>
+          <h2 style="margin:0;font:600 26px/1.15 'Inter Tight',sans-serif;letter-spacing:-.015em;text-wrap:balance">{{ t.pricingTitle }}</h2>
+        </div>
+        <div style="flex:1;overflow:auto;padding:4px 22px 40px;display:flex;flex-direction:column;gap:10px">
+          <sc-for list="{{ plans }}" as="p" hint-placeholder-count="5">
+            <div style="border-radius:16px;border:1px solid {{ p.border }};background:{{ p.bg }};padding:16px;display:flex;flex-direction:column;gap:10px">
+              <div style="display:flex;justify-content:space-between;align-items:baseline"><div style="font:600 16px/1.2 'Inter Tight',sans-serif">{{ p.name }}</div><div><span style="font:600 22px/1 'Inter Tight',sans-serif;letter-spacing:-.02em">{{ p.price }}</span><span style="font:400 12px/1 'Inter',sans-serif;color:#8A95AC"> {{ p.per }}</span></div></div>
+              <div style="font:400 12px/1.5 'Inter',sans-serif;color:#8A95AC">{{ p.who }}</div>
+              <button onClick="{{ p.choose }}" style="height:44px;border-radius:8px;border:1px solid {{ p.btnBorder }};background:{{ p.btnBg }};color:{{ p.btnFg }};font:600 13px/1 'Inter',sans-serif;cursor:pointer">{{ p.ctaLabel }}</button>
+            </div>
+          </sc-for>
+          <div style="font:400 11px/1.6 'Inter',sans-serif;color:#5A6684">{{ t.pricingFoot }}</div>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- MOBILE APP SHELL -->
+    <sc-if value="{{ isApp }}" hint-placeholder-val="{{ false }}">
+      <div style="flex:1;display:flex;flex-direction:column;min-height:0">
+        <div style="padding:58px 20px 12px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #1F2B48;background:#0D1322">
+          <div style="width:26px;height:26px;border-radius:7px;background:linear-gradient(135deg,#1E5AFF 0%,#00B8D4 100%);display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z M9 12l2 2 4-4"></path></svg></div>
+          <div style="flex:1;min-width:0"><div style="font:600 15px/1.1 'Inter Tight',sans-serif">{{ screenTitle }}</div><div style="font:500 10px/1.4 'JetBrains Mono',monospace;color:#5A6684">{{ tenantName }} · EU</div></div>
+          <div style="display:flex;align-items:center;gap:6px;height:24px;padding:0 8px;border-radius:9999px;background:rgba(16,185,129,.12);color:#10B981;font:600 10px/1 'Inter',sans-serif"><span style="width:6px;height:6px;border-radius:9999px;background:#10B981"></span>LIVE</div>
+          <button onClick="{{ toggleMenu }}" style="height:32px;width:32px;border-radius:6px;border:1px solid #1F2B48;background:transparent;color:#C9D1E0;cursor:pointer;display:flex;align-items:center;justify-content:center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16 M4 12h16 M4 17h16"></path></svg></button>
+        </div>
+        <div style="flex:1;overflow:auto;padding:16px 16px 20px;display:flex;flex-direction:column;gap:14px;min-height:0">
+
+          <sc-if value="{{ isDashboard }}" hint-placeholder-val="{{ false }}">
+            <div style="border-radius:8px;border:1px solid #1F2B48;background:#0D1322;padding:16px;display:flex;align-items:center;gap:16px">
+              <div style="width:96px;height:96px;position:relative;flex-shrink:0"><svg width="96" height="96" viewBox="0 0 160 160"><circle cx="80" cy="80" r="68" fill="none" stroke="#14203A" stroke-width="12"></circle><circle cx="80" cy="80" r="68" fill="none" stroke="{{ scoreColor }}" stroke-width="12" stroke-linecap="round" stroke-dasharray="{{ scoreDash }}" transform="rotate(-90 80 80)"></circle></svg><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:600 30px/1 'Inter Tight',sans-serif;letter-spacing:-.03em">{{ score }}</div></div>
+              <div style="flex:1;display:flex;flex-direction:column;gap:8px">
+                <div style="font:600 11px/1.4 'Inter',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#8A95AC">{{ t.complianceScore }}</div>
+                <sc-for list="{{ frameworks }}" as="f" hint-placeholder-count="3"><div style="display:flex;flex-direction:column;gap:3px"><div style="display:flex;justify-content:space-between;font:500 11px/1 'Inter',sans-serif;color:#C9D1E0"><span>{{ f.name }}</span><span style="font-family:'JetBrains Mono',monospace">{{ f.pct }} %</span></div><div style="height:3px;border-radius:9999px;background:#14203A"><div style="height:100%;width:{{ f.pct }}%;border-radius:9999px;background:{{ f.color }}"></div></div></div></sc-for>
+              </div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+              <sc-for list="{{ kpis }}" as="k" hint-placeholder-count="4"><button onClick="{{ k.go }}" style="border-radius:8px;border:1px solid #1F2B48;background:#0D1322;padding:12px;display:flex;flex-direction:column;gap:4px;text-align:left;cursor:pointer;color:#F2F5FA;min-height:44px"><div style="font:600 10px/1.4 'Inter',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#8A95AC">{{ k.label }}</div><div style="font:600 24px/1 'Inter Tight',sans-serif;letter-spacing:-.02em;color:{{ k.color }}">{{ k.value }}</div><div style="font:400 11px/1.4 'Inter',sans-serif;color:#8A95AC">{{ k.sub }}</div></button></sc-for>
+            </div>
+            <div style="border-radius:8px;border:1px solid #1F2B48;background:#0D1322;padding:14px;display:flex;flex-direction:column;gap:10px">
+              <div style="font:600 11px/1.4 'Inter',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#8A95AC">{{ t.attention }}</div>
+              <sc-for list="{{ attention }}" as="a" hint-placeholder-count="3"><button onClick="{{ a.go }}" style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border:0;border-top:1px solid #1F2B48;background:none;color:#F2F5FA;text-align:left;cursor:pointer;min-height:44px"><div><div style="font:600 13px/1.3 'Inter',sans-serif">{{ a.name }}</div><div style="font:400 11px/1.4 'Inter',sans-serif;color:#8A95AC">{{ a.why }}</div></div><span style="height:20px;padding:0 8px;border-radius:9999px;font:600 9px/20px 'Inter',sans-serif;letter-spacing:.06em;text-transform:uppercase;background:{{ a.tagBg }};color:{{ a.tagFg }};white-space:nowrap">{{ a.tag }}</span></button></sc-for>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ isDiscover }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;gap:6px;overflow:auto;margin:0 -16px;padding:0 16px"><sc-for list="{{ classFilters }}" as="f" hint-placeholder-count="5"><button onClick="{{ f.set }}" style="height:34px;padding:0 12px;border-radius:9999px;border:1px solid {{ f.border }};background:{{ f.bg }};color:{{ f.color }};font:500 12px/1 'Inter',sans-serif;cursor:pointer;white-space:nowrap;flex-shrink:0">{{ f.label }}</button></sc-for></div>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <sc-for list="{{ systemRows }}" as="s" hint-placeholder-count="8"><button onClick="{{ s.select }}" style="display:flex;align-items:center;gap:12px;padding:12px;border-radius:8px;border:1px solid {{ s.listBorder }};background:#0D1322;color:#F2F5FA;text-align:left;cursor:pointer;min-height:44px"><span style="display:inline-flex;align-items:center;justify-content:center;width:30px;height:26px;border-radius:4px;background:{{ s.clsBg }};color:{{ s.clsFg }};font:600 13px/1 'JetBrains Mono',monospace;flex-shrink:0">{{ s.cls }}</span><span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px"><span style="font:600 14px/1.2 'Inter',sans-serif">{{ s.name }}</span><span style="font:400 11px/1.4 'Inter',sans-serif;color:#8A95AC">{{ s.typeLabel }} · {{ s.owner }}</span></span><span style="height:20px;padding:0 8px;border-radius:9999px;display:inline-flex;align-items:center;font:600 9px/1 'Inter',sans-serif;letter-spacing:.06em;text-transform:uppercase;background:{{ s.tierBg }};color:{{ s.tierFg }};white-space:nowrap">{{ s.tierLabel }}</span></button></sc-for>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ isClassify }}" hint-placeholder-val="{{ false }}">
+            <button onClick="{{ goDiscover }}" style="align-self:flex-start;background:none;border:0;color:#8A95AC;font:500 13px/1 'Inter',sans-serif;cursor:pointer;padding:0;height:32px">← {{ t.inventory }}</button>
+            <div><div style="font:600 11px/1.4 'Inter',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#00B8D4">{{ sel.typeLabel }} · {{ t.enfClass }} {{ sel.cls }}</div><h2 style="margin:4px 0 0;font:600 22px/1.15 'Inter Tight',sans-serif;letter-spacing:-.015em">{{ sel.name }}</h2><div style="margin-top:6px;font:400 12px/1.5 'Inter',sans-serif;color:#8A95AC">{{ sel.reason }}</div></div>
+            <div style="font:600 11px/1.4 'Inter',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#8A95AC">EU AI Act · {{ t.riskTier }}</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><sc-for list="{{ tierOptions }}" as="o" hint-placeholder-count="4"><button onClick="{{ o.set }}" style="min-height:64px;padding:10px 12px;border-radius:8px;border:1px solid {{ o.border }};background:{{ o.bg }};color:#F2F5FA;text-align:left;cursor:pointer;display:flex;flex-direction:column;gap:4px"><span style="display:flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:9999px;background:{{ o.color }}"></span><span style="font:600 13px/1.2 'Inter',sans-serif">{{ o.label }}</span></span><span style="font:400 10px/1.4 'Inter',sans-serif;color:#8A95AC">{{ o.ref }}</span></button></sc-for></div>
+            <button onClick="{{ toggleArt50 }}" style="border-radius:8px;border:1px solid {{ art50Border }};background:{{ art50Bg }};padding:12px 14px;display:flex;justify-content:space-between;align-items:center;gap:12px;text-align:left;cursor:pointer;color:#F2F5FA;min-height:52px"><div><div style="font:600 13px/1.3 'Inter',sans-serif">Art. 50 · {{ t.transparency }}</div><div style="font:400 11px/1.4 'Inter',sans-serif;color:#8A95AC">{{ art50Label }}</div></div><span style="width:40px;height:22px;border-radius:9999px;background:{{ art50Track }};position:relative;flex-shrink:0"><span style="position:absolute;top:2px;left:{{ art50KnobM }}px;width:18px;height:18px;border-radius:9999px;background:#fff;transition:left 200ms"></span></span></button>
+            <div style="border-radius:8px;border:1px solid #1F2B48;background:#0D1322;padding:12px 14px;display:flex;flex-direction:column;gap:8px"><div style="font:600 11px/1.4 'Inter',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#8A95AC">{{ t.obligations }}</div><sc-for list="{{ obligations }}" as="ob" hint-placeholder-count="4"><div style="display:flex;gap:8px;font:400 12px/1.5 'Inter',sans-serif;color:#C9D1E0"><span style="font:500 10px/1.7 'JetBrains Mono',monospace;color:#00B8D4;white-space:nowrap">{{ ob.art }}</span><span>{{ ob.text }}</span></div></sc-for></div>
+            <button onClick="{{ goEnforce }}" style="height:48px;border-radius:8px;border:0;background:#1E5AFF;color:#fff;font:600 14px/1 'Inter',sans-serif;cursor:pointer">{{ t.toEnforce }}</button>
+          </sc-if>
+
+          <sc-if value="{{ isEnforce }}" hint-placeholder-val="{{ false }}">
+            <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px"><sc-for list="{{ enforceStats }}" as="k" hint-placeholder-count="4"><div style="border-radius:8px;border:1px solid #1F2B48;background:#0D1322;padding:10px 12px"><div style="font:600 10px/1.4 'Inter',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#8A95AC">{{ k.label }}</div><div style="font:600 22px/1 'Inter Tight',sans-serif;color:{{ k.color }};margin-top:4px">{{ k.value }}</div></div></sc-for></div>
+            <sc-if value="{{ hasToast }}" hint-placeholder-val="{{ false }}"><div style="border-radius:8px;border:1px solid rgba(245,165,36,.4);background:rgba(245,165,36,.12);padding:10px 12px;font:400 12px/1.5 'Inter',sans-serif">{{ toast }}</div></sc-if>
+            <sc-for list="{{ policies }}" as="p" hint-placeholder-count="7">
+              <div style="border-radius:8px;border:1px solid #1F2B48;background:#0D1322;padding:12px;display:flex;flex-direction:column;gap:10px">
+                <div style="display:flex;gap:10px;align-items:flex-start"><span style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:22px;border-radius:4px;background:{{ p.clsBg }};color:{{ p.clsFg }};font:600 12px/1 'JetBrains Mono',monospace;flex-shrink:0">{{ p.cls }}</span><div style="min-width:0"><div style="font:600 13px/1.3 'Inter',sans-serif">{{ p.title }}</div><div style="font:400 11px/1.4 'Inter',sans-serif;color:#8A95AC">{{ p.system }}</div></div></div>
+                <div style="display:flex;gap:4px;flex-wrap:wrap"><sc-for list="{{ p.options }}" as="o" hint-placeholder-count="6"><button onClick="{{ o.set }}" style="height:34px;padding:0 10px;border-radius:6px;border:1px solid #1F2B48;background:{{ o.bg }};color:{{ o.color }};font:600 10px/1 'JetBrains Mono',monospace;cursor:pointer;opacity:{{ o.opacity }};text-decoration:{{ o.deco }}">{{ o.label }}</button></sc-for></div>
+              </div>
+            </sc-for>
+          </sc-if>
+
+          <sc-if value="{{ isEvidence }}" hint-placeholder-val="{{ false }}">
+            <div style="border-radius:8px;border:1px solid #1F2B48;background:#0D1322;padding:14px;display:flex;align-items:center;gap:14px">
+              <div style="width:56px;height:56px;position:relative;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                <sc-if value="{{ verifyRunning }}" hint-placeholder-val="{{ false }}"><svg width="56" height="56" viewBox="0 0 88 88" style="position:absolute;inset:0"><circle cx="44" cy="44" r="38" fill="none" stroke="#00B8D4" stroke-width="5" stroke-linecap="round" stroke-dasharray="150" stroke-dashoffset="150" transform="rotate(-90 44 44)" style="animation:rsSeal 600ms ease-out forwards"></circle></svg></sc-if>
+                <sc-if value="{{ verifyOk }}" hint-placeholder-val="{{ false }}"><svg width="56" height="56" viewBox="0 0 88 88" style="position:absolute;inset:0"><circle cx="44" cy="44" r="38" fill="none" stroke="#10B981" stroke-width="5"></circle></svg></sc-if>
+                <sc-if value="{{ verifyIdle }}" hint-placeholder-val="{{ true }}"><svg width="56" height="56" viewBox="0 0 88 88" style="position:absolute;inset:0"><circle cx="44" cy="44" r="38" fill="none" stroke="#1D2B48" stroke-width="5" stroke-dasharray="4 6"></circle></svg></sc-if>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="{{ verifyIconColor }}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z M9 12l2 2 4-4"></path></svg>
+              </div>
+              <div style="flex:1;min-width:0"><div style="font:600 14px/1.3 'Inter Tight',sans-serif">{{ verifyTitle }}</div><div style="font:400 11px/1.4 'Inter',sans-serif;color:#8A95AC">{{ verifySub }}</div></div>
+              <button onClick="{{ verifyChain }}" style="height:44px;padding:0 12px;border-radius:8px;border:0;background:#1E5AFF;color:#fff;font:600 12px/1 'Inter',sans-serif;cursor:pointer;flex-shrink:0">{{ t.verify }}</button>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px">
+              <sc-for list="{{ evidenceRows }}" as="e" hint-placeholder-count="8"><div style="border-radius:8px;border:1px solid #1F2B48;background:{{ e.bgM }};padding:10px 12px;display:flex;flex-direction:column;gap:4px"><div style="display:flex;justify-content:space-between;gap:8px"><span style="font:600 11px/1 'JetBrains Mono',monospace;color:#00B8D4">#{{ e.seq }}</span><span style="font:500 10px/1 'JetBrains Mono',monospace;color:#5A6684">{{ e.ts }}</span></div><div style="font:500 13px/1.3 'Inter',sans-serif">{{ e.event }}</div><div style="font:500 10px/1.4 'JetBrains Mono',monospace;color:#8A95AC;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ e.hash }}</div></div></sc-for>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ isReports }}" hint-placeholder-val="{{ false }}">
+            <sc-for list="{{ reports }}" as="r" hint-placeholder-count="4">
+              <div style="border-radius:8px;border:1px solid #1F2B48;background:#0D1322;padding:14px;display:flex;flex-direction:column;gap:10px">
+                <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><div><div style="font:600 10px/1.4 'Inter',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:{{ r.accent }}">{{ r.fw }}</div><div style="font:600 15px/1.3 'Inter Tight',sans-serif;margin-top:4px">{{ r.title }}</div></div><span style="height:20px;padding:0 8px;border-radius:9999px;display:inline-flex;align-items:center;font:600 9px/1 'Inter',sans-serif;letter-spacing:.06em;text-transform:uppercase;background:{{ r.stBg }};color:{{ r.stFg }};white-space:nowrap">{{ r.status }}</span></div>
+                <div style="height:3px;border-radius:9999px;background:#14203A;overflow:hidden"><div style="height:100%;width:{{ r.pct }}%;background:{{ r.accent }};transition:width 200ms"></div></div>
+                <div style="display:flex;gap:6px"><button onClick="{{ r.gen }}" style="flex:1;height:44px;border-radius:8px;border:0;background:{{ r.btnBg }};color:{{ r.btnFg }};font:600 12px/1 'Inter',sans-serif;cursor:pointer">{{ r.btn }}</button><sc-if value="{{ r.ready }}" hint-placeholder-val="{{ false }}"><button style="height:44px;padding:0 12px;border-radius:8px;border:1px solid #2E3C5E;background:transparent;color:#F2F5FA;font:600 12px/1 'Inter',sans-serif;cursor:pointer">PDF</button><button style="height:44px;padding:0 12px;border-radius:8px;border:1px solid #2E3C5E;background:transparent;color:#F2F5FA;font:600 12px/1 'Inter',sans-serif;cursor:pointer">JSON</button></sc-if></div>
+              </div>
+            </sc-for>
+          </sc-if>
+
+        </div>
+        <div style="display:flex;border-top:1px solid #1F2B48;background:#0D1322;padding:6px 6px 30px">
+          <sc-for list="{{ mobileTabs }}" as="n" hint-placeholder-count="5">
+            <button onClick="{{ n.go }}" style="flex:1;height:50px;border:0;background:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:{{ n.color }};cursor:pointer;border-radius:8px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{ n.icon }}"></path></svg><span style="font:600 9px/1 'Inter',sans-serif;letter-spacing:.06em;text-transform:uppercase">{{ n.label }}</span></button>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+  </div>
+  </x-import>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;startScreen&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;landing&quot;,&quot;login&quot;,&quot;audit&quot;,&quot;dashboard&quot;,&quot;discover&quot;,&quot;classify&quot;,&quot;enforce&quot;,&quot;evidence&quot;,&quot;reports&quot;,&quot;pricing&quot;],&quot;default&quot;:&quot;landing&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Prototype&quot;},&quot;language&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;de&quot;,&quot;en&quot;],&quot;default&quot;:&quot;de&quot;,&quot;tsType&quot;:&quot;'de'|'en'&quot;,&quot;section&quot;:&quot;Prototype&quot;},&quot;plan&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;free&quot;,&quot;starter&quot;,&quot;growth&quot;,&quot;agency&quot;,&quot;enterprise&quot;],&quot;default&quot;:&quot;free&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Prototype&quot;}}">
+const C = { bg0:'#070B14', bg1:'#0D1322', bg2:'#14203A', bg3:'#1D2B48', fg0:'#F2F5FA', fg1:'#C9D1E0', fg2:'#8A95AC', fg3:'#5A6684', border:'#1F2B48', borderS:'#2E3C5E', primary:'#1E5AFF', cyan:'#00B8D4', ok:'#10B981', warn:'#F5A524', danger:'#E5484D', violet:'#7C5CFF' };
+const CLS_COLOR = { A:'#10B981', B:'#00B8D4', C:'#F5A524', D:'#E5484D' };
+const ICON = {
+  home:'M3 9.5 12 3l9 6.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z',
+  cpu:'M4 4h16v16H4z M9 9h6v6H9z M9 1v3 M15 1v3 M9 20v3 M15 20v3 M20 9h3 M20 14h3 M1 9h3 M1 14h3',
+  scale:'M12 3v18 M5 21h14 M3 8l4 8 4-8H3z M13 8l4 8 4-8h-8z',
+  shield:'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z M9 12l2 2 4-4',
+  file:'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6 M9 15l2 2 4-4',
+  chart:'M3 3v18h18 M8 17V9 M13 17V5 M18 17v-3',
+  card:'M2 5h20v14H2z M2 10h20',
+  more:'M4 6h16 M4 12h16 M4 18h16'
+};
+const T = {
+  de:{ navProduct:'Produkt', navPricing:'Preise', cta:'Free Audit starten', cta2:'Live Dashboard ansehen', heroA:'AI Compliance', heroB:'Operations OS', heroC:'for Europe', sub1:'Runtime-Governance für regulierte KI-Systeme.', sub2:'Kontinuierliche Evidenz. EU-nativ by design.',
+    loginTitle:'Anmelden', loginSub:'Magic Link per E-Mail — kein Passwort, kein Drittanbieter.', loginBtn:'Magic Link senden', loginNote:'Auth über Supabase EU (Frankfurt). Keine Weitergabe in Drittländer.', linkSent:'Link gesendet', openDash:'Dashboard öffnen', loginQuote:'Jede Governance-Entscheidung wird zur Laufzeit getroffen — und in der Evidence Chain festgehalten.',
+    auditTitle:'Ihr KI-Bestand in vier Fragen.', auditFoot:'Ergebnis ohne Account. Keine Speicherung der Domain ohne Ihre Einwilligung.', q0:'Wen prüfen wir?', q0hint:'Unternehmen und Hauptdomain.', q1:'Was muss nachweisbar sein?', q1hint:'DSGVO und EU AI Act sitzen im Fundament.', q2:'Welche KI-Systeme sind im Einsatz?', q2hint:'Die Durchsetzbarkeits-Klasse zeigt, was technisch anhaltbar ist.', q3:'Wer nutzt das Produkt?', q3hint:'Die Rolle bestimmt den Plan stärker als der Score.', running:'Audit läuft', resultTitle:'Ihre drei kritischen Risiken', recPlan:'Empfohlener Plan', back:'Zurück', next:'Weiter', start:'Audit starten', toDash:'Dashboard öffnen',
+    pricingTitle:'Vom kostenlosen Audit bis zur Agentur-Suite.', pricingSub:'Monatlich kündbar. Preise netto. Alle Daten in der EU verarbeitet und gespeichert.', monthly:'Monatlich', yearly:'Jährlich', popular:'Beliebt', pricingFoot:'Hinweis: Rechnungsstellung ohne Ausweis von Umsatzsteuer gemäß § 19 UStG (Kleinunternehmer). Enterprise auf Anfrage.',
+    navOverview:'Übersicht', navSystems:'KI-Systeme', navClassify:'Klassifizierung', navEnforce:'Enforcement', navEvidence:'Evidence', navReports:'Berichte', navBilling:'Abrechnung', more:'Mehr', planNote:'Evidence Vault read-only. Policies ab Starter durchsetzbar.', upgrade:'Plan wechseln',
+    complianceScore:'Compliance Score', enforceClasses:'Durchsetzbarkeits-Klassen', lastEvidence:'Letzte Evidenz', all:'Alle', attention:'Braucht Aufmerksamkeit', inventory:'Inventar', type:'Typ', enfClass:'Klasse', riskTier:'Risikostufe', toEnforce:'Zu Enforcement', transparency:'Transparenz', art50Note:'Nutzer müssen erkennen, dass sie mit einem KI-System interagieren.', obligations:'Pflichten', time:'Zeit', entries:'Einträge', exportBundle:'Audit-Bundle exportieren', verifyBtn:'Kette verifizieren', verify:'Prüfen',
+    enforceFoot:'Die Klasse wird abgeleitet, nie eingegeben. Ein Verdikt, das die Klasse technisch nicht hergibt, wird nicht versprochen (Art. 13, Art. 14 EU AI Act · Art. 5 Abs. 2 DSGVO).',
+    kSystems:'KI-Systeme', kSystemsSub:'{n} unklassifiziert', kHigh:'Hochrisiko', kHighSub:'Annex III', kPolicies:'Policies aktiv', kPoliciesSub:'{n} nur beobachtend', kEvidence:'Evidenz-Einträge', kEvidenceSub:'Kette intakt',
+    ovDashboard:'Übersicht', ovDashboardSub:'Command Center', ovDiscover:'KI-Systeme', ovDiscoverSub:'Discover · Inventar', ovClassify:'Klassifizierung', ovClassifySub:'Classify · EU AI Act', ovEnforce:'Enforcement', ovEnforceSub:'Enforce · Policy Decision Point', ovEvidence:'Evidence Chain', ovEvidenceSub:'Prove · append-only', ovReports:'Berichte', ovReportsSub:'Export je Rahmenwerk',
+    statPolicies:'Policies', statBlocking:'Anhaltend', statObserving:'Nachgelagert', statPaper:'Nur Papier',
+    verIdle:'Kette nicht geprüft', verIdleSub:'Letzte Prüfung: —', verRun:'Verifiziere …', verRunSub:'SHA-256 rekonstruieren', verOk:'Kette intakt', verOkSub:'{n} Einträge · Ed25519 gültig',
+    genBtn:'Erzeugen', genRun:'Wird erzeugt …', genReady:'Neu erzeugen', stDraft:'Entwurf', stReady:'Bereit', stRun:'Läuft'
+  },
+  en:{ navProduct:'Product', navPricing:'Pricing', cta:'Start free audit', cta2:'View live dashboard', heroA:'AI Compliance', heroB:'Operations OS', heroC:'for Europe', sub1:'Runtime governance for regulated AI systems.', sub2:'Continuous evidence. EU-native by design.',
+    loginTitle:'Sign in', loginSub:'Magic link by e-mail — no password, no third party.', loginBtn:'Send magic link', loginNote:'Auth via Supabase EU (Frankfurt). No third-country transfer.', linkSent:'Link sent', openDash:'Open dashboard', loginQuote:'Every governance decision is made at runtime — and recorded in the evidence chain.',
+    auditTitle:'Your AI inventory in four questions.', auditFoot:'Result without an account. Domain is not stored without consent.', q0:'Who are we auditing?', q0hint:'Company and primary domain.', q1:'What must be provable?', q1hint:'GDPR and the EU AI Act sit in the foundation.', q2:'Which AI systems are in use?', q2hint:'The enforcement class shows what can technically be stopped.', q3:'Who uses the product?', q3hint:'Role drives the plan more than the score.', running:'Audit running', resultTitle:'Your three critical risks', recPlan:'Recommended plan', back:'Back', next:'Next', start:'Run audit', toDash:'Open dashboard',
+    pricingTitle:'From free audit to agency suite.', pricingSub:'Cancel monthly. Prices net. All data processed and stored in the EU.', monthly:'Monthly', yearly:'Yearly', popular:'Popular', pricingFoot:'Note: invoices issued without VAT under § 19 UStG (small business). Enterprise on request.',
+    navOverview:'Overview', navSystems:'AI systems', navClassify:'Classification', navEnforce:'Enforcement', navEvidence:'Evidence', navReports:'Reports', navBilling:'Billing', more:'More', planNote:'Evidence vault read-only. Policies enforceable from Starter.', upgrade:'Change plan',
+    complianceScore:'Compliance score', enforceClasses:'Enforcement classes', lastEvidence:'Latest evidence', all:'All', attention:'Needs attention', inventory:'Inventory', type:'Type', enfClass:'Class', riskTier:'Risk tier', toEnforce:'To enforcement', transparency:'Transparency', art50Note:'Users must be able to tell they interact with an AI system.', obligations:'Obligations', time:'Time', entries:'Entries', exportBundle:'Export audit bundle', verifyBtn:'Verify chain', verify:'Verify',
+    enforceFoot:'The class is derived, never entered. A verdict the class cannot technically deliver is never promised (Art. 13, Art. 14 EU AI Act · Art. 5(2) GDPR).',
+    kSystems:'AI systems', kSystemsSub:'{n} unclassified', kHigh:'High risk', kHighSub:'Annex III', kPolicies:'Policies active', kPoliciesSub:'{n} observe only', kEvidence:'Evidence entries', kEvidenceSub:'Chain intact',
+    ovDashboard:'Overview', ovDashboardSub:'Command center', ovDiscover:'AI systems', ovDiscoverSub:'Discover · inventory', ovClassify:'Classification', ovClassifySub:'Classify · EU AI Act', ovEnforce:'Enforcement', ovEnforceSub:'Enforce · policy decision point', ovEvidence:'Evidence chain', ovEvidenceSub:'Prove · append-only', ovReports:'Reports', ovReportsSub:'Export per framework',
+    statPolicies:'Policies', statBlocking:'Blocking', statObserving:'Downstream', statPaper:'Paper only',
+    verIdle:'Chain not verified', verIdleSub:'Last check: —', verRun:'Verifying …', verRunSub:'Rebuilding SHA-256', verOk:'Chain intact', verOkSub:'{n} entries · Ed25519 valid',
+    genBtn:'Generate', genRun:'Generating …', genReady:'Regenerate', stDraft:'Draft', stReady:'Ready', stRun:'Running'
+  }
+};
+const TYPES = { chatbot:['Chatbot','A','Läuft über unsere Edge Functions — wir sind der Endpunkt.'], sdk_preflight:['SDK-Preflight','A','Der Vorabruf liegt im Datenpfad, solange der Wrapper eingesetzt wird.'], voice:['Sprachkanal','A','Läuft über unsere Edge Functions.'], cicd_gate:['CI/CD-Schranke','B','Der Deploy passiert die Gate-Engine, die wir betreiben.'], microsoft365:['Microsoft 365','C','Graph liefert Prüfereignisse erst nach der Aktion. Ein Block bräuchte Purview DLP.'], custom_api:['Eigene API','C','Ohne belegten Integrationspunkt ist nur die nachgelagerte Feststellung ehrlich.'], crm:['CRM','C','Zugriff über API und Webhook, kein Punkt zum Abfangen.'], browser_direct:['Browser direkt','D','Kein Weg durch uns. Ohne Endpunkt-Agent nicht abfangbar.'] };
+const VERDICTS = { A:['allow','log_only','warn','block','require_approval'], B:['allow','log_only','warn','block','require_approval'], C:['log_only','warn','react'], D:['log_only'] };
+const ALL_VERDICTS = ['allow','log_only','warn','block','require_approval','react'];
+const TIERS = [ {id:'unacceptable',de:'Unannehmbar',en:'Unacceptable',ref:'Art. 5 · verboten',color:'#E5484D'}, {id:'high',de:'Hochrisiko',en:'High risk',ref:'Art. 6 · Annex III',color:'#F5A524'}, {id:'limited',de:'Begrenzt',en:'Limited',ref:'Art. 50 · Transparenz',color:'#00B8D4'}, {id:'minimal',de:'Minimal',en:'Minimal',ref:'Freiwillige Kodizes',color:'#10B981'} ];
+const SYSTEMS = [
+  { id:'s1', name:'Kundenservice-Chatbot', owner:'Customer Care', type:'chatbot', tier:'limited', art50:true, annex:'—', annexNote:'Kein Annex-III-Bereich. Transparenzpflicht nach Art. 50.' },
+  { id:'s2', name:'Bewerber-Ranking (HR)', owner:'People & Culture', type:'sdk_preflight', tier:'high', art50:false, annex:'Nr. 4 · Beschäftigung', annexNote:'Auswahl und Bewertung natürlicher Personen im Recruiting.' },
+  { id:'s3', name:'Kreditwürdigkeits-Scoring', owner:'Finance', type:'custom_api', tier:'high', art50:false, annex:'Nr. 5b · Kreditwürdigkeit', annexNote:'Zugang zu wesentlichen privaten Dienstleistungen.' },
+  { id:'s4', name:'Microsoft 365 Copilot', owner:'IT', type:'microsoft365', tier:'minimal', art50:false, annex:'—', annexNote:'Allzweck-Assistent. DSGVO-Zugriffspfad relevant, kein Annex III.' },
+  { id:'s5', name:'CI/CD Code-Review-Agent', owner:'Engineering', type:'cicd_gate', tier:'minimal', art50:false, annex:'—', annexNote:'Interner Entwicklungsprozess ohne Wirkung auf natürliche Personen.' },
+  { id:'s6', name:'Voice-Assistent Hotline', owner:'Customer Care', type:'voice', tier:'limited', art50:true, annex:'—', annexNote:'Sprachinteraktion mit Kunden. Art. 50 Hinweis zu Gesprächsbeginn.' },
+  { id:'s7', name:'ChatGPT im Browser', owner:'Schatten-KI', type:'browser_direct', tier:null, art50:false, annex:'?', annexNote:'Nutzung nicht erfasst. Organisatorische Regel, keine technische.' },
+  { id:'s8', name:'Lead-Scoring (HubSpot)', owner:'Sales', type:'crm', tier:'limited', art50:false, annex:'—', annexNote:'Profiling nach Art. 22 DSGVO prüfen; kein Annex III.' }
+];
+const POLICIES = [
+  { id:'p1', sys:'s1', title:'Personenbezogene Daten in Prompts', rule:'Erkennung von PII vor dem Provider-Call · Redaction', verdict:'block' },
+  { id:'p2', sys:'s6', title:'Art.-50-Hinweis zu Gesprächsbeginn', rule:'Ohne Hinweis kein Dialogstart', verdict:'require_approval' },
+  { id:'p3', sys:'s2', title:'Hochrisiko: menschliche Freigabe', rule:'Ranking wird erst nach Freigabe ausgeliefert (Art. 14)', verdict:'require_approval' },
+  { id:'p4', sys:'s3', title:'Kreditentscheidung ohne Aufsicht', rule:'Automatisierte Entscheidung ohne Review erkannt', verdict:'react' },
+  { id:'p5', sys:'s4', title:'Copilot-Zugriff auf Personalakten', rule:'Graph-Audit-Event: Zugriff auf HR-Site', verdict:'warn' },
+  { id:'p6', sys:'s5', title:'Deploy ohne Modellkarte', rule:'Gate blockiert Merge ohne model-card.md', verdict:'block' },
+  { id:'p7', sys:'s7', title:'Schatten-KI im Browser', rule:'Richtlinie gilt organisatorisch — technisch nicht abfangbar', verdict:'log_only' }
+];
+const PLANS = [
+  { id:'free', name:'Free Audit', m:0, y:0, who:{de:'Einstieg · Lead-Audit ohne Account',en:'Entry · audit without an account'}, f:['URL-Scan + Compliance Score','3 kritische Risiken','Mini-PDF-Report','Evidence read-only'] },
+  { id:'starter', name:'Starter', m:79, y:790, who:{de:'Ein Unternehmen, eine Domain',en:'One company, one domain'}, f:['Vollständiger DSGVO-Scan','Policy Packs · Enforcement','Monatlicher Re-Scan + Alerts','Evidence Vault (Basis)'] },
+  { id:'growth', name:'Growth', m:249, y:2490, pop:true, who:{de:'KMU, SaaS, E-Commerce — Hauptprodukt',en:'SMB, SaaS, e-commerce — core product'}, f:['Tägliches Monitoring','EU-AI-Act-Modul · Risiko-Register','Evidence Vault erweitert · Legal Hold','Teamzugänge · PDF-Audit-Reports'] },
+  { id:'agency', name:'Agency', m:699, y:6900, who:{de:'Agenturen, DSB, IT-Dienstleister',en:'Agencies, DPOs, IT providers'}, f:['White Label · Multi-Tenant','API + Webhooks','Automatische Reports','Prioritäts-Scans'] },
+  { id:'enterprise', name:'Enterprise', m:1249, y:12490, who:{de:'Konzerne, öffentliche Stellen, Banken',en:'Enterprises, public sector, banks'}, f:['SSO · individuelle Regeln','SLA · Hosting-Optionen','ISO 42001 · DSB-Integration','Continuous Compliance'] }
+];
+const AUDIT_FW = [['fw_dsgvo','DSGVO'],['fw_ai_act','EU AI Act'],['fw_iso','ISO 27001 / 42001'],['fw_regulated','NIS2 / TISAX / DORA']];
+const AUDIT_SYS = [['chatbot','Website-Chatbot','Klasse A'],['microsoft365','Microsoft 365 Copilot','Klasse C'],['sdk_preflight','HR-Screening / Ranking','Klasse A'],['custom_api','Scoring über eigene API','Klasse C'],['cicd_gate','Code-Agent in CI/CD','Klasse B'],['browser_direct','ChatGPT & Co. im Browser','Klasse D']];
+const AUDIT_ROLE = [['role_solo','Ich selbst'],['role_team','Team bis fünf Personen'],['role_agency','Agentur für Kunden'],['role_enterprise','Konzern / SSO']];
+
+function hash(s){ let h1=0x811c9dc5, h2=0x01000193; for (let i=0;i<s.length;i++){ h1=Math.imul(h1^s.charCodeAt(i),16777619)>>>0; h2=Math.imul(h2+s.charCodeAt(i),2654435761)>>>0; } let out=''; for(let k=0;k<8;k++){ h1=Math.imul(h1^(h1>>>15),2246822507)>>>0; h2=Math.imul(h2^(h2>>>13),3266489909)>>>0; out+=(h1^h2).toString(16).padStart(8,'0'); } return out.slice(0,64); }
+function ts(offsetMin){ const d=new Date(Date.UTC(2026,8,13,7,42,0)-offsetMin*60000); const p=n=>String(n).padStart(2,'0'); return `${p(d.getUTCDate())}.${p(d.getUTCMonth()+1)}. ${p(d.getUTCHours())}:${p(d.getUTCMinutes())}:${p(d.getUTCSeconds())}Z`; }
+function seedChain(){ const ev=[ ['Runtime gestartet · Tenant provisioniert','system',1440],['Connector Microsoft 365 registriert · Klasse C abgeleitet','system',1380],['Policy p1 aktiviert · block','d.kowalski',1310],['Chatbot: PII in Prompt erkannt · redacted','pdp',1120],['Klassifizierung s2 → Hochrisiko (Annex III Nr. 4)','d.kowalski',980],['Freigabe angefordert · Bewerber-Ranking #4471','pdp',760],['Freigabe erteilt · s2 #4471','m.berger',742],['Deploy blockiert · fehlende Modellkarte','cicd-gate',430],['Copilot-Zugriff HR-Site · warn · Ticket erstellt','pdp',210],['Monatlicher Re-Scan abgeschlossen · 0 neue Tracker','scheduler',95] ]; let prev='0000000000000000'; return ev.map((e,i)=>{ const h=hash(prev+e[0]+i); const row={seq:i+1,event:e[0],actor:e[1],ts:ts(e[2]),hash:h,prev:prev.slice(0,8)}; prev=h; return row; }); }
+
+class Component extends DCLogic {
+  state = { screen:'landing', lang:'de', loginEmail:'', loginSent:false, loggedIn:false,
+    aStep:0, aOrg:'', aUrl:'', aFw:['fw_dsgvo','fw_ai_act'], aSys:[], aRole:'role_team', aRunning:false, aPct:0, aLog:[], aDone:false,
+    filter:'all', selected:'s2', tiers:Object.fromEntries(SYSTEMS.map(s=>[s.id,s.tier])), art50:Object.fromEntries(SYSTEMS.map(s=>[s.id,s.art50])),
+    verdicts:Object.fromEntries(POLICIES.map(p=>[p.id,p.verdict])), toast:null,
+    chain:seedChain(), verify:'idle', reports:{}, billing:'monthly', plan:'free', chosen:null };
+
+  componentDidMount(){ const p=this.props||{}; const patch={}; if(p.startScreen) patch.screen=p.startScreen; if(p.language) patch.lang=p.language; if(p.plan) patch.plan=p.plan; if(Object.keys(patch).length) this.setState(patch); }
+  componentDidUpdate(prev){ const p=this.props||{}, q=prev||{}; const patch={}; if(p.startScreen&&p.startScreen!==q.startScreen) patch.screen=p.startScreen; if(p.language&&p.language!==q.language) patch.lang=p.language; if(p.plan&&p.plan!==q.plan) patch.plan=p.plan; if(Object.keys(patch).length) this.setState(patch); }
+  go(screen){ return ()=>this.setState({screen, toast:null}); }
+  append(event, actor){ this.setState(s=>{ const prev=s.chain.length? s.chain[s.chain.length-1].hash : '0000000000000000'; const row={seq:s.chain.length+1,event,actor,ts:ts(0),hash:hash(prev+event+s.chain.length),prev:prev.slice(0,8)}; return {chain:[...s.chain,row], verify: s.verify==='ok'?'idle':s.verify}; }); }
+  toggleIn(key,id){ this.setState(s=>{ const arr=s[key]; return {[key]: arr.includes(id)? arr.filter(x=>x!==id) : [...arr,id]}; }); }
+  runAudit(){ const lang=this.state.lang; const lines= lang==='de'? ['DISCOVER · DNS, Skripte, Provider-Endpunkte gescannt','CLASSIFY · Annex-III-Abgleich, Art.-50-Pflichten geprüft','ENFORCE · Durchsetzbarkeits-Klassen abgeleitet','PROVE · Audit-Snapshot gehasht und signiert'] : ['DISCOVER · DNS, scripts, provider endpoints scanned','CLASSIFY · Annex III mapping, Art. 50 duties checked','ENFORCE · enforcement classes derived','PROVE · audit snapshot hashed and signed'];
+    this.setState({aRunning:true,aPct:0,aLog:[],aDone:false}); let i=0; const tick=()=>{ if(i>=lines.length){ this.setState({aRunning:false,aDone:true,aPct:100}); this.append(`Free Audit abgeschlossen · ${this.state.aOrg||'Unbekannt'}`,'audit-engine'); return; } this.setState(s=>({aPct:Math.round(((i+1)/lines.length)*100), aLog:[...s.aLog,{ts:`0${i}:${String(12+i*7).padStart(2,'0')}`,msg:lines[i],color: i===lines.length-1? C.ok : C.fg1}]})); i++; this._t=setTimeout(tick,650); }; this._t=setTimeout(tick,400); }
+  componentWillUnmount(){ clearTimeout(this._t); clearTimeout(this._v); Object.values(this._r||{}).forEach(clearInterval); }
+  setVerdict(p,v,cls){ const ok=VERDICTS[cls].includes(v); const de=this.state.lang==='de'; if(!ok){ const cdef={A:'Inline',B:'Schranke',C:'nachgelagert',D:'nicht erreichbar'}[cls]; this.setState({toast: de? `Klasse ${cls} (${cdef}): „${v}“ ist hier technisch nicht einlösbar. Erlaubt: ${VERDICTS[cls].join(', ')}.` : `Class ${cls}: "${v}" cannot be technically delivered here. Allowed: ${VERDICTS[cls].join(', ')}.`}); this.append(`Verdikt „${v}“ für ${p.id} abgelehnt · Klasse ${cls}`,'pdp'); return; } this.setState(s=>({verdicts:{...s.verdicts,[p.id]:v},toast:null})); this.append(`Policy ${p.id} → ${v}`,'d.kowalski'); }
+  verifyChain(){ if(this.state.verify==='running') return; this.setState({verify:'running'}); this._v=setTimeout(()=>this.setState({verify:'ok'}),700); }
+  genReport(id){ if(this.state.reports[id]==='running') return; this.setState(s=>({reports:{...s.reports,[id]:'running'},rp:{...(s.rp||{}),[id]:0}})); this._r=this._r||{}; let p=0; this._r[id]=setInterval(()=>{ p+=20; if(p>=100){ clearInterval(this._r[id]); this.setState(s=>({reports:{...s.reports,[id]:'ready'},rp:{...s.rp,[id]:100}})); this.append(`Report ${id} erzeugt · PDF + JSON signiert`,'report-engine'); } else this.setState(s=>({rp:{...s.rp,[id]:p}})); },220); }
+
+  renderVals(){
+    const s=this.state, lang=s.lang, t=T[lang], de=lang==='de';
+    const isApp=['dashboard','discover','classify','enforce','evidence','reports'].includes(s.screen);
+    const tierOf=id=>TIERS.find(x=>x.id===s.tiers[id]);
+    const tierLabel=id=>{ const tr=tierOf(id); return tr? tr[lang] : (de?'Offen':'Open'); };
+    const tierColor=id=>{ const tr=tierOf(id); return tr? tr.color : C.fg2; };
+    const clsOf=sys=>TYPES[sys.type][1];
+    const sel=SYSTEMS.find(x=>x.id===s.selected);
+    const chip=(active)=>({border: active? C.primary : C.borderS, bg: active? 'rgba(30,90,255,.18)' : C.bg1, color: active? C.fg0 : C.fg1});
+    const screens=[['landing','Landing'],['login','Login'],['audit','Free Audit'],['dashboard',t.navOverview],['discover',t.navSystems],['classify',t.navClassify],['enforce',t.navEnforce],['evidence','Evidence'],['reports',t.navReports],['pricing',t.navPricing]];
+    const urlMap={landing:'realsyncdynamicsai.de',login:'realsyncdynamicsai.de/login',audit:'realsyncdynamicsai.de/audit',pricing:'realsyncdynamicsai.de/pricing',dashboard:'app.realsyncdynamicsai.de/app/dashboard',discover:'app.realsyncdynamicsai.de/app/ai-systems',classify:'app.realsyncdynamicsai.de/app/ai-systems/'+s.selected,enforce:'app.realsyncdynamicsai.de/app/policy-packs',evidence:'app.realsyncdynamicsai.de/app/evidence',reports:'app.realsyncdynamicsai.de/app/reports'};
+    // audit
+    const stepsDef=[t.q0,t.q1,t.q2,t.q3,de?'Ergebnis':'Result'];
+    const curStep= s.aDone? 4 : s.aRunning? 4 : s.aStep;
+    const auditSteps=stepsDef.map((label,i)=>{ const on=i===curStep, done=i<curStep; return {n:done?'✓':String(i+1),label,bg:on?C.bg2:'transparent',color:on||done?C.fg0:C.fg3,dotBg:done?C.ok:on?C.primary:'transparent',dotFg:done||on?'#fff':C.fg3,dotBorder:done?C.ok:on?C.primary:C.borderS}; });
+    const canNext= s.aStep===0? (s.aOrg.trim().length>1) : s.aStep===1? s.aFw.length>0 : s.aStep===2? s.aSys.length>0 : true;
+    const auditNextLabel= s.aDone? t.toDash : s.aStep===3? t.start : t.next;
+    const auditScore=Math.max(28, 92 - s.aSys.length*9 - (s.aFw.length>2?8:0));
+    const scoreCol=v=> v>=75?C.ok : v>=50?C.warn : C.danger;
+    const riskPool={ browser_direct:{title:de?'Schatten-KI ohne technische Kontrolle':'Shadow AI without technical control',ref:'Klasse D · Art. 4 EU AI Act (KI-Kompetenz) · Art. 32 DSGVO',color:C.danger}, custom_api:{title:de?'Scoring ohne menschliche Aufsicht':'Scoring without human oversight',ref:'Annex III Nr. 5b · Art. 14 EU AI Act · Art. 22 DSGVO',color:C.danger}, sdk_preflight:{title:de?'Hochrisiko-System ohne Konformitätsdossier':'High-risk system without conformity dossier',ref:'Annex III Nr. 4 · Art. 9, 11 EU AI Act',color:C.warn}, microsoft365:{title:de?'Copilot-Zugriff nur nachgelagert belegbar':'Copilot access only provable downstream',ref:'Klasse C · Art. 5 Abs. 2 DSGVO',color:C.warn}, chatbot:{title:de?'Art.-50-Hinweis fehlt im Chat':'Art. 50 disclosure missing in chat',ref:'Art. 50 EU AI Act · Transparenz',color:C.cyan}, cicd_gate:{title:de?'Deploys ohne Modellkarte':'Deploys without model card',ref:'Art. 11, 13 EU AI Act · Dokumentation',color:C.cyan} };
+    let auditRisks=s.aSys.map(id=>riskPool[id]).slice(0,3); if(auditRisks.length<3) auditRisks=auditRisks.concat([ {title:de?'Kein Verzeichnis der KI-Systeme':'No AI system register',ref:'Art. 30 DSGVO · Art. 49 EU AI Act',color:C.warn}, {title:de?'Keine Evidence Chain':'No evidence chain',ref:'Art. 5 Abs. 2 DSGVO · Rechenschaft',color:C.cyan} ].slice(0,3-auditRisks.length));
+    let rec; if(s.aRole==='role_enterprise') rec=['enterprise',de?'SSO und mehrere Organisationen liegen auf Enterprise.':'SSO and multiple organisations sit on Enterprise.']; else if(s.aRole==='role_agency') rec=['agency',de?'Agentur-Betrieb mit Kunden-Dashboards liegt auf Agency.':'Agency operation with client dashboards sits on Agency.']; else if(s.aFw.includes('fw_iso')||s.aFw.includes('fw_regulated')||s.aSys.some(x=>['sdk_preflight','custom_api'].includes(x))) rec=['growth',de?'Hochrisiko-Systeme brauchen Risiko-Register und erweiterten Vault.':'High-risk systems need a risk register and extended vault.']; else rec=['starter',de?'Eine Domain, DSGVO + AI Act im Fundament.':'One domain, GDPR + AI Act in the foundation.'];
+    const recPlan=PLANS.find(p=>p.id===rec[0]);
+    // dashboard
+    const rows=SYSTEMS.filter(x=>s.filter==='all'||clsOf(x)===s.filter);
+    const unclassified=SYSTEMS.filter(x=>!s.tiers[x.id]).length;
+    const highCount=SYSTEMS.filter(x=>s.tiers[x.id]==='high').length;
+    const observing=POLICIES.filter(p=>['log_only'].includes(s.verdicts[p.id])).length;
+    const blocking=POLICIES.filter(p=>['block','require_approval'].includes(s.verdicts[p.id])).length;
+    const score=Math.min(100, Math.round(38 + (SYSTEMS.length-unclassified)/SYSTEMS.length*26 + blocking/POLICIES.length*24 + (s.verify==='ok'?12:0)));
+    const dash=(v,r)=>{ const c=2*Math.PI*r; return `${(v/100)*c} ${c}`; };
+    const counts={A:0,B:0,C:0,D:0}; SYSTEMS.forEach(x=>counts[clsOf(x)]++);
+    const clsTitle={A:de?'Inline anhaltbar':'Inline · stoppable',B:de?'Schranke':'Gate',C:de?'Nachgelagert':'Downstream',D:de?'Nicht erreichbar':'Unreachable'};
+    const tag=(cls)=>({bg:CLS_COLOR[cls]+'22',fg:CLS_COLOR[cls]});
+    const sysRow=x=>{ const cls=clsOf(x), tc=tierColor(x.id); return { ...x, cls, typeLabel:TYPES[x.type][0], reason:TYPES[x.type][2], clsBg:tag(cls).bg, clsFg:tag(cls).fg, tierLabel:tierLabel(x.id), tierBg:tc+'22', tierFg:tc, art50: s.art50[x.id]? (de?'Aktiv':'On') : '—', art50Color: s.art50[x.id]? C.ok : C.fg3, status: x.type==='browser_direct'? (de?'Nicht erfasst':'Untracked') : (de?'Überwacht':'Monitored'), rowBg: x.id===s.selected? 'rgba(30,90,255,.10)' : 'transparent', listBg: x.id===s.selected? 'rgba(30,90,255,.14)' : C.bg1, listBorder: x.id===s.selected? C.primary : C.border, select:()=>this.setState({selected:x.id,screen:'classify'}) }; };
+    const selRow=sysRow(sel);
+    const obligationsMap={ high:[{art:'Art. 9',text:de?'Risikomanagementsystem über den gesamten Lebenszyklus.':'Risk management system across the lifecycle.'},{art:'Art. 11',text:de?'Technische Dokumentation vor Inverkehrbringen.':'Technical documentation before placing on market.'},{art:'Art. 14',text:de?'Menschliche Aufsicht — Freigabe vor Wirkung.':'Human oversight — approval before effect.'},{art:'Art. 49',text:de?'Registrierung in der EU-Datenbank.':'Registration in the EU database.'}], limited:[{art:'Art. 50',text:de?'Hinweis, dass ein KI-System interagiert.':'Disclose that an AI system is interacting.'},{art:'Art. 4',text:de?'KI-Kompetenz des Personals.':'AI literacy of staff.'}], minimal:[{art:'Art. 4',text:de?'KI-Kompetenz des Personals.':'AI literacy of staff.'},{art:'Art. 95',text:de?'Freiwillige Verhaltenskodizes.':'Voluntary codes of conduct.'}], unacceptable:[{art:'Art. 5',text:de?'Verbotene Praxis — Betrieb einstellen.':'Prohibited practice — cease operation.'}] };
+    const obligations = obligationsMap[s.tiers[sel.id]] || [{art:'—',text:de?'Noch keine Stufe gewählt.':'No tier selected yet.'}];
+    const attention=[ {name:'ChatGPT im Browser',tag:'Klasse D',cls:'D',why:de?'Nicht erfasst — nur organisatorische Regel.':'Untracked — organisational rule only.',id:'s7'}, {name:'Kreditwürdigkeits-Scoring',tag:'Hochrisiko',cls:'C',why:de?'Annex III · nur nachgelagert belegbar.':'Annex III · provable downstream only.',id:'s3'}, {name:'Bewerber-Ranking (HR)',tag:'Freigabe',cls:'A',why:de?'2 Freigaben offen · Art. 14.':'2 approvals pending · Art. 14.',id:'s2'} ].map(a=>({...a,tagBg:tag(a.cls).bg,tagFg:tag(a.cls).fg,go:()=>this.setState({selected:a.id,screen:'classify'})}));
+    // policies
+    const policies=POLICIES.map(p=>{ const sys=SYSTEMS.find(x=>x.id===p.sys); const cls=clsOf(sys); const cur=s.verdicts[p.id]; return { ...p, cls, clsBg:tag(cls).bg, clsFg:tag(cls).fg, system:sys.name, options: ALL_VERDICTS.map(v=>{ const ok=VERDICTS[cls].includes(v), on=cur===v; return {label:v, set:()=>this.setVerdict(p,v,cls), hint: ok? '' : (de?'Technisch nicht einlösbar':'Not technically deliverable'), bg: on? (v==='block'||v==='require_approval'? C.primary : v==='allow'? C.bg3 : C.bg3) : 'transparent', color: on? '#fff' : ok? C.fg1 : C.fg3, opacity: ok? 1 : .45, deco: ok? 'none' : 'line-through'}; }) }; });
+    const paper=POLICIES.filter(p=>clsOf(SYSTEMS.find(x=>x.id===p.sys))==='D').length;
+    // evidence
+    const evidenceRows=[...s.chain].reverse().map((e,i)=>({...e, short:e.hash.slice(0,10), bg: i===0? 'rgba(0,184,212,.06)' : 'transparent', bgM: i===0? 'rgba(0,184,212,.08)' : C.bg1}));
+    const head=s.chain[s.chain.length-1];
+    // reports
+    const rdefs=[ {id:'r1',fw:'DSGVO',accent:C.primary,title:de?'Verzeichnis der Verarbeitungstätigkeiten':'Record of processing activities',desc:de?'Art. 30 · inkl. KI-Systeme als Verarbeitungen, Auftragsverarbeiter, Drittlandtransfers.':'Art. 30 · incl. AI systems as processing, processors, third-country transfers.'}, {id:'r2',fw:'EU AI Act',accent:C.warn,title:de?'Konformitätsdossier Hochrisiko':'High-risk conformity dossier',desc:de?'Art. 11 + Annex IV · Bewerber-Ranking, Kreditwürdigkeits-Scoring.':'Art. 11 + Annex IV · HR ranking, credit scoring.'}, {id:'r3',fw:'Evidence',accent:C.cyan,title:de?'Audit-Bundle (Hash-Chain + Signatur)':'Audit bundle (hash chain + signature)',desc:de?'JSON-Export der Kette, Ed25519-Signatur, Verifier-Skript für Prüfer.':'JSON export of the chain, Ed25519 signature, verifier script for auditors.'}, {id:'r4',fw:'Management',accent:C.violet,title:de?'Management Summary':'Management summary',desc:de?'Score, offene Risiken, Klassenverteilung — eine Seite für die Geschäftsführung.':'Score, open risks, class distribution — one page for leadership.'} ];
+    const reports=rdefs.map(r=>{ const st=s.reports[r.id]||'draft'; const pct=(s.rp||{})[r.id]||0; return {...r, ready:st==='ready', pct, status: st==='ready'? t.stReady : st==='running'? t.stRun : t.stDraft, stBg: st==='ready'? C.ok+'22' : st==='running'? C.cyan+'22' : C.bg3, stFg: st==='ready'? C.ok : st==='running'? C.cyan : C.fg2, btn: st==='ready'? t.genReady : st==='running'? t.genRun : t.genBtn, btnBg: st==='ready'? C.bg3 : C.primary, btnFg:'#fff', meta: st==='ready'? `${ts(0)} · sha256:${hash(r.id+s.chain.length).slice(0,8)}` : '', gen:()=>this.genReport(r.id)}; });
+    // pricing
+    const yearly=s.billing==='yearly';
+    const plans=PLANS.map(p=>{ const chosen=s.chosen===p.id; const price= p.id==='enterprise'? (de?'ab ':'from ')+(yearly? '12.490 €' : '1.249 €') : p.m===0? '0 €' : (yearly? p.y.toLocaleString('de-DE')+' €' : p.m+' €'); return {...p, price, per: p.m===0? '' : (yearly? (de?'/ Jahr':'/ year') : (de?'/ Monat':'/ month')), who:p.who[lang], features:p.f, border: p.pop? C.primary : chosen? C.cyan : C.border, bg: p.pop? 'rgba(30,90,255,.08)' : C.bg1, popularVis: p.pop? 'visible':'hidden', ctaLabel: chosen? (de?'Ausgewählt ✓':'Selected ✓') : p.id==='free'? t.cta : p.id==='enterprise'? (de?'Gespräch anfragen':'Talk to sales') : (de?'14 Tage testen':'14-day trial'), btnBg: p.pop||chosen? C.primary : 'transparent', btnFg: p.pop||chosen? '#fff' : C.fg0, btnBorder: p.pop||chosen? C.primary : C.borderS, choose:()=>{ if(p.id==='free'){ this.setState({screen:'audit'}); return; } this.setState({chosen:p.id,plan:p.id}); this.append(`Plan gewählt · ${p.name}`,'billing'); } }; });
+    const navDefs=[['dashboard',t.navOverview,ICON.home,''],['discover',t.navSystems,ICON.cpu,String(SYSTEMS.length)],['classify',t.navClassify,ICON.scale,unclassified? String(unclassified):''],['enforce',t.navEnforce,ICON.shield,String(POLICIES.length)],['evidence','Evidence',ICON.file,String(s.chain.length)],['reports',t.navReports,ICON.chart,''],['pricing',t.navBilling,ICON.card,'']];
+    const navItems=navDefs.map(([id,label,icon,badge])=>({id,label,icon,badge,bg: s.screen===id? C.bg2 : 'transparent', color: s.screen===id? C.fg0 : C.fg1, go:this.go(id)}));
+    const mobileTabs=[['dashboard',t.navOverview,ICON.home],['discover',t.navSystems,ICON.cpu],['enforce',t.navEnforce,ICON.shield],['evidence','Evidence',ICON.file],['reports',t.navReports,ICON.chart]].map(([id,label,icon])=>({id,label,icon,color: (s.screen===id||(id==='discover'&&s.screen==='classify'))? C.cyan : C.fg3, go:this.go(id)}));
+    const titles={dashboard:[t.ovDashboard,t.ovDashboardSub],discover:[t.ovDiscover,t.ovDiscoverSub],classify:[t.ovClassify,t.ovClassifySub],enforce:[t.ovEnforce,t.ovEnforceSub],evidence:[t.ovEvidence,t.ovEvidenceSub],reports:[t.ovReports,t.ovReportsSub]};
+    const curPlan=PLANS.find(p=>p.id===s.plan);
+    return {
+      t, langLabel: de?'Deutsch':'English', langToggleLabel: de?'DE → EN':'EN → DE', toggleLang:()=>this.setState({lang: de?'en':'de'}),
+      webW:1280, webH:820, mobW:390, mobH:844, url:urlMap[s.screen], tabs:[{title:'RealSync Dynamics AI'}],
+      screenChips: screens.map(([id,label])=>{ const on=s.screen===id, key=['landing','audit','dashboard','pricing'].includes(id); return {id,label,go:()=>this.setState({screen:id,toast:null,menuOpen:false}), bg: on? C.primary : key? 'rgba(30,90,255,.10)' : 'transparent', color: on? '#fff' : key? '#7FA0FF' : C.fg2, border: on? C.primary : key? 'rgba(30,90,255,.35)' : 'transparent', weight: on||key? 600 : 500}; }),
+      isMarketing:!isApp, menuOpen:!!s.menuOpen, toggleMenu:()=>this.setState(st=>({menuOpen:!st.menuOpen})),
+      navChips: screens.filter(([id])=>id!=='landing').map(([id,label])=>{ const on=s.screen===id, key=['audit','dashboard','pricing'].includes(id); return {id,label,go:()=>this.setState({screen:id,toast:null,menuOpen:false}), bg: on? C.primary : 'transparent', color: on? '#fff' : key? '#F2F5FA' : C.fg2, border: on? C.primary : 'transparent', weight: on||key? 600 : 500}; }).filter(c=>c.id!=='audit'),
+      marketingChips: [['landing','Landing'],['pricing',t.navPricing],['login','Login']].map(([id,label])=>({id,label,go:()=>this.setState({screen:id,toast:null,menuOpen:false}), bg:'transparent', color:C.fg1, border:C.border})),
+      isLanding:s.screen==='landing', isLogin:s.screen==='login', isAudit:s.screen==='audit', isPricing:s.screen==='pricing', isApp,
+      isDashboard:s.screen==='dashboard', isDiscover:s.screen==='discover', isClassify:s.screen==='classify', isEnforce:s.screen==='enforce', isEvidence:s.screen==='evidence', isReports:s.screen==='reports',
+      goLanding:this.go('landing'), goLogin:this.go('login'), goAudit:this.go('audit'), goPricing:this.go('pricing'), goDashboard:this.go('dashboard'), goDiscover:this.go('discover'), goEnforce:this.go('enforce'), goEvidence:this.go('evidence'), goReports:this.go('reports'),
+      pillars:[{k:'DSGVO',v:de?'EU-Hosting · Frankfurt':'EU hosting · Frankfurt'},{k:'EU AI Act',v:de?'Annex III · Art. 50':'Annex III · Art. 50'},{k:'Evidence',v:'SHA-256 · Ed25519'},{k:de?'Durchsetzung':'Enforcement',v:de?'Klassen A–D, ehrlich':'Classes A–D, honest'}],
+      loginEmail:s.loginEmail, setLoginEmail:e=>this.setState({loginEmail:e.target.value}), loginIdle:!s.loginSent, loginSent:s.loginSent, sendLink:()=>this.setState({loginSent:true, loginEmail:s.loginEmail||'d.kowalski@unternehmen.de'}), completeLogin:()=>{ this.setState({loggedIn:true,screen:'dashboard',loginSent:false}); this.append('Login · Magic Link eingelöst','auth'); },
+      auditSteps, auditStep0:!s.aRunning&&!s.aDone&&s.aStep===0, auditStep1:!s.aRunning&&!s.aDone&&s.aStep===1, auditStep2:!s.aRunning&&!s.aDone&&s.aStep===2, auditStep3:!s.aRunning&&!s.aDone&&s.aStep===3, auditRunning:s.aRunning, auditDone:s.aDone, auditStepLabel:`${Math.min(curStep+1,5)} / 5`,
+      auditOrg:s.aOrg, setAuditOrg:e=>this.setState({aOrg:e.target.value}), auditUrl:s.aUrl, setAuditUrl:e=>this.setState({aUrl:e.target.value}), auditOrgLabel: (s.aOrg||'—')+(s.aUrl? ' · '+s.aUrl.replace(/^https?:\/\//,'') : ''),
+      fwChips:AUDIT_FW.map(([id,label])=>({label,...chip(s.aFw.includes(id)),toggle:()=>this.toggleIn('aFw',id)})), sysChips:AUDIT_SYS.map(([id,label,cls])=>({label,cls,...chip(s.aSys.includes(id)),toggle:()=>this.toggleIn('aSys',id)})), roleChips:AUDIT_ROLE.map(([id,label])=>({label,...chip(s.aRole===id),toggle:()=>this.setState({aRole:id})})),
+      auditPct:s.aPct, auditLog:s.aLog, auditScore, auditScoreColor:scoreCol(auditScore), auditDash:dash(auditScore,78), auditRisks, recPlanName:recPlan.name, recPlanPrice: recPlan.m? recPlan.m+' €/'+(de?'Monat':'month') : '0 €', recPlanReason:rec[1],
+      auditBack:()=>{ if(s.aDone||s.aRunning) this.setState({aDone:false,aRunning:false,aStep:3,aPct:0,aLog:[]}); else this.setState({aStep:Math.max(0,s.aStep-1)}); }, auditBackVis: (s.aStep===0&&!s.aDone&&!s.aRunning)? 'hidden':'visible',
+      auditNext:()=>{ if(s.aRunning) return; if(s.aDone){ this.setState({screen:'dashboard'}); return; } if(!canNext) return; if(s.aStep<3) this.setState({aStep:s.aStep+1}); else this.runAudit(); }, auditNextLabel, auditNextOpacity: canNext&&!s.aRunning? 1 : .45,
+      plans, setMonthly:()=>this.setState({billing:'monthly'}), setYearly:()=>this.setState({billing:'yearly'}), monthlyBg: yearly? 'transparent' : C.bg3, monthlyFg: yearly? C.fg2 : C.fg0, yearlyBg: yearly? C.bg3 : 'transparent', yearlyFg: yearly? C.fg0 : C.fg2,
+      navItems, mobileTabs, tenantName:(s.aOrg||'Unternehmen GmbH'), currentPlanName:curPlan.name, screenTitle:(titles[s.screen]||['',''])[0], screenSub:(titles[s.screen]||['',''])[1],
+      score, scoreColor:scoreCol(score), scoreDash:dash(score,68), scoreDelta:'+4 · 7d',
+      frameworks:[{name:'DSGVO',pct:Math.min(100,62+blocking*3),color:C.primary},{name:'EU AI Act',pct:Math.min(100,40+(SYSTEMS.length-unclassified)*5),color:C.warn},{name:'ISO 42001',pct:41,color:C.violet}],
+      kpis:[{label:t.kSystems,value:SYSTEMS.length,sub:t.kSystemsSub.replace('{n}',unclassified),color:C.fg0,go:this.go('discover')},{label:t.kHigh,value:highCount,sub:t.kHighSub,color:C.warn,go:this.go('classify')},{label:t.kPolicies,value:POLICIES.length,sub:t.kPoliciesSub.replace('{n}',observing),color:C.fg0,go:this.go('enforce')},{label:t.kEvidence,value:s.chain.length,sub: s.verify==='ok'? t.kEvidenceSub : (de?'Ungeprüft':'Unverified'),color:C.cyan,go:this.go('evidence')}],
+      classDist:['A','B','C','D'].map(k=>({k,n:counts[k],pct:Math.max(4,counts[k]/SYSTEMS.length*100),color:CLS_COLOR[k],title:clsTitle[k]})),
+      recentEvidence:evidenceRows.slice(0,4), attention,
+      classFilters:[['all',t.all],['A','A · Inline'],['B','B · '+(de?'Schranke':'Gate')],['C','C · '+(de?'Nachgelagert':'Downstream')],['D','D · '+(de?'Kein Zugriff':'No access')]].map(([id,label])=>({label,set:()=>this.setState({filter:id}),border: s.filter===id? C.primary : C.border, bg: s.filter===id? 'rgba(30,90,255,.18)' : C.bg1, color: s.filter===id? C.fg0 : C.fg1})),
+      discoverCount:`${rows.length} / ${SYSTEMS.length}`, systemRows:rows.map(sysRow), sel:selRow,
+      tierOptions:TIERS.map(tr=>{ const on=s.tiers[sel.id]===tr.id; return {label:tr[lang],ref:tr.ref,color:tr.color,border: on? tr.color : C.border, bg: on? tr.color+'1A' : C.bg0, set:()=>{ this.setState(st=>({tiers:{...st.tiers,[sel.id]:tr.id}})); this.append(`Klassifizierung ${sel.id} → ${tr.de}`,'d.kowalski'); }}; }),
+      art50Border: s.art50[sel.id]? C.cyan : C.border, art50Bg: s.art50[sel.id]? 'rgba(0,184,212,.08)' : C.bg0, art50Track: s.art50[sel.id]? C.cyan : C.bg3, art50Knob: s.art50[sel.id]? 18 : 2, art50KnobM: s.art50[sel.id]? 20 : 2, art50Label: s.art50[sel.id]? (de?'Hinweis aktiv':'Disclosure active') : (de?'Kein Hinweis konfiguriert':'No disclosure configured'), toggleArt50:()=>{ this.setState(st=>({art50:{...st.art50,[sel.id]:!st.art50[sel.id]}})); this.append(`Art. 50 ${sel.id} → ${!s.art50[sel.id]?'aktiv':'aus'}`,'d.kowalski'); },
+      obligations,
+      enforceStats:[{label:t.statPolicies,value:POLICIES.length,color:C.fg0},{label:t.statBlocking,value:blocking,color:C.ok},{label:t.statObserving,value:POLICIES.length-blocking-paper,color:C.warn},{label:t.statPaper,value:paper,color:C.danger}],
+      policies, hasToast:!!s.toast, toast:s.toast, closeToast:()=>this.setState({toast:null}),
+      evidenceRows, evidenceCount:s.chain.length, chainHead:head.hash, verifyChain:()=>this.verifyChain(), verifyIdle:s.verify==='idle', verifyRunning:s.verify==='running', verifyOk:s.verify==='ok', verifyIconColor: s.verify==='ok'? C.ok : s.verify==='running'? C.cyan : C.fg3, verifyTitle: s.verify==='ok'? t.verOk : s.verify==='running'? t.verRun : t.verIdle, verifySub: s.verify==='ok'? t.verOkSub.replace('{n}',s.chain.length) : s.verify==='running'? t.verRunSub : t.verIdleSub,
+      reports
+    };
+  }
+}
+</script>
+</body>
+</html>

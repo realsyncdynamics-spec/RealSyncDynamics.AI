@@ -128,7 +128,7 @@ async function attachPageGuards(page) {
     const req = route.request();
     const type = req.resourceType();
     const url = req.url();
-    if (BLOCKED_TYPE.has(type) || BLOCKED_HOST.test(url)) return route.abort();
+    if (BLOCKED_TYPE.has(type) || BLOCKED_HOST.test(new URL(url).hostname)) return route.abort();
     return route.continue();
   });
 }
@@ -145,7 +145,7 @@ async function renderRoute(page, route) {
   ).catch(() => {});
   await page.waitForLoadState('networkidle', { timeout: HYDRATE_MS }).catch(() => {});
   await stripRuntimeOnlyState(page);
-  return page.content();
+  return await page.content();
 }
 
 async function writeRoute(route, html) {

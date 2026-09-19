@@ -8,6 +8,9 @@ vi.mock('../../../src/components/governance-os/PaymentGraceBanner', () => ({
 vi.mock('../../../src/components/governance-os/GovernanceTabs', () => ({
   GovernanceTabs: () => <Link to="/app/evidence">Nachweise öffnen</Link>,
 }));
+vi.mock('../../../src/components/governance-os/GovernanceSidebar', () => ({
+  GovernanceSidebar: () => null,
+}));
 vi.mock('../../../src/components/governance-os/GovernanceCanvas', () => ({
   GovernanceCanvas: ({ children }: { children: React.ReactNode }) => (
     <div data-testid="canvas">{children}</div>

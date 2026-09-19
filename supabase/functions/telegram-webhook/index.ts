@@ -25,11 +25,12 @@ const WEBHOOK_SECRET    = Deno.env.get('TELEGRAM_WEBHOOK_SECRET');
 const APP_BASE_URL      = Deno.env.get('PUBLIC_APP_URL') ?? Deno.env.get('APP_BASE_URL') ?? 'https://app.realsyncdynamicsai.de';
 
 if (!WEBHOOK_SECRET) {
-  // Webhook ohne Secret ist spoofbar — beim Start laut warnen.
+  // Ohne Secret verarbeitet diese Function gar nichts mehr (siehe Handler).
+  // Beim Start laut sagen, warum der Bot dann stumm bleibt.
   console.error(JSON.stringify({
-    level: 'warn',
+    level: 'error',
     scope: 'telegram_webhook_startup',
-    msg:   'TELEGRAM_WEBHOOK_SECRET not set — webhook is unauthenticated. Set the secret via BotFather and configure this env var.',
+    msg:   'TELEGRAM_WEBHOOK_SECRET not set — every update is rejected unprocessed. Set the secret via BotFather and configure this env var.',
   }));
 }
 
@@ -354,13 +355,26 @@ Deno.serve(async (req) => {
       return new Response('OK', { status: 200 });
     }
 
-    // Webhook-Secret prüfen — falls konfiguriert ist es Pflicht
-    if (WEBHOOK_SECRET) {
-      const incomingSecret = req.headers.get('x-telegram-bot-api-secret-token');
-      if (incomingSecret !== WEBHOOK_SECRET) {
-        // Stille Ablehnung — kein Detail nach außen
-        return new Response('OK', { status: 200 });
+    // Webhook-Secret prüfen — fail-closed, ohne Secret wird nichts verarbeitet.
+    //
+    // Die Prüfung stand früher in `if (WEBHOOK_SECRET) { … }`. Fehlte die
+    // Env-Variable, entfiel damit die einzige Authentisierung dieser
+    // Function: `config.toml` setzt für sie `verify_jwt = false`, eine
+    // zweite Schranke gibt es nicht. Der Startup-Log warnte, verweigerte
+    // aber nicht — jeder POST lief durch in einen Handler, der die
+    // Service-Role hält. Ein fehlendes Secret ist kein Grund, die Prüfung
+    // zu überspringen, sondern der Grund, sie greifen zu lassen.
+    const incomingSecret = req.headers.get('x-telegram-bot-api-secret-token');
+    if (!WEBHOOK_SECRET || incomingSecret !== WEBHOOK_SECRET) {
+      if (!WEBHOOK_SECRET) {
+        console.error(JSON.stringify({
+          level: 'error',
+          scope: 'telegram_webhook',
+          msg:   'TELEGRAM_WEBHOOK_SECRET not set — update rejected unprocessed.',
+        }));
       }
+      // Stille Ablehnung — kein Detail nach außen, Telegram bekommt 200.
+      return new Response('OK', { status: 200 });
     }
 
     if (!BOT_TOKEN) {

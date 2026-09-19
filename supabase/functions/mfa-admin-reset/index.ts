@@ -42,29 +42,9 @@ Deno.serve(async (req) => {
     const targetUserId = body.target_user_id as string | undefined;
     if (!tenantId || !targetUserId) return jsonResponse({ error: 'missing_fields' }, 400);
 
-    // Autorisierung: Plattform-Operator (ADR 0011, falls Tabelle vorhanden)
-    // ODER legacy profiles.is_super_admin ODER owner/admin des Tenants.
-    let isPlatformOperator = false;
-    let useLegacySuperAdminFallback = false;
-    const { data: operatorRows, error: operatorErr } = await admin
-      .from('platform_operators')
-      .select('user_id')
-      .eq('user_id', user.id)
-      .eq('active', true)
-      .limit(1);
-    if (!operatorErr) {
-      isPlatformOperator = (operatorRows ?? []).length > 0;
-    } else if ((operatorErr as { code?: string }).code === '42P01') {
-      useLegacySuperAdminFallback = true;
-    } else {
-      return jsonResponse({ error: 'forbidden' }, 403);
-    }
-
-    let isSuperAdmin = isPlatformOperator;
-    if (useLegacySuperAdminFallback) {
-      const { data: caller } = await admin.from('profiles').select('is_super_admin').eq('id', user.id).maybeSingle();
-      isSuperAdmin = !!caller?.is_super_admin;
-    }
+    // Autorisierung: Plattform-super_admin ODER owner/admin des Tenants.
+    const { data: caller } = await admin.from('profiles').select('is_super_admin').eq('id', user.id).maybeSingle();
+    const isSuperAdmin = !!caller?.is_super_admin;
 
     if (!isSuperAdmin) {
       const { data: m } = await admin

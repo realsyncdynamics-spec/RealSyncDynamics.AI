@@ -97,8 +97,14 @@ export function SecuritySettings() {
     await logAal2Intent('tenant.security_settings.update');
     if (!activeTenantId) return;
     const sb = getSupabase();
-    const { error: e } = await sb.from('tenant_security_settings')
-      .upsert({ tenant_id: activeTenantId, mfa_enforced: next }, { onConflict: 'tenant_id' });
+    const { data: existing, error: readErr } = await sb.from('tenant_security_settings')
+      .select('tenant_id')
+      .eq('tenant_id', activeTenantId)
+      .maybeSingle();
+    if (readErr) throw readErr;
+    const { error: e } = existing
+      ? await sb.from('tenant_security_settings').update({ mfa_enforced: next }).eq('tenant_id', activeTenantId)
+      : await sb.from('tenant_security_settings').insert({ tenant_id: activeTenantId, mfa_enforced: next });
     if (e) throw e;
     setEnforceAll(next);
   });

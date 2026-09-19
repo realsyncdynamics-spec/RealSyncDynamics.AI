@@ -16,6 +16,16 @@ function tracesSampleRate(): number {
   return ENV === 'production' ? 0.08 : 0;
 }
 
+/** True only when the DSN host is the EU ingest endpoint (exact or subdomain). */
+function isEuSentryDsn(dsn: string): boolean {
+  try {
+    const host = new URL(dsn).hostname.toLowerCase();
+    return host === 'ingest.de.sentry.io' || host.endsWith('.ingest.de.sentry.io');
+  } catch {
+    return false;
+  }
+}
+
 function stripUrl(raw?: string): string | undefined {
   if (!raw) return raw;
   try {
@@ -30,7 +40,7 @@ function stripUrl(raw?: string): string | undefined {
 
 export function initSentry(): void {
   if (!DSN || !DSN.startsWith('https://')) return;
-  if (!DSN.includes('ingest.de.sentry.io') && ENV === 'production') {
+  if (!isEuSentryDsn(DSN) && ENV === 'production') {
     console.warn('[sentry] DSN is not ingest.de.sentry.io — skip init in production');
     return;
   }
@@ -47,17 +57,20 @@ export function initSentry(): void {
     integrations: [browserTracingIntegration({ enableInp: true })],
     tracePropagationTargets: [
       'localhost',
-      /^https:\/\/realsyncdynamicsai\.de/i,
-      /^https:\/\/[a-z0-9-]+\.supabase\.co/i,
+      /^https:\/\/([^/]*\.)?realsyncdynamicsai\.de(?:\/|$)/i,
+      /^https:\/\/[a-z0-9-]+\.supabase\.co(?:\/|$)/i,
     ],
-    allowUrls: [/realsyncdynamicsai\.de/i, /localhost/i],
+    allowUrls: [
+      /^https?:\/\/([^/]*\.)?realsyncdynamicsai\.de(?:\/|$)/i,
+      /^https?:\/\/localhost(?::\d+)?(?:\/|$)/i,
+    ],
     denyUrls: [
-      /extensions\//i,
+      /(?:^|\/)extensions\//i,
       /^chrome:\/\//i,
       /^moz-extension:\/\//i,
-      /gtag\/js/i,
-      /googletagmanager/i,
-      /connect\.facebook\.net/i,
+      /(?:^|\/)gtag\/js(?:\?|$)/i,
+      /^https?:\/\/([^/]*\.)?googletagmanager\.com(?:\/|$)/i,
+      /^https?:\/\/([^/]*\.)?connect\.facebook\.net(?:\/|$)/i,
     ],
     ignoreErrors: [
       'ResizeObserver loop limit exceeded',

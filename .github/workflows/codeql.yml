@@ -23,6 +23,11 @@ name: CodeQL
 #
 # Das Repository ist öffentlich. CodeQL und die Ergebnisdarstellung im
 # Security-Reiter sind für öffentliche Repositories kostenfrei.
+#
+# ## Scope
+#
+# Query-Suite und Pfade stehen in `.github/codeql/codeql-config.yml`.
+# Produktpfade bleiben im Scan; Scripts/Tests sind ausgeschlossen.
 
 on:
   push:
@@ -57,9 +62,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # 1468 TS/JS-Dateien: SPA, siteos-core, Edge Functions, Worker.
+          # SPA, siteos-core, Edge Functions, Worker (siehe codeql-config paths).
           - language: javascript-typescript
-          # 67 Python-Dateien unter platform/ (FastAPI-Dienste).
+          # Python unter platform/ (FastAPI-Dienste).
           - language: python
 
     steps:
@@ -77,11 +82,7 @@ jobs:
           # `autobuild` würde hier nur einen npm-Install anstossen, der für
           # die Analyse nichts beiträgt und Minuten kostet.
           build-mode: none
-          # `security-extended` statt der Standardauswahl: Dieses Repo trägt
-          # Prüfpfad, Evidence-Hash-Ketten und Mandantentrennung. Die
-          # zusätzlichen Abfragen kosten Laufzeit, aber die ist hier
-          # nachrangig.
-          queries: security-extended
+          config-file: .github/codeql/codeql-config.yml
 
       - name: Analysieren
         uses: github/codeql-action/analyze@42947a340483f03ba47bb1a039b2c519aab3df85 # v3.37.8

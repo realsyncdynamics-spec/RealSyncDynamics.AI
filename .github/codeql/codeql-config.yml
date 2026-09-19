@@ -1,0 +1,36 @@
+name: RealSyncDynamics product-path CodeQL
+
+# Suite remains security-extended (default + lower-precision security queries).
+# Scope is the product surface, not CI tooling or tests.
+#
+# Intentionally NOT ignored:
+# - worker/src/detectors (runtime detectors, even if regex-anchor noisy)
+# - supabase/functions, src, shared, platform, services
+#
+# Intentionally ignored (current alert noise):
+# - scripts/* (http-to-file-access, command-line injection in local CI helpers)
+# - tests / e2e specs (regex-anchor in Playwright fixtures)
+
+queries:
+  - uses: security-extended
+
+paths:
+  - src
+  - shared
+  - worker
+  - supabase/functions
+  - platform
+  - services
+
+paths-ignore:
+  - tests
+  - test
+  - e2e
+  - scripts
+  - docs
+  - "**/tests/**"
+  - "**/test/**"
+  - "**/*.spec.ts"
+  - "**/*.spec.js"
+  - "**/*.test.ts"
+  - "**/*.test.js"

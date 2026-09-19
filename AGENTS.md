@@ -12,37 +12,47 @@ Du bist der „RealSync Lead Architect“. Dein Fachgebiet ist die Entwicklung v
 ### Public Landing/Marketing: dunkel mit Gold
 
 Verbindlich seit 2026-09-19. Die frühere Light-Theme-Regel (Slate + Petrol,
-`LandingNavbar`) ist damit aufgehoben — sie beschrieb eine Startseite, die so
-nicht mehr gebaut wird.
+`LandingNavbar`) ist aufgehoben — sie beschrieb eine Startseite, die so nicht
+mehr gebaut wird.
 
-- Öffentliche Marketing-Seiten sind **dunkel**. Referenz ist `/`
-  (`MainLanding`) mit `PublicDarkHeader` und `GovernanceFooter`.
-- Grundton `#0a0a0b`, Panel `#121214`, Text `#f2eee6`, Akzent Gold.
-- Ruhige, leicht abgerundete Karten/Chips/Panels (10–14px via `rounded-chip` /
-  `rounded-card` / `rounded-panel`) bleiben die bewusste Ausnahme vom
-  90-Grad-Prinzip.
-- Monospace bleibt Pflicht für alle Metadaten.
-- Inhalte kommen aus den SSoT-Dateien (`hero-content.ts`, `pricing.ts`,
+Maßgeblich ist `/` (`MainLanding`). Alles unten ist an dieser Datei und an
+`landing-theme.ts` nachgeprüft, nicht aus der Absicht abgeleitet.
+
+- **Tokens** stehen in `components/landing/landing-theme.ts`:
+  Grund `#0a0a0b`, Panel `#121214`, Text `#f2eee6`, Akzent `#d6ad68`,
+  heller Akzent `#e8c98a`. Neue Flächen lesen von dort.
+- **Kopf** ist `PublicDarkHeader`. Einen geteilten Fuß gibt es nicht:
+  `MainLanding` trägt ihren Footer inline. `GovernanceFooter` hat keinen
+  Importeur.
+- **Lebende Bausteine** der Startseite sind genau fünf: `PublicDarkHeader`,
+  `EuropeNetworkHero`, `LandingChannelTools`, `LandingPricingSection`,
+  `EnterpriseAccessSection`. Die übrigen 23 Dateien in
+  `components/landing/` hängen an nichts (siehe unten).
+- **Kanten bleiben hart.** Die Startseite nutzt `rounded-full` für Pills,
+  sonst nichts — `--radius-{xs..3xl}` sind in `@theme` auf 0 gezwungen. Die
+  Trust-Radien `rounded-chip` / `-card` / `-panel` (10–14px) kommen auf der
+  dunklen Startseite **nicht** vor; sie gehören zur hellen Altfläche
+  (`LandingShell`, `LandingNavbar`, `pages/Landing.tsx`) und zu den
+  UI-Primitiven.
+- **Monospace** bleibt Pflicht für Metadaten (`LANDING_MONO`).
+- **Inhalte** kommen aus den SSoT-Dateien (`hero-content.ts`, `pricing.ts`,
   `implementation-status.ts`, `public-nav.ts`), nicht aus der Komponente.
 
-**Zwei Goldwerte, Zusammenführung offen.** Der Akzent kommt heute aus zwei
-Quellen mit verschiedenen Werten:
+**23 von 32 Landing-Dateien sind verwaist.** Nichts im Repo importiert sie —
+weder die App noch Tests noch Skripte. Darunter die komplette Maschinerie für
+einen Farbmodus-Schalter (`ThemeSwitch`, `GovernanceStatusBar`,
+`use-ga-theme`, `governance-ai-theme`) samt ihrer Paletten unter
+`[data-ga-theme]` in `src/index.css`, und die gesamte Abschnitts-Familie
+(`LandingOsSpine`, `PlatformCapabilitiesSection`, `RuntimeLayersSection`,
+`RegulatoryTicker`, `WorkspacePreviewSection`, `GovernanceLoopBand`,
+`GovernanceFooter`, `LandingRoadmapSection`).
 
-| Quelle | Wert | Wer liest sie |
-|---|---|---|
-| `landing-theme.ts` → `LANDING_ACCENT` | `#d6ad68` | `MainLanding`, `PublicDarkHeader`, Hero |
-| `--ga-accent` in `src/index.css` unter `[data-ga-theme]` | `#c9a24a` | die Abschnitts-Komponenten über `governance-ai-theme.ts` |
-
-Neue Flächen nehmen `landing-theme.ts`.
-
-**Es gibt keinen funktionierenden Farbmodus-Schalter.** `ThemeSwitch.tsx`,
-`use-ga-theme.ts` und `components/landing/GovernanceStatusBar.tsx` bilden einen
-Umschalter zwischen `titan` und `night` ab — aber nichts davon wird auf der
-Startseite gerendert, und `data-ga-theme` wird im ganzen Projekt nirgends
-gesetzt. Die `[data-ga-theme]`-Blöcke greifen ausschließlich über ihren
-Rückfall `.landing-context:not([data-ga-theme])`, also immer in der
-Titan-Fassung. Wer einen Umschalter braucht, baut **nicht** auf diesem Zweig
-auf: PR #1465 führt ihn als `data-landing-mode` (Gold / Cyan) neu ein.
+Praktische Folge: Der zweite Goldwert `#c9a24a` aus `--ga-accent` ist damit
+kein konkurrierender Token, sondern Teil dieser toten Fläche. Es gibt genau
+ein lebendes Gold. Und wer einen Farbmodus-Schalter braucht, baut **nicht**
+auf dem toten Zweig auf — PR #1465 führt ihn als `data-landing-mode`
+(Gold / Cyan) neu ein, und sein Test hält ausdrücklich fest, dass
+`useGaTheme` nicht auf die Startseite gehört.
 
 **Noch nicht migriert.** Der öffentliche Bereich ist dreigeteilt; nur die
 erste Gruppe entspricht der Regel oben:

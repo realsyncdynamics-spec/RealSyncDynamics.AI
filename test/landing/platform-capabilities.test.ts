@@ -219,12 +219,19 @@ describe('Hero-Panel — Beispiel ist als Beispiel gekennzeichnet', () => {
     resolve(__dirname, '../../src/components/landing/WorkspacePreviewSection.tsx'),
     'utf8',
   );
+  // Die Beispielansicht sitzt seit der Entwurfsumsetzung in einer eigenen
+  // Komponente, nicht mehr als KPI-Streifen inline in MainLanding.
+  const runtimePanel = readFileSync(
+    resolve(__dirname, '../../src/components/landing/RuntimePreviewPanel.tsx'),
+    'utf8',
+  );
 
   it('das Panel nennt sich nicht mehr „LIVE“', () => {
     expect(landing).not.toContain('GOVERNANCE RUNTIME · LIVE');
     expect(titanHero).toContain('EuropeNetworkHero');
     expect(landing).not.toContain('GovernanceSphereHost');
-    expect(landing).toContain('data-demo-kpis');
+    expect(runtimePanel).toContain('data-demo-kpis');
+    expect(runtimePanel).toMatch(/DEMO\s*\/\s*SIMULATED/);
     expect(workspacePreview).toContain('DEMO · BEISPIELDATEN');
     expect(workspacePreview).toContain('BEISPIELANSICHT');
     expect(titanHero).toContain('id="audit-cta"');

@@ -11,6 +11,8 @@ import { LandingChannelTools } from '../components/landing/LandingChannelTools';
 import { LandingPricingSection } from '../components/landing/LandingPricingSection';
 import { PublicDarkHeader } from '../components/landing/PublicDarkHeader';
 import { HeroTitanium } from '../components/landing/HeroTitanium';
+import { RuntimePreviewPanel } from '../components/landing/RuntimePreviewPanel';
+import { LandingDarkBand } from '../components/landing/LandingDarkBand';
 import { LandingRoadmapSection } from '../components/landing/LandingRoadmapSection';
 import { EnterpriseAccessSection } from '../components/landing/EnterpriseAccessSection';
 import { PLATFORM_LIVE_ITEMS, STATUS_LABEL } from '../product/implementation-status';
@@ -36,13 +38,6 @@ import {
  * Replit SSOT public `/` — Dark/Gold Europe-network (static), not interactive sphere.
  * KPI strip mirrors Replit chrome as illustrative demo values (not live production metrics).
  */
-
-const KPI_STRIP = [
-  { label: 'SYSTEME IM SCOPE', value: '1.284', meta: 'demo' },
-  { label: 'EVIDENCE EVENTS', value: '48.902', meta: '+12%' },
-  { label: 'KONTROLLABDECKUNG', value: '93,7', meta: '%' },
-  { label: 'LETZTER PROOF', value: 'vor 02:14', meta: 'min' },
-] as const;
 
 const OS_STEPS = [
   {
@@ -96,39 +91,7 @@ export function MainLanding() {
       <main ref={revealRoot} className="relative z-10">
         <HeroTitanium />
 
-        {/* ── KPI strip (Replit chrome — illustrative demo values) ── */}
-        <section
-          aria-label="Illustrative operating metrics"
-          className="border-b border-white/[0.06] bg-[#0e0e10]/90"
-          data-demo-kpis="true"
-        >
-          <div className="mx-auto grid max-w-[1280px] grid-cols-2 gap-px sm:grid-cols-4">
-            {KPI_STRIP.map((kpi) => (
-              <div key={kpi.label} className="px-[4vw] py-7 sm:px-8">
-                <p
-                  className="text-[9px] tracking-[0.2em]"
-                  style={{ fontFamily: LANDING_MONO, color: LANDING_MUTED }}
-                >
-                  {kpi.label}
-                </p>
-                <p className="mt-2 flex items-baseline gap-2">
-                  <span className="text-[1.65rem] font-semibold tracking-tight" style={{ color: LANDING_TEXT }}>
-                    {kpi.value}
-                  </span>
-                  <span
-                    className="text-[10px] tracking-[0.12em]"
-                    style={{ fontFamily: LANDING_MONO, color: LANDING_ACCENT }}
-                  >
-                    {kpi.meta}
-                  </span>
-                </p>
-              </div>
-            ))}
-          </div>
-          <p className="sr-only">
-            Kennzahlen sind illustrative Demo-Werte der Replit-Referenz, keine Live-Produktionsmetriken.
-          </p>
-        </section>
+        <RuntimePreviewPanel />
 
         {/* ── Das Betriebssystem ── */}
         <section id="runtime" className="border-b border-white/[0.06] py-[72px] lg:py-[88px]">
@@ -191,6 +154,8 @@ export function MainLanding() {
         </section>
 
         <LandingChannelTools />
+
+        <LandingDarkBand />
 
         {/* Live platform modules — registry-backed */}
         <section id="platform" className="border-t border-white/[0.06] py-[72px]">

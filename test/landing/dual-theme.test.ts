@@ -23,6 +23,10 @@ const theme = readFileSync(resolve(root, 'src/components/landing/landing-theme.t
 const header = readFileSync(resolve(root, 'src/components/landing/PublicDarkHeader.tsx'), 'utf8');
 const network = readFileSync(resolve(root, 'src/components/landing/EuropeNetworkHero.tsx'), 'utf8');
 const titanHero = readFileSync(resolve(root, 'src/components/landing/HeroTitanium.tsx'), 'utf8');
+const runtimePanel = readFileSync(
+  resolve(root, 'src/components/landing/RuntimePreviewPanel.tsx'),
+  'utf8',
+);
 
 describe('Landing Replit Dark/Gold — Europe-network', () => {
   it('keeps Dark/Gold amber tokens', () => {
@@ -80,13 +84,19 @@ describe('Landing Replit Dark/Gold — Europe-network', () => {
     expect(HERO_HEADLINE_TEST_SUBSTRING).toBe('AI Compliance');
   });
 
-  it('ships KPI strip + Das Betriebssystem below the fold', () => {
-    expect(landing).toContain('SYSTEME IM SCOPE');
+  it('zeigt Beispielansicht + Das Betriebssystem below the fold', () => {
+    // Der frühere KPI-Streifen zeigte erfundene Zahlen („1.284 SYSTEME IM
+    // SCOPE") mit dem Vorbehalt nur in `sr-only`. An seiner Stelle steht die
+    // Beispielansicht mit sichtbarem DEMO-Marker.
+    expect(landing).toContain('RuntimePreviewPanel');
+    expect(landing).not.toContain('SYSTEME IM SCOPE');
+    expect(runtimePanel).toMatch(/DEMO\s*\/\s*SIMULATED/);
+    expect(runtimePanel).toContain('RUNTIME_PREVIEW_CARDS');
     expect(landing).toContain('DAS BETRIEBSSYSTEM');
     expect(landing).toContain('Discover');
     expect(landing).toContain('Classify');
     expect(landing).toContain('Enforce');
     expect(landing).toContain('Prove');
-    expect(landing).toContain('data-demo-kpis');
+    expect(runtimePanel).toContain('data-demo-kpis');
   });
 });

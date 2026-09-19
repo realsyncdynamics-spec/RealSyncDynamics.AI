@@ -9,12 +9,13 @@ import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { MainLanding } from '../../src/pages/MainLanding';
 import {
-  HERO_DASHBOARD_CTA_LABEL,
   HERO_HEADLINE_TEST_SUBSTRING,
-  HERO_PROOF_CHIPS,
+  HERO_INFRA_LINES,
+  HERO_OPERATING_LOOP,
+  HERO_PLAN_ANCHOR_FREE,
   HERO_SCAN_CTA_LABEL,
-  HERO_SCAN_CTA_LONG,
 } from '../../src/components/governance-frontend/hero-content';
+import { tierById } from '../../src/config/pricing';
 
 const root = resolve(__dirname, '../..');
 const landing = readFileSync(resolve(root, 'src/pages/MainLanding.tsx'), 'utf8');
@@ -49,17 +50,29 @@ describe('Landing Replit Dark/Gold — Europe-network', () => {
     expect(header).toContain('to="/audit"');
   });
 
-  it('renders Replit H1 + CTAs + trust chips', () => {
+  it('renders Titan H1 + Operating Loop + Infrastrukturzeilen + Plan-Anker', () => {
     render(createElement(MemoryRouter, null, createElement(MainLanding)));
-    expect(screen.getByRole('heading', { level: 1 }).textContent).toMatch(/AI Compliance/);
-    expect(screen.getByRole('heading', { level: 1 }).textContent).toMatch(/Operations OS/);
-    expect(screen.getByRole('heading', { level: 1 }).textContent).toMatch(/für Europa/);
-    expect(screen.getAllByText(HERO_SCAN_CTA_LONG).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(HERO_DASHBOARD_CTA_LABEL).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(HERO_SCAN_CTA_LABEL).length).toBeGreaterThan(0);
-    for (const chip of HERO_PROOF_CHIPS) {
-      expect(screen.getAllByText(chip).length).toBeGreaterThan(0);
+    const h1 = screen.getByRole('heading', { level: 1 }).textContent ?? '';
+    expect(h1).toMatch(/AI Compliance/);
+    expect(h1).toMatch(/Operations OS/);
+    expect(h1).toMatch(/for Europe/);
+
+    // Operating Loop als Pfeilkette, nicht als Satzreihe.
+    expect(screen.getAllByText(HERO_OPERATING_LOOP).length).toBeGreaterThan(0);
+
+    // Jede Infrastrukturzeile steht als eine Zeile mit " · " getrennt.
+    for (const line of HERO_INFRA_LINES) {
+      expect(screen.getAllByText(line.join(' · ')).length).toBeGreaterThan(0);
     }
+
+    // Plan-Anker: Gratis-Chip plus die drei Tarife aus der Preis-SSoT.
+    expect(screen.getAllByText(HERO_PLAN_ANCHOR_FREE).length).toBeGreaterThan(0);
+    for (const id of ['starter', 'growth', 'agency'] as const) {
+      const tier = tierById(id);
+      expect(tier, `Tarif ${id} fehlt in der Preis-SSoT`).toBeTruthy();
+      expect(screen.getAllByText(`${tier!.priceEur}€`).length).toBeGreaterThan(0);
+    }
+
     expect(HERO_HEADLINE_TEST_SUBSTRING).toBe('AI Compliance');
   });
 

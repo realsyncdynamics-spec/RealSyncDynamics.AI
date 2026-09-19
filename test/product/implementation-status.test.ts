@@ -71,7 +71,7 @@ describe('implementation-status registry', () => {
     );
     expect(hero).toContain('AI Compliance');
     expect(hero).toContain('Operations OS');
-    expect(hero).toContain('für Europa');
+    expect(hero).toContain('for Europe');
     expect(hero).toContain("HERO_HEADLINE_TEST_SUBSTRING = 'AI Compliance'");
     expect(hero).toContain("HERO_SCAN_CTA_LABEL = 'Free Audit starten'");
     expect(hero).toContain("HERO_SCAN_CTA_LONG = 'Kostenlosen Audit starten'");

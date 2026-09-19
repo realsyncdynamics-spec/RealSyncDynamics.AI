@@ -1,15 +1,19 @@
 import { Link } from 'react-router-dom';
-import { ArrowDownRight, ArrowRight, Network, Layers, ShieldCheck, RefreshCw } from 'lucide-react';
+import {
+  ArrowRight,
+  Network,
+  Layers,
+  ShieldCheck,
+  RefreshCw,
+} from 'lucide-react';
 import { SEOHead } from '../components/SEOHead';
 import { LandingChannelTools } from '../components/landing/LandingChannelTools';
 import { LandingPricingSection } from '../components/landing/LandingPricingSection';
 import { PublicDarkHeader } from '../components/landing/PublicDarkHeader';
-import { EuropeNetworkHero } from '../components/landing/EuropeNetworkHero';
+import { HeroTitanium } from '../components/landing/HeroTitanium';
+import { LandingRoadmapSection } from '../components/landing/LandingRoadmapSection';
 import { EnterpriseAccessSection } from '../components/landing/EnterpriseAccessSection';
-import {
-  PLATFORM_LIVE_ITEMS,
-  STATUS_LABEL,
-} from '../product/implementation-status';
+import { PLATFORM_LIVE_ITEMS, STATUS_LABEL } from '../product/implementation-status';
 import { useStagedReveal } from '../hooks/useStagedReveal';
 import {
   LANDING_ACCENT,
@@ -17,24 +21,15 @@ import {
   LANDING_BG,
   LANDING_BUTTON,
   LANDING_BUTTON_TEXT,
-  LANDING_H1,
-  LANDING_LINE,
   LANDING_MONO,
   LANDING_MUTED,
   LANDING_SANS,
-  LANDING_SERIF,
   LANDING_TEXT,
 } from '../components/landing/landing-theme';
 import {
   CONTINUOUS_COMPLIANCE_NARRATIVE,
   HERO_DASHBOARD_CTA_LABEL,
-  HERO_EYEBROW,
-  HERO_HEADLINE,
-  HERO_OPERATING_LOOP,
-  HERO_PROOF_CHIPS,
   HERO_SCAN_CTA_LABEL,
-  HERO_SCAN_CTA_LONG,
-  HERO_SUBLINE,
 } from '../components/governance-frontend/hero-content';
 
 /**
@@ -99,99 +94,7 @@ export function MainLanding() {
       <PublicDarkHeader overlay />
 
       <main ref={revealRoot} className="relative z-10">
-        {/* ── Hero ── */}
-        <section
-          id="product"
-          className="relative min-h-[min(100svh,880px)] overflow-hidden border-b border-white/[0.06]"
-        >
-          <EuropeNetworkHero />
-
-          <div className="relative z-10 mx-auto flex min-h-[min(100svh,880px)] max-w-[1280px] flex-col justify-center px-[4vw] pb-16 pt-28 sm:pb-20 sm:pt-32">
-            <div className="max-w-xl lg:max-w-[34rem]">
-              <p
-                className="mb-6 text-[10px] font-medium tracking-[0.22em]"
-                style={{ fontFamily: LANDING_MONO, color: LANDING_ACCENT }}
-              >
-                {HERO_EYEBROW}
-              </p>
-
-              <h1
-                className="leading-[0.98] tracking-[-0.035em]"
-                style={{ fontSize: LANDING_H1, fontWeight: 600 }}
-              >
-                {HERO_HEADLINE.map((segments, line) => (
-                  <span key={line} className="block">
-                    {segments.map((segment, i) =>
-                      segment.accent ? (
-                        <em
-                          key={i}
-                          className="not-italic"
-                          style={{
-                            fontFamily: LANDING_SERIF,
-                            fontWeight: 500,
-                            color: LANDING_ACCENT_SOFT,
-                            fontStyle: 'italic',
-                          }}
-                        >
-                          {segment.text}
-                        </em>
-                      ) : (
-                        <span key={i} style={{ color: LANDING_TEXT }}>
-                          {segment.text}
-                        </span>
-                      ),
-                    )}
-                  </span>
-                ))}
-              </h1>
-
-              <p className="mt-6 max-w-md text-[15px] leading-[1.65]" style={{ color: '#c8c4bc' }}>
-                <span style={{ color: LANDING_TEXT }}>{HERO_OPERATING_LOOP}</span>{' '}
-                {HERO_SUBLINE}
-              </p>
-
-              <div className="mt-9 flex flex-wrap items-center gap-3">
-                <Link
-                  id="audit-cta"
-                  data-hero-cta="audit"
-                  to="/audit"
-                  className="inline-flex items-center gap-2 rounded-full px-6 py-3.5 text-[13px] font-semibold transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d6ad68]"
-                  style={{
-                    backgroundColor: LANDING_BUTTON,
-                    color: LANDING_BUTTON_TEXT,
-                    boxShadow: '0 0 32px rgba(214, 173, 104, 0.28)',
-                  }}
-                >
-                  {HERO_SCAN_CTA_LONG} <ArrowRight className="h-4 w-4" />
-                </Link>
-                <Link
-                  to="/evidence"
-                  className="inline-flex items-center gap-2 rounded-full border px-6 py-3.5 text-[13px] font-medium transition hover:bg-[#d6ad68]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d6ad68]/50"
-                  style={{ borderColor: `${LANDING_ACCENT}66`, color: LANDING_TEXT }}
-                >
-                  {HERO_DASHBOARD_CTA_LABEL} <ArrowDownRight className="h-4 w-4" />
-                </Link>
-              </div>
-
-              {/* Trust row */}
-              <ul
-                className="mt-12 flex flex-wrap gap-x-5 gap-y-2 border-t pt-6"
-                style={{ borderColor: LANDING_LINE }}
-                aria-label="Compliance-Standards"
-              >
-                {HERO_PROOF_CHIPS.map((chip) => (
-                  <li
-                    key={chip}
-                    className="text-[10px] tracking-[0.16em]"
-                    style={{ fontFamily: LANDING_MONO, color: LANDING_MUTED }}
-                  >
-                    {chip}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        </section>
+        <HeroTitanium />
 
         {/* ── KPI strip (Replit chrome — illustrative demo values) ── */}
         <section
@@ -383,6 +286,7 @@ export function MainLanding() {
           </div>
         </section>
 
+        <LandingRoadmapSection />
         <LandingPricingSection />
         <EnterpriseAccessSection />
 

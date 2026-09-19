@@ -34,6 +34,7 @@ import { AgentRunOutput } from './AgentRunOutput';
 import { AgentRunForm } from './AgentRunForm';
 import { FeedbackReportsInput } from './FeedbackReportsInput';
 import { AGENT_INPUT_SCHEMAS, hasInputSchema } from './agentInputSchemas';
+import { AgentOsPanel } from '../agent-os/AgentOsPanel';
 
 const FEEDBACK_AGENT_ID = 'feedback-intelligence-agent';
 
@@ -249,6 +250,7 @@ export function AgentsCenterView() {
 
   return (
     <div className="flex flex-col h-full bg-obsidian-950 text-titanium-100">
+      <div className="px-6 pt-4"><AgentOsPanel /></div>
       <div className="border-b border-titanium-900 px-6 py-4 shrink-0">
         <div className="flex items-center justify-between">
           <div>

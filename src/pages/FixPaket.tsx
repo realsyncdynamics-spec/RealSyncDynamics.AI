@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Loader2, Send, AlertTriangle, CheckCircle2, Wrench } from 'lucide-react';
+import { getSupabaseAnonKey, getSupabaseUrl } from '../lib/supabaseUrl';
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+const SUPABASE_URL = getSupabaseUrl();
+const SUPABASE_ANON_KEY = getSupabaseAnonKey();
 
 /**
  * /fix-paket — public request form for the DSGVO-Fix-Paket Light service.

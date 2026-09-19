@@ -4,8 +4,9 @@ import {
   ArrowLeft, ArrowRight, Cookie, AlertTriangle, CheckCircle2, Globe, Send, Loader2,
   ShieldCheck, Eye, Activity, Mail, CheckCircle,
 } from 'lucide-react';
+import { getSupabaseUrl } from '../lib/supabaseUrl';
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
+const SUPABASE_URL = getSupabaseUrl();
 
 /* ── Loading-Sequenz ──────────────────────────────────────────── */
 // Rotiert während der Scan-Request läuft, damit User die ~2-5 s

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { CalendarDays, ArrowRight, Check } from 'lucide-react';
+import { getSupabaseAnonKey, getSupabaseUrl } from '../lib/supabaseUrl';
 
 /**
  * Methodology-Walkthrough-Booking-Flow.
@@ -22,8 +23,8 @@ const SLOT_LABEL: Record<Slot, string> = {
   flexible: 'Flexibel — Vorschlag erbeten',
 };
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string | undefined;
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
+const SUPABASE_URL = getSupabaseUrl();
+const SUPABASE_ANON_KEY = getSupabaseAnonKey();
 
 export function MethodologyBooking({ source = 'methodology' }: { source?: string }) {
   const [email, setEmail] = useState('');
@@ -40,18 +41,7 @@ export function MethodologyBooking({ source = 'methodology' }: { source?: string
     setErrorMsg('');
 
     try {
-      // Use existing sales-lead Edge Function. If Supabase env not configured,
-      // fall back to mailto so the form is never a dead end.
-      if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-        const subject = encodeURIComponent(`Methodik-Walkthrough — ${company}`);
-        const body = encodeURIComponent(
-          `Email: ${email}\nFirma: ${company}\nZeit-Slot: ${SLOT_LABEL[slot]}\nThema: ${topic || '—'}\nQuelle: ${source}`,
-        );
-        window.location.href = `mailto:hello@realsyncdynamicsai.de?subject=${subject}&body=${body}`;
-        setStatus('success');
-        return;
-      }
-
+      // Use existing sales-lead Edge Function (URL/key via production fallback).
       const response = await fetch(`${SUPABASE_URL}/functions/v1/sales-lead`, {
         method: 'POST',
         headers: {

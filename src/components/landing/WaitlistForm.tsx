@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { ArrowRight, CheckCircle2, Loader2, AlertTriangle } from 'lucide-react';
+import { getSupabaseUrl } from '../../lib/supabaseUrl';
 
 /**
  * WaitlistForm — Anmeldeformular der Warteliste (/warteliste).
@@ -22,9 +23,10 @@ export const WAITLIST_ENDPOINT = '/functions/v1/sales-lead';
 /**
  * Lazy statt Modul-Konstante: die Env wird erst beim Absenden gelesen, damit
  * Tests sie stubben koennen und ein spaet injizierter Wert nicht ignoriert wird.
+ * Fallback über getSupabaseUrl(), falls VITE_SUPABASE_URL im Build fehlt.
  */
-function supabaseUrl(): string | undefined {
-  return import.meta.env.VITE_SUPABASE_URL as string | undefined;
+function supabaseUrl(): string {
+  return getSupabaseUrl();
 }
 
 export const WAITLIST_INTERESTS = [
@@ -57,10 +59,6 @@ export function WaitlistForm({ source = 'warteliste', compact = false, id }: Pro
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const baseUrl = supabaseUrl();
-    if (!baseUrl) {
-      setError('Die Anmeldung ist gerade nicht erreichbar. Bitte schreiben Sie uns direkt.');
-      return;
-    }
 
     const data = new FormData(event.currentTarget);
     // utm_*-Parameter aus der aktuellen URL uebernehmen — die Zuordnung von

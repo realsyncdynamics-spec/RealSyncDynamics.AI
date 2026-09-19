@@ -1,3 +1,5 @@
+import { getSupabaseAnonKey, getSupabaseUrl } from './supabaseUrl';
+
 /**
  * Fire-and-forget upgrade-click tracking.
  *
@@ -14,8 +16,8 @@
  *   instead rides in `use_case` (free text, 50-char cap) plus a structured
  *   message body. See FixPaket.tsx for the same pattern.
  */
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+const SUPABASE_URL = getSupabaseUrl();
+const SUPABASE_ANON_KEY = getSupabaseAnonKey();
 
 export type UpgradePlan = 'starter' | 'growth';
 
@@ -23,8 +25,6 @@ export function trackUpgradeClick(
   plan: UpgradePlan,
   opts: { auditId?: string | null; source?: string; email?: string } = {},
 ): void {
-  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return;
-
   const lines: string[] = [];
   lines.push(`Upgrade-Plan: ${plan}`);
   if (opts.auditId) lines.push(`Audit-ID: ${opts.auditId}`);

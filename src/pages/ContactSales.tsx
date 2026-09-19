@@ -4,8 +4,9 @@ import {
   ArrowLeft, Mail, CheckCircle2, AlertTriangle, Loader2, Send,
 } from 'lucide-react';
 import { normalizePlanKey, planByKey, type PlanKey } from '@/shared/pricing';
+import { getSupabaseUrl } from '../lib/supabaseUrl';
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
+const SUPABASE_URL = getSupabaseUrl();
 
 interface FormState {
   name: string;

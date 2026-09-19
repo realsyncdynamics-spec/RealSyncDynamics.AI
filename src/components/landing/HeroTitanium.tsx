@@ -53,14 +53,14 @@ function planChips(): PlanChip[] {
       key: tier.id,
       name: tier.name,
       price: `${tier.priceEur}€`,
-      to: `/pricing/${tier.id}`,
+      to: `/checkout/${tier.id}?source=hero`,
       featured: tier.id === FEATURED_PLAN,
     })),
     {
       key: 'enterprise',
       name: 'Enterprise',
       price: null,
-      to: '/contact-sales?source=hero-plan-anchor',
+      to: '/contact-sales?source=hero',
       featured: false,
     },
   ];

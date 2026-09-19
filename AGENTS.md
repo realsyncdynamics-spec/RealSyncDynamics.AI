@@ -62,14 +62,25 @@ auf dem toten Zweig auf — PR #1465 führt ihn als `data-landing-mode`
 (Gold / Cyan) neu ein, und sein Test hält ausdrücklich fest, dass
 `useGaTheme` nicht auf die Startseite gehört.
 
-**Noch nicht migriert.** Der öffentliche Bereich ist dreigeteilt; nur die
-erste Gruppe entspricht der Regel oben:
+**Noch nicht migriert.** Der öffentliche Bereich hat vier Kopf-Muster
+nebeneinander; nur das erste entspricht der Regel oben:
 
-| Kopf | Seiten |
-|---|---|
-| `PublicDarkHeader` | `MainLanding`, `Roadmap`, `Branchen` |
-| `LandingNavbar` (hell, Altbestand) | `Landing`, `WhatsAppPricingPage`, `DemoTourStartPage`, `LandingPagesOverview` |
-| `PublicNav` (`enterprise-os`) | `LandingPage`, `AgenciesPage`, `AiGovernancePage`, `AuditLandingPage`, `LegalPage`, `CheckoutPageWrapper` |
+| Muster | Art | Seiten auf `main` (dddf4b9) |
+|---|---|---|
+| `components/landing/PublicDarkHeader` | dunkel, die Referenz | 3 Seiten |
+| `components/LandingNavbar` | hell, Altbestand | 4 Seiten |
+| `enterprise-os/layout/PublicNav` | eigener Strang | 6 Seiten |
+| `pages/alternative/AlternativeLanding` | eigener `<header>` im Rahmen | 7 Seiten |
+
+Die Zahlen bewegen sich: `CaralegalAlternative` kam am Messtag als siebte
+Wettbewerbsseite dazu. Wer den aktuellen Stand braucht, zählt selbst — der
+Befehl misst den ausgecheckten Stand, nicht `main`:
+
+```bash
+for c in PublicDarkHeader LandingNavbar PublicNav AlternativeLanding; do
+  printf '%-20s %s\n' "$c" "$(git grep -l "$c" -- 'src/**/*.tsx' | grep -vc "$c.tsx")"
+done
+```
 
 Neue öffentliche Seiten bekommen `PublicDarkHeader`. Bestehende werden
 schrittweise nachgezogen, nicht in einem Zug.

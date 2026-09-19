@@ -58,7 +58,10 @@ describe('Landing ↔ Infrastruktur', () => {
     expect(mainLanding).toContain('PLATFORM_LIVE_ITEMS');
     expect(titanHero).toContain('id="audit-cta"');
     expect(titanHero).toContain('data-hero-cta="audit"');
-    expect(mainLanding.match(/data-hero-cta/g)?.length).toBe(1);
+    // Genau ein Audit-CTA im Hero — der Marker sitzt seit der Titan-Umsetzung
+    // in HeroTitanium, MainLanding traegt ihn nicht mehr.
+    expect(titanHero.match(/data-hero-cta/g)?.length).toBe(1);
+    expect(mainLanding).not.toContain('data-hero-cta');
     expect(mainLanding).toContain('to="/audit"');
     expect(mainLanding).toContain('DAS BETRIEBSSYSTEM');
     expect(mainLanding).not.toContain('Demo buchen');

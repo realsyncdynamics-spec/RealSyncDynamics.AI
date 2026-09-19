@@ -9,7 +9,7 @@ Du bist der „RealSync Lead Architect“. Dein Fachgebiet ist die Entwicklung v
 - **Formen:** 90-Grad-Winkel (strikte Kanten, keine abgerundeten Ecken/Rounded Corners).
 - **Typografie:** Monospace-Schriften für technische Daten und Metadaten.
 
-### Public Landing/Marketing: Dark/Gold, zwei Varianten
+### Public Landing/Marketing: dunkel mit Gold
 
 Verbindlich seit 2026-09-19. Die frühere Light-Theme-Regel (Slate + Petrol,
 `LandingNavbar`) ist damit aufgehoben — sie beschrieb eine Startseite, die so
@@ -17,22 +17,32 @@ nicht mehr gebaut wird.
 
 - Öffentliche Marketing-Seiten sind **dunkel**. Referenz ist `/`
   (`MainLanding`) mit `PublicDarkHeader` und `GovernanceFooter`.
-- Der Besucher wählt zwischen zwei Ausprägungen. Umgeschaltet wird über
-  `data-ga-theme` am Seiten-Wrapper (`ThemeSwitch`, Wahl im `localStorage`):
-  - `titan` — gebürstetes Titan, Gold-Akzent `#c9a24a`, Inter Tight als
-    Display-Schnitt. **Vorgabe beim ersten Aufruf.**
-  - `night` — Schwarz, Cyan-Akzent `#22c3e6`, Playfair Display.
-- Beide Paletten stehen gebündelt in `src/index.css` unter `[data-ga-theme]`.
-  Farben dort ändern, an einer Stelle für beide Varianten — nicht in den
-  Komponenten. Die TS-Konstanten in `governance-ai-theme.ts` zeigen nur
-  auf diese Variablen.
-- `prefers-color-scheme` steuert hier nichts: Beide Varianten sind dunkel.
+- Grundton `#0a0a0b`, Panel `#121214`, Text `#f2eee6`, Akzent Gold.
 - Ruhige, leicht abgerundete Karten/Chips/Panels (10–14px via `rounded-chip` /
   `rounded-card` / `rounded-panel`) bleiben die bewusste Ausnahme vom
   90-Grad-Prinzip.
 - Monospace bleibt Pflicht für alle Metadaten.
 - Inhalte kommen aus den SSoT-Dateien (`hero-content.ts`, `pricing.ts`,
   `implementation-status.ts`, `public-nav.ts`), nicht aus der Komponente.
+
+**Zwei Goldwerte, Zusammenführung offen.** Der Akzent kommt heute aus zwei
+Quellen mit verschiedenen Werten:
+
+| Quelle | Wert | Wer liest sie |
+|---|---|---|
+| `landing-theme.ts` → `LANDING_ACCENT` | `#d6ad68` | `MainLanding`, `PublicDarkHeader`, Hero |
+| `--ga-accent` in `src/index.css` unter `[data-ga-theme]` | `#c9a24a` | die Abschnitts-Komponenten über `governance-ai-theme.ts` |
+
+Neue Flächen nehmen `landing-theme.ts`.
+
+**Es gibt keinen funktionierenden Farbmodus-Schalter.** `ThemeSwitch.tsx`,
+`use-ga-theme.ts` und `components/landing/GovernanceStatusBar.tsx` bilden einen
+Umschalter zwischen `titan` und `night` ab — aber nichts davon wird auf der
+Startseite gerendert, und `data-ga-theme` wird im ganzen Projekt nirgends
+gesetzt. Die `[data-ga-theme]`-Blöcke greifen ausschließlich über ihren
+Rückfall `.landing-context:not([data-ga-theme])`, also immer in der
+Titan-Fassung. Wer einen Umschalter braucht, baut **nicht** auf diesem Zweig
+auf: PR #1465 führt ihn als `data-landing-mode` (Gold / Cyan) neu ein.
 
 **Noch nicht migriert.** Der öffentliche Bereich ist dreigeteilt; nur die
 erste Gruppe entspricht der Regel oben:

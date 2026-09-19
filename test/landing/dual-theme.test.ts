@@ -22,6 +22,7 @@ const landing = readFileSync(resolve(root, 'src/pages/MainLanding.tsx'), 'utf8')
 const theme = readFileSync(resolve(root, 'src/components/landing/landing-theme.ts'), 'utf8');
 const header = readFileSync(resolve(root, 'src/components/landing/PublicDarkHeader.tsx'), 'utf8');
 const network = readFileSync(resolve(root, 'src/components/landing/EuropeNetworkHero.tsx'), 'utf8');
+const titanHero = readFileSync(resolve(root, 'src/components/landing/HeroTitanium.tsx'), 'utf8');
 
 describe('Landing Replit Dark/Gold — Europe-network', () => {
   it('keeps Dark/Gold amber tokens', () => {
@@ -32,10 +33,13 @@ describe('Landing Replit Dark/Gold — Europe-network', () => {
   });
 
   it('uses static Europe network — not interactive sphere', () => {
-    expect(landing).toContain('EuropeNetworkHero');
+    // Der Hero sitzt seit der Titan-Umsetzung in HeroTitanium, nicht mehr
+    // inline in MainLanding — die Backdrop-Zusicherung wandert mit.
+    expect(titanHero).toContain('EuropeNetworkHero');
+    expect(landing).toContain('HeroTitanium');
     expect(landing).not.toContain('GovernanceSphereHost');
     expect(landing).not.toContain('useGaTheme');
-    expect(landing).not.toContain('EuropeReliefBackdrop');
+    expect(titanHero).not.toContain('EuropeReliefBackdrop');
     expect(network).toContain('europe-network-static');
     expect(network).toContain('data-hero-interactive="false"');
     expect(network).toContain('/europe-globe.webp');

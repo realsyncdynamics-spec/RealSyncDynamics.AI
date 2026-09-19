@@ -1,12 +1,20 @@
 // Sales-Lead-Capture for public conversion forms.
 //
 // POST /functions/v1/sales-lead (verify_jwt = false — public endpoint)
-// Body: { name?, email, company?, use_case?, message?, source?, intent?, tier?, path? }
+// Body: {
+//   name?, email, company?, use_case?, message?, source?, intent?,
+//   tier?, plan_key?, domains?, company_domain?, path?
+// }
 //
 // Public leads are rate-limited, stored in public.sales_leads and optionally
 // forwarded to the configured team webhook. Website-builder leads that
 // explicitly requested the Starter offer also receive the three-month-free
 // offer by email via the existing Resend configuration.
+//
+// Inquiry plans (purchaseMode === 'inquiry', e.g. enterprise / partner):
+//   - plan_key is required (or tier that normalizes to a known inquiry key)
+//   - source is normalized to `contact-sales`
+// Non-inquiry callers (upgrade clicks, waitlist, starter offer) stay unchanged.
 //
 // ── Warteliste (mode='waitlist') ────────────────────────────────────────────
 // Zusätzlich bedient dieser Endpunkt die Warteliste der Landingpage
@@ -26,6 +34,7 @@
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { buildCorsHeaders, corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
+import { normalizePlanKey, planByKey } from '../_shared/pricing.generated.ts';
 
 // Preflight muss GET mit abdecken (Wartelisten-Zähler). Die bestehenden
 // POST-Antworten behalten `corsHeaders` — der Unterschied ist ausschliesslich
@@ -36,6 +45,10 @@ const cors = buildCorsHeaders('GET, POST, OPTIONS');
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const RESEND_API_URL = 'https://api.resend.com/emails';
 const FROM_EMAIL = 'alerts@realsyncdynamicsai.de';
+
+/** Max host length (DNS label budget) and list size for inquiry domains. */
+const MAX_DOMAIN_LEN = 253;
+const MAX_DOMAINS = 25;
 
 /** Erlaubte Werte der Wartelisten-Spalten — Spiegel der CHECK-Constraints. */
 // `bots` gehoert dazu, weil die Landingpage genau diesen Wert sendet
@@ -100,6 +113,57 @@ function pickUtm(raw: unknown): Record<string, string> {
   return out;
 }
 
+/** Strip scheme/path/port noise; keep a host-like token capped at DNS length. */
+function normalizeDomainHost(raw: string): string | null {
+  let s = raw.trim().toLowerCase();
+  if (!s) return null;
+  s = s.replace(/^https?:\/\//, '');
+  s = s.replace(/^www\./, '');
+  s = s.split(/[/?#]/)[0] ?? '';
+  s = s.replace(/:\d+$/, '');
+  s = s.slice(0, MAX_DOMAIN_LEN);
+  return s || null;
+}
+
+/**
+ * Accept `domains` as string (comma/whitespace/semicolon separated) or string[].
+ * Dedupes, caps length and count. Empty input → [].
+ */
+function normalizeDomains(raw: unknown): string[] {
+  const items: string[] = [];
+  if (typeof raw === 'string') {
+    for (const part of raw.split(/[\s,;]+/)) {
+      if (part.trim()) items.push(part);
+    }
+  } else if (Array.isArray(raw)) {
+    for (const x of raw) {
+      if (typeof x === 'string' && x.trim()) items.push(x);
+    }
+  }
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const item of items) {
+    const host = normalizeDomainHost(item);
+    if (!host || seen.has(host)) continue;
+    seen.add(host);
+    out.push(host);
+    if (out.length >= MAX_DOMAINS) break;
+  }
+  return out;
+}
+
+/** True when free-text fields signal Enterprise/Partner inquiry intent. */
+function looksLikeEnterprisePartnerIntent(...parts: Array<string | null | undefined>): boolean {
+  const hay = parts.filter(Boolean).join(' ').toLowerCase();
+  return /\b(enterprise|partner|scale)\b/.test(hay);
+}
+
+function isContactSalesSource(raw: string | null | undefined): boolean {
+  if (!raw) return false;
+  const s = raw.trim().toLowerCase();
+  return s === 'contact-sales' || s === 'contact_sales';
+}
+
 Deno.serve(async (req: Request) => {
   const preflight = handleOptions(req, cors); if (preflight) return preflight;
 
@@ -129,7 +193,26 @@ Deno.serve(async (req: Request) => {
   const text = await req.text();
   if (text.length > 8192) return jsonError(413, 'BODY_TOO_LARGE', 'max 8 KB');
 
-  let body: { mode?: string; name?: string; email?: string; company?: string; use_case?: string; message?: string; source?: string; intent?: string; tier?: string; path?: string; role?: string; team_size?: string; note?: string; referrer?: string; utm?: unknown };
+  let body: {
+    mode?: string;
+    name?: string;
+    email?: string;
+    company?: string;
+    use_case?: string;
+    message?: string;
+    source?: string;
+    intent?: string;
+    tier?: string;
+    plan_key?: string;
+    domains?: string | string[];
+    company_domain?: string;
+    path?: string;
+    role?: string;
+    team_size?: string;
+    note?: string;
+    referrer?: string;
+    utm?: unknown;
+  };
   try { body = JSON.parse(text); } catch { return jsonError(400, 'BAD_REQUEST', 'invalid json'); }
 
   const email = (body.email ?? '').trim().toLowerCase();
@@ -206,20 +289,85 @@ Deno.serve(async (req: Request) => {
 
   const intent = cap(body.intent, 100);
   const tier = cap(body.tier, 50);
+  const rawPlanKey = cap(body.plan_key, 64);
   const name = cap(body.name, 200);
   const company = cap(body.company, 200);
+  const useCase = cap(body.use_case, 50);
+
+  // Resolve canonical plan_key: explicit plan_key wins; else map tier when it
+  // is a known key (scale→partner). Unknown free-text tiers stay as metadata.tier only.
+  let planKey: string | null = null;
+  if (rawPlanKey) {
+    planKey = normalizePlanKey(rawPlanKey);
+    if (!planKey) {
+      return jsonError(400, 'INVALID_PLAN_KEY', `unbekannter plan_key: ${rawPlanKey}`, cors);
+    }
+  } else if (tier) {
+    planKey = normalizePlanKey(tier);
+  }
+
+  const plan = planKey ? planByKey(planKey) : null;
+  const isInquiryPlan = plan?.purchaseMode === 'inquiry';
+
+  const sourceRaw = cap(body.source, 200);
+  const contactSalesInquiry =
+    isContactSalesSource(sourceRaw) &&
+    looksLikeEnterprisePartnerIntent(intent, useCase, tier, rawPlanKey);
+
+  // Enforce inquiry contract only when inquiry intent is present — never for
+  // waitlist (handled above), starter offer, or generic upgrade/contact forms
+  // that omit plan_key and do not signal enterprise/partner.
+  if (isInquiryPlan || contactSalesInquiry) {
+    if (!planKey) {
+      return jsonError(400, 'PLAN_KEY_REQUIRED', 'plan_key required for inquiry leads', cors);
+    }
+    if (!isInquiryPlan) {
+      return jsonError(
+        400,
+        'INVALID_PLAN_KEY',
+        `plan_key ${planKey} is not an inquiry plan`,
+        cors,
+      );
+    }
+  }
+
+  // Inquiry leads always land under contact-sales (accept + normalize).
+  const source = isInquiryPlan || contactSalesInquiry
+    ? 'contact-sales'
+    : sourceRaw;
+
+  const domains = normalizeDomains(body.domains);
+  const companyDomainExplicit = typeof body.company_domain === 'string'
+    ? normalizeDomainHost(body.company_domain)
+    : null;
+  const companyDomain = companyDomainExplicit ?? (domains[0] ?? null);
+  // If company_domain was the only input, mirror it into domains for indexing.
+  const domainsPersisted = domains.length > 0
+    ? domains
+    : (companyDomain ? [companyDomain] : []);
+
+  const metadata: Record<string, unknown> = {
+    ...(intent ? { intent } : {}),
+    ...(tier ? { tier } : {}),
+    ...(planKey ? { plan_key: planKey } : {}),
+    ...(domainsPersisted.length ? { domains: domainsPersisted } : {}),
+    ...(companyDomain ? { company_domain: companyDomain } : {}),
+    ...(body.source === 'unified-entry' ? { marketing_consent: true } : {}),
+  };
 
   const { data, error } = await admin.from('sales_leads').insert({
     name,
     email,
     company,
-    use_case: cap(body.use_case, 50),
+    use_case: useCase,
     message: cap(body.message, 4000),
-    source: cap(body.source, 200),
+    source,
     path: cap(body.path, 500),
     user_agent: cap(req.headers.get('user-agent'), 500),
     ip_hash: ipHash,
-    metadata: { ...(intent ? { intent } : {}), ...(tier ? { tier } : {}), ...(body.source === 'unified-entry' ? { marketing_consent: true } : {}) },
+    company_domain: companyDomain,
+    domains: domainsPersisted,
+    metadata,
   }).select('id, created_at').single();
 
   if (error) return jsonError(500, 'INTERNAL', error.message);
@@ -246,9 +394,12 @@ Deno.serve(async (req: Request) => {
             (body.company ? `Company: ${body.company}\n` : '') +
             (body.use_case ? `Use case: ${body.use_case}\n` : '') +
             (body.message ? `Message: ${body.message.slice(0, 500)}\n` : '') +
-            (body.source ? `Source: ${body.source}\n` : '') +
+            (source ? `Source: ${source}\n` : '') +
             (intent ? `Intent: ${intent}\n` : '') +
             (tier ? `Tier: ${tier}\n` : '') +
+            (planKey ? `Plan: ${planKey}\n` : '') +
+            (companyDomain ? `Domain: ${companyDomain}\n` : '') +
+            (domainsPersisted.length > 1 ? `Domains: ${domainsPersisted.join(', ')}\n` : '') +
             (body.path ? `Path: ${body.path}\n` : ''),
         }),
         signal: AbortSignal.timeout(5000),
@@ -258,5 +409,11 @@ Deno.serve(async (req: Request) => {
     }
   }
 
-  return jsonResponse({ ok: true, id: data?.id, created_at: data?.created_at, offer_email_queued: body.source === 'unified-entry' && intent === 'starter_3_months_free' });
+  return jsonResponse({
+    ok: true,
+    id: data?.id,
+    created_at: data?.created_at,
+    plan_key: planKey ?? undefined,
+    offer_email_queued: body.source === 'unified-entry' && intent === 'starter_3_months_free',
+  });
 });

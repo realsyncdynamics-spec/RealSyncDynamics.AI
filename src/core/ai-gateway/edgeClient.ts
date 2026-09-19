@@ -29,6 +29,8 @@ export interface EdgeClientConfig {
   fetchImpl?: typeof fetch;
   /** Request timeout. */
   timeoutMs?: number;
+  /** Override POST URL (CSRF proxy `/api/fn/ai-gateway`). */
+  endpoint?: string;
 }
 
 export type EdgeOp = 'generate' | 'extract_json' | 'embed' | 'stream';
@@ -75,7 +77,8 @@ export class AiGatewayEdgeClient {
     // ServiceWorkerGlobalScope. Storing it as an instance property
     // would otherwise re-bind `this` to the class instance.
     this.fetchImpl = config.fetchImpl ?? fetch.bind(globalThis);
-    this.endpoint = `${config.supabaseUrl.replace(/\/$/, '')}/functions/v1/ai-gateway`;
+    this.endpoint = config.endpoint
+      ?? `${config.supabaseUrl.replace(/\/$/, '')}/functions/v1/ai-gateway`;
   }
 
   generate(request: AiGatewayRequest): Promise<AiGatewayResponse<string>> {

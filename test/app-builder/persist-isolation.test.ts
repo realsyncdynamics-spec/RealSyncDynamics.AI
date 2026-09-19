@@ -200,7 +200,7 @@ describe('persist-api client — production path', () => {
   );
 
   it('invokes siteos/code-persist, never siteos_blueprints', () => {
-    expect(src).toMatch(/functions\.invoke\('siteos\/code-persist'/);
+    expect(src).toMatch(/edgeFunctionUrl\('siteos\/code-persist'\)/);
     expect(src).not.toMatch(/siteos_blueprints/);
     expect(src).not.toMatch(/siteos\/edit/);
     expect(src).not.toMatch(/siteos\/builder/);

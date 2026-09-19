@@ -1,0 +1,229 @@
+/* =========================================================================
+   RealSyncDynamics — Design Tokens
+   Single source of truth for colors, typography, spacing, radii, shadows.
+   Import this file at the top of every HTML/JSX surface.
+   ========================================================================= */
+
+/* ---------- Fonts (Google Fonts fallback — see README font substitution flag) */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Inter+Tight:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+/* ---------- Design tokens */
+:root {
+  /* -- Primary: Verification Blue --------------------------------------- */
+  --primary-50:  #EEF3FF;
+  --primary-100: #D9E3FF;
+  --primary-200: #B3C7FF;
+  --primary-300: #7FA0FF;
+  --primary-400: #4D79FF;
+  --primary-500: #2F65FF;
+  --primary-600: #1E5AFF;  /* hero action */
+  --primary-700: #1641C4;
+  --primary-800: #0F2F8F;
+  --primary-900: #0A1F60;
+
+  /* -- Accent: Seal Cyan ------------------------------------------------ */
+  --accent-50:  #E0FAFF;
+  --accent-100: #B3F0FA;
+  --accent-300: #4FD4E8;
+  --accent-500: #00B8D4;   /* seal / C2PA verification */
+  --accent-600: #0099B0;
+  --accent-700: #006B7D;
+
+  /* -- Per-product accents --------------------------------------------- */
+  --product-creator-os:    #1E5AFF;  /* primary blue */
+  --product-creator-seal:  #00B8D4;  /* cyan */
+  --product-market:        #7C5CFF;  /* violet */
+  --product-dealflow:      #F5A524;  /* amber */
+  --product-localflow:     #10B981;  /* emerald */
+
+  /* -- Neutrals: Berlin Slate (cool-tinted) ---------------------------- */
+  --bg-0: #FFFFFF;
+  --bg-1: #F7F9FC;
+  --bg-2: #EEF1F6;
+  --bg-3: #E3E8F0;
+
+  --fg-0: #0A1020;   /* primary text */
+  --fg-1: #1F2A44;
+  --fg-2: #4A5878;
+  --fg-3: #8A95AC;   /* placeholder / disabled */
+  --fg-4: #B3BCCD;
+
+  --border:        #DFE4ED;
+  --border-strong: #C7CFDE;
+
+  /* -- Semantic -------------------------------------------------------- */
+  --success: #10B981;
+  --warning: #F5A524;
+  --danger:  #E5484D;
+  --info:    var(--primary-600);
+
+  --success-bg: #E8F8F1;
+  --warning-bg: #FEF3DB;
+  --danger-bg:  #FDECEC;
+  --info-bg:    var(--primary-50);
+
+  /* -- Typography: families ------------------------------------------- */
+  --font-display: 'Inter Tight', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-body:    'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono:    'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+
+  /* -- Type scale (size / line-height / weight) ------------------------ */
+  --display:   600 72px/1.02 var(--font-display);
+  --h1:        600 48px/1.08 var(--font-display);
+  --h2:        600 32px/1.15 var(--font-display);
+  --h3:        600 22px/1.25 var(--font-display);
+  --h4:        600 17px/1.35 var(--font-display);
+  --body:      400 15px/1.55 var(--font-body);
+  --body-sm:   400 13px/1.5  var(--font-body);
+  --caption:   500 12px/1.4  var(--font-body);
+  --overline:  600 11px/1.4  var(--font-body);
+  --mono:      500 13px/1.5  var(--font-mono);
+  --mono-sm:   500 11px/1.4  var(--font-mono);
+
+  /* -- Spacing (8pt w/ 4pt half-step) --------------------------------- */
+  --space-0: 0;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 32px;
+  --space-8: 40px;
+  --space-9: 48px;
+  --space-10: 64px;
+  --space-11: 80px;
+  --space-12: 96px;
+  --space-13: 128px;
+
+  /* -- Radii ----------------------------------------------------------- */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-full: 9999px;
+
+  /* -- Shadows / elevation -------------------------------------------- */
+  --shadow-1: 0 1px 2px rgba(10,16,32,.04), 0 1px 3px rgba(10,16,32,.06);
+  --shadow-2: 0 4px 12px rgba(10,16,32,.06), 0 12px 32px rgba(10,16,32,.08);
+  --shadow-3: 0 8px 24px rgba(10,16,32,.10), 0 24px 48px rgba(10,16,32,.12);
+  --shadow-focus: 0 0 0 3px rgba(30,90,255,.22);
+  --shadow-inset-hairline: inset 0 0 0 1px rgba(255,255,255,.04);
+
+  /* -- Motion --------------------------------------------------------- */
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --dur-micro: 120ms;
+  --dur-default: 200ms;
+  --dur-panel: 320ms;
+  --dur-page: 600ms;
+
+  /* -- Signature gradient (hero seal) --------------------------------- */
+  --gradient-brand: linear-gradient(135deg, #1E5AFF 0%, #00B8D4 100%);
+  --gradient-hero: radial-gradient(1200px 600px at 20% 0%, rgba(30,90,255,.10), transparent 60%),
+                   radial-gradient(900px 500px at 90% 10%, rgba(0,184,212,.08), transparent 60%);
+
+  /* -- Layout --------------------------------------------------------- */
+  --maxw-content: 1200px;
+  --maxw-outer:   1440px;
+  --sidebar-w:    248px;
+  --header-h:     56px;
+}
+
+/* ---------- Dark mode (product dashboard default) --------------------- */
+:root[data-theme="dark"],
+.theme-dark {
+  --bg-0: #070B14;
+  --bg-1: #0D1322;
+  --bg-2: #14203A;
+  --bg-3: #1D2B48;
+
+  --fg-0: #F2F5FA;
+  --fg-1: #C9D1E0;
+  --fg-2: #8A95AC;
+  --fg-3: #5A6684;
+  --fg-4: #3D475F;
+
+  --border:        #1F2B48;
+  --border-strong: #2E3C5E;
+
+  --success-bg: rgba(16,185,129,.12);
+  --warning-bg: rgba(245,165,36,.12);
+  --danger-bg:  rgba(229,72,77,.14);
+  --info-bg:    rgba(30,90,255,.14);
+
+  --shadow-1: 0 1px 2px rgba(0,0,0,.4), inset 0 0 0 1px rgba(255,255,255,.03);
+  --shadow-2: 0 4px 12px rgba(0,0,0,.4), 0 12px 32px rgba(0,0,0,.45), inset 0 0 0 1px rgba(255,255,255,.04);
+  --shadow-3: 0 8px 24px rgba(0,0,0,.5), 0 24px 48px rgba(0,0,0,.55), inset 0 0 0 1px rgba(255,255,255,.05);
+
+  --gradient-hero: radial-gradient(1200px 600px at 20% 0%, rgba(30,90,255,.18), transparent 60%),
+                   radial-gradient(900px 500px at 90% 10%, rgba(0,184,212,.12), transparent 60%);
+}
+
+/* =========================================================================
+   Semantic element defaults
+   Optional: apply `.rs-prose` to a container to get sensible text styles.
+   ========================================================================= */
+
+html { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+body {
+  font: var(--body);
+  color: var(--fg-0);
+  background: var(--bg-0);
+  font-feature-settings: "ss01", "cv11";
+}
+
+.rs-prose h1, h1.rs { font: var(--h1); color: var(--fg-0); letter-spacing: -0.02em; margin: 0; }
+.rs-prose h2, h2.rs { font: var(--h2); color: var(--fg-0); letter-spacing: -0.015em; margin: 0; }
+.rs-prose h3, h3.rs { font: var(--h3); color: var(--fg-0); letter-spacing: -0.01em; margin: 0; }
+.rs-prose h4, h4.rs { font: var(--h4); color: var(--fg-0); margin: 0; }
+.rs-prose p,  p.rs  { font: var(--body); color: var(--fg-1); margin: 0; }
+.rs-prose small, .rs-caption { font: var(--caption); color: var(--fg-2); }
+.rs-overline {
+  font: var(--overline);
+  color: var(--fg-2);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.rs-display { font: var(--display); color: var(--fg-0); letter-spacing: -0.025em; }
+.rs-mono    { font: var(--mono); color: var(--fg-1); }
+code, kbd, samp { font: var(--mono); }
+
+/* =========================================================================
+   Focus ring (apply to any interactive element)
+   ========================================================================= */
+.rs-focus-ring:focus-visible,
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+  border-color: var(--primary-600);
+}
+
+/* =========================================================================
+   Utility: background patterns
+   ========================================================================= */
+.rs-bg-grid {
+  background-image:
+    linear-gradient(var(--border) 1px, transparent 1px),
+    linear-gradient(90deg, var(--border) 1px, transparent 1px);
+  background-size: 32px 32px;
+  background-position: -1px -1px;
+}
+.rs-bg-dots {
+  background-image: radial-gradient(rgba(255,255,255,.06) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+.rs-bg-hero {
+  background: var(--gradient-hero);
+}
+
+/* =========================================================================
+   Reduced motion
+   ========================================================================= */
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: 0ms !important; transition-duration: 0ms !important; }
+}

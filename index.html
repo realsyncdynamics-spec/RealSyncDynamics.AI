@@ -67,13 +67,20 @@
     <!-- COMMERCIAL-SSOT: temporary production hotfix. Canonical source migration
          tracked in Phase 2. Die "offers" unten sind maschinenlesbare Angebote und
          werden auf JEDER Seite ausgeliefert; sie duerfen nur Plaene fuehren, die
-         auch abschliessbar sind. Partner (mtl. + jaehrlich) ist seit
-         AP2 stillgelegt und entfernt — `stripe-checkout` weist ihn mit
-         PLAN_RETIRED ab. Agency 699 €/M ist wieder self_service (Stripe
-         Live-Price). Enterprise steht ohne Betrag: vertraglich vereinbart und
-         manuell fakturiert; der frueher hier stehende Festpreis von 1.249 € war
-         ein Angebot, das kein Kaufpfad einloesen konnte. Diese Liste wird von
-         Hand gepflegt — bei Aenderungen an shared/pricing.ts hier mitziehen. -->
+         auch abschliessbar sind. Agency 699 €/M ist self_service (Stripe
+         Live-Price).
+
+         Enterprise (1.249 €) und Enterprise Plus (1.999 €) tragen seit
+         2026-09-20 wieder einen Betrag. Der frueher hier entfernte Festpreis
+         war ein Angebot ohne Kaufpfad — das ist er nicht mehr: die Zahl ist
+         als Einstiegspreis ausgewiesen und `/pricing/quote` nennt online den
+         tatsaechlichen Betrag. Beide `url` zeigen deshalb dorthin und NICHT
+         auf /checkout: `stripe-checkout` weist beide Plaene weiterhin ab.
+         Enterprise Plus ist der oeffentliche Name des Plans `partner`.
+
+         Diese Liste wird von Hand gepflegt — bei Aenderungen an
+         shared/pricing.ts hier mitziehen. Der Drift-Guard
+         test/pricing-jsonld-sync.test.ts erzwingt das. -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -125,7 +132,8 @@
             {"@type": "Offer", "name": "Starter", "price": "79", "priceCurrency": "EUR", "priceSpecification": {"@type": "UnitPriceSpecification", "price": "79", "priceCurrency": "EUR", "billingDuration": "P1M"}},
             {"@type": "Offer", "name": "Growth", "price": "249", "priceCurrency": "EUR", "priceSpecification": {"@type": "UnitPriceSpecification", "price": "249", "priceCurrency": "EUR", "billingDuration": "P1M"}},
             {"@type": "Offer", "name": "Agency", "price": "699", "priceCurrency": "EUR", "priceSpecification": {"@type": "UnitPriceSpecification", "price": "699", "priceCurrency": "EUR", "billingDuration": "P1M"}},
-            {"@type": "Offer", "name": "Enterprise", "priceCurrency": "EUR", "availability": "https://schema.org/InStock", "description": "Für Großunternehmen: Multi-Org, SLA, Advanced Analytics. Preis auf Anfrage — vertraglich vereinbart, kein Self-Service-Checkout"},
+            {"@type": "Offer", "name": "Enterprise", "price": "1249", "priceCurrency": "EUR", "availability": "https://schema.org/InStock", "url": "https://realsyncdynamicsai.de/pricing/quote?tier=enterprise", "priceSpecification": {"@type": "UnitPriceSpecification", "price": "1249", "priceCurrency": "EUR", "billingDuration": "P1M"}, "description": "Für Großunternehmen: Multi-Org, SLA, Advanced Analytics. Einstiegspreis — den individuellen Betrag ermitteln Sie online"},
+            {"@type": "Offer", "name": "Enterprise Plus", "price": "1999", "priceCurrency": "EUR", "availability": "https://schema.org/InStock", "url": "https://realsyncdynamicsai.de/pricing/quote?tier=partner", "priceSpecification": {"@type": "UnitPriceSpecification", "price": "1999", "priceCurrency": "EUR", "billingDuration": "P1M"}, "description": "Mandantenfähige Runtime für bis zu 50 Organisationen unter eigener Marke. Einstiegspreis — den individuellen Betrag ermitteln Sie online"},
             {"@type": "Offer", "name": "Governance Launch", "price": "349", "priceCurrency": "EUR", "description": "Einmalige Governance-Implementierung: Rahmenwerk-Konfiguration, Evidence Vault und Audit Center für eine Domain"}
           ],
           "publisher": {"@id": "https://realsyncdynamicsai.de/#org"}

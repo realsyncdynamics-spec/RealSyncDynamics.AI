@@ -125,7 +125,10 @@ describe('stripe-checkout akzeptiert nur echte Stripe-Preise', () => {
     it('Enterprise behält Live-Price in products, bleibt aber inquiry (kein Self-Service)', () => {
       const enterprise = PLANS.find((p) => p.id === 'enterprise')!;
       expect(enterprise.purchaseMode).toBe('inquiry');
-      expect(enterprise.priceOnRequest).toBe(true);
+      // `priceOnRequest` ist gefallen (1.249 € steht oeffentlich). Die Sperre
+      // des Self-Service-Checkouts haengt daran ausdruecklich NICHT — sie
+      // kommt aus `purchaseMode` und `ENTERPRISE_SELF_SERVICE_BLOCKED`.
+      expect(enterprise.priceOnRequest).toBeUndefined();
       expect(enterprise.yearlyCheckoutUnavailable).toBe(true);
       expect(SOURCE).toContain('ENTERPRISE_SELF_SERVICE_BLOCKED');
       expect(isLiveStripePrice('price_1UEmHqREjTWueUcG0oqZkb5O')).toBe(true);

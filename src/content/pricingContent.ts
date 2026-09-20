@@ -23,7 +23,14 @@ export interface Feature {
 
 export interface PricingPlan {
   slug: string;
+  /**
+   * Katalogname. Gleichzeitig der Schluessel, gegen den `includedInPlans`
+   * jedes Features matcht — deshalb NICHT umbenennen, wenn sich nur die
+   * Anzeige aendern soll. Dafuer gibt es `publicLabel`.
+   */
   name: string;
+  /** Abweichender Anzeigename (z. B. „Enterprise Plus" fuer `partner`). */
+  publicLabel?: string;
   price: number; // EUR, 0 für Free
   priceString: string; // "0 €", "79 €", "Individuelles Angebot"
   interval: string; // "monatlich", "einmalig", "individuell"
@@ -480,16 +487,13 @@ export const pricingPlans: PricingPlan[] = [
   {
     slug: 'enterprise',
     name: 'Enterprise',
-    // COMMERCIAL-SSOT: temporary production hotfix.
-    // Canonical source migration tracked in Phase 2.
-    // Enterprise wird vertraglich vereinbart und manuell fakturiert
-    // (products.default_for_plan_key='enterprise' traegt bewusst nur einen
-    // Sentinel, keine echte Stripe-Price). Deshalb kein oeffentlicher
-    // Festpreis: `price: 0` unterdrueckt den Intervall-Zusatz, der Betrag
-    // steht als interner Listenpreis in shared/pricing.ts.
-    price: 0,
-    priceString: 'Individuelles Angebot',
-    interval: 'individuell',
+    // 1.249 € ist seit 2026-09-20 der oeffentliche Einstiegspreis. Enterprise
+    // wird weiterhin manuell fakturiert (products.default_for_plan_key traegt
+    // nur einen Sentinel, keine echte Stripe-Price) — deshalb fuehrt der CTA
+    // auf den Online-Rechner und nicht in den Checkout.
+    price: 1249,
+    priceString: 'ab 1.249 €',
+    interval: 'monatlich',
     recommended: false,
     shortDescription: 'Für Großunternehmen und Konzerne mit erweiterten Governance-Anforderungen, Multi-Org-Verwaltung und SLA-Bedarf.',
     targetAudience: 'Für Großunternehmen, regulierte Industrien, Behörden, Finanzdienstleister und Organisationen mit erweiterten Governance- und Compliance-Prozessen.',
@@ -505,10 +509,10 @@ export const pricingPlans: PricingPlan[] = [
       'Advanced Analytics & Risk-Scoring',
     ],
     cta: {
-      label: 'Enterprise anfragen',
-      href: '/contact-sales?plan=enterprise&intent=enterprise',
+      label: 'Preis online ermitteln',
+      href: '/pricing/quote?tier=enterprise&source=plan-detail',
     },
-    checkoutPath: '/contact-sales?plan=enterprise&intent=enterprise',
+    checkoutPath: '/pricing/quote?tier=enterprise&source=plan-detail',
     problemsSolved: [
       'Anforderungen gehen über Standard-Pakete hinaus',
       'Besondere Compliance-Regeln notwendig',
@@ -548,18 +552,17 @@ export const pricingPlans: PricingPlan[] = [
     ],
   },
   {
-    // COMMERCIAL-SSOT: temporary production hotfix.
-    // Canonical source migration tracked in Phase 2.
-    // Seit AP2 stillgelegt (`availability: 'legacy'`): `stripe-checkout` weist
-    // neue Abschluesse mit PLAN_RETIRED ab und `/checkout/partner` leitet auf
-    // die Preisseite zurueck. Deshalb kein Festpreis, kein Trial und kein
-    // Checkout-Link mehr. Bestandskunden rechnen unveraendert weiter ab; der
-    // Eintrag bleibt bestehen, damit ihre Plan-Detailseite erreichbar ist.
+    // Seit 2026-09-20 wieder im Verkauf, oeffentlich als „Enterprise Plus".
+    // `slug` und `name` bleiben `partner`: am Slug haengen die Detail-URL und
+    // die Bestandskunden-Links, am Namen das `includedInPlans`-Matching.
+    // Self-Service-Checkout bleibt zu (`purchaseMode: 'inquiry'`), der CTA
+    // fuehrt deshalb auf den Online-Rechner.
     slug: 'partner',
     name: 'Partner',
-    price: 0,
-    priceString: 'Nicht mehr im Verkauf',
-    interval: 'individuell',
+    publicLabel: 'Enterprise Plus',
+    price: 1999,
+    priceString: 'ab 1.999 €',
+    interval: 'monatlich',
     recommended: false,
     shortDescription: 'Die Multi-Mandanten-Lösung für Kanzleien, Datenschutzunternehmen und große Agenturen mit bis zu 50 Kundenwebsites.',
     targetAudience: 'Für Organisationen, die viele Mandanten, Kundenprojekte oder Websites zentral verwalten und skalierbar prüfen müssen.',
@@ -574,10 +577,10 @@ export const pricingPlans: PricingPlan[] = [
       'Strukturierte Kundenverwaltung',
     ],
     cta: {
-      label: 'Enterprise anfragen',
-      href: '/contact-sales?plan=partner&intent=enterprise',
+      label: 'Preis online ermitteln',
+      href: '/pricing/quote?tier=partner&source=plan-detail',
     },
-    checkoutPath: '/contact-sales?plan=partner&intent=enterprise',
+    checkoutPath: '/pricing/quote?tier=partner&source=plan-detail',
     problemsSolved: [
       'Zu viele einzelne Kundenprüfungen ohne zentrale Übersicht',
       'Kein einheitlicher Prüfstatus über alle Mandanten',

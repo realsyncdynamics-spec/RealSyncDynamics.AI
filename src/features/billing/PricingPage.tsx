@@ -341,10 +341,10 @@ function TierCard({ tier, selected = false }: { tier: PricingTier; selected?: bo
     : withAuditContext(tier.cta.href, auditContext);
   const plan = tier.plan;
   const TierIcon = PLAN_ICONS[plan.id];
-  // COMMERCIAL-SSOT: temporary production hotfix.
-  // Canonical source migration tracked in Phase 2.
   // Plaene ohne oeffentlich zugesicherten Festpreis duerfen keinen Betrag
   // ausweisen — sonst steht dort ein Angebot, das der Checkout nicht erfuellt.
+  // Enterprise und Enterprise Plus fuehren seit 2026-09 einen: ihr Betrag ist
+  // der Einstiegspreis und traegt deshalb `tier.pricePrefix` („ab").
   const priceDisplay = tier.priceOnRequest ? 'Auf Anfrage' : formatPriceEur(tier.priceEur);
   const accent = TIER_ACCENT[tier.id];
 
@@ -370,9 +370,20 @@ function TierCard({ tier, selected = false }: { tier: PricingTier; selected?: bo
       </div>
 
       <div className="flex items-baseline gap-1.5 mb-1.5">
+        {tier.pricePrefix && (
+          <div className="text-xs font-mono uppercase tracking-wider text-silver-400">{tier.pricePrefix}</div>
+        )}
         <div className="text-3xl font-display font-bold text-titanium-100 tabular-nums">{priceDisplay}</div>
         <div className="text-xs font-mono uppercase tracking-wider text-silver-400">{tier.priceSuffix}</div>
       </div>
+
+      {/* Was „ab" bedeutet — nicht als Fussnote, sondern neben der Zahl. */}
+      {tier.pricePrefix && (
+        <p className="mb-1.5 text-[11px] leading-snug text-silver-400">
+          Einstiegspreis. Ihren Betrag ermitteln Sie in zwei Minuten online — der
+          Fragebogen weist jeden Zuschlag einzeln aus.
+        </p>
+      )}
 
       {/* Outcome-Headline — was der Kunde bekommt */}
       <p className="font-display text-sm font-semibold leading-snug text-titanium-100 mb-1.5">

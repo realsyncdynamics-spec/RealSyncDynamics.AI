@@ -176,6 +176,7 @@ const WhatsAppPricingPage = lazy(() => import('./pages/WhatsAppPricingPage').the
 const CheckoutPage = lazy(() => import('./features/billing/CheckoutPage').then((m) => ({ default: m.CheckoutPage })));
 const CheckoutCancelledPage = lazy(() => import('./features/billing/CheckoutCancelledPage').then((m) => ({ default: m.CheckoutCancelledPage })));
 const PricingDetailPageWrapper = lazy(() => import('./pages/pricing/PricingDetailPage').then((m) => ({ default: m.PricingDetailPageWrapper })));
+const PricingQuotePage = lazy(() => import('./pages/pricing/PricingQuotePage').then((m) => ({ default: m.PricingQuotePage })));
 const FeatureDetailPageWrapper = lazy(() => import('./pages/pricing/FeatureDetailPage').then((m) => ({ default: m.FeatureDetailPageWrapper })));
 const PrivacyPolicy = lazy(() => import('./features/legal/PrivacyPolicy').then((m) => ({ default: m.PrivacyPolicy })));
 const SubProcessors = lazy(() => import('./features/legal/SubProcessors').then((m) => ({ default: m.SubProcessors })));
@@ -916,6 +917,11 @@ function RoutesWithTracking() {
       <Route path="/billing/usage" element={<RequireAal2 action="Billing-Verwaltung"><UsageView /></RequireAal2>} />
       <Route path="/pricing" element={<PricingPage />} />
       <Route path="/pricing/whatsapp" element={<WhatsAppPricingPage />} />
+      {/* Online-Preisrechner fuer Enterprise / Enterprise Plus. Steht vor
+          /pricing/:slug, damit „quote" nicht als Plan-Slug gelesen wird —
+          der Wrapper wuerde es als unbekannten Slug auf /pricing zurueck
+          schicken. */}
+      <Route path="/pricing/quote" element={<PricingQuotePage />} />
       {/* Pricing Detail Routes */}
       <Route path="/pricing/:slug" element={<PricingDetailPageWrapper />} />
       {/* Uebersicht zu den bereits vorhandenen /features/:slug-Detailseiten. */}

@@ -120,15 +120,39 @@ const PRICING_PRODUCT_JSONLD = {
         billingDuration: 'P1M',
       },
     },
+    // Enterprise und Enterprise Plus tragen seit 2026-09-20 einen Betrag.
+    // Er ist der Einstiegspreis, nicht der Endpreis — `url` zeigt deshalb auf
+    // den Online-Rechner und nicht auf /checkout, den beide Plaene ohnehin
+    // nicht passieren (`purchaseMode: 'inquiry'`).
     {
       '@type': 'Offer',
       name: 'Enterprise',
+      price: '1249',
       priceCurrency: 'EUR',
-      url: `${SITE_URL}/contact-sales?intent=enterprise`,
-      // Kein Festpreis in schema.org-Offer: Enterprise wird vertraglich
-      // vereinbart und manuell fakturiert. Ein `price` hier waere ein
-      // maschinenlesbares Angebot, das der Checkout nicht erfuellt.
-      description: 'Preis auf Anfrage — SLA nach Vereinbarung, AI-Act-Modul, DSB-Integration, Evidence Vault',
+      url: `${SITE_URL}/pricing/quote?tier=enterprise`,
+      priceSpecification: {
+        '@type': 'UnitPriceSpecification',
+        price: '1249',
+        priceCurrency: 'EUR',
+        billingDuration: 'P1M',
+      },
+      description: 'Einstiegspreis — SLA nach Vereinbarung, AI-Act-Modul, DSB-Integration, Evidence Vault. Individuellen Betrag online ermitteln.',
+    },
+    {
+      // Oeffentlicher Name des Plans `partner`. Die Plan-ID bleibt `partner`,
+      // weil Stripe-Katalog und Bestandsabos daran haengen.
+      '@type': 'Offer',
+      name: 'Enterprise Plus',
+      price: '1999',
+      priceCurrency: 'EUR',
+      url: `${SITE_URL}/pricing/quote?tier=partner`,
+      priceSpecification: {
+        '@type': 'UnitPriceSpecification',
+        price: '1999',
+        priceCurrency: 'EUR',
+        billingDuration: 'P1M',
+      },
+      description: 'Einstiegspreis — mandantenfaehige Runtime fuer bis zu 50 Organisationen unter eigener Marke. Individuellen Betrag online ermitteln.',
     },
   ],
 };
@@ -265,7 +289,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
   '/pricing': {
     title: 'Preise – Runtime-native AI-Governance-Plattform | RealSyncDynamics.AI',
     description:
-      'Free Audit (0 €), Starter (79 €), Growth (249 €), Agency (699 €), Enterprise (auf Anfrage). Runtime-native Governance: kontinuierliche Telemetrie, Policy-Engine, kryptografisch nachvollziehbare Evidenz. EU-Hosting, AVV inklusive.',
+      'Free Audit (0 €), Starter (79 €), Growth (249 €), Agency (699 €), Enterprise (ab 1.249 €), Enterprise Plus (ab 1.999 €). Runtime-native Governance: kontinuierliche Telemetrie, Policy-Engine, kryptografisch nachvollziehbare Evidenz. EU-Hosting, AVV inklusive.',
     canonical: `${SITE_URL}/pricing`,
     jsonLd: [
       PRICING_PRODUCT_JSONLD,

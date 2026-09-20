@@ -48,7 +48,10 @@ export function PlanDetailPage({ planSlug }: PlanDetailPageProps) {
                 {plan.badge}
               </div>
             )}
-            <h1 className="font-display font-bold text-4xl sm:text-5xl mb-2">{plan.name}</h1>
+            {/* `publicLabel`, nicht `name`: „Partner" ist der Katalogname, an
+                dem das Feature-Matching haengt — die Ueberschrift muss aber
+                heissen, was auf der Karte stand, ueber die der Besucher kam. */}
+            <h1 className="font-display font-bold text-4xl sm:text-5xl mb-2">{plan.publicLabel ?? plan.name}</h1>
             <div className="flex items-baseline gap-2 mb-4">
               <span className="text-3xl font-bold">{plan.priceString}</span>
               <span className="text-sm text-silver-300">{plan.interval}</span>

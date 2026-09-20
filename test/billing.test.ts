@@ -69,13 +69,28 @@ describe('Pricing Tiers (6-Tier Model, monthly only in Live Stripe)', () => {
     expect(PUBLIC_PRICING_TIERS.map((t) => t.id)).toEqual(baseIds);
   });
 
-  it('should have enterprise tier as inquiry (list price stored, not sellable)', () => {
+  it('should have enterprise tier as inquiry with a public entry price', () => {
     const enterprise = tierById('enterprise');
     expect(enterprise?.id).toBe('enterprise');
     expect(enterprise?.priceEur).toBe(1249);
-    expect(enterprise?.priceOnRequest).toBe(true);
+    // Der Betrag steht oeffentlich; nur der Self-Service-Checkout bleibt zu.
+    expect(enterprise?.priceOnRequest).toBe(false);
+    expect(enterprise?.pricePrefix).toBe('ab');
     expect(enterprise?.plan.purchaseMode).toBe('inquiry');
     expect(enterprise?.name).toBe('Enterprise');
+  });
+
+  it('fuehrt Enterprise Plus als oeffentliches Label des Plans partner', () => {
+    const plus = tierById('partner');
+    // Die ID bleibt `partner` — daran haengen Stripe-Katalog und Bestandsabos.
+    expect(plus?.id).toBe('partner');
+    expect(plus?.planKey).toBe('partner');
+    // Sichtbar ist der neue Name.
+    expect(plus?.name).toBe('Enterprise Plus');
+    expect(plus?.priceEur).toBe(1999);
+    expect(plus?.priceOnRequest).toBe(false);
+    expect(plus?.pricePrefix).toBe('ab');
+    expect(plus?.plan.purchaseMode).toBe('inquiry');
   });
 
   it('free_audit should have no account required', () => {
@@ -246,12 +261,16 @@ describe('Billing Workflows', () => {
     expect(partner.plan.permissions.multiTenant).toBe(true);
   });
 
-  it('enterprise fuehrt seit AP2 in den Vertrieb, nicht in den Checkout', () => {
-    // Enterprise ist ab AP2 ein Vertrag: `purchaseMode: 'inquiry'`. Der
-    // Self-Service endet bei Growth. Bestehende Enterprise-Abos rechnen
-    // unveraendert weiter ab — betroffen ist allein der Neuabschluss.
+  it('enterprise fuehrt auf den Online-Rechner, nicht in den Checkout', () => {
+    // Enterprise ist ein Vertrag: `purchaseMode: 'inquiry'`. Der
+    // Self-Service-Checkout endet bei Agency. Bestehende Enterprise-Abos
+    // rechnen unveraendert weiter ab — betroffen ist allein der Neuabschluss.
+    //
+    // Geaendert 2026-09-20: Ziel ist `/pricing/quote` statt `/contact-sales`.
+    // Der Besucher bekommt online einen Betrag statt „wir melden uns".
     const enterprise = tierById('enterprise')!;
-    expect(enterprise.cta.href).toContain('/contact-sales');
+    expect(enterprise.cta.href).toContain('/pricing/quote');
+    expect(enterprise.cta.href).not.toContain('/contact-sales');
     expect(enterprise.cta.href).not.toContain('/checkout/');
     // COMMERCIAL-SSOT: temporary production hotfix.
     // Canonical source migration tracked in Phase 2.
@@ -260,7 +279,10 @@ describe('Billing Workflows', () => {
     // Seite weiter „14 Tage kostenlos testen" zu 1.249 € fuer einen Plan,
     // den der Checkout gar nicht abschliessen kann.
     expect(enterprise.plan.trialDays).toBe(0);
-    expect(enterprise.priceOnRequest).toBe(true);
+    // Kein Festpreis-Versprechen mehr noetig: der Betrag ist oeffentlich,
+    // der CTA fuehrt auf den Rechner statt in den Checkout.
+    expect(enterprise.priceOnRequest).toBe(false);
+    expect(enterprise.cta.href).toContain('/pricing/quote');
     expect(enterprise.cta.href).not.toContain('pilot=true');
   });
 });

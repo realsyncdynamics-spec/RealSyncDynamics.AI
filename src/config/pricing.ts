@@ -23,6 +23,7 @@ import {
   normalizePlanKey,
   planKeyFor,
   checkoutHrefForPlan,
+  publicLabelOf,
   formatPriceEur,
   formatLimit,
   addonsFor,
@@ -82,13 +83,21 @@ export interface PricingTier {
   plan: Plan;
   priceEur: number;
   /**
-   * COMMERCIAL-SSOT: temporary production hotfix.
-   * Canonical source migration tracked in Phase 2.
-   *
    * `true` = kein oeffentlich zugesicherter Festpreis. Oberflaechen zeigen
    * „Auf Anfrage" statt `priceEur`. Der Betrag bleibt interner Listenpreis.
+   * Heute traegt das kein Plan mehr — siehe `Plan.priceOnRequest`.
    */
   priceOnRequest: boolean;
+  /**
+   * „ab" oder leer.
+   *
+   * Plaene mit `purchaseMode: 'inquiry'` fuehren einen Einstiegspreis: der
+   * Betrag auf der Karte ist die Untergrenze, der tatsaechliche Preis wird
+   * unter `/pricing/quote` ermittelt und kann darueber liegen. Ohne dieses
+   * Wort staende dort ein Festpreis, den ein Fragebogen anschliessend
+   * erhoeht — genau die Ueberraschung, die eine Preisseite vermeiden soll.
+   */
+  pricePrefix: string;
   /** Formatierter Betrag ohne Währungszeichen, z.B. "1.999" */
   priceString: string;
   /** "/ Monat", "/ Jahr" oder "einmalig · kein Account" */
@@ -158,13 +167,20 @@ function toTier(plan: Plan, interval: 'month' | 'year'): PricingTier {
       ? 'einmalig · kein Account'
       : isYearly ? '/ Jahr' : '/ Monat';
 
+  // Der oeffentliche Name, nicht der Katalogname: Partner heisst auf jeder
+  // Angebotsflaeche „Enterprise Plus". `plan.name` bleibt fuer internes
+  // String-Matching erhalten (siehe `publicLabelOf`).
+  const label = publicLabelOf(plan);
+
   return {
     id,
-    name: isYearly ? `${plan.name} (Jährlich)` : plan.name,
+    name: isYearly ? `${label} (Jährlich)` : label,
     planKey: planKeyFor(plan.id, interval),
     plan,
     priceEur,
     priceOnRequest: plan.priceOnRequest === true,
+    pricePrefix:
+      plan.purchaseMode === 'inquiry' && plan.priceOnRequest !== true ? 'ab' : '',
     priceString: new Intl.NumberFormat('de-DE').format(priceEur),
     priceSuffix,
     // Free (0 €) und Einmalprodukte (Betrag in `oneTimeEur`) sind beide

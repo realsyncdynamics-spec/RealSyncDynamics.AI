@@ -398,13 +398,25 @@ export interface Plan {
   technicalSubheadline: string;
   price: PlanPrice;
   /**
-   * COMMERCIAL-SSOT: temporary production hotfix.
-   * Canonical source migration tracked in Phase 2.
-   *
    * `true` = kein oeffentlich zugesicherter Festpreis. Der Betrag in `price`
    * bleibt interner Listenpreis (DB-Katalog, Angebotskalkulation), darf aber
    * nirgends als kaufbares Festpreis-Angebot ausgewiesen werden. Oberflaechen
    * zeigen stattdessen „Auf Anfrage".
+   *
+   * ── Stand 2026-09-20: kein Plan traegt das Feld mehr ──────────────────
+   *
+   * Enterprise und Enterprise Plus haben es abgelegt. Der Eigentuemer hat
+   * entschieden, dass 1.249 € und 1.999 € der oeffentliche EINSTIEGSPREIS
+   * sind: die Zahl steht auf der Karte, und der individuelle Betrag wird
+   * online ueber `/pricing/quote` ermittelt — nie unterhalb des
+   * Listenpreises. Damit ist „Auf Anfrage" kein Sackgassen-Formular mehr,
+   * sondern ein Pfad mit Zahl am Ende.
+   *
+   * Das Feld bleibt als Mechanik erhalten: ein kuenftiger Plan ohne
+   * Listenpreis kann es wieder setzen, und alle Oberflaechen respektieren
+   * es weiterhin. Was es NICHT tut: den Self-Service-Checkout oeffnen. Das
+   * regelt `purchaseMode: 'inquiry'` getrennt — beide Plaene bleiben
+   * inquiry, weil `stripe-checkout` den Betrag heute nicht einloesen kann.
    */
   priceOnRequest?: boolean;
   /**
@@ -452,6 +464,20 @@ export interface Plan {
   purchaseMode: PurchaseMode;
   /** Vertriebszustand — siehe `PlanAvailability`. */
   availability: PlanAvailability;
+  /**
+   * Abweichendes Label fuer oeffentliche Flaechen (Karten, Vergleich,
+   * JSON-LD). Fehlt es, gilt `name`.
+   *
+   * Warum nicht einfach `name` aendern: `name` ist der Katalogname, auf den
+   * `src/content/pricingContent.ts` seine `includedInPlans`-Listen per
+   * String matcht. Ein Rename dort haette jede Feature-Zuordnung des Plans
+   * still fallen lassen — der Plan haette in der Vergleichstabelle keine
+   * einzige Funktion mehr gefuehrt, ohne dass irgendetwas rot geworden
+   * waere. `planKey` und `id` bleiben aus demselben Grund unangetastet:
+   * Stripe-Katalog, `public.subscriptions` und jede Bestandszeile haengen
+   * daran.
+   */
+  publicLabel?: string;
   /** Hebt die Karte im Grid hervor */
   highlight: boolean;
   /** Badges auf der Karte */
@@ -826,10 +852,16 @@ export const PLANS: Plan[] = [
     trialDays: 0,
   },
 
-  // ── Enterprise — Preis auf Anfrage ──────────────────────────────────────
+  // ── Enterprise — 1.249 € Einstiegspreis, individueller Betrag online ────
   // Live Stripe Price exists in public.products (UEm catalog, #1362) — but only
   // for Katalog / Bestand / manueller Rechnungslauf. Self-Service-Checkout
-  // bleibt gesperrt: inquiry + priceOnRequest + ENTERPRISE_SELF_SERVICE_BLOCKED.
+  // bleibt gesperrt: inquiry + ENTERPRISE_SELF_SERVICE_BLOCKED.
+  //
+  // Der Betrag ist seit 2026-09-20 oeffentlich: 1.249 € ist der Einstiegs-
+  // preis, nicht der Endpreis. Was darueber liegt, ermittelt `/pricing/quote`
+  // aus den Antworten des Fragebogens und weist jeden Zuschlag einzeln aus.
+  // `priceOnRequest` ist deshalb weg — aber `purchaseMode` bleibt `inquiry`:
+  // ein Self-Service-Checkout waere ein Kauf-CTA ohne einloesbaren Preis.
   {
     id: 'enterprise',
     planKey: 'enterprise',
@@ -838,7 +870,6 @@ export const PLANS: Plan[] = [
     outcomeHeadline: 'Konzernweite Governance über alle sechs Rahmenwerke — mit SLA und SSO.',
     technicalSubheadline: 'Multi-Tenant-Runtime für bis zu 5 Organisationen, zentrale Rechteverwaltung und individuell dimensionierte Scheduler- und Automation-Kontingente.',
     price: { monthlyEur: 1_249, yearlyEur: 12_490, oneTimeEur: null },
-    priceOnRequest: true,
     // Keine Jahres-Prices in Stripe — siehe Dominik Live-Katalog 2026-09-12.
     yearlyCheckoutUnavailable: true,
     currency: 'EUR',
@@ -846,7 +877,7 @@ export const PLANS: Plan[] = [
     availability: 'contract',
     highlight: false,
     badges: ['SLA nach Vereinbarung'],
-    ctaLabel: 'Enterprise anfragen',
+    ctaLabel: 'Preis online ermitteln',
     limits: {
       bots: 20,
       answersPerMonth: 50_000,
@@ -921,12 +952,24 @@ export const PLANS: Plan[] = [
     trialDays: 0,
   },
 
-  // ── Partner — 1.999 € ───────────────────────────────────────────────────
+  // ── Partner — oeffentlich „Enterprise Plus", 1.999 € ────────────────────
+  // Stand 2026-09-20 wieder im Angebot. Zwei Dinge sind bewusst getrennt:
+  //
+  //   `id` / `planKey`  bleiben `partner`. Daran haengen der Stripe-Katalog,
+  //                     `public.subscriptions` und jede Bestandszeile. Ein
+  //                     Rename waere eine Datenmigration, keine Textaenderung.
+  //   `publicLabel`     ist das, was der Besucher liest: „Enterprise Plus".
+  //
+  // `availability` war `legacy` (AP2-Stilllegung). Das schloss den Plan aus
+  // `SALES_PLANS`, `SELLABLE_PRICING_TIERS` und dem JSON-LD aus — richtig,
+  // solange er nicht verkauft wurde. Er wird wieder verkauft, also steht hier
+  // `contract`: sichtbar und anfragbar, aber nicht per Self-Service kaufbar.
   {
     id: 'partner',
     planKey: 'partner',
     yearlyPlanKey: 'partner_yearly',
     name: 'Partner',
+    publicLabel: 'Enterprise Plus',
     outcomeHeadline: 'Verkaufen Sie Governance als eigenes Produkt — bis zu 50 Mandanten unter Ihrer Marke.',
     technicalSubheadline: 'Vollständig mandantengetrennte Runtime mit White-Label-Subdomain, eigenem Branding und voller API.',
     price: { monthlyEur: 1_999, yearlyEur: 19_000, oneTimeEur: null },
@@ -934,12 +977,13 @@ export const PLANS: Plan[] = [
     yearlyCheckoutUnavailable: true,
     currency: 'EUR',
     purchaseMode: 'inquiry',
-    availability: 'legacy',
+    availability: 'contract',
     highlight: false,
     badges: ['Reseller', 'Multi Tenant'],
-    // „Partner anfragen" folgt CTA.enterprise aus runtimeVocab.ts. Formen wie
-    // „Partner-Gespräch" sind als Sales-Sprache untersagt (CI_FORBIDDEN_CTA).
-    ctaLabel: 'Partner anfragen',
+    // Wie bei Enterprise: eine Aktion, die der Besucher selbst ausfuehrt.
+    // Formen wie „Partner-Gespräch" bleiben als Sales-Sprache untersagt
+    // (CI_FORBIDDEN_CTA).
+    ctaLabel: 'Preis online ermitteln',
     limits: {
       bots: 50,
       answersPerMonth: 100_000,
@@ -2852,8 +2896,13 @@ export function checkoutHrefForPlan(
   if (resolved.purchaseMode === 'free') {
     return `/audit?source=${encodeURIComponent(source)}`;
   }
+  // Inquiry-Plaene (Enterprise, Enterprise Plus) fuehren auf den Online-
+  // Rechner, nicht auf ein Kontaktformular. Der Besucher bekommt dort einen
+  // konkreten Betrag statt „wir melden uns". Der Parameter heisst `tier` und
+  // traegt die Plan-ID, weil die Quote-Seite den Listenpreis des Tiers als
+  // Untergrenze braucht — nicht den Intervall-Key.
   if (resolved.purchaseMode === 'inquiry') {
-    return `/contact-sales?plan=${encodeURIComponent(key)}&source=${encodeURIComponent(source)}`;
+    return `/pricing/quote?tier=${encodeURIComponent(resolved.id)}&source=${encodeURIComponent(source)}`;
   }
   // `checkout` und `one_time` teilen denselben Einstieg: /checkout/<planKey>.
   // Ob daraus eine Subscription oder ein Einmalkauf wird, entscheidet die
@@ -2863,7 +2912,286 @@ export function checkoutHrefForPlan(
   return `/checkout/${key}?source=${encodeURIComponent(source)}`;
 }
 
+// ── Individuelles Angebot (/pricing/quote) ────────────────────────────────
+//
+// Enterprise und Enterprise Plus fuehren einen Einstiegspreis. Was ein
+// Interessent tatsaechlich zahlt, ermittelt der Online-Rechner aus seinen
+// Antworten. Die Rechnung steht hier und nicht auf der Seite, aus zwei
+// Gruenden:
+//
+//   1. Der Deno-Zwilling dieser Datei laeuft in `sales-lead`. Die Edge
+//      Function rechnet den Betrag beim Absenden NEU — ein vom Browser
+//      geschickter Betrag ist eine Behauptung, keine Zusage. Beide Seiten
+//      muessen dieselbe Funktion benutzen, sonst gibt es zwei Preise.
+//   2. Jeder Betrag kommt aus `PLANS` und `ADDONS`. Es gibt hier keine Zahl,
+//      die nicht schon vorher in dieser Datei stand.
+//
+// Was der Rechner NICHT tut: unter den Listenpreis gehen. `computeQuote`
+// startet beim Monatspreis des Plans und addiert ausschliesslich
+// nicht-negative Posten.
+
+/** Die Plaene, fuer die es einen Online-Rechner gibt. */
+export type QuotePlanId = Extract<PlanId, 'enterprise' | 'partner'>;
+
+export const QUOTE_PLAN_IDS: readonly QuotePlanId[] = ['enterprise', 'partner'];
+
+export function isQuotePlanId(value: unknown): value is QuotePlanId {
+  return typeof value === 'string' && (QUOTE_PLAN_IDS as readonly string[]).includes(value);
+}
+
+/**
+ * Ein Vertragspunkt: geht in die Anfrage ein, traegt aber bewusst KEINEN
+ * Betrag.
+ *
+ * Fuer diese vier Punkte steht in dieser Datei kein Preis — und eine Zahl zu
+ * behaupten, die nirgends hinterlegt ist, waere eine Erfindung. Sie sind
+ * deshalb im Umfang des genannten Betrags enthalten oder ausdruecklich als
+ * Vertragspunkt ausgewiesen; sie erhoehen den genannten Betrag nicht
+ * nachtraeglich. Wer sie bepreisen will, legt sie als Add-on mit `priceEur`
+ * an — dann rechnet der Rechner sie automatisch mit.
+ */
+export interface QuoteContractItem {
+  id: string;
+  label: string;
+  hint: string;
+}
+
+export const QUOTE_CONTRACT_ITEMS: readonly QuoteContractItem[] = [
+  {
+    id: 'sla',
+    label: 'SLA mit garantierter Reaktionszeit',
+    hint: 'Stufe und Reaktionszeit werden im Vertrag festgelegt.',
+  },
+  {
+    id: 'eu_local',
+    label: 'On-Premise oder eigener EU-VPS (eu_local)',
+    hint: 'Betrieb auf Ihrer Infrastruktur statt in unserer EU-Region.',
+  },
+  {
+    id: 'custom_dpa',
+    label: 'Eigener AVV / DPA statt unserer Vorlage',
+    hint: 'Ihr Vertragswerk, gepruefte Abweichungen zur Standard-AVV.',
+  },
+  {
+    id: 'sso',
+    label: 'SSO / SCIM gegen Ihr Verzeichnis',
+    hint: 'Anbindung an Entra ID, Okta oder ein eigenes IdP.',
+  },
+];
+
+/**
+ * Eine Dimension des Fragebogens.
+ *
+ * Die KI formuliert `question` und `hint` individuell um — sie darf aber
+ * keine Dimension erfinden: `sales-lead` verwirft jede zurueckgegebene `id`,
+ * die nicht aus dieser Liste stammt. Damit kann kein Modell einen Posten in
+ * den Preis schreiben, den die SSoT nicht kennt.
+ */
+export interface QuoteDimension {
+  id: string;
+  kind: 'addon' | 'contract';
+  label: string;
+  question: string;
+  hint: string;
+  /** Monatsbetrag je Einheit. `0` bei Vertragspunkten. */
+  unitEur: number;
+  /** Gesetzt, wenn die Dimension mehrfach buchbar ist. */
+  unit?: { label: string; step: string; max: number };
+}
+
+/** Mengen-Bausteine: wie oft buchbar und was eine Einheit bringt. */
+const QUOTE_ADDON_UNITS: Record<string, { label: string; step: string; max: number }> = {
+  agency_bot_pack: { label: 'Bausteine', step: '+5 Bots', max: 10 },
+  response_pack: { label: 'Bausteine', step: '+5.000 Antworten/Monat', max: 20 },
+};
+
+/** Die Frage zu einem Baustein — Ausgangstext, den die KI umformulieren darf. */
+const QUOTE_ADDON_QUESTIONS: Record<string, string> = {
+  agency_bot_pack: 'Brauchen Sie mehr Governance-Bots als im Plan enthalten?',
+  response_pack: 'Brauchen Sie mehr Bot-Antworten pro Monat als im Plan enthalten?',
+  voice: 'Soll ein Sprachkanal ueber Telefonie dazukommen?',
+  whatsapp: 'Soll WhatsApp Business als Kanal dazukommen?',
+  compliance_pack: 'Brauchen Sie den erweiterten Pruefpfad mit Human-Review?',
+  white_label: 'Soll die Oberflaeche vollstaendig unter Ihrer Marke laufen?',
+};
+
+/**
+ * Die Dimensionen, nach denen bei diesem Plan gefragt werden darf.
+ *
+ * Bausteine kommen aus `plan.addons` — also genau das, was die SSoT fuer
+ * diesen Plan freigibt. Ein Add-on, das ein Plan nicht fuehrt, taucht hier
+ * nicht auf und kann deshalb auch nicht in den Betrag geraten.
+ */
+export function quoteDimensionsFor(planId: QuotePlanId): QuoteDimension[] {
+  const plan = planById(planId);
+  const addonDims: QuoteDimension[] = addonsFor(plan).map((addon) => ({
+    id: addon.id,
+    kind: 'addon' as const,
+    label: addon.name,
+    question: QUOTE_ADDON_QUESTIONS[addon.id] ?? `Brauchen Sie ${addon.name}?`,
+    hint: addon.description,
+    unitEur: addon.priceEur,
+    unit: QUOTE_ADDON_UNITS[addon.id],
+  }));
+  const contractDims: QuoteDimension[] = QUOTE_CONTRACT_ITEMS.map((item) => ({
+    id: item.id,
+    kind: 'contract' as const,
+    label: item.label,
+    question: `Brauchen Sie ${item.label.charAt(0).toLowerCase()}${item.label.slice(1)}?`,
+    hint: item.hint,
+    unitEur: 0,
+  }));
+  return [...addonDims, ...contractDims];
+}
+
+/** Die Antworten des Interessenten. Unbekannte Schluessel werden verworfen. */
+export interface QuoteAnswers {
+  planId: QuotePlanId;
+  /** Baustein-ID → Menge. Fehlt ein Schluessel, gilt 0. */
+  quantities: Record<string, number>;
+  /** IDs der gewaehlten Vertragspunkte. */
+  contractItems: string[];
+}
+
+export interface QuoteLine {
+  id: string;
+  label: string;
+  quantity: number;
+  unitEur: number;
+  monthlyEur: number;
+}
+
+export interface Quote {
+  planId: QuotePlanId;
+  planKey: PlanKey;
+  /** Der Name, der auf der Seite steht („Enterprise Plus"). */
+  publicLabel: string;
+  /** Listenpreis des Plans — die Untergrenze des Ergebnisses. */
+  baseMonthlyEur: number;
+  lines: QuoteLine[];
+  addonMonthlyEur: number;
+  /** Der Betrag, der genannt wird. Immer >= `baseMonthlyEur`. */
+  monthlyEur: number;
+  /** Gewaehlte Vertragspunkte — im Betrag enthalten, ohne Aufschlag. */
+  contractItems: QuoteContractItem[];
+  /** Stabile Kennung der Antworten (siehe `quoteFingerprint`). */
+  fingerprint: string;
+}
+
+/** Menge auf das erlaubte Fenster begrenzen; alles Krumme wird 0. */
+function clampQuantity(raw: unknown, max: number): number {
+  const n = typeof raw === 'number' ? raw : Number(raw);
+  if (!Number.isFinite(n)) return 0;
+  return Math.min(Math.max(Math.floor(n), 0), max);
+}
+
+/**
+ * Der Betrag zu einem Satz Antworten.
+ *
+ * Deterministisch: dieselben Antworten ergeben denselben Betrag, im Browser
+ * wie in der Edge Function. Kein Modell ist daran beteiligt — die KI
+ * formuliert die Fragen, sie rechnet nicht.
+ */
+export function computeQuote(answers: QuoteAnswers): Quote {
+  const plan = planById(answers.planId);
+  const dims = quoteDimensionsFor(answers.planId);
+
+  const lines: QuoteLine[] = [];
+  for (const dim of dims) {
+    if (dim.kind !== 'addon') continue;
+    // Ja/Nein-Bausteine sind Menge 1 mit Obergrenze 1.
+    const max = dim.unit?.max ?? 1;
+    const quantity = clampQuantity(answers.quantities?.[dim.id], max);
+    if (quantity <= 0) continue;
+    lines.push({
+      id: dim.id,
+      label: dim.label,
+      quantity,
+      unitEur: dim.unitEur,
+      monthlyEur: dim.unitEur * quantity,
+    });
+  }
+
+  const addonMonthlyEur = lines.reduce((sum, line) => sum + line.monthlyEur, 0);
+  const baseMonthlyEur = plan.price.monthlyEur;
+
+  const chosen = new Set(Array.isArray(answers.contractItems) ? answers.contractItems : []);
+  const contractItems = QUOTE_CONTRACT_ITEMS.filter((item) => chosen.has(item.id));
+
+  return {
+    planId: answers.planId,
+    planKey: plan.planKey,
+    publicLabel: publicLabelOf(plan),
+    baseMonthlyEur,
+    lines,
+    addonMonthlyEur,
+    monthlyEur: baseMonthlyEur + addonMonthlyEur,
+    contractItems: [...contractItems],
+    fingerprint: quoteFingerprint(answers),
+  };
+}
+
+/**
+ * Stabile Kennung eines Fragebogens.
+ *
+ * Kein Sicherheitsmerkmal, sondern ein Aktenzeichen: Vertrieb und
+ * Interessent reden ueber dieselbe Konfiguration, und eine spaetere Anfrage
+ * laesst sich der frueheren zuordnen. Deshalb FNV-1a und keine WebCrypto —
+ * die Funktion muss synchron sein und in Browser wie Deno identisch rechnen.
+ */
+export function quoteFingerprint(answers: QuoteAnswers): string {
+  const dims = isQuotePlanId(answers?.planId) ? quoteDimensionsFor(answers.planId) : [];
+  // Kanonische Form: feste Reihenfolge, nur bekannte Schluessel, geklemmte
+  // Mengen. Zwei Antwortsaetze mit derselben Wirkung auf den Preis bekommen
+  // damit dieselbe Kennung — auch wenn das Formular sie anders serialisiert.
+  const parts: string[] = [String(answers?.planId ?? '')];
+  for (const dim of dims) {
+    if (dim.kind === 'addon') {
+      parts.push(`${dim.id}=${clampQuantity(answers.quantities?.[dim.id], dim.unit?.max ?? 1)}`);
+    } else {
+      const chosen = Array.isArray(answers.contractItems) && answers.contractItems.includes(dim.id);
+      parts.push(`${dim.id}=${chosen ? 1 : 0}`);
+    }
+  }
+  const canonical = parts.join('|');
+
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < canonical.length; i += 1) {
+    hash ^= canonical.charCodeAt(i);
+    // FNV-Prime 16777619, in 32 Bit gehalten.
+    hash = Math.imul(hash, 0x01000193) >>> 0;
+  }
+  return `Q-${hash.toString(16).toUpperCase().padStart(8, '0')}`;
+}
+
+/**
+ * Der Plan, der zu Mandanten-Bedarf und Marken-Wunsch passt.
+ *
+ * „Mehr Organisationen" ist bei uns kein Zuschlag, sondern ein Planwechsel:
+ * Enterprise traegt `limits.tenants = 5`, Enterprise Plus `50`. Wer mehr
+ * Mandanten braucht, bekommt deshalb den groesseren Plan genannt statt eines
+ * erfundenen Aufpreises auf den kleineren.
+ */
+export function quotePlanForTenants(tenants: number): QuotePlanId {
+  const enterprise = planById('enterprise');
+  return tenants > enterprise.limits.tenants ? 'partner' : 'enterprise';
+}
+
 // ── Anzeige-Formatierung ──────────────────────────────────────────────────
+
+/**
+ * Der Name, den ein Besucher sieht.
+ *
+ * Jede oeffentliche Flaeche nutzt diese Funktion statt `plan.name`: Karten,
+ * Vergleichstabellen, FAQ, JSON-LD. `plan.name` bleibt der Katalogname und
+ * gehoert in interne Listen und in das String-Matching von
+ * `pricingContent.ts` — dort wuerde ein Anzeigename die Feature-Zuordnung
+ * zerreissen.
+ */
+export function publicLabelOf(plan: Plan | PlanId): string {
+  const resolved = typeof plan === 'string' ? planById(plan) : plan;
+  return resolved.publicLabel ?? resolved.name;
+}
 
 /**
  * Einheitliche Preisformatierung (de-DE). Wird von jeder Oberfläche

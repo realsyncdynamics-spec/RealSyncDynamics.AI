@@ -124,12 +124,21 @@ describe('pricing config (Single Source of Truth)', () => {
     ]);
   });
 
-  it('SELLABLE_PRICING_TIERS enthaelt die angebotenen Stufen inkl. Agency', () => {
+  it('SELLABLE_PRICING_TIERS enthaelt die angebotenen Stufen inkl. Enterprise Plus', () => {
     // Agency ist seit Dominik-Landing 2026-09 wieder self_service (Stripe
-    // Live-Price). Partner bleibt stillgelegt.
+    // Live-Price). Partner ist seit 2026-09-20 zurueck — oeffentlich als
+    // „Enterprise Plus", die Tier-ID bleibt `partner`.
     expect(SELLABLE_PRICING_TIERS.map((t) => t.id)).toEqual([
-      'starter', 'growth', 'agency', 'enterprise',
+      'starter', 'growth', 'agency', 'enterprise', 'partner',
     ]);
+  });
+
+  it('zeigt fuer partner das oeffentliche Label, nicht den Katalognamen', () => {
+    const plus = SELLABLE_PRICING_TIERS.find((t) => t.id === 'partner')!;
+    expect(plus.name).toBe('Enterprise Plus');
+    // Die ID bleibt das, woran Stripe und Bestandsabos haengen.
+    expect(plus.planKey).toBe('partner');
+    expect(plus.plan.name).toBe('Partner');
   });
 
   it('SELLABLE_PRICING_TIERS ist eine Teilmenge von PUBLIC_PRICING_TIERS', () => {

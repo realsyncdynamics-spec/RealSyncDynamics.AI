@@ -56,8 +56,26 @@ describe('Landing — Europe-network', () => {
         'nicht mit und die Seite traegt zwei Akzente nebeneinander.',
     ).not.toMatch(v1Gold);
     expect(titanHero).toContain("from './landing-theme'");
-    expect(titanHero, 'Der Hero liest den Akzent nicht').toContain('LANDING_ACCENT');
-    expect(titanHero, 'Der CTA-Glow ist nicht der Token-Glow').toContain('LANDING_CTA_GLOW');
+
+    // Der Akzent kommt seit dem Farbmodus-Schalter aus `landing-mode.ts`.
+    // Das ist dieselbe Quelle, nur eine Ebene tiefer: die Modus-Token zeigen
+    // auf CSS-Variablen, deren Rueckfall genau die Goldwerte aus
+    // `landing-theme.ts` sind. Der Zweck dieses Tests — kein Farbwert direkt
+    // im Hero — bleibt damit erfuellt; geprueft wird er oben vom
+    // `v1Gold`-Muster, das die eigentliche Arbeit macht.
+    expect(titanHero, 'Der Hero bezieht den Akzent aus keiner Token-Datei').toContain(
+      "from './landing-mode'",
+    );
+    expect(titanHero, 'Der Hero liest den Akzent nicht').toContain('MODE_ACCENT');
+    expect(titanHero, 'Der CTA-Glow ist nicht der Token-Glow').toContain('MODE_GLOW');
+
+    // Gegenprobe: kein Farbwert darf am Token vorbei im Hero stehen. Ohne
+    // diese Zeile koennte jemand die Token-Importe stehen lassen und
+    // trotzdem daneben eine feste Farbe setzen.
+    expect(
+      titanHero,
+      'HeroTitanium setzt eine Farbe direkt statt ueber ein Token.',
+    ).not.toMatch(/#[0-9a-f]{6}\b/i);
   });
 
   it('die Token-Datei bleibt die einzige Quelle der Landing-Typografie', () => {

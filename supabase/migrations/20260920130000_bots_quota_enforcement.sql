@@ -82,13 +82,22 @@ BEGIN;
 -- ist die Zuordnung am aktuellen Enterprise-Produkt: bots.enabled = 1,
 -- limit.bots = -1, bots.chat = 1 (PLAN_ENTITLEMENTS.enterprise). Trägt ein
 -- Produkt mit default_for_plan_key enterprise / enterprise_yearly einen der
--- drei Werte nicht, bricht diese Migration laut ab — statt still ein
--- Kontingent von 0 zu erzwingen. Ist der Zustand bereits da (frischer
+-- drei Werte nicht — oder gibt es gar kein solches Produkt —, bricht diese
+-- Migration laut ab, statt still ein Kontingent von 0 zu erzwingen. Ist der Zustand bereits da (frischer
 -- Reset, oder #1491 angewendet), läuft sie durch.
 -- >>> RELEASE-GATE >>>
 DO $$
 BEGIN
-  IF EXISTS (
+  IF NOT EXISTS (
+    -- Gar kein Enterprise-Produkt: dann kann auch #1491 nichts zuordnen
+    -- (seine Migration joint an vorhandene products). Fail closed statt
+    -- leerer Menge. enterprise_yearly muss nicht existieren — der Basisplan-
+    -- Fallback in tenant_entitlements() deckt das ab —, eines von beiden aber.
+    SELECT 1
+    FROM public.products p
+    WHERE p.default_for_plan_key IN ('enterprise', 'enterprise_yearly')
+  )
+  OR EXISTS (
     SELECT 1
     FROM public.products p
     WHERE p.default_for_plan_key IN ('enterprise', 'enterprise_yearly')
@@ -110,7 +119,7 @@ BEGIN
         )
       )
   ) THEN
-    RAISE EXCEPTION 'Release-Gate: Entitlement-Parität aus 20260920120000 (#1491) fehlt — ein Enterprise-Produkt trägt nicht bots.enabled=1, limit.bots=-1, bots.chat=1. Erst #1491 anwenden und verifizieren, dann 20260920130000.'
+    RAISE EXCEPTION 'Release-Gate: Entitlement-Parität aus 20260920120000 (#1491) fehlt — kein Enterprise-Produkt vorhanden oder eines trägt nicht bots.enabled=1, limit.bots=-1, bots.chat=1. Erst #1491 anwenden und verifizieren, dann 20260920130000.'
       USING ERRCODE = 'P0001';
   END IF;
 END $$;

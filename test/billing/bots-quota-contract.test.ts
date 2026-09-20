@@ -83,6 +83,10 @@ describe('Migration 20260920130000 — Auflöser geteilt, nicht verdoppelt', () 
     expect(b).toBeGreaterThan(a);
     expect(a, 'Gate steht vor allem anderen').toBeLessThan(NEU.indexOf('CREATE OR REPLACE FUNCTION'));
     const gate = norm(NEU.slice(a, b));
+    // Fail closed auch bei leerer Menge: kein Enterprise-Produkt → Abbruch.
+    expect(gate).toContain(
+      "IF NOT EXISTS ( SELECT 1 FROM public.products p WHERE p.default_for_plan_key IN ('enterprise', 'enterprise_yearly') ) OR EXISTS (",
+    );
     expect(gate).toContain("WHERE p.default_for_plan_key IN ('enterprise', 'enterprise_yearly')");
     expect(gate).toContain("e.key = 'bots.enabled' AND pe.value = 1");
     expect(gate).toContain("e.key = 'limit.bots' AND pe.value = -1");

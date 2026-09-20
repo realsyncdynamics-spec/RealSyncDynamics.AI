@@ -325,6 +325,17 @@ d('Release-Gate der Migration 20260920130000 — Endzustand von #1491', () => {
     await expect(ctx.client.query(gate)).rejects.toThrow(/Release-Gate: Entitlement-Parität aus 20260920120000/);
   });
 
+  it('bricht ab, wenn gar kein Enterprise-Produkt existiert (fail closed statt leerer Menge)', async () => {
+    // #1491 joint an vorhandene products — ohne Enterprise-Produkt kann es
+    // nichts zuordnen. Diesen Zustand darf 20260920130000 nicht akzeptieren.
+    const { rowCount } = await ctx.client.query(
+      `UPDATE public.products SET default_for_plan_key = NULL
+        WHERE default_for_plan_key IN ('enterprise', 'enterprise_yearly')`,
+    );
+    expect(rowCount, 'Vorbedingung: mindestens ein Enterprise-Produkt im Schema').toBeGreaterThan(0);
+    await expect(ctx.client.query(gate)).rejects.toThrow(/Release-Gate/);
+  });
+
   it('bricht auch ab, wenn nur limit.bots fehlt', async () => {
     await ctx.client.query(
       `DELETE FROM public.product_entitlements pe

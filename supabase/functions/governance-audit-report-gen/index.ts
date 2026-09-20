@@ -174,14 +174,14 @@ Deno.serve(async (req) => {
       .update({ compliance_score: score })
       .eq('id', report.id);
 
-    return jsonResponse(200, {
+    return jsonResponse({
       ok: true,
       report_id: report.id,
       frameworks: frameworks,
       compliance_score: score,
       findings_count: findings?.length || 0,
       generated_at: new Date().toISOString(),
-    });
+    }, 200);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     return jsonError(500, 'INTERNAL', message);

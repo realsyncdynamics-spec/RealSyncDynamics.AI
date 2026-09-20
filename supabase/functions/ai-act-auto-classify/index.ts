@@ -101,14 +101,14 @@ Deno.serve(async (req) => {
       .update({ latest_assessment_id: assessment.id })
       .eq('id', body.ai_system_id);
 
-    return jsonResponse(200, {
+    return jsonResponse({
       ok: true,
       assessment_id: assessment.id,
       classification,
       risk_score: riskScore,
       recommendation,
       indicators,
-    });
+    }, 200);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     return jsonError(500, 'INTERNAL', message);

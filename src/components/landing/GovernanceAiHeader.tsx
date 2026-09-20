@@ -64,6 +64,7 @@ export function GovernanceAiHeader() {
   const cta = (
     <Link
       to={PUBLIC_CTA.to}
+      reloadDocument
       className="ga-pill-sheen relative inline-flex items-center gap-2 overflow-hidden whitespace-nowrap rounded-full px-[18px] py-[11px] text-[14px] font-semibold leading-[1.3] tracking-[-.005em] transition hover:brightness-[1.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ga-accent-lite)]"
       style={{
         fontFamily: GA_DISPLAY,

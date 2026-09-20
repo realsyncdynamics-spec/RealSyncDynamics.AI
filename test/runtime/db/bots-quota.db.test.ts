@@ -130,7 +130,7 @@ d('bots — Kontingent im Schreibpfad (Trigger bots_enforce_quota)', () => {
         WHERE n.nspname = 'public'
           AND p.proname IN ('tenant_entitlements', 'tenant_entitlements_resolve', 'bots_quota')`,
     );
-    const byName = new Map(acl.map((r) => [r.proname, r.ok]));
+    const byName = new Map(acl.map((r: { proname: string; ok: boolean }) => [r.proname, r.ok] as const));
     expect(byName.get('tenant_entitlements'), 'öffentlicher Auflöser bleibt für authenticated').toBe(true);
     expect(byName.get('tenant_entitlements_resolve'), 'interner Rumpf ist nicht öffentlich').toBe(false);
     expect(byName.get('bots_quota'), 'bots_quota nur für service_role').toBe(false);
@@ -370,25 +370,27 @@ d('bots — zwei gleichzeitige Inserts bekommen nicht beide den letzten Platz', 
     let userId: string | null = null;
     try {
       const t = await admin.query<{ id: string }>(`INSERT INTO public.tenants (name) VALUES ($1) RETURNING id`, [`race_${suffix}`]);
-      tenantId = t.rows[0]!.id;
+      const tid: string = t.rows[0]!.id;
+      tenantId = tid;
       const u = await admin.query<{ id: string }>(`INSERT INTO auth.users (email) VALUES ($1) RETURNING id`, [`race_${suffix}@example.com`]);
-      userId = u.rows[0]!.id;
-      await admin.query(`INSERT INTO public.memberships (tenant_id, user_id, role) VALUES ($1, $2, 'owner')`, [tenantId, userId]);
-      await planSetzen(admin, tenantId, 'growth');
-      await admin.query(`INSERT INTO public.bots (tenant_id, name) VALUES ($1, 'vorhanden')`, [tenantId]);
+      const uid: string = u.rows[0]!.id;
+      userId = uid;
+      await admin.query(`INSERT INTO public.memberships (tenant_id, user_id, role) VALUES ($1, $2, 'owner')`, [tid, uid]);
+      await planSetzen(admin, tid, 'growth');
+      await admin.query(`INSERT INTO public.bots (tenant_id, name) VALUES ($1, 'vorhanden')`, [tid]);
 
       // A öffnet die Transaktion und hält den Lock; B läuft in die Wartestellung.
       await a.query('BEGIN');
-      await a.query(`INSERT INTO public.bots (tenant_id, name) VALUES ($1, 'A')`, [tenantId]);
+      await a.query(`INSERT INTO public.bots (tenant_id, name) VALUES ($1, 'A')`, [tid]);
       const bVersuch = b
-        .query(`INSERT INTO public.bots (tenant_id, name) VALUES ($1, 'B')`, [tenantId])
+        .query(`INSERT INTO public.bots (tenant_id, name) VALUES ($1, 'B')`, [tid])
         .then(() => 'OK')
         .catch((e: PgError) => e.detail || e.code || e.message);
       await new Promise((r) => setTimeout(r, 300));
       await a.query('COMMIT');
 
       expect(await bVersuch, 'B zählt nach dem Lock die Zeile von A mit').toBe('BOT_QUOTA_EXCEEDED');
-      const { rows } = await admin.query<{ n: string }>(`SELECT count(*)::text AS n FROM public.bots WHERE tenant_id = $1`, [tenantId]);
+      const { rows } = await admin.query<{ n: string }>(`SELECT count(*)::text AS n FROM public.bots WHERE tenant_id = $1`, [tid]);
       expect(Number(rows[0]!.n)).toBe(2);
     } finally {
       try { await a.query('ROLLBACK'); } catch { /* bereits beendet */ }

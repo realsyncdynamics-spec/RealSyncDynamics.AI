@@ -35,8 +35,13 @@
  * Ohne TEST_DB_URL wird übersprungen (Muster der übrigen *.db.test.ts).
  */
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { Client } from 'pg';
 import { createTenantWithMember, closeDb, getDbUrl, openDb, type DbCtx } from './db-helpers';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const skip = !getDbUrl();
 const d = skip ? describe.skip : describe;
@@ -282,6 +287,52 @@ d('bots — Kontingent im Schreibpfad (Trigger bots_enforce_quota)', () => {
     expect(await zaehle({ sub: userId })).toBeGreaterThan(0);
     expect(await zaehle(SERVER)).toBeGreaterThan(0);
     expect(await zaehle({ sub: fremd.userId })).toBe(0);
+  });
+});
+
+d('Release-Gate der Migration 20260920130000 — Endzustand von #1491', () => {
+  /**
+   * Das Gate wird aus der Migrationsdatei gelesen und gegen das volle Schema
+   * ausgeführt: einmal so, wie es ist (muss durchlaufen), einmal mit dem
+   * Live-Befund nachgestellt — Enterprise-Produkt ohne Bot-Zuordnung — (muss
+   * abbrechen). Beides innerhalb der Test-Transaktion, nichts bleibt zurück.
+   */
+  const MIGRATION = join(__dirname, '..', '..', '..', 'supabase', 'migrations', '20260920130000_bots_quota_enforcement.sql');
+  const sql = readFileSync(MIGRATION, 'utf8');
+  const gate = sql.slice(
+    sql.indexOf('-- >>> RELEASE-GATE >>>') + '-- >>> RELEASE-GATE >>>'.length,
+    sql.indexOf('-- <<< RELEASE-GATE <<<'),
+  );
+
+  let ctx: DbCtx;
+  beforeEach(async () => { ctx = await openDb(); });
+  afterEach(async () => { await closeDb(ctx); });
+
+  it('läuft auf dem vollständigen Katalog durch', async () => {
+    expect(gate).toContain('DO $$');
+    await expect(ctx.client.query(gate)).resolves.toBeDefined();
+  });
+
+  it('bricht ab, wenn das Enterprise-Produkt die Bot-Zuordnung nicht trägt (Live-Befund)', async () => {
+    const { rowCount } = await ctx.client.query(
+      `DELETE FROM public.product_entitlements pe
+        USING public.products p, public.entitlements e
+       WHERE pe.product_id = p.id AND pe.entitlement_id = e.id
+         AND p.default_for_plan_key = 'enterprise'
+         AND e.key IN ('bots.enabled', 'limit.bots', 'bots.chat')`,
+    );
+    expect(rowCount, 'Vorbedingung: Enterprise trägt die Keys im migrierten Schema').toBeGreaterThan(0);
+    await expect(ctx.client.query(gate)).rejects.toThrow(/Release-Gate: Entitlement-Parität aus 20260920120000/);
+  });
+
+  it('bricht auch ab, wenn nur limit.bots fehlt', async () => {
+    await ctx.client.query(
+      `DELETE FROM public.product_entitlements pe
+        USING public.products p, public.entitlements e
+       WHERE pe.product_id = p.id AND pe.entitlement_id = e.id
+         AND p.default_for_plan_key = 'enterprise' AND e.key = 'limit.bots'`,
+    );
+    await expect(ctx.client.query(gate)).rejects.toThrow(/Release-Gate/);
   });
 });
 

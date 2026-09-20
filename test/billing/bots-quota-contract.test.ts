@@ -22,6 +22,8 @@ import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
+import { PLAN_ENTITLEMENTS } from '../../shared/pricing';
+
 const root = (p: string) => resolve(__dirname, '../..', p);
 
 const ALT = readFileSync(root('supabase/migrations/20260904000000_addon_booking_schema.sql'), 'utf8');
@@ -71,11 +73,29 @@ describe('Migration 20260920130000 — Auflöser geteilt, nicht verdoppelt', () 
     expect(NEU).toContain('GRANT EXECUTE ON FUNCTION public.bots_quota(uuid) TO service_role');
   });
 
-  it('Release-Gate: ohne 20260920120000 (#1491) bricht die Migration ab', () => {
-    const gate = NEU.indexOf("IF NOT EXISTS (SELECT 1 FROM public.entitlements WHERE key = 'bots.chat')");
-    expect(gate, 'Gate fehlt').toBeGreaterThan(-1);
-    expect(gate, 'Gate steht vor allem anderen').toBeLessThan(NEU.indexOf('CREATE OR REPLACE FUNCTION'));
-    expect(NEU).toContain("RAISE EXCEPTION 'Release-Gate: 20260920120000_entitlement_catalog_ssot_parity (#1491) fehlt");
+  it('Release-Gate prüft den Endzustand von #1491 am Enterprise-Produkt — nicht nur einen Vokabular-Key', () => {
+    // `bots.chat` legt bereits 20260628193759 an; ein Gate auf den Key liefe
+    // auf einem frischen Reset ins Leere. Was #1491 herstellt, ist die
+    // Zuordnung am aktuellen Enterprise-Produkt.
+    const a = NEU.indexOf('-- >>> RELEASE-GATE >>>');
+    const b = NEU.indexOf('-- <<< RELEASE-GATE <<<');
+    expect(a, 'Gate-Marker fehlen').toBeGreaterThan(-1);
+    expect(b).toBeGreaterThan(a);
+    expect(a, 'Gate steht vor allem anderen').toBeLessThan(NEU.indexOf('CREATE OR REPLACE FUNCTION'));
+    const gate = norm(NEU.slice(a, b));
+    expect(gate).toContain("WHERE p.default_for_plan_key IN ('enterprise', 'enterprise_yearly')");
+    expect(gate).toContain("e.key = 'bots.enabled' AND pe.value = 1");
+    expect(gate).toContain("e.key = 'limit.bots' AND pe.value = -1");
+    expect(gate).toContain("e.key = 'bots.chat' AND pe.value = 1");
+    expect(gate).toContain("RAISE EXCEPTION 'Release-Gate: Entitlement-Parität aus 20260920120000 (#1491) fehlt");
+    // Kein Gate mehr auf die bloße Existenz des Keys.
+    expect(gate).not.toContain("FROM public.entitlements WHERE key = 'bots.chat'");
+  });
+
+  it('die drei Gate-Werte sind exakt die der Quelle (PLAN_ENTITLEMENTS.enterprise)', () => {
+    expect(PLAN_ENTITLEMENTS.enterprise?.['bots.enabled']).toBe(1);
+    expect(PLAN_ENTITLEMENTS.enterprise?.['limit.bots']).toBe(-1);
+    expect(PLAN_ENTITLEMENTS.enterprise?.['bots.chat']).toBe(1);
   });
 });
 

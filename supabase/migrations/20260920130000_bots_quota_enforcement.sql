@@ -69,21 +69,52 @@
 
 BEGIN;
 
--- ─── 0. Release-Gate: #1491 muss im Migrationsstand sein ─────────────────
+-- ─── 0. Release-Gate: der Endzustand von #1491 muss vorliegen ────────────
 --
 -- Reihenfolge: #1491 → 20260920120000 → Verifikation → #1492 → diese Datei.
 -- Ohne den korrigierten Katalog fiele Enterprise fail closed (kein
--- bots.enabled, kein limit.bots). Das Gate prüft einen Key, den nur
--- 20260920120000 anlegt; in `db reset` und CI ist die Reihenfolge durch den
--- Zeitstempel gegeben, auf einer Live-DB scheitert ein isoliertes Anwenden
--- dieser Datei hier laut — statt still ein Kontingent von 0 zu erzwingen.
+-- bots.enabled, kein limit.bots).
+--
+-- Geprüft wird der ZUSTAND, nicht ein Stellvertreter-Key: Das Vokabular
+-- (bots.chat u. a.) legt bereits 20260628193759 an — auf einem frischen
+-- `db reset` existiert es also auch ohne #1491, und ein Gate auf den Key
+-- liefe dort ins Leere. Was auf der Live-DB fehlt und was #1491 herstellt,
+-- ist die Zuordnung am aktuellen Enterprise-Produkt: bots.enabled = 1,
+-- limit.bots = -1, bots.chat = 1 (PLAN_ENTITLEMENTS.enterprise). Trägt ein
+-- Produkt mit default_for_plan_key enterprise / enterprise_yearly einen der
+-- drei Werte nicht, bricht diese Migration laut ab — statt still ein
+-- Kontingent von 0 zu erzwingen. Ist der Zustand bereits da (frischer
+-- Reset, oder #1491 angewendet), läuft sie durch.
+-- >>> RELEASE-GATE >>>
 DO $$
 BEGIN
-  IF NOT EXISTS (SELECT 1 FROM public.entitlements WHERE key = 'bots.chat') THEN
-    RAISE EXCEPTION 'Release-Gate: 20260920120000_entitlement_catalog_ssot_parity (#1491) fehlt im Migrationsstand. Erst #1491 anwenden und verifizieren, dann 20260920130000.'
+  IF EXISTS (
+    SELECT 1
+    FROM public.products p
+    WHERE p.default_for_plan_key IN ('enterprise', 'enterprise_yearly')
+      AND (
+        NOT EXISTS (
+          SELECT 1 FROM public.product_entitlements pe
+          JOIN public.entitlements e ON e.id = pe.entitlement_id
+          WHERE pe.product_id = p.id AND e.key = 'bots.enabled' AND pe.value = 1
+        )
+        OR NOT EXISTS (
+          SELECT 1 FROM public.product_entitlements pe
+          JOIN public.entitlements e ON e.id = pe.entitlement_id
+          WHERE pe.product_id = p.id AND e.key = 'limit.bots' AND pe.value = -1
+        )
+        OR NOT EXISTS (
+          SELECT 1 FROM public.product_entitlements pe
+          JOIN public.entitlements e ON e.id = pe.entitlement_id
+          WHERE pe.product_id = p.id AND e.key = 'bots.chat' AND pe.value = 1
+        )
+      )
+  ) THEN
+    RAISE EXCEPTION 'Release-Gate: Entitlement-Parität aus 20260920120000 (#1491) fehlt — ein Enterprise-Produkt trägt nicht bots.enabled=1, limit.bots=-1, bots.chat=1. Erst #1491 anwenden und verifizieren, dann 20260920130000.'
       USING ERRCODE = 'P0001';
   END IF;
 END $$;
+-- <<< RELEASE-GATE <<<
 
 -- ─── 1. Interner Auflöser: bisheriger Rumpf ohne Autorisierungs-CTE ──────
 --

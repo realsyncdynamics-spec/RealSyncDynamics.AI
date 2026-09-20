@@ -266,8 +266,12 @@ verify_jwt = true
 [functions.enterprise-ai-os-agents-list]
 verify_jwt = false
 
+# enterprise-ai-os-agents-run: braucht eine echte Nutzersitzung. verify_jwt
+# ist nur das Plattform-Gate (laesst den Anon-Key durch); die eigentliche
+# Tenant-Autorisierung macht der Handler ueber requireAuthAndTenant aus
+# _shared/auth.ts — body.tenantId ist dort nur ein Claim.
 [functions.enterprise-ai-os-agents-run]
-verify_jwt = false
+verify_jwt = true
 
 [functions.enterprise-ai-os-evaluate]
 verify_jwt = false

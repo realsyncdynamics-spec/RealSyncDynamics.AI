@@ -16,7 +16,7 @@ import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-import { ENTITLEMENT_KEYS, PLAN_ENTITLEMENTS, planGrants } from '../../shared/pricing';
+import { ENTITLEMENT_KEYS, PLAN_ENTITLEMENTS, planGrants, type EntitlementKey } from '../../shared/pricing';
 
 const MIGRATION = resolve(
   __dirname,
@@ -97,11 +97,13 @@ describe('Migration 20260920120000 — Katalog aus PLAN_ENTITLEMENTS', () => {
 
 describe('Bot-Builder — die geprueften Keys sind auch gewaehrt', () => {
   /** Liest den Key aus `gateFeature(admin, <tenant>, '<key>')` einer Edge Function. */
-  function gateKey(fn: string): string {
+  function gateKey(fn: string): EntitlementKey {
     const src = readFileSync(resolve(__dirname, `../../supabase/functions/${fn}/index.ts`), 'utf8');
     const m = src.match(/gateFeature\([^,]+,[^,]+,\s*'([a-z0-9_.]+)'\)/);
     expect(m, `${fn}: kein gateFeature-Aufruf gefunden`).not.toBeNull();
-    return m![1];
+    const key = m![1];
+    expect(ENTITLEMENT_KEYS, `${fn}: unbekannter Entitlement-Key "${key}"`).toContain(key);
+    return key as EntitlementKey;
   }
 
   const bezahltBots = ['starter', 'growth', 'agency', 'enterprise', 'partner'] as const;

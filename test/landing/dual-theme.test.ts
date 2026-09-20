@@ -1,5 +1,7 @@
 /**
- * Replit SSOT `/` — Dark/Gold Europe-network (static), Free Audit CTAs.
+ * SSOT `/` — Europe-network (static), Free Audit CTAs. Die Palette selbst
+ * steht in `landing-theme.ts`; dieser Test prueft die Bindung daran, nicht
+ * einen konkreten Farbwert.
  */
 import { render, screen } from '@testing-library/react';
 import { createElement } from 'react';
@@ -32,12 +34,36 @@ const runtimeStations = readFileSync(
   'utf8',
 );
 
-describe('Landing Replit Dark/Gold — Europe-network', () => {
-  it('keeps Dark/Gold amber tokens', () => {
-    expect(theme).toContain('#0a0a0b');
-    expect(theme).toContain('#d6ad68');
-    expect(theme).toContain('#e8c98a');
+describe('Landing — Europe-network', () => {
+  /**
+   * Bis zum Design-Lock v2 stand hier, dass `landing-theme.ts` die Werte
+   * `#0a0a0b`, `#d6ad68` und `#e8c98a` traegt. Das war eine Zusicherung auf
+   * konkrete Goldwerte — also genau die Entscheidung, die v2 ersetzt: True
+   * Black, Cyan als Handlungsakzent, Gold nur noch fuer VIP/Premium.
+   *
+   * Der Test prueft deshalb nicht mehr *welche* Farbe gilt, sondern dass die
+   * Landing sie aus der Token-Datei bezieht statt sie festzuschreiben. Damit
+   * ueberlebt er den Palettenwechsel, und er faengt den Fehler, der ihn
+   * ueberhaupt erst noetig gemacht hat: einen Akzent, der in einer Komponente
+   * hartkodiert neben dem Token steht.
+   */
+  it('bezieht den Akzent aus der Token-Datei, nicht hartkodiert', () => {
+    const v1Gold = /#d6ad68|#e8c98a|rgba\(\s*214,\s*173,\s*104|rgba\(\s*232,\s*201,\s*138/i;
+    expect(
+      titanHero,
+      'HeroTitanium traegt einen Akzentwert direkt im Code. Er gehoert in ' +
+        '`landing-theme.ts` — sonst zieht ein Palettenwechsel die Komponente ' +
+        'nicht mit und die Seite traegt zwei Akzente nebeneinander.',
+    ).not.toMatch(v1Gold);
+    expect(titanHero).toContain("from './landing-theme'");
+    expect(titanHero, 'Der Hero liest den Akzent nicht').toContain('LANDING_ACCENT');
+    expect(titanHero, 'Der CTA-Glow ist nicht der Token-Glow').toContain('LANDING_CTA_GLOW');
+  });
+
+  it('die Token-Datei bleibt die einzige Quelle der Landing-Typografie', () => {
     expect(theme).toContain('Playfair Display');
+    expect(theme).toContain('LANDING_ACCENT');
+    expect(theme).toContain('LANDING_CTA_GLOW');
   });
 
   it('uses static Europe network — not interactive sphere', () => {

@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react';
 import { Link } from 'react-router-dom';
 import { tierById, type PricingTier } from '../../config/pricing';
 import { EuropeNetworkHero } from './EuropeNetworkHero';
@@ -10,6 +11,7 @@ import {
 import {
   LANDING_ACCENT,
   LANDING_BUTTON,
+  LANDING_CTA_GLOW,
   LANDING_BUTTON_TEXT,
   LANDING_MONO,
   LANDING_MUTED,
@@ -70,9 +72,18 @@ export function HeroTitanium() {
   const chips = planChips();
 
   return (
+    /* Fokusring folgt dem Landing-Akzent statt einem festen Wert. Tailwind
+       kann keine JS-Konstante lesen, deshalb der Umweg ueber zwei CSS-
+       Variablen: Wer `LANDING_ACCENT` aendert, aendert den Ring mit. */
     <section
       id="product"
       className="relative min-h-[min(100svh,880px)] overflow-hidden border-b border-white/[0.06]"
+      style={
+        {
+          '--landing-ring': LANDING_ACCENT,
+          '--landing-ring-soft': `${LANDING_ACCENT}99`,
+        } as CSSProperties
+      }
     >
       <EuropeNetworkHero />
 
@@ -133,11 +144,11 @@ export function HeroTitanium() {
                 id="audit-cta"
                 data-hero-cta="audit"
                 to="/audit"
-                className="flex h-full min-w-[9.5rem] items-center justify-center rounded-xl px-6 py-5 text-[0.95rem] font-semibold transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d6ad68]"
+                className="flex h-full min-w-[9.5rem] items-center justify-center rounded-xl px-6 py-5 text-[0.95rem] font-semibold transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--landing-ring)]"
                 style={{
                   backgroundColor: LANDING_BUTTON,
                   color: LANDING_BUTTON_TEXT,
-                  boxShadow: '0 0 28px rgba(214,173,104,0.30)',
+                  boxShadow: LANDING_CTA_GLOW,
                 }}
               >
                 {HERO_PLAN_ANCHOR_FREE}
@@ -149,14 +160,14 @@ export function HeroTitanium() {
                 <Link
                   to={chip.to}
                   data-plan-anchor={chip.key}
-                  className="flex h-full min-w-[7.25rem] flex-col items-center justify-center rounded-xl border px-5 py-3.5 text-center transition hover:bg-white/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d6ad68]/60"
+                  className="flex h-full min-w-[7.25rem] flex-col items-center justify-center rounded-xl border px-5 py-3.5 text-center transition hover:bg-white/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--landing-ring-soft)]"
                   style={{
                     backgroundColor: 'rgba(255,255,255,0.04)',
                     borderColor: chip.featured
                       ? LANDING_ACCENT
                       : 'rgba(255,255,255,0.12)',
                     boxShadow: chip.featured
-                      ? '0 0 22px rgba(214,173,104,0.22)'
+                      ? LANDING_CTA_GLOW
                       : undefined,
                   }}
                 >

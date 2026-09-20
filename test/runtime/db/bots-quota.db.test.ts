@@ -6,8 +6,9 @@
  * `limit.bots` wurde verkauft und nirgends durchgesetzt: Bot-Anlage läuft aus
  * dem Browser direkt über PostgREST, RLS prüft nur Mitgliedschaft. Migration
  * 20260920130000 setzt einen BEFORE-INSERT-Trigger auf `public.bots`, der
- * das Kontingent aus dem Entitlement-Auflöser liest und je Mandant mit einem
- * Advisory-Lock serialisiert. Alles daran — Trigger, Lock, SECURITY DEFINER,
+ * für Clients zuerst die Mitgliedschaft prüft (Postgres wendet RLS erst NACH
+ * BEFORE-Triggern an), dann je Mandant sperrt und das Kontingent aus dem
+ * Entitlement-Auflöser liest. Alles daran — Trigger, Lock, SECURITY DEFINER,
  * RLS, `auth.uid()` — ist SQL und in TypeScript nicht nachbildbar.
  *
  * ## Matrix
@@ -18,10 +19,18 @@
  *   Einmal-Grant limit.bots=-1 → unbegrenzt
  *   Add-on-Position +5 × 2     → Starter wird zu 11
  *   service_role               → dieselbe Quota, kein Freifahrtschein
- *   Fremder Nutzer             → RLS (42501), sieht nichts
+ *   Fremder Nutzer             → 42501 bei Free, vollem Starter UND freiem
+ *                                Growth — nie ein BOTS_*-Code (kein Leck)
+ *   Bulk-INSERT über das Limit → gesamte Anweisung scheitert, 0 Zeilen
  *   Update / Deaktivieren /
  *   Löschen am Limit           → frei; Löschen gibt den Platz frei
+ *   Altbestand auf Free        → bleibt, weiterer wird abgelehnt
  *   zwei gleichzeitige Inserts → genau einer bekommt den letzten Platz
+ *
+ * Der Testclient ist Superuser. Ohne JWT-Claims liefert der CI-Stub für
+ * `auth.role()` 'authenticated' — deshalb laufen Fixture-Inserts hier mit
+ * service_role-Claims, wie ein Admin-Client. In Produktion hat eine Sitzung
+ * ohne JWT `auth.role() = NULL` und ist kein Client.
  *
  * Ohne TEST_DB_URL wird übersprungen (Muster der übrigen *.db.test.ts).
  */
@@ -33,6 +42,7 @@ const skip = !getDbUrl();
 const d = skip ? describe.skip : describe;
 
 interface PgError extends Error { code?: string; detail?: string }
+const SERVER = { role: 'service_role' } as const;
 
 /** Plan eines Mandanten setzen (der tenants-Trigger hat bereits ein Free-Abo angelegt). */
 async function planSetzen(client: Client, tenantId: string, planKey: string): Promise<void> {
@@ -46,21 +56,7 @@ async function planSetzen(client: Client, tenantId: string, planKey: string): Pr
   );
 }
 
-/** Insert versuchen; liefert 'OK' oder den DETAIL-Code bzw. SQLSTATE der Ablehnung. */
-async function versuch(client: Client, tenantId: string, name: string): Promise<string> {
-  try {
-    await client.query(`INSERT INTO public.bots (tenant_id, name) VALUES ($1, $2)`, [tenantId, name]);
-    return 'OK';
-  } catch (e) {
-    const err = e as PgError;
-    return err.detail || err.code || err.message;
-  }
-}
-
-/**
- * Wie `versuch`, aber innerhalb von `withClaims` — dort bricht ein Fehler
- * die Savepoint-Transaktion, deshalb muss der Aufruf selbst außen liegen.
- */
+/** Insert im Claims-/Rollenkontext; liefert 'OK' oder den DETAIL-Code bzw. SQLSTATE der Ablehnung. */
 async function versuchAls(
   ctx: DbCtx,
   claims: { sub?: string; role?: string },
@@ -139,7 +135,7 @@ d('bots — Kontingent im Schreibpfad (Trigger bots_enforce_quota)', () => {
     const { tenantId, userId } = await createTenantWithMember(ctx);
     // Kein Plan gesetzt: der tenants-Trigger hat ein Free-Abo angelegt.
     expect(await versuchAls(ctx, { sub: userId }, tenantId, 'f1')).toBe('BOTS_NOT_ENTITLED');
-    expect(await versuchAls(ctx, { role: 'service_role' }, tenantId, 'f2')).toBe('BOTS_NOT_ENTITLED');
+    expect(await versuchAls(ctx, SERVER, tenantId, 'f2')).toBe('BOTS_NOT_ENTITLED');
     const { rows } = await ctx.client.query(`SELECT 1 FROM public.bots WHERE tenant_id = $1`, [tenantId]);
     expect(rows.length).toBe(0);
   });
@@ -167,7 +163,7 @@ d('bots — Kontingent im Schreibpfad (Trigger bots_enforce_quota)', () => {
       entitlements: [['bots.enabled', 1], ['limit.bots', -1]],
     });
     for (let i = 1; i <= 6; i++) {
-      expect(await versuch(ctx.client, tenantId, `u${i}`), `Insert ${i}`).toBe('OK');
+      expect(await versuchAls(ctx, SERVER, tenantId, `u${i}`), `Insert ${i}`).toBe('OK');
     }
   });
 
@@ -183,27 +179,64 @@ d('bots — Kontingent im Schreibpfad (Trigger bots_enforce_quota)', () => {
     );
     expect(rows[0]!.max_bots, 'nur plan_catalog zu lesen wäre hier falsch').toBe(11);
     for (let i = 1; i <= 11; i++) {
-      expect(await versuch(ctx.client, tenantId, `a${i}`), `Insert ${i}`).toBe('OK');
+      expect(await versuchAls(ctx, SERVER, tenantId, `a${i}`), `Insert ${i}`).toBe('OK');
     }
-    expect(await versuch(ctx.client, tenantId, 'a12')).toBe('BOT_QUOTA_EXCEEDED');
+    expect(await versuchAls(ctx, SERVER, tenantId, 'a12')).toBe('BOT_QUOTA_EXCEEDED');
   });
 
   it('service_role unterliegt derselben Produkt-Quota', async () => {
     const { tenantId } = await createTenantWithMember(ctx);
     await planSetzen(ctx.client, tenantId, 'starter');
-    expect(await versuchAls(ctx, { role: 'service_role' }, tenantId, 'r1')).toBe('OK');
-    expect(await versuchAls(ctx, { role: 'service_role' }, tenantId, 'r2')).toBe('BOT_QUOTA_EXCEEDED');
+    expect(await versuchAls(ctx, SERVER, tenantId, 'r1')).toBe('OK');
+    expect(await versuchAls(ctx, SERVER, tenantId, 'r2')).toBe('BOT_QUOTA_EXCEEDED');
   });
 
-  it('fremder Nutzer: RLS lehnt ab, bevor die Quota greift; er sieht nichts', async () => {
-    const { tenantId } = await createTenantWithMember(ctx);
+  it('fremder Nutzer bekommt immer 42501 — nie BOTS_NOT_ENTITLED oder BOT_QUOTA_EXCEEDED', async () => {
+    // Postgres prüft WITH CHECK erst nach BEFORE-Triggern. Prüfte der Trigger
+    // das Kontingent vor der Mitgliedschaft, verriete die Fehlerart einem
+    // Fremden Plan und Auslastung. Drei Zustände, dreimal dieselbe Antwort.
+    const frei = await createTenantWithMember(ctx);          // free_audit
+    const voll = await createTenantWithMember(ctx);          // Starter, 1/1
+    const offen = await createTenantWithMember(ctx);         // Growth, 0/2
     const fremd = await createTenantWithMember(ctx);
-    await planSetzen(ctx.client, tenantId, 'growth');
-    expect(await versuchAls(ctx, { sub: fremd.userId }, tenantId, 'x1')).toBe('42501');
+    await planSetzen(ctx.client, voll.tenantId, 'starter');
+    await planSetzen(ctx.client, offen.tenantId, 'growth');
+    expect(await versuchAls(ctx, SERVER, voll.tenantId, 'v1')).toBe('OK');
+
+    expect(await versuchAls(ctx, { sub: fremd.userId }, frei.tenantId, 'x0'), 'Free').toBe('42501');
+    expect(await versuchAls(ctx, { sub: fremd.userId }, voll.tenantId, 'x1'), 'Starter voll').toBe('42501');
+    expect(await versuchAls(ctx, { sub: fremd.userId }, offen.tenantId, 'x2'), 'Growth unter Limit').toBe('42501');
+    expect(await versuchAls(ctx, { role: 'anon' }, frei.tenantId, 'x3'), 'anon').toBe('42501');
+
     await ctx.withClaims({ sub: fremd.userId }, async () => {
-      const { rows } = await ctx.client.query(`SELECT 1 FROM public.bots WHERE tenant_id = $1`, [tenantId]);
+      const { rows } = await ctx.client.query(`SELECT 1 FROM public.bots WHERE tenant_id = $1`, [voll.tenantId]);
       expect(rows.length).toBe(0);
     });
+    // Und der Server sieht weiterhin die echten Codes.
+    expect(await versuchAls(ctx, SERVER, frei.tenantId, 'y0')).toBe('BOTS_NOT_ENTITLED');
+    expect(await versuchAls(ctx, SERVER, voll.tenantId, 'y1')).toBe('BOT_QUOTA_EXCEEDED');
+  });
+
+  it('Bulk-INSERT über das Limit: die gesamte Anweisung scheitert, 0 Zeilen', async () => {
+    // Zeilenweiser BEFORE-Trigger: die zweite Zeile zählt die erste derselben
+    // Anweisung bereits mit und lehnt ab — damit rollt Postgres die ganze
+    // Anweisung zurück. Genau dieses Verhalten wird hier festgeschrieben.
+    const { tenantId } = await createTenantWithMember(ctx);
+    await planSetzen(ctx.client, tenantId, 'starter');
+    let ergebnis = 'OK';
+    try {
+      await ctx.withClaims(SERVER, async () => {
+        await ctx.client.query(
+          `INSERT INTO public.bots (tenant_id, name) VALUES ($1, 'bulk-1'), ($1, 'bulk-2')`,
+          [tenantId],
+        );
+      });
+    } catch (e) {
+      ergebnis = (e as PgError).detail || (e as PgError).code || 'FEHLER';
+    }
+    expect(ergebnis).toBe('BOT_QUOTA_EXCEEDED');
+    const { rows } = await ctx.client.query(`SELECT 1 FROM public.bots WHERE tenant_id = $1`, [tenantId]);
+    expect(rows.length, 'kein Teilerfolg').toBe(0);
   });
 
   it('Update, Deaktivieren, Löschen bleiben am Limit frei; Löschen gibt den Platz frei', async () => {
@@ -220,6 +253,20 @@ d('bots — Kontingent im Schreibpfad (Trigger bots_enforce_quota)', () => {
     expect(await versuchAls(ctx, { sub: userId }, tenantId, 'b3')).toBe('OK');
   });
 
+  it('Altbestand auf Free bleibt lesbar und änderbar; ein weiterer Bot wird abgelehnt', async () => {
+    // Seed-Fall aus der Messung: ein Bot auf einem free_audit-Mandanten.
+    // Durchsetzung ist vorwärtsgerichtet — die Zeile wird nicht angetastet.
+    const { tenantId, userId } = await createTenantWithMember(ctx);
+    await ctx.client.query(`ALTER TABLE public.bots DISABLE TRIGGER bots_enforce_quota`);
+    await ctx.client.query(`INSERT INTO public.bots (tenant_id, name) VALUES ($1, 'alt-bestand')`, [tenantId]);
+    await ctx.client.query(`ALTER TABLE public.bots ENABLE TRIGGER bots_enforce_quota`);
+    await ctx.withClaims({ sub: userId }, async () => {
+      const { rowCount } = await ctx.client.query(`UPDATE public.bots SET enabled = false WHERE tenant_id = $1`, [tenantId]);
+      expect(rowCount).toBe(1);
+    });
+    expect(await versuchAls(ctx, { sub: userId }, tenantId, 'neu')).toBe('BOTS_NOT_ENTITLED');
+  });
+
   it('tenant_entitlements() antwortet weiterhin nur Mitglied und Server', async () => {
     // Die Migration teilt den Auflöser in Rumpf und Hülle. Die Regel der
     // Hülle ist dieselbe wie vorher — geprüft in
@@ -233,7 +280,7 @@ d('bots — Kontingent im Schreibpfad (Trigger bots_enforce_quota)', () => {
         return rows.length;
       });
     expect(await zaehle({ sub: userId })).toBeGreaterThan(0);
-    expect(await zaehle({ role: 'service_role' })).toBeGreaterThan(0);
+    expect(await zaehle(SERVER)).toBeGreaterThan(0);
     expect(await zaehle({ sub: fremd.userId })).toBe(0);
   });
 });
@@ -250,6 +297,11 @@ d('bots — zwei gleichzeitige Inserts bekommen nicht beide den letzten Platz', 
     const a = new Client({ connectionString: url });
     const b = new Client({ connectionString: url });
     await Promise.all([admin.connect(), a.connect(), b.connect()]);
+    // Admin-Kontext auf allen drei Verbindungen (siehe Kopf der Datei).
+    const claims = JSON.stringify({ role: 'service_role' });
+    for (const c of [admin, a, b]) {
+      await c.query(`SELECT set_config('request.jwt.claims', $1, false)`, [claims]);
+    }
 
     const suffix = Math.random().toString(36).slice(2, 8);
     let tenantId: string | null = null;
@@ -266,7 +318,10 @@ d('bots — zwei gleichzeitige Inserts bekommen nicht beide den letzten Platz', 
       // A öffnet die Transaktion und hält den Lock; B läuft in die Wartestellung.
       await a.query('BEGIN');
       await a.query(`INSERT INTO public.bots (tenant_id, name) VALUES ($1, 'A')`, [tenantId]);
-      const bVersuch = versuch(b, tenantId, 'B');
+      const bVersuch = b
+        .query(`INSERT INTO public.bots (tenant_id, name) VALUES ($1, 'B')`, [tenantId])
+        .then(() => 'OK')
+        .catch((e: PgError) => e.detail || e.code || e.message);
       await new Promise((r) => setTimeout(r, 300));
       await a.query('COMMIT');
 

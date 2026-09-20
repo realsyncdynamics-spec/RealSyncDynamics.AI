@@ -8,11 +8,15 @@
  *  1. Der interne Auflöser ist der alte Rumpf ohne Autorisierungs-CTE —
  *     Zeichen für Zeichen. Zwei Fassungen derselben Logik wären eine zweite
  *     Entitlement-SSoT; genau das darf nicht passieren.
- *  2. Der Trigger sperrt VOR dem Zählen (Advisory-Lock je Mandant), feuert
- *     nur BEFORE INSERT und löscht nichts.
- *  3. Der Onboarding-Orchestrator legt keinen Bot mehr bedingungslos an,
- *     fragt dieselbe Quelle wie der Trigger und meldet ohne Bot weder
- *     `bot_id` noch `next.chat`.
+ *  2. Der Trigger prüft für Clients die Mitgliedschaft VOR allem anderen
+ *     (Postgres wendet RLS erst nach BEFORE-Triggern an), sperrt dann VOR
+ *     dem Zählen (Advisory-Lock je Mandant), feuert nur BEFORE INSERT und
+ *     löscht nichts.
+ *  3. Die Migration trägt ein Release-Gate auf 20260920120000 (#1491).
+ *  4. Der Onboarding-Orchestrator bestimmt die Berechtigung IMMER — auch
+ *     bei Bestand —, legt keinen Bot mehr bedingungslos an, fragt dieselbe
+ *     Quelle wie der Trigger und meldet ohne Bot weder `bot_id` noch
+ *     `next.chat`.
  */
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
@@ -67,18 +71,39 @@ describe('Migration 20260920130000 — Auflöser geteilt, nicht verdoppelt', () 
     expect(NEU).toContain('GRANT EXECUTE ON FUNCTION public.bots_quota(uuid) TO service_role');
   });
 
-  it('Trigger: BEFORE INSERT, je Zeile, nicht auf UPDATE/DELETE', () => {
+  it('Release-Gate: ohne 20260920120000 (#1491) bricht die Migration ab', () => {
+    const gate = NEU.indexOf("IF NOT EXISTS (SELECT 1 FROM public.entitlements WHERE key = 'bots.chat')");
+    expect(gate, 'Gate fehlt').toBeGreaterThan(-1);
+    expect(gate, 'Gate steht vor allem anderen').toBeLessThan(NEU.indexOf('CREATE OR REPLACE FUNCTION'));
+    expect(NEU).toContain("RAISE EXCEPTION 'Release-Gate: 20260920120000_entitlement_catalog_ssot_parity (#1491) fehlt");
+  });
+});
+
+describe('Migration 20260920130000 — Trigger', () => {
+  const fn = rumpf(NEU, 'bots_enforce_quota');
+
+  it('BEFORE INSERT, je Zeile, nicht auf UPDATE/DELETE', () => {
     expect(NEU).toMatch(/CREATE TRIGGER bots_enforce_quota\s+BEFORE INSERT ON public\.bots\s+FOR EACH ROW/);
     expect(NEU).not.toMatch(/BEFORE (INSERT OR UPDATE|UPDATE|DELETE)/);
     expect(NEU).not.toMatch(/AFTER (INSERT|UPDATE|DELETE)/);
   });
 
-  it('Trigger: Lock je Mandant VOR dem Zählen, fail closed, -1 unbegrenzt', () => {
-    const fn = rumpf(NEU, 'bots_enforce_quota');
-    const lock = fn.indexOf("pg_advisory_xact_lock(hashtext('public.bots.quota'), hashtext(NEW.tenant_id::text))");
+  it('Clients: Mitgliedschaft VOR Lock und Kontingent, mit RLS-Meldung und 42501', () => {
+    // Postgres prüft WITH CHECK erst nach BEFORE-Triggern. Ohne diese Reihen-
+    // folge verriete die Fehlerart einem Fremden Plan und Auslastung.
+    const auth = fn.indexOf("IF auth.role() IN ('anon', 'authenticated') AND NOT public.is_tenant_member(NEW.tenant_id) THEN");
+    const lock = fn.indexOf('pg_advisory_xact_lock(');
     const zaehlen = fn.indexOf('FROM public.bots_quota(NEW.tenant_id)');
-    expect(lock, 'Advisory-Lock fehlt').toBeGreaterThan(-1);
-    expect(zaehlen).toBeGreaterThan(lock);
+    expect(auth, 'Autorisierung fehlt').toBeGreaterThan(-1);
+    expect(auth).toBeLessThan(lock);
+    expect(fn).toContain(`RAISE EXCEPTION 'new row violates row-level security policy for table "bots"' USING ERRCODE = '42501'`);
+    // In diesem Pfad kein BOTS_*-Detail.
+    expect(fn.slice(auth, lock)).not.toMatch(/BOTS_NOT_ENTITLED|BOT_QUOTA_EXCEEDED/);
+    expect(lock).toBeLessThan(zaehlen);
+  });
+
+  it('Lock je Mandant, fail closed, -1 unbegrenzt, Codes im DETAIL', () => {
+    expect(fn).toContain("pg_advisory_xact_lock(hashtext('public.bots.quota'), hashtext(NEW.tenant_id::text))");
     expect(fn).toContain('IF NOT v_enabled OR v_limit = 0 THEN RAISE EXCEPTION');
     expect(fn).toContain('IF v_limit = -1 THEN RETURN NEW; END IF;');
     expect(fn).toContain('IF v_used >= v_limit THEN RAISE EXCEPTION');
@@ -103,31 +128,49 @@ describe('onboarding-orchestrator — Bot nur mit Berechtigung', () => {
     expect(src).not.toContain('existingBot');
   });
 
-  it('fragt dieselbe Quelle wie der Trigger (bots_quota) und wertet enabled / max_bots / used aus', () => {
-    expect(src).toContain("admin.rpc('bots_quota',{p_tenant_id:tenantId})");
+  it('bestimmt die Berechtigung IMMER — vor dem Bestandspfad', () => {
+    const quota = src.indexOf("admin.rpc('bots_quota',{p_tenant_id:tenantId})");
+    const bestand = src.indexOf('else if(vorhanden){');
+    const nichtBerechtigt = src.indexOf("botSkipped='not_entitled'");
+    expect(quota).toBeGreaterThan(-1);
+    expect(bestand).toBeGreaterThan(-1);
+    // Reihenfolge: Quota lesen → nicht berechtigt → Bestand → Kontingent voll → Insert
+    expect(quota).toBeLessThan(nichtBerechtigt);
+    expect(nichtBerechtigt).toBeLessThan(bestand);
+    expect(bestand).toBeLessThan(src.indexOf("botSkipped='quota_exhausted'"));
     expect(src).toContain("q.enabled!==true||Number(q.max_bots)===0)botSkipped='not_entitled'");
     expect(src).toContain("Number(q.max_bots)!==-1&&Number(q.used)>=Number(q.max_bots))botSkipped='quota_exhausted'");
+  });
+
+  it('Bestand + nicht berechtigt: keine Mutation, kein Bot in der Antwort', () => {
+    // Der Update-Pfad liegt im `else if(vorhanden)`-Zweig NACH not_entitled —
+    // ein Free-Mandant mit Alt-Bot erreicht ihn nicht. Die Zeile bleibt, wird
+    // aber weder aktualisiert noch als provisioniert gemeldet.
+    const bestand = src.indexOf('else if(vorhanden){');
+    const update = src.indexOf(".update({...botValues,config:{...(vorhanden.config??{})");
+    expect(update).toBeGreaterThan(bestand);
+    expect(src).not.toMatch(/\.delete\(\)[^\n]*bots|from\('bots'\)\.delete/);
+  });
+
+  it('Bestand + berechtigt: derselbe Bot wird aktualisiert, auch am Limit; config gemergt', () => {
+    expect(src).toContain(".eq('tenant_id',tenantId).eq('name',botName).limit(1).maybeSingle()");
+    expect(src).toContain('config:{...(vorhanden.config??{}),ai_system_id:ais.row.id');
+    // Der Bestandszweig steht VOR der Kontingentprüfung: used == limit sperrt ihn nicht.
+    expect(src.indexOf('else if(vorhanden){')).toBeLessThan(src.indexOf("botSkipped='quota_exhausted'"));
   });
 
   it('eine Trigger-Ablehnung ist kein Onboarding-Fehler', () => {
     expect(src).toContain("if(code.includes('BOT_QUOTA_EXCEEDED'))botSkipped='quota_exhausted'");
     expect(src).toContain("else if(code.includes('BOTS_NOT_ENTITLED'))botSkipped='not_entitled'");
-    // Alles andere bleibt ein echter Fehler — kein pauschales Schlucken.
     expect(src).toContain('else throw ie;');
   });
 
   it('ohne Bot: keine erfundene bot_id, kein next.chat, kein Agent-Profil, keine Wissensbasis', () => {
-    expect(src).not.toContain('bot_id:existingBot');
     expect((src.match(/bot_id:bot\?\.id\?\?null/g) ?? []).length, 'Audit ×2 + Antwort').toBe(3);
     expect(src).toContain("next:{...(bot?{chat:'bot-chat',voice:'bot-voice-webhook'}:{}),governance:");
     expect(src).toContain("bot:bot?{provisioned:true,id:bot.id}:{provisioned:false,reason:botSkipped}");
     expect(src).toContain('if(bot&&!agentId){');
     expect(src).toContain("const kb=agentId?await one(admin,'agent_knowledge_base'");
     expect(src).toContain('knowledge_base_id:kb?.row.id??null');
-  });
-
-  it('bleibt idempotent: bestehender Bot wird aktualisiert, config gemergt', () => {
-    expect(src).toContain(".eq('tenant_id',tenantId).eq('name',botName).limit(1).maybeSingle()");
-    expect(src).toContain('config:{...(vorhanden.config??{}),ai_system_id:ais.row.id');
   });
 });

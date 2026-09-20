@@ -42,7 +42,14 @@
 --    COMMITTED (PostgREST-Default) sieht das Zählen nach dem Lock die
 --    zwischenzeitlich festgeschriebene Zeile.
 --
--- 5. Fail closed. Kein `bots.enabled`, kein `limit.bots` oder `0` → Insert
+-- 5. Autorisierung zuerst. Postgres wendet die RLS-Policy (WITH CHECK) erst
+--    NACH den BEFORE-Triggern an. Prüfte der Trigger das Kontingent vor der
+--    Mitgliedschaft, verriete die Fehlerart einem angemeldeten Fremden Plan
+--    und Auslastung des Mandanten. Deshalb steht für anon/authenticated
+--    dieselbe Prüfung wie in der Policy an erster Stelle, mit derselben
+--    Meldung und demselben SQLSTATE.
+--
+-- 6. Fail closed. Kein `bots.enabled`, kein `limit.bots` oder `0` → Insert
 --    abgelehnt. Das gilt für jeden Aufrufer, service_role eingeschlossen:
 --    die Produkt-Quota ist keine Frage der Datenbankrolle. Wer aus einer
 --    Edge Function einen Bot anlegen will, prüft vorher (siehe
@@ -61,6 +68,22 @@
 -- und test/billing/bots-quota-contract.test.ts (Quelltext).
 
 BEGIN;
+
+-- ─── 0. Release-Gate: #1491 muss im Migrationsstand sein ─────────────────
+--
+-- Reihenfolge: #1491 → 20260920120000 → Verifikation → #1492 → diese Datei.
+-- Ohne den korrigierten Katalog fiele Enterprise fail closed (kein
+-- bots.enabled, kein limit.bots). Das Gate prüft einen Key, den nur
+-- 20260920120000 anlegt; in `db reset` und CI ist die Reihenfolge durch den
+-- Zeitstempel gegeben, auf einer Live-DB scheitert ein isoliertes Anwenden
+-- dieser Datei hier laut — statt still ein Kontingent von 0 zu erzwingen.
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM public.entitlements WHERE key = 'bots.chat') THEN
+    RAISE EXCEPTION 'Release-Gate: 20260920120000_entitlement_catalog_ssot_parity (#1491) fehlt im Migrationsstand. Erst #1491 anwenden und verifizieren, dann 20260920130000.'
+      USING ERRCODE = 'P0001';
+  END IF;
+END $$;
 
 -- ─── 1. Interner Auflöser: bisheriger Rumpf ohne Autorisierungs-CTE ──────
 --
@@ -282,6 +305,21 @@ DECLARE
   v_limit   integer;
   v_used    integer;
 BEGIN
+  -- Autorisierung VOR Lock und Kontingent. Postgres prüft die RLS-Policy
+  -- (WITH CHECK) erst NACH den BEFORE-Triggern. Ohne diese Zeilen könnte ein
+  -- angemeldeter Nutzer über die Fehlerart — BOTS_NOT_ENTITLED oder
+  -- BOT_QUOTA_EXCEEDED statt 42501 — Plan und Auslastung eines fremden
+  -- Mandanten ablesen. Gleiche Meldung, gleicher SQLSTATE wie die Policy:
+  -- die beiden Pfade sind von außen nicht unterscheidbar. service_role ist
+  -- hier ausgenommen und unterliegt danach trotzdem der Produkt-Quota; ein
+  -- Aufruf ohne JWT (Migration, psql) hat auth.role() = NULL und ist kein
+  -- Client.
+  IF auth.role() IN ('anon', 'authenticated')
+     AND NOT public.is_tenant_member(NEW.tenant_id) THEN
+    RAISE EXCEPTION 'new row violates row-level security policy for table "bots"'
+      USING ERRCODE = '42501';
+  END IF;
+
   -- Erst der Lock, dann das Zählen. Der Lock lebt bis zum Ende der
   -- Transaktion; ein paralleler Insert desselben Mandanten wartet hier und
   -- zählt anschließend die inzwischen festgeschriebene Zeile mit.
@@ -317,7 +355,8 @@ COMMENT ON FUNCTION public.bots_enforce_quota() IS
   'BEFORE-INSERT-Trigger auf public.bots: lehnt den Insert ab, wenn der '
   'Mandant kein bots.enabled hat oder limit.bots erreicht ist. Advisory-Lock '
   'je Mandant macht die Prüfung gegen parallele Inserts dicht. DETAIL trägt '
-  'den Code (BOTS_NOT_ENTITLED / BOT_QUOTA_EXCEEDED).';
+  'den Code (BOTS_NOT_ENTITLED / BOT_QUOTA_EXCEEDED). Ein Client ohne '
+  'Mitgliedschaft bekommt vorher 42501 wie von der RLS-Policy.';
 
 DROP TRIGGER IF EXISTS bots_enforce_quota ON public.bots;
 CREATE TRIGGER bots_enforce_quota

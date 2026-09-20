@@ -45,26 +45,28 @@ const botName=`${company} Assistant`;
 const botValues={description:`Automatically provisioned business assistant for ${company}`,channel:'chat',persona:persona(sector,company),greeting:`Hallo! Ich bin der digitale Assistent von ${company}. Wie kann ich helfen?`,capabilities:{chat:true,voice:true,governance:true,appointments:true},updated_at:now};
 let bot:any=null;let botSkipped:string|null=null;
 {const {data:vorhanden,error:ve}=await admin.from('bots').select('*').eq('tenant_id',tenantId).eq('name',botName).limit(1).maybeSingle();if(ve)throw ve;
-if(vorhanden){
-  // Idempotent: bestehenden Bot aktualisieren, nie einen zweiten anlegen.
-  // config wird gemergt statt ersetzt — sonst ginge agent_profile_id bei
-  // jedem erneuten Onboarding verloren und ein weiteres Agent-Profil entstuende.
+// Berechtigung IMMER bestimmen — auch bei Bestand. Ein Free-Mandant mit
+// Alt-Bot (Seed, Downgrade) hat keinen provisionierten Bot: die Zeile bleibt
+// unangetastet in der DB, aber die Antwort traegt weder bot_id noch next.chat.
+const {data:qrows,error:qe}=await admin.rpc('bots_quota',{p_tenant_id:tenantId});
+const q=Array.isArray(qrows)?qrows[0]:qrows;
+if(qe||!q){console.warn('onboarding: bots_quota nicht verfuegbar, Bot uebersprungen:',qe?.message??'leer');botSkipped='quota_unavailable'}
+else if(q.enabled!==true||Number(q.max_bots)===0)botSkipped='not_entitled';
+else if(vorhanden){
+  // Idempotent: bestehenden Bot aktualisieren, nie einen zweiten anlegen —
+  // auch bei used == limit, denn es entsteht kein zusaetzlicher Bot. config
+  // wird gemergt statt ersetzt, sonst ginge agent_profile_id verloren.
   const {data:u,error:ue}=await admin.from('bots').update({...botValues,config:{...(vorhanden.config??{}),ai_system_id:ais.row.id,sector,residency:'inherit'}}).eq('id',vorhanden.id).select('*').single();if(ue)throw ue;bot=u;
-}else{
-  const {data:qrows,error:qe}=await admin.rpc('bots_quota',{p_tenant_id:tenantId});
-  const q=Array.isArray(qrows)?qrows[0]:qrows;
-  if(qe||!q){console.warn('onboarding: bots_quota nicht verfuegbar, Bot uebersprungen:',qe?.message??'leer');botSkipped='quota_unavailable'}
-  else if(q.enabled!==true||Number(q.max_bots)===0)botSkipped='not_entitled';
-  else if(Number(q.max_bots)!==-1&&Number(q.used)>=Number(q.max_bots))botSkipped='quota_exhausted';
-  else{
-    const {data:i,error:ie}=await admin.from('bots').insert({tenant_id:tenantId,name:botName,...botValues,config:{ai_system_id:ais.row.id,sector,residency:'inherit'},enabled:true}).select('*').single();
-    if(ie){
-      // Der Trigger hat das letzte Wort (z. B. paralleler Insert). Seine
-      // Ablehnung ist kein Onboarding-Fehler, sondern „kein Bot".
-      const code=String((ie as any).details??'');
-      if(code.includes('BOT_QUOTA_EXCEEDED'))botSkipped='quota_exhausted';else if(code.includes('BOTS_NOT_ENTITLED'))botSkipped='not_entitled';else throw ie;
-    }else bot=i;
-  }
+}
+else if(Number(q.max_bots)!==-1&&Number(q.used)>=Number(q.max_bots))botSkipped='quota_exhausted';
+else{
+  const {data:i,error:ie}=await admin.from('bots').insert({tenant_id:tenantId,name:botName,...botValues,config:{ai_system_id:ais.row.id,sector,residency:'inherit'},enabled:true}).select('*').single();
+  if(ie){
+    // Der Trigger hat das letzte Wort (z. B. paralleler Insert). Seine
+    // Ablehnung ist kein Onboarding-Fehler, sondern „kein Bot".
+    const code=String((ie as any).details??'');
+    if(code.includes('BOT_QUOTA_EXCEEDED'))botSkipped='quota_exhausted';else if(code.includes('BOTS_NOT_ENTITLED'))botSkipped='not_entitled';else throw ie;
+  }else bot=i;
 }}
 let agentId:string|null=bot?((bot.config??{}).agent_profile_id??null):null;
 if(bot&&!agentId){const ap=await admin.from('agent_profiles').insert({name:botName,type:'business',description:`Self-service AI agent for ${company}`,system_prompt:persona(sector,company),enabled:true}).select('*').single();if(ap.error)throw ap.error;agentId=ap.data.id;const cfg={...(bot.config??{}),agent_profile_id:agentId,ai_system_id:ais.row.id,sector,residency:'inherit'};const {error:e}=await admin.from('bots').update({config:cfg}).eq('id',bot.id);if(e)throw e;bot={...bot,config:cfg}}

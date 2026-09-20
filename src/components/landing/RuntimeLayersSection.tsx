@@ -18,7 +18,7 @@ export function RuntimeLayersSection() {
       style={{ borderColor: GA_LINE_SOFT }}
     >
       <div className="mx-auto w-full max-w-[1500px]">
-        <SectionIndex number="02" label="RUNTIME" />
+        <SectionIndex number="04" label="RUNTIME" />
         <SectionEyebrow>PRODUKT</SectionEyebrow>
 
         <SectionHeading accent="Vier Ebenen.">Eine Runtime.</SectionHeading>

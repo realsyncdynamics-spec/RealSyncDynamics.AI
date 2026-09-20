@@ -49,9 +49,14 @@ describe('implementation-status registry', () => {
     );
     // Replit `/` inlines PLATFORM_LIVE_ITEMS (no PlatformCapabilitiesSection / Roadmap on hero).
     expect(landing).toContain('PLATFORM_LIVE_ITEMS');
-    expect(landing).toContain('EuropeNetworkHero');
+    const titanHero = readFileSync(
+      resolve('src/components/landing/HeroTitanium.tsx'),
+      'utf8',
+    );
+    expect(landing).toContain('HeroTitanium');
+    expect(titanHero).toContain('EuropeNetworkHero');
     expect(landing).not.toContain('GovernanceSphereHost');
-    expect(landing).not.toContain('EuropeReliefBackdrop');
+    expect(titanHero).not.toContain('EuropeReliefBackdrop');
     expect(platform).toContain('PLATFORM_LIVE_ITEMS');
     expect(roadmap).toContain('PREVIEW_IMPLEMENTATION');
     expect(roadmap).toContain('COMING_SOON_IMPLEMENTATION');
@@ -71,7 +76,7 @@ describe('implementation-status registry', () => {
     );
     expect(hero).toContain('AI Compliance');
     expect(hero).toContain('Operations OS');
-    expect(hero).toContain('für Europa');
+    expect(hero).toContain('for Europe');
     expect(hero).toContain("HERO_HEADLINE_TEST_SUBSTRING = 'AI Compliance'");
     expect(hero).toContain("HERO_SCAN_CTA_LABEL = 'Free Audit starten'");
     expect(hero).toContain("HERO_SCAN_CTA_LONG = 'Kostenlosen Audit starten'");

@@ -21,7 +21,7 @@ describe('scan funnel copy SSOT', () => {
     expect(HERO_SCAN_CTA_LABEL).toBe('Free Audit starten');
     expect(HERO_SCAN_CTA_LONG).toBe('Kostenlosen Audit starten');
     expect(HERO_DASHBOARD_CTA_LABEL).toBe('Live Evidence ansehen');
-    expect(HERO_OPERATING_LOOP).toBe('Entdecken. Klassifizieren. Durchsetzen. Beweisen.');
+    expect(HERO_OPERATING_LOOP).toBe('DISCOVER → CLASSIFY → ENFORCE → PROVE');
     expect(HERO_SCAN_PROMISE_LINE.toLowerCase()).not.toContain('demo');
     expect(HERO_SCAN_CTA_LABEL.toLowerCase()).not.toContain('testen');
     expect(HERO_SCAN_CTA_LONG.toLowerCase()).not.toContain('testen');

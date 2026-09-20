@@ -12,6 +12,7 @@ import { execSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { HOT_FILES, isHotPath } from './lib/merge-playbook.mjs';
+import { lockfileRelevantPackageChanges } from './lib/package-lock-hygiene.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const baseRef = process.env.MERGE_HYGIENE_BASE || 'origin/main';
@@ -174,7 +175,24 @@ for (const [ts, file] of localTs) {
 }
 
 if (files.includes('package.json') && !files.includes('package-lock.json')) {
-  warnings.push('package.json geändert, package-lock.json nicht. `npm install` und Lockfile mitcommitten.');
+  try {
+    const before = JSON.parse(git(`show ${baseRef}:package.json`));
+    const after = JSON.parse(git('show HEAD:package.json'));
+    const relevant = lockfileRelevantPackageChanges(before, after);
+    if (relevant.length > 0) {
+      warnings.push(
+        `package.json lockfile-relevant geändert (${relevant.join(', ')}), package-lock.json nicht. ` +
+        '`npm install` und Lockfile mitcommitten.',
+      );
+    }
+  } catch (error) {
+    // Wenn package.json nicht sicher vergleichbar ist, konservativ warnen statt
+    // einen echten Lockfile-Drift still durchzulassen.
+    warnings.push(
+      `package.json geändert, Lockfile-Relevanz konnte nicht bestimmt werden: ${error.message}. ` +
+      'package-lock.json prüfen.',
+    );
+  }
 }
 
 const hotTouched = files.filter(isHotPath);

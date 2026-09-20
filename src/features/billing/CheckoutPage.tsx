@@ -65,13 +65,23 @@ export function CheckoutPage() {
     const plan = validPlan ? planByKey(validPlan) : null;
     if (!plan) return;
     // Kaufmodus statt Plan-Name: `free` fuehrt ins kostenlose Audit,
-    // `inquiry` (Partner) in den Vertriebskontakt.
+    // `inquiry` auf den Online-Rechner.
     if (plan.purchaseMode === 'free') {
       window.location.href = '/audit?source=checkout-free-redirect';
       return;
     }
+    // Geaendert 2026-09-20: Ziel ist `/pricing/quote`, nicht mehr
+    // `/contact-sales`. Sonst haette eine getippte oder gemerkte URL
+    // (`/checkout/enterprise`) weiterhin im Kontaktformular geendet,
+    // waehrend die Karte daneben einen Betrag nennt und online rechnet —
+    // derselbe Plan mit zwei verschiedenen Wegen.
+    //
+    // `tier` traegt die Plan-ID, nicht den Intervall-Key: der Rechner
+    // braucht den Listenpreis des Plans als Untergrenze. `enterprise_yearly`
+    // und `partner_yearly` landen damit auf dem Monats-Rechner desselben
+    // Plans — eine Jahresvariante gibt es dort ohnehin nicht.
     if (plan.purchaseMode === 'inquiry') {
-      window.location.href = `/contact-sales?plan=${encodeURIComponent(plan.planKey)}&source=checkout-redirect`;
+      window.location.href = `/pricing/quote?tier=${encodeURIComponent(plan.id)}&source=checkout-redirect`;
       return;
     }
     // Stillgelegte Pläne (Partner) behalten ihren Kaufmodus, weil ihre

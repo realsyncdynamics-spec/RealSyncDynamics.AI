@@ -134,6 +134,7 @@ const DataGuardAlternative = lazy(() => import('./pages/DataGuardAlternative').t
 const BorlabsAlternative = lazy(() => import('./pages/BorlabsAlternative').then((m) => ({ default: m.BorlabsAlternative })));
 const CookiebotAlternative = lazy(() => import('./pages/CookiebotAlternative').then((m) => ({ default: m.CookiebotAlternative })));
 const ProlianceAlternative = lazy(() => import('./pages/ProlianceAlternative').then((m) => ({ default: m.ProlianceAlternative })));
+const CaralegalAlternative = lazy(() => import('./pages/CaralegalAlternative').then((m) => ({ default: m.CaralegalAlternative })));
 const InsuranceLanding = lazy(() => import('./pages/InsuranceLanding').then((m) => ({ default: m.InsuranceLanding })));
 const EcommerceLanding = lazy(() => import('./pages/EcommerceLanding').then((m) => ({ default: m.EcommerceLanding })));
 const About = lazy(() => import('./pages/About').then((m) => ({ default: m.About })));
@@ -629,6 +630,7 @@ function RoutesWithTracking() {
       <Route path="/borlabs-alternative" element={<BorlabsAlternative />} />
       <Route path="/cookiebot-alternative" element={<CookiebotAlternative />} />
       <Route path="/proliance-alternative" element={<ProlianceAlternative />} />
+      <Route path="/caralegal-alternative" element={<CaralegalAlternative />} />
       {/* More Industry-Doorways */}
       <Route path="/versicherungen" element={<InsuranceLanding />} />
       <Route path="/insurance" element={<InsuranceLanding />} />

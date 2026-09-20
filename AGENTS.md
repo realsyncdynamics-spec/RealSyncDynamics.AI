@@ -9,18 +9,27 @@ Du bist der „RealSync Lead Architect“. Dein Fachgebiet ist die Entwicklung v
 - **Formen:** 90-Grad-Winkel (strikte Kanten, keine abgerundeten Ecken/Rounded Corners).
 - **Typografie:** Monospace-Schriften für technische Daten und Metadaten.
 
-### Public Landing/Marketing: dunkel mit Gold
+### Public Landing/Marketing: dunkel, Cyan handelt, Gold ist VIP
 
-Verbindlich seit 2026-09-19. Die frühere Light-Theme-Regel (Slate + Petrol,
-`LandingNavbar`) ist aufgehoben — sie beschrieb eine Startseite, die so nicht
-mehr gebaut wird.
+Verbindlich. Die frühere Light-Theme-Regel (Slate + Petrol, `LandingNavbar`)
+ist aufgehoben — sie beschrieb eine Startseite, die so nicht mehr gebaut wird.
 
-Maßgeblich ist `/` (`MainLanding`). Alles unten ist an dieser Datei und an
-`landing-theme.ts` nachgeprüft, nicht aus der Absicht abgeleitet.
+Maßgeblich ist `/` (`MainLanding`). Die Beschreibungen unten sind an dieser
+Datei gemessen, nicht aus der Absicht abgeleitet; wo die Regel dem heutigen
+Stand vorausläuft, steht es ausdrücklich dabei.
 
-- **Tokens** stehen in `components/landing/landing-theme.ts`:
-  Grund `#0a0a0b`, Panel `#121214`, Text `#f2eee6`, Akzent `#d6ad68`,
-  heller Akzent `#e8c98a`. Neue Flächen lesen von dort.
+- **Tokens** stehen in `components/landing/landing-theme.ts`. Es gilt
+  Design-Lock v2 (Freigabe Dominik, 2026-09-13): Grund True Black `#000000`,
+  Akzent Cyan `#22c3e6`, VIP-Gold `#f2c98a`. Die Trennung ist scharf — Cyan
+  trägt die Handlung (CTA, Links, Navigation, Linien, Netz), Gold ist der
+  Premium-Stufe vorbehalten. Neue Flächen lesen von dort, nie daneben.
+
+  **Achtung, Zwischenstand:** Auf `main` trägt die Datei noch die v1-Werte
+  (Grund `#0a0a0b`, Akzent `#d6ad68`, heller Akzent `#e8c98a`) und den
+  Farbmodus-Schalter aus #1465. Die Umstellung liegt in #1483 und ist noch
+  nicht gemergt. Wer die Datei aufschlägt und v1 vorfindet, hat nicht diese
+  Regel widerlegt, sondern den Merge noch vor sich. Maßgeblich ist die
+  Entscheidung, nicht der Zwischenstand.
 - **Kopf** ist `PublicDarkHeader`. Einen geteilten Fuß gibt es nicht:
   `MainLanding` trägt ihren Footer inline. `GovernanceFooter` hat keinen
   Importeur.
@@ -39,8 +48,8 @@ Maßgeblich ist `/` (`MainLanding`). Alles unten ist an dieser Datei und an
 - **Inhalte** kommen aus den SSoT-Dateien (`hero-content.ts`, `pricing.ts`,
   `implementation-status.ts`, `public-nav.ts`), nicht aus der Komponente.
 
-**Ein großer Teil von `components/landing/` hängt an nichts.** Bei der
-Messung am 2026-09-19 waren es 23 von 32 Dateien — weder App noch Tests noch
+**Ein großer Teil von `components/landing/` hängt an nichts.** Zuletzt
+gemessen auf `main` (70545ea): 20 von 39 Dateien — weder App noch Tests noch
 Skripte importierten sie. Die Zahl bewegt sich mit jedem Landing-PR; `npm run
 check:dead` nennt den jeweils aktuellen Stand.
 
@@ -56,24 +65,27 @@ einen Farbmodus-Schalter (`ThemeSwitch`, `GovernanceStatusBar`,
 `components/landing/` zu finden heißt nicht, dass sie gerendert wird.
 
 Praktische Folge: Der zweite Goldwert `#c9a24a` aus `--ga-accent` ist damit
-kein konkurrierender Token, sondern Teil dieser toten Fläche. Es gibt genau
-ein lebendes Gold. Und wer einen Farbmodus-Schalter braucht, baut **nicht**
-auf dem toten Zweig auf — PR #1465 führt ihn als `data-landing-mode`
-(Gold / Cyan) neu ein, und sein Test hält ausdrücklich fest, dass
-`useGaTheme` nicht auf die Startseite gehört.
+kein konkurrierender Token, sondern Teil dieser toten Fläche.
+
+**Die Startseite trägt genau eine Palette — kein Farbmodus-Schalter.** #1465
+hat einen eingeführt (`data-landing-mode`, Gold/Cyan, Vorgabe Gold) und ist
+gemergt; #1483 baut ihn auf Entscheidung Dominiks wieder zurück. Der Grund ist
+nicht Geschmack: Ein Schalter macht die geltende Farbe zur Laufzeitwahl des
+Besuchers, und dann gibt es keinen Design-Lock mehr, den man prüfen könnte.
+Wer eine zweite Fassung zeigen will, baut sie als eigene Vorschau-Route, nicht
+als Umschalter auf `/`.
 
 **Noch nicht migriert.** Der öffentliche Bereich hat vier Kopf-Muster
 nebeneinander; nur das erste entspricht der Regel oben:
 
-| Muster | Art | Seiten auf `main` (dddf4b9) |
+| Muster | Art | Seiten auf `main` (70545ea) |
 |---|---|---|
 | `components/landing/PublicDarkHeader` | dunkel, die Referenz | 3 Seiten |
 | `components/LandingNavbar` | hell, Altbestand | 4 Seiten |
 | `enterprise-os/layout/PublicNav` | eigener Strang | 6 Seiten |
 | `pages/alternative/AlternativeLanding` | eigener `<header>` im Rahmen | 7 Seiten |
 
-Die Zahlen bewegen sich: `CaralegalAlternative` kam am Messtag als siebte
-Wettbewerbsseite dazu. Wer den aktuellen Stand braucht, zählt selbst — der
+Die Zahlen bewegen sich. Wer den aktuellen Stand braucht, zählt selbst — der
 Befehl misst den ausgecheckten Stand, nicht `main`:
 
 ```bash

@@ -31,6 +31,8 @@ export const GOVERNANCE_AI_HERO_HEADLINE: readonly (readonly HeroHeadlineSegment
   [{ text: 'im Unternehmen.', accent: true }],
 ];
 
+export const GOVERNANCE_AI_HERO_TEST_SUBSTRING = 'Das OS für' as const;
+
 export const GOVERNANCE_AI_HERO_SUBLINE =
   'EU AI Act, DSGVO, ISO 42001 und interne Richtlinien — in einer kontinuierlichen Governance-Schicht über alle KI-Systeme, Daten und Anbieter. Gebaut für Unternehmen, die europaweit tätig sind.' as const;
 

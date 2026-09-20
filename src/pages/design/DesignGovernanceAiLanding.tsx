@@ -1,18 +1,16 @@
 /**
- * „The Governance AI" — Design-Vorschau unter `/design/governance-ai`.
+ * „The Governance AI" — production landing surface for RealSyncDynamics.AI.
  *
  * Umsetzung des Hausstandards „Hollywood Enterprise VIP" (siehe `CLAUDE.md`):
  * True Black, Cyan `#22c3e6` als Aktionsfarbe, City-Light-Gold `#f2c98a` als
  * VIP-Stufe für Enterprise und Agency, Playfair Display als Display-Schnitt.
  * Hinter allem die Erde vor der Milchstraße.
  *
- * ## Nicht live `/`
+ * ## Production shell
  *
- * Die Startseite steht unter Design-Lock auf Gold/Cream (`landing-theme.ts`,
- * Stand 2026-09-19). Diese Seite fasst sie nicht an: Die Tokens hängen an
- * `.ga-context`, der Hintergrund ist eine eigene Szene, und keine der Dateien,
- * die `/` rendert, ist hier verändert. Sie steht neben `/design/ledger` und
- * `/design/tribunal` als dritte Design-Vorschau.
+ * The visual layer remains isolated in `.ga-context`; authenticated product
+ * data continues to live behind the existing `/app/*` gates and Supabase RLS.
+ * This component composes the public acquisition surface only.
  *
  * ## Inhalt kommt aus den SSoT-Dateien
  *
@@ -78,9 +76,11 @@ export function DesignGovernanceAiLanding() {
       onPointerMove={trackCardSheen}
     >
       <SEOHead
-        title="The Governance AI (Design-Vorschau) — RealSyncDynamics.AI"
-        description={`${CONTINUOUS_COMPLIANCE_NARRATIVE} Design-Vorschau, nicht die Startseite.`}
-        noIndex
+        title="RealSyncDynamics.AI — Das OS für den sicheren Einsatz von KI im Unternehmen"
+        description="EU AI Act, DSGVO, ISO 42001 und interne Richtlinien in einer kontinuierlichen Governance-Schicht über KI-Systeme, Daten und Anbieter."
+        canonical="/"
+        ogTitle="Das Governance OS für den sicheren Einsatz von KI"
+        ogDescription="RealSyncDynamics.AI verbindet Governance, Evidence und kontrollierte KI-Ausführung in einer EU-nativen Operations-Schicht."
       />
 
       <GovernanceAiBackdrop />

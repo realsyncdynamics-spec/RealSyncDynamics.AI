@@ -125,7 +125,7 @@ function QuoteFlow({ planId: initialPlanId, source }: { planId: QuotePlanId; sou
   const start = useCallback(async () => {
     setError(null);
     if (!EMAIL_RE.test(email.trim())) {
-      setError('Bitte eine gueltige E-Mail-Adresse angeben — an sie geht Ihr Angebot.');
+      setError('Bitte eine gültige E-Mail-Adresse angeben — an sie geht Ihr Angebot.');
       return;
     }
     setBusy(true);
@@ -205,7 +205,7 @@ function QuoteFlow({ planId: initialPlanId, source }: { planId: QuotePlanId; sou
         </h1>
         <p className="mt-3 text-sm leading-relaxed text-silver-300">
           {formatPriceEur(plan.price.monthlyEur)} pro Monat ist der Einstiegspreis. Was Sie
-          tatsaechlich zahlen, haengt von Ihrem Umfang ab — der Fragebogen weist jeden Posten
+          tatsächlich zahlen, hängt von Ihrem Umfang ab — der Fragebogen weist jeden Posten
           einzeln aus. Ihr Betrag liegt nie unter dem Einstiegspreis.
         </p>
 
@@ -264,10 +264,10 @@ function QuoteFlow({ planId: initialPlanId, source }: { planId: QuotePlanId; sou
                 />
               </Field>
             </div>
-            <Field label="Sitz" hint="Entscheidet ueber Datenresidenz und AVV-Fassung.">
+            <Field label="Sitz" hint="Entscheidet über Datenresidenz und AVV-Fassung.">
               <input value={country} onChange={(e) => setCountry(e.target.value)} className={INPUT} />
             </Field>
-            <Field label="Bestandssysteme" hint="Was bereits laeuft — Verzeichnis, SIEM, Ticketing.">
+            <Field label="Bestandssysteme" hint="Was bereits läuft — Verzeichnis, SIEM, Ticketing.">
               <textarea
                 rows={3}
                 value={systems}
@@ -289,12 +289,12 @@ function QuoteFlow({ planId: initialPlanId, source }: { planId: QuotePlanId; sou
             <p className="text-xs font-mono uppercase tracking-widest text-silver-400">
               {aiGenerated
                 ? 'Fragebogen individuell erzeugt'
-                : 'Standardfragebogen — die individuelle Fassung war nicht verfuegbar'}
+                : 'Standardfragebogen — die individuelle Fassung war nicht verfügbar'}
             </p>
 
             {tenantUpgrade && (
               <div className="mt-4 border border-titanium-200/40 bg-titanium-200/5 px-4 py-3 text-sm">
-                Fuer mehr als {planById('enterprise').limits.tenants} Organisationen rechnen wir mit{' '}
+                Für mehr als {planById('enterprise').limits.tenants} Organisationen rechnen wir mit{' '}
                 <strong>{publicLabelOf(planById('partner'))}</strong> — das ist ein anderer Plan, kein
                 Aufpreis auf Enterprise.
               </div>
@@ -364,20 +364,25 @@ function QuoteFlow({ planId: initialPlanId, source }: { planId: QuotePlanId; sou
             <QuoteResult quote={serverQuote} />
             <p className="mt-4 text-xs leading-relaxed text-silver-400">
               Wir haben genau diesen Betrag und diese Konfiguration gespeichert. Nennen Sie{' '}
-              {serverQuote.fingerprint}, dann reden alle Beteiligten ueber dieselbe Rechnung.
+              {serverQuote.fingerprint}, dann reden alle Beteiligten über dieselbe Rechnung.
             </p>
             <Link to="/pricing" className={`${PRIMARY} mt-6`}>
-              Zurueck zu den Preisen <ArrowRight className="h-4 w-4" />
+              Zurück zu den Preisen <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
         )}
 
-        {phase !== 'done' && (
+        {/* Erst ab dem Fragebogen, nicht schon im Kontext-Schritt: vorher ist
+            noch nichts gerechnet, und ein Betrag an dieser Stelle läse sich
+            wie ein Ergebnis. „Verbindlich" steht hier bewusst nicht — der
+            Abschluss ist vertraglich, der Betrag ist die nachvollziehbare
+            Kalkulation dazu. */}
+        {phase === 'questions' && (
           <p className="mt-10 text-xs leading-relaxed text-silver-500">
-            Der genannte Betrag ist ein verbindlich kalkuliertes Angebot auf Basis Ihrer Angaben,
-            kein Kaufabschluss: Enterprise und {publicLabelOf(planById('partner'))} werden
-            vertraglich geschlossen und manuell fakturiert. Angezeigt wird{' '}
-            {formatPriceEur(shown.monthlyEur)} pro Monat.
+            Der genannte Betrag ist auf Basis Ihrer Angaben kalkuliert und weist jeden Posten
+            einzeln aus — er ist kein Kaufabschluss: Enterprise und{' '}
+            {publicLabelOf(planById('partner'))} werden vertraglich geschlossen und manuell
+            fakturiert. Angezeigt wird {formatPriceEur(shown.monthlyEur)} pro Monat.
           </p>
         )}
       </div>

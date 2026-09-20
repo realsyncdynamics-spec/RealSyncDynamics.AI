@@ -9,8 +9,8 @@
  * Startseite umzubauen. Auf einer Seite, deren erste Aussage True Black und
  * Cyan ist, stünde sonst oben rechts eine goldene Pille.
  *
- * Kopiert ist hier nur die Optik, nicht der Inhalt: Navigation, Login und CTA
- * kommen aus `public-nav.ts` — derselben Quelle wie im Live-Header.
+ * Navigation und CTA führen ausschließlich auf bestehende RealSync-Routen;
+ * es gibt hier keine zweite Auth-, Audit- oder Pricing-Implementierung.
  *
  * ## Anker statt Startseite
  *
@@ -21,7 +21,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Menu, X } from 'lucide-react';
-import { PUBLIC_ACCOUNT, PUBLIC_CTA, PUBLIC_PRIMARY_NAV } from '../../config/public-nav';
+import { PUBLIC_CTA } from '../../config/public-nav';
 import { GA_DISPLAY, GA_LINE_SOFT, GA_MUTED, GA_TEXT } from './governance-ai-theme';
 
 /** `/#product` → `#product`; alles andere bleibt eine Route. */
@@ -29,16 +29,17 @@ function localAnchor(to: string): string | null {
   return to.startsWith('/#') ? to.slice(1) : null;
 }
 
-/**
- * Die Navigation der Seite. `PUBLIC_PRIMARY_NAV` führt den Login-Eintrag schon
- * mit; nur falls er dort einmal herausfällt, hängt ihn `PUBLIC_ACCOUNT` an —
- * sonst stünde „Login" doppelt in der Leiste.
- */
-const NAV_ITEMS: readonly { label: string; to: string }[] = PUBLIC_PRIMARY_NAV.some(
-  (item) => item.to === PUBLIC_ACCOUNT.login.to,
-)
-  ? PUBLIC_PRIMARY_NAV
-  : [...PUBLIC_PRIMARY_NAV, PUBLIC_ACCOUNT.login];
+/** Claude-Design navigation mapped only to real, existing product routes. */
+const NAV_ITEMS: readonly { label: string; to: string }[] = [
+  { label: 'Plattform', to: '/#product' },
+  { label: 'AI Governance', to: '/ai-act-governance' },
+  { label: 'EU AI Act', to: '/ai-act' },
+  { label: 'Evidenz', to: '/#evidence' },
+  { label: 'Preise', to: '/#pricing' },
+  { label: 'Login', to: '/welcome' },
+] as const;
+
+const GOVERNANCE_AUDIT_LABEL = 'Kostenloser Governance-Audit' as const;
 
 function NavItem({ label, to, onClick }: { label: string; to: string; onClick?: () => void }) {
   const anchor = localAnchor(to);
@@ -72,7 +73,7 @@ export function GovernanceAiHeader() {
       }}
       onClick={() => setOpen(false)}
     >
-      {PUBLIC_CTA.label}
+      {GOVERNANCE_AUDIT_LABEL}
       <ArrowRight className="h-4 w-4" aria-hidden="true" />
     </Link>
   );
@@ -95,8 +96,6 @@ export function GovernanceAiHeader() {
         </Link>
 
         <nav className="ml-auto hidden items-center gap-[26px] lg:flex" aria-label="Hauptnavigation">
-          {/* `PUBLIC_PRIMARY_NAV` führt den Login bereits — `PUBLIC_ACCOUNT`
-              nur als Rückfall, falls er dort einmal herausfällt. */}
           {NAV_ITEMS.map((item) => (
             <NavItem key={item.to} label={item.label} to={item.to} />
           ))}

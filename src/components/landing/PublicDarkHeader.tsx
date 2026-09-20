@@ -5,6 +5,7 @@ import { HERO_SCAN_CTA_LABEL } from '../governance-frontend/hero-content';
 import {
   LANDING_ACCENT,
   LANDING_BG,
+  LANDING_CTA_GLOW,
   LANDING_BUTTON,
   LANDING_BUTTON_TEXT,
   LANDING_MONO,
@@ -62,7 +63,7 @@ const scanCtaStyle: CSSProperties = {
   fontFamily: LANDING_MONO,
   backgroundColor: LANDING_BUTTON,
   color: LANDING_BUTTON_TEXT,
-  boxShadow: '0 0 28px rgba(214, 173, 104, 0.22)',
+  boxShadow: LANDING_CTA_GLOW,
 };
 
 function DiamondMark() {
@@ -92,14 +93,23 @@ export function PublicDarkHeader({ overlay = false }: { overlay?: boolean }) {
   const [open, setOpen] = useState(false);
 
   return (
+    /* Die Navigation ist unter Design-Lock v2 ausdruecklich kein Gold-Ort.
+       Die Fokusringe folgen deshalb `LANDING_ACCENT` statt einem festen
+       v1-Wert — gleiche Technik wie im Hero. */
     <header
       className={`${overlay ? 'absolute bg-[rgba(10,10,11,0.35)]' : 'sticky bg-[rgba(10,10,11,0.82)]'} inset-x-0 top-0 z-30 border-b border-white/[0.06] backdrop-blur-[18px]`}
-      style={{ color: LANDING_TEXT }}
+      style={
+        {
+          color: LANDING_TEXT,
+          '--landing-ring': LANDING_ACCENT,
+          '--landing-ring-soft': `${LANDING_ACCENT}99`,
+        } as CSSProperties
+      }
     >
       <div className="mx-auto flex h-[72px] max-w-[1280px] items-center gap-6 px-[4vw]">
         <Link
           to="/"
-          className="flex min-w-0 items-center gap-2.5 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d6ad68]/60"
+          className="flex min-w-0 items-center gap-2.5 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--landing-ring-soft)]"
           style={{ color: LANDING_TEXT }}
         >
           <span className="grid h-7 w-7 shrink-0 place-items-center">
@@ -119,7 +129,7 @@ export function PublicDarkHeader({ overlay = false }: { overlay?: boolean }) {
           ))}
           <Link
             to="/audit"
-            className="inline-flex items-center gap-1.5 rounded-full px-[18px] py-[10px] text-[11px] font-semibold transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d6ad68]"
+            className="inline-flex items-center gap-1.5 rounded-full px-[18px] py-[10px] text-[11px] font-semibold transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--landing-ring)]"
             style={scanCtaStyle}
           >
             {HERO_SCAN_CTA_LABEL} <span aria-hidden="true">→</span>
@@ -136,7 +146,7 @@ export function PublicDarkHeader({ overlay = false }: { overlay?: boolean }) {
           </Link>
           <button
             type="button"
-            className="rounded-md p-1.5 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d6ad68]/60"
+            className="rounded-md p-1.5 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--landing-ring-soft)]"
             style={{ color: LANDING_TEXT }}
             aria-expanded={open}
             aria-controls="public-dark-mobile-nav"

@@ -4,9 +4,16 @@
  * City-Light Gold `#f2c98a` (VIP-Stufe). Freigabe: Dominik.
  *
  * Cyan traegt die Handlung (CTA, Linien, Netz), Gold die Wertigkeit
- * (Enterprise-Sektion, Agency-Tarif, Hover-Glow). Beide nebeneinander sind
- * Absicht, kein Rest aus v1 — deshalb bleiben `LANDING_ACCENT_SOFT` und
- * `LANDING_ACCENT_LITE` auf ihren Goldwerten.
+ * (Enterprise-Zugang). Die Trennung ist scharf: Standard-CTA, Links,
+ * Navigation, Governance Runtime und gewoehnliche Hover-Zustaende sind
+ * Cyan; Gold bleibt der Premium-Stufe vorbehalten.
+ *
+ * `LANDING_ACCENT_SOFT` und `LANDING_ACCENT_LITE` standen bis zur
+ * Konsolidierung noch auf v1-Gold. Ihre Konsumenten sind das Europa-Netz,
+ * der Runtime-Verlauf und der Evidence-CTA — allesamt Stellen, an denen
+ * Gold unter v2 falsch ist. Sie tragen jetzt die dunkle und die helle
+ * Variante derselben Cyan-Familie; beide Werte kommen aus dem Entwurf
+ * (Netz-Verlauf, Fokus-Glow) und sind nicht neu erfunden.
  *
  * Achtung: `governance-os/osChrome.ts` re-exportiert dreizehn dieser
  * Konstanten als `OS_*` fuer `/app` und `/build`. Solange diese Kopplung
@@ -24,8 +31,10 @@ export const LANDING_MUTED = '#8a9bb0';
 export const LANDING_ACCENT = '#22c3e6';
 /** VIP-Stufe — City-Light Gold. Enterprise-Sektion, Agency-Tarif, Hover-Glow. */
 export const LANDING_ACCENT_VIP = '#f2c98a';
-export const LANDING_ACCENT_SOFT = '#e8c98a';
-export const LANDING_ACCENT_LITE = '#e4cfa2';
+/** Dunkle Cyan-Variante — Netzknoten, Verlaufsanfang. */
+export const LANDING_ACCENT_SOFT = '#0e8aa6';
+/** Helle Cyan-Variante — Verlaufsmitte, Glanzkanten. */
+export const LANDING_ACCENT_LITE = '#7fe3f5';
 export const LANDING_BUTTON = '#22c3e6';
 export const LANDING_BUTTON_ALT = '#4fd7f0';
 export const LANDING_BUTTON_TEXT = '#041016';

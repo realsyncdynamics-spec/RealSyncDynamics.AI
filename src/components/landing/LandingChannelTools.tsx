@@ -5,6 +5,7 @@ import {
   isImplementationLive,
   STATUS_LABEL,
 } from '../../product/implementation-status';
+import type { CSSProperties } from 'react';
 import {
   LANDING_ACCENT,
   LANDING_MONO,
@@ -61,7 +62,16 @@ const TOOLS = [
 
 export function LandingChannelTools() {
   return (
-    <section id="tools" className="relative border-t border-white/[0.05] py-[92px]">
+    /* Der Fokusring stand als v1-Goldliteral im className, waehrend derselbe
+       Button Rahmen, Flaeche und Schrift bereits aus `LANDING_ACCENT` zieht.
+       Unter Design-Lock v2 ist das ein Standard-CTA, also Cyan — Gold bleibt
+       der Enterprise-Stufe. Tailwind liest keine JS-Konstante, daher die
+       CSS-Variable am Sektionswurzelelement. */
+    <section
+      id="tools"
+      className="relative border-t border-white/[0.05] py-[92px]"
+      style={{ '--landing-ring-soft': `${LANDING_ACCENT}80` } as CSSProperties}
+    >
       <div className="mx-auto max-w-[1500px] px-[4vw]">
         <div className="mb-12 max-w-3xl">
           <p
@@ -154,7 +164,7 @@ export function LandingChannelTools() {
                 </div>
                 <Link
                   to={live ? href : '/warteliste'}
-                  className="inline-flex w-full items-center justify-center gap-2 border px-5 py-3.5 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e4cfa2]/50"
+                  className="inline-flex w-full items-center justify-center gap-2 border px-5 py-3.5 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--landing-ring-soft)]"
                   style={
                     live
                       ? {

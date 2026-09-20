@@ -11,13 +11,18 @@ import {
 } from './landing-theme';
 
 /**
- * Dark band between tools and pricing — Dominik-Referenz
- * „Detect. Govern. Prove."
+ * Dark band zwischen Kanal-Tools und Plattform — Entwurfsabschnitt
+ * „ONE OPERATIONAL PLANE / Detect. Govern. Prove."
+ *
+ * Die Sektion traegt die Anker-ID `one-plane`. Die naheliegende ID
+ * `runtime` gehoert in `MainLanding` bereits dem Abschnitt „DAS
+ * BETRIEBSSYSTEM" — zwei gleiche IDs auf einer Seite brechen den
+ * Ankersprung, und der Header verlinkt diesen Anker.
  */
 export function LandingDarkBand() {
   return (
     <section
-      id="runtime"
+      id="one-plane"
       className="grid items-center gap-10 border-y border-white/[0.06] bg-[#070a10] px-[4vw] py-[65px] lg:grid-cols-[1.2fr_.9fr_auto]"
     >
       <div>
@@ -35,8 +40,8 @@ export function LandingDarkBand() {
         </h2>
       </div>
       <p className="max-w-md text-[13px] leading-[1.7]" style={{ color: LANDING_MUTED }}>
-        Eine Runtime für KI-Risiken, Policies, Evidence, Herkunftsnachweise und
-        automatisierte Kontrollen.
+        Runtime für KI-Risiken, Policies und Evidence — für Module mit Status
+        LIVE. Preview und Next stehen auf der Roadmap.
       </p>
       <Link
         to="/governance-runtime"

@@ -1,22 +1,49 @@
 /**
- * SSOT Hero-Copy — Design-Lock v2: True Black / Cyan / Gold-VIP
- * (`components/landing/landing-theme.ts`).
+ * SSOT Hero-Copy — Titan-Entwurf, Europa-Relief.
  *
- * H1: „AI Compliance Operations OS für Europa.“
- * Serif-Betonung ausschliesslich auf „Operations OS“.
+ * H1 zweizeilig: „AI Compliance“ / „Operations OS for Europe“.
+ * Der Akzent liegt ausschliesslich auf „for Europe“ — im Entwurf traegt der
+ * Europa-Teil die Farbe, nicht das Produktwort.
+ *
+ * Welche Farbe das ist, steht hier bewusst nicht: Sie kommt aus
+ * `components/landing/landing-theme.ts` (Design-Lock v2 — True Black,
+ * Cyan als Handlungsakzent, Gold nur fuer VIP). Diese Datei traegt die
+ * Copy, nicht die Palette.
  */
 
 export type HeroHeadlineSegment = {
   text: string;
-  /** true → Serif-Betonung im Akzent (nur „Operations OS“). */
+  /** true → Akzentfarbe aus `landing-theme` (nur „for Europe“). */
   accent?: boolean;
 };
 
 export const HERO_HEADLINE: readonly (readonly HeroHeadlineSegment[])[] = [
   [{ text: 'AI Compliance' }],
-  [{ text: 'Operations OS', accent: true }],
-  [{ text: 'für Europa.' }],
+  [{ text: 'Operations OS' }, { text: 'for Europe', accent: true }],
 ];
+
+/**
+ * Infrastrukturzeilen unter dem Operating Loop.
+ *
+ * Jede Angabe ist im Repo belegt — Supabase Frankfurt, Evidence Vault,
+ * Hash-Chain, Ollama (eu_local), Multi-Tenant RLS, n8n und Stripe sind
+ * vorhandene Bestandteile, keine Absichtserklaerungen. Wer hier etwas
+ * ergaenzt, muss es vorher belegen koennen: Die Seite verkauft
+ * Nachweisbarkeit.
+ */
+export const HERO_INFRA_LINES: readonly (readonly string[])[] = [
+  ['EU-Hosted Runtime', 'Supabase Frankfurt', 'Evidence Vault'],
+  ['Hash-Chain', 'Ollama local', 'Multi-Tenant RLS', 'n8n', 'Stripe'],
+];
+
+/**
+ * Beschriftung des Gratis-Plan-Ankers in der Chip-Reihe.
+ *
+ * Bewusst kuerzer als `HERO_SCAN_CTA_LABEL`: Im Entwurf traegt die
+ * Navigation „Free Audit starten“, der Chip in der Planreihe nur
+ * „Free Audit“ — er steht dort neben Plannamen, nicht neben CTAs.
+ */
+export const HERO_PLAN_ANCHOR_FREE = 'Free Audit' as const;
 
 export const HERO_HEADLINE_LINES: readonly string[] = HERO_HEADLINE.map((segments) =>
   segments.map((s) => s.text).join(''),
@@ -32,9 +59,9 @@ export const HERO_KICKER = {
 
 export const HERO_EYEBROW = `→ ${HERO_KICKER.claim}` as const;
 
-/** Operating loop under the H1 — German Discover chain (Replit). */
+/** Operating Loop unter der H1 — Pfeilkette des Titan-Entwurfs. */
 export const HERO_OPERATING_LOOP =
-  'Entdecken. Klassifizieren. Durchsetzen. Beweisen.' as const;
+  'DISCOVER → CLASSIFY → ENFORCE → PROVE' as const;
 
 export const HERO_EN_KICKER = 'AI Compliance Operations OS für Europa.' as const;
 

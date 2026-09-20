@@ -63,8 +63,12 @@ export function LandingPricingSection() {
                 className="flex min-h-[280px] flex-col border p-[22px]"
                 style={{
                   borderColor: featured ? `${LANDING_ACCENT}73` : 'rgba(255,255,255,0.12)',
+                  // Hervorgehoben ist `growth`, nicht Enterprise. Ein Goldschleier
+                  // hinter einem Cyan-Rahmen waere genau das Nebeneinander
+                  // zweier Akzente, das Design-Lock v2 aufloest — die Flaeche
+                  // folgt deshalb demselben Token wie der Rahmen.
                   background: featured
-                    ? 'linear-gradient(135deg, rgba(228,207,162,0.08), rgba(7,9,13,0.72))'
+                    ? `linear-gradient(135deg, ${LANDING_ACCENT}14, rgba(7,9,13,0.72))`
                     : 'linear-gradient(135deg, rgba(20,21,25,0.7), rgba(7,9,13,0.72))',
                 }}
               >

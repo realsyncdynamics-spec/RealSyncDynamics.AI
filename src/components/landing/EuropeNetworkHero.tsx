@@ -1,8 +1,13 @@
 /**
  * Static Europe network hero graphic — Replit SSOT.
- * Illustrative map + amber node mesh. NOT an interactive globe/sphere.
+ * Illustrative map + node mesh. NOT an interactive globe/sphere.
+ *
+ * Der Schleier ueber der Aufnahme lief auf dem festen Wert `#0a0a0b` — dem
+ * Grundton aus v1. Unter Design-Lock v2 ist der Grund True Black; ein
+ * Schleier, der ihn um zehn Stufen verfehlt, setzt einen sichtbaren
+ * Graurand auf eine schwarze Seite. Er folgt deshalb `LANDING_BG`.
  */
-import { LANDING_ACCENT, LANDING_ACCENT_SOFT } from './landing-theme';
+import { LANDING_ACCENT, LANDING_ACCENT_SOFT, LANDING_BG } from './landing-theme';
 
 /** Approximate node positions (% of box) over Europe framing. */
 const NODES: readonly { x: number; y: number; r?: number }[] = [
@@ -57,18 +62,19 @@ export function EuropeNetworkHero() {
         />
       </picture>
 
-      {/* Charcoal veil — keeps left copy readable; map glows on the right */}
+      {/* Veil — keeps left copy readable; map glows on the right */}
       <div
         className="absolute inset-0"
         style={{
-          background:
-            'linear-gradient(105deg, #0a0a0b 0%, #0a0a0bcc 32%, #0a0a0b66 52%, transparent 72%),' +
-            'linear-gradient(180deg, #0a0a0b88 0%, transparent 28%, transparent 70%, #0a0a0bee 100%),' +
+          background: [
+            `linear-gradient(105deg, ${LANDING_BG} 0%, ${LANDING_BG}cc 32%, ${LANDING_BG}66 52%, transparent 72%)`,
+            `linear-gradient(180deg, ${LANDING_BG}88 0%, transparent 28%, transparent 70%, ${LANDING_BG}ee 100%)`,
             `radial-gradient(55% 50% at 72% 42%, ${LANDING_ACCENT}33 0%, transparent 62%)`,
+          ].join(','),
         }}
       />
 
-      {/* Amber network mesh */}
+      {/* Network mesh */}
       <svg
         className="absolute inset-0 h-full w-full opacity-90"
         viewBox="0 0 100 100"

@@ -66,8 +66,19 @@ describe('Landing Design-Lock v2 — True Black / Cyan / Gold-VIP', () => {
         'nicht mit und die Seite traegt zwei Akzente nebeneinander.',
     ).not.toMatch(v1Gold);
     expect(titanHero).toContain("from './landing-theme'");
+
     expect(titanHero, 'Der Hero liest den Akzent nicht').toContain('LANDING_ACCENT');
     expect(titanHero, 'Der CTA-Glow ist nicht der Token-Glow').toContain('LANDING_CTA_GLOW');
+
+    // Gegenprobe aus dem Farbmodus-Zweig, hier behalten: kein Farbwert darf
+    // am Token vorbei im Hero stehen. Ohne diese Zeile koennte jemand die
+    // Token-Importe stehen lassen und trotzdem daneben eine feste Farbe
+    // setzen — das `v1Gold`-Muster daruber faende nur die alten Goldwerte,
+    // nicht einen frisch erfundenen.
+    expect(
+      titanHero,
+      'HeroTitanium setzt eine Farbe direkt statt ueber ein Token.',
+    ).not.toMatch(/#[0-9a-f]{6}\b/i);
   });
 
   it('SOFT und LITE gehoeren zur Cyan-Familie, nicht zu Gold', () => {
@@ -161,7 +172,14 @@ describe('Landing Design-Lock v2 — True Black / Cyan / Gold-VIP', () => {
     expect(titanHero).toContain('EuropeNetworkHero');
     expect(landing).toContain('HeroTitanium');
     expect(landing).not.toContain('GovernanceSphereHost');
+    // Unter Design-Lock v2 traegt die Startseite genau eine Palette. Weder
+    // `useGaTheme` (die alte OS-Variante mit eigener Typografie und eigenem
+    // Layout) noch ein Farbmodus-Umschalter gehoeren darauf: beide machen
+    // die geltende Farbe zur Laufzeitfrage.
     expect(landing).not.toContain('useGaTheme');
+    expect(landing, 'Die Startseite traegt wieder einen Farbmodus-Umschalter').not.toContain(
+      'useLandingMode',
+    );
     expect(titanHero).not.toContain('EuropeReliefBackdrop');
     expect(network).toContain('europe-network-static');
     expect(network).toContain('data-hero-interactive="false"');

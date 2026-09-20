@@ -26,6 +26,7 @@ const read = (rel: string) => readFileSync(resolve(root, rel), 'utf8');
 const landing = read('src/pages/MainLanding.tsx');
 const header = read('src/components/landing/PublicDarkHeader.tsx');
 const hero = read('src/components/landing/EuropeNetworkHero.tsx');
+const heroTitanium = read('src/components/landing/HeroTitanium.tsx');
 const modeSwitch = read('src/components/landing/LandingModeSwitch.tsx');
 const css = read('src/index.css');
 
@@ -90,14 +91,28 @@ describe('Farbmodus — zwei Paletten, ein Attribut', () => {
 });
 
 describe('Farbmodus — die Flaechen lesen die Variablen', () => {
-  it('Hero-Akzente im MainLanding haengen nicht mehr an festen Hex-Werten', () => {
-    // Der Hero-Block: Eyebrow, Akzentwort, Primaer-Pill, Ghost-Pill, Trustline.
-    const heroBlock = landing.slice(landing.indexOf('<EuropeNetworkHero'), landing.indexOf('id="runtime"'));
-    expect(heroBlock).toContain('MODE_ACCENT');
-    expect(heroBlock).toContain('MODE_ACCENT_SOFT');
-    expect(heroBlock).toContain('MODE_GLOW');
-    expect(heroBlock).not.toContain('LANDING_ACCENT_SOFT');
-    expect(heroBlock).not.toContain('rgba(214, 173, 104');
+  it('der Hero haengt nicht mehr an festen Hex-Werten', () => {
+    // Seit #1467 sitzt der Hero in `HeroTitanium`, nicht mehr als Block in
+    // `MainLanding`. Akzentwort der H1, Operating Loop, Primaer-Pill und die
+    // Plan-Anker lesen die Modus-Variablen.
+    expect(heroTitanium).toContain('MODE_ACCENT');
+    expect(heroTitanium).toContain('MODE_BUTTON_INK');
+    expect(heroTitanium).toContain('MODE_GLOW');
+    for (const token of ['LANDING_ACCENT', 'LANDING_BUTTON', 'LANDING_CTA_GLOW']) {
+      expect(heroTitanium, `${token} folgt dem Schalter nicht`).not.toContain(token);
+    }
+    // Die Fokusring-Variablen des Entwurfs folgen dem Modus mit.
+    expect(heroTitanium).toContain("'--landing-ring': MODE_ACCENT");
+    expect(heroTitanium).toContain("'--landing-ring-soft': modeAccent(60)");
+  });
+
+  it('MainLanding verdrahtet den Modus, der Hero bleibt eine eigene Komponente', () => {
+    expect(landing).toContain('<HeroTitanium />');
+    expect(landing).toContain('MODE_BG');
+    // Unterhalb des Hero bleibt Gold — das ist die dokumentierte Grenze,
+    // kein Versehen: die Referenz zeigt beide Fassungen nur fuer den
+    // ersten Bildschirm.
+    expect(landing).toContain('LANDING_ACCENT');
   });
 
   it('die Aufnahme wird je Modus anders getont', () => {

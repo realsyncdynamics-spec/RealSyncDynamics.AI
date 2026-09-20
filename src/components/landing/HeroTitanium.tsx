@@ -9,16 +9,13 @@ import {
   HERO_PLAN_ANCHOR_FREE,
 } from '../governance-frontend/hero-content';
 import {
-  LANDING_ACCENT,
-  LANDING_BUTTON,
-  LANDING_CTA_GLOW,
-  LANDING_BUTTON_TEXT,
   LANDING_MONO,
   LANDING_MUTED,
   LANDING_SANS,
   LANDING_SERIF,
   LANDING_TEXT,
 } from './landing-theme';
+import { MODE_ACCENT, MODE_BUTTON_INK, MODE_GLOW, modeAccent } from './landing-mode';
 
 /**
  * Hero der Startseite — Umsetzung des Titan-Entwurfs.
@@ -72,16 +69,18 @@ export function HeroTitanium() {
   const chips = planChips();
 
   return (
-    /* Fokusring folgt dem Landing-Akzent statt einem festen Wert. Tailwind
-       kann keine JS-Konstante lesen, deshalb der Umweg ueber zwei CSS-
-       Variablen: Wer `LANDING_ACCENT` aendert, aendert den Ring mit. */
+    /* Fokusring folgt dem Farbmodus statt einem festen Wert. Tailwind kann
+       keine JS-Konstante lesen, deshalb der Umweg ueber zwei CSS-Variablen.
+       Die weiche Variante laeuft ueber `color-mix`, nicht ueber zwei
+       angehaengte Hex-Ziffern: an einer CSS-Variablen ergaebe das eine
+       ungueltige Farbe — einen unsichtbaren Ring, ohne Fehlermeldung. */
     <section
       id="product"
       className="relative min-h-[min(100svh,880px)] overflow-hidden border-b border-white/[0.06]"
       style={
         {
-          '--landing-ring': LANDING_ACCENT,
-          '--landing-ring-soft': `${LANDING_ACCENT}99`,
+          '--landing-ring': MODE_ACCENT,
+          '--landing-ring-soft': modeAccent(60),
         } as CSSProperties
       }
     >
@@ -112,7 +111,7 @@ export function HeroTitanium() {
                 {segments.map((segment, i) => (
                   <span
                     key={i}
-                    style={{ color: segment.accent ? LANDING_ACCENT : LANDING_TEXT }}
+                    style={{ color: segment.accent ? MODE_ACCENT : LANDING_TEXT }}
                   >
                     {i > 0 ? ' ' : ''}
                     {segment.text}
@@ -124,7 +123,7 @@ export function HeroTitanium() {
 
           <p
             className="mt-7 text-[clamp(0.75rem,0.68rem+0.3vw,0.9rem)] font-medium uppercase tracking-[0.2em]"
-            style={{ fontFamily: LANDING_MONO, color: LANDING_ACCENT }}
+            style={{ fontFamily: LANDING_MONO, color: MODE_ACCENT }}
           >
             {HERO_OPERATING_LOOP}
           </p>
@@ -146,9 +145,9 @@ export function HeroTitanium() {
                 to="/audit"
                 className="flex h-full min-w-[9.5rem] items-center justify-center rounded-xl px-6 py-5 text-[0.95rem] font-semibold transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--landing-ring)]"
                 style={{
-                  backgroundColor: LANDING_BUTTON,
-                  color: LANDING_BUTTON_TEXT,
-                  boxShadow: LANDING_CTA_GLOW,
+                  backgroundColor: MODE_ACCENT,
+                  color: MODE_BUTTON_INK,
+                  boxShadow: MODE_GLOW,
                 }}
               >
                 {HERO_PLAN_ANCHOR_FREE}
@@ -164,10 +163,10 @@ export function HeroTitanium() {
                   style={{
                     backgroundColor: 'rgba(255,255,255,0.04)',
                     borderColor: chip.featured
-                      ? LANDING_ACCENT
+                      ? MODE_ACCENT
                       : 'rgba(255,255,255,0.12)',
                     boxShadow: chip.featured
-                      ? LANDING_CTA_GLOW
+                      ? MODE_GLOW
                       : undefined,
                   }}
                 >
@@ -180,7 +179,7 @@ export function HeroTitanium() {
                   {chip.price ? (
                     <span
                       className="mt-0.5 text-[1.15rem] font-medium leading-tight"
-                      style={{ color: chip.featured ? LANDING_ACCENT : LANDING_TEXT }}
+                      style={{ color: chip.featured ? MODE_ACCENT : LANDING_TEXT }}
                     >
                       {chip.price}
                     </span>

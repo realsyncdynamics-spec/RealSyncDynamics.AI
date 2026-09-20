@@ -5,6 +5,8 @@ import { LandingChannelTools } from '../components/landing/LandingChannelTools';
 import { LandingPricingSection } from '../components/landing/LandingPricingSection';
 import { PublicDarkHeader } from '../components/landing/PublicDarkHeader';
 import { HeroTitanium } from '../components/landing/HeroTitanium';
+import { LandingModeSwitch } from '../components/landing/LandingModeSwitch';
+import { MODE_BG, useLandingMode } from '../components/landing/landing-mode';
 import { RuntimePreviewPanel } from '../components/landing/RuntimePreviewPanel';
 import { LandingDarkBand } from '../components/landing/LandingDarkBand';
 import { GovernanceRuntimeSection } from '../components/landing/GovernanceRuntimeSection';
@@ -35,12 +37,14 @@ import {
 
 export function MainLanding() {
   const revealRoot = useStagedReveal<HTMLElement>();
+  const { mode, setMode } = useLandingMode();
 
   return (
     <div
       className="landing-context relative min-h-screen antialiased"
+      data-landing-mode={mode}
       style={{
-        backgroundColor: LANDING_BG,
+        backgroundColor: MODE_BG,
         color: LANDING_TEXT,
         fontFamily: LANDING_SANS,
       }}
@@ -53,7 +57,7 @@ export function MainLanding() {
         ogDescription="RealSyncDynamics.AI — Governance-Infrastruktur für Europa. Free Audit starten."
       />
 
-      <PublicDarkHeader overlay />
+      <PublicDarkHeader overlay modeSwitch={<LandingModeSwitch mode={mode} onChange={setMode} />} />
 
       <main ref={revealRoot} className="relative z-10">
         <HeroTitanium />

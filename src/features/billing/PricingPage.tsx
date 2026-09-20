@@ -124,7 +124,8 @@ export function PricingPage() {
         </div>
       </section>
 
-      {/* Tier-Cards — Starter / Growth / Agency / Enterprise (Partner legacy) */}
+      {/* Tier-Cards — Starter / Growth / Agency / Enterprise / Enterprise Plus.
+          Fuenf Karten, das Raster bricht bei lg auf 3+2 um. */}
       <section className="px-4 sm:px-6 lg:px-8 pb-16 sm:pb-20">
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 items-stretch">

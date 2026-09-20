@@ -25,15 +25,14 @@ import { type FormEvent, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import {
-  HERO_EU_LINE,
-  HERO_HEADLINE,
-  HERO_KICKER,
-  HERO_OPERATING_LOOP,
+  GOVERNANCE_AI_HERO_HEADLINE,
+  GOVERNANCE_AI_HERO_KICKER,
+  GOVERNANCE_AI_HERO_MICRO,
+  GOVERNANCE_AI_HERO_SUBLINE,
   HERO_PROOF_CHIPS,
   HERO_SCAN_CTA_LONG,
   HERO_SCAN_CTA_PROMISE,
   HERO_SCAN_PROMISE_LINE,
-  HERO_SUBLINE,
   HERO_DASHBOARD_CTA_LABEL,
 } from '../governance-frontend/hero-content';
 import { PUBLIC_CTA } from '../../config/public-nav';
@@ -97,7 +96,7 @@ export function GovernanceAiHero() {
             style={{ backgroundColor: GA_GREEN }}
             aria-hidden="true"
           />
-          {HERO_KICKER.claim}
+          {GOVERNANCE_AI_HERO_KICKER}
         </p>
 
         <h1
@@ -115,7 +114,7 @@ export function GovernanceAiHero() {
             filter: 'drop-shadow(0 6px 18px rgba(0,0,0,.55))',
           }}
         >
-          {HERO_HEADLINE.map((segments, line) => (
+          {GOVERNANCE_AI_HERO_HEADLINE.map((segments, line) => (
             <span key={segments.map((s) => s.text).join('')} className="block">
               {line > 0 && ' '}
               {segments.map((segment) =>
@@ -141,21 +140,17 @@ export function GovernanceAiHero() {
         </h1>
 
         <p
-          className="mt-7 text-[13px] font-medium uppercase tracking-[.3em]"
-          style={{ fontFamily: GA_MONO, color: 'var(--ga-accent)' }}
+          className="mt-7 max-w-[42rem] text-pretty text-[clamp(1.05rem,.95rem+.45vw,1.3rem)] leading-[1.58] tracking-[-.01em]"
+          style={{ color: GA_MUTED }}
         >
-          {HERO_OPERATING_LOOP}
+          {GOVERNANCE_AI_HERO_SUBLINE}
         </p>
 
         <p
-          className="mt-5 max-w-[36rem] text-pretty text-[clamp(1.1rem,1rem+.5vw,1.4rem)] leading-[1.5] tracking-[-.01em]"
-          style={{ color: GA_MUTED }}
+          className="mt-4 max-w-[42rem] text-[11px] font-medium uppercase tracking-[.2em]"
+          style={{ fontFamily: GA_MONO, color: 'var(--ga-accent)' }}
         >
-          {HERO_SUBLINE}
-        </p>
-
-        <p className="mt-3 max-w-[36rem] text-[13.5px] leading-[1.6]" style={{ color: GA_TITAN }}>
-          {HERO_EU_LINE}
+          {GOVERNANCE_AI_HERO_MICRO}
         </p>
 
         <div className="mt-[34px] flex flex-wrap gap-3.5">
@@ -172,10 +167,9 @@ export function GovernanceAiHero() {
             {HERO_SCAN_CTA_LONG}
             <ArrowRight className="h-4 w-4" aria-hidden="true" />
           </Link>
-          {/* Ziel ist die Workspace-Vorschau weiter unten (`WorkspacePreviewSection`). */}
-          <a href="#dashboard" className={GA_PILL_GHOST} style={{ fontFamily: GA_DISPLAY }}>
+          <Link to="/app/dashboard" className={GA_PILL_GHOST} style={{ fontFamily: GA_DISPLAY }}>
             {HERO_DASHBOARD_CTA_LABEL}
-          </a>
+          </Link>
         </div>
 
         <form

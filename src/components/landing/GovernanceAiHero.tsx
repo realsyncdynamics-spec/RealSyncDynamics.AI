@@ -156,6 +156,7 @@ export function GovernanceAiHero() {
         <div className="mt-[34px] flex flex-wrap gap-3.5">
           <Link
             to={PUBLIC_CTA.to}
+            reloadDocument
             className={`${GA_PILL_PRIMARY} ga-pill-sheen`}
             style={{
               fontFamily: GA_DISPLAY,

@@ -7,7 +7,7 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 
 import { MainLanding } from '../../src/pages/MainLanding';
-import { HERO_DASHBOARD_CTA_LABEL, HERO_SCAN_CTA_LONG } from '../../src/components/governance-frontend/hero-content';
+import { HERO_DASHBOARD_CTA_LABEL } from '../../src/components/governance-frontend/hero-content';
 
 const AUDIT_PLATZHALTER = 'AUDIT-SEITE';
 
@@ -35,9 +35,20 @@ describe('Kanonischer Scan-Einstieg', () => {
     expect(screen.getByText(AUDIT_PLATZHALTER)).toBeTruthy();
   });
 
-  it('zeigt Replit Hero-CTAs', () => {
+  it('haelt den kanonischen Audit-Einstieg im Hero', () => {
     landingRendern();
-    expect(screen.getAllByText(HERO_SCAN_CTA_LONG).length).toBeGreaterThan(0);
+
+    // Der Entwurf traegt im Hero keinen langen Audit-CTA mehr, sondern den
+    // Chip „Free Audit" in der Planreihe. Der Vertrag, den dieser Test
+    // sichert, ist nicht die Wortmarke, sondern der Einstieg: genau ein
+    // markierter Audit-CTA im Hero, und er fuehrt nach /audit (das prueft
+    // der erste Test dieser Datei).
+    const heroCtas = document.querySelectorAll('[data-hero-cta="audit"]');
+    expect(heroCtas.length).toBe(1);
+    expect(heroCtas[0].getAttribute('href')).toBe('/audit');
+
+    // Der Evidence-Einstieg bleibt auf der Seite — er ist unter den Hero
+    // gewandert, nicht entfallen.
     expect(screen.getAllByText(HERO_DASHBOARD_CTA_LABEL).length).toBeGreaterThan(0);
   });
 

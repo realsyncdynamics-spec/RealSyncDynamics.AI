@@ -1,20 +1,18 @@
 import { defineConfig, devices } from '@playwright/test';
 
-/**
- * Playwright-Config für die Testkatalog-Suite (tests/e2e/*).
- *
- * Öffentliche Routen, Navigation, Audit, AI-Act, Checkout, Consent, Rechtstexte.
- * Getrennt von der App-Suite (`./e2e`, `npm run e2e`).
- *
- * Default ist der lokale Preview-Port — nicht die Live-Domain. Live hat
- * Bot-Schutz und liefert dem Headless-Browser 403. Gegen Live/Staging:
- *   TEST_BASE_URL=https://staging.example npm run test:e2e
- *
- * CI: .github/workflows/e2e.yml setzt TEST_BASE_URL auf den Preview-Server.
- */
 const LOCAL_PREVIEW = 'http://127.0.0.1:4173';
 const BASE_URL = process.env.TEST_BASE_URL ?? process.env.E2E_BASE_URL ?? LOCAL_PREVIEW;
 const isLocalTarget = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i.test(BASE_URL);
+
+const CI_LAUNCH_ARGS = [
+  '--disable-dev-shm-usage',
+  '--disable-gpu',
+  '--no-sandbox',
+  '--disable-setuid-sandbox',
+  '--mute-audio',
+  '--disable-extensions',
+  '--disable-background-networking',
+];
 
 export default defineConfig({
   testDir: './tests/e2e',
@@ -31,9 +29,10 @@ export default defineConfig({
     baseURL: BASE_URL,
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
-    video: process.env.CI ? 'retain-on-failure' : 'off',
+    video: 'off',
     actionTimeout: 10_000,
     navigationTimeout: 20_000,
+    launchOptions: { args: CI_LAUNCH_ARGS },
   },
   projects: [
     {

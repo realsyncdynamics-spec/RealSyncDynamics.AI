@@ -119,6 +119,7 @@ const GROUPS: LandingGroup[] = [
       { path: '/borlabs-alternative', title: 'Borlabs-Alternative', description: 'Vergleich vs. Borlabs.' },
       { path: '/cookiebot-alternative', title: 'Cookiebot-Alternative', description: 'Vergleich vs. Cookiebot.' },
       { path: '/proliance-alternative', title: 'Proliance-Alternative', description: 'Vergleich vs. Proliance.' },
+      { path: '/caralegal-alternative', title: 'caralegal-Alternative', description: 'Kategorie-Abgrenzung DSMS vs. Governance Runtime.' },
       { path: '/iubenda-alternative', title: 'Iubenda-Alternative', description: 'Vergleich vs. Iubenda.' },
     ],
   },

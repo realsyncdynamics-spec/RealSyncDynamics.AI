@@ -1,78 +1,89 @@
-import React from 'react';
+import React, { type ReactNode } from 'react';
+export type ErrorBoundaryVariant = 'page' | 'panel';
 
-interface Props {
-  children: React.ReactNode;
-}
+type Props = {
+  children: ReactNode;
+  variant?: ErrorBoundaryVariant;
+  fallback?: ReactNode | ((error: Error, reset: () => void) => ReactNode);
+  onError?: (error: Error, info: React.ErrorInfo) => void;
+};
 
-interface State {
-  hasError: boolean;
+type State = {
   error: Error | null;
+};
+
+const PAGE_WRAP =
+  'min-h-screen flex flex-col items-center justify-center gap-4 bg-obsidian-950 text-titanium-200 px-6';
+const PANEL_WRAP =
+  'grid min-h-[40vh] place-items-center bg-obsidian-950 text-titanium-200 px-6';
+
+function DefaultFallback({
+  error,
+  reset,
+  variant,
+}: {
+  error: Error;
+  reset: () => void;
+  variant: ErrorBoundaryVariant;
+}) {
+  const prod = import.meta.env.PROD;
+  return (
+    <div className={variant === 'panel' ? PANEL_WRAP : PAGE_WRAP} role="alert" data-error-boundary={variant}>
+      <p className="font-display text-lg text-titanium-50">Darstellung fehlgeschlagen</p>
+      <p className="text-sm text-titanium-400 max-w-md text-center">
+        Dieser Bereich konnte nicht geladen werden. Der Rest der Seite bleibt nutzbar.
+      </p>
+      {!prod && (
+        <pre className="max-w-lg overflow-auto text-xs text-red-400 bg-obsidian-900 border border-titanium-800 p-3">
+          {error.message}
+        </pre>
+      )}
+      <button
+        type="button"
+        onClick={reset}
+        className="px-4 py-2 text-sm bg-security-500 text-white hover:bg-security-400"
+      >
+        Erneut versuchen
+      </button>
+    </div>
+  );
 }
 
 export class ErrorBoundary extends React.Component<Props, State> {
   constructor(props: Props) {
     super(props);
-    this.state = { hasError: false, error: null };
+    this.state = { error: null };
   }
 
   static getDerivedStateFromError(error: Error): State {
-    return { hasError: true, error };
+    return { error };
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('ErrorBoundary caught:', error, errorInfo);
+    console.error('ErrorBoundary:', error, errorInfo);
+    // Dynamic import — static @sentry/react here broke production chunks
+    // (Cannot set properties of undefined (setting 'Activity')).
+    void import('@sentry/react')
+      .then((Sentry) => {
+        Sentry.captureException(error, { extra: { componentStack: errorInfo.componentStack } });
+      })
+      .catch(() => {
+        /* Sentry optional */
+      });
+    this.props.onError?.(error, errorInfo);
   }
 
-  render() {
-    if (this.state.hasError) {
-      return (
-        <div style={{
-          minHeight: '100vh',
-          backgroundColor: '#0A0A0B',
-          color: '#E2E2E2',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '20px',
-          fontFamily: 'system-ui, -apple-system, sans-serif',
-        }}>
-          <h1 style={{ fontSize: '24px', marginBottom: '10px' }}>Error</h1>
-          <p style={{ color: '#888', marginBottom: '20px', maxWidth: '600px', textAlign: 'center' }}>
-            An error occurred while rendering the app.
-          </p>
-          <pre style={{
-            backgroundColor: '#1A1A1B',
-            padding: '15px',
-            borderRadius: '4px',
-            overflow: 'auto',
-            maxWidth: '600px',
-            fontSize: '12px',
-            color: '#FF6B6B',
-          }}>
-            {this.state.error?.message}
-            {'\n'}
-            {this.state.error?.stack}
-          </pre>
-          <button
-            onClick={() => window.location.reload()}
-            style={{
-              marginTop: '20px',
-              padding: '10px 20px',
-              backgroundColor: '#0052FF',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              fontSize: '14px',
-            }}
-          >
-            Reload Page
-          </button>
-        </div>
-      );
-    }
+  reset = () => {
+    this.setState({ error: null });
+  };
 
-    return this.props.children;
+  render() {
+    const { error } = this.state;
+    if (!error) return this.props.children;
+
+    const { fallback, variant = 'page' } = this.props;
+    if (typeof fallback === 'function') return fallback(error, this.reset);
+    if (fallback) return fallback;
+    return <DefaultFallback error={error} reset={this.reset} variant={variant} />;
   }
 }

@@ -21,3 +21,11 @@ Damit das Projekt auch mit hunderten Komponenten und Ansichten skalierbar und ma
 - **V1.0 (MVP) - Feature Complete**: Copilot (Web & App), Multi-Model Gateway, Entitlements-Basis, Extension ↔ Gateway Integration, UI/UX Mockups für alle SaaS-Module.
 
 (Nächste Phasen: Siehe GitHub Issues Masterplan)
+
+## 📐 Architekturentscheidungen (ADR)
+
+Bindende Entscheidungen liegen unter `docs/adr/`. Für Decision-Provider gilt
+ADR 0012 (`docs/adr/0012-decision-intelligence-calibration.md`): Statistische
+Kalibrierung ist Evidenz für Verlässlichkeit, keine Autorisierung — die
+Autoritätskette lautet `schema_valid → calibration_passed → policy_authorized →
+execution_verified`.

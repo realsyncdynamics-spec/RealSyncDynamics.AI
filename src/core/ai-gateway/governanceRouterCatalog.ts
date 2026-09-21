@@ -198,13 +198,17 @@ export function modelsResponseForStage(
   return { object: 'list', data };
 }
 
-export function processorsFor(allowCloud: boolean, residency: AiResidency): readonly string[] {
+export function processorsFor(
+  allowCloud: boolean,
+  residency: AiResidency,
+  localLabel: string = 'EU-lokale Inferenz (LM Studio)',
+): readonly string[] {
   const list: string[] = ['RealSyncDynamicsAI Governance Router (EU)'];
   if (residency === 'eu_local' || !allowCloud) {
-    list.push('EU-lokale Inferenz (LM Studio)');
+    list.push(localLabel);
     return list;
   }
-  list.push('EU-lokale Inferenz (LM Studio)', 'Anthropic (Cloud-Fallback)', 'OpenAI (Cloud-Fallback)');
+  list.push(localLabel, 'Anthropic (Cloud-Fallback)', 'OpenAI (Cloud-Fallback)');
   return list;
 }
 
@@ -240,12 +244,14 @@ export function governanceMeta(args: {
   allowCloud: boolean;
   pdpMode: 'off' | 'shadow' | 'enforce';
   pdpDecision: string | null;
+  /** Art.-50-Label des lokalen Providers; Default nennt LM Studio. */
+  localLabel?: string;
 }): GovernanceMeta {
   return {
     disclosure: ART50_DISCLOSURE_DE,
     residency: args.residency,
     expansion_stage: args.stage,
     pdp: { mode: args.pdpMode, decision: args.pdpDecision },
-    processors: processorsFor(args.allowCloud, args.residency),
+    processors: processorsFor(args.allowCloud, args.residency, args.localLabel),
   };
 }

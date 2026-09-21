@@ -30,7 +30,9 @@ const DesignTribunalLanding = lazy(() => import('./pages/design/DesignTribunalLa
 const ScanStartPage = lazy(() => import('./pages/product-entry-points/ScanStartPage').then((m) => ({ default: m.ScanStartPage })));
 const ChatbotStartPage = lazy(() => import('./pages/product-entry-points/ChatbotStartPage').then((m) => ({ default: m.ChatbotStartPage })));
 const PhonebotStartPage = lazy(() => import('./pages/product-entry-points/PhonebotStartPage').then((m) => ({ default: m.PhonebotStartPage })));
-const AetherOSLanding = lazy(() => import('./pages/AetherOSLanding').then((m) => ({ default: m.AetherOSLanding })));
+const AetherOSLandingRoute = lazy(() =>
+  import('./pages/AetherOSLandingRoute').then((m) => ({ default: m.AetherOSLandingRoute })),
+);
 const RealSyncDynamicsLanding = lazy(() => import('./marketing/landing/RealSyncDynamicsLanding').then((m) => ({ default: m.RealSyncDynamicsLanding })));
 const EnterpriseKonfigurator = lazy(() => import('./pages/EnterpriseKonfigurator'));
 const PublicWorkspacePreview = lazy(() => import('./pages/PublicWorkspacePreview').then((m) => ({ default: m.PublicWorkspacePreview })));
@@ -132,6 +134,7 @@ const DataGuardAlternative = lazy(() => import('./pages/DataGuardAlternative').t
 const BorlabsAlternative = lazy(() => import('./pages/BorlabsAlternative').then((m) => ({ default: m.BorlabsAlternative })));
 const CookiebotAlternative = lazy(() => import('./pages/CookiebotAlternative').then((m) => ({ default: m.CookiebotAlternative })));
 const ProlianceAlternative = lazy(() => import('./pages/ProlianceAlternative').then((m) => ({ default: m.ProlianceAlternative })));
+const CaralegalAlternative = lazy(() => import('./pages/CaralegalAlternative').then((m) => ({ default: m.CaralegalAlternative })));
 const InsuranceLanding = lazy(() => import('./pages/InsuranceLanding').then((m) => ({ default: m.InsuranceLanding })));
 const EcommerceLanding = lazy(() => import('./pages/EcommerceLanding').then((m) => ({ default: m.EcommerceLanding })));
 const About = lazy(() => import('./pages/About').then((m) => ({ default: m.About })));
@@ -388,6 +391,7 @@ const AuditDashboardView = lazy(() => import('./features/audit/AuditDashboardVie
 const LeadsView = lazy(() => import('./features/admin/LeadsView').then((m) => ({ default: m.LeadsView })));
 const SystemHealthView = lazy(() => import('./features/admin/SystemHealthView').then((m) => ({ default: m.SystemHealthView })));
 const CustomersView = lazy(() => import('./features/admin/CustomersView').then((m) => ({ default: m.CustomersView })));
+const ConversionBillingView = lazy(() => import('./features/admin/billing/ConversionBillingView').then((m) => ({ default: m.ConversionBillingView })));
 const OnboardingView = lazy(() => import('./features/admin/OnboardingView').then((m) => ({ default: m.OnboardingView })));
 const RebuildsView = lazy(() => import('./features/admin/RebuildsView').then((m) => ({ default: m.RebuildsView })));
 // ── Tenant Admin Panel (Phase 1) ──
@@ -491,7 +495,7 @@ function RoutesWithTracking() {
       <Route path="/scan/start" element={<ScanStartPage />} />
       <Route path="/chatbot/start" element={<ChatbotStartPage />} />
       <Route path="/phonebot/start" element={<PhonebotStartPage />} />
-      <Route path="/aetheros" element={<AetherOSLanding />} />
+      <Route path="/aetheros" element={<AetherOSLandingRoute />} />
       <Route path="/preview" element={<PublicWorkspacePreview />} />
       <Route path="/landing" element={<Landing />} />
       <Route path="/landingpages" element={<LandingPagesOverview />} />
@@ -626,6 +630,7 @@ function RoutesWithTracking() {
       <Route path="/borlabs-alternative" element={<BorlabsAlternative />} />
       <Route path="/cookiebot-alternative" element={<CookiebotAlternative />} />
       <Route path="/proliance-alternative" element={<ProlianceAlternative />} />
+      <Route path="/caralegal-alternative" element={<CaralegalAlternative />} />
       {/* More Industry-Doorways */}
       <Route path="/versicherungen" element={<InsuranceLanding />} />
       <Route path="/insurance" element={<InsuranceLanding />} />
@@ -1003,6 +1008,7 @@ function RoutesWithTracking() {
       <Route path="/admin/system" element={<SystemHealthView />} />
       <Route path="/admin/social" element={<AdminSocialPreviewPage />} />
       <Route path="/admin/customers" element={<CustomersView />} />
+      <Route path="/admin/billing" element={<ConversionBillingView />} />
       <Route path="/admin/onboarding" element={<OnboardingView />} />
       <Route path="/admin/rebuilds" element={<RebuildsView />} />
       {/* Legal */}

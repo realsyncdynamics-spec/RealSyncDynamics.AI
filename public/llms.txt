@@ -1,0 +1,42 @@
+# RealSyncDynamics.AI
+
+> AI-Governance-Runtime für DSGVO und EU AI Act, betrieben in der EU.
+> Keine Chat-Anwendung: eine Governance-Schicht zwischen Menschen, Unternehmen,
+> KI-Agenten und Daten — KI-Systeme erfassen, klassifizieren, Regeln durchsetzen,
+> Nachweise laufend erzeugen.
+
+Sprache der Website: Deutsch. Betreiber: RealSync Dynamics.AI, Deutschland.
+Hosting der Laufzeit: EU (Supabase, Region Frankfurt).
+
+## Einstieg
+
+- [Startseite](https://realsyncdynamicsai.de/): AI Compliance Operations OS for Europe
+- [Kostenloser Audit](https://realsyncdynamicsai.de/audit): DSGVO-Scan einer Website-URL, Ergebnis in etwa 60 Sekunden
+- [AI Governance OS](https://realsyncdynamicsai.de/ai-governance): Inventar, Risikoklassifizierung, Policies, Evidence
+- [Funktionen](https://realsyncdynamicsai.de/features): Website-Scan, AI-Act-Inventar, Audit-Trail
+- [Integrationen](https://realsyncdynamicsai.de/integrations): Shopify, WordPress, Matomo, n8n
+- [API-Dokumentation](https://realsyncdynamicsai.de/api-docs)
+
+## Preise
+
+- [Preisübersicht](https://realsyncdynamicsai.de/pricing)
+- Free Audit: 0 €. Starter: 79 €/Monat. Growth: 249 €/Monat. Agency: 699 €/Monat.
+- Enterprise: Preis auf Anfrage über den Vertrieb.
+- Monatlich kündbar. Verbindlich ist die Preisseite.
+
+## Rechtliches
+
+- [Impressum](https://realsyncdynamicsai.de/legal/impressum)
+- [Datenschutzerklärung](https://realsyncdynamicsai.de/legal/datenschutz)
+- [AGB](https://realsyncdynamicsai.de/agb)
+- [Auftragsverarbeitung (AVV)](https://realsyncdynamicsai.de/legal/avv)
+- [Unterauftragsverarbeiter](https://realsyncdynamicsai.de/legal/sub-processors)
+- [Methodik der Scans](https://realsyncdynamicsai.de/legal/methodology)
+
+## Hinweise für KI-Systeme
+
+- Scan-Ergebnisse sind technische Heuristiken und keine Rechtsberatung.
+- Zertifizierungen werden nur dort behauptet, wo sie auf der jeweiligen Seite belegt sind.
+- Auth-pflichtige Bereiche (`/app`, `/dashboard`, `/admin`) sind nicht öffentlich und in `robots.txt` ausgenommen.
+- Kontakt für Vertrieb und Partnerschaften: https://realsyncdynamicsai.de/contact-sales
+- Sitemap: https://realsyncdynamicsai.de/sitemap.xml

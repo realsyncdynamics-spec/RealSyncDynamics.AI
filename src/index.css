@@ -491,6 +491,23 @@
   --color-risk-passed:        #34d399;
   --color-risk-passed-soft:   #0f2a1f;
 
+  /* Basisfarben ohne Skalenstufe.
+
+     `bg-obsidian`, `text-titanium`, `border-petrol` und `text-security-blue`
+     werden an 681 Stellen in 53 Dateien benutzt — darunter alle UI-Primitive,
+     die Navigation und der gesamte Flow-Bereich. Definiert waren sie aber nur
+     in tailwind.config.ts, und die lädt Tailwind 4 ohne @config-Direktive
+     nicht: In der ausgelieferten CSS von realsyncdynamicsai.de gab es für
+     keine dieser Klassen eine Regel. Hintergründe blieben transparent,
+     `border` fiel auf currentColor zurück, Verläufe auf nichts.
+
+     Werte identisch mit der jeweiligen Skalenstufe, damit beide Schreibweisen
+     dasselbe ergeben: obsidian-900 · titanium-200 · petrol-700 · security-500. */
+  --color-obsidian:      #0A0A0B;
+  --color-titanium:      #E2E2E2;
+  --color-petrol:        #0F766E;
+  --color-security-blue: #0052FF;
+
   /* Hard-Edge Industrial — kill all rounded-corner utilities except
      -full (legitim für Kreise: Avatare, Status-Dots, Ping-Animationen).
      CLAUDE.md schreibt „keine abgerundeten Ecken" vor. Overriden hier
@@ -617,6 +634,45 @@ html, body {
   background-image:
     linear-gradient(135deg, rgba(183, 138, 61, 0.025) 0%, transparent 28%),
     url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120' width='120' height='120' fill='none' stroke='rgb(226 226 226 / 0.04)' stroke-width='1'%3E%3Cpath d='M0 0H50C50 8 60 8 60 0H120M0 60H50C50 68 60 68 60 60H120M0 120H50C50 112 60 112 60 120H120M0 0V50C8 50 8 60 0 60V120M60 0V50C68 50 68 60 60 60V120M120 0V50C112 50 112 60 120 60V120'/%3E%3C/svg%3E");
+}
+
+/* Glass-Flächen — aus dem Plugin von tailwind.config.ts hierher portiert.
+
+   Das Plugin wurde nie geladen (siehe Basisfarben oben), die Klassen waren
+   also ebenso wirkungslos. `glass` ist die Card- und Modal-Variante,
+   `glass-petrol` steht im Enterprise-Konfigurator. Als @utility, nicht als
+   einfache Klasse, damit Varianten wie `hover:` und `md:` weiter greifen.
+
+   Die Verläufe des Plugins (gradient-petrol-blue, -overlay, -mesh) sind nicht
+   mitgekommen: null Verwendungen im Quellcode. */
+@utility glass {
+  backdrop-filter: blur(8px);
+  background-color: rgb(10 10 11 / 0.5);
+  border: 1px solid rgb(226 226 226 / 0.2);
+}
+
+@utility glass-sm {
+  backdrop-filter: blur(4px);
+  background-color: rgb(10 10 11 / 0.4);
+  border: 1px solid rgb(226 226 226 / 0.1);
+}
+
+@utility glass-lg {
+  backdrop-filter: blur(12px);
+  background-color: rgb(10 10 11 / 0.6);
+  border: 1px solid rgb(226 226 226 / 0.3);
+}
+
+@utility glass-petrol {
+  backdrop-filter: blur(8px);
+  background-color: rgb(15 118 110 / 0.1);
+  border: 1px solid rgb(15 118 110 / 0.3);
+}
+
+@utility glass-blue {
+  backdrop-filter: blur(8px);
+  background-color: rgb(0 82 255 / 0.1);
+  border: 1px solid rgb(0 82 255 / 0.3);
 }
 
 /* Brass gradient surface — used on dimensional CTAs / wordmark plates. */
@@ -1526,4 +1582,48 @@ html, body {
   background-color: color-mix(in srgb, #78350f 55%, #05070b);
   color: #fcd34d;
   border: 1px solid #92400e;
+}
+
+/* ── Startseite: zwei Farbmodi, ein Attribut ─────────────────────────────
+   Beide Fassungen der Referenz, umschaltbar über `data-landing-mode` auf
+   dem Seiten-Wrapper (siehe `landing-mode.ts` / `LandingModeSwitch`).
+
+     gold — gebürstetes Titan, Europa mit Goldströmen. Vorgabe, Markenbild.
+     cyan — Schwarz, Europa als Nachtaufnahme, Cyan-Akzent.
+
+   Layout, Typografie und Copy sind in beiden identisch — es ist dieselbe
+   Seite in zwei Tonungen, nicht zwei Seiten. Die Werte stehen hier an genau
+   einer Stelle; `landing-mode.ts` zeigt nur darauf.
+
+   Die Hex-Werte der Gold-Fassung spiegeln `landing-theme.ts` — das bleibt
+   die Quelle für alle Flächen, die NICHT umschalten (Roadmap, OS-Chrome).
+   Wer Gold ändert, ändert es in beiden. */
+[data-landing-mode] {
+  --rsd-accent: #d6ad68;
+  --rsd-accent-soft: #e8c98a;
+  --rsd-accent-lite: #e4cfa2;
+  --rsd-bg: #0a0a0b;
+  --rsd-panel: #121214;
+  --rsd-btn-ink: #0a0a0b;
+  --rsd-line: rgba(214, 173, 104, 0.22);
+  --rsd-glow: 0 0 32px rgba(214, 173, 104, 0.28);
+  --rsd-veil: #0a0a0b;
+  /* Deckung der Aufnahme: Gold arbeitet mit dem gefilterten Chromrelief,
+     Nacht zeigt das Foto direkter. */
+  --rsd-shot-opacity: 0.55;
+  --rsd-shot-filter: sepia(0.5) saturate(1.5) hue-rotate(-14deg) contrast(1.08);
+}
+
+[data-landing-mode='cyan'] {
+  --rsd-accent: #22c3e6;
+  --rsd-accent-soft: #7fe3f5;
+  --rsd-accent-lite: #a9ecfa;
+  --rsd-bg: #04070a;
+  --rsd-panel: #0a1016;
+  --rsd-btn-ink: #04161c;
+  --rsd-line: rgba(127, 227, 245, 0.22);
+  --rsd-glow: 0 0 32px rgba(34, 195, 230, 0.3);
+  --rsd-veil: #04070a;
+  --rsd-shot-opacity: 0.72;
+  --rsd-shot-filter: saturate(1.12) contrast(1.06) brightness(1.02);
 }

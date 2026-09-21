@@ -35,13 +35,14 @@ describe('Governance Sphere — demo contract', () => {
       'utf8',
     );
     const landing = readFileSync(resolve(__dirname, '../../src/pages/MainLanding.tsx'), 'utf8');
+    const titanHero = readFileSync(resolve(__dirname, '../../src/components/landing/HeroTitanium.tsx'), 'utf8');
     expect(host).toContain('lazy(');
     expect(host).toContain('prefers-reduced-motion');
     expect(host).toContain('GovernanceSphereFallback');
     expect(host).toContain('SPHERE_DEMO_LABEL');
     expect(host).toContain('DEMO DATA');
     expect(landing).not.toContain('GovernanceSphereHost');
-    expect(landing).toContain('EuropeNetworkHero');
+    expect(titanHero).toContain('EuropeNetworkHero');
   });
 
   it('renders photoreal Earth (day texture), not wireframe-only mesh', () => {

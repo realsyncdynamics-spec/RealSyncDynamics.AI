@@ -119,19 +119,21 @@ export function EuropeNetworkHero() {
         })}
         {NODES.map((n, i) => (
           <g key={`n-${i}`} filter="url(#eu-net-glow)">
+            {/* Kleiner, praeziser Punkt: Halo sehr schwach, Kern unter der
+                halben Entwurfsgroesse — Knoten markieren, sie leuchten nicht. */}
             <circle
               cx={n.x}
               cy={n.y}
-              r={(n.r ?? 2.2) * 1.5}
+              r={(n.r ?? 2.2) * 1.1}
               style={{ fill: MODE_ACCENT }}
-              opacity="0.08"
+              opacity="0.05"
             />
             <circle
               cx={n.x}
               cy={n.y}
-              r={(n.r ?? 2.2) * 0.72}
+              r={(n.r ?? 2.2) * 0.4}
               style={{ fill: MODE_ACCENT }}
-              opacity="0.85"
+              opacity="0.8"
             />
           </g>
         ))}

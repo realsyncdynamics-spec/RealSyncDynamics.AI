@@ -10,6 +10,7 @@ import {
   LANDING_MONO,
   LANDING_MUTED,
   LANDING_SERIF,
+  LANDING_SILVER,
   LANDING_TEXT,
 } from './landing-theme';
 
@@ -79,7 +80,7 @@ export function LandingChannelTools() {
             style={{ fontFamily: LANDING_SERIF, fontWeight: 500, color: LANDING_TEXT }}
           >
             Ihre KI-Kanäle.{' '}
-            <em className="not-italic" style={{ color: LANDING_ACCENT }}>
+            <em className="not-italic" style={{ color: LANDING_SILVER }}>
               Eine Governance-Ebene.
             </em>
           </h2>

@@ -64,6 +64,13 @@ jobs:
       # bemerkt, weil check:pricing nirgends lief.
       - name: Pricing-Kanonizitaet (SSoT, Deno-Zwilling, Plan-Katalog)
         run: npm run check:pricing
+      # Dasselbe Prinzip fuer die EINKAUFSpreise: was ein Providertoken kostet,
+      # steht in shared/model-prices.ts, und der Deno-Zwilling muss byte-gleich
+      # bleiben. Vorher lagen Providerpreise an vier Stellen gleichzeitig
+      # (ai_tools, MODEL_PRICING, zwei Schaetzfunktionen im governance-agent),
+      # drei davon mit falschen Zahlen.
+      - name: Modellpreis-Kanonizitaet (SSoT, Deno-Zwilling)
+        run: npm run check:model-prices
       - name: Kontingent-Kanonizitaet (Ratsche gegen neue Divergenzen)
         run: npm run check:limits
       # Ein oeffentlich zugesicherter Preis ist ein Angebot und darf nur dort

@@ -16,6 +16,8 @@
     "lint": "tsc --noEmit",
     "sync:pricing": "node scripts/sync-shared-pricing.mjs",
     "check:pricing": "node scripts/sync-shared-pricing.mjs --check && tsx scripts/generate-plan-catalog-sql.ts --check",
+    "sync:model-prices": "node scripts/sync-model-prices.mjs",
+    "check:model-prices": "node scripts/sync-model-prices.mjs --check",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:db": "bash -c 'export TEST_DB_URL=$(bash scripts/test-db/up.sh) && echo \"Using $TEST_DB_URL\" && vitest run test/runtime/db/ --no-file-parallelism'",

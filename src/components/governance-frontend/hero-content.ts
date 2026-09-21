@@ -18,6 +18,28 @@ export const HERO_HEADLINE: readonly (readonly HeroHeadlineSegment[])[] = [
 ];
 
 /**
+ * Production copy for the Governance-AI landing designed in Claude Design.
+ * Kept separate from the legacy Titan hero so the old surface remains a
+ * reversible fallback while `/` moves to the Governance-AI experience.
+ */
+export const GOVERNANCE_AI_HERO_KICKER = 'AI GOVERNANCE OPERATING SYSTEM' as const;
+
+export const GOVERNANCE_AI_HERO_HEADLINE: readonly (readonly HeroHeadlineSegment[])[] = [
+  [{ text: 'Das OS für' }],
+  [{ text: 'den sicheren' }],
+  [{ text: 'Einsatz von KI' }],
+  [{ text: 'im Unternehmen.', accent: true }],
+];
+
+export const GOVERNANCE_AI_HERO_TEST_SUBSTRING = 'Das OS für' as const;
+
+export const GOVERNANCE_AI_HERO_SUBLINE =
+  'EU AI Act, DSGVO, ISO 42001 und interne Richtlinien — in einer kontinuierlichen Governance-Schicht über alle KI-Systeme, Daten und Anbieter. Gebaut für Unternehmen, die europaweit tätig sind.' as const;
+
+export const GOVERNANCE_AI_HERO_MICRO =
+  'EU AI ACT · DSGVO · ISO 42001 · KONTINUIERLICHE EVIDENZ' as const;
+
+/**
  * Infrastrukturzeilen unter dem Operating Loop.
  *
  * Jede Angabe ist im Repo belegt — Supabase Frankfurt, Evidence Vault,

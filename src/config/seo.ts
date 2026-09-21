@@ -494,6 +494,16 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
       { name: 'Proliance Alternative', url: '/proliance-alternative' },
     ]),
   },
+  '/caralegal-alternative': {
+    title: 'caralegal Alternative — technische Governance-Runtime neben dem DSMS | RealSyncDynamics.AI',
+    description:
+      'caralegal ist ein DSMS für die Datenschutzorganisation. RealSyncDynamics.AI ist die technische Compliance-Runtime daneben: Detect, Govern, Enforce, Prove — Befund, Policy-Entscheidung, Nachweis.',
+    canonical: `${SITE_URL}/caralegal-alternative`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'caralegal Alternative', url: '/caralegal-alternative' },
+    ]),
+  },
 
   // ─── Tier 3 — Branchen-Landings ──────────────────────────────────────────
   '/healthtech': {
@@ -1025,11 +1035,33 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
 };
 
 /**
- * Liefert SEO-Config für einen Pfad. Normalisiert trailing slash und fällt
- * auf DEFAULT_SEO zurück, wenn keine Map-Eintrag existiert (z.B. Auth-Pages
- * oder neue Routes ohne Eintrag).
+ * Geführter Flow (`/flow`, `/flow/*`, siehe `src/flow/flowRoutes.ts`):
+ * Prozess- und Funnel-Schritte, keine Inhaltsseiten. Der Namespace ist als
+ * Ganzes `noindex` — fail-closed auch für neue Schritte und unbekannte Slugs,
+ * die `App.tsx` über `/flow/*` ins Flow-Modul leitet. Ein Einzeleintrag je
+ * Schritt würde beides nicht abdecken, weil der Lookup unten exakt ist.
+ *
+ * Wirkt im gerenderten React-Dokument (`SEOHead`), nicht serverseitig: Die
+ * Flow-Routen werden nicht vorgerendert, ein Fetcher ohne JavaScript sieht
+ * weiterhin die generische SPA-Shell.
+ */
+const FLOW_NAMESPACE = '/flow';
+
+export function isFlowPath(path: string): boolean {
+  return path === FLOW_NAMESPACE || path.startsWith(`${FLOW_NAMESPACE}/`);
+}
+
+export const FLOW_SEO: SEOConfig = { ...DEFAULT_SEO, noIndex: true };
+
+/**
+ * Liefert SEO-Config für einen Pfad. Normalisiert trailing slash, setzt den
+ * Flow-Namespace auf `noindex` und fällt sonst auf DEFAULT_SEO zurück, wenn
+ * kein Map-Eintrag existiert (z.B. Auth-Pages oder neue Routes ohne Eintrag).
+ * Die Namespace-Prüfung steht vor dem Lookup, damit kein späterer
+ * Einzeleintrag sie still aushebelt.
  */
 export function getSeoForPath(pathname: string): SEOConfig {
   const path = pathname === '/' ? '/' : pathname.replace(/\/$/, '');
+  if (isFlowPath(path)) return FLOW_SEO;
   return SEO_CONFIG[path] ?? DEFAULT_SEO;
 }

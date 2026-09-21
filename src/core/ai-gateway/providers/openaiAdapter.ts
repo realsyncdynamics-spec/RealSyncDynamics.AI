@@ -3,7 +3,9 @@ import type {
   AiGatewayResponse,
   AiProviderAdapter,
   AiProviderHealth,
+  AiStreamChunk,
 } from '../types';
+import { parseOpenAiSse } from '../streamParse';
 
 // OpenAI adapter — implements AiProviderAdapter against OpenAI's REST
 // API. Pure HTTP, no SDK dependency. Mirrors LMStudioAdapter shape so
@@ -109,6 +111,51 @@ export class OpenAIAdapter implements AiProviderAdapter {
           total_tokens:  json.usage?.total_tokens,
         },
         trace_id:   request.trace_id ?? cryptoRandomUUID(),
+        latency_ms: Date.now() - started,
+      };
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
+  async *generateStream(request: AiGatewayRequest): AsyncIterable<AiStreamChunk> {
+    const started = Date.now();
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), request.timeout_ms ?? 8_000);
+    try {
+      const body = this.buildChatBody(request);
+      body.stream = true;
+      const res = await this.fetchImpl(`${this.baseUrl}/v1/chat/completions`, {
+        method: 'POST',
+        headers: this.headers(),
+        signal: controller.signal,
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        let message = `OpenAI HTTP ${res.status}`;
+        try {
+          const json = (await res.json()) as OpenAIChatResponse;
+          if (json?.error?.message) message = json.error.message;
+        } catch {
+          /* keep */
+        }
+        throw new Error(message);
+      }
+      if (!res.body) throw new Error('OpenAI stream empty');
+      let usage: AiStreamChunk['usage'];
+      let model = this.config.model;
+      for await (const ev of parseOpenAiSse(res.body)) {
+        if (ev.model) model = ev.model;
+        if (ev.usage) usage = ev.usage;
+        if (ev.text) yield { event: 'delta', text: ev.text, provider: 'openai', model };
+      }
+      yield {
+        event: 'done',
+        provider: 'openai',
+        model,
+        profile: request.model_profile,
+        usage,
+        trace_id: request.trace_id ?? cryptoRandomUUID(),
         latency_ms: Date.now() - started,
       };
     } finally {

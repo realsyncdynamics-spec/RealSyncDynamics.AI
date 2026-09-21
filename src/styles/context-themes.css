@@ -213,7 +213,7 @@
 .risk-low { color: var(--risk-low); }
 .risk-passed { color: var(--risk-passed); }
 
-/* ═══════════════════════════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════════
    Dashboard-Palette: Slate-Dunkel (Freigabe 2026-08-23, Drei-Fragen-Regel §10)
 
    Der Eigentümer hat das Fast-Schwarz (#0A0A0B) als unarbeitbar bewertet.
@@ -226,7 +226,7 @@
    Dashboard-Fläche um, ohne eine Komponente anzufassen. Die Leiter bleibt
    monoton (950 = dunkelste Fläche), damit bestehende Kontrast-Beziehungen
    (Panel auf Hintergrund, Hover, Hairlines) erhalten bleiben.
-   ═══════════════════════════════════════════════════════════════════════════ */
+   ═══════════════════════════════════════════════════════════════ */
 .dashboard-context {
   /* Flächen: tiefes Blaugrau mit blauem Unterton — sichtbare Tiefenstaffelung */
   --color-obsidian-950: #0b1120;
@@ -254,4 +254,17 @@
   --color-titanium-700: #3e4c66;
   --color-titanium-800: #324158;
   --color-titanium-900: #263349;
+
+  /* Die Basisfarben ohne Skalenstufe (definiert in src/index.css) müssen den
+     Scope-Overrides oben folgen, sonst setzt `bg-obsidian` im Dashboard das
+     Near-Black des Landing-Themes neben die blaustichigen Panels dieses
+     Kontexts. Werte identisch mit obsidian-900 und titanium-200 hier. */
+  --color-obsidian: #0f172a;
+  --color-titanium: #d3ddeb;
+
+  /* Command Center density — consumed by command-center-density.css.
+     Landing and SiteOS stay out of this graph. */
+  --dash-title-size: 22px;
+  --dash-title-size-sm: 28px;
+  --dash-kpi-min-height: 120px;
 }

@@ -1,7 +1,5 @@
 /**
- * Sichert den **einen** kanonischen Scan-Einstieg ab.
- *
- * Governance-OS Preview-Hero: Formular `#scan` → `/audit` (optional `?domain=`).
+ * Kanonischer Scan-Einstieg — Replit Free Audit → /audit.
  */
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
@@ -9,6 +7,7 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 
 import { MainLanding } from '../../src/pages/MainLanding';
+import { HERO_DASHBOARD_CTA_LABEL } from '../../src/components/governance-frontend/hero-content';
 
 const AUDIT_PLATZHALTER = 'AUDIT-SEITE';
 
@@ -19,36 +18,38 @@ function landingRendern() {
         <Route path="/" element={<MainLanding />} />
         <Route path="/audit" element={<div>{AUDIT_PLATZHALTER}</div>} />
         <Route path="/scan" element={<div>ZWEITER-TRICHTER</div>} />
-        <Route path="/app" element={<div>APP-DASHBOARD</div>} />
-        <Route path="/welcome" element={<div>WELCOME</div>} />
+        <Route path="/evidence" element={<div>EVIDENCE</div>} />
       </Routes>
     </MemoryRouter>,
   );
 }
 
 describe('Kanonischer Scan-Einstieg', () => {
-  it('führt den Governance-Scan der Startseite nach /audit', () => {
+  it('führt den Free-Audit-CTA der Startseite nach /audit', () => {
     landingRendern();
 
-    const form = document.querySelector('#scan') as HTMLFormElement;
-    expect(form).toBeTruthy();
-    expect(form.tagName).toBe('FORM');
-    fireEvent.submit(form);
+    const cta = document.querySelector('#audit-cta') as HTMLAnchorElement;
+    expect(cta).toBeTruthy();
+    expect(cta.tagName).toBe('A');
+    fireEvent.click(cta);
     expect(screen.getByText(AUDIT_PLATZHALTER)).toBeTruthy();
   });
 
-  it('reicht eine Domain als ?domain= an /audit weiter', () => {
+  it('haelt den kanonischen Audit-Einstieg im Hero', () => {
     landingRendern();
 
-    const input = screen.getByLabelText(/Ihre Website/i);
-    fireEvent.change(input, { target: { value: 'firma.de' } });
-    fireEvent.submit(document.querySelector('#scan') as HTMLFormElement);
-    expect(screen.getByText(AUDIT_PLATZHALTER)).toBeTruthy();
-  });
+    // Der Entwurf traegt im Hero keinen langen Audit-CTA mehr, sondern den
+    // Chip „Free Audit" in der Planreihe. Der Vertrag, den dieser Test
+    // sichert, ist nicht die Wortmarke, sondern der Einstieg: genau ein
+    // markierter Audit-CTA im Hero, und er fuehrt nach /audit (das prueft
+    // der erste Test dieser Datei).
+    const heroCtas = document.querySelectorAll('[data-hero-cta="audit"]');
+    expect(heroCtas.length).toBe(1);
+    expect(heroCtas[0].getAttribute('href')).toBe('/audit');
 
-  it('zeigt den Governance-OS-CTA auf der Startseite', () => {
-    landingRendern();
-    expect(screen.getAllByText(/Explore the Governance OS/i).length).toBeGreaterThan(0);
+    // Der Evidence-Einstieg bleibt auf der Seite — er ist unter den Hero
+    // gewandert, nicht entfallen.
+    expect(screen.getAllByText(HERO_DASHBOARD_CTA_LABEL).length).toBeGreaterThan(0);
   });
 
   it('zeigt keinen Verweis mehr auf den zurückgezogenen Trichter /scan', () => {
@@ -64,6 +65,6 @@ describe('Kanonischer Scan-Einstieg', () => {
 
   it('belegt das Audit-Formular aus ?domain= vor', () => {
     const quelle = readFileSync('src/pages/AuditLanding.tsx', 'utf8');
-    expect(quelle).toMatch(/domain/);
+    expect(quelle).toContain("get('domain')");
   });
 });

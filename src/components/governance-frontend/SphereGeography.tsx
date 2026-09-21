@@ -6,8 +6,11 @@ import { sphereNodePosition } from './governance-sphere-nodes';
 import { capitalsVisibleAtZoom, WORLD_CAPITALS, type WorldCapital } from './geo/capitals';
 import { CONTINENT_LABEL_MAX_ZOOM, CONTINENT_LABELS } from './geo/continents';
 
+import { LANDING_SILVER } from '../landing/landing-theme';
+
 const BORDERS_URL = '/textures/earth-borders-110m.json';
-const CAPITAL_COLOR = '#f3d9a0';
+/** Hauptstädte: Titan-Silber, klein — Orientierung, keine Dekoration. */
+const CAPITAL_COLOR = LANDING_SILVER;
 
 type BordersPayload = {
   v: number;
@@ -51,8 +54,11 @@ function useCountryBorderTexture(enabled: boolean) {
         if (!ctx) return;
 
         ctx.clearRect(0, 0, width, height);
-        ctx.strokeStyle = 'rgba(230, 245, 255, 0.98)';
-        ctx.lineWidth = 1.35;
+        // Stahl/Silber, sichtbar aber den Governance-Daten untergeordnet
+        // (Spezifikation: rgba(148, 163, 184, 0.25) in der Fläche; die
+        // Material-Deckung darunter skaliert es weiter herunter).
+        ctx.strokeStyle = 'rgba(148, 163, 184, 0.85)';
+        ctx.lineWidth = 1.1;
         ctx.lineJoin = 'round';
         ctx.lineCap = 'round';
 
@@ -114,10 +120,10 @@ function CountryBorders({
   useFrame(() => {
     if (!matRef.current) return;
     const z = zoomRef.current.zoom;
-    const base = isMobile ? 0.35 : 0.5;
-    const boost = THREE.MathUtils.smoothstep(z, 0.95, 1.45) * (isMobile ? 0.2 : 0.3);
-    const hover = hoverBoostRef?.current ? (isMobile ? 0.12 : 0.22) : 0;
-    matRef.current.opacity = reducedMotion ? 0.2 : Math.min(0.95, base + boost + hover);
+    const base = isMobile ? 0.22 : 0.3;
+    const boost = THREE.MathUtils.smoothstep(z, 0.95, 1.45) * (isMobile ? 0.14 : 0.22);
+    const hover = hoverBoostRef?.current ? (isMobile ? 0.08 : 0.16) : 0;
+    matRef.current.opacity = reducedMotion ? 0.16 : Math.min(0.7, base + boost + hover);
   });
 
   if (!texture) return null;
@@ -129,7 +135,7 @@ function CountryBorders({
         ref={matRef}
         map={texture}
         transparent
-        opacity={0.55}
+        opacity={0.3}
         depthWrite={false}
         toneMapped={false}
       />
@@ -253,10 +259,10 @@ function CapitalMarker({
           position={[0, 0.08, 0]}
         >
           <div
-            className="rounded-md border border-[#e8c98a]/35 bg-black/75 px-2 py-1 shadow-[0_8px_24px_rgba(0,0,0,0.45)] backdrop-blur-md"
+            className="rounded-md border border-[var(--rs-border-primary)] bg-[rgba(8,11,15,0.82)] px-2 py-1 shadow-[0_8px_24px_rgba(0,0,0,0.45)] backdrop-blur-md"
             data-capital-label={capital.iso2}
           >
-            <p className="whitespace-nowrap font-mono text-[10px] tracking-[0.12em] text-[#f3d9a0]">
+            <p className="whitespace-nowrap font-mono text-[10px] tracking-[0.12em] text-[var(--rs-text-primary)]">
               {capital.name}
             </p>
             <p className="mt-0.5 font-mono text-[8px] tracking-[0.14em] text-white/40">

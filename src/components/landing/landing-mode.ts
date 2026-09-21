@@ -1,97 +1,39 @@
 /**
- * Die Startseite in zwei Farbmodi.
+ * Farbtoken der Startseite als CSS-Variablen.
  *
- * ## Was umschaltbar ist — und was nicht
+ * ## Ein System, kein Schalter
  *
- * Umgeschaltet wird die Tonung von Kopf und Bühne: Akzent, Grund, Linie,
- * Pill-Fläche, Tonung der Aufnahme. Layout, Typografie, Copy und jede Zahl
- * bleiben identisch. Es ist dieselbe Seite in zwei Farben, nicht zwei
- * Seiten — der Besucher soll eine Vorliebe ausdrücken können, nicht ein
- * anderes Produkt sehen.
- *
- * Die Abschnitte unterhalb des Hero folgen weiterhin `landing-theme.ts`
- * (Gold). Das ist bewusst: die Referenz zeigt beide Fassungen nur für den
- * ersten Bildschirm, und ein Umbau aller Flächen würde den Design-Freeze
- * (`CLAUDE.md`) ohne Not aufreissen.
+ * Bis 2026-09-20 ließ sich die Startseite zwischen Gold und Cyan
+ * umschalten. Das Enterprise Visual System kennt nur eine Palette:
+ * Titan/Graphit als Grund, Governance-Cyan als Funktionsakzent. Der
+ * Schalter ist entfallen; die Konstanten hier bleiben, weil Hero, Kopf und
+ * Netzgrafik sie lesen — sie zeigen jetzt auf die `--rsd-*`-Variablen, die
+ * `src/index.css` auf dem Seiten-Wrapper aus den `--rs-*`-Token ableitet.
  *
  * ## Warum Variablen und keine Hex-Werte
  *
- * `landing-theme.ts` bleibt unverändert die Quelle der Gold-Fassung und
- * wird von Flächen gelesen, die NICHT umschalten. Die Konstanten hier
- * zeigen stattdessen auf die CSS-Variablen aus `src/index.css`
- * (`[data-landing-mode]`), mit der Gold-Fassung als Rückfall — so bleibt
- * eine Fläche auch dann richtig getont, wenn das Attribut fehlt.
+ * `landing-theme.ts` spiegelt dieselben Werte fest für Abnehmer, die keine
+ * Variable lesen können (three.js, SVG-Attribute, Hex-plus-Deckung). Hero
+ * und Kopf brauchen das nicht und lesen die Variable; der Rückfall im
+ * `var()` ist der Spiegelwert, damit die Fläche auch ohne Wrapper-Klasse
+ * richtig getont bleibt.
  */
-import { useCallback, useEffect, useState } from 'react';
 
-export type LandingMode = 'gold' | 'cyan';
-
-export const LANDING_MODES: readonly LandingMode[] = ['gold', 'cyan'] as const;
-
-export const LANDING_MODE_LABEL: Record<LandingMode, string> = {
-  gold: 'Gold',
-  cyan: 'Cyan',
-};
-
-const STORAGE_KEY = 'rsd-landing-mode';
-
-/**
- * Gold ist die Vorgabe, nicht die Systemeinstellung.
- *
- * Beide Fassungen sind dunkel; `prefers-color-scheme` sagt hier nichts
- * Brauchbares aus. Ein neuer Besucher sieht deshalb immer Gold — das ist
- * das Markenbild. Erst eine bewusste Entscheidung am Schalter weicht davon
- * ab, und die gilt dann dauerhaft.
- */
-const DEFAULT_MODE: LandingMode = 'gold';
-
-function readStored(): LandingMode {
-  try {
-    const value = window.localStorage.getItem(STORAGE_KEY);
-    return value === 'cyan' || value === 'gold' ? value : DEFAULT_MODE;
-  } catch {
-    // Privates Fenster, gesperrte Site-Daten: dann eben ohne Gedächtnis.
-    return DEFAULT_MODE;
-  }
-}
-
-export function useLandingMode(): { mode: LandingMode; setMode: (next: LandingMode) => void } {
-  // Serverseitig (Prerender) und im ersten Frame gilt die Vorgabe; die
-  // gespeicherte Wahl wird erst nach dem Mount nachgezogen. Sonst laufen
-  // Prerender-Markup und Client auseinander.
-  const [mode, setModeState] = useState<LandingMode>(DEFAULT_MODE);
-
-  useEffect(() => {
-    const stored = readStored();
-    if (stored !== DEFAULT_MODE) setModeState(stored);
-  }, []);
-
-  const setMode = useCallback((next: LandingMode) => {
-    setModeState(next);
-    try {
-      window.localStorage.setItem(STORAGE_KEY, next);
-    } catch {
-      /* Die Wahl gilt für diese Sitzung, wird aber nicht gemerkt. */
-    }
-  }, []);
-
-  return { mode, setMode };
-}
-
-// ── Token: zeigen auf `[data-landing-mode]` in `src/index.css` ──────────
-
-export const MODE_ACCENT = 'var(--rsd-accent, #d6ad68)';
-export const MODE_ACCENT_SOFT = 'var(--rsd-accent-soft, #e8c98a)';
-export const MODE_ACCENT_LITE = 'var(--rsd-accent-lite, #e4cfa2)';
-export const MODE_BG = 'var(--rsd-bg, #0a0a0b)';
-export const MODE_PANEL = 'var(--rsd-panel, #121214)';
-export const MODE_BUTTON_INK = 'var(--rsd-btn-ink, #0a0a0b)';
-export const MODE_LINE = 'var(--rsd-line, rgba(214, 173, 104, 0.22))';
-export const MODE_GLOW = 'var(--rsd-glow, 0 0 32px rgba(214, 173, 104, 0.28))';
-export const MODE_VEIL = 'var(--rsd-veil, #0a0a0b)';
-export const MODE_SHOT_OPACITY = 'var(--rsd-shot-opacity, 0.55)';
+export const MODE_ACCENT = 'var(--rsd-accent, #22D3EE)';
+export const MODE_ACCENT_SOFT = 'var(--rsd-accent-soft, #67E8F9)';
+export const MODE_ACCENT_LITE = 'var(--rsd-accent-lite, #CBD5DC)';
+/** Titan-Silber — Linien, Netzkanten, Sekundärkonturen. */
+export const MODE_STEEL = 'var(--rsd-steel, #CBD5DC)';
+export const MODE_BG = 'var(--rsd-bg, #080B0F)';
+export const MODE_PANEL = 'var(--rsd-panel, #121922)';
+export const MODE_BUTTON_INK = 'var(--rsd-btn-ink, #080B0F)';
+export const MODE_LINE = 'var(--rsd-line, rgba(148, 163, 184, 0.16))';
+export const MODE_GLOW =
+  'var(--rsd-glow, 0 0 0 1px rgba(34, 211, 238, 0.28), 0 8px 24px rgba(0, 0, 0, 0.35))';
+export const MODE_VEIL = 'var(--rsd-veil, #080B0F)';
+export const MODE_SHOT_OPACITY = 'var(--rsd-shot-opacity, 0.62)';
 export const MODE_SHOT_FILTER =
-  'var(--rsd-shot-filter, sepia(0.5) saturate(1.5) hue-rotate(-14deg) contrast(1.08))';
+  'var(--rsd-shot-filter, grayscale(0.4) saturate(0.6) brightness(0.7) contrast(1.12))';
 
 /**
  * Akzent mit Deckung.
@@ -109,6 +51,11 @@ export function modeAccent(percent: number): string {
 /** Dasselbe für den hellen Akzent. */
 export function modeAccentSoft(percent: number): string {
   return `color-mix(in srgb, ${MODE_ACCENT_SOFT} ${percent}%, transparent)`;
+}
+
+/** Stahl mit Deckung — für Kanten, die nicht leuchten sollen. */
+export function modeSteel(percent: number): string {
+  return `color-mix(in srgb, ${MODE_STEEL} ${percent}%, transparent)`;
 }
 
 /** Deckender Schleier über der Aufnahme — hält die linke Spalte lesbar. */

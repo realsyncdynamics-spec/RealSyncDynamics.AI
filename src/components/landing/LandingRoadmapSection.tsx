@@ -93,7 +93,7 @@ function RoadmapCard({ item }: { item: ImplementationItem }) {
     return (
       <Link
         to={item.route}
-        className="ga-card block border p-5 transition hover:bg-[#d0c3a4]/05"
+        className="ga-card block border p-5 transition hover:bg-[var(--rs-titanium-silver)]/5"
         style={{ borderColor: GA_LINE_SOFT, backgroundColor: 'rgba(7,9,13,0.55)' }}
       >
         {body}
@@ -119,7 +119,7 @@ export function LandingRoadmapSection() {
   return (
     <section
       id="roadmap"
-      className="ga-band-alt relative z-[1] border-t border-[#d0c3a4]/10 py-[72px] lg:py-[80px]"
+      className="ga-band-alt relative z-[1] border-t border-[var(--rs-border-subtle)] py-[72px] lg:py-[80px]"
     >
       <div className="mx-auto max-w-[1500px] px-[4vw]">
         <p
@@ -164,7 +164,7 @@ export function LandingRoadmapSection() {
                   </h3>
                   <span
                     className="text-[9px] tracking-[.14em]"
-                    style={{ fontFamily: GA_MONO, color: 'rgba(154,154,161,0.7)' }}
+                    style={{ fontFamily: GA_MONO, color: 'var(--rs-text-muted)' }}
                   >
                     {group.eyebrow}
                   </span>

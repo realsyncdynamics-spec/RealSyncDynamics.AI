@@ -98,7 +98,7 @@ export function LandingChannelTools() {
                 key={title}
                 className="flex min-h-[280px] flex-col border border-white/12 p-[22px]"
                 style={{
-                  background: 'linear-gradient(135deg, rgba(20,21,25,0.7), rgba(7,9,13,0.72))',
+                  background: 'linear-gradient(135deg, rgba(24,33,43,0.7), rgba(13,18,24,0.72))',
                 }}
               >
                 <div className="flex items-start justify-between gap-4">
@@ -154,7 +154,7 @@ export function LandingChannelTools() {
                 </div>
                 <Link
                   to={live ? href : '/warteliste'}
-                  className="inline-flex w-full items-center justify-center gap-2 border px-5 py-3.5 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e4cfa2]/50"
+                  className="inline-flex w-full items-center justify-center gap-2 border px-5 py-3.5 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--rs-cyan-primary)]/50"
                   style={
                     live
                       ? {

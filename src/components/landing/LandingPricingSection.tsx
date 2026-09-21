@@ -64,8 +64,8 @@ export function LandingPricingSection() {
                 style={{
                   borderColor: featured ? `${LANDING_ACCENT}73` : 'rgba(255,255,255,0.12)',
                   background: featured
-                    ? 'linear-gradient(135deg, rgba(228,207,162,0.08), rgba(7,9,13,0.72))'
-                    : 'linear-gradient(135deg, rgba(20,21,25,0.7), rgba(7,9,13,0.72))',
+                    ? 'linear-gradient(135deg, rgba(34,211,238,0.06), rgba(13,18,24,0.72))'
+                    : 'linear-gradient(135deg, rgba(24,33,43,0.7), rgba(13,18,24,0.72))',
                 }}
               >
                 <div className="flex items-start justify-between gap-3">
@@ -108,7 +108,7 @@ export function LandingPricingSection() {
                     <li
                       key={b}
                       className="flex items-start gap-2 text-[11px] leading-relaxed"
-                      style={{ color: '#898a91' }}
+                      style={{ color: LANDING_MUTED }}
                     >
                       <span style={{ color: LANDING_ACCENT }}>+</span>
                       <span>{b}</span>

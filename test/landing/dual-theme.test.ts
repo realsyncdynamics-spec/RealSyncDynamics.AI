@@ -57,12 +57,10 @@ describe('Landing — Europe-network', () => {
     ).not.toMatch(v1Gold);
     expect(titanHero).toContain("from './landing-theme'");
 
-    // Der Akzent kommt seit dem Farbmodus-Schalter aus `landing-mode.ts`.
-    // Das ist dieselbe Quelle, nur eine Ebene tiefer: die Modus-Token zeigen
-    // auf CSS-Variablen, deren Rueckfall genau die Goldwerte aus
-    // `landing-theme.ts` sind. Der Zweck dieses Tests — kein Farbwert direkt
-    // im Hero — bleibt damit erfuellt; geprueft wird er oben vom
-    // `v1Gold`-Muster, das die eigentliche Arbeit macht.
+    // Der Akzent kommt aus `landing-mode.ts`: CSS-Variablen (`--rsd-*`),
+    // die `src/index.css` aus den `--rs-*`-Token ableitet; der Rueckfall im
+    // `var()` ist der Spiegelwert aus `landing-theme.ts`. Der Zweck dieses
+    // Tests — kein Farbwert direkt im Hero — bleibt damit erfuellt.
     expect(titanHero, 'Der Hero bezieht den Akzent aus keiner Token-Datei').toContain(
       "from './landing-mode'",
     );
@@ -79,7 +77,12 @@ describe('Landing — Europe-network', () => {
   });
 
   it('die Token-Datei bleibt die einzige Quelle der Landing-Typografie', () => {
-    expect(theme).toContain('Playfair Display');
+    // Enterprise Visual System: eine Familie (Geist), Hierarchie statt
+    // Schriftwechsel. Kein Serif mehr auf der Landing.
+    expect(theme).toContain("'Geist'");
+    expect(theme).not.toMatch(/Playfair|Georgia/);
+    expect(titanHero).toContain('LANDING_DISPLAY');
+    expect(titanHero).not.toContain('LANDING_SERIF');
     expect(theme).toContain('LANDING_ACCENT');
     expect(theme).toContain('LANDING_CTA_GLOW');
   });
@@ -90,9 +93,9 @@ describe('Landing — Europe-network', () => {
     expect(titanHero).toContain('EuropeNetworkHero');
     expect(landing).toContain('HeroTitanium');
     expect(landing).not.toContain('GovernanceSphereHost');
-    // Der Farbmodus laeuft ueber `useLandingMode` (Gold/Cyan, nur Tonung).
     // `useGaTheme` ist die alte OS-Variante mit eigener Typografie und
-    // eigenem Layout — die gehoert nicht auf die Startseite.
+    // eigenem Layout — die gehoert nicht auf die Startseite. Der fruehere
+    // Gold/Cyan-Schalter ist mit dem Enterprise Visual System entfallen.
     expect(landing).not.toContain('useGaTheme');
     expect(titanHero).not.toContain('EuropeReliefBackdrop');
     expect(network).toContain('europe-network-static');

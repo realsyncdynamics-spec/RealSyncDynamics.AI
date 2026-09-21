@@ -6,10 +6,12 @@
  * Die Startseite tritt in zwei Ausprägungen auf, zwischen denen der Besucher
  * umschaltet (`data-ga-theme` auf dem Seiten-Wrapper, siehe `ThemeSwitch`):
  *
- *   titan  — gebürstetes Titan, Europa als Chromrelief mit Goldströmen,
- *            Inter Tight als Display-Schnitt. Standard beim ersten Aufruf.
+ *   titan  — seit 2026-09-21 das Enterprise Visual System: Titan/Graphit
+ *            als Grund, Governance-Cyan als Funktionsakzent, Geist als
+ *            Display-Schnitt. Abgeleitet aus den `--rs-*`-Token. Standard
+ *            beim ersten Aufruf und auf `.landing-context` ohne Attribut.
  *   night  — Schwarz, Europa als fotografische Nachtaufnahme, Cyan-Akzent,
- *            Playfair Display als Display-Schnitt.
+ *            Playfair Display als Display-Schnitt (nur `/design/…`).
  *
  * ## Warum hier keine Hex-Werte mehr stehen
  *

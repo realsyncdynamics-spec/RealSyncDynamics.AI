@@ -9,19 +9,29 @@ import {
   HERO_PLAN_ANCHOR_FREE,
 } from '../governance-frontend/hero-content';
 import {
+  LANDING_BODY,
+  LANDING_DISPLAY,
+  LANDING_EYEBROW,
+  LANDING_EYEBROW_TRACKING,
+  LANDING_H1,
+  LANDING_H1_LEADING,
+  LANDING_H1_TRACKING,
+  LANDING_H1_WEIGHT,
   LANDING_MONO,
   LANDING_MUTED,
   LANDING_SANS,
-  LANDING_SERIF,
   LANDING_TEXT,
 } from './landing-theme';
-import { MODE_ACCENT, MODE_BUTTON_INK, MODE_GLOW, modeAccent } from './landing-mode';
+import { MODE_ACCENT, MODE_BUTTON_INK, MODE_GLOW, MODE_PANEL, modeAccent, modeSteel } from './landing-mode';
 
 /**
- * Hero der Startseite — Umsetzung des Titan-Entwurfs.
+ * Hero der Startseite — Enterprise Visual System.
  *
- * Reihenfolge wie im Entwurf: H1 (Serif, Akzent auf dem Europa-Teil) →
- * Operating Loop (Mono, Gold) → zwei Infrastrukturzeilen → Plan-Anker.
+ * Reihenfolge: H1 (Geist 600, Cyan nur auf dem Europa-Teil) → Operating
+ * Loop (Systemlabel, Cyan) → zwei Infrastrukturzeilen → Plan-Anker. Genau
+ * eine Fläche trägt Cyan als Füllung: der Primär-CTA. Alles andere ist
+ * Titan, Stahl und Silber; der hervorgehobene Plan bekommt eine Cyan-Kontur,
+ * kein Leuchten.
  *
  * Preise stammen aus `config/pricing` (`tierById`), nie aus dieser Datei:
  * Der Entwurf zeigt 79/249/699, die SSoT liefert dieselben Werte, und bei
@@ -99,11 +109,12 @@ export function HeroTitanium() {
       <div className="relative z-10 mx-auto flex min-h-[min(100svh,880px)] max-w-[1280px] flex-col justify-center px-[4vw] pb-16 pt-28 sm:pb-20 sm:pt-32">
         <div className="max-w-[46rem]">
           <h1
-            className="leading-[0.94] tracking-[-0.02em]"
             style={{
-              fontFamily: LANDING_SERIF,
-              fontWeight: 400,
-              fontSize: 'clamp(2.75rem, 1.1rem + 5.6vw, 5.5rem)',
+              fontFamily: LANDING_DISPLAY,
+              fontWeight: LANDING_H1_WEIGHT,
+              fontSize: LANDING_H1,
+              lineHeight: LANDING_H1_LEADING,
+              letterSpacing: LANDING_H1_TRACKING,
             }}
           >
             {HERO_HEADLINE.map((segments, line) => (
@@ -122,15 +133,20 @@ export function HeroTitanium() {
           </h1>
 
           <p
-            className="mt-7 text-[clamp(0.75rem,0.68rem+0.3vw,0.9rem)] font-medium uppercase tracking-[0.2em]"
-            style={{ fontFamily: LANDING_MONO, color: MODE_ACCENT }}
+            className="mt-7 font-semibold uppercase"
+            style={{
+              fontFamily: LANDING_MONO,
+              fontSize: LANDING_EYEBROW,
+              letterSpacing: LANDING_EYEBROW_TRACKING,
+              color: MODE_ACCENT,
+            }}
           >
             {HERO_OPERATING_LOOP}
           </p>
 
           <div
-            className="mt-7 space-y-1.5 text-[clamp(0.95rem,0.9rem+0.3vw,1.15rem)]"
-            style={{ fontFamily: LANDING_SANS, color: LANDING_MUTED }}
+            className="mt-7 space-y-1.5 leading-[1.55]"
+            style={{ fontFamily: LANDING_SANS, fontSize: LANDING_BODY, color: LANDING_MUTED }}
           >
             {HERO_INFRA_LINES.map((line) => (
               <p key={line.join('·')}>{line.join(' · ')}</p>
@@ -143,8 +159,9 @@ export function HeroTitanium() {
                 id="audit-cta"
                 data-hero-cta="audit"
                 to="/audit"
-                className="flex h-full min-w-[9.5rem] items-center justify-center rounded-xl px-6 py-5 text-[0.95rem] font-semibold transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--landing-ring)]"
+                className="flex h-full min-w-[9.5rem] items-center justify-center rounded-xl px-6 py-5 text-[0.95rem] font-semibold transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--rsd-bg)] focus-visible:ring-[var(--landing-ring)]"
                 style={{
+                  fontFamily: LANDING_SANS,
                   backgroundColor: MODE_ACCENT,
                   color: MODE_BUTTON_INK,
                   boxShadow: MODE_GLOW,
@@ -159,15 +176,11 @@ export function HeroTitanium() {
                 <Link
                   to={chip.to}
                   data-plan-anchor={chip.key}
-                  className="flex h-full min-w-[7.25rem] flex-col items-center justify-center rounded-xl border px-5 py-3.5 text-center transition hover:bg-white/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--landing-ring-soft)]"
+                  className="flex h-full min-w-[7.25rem] flex-col items-center justify-center rounded-xl border px-5 py-3.5 text-center transition hover:border-[var(--rsd-steel)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--landing-ring-soft)]"
                   style={{
-                    backgroundColor: 'rgba(255,255,255,0.04)',
-                    borderColor: chip.featured
-                      ? MODE_ACCENT
-                      : 'rgba(255,255,255,0.12)',
-                    boxShadow: chip.featured
-                      ? MODE_GLOW
-                      : undefined,
+                    fontFamily: LANDING_SANS,
+                    backgroundColor: `color-mix(in srgb, ${MODE_PANEL} 55%, transparent)`,
+                    borderColor: chip.featured ? MODE_ACCENT : modeSteel(28),
                   }}
                 >
                   <span

@@ -5,8 +5,7 @@ import { LandingChannelTools } from '../components/landing/LandingChannelTools';
 import { LandingPricingSection } from '../components/landing/LandingPricingSection';
 import { PublicDarkHeader } from '../components/landing/PublicDarkHeader';
 import { HeroTitanium } from '../components/landing/HeroTitanium';
-import { LandingModeSwitch } from '../components/landing/LandingModeSwitch';
-import { MODE_BG, useLandingMode } from '../components/landing/landing-mode';
+import { MODE_BG } from '../components/landing/landing-mode';
 import { RuntimePreviewPanel } from '../components/landing/RuntimePreviewPanel';
 import { LandingDarkBand } from '../components/landing/LandingDarkBand';
 import { GovernanceRuntimeSection } from '../components/landing/GovernanceRuntimeSection';
@@ -22,6 +21,7 @@ import {
   LANDING_BUTTON_TEXT,
   LANDING_MONO,
   LANDING_MUTED,
+  LANDING_MUTED_DEEP,
   LANDING_SANS,
   LANDING_TEXT,
 } from '../components/landing/landing-theme';
@@ -37,12 +37,9 @@ import {
 
 export function MainLanding() {
   const revealRoot = useStagedReveal<HTMLElement>();
-  const { mode, setMode } = useLandingMode();
-
   return (
     <div
       className="landing-context relative min-h-screen antialiased"
-      data-landing-mode={mode}
       style={{
         backgroundColor: MODE_BG,
         color: LANDING_TEXT,
@@ -57,7 +54,7 @@ export function MainLanding() {
         ogDescription="RealSyncDynamics.AI — Governance-Infrastruktur für Europa. Free Audit starten."
       />
 
-      <PublicDarkHeader overlay modeSwitch={<LandingModeSwitch mode={mode} onChange={setMode} />} />
+      <PublicDarkHeader overlay />
 
       <main ref={revealRoot} className="relative z-10">
         <HeroTitanium />
@@ -176,7 +173,7 @@ export function MainLanding() {
             >
               Governance statt Checkliste.
             </h2>
-            <p className="mx-auto mt-5 max-w-xl text-[15px] leading-relaxed" style={{ color: '#c8c4bc' }}>
+            <p className="mx-auto mt-5 max-w-xl text-[15px] leading-relaxed" style={{ color: LANDING_MUTED }}>
               Eine Checkliste beruhigt bis zum nächsten Audit. Die Runtime hält den Nachweis, wenn
               Aufsicht, Kunde oder Board fragt.
             </p>
@@ -202,17 +199,17 @@ export function MainLanding() {
 
       <footer
         className="relative z-10 flex flex-col items-center justify-between gap-4 border-t border-white/[0.07] px-[4vw] py-[28px] text-[9px] sm:flex-row"
-        style={{ fontFamily: LANDING_MONO, color: '#62666e' }}
+        style={{ fontFamily: LANDING_MONO, color: LANDING_MUTED_DEEP }}
       >
         <span>© 2026 RealSync Dynamics.AI</span>
         <div className="flex gap-5">
-          <Link to="/impressum" className="hover:text-[#f2eee6]">
+          <Link to="/impressum" className="hover:text-[var(--rs-text-primary)]">
             Impressum
           </Link>
-          <Link to="/datenschutz" className="hover:text-[#f2eee6]">
+          <Link to="/datenschutz" className="hover:text-[var(--rs-text-primary)]">
             Datenschutz
           </Link>
-          <Link to="/agb" className="hover:text-[#f2eee6]">
+          <Link to="/agb" className="hover:text-[var(--rs-text-primary)]">
             AGB
           </Link>
         </div>

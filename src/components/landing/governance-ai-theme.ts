@@ -1,24 +1,28 @@
 /**
- * Governance-AI-Landing — Design-Tokens.
+ * Governance-AI-Landing — Design-Tokens („Hollywood Enterprise VIP").
  *
- * ## Zwei Varianten, ein Attribut
+ * ## Eine Palette
  *
- * Die Startseite tritt in zwei Ausprägungen auf, zwischen denen der Besucher
- * umschaltet (`data-ga-theme` auf dem Seiten-Wrapper, siehe `ThemeSwitch`):
+ * True Black als Fläche, Cyan `#22c3e6` als Aktionsfarbe (Pills, Eyebrows,
+ * Loop), City-Light-Gold `#f2c98a` als VIP-Sekundärakzent für die
+ * Enterprise-Stufe und den Agency-Tarif, Ice White für Headlines. Playfair
+ * Display trägt die Display-Schnitte, Inter den Fließtext, JetBrains Mono die
+ * Daten. Der Hausstandard steht in `CLAUDE.md`.
  *
- *   titan  — gebürstetes Titan, Europa als Chromrelief mit Goldströmen,
- *            Inter Tight als Display-Schnitt. Standard beim ersten Aufruf.
- *   night  — Schwarz, Europa als fotografische Nachtaufnahme, Cyan-Akzent,
- *            Playfair Display als Display-Schnitt.
+ * Eine frühere Fassung bot zwei umschaltbare Varianten („titan"/„night") an.
+ * Der Schalter ist entfallen — es gibt nur noch diesen einen Standard.
  *
- * ## Warum hier keine Hex-Werte mehr stehen
+ * ## Warum hier keine Hex-Werte stehen
  *
- * Die Konstanten zeigen auf CSS-Variablen statt auf feste Farben. Dadurch
- * schaltet ein einziges Attribut die ganze Seite um — die Komponenten
- * behalten ihre bestehenden `style`-Angaben und werden trotzdem
- * themefähig. Die tatsächlichen Werte beider Paletten stehen gebündelt in
- * `src/index.css` unter `[data-ga-theme]`; wer eine Farbe ändern will,
- * ändert sie dort an genau einer Stelle für beide Varianten.
+ * Die Konstanten zeigen auf CSS-Variablen statt auf feste Farben. Die
+ * tatsächlichen Werte stehen gebündelt in `src/index.css` unter
+ * `.ga-context`; wer eine Farbe ändern will, ändert sie dort an genau einer
+ * Stelle. `.ga-vip` hängt sich darüber und tauscht den Akzent auf Gold, ohne
+ * dass die Komponenten davon wissen müssen.
+ *
+ * Die Tokens hängen bewusst **nicht** an `.landing-context`: Live `/` steht
+ * unter Design-Lock (Gold/Cream, `landing-theme.ts`) und darf sich hier nicht
+ * mitverändern.
  *
  * Keine Preise, keine Copy, keine Limits — alles inhaltliche kommt aus den
  * SSoT-Dateien (`hero-content.ts`, `pricing.ts`, `implementation-status.ts`,
@@ -28,7 +32,7 @@
 /** Schriftfamilien — Basis-Stack aus `landing-theme.ts` weiterverwendet. */
 export { LANDING_SANS as GA_SANS, LANDING_MONO as GA_MONO } from './landing-theme';
 
-/** Display-Schnitt: Inter Tight, self-hosted (siehe `src/index.css`). */
+/** Display-Schnitt: Playfair Display, self-hosted (siehe `src/index.css`). */
 export const GA_DISPLAY = 'var(--ga-display)';
 
 // ── Flächen ─────────────────────────────────────────────────────────────
@@ -43,10 +47,22 @@ export const GA_MUTED = 'var(--ga-muted)';
 export const GA_TITAN = 'var(--ga-titan)';
 export const GA_SILVER = 'var(--ga-silver)';
 
-// ── Akzent: Champagner-Gold ─────────────────────────────────────────────
+// ── Akzent: Cyan (Aktion) ───────────────────────────────────────────────
+// Die Namen bleiben `GA_GOLD*`, damit die bestehenden Sektionen unverändert
+// weiterlaufen; sie bezeichnen die Akzentrolle, nicht mehr den Farbton. Unter
+// `.ga-vip` liefern dieselben Variablen Gold statt Cyan.
 export const GA_GOLD = 'var(--ga-accent)';
 export const GA_GOLD_LITE = 'var(--ga-accent-lite)';
 export const GA_GOLD_DEEP = 'var(--ga-accent-deep)';
+
+// ── VIP-Stufe: City-Light-Gold ──────────────────────────────────────────
+/** Nur Enterprise-Sektion und Agency-Tarif — nie als Aktionsfarbe. */
+export const GA_VIP = 'var(--ga-vip)';
+export const GA_VIP_LITE = 'var(--ga-vip-lite)';
+export const GA_VIP_DEEP = 'var(--ga-vip-deep)';
+
+/** Black-Glass-Fläche der Karten, Kacheln und Tafeln. */
+export const GA_GLASS = 'var(--ga-glass)';
 
 /** Status-Grün — ausschließlich für Betriebssignale, nie als Akzentfarbe. */
 export const GA_GREEN = 'var(--ga-green)';

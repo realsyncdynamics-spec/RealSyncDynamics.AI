@@ -34,7 +34,7 @@ Default für Landing-/Marketing-Arbeit. **Nur diese Pfade lesen/schreiben:**
 
 **Nicht anfassen und nicht globben:** `supabase/`, `platform/`, `services/`, `apps/`, `docs/` (außer explizit genannt), Root-`*.sql.bak`, `.archive/` (dort liegen u. a. die alten Root-Status-/Phase-Dokumente unter `root-docs/` — nur gezielt greppen, nie einlesen).
 
-Public Marketing = dunkel, Cyan handelt, Gold nur VIP (`landing-theme.ts`, Design-Lock v2), siehe `AGENTS.md`. App/Dashboard bleibt dunkel. Design-Freeze: bestehende Tokens/Komponenten nicht umstylen ohne Freigabe.
+Public Marketing = dunkel, Cyan trägt die Handlung; Token zentral in `src/index.css` (`.ga-context`), siehe `AGENTS.md`. App/Dashboard bleibt dunkel. Design-Freeze: bestehende Tokens/Komponenten nicht umstylen ohne Freigabe.
 
 ## Harte Verbote
 

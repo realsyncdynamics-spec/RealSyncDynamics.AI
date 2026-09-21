@@ -5,6 +5,10 @@ import {
   LANDING_ACCENT,
   LANDING_BUTTON,
   LANDING_BUTTON_TEXT,
+  LANDING_DISPLAY,
+  LANDING_H2,
+  LANDING_H2_TRACKING,
+  LANDING_H2_WEIGHT,
   LANDING_LINE,
   LANDING_MONO,
   LANDING_MUTED,
@@ -41,8 +45,14 @@ export function LandingPricingSection() {
           PREISE
         </p>
         <h2
-          className="mt-[22px] text-[clamp(40px,5vw,65px)] leading-none tracking-[-.035em]"
-          style={{ fontFamily: LANDING_SERIF, fontWeight: 500, color: LANDING_TEXT }}
+          className="mt-[22px] leading-[1.05]"
+          style={{
+            fontFamily: LANDING_DISPLAY,
+            fontWeight: LANDING_H2_WEIGHT,
+            fontSize: LANDING_H2,
+            letterSpacing: LANDING_H2_TRACKING,
+            color: LANDING_TEXT,
+          }}
         >
           Pläne für die{' '}
           <em className="not-italic" style={{ color: LANDING_ACCENT }}>

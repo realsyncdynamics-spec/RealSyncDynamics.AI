@@ -113,8 +113,14 @@ export function selectModel(
   return complexity < 40 ? 'haiku' : 'sonnet';
 }
 
+// Anthropic model ids are complete as published — a date suffix is part of a
+// specific snapshot id, not something to append. `claude-sonnet-4-6-20250514`
+// stood here until 2026-09-21 and does not exist: it pairs Sonnet 4.6 with the
+// release date of Sonnet 4, a different generation. Every request the agent
+// routed to the sonnet tier carried it (index.ts:427 -> messages.create), so
+// the id has to stay the documented one.
 export function getModelId(tier: ModelTier): string {
-  return tier === 'haiku' ? 'claude-haiku-4-5-20251001' : 'claude-sonnet-4-6-20250514';
+  return tier === 'haiku' ? 'claude-haiku-4-5' : 'claude-sonnet-4-6';
 }
 
 export const MODEL_PRICING = {

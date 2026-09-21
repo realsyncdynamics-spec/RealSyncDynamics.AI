@@ -5,6 +5,10 @@ import {
   LANDING_ACCENT,
   LANDING_BUTTON,
   LANDING_BUTTON_TEXT,
+  LANDING_DISPLAY,
+  LANDING_H2,
+  LANDING_H2_TRACKING,
+  LANDING_H2_WEIGHT,
   LANDING_LINE,
   LANDING_MONO,
   LANDING_MUTED,
@@ -41,8 +45,14 @@ export function LandingPricingSection() {
           PREISE
         </p>
         <h2
-          className="mt-[22px] text-[clamp(40px,5vw,65px)] leading-none tracking-[-.035em]"
-          style={{ fontFamily: LANDING_SERIF, fontWeight: 500, color: LANDING_TEXT }}
+          className="mt-[22px] leading-[1.05]"
+          style={{
+            fontFamily: LANDING_DISPLAY,
+            fontWeight: LANDING_H2_WEIGHT,
+            fontSize: LANDING_H2,
+            letterSpacing: LANDING_H2_TRACKING,
+            color: LANDING_TEXT,
+          }}
         >
           Pläne für die{' '}
           <em className="not-italic" style={{ color: LANDING_ACCENT }}>
@@ -64,8 +74,8 @@ export function LandingPricingSection() {
                 style={{
                   borderColor: featured ? `${LANDING_ACCENT}73` : 'rgba(255,255,255,0.12)',
                   background: featured
-                    ? 'linear-gradient(135deg, rgba(228,207,162,0.08), rgba(7,9,13,0.72))'
-                    : 'linear-gradient(135deg, rgba(20,21,25,0.7), rgba(7,9,13,0.72))',
+                    ? 'linear-gradient(135deg, rgba(34,211,238,0.06), rgba(13,18,24,0.72))'
+                    : 'linear-gradient(135deg, rgba(24,33,43,0.7), rgba(13,18,24,0.72))',
                 }}
               >
                 <div className="flex items-start justify-between gap-3">
@@ -108,7 +118,7 @@ export function LandingPricingSection() {
                     <li
                       key={b}
                       className="flex items-start gap-2 text-[11px] leading-relaxed"
-                      style={{ color: '#898a91' }}
+                      style={{ color: LANDING_MUTED }}
                     >
                       <span style={{ color: LANDING_ACCENT }}>+</span>
                       <span>{b}</span>

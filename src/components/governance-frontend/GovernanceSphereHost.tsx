@@ -11,6 +11,8 @@ import {
   LANDING_GREEN,
   LANDING_MONO,
   LANDING_MUTED,
+  LANDING_MUTED_DEEP,
+  LANDING_WARNING,
 } from '../landing/landing-theme';
 
 const GovernanceSphereScene = lazy(() => import('./GovernanceSphereScene'));
@@ -58,11 +60,11 @@ function NodePanel({
 }) {
   return (
     <aside
-      className="absolute bottom-3 left-3 right-3 z-20 overflow-hidden border border-[#e4cfa2]/28 bg-black/72 p-4 shadow-[0_0_40px_rgba(228,207,162,0.08)] backdrop-blur-xl sm:left-auto sm:right-3 sm:w-[min(100%,17.5rem)]"
+      className="absolute bottom-3 left-3 right-3 z-20 overflow-hidden border border-[var(--rs-border-primary)] bg-[rgba(18,25,34,0.86)] p-4 shadow-[0_12px_40px_rgba(0,0,0,0.45)] backdrop-blur-xl sm:left-auto sm:right-3 sm:w-[min(100%,17.5rem)]"
       aria-live="polite"
     >
       <div
-        className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#e4cfa2]/55 to-transparent"
+        className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[var(--rs-cyan-primary)]/45 to-transparent"
         aria-hidden="true"
       />
       <div className="flex items-start justify-between gap-3">
@@ -73,12 +75,12 @@ function NodePanel({
           >
             {node.phase.toUpperCase()} · {node.state === 'operational' ? 'OPERATIONAL' : 'ATTENTION'}
           </p>
-          <h3 className="mt-1 text-sm font-semibold text-[#f2eee6]">{node.label}</h3>
+          <h3 className="mt-1 text-sm font-semibold text-[var(--rs-text-primary)]">{node.label}</h3>
         </div>
         <button
           type="button"
           onClick={onClose}
-          className="rounded-md px-2 py-1 text-[10px] tracking-[.12em] text-white/45 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e4cfa2]/50"
+          className="rounded-md px-2 py-1 text-[10px] tracking-[.12em] text-white/45 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--rs-cyan-primary)]/50"
           style={{ fontFamily: LANDING_MONO }}
           aria-label="Close node details"
         >
@@ -109,7 +111,7 @@ function NodePanel({
 function SphereSkeleton() {
   return (
     <div className="flex h-full min-h-[320px] items-center justify-center" aria-hidden="true">
-      <div className="h-48 w-48 rounded-full border border-[#e4cfa2]/20 bg-[radial-gradient(circle_at_35%_30%,rgba(228,207,162,0.12),transparent_65%)]" />
+      <div className="h-48 w-48 rounded-full border border-[var(--rs-border-primary)] bg-[radial-gradient(circle_at_35%_30%,rgba(203,213,220,0.1),transparent_65%)]" />
     </div>
   );
 }
@@ -143,7 +145,7 @@ export function GovernanceSphereHost() {
       <div className="mb-3 ml-1 flex flex-col gap-[7px] sm:ml-5">
         <p
           className="text-[8px] tracking-[.16em]"
-          style={{ fontFamily: LANDING_MONO, color: '#a8956f' }}
+          style={{ fontFamily: LANDING_MONO, color: LANDING_MUTED_DEEP }}
         >
           {SPHERE_DEMO_LABEL}
         </p>
@@ -155,17 +157,17 @@ export function GovernanceSphereHost() {
         </p>
       </div>
 
-      <div className="sphere-panel relative overflow-hidden border border-white/20 bg-[rgba(7,11,17,0.38)] p-3 shadow-[0_20px_70px_rgba(0,0,0,0.5)]">
+      <div className="sphere-panel relative overflow-hidden border border-[var(--rs-border-primary)] bg-[rgba(13,18,24,0.6)] p-3 shadow-[0_20px_70px_rgba(0,0,0,0.5)]">
         <div
           className="flex justify-around px-1 pb-3.5 pt-1 text-[8px]"
-          style={{ fontFamily: LANDING_MONO, color: '#888e98' }}
+          style={{ fontFamily: LANDING_MONO, color: LANDING_MUTED }}
           aria-label="Simulated governance status"
         >
           {STATUS_CHROME.map((item) => (
             <button
               key={item.id}
               type="button"
-              className="inline-flex items-center gap-1.5 transition hover:text-[#f2eee6] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#e4cfa2]/50"
+              className="inline-flex items-center gap-1.5 transition hover:text-[var(--rs-text-primary)] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[var(--rs-cyan-primary)]/50"
               onClick={() => {
                 const node = GOVERNANCE_SPHERE_NODES.find((n) => n.id === item.id) ?? null;
                 handleSelect(selected?.id === item.id ? null : node);
@@ -175,8 +177,7 @@ export function GovernanceSphereHost() {
               <i
                 className="inline-block h-[5px] w-[5px] rounded-full"
                 style={{
-                  backgroundColor: item.tone === 'ok' ? LANDING_GREEN : '#e2bf78',
-                  boxShadow: item.tone === 'ok' ? `0 0 8px ${LANDING_GREEN}` : '0 0 8px #e2bf78',
+                  backgroundColor: item.tone === 'ok' ? LANDING_GREEN : LANDING_WARNING,
                 }}
                 aria-hidden="true"
               />
@@ -188,7 +189,7 @@ export function GovernanceSphereHost() {
 
         <div className="relative min-h-[340px] sm:min-h-[390px] lg:min-h-[420px]">
           <div
-            className="pointer-events-none absolute inset-0 z-[1] shadow-[inset_0_0_0_1px_rgba(228,207,162,0.06),inset_0_0_80px_rgba(0,40,80,0.25)]"
+            className="pointer-events-none absolute inset-0 z-[1] shadow-[inset_0_0_0_1px_rgba(148,163,184,0.08),inset_0_0_80px_rgba(8,11,15,0.35)]"
             aria-hidden="true"
           />
           {use3d ? (
@@ -212,7 +213,7 @@ export function GovernanceSphereHost() {
 
           {use3d && (
             <div className="pointer-events-none absolute inset-x-0 top-3 z-10 flex justify-center px-3">
-              <div className="pointer-events-auto flex max-w-full gap-1.5 overflow-x-auto rounded-full border border-[#e4cfa2]/15 bg-black/60 p-1.5 shadow-[0_8px_32px_rgba(0,0,0,0.35)] backdrop-blur-md [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              <div className="pointer-events-auto flex max-w-full gap-1.5 overflow-x-auto rounded-full border border-[var(--rs-border-primary)] bg-[rgba(8,11,15,0.72)] p-1.5 shadow-[0_8px_32px_rgba(0,0,0,0.35)] backdrop-blur-md [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                 {GOVERNANCE_SPHERE_NODES.map((node) => {
                   const active = selected?.id === node.id;
                   return (
@@ -221,9 +222,9 @@ export function GovernanceSphereHost() {
                       type="button"
                       draggable={false}
                       onClick={() => handleSelect(active ? null : node)}
-                      className={`shrink-0 select-none rounded-full px-2.5 py-1 text-[9px] tracking-[.12em] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e4cfa2]/60 ${
+                      className={`shrink-0 select-none rounded-full px-2.5 py-1 text-[9px] tracking-[.12em] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--rs-cyan-primary)]/60 ${
                         active
-                          ? 'bg-[#e4cfa2]/22 text-[#e4cfa2] shadow-[0_0_16px_rgba(228,207,162,0.18)]'
+                          ? 'bg-[var(--rs-cyan-primary)]/15 text-[var(--rs-cyan-hover)]'
                           : 'text-white/55 hover:bg-white/10 hover:text-white/85'
                       }`}
                       style={{ fontFamily: LANDING_MONO }}
@@ -232,8 +233,8 @@ export function GovernanceSphereHost() {
                       <span
                         className={`mr-1.5 inline-block h-1.5 w-1.5 rounded-full ${
                           node.state === 'operational'
-                            ? 'bg-[#20d69a] shadow-[0_0_6px_rgba(32,214,154,0.7)]'
-                            : 'bg-[#e2bf78] shadow-[0_0_6px_rgba(226,191,120,0.65)]'
+                            ? 'bg-[var(--rs-success)]'
+                            : 'bg-[var(--rs-warning)]'
                         }`}
                         aria-hidden="true"
                       />
@@ -251,7 +252,7 @@ export function GovernanceSphereHost() {
         {!selected && (
           <p
             className="px-0.5 py-2.5 text-[8px]"
-            style={{ fontFamily: LANDING_MONO, color: '#737984' }}
+            style={{ fontFamily: LANDING_MONO, color: LANDING_MUTED_DEEP }}
           >
             Ziehen zum Drehen · Scroll/Pinch Zoom · Doppelklick Reset · Knoten tippen
           </p>
@@ -260,7 +261,7 @@ export function GovernanceSphereHost() {
 
       <p
         className="mt-2 ml-1 max-w-md text-[7px] leading-relaxed sm:ml-1"
-        style={{ fontFamily: LANDING_MONO, color: '#5d626b' }}
+        style={{ fontFamily: LANDING_MONO, color: LANDING_MUTED_DEEP }}
       >
         {SPHERE_DEMO_NOTE}
       </p>

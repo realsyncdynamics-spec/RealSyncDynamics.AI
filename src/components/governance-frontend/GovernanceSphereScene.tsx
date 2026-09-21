@@ -7,10 +7,30 @@ import {
   sphereNodePosition,
   type GovernanceSphereNode,
 } from './governance-sphere-nodes';
+import {
+  LANDING_ACCENT,
+  LANDING_ACCENT_SOFT,
+  LANDING_BG,
+  LANDING_BORDER,
+  LANDING_SILVER,
+  LANDING_WARNING,
+} from '../landing/landing-theme';
 
-const GOLD = '#e8c98a';
-const GOLD_SOFT = '#f3d9a0';
-const ATTENTION = '#d4a574';
+/**
+ * Enterprise Visual System — Farben des Globus.
+ *
+ * three.js liest keine CSS-Variablen, deshalb der TS-Spiegel aus
+ * `landing-theme.ts`. Hierarchie: governed = Cyan-Punkt, attention = Amber,
+ * gewählt = Cyan mit zurückhaltendem Halo. Bahnen und Partikel sind Stahl
+ * mit niedriger Deckung — sie ordnen, sie leuchten nicht.
+ */
+const NODE_GOVERNED = LANDING_ACCENT;
+const NODE_SELECTED = LANDING_ACCENT_SOFT;
+const NODE_ATTENTION = LANDING_WARNING;
+const STEEL = LANDING_SILVER;
+/** Lichttemperatur: neutral-kühles Weiß, kein Sonnenuntergang. */
+const LIGHT_KEY = '#f4f7fa';
+const LIGHT_FILL = '#e6edf3';
 const EARTH_RADIUS = 1.55;
 
 type SphereControls = {
@@ -51,8 +71,9 @@ function Nodes({
         const pos = sphereNodePosition(node.lat, node.lon, 1.78);
         const active = selectedId === node.id || hoveredId === node.id;
         const attention = node.state === 'attention';
-        const color = attention ? ATTENTION : GOLD;
-        const breath = reducedMotion ? 1 : 1 + Math.sin(pulse.current * 2.2 + pos[0]) * 0.06;
+        const color = attention ? NODE_ATTENTION : active ? NODE_SELECTED : NODE_GOVERNED;
+        // Atmung nur als Aktivitätssignal, nicht als Dauerpuls: 2 % statt 6 %.
+        const breath = reducedMotion ? 1 : 1 + Math.sin(pulse.current * 1.6 + pos[0]) * 0.02;
         return (
           <group key={node.id} position={pos}>
             <mesh
@@ -74,34 +95,36 @@ function Nodes({
               <sphereGeometry args={[0.24, 12, 12]} />
               <meshBasicMaterial transparent opacity={0} depthWrite={false} />
             </mesh>
-            <mesh scale={(active ? 1.55 : 1.28) * breath} raycast={() => null}>
-              <sphereGeometry args={[0.09, 16, 16]} />
+            {/* Kleiner, klarer Punkt — kein übergroßer Pulskreis. */}
+            <mesh scale={(active ? 1.25 : 1) * breath} raycast={() => null}>
+              <sphereGeometry args={[0.07, 16, 16]} />
               <meshStandardMaterial
                 color={color}
                 emissive={color}
-                emissiveIntensity={active ? 1.2 : attention ? 0.7 : 0.45}
-                metalness={0.55}
-                roughness={0.32}
+                emissiveIntensity={active ? 0.9 : attention ? 0.55 : 0.35}
+                metalness={0.35}
+                roughness={0.4}
               />
             </mesh>
-            {!reducedMotion && (
-              <mesh scale={active ? 3.1 : 2.25} raycast={() => null}>
-                <sphereGeometry args={[0.09, 12, 12]} />
+            {/* Halo nur bei Auswahl oder Aufmerksamkeit — Leuchten zeigt Zustand an. */}
+            {(active || attention) && !reducedMotion && (
+              <mesh scale={active ? 2.4 : 1.9} raycast={() => null}>
+                <sphereGeometry args={[0.07, 12, 12]} />
                 <meshBasicMaterial
                   color={color}
                   transparent
-                  opacity={active ? 0.28 : 0.12}
+                  opacity={active ? 0.18 : 0.08}
                   depthWrite={false}
                 />
               </mesh>
             )}
             {active && !reducedMotion && (
-              <mesh scale={3.8} raycast={() => null}>
-                <ringGeometry args={[0.1, 0.14, 48]} />
+              <mesh scale={3.2} raycast={() => null}>
+                <ringGeometry args={[0.1, 0.125, 48]} />
                 <meshBasicMaterial
-                  color={GOLD_SOFT}
+                  color={NODE_SELECTED}
                   transparent
-                  opacity={0.45}
+                  opacity={0.32}
                   side={THREE.DoubleSide}
                   depthWrite={false}
                 />
@@ -126,17 +149,18 @@ function Orbits({ reducedMotion }: { reducedMotion: boolean }) {
   });
   return (
     <>
+      {/* Dünne Stahlbahnen, niedrige Deckung — Struktur, kein Neon. */}
       <mesh ref={a} rotation={[Math.PI / 2.4, 0.3, 0]} raycast={() => null}>
-        <torusGeometry args={[2.05, 0.005, 8, 160]} />
-        <meshBasicMaterial color={GOLD} transparent opacity={0.32} />
+        <torusGeometry args={[2.05, 0.0035, 8, 160]} />
+        <meshBasicMaterial color={STEEL} transparent opacity={0.14} />
       </mesh>
       <mesh ref={b} rotation={[1.1, 0.8, 0.2]} raycast={() => null}>
-        <torusGeometry args={[2.28, 0.0035, 8, 180]} />
-        <meshBasicMaterial color={GOLD_SOFT} transparent opacity={0.2} />
+        <torusGeometry args={[2.28, 0.0028, 8, 180]} />
+        <meshBasicMaterial color={STEEL} transparent opacity={0.09} />
       </mesh>
       <mesh ref={c} rotation={[0.35, 0.15, 0.6]} raycast={() => null}>
-        <torusGeometry args={[2.48, 0.0025, 8, 200]} />
-        <meshBasicMaterial color="#8eb4c8" transparent opacity={0.12} />
+        <torusGeometry args={[2.48, 0.0022, 8, 200]} />
+        <meshBasicMaterial color={NODE_GOVERNED} transparent opacity={0.07} />
       </mesh>
     </>
   );
@@ -145,8 +169,9 @@ function Orbits({ reducedMotion }: { reducedMotion: boolean }) {
 function AmbientParticles({ reducedMotion }: { reducedMotion: boolean }) {
   const ref = useRef<THREE.Points>(null!);
   const positions = useMemo(() => {
-    const arr = new Float32Array(120 * 3);
-    for (let i = 0; i < 120; i++) {
+    // 48 statt 120 Partikel: Tiefe andeuten, kein Partikelfeld.
+    const arr = new Float32Array(48 * 3);
+    for (let i = 0; i < 48; i++) {
       const r = 2.35 + Math.random() * 1.05;
       const phi = Math.acos(2 * Math.random() - 1);
       const theta = Math.random() * Math.PI * 2;
@@ -171,11 +196,11 @@ function AmbientParticles({ reducedMotion }: { reducedMotion: boolean }) {
   return (
     <points ref={ref} geometry={geometry} raycast={() => null}>
       <pointsMaterial
-        color={GOLD_SOFT}
-        size={0.022}
+        color={STEEL}
+        size={0.016}
         sizeAttenuation
         transparent
-        opacity={0.4}
+        opacity={0.22}
         depthWrite={false}
       />
     </points>
@@ -305,11 +330,12 @@ function PointerLights({
 
   return (
     <>
-      <ambientLight intensity={0.55} />
-      <directionalLight ref={key} position={[4.5, 1.4, 3.2]} intensity={1.35} color="#fff6e8" />
-      <directionalLight position={[-3.2, -1.2, -2.4]} intensity={0.4} color="#6ec8ff" />
-      <pointLight ref={fill} position={[3.2, 2.2, 4]} intensity={0.5} color="#fff4e0" />
-      <hemisphereLight args={['#4a5a72', '#0a0a0b', 0.35]} />
+      {/* Neutrales Schlüssellicht, kühles Gegenlicht: Titan statt Sonnenuntergang. */}
+      <ambientLight intensity={0.5} />
+      <directionalLight ref={key} position={[4.5, 1.4, 3.2]} intensity={1.25} color={LIGHT_KEY} />
+      <directionalLight position={[-3.2, -1.2, -2.4]} intensity={0.35} color={LANDING_ACCENT_SOFT} />
+      <pointLight ref={fill} position={[3.2, 2.2, 4]} intensity={0.4} color={LIGHT_FILL} />
+      <hemisphereLight args={[LANDING_BORDER, LANDING_BG, 0.35]} />
     </>
   );
 }

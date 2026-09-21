@@ -350,6 +350,64 @@
   unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
 }
 
+
+/* ── Enterprise Visual System — zentrale Token ──────────────────────────
+   Quelle für Startseite und Globus (Spezifikation 2026-09-21). Balance:
+   85–90 % Titan/Graphit/Silber, 10–15 % Governance-Cyan als Funktionsakzent.
+   `landing-theme.ts` spiegelt diese Werte fest für three.js und SVG;
+   `test/landing/landing-visual-system.test.ts` hält beide Seiten gleich. */
+:root {
+  --rs-bg-primary: #080B0F;
+  --rs-bg-secondary: #0D1218;
+
+  --rs-surface-primary: #121922;
+  --rs-surface-elevated: #18212B;
+
+  --rs-border-primary: #26323D;
+  --rs-border-subtle: rgba(148, 163, 184, 0.16);
+
+  --rs-text-primary: #F2F5F7;
+  --rs-text-secondary: #A8B3BD;
+  --rs-text-muted: #707E8B;
+
+  --rs-cyan-primary: #22D3EE;
+  --rs-cyan-hover: #67E8F9;
+  --rs-cyan-deep: #0891B2;
+
+  --rs-titanium-silver: #CBD5DC;
+
+  --rs-success: #34D399;
+  --rs-warning: #F5B942;
+  --rs-critical: #F06464;
+
+  --rs-font-sans: 'Geist', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --rs-font-mono: 'JetBrains Mono', 'DM Mono', ui-monospace, monospace;
+}
+
+/* Geist — Interface- und Markenschrift der Startseite. SIL OFL 1.1, Text in
+   public/fonts/OFL-Geist.txt. Selbst gehostet (CSP: font-src 'self'). */
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/geist-latin-400-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/fonts/geist-latin-500-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/fonts/geist-latin-600-normal.woff2') format('woff2');
+}
+
 @theme {
   /* Hard-Edge Industrial DNA — see AGENTS.md.
      Design-Vereinheitlichung (2026-06): Plus Jakarta Sans (die Landing-Schrift)
@@ -1314,47 +1372,46 @@ html, body {
 
 [data-ga-theme='titan'],
 .landing-context:not([data-ga-theme]) {
-  --ga-display: 'Inter Tight', 'Inter', system-ui, sans-serif;
+  /* Enterprise Visual System: Titan/Graphit als Grund, Cyan als Funktionsakzent.
+     Die Werte sind Ableitungen der --rs-*-Token, keine zweite Palette. */
+  --ga-display: var(--rs-font-sans);
   --ga-h1-weight: 600;
-  --ga-h1-tracking: -0.045em;
+  --ga-h1-tracking: -0.04em;
 
-  --ga-void: #0f1012;
-  --ga-deep: #1c1e21;
-  --ga-mid: #2a2d31;
-  --ga-panel: rgba(24, 26, 29, 0.72);
+  --ga-void: var(--rs-bg-primary);
+  --ga-deep: var(--rs-bg-secondary);
+  --ga-mid: var(--rs-surface-primary);
+  --ga-panel: rgba(18, 25, 34, 0.78);
 
-  --ga-text: #f3f5f8;
-  --ga-muted: #a3acb8;
-  --ga-titan: #8a929c;
-  --ga-silver: #d9dee5;
+  --ga-text: var(--rs-text-primary);
+  --ga-muted: var(--rs-text-secondary);
+  --ga-titan: var(--rs-text-muted);
+  --ga-silver: var(--rs-titanium-silver);
 
-  --ga-accent: #c9a24a;
-  --ga-accent-lite: #e6c98a;
-  --ga-accent-deep: #8a6a24;
-  --ga-accent-border: rgba(201, 162, 74, 0.42);
+  --ga-accent: var(--rs-cyan-primary);
+  --ga-accent-lite: var(--rs-cyan-hover);
+  --ga-accent-deep: var(--rs-cyan-deep);
+  --ga-accent-border: rgba(34, 211, 238, 0.35);
 
-  --ga-line: rgba(217, 222, 229, 0.16);
-  --ga-line-soft: rgba(217, 222, 229, 0.09);
+  --ga-line: var(--rs-border-primary);
+  --ga-line-soft: var(--rs-border-subtle);
 
-  --ga-pill-face: linear-gradient(180deg, #f2dca4 0%, #d3ad55 48%, #a8842c 100%);
-  --ga-pill-ink: #14100b;
-  --ga-pill-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.6), inset 0 -2px 0 rgba(0, 0, 0, 0.18),
-    0 0 0 1px rgba(255, 236, 190, 0.35), 0 12px 30px rgba(0, 0, 0, 0.45),
-    0 0 30px rgba(211, 173, 85, 0.22);
+  --ga-pill-face: var(--rs-cyan-primary);
+  --ga-pill-ink: var(--rs-bg-primary);
+  --ga-pill-shadow: 0 0 0 1px rgba(34, 211, 238, 0.28), 0 8px 24px rgba(0, 0, 0, 0.35);
 
-  --ga-ghost-face: rgba(18, 28, 38, 0.66);
-  --ga-ghost-face-hover: rgba(214, 220, 228, 0.16);
-  --ga-ghost-border: rgba(214, 220, 228, 0.4);
-  --ga-ghost-border-hover: #d9dee5;
-  --ga-chip-face: rgba(18, 28, 38, 0.6);
+  --ga-ghost-face: rgba(18, 25, 34, 0.66);
+  --ga-ghost-face-hover: rgba(203, 213, 220, 0.12);
+  --ga-ghost-border: var(--rs-border-primary);
+  --ga-ghost-border-hover: var(--rs-titanium-silver);
+  --ga-chip-face: rgba(18, 25, 34, 0.6);
 
-  --ga-h1-face: linear-gradient(180deg, #ffffff 0%, #e9ecf0 48%, #b7bcc4 100%);
-  --ga-h1-accent: linear-gradient(180deg, #f4e0b0 0%, #d3ad55 50%, #a8842c 100%);
-  --ga-h2-accent: linear-gradient(116deg, #f7ecd6 0%, #e6c98a 34%, #c9a24a 64%, #8a6a24 88%);
+  --ga-h1-face: linear-gradient(180deg, #ffffff 0%, #f2f5f7 55%, #cbd5dc 100%);
+  --ga-h1-accent: linear-gradient(180deg, #67e8f9 0%, #22d3ee 55%, #0891b2 100%);
+  --ga-h2-accent: linear-gradient(116deg, #e0fbff 0%, #67e8f9 34%, #22d3ee 64%, #0891b2 88%);
 
-  --ga-band: linear-gradient(180deg, rgba(24, 26, 29, 0.62), rgba(18, 19, 22, 0.74));
-  --ga-band-alt: linear-gradient(180deg, rgba(18, 19, 22, 0.74), rgba(26, 28, 31, 0.62));
+  --ga-band: linear-gradient(180deg, rgba(13, 18, 24, 0.62), rgba(8, 11, 15, 0.78));
+  --ga-band-alt: linear-gradient(180deg, rgba(8, 11, 15, 0.78), rgba(13, 18, 24, 0.62));
 }
 
 [data-ga-theme='night'] {
@@ -1584,46 +1641,27 @@ html, body {
   border: 1px solid #92400e;
 }
 
-/* ── Startseite: zwei Farbmodi, ein Attribut ─────────────────────────────
-   Beide Fassungen der Referenz, umschaltbar über `data-landing-mode` auf
-   dem Seiten-Wrapper (siehe `landing-mode.ts` / `LandingModeSwitch`).
-
-     gold — gebürstetes Titan, Europa mit Goldströmen. Vorgabe, Markenbild.
-     cyan — Schwarz, Europa als Nachtaufnahme, Cyan-Akzent.
-
-   Layout, Typografie und Copy sind in beiden identisch — es ist dieselbe
-   Seite in zwei Tonungen, nicht zwei Seiten. Die Werte stehen hier an genau
-   einer Stelle; `landing-mode.ts` zeigt nur darauf.
-
-   Die Hex-Werte der Gold-Fassung spiegeln `landing-theme.ts` — das bleibt
-   die Quelle für alle Flächen, die NICHT umschalten (Roadmap, OS-Chrome).
-   Wer Gold ändert, ändert es in beiden. */
+/* ── Startseite: ein Farbsystem ──────────────────────────────────────────
+   Bis 2026-09-20 standen hier zwei Paletten (Gold/Cyan) hinter einem
+   Schalter. Das Enterprise Visual System kennt eine: Titan/Graphit als
+   Grund, Governance-Cyan als Funktionsakzent. Die `--rsd-*`-Variablen
+   bleiben als Lesestelle für Hero, Kopf und Netzgrafik (`landing-mode.ts`)
+   und leiten sich ausschließlich aus den `--rs-*`-Token oben ab. */
+.landing-context,
 [data-landing-mode] {
-  --rsd-accent: #d6ad68;
-  --rsd-accent-soft: #e8c98a;
-  --rsd-accent-lite: #e4cfa2;
-  --rsd-bg: #0a0a0b;
-  --rsd-panel: #121214;
-  --rsd-btn-ink: #0a0a0b;
-  --rsd-line: rgba(214, 173, 104, 0.22);
-  --rsd-glow: 0 0 32px rgba(214, 173, 104, 0.28);
-  --rsd-veil: #0a0a0b;
-  /* Deckung der Aufnahme: Gold arbeitet mit dem gefilterten Chromrelief,
-     Nacht zeigt das Foto direkter. */
-  --rsd-shot-opacity: 0.55;
-  --rsd-shot-filter: sepia(0.5) saturate(1.5) hue-rotate(-14deg) contrast(1.08);
-}
-
-[data-landing-mode='cyan'] {
-  --rsd-accent: #22c3e6;
-  --rsd-accent-soft: #7fe3f5;
-  --rsd-accent-lite: #a9ecfa;
-  --rsd-bg: #04070a;
-  --rsd-panel: #0a1016;
-  --rsd-btn-ink: #04161c;
-  --rsd-line: rgba(127, 227, 245, 0.22);
-  --rsd-glow: 0 0 32px rgba(34, 195, 230, 0.3);
-  --rsd-veil: #04070a;
-  --rsd-shot-opacity: 0.72;
-  --rsd-shot-filter: saturate(1.12) contrast(1.06) brightness(1.02);
+  --rsd-accent: var(--rs-cyan-primary);
+  --rsd-accent-soft: var(--rs-cyan-hover);
+  --rsd-accent-lite: var(--rs-titanium-silver);
+  --rsd-steel: var(--rs-titanium-silver);
+  --rsd-bg: var(--rs-bg-primary);
+  --rsd-panel: var(--rs-surface-primary);
+  --rsd-btn-ink: var(--rs-bg-primary);
+  --rsd-line: var(--rs-border-subtle);
+  /* Kein Dauerleuchten: Kontur plus Tiefe. */
+  --rsd-glow: 0 0 0 1px rgba(34, 211, 238, 0.28), 0 8px 24px rgba(0, 0, 0, 0.35);
+  --rsd-veil: var(--rs-bg-primary);
+  /* Die Aufnahme wird zu Graphit gedämpft: Ozean fast schwarz, Land Titan,
+     kein leuchtendes Königsblau. */
+  --rsd-shot-opacity: 0.62;
+  --rsd-shot-filter: grayscale(0.4) saturate(0.6) brightness(0.7) contrast(1.12);
 }

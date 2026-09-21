@@ -7,9 +7,14 @@ import {
 } from '../../product/implementation-status';
 import {
   LANDING_ACCENT,
+  LANDING_DISPLAY,
+  LANDING_H2,
+  LANDING_H2_TRACKING,
+  LANDING_H2_WEIGHT,
   LANDING_MONO,
   LANDING_MUTED,
   LANDING_SERIF,
+  LANDING_SILVER,
   LANDING_TEXT,
 } from './landing-theme';
 
@@ -75,11 +80,17 @@ export function LandingChannelTools() {
             GOVERNANCE TOOLS
           </p>
           <h2
-            className="mt-[22px] text-[clamp(40px,5vw,65px)] leading-none tracking-[-.035em]"
-            style={{ fontFamily: LANDING_SERIF, fontWeight: 500, color: LANDING_TEXT }}
+            className="mt-[22px] leading-[1.05]"
+            style={{
+              fontFamily: LANDING_DISPLAY,
+              fontWeight: LANDING_H2_WEIGHT,
+              fontSize: LANDING_H2,
+              letterSpacing: LANDING_H2_TRACKING,
+              color: LANDING_TEXT,
+            }}
           >
             Ihre KI-Kanäle.{' '}
-            <em className="not-italic" style={{ color: LANDING_ACCENT }}>
+            <em className="not-italic" style={{ color: LANDING_SILVER }}>
               Eine Governance-Ebene.
             </em>
           </h2>
@@ -98,7 +109,7 @@ export function LandingChannelTools() {
                 key={title}
                 className="flex min-h-[280px] flex-col border border-white/12 p-[22px]"
                 style={{
-                  background: 'linear-gradient(135deg, rgba(20,21,25,0.7), rgba(7,9,13,0.72))',
+                  background: 'linear-gradient(135deg, rgba(24,33,43,0.7), rgba(13,18,24,0.72))',
                 }}
               >
                 <div className="flex items-start justify-between gap-4">
@@ -154,7 +165,7 @@ export function LandingChannelTools() {
                 </div>
                 <Link
                   to={live ? href : '/warteliste'}
-                  className="inline-flex w-full items-center justify-center gap-2 border px-5 py-3.5 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e4cfa2]/50"
+                  className="inline-flex w-full items-center justify-center gap-2 border px-5 py-3.5 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--rs-cyan-primary)]/50"
                   style={
                     live
                       ? {

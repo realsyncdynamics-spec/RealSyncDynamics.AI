@@ -4,9 +4,12 @@ import {
   LANDING_ACCENT,
   LANDING_BUTTON,
   LANDING_BUTTON_TEXT,
+  LANDING_DISPLAY,
+  LANDING_H2,
+  LANDING_H2_TRACKING,
+  LANDING_H2_WEIGHT,
   LANDING_MONO,
   LANDING_MUTED,
-  LANDING_SERIF,
   LANDING_TEXT,
 } from './landing-theme';
 
@@ -23,7 +26,7 @@ export function LandingDarkBand() {
   return (
     <section
       id="one-plane"
-      className="grid items-center gap-10 border-y border-white/[0.06] bg-[#070a10] px-[4vw] py-[65px] lg:grid-cols-[1.2fr_.9fr_auto]"
+      className="grid items-center gap-10 border-y border-white/[0.06] bg-[var(--rs-bg-secondary)] px-[4vw] py-[65px] lg:grid-cols-[1.2fr_.9fr_auto]"
     >
       <div>
         <p
@@ -33,8 +36,14 @@ export function LandingDarkBand() {
           ONE OPERATIONAL PLANE
         </p>
         <h2
-          className="mt-3 text-[clamp(32px,4vw,52px)] leading-none tracking-[-.03em]"
-          style={{ fontFamily: LANDING_SERIF, fontWeight: 500, color: LANDING_TEXT }}
+          className="mt-3 leading-[1.05]"
+          style={{
+            fontFamily: LANDING_DISPLAY,
+            fontWeight: LANDING_H2_WEIGHT,
+            fontSize: LANDING_H2,
+            letterSpacing: LANDING_H2_TRACKING,
+            color: LANDING_TEXT,
+          }}
         >
           Detect. Govern. Prove.
         </h2>

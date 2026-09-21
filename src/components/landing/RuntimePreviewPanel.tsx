@@ -42,7 +42,7 @@ export function RuntimePreviewPanel() {
   return (
     <section
       aria-label={RUNTIME_PREVIEW_LABEL}
-      className="border-b border-white/[0.06] bg-[#0e0e10]/90 py-[52px]"
+      className="border-b border-white/[0.06] bg-[var(--rs-bg-secondary)]/90 py-[52px]"
       data-demo-kpis="true"
       data-runtime-preview="example"
     >

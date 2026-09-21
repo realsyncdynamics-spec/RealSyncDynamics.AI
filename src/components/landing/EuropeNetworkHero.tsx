@@ -1,11 +1,11 @@
 /**
- * Static Europe network hero graphic — Replit SSOT.
+ * Static Europe network hero graphic.
  * Illustrative map + node mesh. NOT an interactive globe/sphere.
  *
- * Die Tonung folgt dem Farbmodus der Seite (`landing-mode.ts`): Gold über
- * einem warm gefilterten Chromrelief, Cyan über der ungefilterten
- * Nachtaufnahme. Dieselbe Aufnahme, dieselben Knoten — nur die Farbe
- * wechselt.
+ * Enterprise Visual System: die Aufnahme wird zu Graphit gedämpft (Ozean
+ * fast schwarz, Land Titan), die Netzkanten sind Stahl, nur die Knoten
+ * tragen Cyan — klein, klar, ohne Dauerleuchten. Alle Werte kommen aus
+ * `landing-mode.ts`.
  *
  * Die Knotenfarben stehen als `style`, nicht als `fill`/`stroke`-Attribut:
  * `var()` ist in SVG-Präsentationsattributen nicht verlässlich, in der
@@ -13,9 +13,9 @@
  */
 import {
   MODE_ACCENT,
-  MODE_ACCENT_SOFT,
   MODE_SHOT_FILTER,
   MODE_SHOT_OPACITY,
+  MODE_STEEL,
   modeAccent,
   modeVeil,
 } from './landing-mode';
@@ -81,20 +81,20 @@ export function EuropeNetworkHero() {
           background: [
             `linear-gradient(105deg, ${modeVeil(100)} 0%, ${modeVeil(80)} 32%, ${modeVeil(40)} 52%, transparent 72%)`,
             `linear-gradient(180deg, ${modeVeil(53)} 0%, transparent 28%, transparent 70%, ${modeVeil(93)} 100%)`,
-            `radial-gradient(55% 50% at 72% 42%, ${modeAccent(20)} 0%, transparent 62%)`,
+            `radial-gradient(55% 50% at 72% 42%, ${modeAccent(9)} 0%, transparent 62%)`,
           ].join(','),
         }}
       />
 
-      {/* Amber network mesh */}
+      {/* Steel network mesh, cyan nodes */}
       <svg
-        className="absolute inset-0 h-full w-full opacity-90"
+        className="absolute inset-0 h-full w-full opacity-80"
         viewBox="0 0 100 100"
         preserveAspectRatio="none"
       >
         <defs>
           <filter id="eu-net-glow" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur stdDeviation="0.35" result="blur" />
+            <feGaussianBlur stdDeviation="0.18" result="blur" />
             <feMerge>
               <feMergeNode in="blur" />
               <feMergeNode in="SourceGraphic" />
@@ -111,28 +111,29 @@ export function EuropeNetworkHero() {
               y1={from.y}
               x2={to.x}
               y2={to.y}
-              style={{ stroke: MODE_ACCENT_SOFT }}
-              strokeWidth="0.18"
-              opacity="0.55"
-              filter="url(#eu-net-glow)"
+              style={{ stroke: MODE_STEEL }}
+              strokeWidth="0.14"
+              opacity="0.38"
             />
           );
         })}
         {NODES.map((n, i) => (
           <g key={`n-${i}`} filter="url(#eu-net-glow)">
+            {/* Kleiner, praeziser Punkt: Halo sehr schwach, Kern unter der
+                halben Entwurfsgroesse — Knoten markieren, sie leuchten nicht. */}
             <circle
               cx={n.x}
               cy={n.y}
-              r={(n.r ?? 2.2) * 1.8}
+              r={(n.r ?? 2.2) * 1.1}
               style={{ fill: MODE_ACCENT }}
-              opacity="0.12"
+              opacity="0.05"
             />
             <circle
               cx={n.x}
               cy={n.y}
-              r={n.r ?? 2.2}
-              style={{ fill: MODE_ACCENT_SOFT }}
-              opacity="0.9"
+              r={(n.r ?? 2.2) * 0.4}
+              style={{ fill: MODE_ACCENT }}
+              opacity="0.8"
             />
           </g>
         ))}

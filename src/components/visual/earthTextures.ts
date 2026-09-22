@@ -13,6 +13,11 @@ export interface EarthTextureSet {
   night: string | null;
   clouds: string | null;
   specular: string | null;
+  /** Optional BasisLZ KTX2 equivalents. Runtime falls back to WebP on any failure. */
+  dayKtx2: string | null;
+  nightKtx2: string | null;
+  cloudsKtx2: string | null;
+  specularKtx2: string | null;
   /** Sphere segment counts [width, height]. */
   segments: [number, number];
   /** Anisotropy cap for day map. */
@@ -33,6 +38,10 @@ const TEXTURE_SETS: Record<EarthQuality, EarthTextureSet> = {
     night: null,
     clouds: null,
     specular: null,
+    dayKtx2: null,
+    nightKtx2: null,
+    cloudsKtx2: null,
+    specularKtx2: null,
     segments: [48, 48],
     anisotropy: 4,
     atmosphere: true,
@@ -45,6 +54,10 @@ const TEXTURE_SETS: Record<EarthQuality, EarthTextureSet> = {
     night: '/textures/earth-night-2k.webp',
     clouds: '/textures/earth-clouds-2k.webp',
     specular: '/textures/earth-specular-1k.webp',
+    dayKtx2: '/textures/earth-day-2k.ktx2',
+    nightKtx2: '/textures/earth-night-2k.ktx2',
+    cloudsKtx2: '/textures/earth-clouds-2k.ktx2',
+    specularKtx2: '/textures/earth-specular-1k.ktx2',
     segments: [72, 72],
     anisotropy: 8,
     atmosphere: true,
@@ -57,6 +70,10 @@ const TEXTURE_SETS: Record<EarthQuality, EarthTextureSet> = {
     night: '/textures/earth-night-2k.webp',
     clouds: '/textures/earth-clouds-2k.webp',
     specular: '/textures/earth-specular-1k.webp',
+    dayKtx2: '/textures/earth-day-4k.ktx2',
+    nightKtx2: '/textures/earth-night-2k.ktx2',
+    cloudsKtx2: '/textures/earth-clouds-2k.ktx2',
+    specularKtx2: '/textures/earth-specular-1k.ktx2',
     segments: [128, 128],
     anisotropy: 16,
     atmosphere: true,
@@ -102,6 +119,41 @@ export function detectEarthQuality(opts?: {
 
 export function getEarthTextureSet(quality: EarthQuality): EarthTextureSet {
   return TEXTURE_SETS[quality];
+}
+
+/**
+ * KTX2 reduces decoded GPU residency, but the measured Basis payload is larger
+ * than the WebP fallback and requires the WASM transcoder. Keep it targeted to
+ * memory-constrained devices on a non-slow connection instead of making it the
+ * default network path for everyone.
+ */
+export function shouldPreferGpuCompression(hints?: {
+  deviceMemory?: number;
+  saveData?: boolean;
+  effectiveType?: string;
+}): boolean {
+  const nav =
+    typeof navigator === 'undefined'
+      ? undefined
+      : (navigator as Navigator & {
+          deviceMemory?: number;
+          connection?: { saveData?: boolean; effectiveType?: string };
+        });
+
+  const deviceMemory = hints?.deviceMemory ?? nav?.deviceMemory;
+  const saveData = hints?.saveData ?? Boolean(nav?.connection?.saveData);
+  const effectiveType = hints?.effectiveType ?? nav?.connection?.effectiveType;
+
+  if (saveData) return false;
+  if (effectiveType === '2g' || effectiveType === 'slow-2g' || effectiveType === '3g') {
+    return false;
+  }
+
+  return (
+    typeof deviceMemory === 'number' &&
+    deviceMemory > 0 &&
+    deviceMemory <= 4
+  );
 }
 
 /** Preload a URL without blocking React render (upgrade path). */

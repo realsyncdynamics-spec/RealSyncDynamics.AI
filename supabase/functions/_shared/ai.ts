@@ -14,6 +14,11 @@ import { recordUsage, getCurrentTotal, UsageError } from './usage.ts';
 import { callProvider, ProviderError } from './providers.ts';
 import { reserveLlmBudget, settleLlmBudget, CostCapError } from './cost-cap.ts';
 import type { ExecutionZone, RuntimeClass } from './pricing.generated.ts';
+import {
+  mapResidencyToExecutionZone,
+  normalizeRuntimeResidency,
+  type RuntimeResidency,
+} from '../../../shared/runtime-zone.ts';
 
 export interface RunAiToolOptions {
   /** Forwarded to ai_tool_runs.metadata. Shadow fields below override collisions. */
@@ -68,7 +73,7 @@ interface ToolRow {
   enabled: boolean;
 }
 
-type Residency = 'cloud' | 'eu_local';
+type Residency = RuntimeResidency;
 type ProviderClass = 'local_open' | 'managed_cloud';
 
 function nonNegativeInt(value: number | undefined): number {
@@ -87,8 +92,7 @@ function buildShadowRatingTelemetry(args: {
   durationMs: number;
   actualProviderCostUsd: number | null;
 }) {
-  const executionZone: ExecutionZone =
-    args.residency === 'eu_local' ? 'eu_private' : 'governed_cloud';
+  const executionZone: ExecutionZone = mapResidencyToExecutionZone(args.residency);
   const providerClass: ProviderClass =
     args.provider === 'ollama' ? 'local_open' : 'managed_cloud';
 
@@ -122,7 +126,9 @@ async function resolveResidency(
     console.error('resolve_ai_residency failed, defaulting to cloud:', error.message);
     return 'cloud';
   }
-  return data === 'eu_local' ? 'eu_local' : 'cloud';
+  return normalizeRuntimeResidency(data, (message) => {
+    console.warn(`resolve_ai_residency returned unexpected value; ${message}`);
+  });
 }
 
 export async function runAiTool(
@@ -204,41 +210,52 @@ export async function runAiTool(
     effectiveModelId  = tool.ollama_model_id;
   }
 
-  // P4-impl-3 — reserve budget against the monthly USD-cap BEFORE the
-  // provider call. Local inference is free at the per-call level and
-  // sits outside the LLM-USD cap, so reservation is skipped for ollama.
-  const estimatedUsd = effectiveProvider === 'ollama'
-    ? 0
-    : (estimatedInputTokens / 1_000_000) * Number(tool.cost_input_per_million_usd) +
-      (tool.max_tokens       / 1_000_000) * Number(tool.cost_output_per_million_usd);
-  let reservationId: string | null = null;
-  if (effectiveProvider !== 'ollama' && estimatedUsd > 0) {
-    try {
-      const r = await reserveLlmBudget(admin, {
-        tenantId,
-        agentRef: tool.key,
-        estimatedUsd,
-      });
-      reservationId = r.reservationId;
-    } catch (e) {
-      if (e instanceof CostCapError) {
-        throw new AiInvokeError(
-          'monthly LLM USD cap reached',
-          'COST_LIMIT_EXCEEDED',
-          429,
-          { cap_used: e.capUsed, cap_total: e.capTotal, cap_remaining: e.capRemaining },
-        );
-      }
-      // Reservation infrastructure errors should not block calls in
-      // the absence of a clear deny — log and fall through so a
-      // degraded ledger doesn't take down the runtime.
-      console.error('cost-cap reserve failed (proceeding):', (e as Error).message);
-    }
-  }
-
-  // Call provider
   const start = performance.now();
   try {
+    // Zone 0 needs a future device runtime that performs local inference on
+    // the client and posts telemetry via a dedicated record-only path.
+    if (residency === 'device_local') {
+      throw new AiInvokeError(
+        'device-local residency requires a client-side runtime',
+        'DEVICE_RUNTIME_REQUIRED',
+        501,
+        { zone: 'device_local', reason: 'server_cannot_execute_zone0' },
+      );
+    }
+
+    // P4-impl-3 — reserve budget against the monthly USD-cap BEFORE the
+    // provider call. Local inference is free at the per-call level and
+    // sits outside the LLM-USD cap, so reservation is skipped for ollama.
+    const estimatedUsd = effectiveProvider === 'ollama'
+      ? 0
+      : (estimatedInputTokens / 1_000_000) * Number(tool.cost_input_per_million_usd) +
+        (tool.max_tokens       / 1_000_000) * Number(tool.cost_output_per_million_usd);
+    let reservationId: string | null = null;
+    if (effectiveProvider !== 'ollama' && estimatedUsd > 0) {
+      try {
+        const r = await reserveLlmBudget(admin, {
+          tenantId,
+          agentRef: tool.key,
+          estimatedUsd,
+        });
+        reservationId = r.reservationId;
+      } catch (e) {
+        if (e instanceof CostCapError) {
+          throw new AiInvokeError(
+            'monthly LLM USD cap reached',
+            'COST_LIMIT_EXCEEDED',
+            429,
+            { cap_used: e.capUsed, cap_total: e.capTotal, cap_remaining: e.capRemaining },
+          );
+        }
+        // Reservation infrastructure errors should not block calls in
+        // the absence of a clear deny — log and fall through so a
+        // degraded ledger doesn't take down the runtime.
+        console.error('cost-cap reserve failed (proceeding):', (e as Error).message);
+      }
+    }
+
+    // Call provider
     const result = await callProvider({
       provider: effectiveProvider,
       modelId: effectiveModelId,
@@ -369,10 +386,16 @@ export async function runAiTool(
 
     const status = code === 'PROVIDER_NOT_CONFIGURED' ? 503
                  : code === 'PROVIDER_NOT_IMPLEMENTED' ? 501
+                 : code === 'DEVICE_RUNTIME_REQUIRED' ? 501
                  : code === 'PROVIDER_ERROR' ? 502
                  : code === 'QUOTA_EXCEEDED' ? 402
                  : code === 'LOCAL_UNAVAILABLE' ? 503
                  : 500;
-    throw new AiInvokeError(message, code, status);
+    throw new AiInvokeError(
+      message,
+      code,
+      status,
+      e instanceof AiInvokeError ? e.details : undefined,
+    );
   }
 }

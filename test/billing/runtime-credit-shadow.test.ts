@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   ADDONS,
   RUNTIME_CREDIT_PACK_STUBS,
@@ -7,6 +7,7 @@ import {
   type ExecutionZone,
   type RuntimeClass,
 } from '../../shared/pricing';
+import { mapResidencyToExecutionZone } from '../../shared/runtime-zone';
 
 const AI_SHARED = readFileSync('supabase/functions/_shared/ai.ts', 'utf8');
 
@@ -22,6 +23,18 @@ describe('Runtime Credits — shadow only', () => {
     const zones: ExecutionZone[] = ['device_local', 'eu_private', 'governed_cloud'];
     expect(classes).toHaveLength(5);
     expect(zones).toHaveLength(3);
+  });
+
+  it('maps residency into the three-zone execution model and fail-closes unknown values', () => {
+    const warn = vi.fn();
+
+    expect(mapResidencyToExecutionZone('device_local', warn)).toBe('device_local');
+    expect(mapResidencyToExecutionZone('eu_local', warn)).toBe('eu_private');
+    expect(mapResidencyToExecutionZone('cloud', warn)).toBe('governed_cloud');
+    expect(mapResidencyToExecutionZone('unexpected', warn)).toBe('governed_cloud');
+    expect(warn).toHaveBeenCalledWith(
+      '[runtime-zone] unknown residency "unexpected", defaulting to cloud',
+    );
   });
 
   it('keeps every credit pack internal and unpriced until calibration', () => {
@@ -45,7 +58,7 @@ describe('Runtime Credits — shadow only', () => {
 
   it('records a non-billable shadow envelope on the canonical runAiTool path', () => {
     expect(AI_SHARED).toContain("runtimeClass ?? 'c1_standard'");
-    expect(AI_SHARED).toContain("args.residency === 'eu_local' ? 'eu_private' : 'governed_cloud'");
+    expect(AI_SHARED).toContain('mapResidencyToExecutionZone(args.residency)');
     expect(AI_SHARED).toContain("shadow_rating_status: 'uncalibrated'");
     expect(AI_SHARED).toContain('shadow_credit_estimate: 0');
     expect(AI_SHARED).toContain('wallet_enforced: false');
@@ -61,6 +74,21 @@ describe('Runtime Credits — shadow only', () => {
     expect(successInsert.indexOf('...(opts.metadata ?? {})')).toBeLessThan(
       successInsert.indexOf('...shadowRating'),
     );
+  });
+
+  it('refuses device-local residency before any server-side provider call', () => {
+    expect(AI_SHARED).toContain('normalizeRuntimeResidency');
+    expect(AI_SHARED).toContain('DEVICE_RUNTIME_REQUIRED');
+    expect(AI_SHARED).toContain('server_cannot_execute_zone0');
+    expect(AI_SHARED.indexOf("if (residency === 'device_local')")).toBeLessThan(
+      AI_SHARED.indexOf('const result = await callProvider({'),
+    );
+  });
+
+  it('keeps VPS ollama on zone 1 with local_open telemetry', () => {
+    expect(AI_SHARED).toContain("if (residency === 'eu_local')");
+    expect(AI_SHARED).toContain("effectiveProvider = 'ollama'");
+    expect(AI_SHARED).toContain("args.provider === 'ollama' ? 'local_open' : 'managed_cloud'");
   });
 
   it('does not introduce wallet, credit-ledger or customer-charge enforcement', () => {

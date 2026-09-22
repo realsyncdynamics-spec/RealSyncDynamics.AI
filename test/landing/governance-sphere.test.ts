@@ -65,9 +65,9 @@ describe('Governance Sphere — demo contract', () => {
     expect(scene).toContain('PhotorealEarthMesh');
     expect(scene).not.toMatch(/\bwireframe\b/);
     expect(scene).not.toContain('icosahedronGeometry');
-    expect(mesh).toContain('/textures/earth-day.jpg');
+    expect(mesh).toContain('/textures/earth-day-2k.webp');
     expect(mesh).toContain('meshBasicMaterial');
-    expect(textures).toContain('earth-day-8k.jpg');
+    expect(textures).toContain('earth-day-4k.webp');
     expect(mesh).toMatch(/uNight|night/i);
     expect(mesh).toMatch(/uClouds|clouds/i);
     expect(fallback).toContain('/europe-globe');
@@ -76,12 +76,11 @@ describe('Governance Sphere — demo contract', () => {
   it('ships adaptive day/night/cloud/specular texture assets', () => {
     const root = resolve(__dirname, '../../public/textures');
     for (const file of [
-      'earth-day.jpg',
-      'earth-day-4k.jpg',
-      'earth-day-8k.jpg',
-      'earth-night.jpg',
-      'earth-clouds.jpg',
-      'earth-specular.jpg',
+      'earth-day-2k.webp',
+      'earth-day-4k.webp',
+      'earth-night-2k.webp',
+      'earth-clouds-2k.webp',
+      'earth-specular-1k.webp',
       'README.md',
     ]) {
       expect(existsSync(resolve(root, file)), file).toBe(true);
@@ -90,9 +89,9 @@ describe('Governance Sphere — demo contract', () => {
 
   it('maps quality tiers to progressive texture paths', () => {
     expect(detectEarthQuality({ reducedMotion: true })).toBe('low');
-    expect(getEarthTextureSet('low').day).toBe('/textures/earth-day.jpg');
-    expect(getEarthTextureSet('medium').day).toBe('/textures/earth-day-4k.jpg');
-    expect(getEarthTextureSet('high').day).toBe('/textures/earth-day-8k.jpg');
+    expect(getEarthTextureSet('low').day).toBe('/textures/earth-day-2k.webp');
+    expect(getEarthTextureSet('medium').day).toBe('/textures/earth-day-2k.webp');
+    expect(getEarthTextureSet('high').day).toBe('/textures/earth-day-4k.webp');
     expect(getEarthTextureSet('high').cloudsEnabled).toBe(true);
     expect(getEarthTextureSet('low').nightEnabled).toBe(false);
   });

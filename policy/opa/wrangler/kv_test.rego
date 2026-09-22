@@ -43,3 +43,12 @@ test_service_role_secret_denied if {
 	}
 	msg == "wrangler secrets_store_secrets secret_name \"LIVE_SERVICE_ROLE\" is forbidden"
 }
+
+test_jwt_secret_binding_denied if {
+	deny[msg] with input as {
+		"secrets_store_secrets": [
+			{"binding": "EDGE_JWT_SECRET", "secret_name": "EDGE_RUNTIME"},
+		],
+	}
+	msg == "wrangler secrets_store_secrets binding \"EDGE_JWT_SECRET\" is forbidden"
+}

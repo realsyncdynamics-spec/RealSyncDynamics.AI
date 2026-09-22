@@ -15,6 +15,11 @@ for (const args of commands) {
     stdio: 'inherit',
   });
 
+  if (result.error) {
+    console.error(`[check:opa] docker invocation failed: ${result.error.message}`);
+    process.exit(1);
+  }
+
   if (result.status !== 0) {
     process.exit(result.status ?? 1);
   }

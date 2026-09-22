@@ -6,6 +6,10 @@ import { lazy, Suspense, useEffect, useState } from 'react';
 
 const HeroEarthBackdropScene = lazy(() => import('./HeroEarthBackdropScene'));
 
+function isAutomation(): boolean {
+  return typeof navigator !== 'undefined' && Boolean(navigator.webdriver);
+}
+
 function usePrefersReducedMotion(): boolean {
   const [reduced, setReduced] = useState(false);
   useEffect(() => {
@@ -134,6 +138,7 @@ function WarmRimLight() {
 
 export function HeroEarthBackdrop() {
   const reducedMotion = usePrefersReducedMotion();
+  const automation = isAutomation();
 
   return (
     <div
@@ -154,7 +159,7 @@ export function HeroEarthBackdrop() {
         }}
       />
       <WarmRimLight />
-      {reducedMotion ? (
+      {reducedMotion || automation ? (
         <StaticEarthPlane />
       ) : (
         <Suspense fallback={<StaticEarthPlane />}>

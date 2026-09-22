@@ -1,6 +1,7 @@
 import { useFrame, useLoader, useThree } from '@react-three/fiber';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
+import type { KTX2Loader } from 'three/addons/loaders/KTX2Loader.js';
 import {
   EARTH_DAY_BOOT,
   detectEarthQuality,
@@ -76,6 +77,39 @@ function loadTexture(url: string, anisotropy: number, colorSpace?: THREE.ColorSp
       reject,
     );
   });
+}
+
+function configureCompressedMap(
+  tex: THREE.CompressedTexture,
+  anisotropy: number,
+  colorSpace?: THREE.ColorSpace,
+) {
+  tex.colorSpace = colorSpace ?? THREE.SRGBColorSpace;
+  tex.anisotropy = anisotropy;
+  tex.wrapS = THREE.ClampToEdgeWrapping;
+  tex.wrapT = THREE.ClampToEdgeWrapping;
+  tex.minFilter = THREE.LinearMipmapLinearFilter;
+  tex.magFilter = THREE.LinearFilter;
+  tex.needsUpdate = true;
+}
+
+async function createKtx2Loader(gl: THREE.WebGLRenderer) {
+  const { KTX2Loader } = await import('three/addons/loaders/KTX2Loader.js');
+  return new KTX2Loader()
+    .setTranscoderPath('/basis/')
+    .setWorkerLimit(2)
+    .detectSupport(gl);
+}
+
+async function loadCompressedTexture(
+  loader: KTX2Loader,
+  url: string,
+  anisotropy: number,
+  colorSpace?: THREE.ColorSpace,
+) {
+  const tex = await loader.loadAsync(url);
+  configureCompressedMap(tex, anisotropy, colorSpace);
+  return tex;
 }
 
 /** Fresnel atmosphere rim — stronger scattering without neon cyberpunk. */
@@ -235,23 +269,57 @@ export function PhotorealEarthMesh({
     const owned: THREE.Texture[] = [];
 
     (async () => {
-      try {
-        if (set.day !== EARTH_DAY_BOOT) {
-          await preloadImage(set.day).catch(() => null);
-          if (cancelled) return;
-          const hi = await loadTexture(set.day, maxAniso);
-          if (cancelled) {
-            hi.dispose();
-            return;
+      let ktx2LoaderPromise: Promise<KTX2Loader> | null = null;
+      const getKtx2Loader = () => {
+        ktx2LoaderPromise ??= createKtx2Loader(gl);
+        return ktx2LoaderPromise;
+      };
+
+      const loadAdaptiveTexture = async (
+        ktx2Url: string | null,
+        webpUrl: string | null,
+        anisotropy: number,
+        colorSpace?: THREE.ColorSpace,
+      ) => {
+        if (ktx2Url) {
+          try {
+            const loader = await getKtx2Loader();
+            return await loadCompressedTexture(loader, ktx2Url, anisotropy, colorSpace);
+          } catch {
+            // KTX2 requires WASM + a supported GPU target. Fall back to WebP.
           }
-          owned.push(hi);
-          setDayMap(hi);
+        }
+
+        if (!webpUrl) return null;
+        return loadTexture(webpUrl, anisotropy, colorSpace);
+      };
+
+      try {
+        if (set.dayKtx2 || set.day !== EARTH_DAY_BOOT) {
+          if (!set.dayKtx2) {
+            await preloadImage(set.day).catch(() => null);
+          }
+          if (cancelled) return;
+          const hi = await loadAdaptiveTexture(set.dayKtx2, set.day, maxAniso);
+          if (hi) {
+            if (cancelled) {
+              hi.dispose();
+              return;
+            }
+            owned.push(hi);
+            setDayMap(hi);
+          }
         }
 
         const jobs: Promise<void>[] = [];
         if (set.nightEnabled && set.night) {
           jobs.push(
-            loadTexture(set.night, Math.min(8, maxAniso)).then((t) => {
+            loadAdaptiveTexture(
+              set.nightKtx2,
+              set.night,
+              Math.min(8, maxAniso),
+            ).then((t) => {
+              if (!t) return;
               if (cancelled) {
                 t.dispose();
                 return;
@@ -263,7 +331,13 @@ export function PhotorealEarthMesh({
         }
         if (set.cloudsEnabled && set.clouds) {
           jobs.push(
-            loadTexture(set.clouds, Math.min(8, maxAniso), THREE.NoColorSpace).then((t) => {
+            loadAdaptiveTexture(
+              set.cloudsKtx2,
+              set.clouds,
+              Math.min(8, maxAniso),
+              THREE.NoColorSpace,
+            ).then((t) => {
+              if (!t) return;
               if (cancelled) {
                 t.dispose();
                 return;
@@ -275,7 +349,13 @@ export function PhotorealEarthMesh({
         }
         if (set.specularEnabled && set.specular) {
           jobs.push(
-            loadTexture(set.specular, 4, THREE.NoColorSpace).then((t) => {
+            loadAdaptiveTexture(
+              set.specularKtx2,
+              set.specular,
+              4,
+              THREE.NoColorSpace,
+            ).then((t) => {
+              if (!t) return;
               if (cancelled) {
                 t.dispose();
                 return;
@@ -291,6 +371,15 @@ export function PhotorealEarthMesh({
         }
       } catch {
         // Boot day alone remains readable.
+      } finally {
+        if (ktx2LoaderPromise) {
+          try {
+            const loader = await ktx2LoaderPromise;
+            loader.dispose();
+          } catch {
+            // Loader initialization failed; WebP fallback already handled it.
+          }
+        }
       }
     })();
 

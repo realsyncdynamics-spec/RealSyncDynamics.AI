@@ -160,7 +160,9 @@ function SceneryEarth({
         palette="landing-gold"
         quality={quality}
       />
-      <SphereGeography zoomRef={geoZoom} earthRadius={EARTH_RADIUS} reducedMotion={reducedMotion} layers={['borders']} />
+      {quality !== 'low' ? (
+        <SphereGeography zoomRef={geoZoom} earthRadius={EARTH_RADIUS} reducedMotion={reducedMotion} layers={['borders']} />
+      ) : null}
       <GoldEuropeNetwork radius={EARTH_RADIUS} reducedMotion={reducedMotion} />
     </group>
   );
@@ -176,16 +178,15 @@ function CameraLock() {
   return null;
 }
 
-function useProgressiveEarthQuality(reducedMotion: boolean): EarthQuality {
-  const [quality, setQuality] = useState<EarthQuality>(() => (reducedMotion ? 'low' : 'medium'));
+/** Landing darf nicht auf 4K springen — das zieht KTX2 + Transcoder in den First View. */
+function useLandingEarthQuality(reducedMotion: boolean): EarthQuality {
+  const [quality, setQuality] = useState<EarthQuality>('low');
   useEffect(() => {
     if (reducedMotion || isAutomation()) return;
     const target = detectEarthQuality({ reducedMotion });
-    if (target !== 'high') {
-      setQuality(target);
-      return;
-    }
-    const delay = window.setTimeout(() => setQuality('high'), 2800);
+    const capped: EarthQuality = target === 'high' ? 'medium' : target;
+    if (capped === 'low') return;
+    const delay = window.setTimeout(() => setQuality(capped), 2200);
     return () => window.clearTimeout(delay);
   }, [reducedMotion]);
   return quality;
@@ -198,8 +199,8 @@ export interface HeroEarthBackdropSceneProps {
 export function HeroEarthBackdropScene({ reducedMotion = false }: HeroEarthBackdropSceneProps) {
   const sunDir = useMemo(() => LANDING_SUN_POSITION.clone().normalize(), []);
   const keyLight = useRef<THREE.DirectionalLight | null>(null);
-  const quality = useProgressiveEarthQuality(reducedMotion);
-  const maxDpr = reducedMotion || isAutomation() ? 1 : quality === 'high' ? 1.5 : 1.25;
+  const quality = useLandingEarthQuality(reducedMotion);
+  const maxDpr = reducedMotion || isAutomation() ? 1 : 1.25;
   return (
     <Canvas
       className="h-full w-full"

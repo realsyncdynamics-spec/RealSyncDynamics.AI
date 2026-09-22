@@ -293,6 +293,9 @@ describe('SQL_ANTWORTEN', () => {
   it('liest die Antwort-Tabelle und zählt Dispatch-Läufe im selben Fenster', () => {
     expect(SQL_ANTWORTEN).toContain('net._http_response');
     expect(SQL_ANTWORTEN).toContain('dispatch_cron_function');
+    expect(SQL_ANTWORTEN).toContain('dispatch_laeufe');
+    expect(SQL_ANTWORTEN).toContain("interval '2 minutes'");
+    expect(SQL_ANTWORTEN).toContain('EXISTS');
     // Das Fenster muss zur Aufbewahrung von net._http_response passen.
     expect(SQL_ANTWORTEN).toContain("interval '6 hours'");
   });

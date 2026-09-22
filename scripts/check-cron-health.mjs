@@ -165,21 +165,32 @@ export function groupByCause(broken) {
 //   B  seit laenger als seiner Kadenz nicht gelaufen  (ausgebliebene Ausfuehrung)
 //   C  Antwort war kein 2xx               (Antwort-Ebene, neu)
 //
-// ## Warum die Antworten nicht je Job zugeordnet werden
+// ## Wie die Antworten der Dispatch-Jobs zugeordnet werden
 //
-// `net.http_request_queue` wird beim Eintreffen der Antwort geleert; die URL
-// ist danach weg. Eine Zuordnung Antwort→Job ginge nur ueber Zeitstempel und
-// waere bei mehreren Jobs in derselben Minute geraten. Der Guard zaehlt
-// deshalb: Jede Nicht-2xx-Antwort im Fenster ist ein Befund, und der
-// Antwortkoerper benennt die Function ohnehin selbst
-// (`{"error":"cron key required"}` etc.). Lieber eine ehrliche Zaehlung als
-// eine erfundene Zuordnung.
+// `net._http_response` enthaelt auch Antworten anderer `net.http_*`-Aufrufe.
+// Wuerde der Guard sie ungefiltert zaehlen, reichen fremde 401/5xx fuer einen
+// Rot-Befund ohne Cron-Drift. Deshalb korrelieren wir ueber Zeit:
+// Nur Antworten, die innerhalb von zwei Minuten nach einem
+// `dispatch_cron_function`-Lauf eintreffen, zaehlen fuer Klasse C.
+//
+// Die Korrelation bleibt absichtlich einfach (kein Job↔Antwort-Matching per
+// ID): sie trennt Cron-Dispatch robust von Fremdverkehr, ohne eine Zuordnung
+// zu erfinden, die `pg_net` nicht garantiert hergibt.
 //
 // `net._http_response` haelt nur rund sechs Stunden vor — das Fenster ist
 // deshalb bewusst kurz und wird in der Ausgabe mitgenannt.
 
 export const SQL_ANTWORTEN = `
 WITH fenster AS (SELECT now() - interval '6 hours' AS ab),
+dispatch_laeufe AS (
+  SELECT d.start_time
+  FROM cron.job_run_details d
+  JOIN cron.job j ON j.jobid = d.jobid
+  CROSS JOIN fenster f
+  WHERE d.start_time >= f.ab
+    AND j.active
+    AND j.command LIKE '%dispatch_cron_function%'
+),
 antworten AS (
   SELECT coalesce(r.status_code::text, '(keine Antwort)') AS status,
          count(*)::int AS anzahl,
@@ -188,16 +199,17 @@ antworten AS (
          left((array_agg(r.content ORDER BY r.created DESC))[1], 200) AS beispiel
   FROM net._http_response r, fenster f
   WHERE r.created >= f.ab
+    AND EXISTS (
+      SELECT 1
+      FROM dispatch_laeufe l
+      WHERE r.created >= l.start_time
+        AND r.created <= l.start_time + interval '2 minutes'
+    )
   GROUP BY 1
 ),
 laeufe AS (
   SELECT count(*)::int AS anzahl
-  FROM cron.job_run_details d
-  JOIN cron.job j ON j.jobid = d.jobid
-  CROSS JOIN fenster f
-  WHERE d.start_time >= f.ab
-    AND j.active
-    AND j.command LIKE '%dispatch_cron_function%'
+  FROM dispatch_laeufe
 )
 SELECT 'antwort' AS art, a.status, a.anzahl, a.von, a.bis, a.beispiel FROM antworten a
 UNION ALL

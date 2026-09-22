@@ -110,16 +110,22 @@ jobs:
         run: npm run build
 
   opa:
-    if: github.event_name != 'pull_request' || !github.event.pull_request.draft
     runs-on: ubuntu-latest
     steps:
+      - name: Draft PR ueberspringt OPA-Pruefung
+        if: github.event_name == 'pull_request' && github.event.pull_request.draft
+        run: echo "::notice::Draft PR — OPA-Pruefung uebersprungen."
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        if: github.event_name != 'pull_request' || !github.event.pull_request.draft
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        if: github.event_name != 'pull_request' || !github.event.pull_request.draft
         with:
           node-version: '20'
           cache: npm
-      - run: npm ci
+      - if: github.event_name != 'pull_request' || !github.event.pull_request.draft
+        run: npm ci
       - name: OPA / Conftest gate
+        if: github.event_name != 'pull_request' || !github.event.pull_request.draft
         run: npm run check:opa
 
   # Sammelknoten mit dem bisherigen Check-Namen `build`.

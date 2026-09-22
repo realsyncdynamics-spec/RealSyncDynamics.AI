@@ -1,0 +1,62 @@
+name: Generate Globe WebP Assets
+
+on:
+  push:
+    branches:
+      - codex/globe-webp-textures-20260922
+    paths:
+      - 'scripts/patch-03-texturen.mjs'
+      - 'public/textures/earth-day-8k.jpg'
+      - 'public/textures/earth-night-4k.jpg'
+      - 'public/textures/earth-clouds-4k.jpg'
+      - 'public/textures/earth-specular.jpg'
+      - '.github/workflows/generate-globe-webp.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: generate-globe-webp-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '20'
+
+      - name: Install one-off encoder
+        run: npm install --no-save --package-lock=false sharp@0.34.4
+
+      - name: Generate optimized textures
+        run: node scripts/patch-03-texturen.mjs
+
+      - name: Verify generated assets
+        run: |
+          test -s public/textures/earth-day-4k.webp
+          test -s public/textures/earth-day-2k.webp
+          test -s public/textures/earth-night-2k.webp
+          test -s public/textures/earth-clouds-2k.webp
+          test -s public/textures/earth-specular-1k.webp
+          du -h public/textures/*.webp
+
+      - name: Commit generated binaries
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/textures/earth-day-4k.webp                   public/textures/earth-day-2k.webp                   public/textures/earth-night-2k.webp                   public/textures/earth-clouds-2k.webp                   public/textures/earth-specular-1k.webp
+          if git diff --cached --quiet; then
+            echo "No generated asset changes."
+            exit 0
+          fi
+          git commit -m "perf(globe): generate optimized WebP textures"
+          git push origin HEAD:codex/globe-webp-textures-20260922

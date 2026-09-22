@@ -35,18 +35,18 @@ jobs:
 
       - name: Install one-off encoder
         run: |
-          mkdir -p .texture-tools
-          cd .texture-tools
+          mkdir -p texture-tools-tmp
+          cd texture-tools-tmp
           npm init -y >/dev/null 2>&1
           npm install --package-lock=false --no-save sharp@0.34.4
           cd ..
-          ln -s .texture-tools/node_modules node_modules
+          ln -s texture-tools-tmp/node_modules node_modules
 
       - name: Generate optimized textures
         run: |
           node scripts/patch-03-texturen.mjs
           rm node_modules
-          rm -rf .texture-tools
+          rm -rf texture-tools-tmp
 
       - name: Verify generated assets
         run: |

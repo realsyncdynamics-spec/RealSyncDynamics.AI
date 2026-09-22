@@ -74,7 +74,7 @@ export function GovernanceAiHero() {
       <div className="relative max-w-[760px]">
         {/* Leseplatte: hält den Textkontrast, ohne die Szene global abzudunkeln. */}
         <div
-          className="pointer-events-none absolute -bottom-11 -left-[60px] -top-14 -right-[180px] -z-10"
+          className="pointer-events-none absolute -bottom-11 -left-[60px] -top-14 -right-[180px] -z-10 max-md:left-0 max-md:right-0"
           aria-hidden="true"
           style={{
             background:

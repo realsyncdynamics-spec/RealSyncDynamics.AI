@@ -1,3 +1,5 @@
+import { getRestaurantMenu } from './restaurant.ts';
+
 // Gemeinsame Helfer für die Bot-Edge-Functions (bot-chat, appointment-book,
 // order-intake, bot-voice-webhook).
 //
@@ -173,8 +175,60 @@ export async function loadRecentHistory(
 
 export interface BuildBotPromptInput {
   persona?: string | null;
+  config?: Record<string, unknown> | null;
   history?: Array<{ role: string; content: string }>;
   userMessage: string;
+}
+
+function recordValue(value: unknown): Record<string, unknown> | null {
+  return value !== null && typeof value === 'object' && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : null;
+}
+
+function textValue(value: unknown, max = 160): string | null {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  return trimmed ? trimmed.slice(0, max) : null;
+}
+
+function nonNegativeNumber(value: unknown): number | null {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : null;
+}
+
+function buildVerticalContext(config: Record<string, unknown> | null | undefined): string | null {
+  if (!config || config.vertical !== 'restaurant') return null;
+  const restaurant = recordValue(config.restaurant) ?? {};
+  const currencyCandidate = textValue(restaurant.currency, 3)?.toUpperCase();
+  const currency = currencyCandidate && /^[A-Z]{3}$/.test(currencyCandidate) ? currencyCandidate : 'EUR';
+  const businessName = textValue(restaurant.business_name);
+  const orderMode = restaurant.order_mode === 'delivery'
+    ? 'nur Lieferung'
+    : restaurant.order_mode === 'pickup'
+      ? 'nur Abholung'
+      : 'Lieferung und Abholung';
+  const minimumOrder = nonNegativeNumber(restaurant.minimum_order);
+  const deliveryFee = nonNegativeNumber(restaurant.delivery_fee);
+  const deliveryMinutes = nonNegativeNumber(restaurant.estimated_delivery_minutes);
+  const menu = getRestaurantMenu(config).slice(0, 80);
+  const menuLines = menu.map((item) =>
+    `- [${item.id}] ${item.name}: ${item.price.toFixed(2)} ${currency} — ${item.available ? 'verfügbar' : 'nicht verfügbar'}`
+  );
+
+  const lines = [
+    'Vertical: Restaurant / Pizza-Service',
+    businessName ? `Unternehmen: ${businessName}` : null,
+    `Bestellmodus: ${orderMode}`,
+    minimumOrder !== null ? `Mindestbestellwert: ${minimumOrder.toFixed(2)} ${currency}` : null,
+    deliveryFee !== null ? `Konfigurierte Liefergebühr: ${deliveryFee.toFixed(2)} ${currency}` : null,
+    deliveryMinutes !== null ? `Lieferzeit-Richtwert: ca. ${Math.round(deliveryMinutes)} Minuten (nicht verbindlich)` : null,
+    menuLines.length > 0 ? `Aktuelles Menü:\n${menuLines.join('\n')}` : 'Aktuelles Menü: keine freigegebenen Einträge',
+    'Regeln: Erfinde keine Produkte, Preise, Verfügbarkeiten, Rabatte oder Lieferzeiten.',
+    'Eine Bestellung, Zahlung oder POS-/Küchenübergabe gilt erst nach bestätigtem Backend-Ergebnis als erfolgreich.',
+    'Bei unklaren Allergenen oder technisch nicht prüfbaren Sonderwünschen keine Vermutung äußern; Übergabe an Mitarbeiter/Küche vorsehen.',
+  ].filter((line): line is string => Boolean(line));
+
+  return lines.join('\n');
 }
 
 /**
@@ -190,6 +244,11 @@ export function buildBotPrompt(input: BuildBotPromptInput): string {
   const persona = (input.persona ?? '').trim();
   if (persona) {
     parts.push(`[Unternehmens-Kontext und Persona]\n${persona}`);
+  }
+
+  const verticalContext = buildVerticalContext(input.config);
+  if (verticalContext) {
+    parts.push(`[Branchenprofil]\n${verticalContext}`);
   }
 
   const history = (input.history ?? []).filter((m) => m.role !== 'system' && m.content.trim());

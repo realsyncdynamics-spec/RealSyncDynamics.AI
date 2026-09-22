@@ -126,7 +126,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const prompt = buildBotPrompt({ persona: bot.persona, history: priorHistory, userMessage: message });
+    const prompt = buildBotPrompt({ persona: bot.persona, config: bot.config, history: priorHistory, userMessage: message });
 
     const ai = await runAiTool(admin, tenantId, null, 'bot_reply', prompt, {
       metadata: { bot_id: bot.id, conversation_id: conversationId, channel: 'chat' },

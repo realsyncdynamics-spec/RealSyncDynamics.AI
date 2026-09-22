@@ -1,30 +1,13 @@
 /**
- * „The Governance AI" — production landing surface for RealSyncDynamics.AI.
- *
- * Umsetzung des Hausstandards „Hollywood Enterprise VIP" (siehe `CLAUDE.md`):
- * True Black, Cyan `#22c3e6` als Aktionsfarbe, City-Light-Gold `#f2c98a` als
- * VIP-Stufe für Enterprise und Agency, Playfair Display als Display-Schnitt.
- * Hinter allem die Erde vor der Milchstraße.
- *
- * ## Production shell
- *
- * The visual layer remains isolated in `.ga-context`; authenticated product
- * data continues to live behind the existing `/app/*` gates and Supabase RLS.
- * This component composes the public acquisition surface only.
- *
- * ## Inhalt kommt aus den SSoT-Dateien
- *
- * Copy, Preise, Roadmap, Module und Navigation lesen die Sektionen selbst aus
- * `hero-content.ts`, `pricing.ts`, `implementation-status.ts`,
- * `governanceModules.ts` und `public-nav.ts`. Diese Datei komponiert nur die
- * Reihenfolge — sie verdrahtet keinen Text fest.
+ * Production landing. Earth hero comes from HeroEarthBackdrop so night lights,
+ * Europe framing and the terminator/moon rig actually mount on `/`.
  */
 import { type PointerEvent as ReactPointerEvent } from 'react';
 import '../../styles/governance-landing-polish.css';
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import { SEOHead } from '../../components/SEOHead';
-import { GovernanceAiBackdrop } from '../../components/landing/GovernanceAiBackdrop';
+import { HeroEarthBackdrop } from '../../components/landing/HeroEarthBackdrop';
 import { GovernanceAiHero } from '../../components/landing/GovernanceAiHero';
 import { GovernanceStatusBar } from '../../components/landing/GovernanceStatusBar';
 import { GovernanceLoopBand } from '../../components/landing/GovernanceLoopBand';
@@ -54,13 +37,6 @@ import { CONTINUOUS_COMPLIANCE_NARRATIVE } from '../../components/governance-fro
 import { CTA } from '../../content/runtimeVocab';
 import { PUBLIC_CTA } from '../../config/public-nav';
 
-/**
- * Gold-Schimmer folgt dem Zeiger über die Karten.
- *
- * Ein Handler auf dem Seiten-Wrapper statt einer je Karte: Die Seite trägt
- * mehr als vierzig `.ga-card`-Flächen, und `pointermove` auf jeder einzelnen
- * wäre spürbar teurer als ein `closest()` pro Bewegung.
- */
 function trackCardSheen(event: ReactPointerEvent<HTMLDivElement>) {
   const card = (event.target as HTMLElement).closest?.('.ga-card');
   if (!(card instanceof HTMLElement)) return;
@@ -84,17 +60,16 @@ export function DesignGovernanceAiLanding() {
         ogDescription="RealSyncDynamics.AI verbindet Governance, Evidence und kontrollierte KI-Ausführung in einer EU-nativen Operations-Schicht."
       />
 
-      <GovernanceAiBackdrop />
+      <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden" data-ga-earth="hero-mount">
+        <HeroEarthBackdrop />
+      </div>
 
       <div className="relative z-10 flex min-h-screen flex-col">
         <GovernanceStatusBar />
         <GovernanceAiHeader />
-
         <GovernanceAiHero />
-
         <RegulatoryTicker />
         <GovernanceLoopBand />
-
         <WorkspacePreviewSection />
         <GovernanceToolsSection />
         <PlatformCapabilitiesSection />
@@ -115,13 +90,9 @@ export function DesignGovernanceAiLanding() {
             <span id="next-heading">
               <SectionHeading centered>Governance statt Checkliste.</SectionHeading>
             </span>
-            <p
-              className="mx-auto mt-4 max-w-[46rem] text-pretty leading-[1.7]"
-              style={{ color: GA_MUTED }}
-            >
+            <p className="mx-auto mt-4 max-w-[46rem] text-pretty leading-[1.7]" style={{ color: GA_MUTED }}>
               {CONTINUOUS_COMPLIANCE_NARRATIVE}
             </p>
-
             <div className="mt-6 flex flex-wrap justify-center gap-2">
               {POLICY_PACKS.map((pack) => (
                 <span
@@ -139,7 +110,6 @@ export function DesignGovernanceAiLanding() {
                 </span>
               ))}
             </div>
-
             <div className="mt-[34px] flex flex-wrap justify-center gap-3.5">
               <Link
                 to={PUBLIC_CTA.to}

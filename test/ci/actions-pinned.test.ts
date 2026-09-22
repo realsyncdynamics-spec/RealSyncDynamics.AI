@@ -79,6 +79,7 @@ function actionRefs(): Ref[] {
 
 const REFS = actionRefs();
 const isPinned = (uses: string) => /@[0-9a-f]{40}$/.test(uses);
+const DRIFT_ALERT = readFileSync(join(WORKFLOWS, 'drift-alert.yml'), 'utf8');
 
 describe('Actions sind auf einen Commit-SHA gepinnt', () => {
   it('findet überhaupt Verweise (Scanner nicht kaputt)', () => {
@@ -130,5 +131,11 @@ describe('Drift Alert kann laufen', () => {
     const script = driftAlert.find((r) => r.uses.startsWith('actions/github-script@'));
     expect(script, 'drift-alert.yml nutzt github-script nicht mehr').toBeDefined();
     expect(isPinned(script!.uses)).toBe(true);
+  });
+
+  it('meldet rote Guards, ohne selbst rot zu werden', () => {
+    expect(DRIFT_ALERT).not.toContain('core.setFailed(');
+    expect(DRIFT_ALERT).toContain('core.notice(`${guard} weiterhin rot');
+    expect(DRIFT_ALERT).toContain('core.notice(`${guard} rot — Issue #${created.number} angelegt.`);');
   });
 });

@@ -17,12 +17,14 @@
  */
 import { describe, expect, it } from 'vitest';
 import {
+  antwortUrsache,
   beschreibeStatus,
   causeKey,
   erwarteterAbstandMinuten,
   evaluate,
   evaluateAntworten,
   evaluateFrische,
+  groupAntwortenByCause,
   groupByCause,
   SQL,
   SQL_ANTWORTEN,
@@ -274,6 +276,51 @@ describe('Klasse C — Antwort-Ebene', () => {
     ]);
     expect(a.summeSchlecht).toBe(4);
   });
+
+  it('vereinheitlicht alle cron-only-Antwortformen auf dieselbe Ursache', () => {
+    const ursachen = [
+      antwortUrsache('{"ok":false,"error":{"code":"UNAUTHORIZED","message":"cron only"}}'),
+      antwortUrsache('{"error":"cron only"}'),
+      antwortUrsache('{"ok":false,"error":"cron only"}'),
+    ];
+    expect(new Set(ursachen).size).toBe(1);
+    expect(ursachen[0]).toContain('cron-vault-secrets.md');
+  });
+
+  it('gruppiert die 40x-401-Messung vom 2026-09-22 zu einer Ursache', () => {
+    const gruppen = groupAntwortenByCause([
+      {
+        art: 'antwort',
+        status: '401',
+        anzahl: 40,
+        von: '2026-09-22 06:15:00.339121+00',
+        bis: '2026-09-22 12:00:00.655852+00',
+        beispiel: '{"ok":false,"error":{"code":"UNAUTHORIZED","message":"cron only"}}',
+      },
+    ]);
+    expect(gruppen).toEqual([
+      {
+        anzahl: 40,
+        ursache: expect.stringContaining('cron-vault-secrets.md'),
+      },
+    ]);
+  });
+
+  it('trennt 401 cron-only von 503 upstream als zwei Ursachen', () => {
+    const gruppen = groupAntwortenByCause([
+      { art: 'antwort', status: '401', anzahl: 40, von: 'a', bis: 'b', beispiel: '{"error":"cron only"}' },
+      { art: 'antwort', status: '503', anzahl: 2, von: 'a', bis: 'b', beispiel: '{"code":"UPSTREAM","message":"upstream timeout"}' },
+    ]);
+    expect(gruppen).toHaveLength(2);
+    expect(gruppen[0]).toEqual({
+      anzahl: 40,
+      ursache: expect.stringContaining('cron-vault-secrets.md'),
+    });
+    expect(gruppen[1]).toEqual({
+      anzahl: 2,
+      ursache: 'UPSTREAM: upstream timeout',
+    });
+  });
 });
 
 describe('Beschriftung der Antwortzeilen', () => {
@@ -295,5 +342,6 @@ describe('SQL_ANTWORTEN', () => {
     expect(SQL_ANTWORTEN).toContain('dispatch_cron_function');
     // Das Fenster muss zur Aufbewahrung von net._http_response passen.
     expect(SQL_ANTWORTEN).toContain("interval '6 hours'");
+    expect(SQL_ANTWORTEN).toContain("GROUP BY 1, left(coalesce(r.content, ''), 200)");
   });
 });

@@ -16,7 +16,7 @@ import {
  */
 
 /** Boot / low-tier day map path (also kept as literal for smoke tests). */
-export const EARTH_DAY_TEXTURE = '/textures/earth-day.jpg';
+export const EARTH_DAY_TEXTURE = '/textures/earth-day-2k.webp';
 
 /** Visual grade for shared Earth mesh. `landing-gold` = public Dark/Gold/Cream only. */
 export type EarthPalette = 'default' | 'landing-gold';
@@ -207,9 +207,9 @@ export function PhotorealEarthMesh({
   const maxTex = gl.capabilities.maxTextureSize;
   const [quality] = useState<EarthQuality>(() => {
     const base = qualityProp ?? detectEarthQuality({ reducedMotion });
-    // Cap to what the GPU can actually sample (8K needs ≥8192).
-    if (base === 'high' && maxTex < 8192) return 'medium';
-    if (base === 'medium' && maxTex < 4096) return 'low';
+    // Cap to what the GPU can actually sample (high = 4K, medium/low = 2K).
+    if (base === 'high' && maxTex < 4096) return 'medium';
+    if (base === 'medium' && maxTex < 2048) return 'low';
     return base;
   });
   const set = useMemo(() => getEarthTextureSet(quality), [quality]);
@@ -263,7 +263,7 @@ export function PhotorealEarthMesh({
         }
         if (set.cloudsEnabled && set.clouds) {
           jobs.push(
-            loadTexture(set.clouds, Math.min(8, maxAniso)).then((t) => {
+            loadTexture(set.clouds, Math.min(8, maxAniso), THREE.NoColorSpace).then((t) => {
               if (cancelled) {
                 t.dispose();
                 return;

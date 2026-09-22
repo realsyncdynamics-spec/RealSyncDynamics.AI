@@ -25,11 +25,11 @@ export interface EarthTextureSet {
 }
 
 /** Boot / reduced-motion / weak mobile — day only, fast FCP. */
-export const EARTH_DAY_BOOT = '/textures/earth-day.jpg';
+export const EARTH_DAY_BOOT = '/textures/earth-day-2k.webp';
 
 const TEXTURE_SETS: Record<EarthQuality, EarthTextureSet> = {
   low: {
-    day: '/textures/earth-day.jpg',
+    day: '/textures/earth-day-2k.webp',
     night: null,
     clouds: null,
     specular: null,
@@ -41,10 +41,10 @@ const TEXTURE_SETS: Record<EarthQuality, EarthTextureSet> = {
     specularEnabled: false,
   },
   medium: {
-    day: '/textures/earth-day-4k.jpg',
-    night: '/textures/earth-night-4k.jpg',
-    clouds: '/textures/earth-clouds-4k.jpg',
-    specular: '/textures/earth-specular.jpg',
+    day: '/textures/earth-day-2k.webp',
+    night: '/textures/earth-night-2k.webp',
+    clouds: '/textures/earth-clouds-2k.webp',
+    specular: '/textures/earth-specular-1k.webp',
     segments: [72, 72],
     anisotropy: 8,
     atmosphere: true,
@@ -53,10 +53,10 @@ const TEXTURE_SETS: Record<EarthQuality, EarthTextureSet> = {
     specularEnabled: true,
   },
   high: {
-    day: '/textures/earth-day-8k.jpg',
-    night: '/textures/earth-night-4k.jpg',
-    clouds: '/textures/earth-clouds-4k.jpg',
-    specular: '/textures/earth-specular.jpg',
+    day: '/textures/earth-day-4k.webp',
+    night: '/textures/earth-night-2k.webp',
+    clouds: '/textures/earth-clouds-2k.webp',
+    specular: '/textures/earth-specular-1k.webp',
     segments: [128, 128],
     anisotropy: 16,
     atmosphere: true,
@@ -94,7 +94,7 @@ export function detectEarthQuality(opts?: {
   if ((coarse || narrow || mobileUA) && lowMem) return 'low';
   if (coarse || narrow || mobileUA) return 'medium';
 
-  // Desktop: prefer 4K medium by default; 8K only with clear headroom.
+  // Desktop: use the 4K WebP high tier with 2K overlays when memory allows.
   if (lowMem) return 'medium';
   const memOk = typeof nav.deviceMemory !== 'number' || nav.deviceMemory >= 8;
   return memOk ? 'high' : 'medium';

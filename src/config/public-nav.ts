@@ -382,15 +382,15 @@ export const PUBLIC_FOOTER_LINKS: PublicNavLeaf[] = [
 ];
 
 export const PUBLIC_CTA = {
-  /** Acquisition CTA — never „Demo“ / „testen“. Scan is entry, not the product. */
-  label: 'Kostenlosen Governance Scan starten',
-  shortLabel: 'Governance Scan',
+  /** Acquisition CTA — Replit SSOT Free Audit (never „Demo“ / „testen“). */
+  label: 'Kostenlosen Audit starten',
+  shortLabel: 'Free Audit',
   to: '/audit',
 } as const;
 
 /**
  * Visible top-level links on PublicDarkHeader.
- * Produkt / Evidence / Preise / Login (+ Governance Scan CTA). Fuller IA in drawer.
+ * Replit strip: Produkt / Evidence / Preise (+ Free Audit CTA). Fuller IA in drawer/public-nav.
  */
 export const PUBLIC_PRIMARY_NAV: readonly PublicNavLeaf[] = [
   { label: 'Produkt', to: '/#product' },

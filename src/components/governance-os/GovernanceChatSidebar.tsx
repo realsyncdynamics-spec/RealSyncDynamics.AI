@@ -189,14 +189,14 @@ export function GovernanceChatSidebar({ open, onClose }: GovernanceChatSidebarPr
           <div className="flex items-center gap-2">
             <ShieldCheck className="h-3.5 w-3.5 text-[#e4cfa2]" />
             <span className="font-mono">{currentAgent.label}</span>
-            <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 bg-teal-400 block" /><span className="font-mono text-[10px] text-teal-400">EU-lokal</span></span>
+            <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 bg-[#e4cfa2] block" /><span className="font-mono text-[10px] text-[#e4cfa2]">EU-lokal</span></span>
           </div>
           <ChevronDown className="h-3.5 w-3.5 text-titanium-500" />
         </button>
         {agentDropdownOpen && (
           <div className="absolute top-full left-0 right-0 z-50 bg-obsidian-950 border border-titanium-900 shadow-xl max-h-64 overflow-y-auto">
             {GOVERNANCE_AGENTS.map((agent) => (
-              <button key={agent.id} onClick={() => { setSelectedAgent(agent.id); setAgentDropdownOpen(false); }} className={`w-full flex items-center gap-2 px-4 py-2 text-xs text-left transition-colors hover:bg-obsidian-800 ${agent.id === selectedAgent ? 'text-teal-400 bg-obsidian-800' : 'text-titanium-200'}`}>
+              <button key={agent.id} onClick={() => { setSelectedAgent(agent.id); setAgentDropdownOpen(false); }} className={`w-full flex items-center gap-2 px-4 py-2 text-xs text-left transition-colors hover:bg-obsidian-800 ${agent.id === selectedAgent ? 'text-[#e4cfa2] bg-obsidian-800' : 'text-titanium-200'}`}>
                 <Bot className="h-3 w-3 shrink-0 text-titanium-500" /><span className="font-mono">{agent.label}</span>
               </button>
             ))}
@@ -214,7 +214,7 @@ export function GovernanceChatSidebar({ open, onClose }: GovernanceChatSidebarPr
         {!historyCollapsed && (
           <div>
             {MOCK_CONVERSATIONS.map((conv) => (
-              <button key={conv.id} onClick={() => setActiveConversationId(conv.id)} className={`w-full flex items-start gap-3 px-4 py-2 text-left transition-colors hover:bg-obsidian-800 ${activeConversationId === conv.id ? 'bg-obsidian-800 border-l-2 border-teal-400' : ''}`}>
+              <button key={conv.id} onClick={() => setActiveConversationId(conv.id)} className={`w-full flex items-start gap-3 px-4 py-2 text-left transition-colors hover:bg-obsidian-800 ${activeConversationId === conv.id ? 'bg-obsidian-800 border-l-2 border-[#e4cfa2]' : ''}`}>
                 <Clock className="h-3.5 w-3.5 text-titanium-600 shrink-0 mt-0.5" />
                 <div className="flex-1 min-w-0"><div className="flex items-center justify-between gap-2"><span className="text-xs text-titanium-100 truncate font-medium">{conv.title}</span><span className="font-mono text-[9px] text-titanium-600 shrink-0">{conv.timestamp}</span></div><span className="font-mono text-[10px] text-titanium-500 truncate block">{conv.agent}</span></div>
               </button>
@@ -228,8 +228,8 @@ export function GovernanceChatSidebar({ open, onClose }: GovernanceChatSidebarPr
         {messages.map((msg) => <ChatMessageView key={msg.id} message={msg} />)}
         {isLoading && (
           <div className="flex items-start gap-2">
-            <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center bg-teal-600 text-[10px] font-bold text-white font-mono">RS</div>
-            <div className="border border-white/10 bg-white/5 px-3 py-2"><div className="flex h-4 items-center gap-1">{[0, 1, 2].map((i) => <span key={i} className="h-1.5 w-1.5 animate-bounce bg-teal-400" style={{ animationDelay: `${i * 150}ms` }} />)}</div></div>
+            <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center bg-[#e4cfa2] text-[10px] font-bold text-[#1a1917] font-mono">RS</div>
+            <div className="border border-white/10 bg-white/5 px-3 py-2"><div className="flex h-4 items-center gap-1">{[0, 1, 2].map((i) => <span key={i} className="h-1.5 w-1.5 animate-bounce bg-[#e4cfa2]" style={{ animationDelay: `${i * 150}ms` }} />)}</div></div>
           </div>
         )}
         <div ref={bottomRef} />
@@ -242,7 +242,7 @@ export function GovernanceChatSidebar({ open, onClose }: GovernanceChatSidebarPr
         </div>
         <div className="flex flex-wrap gap-1.5">
           {context.quickActions.map((action) => (
-            <button key={action} onClick={() => handleQuickAction(action)} className="px-2.5 py-1 text-[10px] font-mono text-titanium-300 bg-obsidian-800 border border-titanium-800 hover:border-teal-700 hover:text-teal-400 transition-colors">{action}</button>
+            <button key={action} onClick={() => handleQuickAction(action)} className="px-2.5 py-1 text-[10px] font-mono text-titanium-300 bg-obsidian-800 border border-titanium-800 hover:border-[#e4cfa2]/60 hover:text-[#e4cfa2] transition-colors">{action}</button>
           ))}
         </div>
       </div>

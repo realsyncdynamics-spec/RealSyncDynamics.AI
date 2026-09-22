@@ -29,12 +29,12 @@ Default für Landing-/Marketing-Arbeit. **Nur diese Pfade lesen/schreiben:**
 
 - `src/pages/` (Public Pages, eager in `App.tsx`)
 - `src/components/` soweit Landing sie importiert
-- `src/index.css`, `tailwind.config.ts`, `src/config/seo.ts`
+- `src/index.css` (Design-Tokens stehen im `@theme`-Block), `src/config/seo.ts`
 - `packages/siteos-core` nur wenn der Builder betroffen ist
 
 **Nicht anfassen und nicht globben:** `supabase/`, `platform/`, `services/`, `apps/`, `docs/` (außer explizit genannt), Root-`*.sql.bak`, `.archive/` (dort liegen u. a. die alten Root-Status-/Phase-Dokumente unter `root-docs/` — nur gezielt greppen, nie einlesen).
 
-Public Marketing = Light-Theme (Slate + Petrol), siehe `AGENTS.md`. App/Dashboard bleibt dunkel. Design-Freeze: bestehende Tokens/Komponenten nicht umstylen ohne Freigabe.
+Public Marketing = dunkel, Cyan trägt die Handlung; Token zentral in `src/index.css` (`.ga-context`), siehe `AGENTS.md`. App/Dashboard bleibt dunkel. Design-Freeze: bestehende Tokens/Komponenten nicht umstylen ohne Freigabe.
 
 ## Harte Verbote
 

@@ -2,10 +2,14 @@
 // Executes a governance agent from the registry and persists results
 //
 // POST /functions/v1/enterprise-ai-os-agents-run
-// Authorization: Bearer <user JWT> (optional, uses anon key if not provided)
+// Authorization: Bearer <user JWT> (Pflicht — verify_jwt = true in config.toml)
 // Body: {
 //   agentId: string (one of: 'ai-discovery-agent', 'risk-classification-agent', etc)
-//   tenantId?: string
+//   tenantId: string — nur ein Claim. Der Handler prueft ueber
+//             requireAuthAndTenant (_shared/auth.ts), ob der angemeldete
+//             Nutzer Mitglied dieses Mandanten ist; erst der gepruefte
+//             Wert (auth.tenantId) wird fuer Reads, Writes und Metering
+//             verwendet. Ohne JWT: 401. Fremder Mandant: 403.
 //   actor?: string (defaults to 'system')
 //   payload?: Record<string, unknown>
 // }
@@ -22,8 +26,9 @@
 //   persist_error?: string
 // }
 
-import { createClient } from 'jsr:@supabase/supabase-js@2';
+import type { SupabaseClient } from 'jsr:@supabase/supabase-js@2';
 import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
+import { requireAuthAndTenant } from '../_shared/auth.ts';
 import { recordUsage } from '../_shared/usage.ts';
 
 // Metered entitlement for agent executions (see migration
@@ -31,12 +36,16 @@ import { recordUsage } from '../_shared/usage.ts';
 // 'error') is logged once for a tenant; stripe-meter-sync bills the overage.
 const AGENT_RUNS_ENTITLEMENT = 'limit.agent_runs_monthly';
 
+/** Wire-Format des Requests. `tenantId` ist hier ein unbestaetigter Claim. */
 interface AgentRunRequest {
   agentId: string;
   tenantId?: string;
   actor?: string;
   payload?: Record<string, unknown>;
 }
+
+/** Was der Executor sieht: kein tenantId — der kommt geprueft als Parameter. */
+type AgentRunInput = Omit<AgentRunRequest, 'tenantId'>;
 
 interface AgentRunResponse {
   agentId: string;
@@ -50,8 +59,20 @@ interface AgentRunResponse {
   persist_error?: string;
 }
 
-async function executeAgent(req: AgentRunRequest): Promise<AgentRunResponse> {
-  const { agentId, tenantId, actor = 'system', payload = {} } = req;
+/**
+ * Fuehrt einen Agenten fuer einen bereits autorisierten Mandanten aus.
+ *
+ * `tenantId` ist `auth.tenantId` aus requireAuthAndTenant, `supabase` der
+ * Service-Role-Client aus demselben Ergebnis (`auth.admin`). Beides existiert
+ * nur, wenn die Mitgliedschaft geprueft wurde — diese Funktion erzeugt keinen
+ * eigenen Service-Role-Client und kennt keinen unbestaetigten Mandanten.
+ */
+async function executeAgent(
+  input: AgentRunInput,
+  tenantId: string,
+  supabase: SupabaseClient,
+): Promise<AgentRunResponse> {
+  const { agentId, actor = 'system', payload = {} } = input;
 
   // Validate agent ID
   const validAgentIds = [
@@ -78,18 +99,6 @@ async function executeAgent(req: AgentRunRequest): Promise<AgentRunResponse> {
   }
 
   try {
-    // Create Supabase client with service role key
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false,
-        },
-      }
-    );
-
     // Execute the appropriate agent logic based on agent ID
     const result = await executeAgentLogic(agentId, {
       tenantId,
@@ -125,9 +134,10 @@ async function executeAgent(req: AgentRunRequest): Promise<AgentRunResponse> {
     }
 
     // Meter the run for billing. Only count runs that actually executed
-    // (status !== 'error') and belong to a tenant. Metering must never break
-    // the agent response, so failures are swallowed into metadata.
-    if (tenantId && result.status !== 'error') {
+    // (status !== 'error'). tenantId ist der gepruefte Mandant aus
+    // requireAuthAndTenant. Metering must never break the agent response,
+    // so failures are swallowed into metadata.
+    if (result.status !== 'error') {
       try {
         await recordUsage(supabase, tenantId, AGENT_RUNS_ENTITLEMENT, 1, {
           agent_id: agentId,
@@ -160,10 +170,11 @@ async function executeAgent(req: AgentRunRequest): Promise<AgentRunResponse> {
 }
 
 interface ExecuteAgentContext {
-  tenantId?: string;
+  /** Geprueft (auth.tenantId) — nie der Body-Claim. */
+  tenantId: string;
   actor: string;
   payload: Record<string, unknown>;
-  supabase: ReturnType<typeof createClient>;
+  supabase: SupabaseClient;
 }
 
 async function executeAgentLogic(
@@ -204,7 +215,7 @@ async function executeDiscoveryAgent(ctx: ExecuteAgentContext): Promise<AgentRun
     const { data: aiSystems } = await supabase
       .from('ai_systems')
       .select('*')
-      .eq('tenant_id', tenantId || null)
+      .eq('tenant_id', tenantId)
       .limit(100);
 
     const findings = aiSystems?.map((system: any) => ({
@@ -507,23 +518,37 @@ Deno.serve(async (req) => {
   }
 
   if (req.method !== 'POST') {
-    return jsonError({ error: 'Method not allowed' }, 405, corsHeaders);
+    return jsonError(405, 'METHOD_NOT_ALLOWED', 'Method not allowed', corsHeaders);
   }
 
   try {
-    const body = await req.json();
-    const input = body as AgentRunRequest;
+    const body = (await req.json()) as Partial<AgentRunRequest>;
 
-    const result = await executeAgent(input);
+    // Autorisierung VOR jedem tenantgebundenen Zugriff und vor dem Agentenlauf.
+    // body.tenantId ist nur ein Claim; der einzige Resolver ist
+    // requireAuthAndTenant (401 ohne Sitzung, 400 ohne tenantId, 403 ohne
+    // Mitgliedschaft). Ab hier zaehlt ausschliesslich auth.tenantId.
+    const auth = await requireAuthAndTenant(
+      req,
+      typeof body.tenantId === 'string' ? body.tenantId : undefined,
+    );
+    if (auth instanceof Response) return auth;
+
+    const tenantId = auth.tenantId;
+
+    const result = await executeAgent(
+      { agentId: String(body.agentId ?? ''), actor: body.actor, payload: body.payload },
+      tenantId,
+      auth.admin,
+    );
     return jsonResponse(result, 200, corsHeaders);
   } catch (err) {
     console.error('Handler error:', err);
     return jsonError(
-      {
-        error: err instanceof Error ? err.message : 'Unknown error',
-      },
       400,
-      corsHeaders
+      'BAD_REQUEST',
+      err instanceof Error ? err.message : 'Unknown error',
+      corsHeaders,
     );
   }
 });

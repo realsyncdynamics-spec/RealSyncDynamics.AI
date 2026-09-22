@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { CalendarDays, ArrowRight, Check } from 'lucide-react';
+import { ensureCsrfCookie } from '../lib/csrf';
+import { edgeFunctionUrl, fnFetchInit, shouldUseFnProxy } from '../lib/fn-proxy';
 
 /**
  * Methodology-Walkthrough-Booking-Flow.
@@ -22,9 +24,6 @@ const SLOT_LABEL: Record<Slot, string> = {
   flexible: 'Flexibel — Vorschlag erbeten',
 };
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string | undefined;
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
-
 export function MethodologyBooking({ source = 'methodology' }: { source?: string }) {
   const [email, setEmail] = useState('');
   const [company, setCompany] = useState('');
@@ -40,25 +39,12 @@ export function MethodologyBooking({ source = 'methodology' }: { source?: string
     setErrorMsg('');
 
     try {
-      // Use existing sales-lead Edge Function. If Supabase env not configured,
-      // fall back to mailto so the form is never a dead end.
-      if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-        const subject = encodeURIComponent(`Methodik-Walkthrough — ${company}`);
-        const body = encodeURIComponent(
-          `Email: ${email}\nFirma: ${company}\nZeit-Slot: ${SLOT_LABEL[slot]}\nThema: ${topic || '—'}\nQuelle: ${source}`,
-        );
-        window.location.href = `mailto:hello@realsyncdynamicsai.de?subject=${subject}&body=${body}`;
-        setStatus('success');
-        return;
-      }
-
-      const response = await fetch(`${SUPABASE_URL}/functions/v1/sales-lead`, {
+      // Existing sales-lead Edge Function via CSRF proxy on production hosts.
+      if (shouldUseFnProxy()) await ensureCsrfCookie();
+      const url = edgeFunctionUrl('sales-lead');
+      const response = await fetch(url, fnFetchInit(url, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-          apikey: SUPABASE_ANON_KEY,
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email,
           company,
@@ -67,7 +53,7 @@ export function MethodologyBooking({ source = 'methodology' }: { source?: string
           time_slot: slot,
           topic: topic || null,
         }),
-      });
+      }));
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);

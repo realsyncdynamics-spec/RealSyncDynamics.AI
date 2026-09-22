@@ -3,8 +3,9 @@ import { Link } from 'react-router-dom';
 import {
   ArrowLeft, Mail, CheckCircle2, AlertTriangle, Loader2, Send,
 } from 'lucide-react';
-
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
+import { normalizePlanKey, planByKey, type PlanKey } from '@/shared/pricing';
+import { ensureCsrfCookie } from '../lib/csrf';
+import { edgeFunctionUrl, fnFetchInit, shouldUseFnProxy } from '../lib/fn-proxy';
 
 interface FormState {
   name: string;
@@ -12,49 +13,116 @@ interface FormState {
   company: string;
   use_case: string;
   message: string;
+  /** Primary company host, e.g. acme.de */
+  company_domain: string;
+  /** Extra hosts, comma / whitespace / semicolon separated */
+  domains: string;
+}
+
+function isInquiryPlanKey(key: PlanKey | null): boolean {
+  if (!key) return false;
+  return planByKey(key)?.purchaseMode === 'inquiry';
+}
+
+/** Matches backend `looksLikeEnterprisePartnerIntent` signal. */
+function looksLikeEnterprisePartnerIntent(...parts: Array<string | null | undefined>): boolean {
+  const hay = parts.filter(Boolean).join(' ').toLowerCase();
+  return /\b(enterprise|partner|scale)\b/.test(hay);
+}
+
+function isFoundingIntent(source: string, intent: string | null): boolean {
+  const hay = `${source} ${intent ?? ''}`.toLowerCase();
+  return /\bfounding\b/.test(hay);
+}
+
+function planBadgeLabel(key: PlanKey): string {
+  const plan = planByKey(key);
+  if (!plan) return key;
+  const yearly = key === plan.yearlyPlanKey;
+  return yearly ? `${plan.name} (Jährlich)` : plan.name;
+}
+
+/**
+ * Default inquiry plan when CTA only sets intent (many legacy links use
+ * `?intent=enterprise` without `?plan=`). scale → partner via normalizePlanKey.
+ */
+function defaultInquiryPlanFromIntent(intent: string | null): PlanKey | null {
+  if (!intent) return null;
+  const lower = intent.toLowerCase();
+  if (/\bpartner\b/.test(lower) || /\bscale\b/.test(lower)) {
+    return normalizePlanKey('partner');
+  }
+  if (/\benterprise\b/.test(lower)) {
+    return normalizePlanKey('enterprise');
+  }
+  return null;
+}
+
+/** Split free-text domain list; backend also accepts a raw string. */
+function parseDomainsInput(raw: string): string[] {
+  return raw
+    .split(/[,;\s]+/)
+    .map((s) => s.trim().toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/.*$/, ''))
+    .filter(Boolean);
 }
 
 export function ContactSales() {
   const [form, setForm] = useState<FormState>({
     name: '', email: '', company: '', use_case: '', message: '',
+    company_domain: '', domains: '',
   });
-  const [source, setSource] = useState('direct');
-  const [tier, setTier] = useState<string | null>(null);
-  // `?intent=` qualifiziert den Lead (enterprise, migration, pricing, …) und
-  // wird von ~12 Call-Sites gesetzt. Bis hierher wurde er nur für das
-  // Vorbelegen von use_case gelesen und dann verworfen — der Kanal, über den
-  // der Lead reinkam, ging im Backend verloren.
+  /** Inbound tracking source (utm / ?source / referrer). */
+  const [inboundSource, setInboundSource] = useState<string | null>(null);
+  /** Kanonischer Plan-Key aus `?plan=` / `?plan_key=` / `?tier=` / intent default. */
+  const [planKey, setPlanKey] = useState<PlanKey | null>(null);
+  /** True when query or CTA signals Enterprise/Partner inquiry. */
+  const [inquirySignal, setInquirySignal] = useState(false);
+  // `?intent=` qualifiziert den Lead (enterprise, migration, pricing, …).
   const [intent, setIntent] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
 
-  // Capture source (utm_source / ?source / referrer), tier, and intent on mount
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const s = params.get('source') ?? params.get('utm_source');
     if (s) {
-      setSource(s);
+      setInboundSource(s);
     } else if (document.referrer) {
       try {
         const ref = new URL(document.referrer);
-        setSource(`ref:${ref.hostname}`);
+        setInboundSource(`ref:${ref.hostname}`);
       } catch { /* ignore */ }
     }
 
-    // Capture tier parameter (scale, enterprise, etc.)
-    const tierParam = params.get('tier');
-    if (tierParam) {
-      setTier(tierParam);
-    }
+    // Checkout redirect: `?plan=`; legacy CTAs: `?tier=` / `?plan_key=`.
+    const rawPlan =
+      params.get('plan') ??
+      params.get('plan_key') ??
+      params.get('tier');
+    const fromQuery = normalizePlanKey(rawPlan);
 
-    // Pre-populate use_case based on intent parameter
-    const i = params.get('intent')?.trim().slice(0, 100);
+    const i = params.get('intent')?.trim().slice(0, 100) ?? null;
     if (i) setIntent(i);
     if (i === 'policy-customization') {
       setForm((prev) => ({ ...prev, use_case: 'compliance' }));
     }
+
+    const fromIntent = defaultInquiryPlanFromIntent(i);
+    const resolved = fromQuery ?? fromIntent;
+    if (resolved) setPlanKey(resolved);
+
+    const signal =
+      Boolean(rawPlan) ||
+      isInquiryPlanKey(resolved) ||
+      looksLikeEnterprisePartnerIntent(i, rawPlan);
+    setInquirySignal(signal);
   }, []);
+
+  const inquiryPlan = isInquiryPlanKey(planKey);
+  const isInquiry = inquirySignal || inquiryPlan;
+  const showFoundingCopy = !isInquiry || isFoundingIntent(inboundSource ?? '', intent);
+  const showPlanBadge = isInquiry && planKey !== null;
 
   function handleChange(field: keyof FormState) {
     return (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -65,8 +133,36 @@ export function ContactSales() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true); setError(null);
+
+    // Inquiry funnel: plan_key is REQUIRED (backend 400 PLAN_KEY_REQUIRED).
+    if (isInquiry && !planKey) {
+      setError('plan_key required for inquiry leads (PLAN_KEY_REQUIRED)');
+      setLoading(false);
+      return;
+    }
+
+    const companyDomain = form.company_domain.trim() || undefined;
+    const domainsList = parseDomainsInput(form.domains);
+    // Prefer array when multiple; single string also accepted by backend.
+    const domainsPayload =
+      domainsList.length > 1
+        ? domainsList
+        : domainsList.length === 1
+          ? domainsList
+          : undefined;
+
+    // Inquiry: preserve utm/source when present; otherwise identify as contact-sales.
+    // Backend normalizes inquiry source → `contact-sales` once plan_key is inquiry.
+    const source = isInquiry
+      ? (inboundSource ?? 'contact-sales')
+      : (inboundSource ?? 'direct');
+
     try {
-      const resp = await fetch(`${SUPABASE_URL}/functions/v1/sales-lead`, {
+      // Production hosts: same-origin `/api/fn/sales-lead` + CSRF.
+      // Localhost: direct `${getSupabaseUrl()}/functions/v1/sales-lead`.
+      if (shouldUseFnProxy()) await ensureCsrfCookie();
+      const url = edgeFunctionUrl('sales-lead');
+      const resp = await fetch(url, fnFetchInit(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -75,17 +171,25 @@ export function ContactSales() {
           company: form.company.trim() || undefined,
           use_case: form.use_case || undefined,
           message: form.message.trim() || undefined,
-          tier: tier || undefined,
+          company_domain: companyDomain,
+          domains: domainsPayload,
+          // Canonical — required for inquiry.
+          ...(planKey ? { plan_key: planKey } : {}),
+          // Optional alias for back-compat (metadata.tier / pre-1452 readers).
+          ...(planKey ? { tier: planKey } : {}),
           source,
           intent: intent ?? undefined,
-          path: window.location.pathname,
+          path: '/contact-sales',
         }),
-      });
+      }));
       const body = await resp.json().catch(() => ({}));
-      if (!resp.ok) throw new Error(body.error?.message ?? `HTTP ${resp.status}`);
+      if (!resp.ok) {
+        const code = body.error?.code ? ` (${body.error.code})` : '';
+        throw new Error((body.error?.message ?? `HTTP ${resp.status}`) + code);
+      }
       setDone(true);
-    } catch (e) {
-      setError((e as Error).message);
+    } catch (err) {
+      setError((err as Error).message);
     } finally {
       setLoading(false);
     }
@@ -112,6 +216,25 @@ export function ContactSales() {
     );
   }
 
+  const headerTitle = showFoundingCopy
+    ? 'Founding Access / Kontakt'
+    : 'Enterprise / Partner Anfrage';
+  const headerSub = showFoundingCopy
+    ? 'AI Agent antwortet sofort'
+    : 'Vertrieb prüft die Anfrage';
+
+  const headline = showFoundingCopy
+    ? (planKey
+      ? `${planBadgeLabel(planKey)} — Founding Access`
+      : 'Founding Access anfragen')
+    : (planKey ? `${planBadgeLabel(planKey)} — Anfrage` : 'Enterprise / Partner anfragen');
+
+  const intro = showFoundingCopy
+    ? '14 Tage kostenloser Enterprise-Zugang für 100 Unternehmen bis 31.12.2026. Gegenleistung: Feedback, Verbesserungsvorschläge und Screenshots von Fehlern. Onboarding komplett AI-geführt: Der Agent gleicht Deinen Use-Case mit den relevanten Features ab und schaltet den Zugang automatisiert frei.'
+    : 'Individuelles Angebot für Enterprise- und Partner-Deployments — Multi-Org, SLA und vertragliche Konditionen. Kurz beschreiben, was Du brauchst; unser Team meldet sich mit einem konkreten Vorschlag.';
+
+  const submitLabel = showFoundingCopy ? 'Founding Access anfragen' : 'Anfrage senden';
+
   return (
     <div className="min-h-screen bg-obsidian-950 text-titanium-100">
       <header className="h-14 border-b border-titanium-900 bg-obsidian-900 flex items-center px-4">
@@ -119,25 +242,39 @@ export function ContactSales() {
           <ArrowLeft className="h-4 w-4" />
         </Link>
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-none bg-gradient-to-br from-emerald-500 to-teal-700 flex items-center justify-center">
-            <Mail className="h-4 w-4 text-white" />
+          <div className="w-8 h-8 rounded-none bg-gradient-to-br from-gold-500 to-gold-700 flex items-center justify-center">
+            <Mail className="h-4 w-4 text-obsidian-950" />
           </div>
           <div className="leading-tight">
-            <div className="font-display font-bold text-sm tracking-tight text-titanium-50">Founding Access / Kontakt</div>
-            <div className="text-[11px] text-titanium-400 font-medium">AI Agent antwortet sofort</div>
+            <div className="font-display font-bold text-sm tracking-tight text-titanium-50">{headerTitle}</div>
+            <div className="text-[11px] text-titanium-400 font-medium">{headerSub}</div>
           </div>
         </div>
       </header>
 
       <main className="max-w-xl mx-auto px-4 sm:px-6 py-10">
+        {showPlanBadge && planKey && (
+          <div
+            data-testid="contact-sales-plan-badge"
+            className="mb-4 inline-flex items-center gap-2 border border-gold-600/60 bg-gold-900/20 px-3 py-1.5"
+          >
+            <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-gold-400">
+              Plan
+            </span>
+            <span className="font-mono text-xs font-bold text-gold-300">
+              {planBadgeLabel(planKey)}
+            </span>
+            <span className="font-mono text-[10px] text-titanium-500">
+              {planKey}
+            </span>
+          </div>
+        )}
+
         <h1 className="font-display text-3xl font-bold text-titanium-50 tracking-tight mb-2">
-          {tier ? `${tier.charAt(0).toUpperCase()}${tier.slice(1)} — Founding Access` : 'Founding Access anfragen'}
+          {headline}
         </h1>
         <p className="text-sm text-titanium-400 leading-relaxed mb-6">
-          14 Tage kostenloser Enterprise-Zugang für 100 Unternehmen bis 31.12.2026.
-          Gegenleistung: Feedback, Verbesserungsvorschläge und Screenshots von Fehlern. Onboarding
-          komplett AI-geführt: Der Agent gleicht Deinen Use-Case mit den relevanten Features ab und
-          schaltet den Zugang automatisiert frei.
+          {intro}
         </p>
 
         {error && (
@@ -165,6 +302,19 @@ export function ContactSales() {
               className="w-full bg-obsidian-950 border border-titanium-900 px-3 py-2.5 text-sm rounded-none outline-none focus:border-security-500" />
           </Field>
 
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Field label="Firmen-Domain (optional)">
+              <input type="text" value={form.company_domain} onChange={handleChange('company_domain')}
+                placeholder="acme.de" autoComplete="url"
+                className="w-full bg-obsidian-950 border border-titanium-900 px-3 py-2.5 text-sm rounded-none outline-none focus:border-security-500" />
+            </Field>
+            <Field label="Weitere Domains (optional)">
+              <input type="text" value={form.domains} onChange={handleChange('domains')}
+                placeholder="acme.com, shop.acme.de"
+                className="w-full bg-obsidian-950 border border-titanium-900 px-3 py-2.5 text-sm rounded-none outline-none focus:border-security-500" />
+            </Field>
+          </div>
+
           <Field label="Use-Case">
             <select value={form.use_case} onChange={handleChange('use_case')}
               className="w-full bg-obsidian-950 border border-titanium-900 px-3 py-2.5 text-sm rounded-none outline-none focus:border-security-500">
@@ -185,11 +335,11 @@ export function ContactSales() {
               className="w-full bg-obsidian-950 border border-titanium-900 px-3 py-2.5 text-sm rounded-none outline-none focus:border-security-500 resize-y" />
           </Field>
 
-          <button type="submit" disabled={loading || !form.email}
+          <button type="submit" disabled={loading || !form.email || (isInquiry && !planKey)}
             className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 bg-security-500 hover:bg-security-600 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold rounded-none">
             {loading
               ? (<><Loader2 className="h-4 w-4 animate-spin" /> Senden…</>)
-              : (<><Send className="h-4 w-4" /> Founding Access anfragen</>)}
+              : (<><Send className="h-4 w-4" /> {submitLabel}</>)}
           </button>
 
           <p className="text-[11px] text-titanium-500 text-center pt-2">

@@ -1,6 +1,7 @@
 // GovernanceBrowserShell — browserartiger Governance-OS-Rahmen für alle /app/* Routen.
 //
-// Layout: TopBar → Tabs → [Canvas + GovernanceChatSidebar] → MobileBottomNav → StatusBar
+// Layout ab `lg`: TopBar → [Sidebar + Canvas + GovernanceChatSidebar] → StatusBar
+// Darunter: TopBar → (Burger-Menü mit GovernanceTabs) → Canvas → MobileBottomNav
 // Embedded Browser: Address-Bar-Eingabe einer echten URL öffnet EmbeddedBrowserCanvas
 // über dem Canvas; Chat-Sidebar bleibt seitlich sichtbar.
 // Command Center: Ctrl/Cmd+K öffnet die Befehlspalette über dem Shell-Chrome.
@@ -8,6 +9,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { BrowserTopBar } from './BrowserTopBar';
 import { GovernanceTabs } from './GovernanceTabs';
+import { GovernanceSidebar } from './GovernanceSidebar';
 import { GovernanceCanvas } from './GovernanceCanvas';
 import { GovernanceStatusBar } from './GovernanceStatusBar';
 import { MobileBottomNavigation } from './MobileBottomNavigation';
@@ -98,7 +100,7 @@ export function GovernanceBrowserShell({ children }: GovernanceBrowserShellProps
 
   return (
     <AppGate>
-      <div className="dashboard-context h-screen h-dvh flex flex-col bg-obsidian-950 text-titanium-100 overflow-hidden">
+      <div className="os-chrome dashboard-context h-screen h-dvh flex flex-col bg-obsidian-950 text-titanium-100 overflow-hidden">
         <BrowserTopBar
           mobileMenuOpen={mobileMenuOpen}
           onToggleMobile={() => setMobileMenuOpen((v) => !v)}
@@ -113,10 +115,6 @@ export function GovernanceBrowserShell({ children }: GovernanceBrowserShellProps
             einem eingeschränkten Konto. Rendert sich selbst weg, wenn kein
             Zahlungsverzug vorliegt. */}
         <PaymentGraceBanner />
-
-        <div className="hidden lg:block">
-          <GovernanceTabs />
-        </div>
 
         {mobileMenuOpen && (
           <nav
@@ -146,6 +144,11 @@ export function GovernanceBrowserShell({ children }: GovernanceBrowserShellProps
             Entitlements — dieselbe Quelle wie der Server, inklusive Grace
             Period und Add-on-Grants. Freie Flächen passieren unverändert. */}
         <div className="flex flex-1 overflow-hidden min-h-0">
+          {/* Modulnavigation ab `lg` links statt oben — Entwurfs-Layout.
+              Auf schmalen Geraeten bleibt es beim Burger-Menue oben und der
+              Tab-Bar unten; die Sidebar blendet sich dort selbst aus. */}
+          <GovernanceSidebar />
+
           {embeddedUrl ? (
             <EmbeddedBrowserCanvas
               url={embeddedUrl}

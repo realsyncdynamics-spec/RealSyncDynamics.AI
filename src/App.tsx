@@ -11,14 +11,14 @@ import { SupabaseAuthProvider } from './features/supabase/SupabaseAuthContext';
 import { ProtectedRoute } from './features/demo/ProtectedRoute';
 import { AppGate } from './features/auth/AppGate';
 import { DemoTourProvider } from './core/demo/DemoTourContext';
-// ── Public entry: MainLanding (Unternehmenshauptseite) auf / — eager for LCP
-import { MainLanding } from './pages/MainLanding';
+// ── Public entry: Claude-Design Governance AI surface on / — eager for LCP
+import { DesignGovernanceAiLanding } from './pages/design/DesignGovernanceAiLanding';
 import { LogoutPage } from './pages/LogoutPage';
 import { Welcome } from './pages/Welcome';
 // FlowProvider stays eager (wraps Routes at root); FlowStepRoute is lazy below.
 import { FlowProvider } from './flow/FlowContext';
 // ── Phase 1: Public/marketing/SEO/demo/unified-entry pages → lazy
-// Keeps MainLanding + auth shell (Welcome/Logout/AppGate) eager for LCP / resume.
+// Keeps the live Governance-AI landing + auth shell eager for LCP / resume.
 const DemoGovernanceDashboard = lazy(() => import('./pages/DemoGovernanceDashboard').then((m) => ({ default: m.DemoGovernanceDashboard })));
 const DemoLandingPage = lazy(() => import('./pages/DemoLandingPage').then((m) => ({ default: m.DemoLandingPage })));
 const DemoTourStartPage = lazy(() => import('./pages/DemoTourStartPage').then((m) => ({ default: m.DemoTourStartPage })));
@@ -27,10 +27,13 @@ const DemoTourCheckoutPage = lazy(() => import('./pages/DemoTourCheckoutPage').t
 const DemoTourDashboard = lazy(() => import('./pages/DemoTourDashboard').then((m) => ({ default: m.DemoTourDashboard })));
 const DesignLedgerLanding = lazy(() => import('./pages/design/DesignLedgerLanding').then((m) => ({ default: m.DesignLedgerLanding })));
 const DesignTribunalLanding = lazy(() => import('./pages/design/DesignTribunalLanding').then((m) => ({ default: m.DesignTribunalLanding })));
+const MainLanding = lazy(() => import('./pages/MainLanding').then((m) => ({ default: m.MainLanding })));
 const ScanStartPage = lazy(() => import('./pages/product-entry-points/ScanStartPage').then((m) => ({ default: m.ScanStartPage })));
 const ChatbotStartPage = lazy(() => import('./pages/product-entry-points/ChatbotStartPage').then((m) => ({ default: m.ChatbotStartPage })));
 const PhonebotStartPage = lazy(() => import('./pages/product-entry-points/PhonebotStartPage').then((m) => ({ default: m.PhonebotStartPage })));
-const AetherOSLanding = lazy(() => import('./pages/AetherOSLanding').then((m) => ({ default: m.AetherOSLanding })));
+const AetherOSLandingRoute = lazy(() =>
+  import('./pages/AetherOSLandingRoute').then((m) => ({ default: m.AetherOSLandingRoute })),
+);
 const RealSyncDynamicsLanding = lazy(() => import('./marketing/landing/RealSyncDynamicsLanding').then((m) => ({ default: m.RealSyncDynamicsLanding })));
 const EnterpriseKonfigurator = lazy(() => import('./pages/EnterpriseKonfigurator'));
 const PublicWorkspacePreview = lazy(() => import('./pages/PublicWorkspacePreview').then((m) => ({ default: m.PublicWorkspacePreview })));
@@ -132,6 +135,7 @@ const DataGuardAlternative = lazy(() => import('./pages/DataGuardAlternative').t
 const BorlabsAlternative = lazy(() => import('./pages/BorlabsAlternative').then((m) => ({ default: m.BorlabsAlternative })));
 const CookiebotAlternative = lazy(() => import('./pages/CookiebotAlternative').then((m) => ({ default: m.CookiebotAlternative })));
 const ProlianceAlternative = lazy(() => import('./pages/ProlianceAlternative').then((m) => ({ default: m.ProlianceAlternative })));
+const CaralegalAlternative = lazy(() => import('./pages/CaralegalAlternative').then((m) => ({ default: m.CaralegalAlternative })));
 const InsuranceLanding = lazy(() => import('./pages/InsuranceLanding').then((m) => ({ default: m.InsuranceLanding })));
 const EcommerceLanding = lazy(() => import('./pages/EcommerceLanding').then((m) => ({ default: m.EcommerceLanding })));
 const About = lazy(() => import('./pages/About').then((m) => ({ default: m.About })));
@@ -475,11 +479,12 @@ function RoutesWithTracking() {
           <Route path="/demo-tour/signup" element={<DemoTourProvider><DemoTourSignupPage /></DemoTourProvider>} />
           <Route path="/demo-tour/checkout" element={<DemoTourProvider><DemoTourCheckoutPage /></DemoTourProvider>} />
           <Route path="/demo-tour/dashboard" element={<DemoTourProvider><DemoTourDashboard /></DemoTourProvider>} />
-      {/* Public — Startseite ist die Governance-OS-Workspace-Vorschau;
-          die Marketing-Landing bleibt unter /landing erreichbar. */}
-      <Route path="/" element={<MainLanding />} />
+      {/* Public — Claude Design visual layer, existing RealSync backend routes. */}
+      <Route path="/" element={<DesignGovernanceAiLanding />} />
 
-      {/* Design previews — do NOT replace live `/`. Honest Preview surfaces. */}
+      {/* Reversible design references; no duplicate backend/runtime paths. */}
+      <Route path="/design/governance-ai" element={<DesignGovernanceAiLanding />} />
+      <Route path="/design/titan" element={<MainLanding />} />
       <Route path="/design/ledger" element={<DesignLedgerLanding />} />
       <Route path="/design/tribunal" element={<DesignTribunalLanding />} />
 
@@ -493,7 +498,7 @@ function RoutesWithTracking() {
       <Route path="/scan/start" element={<ScanStartPage />} />
       <Route path="/chatbot/start" element={<ChatbotStartPage />} />
       <Route path="/phonebot/start" element={<PhonebotStartPage />} />
-      <Route path="/aetheros" element={<AetherOSLanding />} />
+      <Route path="/aetheros" element={<AetherOSLandingRoute />} />
       <Route path="/preview" element={<PublicWorkspacePreview />} />
       <Route path="/landing" element={<Landing />} />
       <Route path="/landingpages" element={<LandingPagesOverview />} />
@@ -628,6 +633,7 @@ function RoutesWithTracking() {
       <Route path="/borlabs-alternative" element={<BorlabsAlternative />} />
       <Route path="/cookiebot-alternative" element={<CookiebotAlternative />} />
       <Route path="/proliance-alternative" element={<ProlianceAlternative />} />
+      <Route path="/caralegal-alternative" element={<CaralegalAlternative />} />
       {/* More Industry-Doorways */}
       <Route path="/versicherungen" element={<InsuranceLanding />} />
       <Route path="/insurance" element={<InsuranceLanding />} />

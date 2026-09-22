@@ -36,8 +36,10 @@ Flipping `status` moves an item between Live / Preview / Coming Soon in the UI.
 6. RealSync Agent OS™ first slice is **preview** on that same `/app` surface
    (`docs/product/realsync-agent-os.md`) — never a second dashboard, never live
    mesh specialists beyond Compliance.
-7. Stripe checkout E2E stays **preview** until Vault secrets (`STRIPE_*`,
-   webhook signing) are set in Supabase Dashboard — code path is wired.
+7. Stripe Checkout E2E is **live**: checkout/webhook/portal wired, Vault
+   Stripe secrets provisioned, live `public.products` defaults (`price_1UEm*`).
+   Monthly self-service for starter/growth/agency; yearly remains coming-soon;
+   enterprise stays inquiry.
 
 ## Automation
 

@@ -29,6 +29,7 @@ import {
   buildBotPrompt, BotError,
 } from '../_shared/bots.ts';
 import { enforceBotMessage } from '../_shared/pdp/botmessage.ts';
+import { runRestaurantConversationTurn } from '../_shared/restaurant-conversation.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -123,6 +124,31 @@ Deno.serve(async (req) => {
         reply: verdict.safe_reply,
         run_id: null,
         policy_blocked: true,
+      });
+    }
+
+    const restaurantTurn = await runRestaurantConversationTurn(
+      admin,
+      bot,
+      conversationId,
+      message,
+      priorHistory,
+      { channel: 'chat', contact: contactLabel },
+    );
+    if (restaurantTurn) {
+      await insertMessage(admin, bot, conversationId, 'assistant', restaurantTurn.reply, {
+        runId: restaurantTurn.runId,
+        inputTokens: restaurantTurn.inputTokens,
+        outputTokens: restaurantTurn.outputTokens,
+        costUsd: restaurantTurn.costUsd,
+        metadata: restaurantTurn.metadata,
+      });
+      return jsonResponse({
+        ok: true,
+        conversation_id: conversationId,
+        reply: restaurantTurn.reply,
+        run_id: restaurantTurn.runId,
+        ...(restaurantTurn.orderId ? { order_id: restaurantTurn.orderId } : {}),
       });
     }
 

@@ -1,4 +1,3 @@
-import type { SupabaseClient } from 'jsr:@supabase/supabase-js@2';
 import { importSecretKey, open } from './secretBox.ts';
 import type {
   RestaurantExecutionAdapter,
@@ -8,7 +7,15 @@ import type {
   RestaurantExecutionVerification,
 } from './restaurant-execution.ts';
 
-type SupabaseAdmin = SupabaseClient;
+// Deliberately structural: these shared modules are checked by both Deno and
+// the Node/Vitest TypeScript graph. A jsr: type-only import breaks the latter.
+interface SupabaseAdmin {
+  // Query builders are runtime-validated by the existing Supabase client.
+  // deno-lint-ignore no-explicit-any
+  from(table: string): any;
+  // deno-lint-ignore no-explicit-any
+  rpc(name: string, args?: Record<string, unknown>): any;
+}
 
 export class RestaurantWebhookError extends Error {
   code: string;

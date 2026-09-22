@@ -238,7 +238,7 @@ async function handleInbound(
     return;
   }
 
-  const prompt = buildBotPrompt({ persona: bot.persona, history: prior, userMessage: msg.text });
+  const prompt = buildBotPrompt({ persona: bot.persona, config: bot.config, history: prior, userMessage: msg.text });
 
   const ai = await runAiTool(admin, bot.tenant_id, null, 'bot_reply', prompt, {
     metadata: { bot_id: bot.id, conversation_id: conversationId, channel: 'whatsapp' },

@@ -102,7 +102,7 @@ async function replyForVoice(
     return verdict.safe_reply!;
   }
 
-  const prompt = buildBotPrompt({ persona: bot.persona, history: prior, userMessage: userText });
+  const prompt = buildBotPrompt({ persona: bot.persona, config: bot.config, history: prior, userMessage: userText });
   const ai = await runAiTool(admin, bot.tenant_id, null, 'bot_reply', prompt, {
     metadata: { bot_id: bot.id, conversation_id: conversationId, channel: 'voice' },
   });

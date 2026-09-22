@@ -194,7 +194,9 @@ export async function runAiTool(
 
   // Resolve effective data residency (tenant policy > user pref > default 'cloud')
   // and override the tool's provider when the caller opted into eu_local routing.
-  const residency = await resolveResidency(admin, tenantId, userId);
+  const residency = normalizeRuntimeResidency(
+    await resolveResidency(admin, tenantId, userId),
+  );
   let effectiveProvider = tool.model_provider;
   let effectiveModelId  = tool.model_id;
   if (residency === 'eu_local') {

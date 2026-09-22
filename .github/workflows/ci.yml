@@ -23,6 +23,9 @@ concurrency:
   group: ci-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
+permissions:
+  contents: read
+
 jobs:
   # Die drei Teile des frueheren `build`-Jobs laufen parallel. Der Job
   # `build` unten fuehrt sie zusammen und behaelt damit den Namen, den die

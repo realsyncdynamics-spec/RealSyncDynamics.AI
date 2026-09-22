@@ -8,7 +8,11 @@ const image =
   'openpolicyagent/conftest:v0.56.0@sha256:6e3fe2e577e745ad30dedc651806ba009f66cf62e12b06fdb99b840c1048ec76';
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const projectDir = path.resolve(scriptDir, '..');
-const dockerMount = `type=bind,source=${projectDir},target=/project`;
+const dockerSourcePath =
+  process.platform === 'win32'
+    ? projectDir.replace(/\\/g, '/').replace(/^([A-Za-z]):/, (_, drive) => `//${drive.toLowerCase()}`)
+    : projectDir;
+const dockerMount = `type=bind,source=${dockerSourcePath},target=/project`;
 
 const commands = [
   ['verify', '-p', 'policy/opa'],

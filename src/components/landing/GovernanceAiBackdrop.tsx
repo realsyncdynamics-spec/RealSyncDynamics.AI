@@ -167,8 +167,9 @@ const STAR_COUNT = 1800;
 
 /**
  * Sternenfeld mit echter Tiefe: Die Punkte fliegen auf die Kamera zu und
- * werden hinter ihr wieder nach hinten gesetzt. Das ist die einzige Bewegung,
- * die dem Hintergrund Raum gibt — die Erde selbst dreht sich fast unmerklich.
+ * werden hinter ihr wieder nach hinten gesetzt. Die Z-Bewegung läuft komplett
+ * im Vertex-Shader. Dadurch entfällt pro Frame die CPU-Schleife über 1.800
+ * Sterne samt Upload des Positions-Buffers zur GPU.
  */
 function Starfield({ animate }: { animate: boolean }) {
   const points = useRef<THREE.Points>(null);
@@ -182,7 +183,8 @@ function Starfield({ animate }: { animate: boolean }) {
     for (let i = 0; i < STAR_COUNT; i++) {
       positions[i * 3] = (rand() - 0.5) * 160;
       positions[i * 3 + 1] = (rand() - 0.5) * 100;
-      positions[i * 3 + 2] = -rand() * 200;
+      // Stationärer Zyklusbereich [-192, 8]: der Shader wickelt exakt über 200 Einheiten.
+      positions[i * 3 + 2] = 8 - rand() * 200;
 
       const roll = rand();
       const colour =
@@ -214,7 +216,10 @@ function Starfield({ animate }: { animate: boolean }) {
           uniform float uPixelRatio;
           void main() {
             vColor = color;
-            vec4 mv = modelViewMatrix * vec4(position, 1.0);
+            vec3 animatedPosition = position;
+            float depthOffset = 8.0 - position.z;
+            animatedPosition.z = 8.0 - mod(depthOffset + uTime * 2.0, 200.0);
+            vec4 mv = modelViewMatrix * vec4(animatedPosition, 1.0);
             vTwinkle = 0.55 + 0.45 * sin(uTime * 1.7 + position.x * 3.1 + position.y * 2.3);
             gl_PointSize = aSize * uPixelRatio * (140.0 / -mv.z);
             gl_Position = projectionMatrix * mv;
@@ -246,13 +251,6 @@ function Starfield({ animate }: { animate: boolean }) {
 
     material.uniforms.uTime.value = state.clock.elapsedTime;
     mesh.rotation.z += delta * 0.006;
-
-    const array = geometry.attributes.position.array as Float32Array;
-    for (let i = 2; i < array.length; i += 3) {
-      array[i] += delta * 2;
-      if (array[i] > 8) array[i] -= 200;
-    }
-    geometry.attributes.position.needsUpdate = true;
   });
 
   return <points ref={points} geometry={geometry} material={material} />;

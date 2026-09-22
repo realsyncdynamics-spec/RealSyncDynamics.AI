@@ -1,0 +1,84 @@
+name: Generate Globe KTX2 Assets
+
+on:
+  push:
+    branches:
+      - codex/globe-ktx2-gpu-compression-20260922
+    paths:
+      - 'scripts/generate-globe-ktx2.sh'
+      - '.github/workflows/generate-globe-ktx2.yml'
+      - 'assets-source/globe/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: generate-globe-ktx2-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '20'
+
+      - name: Install repository dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Install image conversion dependency
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y imagemagick
+
+      - name: Download pinned Khronos KTX tools
+        shell: bash
+        run: |
+          curl -L --fail --retry 3 \
+            -o /tmp/ktx-tools.tar.bz2 \
+            https://github.com/KhronosGroup/KTX-Software/releases/download/v4.4.2/KTX-Software-4.4.2-Linux-x86_64.tar.bz2
+          echo "a8781bad05f9624edbf910b7f258cd0a4ba7d3e63b49ecc0a0ab440bf6a0a245  /tmp/ktx-tools.tar.bz2" | sha256sum -c -
+          mkdir -p /tmp/ktx-tools
+          tar -xjf /tmp/ktx-tools.tar.bz2 -C /tmp/ktx-tools
+          KTX_BIN="$(find /tmp/ktx-tools -type f -path '*/bin/ktx' -print -quit)"
+          test -n "$KTX_BIN"
+          echo "KTX_BIN=$KTX_BIN" >> "$GITHUB_ENV"
+          "$KTX_BIN" --version
+
+      - name: Generate and validate BasisLZ KTX2 textures
+        run: bash scripts/generate-globe-ktx2.sh
+
+      - name: Stage matching Three.js Basis transcoder
+        run: |
+          mkdir -p public/basis
+          cp node_modules/three/examples/jsm/libs/basis/basis_transcoder.js public/basis/
+          cp node_modules/three/examples/jsm/libs/basis/basis_transcoder.wasm public/basis/
+          test -s public/basis/basis_transcoder.js
+          test -s public/basis/basis_transcoder.wasm
+
+      - name: Commit generated binaries
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            public/textures/earth-day-4k.ktx2 \
+            public/textures/earth-day-2k.ktx2 \
+            public/textures/earth-night-2k.ktx2 \
+            public/textures/earth-clouds-2k.ktx2 \
+            public/textures/earth-specular-1k.ktx2 \
+            public/basis/basis_transcoder.js \
+            public/basis/basis_transcoder.wasm
+          if git diff --cached --quiet; then
+            echo "No generated asset changes."
+            exit 0
+          fi
+          git commit -m "perf(globe): generate KTX2 Basis runtime assets"
+          git push origin HEAD:codex/globe-ktx2-gpu-compression-20260922

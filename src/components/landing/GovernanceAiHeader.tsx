@@ -81,10 +81,10 @@ export function GovernanceAiHeader() {
 
   return (
     <header
-      className="relative z-20 border-b backdrop-blur-[18px]"
+      className="sticky top-0 z-50 border-b backdrop-blur-[18px]"
       style={{
         borderColor: GA_LINE_SOFT,
-        backgroundImage: 'linear-gradient(180deg, rgba(0,0,0,.6), rgba(0,0,0,0))',
+        backgroundImage: 'linear-gradient(180deg, rgba(0,0,0,.94), rgba(4,7,10,.86))',
       }}
     >
       <div className="mx-auto flex h-[76px] w-full max-w-[1500px] items-center gap-6 px-[4vw]">

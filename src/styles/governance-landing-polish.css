@@ -1,0 +1,113 @@
+/*
+ * Governance-AI landing polish.
+ *
+ * Scope is intentionally limited to .ga-context so authenticated/app surfaces
+ * cannot inherit marketing typography, spacing, focus or motion changes.
+ */
+
+.ga-context {
+  overflow-x: clip;
+  max-width: 100%;
+  --ga-h1-scale: clamp(2.65rem, 1.25rem + 4.05vw, 4.35rem);
+  --context-section-py: 5rem;
+  --context-section-gap: 1.25rem;
+  --context-card-p: 1.25rem;
+}
+
+.ga-context section {
+  scroll-margin-top: 110px;
+}
+
+.ga-context .text-\[8px\],
+.ga-context .text-\[9px\],
+.ga-context .text-\[10px\] {
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.ga-context .text-\[11px\] {
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.ga-context .text-\[12px\],
+.ga-context .text-\[12\.5px\] {
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.ga-context .text-\[13px\],
+.ga-context .text-\[13\.5px\] {
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.ga-context .text-\[14px\],
+.ga-context .text-\[15px\],
+.ga-context .text-\[15\.5px\] {
+  font-size: 16px;
+  line-height: 1.65;
+}
+
+.ga-context section p:not([class*='max-w']) {
+  max-width: 68ch;
+}
+
+.ga-context .ga-card {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.025),
+    0 18px 48px rgba(0, 0, 0, 0.28);
+  transition:
+    border-color 180ms ease,
+    background-color 180ms ease,
+    transform 180ms ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .ga-context .ga-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(34, 195, 230, 0.24);
+  }
+}
+
+.ga-context :is(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--ga-accent);
+  outline-offset: 3px;
+}
+
+@media (pointer: coarse) {
+  .ga-context footer a,
+  .ga-context a[href^='/legal'],
+  .ga-context a[href='/impressum'],
+  .ga-context a[href='/agb'],
+  .ga-context a[href='/datenschutz'],
+  .ga-context a[href='/kontakt'],
+  .ga-context a[href='/roadmap'] {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding-block: 2px;
+  }
+}
+
+@media (max-width: 767px) {
+  .ga-context {
+    --context-section-py: 3.5rem;
+    --context-card-p: 1rem;
+  }
+
+  .ga-context h1 {
+    text-wrap: balance;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ga-context .ga-ticker-track {
+    animation: none !important;
+    transform: none !important;
+  }
+
+  .ga-context .ga-card {
+    transition: none;
+  }
+}

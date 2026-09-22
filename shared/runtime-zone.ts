@@ -18,11 +18,8 @@ export function normalizeRuntimeResidency(
   }
 }
 
-export function mapResidencyToExecutionZone(
-  residency: unknown,
-  log?: RuntimeResidencyLogger,
-): ExecutionZone {
-  switch (normalizeRuntimeResidency(residency, log)) {
+export function executionZoneFromResidency(residency: RuntimeResidency): ExecutionZone {
+  switch (residency) {
     case 'device_local':
       return 'device_local';
     case 'eu_local':
@@ -31,4 +28,11 @@ export function mapResidencyToExecutionZone(
     default:
       return 'governed_cloud';
   }
+}
+
+export function mapResidencyToExecutionZone(
+  residency: unknown,
+  log?: RuntimeResidencyLogger,
+): ExecutionZone {
+  return executionZoneFromResidency(normalizeRuntimeResidency(residency, log));
 }

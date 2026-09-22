@@ -58,7 +58,8 @@ describe('Runtime Credits — shadow only', () => {
 
   it('records a non-billable shadow envelope on the canonical runAiTool path', () => {
     expect(AI_SHARED).toContain("runtimeClass ?? 'c1_standard'");
-    expect(AI_SHARED).toContain('mapResidencyToExecutionZone(args.residency)');
+    expect(AI_SHARED).toContain('const residency = normalizeRuntimeResidency(args.residency)');
+    expect(AI_SHARED).toContain('executionZoneFromResidency(residency)');
     expect(AI_SHARED).toContain("shadow_rating_status: 'uncalibrated'");
     expect(AI_SHARED).toContain('shadow_credit_estimate: 0');
     expect(AI_SHARED).toContain('wallet_enforced: false');

@@ -15,7 +15,7 @@ import { callProvider, ProviderError } from './providers.ts';
 import { reserveLlmBudget, settleLlmBudget, CostCapError } from './cost-cap.ts';
 import type { ExecutionZone, RuntimeClass } from './pricing.generated.ts';
 import {
-  mapResidencyToExecutionZone,
+  executionZoneFromResidency,
   normalizeRuntimeResidency,
   type RuntimeResidency,
 } from '../../../shared/runtime-zone.ts';
@@ -92,7 +92,8 @@ function buildShadowRatingTelemetry(args: {
   durationMs: number;
   actualProviderCostUsd: number | null;
 }) {
-  const executionZone: ExecutionZone = mapResidencyToExecutionZone(args.residency);
+  const residency = normalizeRuntimeResidency(args.residency);
+  const executionZone: ExecutionZone = executionZoneFromResidency(residency);
   const providerClass: ProviderClass =
     args.provider === 'ollama' ? 'local_open' : 'managed_cloud';
 

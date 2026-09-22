@@ -121,6 +121,41 @@ export function getEarthTextureSet(quality: EarthQuality): EarthTextureSet {
   return TEXTURE_SETS[quality];
 }
 
+/**
+ * KTX2 reduces decoded GPU residency, but the measured Basis payload is larger
+ * than the WebP fallback and requires the WASM transcoder. Keep it targeted to
+ * memory-constrained devices on a non-slow connection instead of making it the
+ * default network path for everyone.
+ */
+export function shouldPreferGpuCompression(hints?: {
+  deviceMemory?: number;
+  saveData?: boolean;
+  effectiveType?: string;
+}): boolean {
+  const nav =
+    typeof navigator === 'undefined'
+      ? undefined
+      : (navigator as Navigator & {
+          deviceMemory?: number;
+          connection?: { saveData?: boolean; effectiveType?: string };
+        });
+
+  const deviceMemory = hints?.deviceMemory ?? nav?.deviceMemory;
+  const saveData = hints?.saveData ?? Boolean(nav?.connection?.saveData);
+  const effectiveType = hints?.effectiveType ?? nav?.connection?.effectiveType;
+
+  if (saveData) return false;
+  if (effectiveType === '2g' || effectiveType === 'slow-2g' || effectiveType === '3g') {
+    return false;
+  }
+
+  return (
+    typeof deviceMemory === 'number' &&
+    deviceMemory > 0 &&
+    deviceMemory <= 4
+  );
+}
+
 /** Preload a URL without blocking React render (upgrade path). */
 export function preloadImage(url: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {

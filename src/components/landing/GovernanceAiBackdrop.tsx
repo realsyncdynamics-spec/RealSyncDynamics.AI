@@ -374,7 +374,6 @@ async function createBackdropKtx2Loader(gl: THREE.WebGLRenderer) {
 }
 
 async function loadAdaptiveEarthMap({
-  gl,
   preferGpuCompression,
   ktx2Url,
   webpUrl,
@@ -382,7 +381,6 @@ async function loadAdaptiveEarthMap({
   anisotropy,
   loader,
 }: {
-  gl: THREE.WebGLRenderer;
   preferGpuCompression: boolean;
   ktx2Url: string | null;
   webpUrl: string;
@@ -423,7 +421,6 @@ function useAdaptiveEarthMaps(set: EarthTextureSet): LoadedEarthMaps | null {
     (async () => {
       const [map, emissiveMap, specularMap, cloudMap] = await Promise.all([
         loadAdaptiveEarthMap({
-          gl,
           preferGpuCompression,
           ktx2Url: set.dayKtx2,
           webpUrl: set.day,
@@ -432,7 +429,6 @@ function useAdaptiveEarthMaps(set: EarthTextureSet): LoadedEarthMaps | null {
           loader: getLoader,
         }),
         loadAdaptiveEarthMap({
-          gl,
           preferGpuCompression,
           ktx2Url: set.nightKtx2,
           webpUrl: set.night ?? set.day,
@@ -441,7 +437,6 @@ function useAdaptiveEarthMaps(set: EarthTextureSet): LoadedEarthMaps | null {
           loader: getLoader,
         }),
         loadAdaptiveEarthMap({
-          gl,
           preferGpuCompression,
           ktx2Url: set.specularKtx2,
           webpUrl: set.specular ?? set.day,
@@ -450,7 +445,6 @@ function useAdaptiveEarthMaps(set: EarthTextureSet): LoadedEarthMaps | null {
           loader: getLoader,
         }),
         loadAdaptiveEarthMap({
-          gl,
           preferGpuCompression,
           ktx2Url: set.cloudsKtx2,
           webpUrl: set.clouds ?? set.day,

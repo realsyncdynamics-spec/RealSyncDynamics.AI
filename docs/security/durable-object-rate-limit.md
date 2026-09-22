@@ -4,50 +4,34 @@
 **Scope:** Optional Cloudflare Durable Object coordination after tenant authorization
 
 ## Decision
-
 **Durable Object = tenant-bound coordination after authorization. Never tenant identity source, never policy authority, never secret store, never evidence vault.**
 
-A Durable Object is a coordination primitive. It does not create an additional RealSync security boundary and does not replace Postgres/RLS, R2 + hash evidence, Vault/function secrets, or the authoritative membership lookup.
+A Durable Object is a coordination primitive. It does not create another RealSync security boundary and does not replace Postgres/RLS, R2 + hash evidence, Vault/function secrets, or authoritative membership lookup.
 
 ## Cloudflare corrections — 2026-09
-
-1. **Concurrency:** one Durable Object ID is single-threaded, but a request is not guaranteed to remain serialized until request end. Other requests on the same ID may interleave across `await fetch()`, R2, or other non-storage I/O. SQLite operations are synchronous and storage gates protect storage access. `blockConcurrencyWhile()` is for initialization/migration, not a general request mutex.
-2. **Data Studio / IAM:** users with Worker Editor access can read/write SQLite-backed Durable Object data. Durable Objects have no separate IAM plane. Secrets and policy plaintext therefore must never be stored in a Durable Object.
-3. **Location:** `locationHint: "eeur"` is best-effort only. `jurisdiction("eu")` constrains compute and persistent Durable Object data to the EU, but this is still not RealSync `eu_private` (DE VPS/device zone). Durable Object IDs may still appear outside the jurisdiction in billing/debug metadata.
-4. **Configuration:** `new_sqlite_classes` is the legacy model. New classes should use declarative `[exports.ClassName]` with `type = "durable-object"` and `storage = "sqlite"`. Do not mix both models. Either path provisions through a Worker deploy and is forbidden while the policy routes remain frozen under #1510.
+1. **Concurrency:** one Durable Object ID is single-threaded, but requests are not serialized until request end. Requests on the same ID may interleave across `await fetch()`, R2, or other non-storage I/O. SQLite operations are synchronous; storage gates protect storage access. `blockConcurrencyWhile()` is for initialization/migration, not a general request mutex.
+2. **Data Studio / IAM:** users with Worker Editor access can read/write SQLite-backed Durable Object data. Durable Objects have no separate IAM plane. Secrets and policy plaintext must never live in a Durable Object.
+3. **Location:** `locationHint: "eeur"` is best-effort only. `jurisdiction("eu")` constrains compute and persistent Durable Object data to the EU, but is still not RealSync `eu_private` (DE VPS/device zone). Durable Object IDs may still appear outside the jurisdiction in billing/debug metadata.
+4. **Configuration:** `new_sqlite_classes` is legacy. New classes should use `[exports.ClassName]`, `type = "durable-object"`, `storage = "sqlite"`. Do not mix both models. Either path requires a Worker deploy and is forbidden while policy routes remain frozen under #1510.
 
 ## Cost and lifecycle
-
 - A hot ID can remain active and accrue runtime duration.
 - An idle hibernation-capable Durable Object incurs no duration while hibernated.
-- SQLite storage persists independently of hibernation.
-- WebSocket hibernation discards in-memory state; the constructor runs again when the object wakes.
+- SQLite storage persists.
+- WebSocket hibernation discards in-memory state; the constructor runs again on wake.
 
 ## Authoritative identity chain
-
 Allowed chain only:
 
 `verifyJwt -> resolveMembership(auth.uid) -> tenantId = membership.tenantId -> optional TenantRateLimit idFromName(tenantId) / getByName(tenantId) -> policy / execution / evidence`
 
-The Durable Object ID must derive only from the tenant ID returned by the authoritative membership lookup.
-
-Forbidden identity sources:
-
-- URL/path tenant
-- JWT custom tenant claim
-- `body.tenant_id`
-- tenant header
-- anonymous/user-controlled key material
-
-The rate limit also comes from the server-side entitlement/plan resolver, never from `request.body`.
+The Durable Object ID derives only from the tenant ID returned by authoritative membership lookup. Forbidden identity sources are URL/path tenant, JWT custom tenant claim, `body.tenant_id`, tenant header, or other user-controlled key material. The limit comes from the server-side entitlement/plan resolver, never `request.body`.
 
 ## Pre-class authorization pattern
-
-Conceptual only; no call-site is introduced by this ADR.
+Conceptual only; this ADR introduces no call-site.
 
 ```ts
 const auth = await verifyJwt(request);
-
 const membership = await resolveMembership(auth.userId);
 
 if (!membership) {
@@ -55,12 +39,10 @@ if (!membership) {
 }
 
 const tenantId = membership.tenantId;
-
 const entitlement = await resolveEntitlement(tenantId);
 
 // Hypothetical binding only. Do not add it while the freeze is active.
 const limiter = env.RATE.getByName(tenantId);
-
 const result = await limiter.consume({
   limit: entitlement.requestsPerMinute,
   windowMs: 60_000,
@@ -79,17 +61,12 @@ if (!result.allowed) {
 ```
 
 ## TenantRateLimit design
-
-The object stores counters only. It has no tenant, policy, secret, evidence, token, document, or authorization columns.
+The object stores counters only: no tenant, policy, secret, evidence, token, document, or authorization columns.
 
 ```ts
 import { DurableObject } from "cloudflare:workers";
 
-type ConsumeInput = {
-  limit: number;
-  windowMs: number;
-};
-
+type ConsumeInput = { limit: number; windowMs: number };
 type ConsumeResult = {
   allowed: boolean;
   remaining: number;
@@ -99,7 +76,6 @@ type ConsumeResult = {
 export class TenantRateLimit extends DurableObject {
   constructor(ctx: DurableObjectState, env: unknown) {
     super(ctx, env);
-
     ctx.blockConcurrencyWhile(async () => {
       ctx.storage.sql.exec(`
         CREATE TABLE IF NOT EXISTS rate_buckets (
@@ -124,18 +100,14 @@ export class TenantRateLimit extends DurableObject {
     const resetAt = windowStart + windowMs;
 
     const rows = this.ctx.storage.sql.exec(
-      `
-      INSERT INTO rate_buckets (window_start, count)
-      VALUES (?, 1)
-      ON CONFLICT(window_start)
-      DO UPDATE SET count = count + 1
-      RETURNING count
-      `,
+      `INSERT INTO rate_buckets (window_start, count)
+       VALUES (?, 1)
+       ON CONFLICT(window_start) DO UPDATE SET count = count + 1
+       RETURNING count`,
       windowStart,
     ).toArray();
 
     const count = Number(rows[0]?.count ?? 1);
-
     this.ctx.storage.sql.exec(
       `DELETE FROM rate_buckets WHERE window_start < ?`,
       windowStart - windowMs,
@@ -151,11 +123,10 @@ export class TenantRateLimit extends DurableObject {
 ```
 
 ## Freeze / scope
-
-This ADR is documentation only and is explicitly out of scope for #1511.
+This ADR is documentation only and explicitly out of scope for #1511.
 
 - No Durable Object binding in `wrangler-workers.toml`.
-- No `[exports.*]`, `new_sqlite_classes`, or other Durable Object migration/configuration.
+- No `[exports.*]`, `new_sqlite_classes`, or Durable Object migration/configuration.
 - No call-site or import in `src/workers/index.ts` or any other worker runtime.
 - No KV creation or other infrastructure provisioning.
 - No deploy.

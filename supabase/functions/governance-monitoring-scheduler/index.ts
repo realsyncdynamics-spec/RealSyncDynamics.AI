@@ -32,7 +32,7 @@
  */
 
 import { createClient, type SupabaseClient } from 'jsr:@supabase/supabase-js@2';
-import { corsHeaders, handleOptions, jsonResponse } from '../_shared/gateway.ts';
+import { buildCorsHeaders, handleOptions, jsonResponse, methodNotAllowed } from '../_shared/gateway.ts';
 import { loadEntitlementsForTenant, hasFeature, type Entitlements } from '../_shared/entitlements.ts';
 import {
   erlaubteKadenz,
@@ -40,20 +40,31 @@ import {
   wirksameKadenz,
   type Kadenz,
 } from '../_shared/monitoring-cadence.ts';
+import {
+  buildDueFilter,
+  buildGovernanceEventRow,
+  buildSourceSelection,
+  resolveSchedulerRequestBody,
+  scanDurationMs,
+  type SchedulerRequestBody,
+} from '../_shared/governanceMonitoringScheduler.ts';
 
 const SUPABASE_URL  = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_KEY   = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+const corsHeaders = buildCorsHeaders('GET, POST, OPTIONS');
 
 // ── Typen ────────────────────────────────────────────────────────────────────
 interface MonitoringSource {
   id: string;
   tenant_id: string;
+  asset_id: string | null;
   type: string;
   name: string;
   url: string | null;
   scan_frequency: 'hourly' | 'daily' | 'weekly' | 'monthly';
   current_score: number | null;
   previous_score: number | null;
+  scan_count: number;
 }
 
 interface ScanResponse {
@@ -64,13 +75,6 @@ interface ScanResponse {
   issues?: Array<{ risk: string; issue: string }>;
   error?: string;
 }
-
-const FREQUENCY_INTERVAL: Record<string, string> = {
-  hourly:  '1 hour',
-  daily:   '24 hours',
-  weekly:  '7 days',
-  monthly: '30 days',
-};
 
 // ── Plan-Gate ───────────────────────────────────────────────────────────────
 //
@@ -125,6 +129,19 @@ function nextScanAt(kadenz: Kadenz): string {
   return naechsterLauf(kadenz, Date.now());
 }
 
+async function rescheduleSource(
+  sb: ReturnType<typeof createClient>,
+  sourceId: string,
+  kadenz: Kadenz,
+  updates: Record<string, unknown> = {},
+) {
+  await sb.from('monitoring_sources').update({
+    last_scan_at: new Date().toISOString(),
+    next_scan_at: nextScanAt(kadenz),
+    ...updates,
+  }).eq('id', sourceId);
+}
+
 async function scanSource(source: MonitoringSource): Promise<ScanResponse> {
   if (!source.url) return { error: 'Keine URL konfiguriert' };
 
@@ -152,17 +169,13 @@ async function emitEvent(
   sb: ReturnType<typeof createClient>,
   tenantId: string,
   sourceId: string,
+  assetId: string | null,
   eventType: string,
   payload: Record<string, unknown>,
 ) {
-  await sb.from('governance_events').insert({
-    tenant_id:    tenantId,
-    event_type:   eventType,
-    event_source: 'monitoring-scheduler',
-    risk_level:   'low',
-    payload,
-    asset_id:     sourceId,
-  });
+  await sb.from('governance_events').insert(
+    buildGovernanceEventRow({ tenantId, sourceId, assetId, eventType, payload }),
+  );
 }
 
 async function createAlert(
@@ -192,8 +205,11 @@ async function createAlert(
 // ── Hauptlogik ───────────────────────────────────────────────────────────────
 
 Deno.serve(async (req) => {
-  const preflight = handleOptions(req);
+  const preflight = handleOptions(req, corsHeaders);
   if (preflight) return preflight;
+  if (req.method !== 'GET' && req.method !== 'POST') {
+    return methodNotAllowed(corsHeaders);
+  }
 
   // Drift-Guard: verify_jwt=false, also eigener Bearer-Check. Credential ist
   // der dedizierte Cron-Key (nicht der service_role JWT). Leerer Key → 401.
@@ -203,15 +219,46 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: 'cron only' }, 401);
   }
 
+  let body: SchedulerRequestBody = {};
+  if (req.method === 'POST') {
+    const rawBody = await req.text();
+    try {
+      body = resolveSchedulerRequestBody(req.method, rawBody);
+    } catch (error) {
+      return jsonResponse(
+        { error: error instanceof SyntaxError ? 'invalid json' : 'invalid scheduler payload' },
+        400,
+      );
+    }
+  }
+
   const sb = createClient(SUPABASE_URL, SERVICE_KEY);
 
+  const nowIso = new Date().toISOString();
+  const selection = buildSourceSelection(body, nowIso);
+  let query = sb.from('monitoring_sources').select('*');
+  if (selection.source_id) {
+    query = query
+      .eq('id', selection.source_id)
+      .in('status', [...selection.statuses]);
+    if (selection.frequency_filter) {
+      query = query.eq('scan_frequency', selection.frequency_filter);
+    }
+  } else {
+    query = query.in('status', [...selection.statuses]);
+    if (selection.dueBefore) {
+      query = query.or(buildDueFilter(selection.dueBefore));
+    }
+    if (selection.frequency_filter) {
+      query = query.eq('scan_frequency', selection.frequency_filter);
+    }
+  }
+
   // Alle fälligen Quellen holen
-  const { data: sources, error: fetchErr } = await sb
-    .from('monitoring_sources')
-    .select('*')
-    .eq('status', 'active')
-    .or('next_scan_at.is.null,next_scan_at.lte.' + new Date().toISOString())
-    .limit(50);
+  const { data: sources, error: fetchErr } = await query
+    .order('next_scan_at', { ascending: true, nullsFirst: true })
+    .order('id', { ascending: true })
+    .limit(selection.limit);
 
   if (fetchErr) {
     return jsonResponse({ error: fetchErr.message }, 500);
@@ -221,7 +268,7 @@ Deno.serve(async (req) => {
     return jsonResponse({ processed: 0, message: 'Keine fälligen Quellen' });
   }
 
-  const results: Array<{ id: string; name: string; status: string; score?: number }> = [];
+  const results: Array<{ id: string; name: string; status: string; score?: number; duration_ms?: number }> = [];
   const entitlementsFuer = entitlementCache(sb);
 
   for (const source of sources as MonitoringSource[]) {
@@ -233,7 +280,7 @@ Deno.serve(async (req) => {
       // Kein Überwachungs-Entitlement. Der Prüfpfad hält fest, dass der Lauf
       // ausgelassen wurde — stilles Überspringen wäre in einem
       // Governance-Produkt der falsche Umgang damit.
-      await emitEvent(sb, source.tenant_id, source.id, 'SCAN_SKIPPED', {
+      await emitEvent(sb, source.tenant_id, source.id, source.asset_id, 'SCAN_SKIPPED', {
         source_name: source.name,
         reason: 'plan_without_monitoring',
       });
@@ -241,9 +288,7 @@ Deno.serve(async (req) => {
       // Lauf die Auswahl von 50 füllen und bezahlte Quellen verdrängen.
       // `status` bleibt `active`: Der Kunde hat die Quelle nicht abgeschaltet,
       // sein Plan trägt sie nur nicht. Nach einem Upgrade läuft sie weiter.
-      await sb.from('monitoring_sources').update({
-        next_scan_at: nextScanAt('daily'),
-      }).eq('id', source.id);
+      await rescheduleSource(sb, source.id, 'daily');
       results.push({ id: source.id, name: source.name, status: 'skipped' });
       continue;
     }
@@ -252,7 +297,7 @@ Deno.serve(async (req) => {
     const driftErlaubt = hasFeature(ent, 'monitoring.drift');
 
     // SCAN_STARTED
-    await emitEvent(sb, source.tenant_id, source.id, 'SCAN_STARTED', {
+    await emitEvent(sb, source.tenant_id, source.id, source.asset_id, 'SCAN_STARTED', {
       source_name: source.name,
       source_type: source.type,
       url: source.url,
@@ -261,21 +306,23 @@ Deno.serve(async (req) => {
     });
 
     // Scan ausführen
+    const scanStartedAt = Date.now();
     const result = await scanSource(source);
+    const duration_ms = scanDurationMs(scanStartedAt, Date.now());
 
     if (result.error) {
       // SCAN_FAILED
-      await emitEvent(sb, source.tenant_id, source.id, 'SCAN_FAILED', {
+      await emitEvent(sb, source.tenant_id, source.id, source.asset_id, 'SCAN_FAILED', {
         error: result.error,
         source_name: source.name,
+        duration_ms,
       });
 
-      await sb.from('monitoring_sources').update({
-        status:       'error',
-        last_error:   result.error,
-        last_scan_at: new Date().toISOString(),
-        next_scan_at: nextScanAt(kadenz),
-      }).eq('id', source.id);
+      await rescheduleSource(sb, source.id, kadenz, {
+        status: 'error',
+        last_error: result.error,
+        scan_count: source.scan_count + 1,
+      });
 
       await createAlert(sb, source.tenant_id, source.id, {
         severity: 'high',
@@ -285,7 +332,7 @@ Deno.serve(async (req) => {
         metadata: { source_url: source.url },
       });
 
-      results.push({ id: source.id, name: source.name, status: 'error' });
+      results.push({ id: source.id, name: source.name, status: 'error', duration_ms });
       continue;
     }
 
@@ -295,12 +342,13 @@ Deno.serve(async (req) => {
       : null;
 
     // SCAN_COMPLETED
-    await emitEvent(sb, source.tenant_id, source.id, 'SCAN_COMPLETED', {
+    await emitEvent(sb, source.tenant_id, source.id, source.asset_id, 'SCAN_COMPLETED', {
       source_name:  source.name,
       score:        newScore,
       score_delta:  scoreDelta,
       trackers:     result.trackers ?? [],
       cookie_count: result.cookie_count ?? 0,
+      duration_ms,
     });
 
     // Score-Drift-Alert bei Verschlechterung > 10 Punkte.
@@ -334,17 +382,15 @@ Deno.serve(async (req) => {
     }
 
     // Monitoring-Quelle aktualisieren
-    await sb.from('monitoring_sources').update({
-      status:         'active',
-      last_error:     null,
-      last_scan_at:   new Date().toISOString(),
-      next_scan_at:   nextScanAt(kadenz),
+    await rescheduleSource(sb, source.id, kadenz, {
+      status: 'active',
+      last_error: null,
       previous_score: source.current_score,
-      current_score:  newScore,
-      scan_count:     (source as MonitoringSource & { scan_count: number }).scan_count + 1,
-    }).eq('id', source.id);
+      current_score: newScore,
+      scan_count: source.scan_count + 1,
+    });
 
-    results.push({ id: source.id, name: source.name, status: 'ok', score: newScore ?? undefined });
+    results.push({ id: source.id, name: source.name, status: 'ok', score: newScore ?? undefined, duration_ms });
   }
 
   return jsonResponse({ processed: results.length, results });

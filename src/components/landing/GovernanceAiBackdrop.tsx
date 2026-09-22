@@ -24,11 +24,12 @@
  */
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { useTexture } from '@react-three/drei';
 import * as THREE from 'three';
+import type { KTX2Loader } from 'three/addons/loaders/KTX2Loader.js';
 import {
   detectEarthQuality,
   getEarthTextureSet,
+  shouldPreferGpuCompression,
   type EarthTextureSet,
 } from '../visual/earthTextures';
 import { prefersReducedMotion } from './prefers-reduced-motion';
@@ -325,6 +326,160 @@ function placeEarth(viewportWidth: number, aspect: number) {
   };
 }
 
+type LoadedEarthMaps = {
+  map: THREE.Texture;
+  emissiveMap: THREE.Texture;
+  specularMap: THREE.Texture;
+  cloudMap: THREE.Texture;
+};
+
+function configureEarthMap(
+  texture: THREE.Texture,
+  colorSpace: THREE.ColorSpace,
+  anisotropy: number,
+) {
+  texture.colorSpace = colorSpace;
+  texture.anisotropy = anisotropy;
+  texture.wrapS = THREE.ClampToEdgeWrapping;
+  texture.wrapT = THREE.ClampToEdgeWrapping;
+  texture.minFilter = THREE.LinearMipmapLinearFilter;
+  texture.magFilter = THREE.LinearFilter;
+  texture.needsUpdate = true;
+}
+
+function loadWebpTexture(
+  url: string,
+  colorSpace: THREE.ColorSpace,
+  anisotropy: number,
+): Promise<THREE.Texture> {
+  return new Promise((resolve, reject) => {
+    new THREE.TextureLoader().load(
+      url,
+      (texture) => {
+        configureEarthMap(texture, colorSpace, anisotropy);
+        resolve(texture);
+      },
+      undefined,
+      reject,
+    );
+  });
+}
+
+async function createBackdropKtx2Loader(gl: THREE.WebGLRenderer) {
+  const { KTX2Loader } = await import('three/addons/loaders/KTX2Loader.js');
+  return new KTX2Loader()
+    .setTranscoderPath('/basis/')
+    .setWorkerLimit(2)
+    .detectSupport(gl);
+}
+
+async function loadAdaptiveEarthMap({
+  preferGpuCompression,
+  ktx2Url,
+  webpUrl,
+  colorSpace,
+  anisotropy,
+  loader,
+}: {
+  preferGpuCompression: boolean;
+  ktx2Url: string | null;
+  webpUrl: string;
+  colorSpace: THREE.ColorSpace;
+  anisotropy: number;
+  loader: () => Promise<KTX2Loader>;
+}): Promise<THREE.Texture> {
+  if (preferGpuCompression && ktx2Url) {
+    try {
+      const ktx2Loader = await loader();
+      const texture = await ktx2Loader.loadAsync(ktx2Url);
+      configureEarthMap(texture, colorSpace, anisotropy);
+      return texture;
+    } catch {
+      // KTX2 is an optimization only. Any WASM/GPU/load failure falls back to WebP.
+    }
+  }
+
+  return loadWebpTexture(webpUrl, colorSpace, anisotropy);
+}
+
+function useAdaptiveEarthMaps(set: EarthTextureSet): LoadedEarthMaps | null {
+  const gl = useThree((state) => state.gl);
+  const [maps, setMaps] = useState<LoadedEarthMaps | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    let owned: THREE.Texture[] = [];
+    let loaderPromise: Promise<KTX2Loader> | null = null;
+    const preferGpuCompression = shouldPreferGpuCompression();
+    const maxAnisotropy = gl.capabilities.getMaxAnisotropy();
+
+    const getLoader = () => {
+      loaderPromise ??= createBackdropKtx2Loader(gl);
+      return loaderPromise;
+    };
+
+    (async () => {
+      const [map, emissiveMap, specularMap, cloudMap] = await Promise.all([
+        loadAdaptiveEarthMap({
+          preferGpuCompression,
+          ktx2Url: set.dayKtx2,
+          webpUrl: set.day,
+          colorSpace: THREE.SRGBColorSpace,
+          anisotropy: Math.min(set.anisotropy, maxAnisotropy),
+          loader: getLoader,
+        }),
+        loadAdaptiveEarthMap({
+          preferGpuCompression,
+          ktx2Url: set.nightKtx2,
+          webpUrl: set.night ?? set.day,
+          colorSpace: THREE.SRGBColorSpace,
+          anisotropy: Math.min(8, maxAnisotropy),
+          loader: getLoader,
+        }),
+        loadAdaptiveEarthMap({
+          preferGpuCompression,
+          ktx2Url: set.specularKtx2,
+          webpUrl: set.specular ?? set.day,
+          colorSpace: THREE.NoColorSpace,
+          anisotropy: Math.min(4, maxAnisotropy),
+          loader: getLoader,
+        }),
+        loadAdaptiveEarthMap({
+          preferGpuCompression,
+          ktx2Url: set.cloudsKtx2,
+          webpUrl: set.clouds ?? set.day,
+          colorSpace: THREE.NoColorSpace,
+          anisotropy: Math.min(8, maxAnisotropy),
+          loader: getLoader,
+        }),
+      ]);
+
+      owned = [map, emissiveMap, specularMap, cloudMap];
+
+      if (cancelled) {
+        for (const texture of owned) texture.dispose();
+        owned = [];
+        return;
+      }
+
+      setMaps({ map, emissiveMap, specularMap, cloudMap });
+    })().catch(() => {
+      // Decorative scene: the outer component keeps the black/cyan fallback readable.
+    });
+
+    return () => {
+      cancelled = true;
+      for (const texture of owned) texture.dispose();
+      owned = [];
+      if (loaderPromise) {
+        void loaderPromise.then((loader) => loader.dispose()).catch(() => undefined);
+      }
+    };
+  }, [gl, set]);
+
+  return maps;
+}
+
 /**
  * @param set Texturstufe. Der Aufrufer stellt sicher, dass Nacht-, Wolken- und
  *   Specular-Karte gesetzt sind — auf der `low`-Stufe, wo sie fehlen, läuft die
@@ -337,21 +492,10 @@ function Earth({ animate, set }: { animate: boolean; set: EarthTextureSet }) {
   const sun = useRef<THREE.DirectionalLight>(null);
   const viewport = useThree((state) => state.viewport);
 
-  const maps = useTexture({
-    map: set.day,
-    emissiveMap: set.night ?? set.day,
-    specularMap: set.specular ?? set.day,
-  });
-  const cloudMap = useTexture(set.clouds ?? set.day);
+  const maps = useAdaptiveEarthMaps(set);
 
   const atmosphere = useMemo(atmosphereMaterial, []);
   useEffect(() => () => atmosphere.dispose(), [atmosphere]);
-
-  useEffect(() => {
-    maps.map.colorSpace = THREE.SRGBColorSpace;
-    maps.emissiveMap.colorSpace = THREE.SRGBColorSpace;
-    cloudMap.colorSpace = THREE.SRGBColorSpace;
-  }, [maps, cloudMap]);
 
   const { scale, x: offsetX, y: offsetY } = placeEarth(viewport.width, viewport.aspect);
 
@@ -384,6 +528,8 @@ function Earth({ animate, set }: { animate: boolean; set: EarthTextureSet }) {
     }
   });
 
+  if (!maps) return null;
+
   return (
     <>
       <ambientLight color={0x2a3a55} intensity={0.16} />
@@ -411,7 +557,7 @@ function Earth({ animate, set }: { animate: boolean; set: EarthTextureSet }) {
 
         <mesh ref={clouds} rotation={[0, EUROPE_FACING_Y, 0]}>
           <sphereGeometry args={[1.008, 96, 96]} />
-          <meshLambertMaterial map={cloudMap} transparent opacity={0.35} depthWrite={false} />
+          <meshLambertMaterial map={maps.cloudMap} transparent opacity={0.35} depthWrite={false} />
         </mesh>
 
         <mesh material={atmosphere}>

@@ -19,6 +19,18 @@ describe('Governance AI public backdrop — adaptive texture path', () => {
     expect(backdrop).toContain('loadWebpTexture');
   });
 
+  it('keeps the procedural sky within the 2048×1024 memory budget', () => {
+    const backdrop = readFileSync(
+      resolve(__dirname, '../../src/components/landing/GovernanceAiBackdrop.tsx'),
+      'utf8',
+    );
+
+    expect(backdrop).toContain('const MILKY_WAY_WIDTH = 2048');
+    expect(backdrop).toContain('const MILKY_WAY_HEIGHT = 1024');
+    expect(backdrop).not.toContain('canvas.width = 4096');
+    expect(backdrop).not.toContain('canvas.height = 2048');
+  });
+
   it('keeps committed KTX2 + Basis runtime assets available to the public surface', () => {
     const root = resolve(__dirname, '../../public');
     for (const file of [

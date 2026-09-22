@@ -117,16 +117,15 @@ jobs:
         run: echo "::notice::Draft PR — OPA-Pruefung uebersprungen."
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         if: github.event_name != 'pull_request' || !github.event.pull_request.draft
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
-        if: github.event_name != 'pull_request' || !github.event.pull_request.draft
-        with:
-          node-version: '20'
-          cache: npm
-      - if: github.event_name != 'pull_request' || !github.event.pull_request.draft
-        run: npm ci
       - name: OPA / Conftest gate
         if: github.event_name != 'pull_request' || !github.event.pull_request.draft
-        run: npm run check:opa
+        env:
+          # Pin Conftest v0.56.0 by digest; update tag and digest together.
+          CONFTEST_IMAGE: openpolicyagent/conftest:v0.56.0@sha256:6e3fe2e577e745ad30dedc651806ba009f66cf62e12b06fdb99b840c1048ec76
+        run: |
+          set -euo pipefail
+          docker run --rm --mount "type=bind,source=$PWD,target=/project" -w /project --entrypoint conftest "$CONFTEST_IMAGE" verify -p policy/opa
+          docker run --rm --mount "type=bind,source=$PWD,target=/project" -w /project --entrypoint conftest "$CONFTEST_IMAGE" test -p policy/opa wrangler-workers.toml wrangler.toml
 
   # Sammelknoten mit dem bisherigen Check-Namen `build`.
   #

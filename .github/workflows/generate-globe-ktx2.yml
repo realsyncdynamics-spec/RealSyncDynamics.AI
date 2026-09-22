@@ -26,6 +26,11 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Sync latest branch head
+        run: |
+          git fetch origin codex/globe-ktx2-gpu-compression-20260922
+          git reset --hard origin/codex/globe-ktx2-gpu-compression-20260922
+
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: '20'

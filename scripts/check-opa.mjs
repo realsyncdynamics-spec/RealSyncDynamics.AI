@@ -8,7 +8,7 @@ const image =
   'openpolicyagent/conftest:v0.56.0@sha256:6e3fe2e577e745ad30dedc651806ba009f66cf62e12b06fdb99b840c1048ec76';
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const projectDir = path.resolve(scriptDir, '..');
-const dockerMount = `${projectDir.replace(/\\/g, '/')}:/project`;
+const dockerMount = `type=bind,source=${projectDir},target=/project`;
 
 const commands = [
   ['verify', '-p', 'policy/opa'],
@@ -16,7 +16,7 @@ const commands = [
 ];
 
 for (const args of commands) {
-  const result = spawnSync('docker', ['run', '--rm', '-v', dockerMount, '-w', '/project', image, ...args], {
+  const result = spawnSync('docker', ['run', '--rm', '--mount', dockerMount, '-w', '/project', '--entrypoint', 'conftest', image, ...args], {
     stdio: 'inherit',
   });
 

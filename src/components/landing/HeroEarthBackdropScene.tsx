@@ -1,9 +1,3 @@
-/**
- * Passive photoreal Earth scenery for the public landing hero backdrop.
- *
- * Europe stays in frame (locked yaw). Day/night terminator walks because
- * the sun direction sweeps — not because the globe free-spins to the Americas.
- */
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Line } from '@react-three/drei';
 import { useEffect, useMemo, useRef, useState, type MutableRefObject } from 'react';
@@ -12,12 +6,12 @@ import { PhotorealEarthMesh } from '../visual/PhotorealEarthMesh';
 import { detectEarthQuality, type EarthQuality } from '../visual/earthTextures';
 import { sphereNodePosition } from '../governance-frontend/governance-sphere-nodes';
 import { SphereGeography } from '../governance-frontend/SphereGeography';
+import { PhaseMoon } from './PhaseMoon';
 
 export const LANDING_SUN_POSITION = new THREE.Vector3(-3.4, 0.55, -1.2);
-
 const EARTH_RADIUS = 1.55;
-/** Full sun sweep period in seconds — slow enough to read as daylight crawl. */
-const TERMINATOR_PERIOD_SEC = 96;
+const TERMINATOR_PERIOD_SEC = 72;
+const EUROPE_LIMB_ROTY = -1.58;
 
 const EUROPE_NETWORK_HUBS: readonly { id: string; lat: number; lon: number }[] = [
   { id: 'berlin', lat: 52.52, lon: 13.41 },
@@ -38,24 +32,12 @@ const EUROPE_NETWORK_HUBS: readonly { id: string; lat: number; lon: number }[] =
 ];
 
 const EUROPE_ROUTES: readonly [string, string][] = [
-  ['london', 'paris'],
-  ['paris', 'berlin'],
-  ['brussels', 'amsterdam'],
-  ['berlin', 'warsaw'],
-  ['berlin', 'vienna'],
-  ['vienna', 'rome'],
-  ['paris', 'madrid'],
-  ['madrid', 'lisbon'],
-  ['amsterdam', 'copenhagen'],
-  ['copenhagen', 'stockholm'],
-  ['berlin', 'prague'],
-  ['rome', 'athens'],
-  ['london', 'dublin'],
-  ['paris', 'rome'],
-  ['brussels', 'berlin'],
-  ['warsaw', 'stockholm'],
-  ['lisbon', 'london'],
-  ['athens', 'vienna'],
+  ['london', 'paris'], ['paris', 'berlin'], ['brussels', 'amsterdam'],
+  ['berlin', 'warsaw'], ['berlin', 'vienna'], ['vienna', 'rome'],
+  ['paris', 'madrid'], ['madrid', 'lisbon'], ['amsterdam', 'copenhagen'],
+  ['copenhagen', 'stockholm'], ['berlin', 'prague'], ['rome', 'athens'],
+  ['london', 'dublin'], ['paris', 'rome'], ['brussels', 'berlin'],
+  ['warsaw', 'stockholm'], ['lisbon', 'london'], ['athens', 'vienna'],
 ];
 
 function isAutomation(): boolean {
@@ -84,19 +66,10 @@ function LandingRenderLoop({ reducedMotion }: { reducedMotion: boolean }) {
   return null;
 }
 
-function buildGreatCirclePoints(
-  a: THREE.Vector3,
-  b: THREE.Vector3,
-  lift: number,
-  segments = 40,
-): THREE.Vector3[] {
+function buildGreatCirclePoints(a: THREE.Vector3, b: THREE.Vector3, lift: number, segments = 40) {
   const mid = a.clone().add(b).multiplyScalar(0.5).normalize().multiplyScalar(lift);
   const curve = new THREE.QuadraticBezierCurve3(a, mid, b);
-  const points: THREE.Vector3[] = [];
-  for (let i = 0; i <= segments; i++) {
-    points.push(curve.getPoint(i / segments));
-  }
-  return points;
+  return Array.from({ length: segments + 1 }, (_, i) => curve.getPoint(i / segments));
 }
 
 function GoldEuropeNetwork({ radius, reducedMotion }: { radius: number; reducedMotion: boolean }) {
@@ -109,7 +82,6 @@ function GoldEuropeNetwork({ radius, reducedMotion }: { radius: number; reducedM
     }
     return map;
   }, [radius]);
-
   const arcs = useMemo(() => {
     const lift = radius * 1.12;
     return EUROPE_ROUTES.flatMap(([from, to], idx) => {
@@ -119,56 +91,33 @@ function GoldEuropeNetwork({ radius, reducedMotion }: { radius: number; reducedM
       return [{ key: `${from}-${to}-${idx}`, points: buildGreatCirclePoints(a, b, lift) }];
     });
   }, [hubs, radius]);
-
   useFrame(({ clock }) => {
     if (!group.current || reducedMotion) return;
     const t = clock.elapsedTime;
     group.current.children.forEach((child, i) => {
       const mat = (child as THREE.Object3D & { material?: THREE.Material }).material;
       if (mat && 'opacity' in mat) {
-        (mat as THREE.Material & { opacity: number }).opacity =
-          0.5 + Math.sin(t * 0.7 + i * 0.15) * 0.12;
+        (mat as THREE.Material & { opacity: number }).opacity = 0.5 + Math.sin(t * 0.7 + i * 0.15) * 0.12;
       }
     });
   });
-
   return (
     <group ref={group} raycast={() => null}>
       {arcs.map(({ key, points }) => (
-        <Line
-          key={key}
-          points={points}
-          color="#e4cfa2"
-          lineWidth={1.15}
-          transparent
-          opacity={0.62}
-          depthWrite={false}
-          toneMapped={false}
-        />
+        <Line key={key} points={points} color="#e4cfa2" lineWidth={1.15} transparent opacity={0.62} depthWrite={false} toneMapped={false} />
       ))}
       {Array.from(hubs.entries()).map(([id, pos]) => (
         <mesh key={id} position={pos.toArray() as [number, number, number]} raycast={() => null}>
           <sphereGeometry args={[0.018, 10, 10]} />
-          <meshBasicMaterial
-            color="#f2e6c8"
-            transparent
-            opacity={0.9}
-            depthWrite={false}
-            toneMapped={false}
-          />
+          <meshBasicMaterial color="#f2e6c8" transparent opacity={0.9} depthWrite={false} toneMapped={false} />
         </mesh>
       ))}
     </group>
   );
 }
 
-const EUROPE_LIMB_ROTY = -1.58;
-
-/** Sun azimuth sweep only — globe yaw stays on Europe. */
 function WalkingSun({
-  reducedMotion,
-  sunDir,
-  keyLight,
+  reducedMotion, sunDir, keyLight,
 }: {
   reducedMotion: boolean;
   sunDir: THREE.Vector3;
@@ -180,17 +129,13 @@ function WalkingSun({
     const az = -0.55 + Math.sin(phase) * 0.62;
     const el = 0.18 + Math.cos(phase) * 0.14;
     sunDir.set(Math.cos(az) * Math.cos(el), Math.sin(el), Math.sin(az) * Math.cos(el)).normalize();
-    if (keyLight.current) {
-      keyLight.current.position.copy(sunDir).multiplyScalar(8);
-    }
+    if (keyLight.current) keyLight.current.position.copy(sunDir).multiplyScalar(8);
   });
   return null;
 }
 
 function SceneryEarth({
-  reducedMotion,
-  sunDir,
-  quality,
+  reducedMotion, sunDir, quality,
 }: {
   reducedMotion: boolean;
   sunDir: THREE.Vector3;
@@ -198,14 +143,11 @@ function SceneryEarth({
 }) {
   const wrap = useRef<THREE.Group>(null!);
   const geoZoom = useRef({ zoom: 1.18 });
-
   useFrame(({ clock }) => {
     if (!wrap.current) return;
-    // Micro-sway only. Never leave the Europe yaw band.
-    const sway = reducedMotion ? 0 : Math.sin(clock.elapsedTime * 0.12) * 0.055;
+    const sway = reducedMotion ? 0 : Math.sin(clock.elapsedTime * 0.18) * 0.32;
     wrap.current.rotation.y = EUROPE_LIMB_ROTY + sway;
   });
-
   return (
     <group ref={wrap} position={[1.95, -0.45, -0.2]} scale={1.68} rotation={[0.22, 0, -0.02]}>
       <PhotorealEarthMesh
@@ -218,12 +160,7 @@ function SceneryEarth({
         palette="landing-gold"
         quality={quality}
       />
-      <SphereGeography
-        zoomRef={geoZoom}
-        earthRadius={EARTH_RADIUS}
-        reducedMotion={reducedMotion}
-        layers={['borders']}
-      />
+      <SphereGeography zoomRef={geoZoom} earthRadius={EARTH_RADIUS} reducedMotion={reducedMotion} layers={['borders']} />
       <GoldEuropeNetwork radius={EARTH_RADIUS} reducedMotion={reducedMotion} />
     </group>
   );
@@ -240,11 +177,7 @@ function CameraLock() {
 }
 
 function useProgressiveEarthQuality(reducedMotion: boolean): EarthQuality {
-  const [quality, setQuality] = useState<EarthQuality>(() => {
-    if (reducedMotion) return 'low';
-    return 'medium';
-  });
-
+  const [quality, setQuality] = useState<EarthQuality>(() => (reducedMotion ? 'low' : 'medium'));
   useEffect(() => {
     if (reducedMotion || isAutomation()) return;
     const target = detectEarthQuality({ reducedMotion });
@@ -255,7 +188,6 @@ function useProgressiveEarthQuality(reducedMotion: boolean): EarthQuality {
     const delay = window.setTimeout(() => setQuality('high'), 2800);
     return () => window.clearTimeout(delay);
   }, [reducedMotion]);
-
   return quality;
 }
 
@@ -268,7 +200,6 @@ export function HeroEarthBackdropScene({ reducedMotion = false }: HeroEarthBackd
   const keyLight = useRef<THREE.DirectionalLight | null>(null);
   const quality = useProgressiveEarthQuality(reducedMotion);
   const maxDpr = reducedMotion || isAutomation() ? 1 : quality === 'high' ? 1.5 : 1.25;
-
   return (
     <Canvas
       className="h-full w-full"
@@ -294,14 +225,10 @@ export function HeroEarthBackdropScene({ reducedMotion = false }: HeroEarthBackd
       <LandingRenderLoop reducedMotion={reducedMotion} />
       <WalkingSun reducedMotion={reducedMotion} sunDir={sunDir} keyLight={keyLight} />
       <ambientLight intensity={0.28} color="#efe4cc" />
-      <directionalLight
-        ref={keyLight}
-        position={[LANDING_SUN_POSITION.x, LANDING_SUN_POSITION.y, LANDING_SUN_POSITION.z]}
-        intensity={1.95}
-        color="#fff6e0"
-      />
+      <directionalLight ref={keyLight} position={[LANDING_SUN_POSITION.x, LANDING_SUN_POSITION.y, LANDING_SUN_POSITION.z]} intensity={2.15} color="#fff6e0" />
       <directionalLight position={[2.8, 0.4, 1.2]} intensity={0.32} color="#9aacc0" />
       <CameraLock />
+      <PhaseMoon reducedMotion={reducedMotion} sunDir={sunDir} />
       <SceneryEarth reducedMotion={reducedMotion} sunDir={sunDir} quality={quality} />
     </Canvas>
   );

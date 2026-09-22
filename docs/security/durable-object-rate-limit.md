@@ -79,6 +79,8 @@ export class TenantRateLimit extends DurableObject {
   }
 
   consume(input: ConsumeInput): ConsumeResult {
+    // Intentionally synchronous: no await between increment and cleanup.
+    // This keeps storage mutation atomic from the caller perspective.
     const limit = Math.trunc(input.limit);
     const windowMs = Math.trunc(input.windowMs);
     if (!Number.isFinite(limit) || limit < 1) throw new Error('invalid rate limit');

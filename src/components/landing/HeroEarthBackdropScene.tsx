@@ -1,12 +1,8 @@
 /**
  * Passive photoreal Earth scenery for the public landing hero backdrop.
  *
- * Europe-night framing (right / background) with gold route network arcs —
- * matches Dominik Grok Imagine mock scenery. Deep space void left for copy.
- * No Sphere HUD, continent UI labels, drag orbit, or fake KPIs.
- * Slow Europe-locked auto-orbit — canvas is pointer-events-none via CSS/host.
- *
- * Perf: boot on medium textures, upgrade to 8K after idle; demand frameloop.
+ * Europe stays in frame (locked yaw). Day/night terminator walks because
+ * the sun direction sweeps — not because the globe free-spins to the Americas.
  */
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Line } from '@react-three/drei';
@@ -20,6 +16,8 @@ import { SphereGeography } from '../governance-frontend/SphereGeography';
 export const LANDING_SUN_POSITION = new THREE.Vector3(-3.4, 0.55, -1.2);
 
 const EARTH_RADIUS = 1.55;
+/** Full sun sweep period in seconds — slow enough to read as daylight crawl. */
+const TERMINATOR_PERIOD_SEC = 96;
 
 const EUROPE_NETWORK_HUBS: readonly { id: string; lat: number; lon: number }[] = [
   { id: 'berlin', lat: 52.52, lon: 13.41 },
@@ -60,28 +58,8 @@ const EUROPE_ROUTES: readonly [string, string][] = [
   ['athens', 'vienna'],
 ];
 
-type ScenerySpin = {
-  rotY: number;
-  dir: 1 | -1;
-};
-
 function isAutomation(): boolean {
   return typeof navigator !== 'undefined' && Boolean(navigator.webdriver);
-}
-
-function LimbLight() {
-  return (
-    <group position={LANDING_SUN_POSITION.toArray() as [number, number, number]}>
-      <pointLight color="#ffe8c4" intensity={1.85} distance={36} decay={2} />
-      <pointLight
-        color="#f0ddb8"
-        intensity={0.7}
-        distance={24}
-        decay={2}
-        position={[0.5, -0.25, 0.35]}
-      />
-    </group>
-  );
 }
 
 function LandingRenderLoop({ reducedMotion }: { reducedMotion: boolean }) {
@@ -186,13 +164,34 @@ function GoldEuropeNetwork({ radius, reducedMotion }: { radius: number; reducedM
 
 const EUROPE_LIMB_ROTY = -1.58;
 
+/** Sun azimuth sweep only — globe yaw stays on Europe. */
+function WalkingSun({
+  reducedMotion,
+  sunDir,
+  keyLight,
+}: {
+  reducedMotion: boolean;
+  sunDir: THREE.Vector3;
+  keyLight: MutableRefObject<THREE.DirectionalLight | null>;
+}) {
+  useFrame(({ clock }) => {
+    if (reducedMotion) return;
+    const phase = (clock.elapsedTime / TERMINATOR_PERIOD_SEC) * Math.PI * 2;
+    const az = -0.55 + Math.sin(phase) * 0.62;
+    const el = 0.18 + Math.cos(phase) * 0.14;
+    sunDir.set(Math.cos(az) * Math.cos(el), Math.sin(el), Math.sin(az) * Math.cos(el)).normalize();
+    if (keyLight.current) {
+      keyLight.current.position.copy(sunDir).multiplyScalar(8);
+    }
+  });
+  return null;
+}
+
 function SceneryEarth({
-  spin,
   reducedMotion,
   sunDir,
   quality,
 }: {
-  spin: MutableRefObject<ScenerySpin>;
   reducedMotion: boolean;
   sunDir: THREE.Vector3;
   quality: EarthQuality;
@@ -200,22 +199,11 @@ function SceneryEarth({
   const wrap = useRef<THREE.Group>(null!);
   const geoZoom = useRef({ zoom: 1.18 });
 
-  useFrame((_, delta) => {
-    const EUROPE_MIN = EUROPE_LIMB_ROTY - 0.38;
-    const EUROPE_MAX = EUROPE_LIMB_ROTY + 0.48;
-    if (!reducedMotion) {
-      spin.current.rotY += delta * 0.048 * spin.current.dir;
-      if (spin.current.rotY > EUROPE_MAX) {
-        spin.current.rotY = EUROPE_MAX;
-        spin.current.dir = -1;
-      } else if (spin.current.rotY < EUROPE_MIN) {
-        spin.current.rotY = EUROPE_MIN;
-        spin.current.dir = 1;
-      }
-    }
-    if (wrap.current) {
-      wrap.current.rotation.y = spin.current.rotY;
-    }
+  useFrame(({ clock }) => {
+    if (!wrap.current) return;
+    // Micro-sway only. Never leave the Europe yaw band.
+    const sway = reducedMotion ? 0 : Math.sin(clock.elapsedTime * 0.12) * 0.055;
+    wrap.current.rotation.y = EUROPE_LIMB_ROTY + sway;
   });
 
   return (
@@ -276,10 +264,9 @@ export interface HeroEarthBackdropSceneProps {
 }
 
 export function HeroEarthBackdropScene({ reducedMotion = false }: HeroEarthBackdropSceneProps) {
-  const sun = LANDING_SUN_POSITION;
   const sunDir = useMemo(() => LANDING_SUN_POSITION.clone().normalize(), []);
+  const keyLight = useRef<THREE.DirectionalLight | null>(null);
   const quality = useProgressiveEarthQuality(reducedMotion);
-  const spin = useRef<ScenerySpin>({ rotY: EUROPE_LIMB_ROTY, dir: 1 });
   const maxDpr = reducedMotion || isAutomation() ? 1 : quality === 'high' ? 1.5 : 1.25;
 
   return (
@@ -305,13 +292,17 @@ export function HeroEarthBackdropScene({ reducedMotion = false }: HeroEarthBackd
       }}
     >
       <LandingRenderLoop reducedMotion={reducedMotion} />
-      <ambientLight intensity={0.34} color="#efe4cc" />
-      <directionalLight position={[sun.x, sun.y, sun.z]} intensity={1.85} color="#fff6e0" />
-      <directionalLight position={[2.8, 0.4, 1.2]} intensity={0.42} color="#9aacc0" />
-      <directionalLight position={[-0.8, -1.2, 2.2]} intensity={0.55} color="#c4aa78" />
-      <LimbLight />
+      <WalkingSun reducedMotion={reducedMotion} sunDir={sunDir} keyLight={keyLight} />
+      <ambientLight intensity={0.28} color="#efe4cc" />
+      <directionalLight
+        ref={keyLight}
+        position={[LANDING_SUN_POSITION.x, LANDING_SUN_POSITION.y, LANDING_SUN_POSITION.z]}
+        intensity={1.95}
+        color="#fff6e0"
+      />
+      <directionalLight position={[2.8, 0.4, 1.2]} intensity={0.32} color="#9aacc0" />
       <CameraLock />
-      <SceneryEarth spin={spin} reducedMotion={reducedMotion} sunDir={sunDir} quality={quality} />
+      <SceneryEarth reducedMotion={reducedMotion} sunDir={sunDir} quality={quality} />
     </Canvas>
   );
 }

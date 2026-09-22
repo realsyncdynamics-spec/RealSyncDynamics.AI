@@ -1,0 +1,175 @@
+{
+  "endpoint": "GET /admin/dashboard/governance-compliance",
+  "stub": true,
+  "generated_at": "2026-09-18T11:57:53.650954+00:00",
+  "aligned_with": "RSD Backend field catalog 2026-09-18",
+  "note": "Aggregate-Wunschshape; Live = Tables + Functions (kein dediziertes GET Pflicht)",
+  "compliance": {
+    "score_overall": null,
+    "score_breakdown": {
+      "score_gdpr": null,
+      "score_nis2": null,
+      "score_dsa": null,
+      "score_ai_act": null,
+      "policy_compliance": null,
+      "vendor_risk": null,
+      "incident_response": null,
+      "data_governance": null
+    },
+    "by_tenant": [],
+    "riskTrendDirection": null,
+    "newIncidents": null,
+    "resolvedIncidents": null,
+    "upcomingDeadlines": [],
+    "criticalFindings": null,
+    "policies": {
+      "documented": null,
+      "pending": null
+    },
+    "vendors": {
+      "active": null,
+      "highRisk": null
+    },
+    "insights": []
+  },
+  "governance": {
+    "orgs": [],
+    "quota": {
+      "bots_used": null,
+      "bots_limit_key": "limit.bots",
+      "bots_usage_key": "bots.count",
+      "bot_messages_used": null,
+      "bot_messages_limit_key": "limit.bot_messages_monthly"
+    },
+    "roles": [
+      "owner",
+      "admin",
+      "dpo",
+      "editor",
+      "viewer_auditor"
+    ],
+    "members_endpoint": "POST /functions/v1/tenant-members"
+  },
+  "sources": {
+    "received_at": "2026-09-18T11:57:53.650954+00:00",
+    "source": "RSD Backend",
+    "dashboard_intelligence": {
+      "path": "POST /functions/v1/dashboard-intelligence",
+      "body": {
+        "tenant_id": "optional",
+        "action": "update_scores|generate_insights|refresh_all"
+      },
+      "http_response": [
+        "ok",
+        "action",
+        "updated_count",
+        "insights_generated",
+        "timestamp_utc"
+      ],
+      "scores_via_rpc": "update_compliance_score",
+      "score_fields": [
+        "score_overall",
+        "score_gdpr",
+        "score_nis2",
+        "score_dsa",
+        "score_ai_act",
+        "policy_compliance",
+        "vendor_risk",
+        "incident_response",
+        "data_governance"
+      ],
+      "read_from": [
+        "compliance_score_history",
+        "Score-Tabellen"
+      ],
+      "insights_row": [
+        "type",
+        "title",
+        "severity",
+        "action",
+        "impact?",
+        "effort?",
+        "confidence"
+      ]
+    },
+    "dashboard_digest": {
+      "path": "POST /functions/v1/dashboard-digest-generate",
+      "body": {
+        "tenant_id": "optional",
+        "action": "generate_digests|generate_single"
+      },
+      "http_response": [
+        "ok",
+        "action",
+        "digests_created",
+        "timestamp_utc"
+      ],
+      "payload_internal": {
+        "newIncidents": "number",
+        "resolvedIncidents": "number",
+        "upcomingDeadlines": "array/count",
+        "riskTrendDirection": "improving|stable|declining",
+        "complianceScore": "number",
+        "criticalFindings": "number",
+        "policies": {
+          "documented": "n",
+          "pending": "n"
+        },
+        "vendors": {
+          "active": "n",
+          "highRisk": "n"
+        }
+      },
+      "note": "Kein incidents_open / risk_trend — nutze newIncidents + riskTrendDirection",
+      "sources": [
+        "incidents",
+        "compliance_score_history.trend_direction",
+        "dpia_assessments",
+        "compliance_policies",
+        "vendors",
+        "audits"
+      ]
+    },
+    "quota": {
+      "limit_bots": "limit.bots (-1 = unlimited)",
+      "usage_bots": "bots.count",
+      "answers": "answersPerMonth → limit.bot_messages_monthly",
+      "read": "RPC tenant_entitlements(p_tenant_id)",
+      "increment_response": [
+        "ok",
+        "total",
+        "hard_limit",
+        "soft_limit",
+        "billing_mode",
+        "warning"
+      ]
+    },
+    "org_roles": {
+      "tenants_table": "tenants (admin often service-role)",
+      "members": "POST /functions/v1/tenant-members ops list|set_role|remove",
+      "list_shape": {
+        "ok": true,
+        "members": [
+          {
+            "user_id": "",
+            "role": "",
+            "created_at": "",
+            "email": "",
+            "is_self": false
+          }
+        ],
+        "caller_role": ""
+      },
+      "roles": [
+        "owner",
+        "admin",
+        "dpo",
+        "editor",
+        "viewer_auditor"
+      ],
+      "invite": "tenant-invite",
+      "partner": "partner-provision-tenant"
+    },
+    "first_view": "compliance_kpi_row"
+  }
+}

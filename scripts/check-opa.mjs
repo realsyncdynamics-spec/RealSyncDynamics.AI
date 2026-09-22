@@ -12,7 +12,7 @@ const dockerSourcePath =
   process.platform === 'win32'
     ? projectDir.replace(/\\/g, '/').replace(/^([A-Za-z]):/, (_, drive) => `//${drive.toLowerCase()}`)
     : projectDir;
-const dockerMount = `type=bind,source=${dockerSourcePath},target=/project`;
+const dockerMount = `type=bind,source=${dockerSourcePath},target=/project,readonly`;
 
 const commands = [
   ['verify', '-p', 'policy/opa'],
@@ -20,7 +20,7 @@ const commands = [
 ];
 
 for (const args of commands) {
-  const result = spawnSync('docker', ['run', '--rm', '--mount', dockerMount, '-w', '/project', '--entrypoint', 'conftest', image, ...args], {
+  const result = spawnSync('docker', ['run', '--rm', '--user', '0:0', '--mount', dockerMount, '-w', '/project', '--entrypoint', 'conftest', image, ...args], {
     stdio: 'inherit',
   });
 

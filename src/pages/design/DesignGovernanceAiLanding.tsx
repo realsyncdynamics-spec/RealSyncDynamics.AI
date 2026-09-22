@@ -20,6 +20,7 @@
  * Reihenfolge — sie verdrahtet keinen Text fest.
  */
 import { type PointerEvent as ReactPointerEvent } from 'react';
+import '../../styles/governance-landing-polish.css';
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import { SEOHead } from '../../components/SEOHead';

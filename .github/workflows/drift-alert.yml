@@ -182,7 +182,7 @@ jobs:
                 issue_number: existing.number,
                 body: `❌ Weiterhin rot — ${link} (${when}).\n\nDer Befund besteht seit dem Öffnen dieses Issues fort.`,
               });
-              core.setFailed(`${guard} weiterhin rot — Issue #${existing.number} aktualisiert.`);
+              core.info(`${guard} weiterhin rot — Issue #${existing.number} aktualisiert.`);
               return;
             }
 
@@ -288,4 +288,4 @@ jobs:
               body,
               labels: [label],
             });
-            core.setFailed(`${guard} rot — Issue #${created.number} angelegt.`);
+            core.info(`${guard} rot — Issue #${created.number} angelegt.`);

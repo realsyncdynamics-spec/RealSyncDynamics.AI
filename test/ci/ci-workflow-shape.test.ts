@@ -26,6 +26,7 @@ import { describe, expect, it } from 'vitest';
 const WORKFLOWS = resolve(__dirname, '../../.github/workflows');
 const ci = readFileSync(resolve(WORKFLOWS, 'ci.yml'), 'utf8');
 const e2e = readFileSync(resolve(WORKFLOWS, 'e2e.yml'), 'utf8');
+const driftAlert = readFileSync(resolve(WORKFLOWS, 'drift-alert.yml'), 'utf8');
 
 /** Zeilen eines Top-Level-Jobs (`  name:` bis zum naechsten `  name:`). */
 function job(source: string, id: string): string {
@@ -179,5 +180,16 @@ describe('ci.yml: schneller Pfad im db-Job', () => {
 
   it('haelt REQUIRE_DB_TESTS auf dem vollen Pfad', () => {
     expect(db).toContain("REQUIRE_DB_TESTS: '1'");
+  });
+});
+
+describe('drift-alert.yml: Notifier bleibt grün', () => {
+  it('verwaltet Drift-Issues ohne den Benachrichtigungsjob rot zu faerben', () => {
+    expect(driftAlert).toContain('Issue für Drift-Befund pflegen');
+    expect(driftAlert).toContain('github.event.workflow_run.conclusion == \'failure\' ||');
+    expect(driftAlert).toContain('github.event.workflow_run.conclusion == \'success\'');
+    expect(driftAlert).not.toContain('core.setFailed(');
+    expect(driftAlert).toContain('core.info(`${guard} weiterhin rot — Issue #${existing.number} aktualisiert.`);');
+    expect(driftAlert).toContain('core.info(`${guard} rot — Issue #${created.number} angelegt.`);');
   });
 });

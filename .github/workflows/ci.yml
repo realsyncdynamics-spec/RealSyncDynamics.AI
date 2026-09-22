@@ -124,15 +124,16 @@ jobs:
 
   # Sammelknoten mit dem bisherigen Check-Namen `build`.
   #
-  # `!cancelled()` statt des impliziten `success()`: Ohne diese Bedingung
-  # wuerde der Job bei einem roten Teil-Job UEBERSPRUNGEN — und ein
+  # `always() && !cancelled()` statt des impliziten `success()`: Ohne diese
+  # Bedingung wuerde der Job bei einem roten oder uebersprungenen Teil-Job
+  # UEBERSPRUNGEN — und ein
   # uebersprungener Required Check gilt fuer GitHub als bestanden. Der Job
   # muss also gerade dann laufen, wenn etwas rot ist, und selbst rot werden.
   #
   # Bei Drafts bleibt er uebersprungen, wie bisher der ganze `build`-Job.
   build:
     needs: [gates, unit, spa, opa]
-    if: ${{ !cancelled() && (github.event_name != 'pull_request' || !github.event.pull_request.draft) }}
+    if: ${{ always() && !cancelled() && (github.event_name != 'pull_request' || !github.event.pull_request.draft) }}
     runs-on: ubuntu-latest
     steps:
       - name: Ergebnis der Teil-Jobs zusammenfuehren

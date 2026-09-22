@@ -31,7 +31,7 @@ import { mkdir, stat } from 'node:fs/promises'
 import path from 'node:path'
 
 // Falls die Texturen woanders liegen: nur diese Zeile anpassen.
-const SRC_DIR = 'public/textures'
+const SRC_DIR = 'assets-source/globe'
 const OUT_DIR = 'public/textures'
 
 const JOBS = [

@@ -14,6 +14,7 @@ import {
   fetchTenantEvidence,
 } from '../governanceApi';
 import { listTimeline } from '../../evidence-vault/evidenceVaultApi';
+import { ChainIntegrityPanel } from './ChainIntegrityPanel';
 import {
   exportAnalytics,
   triggerBlobDownload,
@@ -476,7 +477,7 @@ function ExportsTab({ handlers }: { handlers: EvidenceHandlers }) {
   );
 }
 
-type TabId = 'timeline' | 'snapshots' | 'audittrail' | 'changes' | 'exports';
+type TabId = 'timeline' | 'snapshots' | 'audittrail' | 'changes' | 'exports' | 'integrity';
 
 const TABS: { id: TabId; label: string }[] = [
   { id: 'timeline',   label: 'Timeline'        },
@@ -484,6 +485,7 @@ const TABS: { id: TabId; label: string }[] = [
   { id: 'audittrail', label: 'Prüfpfad'        },
   { id: 'changes',    label: 'Change Tracking' },
   { id: 'exports',    label: 'Exports'         },
+  { id: 'integrity',  label: 'Integrität'      },
 ];
 
 function _EvidenceVaultView() {
@@ -666,6 +668,7 @@ function _EvidenceVaultView() {
         {activeTab === 'audittrail' && <AuditTrailTab entries={audit} loading={loading} unavailable={eventsFailed} />}
         {activeTab === 'changes'    && <ChangeTrackingTab changes={changes} loading={loading} unavailable={eventsFailed} />}
         {activeTab === 'exports'    && <ExportsTab handlers={handlers} />}
+        {activeTab === 'integrity'  && <ChainIntegrityPanel tenantId={activeTenantId} />}
       </div>
 
       {toast && (

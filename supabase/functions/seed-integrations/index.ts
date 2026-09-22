@@ -48,6 +48,13 @@ const INTEGRATIONS = [
     auth_type: "api_key",
     enabled: true,
   },
+  {
+    slug: "restaurant-webhook",
+    name: "Restaurant POS/Kitchen Webhook",
+    description: "HMAC-signed server-to-server adapter for restaurant POS and kitchen execution",
+    auth_type: "webhook",
+    enabled: true,
+  },
 ];
 
 Deno.serve(async (req) => {

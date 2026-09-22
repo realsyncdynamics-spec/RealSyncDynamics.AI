@@ -5,8 +5,23 @@ import { AuthGate } from '../kodee/connections/AuthGate';
 import { useTenant } from '../../core/access/TenantProvider';
 import { Button } from '../../enterprise-os/components/Button';
 import { Card, CardHeader, CardBody } from '../../enterprise-os/components/Card';
-import { getBot, updateBot, deleteBot } from './api';
-import type { Bot, BotChannel, BotVertical, RestaurantBotConfig, RestaurantMenuItem } from './types';
+import {
+  getBot,
+  updateBot,
+  deleteBot,
+  getRestaurantWebhookConnection,
+  configureRestaurantWebhook,
+  testRestaurantWebhook,
+} from './api';
+import type {
+  Bot,
+  BotChannel,
+  BotVertical,
+  RestaurantBotConfig,
+  RestaurantExecutionConfig,
+  RestaurantMenuItem,
+  RestaurantWebhookConnection,
+} from './types';
 
 /** /app/bots/:botId — Bot-Builder: Persona, Kanal, Fähigkeiten, Integration. */
 export function BotBuilderView() {
@@ -30,6 +45,11 @@ function BotBuilderInner() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [savedAt, setSavedAt] = useState<number | null>(null);
+  const [webhookConnection, setWebhookConnection] = useState<RestaurantWebhookConnection | null>(null);
+  const [webhookUrl, setWebhookUrl] = useState('');
+  const [webhookSecret, setWebhookSecret] = useState('');
+  const [webhookBusy, setWebhookBusy] = useState(false);
+  const [webhookMessage, setWebhookMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (!activeTenantId || !botId) return;
@@ -39,6 +59,13 @@ function BotBuilderInner() {
       .catch((e) => setError((e as Error).message))
       .finally(() => setLoading(false));
   }, [activeTenantId, botId]);
+
+  useEffect(() => {
+    if (!activeTenantId) return;
+    getRestaurantWebhookConnection(activeTenantId)
+      .then(setWebhookConnection)
+      .catch((e) => setWebhookMessage((e as Error).message));
+  }, [activeTenantId]);
 
   function patch<K extends keyof Bot>(key: K, value: Bot[K]) {
     setBot((prev) => (prev ? { ...prev, [key]: value } : prev));
@@ -67,6 +94,78 @@ function BotBuilderInner() {
         },
       },
     } : prev);
+  }
+
+  function patchRestaurantExecution<K extends keyof RestaurantExecutionConfig>(
+    key: K,
+    value: RestaurantExecutionConfig[K],
+  ) {
+    setBot((prev) => prev ? {
+      ...prev,
+      config: {
+        ...prev.config,
+        vertical: 'restaurant',
+        restaurant: {
+          ...(prev.config.restaurant ?? {}),
+          execution: {
+            ...(prev.config.restaurant?.execution ?? {}),
+            [key]: value,
+          },
+        },
+      },
+    } : prev);
+  }
+
+  async function handleWebhookConfigure() {
+    if (!activeTenantId || !webhookConnection?.integration_id) return;
+    if (!webhookUrl.trim() || !webhookSecret.trim()) {
+      setWebhookMessage('HTTPS-Webhook-URL und Secret sind erforderlich.');
+      return;
+    }
+
+    setWebhookBusy(true);
+    setWebhookMessage(null);
+    try {
+      const connection = await configureRestaurantWebhook(
+        activeTenantId,
+        webhookConnection.integration_id,
+        webhookUrl.trim(),
+        webhookSecret,
+      );
+      setWebhookConnection(connection);
+      setWebhookUrl('');
+      setWebhookSecret('');
+      patchRestaurantExecution('integration_config_id', connection.config_id ?? undefined);
+      if (bot?.config.restaurant?.execution?.pos_enabled === undefined) {
+        patchRestaurantExecution('pos_enabled', true);
+      }
+      if (bot?.config.restaurant?.execution?.kitchen_enabled === undefined) {
+        patchRestaurantExecution('kitchen_enabled', true);
+      }
+      setWebhookMessage('Zugangsdaten sicher gespeichert. Verbindungstest steht noch aus.');
+    } catch (e) {
+      setWebhookMessage((e as Error).message);
+    } finally {
+      setWebhookBusy(false);
+    }
+  }
+
+  async function handleWebhookTest() {
+    if (!activeTenantId || !webhookConnection?.config_id) return;
+    setWebhookBusy(true);
+    setWebhookMessage(null);
+    try {
+      await testRestaurantWebhook(activeTenantId, webhookConnection.config_id);
+      const refreshed = await getRestaurantWebhookConnection(activeTenantId);
+      setWebhookConnection(refreshed);
+      setWebhookMessage('Signierter Verbindungstest erfolgreich.');
+    } catch (e) {
+      const refreshed = await getRestaurantWebhookConnection(activeTenantId).catch(() => null);
+      if (refreshed) setWebhookConnection(refreshed);
+      setWebhookMessage((e as Error).message);
+    } finally {
+      setWebhookBusy(false);
+    }
   }
 
   function optionalNumber(value: string): number | undefined {
@@ -346,6 +445,110 @@ function BotBuilderInner() {
                             </div>
                           ))}
                         </div>
+                      )}
+                    </div>
+
+                    <div className="space-y-3 border-t border-titanium-800 pt-4">
+                      <div>
+                        <p className={label}>POS / Küchen-Webhook</p>
+                        <p className="text-xs text-titanium-500">
+                          URL und Secret werden serverseitig versiegelt gespeichert. Der Bot speichert nur die Verbindungs-ID.
+                        </p>
+                      </div>
+
+                      {!webhookConnection ? (
+                        <div className="border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs text-amber-300">
+                          Die Restaurant-Webhook-Integration ist im Katalog noch nicht verfügbar.
+                        </div>
+                      ) : (
+                        <>
+                          <div className="grid gap-3 sm:grid-cols-2">
+                            <div>
+                              <label className={label}>HTTPS Webhook URL</label>
+                              <input
+                                className={input}
+                                value={webhookUrl}
+                                onChange={(e) => setWebhookUrl(e.target.value)}
+                                placeholder="https://pos.example.com/realsync"
+                                autoComplete="off"
+                              />
+                            </div>
+                            <div>
+                              <label className={label}>Webhook Secret</label>
+                              <input
+                                className={input}
+                                type="password"
+                                value={webhookSecret}
+                                onChange={(e) => setWebhookSecret(e.target.value)}
+                                placeholder="mindestens 16 Zeichen"
+                                autoComplete="new-password"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="flex flex-wrap items-center gap-2">
+                            <Button
+                              type="button"
+                              variant="secondary"
+                              size="sm"
+                              disabled={webhookBusy}
+                              onClick={handleWebhookConfigure}
+                            >
+                              {webhookConnection.config_id ? 'Zugangsdaten rotieren' : 'Webhook speichern'}
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              disabled={webhookBusy || !webhookConnection.config_id}
+                              onClick={handleWebhookTest}
+                            >
+                              Verbindung testen
+                            </Button>
+                            <span className={
+                              webhookConnection.status === 'connected'
+                                ? 'font-mono text-[10px] uppercase tracking-wider text-emerald-400'
+                                : webhookConnection.status === 'error'
+                                  ? 'font-mono text-[10px] uppercase tracking-wider text-risk-critical'
+                                  : 'font-mono text-[10px] uppercase tracking-wider text-amber-400'
+                            }>
+                              {webhookConnection.status}
+                            </span>
+                          </div>
+
+                          {webhookConnection.config_id && (
+                            <div className="grid gap-3 sm:grid-cols-2">
+                              <label className="flex items-center gap-2 text-sm text-titanium-200">
+                                <input
+                                  type="checkbox"
+                                  checked={bot.config.restaurant?.execution?.pos_enabled === true}
+                                  onChange={(e) => {
+                                    patchRestaurantExecution('integration_config_id', webhookConnection.config_id ?? undefined);
+                                    patchRestaurantExecution('pos_enabled', e.target.checked);
+                                  }}
+                                />
+                                POS-Übergabe aktivieren
+                              </label>
+                              <label className="flex items-center gap-2 text-sm text-titanium-200">
+                                <input
+                                  type="checkbox"
+                                  checked={bot.config.restaurant?.execution?.kitchen_enabled === true}
+                                  onChange={(e) => {
+                                    patchRestaurantExecution('integration_config_id', webhookConnection.config_id ?? undefined);
+                                    patchRestaurantExecution('kitchen_enabled', e.target.checked);
+                                  }}
+                                />
+                                Küchen-Übergabe aktivieren
+                              </label>
+                            </div>
+                          )}
+
+                          {webhookMessage && (
+                            <div className="border border-titanium-800 px-3 py-2 text-xs text-titanium-400">
+                              {webhookMessage}
+                            </div>
+                          )}
+                        </>
                       )}
                     </div>
 

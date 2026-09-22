@@ -11,6 +11,12 @@ export interface RestaurantMenuItem {
   available?: boolean;
 }
 
+export interface RestaurantExecutionConfig {
+  integration_config_id?: string;
+  pos_enabled?: boolean;
+  kitchen_enabled?: boolean;
+}
+
 export interface RestaurantBotConfig {
   business_name?: string;
   order_mode?: 'pickup' | 'delivery' | 'both';
@@ -19,6 +25,15 @@ export interface RestaurantBotConfig {
   estimated_delivery_minutes?: number;
   currency?: string;
   menu?: RestaurantMenuItem[];
+  execution?: RestaurantExecutionConfig;
+}
+
+export interface RestaurantWebhookConnection {
+  integration_id: string;
+  config_id: string | null;
+  name: string | null;
+  enabled: boolean;
+  status: 'not_configured' | 'pending' | 'connected' | 'error' | 'disabled';
 }
 
 export interface BotConfig {

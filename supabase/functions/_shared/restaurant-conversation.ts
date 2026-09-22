@@ -11,6 +11,10 @@ import {
 } from './restaurant.ts';
 import { initialRestaurantExecutionState } from './restaurant-execution.ts';
 import {
+  executeConfiguredRestaurantOrder,
+  restaurantExecutionCustomerNote,
+} from './restaurant-execution-runtime.ts';
+import {
   buildRestaurantQuotePayload,
   buildRestaurantTurnProtocol,
   canQuoteRestaurantDraft,
@@ -309,6 +313,24 @@ export async function runRestaurantConversationTurn(
         input.contact ?? null,
       );
 
+      const execution = await executeConfiguredRestaurantOrder(
+        admin,
+        bot,
+        {
+          order_id: order.id,
+          tenant_id: bot.tenant_id,
+          bot_id: bot.id,
+          customer_name: state.draft.customer_name!,
+          contact: input.contact ?? null,
+          items: resolution.items,
+          total_amount: resolution.total_amount,
+          currency: resolution.currency,
+          fulfillment: resolution.fulfillment,
+          delivery_address: resolution.fulfillment === 'delivery' ? state.draft.delivery_address ?? null : null,
+          notes: state.draft.notes ?? null,
+        },
+      );
+
       const finalState: RestaurantConversationState = {
         version: 1,
         revision: state.revision,
@@ -320,10 +342,10 @@ export async function runRestaurantConversationTurn(
       await saveConversationState(admin, bot, conversationId, loaded.metadata, finalState);
 
       return {
-        reply: `Danke. Ihre Bestellung wurde angenommen. Gesamtbetrag: ${new Intl.NumberFormat('de-DE', {
+        reply: `Danke. Ihre Bestellung wurde in RealSync erfasst. Gesamtbetrag: ${new Intl.NumberFormat('de-DE', {
           style: 'currency',
           currency: resolution.currency,
-        }).format(resolution.total_amount)}.`,
+        }).format(resolution.total_amount)}.${restaurantExecutionCustomerNote(execution)}`,
         runId: null,
         inputTokens: 0,
         outputTokens: 0,
@@ -336,6 +358,7 @@ export async function runRestaurantConversationTurn(
           order_id: order.id,
           quote_hash: currentHash,
           draft_revision: state.revision,
+          execution,
         },
       };
     } catch (error) {

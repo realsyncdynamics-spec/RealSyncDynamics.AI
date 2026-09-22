@@ -4,6 +4,7 @@
 // POST /functions/v1/integration-credentials   (verify_jwt = true, Default)
 //   { op: 'configure', tenant_id, integration_id, name, credentials: {..} }
 //   { op: 'remove',    tenant_id, config_id }
+//   { op: 'test',      tenant_id, config_id }  // restaurant-webhook only
 //
 // Governance-Zweck: Zugangsdaten fremder Systeme sind das wertvollste Gut,
 // das Kunden dieser Plattform anvertrauen. Sie werden hier AES-256-GCM-
@@ -20,6 +21,12 @@ import { requireAuthAndTenant } from '../_shared/auth.ts';
 import { buildCorsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 import { importSecretKey, seal } from '../_shared/secretBox.ts';
 import { audit } from '../_shared/auditLog.ts';
+import {
+  loadRestaurantWebhookCredentials,
+  normalizeRestaurantWebhookCredentials,
+  RestaurantWebhookError,
+  testRestaurantWebhookConnection,
+} from '../_shared/restaurant-webhook.ts';
 
 const corsHeaders = buildCorsHeaders('POST, OPTIONS');
 
@@ -54,7 +61,7 @@ Deno.serve(async (req) => {
   }
 
   const op = String(body.op ?? '');
-  if (op !== 'configure' && op !== 'remove') {
+  if (op !== 'configure' && op !== 'remove' && op !== 'test') {
     return jsonError(400, 'BAD_REQUEST', `unknown op: ${op}`, corsHeaders);
   }
 
@@ -79,6 +86,25 @@ Deno.serve(async (req) => {
       return jsonError(400, 'BAD_REQUEST', 'credentials must be a non-empty object', corsHeaders);
     }
 
+    const { data: integration, error: integrationError } = await admin
+      .from('integrations')
+      .select('id, slug, name')
+      .eq('id', integrationId)
+      .maybeSingle();
+    if (integrationError) return jsonError(500, 'INTERNAL', integrationError.message, corsHeaders);
+    if (!integration) return jsonError(404, 'NOT_FOUND', 'integration not found', corsHeaders);
+
+    let credentialsToSeal: unknown = credentials;
+    if (integration.slug === 'restaurant-webhook') {
+      try {
+        credentialsToSeal = normalizeRestaurantWebhookCredentials(credentials);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Ungültige Webhook-Konfiguration';
+        const code = error instanceof RestaurantWebhookError ? error.code : 'WEBHOOK_CONFIG_INVALID';
+        return jsonError(400, code, message, corsHeaders);
+      }
+    }
+
     const key = await loadSealKey(admin);
     if (!key) {
       // Bewusst 503 statt Klartext-Fallback: lieber nicht speichern als
@@ -88,7 +114,7 @@ Deno.serve(async (req) => {
         corsHeaders);
     }
 
-    const sealed = await seal(key, credentials);
+    const sealed = await seal(key, credentialsToSeal);
     const { data: row, error } = await admin
       .from('integration_configs')
       .upsert({
@@ -104,6 +130,41 @@ Deno.serve(async (req) => {
       .maybeSingle();
     if (error) return jsonError(500, 'INTERNAL', error.message, corsHeaders);
 
+    if (integration.slug === 'restaurant-webhook' && row?.id) {
+      const registryRow = {
+        tenant_id: tenantId,
+        system_type: 'custom_api',
+        display_name: name.trim(),
+        source_table: 'integration_configs',
+        source_id: row.id,
+        auth_kind: 'webhook',
+        scope: 'Restaurant POS/Kitchen Übergabe',
+        status: 'pending',
+        last_error: null,
+      };
+
+      const { data: existingRegistry } = await admin
+        .from('connector_registry')
+        .select('id')
+        .eq('tenant_id', tenantId)
+        .eq('source_table', 'integration_configs')
+        .eq('source_id', row.id)
+        .maybeSingle();
+
+      const registryWrite = existingRegistry
+        ? await admin.from('connector_registry').update(registryRow).eq('id', existingRegistry.id)
+        : await admin.from('connector_registry').insert(registryRow);
+
+      if (registryWrite.error) {
+        await admin.from('integration_configs').update({
+          enabled: false,
+          credentials_enc: null,
+          credentials: {},
+        }).eq('id', row.id);
+        return jsonError(500, 'INTERNAL', 'connector registry write failed', corsHeaders);
+      }
+    }
+
     await audit(admin, {
       tenant_id: tenantId,
       actor_user_id: user.id,
@@ -112,10 +173,85 @@ Deno.serve(async (req) => {
       target_type: 'integration_config',
       target_id: row?.id ?? null,
       // Nur Feldnamen ins Audit — nie Werte.
-      payload: { integration_id: integrationId, credential_fields: Object.keys(credentials) },
+      payload: {
+        integration_id: integrationId,
+        integration_slug: integration.slug,
+        credential_fields: Object.keys(credentials),
+      },
     });
 
     return jsonResponse({ ok: true, config: row }, 200, corsHeaders);
+  }
+
+  if (op === 'test') {
+    const configId = body.config_id;
+    if (typeof configId !== 'string' || !configId) {
+      return jsonError(400, 'BAD_REQUEST', 'config_id is required', corsHeaders);
+    }
+
+    try {
+      const credentials = await loadRestaurantWebhookCredentials(admin, tenantId, configId);
+      await testRestaurantWebhookConnection(credentials);
+
+      const { data: registry, error: registryError } = await admin
+        .from('connector_registry')
+        .update({
+          status: 'connected',
+          last_sync_at: new Date().toISOString(),
+          last_error: null,
+        })
+        .eq('tenant_id', tenantId)
+        .eq('source_table', 'integration_configs')
+        .eq('source_id', configId)
+        .select('id, enforcement_class')
+        .maybeSingle();
+
+      if (registryError || !registry) {
+        return jsonError(
+          500,
+          'REGISTRY_UPDATE_FAILED',
+          'Verbindung wurde erreicht, aber der Governance-Status konnte nicht gespeichert werden',
+          corsHeaders,
+        );
+      }
+
+      await audit(admin, {
+        tenant_id: tenantId,
+        actor_user_id: user.id,
+        actor_email: user.email ?? null,
+        action: 'restaurant_webhook.test.ok',
+        target_type: 'integration_config',
+        target_id: configId,
+      });
+
+      return jsonResponse({
+        ok: true,
+        status: 'connected',
+        enforcement_class: registry.enforcement_class,
+      }, 200, corsHeaders);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Verbindungstest fehlgeschlagen';
+
+      await admin.from('connector_registry').update({
+        status: 'error',
+        last_error: message.slice(0, 500),
+      })
+        .eq('tenant_id', tenantId)
+        .eq('source_table', 'integration_configs')
+        .eq('source_id', configId);
+
+      await audit(admin, {
+        tenant_id: tenantId,
+        actor_user_id: user.id,
+        actor_email: user.email ?? null,
+        action: 'restaurant_webhook.test.failed',
+        target_type: 'integration_config',
+        target_id: configId,
+        payload: { error: message.slice(0, 120) },
+      });
+
+      return jsonResponse({ ok: false, status: 'error', error: message }, 200, corsHeaders);
+    }
   }
 
   // op === 'remove': deaktivieren UND Siegel entfernen — eine entfernte
@@ -138,6 +274,14 @@ Deno.serve(async (req) => {
     .update({ enabled: false, credentials_enc: null, credentials: {} })
     .eq('id', configId);
   if (rmErr) return jsonError(500, 'INTERNAL', rmErr.message, corsHeaders);
+
+  await admin.from('connector_registry').update({
+    status: 'disabled',
+    last_error: null,
+  })
+    .eq('tenant_id', tenantId)
+    .eq('source_table', 'integration_configs')
+    .eq('source_id', configId);
 
   await audit(admin, {
     tenant_id: tenantId,

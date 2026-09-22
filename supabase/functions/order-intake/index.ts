@@ -16,6 +16,7 @@ import { resolveBot, upsertConversation, BotError } from '../_shared/bots.ts';
 import { gateFeature, EntitlementError } from '../_shared/entitlements.ts';
 import { resolveRestaurantOrder, RestaurantOrderError } from '../_shared/restaurant.ts';
 import { initialRestaurantExecutionState } from '../_shared/restaurant-execution.ts';
+import { executeConfiguredRestaurantOrder } from '../_shared/restaurant-execution-runtime.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -169,6 +170,24 @@ Deno.serve(async (req) => {
 
     if (error) return jsonError(500, 'INTERNAL', error.message);
 
+    const execution = isRestaurant
+      ? await executeConfiguredRestaurantOrder(admin, bot, {
+          order_id: data.id,
+          tenant_id: bot.tenant_id,
+          bot_id: bot.id,
+          customer_name: customerName,
+          contact: body.contact ? String(body.contact) : null,
+          items,
+          total_amount: totalAmount,
+          currency,
+          fulfillment: orderMetadata.fulfillment as 'pickup' | 'delivery',
+          delivery_address: typeof orderMetadata.delivery_address === 'string'
+            ? orderMetadata.delivery_address
+            : null,
+          notes: body.notes ? String(body.notes) : null,
+        })
+      : null;
+
     return jsonResponse({
       ok: true,
       order_id: data.id,
@@ -179,6 +198,7 @@ Deno.serve(async (req) => {
         fulfillment: orderMetadata.fulfillment,
         pricing_authority: orderMetadata.pricing_authority,
         persisted: true,
+        execution,
       } : {}),
     });
   } catch (e) {

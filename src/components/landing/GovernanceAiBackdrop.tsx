@@ -34,6 +34,13 @@ import {
 } from '../visual/earthTextures';
 import { prefersReducedMotion } from './prefers-reduced-motion';
 
+const MILKY_WAY_WIDTH = 2048;
+const MILKY_WAY_HEIGHT = 1024;
+const MILKY_WAY_FOG_COUNT = 700;
+const MILKY_WAY_DARK_CLOUD_COUNT = 120;
+const MILKY_WAY_BAND_STAR_COUNT = 12000;
+const MILKY_WAY_FIELD_STAR_COUNT = 4200;
+
 /** Deterministischer PRNG — die Milchstraße soll bei jedem Aufruf gleich aussehen. */
 function seeded(seed: number): () => number {
   let s = seed;
@@ -44,31 +51,33 @@ function seeded(seed: number): () => number {
  * Milchstraße als Equirect-Panorama, prozedural auf ein Canvas gezeichnet.
  *
  * Ein echtes Panoramafoto wäre mehrere Megabyte schwer für eine Fläche, die
- * hinter der Seite zu 90 % abgedeckt ist. Das Band aus Nebelschleiern,
- * Dunkelwolken und verdichteten Sternen liest sich an dieser Größe identisch.
+ * hinter der Seite zu 90 % abgedeckt ist. 2048×1024 genügt bei max. 1,75 DPR
+ * für diesen weich gezeichneten Hintergrund und senkt den rohen RGBA-Canvas
+ * von rund 32 MiB auf 8 MiB. Das Band aus Nebelschleiern, Dunkelwolken und
+ * verdichteten Sternen bleibt pro Fläche ähnlich dicht.
  */
 function useMilkyWayTexture(): THREE.Texture | null {
   return useMemo(() => {
     if (typeof document === 'undefined') return null;
     const canvas = document.createElement('canvas');
-    canvas.width = 4096;
-    canvas.height = 2048;
+    canvas.width = MILKY_WAY_WIDTH;
+    canvas.height = MILKY_WAY_HEIGHT;
     const ctx = canvas.getContext('2d');
     if (!ctx) return null;
 
     ctx.fillStyle = '#000';
-    ctx.fillRect(0, 0, 4096, 2048);
+    ctx.fillRect(0, 0, MILKY_WAY_WIDTH, MILKY_WAY_HEIGHT);
     const rand = seeded(97);
 
     // Band, leicht gekippt: erst Nebel, dann Dunkelwolken, dann Sterne.
     ctx.save();
-    ctx.translate(2048, 1024);
+    ctx.translate(MILKY_WAY_WIDTH / 2, MILKY_WAY_HEIGHT / 2);
     ctx.rotate(-0.28);
 
-    for (let i = 0; i < 1400; i++) {
-      const x = (rand() - 0.5) * 5200;
-      const y = (rand() - 0.5) * 2 * (90 + 120 * rand() ** 2.2);
-      const r = 40 + rand() * 160;
+    for (let i = 0; i < MILKY_WAY_FOG_COUNT; i++) {
+      const x = (rand() - 0.5) * MILKY_WAY_WIDTH * 1.27;
+      const y = (rand() - 0.5) * 2 * (45 + 60 * rand() ** 2.2);
+      const r = 20 + rand() * 80;
       const grad = ctx.createRadialGradient(x, y, 0, x, y, r);
       const warm = rand() < 0.55;
       grad.addColorStop(
@@ -82,10 +91,10 @@ function useMilkyWayTexture(): THREE.Texture | null {
       ctx.fillRect(x - r, y - r, r * 2, r * 2);
     }
 
-    for (let i = 0; i < 260; i++) {
-      const x = (rand() - 0.5) * 5200;
-      const y = (rand() - 0.5) * 160;
-      const r = 30 + rand() * 110;
+    for (let i = 0; i < MILKY_WAY_DARK_CLOUD_COUNT; i++) {
+      const x = (rand() - 0.5) * MILKY_WAY_WIDTH * 1.27;
+      const y = (rand() - 0.5) * 80;
+      const r = 15 + rand() * 55;
       const grad = ctx.createRadialGradient(x, y, 0, x, y, r);
       grad.addColorStop(0, `rgba(0,0,0,${0.25 + rand() * 0.35})`);
       grad.addColorStop(1, 'rgba(0,0,0,0)');
@@ -93,10 +102,10 @@ function useMilkyWayTexture(): THREE.Texture | null {
       ctx.fillRect(x - r, y - r, r * 2, r * 2);
     }
 
-    for (let i = 0; i < 26000; i++) {
-      const x = (rand() - 0.5) * 5200;
-      const y = (rand() - 0.5) * 2 * (60 + 260 * rand() ** 1.6);
-      const r = rand() < 0.02 ? 1.4 + rand() * 1.2 : 0.3 + rand() * 0.8;
+    for (let i = 0; i < MILKY_WAY_BAND_STAR_COUNT; i++) {
+      const x = (rand() - 0.5) * MILKY_WAY_WIDTH * 1.27;
+      const y = (rand() - 0.5) * 2 * (30 + 130 * rand() ** 1.6);
+      const r = rand() < 0.02 ? 1 + rand() * 0.9 : 0.25 + rand() * 0.65;
       const alpha = 0.35 + rand() * 0.65;
       ctx.fillStyle =
         rand() < 0.15 ? `rgba(255,225,190,${alpha})` : `rgba(235,240,255,${alpha})`;
@@ -107,10 +116,10 @@ function useMilkyWayTexture(): THREE.Texture | null {
     ctx.restore();
 
     // Streusterne über die ganze Kugel, damit das Band nicht freisteht.
-    for (let i = 0; i < 9000; i++) {
-      const x = rand() * 4096;
-      const y = rand() * 2048;
-      const r = rand() < 0.03 ? 1.4 + rand() * 1.4 : 0.3 + rand() * 0.9;
+    for (let i = 0; i < MILKY_WAY_FIELD_STAR_COUNT; i++) {
+      const x = rand() * MILKY_WAY_WIDTH;
+      const y = rand() * MILKY_WAY_HEIGHT;
+      const r = rand() < 0.03 ? 1 + rand() * 1.1 : 0.25 + rand() * 0.75;
       const alpha = 0.3 + rand() * 0.7;
       const roll = rand();
       ctx.fillStyle =

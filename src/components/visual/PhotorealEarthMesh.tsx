@@ -7,6 +7,7 @@ import {
   detectEarthQuality,
   getEarthTextureSet,
   preloadImage,
+  shouldPreferGpuCompression,
   type EarthQuality,
   type EarthTextureSet,
 } from './earthTextures';
@@ -247,6 +248,7 @@ export function PhotorealEarthMesh({
     return base;
   });
   const set = useMemo(() => getEarthTextureSet(quality), [quality]);
+  const preferGpuCompression = useMemo(() => shouldPreferGpuCompression(), []);
 
   // Cached boot map — never disposed by us (R3F loader cache owns it).
   const bootDay = useLoader(THREE.TextureLoader, EARTH_DAY_BOOT);
@@ -281,7 +283,7 @@ export function PhotorealEarthMesh({
         anisotropy: number,
         colorSpace?: THREE.ColorSpace,
       ) => {
-        if (ktx2Url) {
+        if (preferGpuCompression && ktx2Url) {
           try {
             const loader = await getKtx2Loader();
             return await loadCompressedTexture(loader, ktx2Url, anisotropy, colorSpace);
@@ -295,8 +297,8 @@ export function PhotorealEarthMesh({
       };
 
       try {
-        if (set.dayKtx2 || set.day !== EARTH_DAY_BOOT) {
-          if (!set.dayKtx2) {
+        if ((preferGpuCompression && set.dayKtx2) || set.day !== EARTH_DAY_BOOT) {
+          if (!(preferGpuCompression && set.dayKtx2)) {
             await preloadImage(set.day).catch(() => null);
           }
           if (cancelled) return;
@@ -387,7 +389,7 @@ export function PhotorealEarthMesh({
       cancelled = true;
       // Soft cancel only — dispose owned upgrades on true unmount below.
     };
-  }, [gl, set]);
+  }, [gl, preferGpuCompression, set]);
 
   // Dispose upgrade textures only when the mesh unmounts for real.
   useEffect(() => {

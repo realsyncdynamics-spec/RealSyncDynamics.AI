@@ -374,9 +374,10 @@ export function PhotorealEarthMesh({
       } catch {
         // Boot day alone remains readable.
       } finally {
-        if (ktx2LoaderPromise) {
+        const loaderPromise = ktx2LoaderPromise as Promise<KTX2Loader> | null;
+        if (loaderPromise) {
           try {
-            const loader = await ktx2LoaderPromise;
+            const loader: KTX2Loader = await loaderPromise;
             loader.dispose();
           } catch {
             // Loader initialization failed; WebP fallback already handled it.

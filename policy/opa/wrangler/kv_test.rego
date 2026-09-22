@@ -52,3 +52,45 @@ test_jwt_secret_binding_denied if {
 	}
 	msg == "wrangler secrets_store_secrets binding \"EDGE_JWT_SECRET\" is forbidden"
 }
+
+test_environment_frozen_bindings_allowed_with_root_freeze if {
+	count({msg |
+		deny[msg] with input as {
+			"vars": {"WORKER_POLICY_ROUTES_DEPLOY_FROZEN": "true"},
+			"env": {
+				"production": {
+					"kv_namespaces": [
+						{"binding": "POLICY_CACHE", "id": "placeholder-1"},
+					],
+				},
+			},
+		}
+	}) == 0
+}
+
+test_environment_extra_binding_denied if {
+	deny[msg] with input as {
+		"vars": {"WORKER_POLICY_ROUTES_DEPLOY_FROZEN": "true"},
+		"env": {
+			"production": {
+				"kv_namespaces": [
+					{"binding": "OTHER_CACHE", "id": "placeholder-3"},
+				],
+			},
+		},
+	}
+	msg == "wrangler production kv_namespaces binding \"OTHER_CACHE\" is not frozen; new KV namespaces are blocked"
+}
+
+test_environment_secret_name_denied if {
+	deny[msg] with input as {
+		"env": {
+			"production": {
+				"secrets_store_secrets": [
+					{"binding": "EDGE_RUNTIME", "secret_name": "PROD_SERVICE_ROLE"},
+				],
+			},
+		},
+	}
+	msg == "wrangler production secrets_store_secrets secret_name \"PROD_SERVICE_ROLE\" is forbidden"
+}

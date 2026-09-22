@@ -30,6 +30,11 @@ import {
 } from './r2-evidence/index.js';
 import { initializeSentry, withObservability, measureOperation } from './observability.js';
 
+// Policy/KV routes must not be bound in wrangler production until tenant comes
+// from membership (requireAuthAndTenant), service role is gone from the Worker,
+// and policies are not stored as plaintext in KV (Spectre isolate + KV replication).
+export const WORKER_POLICY_ROUTES_DEPLOY_FROZEN = true;
+
 // Cloudflare Workers environment types
 // (These are provided by Cloudflare at runtime; TypeScript needs the definitions)
 interface KVNamespace {
@@ -131,6 +136,20 @@ export default {
         response.headers.set('X-Canary-Routing', 'verify-jwt@5pct');
 
         return response;
+      }
+
+      if (
+        WORKER_POLICY_ROUTES_DEPLOY_FROZEN &&
+        (
+          url.pathname.startsWith('/api/policies/') ||
+          url.pathname.startsWith('/api/cache/invalidate/')
+        )
+      ) {
+        return errorResponse(
+          503,
+          'worker_policy_routes_frozen',
+          'Policy and cache invalidation routes are frozen pending membership-bound tenancy and secretless edge design.'
+        );
       }
 
       // Route: GET /api/policies/{tenantId}/{policyId}

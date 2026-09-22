@@ -34,7 +34,7 @@ jobs:
           node-version: '20'
 
       - name: Install one-off encoder
-        run: npm install --no-save --package-lock=false sharp@0.34.4
+        run: npm install --no-save --package-lock=false --legacy-peer-deps sharp@0.34.4
 
       - name: Generate optimized textures
         run: node scripts/patch-03-texturen.mjs

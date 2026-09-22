@@ -4,7 +4,7 @@
  * Europe-night framing (right / background) with gold route network arcs —
  * matches Dominik Grok Imagine mock scenery. Deep space void left for copy.
  * No Sphere HUD, continent UI labels, drag orbit, or fake KPIs.
- * Gentle idle drift only — canvas is pointer-events-none via CSS/host.
+ * Slow Europe-locked auto-orbit — canvas is pointer-events-none via CSS/host.
  *
  * Perf: boot on medium textures, upgrade to 8K after idle; demand frameloop.
  */
@@ -15,16 +15,12 @@ import * as THREE from 'three';
 import { PhotorealEarthMesh } from '../visual/PhotorealEarthMesh';
 import { detectEarthQuality, type EarthQuality } from '../visual/earthTextures';
 import { sphereNodePosition } from '../governance-frontend/governance-sphere-nodes';
+import { SphereGeography } from '../governance-frontend/SphereGeography';
 
-/**
- * Sun sits west of Europe so the continent reads as night city lights —
- * not a cream wash, not a fully black void.
- */
 export const LANDING_SUN_POSITION = new THREE.Vector3(-3.4, 0.55, -1.2);
 
 const EARTH_RADIUS = 1.55;
 
-/** EU hubs for gold governance-route arcs (geography only — no KPI HUD). */
 const EUROPE_NETWORK_HUBS: readonly { id: string; lat: number; lon: number }[] = [
   { id: 'berlin', lat: 52.52, lon: 13.41 },
   { id: 'paris', lat: 48.86, lon: 2.35 },
@@ -43,7 +39,6 @@ const EUROPE_NETWORK_HUBS: readonly { id: string; lat: number; lon: number }[] =
   { id: 'prague', lat: 50.08, lon: 14.44 },
 ];
 
-/** Curated gold routes — arcs across Europe, not a dense fake mesh. */
 const EUROPE_ROUTES: readonly [string, string][] = [
   ['london', 'paris'],
   ['paris', 'berlin'],
@@ -67,21 +62,21 @@ const EUROPE_ROUTES: readonly [string, string][] = [
 
 type ScenerySpin = {
   rotY: number;
+  dir: 1 | -1;
 };
 
 function isAutomation(): boolean {
   return typeof navigator !== 'undefined' && Boolean(navigator.webdriver);
 }
 
-/** Soft key only — no visible RisingSun mesh / CSS sun disc. */
 function LimbLight() {
   return (
     <group position={LANDING_SUN_POSITION.toArray() as [number, number, number]}>
-      <pointLight color="#ffe0b0" intensity={1.15} distance={32} decay={2} />
+      <pointLight color="#ffe8c4" intensity={1.85} distance={36} decay={2} />
       <pointLight
-        color="#d0c3a4"
-        intensity={0.45}
-        distance={22}
+        color="#f0ddb8"
+        intensity={0.7}
+        distance={24}
         decay={2}
         position={[0.5, -0.25, 0.35]}
       />
@@ -89,11 +84,7 @@ function LimbLight() {
   );
 }
 
-function LandingRenderLoop({
-  reducedMotion,
-}: {
-  reducedMotion: boolean;
-}) {
+function LandingRenderLoop({ reducedMotion }: { reducedMotion: boolean }) {
   const { invalidate } = useThree();
   useEffect(() => {
     if (reducedMotion) {
@@ -103,7 +94,6 @@ function LandingRenderLoop({
     let raf = 0;
     let last = 0;
     const tick = (now: number) => {
-      // ~20fps idle is enough for slow drift; saves main-thread for CTAs.
       if (now - last >= 50) {
         last = now;
         invalidate();
@@ -131,10 +121,6 @@ function buildGreatCirclePoints(
   return points;
 }
 
-/**
- * Gold route/network overlay — thin luminous arcs + nodes over Europe.
- * Scenery only: no labels, no KPI chips, no pointer capture.
- */
 function GoldEuropeNetwork({ radius, reducedMotion }: { radius: number; reducedMotion: boolean }) {
   const group = useRef<THREE.Group>(null!);
   const hubs = useMemo(() => {
@@ -198,14 +184,6 @@ function GoldEuropeNetwork({ radius, reducedMotion }: { radius: number; reducedM
   );
 }
 
-/**
- * Europe on the limb — UK/FR/DE/IT city lights readable on the right crescent.
- * Deep void left for copy. Gold network rides the mesh.
- *
- * Orientation note: sphereNodePosition puts lon 0 near -X at rotY=0, so
- * Americas face +Z by default. Base Y ≈ -1.72 brings Central Europe to +Z
- * (camera). A small offset keeps the continent on the limb, not flat-on.
- */
 const EUROPE_LIMB_ROTY = -1.58;
 
 function SceneryEarth({
@@ -220,23 +198,28 @@ function SceneryEarth({
   quality: EarthQuality;
 }) {
   const wrap = useRef<THREE.Group>(null!);
+  const geoZoom = useRef({ zoom: 1.18 });
 
-  useFrame(({ clock }) => {
-    // Locked Europe-on-limb — gentle sway only; never free-spin to the Americas.
-    const sway = reducedMotion ? 0 : Math.sin(clock.elapsedTime * 0.11) * 0.03;
-    spin.current.rotY = EUROPE_LIMB_ROTY + sway;
+  useFrame((_, delta) => {
+    const EUROPE_MIN = EUROPE_LIMB_ROTY - 0.38;
+    const EUROPE_MAX = EUROPE_LIMB_ROTY + 0.48;
+    if (!reducedMotion) {
+      spin.current.rotY += delta * 0.048 * spin.current.dir;
+      if (spin.current.rotY > EUROPE_MAX) {
+        spin.current.rotY = EUROPE_MAX;
+        spin.current.dir = -1;
+      } else if (spin.current.rotY < EUROPE_MIN) {
+        spin.current.rotY = EUROPE_MIN;
+        spin.current.dir = 1;
+      }
+    }
     if (wrap.current) {
       wrap.current.rotation.y = spin.current.rotY;
     }
   });
 
   return (
-    <group
-      ref={wrap}
-      position={[1.95, -0.45, -0.2]}
-      scale={1.68}
-      rotation={[0.22, 0, -0.02]}
-    >
+    <group ref={wrap} position={[1.95, -0.45, -0.2]} scale={1.68} rotation={[0.22, 0, -0.02]}>
       <PhotorealEarthMesh
         key={quality}
         radius={EARTH_RADIUS}
@@ -247,6 +230,12 @@ function SceneryEarth({
         palette="landing-gold"
         quality={quality}
       />
+      <SphereGeography
+        zoomRef={geoZoom}
+        earthRadius={EARTH_RADIUS}
+        reducedMotion={reducedMotion}
+        layers={['borders']}
+      />
       <GoldEuropeNetwork radius={EARTH_RADIUS} reducedMotion={reducedMotion} />
     </group>
   );
@@ -255,20 +244,16 @@ function SceneryEarth({
 function CameraLock() {
   const { camera } = useThree();
   const base = useMemo(() => new THREE.Vector3(-0.7, 0.15, 4.2), []);
-
   useFrame(() => {
     camera.position.copy(base);
-    // Look toward the limb so Europe dominates the right crescent.
     camera.lookAt(1.5, -0.28, 0);
   });
-
   return null;
 }
 
 function useProgressiveEarthQuality(reducedMotion: boolean): EarthQuality {
   const [quality, setQuality] = useState<EarthQuality>(() => {
     if (reducedMotion) return 'low';
-    // Boot medium (4K) — never decode 8K on first paint / CI webdriver.
     return 'medium';
   });
 
@@ -294,9 +279,7 @@ export function HeroEarthBackdropScene({ reducedMotion = false }: HeroEarthBackd
   const sun = LANDING_SUN_POSITION;
   const sunDir = useMemo(() => LANDING_SUN_POSITION.clone().normalize(), []);
   const quality = useProgressiveEarthQuality(reducedMotion);
-  // Europe on the limb (UK/FR/DE/IT) — never Americas-facing default.
-  const spin = useRef<ScenerySpin>({ rotY: EUROPE_LIMB_ROTY });
-
+  const spin = useRef<ScenerySpin>({ rotY: EUROPE_LIMB_ROTY, dir: 1 });
   const maxDpr = reducedMotion || isAutomation() ? 1 : quality === 'high' ? 1.5 : 1.25;
 
   return (
@@ -322,19 +305,13 @@ export function HeroEarthBackdropScene({ reducedMotion = false }: HeroEarthBackd
       }}
     >
       <LandingRenderLoop reducedMotion={reducedMotion} />
-      {/* Dim ambient — night Europe + city lights must dominate */}
-      <ambientLight intensity={0.08} color="#d8c9a8" />
-      <directionalLight position={[sun.x, sun.y, sun.z]} intensity={1.15} color="#fff1d6" />
-      <directionalLight position={[2.8, 0.4, 1.2]} intensity={0.22} color="#8a9bb0" />
-      <directionalLight position={[-0.8, -1.2, 2.2]} intensity={0.35} color="#b49a6b" />
+      <ambientLight intensity={0.34} color="#efe4cc" />
+      <directionalLight position={[sun.x, sun.y, sun.z]} intensity={1.85} color="#fff6e0" />
+      <directionalLight position={[2.8, 0.4, 1.2]} intensity={0.42} color="#9aacc0" />
+      <directionalLight position={[-0.8, -1.2, 2.2]} intensity={0.55} color="#c4aa78" />
       <LimbLight />
       <CameraLock />
-      <SceneryEarth
-        spin={spin}
-        reducedMotion={reducedMotion}
-        sunDir={sunDir}
-        quality={quality}
-      />
+      <SceneryEarth spin={spin} reducedMotion={reducedMotion} sunDir={sunDir} quality={quality} />
     </Canvas>
   );
 }

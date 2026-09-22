@@ -25,6 +25,7 @@ import { gateFeature, EntitlementError } from '../_shared/entitlements.ts';
 import { recordUsage } from '../_shared/usage.ts';
 import { runAiTool, AiInvokeError } from '../_shared/ai.ts';
 import { enforceBotMessage } from '../_shared/pdp/botmessage.ts';
+import { runRestaurantConversationTurn } from '../_shared/restaurant-conversation.ts';
 import {
   resolveBot, upsertConversation, insertMessage, loadRecentHistory,
   buildBotPrompt, BotError, type BotRow,
@@ -62,6 +63,7 @@ async function replyForVoice(
   bot: BotRow,
   conversationId: string,
   userText: string,
+  contact: string | null = null,
 ): Promise<string> {
   await insertMessage(admin, bot, conversationId, 'user', userText, { metadata: { channel: 'voice' } });
   const history = await loadRecentHistory(admin, conversationId, 12);
@@ -100,6 +102,25 @@ async function replyForVoice(
     // Pruefpfad. Stille waere hier das Schlechteste: Sie klingt wie ein
     // technischer Ausfall und ruft einen zweiten Anruf hervor.
     return verdict.safe_reply!;
+  }
+
+  const restaurantTurn = await runRestaurantConversationTurn(
+    admin,
+    bot,
+    conversationId,
+    userText,
+    prior,
+    { channel: 'voice', contact },
+  );
+  if (restaurantTurn) {
+    await insertMessage(admin, bot, conversationId, 'assistant', restaurantTurn.reply, {
+      runId: restaurantTurn.runId,
+      inputTokens: restaurantTurn.inputTokens,
+      outputTokens: restaurantTurn.outputTokens,
+      costUsd: restaurantTurn.costUsd,
+      metadata: restaurantTurn.metadata,
+    });
+    return restaurantTurn.reply;
   }
 
   const prompt = buildBotPrompt({ persona: bot.persona, config: bot.config, history: prior, userMessage: userText });
@@ -182,7 +203,7 @@ Deno.serve(async (req) => {
       }
 
       // SpeechResult vorhanden → Antwort generieren + erneut sammeln.
-      const reply = await replyForVoice(admin, bot, conversationId, speech);
+      const reply = await replyForVoice(admin, bot, conversationId, speech, from || null);
       return speakAndGather(actionUrl, reply);
     }
 
@@ -224,7 +245,7 @@ Deno.serve(async (req) => {
       return jsonResponse({ ok: true, conversation_id: conversationId, reply: greeting, greeting: true });
     }
 
-    const reply = await replyForVoice(admin, bot, conversationId, message);
+    const reply = await replyForVoice(admin, bot, conversationId, message, body.from ? String(body.from) : null);
     return jsonResponse({ ok: true, conversation_id: conversationId, reply });
   } catch (e) {
     if (e instanceof BotError)      return jsonError(e.status, e.code, e.message);

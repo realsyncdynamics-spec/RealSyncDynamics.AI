@@ -35,6 +35,7 @@ import { consumeUsage, recordUsage, UsageError } from '../_shared/usage.ts';
 import { runAiTool } from '../_shared/ai.ts';
 import { audit } from '../_shared/auditLog.ts';
 import { enforceBotMessage } from '../_shared/pdp/botmessage.ts';
+import { runRestaurantConversationTurn } from '../_shared/restaurant-conversation.ts';
 import {
   resolveBot, upsertConversation, insertMessage, loadRecentHistory,
   buildBotPrompt, type BotRow,
@@ -233,6 +234,43 @@ async function handleInbound(
       payload: {
         bot_id: bot.id, decision: verdict.decision,
         reasons: verdict.reasons, signals: verdict.signals,
+      },
+    });
+    return;
+  }
+
+  const restaurantTurn = await runRestaurantConversationTurn(
+    admin,
+    bot,
+    conversationId,
+    msg.text,
+    prior,
+    { channel: 'whatsapp', contact: msg.from },
+  );
+  if (restaurantTurn) {
+    await insertMessage(admin, bot, conversationId, 'assistant', restaurantTurn.reply, {
+      runId: restaurantTurn.runId,
+      inputTokens: restaurantTurn.inputTokens,
+      outputTokens: restaurantTurn.outputTokens,
+      costUsd: restaurantTurn.costUsd,
+      metadata: restaurantTurn.metadata,
+    });
+
+    await sendWhatsAppText(channel.phone_number_id, msg.from, restaurantTurn.reply);
+
+    await audit(admin, {
+      tenant_id: bot.tenant_id,
+      actor_user_id: '00000000-0000-0000-0000-000000000000',
+      actor_email: null,
+      action: restaurantTurn.orderId ? 'whatsapp.restaurant_order_created' : 'whatsapp.message_answered',
+      target_type: 'bot_conversation',
+      target_id: conversationId,
+      payload: {
+        source: 'whatsapp',
+        bot_id: bot.id,
+        wa_message_id: msg.waMessageId,
+        run_id: restaurantTurn.runId,
+        ...(restaurantTurn.orderId ? { order_id: restaurantTurn.orderId } : {}),
       },
     });
     return;

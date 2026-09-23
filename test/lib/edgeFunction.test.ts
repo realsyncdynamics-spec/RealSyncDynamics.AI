@@ -1,5 +1,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { postEdgeFunction } from '../../src/lib/edgeFunction';
+import {
+  EDGE_AUTH_REQUIRED_MESSAGE,
+  isEdgeAuthRequiredError,
+  postEdgeFunction,
+} from '../../src/lib/edgeFunction';
 
 describe('postEdgeFunction', () => {
   const originalFetch = global.fetch;
@@ -101,5 +105,14 @@ describe('postEdgeFunction', () => {
       'https://ebljyceifhnlzhjfyxup.supabase.co/functions/v1/gdpr-audit',
       expect.objectContaining({ method: 'POST' }),
     );
+  });
+});
+
+describe('isEdgeAuthRequiredError', () => {
+  it('matches the guard message thrown without a token', () => {
+    expect(isEdgeAuthRequiredError(EDGE_AUTH_REQUIRED_MESSAGE)).toBe(true);
+    expect(isEdgeAuthRequiredError('Nicht authentifiziert – kein Token in localStorage')).toBe(true);
+    expect(isEdgeAuthRequiredError('Backend nicht erreichbar (gdpr-audit).')).toBe(false);
+    expect(isEdgeAuthRequiredError(null)).toBe(false);
   });
 });

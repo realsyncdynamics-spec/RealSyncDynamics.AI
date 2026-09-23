@@ -89,7 +89,7 @@ export function HeroTitanium() {
         className="pointer-events-none absolute inset-x-0 top-0 h-[48%]"
         style={{
           background:
-            'radial-gradient(110% 90% at 18% 0%, rgba(232,201,138,0.07) 0%, rgba(255,255,255,0.03) 34%, transparent 70%)',
+            `radial-gradient(110% 90% at 18% 0%, ${modeAccent(7)} 0%, rgba(255,255,255,0.03) 34%, transparent 70%)`,
         }}
       />
 

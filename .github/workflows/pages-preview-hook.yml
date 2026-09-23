@@ -1,0 +1,91 @@
+name: Pages preview hook
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: Git branch to upload as Pages preview
+        required: false
+        default: ''
+  repository_dispatch:
+    types: [pages-preview]
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - 'src/**'
+      - 'public/**'
+      - 'index.html'
+      - 'package.json'
+      - '.github/workflows/pages-preview-hook.yml'
+
+concurrency:
+  group: pages-preview-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  preview:
+    name: Preview via hook or Wrangler
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      GIT_BRANCH: ${{ github.event.client_payload.branch || github.event.inputs.branch || github.head_ref || github.ref_name }}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          ref: ${{ env.GIT_BRANCH }}
+
+      - name: Decide transport
+        id: path
+        env:
+          CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CF_HOOK: ${{ secrets.CF_PAGES_DEPLOY_HOOK }}
+        run: |
+          echo "## Pages preview hook" >> "$GITHUB_STEP_SUMMARY"
+          echo "Branch: \`$GIT_BRANCH\`" >> "$GITHUB_STEP_SUMMARY"
+          if [ -n "$CF_API_TOKEN" ] && [ -n "$CF_ACCOUNT_ID" ]; then
+            echo "mode=wrangler" >> "$GITHUB_OUTPUT"
+            echo "Transport: Wrangler Direct Upload" >> "$GITHUB_STEP_SUMMARY"
+          elif [ -n "$CF_HOOK" ]; then
+            echo "mode=hook" >> "$GITHUB_OUTPUT"
+            echo "Transport: Deploy Hook (Dashboard-Branch)" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "mode=skip" >> "$GITHUB_OUTPUT"
+            echo "Kein Secret — Git-App bleibt der einzige Pfad." >> "$GITHUB_STEP_SUMMARY"
+            echo "::notice::Set CLOUDFLARE_API_TOKEN+ACCOUNT_ID or CF_PAGES_DEPLOY_HOOK to rebuild previews after Contents-API commits."
+          fi
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d022e54
+        if: steps.path.outputs.mode == 'wrangler'
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install and build
+        if: steps.path.outputs.mode == 'wrangler'
+        env:
+          VITE_BASE: /
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: |
+          npm ci
+          npm run build
+
+      - name: Wrangler preview upload
+        if: steps.path.outputs.mode == 'wrangler'
+        uses: cloudflare/wrangler-action@9acf94ace14e7dc412b076f2c5c20b8ce93c79cd
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy dist --project-name=realsyncdynamics-ai --branch=${{ env.GIT_BRANCH }}
+
+      - name: Fire Deploy Hook
+        if: steps.path.outputs.mode == 'hook'
+        env:
+          CF_HOOK: ${{ secrets.CF_PAGES_DEPLOY_HOOK }}
+        run: |
+          chmod +x scripts/trigger-pages-preview.sh
+          CF_PAGES_DEPLOY_HOOK="$CF_HOOK" ./scripts/trigger-pages-preview.sh

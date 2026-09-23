@@ -58,7 +58,7 @@ jobs:
             echo "::notice::Set CLOUDFLARE_API_TOKEN+ACCOUNT_ID or CF_PAGES_DEPLOY_HOOK to rebuild previews after Contents-API commits."
           fi
 
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d022e54
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         if: steps.path.outputs.mode == 'wrangler'
         with:
           node-version: '20'

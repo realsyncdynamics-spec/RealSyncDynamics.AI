@@ -13,18 +13,20 @@ import { AgentWidget } from '../features/governance/AgentWidget/AgentWidget';
 // (governance-agent op:'chat_anon') is also already in main.
 //
 // Visual model unchanged from Phase 1:
-//   - Position: BOTTOM-CENTER, fixed, respects iOS safe-area-inset-bottom.
-//   - Look: schwarzer Mic-Circle + "Assistent"-Label, glassmorphism.
-//   - Routes: auto-hide on /dashboard, /app/*, /checkout/* and
-//     /audit — those surfaces already have their own assistant context
-//     (tenant widget or audit-copilot panel).
-//   - Hero-CTA-Coexistence: while a [data-hero-cta] is intersecting,
-//     the chip fades out so it doesn't compete with the primary CTA.
+//   - Position: Landing `/` BOTTOM-RIGHT; other public routes BOTTOM-CENTER.
+//     Respects iOS safe-area-inset-bottom.
+//   - Look: schwarzer Mic-Circle + "Grok Bot"-Label, glassmorphism.
+//   - Routes: visible on `/` (landing). Auto-hide on /dashboard, /app/*,
+//     /checkout/* and /audit — those surfaces already have their own
+//     assistant context (tenant widget or audit-copilot panel).
+//   - Hero-CTA-Coexistence: on non-landing routes, while a [data-hero-cta]
+//     is intersecting, the chip fades out. On `/` the chip stays visible
+//     (bottom-right) so the Grok Bot remains discoverable.
 
 const HIDDEN_PREFIXES = ['/dashboard', '/app', '/checkout', '/audit'];
 
 function shouldHide(pathname: string): boolean {
-  if (pathname === '/') return true; // Hero fold owns attention — no Assistent on headline
+  // Landing `/` shows the chip (Dominik: RealSyncDynamicsai Grok Bot on homepage).
   if (HIDDEN_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`))) return true;
   // Legacy: hide on /governance/* subroutes (but not /governance itself) for backwards compatibility
   if (pathname !== '/governance' && pathname.startsWith('/governance/')) return true;
@@ -35,11 +37,16 @@ export function AssistentChip() {
   const { pathname } = useLocation();
   const [open, setOpen] = useState(false);
   const [heroVisible, setHeroVisible] = useState(false);
+  const isLanding = pathname === '/';
 
   // Observe [data-hero-cta] visibility — hide chip while hero CTA is on
-  // screen to avoid attention-competition.
+  // screen to avoid attention-competition (skipped on landing).
   useEffect(() => {
     if (typeof document === 'undefined') return;
+    if (isLanding) {
+      setHeroVisible(false);
+      return;
+    }
     const targets = Array.from(document.querySelectorAll('[data-hero-cta]'));
     if (targets.length === 0) {
       setHeroVisible(false);
@@ -58,9 +65,14 @@ export function AssistentChip() {
     );
     for (const t of targets) obs.observe(t);
     return () => obs.disconnect();
-  }, [pathname]);
+  }, [pathname, isLanding]);
 
   if (shouldHide(pathname)) return null;
+
+  const faded = !isLanding && heroVisible;
+  const positionClass = isLanding
+    ? 'fixed right-4 sm:right-6 z-40'
+    : 'fixed left-1/2 -translate-x-1/2 z-40';
 
   return (
     <>
@@ -70,10 +82,10 @@ export function AssistentChip() {
         aria-label="Assistent öffnen"
         aria-expanded={open}
         aria-haspopup="dialog"
-        aria-hidden={heroVisible ? true : undefined}
-        tabIndex={heroVisible ? -1 : 0}
-        className={`fixed left-1/2 -translate-x-1/2 z-40 inline-flex items-center gap-2 pl-2 pr-4 py-1.5 rounded-full backdrop-blur-md transition-all duration-200 motion-reduce:transition-none motion-reduce:hover:scale-100 hover:scale-[1.03] ${
-          heroVisible
+        aria-hidden={faded ? true : undefined}
+        tabIndex={faded ? -1 : 0}
+        className={`${positionClass} inline-flex items-center gap-2 pl-2 pr-4 py-1.5 rounded-full backdrop-blur-md transition-all duration-200 motion-reduce:transition-none motion-reduce:hover:scale-100 hover:scale-[1.03] ${
+          faded
             ? 'opacity-0 translate-y-2 pointer-events-none'
             : 'opacity-100 translate-y-0'
         } ${
@@ -97,7 +109,7 @@ export function AssistentChip() {
           <Mic className="h-4 w-4" style={{ color: '#e4cfa2' }} />
         </span>
         <span className="text-sm font-medium tracking-tight" style={{ color: '#e8ddc8' }}>
-          Assistent
+          Grok Bot
         </span>
       </button>
 

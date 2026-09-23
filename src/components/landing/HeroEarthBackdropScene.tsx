@@ -8,11 +8,9 @@ import { sphereNodePosition } from '../governance-frontend/governance-sphere-nod
 import { SphereGeography } from '../governance-frontend/SphereGeography';
 import { PhaseMoon } from './PhaseMoon';
 
-/** Day/night cycle across the Europe limb — no globe orbit. */
 export const LANDING_SUN_POSITION = new THREE.Vector3(-3.4, 0.55, -1.2);
 const EARTH_RADIUS = 1.55;
-const TERMINATOR_PERIOD_SEC = 48;
-/** Locked so the Americas stay off-frame. */
+const TERMINATOR_PERIOD_SEC = 56;
 const EUROPE_LIMB_ROTY = -1.58;
 
 const EUROPE_NETWORK_HUBS: readonly { id: string; lat: number; lon: number }[] = [
@@ -68,7 +66,7 @@ function LandingRenderLoop({ reducedMotion }: { reducedMotion: boolean }) {
   return null;
 }
 
-function buildGreatCirclePoints(a: THREE.Vector3, b: THREE.Vector3, lift: number, segments = 40) {
+function buildGreatCirclePoints(a: THREE.Vector3, b: THREE.Vector3, lift: number, segments = 36) {
   const mid = a.clone().add(b).multiplyScalar(0.5).normalize().multiplyScalar(lift);
   const curve = new THREE.QuadraticBezierCurve3(a, mid, b);
   return Array.from({ length: segments + 1 }, (_, i) => curve.getPoint(i / segments));
@@ -79,13 +77,13 @@ function CyanEuropeNetwork({ radius, reducedMotion }: { radius: number; reducedM
   const hubs = useMemo(() => {
     const map = new Map<string, THREE.Vector3>();
     for (const h of EUROPE_NETWORK_HUBS) {
-      const [x, y, z] = sphereNodePosition(h.lat, h.lon, radius * 1.018);
+      const [x, y, z] = sphereNodePosition(h.lat, h.lon, radius * 1.012);
       map.set(h.id, new THREE.Vector3(x, y, z));
     }
     return map;
   }, [radius]);
   const arcs = useMemo(() => {
-    const lift = radius * 1.12;
+    const lift = radius * 1.08;
     return EUROPE_ROUTES.flatMap(([from, to], idx) => {
       const a = hubs.get(from);
       const b = hubs.get(to);
@@ -99,19 +97,19 @@ function CyanEuropeNetwork({ radius, reducedMotion }: { radius: number; reducedM
     group.current.children.forEach((child, i) => {
       const mat = (child as THREE.Object3D & { material?: THREE.Material }).material;
       if (mat && 'opacity' in mat) {
-        (mat as THREE.Material & { opacity: number }).opacity = 0.48 + Math.sin(t * 0.85 + i * 0.14) * 0.18;
+        (mat as THREE.Material & { opacity: number }).opacity = 0.28 + Math.sin(t * 0.7 + i * 0.14) * 0.1;
       }
     });
   });
   return (
     <group ref={group} raycast={() => null}>
       {arcs.map(({ key, points }) => (
-        <Line key={key} points={points} color="#22c3e6" lineWidth={1.25} transparent opacity={0.68} depthWrite={false} toneMapped={false} />
+        <Line key={key} points={points} color="#7fe3f5" lineWidth={0.7} transparent opacity={0.38} depthWrite={false} toneMapped={false} />
       ))}
       {Array.from(hubs.entries()).map(([id, pos]) => (
         <mesh key={id} position={pos.toArray() as [number, number, number]} raycast={() => null}>
-          <sphereGeometry args={[0.02, 10, 10]} />
-          <meshBasicMaterial color="#bff1fb" transparent opacity={0.92} depthWrite={false} toneMapped={false} />
+          <sphereGeometry args={[0.01, 8, 8]} />
+          <meshBasicMaterial color="#e8f7fc" transparent opacity={0.7} depthWrite={false} toneMapped={false} />
         </mesh>
       ))}
     </group>
@@ -134,7 +132,7 @@ function WalkingSun({
     if (keyLight.current) {
       keyLight.current.position.copy(sunDir).multiplyScalar(9);
       const day = Math.max(0, sunDir.y);
-      keyLight.current.intensity = 1.35 + day * 1.35;
+      keyLight.current.intensity = 1.45 + day * 1.4;
     }
   });
   return null;
@@ -151,11 +149,11 @@ function SceneryEarth({
   const geoZoom = useRef({ zoom: 1.22 });
   useFrame(({ clock }) => {
     if (!wrap.current) return;
-    const sway = reducedMotion ? 0 : Math.sin(clock.elapsedTime * 0.07) * 0.035;
+    const sway = reducedMotion ? 0 : Math.sin(clock.elapsedTime * 0.06) * 0.028;
     wrap.current.rotation.y = EUROPE_LIMB_ROTY + sway;
   });
   return (
-    <group ref={wrap} position={[2.15, -0.38, -0.15]} scale={2.05} rotation={[0.2, 0, -0.02]}>
+    <group ref={wrap} position={[2.22, -0.36, -0.12]} scale={2.18} rotation={[0.18, 0, -0.02]}>
       <PhotorealEarthMesh
         key={quality}
         radius={EARTH_RADIUS}
@@ -163,7 +161,7 @@ function SceneryEarth({
         reducedMotion={reducedMotion}
         sunDirection={sunDir}
         rotation={[0.28, 0.08, 0.02]}
-        palette="landing-gold"
+        palette="default"
         quality={quality}
       />
       <SphereGeography zoomRef={geoZoom} earthRadius={EARTH_RADIUS} reducedMotion={reducedMotion} layers={['borders']} />
@@ -174,10 +172,10 @@ function SceneryEarth({
 
 function CameraLock() {
   const { camera } = useThree();
-  const base = useMemo(() => new THREE.Vector3(-0.55, 0.12, 3.55), []);
+  const base = useMemo(() => new THREE.Vector3(-0.48, 0.1, 3.35), []);
   useFrame(() => {
     camera.position.copy(base);
-    camera.lookAt(1.65, -0.22, 0);
+    camera.lookAt(1.72, -0.2, 0);
   });
   return null;
 }
@@ -191,7 +189,7 @@ function useProgressiveEarthQuality(reducedMotion: boolean): EarthQuality {
       setQuality(target);
       return;
     }
-    const delay = window.setTimeout(() => setQuality('high'), 2200);
+    const delay = window.setTimeout(() => setQuality('high'), 1600);
     return () => window.clearTimeout(delay);
   }, [reducedMotion]);
   return quality;
@@ -205,16 +203,16 @@ export function HeroEarthBackdropScene({ reducedMotion = false }: HeroEarthBackd
   const sunDir = useMemo(() => LANDING_SUN_POSITION.clone().normalize(), []);
   const keyLight = useRef<THREE.DirectionalLight | null>(null);
   const quality = useProgressiveEarthQuality(reducedMotion);
-  const maxDpr = reducedMotion || isAutomation() ? 1 : quality === 'high' ? 1.6 : 1.3;
+  const maxDpr = reducedMotion || isAutomation() ? 1 : quality === 'high' ? 1.7 : 1.35;
   return (
     <Canvas
       className="h-full w-full"
-      camera={{ position: [-0.55, 0.12, 3.55], fov: 32 }}
+      camera={{ position: [-0.48, 0.1, 3.35], fov: 30 }}
       gl={{
         alpha: true,
         antialias: !isAutomation(),
         powerPreference: isAutomation() ? 'low-power' : 'high-performance',
-        toneMapping: THREE.NoToneMapping,
+        toneMapping: THREE.ACESFilmicToneMapping,
         outputColorSpace: THREE.SRGBColorSpace,
       }}
       dpr={[1, maxDpr]}
@@ -224,15 +222,16 @@ export function HeroEarthBackdropScene({ reducedMotion = false }: HeroEarthBackd
         gl.domElement.style.touchAction = 'auto';
         gl.domElement.style.cursor = 'default';
         gl.domElement.style.pointerEvents = 'none';
-        gl.toneMapping = THREE.NoToneMapping;
+        gl.toneMapping = THREE.ACESFilmicToneMapping;
+        gl.toneMappingExposure = 1.05;
         gl.setClearColor(0x000000, 0);
       }}
     >
       <LandingRenderLoop reducedMotion={reducedMotion} />
       <WalkingSun reducedMotion={reducedMotion} sunDir={sunDir} keyLight={keyLight} />
-      <ambientLight intensity={0.16} color="#9fb4c8" />
-      <directionalLight ref={keyLight} position={[LANDING_SUN_POSITION.x, LANDING_SUN_POSITION.y, LANDING_SUN_POSITION.z]} intensity={2.2} color="#fff6e0" />
-      <directionalLight position={[2.8, 0.4, 1.2]} intensity={0.28} color="#22c3e6" />
+      <ambientLight intensity={0.12} color="#8aa4b8" />
+      <directionalLight ref={keyLight} position={[LANDING_SUN_POSITION.x, LANDING_SUN_POSITION.y, LANDING_SUN_POSITION.z]} intensity={2.35} color="#fff4e2" />
+      <directionalLight position={[2.8, 0.4, 1.2]} intensity={0.18} color="#7ec8e3" />
       <CameraLock />
       <PhaseMoon reducedMotion={reducedMotion} sunDir={sunDir} />
       <SceneryEarth reducedMotion={reducedMotion} sunDir={sunDir} quality={quality} />

@@ -61,27 +61,31 @@ function planChips(): PlanChip[] {
 }
 
 function EuropeStage({ reducedMotion }: { reducedMotion: boolean }) {
-  if (reducedMotion) return <EuropeNetworkHero />;
   return (
-    <Suspense fallback={<EuropeNetworkHero />}>
-      <div
-        className="pointer-events-none absolute inset-0"
-        data-landing-earth="webgl"
-        data-hero-visual="europe-day-night-3d"
-        aria-hidden="true"
-      >
-        <HeroEarthBackdropScene reducedMotion={false} />
-        <div
-          className="absolute inset-0"
-          style={{
-            background: [
-              'linear-gradient(105deg, rgba(0,0,0,0.82) 0%, rgba(0,0,0,0.42) 32%, rgba(0,0,0,0.08) 58%, transparent 74%)',
-              'linear-gradient(180deg, rgba(0,0,0,0.18) 0%, transparent 18%, transparent 78%, rgba(0,0,0,0.45) 100%)',
-            ].join(', '),
-          }}
-        />
-      </div>
-    </Suspense>
+    <>
+      <EuropeNetworkHero />
+      {reducedMotion ? null : (
+        <Suspense fallback={null}>
+          <div
+            className="pointer-events-none absolute inset-0"
+            data-landing-earth="webgl"
+            data-hero-visual="europe-day-night-3d"
+            aria-hidden="true"
+          >
+            <HeroEarthBackdropScene reducedMotion={false} />
+            <div
+              className="absolute inset-0"
+              style={{
+                background: [
+                  'linear-gradient(105deg, rgba(0,0,0,0.78) 0%, rgba(0,0,0,0.36) 30%, rgba(0,0,0,0.06) 56%, transparent 72%)',
+                  'linear-gradient(180deg, rgba(0,0,0,0.16) 0%, transparent 18%, transparent 78%, rgba(0,0,0,0.42) 100%)',
+                ].join(', '),
+              }}
+            />
+          </div>
+        </Suspense>
+      )}
+    </>
   );
 }
 
@@ -102,15 +106,6 @@ export function HeroTitanium() {
       }
     >
       <EuropeStage reducedMotion={reducedMotion} />
-
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-x-0 top-0 h-[42%]"
-        style={{
-          background:
-            'radial-gradient(120% 100% at 22% 0%, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.02) 38%, transparent 72%)',
-        }}
-      />
 
       <div className="relative z-10 mx-auto flex min-h-[100svh] max-w-[1360px] flex-col justify-center px-[4vw] pb-16 pt-28 sm:pb-24 sm:pt-32">
         <div className="max-w-[58rem]">

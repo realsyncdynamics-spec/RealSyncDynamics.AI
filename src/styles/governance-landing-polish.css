@@ -18,33 +18,33 @@
   scroll-margin-top: 110px;
 }
 
-.ga-context .text-\[8px\],
-.ga-context .text-\[9px\],
-.ga-context .text-\[10px\] {
+.ga-context .text-\\[8px\\],
+.ga-context .text-\\[9px\\],
+.ga-context .text-\\[10px\\] {
   font-size: 12px;
   line-height: 1.4;
 }
 
-.ga-context .text-\[11px\] {
+.ga-context .text-\\[11px\\] {
   font-size: 12px;
   line-height: 1.45;
 }
 
-.ga-context .text-\[12px\],
-.ga-context .text-\[12\.5px\] {
+.ga-context .text-\\[12px\\],
+.ga-context .text-\\[12\\.5px\\] {
   font-size: 13px;
   line-height: 1.5;
 }
 
-.ga-context .text-\[13px\],
-.ga-context .text-\[13\.5px\] {
+.ga-context .text-\\[13px\\],
+.ga-context .text-\\[13\\.5px\\] {
   font-size: 15px;
   line-height: 1.6;
 }
 
-.ga-context .text-\[14px\],
-.ga-context .text-\[15px\],
-.ga-context .text-\[15\.5px\] {
+.ga-context .text-\\[14px\\],
+.ga-context .text-\\[15px\\],
+.ga-context .text-\\[15\\.5px\\] {
   font-size: 16px;
   line-height: 1.65;
 }
@@ -110,4 +110,23 @@
   .ga-context .ga-card {
     transition: none;
   }
+}
+
+/* Fixed gold on the public landing header/pills (Schwarz-Gold, 2026-09-23). */
+.ga-context.ga-gold-reference {
+  --ga-accent: var(--ga-vip);
+  --ga-accent-lite: var(--ga-vip-lite);
+  --ga-accent-deep: var(--ga-vip-deep);
+  --ga-accent-border: var(--ga-vip-border);
+  --ga-line: rgba(242, 201, 138, .22);
+  --ga-line-soft: rgba(242, 201, 138, .12);
+  --ga-pill-face: linear-gradient(180deg, #f7dcae, #d6ad68 55%, #b98a4a);
+  --ga-pill-ink: #0a0a0b;
+  --ga-pill-shadow: inset 0 1px 0 #ffffff80, 0 0 24px #d6ad6838;
+  --ga-h1-accent: linear-gradient(180deg, #f7dcae, #d6ad68);
+  --ga-h2-accent: var(--ga-h1-accent);
+  --ga-ghost-border: var(--ga-vip-border);
+  --ga-ghost-border-hover: var(--ga-vip-lite);
+  --ga-ghost-face-hover: #d6ad6818;
+  --ga-chip-face: #d6ad680f;
 }

@@ -182,8 +182,8 @@ function AnonWidget({ open, onClose }: { open: boolean; onClose: () => void }) {
 
       <div
         className={[
-          // Mobile (<768): full-width bottom sheet under status / over header
-          'fixed z-[60] flex flex-col overflow-hidden border border-white/10 bg-[#0a0a0a] shadow-2xl transition-all duration-200',
+          // Mobile (<768): opaque bottom sheet, gold border, no landing bleed-through
+          'fixed z-[60] flex flex-col overflow-hidden transition-all duration-200',
           'inset-x-0 bottom-0 h-[min(92dvh,100%)] rounded-t-2xl',
           // Desktop: floating card
           'md:inset-x-auto md:bottom-6 md:left-auto md:right-6 md:h-[520px] md:w-[400px] md:max-w-[calc(100vw-2rem)] md:rounded-2xl md:translate-x-0',
@@ -191,6 +191,12 @@ function AnonWidget({ open, onClose }: { open: boolean; onClose: () => void }) {
             ? 'pointer-events-auto translate-y-0 opacity-100'
             : 'pointer-events-none translate-y-full opacity-0 md:translate-y-3',
         ].join(' ')}
+        style={{
+          backgroundColor: '#0a0b0e',
+          border: '1px solid rgba(228, 207, 162, 0.45)',
+          boxShadow:
+            '0 -8px 40px rgba(0,0,0,0.75), 0 0 32px -8px rgba(228, 207, 162, 0.2)',
+        }}
         role="dialog"
         aria-modal="true"
         aria-label="Compliance-Assistent"
@@ -198,7 +204,7 @@ function AnonWidget({ open, onClose }: { open: boolean; onClose: () => void }) {
       >
         {/* Drag handle affordance (mobile) */}
         <div className="flex justify-center pt-2 md:hidden" aria-hidden>
-          <span className="h-1 w-10 rounded-full bg-white/25" />
+          <span className="h-1 w-10 rounded-full" style={{ backgroundColor: "rgba(228, 207, 162, 0.45)" }} />
         </div>
 
         <WidgetHeader
@@ -254,30 +260,49 @@ function WidgetHeader({
   onClose: () => void;
 }) {
   return (
-    <header className="flex items-center justify-between border-b border-white/10 bg-black/40 px-4 py-3">
+    <header
+      className="flex items-center justify-between px-4 py-3"
+      style={{
+        borderBottom: '1px solid rgba(228, 207, 162, 0.25)',
+        backgroundColor: '#0d0f14',
+      }}
+    >
       <div className="flex items-center gap-2.5">
-        <div className="flex h-7 w-7 items-center justify-center rounded-full bg-amber-400 text-[10px] font-bold text-black">
+        <div
+          className="flex h-7 w-7 items-center justify-center rounded-full text-[10px] font-bold text-black"
+          style={{ backgroundColor: '#e4cfa2' }}
+        >
           RS
         </div>
         <div>
-          <p className="text-sm font-semibold leading-none text-white">{label}</p>
-          <p className="mt-0.5 flex items-center gap-1 text-[10px] text-emerald-400">
-            <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400" />
+          <p className="text-sm font-semibold leading-none" style={{ color: '#f3ead8' }}>
+            {label}
+          </p>
+          <p className="mt-0.5 flex items-center gap-1.5 text-[11px]" style={{ color: '#e8ddc8' }}>
+            <span
+              className="inline-block h-1.5 w-1.5 rounded-full"
+              style={{ backgroundColor: '#e4cfa2' }}
+              aria-hidden
+            />
             {badge}
           </p>
         </div>
       </div>
       <div className="flex items-center gap-1">
         <button
+          type="button"
           onClick={onReset}
           title="Konversation zurücksetzen"
-          className="flex h-7 w-7 items-center justify-center rounded-lg text-zinc-500 transition-colors hover:bg-white/5 hover:text-zinc-200"
+          className="flex h-7 w-7 items-center justify-center rounded-lg transition-colors"
+          style={{ color: '#9a917f' }}
         >
           ↺
         </button>
         <button
+          type="button"
           onClick={onClose}
-          className="flex h-7 w-7 items-center justify-center rounded-lg text-zinc-500 transition-colors hover:bg-white/5 hover:text-zinc-200"
+          className="flex h-7 w-7 items-center justify-center rounded-lg transition-colors"
+          style={{ color: '#9a917f' }}
           aria-label="Schliessen"
         >
           <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

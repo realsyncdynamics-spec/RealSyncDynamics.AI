@@ -93,10 +93,11 @@ export function AssistentChip() {
         }`}
         style={{
           bottom: 'calc(env(safe-area-inset-bottom, 0px) + 16px)',
-          backgroundColor: 'rgba(10, 11, 14, 0.92)',
+          backgroundColor: '#0a0b0e',
           color: '#e8ddc8',
-          border: '1px solid rgba(228, 207, 162, 0.35)',
-          boxShadow: '0 10px 40px -10px rgba(0,0,0,0.7), 0 0 0 1px rgba(228,207,162,0.06)',
+          border: '1px solid rgba(228, 207, 162, 0.55)',
+          boxShadow:
+            '0 10px 40px -10px rgba(0,0,0,0.85), 0 0 24px -4px rgba(228,207,162,0.22), 0 0 0 1px rgba(228,207,162,0.12)',
         }}
       >
         <span

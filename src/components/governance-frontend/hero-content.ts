@@ -1,5 +1,5 @@
 /**
- * SSOT Hero-Copy — Titan-Entwurf (Dark/Gold, Europa-Relief).
+ * SSOT Hero-Copy — Claude Design / Titan (Dark/Gold, Europa-Relief).
  *
  * H1 zweizeilig: „AI Compliance“ / „Operations OS for Europe“.
  * Goldakzent ausschliesslich auf „for Europe“ — im Entwurf traegt der

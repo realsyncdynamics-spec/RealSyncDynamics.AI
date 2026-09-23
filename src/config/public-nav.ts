@@ -382,8 +382,8 @@ export const PUBLIC_FOOTER_LINKS: PublicNavLeaf[] = [
 ];
 
 export const PUBLIC_CTA = {
-  /** Acquisition CTA — Replit SSOT Free Audit (never „Demo“ / „testen“). */
-  label: 'Kostenlosen Audit starten',
+  /** Acquisition CTA — Brand Direction v1.0 (never „Demo“ / „testen“). */
+  label: 'Free Audit starten',
   shortLabel: 'Free Audit',
   to: '/audit',
 } as const;

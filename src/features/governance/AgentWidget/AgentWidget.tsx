@@ -156,51 +156,87 @@ function AnonWidget({ open, onClose }: { open: boolean; onClose: () => void }) {
     return () => window.removeEventListener('keydown', onKey);
   }, [open, onClose]);
 
+  // Mobile sheet: lock background scroll so landing does not bleed through.
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [open]);
+
   return (
-    <div
-      className={[
-        'fixed bottom-20 left-1/2 -translate-x-1/2 z-50 flex w-[min(400px,calc(100vw-2rem))] flex-col overflow-hidden rounded-2xl border border-titanium-800 bg-obsidian-950 shadow-2xl transition-all duration-200',
-        open ? 'pointer-events-auto opacity-100 translate-y-0' : 'pointer-events-none translate-y-3 opacity-0',
-      ].join(' ')}
-      style={{ height: 500 }}
-      role="dialog"
-      aria-label="Compliance-Assistent"
-      aria-hidden={!open}
-    >
-      <WidgetHeader
-        label="KI-Assistent"
-        badge="Öffentlich · EU · keine Rechtsberatung"
-        onReset={chat.reset}
-        onClose={onClose}
+    <>
+      {/* Scrim: tap outside closes; covers site header on mobile */}
+      <button
+        type="button"
+        aria-label="Assistent schliessen"
+        onClick={onClose}
+        className={[
+          'fixed inset-0 z-[55] bg-black/70 transition-opacity duration-200 md:bg-black/40',
+          open ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0',
+        ].join(' ')}
+        tabIndex={open ? 0 : -1}
       />
 
-      <AIDisclosureNotice variant="full" />
-
-      {chat.rateLimited && (
-        <div className="border-b border-orange-400/30 bg-orange-400/10 px-4 py-2.5 text-[12px] text-orange-200">
-          Anfrage-Limit erreicht (5/min). Bitte in einer Minute erneut versuchen.
+      <div
+        className={[
+          // Mobile (<768): full-width bottom sheet under status / over header
+          'fixed z-[60] flex flex-col overflow-hidden border border-white/10 bg-[#0a0a0a] shadow-2xl transition-all duration-200',
+          'inset-x-0 bottom-0 h-[min(92dvh,100%)] rounded-t-2xl',
+          // Desktop: floating card
+          'md:inset-x-auto md:bottom-6 md:left-auto md:right-6 md:h-[520px] md:w-[400px] md:max-w-[calc(100vw-2rem)] md:rounded-2xl md:translate-x-0',
+          open
+            ? 'pointer-events-auto translate-y-0 opacity-100'
+            : 'pointer-events-none translate-y-full opacity-0 md:translate-y-3',
+        ].join(' ')}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Compliance-Assistent"
+        aria-hidden={!open}
+      >
+        {/* Drag handle affordance (mobile) */}
+        <div className="flex justify-center pt-2 md:hidden" aria-hidden>
+          <span className="h-1 w-10 rounded-full bg-white/25" />
         </div>
-      )}
 
-      {chat.usRoutingRequired && (
-        <UsRoutingBanner onAck={chat.acknowledgeUsRouting} />
-      )}
+        <WidgetHeader
+          label="KI-Assistent"
+          badge="Öffentlich · EU · keine Rechtsberatung"
+          onReset={chat.reset}
+          onClose={onClose}
+        />
 
-      <div className="flex-1 space-y-4 overflow-y-auto p-4 scroll-smooth">
-        {chat.messages.map((m) => (
-          <ChatMessageView key={m.id} message={m} />
-        ))}
-        <div ref={chat.bottomRef} />
+        {/* Compact: first line + link — full Art. 50 text on /legal/datenschutz#ki-systeme */}
+        <AIDisclosureNotice variant="compact" />
+
+        {chat.rateLimited && (
+          <div className="border-b border-orange-400/30 bg-orange-400/10 px-4 py-2.5 text-[12px] text-orange-200">
+            Anfrage-Limit erreicht (5/min). Bitte in einer Minute erneut versuchen.
+          </div>
+        )}
+
+        {chat.usRoutingRequired && (
+          <UsRoutingBanner onAck={chat.acknowledgeUsRouting} />
+        )}
+
+        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-4 scroll-smooth">
+          {chat.messages.map((m) => (
+            <ChatMessageView key={m.id} message={m} />
+          ))}
+          <div ref={chat.bottomRef} />
+        </div>
+
+        <ChatInput
+          onSend={chat.send}
+          isLoading={chat.isLoading}
+          showQuickActions={chat.showQuickActions}
+          quickActions={ANON_QUICK}
+          placeholder="DSGVO-Frage stellen…"
+        />
       </div>
-
-      <ChatInput
-        onSend={chat.send}
-        isLoading={chat.isLoading}
-        showQuickActions={chat.showQuickActions}
-        quickActions={ANON_QUICK}
-        placeholder="DSGVO-Frage stellen…"
-      />
-    </div>
+    </>
   );
 }
 

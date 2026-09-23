@@ -74,13 +74,15 @@ export function AssistentChip() {
     ? 'fixed right-4 sm:right-6 z-40'
     : 'fixed left-1/2 -translate-x-1/2 z-40';
 
+  // Ein Einstieg: Chip nur wenn Panel zu. Sonst Doppel-FAB über Landing-Text.
   return (
     <>
+      {!open && (
       <button
         type="button"
         onClick={() => setOpen(true)}
         aria-label="Assistent öffnen"
-        aria-expanded={open}
+        aria-expanded={false}
         aria-haspopup="dialog"
         aria-hidden={faded ? true : undefined}
         tabIndex={faded ? -1 : 0}
@@ -88,8 +90,6 @@ export function AssistentChip() {
           faded
             ? 'opacity-0 translate-y-2 pointer-events-none'
             : 'opacity-100 translate-y-0'
-        } ${
-          open ? 'opacity-0 pointer-events-none' : ''
         }`}
         style={{
           bottom: 'calc(env(safe-area-inset-bottom, 0px) + 16px)',
@@ -112,6 +112,7 @@ export function AssistentChip() {
           Grok Bot
         </span>
       </button>
+      )}
 
       <AgentWidget mode="anon" open={open} onClose={() => setOpen(false)} />
     </>

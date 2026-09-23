@@ -34,7 +34,19 @@
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { buildCorsHeaders, corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
-import { normalizePlanKey, planByKey } from '../_shared/pricing.generated.ts';
+import {
+  normalizePlanKey,
+  planByKey,
+  planById,
+  publicLabelOf,
+  computeQuote,
+  quoteDimensionsFor,
+  isQuotePlanId,
+  type QuoteAnswers,
+  type QuotePlanId,
+} from '../_shared/pricing.generated.ts';
+import { callProvider, ProviderError } from '../_shared/providers.ts';
+import { getModelId } from '../_shared/modelSelection.ts';
 
 // Preflight muss GET mit abdecken (Wartelisten-Zähler). Die bestehenden
 // POST-Antworten behalten `corsHeaders` — der Unterschied ist ausschliesslich
@@ -55,6 +67,172 @@ const MAX_DOMAINS = 25;
 // (src/components/landing/WaitlistForm.tsx). Fehlte er hier, fiel jede
 // Bot-Anmeldung auf `other` zurueck — ausgerechnet fuer das eine Modul, das
 // noch nicht ausliefert und dessen Nachfrage gemessen werden sollte.
+// ── Online-Preisrechner (/pricing/quote) ────────────────────────────────────
+
+/** `source` jedes Leads aus dem Rechner. Der Submit-Schritt filtert darauf. */
+const QUOTE_SOURCE = 'pricing-quote';
+
+/** Ganzzahl aus beliebigem Input, auf ein Fenster geklemmt. */
+function clampInt(raw: unknown, min: number, max: number): number {
+  const n = typeof raw === 'number' ? raw : Number(raw);
+  if (!Number.isFinite(n)) return min;
+  return Math.min(Math.max(Math.floor(n), min), max);
+}
+
+/**
+ * Antworten aus dem Request in die Form bringen, die `computeQuote()` erwartet.
+ *
+ * Gibt `null` zurueck, wenn der Plan unbekannt ist — ein Betrag ohne Plan
+ * haette keine Untergrenze. Alles andere wird bereinigt statt abgelehnt:
+ * unbekannte Bausteine verwirft `computeQuote()` ohnehin, und ein Formular,
+ * das ein Feld zu viel schickt, ist kein Angriff.
+ */
+function normalizeQuoteAnswers(raw: unknown): QuoteAnswers | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const input = raw as Record<string, unknown>;
+  const planId = input.planId ?? input.plan_id;
+  if (!isQuotePlanId(planId)) return null;
+
+  const quantities: Record<string, number> = {};
+  const rawQuantities = input.quantities;
+  if (rawQuantities && typeof rawQuantities === 'object') {
+    for (const [key, value] of Object.entries(rawQuantities as Record<string, unknown>)) {
+      quantities[key.slice(0, 64)] = clampInt(value, 0, 1_000);
+    }
+  }
+
+  const rawItems = input.contractItems ?? input.contract_items;
+  const contractItems = Array.isArray(rawItems)
+    ? rawItems.filter((v): v is string => typeof v === 'string').map((v) => v.slice(0, 64))
+    : [];
+
+  return { planId, quantities, contractItems };
+}
+
+interface QuoteQuestion {
+  id: string;
+  kind: 'addon' | 'contract';
+  label: string;
+  question: string;
+  hint: string;
+  unitEur: number;
+  unit?: { label: string; step: string; max: number };
+}
+
+interface QuoteAiLog {
+  generated: boolean;
+  provider: string;
+  model: string;
+  input_tokens?: number;
+  output_tokens?: number;
+  reason?: string;
+}
+
+/**
+ * Den individuellen Fragebogen erzeugen.
+ *
+ * Die KI formuliert die Fragen auf den geschilderten Kontext um — Branche,
+ * Anzahl Organisationen, Sitz, Bestandssysteme. Was sie NICHT darf: eine
+ * Dimension erfinden. Die erlaubten IDs kommen aus der Pricing-SSoT, und jede
+ * zurueckgegebene ID, die nicht darin steht, wird verworfen. Ein Modell kann
+ * so keinen Posten in den Preis schreiben, den es nicht gibt.
+ *
+ * Faellt der Provider aus oder ist kein Schluessel hinterlegt, bleibt es bei
+ * den Standardfragen aus der SSoT. Die Seite funktioniert dann vollstaendig
+ * weiter und nennt denselben Betrag — nur eben mit generischem Wortlaut. Das
+ * ist der Grund, warum der Preis nicht aus dem Modell kommt.
+ */
+async function generateQuoteQuestions(
+  planId: QuotePlanId,
+  context: { industry: string; tenants: number; domains: number; country: string; systems: string },
+  dimensions: ReturnType<typeof quoteDimensionsFor>,
+): Promise<{ questions: QuoteQuestion[]; log: QuoteAiLog }> {
+  const fallback: QuoteQuestion[] = dimensions.map((d) => ({
+    id: d.id,
+    kind: d.kind,
+    label: d.label,
+    question: d.question,
+    hint: d.hint,
+    unitEur: d.unitEur,
+    unit: d.unit,
+  }));
+
+  const model = getModelId('haiku');
+  const log: QuoteAiLog = { generated: false, provider: 'anthropic', model };
+
+  const allowed = dimensions.map((d) => `${d.id} — ${d.label}`).join('\n');
+  const systemPrompt = [
+    'Du formulierst Fragen fuer einen Preisrechner einer EU-Governance-Plattform.',
+    'Du bekommst eine feste Liste von Dimensionen. Formuliere zu JEDER Dimension',
+    'genau eine Frage und einen kurzen Hinweis, zugeschnitten auf den Kontext des',
+    'Interessenten (Branche, Groesse, Sitz, Bestandssysteme).',
+    '',
+    'Regeln:',
+    '- Antworte ausschliesslich mit JSON: {"questions":[{"id":"...","question":"...","hint":"..."}]}',
+    '- Verwende NUR die vorgegebenen ids. Erfinde keine.',
+    '- Nenne KEINE Betraege, Preise oder Prozente. Der Preis wird nicht von dir berechnet.',
+    '- Deutsch, Sie-Form, je Frage hoechstens 140 Zeichen, je Hinweis hoechstens 160.',
+  ].join('\n');
+
+  const userPrompt = [
+    `Plan: ${planId}`,
+    `Branche: ${context.industry || 'nicht angegeben'}`,
+    `Organisationen/Mandanten: ${context.tenants || 'nicht angegeben'}`,
+    `Domains: ${context.domains || 'nicht angegeben'}`,
+    `Sitz: ${context.country || 'nicht angegeben'}`,
+    `Bestandssysteme: ${context.systems || 'nicht angegeben'}`,
+    '',
+    'Dimensionen:',
+    allowed,
+  ].join('\n');
+
+  try {
+    const result = await callProvider({
+      provider: 'anthropic',
+      modelId: model,
+      systemPrompt,
+      userPrompt,
+      maxTokens: 1_500,
+      temperature: 0.5,
+    });
+    log.input_tokens = result.inputTokens;
+    log.output_tokens = result.outputTokens;
+
+    // Modelle rahmen JSON gern in Fliesstext. Den ersten Block nehmen statt
+    // die Antwort zu verwerfen.
+    const start = result.text.indexOf('{');
+    const end = result.text.lastIndexOf('}');
+    if (start < 0 || end <= start) throw new Error('keine JSON-Struktur in der Antwort');
+    const parsed = JSON.parse(result.text.slice(start, end + 1)) as {
+      questions?: Array<{ id?: unknown; question?: unknown; hint?: unknown }>;
+    };
+
+    const byId = new Map(fallback.map((q) => [q.id, q]));
+    let replaced = 0;
+    for (const item of parsed.questions ?? []) {
+      const id = typeof item.id === 'string' ? item.id : '';
+      const base = byId.get(id);
+      // Unbekannte id → verwerfen. Das ist die Stelle, an der ein Modell
+      // keinen eigenen Preisposten unterschieben kann.
+      if (!base) continue;
+      const question = typeof item.question === 'string' ? item.question.trim().slice(0, 200) : '';
+      const hint = typeof item.hint === 'string' ? item.hint.trim().slice(0, 220) : '';
+      if (!question) continue;
+      byId.set(id, { ...base, question, hint: hint || base.hint });
+      replaced += 1;
+    }
+
+    if (replaced === 0) throw new Error('keine verwertbare Frage in der Antwort');
+    log.generated = true;
+    // Reihenfolge der SSoT beibehalten — das Modell darf umformulieren,
+    // nicht umsortieren.
+    return { questions: fallback.map((q) => byId.get(q.id)!), log };
+  } catch (err) {
+    log.reason = err instanceof ProviderError ? `${err.code}: ${err.message}` : String(err);
+    return { questions: fallback, log };
+  }
+}
+
 const WAITLIST_INTERESTS = ['runtime', 'siteos', 'evidence', 'provenance', 'audit', 'bots', 'other'];
 const WAITLIST_TEAM_SIZES = ['1-9', '10-49', '50-249', '250-999', '1000+'];
 /** Wartelisten-Anmeldungen pro IP-Hash und Stunde. */
@@ -212,6 +390,17 @@ Deno.serve(async (req: Request) => {
     note?: string;
     referrer?: string;
     utm?: unknown;
+    // mode='quote' (Online-Preisrechner). `domain_count` heisst bewusst nicht
+    // `domains`: dieses Feld fuehrt oben eine Liste von Hostnamen, hier ist
+    // eine Anzahl gemeint.
+    action?: string;
+    lead_id?: string;
+    answers?: unknown;
+    industry?: string;
+    tenants?: number | string;
+    domain_count?: number | string;
+    country?: string;
+    systems?: string;
   };
   try { body = JSON.parse(text); } catch { return jsonError(400, 'BAD_REQUEST', 'invalid json'); }
 
@@ -286,6 +475,139 @@ Deno.serve(async (req: Request) => {
 
   const { count } = await admin.from('sales_leads').select('*', { count: 'exact', head: true }).eq('ip_hash', ipHash).gte('created_at', oneHourAgo);
   if ((count ?? 0) >= 5) return jsonError(429, 'RATE_LIMITED', 'too many submissions, retry later');
+
+  // ── POST mode=quote — Online-Rechner fuer Enterprise / Enterprise Plus ────
+  //
+  // Zwei Schritte, beide ueber diesen Zweig:
+  //
+  //   action='start'   Kontext rein → Lead anlegen, KI erzeugt den
+  //                    individuellen Fragebogen, Fragen raus.
+  //   action='submit'  Antworten rein → Betrag NEU rechnen, an denselben Lead
+  //                    schreiben, Betrag raus.
+  //
+  // Warum der Betrag hier noch einmal gerechnet wird, obwohl die Seite ihn
+  // schon anzeigt: was der Browser schickt, ist eine Behauptung. Beide Seiten
+  // rufen `computeQuote()` aus derselben SSoT auf — weicht das Ergebnis ab,
+  // gilt dieses hier, und die Antwort sagt es der Seite ausdruecklich.
+  //
+  // Warum kein eigener Endpunkt: das Supabase-Projekt ist beim
+  // Function-Kontingent angestossen (siehe Kopf dieser Datei), und ein Lead
+  // aus einem Preisrechner ist genau das, was diese Function ohnehin tut —
+  // inklusive Rate-Limit, IP-Hash und `sales_leads`.
+  if (body.mode === 'quote') {
+    const action = body.action === 'submit' ? 'submit' : 'start';
+
+    // ── submit ────────────────────────────────────────────────────────────
+    if (action === 'submit') {
+      const leadId = cap(body.lead_id, 64);
+      if (!leadId) return jsonError(400, 'MISSING_LEAD', 'lead_id fehlt', cors);
+
+      const answers = normalizeQuoteAnswers(body.answers);
+      if (!answers) return jsonError(400, 'INVALID_ANSWERS', 'answers unvollstaendig oder unbekannter Plan', cors);
+
+      const quote = computeQuote(answers);
+
+      // Der Lead muss existieren UND aus dem Rechner stammen. Ohne die
+      // zweite Bedingung liesse sich jeder fremde Lead mit einem Betrag
+      // ueberschreiben, dessen ID man erraten hat.
+      const { data: lead } = await admin
+        .from('sales_leads').select('id, email, metadata')
+        .eq('id', leadId).eq('source', QUOTE_SOURCE).maybeSingle();
+      if (!lead) return jsonError(404, 'LEAD_NOT_FOUND', 'Fragebogen nicht gefunden', cors);
+
+      const previous = (lead.metadata ?? {}) as Record<string, unknown>;
+      const previousQuote = (previous.quote ?? {}) as Record<string, unknown>;
+      const { error: updErr } = await admin
+        .from('sales_leads')
+        .update({
+          plan_key: quote.planKey,
+          metadata: {
+            ...previous,
+            quote: {
+              ...previousQuote,
+              status: 'requested',
+              plan_id: quote.planId,
+              plan_key: quote.planKey,
+              public_label: quote.publicLabel,
+              base_monthly_eur: quote.baseMonthlyEur,
+              monthly_eur: quote.monthlyEur,
+              lines: quote.lines,
+              contract_items: quote.contractItems.map((c) => c.id),
+              answers,
+              fingerprint: quote.fingerprint,
+              requested_at: new Date().toISOString(),
+            },
+          },
+        })
+        .eq('id', leadId);
+      if (updErr) return jsonError(500, 'INTERNAL', updErr.message, cors);
+
+      return jsonResponse({ ok: true, lead_id: leadId, quote }, 200, cors);
+    }
+
+    // ── start ─────────────────────────────────────────────────────────────
+    const planId = typeof body.tier === 'string' ? body.tier.trim() : '';
+    if (!isQuotePlanId(planId)) {
+      return jsonError(400, 'INVALID_TIER', 'tier muss enterprise oder partner sein', cors);
+    }
+
+    const context = {
+      industry: cap(body.industry, 120) ?? '',
+      tenants: clampInt(body.tenants, 0, 10_000),
+      domains: clampInt(body.domain_count, 0, 100_000),
+      country: cap(body.country, 120) ?? '',
+      systems: cap(body.systems, 1_000) ?? '',
+    };
+
+    const dimensions = quoteDimensionsFor(planId);
+    const ai = await generateQuoteQuestions(planId, context, dimensions);
+
+    const { data: lead, error: insErr } = await admin
+      .from('sales_leads')
+      .insert({
+        email,
+        company: cap(body.company, 200),
+        name: cap(body.name, 200),
+        source: QUOTE_SOURCE,
+        use_case: 'pricing_quote',
+        plan_key: planById(planId).planKey,
+        path: cap(body.path, 500),
+        user_agent: cap(req.headers.get('user-agent'), 500),
+        ip_hash: ipHash,
+        message: `Preisrechner ${publicLabelOf(planById(planId))} — Kontext: ${JSON.stringify(context).slice(0, 3_000)}`,
+        metadata: {
+          quote: {
+            status: 'started',
+            plan_id: planId,
+            public_label: publicLabelOf(planById(planId)),
+            base_monthly_eur: planById(planId).price.monthlyEur,
+            context,
+            questionnaire: ai.questions,
+            // Der AI-Call wird mit dem Lead protokolliert: Anbieter, Modell,
+            // Tokens und — falls er scheiterte — der Grund. Ohne diese Zeile
+            // gaebe es einen Provider-Call ohne Spur.
+            ai: ai.log,
+            started_at: new Date().toISOString(),
+          },
+        },
+      })
+      .select('id')
+      .single();
+    if (insErr) return jsonError(500, 'INTERNAL', insErr.message, cors);
+
+    return jsonResponse(
+      {
+        ok: true,
+        lead_id: lead!.id,
+        plan_id: planId,
+        questions: ai.questions,
+        ai_generated: ai.log.generated,
+      },
+      200,
+      cors,
+    );
+  }
+
 
   const intent = cap(body.intent, 100);
   const tier = cap(body.tier, 50);

@@ -95,6 +95,11 @@ describe('pricingContent', () => {
     // verkaufbar.
     const INQUIRY_ONLY_SLUGS = ['enterprise', 'partner', 'partner_yearly'];
 
+    // Anfrage-Plaene mit Online-Rechner. `partner_yearly` gehoert NICHT dazu:
+    // fuer die Jahresvariante gibt es weder Stripe-Preis noch Rechner, sie
+    // bleibt beim Kontaktformular.
+    const QUOTE_SLUGS = ['enterprise', 'partner'];
+
     // Dritte Kategorie: Der Plan ist verkaeuflich, nur seine JAHRESvariante
     // hat keinen verdrahteten Stripe-Preis. Hier waere `/contact-sales`
     // falsch (der Plan ist ja im Self-Service zu haben) und
@@ -131,9 +136,23 @@ describe('pricingContent', () => {
       }
     });
 
-    it('Anfrage-Plaene verlinken auf /contact-sales statt auf einen Checkout', () => {
+    it('Anfrage-Plaene mit Rechner verlinken auf /pricing/quote', () => {
+      pricingPlans
+        .filter((plan) => QUOTE_SLUGS.includes(plan.slug))
+        .forEach((plan) => {
+          expect(plan.cta.href).toContain('/pricing/quote');
+          expect(plan.checkoutPath).toContain('/pricing/quote');
+          // Weder Checkout (der Betrag ist dort nicht einloesbar) noch
+          // Kontaktformular (das war die Sackgasse).
+          expect(plan.cta.href).not.toContain('/checkout/');
+          expect(plan.cta.href).not.toContain('/contact-sales');
+        });
+    });
+
+    it('Anfrage-Plaene ohne Rechner bleiben beim Kontaktformular', () => {
       pricingPlans
         .filter((plan) => INQUIRY_ONLY_SLUGS.includes(plan.slug))
+        .filter((plan) => !QUOTE_SLUGS.includes(plan.slug))
         .forEach((plan) => {
           expect(plan.cta.href).toContain('/contact-sales');
           expect(plan.checkoutPath).toContain('/contact-sales');
@@ -349,9 +368,14 @@ describe('pricingContent', () => {
     // Platzhalter, `stripe-checkout` weist sie mit PRICE_NOT_CONFIGURED ab.
     // Ihre MONATS-Plaene sind davon unberuehrt und weisen weiter einen
     // Betrag aus.
+    //
+    // Stand 2026-09-20: Enterprise und Partner sind hier raus. Beide weisen
+    // wieder einen Betrag aus — als Einstiegspreis, den `/pricing/quote`
+    // online einloest. `partner_yearly` bleibt drin: fuer die Jahresvariante
+    // gibt es keinen Rechner und keinen Stripe-Preis.
     const NO_PUBLIC_PRICE = [
-      'free-audit', 'enterprise',
-      'agency_yearly', 'partner', 'partner_yearly',
+      'free-audit',
+      'agency_yearly', 'partner_yearly',
       'starter_yearly', 'growth_yearly',
     ];
 
@@ -363,13 +387,22 @@ describe('pricingContent', () => {
       });
     });
 
-    it('stillgelegte Partner-Pläne weisen keinen Festpreis aus', () => {
-      for (const slug of ['partner', 'partner_yearly']) {
-        const plan = getPlanBySlug(slug);
-        expect(plan, `Plan ${slug} fehlt`).toBeDefined();
-        expect(plan?.price).toBe(0);
-        expect(plan?.priceString).not.toMatch(/\d/);
-      }
+    it('die Partner-Jahresvariante weist weiter keinen Festpreis aus', () => {
+      // Monatlich ist der Plan zurueck, jaehrlich nicht: dafuer gibt es
+      // weder einen Stripe-Preis noch einen Rechner.
+      const plan = getPlanBySlug('partner_yearly');
+      expect(plan, 'Plan partner_yearly fehlt').toBeDefined();
+      expect(plan?.price).toBe(0);
+      expect(plan?.priceString).not.toMatch(/\d/);
+    });
+
+    it('Partner heisst oeffentlich Enterprise Plus, bleibt intern aber Partner', () => {
+      const plan = getPlanBySlug('partner');
+      // Der Katalogname bleibt — `includedInPlans` matcht darauf.
+      expect(plan?.name).toBe('Partner');
+      expect(plan?.publicLabel).toBe('Enterprise Plus');
+      expect(plan?.price).toBe(1999);
+      expect(plan?.priceString).toMatch(/1\.999/);
     });
 
     it('agency weist den Live-Monatspreis 699 aus', () => {
@@ -384,16 +417,18 @@ describe('pricingContent', () => {
       expect(freeAudit?.priceString).toBe('0 €');
     });
 
-    // COMMERCIAL-SSOT: temporary production hotfix.
-    // Canonical source migration tracked in Phase 2.
-    // Enterprise darf keinen oeffentlichen Festpreis mehr ausweisen: der
-    // Self-Service-Checkout kann ihn nicht erfuellen (manuelle Faktura,
-    // Sentinel statt echter Stripe-Price).
-    it('enterprise weist keinen oeffentlichen Festpreis aus', () => {
+    // Enterprise weist seit 2026-09-20 wieder einen Betrag aus. Er ist der
+    // Einstiegspreis, nicht der Endpreis — deshalb „ab". Der
+    // Self-Service-Checkout bleibt unveraendert zu; eingeloest wird der
+    // Betrag ueber `/pricing/quote`.
+    it('enterprise weist den Einstiegspreis aus, nicht „auf Anfrage"', () => {
       const enterprise = getPlanBySlug('enterprise');
-      expect(enterprise?.priceString).toBe('Individuelles Angebot');
-      expect(enterprise?.priceString).not.toMatch(/\d/);
-      expect(enterprise?.price).toBe(0);
+      expect(enterprise?.price).toBe(1249);
+      expect(enterprise?.priceString).toMatch(/1\.249/);
+      expect(enterprise?.priceString).toMatch(/^ab /);
+      // Der Weg fuehrt auf den Rechner, nicht in den Checkout.
+      expect(enterprise?.cta.href).toContain('/pricing/quote');
+      expect(enterprise?.checkoutPath).not.toContain('/checkout/');
     });
 
     it('prices should be in ascending order for paid plans', () => {

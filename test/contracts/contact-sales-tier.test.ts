@@ -20,7 +20,7 @@
 import { describe, expect, it } from 'vitest';
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
-import { LEGACY_PLANS } from '../../shared/pricing';
+import { LEGACY_PLANS, checkoutHrefForPlan, planById } from '../../shared/pricing';
 
 const ROOT = resolve(__dirname, '../..');
 const SRC = join(ROOT, 'src');
@@ -75,8 +75,11 @@ describe('/contact-sales — tier-Parameter', () => {
 
   it('gibt keinen stillgelegten Plan als tier mit', () => {
     const legacy = new Set(LEGACY_PLANS.map((plan) => plan.id));
-    expect(legacy.size, 'SSoT führt keine Legacy-Pläne mehr — Prüfung anpassen').toBeGreaterThan(0);
-
+    // Seit 2026-09-20 ist die Menge leer: Partner wird als „Enterprise Plus"
+    // wieder verkauft. Der Test bleibt trotzdem stehen — er ist die Sperre
+    // fuer den naechsten Plan, der stillgelegt wird, und greift dann ohne
+    // Zutun. Eine Zusicherung auf `size > 0` stand hier frueher und musste
+    // fallen: sie haette den Guard an den Bestand von 2026-08 gekettet.
     const offenders = contactSalesTiers().filter((hit) => legacy.has(hit.tier as never));
     expect(
       offenders.map((o) => `${o.file}:${o.line} → tier=${o.tier}`),
@@ -84,17 +87,23 @@ describe('/contact-sales — tier-Parameter', () => {
     ).toEqual([]);
   });
 
-  it('gibt keinen stillgelegten Plan als plan/plan_key mit (außer explizite Partner-Inquiry)', () => {
-    // Partner ist legacy, bleibt aber inquiry-fähig: CTAs dürfen `plan=partner`
-    // setzen, damit ContactSales plan_key korrekt verbucht. Andere legacy IDs
-    // (falls später) dürfen nicht still reinrutschen.
+  it('gibt keinen stillgelegten Plan als plan/plan_key mit', () => {
     const legacy = new Set(LEGACY_PLANS.map((plan) => plan.id));
-    const allowedInquiry = new Set(['partner', 'partner_yearly']);
-    const offenders = contactSalesPlans().filter(
-      (hit) => legacy.has(hit.plan as never) && !allowedInquiry.has(hit.plan),
-    );
+    const offenders = contactSalesPlans().filter((hit) => legacy.has(hit.plan as never));
     expect(
       offenders.map((o) => `${o.file}:${o.line} → plan=${o.plan}`),
     ).toEqual([]);
+  });
+
+  it('schickt Enterprise und Enterprise Plus nicht mehr auf /contact-sales', () => {
+    // Beide Plaene fuehren einen oeffentlichen Einstiegspreis und einen
+    // Online-Rechner. Ein CTA, der sie weiterhin auf das Kontaktformular
+    // legt, ist die Sackgasse, die der Rechner ersetzen sollte.
+    for (const planId of ['enterprise', 'partner'] as const) {
+      const href = checkoutHrefForPlan(planById(planId), { interval: 'month' });
+      expect(href, `${planId} fuehrt noch auf /contact-sales`).toContain('/pricing/quote');
+      expect(href).not.toContain('/contact-sales');
+      expect(href).not.toContain('/checkout/');
+    }
   });
 });

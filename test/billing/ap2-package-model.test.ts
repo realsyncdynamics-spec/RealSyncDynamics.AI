@@ -16,6 +16,7 @@ import {
   isPlanSelectable,
   planById,
   planGrants,
+  publicLabelOf,
 } from '../../shared/pricing';
 
 /**
@@ -204,9 +205,23 @@ describe('Berechtigungen und Entitlements sagen dasselbe', () => {
   });
 });
 
-describe('Partner ist stillgelegt; Agency ist wieder verkaufbar', () => {
-  it('führt genau einen stillgelegten Plan (Partner)', () => {
-    expect(LEGACY_PLANS.map((p) => p.id)).toEqual(['partner']);
+describe('Partner ist als Enterprise Plus zurueck; Agency bleibt verkaufbar', () => {
+  it('fuehrt keinen stillgelegten Plan mehr', () => {
+    // Partner war seit AP2 `legacy`. Seit 2026-09-20 wird er wieder verkauft —
+    // oeffentlich als „Enterprise Plus", intern unveraendert als `partner`.
+    expect(LEGACY_PLANS.map((p) => p.id)).toEqual([]);
+  });
+
+  it('haelt Plan-ID und oeffentliches Label auseinander', () => {
+    const partner = planById('partner');
+    // Die ID bleibt: Stripe-Katalog, `public.subscriptions` und jede
+    // Bestandszeile haengen daran. Ein Rename waere eine Datenmigration.
+    expect(partner.id).toBe('partner');
+    expect(partner.planKey).toBe('partner');
+    // `name` bleibt der Katalogname — `pricingContent.ts` matcht darauf.
+    expect(partner.name).toBe('Partner');
+    // Sichtbar ist etwas anderes.
+    expect(publicLabelOf(partner)).toBe('Enterprise Plus');
   });
 
   it('behält Agency und Partner in PLAN_ORDER, damit Ränge für Bestandskunden stimmen', () => {
@@ -221,12 +236,16 @@ describe('Partner ist stillgelegt; Agency ist wieder verkaufbar', () => {
     }
   });
 
-  it('nimmt Partner aus jedem Verkaufs-Listing heraus', () => {
+  it('fuehrt Partner wieder im Verkaufs-Listing, aber nicht im Self-Service', () => {
     for (const plan of [...SALES_PLANS, ...SELF_SERVICE_PLANS]) {
       expect(plan.availability, plan.id).not.toBe('legacy');
     }
     expect(isPlanSelectable('agency')).toBe(true);
-    expect(isPlanSelectable('partner')).toBe(false);
+    expect(isPlanSelectable('partner')).toBe(true);
+    // Verkaufbar heisst nicht self-service: der Checkout bleibt zu.
+    expect(planById('partner').purchaseMode).toBe('inquiry');
+    expect(SALES_PLANS.map((p) => p.id)).toContain('partner');
+    expect(SELF_SERVICE_PLANS.map((p) => p.id)).not.toContain('partner');
   });
 
   it('lässt Enterprise sichtbar, aber nur über den Vertrieb', () => {

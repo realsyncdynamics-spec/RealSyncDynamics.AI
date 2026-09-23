@@ -34,9 +34,9 @@ export function PlanSelector({
             Wähle deinen Plan
           </h2>
           <p className="text-titanium-300 max-w-2xl mx-auto">
-            Von kostenlos bis Enterprise — alle Funktionen skalieren mit deinen Anforderungen.
+            Von kostenlos bis Enterprise Plus — alle Funktionen skalieren mit deinen Anforderungen.
             Starter, Growth und Agency: 14 Tage kostenlos testen, jederzeit kündbar.
-            Enterprise und Partner: auf Anfrage.
+            Enterprise und Enterprise Plus: Einstiegspreis auf der Karte, individuellen Betrag online ermitteln.
           </p>
         </div>
 

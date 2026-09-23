@@ -423,11 +423,18 @@ describe('Öffentliche Angebote sind erfüllbar', () => {
     }
   });
 
-  it('Enterprise ist anfragepflichtig, ohne Festpreis und ohne Trial', () => {
+  it('Enterprise ist anfragepflichtig und ohne Trial — aber mit oeffentlichem Einstiegspreis', () => {
     const enterprise = planById('enterprise');
     expect(enterprise.purchaseMode).toBe('inquiry');
-    expect(enterprise.priceOnRequest).toBe(true);
     expect(enterprise.trialDays).toBe(0);
+
+    // Seit 2026-09-20 traegt Enterprise KEIN `priceOnRequest` mehr: 1.249 €
+    // ist der oeffentliche Einstiegspreis. Was dadurch NICHT aufgeht, ist der
+    // Self-Service-Checkout — das regelt `purchaseMode`, und genau darauf
+    // prueft der Rest dieses Tests. Die beiden Eigenschaften sind getrennt,
+    // und dieser Test haelt fest, dass sie es bleiben.
+    expect(enterprise.priceOnRequest).toBeUndefined();
+    expect(enterprise.price.monthlyEur).toBe(1249);
 
     // Auch die Jahresvariante darf keinen Kaufpfad öffnen.
     for (const interval of ['month', 'year'] as const) {

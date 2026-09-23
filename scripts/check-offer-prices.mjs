@@ -3,14 +3,31 @@
  * COMMERCIAL-SSOT: temporary production hotfix.
  * Canonical source migration tracked in Phase 2.
  *
- * Guard: Kein öffentlicher Bereich nennt den Betrag eines Plans, den man
- * heute nicht im Self-Service kaufen kann.
+ * Guard: Kein öffentlicher Bereich nennt den Betrag eines Plans, den der
+ * Besucher nicht online einlösen kann.
  *
  * Warum genau diese Regel? Sie ist die maschinelle Fassung des Grundsatzes,
  * an dem sich Spur A dreimal abgearbeitet hat:
  *
  *   Ein öffentlich zugesicherter Preis ist ein Angebot. Es darf nur dort
- *   stehen, wo der Kaufpfad es auch einlösen kann.
+ *   stehen, wo ein Pfad es auch einlösen kann.
+ *
+ * ── Präzisierung 2026-09-20: „einlösen" heißt nicht „per Stripe kaufen" ──
+ *
+ * Die Regel prüfte bisher auf `availability === 'self_service'` und setzte
+ * damit Kaufpfad mit Stripe-Checkout gleich. Für Enterprise und Enterprise
+ * Plus gibt es seit `/pricing/quote` einen zweiten Pfad: der Besucher gibt
+ * seinen Umfang an und bekommt online einen konkreten Betrag, der nie unter
+ * dem genannten Einstiegspreis liegt. Damit ist der Betrag auf der Karte
+ * eingelöst — er ist die belastbare Untergrenze dessen, was der Rechner
+ * ausgibt, und keine Zahl, hinter der ein Formular wartet.
+ *
+ * Was die Präzisierung NICHT aufweicht: ein stillgelegter Plan bleibt rot,
+ * ein Plan mit `priceOnRequest` bleibt rot, und jede Jahresvariante ohne
+ * verdrahtete Stripe-Price bleibt rot — für sie gibt es keinen Rechner. Die
+ * Ausnahme hängt zudem an zwei nachprüfbaren Tatsachen: der Plan steht in
+ * `QUOTE_PLAN_IDS`, und die Route `/pricing/quote` existiert wirklich.
+ * Verschwindet eine von beiden, greift der Guard sofort wieder.
  *
  * Dreimal stand ein Betrag öffentlich, den `stripe-checkout` nicht einlösen
  * konnte — Enterprise 1.249 € (Sentinel statt Stripe-Price), Agency 699 €
@@ -39,6 +56,17 @@ const BASELINE_PATH = join(ROOT, 'scripts', 'offer-price-baseline.json');
 function nonSellableAmounts() {
   const src = readFileSync(join(ROOT, 'shared', 'pricing.ts'), 'utf8');
   const amounts = new Map(); // Betrag -> Plan-Id
+
+  // Pläne mit Online-Rechner. Beides muss stimmen — die SSoT muss den Plan
+  // nennen UND die Route muss existieren. Eine der beiden Seiten allein wäre
+  // eine Behauptung.
+  const quoteIds = new Set(
+    (src.match(/QUOTE_PLAN_IDS[^=]*=\s*\[([^\]]*)\]/)?.[1] ?? '')
+      .match(/'([a-z_]+)'/g)
+      ?.map((raw) => raw.replace(/'/g, '')) ?? [],
+  );
+  const hasQuoteRoute = readFileSync(join(ROOT, 'src', 'App.tsx'), 'utf8')
+    .includes('path="/pricing/quote"');
   // Blöcke: von `id: '<x>'` bis zum nächsten `id: '<y>'` auf derselben Ebene.
   const ids = [...src.matchAll(/^    id: '([a-z_]+)',$/gm)];
   for (let i = 0; i < ids.length; i++) {
@@ -62,9 +90,13 @@ function nonSellableAmounts() {
     const monthly = Number(price[1].replace(/_/g, ''));
     const yearly = price[2] === 'null' ? null : Number(price[2].replace(/_/g, ''));
 
-    // Der Monatsbetrag ist nur dann ein Angebot ohne Kaufpfad, wenn der Plan
-    // selbst keinen Self-Service-Abschluss zulässt.
-    const monthlyBlocked = !(availability === 'self_service' && !onRequest);
+    // Der Monatsbetrag ist nur dann ein Angebot ohne Kaufpfad, wenn ihn weder
+    // der Self-Service-Checkout noch der Online-Rechner einlöst. Ein
+    // stillgelegter Plan bekommt die Ausnahme nie: dort gibt es überhaupt
+    // nichts abzuschließen.
+    const onlineQuote =
+      hasQuoteRoute && quoteIds.has(planId) && !onRequest && availability !== 'legacy';
+    const monthlyBlocked = !(availability === 'self_service' && !onRequest) && !onlineQuote;
     if (monthlyBlocked && monthly > 0) amounts.set(monthly, planId);
     if (yearly && (monthlyBlocked || yearlyBlocked)) {
       amounts.set(yearly, `${planId} (jährlich)`);

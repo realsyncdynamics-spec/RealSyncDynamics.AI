@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, HelpCircle, Plus, Minus } from 'lucide-react';
-import { SALES_PLANS, formatLimit } from '@/shared/pricing';
+import { SALES_PLANS, formatLimit, publicLabelOf } from '@/shared/pricing';
 
 type Item = { q: string; a: React.ReactNode; tag: 'DSGVO' | 'AI Act' | 'Pricing' | 'Technik' | 'Migration' };
 
@@ -65,10 +65,11 @@ const ITEMS: Item[] = [
           <li><strong className="text-titanium-50">Free Audit</strong> kostenlos — einmaliger Compliance-Snapshot, kein Account</li>
           <li><strong className="text-titanium-50">Starter</strong> 79 €/Monat — eine Domain, Audit-Trail, monatlicher Re-Scan</li>
           <li><strong className="text-titanium-50">Growth</strong> 249 €/Monat — bis 3 Domains, tägliches Monitoring + Drift-Detection</li>
-          {/* COMMERCIAL-SSOT: kein Festpreis — Enterprise wird vertraglich
-              vereinbart und manuell fakturiert; der Self-Service-Checkout
-              kann 1.249 € nicht einloesen. */}
-          <li><strong className="text-titanium-50">Enterprise</strong> auf Anfrage — White-Label, Multi-Tenant, SLA nach Vereinbarung, AI-Act-Modul, DSB-Integration, Evidence Vault</li>
+          {/* Einstiegspreise. Der Self-Service-Checkout loest sie nicht ein —
+              deshalb nennt /pricing/quote den individuellen Betrag online,
+              statt ihn zu verschweigen. */}
+          <li><strong className="text-titanium-50">Enterprise</strong> ab 1.249 €/Monat — White-Label, Multi-Tenant, SLA nach Vereinbarung, AI-Act-Modul, DSB-Integration, Evidence Vault</li>
+          <li><strong className="text-titanium-50">Enterprise Plus</strong> ab 1.999 €/Monat — bis 50 Mandanten unter eigener Marke, eigene White-Label-Subdomain, volle API</li>
         </ul>
         <p className="mt-2">
           Volle Feature-Matrix: <Link to="/pricing" className="text-security-400">/pricing</Link>
@@ -125,7 +126,7 @@ const ITEMS: Item[] = [
         <ul className="list-disc pl-5 space-y-1 mt-2">
           {SALES_PLANS.filter((plan) => plan.limits.bots > 0).map((plan) => (
             <li key={plan.id}>
-              <strong className="text-titanium-50">{plan.name}</strong>
+              <strong className="text-titanium-50">{publicLabelOf(plan)}</strong>
               {' — bis '}{formatLimit(plan.limits.bots)}{' Bots · '}
               {formatLimit(plan.limits.answersPerMonth)}{' Antworten/Monat · '}
               {plan.channels.length}{' Kanäle'}
@@ -152,7 +153,7 @@ const ITEMS: Item[] = [
             {SALES_PLANS.map((plan, i) => (
               <span key={plan.id}>
                 {i > 0 && ' · '}
-                <strong className="text-titanium-50">{plan.name}</strong>
+                <strong className="text-titanium-50">{publicLabelOf(plan)}</strong>
                 {' '}{formatLimit(plan.limits.automationRunsPerMonth)}
               </span>
             ))}
@@ -218,7 +219,7 @@ const ITEMS: Item[] = [
             {SALES_PLANS.filter((plan) => plan.limits.bulkJobsPerMonth !== 0).map((plan, i) => (
               <span key={plan.id}>
                 {i > 0 && ' · '}
-                <strong className="text-titanium-50">{plan.name}</strong>
+                <strong className="text-titanium-50">{publicLabelOf(plan)}</strong>
                 {' '}{formatLimit(plan.limits.bulkJobsPerMonth)}
               </span>
             ))}

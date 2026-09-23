@@ -2,13 +2,16 @@ import { test, expect } from '@playwright/test';
 
 const BASE_URL = process.env.TEST_BASE_URL || process.env.BASE_URL || 'http://localhost:3000';
 
-// Die Karten, die auf /pricing stehen. Agency ist wieder self_service;
-// Partner bleibt stillgelegt. Enterprise bleibt als contract sichtbar.
+// Die Karten, die auf /pricing stehen. Agency ist self_service; Enterprise
+// und Partner sind `contract` — sichtbar mit Einstiegspreis, aber ohne
+// Self-Service-Checkout. Partner heisst auf der Karte „Enterprise Plus";
+// die data-testid folgt der Plan-ID und bleibt `partner`.
 const CARD_IDS = [
   'starter',
   'growth',
   'agency',
   'enterprise',
+  'partner',
 ];
 
 const DETAIL_SLUGS = [
@@ -25,7 +28,7 @@ const DETAIL_SLUGS = [
 ];
 
 // Nur Pläne mit `purchaseMode: 'checkout'` (shared/pricing.ts) bleiben auf der
-// Checkout-Seite stehen. `partner` ist 'inquiry' und leitet auf /contact-sales
+// Checkout-Seite stehen. `partner` ist 'inquiry' und leitet auf /pricing/quote
 // um — in dieser Liste erzeugte er ein Rennen zwischen page.goto und dem
 // Redirect, das der Test mal gewann und mal verlor. Der Redirect wird unten
 // eigens geprüft statt hier ignoriert.
@@ -133,11 +136,14 @@ test.describe('Pricing Flow', () => {
       }
     });
 
-    test('partner checkout should redirect to contact-sales', async ({ page }) => {
+    test('partner checkout should redirect to the online quote', async ({ page }) => {
+      // Beide Keys landen auf dem Monats-Rechner desselben Plans: eine
+      // Jahresvariante gibt es dort nicht.
       for (const planKey of ['partner', 'partner_yearly']) {
         await page.goto(`${BASE_URL}/checkout/${planKey}`);
-        await page.waitForURL(/\/contact-sales/);
-        await expect(page).toHaveURL(/plan=partner/);
+        await page.waitForURL(/\/pricing\/quote/);
+        await expect(page).toHaveURL(/tier=partner/);
+        await expect(page).not.toHaveURL(/contact-sales/);
       }
     });
 
@@ -147,21 +153,32 @@ test.describe('Pricing Flow', () => {
       await expect(page).toHaveURL(/\/audit/);
     });
 
-    test('enterprise checkout should redirect to contact-sales', async ({ page }) => {
-      // Seit AP2 (2026-08-24) ist Enterprise ein Vertrag, kein
-      // Self-Service-Checkout: `purchaseMode: 'inquiry'`. Er darf damit auch
-      // keinen Self-Service-Trial oeffnen. Bestehende Enterprise-Abos rechnen
-      // unverändert weiter ab — betroffen ist allein der Neuabschluss.
+    test('enterprise checkout should redirect to the online quote', async ({ page }) => {
+      // Enterprise ist ein Vertrag, kein Self-Service-Checkout
+      // (`purchaseMode: 'inquiry'`), und darf keinen Self-Service-Trial
+      // oeffnen. Seit 2026-09-20 endet die getippte Checkout-URL aber nicht
+      // mehr im Kontaktformular, sondern im Online-Rechner — sonst haette
+      // derselbe Plan zwei verschiedene Wege.
       await page.goto(`${BASE_URL}/checkout/enterprise`);
-      await page.waitForURL(/\/contact-sales/);
-      await expect(page).toHaveURL(/plan=enterprise/);
+      await page.waitForURL(/\/pricing\/quote/);
+      await expect(page).toHaveURL(/tier=enterprise/);
+      await expect(page).not.toHaveURL(/contact-sales/);
       await expect(page).not.toHaveURL(/pilot=true/);
     });
 
-    // Partner bleibt legacy + inquiry: die Umleitung auf /contact-sales
-    // ist oben unter „partner checkout should redirect to contact-sales"
-    // abgedeckt. Ein zweiter Test auf /pricing?source=checkout-retired
-    // würde gegen die CheckoutPage-Reihenfolge (inquiry vor legacy) laufen.
+    test('der Rechner nennt den Einstiegspreis des gewaehlten Plans', async ({ page }) => {
+      // Der Betrag kommt aus der SSoT; hier zaehlt nur, dass die Seite ihn
+      // ueberhaupt fuehrt und den richtigen Plan meint.
+      await page.goto(`${BASE_URL}/pricing/quote?tier=partner`);
+      await expect(page.getByRole('heading', { level: 1 })).toContainText('Enterprise Plus');
+      await expect(page.getByTestId('quote-start')).toBeVisible();
+    });
+
+    test('ein unbekannter tier-Parameter faellt auf /pricing zurueck', async ({ page }) => {
+      await page.goto(`${BASE_URL}/pricing/quote?tier=gibtesnicht`);
+      await page.waitForURL(/\/pricing(\?|$)/);
+      await expect(page).not.toHaveURL(/quote/);
+    });
 
     test('agency checkout bleibt auf dem Checkout-Pfad', async ({ page }) => {
       await page.goto(`${BASE_URL}/checkout/agency`);

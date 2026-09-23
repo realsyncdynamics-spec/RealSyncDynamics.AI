@@ -2,6 +2,7 @@ import * as Icons from 'lucide-react';
 import {
   FEATURE_GROUPS,
   SALES_PLANS,
+  publicLabelOf,
   PRODUCT_AREAS,
   formatLimit,
   modulesForArea,
@@ -135,7 +136,7 @@ export function PlanComparisonMatrix() {
                 scope="col"
                 className="whitespace-nowrap px-3 py-3 text-center font-mono text-[10px] uppercase tracking-widest text-titanium-400"
               >
-                {plan.name}
+                {publicLabelOf(plan)}
               </th>
             ))}
           </tr>

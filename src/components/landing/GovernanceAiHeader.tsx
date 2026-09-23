@@ -1,12 +1,12 @@
 /** Production navigation — Brand Direction v1.0. */
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Menu, X } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 import { PUBLIC_CTA, PUBLIC_PRIMARY_NAV } from '../../config/public-nav';
 import { GA_SANS, GA_LINE_SOFT, GA_MUTED, GA_TEXT } from './governance-ai-theme';
 import { HERO_SCAN_CTA_LABEL } from '../governance-frontend/hero-content';
+import { MODE_BUTTON_INK, MODE_GLOW, MODE_PILL_FACE } from './landing-mode';
 
-/** `/#product` → `#product`; alles andere bleibt eine Route. */
 function localAnchor(to: string): string | null {
   return to.startsWith('/#') ? to.slice(1) : null;
 }
@@ -38,14 +38,13 @@ export function GovernanceAiHeader() {
       className="ga-pill-sheen relative inline-flex items-center gap-2 overflow-hidden whitespace-nowrap rounded-full px-[18px] py-[11px] text-[14px] font-semibold leading-[1.3] tracking-[-.005em] transition hover:brightness-[1.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ga-accent-lite)]"
       style={{
         fontFamily: GA_SANS,
-        backgroundImage: 'var(--ga-pill-face)',
-        color: 'var(--ga-pill-ink)',
-        boxShadow: 'var(--ga-pill-shadow)',
+        backgroundImage: MODE_PILL_FACE,
+        color: MODE_BUTTON_INK,
+        boxShadow: MODE_GLOW,
       }}
       onClick={() => setOpen(false)}
     >
       {HERO_SCAN_CTA_LABEL}
-      <ArrowRight className="h-4 w-4" aria-hidden="true" />
     </Link>
   );
 
@@ -63,7 +62,7 @@ export function GovernanceAiHeader() {
           className="text-[21px] font-medium tracking-[-.02em]"
           style={{ fontFamily: GA_SANS, color: GA_TEXT }}
         >
-          RealSync Dynamics.AI
+          RealSyncDynamics.AI
         </Link>
 
         <nav className="ml-auto hidden items-center gap-[26px] lg:flex" aria-label="Hauptnavigation">

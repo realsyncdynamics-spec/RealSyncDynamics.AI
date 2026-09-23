@@ -836,7 +836,7 @@ function RoutesWithTracking() {
       <Route path="/app/risks" element={<AppGate><GovernanceBrowserShell><RiskCenterView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/compliance" element={<AppGate><GovernanceBrowserShell><GovernanceComplianceReportView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/evidence" element={<AppGate><GovernanceBrowserShell><EvidenceVaultView /></GovernanceBrowserShell></AppGate>} />
-      <Route path="/app/evidence/auditor" element={<AppGate><GovernanceBrowserShell><RequireAal2 action="Evidence-Export"><GovernanceAuditorConsoleView /></RequireAal2></GovernanceBrowserShell></AppGate>} />
+      <Route path="/app/evidence/auditor" element={<AppGate><GovernanceBrowserShell><RequireAal2 mode="observe" action="Evidence-Export"><GovernanceAuditorConsoleView /></RequireAal2></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/monitoring" element={<AppGate><GovernanceBrowserShell><MonitoringRuntimeView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/vendors" element={<AppGate><GovernanceBrowserShell><GovernanceVendorInventoryView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/reports" element={<AppGate><GovernanceBrowserShell><GovernanceComplianceReportView /></GovernanceBrowserShell></AppGate>} />
@@ -870,14 +870,14 @@ function RoutesWithTracking() {
       <Route path="/app/risk-inventory" element={<AppGate><GovernanceBrowserShell><AiActRiskInventoryView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/alerts" element={<AppGate><GovernanceBrowserShell><GovernanceAlertsView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/monitoring/dashboard" element={<AppGate><GovernanceBrowserShell><ComplianceMonitoringDashboard /></GovernanceBrowserShell></AppGate>} />
-      <Route path="/app/monitoring/rules" element={<AppGate><GovernanceBrowserShell><RequireAal2 action="Compliance Rules"><ComplianceAlertRulesView /></RequireAal2></GovernanceBrowserShell></AppGate>} />
+      <Route path="/app/monitoring/rules" element={<AppGate><GovernanceBrowserShell><RequireAal2 mode="observe" action="Compliance Rules"><ComplianceAlertRulesView /></RequireAal2></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/optimize" element={<AppGate><GovernanceBrowserShell><OptimizationView /></GovernanceBrowserShell></AppGate>} />
-      <Route path="/app/billing" element={<AppGate><GovernanceBrowserShell><RequireAal2 action="Billing-Verwaltung"><BillingView /></RequireAal2></GovernanceBrowserShell></AppGate>} />
+      <Route path="/app/billing" element={<AppGate><GovernanceBrowserShell><RequireAal2 mode="observe" action="Billing-Verwaltung"><BillingView /></RequireAal2></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/datasets" element={<AppGate><GovernanceBrowserShell><AiActDataGovernanceView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/analytics" element={<AppGate><GovernanceBrowserShell><Suspense fallback={<div>Loading...</div>}><DashboardAnalyticsView /></Suspense></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/monitoring/sources" element={<AppGate><GovernanceBrowserShell><MonitoringSourcesView /></GovernanceBrowserShell></AppGate>} />
-      <Route path="/app/team" element={<AppGate><GovernanceBrowserShell><RequireAal2 action="Team-Verwaltung"><TenantAdminConsole /></RequireAal2></GovernanceBrowserShell></AppGate>} />
-      <Route path="/app/settings/team" element={<AppGate><GovernanceBrowserShell><RequireAal2 action="Team-Verwaltung"><TenantAdminConsole /></RequireAal2></GovernanceBrowserShell></AppGate>} />
+      <Route path="/app/team" element={<AppGate><GovernanceBrowserShell><RequireAal2 mode="observe" action="Team-Verwaltung"><TenantAdminConsole /></RequireAal2></GovernanceBrowserShell></AppGate>} />
+      <Route path="/app/settings/team" element={<AppGate><GovernanceBrowserShell><RequireAal2 mode="observe" action="Team-Verwaltung"><TenantAdminConsole /></RequireAal2></GovernanceBrowserShell></AppGate>} />
       {/* Admin Panel Routes — die Unterseiten hatten bis 2026-09-01 keinen
           Auth-Wrapper (Befund Zugriffsregister); AppGate ist rein additiv. */}
       <Route path="/app/admin" element={<AppGate><GovernanceBrowserShell><AdminDashboard /></GovernanceBrowserShell></AppGate>} />
@@ -916,7 +916,7 @@ function RoutesWithTracking() {
           bringt einen eigenen `AuthGate` mit. */}
       <Route path="/kodee" element={<AppGate><KodeeView /></AppGate>} />
       <Route path="/kodee/connections" element={<ConnectionsView />} />
-      <Route path="/billing/usage" element={<RequireAal2 action="Billing-Verwaltung"><UsageView /></RequireAal2>} />
+      <Route path="/billing/usage" element={<RequireAal2 mode="observe" action="Billing-Verwaltung"><UsageView /></RequireAal2>} />
       <Route path="/pricing" element={<PricingPage />} />
       <Route path="/pricing/whatsapp" element={<WhatsAppPricingPage />} />
       {/* Pricing Detail Routes */}
@@ -935,7 +935,7 @@ function RoutesWithTracking() {
       <Route path="/governance-os-pricing" element={<Navigate to="/pricing" replace />} />
       <Route path="/solutions/saas" element={<SaaSSolution />} />
       <Route path="/solutions/agencies" element={<AgenciesSolution />} />
-      <Route path="/tenant/invites" element={<RequireAal2 action="Team-Verwaltung"><InvitesView /></RequireAal2>} />
+      <Route path="/tenant/invites" element={<RequireAal2 mode="observe" action="Team-Verwaltung"><InvitesView /></RequireAal2>} />
       <Route path="/tenant/invite/:token" element={<AcceptInviteView />} />
       {/* Legacy /governance/* routes redirect to canonical /app/* paths (with shell wrapper).
           Backwards compatibility: old bookmarks/links continue to work. */}
@@ -989,10 +989,10 @@ function RoutesWithTracking() {
       <Route path="/settings" element={<AppGate><GovernanceBrowserShell><SettingsView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/settings/ai-residency" element={<AppGate><GovernanceBrowserShell><AiResidencySettings /></GovernanceBrowserShell></AppGate>} />
       <Route path="/settings/security" element={<AppGate><GovernanceBrowserShell><SecuritySettings /></GovernanceBrowserShell></AppGate>} />
-      <Route path="/settings/team" element={<AppGate><GovernanceBrowserShell><RequireAal2 action="Team-Verwaltung"><TenantAdminConsole /></RequireAal2></GovernanceBrowserShell></AppGate>} />
+      <Route path="/settings/team" element={<AppGate><GovernanceBrowserShell><RequireAal2 mode="observe" action="Team-Verwaltung"><TenantAdminConsole /></RequireAal2></GovernanceBrowserShell></AppGate>} />
       <Route path="/settings/account" element={<AppGate><GovernanceBrowserShell><AccountSettings /></GovernanceBrowserShell></AppGate>} />
       <Route path="/settings/api-keys" element={<AppGate><GovernanceBrowserShell><ApiKeysSettings /></GovernanceBrowserShell></AppGate>} />
-      <Route path="/settings/branding" element={<AppGate><GovernanceBrowserShell><RequireAal2 action="White-Label Branding"><BrandingSettings /></RequireAal2></GovernanceBrowserShell></AppGate>} />
+      <Route path="/settings/branding" element={<AppGate><GovernanceBrowserShell><RequireAal2 mode="observe" action="White-Label Branding"><BrandingSettings /></RequireAal2></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/api/setup" element={<AppGate><GovernanceBrowserShell><ApiSetupWizard /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/api/docs" element={<AppGate><GovernanceBrowserShell><ApiDocumentation /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/api/monitoring" element={<AppGate><GovernanceBrowserShell><ApiMonitoringDashboard /></GovernanceBrowserShell></AppGate>} />

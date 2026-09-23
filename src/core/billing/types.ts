@@ -32,6 +32,7 @@ export type SubscriptionStatus =
 export type TenantRole =
   | 'owner'
   | 'admin'
+  | 'dpo'
   | 'editor'
   | 'viewer_auditor';
 

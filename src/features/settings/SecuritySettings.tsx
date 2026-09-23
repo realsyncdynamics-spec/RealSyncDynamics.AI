@@ -10,6 +10,7 @@ import {
   regenerateRecoveryCodes, redeemRecoveryCode, logAal2Intent, mfaErrorMessage,
   type MfaStatus, type EnrollResult,
 } from '../../core/access/mfa';
+import { effectiveMfaEnforced, requiresAal2ForUnenroll, shouldShowMfaObserveBanner } from './mfaObservePolicy';
 
 export function SecuritySettings() {
   const { activeTenantId, tenants } = useTenant();
@@ -17,6 +18,7 @@ export function SecuritySettings() {
   const role = activeTenant?.role ?? null;
   const isPublicSector = activeTenant?.isPublicSector ?? false;
   const isAdmin = role === 'owner' || role === 'admin';
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
 
   const [userId, setUserId] = useState<string | null>(null);
   const [status, setStatus] = useState<MfaStatus | null>(null);
@@ -33,16 +35,30 @@ export function SecuritySettings() {
   const [redeemCode, setRedeemCode] = useState('');
 
   const [enforceAll, setEnforceAll] = useState(false);
+  const observeBannerVisible = shouldShowMfaObserveBanner(role, isSuperAdmin);
+  const enforcedInUi = effectiveMfaEnforced(enforceAll, isPublicSector);
 
   async function refresh() {
     const sb = getSupabase();
     const { data: { user } } = await sb.auth.getUser();
     setUserId(user?.id ?? null);
+    if (user?.id) {
+      const { data: observeData, error: observeErr } = await sb.functions.invoke('mfa-observe-status', { body: {} });
+      if (observeErr) {
+        setIsSuperAdmin(false);
+      } else {
+        setIsSuperAdmin(!!(observeData as { is_super_admin?: boolean } | null)?.is_super_admin);
+      }
+    } else {
+      setIsSuperAdmin(false);
+    }
     setStatus(await getMfaStatus());
     if (activeTenantId) {
       const { data } = await sb.from('tenant_security_settings')
-        .select('enforce_mfa_all').eq('tenant_id', activeTenantId).maybeSingle();
-      setEnforceAll(!!data?.enforce_mfa_all);
+        .select('mfa_enforced,enforce_mfa_all').eq('tenant_id', activeTenantId).maybeSingle();
+      setEnforceAll(!!(data?.mfa_enforced ?? data?.enforce_mfa_all));
+    } else {
+      setEnforceAll(false);
     }
   }
   useEffect(() => { refresh().catch((e) => setError(String(e))); /* eslint-disable-next-line */ }, [activeTenantId]);
@@ -68,6 +84,12 @@ export function SecuritySettings() {
     await refresh();
   });
   const removeFactor = () => run(async () => {
+    if (requiresAal2ForUnenroll(
+      status?.currentLevel ?? null,
+      (status?.factors ?? []).map((factor) => factor.status),
+    )) {
+      throw new Error('Zum Entfernen von MFA wird eine AAL2-Session benötigt. Alternativ Recovery-Code einlösen.');
+    }
     await removeAllTotpFactors();
     await refresh();
   });
@@ -85,7 +107,7 @@ export function SecuritySettings() {
     if (!activeTenantId) return;
     const sb = getSupabase();
     const { error: e } = await sb.from('tenant_security_settings')
-      .upsert({ tenant_id: activeTenantId, enforce_mfa_all: next }, { onConflict: 'tenant_id' });
+      .upsert({ tenant_id: activeTenantId, mfa_enforced: next, enforce_mfa_all: next }, { onConflict: 'tenant_id' });
     if (e) throw e;
     setEnforceAll(next);
   });
@@ -112,6 +134,17 @@ export function SecuritySettings() {
             <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" /> {error}
           </div>
         )}
+        {observeBannerVisible && !status?.hasVerifiedTotp && (
+          <div className="border border-amber-500/40 bg-amber-500/10 text-amber-100 text-sm p-3 flex items-start gap-2">
+            <ShieldAlert className="h-4 w-4 shrink-0 mt-0.5" />
+            Observe-Modus: Für privilegierte Rollen wird MFA zeitnah verpflichtend. Bitte richten Sie TOTP jetzt ein.
+          </div>
+        )}
+        {isPublicSector && (
+          <div className="border border-security-500/40 bg-security-500/10 text-security-100 text-sm p-3">
+            Public-Sector-Modus: MFA gilt in der UI als verpflichtend für alle Rollen (Observe-Modus, noch ohne Session-Hardlock).
+          </div>
+        )}
 
         {/* Status */}
         <section className="border border-titanium-800 bg-obsidian-900 p-5">
@@ -127,6 +160,15 @@ export function SecuritySettings() {
                 AAL: {status?.currentLevel ?? '—'} · Faktoren: {status?.factorCount ?? 0}
                 {(status?.pendingCount ?? 0) > 0 && ' · Einrichtung nicht abgeschlossen'}
               </div>
+              {(status?.factors?.length ?? 0) > 0 && (
+                <ul className="mt-2 space-y-1">
+                  {status?.factors.map((factor) => (
+                    <li key={factor.id} className="font-mono text-[11px] text-titanium-300">
+                      {factor.friendlyName ?? 'TOTP'} · {factor.status}
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
           </div>
         </section>
@@ -201,34 +243,35 @@ export function SecuritySettings() {
           </section>
         )}
 
-        {/* Lockout-Escape */}
-        {!status?.hasVerifiedTotp && (
-          <section className="border border-titanium-900 bg-obsidian-900 p-5">
-            {redeemMode ? (
-              <div className="space-y-3">
-                <p className="text-sm text-titanium-300">Recovery-Code einlösen (entfernt das alte MFA-Gerät):</p>
-                <div className="flex gap-2">
-                  <input value={redeemCode} onChange={(e) => setRedeemCode(e.target.value)} placeholder="XXXX-XXXX-XXXX"
-                    className="bg-obsidian-950 border border-titanium-700 px-3 py-2 text-sm font-mono w-44 outline-none focus:border-cyan-400" />
-                  <button onClick={doRedeem} disabled={busy || redeemCode.trim().length < 8}
-                    className="bg-cyan-400 text-obsidian-950 px-4 py-2 text-sm font-semibold hover:bg-cyan-300 disabled:opacity-40">Einlösen</button>
-                  <button onClick={() => setRedeemMode(false)} className="text-titanium-400 text-sm px-3">Abbrechen</button>
-                </div>
+        {/* Recovery (auch als Unenroll-Alternative ohne AAL2) */}
+        <section className="border border-titanium-900 bg-obsidian-900 p-5">
+          <p className="text-[11px] text-titanium-500 mb-3">
+            MFA entfernen geht direkt nur mit aktueller AAL2-Session. Alternativ kann ein Recovery-Code eingelöst werden.
+          </p>
+          {redeemMode ? (
+            <div className="space-y-3">
+              <p className="text-sm text-titanium-300">Recovery-Code einlösen (entfernt das alte MFA-Gerät):</p>
+              <div className="flex gap-2">
+                <input value={redeemCode} onChange={(e) => setRedeemCode(e.target.value)} placeholder="XXXX-XXXX-XXXX"
+                  className="bg-obsidian-950 border border-titanium-700 px-3 py-2 text-sm font-mono w-44 outline-none focus:border-cyan-400" />
+                <button onClick={doRedeem} disabled={busy || redeemCode.trim().length < 8}
+                  className="bg-cyan-400 text-obsidian-950 px-4 py-2 text-sm font-semibold hover:bg-cyan-300 disabled:opacity-40">Einlösen</button>
+                <button onClick={() => setRedeemMode(false)} className="text-titanium-400 text-sm px-3">Abbrechen</button>
               </div>
-            ) : (
-              <button onClick={() => setRedeemMode(true)} className="text-titanium-400 hover:text-titanium-200 text-sm">
-                Gerät verloren? Recovery-Code einlösen
-              </button>
-            )}
-          </section>
-        )}
+            </div>
+          ) : (
+            <button onClick={() => setRedeemMode(true)} className="text-titanium-400 hover:text-titanium-200 text-sm">
+              Recovery-Code einlösen
+            </button>
+          )}
+        </section>
 
         {/* Tenant-Enforcement (owner/admin) */}
         {isAdmin && (
           <section className="border border-titanium-800 bg-obsidian-900 p-5">
             <h2 className="font-display font-semibold text-titanium-50 mb-2">Tenant-Sicherheit</h2>
             <label className="flex items-center gap-3 text-sm text-titanium-200">
-              <input type="checkbox" checked={enforceAll || isPublicSector} disabled={busy || isPublicSector}
+              <input type="checkbox" checked={enforcedInUi} disabled={busy || isPublicSector}
                 onChange={(e) => toggleEnforceAll(e.target.checked)} />
               MFA für <strong>alle</strong> Mitglieder erzwingen
               {isPublicSector && <span className="font-mono text-[10px] text-security-400">· durch Public-Sector-Modus vorgegeben</span>}

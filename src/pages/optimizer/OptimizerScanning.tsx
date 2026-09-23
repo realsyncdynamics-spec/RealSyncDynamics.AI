@@ -16,6 +16,7 @@ import { AlertTriangle, Loader2, RotateCw, ArrowLeft } from 'lucide-react';
 import { OptimizerLayout } from './OptimizerLayout';
 import { getTargetUrl, setScanResult, domainFromUrl } from '../../lib/optimizer/state';
 import { runOptimizerScan } from '../../lib/optimizer/scan';
+import { isEdgeAuthRequiredError } from '../../lib/edgeFunction';
 
 const STATUS_MESSAGES = [
   'Rufe Startseite ab …',
@@ -88,11 +89,24 @@ export function OptimizerScanning() {
           <div role="alert" className="flex items-start gap-2 text-sm text-red-300 bg-red-950/40 border border-red-900 rounded-none p-4 mb-6">
             <AlertTriangle className="h-5 w-5 shrink-0 mt-0.5" aria-hidden />
             <div>
-              <p className="font-bold text-red-200 mb-1">Wir konnten {domain || 'die Seite'} nicht analysieren.</p>
-              <p>{error}</p>
-              <p className="mt-2 text-red-300/80">
-                Prüfe die Schreibweise der URL und ob die Seite öffentlich erreichbar ist.
-              </p>
+              {isEdgeAuthRequiredError(error) ? (
+                <>
+                  <p className="font-bold text-red-200 mb-1">Scan-Aufruf ohne Sitzung blockiert.</p>
+                  <p>{error}</p>
+                  <p className="mt-2 text-red-300/80">
+                    Der Free-Scan braucht keine Anmeldung. Bitte erneut versuchen oder die Seite neu laden —
+                    das ist kein URL-Problem.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="font-bold text-red-200 mb-1">Wir konnten {domain || 'die Seite'} nicht analysieren.</p>
+                  <p>{error}</p>
+                  <p className="mt-2 text-red-300/80">
+                    Prüfe die Schreibweise der URL und ob die Seite öffentlich erreichbar ist.
+                  </p>
+                </>
+              )}
             </div>
           </div>
           <div className="flex flex-wrap gap-3">

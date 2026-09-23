@@ -1,10 +1,12 @@
 import type { CSSProperties } from 'react';
 import { Link } from 'react-router-dom';
 import { tierById, type PricingTier } from '../../config/pricing';
+import { PUBLIC_CTA, PUBLIC_ACCOUNT } from '../../config/public-nav';
 import { EuropeNetworkHero } from './EuropeNetworkHero';
 import {
   HERO_HEADLINE,
-  HERO_INFRA_LINES,
+  GOVERNANCE_AI_HERO_SUBLINE,
+  HERO_DASHBOARD_CTA_LABEL,
   HERO_OPERATING_LOOP,
   HERO_PLAN_ANCHOR_FREE,
 } from '../governance-frontend/hero-content';
@@ -51,21 +53,21 @@ function planChips(): PlanChip[] {
     ...tiers.map((tier) => ({
       key: tier.id,
       name: tier.name,
-      price: `${tier.priceEur}€`,
-      to: `/checkout/${tier.id}?source=hero`,
+      price: `${tier.priceEur} € / Monat`,
+      to: tier.cta.href,
       featured: tier.id === FEATURED_PLAN,
     })),
     {
       key: 'enterprise',
       name: 'Enterprise',
       price: null,
-      to: '/contact-sales?source=hero',
+      to: '/enterprise',
       featured: false,
     },
   ];
 }
 
-export function HeroTitanium() {
+export function HeroTitanium({ sectionId = 'product' }: { sectionId?: string }) {
   const chips = planChips();
 
   return (
@@ -75,7 +77,7 @@ export function HeroTitanium() {
        angehaengte Hex-Ziffern: an einer CSS-Variablen ergaebe das eine
        ungueltige Farbe — einen unsichtbaren Ring, ohne Fehlermeldung. */
     <section
-      id="product"
+      id={sectionId}
       className="relative min-h-[min(100svh,880px)] overflow-hidden border-b border-white/[0.06]"
       style={
         {
@@ -108,6 +110,7 @@ export function HeroTitanium() {
           >
             {HERO_HEADLINE.map((segments, line) => (
               <span key={line} className="block">
+                {line > 0 ? ' ' : null}
                 {segments.map((segment, i) => (
                   <span
                     key={i}
@@ -132,9 +135,7 @@ export function HeroTitanium() {
             className="mt-7 space-y-1.5 text-[clamp(0.95rem,0.9rem+0.3vw,1.15rem)]"
             style={{ fontFamily: LANDING_SANS, color: LANDING_MUTED }}
           >
-            {HERO_INFRA_LINES.map((line) => (
-              <p key={line.join('·')}>{line.join(' · ')}</p>
-            ))}
+            <p>{GOVERNANCE_AI_HERO_SUBLINE}</p>
           </div>
 
           <ul className="mt-10 flex flex-wrap items-stretch gap-3" aria-label="Pläne">
@@ -142,7 +143,7 @@ export function HeroTitanium() {
               <Link
                 id="audit-cta"
                 data-hero-cta="audit"
-                to="/audit"
+                to={PUBLIC_CTA.to}
                 className="flex h-full min-w-[9.5rem] items-center justify-center rounded-xl px-6 py-5 text-[0.95rem] font-semibold transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--landing-ring)]"
                 style={{
                   backgroundColor: MODE_ACCENT,
@@ -188,6 +189,9 @@ export function HeroTitanium() {
               </li>
             ))}
           </ul>
+          <Link to={PUBLIC_ACCOUNT.dashboard.to} className="mt-6 inline-block underline underline-offset-4 focus-visible:outline focus-visible:outline-2" style={{ color: LANDING_TEXT }}>
+            {HERO_DASHBOARD_CTA_LABEL}
+          </Link>
         </div>
       </div>
     </section>

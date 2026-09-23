@@ -178,7 +178,8 @@ jobs:
     # Warteschlange, statt schnell und lesbar zu scheitern.
     timeout-minutes: 15
     needs: build
-    if: needs.build.outputs.cf_ready == 'true'
+    # PRs validate the build; only main may publish to the production branch.
+    if: needs.build.outputs.cf_ready == 'true' && github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
@@ -201,7 +202,8 @@ jobs:
     # Warteschlange, statt schnell und lesbar zu scheitern.
     timeout-minutes: 10
     needs: [build, deploy]
-    if: needs.build.outputs.cf_ready == 'true'
+    # PRs validate the build; only main may publish to the production branch.
+    if: needs.build.outputs.cf_ready == 'true' && github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Wait for CDN propagation

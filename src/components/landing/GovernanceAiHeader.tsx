@@ -21,7 +21,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Menu, X } from 'lucide-react';
-import { PUBLIC_CTA } from '../../config/public-nav';
+import { PUBLIC_CTA, PUBLIC_PRIMARY_NAV } from '../../config/public-nav';
 import { GA_DISPLAY, GA_LINE_SOFT, GA_MUTED, GA_TEXT } from './governance-ai-theme';
 
 /** `/#product` → `#product`; alles andere bleibt eine Route. */
@@ -30,16 +30,9 @@ function localAnchor(to: string): string | null {
 }
 
 /** Claude-Design navigation mapped only to real, existing product routes. */
-const NAV_ITEMS: readonly { label: string; to: string }[] = [
-  { label: 'Plattform', to: '/#product' },
-  { label: 'AI Governance', to: '/ai-act-governance' },
-  { label: 'EU AI Act', to: '/ai-act' },
-  { label: 'Evidenz', to: '/#evidence' },
-  { label: 'Preise', to: '/#pricing' },
-  { label: 'Login', to: '/welcome' },
-] as const;
+const NAV_ITEMS = PUBLIC_PRIMARY_NAV;
 
-const GOVERNANCE_AUDIT_LABEL = 'Kostenloser Governance-Audit' as const;
+const GOVERNANCE_AUDIT_LABEL = `${PUBLIC_CTA.shortLabel} starten`;
 
 function NavItem({ label, to, onClick }: { label: string; to: string; onClick?: () => void }) {
   const anchor = localAnchor(to);

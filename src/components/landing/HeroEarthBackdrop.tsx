@@ -1,6 +1,9 @@
 /**
- * Public landing hero backdrop — full-bleed photoreal Earth.
- * Next-level grade: Europe in frame, brighter limb, lazy 3D orbit.
+ * Public landing hero backdrop.
+ *
+ * First paint: statische Europa-Aufnahme (`/europe-globe.*`).
+ * 3D (R3F + Texturen + Basis-Transcoder) erst nach Load/Idle,
+ * nie bei reduced-motion oder Save-Data.
  */
 import { lazy, Suspense, useEffect, useState } from 'react';
 
@@ -17,6 +20,47 @@ function usePrefersReducedMotion(): boolean {
     return () => mq.removeEventListener('change', update);
   }, []);
   return reduced;
+}
+
+/** 3D-Chunk + Texturen erst, wenn der First Paint durch ist. */
+function useDeferHeavyEarth(reducedMotion: boolean): boolean {
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    if (reducedMotion || typeof window === 'undefined') return;
+    const nav = navigator as Navigator & {
+      connection?: { saveData?: boolean; effectiveType?: string };
+      webdriver?: boolean;
+    };
+    if (nav.webdriver) return;
+    if (nav.connection?.saveData) return;
+    const slow =
+      nav.connection?.effectiveType === '2g' ||
+      nav.connection?.effectiveType === 'slow-2g' ||
+      nav.connection?.effectiveType === '3g';
+    if (slow) return;
+
+    let idleId = 0;
+    let timeoutId = 0;
+    const arm = () => {
+      const start = () => setReady(true);
+      const ric = window.requestIdleCallback;
+      if (typeof ric === 'function') {
+        idleId = ric(start, { timeout: 2500 });
+      } else {
+        timeoutId = window.setTimeout(start, 1800);
+      }
+    };
+    if (document.readyState === 'complete') arm();
+    else window.addEventListener('load', arm, { once: true });
+    return () => {
+      window.removeEventListener('load', arm);
+      if (idleId && typeof window.cancelIdleCallback === 'function') {
+        window.cancelIdleCallback(idleId);
+      }
+      if (timeoutId) window.clearTimeout(timeoutId);
+    };
+  }, [reducedMotion]);
+  return ready;
 }
 
 function GoldNetworkOverlay() {
@@ -74,7 +118,7 @@ function StaticEarthPlane() {
           height={768}
           decoding="async"
           fetchPriority="high"
-          className="hero-earth-static-img h-full w-full scale-[1.06] object-cover object-[56%_40%] opacity-100 brightness-[1.42] contrast-[1.2] saturate-[1.25]"
+          className="hero-earth-static-img h-full w-full scale-[1.06] object-cover object-[68%_42%] opacity-100 brightness-[1.28] contrast-[1.15] saturate-[1.2]"
         />
       </picture>
       <GoldNetworkOverlay />
@@ -89,61 +133,17 @@ function StaticEarthPlane() {
   );
 }
 
-function Starfield() {
-  return (
-    <div className="hero-earth-stars pointer-events-none absolute inset-0" aria-hidden="true">
-      <div
-        className="hero-earth-stars-far absolute inset-0"
-        style={{
-          backgroundImage: [
-            'radial-gradient(1px 1px at 8% 12%, rgba(242,238,230,0.8), transparent)',
-            'radial-gradient(1.5px 1.5px at 22% 8%, rgba(239,230,213,0.7), transparent)',
-            'radial-gradient(1px 1px at 48% 6%, rgba(242,238,230,0.65), transparent)',
-            'radial-gradient(2px 2px at 71% 10%, rgba(255,248,235,0.85), transparent)',
-            'radial-gradient(1px 1px at 91% 18%, rgba(208,195,164,0.55), transparent)',
-            'radial-gradient(1.5px 1.5px at 14% 28%, rgba(239,230,213,0.5), transparent)',
-            'radial-gradient(1px 1px at 36% 22%, rgba(242,238,230,0.45), transparent)',
-            'radial-gradient(1px 1px at 62% 30%, rgba(208,195,164,0.4), transparent)',
-          ].join(','),
-        }}
-      />
-    </div>
-  );
-}
-
-function WarmRimLight() {
-  return (
-    <div className="hero-sunrise pointer-events-none absolute inset-0" aria-hidden="true">
-      <div
-        className="absolute"
-        style={{
-          left: '48%',
-          top: '18%',
-          width: 'min(36vw, 420px)',
-          height: 'min(42vw, 480px)',
-          borderRadius: '50%',
-          background:
-            'radial-gradient(ellipse at 40% 48%, rgba(255,210,140,0.32) 0%, rgba(200,150,70,0.12) 42%, transparent 72%)',
-          filter: 'blur(26px)',
-          opacity: 0.8,
-        }}
-      />
-    </div>
-  );
-}
-
 export function HeroEarthBackdrop() {
   const reducedMotion = usePrefersReducedMotion();
+  const allow3d = useDeferHeavyEarth(reducedMotion);
 
   return (
     <div
       className="hero-earth-backdrop absolute inset-0 overflow-hidden"
       data-hero-visual="earth-universe"
       data-earth-palette="landing-gold"
-      data-hero-lighting="europe-day-limb"
-      data-hero-scenery="europe-night-gold-network"
       data-hero-framing="europe-right"
-      data-landing-earth="static"
+      data-landing-earth={allow3d ? 'deferred-3d' : 'static'}
       aria-hidden="true"
     >
       <div
@@ -153,19 +153,14 @@ export function HeroEarthBackdrop() {
             'radial-gradient(ellipse at 68% 52%, #080a10 0%, #05070c 38%, #02040a 68%, #010308 100%)',
         }}
       />
-      <WarmRimLight />
-      {reducedMotion ? (
-        <StaticEarthPlane />
-      ) : (
-        <Suspense fallback={<StaticEarthPlane />}>
-          <div className="pointer-events-none absolute inset-0" data-landing-earth-3d="orbit-europe">
+      <StaticEarthPlane />
+      {allow3d ? (
+        <Suspense fallback={null}>
+          <div className="pointer-events-none absolute inset-0" data-landing-earth-3d="deferred">
             <HeroEarthBackdropScene reducedMotion={false} />
           </div>
         </Suspense>
-      )}
-      <div className="hero-earth-space-scenery pointer-events-none absolute inset-0" data-hero-scenery-layer="sky">
-        <Starfield />
-      </div>
+      ) : null}
       <div
         className="pointer-events-none absolute inset-0"
         style={{

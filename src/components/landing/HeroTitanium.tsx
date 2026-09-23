@@ -1,5 +1,6 @@
-import type { CSSProperties } from 'react';
+import { lazy, Suspense, type CSSProperties } from 'react';
 import { Link } from 'react-router-dom';
+import { useReducedMotion } from 'motion/react';
 import { tierById, type PricingTier } from '../../config/pricing';
 import { EuropeNetworkHero } from './EuropeNetworkHero';
 import {
@@ -9,32 +10,23 @@ import {
   HERO_PLAN_ANCHOR_FREE,
 } from '../governance-frontend/hero-content';
 import {
-  LANDING_ACCENT,
-  LANDING_BUTTON,
-  LANDING_CTA_GLOW,
-  LANDING_BUTTON_TEXT,
   LANDING_MONO,
   LANDING_MUTED,
   LANDING_SANS,
   LANDING_SERIF,
   LANDING_TEXT,
 } from './landing-theme';
+import {
+  MODE_ACCENT,
+  MODE_BUTTON_INK,
+  MODE_GLOW,
+  MODE_PILL_FACE,
+  modeAccent,
+} from './landing-mode';
 
-/**
- * Hero der Startseite — Umsetzung des Titan-Entwurfs.
- *
- * Reihenfolge wie im Entwurf: H1 (Serif, Akzent auf dem Europa-Teil) →
- * Operating Loop (Mono, Gold) → zwei Infrastrukturzeilen → Plan-Anker.
- *
- * Preise stammen aus `config/pricing` (`tierById`), nie aus dieser Datei:
- * Der Entwurf zeigt 79/249/699, die SSoT liefert dieselben Werte, und bei
- * einer Preisaenderung wandert der Hero mit, statt zu luegen.
- */
+const HeroEarthBackdropScene = lazy(() => import('./HeroEarthBackdropScene'));
 
-/** Plan-Anker unter den Infrastrukturzeilen. `null` = kein Preis (Entwurf). */
 const PLAN_ANCHORS = ['starter', 'growth', 'agency'] as const;
-
-/** Der im Entwurf hervorgehobene Plan. */
 const FEATURED_PLAN = 'growth';
 
 type PlanChip = {
@@ -68,51 +60,77 @@ function planChips(): PlanChip[] {
   ];
 }
 
+function EuropeStage({ reducedMotion }: { reducedMotion: boolean }) {
+  if (reducedMotion) return <EuropeNetworkHero />;
+  return (
+    <Suspense fallback={<EuropeNetworkHero />}>
+      <div
+        className="pointer-events-none absolute inset-0"
+        data-landing-earth="webgl"
+        data-hero-visual="europe-day-night-3d"
+        aria-hidden="true"
+      >
+        <HeroEarthBackdropScene reducedMotion={false} />
+        <div
+          className="absolute inset-0"
+          style={{
+            background: [
+              'linear-gradient(105deg, rgba(0,0,0,0.82) 0%, rgba(0,0,0,0.42) 32%, rgba(0,0,0,0.08) 58%, transparent 74%)',
+              'linear-gradient(180deg, rgba(0,0,0,0.18) 0%, transparent 18%, transparent 78%, rgba(0,0,0,0.45) 100%)',
+            ].join(', '),
+          }}
+        />
+      </div>
+    </Suspense>
+  );
+}
+
 export function HeroTitanium() {
   const chips = planChips();
+  const reducedMotion = Boolean(useReducedMotion());
 
   return (
-    /* Fokusring folgt dem Landing-Akzent statt einem festen Wert. Tailwind
-       kann keine JS-Konstante lesen, deshalb der Umweg ueber zwei CSS-
-       Variablen: Wer `LANDING_ACCENT` aendert, aendert den Ring mit. */
     <section
       id="product"
-      className="relative min-h-[min(100svh,880px)] overflow-hidden border-b border-white/[0.06]"
+      className="relative min-h-[100svh] overflow-hidden border-b border-white/[0.06]"
+      data-hero-framing="europe-limb-lock"
       style={
         {
-          '--landing-ring': LANDING_ACCENT,
-          '--landing-ring-soft': `${LANDING_ACCENT}99`,
+          '--landing-ring': MODE_ACCENT,
+          '--landing-ring-soft': modeAccent(60),
         } as CSSProperties
       }
     >
-      <EuropeNetworkHero />
+      <EuropeStage reducedMotion={reducedMotion} />
 
-      {/* Lichtstreif oben links — gebuerstetes Titan des Entwurfs. */}
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-x-0 top-0 h-[42%]"
         style={{
           background:
-            'radial-gradient(120% 100% at 22% 0%, rgba(255,255,255,0.09) 0%, rgba(255,255,255,0.03) 38%, transparent 72%)',
+            'radial-gradient(120% 100% at 22% 0%, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.02) 38%, transparent 72%)',
         }}
       />
 
-      <div className="relative z-10 mx-auto flex min-h-[min(100svh,880px)] max-w-[1280px] flex-col justify-center px-[4vw] pb-16 pt-28 sm:pb-20 sm:pt-32">
-        <div className="max-w-[46rem]">
+      <div className="relative z-10 mx-auto flex min-h-[100svh] max-w-[1360px] flex-col justify-center px-[4vw] pb-16 pt-28 sm:pb-24 sm:pt-32">
+        <div className="max-w-[58rem]">
           <h1
-            className="leading-[0.94] tracking-[-0.02em]"
+            className="leading-[0.92] tracking-[-0.02em]"
             style={{
               fontFamily: LANDING_SERIF,
               fontWeight: 400,
-              fontSize: 'clamp(2.75rem, 1.1rem + 5.6vw, 5.5rem)',
+              fontSize: 'clamp(2.85rem, 0.7rem + 6.2vw, 6.1rem)',
             }}
           >
             {HERO_HEADLINE.map((segments, line) => (
-              <span key={line} className="block">
+              <span
+                key={line}
+                className={line === 1 ? 'mt-[0.06em] block whitespace-nowrap' : 'block'}
+              >
                 {segments.map((segment, i) => (
                   <span
                     key={i}
-                    style={{ color: segment.accent ? LANDING_ACCENT : LANDING_TEXT }}
+                    style={{ color: segment.accent ? MODE_ACCENT : LANDING_TEXT }}
                   >
                     {i > 0 ? ' ' : ''}
                     {segment.text}
@@ -123,14 +141,14 @@ export function HeroTitanium() {
           </h1>
 
           <p
-            className="mt-7 text-[clamp(0.75rem,0.68rem+0.3vw,0.9rem)] font-medium uppercase tracking-[0.2em]"
-            style={{ fontFamily: LANDING_MONO, color: LANDING_ACCENT }}
+            className="mt-8 text-[clamp(0.78rem,0.68rem+0.35vw,0.95rem)] font-medium uppercase tracking-[0.22em]"
+            style={{ fontFamily: LANDING_MONO, color: MODE_ACCENT }}
           >
             {HERO_OPERATING_LOOP}
           </p>
 
           <div
-            className="mt-7 space-y-1.5 text-[clamp(0.95rem,0.9rem+0.3vw,1.15rem)]"
+            className="mt-8 space-y-1.5 text-[clamp(1rem,0.92rem+0.35vw,1.2rem)]"
             style={{ fontFamily: LANDING_SANS, color: LANDING_MUTED }}
           >
             {HERO_INFRA_LINES.map((line) => (
@@ -138,17 +156,17 @@ export function HeroTitanium() {
             ))}
           </div>
 
-          <ul className="mt-10 flex flex-wrap items-stretch gap-3" aria-label="Pläne">
+          <ul className="mt-12 flex flex-wrap items-stretch gap-3" aria-label="Pläne">
             <li>
               <Link
                 id="audit-cta"
                 data-hero-cta="audit"
                 to="/audit"
-                className="flex h-full min-w-[9.5rem] items-center justify-center rounded-xl px-6 py-5 text-[0.95rem] font-semibold transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--landing-ring)]"
+                className="flex h-full min-w-[9.5rem] items-center justify-center rounded-2xl px-6 py-5 text-[0.95rem] font-semibold transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--landing-ring)]"
                 style={{
-                  backgroundColor: LANDING_BUTTON,
-                  color: LANDING_BUTTON_TEXT,
-                  boxShadow: LANDING_CTA_GLOW,
+                  backgroundImage: MODE_PILL_FACE,
+                  color: MODE_BUTTON_INK,
+                  boxShadow: MODE_GLOW,
                 }}
               >
                 {HERO_PLAN_ANCHOR_FREE}
@@ -160,15 +178,11 @@ export function HeroTitanium() {
                 <Link
                   to={chip.to}
                   data-plan-anchor={chip.key}
-                  className="flex h-full min-w-[7.25rem] flex-col items-center justify-center rounded-xl border px-5 py-3.5 text-center transition hover:bg-white/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--landing-ring-soft)]"
+                  className="flex h-full min-w-[7.25rem] flex-col items-center justify-center rounded-2xl border px-5 py-3.5 text-center transition hover:bg-white/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--landing-ring-soft)]"
                   style={{
-                    backgroundColor: 'rgba(255,255,255,0.04)',
-                    borderColor: chip.featured
-                      ? LANDING_ACCENT
-                      : 'rgba(255,255,255,0.12)',
-                    boxShadow: chip.featured
-                      ? LANDING_CTA_GLOW
-                      : undefined,
+                    backgroundColor: chip.featured ? 'rgba(10,10,11,0.72)' : 'rgba(255,255,255,0.04)',
+                    borderColor: chip.featured ? MODE_ACCENT : 'rgba(255,255,255,0.12)',
+                    boxShadow: chip.featured ? MODE_GLOW : undefined,
                   }}
                 >
                   <span
@@ -180,7 +194,7 @@ export function HeroTitanium() {
                   {chip.price ? (
                     <span
                       className="mt-0.5 text-[1.15rem] font-medium leading-tight"
-                      style={{ color: chip.featured ? LANDING_ACCENT : LANDING_TEXT }}
+                      style={{ color: chip.featured ? MODE_ACCENT : LANDING_TEXT }}
                     >
                       {chip.price}
                     </span>

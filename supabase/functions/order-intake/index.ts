@@ -15,6 +15,7 @@ import { handleOptions, jsonResponse, jsonError, methodNotAllowed } from '../_sh
 import { resolveBot, upsertConversation, BotError } from '../_shared/bots.ts';
 import { gateFeature, EntitlementError } from '../_shared/entitlements.ts';
 import { resolveRestaurantOrder, RestaurantOrderError } from '../_shared/restaurant.ts';
+import { initialRestaurantExecutionState } from '../_shared/restaurant-execution.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -138,6 +139,7 @@ Deno.serve(async (req) => {
         delivery_address: resolved.fulfillment === 'delivery' ? deliveryAddress : null,
         estimated_delivery_minutes: resolved.estimated_delivery_minutes,
         payment_method: typeof body.payment_method === 'string' ? body.payment_method.slice(0, 40) : null,
+        execution: initialRestaurantExecutionState(),
       };
     } else {
       const legacyItems = parseLegacyItems(rawItems);

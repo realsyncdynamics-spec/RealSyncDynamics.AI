@@ -9,6 +9,7 @@ import {
   RestaurantOrderError,
   type RestaurantOrderResolution,
 } from './restaurant.ts';
+import { initialRestaurantExecutionState } from './restaurant-execution.ts';
 import {
   buildRestaurantQuotePayload,
   buildRestaurantTurnProtocol,
@@ -204,6 +205,7 @@ async function persistConfirmedOrder(
     delivery_fee: resolution.delivery_fee,
     delivery_address: resolution.fulfillment === 'delivery' ? draft.delivery_address ?? null : null,
     estimated_delivery_minutes: resolution.estimated_delivery_minutes,
+    execution: initialRestaurantExecutionState(),
   };
 
   const { data, error } = await admin.from('bot_orders').insert({

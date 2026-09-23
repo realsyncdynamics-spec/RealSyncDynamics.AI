@@ -32,6 +32,18 @@ function metadataNumber(metadata: Record<string, unknown> | undefined, key: stri
   return typeof value === 'number' && Number.isFinite(value) ? value : null;
 }
 
+function metadataRecord(metadata: Record<string, unknown> | undefined, key: string): Record<string, unknown> | null {
+  const value = metadata?.[key];
+  return value !== null && typeof value === 'object' && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : null;
+}
+
+function executionStatus(state: Record<string, unknown> | null): string {
+  const status = state?.status;
+  return typeof status === 'string' ? status : 'not_configured';
+}
+
 function money(value: number, currency: string): string {
   return value.toLocaleString('de-DE', { style: 'currency', currency: currency || 'EUR' });
 }
@@ -209,6 +221,9 @@ function OrdersPane({ tenantId }: { tenantId: string }) {
         const deliveryFee = metadataNumber(o.metadata, 'delivery_fee');
         const customerConfirmed = o.metadata?.customer_confirmed === true;
         const eta = metadataNumber(o.metadata, 'estimated_delivery_minutes');
+        const execution = metadataRecord(o.metadata, 'execution');
+        const posExecution = metadataRecord(execution ?? undefined, 'pos');
+        const kitchenExecution = metadataRecord(execution ?? undefined, 'kitchen');
 
         return (
           <div key={o.id} className="border border-titanium-800 px-4 py-3">
@@ -279,7 +294,7 @@ function OrdersPane({ tenantId }: { tenantId: string }) {
             )}
 
             {isRestaurant && (
-              <div className="mt-3 grid gap-2 border-t border-titanium-900 pt-3 text-[11px] sm:grid-cols-2 lg:grid-cols-4">
+              <div className="mt-3 grid gap-2 border-t border-titanium-900 pt-3 text-[11px] sm:grid-cols-2 lg:grid-cols-6">
                 <div>
                   <p className="font-mono text-[9px] uppercase tracking-wider text-titanium-600">Kundenbestätigung</p>
                   <p className={customerConfirmed ? 'text-emerald-400' : 'text-amber-400'}>
@@ -303,6 +318,14 @@ function OrdersPane({ tenantId }: { tenantId: string }) {
                   <p className="font-mono text-[9px] uppercase tracking-wider text-titanium-600">Lieferzeit-Richtwert</p>
                   <p className="text-titanium-300">{eta !== null ? `ca. ${Math.round(eta)} Min.` : '—'}</p>
                 </div>
+                <div>
+                  <p className="font-mono text-[9px] uppercase tracking-wider text-titanium-600">POS</p>
+                  <ExecutionStateChip status={executionStatus(posExecution)} />
+                </div>
+                <div>
+                  <p className="font-mono text-[9px] uppercase tracking-wider text-titanium-600">Küche</p>
+                  <ExecutionStateChip status={executionStatus(kitchenExecution)} />
+                </div>
               </div>
             )}
 
@@ -312,6 +335,24 @@ function OrdersPane({ tenantId }: { tenantId: string }) {
       })}
     </div>
   );
+}
+
+function ExecutionStateChip({ status }: { status: string }) {
+  const label = status === 'accepted'
+    ? 'bestätigt'
+    : status === 'pending'
+      ? 'ausstehend'
+      : status === 'failed'
+        ? 'Fehler'
+        : 'nicht konfiguriert';
+  const cls = status === 'accepted'
+    ? 'text-emerald-400'
+    : status === 'failed'
+      ? 'text-risk-critical'
+      : status === 'pending'
+        ? 'text-amber-400'
+        : 'text-titanium-500';
+  return <p className={cls}>{label}</p>;
 }
 
 function StatusChip({ status }: { status: string }) {

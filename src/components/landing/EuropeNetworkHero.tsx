@@ -1,15 +1,9 @@
 /**
- * Static Europe network hero graphic — Replit SSOT.
- * Illustrative map + node mesh. NOT an interactive globe/sphere.
+ * Static Europe network hero — Brand Direction v1.1.
  *
- * Die Tonung folgt dem Farbmodus der Seite (`landing-mode.ts`): Gold über
- * einem warm gefilterten Chromrelief, Cyan über der ungefilterten
- * Nachtaufnahme. Dieselbe Aufnahme, dieselben Knoten — nur die Farbe
- * wechselt.
- *
- * Die Knotenfarben stehen als `style`, nicht als `fill`/`stroke`-Attribut:
- * `var()` ist in SVG-Präsentationsattributen nicht verlässlich, in der
- * CSS-Deklaration dagegen schon.
+ * Left column is brushed-metal void (copy must stay readable).
+ * Right column carries the night/relief shot + gold corridors.
+ * Nodes never sit over the headline: mesh is framed to the right half.
  */
 import {
   MODE_ACCENT,
@@ -20,20 +14,22 @@ import {
   modeVeil,
 } from './landing-mode';
 
-/** Approximate node positions (% of box) over Europe framing. */
+/** Node positions in the RIGHT frame only (viewBox 100×100, map lives at x≥54). */
 const NODES: readonly { x: number; y: number; r?: number }[] = [
-  { x: 42, y: 28, r: 3.2 },
-  { x: 48, y: 34, r: 2.4 },
-  { x: 55, y: 30, r: 2.8 },
-  { x: 61, y: 38, r: 2.2 },
-  { x: 52, y: 44, r: 3.5 },
-  { x: 45, y: 48, r: 2.1 },
-  { x: 58, y: 52, r: 2.6 },
-  { x: 66, y: 46, r: 2.3 },
-  { x: 70, y: 36, r: 2.0 },
-  { x: 38, y: 40, r: 2.2 },
-  { x: 50, y: 58, r: 2.4 },
-  { x: 63, y: 58, r: 2.0 },
+  { x: 62, y: 22, r: 0.9 },
+  { x: 68, y: 28, r: 0.7 },
+  { x: 74, y: 24, r: 0.85 },
+  { x: 80, y: 32, r: 0.7 },
+  { x: 71, y: 38, r: 1.05 },
+  { x: 64, y: 42, r: 0.65 },
+  { x: 77, y: 46, r: 0.8 },
+  { x: 84, y: 40, r: 0.7 },
+  { x: 88, y: 30, r: 0.6 },
+  { x: 58, y: 36, r: 0.65 },
+  { x: 70, y: 54, r: 0.75 },
+  { x: 82, y: 54, r: 0.65 },
+  { x: 90, y: 48, r: 0.55 },
+  { x: 76, y: 62, r: 0.7 },
 ];
 
 const EDGES: readonly [number, number][] = [
@@ -51,6 +47,10 @@ const EDGES: readonly [number, number][] = [
   [7, 11],
   [0, 9],
   [4, 7],
+  [7, 12],
+  [11, 13],
+  [10, 13],
+  [8, 12],
 ];
 
 export function EuropeNetworkHero() {
@@ -68,33 +68,41 @@ export function EuropeNetworkHero() {
           alt=""
           width={1376}
           height={768}
-          className="absolute inset-0 h-full w-full scale-[1.08] object-cover object-[68%_42%]"
+          className="absolute inset-0 h-full w-full scale-[1.12] object-cover object-[82%_44%]"
           style={{ opacity: MODE_SHOT_OPACITY, filter: MODE_SHOT_FILTER }}
           decoding="async"
         />
       </picture>
 
-      {/* Veil — keeps left copy readable; map glows on the right */}
+      {/* Brushed-metal plate + left copy well. Map only survives on the right. */}
       <div
         className="absolute inset-0"
         style={{
           background: [
-            `linear-gradient(105deg, ${modeVeil(100)} 0%, ${modeVeil(80)} 32%, ${modeVeil(40)} 52%, transparent 72%)`,
-            `linear-gradient(180deg, ${modeVeil(53)} 0%, transparent 28%, transparent 70%, ${modeVeil(93)} 100%)`,
-            `radial-gradient(55% 50% at 72% 42%, ${modeAccent(20)} 0%, transparent 62%)`,
+            `linear-gradient(102deg, ${modeVeil(100)} 0%, ${modeVeil(100)} 34%, ${modeVeil(92)} 46%, ${modeVeil(55)} 58%, transparent 74%)`,
+            `linear-gradient(180deg, ${modeVeil(70)} 0%, transparent 22%, transparent 68%, ${modeVeil(96)} 100%)`,
+            `radial-gradient(42% 70% at 18% -8%, rgba(255,255,255,0.11) 0%, transparent 62%)`,
+            `radial-gradient(48% 42% at 78% 46%, ${modeAccent(22)} 0%, transparent 64%)`,
           ].join(','),
         }}
       />
 
-      {/* Amber network mesh */}
+      <div
+        className="absolute inset-0 opacity-[0.14] mix-blend-overlay"
+        style={{
+          backgroundImage:
+            'repeating-linear-gradient(90deg, rgba(255,255,255,0.04) 0px, rgba(255,255,255,0.04) 1px, transparent 1px, transparent 3px)',
+        }}
+      />
+
       <svg
-        className="absolute inset-0 h-full w-full opacity-90"
+        className="absolute inset-0 h-full w-full"
         viewBox="0 0 100 100"
-        preserveAspectRatio="none"
+        preserveAspectRatio="xMaxYMid slice"
       >
         <defs>
-          <filter id="eu-net-glow" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur stdDeviation="0.35" result="blur" />
+          <filter id="eu-net-glow" x="-80%" y="-80%" width="260%" height="260%">
+            <feGaussianBlur stdDeviation="0.22" result="blur" />
             <feMerge>
               <feMergeNode in="blur" />
               <feMergeNode in="SourceGraphic" />
@@ -112,8 +120,8 @@ export function EuropeNetworkHero() {
               x2={to.x}
               y2={to.y}
               style={{ stroke: MODE_ACCENT_SOFT }}
-              strokeWidth="0.18"
-              opacity="0.55"
+              strokeWidth="0.12"
+              opacity="0.62"
               filter="url(#eu-net-glow)"
             />
           );
@@ -123,16 +131,16 @@ export function EuropeNetworkHero() {
             <circle
               cx={n.x}
               cy={n.y}
-              r={(n.r ?? 2.2) * 1.8}
+              r={(n.r ?? 0.7) * 2.1}
               style={{ fill: MODE_ACCENT }}
-              opacity="0.12"
+              opacity="0.16"
             />
             <circle
               cx={n.x}
               cy={n.y}
-              r={n.r ?? 2.2}
+              r={n.r ?? 0.7}
               style={{ fill: MODE_ACCENT_SOFT }}
-              opacity="0.9"
+              opacity="0.95"
             />
           </g>
         ))}

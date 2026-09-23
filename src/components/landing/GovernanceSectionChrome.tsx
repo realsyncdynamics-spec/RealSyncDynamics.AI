@@ -68,7 +68,7 @@ export function SectionHeading({
   return (
     <h2
       className={`mt-5 leading-[1.06] tracking-[-.03em] ${centered ? 'mx-auto max-w-none' : 'max-w-[24ch]'}`}
-      style={{ fontFamily: GA_DISPLAY, fontWeight: 600, fontSize: GA_H2, color: GA_TEXT }}
+      style={{ fontFamily: GA_DISPLAY, fontWeight: 700, fontSize: GA_H2, color: GA_TEXT }}
     >
       {children}
       {accent && (

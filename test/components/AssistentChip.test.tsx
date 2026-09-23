@@ -83,14 +83,22 @@ function renderChip({
 }
 
 describe('<AssistentChip>', () => {
-  it('does not mount on `/` (luxury hero fold owns attention)', () => {
-    const { queryByLabelText } = renderChip({ path: '/', withHero: true });
-    expect(queryByLabelText('Assistent öffnen')).toBeNull();
+  it('mounts on `/` even when a hero CTA marker is present (Grok Bot on landing)', () => {
+    const { getByLabelText, getByText } = renderChip({ path: '/', withHero: true });
+    const btn = getByLabelText('Assistent öffnen');
+    expect(btn).toBeInTheDocument();
+    expect(btn.className).toMatch(/opacity-100/);
+    expect(getByText('Grok Bot')).toBeInTheDocument();
   });
 
-  it('does not mount on `/` even without a hero CTA marker', () => {
-    const { queryByLabelText } = renderChip({ path: '/', withHero: false });
-    expect(queryByLabelText('Assistent öffnen')).toBeNull();
+  it('stays visible on `/` when hero CTA intersects (no fade on landing)', () => {
+    const { getByLabelText } = renderChip({ path: '/', withHero: true });
+    const btn = getByLabelText('Assistent öffnen');
+    act(() => {
+      observers.forEach((o) => o.trigger(true));
+    });
+    expect(btn.className).toMatch(/opacity-100/);
+    expect(btn.className).not.toMatch(/pointer-events-none/);
   });
 
   it('renders visible on non-landing routes when no [data-hero-cta] is present', () => {

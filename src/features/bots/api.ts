@@ -9,6 +9,7 @@ import { getSupabase } from '../../lib/supabase';
 import type {
   Bot, BotConversation, BotMessage, BotAppointment, BotOrder,
   CreateBotArgs, UpdateBotArgs, WhatsAppChannel, CreateWhatsAppChannelArgs,
+  RestaurantWebhookConnection,
 } from './types';
 
 export async function listBots(tenant_id: string): Promise<Bot[]> {
@@ -124,6 +125,101 @@ export async function setOrderStatus(
     .from('bot_orders').update({ status })
     .eq('tenant_id', tenant_id).eq('id', order_id);
   if (error) throw new Error(`setOrderStatus: ${error.message}`);
+}
+
+// ── Restaurant Execution ───────────────────────────────────────────────────
+
+export async function getRestaurantWebhookConnection(
+  tenant_id: string,
+): Promise<RestaurantWebhookConnection | null> {
+  const sb = getSupabase();
+  const { data: integration, error: integrationError } = await sb
+    .from('integrations')
+    .select('id')
+    .eq('slug', 'restaurant-webhook')
+    .eq('enabled', true)
+    .maybeSingle();
+  if (integrationError) throw new Error(`restaurantWebhookCatalog: ${integrationError.message}`);
+  if (!integration) return null;
+
+  const { data: config, error: configError } = await sb
+    .from('integration_configs')
+    .select('id, name, enabled')
+    .eq('tenant_id', tenant_id)
+    .eq('integration_id', integration.id)
+    .maybeSingle();
+  if (configError) throw new Error(`restaurantWebhookConfig: ${configError.message}`);
+
+  let registryStatus: RestaurantWebhookConnection['status'] = config ? 'pending' : 'not_configured';
+  if (config?.id) {
+    const { data: registry } = await sb
+      .from('connector_registry')
+      .select('status')
+      .eq('tenant_id', tenant_id)
+      .eq('source_table', 'integration_configs')
+      .eq('source_id', config.id)
+      .maybeSingle();
+    if (
+      registry?.status === 'connected' ||
+      registry?.status === 'pending' ||
+      registry?.status === 'error' ||
+      registry?.status === 'disabled'
+    ) {
+      registryStatus = registry.status;
+    }
+  }
+
+  return {
+    integration_id: integration.id,
+    config_id: config?.id ?? null,
+    name: config?.name ?? null,
+    enabled: config?.enabled === true,
+    status: registryStatus,
+  };
+}
+
+export async function configureRestaurantWebhook(
+  tenant_id: string,
+  integration_id: string,
+  url: string,
+  secret: string,
+): Promise<RestaurantWebhookConnection> {
+  const sb = getSupabase();
+  const { data, error } = await sb.functions.invoke('integration-credentials', {
+    body: {
+      op: 'configure',
+      tenant_id,
+      integration_id,
+      name: 'Restaurant POS/Kitchen Webhook',
+      credentials: {
+        webhook_url: url,
+        secret,
+      },
+    },
+  });
+  if (error || !data?.ok || !data?.config?.id) {
+    throw new Error(error?.message ?? data?.error ?? 'Restaurant-Webhook konnte nicht gespeichert werden');
+  }
+  return {
+    integration_id,
+    config_id: data.config.id,
+    name: data.config.name ?? 'Restaurant POS/Kitchen Webhook',
+    enabled: data.config.enabled === true,
+    status: 'pending',
+  };
+}
+
+export async function testRestaurantWebhook(
+  tenant_id: string,
+  config_id: string,
+): Promise<void> {
+  const sb = getSupabase();
+  const { data, error } = await sb.functions.invoke('integration-credentials', {
+    body: { op: 'test', tenant_id, config_id },
+  });
+  if (error || !data?.ok) {
+    throw new Error(error?.message ?? data?.error ?? 'Restaurant-Webhook-Test fehlgeschlagen');
+  }
 }
 
 // ── WhatsApp-Kanäle ────────────────────────────────────────────────────────

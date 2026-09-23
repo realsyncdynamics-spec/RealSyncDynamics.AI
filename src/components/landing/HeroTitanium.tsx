@@ -18,20 +18,11 @@ import {
 import { MODE_ACCENT, MODE_BUTTON_INK, MODE_GLOW, modeAccent } from './landing-mode';
 
 /**
- * Hero der Startseite — Umsetzung des Titan-Entwurfs.
- *
- * Reihenfolge wie im Entwurf: H1 (Serif, Akzent auf dem Europa-Teil) →
- * Operating Loop (Mono, Gold) → zwei Infrastrukturzeilen → Plan-Anker.
- *
- * Preise stammen aus `config/pricing` (`tierById`), nie aus dieser Datei:
- * Der Entwurf zeigt 79/249/699, die SSoT liefert dieselben Werte, und bei
- * einer Preisaenderung wandert der Hero mit, statt zu luegen.
+ * Hero der Startseite — Titan-Entwurf, zweizeilige H1.
+ * Zweite Zeile bleibt eine Phrase: „Operations OS for Europe“.
  */
 
-/** Plan-Anker unter den Infrastrukturzeilen. `null` = kein Preis (Entwurf). */
 const PLAN_ANCHORS = ['starter', 'growth', 'agency'] as const;
-
-/** Der im Entwurf hervorgehobene Plan. */
 const FEATURED_PLAN = 'growth';
 
 type PlanChip = {
@@ -69,11 +60,6 @@ export function HeroTitanium() {
   const chips = planChips();
 
   return (
-    /* Fokusring folgt dem Farbmodus statt einem festen Wert. Tailwind kann
-       keine JS-Konstante lesen, deshalb der Umweg ueber zwei CSS-Variablen.
-       Die weiche Variante laeuft ueber `color-mix`, nicht ueber zwei
-       angehaengte Hex-Ziffern: an einer CSS-Variablen ergaebe das eine
-       ungueltige Farbe — einen unsichtbaren Ring, ohne Fehlermeldung. */
     <section
       id="product"
       className="relative min-h-[min(100svh,880px)] overflow-hidden border-b border-white/[0.06]"
@@ -86,7 +72,6 @@ export function HeroTitanium() {
     >
       <EuropeNetworkHero />
 
-      {/* Lichtstreif oben links — gebuerstetes Titan des Entwurfs. */}
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-x-0 top-0 h-[42%]"
@@ -97,17 +82,20 @@ export function HeroTitanium() {
       />
 
       <div className="relative z-10 mx-auto flex min-h-[min(100svh,880px)] max-w-[1280px] flex-col justify-center px-[4vw] pb-16 pt-28 sm:pb-20 sm:pt-32">
-        <div className="max-w-[46rem]">
+        <div className="max-w-[54rem]">
           <h1
             className="leading-[0.94] tracking-[-0.02em]"
             style={{
               fontFamily: LANDING_SERIF,
               fontWeight: 400,
-              fontSize: 'clamp(2.75rem, 1.1rem + 5.6vw, 5.5rem)',
+              fontSize: 'clamp(2.55rem, 0.85rem + 5.1vw, 5.15rem)',
             }}
           >
             {HERO_HEADLINE.map((segments, line) => (
-              <span key={line} className="block">
+              <span
+                key={line}
+                className={line === 1 ? 'mt-[0.06em] block whitespace-nowrap' : 'block'}
+              >
                 {segments.map((segment, i) => (
                   <span
                     key={i}
@@ -143,9 +131,10 @@ export function HeroTitanium() {
                 id="audit-cta"
                 data-hero-cta="audit"
                 to="/audit"
-                className="flex h-full min-w-[9.5rem] items-center justify-center rounded-xl px-6 py-5 text-[0.95rem] font-semibold transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--landing-ring)]"
+                className="flex h-full min-w-[9.5rem] items-center justify-center rounded-2xl px-6 py-5 text-[0.95rem] font-semibold transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--landing-ring)]"
                 style={{
-                  backgroundColor: MODE_ACCENT,
+                  backgroundImage:
+                    'linear-gradient(180deg, #e8c98a 0%, #c9a056 52%, #a9843a 100%)',
                   color: MODE_BUTTON_INK,
                   boxShadow: MODE_GLOW,
                 }}
@@ -159,15 +148,11 @@ export function HeroTitanium() {
                 <Link
                   to={chip.to}
                   data-plan-anchor={chip.key}
-                  className="flex h-full min-w-[7.25rem] flex-col items-center justify-center rounded-xl border px-5 py-3.5 text-center transition hover:bg-white/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--landing-ring-soft)]"
+                  className="flex h-full min-w-[7.25rem] flex-col items-center justify-center rounded-2xl border px-5 py-3.5 text-center transition hover:bg-white/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--landing-ring-soft)]"
                   style={{
-                    backgroundColor: 'rgba(255,255,255,0.04)',
-                    borderColor: chip.featured
-                      ? MODE_ACCENT
-                      : 'rgba(255,255,255,0.12)',
-                    boxShadow: chip.featured
-                      ? MODE_GLOW
-                      : undefined,
+                    backgroundColor: chip.featured ? 'rgba(10,10,11,0.72)' : 'rgba(255,255,255,0.04)',
+                    borderColor: chip.featured ? MODE_ACCENT : 'rgba(255,255,255,0.12)',
+                    boxShadow: chip.featured ? MODE_GLOW : undefined,
                   }}
                 >
                   <span

@@ -48,7 +48,7 @@ function trackCardSheen(event: ReactPointerEvent<HTMLDivElement>) {
 export function DesignGovernanceAiLanding() {
   return (
     <div
-      className="ga-context landing-context relative min-h-screen antialiased"
+      className="ga-context ga-gold-reference landing-context relative min-h-screen antialiased"
       data-landing-mode="gold"
       data-hero-visual="europe-network-static"
       style={{ backgroundColor: 'var(--ga-void)', color: 'var(--ga-text)' }}

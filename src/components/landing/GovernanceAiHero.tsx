@@ -38,6 +38,7 @@ import {
 import { PUBLIC_CTA } from '../../config/public-nav';
 import {
   GA_DISPLAY,
+  GA_SANS,
   GA_GOLD_LITE,
   GA_GREEN,
   GA_LINE,
@@ -83,7 +84,7 @@ export function GovernanceAiHero() {
         />
 
         <p
-          className="m-0 mb-6 inline-flex w-max max-w-full items-center gap-2.5 whitespace-nowrap rounded-full border px-4 py-2 text-[11px] tracking-[.2em]"
+          className="m-0 mb-6 inline-flex w-max max-w-full items-center gap-2.5 whitespace-normal rounded-full border px-4 py-2 text-[11px] tracking-[.2em]"
           style={{
             fontFamily: GA_MONO,
             borderColor: 'var(--ga-accent-border)',
@@ -140,7 +141,7 @@ export function GovernanceAiHero() {
         </h1>
 
         <p
-          className="mt-7 max-w-[42rem] text-pretty text-[clamp(1.05rem,.95rem+.45vw,1.3rem)] leading-[1.58] tracking-[-.01em]"
+          className="mt-7 max-w-[42rem] whitespace-pre-line text-pretty text-[clamp(1.05rem,.95rem+.45vw,1.3rem)] leading-[1.58] tracking-[-.01em]"
           style={{ color: GA_MUTED }}
         >
           {GOVERNANCE_AI_HERO_SUBLINE}
@@ -159,7 +160,7 @@ export function GovernanceAiHero() {
             reloadDocument
             className={`${GA_PILL_PRIMARY} ga-pill-sheen`}
             style={{
-              fontFamily: GA_DISPLAY,
+              fontFamily: GA_SANS,
               backgroundImage: 'var(--ga-pill-face)',
               color: 'var(--ga-pill-ink)',
               boxShadow: 'var(--ga-pill-shadow)',
@@ -168,7 +169,7 @@ export function GovernanceAiHero() {
             {HERO_SCAN_CTA_LONG}
             <ArrowRight className="h-4 w-4" aria-hidden="true" />
           </Link>
-          <Link to="/app/dashboard" className={GA_PILL_GHOST} style={{ fontFamily: GA_DISPLAY }}>
+          <Link to="/app/dashboard" className={GA_PILL_GHOST} style={{ fontFamily: GA_SANS }}>
             {HERO_DASHBOARD_CTA_LABEL}
           </Link>
         </div>
@@ -192,7 +193,7 @@ export function GovernanceAiHero() {
             type="submit"
             className="inline-flex items-center gap-2 rounded-full px-5 py-3 text-[14px] font-semibold transition hover:brightness-[1.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ga-accent-lite)]"
             style={{
-              fontFamily: GA_DISPLAY,
+              fontFamily: GA_SANS,
               backgroundImage: 'var(--ga-pill-face)',
               color: 'var(--ga-pill-ink)',
               boxShadow: 'var(--ga-pill-shadow)',
@@ -230,14 +231,14 @@ export function GovernanceAiHero() {
         </div>
 
         <div
-          className="mt-7 grid grid-cols-3 gap-px border"
+          className="mt-7 grid grid-cols-1 sm:grid-cols-3 gap-px border"
           style={{ borderColor: GA_LINE, backgroundColor: GA_LINE_SOFT }}
         >
           {FACTS.map(([value, label]) => (
             <div key={label} className="px-4 py-3.5" style={{ backgroundColor: 'rgba(0,0,0,.72)' }}>
               <b
                 className="block text-[30px] font-normal tracking-[-.02em]"
-                style={{ fontFamily: GA_DISPLAY, color: GA_SILVER }}
+                style={{ fontFamily: GA_SANS, color: GA_SILVER }}
               >
                 {value}
               </b>

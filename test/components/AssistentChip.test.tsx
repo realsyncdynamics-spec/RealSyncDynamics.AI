@@ -186,4 +186,16 @@ describe('<AssistentChip>', () => {
     });
     expect(dialog).toHaveAttribute('aria-hidden', 'true');
   });
+
+  it('unmounts the Grok Bot chip while the panel is open (kein Doppel-FAB)', () => {
+    const { getByLabelText, queryByLabelText, getByRole } = renderChip({ withHero: false });
+    expect(getByLabelText('Assistent öffnen')).toBeInTheDocument();
+
+    act(() => {
+      getByLabelText('Assistent öffnen').click();
+    });
+
+    expect(getByRole('dialog', { hidden: true })).toHaveAttribute('aria-hidden', 'false');
+    expect(queryByLabelText('Assistent öffnen')).toBeNull();
+  });
 });

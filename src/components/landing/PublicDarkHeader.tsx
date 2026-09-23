@@ -2,6 +2,7 @@ import { useState, type CSSProperties, type MouseEvent, type ReactNode } from 'r
 import { Link } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
 import { HERO_SCAN_CTA_LABEL } from '../governance-frontend/hero-content';
+import { PUBLIC_PRIMARY_NAV } from '../../config/public-nav';
 import {
   LANDING_BG,
   LANDING_MONO,
@@ -11,14 +12,10 @@ import {
 import { MODE_ACCENT, MODE_BUTTON_INK, MODE_GLOW } from './landing-mode';
 
 /**
- * Replit Nr.1 SSOT header — gold diamond mark · REALSYNCDYNAMICS.AI
- * · Produkt / Evidence / Preise · Free Audit → /audit
+ * Claude Design / Replit SSOT header — gold diamond · REALSYNCDYNAMICS.AI
+ * · Produkt / Evidence / Preise / Login · Free Audit → /audit
+ * Nav strip from PUBLIC_PRIMARY_NAV (src/config/public-nav.ts).
  */
-const LINKS = [
-  { label: 'Produkt', to: '/#product' },
-  { label: 'Evidence', to: '/#evidence' },
-  { label: 'Preise', to: '/#pricing' },
-] as const;
 
 function NavItem({
   to,
@@ -116,15 +113,15 @@ export function PublicDarkHeader({
             <DiamondMark />
           </span>
           <span
-            className="truncate text-[12px] font-semibold tracking-[0.14em]"
-            style={{ fontFamily: LANDING_MONO }}
+            className="truncate text-[13px] font-semibold tracking-tight"
+            style={{ fontFamily: LANDING_MONO, letterSpacing: '0.04em' }}
           >
-            REALSYNCDYNAMICS.AI
+            RealSyncDynamics.AI
           </span>
         </Link>
 
         <nav className="ml-auto hidden items-center gap-7 md:flex" aria-label="Hauptnavigation">
-          {LINKS.map((item) => (
+          {PUBLIC_PRIMARY_NAV.map((item) => (
             <NavItem key={item.to} {...item} />
           ))}
           {modeSwitch}
@@ -169,7 +166,7 @@ export function PublicDarkHeader({
         >
           {modeSwitch && <div className="mb-3">{modeSwitch}</div>}
           <nav aria-label="Mobile Navigation" className="flex flex-col">
-            {LINKS.map((item) => (
+            {PUBLIC_PRIMARY_NAV.map((item) => (
               <NavItem
                 key={item.to}
                 to={item.to}

@@ -1,14 +1,14 @@
 /**
- * Production landing. Earth hero comes from HeroEarthBackdrop so night lights,
- * Europe framing and the terminator/moon rig actually mount on `/`.
+ * Production landing. Fold follows Brand Direction v1.0 / Titan lock:
+ * static Europe night map, gold operating loop, infra lines, plan pills.
+ * No 3D globe on `/`.
  */
 import { type PointerEvent as ReactPointerEvent } from 'react';
 import '../../styles/governance-landing-polish.css';
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import { SEOHead } from '../../components/SEOHead';
-import { HeroEarthBackdrop } from '../../components/landing/HeroEarthBackdrop';
-import { GovernanceAiHero } from '../../components/landing/GovernanceAiHero';
+import { HeroTitanium } from '../../components/landing/HeroTitanium';
 import { GovernanceStatusBar } from '../../components/landing/GovernanceStatusBar';
 import { GovernanceLoopBand } from '../../components/landing/GovernanceLoopBand';
 import { GovernanceFooter } from '../../components/landing/GovernanceFooter';
@@ -48,20 +48,18 @@ function trackCardSheen(event: ReactPointerEvent<HTMLDivElement>) {
 export function DesignGovernanceAiLanding() {
   return (
     <div
-      className="ga-context relative min-h-screen antialiased"
+      className="ga-context landing-context relative min-h-screen antialiased"
+      data-landing-mode="gold"
+      data-hero-visual="europe-network-static"
       style={{ backgroundColor: 'var(--ga-void)', color: 'var(--ga-text)' }}
       onPointerMove={trackCardSheen}
     >
       <SEOHead title={SEO_CONFIG['/'].title} description={SEO_CONFIG['/'].description} canonical="/" />
 
-      <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden" data-ga-earth="hero-mount">
-        <HeroEarthBackdrop />
-      </div>
-
       <div className="relative z-10 flex min-h-screen flex-col">
         <GovernanceStatusBar />
         <GovernanceAiHeader />
-        <GovernanceAiHero />
+        <HeroTitanium />
         <RegulatoryTicker />
         <GovernanceLoopBand />
         <WorkspacePreviewSection />

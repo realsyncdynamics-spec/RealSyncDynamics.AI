@@ -2,15 +2,14 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Menu, X } from 'lucide-react';
-import { PUBLIC_CTA, GOVERNANCE_PRIMARY_NAV } from '../../config/public-nav';
+import { PUBLIC_CTA, PUBLIC_PRIMARY_NAV } from '../../config/public-nav';
 import { GA_SANS, GA_LINE_SOFT, GA_MUTED, GA_TEXT } from './governance-ai-theme';
+import { HERO_SCAN_CTA_LABEL } from '../governance-frontend/hero-content';
 
 /** `/#product` → `#product`; alles andere bleibt eine Route. */
 function localAnchor(to: string): string | null {
   return to.startsWith('/#') ? to.slice(1) : null;
 }
-
-import { HERO_SCAN_CTA_LABEL } from '../governance-frontend/hero-content';
 
 function NavItem({ label, to, onClick }: { label: string; to: string; onClick?: () => void }) {
   const anchor = localAnchor(to);
@@ -68,7 +67,7 @@ export function GovernanceAiHeader() {
         </Link>
 
         <nav className="ml-auto hidden items-center gap-[26px] lg:flex" aria-label="Hauptnavigation">
-          {GOVERNANCE_PRIMARY_NAV.map((item) => (
+          {PUBLIC_PRIMARY_NAV.map((item) => (
             <NavItem key={item.to} label={item.label} to={item.to} />
           ))}
           {cta}
@@ -92,7 +91,7 @@ export function GovernanceAiHeader() {
           style={{ borderColor: GA_LINE_SOFT, backgroundColor: 'var(--ga-void)' }}
           aria-label="Hauptnavigation"
         >
-          {GOVERNANCE_PRIMARY_NAV.map((item) => (
+          {PUBLIC_PRIMARY_NAV.map((item) => (
             <NavItem
               key={item.to}
               label={item.label}

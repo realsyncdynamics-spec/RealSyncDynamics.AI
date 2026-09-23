@@ -22,7 +22,7 @@ export const GOVERNANCE_AI_HERO_KICKER = 'RUNTIME GOVERNANCE FOR ENTERPRISE AI' 
 
 export const GOVERNANCE_AI_HERO_HEADLINE: readonly (readonly HeroHeadlineSegment[])[] = [
   [{ text: 'AI Compliance' }],
-  [{ text: 'Operations OS for Europe' }],
+  [{ text: 'Operations OS' }, { text: 'for Europe', accent: true }],
 ];
 
 export const GOVERNANCE_AI_HERO_TEST_SUBSTRING = 'AI Compliance' as const;

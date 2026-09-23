@@ -1,7 +1,13 @@
 // Daily Digest Email an den Founder.
 //
+// Auth: Bearer == CRON_DAILY_DIGEST_KEY (Function Secret). pg_cron sendet den Wert
+// aus Vault `cron_daily_digest_key` über dispatch_cron_function. verify_jwt = false;
+// fail-closed, wenn das Secret leer ist. Der eingehende Authorization-
+// Header wird NIE gegen SUPABASE_SERVICE_ROLE_KEY geprüft — die
+// Service-Role dient nur dem Zugriff NACH der Authentisierung.
+//
 // GET/POST /functions/v1/daily-digest   (verify_jwt = false, eigener Bearer-Check)
-// Optional ?email=… overrides FOUNDER_EMAIL env var — nur mit Service-Role.
+// Optional ?email=… overrides FOUNDER_EMAIL env var — nur mit dem Cron-Key.
 //
 // Sammelt:
 //   - last 24h audits, leads, pageviews
@@ -43,8 +49,9 @@ Deno.serve(async (req) => {
 
   const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
   const SRK = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+  const CRON_KEY = Deno.env.get('CRON_DAILY_DIGEST_KEY') ?? '';
   const authHeader = req.headers.get('Authorization') ?? '';
-  if (authHeader !== `Bearer ${SRK}`) {
+  if (!CRON_KEY || authHeader !== `Bearer ${CRON_KEY}`) {
     return jsonResponse({ ok: false, error: 'cron only' }, 401, corsHeaders);
   }
 

@@ -17,9 +17,11 @@ export const LANDING_ACCENT_SOFT = '#4fd7f0';
 export const LANDING_ACCENT_LITE = '#7fe3f5';
 export const LANDING_BUTTON = '#22c3e6';
 export const LANDING_BUTTON_ALT = '#4fd7f0';
+export const LANDING_BUTTON_DEEP = '#0e9fbf';
 export const LANDING_BUTTON_TEXT = '#041016';
+export const LANDING_CTA_FACE = `linear-gradient(180deg, ${LANDING_BUTTON_ALT} 0%, ${LANDING_BUTTON} 52%, ${LANDING_BUTTON_DEEP} 100%)`;
 export const LANDING_CTA_GLOW =
-  '0 0 0 1px rgba(127,227,245,.35), 0 0 34px rgba(34,195,230,.35)';
+  'inset 0 1px 0 rgba(255,255,255,.45), 0 0 0 1px rgba(127,227,245,.3), 0 10px 30px rgba(0,0,0,.55), 0 0 34px rgba(34,195,230,.3)';
 export const LANDING_GREEN = '#35d0a8';
 export const LANDING_LINE = 'rgba(34, 195, 230, 0.16)';
 export const LANDING_TRUST_MARKS = [
@@ -35,3 +37,18 @@ export const LANDING_H2_LG = 'clamp(1.9rem, 1.2rem + 2.5vw, 2.875rem)';
 export const LANDING_BODY = 'clamp(1rem, 0.92rem + 0.35vw, 1.125rem)';
 export const LANDING_EYEBROW = '0.75rem';
 export const LANDING_META = '0.625rem';
+
+function alphaHex(opacityPercent: number) {
+  const clamped = Math.min(100, Math.max(0, opacityPercent));
+  return Math.round((clamped / 100) * 255)
+    .toString(16)
+    .padStart(2, '0');
+}
+
+export function landingAccent(opacityPercent = 100) {
+  return `${LANDING_ACCENT}${alphaHex(opacityPercent)}`;
+}
+
+export function landingVip(opacityPercent = 100) {
+  return `${LANDING_ACCENT_VIP}${alphaHex(opacityPercent)}`;
+}

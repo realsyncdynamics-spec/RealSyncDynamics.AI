@@ -66,9 +66,13 @@ describe('Landing Design-Lock v2 — True Black / Cyan / Gold-VIP', () => {
         'nicht mit und die Seite traegt zwei Akzente nebeneinander.',
     ).not.toMatch(v1Gold);
     expect(titanHero).toContain("from './landing-theme'");
+    expect(titanHero).not.toContain("from './landing-mode'");
 
     expect(titanHero, 'Der Hero liest den Akzent nicht').toContain('LANDING_ACCENT');
     expect(titanHero, 'Der CTA-Glow ist nicht der Token-Glow').toContain('LANDING_CTA_GLOW');
+    expect(titanHero, 'Der Hero benutzt nicht die Design-Lock-v2-Helfer').toContain(
+      'landingAccent(60)',
+    );
 
     // Gegenprobe aus dem Farbmodus-Zweig, hier behalten: kein Farbwert darf
     // am Token vorbei im Hero stehen. Ohne diese Zeile koennte jemand die

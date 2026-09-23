@@ -10,19 +10,18 @@ import {
   HERO_PLAN_ANCHOR_FREE,
 } from '../governance-frontend/hero-content';
 import {
+  LANDING_ACCENT,
+  LANDING_BUTTON_TEXT,
+  LANDING_CTA_FACE,
+  LANDING_CTA_GLOW,
   LANDING_MONO,
   LANDING_MUTED,
+  LANDING_PANEL,
   LANDING_SANS,
   LANDING_SERIF,
   LANDING_TEXT,
+  landingAccent,
 } from './landing-theme';
-import {
-  MODE_ACCENT,
-  MODE_BUTTON_INK,
-  MODE_GLOW,
-  MODE_PILL_FACE,
-  modeAccent,
-} from './landing-mode';
 
 const HeroEarthBackdropScene = lazy(() => import('./HeroEarthBackdropScene'));
 
@@ -130,8 +129,8 @@ export function HeroTitanium() {
       data-hero-framing="europe-limb-lock"
       style={
         {
-          '--landing-ring': MODE_ACCENT,
-          '--landing-ring-soft': modeAccent(60),
+          '--landing-ring': LANDING_ACCENT,
+          '--landing-ring-soft': landingAccent(60),
         } as CSSProperties
       }
     >
@@ -155,7 +154,7 @@ export function HeroTitanium() {
                 {segments.map((segment, i) => (
                   <span
                     key={i}
-                    style={{ color: segment.accent ? MODE_ACCENT : LANDING_TEXT }}
+                    style={{ color: segment.accent ? LANDING_ACCENT : LANDING_TEXT }}
                   >
                     {i > 0 ? ' ' : ''}
                     {segment.text}
@@ -167,7 +166,7 @@ export function HeroTitanium() {
 
           <p
             className="mt-8 text-[clamp(0.78rem,0.68rem+0.35vw,0.95rem)] font-medium uppercase tracking-[0.22em]"
-            style={{ fontFamily: LANDING_MONO, color: MODE_ACCENT }}
+            style={{ fontFamily: LANDING_MONO, color: LANDING_ACCENT }}
           >
             {HERO_OPERATING_LOOP}
           </p>
@@ -189,9 +188,9 @@ export function HeroTitanium() {
                 to="/audit"
                 className="flex h-full min-w-[9.5rem] items-center justify-center rounded-2xl px-6 py-5 text-[0.95rem] font-semibold transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--landing-ring)]"
                 style={{
-                  backgroundImage: MODE_PILL_FACE,
-                  color: MODE_BUTTON_INK,
-                  boxShadow: MODE_GLOW,
+                  backgroundImage: LANDING_CTA_FACE,
+                  color: LANDING_BUTTON_TEXT,
+                  boxShadow: LANDING_CTA_GLOW,
                 }}
               >
                 {HERO_PLAN_ANCHOR_FREE}
@@ -205,9 +204,11 @@ export function HeroTitanium() {
                   data-plan-anchor={chip.key}
                   className="flex h-full min-w-[7.25rem] flex-col items-center justify-center rounded-2xl border px-5 py-3.5 text-center transition hover:bg-white/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--landing-ring-soft)]"
                   style={{
-                    backgroundColor: chip.featured ? 'rgba(10,10,11,0.72)' : 'rgba(255,255,255,0.04)',
-                    borderColor: chip.featured ? MODE_ACCENT : 'rgba(255,255,255,0.12)',
-                    boxShadow: chip.featured ? MODE_GLOW : undefined,
+                    backgroundColor: chip.featured ? LANDING_PANEL : 'rgba(255,255,255,0.04)',
+                    borderColor: chip.featured ? LANDING_ACCENT : 'rgba(255,255,255,0.12)',
+                    boxShadow: chip.featured
+                      ? `0 0 0 1px ${landingAccent(18)}, ${LANDING_CTA_GLOW}`
+                      : undefined,
                   }}
                 >
                   <span
@@ -219,7 +220,7 @@ export function HeroTitanium() {
                   {chip.price ? (
                     <span
                       className="mt-0.5 text-[1.15rem] font-medium leading-tight"
-                      style={{ color: chip.featured ? MODE_ACCENT : LANDING_TEXT }}
+                      style={{ color: chip.featured ? LANDING_ACCENT : LANDING_TEXT }}
                     >
                       {chip.price}
                     </span>

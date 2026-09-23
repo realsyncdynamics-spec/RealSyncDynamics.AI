@@ -18,33 +18,33 @@
   scroll-margin-top: 110px;
 }
 
-.ga-context .text-\\[8px\\],
-.ga-context .text-\\[9px\\],
-.ga-context .text-\\[10px\\] {
+.ga-context .text-\[8px\],
+.ga-context .text-\[9px\],
+.ga-context .text-\[10px\] {
   font-size: 12px;
   line-height: 1.4;
 }
 
-.ga-context .text-\\[11px\\] {
+.ga-context .text-\[11px\] {
   font-size: 12px;
   line-height: 1.45;
 }
 
-.ga-context .text-\\[12px\\],
-.ga-context .text-\\[12\\.5px\\] {
+.ga-context .text-\[12px\],
+.ga-context .text-\[12\.5px\] {
   font-size: 13px;
   line-height: 1.5;
 }
 
-.ga-context .text-\\[13px\\],
-.ga-context .text-\\[13\\.5px\\] {
+.ga-context .text-\[13px\],
+.ga-context .text-\[13\.5px\] {
   font-size: 15px;
   line-height: 1.6;
 }
 
-.ga-context .text-\\[14px\\],
-.ga-context .text-\\[15px\\],
-.ga-context .text-\\[15\\.5px\\] {
+.ga-context .text-\[14px\],
+.ga-context .text-\[15px\],
+.ga-context .text-\[15\.5px\] {
   font-size: 16px;
   line-height: 1.65;
 }

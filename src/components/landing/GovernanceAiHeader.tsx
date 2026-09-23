@@ -5,8 +5,8 @@ import { Menu, X } from 'lucide-react';
 import { PUBLIC_CTA, PUBLIC_PRIMARY_NAV } from '../../config/public-nav';
 import { GA_SANS, GA_LINE_SOFT, GA_MUTED, GA_TEXT } from './governance-ai-theme';
 import { HERO_SCAN_CTA_LABEL } from '../governance-frontend/hero-content';
+import { MODE_BUTTON_INK, MODE_GLOW, MODE_PILL_FACE } from './landing-mode';
 
-/** `/#product` → `#product`; alles andere bleibt eine Route. */
 function localAnchor(to: string): string | null {
   return to.startsWith('/#') ? to.slice(1) : null;
 }
@@ -38,9 +38,9 @@ export function GovernanceAiHeader() {
       className="ga-pill-sheen relative inline-flex items-center gap-2 overflow-hidden whitespace-nowrap rounded-full px-[18px] py-[11px] text-[14px] font-semibold leading-[1.3] tracking-[-.005em] transition hover:brightness-[1.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ga-accent-lite)]"
       style={{
         fontFamily: GA_SANS,
-        backgroundImage: 'linear-gradient(180deg, #e8c98a 0%, #c9a056 52%, #a9843a 100%)',
-        color: '#0a0a0b',
-        boxShadow: '0 0 24px rgba(214, 173, 104, 0.32)',
+        backgroundImage: MODE_PILL_FACE,
+        color: MODE_BUTTON_INK,
+        boxShadow: MODE_GLOW,
       }}
       onClick={() => setOpen(false)}
     >

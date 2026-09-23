@@ -15,12 +15,13 @@ import {
   LANDING_SERIF,
   LANDING_TEXT,
 } from './landing-theme';
-import { MODE_ACCENT, MODE_BUTTON_INK, MODE_GLOW, modeAccent } from './landing-mode';
-
-/**
- * Hero der Startseite — Titan-Entwurf, zweizeilige H1.
- * Zweite Zeile bleibt eine Phrase: „Operations OS for Europe“.
- */
+import {
+  MODE_ACCENT,
+  MODE_BUTTON_INK,
+  MODE_GLOW,
+  MODE_PILL_FACE,
+  modeAccent,
+} from './landing-mode';
 
 const PLAN_ANCHORS = ['starter', 'growth', 'agency'] as const;
 const FEATURED_PLAN = 'growth';
@@ -133,8 +134,7 @@ export function HeroTitanium() {
                 to="/audit"
                 className="flex h-full min-w-[9.5rem] items-center justify-center rounded-2xl px-6 py-5 text-[0.95rem] font-semibold transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--landing-ring)]"
                 style={{
-                  backgroundImage:
-                    'linear-gradient(180deg, #e8c98a 0%, #c9a056 52%, #a9843a 100%)',
+                  backgroundImage: MODE_PILL_FACE,
                   color: MODE_BUTTON_INK,
                   boxShadow: MODE_GLOW,
                 }}

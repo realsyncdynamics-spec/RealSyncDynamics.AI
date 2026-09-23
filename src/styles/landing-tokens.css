@@ -1,0 +1,39 @@
+/*
+ * Landing design tokens — CSS mirror of landing-theme.ts.
+ * Hex lives in the TS module. This file only binds names.
+ * Components consume var(--rsd-*) via landing-mode.ts, never new hex.
+ */
+
+.landing-context,
+[data-landing-mode],
+:root {
+  --rsd-bg: #0a0a0b;
+  --rsd-panel: #121214;
+  --rsd-text: #f2eee6;
+  --rsd-muted: #9a9aa1;
+  --rsd-accent: #d6ad68;
+  --rsd-accent-soft: #e8c98a;
+  --rsd-accent-lite: #e4cfa2;
+  --rsd-btn-ink: #0a0a0b;
+  --rsd-line: rgba(214, 173, 104, 0.22);
+  --rsd-glow: 0 0 24px rgba(214, 173, 104, 0.28), 0 0 48px rgba(232, 201, 138, 0.12);
+  --rsd-veil: #0a0a0b;
+  --rsd-live: #20d69a;
+  --rsd-font-sans: 'Inter', system-ui, sans-serif;
+  --rsd-font-serif: 'Playfair Display', Georgia, 'Times New Roman', serif;
+  --rsd-font-mono: 'DM Mono', 'JetBrains Mono', ui-monospace, monospace;
+  --rsd-h1: clamp(2.5rem, 1.2rem + 4.2vw, 4.25rem);
+  --rsd-h2: clamp(1.8125rem, 1.15rem + 2.3vw, 2.75rem);
+  --rsd-body: clamp(1rem, 0.92rem + 0.35vw, 1.125rem);
+  --rsd-eyebrow: 0.75rem;
+  --rsd-radius-cta: 0.75rem;
+  --rsd-space-fold: min(100svh, 920px);
+}
+
+[data-landing-mode='cyan'] {
+  --rsd-accent: #22c3e6;
+  --rsd-accent-soft: #7fe3f5;
+  --rsd-accent-lite: #b7eef7;
+  --rsd-line: rgba(34, 195, 230, 0.28);
+  --rsd-glow: 0 0 24px rgba(34, 195, 230, 0.28), 0 0 48px rgba(34, 195, 230, 0.12);
+}

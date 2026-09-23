@@ -1,3 +1,5 @@
+@import "./landing-tokens.css";
+
 /**
  * Context-based theme CSS variables
  *
@@ -29,10 +31,10 @@
 
 /* Landing Context — public pages (MainLanding is dark/obsidian baseline due to design-lock) */
 .landing-context {
-  --context-accent: var(--cyan-400);
-  --context-bg: var(--obsidian-950);
-  --context-text: var(--titanium-100);
-  --context-secondary: var(--titanium-400);
+  --context-accent: var(--rsd-accent);
+  --context-bg: var(--rsd-bg);
+  --context-text: var(--rsd-text);
+  --context-secondary: var(--rsd-muted);
   --context-section-py: theme(padding.12);
   --context-section-gap: theme(gap.6);
   --context-card-p: theme(padding.6);
@@ -77,16 +79,16 @@
   }
 
   .landing-context {
-    --context-bg: white;
-    --context-text: var(--slate-900);
+    --context-bg: var(--rsd-bg);
+    --context-text: var(--rsd-text);
   }
 }
 
 /* Button hierarchy variables — Primary, Secondary, Tertiary */
 :root {
-  --button-primary-bg: var(--gold-500);
-  --button-primary-text: var(--obsidian-950);
-  --button-primary-hover: var(--gold-600);
+  --button-primary-bg: var(--rsd-accent);
+  --button-primary-text: var(--rsd-btn-ink);
+  --button-primary-hover: var(--rsd-accent-soft);
 
   --button-secondary-bg: var(--titanium-200);
   --button-secondary-text: var(--obsidian-950);
@@ -213,22 +215,8 @@
 .risk-low { color: var(--risk-low); }
 .risk-passed { color: var(--risk-passed); }
 
-/* ═══════════════════════════════════════════════════════════════
-   Dashboard-Palette: Slate-Dunkel (Freigabe 2026-08-23, Drei-Fragen-Regel §10)
-
-   Der Eigentümer hat das Fast-Schwarz (#0A0A0B) als unarbeitbar bewertet.
-   Freigegeben: Grundton Slate-Dunkel, Akzent bleibt Security-Blue, Umfang
-   NUR .dashboard-context — Landing (Design-Freeze) und Flow behalten die
-   Standard-Obsidian-Werte aus @theme in src/index.css.
-
-   Mechanik: Tailwind 4 kompiliert bg-obsidian-900 etc. zu
-   var(--color-obsidian-900). Diese scoped Overrides färben deshalb jede
-   Dashboard-Fläche um, ohne eine Komponente anzufassen. Die Leiter bleibt
-   monoton (950 = dunkelste Fläche), damit bestehende Kontrast-Beziehungen
-   (Panel auf Hintergrund, Hover, Hairlines) erhalten bleiben.
-   ═══════════════════════════════════════════════════════════════ */
+/* Dashboard-Palette: Slate-Dunkel (Freigabe 2026-08-23) */
 .dashboard-context {
-  /* Flächen: tiefes Blaugrau mit blauem Unterton — sichtbare Tiefenstaffelung */
   --color-obsidian-950: #0b1120;
   --color-obsidian-900: #0f172a;
   --color-obsidian-800: #1e293b;
@@ -241,9 +229,6 @@
   --color-obsidian-100: #cbd5e1;
   --color-obsidian-50:  #f1f5f9;
 
-  /* Schrift + Hairlines: kühles Grau passend zum Slate-Grundton.
-     titanium-800/900 sind Border-Töne — heller als zuvor, damit Panels
-     auf dem helleren Hintergrund weiterhin eine sichtbare Kante haben. */
   --color-titanium-50:  #f5f8fc;
   --color-titanium-100: #e6edf7;
   --color-titanium-200: #d3ddeb;
@@ -255,15 +240,9 @@
   --color-titanium-800: #324158;
   --color-titanium-900: #263349;
 
-  /* Die Basisfarben ohne Skalenstufe (definiert in src/index.css) müssen den
-     Scope-Overrides oben folgen, sonst setzt `bg-obsidian` im Dashboard das
-     Near-Black des Landing-Themes neben die blaustichigen Panels dieses
-     Kontexts. Werte identisch mit obsidian-900 und titanium-200 hier. */
   --color-obsidian: #0f172a;
   --color-titanium: #d3ddeb;
 
-  /* Command Center density — consumed by command-center-density.css.
-     Landing and SiteOS stay out of this graph. */
   --dash-title-size: 22px;
   --dash-title-size-sm: 28px;
   --dash-kpi-min-height: 120px;

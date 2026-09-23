@@ -1,4 +1,4 @@
-import { lazy, Suspense, type CSSProperties } from 'react';
+import { lazy, Suspense, useEffect, useState, type CSSProperties } from 'react';
 import { Link } from 'react-router-dom';
 import { useReducedMotion } from 'motion/react';
 import { tierById, type PricingTier } from '../../config/pricing';
@@ -60,7 +60,36 @@ function planChips(): PlanChip[] {
   ];
 }
 
+function useHeroGlobeActive() {
+  const [active, setActive] = useState(true);
+  useEffect(() => {
+    const hero = document.getElementById('product');
+    const sync = () => {
+      const visibleTab = document.visibilityState !== 'hidden';
+      setActive(visibleTab);
+    };
+    document.addEventListener('visibilitychange', sync);
+    let io: IntersectionObserver | null = null;
+    if (hero && 'IntersectionObserver' in window) {
+      io = new IntersectionObserver(
+        (entries) => {
+          const onScreen = entries.some((e) => e.isIntersecting);
+          setActive(document.visibilityState !== 'hidden' && onScreen);
+        },
+        { threshold: 0.08 },
+      );
+      io.observe(hero);
+    }
+    return () => {
+      document.removeEventListener('visibilitychange', sync);
+      io?.disconnect();
+    };
+  }, []);
+  return active;
+}
+
 function EuropeStage({ reducedMotion }: { reducedMotion: boolean }) {
+  const active = useHeroGlobeActive();
   return (
     <>
       <EuropeNetworkHero />
@@ -70,9 +99,10 @@ function EuropeStage({ reducedMotion }: { reducedMotion: boolean }) {
             className="pointer-events-none absolute inset-0"
             data-landing-earth="webgl"
             data-hero-visual="europe-day-night-3d"
+            data-globe-active={active ? 'true' : 'false'}
             aria-hidden="true"
           >
-            <HeroEarthBackdropScene reducedMotion={false} />
+            <HeroEarthBackdropScene reducedMotion={false} active={active} />
             <div
               className="absolute inset-0"
               style={{

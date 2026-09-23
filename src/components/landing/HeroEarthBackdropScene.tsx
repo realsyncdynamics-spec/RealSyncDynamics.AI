@@ -1,17 +1,18 @@
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Line } from '@react-three/drei';
-import { useEffect, useMemo, useRef, useState, type MutableRefObject } from 'react';
+import { useEffect, useMemo, useRef, type MutableRefObject } from 'react';
 import * as THREE from 'three';
 import { PhotorealEarthMesh } from '../visual/PhotorealEarthMesh';
 import { detectEarthQuality, type EarthQuality } from '../visual/earthTextures';
 import { sphereNodePosition } from '../governance-frontend/governance-sphere-nodes';
-import { SphereGeography } from '../governance-frontend/SphereGeography';
-import { PhaseMoon } from './PhaseMoon';
 
 export const LANDING_SUN_POSITION = new THREE.Vector3(-3.4, 0.55, -1.2);
 const EARTH_RADIUS = 1.55;
 const TERMINATOR_PERIOD_SEC = 56;
 const EUROPE_LIMB_ROTY = -1.58;
+/** Landing never pulls the 4K high tier — FCP + VRAM budget. */
+const LANDING_MAX_QUALITY: EarthQuality = 'medium';
+const VISIBLE_FRAME_MS = 50; // 20 fps terminator
 
 const EUROPE_NETWORK_HUBS: readonly { id: string; lat: number; lon: number }[] = [
   { id: 'berlin', lat: 52.52, lon: 13.41 },
@@ -26,35 +27,42 @@ const EUROPE_NETWORK_HUBS: readonly { id: string; lat: number; lon: number }[] =
   { id: 'stockholm', lat: 59.33, lon: 18.07 },
   { id: 'lisbon', lat: 38.72, lon: -9.14 },
   { id: 'athens', lat: 37.98, lon: 23.73 },
-  { id: 'dublin', lat: 53.35, lon: -6.26 },
-  { id: 'copenhagen', lat: 55.68, lon: 12.57 },
-  { id: 'prague', lat: 50.08, lon: 14.44 },
 ];
 
 const EUROPE_ROUTES: readonly [string, string][] = [
   ['london', 'paris'], ['paris', 'berlin'], ['brussels', 'amsterdam'],
-  ['berlin', 'warsaw'], ['berlin', 'vienna'], ['vienna', 'rome'],
-  ['paris', 'madrid'], ['madrid', 'lisbon'], ['amsterdam', 'copenhagen'],
-  ['copenhagen', 'stockholm'], ['berlin', 'prague'], ['rome', 'athens'],
-  ['london', 'dublin'], ['paris', 'rome'], ['brussels', 'berlin'],
-  ['warsaw', 'stockholm'], ['lisbon', 'london'], ['athens', 'vienna'],
+  ['berlin', 'warsaw'], ['vienna', 'rome'], ['paris', 'madrid'],
+  ['amsterdam', 'stockholm'], ['rome', 'athens'], ['london', 'lisbon'],
+  ['brussels', 'berlin'],
 ];
 
 function isAutomation(): boolean {
   return typeof navigator !== 'undefined' && Boolean(navigator.webdriver);
 }
 
-function LandingRenderLoop({ reducedMotion }: { reducedMotion: boolean }) {
+function landingQuality(reducedMotion: boolean): EarthQuality {
+  if (reducedMotion || isAutomation()) return 'low';
+  const raw = detectEarthQuality({ reducedMotion });
+  return raw === 'high' ? LANDING_MAX_QUALITY : raw;
+}
+
+function LandingRenderLoop({
+  reducedMotion,
+  active,
+}: {
+  reducedMotion: boolean;
+  active: boolean;
+}) {
   const { invalidate } = useThree();
   useEffect(() => {
-    if (reducedMotion) {
+    if (reducedMotion || !active) {
       invalidate();
       return;
     }
     let raf = 0;
     let last = 0;
     const tick = (now: number) => {
-      if (now - last >= 33) {
+      if (now - last >= VISIBLE_FRAME_MS) {
         last = now;
         invalidate();
       }
@@ -62,18 +70,17 @@ function LandingRenderLoop({ reducedMotion }: { reducedMotion: boolean }) {
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [invalidate, reducedMotion]);
+  }, [invalidate, reducedMotion, active]);
   return null;
 }
 
-function buildGreatCirclePoints(a: THREE.Vector3, b: THREE.Vector3, lift: number, segments = 36) {
+function buildGreatCirclePoints(a: THREE.Vector3, b: THREE.Vector3, lift: number, segments = 16) {
   const mid = a.clone().add(b).multiplyScalar(0.5).normalize().multiplyScalar(lift);
   const curve = new THREE.QuadraticBezierCurve3(a, mid, b);
   return Array.from({ length: segments + 1 }, (_, i) => curve.getPoint(i / segments));
 }
 
-function CyanEuropeNetwork({ radius, reducedMotion }: { radius: number; reducedMotion: boolean }) {
-  const group = useRef<THREE.Group>(null!);
+function CyanEuropeNetwork({ radius }: { radius: number }) {
   const hubs = useMemo(() => {
     const map = new Map<string, THREE.Vector3>();
     for (const h of EUROPE_NETWORK_HUBS) {
@@ -83,7 +90,7 @@ function CyanEuropeNetwork({ radius, reducedMotion }: { radius: number; reducedM
     return map;
   }, [radius]);
   const arcs = useMemo(() => {
-    const lift = radius * 1.08;
+    const lift = radius * 1.07;
     return EUROPE_ROUTES.flatMap(([from, to], idx) => {
       const a = hubs.get(from);
       const b = hubs.get(to);
@@ -91,25 +98,15 @@ function CyanEuropeNetwork({ radius, reducedMotion }: { radius: number; reducedM
       return [{ key: `${from}-${to}-${idx}`, points: buildGreatCirclePoints(a, b, lift) }];
     });
   }, [hubs, radius]);
-  useFrame(({ clock }) => {
-    if (!group.current || reducedMotion) return;
-    const t = clock.elapsedTime;
-    group.current.children.forEach((child, i) => {
-      const mat = (child as THREE.Object3D & { material?: THREE.Material }).material;
-      if (mat && 'opacity' in mat) {
-        (mat as THREE.Material & { opacity: number }).opacity = 0.28 + Math.sin(t * 0.7 + i * 0.14) * 0.1;
-      }
-    });
-  });
   return (
-    <group ref={group} raycast={() => null}>
+    <group raycast={() => null}>
       {arcs.map(({ key, points }) => (
-        <Line key={key} points={points} color="#7fe3f5" lineWidth={0.7} transparent opacity={0.38} depthWrite={false} toneMapped={false} />
+        <Line key={key} points={points} color="#7fe3f5" lineWidth={0.65} transparent opacity={0.34} depthWrite={false} toneMapped={false} />
       ))}
       {Array.from(hubs.entries()).map(([id, pos]) => (
         <mesh key={id} position={pos.toArray() as [number, number, number]} raycast={() => null}>
-          <sphereGeometry args={[0.01, 8, 8]} />
-          <meshBasicMaterial color="#e8f7fc" transparent opacity={0.7} depthWrite={false} toneMapped={false} />
+          <sphereGeometry args={[0.009, 6, 6]} />
+          <meshBasicMaterial color="#e8f7fc" transparent opacity={0.65} depthWrite={false} toneMapped={false} />
         </mesh>
       ))}
     </group>
@@ -117,22 +114,22 @@ function CyanEuropeNetwork({ radius, reducedMotion }: { radius: number; reducedM
 }
 
 function WalkingSun({
-  reducedMotion, sunDir, keyLight,
+  reducedMotion, sunDir, keyLight, active,
 }: {
   reducedMotion: boolean;
   sunDir: THREE.Vector3;
   keyLight: MutableRefObject<THREE.DirectionalLight | null>;
+  active: boolean;
 }) {
   useFrame(({ clock }) => {
-    if (reducedMotion) return;
+    if (reducedMotion || !active) return;
     const phase = (clock.elapsedTime / TERMINATOR_PERIOD_SEC) * Math.PI * 2;
     const az = -0.72 + Math.sin(phase) * 0.86;
     const el = 0.12 + Math.cos(phase) * 0.28;
     sunDir.set(Math.cos(az) * Math.cos(el), Math.sin(el), Math.sin(az) * Math.cos(el)).normalize();
     if (keyLight.current) {
       keyLight.current.position.copy(sunDir).multiplyScalar(9);
-      const day = Math.max(0, sunDir.y);
-      keyLight.current.intensity = 1.45 + day * 1.4;
+      keyLight.current.intensity = 1.45 + Math.max(0, sunDir.y) * 1.4;
     }
   });
   return null;
@@ -146,7 +143,6 @@ function SceneryEarth({
   quality: EarthQuality;
 }) {
   const wrap = useRef<THREE.Group>(null!);
-  const geoZoom = useRef({ zoom: 1.22 });
   useFrame(({ clock }) => {
     if (!wrap.current) return;
     const sway = reducedMotion ? 0 : Math.sin(clock.elapsedTime * 0.06) * 0.028;
@@ -155,7 +151,6 @@ function SceneryEarth({
   return (
     <group ref={wrap} position={[2.22, -0.36, -0.12]} scale={2.18} rotation={[0.18, 0, -0.02]}>
       <PhotorealEarthMesh
-        key={quality}
         radius={EARTH_RADIUS}
         autoRotate={false}
         reducedMotion={reducedMotion}
@@ -164,54 +159,43 @@ function SceneryEarth({
         palette="default"
         quality={quality}
       />
-      <SphereGeography zoomRef={geoZoom} earthRadius={EARTH_RADIUS} reducedMotion={reducedMotion} layers={['borders']} />
-      <CyanEuropeNetwork radius={EARTH_RADIUS} reducedMotion={reducedMotion} />
+      <CyanEuropeNetwork radius={EARTH_RADIUS} />
     </group>
   );
 }
 
 function CameraLock() {
   const { camera } = useThree();
-  const base = useMemo(() => new THREE.Vector3(-0.48, 0.1, 3.35), []);
-  useFrame(() => {
-    camera.position.copy(base);
-    camera.lookAt(1.72, -0.2, 0);
-  });
-  return null;
-}
-
-function useProgressiveEarthQuality(reducedMotion: boolean): EarthQuality {
-  const [quality, setQuality] = useState<EarthQuality>(() => (reducedMotion ? 'low' : 'medium'));
   useEffect(() => {
-    if (reducedMotion || isAutomation()) return;
-    const target = detectEarthQuality({ reducedMotion });
-    if (target !== 'high') {
-      setQuality(target);
-      return;
-    }
-    const delay = window.setTimeout(() => setQuality('high'), 1600);
-    return () => window.clearTimeout(delay);
-  }, [reducedMotion]);
-  return quality;
+    camera.position.set(-0.48, 0.1, 3.35);
+    camera.lookAt(1.72, -0.2, 0);
+  }, [camera]);
+  return null;
 }
 
 export interface HeroEarthBackdropSceneProps {
   reducedMotion?: boolean;
+  /** Pause the demand loop when the hero is off-screen or the tab is hidden. */
+  active?: boolean;
 }
 
-export function HeroEarthBackdropScene({ reducedMotion = false }: HeroEarthBackdropSceneProps) {
+export function HeroEarthBackdropScene({
+  reducedMotion = false,
+  active = true,
+}: HeroEarthBackdropSceneProps) {
   const sunDir = useMemo(() => LANDING_SUN_POSITION.clone().normalize(), []);
   const keyLight = useRef<THREE.DirectionalLight | null>(null);
-  const quality = useProgressiveEarthQuality(reducedMotion);
-  const maxDpr = reducedMotion || isAutomation() ? 1 : quality === 'high' ? 1.7 : 1.35;
+  const quality = useMemo(() => landingQuality(reducedMotion), [reducedMotion]);
+  const maxDpr = reducedMotion || isAutomation() || quality === 'low' ? 1 : 1.25;
+
   return (
     <Canvas
       className="h-full w-full"
       camera={{ position: [-0.48, 0.1, 3.35], fov: 30 }}
       gl={{
         alpha: true,
-        antialias: !isAutomation(),
-        powerPreference: isAutomation() ? 'low-power' : 'high-performance',
+        antialias: quality !== 'low' && !isAutomation(),
+        powerPreference: 'low-power',
         toneMapping: THREE.ACESFilmicToneMapping,
         outputColorSpace: THREE.SRGBColorSpace,
       }}
@@ -227,13 +211,11 @@ export function HeroEarthBackdropScene({ reducedMotion = false }: HeroEarthBackd
         gl.setClearColor(0x000000, 0);
       }}
     >
-      <LandingRenderLoop reducedMotion={reducedMotion} />
-      <WalkingSun reducedMotion={reducedMotion} sunDir={sunDir} keyLight={keyLight} />
+      <LandingRenderLoop reducedMotion={reducedMotion} active={active} />
+      <WalkingSun reducedMotion={reducedMotion} sunDir={sunDir} keyLight={keyLight} active={active} />
       <ambientLight intensity={0.12} color="#8aa4b8" />
       <directionalLight ref={keyLight} position={[LANDING_SUN_POSITION.x, LANDING_SUN_POSITION.y, LANDING_SUN_POSITION.z]} intensity={2.35} color="#fff4e2" />
-      <directionalLight position={[2.8, 0.4, 1.2]} intensity={0.18} color="#7ec8e3" />
       <CameraLock />
-      <PhaseMoon reducedMotion={reducedMotion} sunDir={sunDir} />
       <SceneryEarth reducedMotion={reducedMotion} sunDir={sunDir} quality={quality} />
     </Canvas>
   );

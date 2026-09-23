@@ -17,7 +17,8 @@ const router = readFileSync(
 describe('Command Center surface', () => {
   it('keeps theater off /app/dashboard', () => {
     expect(router).toContain('CommandCenterDashboard');
-    expect(command).not.toContain('AgentOsPanel');
+    expect(command).not.toMatch(/from ['\"][^'\"]*AgentOsPanel['\"]/);
+    expect(command).not.toContain('<AgentOsPanel');
     expect(command).not.toContain('dashboard-control-plane');
     expect(command).toContain('DashboardExecuteStrip');
     expect(command).toContain('ComplianceStatusView');

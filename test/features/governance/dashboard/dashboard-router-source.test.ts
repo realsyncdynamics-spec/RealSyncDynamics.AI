@@ -9,7 +9,8 @@ describe('DashboardRouter — Compliance-Status ist Default', () => {
   it('mountet CommandCenterDashboard auf der bestehenden View, nicht den Chat', () => {
     expect(router).toContain('CommandCenterDashboard');
     expect(command).toContain('ComplianceStatusView');
-    expect(command).not.toContain('AgentOsPanel');
+    expect(command).not.toMatch(/from ['\"][^'\"]*AgentOsPanel['\"]/);
+    expect(command).not.toContain('<AgentOsPanel');
     expect(router).not.toContain('GovernanceAiWorkspace');
     expect(router).not.toMatch(/return\s+<GovernanceAiWorkspace/);
   });

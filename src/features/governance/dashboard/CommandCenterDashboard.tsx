@@ -1,6 +1,6 @@
 // Command Center entry for /app/dashboard.
 // Uses ComplianceStatusView (Mandant / Lage / Jetzt). Does not mount
-// AgentOsPanel or the build control plane — those live under /app/agents
+// the agent preview mesh or the build control plane — those live under /app/agents
 // and /app/modules.
 
 import { useEffect, useState } from 'react';

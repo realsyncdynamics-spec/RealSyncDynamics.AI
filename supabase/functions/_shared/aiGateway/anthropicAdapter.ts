@@ -37,6 +37,54 @@ interface AnthropicMessagesResponse {
   error?: { type?: string; message?: string };
 }
 
+/**
+ * Anthropic removed the sampling parameters (`temperature`, `top_p`, `top_k`)
+ * with the Claude 4.7 generation. Both directions of getting this wrong are
+ * real defects:
+ *
+ *   - sending one to a model that removed it fails the whole request with
+ *     HTTP 400 invalid_request_error;
+ *   - omitting one where it is still supported silently discards the
+ *     caller's intent — notably the `temperature: 0` that `extractJson()`
+ *     sets to keep JSON extraction deterministic.
+ *
+ * So this is an explicit version check, not a `claude-*-4` prefix heuristic.
+ *
+ *   sampling supported : Opus 4.6/4.5/4.1/4, Sonnet 4.6/4.5, Haiku 4.5,
+ *                        and the whole pre-4 line (claude-3*, claude-2*).
+ *   sampling removed   : Opus 4.7 and newer, Sonnet 5, Opus 5,
+ *                        Fable 5/5.1, Mythos 5/5.1.
+ *
+ * Unrecognised ids default to "removed". Anthropic has removed sampling in
+ * every generation since 4.7, so an unknown id is far likelier to reject the
+ * parameter than to need it — and the costs are asymmetric: guessing wrong
+ * here loses a default sampling temperature, guessing wrong the other way
+ * loses the entire request.
+ */
+export function supportsSamplingParams(model: string): boolean {
+  const id = model.trim().toLowerCase();
+
+  // Pre-4 ids put the version before the family (claude-3-5-sonnet-20241022,
+  // claude-3.5-sonnet, claude-2.1) and all predate the removal.
+  if (/^claude-\d/.test(id)) return true;
+  if (id.startsWith('claude-instant')) return true;
+
+  // The minor group takes at most two digits and must not be followed by
+  // another one, so an 8-digit date suffix is not read as a minor version:
+  // claude-sonnet-4-20250514 is Sonnet 4, not Sonnet 4.20250514.
+  const m = /^claude-(opus|sonnet|haiku|fable|mythos)-(\d+)(?:[-.](\d{1,2})(?!\d))?/.exec(id);
+  if (!m) return false;
+
+  const [, family, majorRaw, minorRaw] = m;
+  // Fable and Mythos exist only from the 5 generation onward.
+  if (family === 'fable' || family === 'mythos') return false;
+
+  const major = Number(majorRaw);
+  const minor = minorRaw === undefined ? 0 : Number(minorRaw);
+  if (major !== 4) return major < 4;
+  return minor < 7;
+}
+
 export class AnthropicAdapter implements AiProviderAdapter {
   readonly id = 'anthropic' as const;
   private readonly fetchImpl: typeof fetch;
@@ -195,8 +243,10 @@ export class AnthropicAdapter implements AiProviderAdapter {
         },
       ];
     }
-    // Anthropic deprecated `temperature` for Claude 4.x+ models.
-    if (!/^claude-(opus|sonnet|haiku)-4/.test(this.config.model)) {
+    // Sampling params are version-gated — see supportsSamplingParams().
+    // On models that removed them, JSON determinism rests on the prompt
+    // instruction extractJson() adds, because temperature cannot be sent.
+    if (supportsSamplingParams(this.config.model)) {
       body.temperature = request.temperature ?? 0.2;
     }
     return body;

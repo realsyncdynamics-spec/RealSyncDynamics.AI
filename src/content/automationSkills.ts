@@ -1,9 +1,20 @@
-// Automatisierungs-Skills (Self-Service-Modul · Phase 1).
+// Automatisierungs-Skills (Self-Service-Modul).
 //
-// REINE KONFIGURATION — keine Engine, keine DB. Jeder Skill ist ein
-// vordefinierter Workflow, der in der UI als "Wählen. Aktivieren. Nutzen."
-// dargestellt wird. CTAs verlinken auf BEREITS VORHANDENE Routen — Phase 1
-// fuehrt keine echten Backend-Runs aus (siehe docs/product/automation-skills.md).
+// DIESE DATEI ist reine Konfiguration: Titel, Kategorie, Tarifstufe, CTA-Ziel.
+// Sie beschreibt den Katalog, nicht die Ausfuehrung.
+//
+// Sie sagt NICHTS darueber, ob es eine Engine gibt. Ein frueherer Kommentar an
+// dieser Stelle behauptete "keine Engine, keine DB" — das stimmt seit
+// Migration 20260614100000_automation_skills.sql nicht mehr: automation_skills,
+// automation_runs, automation_run_events und automation_outputs existieren,
+// ebenso die Edge Functions automation-trigger und automation-callback samt
+// Entitlement-Gate und Verbrauchszaehler. Der veraltete Satz ist in ein
+// Inventar uebernommen und dort zur Falschaussage geworden; der tatsaechliche
+// Stand des Ausfuehrungspfads steht darum genau an einer Stelle:
+// scripts/dashboard-actions.json, Eintrag "automation.run".
+//
+// Ausgefuehrt wird nur, was in AutomationSkillCard.tsx unter DIRECT_RUN_SKILLS
+// steht. Alle uebrigen CTAs verlinken auf bereits vorhandene Routen.
 
 import type { TierId } from '../config/pricing';
 

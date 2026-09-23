@@ -40,7 +40,7 @@ export interface ImplementationItem {
 }
 
 /** Bump when statuses are re-measured. */
-export const IMPLEMENTATION_MEASURED_AT = '2026-09-12';
+export const IMPLEMENTATION_MEASURED_AT = '2026-09-18';
 
 export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
   {
@@ -49,13 +49,14 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     status: 'live',
     group: 'surface',
     description:
-      'Europe-OS Hero — bundler structure SSOT (Dark/Gold): kicker 01·AI GOVERNANCE·EU-CENTRAL; H1 AI Compliance / Operations OS for / gold Europe; DISCOVER loop; lede + EU line; Free Audit + Live Dashboard; proof chips (labels only); night-Europe limb + gold network; header Produkt · Evidence · Preise · Login. No cyan, no fake KPIs, Assistent off `/`.',
+      'Replit Dark/Gold Europe-network SSOT: H1 AI Compliance / Operations OS / für Europa.; Free Audit + Live Evidence; static Europe network (not interactive sphere); trust chips; demo KPI strip; Das Betriebssystem Discover→Prove. Header REALSYNCDYNAMICS.AI · Produkt · Evidence · Preise. No cyan.',
     route: '/',
     evidence: [
       'src/pages/MainLanding.tsx',
       'src/components/governance-frontend/hero-content.ts',
-      'src/components/landing/HeroEarthBackdrop.tsx',
-      'test/landing/platform-capabilities.test.ts',
+      'src/components/landing/EuropeNetworkHero.tsx',
+      'test/landing/dual-theme.test.ts',
+      'test/product/implementation-status.test.ts',
     ],
     showOnRoadmap: false,
   },
@@ -336,18 +337,21 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
   {
     id: 'stripe-checkout-e2e',
     name: 'Stripe Checkout E2E',
-    status: 'preview',
+    status: 'live',
     group: 'billing',
     description:
-      'Checkout-Seiten + stripe-checkout/webhook/portal verdrahtet; E2E production-ready erst nach Vault-Secrets (STRIPE_*, Webhook).',
+      'Checkout/Webhook/Portal verdrahtet; Vault Stripe-Secrets provisioniert; Self-Service monatlich für starter/growth/agency; Jahresabrechnung Coming Soon; Enterprise per Anfrage.',
     route: '/checkout/starter',
     evidence: [
       'src/features/billing/CheckoutPage.tsx',
       'supabase/functions/stripe-checkout',
+      'supabase/functions/stripe-webhook',
+      'supabase/functions/stripe-portal',
+      'supabase/migrations/20260913000000_stripe_live_catalog_tax_inclusive_price_ids.sql',
       'test/billing/checkoutPage.test.tsx',
       'PR #1327',
     ],
-    showOnRoadmap: true,
+    showOnRoadmap: false,
   },
   {
     id: 'governance-activation',

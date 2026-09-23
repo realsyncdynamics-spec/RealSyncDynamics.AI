@@ -382,7 +382,7 @@ export function Welcome() {
                           isCompleted
                             ? 'border-brass-500 bg-brass-500 text-obsidian-950'
                             : isCurrent
-                              ? 'border-ai-cyan-500 bg-ai-cyan-500/15 text-ai-cyan-300'
+                              ? 'border-[#e4cfa2] bg-[#e4cfa2]/15 text-[#e4cfa2]'
                               : 'border-titanium-800 text-titanium-500'
                         }`}
                       >
@@ -426,7 +426,7 @@ export function Welcome() {
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="vorname.name@firma.de"
-                        className="mt-2 w-full rounded-none border border-titanium-800 bg-obsidian-900 px-4 py-3 text-sm text-titanium-50 outline-none placeholder:text-titanium-600 focus:border-ai-cyan-500"
+                        className="mt-2 w-full rounded-none border border-titanium-800 bg-obsidian-900 px-4 py-3 text-sm text-titanium-50 outline-none placeholder:text-titanium-600 focus:border-[#e4cfa2]"
                       />
                     </div>
                     <div>
@@ -438,7 +438,7 @@ export function Welcome() {
                         value={name}
                         onChange={(e) => setName(e.target.value)}
                         placeholder="Vor- + Nachname"
-                        className="mt-2 w-full rounded-none border border-titanium-800 bg-obsidian-900 px-4 py-3 text-sm text-titanium-50 outline-none placeholder:text-titanium-600 focus:border-ai-cyan-500"
+                        className="mt-2 w-full rounded-none border border-titanium-800 bg-obsidian-900 px-4 py-3 text-sm text-titanium-50 outline-none placeholder:text-titanium-600 focus:border-[#e4cfa2]"
                       />
                     </div>
                     <button
@@ -573,7 +573,7 @@ export function Welcome() {
                         value={domain}
                         onChange={(e) => setDomain(e.target.value)}
                         placeholder="https://example.com"
-                        className="w-full rounded-none border border-titanium-800 bg-obsidian-900 px-4 py-3 text-sm text-titanium-50 outline-none placeholder:text-titanium-600 focus:border-ai-cyan-500"
+                        className="w-full rounded-none border border-titanium-800 bg-obsidian-900 px-4 py-3 text-sm text-titanium-50 outline-none placeholder:text-titanium-600 focus:border-[#e4cfa2]"
                       />
                       <button
                         onClick={submitAuditDomain}

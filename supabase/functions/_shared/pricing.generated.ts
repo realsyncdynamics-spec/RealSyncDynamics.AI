@@ -747,9 +747,9 @@ export const PLANS: Plan[] = [
   },
 
   // ── Agency — 699 € ──────────────────────────────────────────────────────
-  // Wieder im Self-Service (Dominik-Landing-Referenz 2026-09): Stripe-Price
-  // `price_1TfsV9REjTWueUcGxJIBHYgC` ist in products verdrahtet (Migration
-  // 20260624000001). Partner bleibt legacy.
+  // Wieder im Self-Service (Dominik-Landing-Referenz 2026-09): Live catalog
+  // via public.products.default_for_plan_key → price_1UEm* (#1362). Partner bleibt
+  // legacy. Never hardcode inactive TfsV price IDs in checkout.
   {
     id: 'agency',
     planKey: 'agency',
@@ -838,9 +838,8 @@ export const PLANS: Plan[] = [
   },
 
   // ── Enterprise — Preis auf Anfrage ──────────────────────────────────────
-  // Live Stripe Price `price_1TxLdLREjTWueUcGRaXie8Vs` existiert
-  // (prod_UxG9V9clbqV7qw) und ist in public.products verdrahtet — aber nur
-  // für Katalog / Bestand / manueller Rechnungslauf. Self-Service-Checkout
+  // Live Stripe Price exists in public.products (UEm catalog, #1362) — but only
+  // for Katalog / Bestand / manueller Rechnungslauf. Self-Service-Checkout
   // bleibt gesperrt: inquiry + priceOnRequest + ENTERPRISE_SELF_SERVICE_BLOCKED.
   {
     id: 'enterprise',
@@ -1102,6 +1101,66 @@ export const PLANS: Plan[] = [
       multi_tenant_reseller: [],
     },
     trialDays: 0,
+  },
+];
+
+// ─────────────────────────────────────────────────────────────────────────
+//  Runtime Credits — Shadow-Rating-Vertrag (noch NICHT verkäuflich)
+// ─────────────────────────────────────────────────────────────────────────
+
+/**
+ * Runtime Credits sind eine normalisierte Einheit für governed AI capacity.
+ * Sie sind ausdrücklich KEIN Euro-Guthaben und KEINE Provider-Token-Einheit.
+ *
+ * Die Reihenfolge bleibt: tatsächlicher Burn messen → Included festlegen →
+ * Packgröße → Preis → Margin-Floor. Bis dahin gibt es keine verkaufbare SKU.
+ */
+export type RuntimeClass =
+  | 'c0_local'
+  | 'c1_standard'
+  | 'c2_agent'
+  | 'c3_page_builder'
+  | 'c4_app_builder';
+
+export type ExecutionZone =
+  | 'device_local'
+  | 'eu_private'
+  | 'governed_cloud';
+
+export type RuntimeCreditPackAvailability = 'internal' | 'self_service' | 'contract';
+
+export interface RuntimeCreditRating {
+  runtimeClass: RuntimeClass;
+  executionZone: ExecutionZone;
+  /** Null bis echte Burn-Daten eine belastbare Kalibrierung erlauben. */
+  shadowCreditEstimate: number | null;
+  /** Phase 1 misst nur. Ein Wallet darf in diesem Schnitt nichts blockieren. */
+  walletEnforced: false;
+  /** Kein Kundenentgelt im Shadow-Modus. Credits sind keine Währung. */
+  customerCharge: 0;
+}
+
+export interface RuntimeCreditPack {
+  id: string;
+  label: string;
+  /** Null = Packgröße absichtlich noch nicht kalibriert. */
+  credits: number | null;
+  /** Muss 0 bleiben, solange availability='internal'. */
+  priceEur: number;
+  availability: RuntimeCreditPackAvailability;
+}
+
+/**
+ * Absichtlicher Nicht-Verkaufs-Stub. Er erzeugt weder Stripe-Produkte noch
+ * Entitlements und wird von ADDONS/PLANS nicht referenziert.
+ */
+export const RUNTIME_CREDIT_PACK_STUBS: readonly RuntimeCreditPack[] = [
+  {
+    id: 'runtime_credits_uncalibrated',
+    label: 'Runtime Credits · Calibration',
+    credits: null,
+    priceEur: 0,
+    availability: 'internal',
   },
 ];
 

@@ -48,7 +48,7 @@ const GROUPS: LandingGroup[] = [
     title: 'Haupt- & Marketing-Landings',
     Icon: Home,
     entries: [
-      { path: '/', title: 'MainLanding', description: 'Unternehmenshauptseite (Earth-at-Night Hero).', badge: 'Design-Lock' },
+      { path: '/', title: 'The Governance AI', description: 'Produktive Unternehmenshauptseite: Governance OS mit Audit-, Auth-, Pricing- und App-Handoff.', badge: 'Live' },
       { path: '/landing', title: 'Landing', description: 'Klassische Marketing-Landing.' },
       { path: '/aetheros', title: 'AetherOS', description: '3D-Konzept-Landing.' },
       { path: '/realsync-landing', title: 'RealSyncDynamics', description: 'Marken-Landing RealSyncDynamics.AI.' },
@@ -119,6 +119,7 @@ const GROUPS: LandingGroup[] = [
       { path: '/borlabs-alternative', title: 'Borlabs-Alternative', description: 'Vergleich vs. Borlabs.' },
       { path: '/cookiebot-alternative', title: 'Cookiebot-Alternative', description: 'Vergleich vs. Cookiebot.' },
       { path: '/proliance-alternative', title: 'Proliance-Alternative', description: 'Vergleich vs. Proliance.' },
+      { path: '/caralegal-alternative', title: 'caralegal-Alternative', description: 'Kategorie-Abgrenzung DSMS vs. Governance Runtime.' },
       { path: '/iubenda-alternative', title: 'Iubenda-Alternative', description: 'Vergleich vs. Iubenda.' },
     ],
   },

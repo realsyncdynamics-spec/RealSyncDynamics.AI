@@ -1,9 +1,13 @@
-import { useMemo } from 'react';
-import { Users, CreditCard, Key, AlertCircle } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { Users, CreditCard, Key, AlertCircle, Loader2 } from 'lucide-react';
 import { SovereignButton } from '../../../components/ui/SovereignButton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../../components/ui/Card';
 import { useTenant } from '../../../core/access/TenantProvider';
+import { getSupabase } from '../../../lib/supabase';
 import { AdminLayout } from '../layouts/AdminLayout';
+import { ComplianceKpiRow } from '../compliance/ComplianceKpiRow';
+import { EMPTY_COMPLIANCE_KPI, type ComplianceKpiSnapshot } from '../compliance/complianceTypes';
+import { loadComplianceKpiForTenant } from '../compliance/loadComplianceGovernance';
 
 export function AdminDashboard() {
   const { tenants, activeTenantId } = useTenant();
@@ -11,6 +15,28 @@ export function AdminDashboard() {
     () => tenants.find(t => t.tenantId === activeTenantId),
     [tenants, activeTenantId]
   );
+  const [compliance, setCompliance] = useState<ComplianceKpiSnapshot>(EMPTY_COMPLIANCE_KPI);
+  const [complianceLoading, setComplianceLoading] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!activeTenantId) {
+      setCompliance(EMPTY_COMPLIANCE_KPI);
+      return;
+    }
+    setComplianceLoading(true);
+    loadComplianceKpiForTenant(getSupabase(), activeTenantId)
+      .then((kpi) => {
+        if (!cancelled) setCompliance(kpi);
+      })
+      .catch(() => {
+        if (!cancelled) setCompliance(EMPTY_COMPLIANCE_KPI);
+      })
+      .finally(() => {
+        if (!cancelled) setComplianceLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [activeTenantId]);
 
   if (!activeTenantId || !activeTenant) {
     return (
@@ -39,6 +65,24 @@ export function AdminDashboard() {
           <p className="text-titanium-400">
             Verwalten Sie Ihr Workspace, Team, Abrechnung und Einstellungen.
           </p>
+        </div>
+
+        {/* Compliance KPI row — first view (Prio-1 Expand) */}
+        <div>
+          <div className="flex items-baseline justify-between gap-3 mb-3">
+            <div>
+              <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-titanium-500">
+                compliance_kpi_row
+              </p>
+              <h2 className="font-display font-bold text-lg text-titanium-50">Compliance</h2>
+            </div>
+            {complianceLoading && (
+              <span className="inline-flex items-center gap-1.5 text-xs text-titanium-500">
+                <Loader2 className="h-3.5 w-3.5 animate-spin" /> Laden
+              </span>
+            )}
+          </div>
+          <ComplianceKpiRow compliance={compliance} />
         </div>
 
         {/* Quick Stats */}

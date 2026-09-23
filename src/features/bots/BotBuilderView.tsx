@@ -6,7 +6,7 @@ import { useTenant } from '../../core/access/TenantProvider';
 import { Button } from '../../enterprise-os/components/Button';
 import { Card, CardHeader, CardBody } from '../../enterprise-os/components/Card';
 import { getBot, updateBot, deleteBot } from './api';
-import type { Bot, BotChannel } from './types';
+import type { Bot, BotChannel, BotVertical, RestaurantBotConfig, RestaurantMenuItem } from './types';
 
 /** /app/bots/:botId — Bot-Builder: Persona, Kanal, Fähigkeiten, Integration. */
 export function BotBuilderView() {
@@ -44,6 +44,63 @@ function BotBuilderInner() {
     setBot((prev) => (prev ? { ...prev, [key]: value } : prev));
   }
 
+  function setVertical(vertical: BotVertical) {
+    setBot((prev) => prev ? {
+      ...prev,
+      config: {
+        ...prev.config,
+        vertical,
+        ...(vertical === 'restaurant' ? { restaurant: prev.config.restaurant ?? {} } : {}),
+      },
+    } : prev);
+  }
+
+  function patchRestaurant<K extends keyof RestaurantBotConfig>(key: K, value: RestaurantBotConfig[K]) {
+    setBot((prev) => prev ? {
+      ...prev,
+      config: {
+        ...prev.config,
+        vertical: 'restaurant',
+        restaurant: {
+          ...(prev.config.restaurant ?? {}),
+          [key]: value,
+        },
+      },
+    } : prev);
+  }
+
+  function optionalNumber(value: string): number | undefined {
+    if (!value.trim()) return undefined;
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : undefined;
+  }
+
+  function addRestaurantMenuItem() {
+    const item: RestaurantMenuItem = {
+      id: crypto.randomUUID(),
+      name: '',
+      price: 0,
+      available: true,
+    };
+    patchRestaurant('menu', [...(bot?.config.restaurant?.menu ?? []), item]);
+  }
+
+  function patchRestaurantMenuItem(id: string, patchValue: Partial<RestaurantMenuItem>) {
+    patchRestaurant(
+      'menu',
+      (bot?.config.restaurant?.menu ?? []).map((item) =>
+        item.id === id ? { ...item, ...patchValue } : item,
+      ),
+    );
+  }
+
+  function removeRestaurantMenuItem(id: string) {
+    patchRestaurant(
+      'menu',
+      (bot?.config.restaurant?.menu ?? []).filter((item) => item.id !== id),
+    );
+  }
+
   async function handleSave() {
     if (!activeTenantId || !bot) return;
     setSaving(true); setError(null);
@@ -55,6 +112,7 @@ function BotBuilderInner() {
         persona: bot.persona,
         greeting: bot.greeting,
         capabilities: bot.capabilities,
+        config: bot.config,
         enabled: bot.enabled,
       });
       setBot(updated);
@@ -131,6 +189,173 @@ function BotBuilderInner() {
                   <input type="checkbox" checked={bot.enabled} onChange={(e) => patch('enabled', e.target.checked)} />
                   Bot aktiv (liefert Antworten aus)
                 </label>
+              </CardBody>
+            </Card>
+
+            <Card>
+              <CardHeader
+                title="Branchenprofil"
+                eyebrow="Vertical"
+                subtitle="Erweitert denselben RealSync-Bot — keine separate App und kein zweites Bot-System."
+              />
+              <CardBody className="space-y-4">
+                <div>
+                  <label className={label}>Branche</label>
+                  <select
+                    className={input}
+                    value={bot.config.vertical ?? 'general'}
+                    onChange={(e) => setVertical(e.target.value as BotVertical)}
+                  >
+                    <option value="general">Allgemein</option>
+                    <option value="restaurant">Restaurant / Pizza-Service</option>
+                  </select>
+                </div>
+
+                {(bot.config.vertical ?? 'general') === 'restaurant' && (
+                  <div className="space-y-4 border-t border-titanium-800 pt-4">
+                    <div>
+                      <label className={label}>Restaurantname</label>
+                      <input
+                        className={input}
+                        value={bot.config.restaurant?.business_name ?? ''}
+                        onChange={(e) => patchRestaurant('business_name', e.target.value || undefined)}
+                        placeholder="z.B. Pizzeria Bella Napoli"
+                      />
+                    </div>
+
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div>
+                        <label className={label}>Bestellmodus</label>
+                        <select
+                          className={input}
+                          value={bot.config.restaurant?.order_mode ?? 'both'}
+                          onChange={(e) => patchRestaurant('order_mode', e.target.value as RestaurantBotConfig['order_mode'])}
+                        >
+                          <option value="both">Lieferung &amp; Abholung</option>
+                          <option value="delivery">Nur Lieferung</option>
+                          <option value="pickup">Nur Abholung</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className={label}>Währung</label>
+                        <input
+                          className={input}
+                          value={bot.config.restaurant?.currency ?? 'EUR'}
+                          maxLength={3}
+                          onChange={(e) => patchRestaurant('currency', e.target.value.toUpperCase().slice(0, 3) || undefined)}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid gap-4 sm:grid-cols-3">
+                      <div>
+                        <label className={label}>Mindestbestellwert</label>
+                        <input
+                          className={input}
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={bot.config.restaurant?.minimum_order ?? ''}
+                          onChange={(e) => patchRestaurant('minimum_order', optionalNumber(e.target.value))}
+                          placeholder="z.B. 15"
+                        />
+                      </div>
+                      <div>
+                        <label className={label}>Liefergebühr</label>
+                        <input
+                          className={input}
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={bot.config.restaurant?.delivery_fee ?? ''}
+                          onChange={(e) => patchRestaurant('delivery_fee', optionalNumber(e.target.value))}
+                          placeholder="z.B. 2.50"
+                        />
+                      </div>
+                      <div>
+                        <label className={label}>Lieferzeit Richtwert</label>
+                        <input
+                          className={input}
+                          type="number"
+                          min="1"
+                          step="1"
+                          value={bot.config.restaurant?.estimated_delivery_minutes ?? ''}
+                          onChange={(e) => patchRestaurant('estimated_delivery_minutes', optionalNumber(e.target.value))}
+                          placeholder="Minuten"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-3 border-t border-titanium-800 pt-4">
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <p className={label}>Speisekarte</p>
+                          <p className="text-xs text-titanium-500">
+                            Diese Einträge sind die serverseitige Preis- und Verfügbarkeitsquelle für den Restaurant-Bot.
+                          </p>
+                        </div>
+                        <Button type="button" variant="secondary" size="sm" onClick={addRestaurantMenuItem}>
+                          Menüeintrag hinzufügen
+                        </Button>
+                      </div>
+
+                      {(bot.config.restaurant?.menu ?? []).length === 0 ? (
+                        <div className="border border-titanium-800 px-3 py-3 text-xs text-titanium-500">
+                          Noch keine Produkte hinterlegt. Ohne Menü nimmt der Restaurant-Bot keine verbindliche Bestellung an.
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          {(bot.config.restaurant?.menu ?? []).map((item) => (
+                            <div key={item.id} className="grid gap-2 border border-titanium-800 p-3 sm:grid-cols-[1fr_8rem_auto_auto] sm:items-end">
+                              <div>
+                                <label className={label}>Produkt</label>
+                                <input
+                                  className={input}
+                                  value={item.name}
+                                  onChange={(e) => patchRestaurantMenuItem(item.id, { name: e.target.value })}
+                                  placeholder="z.B. Pizza Salami groß"
+                                />
+                              </div>
+                              <div>
+                                <label className={label}>Preis</label>
+                                <input
+                                  className={input}
+                                  type="number"
+                                  min="0"
+                                  step="0.01"
+                                  value={item.price}
+                                  onChange={(e) => patchRestaurantMenuItem(item.id, { price: optionalNumber(e.target.value) ?? 0 })}
+                                />
+                              </div>
+                              <label className="flex items-center gap-2 pb-2 text-xs text-titanium-300">
+                                <input
+                                  type="checkbox"
+                                  checked={item.available !== false}
+                                  onChange={(e) => patchRestaurantMenuItem(item.id, { available: e.target.checked })}
+                                />
+                                verfügbar
+                              </label>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => removeRestaurantMenuItem(item.id)}
+                              >
+                                Entfernen
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="border border-security-500/25 bg-security-500/5 px-3 py-2 text-xs text-titanium-400">
+                      Preise, Verfügbarkeit, Liefergebühr und Mindestbestellwert werden bei Restaurant-Bestellungen
+                      aus dieser gespeicherten Bot-Konfiguration auf dem Server aufgelöst. Vom Aufrufer mitgesendete
+                      Preisfelder werden nicht als Preisautorität akzeptiert.
+                    </div>
+                  </div>
+                )}
               </CardBody>
             </Card>
 

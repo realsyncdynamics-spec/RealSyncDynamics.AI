@@ -1,14 +1,12 @@
 /**
- * Production landing. Earth hero comes from HeroEarthBackdrop so night lights,
- * Europe framing and the terminator/moon rig actually mount on `/`.
+ * Gold Europe landing, connected to the existing audit, auth and billing routes.
  */
 import { type PointerEvent as ReactPointerEvent } from 'react';
 import '../../styles/governance-landing-polish.css';
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import { SEOHead } from '../../components/SEOHead';
-import { HeroEarthBackdrop } from '../../components/landing/HeroEarthBackdrop';
-import { GovernanceAiHero } from '../../components/landing/GovernanceAiHero';
+import { HeroTitanium } from '../../components/landing/HeroTitanium';
 import { GovernanceStatusBar } from '../../components/landing/GovernanceStatusBar';
 import { GovernanceLoopBand } from '../../components/landing/GovernanceLoopBand';
 import { GovernanceFooter } from '../../components/landing/GovernanceFooter';
@@ -48,26 +46,23 @@ function trackCardSheen(event: ReactPointerEvent<HTMLDivElement>) {
 export function DesignGovernanceAiLanding() {
   return (
     <div
-      className="ga-context relative min-h-screen antialiased"
+      data-landing-mode="gold"
+      className="ga-context ga-gold-reference relative min-h-screen antialiased"
       style={{ backgroundColor: 'var(--ga-void)', color: 'var(--ga-text)' }}
       onPointerMove={trackCardSheen}
     >
       <SEOHead
-        title="RealSyncDynamics.AI — Das OS für den sicheren Einsatz von KI im Unternehmen"
+        title="RealSyncDynamics.AI — AI Compliance Operations OS for Europe"
         description="EU AI Act, DSGVO, ISO 42001 und interne Richtlinien in einer kontinuierlichen Governance-Schicht über KI-Systeme, Daten und Anbieter."
         canonical="/"
-        ogTitle="Das Governance OS für den sicheren Einsatz von KI"
+        ogTitle="AI Compliance Operations OS for Europe"
         ogDescription="RealSyncDynamics.AI verbindet Governance, Evidence und kontrollierte KI-Ausführung in einer EU-nativen Operations-Schicht."
       />
-
-      <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden" data-ga-earth="hero-mount">
-        <HeroEarthBackdrop />
-      </div>
 
       <div className="relative z-10 flex min-h-screen flex-col">
         <GovernanceStatusBar />
         <GovernanceAiHeader />
-        <GovernanceAiHero />
+        <HeroTitanium sectionId="overview" />
         <RegulatoryTicker />
         <GovernanceLoopBand />
         <WorkspacePreviewSection />

@@ -1,3 +1,4 @@
+import { BRAND_PRODUCT_DESCRIPTION } from '../governance-frontend/hero-content';
 import { LAYERS } from '../../content/runtimeVocab';
 import { GA_GOLD, GA_GOLD_LITE, GA_LINE_SOFT, GA_MONO, GA_MUTED, GA_TITAN } from './governance-ai-theme';
 import { SectionEyebrow, SectionHeading, SectionIndex } from './GovernanceSectionChrome';
@@ -24,9 +25,7 @@ export function RuntimeLayersSection() {
         <SectionHeading accent="Vier Ebenen.">Eine Runtime.</SectionHeading>
 
         <p className="mt-4 max-w-[660px] text-[14px] leading-[1.7] text-pretty" style={{ color: GA_MUTED }}>
-          Detect, Monitor, Govern und Automate greifen ineinander: Was der Scan findet, wird
-          laufend überwacht, nach AI-Act-Risiko und DSGVO-Artikel klassifiziert und als Evidence
-          versiegelt.
+          {BRAND_PRODUCT_DESCRIPTION}
         </p>
 
         <div className="mt-[38px] grid gap-3.5 sm:grid-cols-2 lg:grid-cols-4">

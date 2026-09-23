@@ -1,14 +1,14 @@
 /**
- * Production landing. Earth hero comes from HeroEarthBackdrop so night lights,
- * Europe framing and the terminator/moon rig actually mount on `/`.
+ * Production landing. Fold follows Brand Direction v1.0 / Titan lock:
+ * static Europe night map, gold operating loop, infra lines, plan pills.
+ * No 3D globe on `/`.
  */
 import { type PointerEvent as ReactPointerEvent } from 'react';
 import '../../styles/governance-landing-polish.css';
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import { SEOHead } from '../../components/SEOHead';
-import { HeroEarthBackdrop } from '../../components/landing/HeroEarthBackdrop';
-import { GovernanceAiHero } from '../../components/landing/GovernanceAiHero';
+import { HeroTitanium } from '../../components/landing/HeroTitanium';
 import { GovernanceStatusBar } from '../../components/landing/GovernanceStatusBar';
 import { GovernanceLoopBand } from '../../components/landing/GovernanceLoopBand';
 import { GovernanceFooter } from '../../components/landing/GovernanceFooter';
@@ -24,7 +24,7 @@ import { GovernanceEnterpriseSection } from '../../components/landing/Governance
 import { GovernanceAiHeader } from '../../components/landing/GovernanceAiHeader';
 import { SectionEyebrow, SectionHeading } from '../../components/landing/GovernanceSectionChrome';
 import {
-  GA_DISPLAY,
+  GA_SANS,
   GA_LINE_SOFT,
   GA_MONO,
   GA_MUTED,
@@ -33,8 +33,8 @@ import {
   GA_SILVER,
 } from '../../components/landing/governance-ai-theme';
 import { POLICY_PACKS } from '../../components/landing/policy-packs';
-import { CONTINUOUS_COMPLIANCE_NARRATIVE } from '../../components/governance-frontend/hero-content';
-import { CTA } from '../../content/runtimeVocab';
+import { BRAND_VALUE_PROPOSITION, HERO_SCAN_CTA_LABEL } from '../../components/governance-frontend/hero-content';
+import { SEO_CONFIG } from '../../config/seo';
 import { PUBLIC_CTA } from '../../config/public-nav';
 
 function trackCardSheen(event: ReactPointerEvent<HTMLDivElement>) {
@@ -48,26 +48,18 @@ function trackCardSheen(event: ReactPointerEvent<HTMLDivElement>) {
 export function DesignGovernanceAiLanding() {
   return (
     <div
-      className="ga-context relative min-h-screen antialiased"
+      className="ga-context ga-gold-reference landing-context relative min-h-screen antialiased"
+      data-landing-mode="gold"
+      data-hero-visual="europe-network-static"
       style={{ backgroundColor: 'var(--ga-void)', color: 'var(--ga-text)' }}
       onPointerMove={trackCardSheen}
     >
-      <SEOHead
-        title="RealSyncDynamics.AI — Das OS für den sicheren Einsatz von KI im Unternehmen"
-        description="EU AI Act, DSGVO, ISO 42001 und interne Richtlinien in einer kontinuierlichen Governance-Schicht über KI-Systeme, Daten und Anbieter."
-        canonical="/"
-        ogTitle="Das Governance OS für den sicheren Einsatz von KI"
-        ogDescription="RealSyncDynamics.AI verbindet Governance, Evidence und kontrollierte KI-Ausführung in einer EU-nativen Operations-Schicht."
-      />
-
-      <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden" data-ga-earth="hero-mount">
-        <HeroEarthBackdrop />
-      </div>
+      <SEOHead title={SEO_CONFIG['/'].title} description={SEO_CONFIG['/'].description} canonical="/" />
 
       <div className="relative z-10 flex min-h-screen flex-col">
         <GovernanceStatusBar />
         <GovernanceAiHeader />
-        <GovernanceAiHero />
+        <HeroTitanium />
         <RegulatoryTicker />
         <GovernanceLoopBand />
         <WorkspacePreviewSection />
@@ -91,7 +83,7 @@ export function DesignGovernanceAiLanding() {
               <SectionHeading centered>Governance statt Checkliste.</SectionHeading>
             </span>
             <p className="mx-auto mt-4 max-w-[46rem] text-pretty leading-[1.7]" style={{ color: GA_MUTED }}>
-              {CONTINUOUS_COMPLIANCE_NARRATIVE}
+              {BRAND_VALUE_PROPOSITION}
             </p>
             <div className="mt-6 flex flex-wrap justify-center gap-2">
               {POLICY_PACKS.map((pack) => (
@@ -115,16 +107,16 @@ export function DesignGovernanceAiLanding() {
                 to={PUBLIC_CTA.to}
                 className={`${GA_PILL_PRIMARY} ga-pill-sheen`}
                 style={{
-                  fontFamily: GA_DISPLAY,
+                  fontFamily: GA_SANS,
                   backgroundImage: 'var(--ga-pill-face)',
                   color: 'var(--ga-pill-ink)',
                   boxShadow: 'var(--ga-pill-shadow)',
                 }}
               >
-                {CTA.startFreeAudit}
+                {HERO_SCAN_CTA_LABEL}
                 <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </Link>
-              <a href="#pricing" className={GA_PILL_GHOST} style={{ fontFamily: GA_DISPLAY }}>
+              <a href="#pricing" className={GA_PILL_GHOST} style={{ fontFamily: GA_SANS }}>
                 Preise ansehen
               </a>
             </div>

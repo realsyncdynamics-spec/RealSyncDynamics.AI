@@ -47,7 +47,6 @@ describe('implementation-status registry', () => {
       resolve('src/components/landing/PlatformCapabilitiesSection.tsx'),
       'utf8',
     );
-    // Replit `/` inlines PLATFORM_LIVE_ITEMS (no PlatformCapabilitiesSection / Roadmap on hero).
     expect(landing).toContain('PLATFORM_LIVE_ITEMS');
     const titanHero = readFileSync(
       resolve('src/components/landing/HeroTitanium.tsx'),
@@ -79,8 +78,8 @@ describe('implementation-status registry', () => {
     expect(hero).toContain('for Europe');
     expect(hero).toContain("HERO_HEADLINE_TEST_SUBSTRING = 'AI Compliance'");
     expect(hero).toContain("HERO_SCAN_CTA_LABEL = 'Free Audit starten'");
-    expect(hero).toContain("HERO_SCAN_CTA_LONG = 'Kostenlosen Audit starten'");
-    expect(hero).toContain("HERO_DASHBOARD_CTA_LABEL = 'Live Evidence ansehen'");
+    expect(hero).toContain("HERO_SCAN_CTA_LONG = 'Free Audit starten'");
+    expect(hero).toContain("HERO_DASHBOARD_CTA_LABEL = 'Live Dashboard ansehen'");
     expect(hero).not.toContain('99.9');
     expect(hero).not.toContain('UPTIME');
   });

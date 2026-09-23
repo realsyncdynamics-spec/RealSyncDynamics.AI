@@ -1,6 +1,11 @@
 import type { CSSProperties } from 'react';
 import { Link } from 'react-router-dom';
-import { tierById, type PricingTier } from '../../config/pricing';
+import {
+  checkoutHrefForPlan,
+  planById,
+  tierById,
+  type PricingTier,
+} from '../../config/pricing';
 import { EuropeNetworkHero } from './EuropeNetworkHero';
 import {
   HERO_HEADLINE,
@@ -22,6 +27,7 @@ import {
   MODE_PILL_FACE,
   modeAccent,
 } from './landing-mode';
+import { PUBLIC_CTA } from '../../config/public-nav';
 
 const PLAN_ANCHORS = ['starter', 'growth', 'agency'] as const;
 const FEATURED_PLAN = 'growth';
@@ -39,19 +45,24 @@ function planChips(): PlanChip[] {
     (t): t is PricingTier => Boolean(t),
   );
 
+  const paid = tiers.map((tier) => ({
+    key: tier.id,
+    name: tier.name,
+    price: tier.priceOnRequest ? null : `${tier.priceEur}€`,
+    to: checkoutHrefForPlan(tier.plan, { interval: 'month', source: 'hero' }),
+    featured: tier.id === FEATURED_PLAN,
+  }));
+
+  const enterprise = planById('enterprise');
   return [
-    ...tiers.map((tier) => ({
-      key: tier.id,
-      name: tier.name,
-      price: `${tier.priceEur}€`,
-      to: `/checkout/${tier.id}?source=hero`,
-      featured: tier.id === FEATURED_PLAN,
-    })),
+    ...paid,
     {
       key: 'enterprise',
-      name: 'Enterprise',
+      name: enterprise?.name ?? 'Enterprise',
       price: null,
-      to: '/contact-sales?source=hero',
+      to: enterprise
+        ? checkoutHrefForPlan(enterprise, { interval: 'month', source: 'hero' })
+        : '/contact-sales?source=hero&intent=enterprise',
       featured: false,
     },
   ];
@@ -63,7 +74,7 @@ export function HeroTitanium() {
   return (
     <section
       id="product"
-      className="relative min-h-[min(100svh,880px)] overflow-hidden border-b border-white/[0.06]"
+      className="relative min-h-[min(100svh,920px)] overflow-hidden border-b border-white/[0.05]"
       style={
         {
           '--landing-ring': MODE_ACCENT,
@@ -75,27 +86,27 @@ export function HeroTitanium() {
 
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-x-0 top-0 h-[42%]"
+        className="pointer-events-none absolute inset-x-0 top-0 h-[48%]"
         style={{
           background:
-            'radial-gradient(120% 100% at 22% 0%, rgba(255,255,255,0.09) 0%, rgba(255,255,255,0.03) 38%, transparent 72%)',
+            `radial-gradient(110% 90% at 18% 0%, ${modeAccent(7)} 0%, rgba(255,255,255,0.03) 34%, transparent 70%)`,
         }}
       />
 
-      <div className="relative z-10 mx-auto flex min-h-[min(100svh,880px)] max-w-[1280px] flex-col justify-center px-[4vw] pb-16 pt-28 sm:pb-20 sm:pt-32">
-        <div className="max-w-[54rem]">
+      <div className="relative z-10 mx-auto flex min-h-[min(100svh,920px)] max-w-[1320px] flex-col justify-center px-[4.5vw] pb-20 pt-28 sm:pb-24 sm:pt-32">
+        <div className="max-w-[56rem]">
           <h1
-            className="leading-[0.94] tracking-[-0.02em]"
+            className="leading-[0.93] tracking-[-0.028em]"
             style={{
               fontFamily: LANDING_SERIF,
               fontWeight: 400,
-              fontSize: 'clamp(2.55rem, 0.85rem + 5.1vw, 5.15rem)',
+              fontSize: 'clamp(2.7rem, 0.8rem + 5.4vw, 5.35rem)',
             }}
           >
             {HERO_HEADLINE.map((segments, line) => (
               <span
                 key={line}
-                className={line === 1 ? 'mt-[0.06em] block whitespace-nowrap' : 'block'}
+                className={line === 1 ? 'mt-[0.04em] block whitespace-nowrap' : 'block'}
               >
                 {segments.map((segment, i) => (
                   <span
@@ -111,14 +122,14 @@ export function HeroTitanium() {
           </h1>
 
           <p
-            className="mt-7 text-[clamp(0.75rem,0.68rem+0.3vw,0.9rem)] font-medium uppercase tracking-[0.2em]"
+            className="mt-8 text-[clamp(0.72rem,0.66rem+0.28vw,0.84rem)] font-medium uppercase tracking-[0.24em]"
             style={{ fontFamily: LANDING_MONO, color: MODE_ACCENT }}
           >
             {HERO_OPERATING_LOOP}
           </p>
 
           <div
-            className="mt-7 space-y-1.5 text-[clamp(0.95rem,0.9rem+0.3vw,1.15rem)]"
+            className="mt-7 max-w-[40rem] space-y-1.5 text-[clamp(0.98rem,0.9rem+0.28vw,1.12rem)] leading-relaxed"
             style={{ fontFamily: LANDING_SANS, color: LANDING_MUTED }}
           >
             {HERO_INFRA_LINES.map((line) => (
@@ -126,13 +137,13 @@ export function HeroTitanium() {
             ))}
           </div>
 
-          <ul className="mt-10 flex flex-wrap items-stretch gap-3" aria-label="Pläne">
+          <ul className="mt-11 flex flex-wrap items-stretch gap-2.5" aria-label="Pläne">
             <li>
               <Link
                 id="audit-cta"
                 data-hero-cta="audit"
-                to="/audit"
-                className="flex h-full min-w-[9.5rem] items-center justify-center rounded-2xl px-6 py-5 text-[0.95rem] font-semibold transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--landing-ring)]"
+                to={PUBLIC_CTA.to}
+                className="flex h-full min-w-[9.25rem] items-center justify-center rounded-xl px-6 py-[1.15rem] text-[0.92rem] font-semibold tracking-[-0.01em] transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--landing-ring)]"
                 style={{
                   backgroundImage: MODE_PILL_FACE,
                   color: MODE_BUTTON_INK,
@@ -148,22 +159,25 @@ export function HeroTitanium() {
                 <Link
                   to={chip.to}
                   data-plan-anchor={chip.key}
-                  className="flex h-full min-w-[7.25rem] flex-col items-center justify-center rounded-2xl border px-5 py-3.5 text-center transition hover:bg-white/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--landing-ring-soft)]"
+                  className="flex h-full min-w-[7.1rem] flex-col items-center justify-center rounded-xl border px-5 py-3 text-center transition hover:bg-white/[0.05] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--landing-ring-soft)]"
                   style={{
-                    backgroundColor: chip.featured ? 'rgba(10,10,11,0.72)' : 'rgba(255,255,255,0.04)',
-                    borderColor: chip.featured ? MODE_ACCENT : 'rgba(255,255,255,0.12)',
+                    backgroundColor: chip.featured ? 'rgba(8,8,10,0.78)' : 'rgba(255,255,255,0.03)',
+                    borderColor: chip.featured ? MODE_ACCENT : 'rgba(255,255,255,0.10)',
                     boxShadow: chip.featured ? MODE_GLOW : undefined,
                   }}
                 >
                   <span
-                    className="text-[0.9rem] leading-tight"
-                    style={{ color: chip.price ? LANDING_MUTED : LANDING_TEXT }}
+                    className="text-[0.78rem] uppercase tracking-[0.14em]"
+                    style={{
+                      fontFamily: LANDING_MONO,
+                      color: chip.price ? LANDING_MUTED : LANDING_TEXT,
+                    }}
                   >
                     {chip.name}
                   </span>
                   {chip.price ? (
                     <span
-                      className="mt-0.5 text-[1.15rem] font-medium leading-tight"
+                      className="mt-1 text-[1.12rem] font-medium leading-none"
                       style={{ color: chip.featured ? MODE_ACCENT : LANDING_TEXT }}
                     >
                       {chip.price}

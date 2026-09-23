@@ -17,27 +17,27 @@ export const HERO_HEADLINE: readonly (readonly HeroHeadlineSegment[])[] = [
   [{ text: 'Operations OS' }, { text: 'for Europe', accent: true }],
 ];
 
-/**
- * Production copy for the Governance-AI landing designed in Claude Design.
- * Kept separate from the legacy Titan hero so the old surface remains a
- * reversible fallback while `/` moves to the Governance-AI experience.
- */
-export const GOVERNANCE_AI_HERO_KICKER = 'AI GOVERNANCE OPERATING SYSTEM' as const;
+/** Brand Direction v1.0 — user-approved lock for the production landing. */
+export const GOVERNANCE_AI_HERO_KICKER = 'RUNTIME GOVERNANCE FOR ENTERPRISE AI' as const;
 
 export const GOVERNANCE_AI_HERO_HEADLINE: readonly (readonly HeroHeadlineSegment[])[] = [
-  [{ text: 'Das OS für' }],
-  [{ text: 'den sicheren' }],
-  [{ text: 'Einsatz von KI' }],
-  [{ text: 'im Unternehmen.', accent: true }],
+  [{ text: 'AI Compliance' }],
+  [{ text: 'Operations OS' }, { text: 'for Europe', accent: true }],
 ];
 
-export const GOVERNANCE_AI_HERO_TEST_SUBSTRING = 'Das OS für' as const;
+export const GOVERNANCE_AI_HERO_TEST_SUBSTRING = 'AI Compliance' as const;
 
 export const GOVERNANCE_AI_HERO_SUBLINE =
-  'EU AI Act, DSGVO, ISO 42001 und interne Richtlinien — in einer kontinuierlichen Governance-Schicht über alle KI-Systeme, Daten und Anbieter. Gebaut für Unternehmen, die europaweit tätig sind.' as const;
+  'Runtime governance for regulated AI systems.\nContinuous evidence.\nEU-native by design.' as const;
 
 export const GOVERNANCE_AI_HERO_MICRO =
-  'EU AI ACT · DSGVO · ISO 42001 · KONTINUIERLICHE EVIDENZ' as const;
+  'DISCOVER → CLASSIFY → ENFORCE → PROVE' as const;
+
+export const BRAND_VALUE_PROPOSITION =
+  'RealSync Dynamics.AI gibt Unternehmen die Kontrolle über regulierte KI-Systeme. Von der Erkennung über die Klassifizierung bis zum laufenden Compliance-Nachweis nach EU AI Act.' as const;
+
+export const BRAND_PRODUCT_DESCRIPTION =
+  'RealSync Dynamics.AI ist das Compliance-Betriebssystem für den Einsatz regulierter KI. Die Plattform erkennt KI-Systeme, klassifiziert Risiken, erzwingt Governance-Richtlinien und liefert fortlaufende Nachweise für Audits und regulatorische Anforderungen.' as const;
 
 /**
  * Infrastrukturzeilen unter dem Operating Loop.
@@ -119,9 +119,9 @@ export const HERO_PROOF_CHIPS = [
 /** Header primary CTA. */
 export const HERO_SCAN_CTA_LABEL = 'Free Audit starten' as const;
 /** Hero primary CTA (long form). */
-export const HERO_SCAN_CTA_LONG = 'Kostenlosen Audit starten' as const;
+export const HERO_SCAN_CTA_LONG = 'Free Audit starten' as const;
 /** Hero secondary CTA. */
-export const HERO_DASHBOARD_CTA_LABEL = 'Live Evidence ansehen' as const;
+export const HERO_DASHBOARD_CTA_LABEL = 'Live Dashboard ansehen' as const;
 
 export const HERO_SCAN_PROMISE_LINE =
   'Finde deine Compliance-Risiken — kostenlos analysieren' as const;

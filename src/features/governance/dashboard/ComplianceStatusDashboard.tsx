@@ -1086,7 +1086,9 @@ function ScoreCard({
             </div>
             <div>
               <dt className="inline">Stand:</dt>{' '}
-              <dd className="inline">{measuredAt ?? 'nicht verfügbar'}</dd>
+              <dd className="inline">
+                {measuredAt ? <time dateTime={measuredAt}>{measuredAt}</time> : 'nicht verfügbar'}
+              </dd>
             </div>
             <div>
               <dt className="inline">Geltungsbereich:</dt>{' '}

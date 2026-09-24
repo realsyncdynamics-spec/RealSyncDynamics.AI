@@ -39,7 +39,6 @@ describe('computeGovernanceScore', () => {
       assetEvidencePercent: 50,
       assetMappingsPercent: 0,
     };
-    // penalty = 100, posture avg = 50 → 0.6*100 + 0.4*50 = 80
     expect(computeGovernanceScore(ZERO, posture)).toBe(80);
   });
 
@@ -51,9 +50,12 @@ describe('computeGovernanceScore', () => {
 });
 
 describe('computeGovernanceScoreIfReliable', () => {
-  it('returns null when count sources failed instead of scoring fallback zeros as 100', () => {
+  it('returns null when count sources failed', () => {
     expect(computeGovernanceScoreIfReliable(false, ZERO, null)).toBeNull();
-    expect(computeGovernanceScoreIfReliable(true, ZERO, null)).toBe(100);
+  });
+
+  it('returns null without a KPI snapshot instead of 100 / Sehr gut', () => {
+    expect(computeGovernanceScoreIfReliable(true, ZERO, null)).toBeNull();
   });
 });
 

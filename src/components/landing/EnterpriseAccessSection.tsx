@@ -117,8 +117,8 @@ export function EnterpriseAccessSection() {
             />
             <AccessCard
               icon={ShieldCheck}
-              title="Alle sechs Rahmenwerke"
-              text="DSGVO, EU AI Act, ISO 27001, NIS2, TISAX und DORA als aktive Policy Packs."
+              title="Aktive Policy Packs + Roadmap"
+              text="Live: DSGVO, EU AI Act, ISO 27001, NIS2. TISAX und DORA: Roadmap / auf Anfrage — kein Fake-LIVE, kein Policy-Packs-Alias."
             />
             <AccessCard
               icon={KeyRound}

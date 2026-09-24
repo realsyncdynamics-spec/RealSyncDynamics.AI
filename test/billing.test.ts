@@ -5,7 +5,7 @@
  * - Stripe checkout session creation
  * - Subscription plan configuration
  * - Feature quota enforcement
- * - UG/GmbH company display
+ * - Company display (Impressum SSOT)
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
@@ -16,20 +16,23 @@ import { generateImpressumText, areLegalDocsComplete, getComplianceBanner } from
 
 // ─── Company Configuration Tests ────────────────────────────────────────────
 
-describe('Company Configuration (UG/GmbH Ready)', () => {
-  it('should display UG form correctly', () => {
-    expect(COMPANY.legalForm).toBe('UG');
-    expect(getCompanyDisplayName()).toContain('UG (haftungsbeschränkt)');
+describe('Company Configuration (Impressum SSOT)', () => {
+  it('should display Einzelunternehmen form correctly', () => {
+    expect(COMPANY.legalForm).toBe('Einzelunternehmen');
+    expect(getCompanyDisplayName()).toContain('Einzelunternehmen');
+    expect(getCompanyDisplayName()).not.toContain('GmbH');
+    expect(getCompanyDisplayName()).not.toContain('UG (haftungsbeschränkt)');
   });
 
-  it('should have headquarters in Jena, Germany', () => {
+  it('should have headquarters in Neuhaus am Rennweg, Germany', () => {
     const address = getCompanyAddress();
-    expect(address).toContain('Jena');
+    expect(address).toContain('Neuhaus am Rennweg');
+    expect(address).toContain('Schwarzburger Str. 31');
     expect(address).toContain('Germany');
   });
 
   it('should have support email configured', () => {
-    expect(COMPANY.supportEmail).toBe('support@realsyncdynamicsai.de');
+    expect(COMPANY.supportEmail).toBe('info@realsyncdynamicsai.de');
   });
 
   it('should support future GmbH transition', () => {
@@ -165,8 +168,8 @@ describe('Stripe Integration', () => {
     const metadata = getStripeProductMetadata('growth');
     expect(metadata.plan_key).toBe('growth');
     expect(metadata.plan_name).toBe('Growth');
-    expect(metadata.company_name).toBe('RealSync Dynamics AI');
-    expect(metadata.company_legal_form).toBe('UG');
+    expect(metadata.company_name).toBe('RealSync Dynamics');
+    expect(metadata.company_legal_form).toBe('Einzelunternehmen');
     expect(metadata.recurring).toBe('true');
   });
 
@@ -182,10 +185,10 @@ describe('Stripe Integration', () => {
 describe('Compliance & Legal Notices', () => {
   it('should generate complete impressum text', () => {
     const impressum = generateImpressumText();
-    expect(impressum).toContain('RealSync Dynamics AI');
+    expect(impressum).toContain('RealSync Dynamics');
     expect(impressum).toContain('IMPRESSUM');
     expect(impressum).toContain(COMPANY.supportEmail);
-    expect(impressum).toContain('UG (haftungsbeschränkt)');
+    expect(impressum).toContain('Einzelunternehmen');
   });
 
   it('should check completeness of legal documents', () => {
@@ -304,20 +307,21 @@ describe('Feature Quotas by Tier', () => {
   });
 });
 
-// ─── UG-Specific Tests ───────────────────────────────────────────────────────
+// ─── Legal-form Compliance Tests ─────────────────────────────────────────────
 
-describe('UG (haftungsbeschränkt) Compliance', () => {
-  it('should never display as GmbH while configured as UG', () => {
-    if (COMPANY.legalForm === 'UG') {
+describe('Legal form Compliance (Impressum SSOT)', () => {
+  it('should never display as GmbH/UG while configured as Einzelunternehmen', () => {
+    if (COMPANY.legalForm === 'Einzelunternehmen') {
       const displayName = getCompanyDisplayName();
       expect(displayName).not.toContain('GmbH');
-      expect(displayName).toContain('UG');
+      expect(displayName).not.toContain('UG (haftungsbeschränkt)');
+      expect(displayName).toContain('Einzelunternehmen');
     }
   });
 
   it('should use correct legal entity name in all formal documents', () => {
-    const expectedName = `${COMPANY.companyName} ${COMPANY.legalForm}`;
-    expect(getCompanyDisplayName()).toContain(expectedName);
+    expect(getCompanyDisplayName()).toContain(COMPANY.companyName);
+    expect(getCompanyDisplayName()).toContain(COMPANY.legalForm);
   });
 
   it('should transition easily to GmbH by changing config', () => {

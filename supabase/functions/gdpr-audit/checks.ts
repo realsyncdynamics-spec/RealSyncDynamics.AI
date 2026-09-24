@@ -502,6 +502,51 @@ export function hasPhoneNumber(text: string): boolean {
   return false;
 }
 
+
+/**
+ * Cloudflare Email Protection speichert die Adresse XOR-kodiert in
+ * `data-cfemail` bzw. `/cdn-cgi/l/email-protection#…`. Im fetched HTML
+ * steht dann nur `[email&#160;protected]` — kein Klartext und kein `mailto:`.
+ * Ohne Decode liefert `deepCheckImprint` fälschlich `sub_imprint_no_contact`
+ * (Live-Fall realsyncdynamicsai.de/impressum, 2026-09-24).
+ */
+export function decodeCloudflareEmailHex(encoded: string): string | null {
+  const hex = encoded.trim();
+  if (hex.length < 4 || hex.length % 2 !== 0 || !/^[0-9a-fA-F]+$/.test(hex)) {
+    return null;
+  }
+  const key = parseInt(hex.slice(0, 2), 16);
+  if (Number.isNaN(key)) return null;
+  let out = '';
+  for (let i = 2; i < hex.length; i += 2) {
+    const byte = parseInt(hex.slice(i, i + 2), 16);
+    if (Number.isNaN(byte)) return null;
+    out += String.fromCharCode(byte ^ key);
+  }
+  // Sanity: Decode muss einer E-Mail gleichen, sonst kein Kontaktnachweis.
+  if (!/^[^\s@<>"]+@[^\s@<>"]+\.[A-Za-z]{2,24}$/.test(out)) return null;
+  return out;
+}
+
+/** Alle CF-obfuskierten Adressen aus HTML (data-cfemail und Protection-Hash). */
+export function extractCloudflareEmails(html: string): string[] {
+  const found = new Set<string>();
+  const re =
+    /(?:data-cfemail=["']|\/cdn-cgi\/l\/email-protection#)([0-9a-fA-F]+)/gi;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(html)) !== null) {
+    const email = decodeCloudflareEmailHex(m[1]);
+    if (email) found.add(email.toLowerCase());
+  }
+  return [...found];
+}
+
+export function hasEmailContact(html: string, text: string): boolean {
+  if (/[\w.+-]@[\w-]{1,63}\.[a-z]{2,10}/i.test(text)) return true;
+  if (/mailto:/i.test(html)) return true;
+  return extractCloudflareEmails(html).length > 0;
+}
+
 export function deepCheckImprint(html: string): Issue[] {
   const issues: Issue[] = [];
   const text = visibleText(html);
@@ -535,7 +580,9 @@ export function deepCheckImprint(html: string): Issue[] {
     });
   }
 
-  const hasEmail = /[\w.+-]@[\w-]{1,63}\.[a-z]{2,10}/i.test(text) || /mailto:/i.test(html);
+  // Klartext / mailto ODER Cloudflare Email Protection (XOR in data-cfemail).
+  // TMG § 5 Abs. 1 Nr. 2 bleibt: Email UND Telefon — CF zählt als Email-Nachweis.
+  const hasEmail = hasEmailContact(html, text);
   const hasPhone = hasPhoneNumber(text) && /tel(?:efon)?|phone|fon\b|tel:/i.test(html);
   if (!hasEmail || !hasPhone) {
     issues.push({

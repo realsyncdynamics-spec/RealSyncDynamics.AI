@@ -29,6 +29,7 @@ import Stripe from 'npm:stripe@16.12.0';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 import { normalizePlanKey, planByKey } from '../_shared/pricing.generated.ts';
+import { decideTrial, loadTrialInputs } from '../_shared/trialEligibility.ts';
 
 // COMMERCIAL-SSOT: temporary production hotfix.
 // Canonical source migration tracked in Phase 2.
@@ -144,6 +145,35 @@ Deno.serve(async (req) => {
     auth: { persistSession: false },
   });
 
+  const { current, auditGrantExists } = await loadTrialInputs(admin, body.tenant_id);
+  const trialDecision = decideTrial({
+    trialDays: plan.trialDays,
+    purchaseMode: plan.purchaseMode,
+    current,
+    auditGrantExists,
+  });
+  const trial = trialDecision.grant
+    ? { granted: true, days: trialDecision.days, reason: 'GRANTED' }
+    : { granted: false, reason: trialDecision.reason };
+
+  if (!trialDecision.grant && trialDecision.reason === 'LIVE_SUBSCRIPTION') {
+    return jsonResponse({
+      ok: false,
+      error: {
+        code: 'SUBSCRIPTION_EXISTS',
+        message: `Tenant already has a ${current?.status} ${current?.plan_key} subscription.`,
+      },
+      subscription: current
+        ? {
+            plan_key: current.plan_key,
+            status: current.status,
+            trial_end: current.trial_end,
+          }
+        : null,
+      trial,
+    }, 409);
+  }
+
   // Resolve Stripe Price ID.
   //
   // COMMERCIAL-SSOT: temporary production hotfix.
@@ -200,16 +230,17 @@ Deno.serve(async (req) => {
   // Aufrufer ein Abo als Einmalzahlung abschließen.
   const isOneTime = plan.purchaseMode === 'one_time';
 
-  // Pilot-Trial: 14 Tage kostenlos für Demo-zu-Customer-Conversion.
-  // Triggered via body.pilot=true (typically set from /contact-sales after
-  // a sales call agreed on the pilot terms in marketing/demo-skript.md).
-  // Stripe will not charge until day 15 — user can cancel anytime in trial.
-  // Für Einmalkäufe existiert keine Subscription und damit auch kein Trial.
+  // Trials werden serverseitig aus Plan-Metadaten + bestehendem Tenant-Zustand
+  // entschieden. `body.pilot` bleibt reines Log-Metadatum und ist KEIN
+  // Entitlement. Für Einmalkäufe existiert keine Subscription und damit auch
+  // kein Trial.
   const subscriptionData: Stripe.Checkout.SessionCreateParams.SubscriptionData = {
     metadata: { tenant_id: body.tenant_id, plan_key: body.plan_key },
   };
-  if (!isOneTime && body.pilot === true && plan.trialDays > 0) {
-    subscriptionData.trial_period_days = plan.trialDays;
+  if (!isOneTime && trialDecision.grant) {
+    subscriptionData.trial_period_days = trialDecision.days;
+  }
+  if (!isOneTime && body.pilot === true) {
     subscriptionData.metadata = { ...subscriptionData.metadata, pilot: 'true' };
   }
 
@@ -219,6 +250,44 @@ Deno.serve(async (req) => {
   // das dann nur als generisches "Failed to send a request to the Edge
   // Function" ohne nutzbare Fehlermeldung im Frontend.
   try {
+    if (!isOneTime) {
+      const { data: lock, error: lockError } = await admin
+        .from('checkout_session_locks')
+        .select('tenant_id, stripe_session_id, plan_key, trial_intended, status')
+        .eq('tenant_id', body.tenant_id)
+        .eq('status', 'open')
+        .maybeSingle();
+      if (lockError) return jsonError(500, 'INTERNAL', lockError.message);
+      if (lock?.stripe_session_id) {
+        try {
+          const existingSession = await stripe.checkout.sessions.retrieve(lock.stripe_session_id);
+          if (existingSession.status === 'open' && existingSession.url) {
+            return jsonResponse({
+              ok: true,
+              url: existingSession.url,
+              session_id: existingSession.id,
+              alreadyExisted: true,
+              trial: lock.trial_intended
+                ? { granted: true, days: trialDecision.grant ? trialDecision.days : plan.trialDays, reason: 'GRANTED' }
+                : trial,
+            });
+          }
+          const lockStatus = existingSession.status === 'complete' ? 'completed' : 'expired';
+          const { error: updateLockError } = await admin
+            .from('checkout_session_locks')
+            .update({ status: lockStatus, updated_at: new Date().toISOString() })
+            .eq('tenant_id', body.tenant_id);
+          if (updateLockError) return jsonError(500, 'INTERNAL', updateLockError.message);
+        } catch {
+          const { error: updateLockError } = await admin
+            .from('checkout_session_locks')
+            .update({ status: 'expired', updated_at: new Date().toISOString() })
+            .eq('tenant_id', body.tenant_id);
+          if (updateLockError) return jsonError(500, 'INTERNAL', updateLockError.message);
+        }
+      }
+    }
+
     if (existingSub?.stripe_customer_id) {
       stripeCustomerId = existingSub.stripe_customer_id;
     } else {
@@ -265,9 +334,22 @@ Deno.serve(async (req) => {
       customer_update: { address: 'auto', name: 'auto' },
     });
 
-    return jsonResponse({ ok: true, url: session.url, session_id: session.id });
+    if (!isOneTime) {
+      const { error: lockUpsertError } = await admin
+        .from('checkout_session_locks')
+        .upsert({
+          tenant_id: body.tenant_id,
+          stripe_session_id: session.id,
+          plan_key: body.plan_key,
+          trial_intended: trialDecision.grant,
+          status: 'open',
+          updated_at: new Date().toISOString(),
+        }, { onConflict: 'tenant_id' });
+      if (lockUpsertError) return jsonError(500, 'INTERNAL', lockUpsertError.message);
+    }
+
+    return jsonResponse({ ok: true, url: session.url, session_id: session.id, trial });
   } catch (e) {
     return jsonError(502, 'STRIPE_ERROR', `stripe checkout failed: ${(e as Error).message}`);
   }
 });
-

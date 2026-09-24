@@ -9,10 +9,9 @@
  * Seiten — der Besucher soll eine Vorliebe ausdrücken können, nicht ein
  * anderes Produkt sehen.
  *
- * Die Abschnitte unterhalb des Hero folgen weiterhin `landing-theme.ts`
- * (Gold). Das ist bewusst: die Referenz zeigt die Umschaltung nur für den
- * ersten Bildschirm, und ein Umbau aller Flächen würde den Design-Freeze
- * (`CLAUDE.md`) ohne Not aufreissen.
+ * Alle Hauptflächen von `MainLanding` lesen für die Umschaltung diese
+ * Variablen. Fallback-Routen und Bereiche ohne `data-landing-mode` bleiben
+ * weiter auf der Gold-Basis von `landing-theme.ts`.
  *
  * ## Warum Variablen und keine Hex-Werte
  *

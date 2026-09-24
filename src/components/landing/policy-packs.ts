@@ -15,7 +15,7 @@
  *
  * `next: true` heißt: angekündigt, aber nicht ausgeliefert. Die Seite zeichnet
  * es gestrichelt und ohne Reifegrad. Der Stand deckt sich mit
- * `implementation-status.ts` („TISAX / DORA Frameworks" → Coming Soon).
+ * `implementation-status.ts` (NIS2 → Preview; TISAX / DORA → Coming Soon).
  */
 import { frameworkLabel } from '../../lib/policy-packs/coverage';
 
@@ -32,7 +32,7 @@ const SELECTION: readonly (readonly [code: string, next?: true])[] = [
   ['GDPR'],
   ['EU_AI_ACT'],
   ['ISO_27001'],
-  ['NIS2'],
+  ['NIS2', true],
   ['TISAX', true],
   ['DORA', true],
 ] as const;

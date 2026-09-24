@@ -1,0 +1,114 @@
+{
+  "pack_id": "nis2",
+  "pack_name": "NIS2 — Risikomanagement § 30 BSIG",
+  "version": "0.1.0",
+  "frameworks": [
+    "NIS2"
+  ],
+  "industry": "all",
+  "legal_basis_version": "BSIG n.F. i.d.F. NIS2UmsuCG, in Kraft 2025-12-06; Art. 21 RL (EU) 2022/2555",
+  "status": "preview",
+  "disclaimer": "Kein Ersatz für BSI-Registrierung, Meldeweg oder Rechtsberatung.",
+  "controls": [
+    {
+      "id": "NIS2-01",
+      "framework": "NIS2",
+      "control_code": "RM-01",
+      "title": "Risikoanalyse und IT-Sicherheitskonzepte",
+      "legal_ref": "§ 30 Abs. 2 Nr. 1 BSIG / Art. 21 Abs. 2 lit. a",
+      "description": "Konzepte für Risikoanalyse und Sicherheit von Informationssystemen. Risiken für Netz- und Informationssysteme werden systematisch erhoben, bewertet und in dokumentierte IT-Sicherheitskonzepte überführt.",
+      "evidence_hint": "Risikobewertung, IT-Sicherheitskonzept, Freigaben/Review-Protokolle",
+      "status_default": "preview"
+    },
+    {
+      "id": "NIS2-02",
+      "framework": "NIS2",
+      "control_code": "IR-01",
+      "title": "Incident Response / Bewältigung von Sicherheitsvorfällen",
+      "legal_ref": "§ 30 Abs. 2 Nr. 2 BSIG / Art. 21 Abs. 2 lit. b",
+      "description": "Prozesse zur Erkennung, Eindämmung, Analyse und Nachbereitung von Sicherheitsvorfällen, inklusive klarer Rollen und Eskalationswege.",
+      "evidence_hint": "Incident-Playbook, Tickets/Timeline, Post-Mortem, Meldeketten",
+      "status_default": "preview"
+    },
+    {
+      "id": "NIS2-03",
+      "framework": "NIS2",
+      "control_code": "BC-01",
+      "title": "Betriebskontinuität / Backup / Krisenmanagement",
+      "legal_ref": "§ 30 Abs. 2 Nr. 3 BSIG / Art. 21 Abs. 2 lit. c",
+      "description": "Aufrechterhaltung des Betriebs durch Backup, Wiederherstellung und Krisenmanagement, sodass kritische Dienste nach Störungen fortgeführt oder wiederhergestellt werden können.",
+      "evidence_hint": "BCP/DRP, Backup- und Restore-Nachweise, Krisenübungsprotokolle",
+      "status_default": "preview"
+    },
+    {
+      "id": "NIS2-04",
+      "framework": "NIS2",
+      "control_code": "SC-01",
+      "title": "Lieferkettensicherheit (unmittelbare Anbieter)",
+      "legal_ref": "§ 30 Abs. 2 Nr. 4 BSIG / Art. 21 Abs. 2 lit. d",
+      "description": "Sicherheitsanforderungen und Überwachung unmittelbarer Anbieter und Dienstleister in der Lieferkette, soweit sie Netz- und Informationssysteme beeinflussen.",
+      "evidence_hint": "Lieferantenverzeichnis, Vertrags-Security-Klauseln, Prüfungen/Assessments",
+      "status_default": "preview"
+    },
+    {
+      "id": "NIS2-05",
+      "framework": "NIS2",
+      "control_code": "SDM-01",
+      "title": "Beschaffung, Entwicklung, Wartung, Schwachstellen",
+      "legal_ref": "§ 30 Abs. 2 Nr. 5 BSIG / Art. 21 Abs. 2 lit. e",
+      "description": "Sicherheit über den Lebenszyklus von IKT-Systemen: Beschaffung, Entwicklung, Wartung und Umgang mit Schwachstellen einschließlich Patch-/Remediation-Prozessen.",
+      "evidence_hint": "Change-/Release-Prozess, Vulnerability-Management, Patch-Nachweise",
+      "status_default": "preview"
+    },
+    {
+      "id": "NIS2-06",
+      "framework": "NIS2",
+      "control_code": "EFF-01",
+      "title": "Wirksamkeit der Maßnahmen",
+      "legal_ref": "§ 30 Abs. 2 Nr. 6 BSIG / Art. 21 Abs. 2 lit. f",
+      "description": "Verfahren zur Bewertung der Wirksamkeit der Cybersecurity-Maßnahmen, etwa durch Tests, Audits oder Kennzahlen, mit dokumentierter Nachverfolgung von Abweichungen.",
+      "evidence_hint": "Wirksamkeitstests, Auditberichte, KPI-/Review-Protokolle",
+      "status_default": "preview"
+    },
+    {
+      "id": "NIS2-07",
+      "framework": "NIS2",
+      "control_code": "HYG-01",
+      "title": "Cyberhygiene und Schulung",
+      "legal_ref": "§ 30 Abs. 2 Nr. 7 BSIG / Art. 21 Abs. 2 lit. g",
+      "description": "Grundlegende Cyberhygiene und regelmäßige Awareness-/Schulungsmaßnahmen für Mitarbeitende mit Bezug zu Netz- und Informationssystemen.",
+      "evidence_hint": "Schulungsplan, Teilnahmenachweise, Hygiene-Richtlinien",
+      "status_default": "preview"
+    },
+    {
+      "id": "NIS2-08",
+      "framework": "NIS2",
+      "control_code": "CRY-01",
+      "title": "Kryptografie",
+      "legal_ref": "§ 30 Abs. 2 Nr. 8 BSIG / Art. 21 Abs. 2 lit. h",
+      "description": "Konzepte und Verfahren für Kryptografie und Verschlüsselung zum Schutz von Vertraulichkeit und Integrität von Daten und Kommunikation.",
+      "evidence_hint": "Krypto-Policy, Schlüsselmangement, TLS-/Verschlüsselungsnachweise",
+      "status_default": "preview"
+    },
+    {
+      "id": "NIS2-09",
+      "framework": "NIS2",
+      "control_code": "IAM-01",
+      "title": "Personal, Zugriff, Assets",
+      "legal_ref": "§ 30 Abs. 2 Nr. 9 BSIG / Art. 21 Abs. 2 lit. i",
+      "description": "Personalsicherheit, Zugriffskontrolle und Asset-Management: wer worauf zugreifen darf, wie Zugänge vergeben und entzogen werden, und welche Assets kritisch sind.",
+      "evidence_hint": "Rollen-/Rechtekonzept, Joiner-Mover-Leaver, Asset-Inventar",
+      "status_default": "preview"
+    },
+    {
+      "id": "NIS2-10",
+      "framework": "NIS2",
+      "control_code": "MFA-01",
+      "title": "MFA und sichere Kommunikation",
+      "legal_ref": "§ 30 Abs. 2 Nr. 10 BSIG / Art. 21 Abs. 2 lit. j",
+      "description": "Multi-Faktor-Authentifizierung sowie gesicherte Sprach-, Video- und Textkommunikation einschließlich Notfallkommunikation.",
+      "evidence_hint": "MFA-Enforcement-Nachweise, sichere Kommunikationskanäle, Notfallkontakte",
+      "status_default": "preview"
+    }
+  ]
+}

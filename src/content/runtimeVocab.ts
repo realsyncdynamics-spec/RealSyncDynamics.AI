@@ -23,10 +23,10 @@ export const LAYERS = [
     id: 'monitor',
     short: '02',
     title: 'Monitor',
-    role: 'Continuous Runtime',
+    role: 'Continuous Runtime · Coming Soon',
     blurb:
-      'Sobald die Runtime aktiv ist, läuft sie weiter. Drift, Consent-Änderungen, neue Tracker, geänderte Header werden in Echtzeit detektiert.',
-    bullets: ['Drift Detection', 'Alerts · Re-Scans', 'Consent Changes', 'Deploy Monitoring'],
+      'Dauerhafte Domain-Überwachung (Coming Soon): Post-Scan „Diese Domain überwachen“ — öffentlicher Funnel geplant. Einmal-/Public-Scans laufen live; wiederkehrendes Drift-Monitoring ist Roadmap.',
+    bullets: ['Drift Detection (Coming Soon)', 'Alerts · Re-Scans (Coming Soon)', 'Consent Changes', 'Deploy Monitoring (Coming Soon)'],
   },
   {
     id: 'govern',
@@ -63,9 +63,9 @@ export const PLANS = [
   {
     id: 'monitoring',
     name: 'Monitoring',
-    tagline: 'Continuous runtime',
+    tagline: 'Continuous runtime · Coming Soon',
     headline: '€49',
-    bullets: ['1 Domain · 24/7 Drift', 'Email + Slack Alerts', 'Weekly Re-Scan', 'Evidence-Chain'],
+    bullets: ['1 Domain · Drift (Coming Soon)', 'Email + Slack Alerts (geplant)', 'Weekly Re-Scan (Coming Soon)', 'Evidence-Chain'],
     cta: { label: 'Enable monitoring', to: '/audit?plan=monitoring', kind: 'primary' as const },
   },
   {

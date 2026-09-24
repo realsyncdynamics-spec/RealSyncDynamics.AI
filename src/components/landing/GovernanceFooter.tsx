@@ -21,12 +21,12 @@ const COLUMNS: readonly { title: string; body: React.ReactNode }[] = [
     body: (
       <>
         <strong className="font-medium" style={{ color: GA_SILVER }}>
-          RealSyncDynamics GmbH
+          RealSync Dynamics
         </strong>
         <br />
-        Berlin, Deutschland
+        Einzelunternehmen · Dominik Steiner
         <br />
-        Handelsregister: HRB · Amtsgericht Berlin-Charlottenburg
+        Neuhaus am Rennweg
       </>
     ),
   },

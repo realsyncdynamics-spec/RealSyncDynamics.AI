@@ -215,8 +215,8 @@ export function PricingPage() {
                 body: 'Nicht nur "hier ist das Problem". Sondern: hier ist der Fix-Code, den Sie einfügen können. Script-Blocking, Consent-Injection, Font-Self-Hosting — alles automatisiert.',
               },
               {
-                title: 'Continuous Runtime-Monitoring',
-                body: 'Governance ist kein einmaliger Zustand. Websites und KI-Endpunkte verändern sich. Wir messen täglich, erkennen Drift gegen den letzten Baseline-Stand und alarmieren — damit zwischen den Audits keine stillen Regressionen verschwinden.',
+                title: 'Continuous Runtime-Monitoring (Coming Soon)',
+                body: 'Dauerhafte Domain-Überwachung ist Roadmap (Registry: Coming Soon). Einmal-/Public-Scans laufen live; wiederkehrendes tägliches Drift-Monitoring und Alerts sind geplant — kein bereits laufender Dauerbetrieb.',
               },
               {
                 title: 'Nachweisbarkeit (Audit-Trails)',

@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, AlertTriangle, FileText, Loader2, ShieldCheck, ArrowRight,
-  Linkedin, Share2, Globe, Mail, Clock, Copy, Check, Zap,
+  Linkedin, Share2, Globe, Clock, Copy, Check, Zap,
 } from 'lucide-react';
 import { AgentWidget } from '../governance/AgentWidget/AgentWidget';
 import type { ScanFinding } from '../../core/onboarding/types';
@@ -22,8 +22,9 @@ import { bookableModuleById } from '@/shared/pricing';
  * und Conversion):
  *
  *   1. Header
- *   2. Audit-Zusammenfassung (Domain, E-Mail, Zeit, ID, Score, Status,
+ *   2. Audit-Zusammenfassung (Domain, Zeit, ID, Score, Status,
  *      Severity-Counts)            ← "10-Sekunden-Verstaendnis"
+ *      (keine Report-E-Mail auf sharebarer View — Privacy P0)
  *   3. Ergebnis in einem Satz       ← Klartext-Summary
  *   4. Methodik-Disclaimer
  *   5. Befunde nach Severity in Geschaeftssprache
@@ -47,7 +48,6 @@ interface AuditResultViewProps {
   auditId: string;
   domain?:         string;
   score?:          number;
-  email?:          string;
   createdAt?:      string;
   coverage?:       'full' | 'limited' | 'failed';
   coverageNotice?: string;
@@ -163,7 +163,7 @@ function formatDateTime(iso?: string): string | null {
 }
 
 export function AuditResultView({
-  auditId, domain, score, email, createdAt, coverageNotice,
+  auditId, domain, score, createdAt, coverageNotice,
   findings = [], loading = false, error = null,
 }: AuditResultViewProps) {
   const navigate = useNavigate();
@@ -233,7 +233,6 @@ export function AuditResultView({
             <>
               <SummaryBlock
                 domain={domain}
-                email={email}
                 createdAt={createdAt}
                 auditId={auditId}
                 score={score}
@@ -294,10 +293,9 @@ export function AuditResultView({
 }
 
 function SummaryBlock({
-  domain, email, createdAt, auditId, score, counts,
+  domain, createdAt, auditId, score, counts,
 }: {
   domain?: string;
-  email?: string;
   createdAt?: string;
   auditId: string;
   score?: number;
@@ -326,17 +324,6 @@ function SummaryBlock({
       <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <SumRow icon={<Globe className="h-3.5 w-3.5" />} label="Gescannte Website">
           <span className="font-mono text-sm text-titanium-50">{domain ?? '—'}</span>
-        </SumRow>
-
-        <SumRow icon={<Mail className="h-3.5 w-3.5" />} label="Report-E-Mail">
-          {email ? (
-            <span className="font-mono text-sm text-titanium-200">{email}</span>
-          ) : (
-            <span className="text-xs text-titanium-500">
-              nicht in dieser Ansicht verfuegbar
-              <span className="ml-1.5 text-titanium-600">(geteilte Permalinks zeigen keine E-Mail)</span>
-            </span>
-          )}
         </SumRow>
 
         <SumRow icon={<Clock className="h-3.5 w-3.5" />} label="Scan durchgefuehrt">

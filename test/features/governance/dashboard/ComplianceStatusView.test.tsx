@@ -181,6 +181,9 @@ describe('ComplianceStatusView', () => {
     expect(getByTestId('governance-score').textContent).toContain('Quelle: governance_kpi_snapshots');
     expect(getByTestId('governance-score').textContent).toContain('Stand: 2026-09-24');
     expect(getByTestId('governance-score').textContent).toContain('Geltungsbereich: gesamter Mandant');
+    const measuredAt = getByTestId('governance-score').querySelector('time');
+    expect(measuredAt).not.toBeNull();
+    expect(measuredAt).toHaveAttribute('datetime', '2026-09-24');
   });
 
   it('keeps score source and scope visible when the snapshot date is missing', () => {

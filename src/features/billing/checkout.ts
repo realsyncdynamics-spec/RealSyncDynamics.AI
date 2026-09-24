@@ -7,6 +7,20 @@ export interface CheckoutResult {
   ok: boolean;
   url?: string;
   session_id?: string;
+  trial?: {
+    granted: boolean;
+    days?: number;
+    reason?: string;
+  };
+  alreadyExisted?: boolean;
+  subscription?: {
+    id?: string;
+    tenant_id?: string;
+    status?: string | null;
+    plan_key?: string | null;
+    trial_start?: string | null;
+    trial_end?: string | null;
+  } | null;
   error?: { code: string; message: string };
 }
 
@@ -15,7 +29,7 @@ async function readCheckoutError(error: unknown): Promise<CheckoutResult> {
   if (ctx && typeof ctx.json === 'function') {
     try {
       const body = (await ctx.json()) as CheckoutResult;
-      if (body?.error?.code) return { ok: false, error: body.error };
+      if (body?.error?.code) return { ...body, ok: false, error: body.error };
     } catch { /* fall through */ }
   }
   return {
@@ -39,9 +53,8 @@ export async function createCheckoutSession(
   if (plan.purchaseMode === 'free') return { ok: false, error: { code: 'BAD_REQUEST', message: 'Free Audit braucht keinen Checkout' } };
   if (plan.purchaseMode === 'inquiry') return { ok: false, error: { code: 'INQUIRY_ONLY', message: `${plan.name} wird über /contact-sales abgeschlossen` } };
 
-  const isPilot = pilot ?? new URLSearchParams(window.location.search).get('pilot') === 'true';
   const { data, error } = await getSupabase().functions.invoke('stripe-checkout', {
-    body: { tenant_id: tenantId, plan_key: key, return_url: window.location.origin, pilot: isPilot },
+    body: { tenant_id: tenantId, plan_key: key, return_url: window.location.origin, pilot: pilot === true },
   });
   if (error) return readCheckoutError(error);
   return data as CheckoutResult;

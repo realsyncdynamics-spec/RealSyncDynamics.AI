@@ -1,16 +1,16 @@
 /**
- * Die Startseite in zwei Farbmodi.
+ * Die Startseite in drei Farbmodi.
  *
  * ## Was umschaltbar ist — und was nicht
  *
  * Umgeschaltet wird die Tonung von Kopf und Bühne: Akzent, Grund, Linie,
  * Pill-Fläche, Tonung der Aufnahme. Layout, Typografie, Copy und jede Zahl
- * bleiben identisch. Es ist dieselbe Seite in zwei Farben, nicht zwei
+ * bleiben identisch. Es ist dieselbe Seite in drei Farben, nicht drei
  * Seiten — der Besucher soll eine Vorliebe ausdrücken können, nicht ein
  * anderes Produkt sehen.
  *
  * Die Abschnitte unterhalb des Hero folgen weiterhin `landing-theme.ts`
- * (Gold). Das ist bewusst: die Referenz zeigt beide Fassungen nur für den
+ * (Gold). Das ist bewusst: die Referenz zeigt die Umschaltung nur für den
  * ersten Bildschirm, und ein Umbau aller Flächen würde den Design-Freeze
  * (`CLAUDE.md`) ohne Not aufreissen.
  *
@@ -24,13 +24,14 @@
  */
 import { useCallback, useEffect, useState } from 'react';
 
-export type LandingMode = 'gold' | 'cyan';
+export type LandingMode = 'gold' | 'cyan' | 'light';
 
-export const LANDING_MODES: readonly LandingMode[] = ['gold', 'cyan'] as const;
+export const LANDING_MODES: readonly LandingMode[] = ['gold', 'cyan', 'light'] as const;
 
 export const LANDING_MODE_LABEL: Record<LandingMode, string> = {
-  gold: 'Gold',
+  gold: 'Dunkel',
   cyan: 'Cyan',
+  light: 'Hell',
 };
 
 const STORAGE_KEY = 'rsd-landing-mode';
@@ -40,7 +41,7 @@ const DEFAULT_MODE: LandingMode = 'gold';
 function readStored(): LandingMode {
   try {
     const value = window.localStorage.getItem(STORAGE_KEY);
-    return value === 'cyan' || value === 'gold' ? value : DEFAULT_MODE;
+    return value === 'cyan' || value === 'gold' || value === 'light' ? value : DEFAULT_MODE;
   } catch {
     return DEFAULT_MODE;
   }
@@ -72,7 +73,12 @@ export const MODE_ACCENT_LITE = 'var(--rsd-accent-lite, #e4cfa2)';
 export const MODE_BG = 'var(--rsd-bg, #0a0a0b)';
 export const MODE_PANEL = 'var(--rsd-panel, #121214)';
 export const MODE_BUTTON_INK = 'var(--rsd-btn-ink, #0a0a0b)';
+export const MODE_TEXT = 'var(--rsd-text, #f2eee6)';
+export const MODE_MUTED = 'var(--rsd-muted, #9a9aa1)';
 export const MODE_LINE = 'var(--rsd-line, rgba(214, 173, 104, 0.22))';
+export const MODE_HEADER_BORDER = 'var(--rsd-header-border, rgba(255, 255, 255, 0.06))';
+export const MODE_HEADER_BG = 'var(--rsd-header-bg, rgba(10, 10, 11, 0.82))';
+export const MODE_HEADER_BG_OVERLAY = 'var(--rsd-header-bg-overlay, rgba(10, 10, 11, 0.35))';
 export const MODE_GLOW = 'var(--rsd-glow, 0 0 32px rgba(214, 173, 104, 0.28))';
 export const MODE_VEIL = 'var(--rsd-veil, #0a0a0b)';
 export const MODE_SHOT_OPACITY = 'var(--rsd-shot-opacity, 0.55)';

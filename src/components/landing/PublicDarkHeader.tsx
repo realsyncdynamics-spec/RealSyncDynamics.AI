@@ -4,12 +4,19 @@ import { Menu, X } from 'lucide-react';
 import { HERO_SCAN_CTA_LABEL } from '../governance-frontend/hero-content';
 import { PUBLIC_PRIMARY_NAV } from '../../config/public-nav';
 import {
-  LANDING_BG,
   LANDING_MONO,
-  LANDING_MUTED,
-  LANDING_TEXT,
 } from './landing-theme';
-import { MODE_ACCENT, MODE_BUTTON_INK, MODE_GLOW } from './landing-mode';
+import {
+  MODE_ACCENT,
+  MODE_BG,
+  MODE_BUTTON_INK,
+  MODE_GLOW,
+  MODE_HEADER_BG,
+  MODE_HEADER_BG_OVERLAY,
+  MODE_HEADER_BORDER,
+  MODE_MUTED,
+  MODE_TEXT,
+} from './landing-mode';
 
 /**
  * Claude Design / Replit SSOT header — gold diamond · REALSYNCDYNAMICS.AI
@@ -30,12 +37,12 @@ function NavItem({
 }) {
   const shared = {
     className: `text-[13px] transition-colors focus-visible:outline-none focus-visible:underline focus-visible:underline-offset-4${className ? ` ${className}` : ''}`,
-    style: { color: LANDING_MUTED } as CSSProperties,
+    style: { color: MODE_MUTED } as CSSProperties,
     onMouseEnter: (e: MouseEvent<HTMLAnchorElement>) => {
-      e.currentTarget.style.color = LANDING_TEXT;
+      e.currentTarget.style.color = MODE_TEXT;
     },
     onMouseLeave: (e: MouseEvent<HTMLAnchorElement>) => {
-      e.currentTarget.style.color = LANDING_MUTED;
+      e.currentTarget.style.color = MODE_MUTED;
     },
   };
 
@@ -100,14 +107,18 @@ export function PublicDarkHeader({
 
   return (
     <header
-      className={`${overlay ? 'absolute bg-[rgba(10,10,11,0.35)]' : 'sticky bg-[rgba(10,10,11,0.82)]'} inset-x-0 top-0 z-30 border-b border-white/[0.06] backdrop-blur-[18px]`}
-      style={{ color: LANDING_TEXT }}
+      className={`${overlay ? 'absolute' : 'sticky'} inset-x-0 top-0 z-30 border-b backdrop-blur-[18px]`}
+      style={{
+        color: MODE_TEXT,
+        borderColor: MODE_HEADER_BORDER,
+        backgroundColor: overlay ? MODE_HEADER_BG_OVERLAY : MODE_HEADER_BG,
+      }}
     >
       <div className="mx-auto flex h-[72px] max-w-[1280px] items-center gap-6 px-[4vw]">
         <Link
           to="/"
           className="flex min-w-0 items-center gap-2.5 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--rsd-accent,#d6ad68)]/60"
-          style={{ color: LANDING_TEXT }}
+          style={{ color: MODE_TEXT }}
         >
           <span className="grid h-7 w-7 shrink-0 place-items-center">
             <DiamondMark />
@@ -145,7 +156,7 @@ export function PublicDarkHeader({
           <button
             type="button"
             className="rounded-md p-1.5 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--rsd-accent,#d6ad68)]/60"
-            style={{ color: LANDING_TEXT }}
+            style={{ color: MODE_TEXT }}
             aria-expanded={open}
             aria-controls="public-dark-mobile-nav"
             aria-label={open ? 'Menü schließen' : 'Menü öffnen'}
@@ -160,7 +171,10 @@ export function PublicDarkHeader({
         <div
           id="public-dark-mobile-nav"
           className="border-t border-white/[0.06] px-6 py-4 backdrop-blur-md md:hidden"
-          style={{ backgroundColor: `${LANDING_BG}fa` }}
+          style={{
+            borderColor: MODE_HEADER_BORDER,
+            backgroundColor: `color-mix(in srgb, ${MODE_BG} 94%, transparent)`,
+          }}
           role="dialog"
           aria-label="Navigation"
         >

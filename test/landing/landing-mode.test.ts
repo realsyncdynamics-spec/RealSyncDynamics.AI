@@ -1,5 +1,5 @@
 /**
- * Die Startseite laesst sich zwischen zwei Farben umschalten.
+ * Die Startseite laesst sich zwischen drei Farben umschalten.
  */
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
@@ -22,23 +22,26 @@ const heroTitanium = read('src/components/landing/HeroTitanium.tsx');
 const modeSwitch = read('src/components/landing/LandingModeSwitch.tsx');
 const css = read('src/index.css');
 
-describe('Farbmodus — zwei Paletten, ein Attribut', () => {
-  it('genau zwei Modi, beide benannt, Gold als Vorgabe', () => {
-    expect([...LANDING_MODES]).toEqual(['gold', 'cyan']);
-    expect(LANDING_MODE_LABEL.gold).toBe('Gold');
+describe('Farbmodus — drei Paletten, ein Attribut', () => {
+  it('genau drei Modi, benannt, Gold als Vorgabe', () => {
+    expect([...LANDING_MODES]).toEqual(['gold', 'cyan', 'light']);
+    expect(LANDING_MODE_LABEL.gold).toBe('Dunkel');
     expect(LANDING_MODE_LABEL.cyan).toBe('Cyan');
+    expect(LANDING_MODE_LABEL.light).toBe('Hell');
     expect(LANDING_MODES[0]).toBe('gold');
   });
 
-  it('beide Paletten stehen in src/index.css und unterscheiden sich', () => {
+  it('alle Paletten stehen in src/index.css und unterscheiden sich', () => {
     expect(css).toContain('[data-landing-mode]');
     expect(css).toContain("[data-landing-mode='cyan']");
+    expect(css).toContain("[data-landing-mode='light']");
     expect(css).toContain('--rsd-accent: #d6ad68;');
     expect(css).toContain('--rsd-accent: #22c3e6;');
+    expect(css).toContain('--rsd-bg: #f4efe6;');
     expect(css).toContain('--rsd-shot-filter:');
   });
 
-  it('jede Variable der Gold-Fassung hat eine Cyan-Entsprechung', () => {
+  it('jede Variable der Gold-Fassung hat Cyan- und Hell-Entsprechung', () => {
     const block = (selector: string) => {
       const start = css.indexOf(selector);
       expect(start, `${selector} fehlt`).toBeGreaterThan(-1);
@@ -48,8 +51,10 @@ describe('Farbmodus — zwei Paletten, ein Attribut', () => {
     const names = (body: string) => new Set(body.match(/--rsd-[a-z-]+/g) ?? []);
     const gold = names(block('[data-landing-mode] {'));
     const cyan = names(block("[data-landing-mode='cyan']"));
+    const light = names(block("[data-landing-mode='light']"));
     expect(gold.size).toBeGreaterThan(5);
     expect([...gold].filter((n) => !cyan.has(n))).toEqual([]);
+    expect([...gold].filter((n) => !light.has(n))).toEqual([]);
   });
 
   it('die Startseite setzt das Attribut und traegt den Schalter im Kopf', () => {

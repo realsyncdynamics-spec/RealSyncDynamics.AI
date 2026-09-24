@@ -1,7 +1,7 @@
 /**
- * Production landing. Fold follows Brand Direction v1.0 / Titan lock:
- * static Europe night map, gold operating loop, infra lines, plan pills.
- * No 3D globe on `/`.
+ * Production landing — Dominik Go Homepage 2026-09-24.
+ * Structure: Hero → Problem → 4 Modules → Evidence Flow → EU-Trust → Audiences → CTA.
+ * Dark/Gold/Cream. No 3D globe on `/`.
  */
 import { type PointerEvent as ReactPointerEvent } from 'react';
 import '../../styles/governance-landing-polish.css';
@@ -10,30 +10,24 @@ import { ArrowRight } from 'lucide-react';
 import { SEOHead } from '../../components/SEOHead';
 import { HeroTitanium } from '../../components/landing/HeroTitanium';
 import { GovernanceStatusBar } from '../../components/landing/GovernanceStatusBar';
-import { GovernanceLoopBand } from '../../components/landing/GovernanceLoopBand';
 import { GovernanceFooter } from '../../components/landing/GovernanceFooter';
 import { RegulatoryTicker } from '../../components/landing/RegulatoryTicker';
-import { WorkspacePreviewSection } from '../../components/landing/WorkspacePreviewSection';
-import { GovernanceToolsSection } from '../../components/landing/GovernanceToolsSection';
-import { PlatformCapabilitiesSection } from '../../components/landing/PlatformCapabilitiesSection';
-import { RuntimeLayersSection } from '../../components/landing/RuntimeLayersSection';
-import { EvidenceTrustSection } from '../../components/landing/EvidenceTrustSection';
+import { HomepageBriefSections } from '../../components/landing/HomepageBriefSections';
 import { GovernancePricingSection } from '../../components/landing/GovernancePricingSection';
-import { LandingRoadmapSection } from '../../components/landing/LandingRoadmapSection';
-import { GovernanceEnterpriseSection } from '../../components/landing/GovernanceEnterpriseSection';
 import { GovernanceAiHeader } from '../../components/landing/GovernanceAiHeader';
 import { SectionEyebrow, SectionHeading } from '../../components/landing/GovernanceSectionChrome';
 import {
   GA_SANS,
   GA_LINE_SOFT,
-  GA_MONO,
   GA_MUTED,
   GA_PILL_GHOST,
   GA_PILL_PRIMARY,
-  GA_SILVER,
 } from '../../components/landing/governance-ai-theme';
-import { POLICY_PACKS } from '../../components/landing/policy-packs';
-import { BRAND_VALUE_PROPOSITION, HERO_SCAN_CTA_LABEL } from '../../components/governance-frontend/hero-content';
+import {
+  BRAND_VALUE_PROPOSITION,
+  HERO_DASHBOARD_CTA_LABEL,
+  HERO_SCAN_CTA_LABEL,
+} from '../../components/governance-frontend/hero-content';
 import { SEO_CONFIG } from '../../config/seo';
 import { PUBLIC_CTA } from '../../config/public-nav';
 
@@ -61,15 +55,8 @@ export function DesignGovernanceAiLanding() {
         <GovernanceAiHeader />
         <HeroTitanium />
         <RegulatoryTicker />
-        <GovernanceLoopBand />
-        <WorkspacePreviewSection />
-        <GovernanceToolsSection />
-        <PlatformCapabilitiesSection />
-        <RuntimeLayersSection />
-        <EvidenceTrustSection />
+        <HomepageBriefSections />
         <GovernancePricingSection />
-        <LandingRoadmapSection />
-        <GovernanceEnterpriseSection />
 
         <section
           id="next"
@@ -78,30 +65,13 @@ export function DesignGovernanceAiLanding() {
           aria-labelledby="next-heading"
         >
           <div className="mx-auto w-full max-w-[780px] text-center">
-            <SectionEyebrow>ONE GOVERNANCE PLANE</SectionEyebrow>
+            <SectionEyebrow>STARTEN</SectionEyebrow>
             <span id="next-heading">
-              <SectionHeading centered>Governance statt Checkliste.</SectionHeading>
+              <SectionHeading centered>Kontrollierbar. Nachweisbar. Auditbereit.</SectionHeading>
             </span>
             <p className="mx-auto mt-4 max-w-[46rem] text-pretty leading-[1.7]" style={{ color: GA_MUTED }}>
               {BRAND_VALUE_PROPOSITION}
             </p>
-            <div className="mt-6 flex flex-wrap justify-center gap-2">
-              {POLICY_PACKS.map((pack) => (
-                <span
-                  key={pack.label}
-                  className={`whitespace-nowrap rounded border px-3 py-[7px] text-[11px] tracking-[.14em] ${
-                    pack.next ? 'border-dashed' : ''
-                  }`}
-                  style={{
-                    fontFamily: GA_MONO,
-                    borderColor: GA_LINE_SOFT,
-                    color: pack.next ? 'var(--ga-titan)' : GA_SILVER,
-                  }}
-                >
-                  {pack.label}
-                </span>
-              ))}
-            </div>
             <div className="mt-[34px] flex flex-wrap justify-center gap-3.5">
               <Link
                 to={PUBLIC_CTA.to}
@@ -116,8 +86,8 @@ export function DesignGovernanceAiLanding() {
                 {HERO_SCAN_CTA_LABEL}
                 <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </Link>
-              <a href="#pricing" className={GA_PILL_GHOST} style={{ fontFamily: GA_SANS }}>
-                Preise ansehen
+              <a href="#audit-trail" className={GA_PILL_GHOST} style={{ fontFamily: GA_SANS }}>
+                {HERO_DASHBOARD_CTA_LABEL}
               </a>
             </div>
           </div>

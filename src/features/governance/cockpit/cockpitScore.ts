@@ -23,8 +23,6 @@ export interface CockpitPosture {
   assetMappingsPercent: number;
 }
 
-// Penalty-Gewichte je offenem Posten — übernommen aus WorkspaceHome:352-361,
-// damit Cockpit und Status-Home denselben Massstab verwenden.
 export const PENALTY_WEIGHTS = {
   dsrOverdue: 12,
   incident: 10,
@@ -33,7 +31,6 @@ export const PENALTY_WEIGHTS = {
   approval: 3,
 } as const;
 
-// Mischung: 60 % offene-Posten-Penalty, 40 % KPI-Posture (Policy-/Evidence-Abdeckung).
 export const SCORE_BLEND = { penalty: 0.6, posture: 0.4 } as const;
 
 function clamp(n: number, lo = 0, hi = 100): number {
@@ -52,8 +49,8 @@ export function computePenaltyScore(counts: CockpitCounts): number {
 }
 
 /**
- * Gesamt-Governance-Score (0..100). Ohne Posture-Daten fällt er auf den
- * reinen Penalty-Score zurück (z. B. wenn noch kein KPI-Snapshot existiert).
+ * Gesamt-Governance-Score (0..100) wenn Counts + Posture vorliegen.
+ * Ohne Snapshot nicht aufrufen — dafür computeGovernanceScoreIfReliable.
  */
 export function computeGovernanceScore(
   counts: CockpitCounts,
@@ -70,8 +67,8 @@ export function computeGovernanceScore(
 }
 
 /**
- * Score nur aus erfüllten Count-Queries. Abgelehnte Zähler als 0 zu lesen
- * würde 100 / „Sehr gut“ ergeben — das ist kein leerer Mandant.
+ * Anzeigbarer Score. Ohne zuverlässige Counts oder ohne KPI-Snapshot: null.
+ * Leere Zähler ohne Snapshot dürfen nicht als 100 / „Sehr gut“ erscheinen.
  */
 export function computeGovernanceScoreIfReliable(
   countsReliable: boolean,
@@ -79,19 +76,15 @@ export function computeGovernanceScoreIfReliable(
   posture?: CockpitPosture | null,
 ): number | null {
   if (!countsReliable) return null;
+  if (!posture) return null;
   return computeGovernanceScore(counts, posture);
 }
 
-/**
- * Audit-Readiness in Prozent. v1-Proxy = Anteil der Assets mit
- * Control-Mapping (assets_with_mappings_percent). Ohne Snapshot → null.
- */
 export function computeAuditReadiness(posture?: CockpitPosture | null): number | null {
   if (!posture) return null;
   return Math.round(clamp(posture.assetMappingsPercent));
 }
 
-/** Ampel-Stufe passend zu den ScoreGauge-Schwellen. */
 export function scoreLevel(score: number): ScoreLevel {
   if (score >= 85) return 'passed';
   if (score >= 65) return 'low';
@@ -99,7 +92,6 @@ export function scoreLevel(score: number): ScoreLevel {
   return 'critical';
 }
 
-/** CEO-taugliches Label (deutsch). */
 export function scoreLabel(score: number): string {
   if (score >= 90) return 'Sehr gut';
   if (score >= 75) return 'Gut';

@@ -163,8 +163,24 @@ describe('ComplianceStatusView', () => {
     });
     expect(getByTestId('compliance-partial-failure')).toBeInTheDocument();
     expect(queryByText('Noch keine Governance-Daten')).toBeNull();
-    expect(getByTestId('governance-score').textContent).toContain('Score nicht verfügbar');
+    expect(getByTestId('governance-score').textContent).toContain('Noch nicht bewertet');
+    expect(getByTestId('risk-index').textContent).toContain('Noch nicht bewertet');
+    expect(getByTestId('evidence-health').textContent).toContain('Noch nicht bewertet');
+    expect(getByTestId('audit-readiness').textContent).toContain('Noch nicht bewertet');
     expect(getByTestId('governance-score').textContent).not.toMatch(/Sehr gut/);
+  });
+
+  it('shows KPI snapshot metadata for a measured governance score', () => {
+    const { getByTestId } = rendered({
+      data: fixture({
+        counts: { ...ZERO, incidents: 1 },
+        score: 72,
+        lastUpdated: '2026-09-24',
+      }),
+    });
+    expect(getByTestId('governance-score').textContent).toContain('Quelle: governance_kpi_snapshots');
+    expect(getByTestId('governance-score').textContent).toContain('Stand: 2026-09-24');
+    expect(getByTestId('governance-score').textContent).toContain('Scope: gesamter Mandant');
   });
 
   it('lists prioritized open measures with deep links', () => {

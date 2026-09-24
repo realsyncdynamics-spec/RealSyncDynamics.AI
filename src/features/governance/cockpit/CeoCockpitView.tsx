@@ -143,7 +143,7 @@ export function CeoCockpitView() {
               {data.score === null ? (
                 <>
                   <p className="font-mono text-5xl font-bold text-titanium-600">–</p>
-                  <p className="text-xs text-titanium-400">Score nicht verfügbar</p>
+                  <p className="text-xs text-titanium-400">Noch nicht bewertet</p>
                 </>
               ) : (
                 <>

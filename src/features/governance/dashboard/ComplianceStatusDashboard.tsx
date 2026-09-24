@@ -435,6 +435,8 @@ export function ComplianceStatusView({
                 testId="governance-score"
                 eyebrow="Governance-Score"
                 score={data.score}
+                measuredAt={data.lastUpdated}
+                tenantScope="gesamter Mandant"
                 hint="Self-Assessment aus offenen Pflichten und KPI-Abdeckung. Keine Zertifizierung."
               />
               <RiskCard risk={data.riskIndex} />
@@ -1049,22 +1051,31 @@ function ScoreCard({
   testId,
   eyebrow,
   score,
+  measuredAt,
+  tenantScope,
   hint,
 }: {
   testId: string;
   eyebrow: string;
   score: number | null;
+  measuredAt: string | null;
+  tenantScope: string;
   hint: string;
 }) {
   return (
     <Card className="bg-obsidian-900 flex flex-col items-center justify-center gap-3 py-6 border-0" data-testid={testId}>
       <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-titanium-500">{eyebrow}</p>
       {score === null ? (
-        <EmptyMetric value="–" caption="Score nicht verfügbar" />
+        <EmptyMetric value="–" caption="Noch nicht bewertet" />
       ) : (
         <>
           <ScoreGauge score={score} size={112} tone="health" />
           <StatusBadge level={scoreLevel(score)} label={scoreLabel(score)} />
+          {measuredAt && (
+            <p className="px-4 text-center text-[11px] text-titanium-500 font-mono">
+              Quelle: governance_kpi_snapshots · Stand: {measuredAt} · Scope: {tenantScope}
+            </p>
+          )}
         </>
       )}
       <p className="px-4 text-center text-[11px] text-titanium-500">{hint}</p>
@@ -1077,7 +1088,7 @@ function RiskCard({ risk }: { risk: RiskIndex }) {
     <Card className="bg-obsidian-900 flex flex-col items-center justify-center gap-3 py-6 border-0" data-testid="risk-index">
       <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-titanium-500">Residualrisiko</p>
       {risk.score === null ? (
-        <EmptyMetric value="–" caption={risk.label} />
+        <EmptyMetric value="–" caption="Noch nicht bewertet" />
       ) : (
         <>
           <ScoreGauge score={risk.score} size={112} tone="risk" label="Risiko-Index" />
@@ -1097,7 +1108,7 @@ function EvidenceCard({ health }: { health: EvidenceHealth }) {
     <Card className="bg-obsidian-900 flex flex-col items-center justify-center gap-3 py-6 border-0" data-testid="evidence-health">
       <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-titanium-500">Evidence-Gesundheit</p>
       {health.percent === null ? (
-        <EmptyMetric value="–" caption={health.label} />
+        <EmptyMetric value="–" caption="Noch nicht bewertet" />
       ) : (
         <>
           <ScoreGauge score={health.percent} size={112} tone="health" label="Health" />
@@ -1124,14 +1135,18 @@ function ReadinessCard({
       <CardBody className="flex flex-col justify-center h-full gap-3 py-6">
         <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-titanium-500">Audit-Readiness</p>
         <div className="flex items-baseline gap-3">
-          <span className="font-mono text-5xl font-bold text-titanium-50">
+          <span className={`font-mono text-5xl font-bold ${readiness === null ? 'text-titanium-600' : 'text-titanium-50'}`}>
             {readiness === null ? '–' : `${readiness}%`}
           </span>
           {trend && <TrendChip {...trend} />}
         </div>
-        <p className="text-xs text-titanium-400">
-          Anteil der Objekte mit Kontroll-Mapping. Indikativ, keine Bescheinigung.
-        </p>
+        {readiness === null ? (
+          <p className="text-xs text-titanium-400">Noch nicht bewertet</p>
+        ) : (
+          <p className="text-xs text-titanium-400">
+            Anteil der Objekte mit Kontroll-Mapping. Indikativ, keine Bescheinigung.
+          </p>
+        )}
       </CardBody>
     </Card>
   );

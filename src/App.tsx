@@ -78,6 +78,7 @@ const CookieConsentSdk = lazy(() => import('./pages/CookieConsentSdk').then((m) 
 const AuditPro = lazy(() => import('./pages/AuditPro').then((m) => ({ default: m.AuditPro })));
 const DsgvoToolVergleich = lazy(() => import('./pages/DsgvoToolVergleich').then((m) => ({ default: m.DsgvoToolVergleich })));
 const ContactSales = lazy(() => import('./pages/ContactSales').then((m) => ({ default: m.ContactSales })));
+const FrontendBuilderLanding = lazy(() => import('./pages/frontend-builder/FrontendBuilderLanding').then((m) => ({ default: m.FrontendBuilderLanding })));
 const KontaktPage = lazy(() => import('./pages/KontaktPage').then((m) => ({ default: m.KontaktPage })));
 const EnterpriseAiOs = lazy(() => import('./pages/EnterpriseAiOs').then((m) => ({ default: m.EnterpriseAiOs })));
 const EnterpriseAiOsFoundingAccess = lazy(() => import('./pages/EnterpriseAiOsFoundingAccess').then((m) => ({ default: m.EnterpriseAiOsFoundingAccess })));
@@ -587,6 +588,7 @@ function RoutesWithTracking() {
       <Route path="/audit-pro" element={<AuditPro />} />
       <Route path="/dsgvo-tool-vergleich" element={<DsgvoToolVergleich />} />
       <Route path="/contact-sales" element={<ContactSales />} />
+      <Route path="/frontend-builder" element={<FrontendBuilderLanding />} />
       <Route path="/kontakt" element={<KontaktPage />} />
       <Route path="/contact" element={<Navigate to="/kontakt" replace />} />
       <Route path="/enterprise" element={<EnterpriseLanding />} />

@@ -423,6 +423,17 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     ]),
   },
 
+  '/frontend-builder': {
+    title: 'Frontend Builder für SaaS, AI und B2B-Websites',
+    description:
+      'Wir planen, designen und bauen performante Frontends mit klarem Scope statt endlosen Erstgesprächen. Projekt jetzt qualifizieren.',
+    canonical: `${SITE_URL}/frontend-builder`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'Frontend Builder', url: '/frontend-builder' },
+    ]),
+  },
+
   // ─── Tier 2 — Alternative Pages (high commercial intent) ─────────────────
   '/cookiebot-alternative': {
     title: 'Cookiebot Alternative mit EU-Hosting & AI-Act | RealSyncDynamics.AI',

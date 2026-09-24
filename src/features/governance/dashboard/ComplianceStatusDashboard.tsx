@@ -1081,16 +1081,16 @@ function ScoreCard({
             aria-label={`${eyebrow} Metadaten`}
           >
             <div>
-              <dt className="sr-only">Quelle</dt>
-              <dd>Quelle: governance_kpi_snapshots</dd>
+              <dt className="inline">Quelle:</dt>{' '}
+              <dd className="inline">governance_kpi_snapshots</dd>
             </div>
             <div>
-              <dt className="sr-only">Stand</dt>
-              <dd>Stand: {measuredAt ?? 'nicht verfügbar'}</dd>
+              <dt className="inline">Stand:</dt>{' '}
+              <dd className="inline">{measuredAt ?? 'nicht verfügbar'}</dd>
             </div>
             <div>
-              <dt className="sr-only">Scope</dt>
-              <dd>Scope: {tenantScope}</dd>
+              <dt className="inline">Scope:</dt>{' '}
+              <dd className="inline">{tenantScope}</dd>
             </div>
           </dl>
         </>

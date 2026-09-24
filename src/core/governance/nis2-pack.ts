@@ -4,11 +4,19 @@
  * Preview-only: keine Scores, keine Maturity, keine Compliance-Claims.
  * Coverage-Schlüssel: `framework::control_code` (z. B. NIS2::RM-01), kompatibel
  * zu `PackControlRef` in `src/lib/policy-packs/coverage.ts`.
+ * BSI IT-Grundschutz-Referenzen sind Orientierungs-Grid unter den 10 Controls,
+ * kein eigenes Landing-/LIVE-Framework.
  */
 import packJson from './policy-pack-nis2.json';
 import type { PackControlRef } from '../../lib/policy-packs/coverage';
 
 export type Nis2ControlStatusDefault = 'preview';
+
+export interface Nis2GrundschutzRef {
+  baustein: string;
+  title: string;
+  standard: 'BSI IT-Grundschutz-Kompendium';
+}
 
 export interface Nis2PackControl extends PackControlRef {
   id: string;
@@ -17,6 +25,7 @@ export interface Nis2PackControl extends PackControlRef {
   description: string;
   evidence_hint: string;
   status_default: Nis2ControlStatusDefault;
+  grundschutz_refs: readonly Nis2GrundschutzRef[];
 }
 
 export interface Nis2PolicyPack {
@@ -27,6 +36,8 @@ export interface Nis2PolicyPack {
   industry: string;
   legal_basis_version: string;
   status: 'preview';
+  implementation_method: 'BSI IT-Grundschutz';
+  grundschutz_edition: string;
   disclaimer: string;
   controls: readonly Nis2PackControl[];
 }

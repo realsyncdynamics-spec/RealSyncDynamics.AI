@@ -1,13 +1,15 @@
 /**
- * NIS2 Policy Pack — Schema- und Coverage-Anbindung (§ 30 BSIG / Art. 21 NIS2).
+ * NIS2 Policy Pack — Schema-, Coverage- und Grundschutz-Anbindung.
  */
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   nis2CoverageKey,
   nis2PackControlRefs,
   nis2PolicyPack,
 } from '../../src/core/governance/nis2-pack';
-import { computeCoverage } from '../../src/lib/policy-packs/coverage';
+import { computeCoverage, frameworkLabel } from '../../src/lib/policy-packs/coverage';
 
 const EXPECTED_CODES = [
   'RM-01',
@@ -23,7 +25,7 @@ const EXPECTED_CODES = [
 ] as const;
 
 describe('NIS2 policy pack', () => {
-  it('hat die kanonischen Pack-Metadaten (preview)', () => {
+  it('hat die kanonischen Pack-Metadaten (preview + Grundschutz-Methode)', () => {
     expect(nis2PolicyPack.pack_id).toBe('nis2');
     expect(nis2PolicyPack.pack_name).toBe('NIS2 — Risikomanagement § 30 BSIG');
     expect(nis2PolicyPack.version).toBe('0.1.0');
@@ -32,7 +34,10 @@ describe('NIS2 policy pack', () => {
     expect(nis2PolicyPack.legal_basis_version).toContain('BSIG');
     expect(nis2PolicyPack.legal_basis_version).toContain('Art. 21');
     expect(nis2PolicyPack.status).toBe('preview');
-    expect(nis2PolicyPack.disclaimer.length).toBeGreaterThan(10);
+    expect(nis2PolicyPack.implementation_method).toBe('BSI IT-Grundschutz');
+    expect(nis2PolicyPack.grundschutz_edition).toBe('Kompendium Edition 2023');
+    expect(nis2PolicyPack.disclaimer).toMatch(/BSI-Registrierung/);
+    expect(nis2PolicyPack.disclaimer).toMatch(/kein Nachweis/);
   });
 
   it('enthält genau 10 Controls mit NIS2-01..10 und fester control_code-Reihenfolge', () => {
@@ -66,6 +71,21 @@ describe('NIS2 policy pack', () => {
     }
   });
 
+  it('jedes Control hat >= 1 Grundschutz-Ref mit baustein/title/standard', () => {
+    for (const c of nis2PolicyPack.controls) {
+      expect(c.grundschutz_refs.length).toBeGreaterThanOrEqual(1);
+      for (const r of c.grundschutz_refs) {
+        expect(r.baustein.trim().length).toBeGreaterThan(0);
+        expect(r.title.trim().length).toBeGreaterThan(0);
+        expect(r.standard).toBe('BSI IT-Grundschutz-Kompendium');
+      }
+    }
+    // SC-01: Edition-2023-Abweichung OPS.2.1 → OPS.2.3
+    const sc = nis2PolicyPack.controls.find((c) => c.control_code === 'SC-01')!;
+    expect(sc.grundschutz_refs.map((r) => r.baustein)).toContain('OPS.2.3');
+    expect(sc.grundschutz_refs.map((r) => r.baustein)).not.toContain('OPS.2.1');
+  });
+
   it('Coverage-Keys sind NIS2::<control_code> und PackControlRef-kompatibel', () => {
     const refs = nis2PackControlRefs();
     expect(refs).toHaveLength(10);
@@ -76,5 +96,14 @@ describe('NIS2 policy pack', () => {
     expect(cov.total).toBe(10);
     expect(cov.notStarted).toBe(10);
     expect(cov.percent).toBe(0);
+  });
+
+  it('Landing policy-packs.ts: kein BSI_GRUNDSCHUTZ; NIS2/TISAX/DORA haben next', () => {
+    const landing = readFileSync(resolve('src/components/landing/policy-packs.ts'), 'utf8');
+    expect(landing).not.toMatch(/BSI_GRUNDSCHUTZ|Grundschutz/);
+    expect(landing).toContain("['NIS2', true]");
+    expect(landing).toContain("['TISAX', true]");
+    expect(landing).toContain("['DORA', true]");
+    expect(frameworkLabel('BSI_GRUNDSCHUTZ')).toBe('BSI IT-Grundschutz');
   });
 });

@@ -4,7 +4,7 @@
  * Diese Datei enthält alle gesetzlich erforderlichen Hinweise für:
  * - DSGVO (Datenschutz)
  * - EU AI Act (KI-Governance)
- * - UG (haftungsbeschränkt) Rechtsform
+ * - Rechtsform laut COMPANY (aktuell: Einzelunternehmen)
  *
  * Alle Texte sollten zentral von hier aus konsumiert werden.
  */
@@ -14,7 +14,7 @@ import { COMPANY, getCompanyDisplayName, getCompanyAddress } from '../config/com
 // ─── DSGVO Hinweise ─────────────────────────────────────────────────────────
 
 export const DSGVO_COMPLIANCE_NOTICE = `
-RealSync Dynamics AI ist eine Compliance-Support-Plattform für technische und
+RealSync Dynamics / RealSyncDynamics.AI ist eine Compliance-Support-Plattform für technische und
 organisatorische Maßnahmen. Die Plattform liefert KEINE Rechtsberatung.
 
 Alle Audit-Ergebnisse, Risikobewertungen und Empfehlungen dienen der
@@ -40,9 +40,13 @@ Risikoeinschätzung. Nutzer sollten sich bewusst sein:
 Weitere Informationen: https://ec.europa.eu/commission/ai-act-documents
 `;
 
-// ─── UG Specific Legal Notice ──────────────────────────────────────────────
+// ─── Legal Notice (Rechtsform laut COMPANY) ────────────────────────────────
 
 export function getUGLegalNotice(): string {
+  const liability =
+    COMPANY.legalForm === 'UG' || COMPANY.legalForm === 'GmbH'
+      ? `- Die Haftung richtet sich nach den Regeln der ${COMPANY.legalForm}`
+      : '- Einzelunternehmen: Inhaber haftet mit Privat- und Betriebsvermögen nach geltendem Recht';
   return `
 Betreiber dieser Plattform:
 
@@ -51,8 +55,8 @@ ${getCompanyAddress()}
 E-Mail: ${COMPANY.supportEmail}
 
 Rechtliche Hinweise:
-- Diese Plattform wird als ${COMPANY.legalForm} (haftungsbeschränkt) betrieben
-- Die Haftung ist auf die Betriebsvermögen der UG beschränkt
+- Diese Plattform wird als ${getCompanyDisplayName(true)} betrieben
+${liability}
 - Für die Nutzung der Plattform gelten die Allgemeinen Geschäftsbedingungen (AGB)
 `;
 }
@@ -113,7 +117,9 @@ export function generateImpressumText(): string {
   const vat = COMPANY.vatId ? `USt-IdNr.: ${COMPANY.vatId}` : 'USt-IdNr.: [noch zu vergeben]';
   const registry = COMPANY.registryEntry
     ? `${COMPANY.registryEntry}`
-    : '[Handelsregister-Eintrag: noch zu vergeben]';
+    : (COMPANY.legalForm === 'Einzelunternehmen'
+      ? 'Kein Handelsregistereintrag (Einzelunternehmen)'
+      : '[Handelsregister-Eintrag: noch zu vergeben]');
 
   return `
 IMPRESSUM
@@ -134,7 +140,7 @@ ${registry}
 Wirtschafts-ID: ${COMPANY.economicId || '[wird durch BZSt vergeben]'}
 
 Vertretungsberechtigung:
-Geschäftsführer/in: [Name wird ergänzt]
+Inhaber: Dominik Steiner
 
 Haftungshinweis:
 Trotz sorgfältiger Prüfung übernehmen wir für die Richtigkeit, Vollständigkeit
@@ -172,7 +178,7 @@ Die vollständigen Bedingungen finden Sie auf ${COMPANY.website}/terms
    - Bug-Fixes nach bestem Wissen
 
 4. Haftung
-   - ${COMPANY.legalForm}-Haftungsbegrenzung (Betriebsvermögen)
+   - Haftung nach den Regeln der Rechtsform ${COMPANY.legalForm}
    - Ausnahme: Produkthaftung, Datenschutzverletzungen (§ 88 GDPR)
 
 5. Kündigung
@@ -190,7 +196,7 @@ Die vollständigen Bedingungen finden Sie auf ${COMPANY.website}/terms
    - Weitergenutzung = Annahme der neuen Bedingungen
 
 8. Streitbeilegung
-   - Gerichtsstand: Jena, Deutschland
+   - Gerichtsstand: Neuhaus am Rennweg, Deutschland
    - Anwendbares Recht: Deutsches Recht
    - Verbraucherschlichtung siehe ${COMPANY.website}/complaints
 `;
@@ -203,10 +209,11 @@ export function areLegalDocsComplete(): {
 } {
   const missing: string[] = [];
 
-  if (!COMPANY.vatId) {
+  // Kleinunternehmer § 19 UStG: USt-IdNr. optional bis zur Vergabe.
+  if (COMPANY.legalForm !== 'Einzelunternehmen' && !COMPANY.vatId) {
     missing.push('USt-IdNr. (Umsatzsteuer-Identifikationsnummer)');
   }
-  if (!COMPANY.registryEntry) {
+  if ((COMPANY.legalForm === 'UG' || COMPANY.legalForm === 'GmbH') && !COMPANY.registryEntry) {
     missing.push('Handelsregister-Eintrag (HRB)');
   }
   if (!COMPANY.supportPhoneOptional) {

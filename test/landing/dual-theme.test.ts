@@ -109,12 +109,12 @@ describe('Landing — Europe-network', () => {
     expect(header).toContain('to="/audit"');
   });
 
-  it('renders Titan H1 + Operating Loop + Infrastrukturzeilen + Plan-Anker', () => {
+  it('renders current homepage H1 + Operating Loop + Infrastrukturzeilen + Plan-Anker', () => {
     render(createElement(MemoryRouter, null, createElement(MainLanding)));
     const h1 = screen.getByRole('heading', { level: 1 }).textContent ?? '';
-    expect(h1).toMatch(/AI Compliance/);
-    expect(h1).toMatch(/Operations OS/);
-    expect(h1).toMatch(/for Europe/);
+    expect(h1).toMatch(/Machen Sie KI-Nutzung/);
+    expect(h1).toMatch(/kontrollierbar,\s*nachweisbar/);
+    expect(h1).toMatch(/auditbereit/);
 
     // Operating Loop als Pfeilkette, nicht als Satzreihe.
     expect(screen.getAllByText(HERO_OPERATING_LOOP).length).toBeGreaterThan(0);
@@ -132,7 +132,7 @@ describe('Landing — Europe-network', () => {
       expect(screen.getAllByText(`${tier!.priceEur}€`).length).toBeGreaterThan(0);
     }
 
-    expect(HERO_HEADLINE_TEST_SUBSTRING).toBe('AI Compliance');
+    expect(HERO_HEADLINE_TEST_SUBSTRING).toBe('kontrollierbar');
   });
 
   it('zeigt Beispielansicht + Das Betriebssystem below the fold', () => {

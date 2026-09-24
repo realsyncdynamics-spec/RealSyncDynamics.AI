@@ -68,18 +68,18 @@ describe('implementation-status registry', () => {
     }
   });
 
-  it('hero headline is Replit Dark/Gold SSOT lock', () => {
+  it('hero headline is homepage-brief SSOT lock', () => {
     const hero = readFileSync(
       resolve('src/components/governance-frontend/hero-content.ts'),
       'utf8',
     );
-    expect(hero).toContain('AI Compliance');
-    expect(hero).toContain('Operations OS');
-    expect(hero).toContain('for Europe');
-    expect(hero).toContain("HERO_HEADLINE_TEST_SUBSTRING = 'AI Compliance'");
-    expect(hero).toContain("HERO_SCAN_CTA_LABEL = 'Free Audit starten'");
-    expect(hero).toContain("HERO_SCAN_CTA_LONG = 'Free Audit starten'");
-    expect(hero).toContain("HERO_DASHBOARD_CTA_LABEL = 'Live Dashboard ansehen'");
+    expect(hero).toContain('Machen Sie KI-Nutzung');
+    expect(hero).toContain('kontrollierbar, nachweisbar');
+    expect(hero).toContain('auditbereit.');
+    expect(hero).toContain("HERO_HEADLINE_TEST_SUBSTRING = 'kontrollierbar'");
+    expect(hero).toContain("HERO_SCAN_CTA_LABEL = 'Governance-Scan starten'");
+    expect(hero).toContain("HERO_SCAN_CTA_LONG = 'Governance-Scan starten'");
+    expect(hero).toContain("HERO_DASHBOARD_CTA_LABEL = 'Beispiel-Audit-Trail ansehen'");
     expect(hero).not.toContain('99.9');
     expect(hero).not.toContain('UPTIME');
   });

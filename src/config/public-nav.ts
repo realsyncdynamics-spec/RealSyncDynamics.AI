@@ -382,9 +382,9 @@ export const PUBLIC_FOOTER_LINKS: PublicNavLeaf[] = [
 ];
 
 export const PUBLIC_CTA = {
-  /** Acquisition CTA — Brand Direction v1.0 (never „Demo“ / „testen“). */
-  label: 'Free Audit starten',
-  shortLabel: 'Free Audit',
+  /** Acquisition CTA — Dominik Go Homepage 2026-09-24 (never Demo/Pilot/Call). */
+  label: 'Governance-Scan starten',
+  shortLabel: 'Governance-Scan',
   to: '/audit',
 } as const;
 

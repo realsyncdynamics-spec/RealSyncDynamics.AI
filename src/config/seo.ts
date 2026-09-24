@@ -254,11 +254,11 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
   // ─── Tier 1 — Hero / Top-Conversion ──────────────────────────────────────
   '/': {
     // Europe-OS hero lock — matches hero-content.ts H1.
-    title: 'RealSyncDynamics.AI — AI Compliance Operations OS for Europe',
+    title: 'RealSyncDynamics.AI — KI kontrollierbar, nachweisbar, auditbereit',
     description:
-      'Runtime governance for regulated AI systems. Continuous evidence. EU-native by design. Free Audit starten.',
+      'RealSyncDynamics.AI erkennt KI- und Compliance-Risiken, setzt Richtlinien durch und erzeugt kontinuierliche Evidenz für EU AI Act und DSGVO. Governance-Scan starten.',
     canonical: `${SITE_URL}/`,
-    ogTitle: 'AI Compliance Operations OS for Europe',
+    ogTitle: 'KI-Nutzung kontrollierbar, nachweisbar und auditbereit',
     ogDescription:
       'Runtime governance for regulated AI systems. Continuous evidence. EU-native by design.',
   },

@@ -1063,7 +1063,11 @@ function ScoreCard({
   hint: string;
 }) {
   return (
-    <Card className="bg-obsidian-900 flex flex-col items-center justify-center gap-3 py-6 border-0" data-testid={testId}>
+    <Card
+      className="bg-obsidian-900 flex flex-col items-center justify-center gap-3 py-6 border-0"
+      data-testid={testId}
+      aria-describedby={score === null ? undefined : `${testId}-metadata`}
+    >
       <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-titanium-500">{eyebrow}</p>
       {score === null ? (
         <EmptyMetric value="–" caption="Noch nicht bewertet" />
@@ -1071,11 +1075,24 @@ function ScoreCard({
         <>
           <ScoreGauge score={score} size={112} tone="health" />
           <StatusBadge level={scoreLevel(score)} label={scoreLabel(score)} />
-          <div className="px-4 text-center text-xs text-titanium-400 font-mono space-y-1">
-            <p>Quelle: governance_kpi_snapshots</p>
-            <p>Stand: {measuredAt ?? 'nicht verfügbar'}</p>
-            <p>Scope: {tenantScope}</p>
-          </div>
+          <dl
+            id={`${testId}-metadata`}
+            className="px-4 text-center text-xs text-titanium-400 font-mono space-y-1"
+            aria-label={`${eyebrow} Metadaten`}
+          >
+            <div>
+              <dt className="sr-only">Quelle</dt>
+              <dd>Quelle: governance_kpi_snapshots</dd>
+            </div>
+            <div>
+              <dt className="sr-only">Stand</dt>
+              <dd>Stand: {measuredAt ?? 'nicht verfügbar'}</dd>
+            </div>
+            <div>
+              <dt className="sr-only">Scope</dt>
+              <dd>Scope: {tenantScope}</dd>
+            </div>
+          </dl>
         </>
       )}
       <p className="px-4 text-center text-[11px] text-titanium-500">{hint}</p>

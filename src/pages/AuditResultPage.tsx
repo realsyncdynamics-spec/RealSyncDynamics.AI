@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
 import { AuditResultView, type AuditResultFinding } from '../features/audit/AuditResultView';
 import { rememberPendingAudit } from '../features/audit/pendingAudit';
+import { getSupabase, isSupabaseConfigured } from '../lib/supabase';
 
 // AuditResultPage — sharable permalink for an audit result.
 //
@@ -54,6 +55,7 @@ export function AuditResultPage() {
   const [findings,  setFindings]  = useState<AuditResultFinding[]>(initialReport.findings ?? []);
   const [loading,   setLoading]   = useState(!hasWarmReport);
   const [error,     setError]     = useState<string | null>(null);
+  const [revealEmail, setRevealEmail] = useState(false);
 
   useEffect(() => {
     if (hasWarmReport)           return;
@@ -103,12 +105,29 @@ export function AuditResultPage() {
   // sie sonst weg. Nur die UUID, keine Befunde — siehe `pendingAudit.ts`.
   useEffect(() => { rememberPendingAudit(auditId); }, [auditId]);
 
+  // P0 Privacy: Klartext-E-Mail nur bei eingeloggter Session — Share-URLs sonst maskiert.
+  useEffect(() => {
+    if (!isSupabaseConfigured()) { setRevealEmail(false); return; }
+    let cancelled = false;
+    void getSupabase().auth.getSession().then(({ data }) => {
+      if (!cancelled) setRevealEmail(Boolean(data.session?.user));
+    });
+    const { data: sub } = getSupabase().auth.onAuthStateChange((_event, session) => {
+      setRevealEmail(Boolean(session?.user));
+    });
+    return () => {
+      cancelled = true;
+      sub.subscription.unsubscribe();
+    };
+  }, []);
+
   return (
     <AuditResultView
       auditId={auditId}
       domain={domain}
       score={score}
       email={initialReport.email}
+      revealEmail={revealEmail}
       createdAt={createdAt}
       coverage={initialReport.coverage}
       coverageNotice={initialReport.coverage_notice ?? undefined}

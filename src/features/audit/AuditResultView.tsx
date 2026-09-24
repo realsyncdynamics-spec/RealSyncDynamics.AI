@@ -13,6 +13,7 @@ import {
   type ActionTrack,
 } from '@/shared/reality-decision';
 import { bookableModuleById } from '@/shared/pricing';
+import { maskEmail } from '../../lib/maskEmail';
 
 /**
  * AuditResultView — Render-Surface fuer ein Audit-Ergebnis an
@@ -22,7 +23,7 @@ import { bookableModuleById } from '@/shared/pricing';
  * und Conversion):
  *
  *   1. Header
- *   2. Audit-Zusammenfassung (Domain, E-Mail, Zeit, ID, Score, Status,
+ *   2. Audit-Zusammenfassung (Domain, E-Mail maskiert/Login, Zeit, ID, Score, Status,
  *      Severity-Counts)            ← "10-Sekunden-Verstaendnis"
  *   3. Ergebnis in einem Satz       ← Klartext-Summary
  *   4. Methodik-Disclaimer
@@ -48,6 +49,8 @@ interface AuditResultViewProps {
   domain?:         string;
   score?:          number;
   email?:          string;
+  /** true nur bei eingeloggtem Owner — sonst maskierte E-Mail (teilbare URL). */
+  revealEmail?:    boolean;
   createdAt?:      string;
   coverage?:       'full' | 'limited' | 'failed';
   coverageNotice?: string;
@@ -163,7 +166,8 @@ function formatDateTime(iso?: string): string | null {
 }
 
 export function AuditResultView({
-  auditId, domain, score, email, createdAt, coverageNotice,
+  auditId, domain, score, email,
+  revealEmail = false, createdAt, coverageNotice,
   findings = [], loading = false, error = null,
 }: AuditResultViewProps) {
   const navigate = useNavigate();
@@ -234,6 +238,7 @@ export function AuditResultView({
               <SummaryBlock
                 domain={domain}
                 email={email}
+                revealEmail={revealEmail}
                 createdAt={createdAt}
                 auditId={auditId}
                 score={score}
@@ -294,10 +299,11 @@ export function AuditResultView({
 }
 
 function SummaryBlock({
-  domain, email, createdAt, auditId, score, counts,
+  domain, email, revealEmail = false, createdAt, auditId, score, counts,
 }: {
   domain?: string;
   email?: string;
+  revealEmail?: boolean;
   createdAt?: string;
   auditId: string;
   score?: number;
@@ -330,7 +336,9 @@ function SummaryBlock({
 
         <SumRow icon={<Mail className="h-3.5 w-3.5" />} label="Report-E-Mail">
           {email ? (
-            <span className="font-mono text-sm text-titanium-200">{email}</span>
+            <span className="font-mono text-sm text-titanium-200" data-testid="audit-report-email">
+              {revealEmail ? email : maskEmail(email)}
+            </span>
           ) : (
             <span className="text-xs text-titanium-500">
               nicht in dieser Ansicht verfuegbar

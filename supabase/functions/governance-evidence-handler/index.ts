@@ -77,12 +77,12 @@ Deno.serve(async (req) => {
 
       if (createErr) throw new Error(`Evidence creation: ${createErr.message}`);
 
-      return jsonResponse(200, {
+      return jsonResponse({
         ok: true,
         action: 'create',
         evidence_id: evidence.id,
         frameworks: evidence.framework_codes,
-      });
+      }, 200);
     } else if (body.action === 'tag') {
       if (!body.evidence_id) return jsonError(400, 'BAD_REQUEST', 'evidence_id required for tag');
 
@@ -110,13 +110,13 @@ Deno.serve(async (req) => {
 
       if (updateErr) throw new Error(`Tag update: ${updateErr.message}`);
 
-      return jsonResponse(200, {
+      return jsonResponse({
         ok: true,
         action: 'tag',
         evidence_id: body.evidence_id,
         frameworks: Array.from(updatedFrameworks),
         gaps: Array.from(updatedGaps),
-      });
+      }, 200);
     } else if (body.action === 'link') {
       if (!body.evidence_id) return jsonError(400, 'BAD_REQUEST', 'evidence_id required for link');
 
@@ -132,11 +132,11 @@ Deno.serve(async (req) => {
 
       if (linkErr) throw new Error(`Link creation: ${linkErr.message}`);
 
-      return jsonResponse(200, {
+      return jsonResponse({
         ok: true,
         action: 'link',
         evidence_id: body.evidence_id,
-      });
+      }, 200);
     }
 
     return jsonError(400, 'BAD_REQUEST', 'invalid action');

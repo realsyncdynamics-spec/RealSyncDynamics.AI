@@ -100,7 +100,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    return jsonResponse(200, {
+    return jsonResponse({
       ok: true,
       deadline_id: deadline.id,
       initial_assessment_deadline: initialAssessmentDeadline.toISOString(),
@@ -108,7 +108,7 @@ Deno.serve(async (req) => {
       full_notification_deadline: fullNotificationDeadline.toISOString(),
       severity,
       is_significant_incident: severity === 'critical' || severity === 'high',
-    });
+    }, 200);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     return jsonError(500, 'INTERNAL', message);

@@ -183,6 +183,19 @@ describe('ComplianceStatusView', () => {
     expect(getByTestId('governance-score').textContent).toContain('Scope: gesamter Mandant');
   });
 
+  it('keeps score source and scope visible when the snapshot date is missing', () => {
+    const { getByTestId } = rendered({
+      data: fixture({
+        counts: { ...ZERO, incidents: 1 },
+        score: 72,
+        lastUpdated: null,
+      }),
+    });
+    expect(getByTestId('governance-score').textContent).toContain('Quelle: governance_kpi_snapshots');
+    expect(getByTestId('governance-score').textContent).toContain('Stand: nicht verfügbar');
+    expect(getByTestId('governance-score').textContent).toContain('Scope: gesamter Mandant');
+  });
+
   it('lists prioritized open measures with deep links', () => {
     const { getByTestId, getByText } = rendered({
       data: fixture({

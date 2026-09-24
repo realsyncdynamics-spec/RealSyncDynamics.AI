@@ -78,6 +78,7 @@ const CookieConsentSdk = lazy(() => import('./pages/CookieConsentSdk').then((m) 
 const AuditPro = lazy(() => import('./pages/AuditPro').then((m) => ({ default: m.AuditPro })));
 const DsgvoToolVergleich = lazy(() => import('./pages/DsgvoToolVergleich').then((m) => ({ default: m.DsgvoToolVergleich })));
 const ContactSales = lazy(() => import('./pages/ContactSales').then((m) => ({ default: m.ContactSales })));
+const FrontendBuilderLanding = lazy(() => import('./pages/frontend-builder/FrontendBuilderLanding').then((m) => ({ default: m.FrontendBuilderLanding })));
 const KontaktPage = lazy(() => import('./pages/KontaktPage').then((m) => ({ default: m.KontaktPage })));
 const EnterpriseAiOs = lazy(() => import('./pages/EnterpriseAiOs').then((m) => ({ default: m.EnterpriseAiOs })));
 const EnterpriseAiOsFoundingAccess = lazy(() => import('./pages/EnterpriseAiOsFoundingAccess').then((m) => ({ default: m.EnterpriseAiOsFoundingAccess })));
@@ -253,6 +254,7 @@ const BoltCodeBuilderPage = lazy(() => import('./features/app-builder/BoltCodeBu
 // läge das im kritischen Pfad jeder Landingpage.
 const BuildStudioPage = lazy(() => import('./unified-entry/pages/BuildStudioPage'));
 const SiteOsClaimView = lazy(() => import('./features/siteos/SiteOsClaimView').then((m) => ({ default: m.SiteOsClaimView })));
+const FmtModernizeWizard = lazy(() => import('./features/siteos/fmt/FmtModernizeWizard').then((m) => ({ default: m.FmtModernizeWizard })));
 const LegalRagView = lazy(() => import('./features/legal-rag/LegalRagView').then((m) => ({ default: m.LegalRagView })));
 const AgentOsAdminPage = lazy(() => import('./features/agent-os-admin/AgentOsAdminPage').then((m) => ({ default: m.AgentOsAdminPage })));
 const GovernanceDashboardView = lazy(() => import('./features/governance/GovernanceDashboardView').then((m) => ({ default: m.GovernanceDashboardView })));
@@ -586,6 +588,7 @@ function RoutesWithTracking() {
       <Route path="/audit-pro" element={<AuditPro />} />
       <Route path="/dsgvo-tool-vergleich" element={<DsgvoToolVergleich />} />
       <Route path="/contact-sales" element={<ContactSales />} />
+      <Route path="/frontend-builder" element={<FrontendBuilderLanding />} />
       <Route path="/kontakt" element={<KontaktPage />} />
       <Route path="/contact" element={<Navigate to="/kontakt" replace />} />
       <Route path="/enterprise" element={<EnterpriseLanding />} />
@@ -823,6 +826,8 @@ function RoutesWithTracking() {
       <Route path="/app/policy-packs" element={<AppGate><GovernanceBrowserShell><PolicyPacksView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/siteos" element={<AppGate><GovernanceBrowserShell><SiteOsDashboardView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/siteos/builder" element={<AppGate><SiteOsBuilderPage /></AppGate>} />
+      <Route path="/app/siteos/modernize" element={<AppGate><GovernanceBrowserShell><FmtModernizeWizard /></GovernanceBrowserShell></AppGate>} />
+      <Route path="/app/siteos/modernize/:projectId" element={<AppGate><GovernanceBrowserShell><FmtModernizeWizard /></GovernanceBrowserShell></AppGate>} />
       {/* Claim: AppGate + View-eigener Resume nach /welcome?next=. */}
       <Route path="/app/siteos/claim" element={<AppGate><SiteOsClaimView /></AppGate>} />
       <Route path="/app/bots" element={<AppGate><GovernanceBrowserShell><BotsView /></GovernanceBrowserShell></AppGate>} />

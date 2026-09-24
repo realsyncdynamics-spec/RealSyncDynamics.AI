@@ -7,12 +7,12 @@ export function ChatMessageView({ message }: { message: ChatMessage }) {
     return (
       <div className="flex items-start gap-2">
         <BotAvatar />
-        <div className="rounded-2xl rounded-tl-sm border border-white/10 bg-white/5 px-3 py-2">
+        <div className="rounded-2xl rounded-tl-sm border border-[rgba(228,207,162,0.35)] bg-[#14171e] px-3 py-2">
           <div className="flex h-4 items-center gap-1">
             {[0, 1, 2].map((i) => (
               <span
                 key={i}
-                className="h-1.5 w-1.5 animate-bounce rounded-full bg-amber-400"
+                className="h-1.5 w-1.5 animate-bounce rounded-full bg-[#e4cfa2]"
                 style={{ animationDelay: `${i * 150}ms` }}
               />
             ))}
@@ -28,10 +28,10 @@ export function ChatMessageView({ message }: { message: ChatMessage }) {
         className={[
           'max-w-[80%] rounded-2xl px-3 py-2 text-[13px] leading-relaxed',
           isUser
-            ? 'rounded-tr-sm bg-amber-400 text-black'
+            ? 'rounded-tr-sm bg-[#e4cfa2] text-black'
             : message.isError
               ? 'rounded-tl-sm border border-rose-500/30 bg-rose-500/10 text-rose-200'
-              : 'rounded-tl-sm border border-white/10 bg-white/5 text-zinc-100',
+              : 'rounded-tl-sm border border-[rgba(228,207,162,0.35)] bg-[#14171e] text-[#f3ead8]',
         ].join(' ')}
       >
         <MessageBody content={message.content} />
@@ -46,7 +46,7 @@ export function ChatMessageView({ message }: { message: ChatMessage }) {
 
 function BotAvatar() {
   return (
-    <div className="mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-amber-400 text-[10px] font-bold text-black">
+    <div className="mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-[#e4cfa2] text-[10px] font-bold text-black">
       RS
     </div>
   );
@@ -65,7 +65,7 @@ function MessageBody({ content }: { content: string }) {
                 return <strong key={j} className="font-semibold">{p.slice(2, -2)}</strong>;
               if (p.startsWith('`') && p.endsWith('`'))
                 return (
-                  <code key={j} className="rounded bg-white/10 px-1 font-mono text-[11px] text-amber-300">
+                  <code key={j} className="rounded bg-black/40 px-1 font-mono text-[11px] text-[#e4cfa2]">
                     {p.slice(1, -1)}
                   </code>
                 );

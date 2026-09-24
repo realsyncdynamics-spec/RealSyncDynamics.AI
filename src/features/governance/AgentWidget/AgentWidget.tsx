@@ -156,51 +156,93 @@ function AnonWidget({ open, onClose }: { open: boolean; onClose: () => void }) {
     return () => window.removeEventListener('keydown', onKey);
   }, [open, onClose]);
 
+  // Mobile sheet: lock background scroll so landing does not bleed through.
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [open]);
+
   return (
-    <div
-      className={[
-        'fixed bottom-20 left-1/2 -translate-x-1/2 z-50 flex w-[min(400px,calc(100vw-2rem))] flex-col overflow-hidden rounded-2xl border border-titanium-800 bg-obsidian-950 shadow-2xl transition-all duration-200',
-        open ? 'pointer-events-auto opacity-100 translate-y-0' : 'pointer-events-none translate-y-3 opacity-0',
-      ].join(' ')}
-      style={{ height: 500 }}
-      role="dialog"
-      aria-label="Compliance-Assistent"
-      aria-hidden={!open}
-    >
-      <WidgetHeader
-        label="KI-Assistent"
-        badge="Öffentlich · EU · keine Rechtsberatung"
-        onReset={chat.reset}
-        onClose={onClose}
+    <>
+      {/* Scrim: tap outside closes; covers site header on mobile */}
+      <button
+        type="button"
+        aria-label="Assistent schliessen"
+        onClick={onClose}
+        className={[
+          'fixed inset-0 z-[55] bg-black/70 transition-opacity duration-200 md:bg-black/40',
+          open ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0',
+        ].join(' ')}
+        tabIndex={open ? 0 : -1}
       />
 
-      <AIDisclosureNotice variant="full" />
-
-      {chat.rateLimited && (
-        <div className="border-b border-orange-400/30 bg-orange-400/10 px-4 py-2.5 text-[12px] text-orange-200">
-          Anfrage-Limit erreicht (5/min). Bitte in einer Minute erneut versuchen.
+      <div
+        className={[
+          // Mobile (<768): opaque bottom sheet, gold border, no landing bleed-through
+          'fixed z-[60] flex flex-col overflow-hidden transition-all duration-200',
+          'inset-x-0 bottom-0 h-[min(92dvh,100%)] rounded-t-2xl',
+          // Desktop: floating card
+          'md:inset-x-auto md:bottom-6 md:left-auto md:right-6 md:h-[520px] md:w-[400px] md:max-w-[calc(100vw-2rem)] md:rounded-2xl md:translate-x-0',
+          open
+            ? 'pointer-events-auto translate-y-0 opacity-100'
+            : 'pointer-events-none translate-y-full opacity-0 md:translate-y-3',
+        ].join(' ')}
+        style={{
+          backgroundColor: '#0a0b0e',
+          border: '1px solid rgba(228, 207, 162, 0.45)',
+          boxShadow:
+            '0 -8px 40px rgba(0,0,0,0.75), 0 0 32px -8px rgba(228, 207, 162, 0.2)',
+        }}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Compliance-Assistent"
+        aria-hidden={!open}
+      >
+        {/* Drag handle affordance (mobile) */}
+        <div className="flex justify-center pt-2 md:hidden" aria-hidden>
+          <span className="h-1 w-10 rounded-full" style={{ backgroundColor: "rgba(228, 207, 162, 0.45)" }} />
         </div>
-      )}
 
-      {chat.usRoutingRequired && (
-        <UsRoutingBanner onAck={chat.acknowledgeUsRouting} />
-      )}
+        <WidgetHeader
+          label="KI-Assistent"
+          badge="Öffentlich · EU · keine Rechtsberatung"
+          onReset={chat.reset}
+          onClose={onClose}
+        />
 
-      <div className="flex-1 space-y-4 overflow-y-auto p-4 scroll-smooth">
-        {chat.messages.map((m) => (
-          <ChatMessageView key={m.id} message={m} />
-        ))}
-        <div ref={chat.bottomRef} />
+        {/* Compact: first line + link — full Art. 50 text on /legal/datenschutz#ki-systeme */}
+        <AIDisclosureNotice variant="compact" />
+
+        {chat.rateLimited && (
+          <div className="border-b border-orange-400/30 bg-orange-400/10 px-4 py-2.5 text-[12px] text-orange-200">
+            Anfrage-Limit erreicht (5/min). Bitte in einer Minute erneut versuchen.
+          </div>
+        )}
+
+        {chat.usRoutingRequired && (
+          <UsRoutingBanner onAck={chat.acknowledgeUsRouting} />
+        )}
+
+        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-4 scroll-smooth">
+          {chat.messages.map((m) => (
+            <ChatMessageView key={m.id} message={m} />
+          ))}
+          <div ref={chat.bottomRef} />
+        </div>
+
+        <ChatInput
+          onSend={chat.send}
+          isLoading={chat.isLoading}
+          showQuickActions={chat.showQuickActions}
+          quickActions={ANON_QUICK}
+          placeholder="DSGVO-Frage stellen…"
+        />
       </div>
-
-      <ChatInput
-        onSend={chat.send}
-        isLoading={chat.isLoading}
-        showQuickActions={chat.showQuickActions}
-        quickActions={ANON_QUICK}
-        placeholder="DSGVO-Frage stellen…"
-      />
-    </div>
+    </>
   );
 }
 
@@ -218,30 +260,49 @@ function WidgetHeader({
   onClose: () => void;
 }) {
   return (
-    <header className="flex items-center justify-between border-b border-white/10 bg-black/40 px-4 py-3">
+    <header
+      className="flex items-center justify-between px-4 py-3"
+      style={{
+        borderBottom: '1px solid rgba(228, 207, 162, 0.25)',
+        backgroundColor: '#0d0f14',
+      }}
+    >
       <div className="flex items-center gap-2.5">
-        <div className="flex h-7 w-7 items-center justify-center rounded-full bg-amber-400 text-[10px] font-bold text-black">
+        <div
+          className="flex h-7 w-7 items-center justify-center rounded-full text-[10px] font-bold text-black"
+          style={{ backgroundColor: '#e4cfa2' }}
+        >
           RS
         </div>
         <div>
-          <p className="text-sm font-semibold leading-none text-white">{label}</p>
-          <p className="mt-0.5 flex items-center gap-1 text-[10px] text-emerald-400">
-            <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400" />
+          <p className="text-sm font-semibold leading-none" style={{ color: '#f3ead8' }}>
+            {label}
+          </p>
+          <p className="mt-0.5 flex items-center gap-1.5 text-[11px]" style={{ color: '#e8ddc8' }}>
+            <span
+              className="inline-block h-1.5 w-1.5 rounded-full"
+              style={{ backgroundColor: '#e4cfa2' }}
+              aria-hidden
+            />
             {badge}
           </p>
         </div>
       </div>
       <div className="flex items-center gap-1">
         <button
+          type="button"
           onClick={onReset}
           title="Konversation zurücksetzen"
-          className="flex h-7 w-7 items-center justify-center rounded-lg text-zinc-500 transition-colors hover:bg-white/5 hover:text-zinc-200"
+          className="flex h-7 w-7 items-center justify-center rounded-lg transition-colors"
+          style={{ color: '#9a917f' }}
         >
           ↺
         </button>
         <button
+          type="button"
           onClick={onClose}
-          className="flex h-7 w-7 items-center justify-center rounded-lg text-zinc-500 transition-colors hover:bg-white/5 hover:text-zinc-200"
+          className="flex h-7 w-7 items-center justify-center rounded-lg transition-colors"
+          style={{ color: '#9a917f' }}
           aria-label="Schliessen"
         >
           <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -566,7 +566,7 @@ export const PLANS: Plan[] = [
     yearlyPlanKey: 'starter_yearly',
     name: 'Starter',
     outcomeHeadline: 'Ein nachweisbares Governance-Fundament, das jeden Prüfer überzeugt.',
-    technicalSubheadline: 'Kontinuierlicher DSGVO- und AI-Act-Scan mit lückenloser Hash-Chain und exportierbarem Prüfpfad.',
+    technicalSubheadline: 'DSGVO- und AI-Act-Scan mit lückenloser Hash-Chain und exportierbarem Prüfpfad. Dauerhafte Domain-Überwachung: Coming Soon.',
     price: { monthlyEur: 79, yearlyEur: 790, oneTimeEur: null },
     // Jahres-Preis in Stripe nicht verdrahtet — siehe `yearlyCheckoutUnavailable`.
     yearlyCheckoutUnavailable: true,
@@ -628,7 +628,7 @@ export const PLANS: Plan[] = [
         'Technische Consent-Empfehlungen',
       ],
       automation_ops: [
-        'Kontinuierliches Monitoring',
+        'Kontinuierliches Monitoring (Coming Soon)',
         'E-Mail-Alert bei neuen Findings',
         '25 Automationsläufe pro Monat',
         '1 Governance-Bot mit 500 Antworten (Website)',
@@ -646,7 +646,7 @@ export const PLANS: Plan[] = [
     yearlyPlanKey: 'growth_yearly',
     name: 'Growth',
     outcomeHeadline: 'KI-Governance, die sich selbst überwacht — statt einmal im Jahr geprüft zu werden.',
-    technicalSubheadline: 'Tägliche Runtime-Läufe mit Drift Detection, Risk Register und Policy Engine über drei Rahmenwerke.',
+    technicalSubheadline: 'Runtime-Läufe mit Risk Register und Policy Engine über drei Rahmenwerke. Tägliches Drift-Monitoring: Coming Soon.',
     price: { monthlyEur: 249, yearlyEur: 2490, oneTimeEur: null },
     // Jahres-Preis in Stripe nicht verdrahtet — siehe `yearlyCheckoutUnavailable`.
     yearlyCheckoutUnavailable: true,
@@ -722,7 +722,7 @@ export const PLANS: Plan[] = [
         'Governance Score je Rahmenwerk',
       ],
       automation_ops: [
-        'Tägliches Monitoring mit Drift Detection',
+        'Tägliches Monitoring mit Drift Detection (Coming Soon)',
         'Behebungsvorschläge mit Code-Snippets',
         'API-Zugriff, Webhooks und Scheduler',
         '10 Bulk-Jobs pro Monat, 3 API-Schlüssel',
@@ -803,7 +803,7 @@ export const PLANS: Plan[] = [
         'White-Label-Berichte mit eigenem Logo',
       ],
       ai_governance: [
-        'Policy Packs: DSGVO, EU AI Act, ISO 27001, NIS2, TISAX',
+        'Policy Packs: DSGVO, EU AI Act, ISO 27001, NIS2 (live); TISAX Roadmap',
         'Branchenbibliothek vorkonfigurierter Governance-Profile',
         'Governance Agents für Prüfungen und Maßnahmen (Review-pflichtig)',
       ],
@@ -835,7 +835,7 @@ export const PLANS: Plan[] = [
     planKey: 'enterprise',
     yearlyPlanKey: 'enterprise_yearly',
     name: 'Enterprise',
-    outcomeHeadline: 'Konzernweite Governance über alle sechs Rahmenwerke — mit SLA und SSO.',
+    outcomeHeadline: 'Konzernweite Governance über aktive Policy Packs plus Framework-Roadmap — mit SLA und SSO.',
     technicalSubheadline: 'Multi-Tenant-Runtime für bis zu 5 Organisationen, zentrale Rechteverwaltung und individuell dimensionierte Scheduler- und Automation-Kontingente.',
     price: { monthlyEur: 1_249, yearlyEur: 12_490, oneTimeEur: null },
     priceOnRequest: true,
@@ -900,7 +900,7 @@ export const PLANS: Plan[] = [
         'Evidence Vault Enterprise mit 200 GB Nachweisspeicher',
       ],
       ai_governance: [
-        'Alle sechs Policy Packs: DSGVO, EU AI Act, ISO 27001, NIS2, TISAX, DORA',
+        'Policy Packs live: DSGVO, EU AI Act, ISO 27001, NIS2; TISAX/DORA Roadmap / auf Anfrage',
         'Erweiterte Analysen und Risk Scoring',
         'Eigene Richtlinien und Kontrollkataloge',
       ],
@@ -990,7 +990,7 @@ export const PLANS: Plan[] = [
         'Unbegrenzte Behebungspläne und Bulk Jobs',
       ],
       ai_governance: [
-        'Alle sechs Policy Packs je Mandant getrennt aktivierbar',
+        'Aktive Policy Packs je Mandant; TISAX/DORA Roadmap / auf Anfrage',
         'Mandantenspezifische Richtlinien und Kontrollkataloge',
       ],
       automation_ops: [
@@ -1515,7 +1515,7 @@ export const BOOKABLE_MODULES: BookableModule[] = [
     bullets: [
       'Ein Unternehmen, eine Domain',
       'DSGVO und EU AI Act als Policy Packs',
-      'Kontinuierliches Monitoring statt Einmalprüfung',
+      'Kontinuierliches Monitoring (Coming Soon) statt Einmalprüfung',
       'Governance Score, Evidence Vault und Audit-Export',
       'Alerts bei neuen Findings',
     ],

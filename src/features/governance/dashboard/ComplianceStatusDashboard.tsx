@@ -1089,7 +1089,7 @@ function ScoreCard({
               <dd className="inline">{measuredAt ?? 'nicht verfügbar'}</dd>
             </div>
             <div>
-              <dt className="inline">Scope:</dt>{' '}
+              <dt className="inline">Geltungsbereich:</dt>{' '}
               <dd className="inline">{tenantScope}</dd>
             </div>
           </dl>

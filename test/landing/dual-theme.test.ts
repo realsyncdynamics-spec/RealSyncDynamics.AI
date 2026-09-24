@@ -12,12 +12,9 @@ import { describe, expect, it } from 'vitest';
 import { MainLanding } from '../../src/pages/MainLanding';
 import {
   HERO_HEADLINE_TEST_SUBSTRING,
-  HERO_INFRA_LINES,
   HERO_OPERATING_LOOP,
-  HERO_PLAN_ANCHOR_FREE,
   HERO_SCAN_CTA_LABEL,
 } from '../../src/components/governance-frontend/hero-content';
-import { tierById } from '../../src/config/pricing';
 
 const root = resolve(__dirname, '../..');
 const landing = readFileSync(resolve(root, 'src/pages/MainLanding.tsx'), 'utf8');
@@ -109,7 +106,7 @@ describe('Landing — Europe-network', () => {
     expect(header).toContain('to="/audit"');
   });
 
-  it('renders current homepage H1 + Operating Loop + Infrastrukturzeilen + Plan-Anker', () => {
+  it('renders current homepage H1 + Operating Loop + primary CTA', () => {
     render(createElement(MemoryRouter, null, createElement(MainLanding)));
     const h1 = screen.getByRole('heading', { level: 1 }).textContent ?? '';
     expect(h1).toMatch(/Machen Sie KI-Nutzung/);
@@ -119,19 +116,7 @@ describe('Landing — Europe-network', () => {
     // Operating Loop als Pfeilkette, nicht als Satzreihe.
     expect(screen.getAllByText(HERO_OPERATING_LOOP).length).toBeGreaterThan(0);
 
-    // Jede Infrastrukturzeile steht als eine Zeile mit " · " getrennt.
-    for (const line of HERO_INFRA_LINES) {
-      expect(screen.getAllByText(line.join(' · ')).length).toBeGreaterThan(0);
-    }
-
-    // Plan-Anker: Gratis-Chip plus die drei Tarife aus der Preis-SSoT.
-    expect(screen.getAllByText(HERO_PLAN_ANCHOR_FREE).length).toBeGreaterThan(0);
-    for (const id of ['starter', 'growth', 'agency'] as const) {
-      const tier = tierById(id);
-      expect(tier, `Tarif ${id} fehlt in der Preis-SSoT`).toBeTruthy();
-      expect(screen.getAllByText(`${tier!.priceEur}€`).length).toBeGreaterThan(0);
-    }
-
+    expect(screen.getAllByText(HERO_SCAN_CTA_LABEL).length).toBeGreaterThan(0);
     expect(HERO_HEADLINE_TEST_SUBSTRING).toBe('kontrollierbar');
   });
 

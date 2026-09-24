@@ -1072,9 +1072,11 @@ function ScoreCard({
           <ScoreGauge score={score} size={112} tone="health" />
           <StatusBadge level={scoreLevel(score)} label={scoreLabel(score)} />
           {measuredAt && (
-            <p className="px-4 text-center text-xs text-titanium-400 font-mono">
-              Quelle: governance_kpi_snapshots · Stand: {measuredAt} · Scope: {tenantScope}
-            </p>
+            <div className="px-4 text-center text-xs text-titanium-400 font-mono space-y-1">
+              <p>Quelle: governance_kpi_snapshots</p>
+              <p>Stand: {measuredAt}</p>
+              <p>Scope: {tenantScope}</p>
+            </div>
           )}
         </>
       )}

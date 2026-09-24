@@ -91,7 +91,7 @@ const FAQ = [
   },
   {
     q: 'Wie läuft die Zusammenarbeit?',
-    a: 'Klare Scope-Definition, kurze Feedback-Schleifen, Lieferungen in Meilensteinen. Keine endlosen Erstgespräche — der Builder ersetzt den Großteil der Vorqualifizierung.',
+    a: 'Klare Scope-Definition, kurze Feedback-Schleifen, Lieferungen in Meilensteinen. Keine endlosen Vorabstimmungen — der Builder ersetzt den Großteil der Vorqualifizierung.',
   },
 ] as const;
 
@@ -138,7 +138,7 @@ export function FrontendBuilderLanding() {
     <div className="min-h-screen antialiased" style={{ backgroundColor: LANDING_BG, color: LANDING_TEXT }}>
       <SEOHead
         title="Frontend Builder für SaaS, AI und B2B-Websites"
-        description="Wir planen, designen und bauen performante Frontends mit klarem Scope statt endlosen Erstgesprächen. Projekt jetzt qualifizieren."
+        description="Wir planen, designen und bauen performante Frontends mit klarem Scope statt endloser Vorabstimmungen. Projekt jetzt qualifizieren."
         canonical="https://realsyncdynamicsai.de/frontend-builder"
       />
       <PageHeader />
@@ -226,7 +226,7 @@ function Hero() {
           Frontend Builder für SaaS, AI und B2B-Websites
         </h1>
         <p className="mx-auto mt-6 max-w-2xl text-base leading-relaxed sm:text-lg" style={{ color: LANDING_MUTED }}>
-          Wir planen, designen und bauen performante Frontends mit klarem Scope statt endlosen Erstgesprächen.
+          Wir planen, designen und bauen performante Frontends mit klarem Scope statt endloser Vorabstimmungen.
         </p>
         <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <button
@@ -832,7 +832,7 @@ function ClosingCta() {
           Bereit für ein klares Frontend-Scope?
         </h2>
         <p className="mx-auto mt-4 max-w-xl text-sm leading-relaxed" style={{ color: LANDING_MUTED }}>
-          Qualifizieren Sie Ihr Projekt im Builder — oder schreiben Sie uns kurz. Termine laufen über dieselbe Anfrage-Strecke.
+          Qualifizieren Sie Ihr Projekt im Builder — oder schreiben Sie uns kurz. Enterprise-Anfragen laufen über dieselbe Strecke.
         </p>
         <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <button
@@ -851,11 +851,11 @@ function ClosingCta() {
             Kurz anfragen
           </Link>
           <Link
-            to="/contact-sales?source=frontend-builder&intent=termin"
+            to="/contact-sales?source=frontend-builder&intent=enterprise"
             className="inline-flex items-center gap-2 rounded-sm border px-5 py-3 text-sm font-semibold"
             style={{ borderColor: 'rgba(255,255,255,0.12)', color: LANDING_TEXT }}
           >
-            Termin buchen
+            Enterprise anfragen
           </Link>
         </div>
       </div>

@@ -426,7 +426,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
   '/frontend-builder': {
     title: 'Frontend Builder für SaaS, AI und B2B-Websites',
     description:
-      'Wir planen, designen und bauen performante Frontends mit klarem Scope statt endlosen Erstgesprächen. Projekt jetzt qualifizieren.',
+      'Wir planen, designen und bauen performante Frontends mit klarem Scope statt endloser Vorabstimmungen. Projekt jetzt qualifizieren.',
     canonical: `${SITE_URL}/frontend-builder`,
     jsonLd: breadcrumbs([
       { name: 'Home', url: '/' },

@@ -20,6 +20,7 @@ const header = read('src/components/landing/PublicDarkHeader.tsx');
 const hero = read('src/components/landing/EuropeNetworkHero.tsx');
 const heroTitanium = read('src/components/landing/HeroTitanium.tsx');
 const modeSwitch = read('src/components/landing/LandingModeSwitch.tsx');
+const modeSrc = read('src/components/landing/landing-mode.ts');
 const css = read('src/index.css');
 
 describe('Farbmodus — drei Paletten, ein Attribut', () => {
@@ -29,6 +30,12 @@ describe('Farbmodus — drei Paletten, ein Attribut', () => {
     expect(LANDING_MODE_LABEL.cyan).toBe('Cyan');
     expect(LANDING_MODE_LABEL.light).toBe('Hell');
     expect(LANDING_MODES[0]).toBe('gold');
+  });
+
+  it('folgt prefers-color-scheme, bis der Nutzer speichert', () => {
+    expect(modeSrc).toContain('modeFromPrefersColorScheme');
+    expect(modeSrc).toContain("(prefers-color-scheme: light)");
+    expect(modeSrc).toContain('addEventListener');
   });
 
   it('alle Paletten stehen in src/index.css und unterscheiden sich', () => {

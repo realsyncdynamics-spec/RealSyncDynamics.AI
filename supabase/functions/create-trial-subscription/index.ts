@@ -1,11 +1,10 @@
 // Create the first-trial subscription for the authenticated tenant.
 // POST /functions/v1/create-trial-subscription
 // Auth: Required
-// Body: { tenantId?: string, planKey?: 'starter' | 'growth' }
+// Body: { tenantId?: string, planKey?: string }
 //
-// IMPORTANT: only trial-capable self-service plans from pricing.generated.ts
-// are eligible here. Today that is Starter/Growth; the actual duration comes
-// from `plan.trialDays`, not from a hardcoded constant.
+// Eligible when pricing SSoT says purchaseMode checkout and trialDays > 0.
+// Duration comes from plan.trialDays. No plan-name comparisons.
 //
 // ── Drei Befunde vom 2026-08-19, vor dem ersten Deploy behoben ────────────
 //
@@ -17,15 +16,14 @@
 //
 // 2. **`tenantId` aus dem Body wurde ungeprüft übernommen.** Die Function
 //    arbeitet mit dem Service-Role-Schlüssel und umgeht damit RLS. Ein
-//    angemeldeter Nutzer hätte einen Growth-Testzeitraum in einen **fremden**
+//    angemeldeter Nutzer hätte einen Testzeitraum in einen **fremden**
 //    Mandanten schreiben können. Das ist ein Bruch der Mandantentrennung
 //    (CLAUDE.md §4), nicht nur ein Schönheitsfehler.
 //
 // 3. **Der Upsert hätte ein bestehendes Abo überschrieben.** `subscriptions`
 //    trägt `UNIQUE (tenant_id)` — „genau ein Abo pro Tenant". Ein Upsert auf
 //    diesen Schlüssel ersetzt eine laufende, bezahlte Subscription durch einen
-//    14-Tage-Testzeitraum. Ein zweiter Aufruf der Onboarding-Seite hätte
-//    gereicht.
+//    Testzeitraum. Ein zweiter Aufruf der Onboarding-Seite hätte gereicht.
 
 import Stripe from 'npm:stripe@16.12.0';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
@@ -33,15 +31,6 @@ import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/
 import { planByKey } from '../_shared/pricing.generated.ts';
 import { decideTrial, loadTrialInputs, LIVE_SUBSCRIPTION_STATES } from '../_shared/trialEligibility.ts';
 
-/**
- * Erste Adresse aus `X-Forwarded-For`, sonst null.
- *
- * `trial_audit_logs.ip_address` ist vom Typ `inet`. Der frühere Stand schrieb
- * bei fehlendem Header den Text `'unknown'` — Postgres lehnt das ab, der
- * Insert scheiterte, und weil der Fehler abgefangen wurde, fehlte der Eintrag
- * im Prüfpfad stillschweigend. Ein Prüfpfad, der bei Kleinigkeiten Einträge
- * verliert, ist keiner.
- */
 function clientIp(req: Request): string | null {
   const raw = req.headers.get('x-forwarded-for');
   if (!raw) return null;
@@ -71,7 +60,7 @@ Deno.serve(async (req) => {
   try { body = await req.json(); } catch { return jsonError(400, 'BAD_REQUEST', 'invalid json'); }
 
   const plan = body.planKey ? planByKey(body.planKey) : null;
-  if (!plan || plan.purchaseMode !== 'checkout' || plan.trialDays <= 0 || (plan.planKey !== 'starter' && plan.planKey !== 'growth')) {
+  if (!plan || plan.purchaseMode !== 'checkout' || plan.trialDays <= 0) {
     return jsonError(400, 'TRIAL_NOT_AVAILABLE', 'A first trial is available only for eligible self-service plans.');
   }
 
@@ -80,13 +69,6 @@ Deno.serve(async (req) => {
   const { data: { user }, error: userError } = await supabase.auth.getUser(token);
   if (userError || !user?.id) return jsonError(401, 'UNAUTHORIZED', 'Invalid token');
 
-  // Mandant auflösen — und in jedem Fall gegen `memberships` prüfen.
-  //
-  // Die Auflösung steht hier ausgeschrieben statt in `_shared/`: Eine Änderung
-  // an `supabase/functions/_shared/*` schaltet `deploy.yml` auf `deploy_all`
-  // und deployt alle 177 Verzeichnisse. Eine geteilte Hilfsfunktion wäre die
-  // schönere Form und der teurere Deploy; die Verdopplung ist hier die
-  // bewusste Wahl.
   let tenantId = body.tenantId;
   if (tenantId) {
     const { data: member } = await supabase
@@ -100,8 +82,6 @@ Deno.serve(async (req) => {
     if (!memberships || memberships.length === 0) {
       return jsonError(400, 'TENANT_NOT_FOUND', 'No tenant found for this user');
     }
-    // Bei mehreren Mandanten ist die Wahl nicht zu erraten — und ein Abo im
-    // falschen Arbeitsbereich ist teurer als eine Rückfrage.
     if (memberships.length > 1) {
       return jsonError(400, 'TENANT_AMBIGUOUS', 'Multiple tenants — tenantId required');
     }
@@ -216,11 +196,6 @@ Deno.serve(async (req) => {
 
     if (upsertError) throw upsertError;
 
-    // `.insert(...)` liefert einen PostgREST-Builder, kein Promise: `.catch()`
-    // gibt es dort nicht, der Zugriff warf `TypeError` — und zwar bevor der
-    // Insert abgeschickt wurde. Der Pruefpfad wurde also nicht nur nicht
-    // geschrieben, der ganze Request starb daran, nachdem das Abo bereits
-    // angelegt war. Fehler gehoert ueber das Ergebnis geprueft.
     const { error: auditErr } = await supabase.from('trial_audit_logs').insert({
       tenant_id: tenantId,
       user_id: user.id,

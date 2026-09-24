@@ -253,6 +253,7 @@ const BoltCodeBuilderPage = lazy(() => import('./features/app-builder/BoltCodeBu
 // läge das im kritischen Pfad jeder Landingpage.
 const BuildStudioPage = lazy(() => import('./unified-entry/pages/BuildStudioPage'));
 const SiteOsClaimView = lazy(() => import('./features/siteos/SiteOsClaimView').then((m) => ({ default: m.SiteOsClaimView })));
+const FmtModernizeWizard = lazy(() => import('./features/siteos/fmt/FmtModernizeWizard').then((m) => ({ default: m.FmtModernizeWizard })));
 const LegalRagView = lazy(() => import('./features/legal-rag/LegalRagView').then((m) => ({ default: m.LegalRagView })));
 const AgentOsAdminPage = lazy(() => import('./features/agent-os-admin/AgentOsAdminPage').then((m) => ({ default: m.AgentOsAdminPage })));
 const GovernanceDashboardView = lazy(() => import('./features/governance/GovernanceDashboardView').then((m) => ({ default: m.GovernanceDashboardView })));
@@ -823,6 +824,8 @@ function RoutesWithTracking() {
       <Route path="/app/policy-packs" element={<AppGate><GovernanceBrowserShell><PolicyPacksView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/siteos" element={<AppGate><GovernanceBrowserShell><SiteOsDashboardView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/siteos/builder" element={<AppGate><SiteOsBuilderPage /></AppGate>} />
+      <Route path="/app/siteos/modernize" element={<AppGate><GovernanceBrowserShell><FmtModernizeWizard /></GovernanceBrowserShell></AppGate>} />
+      <Route path="/app/siteos/modernize/:projectId" element={<AppGate><GovernanceBrowserShell><FmtModernizeWizard /></GovernanceBrowserShell></AppGate>} />
       {/* Claim: AppGate + View-eigener Resume nach /welcome?next=. */}
       <Route path="/app/siteos/claim" element={<AppGate><SiteOsClaimView /></AppGate>} />
       <Route path="/app/bots" element={<AppGate><GovernanceBrowserShell><BotsView /></GovernanceBrowserShell></AppGate>} />

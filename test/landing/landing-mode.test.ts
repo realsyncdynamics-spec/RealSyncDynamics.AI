@@ -1,13 +1,5 @@
 /**
  * Die Startseite laesst sich zwischen zwei Farben umschalten.
- *
- * Geprueft wird nicht, dass die Dateien existieren, sondern dass der
- * Schalter tatsaechlich wirkt: beide Paletten stehen in `src/index.css`,
- * die Startseite setzt das Attribut, Kopf und Hero lesen die Variablen
- * statt fester Hex-Werte, und die Aufnahme wird je Modus anders getont.
- *
- * Der zweite Teil sichert die Grenze: Layout, Typografie und Copy duerfen
- * NICHT vom Modus abhaengen. Zwei Farben, eine Seite.
  */
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
@@ -41,7 +33,6 @@ describe('Farbmodus — zwei Paletten, ein Attribut', () => {
   it('beide Paletten stehen in src/index.css und unterscheiden sich', () => {
     expect(css).toContain('[data-landing-mode]');
     expect(css).toContain("[data-landing-mode='cyan']");
-    // Gold-Rueckfall spiegelt landing-theme.ts, Cyan setzt dagegen.
     expect(css).toContain('--rsd-accent: #d6ad68;');
     expect(css).toContain('--rsd-accent: #22c3e6;');
     expect(css).toContain('--rsd-shot-filter:');
@@ -75,16 +66,11 @@ describe('Farbmodus — zwei Paletten, ein Attribut', () => {
   });
 
   it('die Radiogroup liefert die Tastaturbedienung, die sie ankuendigt', () => {
-    // Wer `role="radiogroup"` ansagt, muss das Muster auch bedienen koennen,
-    // sonst ist die Ansage gegenueber Hilfstechnologie eine Luege.
-    // Roving Tabindex: die Gruppe ist EIN Tabstopp, nicht zwei.
     expect(modeSwitch).toContain('tabIndex={active ? 0 : -1}');
     expect(modeSwitch).toContain('onKeyDown');
     for (const key of ['ArrowRight', 'ArrowLeft', 'ArrowUp', 'ArrowDown', 'Home', 'End']) {
       expect(modeSwitch, `${key} wird nicht behandelt`).toContain(`'${key}'`);
     }
-    // Der Fokus zieht mit der Wahl mit — sonst stuende er auf einem Knopf,
-    // der nicht mehr der gewaehlte ist.
     expect(modeSwitch).toContain('.focus()');
     expect(modeSwitch).toContain('event.preventDefault()');
   });
@@ -92,16 +78,12 @@ describe('Farbmodus — zwei Paletten, ein Attribut', () => {
 
 describe('Farbmodus — die Flaechen lesen die Variablen', () => {
   it('der Hero haengt nicht mehr an festen Hex-Werten', () => {
-    // Seit #1467 sitzt der Hero in `HeroTitanium`, nicht mehr als Block in
-    // `MainLanding`. Akzentwort der H1, Operating Loop, Primaer-Pill und die
-    // Plan-Anker lesen die Modus-Variablen.
     expect(heroTitanium).toContain('MODE_ACCENT');
     expect(heroTitanium).toContain('MODE_BUTTON_INK');
     expect(heroTitanium).toContain('MODE_GLOW');
     for (const token of ['LANDING_ACCENT', 'LANDING_BUTTON', 'LANDING_CTA_GLOW']) {
       expect(heroTitanium, `${token} folgt dem Schalter nicht`).not.toContain(token);
     }
-    // Die Fokusring-Variablen des Entwurfs folgen dem Modus mit.
     expect(heroTitanium).toContain("'--landing-ring': MODE_ACCENT");
     expect(heroTitanium).toContain("'--landing-ring-soft': modeAccent(60)");
   });
@@ -109,9 +91,6 @@ describe('Farbmodus — die Flaechen lesen die Variablen', () => {
   it('MainLanding verdrahtet den Modus, der Hero bleibt eine eigene Komponente', () => {
     expect(landing).toContain('<HeroTitanium />');
     expect(landing).toContain('MODE_BG');
-    // Unterhalb des Hero bleibt Gold — das ist die dokumentierte Grenze,
-    // kein Versehen: die Referenz zeigt beide Fassungen nur fuer den
-    // ersten Bildschirm.
     expect(landing).toContain('LANDING_ACCENT');
   });
 
@@ -121,12 +100,11 @@ describe('Farbmodus — die Flaechen lesen die Variablen', () => {
     expect(hero).not.toContain('opacity-[0.55]');
   });
 
-  it('SVG-Farben stehen als style, nicht als Praesentationsattribut', () => {
-    // `fill="var(--x)"` ist als Attribut nicht verlaesslich — als
-    // CSS-Deklaration dagegen schon. Sonst faellt das Netz unsichtbar aus.
+  it('Hero trägt kein Gold-Netz mehr', () => {
     expect(hero).not.toMatch(/\bfill=\{MODE_/);
     expect(hero).not.toMatch(/\bstroke=\{MODE_/);
-    expect(hero).toContain('style={{ fill: MODE_ACCENT }}');
+    expect(hero).not.toContain('<line');
+    expect(hero).not.toContain('<circle');
     expect(header).toContain('style={{ stroke: MODE_ACCENT }}');
   });
 
@@ -134,8 +112,6 @@ describe('Farbmodus — die Flaechen lesen die Variablen', () => {
     expect(MODE_ACCENT).toBe('var(--rsd-accent, #d6ad68)');
     expect(modeAccent(40)).toBe('color-mix(in srgb, var(--rsd-accent, #d6ad68) 40%, transparent)');
     expect(modeVeil(100)).toContain('color-mix(in srgb, var(--rsd-veil');
-    // Die alte Schreibweise wuerde an einer Variablen still zu einer
-    // ungueltigen Farbe — also zu einem unsichtbaren Rahmen ohne Fehler.
     expect(landing).not.toContain('${MODE_ACCENT}');
     expect(hero).not.toContain('${MODE_ACCENT}');
   });
@@ -143,15 +119,9 @@ describe('Farbmodus — die Flaechen lesen die Variablen', () => {
 
 describe('Farbmodus — nur Farbe, nicht Inhalt', () => {
   it('kein Text und kein Layout haengt am Modus', () => {
-    for (const forbidden of [
-      "mode === 'cyan' ?",
-      "mode === 'gold' ?",
-      'mode ===',
-    ]) {
+    for (const forbidden of ["mode === 'cyan' ?", "mode === 'gold' ?", 'mode ===']) {
       expect(landing, `Der Modus darf nur Farbe steuern (${forbidden})`).not.toContain(forbidden);
     }
-    // Die Grafik bekommt den Modus gar nicht erst gereicht — sie liest die
-    // Variablen. Damit kann sie ihn auch nicht versehentlich auswerten.
     expect(hero).toContain('export function EuropeNetworkHero() {');
     expect(header).not.toContain('mode === ');
   });

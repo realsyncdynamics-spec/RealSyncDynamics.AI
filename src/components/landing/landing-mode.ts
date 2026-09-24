@@ -1,25 +1,8 @@
 /**
- * Die Startseite in drei Farbmodi.
+ * Startseite: Gold / Cyan / Hell.
  *
- * ## Was umschaltbar ist — und was nicht
- *
- * Umgeschaltet wird die Tonung von Kopf und Bühne: Akzent, Grund, Linie,
- * Pill-Fläche, Tonung der Aufnahme. Layout, Typografie, Copy und jede Zahl
- * bleiben identisch. Es ist dieselbe Seite in drei Farben, nicht drei
- * Seiten — der Besucher soll eine Vorliebe ausdrücken können, nicht ein
- * anderes Produkt sehen.
- *
- * Alle Hauptflächen von `MainLanding` lesen für die Umschaltung diese
- * Variablen. Fallback-Routen und Bereiche ohne `data-landing-mode` bleiben
- * weiter auf der Gold-Basis von `landing-theme.ts`.
- *
- * ## Warum Variablen und keine Hex-Werte
- *
- * `landing-theme.ts` bleibt unverändert die Quelle der Gold-Fassung und
- * wird von Flächen gelesen, die NICHT umschalten. Die Konstanten hier
- * zeigen stattdessen auf die CSS-Variablen aus `src/index.css`
- * (`[data-landing-mode]`), mit der Gold-Fassung als Rückfall — so bleibt
- * eine Fläche auch dann richtig getont, wenn das Attribut fehlt.
+ * Systempräferenz (`prefers-color-scheme`) gilt nur, solange der Nutzer
+ * keinen Modus gespeichert hat. Eine explizite Wahl in localStorage gewinnt.
  */
 import { useCallback, useEffect, useState } from 'react';
 
@@ -37,31 +20,71 @@ const STORAGE_KEY = 'rsd-landing-mode';
 
 const DEFAULT_MODE: LandingMode = 'gold';
 
-function readStored(): LandingMode {
+function parseMode(value: string | null): LandingMode | null {
+  if (value === 'cyan' || value === 'gold' || value === 'light') return value;
+  return null;
+}
+
+function readStored(): LandingMode | null {
   try {
-    const value = window.localStorage.getItem(STORAGE_KEY);
-    return value === 'cyan' || value === 'gold' || value === 'light' ? value : DEFAULT_MODE;
+    return parseMode(window.localStorage.getItem(STORAGE_KEY));
+  } catch {
+    return null;
+  }
+}
+
+export function modeFromPrefersColorScheme(): LandingMode {
+  try {
+    if (window.matchMedia('(prefers-color-scheme: light)').matches) return 'light';
+    return 'gold';
   } catch {
     return DEFAULT_MODE;
   }
 }
 
+function initialMode(): LandingMode {
+  return readStored() ?? modeFromPrefersColorScheme();
+}
+
 export function useLandingMode(): { mode: LandingMode; setMode: (next: LandingMode) => void } {
   const [mode, setModeState] = useState<LandingMode>(DEFAULT_MODE);
+  const [lockedByUser, setLockedByUser] = useState(false);
 
   useEffect(() => {
     const stored = readStored();
-    if (stored !== DEFAULT_MODE) setModeState(stored);
+    if (stored) {
+      setLockedByUser(true);
+      setModeState(stored);
+      return;
+    }
+    setModeState(modeFromPrefersColorScheme());
+    let mq: MediaQueryList | null = null;
+    const onChange = (event: MediaQueryListEvent) => {
+      if (readStored()) return;
+      setModeState(event.matches ? 'light' : 'gold');
+    };
+    try {
+      mq = window.matchMedia('(prefers-color-scheme: light)');
+      mq.addEventListener('change', onChange);
+    } catch {
+      /* SSR / alte Engine */
+    }
+    return () => {
+      mq?.removeEventListener('change', onChange);
+    };
   }, []);
 
   const setMode = useCallback((next: LandingMode) => {
+    setLockedByUser(true);
     setModeState(next);
     try {
       window.localStorage.setItem(STORAGE_KEY, next);
     } catch {
-      /* Die Wahl gilt für diese Sitzung, wird aber nicht gemerkt. */
+      /* Sitzung nur */
     }
   }, []);
+
+  void lockedByUser;
 
   return { mode, setMode };
 }
@@ -84,7 +107,6 @@ export const MODE_SHOT_OPACITY = 'var(--rsd-shot-opacity, 0.55)';
 export const MODE_SHOT_FILTER =
   'var(--rsd-shot-filter, sepia(0.5) saturate(1.5) hue-rotate(-14deg) contrast(1.08))';
 
-/** Metall-Pill — Token, kein Hex in den Komponenten. */
 export const MODE_PILL_FACE =
   'linear-gradient(180deg, var(--rsd-accent-soft, #e8c98a) 0%, var(--rsd-accent, #d6ad68) 100%)';
 

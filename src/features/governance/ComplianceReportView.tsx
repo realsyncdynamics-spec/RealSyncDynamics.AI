@@ -180,7 +180,7 @@ function Inner() {
       <main className="max-w-4xl mx-auto px-4 sm:px-6 py-8 space-y-6">
         <section className="border border-titanium-900 bg-obsidian-900/60 p-5">
           <div className="flex items-center gap-2 mb-2">
-            <ShieldCheck className="h-4 w-4 text-amber-300" />
+            <ShieldCheck className="h-4 w-4 text-rs-cyan" />
             <h2 className="font-display font-bold text-titanium-50 text-lg tracking-tight">
               Point-in-time Snapshot generieren
             </h2>
@@ -211,7 +211,7 @@ function Inner() {
                   }
                 }}
                 disabled={busy || !activeTenantId || !allowed}
-                className="inline-flex items-center gap-2 px-4 py-2.5 bg-amber-500 text-obsidian-950 text-sm font-bold rounded-none hover:bg-amber-400 disabled:opacity-50"
+                className="inline-flex items-center gap-2 px-4 py-2.5 bg-rs-primary text-white text-sm font-bold rounded-md hover:bg-rs-primary-hover disabled:opacity-50"
               >
                 {busy ? <><Loader2 className="h-4 w-4 animate-spin" /> Erzeuge Snapshot…</>
                       : <><FileDown className="h-4 w-4" /> Report jetzt erzeugen + herunterladen</>}
@@ -231,7 +231,7 @@ function Inner() {
             <div className="text-[12px] font-mono text-titanium-200 break-all mb-3">
               <span className="text-titanium-500">file:</span> {lastReport.filename}
             </div>
-            <div className="text-[12px] font-mono text-amber-200 break-all mb-3">
+            <div className="text-[12px] font-mono text-rs-cyan-light break-all mb-3">
               <span className="text-titanium-500">sha256:</span> {lastReport.hash}
             </div>
             <div className="text-[11px] text-titanium-400 mb-3">
@@ -249,7 +249,7 @@ function Inner() {
         )}
 
         <section className="border border-titanium-900 bg-obsidian-900/40 p-4 text-[13px] text-titanium-300 leading-relaxed">
-          <div className="text-[10px] font-mono uppercase tracking-[0.18em] text-amber-300 mb-2">
+          <div className="text-[10px] font-mono uppercase tracking-[0.18em] text-rs-cyan mb-2">
             Nutzung durch Auditoren
           </div>
           <ul className="list-disc list-inside space-y-1.5">

@@ -67,7 +67,7 @@ export function GovernancePricingSection() {
                     ? {
                         borderColor: 'var(--ga-accent-border)',
                         boxShadow:
-                          '0 0 0 1px rgba(34,195,230,.3), 0 30px 80px rgba(0,0,0,.65), 0 0 70px rgba(34,195,230,.28)',
+                          'var(--ga-featured-shadow, 0 0 0 1px rgba(34,195,230,.3), 0 30px 80px rgba(0,0,0,.65), 0 0 70px rgba(34,195,230,.28))',
                       }
                     : undefined
                 }
@@ -98,7 +98,7 @@ export function GovernancePricingSection() {
                   style={{
                     fontFamily: GA_DISPLAY,
                     backgroundImage:
-                      'linear-gradient(180deg, #fff 0%, var(--ga-accent) 100%)',
+                      'var(--ga-price-face, linear-gradient(180deg, #fff 0%, var(--ga-accent) 100%))',
                     backgroundClip: 'text',
                     WebkitBackgroundClip: 'text',
                     color: 'transparent',
@@ -156,7 +156,7 @@ export function GovernancePricingSection() {
                       : {
                           // Akzent statt Ghost-Kante: Agency trägt damit seine
                           // Gold-Stufe auch auf dem Button, Starter bleibt Cyan.
-                          backgroundColor: 'rgba(0,0,0,.6)',
+                          backgroundColor: 'var(--ga-ghost-face)',
                           color: 'var(--ga-accent-lite)',
                           border: '1px solid var(--ga-accent-border)',
                         }

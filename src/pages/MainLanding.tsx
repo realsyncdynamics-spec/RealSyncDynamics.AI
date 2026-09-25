@@ -151,7 +151,7 @@ export function MainLanding() {
               exportierbar für Aufsicht, Board und Audit.
             </p>
             <Link
-              to="/evidence"
+              to="/app/dashboard"
               className="mt-7 inline-flex items-center gap-2 text-[13px] font-medium"
               style={{ color: LANDING_ACCENT_SOFT }}
             >

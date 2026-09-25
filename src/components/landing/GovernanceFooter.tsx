@@ -55,8 +55,8 @@ const COLUMNS: readonly { title: string; body: React.ReactNode }[] = [
 export function GovernanceFooter() {
   return (
     <footer
-      className="relative z-[1] border-t bg-[rgba(12,13,15,.82)] px-[4vw] pb-6 pt-5 backdrop-blur-[4px]"
-      style={{ borderColor: GA_LINE_SOFT }}
+      className="relative z-[1] border-t  px-[4vw] pb-6 pt-5 backdrop-blur-[4px]"
+      style={{ borderColor: GA_LINE_SOFT, backgroundColor: 'var(--ga-footer-bg, rgba(12,13,15,.82))' }}
     >
       <div
         className="mx-auto mb-4 grid w-full max-w-[1500px] gap-5 border-b pb-4 text-[12px] leading-[1.7] sm:grid-cols-2 lg:grid-cols-4"
@@ -85,7 +85,7 @@ export function GovernanceFooter() {
           <Link
             to="/contact-sales?intent=enterprise"
             className="underline-offset-4 transition hover:underline"
-            style={{ color: '#e6c98a' }}
+            style={{ color: 'var(--ga-accent-lite)' }}
           >
             {CTA.enterprise}
           </Link>
@@ -94,26 +94,26 @@ export function GovernanceFooter() {
 
       <div
         className="mx-auto flex w-full max-w-[1500px] flex-wrap items-center justify-between gap-x-4 gap-y-2 text-[11px]"
-        style={{ color: 'rgba(238,242,247,.6)' }}
+        style={{ color: GA_MUTED }}
       >
         <span>© 2026 RealSync Dynamics.AI</span>
         <nav className="flex flex-wrap items-center gap-x-3 gap-y-1" aria-label="Rechtliches">
           {PUBLIC_FOOTER_LINKS.map((link, index) => (
             <span key={link.to} className="flex items-center gap-3">
               {index > 0 && (
-                <i className="not-italic" style={{ color: 'rgba(169,180,192,.5)' }} aria-hidden="true">
+                <i className="not-italic" style={{ color: GA_TITAN }} aria-hidden="true">
                   |
                 </i>
               )}
               <Link
                 to={link.to}
                 className="transition-colors"
-                style={{ color: 'rgba(238,242,247,.6)' }}
+                style={{ color: GA_MUTED }}
                 onMouseEnter={(event) => {
                   event.currentTarget.style.color = GA_TEXT;
                 }}
                 onMouseLeave={(event) => {
-                  event.currentTarget.style.color = 'rgba(238,242,247,.6)';
+                  event.currentTarget.style.color = GA_MUTED;
                 }}
               >
                 {link.label}

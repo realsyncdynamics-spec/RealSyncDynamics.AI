@@ -53,7 +53,7 @@ const TILES: Tile[] = [
   {
     id: 'monitoring',
     label: 'Monitoring',
-    description: 'Echtzeit-Überwachung und Drift-Erkennung',
+    description: 'Überwachung und Drift-Erkennung (Coming Soon)',
     icon: Activity,
     color: 'amber',
   },
@@ -132,8 +132,8 @@ export function PublicWorkspacePreview() {
           </h1>
           <p className="text-titanium-300 text-lg max-w-2xl mb-3 leading-relaxed">
             Ein europäisches Governance Operating System für Websites, KI-Systeme,
-            Drittanbieter, Risiken und Nachweise — kontinuierlich überwacht und
-            auditfähig dokumentiert im Browser-Format.
+            Drittanbieter, Risiken und Nachweise — geprüft und auditfähig
+            dokumentiert im Browser-Format.
           </p>
           <p className="text-titanium-500 text-sm max-w-xl mb-8 font-mono">
             Automatisch erkennen · Kontinuierlich monitoren · Immer nachweisbar
@@ -269,8 +269,8 @@ export function PublicWorkspacePreview() {
                 copy: 'Policy Engine erkennt Risiken, Datenschutzdrift und AI-Act-Verstöße automatisch — per API, Scanner oder Agent.',
               },
               {
-                label: 'Monitoren',
-                copy: 'Kontinuierliche Überwachung aller Assets. Webhooks, Alerts und Risk-Score-Recalculation ohne manuellen Aufwand.',
+                label: 'Monitoren (Coming Soon)',
+                copy: 'Geplant: dauerhafte Überwachung aller Assets mit Webhooks, Alerts und Risk-Score-Recalculation ohne manuellen Aufwand.',
               },
               {
                 label: 'Beweisen',

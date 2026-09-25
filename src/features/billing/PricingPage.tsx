@@ -1,15 +1,16 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { resolveAuditContext, withAuditContext } from '../../core/onboarding/funnelContext';
-import {
-  ArrowRight, Check, Sparkles, Award, Building2, Cookie, ShieldCheck, Zap, Globe, Briefcase, Rocket,
-} from 'lucide-react';
-import { Logo } from '../../components/Logo';
+import { Check, Sparkles, Award } from 'lucide-react';
 import { SEOHead } from '../../components/SEOHead';
+import '../../styles/governance-os-handoff.css';
+import { HandoffTopBar } from '../../components/handoff/HandoffTopBar';
+import { useLang } from '../../i18n/useLang';
+import { COMPANY } from '../../config/company';
 import {
-  SELLABLE_PRICING_TIERS, PRICING_TRUST_NOTE, PRICING_TAX_NOTE, TIER_ACCENT,
-  PRODUCT_POSITIONING, ORDERED_PLANS, formatPriceEur, planById, PLANS,
-  type PricingTier, type PlanId,
+  SELLABLE_PRICING_TIERS, PRICING_TRUST_NOTE, PRICING_TAX_NOTE, CALCULABLE_PRICING_TIERS,
+  formatPriceEur, tierById, planById, PLANS,
+  type PricingTier,
 } from '../../config/pricing';
 
 // COMMERCIAL-SSOT: temporary production hotfix.
@@ -30,9 +31,7 @@ import { GovernanceBotsSection } from '../../components/pricing/GovernanceBotsSe
 import { CostCalculator } from '../../components/pricing/CostCalculator';
 import { RuntimePipeline } from '../../components/pricing/RuntimePipeline';
 import { DeveloperSection } from '../../components/pricing/DeveloperSection';
-import {
-  PlanFeatureGroups, PlanRuntimeLimits, PlanModuleAreas, PlanComparisonMatrix,
-} from '../../components/pricing/PlanFeatureGroups';
+import { PlanComparisonMatrix } from '../../components/pricing/PlanFeatureGroups';
 import { GovernanceModuleMatrix } from '../../components/pricing/GovernanceModuleMatrix';
 
 /**
@@ -42,27 +41,37 @@ import { GovernanceModuleMatrix } from '../../components/pricing/GovernanceModul
  * stammen aus der SSoT `shared/pricing.ts`. Diese Datei enthält KEINE
  * eigenen Preise, Limits oder Feature-Listen — sie rendert nur.
  *
- * Aufbau je Karte (verbindlich):
- *   Outcome-Headline → technische Subheadline → Preis → Runtime-Limits
- *   → Governance-Module (GOVERN/AUTOMATE/ENGAGE) → Features in vier
- *   Gruppen → CTA
+ * Kopf und Karten folgen dem Governance-OS-Handoff v2 (§ 4): fünf Karten
+ * (Free Audit + die buchbaren Monats-Abos), Monatlich/Jährlich-Umschalter.
+ * Die Jahresabrechnung ist nicht buchbar (`yearlyCheckoutUnavailable`,
+ * Registry `pricing-yearly` = coming-soon): im Jahresmodus stehen die
+ * Jahresbeträge aus `planById().price.yearlyEur` mit „Jährlich · Coming
+ * Soon", die Buchung bleibt monatlich. Details je Plan (Limits, Module,
+ * Feature-Gruppen) stehen in der Vergleichsmatrix und auf /pricing/<id>.
  */
 
-const PLAN_ICONS: Record<PlanId, typeof Cookie> = {
-  free: Cookie,
-  starter: ShieldCheck,
-  growth: Zap,
-  agency: Globe,
-  enterprise: Building2,
-  partner: Briefcase,
-  governance_launch: Rocket,
-};
+type Billing = 'monthly' | 'yearly';
+
+/**
+ * Ersparnis der Jahresvariante in Prozent, aus der SSoT gerechnet (kleinster
+ * Wert über alle Pläne mit Festpreis — „mindestens").
+ */
+const YEARLY_SAVING_PERCENT: number | null = (() => {
+  const savings = CALCULABLE_PRICING_TIERS.flatMap((tier) => {
+    const { yearlyEur: yearly, monthlyEur: monthly } = planById(tier.plan.id).price;
+    return yearly && monthly ? [Math.round((1 - yearly / (12 * monthly)) * 100)] : [];
+  });
+  return savings.length ? Math.min(...savings) : null;
+})();
+
 
 export function PricingPage() {
   // Deep-Link von Startseite/Audit: ?plan=<id> hebt das gewählte Paket hervor
   // und scrollt es in den Blick — so bleibt der Weg zur Paket-Auswahl eindeutig.
   const [params] = useSearchParams();
   const selectedPlan = params.get('plan');
+  const { t } = useLang();
+  const [billing, setBilling] = useState<Billing>('monthly');
   useEffect(() => {
     if (!selectedPlan) return;
     const el = document.getElementById(`plan-${selectedPlan}`);
@@ -72,81 +81,46 @@ export function PricingPage() {
   return (
     <>
       <SEOHead />
-      <div className="bg-hero-only min-h-screen flex flex-col text-titanium-50">
-      {/* Top bar */}
-      <div className="px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-        <Link to="/" className="inline-flex items-center gap-2 text-xs sm:text-sm text-silver-300 hover:text-titanium-50">
-          <Sparkles className="h-3.5 w-3.5 text-titanium-100" />
-          <span className="font-display font-bold tracking-tight text-titanium-50">RealSyncDynamics.AI</span>
-        </Link>
-        <Link
-          to="/audit?source=pricing-top"
-          className="surface-mono inline-flex items-center gap-1.5 px-4 py-2 text-sm font-bold rounded-none"
-        >
-          Audit starten <ArrowRight className="h-3.5 w-3.5" />
-        </Link>
-      </div>
-
-      {/* Hero */}
-      <section className="px-4 sm:px-6 lg:px-8 pt-10 pb-12 sm:pt-16 sm:pb-16">
-        <div className="max-w-3xl mx-auto text-center">
-          <div className="mb-7 flex flex-col items-center gap-3">
-            <div className="logo-pulse">
-              <Logo size={48} iconOnly />
+      <div className="rs-ui rs-page">
+        <HandoffTopBar active="navPricing" />
+        <section className="rs-pricing" aria-labelledby="pricing-heading">
+          <div className="mx-auto max-w-[1400px]">
+            <div className="rs-pricing__head">
+              <div>
+                <h1 id="pricing-heading" className="rs-pricing__title">{t('pricingTitle')}</h1>
+                <p className="rs-pricing__sub">{t('pricingSub')}</p>
+              </div>
+              <BillingToggle billing={billing} onChange={setBilling} />
             </div>
-            <div className="text-[11px] font-mono uppercase tracking-[0.25em] text-titanium-100">
-              {PRODUCT_POSITIONING} · Preise
+            {billing === 'yearly' && (
+              <p className="rs-pricing__yearly-note" role="status" data-testid="pricing-yearly-note">
+                <span className="rs-pill rs-pill--cyan">{t('yearlyComingSoon')}</span>
+                {t('yearlyNote')}
+              </p>
+            )}
+            <div className="rs-pricing__grid">
+              <FreeAuditCard />
+              {SELLABLE_PRICING_TIERS.map((tier) => (
+                <TierCard key={tier.id} tier={tier} billing={billing} selected={tier.id === selectedPlan} />
+              ))}
+            </div>
+            <div className="rs-pricing__foot">
+              <p>{PRICING_TRUST_NOTE}</p>
+              <p>
+                Free Audit kostenlos · kein Account nötig · {TRIAL_PLAN_LIST}:{' '}
+                {TRIAL_DAYS} Tage kostenlos testen — keine Kosten bis Tag {TRIAL_DAYS + 1}, monatlich kündbar ·
+                {' '}Enterprise: nach Anfrage, kein Self-Service-Trial
+              </p>
+              <p data-testid="pricing-tax-note">
+                {COMPANY.taxMode === 'EXEMPT' ? t('pricingFoot') : `Alle Preise in EUR. ${PRICING_TAX_NOTE}`}
+              </p>
             </div>
           </div>
-          <h1 className="font-display font-bold text-3xl sm:text-5xl text-titanium-50 tracking-tight leading-[1.05] mb-4">
-            Wie viel Governance-Runtime brauchen Sie?
-          </h1>
-          <p className="text-base sm:text-lg text-silver-300 leading-relaxed max-w-2xl mx-auto">
-            Jeder Plan enthält dieselbe Runtime: Scan, Policy Engine, Evidence Vault, Risk Engine,
-            Automation und Audit Export. Der Unterschied liegt in Reichweite und Tempo — wie viele
-            Rahmenwerke geprüft werden, wie oft die Runtime läuft, wie weit die Automatisierung reicht
-            und für wie viele Mandanten sie arbeitet.
-          </p>
-
-          {/* Free Audit → Governance Score → automatische Planempfehlung */}
-          <Link
-            to="/audit?source=pricing-hero"
-            className="mt-7 inline-flex items-center gap-2 surface-mono px-5 py-3 text-sm font-bold rounded-none"
-          >
-            Governance Score ermitteln — der Plan folgt daraus <ArrowRight className="h-4 w-4" />
-          </Link>
-
-          {/* Self-Service-Pläne: monatlich kündbar. Kein ?pilot=true an CTAs. */}
-          <p className="mt-5 inline-flex items-center gap-2 text-[11px] font-mono uppercase tracking-[0.18em] text-titanium-300">
-            <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
-            {TRIAL_PLAN_LIST}: monatlich kündbar · Starter 79 € · Growth 249 € · Agency 699 €
-          </p>
-        </div>
-      </section>
-
-      {/* Tier-Cards — Starter / Growth / Agency / Enterprise (Partner legacy) */}
+        </section>
+      </div>
+      <div className="bg-hero-only flex flex-col text-titanium-50">
       <section className="px-4 sm:px-6 lg:px-8 pb-16 sm:pb-20">
         <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 items-stretch">
-            {SELLABLE_PRICING_TIERS.map((tier) => (
-              <TierCard key={tier.id} tier={tier} selected={tier.id === selectedPlan} />
-            ))}
-          </div>
-
-          <div className="mt-8 text-center space-y-2">
-            <p className="text-[11px] font-mono uppercase tracking-[0.18em] text-silver-500">
-              {PRICING_TRUST_NOTE}
-            </p>
-            <p className="text-[10px] font-mono text-titanium-600">
-              Free Audit kostenlos · kein Account nötig · {TRIAL_PLAN_LIST}:{' '}
-              {TRIAL_DAYS} Tage kostenlos testen — keine Kosten bis Tag {TRIAL_DAYS + 1}, monatlich kündbar ·
-              {' '}Enterprise und Partner: nach Anfrage, kein Self-Service-Trial
-            </p>
-            <p className="text-[10px] font-mono text-titanium-600">
-              Alle Preise in EUR. {PRICING_TAX_NOTE}
-            </p>
-          </div>
-
           {/* Disclaimer */}
           <div className="mt-10 max-w-3xl mx-auto p-5 bg-obsidian-900/60 border border-silver-700/30 border-l-2 border-l-titanium-200 rounded-none">
             <div className="flex items-start gap-3">
@@ -328,7 +302,68 @@ export function PricingPage() {
   );
 }
 
-function TierCard({ tier, selected = false }: { tier: PricingTier; selected?: boolean }) {
+function BillingToggle({ billing, onChange }: { billing: Billing; onChange: (b: Billing) => void }) {
+  const { t } = useLang();
+  return (
+    <div className="rs-segment" role="group" aria-label={t('billingToggle')}>
+      <button type="button" aria-pressed={billing === 'monthly'} onClick={() => onChange('monthly')}>
+        {t('monthly')}
+      </button>
+      <button
+        type="button"
+        aria-pressed={billing === 'yearly'}
+        onClick={() => onChange('yearly')}
+        data-testid="pricing-billing-yearly"
+      >
+        {t('yearly')}
+        {YEARLY_SAVING_PERCENT !== null && (
+          <span className="rs-segment__save">−{YEARLY_SAVING_PERCENT} %</span>
+        )}
+      </button>
+    </div>
+  );
+}
+
+function FeatureList({ items }: { items: readonly string[] }) {
+  return (
+    <ul className="rs-price-card__features">
+      {items.map((item) => (
+        <li key={item}>
+          <Check size={14} aria-hidden="true" />
+          <span>{item}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/** Kostenloser Einstieg — Preis, Label und Ziel aus der SSoT (`tierById('free')`). */
+function FreeAuditCard() {
+  const { t } = useLang();
+  const free = tierById('free');
+  if (!free) return null;
+  return (
+    <div className="rs-price-card" data-testid="pricing-free-audit" id="plan-free">
+      <div className="rs-price-card__head">
+        <h2 className="rs-price-card__name">{free.name}</h2>
+      </div>
+      <div className="rs-price-card__price">
+        <span className="rs-price-card__amount">{formatPriceEur(free.priceEur)}</span>
+        <span className="rs-price-card__suffix">{free.priceSuffix}</span>
+      </div>
+      <p className="rs-price-card__tagline">{free.tagline}</p>
+      <FeatureList items={free.bullets.slice(0, 5)} />
+      <div className="rs-price-card__cta">
+        <Link to={free.cta.href} className="rs-btn rs-btn--outline rs-btn--h40" data-testid="pricing-book-free">
+          {free.cta.label}
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+function TierCard({ tier, billing, selected = false }: { tier: PricingTier; billing: Billing; selected?: boolean }) {
+  const { t } = useLang();
   // Der Scan-Kontext reiste bis hierher (`?audit_id=` aus dem Bericht, oder
   // die Sitzung aus /onboarding) und ging genau an dieser Karte verloren:
   // `tier.cta.href` kommt aus der Config und kannte ihn nicht. Der Checkout
@@ -339,114 +374,83 @@ function TierCard({ tier, selected = false }: { tier: PricingTier; selected?: bo
   const ctaHref = tier.cta.href.startsWith('http')
     ? tier.cta.href
     : withAuditContext(tier.cta.href, auditContext);
-  const plan = tier.plan;
-  const TierIcon = PLAN_ICONS[plan.id];
   // COMMERCIAL-SSOT: temporary production hotfix.
   // Canonical source migration tracked in Phase 2.
   // Plaene ohne oeffentlich zugesicherten Festpreis duerfen keinen Betrag
   // ausweisen — sonst steht dort ein Angebot, das der Checkout nicht erfuellt.
-  const priceDisplay = tier.priceOnRequest ? 'Auf Anfrage' : formatPriceEur(tier.priceEur);
-  const accent = TIER_ACCENT[tier.id];
+  const yearlyEur = planById(tier.plan.id).price.yearlyEur;
+  // Jahresbetrag nur zeigen, wenn es ihn gibt; buchbar ist er nicht
+  // (`yearlyCheckoutUnavailable`), die Karte sagt das ausdrücklich.
+  const showYearly = billing === 'yearly' && !tier.priceOnRequest && yearlyEur !== null;
+  const yearlyBookable = showYearly && tier.plan.yearlyCheckoutUnavailable !== true;
+  const priceDisplay = tier.priceOnRequest
+    ? t('onRequest')
+    : formatPriceEur(showYearly && yearlyEur !== null ? yearlyEur : tier.priceEur);
+  const suffix = tier.priceOnRequest ? tier.priceSuffix : showYearly ? t('perYear') : t('perMonth');
+  const filled = tier.highlight || selected;
+  const go = () => {
+    if (ctaHref.startsWith('http')) window.open(ctaHref, '_blank', 'noopener');
+    else window.location.href = ctaHref;
+  };
 
   return (
     <div
       id={`plan-${tier.id}`}
-      className={`relative flex flex-col p-6 sm:p-7 bg-obsidian-900/60 border-x border-b rounded-none border-t-4 transition-colors ${accent.border} ${
-        tier.highlight
-          ? 'border-titanium-200/80 shadow-[0_0_0_1px_rgba(229,231,235,0.25)]'
-          : 'border-silver-700/30 hover:border-titanium-200/60'
-      }${selected ? ' ring-2 ring-cyan-400/70' : ''}`}
+      className={`rs-price-card${tier.highlight ? ' rs-price-card--popular' : ''}${selected ? ' rs-price-card--selected' : ''}`}
       data-testid={`pricing-card-${tier.id}`}
+      data-billing={billing}
     >
-      {tier.highlight && (
-        <div className="absolute -top-3 left-5 px-2 py-0.5 bg-titanium-50 text-obsidian-950 font-mono uppercase tracking-wider text-[10px] font-bold">
-          Empfohlen
-        </div>
+      <div className="rs-price-card__head">
+        <h2 className="rs-price-card__name">{tier.name}</h2>
+        {selected ? (
+          <span className="rs-pill rs-pill--cyan">{t('selected')} ✓</span>
+        ) : tier.highlight ? (
+          <span className="rs-pill rs-pill--primary">{t('popularBadge')}</span>
+        ) : null}
+      </div>
+
+      <div className="rs-price-card__price">
+        <span className={`rs-price-card__amount${tier.priceOnRequest ? ' rs-price-card__amount--text' : ''}`}>{priceDisplay}</span>
+        <span className="rs-price-card__suffix">{suffix}</span>
+      </div>
+      {showYearly && !yearlyBookable && (
+        <span className="rs-pill rs-pill--muted" style={{ marginTop: 10, alignSelf: 'flex-start' }}>
+          {t('yearlyComingSoon')}
+        </span>
       )}
 
-      <div className="flex items-center gap-2 mb-2 mt-1">
-        <TierIcon className={`h-4 w-4 ${accent.text}`} />
-        <div className="font-display font-bold text-titanium-50 text-lg tracking-tight">{tier.name}</div>
-      </div>
+      <p className="rs-price-card__tagline">{tier.tagline}</p>
+      <FeatureList items={tier.bullets.slice(0, 5)} />
 
-      <div className="flex items-baseline gap-1.5 mb-1.5">
-        <div className="text-3xl font-display font-bold text-titanium-100 tabular-nums">{priceDisplay}</div>
-        <div className="text-xs font-mono uppercase tracking-wider text-silver-400">{tier.priceSuffix}</div>
-      </div>
-
-      {/* Outcome-Headline — was der Kunde bekommt */}
-      <p className="font-display text-sm font-semibold leading-snug text-titanium-100 mb-1.5">
-        {tier.tagline}
-      </p>
-      {/* Technische Subheadline — wie die Runtime das leistet */}
-      <p className="text-xs leading-relaxed text-silver-400 mb-4">{tier.subline}</p>
-
-      {tier.badges && tier.badges.length > 0 && (
-        <div className="flex flex-wrap gap-1.5 mb-4">
-          {tier.badges.map((b) => (
-            <span
-              key={b}
-              className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-mono uppercase tracking-wider bg-titanium-200/10 border border-titanium-200/40 text-titanium-100 rounded-none"
+      <div className="rs-price-card__cta">
+        {showYearly && !yearlyBookable ? (
+          <>
+            <button type="button" className="rs-btn rs-btn--outline rs-btn--h40" disabled aria-disabled="true">
+              {t('yearlyComingSoon')}
+            </button>
+            <button
+              type="button"
+              onClick={go}
+              className="rs-price-card__more"
+              data-testid={`pricing-book-${tier.id}`}
             >
-              <Award className="h-2.5 w-2.5" /> {b}
-            </span>
-          ))}
-        </div>
-      )}
-
-      {/* Runtime-Limits */}
-      <div className="mb-4">
-        <PlanRuntimeLimits plan={plan} />
-      </div>
-
-      {/* Governance-Module nach GOVERN / AUTOMATE / ENGAGE */}
-      <div className="mb-4">
-        <PlanModuleAreas plan={plan} />
-      </div>
-
-      {/* Features in den vier verbindlichen Gruppen */}
-      <div className="mb-6 flex-1">
-        <PlanFeatureGroups plan={plan} />
-      </div>
-
-      <div className="flex flex-col gap-3">
-        {/* Primary CTA: Book / Start */}
-        {ctaHref.startsWith('http') ? (
-          <button
-            onClick={() => window.open(ctaHref, '_blank')}
-            className={`inline-flex items-center justify-center gap-2 px-5 py-3 text-sm font-bold rounded-none transition-colors ${
-              tier.highlight
-                ? 'surface-mono'
-                : 'border border-silver-500 hover:border-titanium-200 text-silver-100 hover:text-titanium-50'
-            }`}
-            data-testid={`pricing-book-${tier.id}`}
-          >
-            {tier.cta.label} <ArrowRight className="h-4 w-4" />
-          </button>
+              {t('bookMonthly')} →
+            </button>
+          </>
         ) : (
           <button
-            onClick={() => window.location.href = ctaHref}
-            className={`inline-flex items-center justify-center gap-2 px-5 py-3 text-sm font-bold rounded-none transition-colors ${
-              tier.highlight
-                ? 'surface-mono'
-                : 'border border-silver-500 hover:border-titanium-200 text-silver-100 hover:text-titanium-50'
-            }`}
+            type="button"
+            onClick={go}
+            className={`rs-btn ${filled ? 'rs-btn--solid' : 'rs-btn--outline'} rs-btn--h40`}
             data-testid={`pricing-book-${tier.id}`}
           >
-            {tier.cta.label} <ArrowRight className="h-4 w-4" />
+            {tier.cta.label}
           </button>
         )}
-
-        {/* Secondary: More Info button (links to plan detail page) */}
-        <button
-          onClick={() => window.location.href = `/pricing/${tier.id}`}
-          className="inline-flex items-center justify-center gap-2 px-5 py-2.5 text-xs font-bold rounded-none border border-titanium-200/30 text-titanium-300 hover:text-titanium-50 hover:border-titanium-200/60 transition-colors"
-          data-testid={`pricing-info-${tier.id}`}
-        >
-          Mehr erfahren
-        </button>
+        <Link to={`/pricing/${tier.id}`} className="rs-price-card__more" data-testid={`pricing-info-${tier.id}`}>
+          {t('moreInfo')}
+        </Link>
       </div>
     </div>
   );
 }
-

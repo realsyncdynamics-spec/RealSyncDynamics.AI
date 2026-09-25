@@ -56,10 +56,10 @@ export function BuilderUpgradePanel({
       data-testid="builder-upgrade-panel"
       data-reason={reason}
     >
-      <div className="mb-5 grid h-12 w-12 place-items-center border border-[#e4cfa2]/40 bg-[#e4cfa2]/10 text-[#e4cfa2]">
+      <div className="mb-5 grid h-12 w-12 place-items-center border border-[#00B8D4]/40 bg-[#00B8D4]/10 text-[#00B8D4]">
         <Lock size={20} aria-hidden />
       </div>
-      <span className="mb-3 font-mono text-[9px] uppercase tracking-widest text-[#e4cfa2]">
+      <span className="mb-3 font-mono text-[9px] uppercase tracking-widest text-[#00B8D4]">
         Governance OS · {STATUS_LABEL.preview}
       </span>
       <h1 className="font-display max-w-lg text-2xl font-semibold text-titanium-50">
@@ -94,7 +94,7 @@ export function BuilderUpgradePanel({
         </Link>
         <Link
           to="/app"
-          className="inline-flex items-center gap-2 border border-titanium-700 px-4 py-3 font-mono text-[10px] uppercase tracking-wider text-titanium-300 hover:border-[#e4cfa2]/40 hover:text-[#e4cfa2]"
+          className="inline-flex items-center gap-2 border border-titanium-700 px-4 py-3 font-mono text-[10px] uppercase tracking-wider text-titanium-300 hover:border-[#00B8D4]/40 hover:text-[#00B8D4]"
         >
           <Sparkles size={12} /> Command Center
         </Link>

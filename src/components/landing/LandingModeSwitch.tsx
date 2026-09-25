@@ -32,9 +32,10 @@ import {
   MODE_ACCENT,
   MODE_BUTTON_INK,
   MODE_LINE,
+  MODE_MUTED,
   type LandingMode,
 } from './landing-mode';
-import { LANDING_MONO, LANDING_MUTED } from './landing-theme';
+import { LANDING_MONO } from './landing-theme';
 
 export function LandingModeSwitch({
   mode,
@@ -100,7 +101,7 @@ export function LandingModeSwitch({
             className="rounded-full px-2.5 py-[3px] text-[10px] tracking-[.12em] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--rsd-accent-soft,#e8c98a)]"
             style={{
               fontFamily: LANDING_MONO,
-              color: active ? MODE_BUTTON_INK : LANDING_MUTED,
+              color: active ? MODE_BUTTON_INK : MODE_MUTED,
               backgroundColor: active ? MODE_ACCENT : 'transparent',
             }}
           >

@@ -18,8 +18,7 @@
  *
  *   - **Roving Tabindex** — die Gruppe ist EIN Tabstopp, nicht zwei. Nur
  *     die aktive Option ist `tabbable`, die andere steht auf `-1`.
- *   - **Pfeiltasten** wechseln die Wahl und wandern zyklisch (bei zwei
- *     Optionen also schlicht: umschalten).
+ *   - **Pfeiltasten** wechseln die Wahl und wandern zyklisch.
  *   - **Pos1/Ende** springen auf die erste bzw. letzte Option.
  *   - Der Fokus zieht mit der Wahl mit, sonst stünde er auf einem
  *     Knopf, der nicht mehr der gewählte ist.

@@ -1621,20 +1621,21 @@ html, body {
   border: 1px solid #92400e;
 }
 
-/* ── Startseite: zwei Farbmodi, ein Attribut ─────────────────────────────
-   Beide Fassungen der Referenz, umschaltbar über `data-landing-mode` auf
+/* ── Startseite: drei Farbmodi, ein Attribut ─────────────────────────────
+   Alle Fassungen der Referenz, umschaltbar über `data-landing-mode` auf
    dem Seiten-Wrapper (siehe `landing-mode.ts` / `LandingModeSwitch`).
 
      gold — gebürstetes Titan, Europa mit Goldströmen. Vorgabe, Markenbild.
      cyan — Schwarz, Europa als Nachtaufnahme, Cyan-Akzent.
+     light — Cremefläche mit dunkler Schrift, Gold-Akzent.
 
-   Layout, Typografie und Copy sind in beiden identisch — es ist dieselbe
-   Seite in zwei Tonungen, nicht zwei Seiten. Die Werte stehen hier an genau
+   Layout, Typografie und Copy sind in allen identisch — es ist dieselbe
+   Seite in drei Tonungen, nicht drei Seiten. Die Werte stehen hier an genau
    einer Stelle; `landing-mode.ts` zeigt nur darauf.
 
    Die Hex-Werte der Gold-Fassung spiegeln `landing-theme.ts` — das bleibt
    die Quelle für alle Flächen, die NICHT umschalten (Roadmap, OS-Chrome).
-   Wer Gold ändert, ändert es in beiden. */
+   Wer Gold ändert, ändert es in allen. */
 [data-landing-mode] {
   --rsd-accent: #d6ad68;
   --rsd-accent-soft: #e8c98a;
@@ -1642,7 +1643,12 @@ html, body {
   --rsd-bg: #0a0a0b;
   --rsd-panel: #121214;
   --rsd-btn-ink: #0a0a0b;
+   --rsd-text: #f2eee6;
+   --rsd-muted: #9a9aa1;
   --rsd-line: rgba(214, 173, 104, 0.22);
+   --rsd-header-border: rgba(255, 255, 255, 0.06);
+   --rsd-header-bg: rgba(10, 10, 11, 0.82);
+   --rsd-header-bg-overlay: rgba(10, 10, 11, 0.35);
   --rsd-glow: 0 0 32px rgba(214, 173, 104, 0.28);
   --rsd-veil: #0a0a0b;
   /* Deckung der Aufnahme: Gold arbeitet mit dem gefilterten Chromrelief,
@@ -1658,9 +1664,33 @@ html, body {
   --rsd-bg: #04070a;
   --rsd-panel: #0a1016;
   --rsd-btn-ink: #04161c;
+   --rsd-text: #e9edf5;
+   --rsd-muted: #9cb0c4;
   --rsd-line: rgba(127, 227, 245, 0.22);
+   --rsd-header-border: rgba(127, 227, 245, 0.2);
+   --rsd-header-bg: rgba(4, 7, 10, 0.82);
+   --rsd-header-bg-overlay: rgba(4, 7, 10, 0.35);
   --rsd-glow: 0 0 32px rgba(34, 195, 230, 0.3);
   --rsd-veil: #04070a;
   --rsd-shot-opacity: 0.72;
   --rsd-shot-filter: saturate(1.12) contrast(1.06) brightness(1.02);
+}
+
+[data-landing-mode='light'] {
+  --rsd-accent: #c9a462;
+  --rsd-accent-soft: #dfc18c;
+  --rsd-accent-lite: #edd8af;
+  --rsd-bg: #f4efe6;
+  --rsd-panel: #ebe4d8;
+  --rsd-btn-ink: #1a1917;
+  --rsd-text: #1a1917;
+  --rsd-muted: #575146;
+  --rsd-line: rgba(26, 25, 23, 0.1);
+  --rsd-header-border: rgba(26, 25, 23, 0.1);
+  --rsd-header-bg: rgba(244, 239, 230, 0.88);
+  --rsd-header-bg-overlay: rgba(244, 239, 230, 0.64);
+  --rsd-glow: 0 0 24px rgba(201, 164, 98, 0.22);
+  --rsd-veil: #f4efe6;
+  --rsd-shot-opacity: 0.44;
+  --rsd-shot-filter: saturate(0.9) contrast(1.03) brightness(0.9);
 }

@@ -328,6 +328,14 @@ describe('ComplianceStatusView', () => {
     expect(queryByTestId('governance-score-state-first-step')).toBeNull();
   });
 
+  it('Backend-Review A: Fußzeile ohne KPI-Snapshot sagt „Score noch nicht bewertbar“', () => {
+    const { container } = rendered({
+      data: fixture({ counts: { ...ZERO, incidents: 1 }, score: null, scoreStatus: 'insufficient_data', lastUpdated: null }),
+    });
+    expect(container.textContent).toContain('KPI-Snapshot noch nicht verfügbar — Score noch nicht bewertbar.');
+    expect(container.textContent).not.toContain('Echtzeit-Zählern');
+  });
+
   it('lists prioritized open measures with deep links', () => {
     const { getByTestId, getByText } = rendered({
       data: fixture({

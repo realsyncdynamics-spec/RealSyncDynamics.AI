@@ -126,4 +126,57 @@ describe('CeoCockpitView', () => {
     fireEvent.click(screen.getByTestId('cockpit-score-state-retry'));
     await waitFor(() => expect(mockedLoadCockpitData).toHaveBeenCalledTimes(2));
   });
+
+  it('Backend-Review A: Fußzeile ohne KPI-Snapshot sagt „Score noch nicht bewertbar“', async () => {
+    mockedLoadCockpitData.mockResolvedValue(makeData({ counts: { incidents: 1, dpias: 0, dsr: { total: 0, overdue: 0 }, approvals: 0, vendorsNoDpa: 0 } }));
+    render(
+      <MemoryRouter>
+        <CeoCockpitView />
+      </MemoryRouter>,
+    );
+    await waitFor(() =>
+      expect(screen.getByText(/KPI-Snapshot noch nicht verfügbar — Score noch nicht bewertbar\./)).toBeInTheDocument(),
+    );
+    expect(screen.queryByText(/Echtzeit-Zählern/)).toBeNull();
+  });
+
+  it('Backend-Review B: fehlgeschlagene Zähler zeigen „nicht geladen“ statt 0', async () => {
+    mockedLoadCockpitData.mockResolvedValue(
+      makeData({ partialFailures: ['incidents: timeout', 'vendors: rls denied'] }),
+    );
+    render(
+      <MemoryRouter>
+        <CeoCockpitView />
+      </MemoryRouter>,
+    );
+    await waitFor(() => expect(screen.getAllByText('nicht geladen')).toHaveLength(2));
+    const metric = (label: string) => screen.getByText(label).parentElement!.firstElementChild!.textContent;
+    expect(metric('Offene Vorfälle')).toBe('nicht geladen');
+    expect(metric('Vendoren ohne AVV')).toBe('nicht geladen');
+    // Geladene Zähler bleiben Zahlen.
+    expect(metric('DSR überfällig')).toBe('0');
+    expect(metric('Offene DSFA')).toBe('0');
+  });
+
+  it('Backend-Review B: kein Erststart-Banner, wenn Zähler fehlgeschlagen sind', async () => {
+    mockedLoadCockpitData.mockResolvedValue(makeData({ partialFailures: ['dsr: timeout'] }));
+    render(
+      <MemoryRouter>
+        <CeoCockpitView />
+      </MemoryRouter>,
+    );
+    await waitFor(() => expect(screen.getByText('nicht geladen')).toBeInTheDocument());
+    expect(screen.queryByText('Willkommen im Governance-Cockpit!')).toBeNull();
+  });
+
+  it('zeigt den Erststart-Banner weiterhin ohne partialFailures', async () => {
+    mockedLoadCockpitData.mockResolvedValue(makeData());
+    render(
+      <MemoryRouter>
+        <CeoCockpitView />
+      </MemoryRouter>,
+    );
+    await waitFor(() => expect(screen.getByText('Willkommen im Governance-Cockpit!')).toBeInTheDocument());
+    expect(screen.queryByText('nicht geladen')).toBeNull();
+  });
 });

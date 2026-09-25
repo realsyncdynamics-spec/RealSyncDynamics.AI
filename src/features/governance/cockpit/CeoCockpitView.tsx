@@ -33,13 +33,19 @@ export function CeoCockpitView() {
   const [error, setError] = useState<string | null>(null);
   const [dismissed, setDismissed] = useState(false);
 
-  // First-time user detection: kein Assets/Data vorhanden
-  const isFirstTime = data && !dismissed && (
+  // First-time user detection: kein Assets/Data vorhanden. Nicht bei
+  // fehlgeschlagenen Zählern — deren 0 ist kein Beleg für einen Erststart.
+  const isFirstTime = data && !dismissed && data.partialFailures.length === 0 && (
     data.counts.incidents === 0 &&
     data.counts.dpias === 0 &&
     data.counts.dsr.total === 0 &&
     data.actions.length === 0
   );
+
+  // Gleiches Muster wie CeoBriefPrintView: fehlgeschlagene Zähler zeigen
+  // „nicht geladen“ statt 0.
+  const failed = (name: string) => data?.partialFailures.some((f) => f.startsWith(`${name}:`)) ?? false;
+  const countCell = (name: string, value: number) => (failed(name) ? 'nicht geladen' : value);
 
   const [reloadKey, setReloadKey] = useState(0);
   const retry = useCallback(() => setReloadKey((k) => k + 1), []);
@@ -181,10 +187,10 @@ export function CeoCockpitView() {
 
             <Card className="md:col-span-1 bg-obsidian-900">
               <CardBody className="grid grid-cols-2 gap-4 h-full content-center">
-                <Metric label="Offene Vorfälle" value={data.counts.incidents} danger={data.counts.incidents > 0} />
-                <Metric label="DSR überfällig" value={data.counts.dsr.overdue} danger={data.counts.dsr.overdue > 0} />
-                <Metric label="Offene DSFA" value={data.counts.dpias} />
-                <Metric label="Vendoren ohne AVV" value={data.counts.vendorsNoDpa} danger={data.counts.vendorsNoDpa > 0} />
+                <Metric label="Offene Vorfälle" value={countCell('incidents', data.counts.incidents)} danger={!failed('incidents') && data.counts.incidents > 0} />
+                <Metric label="DSR überfällig" value={countCell('dsr', data.counts.dsr.overdue)} danger={!failed('dsr') && data.counts.dsr.overdue > 0} />
+                <Metric label="Offene DSFA" value={countCell('dpias', data.counts.dpias)} />
+                <Metric label="Vendoren ohne AVV" value={countCell('vendors', data.counts.vendorsNoDpa)} danger={!failed('vendors') && data.counts.vendorsNoDpa > 0} />
               </CardBody>
             </Card>
           </div>
@@ -240,7 +246,7 @@ export function CeoCockpitView() {
           <ApiStatusCard />
 
           <p className="text-[11px] text-titanium-600 font-mono">
-            {data.lastUpdated ? `KPI-Stand: ${data.lastUpdated}` : 'KPI-Snapshot noch nicht verfügbar — Score aus Echtzeit-Zählern.'}
+            {data.lastUpdated ? `KPI-Stand: ${data.lastUpdated}` : 'KPI-Snapshot noch nicht verfügbar — Score noch nicht bewertbar.'}
             {' · '}
             <Link to="/app/overview" className="hover:text-titanium-300 underline">Klassische Übersicht</Link>
           </p>
@@ -263,10 +269,11 @@ function TrendChip({ direction, percent }: { direction: 'up' | 'down' | 'flat'; 
   );
 }
 
-function Metric({ label, value, danger = false }: { label: string; value: number; danger?: boolean }) {
+function Metric({ label, value, danger = false }: { label: string; value: number | string; danger?: boolean }) {
+  const notLoaded = typeof value === 'string';
   return (
     <div>
-      <p className={`font-mono text-2xl font-bold ${danger ? 'text-rose-300' : 'text-titanium-50'}`}>{value}</p>
+      <p className={`font-mono font-bold ${notLoaded ? 'text-sm text-amber-300' : 'text-2xl'} ${danger ? 'text-rose-300' : notLoaded ? '' : 'text-titanium-50'}`}>{value}</p>
       <p className="text-[10px] uppercase tracking-wider text-titanium-500 font-mono mt-0.5">{label}</p>
     </div>
   );

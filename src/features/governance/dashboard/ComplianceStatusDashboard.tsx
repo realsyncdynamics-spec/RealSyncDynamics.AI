@@ -529,7 +529,7 @@ export function ComplianceStatusView({
           <p className="text-[11px] text-titanium-600 font-mono">
             {data.lastUpdated
               ? `KPI-Stand: ${data.lastUpdated}`
-              : 'KPI-Snapshot noch nicht verfügbar — Score aus Echtzeit-Zählern.'}
+              : 'KPI-Snapshot noch nicht verfügbar — Score noch nicht bewertbar.'}
             {' · '}
             <Link to="/app/dashboard" className="hover:text-titanium-300 underline">Workspace</Link>
             {' · '}

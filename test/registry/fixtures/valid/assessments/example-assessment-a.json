@@ -1,0 +1,135 @@
+{
+  "schema_version": "1.0",
+  "assessment_id": "example-assessment-a",
+  "is_example": true,
+  "deployment_id": "example-deployment-a",
+  "model_id": "example-model-1",
+  "policy_profile": "strict_eu_sovereignty",
+  "assurance_target": "routing_eligibility",
+  "rule_version": "registry-invariants@0.1.0",
+  "evaluated_at": "2026-09-26T10:00:00Z",
+  "evidence_cutoff": "2026-09-26T00:00:00Z",
+  "expires_at": "2026-12-26T00:00:00Z",
+  "result": "PASS",
+  "inputs": {
+    "deployment_id": "example-deployment-a",
+    "product_sku": "example-product-a",
+    "facts": {
+      "inference_region": {
+        "scope": "country",
+        "country_codes": [
+          "DE"
+        ],
+        "provider_region_code": "de-1",
+        "locality": "Frankfurt",
+        "status": "claimed",
+        "sources": [
+          {
+            "url": "https://example.com/fixtures/source",
+            "captured_at": "2026-09-20",
+            "locator": "Region"
+          }
+        ],
+        "captured_at": "2026-09-20"
+      },
+      "external_inference_egress": {
+        "value": false,
+        "status": "claimed",
+        "sources": [
+          {
+            "url": "https://example.com/fixtures/source",
+            "captured_at": "2026-09-20",
+            "locator": "keine Weitergabe"
+          }
+        ],
+        "captured_at": "2026-09-20"
+      },
+      "third_country_access": {
+        "status": "no_access_claimed",
+        "requires_subprocessor_review": false,
+        "verification_status": "claimed",
+        "sources": [
+          {
+            "url": "https://example.com/fixtures/source",
+            "captured_at": "2026-09-20",
+            "locator": "kein Zugriff"
+          }
+        ],
+        "captured_at": "2026-09-20"
+      },
+      "eu_commission_seal": {
+        "status": "awarded",
+        "level": "SEAL-3",
+        "applies_to_sku": [
+          "example-product-a"
+        ],
+        "verification_status": "claimed",
+        "sources": [
+          {
+            "url": "https://example.com/fixtures/source",
+            "captured_at": "2026-09-20",
+            "locator": "Siegel"
+          }
+        ],
+        "captured_at": "2026-09-20",
+        "valid_from": "2026-01-01",
+        "valid_until": "2027-12-31"
+      }
+    },
+    "evidence": [
+      {
+        "ref": "claim:example-claim-1",
+        "status": "claimed",
+        "source_count": 1,
+        "captured_at": "2026-09-20",
+        "max_age_days": 90,
+        "freshness": "fresh"
+      },
+      {
+        "ref": "certification:example-cert-1",
+        "status": "claimed",
+        "source_count": 1,
+        "captured_at": "2026-09-20",
+        "max_age_days": 365,
+        "freshness": "fresh"
+      },
+      {
+        "ref": "fact:inference_region",
+        "status": "claimed",
+        "source_count": 1,
+        "captured_at": "2026-09-20",
+        "max_age_days": 90,
+        "freshness": "fresh"
+      }
+    ],
+    "relied_on": [
+      "claim:example-claim-1",
+      "certification:example-cert-1",
+      "fact:inference_region"
+    ],
+    "customer_config": {
+      "residency_class": "DE_ONLY",
+      "settings": {}
+    },
+    "intended_purpose": "Beispiel: Zusammenfassung interner Richtlinien",
+    "use_case_risk_class": "not_assessed",
+    "policy_profile": "strict_eu_sovereignty",
+    "assurance_target": "routing_eligibility",
+    "rule_version": "registry-invariants@0.1.0"
+  },
+  "inputs_hash": "c853e328cc60fdc062db7cdf9edc036252c65d54bf7517071e9d4305fef59798",
+  "inputs_hash_method": "sha256_hex(utf8(RFC8785_JCS(inputs)))",
+  "derived": {
+    "third_country_access": "no_access_claimed",
+    "seal_level": "SEAL-3",
+    "sovereignty_assurance": "data_residency",
+    "ai_act_conformity": null
+  },
+  "findings": [
+    {
+      "code": "THIRD_COUNTRY_ACCESS_CLAIMED_ONLY",
+      "severity": "info",
+      "message": "Drittstaatenzugriff: nur Anbieterbehauptung."
+    }
+  ]
+}

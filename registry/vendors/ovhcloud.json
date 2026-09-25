@@ -1,0 +1,141 @@
+{
+  "schema_version": "1.0",
+  "vendor_id": "ovhcloud",
+  "display_name": "OVHcloud",
+  "legal_name": {
+    "value": null,
+    "status": "unknown",
+    "sources": [],
+    "captured_at": "2026-09-26",
+    "note": "Rechtstraeger nicht in den ausgewerteten Quellen belegt."
+  },
+  "brands": [
+    "OVHcloud"
+  ],
+  "legal_seat_country": {
+    "value": [],
+    "status": "unknown",
+    "sources": [],
+    "captured_at": "2026-09-26",
+    "note": "Nicht belegt."
+  },
+  "parent_organization": {
+    "value": null,
+    "status": "unknown",
+    "sources": [],
+    "captured_at": "2026-09-26",
+    "note": "Nicht belegt."
+  },
+  "control_change": {
+    "status": "unknown",
+    "counterparty": null,
+    "as_of": null,
+    "verification_status": "unknown",
+    "sources": [],
+    "captured_at": "2026-09-26",
+    "note": "Kein Beleg zu Kontrollwechseln ausgewertet; bewusst nicht 'none'."
+  },
+  "certifications": [
+    {
+      "cert_id": "ovh-iso-27001",
+      "scheme": "ISO_27001",
+      "name": "ISO/IEC 27001",
+      "scope": "OVHcloud unternehmensweit (Compliance-Seite; AI Endpoints nicht genannt)",
+      "applies_to_sku": [],
+      "status": "claimed",
+      "sources": [
+        {
+          "url": "https://www.ovhcloud.com/en/compliance/",
+          "captured_at": "2026-09-26",
+          "locator": "ISO/IEC 27001"
+        }
+      ],
+      "captured_at": "2026-09-26",
+      "valid_from": null,
+      "valid_until": null
+    },
+    {
+      "cert_id": "ovh-iso-27017",
+      "scheme": "ISO_27017",
+      "name": "ISO/IEC 27017",
+      "scope": "OVHcloud unternehmensweit (Compliance-Seite; AI Endpoints nicht genannt)",
+      "applies_to_sku": [],
+      "status": "claimed",
+      "sources": [
+        {
+          "url": "https://www.ovhcloud.com/en/compliance/",
+          "captured_at": "2026-09-26",
+          "locator": "ISO/IEC 27017"
+        }
+      ],
+      "captured_at": "2026-09-26",
+      "valid_from": null,
+      "valid_until": null
+    },
+    {
+      "cert_id": "ovh-iso-27018",
+      "scheme": "ISO_27018",
+      "name": "ISO/IEC 27018",
+      "scope": "OVHcloud unternehmensweit (Compliance-Seite; AI Endpoints nicht genannt)",
+      "applies_to_sku": [],
+      "status": "claimed",
+      "sources": [
+        {
+          "url": "https://www.ovhcloud.com/en/compliance/",
+          "captured_at": "2026-09-26",
+          "locator": "ISO/IEC 27018"
+        }
+      ],
+      "captured_at": "2026-09-26",
+      "valid_from": null,
+      "valid_until": null
+    },
+    {
+      "cert_id": "ovh-iso-27701",
+      "scheme": "ISO_27701",
+      "name": "ISO/IEC 27701",
+      "scope": "OVHcloud unternehmensweit (Compliance-Seite; AI Endpoints nicht genannt)",
+      "applies_to_sku": [],
+      "status": "claimed",
+      "sources": [
+        {
+          "url": "https://www.ovhcloud.com/en/compliance/",
+          "captured_at": "2026-09-26",
+          "locator": "ISO/IEC 27701"
+        }
+      ],
+      "captured_at": "2026-09-26",
+      "valid_from": null,
+      "valid_until": null
+    },
+    {
+      "cert_id": "ovh-bsi-c5",
+      "scheme": "BSI_C5",
+      "name": "BSI C5",
+      "scope": "OVHcloud unternehmensweit (Compliance-Seite; AI Endpoints nicht genannt)",
+      "applies_to_sku": [],
+      "status": "claimed",
+      "sources": [
+        {
+          "url": "https://www.ovhcloud.com/en/compliance/",
+          "captured_at": "2026-09-26",
+          "locator": "C5"
+        }
+      ],
+      "captured_at": "2026-09-26",
+      "valid_from": null,
+      "valid_until": null,
+      "note": "Recherche: 'C5 nicht belegt'; die Compliance-Seite nennt C5 am 2026-09-26 unternehmensweit, ohne Produktbezug. Keinem Produkt zugeordnet."
+    }
+  ],
+  "website": "https://www.ovhcloud.com",
+  "provenance": {
+    "captured_at": "2026-09-26",
+    "captured_by": "RealSyncDynamics Registry-Bootstrap (Agent im Auftrag von Dominik Steiner)",
+    "research_refs": [
+      "research/eu-ai-providers-2026-09-25.md",
+      "research/eu-llm-poc-plan-2026-09-25.md"
+    ],
+    "notes": "Die Compliance-Seite nennt ausserdem SOC 1/2/3 und SecNumCloud ohne Bezug auf AI Endpoints; nicht erfasst, weil Typ/Scope fehlen."
+  }
+}

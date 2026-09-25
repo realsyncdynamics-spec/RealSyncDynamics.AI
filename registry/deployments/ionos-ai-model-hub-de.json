@@ -1,0 +1,889 @@
+{
+  "schema_version": "1.0",
+  "deployment_id": "ionos-ai-model-hub-de",
+  "vendor_id": "ionos-cloud",
+  "brand": "IONOS",
+  "product_name": "IONOS AI Model Hub",
+  "product_sku": "ionos-ai-model-hub",
+  "deployment_kind": "shared_serverless",
+  "listing_status": "active",
+  "infrastructure_operator": {
+    "vendor_id": "ionos-cloud",
+    "name": "IONOS",
+    "status": "claimed",
+    "sources": [
+      {
+        "url": "https://docs.ionos.com/cloud/ai/ai-model-hub/governance-and-compliance/data-handling",
+        "captured_at": "2026-09-26",
+        "locator": "Inferenz ausschliesslich in IONOS-Rechenzentren in Deutschland"
+      }
+    ],
+    "captured_at": "2026-09-26"
+  },
+  "connector": {
+    "connector_type": "openai_compatible",
+    "api_base_url": null,
+    "api_paths": [],
+    "inventory_endpoint": null,
+    "legacy_fallback_endpoint": null,
+    "sources": [
+      {
+        "url": "https://api.ionos.com/docs/inference-openai/v1/",
+        "captured_at": "2026-09-25",
+        "locator": "OpenAI-kompatible Inference-API (laut Recherche)"
+      }
+    ],
+    "captured_at": "2026-09-25",
+    "note": "Basis-URL, Pfade und Inventar-Endpunkt nicht aus den ausgewerteten Quellen erfasst."
+  },
+  "inference_region": {
+    "scope": "country",
+    "country_codes": [
+      "DE"
+    ],
+    "provider_region_code": null,
+    "locality": "Germany",
+    "status": "claimed",
+    "sources": [
+      {
+        "url": "https://docs.ionos.com/cloud/ai/ai-model-hub/governance-and-compliance/data-handling",
+        "captured_at": "2026-09-26",
+        "locator": "Inference only in data centers in Germany, nowhere else"
+      }
+    ],
+    "captured_at": "2026-09-26"
+  },
+  "external_inference_egress": {
+    "value": false,
+    "status": "claimed",
+    "sources": [
+      {
+        "url": "https://docs.ionos.com/cloud/ai/ai-model-hub/governance-and-compliance/data-handling",
+        "captured_at": "2026-09-26",
+        "locator": "keine Weitergabe an Dritte, auch nicht an Modellentwickler"
+      }
+    ],
+    "captured_at": "2026-09-26"
+  },
+  "jurisdiction": {
+    "provider_jurisdiction": {
+      "value": [
+        "DE"
+      ],
+      "status": "claimed",
+      "sources": [
+        {
+          "url": "https://docs.ionos.com/cloud/ai/ai-model-hub/governance-and-compliance/data-handling",
+          "captured_at": "2026-09-26",
+          "locator": "Vertragspartei IONOS Cloud GmbH (Germany)"
+        }
+      ],
+      "captured_at": "2026-09-26"
+    },
+    "infrastructure_jurisdiction": {
+      "value": [
+        "DE"
+      ],
+      "status": "claimed",
+      "sources": [
+        {
+          "url": "https://docs.ionos.com/cloud/ai/ai-model-hub/governance-and-compliance/data-handling",
+          "captured_at": "2026-09-26",
+          "locator": "data centers in Germany"
+        }
+      ],
+      "captured_at": "2026-09-26"
+    },
+    "non_eu_parent_control": {
+      "value": null,
+      "status": "unknown",
+      "sources": [],
+      "captured_at": "2026-09-26",
+      "note": "Nicht belegt."
+    },
+    "eu_commission_seal": {
+      "status": "unknown",
+      "level": null,
+      "applies_to_sku": [],
+      "verification_status": "unknown",
+      "sources": [],
+      "captured_at": "2026-09-26",
+      "valid_from": null,
+      "valid_until": null,
+      "note": "Kein Beleg fuer ein EU-Souveraenitaets-Siegel in den ausgewerteten Quellen."
+    },
+    "third_country_access": {
+      "status": "no_access_claimed",
+      "requires_subprocessor_review": false,
+      "verification_status": "claimed",
+      "sources": [
+        {
+          "url": "https://docs.ionos.com/cloud/ai/ai-model-hub/governance-and-compliance/data-handling",
+          "captured_at": "2026-09-26",
+          "locator": "Zugriff nur durch EU-Personal, no access from outside the EU; no third-party sub-processors"
+        }
+      ],
+      "captured_at": "2026-09-26",
+      "note": "Anbieterbehauptung, keine Garantie. requires_subprocessor_review=false, weil die Quelle fuer den AI Model Hub keine Drittanbieter-Subprozessoren nennt."
+    }
+  },
+  "capabilities": {
+    "chat": {
+      "support": "yes",
+      "status": "claimed",
+      "sources": [
+        {
+          "url": "https://docs.ionos.com/cloud/ai/ai-model-hub/models/models-comparison",
+          "captured_at": "2026-09-26",
+          "locator": "Chat-Modelle im Modellvergleich"
+        }
+      ],
+      "captured_at": "2026-09-26"
+    },
+    "streaming": {
+      "support": "model_dependent",
+      "status": "claimed",
+      "sources": [
+        {
+          "url": "https://docs.ionos.com/cloud/ai/ai-model-hub/models/models-comparison",
+          "captured_at": "2026-09-26",
+          "locator": "Streaming je Modell"
+        }
+      ],
+      "captured_at": "2026-09-26"
+    },
+    "tools": {
+      "support": "model_dependent",
+      "status": "claimed",
+      "sources": [
+        {
+          "url": "https://docs.ionos.com/cloud/ai/ai-model-hub/models/models-comparison",
+          "captured_at": "2026-09-26",
+          "locator": "Tool Calling je Modell"
+        }
+      ],
+      "captured_at": "2026-09-26"
+    },
+    "json_object": {
+      "support": "unknown",
+      "status": "unknown",
+      "sources": [],
+      "captured_at": "2026-09-26",
+      "note": "Recherche: 'vermutlich'; nicht belegt."
+    },
+    "json_schema": {
+      "support": "unknown",
+      "status": "unknown",
+      "sources": [],
+      "captured_at": "2026-09-26",
+      "note": "Structured json_schema nicht explizit belegt."
+    },
+    "json_schema_strict": {
+      "support": "unknown",
+      "status": "unknown",
+      "sources": [],
+      "captured_at": "2026-09-26"
+    },
+    "tool_choice": {
+      "support": "unknown",
+      "status": "unknown",
+      "sources": [],
+      "captured_at": "2026-09-26"
+    },
+    "embeddings": {
+      "support": "unknown",
+      "status": "unknown",
+      "sources": [],
+      "captured_at": "2026-09-26"
+    },
+    "languages": {
+      "value": [],
+      "status": "unknown",
+      "sources": [],
+      "captured_at": "2026-09-26"
+    }
+  },
+  "certifications": [
+    {
+      "cert_id": "ionos-ai-model-hub-bsi-c5",
+      "scheme": "BSI_C5",
+      "name": "BSI C5",
+      "scope": "AI Model Hub",
+      "applies_to_sku": [
+        "ionos-ai-model-hub"
+      ],
+      "status": "claimed",
+      "sources": [
+        {
+          "url": "https://docs.ionos.com/cloud/ai/ai-model-hub/governance-and-compliance/data-handling",
+          "captured_at": "2026-09-26",
+          "locator": "AI Model Hub falls within the scope of BSI C5"
+        }
+      ],
+      "captured_at": "2026-09-26",
+      "valid_from": null,
+      "valid_until": null,
+      "note": "Typ (Type 1/Type 2) und Pruefzeitraum nicht genannt."
+    }
+  ],
+  "claims": [
+    {
+      "claim_id": "ionos-no-prompt-logging",
+      "claim_type": "prompt_logging",
+      "subject": {
+        "deployment_id": "ionos-ai-model-hub-de",
+        "model_ids": []
+      },
+      "value": false,
+      "statement": "Prompts und Outputs werden nie geloggt.",
+      "status": "claimed",
+      "sources": [
+        {
+          "url": "https://docs.ionos.com/cloud/ai/ai-model-hub/governance-and-compliance/data-handling",
+          "captured_at": "2026-09-26",
+          "locator": "prompts and outputs are never logged"
+        }
+      ],
+      "captured_at": "2026-09-26"
+    },
+    {
+      "claim_id": "ionos-no-persistence",
+      "claim_type": "request_retention",
+      "subject": {
+        "deployment_id": "ionos-ai-model-hub-de",
+        "model_ids": []
+      },
+      "value": false,
+      "statement": "Prompts und Outputs werden nicht persistiert.",
+      "status": "claimed",
+      "sources": [
+        {
+          "url": "https://docs.ionos.com/cloud/ai/ai-model-hub/governance-and-compliance/data-handling",
+          "captured_at": "2026-09-26",
+          "locator": "never persisted"
+        }
+      ],
+      "captured_at": "2026-09-26"
+    },
+    {
+      "claim_id": "ionos-no-training",
+      "claim_type": "training_on_customer_data",
+      "subject": {
+        "deployment_id": "ionos-ai-model-hub-de",
+        "model_ids": []
+      },
+      "value": false,
+      "statement": "Keine Nutzung zum Training.",
+      "status": "claimed",
+      "sources": [
+        {
+          "url": "https://docs.ionos.com/cloud/ai/ai-model-hub/governance-and-compliance/data-handling",
+          "captured_at": "2026-09-26",
+          "locator": "not used for training"
+        }
+      ],
+      "captured_at": "2026-09-26"
+    },
+    {
+      "claim_id": "ionos-no-model-developer-access",
+      "claim_type": "model_developer_access",
+      "subject": {
+        "deployment_id": "ionos-ai-model-hub-de",
+        "model_ids": []
+      },
+      "value": false,
+      "statement": "Keine Weitergabe, auch nicht an Modellentwickler.",
+      "status": "claimed",
+      "sources": [
+        {
+          "url": "https://docs.ionos.com/cloud/ai/ai-model-hub/governance-and-compliance/data-handling",
+          "captured_at": "2026-09-26",
+          "locator": "not shared, including with model developers"
+        }
+      ],
+      "captured_at": "2026-09-26"
+    },
+    {
+      "claim_id": "ionos-usage-metadata",
+      "claim_type": "usage_metadata_retention",
+      "subject": {
+        "deployment_id": "ionos-ai-model-hub-de",
+        "model_ids": []
+      },
+      "value": {
+        "fields": [
+          "timestamp",
+          "model",
+          "tokens"
+        ]
+      },
+      "statement": "Es werden Metadaten (Zeitpunkt, Modell, Tokenanzahl) verarbeitet.",
+      "status": "claimed",
+      "sources": [
+        {
+          "url": "https://docs.ionos.com/cloud/ai/ai-model-hub/governance-and-compliance/data-handling",
+          "captured_at": "2026-09-26",
+          "locator": "metadata: time, model, tokens"
+        }
+      ],
+      "captured_at": "2026-09-26"
+    },
+    {
+      "claim_id": "ionos-personnel-eu-only",
+      "claim_type": "personnel_access_location",
+      "subject": {
+        "deployment_id": "ionos-ai-model-hub-de",
+        "model_ids": []
+      },
+      "value": "EU",
+      "statement": "Zugriff nur durch Personal in der EU; kein Zugriff von ausserhalb der EU.",
+      "status": "claimed",
+      "sources": [
+        {
+          "url": "https://docs.ionos.com/cloud/ai/ai-model-hub/governance-and-compliance/data-handling",
+          "captured_at": "2026-09-26",
+          "locator": "no access from outside the EU"
+        }
+      ],
+      "captured_at": "2026-09-26"
+    },
+    {
+      "claim_id": "ionos-no-subprocessors",
+      "claim_type": "subprocessors_engaged",
+      "subject": {
+        "deployment_id": "ionos-ai-model-hub-de",
+        "model_ids": []
+      },
+      "value": false,
+      "statement": "Keine Drittanbieter-Subprozessoren fuer den AI Model Hub.",
+      "status": "claimed",
+      "sources": [
+        {
+          "url": "https://docs.ionos.com/cloud/ai/ai-model-hub/governance-and-compliance/data-handling",
+          "captured_at": "2026-09-26",
+          "locator": "No third-party sub-processors"
+        }
+      ],
+      "captured_at": "2026-09-26"
+    },
+    {
+      "claim_id": "ionos-dpa",
+      "claim_type": "dpa_available",
+      "subject": {
+        "deployment_id": "ionos-ai-model-hub-de",
+        "model_ids": []
+      },
+      "value": true,
+      "statement": "Auftragsverarbeitung ohne separate Unterschrift Teil des Vertrags.",
+      "status": "claimed",
+      "sources": [
+        {
+          "url": "https://docs.ionos.com/cloud/ai/ai-model-hub/governance-and-compliance/data-handling",
+          "captured_at": "2026-09-26",
+          "locator": "DPA ohne separate Signatur"
+        }
+      ],
+      "captured_at": "2026-09-26"
+    }
+  ],
+  "pricing": {
+    "scheme": "per_model",
+    "currency": "USD",
+    "unit": "per_1m_tokens",
+    "vat": "unknown",
+    "categories": [],
+    "modifiers": [],
+    "sources": [
+      {
+        "url": "https://cloud.ionos.com/managed/ai-model-hub",
+        "captured_at": "2026-09-26",
+        "locator": "Preisliste AI Model Hub (USD je 1M Tokens)"
+      }
+    ],
+    "captured_at": "2026-09-26"
+  },
+  "models": [
+    {
+      "model_id": "gpt-oss-120b",
+      "api_model_id": null,
+      "display_name": "GPT-OSS 120B",
+      "model_type": "chat",
+      "availability": {
+        "value": "available",
+        "status": "claimed",
+        "sources": [
+          {
+            "url": "https://cloud.ionos.com/managed/ai-model-hub",
+            "captured_at": "2026-09-26",
+            "locator": "GPT-OSS 120B (Preisliste)"
+          }
+        ],
+        "captured_at": "2026-09-26"
+      },
+      "model_origin": {
+        "developer": null,
+        "developer_vendor_id": null,
+        "open_weights": null,
+        "status": "unknown",
+        "sources": [],
+        "captured_at": "2026-09-26"
+      },
+      "capabilities": {
+        "context_window_tokens": {
+          "value": 128000,
+          "status": "claimed",
+          "sources": [
+            {
+              "url": "https://docs.ionos.com/cloud/ai/ai-model-hub/models/models-comparison",
+              "captured_at": "2026-09-26",
+              "locator": "GPT-OSS 120B: Kontext 128k"
+            }
+          ],
+          "captured_at": "2026-09-26",
+          "note": "Quelle nennt 128k; als 128000 erfasst (Untergrenze, exakte Tokenzahl nicht angegeben)."
+        },
+        "tools": {
+          "support": "yes",
+          "status": "claimed",
+          "sources": [
+            {
+              "url": "https://docs.ionos.com/cloud/ai/ai-model-hub/models/models-comparison",
+              "captured_at": "2026-09-26",
+              "locator": "GPT-OSS 120B: Tool Calling ✅"
+            }
+          ],
+          "captured_at": "2026-09-26"
+        },
+        "streaming": {
+          "support": "yes",
+          "status": "claimed",
+          "sources": [
+            {
+              "url": "https://docs.ionos.com/cloud/ai/ai-model-hub/models/models-comparison",
+              "captured_at": "2026-09-26",
+              "locator": "GPT-OSS 120B: Streaming ✅"
+            }
+          ],
+          "captured_at": "2026-09-26"
+        }
+      },
+      "price": {
+        "input_per_1m": 0.17,
+        "output_per_1m": 0.71,
+        "status": "claimed",
+        "sources": [
+          {
+            "url": "https://cloud.ionos.com/managed/ai-model-hub",
+            "captured_at": "2026-09-26",
+            "locator": "GPT-OSS 120B: $0.17 / $0.71"
+          }
+        ],
+        "captured_at": "2026-09-26"
+      },
+      "note": "api_model_id nicht erfasst; ueber den Modell-Endpunkt der API ermitteln."
+    },
+    {
+      "model_id": "qwen3.8-27b",
+      "api_model_id": null,
+      "display_name": "Qwen3.8-27B",
+      "model_type": "chat",
+      "availability": {
+        "value": "available",
+        "status": "claimed",
+        "sources": [
+          {
+            "url": "https://cloud.ionos.com/managed/ai-model-hub",
+            "captured_at": "2026-09-26",
+            "locator": "Qwen3.8-27B (Preisliste)"
+          }
+        ],
+        "captured_at": "2026-09-26"
+      },
+      "model_origin": {
+        "developer": null,
+        "developer_vendor_id": null,
+        "open_weights": null,
+        "status": "unknown",
+        "sources": [],
+        "captured_at": "2026-09-26"
+      },
+      "capabilities": {
+        "context_window_tokens": {
+          "value": 262000,
+          "status": "claimed",
+          "sources": [
+            {
+              "url": "https://docs.ionos.com/cloud/ai/ai-model-hub/models/models-comparison",
+              "captured_at": "2026-09-26",
+              "locator": "Qwen3.8-27B: Kontext 262k"
+            }
+          ],
+          "captured_at": "2026-09-26",
+          "note": "Quelle nennt 262k; als 262000 erfasst (Untergrenze, exakte Tokenzahl nicht angegeben)."
+        },
+        "tools": {
+          "support": "yes",
+          "status": "claimed",
+          "sources": [
+            {
+              "url": "https://docs.ionos.com/cloud/ai/ai-model-hub/models/models-comparison",
+              "captured_at": "2026-09-26",
+              "locator": "Qwen3.8-27B: Tool Calling ✅"
+            }
+          ],
+          "captured_at": "2026-09-26"
+        },
+        "streaming": {
+          "support": "yes",
+          "status": "claimed",
+          "sources": [
+            {
+              "url": "https://docs.ionos.com/cloud/ai/ai-model-hub/models/models-comparison",
+              "captured_at": "2026-09-26",
+              "locator": "Qwen3.8-27B: Streaming ✅"
+            }
+          ],
+          "captured_at": "2026-09-26"
+        }
+      },
+      "price": {
+        "input_per_1m": 0.45,
+        "output_per_1m": 2.7,
+        "status": "claimed",
+        "sources": [
+          {
+            "url": "https://cloud.ionos.com/managed/ai-model-hub",
+            "captured_at": "2026-09-26",
+            "locator": "Qwen3.8-27B: $0.45 / $2.7"
+          }
+        ],
+        "captured_at": "2026-09-26"
+      },
+      "note": "api_model_id nicht erfasst; ueber den Modell-Endpunkt der API ermitteln."
+    },
+    {
+      "model_id": "qwen3.5-397b-a17b",
+      "api_model_id": null,
+      "display_name": "Qwen3.5-397B-A17B",
+      "model_type": "chat",
+      "availability": {
+        "value": "available",
+        "status": "claimed",
+        "sources": [
+          {
+            "url": "https://cloud.ionos.com/managed/ai-model-hub",
+            "captured_at": "2026-09-26",
+            "locator": "Qwen3.5-397B-A17B (Preisliste)"
+          }
+        ],
+        "captured_at": "2026-09-26"
+      },
+      "model_origin": {
+        "developer": null,
+        "developer_vendor_id": null,
+        "open_weights": null,
+        "status": "unknown",
+        "sources": [],
+        "captured_at": "2026-09-26"
+      },
+      "capabilities": {
+        "context_window_tokens": {
+          "value": 262000,
+          "status": "claimed",
+          "sources": [
+            {
+              "url": "https://docs.ionos.com/cloud/ai/ai-model-hub/models/models-comparison",
+              "captured_at": "2026-09-26",
+              "locator": "Qwen3.5-397B-A17B: Kontext 262k"
+            }
+          ],
+          "captured_at": "2026-09-26",
+          "note": "Quelle nennt 262k; als 262000 erfasst (Untergrenze, exakte Tokenzahl nicht angegeben)."
+        },
+        "tools": {
+          "support": "yes",
+          "status": "claimed",
+          "sources": [
+            {
+              "url": "https://docs.ionos.com/cloud/ai/ai-model-hub/models/models-comparison",
+              "captured_at": "2026-09-26",
+              "locator": "Qwen3.5-397B-A17B: Tool Calling ✅"
+            }
+          ],
+          "captured_at": "2026-09-26"
+        },
+        "streaming": {
+          "support": "yes",
+          "status": "claimed",
+          "sources": [
+            {
+              "url": "https://docs.ionos.com/cloud/ai/ai-model-hub/models/models-comparison",
+              "captured_at": "2026-09-26",
+              "locator": "Qwen3.5-397B-A17B: Streaming ✅"
+            }
+          ],
+          "captured_at": "2026-09-26"
+        }
+      },
+      "price": {
+        "input_per_1m": 0.67,
+        "output_per_1m": 4.0,
+        "status": "claimed",
+        "sources": [
+          {
+            "url": "https://cloud.ionos.com/managed/ai-model-hub",
+            "captured_at": "2026-09-26",
+            "locator": "Qwen3.5-397B-A17B: $0.67 / $4.0"
+          }
+        ],
+        "captured_at": "2026-09-26"
+      },
+      "note": "api_model_id nicht erfasst; ueber den Modell-Endpunkt der API ermitteln."
+    },
+    {
+      "model_id": "llama-3.3-70b-instruct",
+      "api_model_id": null,
+      "display_name": "Llama 3.3 70B Instruct",
+      "model_type": "chat",
+      "availability": {
+        "value": "available",
+        "status": "claimed",
+        "sources": [
+          {
+            "url": "https://cloud.ionos.com/managed/ai-model-hub",
+            "captured_at": "2026-09-26",
+            "locator": "Llama 3.3 70B Instruct (Preisliste)"
+          }
+        ],
+        "captured_at": "2026-09-26"
+      },
+      "model_origin": {
+        "developer": null,
+        "developer_vendor_id": null,
+        "open_weights": null,
+        "status": "unknown",
+        "sources": [],
+        "captured_at": "2026-09-26"
+      },
+      "capabilities": {
+        "context_window_tokens": {
+          "value": 128000,
+          "status": "claimed",
+          "sources": [
+            {
+              "url": "https://docs.ionos.com/cloud/ai/ai-model-hub/models/models-comparison",
+              "captured_at": "2026-09-26",
+              "locator": "Llama 3.3 70B Instruct: Kontext 128k"
+            }
+          ],
+          "captured_at": "2026-09-26",
+          "note": "Quelle nennt 128k; als 128000 erfasst (Untergrenze, exakte Tokenzahl nicht angegeben)."
+        },
+        "tools": {
+          "support": "yes",
+          "status": "claimed",
+          "sources": [
+            {
+              "url": "https://docs.ionos.com/cloud/ai/ai-model-hub/models/models-comparison",
+              "captured_at": "2026-09-26",
+              "locator": "Llama 3.3 70B Instruct: Tool Calling ✅"
+            }
+          ],
+          "captured_at": "2026-09-26"
+        },
+        "streaming": {
+          "support": "yes",
+          "status": "claimed",
+          "sources": [
+            {
+              "url": "https://docs.ionos.com/cloud/ai/ai-model-hub/models/models-comparison",
+              "captured_at": "2026-09-26",
+              "locator": "Llama 3.3 70B Instruct: Streaming ✅"
+            }
+          ],
+          "captured_at": "2026-09-26"
+        }
+      },
+      "price": {
+        "input_per_1m": 0.71,
+        "output_per_1m": 0.71,
+        "status": "claimed",
+        "sources": [
+          {
+            "url": "https://cloud.ionos.com/managed/ai-model-hub",
+            "captured_at": "2026-09-26",
+            "locator": "Llama 3.3 70B Instruct: $0.71 / $0.71"
+          }
+        ],
+        "captured_at": "2026-09-26"
+      },
+      "note": "api_model_id nicht erfasst; ueber den Modell-Endpunkt der API ermitteln."
+    },
+    {
+      "model_id": "mistral-small-24b",
+      "api_model_id": null,
+      "display_name": "Mistral Small 24B",
+      "model_type": "chat",
+      "availability": {
+        "value": "available",
+        "status": "claimed",
+        "sources": [
+          {
+            "url": "https://cloud.ionos.com/managed/ai-model-hub",
+            "captured_at": "2026-09-26",
+            "locator": "Mistral Small 24B (Preisliste)"
+          }
+        ],
+        "captured_at": "2026-09-26"
+      },
+      "model_origin": {
+        "developer": null,
+        "developer_vendor_id": null,
+        "open_weights": null,
+        "status": "unknown",
+        "sources": [],
+        "captured_at": "2026-09-26"
+      },
+      "capabilities": {
+        "context_window_tokens": {
+          "value": 128000,
+          "status": "claimed",
+          "sources": [
+            {
+              "url": "https://docs.ionos.com/cloud/ai/ai-model-hub/models/models-comparison",
+              "captured_at": "2026-09-26",
+              "locator": "Mistral Small 24B: Kontext 128k"
+            }
+          ],
+          "captured_at": "2026-09-26",
+          "note": "Quelle nennt 128k; als 128000 erfasst (Untergrenze, exakte Tokenzahl nicht angegeben)."
+        },
+        "tools": {
+          "support": "yes",
+          "status": "claimed",
+          "sources": [
+            {
+              "url": "https://docs.ionos.com/cloud/ai/ai-model-hub/models/models-comparison",
+              "captured_at": "2026-09-26",
+              "locator": "Mistral Small 24B: Tool Calling ✅"
+            }
+          ],
+          "captured_at": "2026-09-26"
+        },
+        "streaming": {
+          "support": "yes",
+          "status": "claimed",
+          "sources": [
+            {
+              "url": "https://docs.ionos.com/cloud/ai/ai-model-hub/models/models-comparison",
+              "captured_at": "2026-09-26",
+              "locator": "Mistral Small 24B: Streaming ✅"
+            }
+          ],
+          "captured_at": "2026-09-26"
+        }
+      },
+      "price": {
+        "input_per_1m": 0.11,
+        "output_per_1m": 0.33,
+        "status": "claimed",
+        "sources": [
+          {
+            "url": "https://cloud.ionos.com/managed/ai-model-hub",
+            "captured_at": "2026-09-26",
+            "locator": "Mistral Small 24B: $0.11 / $0.33"
+          }
+        ],
+        "captured_at": "2026-09-26"
+      },
+      "note": "api_model_id nicht erfasst; ueber den Modell-Endpunkt der API ermitteln."
+    },
+    {
+      "model_id": "mistral-nemo-12b",
+      "api_model_id": null,
+      "display_name": "Mistral Nemo 12B",
+      "model_type": "chat",
+      "availability": {
+        "value": "available",
+        "status": "claimed",
+        "sources": [
+          {
+            "url": "https://cloud.ionos.com/managed/ai-model-hub",
+            "captured_at": "2026-09-26",
+            "locator": "Mistral Nemo 12B (Preisliste)"
+          }
+        ],
+        "captured_at": "2026-09-26"
+      },
+      "model_origin": {
+        "developer": null,
+        "developer_vendor_id": null,
+        "open_weights": null,
+        "status": "unknown",
+        "sources": [],
+        "captured_at": "2026-09-26"
+      },
+      "capabilities": {
+        "context_window_tokens": {
+          "value": 128000,
+          "status": "claimed",
+          "sources": [
+            {
+              "url": "https://docs.ionos.com/cloud/ai/ai-model-hub/models/models-comparison",
+              "captured_at": "2026-09-26",
+              "locator": "Mistral Nemo 12B: Kontext 128k"
+            }
+          ],
+          "captured_at": "2026-09-26",
+          "note": "Quelle nennt 128k; als 128000 erfasst (Untergrenze, exakte Tokenzahl nicht angegeben)."
+        },
+        "tools": {
+          "support": "yes",
+          "status": "claimed",
+          "sources": [
+            {
+              "url": "https://docs.ionos.com/cloud/ai/ai-model-hub/models/models-comparison",
+              "captured_at": "2026-09-26",
+              "locator": "Mistral Nemo 12B: Tool Calling ✅"
+            }
+          ],
+          "captured_at": "2026-09-26"
+        },
+        "streaming": {
+          "support": "yes",
+          "status": "claimed",
+          "sources": [
+            {
+              "url": "https://docs.ionos.com/cloud/ai/ai-model-hub/models/models-comparison",
+              "captured_at": "2026-09-26",
+              "locator": "Mistral Nemo 12B: Streaming ✅"
+            }
+          ],
+          "captured_at": "2026-09-26"
+        }
+      },
+      "price": {
+        "input_per_1m": 0.17,
+        "output_per_1m": 0.17,
+        "status": "claimed",
+        "sources": [
+          {
+            "url": "https://cloud.ionos.com/managed/ai-model-hub",
+            "captured_at": "2026-09-26",
+            "locator": "Mistral Nemo 12B: $0.17 / $0.17"
+          }
+        ],
+        "captured_at": "2026-09-26"
+      },
+      "note": "api_model_id nicht erfasst; ueber den Modell-Endpunkt der API ermitteln."
+    }
+  ],
+  "provenance": {
+    "captured_at": "2026-09-26",
+    "captured_by": "RealSyncDynamics Registry-Bootstrap (Agent im Auftrag von Dominik Steiner)",
+    "research_refs": [
+      "research/eu-ai-providers-2026-09-25.md",
+      "research/eu-llm-poc-plan-2026-09-25.md"
+    ]
+  }
+}

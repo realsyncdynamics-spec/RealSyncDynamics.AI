@@ -1,5 +1,7 @@
 import { ServerAiGateway } from './router.ts';
 import { OllamaAdapter } from './ollamaAdapter.ts';
+import type { AiProviderAdapter } from './types.ts';
+import { decideLocalSlot, UnreachableLocalAdapter } from './localEndpoint.ts';
 
 /**
  * Gemeinsamer Gateway-Bau für `ai-gateway` und `governance-router`.
@@ -12,6 +14,15 @@ import { OllamaAdapter } from './ollamaAdapter.ts';
  * Default bleibt `lm_studio` → ohne bewusstes Umschalten byte-identisch.
  *
  * Cloud-Adapter nur, wenn `allowCloudFallback` wahr ist UND ein Key vorliegt.
+ *
+ * Lokale Base-URL, die aus der GEHOSTETEN Edge-Runtime nie erreichbar ist
+ * (localhost, 127.x, RFC1918, host.docker.internal …; siehe localEndpoint.ts):
+ *   - mit Cloud-Key  → lokaler Slot wird deaktiviert (wirft sofort einen
+ *                      Transportfehler, kein Netzwerk-Probe), die Kette
+ *                      läuft direkt auf Anthropic/OpenAI; einmal pro Isolate
+ *                      wird eine Warnung geloggt.
+ *   - ohne Cloud-Key → 503 LOCAL_PROVIDER_UNREACHABLE mit klarer Meldung
+ *                      statt eines unklaren 500 pro Aufruf.
  * Ohne lokalen Host:
  *   - requireLmStudio=true  → Fehler (bisheriges ai-gateway-Verhalten)
  *   - requireLmStudio=false → Dummy-URL, der Transport scheitert und die Kette
@@ -22,7 +33,7 @@ export type GatewayBuildOk = { ok: true; gateway: ServerAiGateway };
 export type GatewayBuildErr = {
   ok: false;
   status: 503;
-  code: 'LM_STUDIO_NOT_CONFIGURED' | 'LOCAL_NOT_CONFIGURED' | 'NO_PROVIDER';
+  code: 'LM_STUDIO_NOT_CONFIGURED' | 'LOCAL_NOT_CONFIGURED' | 'NO_PROVIDER' | 'LOCAL_PROVIDER_UNREACHABLE';
   message: string;
 };
 export type GatewayBuild = GatewayBuildOk | GatewayBuildErr;
@@ -94,6 +105,20 @@ export async function createServerGatewayFromEnv(opts: {
     ]);
   }
 
+  // Lokale Base-URL gegen die Laufzeit prüfen (nur gehostetes Supabase).
+  const localEnvName = localProvider === 'ollama' ? 'OLLAMA_BASE_URL' : 'LM_STUDIO_BASE_URL';
+  const slot = decideLocalSlot({
+    envName: localEnvName,
+    baseUrl: localBaseUrl,
+    supabaseUrl: Deno.env.get('SUPABASE_URL'),
+    hasCloud: Boolean(anthropicKey || openaiKey),
+  });
+  if (slot.action !== 'use') warnLocalDisabledOnce(localEnvName, slot.reason, slot.action === 'disable');
+  if (slot.action === 'fail') {
+    return { ok: false, status: slot.status, code: slot.code, message: slot.message };
+  }
+  const localDisabled = slot.action === 'disable';
+
   if (!localBaseUrl && !anthropicKey && !openaiKey) {
     return {
       ok: false,
@@ -105,9 +130,11 @@ export async function createServerGatewayFromEnv(opts: {
 
   // Ollama als lokalen Slot injizieren, wenn gewählt UND konfiguriert. Sonst
   // baut ServerAiGateway den Default-LM-Studio-Adapter aus lmStudioBaseUrl.
-  const localAdapter = localProvider === 'ollama' && localBaseUrl
-    ? new OllamaAdapter({ baseUrl: localBaseUrl, model: OLLAMA_MODEL, embeddingModel: OLLAMA_EMBED_MODEL })
-    : undefined;
+  const localAdapter: AiProviderAdapter | undefined = localDisabled
+    ? new UnreachableLocalAdapter(localProvider)
+    : localProvider === 'ollama' && localBaseUrl
+      ? new OllamaAdapter({ baseUrl: localBaseUrl, model: OLLAMA_MODEL, embeddingModel: OLLAMA_EMBED_MODEL })
+      : undefined;
 
   return {
     ok: true,
@@ -127,6 +154,21 @@ export async function createServerGatewayFromEnv(opts: {
         : undefined,
     }),
   };
+}
+
+const warnedLocalDisabled = new Set<string>();
+function warnLocalDisabledOnce(envName: string, reason: string, hasCloud: boolean): void {
+  const key = `${envName}:${reason}:${hasCloud}`;
+  if (warnedLocalDisabled.has(key)) return;
+  warnedLocalDisabled.add(key);
+  // Nur Variablenname + Grund, nie der Wert.
+  console.warn(JSON.stringify({
+    scope: 'ai-gateway-provider',
+    event: 'local_provider_disabled',
+    env: envName,
+    reason,
+    fallback: hasCloud ? 'cloud' : 'none',
+  }));
 }
 
 async function readVaultSecret(name: string): Promise<string | null> {

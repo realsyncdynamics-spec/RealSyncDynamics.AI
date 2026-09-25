@@ -13,6 +13,7 @@
 //   4. Politik: Profil-Allowlist, max_tokens-Clamp, system_prompt-Regeln
 //   5. Rate-Limit pro Principal (ohne feature) + optional Feature-Bucket
 //   6. PDP (PEP), dann Provider
+//   7. Provider-Fehler → stabiler Code + bereinigte Logzeile (errorReport.ts)
 //
 // Sonderpfad `mode: 'audit_anon'` (öffentlicher Audit-Copilot, ohne Login):
 //   Cloudflare Turnstile (fail-closed, vor allem anderen), fester Zweck/
@@ -31,10 +32,8 @@ import {
   modelsResponse,
   parseChatRequest,
   formatChatResponse,
-  mapInferenceError,
   type OpenAIChatRequest,
 } from '../_shared/aiGateway/openaiCompat.ts';
-import { isTransportLevelFailure } from '../_shared/aiGateway/router.ts';
 import { verifyTurnstile } from '../_shared/aiGateway/turnstile.ts';
 import {
   decideRateLimit,
@@ -63,6 +62,7 @@ import {
   parseAnonAuditBody,
   type AnonAuditLog,
 } from '../_shared/aiGateway/anonAuditCopilot.ts';
+import { reportInferenceError } from '../_shared/aiGateway/errorReport.ts';
 import { sha256Hex } from '../_shared/hash.ts';
 import { buildCorsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 
@@ -128,20 +128,6 @@ type Principal =
   | { kind: 'service'; caller: InternalCaller; tenantId: string | null };
 
 // ── Handler-Fabrik ──────────────────────────────────────────────────
-
-/**
- * Fehler-Mapping fail-closed: ohne Cloud-Kette ist ein Transportfehler des
- * lokalen Providers (Timeout, Abbruch, Verbindungsfehler, lokaler 5xx, kein
- * Modell geladen) kein „Upstream"-Problem, sondern „kein Provider verfügbar"
- * → 503 LOCAL_PROVIDER_UNREACHABLE. Sonst unverändert mapInferenceError.
- */
-function mapGatewayError(error: unknown): { status: number; code: string; message: string } {
-  if (isTransportLevelFailure(error)) {
-    const message = error instanceof Error ? error.message : String(error);
-    return { status: 503, code: 'LOCAL_PROVIDER_UNREACHABLE', message };
-  }
-  return mapInferenceError(error);
-}
 
 export function createAiGatewayHandler(deps: GatewayHandlerDeps): (req: Request) => Promise<Response> {
   const minuteWindows = deps.minuteWindows ?? new Map<string, WindowState>();
@@ -240,6 +226,28 @@ export function createAiGatewayHandler(deps: GatewayHandlerDeps): (req: Request)
       model_profile: request.model_profile,
       max_tokens: request.max_tokens ?? null,
     });
+  }
+
+  /**
+   * Provider-Fehler: stabiler Code in der Antwort, bereinigter + gekürzter
+   * Fehlertext im Log (keine Prompts, keine Secrets). Vorher endete jeder
+   * unklassifizierte Fehler als 500 INFERENCE_ERROR ohne Logzeile.
+   */
+  function inferenceError(error: unknown, p: Principal | null, route: string, request: AiGatewayRequest | null): Response {
+    const r = reportInferenceError(error);
+    log({
+      scope: 'ai-gateway-error',
+      route,
+      code: r.code,
+      status: r.status,
+      path: p?.kind ?? (route === 'anon' ? 'anon' : null),
+      ...(p?.kind === 'service' ? { internal_caller: p.caller } : {}),
+      tenant_id: p?.tenantId ?? null,
+      feature: request?.feature ?? null,
+      model_profile: request?.model_profile ?? null,
+      error: r.logMessage,
+    });
+    return jsonError(r.status, r.code, r.message, corsHeaders);
   }
 
   // ── Anonymer Audit-Copilot (mode: 'audit_anon') ───────────────────
@@ -357,9 +365,9 @@ export function createAiGatewayHandler(deps: GatewayHandlerDeps): (req: Request)
     try {
       resp = await gateway.generate(request);
     } catch (error) {
-      const mapped = mapGatewayError(error);
-      await finish({ outcome: 'error', error_code: mapped.code, duration_ms: now() - startedAt });
-      return jsonError(mapped.status, mapped.code, mapped.message, corsHeaders);
+      const code = reportInferenceError(error).code;
+      await finish({ outcome: 'error', error_code: code, duration_ms: now() - startedAt });
+      return inferenceError(error, null, 'anon', request);
     }
 
     // 4. Protokoll abschließen.
@@ -428,10 +436,16 @@ export function createAiGatewayHandler(deps: GatewayHandlerDeps): (req: Request)
     const gateway = await deps.buildGateway();
     if (gateway instanceof Response) return gateway;
 
-    if (op === 'generate')     return jsonResponse({ ok: true, ...(await gateway.generate(request)), ...extra }, 200, corsHeaders);
-    if (op === 'extract_json') return jsonResponse({ ok: true, ...(await gateway.extractJson(request)), ...extra }, 200, corsHeaders);
-    if (op === 'embed')        return jsonResponse({ ok: true, ...(await gateway.embed(request)), ...extra }, 200, corsHeaders);
-    if (op === 'stream')       return streamNdjson(gateway, request, governance);
+    if (op === 'stream') {
+      return streamNdjson(gateway, request, governance, (e) => { inferenceError(e, principal, '/', request); });
+    }
+    try {
+      if (op === 'generate')     return jsonResponse({ ok: true, ...(await gateway.generate(request)), ...extra }, 200, corsHeaders);
+      if (op === 'extract_json') return jsonResponse({ ok: true, ...(await gateway.extractJson(request)), ...extra }, 200, corsHeaders);
+      if (op === 'embed')        return jsonResponse({ ok: true, ...(await gateway.embed(request)), ...extra }, 200, corsHeaders);
+    } catch (error) {
+      return inferenceError(error, principal, '/', request);
+    }
     return jsonError(400, 'BAD_REQUEST', `unknown op: ${op}`, corsHeaders);
   }
 
@@ -470,13 +484,14 @@ export function createAiGatewayHandler(deps: GatewayHandlerDeps): (req: Request)
     if (gateway instanceof Response) return gateway;
 
     try {
-      if (body.stream === true) return streamOpenAiCompat(gateway, request);
+      if (body.stream === true) {
+        return streamOpenAiCompat(gateway, request, (e) => { inferenceError(e, principal, '/v1/chat/completions', request); });
+      }
       const response = parsed.wantsJson ? await gateway.extractJson(request) : await gateway.generate(request);
       // deno-lint-ignore no-explicit-any
       return jsonResponse(formatChatResponse(response as any, request.model_profile), 200, corsHeaders);
     } catch (error) {
-      const mapped = mapGatewayError(error);
-      return jsonError(mapped.status, mapped.code, mapped.message, corsHeaders);
+      return inferenceError(error, principal, '/v1/chat/completions', request);
     }
   }
 
@@ -499,18 +514,18 @@ export function createAiGatewayHandler(deps: GatewayHandlerDeps): (req: Request)
       }
       return jsonError(404, 'NOT_FOUND', `unknown route: ${req.method} ${route}`, corsHeaders);
     } catch (error) {
-      const mapped = mapGatewayError(error);
-      return jsonError(mapped.status, mapped.code, mapped.message, corsHeaders);
+      return inferenceError(error, null, route, null);
     }
   };
 }
 
-// ── Streaming-Helfer (unverändert aus index.ts übernommen) ──────────
+// ── Streaming-Helfer (aus index.ts übernommen, Fehler jetzt geloggt) ─
 
 function streamNdjson(
   gateway: GatewayLike,
   request: AiGatewayRequest,
   governance: { decision: string; reasons: string[] } | undefined,
+  onError: (error: unknown) => void,
 ): Response {
   const encoder = new TextEncoder();
   const stream = new ReadableStream<Uint8Array>({
@@ -521,8 +536,9 @@ function streamNdjson(
           send({ ok: true, ...chunk, ...(governance && chunk.event === 'done' ? { governance } : {}) });
         }
       } catch (error) {
-        const mapped = mapGatewayError(error);
-        send({ ok: false, error: { code: mapped.code, message: mapped.message } });
+        onError(error);
+        const r = reportInferenceError(error);
+        send({ ok: false, error: { code: r.code, message: r.message } });
       } finally {
         controller.close();
       }
@@ -534,7 +550,7 @@ function streamNdjson(
   });
 }
 
-function streamOpenAiCompat(gateway: GatewayLike, request: AiGatewayRequest): Response {
+function streamOpenAiCompat(gateway: GatewayLike, request: AiGatewayRequest, onError: (error: unknown) => void): Response {
   const encoder = new TextEncoder();
   const id = `chatcmpl-${request.trace_id ?? crypto.randomUUID()}`;
   const stream = new ReadableStream<Uint8Array>({
@@ -551,8 +567,9 @@ function streamOpenAiCompat(gateway: GatewayLike, request: AiGatewayRequest): Re
         }
         controller.enqueue(encoder.encode('data: [DONE]\n\n'));
       } catch (error) {
-        const mapped = mapGatewayError(error);
-        send({ error: { code: mapped.code, message: mapped.message } });
+        onError(error);
+        const r = reportInferenceError(error);
+        send({ error: { code: r.code, message: r.message } });
       } finally {
         controller.close();
       }

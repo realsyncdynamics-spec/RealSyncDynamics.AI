@@ -100,15 +100,15 @@ interface Harness {
   authCalls: number;
   env: Record<string, string | undefined>;
   builderEntitled: boolean;
-  /** allowCloud-Wert jedes buildGateway-Aufrufs. */
-  gatewayOpts: boolean[];
+  /** Anzahl buildGateway-Aufrufe (Signatur ohne Cloud-Option). */
+  gatewayBuilds: number;
   anonReserves: AnonLogReserve[];
   anonCompletes: Array<{ requestId: string; patch: AnonLogComplete }>;
 }
 
 type AnonLogMode = 'ok' | 'reserve_fails' | 'complete_fails' | 'missing';
 
-function makeHarness(opts: { env?: Record<string, string | undefined>; builderEntitled?: boolean; anonLog?: AnonLogMode } = {}): Harness {
+function makeHarness(opts: { env?: Record<string, string | undefined>; builderEntitled?: boolean; anonLog?: AnonLogMode; failWith?: Error } = {}): Harness {
   const h: Harness = {
     handler: async () => new Response(),
     calls: [],
@@ -116,13 +116,15 @@ function makeHarness(opts: { env?: Record<string, string | undefined>; builderEn
     authCalls: 0,
     env: { AI_GATEWAY_INTERNAL_KEY: INTERNAL_KEY, ...(opts.env ?? {}) },
     builderEntitled: opts.builderEntitled ?? false,
-    gatewayOpts: [],
+    gatewayBuilds: 0,
     anonReserves: [],
     anonCompletes: [],
   };
   const anonMode: AnonLogMode = opts.anonLog ?? 'ok';
   const reply = async (r: AiGatewayRequest) => {
     h.calls.push(r);
+    // simuliert den lokalen Provider-Fehler (ServerAiGateway ohne Cloud-Kette wirft ihn durch)
+    if (opts.failWith) throw opts.failWith;
     return { provider: 'mock', model: 'mock-1', profile: r.model_profile, output: 'ok', trace_id: 't', latency_ms: 1 };
   };
   const gateway: GatewayLike = {
@@ -144,8 +146,10 @@ function makeHarness(opts: { env?: Record<string, string | undefined>; builderEn
       return fakeRequireAuthAndTenant(req, tenant);
     },
     gateBuilder: async () => (h.builderEntitled ? null : jsonErr(403, 'ENTITLEMENT', 'siteos.builder required')),
-    buildGateway: async ({ allowCloud }) => {
-      h.gatewayOpts.push(allowCloud);
+    buildGateway: async (...args: unknown[]) => {
+      // Die Handler-Schnittstelle kennt keine Cloud-Option mehr.
+      expect(args).toHaveLength(0);
+      h.gatewayBuilds += 1;
       return gateway;
     },
     pdpCheck: async () => null,
@@ -365,7 +369,7 @@ describe('ai-gateway — Eingabepolitik im Nutzerpfad', () => {
     const res = await h.handler(opReq(body('app_builder_code', { max_tokens: 9_000 }), userHeaders));
     expect(res.status).toBe(200);
     expect(h.calls[0].max_tokens).toBe(ELEVATED_MAX_TOKENS_CAP);
-    expect(h.gatewayOpts).toEqual([false]);
+    expect(h.gatewayBuilds).toBe(1);
   });
 
   it('Builder MIT Entitlement: cloud-fallback ist ebenfalls gesperrt (kein US-Routing als Standard)', async () => {
@@ -376,14 +380,13 @@ describe('ai-gateway — Eingabepolitik im Nutzerpfad', () => {
     expect(h.calls).toHaveLength(0);
   });
 
-  it('Nutzerpfad baut den Gateway immer mit allowCloud=false (op, stream, health, chat/completions)', async () => {
+  it('Nutzerpfad baut den Gateway ohne Cloud-Option (op, stream, health, chat/completions)', async () => {
     const h = makeHarness();
     await h.handler(opReq(body('kodee_chat'), userHeaders));
     await h.handler(opReq(body('kodee_chat', { op: 'stream' }), userHeaders));
     await h.handler(opReq(body('kodee_chat', { op: 'health' }), userHeaders));
     await h.handler(chatReq({ model: 'fast-local', messages: [{ role: 'user', content: 'hi' }], tenant_id: T1 }, userHeaders));
-    expect(h.gatewayOpts.length).toBeGreaterThanOrEqual(4);
-    expect(h.gatewayOpts.every((v) => v === false)).toBe(true);
+    expect(h.gatewayBuilds).toBeGreaterThanOrEqual(4);
   });
 
   it('system_prompt über dem Längenlimit → 400 BAD_REQUEST', async () => {
@@ -468,12 +471,41 @@ describe('ai-gateway — Service-Pfad (x-internal-key)', () => {
     });
   });
 
-  it('Service-Pfad darf cloud-fallback (telegram-webhook), max_tokens bleibt gedeckelt', async () => {
+  it('Service-Pfad: cloud-fallback ist ebenfalls gesperrt → 400 BAD_REQUEST, kein Provider-Aufruf', async () => {
     const h = makeHarness();
-    const res = await h.handler(opReq(body('general_assistant', { model_profile: 'cloud-fallback', max_tokens: 99_999 }), { ...internalHeaders, 'x-internal-caller': 'telegram-webhook' }));
+    const res = await h.handler(opReq(body('general_assistant', { model_profile: 'cloud-fallback' }), { ...internalHeaders, 'x-internal-caller': 'telegram-webhook' }));
+    expect(res.status).toBe(400);
+    expect(await errCode(res)).toBe('BAD_REQUEST');
+    expect(h.calls).toHaveLength(0);
+  });
+
+  it('Service-Pfad: lokales Profil, max_tokens bleibt gedeckelt', async () => {
+    const h = makeHarness();
+    const res = await h.handler(opReq(body('general_assistant', { model_profile: 'fast-local', max_tokens: 99_999 }), { ...internalHeaders, 'x-internal-caller': 'telegram-webhook' }));
     expect(res.status).toBe(200);
     expect(h.calls[0].max_tokens).toBe(ELEVATED_MAX_TOKENS_CAP);
-    expect(h.gatewayOpts).toEqual([true]);
+    expect(h.gatewayBuilds).toBe(1);
+  });
+
+  it.each([
+    ['LM Studio HTTP 503'],
+    ['This operation was aborted'],
+    ['Signal timed out: timeout'],
+    ['TypeError: fetch failed'],
+    ['No LM Studio model available'],
+  ])('Service-Pfad: lokaler Fehler „%s" → 503 LOCAL_PROVIDER_UNREACHABLE (fail-closed, keine Cloud-Kette)', async (msg) => {
+    const h = makeHarness({ failWith: new Error(msg) });
+    const res = await h.handler(opReq(body('governance_brief_daily', { op: 'extract_json', model_profile: 'strict-json' }), internalHeaders));
+    expect(res.status).toBe(503);
+    expect(await errCode(res)).toBe('LOCAL_PROVIDER_UNREACHABLE');
+    expect(h.calls).toHaveLength(1);
+    expect(h.gatewayBuilds).toBe(1);
+  });
+
+  it('Service-Pfad: Provider-4xx bleibt kein 503 (nur Transportfehler sind fail-closed)', async () => {
+    const h = makeHarness({ failWith: new Error('LM Studio returned invalid JSON') });
+    const res = await h.handler(opReq(body('governance_brief_daily', { op: 'extract_json' }), internalHeaders));
+    expect(res.status).toBe(502);
   });
 
   it('falscher Key → 401', async () => {
@@ -600,6 +632,29 @@ describe('interne ai-gateway-Aufrufer nutzen Service-Pfad bzw. Nutzer-JWT', () =
     expect(src).not.toMatch(/'authorization':\s*`Bearer \$\{ANON\}`/);
   });
 
+  it('ai-gateway/index.ts: allowCloudFallback ist in allen Pfaden fest false (keine Anthropic/OpenAI-Kette)', () => {
+    const src = read('supabase/functions/ai-gateway/index.ts');
+    const hits = src.match(/allowCloudFallback\s*:\s*[^,\n]+/g) ?? [];
+    expect(hits.length).toBeGreaterThan(0);
+    for (const h of hits) expect(h).toMatch(/allowCloudFallback\s*:\s*false$/);
+    const handler = read('supabase/functions/ai-gateway/handler.ts');
+    expect(handler).not.toMatch(/allowCloud\s*:/);
+    expect(handler).not.toMatch(/cloudAllowed/);
+  });
+
+  it('Aufrufer loggen ai-gateway-Fehler (z. B. 503 fail-closed) strukturiert mit Status/Code', () => {
+    const ga = read('supabase/functions/governance-agent/index.ts');
+    expect(ga.match(/scope: 'ai_gateway_call_failed'/g) ?? []).toHaveLength(3);
+    const tg = read('supabase/functions/telegram-webhook/index.ts');
+    expect(tg).toMatch(/e instanceof AiGatewayEdgeError \? \{ status: e\.status, code: e\.code \}/);
+    expect(tg).toMatch(/scope: 'agent_route_failed', feature, \.\.\.gwErr/);
+  });
+
+  it('telegram-webhook verlangt kein cloud-fallback-Profil mehr', () => {
+    const src = read('supabase/functions/telegram-webhook/index.ts');
+    expect(src).not.toMatch(/model_profile:\s*'cloud-fallback'/);
+  });
+
   it('kein Aufrufer schickt service_role an den Gateway', () => {
     for (const f of [
       'supabase/functions/telegram-webhook/index.ts',
@@ -669,10 +724,11 @@ describe('ai-gateway — anonymer Audit-Copilot (mode audit_anon)', () => {
     expect(ANON_MAX_TOKENS).toBeLessThan(USER_MAX_TOKENS_CAP);
   });
 
-  it('nie Cloud-Kette: Gateway wird mit allowCloud=false gebaut, auch wenn der Client cloud-fallback verlangt', async () => {
+  it('nie Cloud-Kette: auch wenn der Client cloud-fallback verlangt, läuft es über das lokale Profil', async () => {
     const h = makeHarness();
     await h.handler(opReq(anonBody({ model_profile: 'cloud-fallback' }), apikeyOnly));
-    expect(h.gatewayOpts).toEqual([false]);
+    expect(h.gatewayBuilds).toBeLessThanOrEqual(1);
+    for (const c of h.calls) expect(c.model_profile).not.toBe('cloud-fallback');
   });
 
   it(`question länger als ${ANON_QUESTION_MAX_CHARS} Zeichen → 400 BAD_REQUEST, kein Log, kein Provider`, async () => {

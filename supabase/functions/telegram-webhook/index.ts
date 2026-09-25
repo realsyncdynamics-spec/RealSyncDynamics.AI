@@ -15,7 +15,7 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { sha256Hex, randomToken } from '../_shared/hash.ts';
 import { audit } from '../_shared/auditLog.ts';
-import { AiGatewayEdgeClient } from '../_shared/aiGateway/edgeClient.ts';
+import { AiGatewayEdgeClient, AiGatewayEdgeError } from '../_shared/aiGateway/edgeClient.ts';
 import { internalGatewayConfig } from '../_shared/aiGateway/internalClient.ts';
 import { gateFeature, EntitlementError } from '../_shared/entitlements.ts';
 
@@ -142,7 +142,8 @@ async function routeToAgent(
     const result = await gatewayClient.generate({
       feature,
       task_type:     'chat',
-      model_profile: 'cloud-fallback',
+      // Kein Cloud-Profil mehr im ai-gateway (fail-closed ohne EU-Provider).
+      model_profile: 'fast-local',
       tenant_id:     tenantId,
       input:         userText,
     });
@@ -151,7 +152,10 @@ async function routeToAgent(
     if (output != null) return JSON.stringify(output);
     return 'Keine Antwort erhalten.';
   } catch (e) {
-    console.error(JSON.stringify({ level: 'warn', scope: 'agent_route_failed', feature, error: (e as Error)?.message }));
+    // Status/Code des ai-gateway mitloggen (503 = lokaler Provider nicht
+    // erreichbar, fail-closed ohne Cloud-Kette); der Nutzer bekommt den Link.
+    const gwErr = e instanceof AiGatewayEdgeError ? { status: e.status, code: e.code } : {};
+    console.error(JSON.stringify({ level: 'warn', scope: 'agent_route_failed', feature, ...gwErr, error: (e as Error)?.message }));
     const linkMap: Record<string, string> = {
       '/audit':      `${APP_BASE_URL}/app/websites`,
       '/risks':      `${APP_BASE_URL}/app/risks`,

@@ -179,7 +179,8 @@ verify_jwt = false
 #     Limit, anon_chat_runs fail-closed. Braucht wegen verify_jwt = true den
 #     Legacy-Anon-Key als Bearer (supabase-js/AiGatewayEdgeClient tun das);
 #     der reine sb_publishable_-Key besteht den Vorfilter nicht.
-#   - Cloud-Kette (Anthropic/OpenAI) nur im Service-Pfad.
+#   - Cloud-Kette (Anthropic/OpenAI): in keinem Pfad (allowCloudFallback=false,
+#     auch Service-Pfad). Ohne erreichbaren lokalen Provider fail-closed 503.
 #
 # Wirkt erst nach `supabase functions deploy ai-gateway`.
 [functions.ai-gateway]

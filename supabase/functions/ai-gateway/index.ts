@@ -20,8 +20,9 @@
 //     (fail-closed, konstante Zeit) + `x-internal-caller`.
 //   - Anon-Audit-Copilot: Body `{ mode: 'audit_anon', input: { question } }`,
 //     fester Zweck/Prompt, IP-Hash-Limit, anon_chat_runs fail-closed.
-//   - Cloud-Kette (Anthropic/OpenAI) nur im Service-Pfad; Nutzer- und
-//     anon-Pfad bauen den Gateway mit allowCloudFallback=false.
+//   - Cloud-Kette (Anthropic/OpenAI): in KEINEM Pfad, auch nicht im
+//     Service-Pfad. allowCloudFallback=false fest; ohne erreichbaren lokalen/
+//     EU-Provider fail-closed 503. EU-Anbieter kommen mit „Gateway v2".
 //   Die gesamte Request-Logik liegt in handler.ts (vitest-getestet); diese
 //   Datei verdrahtet nur die Deno-/jsr-Abhängigkeiten.
 //
@@ -146,10 +147,11 @@ async function gateBuilder(admin: any, tenantId: string): Promise<Response | nul
   }
 }
 
-async function buildGateway(opts: { allowCloud: boolean }): Promise<GatewayLike | Response> {
+async function buildGateway(): Promise<GatewayLike | Response> {
   const built = await createServerGatewayFromEnv({
-    // false für Nutzer- und anon-Pfad: kein stiller Wechsel zu US-Anbietern.
-    allowCloudFallback: opts.allowCloud,
+    // Fest false für ALLE Pfade: kein automatischer Wechsel zu Anthropic/
+    // OpenAI. Cloud-Keys werden gar nicht erst gelesen.
+    allowCloudFallback: false,
     requireLmStudio: true,
   });
   if (!built.ok) return jsonError(built.status, built.code, built.message);

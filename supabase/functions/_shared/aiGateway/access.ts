@@ -254,10 +254,15 @@ export function applyUserPolicy(
 
 /**
  * Service-Pfad: der Aufrufer ist vertrauenswürdig (Profil + Systemprompt
- * frei, inkl. cloud-fallback), aber max_tokens/timeout/input bleiben
+ * frei, außer cloud-fallback), aber max_tokens/timeout/input bleiben
  * begrenzt — auch ein interner Bug soll keine unbegrenzten Kosten erzeugen.
  */
 export function applyServicePolicy(request: AiGatewayRequest): AiGatewayRequest | Rejection {
+  // Auch intern kein Cloud-Profil mehr (Entscheidung 26.09.): der Gateway
+  // baut ohne Anthropic/OpenAI-Kette, `cloud-fallback` hätte keinen Provider.
+  if (request.model_profile === 'cloud-fallback') {
+    return { status: 400, code: 'BAD_REQUEST', message: 'model_profile cloud-fallback is disabled in ai-gateway' };
+  }
   if (typeof request.input !== 'string') {
     return { status: 400, code: 'BAD_REQUEST', message: 'input must be a string' };
   }

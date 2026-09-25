@@ -17,6 +17,7 @@
 import { AiGatewayEdgeClient, AiGatewayEdgeError } from './edgeClient';
 import { getSupabaseUrl, getSupabaseAnonKey } from '../../lib/supabaseUrl';
 import { edgeFunctionUrl, fnFetchInit } from '../../lib/fn-proxy';
+import { getSupabase } from '../../lib/supabase';
 import type { ModelProfile } from './types';
 
 export type ModelProvider = 'gemini' | 'openai' | 'claude';
@@ -30,7 +31,10 @@ export interface GatewayRequest {
   systemPrompt?: string;
   /** Analytics-Name des aufrufenden Features, landet im Gateway-Trace. */
   feature?: string;
-  /** Optionaler Mandantenbezug fuer die Gateway-Telemetrie. */
+  /**
+   * Aktiver Workspace. Pflicht (Vertrag RSD Backend): Der Server prueft die
+   * Mitgliedschaft. Fehlt er, geht keine Anfrage raus (BAD_REQUEST).
+   */
   tenantId?: string | null;
   timeoutMs?: number;
   maxTokens?: number;
@@ -46,6 +50,60 @@ export interface GatewayResult {
   modelOutput?: string;
   tokensUsed?: number;
   error?: string;
+  /** Maschinenlesbarer Fehlercode des Gateways (z. B. UNAUTHORIZED, FORBIDDEN, RATE_LIMITED). */
+  errorCode?: string;
+  /** HTTP-Status des Fehlers, falls vom Gateway. */
+  status?: number;
+  /**
+   * Sekunden bis zum naechsten Versuch: bevorzugt `error.retry_after_ms`
+   * (aufgerundet), sonst `Retry-After`. Nur wenn der Gateway etwas sendet.
+   */
+  retryAfter?: number;
+  /** 429: Geltungsbereich des Limits aus `error.scope` (z. B. user/tenant). */
+  errorScope?: string;
+}
+
+/**
+ * Aktuelles Nutzer-JWT. `getSession()` erneuert ein abgelaufenes Token
+ * selbst; ohne Sitzung `null` — dann sendet der Client nichts (UNAUTHORIZED).
+ */
+async function currentAccessToken(): Promise<string | null> {
+  try {
+    const { data } = await getSupabase().auth.getSession();
+    return data.session?.access_token ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Client im Nutzer-Modus (Vertrag #1591): Sitzungs-JWT als Bearer, Anon-Key
+ * nur als `apikey`. Ohne Sitzung wird nichts gesendet — kein Rueckfall auf anon.
+ */
+function userClient(timeoutMs?: number): AiGatewayEdgeClient {
+  return new AiGatewayEdgeClient({
+    supabaseUrl: getSupabaseUrl(),
+    apiKey: getSupabaseAnonKey(),
+    authToken: currentAccessToken,
+    ...(timeoutMs !== undefined ? { timeoutMs } : {}),
+    endpoint: edgeFunctionUrl('ai-gateway'),
+    fetchImpl: (input, init) => fetch(input, fnFetchInit(String(input), init)),
+  });
+}
+
+function failureFrom(error: unknown): GatewayResult {
+  if (error instanceof AiGatewayEdgeError) {
+    return {
+      success: false,
+      error: `${error.code}: ${error.message}`,
+      errorCode: error.code,
+      status: error.status,
+      ...(error.retryAfter !== undefined ? { retryAfter: error.retryAfter } : {}),
+      ...(error.scope !== undefined ? { errorScope: error.scope } : {}),
+    };
+  }
+  const message = error instanceof Error ? error.message : String(error);
+  return { success: false, error: message || 'Gateway Error' };
 }
 
 /**
@@ -97,12 +155,7 @@ export async function processAIGatewayRequest(
   }
 
   try {
-    const client = deps?.client ?? new AiGatewayEdgeClient({
-      supabaseUrl: getSupabaseUrl(),
-      apiKey: getSupabaseAnonKey(),
-      endpoint: edgeFunctionUrl('ai-gateway'),
-      fetchImpl: (input, init) => fetch(input, fnFetchInit(String(input), init)),
-    });
+    const client = deps?.client ?? userClient();
 
     const resp = await client.generate({
       tenant_id: req.tenantId ?? null,
@@ -125,11 +178,7 @@ export async function processAIGatewayRequest(
         usage?.total_tokens ?? (usage?.input_tokens ?? 0) + (usage?.output_tokens ?? 0),
     };
   } catch (error: unknown) {
-    if (error instanceof AiGatewayEdgeError) {
-      return { success: false, error: `${error.code}: ${error.message}` };
-    }
-    const message = error instanceof Error ? error.message : String(error);
-    return { success: false, error: message || 'Gateway Error' };
+    return failureFrom(error);
   }
 }
 
@@ -155,13 +204,7 @@ export async function processAIGatewayStream(
     : req.prompt;
 
   try {
-    const client = deps?.client ?? new AiGatewayEdgeClient({
-      supabaseUrl: getSupabaseUrl(),
-      apiKey: getSupabaseAnonKey(),
-      timeoutMs: req.timeoutMs ?? 90_000,
-      endpoint: edgeFunctionUrl('ai-gateway'),
-      fetchImpl: (input, init) => fetch(input, fnFetchInit(String(input), init)),
-    });
+    const client = deps?.client ?? userClient(req.timeoutMs ?? 90_000);
     if (typeof client.stream !== 'function') {
       const fallback = await processAIGatewayRequest(req, deps);
       if (fallback.success && fallback.modelOutput) onDelta(fallback.modelOutput);
@@ -201,10 +244,6 @@ export async function processAIGatewayStream(
     }
     return { success: true, provider, model, modelOutput: text, tokensUsed };
   } catch (error: unknown) {
-    if (error instanceof AiGatewayEdgeError) {
-      return { success: false, error: `${error.code}: ${error.message}` };
-    }
-    const message = error instanceof Error ? error.message : String(error);
-    return { success: false, error: message || 'Gateway Error' };
+    return failureFrom(error);
   }
 }

@@ -25,6 +25,6 @@ describe('DashboardRouter — Compliance-Status ist Default', () => {
     const line = app.split('\n').find((text) => text.includes('path="/app/assistant"'));
     expect(line, '/app/assistant fehlt').toBeDefined();
     expect(line).toContain('<AppGate>');
-    expect(line).toContain('GovernanceAiWorkspace');
+    expect(line).toContain('GovernanceAiRoute');
   });
 });

@@ -7,7 +7,9 @@
 //
 // Pipeline contract:
 //
-//   const { scan_run_id, correlation_id } = await startScanRun(admin, { ... });
+//   const started = await startScanRun(admin, { ... });
+//   if (!started.ok) throw ...;
+//   const { scan_run_id, correlation_id } = started.run;   // NOT top-level
 //   try {
 //     for (const f of detectorResults) {
 //       await recordScanFinding(admin, scan_run_id, correlation_id, f);
@@ -143,7 +145,7 @@ export async function startScanRun(
 export async function recordScanFinding(
   admin:          AdminLike,
   scanRunId:      string,
-  correlationId:  string,
+  correlationId:  string | null,
   f:              Omit<NewFinding, 'scan_run_id' | 'correlation_id' | 'tenant_id'> & {
     tenant_id: string;
   },

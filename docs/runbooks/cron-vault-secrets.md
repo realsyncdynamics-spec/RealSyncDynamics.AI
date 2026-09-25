@@ -22,6 +22,7 @@ für PostgREST/Admin genutzt werden — nie als Inbound-Credential.
 | `scan-scheduler-dispatch` | `scheduler-dispatch` | `cron_scheduler_dispatch_key` | `CRON_SCHEDULER_DISPATCH_KEY` |
 | `governance-monitoring-hourly` / `-daily` | `governance-monitoring-scheduler` | `cron_governance_monitoring_key` | `CRON_GOVERNANCE_MONITORING_KEY` |
 | `memory-decay-hourly` | `memory-decay-worker` | `cron_memory_decay_key` | `CRON_MEMORY_DECAY_KEY` |
+| `website-rescan-daily` | `email-auth-rescan` | `cron_website_rescan_key` | `CRON_WEBSITE_RESCAN_KEY` |
 
 `verify_jwt = false` bleibt (Drift-Guard). Ohne passenden Cron-Bearer bleibt die
 Function nicht öffentlich aufrufbar.
@@ -73,6 +74,7 @@ bereits live gesetzte `cron_*` Keys nicht überschreiben.
 select vault.create_secret('<cron-key>', 'cron_scheduler_dispatch_key');
 select vault.create_secret('<cron-key>', 'cron_governance_monitoring_key');
 select vault.create_secret('<cron-key>', 'cron_memory_decay_key');
+select vault.create_secret('<cron-key>', 'cron_website_rescan_key');
 ```
 
 Dieselben Werte als Function Secrets setzen (Namen only):
@@ -82,6 +84,7 @@ Dieselben Werte als Function Secrets setzen (Namen only):
 | `cron_scheduler_dispatch_key` | `CRON_SCHEDULER_DISPATCH_KEY` |
 | `cron_governance_monitoring_key` | `CRON_GOVERNANCE_MONITORING_KEY` |
 | `cron_memory_decay_key` | `CRON_MEMORY_DECAY_KEY` |
+| `cron_website_rescan_key` | `CRON_WEBSITE_RESCAN_KEY` |
 
 `dispatch_cron_function` liest den Vault-Namen zur Laufzeit über
 `public.get_app_secret(...)`. Die Edge Function liest das Function Secret.
@@ -92,7 +95,33 @@ Beide Seiten müssen denselben Wert sehen.
 > Orte.
 
 **Nicht** den kompromittierten `service_role` JWT als Inbound-Bearer für diese
-drei Functions verwenden.
+Functions verwenden.
+
+### `website-rescan-daily` → `email-auth-rescan` (neu, 2026-09-25)
+
+Täglicher SPF/DMARC/DKIM-Recheck (03:30 UTC) mit Auto-Resolve von
+`email_auth_finding`-Events. Beide Werte legt **ein Mensch** an — derselbe
+zufällige Wert an beiden Stellen (z. B. `openssl rand -hex 32`, nicht
+notieren):
+
+1. Vault: `select vault.create_secret('<cron-key>', 'cron_website_rescan_key');`
+2. Function Secret: `CRON_WEBSITE_RESCAN_KEY` = derselbe Wert.
+
+Reihenfolge nach dem Merge: Vault-Eintrag + Function Secret anlegen →
+Migration `20260925210000_email_auth_rescan.sql` anwenden → Function über den
+Deploy-Workflow ausrollen.
+
+Verhalten bei fehlender Konfiguration (beides fail-closed, nichts wird
+geschrieben):
+
+- Vault-Eintrag fehlt → `dispatch_cron_function` bricht mit
+  `Vault-Secret "cron_website_rescan_key" fehlt` ab, kein HTTP-Request; der
+  Lauf steht in `cron.job_run_details` als `failed`.
+- Function Secret fehlt → die Function antwortet `500 CRON_KEY_MISSING`.
+- Werte verschieden → `401 cron only`.
+
+Manueller Probelauf ohne Schreibzugriffe: `POST` mit dem Cron-Bearer und
+Body `{"trigger":"manual","dry_run":true}`.
 
 ## Prüfen, dass es gewirkt hat
 
@@ -104,7 +133,7 @@ from cron.job j
 join cron.job_run_details d on d.jobid = j.jobid
 where j.jobname in (
   'scan-scheduler-dispatch','governance-monitoring-hourly',
-  'memory-decay-hourly','governance-monitoring-daily'
+  'memory-decay-hourly','governance-monitoring-daily','website-rescan-daily'
 )
 order by d.start_time desc
 limit 8;

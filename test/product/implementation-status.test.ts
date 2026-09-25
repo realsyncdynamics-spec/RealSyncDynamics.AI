@@ -79,7 +79,7 @@ describe('implementation-status registry', () => {
     expect(hero).toContain("HERO_HEADLINE_TEST_SUBSTRING = 'kontrollierbar'");
     expect(hero).toContain("HERO_SCAN_CTA_LABEL = 'Governance-Scan starten'");
     expect(hero).toContain("HERO_SCAN_CTA_LONG = 'Governance-Scan starten'");
-    expect(hero).toContain("HERO_DASHBOARD_CTA_LABEL = 'Beispiel-Audit-Trail ansehen'");
+    expect(hero).toContain("HERO_DASHBOARD_CTA_LABEL = 'Live Dashboard ansehen'");
     expect(hero).not.toContain('99.9');
     expect(hero).not.toContain('UPTIME');
   });

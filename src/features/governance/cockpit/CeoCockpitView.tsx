@@ -17,6 +17,7 @@ import { Button } from '../../../enterprise-os/components/Button';
 import { StatusBadge } from '../../../enterprise-os/components/Badge';
 import { scoreLabel, scoreLevel } from './cockpitScore';
 import { loadCockpitData, type CockpitData } from './cockpitData';
+import { tenantDisplayName } from '../dashboard/dashboardSignals';
 import { GovernanceScoreState } from './GovernanceScoreState';
 import { GovernanceBriefCard } from './GovernanceBriefCard';
 import { ApiStatusCard } from '../../../features/api/ApiStatusCard';
@@ -24,7 +25,9 @@ import { ApiStatusCard } from '../../../features/api/ApiStatusCard';
 export function CeoCockpitView() {
   const navigate = useNavigate();
   const { activeTenantId, tenants } = useTenant();
-  const tenantName = tenants.find((t) => t.tenantId === activeTenantId)?.name ?? null;
+  const rawTenantName = tenants.find((t) => t.tenantId === activeTenantId)?.name ?? null;
+  // Deutsche Oberfläche: „Workspace von …“ statt englischem Genitiv.
+  const tenantName = rawTenantName === null ? null : tenantDisplayName(rawTenantName, 'de');
   const [data, setData] = useState<CockpitData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

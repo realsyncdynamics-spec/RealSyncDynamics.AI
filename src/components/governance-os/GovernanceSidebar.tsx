@@ -19,6 +19,7 @@ import { OS_ACCENT_TEXT } from './osChrome';
 import { APP_SIDEBAR_WIDTH } from './app-theme';
 import { SHELL_NAV, SHELL_NAV_ROUTES, activeShellNav, type ShellNavId } from './shellNav';
 import { useShellCounts, type ShellCounts } from './useShellCounts';
+import { tenantDisplayName } from '../../features/governance/dashboard/dashboardSignals';
 import '../../styles/governance-os-app.css';
 
 /**
@@ -106,10 +107,11 @@ export function GovernanceSidebar() {
   const { plan, loading: planLoading } = useActivePlan();
   const lockFor = useNavLock();
   const { tenants, activeTenantId } = useTenant();
-  const { t } = useLang();
+  const { t, lang } = useLang();
   const counts = useShellCounts();
   const active = activeShellNav(pathname);
-  const tenantName = tenants.find((x) => x.tenantId === activeTenantId)?.name ?? null;
+  const rawTenantName = tenants.find((x) => x.tenantId === activeTenantId)?.name ?? null;
+  const tenantName = rawTenantName === null ? null : tenantDisplayName(rawTenantName, lang);
   const moreModules = TAB_MODULES.filter((m) => !SHELL_NAV_ROUTES.has(m.route));
 
   return (

@@ -19,6 +19,8 @@ import { DashboardExecuteStrip } from './DashboardExecuteStrip';
 import { HandoffOverview } from '../handoff/HandoffOverview';
 import { decideNavLock } from '../../../components/governance-os/navAccess';
 import { navLockTitle } from '../../../components/governance-os/useNavLock';
+import { useLang } from '../../../i18n/useLang';
+import { tenantDisplayName } from './dashboardSignals';
 
 export function CommandCenterDashboard() {
   const { activeTenantId, tenants, loading: tenantLoading, entitlements, hasFeature } = useTenant();
@@ -31,7 +33,10 @@ export function CommandCenterDashboard() {
     null,
   );
   const packsLockTitle = packsLock.locked ? navLockTitle('Policy Packs', packsLock) : null;
-  const tenantName = tenants.find((t) => t.tenantId === activeTenantId)?.name ?? null;
+  const { lang } = useLang();
+  const rawTenantName = tenants.find((t) => t.tenantId === activeTenantId)?.name ?? null;
+  // DE: „Workspace von …“ statt englischem Genitiv aus dem Signup-Trigger.
+  const tenantName = rawTenantName === null ? null : tenantDisplayName(rawTenantName, lang);
   const [data, setData] = useState<CockpitData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -68,7 +73,7 @@ export function CommandCenterDashboard() {
     void (async () => {
       const [websites, scans, activation] = await Promise.all([
         listWebsitesForTenant(activeTenantId).then((rows) => rows.length).catch(() => null),
-        listScanRuns(activeTenantId, { limit: 1 }).then((rows) => rows.length).catch(() => null),
+        listScanRuns(activeTenantId, { limit: 1 }).catch(() => null),
         loadGovernanceActivation(activeTenantId)
           .then((row): ActivationBootstrapStatus => (row?.status ?? 'none'))
           .catch(() => null),
@@ -76,8 +81,9 @@ export function CommandCenterDashboard() {
       if (cancelled) return;
       setBootstrapSteps(computeWorkspaceBootstrapSteps({
         websiteCount: websites,
-        scanCount: scans,
+        scanCount: scans === null ? null : scans.length,
         activationStatus: activation,
+        lastScanRunAt: scans?.[0]?.created_at ?? null,
       }));
     })();
     return () => { cancelled = true; };

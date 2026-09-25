@@ -16,6 +16,7 @@ import { fetchTenantAssets, fetchTenantEvidence, fetchTenantPolicies } from '../
 import { listConnectors } from '../gatesApi';
 import { listTenantMappings } from '../../policy-packs/policyPacksApi';
 import type { CockpitData } from '../cockpit/cockpitData';
+import { riskAttentionSignals } from '../dashboard/dashboardSignals';
 import { GovernanceScoreState } from '../cockpit/GovernanceScoreState';
 import { useLang } from '../../../i18n/useLang';
 import {
@@ -117,6 +118,8 @@ export function HandoffOverview({
   for (const action of data?.actions ?? []) {
     attention.push({ id: `act-${action.id}`, title: action.title, reason: `${t('attAction')} · ${action.detail}`, href: action.href, klasse: null });
   }
+  // Erhöhte Risiko-Scores + offene Scanner-Befunde (dashboardSignals) — nie „Nichts offen“, solange eins davon vorliegt.
+  for (const signal of riskAttentionSignals(data?.signals)) attention.push({ ...signal, klasse: null });
 
   // Score nur bei status 'ok'. Ladefehler (ganz oder Teilquelle) ⇒ Fehlerzustand.
   const scoreStatus = error ? 'unreliable' : data ? data.scoreStatus : null;

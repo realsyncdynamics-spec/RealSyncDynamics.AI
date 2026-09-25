@@ -114,6 +114,26 @@ export async function fetchTenantEvents(tenantId: string, limit = 50): Promise<D
   return (data ?? []) as DbGovernanceEvent[];
 }
 
+/**
+ * Befund- und Behebungs-Events des Mandanten: governance_events mit
+ * event_type `*finding` (z. B. email_auth_finding vom website_scanner) oder
+ * `*_resolved` (append-only Behebung mit payload.resolves_event_id), neueste
+ * zuerst. Eigene Abfrage, damit Befunde nicht hinter den letzten 12
+ * Stream-Events verschwinden. Wirft bei Fehler.
+ */
+export async function fetchTenantFindingEvents(tenantId: string, limit = 50): Promise<DbGovernanceEvent[]> {
+  const sb = getSupabase();
+  const { data, error } = await sb
+    .from('governance_events')
+    .select('*')
+    .eq('tenant_id', tenantId)
+    .or('event_type.like.*finding,event_type.like.*_resolved')
+    .order('created_at', { ascending: false })
+    .limit(limit);
+  if (error) throw new Error(error.message);
+  return (data ?? []) as DbGovernanceEvent[];
+}
+
 export async function countTenantEvents(tenantId: string): Promise<number> {
   const sb = getSupabase();
   const { count, error } = await sb

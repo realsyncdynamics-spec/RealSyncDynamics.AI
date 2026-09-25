@@ -12,6 +12,7 @@ import { useEffect, useState } from 'react';
 import { useTenant } from '../../../core/access/TenantProvider';
 import { loadCockpitData, cockpitIntegrityHash, type CockpitData } from './cockpitData';
 import { scoreLabel } from './cockpitScore';
+import { tenantDisplayName } from '../dashboard/dashboardSignals';
 
 const SCORE_STATUS_LABEL: Record<CockpitData['scoreStatus'], string> = {
   ok: 'bewertet',
@@ -38,7 +39,9 @@ const PRINT_CSS = `
 
 export function CeoBriefPrintView() {
   const { activeTenantId, tenants } = useTenant();
-  const tenantName = tenants.find((t) => t.tenantId === activeTenantId)?.name ?? '—';
+  const rawTenantName = tenants.find((t) => t.tenantId === activeTenantId)?.name ?? null;
+  // Deutsche Prüfer-Mappe: „Workspace von …“ statt englischem Genitiv.
+  const tenantName = rawTenantName === null ? '—' : tenantDisplayName(rawTenantName, 'de');
   const [data, setData] = useState<CockpitData | null>(null);
   const [hash, setHash] = useState<string>('');
   const [error, setError] = useState<string | null>(null);

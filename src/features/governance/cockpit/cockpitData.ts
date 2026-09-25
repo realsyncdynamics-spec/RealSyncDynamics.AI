@@ -10,9 +10,14 @@ import { countOpenDsrs, fetchTenantDsrs } from '../dsrApi';
 import { countPendingApprovals } from '../approvalsApi';
 import { countVendorsNoDpa } from '../vendorsApi';
 import {
-  countTenantControlMappings, countTenantEvidence, countTenantEvidenceHashed, fetchTenantAssets,
-  fetchTenantEvents, type DbGovernanceEvent,
+  countTenantControlMappings, countTenantEvidence, countTenantEvidenceHashed,
+  fetchTenantAssets, fetchTenantEvents, fetchTenantEvidence, fetchTenantFindingEvents,
+  type DbGovernanceEvent,
 } from '../governanceApi';
+import { listScanRuns } from '../scans/scansApi';
+import {
+  elevatedAssetsOf, pairFindings, resolutionIndex, resolvesEventIdOf, type DashboardSignals, type Resolution,
+} from '../dashboard/dashboardSignals';
 import type { DbGovernanceKpiSnapshot } from '../analytics/types';
 import {
   computeGovernanceScoreIfReliable, computeAuditReadiness,
@@ -78,6 +83,12 @@ export interface CockpitRuntimeEvent {
   riskLevel: string;
   source: string;
   createdAt: string;
+  /** Behoben am (gepaartes `*_resolved`-Event); fehlt/`null` = nicht behoben. */
+  resolvedAt?: string | null;
+  /** Behebung manuell bestätigt (payload.source === 'manual_owner_approved'). */
+  resolvedManually?: boolean;
+  /** Bei Behebungs-Events: ID des behobenen Events. */
+  resolvesEventId?: string | null;
 }
 
 export interface CockpitData {
@@ -104,9 +115,14 @@ export interface CockpitData {
   assetFlows: AssetFlowItem[];
   /** Abgelehnte Teillader — Dashboard darf das nicht als leeren Mandanten lesen. */
   partialFailures: string[];
+  /**
+   * Risiko-/Befund-/Alterssignale (dashboardSignals). Optional, damit
+   * bestehende Fixtures gültig bleiben; loadCockpitData setzt es immer.
+   */
+  signals?: DashboardSignals;
 }
 
-function toRuntimeEvent(event: DbGovernanceEvent): CockpitRuntimeEvent {
+function toRuntimeEvent(event: DbGovernanceEvent, resolved?: Map<string, Resolution>): CockpitRuntimeEvent {
   return {
     id: event.id,
     title: event.title,
@@ -114,6 +130,9 @@ function toRuntimeEvent(event: DbGovernanceEvent): CockpitRuntimeEvent {
     riskLevel: event.risk_level,
     source: event.event_source,
     createdAt: event.created_at,
+    resolvedAt: resolved?.get(event.id)?.resolvedAt ?? null,
+    resolvedManually: resolved?.get(event.id)?.manual ?? false,
+    resolvesEventId: resolvesEventIdOf(event),
   };
 }
 
@@ -134,6 +153,7 @@ export async function loadCockpitData(tenantId: string): Promise<CockpitData> {
     incidentsCount, dpiasCount, dsrCount, approvalsCount, vendorsCount,
     latestKpi, kpiRange, incidentList, dpiaList, dsrList,
     summary24hRaw, assets, evidenceTotal, evidenceHashed, eventsRaw, mappingsCount,
+    findingEvents, latestEvidenceRows, latestScanRuns,
   ] = await Promise.allSettled([
     countOpenIncidents(tenantId),
     countOpenDpias(tenantId),
@@ -151,6 +171,9 @@ export async function loadCockpitData(tenantId: string): Promise<CockpitData> {
     countTenantEvidenceHashed(tenantId),
     fetchTenantEvents(tenantId, 12),
     countTenantControlMappings(tenantId),
+    fetchTenantFindingEvents(tenantId),
+    fetchTenantEvidence(tenantId, 1),
+    listScanRuns(tenantId, { limit: 1 }),
   ]);
 
   const counts: CockpitCounts = {
@@ -191,13 +214,20 @@ export async function loadCockpitData(tenantId: string): Promise<CockpitData> {
   const assetScores = assetRows.map((asset) => asset.risk_score);
   const evidenceTotalCount = val(evidenceTotal, 0);
   const evidenceHashedCount = val(evidenceHashed, 0);
-  const recentEvents = val(eventsRaw, []).map(toRuntimeEvent);
+  // Behebungs-Paarung über Stream- und Befund-Events (append-only,
+  // payload.resolves_event_id) — das alte Event zeigt „behoben“.
+  const eventRows = val(eventsRaw, []);
+  const findingRows = val(findingEvents, []);
+  const resolved = resolutionIndex([...eventRows, ...findingRows]);
+  const recentEvents = eventRows.map((event) => toRuntimeEvent(event, resolved));
 
   const openMeasures = computeOpenMeasures(counts);
+  const latestEvidenceAt = val(latestEvidenceRows, [])[0]?.created_at ?? null;
   const evidenceHealth = computeEvidenceHealth({
     coveragePercent: posture?.assetEvidencePercent ?? null,
     totalCount: evidenceTotalCount,
     hashedCount: evidenceHashedCount,
+    latestEvidenceAt,
     newEvidence24h: summary24h?.new_evidence ?? 0,
     failedScans: summary24h?.failed_scans ?? 0,
   });
@@ -227,6 +257,9 @@ export async function loadCockpitData(tenantId: string): Promise<CockpitData> {
     failureOf('evidence-hashed', evidenceHashed),
     failureOf('events', eventsRaw),
     failureOf('control-mappings', mappingsCount),
+    failureOf('findings', findingEvents),
+    failureOf('evidence-latest', latestEvidenceRows),
+    failureOf('scan-latest', latestScanRuns),
   ].filter((item): item is string => item !== null);
 
   const countsReliable = [
@@ -241,6 +274,14 @@ export async function loadCockpitData(tenantId: string): Promise<CockpitData> {
     countsReliable, counts, posture, scoreBasis, latestKpi.status === 'fulfilled',
   );
 
+  const signals: DashboardSignals = {
+    elevatedAssets: assets.status === 'fulfilled' ? elevatedAssetsOf(assets.value) : null,
+    findings: findingEvents.status === 'fulfilled' ? pairFindings(findingEvents.value) : null,
+    // Nur scan_runs: Scanner-/Seed-Events sind kein Beleg für einen Audit-Lauf.
+    lastScanAt: val(latestScanRuns, [])[0]?.created_at ?? null,
+    latestEvidenceAt,
+  };
+
   return {
     counts, posture,
     score: scoreResult.score,
@@ -252,6 +293,7 @@ export async function loadCockpitData(tenantId: string): Promise<CockpitData> {
     evidenceHealth, riskIndex, openMeasures, summary24h,
     recentEvents, riskDistribution, assetFlows,
     partialFailures,
+    signals,
   };
 }
 

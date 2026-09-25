@@ -16,6 +16,7 @@ import type { FindingSeverity } from '../../../types/governance/finding';
 import { withPerformanceMonitoring } from '../withPerformanceMonitoring';
 import { getSupabase } from '../../../lib/supabase';
 import { TenantCustomDomainPanel } from '../../website-operations/TenantCustomDomainPanel';
+import { WEBSITE_AUDIT_CTA_LABEL } from '../dashboard/dashboardSignals';
 
 interface WebsiteRow {
   id: string;
@@ -91,10 +92,12 @@ async function domainHintFromSession(): Promise<string | null> {
   }
 }
 
-function WebsiteCard({ row, onScan, scanning }: {
+function WebsiteCard({ row, onScan, scanning, scanError = null }: {
   row: WebsiteRow;
   onScan: (row: WebsiteRow) => void;
   scanning: boolean;
+  /** Fehler des letzten Audit-Starts für genau diese Domain (sichtbar an der Karte). */
+  scanError?: string | null;
 }) {
   const scan = row.lastScan;
   return (
@@ -148,9 +151,19 @@ function WebsiteCard({ row, onScan, scanning }: {
           className="flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-mono border border-titanium-800 text-titanium-400 hover:border-[#00B8D4]/60 hover:text-[#00B8D4] transition-colors disabled:opacity-40"
         >
           <RefreshCw className={`h-2.5 w-2.5 ${scanning ? 'animate-spin' : ''}`} />
-          Scannen
+          {WEBSITE_AUDIT_CTA_LABEL}
         </button>
       </div>
+      {scanError && (
+        <div
+          role="alert"
+          data-testid={`website-scan-error-${row.id}`}
+          className="flex items-start gap-1.5 border-t border-red-900 bg-red-950/40 px-4 py-2 text-[10px] font-mono text-red-400"
+        >
+          <AlertTriangle className="h-3 w-3 shrink-0 mt-px" />
+          {scanError}
+        </div>
+      )}
     </div>
   );
 }
@@ -199,6 +212,7 @@ function _WebsiteGovernanceView() {
   const [rows, setRows] = useState<WebsiteRow[]>([]);
   const [search, setSearch] = useState('');
   const [scanning, setScanning] = useState<string | null>(null);
+  const [scanErrors, setScanErrors] = useState<Record<string, string>>({});
   const [addOpen, setAddOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loadingSites, setLoadingSites] = useState(false);
@@ -270,6 +284,7 @@ function _WebsiteGovernanceView() {
     if (!activeTenantId) { setError('Bitte einloggen.'); return; }
     setScanning(row.id);
     setError(null);
+    setScanErrors((prev) => { const next = { ...prev }; delete next[row.id]; return next; });
     try {
       await triggerTenantAudit(activeTenantId, row.domain, { website_id: row.id });
       const scans = await listScanRuns(activeTenantId, { limit: 200 });
@@ -279,7 +294,9 @@ function _WebsiteGovernanceView() {
         return { ...r, lastScan: latest };
       }));
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Scan fehlgeschlagen.');
+      const message = e instanceof Error ? e.message : 'Website-Audit fehlgeschlagen.';
+      setError(message);
+      setScanErrors((prev) => ({ ...prev, [row.id]: message }));
     } finally {
       setScanning(null);
     }
@@ -421,6 +438,7 @@ function _WebsiteGovernanceView() {
                 row={row}
                 onScan={handleScan}
                 scanning={scanning === row.id}
+                scanError={scanErrors[row.id] ?? null}
               />
             ))}
           </div>

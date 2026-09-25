@@ -131,3 +131,48 @@ describe('Prüfer-Mappe (CeoBriefPrintView)', () => {
     expect(score.textContent).toContain('74/100');
   });
 });
+
+describe('„Braucht Aufmerksamkeit“ (Addendum P0-3)', () => {
+  const finding = (resolvedAt: string | null) => ({
+    id: 'f1', title: 'DMARC fehlt', level: 'medium' as const, eventType: 'email_auth_finding',
+    source: 'website_scanner', createdAt: '2026-06-27T23:02:04Z', assetId: null, resolvedAt,
+  });
+
+  it('erhöhtes Asset + offener Befund ⇒ Einträge statt „Nichts offen“', async () => {
+    render(
+      <MemoryRouter>
+        <HandoffOverview
+          activeTenantId="t1"
+          data={cockpit({
+            signals: {
+              elevatedAssets: [{ id: 'w1', name: 'realsyncdynamicsai.de', score: 68, bucket: 'high' }],
+              findings: [finding(null)],
+              lastScanAt: null,
+              latestEvidenceAt: null,
+            },
+          })}
+        />
+      </MemoryRouter>,
+    );
+    const items = await screen.findAllByTestId('attention-item');
+    const text = items.map((i) => i.textContent).join(' | ');
+    expect(text).toContain('realsyncdynamicsai.de');
+    expect(text).toContain('DMARC fehlt');
+    expect(screen.queryByTestId('attention-empty')).toBeNull();
+  });
+
+  it('behobener Befund, keine erhöhten Assets ⇒ „Nichts offen“', async () => {
+    render(
+      <MemoryRouter>
+        <HandoffOverview
+          activeTenantId="t1"
+          data={cockpit({
+            signals: { elevatedAssets: [], findings: [finding('2026-09-20T08:00:00Z')], lastScanAt: null, latestEvidenceAt: null },
+          })}
+        />
+      </MemoryRouter>,
+    );
+    expect(await screen.findByTestId('attention-empty')).toBeInTheDocument();
+    expect(screen.queryByTestId('attention-item')).toBeNull();
+  });
+});

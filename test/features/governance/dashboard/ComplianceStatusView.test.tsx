@@ -6,6 +6,7 @@ import type { CockpitData } from '../../../../src/features/governance/cockpit/co
 import {
   computeEvidenceHealth,
   computeOpenMeasures,
+  computeRiskDistribution,
   computeRiskIndex,
   EMPTY_SUMMARY_24H,
 } from '../../../../src/features/governance/dashboard/complianceStatus';
@@ -58,6 +59,7 @@ function fixture(overrides: Partial<CockpitData> = {}): CockpitData {
     ],
     assetFlows: overrides.assetFlows ?? [],
     partialFailures: overrides.partialFailures ?? [],
+    signals: overrides.signals,
   };
 }
 
@@ -113,16 +115,18 @@ describe('ComplianceStatusView', () => {
 
   it('shows dashes instead of fake scores when the tenant is empty', () => {
     const { getByText, queryByTestId, getByTestId } = rendered({
-      data: fixture(),
+      data: fixture({ score: null, scoreStatus: 'insufficient_data', scoreBasis: { aiSystems: 0, controlMappings: 0 } }),
     });
     expect(getByText('Noch keine Governance-Daten')).toBeInTheDocument();
     expect(queryByTestId('governance-score')).toBeNull();
     expect(queryByTestId('risk-index')).toBeNull();
     expect(queryByTestId('evidence-health')).toBeNull();
     expect(queryByTestId('open-measures')).toBeNull();
-    // Compliance KPI row still renders — null → "—", never invented scores.
+    // Compliance KPI row still renders — Governance-Score aus derselben
+    // Quelle wie Kachel/Karte: „Noch nicht bewertbar“, nie 100.
     expect(getByTestId('compliance-kpi-row')).toBeInTheDocument();
-    expect(getByTestId('compliance-score-overall').textContent).toContain('—');
+    expect(getByTestId('compliance-score-overall').textContent).toContain('Noch nicht bewertbar');
+    expect(getByTestId('compliance-score-overall').textContent).not.toMatch(/\b100\b/);
     expect(getByTestId('compliance-critical-findings').textContent).toContain('—');
   });
 
@@ -150,7 +154,11 @@ describe('ComplianceStatusView', () => {
         vendors: { active: null, highRisk: null },
       },
     });
-    expect(getByTestId('compliance-score-overall').textContent).toMatch(/0%/);
+    // P0: Score overall = Governance-Score (90 aus 1 Vorfall), die
+    // compliance_score_history nur noch als Rahmenwerk-Hinweis.
+    expect(getByTestId('compliance-score-overall').textContent).toContain('Governance-Score90');
+    expect(getByTestId('compliance-score-overall').textContent).toContain('Rahmenwerk-Historie: GDPR 0');
+    expect(getByTestId('governance-score').textContent).toContain('90');
     expect(getByTestId('compliance-critical-findings').textContent).toContain('Critical findings0');
     expect(getByTestId('compliance-new-incidents').textContent).toContain('New incidents (24h)0');
     expect(getByTestId('compliance-risk-trend').textContent).toMatch(/Stable/);
@@ -197,6 +205,97 @@ describe('ComplianceStatusView', () => {
     const openLink = open.getByTestId('policy-coverage-packs-link');
     expect(openLink).toHaveAttribute('data-locked', 'false');
     expect(openLink.querySelector('svg')).toBeNull();
+  });
+
+  it('Addendum: ein Score-Wert auf allen Flächen — insufficient_data ⇒ KPI-Zeile und Karte „Noch nicht bewertbar“', () => {
+    const { getByTestId } = rendered({
+      data: fixture({
+        counts: { ...ZERO, incidents: 1 },
+        score: null,
+        scoreStatus: 'insufficient_data',
+        scoreBasis: { aiSystems: 0, controlMappings: 0 },
+      }),
+    });
+    expect(getByTestId('compliance-score-overall').textContent).toContain('Noch nicht bewertbar');
+    expect(getByTestId('governance-score').textContent).toContain('Noch nicht bewertbar');
+    expect(getByTestId('compliance-score-overall').textContent).not.toMatch(/\b100\b/);
+    expect(getByTestId('governance-score').textContent).not.toMatch(/\b100\b/);
+  });
+
+  it('Addendum: Residualrisiko nennt Hoch/Kritisch mit derselben Schwelle wie die Verteilung', () => {
+    const { getByTestId } = rendered({
+      data: fixture({
+        riskIndex: computeRiskIndex({ assetScores: [68, 0], newRisks24h: 0, openIncidents: 0, dsrOverdue: 0 }),
+        riskDistribution: computeRiskDistribution([68, 0]),
+      }),
+    });
+    expect(getByTestId('risk-index').textContent).toContain('1 Hoch/Kritisch (≥ 50)');
+    expect(getByTestId('risk-index-explainer').textContent).toMatch(/Mittelwert/);
+  });
+
+  it('Addendum: Kritische Befunde enthalten erhöhte Assets, mittlere Scanner-Befunde als Hinweis mit Alter', () => {
+    const { getByTestId } = rendered({
+      data: fixture({
+        counts: { ...ZERO, incidents: 1 },
+        signals: {
+          elevatedAssets: [{ id: 'w1', name: 'realsyncdynamicsai.de', score: 68, bucket: 'high' }],
+          findings: [{
+            id: 'f1', title: 'DMARC fehlt', level: 'medium', eventType: 'email_auth_finding',
+            source: 'website_scanner', createdAt: new Date(Date.now() - 89 * 86_400_000).toISOString(),
+            assetId: null, resolvedAt: null,
+          }],
+          lastScanAt: null,
+          latestEvidenceAt: null,
+        },
+      }),
+    });
+    expect(getByTestId('critical-findings-list').textContent).toContain('realsyncdynamicsai.de');
+    expect(getByTestId('medium-findings-hint').textContent).toMatch(/1 mittlerer Befund: DMARC fehlt · mittel · vor 89 Tagen/);
+  });
+
+  it('Addendum: behobener Befund (gepaart) zählt nicht und steht im Stream als „behoben“', () => {
+    const { getByTestId, queryByTestId } = rendered({
+      data: fixture({
+        counts: { ...ZERO, incidents: 1 },
+        recentEvents: [
+          { id: 'r1', title: 'DMARC gesetzt', eventType: 'email_auth_resolved', riskLevel: 'info', source: 'website_scanner', createdAt: '2026-09-20T08:00:00Z', resolvesEventId: 'f1' },
+          { id: 'f1', title: 'DMARC fehlt', eventType: 'email_auth_finding', riskLevel: 'medium', source: 'website_scanner', createdAt: '2026-06-27T23:02:04Z', resolvedAt: '2026-09-20T08:00:00Z' },
+          { id: 'f0', title: 'SPF fehlt', eventType: 'email_auth_finding', riskLevel: 'medium', source: 'website_scanner', createdAt: '2026-06-27T23:02:04Z', resolvedAt: '2026-09-25T21:04:48Z', resolvedManually: true },
+        ],
+        signals: {
+          elevatedAssets: [],
+          findings: [{
+            id: 'f1', title: 'DMARC fehlt', level: 'medium', eventType: 'email_auth_finding',
+            source: 'website_scanner', createdAt: '2026-06-27T23:02:04Z', assetId: null,
+            resolvedAt: '2026-09-20T08:00:00Z',
+          }],
+          lastScanAt: null,
+          latestEvidenceAt: null,
+        },
+      }),
+    });
+    expect(getByTestId('event-f1')).toHaveAttribute('data-resolved', 'true');
+    expect(getByTestId('event-f1-resolved').textContent).toBe('behoben am 20.09.');
+    expect(getByTestId('event-f0-resolved').textContent).toBe('behoben am 25.09. · manuell bestätigt');
+    expect(getByTestId('event-r1')).toHaveAttribute('data-resolved', 'false');
+    expect(queryByTestId('medium-findings-hint')).toBeNull();
+    expect(getByTestId('no-critical-findings')).toBeInTheDocument();
+  });
+
+  it('Addendum: Evidence mit einem 89 Tage alten Eintrag ⇒ „Zu wenig Daten“, kein 100', () => {
+    const { getByTestId } = rendered({
+      data: fixture({
+        counts: { ...ZERO, incidents: 1 },
+        evidenceHealth: computeEvidenceHealth({
+          coveragePercent: null, totalCount: 1, hashedCount: 1, newEvidence24h: 0, failedScans: 0,
+          latestEvidenceAt: new Date(Date.now() - 89 * 86_400_000).toISOString(),
+        }),
+      }),
+    });
+    const card = getByTestId('evidence-health');
+    expect(card.textContent).toContain('Zu wenig Daten');
+    expect(card.textContent).not.toContain('Prüfbar');
+    expect(getByTestId('evidence-freshness').textContent).toBe('Unter 3 Nachweisen kein Wert. Letzter Nachweis vor 89 Tagen.');
   });
 
   it('shows „Noch nicht bewertbar“ with a first step instead of 100 for an empty inventory', () => {

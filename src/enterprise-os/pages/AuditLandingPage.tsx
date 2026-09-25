@@ -124,11 +124,11 @@ export function AuditLandingPage() {
       <section className="py-16 lg:py-20">
         <div className="mx-auto max-w-4xl px-4 text-center sm:px-6 lg:px-8">
           <h2 className="font-display text-3xl font-bold text-titanium-50 sm:text-4xl">
-            Vom einmaligen Check zum kontinuierlichen Monitoring
+            Vom einmaligen Check zur laufenden Governance
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-base text-titanium-400">
-            Der kostenlose Check ist der erste Schritt. Mit dem Governance OS überwachen wir Ihre Website
-            kontinuierlich und dokumentieren jeden Befund revisionssicher.
+            Der kostenlose Check ist der erste Schritt. Mit dem Governance OS dokumentieren wir jeden Befund
+            revisionssicher; dauerhafte Überwachung Ihrer Website ist Coming Soon.
           </p>
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Link to="/os/pricing">

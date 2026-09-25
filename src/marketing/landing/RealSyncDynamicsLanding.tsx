@@ -104,7 +104,7 @@ export const RealSyncDynamicsLanding = () => {
               für<span className="bg-gradient-to-r from-petrol via-security-blue to-petrol bg-clip-text text-transparent"> Compliance</span>
             </h2>
             <p className="text-2xl text-titanium/80 mb-12 max-w-3xl mx-auto leading-relaxed">
-              EU-souveräne Runtime-native Governance für DSGVO, TDDDG &amp; EU AI Act. Kontinuierliche Telemetrie statt Stichproben.
+              EU-souveräne Runtime-native Governance für DSGVO, TDDDG &amp; EU AI Act. Scans auf Knopfdruck statt Stichproben; dauerhafte Überwachung Coming Soon.
               Auto-Fix statt nur Diagnose.
             </p>
 
@@ -147,7 +147,7 @@ export const RealSyncDynamicsLanding = () => {
                 Was wir <span className="bg-gradient-to-r from-petrol to-security-blue bg-clip-text text-transparent">bieten</span>
               </h2>
               <p className="text-xl text-titanium/70 max-w-2xl mx-auto">
-                Kontinuierliche Überwachung, automatische Fixes und kryptografische Nachweise
+                Scans, Fix-Empfehlungen und kryptografische Nachweise — dauerhafte Überwachung Coming Soon
               </p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -158,10 +158,10 @@ export const RealSyncDynamicsLanding = () => {
                     <span className="text-2xl">🔍</span>
                   </div>
                   <h3 className="text-2xl font-bold text-petrol mb-4" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-                    Continuous Monitoring
+                    Continuous Monitoring (Coming Soon)
                   </h3>
                   <p className="text-titanium/70">
-                    Websites, Cookies und Tracking laufend überwacht. Risiko-Erkennung in Echtzeit statt einmaliger Audits.
+                    Geplant: Websites, Cookies und Tracking laufend überwachen — heute Scans auf Knopfdruck statt nur einmaliger Audits.
                   </p>
                 </div>
               </div>
@@ -242,7 +242,7 @@ export const RealSyncDynamicsLanding = () => {
                       Telemetrie &amp; Risk-Detection
                     </h3>
                     <ul className="space-y-2 text-titanium/70 text-sm">
-                      <li className="flex gap-2"><span className="text-petrol">✓</span> Kontinuierliche Scans statt Stichprobe</li>
+                      <li className="flex gap-2"><span className="text-petrol">✓</span> Wiederholbare Scans statt Stichprobe</li>
                       <li className="flex gap-2"><span className="text-petrol">✓</span> Risk-Score je Domain &amp; System</li>
                       <li className="flex gap-2"><span className="text-petrol">✓</span> Cookie- &amp; Tracking-Inventar</li>
                     </ul>
@@ -348,7 +348,7 @@ export const RealSyncDynamicsLanding = () => {
                   <h3 className="text-xl font-bold text-petrol mb-2" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
                     Runtime-native, nicht einmalig
                   </h3>
-                  <p className="text-titanium/70">Compliance ist kein PDF von gestern. Kontinuierliche Telemetrie erkennt Drift, sobald sie passiert — mit lückenlosem Prüfpfad.</p>
+                  <p className="text-titanium/70">Compliance ist kein PDF von gestern. Jeder Scan landet im Prüfpfad; automatische Drift-Erkennung ist Coming Soon.</p>
                 </div>
               </div>
             </div>
@@ -535,7 +535,7 @@ export const RealSyncDynamicsLanding = () => {
                 <ul className="space-y-4 text-titanium/70">
                   <li className="flex gap-4">
                     <span className="text-security-blue min-w-fit font-bold">✓</span>
-                    <span>24/7 Support (Deutsch & Englisch)</span>
+                    <span>Support per E-Mail (Deutsch & Englisch)</span>
                   </li>
                   <li className="flex gap-4">
                     <span className="text-security-blue min-w-fit font-bold">✓</span>

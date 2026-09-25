@@ -116,7 +116,7 @@ export function HandoffOverview({
   const trend = data?.readinessTrend ?? null;
 
   return (
-    <div className="rs-page rs-ui" data-testid="handoff-overview">
+    <div className="rs-apppage rs-ui" data-testid="handoff-overview">
       {state.status === 'error' && <WarnToast error>{t('loadFailed')}</WarnToast>}
       <div className="rs-dash">
         <Panel className="rs-dash__score rs-panel--pad20" testId="overview-score">

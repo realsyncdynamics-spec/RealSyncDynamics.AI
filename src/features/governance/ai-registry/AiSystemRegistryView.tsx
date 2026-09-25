@@ -66,7 +66,7 @@ export function AiSystemRegistryView() {
   const visible = filter === 'all' ? rows : rows.filter((r) => r.cls.klasse === filter);
 
   return (
-    <div className="rs-page rs-ui" data-testid="ai-systems-view">
+    <div className="rs-apppage rs-ui" data-testid="ai-systems-view">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="rs-filters" role="group" aria-label={t('enfClass')}>
           {(['all', ...CLASS_ORDER] as Filter[]).map((f) => (

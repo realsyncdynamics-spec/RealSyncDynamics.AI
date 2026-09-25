@@ -145,7 +145,7 @@ export function ReportsGrid() {
   }
 
   return (
-    <div className="rs-page rs-ui" data-testid="reports-grid">
+    <div className="rs-apppage rs-ui" data-testid="reports-grid">
       <div className="rs-reports">
         {/* DSGVO Art. 30 */}
         <Panel className="rs-panel--pad20 rs-report" style={colorVar('var(--color-rs-primary-light)')} testId="report-dsgvo">

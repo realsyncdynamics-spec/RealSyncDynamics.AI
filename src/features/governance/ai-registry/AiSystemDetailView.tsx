@@ -66,7 +66,7 @@ export function AiSystemDetailView() {
   const asset = systems.find((s) => s.id === id) ?? null;
 
   return (
-    <div className="rs-page rs-ui" data-testid="ai-system-detail">
+    <div className="rs-apppage rs-ui" data-testid="ai-system-detail">
       {state.status === 'error' && <WarnToast error>{t('loadFailed')}</WarnToast>}
       {state.status === 'idle' && <p className="rs-muted">{t('noTenant')}</p>}
       <div className="rs-classify">

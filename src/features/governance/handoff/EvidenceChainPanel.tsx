@@ -87,7 +87,7 @@ export function EvidenceChainPanel() {
     verify.status === 'done' ? (ok ? 'var(--color-rs-success)' : 'var(--color-rs-danger)') : 'var(--color-rs-bg-3)';
 
   return (
-    <div className="rs-page rs-ui" data-testid="evidence-chain-panel">
+    <div className="rs-apppage rs-ui" data-testid="evidence-chain-panel">
       {state.status === 'error' && <WarnToast error>{t('loadFailed')}</WarnToast>}
       {notice && <WarnToast error={notice.error}>{notice.text}</WarnToast>}
       <div className="rs-evidence">

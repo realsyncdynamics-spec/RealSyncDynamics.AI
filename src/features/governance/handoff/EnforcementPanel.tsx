@@ -60,7 +60,7 @@ export function EnforcementPanel() {
   }
 
   return (
-    <div className="rs-page rs-ui" data-testid="enforcement-panel">
+    <div className="rs-apppage rs-ui" data-testid="enforcement-panel">
       <div className="rs-stats">
         <StatCard label={t('statPolicies')} value={ready ? rows.length : null} testId="stat-policies" />
         <StatCard label={t('statBlocking')} value={ready ? stats.blocking : null} accent="var(--color-rs-success)" testId="stat-blocking" />

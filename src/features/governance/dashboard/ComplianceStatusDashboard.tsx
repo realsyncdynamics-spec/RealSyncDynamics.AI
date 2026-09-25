@@ -7,8 +7,8 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
-  Activity, AlertTriangle, ArrowRight, Bot, Clock, ChevronRight, FileCheck2, Globe2, LayoutTemplate, Loader2,
-  Minus, Radar, Rocket, ShieldCheck, Sparkles, TrendingDown, TrendingUp,
+  Activity, AlertTriangle, ArrowRight, Clock, ChevronRight, FileCheck2, Globe2, Loader2,
+  Minus, Radar, Rocket, ShieldCheck, TrendingDown, TrendingUp,
 } from 'lucide-react';
 import { useTenant } from '../../../core/access/TenantProvider';
 import { useEntitlements } from '../../../core/billing/useEntitlements';
@@ -38,6 +38,7 @@ import {
   type RiskIndex,
 } from './complianceStatus';
 import { AgentOsPanel } from '../agent-os/AgentOsPanel';
+import { GovernedAiWorkspacePanel } from './GovernedAiWorkspacePanel';
 import { listScanRuns, listWebsitesForTenant } from '../scans/scansApi';
 import { loadGovernanceActivation } from '../../activation/activationApi';
 import {
@@ -114,7 +115,7 @@ export function ComplianceStatusDashboard() {
       {activeTenantId && (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-6">
           <AgentOsPanel />
-          <DashboardControlPlane />
+          <GovernedAiWorkspacePanel />
         </div>
       )}
       <ComplianceStatusView
@@ -129,40 +130,6 @@ export function ComplianceStatusDashboard() {
         entitlementsLoading={entitlementsLoading}
       />
     </>
-  );
-}
-
-function DashboardControlPlane() {
-  const tools = [
-    { href: '/app/bots', label: 'AI Agents & Bots', text: 'Bots anlegen, Kanäle und Fähigkeiten verwalten.', icon: Bot, accent: 'text-[#e4cfa2]' },
-    { href: '/app/agents', label: 'Agent Runtime', text: 'Enterprise-Agenten starten und Runs überwachen.', icon: Sparkles, accent: 'text-[#e8ddc8]' },
-    { href: '/build', label: 'Frontend & Landing Builder', text: 'Prompt → Website → Vorschau mit SiteOS.', icon: LayoutTemplate, accent: 'text-[#e4cfa2]' },
-    { href: '/app/siteos/builder', label: 'Web App Builder', text: 'SiteOS-Workspace für bestehende Projekte öffnen.', icon: Globe2, accent: 'text-emerald-300' },
-  ];
-
-  return (
-    <section aria-label="Build and Agent Control Plane" data-testid="dashboard-control-plane" className="mt-4 rounded-2xl border border-titanium-800 bg-obsidian-900/90 overflow-hidden">
-      <div className="px-5 py-4 border-b border-titanium-900 flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#e4cfa2]">Operate · Build · Automate</p>
-          <h2 className="mt-1 text-base font-semibold text-titanium-50">AI Control Plane</h2>
-          <p className="mt-1 text-xs text-titanium-400">Direkter Zugriff auf Bots, Agenten und die produktiven SiteOS-Build-Flows.</p>
-        </div>
-        <Link to="/app/modules" className="text-[10px] font-mono uppercase tracking-wider text-[#e4cfa2] hover:text-titanium-50">Alle Module →</Link>
-      </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-px bg-titanium-900">
-        {tools.map(({ href, label, text, icon: Icon, accent }) => (
-          <Link key={href} to={href} className="group bg-obsidian-900 px-5 py-4 hover:bg-obsidian-800 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#e4cfa2]">
-            <div className="flex items-center justify-between gap-3">
-              <Icon className={`h-5 w-5 ${accent}`} />
-              <ArrowRight className="h-4 w-4 text-titanium-600 group-hover:text-[#e4cfa2] transition-colors" />
-            </div>
-            <p className="mt-4 text-sm font-semibold text-titanium-50">{label}</p>
-            <p className="mt-1 text-xs leading-5 text-titanium-400">{text}</p>
-          </Link>
-        ))}
-      </div>
-    </section>
   );
 }
 

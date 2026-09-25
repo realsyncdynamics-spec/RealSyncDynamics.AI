@@ -16,13 +16,15 @@
 //   7. Provider-Fehler → stabiler Code + bereinigte Logzeile (errorReport.ts)
 //
 // Sonderpfad `mode: 'audit_anon'` (öffentlicher Audit-Copilot, ohne Login):
-//   fester Zweck/Prompt/Profil/Token-Limit, IP-Hash-Rate-Limit ohne Feature,
-//   anon_chat_runs-Protokoll fail-closed, nur EU-lokaler Provider.
+//   Cloudflare Turnstile (fail-closed, vor allem anderen), fester Zweck/
+//   Prompt/Profil/Token-Limit, IP-Hash-Rate-Limit ohne Feature,
+//   anon_chat_runs-Protokoll fail-closed, audit_id nur als correlation_id
+//   (kein Kontext, kein DB-Read), nur EU-lokaler Provider.
+//   Siehe _shared/aiGateway/anonAuditCopilot.ts und turnstile.ts.
 //
 // Cloud-Kette (Anthropic/OpenAI): in KEINEM Pfad (Entscheidung 26.09.).
 // index.ts baut den Gateway mit allowCloudFallback=false; `cloud-fallback`
 // wird im Nutzer- und im Service-Pfad mit 400 abgelehnt.
-//   Siehe _shared/aiGateway/anonAuditCopilot.ts.
 
 import type { AiGatewayRequest, AiStreamChunk } from '../_shared/aiGateway/types.ts';
 import {
@@ -32,6 +34,7 @@ import {
   formatChatResponse,
   type OpenAIChatRequest,
 } from '../_shared/aiGateway/openaiCompat.ts';
+import { verifyTurnstile } from '../_shared/aiGateway/turnstile.ts';
 import {
   decideRateLimit,
   clientIp,
@@ -110,6 +113,8 @@ export interface GatewayHandlerDeps {
   pdpCheck: (feature: string, modelProfile: string) => Promise<Response | PdpVerdict | null>;
   /** anon_chat_runs-Protokoll (reserve fail-closed). null → anon-Pfad antwortet 503 LOG_UNAVAILABLE. */
   anonAuditLog: () => Promise<AnonAuditLog | null>;
+  /** fetch für die Turnstile-Siteverify (Tests injizieren einen Mock). */
+  turnstileFetch?: typeof fetch;
   now?: () => number;
   log?: (line: Record<string, unknown>) => void;
   newId?: () => string;
@@ -271,6 +276,20 @@ export function createAiGatewayHandler(deps: GatewayHandlerDeps): (req: Request)
   async function handleAnonAudit(req: Request, body: Record<string, unknown>): Promise<Response> {
     const parsed = parseAnonAuditBody(body);
     if (isRejection(parsed)) return reject(parsed);
+
+    // 0. Cloudflare Turnstile — fail-closed, VOR Rate-Limit-Zählung, DB-Write
+    //    und Provider-Aufruf (400 TURNSTILE_MISSING / 403 TURNSTILE_FAILED /
+    //    503 TURNSTILE_UNCONFIGURED). Token, Secret und IP werden nicht geloggt.
+    const ts = await verifyTurnstile({
+      body,
+      remoteIp: req.headers.get('cf-connecting-ip'),
+      env: deps.env,
+      fetchImpl: deps.turnstileFetch,
+    });
+    if (!ts.ok) {
+      log({ scope: 'ai-gateway-anon', event: 'turnstile_rejected', code: ts.code, reason: ts.reason });
+      return jsonError(ts.status, ts.code, ts.message, corsHeaders);
+    }
 
     // Gleiche Hash-Form wie governance-agent (anon_chat_runs.ip_hash =
     // sha256(ip)), damit Zeilen beider Pfade pro IP zusammenpassen. Die IP

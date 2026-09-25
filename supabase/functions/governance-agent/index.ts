@@ -866,6 +866,12 @@ async function runAnonViaAiGateway(
     };
   } catch (err) {
     if (err instanceof AiGatewayEdgeError) {
+      // Strukturierte Logzeile (ohne Prompt): seit 26.09. endet ein nicht
+      // erreichbarer lokaler Provider fail-closed mit 503 (keine Cloud-Kette).
+      console.error(JSON.stringify({
+        level: 'warn', scope: 'ai_gateway_call_failed', caller: 'governance-agent',
+        feature: 'governance_agent_anon', status: err.status, code: err.code,
+      }));
       return jsonError(err.status === 200 ? 502 : err.status, err.code, err.message);
     }
     throw err;
@@ -1088,6 +1094,10 @@ async function handleExplainFindingAnon(req: Request, body: Record<string, unkno
     });
   } catch (err) {
     const code = err instanceof AiGatewayEdgeError ? err.code : 'LLM_UNAVAILABLE';
+    console.error(JSON.stringify({
+      level: 'warn', scope: 'ai_gateway_call_failed', caller: 'governance-agent', op: 'explain_finding',
+      status: err instanceof AiGatewayEdgeError ? err.status : null, code, degraded: true,
+    }));
     await finishAnon(admin, requestId, startedAt, { outcome: 'error', error_code: code });
     // Sichtbare Degradierung statt Fehler — das Copilot-Panel bleibt nutzbar.
     return jsonResponse({
@@ -1167,6 +1177,10 @@ async function handleGenerateFixSnippetAnon(req: Request, body: Record<string, u
     });
   } catch (err) {
     const code = err instanceof AiGatewayEdgeError ? err.code : 'LLM_UNAVAILABLE';
+    console.error(JSON.stringify({
+      level: 'warn', scope: 'ai_gateway_call_failed', caller: 'governance-agent', op: 'generate_fix_snippet',
+      status: err instanceof AiGatewayEdgeError ? err.status : null, code, degraded: true,
+    }));
     await finishAnon(admin, requestId, startedAt, { outcome: 'error', error_code: code });
     // Sichtbare Degradierung statt Fehler — das Copilot-Panel bleibt nutzbar.
     return jsonResponse({

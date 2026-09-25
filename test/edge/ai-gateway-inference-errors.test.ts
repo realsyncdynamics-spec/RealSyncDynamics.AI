@@ -24,6 +24,7 @@ import {
   UnreachableLocalAdapter,
 } from '../../supabase/functions/_shared/aiGateway/localEndpoint.ts';
 import { isTransportLevelFailure, ServerAiGateway } from '../../supabase/functions/_shared/aiGateway/router.ts';
+import { LMStudioAdapter } from '../../supabase/functions/_shared/aiGateway/lmStudioAdapter.ts';
 import type { AiGatewayRequest } from '../../supabase/functions/_shared/aiGateway/types.ts';
 
 // Pfade relativ zum Repo-Root (URL-Auflösung über das Modul scheitert unter jsdom).
@@ -79,8 +80,16 @@ function briefRequest(op = 'extract_json'): Request {
 describe('errorReport — stabile Codes statt Catch-all', () => {
   it.each([
     ['LM Studio returned invalid JSON', 502, 'UPSTREAM_BAD_OUTPUT'],
-    ['No LM Studio model available', 502, 'UPSTREAM_UNAVAILABLE'],
+    ['No LM Studio model available', 503, 'LOCAL_PROVIDER_UNREACHABLE'],
     [LOCAL_UNREACHABLE_MESSAGE, 503, 'LOCAL_PROVIDER_UNREACHABLE'],
+    ['LM Studio HTTP 503', 503, 'LOCAL_PROVIDER_UNREACHABLE'],
+    ['LM Studio embeddings HTTP 500', 503, 'LOCAL_PROVIDER_UNREACHABLE'],
+    ['Ollama HTTP 502', 503, 'LOCAL_PROVIDER_UNREACHABLE'],
+    ['This operation was aborted', 503, 'LOCAL_PROVIDER_UNREACHABLE'],
+    ['Signal timed out: timeout after 8000ms', 503, 'LOCAL_PROVIDER_UNREACHABLE'],
+    ['TypeError: fetch failed', 503, 'LOCAL_PROVIDER_UNREACHABLE'],
+    ['tcp connect error: Connection refused (os error 111)', 503, 'LOCAL_PROVIDER_UNREACHABLE'],
+    ['LM Studio HTTP 400', 502, 'UPSTREAM_UNAVAILABLE'],
     ['Provider not configured for profile: cloud-fallback', 503, 'PROVIDER_NOT_CONFIGURED'],
     ['invalid x-api-key', 502, 'UPSTREAM_AUTH_FAILED'],
     ['Your credit balance is too low to access the Anthropic API.', 502, 'UPSTREAM_QUOTA'],
@@ -205,7 +214,11 @@ describe('Provider-Aufbau mit lokaler Base-URL in der Cloud', () => {
     expect(decideLocalSlot({ ...base, baseUrl: undefined, hasCloud: false })).toEqual({ action: 'use' });
   });
 
-  it('deaktivierter Slot + Anthropic → kein Probe gegen localhost, direkt Cloud-Kette', async () => {
+  // Router-Ebene (ServerAiGateway mit injizierter Cloud-Kette). Das ai-gateway
+  // selbst baut seit 26.09. in KEINEM Pfad eine Cloud-Kette (s. unten); dieser
+  // Fall betrifft nur Aufrufer des Routers außerhalb des ai-gateway
+  // (governance-router), bis Gateway v2 die Residency-Policy einführt.
+  it('Router-Ebene: deaktivierter Slot + injizierte Cloud-Kette → kein Probe gegen localhost', async () => {
     const seen: string[] = [];
     const anthropic = {
       id: 'anthropic' as const,
@@ -269,5 +282,78 @@ describe('Governance-Brief-Runner — Payload und Fehlertext', () => {
   it('agent-os-runner schreibt brief_failed ins Function-Log', () => {
     const runner = readFileSync(repoFile('supabase/functions/agent-os-runner/index.ts'), 'utf8');
     expect(runner).toContain("event: 'brief_failed'");
+  });
+});
+
+// Service-Pfad seit 26.09. ohne Cloud-Kette: ai-gateway/index.ts baut den
+// Gateway für ALLE Pfade mit allowCloudFallback=false; serverFromEnv liest dann
+// keine Anthropic/OpenAI-Keys (nicht jsdom-importierbar, daher statisch
+// geprüft) und der Router bekommt eine leere fallbackChain. Hier: echter
+// Router + echter LM-Studio-Adapter mit gemocktem fetch hinter dem Handler.
+describe('Service-Pfad: lokaler Timeout/5xx → 503, kein Cloud-Aufruf', () => {
+  afterEach(() => { vi.restoreAllMocks(); });
+
+  function serviceHarness(fetchImpl: typeof fetch) {
+    const logs: Array<Record<string, unknown>> = [];
+    const gw = new ServerAiGateway({
+      lmStudio: new LMStudioAdapter({ baseUrl: 'https://lmstudio.example.eu/v1', defaultModel: 'local-model', fetchImpl }),
+      lmStudioBaseUrl: 'https://lmstudio.example.eu/v1',
+      // bewusst KEIN anthropic/openai — so wie serverFromEnv mit allowCloudFallback=false
+    });
+    const deps: GatewayHandlerDeps = {
+      env: (n) => (n === 'AI_GATEWAY_INTERNAL_KEY' ? INTERNAL_KEY : undefined),
+      requireAuthAndTenant: async () => new Response(null, { status: 401 }),
+      gateBuilder: async () => null,
+      buildGateway: async () => gw as unknown as GatewayLike,
+      pdpCheck: async () => null,
+      anonAuditLog: async () => null,
+      log: (l) => logs.push(l),
+    };
+    return { handler: createAiGatewayHandler(deps), logs };
+  }
+
+  const hosts = (spy: { mock: { calls: unknown[][] } }) =>
+    spy.mock.calls.map((c) => new URL(String(c[0])).host);
+
+  it.each([
+    ['lokaler HTTP 503', async () => new Response(JSON.stringify({ error: { message: 'LM Studio HTTP 503' } }), { status: 503 })],
+    ['lokaler HTTP 500 ohne Body', async () => new Response('{}', { status: 500 })],
+    ['Timeout/Abbruch', async () => { throw new DOMException('This operation was aborted', 'AbortError'); }],
+    ['Verbindungsfehler', async () => { throw new TypeError('fetch failed'); }],
+  ])('%s → 503 LOCAL_PROVIDER_UNREACHABLE', async (_name, impl) => {
+    const fetchImpl = vi.fn(impl as unknown as typeof fetch);
+    const globalFetch = vi.spyOn(globalThis, 'fetch');
+    const h = serviceHarness(fetchImpl as unknown as typeof fetch);
+    const res = await h.handler(briefRequest());
+    expect(res.status).toBe(503);
+    const body = await res.json();
+    expect(body.error?.code ?? body.code).toBe('LOCAL_PROVIDER_UNREACHABLE');
+    // nur der lokale Host wurde angefragt — kein Anthropic/OpenAI
+    expect(new Set(hosts(fetchImpl))).toEqual(new Set(['lmstudio.example.eu']));
+    expect(globalFetch).not.toHaveBeenCalled();
+    const err = h.logs.find((l) => l.scope === 'ai-gateway-error');
+    expect(err).toMatchObject({ code: 'LOCAL_PROVIDER_UNREACHABLE', status: 503, internal_caller: 'agent-os-runner' });
+    expect(JSON.stringify(h.logs)).not.toContain('GEHEIMER-PROMPT-INHALT');
+  });
+
+  it('auch op generate (telegram-webhook, fast-local) → 503, kein Cloud-Aufruf', async () => {
+    const fetchImpl = vi.fn(async () => { throw new Error('Signal timed out: timeout'); });
+    const h = serviceHarness(fetchImpl as unknown as typeof fetch);
+    const req = new Request('https://x.supabase.co/functions/v1/ai-gateway', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-internal-key': INTERNAL_KEY, 'x-internal-caller': 'telegram-webhook' },
+      body: JSON.stringify({ op: 'generate', tenant_id: T1, feature: 'general_assistant', task_type: 'chat', model_profile: 'fast-local', input: 'hi' }),
+    });
+    const res = await h.handler(req);
+    expect(res.status).toBe(503);
+    expect(new Set(hosts(fetchImpl))).toEqual(new Set(['lmstudio.example.eu']));
+  });
+
+  it('serverFromEnv liest Cloud-Keys nur bei allowCloudFallback=true; index.ts übergibt fest false', () => {
+    const sfe = readFileSync(repoFile('supabase/functions/_shared/aiGateway/serverFromEnv.ts'), 'utf8');
+    expect(sfe).toMatch(/if \(opts\.allowCloudFallback\) \{\s*\[anthropicKey, openaiKey\]/);
+    const idx = readFileSync(repoFile('supabase/functions/ai-gateway/index.ts'), 'utf8');
+    expect(idx).toMatch(/allowCloudFallback:\s*false,/);
+    expect(idx).not.toMatch(/allowCloudFallback:\s*(true|opts|[a-z]+\.)/);
   });
 });

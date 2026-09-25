@@ -18,6 +18,10 @@
 // Sonderpfad `mode: 'audit_anon'` (öffentlicher Audit-Copilot, ohne Login):
 //   fester Zweck/Prompt/Profil/Token-Limit, IP-Hash-Rate-Limit ohne Feature,
 //   anon_chat_runs-Protokoll fail-closed, nur EU-lokaler Provider.
+//
+// Cloud-Kette (Anthropic/OpenAI): in KEINEM Pfad (Entscheidung 26.09.).
+// index.ts baut den Gateway mit allowCloudFallback=false; `cloud-fallback`
+// wird im Nutzer- und im Service-Pfad mit 400 abgelehnt.
 //   Siehe _shared/aiGateway/anonAuditCopilot.ts.
 
 import type { AiGatewayRequest, AiStreamChunk } from '../_shared/aiGateway/types.ts';
@@ -98,11 +102,11 @@ export interface GatewayHandlerDeps {
   /** Entitlement-Gate für den Builder. Response = abgelehnt, null = ok. */
   gateBuilder: (admin: unknown, tenantId: string) => Promise<Response | null>;
   /**
-   * Baut den Gateway. `allowCloud=false` → OHNE Anthropic/OpenAI-Kette: ein
-   * lokaler Timeout/5xx endet als Fehler statt still bei einem US-Anbieter.
-   * Cloud nur für den Service-Pfad; nie für Nutzer- oder anon-Pfad.
+   * Baut den Gateway — in index.ts IMMER mit allowCloudFallback=false (alle
+   * Pfade, auch Service): ohne Anthropic/OpenAI-Kette. Ein lokaler
+   * Timeout/5xx endet als Fehler (503) statt still bei einem US-Anbieter.
    */
-  buildGateway: (opts: { allowCloud: boolean }) => Promise<GatewayLike | Response>;
+  buildGateway: () => Promise<GatewayLike | Response>;
   pdpCheck: (feature: string, modelProfile: string) => Promise<Response | PdpVerdict | null>;
   /** anon_chat_runs-Protokoll (reserve fail-closed). null → anon-Pfad antwortet 503 LOG_UNAVAILABLE. */
   anonAuditLog: () => Promise<AnonAuditLog | null>;
@@ -170,19 +174,6 @@ export function createAiGatewayHandler(deps: GatewayHandlerDeps): (req: Request)
     return applyUserPolicy(request, { tenantId: p.tenantId, userId: p.userId }, { builderEntitled: p.builderEntitled });
   }
 
-  /**
-   * Darf dieser Aufruf auf die Cloud-Kette (Anthropic → OpenAI) wechseln?
-   *   - Service-Pfad (interne Aufrufer): ja — bisheriges Verhalten.
-   *   - Nutzerpfad: NEIN (allowCloudFallback=false). Ein lokaler Timeout/5xx
-   *     endet als Fehler statt still bei einem US-Anbieter.
-   *   - anon: nie (handleAnonAudit baut ebenfalls ohne Cloud).
-   * Bekannte Restlücke (dokumentiert, Lösung in „Gateway v2"): im
-   * Service-Pfad wechselt der Router bei Timeout/Abbruch/5xx weiterhin
-   * automatisch auf die Cloud-Kette.
-   */
-  function cloudAllowed(p: Principal, _request: AiGatewayRequest | null): boolean {
-    return p.kind === 'service';
-  }
 
   // ── Rate-Limit ─────────────────────────────────────────────────────
 
@@ -338,7 +329,7 @@ export function createAiGatewayHandler(deps: GatewayHandlerDeps): (req: Request)
     };
 
     // 3. Nur EU-lokaler Provider (keine Cloud-Kette).
-    const gateway = await deps.buildGateway({ allowCloud: false });
+    const gateway = await deps.buildGateway();
     if (gateway instanceof Response) {
       await finish({ outcome: 'error', error_code: 'PROVIDER_UNAVAILABLE', duration_ms: now() - startedAt });
       return gateway;
@@ -397,7 +388,7 @@ export function createAiGatewayHandler(deps: GatewayHandlerDeps): (req: Request)
     if (principal instanceof Response) return principal;
 
     if (op === 'health') {
-      const hg = await deps.buildGateway({ allowCloud: cloudAllowed(principal, null) });
+      const hg = await deps.buildGateway();
       if (hg instanceof Response) return hg;
       const health = await hg.health();
       return jsonResponse({ ...health, ok: health.ok }, 200, corsHeaders);
@@ -423,7 +414,7 @@ export function createAiGatewayHandler(deps: GatewayHandlerDeps): (req: Request)
       : undefined;
     const extra = governance ? { governance } : {};
 
-    const gateway = await deps.buildGateway({ allowCloud: cloudAllowed(principal, request) });
+    const gateway = await deps.buildGateway();
     if (gateway instanceof Response) return gateway;
 
     if (op === 'stream') {
@@ -470,7 +461,7 @@ export function createAiGatewayHandler(deps: GatewayHandlerDeps): (req: Request)
     const verdict = await deps.pdpCheck(request.feature, request.model_profile);
     if (verdict instanceof Response) return verdict;
 
-    const gateway = await deps.buildGateway({ allowCloud: cloudAllowed(principal, request) });
+    const gateway = await deps.buildGateway();
     if (gateway instanceof Response) return gateway;
 
     try {

@@ -63,8 +63,8 @@ const ITEMS: Item[] = [
         <p>Vier Tiers — Starter und Growth mit 14-Tage-Pilot, Enterprise nach Vertrag:</p>
         <ul className="list-disc pl-5 space-y-1 mt-2">
           <li><strong className="text-titanium-50">Free Audit</strong> kostenlos — einmaliger Compliance-Snapshot, kein Account</li>
-          <li><strong className="text-titanium-50">Starter</strong> 79 €/Monat — eine Domain, Audit-Trail, monatlicher Re-Scan</li>
-          <li><strong className="text-titanium-50">Growth</strong> 249 €/Monat — bis 3 Domains, tägliches Monitoring + Drift-Detection</li>
+          <li><strong className="text-titanium-50">Starter</strong> 79 €/Monat — eine Domain, Audit-Trail, Re-Scan-Monitoring (Coming Soon)</li>
+          <li><strong className="text-titanium-50">Growth</strong> 249 €/Monat — bis 3 Domains, tägliches Monitoring + Drift-Detection (Coming Soon)</li>
           {/* COMMERCIAL-SSOT: kein Festpreis — Enterprise wird vertraglich
               vereinbart und manuell fakturiert; der Self-Service-Checkout
               kann 1.249 € nicht einloesen. */}
@@ -284,7 +284,8 @@ const ITEMS: Item[] = [
           Kontroll-Matrix und die <strong className="text-titanium-50">Abdeckung</strong> wird gegen deine dokumentierten Maßnahmen berechnet.
         </p>
         <ul className="list-disc pl-5 space-y-1 mt-2">
-          <li>Packs u. a.: DSGVO (vollständiger Kernkatalog) · EU AI Act High-Risk (Art. 8–27) · NIS2 (inkl. Maßnahmenkatalog Art. 21) · DORA · ISO 27001 Annex A 2022 (93 Controls) · TISAX (Automotive) · FinTech-Kombi (DSGVO + NIS2 + DORA).</li>
+          <li>Live: DSGVO (vollständiger Kernkatalog) · EU AI Act High-Risk (Art. 8–27) · NIS2 (inkl. Maßnahmenkatalog Art. 21) · ISO 27001 Annex A 2022 (93 Controls).</li>
+          <li>TISAX (Automotive) und DORA: Roadmap / auf Anfrage — noch keine aktiven Policy Packs.</li>
           <li>Vollständige Framework-Kataloge statt kuratierter Auszüge; jederzeit aktivier-/deaktivierbar; individuelle Unternehmensrichtlinien ergänzbar.</li>
         </ul>
         <p className="mt-2">

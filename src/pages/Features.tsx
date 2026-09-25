@@ -43,8 +43,9 @@ export function Features() {
             Eine Plattform — DSGVO, AI-Act, Vendor-Stack.
           </h1>
           <p className="text-base sm:text-lg text-silver-300 leading-relaxed max-w-2xl mx-auto">
-            RealSyncDynamics.AI überwacht Ihre Website, Vendor-Stacks und KI-Workflows kontinuierlich auf
+            RealSyncDynamics.AI prüft Ihre Website, Vendor-Stacks und KI-Workflows auf
             DSGVO- und AI-Act-Risiken — und liefert prüffertige Dokumentation automatisch.
+            Dauerhafte Überwachung ist Coming Soon.
           </p>
         </div>
       </section>
@@ -74,9 +75,9 @@ export function Features() {
           />
           <FeatureBlock
             icon={<Activity className="h-5 w-5 text-amber-400" />}
-            title="Kontinuierliche Überwachung"
+            title="Kontinuierliche Überwachung (Coming Soon)"
             bullets={[
-              'Wöchentliche Re-Audits + Alerts bei neuen Verstößen oder Vendor-Wechseln',
+              'Geplant: wöchentliche Re-Audits + Alerts bei neuen Verstößen oder Vendor-Wechseln',
               'Dashboards für DSB, IT, HR — Ampel-Logik (grün/gelb/rot) plus Risk-Score',
               'Change-Historie: wer hat wann welche Änderung an Compliance-Konfig gemacht',
               'Realtime-Status der Rebuild- und Audit-Jobs',
@@ -157,7 +158,7 @@ export function Features() {
             <RoleCard
               icon={<ShieldCheck className="h-5 w-5 text-emerald-400" />}
               role="Datenschutzbeauftragte"
-              body="Endlich kontinuierliche Sicht auf alle Domains und KI-Systeme — dokumentenfertig, ohne Excel-Tracking. Audit-Trail, Versionierung, signierte Exporte für Aufsichtsbehörden."
+              body="Endlich eine gemeinsame Sicht auf alle Domains und KI-Systeme — dokumentenfertig, ohne Excel-Tracking. Audit-Trail, Versionierung, signierte Exporte für Aufsichtsbehörden."
               cta={{ to: '/audit?source=features-dsb', label: 'Domain auditieren' }}
             />
             <RoleCard

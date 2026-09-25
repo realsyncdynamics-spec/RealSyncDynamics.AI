@@ -103,7 +103,7 @@ export function PricingRoiExampleSection() {
         </div>
 
         <p className="mt-6 text-[12px] text-silver-400 leading-relaxed max-w-3xl">
-          Was RealSync leisten kann: kontinuierliche Runtime-Beobachtung, kryptographisch
+          Was RealSync leisten kann: automatisierte Scans (dauerhafte Überwachung: Coming Soon), kryptographisch
           überprüfbare Evidence und priorisierte Befunde — was den manuellen Prüfaufwand
           deutlich senken kann, ohne Rechtsbewertung oder DSB-Verantwortung zu ersetzen.
         </p>

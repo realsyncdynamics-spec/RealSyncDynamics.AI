@@ -65,7 +65,7 @@ const PRICING_PRODUCT_JSONLD = {
   '@type': 'Product',
   name: 'RealSyncDynamics.AI Compliance Platform',
   description:
-    'EU-native DSGVO- und EU-AI-Act-Compliance-Infrastruktur mit Website-Audit, Consent-Timing-Analyse, Fix-Empfehlungen und Continuous Monitoring.',
+    'EU-native DSGVO- und EU-AI-Act-Compliance-Infrastruktur mit Website-Audit, Consent-Timing-Analyse, Fix-Empfehlungen und Evidence-Export. Dauerhafte Domain-Überwachung: Coming Soon.',
   brand: { '@type': 'Brand', name: 'RealSyncDynamics.AI' },
   offers: [
     {
@@ -265,7 +265,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
   '/pricing': {
     title: 'Preise – Runtime-native AI-Governance-Plattform | RealSyncDynamics.AI',
     description:
-      'Free Audit (0 €), Starter (79 €), Growth (249 €), Agency (699 €), Enterprise (auf Anfrage). Runtime-native Governance: kontinuierliche Telemetrie, Policy-Engine, kryptografisch nachvollziehbare Evidenz. EU-Hosting, AVV inklusive.',
+      'Free Audit (0 €), Starter (79 €), Growth (249 €), Agency (699 €), Enterprise (auf Anfrage). Runtime-native Governance: Website-Scans, Policy-Engine, kryptografisch nachvollziehbare Evidenz. EU-Hosting, AVV inklusive.',
     canonical: `${SITE_URL}/pricing`,
     jsonLd: [
       PRICING_PRODUCT_JSONLD,
@@ -389,7 +389,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
   '/digitale-souveraenitaet': {
     title: 'Digitale Souveränität als Betriebsmodell | RealSyncDynamics.AI',
     description:
-      'Digitale Souveränität praktisch umsetzen: transparente Anbieterstruktur, nachweisbare DSGVO- & AI-Act-Governance, Kontrolle über Drittanbieter und Datenflüsse, Evidence Vault und kontinuierliches Monitoring — das Governance OS im Browser-Format.',
+      'Digitale Souveränität praktisch umsetzen: transparente Anbieterstruktur, nachweisbare DSGVO- & AI-Act-Governance, Kontrolle über Drittanbieter und Datenflüsse, Evidence Vault; dauerhafte Domain-Überwachung als Coming Soon — das Governance OS im Browser-Format.',
     canonical: `${SITE_URL}/digitale-souveraenitaet`,
     ogTitle: 'Digitale Souveränität als Betriebsmodell',
     ogDescription:
@@ -498,7 +498,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
   '/proliance-alternative': {
     title: 'Proliance Alternative — Web-Compliance-Automation | RealSyncDynamics.AI',
     description:
-      'Proliance ist Compliance-Suite. RealSyncDynamics.AI fokussiert auf Web-Compliance: Pre-Consent-Audit, Fix-Empfehlungen und Continuous Monitoring.',
+      'Proliance ist Compliance-Suite. RealSyncDynamics.AI fokussiert auf Web-Compliance: Pre-Consent-Audit, Fix-Empfehlungen und Audit-Trail; dauerhafte Überwachung Coming Soon.',
     canonical: `${SITE_URL}/proliance-alternative`,
     jsonLd: breadcrumbs([
       { name: 'Home', url: '/' },

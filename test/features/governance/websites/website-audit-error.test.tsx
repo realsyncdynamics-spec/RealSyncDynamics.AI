@@ -42,9 +42,11 @@ describe('Website-Audit-CTA', () => {
 
     render(<MemoryRouter><WebsiteGovernanceView /></MemoryRouter>);
 
-    const button = await screen.findByRole('button', { name: new RegExp(WEBSITE_AUDIT_CTA_LABEL.replace(/[()]/g, '\\$&')) });
+    const label = await screen.findByText(WEBSITE_AUDIT_CTA_LABEL);
+    const button = label.closest('button');
+    expect(button).not.toBeNull();
     expect(screen.queryByText(/^Scannen$/)).toBeNull();
-    fireEvent.click(button);
+    fireEvent.click(button!);
 
     const alert = await screen.findByTestId('website-scan-error-w1');
     expect(alert).toHaveAttribute('role', 'alert');

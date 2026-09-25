@@ -54,8 +54,13 @@ export interface GatewayResult {
   errorCode?: string;
   /** HTTP-Status des Fehlers, falls vom Gateway. */
   status?: number;
-  /** Sekunden bis zum naechsten Versuch (Retry-After), falls gesendet. */
+  /**
+   * Sekunden bis zum naechsten Versuch: bevorzugt `error.retry_after_ms`
+   * (aufgerundet), sonst `Retry-After`. Nur wenn der Gateway etwas sendet.
+   */
   retryAfter?: number;
+  /** 429: Geltungsbereich des Limits aus `error.scope` (z. B. user/tenant). */
+  errorScope?: string;
 }
 
 /**
@@ -71,11 +76,15 @@ async function currentAccessToken(): Promise<string | null> {
   }
 }
 
+/**
+ * Client im Nutzer-Modus (Vertrag #1591): Sitzungs-JWT als Bearer, Anon-Key
+ * nur als `apikey`. Ohne Sitzung wird nichts gesendet — kein Rueckfall auf anon.
+ */
 function userClient(timeoutMs?: number): AiGatewayEdgeClient {
   return new AiGatewayEdgeClient({
     supabaseUrl: getSupabaseUrl(),
     apiKey: getSupabaseAnonKey(),
-    auth: { mode: 'user', getAccessToken: currentAccessToken },
+    authToken: currentAccessToken,
     ...(timeoutMs !== undefined ? { timeoutMs } : {}),
     endpoint: edgeFunctionUrl('ai-gateway'),
     fetchImpl: (input, init) => fetch(input, fnFetchInit(String(input), init)),
@@ -90,6 +99,7 @@ function failureFrom(error: unknown): GatewayResult {
       errorCode: error.code,
       status: error.status,
       ...(error.retryAfter !== undefined ? { retryAfter: error.retryAfter } : {}),
+      ...(error.scope !== undefined ? { errorScope: error.scope } : {}),
     };
   }
   const message = error instanceof Error ? error.message : String(error);

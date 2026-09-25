@@ -1,5 +1,8 @@
-import { AiGatewayEdgeClient, AiGatewayEdgeError } from '../../core/ai-gateway/edgeClient';
+import {
+  AiGatewayEdgeClient, AiGatewayEdgeError, type SessionTokenProvider,
+} from '../../core/ai-gateway/edgeClient';
 import { getSupabaseUrl, getSupabaseAnonKey } from '../../lib/supabaseUrl';
+import { getSupabase } from '../../lib/supabase';
 
 // Audit-Copilot helpers. Talk to the `ai-gateway` Edge Function via
 // `AiGatewayEdgeClient` and return structured payloads for the panel UI.
@@ -38,6 +41,21 @@ export interface RemediationPlan {
   legal_reference?: string;
 }
 
+/**
+ * Ausweis des Audit-Copilots (Vertrag #1591). Der Aufrufer entscheidet
+ * VOR dem Aufruf anhand des Login-Zustands:
+ * - `user`: eingeloggt → Sitzungs-JWT + `tenant_id` des aktiven Workspace.
+ *   Fehlt die Sitzung, wirft der Client `UNAUTHORIZED`; fehlt der
+ *   Workspace, `TENANT_REQUIRED`. Kein Rückfall auf anon.
+ * - `anon`: ausdrücklich anonym (öffentliches /audit ohne Login),
+ *   Legacy-Anon-Key als Bearer. `mode: 'audit_anon'` ist bewusst NICHT
+ *   verdrahtet — das kommt mit dem Schalter nach #1583.
+ * Ohne Angabe gilt `anon` — der heutige öffentliche Aufrufweg.
+ */
+export type AuditCopilotAuth =
+  | { mode: 'user'; tenantId: string | null | undefined }
+  | { mode: 'anon' };
+
 export interface AiGatewayClientDeps {
   /** Test/SSR hook: inject a preconfigured client (e.g. mocked fetch). */
   client?: AiGatewayEdgeClient;
@@ -45,6 +63,24 @@ export interface AiGatewayClientDeps {
   supabaseUrl?: string;
   /** Test/SSR hook: override env-derived anon key. */
   supabaseAnonKey?: string;
+  /** Ausweis gegenüber dem Gateway, siehe `AuditCopilotAuth`. */
+  auth?: AuditCopilotAuth;
+  /** Test hook: Sitzungs-Token-Provider statt `supabase.auth.getSession()`. */
+  getAccessToken?: SessionTokenProvider;
+}
+
+async function sessionAccessToken(): Promise<string | null> {
+  try {
+    const { data } = await getSupabase().auth.getSession();
+    return data.session?.access_token ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/** `tenant_id` nur im Nutzer-Modus; dort Pflicht (prüft der Client). */
+function tenantFields(deps?: AiGatewayClientDeps): { tenant_id?: string | null } {
+  return deps?.auth?.mode === 'user' ? { tenant_id: deps.auth.tenantId ?? null } : {};
 }
 
 function resolveClient(deps?: AiGatewayClientDeps): AiGatewayEdgeClient {
@@ -58,7 +94,14 @@ function resolveClient(deps?: AiGatewayClientDeps): AiGatewayEdgeClient {
     throw new AiGatewayEdgeError(503, 'AI_GATEWAY_NOT_CONFIGURED',
       'Supabase-Zugangsdaten fehlen — ai-gateway nicht aufrufbar.');
   }
-  return new AiGatewayEdgeClient({ supabaseUrl: url, apiKey: key });
+  if (deps?.auth?.mode === 'user') {
+    return new AiGatewayEdgeClient({
+      supabaseUrl: url,
+      apiKey: key,
+      authToken: deps.getAccessToken ?? sessionAccessToken,
+    });
+  }
+  return new AiGatewayEdgeClient({ supabaseUrl: url, apiKey: key, auth: { mode: 'anon' } });
 }
 
 const FIX_SNIPPET_SYSTEM_PROMPT = `Du bist Audit-Co-Pilot für DSGVO-/AI-Act-Compliance.
@@ -108,6 +151,7 @@ export async function generateFixSnippet(
   ].filter(Boolean).join('\n');
 
   const resp = await client.extractJson<FixSnippet>({
+    ...tenantFields(deps),
     feature:       'audit_copilot.fix_snippet',
     task_type:     'extract_json',
     model_profile: 'strict-json',
@@ -142,6 +186,7 @@ export async function generateRemediationPlan(
   ].filter(Boolean).join('\n')).join('\n\n');
 
   const resp = await client.extractJson<RemediationPlan>({
+    ...tenantFields(deps),
     feature:       'audit_copilot.remediation_plan',
     task_type:     'extract_json',
     model_profile: 'strict-json',

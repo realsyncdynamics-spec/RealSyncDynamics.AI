@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { AudioLines, Loader2, X, RotateCcw, Send, AlertTriangle, ShieldCheck, Code2 } from 'lucide-react';
 import { sendChatAnon, type SimpleMsg } from '../../features/governance/AgentWidget/agentApi';
 import {
@@ -6,7 +6,10 @@ import {
   AiGatewayEdgeError,
   type AuditCmsTarget,
   type FixSnippet,
+  type AuditCopilotAuth,
 } from '../../features/audit/auditCopilotApi';
+import { SupabaseAuthContext } from '../../features/supabase/SupabaseAuthContext';
+import { useOptionalTenant } from '../../core/access/TenantProvider';
 
 type Severity = 'critical' | 'high' | 'medium' | 'low' | 'info';
 
@@ -80,6 +83,14 @@ export function AuditCopilotPanel({ issue, domain, open, onClose }: AuditCopilot
   const sessionIdRef = useRef<string>(crypto.randomUUID());
   const bottomRef = useRef<HTMLDivElement>(null);
   const sendInProgress = useRef(false);
+  // Eingeloggt → Nutzer-Modus mit aktivem Workspace, sonst ausdrücklich
+  // anonym (Vertrag #1591). Entschieden wird vor dem Aufruf; fehlt im
+  // Nutzer-Modus Sitzung oder Workspace, bricht der Client typisiert ab.
+  const authCtx = useContext(SupabaseAuthContext);
+  const tenant = useOptionalTenant();
+  const copilotAuth: AuditCopilotAuth = authCtx?.session
+    ? { mode: 'user', tenantId: tenant?.activeTenantId ?? null }
+    : { mode: 'anon' };
 
   const send = useCallback(
     async (text: string, isAuto = false) => {
@@ -209,7 +220,7 @@ export function AuditCopilotPanel({ issue, domain, open, onClose }: AuditCopilot
       { id: loadingId, role: 'assistant', content: '', isLoading: true },
     ]);
     try {
-      const snippet = await generateFixSnippet(issue, snippetCms);
+      const snippet = await generateFixSnippet(issue, snippetCms, { auth: copilotAuth });
       setBubbles((prev) =>
         prev.filter((b) => b.id !== loadingId).concat({
           id: crypto.randomUUID(),

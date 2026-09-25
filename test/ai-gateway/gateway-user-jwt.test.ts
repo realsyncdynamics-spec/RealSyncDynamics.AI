@@ -56,6 +56,24 @@ describe('gateway.ts — Nutzer-JWT', () => {
     expect(res).toMatchObject({ success: false, errorCode: 'RATE_LIMITED', status: 429, retryAfter: 20 });
   });
 
+  it('429: retry_after_ms und scope aus dem Body kommen an der Oberfläche an', async () => {
+    fetchSpy.mockResolvedValue(new Response(JSON.stringify({ ok: false, error: { code: 'RATE_LIMITED', message: 'x', scope: 'user', retry_after_ms: 2500 } }), { status: 429, headers: { 'retry-after': '20' } }));
+    const res = await processAIGatewayRequest({ prompt: 'hi', provider: 'openai', tenantId: 'tenant-7' });
+    expect(res).toMatchObject({ success: false, errorCode: 'RATE_LIMITED', retryAfter: 3, errorScope: 'user' });
+  });
+
+  it('ohne tenantId: TENANT_REQUIRED, kein fetch', async () => {
+    const res = await processAIGatewayRequest({ prompt: 'hi', provider: 'openai', feature: 'kodee_chat', tenantId: null });
+    expect(res).toMatchObject({ success: false, errorCode: 'TENANT_REQUIRED', status: 400 });
+    expect(fetchSpy.mock.calls).toHaveLength(0);
+  });
+
+  it('ENTITLEMENT (Builder-Plansperre) wird typisiert durchgereicht', async () => {
+    fetchSpy.mockResolvedValue(new Response(JSON.stringify({ ok: false, error: { code: 'ENTITLEMENT', message: 'siteos.builder fehlt' } }), { status: 403 }));
+    const res = await processAIGatewayStream({ prompt: 'bau', provider: 'openai', feature: 'app_builder_code', tenantId: 'tenant-9' }, () => {});
+    expect(res).toMatchObject({ success: false, errorCode: 'ENTITLEMENT', status: 403 });
+  });
+
   it('Builder-Stream-Pfad sendet ebenfalls Bearer und tenant_id', async () => {
     fetchSpy.mockResolvedValue(new Response('{"event":"delta","text":"ok"}\n{"event":"done"}\n', { status: 200 }));
     const res = await processAIGatewayStream(

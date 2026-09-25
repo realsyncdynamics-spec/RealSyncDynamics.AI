@@ -38,7 +38,7 @@ describe('KodeeView — ehrliche Gateway-Fehler', () => {
     mocked.mockResolvedValue({ success: true, modelOutput: 'ok' });
     start();
     await waitFor(() => expect(mocked).toHaveBeenCalled());
-    expect(mocked.mock.calls[0]![0]).toMatchObject({ feature: 'kodee_chat', tenantId: 'tenant-1' });
+    expect(mocked.mock.calls[0]![0]).toMatchObject({ feature: 'kodee_chat', tenantId: 'tenant-1', maxTokens: 2048 });
   });
 
   it('401: „Bitte erneut anmelden.“ mit Login-Link', async () => {
@@ -88,5 +88,18 @@ describe('KodeeView — ehrliche Gateway-Fehler', () => {
 
   it('lokale Hinweise ohne Gateway-Code bleiben lesbar (z. B. Provider nicht verfügbar)', () => {
     expect(describeGatewayFailure({ success: false, error: 'Provider „gemini" ist im AI-Gateway nicht konfiguriert.' }).text).toContain('gemini');
+  });
+
+  it.each([
+    ['TENANT_REQUIRED', 400, 'forbidden', 'Kein aktiver Workspace ausgewählt.'],
+    ['ENTITLEMENT', 403, 'forbidden', 'Diese Funktion ist im aktuellen Plan nicht enthalten.'],
+    ['QUOTA_EXCEEDED', 403, 'forbidden', 'Das Kontingent des aktuellen Plans ist ausgeschöpft.'],
+    ['NO_PROVIDER', 503, 'generic', 'Der KI-Dienst ist gerade nicht erreichbar.'],
+    ['LM_STUDIO_NOT_CONFIGURED', 503, 'generic', 'Der KI-Dienst ist gerade nicht erreichbar.'],
+    ['BAD_REQUEST', 400, 'generic', 'Die Anfrage konnte gerade nicht verarbeitet werden.'],
+    ['INTERNAL', 500, 'generic', 'Die Anfrage konnte gerade nicht verarbeitet werden.'],
+    ['INFERENCE_ERROR', 502, 'generic', 'Die Anfrage konnte gerade nicht verarbeitet werden.'],
+  ] as const)('%s (%i) → %s: %s', (code, status, kind, text) => {
+    expect(describeGatewayFailure({ success: false, error: `${code}: x`, errorCode: code, status })).toEqual({ kind, text });
   });
 });

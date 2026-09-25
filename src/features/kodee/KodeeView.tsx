@@ -48,8 +48,17 @@ export function describeGatewayFailure(res: GatewayResult): { kind: GatewayError
         : 'Zu viele Anfragen — bitte später erneut versuchen.',
     };
   }
-  if (code === 'BAD_REQUEST' && res.status === 400 && /tenant_id/i.test(res.error ?? '')) {
+  if (code === 'TENANT_REQUIRED') {
     return { kind: 'forbidden', text: 'Kein aktiver Workspace ausgewählt.' };
+  }
+  if (code === 'ENTITLEMENT') {
+    return { kind: 'forbidden', text: 'Diese Funktion ist im aktuellen Plan nicht enthalten.' };
+  }
+  if (code === 'QUOTA_EXCEEDED') {
+    return { kind: 'forbidden', text: 'Das Kontingent des aktuellen Plans ist ausgeschöpft.' };
+  }
+  if (code === 'NO_PROVIDER' || code === 'LM_STUDIO_NOT_CONFIGURED') {
+    return { kind: 'generic', text: 'Der KI-Dienst ist gerade nicht erreichbar.' };
   }
   if (code === 'POLICY_BLOCKED' || code === 'APPROVAL_REQUIRED') {
     const detail = (res.error ?? '').replace(/^[A-Z_]+:\s*/, '');
@@ -130,6 +139,8 @@ export function KodeeView() {
         systemPrompt: KODEE_PERSONA,
         feature: 'kodee_chat',
         tenantId: activeTenantId,
+        // Der Gateway kappt Nutzeranfragen ohnehin still auf 2048 (#1591).
+        maxTokens: 2048,
       });
       if (!res.success) {
         const failure = describeGatewayFailure(res);

@@ -16,6 +16,7 @@ import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { sha256Hex, randomToken } from '../_shared/hash.ts';
 import { audit } from '../_shared/auditLog.ts';
 import { AiGatewayEdgeClient } from '../_shared/aiGateway/edgeClient.ts';
+import { internalGatewayConfig } from '../_shared/aiGateway/internalClient.ts';
 import { gateFeature, EntitlementError } from '../_shared/entitlements.ts';
 
 const SUPABASE_URL      = Deno.env.get('SUPABASE_URL')!;
@@ -113,7 +114,16 @@ async function routeToAgent(
   command: string,
   text: string,
 ): Promise<string> {
-  const gatewayClient = new AiGatewayEdgeClient({ supabaseUrl: SUPABASE_URL, apiKey: SRK });
+  // Service-Pfad des ai-gateway (kein Nutzer-JWT im Telegram-Webhook):
+  // x-internal-key + x-internal-caller, tenant_id im Body. Früher ging hier
+  // der service_role-Key als Bearer raus — das akzeptiert der Gateway nicht
+  // mehr, und der Key soll dieses Isolat nicht verlassen.
+  const gw = internalGatewayConfig('telegram-webhook', (n) => Deno.env.get(n));
+  if (!gw.ok) {
+    console.error(JSON.stringify({ level: 'warn', scope: 'agent_route_failed', error: `ai-gateway not configured (missing ${gw.missing.join(', ')})` }));
+    return `Hier geht es weiter: <a href="${APP_BASE_URL}/app">${APP_BASE_URL}/app</a>`;
+  }
+  const gatewayClient = new AiGatewayEdgeClient(gw.config);
 
   const featureMap: Record<string, string> = {
     '/audit':      'compliance_audit',

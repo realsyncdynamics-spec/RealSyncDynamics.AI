@@ -8,6 +8,8 @@ import '../../styles/governance-landing-polish.css';
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import { SEOHead } from '../../components/SEOHead';
+import { LandingModeSwitch } from '../../components/landing/LandingModeSwitch';
+import { useLandingMode } from '../../components/landing/landing-mode';
 import { HeroTitanium } from '../../components/landing/HeroTitanium';
 import { GovernanceStatusBar } from '../../components/landing/GovernanceStatusBar';
 import { GovernanceFooter } from '../../components/landing/GovernanceFooter';
@@ -40,10 +42,11 @@ function trackCardSheen(event: ReactPointerEvent<HTMLDivElement>) {
 }
 
 export function DesignGovernanceAiLanding() {
+  const { mode, setMode } = useLandingMode();
   return (
     <div
-      className="ga-context ga-gold-reference landing-context relative min-h-screen antialiased"
-      data-landing-mode="gold"
+      className="ga-context ga-landing-modes landing-context relative min-h-screen antialiased"
+      data-landing-mode={mode}
       data-hero-visual="europe-network-static"
       style={{ backgroundColor: 'var(--ga-void)', color: 'var(--ga-text)' }}
       onPointerMove={trackCardSheen}
@@ -52,7 +55,7 @@ export function DesignGovernanceAiLanding() {
 
       <div className="relative z-10 flex min-h-screen flex-col">
         <GovernanceStatusBar />
-        <GovernanceAiHeader />
+        <GovernanceAiHeader modeSwitch={<LandingModeSwitch mode={mode} onChange={setMode} />} />
         <HeroTitanium />
         <RegulatoryTicker />
         <HomepageBriefSections />

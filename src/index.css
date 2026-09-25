@@ -1694,3 +1694,66 @@ html, body {
   --rsd-shot-opacity: 0.44;
   --rsd-shot-filter: saturate(0.9) contrast(1.03) brightness(0.9);
 }
+
+/* Public homepage: share the existing persisted landing mode with GA sections.
+   Scoped to this wrapper; app surfaces and other design routes keep their tokens. */
+.ga-context.ga-landing-modes {
+  color-scheme: dark;
+  --ga-accent: var(--rsd-accent);
+  --ga-accent-lite: var(--rsd-accent-soft);
+  --ga-accent-deep: var(--rsd-accent);
+  --ga-accent-border: color-mix(in srgb, var(--rsd-accent) 45%, transparent);
+  --ga-line: var(--rsd-line);
+  --ga-line-soft: var(--rsd-header-border);
+  --ga-pill-face: linear-gradient(180deg, var(--rsd-accent-soft), var(--rsd-accent));
+  --ga-pill-ink: var(--rsd-btn-ink);
+  --ga-pill-shadow: var(--rsd-glow);
+  --ga-h1-accent: linear-gradient(var(--ga-accent-lite), var(--ga-accent));
+  --ga-h2-accent: var(--ga-h1-accent);
+  --ga-ghost-border: var(--ga-accent-border);
+  --ga-ghost-border-hover: var(--ga-accent-lite);
+  --ga-ghost-face-hover: color-mix(in srgb, var(--ga-accent) 10%, transparent);
+  --ga-chip-face: color-mix(in srgb, var(--ga-accent) 6%, transparent);
+}
+
+.ga-context.ga-landing-modes[data-landing-mode='light'] {
+  color-scheme: light;
+  --ga-void: var(--rsd-bg);
+  --ga-deep: #ebe4d8;
+  --ga-mid: #ebe4d8;
+  --ga-panel: #fffaf2;
+  --ga-text: var(--rsd-text);
+  --ga-muted: var(--rsd-muted);
+  --ga-titan: #625b50;
+  --ga-silver: #36322c;
+  --ga-green: #08745a;
+  /* Text accents need darker gold than the button's gold fill. */
+  --ga-accent: #78551e;
+  --ga-accent-lite: #78551e;
+  --ga-accent-deep: #624418;
+  --ga-vip: #78551e;
+  --ga-vip-lite: #78551e;
+  --ga-vip-deep: #624418;
+  --ga-vip-border: rgba(120,85,30,.4);
+  --ga-glass: linear-gradient(160deg, #fffaf2, #ebe4d8);
+  --ga-band: linear-gradient(180deg, #f4efe6, #ebe4d8);
+  --ga-band-alt: linear-gradient(180deg, #ebe4d8, #f4efe6);
+  --ga-ghost-face: rgba(255,250,242,.8);
+  --ga-status-bg: #ebe4d8;
+  --ga-ticker-bg: #ebe4d8;
+  --ga-footer-bg: #ebe4d8;
+  --ga-price-face: linear-gradient(#1a1917, #78551e);
+  --ga-featured-shadow: 0 0 0 1px rgba(120,85,30,.3), 0 12px 32px rgba(26,25,23,.12);
+}
+
+.ga-landing-modes[data-landing-mode='light'] .ga-vip {
+  --ga-h2-accent: linear-gradient(#78551e, #624418);
+  --ga-pill-face: linear-gradient(#dfc18c, #c9a462);
+  --ga-pill-ink: #1a1917;
+  --ga-ghost-face: rgba(255,250,242,.8);
+}
+
+.ga-landing-modes[data-landing-mode='light'] #product h1 span span,
+.ga-landing-modes[data-landing-mode='light'] #product p.font-medium {
+  --rsd-accent: #78551e;
+}

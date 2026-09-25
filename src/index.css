@@ -1816,6 +1816,38 @@ html, body {
    Sektionen unter dem Hero lesen weiter die `--ga-*`-Variablen; dieser Scope
    stellt sie auf die Handoff-Palette (Cyan-Akzent, kein Gold) und die
    Titel-Schrift auf Inter Tight. Andere Design-Routen bleiben unberührt. */
+/* Screenshot-specific hero tokens; authenticated Handoff UI keeps its palette. */
+.ga-context .rs-hero--reference {
+  --rs-ref-background: #000000;
+  --rs-ref-text: #ededed;
+  --rs-ref-muted: #b6b6b6;
+  --rs-ref-cyan: #00b8d4;
+  --rs-ref-loop: #37b6c5;
+  --rs-ref-face: linear-gradient(180deg, #0bbdd3 0%, #0094aa 58%, #00b6cd 100%);
+  --rs-ref-border: rgba(71, 217, 235, .7);
+  --rs-ref-glow: 0 0 12px rgba(0, 184, 212, .19), inset 0 0 12px rgba(87, 228, 246, .25);
+  --rs-ref-glass: rgba(0, 13, 18, .64);
+  --rs-ref-serif: 'Newsreader', Georgia, 'Times New Roman', serif;
+}
+
+/* The reference page keeps one layout and image; only these color tokens
+   change when the customer chooses Hell or Dunkel. */
+.ga-context.ga-landing-modes[data-landing-mode='light'] .rs-hero--reference {
+  --rs-ref-background: #f4efe6;
+  --rs-ref-text: #1a1917;
+  --rs-ref-muted: #575146;
+  --rs-ref-cyan: #b98532;
+  --rs-ref-loop: #78551e;
+  --rs-ref-face: linear-gradient(180deg, #dfc18c 0%, #c9a462 100%);
+  --rs-ref-border: rgba(120, 85, 30, .5);
+  --rs-ref-glow: 0 0 12px rgba(120, 85, 30, .16), inset 0 0 12px rgba(255, 255, 255, .35);
+  --rs-ref-glass: rgba(255, 250, 242, .72);
+  --rs-ref-button-ink: #1a1917;
+}
+.ga-context.ga-landing-modes[data-landing-mode='light'] .rs-hero--reference .rs-hero__map img {
+  filter: brightness(1.35) saturate(.78) sepia(.12);
+}
+
 .ga-context.rs-handoff {
   color-scheme: dark;
   --ga-display: var(--font-rs-title);
@@ -1869,4 +1901,43 @@ html, body {
   --ga-h1-accent: var(--ga-h2-accent);
   --ga-ghost-face-hover: rgba(124, 92, 255, 0.12);
   --ga-chip-face: rgba(124, 92, 255, 0.08);
+}
+
+/* Light mode is a color treatment for the same homepage, including the
+   sections below the hero. Geometry, copy, routes and data remain unchanged. */
+.ga-context.ga-landing-modes.rs-handoff[data-landing-mode='light'] {
+  color-scheme: light;
+  --ga-void: #f4efe6;
+  --ga-deep: #ebe4d8;
+  --ga-mid: #ebe4d8;
+  --ga-panel: #fffaf2;
+  --ga-text: #1a1917;
+  --ga-muted: #575146;
+  --ga-titan: #625b50;
+  --ga-silver: #36322c;
+  --ga-accent: #78551e;
+  --ga-accent-lite: #78551e;
+  --ga-accent-deep: #624418;
+  --ga-accent-border: rgba(120, 85, 30, .4);
+  --ga-line: rgba(26, 25, 23, .1);
+  --ga-line-soft: rgba(26, 25, 23, .1);
+  --ga-pill-face: linear-gradient(180deg, #dfc18c, #c9a462);
+  --ga-pill-ink: #1a1917;
+  --ga-pill-shadow: 0 8px 24px rgba(120, 85, 30, .18);
+  --ga-ghost-face: rgba(255, 250, 242, .8);
+  --ga-ghost-face-hover: rgba(120, 85, 30, .1);
+  --ga-ghost-border: rgba(120, 85, 30, .35);
+  --ga-ghost-border-hover: #78551e;
+  --ga-chip-face: rgba(120, 85, 30, .06);
+  --ga-h1-face: linear-gradient(#36322c, #36322c);
+  --ga-h1-accent: linear-gradient(#78551e, #624418);
+  --ga-h2-accent: linear-gradient(#78551e, #624418);
+  --ga-glass: linear-gradient(160deg, #fffaf2, #ebe4d8);
+  --ga-band: linear-gradient(180deg, #f4efe6, #ebe4d8);
+  --ga-band-alt: linear-gradient(180deg, #ebe4d8, #f4efe6);
+  --ga-status-bg: #ebe4d8;
+  --ga-ticker-bg: #ebe4d8;
+  --ga-footer-bg: #ebe4d8;
+  --ga-price-face: linear-gradient(#1a1917, #78551e);
+  --ga-featured-shadow: 0 0 0 1px rgba(120, 85, 30, .3), 0 12px 32px rgba(26, 25, 23, .12);
 }

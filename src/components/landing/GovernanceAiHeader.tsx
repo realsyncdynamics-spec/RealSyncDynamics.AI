@@ -1,5 +1,5 @@
 /** Production navigation — Brand Direction v1.0. */
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
 import { PUBLIC_CTA, PUBLIC_PRIMARY_NAV } from '../../config/public-nav';
@@ -28,7 +28,7 @@ function NavItem({ label, to, onClick }: { label: string; to: string; onClick?: 
   );
 }
 
-export function GovernanceAiHeader() {
+export function GovernanceAiHeader({ modeSwitch }: { modeSwitch?: ReactNode }) {
   const [open, setOpen] = useState(false);
 
   const cta = (
@@ -65,16 +65,17 @@ export function GovernanceAiHeader() {
           RealSyncDynamics.AI
         </Link>
 
-        <nav className="ml-auto hidden items-center gap-[26px] lg:flex" aria-label="Hauptnavigation">
+        <nav className="ml-auto hidden items-center gap-4 xl:flex" aria-label="Hauptnavigation">
           {PUBLIC_PRIMARY_NAV.map((item) => (
             <NavItem key={item.to} label={item.label} to={item.to} />
           ))}
+          {modeSwitch}
           {cta}
         </nav>
 
         <button
           type="button"
-          className="ml-auto inline-flex h-10 w-10 items-center justify-center rounded-md border lg:hidden"
+          className="ml-auto inline-flex h-10 w-10 items-center justify-center rounded-md border xl:hidden"
           style={{ borderColor: GA_LINE_SOFT, color: GA_TEXT }}
           aria-expanded={open}
           aria-label={open ? 'Navigation schließen' : 'Navigation öffnen'}
@@ -86,7 +87,7 @@ export function GovernanceAiHeader() {
 
       {open && (
         <nav
-          className="flex flex-col gap-4 border-t px-[4vw] py-5 lg:hidden"
+          className="flex flex-col gap-4 border-t px-[4vw] py-5 xl:hidden"
           style={{ borderColor: GA_LINE_SOFT, backgroundColor: 'var(--ga-void)' }}
           aria-label="Hauptnavigation"
         >
@@ -98,6 +99,7 @@ export function GovernanceAiHeader() {
               onClick={() => setOpen(false)}
             />
           ))}
+          {modeSwitch}
           <div className="pt-1">{cta}</div>
         </nav>
       )}

@@ -16,6 +16,7 @@ import {
 } from './workspaceBootstrapSteps';
 import { ComplianceStatusView } from './ComplianceStatusDashboard';
 import { DashboardExecuteStrip } from './DashboardExecuteStrip';
+import { HandoffOverview } from '../handoff/HandoffOverview';
 
 export function CommandCenterDashboard() {
   const { activeTenantId, tenants } = useTenant();
@@ -70,6 +71,9 @@ export function CommandCenterDashboard() {
   return (
     <>
       <TrialBanner />
+      {/* Handoff v2 §6: Übersicht im Entwurfsraster — dieselben Cockpit-Daten
+          (Score, Maßnahmen, Evidenz) plus Inventar/Policies/Connectoren. */}
+      <HandoffOverview activeTenantId={activeTenantId} data={data} />
       <ComplianceStatusView
         tenantName={tenantName}
         activeTenantId={activeTenantId}

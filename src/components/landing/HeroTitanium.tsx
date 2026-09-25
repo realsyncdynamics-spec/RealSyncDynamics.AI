@@ -2,7 +2,7 @@ import type { CSSProperties } from 'react';
 import { Link } from 'react-router-dom';
 import { EuropeNetworkHero } from './EuropeNetworkHero';
 import {
-  HERO_DASHBOARD_CTA_LABEL,
+  HERO_AUDIT_TRAIL_CTA_LABEL,
   HERO_HEADLINE,
   HERO_OPERATING_LOOP,
   HERO_SCAN_CTA_LABEL,
@@ -10,28 +10,32 @@ import {
 } from '../governance-frontend/hero-content';
 import {
   LANDING_MONO,
-  LANDING_MUTED,
   LANDING_SANS,
   LANDING_SERIF,
-  LANDING_TEXT,
 } from './landing-theme';
 import {
   MODE_ACCENT,
   MODE_BUTTON_INK,
   MODE_GLOW,
+  MODE_LINE,
+  MODE_MUTED,
   MODE_PILL_FACE,
+  MODE_TEXT,
   modeAccent,
+  modeAccentSoft,
+  modeVeil,
 } from './landing-mode';
 
 export function HeroTitanium() {
   return (
     <section
       id="product"
-      className="relative min-h-[min(100svh,880px)] overflow-hidden border-b border-white/[0.06]"
+      className="relative min-h-[min(100svh,880px)] overflow-hidden border-b"
       style={
         {
           '--landing-ring': MODE_ACCENT,
           '--landing-ring-soft': modeAccent(60),
+          borderColor: MODE_LINE,
         } as CSSProperties
       }
     >
@@ -61,7 +65,7 @@ export function HeroTitanium() {
                 {segments.map((segment, i) => (
                   <span
                     key={i}
-                    style={{ color: segment.accent ? MODE_ACCENT : LANDING_TEXT }}
+                    style={{ color: segment.accent ? MODE_ACCENT : MODE_TEXT }}
                   >
                     {i > 0 ? ' ' : ''}
                     {segment.text}
@@ -73,7 +77,7 @@ export function HeroTitanium() {
 
           <p
             className="mt-7 max-w-[42rem] text-pretty text-[clamp(1rem,0.92rem+0.35vw,1.2rem)] leading-[1.65]"
-            style={{ fontFamily: LANDING_SANS, color: LANDING_MUTED }}
+            style={{ fontFamily: LANDING_SANS, color: MODE_MUTED }}
           >
             {HERO_SUBLINE}
           </p>
@@ -106,12 +110,12 @@ export function HeroTitanium() {
               data-testid="hero-secondary-cta"
               className="inline-flex min-h-[3.25rem] min-w-[12rem] items-center justify-center rounded-2xl border px-6 py-4 text-[0.95rem] font-semibold transition hover:bg-white/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--landing-ring-soft)]"
               style={{
-                borderColor: 'rgba(228,207,162,0.45)',
-                color: LANDING_TEXT,
-                backgroundColor: 'rgba(255,255,255,0.04)',
+                borderColor: modeAccentSoft(45),
+                color: MODE_TEXT,
+                backgroundColor: modeVeil(14),
               }}
             >
-              {HERO_DASHBOARD_CTA_LABEL}
+              {HERO_AUDIT_TRAIL_CTA_LABEL}
             </a>
           </div>
         </div>

@@ -1,4 +1,6 @@
 // GovernanceBrowserShell — browserartiger Governance-OS-Rahmen für alle /app/* Routen.
+// Handoff v2 §5: 248px-Seitenleiste, 56px-Kopfzeile, mobile Tab-Bar mit fünf Tabs;
+// alle übrigen Bereiche (Klassifizierung, Abrechnung, Module) im Burger-Menü.
 //
 // Layout ab `lg`: TopBar → [Sidebar + Canvas + GovernanceChatSidebar] → StatusBar
 // Darunter: TopBar → (Burger-Menü mit GovernanceTabs) → Canvas → MobileBottomNav
@@ -24,6 +26,8 @@ import {
 } from './commandCenterCatalog';
 import { RouteEntitlementGate } from '../../core/access/RouteEntitlementGate';
 import { AppGate } from '../../features/auth/AppGate';
+import { MobileShellMenu } from './MobileShellMenu';
+import '../../styles/governance-os-app.css';
 
 interface GovernanceBrowserShellProps {
   children: React.ReactNode;
@@ -100,7 +104,8 @@ export function GovernanceBrowserShell({ children }: GovernanceBrowserShellProps
 
   return (
     <AppGate>
-      <div className="os-chrome dashboard-context h-screen h-dvh flex flex-col bg-obsidian-950 text-titanium-100 overflow-hidden">
+      {/* `rs-app`: Handoff-v2-Palette für alle /app/*-Flächen (governance-os-app.css). */}
+      <div className="os-chrome dashboard-context rs-app h-screen h-dvh flex flex-col bg-obsidian-950 text-titanium-100 overflow-hidden">
         <BrowserTopBar
           mobileMenuOpen={mobileMenuOpen}
           onToggleMobile={() => setMobileMenuOpen((v) => !v)}
@@ -125,10 +130,11 @@ export function GovernanceBrowserShell({ children }: GovernanceBrowserShellProps
               if ((event.target as HTMLElement).closest('a')) setMobileMenuOpen(false);
             }}
           >
+            <MobileShellMenu />
             <GovernanceTabs />
             <button
               type="button"
-              className="w-full px-4 py-3 text-left text-sm text-titanium-200 bg-obsidian-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#e4cfa2]"
+              className="w-full px-4 py-3 text-left text-sm text-titanium-200 bg-obsidian-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#00B8D4]"
               onClick={() => {
                 setMobileMenuOpen(false);
                 setCommandCenterOpen(true);

@@ -6,7 +6,7 @@ import { LandingPricingSection } from '../components/landing/LandingPricingSecti
 import { PublicDarkHeader } from '../components/landing/PublicDarkHeader';
 import { HeroTitanium } from '../components/landing/HeroTitanium';
 import { LandingModeSwitch } from '../components/landing/LandingModeSwitch';
-import { MODE_BG, useLandingMode } from '../components/landing/landing-mode';
+import { MODE_BG, MODE_MUTED, MODE_TEXT, modeVeil, useLandingMode } from '../components/landing/landing-mode';
 import { RuntimePreviewPanel } from '../components/landing/RuntimePreviewPanel';
 import { LandingDarkBand } from '../components/landing/LandingDarkBand';
 import { GovernanceRuntimeSection } from '../components/landing/GovernanceRuntimeSection';
@@ -21,9 +21,7 @@ import {
   LANDING_BUTTON,
   LANDING_BUTTON_TEXT,
   LANDING_MONO,
-  LANDING_MUTED,
   LANDING_SANS,
-  LANDING_TEXT,
 } from '../components/landing/landing-theme';
 import {
   HERO_DASHBOARD_CTA_LABEL,
@@ -45,7 +43,7 @@ export function MainLanding() {
       data-landing-mode={mode}
       style={{
         backgroundColor: MODE_BG,
-        color: LANDING_TEXT,
+        color: MODE_TEXT,
         fontFamily: LANDING_SANS,
       }}
     >
@@ -88,7 +86,7 @@ export function MainLanding() {
                 const body = (
                   <>
                     <div className="flex items-start justify-between gap-2">
-                      <h3 className="text-base font-semibold" style={{ color: LANDING_TEXT }}>
+                      <h3 className="text-base font-semibold" style={{ color: MODE_TEXT }}>
                         {cap.name}
                       </h3>
                       <span
@@ -102,7 +100,7 @@ export function MainLanding() {
                         {STATUS_LABEL.live}
                       </span>
                     </div>
-                    <p className="mt-2 text-sm leading-relaxed" style={{ color: LANDING_MUTED }}>
+                    <p className="mt-2 text-sm leading-relaxed" style={{ color: MODE_MUTED }}>
                       {cap.description}
                     </p>
                   </>
@@ -148,12 +146,12 @@ export function MainLanding() {
             >
               Compliance, die sich beweisen lässt.
             </h2>
-            <p className="mt-4 max-w-2xl text-[14px] leading-relaxed" style={{ color: LANDING_MUTED }}>
+            <p className="mt-4 max-w-2xl text-[14px] leading-relaxed" style={{ color: MODE_MUTED }}>
               Prüfungen, Entscheidungen und Änderungen landen in derselben Governance-Historie —
               exportierbar für Aufsicht, Board und Audit.
             </p>
             <Link
-              to="/evidence"
+              to="/app/dashboard"
               className="mt-7 inline-flex items-center gap-2 text-[13px] font-medium"
               style={{ color: LANDING_ACCENT_SOFT }}
             >
@@ -168,7 +166,10 @@ export function MainLanding() {
         <LandingPricingSection />
         <EnterpriseAccessSection />
 
-        <section className="border-t border-white/[0.06] bg-black/60 py-[80px]">
+        <section
+          className="border-t border-white/[0.06] py-[80px]"
+          style={{ backgroundColor: modeVeil(72) }}
+        >
           <div className="mx-auto max-w-3xl px-[4vw] text-center">
             <h2
               className="text-[clamp(2rem,1.2rem+2.5vw,3rem)] tracking-tight"
@@ -176,7 +177,7 @@ export function MainLanding() {
             >
               Governance statt Checkliste.
             </h2>
-            <p className="mx-auto mt-5 max-w-xl text-[15px] leading-relaxed" style={{ color: '#c8c4bc' }}>
+            <p className="mx-auto mt-5 max-w-xl text-[15px] leading-relaxed" style={{ color: MODE_MUTED }}>
               Eine Checkliste beruhigt bis zum nächsten Audit. Die Runtime hält den Nachweis, wenn
               Aufsicht, Kunde oder Board fragt.
             </p>
@@ -202,7 +203,7 @@ export function MainLanding() {
 
       <footer
         className="relative z-10 flex flex-col items-center justify-between gap-4 border-t border-white/[0.07] px-[4vw] py-[28px] text-[9px] sm:flex-row"
-        style={{ fontFamily: LANDING_MONO, color: '#62666e' }}
+        style={{ fontFamily: LANDING_MONO, color: MODE_MUTED }}
       >
         <span>© 2026 RealSync Dynamics.AI</span>
         <div className="flex gap-5">

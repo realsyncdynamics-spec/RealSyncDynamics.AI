@@ -55,8 +55,8 @@ function Anchor({ article, topic }: { article: string; topic: string }) {
 export function RegulatoryTicker() {
   return (
     <div
-      className="ga-ticker relative z-[1] h-[44px] overflow-hidden border-y bg-[rgba(14,15,18,.82)] backdrop-blur-[6px]"
-      style={{ borderColor: GA_LINE_SOFT }}
+      className="ga-ticker relative z-[1] h-[44px] overflow-hidden border-y  backdrop-blur-[6px]"
+      style={{ borderColor: GA_LINE_SOFT, backgroundColor: 'var(--ga-ticker-bg, rgba(14,15,18,.82))' }}
       aria-label="Regulatorische Anker"
     >
       <div className="ga-ticker-track flex h-full w-max items-center">

@@ -1,57 +1,72 @@
 /**
- * Die Startseite in zwei Farbmodi.
+ * Startseite: Gold / Cyan / Hell.
  *
- * ## Was umschaltbar ist — und was nicht
- *
- * Umgeschaltet wird die Tonung von Kopf und Bühne: Akzent, Grund, Linie,
- * Pill-Fläche, Tonung der Aufnahme. Layout, Typografie, Copy und jede Zahl
- * bleiben identisch. Es ist dieselbe Seite in zwei Farben, nicht zwei
- * Seiten — der Besucher soll eine Vorliebe ausdrücken können, nicht ein
- * anderes Produkt sehen.
- *
- * Die Abschnitte unterhalb des Hero folgen weiterhin `landing-theme.ts`
- * (Gold). Das ist bewusst: die Referenz zeigt beide Fassungen nur für den
- * ersten Bildschirm, und ein Umbau aller Flächen würde den Design-Freeze
- * (`CLAUDE.md`) ohne Not aufreissen.
- *
- * ## Warum Variablen und keine Hex-Werte
- *
- * `landing-theme.ts` bleibt unverändert die Quelle der Gold-Fassung und
- * wird von Flächen gelesen, die NICHT umschalten. Die Konstanten hier
- * zeigen stattdessen auf die CSS-Variablen aus `src/index.css`
- * (`[data-landing-mode]`), mit der Gold-Fassung als Rückfall — so bleibt
- * eine Fläche auch dann richtig getont, wenn das Attribut fehlt.
+ * Erster React-Render liest Storage oder prefers-color-scheme.
+ * Gespeicherte Wahl gewinnt; ohne Key folgt das OS und der Listener.
+ * Kein Inline-Boot in index.html — CSP verbietet script-src unsafe-inline.
  */
 import { useCallback, useEffect, useState } from 'react';
 
-export type LandingMode = 'gold' | 'cyan';
+export type LandingMode = 'gold' | 'cyan' | 'light';
 
-export const LANDING_MODES: readonly LandingMode[] = ['gold', 'cyan'] as const;
+export const LANDING_MODES: readonly LandingMode[] = ['gold', 'cyan', 'light'] as const;
 
 export const LANDING_MODE_LABEL: Record<LandingMode, string> = {
-  gold: 'Gold',
+  gold: 'Dunkel',
   cyan: 'Cyan',
+  light: 'Hell',
 };
 
-const STORAGE_KEY = 'rsd-landing-mode';
+export const STORAGE_KEY = 'rsd-landing-mode';
 
 const DEFAULT_MODE: LandingMode = 'gold';
 
-function readStored(): LandingMode {
+export function parseMode(value: string | null): LandingMode | null {
+  if (value === 'cyan' || value === 'gold' || value === 'light') return value;
+  return null;
+}
+
+export function readStored(): LandingMode | null {
   try {
-    const value = window.localStorage.getItem(STORAGE_KEY);
-    return value === 'cyan' || value === 'gold' ? value : DEFAULT_MODE;
+    return parseMode(window.localStorage.getItem(STORAGE_KEY));
+  } catch {
+    return null;
+  }
+}
+
+export function modeFromPrefersColorScheme(): LandingMode {
+  try {
+    if (window.matchMedia('(prefers-color-scheme: light)').matches) return 'light';
+    return 'gold';
   } catch {
     return DEFAULT_MODE;
   }
 }
 
+export function initialMode(): LandingMode {
+  if (typeof window === 'undefined') return DEFAULT_MODE;
+  return readStored() ?? modeFromPrefersColorScheme();
+}
+
 export function useLandingMode(): { mode: LandingMode; setMode: (next: LandingMode) => void } {
-  const [mode, setModeState] = useState<LandingMode>(DEFAULT_MODE);
+  const [mode, setModeState] = useState<LandingMode>(initialMode);
 
   useEffect(() => {
-    const stored = readStored();
-    if (stored !== DEFAULT_MODE) setModeState(stored);
+    if (readStored()) return undefined;
+    let mq: MediaQueryList | null = null;
+    const onChange = (event: MediaQueryListEvent) => {
+      if (readStored()) return;
+      setModeState(event.matches ? 'light' : 'gold');
+    };
+    try {
+      mq = window.matchMedia('(prefers-color-scheme: light)');
+      mq.addEventListener('change', onChange);
+    } catch {
+      /* alte Engine */
+    }
+    return () => {
+      mq?.removeEventListener('change', onChange);
+    };
   }, []);
 
   const setMode = useCallback((next: LandingMode) => {
@@ -59,7 +74,7 @@ export function useLandingMode(): { mode: LandingMode; setMode: (next: LandingMo
     try {
       window.localStorage.setItem(STORAGE_KEY, next);
     } catch {
-      /* Die Wahl gilt für diese Sitzung, wird aber nicht gemerkt. */
+      /* Sitzung nur */
     }
   }, []);
 
@@ -72,14 +87,18 @@ export const MODE_ACCENT_LITE = 'var(--rsd-accent-lite, #e4cfa2)';
 export const MODE_BG = 'var(--rsd-bg, #0a0a0b)';
 export const MODE_PANEL = 'var(--rsd-panel, #121214)';
 export const MODE_BUTTON_INK = 'var(--rsd-btn-ink, #0a0a0b)';
+export const MODE_TEXT = 'var(--rsd-text, #f2eee6)';
+export const MODE_MUTED = 'var(--rsd-muted, #9a9aa1)';
 export const MODE_LINE = 'var(--rsd-line, rgba(214, 173, 104, 0.22))';
+export const MODE_HEADER_BORDER = 'var(--rsd-header-border, rgba(255, 255, 255, 0.06))';
+export const MODE_HEADER_BG = 'var(--rsd-header-bg, rgba(10, 10, 11, 0.82))';
+export const MODE_HEADER_BG_OVERLAY = 'var(--rsd-header-bg-overlay, rgba(10, 10, 11, 0.35))';
 export const MODE_GLOW = 'var(--rsd-glow, 0 0 32px rgba(214, 173, 104, 0.28))';
 export const MODE_VEIL = 'var(--rsd-veil, #0a0a0b)';
 export const MODE_SHOT_OPACITY = 'var(--rsd-shot-opacity, 0.55)';
 export const MODE_SHOT_FILTER =
   'var(--rsd-shot-filter, sepia(0.5) saturate(1.5) hue-rotate(-14deg) contrast(1.08))';
 
-/** Metall-Pill — Token, kein Hex in den Komponenten. */
 export const MODE_PILL_FACE =
   'linear-gradient(180deg, var(--rsd-accent-soft, #e8c98a) 0%, var(--rsd-accent, #d6ad68) 100%)';
 

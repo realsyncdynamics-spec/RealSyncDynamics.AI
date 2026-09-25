@@ -1,0 +1,97 @@
+name: Bug report
+description: Report a reproducible defect in RealSyncDynamics.AI
+title: "[Bug]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a defect. Please provide enough detail to reproduce and verify the problem.
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Affected area
+      description: Which part of RealSyncDynamics.AI is affected?
+      options:
+        - Marketing website
+        - App / dashboard
+        - Governance / risk / evidence
+        - Bots / voice
+        - Authentication / tenant access
+        - Billing / Stripe
+        - API / Edge Functions
+        - CI / CD
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: route
+    attributes:
+      label: Route, component, or workflow
+      description: Add the affected route, component, API, workflow, or file if known.
+      placeholder: "/app/costs, login flow, ai-gateway, ..."
+      
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      description: List the smallest reliable sequence that reproduces the defect.
+      placeholder: |
+        1. Open ...
+        2. Select ...
+        3. Observe ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What should happen?
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: What happens instead? Include the exact error text when possible.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity
+      options:
+        - Low - cosmetic or minor inconvenience
+        - Medium - important workflow degraded
+        - High - core workflow blocked
+        - Critical - security, tenant isolation, data integrity, or production outage
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Browser, device, commit/PR, preview or production, and any other relevant runtime details.
+      placeholder: "Chrome 140, Android/Desktop, PR #..., preview/production"
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs or screenshots
+      description: Paste sanitized logs or add screenshots. Never include secrets, tokens, credentials, or personal data.
+      render: shell
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Reporter checks
+      options:
+        - label: I searched existing issues for the same defect.
+          required: true
+        - label: I removed secrets, credentials, tokens, and unnecessary personal data.
+          required: true

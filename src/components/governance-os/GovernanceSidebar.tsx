@@ -5,49 +5,40 @@ import {
   Bell, CreditCard, Wrench, Bot, GitMerge, FileText,
   ClipboardCheck, ClipboardList, LayoutDashboard, ShieldAlert, ShieldCheck,
   MessagesSquare, Zap, Server, Layers, CalendarClock, Archive, Library,
-  Share2, Sparkles,
+  Share2, Sparkles, Scale, Shield,
   type LucideIcon,
 } from 'lucide-react';
-import { TAB_MODULES, canAccessModule, minimumPlanForModule } from './governanceModules';
-import { ModuleStatusBadge } from './ModuleStatusBadge';
+import {
+  GOVERNANCE_MODULES,
+  TAB_MODULES,
+  canAccessModule,
+  minimumPlanForModule,
+} from './governanceModules';
 import type { GovernanceModule } from './governanceBrowserTypes';
 import { useActivePlan } from '../../hooks/useModuleAccess';
-import { OS_ACCENT_BG, OS_ACCENT_TEXT, OS_CREAM_TEXT, OS_FOCUS_RING } from './osChrome';
-import {
-  APP_DURATION_MS,
-  APP_EASING,
-  APP_NAV_ITEM_HEIGHT,
-  APP_RADIUS_MD,
-  APP_SIDEBAR_WIDTH,
-} from './app-theme';
+import { useTenant } from '../../core/access/TenantProvider';
+import { useLang } from '../../i18n/useLang';
+import { OS_ACCENT_TEXT } from './osChrome';
+import { APP_SIDEBAR_WIDTH } from './app-theme';
+import { SHELL_NAV, SHELL_NAV_ROUTES, activeShellNav, type ShellNavId } from './shellNav';
+import { useShellCounts, type ShellCounts } from './useShellCounts';
+import '../../styles/governance-os-app.css';
 
 /**
- * Seitenleiste der App — die Modulnavigation aus dem Handoff-Entwurf.
+ * Seitenleiste der App — Handoff v2 §5.
  *
- * Sie ersetzt ab `lg` die waagerechte Tab-Leiste. Auf schmalen Geraeten
- * bleibt es beim Burger-Menue und der Tab-Bar unten: Eine 248px-Spalte
- * neben einem 390px-Fenster laesst fuer den Inhalt nichts uebrig.
+ * Oben die sieben Hauptbereiche des Entwurfs (Übersicht, KI-Systeme,
+ * Klassifizierung, Enforcement, Evidence, Berichte, Abrechnung) mit
+ * Lucide-Icons. Darunter „Weitere Module" aus `TAB_MODULES` — dieselbe
+ * Registry wie die mobile Tab-Leiste, mit Status-Filter und Plan-Gate.
+ * So bleibt jedes Modul erreichbar, ohne dass eine zweite, handgepflegte
+ * Modulliste entsteht.
  *
- * ## Aus dem Entwurf kommt das Raster, nicht die Farbe
+ * Badges nur aus echten Zählern (`useShellCounts`); unbekannt ⇒ kein Badge.
+ * Plan-Box: echter Plan aus `useActivePlan`, „Plan wechseln" → /app/billing.
  *
- * Breite, Zeilenhoehe, Radius und Bewegungskurve folgen dem Entwurf
- * (`app-theme.ts`). Die Farben kommen aus `osChrome.ts` — dieselbe Quelle,
- * aus der TopBar, Tabs, Statusleiste und Command Center lesen. Der Entwurf
- * ist in Cyan gehalten; `osChrome` und `index.css` schreiben fuer `/app`
- * ausdruecklich Gold fest. Eine cyanfarbene Seitenleiste neben goldenem
- * Chrome haette diese Regel nicht geaendert, nur gebrochen.
- *
- * ## Die Liste wird nicht gepflegt, sie wird gelesen
- *
- * Der Entwurf zeigt sieben feste Eintraege. Diese Komponente nimmt
- * stattdessen `TAB_MODULES` — dieselbe Registry, aus der die Tab-Leiste
- * liest. Eine zweite, handgepflegte Liste waere genau die Stelle, an der
- * beim naechsten Modul die Navigation auseinanderlaeuft, und sie haette
- * weder Status-Badge noch Plan-Gate. Wer ein Modul auf `roadmap`
- * zurueckstuft, nimmt es damit auch hier automatisch aus der Leiste.
- *
- * Gesperrte Module bleiben sichtbar, tragen aber ein Schloss und den
- * Mindest-Plan — verschwiegene Module lassen sich nicht buchen.
+ * Farben: Tokens aus governance-os-app.css (`--color-rs-*`), Akzent-Fragment
+ * aus osChrome.ts — keine Hex-Werte in dieser Datei.
  */
 
 const ICON_MAP: Record<string, LucideIcon> = {
@@ -58,109 +49,127 @@ const ICON_MAP: Record<string, LucideIcon> = {
   CalendarClock, Archive, Library, Share2, Sparkles,
 };
 
+const NAV_ICONS: Record<ShellNavId, LucideIcon> = {
+  overview: Home,
+  systems: Cpu,
+  classify: Scale,
+  enforce: Shield,
+  evidence: FileCheck2,
+  reports: BarChart3,
+  billing: CreditCard,
+};
+
 const PLAN_LABELS: Record<string, string> = {
+  free: 'Free',
   starter: 'Starter',
   growth: 'Professional',
   agency: 'Agency',
   enterprise: 'Enterprise',
 };
 
-/** Bewegung nach Entwurf — eine Kurve, keine Federn, kein Hover-Zoom. */
-const MOTION = {
-  transitionTimingFunction: APP_EASING,
-  transitionDuration: `${APP_DURATION_MS}ms`,
-} as const;
-
-/** `/app/dashboard` traegt mehrere historische Adressen. */
-function isActiveRoute(route: string, pathname: string): boolean {
-  if (route === '/app/dashboard') {
-    return ['/app', '/app/dashboard', '/app/home', '/app/overview'].includes(pathname);
+function badgeFor(id: ShellNavId, counts: ShellCounts): number | null {
+  switch (id) {
+    case 'systems': return counts.systems;
+    case 'classify': return counts.unclassified && counts.unclassified > 0 ? counts.unclassified : null;
+    case 'enforce': return counts.policies;
+    case 'evidence': return counts.evidence;
+    default: return null;
   }
+}
+
+function isActiveRoute(route: string, pathname: string): boolean {
   return pathname === route || pathname.startsWith(`${route}/`);
 }
 
-function SidebarItem({
-  module,
-  active,
-  locked,
-}: {
-  module: GovernanceModule;
-  active: boolean;
-  locked: boolean;
-}) {
+function MoreItem({ module, active, locked }: { module: GovernanceModule; active: boolean; locked: boolean }) {
   const Icon: LucideIcon = ICON_MAP[module.icon] ?? Home;
   const minPlan = locked ? PLAN_LABELS[minimumPlanForModule(module)] ?? 'Enterprise' : null;
-
-  const tone = active
-    ? 'bg-obsidian-800 text-titanium-50'
-    : locked
-      ? 'text-titanium-600 hover:bg-obsidian-800'
-      : 'text-titanium-400 hover:text-titanium-100 hover:bg-obsidian-800';
-
   return (
     <Link
       to={module.route}
       aria-current={active ? 'page' : undefined}
       title={locked && minPlan ? `${module.label} — ab ${minPlan}` : module.description}
-      className={`group flex items-center gap-2.5 px-2.5 text-[13px] transition-colors focus-visible:outline-none ${OS_FOCUS_RING} ${tone}`}
-      style={{ ...MOTION, height: APP_NAV_ITEM_HEIGHT, borderRadius: APP_RADIUS_MD }}
+      className={`rs-side__item rs-side__item--small${locked ? ' rs-side__item--locked' : ''}`}
     >
-      <Icon
-        className={`h-[18px] w-[18px] shrink-0 ${
-          active ? OS_ACCENT_TEXT : 'text-titanium-600 group-hover:text-titanium-300'
-        }`}
-      />
-      <span className="min-w-0 flex-1 truncate">{module.label}</span>
-      {locked ? (
-        <Lock className="h-3 w-3 shrink-0" aria-label={minPlan ? `ab ${minPlan}` : 'gesperrt'} />
-      ) : (
-        <ModuleStatusBadge status={module.status} />
-      )}
+      <Icon className="rs-side__icon" aria-hidden="true" />
+      <span className="rs-side__text">{module.label}</span>
+      {locked && <Lock className="h-3 w-3 shrink-0" aria-label={minPlan ? `ab ${minPlan}` : 'gesperrt'} />}
     </Link>
   );
 }
 
 export function GovernanceSidebar() {
   const { pathname } = useLocation();
-  const { plan } = useActivePlan();
+  const { plan, loading: planLoading } = useActivePlan();
+  const { tenants, activeTenantId } = useTenant();
+  const { t } = useLang();
+  const counts = useShellCounts();
+  const active = activeShellNav(pathname);
+  const tenantName = tenants.find((x) => x.tenantId === activeTenantId)?.name ?? null;
+  const moreModules = TAB_MODULES.filter((m) => !SHELL_NAV_ROUTES.has(m.route));
 
   return (
-    <nav
-      aria-label="Modulnavigation"
-      className="hidden shrink-0 flex-col overflow-y-auto border-r border-titanium-800 bg-obsidian-900 px-3 py-4 lg:flex"
-      style={{ width: APP_SIDEBAR_WIDTH }}
-    >
-      <div className="flex items-center gap-2.5 px-1 pb-4">
-        <span className={`grid h-7 w-7 shrink-0 place-items-center ${OS_ACCENT_BG}`}>
-          <ShieldCheck className="h-4 w-4" style={{ color: OS_CREAM_TEXT }} aria-hidden="true" />
+    <nav aria-label={t('shellNavLabel')} className="rs-side" style={{ width: APP_SIDEBAR_WIDTH }}>
+      <Link to="/app/dashboard" className="rs-side__brand" style={{ textDecoration: 'none' }}>
+        <span className="rs-logo-mark">
+          <ShieldCheck className="h-4 w-4" aria-hidden="true" />
         </span>
-        <span className="truncate font-mono text-[10px] uppercase tracking-[0.14em] text-titanium-500">
-          Governance OS
+        <span className="rs-side__brand-text">
+          <span className="rs-side__product">Governance OS</span>
+          <span className="rs-side__tenant">{tenantName ?? t('shellNoTenant')}</span>
         </span>
+      </Link>
+
+      <div className="rs-side__group">
+        {SHELL_NAV.map((item) => {
+          const Icon = NAV_ICONS[item.id];
+          const module = item.moduleId ? GOVERNANCE_MODULES.find((m) => m.id === item.moduleId) : undefined;
+          const locked = module ? !canAccessModule(module, plan) : false;
+          const badge = badgeFor(item.id, counts);
+          const to = item.id === 'classify' && counts.firstSystemId
+            ? `/app/ai-systems/${counts.firstSystemId}`
+            : item.route;
+          return (
+            <Link
+              key={item.id}
+              to={to}
+              aria-current={active === item.id ? 'page' : undefined}
+              className={`rs-side__item${locked ? ' rs-side__item--locked' : ''}`}
+              data-testid={`side-nav-${item.id}`}
+            >
+              <Icon className="rs-side__icon" aria-hidden="true" />
+              <span className="rs-side__text">{t(item.labelKey)}</span>
+              {locked ? (
+                <Lock className="h-3 w-3 shrink-0" aria-hidden="true" />
+              ) : badge !== null ? (
+                <span className="rs-side__badge" data-testid={`side-badge-${item.id}`}>{badge}</span>
+              ) : null}
+            </Link>
+          );
+        })}
       </div>
 
-      <div className="flex flex-col gap-0.5">
-        {TAB_MODULES.map((module) => (
-          <SidebarItem
-            key={module.id}
-            module={module}
-            active={isActiveRoute(module.route, pathname)}
-            locked={!canAccessModule(module, plan)}
-          />
-        ))}
-      </div>
+      {moreModules.length > 0 && (
+        <>
+          <p className="rs-side__label">{t('shellMoreModules')}</p>
+          <div className="rs-side__group">
+            {moreModules.map((module) => (
+              <MoreItem
+                key={module.id}
+                module={module}
+                active={isActiveRoute(module.route, pathname)}
+                locked={!canAccessModule(module, plan)}
+              />
+            ))}
+          </div>
+        </>
+      )}
 
-      <div
-        className="mt-auto border border-titanium-800 bg-obsidian-950 p-3"
-        style={{ borderRadius: APP_RADIUS_MD }}
-      >
-        <p className="font-mono text-[9px] uppercase tracking-[0.16em] text-titanium-600">Plan</p>
-        <p className="mt-1 text-[13px] text-titanium-100">{PLAN_LABELS[plan] ?? 'Free'}</p>
-        <Link
-          to="/app/billing"
-          className={`mt-2 inline-block text-[12px] underline-offset-2 hover:underline ${OS_ACCENT_TEXT}`}
-        >
-          Plan wechseln
+      <div className="rs-plan">
+        <p className="rs-plan__label">{t('shellPlan')}</p>
+        <p className="rs-plan__name">{planLoading ? '—' : PLAN_LABELS[plan] ?? plan}</p>
+        <Link to="/app/billing" className={`rs-plan__link ${OS_ACCENT_TEXT}`}>
+          {t('upgrade')}
         </Link>
       </div>
     </nav>

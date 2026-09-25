@@ -1,20 +1,22 @@
 /**
- * Production landing — Dominik Go Homepage 2026-09-24.
- * Structure: Hero → Problem → 4 Modules → Evidence Flow → EU-Trust → Audiences → CTA.
- * Dark/Gold/Cream. No 3D globe on `/`.
+ * Production landing `/` — Governance OS Handoff v2 (2026-09-25).
+ * Structure: Hero (Europa-Karte, Cyan) → Ticker → Problem → Module → Evidence Flow
+ * → EU-Trust → Audiences → Preise → CTA → Footer.
+ *
+ * Kein Dunkel/Cyan/Hell-Umschalter und kein Gold mehr auf `/`: `.rs-handoff`
+ * mappt die `--ga-*`-Tokens der Folgesektionen auf die Handoff-Palette.
+ * Die Titan-Referenz (Modus-Umschalter) lebt weiter unter `/design/titan`.
  */
 import { type PointerEvent as ReactPointerEvent } from 'react';
 import '../../styles/governance-landing-polish.css';
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import { SEOHead } from '../../components/SEOHead';
-import { HeroTitanium } from '../../components/landing/HeroTitanium';
-import { GovernanceStatusBar } from '../../components/landing/GovernanceStatusBar';
+import { GovernanceOsHero } from '../../components/landing/GovernanceOsHero';
 import { GovernanceFooter } from '../../components/landing/GovernanceFooter';
 import { RegulatoryTicker } from '../../components/landing/RegulatoryTicker';
 import { HomepageBriefSections } from '../../components/landing/HomepageBriefSections';
 import { GovernancePricingSection } from '../../components/landing/GovernancePricingSection';
-import { GovernanceAiHeader } from '../../components/landing/GovernanceAiHeader';
 import { SectionEyebrow, SectionHeading } from '../../components/landing/GovernanceSectionChrome';
 import {
   GA_SANS,
@@ -25,7 +27,7 @@ import {
 } from '../../components/landing/governance-ai-theme';
 import {
   BRAND_VALUE_PROPOSITION,
-  HERO_DASHBOARD_CTA_LABEL,
+  HERO_AUDIT_TRAIL_CTA_LABEL,
   HERO_SCAN_CTA_LABEL,
 } from '../../components/governance-frontend/hero-content';
 import { SEO_CONFIG } from '../../config/seo';
@@ -42,18 +44,15 @@ function trackCardSheen(event: ReactPointerEvent<HTMLDivElement>) {
 export function DesignGovernanceAiLanding() {
   return (
     <div
-      className="ga-context ga-gold-reference landing-context relative min-h-screen antialiased"
-      data-landing-mode="gold"
-      data-hero-visual="europe-network-static"
+      className="ga-context rs-handoff landing-context relative min-h-screen antialiased"
+      data-hero-visual="europe-map-v2"
       style={{ backgroundColor: 'var(--ga-void)', color: 'var(--ga-text)' }}
       onPointerMove={trackCardSheen}
     >
       <SEOHead title={SEO_CONFIG['/'].title} description={SEO_CONFIG['/'].description} canonical="/" />
 
       <div className="relative z-10 flex min-h-screen flex-col">
-        <GovernanceStatusBar />
-        <GovernanceAiHeader />
-        <HeroTitanium />
+        <GovernanceOsHero />
         <RegulatoryTicker />
         <HomepageBriefSections />
         <GovernancePricingSection />
@@ -87,7 +86,7 @@ export function DesignGovernanceAiLanding() {
                 <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </Link>
               <a href="#audit-trail" className={GA_PILL_GHOST} style={{ fontFamily: GA_SANS }}>
-                {HERO_DASHBOARD_CTA_LABEL}
+                {HERO_AUDIT_TRAIL_CTA_LABEL}
               </a>
             </div>
           </div>

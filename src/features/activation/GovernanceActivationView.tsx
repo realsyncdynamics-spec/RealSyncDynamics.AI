@@ -252,7 +252,7 @@ export function GovernanceActivationView() {
           </div>
           <Link
             to="/app/dashboard"
-            className={`text-[11px] font-mono uppercase tracking-wider text-titanium-500 hover:text-[#e4cfa2] transition-colors shrink-0`}
+            className={`text-[11px] font-mono uppercase tracking-wider text-titanium-500 hover:text-[#00B8D4] transition-colors shrink-0`}
           >
             ← Compliance Dashboard
           </Link>
@@ -298,11 +298,11 @@ export function GovernanceActivationView() {
                 onClick={() => setStep(s.id)}
                 className={`flex-1 min-w-[7.5rem] px-3 py-2.5 text-left transition-colors ${
                   active
-                    ? 'bg-obsidian-800 text-titanium-50 border-b-2 border-[#e4cfa2]'
+                    ? 'bg-obsidian-800 text-titanium-50 border-b-2 border-[#00B8D4]'
                     : 'bg-obsidian-950 text-titanium-500 hover:bg-obsidian-900 hover:text-titanium-200'
                 }`}
               >
-                <div className={`font-mono text-[9px] tracking-widest ${active || done ? 'text-[#e4cfa2]/90' : 'text-titanium-600'}`}>
+                <div className={`font-mono text-[9px] tracking-widest ${active || done ? 'text-[#00B8D4]/90' : 'text-titanium-600'}`}>
                   {s.index}
                   {done ? ' · DONE' : active ? ' · ACTIVE' : ''}
                 </div>
@@ -330,7 +330,7 @@ export function GovernanceActivationView() {
                   setOrg({ ...org, company: v });
                   setSaveState('idle');
                 }}
-                placeholder="z. B. RealSync Dynamics GmbH"
+                placeholder="z. B. Muster GmbH"
               />
               <Field
                 label="Gesellschaften"
@@ -409,7 +409,7 @@ export function GovernanceActivationView() {
                       onClick={() => toggleScope(opt.id)}
                       className={`text-left p-3 border transition-colors flex items-start gap-2 ${
                         active
-                          ? 'border-[#e4cfa2] bg-obsidian-800'
+                          ? 'border-[#00B8D4] bg-obsidian-800'
                           : 'border-titanium-800 bg-obsidian-950 hover:border-titanium-600'
                       }`}
                     >
@@ -435,7 +435,7 @@ export function GovernanceActivationView() {
             <div className="space-y-4">
               <p className="text-sm text-titanium-400">
                 Auto-Blueprint Engine — Flow:{' '}
-                <span className="font-mono text-[11px] text-[#e4cfa2]/90">
+                <span className="font-mono text-[11px] text-[#00B8D4]/90">
                   ORGANIZATION → BLUEPRINT → Policies / Controls / Risks → Systems → Evidence → Owners → Tasks
                 </span>
               </p>
@@ -487,14 +487,14 @@ export function GovernanceActivationView() {
                 onDrop={onDrop}
                 className={`border border-dashed p-8 text-center transition-colors ${
                   dropActive
-                    ? 'border-[#e4cfa2] bg-[#e4cfa2]/10'
+                    ? 'border-[#00B8D4] bg-[#00B8D4]/10'
                     : 'border-titanium-800 bg-obsidian-950'
                 }`}
               >
                 <FileUp className={`h-8 w-8 ${OS_ACCENT_TEXT} mx-auto mb-3`} />
                 <p className="text-sm font-medium text-titanium-100">Bestehende Dokumente hier ablegen</p>
                 <p className="mt-2 text-[11px] font-mono text-titanium-500 tracking-wide">{ACCEPTED_TYPES}</p>
-                <label className="mt-4 inline-flex cursor-pointer items-center gap-2 px-3 py-2 border border-titanium-700 text-xs text-titanium-200 hover:border-[#e4cfa2] hover:text-titanium-50 transition-colors">
+                <label className="mt-4 inline-flex cursor-pointer items-center gap-2 px-3 py-2 border border-titanium-700 text-xs text-titanium-200 hover:border-[#00B8D4] hover:text-titanium-50 transition-colors">
                   Dateien wählen
                   <input type="file" multiple className="hidden" onChange={onBrowse} />
                 </label>
@@ -598,19 +598,19 @@ export function GovernanceActivationView() {
                 <ul className="space-y-1.5 text-sm text-titanium-300">
                   <li>
                     ·{' '}
-                    <Link to="/app/dashboard" className="text-[#e4cfa2] hover:underline">
+                    <Link to="/app/dashboard" className="text-[#00B8D4] hover:underline">
                       Compliance Dashboard öffnen
                     </Link>
                   </li>
                   <li>
                     ·{' '}
-                    <Link to="/app/evidence" className="text-[#e4cfa2] hover:underline">
+                    <Link to="/app/evidence" className="text-[#00B8D4] hover:underline">
                       Evidence prüfen
                     </Link>
                   </li>
                   <li>
                     ·{' '}
-                    <Link to="/app/modules" className="text-[#e4cfa2] hover:underline">
+                    <Link to="/app/modules" className="text-[#00B8D4] hover:underline">
                       Module aktivieren
                     </Link>
                   </li>
@@ -646,7 +646,7 @@ export function GovernanceActivationView() {
                   type="button"
                   onClick={() => void persistOrgAndScope()}
                   disabled={saveState === 'saving' || !activeTenantId}
-                  className="inline-flex items-center gap-2 px-4 py-2 border border-titanium-700 text-sm text-titanium-200 hover:border-[#e4cfa2] disabled:opacity-40 disabled:cursor-not-allowed transition"
+                  className="inline-flex items-center gap-2 px-4 py-2 border border-titanium-700 text-sm text-titanium-200 hover:border-[#00B8D4] disabled:opacity-40 disabled:cursor-not-allowed transition"
                 >
                   {saveState === 'saving' ? (
                     <>

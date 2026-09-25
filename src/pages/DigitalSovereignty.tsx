@@ -60,7 +60,7 @@ export function DigitalSovereignty() {
     description:
       'Digitale Souveränität praktisch umsetzen: transparente Anbieterstruktur, nachweisbare ' +
       'DSGVO- & AI-Act-Governance, Kontrolle über Drittanbieter und Datenflüsse, Evidence Vault ' +
-      'und kontinuierliches Monitoring — das Governance OS im Browser-Format.',
+      'und dauerhafte Domain-Überwachung als Coming Soon — das Governance OS im Browser-Format.',
     url: 'https://RealSyncDynamicsAI.de/digitale-souveraenitaet',
   });
 

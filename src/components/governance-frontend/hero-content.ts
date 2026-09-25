@@ -20,7 +20,11 @@ export const GOVERNANCE_AI_HERO_KICKER = 'EU CONTROL & EVIDENCE LAYER FOR AI' as
 
 export const GOVERNANCE_AI_HERO_HEADLINE: readonly (readonly HeroHeadlineSegment[])[] = HERO_HEADLINE;
 
-export const GOVERNANCE_AI_HERO_TEST_SUBSTRING = 'kontrollierbar' as const;
+/**
+ * Substring der sichtbaren H1 auf `/` (Handoff v2: „AI Compliance / Operations OS for Europe").
+ * Genutzt von tests/e2e/public-routes.spec.ts (FE-001).
+ */
+export const GOVERNANCE_AI_HERO_TEST_SUBSTRING = 'Operations OS' as const;
 
 export const GOVERNANCE_AI_HERO_SUBLINE =
   'RealSyncDynamics.AI erkennt KI- und Compliance-Risiken, setzt Richtlinien durch und erzeugt kontinuierliche Evidenz für EU AI Act und DSGVO.' as const;
@@ -98,8 +102,10 @@ export const HERO_PROOF_CHIPS = [
 /** Header + final CTA primary. */
 export const HERO_SCAN_CTA_LABEL = 'Governance-Scan starten' as const;
 export const HERO_SCAN_CTA_LONG = 'Governance-Scan starten' as const;
-/** Hero secondary CTA. */
-export const HERO_DASHBOARD_CTA_LABEL = 'Beispiel-Audit-Trail ansehen' as const;
+/** Hero secondary CTA (Handoff v2, Ziel `/app/dashboard`). */
+export const HERO_DASHBOARD_CTA_LABEL = 'Live Dashboard ansehen' as const;
+/** Anker-CTA auf den Beispiel-Audit-Trail (`#audit-trail`, Titan-Referenzhero). */
+export const HERO_AUDIT_TRAIL_CTA_LABEL = 'Beispiel-Audit-Trail ansehen' as const;
 
 export const HERO_SCAN_PROMISE_LINE =
   'Governance-Scan starten — Risiken und Evidence-Preview' as const;

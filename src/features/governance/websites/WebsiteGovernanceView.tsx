@@ -145,7 +145,7 @@ function WebsiteCard({ row, onScan, scanning }: {
         <button
           onClick={() => onScan(row)}
           disabled={scanning}
-          className="flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-mono border border-titanium-800 text-titanium-400 hover:border-[#e4cfa2]/60 hover:text-[#e4cfa2] transition-colors disabled:opacity-40"
+          className="flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-mono border border-titanium-800 text-titanium-400 hover:border-[#00B8D4]/60 hover:text-[#00B8D4] transition-colors disabled:opacity-40"
         >
           <RefreshCw className={`h-2.5 w-2.5 ${scanning ? 'animate-spin' : ''}`} />
           Scannen
@@ -174,7 +174,7 @@ function AddDomainModal({
           onChange={(e) => setValue(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter' && value.trim()) { onAdd(value.trim()); } }}
           placeholder="z.B. www.mein-unternehmen.de"
-          className="w-full bg-obsidian-950 border border-titanium-800 px-3 py-2 text-sm font-mono text-titanium-100 placeholder-titanium-700 outline-none focus:border-[#e4cfa2]"
+          className="w-full bg-obsidian-950 border border-titanium-800 px-3 py-2 text-sm font-mono text-titanium-100 placeholder-titanium-700 outline-none focus:border-[#00B8D4]"
         />
         <div className="flex items-center gap-2 justify-end">
           <button onClick={onClose} className="px-3 py-1.5 text-xs font-mono text-titanium-500 border border-titanium-800 hover:text-titanium-300">
@@ -182,7 +182,7 @@ function AddDomainModal({
           </button>
           <button
             onClick={() => value.trim() && onAdd(value.trim())}
-            className="px-3 py-1.5 text-xs font-mono bg-[#e8ddc8] text-[#1a1917] hover:bg-[#f0e6d4]"
+            className="px-3 py-1.5 text-xs font-mono bg-[#1E5AFF] text-white hover:bg-[#1641C4]"
           >
             Hinzufügen
           </button>
@@ -306,8 +306,8 @@ function _WebsiteGovernanceView() {
     <div className="min-h-screen bg-obsidian-950 text-titanium-100">
       <header className="h-14 border-b border-titanium-900 bg-obsidian-900 flex items-center justify-between px-4 shrink-0">
         <div className="flex items-center gap-2.5 min-w-0">
-          <div className="w-8 h-8 bg-obsidian-800 border border-[#e4cfa2]/30 flex items-center justify-center shrink-0">
-            <Globe className="h-4 w-4 text-[#e4cfa2]" />
+          <div className="w-8 h-8 bg-obsidian-800 border border-[#00B8D4]/30 flex items-center justify-center shrink-0">
+            <Globe className="h-4 w-4 text-[#00B8D4]" />
           </div>
           <div className="leading-tight min-w-0">
             <div className="font-display font-bold text-sm tracking-tight text-titanium-50">Websites</div>
@@ -322,7 +322,7 @@ function _WebsiteGovernanceView() {
           <button
             onClick={() => setAddOpen(true)}
             disabled={signedOut}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono border border-titanium-800 text-titanium-400 hover:border-[#e4cfa2]/60 hover:text-[#e4cfa2] transition-colors disabled:opacity-40"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono border border-titanium-800 text-titanium-400 hover:border-[#00B8D4]/60 hover:text-[#00B8D4] transition-colors disabled:opacity-40"
           >
             <Plus className="h-3.5 w-3.5" />
             Domain hinzufügen
@@ -378,7 +378,7 @@ function _WebsiteGovernanceView() {
             </p>
             <a
               href="/welcome"
-              className="mt-5 px-4 py-2 text-xs font-mono border border-[#e4cfa2]/50 text-[#e4cfa2] hover:bg-[#e4cfa2]/10"
+              className="mt-5 px-4 py-2 text-xs font-mono border border-[#00B8D4]/50 text-[#00B8D4] hover:bg-[#00B8D4]/10"
             >
               Anmelden
             </a>
@@ -398,11 +398,11 @@ function _WebsiteGovernanceView() {
               Domains und Scan-Zähler bleiben leer (0), bis Sie eine Domain hinzufügen — keine Demo-Scores.
             </p>
             {domainHint && (
-              <p className="mt-2 font-mono text-xs text-[#e4cfa2]">Vorschlag aus dem Konto: {domainHint}</p>
+              <p className="mt-2 font-mono text-xs text-[#00B8D4]">Vorschlag aus dem Konto: {domainHint}</p>
             )}
             <button
               onClick={() => setAddOpen(true)}
-              className="mt-5 flex items-center gap-1.5 px-4 py-2 text-xs font-mono bg-[#e8ddc8] text-[#1a1917] hover:bg-[#f0e6d4]"
+              className="mt-5 flex items-center gap-1.5 px-4 py-2 text-xs font-mono bg-[#1E5AFF] text-white hover:bg-[#1641C4]"
             >
               <Plus className="h-3.5 w-3.5" />
               {domainHint ? `${domainHint} übernehmen` : 'Erste Domain hinzufügen'}

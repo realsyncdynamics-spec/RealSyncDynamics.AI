@@ -141,7 +141,7 @@ export function HandoffOverview({
             <Link to="/app/websites" className="rs-btn rs-btn--secondary">Website scannen</Link>
             <Link to="/app/ai-systems" className="rs-btn rs-btn--secondary">KI-System erfassen</Link>
             <Link to="/app/vendors" className="rs-btn rs-btn--secondary">Vendor erfassen</Link>
-            <Link to="/app/dpias" className="rs-btn rs-btn--secondary">DSFA starten</Link>
+            <Link to="/app/dpia" className="rs-btn rs-btn--secondary">DSFA starten</Link>
             <Link to="/app/incidents" className="rs-btn rs-btn--secondary">Incident melden</Link>
           </div>
         </div>
@@ -208,7 +208,7 @@ export function HandoffOverview({
           <Panel className="xl:col-span-4 rs-panel--pad20" testId="management-assets">
             <div className="rs-panel__head">
               <span className="rs-overline">Überwachter Scope</span>
-              <Link to="/app/assets" className="rs-note rs-cyan">Assets →</Link>
+              <Link to="/app/risk-inventory" className="rs-note rs-cyan">Assets →</Link>
             </div>
             {assetFlows.length === 0 ? (
               <p className="rs-note mt-4">{data ? 'Noch keine Assets im Register.' : t('loading')}</p>
@@ -271,7 +271,7 @@ export function HandoffOverview({
           <Panel className="xl:col-span-12 rs-panel--pad20" testId="management-timeline">
             <div className="rs-panel__head">
               <span className="rs-overline">Executive Timeline</span>
-              <Link to="/app/activity" className="rs-note rs-cyan">Aktivität →</Link>
+              <Link to="/app/monitoring" className="rs-note rs-cyan">Aktivität →</Link>
             </div>
             {eventStream.length === 0 ? (
               <p className="rs-note mt-4">{data ? 'Noch keine Governance-Aktivität protokolliert.' : t('loading')}</p>

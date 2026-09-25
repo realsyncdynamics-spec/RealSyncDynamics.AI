@@ -92,7 +92,8 @@ describe('/audit stepper', () => {
   it('AuditLanding still calls gdpr-audit and keeps the ?domain= prefill', () => {
     const src = readFileSync(resolve('src/pages/AuditLanding.tsx'), 'utf8');
     expect(src).toContain("postEdgeFunction<Report>('gdpr-audit'");
-    expect(src).toContain("get('domain')");
+    // Vorbelegung läuft über den gemeinsamen Helper (liest `domain` zuerst).
+    expect(src).toContain('readAuditPrefill(window.location.search)');
     expect(src).not.toMatch(/92\s*-\s*/);
   });
 });

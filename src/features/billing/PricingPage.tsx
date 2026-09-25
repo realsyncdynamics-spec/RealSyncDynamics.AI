@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { resolveAuditContext, withAuditContext } from '../../core/onboarding/funnelContext';
-import { ArrowRight, Check, Sparkles, Award } from 'lucide-react';
+import { Check, Sparkles, Award } from 'lucide-react';
 import { SEOHead } from '../../components/SEOHead';
 import '../../styles/governance-os-handoff.css';
 import { HandoffTopBar } from '../../components/handoff/HandoffTopBar';
@@ -444,7 +444,7 @@ function TierCard({ tier, billing, selected = false }: { tier: PricingTier; bill
             className={`rs-btn ${filled ? 'rs-btn--solid' : 'rs-btn--outline'} rs-btn--h40`}
             data-testid={`pricing-book-${tier.id}`}
           >
-            {tier.cta.label} <ArrowRight size={16} aria-hidden="true" />
+            {tier.cta.label}
           </button>
         )}
         <Link to={`/pricing/${tier.id}`} className="rs-price-card__more" data-testid={`pricing-info-${tier.id}`}>

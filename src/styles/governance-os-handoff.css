@@ -607,7 +607,7 @@
 .rs-price-card__features li { display: flex; gap: 8px; font-size: 13px; line-height: 1.45; color: var(--color-rs-fg-1); }
 .rs-price-card__features svg { flex-shrink: 0; margin-top: 2px; color: var(--color-rs-cyan); }
 .rs-price-card__cta { margin-top: 20px; display: flex; flex-direction: column; gap: 8px; }
-.rs-price-card__cta .rs-btn { width: 100%; }
+.rs-price-card__cta .rs-btn { width: 100%; padding: 0 10px; font-size: 13px; }
 .rs-price-card__more {
   align-self: center; font-size: 12px; font-weight: 500; color: var(--color-rs-fg-2);
   background: none; border: 0; cursor: pointer; text-decoration: none;

@@ -126,6 +126,24 @@ export function HandoffOverview({
   const eventStream = data?.recentEvents ?? [];
   const assetFlows = data?.assetFlows ?? [];
 
+  const ownedAssets = ready ? ready.assets.filter((asset) => Boolean(asset.owner_email?.trim())).length : null;
+  const ownerMissing = ready ? ready.assets.length - (ownedAssets ?? 0) : null;
+  const ownerCoverage = ready && ready.assets.length > 0 && ownedAssets !== null
+    ? Math.round((ownedAssets / ready.assets.length) * 100)
+    : null;
+
+  const aiPortfolio = {
+    prohibited: aiAssets.filter((asset) => asset.ai_act_class === 'prohibited').length,
+    high: aiAssets.filter((asset) => asset.ai_act_class === 'high').length,
+    limited: aiAssets.filter((asset) => asset.ai_act_class === 'limited').length,
+    minimal: aiAssets.filter((asset) => asset.ai_act_class === 'minimal').length,
+    unknown: unclassified.length,
+  };
+
+  const nextDeadlines = (data?.actions ?? [])
+    .filter((action) => action.deadline !== null)
+    .sort((a, b) => (a.hoursRemaining ?? Number.POSITIVE_INFINITY) - (b.hoursRemaining ?? Number.POSITIVE_INFINITY));
+
   return (
     <div className="rs-apppage rs-ui" data-testid="handoff-overview">
       {state.status === 'error' && <WarnToast error>{t('loadFailed')}</WarnToast>}
@@ -266,6 +284,87 @@ export function HandoffOverview({
               <MiniMetric label="Neu 24h" value={evidenceHealth?.newEvidence24h ?? null} />
             </div>
             <p className="rs-note mt-3">{evidenceHealth?.label ?? 'Noch nicht bewertet'}</p>
+          </Panel>
+
+          <Panel className="xl:col-span-4 rs-panel--pad20" testId="management-deadlines">
+            <div className="rs-panel__head">
+              <span className="rs-overline">Nächste Fristen</span>
+              <Link to="/app/cockpit" className="rs-note rs-cyan">Obligations →</Link>
+            </div>
+            {data === null ? (
+              <p className="rs-note mt-4">{t('loading')}</p>
+            ) : nextDeadlines.length === 0 ? (
+              <p className="rs-note mt-4">Keine datierten Pflichten in den aktuell geladenen Maßnahmen.</p>
+            ) : (
+              <div className="mt-4 space-y-2">
+                {nextDeadlines.slice(0, 4).map((action) => {
+                  const hours = action.hoursRemaining;
+                  const overdue = hours !== null && hours < 0;
+                  const dueSoon = hours !== null && hours >= 0 && hours <= 14 * 24;
+                  const color = overdue
+                    ? 'var(--color-rs-danger)'
+                    : dueSoon
+                      ? 'var(--color-rs-warning)'
+                      : 'var(--color-rs-success)';
+                  const dueText = hours === null
+                    ? 'Frist hinterlegt'
+                    : overdue
+                      ? `${Math.ceil(Math.abs(hours) / 24)} Tage überfällig`
+                      : hours < 48
+                        ? `${Math.max(0, Math.floor(hours))} h`
+                        : `${Math.floor(hours / 24)} Tage`;
+                  return (
+                    <Link
+                      key={`${action.kind}-${action.id}`}
+                      to={action.href}
+                      className="flex items-center justify-between gap-3 border p-3"
+                      style={{ borderColor: 'var(--color-rs-line)' }}
+                    >
+                      <span className="min-w-0">
+                        <span className="rs-cell-main block truncate">{action.title}</span>
+                        <span className="rs-note block mt-1">{action.kind.toUpperCase()}</span>
+                      </span>
+                      <span className="rs-mono text-xs shrink-0" style={{ color }}>{dueText}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+            <p className="rs-note mt-3">Quelle: offene Incidents, Betroffenenanfragen und DSFA-Reviews mit hinterlegter Frist.</p>
+          </Panel>
+
+          <Panel className="xl:col-span-4 rs-panel--pad20" testId="management-ai-portfolio">
+            <div className="rs-panel__head">
+              <span className="rs-overline">AI-System Portfolio</span>
+              <Link to="/app/ai-systems" className="rs-note rs-cyan">Portfolio →</Link>
+            </div>
+            <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-2">
+              <MiniMetric label="Gesamt" value={has('assets') ? aiAssets.length : null} />
+              <MiniMetric label="Unzulässig" value={has('assets') ? aiPortfolio.prohibited : null} />
+              <MiniMetric label="High Risk" value={has('assets') ? aiPortfolio.high : null} />
+              <MiniMetric label="Limited Risk" value={has('assets') ? aiPortfolio.limited : null} />
+              <MiniMetric label="Minimal Risk" value={has('assets') ? aiPortfolio.minimal : null} />
+              <MiniMetric label="Unklassifiziert" value={has('assets') ? aiPortfolio.unknown : null} />
+            </div>
+            <p className="rs-note mt-3">Direkt aus <span className="rs-mono">governance_assets.ai_act_class</span>; keine abgeleitete Konformitätsquote.</p>
+          </Panel>
+
+          <Panel className="xl:col-span-4 rs-panel--pad20" testId="management-owner-coverage">
+            <div className="rs-panel__head">
+              <span className="rs-overline">Ownership Coverage</span>
+              <Link to="/app/risk-inventory" className="rs-note rs-cyan">Assets prüfen →</Link>
+            </div>
+            <div className="mt-4 flex items-end gap-2">
+              <span className="rs-mono text-4xl font-semibold" style={{ color: 'var(--color-rs-fg)' }}>
+                {ownerCoverage === null ? '—' : `${ownerCoverage}%`}
+              </span>
+            </div>
+            <p className="rs-note mt-1">Assets mit hinterlegtem <span className="rs-mono">owner_email</span></p>
+            <div className="grid grid-cols-2 gap-2 mt-4">
+              <MiniMetric label="Zugewiesen" value={ownedAssets} />
+              <MiniMetric label="Ohne Owner" value={ownerMissing} />
+            </div>
+            <p className="rs-note mt-3">0 Assets ergeben keinen künstlichen 100%-Wert.</p>
           </Panel>
 
           <Panel className="xl:col-span-12 rs-panel--pad20" testId="management-timeline">

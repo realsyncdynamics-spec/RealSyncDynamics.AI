@@ -275,6 +275,9 @@ export interface GovernanceRoutingRuntime {
    * prerequisite represented outside the static capability booleans
    * (for example dedicated+ZDR on Nebius).
    */
+  /**
+   * Omitted means "nothing verified" (fail closed), never "trust enabled".
+   */
   verifiedDeploymentIds?: readonly string[];
 }
 
@@ -335,7 +338,7 @@ export function compliantGovernanceCandidates(
   runtime: GovernanceRoutingRuntime,
 ): readonly GovernanceDeploymentCandidate[] {
   const enabled = new Set(runtime.enabledDeploymentIds);
-  const verified = new Set(runtime.verifiedDeploymentIds ?? runtime.enabledDeploymentIds);
+  const verified = new Set(runtime.verifiedDeploymentIds ?? []);
 
   return GOVERNANCE_DEPLOYMENTS
     .filter((candidate) => enabled.has(candidate.deploymentId))

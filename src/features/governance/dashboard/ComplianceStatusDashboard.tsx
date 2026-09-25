@@ -57,6 +57,7 @@ import {
   type ActivationBootstrapStatus,
   type BootstrapStep,
 } from './workspaceBootstrapSteps';
+import { GOVERNANCE_AI_PATH, isGovernanceAiEnabled } from '../../../config/featureFlags';
 
 export function ComplianceStatusDashboard() {
   const { activeTenantId, tenants } = useTenant();
@@ -276,11 +277,13 @@ export function ComplianceStatusView({
               </Button>
             </Link>
           )}
-          <Link to="/app/assistant">
-            <Button variant="primary" size="md">
-              Governance AI
-            </Button>
-          </Link>
+          {isGovernanceAiEnabled() && (
+            <Link to={GOVERNANCE_AI_PATH}>
+              <Button variant="primary" size="md">
+                Governance AI
+              </Button>
+            </Link>
+          )}
         </div>
       </div>
 

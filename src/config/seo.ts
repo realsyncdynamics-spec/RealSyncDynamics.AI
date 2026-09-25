@@ -253,12 +253,12 @@ function breadcrumbs(items: Array<{ name: string; url: string }>): Record<string
 export const SEO_CONFIG: Record<string, SEOConfig> = {
   // ─── Tier 1 — Hero / Top-Conversion ──────────────────────────────────────
   '/': {
-    // Europe-OS hero lock — matches hero-content.ts H1.
-    title: 'RealSyncDynamics.AI — KI kontrollierbar, nachweisbar, auditbereit',
+    // Governance OS Handoff v2 — matches the H1 in GovernanceOsHero.
+    title: 'RealSyncDynamics.AI — AI Compliance Operations OS for Europe',
     description:
-      'RealSyncDynamics.AI erkennt KI- und Compliance-Risiken, setzt Richtlinien durch und erzeugt kontinuierliche Evidenz für EU AI Act und DSGVO. Governance-Scan starten.',
+      'Runtime-Governance für regulierte KI-Systeme: KI-Bestand erfassen, nach EU AI Act klassifizieren, Richtlinien durchsetzen, Evidenz nachweisen. DSGVO und EU AI Act, EU-Hosting. Free Audit starten.',
     canonical: `${SITE_URL}/`,
-    ogTitle: 'KI-Nutzung kontrollierbar, nachweisbar und auditbereit',
+    ogTitle: 'AI Compliance Operations OS for Europe',
     ogDescription:
       'Runtime governance for regulated AI systems. Continuous evidence. EU-native by design.',
   },

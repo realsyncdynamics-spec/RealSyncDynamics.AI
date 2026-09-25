@@ -423,6 +423,7 @@ const EnterpriseDatenschutzPage = lazy(() => import('./enterprise-os/pages/Legal
 const EnterpriseImpressumPage = lazy(() => import('./enterprise-os/pages/LegalPage').then((m) => ({ default: m.ImpressumPage })));
 const EnterpriseCheckoutEntryPage = lazy(() => import('./enterprise-os/pages/CheckoutEntryPage').then((m) => ({ default: m.CheckoutEntryPage })));
 const EnterpriseCheckoutPageWrapper = lazy(() => import('./enterprise-os/pages/CheckoutPageWrapper').then((m) => ({ default: m.CheckoutPageWrapper })));
+const LoginPage = lazy(() => import('./pages/LoginPage'));
 const EnterpriseWelcomeWizardPage = lazy(() => import('./enterprise-os/pages/WelcomeWizardPage').then((m) => ({ default: m.WelcomeWizardPage })));
 
 
@@ -1042,7 +1043,7 @@ function RoutesWithTracking() {
 
       {/* Common auth entry points users expect */}
       {/* Auth Entry Points — Canonical path is /welcome (OTP magic link via Supabase) */}
-      <Route path="/login" element={<Navigate to="/welcome" replace />} />
+      <Route path="/login" element={<LoginPage />} />
       <Route path="/signin" element={<Navigate to="/welcome" replace />} />
       <Route path="/signup" element={<Navigate to="/welcome" replace />} />
       <Route path="/register" element={<Navigate to="/welcome" replace />} />

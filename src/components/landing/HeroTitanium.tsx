@@ -2,7 +2,7 @@ import type { CSSProperties } from 'react';
 import { Link } from 'react-router-dom';
 import { EuropeNetworkHero } from './EuropeNetworkHero';
 import {
-  HERO_DASHBOARD_CTA_LABEL,
+  HERO_AUDIT_TRAIL_CTA_LABEL,
   HERO_HEADLINE,
   HERO_OPERATING_LOOP,
   HERO_SCAN_CTA_LABEL,
@@ -115,7 +115,7 @@ export function HeroTitanium() {
                 backgroundColor: modeVeil(14),
               }}
             >
-              {HERO_DASHBOARD_CTA_LABEL}
+              {HERO_AUDIT_TRAIL_CTA_LABEL}
             </a>
           </div>
         </div>

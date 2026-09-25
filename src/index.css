@@ -5,6 +5,26 @@
 /* Self-hosted Fonts (Inter, Space Grotesk, JetBrains Mono) — latin + latin-ext.
    Vermeidet CSP-Verstoss + Drittanbieter-Request an fonts.googleapis.com (DSGVO). */
 
+/* Newsreader 400 — ausschließlich Hero-H1 der Governance-OS-Landing (Handoff v2).
+   Self-hosted (OFL, public/fonts/OFL-Newsreader.txt), weil die CSP
+   `font-src 'self' data:` keinen Google-Fonts-CDN erlaubt. */
+@font-face {
+  font-family: 'Newsreader';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/newsreader-latin-400-normal.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Newsreader';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/newsreader-latin-ext-400-normal.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
 /* Inter Tight — Display-Schnitt der Governance-AI-Landing. Enger laufend als
    Inter; trägt H1/H2, Marke und Kennzahlen im Titan-Enterprise-Setz. */
 @font-face {
@@ -377,6 +397,36 @@
   --font-sans:    "Plus Jakarta Sans", "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Plus Jakarta Sans", "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
   --font-mono:    "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+
+  /* Governance OS — Handoff v2 (Cyan). Namespaced `rs-`, damit bestehende
+     Paletten (Obsidian, Titanium, Brass, Gold-Landing) unberührt bleiben.
+     Quelle: HANDOFF.md „Design Tokens". Nutzung z.B. `bg-rs-bg-1`,
+     `text-rs-fg-2`, `border-rs-border`, `font-rs-serif`. */
+  --font-rs-serif: "Newsreader", Georgia, "Times New Roman", serif;
+  --font-rs-title: "Inter Tight", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-rs-ui:    "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-rs-mono:  "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+
+  --color-rs-hero:           #02050B;
+  --color-rs-bg-0:           #070B14;
+  --color-rs-bg-1:           #0D1322;
+  --color-rs-bg-2:           #14203A;
+  --color-rs-bg-3:           #1D2B48;
+  --color-rs-fg-0:           #F2F5FA;
+  --color-rs-fg-1:           #C9D1E0;
+  --color-rs-fg-2:           #8A95AC;
+  --color-rs-fg-3:           #5A6684;
+  --color-rs-border:         #1F2B48;
+  --color-rs-border-strong:  #2E3C5E;
+  --color-rs-primary:        #1E5AFF;
+  --color-rs-primary-hover:  #1641C4;
+  --color-rs-primary-light:  #7FA0FF;
+  --color-rs-cyan:           #00B8D4;
+  --color-rs-cyan-light:     #4FD4E8;
+  --color-rs-success:        #10B981;
+  --color-rs-warning:        #F5A524;
+  --color-rs-danger:         #E5484D;
+  --color-rs-violet:         #7C5CFF;
 
   /* Obsidian (background + surfaces) */
   --color-obsidian-50:  #f4f4f5;
@@ -1756,4 +1806,64 @@ html, body {
 .ga-landing-modes[data-landing-mode='light'] #product h1 span span,
 .ga-landing-modes[data-landing-mode='light'] #product p.font-medium {
   --rsd-accent: #78551e;
+}
+
+/* ── Governance OS Handoff v2 — Startseite ohne Farbmodus ─────────────────
+   `/` trägt seit Handoff v2 keinen Dunkel/Cyan/Hell-Schalter mehr. Die
+   Sektionen unter dem Hero lesen weiter die `--ga-*`-Variablen; dieser Scope
+   stellt sie auf die Handoff-Palette (Cyan-Akzent, kein Gold) und die
+   Titel-Schrift auf Inter Tight. Andere Design-Routen bleiben unberührt. */
+.ga-context.rs-handoff {
+  color-scheme: dark;
+  --ga-display: var(--font-rs-title);
+  --ga-void: var(--color-rs-hero);
+  --ga-deep: var(--color-rs-bg-0);
+  --ga-mid: var(--color-rs-bg-1);
+  --ga-panel: rgba(13, 19, 34, 0.72);
+  --ga-text: var(--color-rs-fg-0);
+  --ga-muted: var(--color-rs-fg-1);
+  --ga-titan: var(--color-rs-fg-2);
+  --ga-silver: var(--color-rs-fg-1);
+  --ga-green: var(--color-rs-success);
+  --ga-accent: var(--color-rs-cyan);
+  --ga-accent-lite: var(--color-rs-cyan-light);
+  --ga-accent-deep: #0e8aa6;
+  --ga-accent-border: rgba(0, 184, 212, 0.35);
+  /* Die VIP-Stufe war Gold; im Handoff gibt es kein Gold. Violett ist die
+     vorgesehene Sekundärfarbe (Management/Enterprise). */
+  --ga-vip: var(--color-rs-violet);
+  --ga-vip-lite: #a996ff;
+  --ga-vip-deep: #5b3fd9;
+  --ga-vip-border: rgba(124, 92, 255, 0.4);
+  --ga-line: var(--color-rs-border);
+  --ga-line-soft: rgba(31, 43, 72, 0.7);
+  --ga-pill-face: linear-gradient(180deg, #2b66ff, var(--color-rs-primary));
+  --ga-pill-ink: #ffffff;
+  --ga-pill-shadow: 0 1px 0 rgba(255, 255, 255, 0.12) inset, 0 8px 24px rgba(30, 90, 255, 0.3);
+  --ga-ghost-face: rgba(13, 19, 34, 0.7);
+  --ga-ghost-face-hover: rgba(0, 184, 212, 0.1);
+  --ga-ghost-border: var(--color-rs-border-strong);
+  --ga-ghost-border-hover: var(--color-rs-cyan-light);
+  --ga-chip-face: rgba(0, 184, 212, 0.08);
+  --ga-h1-face: linear-gradient(var(--color-rs-fg-0), var(--color-rs-fg-0));
+  --ga-h1-accent: linear-gradient(var(--color-rs-cyan-light), var(--color-rs-cyan));
+  --ga-h2-accent: linear-gradient(var(--color-rs-cyan-light), var(--color-rs-cyan));
+  --ga-glass: linear-gradient(160deg, rgba(20, 32, 58, 0.72), rgba(13, 19, 34, 0.72) 60%);
+  --ga-band: linear-gradient(180deg, rgba(7, 11, 20, 0.6), rgba(7, 11, 20, 0.88));
+  --ga-band-alt: linear-gradient(180deg, rgba(7, 11, 20, 0.88), rgba(7, 11, 20, 0.6));
+  --ga-status-bg: var(--color-rs-bg-0);
+  --ga-ticker-bg: var(--color-rs-bg-0);
+  --ga-footer-bg: var(--color-rs-bg-0);
+  --ga-price-face: linear-gradient(180deg, #ffffff 0%, var(--color-rs-cyan-light) 100%);
+  --ga-featured-shadow: 0 0 0 1px rgba(30, 90, 255, 0.45), 0 12px 32px rgba(0, 0, 0, 0.45);
+  font-feature-settings: "ss01", "cv11";
+}
+.rs-handoff .ga-vip {
+  --ga-sheen: rgba(124, 92, 255, 0.16);
+  --ga-pill-face: linear-gradient(180deg, #2b66ff, var(--color-rs-primary));
+  --ga-pill-ink: #ffffff;
+  --ga-h2-accent: linear-gradient(#c9bdff, var(--color-rs-violet));
+  --ga-h1-accent: var(--ga-h2-accent);
+  --ga-ghost-face-hover: rgba(124, 92, 255, 0.12);
+  --ga-chip-face: rgba(124, 92, 255, 0.08);
 }

@@ -7,7 +7,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
-  Activity, AlertTriangle, ArrowRight, Bot, Clock, ChevronRight, FileCheck2, Globe2, LayoutTemplate, Loader2,
+  Activity, AlertTriangle, ArrowRight, Bot, Clock, ChevronRight, FileCheck2, Globe2, LayoutTemplate, Loader2, Lock,
   Minus, Radar, Rocket, ShieldCheck, Sparkles, TrendingDown, TrendingUp,
 } from 'lucide-react';
 import { useTenant } from '../../../core/access/TenantProvider';
@@ -24,9 +24,21 @@ import { Card, CardHeader, CardBody } from '../../../enterprise-os/components/Ca
 import { ScoreGauge } from '../../../enterprise-os/components/ScoreGauge';
 import { Button } from '../../../enterprise-os/components/Button';
 import { StatusBadge } from '../../../enterprise-os/components/Badge';
-import type { ScoreLevel } from '../cockpit/cockpitScore';
+import type { GovernanceScoreStatus, ScoreDataBasis, ScoreLevel } from '../cockpit/cockpitScore';
+import { GovernanceScoreState } from '../cockpit/GovernanceScoreState';
 import { scoreLabel, scoreLevel } from '../cockpit/cockpitScore';
 import { loadCockpitData, type CockpitData, type CockpitRuntimeEvent } from '../cockpit/cockpitData';
+import {
+  daysSince,
+  EVIDENCE_MIN_ENTRIES,
+  EVIDENCE_STALE_DAYS,
+  FINDING_LEVEL_LABEL,
+  formatAgeDe,
+  resolvedLabel,
+  RISK_BUCKET_LABEL,
+  summarizeFindings,
+  type DashboardSignals,
+} from './dashboardSignals';
 import { TrialBanner } from '../../workspace/TrialBanner';
 import {
   HIGH_RISK_ASSET_THRESHOLD,
@@ -45,6 +57,7 @@ import {
   type ActivationBootstrapStatus,
   type BootstrapStep,
 } from './workspaceBootstrapSteps';
+import { GOVERNANCE_AI_PATH, isGovernanceAiEnabled } from '../../../config/featureFlags';
 
 export function ComplianceStatusDashboard() {
   const { activeTenantId, tenants } = useTenant();
@@ -182,6 +195,14 @@ export interface ComplianceStatusViewProps {
   livePlanId?: string | null;
   /** True while entitlements are still loading after post-checkout redirect. */
   entitlementsLoading?: boolean;
+  /** „Erneut laden“ im Score-Fehlerzustand. */
+  onRetry?: () => void;
+  /**
+   * Schloss am „Packs →“-Link (/app/policy-packs, Entitlement `policy.packs`).
+   * Tooltip-Text, wenn gesperrt; `null`/fehlend = offen. Kommt aus
+   * tenant_entitlements (CommandCenterDashboard), wie RouteEntitlementGate.
+   */
+  packsLockTitle?: string | null;
 }
 
 export function ComplianceStatusView({
@@ -194,6 +215,8 @@ export function ComplianceStatusView({
   bootstrapSteps = [],
   livePlanId = null,
   entitlementsLoading = false,
+  onRetry,
+  packsLockTitle = null,
 }: ComplianceStatusViewProps) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -222,6 +245,7 @@ export function ComplianceStatusView({
     data.openMeasures.total === 0 &&
     data.actions.length === 0 &&
     data.evidenceHealth.percent === null &&
+    data.evidenceHealth.totalCount === 0 &&
     data.riskIndex.score === null &&
     data.readiness === null,
   );
@@ -253,11 +277,13 @@ export function ComplianceStatusView({
               </Button>
             </Link>
           )}
-          <Link to="/app/assistant">
-            <Button variant="primary" size="md">
-              Governance AI
-            </Button>
-          </Link>
+          {isGovernanceAiEnabled() && (
+            <Link to={GOVERNANCE_AI_PATH}>
+              <Button variant="primary" size="md">
+                Governance AI
+              </Button>
+            </Link>
+          )}
         </div>
       </div>
 
@@ -371,7 +397,7 @@ export function ComplianceStatusView({
       )}
 
       {activeTenantId && !loading && (
-        <ComplianceKpiStrip kpi={complianceKpi} />
+        <ComplianceKpiStrip kpi={complianceKpi} governance={data} onRetry={onRetry} />
       )}
 
       {isEmptyTenant && (
@@ -435,6 +461,9 @@ export function ComplianceStatusView({
                 testId="governance-score"
                 eyebrow="Governance-Score"
                 score={data.score}
+                status={data.scoreStatus}
+                basis={data.scoreBasis}
+                onRetry={onRetry}
                 hint="Self-Assessment aus offenen Pflichten und KPI-Abdeckung. Keine Zertifizierung."
               />
               <RiskCard risk={data.riskIndex} />
@@ -465,7 +494,7 @@ export function ComplianceStatusView({
                   flows={data.assetFlows}
                   assetsFailed={data.partialFailures.some((f) => f.startsWith('assets:'))}
                 />
-                <PolicyCoveragePanel posture={data.posture} />
+                <PolicyCoveragePanel posture={data.posture} packsLockTitle={packsLockTitle} />
               </div>
 
               {data.summary24h && (
@@ -489,6 +518,7 @@ export function ComplianceStatusView({
             {/* Zone 4 — Right rail: Critical Findings / Alerts / Tasks */}
             <aside className="xl:col-span-4 space-y-5" aria-label="Findings und Aufgaben">
               <CriticalFindingsRail
+                signals={data.signals}
                 actions={data.actions}
                 summary={data.summary24h}
                 bootstrapSteps={bootstrapSteps}
@@ -502,7 +532,7 @@ export function ComplianceStatusView({
           <p className="text-[11px] text-titanium-600 font-mono">
             {data.lastUpdated
               ? `KPI-Stand: ${data.lastUpdated}`
-              : 'KPI-Snapshot noch nicht verfügbar — Score aus Echtzeit-Zählern.'}
+              : 'KPI-Snapshot noch nicht verfügbar — Score noch nicht bewertbar.'}
             {' · '}
             <Link to="/app/dashboard" className="hover:text-titanium-300 underline">Workspace</Link>
             {' · '}
@@ -543,8 +573,13 @@ function EventStreamPanel({
         ) : (
           <ul className="divide-y divide-titanium-900 max-h-72 overflow-y-auto">
             {events.map((event) => (
-              <li key={event.id} className="px-5 py-3 flex items-start gap-3">
-                <Activity className={`h-3.5 w-3.5 mt-0.5 shrink-0 ${riskLevelColor(event.riskLevel)}`} />
+              <li
+                key={event.id}
+                className="px-5 py-3 flex items-start gap-3"
+                data-testid={`event-${event.id}`}
+                data-resolved={event.resolvedAt ? 'true' : 'false'}
+              >
+                <Activity className={`h-3.5 w-3.5 mt-0.5 shrink-0 ${event.resolvedAt ? 'text-titanium-600' : riskLevelColor(event.riskLevel)}`} />
                 <div className="min-w-0 flex-1">
                   <p className="text-sm text-titanium-100 truncate">{event.title}</p>
                   <p className="text-[10px] font-mono text-titanium-500 mt-0.5 truncate">
@@ -555,9 +590,15 @@ function EventStreamPanel({
                     {formatRelativeTime(event.createdAt)}
                   </p>
                 </div>
-                <span className={`font-mono text-[9px] uppercase tracking-wider shrink-0 ${riskLevelColor(event.riskLevel)}`}>
-                  {event.riskLevel}
-                </span>
+                {event.resolvedAt ? (
+                  <span className="font-mono text-[9px] uppercase tracking-wider shrink-0 max-w-[8.5rem] text-right leading-snug text-emerald-400" data-testid={`event-${event.id}-resolved`}>
+                    {resolvedLabel(event.resolvedAt, event.resolvedManually)}
+                  </span>
+                ) : (
+                  <span className={`font-mono text-[9px] uppercase tracking-wider shrink-0 ${riskLevelColor(event.riskLevel)}`}>
+                    {event.riskLevel}
+                  </span>
+                )}
               </li>
             ))}
           </ul>
@@ -666,7 +707,13 @@ function AssetFlowsPanel({
   );
 }
 
-function PolicyCoveragePanel({ posture }: { posture: CockpitData['posture'] }) {
+function PolicyCoveragePanel({
+  posture,
+  packsLockTitle = null,
+}: {
+  posture: CockpitData['posture'];
+  packsLockTitle?: string | null;
+}) {
   return (
     <Card data-testid="policy-coverage" className="bg-obsidian-900/80">
       <CardHeader
@@ -674,7 +721,14 @@ function PolicyCoveragePanel({ posture }: { posture: CockpitData['posture'] }) {
         title="Policy Coverage"
         subtitle="Aus dem letzten KPI-Snapshot — keine Schätzung."
         action={(
-          <Link to="/app/policy-packs" className="text-[10px] font-mono uppercase tracking-wider text-[#00B8D4] hover:text-[#00B8D4]">
+          <Link
+            to="/app/policy-packs"
+            title={packsLockTitle ?? undefined}
+            data-locked={packsLockTitle ? 'true' : 'false'}
+            data-testid="policy-coverage-packs-link"
+            className="inline-flex items-center gap-1 text-[10px] font-mono uppercase tracking-wider text-[#00B8D4] hover:text-[#00B8D4]"
+          >
+            {packsLockTitle && <Lock className="h-3 w-3" aria-label={packsLockTitle} />}
             Packs →
           </Link>
         )}
@@ -694,16 +748,66 @@ function PolicyCoveragePanel({ posture }: { posture: CockpitData['posture'] }) {
   );
 }
 
+interface CriticalFindingItem {
+  id: string;
+  level: 'critical' | 'high';
+  title: string;
+  detail: string;
+  href: string;
+}
+
+/**
+ * „Kritische Befunde“: Pflichten (Incidents/DSFA/DSR) + Assets im Bucket
+ * Hoch/Kritisch + Scanner-Befunde hoch/kritisch (mit Alter). Mittlere
+ * Scanner-Befunde nur als Hinweis. Rein, für Tests exportiert.
+ */
+export function collectCriticalFindings(
+  actions: CockpitData['actions'],
+  signals: DashboardSignals | null | undefined,
+  now: number = Date.now(),
+): { items: CriticalFindingItem[]; mediumHints: string[] } {
+  const items: CriticalFindingItem[] = actions
+    .filter((a): a is typeof a & { level: 'critical' | 'high' } => a.level === 'critical' || a.level === 'high')
+    .map((a) => ({ id: a.id, level: a.level, title: a.title, detail: a.detail, href: a.href }));
+  for (const asset of signals?.elevatedAssets ?? []) {
+    items.push({
+      id: `risk-${asset.id}`,
+      level: asset.bucket === 'critical' ? 'critical' : 'high',
+      title: asset.name,
+      detail: `Risiko-Score ${asset.score} · ${RISK_BUCKET_LABEL[asset.bucket]}`,
+      href: '/app/risk-inventory',
+    });
+  }
+  const findings = summarizeFindings(signals?.findings ?? []);
+  for (const f of findings.severe) {
+    const age = daysSince(f.createdAt, now);
+    items.push({
+      id: `finding-${f.id}`,
+      level: f.level === 'critical' ? 'critical' : 'high',
+      title: f.title,
+      detail: `Scanner-Befund · ${FINDING_LEVEL_LABEL[f.level]}${age === null ? '' : ` · ${formatAgeDe(age)}`}`,
+      href: '/app/websites',
+    });
+  }
+  const mediumHints = findings.medium.map((f) => {
+    const age = daysSince(f.createdAt, now);
+    return `${f.title} · ${FINDING_LEVEL_LABEL[f.level]}${age === null ? '' : ` · ${formatAgeDe(age)}`}`;
+  });
+  return { items, mediumHints };
+}
+
 function CriticalFindingsRail({
   actions,
   summary,
   bootstrapSteps,
+  signals,
 }: {
   actions: CockpitData['actions'];
   summary: CockpitData['summary24h'];
   bootstrapSteps: BootstrapStep[];
+  signals?: DashboardSignals;
 }) {
-  const critical = actions.filter((a) => a.level === 'critical' || a.level === 'high');
+  const { items: critical, mediumHints } = collectCriticalFindings(actions, signals);
 
   return (
     <>
@@ -711,15 +815,21 @@ function CriticalFindingsRail({
         <CardHeader
           eyebrow="Findings"
           title="Kritische Befunde"
-          subtitle="Priorisierte Pflichten aus Incidents, DSFA und DSR."
+          subtitle="Pflichten (Incidents, DSFA, DSR), erhöhte Risiko-Scores und Scanner-Befunde."
         />
         <CardBody className="p-0">
           {critical.length === 0 ? (
             <div className="px-5 py-6 text-center text-sm text-titanium-400" data-testid="no-critical-findings">
               <ShieldCheck className="h-5 w-5 mx-auto mb-2 text-emerald-400" />
               Keine kritischen oder hohen Befunde offen.
+              {mediumHints.length > 0 && (
+                <p className="mt-2 text-xs text-amber-300" data-testid="medium-findings-hint">
+                  {mediumHints.length === 1 ? '1 mittlerer Befund' : `${mediumHints.length} mittlere Befunde`}: {mediumHints.slice(0, 3).join(' · ')}
+                </p>
+              )}
             </div>
           ) : (
+            <>
             <ul className="divide-y divide-titanium-900" data-testid="critical-findings-list">
               {critical.slice(0, 6).map((action) => (
                 <li key={action.id}>
@@ -739,6 +849,12 @@ function CriticalFindingsRail({
                 </li>
               ))}
             </ul>
+            {mediumHints.length > 0 && (
+              <p className="px-5 py-3 text-xs text-amber-300 border-t border-titanium-900" data-testid="medium-findings-hint">
+                Hinweis — {mediumHints.length === 1 ? '1 mittlerer Befund' : `${mediumHints.length} mittlere Befunde`}: {mediumHints.slice(0, 3).join(' · ')}
+              </p>
+            )}
+            </>
           )}
         </CardBody>
       </Card>
@@ -922,7 +1038,16 @@ function FrameworkStrip() {
 
 /* ─── Compliance KPI row (score history + table digests) ───────────────── */
 
-function ComplianceKpiStrip({ kpi }: { kpi: ComplianceKpiRow }) {
+function ComplianceKpiStrip({
+  kpi,
+  governance = null,
+  onRetry,
+}: {
+  kpi: ComplianceKpiRow;
+  /** Governance-Score (computeGovernanceScoreIfReliable) — einzige Score-Quelle. */
+  governance?: CockpitData | null;
+  onRetry?: () => void;
+}) {
   const breakdownBits = [
     { key: 'GDPR', value: kpi.score_breakdown.score_gdpr },
     { key: 'NIS2', value: kpi.score_breakdown.score_nis2 },
@@ -942,15 +1067,16 @@ function ComplianceKpiStrip({ kpi }: { kpi: ComplianceKpiRow }) {
         </p>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-px bg-titanium-900 border border-titanium-900">
-        <KpiMetricCard
-          testId="compliance-score-overall"
-          label="Score overall"
-          value={kpi.score_overall}
-          suffix="%"
+        {/* P0: Dieselbe Zahl wie Kachel und Governance-Score-Karte — kein
+            zweiter Score aus compliance_score_history. Die Historie bleibt
+            nur als Rahmenwerk-Hinweis. */}
+        <GovernanceKpiScoreCard
+          governance={governance}
+          onRetry={onRetry}
           hint={
             breakdownBits.length > 0
-              ? breakdownBits.map((b) => `${b.key} ${formatMetric(b.value)}`).join(' · ')
-              : 'Kein Score-Snapshot — keine erfundenen Werte.'
+              ? `Rahmenwerk-Historie: ${breakdownBits.map((b) => `${b.key} ${formatMetric(b.value)}`).join(' · ')}`
+              : 'Self-Assessment · keine Zertifizierung.'
           }
         />
         <TrendMetricCard direction={kpi.riskTrendDirection} />
@@ -970,6 +1096,43 @@ function ComplianceKpiStrip({ kpi }: { kpi: ComplianceKpiRow }) {
         />
       </div>
     </section>
+  );
+}
+
+function GovernanceKpiScoreCard({
+  governance,
+  hint,
+  onRetry,
+}: {
+  governance: CockpitData | null;
+  hint: string;
+  onRetry?: () => void;
+}) {
+  const status = governance?.scoreStatus ?? null;
+  return (
+    <div className="bg-obsidian-900 px-5 py-5" data-testid="compliance-score-overall">
+      <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-titanium-500">Governance-Score</p>
+      {status === 'ok' && governance?.score != null ? (
+        <div className="mt-3">
+          <p className="font-mono text-4xl font-bold tabular-nums text-titanium-50">{governance.score}</p>
+          <p className="mt-2 text-[11px] text-titanium-500">{hint}</p>
+        </div>
+      ) : status === 'insufficient_data' || status === 'unreliable' ? (
+        <div className="mt-3 text-titanium-200">
+          <GovernanceScoreState
+            status={status}
+            basis={governance?.scoreBasis ?? null}
+            onRetry={onRetry}
+            testId="compliance-score-overall-state"
+          />
+        </div>
+      ) : (
+        <div className="mt-3">
+          <p className="font-mono text-4xl font-bold text-titanium-600">—</p>
+          <p className="mt-2 text-[11px] text-titanium-500">Wird geladen …</p>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -1049,17 +1212,27 @@ function ScoreCard({
   testId,
   eyebrow,
   score,
+  status,
+  basis,
+  onRetry,
   hint,
 }: {
   testId: string;
   eyebrow: string;
   score: number | null;
+  status: GovernanceScoreStatus;
+  basis?: ScoreDataBasis | null;
+  onRetry?: () => void;
   hint: string;
 }) {
   return (
     <Card className="bg-obsidian-900 flex flex-col items-center justify-center gap-3 py-6 border-0" data-testid={testId}>
       <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-titanium-500">{eyebrow}</p>
-      {score === null ? (
+      {status !== 'ok' ? (
+        <div className="text-titanium-200">
+          <GovernanceScoreState status={status} basis={basis} onRetry={onRetry} testId={`${testId}-state`} />
+        </div>
+      ) : score === null ? (
         <EmptyMetric value="–" caption="Score nicht verfügbar" />
       ) : (
         <>
@@ -1085,9 +1258,14 @@ function RiskCard({ risk }: { risk: RiskIndex }) {
         </>
       )}
       <p className="px-4 text-center text-[11px] text-titanium-500 font-mono">
-        {risk.assetCount} Assets · {risk.highRiskAssets} ≥ {HIGH_RISK_ASSET_THRESHOLD}
+        {risk.assetCount} Assets · {risk.highRiskAssets} {RISK_BUCKET_LABEL.high}/{RISK_BUCKET_LABEL.critical} (≥ {HIGH_RISK_ASSET_THRESHOLD})
         {risk.newRisks24h > 0 ? ` · +${risk.newRisks24h} / 24h` : ''}
       </p>
+      {risk.score !== null && (
+        <p className="px-4 text-center text-[10px] text-titanium-600" data-testid="risk-index-explainer">
+          Gewichteter Mittelwert aller Assets — einzelne Assets stehen in der Risk Distribution.
+        </p>
+      )}
     </Card>
   );
 }
@@ -1108,8 +1286,26 @@ function EvidenceCard({ health }: { health: EvidenceHealth }) {
         {health.hashedCount}/{health.totalCount} gehasht
         {health.failedScans > 0 ? ` · ${health.failedScans} Scan-Fehler` : ''}
       </p>
+      {evidenceFreshnessNote(health) && (
+        <p className="px-4 text-center text-[10px] text-titanium-600" data-testid="evidence-freshness">
+          {evidenceFreshnessNote(health)}
+        </p>
+      )}
     </Card>
   );
+}
+
+/** Alters-/Mengenhinweis unter der Evidence-Kachel; Schwellen aus dashboardSignals. */
+export function evidenceFreshnessNote(health: EvidenceHealth): string | null {
+  const age = health.latestAgeDays;
+  const ageText = age == null ? null : `Letzter Nachweis ${formatAgeDe(age)}.`;
+  if (health.freshness === 'insufficient') {
+    return [`Unter ${EVIDENCE_MIN_ENTRIES} Nachweisen kein Wert.`, ageText].filter(Boolean).join(' ');
+  }
+  if (health.freshness === 'stale') {
+    return `Letzter Nachweis ${formatAgeDe(age ?? 0)} — älter als ${EVIDENCE_STALE_DAYS} Tage.`;
+  }
+  return ageText;
 }
 
 function ReadinessCard({

@@ -76,14 +76,10 @@ export function GovernanceBrowserShell({ children }: GovernanceBrowserShellProps
     [navigate],
   );
 
-  const handleSubmitIntent = useCallback(
-    (text: string) => {
-      const trimmed = text.trim();
-      if (!trimmed) return;
-      navigate('/app/dashboard', { state: { agentOsIntent: trimmed } });
-    },
-    [navigate],
-  );
+  // Kein Freitext-Intent mehr (P0-5): Er ging per Router-State an
+  // `/app/dashboard`, gelesen wurde er nur von `AgentOsPanel`, das auf keiner
+  // erreichbaren Route gemountet ist — der Intent verpuffte. Ohne
+  // `onSubmitIntent` bietet die Palette nur ausführbare Befehle an.
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
@@ -185,7 +181,6 @@ export function GovernanceBrowserShell({ children }: GovernanceBrowserShellProps
           onClose={() => setCommandCenterOpen(false)}
           items={commandItems}
           onRun={handleRunCommand}
-          onSubmitIntent={handleSubmitIntent}
         />
       </div>
     </AppGate>

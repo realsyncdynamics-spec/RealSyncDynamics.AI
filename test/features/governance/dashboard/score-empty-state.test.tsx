@@ -65,7 +65,7 @@ describe('Score-Kachel (HandoffOverview)', () => {
     renderTile({ data: cockpit() });
     const tile = screen.getByTestId('overview-score');
     expect(tile.textContent).toContain('Noch nicht bewertbar');
-    expect(screen.getByTestId('overview-score-value').textContent).toBe('—');
+    expect(screen.queryByTestId('overview-score-value')).toBeNull();
     expect(tile.textContent).not.toMatch(/\b100\b/);
     expect(screen.getByTestId('overview-score-state-first-step')).toHaveAttribute('href', '/app/onboarding');
   });

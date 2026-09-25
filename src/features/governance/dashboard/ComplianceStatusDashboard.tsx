@@ -7,7 +7,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
-  Activity, AlertTriangle, ArrowRight, Bot, Clock, ChevronRight, FileCheck2, Globe2, LayoutTemplate, Loader2,
+  Activity, AlertTriangle, ArrowRight, Bot, Clock, ChevronRight, FileCheck2, Globe2, LayoutTemplate, Loader2, Lock,
   Minus, Radar, Rocket, ShieldCheck, Sparkles, TrendingDown, TrendingUp,
 } from 'lucide-react';
 import { useTenant } from '../../../core/access/TenantProvider';
@@ -185,6 +185,12 @@ export interface ComplianceStatusViewProps {
   entitlementsLoading?: boolean;
   /** „Erneut laden“ im Score-Fehlerzustand. */
   onRetry?: () => void;
+  /**
+   * Schloss am „Packs →“-Link (/app/policy-packs, Entitlement `policy.packs`).
+   * Tooltip-Text, wenn gesperrt; `null`/fehlend = offen. Kommt aus
+   * tenant_entitlements (CommandCenterDashboard), wie RouteEntitlementGate.
+   */
+  packsLockTitle?: string | null;
 }
 
 export function ComplianceStatusView({
@@ -198,6 +204,7 @@ export function ComplianceStatusView({
   livePlanId = null,
   entitlementsLoading = false,
   onRetry,
+  packsLockTitle = null,
 }: ComplianceStatusViewProps) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -472,7 +479,7 @@ export function ComplianceStatusView({
                   flows={data.assetFlows}
                   assetsFailed={data.partialFailures.some((f) => f.startsWith('assets:'))}
                 />
-                <PolicyCoveragePanel posture={data.posture} />
+                <PolicyCoveragePanel posture={data.posture} packsLockTitle={packsLockTitle} />
               </div>
 
               {data.summary24h && (
@@ -673,7 +680,13 @@ function AssetFlowsPanel({
   );
 }
 
-function PolicyCoveragePanel({ posture }: { posture: CockpitData['posture'] }) {
+function PolicyCoveragePanel({
+  posture,
+  packsLockTitle = null,
+}: {
+  posture: CockpitData['posture'];
+  packsLockTitle?: string | null;
+}) {
   return (
     <Card data-testid="policy-coverage" className="bg-obsidian-900/80">
       <CardHeader
@@ -681,7 +694,14 @@ function PolicyCoveragePanel({ posture }: { posture: CockpitData['posture'] }) {
         title="Policy Coverage"
         subtitle="Aus dem letzten KPI-Snapshot — keine Schätzung."
         action={(
-          <Link to="/app/policy-packs" className="text-[10px] font-mono uppercase tracking-wider text-[#00B8D4] hover:text-[#00B8D4]">
+          <Link
+            to="/app/policy-packs"
+            title={packsLockTitle ?? undefined}
+            data-locked={packsLockTitle ? 'true' : 'false'}
+            data-testid="policy-coverage-packs-link"
+            className="inline-flex items-center gap-1 text-[10px] font-mono uppercase tracking-wider text-[#00B8D4] hover:text-[#00B8D4]"
+          >
+            {packsLockTitle && <Lock className="h-3 w-3" aria-label={packsLockTitle} />}
             Packs →
           </Link>
         )}

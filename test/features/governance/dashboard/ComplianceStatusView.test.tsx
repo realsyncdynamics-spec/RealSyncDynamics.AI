@@ -183,6 +183,22 @@ describe('ComplianceStatusView', () => {
     expect(onRetry).toHaveBeenCalledTimes(1);
   });
 
+  it('P0-2: „Packs →“ trägt ein Schloss, wenn policy.packs fehlt (Free)', () => {
+    const { getByTestId, unmount } = rendered({
+      data: fixture({ counts: { ...ZERO, incidents: 1 } }),
+      packsLockTitle: 'Policy Packs — ab Starter',
+    });
+    const link = getByTestId('policy-coverage-packs-link');
+    expect(link).toHaveAttribute('data-locked', 'true');
+    expect(link).toHaveAttribute('title', 'Policy Packs — ab Starter');
+    expect(link.querySelector('svg')).not.toBeNull();
+    unmount();
+    const open = rendered({ data: fixture({ counts: { ...ZERO, incidents: 1 } }) });
+    const openLink = open.getByTestId('policy-coverage-packs-link');
+    expect(openLink).toHaveAttribute('data-locked', 'false');
+    expect(openLink.querySelector('svg')).toBeNull();
+  });
+
   it('shows „Noch nicht bewertbar“ with a first step instead of 100 for an empty inventory', () => {
     const { getByTestId } = rendered({
       data: fixture({

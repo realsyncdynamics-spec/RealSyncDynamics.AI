@@ -17,9 +17,20 @@ import {
 import { ComplianceStatusView } from './ComplianceStatusDashboard';
 import { DashboardExecuteStrip } from './DashboardExecuteStrip';
 import { HandoffOverview } from '../handoff/HandoffOverview';
+import { decideNavLock } from '../../../components/governance-os/navAccess';
+import { navLockTitle } from '../../../components/governance-os/useNavLock';
 
 export function CommandCenterDashboard() {
-  const { activeTenantId, tenants } = useTenant();
+  const { activeTenantId, tenants, loading: tenantLoading, entitlements, hasFeature } = useTenant();
+  // Schloss für „Packs →“ aus tenant_entitlements (policy.packs) — dieselbe
+  // Quelle wie RouteEntitlementGate und die Sidebar. Plan nur Legacy-Fallback,
+  // für /app/policy-packs nicht relevant (Route steht im Register).
+  const packsLock = decideNavLock(
+    { route: '/app/policy-packs', keys: ['policy.packs'] },
+    { loading: tenantLoading, available: entitlements != null, hasFeature },
+    null,
+  );
+  const packsLockTitle = packsLock.locked ? navLockTitle('Policy Packs', packsLock) : null;
   const tenantName = tenants.find((t) => t.tenantId === activeTenantId)?.name ?? null;
   const [data, setData] = useState<CockpitData | null>(null);
   const [loading, setLoading] = useState(false);
@@ -92,6 +103,7 @@ export function CommandCenterDashboard() {
         error={error}
         bootstrapSteps={bootstrapSteps}
         onRetry={retry}
+        packsLockTitle={packsLockTitle}
       />
       {activeTenantId && <DashboardExecuteStrip />}
     </>

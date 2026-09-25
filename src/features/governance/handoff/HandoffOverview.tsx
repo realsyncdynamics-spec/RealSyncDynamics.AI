@@ -134,6 +134,8 @@ export function HandoffOverview({
         <Panel className="rs-dash__score rs-panel--pad20" testId="overview-score">
           <div className="rs-score">
             <span className="rs-overline self-start">{t('scoreTitle')}</span>
+            {/* Kein Ring bei nicht bewertbarem/fehlerhaftem Score — identisch zur Command-Center-Karte. */}
+            {scoreStatus !== 'unreliable' && scoreStatus !== 'insufficient_data' && (
             <div className="rs-score__ring">
               <svg viewBox="0 0 160 160" width="160" height="160" aria-hidden="true">
                 <circle cx="80" cy="80" r="70" fill="none" stroke="var(--color-rs-bg-3)" strokeWidth="10" />
@@ -155,6 +157,7 @@ export function HandoffOverview({
                 {score === null ? '—' : score}
               </div>
             </div>
+            )}
             {scoreStatus === 'unreliable' || scoreStatus === 'insufficient_data' ? (
               <GovernanceScoreState
                 status={scoreStatus}

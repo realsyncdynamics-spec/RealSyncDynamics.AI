@@ -20,11 +20,35 @@ import type {
   AiGatewayRequest, AiGatewayResponse, AiStreamChunk, ModelProfile,
 } from './types';
 
+/**
+ * Wie sich der Client beim Gateway ausweist (Vertrag RSD Backend, vorläufig).
+ *
+ * - `user`: `Authorization: Bearer <session.access_token>` plus
+ *   `apikey: <anon>`. `tenant_id` ist Pflicht im Body. Fehlt die Sitzung,
+ *   wirft der Client `UNAUTHORIZED` und sendet nichts — kein stiller
+ *   Rückfall auf den Anon-Key.
+ * - `anon`: ausdrücklich anonymer Aufruf (später z. B. Audit-Copilot mit
+ *   `mode: 'audit_anon'`). Sendet nur den Anon-Key. Muss vom Aufrufer
+ *   bewusst gewählt werden.
+ *
+ * Ohne `auth` gilt das bisherige Verhalten (Anon-Key als `apikey` und
+ * Bearer). Das bleibt nur für Alt-Aufrufer bestehen, die noch nicht
+ * umgestellt sind (siehe PR-Beschreibung) und ist veraltet.
+ */
+export type EdgeClientAuth =
+  | { mode: 'user'; getAccessToken: () => Promise<string | null | undefined> }
+  | { mode: 'anon' };
+
 export interface EdgeClientConfig {
   /** Supabase project base URL, e.g. `https://<ref>.supabase.co`. */
   supabaseUrl: string;
-  /** anon or service_role key — used as `apikey` + `Authorization: Bearer`. */
+  /**
+   * Anon-Key — immer als `apikey`. Ohne `auth` (Altverhalten) zusätzlich als
+   * `Authorization: Bearer`; Edge-seitig auch service_role.
+   */
   apiKey: string;
+  /** Ausweis gegenüber dem Gateway. Siehe `EdgeClientAuth`. */
+  auth?: EdgeClientAuth;
   /** Defaults to global `fetch`. Injected in tests. */
   fetchImpl?: typeof fetch;
   /** Request timeout. */
@@ -61,10 +85,38 @@ export class AiGatewayEdgeError extends Error {
     public readonly status: number,
     public readonly code: string,
     message: string,
+    /** Sekunden bis zum nächsten Versuch (aus `Retry-After`), falls gesendet. */
+    public readonly retryAfter?: number,
   ) {
     super(message);
     this.name = 'AiGatewayEdgeError';
   }
+}
+
+/**
+ * `Retry-After` als Sekunden: ganze Zahl oder HTTP-Datum. Unlesbare Werte
+ * ergeben `undefined` — wir erfinden keine Wartezeit.
+ */
+export function parseRetryAfter(value: string | null | undefined, now: number = Date.now()): number | undefined {
+  if (value == null) return undefined;
+  const trimmed = value.trim();
+  if (trimmed === '') return undefined;
+  if (/^\d+$/.test(trimmed)) return Number(trimmed);
+  const at = Date.parse(trimmed);
+  if (Number.isNaN(at)) return undefined;
+  return Math.max(0, Math.ceil((at - now) / 1000));
+}
+
+/** Fehlercode, wenn der Server keinen JSON-Umschlag liefert. */
+const CODE_BY_STATUS: Record<number, string> = {
+  400: 'BAD_REQUEST',
+  401: 'UNAUTHORIZED',
+  403: 'FORBIDDEN',
+  429: 'RATE_LIMITED',
+};
+
+function retryAfterOf(res: Response): number | undefined {
+  return parseRetryAfter(res.headers?.get?.('retry-after') ?? null);
 }
 
 export class AiGatewayEdgeClient {
@@ -97,21 +149,15 @@ export class AiGatewayEdgeClient {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), this.config.timeoutMs ?? 90_000);
     try {
+      const headers = await this.buildHeaders(request);
       const res = await this.fetchImpl(this.endpoint, {
         method: 'POST',
         signal: controller.signal,
-        headers: {
-          'content-type': 'application/json',
-          'apikey': this.config.apiKey,
-          'authorization': `Bearer ${this.config.apiKey}`,
-        },
+        headers,
         body: JSON.stringify({ op: 'stream', ...request } satisfies EdgeRequestBody),
       });
-      if (!res.body) {
-        throw new AiGatewayEdgeError(res.status, 'BAD_ENVELOPE', `gateway stream empty (HTTP ${res.status})`);
-      }
       if (!res.ok) {
-        let code = 'UPSTREAM';
+        let code = CODE_BY_STATUS[res.status] ?? 'UPSTREAM';
         let message = `gateway HTTP ${res.status}`;
         try {
           const envelope = (await res.json()) as EdgeErrorEnvelope;
@@ -122,7 +168,10 @@ export class AiGatewayEdgeClient {
         } catch {
           /* keep */
         }
-        throw new AiGatewayEdgeError(res.status, code, message);
+        throw new AiGatewayEdgeError(res.status, code, message, retryAfterOf(res));
+      }
+      if (!res.body) {
+        throw new AiGatewayEdgeError(res.status, 'BAD_ENVELOPE', `gateway stream empty (HTTP ${res.status})`);
       }
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
@@ -154,19 +203,44 @@ export class AiGatewayEdgeClient {
     }
   }
 
+  /**
+   * Header je nach Ausweis. Im Nutzer-Modus wird vor dem Senden geprüft:
+   * ohne Sitzung `UNAUTHORIZED`, ohne `tenant_id` `BAD_REQUEST` — in beiden
+   * Fällen geht keine Anfrage raus.
+   */
+  private async buildHeaders(request: AiGatewayRequest): Promise<Record<string, string>> {
+    const auth = this.config.auth;
+    const base: Record<string, string> = {
+      'content-type': 'application/json',
+      'apikey':       this.config.apiKey,
+    };
+    if (!auth) {
+      // Altverhalten (veraltet): Anon-Key auch als Bearer.
+      return { ...base, authorization: `Bearer ${this.config.apiKey}` };
+    }
+    if (auth.mode === 'anon') {
+      return base;
+    }
+    const token = await auth.getAccessToken();
+    if (!token) {
+      throw new AiGatewayEdgeError(401, 'UNAUTHORIZED', 'Keine aktive Sitzung — bitte erneut anmelden.');
+    }
+    if (typeof request.tenant_id !== 'string' || request.tenant_id.trim() === '') {
+      throw new AiGatewayEdgeError(400, 'BAD_REQUEST', 'tenant_id fehlt — kein aktiver Workspace.');
+    }
+    return { ...base, authorization: `Bearer ${token}` };
+  }
+
   private async invoke<T>(op: EdgeOp, request: AiGatewayRequest): Promise<AiGatewayResponse<T>> {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), this.config.timeoutMs ?? 30_000);
 
     try {
+      const headers = await this.buildHeaders(request);
       const res = await this.fetchImpl(this.endpoint, {
         method: 'POST',
         signal: controller.signal,
-        headers: {
-          'content-type':  'application/json',
-          'apikey':         this.config.apiKey,
-          'authorization': `Bearer ${this.config.apiKey}`,
-        },
+        headers,
         body: JSON.stringify({ op, ...request } satisfies EdgeRequestBody),
       });
 
@@ -174,11 +248,14 @@ export class AiGatewayEdgeClient {
       try {
         envelope = (await res.json()) as EdgeSuccessEnvelope<T> | EdgeErrorEnvelope;
       } catch {
-        throw new AiGatewayEdgeError(res.status, 'BAD_ENVELOPE', `gateway returned non-JSON (HTTP ${res.status})`);
+        const code = CODE_BY_STATUS[res.status] ?? 'BAD_ENVELOPE';
+        throw new AiGatewayEdgeError(res.status, code, `gateway returned non-JSON (HTTP ${res.status})`, retryAfterOf(res));
       }
 
       if (envelope.ok === false) {
-        throw new AiGatewayEdgeError(res.status, envelope.error.code, envelope.error.message);
+        const code = envelope.error?.code ?? CODE_BY_STATUS[res.status] ?? 'UPSTREAM';
+        const message = envelope.error?.message ?? `gateway HTTP ${res.status}`;
+        throw new AiGatewayEdgeError(res.status, code, message, retryAfterOf(res));
       }
 
       return {

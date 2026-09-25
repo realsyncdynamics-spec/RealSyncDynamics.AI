@@ -1,61 +1,58 @@
 /**
- * Shared Dark / Gold / Cream chrome for Governance OS surfaces (/app, /build).
- * Authoritative tokens: **this file** → CSS bridge in `index.css`
- * (`.os-chrome` / `.dashboard-context`). No cyan/purple product chrome.
+ * App-Chrome für Governance-OS-Flächen (/app, /build) — Handoff v2 (Cyan).
+ * Authoritative tokens: **this file** → CSS bridge in `governance-os-app.css`
+ * (`.os-chrome.rs-app`) und die `--color-rs-*`-Tokens in `index.css`.
  * Preview surfaces (`/design/ledger`, `/design/tribunal`) keep local tokens —
  * do not import Cobalt/Burgundy into this module.
  *
- * ## Warum die Werte hier stehen und nicht aus `landing-theme` kommen
+ * ## Palettenwechsel Gold → Handoff v2 (bewusste Entscheidung)
  *
- * Bis zur Entkopplung re-exportierte diese Datei dreizehn `LANDING_*` als
- * `OS_*`. Damit haette jede Aenderung an der Marketing-Palette die App
- * mitgezogen — und zwar nur zur Haelfte: Die Tailwind-Fragmente weiter unten
- * sind hartkodiert und waeren stehengeblieben. Ein Farbwechsel auf `/` haette
- * also nicht die App umgefaerbt, sondern zwei Akzente nebeneinander erzeugt.
+ * Bis Handoff v2 Phase 2 trug die App Gold (die frühere Gold-Palette). Der
+ * Eigentümer hat für Phase 2 („App-Shell + Screens im Handoff-Design")
+ * den Wechsel auf die Handoff-Palette angeordnet. Der Test
+ * `test/app/app-theme.test.ts` hielt die Goldwerte ausdrücklich fest, damit
+ * ein Farbwechsel „eine bewusste Entscheidung ist, kein Nebeneffekt" — das
+ * ist er hiermit, und der Test friert jetzt die Handoff-Werte ein.
  *
- * Die Werte unten sind die aufgeloesten Werte von vor der Entkopplung, Wert
- * fuer Wert uebernommen. Das ist Absicht: Der Schnitt soll nichts an der
- * Darstellung aendern, sondern nur die Kopplung aufloesen. Wer die App
- * umfaerben will, aendert ab jetzt diese Datei; wer die Startseite umfaerbt,
- * laesst sie in Ruhe.
+ * Die Namen (`OS_GOLD`, `OS_CREAM`, …) bleiben als stabile API für die
+ * bestehenden Importeure; ihre Bedeutung ist die Rolle, nicht der Farbton:
  *
- * ## Zwei Dinge, die beim Entkoppeln sichtbar wurden
+ *   OS_GOLD       Akzent des Chrome           → Cyan  #00B8D4
+ *   OS_CREAM      Fläche primärer Buttons     → Primary #1E5AFF
+ *   OS_CREAM_ALT  Hover/Verlauf               → Primary hover #1641C4
+ *   OS_CREAM_TEXT Schrift auf primären Buttons→ #FFFFFF
  *
- * - `OS_GOLD` und `OS_CREAM` tragen denselben Wert. Die Namen versprechen
- *   eine Unterscheidung, die es nicht gibt — vor einer Vereinheitlichung
- *   gehoert geklaert, welcher der beiden gemeint war.
- * - Die Tailwind-Fragmente nutzen `#e4cfa2`, die Konstanten hier `#d6ad68`.
- *   Die App traegt also zwei Goldtoene. Das war schon vorher so; es hier
- *   anzugleichen waere eine sichtbare Aenderung, kein Aufraeumen.
+ * Die Kopplung an `landing-theme` bleibt gelöst: Diese Datei importiert
+ * nichts von der Startseite.
  */
 
-/** Akzent des App-Chrome. */
-export const OS_GOLD = '#d6ad68';
+/** Akzent des App-Chrome (Rolle; Wert: Handoff-Cyan). */
+export const OS_GOLD = '#00B8D4';
 /** Grundflaeche. */
-export const OS_BG = '#0a0a0b';
-/** Flaeche heller Schaltflaechen. Wertgleich mit `OS_GOLD` — s. o. */
-export const OS_CREAM = '#d6ad68';
-/** Hellere Variante fuer Verlaeufe und Hover. */
-export const OS_CREAM_ALT = '#e8c98a';
-/** Schrift **auf** hellen Schaltflaechen — dunkel, trotz des Namens. */
-export const OS_CREAM_TEXT = '#0a0a0b';
+export const OS_BG = '#070B14';
+/** Flaeche primaerer Schaltflaechen (Rolle; Wert: Handoff-Primary). */
+export const OS_CREAM = '#1E5AFF';
+/** Hover-Variante primaerer Schaltflaechen. */
+export const OS_CREAM_ALT = '#1641C4';
+/** Schrift **auf** primaeren Schaltflaechen. */
+export const OS_CREAM_TEXT = '#FFFFFF';
 export const OS_H1 = 'clamp(2.5rem, 1.2rem + 4.2vw, 4.25rem)';
 export const OS_H2 = 'clamp(1.8125rem, 1.15rem + 2.3vw, 2.75rem)';
-export const OS_LINE = 'rgba(214, 173, 104, 0.22)';
-export const OS_MONO = "'DM Mono', 'JetBrains Mono', ui-monospace, monospace";
-export const OS_MUTED = '#9a9aa1';
-export const OS_PANEL = '#121214';
-export const OS_SERIF = "'Playfair Display', Georgia, 'Times New Roman', serif";
-export const OS_TEXT = '#f2eee6';
+export const OS_LINE = '#1F2B48';
+export const OS_MONO = "'JetBrains Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace";
+export const OS_MUTED = '#8A95AC';
+export const OS_PANEL = '#0D1322';
+export const OS_SERIF = "'Newsreader', Georgia, 'Times New Roman', serif";
+export const OS_TEXT = '#F2F5FA';
 
-/** Tailwind-friendly class fragments for chrome accents (hard-edge, Cream/Gold only). */
-export const OS_ACCENT_TEXT = 'text-[#e4cfa2]';
-export const OS_ACCENT_BORDER = 'border-[#e4cfa2]';
-export const OS_ACCENT_BG = 'bg-[#e4cfa2]';
+/** Tailwind-friendly class fragments for chrome accents (Handoff v2). */
+export const OS_ACCENT_TEXT = 'text-[#00B8D4]';
+export const OS_ACCENT_BORDER = 'border-[#00B8D4]';
+export const OS_ACCENT_BG = 'bg-[#00B8D4]';
 export const OS_CREAM_BTN =
-  'bg-[#e8ddc8] text-[#1a1917] hover:bg-[#f0e6d4] border border-[#e8ddc8]';
-export const OS_FOCUS_RING = 'focus-visible:ring-1 focus-visible:ring-[#e4cfa2]/50';
-/** Input / control focus border — cream-gold, never ai-cyan / #00E5FF. */
-export const OS_FOCUS_BORDER = 'focus:border-[#e4cfa2]';
-/** Soft gold wash for active stepper / selected chips. */
-export const OS_ACCENT_SOFT = 'border-[#e4cfa2] bg-[#e4cfa2]/15 text-[#e4cfa2]';
+  'bg-[#1E5AFF] text-white hover:bg-[#1641C4] border border-[#1E5AFF]';
+export const OS_FOCUS_RING = 'focus-visible:ring-1 focus-visible:ring-[#4FD4E8]/60';
+/** Input / control focus border — Handoff-Cyan. */
+export const OS_FOCUS_BORDER = 'focus:border-[#00B8D4]';
+/** Soft cyan wash for active stepper / selected chips. */
+export const OS_ACCENT_SOFT = 'border-[#00B8D4] bg-[#00B8D4]/15 text-[#4FD4E8]';

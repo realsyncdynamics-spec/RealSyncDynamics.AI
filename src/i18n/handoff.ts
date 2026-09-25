@@ -25,6 +25,8 @@
  * (Navigation, Badge, Loop, Formularlabels) — ebenfalls DE/EN.
  */
 
+import { HANDOFF_APP, type HandoffAppKey } from './handoffApp';
+
 export type Lang = 'de' | 'en';
 
 export const LANGS: readonly Lang[] = ['de', 'en'] as const;
@@ -408,7 +410,7 @@ export const HANDOFF_EXTRA = {
   },
 } as const;
 
-export type HandoffKey = CopyKey | keyof (typeof HANDOFF_EXTRA)['de'];
+export type HandoffKey = CopyKey | keyof (typeof HANDOFF_EXTRA)['de'] | HandoffAppKey;
 
 /**
  * Übersetzung mit `{n}`-Platzhaltern. Reihenfolge: Korrektur → Handoff-Copy →
@@ -422,11 +424,13 @@ export function translate(
   const override = HANDOFF_OVERRIDES[lang][key as CopyKey];
   const copy = (HANDOFF_COPY[lang] as Record<string, string>)[key];
   const extra = (HANDOFF_EXTRA[lang] as Record<string, string>)[key];
+  const app = (HANDOFF_APP[lang] as Record<string, string>)[key];
   const fallback =
     (HANDOFF_COPY.de as Record<string, string>)[key] ??
     (HANDOFF_EXTRA.de as Record<string, string>)[key] ??
+    (HANDOFF_APP.de as Record<string, string>)[key] ??
     key;
-  let text = override ?? copy ?? extra ?? fallback;
+  let text = override ?? copy ?? extra ?? app ?? fallback;
   if (vars) {
     for (const [name, value] of Object.entries(vars)) {
       text = text.split(`{${name}}`).join(String(value));

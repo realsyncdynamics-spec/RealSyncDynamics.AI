@@ -588,7 +588,7 @@ function EventStreamPanel({
                   </p>
                 </div>
                 {event.resolvedAt ? (
-                  <span className="font-mono text-[9px] uppercase tracking-wider shrink-0 text-emerald-400" data-testid={`event-${event.id}-resolved`}>
+                  <span className="font-mono text-[9px] uppercase tracking-wider shrink-0 max-w-[8.5rem] text-right leading-snug text-emerald-400" data-testid={`event-${event.id}-resolved`}>
                     {resolvedLabel(event.resolvedAt, event.resolvedManually)}
                   </span>
                 ) : (

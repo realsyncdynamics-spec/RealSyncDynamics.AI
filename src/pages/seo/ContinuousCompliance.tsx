@@ -89,8 +89,8 @@ export function ContinuousCompliance() {
         <h2 className="font-display font-bold text-titanium-50 text-xl">Wie steige ich ein?</h2>
         <p>
           Der kostenlose Audit ist der schnellste Einstieg: eine erste technische Vorprüfung Ihrer Domain mit
-          priorisierten Hinweisen. Für eine laufende Überwachung können Sie anschließend Starter oder Growth
-          aktivieren.
+          priorisierten Hinweisen. Die laufende Überwachung in Starter und Growth ist bei uns Coming Soon —
+          bis dahin können Sie Ihre Domain jederzeit erneut scannen.
         </p>
       </ProseSection>
 

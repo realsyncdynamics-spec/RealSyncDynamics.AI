@@ -142,7 +142,7 @@ function SiteOsInner() {
             </Link>
             <Link
               to="/app/siteos/modernize"
-              className="inline-flex items-center gap-2 border border-[#e4cfa2]/45 bg-[#e4cfa2]/10 px-4 py-2 font-mono text-[11px] uppercase tracking-[0.14em] text-[#e4cfa2] transition hover:border-[#e4cfa2]/70 hover:bg-[#e4cfa2]/15"
+              className="inline-flex items-center gap-2 border border-[#00B8D4]/45 bg-[#00B8D4]/10 px-4 py-2 font-mono text-[11px] uppercase tracking-[0.14em] text-[#00B8D4] transition hover:border-[#00B8D4]/70 hover:bg-[#00B8D4]/15"
               data-testid="fmt-modernize-entry"
             >
               Frontend modernisieren

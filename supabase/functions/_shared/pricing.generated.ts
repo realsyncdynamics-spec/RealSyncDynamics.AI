@@ -129,7 +129,7 @@ export const GOVERN_MODULES: ModuleDefinition[] = [
   { id: 'evidence_vault', area: 'govern', name: 'Evidence Vault', description: 'Manipulationssicherer Nachweisspeicher mit Hash-Chain, Retention und Legal Hold.', icon: 'Archive' },
   { id: 'audit_center', area: 'govern', name: 'Audit Center', description: 'Prüfpfad, Audit-Läufe und exportfähige Nachweispakete für Prüfer.', icon: 'ClipboardCheck' },
   { id: 'risk_register', area: 'govern', name: 'Risk Register', description: 'Zentrales Risikoregister mit Bewertung, Eigentümern und Maßnahmenverfolgung.', icon: 'AlertTriangle' },
-  { id: 'monitoring', area: 'govern', name: 'Monitoring', description: 'Kontinuierliche Runtime-Überwachung von Assets, Kontrollen und SLOs.', icon: 'Activity' },
+  { id: 'monitoring', area: 'govern', name: 'Monitoring', description: 'Runtime-Überwachung von Assets, Kontrollen und SLOs — dauerhafte Domain-Überwachung Coming Soon.', icon: 'Activity' },
   { id: 'compliance_reports', area: 'govern', name: 'Compliance Reports', description: 'Berichte je Rahmenwerk — PDF/JSON, revisionssicher signiert.', icon: 'FileText' },
 ];
 
@@ -1764,7 +1764,7 @@ export interface RuntimeStage {
  */
 export const RUNTIME_PIPELINE: RuntimeStage[] = [
   { id: 'source', label: 'Website / API', description: 'Ihre Systeme, Domains und Schnittstellen als Eingang der Runtime.', icon: 'Globe' },
-  { id: 'scan', label: 'Runtime Scan', description: 'Kontinuierliche Erfassung des Ist-Zustands über alle Assets.', icon: 'Radar' },
+  { id: 'scan', label: 'Runtime Scan', description: 'Erfassung des Ist-Zustands je Scan über alle Assets.', icon: 'Radar' },
   { id: 'policy', label: 'Policy Engine', description: 'Abgleich gegen versionierte Richtlinien und Rahmenwerke.', icon: 'Scale' },
   { id: 'evidence', label: 'Evidence Vault', description: 'Manipulationssichere Ablage jedes Nachweises mit Hash-Chain.', icon: 'Archive' },
   { id: 'risk', label: 'Risk Engine', description: 'Bewertung, Priorisierung und Eintrag ins Risikoregister.', icon: 'AlertTriangle' },
@@ -2897,7 +2897,7 @@ export function recommendPlan(input: RecommendationInput): PlanRecommendation {
   }
 
   if (score < 40) {
-    return { planId: 'growth', reason: `Governance Score ${score}/100 — kritische Lücken brauchen tägliches Monitoring und ein Risk Register.` };
+    return { planId: 'growth', reason: `Governance Score ${score}/100 — kritische Lücken brauchen ein Risk Register und priorisierte Fix-Pläne.` };
   }
   if (score < 70) {
     return { planId: 'growth', reason: `Governance Score ${score}/100 — Drift Detection hält den erreichten Stand stabil.` };

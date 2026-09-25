@@ -109,6 +109,7 @@ export function GovernanceOsHero({ modeSwitch }: { modeSwitch?: ReactNode } = {}
         <BrandWordmark />
         <nav className="rs-nav__links" aria-label={t('mainNav')}>
           <ReferenceNav lang={lang} />
+          {modeSwitch}
         </nav>
         <div className="rs-nav__tools">
           {modeSwitch}
@@ -146,6 +147,7 @@ export function GovernanceOsHero({ modeSwitch }: { modeSwitch?: ReactNode } = {}
           </div>
           <nav className="flex flex-col gap-2" aria-label={t('mainNav')}>
             <ReferenceNav lang={lang} onNavigate={() => setMenuOpen(false)} />
+            {modeSwitch}
           </nav>
           <div className="mt-4 flex items-center gap-3">
             {modeSwitch}

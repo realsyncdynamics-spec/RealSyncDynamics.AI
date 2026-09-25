@@ -161,6 +161,15 @@ export const GOVERNANCE_MODULES: GovernanceModule[] = [
     description: 'Benachrichtigungen bei neuen Findings',
   },
   {
+    id: 'actions',
+    label: 'Action Center',
+    icon: 'ListChecks',
+    route: '/app/actions',
+    status: 'beta',
+    gate: { kind: 'module', module: 'remediation' },
+    description: 'Mandantenweite Maßnahmen aus Incidents, DSRs und DSFA-Reviews',
+  },
+  {
     id: 'remediation',
     label: 'Maßnahmen',
     icon: 'Wrench',

@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
-import { render } from '@testing-library/react';
+import { describe, expect, it, vi } from 'vitest';
+import { fireEvent, render } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { ComplianceStatusView } from '../../../../src/features/governance/dashboard/ComplianceStatusDashboard';
 import type { CockpitData } from '../../../../src/features/governance/cockpit/cockpitData';
@@ -38,6 +38,8 @@ function fixture(overrides: Partial<CockpitData> = {}): CockpitData {
     counts,
     posture,
     score: overrides.score !== undefined ? overrides.score : computeGovernanceScore(counts, posture),
+    scoreStatus: overrides.scoreStatus ?? 'ok',
+    scoreBasis: overrides.scoreBasis ?? { aiSystems: 1, controlMappings: 1 },
     readiness: overrides.readiness !== undefined ? overrides.readiness : computeAuditReadiness(posture),
     readinessTrend: overrides.readinessTrend ?? null,
     actions: overrides.actions ?? [],
@@ -159,12 +161,56 @@ describe('ComplianceStatusView', () => {
       data: fixture({
         partialFailures: ['incidents: RLS'],
         score: null,
+        scoreStatus: 'unreliable',
       }),
     });
     expect(getByTestId('compliance-partial-failure')).toBeInTheDocument();
     expect(queryByText('Noch keine Governance-Daten')).toBeNull();
-    expect(getByTestId('governance-score').textContent).toContain('Score nicht verfügbar');
-    expect(getByTestId('governance-score').textContent).not.toMatch(/Sehr gut/);
+    // Fehlerzustand mit Retry — weder Leerzustand noch Zahl.
+    expect(getByTestId('governance-score-state-error').textContent).toContain('Score konnte nicht geladen werden');
+    expect(getByTestId('governance-score-state-retry')).toBeInTheDocument();
+    expect(queryByText('Noch nicht bewertbar')).toBeNull();
+    expect(getByTestId('governance-score').textContent).not.toMatch(/Sehr gut|100/);
+  });
+
+  it('calls onRetry from the score error state', () => {
+    const onRetry = vi.fn();
+    const { getByTestId } = rendered({
+      data: fixture({ partialFailures: ['kpi: rpc down'], score: null, scoreStatus: 'unreliable' }),
+      onRetry,
+    });
+    fireEvent.click(getByTestId('governance-score-state-retry'));
+    expect(onRetry).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows „Noch nicht bewertbar“ with a first step instead of 100 for an empty inventory', () => {
+    const { getByTestId } = rendered({
+      data: fixture({
+        counts: { ...ZERO },
+        score: null,
+        scoreStatus: 'insufficient_data',
+        scoreBasis: { aiSystems: 0, controlMappings: 0 },
+        riskIndex: computeRiskIndex({ assetScores: [10, 20], newRisks24h: 0, openIncidents: 0, dsrOverdue: 0 }),
+      }),
+    });
+    const card = getByTestId('governance-score');
+    expect(card.textContent).toContain('Noch nicht bewertbar');
+    expect(card.textContent).not.toMatch(/100|Sehr gut/);
+    expect(getByTestId('governance-score-state-first-step')).toHaveAttribute('href', '/app/onboarding');
+  });
+
+  it('explains a missing KPI snapshot without a first-step link when the inventory has data', () => {
+    const { getByTestId, queryByTestId } = rendered({
+      data: fixture({
+        counts: { ...ZERO, incidents: 1 },
+        score: null,
+        scoreStatus: 'insufficient_data',
+        scoreBasis: { aiSystems: 2, controlMappings: 0 },
+      }),
+    });
+    expect(getByTestId('governance-score').textContent).toContain('Noch nicht bewertbar');
+    expect(getByTestId('governance-score').textContent).toContain('KPI-Snapshot');
+    expect(queryByTestId('governance-score-state-first-step')).toBeNull();
   });
 
   it('lists prioritized open measures with deep links', () => {

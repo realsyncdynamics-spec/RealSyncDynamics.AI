@@ -10,14 +10,15 @@ import { countOpenDsrs, fetchTenantDsrs } from '../dsrApi';
 import { countPendingApprovals } from '../approvalsApi';
 import { countVendorsNoDpa } from '../vendorsApi';
 import {
-  countTenantEvidence, countTenantEvidenceHashed, fetchTenantAssets, fetchTenantEvents,
-  type DbGovernanceEvent,
+  countTenantControlMappings, countTenantEvidence, countTenantEvidenceHashed, fetchTenantAssets,
+  fetchTenantEvents, type DbGovernanceEvent,
 } from '../governanceApi';
 import type { DbGovernanceKpiSnapshot } from '../analytics/types';
 import {
   computeGovernanceScoreIfReliable, computeAuditReadiness,
-  type CockpitCounts, type CockpitPosture,
+  type CockpitCounts, type CockpitPosture, type GovernanceScoreStatus,
 } from './cockpitScore';
+import { isAiSystemAsset } from '../handoff/enforcementModel';
 import { prioritizeActions, type PriorityAction } from './prioritizeActions';
 import {
   computeAssetFlows, computeEvidenceHealth, computeOpenMeasures, computeRiskDistribution,
@@ -29,12 +30,16 @@ import {
 // KPI-Snapshots über das lazy getSupabase() (NICHT über analyticsApi, das den
 // Client auf Modulebene erzeugt und ohne Env beim Import crasht). Aufrufe
 // laufen in loadCockpitData unter Promise.allSettled — ein fehlender Snapshot
-// (oder fehlende Env) leert das Cockpit nicht.
-async function fetchLatestKpiSnapshot(tenantId: string): Promise<DbGovernanceKpiSnapshot | null> {
+// leert das Cockpit nicht.
+//
+// `null` heisst ausschliesslich „kein Snapshot vorhanden“. Ein RPC-Fehler
+// wirft: Früher wurde er zu `null` verschluckt und ergab zusammen mit dem
+// Penalty-Score 100 — ohne Eintrag in `partialFailures`.
+export async function fetchLatestKpiSnapshot(tenantId: string): Promise<DbGovernanceKpiSnapshot | null> {
   const sb = getSupabase();
   const { data, error } = await sb.rpc('governance_kpi_latest_snapshot', { p_tenant_id: tenantId });
-  if (error) return null;
-  return (data && data.length > 0 ? data[0] : null) as DbGovernanceKpiSnapshot | null;
+  if (error) throw new Error(error.message || 'governance_kpi_latest_snapshot fehlgeschlagen');
+  return (Array.isArray(data) && data.length > 0 ? data[0] : null) as DbGovernanceKpiSnapshot | null;
 }
 
 async function fetchKpiSnapshotRange(tenantId: string, start: string, end: string): Promise<DbGovernanceKpiSnapshot[]> {
@@ -78,7 +83,11 @@ export interface CockpitRuntimeEvent {
 export interface CockpitData {
   counts: CockpitCounts;
   posture: CockpitPosture | null;
+  /** Nur bei `scoreStatus === 'ok'` eine Zahl (cockpitScore.ts). */
   score: number | null;
+  scoreStatus: GovernanceScoreStatus;
+  /** Datenbasis des Scores; `null` = Zähler nicht ladbar. */
+  scoreBasis: { aiSystems: number | null; controlMappings: number | null };
   readiness: number | null;
   readinessTrend: { direction: 'up' | 'down' | 'flat'; percent: number } | null;
   actions: PriorityAction[];
@@ -124,7 +133,7 @@ export async function loadCockpitData(tenantId: string): Promise<CockpitData> {
   const [
     incidentsCount, dpiasCount, dsrCount, approvalsCount, vendorsCount,
     latestKpi, kpiRange, incidentList, dpiaList, dsrList,
-    summary24hRaw, assets, evidenceTotal, evidenceHashed, eventsRaw,
+    summary24hRaw, assets, evidenceTotal, evidenceHashed, eventsRaw, mappingsCount,
   ] = await Promise.allSettled([
     countOpenIncidents(tenantId),
     countOpenDpias(tenantId),
@@ -141,6 +150,7 @@ export async function loadCockpitData(tenantId: string): Promise<CockpitData> {
     countTenantEvidence(tenantId),
     countTenantEvidenceHashed(tenantId),
     fetchTenantEvents(tenantId, 12),
+    countTenantControlMappings(tenantId),
   ]);
 
   const counts: CockpitCounts = {
@@ -216,15 +226,26 @@ export async function loadCockpitData(tenantId: string): Promise<CockpitData> {
     failureOf('evidence-total', evidenceTotal),
     failureOf('evidence-hashed', evidenceHashed),
     failureOf('events', eventsRaw),
+    failureOf('control-mappings', mappingsCount),
   ].filter((item): item is string => item !== null);
 
   const countsReliable = [
     incidentsCount, dpiasCount, dsrCount, approvalsCount, vendorsCount,
   ].every((result) => result.status === 'fulfilled');
 
+  const scoreBasis = {
+    aiSystems: assets.status === 'fulfilled' ? assets.value.filter(isAiSystemAsset).length : null,
+    controlMappings: mappingsCount.status === 'fulfilled' ? mappingsCount.value : null,
+  };
+  const scoreResult = computeGovernanceScoreIfReliable(
+    countsReliable, counts, posture, scoreBasis, latestKpi.status === 'fulfilled',
+  );
+
   return {
     counts, posture,
-    score: computeGovernanceScoreIfReliable(countsReliable, counts, posture),
+    score: scoreResult.score,
+    scoreStatus: scoreResult.status,
+    scoreBasis,
     readiness: computeAuditReadiness(posture),
     readinessTrend, actions,
     lastUpdated: snap?.captured_date ?? null,
@@ -234,11 +255,16 @@ export async function loadCockpitData(tenantId: string): Promise<CockpitData> {
   };
 }
 
-/** Deterministischer SHA-256-Hex über einen stabilen Cockpit-Snapshot. */
-export async function cockpitIntegrityHash(data: CockpitData, generatedDate: string): Promise<string> {
-  const stable = {
+/**
+ * Stabiler, gehashter Datenstand der Prüfer-Mappe. `score_status` geht immer
+ * ein, `score` nur bei `ok` — sonst `null`. Nie ein Hash über einen
+ * Schein-Score.
+ */
+export function cockpitIntegrityPayload(data: CockpitData, generatedDate: string) {
+  return {
     generated_date: generatedDate,
-    score: data.score,
+    score_status: data.scoreStatus,
+    score: data.scoreStatus === 'ok' ? data.score : null,
     readiness: data.readiness,
     counts: data.counts,
     posture: data.posture,
@@ -248,7 +274,11 @@ export async function cockpitIntegrityHash(data: CockpitData, generatedDate: str
     risk_index: data.riskIndex.score,
     open_measures_total: data.openMeasures.total,
   };
-  const json = JSON.stringify(stable);
+}
+
+/** Deterministischer SHA-256-Hex über einen stabilen Cockpit-Snapshot. */
+export async function cockpitIntegrityHash(data: CockpitData, generatedDate: string): Promise<string> {
+  const json = JSON.stringify(cockpitIntegrityPayload(data, generatedDate));
   const bytes = new TextEncoder().encode(json);
   const digest = await crypto.subtle.digest('SHA-256', bytes);
   return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, '0')).join('');

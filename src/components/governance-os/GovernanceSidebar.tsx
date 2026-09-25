@@ -8,13 +8,10 @@ import {
   Share2, Sparkles, Scale, Shield,
   type LucideIcon,
 } from 'lucide-react';
-import {
-  GOVERNANCE_MODULES,
-  TAB_MODULES,
-  canAccessModule,
-  minimumPlanForModule,
-} from './governanceModules';
+import { TAB_MODULES } from './governanceModules';
 import type { GovernanceModule } from './governanceBrowserTypes';
+import type { NavLock } from './navAccess';
+import { navLockTitle, useNavLock } from './useNavLock';
 import { useActivePlan } from '../../hooks/useModuleAccess';
 import { useTenant } from '../../core/access/TenantProvider';
 import { useLang } from '../../i18n/useLang';
@@ -30,7 +27,11 @@ import '../../styles/governance-os-app.css';
  * Oben die sieben Hauptbereiche des Entwurfs (Übersicht, KI-Systeme,
  * Klassifizierung, Enforcement, Evidence, Berichte, Abrechnung) mit
  * Lucide-Icons. Darunter „Weitere Module" aus `TAB_MODULES` — dieselbe
- * Registry wie die mobile Tab-Leiste, mit Status-Filter und Plan-Gate.
+ * Registry wie die mobile Tab-Leiste, mit Status-Filter.
+ *
+ * Schlösser: aus `tenant_entitlements` (`useNavLock` → navAccess.ts), nicht
+ * mehr aus `plan.modules`. Schloss ⇔ Routensperre (RouteEntitlementGate)
+ * würde blockieren. Gesperrte Punkte zeigen kein Badge.
  * So bleibt jedes Modul erreichbar, ohne dass eine zweite, handgepflegte
  * Modulliste entsteht.
  *
@@ -81,19 +82,21 @@ function isActiveRoute(route: string, pathname: string): boolean {
   return pathname === route || pathname.startsWith(`${route}/`);
 }
 
-function MoreItem({ module, active, locked }: { module: GovernanceModule; active: boolean; locked: boolean }) {
+function MoreItem({ module, active, lock }: { module: GovernanceModule; active: boolean; lock: NavLock }) {
   const Icon: LucideIcon = ICON_MAP[module.icon] ?? Home;
-  const minPlan = locked ? PLAN_LABELS[minimumPlanForModule(module)] ?? 'Enterprise' : null;
+  const locked = lock.locked;
   return (
     <Link
       to={module.route}
       aria-current={active ? 'page' : undefined}
-      title={locked && minPlan ? `${module.label} — ab ${minPlan}` : module.description}
+      title={locked ? navLockTitle(module.label, lock) : module.description}
       className={`rs-side__item rs-side__item--small${locked ? ' rs-side__item--locked' : ''}`}
+      data-testid={`side-more-${module.id}`}
+      data-locked={locked ? 'true' : 'false'}
     >
       <Icon className="rs-side__icon" aria-hidden="true" />
       <span className="rs-side__text">{module.label}</span>
-      {locked && <Lock className="h-3 w-3 shrink-0" aria-label={minPlan ? `ab ${minPlan}` : 'gesperrt'} />}
+      {locked && <Lock className="h-3 w-3 shrink-0" aria-label={navLockTitle(module.label, lock)} />}
     </Link>
   );
 }
@@ -101,6 +104,7 @@ function MoreItem({ module, active, locked }: { module: GovernanceModule; active
 export function GovernanceSidebar() {
   const { pathname } = useLocation();
   const { plan, loading: planLoading } = useActivePlan();
+  const lockFor = useNavLock();
   const { tenants, activeTenantId } = useTenant();
   const { t } = useLang();
   const counts = useShellCounts();
@@ -123,8 +127,9 @@ export function GovernanceSidebar() {
       <div className="rs-side__group">
         {SHELL_NAV.map((item) => {
           const Icon = NAV_ICONS[item.id];
-          const module = item.moduleId ? GOVERNANCE_MODULES.find((m) => m.id === item.moduleId) : undefined;
-          const locked = module ? !canAccessModule(module, plan) : false;
+          const lock = lockFor({ route: item.route, keys: item.entitlementKeys });
+          const locked = lock.locked;
+          const label = t(item.labelKey);
           const badge = badgeFor(item.id, counts);
           const to = item.id === 'classify' && counts.firstSystemId
             ? `/app/ai-systems/${counts.firstSystemId}`
@@ -136,11 +141,13 @@ export function GovernanceSidebar() {
               aria-current={active === item.id ? 'page' : undefined}
               className={`rs-side__item${locked ? ' rs-side__item--locked' : ''}`}
               data-testid={`side-nav-${item.id}`}
+              data-locked={locked ? 'true' : 'false'}
+              title={locked ? navLockTitle(label, lock) : undefined}
             >
               <Icon className="rs-side__icon" aria-hidden="true" />
-              <span className="rs-side__text">{t(item.labelKey)}</span>
+              <span className="rs-side__text">{label}</span>
               {locked ? (
-                <Lock className="h-3 w-3 shrink-0" aria-hidden="true" />
+                <Lock className="h-3 w-3 shrink-0" aria-label={navLockTitle(label, lock)} data-testid={`side-lock-${item.id}`} />
               ) : badge !== null ? (
                 <span className="rs-side__badge" data-testid={`side-badge-${item.id}`}>{badge}</span>
               ) : null}
@@ -158,7 +165,7 @@ export function GovernanceSidebar() {
                 key={module.id}
                 module={module}
                 active={isActiveRoute(module.route, pathname)}
-                locked={!canAccessModule(module, plan)}
+                lock={lockFor({ route: module.route, module })}
               />
             ))}
           </div>

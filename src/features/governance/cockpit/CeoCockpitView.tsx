@@ -4,7 +4,7 @@
 // Detail-Listen) zu der einen Antwort, die eine Geschäftsführung in 30
 // Sekunden braucht: Gesamt-Score, Audit-Readiness, Top-3-Pflichten, Fristen.
 // Nutzt ausschliesslich bestehende APIs — kein neues Backend.
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   AlertTriangle, ArrowRight, FileCheck2, Loader2, ShieldCheck,
@@ -17,6 +17,7 @@ import { Button } from '../../../enterprise-os/components/Button';
 import { StatusBadge } from '../../../enterprise-os/components/Badge';
 import { scoreLabel, scoreLevel } from './cockpitScore';
 import { loadCockpitData, type CockpitData } from './cockpitData';
+import { GovernanceScoreState } from './GovernanceScoreState';
 import { GovernanceBriefCard } from './GovernanceBriefCard';
 import { ApiStatusCard } from '../../../features/api/ApiStatusCard';
 
@@ -37,6 +38,9 @@ export function CeoCockpitView() {
     data.actions.length === 0
   );
 
+  const [reloadKey, setReloadKey] = useState(0);
+  const retry = useCallback(() => setReloadKey((k) => k + 1), []);
+
   useEffect(() => {
     let cancelled = false;
     if (!activeTenantId) { setData(null); return; }
@@ -48,7 +52,7 @@ export function CeoCockpitView() {
       .finally(() => { if (!cancelled) setLoading(false); });
 
     return () => { cancelled = true; };
-  }, [activeTenantId]);
+  }, [activeTenantId, reloadKey]);
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 space-y-6">
@@ -140,7 +144,11 @@ export function CeoCockpitView() {
           {/* Zone 1 — Hero: Score + Readiness */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-px bg-titanium-900">
             <Card className="md:col-span-1 flex flex-col items-center justify-center gap-3 py-6 bg-obsidian-900">
-              {data.score === null ? (
+              {data.scoreStatus !== 'ok' ? (
+                <div className="text-titanium-200">
+                  <GovernanceScoreState status={data.scoreStatus} basis={data.scoreBasis} onRetry={retry} testId="cockpit-score-state" />
+                </div>
+              ) : data.score === null ? (
                 <>
                   <p className="font-mono text-5xl font-bold text-titanium-600">–</p>
                   <p className="text-xs text-titanium-400">Score nicht verfügbar</p>

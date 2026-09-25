@@ -3,7 +3,7 @@
 // the agent preview mesh or the build control plane — those live under /app/agents
 // and /app/modules.
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useTenant } from '../../../core/access/TenantProvider';
 import { loadCockpitData, type CockpitData } from '../cockpit/cockpitData';
 import { TrialBanner } from '../../workspace/TrialBanner';
@@ -25,6 +25,10 @@ export function CommandCenterDashboard() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [bootstrapSteps, setBootstrapSteps] = useState<BootstrapStep[]>([]);
+  // „Erneut laden“ im Score-Fehlerzustand: erhöht den Schlüssel und lädt die
+  // Cockpit-Daten neu (kein Seiten-Reload).
+  const [reloadKey, setReloadKey] = useState(0);
+  const retry = useCallback(() => setReloadKey((k) => k + 1), []);
 
   useEffect(() => {
     let cancelled = false;
@@ -42,7 +46,7 @@ export function CommandCenterDashboard() {
       .catch((err) => { if (!cancelled) setError((err as Error)?.message ?? String(err)); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
-  }, [activeTenantId]);
+  }, [activeTenantId, reloadKey]);
 
   useEffect(() => {
     let cancelled = false;
@@ -73,7 +77,13 @@ export function CommandCenterDashboard() {
       <TrialBanner />
       {/* Handoff v2 §6: Übersicht im Entwurfsraster — dieselben Cockpit-Daten
           (Score, Maßnahmen, Evidenz) plus Inventar/Policies/Connectoren. */}
-      <HandoffOverview activeTenantId={activeTenantId} data={data} />
+      <HandoffOverview
+        activeTenantId={activeTenantId}
+        data={data}
+        loading={loading}
+        error={error}
+        onRetry={retry}
+      />
       <ComplianceStatusView
         tenantName={tenantName}
         activeTenantId={activeTenantId}
@@ -81,6 +91,7 @@ export function CommandCenterDashboard() {
         loading={loading}
         error={error}
         bootstrapSteps={bootstrapSteps}
+        onRetry={retry}
       />
       {activeTenantId && <DashboardExecuteStrip />}
     </>

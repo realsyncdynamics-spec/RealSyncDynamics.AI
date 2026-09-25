@@ -24,7 +24,8 @@ import { Card, CardHeader, CardBody } from '../../../enterprise-os/components/Ca
 import { ScoreGauge } from '../../../enterprise-os/components/ScoreGauge';
 import { Button } from '../../../enterprise-os/components/Button';
 import { StatusBadge } from '../../../enterprise-os/components/Badge';
-import type { ScoreLevel } from '../cockpit/cockpitScore';
+import type { GovernanceScoreStatus, ScoreDataBasis, ScoreLevel } from '../cockpit/cockpitScore';
+import { GovernanceScoreState } from '../cockpit/GovernanceScoreState';
 import { scoreLabel, scoreLevel } from '../cockpit/cockpitScore';
 import { loadCockpitData, type CockpitData, type CockpitRuntimeEvent } from '../cockpit/cockpitData';
 import { TrialBanner } from '../../workspace/TrialBanner';
@@ -182,6 +183,8 @@ export interface ComplianceStatusViewProps {
   livePlanId?: string | null;
   /** True while entitlements are still loading after post-checkout redirect. */
   entitlementsLoading?: boolean;
+  /** „Erneut laden“ im Score-Fehlerzustand. */
+  onRetry?: () => void;
 }
 
 export function ComplianceStatusView({
@@ -194,6 +197,7 @@ export function ComplianceStatusView({
   bootstrapSteps = [],
   livePlanId = null,
   entitlementsLoading = false,
+  onRetry,
 }: ComplianceStatusViewProps) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -435,6 +439,9 @@ export function ComplianceStatusView({
                 testId="governance-score"
                 eyebrow="Governance-Score"
                 score={data.score}
+                status={data.scoreStatus}
+                basis={data.scoreBasis}
+                onRetry={onRetry}
                 hint="Self-Assessment aus offenen Pflichten und KPI-Abdeckung. Keine Zertifizierung."
               />
               <RiskCard risk={data.riskIndex} />
@@ -1049,17 +1056,27 @@ function ScoreCard({
   testId,
   eyebrow,
   score,
+  status,
+  basis,
+  onRetry,
   hint,
 }: {
   testId: string;
   eyebrow: string;
   score: number | null;
+  status: GovernanceScoreStatus;
+  basis?: ScoreDataBasis | null;
+  onRetry?: () => void;
   hint: string;
 }) {
   return (
     <Card className="bg-obsidian-900 flex flex-col items-center justify-center gap-3 py-6 border-0" data-testid={testId}>
       <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-titanium-500">{eyebrow}</p>
-      {score === null ? (
+      {status !== 'ok' ? (
+        <div className="text-titanium-200">
+          <GovernanceScoreState status={status} basis={basis} onRetry={onRetry} testId={`${testId}-state`} />
+        </div>
+      ) : score === null ? (
         <EmptyMetric value="–" caption="Score nicht verfügbar" />
       ) : (
         <>

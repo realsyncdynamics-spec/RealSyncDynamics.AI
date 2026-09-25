@@ -2,7 +2,9 @@
  * /app/dashboard — Übersicht im Handoff-Raster (HANDOFF §6).
  *
  * Score: `CockpitData.score` aus cockpitScore (computeGovernanceScoreIfReliable)
- * — dieselbe Zahl wie im Command Center darunter. Die Prototyp-Formel
+ * — dieselbe Zahl wie im Command Center darunter. Nur bei `scoreStatus === 'ok'`;
+ * sonst „Noch nicht bewertbar“ bzw. Fehlerzustand mit Retry
+ * (GovernanceScoreState, identisch zur Command-Center-Karte). Die Prototyp-Formel
  * (`38 + klassifiziert/8×26 + …`) ist bewusst NICHT übernommen.
  * Rahmenwerk-Balken nur, wo echte Control-Mappings existieren; ISO 42001
  * erscheint nur mit eigenen Mappings.
@@ -14,6 +16,7 @@ import { fetchTenantAssets, fetchTenantEvidence, fetchTenantPolicies } from '../
 import { listConnectors } from '../gatesApi';
 import { listTenantMappings } from '../../policy-packs/policyPacksApi';
 import type { CockpitData } from '../cockpit/cockpitData';
+import { GovernanceScoreState } from '../cockpit/GovernanceScoreState';
 import { useLang } from '../../../i18n/useLang';
 import {
   CLASS_COLOR_VAR,
@@ -66,9 +69,16 @@ interface AttentionItem {
 export function HandoffOverview({
   activeTenantId,
   data,
+  loading = false,
+  error = null,
+  onRetry,
 }: {
   activeTenantId: string | null;
   data: CockpitData | null;
+  loading?: boolean;
+  /** loadCockpitData abgelehnt — Score-Fehlerzustand, kein Leerzustand. */
+  error?: string | null;
+  onRetry?: () => void;
 }) {
   const { t, lang } = useLang();
   const [state] = useTenantLoad(activeTenantId, loadOverview);
@@ -108,7 +118,9 @@ export function HandoffOverview({
     attention.push({ id: `act-${action.id}`, title: action.title, reason: `${t('attAction')} · ${action.detail}`, href: action.href, klasse: null });
   }
 
-  const score = data?.score ?? null;
+  // Score nur bei status 'ok'. Ladefehler (ganz oder Teilquelle) ⇒ Fehlerzustand.
+  const scoreStatus = error ? 'unreliable' : data ? data.scoreStatus : null;
+  const score = scoreStatus === 'ok' ? data?.score ?? null : null;
   const cockpitHas = (name: string) =>
     data !== null && !data.partialFailures.some((f) => f.startsWith(`${name}:`));
   const evidenceTotal = cockpitHas('evidence-total') ? data!.evidenceHealth.totalCount : null;
@@ -121,7 +133,7 @@ export function HandoffOverview({
       <div className="rs-dash">
         <Panel className="rs-dash__score rs-panel--pad20" testId="overview-score">
           <div className="rs-score">
-            <span className="rs-overline self-start">{t('complianceScore')}</span>
+            <span className="rs-overline self-start">{t('scoreTitle')}</span>
             <div className="rs-score__ring">
               <svg viewBox="0 0 160 160" width="160" height="160" aria-hidden="true">
                 <circle cx="80" cy="80" r="70" fill="none" stroke="var(--color-rs-bg-3)" strokeWidth="10" />
@@ -143,10 +155,17 @@ export function HandoffOverview({
                 {score === null ? '—' : score}
               </div>
             </div>
-            {score === null ? (
+            {scoreStatus === 'unreliable' || scoreStatus === 'insufficient_data' ? (
+              <GovernanceScoreState
+                status={scoreStatus}
+                basis={data?.scoreBasis ?? null}
+                onRetry={onRetry}
+                testId="overview-score-state"
+              />
+            ) : score === null ? (
               <div>
-                <div className="rs-h3">{t('scoreNone')}</div>
-                <p className="rs-note mt-1">{t('scoreNoneSub')}</p>
+                <div className="rs-h3">{loading ? t('loading') : t('scoreNone')}</div>
+                {!loading && <p className="rs-note mt-1">{t('scoreNoneSub')}</p>}
               </div>
             ) : (
               <div className="flex flex-col items-center gap-1">

@@ -189,6 +189,21 @@ export async function fetchTenantAssets(tenantId: string): Promise<DbGovernanceA
   return (data ?? []) as DbGovernanceAsset[];
 }
 
+/**
+ * Anzahl Control-Mappings über alle Assets des Mandanten (HEAD-Count).
+ * Wirft bei Fehler — ein RLS-/Netzfehler ist kein „0 Mappings“
+ * (Eingang der Score-Zuverlässigkeit, cockpitScore.ts).
+ */
+export async function countTenantControlMappings(tenantId: string): Promise<number> {
+  const sb = getSupabase();
+  const { count, error } = await sb
+    .from('asset_control_mappings')
+    .select('id, governance_assets!inner(tenant_id)', { count: 'exact', head: true })
+    .eq('governance_assets.tenant_id', tenantId);
+  if (error) throw new Error(error.message);
+  return count ?? 0;
+}
+
 export async function fetchTenantPolicies(tenantId: string): Promise<DbGovernancePolicy[]> {
   const sb = getSupabase();
   const { data, error } = await sb

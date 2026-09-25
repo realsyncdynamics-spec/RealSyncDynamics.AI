@@ -8,7 +8,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Activity, AlertTriangle, ArrowRight, Bot, Clock, ChevronRight, FileCheck2, Globe2, LayoutTemplate, Loader2,
-  Lock, Minus, Radar, Rocket, ShieldCheck, Sparkles, TrendingDown, TrendingUp,
+  Minus, Radar, Rocket, ShieldCheck, Sparkles, TrendingDown, TrendingUp,
 } from 'lucide-react';
 import { useTenant } from '../../../core/access/TenantProvider';
 import { useEntitlements } from '../../../core/billing/useEntitlements';
@@ -175,12 +175,6 @@ export interface ComplianceStatusViewProps {
   error: string | null;
   bootstrapSteps?: BootstrapStep[];
   /**
-   * Policy Packs (Enforcement) im Plan gesperrt — aus demselben Route-Gate
-   * wie die Seitenleiste (`useRouteLocked('/app/policy-packs')`). Ohne Angabe:
-   * kein Schloss (Entitlements unbekannt, Durchsetzung bleibt serverseitig).
-   */
-  policyPacksLocked?: boolean;
-  /**
    * Live plan from tenant_entitlements / subscriptions (useEntitlements.tier).
    * Required to claim "Abo aktiv" — URL ?plan= alone is not enough (fail-closed).
    * `null` while entitlements still load → treat like sync pending.
@@ -198,7 +192,6 @@ export function ComplianceStatusView({
   loading,
   error,
   bootstrapSteps = [],
-  policyPacksLocked = false,
   livePlanId = null,
   entitlementsLoading = false,
 }: ComplianceStatusViewProps) {
@@ -472,7 +465,7 @@ export function ComplianceStatusView({
                   flows={data.assetFlows}
                   assetsFailed={data.partialFailures.some((f) => f.startsWith('assets:'))}
                 />
-                <PolicyCoveragePanel posture={data.posture} packsLocked={policyPacksLocked} />
+                <PolicyCoveragePanel posture={data.posture} />
               </div>
 
               {data.summary24h && (
@@ -673,7 +666,7 @@ function AssetFlowsPanel({
   );
 }
 
-function PolicyCoveragePanel({ posture, packsLocked }: { posture: CockpitData['posture']; packsLocked: boolean }) {
+function PolicyCoveragePanel({ posture }: { posture: CockpitData['posture'] }) {
   return (
     <Card data-testid="policy-coverage" className="bg-obsidian-900/80">
       <CardHeader
@@ -681,13 +674,8 @@ function PolicyCoveragePanel({ posture, packsLocked }: { posture: CockpitData['p
         title="Policy Coverage"
         subtitle="Aus dem letzten KPI-Snapshot — keine Schätzung."
         action={(
-          <Link
-            to="/app/policy-packs"
-            className="inline-flex items-center gap-1 text-[10px] font-mono uppercase tracking-wider text-[#00B8D4] hover:text-[#00B8D4]"
-            data-locked={packsLocked ? 'true' : undefined}
-            title={packsLocked ? 'Im aktuellen Plan nicht enthalten' : undefined}
-          >
-            Packs {packsLocked ? <Lock className="h-3 w-3" aria-label="gesperrt" data-testid="packs-lock" /> : '→'}
+          <Link to="/app/policy-packs" className="text-[10px] font-mono uppercase tracking-wider text-[#00B8D4] hover:text-[#00B8D4]">
+            Packs →
           </Link>
         )}
       />

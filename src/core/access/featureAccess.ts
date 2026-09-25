@@ -146,28 +146,6 @@ export function decideAccess(
   return { allowed: missing.length === 0, missing };
 }
 
-/**
- * Schloss für Navigation und Karten — aus demselben Register und denselben
- * wirksamen Entitlements, die `RouteEntitlementGate` beim Öffnen der Route
- * auswertet. Damit kann ein Menüpunkt nicht offen aussehen und dann auf der
- * Sperrseite landen (so geschehen bei Enforcement → `/app/policy-packs` im
- * Free-Plan), und umgekehrt keine Fläche ein Schloss tragen, die Server und
- * Route-Gate freigeben (KI-Register, `governance.ai_register`, ab Free).
- *
- * Randfälle wie im Gate: Route nicht im Register → offen; Entitlements noch
- * nicht geladen oder nicht ladbar → kein Schloss (das Gate zeigt dann die
- * Fläche, die Durchsetzung bleibt serverseitig).
- */
-export function isRouteLocked(
-  route: string,
-  hasFeature: (key: string) => boolean,
-  entitlementsLoaded: boolean,
-): boolean {
-  const requirement = requirementForPath(route);
-  if (!requirement || !entitlementsLoaded) return false;
-  return !decideAccess(requirement, hasFeature).allowed;
-}
-
 /** Günstigster wählbarer Plan, der alle Keys gewährt — `null`, wenn keiner. */
 export function cheapestPlanForKeys(keys: readonly EntitlementKey[]): PlanId | null {
   for (const planId of PLAN_ORDER) {
@@ -175,12 +153,6 @@ export function cheapestPlanForKeys(keys: readonly EntitlementKey[]): PlanId | n
     if (keys.every((key) => planGrants(planId, key))) return planId;
   }
   return null;
-}
-
-/** Günstigster wählbarer Plan, der eine registrierte Route öffnet — für „ab …"-Hinweise. */
-export function minimumPlanForRoute(route: string): PlanId | null {
-  const requirement = requirementForPath(route);
-  return requirement ? cheapestPlanForKeys(requirement.allOf) : null;
 }
 
 /** Add-ons, die alle fehlenden Keys mitbringen — der zweite Weg neben dem Plan. */

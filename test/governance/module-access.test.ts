@@ -54,15 +54,12 @@ describe('GOVERNANCE_MODULES config', () => {
     }
   });
 
-  it('Risks sind für free gesperrt, das KI-Register (KI-Systeme) nicht', () => {
-    // KI-Systeme folgen seit 2026-09-25 `governance.ai_register` — dem Key,
-    // den der Server ab Free gewährt. Das frühere Modul-Gate `eu_ai_act`
-    // sperrte nur im Browser.
+  it('KI-Systeme und Risks sind für free gesperrt', () => {
     const aiSystems = GOVERNANCE_MODULES.find((m) => m.id === 'ai-systems');
     const risks = GOVERNANCE_MODULES.find((m) => m.id === 'risks');
     expect(aiSystems).toBeDefined();
     expect(risks).toBeDefined();
-    expect(canAccessModule(aiSystems!, 'free')).toBe(true);
+    expect(canAccessModule(aiSystems!, 'free')).toBe(false);
     expect(canAccessModule(risks!, 'free')).toBe(false);
   });
 
@@ -122,8 +119,8 @@ describe('minimumPlanForModule', () => {
   });
 
   it('gibt starter zurück für starter-Minimum-Module', () => {
-    const policyPacks = GOVERNANCE_MODULES.find((m) => m.id === 'policy-packs')!;
-    expect(minimumPlanForModule(policyPacks)).toBe('starter');
+    const aiSystems = GOVERNANCE_MODULES.find((m) => m.id === 'ai-systems')!;
+    expect(minimumPlanForModule(aiSystems)).toBe('starter');
   });
 
   it('gibt growth zurück für Scheduler (Berechtigungs-Gate)', () => {

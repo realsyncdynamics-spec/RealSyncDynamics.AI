@@ -6,7 +6,7 @@
  * `?domain=` — die Eingabe ging verloren.
  */
 import { readFileSync } from 'node:fs';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import {
@@ -64,6 +64,36 @@ function AuditProbe() {
 }
 
 describe('GovernanceAddressBar → /audit', () => {
+  it('Enter mit Domain startet den Audit (nicht die Vorschau)', () => {
+    const onLoadUrl = vi.fn();
+    render(
+      <MemoryRouter initialEntries={['/app/dashboard']}>
+        <Routes>
+          <Route path="/app/dashboard" element={<GovernanceAddressBar onLoadUrl={onLoadUrl} />} />
+          <Route path="/audit" element={<AuditProbe />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+    const input = screen.getByRole('textbox', { name: 'Domain prüfen (startet Audit)' });
+    expect(input).toHaveAttribute('placeholder', 'Domain prüfen (startet Audit)');
+    fireEvent.change(input, { target: { value: 'example.com' } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+    expect(screen.getByTestId('audit-prefill')).toHaveTextContent('example.com');
+    expect(onLoadUrl).not.toHaveBeenCalled();
+  });
+
+  it('Vorschau bleibt als eigener Knopf erreichbar', () => {
+    const onLoadUrl = vi.fn();
+    render(
+      <MemoryRouter>
+        <GovernanceAddressBar onLoadUrl={onLoadUrl} />
+      </MemoryRouter>,
+    );
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'example.com' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Vorschau' }));
+    expect(onLoadUrl).toHaveBeenCalledWith('https://example.com/');
+  });
+
   it('übergibt die Suche so, dass /audit sie vorbelegt', () => {
     render(
       <MemoryRouter initialEntries={['/app/dashboard']}>

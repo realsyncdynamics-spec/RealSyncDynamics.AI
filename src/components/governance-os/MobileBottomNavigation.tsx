@@ -1,9 +1,8 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Cpu, Shield, FileCheck2, BarChart3, Lock } from 'lucide-react';
+import { Home, Cpu, Shield, FileCheck2, BarChart3 } from 'lucide-react';
 import { useLang } from '../../i18n/useLang';
 import type { HandoffKey } from '../../i18n/handoff';
 import { activeShellNav, type ShellNavId } from './shellNav';
-import { useRouteLockCheck } from '../../core/access/useRouteLock';
 import '../../styles/governance-os-app.css';
 
 /**
@@ -23,33 +22,23 @@ const BOTTOM_TABS: ReadonlyArray<{ id: ShellNavId; icon: typeof Home; labelKey: 
 export function MobileBottomNavigation() {
   const { pathname } = useLocation();
   const { t } = useLang();
-  const isLocked = useRouteLockCheck();
   const active = activeShellNav(pathname);
   // Klassifizierung ist die Detailseite der KI-Systeme — der Tab bleibt aktiv.
   const activeTab = active === 'classify' ? 'systems' : active;
 
   return (
     <nav className="rs-tabbar rs-ui" aria-label={t('shellTabsLabel')}>
-      {BOTTOM_TABS.map(({ id, icon: Icon, labelKey, route }) => {
-        // Gleiches Schloss wie die Seitenleiste: Route-Gate, nicht plan.modules.
-        const locked = isLocked(route);
-        return (
-          <Link
-            key={id}
-            to={route}
-            className="rs-tabbar__tab"
-            aria-current={activeTab === id ? 'page' : undefined}
-            data-locked={locked ? 'true' : undefined}
-          >
-            {locked ? (
-              <Lock className="h-5 w-5 shrink-0" aria-label="gesperrt" data-testid={`tab-lock-${id}`} />
-            ) : (
-              <Icon className="h-5 w-5 shrink-0" aria-hidden="true" />
-            )}
-            <span className="rs-tabbar__label">{t(labelKey)}</span>
-          </Link>
-        );
-      })}
+      {BOTTOM_TABS.map(({ id, icon: Icon, labelKey, route }) => (
+        <Link
+          key={id}
+          to={route}
+          className="rs-tabbar__tab"
+          aria-current={activeTab === id ? 'page' : undefined}
+        >
+          <Icon className="h-5 w-5 shrink-0" aria-hidden="true" />
+          <span className="rs-tabbar__label">{t(labelKey)}</span>
+        </Link>
+      ))}
     </nav>
   );
 }

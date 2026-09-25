@@ -36,33 +36,38 @@ export function GovernanceAddressBar({ onLoadUrl, activeUrl }: GovernanceAddress
   // Zeige die aktive URL wenn nicht im Fokus und eine geladen ist
   const displayValue = focused ? value : (activeUrl && !value ? activeUrl : value);
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key !== 'Enter') return;
+  // Enter startet immer den Audit mit vorbelegtem Domain-Feld (`?domain=`).
+  // Früher: URL → eingebettete Vorschau, sonst ein Audit-Link mit target-Parameter — den
+  // Parameter las /audit nicht, die Eingabe ging verloren; und der Platzhalter
+  // versprach eine Suche über KI-Systeme, Vendoren und Risiken, die es hier
+  // nicht gibt. Die Vorschau bleibt als eigener, beschrifteter Knopf.
+  const startAudit = () => {
     const input = value.trim();
     if (!input) return;
-
-    const url = normalizeUrl(input);
-    if (url && onLoadUrl) {
-      // Echte URL → Embedded Browser
-      onLoadUrl(url);
-      setValue('');
-    } else {
-      // Suche / Audit-Query → /audit mit vorbelegtem Domain-Feld. Früher
-      // `?target=`, das /audit nicht las — die Eingabe ging verloren.
-      navigate(auditPathFor(input, 'app-search'));
-      setValue('');
-    }
+    navigate(auditPathFor(input, 'app-search'));
+    setValue('');
   };
 
-  const isUrl = value.trim() ? Boolean(normalizeUrl(value)) : false;
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key !== 'Enter') return;
+    e.preventDefault();
+    startAudit();
+  };
+
+  const previewUrl = value.trim() ? normalizeUrl(value) : null;
+  const openPreview = () => {
+    if (!previewUrl || !onLoadUrl) return;
+    onLoadUrl(previewUrl);
+    setValue('');
+  };
 
   return (
     <div className={`flex-1 flex items-center gap-2 bg-obsidian-950 border px-3 py-1.5 max-w-xl transition-colors ${
       focused ? 'border-[#00B8D4]/60' : 'border-titanium-800'
     }`}>
-      {isUrl
-        ? <Globe className="h-3.5 w-3.5 text-[#00B8D4] shrink-0" />
-        : <Search className="h-3.5 w-3.5 text-titanium-600 shrink-0" />
+      {previewUrl
+        ? <Globe className="h-3.5 w-3.5 text-[#00B8D4] shrink-0" aria-hidden="true" />
+        : <Search className="h-3.5 w-3.5 text-titanium-600 shrink-0" aria-hidden="true" />
       }
       <input
         type="text"
@@ -71,13 +76,25 @@ export function GovernanceAddressBar({ onLoadUrl, activeUrl }: GovernanceAddress
         onFocus={() => { setFocused(true); if (activeUrl && !value) setValue(activeUrl); }}
         onBlur={() => { setFocused(false); }}
         onKeyDown={handleKeyDown}
-        placeholder="Website, KI-System, Vendor oder Risiko prüfen…"
+        placeholder="Domain prüfen (startet Audit)"
+        aria-label="Domain prüfen (startet Audit)"
         className="flex-1 bg-transparent text-xs text-titanium-200 placeholder-titanium-600 outline-none min-w-0"
       />
       {value && (
         <span className="font-mono text-[9px] text-titanium-700 shrink-0 hidden sm:block">
-          {isUrl ? '↵ Vorschau' : '↵ Audit'}
+          ↵ Audit
         </span>
+      )}
+      {previewUrl && onLoadUrl && (
+        <button
+          type="button"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={openPreview}
+          className="font-mono text-[9px] uppercase tracking-wider text-titanium-500 hover:text-[#00B8D4] shrink-0"
+          title="Seite eingebettet anzeigen (viele Seiten blockieren das)"
+        >
+          Vorschau
+        </button>
       )}
     </div>
   );

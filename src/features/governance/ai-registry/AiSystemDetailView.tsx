@@ -8,15 +8,12 @@
  * Risikostufe, Annex III und Art. 50 sind hier bearbeitbar, aber NICHT
  * speicherbar: `governanceApi` liest nur, und `governance-resources` kennt
  * kein Asset-Update (nur create/archive). Jede Abweichung vom gespeicherten
- * Stand trägt deshalb sichtbar „Entwurf · nicht gespeichert", und oben steht
- * dauerhaft „Entwurf — Speichern folgt": kein Speichern-Knopf, keine
- * Erfolgsmeldung, das Dossier nutzt nur den gespeicherten Stand.
+ * Stand trägt deshalb sichtbar „Entwurf · nicht gespeichert".
  */
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { ArrowRight, FileDown, Lock } from 'lucide-react';
+import { ArrowRight, FileDown } from 'lucide-react';
 import { useTenant } from '../../../core/access/TenantProvider';
-import { useRouteLocked } from '../../../core/access/useRouteLock';
 import { fetchTenantAssets, type DbGovernanceAsset } from '../governanceApi';
 import { listConnectors, type ConnectorRegistryEntry } from '../gatesApi';
 import {
@@ -138,13 +135,7 @@ function ClassificationDetail({
     setArt50(storedArt50 ?? false);
   }, [storedTier, storedAnnex, storedArt50]);
 
-  const tierDirty = tier !== storedTier;
-  const annexDirty = annex !== storedAnnex;
-  const art50Dirty = art50 !== (storedArt50 ?? false);
-  const dirty = tierDirty || annexDirty || art50Dirty;
-  // Enforcement liegt hinter `policy.packs` (Route-Gate) — der Sprung dorthin
-  // trägt dasselbe Schloss wie die Seitenleiste.
-  const enforceLocked = useRouteLocked('/app/policy-packs');
+  const dirty = tier !== storedTier || annex !== storedAnnex || art50 !== (storedArt50 ?? false);
   const annexMeta = annex ? ANNEX_III_CATEGORIES.find((c) => c.id === annex) : null;
 
   function onDossier() {
@@ -170,12 +161,6 @@ function ClassificationDetail({
 
   return (
     <div className="flex min-w-0 flex-col gap-4">
-      <div role="note" className="rs-toast" data-testid="classify-preview-note">
-        <div>
-          <strong>{t('classifyPreview')}</strong>
-          <p className="rs-note mt-1">{t('classifyPreviewNote')}</p>
-        </div>
-      </div>
       <Panel className="rs-panel--pad24">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0">
@@ -191,18 +176,8 @@ function ClassificationDetail({
             <button type="button" className="rs-chip-sm" onClick={onDossier}>
               <FileDown className="h-3.5 w-3.5" aria-hidden="true" /> {t('dossierBtn')}
             </button>
-            <Link
-              to="/app/policy-packs"
-              className="rs-chip-sm rs-chip-sm--primary"
-              data-locked={enforceLocked ? 'true' : undefined}
-              title={enforceLocked ? t('lockedHint') : undefined}
-            >
-              {t('toEnforce')}{' '}
-              {enforceLocked ? (
-                <Lock className="h-3.5 w-3.5" aria-label={t('lockedHint')} data-testid="to-enforce-lock" />
-              ) : (
-                <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
-              )}
+            <Link to="/app/policy-packs" className="rs-chip-sm rs-chip-sm--primary">
+              {t('toEnforce')} <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
             </Link>
           </div>
         </div>
@@ -215,7 +190,7 @@ function ClassificationDetail({
             <span className="rs-note">
               {t('storedTier', { tier: storedTier ? t(tierDefinition(storedTier).labelKey) : t('tierUnknown') })}
             </span>
-            {tierDirty && <DraftBadge />}
+            {dirty && <DraftBadge />}
           </span>
         </div>
         <div className="rs-tiers" role="group" aria-label={t('riskTier')}>
@@ -240,10 +215,7 @@ function ClassificationDetail({
         <Panel className="rs-panel--pad20">
           <div className="rs-panel__head">
             <span className="rs-overline">{t('annexTitle')}</span>
-            <span className="flex items-center gap-2">
-              {annexMeta && <span className="rs-mono rs-cyan text-[11px]">{annexMeta.annexPoint}</span>}
-              {annexDirty && <DraftBadge />}
-            </span>
+            {annexMeta && <span className="rs-mono rs-cyan text-[11px]">{annexMeta.annexPoint}</span>}
           </div>
           <select
             className="rs-select"
@@ -270,7 +242,6 @@ function ClassificationDetail({
         <Panel className="rs-panel--pad20">
           <div className="rs-panel__head">
             <span className="rs-overline">{t('transparency')}</span>
-            {art50Dirty && <DraftBadge />}
             <button
               type="button"
               role="switch"

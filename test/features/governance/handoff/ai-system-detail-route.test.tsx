@@ -10,16 +10,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 
-// `entitlements: null` = nicht geladen → kein Schloss (wie RouteEntitlementGate).
-const tenantState: { entitlements: Record<string, number> | null } = { entitlements: null };
 vi.mock('@/src/core/access/TenantProvider', () => ({
-  useTenant: () => ({
-    activeTenantId: 'tenant-1',
-    tenants: [],
-    loading: false,
-    entitlements: tenantState.entitlements,
-    hasFeature: (key: string) => (tenantState.entitlements?.[key] ?? 0) !== 0,
-  }),
+  useTenant: () => ({ activeTenantId: 'tenant-1', tenants: [], loading: false }),
 }));
 
 const assets = [
@@ -130,34 +122,6 @@ describe('AiSystemDetailView', () => {
   beforeEach(() => {
     window.localStorage.clear();
     resetLangForTests();
-    tenantState.entitlements = null;
-  });
-
-  it('zeigt die Klassifizierung dauerhaft als Entwurf — ohne Speichern-Knopf', async () => {
-    renderAt('/app/ai-systems/a1');
-    await waitFor(() => expect(screen.getByRole('heading', { name: 'Support-Chatbot' })).toBeInTheDocument());
-    const note = screen.getByTestId('classify-preview-note');
-    expect(note).toHaveTextContent('Speichern folgt');
-    expect(note).toHaveTextContent('Wir speichern Risikostufe, Annex III und Art. 50 hier noch nicht');
-    // Kein Knopf, der Persistenz vortäuscht, keine Erfolgsmeldung
-    expect(screen.queryByRole('button', { name: /speichern|übernehmen|save/i })).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: /Hochrisiko/ }));
-    expect(screen.queryByText(/gespeichert!|erfolgreich/i)).not.toBeInTheDocument();
-    expect(screen.getByTestId('classify-preview-note')).toBeInTheDocument();
-  });
-
-  it('Sprung zu Enforcement trägt das Schloss, wenn policy.packs fehlt (Free)', async () => {
-    tenantState.entitlements = { 'governance.ai_register': 1, 'dashboard.access': 1 };
-    renderAt('/app/ai-systems/a1');
-    await waitFor(() => expect(screen.getByRole('heading', { name: 'Support-Chatbot' })).toBeInTheDocument());
-    expect(screen.getByTestId('to-enforce-lock')).toBeInTheDocument();
-  });
-
-  it('kein Schloss am Enforcement-Sprung, wenn policy.packs gewährt ist', async () => {
-    tenantState.entitlements = { 'governance.ai_register': 1, 'policy.packs': 1 };
-    renderAt('/app/ai-systems/a1');
-    await waitFor(() => expect(screen.getByRole('heading', { name: 'Support-Chatbot' })).toBeInTheDocument());
-    expect(screen.queryByTestId('to-enforce-lock')).not.toBeInTheDocument();
   });
 
   it('zeigt das echte System mit abgeleiteter Klasse und Begründung', async () => {

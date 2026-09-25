@@ -9,7 +9,7 @@ import {
   residencySatisfies,
   selectGovernanceDeployment,
   type GovernanceRoutingPolicy,
-} from '../../src/core/ai-gateway/governanceProviderRegistry';
+} from '../../../src/core/ai-gateway/governanceProviderRegistry';
 
 const ALL = GOVERNANCE_DEPLOYMENTS.map((d) => d.deploymentId);
 

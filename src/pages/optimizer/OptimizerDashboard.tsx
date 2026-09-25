@@ -150,7 +150,7 @@ export function OptimizerDashboard() {
           </h2>
           <p className="text-sm text-titanium-300 mb-5">
             {paid
-              ? 'Dein Paket zeigt den vollständigen Bericht. Für automatisierte Fix-Snippets und tägliches Monitoring wechselst du auf Silber (Growth).'
+              ? 'Dein Paket zeigt den vollständigen Bericht. Für automatisierte Fix-Snippets wechselst du auf Silber (Growth); tägliches Monitoring ist dort als Coming Soon vorgesehen.'
               : 'Aktuell liest du den Bericht und behebst Befunde selbst. Ab Bronze bekommst du den vollständigen Bericht, ab Silber automatisierte Fix-Snippets.'}
           </p>
           <button

@@ -41,7 +41,7 @@ const OPTIONS: TrackOption[] = [
     bullets: [
       'Ihre Website bleibt unverändert — kein Umbau, keine Designänderung',
       'Anbindung über Scan, API, SDK oder Snippet',
-      'Kontinuierliches Monitoring statt Einmalprüfung',
+      'Kontinuierliches Monitoring statt Einmalprüfung (Coming Soon)',
       'Chat, Terminbuchung und Voice bleiben zubuchbar',
     ],
     cta: 'Nur Governance — weiter zur Registrierung',

@@ -130,6 +130,15 @@ describe('selectGovernanceDeployment — policy first, preference second', () =>
     )).toThrow(NoCompliantProviderError);
   });
 
+  it('treats omitted verification as unverified (fail closed)', () => {
+    expect(() => selectGovernanceDeployment(
+      { residency: 'EU_ONLY', workload: 'strict_json', requireJsonSchema: true },
+      {
+        enabledDeploymentIds: ['scaleway.generative.fr-par'],
+      },
+    )).toThrow(NoCompliantProviderError);
+  });
+
   it('DE_ONLY classification prefers IONOS, with STACKIT remaining an eligible fallback', () => {
     const decision = selectGovernanceDeployment(
       { residency: 'DE_ONLY', workload: 'classification' },

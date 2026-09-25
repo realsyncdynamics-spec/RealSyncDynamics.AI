@@ -995,8 +995,8 @@ describe('ai-gateway — audit_id ist nur correlation_id, kein Prompt-Kontext, k
     const c = h.calls[0];
     expect(c.system_prompt).toBe(ANON_AUDIT_SYSTEM_PROMPT);
     expect(c.input).toBe('Was heißt das?');
-    expect(c.messages).toBeUndefined();
-    expect(c.metadata).toBeUndefined();
+    expect('messages' in c).toBe(false);
+    expect('metadata' in c).toBe(false);
     const sent = JSON.stringify(c);
     expect(sent).not.toContain(AUDIT);
     expect(sent).not.toContain('secret-site.example');

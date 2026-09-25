@@ -8,12 +8,19 @@
  * Risikostufe, Annex III und Art. 50 sind hier bearbeitbar, aber NICHT
  * speicherbar: `governanceApi` liest nur, und `governance-resources` kennt
  * kein Asset-Update (nur create/archive). Jede Abweichung vom gespeicherten
- * Stand trägt deshalb sichtbar „Entwurf · nicht gespeichert".
+ * Stand trägt deshalb sichtbar „Entwurf · nicht gespeichert". Ein dauerhafter
+ * Hinweis sagt das auch ohne Änderung (P0-2).
+ *
+ * Ohne `ai_classification.limited` (Free) sind die Eingaben gesperrt — dieselbe
+ * Entscheidung wie das Schloss „Klassifizierung“ in der Seitenleiste
+ * (decideNavLock / navAccess.ts). Die Seite selbst bleibt als KI-System-Detail
+ * erreichbar (governance.ai_register).
  */
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { ArrowRight, FileDown } from 'lucide-react';
+import { ArrowRight, FileDown, Lock } from 'lucide-react';
 import { useTenant } from '../../../core/access/TenantProvider';
+import { decideNavLock } from '../../../components/governance-os/navAccess';
 import { fetchTenantAssets, type DbGovernanceAsset } from '../governanceApi';
 import { listConnectors, type ConnectorRegistryEntry } from '../gatesApi';
 import {
@@ -120,6 +127,19 @@ function ClassificationDetail({
   lang: 'de' | 'en';
 }) {
   const { t } = useLang();
+  const { loading: entLoading, entitlements, hasFeature } = useTenant();
+  // Gleiche Entscheidung wie das Nav-Schloss „Klassifizierung“ (navAccess.ts).
+  const classifyLocked = decideNavLock(
+    { route: '/app/ai-systems', keys: ['ai_classification.limited'] },
+    { loading: entLoading, available: entitlements != null, hasFeature },
+    null,
+  ).locked;
+  // „Zu Enforcement“: gleiche Entscheidung wie Nav-Schloss und Routensperre (policy.packs).
+  const enforceLocked = decideNavLock(
+    { route: '/app/policy-packs', keys: ['policy.packs'] },
+    { loading: entLoading, available: entitlements != null, hasFeature },
+    null,
+  ).locked;
   const cls = useMemo(() => classifyAsset(asset, connectors), [asset, connectors]);
   const storedTier = tierOf(asset.ai_act_class);
   const storedAnnex = isAnnexCategory(asset.annex_iii_category) ? asset.annex_iii_category : null;
@@ -177,7 +197,12 @@ function ClassificationDetail({
               <FileDown className="h-3.5 w-3.5" aria-hidden="true" /> {t('dossierBtn')}
             </button>
             <Link to="/app/policy-packs" className="rs-chip-sm rs-chip-sm--primary">
-              {t('toEnforce')} <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+              {t('toEnforce')}{' '}
+              {enforceLocked ? (
+                <Lock className="h-3.5 w-3.5" aria-label="im aktuellen Plan nicht enthalten" data-testid="to-enforce-locked" />
+              ) : (
+                <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+              )}
             </Link>
           </div>
         </div>
@@ -193,6 +218,10 @@ function ClassificationDetail({
             {dirty && <DraftBadge />}
           </span>
         </div>
+        <p className="rs-note mb-3" data-testid="classify-no-save">{t('classifyNoSavePath')}</p>
+        {classifyLocked && (
+          <p className="rs-note mb-3" data-testid="classify-locked">{t('classifyLocked')}</p>
+        )}
         <div className="rs-tiers" role="group" aria-label={t('riskTier')}>
           {TIERS.map((def) => (
             <button
@@ -201,6 +230,7 @@ function ClassificationDetail({
               className="rs-tier"
               style={colorVar(def.colorVar)}
               aria-pressed={tier === def.id}
+              disabled={classifyLocked}
               onClick={() => setTier(def.id)}
             >
               <span className="rs-tier__name">{t(def.labelKey)}</span>
@@ -221,6 +251,7 @@ function ClassificationDetail({
             className="rs-select"
             aria-label={t('annexTitle')}
             value={annex ?? ''}
+            disabled={classifyLocked}
             onChange={(e) => setAnnex(isAnnexCategory(e.target.value) ? e.target.value : null)}
           >
             <option value="">—</option>
@@ -248,6 +279,7 @@ function ClassificationDetail({
               className="rs-toggle"
               aria-checked={art50}
               aria-label={t('art50Toggle')}
+              disabled={classifyLocked}
               onClick={() => setArt50((v) => !v)}
             />
           </div>

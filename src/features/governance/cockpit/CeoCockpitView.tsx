@@ -4,7 +4,7 @@
 // Detail-Listen) zu der einen Antwort, die eine Geschäftsführung in 30
 // Sekunden braucht: Gesamt-Score, Audit-Readiness, Top-3-Pflichten, Fristen.
 // Nutzt ausschliesslich bestehende APIs — kein neues Backend.
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   AlertTriangle, ArrowRight, FileCheck2, Loader2, ShieldCheck,
@@ -17,25 +17,38 @@ import { Button } from '../../../enterprise-os/components/Button';
 import { StatusBadge } from '../../../enterprise-os/components/Badge';
 import { scoreLabel, scoreLevel } from './cockpitScore';
 import { loadCockpitData, type CockpitData } from './cockpitData';
+import { tenantDisplayName } from '../dashboard/dashboardSignals';
+import { GovernanceScoreState } from './GovernanceScoreState';
 import { GovernanceBriefCard } from './GovernanceBriefCard';
 import { ApiStatusCard } from '../../../features/api/ApiStatusCard';
 
 export function CeoCockpitView() {
   const navigate = useNavigate();
   const { activeTenantId, tenants } = useTenant();
-  const tenantName = tenants.find((t) => t.tenantId === activeTenantId)?.name ?? null;
+  const rawTenantName = tenants.find((t) => t.tenantId === activeTenantId)?.name ?? null;
+  // Deutsche Oberfläche: „Workspace von …“ statt englischem Genitiv.
+  const tenantName = rawTenantName === null ? null : tenantDisplayName(rawTenantName, 'de');
   const [data, setData] = useState<CockpitData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [dismissed, setDismissed] = useState(false);
 
-  // First-time user detection: kein Assets/Data vorhanden
-  const isFirstTime = data && !dismissed && (
+  // First-time user detection: kein Assets/Data vorhanden. Nicht bei
+  // fehlgeschlagenen Zählern — deren 0 ist kein Beleg für einen Erststart.
+  const isFirstTime = data && !dismissed && data.partialFailures.length === 0 && (
     data.counts.incidents === 0 &&
     data.counts.dpias === 0 &&
     data.counts.dsr.total === 0 &&
     data.actions.length === 0
   );
+
+  // Gleiches Muster wie CeoBriefPrintView: fehlgeschlagene Zähler zeigen
+  // „nicht geladen“ statt 0.
+  const failed = (name: string) => data?.partialFailures.some((f) => f.startsWith(`${name}:`)) ?? false;
+  const countCell = (name: string, value: number) => (failed(name) ? 'nicht geladen' : value);
+
+  const [reloadKey, setReloadKey] = useState(0);
+  const retry = useCallback(() => setReloadKey((k) => k + 1), []);
 
   useEffect(() => {
     let cancelled = false;
@@ -48,7 +61,7 @@ export function CeoCockpitView() {
       .finally(() => { if (!cancelled) setLoading(false); });
 
     return () => { cancelled = true; };
-  }, [activeTenantId]);
+  }, [activeTenantId, reloadKey]);
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 space-y-6">
@@ -140,7 +153,11 @@ export function CeoCockpitView() {
           {/* Zone 1 — Hero: Score + Readiness */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-px bg-titanium-900">
             <Card className="md:col-span-1 flex flex-col items-center justify-center gap-3 py-6 bg-obsidian-900">
-              {data.score === null ? (
+              {data.scoreStatus !== 'ok' ? (
+                <div className="text-titanium-200">
+                  <GovernanceScoreState status={data.scoreStatus} basis={data.scoreBasis} onRetry={retry} testId="cockpit-score-state" />
+                </div>
+              ) : data.score === null ? (
                 <>
                   <p className="font-mono text-5xl font-bold text-titanium-600">–</p>
                   <p className="text-xs text-titanium-400">Score nicht verfügbar</p>
@@ -170,10 +187,10 @@ export function CeoCockpitView() {
 
             <Card className="md:col-span-1 bg-obsidian-900">
               <CardBody className="grid grid-cols-2 gap-4 h-full content-center">
-                <Metric label="Offene Vorfälle" value={data.counts.incidents} danger={data.counts.incidents > 0} />
-                <Metric label="DSR überfällig" value={data.counts.dsr.overdue} danger={data.counts.dsr.overdue > 0} />
-                <Metric label="Offene DSFA" value={data.counts.dpias} />
-                <Metric label="Vendoren ohne AVV" value={data.counts.vendorsNoDpa} danger={data.counts.vendorsNoDpa > 0} />
+                <Metric label="Offene Vorfälle" value={countCell('incidents', data.counts.incidents)} danger={!failed('incidents') && data.counts.incidents > 0} />
+                <Metric label="DSR überfällig" value={countCell('dsr', data.counts.dsr.overdue)} danger={!failed('dsr') && data.counts.dsr.overdue > 0} />
+                <Metric label="Offene DSFA" value={countCell('dpias', data.counts.dpias)} />
+                <Metric label="Vendoren ohne AVV" value={countCell('vendors', data.counts.vendorsNoDpa)} danger={!failed('vendors') && data.counts.vendorsNoDpa > 0} />
               </CardBody>
             </Card>
           </div>
@@ -229,7 +246,7 @@ export function CeoCockpitView() {
           <ApiStatusCard />
 
           <p className="text-[11px] text-titanium-600 font-mono">
-            {data.lastUpdated ? `KPI-Stand: ${data.lastUpdated}` : 'KPI-Snapshot noch nicht verfügbar — Score aus Echtzeit-Zählern.'}
+            {data.lastUpdated ? `KPI-Stand: ${data.lastUpdated}` : 'KPI-Snapshot noch nicht verfügbar — Score noch nicht bewertbar.'}
             {' · '}
             <Link to="/app/overview" className="hover:text-titanium-300 underline">Klassische Übersicht</Link>
           </p>
@@ -252,10 +269,11 @@ function TrendChip({ direction, percent }: { direction: 'up' | 'down' | 'flat'; 
   );
 }
 
-function Metric({ label, value, danger = false }: { label: string; value: number; danger?: boolean }) {
+function Metric({ label, value, danger = false }: { label: string; value: number | string; danger?: boolean }) {
+  const notLoaded = typeof value === 'string';
   return (
     <div>
-      <p className={`font-mono text-2xl font-bold ${danger ? 'text-rose-300' : 'text-titanium-50'}`}>{value}</p>
+      <p className={`font-mono font-bold ${notLoaded ? 'text-sm text-amber-300' : 'text-2xl'} ${danger ? 'text-rose-300' : notLoaded ? '' : 'text-titanium-50'}`}>{value}</p>
       <p className="text-[10px] uppercase tracking-wider text-titanium-500 font-mono mt-0.5">{label}</p>
     </div>
   );

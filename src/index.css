@@ -1634,9 +1634,12 @@ html, body {
   }
 }
 
-/* ── Governance OS chrome — Cream/Gold SSOT bridge ───────────────────────
-   Authoritative values mirror landing-theme.ts → osChrome.ts (OS_*).
-   Scoped to product shell only — never import Preview Cobalt/Burgundy here. */
+/* ── Governance OS chrome — Legacy-Bridge ──────────────────────────────────
+   Seit Handoff v2 Phase 2 überschreibt `.os-chrome.rs-app`
+   (src/styles/governance-os-app.css) diese Werte in der GovernanceBrowserShell
+   mit der Handoff-Palette (osChrome.ts). Dieser Block bleibt nur für
+   `.dashboard-context`-Flächen außerhalb der Shell.
+   Never import Preview Cobalt/Burgundy here. */
 .os-chrome,
 .dashboard-context {
   --os-bg: #05070b;

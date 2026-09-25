@@ -226,6 +226,10 @@ const GovernanceKeysView = lazy(() => import('./features/governance/KeysView').t
 const RuntimeVvtView = lazy(() => import('./features/governance/vvt/RuntimeVvtView').then((m) => ({ default: m.RuntimeVvtView })));
 const AgentRegistryView = lazy(() => import('./features/governance/agents/AgentRegistryView').then((m) => ({ default: m.AgentRegistryView })));
 const AiSystemRegistryView = lazy(() => import('./features/governance/ai-registry/AiSystemRegistryView').then((m) => ({ default: m.AiSystemRegistryView })));
+const AiSystemDetailView = lazy(() => import('./features/governance/ai-registry/AiSystemDetailView').then((m) => ({ default: m.AiSystemDetailView })));
+const EnforcementPanel = lazy(() => import('./features/governance/handoff/EnforcementPanel').then((m) => ({ default: m.EnforcementPanel })));
+const EvidenceChainPanel = lazy(() => import('./features/governance/handoff/EvidenceChainPanel').then((m) => ({ default: m.EvidenceChainPanel })));
+const ReportsGrid = lazy(() => import('./features/governance/handoff/ReportsGrid').then((m) => ({ default: m.ReportsGrid })));
 const GovernanceAgentsCenterView = lazy(() => import('./features/governance/agents/AgentsCenterView').then((m) => ({ default: m.AgentsCenterView })));
 const GovernanceDocumentsView = lazy(() => import('./features/governance/documents/DocumentsView').then((m) => ({ default: m.DocumentsView })));
 const GovernanceAuditExportView = lazy(() => import('./features/governance/audit/AuditExportView').then((m) => ({ default: m.AuditExportView })));
@@ -819,12 +823,13 @@ function RoutesWithTracking() {
       <Route path="/app/governance/team-collaboration" element={<AppGate><GovernanceBrowserShell><GovernanceTeamView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/ai-systems" element={<AppGate><GovernanceBrowserShell><AiSystemRegistryView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/ai-systems/agents" element={<AppGate><GovernanceBrowserShell><AgentRegistryView /></GovernanceBrowserShell></AppGate>} />
+      <Route path="/app/ai-systems/:id" element={<AppGate><GovernanceBrowserShell><AiSystemDetailView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/automations" element={<AppGate><GovernanceBrowserShell><AutomationSkillsView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/provenance" element={<AppGate><GovernanceBrowserShell><ProvenanceView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/bulk" element={<AppGate><GovernanceBrowserShell><BulkJobsView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/scheduler" element={<AppGate><GovernanceBrowserShell><SchedulerView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/evidence-vault" element={<AppGate><GovernanceBrowserShell><EvidenceVaultAdvancedView /></GovernanceBrowserShell></AppGate>} />
-      <Route path="/app/policy-packs" element={<AppGate><GovernanceBrowserShell><PolicyPacksView /></GovernanceBrowserShell></AppGate>} />
+      <Route path="/app/policy-packs" element={<AppGate><GovernanceBrowserShell><EnforcementPanel /><PolicyPacksView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/siteos" element={<AppGate><GovernanceBrowserShell><SiteOsDashboardView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/siteos/builder" element={<AppGate><SiteOsBuilderPage /></AppGate>} />
       <Route path="/app/siteos/modernize" element={<AppGate><GovernanceBrowserShell><FmtModernizeWizard /></GovernanceBrowserShell></AppGate>} />
@@ -841,11 +846,11 @@ function RoutesWithTracking() {
       <Route path="/app/workflows" element={<AppGate><GovernanceBrowserShell><WorkflowsView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/risks" element={<AppGate><GovernanceBrowserShell><RiskCenterView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/compliance" element={<AppGate><GovernanceBrowserShell><GovernanceComplianceReportView /></GovernanceBrowserShell></AppGate>} />
-      <Route path="/app/evidence" element={<AppGate><GovernanceBrowserShell><EvidenceVaultView /></GovernanceBrowserShell></AppGate>} />
+      <Route path="/app/evidence" element={<AppGate><GovernanceBrowserShell><EvidenceChainPanel /><EvidenceVaultView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/evidence/auditor" element={<AppGate><GovernanceBrowserShell><RequireAal2 action="Evidence-Export"><GovernanceAuditorConsoleView /></RequireAal2></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/monitoring" element={<AppGate><GovernanceBrowserShell><MonitoringRuntimeView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/vendors" element={<AppGate><GovernanceBrowserShell><GovernanceVendorInventoryView /></GovernanceBrowserShell></AppGate>} />
-      <Route path="/app/reports" element={<AppGate><GovernanceBrowserShell><GovernanceComplianceReportView /></GovernanceBrowserShell></AppGate>} />
+      <Route path="/app/reports" element={<AppGate><GovernanceBrowserShell><ReportsGrid /><GovernanceComplianceReportView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/dpia" element={<AppGate><GovernanceBrowserShell><GovernanceDpiasView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/dsr" element={<AppGate><GovernanceBrowserShell><GovernanceDsrTrackerView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/incidents" element={<AppGate><GovernanceBrowserShell><GovernanceIncidentsView /></GovernanceBrowserShell></AppGate>} />

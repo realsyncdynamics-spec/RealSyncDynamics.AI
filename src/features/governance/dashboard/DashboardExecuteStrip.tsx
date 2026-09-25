@@ -11,7 +11,7 @@ export function DashboardExecuteStrip() {
     >
       <div className="flex flex-wrap items-center justify-between gap-3 border border-titanium-900 bg-obsidian-900 px-5 py-4">
         <div className="min-w-0">
-          <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#e4cfa2] flex items-center gap-2">
+          <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#00B8D4] flex items-center gap-2">
             <ShieldCheck className="h-3 w-3" aria-hidden />
             Ausführen
           </p>
@@ -21,7 +21,7 @@ export function DashboardExecuteStrip() {
         </div>
         <Link
           to="/app/agents"
-          className="inline-flex items-center gap-2 bg-[#e8ddc8] hover:bg-[#f0e6d4] text-obsidian-950 px-4 py-2 text-sm font-semibold font-mono uppercase tracking-wider"
+          className="inline-flex items-center gap-2 bg-[#1E5AFF] hover:bg-[#1641C4] text-white px-4 py-2 text-sm font-semibold font-mono uppercase tracking-wider"
         >
           Prüfung öffnen <ArrowRight className="h-4 w-4" />
         </Link>

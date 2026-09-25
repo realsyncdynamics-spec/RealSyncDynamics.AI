@@ -10,6 +10,12 @@
  *
  * ## Stand der Messung
  *
+ * 2026-09-25T23:51Z, Edge Function Drift Guard gegen das Live-Projekt:
+ * **190 deployt, 190 Verzeichnisse**, deckungsgleich. Neu gegenüber der
+ * vorherigen Messung ist `email-auth-rescan`.
+ *
+ * Frühere Messung:
+ *
  * 2026-09-08T21:51Z, Deploy-Lauf 34282015173 auf `main` @ `2380d027`:
  * **189 deployt, 189 Verzeichnisse**, `comm` in beide Richtungen leer.
  * `governance-router` ist in diesem Lauf angekommen (Bundling + Deploy im
@@ -69,10 +75,10 @@
  * Sie darf steigen, sobald jemand einen höheren Stand misst — und sie ist
  * kein Argument dafür, dass ein weiterer Deploy scheitern wird.
  */
-export const EDGE_FUNCTIONS_OBSERVED_MAX = 189;
+export const EDGE_FUNCTIONS_OBSERVED_MAX = 190;
 
 /** Datum der letzten Messung gegen das Live-Projekt. */
-export const PRODUCTION_EDGE_FUNCTIONS_MEASURED_AT = '2026-09-08T21:51Z';
+export const PRODUCTION_EDGE_FUNCTIONS_MEASURED_AT = '2026-09-25T23:51Z';
 
 /**
  * Die in Produktion aktiven Function-Slugs — alphabetisch, damit ein Diff
@@ -123,6 +129,7 @@ export const PRODUCTION_EDGE_FUNCTIONS: readonly string[] = [
   'daily-digest',
   'dashboard-digest-generate',
   'dashboard-intelligence',
+  'email-auth-rescan',
   'email-delivery-webhook',
   'email-notify-send',
   'enterprise-ai-os-agent-runs-list',

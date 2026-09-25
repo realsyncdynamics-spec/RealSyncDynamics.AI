@@ -13,6 +13,7 @@ import { Link } from 'react-router-dom';
 import { fetchTenantAssets, fetchTenantEvidence, fetchTenantPolicies } from '../governanceApi';
 import { listConnectors } from '../gatesApi';
 import { listTenantMappings } from '../../policy-packs/policyPacksApi';
+import { listScanRuns } from '../scans/scansApi';
 import type { CockpitData } from '../cockpit/cockpitData';
 import { useLang } from '../../../i18n/useLang';
 import {
@@ -37,12 +38,13 @@ const FRAMEWORKS: ReadonlyArray<{ id: string; label: string; color: string }> = 
 ];
 
 async function loadOverview(tenantId: string) {
-  const [assetsR, policiesR, connectorsR, evidenceR, mappingsR] = await Promise.allSettled([
+  const [assetsR, policiesR, connectorsR, evidenceR, mappingsR, scansR] = await Promise.allSettled([
     fetchTenantAssets(tenantId),
     fetchTenantPolicies(tenantId),
     listConnectors(tenantId),
     fetchTenantEvidence(tenantId, 4),
     listTenantMappings(tenantId),
+    listScanRuns(tenantId, { limit: 1 }),
   ]);
   const failures: string[] = [];
   return {
@@ -51,6 +53,7 @@ async function loadOverview(tenantId: string) {
     connectors: settled(connectorsR, [], 'connectors', failures),
     evidence: settled(evidenceR, [], 'evidence', failures),
     mappings: settled(mappingsR, [], 'mappings', failures),
+    scans: settled(scansR, [], 'scans', failures),
     failures,
   };
 }
@@ -114,10 +117,179 @@ export function HandoffOverview({
   const evidenceTotal = cockpitHas('evidence-total') ? data!.evidenceHealth.totalCount : null;
   const evidenceHashed = cockpitHas('evidence-hashed') ? data!.evidenceHealth.hashedCount : null;
   const trend = data?.readinessTrend ?? null;
+  const latestScan = ready?.scans[0] ?? null;
+  const classifiedAi = Math.max(0, aiAssets.length - unclassified.length);
+  const aiReadiness = aiAssets.length === 0 ? null : Math.round((classifiedAi / aiAssets.length) * 100);
+  const riskBuckets = data?.riskDistribution ?? [];
+  const risk = (id: string) => riskBuckets.find((bucket) => bucket.id === id)?.count ?? 0;
+  const evidenceHealth = data?.evidenceHealth ?? null;
+  const eventStream = data?.recentEvents ?? [];
+  const assetFlows = data?.assetFlows ?? [];
 
   return (
     <div className="rs-apppage rs-ui" data-testid="handoff-overview">
       {state.status === 'error' && <WarnToast error>{t('loadFailed')}</WarnToast>}
+
+      <section aria-labelledby="management-cockpit-heading" className="mb-6 space-y-4" data-testid="management-cockpit">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <span className="rs-overline">Executive Governance Posture</span>
+            <h2 id="management-cockpit-heading" className="rs-h2 mt-1">Management Cockpit</h2>
+            <p className="rs-note mt-1">Mandantenstatus aus realen Scans, Findings, Assets, Evidence und Runtime-Ereignissen.</p>
+          </div>
+          <div className="flex flex-wrap gap-2" aria-label="Schnellaktionen">
+            <Link to="/app/websites" className="rs-btn rs-btn--secondary">Website scannen</Link>
+            <Link to="/app/ai-systems" className="rs-btn rs-btn--secondary">KI-System erfassen</Link>
+            <Link to="/app/vendors" className="rs-btn rs-btn--secondary">Vendor erfassen</Link>
+            <Link to="/app/dpias" className="rs-btn rs-btn--secondary">DSFA starten</Link>
+            <Link to="/app/incidents" className="rs-btn rs-btn--secondary">Incident melden</Link>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 xl:grid-cols-12 gap-3">
+          <Panel className="xl:col-span-3 rs-panel--pad20" testId="management-score">
+            <span className="rs-overline">Governance Score</span>
+            <div className="mt-4 flex items-end gap-2">
+              <span className="rs-mono text-4xl font-semibold" style={{ color: 'var(--color-rs-fg)' }}>
+                {score === null ? '—' : score}
+              </span>
+              {score !== null && <span className="rs-note mb-1">/ 100</span>}
+            </div>
+            <p className="rs-note mt-2">{score === null ? t('scoreNone') : t('appScoreSource')}</p>
+            {data?.lastUpdated && (
+              <p className="rs-note rs-mono mt-3">Stand {data.lastUpdated} · Mandant</p>
+            )}
+          </Panel>
+
+          <Panel className="xl:col-span-5 rs-panel--pad20" testId="management-risk-heatmap">
+            <div className="rs-panel__head">
+              <span className="rs-overline">Risk Heatmap</span>
+              <Link to="/app/risks" className="rs-note rs-cyan">Risiko-Register →</Link>
+            </div>
+            {data === null ? (
+              <p className="rs-note mt-4">{t('loading')}</p>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 mt-4">
+                {[
+                  ['critical', 'Kritisch', 'var(--color-rs-danger)'],
+                  ['high', 'Hoch', 'var(--color-rs-warning)'],
+                  ['medium', 'Mittel', '#E0B75A'],
+                  ['low', 'Niedrig', 'var(--color-rs-cyan)'],
+                  ['passed', 'Stabil', '#69C18E'],
+                ].map(([id, label, color]) => (
+                  <div key={id} className="border p-3" style={{ borderColor: 'var(--color-rs-line)' }}>
+                    <div className="rs-mono text-2xl font-semibold" style={{ color }}>{risk(id)}</div>
+                    <div className="rs-note mt-1">{label}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+            <p className="rs-note mt-3">Verteilung aus den Risk-Scores der registrierten Governance-Assets.</p>
+          </Panel>
+
+          <Panel className="xl:col-span-4 rs-panel--pad20" testId="management-ai-readiness">
+            <div className="rs-panel__head">
+              <span className="rs-overline">EU AI Act Readiness</span>
+              <Link to="/app/ai-systems" className="rs-note rs-cyan">KI-Systeme →</Link>
+            </div>
+            <div className="mt-4 flex items-end gap-2">
+              <span className="rs-mono text-4xl font-semibold" style={{ color: 'var(--color-rs-fg)' }}>
+                {aiReadiness === null ? '—' : `${aiReadiness}%`}
+              </span>
+            </div>
+            <p className="rs-note mt-1">Klassifizierungsgrad · keine Konformitätsbescheinigung</p>
+            <div className="grid grid-cols-3 gap-2 mt-4">
+              <MiniMetric label="KI-Systeme" value={has('assets') ? aiAssets.length : null} />
+              <MiniMetric label="High Risk" value={has('assets') ? high.length : null} />
+              <MiniMetric label="Unklassifiziert" value={has('assets') ? unclassified.length : null} />
+            </div>
+          </Panel>
+
+          <Panel className="xl:col-span-4 rs-panel--pad20" testId="management-assets">
+            <div className="rs-panel__head">
+              <span className="rs-overline">Überwachter Scope</span>
+              <Link to="/app/assets" className="rs-note rs-cyan">Assets →</Link>
+            </div>
+            {assetFlows.length === 0 ? (
+              <p className="rs-note mt-4">{data ? 'Noch keine Assets im Register.' : t('loading')}</p>
+            ) : (
+              <div className="grid grid-cols-2 gap-2 mt-4">
+                {assetFlows.slice(0, 6).map((flow) => (
+                  <Link key={flow.type} to={flow.href} className="border p-3 hover:border-[var(--color-rs-cyan)]" style={{ borderColor: 'var(--color-rs-line)' }}>
+                    <div className="rs-mono text-2xl font-semibold" style={{ color: 'var(--color-rs-fg)' }}>{flow.count}</div>
+                    <div className="rs-note mt-1">{flow.label}</div>
+                    {flow.highRisk > 0 && <div className="rs-note mt-1" style={{ color: 'var(--color-rs-warning)' }}>{flow.highRisk} erhöht</div>}
+                  </Link>
+                ))}
+              </div>
+            )}
+          </Panel>
+
+          <Panel className="xl:col-span-4 rs-panel--pad20" testId="management-live-audit">
+            <div className="rs-panel__head">
+              <span className="rs-overline">Live Audit Status</span>
+              <Link to="/app/websites" className="rs-note rs-cyan">Scans →</Link>
+            </div>
+            {!has('scans') ? (
+              <p className="rs-note mt-4">{t('unavailable')}</p>
+            ) : !latestScan ? (
+              <p className="rs-note mt-4">Noch kein Scan vorhanden.</p>
+            ) : (
+              <div className="mt-4 space-y-3">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="rs-h3">{latestScan.status}</span>
+                  <span className="rs-note rs-mono">{formatDateTime(latestScan.completed_at ?? latestScan.created_at, lang)}</span>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <MiniMetric label="Findings" value={latestScan.finding_count} />
+                  <MiniMetric label="Max. Severity" value={latestScan.severity_max ?? '—'} />
+                </div>
+                {latestScan.duration_ms !== null && <p className="rs-note rs-mono">Dauer {Math.round(latestScan.duration_ms / 1000)} s</p>}
+                {latestScan.error_message && <p className="rs-note" style={{ color: 'var(--color-rs-danger)' }}>{latestScan.error_message}</p>}
+              </div>
+            )}
+          </Panel>
+
+          <Panel className="xl:col-span-4 rs-panel--pad20" testId="management-evidence-health">
+            <div className="rs-panel__head">
+              <span className="rs-overline">Evidence Health</span>
+              <Link to="/app/evidence" className="rs-note rs-cyan">Evidence Hub →</Link>
+            </div>
+            <div className="mt-4 flex items-end gap-2">
+              <span className="rs-mono text-4xl font-semibold" style={{ color: 'var(--color-rs-fg)' }}>
+                {evidenceHealth?.percent === null || evidenceHealth === null ? '—' : `${evidenceHealth.percent}%`}
+              </span>
+            </div>
+            <div className="grid grid-cols-3 gap-2 mt-4">
+              <MiniMetric label="Dokumente" value={evidenceHealth?.totalCount ?? null} />
+              <MiniMetric label="Gehasht" value={evidenceHealth?.hashedCount ?? null} />
+              <MiniMetric label="Neu 24h" value={evidenceHealth?.newEvidence24h ?? null} />
+            </div>
+            <p className="rs-note mt-3">{evidenceHealth?.label ?? 'Noch nicht bewertet'}</p>
+          </Panel>
+
+          <Panel className="xl:col-span-12 rs-panel--pad20" testId="management-timeline">
+            <div className="rs-panel__head">
+              <span className="rs-overline">Executive Timeline</span>
+              <Link to="/app/activity" className="rs-note rs-cyan">Aktivität →</Link>
+            </div>
+            {eventStream.length === 0 ? (
+              <p className="rs-note mt-4">{data ? 'Noch keine Governance-Aktivität protokolliert.' : t('loading')}</p>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-2 mt-4">
+                {eventStream.slice(0, 8).map((event) => (
+                  <div key={event.id} className="border p-3" style={{ borderColor: 'var(--color-rs-line)' }}>
+                    <div className="rs-note rs-mono">{formatDateTime(event.createdAt, lang)}</div>
+                    <div className="rs-cell-main mt-2">{event.title}</div>
+                    <div className="rs-note mt-1">{event.source} · {event.riskLevel}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Panel>
+        </div>
+      </section>
+
       <div className="rs-dash">
         <Panel className="rs-dash__score rs-panel--pad20" testId="overview-score">
           <div className="rs-score">
@@ -293,6 +465,17 @@ export function HandoffOverview({
           </div>
         )}
       </section>
+    </div>
+  );
+}
+
+function MiniMetric({ label, value }: { label: string; value: string | number | null }) {
+  return (
+    <div className="border p-3" style={{ borderColor: 'var(--color-rs-line)' }}>
+      <div className="rs-mono text-xl font-semibold" style={{ color: 'var(--color-rs-fg)' }}>
+        {value === null ? '—' : value}
+      </div>
+      <div className="rs-note mt-1">{label}</div>
     </div>
   );
 }

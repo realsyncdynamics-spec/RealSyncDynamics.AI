@@ -94,7 +94,12 @@ export const GOVERNANCE_MODULES: GovernanceModule[] = [
     icon: 'Cpu',
     route: '/app/ai-systems',
     status: 'beta',
-    gate: { kind: 'module', module: 'eu_ai_act' },
+    // Server-Wahrheit: KI-Register = `governance.ai_register`, ab Free
+    // (PLAN_ENTITLEMENTS / Migration 20260707010000; `ai-act-risk-inventory`
+    // hält es ausdrücklich frei, das Zugriffsregister gatet /app/ai-systems
+    // nicht). Das frühere Modul-Gate `eu_ai_act` (ab Starter) sperrte das
+    // Register nur im Browser.
+    gate: { kind: 'entitlement', key: 'governance.ai_register' },
     description: 'KI-System-Registry und EU-AI-Act-Dokumentation',
   },
   {

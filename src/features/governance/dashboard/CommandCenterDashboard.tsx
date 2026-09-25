@@ -5,6 +5,7 @@
 
 import { useEffect, useState } from 'react';
 import { useTenant } from '../../../core/access/TenantProvider';
+import { useRouteLocked } from '../../../core/access/useRouteLock';
 import { loadCockpitData, type CockpitData } from '../cockpit/cockpitData';
 import { TrialBanner } from '../../workspace/TrialBanner';
 import { listScanRuns, listWebsitesForTenant } from '../scans/scansApi';
@@ -21,6 +22,7 @@ import { HandoffOverview } from '../handoff/HandoffOverview';
 export function CommandCenterDashboard() {
   const { activeTenantId, tenants } = useTenant();
   const tenantName = tenants.find((t) => t.tenantId === activeTenantId)?.name ?? null;
+  const policyPacksLocked = useRouteLocked('/app/policy-packs');
   const [data, setData] = useState<CockpitData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -81,6 +83,7 @@ export function CommandCenterDashboard() {
         loading={loading}
         error={error}
         bootstrapSteps={bootstrapSteps}
+        policyPacksLocked={policyPacksLocked}
       />
       {activeTenantId && <DashboardExecuteStrip />}
     </>

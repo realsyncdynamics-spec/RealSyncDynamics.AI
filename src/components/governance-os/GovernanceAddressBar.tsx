@@ -1,6 +1,7 @@
 import { Search, Globe } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
+import { auditPathFor } from '../../features/audit/auditPrefill';
 
 interface GovernanceAddressBarProps {
   onLoadUrl?: (url: string) => void;
@@ -46,8 +47,9 @@ export function GovernanceAddressBar({ onLoadUrl, activeUrl }: GovernanceAddress
       onLoadUrl(url);
       setValue('');
     } else {
-      // Suche / Audit-Query → bestehende Route
-      navigate(`/audit?target=${encodeURIComponent(input)}`);
+      // Suche / Audit-Query → /audit mit vorbelegtem Domain-Feld. Früher
+      // `?target=`, das /audit nicht las — die Eingabe ging verloren.
+      navigate(auditPathFor(input, 'app-search'));
       setValue('');
     }
   };

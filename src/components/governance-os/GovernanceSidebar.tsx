@@ -9,7 +9,6 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import {
-  GOVERNANCE_MODULES,
   TAB_MODULES,
   canAccessModule,
   minimumPlanForModule,
@@ -17,6 +16,8 @@ import {
 import type { GovernanceModule } from './governanceBrowserTypes';
 import { useActivePlan } from '../../hooks/useModuleAccess';
 import { useTenant } from '../../core/access/TenantProvider';
+import { minimumPlanForRoute } from '../../core/access/featureAccess';
+import { useRouteLockCheck } from '../../core/access/useRouteLock';
 import { useLang } from '../../i18n/useLang';
 import { OS_ACCENT_TEXT } from './osChrome';
 import { APP_SIDEBAR_WIDTH } from './app-theme';
@@ -104,6 +105,7 @@ export function GovernanceSidebar() {
   const { tenants, activeTenantId } = useTenant();
   const { t } = useLang();
   const counts = useShellCounts();
+  const isLocked = useRouteLockCheck();
   const active = activeShellNav(pathname);
   const tenantName = tenants.find((x) => x.tenantId === activeTenantId)?.name ?? null;
   const moreModules = TAB_MODULES.filter((m) => !SHELL_NAV_ROUTES.has(m.route));
@@ -123,8 +125,11 @@ export function GovernanceSidebar() {
       <div className="rs-side__group">
         {SHELL_NAV.map((item) => {
           const Icon = NAV_ICONS[item.id];
-          const module = item.moduleId ? GOVERNANCE_MODULES.find((m) => m.id === item.moduleId) : undefined;
-          const locked = module ? !canAccessModule(module, plan) : false;
+          // Schloss = Route-Gate (Zugriffsregister + wirksame Entitlements),
+          // nicht plan.modules — sonst zeigt die Leiste etwas anderes, als
+          // beim Klick passiert. Siehe shellNav.ts.
+          const locked = isLocked(item.route);
+          const minPlan = locked ? minimumPlanForRoute(item.route) : null;
           const badge = badgeFor(item.id, counts);
           const to = item.id === 'classify' && counts.firstSystemId
             ? `/app/ai-systems/${counts.firstSystemId}`
@@ -136,11 +141,17 @@ export function GovernanceSidebar() {
               aria-current={active === item.id ? 'page' : undefined}
               className={`rs-side__item${locked ? ' rs-side__item--locked' : ''}`}
               data-testid={`side-nav-${item.id}`}
+              data-locked={locked ? 'true' : undefined}
+              title={locked && minPlan ? `${t(item.labelKey)} — ab ${PLAN_LABELS[minPlan] ?? minPlan}` : undefined}
             >
               <Icon className="rs-side__icon" aria-hidden="true" />
               <span className="rs-side__text">{t(item.labelKey)}</span>
               {locked ? (
-                <Lock className="h-3 w-3 shrink-0" aria-hidden="true" />
+                <Lock
+                  className="h-3 w-3 shrink-0"
+                  aria-label={minPlan ? `ab ${PLAN_LABELS[minPlan] ?? minPlan}` : 'gesperrt'}
+                  data-testid={`side-lock-${item.id}`}
+                />
               ) : badge !== null ? (
                 <span className="rs-side__badge" data-testid={`side-badge-${item.id}`}>{badge}</span>
               ) : null}

@@ -14,6 +14,7 @@ import { postEdgeFunction } from '../lib/edgeFunction';
 import { getSupabaseUrl } from '../lib/supabaseUrl';
 import { LegalDisclaimer } from '../components/LegalDisclaimer';
 import { AuditStepper, type AuditStepperInput } from '../components/audit/AuditStepper';
+import { readAuditPrefill } from '../features/audit/auditPrefill';
 import { HandoffTopBar } from '../components/handoff/HandoffTopBar';
 import { AuditCopilotPanel } from '../components/audit/AuditCopilotPanel';
 import {
@@ -90,14 +91,13 @@ export function AuditLanding() {
       'Technische Vorprüfung für Websites: Consent, Tracking, Drittanbieter-Skripte und mögliche DSGVO-/TDDDG-Risiken analysieren.',
     url: 'https://RealSyncDynamicsAI.de/audit',
   });
-  // Vorbelegung aus `?domain=`. Die Startseite schickt die dort getippte
-  // Adresse mit; ohne diese Zeile müsste der Besucher sie ein zweites Mal
-  // eingeben, was den Trichter genau an seiner engsten Stelle bricht.
-  // Nur als Startwert — danach gehört das Feld dem Besucher.
-  const [url] = useState(() => {
-    const vorgabe = new URLSearchParams(window.location.search).get('domain');
-    return vorgabe ? vorgabe.trim().slice(0, 255) : '';
-  });
+  // Vorbelegung aus `?domain=` (kanonisch; `target`/`url`/`q` als Altlast,
+  // siehe `features/audit/auditPrefill.ts`). Startseite und die Suche oben in
+  // der App-Shell schicken die dort getippte Adresse mit; ohne diese Zeile
+  // müsste der Besucher sie ein zweites Mal eingeben, was den Trichter genau
+  // an seiner engsten Stelle bricht. Nur als Startwert — danach gehört das
+  // Feld dem Besucher.
+  const [url] = useState(() => readAuditPrefill(window.location.search));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [report, setReport] = useState<Report | null>(null);

@@ -42,6 +42,17 @@ vi.mock('../../../src/components/governance-os/EmbeddedBrowserCanvas', () => ({
 vi.mock('../../../src/core/access/RouteEntitlementGate', () => ({
   RouteEntitlementGate: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
+// Schlösser im mobilen Menü lesen die Entitlements des Mandanten
+// (useRouteLockCheck). `entitlements: null` = unbekannt → kein Schloss.
+vi.mock('../../../src/core/access/TenantProvider', () => ({
+  useTenant: () => ({
+    activeTenantId: null,
+    tenants: [],
+    loading: false,
+    entitlements: null,
+    hasFeature: () => false,
+  }),
+}));
 vi.mock('../../../src/features/supabase/SupabaseAuthContext', () => ({
   useSupabaseAuth: () => ({
     isAuthenticated: true,

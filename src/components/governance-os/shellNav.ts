@@ -10,22 +10,33 @@ import type { HandoffKey } from '../../i18n/handoff';
 
 export type ShellNavId = 'overview' | 'systems' | 'classify' | 'enforce' | 'evidence' | 'reports' | 'billing';
 
+/**
+ * Das Schloss eines Hauptbereichs kommt NICHT aus einer eigenen Modul-Liste,
+ * sondern aus dem Zugriffsregister (`core/access/featureAccess.ts`) über die
+ * Route — also aus genau der Prüfung, die `RouteEntitlementGate` beim Öffnen
+ * ausführt, gegen die wirksamen Entitlements des Mandanten
+ * (`tenant_entitlements()`, gespiegelt in `PLAN_ENTITLEMENTS`).
+ *
+ * Vorher hing das Schloss an `moduleId` → `plan.modules`: KI-Systeme und
+ * Klassifizierung trugen im Free-Plan ein Schloss (Modul `eu_ai_act`), obwohl
+ * Server und Route-Gate das KI-Register (`governance.ai_register`) ab Free
+ * freigeben; Enforcement hatte gar kein Schloss, landete im Free-Plan aber auf
+ * der Sperrseite (`policy.packs`, ab Starter).
+ */
 export interface ShellNavItem {
   id: ShellNavId;
   labelKey: HandoffKey;
   route: string;
-  /** Modul-ID in GOVERNANCE_MODULES für das Plan-Gate, falls vorhanden. */
-  moduleId?: string;
 }
 
 export const SHELL_NAV: readonly ShellNavItem[] = [
-  { id: 'overview', labelKey: 'navOverview', route: '/app/dashboard', moduleId: 'overview' },
-  { id: 'systems', labelKey: 'navSystems', route: '/app/ai-systems', moduleId: 'ai-systems' },
-  { id: 'classify', labelKey: 'navClassify', route: '/app/ai-systems', moduleId: 'ai-systems' },
+  { id: 'overview', labelKey: 'navOverview', route: '/app/dashboard' },
+  { id: 'systems', labelKey: 'navSystems', route: '/app/ai-systems' },
+  { id: 'classify', labelKey: 'navClassify', route: '/app/ai-systems' },
   { id: 'enforce', labelKey: 'navEnforce', route: '/app/policy-packs' },
-  { id: 'evidence', labelKey: 'navEvidence', route: '/app/evidence', moduleId: 'evidence' },
-  { id: 'reports', labelKey: 'navReports', route: '/app/reports', moduleId: 'reports' },
-  { id: 'billing', labelKey: 'navBilling', route: '/app/billing', moduleId: 'billing' },
+  { id: 'evidence', labelKey: 'navEvidence', route: '/app/evidence' },
+  { id: 'reports', labelKey: 'navReports', route: '/app/reports' },
+  { id: 'billing', labelKey: 'navBilling', route: '/app/billing' },
 ] as const;
 
 /** Routen, die die Hauptliste schon abdeckt (für „Weitere Module"). */

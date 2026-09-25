@@ -26,6 +26,7 @@ import {
 } from './commandCenterCatalog';
 import { RouteEntitlementGate } from '../../core/access/RouteEntitlementGate';
 import { AppGate } from '../../features/auth/AppGate';
+import { auditPathFor } from '../../features/audit/auditPrefill';
 import { MobileShellMenu } from './MobileShellMenu';
 import '../../styles/governance-os-app.css';
 
@@ -58,7 +59,7 @@ export function GovernanceBrowserShell({ children }: GovernanceBrowserShellProps
   const handleLoadUrl = (url: string) => setEmbeddedUrl(url);
   const handleCloseEmbed = () => setEmbeddedUrl(null);
   const handleScan = (url: string) => {
-    navigate(`/audit?target=${encodeURIComponent(url)}`);
+    navigate(auditPathFor(url, 'app-embedded-scan'));
     setEmbeddedUrl(null);
   };
 

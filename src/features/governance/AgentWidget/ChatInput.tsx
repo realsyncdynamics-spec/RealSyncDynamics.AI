@@ -134,7 +134,7 @@ export function ChatInput(props: {
         </button>
       </div>
       <p className="text-center text-[10px]" style={{ color: '#9a917f' }}>
-        KI-Assistent · keine Rechtsberatung · EU-Daten · auditierbar
+        KI-Assistent · keine Rechtsberatung · auditierbar
       </p>
     </div>
   );

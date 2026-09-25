@@ -4,13 +4,12 @@
  * Hintergrund: Der gdpr-audit-Scanner triggert seit jeher einen
  * `no_imprint_link` Befund mit Severity `critical` und §-5-DDG-Referenz,
  * sobald das HTML kein „Impressum"-Wort enthält. Für gewerbliche
- * DE-/AT-/CH-Sites ist das korrekt; für ausländische Mega-Sites
+ * Anbieter in Deutschland ist das relevant; für Anbieter außerhalb Deutschlands
  * (gmail.com, github.com, ...) ist es ein False-Positive — § 5 DDG ist
  * deutsches Recht, das nur greift, wenn der Anbieter in DE sitzt.
  *
- * Diese Heuristik erkennt deutschsprachige Anbieter konservativ:
- *   - TLD `.de` / `.at` / `.ch`
- *   - HTML mit `<html lang="de…">` / `lang="de-…">`
+ * Diese Heuristik erkennt Deutschland-Bezug konservativ:
+ *   - TLD `.de`
  *   - HTML enthält starke DE-Anbieter-Signale (Rechtsform, +49, deutsche
  *     PLZ-Pattern, „Geschäftsführer", „Handelsregister", …)
  *
@@ -19,7 +18,7 @@
  * werden kann.
  */
 
-const DE_TLD_SUFFIXES = ['.de', '.at', '.ch'] as const;
+const DE_TLD_SUFFIXES = ['.de'] as const;
 
 const DE_PROVIDER_PATTERNS: ReadonlyArray<RegExp> = [
   // Rechtsformen, die im internationalen Kontext eindeutig deutsch sind.
@@ -38,13 +37,6 @@ const DE_PROVIDER_PATTERNS: ReadonlyArray<RegExp> = [
   /\b\d{5}\s+[A-ZÄÖÜ][a-zäöüß]/, // deutsche PLZ (5-stellig) + Stadtname
 ];
 
-function hasGermanLangAttribute(html: string): boolean {
-  // Match opening <html …> tag with lang attribute starting with "de"
-  // (de, de-DE, de-AT, de-CH). Case-insensitive, tolerant zu Attribut-
-  // Reihenfolge.
-  return /<html\b[^>]*\blang\s*=\s*["']?de\b/i.test(html);
-}
-
 function hasGermanTld(url: string): boolean {
   let host: string;
   try {
@@ -60,8 +52,8 @@ function hasGermanProviderSignals(html: string): boolean {
 }
 
 /**
- * True, wenn die Site mit hoher Wahrscheinlichkeit von einem DE/AT/CH-
- * Anbieter betrieben wird — und damit § 5 DDG / § 18 MStV in Reichweite
+ * True, wenn die Site mit hoher Wahrscheinlichkeit von einem Anbieter
+ * in Deutschland betrieben wird — und damit § 5 DDG / § 18 MStV in Reichweite
  * sind. Konservativ: lieber false-negativ (DE-Anbieter wird als non-DE
  * erkannt → Befund wird zu info, aber kein false-positive `critical`)
  * als false-positiv.
@@ -71,7 +63,6 @@ export function isLikelyGermanJurisdiction(
   html: string,
 ): boolean {
   if (hasGermanTld(url)) return true;
-  if (hasGermanLangAttribute(html)) return true;
   if (hasGermanProviderSignals(html)) return true;
   return false;
 }

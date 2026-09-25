@@ -14,6 +14,11 @@ import { resolve } from 'node:path';
 // Pfade relativ zum Repo-Root (URL-Auflösung über das Modul scheitert unter jsdom).
 const repoFile = (p: string) => resolve(__dirname, '../..', p);
 import {
+  verifyTurnstile,
+  TURNSTILE_TOKEN_MAX_CHARS,
+  TURNSTILE_VERIFY_URL,
+} from '../../supabase/functions/_shared/aiGateway/turnstile.ts';
+import {
   createAiGatewayHandler,
   type GatewayHandlerDeps,
   type GatewayLike,
@@ -39,6 +44,7 @@ import {
   ANON_QUESTION_MAX_CHARS,
   type AnonLogComplete,
   type AnonLogReserve,
+  buildAnonAuditRequest,
 } from '../../supabase/functions/_shared/aiGateway/anonAuditCopilot.ts';
 import { gatewayHeaders } from '../../supabase/functions/_shared/aiGateway/edgeClient.ts';
 import { internalGatewayConfig } from '../../supabase/functions/_shared/aiGateway/internalClient.ts';
@@ -104,22 +110,30 @@ interface Harness {
   gatewayBuilds: number;
   anonReserves: AnonLogReserve[];
   anonCompletes: Array<{ requestId: string; patch: AnonLogComplete }>;
+  /** Siteverify-Aufrufe (URL + JSON-Body). */
+  turnstileCalls: Array<{ url: string; body: Record<string, string> }>;
 }
+
+type TurnstileMock = (url: string, init: RequestInit) => Promise<Response>;
+const turnstileOk = (extra: Record<string, unknown> = {}): TurnstileMock => async () =>
+  new Response(JSON.stringify({ success: true, hostname: 'realsyncdynamicsai.de', action: 'audit_copilot', 'error-codes': [], ...extra }), { status: 200 });
 
 type AnonLogMode = 'ok' | 'reserve_fails' | 'complete_fails' | 'missing';
 
-function makeHarness(opts: { env?: Record<string, string | undefined>; builderEntitled?: boolean; anonLog?: AnonLogMode; failWith?: Error } = {}): Harness {
+function makeHarness(opts: { env?: Record<string, string | undefined>; builderEntitled?: boolean; anonLog?: AnonLogMode; failWith?: Error; turnstile?: TurnstileMock } = {}): Harness {
   const h: Harness = {
     handler: async () => new Response(),
     calls: [],
     logs: [],
     authCalls: 0,
-    env: { AI_GATEWAY_INTERNAL_KEY: INTERNAL_KEY, ...(opts.env ?? {}) },
+    env: { AI_GATEWAY_INTERNAL_KEY: INTERNAL_KEY, TURNSTILE_SECRET_KEY: TURNSTILE_SECRET, ...(opts.env ?? {}) },
     builderEntitled: opts.builderEntitled ?? false,
     gatewayBuilds: 0,
     anonReserves: [],
     anonCompletes: [],
+    turnstileCalls: [],
   };
+  const tsMock = opts.turnstile ?? turnstileOk();
   const anonMode: AnonLogMode = opts.anonLog ?? 'ok';
   const reply = async (r: AiGatewayRequest) => {
     h.calls.push(r);
@@ -163,6 +177,10 @@ function makeHarness(opts: { env?: Record<string, string | undefined>; builderEn
         h.anonCompletes.push({ requestId, patch });
       },
     }),
+    turnstileFetch: (async (url: string, init: RequestInit) => {
+      h.turnstileCalls.push({ url: String(url), body: JSON.parse(String(init.body)) });
+      return tsMock(String(url), init);
+    }) as unknown as typeof fetch,
     newId: () => 'req-0001',
     now: () => (t += 10),
     log: (line) => h.logs.push(line),
@@ -187,6 +205,7 @@ function chatReq(body: Record<string, unknown>, headers: Record<string, string> 
   });
 }
 
+const TURNSTILE_SECRET = 'ts-secret-DO-NOT-LOG-0123456789';
 const anonHeaders = { apikey: ANON_KEY, Authorization: `Bearer ${ANON_KEY}` };
 const userHeaders = { apikey: ANON_KEY, Authorization: `Bearer ${USER_TOKEN}` };
 const serviceRoleHeaders = { apikey: ANON_KEY, Authorization: `Bearer ${SERVICE_ROLE}` };
@@ -675,7 +694,7 @@ describe('interne ai-gateway-Aufrufer nutzen Service-Pfad bzw. Nutzer-JWT', () =
 describe('ai-gateway — anonymer Audit-Copilot (mode audit_anon)', () => {
   const apikeyOnly = { apikey: ANON_KEY, 'x-forwarded-for': '203.0.113.7' };
   const anonBody = (extra: Record<string, unknown> = {}, input: Record<string, unknown> = { question: 'Was bedeutet Befund GA4 ohne Consent?' }) =>
-    ({ mode: 'audit_anon', input, ...extra });
+    ({ mode: 'audit_anon', turnstile_token: 'tok-ok', input, ...extra });
 
   it('nur apikey (kein Nutzer-JWT) → 200, gleiche Antwortform wie der Nutzerpfad', async () => {
     const h = makeHarness();
@@ -759,7 +778,7 @@ describe('ai-gateway — anonymer Audit-Copilot (mode audit_anon)', () => {
     expect(JSON.stringify(r)).not.toContain('203.0.113.7');
     expect(r.user_agent_hash).toMatch(/^[0-9a-f]{64}$/);
     expect(r.correlation_id).toBe(auditId);
-    expect(r.payload_keys).toEqual(['feature', 'input', 'mode']);
+    expect(r.payload_keys).toEqual(['feature', 'input', 'mode', 'turnstile_token']);
     expect(h.anonCompletes).toEqual([{ requestId: 'req-0001', patch: expect.objectContaining({ outcome: 'success', model: 'mock-1' }) }]);
   });
 
@@ -814,7 +833,8 @@ describe('ai-gateway — anonymer Audit-Copilot (mode audit_anon)', () => {
   it('Provider-Fehler → Fehlerform { ok:false, error:{code,message} }, Protokoll mit error_code', async () => {
     const h = makeHarness();
     const failing = createAiGatewayHandler({
-      env: () => undefined,
+      env: (n) => (n === 'TURNSTILE_SECRET_KEY' ? TURNSTILE_SECRET : undefined),
+      turnstileFetch: turnstileOk() as unknown as typeof fetch,
       requireAuthAndTenant: fakeRequireAuthAndTenant,
       gateBuilder: async () => null,
       buildGateway: async () => ({
@@ -837,5 +857,187 @@ describe('ai-gateway — anonymer Audit-Copilot (mode audit_anon)', () => {
     expect(j.ok).toBe(false);
     expect(typeof j.error.code).toBe('string');
     expect(h.anonCompletes[0].patch.outcome).toBe('error');
+  });
+});
+
+// ── Cloudflare Turnstile auf mode 'audit_anon' (Entscheidung 26.09., 00:35) ──
+
+describe('ai-gateway — Turnstile nur auf audit_anon, fail-closed', () => {
+  const ip = { apikey: ANON_KEY, Authorization: `Bearer ${ANON_KEY}`, 'x-forwarded-for': '198.51.100.9', 'cf-connecting-ip': '198.51.100.9' };
+  const q = { question: 'Was bedeutet Befund GA4 ohne Consent?' };
+  const withToken = (token: unknown = 'tok-ok') => ({ mode: 'audit_anon', turnstile_token: token, input: q });
+  const nothingHappened = (h: Harness) => {
+    expect(h.calls).toHaveLength(0);
+    expect(h.anonReserves).toHaveLength(0);
+    expect(h.gatewayBuilds).toBe(0);
+  };
+
+  it.each([
+    ['fehlt', { mode: 'audit_anon', input: q }],
+    ['leer', withToken('   ')],
+    ['kein String', withToken(12345)],
+    ['länger als 2048 Zeichen', withToken('t'.repeat(TURNSTILE_TOKEN_MAX_CHARS + 1))],
+  ])('Token %s → 400 TURNSTILE_MISSING, keine Siteverify, kein Log, kein Provider', async (_n, b) => {
+    const h = makeHarness();
+    const res = await h.handler(opReq(b as Record<string, unknown>, ip));
+    expect(res.status).toBe(400);
+    expect(await errCode(res)).toBe('TURNSTILE_MISSING');
+    expect(h.turnstileCalls).toHaveLength(0);
+    nothingHappened(h);
+  });
+
+  it('Secret fehlt → 503 TURNSTILE_UNCONFIGURED, keine Siteverify, kein Provider', async () => {
+    const h = makeHarness({ env: { TURNSTILE_SECRET_KEY: undefined } });
+    const res = await h.handler(opReq(withToken(), ip));
+    expect(res.status).toBe(503);
+    expect(await errCode(res)).toBe('TURNSTILE_UNCONFIGURED');
+    expect(h.turnstileCalls).toHaveLength(0);
+    nothingHappened(h);
+  });
+
+  it.each([
+    ['success=false (invalid-input-response)', async () => new Response(JSON.stringify({ success: false, 'error-codes': ['invalid-input-response'] }), { status: 200 })],
+    ['success=false (timeout-or-duplicate, Replay)', async () => new Response(JSON.stringify({ success: false, 'error-codes': ['timeout-or-duplicate'] }), { status: 200 })],
+    ['Siteverify HTTP 500', async () => new Response('oops', { status: 500 })],
+    ['Netzwerkfehler', async () => { throw new TypeError('fetch failed'); }],
+    ['Timeout/Abbruch', async () => { throw new DOMException('The operation was aborted.', 'AbortError'); }],
+    ['kaputtes JSON', async () => new Response('<html>', { status: 200 })],
+    ['falscher Hostname', turnstileOk({ hostname: 'evil.example' })],
+    ['Hostname fehlt', turnstileOk({ hostname: undefined })],
+    ['falsche Action', turnstileOk({ action: 'login' })],
+  ])('%s → 403 TURNSTILE_FAILED, kein Log, kein Provider', async (_n, mock) => {
+    const h = makeHarness({ turnstile: mock as TurnstileMock });
+    const res = await h.handler(opReq(withToken(), ip));
+    expect(res.status).toBe(403);
+    expect(await errCode(res)).toBe('TURNSTILE_FAILED');
+    expect(h.turnstileCalls).toHaveLength(1);
+    nothingHappened(h);
+    expect(h.logs.some((l) => l.event === 'turnstile_rejected' && l.code === 'TURNSTILE_FAILED')).toBe(true);
+  });
+
+  it('Siteverify-Aufruf: POST an Cloudflare mit secret/response/remoteip=CF-Connecting-IP; Secret/Token nie im Log oder in der Antwort', async () => {
+    const h = makeHarness({ turnstile: async () => new Response(JSON.stringify({ success: false }), { status: 200 }) });
+    const res = await h.handler(opReq(withToken('tok-geheim'), ip));
+    expect(h.turnstileCalls).toEqual([{ url: TURNSTILE_VERIFY_URL, body: { secret: TURNSTILE_SECRET, response: 'tok-geheim', remoteip: '198.51.100.9' } }]);
+    const txt = await res.text();
+    const logs = JSON.stringify(h.logs);
+    for (const s of [TURNSTILE_SECRET, 'tok-geheim', '198.51.100.9']) {
+      expect(txt).not.toContain(s);
+      expect(logs).not.toContain(s);
+    }
+  });
+
+  it('ohne CF-Connecting-IP wird remoteip weggelassen (optional laut API)', async () => {
+    const h = makeHarness();
+    const { 'cf-connecting-ip': _drop, ...noCf } = ip;
+    const res = await h.handler(opReq(withToken(), noCf));
+    expect(res.status).toBe(200);
+    expect(h.turnstileCalls[0].body).toEqual({ secret: TURNSTILE_SECRET, response: 'tok-ok' });
+  });
+
+  it('gültiger Token → 200; Action darf fehlen; Hostnamen per TURNSTILE_ALLOWED_HOSTNAMES überschreibbar', async () => {
+    const h1 = makeHarness({ turnstile: turnstileOk({ action: '' }) });
+    expect((await h1.handler(opReq(withToken(), ip))).status).toBe(200);
+    const h2 = makeHarness({ turnstile: turnstileOk({ hostname: 'www.realsyncdynamicsai.de' }) });
+    expect((await h2.handler(opReq(withToken(), ip))).status).toBe(200);
+    const h3 = makeHarness({ env: { TURNSTILE_ALLOWED_HOSTNAMES: 'preview.realsyncdynamics-ai.pages.dev' }, turnstile: turnstileOk({ hostname: 'preview.realsyncdynamics-ai.pages.dev' }) });
+    expect((await h3.handler(opReq(withToken(), ip))).status).toBe(200);
+    const h4 = makeHarness({ env: { TURNSTILE_ALLOWED_HOSTNAMES: 'preview.realsyncdynamics-ai.pages.dev' } });
+    expect((await h4.handler(opReq(withToken(), ip))).status).toBe(403);
+  });
+
+  it('Turnstile läuft VOR dem Rate-Limit: abgelehnte Anfragen verbrauchen kein Kontingent', async () => {
+    let pass = false;
+    const h = makeHarness({ turnstile: async () => new Response(JSON.stringify(pass ? { success: true, hostname: 'realsyncdynamicsai.de' } : { success: false }), { status: 200 }) });
+    for (let i = 0; i < ANON_LIMITS.perMinute * 3; i++) {
+      expect((await h.handler(opReq(withToken(), ip))).status).toBe(403);
+    }
+    pass = true;
+    for (let i = 0; i < ANON_LIMITS.perMinute; i++) {
+      expect((await h.handler(opReq(withToken(), ip))).status).toBe(200);
+    }
+    expect((await h.handler(opReq(withToken(), ip))).status).toBe(429);
+  });
+
+  it('Timeout der Siteverify greift (fetch hängt → Abbruch → 403)', async () => {
+    const hanging = ((_u: string, init: RequestInit) => new Promise<Response>((_res, rej) => {
+      init.signal?.addEventListener('abort', () => rej(new DOMException('aborted', 'AbortError')));
+    })) as unknown as typeof fetch;
+    const r = await verifyTurnstile({ body: { turnstile_token: 't' }, remoteIp: null, env: (n) => (n === 'TURNSTILE_SECRET_KEY' ? 's' : undefined), fetchImpl: hanging, timeoutMs: 20 });
+    expect(r).toMatchObject({ ok: false, status: 403, code: 'TURNSTILE_FAILED', reason: 'timeout' });
+  });
+
+  it('eingeloggter Pfad unverändert: kein Token nötig, keine Siteverify', async () => {
+    const h = makeHarness({ env: { TURNSTILE_SECRET_KEY: undefined } });
+    const res = await h.handler(opReq(body('kodee_chat'), userHeaders));
+    expect(res.status).toBe(200);
+    expect(h.turnstileCalls).toHaveLength(0);
+    const svc = await h.handler(opReq(body('governance_brief_daily'), internalHeaders));
+    expect(svc.status).toBe(200);
+    expect(h.turnstileCalls).toHaveLength(0);
+  });
+});
+
+// ── audit_id nur als Korrelation (Entscheidung 26.09., 00:35) ───────
+
+describe('ai-gateway — audit_id ist nur correlation_id, kein Prompt-Kontext, kein DB-Read', () => {
+  const AUDIT = '44444444-4444-4444-8444-444444444444';
+  const ip = { apikey: ANON_KEY, Authorization: `Bearer ${ANON_KEY}`, 'x-forwarded-for': '198.51.100.10' };
+
+  it('Provider-Anfrage enthält weder audit_id noch Audit-Daten; Systemprompt ist der feste Anon-Prompt, input nur die Frage', async () => {
+    const h = makeHarness();
+    const res = await h.handler(opReq({
+      mode: 'audit_anon', turnstile_token: 'tok-ok',
+      input: { question: 'Was heißt das?', audit_id: AUDIT, findings: [{ title: 'GA4 ohne Consent', detail: 'secret-site.example' }], domain: 'secret-site.example' },
+    }, ip));
+    expect(res.status).toBe(200);
+    expect(h.calls).toHaveLength(1);
+    const c = h.calls[0];
+    expect(c.system_prompt).toBe(ANON_AUDIT_SYSTEM_PROMPT);
+    expect(c.input).toBe('Was heißt das?');
+    expect(c.messages).toBeUndefined();
+    expect(c.metadata).toBeUndefined();
+    const sent = JSON.stringify(c);
+    expect(sent).not.toContain(AUDIT);
+    expect(sent).not.toContain('secret-site.example');
+    expect(sent).not.toContain('GA4 ohne Consent');
+    // …aber protokolliert als Korrelation
+    expect(h.anonReserves[0].correlation_id).toBe(AUDIT);
+  });
+
+  it('buildAnonAuditRequest: feste Schlüsselmenge, trace_id ist die request_id (nicht die audit_id)', () => {
+    const r = buildAnonAuditRequest({ question: 'q', auditId: AUDIT }, 'req-x');
+    expect(Object.keys(r).sort()).toEqual(['feature', 'input', 'max_tokens', 'model_profile', 'system_prompt', 'task_type', 'temperature', 'tenant_id', 'timeout_ms', 'trace_id', 'user_id']);
+    expect(r.trace_id).toBe('req-x');
+    expect(JSON.stringify(r)).not.toContain(AUDIT);
+    expect(ANON_AUDIT_SYSTEM_PROMPT).not.toMatch(/\{\{|\$\{|audit_id/);
+  });
+
+  it('kein DB-Read auf Audit-Tabellen: der anon-Pfad fasst nur anon_chat_runs an (Quelltext-Check)', () => {
+    const read = (p: string) => readFileSync(repoFile(p), 'utf8');
+    for (const f of [
+      'supabase/functions/ai-gateway/handler.ts',
+      'supabase/functions/_shared/aiGateway/anonAuditCopilot.ts',
+      'supabase/functions/_shared/aiGateway/turnstile.ts',
+    ]) {
+      const src = read(f);
+      expect(src, f).not.toMatch(/\.from\(|\.rpc\(|createClient/);
+    }
+    const anonAudit = read('supabase/functions/_shared/anonAudit.ts');
+    const tables = [...anonAudit.matchAll(/\.from\(\s*['"]([a-z_]+)['"]/g)].map((m) => m[1]);
+    expect(tables.length).toBeGreaterThan(0);
+    expect(new Set(tables)).toEqual(new Set(['anon_chat_runs']));
+    const index = read('supabase/functions/ai-gateway/index.ts');
+    const fn = index.slice(index.indexOf('async function anonAuditLog'), index.indexOf('Deno.serve('));
+    expect(fn).toMatch(/reserveAnonAudit/);
+    expect(fn).not.toMatch(/\.from\(|\.select\(|\.rpc\(/);
+  });
+
+  it('Handler-Deps im anon-Pfad: nur anonAuditLog (reserve/complete), kein Lese-Zugriff', async () => {
+    const h = makeHarness();
+    await h.handler(opReq({ mode: 'audit_anon', turnstile_token: 'tok-ok', input: { question: 'q', audit_id: AUDIT } }, ip));
+    expect(h.authCalls).toBe(0);
+    expect(h.anonReserves).toHaveLength(1);
+    expect(h.anonCompletes).toHaveLength(1);
   });
 });

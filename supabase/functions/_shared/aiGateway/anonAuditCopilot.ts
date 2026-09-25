@@ -4,12 +4,17 @@
 // Vertrag (Frontend):
 //   POST /functions/v1/ai-gateway
 //   Header: apikey: <anon>   (kein Nutzer-JWT nötig; Authorization wird ignoriert)
-//   Body:   { mode: 'audit_anon', input: { question: string, audit_id?: string } }
+//   Body:   { mode: 'audit_anon', turnstile_token: string,
+//             input: { question: string, audit_id?: string } }
+//   (Authorization: Bearer <Legacy-Anon-JWT> wegen verify_jwt; siehe config.toml)
 //   Alle anderen Felder (feature, system_prompt, model_profile, max_tokens,
 //   temperature, tenant_id, op …) werden IGNORIERT — nichts davon erreicht
 //   den Provider. Zweck, Systemprompt, Profil und Token-Limit sind fest.
 //
 // Grenzen (serverseitig, nicht vom Client beeinflussbar):
+//   - Turnstile         Siteverify fail-closed VOR allem anderen (turnstile.ts)
+//   - audit_id          NUR correlation_id in anon_chat_runs — KEIN Kontext im
+//                        Prompt, KEIN DB-Read auf Audit-Tabellen
 //   - feature           'audit_copilot.anon' (fest)
 //   - model_profile     'fast-local', NUR EU-lokaler Provider (kein
 //                        Anthropic/OpenAI-Fallback — Gateway ohne Cloud-Kette)

@@ -330,7 +330,7 @@ export function GovernanceActivationView() {
                   setOrg({ ...org, company: v });
                   setSaveState('idle');
                 }}
-                placeholder="z. B. RealSync Dynamics GmbH"
+                placeholder="z. B. Muster GmbH"
               />
               <Field
                 label="Gesellschaften"

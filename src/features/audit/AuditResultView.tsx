@@ -533,11 +533,11 @@ function MonitoringCta() {
         <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-security-400" />
         <div>
           <h3 className="font-display text-base font-bold text-titanium-50 sm:text-lg">
-            Befunde dauerhaft fixen — mit Continuous Monitoring
+            Befunde dauerhaft fixen — Continuous Monitoring (Coming Soon)
           </h3>
           <p className="mt-1.5 text-sm leading-relaxed text-titanium-300">
             Du siehst beim naechsten Scan den Delta, bekommst Fix-Empfehlungen mit Code-Snippets
-            und einen E-Mail-Alert, sobald sich an Deinem Compliance-Score etwas aendert.
+            und — sobald das Monitoring live ist — einen E-Mail-Alert, wenn sich an Deinem Compliance-Score etwas aendert.
           </p>
           <div className="mt-4 flex flex-wrap gap-2">
             <Link

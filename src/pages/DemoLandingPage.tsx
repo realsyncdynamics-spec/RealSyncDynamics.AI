@@ -132,8 +132,8 @@ export function DemoLandingPage() {
               </div>
 
               <div className="text-center">
-                <div className="text-4xl font-bold text-green-400 mb-2">24/7</div>
-                <div className="text-titanium-400">Continuous Monitoring</div>
+                <div className="text-4xl font-bold text-green-400 mb-2">Soon</div>
+                <div className="text-titanium-400">Continuous Monitoring (Coming Soon)</div>
               </div>
             </div>
           </div>
@@ -164,8 +164,8 @@ export function DemoLandingPage() {
               },
               {
                 icon: '🔍',
-                title: 'Real-time Scanning',
-                description: 'Continuous monitoring of your AI systems',
+                title: 'On-demand Scanning',
+                description: 'On-demand scans of your AI systems — continuous monitoring coming soon',
               },
               {
                 icon: '✅',

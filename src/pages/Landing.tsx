@@ -250,7 +250,7 @@ function TrustStrip() {
 const MECHANICS_STEPS = [
   { Icon: ScanSearch, title: 'Scan', metric: '47 Risiken erkannt' },
   { Icon: FileCheck2, title: 'Evidence', metric: '312 Nachweise erzeugt' },
-  { Icon: Activity, title: 'Monitoring', metric: '24/7 Überwachung aktiv' },
+  { Icon: Activity, title: 'Monitoring', metric: 'Dauerbetrieb: Coming Soon' },
   { Icon: BadgeCheck, title: 'Audit Ready', metric: 'Bereit für Prüfung' },
 ] as const;
 

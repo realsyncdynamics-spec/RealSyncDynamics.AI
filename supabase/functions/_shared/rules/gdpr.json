@@ -70,7 +70,7 @@
     {
       "id": "MISSING_IMPRESSUM",
       "title": "Fehlendes oder unvollständiges Impressum",
-      "description": "Pflichtangabe nach § 5 TMG / § 18 MStV nicht oder unvollständig vorhanden.",
+      "description": "Pflichtangabe nach § 5 DDG / § 18 MStV nicht oder unvollständig vorhanden.",
       "category": "documentation",
       "severity": "critical",
       "norms": ["TMG § 5", "MStV § 18"],

@@ -1,5 +1,5 @@
 /**
- * Business-Identity-Konfig für § 5 TMG / § 18 MStV-Pflichtangaben.
+ * Business-Identity-Konfig für § 5 DDG / § 18 MStV-Pflichtangaben.
  *
  * Diese Werte werden in /legal/impressum gerendert. Felder, die noch nicht
  * vergeben sind (USt-IdNr. nach Finanzamt-Fragebogen, HRB bei späterer

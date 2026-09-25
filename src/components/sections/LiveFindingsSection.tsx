@@ -103,7 +103,7 @@ const FINDINGS: Finding[] = [
                 title: 'Datenschutzerklaerung nicht erreichbar',
                 detail: 'Footer-Link /datenschutz liefert 404. Pflicht-Information nach Art.13 DSGVO fehlt — abmahnfaehig.',
                 ref: 'GET /datenschutz => 404 Not Found',
-                rule: 'DSGVO Art.13 · TMG 5',
+                rule: 'DSGVO Art.13 · DDG 5',
                 fix_snippets: [{ label: 'Route anlegen (React Router)', language: 'tsx', code: `// App.tsx
                 <Route path="/datenschutz" element={<DatenschutzPage />} />
                 <Route path="/privacy"     element={<DatenschutzPage />} />` }],

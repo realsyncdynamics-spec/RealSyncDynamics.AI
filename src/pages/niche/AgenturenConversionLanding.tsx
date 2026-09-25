@@ -7,7 +7,7 @@ const CONFIG: NicheConfig = {
   eyebrow: 'Für Marketing-Agenturen & Web-Studios',
   headline: '1 Agentur. 50 Kunden. 0 manuelle DSGVO-Audits.',
   subline:
-    'Jede Ihrer Kunden-Websites ist ein eigenes Compliance-Risiko — und jedes Plugin-Update, jeder neue Tracker kann den Status kippen. Mit RealSyncDynamics.AI überwachen Sie alle Mandanten-Domains zentral, erhalten sofort Drift-Alerts und liefern strukturierte Befunde, die Sie direkt an den Kunden weitergeben.',
+    'Jede Ihrer Kunden-Websites ist ein eigenes Compliance-Risiko — und jedes Plugin-Update, jeder neue Tracker kann den Status kippen. Mit RealSyncDynamics.AI prüfen Sie alle Mandanten-Domains zentral und liefern strukturierte Befunde, die Sie direkt an den Kunden weitergeben. Dauerhafte Überwachung mit Drift-Alerts ist Coming Soon.',
   primaryCtaHref: '/audit?source=agenturen',
   primaryCtaLabel: 'Jetzt Agentur-Paket starten',
   painCards: [
@@ -30,8 +30,8 @@ const CONFIG: NicheConfig = {
   checksTitle: 'Was wir für Agenturen konkret prüfen',
   checks: [
     {
-      title: 'Multi-Domain-Monitoring für alle Mandanten',
-      body: 'Alle Kunden-Websites in einem Dashboard. GA4, Meta-Pixel, LinkedIn, TikTok, Hotjar — wir erkennen jeden Tracker und prüfen, ob Pre-Consent-Loading aktiv ist. Drift-Alert per E-Mail oder Webhook.',
+      title: 'Multi-Domain-Scans für alle Mandanten',
+      body: 'Alle Kunden-Websites in einem Dashboard. GA4, Meta-Pixel, LinkedIn, TikTok, Hotjar — wir erkennen jeden Tracker und prüfen, ob Pre-Consent-Loading aktiv ist. Drift-Alert per E-Mail oder Webhook: Coming Soon.',
     },
     {
       title: 'Strukturierter Befund-Report pro Mandant',

@@ -7,7 +7,7 @@ const CONFIG: NicheConfig = {
   eyebrow: 'Für Rechtsanwaltskanzleien & Notariate',
   headline: 'DSGVO-Compliance für Kanzleien — mit lückenlosem Nachweis statt Hoffnung.',
   subline:
-    'Kanzleien kaufen keine Software. Kanzleien kaufen Nachweise, Historien und Audit-Trails. RealSyncDynamics.AI überwacht Ihre Kanzlei-Website kontinuierlich, dokumentiert jeden Compliance-Status und erzeugt kryptographisch gesicherte Evidence-Records — für den Fall, dass die Aufsichtsbehörde fragt.',
+    'Kanzleien kaufen keine Software. Kanzleien kaufen Nachweise, Historien und Audit-Trails. RealSyncDynamics.AI prüft Ihre Kanzlei-Website, dokumentiert jeden Compliance-Status und erzeugt kryptographisch gesicherte Evidence-Records — für den Fall, dass die Aufsichtsbehörde fragt.',
   primaryCtaHref: '/audit?source=kanzleien',
   primaryCtaLabel: 'Kanzlei-Website jetzt prüfen',
   painCards: [
@@ -38,8 +38,8 @@ const CONFIG: NicheConfig = {
       body: 'Jeder Prüfdurchlauf erzeugt einen signierten Befund mit Timestamp. Der Evidence-Vault speichert alle Compliance-Zustände chronologisch — für Aufsichtsbehörden, Zertifizierungen und interne Dokumentationspflichten.',
     },
     {
-      title: 'Kontinuierliches Monitoring + Drift-Alert',
-      body: 'Sofort-Alert per E-Mail wenn sich Ihr Compliance-Status ändert: neuer Tracker erkannt, Cookie-Banner deaktiviert, Drittland-Transfer hinzugekommen. Keine manuelle Prüfung mehr notwendig.',
+      title: 'Kontinuierliches Monitoring + Drift-Alert (Coming Soon)',
+      body: 'Geplant: Alert per E-Mail, wenn sich Ihr Compliance-Status ändert — neuer Tracker erkannt, Cookie-Banner deaktiviert, Drittland-Transfer hinzugekommen. Bis dahin: erneuter Scan nach jedem Website-Update.',
     },
   ],
   faqTitle: 'Häufige Fragen von Kanzleien',
@@ -54,7 +54,7 @@ const CONFIG: NicheConfig = {
     },
     {
       q: 'Was passiert, wenn sich nach einem Website-Update die Compliance ändert?',
-      a: 'Das Monitoring erkennt Drift automatisch — z. B. wenn nach einem Plugin-Update ein Tracker vor Consent lädt. Sie erhalten sofort eine Benachrichtigung mit konkretem Befund und Empfehlung.',
+      a: 'Heute: Sie starten nach dem Update einen erneuten Scan und sehen den konkreten Befund mit Empfehlung. Automatische Drift-Erkennung mit Benachrichtigung ist Coming Soon.',
     },
     {
       q: 'Können wir den Service für Mandanten-Websites nutzen?',

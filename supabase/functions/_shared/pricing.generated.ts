@@ -520,7 +520,7 @@ export const PLANS: Plan[] = [
     planKey: 'free_audit',
     yearlyPlanKey: null,
     name: 'Free Audit',
-    outcomeHeadline: 'Sehen Sie in 90 Sekunden, wo Ihre Governance-Lücken liegen.',
+    outcomeHeadline: 'Sehen Sie in 30 Sekunden, wo Ihre Governance-Lücken liegen.',
     technicalSubheadline: 'Unbegrenzte Runtime-Scans Ihrer Domain mit Governance Score, Top-Risiken und Planempfehlung.',
     price: { monthlyEur: 0, yearlyEur: null, oneTimeEur: null },
     currency: 'EUR',

@@ -114,7 +114,7 @@ export function SubProcessors() {
 
       <main className="max-w-4xl mx-auto px-4 sm:px-6 py-8 space-y-6">
         <div className="text-[11px] font-mono uppercase tracking-[0.25em] text-titanium-100 mb-4">
-          Sub-Prozessoren: Supabase · Anthropic · Google · OpenAI · Stripe · Hostinger · Resend · GitHub
+          Sub-Prozessoren: Supabase · Anthropic · Google · OpenAI · Stripe · Hostinger · Resend · GitHub · Sentry
         </div>
         <div className="prose prose-invert max-w-none text-titanium-300 text-sm leading-relaxed">
           <p>

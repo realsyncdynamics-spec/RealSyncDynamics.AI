@@ -171,8 +171,10 @@ export function PrivacyPolicy() {
             <li><strong>Art. 15</strong> Auskunftsrecht — Selfservice-Export unter <Link to="/settings/account" className="text-security-400">/settings/account</Link>.</li>
             <li><strong>Art. 16</strong> Recht auf Berichtigung — direkt im Profil.</li>
             <li><strong>Art. 17</strong> Recht auf Löschung — Selfservice-Löschung unter /settings/account.</li>
+            <li><strong>Art. 18</strong> Recht auf Einschränkung der Verarbeitung — Anfragen bitte an <a className="text-security-400" href="mailto:privacy@realsyncdynamicsai.de">privacy@realsyncdynamicsai.de</a>.</li>
             <li><strong>Art. 20</strong> Datenübertragbarkeit — der Export liefert maschinenlesbares JSON.</li>
             <li><strong>Art. 21</strong> Widerspruchsrecht gegen Verarbeitung auf Grundlage berechtigter Interessen.</li>
+            <li><strong>Art. 22</strong> Keine ausschließlich automatisierte Entscheidung mit rechtlicher oder vergleichbar erheblicher Wirkung — KI-gestützte Risikoanalysen und Empfehlungen dienen als Entscheidungsunterstützung und unterliegen menschlicher Prüfung.</li>
             <li><strong>Art. 77</strong> Beschwerderecht bei der zuständigen Aufsichtsbehörde — für uns:
               <strong className="text-titanium-50"> Thüringer Landesbeauftragter für den Datenschutz und die Informationsfreiheit (TLfDI)</strong>,
               Häßlerstraße 8, 99096 Erfurt, <a className="text-security-400" href="mailto:poststelle@datenschutz.thueringen.de">poststelle@datenschutz.thueringen.de</a>.

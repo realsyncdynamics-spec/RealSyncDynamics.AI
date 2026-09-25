@@ -2,10 +2,10 @@ import { describe, expect, test } from 'vitest';
 import { isLikelyGermanJurisdiction } from '../../supabase/functions/_shared/jurisdiction';
 
 /**
- * Schützt den gdpr-audit-Scanner vor False-Positive § 5 TMG-Befunden
+ * Schützt den gdpr-audit-Scanner vor False-Positive § 5 DDG-Befunden
  * gegen ausländische Sites (gmail.com, github.com, ...). PR-Kontext:
  * Screenshots zeigten Score 61/100 „KRITISCH — handeln" für gmail.com
- * aufgrund eines „Kein Impressum-Link"-Befunds — § 5 TMG ist deutsches
+ * aufgrund eines „Kein Impressum-Link"-Befunds — § 5 DDG ist deutsches
  * Recht und greift dort nicht.
  */
 
@@ -32,30 +32,30 @@ describe('isLikelyGermanJurisdiction', () => {
     });
   });
 
-  describe('DE/AT/CH Sites (sollen true zurückgeben)', () => {
+  describe('Deutschland-Jurisdiktion', () => {
     test('TLD .de allein reicht', () => {
       const html = `<html><body>Empty</body></html>`;
       expect(isLikelyGermanJurisdiction('https://example.de/', html)).toBe(true);
     });
 
-    test('TLD .at allein reicht', () => {
+    test('TLD .at allein reicht nicht für deutsches DDG', () => {
       const html = `<html><body>Empty</body></html>`;
-      expect(isLikelyGermanJurisdiction('https://example.at', html)).toBe(true);
+      expect(isLikelyGermanJurisdiction('https://example.at', html)).toBe(false);
     });
 
-    test('TLD .ch allein reicht', () => {
+    test('TLD .ch allein reicht nicht für deutsches DDG', () => {
       const html = `<html><body>Empty</body></html>`;
-      expect(isLikelyGermanJurisdiction('https://example.ch', html)).toBe(true);
+      expect(isLikelyGermanJurisdiction('https://example.ch', html)).toBe(false);
     });
 
-    test('lang="de" im html-Tag', () => {
+    test('lang="de" allein reicht nicht für deutsches DDG', () => {
       const html = `<!DOCTYPE html><html lang="de"><body>Inhalt auf Deutsch</body></html>`;
-      expect(isLikelyGermanJurisdiction('https://example.com', html)).toBe(true);
+      expect(isLikelyGermanJurisdiction('https://example.com', html)).toBe(false);
     });
 
-    test('lang="de-DE" wird erkannt', () => {
+    test('lang="de-DE" allein reicht nicht für deutsches DDG', () => {
       const html = `<html lang="de-DE"><body>Test</body></html>`;
-      expect(isLikelyGermanJurisdiction('https://example.io', html)).toBe(true);
+      expect(isLikelyGermanJurisdiction('https://example.io', html)).toBe(false);
     });
 
     test('Rechtsform GmbH im Body', () => {

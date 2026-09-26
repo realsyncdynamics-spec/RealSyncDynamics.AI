@@ -81,7 +81,7 @@ export function PricingPage() {
   return (
     <>
       <SEOHead />
-      <div className="rs-ui rs-page">
+      <div className="rs-paper rs-ui rs-page">
         <HandoffTopBar active="navPricing" />
         <section className="rs-pricing" aria-labelledby="pricing-heading">
           <div className="mx-auto max-w-[1400px]">

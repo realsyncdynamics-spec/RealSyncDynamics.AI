@@ -160,7 +160,7 @@ export function AuditLanding() {
   }
 
   return (
-    <div className="rs-ui rs-page min-h-screen">
+    <div className="rs-paper rs-ui rs-page min-h-screen">
       <HandoffTopBar />
 
       {/* Governance-OS-Handoff v2: vier Fragen → echter gdpr-audit-Scan →

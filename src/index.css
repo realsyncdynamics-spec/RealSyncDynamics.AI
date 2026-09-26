@@ -1835,15 +1835,20 @@ html, body {
    Sektionen unter dem Hero lesen weiter die `--ga-*`-Variablen; dieser Scope
    stellt sie auf die Handoff-Palette (Cyan-Akzent, kein Gold) und die
    Titel-Schrift auf Inter Tight. Andere Design-Routen bleiben unberührt. */
-/* Startseiten-Palette „Papier & Waldgrün" (natürlich, vertrauensvoll):
-   warmes Papier, fast schwarze Schrift, tiefes Waldgrün als einzige
-   Handlungs- und Systemfarbe. Gilt ausschließlich im Scope von `/`: Die
-   `--color-rs-*`-Werte werden hier überschrieben, App und Dashboard behalten
-   ihre Werte aus `@theme`. Der Tokenname `cyan` bleibt aus Kompatibilität —
-   er trägt hier Waldgrün. */
-.ga-context.rs-handoff {
+/* „Papier & Waldgrün" (natürlich, vertrauensvoll): warmes Papier, fast
+   schwarze Schrift, tiefes Waldgrün als einzige Handlungs- und Systemfarbe.
+
+   Ein Scope für die Startseite und die Seiten hinter ihren Buttons
+   (`/audit`, `/pricing`, `/login`, `/contact-sales`, Checkout, Content-Seiten,
+   `/governance-runtime`). Wie `.eos-light` kippt es Paletten über ihre
+   CSS-Variablen, ohne Komponenten-Klassen anzufassen — beide Familien:
+   die Handoff-Tokens (`--color-rs-*`) und die ältere Obsidian/Titanium/
+   Silver/Gold-Skala. App und Dashboard bleiben dunkel. Der Tokenname
+   `cyan` bleibt aus Kompatibilität — er trägt hier Waldgrün. */
+.rs-paper {
+  color-scheme: light;
   --color-rs-hero:          #EFEAE1;
-  --color-rs-bg-0:          #E8E2D7;
+  --color-rs-bg-0:          #EFEAE1;
   --color-rs-bg-1:          #F7F4EE;
   --color-rs-bg-2:          #EDE7DC;
   --color-rs-bg-3:          #E2DBCF;
@@ -1855,13 +1860,89 @@ html, body {
   --color-rs-border-strong: #B9B0A0;
   --color-rs-primary:       #1F3D32;
   --color-rs-primary-hover: #16302A;
+  --color-rs-primary-light: #2F6B53;
   --color-rs-cyan:          #2F6B53;
   --color-rs-cyan-light:    #3F8A6A;
   --color-rs-success:       #2F6B53;
+  --color-rs-violet:        #1F3D32;
+
+  /* Ältere Skalen: Flächen → Papier, Schrift → Tinte, Akzente → Waldgrün. */
+  --color-obsidian-950: #EFEAE1;
+  --color-obsidian-900: #F7F4EE;
+  --color-obsidian-800: #E8E2D7;
+  --color-obsidian-700: #E2DBCF;
+  --color-obsidian-600: #D6CFC2;
+  --color-obsidian-500: #B9B0A0;
+  --color-obsidian-400: #8A9089;
+  --color-obsidian-300: #5E665F;
+  --color-obsidian-200: #454B47;
+  --color-obsidian-100: #2A2F2B;
+  --color-obsidian-50:  #1B1F1C;
+
+  --color-titanium-50:  #1B1F1C;
+  --color-titanium-100: #1B1F1C;
+  --color-titanium-200: #2A2F2B;
+  --color-titanium-300: #454B47;
+  --color-titanium-400: #5E665F;
+  --color-titanium-500: #5E665F;
+  --color-titanium-600: #8A9089;
+  --color-titanium-700: #B9B0A0;
+  --color-titanium-800: #D6CFC2;
+  --color-titanium-900: #E2DBCF;
+
+  --color-silver-50:  #1B1F1C;
+  --color-silver-100: #1B1F1C;
+  --color-silver-300: #454B47;
+  --color-silver-400: #5E665F;
+  --color-silver-500: #5E665F;
+  --color-silver-700: #B9B0A0;
+  --color-silver-900: #E2DBCF;
+
+  --color-gold-50:  #E4ECE6;
+  --color-gold-100: #D3E1D7;
+  --color-gold-200: #2F6B53;
+  --color-gold-300: #1F3D32;
+  --color-gold-400: #2F6B53;
+  --color-gold-500: #1F3D32;
+  --color-gold-600: #2F6B53;
+  --color-gold-700: #16302A;
+  --color-gold-800: #16302A;
+  --color-gold-900: #D3E1D7;
+
+  --color-security-400: #2F6B53;
+  --color-security-500: #1F3D32;
+  --color-security-600: #16302A;
+  --color-cyan-300: #2F6B53;
+  --color-cyan-400: #2F6B53;
+  --color-cyan-500: #1F3D32;
+  --color-cyan-600: #1F3D32;
+  --color-cyan-700: #2F6B53;
+  --color-brass-100: #1B1F1C;
+
+  /* Statusfarben: auf Papier dunkel genug für Text, Flächen hell. */
+  --color-red-100: #7F1D1D;
+  --color-red-200: #7F1D1D;
+  --color-red-300: #9B2C2C;
+  --color-red-400: #9B2C2C;
+  --color-red-900: #E8C4C0;
+  --color-red-950: #F6E4E1;
+  --color-emerald-200: #1F3D32;
+  --color-emerald-300: #2F6B53;
+  --color-emerald-400: #2F6B53;
+  --color-emerald-600: #2F6B53;
+  --color-emerald-900: #C9DCCF;
+  --color-emerald-950: #E4ECE6;
+  --color-amber-300: #8A5A0B;
+  --color-amber-400: #8A5A0B;
+
+  background-color: var(--color-rs-hero);
+  color: var(--color-rs-fg-0);
 }
 
 .ga-context.rs-handoff {
   color-scheme: light;
+  /* Startseite: Wechselbänder etwas dunkler als das Seitenpapier. */
+  --color-rs-bg-0: #E8E2D7;
   --ga-display: var(--font-rs-serif);
   --ga-void: var(--color-rs-hero);
   --ga-deep: var(--color-rs-bg-0);

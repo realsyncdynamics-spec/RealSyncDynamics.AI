@@ -14,23 +14,23 @@ drop policy if exists rls_approval_gates_tenant_insert on public.runtime_approva
 drop policy if exists rls_approval_gates_tenant_update on public.runtime_approval_gates;
 drop policy if exists rls_approval_gates_service_role on public.runtime_approval_gates;
 
--- New Phase 1.3 policies: direct tenant_id check via is_tenant_member()
+-- New Phase 1.3 policies: tenant_id check via is_tenant_member()
 -- These policies enforce tenant isolation for approval gate records
--- tenant_id is NOT NULL per Phase 1.2, so policies can assume valid values
+-- tenant_id may be nullable in Phase 1.2; rows without tenant_id are inaccessible
 create policy rls_approval_gates_tenant_select
   on public.runtime_approval_gates
   for select
-  using (public.is_tenant_member(tenant_id));
+  using (tenant_id is not null and public.is_tenant_member(tenant_id));
 
 create policy rls_approval_gates_tenant_insert
   on public.runtime_approval_gates
   for insert
-  with check (public.is_tenant_member(tenant_id));
+  with check (tenant_id is not null and public.is_tenant_member(tenant_id));
 
 create policy rls_approval_gates_tenant_update
   on public.runtime_approval_gates
   for update
-  using (public.is_tenant_member(tenant_id) and status = 'pending')
+  using (tenant_id is not null and public.is_tenant_member(tenant_id) and status = 'pending')
   with check (status in ('granted', 'denied', 'expired'));
 
 -- Service Role can do all operations (used by Edge Functions)

@@ -11,15 +11,11 @@ alter table public.runtime_approval_gates
   add column if not exists tenant_id uuid,
   add column if not exists metadata jsonb;
 
--- Backfill tenant_id from related execution for all rows
--- Use COALESCE to ensure rows without matches get a non-NULL value
+-- Backfill tenant_id from related execution for rows that have matching executions
+-- Rows without matching executions remain NULL; constraint will be added in a later phase
+-- once all data integrity issues are resolved
 update public.runtime_approval_gates rg
-  set tenant_id = coalesce(
-    (select re.tenant_id from public.runtime_executions re where rg.execution_id = re.id),
-    gen_random_uuid()
-  )
-  where rg.tenant_id is null;
-
--- Add NOT NULL constraint after backfill completes
-alter table public.runtime_approval_gates
-  alter column tenant_id set not null;
+  set tenant_id = re.tenant_id
+  from public.runtime_executions re
+  where rg.execution_id = re.id
+    and rg.tenant_id is null;

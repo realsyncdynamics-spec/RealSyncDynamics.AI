@@ -26,6 +26,14 @@ name: Drift Alert
 # gleiches Muster, gleicher Weg nach draußen; der Issue-Text unterscheidet
 # sich entsprechend.
 #
+# Seit dem 2026-09-26 haengt auch der `Entitlement Drift Guard` mit dran —
+# und sein Fehlen war derselbe Befund eine Ebene hoeher. Er existiert seit
+# dem 2026-09-20, stand aber nicht in der Liste unten: Am 24., 25. und
+# 26.09. war er rot, ohne dass ein Issue entstand. Ein Guard, der messen
+# kann und nicht zustellt, ist genau der Zustand, gegen den dieser Workflow
+# gebaut wurde. **Wer einen Guard anlegt, traegt ihn hier mit ein** — sonst
+# misst er fuer niemanden.
+#
 # ## Warum als eigener Workflow statt als Schritt in den Guards
 #
 # `workflow_run` beobachtet die Guards von außen. Damit bleiben sie
@@ -73,6 +81,7 @@ on:
       - Migration Drift Guard
       - Function ACL Drift Guard
       - Cron Health Guard
+      - Entitlement Drift Guard
       - Pre-Deploy Check
     types:
       - completed
@@ -217,6 +226,7 @@ jobs:
             // — ein Issue mit dem falschen Text schickt den Leser in die
             // falsche Richtung.
             const cron = guard === 'Cron Health Guard';
+            const entitlement = guard === 'Entitlement Drift Guard';
 
             const cronBody = [
               `Der Guard **${guard}** ist fehlgeschlagen: ${link} (${when}).`,
@@ -243,6 +253,45 @@ jobs:
               '2. Fehlt ein Vault-Secret, legt es der Betreiber an:',
               '   `docs/runbooks/cron-vault-secrets.md`',
               '3. Ist es ein Fehler der aufgerufenen Edge Function, gehört er dorthin',
+              '',
+              'Dieses Issue schließt sich selbst, sobald der Guard wieder grün läuft.',
+            ].join('\n');
+
+            // Der Entitlement-Guard vergleicht die Quelle `shared/pricing.ts`
+            // mit dem DB-Katalog. Der übliche Anlass ist deshalb NICHT ein
+            // Eingriff an der Live-Umgebung vorbei, sondern eine Migration im
+            // Repo, die einen Key vergibt, ohne die Quelle nachzuziehen — so
+            // beim ersten roten Lauf am 2026-09-24 (`frontend.modernization`
+            // aus `20260924000000_frontend_modernization_tool.sql`, sieben
+            // Pläne in der DB, kein Eintrag in der Quelle). Mit dem
+            // Drift-Standardtext stünde hier „jemand hat direkt gegen die
+            // Live-Umgebung gearbeitet" — falsch, und es schickt den Leser in
+            // die falsche Richtung.
+            const entitlementBody = [
+              `Der Guard **${guard}** ist fehlgeschlagen: ${link} (${when}).`,
+              '',
+              'Das heißt: **Plan-Berechtigungen in der Datenbank und in',
+              '`shared/pricing.ts` stimmen nicht überein.** Welche Keys, in welchem',
+              'Plan und in welche Richtung, nennt das Protokoll des Laufs — der',
+              'Guard gibt je Abweichung Plan und Key namentlich aus.',
+              '',
+              '### Warum das zählt',
+              '',
+              '`shared/pricing.ts` ist die einzige Quelle für Pläne, Preise, Module',
+              'und Berechtigungen; die Dashboard-Gates und `tenant_entitlements()`',
+              'lesen daraus abgeleitete Werte. Driften beide Seiten, entscheidet je',
+              'nach Pfad eine andere Wahrheit darüber, was ein Kunde darf — als',
+              'Zugriff, den er nicht bezahlt hat, oder als bezahlte Fläche, die',
+              'gesperrt bleibt.',
+              '',
+              '### Was zu tun ist',
+              '',
+              '1. Protokoll des Laufs öffnen und die Richtung der Abweichung lesen',
+              '2. Steht der Key **nur in der DB**, ist meist eine Migration ihm',
+              '   vorausgegangen: dann die Quelle nachziehen und `npm run sync:pricing`',
+              '3. Steht er **nur in der Quelle**, fehlt die Migration',
+              '4. Nie beides driften lassen — eine Seite ist die richtige, und die',
+              '   Entscheidung, welche, gehört in den PR',
               '',
               'Dieses Issue schließt sich selbst, sobald der Guard wieder grün läuft.',
             ].join('\n');
@@ -277,9 +326,16 @@ jobs:
               'Dieses Issue schließt sich selbst, sobald der Guard wieder grün läuft.',
             ].join('\n');
 
-            // Drei Befundklassen, drei Texte: Deploy (Lint auf main), Cron,
-            // Drift. Die Auswahl steht hier, damit sie an einer Stelle lesbar ist.
-            const body = isLint ? lintBody : cron ? cronBody : driftBody;
+            // Vier Befundklassen, vier Texte: Deploy (Lint auf main), Cron,
+            // Entitlement-Parität, Repo-Prod-Drift. Die Auswahl steht hier,
+            // damit sie an einer Stelle lesbar ist.
+            const body = isLint
+              ? lintBody
+              : cron
+                ? cronBody
+                : entitlement
+                  ? entitlementBody
+                  : driftBody;
 
             const { data: created } = await github.rest.issues.create({
               owner: context.repo.owner,

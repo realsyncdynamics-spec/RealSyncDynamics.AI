@@ -337,6 +337,7 @@ const GovernanceComplianceReportView = lazy(() => import('./features/governance/
 const GovernanceDpiasView = lazy(() => import('./features/governance/DpiasView').then((m) => ({ default: m.DpiasView })));
 const GovernanceDsrTrackerView = lazy(() => import('./features/governance/DsrTrackerView').then((m) => ({ default: m.DsrTrackerView })));
 const GovernanceIncidentsView = lazy(() => import('./features/governance/IncidentsView').then((m) => ({ default: m.IncidentsView })));
+const ActionCenterView = lazy(() => import('./features/governance/ActionCenterView').then((m) => ({ default: m.ActionCenterView })));
 const RiskCenterView = lazy(() => import('./features/governance/risks/RiskCenterView').then((m) => ({ default: m.RiskCenterView })));
 const SecuritySignalsView = lazy(() => import('./features/governance/security-signals/SecuritySignalsView').then((m) => ({ default: m.SecuritySignalsView })));
 const GovernanceConnectorsView = lazy(() => import('./features/governance/ConnectorsView').then((m) => ({ default: m.ConnectorsView })));
@@ -858,6 +859,7 @@ function RoutesWithTracking() {
       <Route path="/app/dpia" element={<AppGate><GovernanceBrowserShell><GovernanceDpiasView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/dsr" element={<AppGate><GovernanceBrowserShell><GovernanceDsrTrackerView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/incidents" element={<AppGate><GovernanceBrowserShell><GovernanceIncidentsView /></GovernanceBrowserShell></AppGate>} />
+      <Route path="/app/actions" element={<AppGate><GovernanceBrowserShell><ActionCenterView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/remediation" element={<AppGate><GovernanceBrowserShell><RemediationPlansView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/remediation/:planId" element={<AppGate><GovernanceBrowserShell><RemediationPlanDetailView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/keys" element={<AppGate><GovernanceBrowserShell><GovernanceKeysView /></GovernanceBrowserShell></AppGate>} />

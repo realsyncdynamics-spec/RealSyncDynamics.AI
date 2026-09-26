@@ -131,7 +131,7 @@
   isolation: isolate;
   overflow: hidden;
   background: var(--color-rs-hero);
-  min-height: max(700px, min(100svh, 900px));
+  min-height: max(640px, min(88svh, 820px));
   display: flex;
   flex-direction: column;
 }
@@ -141,7 +141,7 @@
   top: 0;
   right: 0;
   bottom: 0;
-  width: min(66vw, 1060px);
+  width: min(61vw, 980px);
   perspective: 1400px;
   pointer-events: none;
   z-index: 0;
@@ -166,7 +166,7 @@
 }
 .rs-hero__map-main {
   transform: rotateY(-14deg) rotateX(6deg) scale(1.06);
-  filter: saturate(1.15) contrast(1.08);
+  filter: saturate(1.08) contrast(1.04) brightness(1.12);
 }
 
 .rs-hero__overlay {
@@ -197,13 +197,13 @@
   display: flex;
   align-items: center;
   gap: 16px;
-  padding: 26px 48px;
+  padding: 22px 48px;
 }
 .rs-nav__links {
   margin-left: auto;
   display: none;
   align-items: center;
-  gap: 2px;
+  gap: 8px;
 }
 .rs-nav__link {
   display: inline-flex;
@@ -290,9 +290,9 @@
   flex: 1;
   display: flex;
   align-items: center;
-  padding: 56px 48px;
+  padding: 30px 48px 54px;
 }
-.rs-hero__content { max-width: 940px; }
+.rs-hero__content { max-width: 760px; }
 
 .rs-badge {
   display: inline-flex;
@@ -320,10 +320,10 @@
 }
 
 .rs-hero__h1 {
-  margin: 28px 0 0;
+  margin: 22px 0 0;
   font-family: var(--font-rs-serif);
   font-weight: 400;
-  font-size: clamp(56px, 6.25vw, 80px);
+  font-size: clamp(52px, 5.35vw, 74px);
   line-height: 1;
   letter-spacing: -0.02em;
   color: #eef1f6;
@@ -333,12 +333,23 @@
 .rs-hero__h1-accent { color: var(--color-rs-cyan); white-space: nowrap; }
 .rs-hero__h1-nowrap { white-space: nowrap; }
 
+
+.rs-hero__subline {
+  margin-top: 22px;
+  max-width: 650px;
+  font-family: var(--font-rs-ui);
+  font-size: clamp(15px, 1.2vw, 18px);
+  line-height: 1.65;
+  color: var(--color-rs-fg-2);
+  text-wrap: balance;
+}
+
 .rs-loop {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 14px;
-  margin: 36px 0 0;
+  margin: 24px 0 0;
   padding: 0;
   list-style: none;
   font-family: var(--font-rs-mono);
@@ -353,7 +364,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 14px;
-  margin-top: 40px;
+  margin-top: 30px;
 }
 .rs-hero__trust {
   display: none;
@@ -385,9 +396,10 @@
   }
   .rs-hero__dots { display: none; }
   .rs-hero__body { order: 2; padding: 0 20px 40px; margin-top: -72px; }
-  .rs-hero__h1 { font-size: 44px; margin-top: 20px; }
+  .rs-hero__h1 { font-size: 42px; margin-top: 18px; }
   .rs-hero__h1-line { white-space: normal; }
-  .rs-loop { margin-top: 24px; gap: 10px; font-size: 11px; letter-spacing: 0.14em; }
+  .rs-hero__subline { margin-top: 18px; font-size: 15px; line-height: 1.6; }
+  .rs-loop { margin-top: 20px; gap: 10px; font-size: 11px; letter-spacing: 0.14em; }
   .rs-loop li { gap: 10px; }
   .rs-hero__ctas { flex-direction: column; margin-top: 28px; }
   .rs-hero__ctas .rs-btn { width: 100%; }

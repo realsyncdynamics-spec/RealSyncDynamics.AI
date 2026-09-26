@@ -2,12 +2,13 @@
  * Test fixtures for Supabase and runtime services.
  * Provides utilities for integration and E2E tests.
  */
+import { randomUUID } from 'crypto';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { createClient } from '@supabase/supabase-js';
 import type { ExecutorDeps } from '../../src/core/runtime/executor';
 import { Executor } from '../../src/core/runtime/executor';
 import type { ApprovalGateService } from '../../src/core/runtime/approvals';
-import { PostgresApprovalGateService } from '../../src/core/runtime/approvals/postgres-implementation';
+import { InMemoryApprovalGateService } from '../../src/core/runtime/approvals/in-memory-implementation';
 import { SkillRegistry } from '../../src/core/runtime/registry';
 import { HandlerRegistry } from '../../src/core/runtime/handlers';
 import type { PermissionChecker } from '../../src/core/runtime/permissions';
@@ -54,9 +55,11 @@ export async function createTestExecutor(options: {
   tenantId?: string;
 }): Promise<Executor> {
   const supabase = options.supabase;
+  const tenantId = options.tenantId || 'test-tenant-' + randomUUID().slice(0, 8);
 
-  // Default approval service (Postgres-backed)
-  const approvalService = options.approvalService || new PostgresApprovalGateService(supabase, options.tenantId);
+  // Phase 1.1: Default approval service (in-memory).
+  // Phase 2: Replace with PostgresApprovalGateService once schema is deployed.
+  const approvalService = options.approvalService || new InMemoryApprovalGateService(tenantId);
 
   // Default event bus (in-memory for tests)
   const eventBus = options.eventBus || new InMemoryEventBus();

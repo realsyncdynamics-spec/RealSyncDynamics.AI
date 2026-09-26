@@ -1,247 +1,202 @@
-# Playwright Scanner — VPS Deployment Guide
+# Playwright Scanner / Governed Browser Executor — Production Deployment
 
-Vollständige Deploy-Anleitung für den Playwright-Microservice auf dem Hostinger VPS.
-Danach: Supabase Vault Secrets setzen (Schritt 2).
+Canonical production runtime for `scanner.realsyncdynamicsai.de`.
 
----
+## Architecture
 
-## SCHRITT 1 — VPS: Playwright-Scanner deployen
-
-### 1.1 SSH auf VPS
-
-```bash
-ssh root@DEINE_VPS_IP
+```text
+Authenticated browser user
+  → Supabase browser-execute (JWT + membership + approval)
+  → PLAYWRIGHT_SCANNER_URL / PLAYWRIGHT_SCANNER_KEY
+  → scanner.realsyncdynamicsai.de
+  → Traefik TLS + rate limit
+  → Playwright Chromium
 ```
 
-### 1.2 Repo auf dem VPS holen / aktualisieren
+The scanner accepts the shared scanner credential through either
+`Authorization: Bearer <key>` or `x-api-key: <key>`.
 
-```bash
-# Falls noch nicht geklont:
-cd /opt
-git clone https://github.com/realsyncdynamics-spec/RealSyncDynamics.AI.git
-cd RealSyncDynamics.AI
+There is **no second BasicAuth credential** in the canonical path. This keeps
+existing Supabase callers (`cookie-scan-deep`, monitoring and
+`browser-execute`) on one authenticated service contract.
 
-# Falls bereits vorhanden — auf neuesten Stand bringen:
-cd /opt/RealSyncDynamics.AI
-git pull origin main
+## Canonical deployment
+
+GitHub Actions workflow:
+
+`.github/workflows/deploy-playwright-scanner.yml`
+
+It runs automatically when scanner deployment files change on `main`, and can
+also be run manually from GitHub Actions.
+
+The workflow:
+
+1. typechecks and builds the scanner,
+2. verifies VPS SSH connectivity before mutation,
+3. creates a new 32-byte scanner credential,
+4. syncs `deploy/playwright-scanner/` to
+   `/opt/RealSyncDynamics.AI/deploy/playwright-scanner`,
+5. writes the rotated credential only to the VPS `.env`,
+6. builds and restarts the Docker container,
+7. verifies authenticated local health,
+8. stores `PLAYWRIGHT_SCANNER_URL` and `PLAYWRIGHT_SCANNER_KEY` as
+   **Supabase Edge Function Secrets**,
+9. verifies public authenticated health,
+10. smoke-tests `/execute` with `example.com`.
+
+Required GitHub repository/environment secrets:
+
+- `VPS_SSH_HOST`
+- `VPS_SSH_PORT` (optional; defaults to 22)
+- `VPS_SSH_USER`
+- `VPS_SSH_KEY`
+- `VPS_SSH_KNOWN_HOST`
+- `SUPABASE_ACCESS_TOKEN`
+- `SUPABASE_PROJECT_ID`
+
+The scanner credential itself is rotated during deployment and is not stored in
+GitHub or source control.
+
+## Supabase secrets
+
+`PLAYWRIGHT_SCANNER_URL` and `PLAYWRIGHT_SCANNER_KEY` are **Edge Function
+environment secrets**, not Postgres Vault rows.
+
+Canonical values:
+
+```text
+PLAYWRIGHT_SCANNER_URL=https://scanner.realsyncdynamicsai.de
+PLAYWRIGHT_SCANNER_KEY=<rotated scanner credential>
 ```
 
-### 1.3 In das Scanner-Verzeichnis wechseln
+They are read in Edge Functions via `Deno.env.get(...)`.
 
-```bash
-cd /opt/RealSyncDynamics.AI/deploy/playwright-scanner
-```
+Do not put the scanner key into `public` tables, browser environment variables,
+or source control.
 
-### 1.4 API-Key generieren (sicher, 32 Byte hex)
+## Supported endpoints
 
-```bash
-openssl rand -hex 32
-# Beispiel-Output: a3f8b2c1d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1
-# Diesen Key merken — wird in Schritt 2 (Supabase Vault) eingetragen!
-```
+### GET /health
 
-### 1.5 BasicAuth-Hash generieren (Traefik-Schutzschicht)
+Requires scanner credential.
 
-```bash
-# htpasswd installieren falls nötig:
-apt-get install -y apache2-utils
+### POST /scan/full
 
-# Hash generieren (DEIN_PASSWORT ersetzen):
-htpasswd -nb realsyncdynamics DEIN_PASSWORT
-# Output: realsyncdynamics:$apr1$xyz...abc
-# WICHTIG: In .env wird jedes $ durch $$ ersetzt (docker-compose quirk)
-```
+Existing deep compliance scan.
 
-### 1.6 .env Datei anlegen
+### POST /scan/consent-timing
 
-```bash
-cp .env.example .env
-nano .env
-```
+Existing consent-timing analysis.
 
-Inhalt der .env (Werte ersetzen):
+### POST /scan/screenshot
 
-```env
-SCANNER_API_KEY=<output aus openssl rand -hex 32>
-TRAEFIK_BASIC_AUTH=realsyncdynamics:$$apr1$$<rest des htpasswd outputs — $ durch $$ ersetzen>
-MAX_CONCURRENT=3
-```
+Existing screenshot scan.
 
-### 1.7 Traefik proxy-Netzwerk sicherstellen
+### POST /execute
 
-```bash
-# Prüfen ob proxy-Netzwerk existiert:
-docker network ls | grep proxy
+Governed low-level browser executor.
 
-# Falls nicht vorhanden:
-docker network create proxy
-```
+Supported actions:
 
-### 1.8 Docker-Image bauen und starten
+- `navigate`
+- `scroll`
+- `click`
+- `type`
+- `select`
+- `extract`
+- `wait`
+- `screenshot`
 
-```bash
-# Im Verzeichnis /opt/RealSyncDynamics.AI/deploy/playwright-scanner:
-docker compose build --no-cache
-docker compose up -d
+The scanner itself does not decide policy. `browser-execute` performs identity,
+tenant, risk and human-approval checks before forwarding governed actions.
 
-# Status prüfen:
-docker compose ps
-docker compose logs -f playwright-scanner
-```
+## Security boundaries
 
-### 1.9 Health-Check (lokal auf VPS)
+- Scanner startup fails when `SCANNER_API_KEY` is missing.
+- Browser sessions are ephemeral and expire after inactivity.
+- Session IDs received from the Edge Function are namespaced by tenant.
+- Private/local network destinations are blocked both on initial navigation and
+  through a context-wide request guard.
+- The scanner has a bounded action count, wait duration, selector length and
+  input length.
+- `click`, `type` and `select` require human approval in
+  `browser-execute`.
+- Typed values and selected values are redacted from governance event payloads.
+- Inline screenshot base64 is not persisted in evidence metadata.
+- Autonomous agent planning is not part of this runtime yet.
 
-```bash
-# Direkt auf Port 3001 (ohne Auth, da nur intern):
-curl http://localhost:3001/health
-# Erwartete Antwort: {"ok":true,"version":"2026.05.0","active_scans":0}
-```
+## Manual fallback
 
-### 1.10 Health-Check über Traefik (von außen)
-
-```bash
-# Mit BasicAuth:
-curl -u realsyncdynamics:DEIN_PASSWORT \
-  -H "x-api-key: DEIN_SCANNER_API_KEY" \
-  https://scanner.realsyncdynamicsai.de/health
-# Erwartete Antwort: {"ok":true,"version":"2026.05.0","active_scans":0}
-```
-
-### 1.11 Test-Scan durchführen
-
-```bash
-curl -u realsyncdynamics:DEIN_PASSWORT \
-  -H "x-api-key: DEIN_SCANNER_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{"url":"https://example.com"}' \
-  https://scanner.realsyncdynamicsai.de/scan/full | jq .
-```
-
----
-
-## SCHRITT 2 — Supabase Vault: Secrets setzen
-
-### 2.1 Supabase Dashboard öffnen
-
-URL: https://supabase.com/dashboard/project/ebljyceifhnlzhjfyxup/settings/vault
-
-### 2.2 Secrets anlegen (SQL Editor)
-
-Im Supabase SQL Editor ausführen:
-
-```sql
--- Playwright Scanner URL
-SELECT vault.create_secret(
-  'https://scanner.realsyncdynamicsai.de',
-  'PLAYWRIGHT_SCANNER_URL',
-  'Public URL des Playwright-Scanner-Microservice'
-);
-
--- Playwright Scanner API Key (aus Schritt 1.4)
-SELECT vault.create_secret(
-  'DEIN_SCANNER_API_KEY_AUS_SCHRITT_1_4',
-  'PLAYWRIGHT_SCANNER_KEY',
-  'API-Key fuer den Playwright-Scanner-Microservice'
-);
-```
-
-### 2.3 Verify: Secrets in Edge Functions verfügbar
-
-```sql
--- Prüfen ob Secrets angelegt:
-SELECT name, description, created_at
-FROM vault.secrets
-WHERE name IN ('PLAYWRIGHT_SCANNER_URL', 'PLAYWRIGHT_SCANNER_KEY');
-```
-
-### 2.4 Edge Function neu deployen (falls bereits deployed)
-
-```bash
-# In deinem lokalen Repo-Verzeichnis:
-npx supabase functions deploy cookie-scan-deep --project-ref ebljyceifhnlzhjfyxup
-```
-
----
-
-## SCHRITT 3 — End-to-End-Test
-
-### 3.1 cookie-scan-deep Edge Function testen
-
-```bash
-curl -X POST \
-  https://ebljyceifhnlzhjfyxup.supabase.co/functions/v1/cookie-scan-deep \
-  -H "Authorization: Bearer DEIN_SUPABASE_ANON_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{"url":"https://realsyncdynamicsai.de","scan_depth":1}' | jq .
-```
-
-Erwartete Antwort enthält:
-- `riskScore`: 0-100
-- `trackers`: Array erkannter Tracker
-- `preConsentTrackers`: Tracker die vor Consent gefeuert haben (Consent-Timing)
-- `issues`: Liste der DSGVO-Verstösse
-
----
-
-## TROUBLESHOOTING
-
-### Docker baut nicht
-
-```bash
-# Chromium-Download-Fehler? Node-Version prüfen:
-docker compose build --progress=plain 2>&1 | tail -50
-```
-
-### Traefik erkennt Container nicht
-
-```bash
-# Netzwerk prüfen:
-docker network inspect proxy | grep playwright
-
-# Container muss im proxy-Netzwerk sein:
-docker compose down && docker compose up -d
-```
-
-### SSL-Zertifikat fehlt
-
-```bash
-# Traefik-Logs prüfen:
-docker logs traefik 2>&1 | grep scanner
-# Ggf. warten (Let's Encrypt braucht 30-60s)
-```
-
-### 429 Too Many Scans
-
-```bash
-# MAX_CONCURRENT in .env erhöhen oder warten
-# Status prüfen:
-curl http://localhost:3001/health | jq .active_scans
-```
-
----
-
-## MAINTENANCE
-
-### Update deployen
+Only use this if the GitHub workflow is unavailable.
 
 ```bash
 cd /opt/RealSyncDynamics.AI
-git pull origin main
+git pull --ff-only origin main
 cd deploy/playwright-scanner
-docker compose build --no-cache
-docker compose up -d
+
+# Existing .env must contain a real SCANNER_API_KEY.
+test -s .env
+
+docker network inspect proxy >/dev/null 2>&1 || docker network create proxy
+docker compose build --pull playwright-scanner
+docker compose up -d --remove-orphans playwright-scanner
 ```
 
-### Logs anzeigen
+Local VPS health:
 
 ```bash
-docker compose logs -f playwright-scanner
-# Letzte 100 Zeilen:
-docker compose logs --tail=100 playwright-scanner
+set -a
+. ./.env
+set +a
+
+curl -fsS \
+  -H "Authorization: Bearer $SCANNER_API_KEY" \
+  http://127.0.0.1:3001/health
 ```
 
-### Ressourcen prüfen
+Public health:
 
 ```bash
-docker stats playwright-scanner
+curl -fsS \
+  -H "Authorization: Bearer $SCANNER_API_KEY" \
+  https://scanner.realsyncdynamicsai.de/health
 ```
+
+Governed executor smoke:
+
+```bash
+curl -fsS \
+  -H "Authorization: Bearer $SCANNER_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"session_id":"manual-smoke","actions":[{"type":"navigate","url":"https://example.com"},{"type":"extract","selector":"h1"}]}' \
+  https://scanner.realsyncdynamicsai.de/execute
+```
+
+## Troubleshooting
+
+### SSH preflight fails
+
+No VPS mutation has occurred. Verify the Hostinger firewall, SSH daemon and
+`VPS_SSH_PORT`.
+
+### Public health fails after local health succeeds
+
+Check DNS for `scanner.realsyncdynamicsai.de`, Traefik discovery, TLS
+certificate issuance and the external `proxy` Docker network.
+
+### browser-execute returns EXECUTOR_NOT_CONFIGURED
+
+The Supabase Edge Function environment is missing
+`PLAYWRIGHT_SCANNER_URL` or `PLAYWRIGHT_SCANNER_KEY`. The deployment workflow
+sets both after the VPS service becomes healthy.
+
+### browser-execute returns APPROVAL_REQUIRED
+
+Expected for `click`, `type` and `select`. Resolve the generated approval
+through the Governance approval queue, then retry the exact same action with the
+returned `approval_id`.
+
+### 429 / capacity
+
+Increase `MAX_CONCURRENT` only after checking VPS memory/CPU headroom. Chromium
+sessions are intentionally resource bounded.

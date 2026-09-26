@@ -12,6 +12,8 @@ import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { closeBrowser, getBrowser, scan, ScanFailure } from './scanner.js';
+import { executeBrowserActions } from './browserExecutor.js';
+import type { BrowserExecuteRequest } from './browserExecutor.js';
 import type { ScanError, ScanRequest } from './types.js';
 
 const PORT = parseInt(process.env.PORT ?? '3000', 10);
@@ -124,6 +126,29 @@ app.post('/scan', async (c) => {
     }, 500);
   } finally {
     activeScans--;
+  }
+});
+
+// ─── Governed browser execution endpoint ────────────────────────────────────
+app.post('/execute', async (c) => {
+  const authHeader = c.req.header('Authorization') ?? '';
+  if (!authHeader.startsWith('Bearer ') || authHeader.slice(7) !== SCANNER_SECRET) {
+    return c.json<ScanError>({ ok: false, error: { code: 'UNAUTHORIZED', message: 'Bearer token missing or invalid' } }, 401);
+  }
+
+  let body: BrowserExecuteRequest;
+  try { body = await c.req.json<BrowserExecuteRequest>(); }
+  catch {
+    return c.json<ScanError>({ ok: false, error: { code: 'BAD_REQUEST', message: 'Invalid JSON body' } }, 400);
+  }
+
+  try {
+    const results = await executeBrowserActions(body);
+    return c.json({ ok: true, session_id: body.session_id, results });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    const status = message === 'PRIVATE_NETWORK_BLOCKED' ? 403 : 400;
+    return c.json<ScanError>({ ok: false, error: { code: message, message } }, status);
   }
 });
 

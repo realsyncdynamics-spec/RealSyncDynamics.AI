@@ -1,0 +1,154 @@
+name: Deploy Playwright Scanner
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'deploy/playwright-scanner/**'
+      - '.github/workflows/deploy-playwright-scanner.yml'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy governed browser scanner
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+    env:
+      VPS_SSH_PORT: ${{ secrets.VPS_SSH_PORT || '22' }}
+      SCANNER_DIR: /opt/RealSyncDynamics.AI/deploy/playwright-scanner
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '20'
+
+      - name: Validate scanner source
+        working-directory: deploy/playwright-scanner
+        run: |
+          npm install --no-audit --no-fund
+          npm run typecheck
+          npm run build
+
+      - name: Configure SSH
+        run: |
+          set -Eeuo pipefail
+          mkdir -p ~/.ssh
+          printf '%s\n' "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "${{ secrets.VPS_SSH_KNOWN_HOST }}" >> ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
+
+      - name: Preflight VPS connectivity
+        run: |
+          set -Eeuo pipefail
+          if timeout 15 bash -c "cat < /dev/null > /dev/tcp/${{ secrets.VPS_SSH_HOST }}/${VPS_SSH_PORT}" 2>/dev/null; then
+            echo "VPS SSH reachable on port ${VPS_SSH_PORT}"
+          else
+            echo "::error::VPS SSH is not reachable on port ${VPS_SSH_PORT}."
+            exit 1
+          fi
+
+      - name: Sync scanner source
+        run: |
+          set -Eeuo pipefail
+          ssh -i ~/.ssh/deploy_key -p "${VPS_SSH_PORT}" -o ConnectTimeout=15             "${{ secrets.VPS_SSH_USER }}@${{ secrets.VPS_SSH_HOST }}"             "mkdir -p '${SCANNER_DIR}'"
+
+          rsync -az --delete             --exclude='.env'             -e "ssh -i ~/.ssh/deploy_key -p ${VPS_SSH_PORT} -o ConnectTimeout=15"             deploy/playwright-scanner/             "${{ secrets.VPS_SSH_USER }}@${{ secrets.VPS_SSH_HOST }}:${SCANNER_DIR}/"
+
+      - name: Load or provision scanner credential
+        id: scanner_secret
+        run: |
+          set -Eeuo pipefail
+          secret="$(ssh -i ~/.ssh/deploy_key -p "${VPS_SSH_PORT}" -o ConnectTimeout=15 \
+            "${{ secrets.VPS_SSH_USER }}@${{ secrets.VPS_SSH_HOST }}" \
+            "SCANNER_DIR='${SCANNER_DIR}' bash -s" <<'EOF'
+          set -Eeuo pipefail
+          cd "$SCANNER_DIR"
+          umask 077
+
+          if [ -f .env ]; then
+            existing="$(sed -n 's/^SCANNER_API_KEY=//p' .env | head -n 1)"
+          else
+            existing=""
+          fi
+
+          if [ -z "$existing" ]; then
+            existing="$(openssl rand -hex 32)"
+          fi
+
+          {
+            echo "SCANNER_API_KEY=$existing"
+            echo "MAX_CONCURRENT=3"
+          } > .env
+
+          printf '%s' "$existing"
+          EOF
+          )"
+          test -n "$secret"
+          echo "::add-mask::$secret"
+          echo "value=$secret" >> "$GITHUB_OUTPUT"
+
+      - name: Build and restart scanner
+        env:
+          SCANNER_SECRET: ${{ steps.scanner_secret.outputs.value }}
+        run: |
+          set -Eeuo pipefail
+          ssh -i ~/.ssh/deploy_key -p "${VPS_SSH_PORT}" -o ConnectTimeout=15             "${{ secrets.VPS_SSH_USER }}@${{ secrets.VPS_SSH_HOST }}"             "SCANNER_SECRET='$SCANNER_SECRET' SCANNER_DIR='${SCANNER_DIR}' bash -s" <<'EOF'
+          set -Eeuo pipefail
+          cd "$SCANNER_DIR"
+          docker compose build --pull playwright-scanner
+          docker compose up -d --remove-orphans playwright-scanner
+
+          for i in $(seq 1 45); do
+            if curl -fsS               -H "Authorization: Bearer $SCANNER_SECRET"               http://127.0.0.1:3001/health >/tmp/scanner-health.json 2>/dev/null; then
+              cat /tmp/scanner-health.json
+              exit 0
+            fi
+            sleep 2
+          done
+
+          docker compose logs --tail=100 playwright-scanner
+          exit 1
+          EOF
+
+      - name: Verify public scanner health
+        env:
+          SCANNER_SECRET: ${{ steps.scanner_secret.outputs.value }}
+        run: |
+          set -Eeuo pipefail
+          for i in $(seq 1 30); do
+            if curl -fsS --max-time 15               -H "Authorization: Bearer $SCANNER_SECRET"               https://scanner.realsyncdynamicsai.de/health >/tmp/public-health.json 2>/dev/null; then
+              cat /tmp/public-health.json
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "::error::scanner.realsyncdynamicsai.de health check failed"
+          exit 1
+
+      - uses: supabase/setup-cli@46f7f98c7f948ad727d22c1e67fab04c223a0520 # v3.0.0
+        with:
+          version: latest
+
+      - name: Configure Edge Function scanner secrets
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SCANNER_SECRET: ${{ steps.scanner_secret.outputs.value }}
+        run: |
+          set -Eeuo pipefail
+          supabase secrets set             --project-ref "${{ secrets.SUPABASE_PROJECT_ID }}"             PLAYWRIGHT_SCANNER_URL=https://scanner.realsyncdynamicsai.de             PLAYWRIGHT_SCANNER_KEY="$SCANNER_SECRET"
+
+      - name: Verify governed execute endpoint
+        env:
+          SCANNER_SECRET: ${{ steps.scanner_secret.outputs.value }}
+        run: |
+          set -Eeuo pipefail
+          result="$(curl -fsS --max-time 45             -H "Authorization: Bearer $SCANNER_SECRET"             -H "Content-Type: application/json"             -d '{"session_id":"deploy-smoke-${{ github.sha }}","actions":[{"type":"navigate","url":"https://example.com"},{"type":"extract","selector":"h1"}]}'             https://scanner.realsyncdynamicsai.de/execute)"
+          echo "$result" | jq -e '.ok == true and (.results | length) == 2 and .results[1].text == "Example Domain"' >/dev/null
+          echo "Governed execute smoke test passed"
+
+      - name: Cleanup SSH key
+        if: always()
+        run: rm -f ~/.ssh/deploy_key

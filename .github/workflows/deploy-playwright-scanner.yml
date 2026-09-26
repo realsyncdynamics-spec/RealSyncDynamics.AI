@@ -50,14 +50,6 @@ jobs:
             exit 1
           fi
 
-      - name: Generate scanner credential
-        id: scanner_secret
-        run: |
-          set -Eeuo pipefail
-          secret="$(openssl rand -hex 32)"
-          echo "::add-mask::$secret"
-          echo "value=$secret" >> "$GITHUB_OUTPUT"
-
       - name: Sync scanner source
         run: |
           set -Eeuo pipefail
@@ -65,21 +57,38 @@ jobs:
 
           rsync -az --delete             --exclude='.env'             -e "ssh -i ~/.ssh/deploy_key -p ${VPS_SSH_PORT} -o ConnectTimeout=15"             deploy/playwright-scanner/             "${{ secrets.VPS_SSH_USER }}@${{ secrets.VPS_SSH_HOST }}:${SCANNER_DIR}/"
 
-      - name: Configure scanner credential on VPS
-        env:
-          SCANNER_SECRET: ${{ steps.scanner_secret.outputs.value }}
+      - name: Load or provision scanner credential
+        id: scanner_secret
         run: |
           set -Eeuo pipefail
-          ssh -i ~/.ssh/deploy_key -p "${VPS_SSH_PORT}" -o ConnectTimeout=15             "${{ secrets.VPS_SSH_USER }}@${{ secrets.VPS_SSH_HOST }}"             "SCANNER_SECRET='$SCANNER_SECRET' SCANNER_DIR='${SCANNER_DIR}' bash -s" <<'EOF'
+          secret="$(ssh -i ~/.ssh/deploy_key -p "${VPS_SSH_PORT}" -o ConnectTimeout=15 \
+            "${{ secrets.VPS_SSH_USER }}@${{ secrets.VPS_SSH_HOST }}" \
+            "SCANNER_DIR='${SCANNER_DIR}' bash -s" <<'EOF'
           set -Eeuo pipefail
           cd "$SCANNER_DIR"
           umask 077
+
+          if [ -f .env ]; then
+            existing="$(sed -n 's/^SCANNER_API_KEY=//p' .env | head -n 1)"
+          else
+            existing=""
+          fi
+
+          if [ -z "$existing" ]; then
+            existing="$(openssl rand -hex 32)"
+          fi
+
           {
-            echo "SCANNER_API_KEY=$SCANNER_SECRET"
+            echo "SCANNER_API_KEY=$existing"
             echo "MAX_CONCURRENT=3"
           } > .env
-          docker network inspect proxy >/dev/null 2>&1 || docker network create proxy >/dev/null
+
+          printf '%s' "$existing"
           EOF
+          )"
+          test -n "$secret"
+          echo "::add-mask::$secret"
+          echo "value=$secret" >> "$GITHUB_OUTPUT"
 
       - name: Build and restart scanner
         env:
@@ -104,18 +113,6 @@ jobs:
           exit 1
           EOF
 
-      - uses: supabase/setup-cli@46f7f98c7f948ad727d22c1e67fab04c223a0520 # v3.0.0
-        with:
-          version: latest
-
-      - name: Configure Edge Function scanner secrets
-        env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-          SCANNER_SECRET: ${{ steps.scanner_secret.outputs.value }}
-        run: |
-          set -Eeuo pipefail
-          supabase secrets set             --project-ref "${{ secrets.SUPABASE_PROJECT_ID }}"             PLAYWRIGHT_SCANNER_URL=https://scanner.realsyncdynamicsai.de             PLAYWRIGHT_SCANNER_KEY="$SCANNER_SECRET"
-
       - name: Verify public scanner health
         env:
           SCANNER_SECRET: ${{ steps.scanner_secret.outputs.value }}
@@ -130,6 +127,18 @@ jobs:
           done
           echo "::error::scanner.realsyncdynamicsai.de health check failed"
           exit 1
+
+      - uses: supabase/setup-cli@46f7f98c7f948ad727d22c1e67fab04c223a0520 # v3.0.0
+        with:
+          version: latest
+
+      - name: Configure Edge Function scanner secrets
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SCANNER_SECRET: ${{ steps.scanner_secret.outputs.value }}
+        run: |
+          set -Eeuo pipefail
+          supabase secrets set             --project-ref "${{ secrets.SUPABASE_PROJECT_ID }}"             PLAYWRIGHT_SCANNER_URL=https://scanner.realsyncdynamicsai.de             PLAYWRIGHT_SCANNER_KEY="$SCANNER_SECRET"
 
       - name: Verify governed execute endpoint
         env:

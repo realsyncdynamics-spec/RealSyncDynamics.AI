@@ -10,19 +10,12 @@ alter table public.runtime_approval_gates
   add column if not exists tenant_id uuid,
   add column if not exists metadata jsonb;
 
--- Backfill tenant_id from related execution
+-- Backfill tenant_id from related execution (if table is not empty)
 update public.runtime_approval_gates rg
   set tenant_id = re.tenant_id
   from public.runtime_executions re
-  where rg.execution_id = re.id and rg.tenant_id is null;
-
--- Indexes for query performance
-create index if not exists ix_approval_gates_tenant_created
-  on public.runtime_approval_gates (tenant_id, created_at desc);
-
-create index if not exists ix_approval_gates_status_tenant
-  on public.runtime_approval_gates (status, tenant_id)
-  where status = 'pending';
+  where rg.execution_id = re.id
+    and rg.tenant_id is null;
 
 -- Row Level Security (RLS)
 -- Replace Phase 1.1 RLS (which checked via runtime_executions) with direct tenant_id check.
@@ -40,17 +33,17 @@ drop policy if exists runtime_approval_gates_tenant_update on public.runtime_app
 create policy rls_approval_gates_tenant_select
   on public.runtime_approval_gates
   for select
-  using (public.is_tenant_member(tenant_id));
+  using (coalesce(public.is_tenant_member(tenant_id), false));
 
 create policy rls_approval_gates_tenant_insert
   on public.runtime_approval_gates
   for insert
-  with check (public.is_tenant_member(tenant_id));
+  with check (coalesce(public.is_tenant_member(tenant_id), false));
 
 create policy rls_approval_gates_tenant_update
   on public.runtime_approval_gates
   for update
-  using (public.is_tenant_member(tenant_id) and status = 'pending')
+  using (coalesce(public.is_tenant_member(tenant_id), false) and status = 'pending')
   with check (status in ('granted', 'denied', 'expired'));
 
 -- Service Role can do all operations
@@ -63,6 +56,5 @@ create policy rls_approval_gates_service_role
 -- This migration enables production-grade approval gates with:
 -- - Tenant denormalization (tenant_id column for direct RLS)
 -- - RLS enforcement (direct tenant_id check via is_tenant_member)
--- - Indexes for operational queries
--- State machine functions (can_decide_gate, decide_gate) deferred to Phase 1.3
--- for separate validation and testing of plpgsql functionality.
+-- - State machine functions (decide_gate) deferred to Phase 1.3
+-- for separate validation and testing of stored procedure logic.

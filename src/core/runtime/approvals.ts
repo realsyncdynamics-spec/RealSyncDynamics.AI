@@ -62,5 +62,6 @@ export function defaultGateReason(skillId: string, input: ExecutionInput): strin
   return `Skill "${skillId}" requested for tenant ${input.tenant_id} by agent ${input.agent_id}`;
 }
 
-// Re-export Postgres implementation for use in production/Edge Functions
-export { PostgresApprovalGateService, createApprovalGateService } from './approvals/postgres-implementation';
+// Postgres implementation deferred to Phase 1.2+ (requires schema deployment).
+// Phase 1.1 ships interface + in-memory test implementation only.
+// export { PostgresApprovalGateService, createApprovalGateService } from './approvals/postgres-implementation';

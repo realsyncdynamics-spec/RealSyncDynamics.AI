@@ -7,6 +7,9 @@
  * - Timeline (created, decision window)
  * - Action buttons (APPROVE / DENY)
  * - Decision audit trail
+ *
+ * Phase 1.2+: Deferred until Postgres schema deployment.
+ * Phase 1.1 (code-only) has no backend to process decisions.
  */
 
 import React, { useState } from 'react';

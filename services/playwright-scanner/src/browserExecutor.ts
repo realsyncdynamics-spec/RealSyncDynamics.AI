@@ -124,8 +124,7 @@ export async function executeBrowserActions(input: BrowserExecuteRequest): Promi
   const { page } = await getSession(input.session_id);
   const results: BrowserActionResult[] = [];
 
-  for (let index = 0; index < input.actions.length; index++) {
-    const action = input.actions[index];
+  for (const [index, action] of input.actions.entries()) {
     try {
       if (action.type === 'navigate') {
         const url = await assertPublicHttpUrl(action.url);
@@ -133,7 +132,7 @@ export async function executeBrowserActions(input: BrowserExecuteRequest): Promi
       } else if (action.type === 'scroll') {
         const amount = Math.min(Math.max(action.amount ?? 700, 1), 5000);
         const delta = action.direction === 'up' ? -amount : amount;
-        await page.evaluate((y) => globalThis.scrollBy(0, y), delta);
+        await page.evaluate(`window.scrollBy(0, ${delta})`);
       } else if (action.type === 'click') {
         validateSelector(action.selector);
         await page.locator(action.selector).first().click({ timeout: 10_000 });

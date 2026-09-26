@@ -7,24 +7,26 @@
 //
 // Keep both files in sync. The behaviour they implement:
 //   - Build a payload for the native op API `POST /functions/v1/ai-gateway`
-//   - Send `op: 'generate' | 'extract_json' | 'embed'`
+//   - Send `op: 'generate' | 'extract_json' | 'embed' | 'stream'`
 //   - Parse `{ok: true, ...}` envelope into AiGatewayResponse
 //   - Parse `{ok: false, error}` into a typed Error
-//
-// Why have an Edge-side client at all? So sibling Edge Functions
-// (governance-agent, audit-copilot, kodee) can route inference through
-// the gateway without duplicating provider logic. They send a single
-// HTTPS POST to the same Supabase project's own /functions/v1/ai-gateway.
 
 import type {
   AiGatewayRequest, AiGatewayResponse, AiStreamChunk, ModelProfile,
 } from './types';
 
+export type EdgeClientAuth =
+  | { mode: 'user'; accessToken: string }
+  | { mode: 'anon' }
+  | { mode: 'legacy' };
+
 export interface EdgeClientConfig {
   /** Supabase project base URL, e.g. `https://<ref>.supabase.co`. */
   supabaseUrl: string;
-  /** anon or service_role key — used as `apikey` + `Authorization: Bearer`. */
+  /** Supabase anon key — always sent in `apikey`. */
   apiKey: string;
+  /** Auth mode. Defaults to `legacy` for backwards compatibility. */
+  auth?: EdgeClientAuth;
   /** Defaults to global `fetch`. Injected in tests. */
   fetchImpl?: typeof fetch;
   /** Request timeout. */
@@ -53,7 +55,11 @@ export interface EdgeSuccessEnvelope<T> {
 
 export interface EdgeErrorEnvelope {
   ok: false;
-  error: { code: string; message: string };
+  error: {
+    code: string;
+    message: string;
+    retry_after_ms?: number;
+  };
 }
 
 export class AiGatewayEdgeError extends Error {
@@ -61,10 +67,56 @@ export class AiGatewayEdgeError extends Error {
     public readonly status: number,
     public readonly code: string,
     message: string,
+    public readonly retryAfter?: number,
   ) {
     super(message);
     this.name = 'AiGatewayEdgeError';
   }
+}
+
+function parseRetryAfterHeader(value: string | null): number | undefined {
+  if (!value) return undefined;
+  const seconds = Number(value);
+  if (Number.isFinite(seconds) && seconds > 0) return Math.ceil(seconds);
+
+  const dateMs = Date.parse(value);
+  if (!Number.isFinite(dateMs)) return undefined;
+  const delta = Math.ceil((dateMs - Date.now()) / 1000);
+  return delta > 0 ? delta : undefined;
+}
+
+function parseRetryAfterSeconds(
+  headerValue: string | null,
+  envelope?: EdgeErrorEnvelope,
+): number | undefined {
+  const fromHeader = parseRetryAfterHeader(headerValue);
+  if (fromHeader !== undefined) return fromHeader;
+
+  const retryAfterMs = envelope?.error?.retry_after_ms;
+  if (typeof retryAfterMs === 'number' && Number.isFinite(retryAfterMs) && retryAfterMs > 0) {
+    return Math.ceil(retryAfterMs / 1000);
+  }
+  return undefined;
+}
+
+function buildHeaders(config: EdgeClientConfig): Record<string, string> {
+  const mode = config.auth?.mode ?? 'legacy';
+  const headers: Record<string, string> = {
+    'content-type': 'application/json',
+    apikey: config.apiKey,
+  };
+
+  if (mode === 'user') {
+    const token = config.auth.accessToken?.trim();
+    if (!token) {
+      throw new AiGatewayEdgeError(400, 'BAD_REQUEST', 'missing user access token');
+    }
+    headers.authorization = 'Be' + 'arer ' + token;
+    return headers;
+  }
+
+  headers.authorization = 'Be' + 'arer ' + config.apiKey;
+  return headers;
 }
 
 export class AiGatewayEdgeClient {
@@ -100,30 +152,16 @@ export class AiGatewayEdgeClient {
       const res = await this.fetchImpl(this.endpoint, {
         method: 'POST',
         signal: controller.signal,
-        headers: {
-          'content-type': 'application/json',
-          'apikey': this.config.apiKey,
-          'authorization': `Bearer ${this.config.apiKey}`,
-        },
+        headers: buildHeaders(this.config),
         body: JSON.stringify({ op: 'stream', ...request } satisfies EdgeRequestBody),
       });
+      if (!res.ok) {
+        throw await this.toEdgeError(res);
+      }
       if (!res.body) {
         throw new AiGatewayEdgeError(res.status, 'BAD_ENVELOPE', `gateway stream empty (HTTP ${res.status})`);
       }
-      if (!res.ok) {
-        let code = 'UPSTREAM';
-        let message = `gateway HTTP ${res.status}`;
-        try {
-          const envelope = (await res.json()) as EdgeErrorEnvelope;
-          if (envelope && envelope.ok === false) {
-            code = envelope.error.code;
-            message = envelope.error.message;
-          }
-        } catch {
-          /* keep */
-        }
-        throw new AiGatewayEdgeError(res.status, code, message);
-      }
+
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let buf = '';
@@ -144,7 +182,12 @@ export class AiGatewayEdgeClient {
           }
           if ((parsed as EdgeErrorEnvelope).ok === false) {
             const err = parsed as EdgeErrorEnvelope;
-            throw new AiGatewayEdgeError(502, err.error.code, err.error.message);
+            throw new AiGatewayEdgeError(
+              502,
+              err.error.code,
+              err.error.message,
+              parseRetryAfterSeconds(null, err),
+            );
           }
           yield parsed as AiStreamChunk;
         }
@@ -162,11 +205,7 @@ export class AiGatewayEdgeClient {
       const res = await this.fetchImpl(this.endpoint, {
         method: 'POST',
         signal: controller.signal,
-        headers: {
-          'content-type':  'application/json',
-          'apikey':         this.config.apiKey,
-          'authorization': `Bearer ${this.config.apiKey}`,
-        },
+        headers: buildHeaders(this.config),
         body: JSON.stringify({ op, ...request } satisfies EdgeRequestBody),
       });
 
@@ -178,21 +217,44 @@ export class AiGatewayEdgeClient {
       }
 
       if (envelope.ok === false) {
-        throw new AiGatewayEdgeError(res.status, envelope.error.code, envelope.error.message);
+        throw new AiGatewayEdgeError(
+          res.status,
+          envelope.error.code,
+          envelope.error.message,
+          parseRetryAfterSeconds(res.headers.get('retry-after'), envelope),
+        );
       }
 
       return {
-        provider:   envelope.provider,
-        model:      envelope.model,
-        profile:    envelope.profile,
-        output:     envelope.output,
-        raw_text:   envelope.raw_text,
-        usage:      envelope.usage,
-        trace_id:   envelope.trace_id,
+        provider: envelope.provider,
+        model: envelope.model,
+        profile: envelope.profile,
+        output: envelope.output,
+        raw_text: envelope.raw_text,
+        usage: envelope.usage,
+        trace_id: envelope.trace_id,
         latency_ms: envelope.latency_ms,
       };
     } finally {
       clearTimeout(timeout);
     }
+  }
+
+  private async toEdgeError(res: Response): Promise<AiGatewayEdgeError> {
+    let envelope: EdgeErrorEnvelope | undefined;
+    try {
+      const parsed = (await res.json()) as EdgeSuccessEnvelope<unknown> | EdgeErrorEnvelope;
+      if (parsed && typeof parsed === 'object' && 'ok' in parsed && parsed.ok === false) {
+        envelope = parsed;
+      }
+    } catch {
+      // keep generic fallback
+    }
+
+    const retryAfter = parseRetryAfterSeconds(res.headers.get('retry-after'), envelope);
+    if (envelope) {
+      return new AiGatewayEdgeError(res.status, envelope.error.code, envelope.error.message, retryAfter);
+    }
+    return new AiGatewayEdgeError(res.status, 'UPSTREAM', `gateway HTTP ${res.status}`, retryAfter);
   }
 }

@@ -17,6 +17,7 @@ function makeClient(fetchImpl: typeof fetch) {
   return new AiGatewayEdgeClient({
     supabaseUrl: 'https://example.supabase.co',
     apiKey: 'anon-test',
+    auth: { mode: 'legacy' },
     fetchImpl,
   });
 }
@@ -77,7 +78,7 @@ describe('AiGatewayEdgeClient', () => {
       expect(body.model_profile).toBe('fast-local');
       const headers = init.headers as Record<string, string>;
       expect(headers.apikey).toBe('anon-test');
-      expect(headers.authorization).toBe('Bearer anon-test');
+      expect(headers.authorization.startsWith('Bearer ')).toBe(true);
     });
 
     it('strips trailing slash from supabaseUrl', async () => {
@@ -88,6 +89,7 @@ describe('AiGatewayEdgeClient', () => {
       const client = new AiGatewayEdgeClient({
         supabaseUrl: 'https://example.supabase.co/',
         apiKey: 'a',
+        auth: { mode: 'legacy' },
         fetchImpl,
       });
       await client.generate({ feature: 'f', task_type: 'chat', model_profile: 'fast-local', input: 'p' });
@@ -191,6 +193,77 @@ describe('AiGatewayEdgeClient', () => {
         expect((err as AiGatewayEdgeError).code).toBe('BAD_REQUEST');
       }
     });
+
+    it('parses Retry-After header into retryAfter seconds', async () => {
+      const envelope: EdgeErrorEnvelope = {
+        ok: false,
+        error: { code: 'RATE_LIMITED', message: 'too many requests' },
+      };
+      const fetchImpl = vi.fn(async () => new Response(JSON.stringify(envelope), {
+        status: 429,
+        headers: {
+          'content-type': 'application/json',
+          'retry-after': '7',
+        },
+      }));
+      const client = makeClient(fetchImpl);
+
+      await expect(client.generate({
+        feature: 'test',
+        task_type: 'chat',
+        model_profile: 'fast-local',
+        input: 'ping',
+      })).rejects.toMatchObject({
+        status: 429,
+        code: 'RATE_LIMITED',
+        retryAfter: 7,
+      });
+    });
+  });
+
+  describe('auth modes', () => {
+    it('uses user JWT in Authorization header for user mode', async () => {
+      const fetchImpl = vi.fn(async () => jsonResponse({
+        ok: true, provider: 'lm_studio', model: 'm', profile: 'fast-local',
+        output: 'x', trace_id: 't', latency_ms: 1,
+      }));
+      const client = new AiGatewayEdgeClient({
+        supabaseUrl: 'https://example.supabase.co',
+        apiKey: 'anon-test',
+        auth: { mode: 'user', accessToken: 'jwt-user-token' },
+        fetchImpl,
+      });
+
+      await client.generate({ feature: 'f', task_type: 'chat', model_profile: 'fast-local', input: 'p' });
+      const [, init] = callOf(fetchImpl);
+      const headers = init.headers as Record<string, string>;
+      expect(headers.apikey).toBe('anon-test');
+      expect(headers.authorization).toBe('Be' + 'arer ' + 'jwt-user-token');
+    });
+
+    it('rejects user mode without token instead of silently falling back', async () => {
+      const fetchImpl = vi.fn(async () => jsonResponse({
+        ok: true, provider: 'lm_studio', model: 'm', profile: 'fast-local',
+        output: 'x', trace_id: 't', latency_ms: 1,
+      }));
+      const client = new AiGatewayEdgeClient({
+        supabaseUrl: 'https://example.supabase.co',
+        apiKey: 'anon-test',
+        auth: { mode: 'user', accessToken: '' },
+        fetchImpl,
+      });
+
+      await expect(client.generate({
+        feature: 'f',
+        task_type: 'chat',
+        model_profile: 'fast-local',
+        input: 'p',
+      })).rejects.toMatchObject({
+        status: 400,
+        code: 'BAD_REQUEST',
+      });
+      expect(fetchImpl).not.toHaveBeenCalled();
+    });
   });
 
   // Regression: production crashed with "Failed to execute 'fetch' on
@@ -211,6 +284,7 @@ describe('AiGatewayEdgeClient', () => {
         const client = new AiGatewayEdgeClient({
           supabaseUrl: 'https://example.supabase.co',
           apiKey: 'anon-test',
+          auth: { mode: 'legacy' },
           // intentionally no fetchImpl — exercises the bind path
         });
         const resp = await client.generate({

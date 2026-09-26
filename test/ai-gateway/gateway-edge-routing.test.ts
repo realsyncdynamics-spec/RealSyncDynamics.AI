@@ -28,7 +28,11 @@ function okClient(output = 'echte Modellantwort') {
   };
 }
 
-const base: GatewayRequest = { prompt: 'Was verlangt Art. 30 DSGVO?', provider: 'openai' };
+const base: GatewayRequest = {
+  prompt: 'Was verlangt Art. 30 DSGVO?',
+  provider: 'openai',
+  authMode: 'legacy',
+};
 
 describe('processAIGatewayRequest — Routing ueber die Edge-Function', () => {
   it('leitet openai auf das cloud-fallback-Profil und reicht die echte Ausgabe durch', async () => {
@@ -80,12 +84,29 @@ describe('processAIGatewayRequest — Routing ueber die Edge-Function', () => {
 
   it('reicht Feature-Name und Mandant fuer die Gateway-Telemetrie durch', async () => {
     const client = okClient();
-    await processAIGatewayRequest(
-      { ...base, feature: 'kodee_chat', tenantId: 'tenant-42' },
-      { client },
-    );
+    await processAIGatewayRequest({ ...base, feature: 'kodee_chat', tenantId: 'tenant-42' }, { client });
     expect(client.generate.mock.calls[0]![0]).toMatchObject({
       feature: 'kodee_chat',
+      tenant_id: 'tenant-42',
+    });
+  });
+
+  it('nutzerpfad: akzeptiert Session-JWT und sendet tenant_id', async () => {
+    const client = okClient();
+    const res = await processAIGatewayRequest(
+      {
+        prompt: base.prompt,
+        provider: 'openai',
+        authMode: 'user',
+        tenantId: 'tenant-42',
+      },
+      {
+        client,
+        resolveUserAccessToken: async () => 'jwt-user-token',
+      },
+    );
+    expect(res.success).toBe(true);
+    expect(client.generate.mock.calls[0]![0]).toMatchObject({
       tenant_id: 'tenant-42',
     });
   });
@@ -105,6 +126,40 @@ describe('processAIGatewayRequest — Routing ueber die Edge-Function', () => {
   it('faengt auch Netzwerkfehler ab, ohne zu werfen', async () => {
     const client = { generate: vi.fn().mockRejectedValue(new Error('offline')) };
     const res = await processAIGatewayRequest(base, { client });
-    expect(res).toEqual({ success: false, error: 'offline' });
+    expect(res).toMatchObject({
+      success: false,
+      status: 500,
+      errorCode: 'GATEWAY_ERROR',
+      error: 'GATEWAY_ERROR: offline',
+    });
+  });
+
+  it('nutzerpfad: tenant_id ist Pflicht und liefert BAD_REQUEST statt Anon-Fallback', async () => {
+    const client = okClient();
+    const res = await processAIGatewayRequest(
+      { prompt: base.prompt, provider: 'openai', authMode: 'user' },
+      { client, resolveUserAccessToken: async () => 'jwt-user-token' },
+    );
+    expect(res).toMatchObject({
+      success: false,
+      status: 400,
+      errorCode: 'BAD_REQUEST',
+      error: 'BAD_REQUEST: tenant_id is required',
+    });
+    expect(client.generate).not.toHaveBeenCalled();
+  });
+
+  it('nutzerpfad: ohne Session-JWT gibt es 401 ohne stillen Fallback', async () => {
+    const client = okClient();
+    const res = await processAIGatewayRequest(
+      { prompt: base.prompt, provider: 'openai', authMode: 'user', tenantId: 'tenant-42' },
+      { client, resolveUserAccessToken: async () => null },
+    );
+    expect(res).toMatchObject({
+      success: false,
+      status: 401,
+      errorCode: 'UNAUTHORIZED',
+    });
+    expect(client.generate).not.toHaveBeenCalled();
   });
 });

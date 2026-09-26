@@ -49,6 +49,7 @@ export async function generateViaRealSyncGateway(args: {
     systemPrompt: BUILDER_SYSTEM_PROMPT,
     feature: 'app_builder_code',
     tenantId: args.tenantId,
+    authMode: 'user',
     timeoutMs: BUILDER_TIMEOUT_MS,
     maxTokens: BUILDER_MAX_TOKENS,
   });
@@ -85,6 +86,7 @@ export async function generateViaRealSyncGatewayStream(
       systemPrompt: BUILDER_SYSTEM_PROMPT,
       feature: 'app_builder_code',
       tenantId: args.tenantId,
+      authMode: 'user',
       timeoutMs: BUILDER_TIMEOUT_MS,
       maxTokens: BUILDER_MAX_TOKENS,
       signal,

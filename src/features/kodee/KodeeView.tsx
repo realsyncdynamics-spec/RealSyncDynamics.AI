@@ -5,7 +5,7 @@ import {
   Terminal, AlertTriangle, Sparkles, ArrowLeft, Settings2, Wand2,
 } from 'lucide-react';
 import Markdown from 'react-markdown';
-import { processAIGatewayRequest, ModelProvider } from '../../core/ai-gateway/gateway';
+import { processAIGatewayRequest, ModelProvider, type GatewayResult } from '../../core/ai-gateway/gateway';
 import { KODEE_PERSONA } from './kodee-persona';
 import { ActionRunner, formatActionResult } from './ActionRunner';
 import { listConnections, type VpsConnection } from './connections/api';
@@ -13,7 +13,64 @@ import { isSupabaseConfigured } from '../../lib/supabase';
 import { runDiagnose } from './diagnose';
 import { useTenant } from '../../core/access/TenantProvider';
 
-type Msg = { role: 'user' | 'kodee'; text: string; status?: 'loading' | 'error' | 'success' };
+type Msg = {
+  role: 'user' | 'kodee';
+  text: string;
+  status?: 'loading' | 'error' | 'success';
+  retryPrompt?: string;
+};
+
+export function mapKodeeGatewayError(result: GatewayResult): { text: string; retryable: boolean } {
+  const status = result.status;
+  const code = (result.errorCode ?? '').toUpperCase();
+  const raw = result.error ?? 'Die Anfrage konnte nicht verarbeitet werden.';
+  const missingTenant = code === 'BAD_REQUEST' && /tenant_id/i.test(raw);
+
+  if (missingTenant) {
+    return {
+      text: 'Kein aktiver Mandant gefunden. Bitte Workspace neu laden und erneut versuchen.',
+      retryable: false,
+    };
+  }
+  if (status === 401 || code === 'UNAUTHORIZED') {
+    return {
+      text: 'Deine Sitzung ist abgelaufen. Bitte neu anmelden und die Anfrage erneut senden.',
+      retryable: false,
+    };
+  }
+  if (status === 429 || code === 'RATE_LIMITED') {
+    const retry = typeof result.retryAfter === 'number' && result.retryAfter > 0
+      ? ` Bitte in ${result.retryAfter}s erneut versuchen.`
+      : ' Bitte in wenigen Sekunden erneut versuchen.';
+    return {
+      text: `Zu viele Anfragen in kurzer Zeit.${retry}`,
+      retryable: true,
+    };
+  }
+  if (code === 'POLICY_BLOCKED') {
+    return {
+      text: 'Die Anfrage wurde durch eine Richtlinie blockiert. Bitte formuliere die Anfrage governance-konform um.',
+      retryable: false,
+    };
+  }
+  if (code === 'APPROVAL_REQUIRED') {
+    return {
+      text: 'Für diese Aktion ist eine Freigabe erforderlich. Starte die Anfrage nach erteilter Freigabe erneut.',
+      retryable: false,
+    };
+  }
+  if (status === 403 || code === 'FORBIDDEN') {
+    return {
+      text: 'Du hast keine Berechtigung für diese Aktion im aktuellen Mandanten.',
+      retryable: false,
+    };
+  }
+
+  return {
+    text: 'Die Anfrage an Kodee ist fehlgeschlagen. Bitte versuche es erneut.',
+    retryable: true,
+  };
+}
 
 const QUICK_PROMPTS: { icon: React.ElementType<{ className?: string }>; label: string; prompt: string }[] = [
   {
@@ -85,15 +142,28 @@ export function KodeeView() {
         systemPrompt: KODEE_PERSONA,
         feature: 'kodee_chat',
         tenantId: activeTenantId,
+        authMode: 'user',
       });
-      if (!res.success) throw new Error(res.error || 'Gateway-Fehler');
+      if (!res.success) {
+        const mapped = mapKodeeGatewayError(res);
+        setMessages([...next, {
+          role: 'kodee',
+          text: mapped.text,
+          status: 'error',
+          retryPrompt: mapped.retryable ? text : undefined,
+        }]);
+        return;
+      }
       setMessages([...next, { role: 'kodee', text: res.modelOutput || '…', status: 'success' }]);
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Da ist etwas schiefgelaufen – versuch es nochmal oder wechsel das Modell.';
+      const message = err instanceof Error
+        ? `Anfrage fehlgeschlagen: ${err.message}`
+        : 'Da ist etwas schiefgelaufen – versuch es nochmal oder wechsel das Modell.';
       setMessages([...next, {
         role: 'kodee',
         text: message,
         status: 'error',
+        retryPrompt: text,
       }]);
     }
   };
@@ -212,7 +282,18 @@ export function KodeeView() {
                   ) : m.status === 'error' ? (
                     <div className="bg-red-950/50 border border-red-900 text-red-300 px-4 py-3 rounded-none flex items-start gap-2.5">
                       <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
-                      <span className="text-sm">{m.text}</span>
+                      <div className="flex-1 min-w-0 space-y-2">
+                        <span className="text-sm block">{m.text}</span>
+                        {m.retryPrompt && (
+                          <button
+                            type="button"
+                            onClick={() => send(m.retryPrompt)}
+                            className="inline-flex items-center px-2.5 py-1 text-xs font-semibold border border-red-700 text-red-200 hover:bg-red-900/40 rounded-none"
+                          >
+                            Erneut versuchen
+                          </button>
+                        )}
+                      </div>
                     </div>
                   ) : m.role === 'user' ? (
                     m.text

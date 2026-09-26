@@ -14,12 +14,14 @@
  * Zustand, in dem eine erfundene Compliance-Auskunft akzeptabel ist.
  * Seitdem gilt: entweder eine echte Modellantwort oder ein ehrlicher Fehler.
  */
-import { AiGatewayEdgeClient, AiGatewayEdgeError } from './edgeClient';
+import { AiGatewayEdgeClient, AiGatewayEdgeError, type EdgeClientAuth } from './edgeClient';
 import { getSupabaseUrl, getSupabaseAnonKey } from '../../lib/supabaseUrl';
 import { edgeFunctionUrl, fnFetchInit } from '../../lib/fn-proxy';
+import { getSupabase } from '../../lib/supabase';
 import type { ModelProfile } from './types';
 
 export type ModelProvider = 'gemini' | 'openai' | 'claude';
+export type GatewayAuthMode = 'user' | 'anon' | 'legacy';
 
 export interface GatewayRequest {
   prompt: string;
@@ -32,6 +34,8 @@ export interface GatewayRequest {
   feature?: string;
   /** Optionaler Mandantenbezug fuer die Gateway-Telemetrie. */
   tenantId?: string | null;
+  /** Auth mode for ai-gateway calls. Defaults to user JWT. */
+  authMode?: GatewayAuthMode;
   timeoutMs?: number;
   maxTokens?: number;
   /** Client-only: stop consuming the stream. Never sent to the Edge Function. */
@@ -45,7 +49,11 @@ export interface GatewayResult {
   model?: string;
   modelOutput?: string;
   tokensUsed?: number;
+  /** Preserves legacy error rendering shape (`<CODE>: <message>`). */
   error?: string;
+  errorCode?: string;
+  status?: number;
+  retryAfter?: number;
 }
 
 /**
@@ -74,6 +82,91 @@ const UNAVAILABLE_HINT =
  */
 export interface GatewayDeps {
   client?: Pick<AiGatewayEdgeClient, 'generate'> & Partial<Pick<AiGatewayEdgeClient, 'stream'>>;
+  resolveUserAccessToken?: () => Promise<string | null | undefined>;
+}
+
+function formatError(code: string, message: string): string {
+  return `${code}: ${message}`;
+}
+
+function gatewayFailure(args: {
+  status?: number;
+  errorCode: string;
+  message: string;
+  retryAfter?: number;
+}): GatewayResult {
+  return {
+    success: false,
+    status: args.status,
+    errorCode: args.errorCode,
+    retryAfter: args.retryAfter,
+    error: formatError(args.errorCode, args.message),
+  };
+}
+
+function sanitizeTenantId(tenantId?: string | null): string | null {
+  if (typeof tenantId !== 'string') return null;
+  const trimmed = tenantId.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
+async function resolveUserAccessToken(deps?: GatewayDeps): Promise<string | null> {
+  if (deps?.resolveUserAccessToken) {
+    const token = await deps.resolveUserAccessToken();
+    return typeof token === 'string' && token.trim() ? token : null;
+  }
+  const { data: { session } } = await getSupabase().auth.getSession();
+  return session?.access_token?.trim() ? session.access_token : null;
+}
+
+async function resolveClientAuth(
+  authMode: GatewayAuthMode,
+  tenantId: string | null,
+  deps?: GatewayDeps,
+): Promise<{ auth: EdgeClientAuth; tenantId: string | null } | GatewayResult> {
+  if (authMode === 'user') {
+    if (!tenantId) {
+      return gatewayFailure({
+        status: 400,
+        errorCode: 'BAD_REQUEST',
+        message: 'tenant_id is required',
+      });
+    }
+
+    const accessToken = await resolveUserAccessToken(deps);
+    if (!accessToken) {
+      return gatewayFailure({
+        status: 401,
+        errorCode: 'UNAUTHORIZED',
+        message: 'Kein gültiger Login gefunden. Bitte erneut anmelden.',
+      });
+    }
+
+    return {
+      auth: { mode: 'user', accessToken },
+      tenantId,
+    };
+  }
+
+  if (authMode === 'anon') {
+    return {
+      auth: { mode: 'anon' },
+      tenantId,
+    };
+  }
+
+  return {
+    auth: { mode: 'legacy' },
+    tenantId,
+  };
+}
+
+/**
+ * `authMode` defaults to `user` so Kodee and Builder use session JWT auth.
+ * Other callers can opt into `anon` or `legacy` explicitly.
+ */
+function resolveAuthMode(req: GatewayRequest): GatewayAuthMode {
+  return req.authMode ?? 'user';
 }
 
 export async function processAIGatewayRequest(
@@ -82,10 +175,11 @@ export async function processAIGatewayRequest(
 ): Promise<GatewayResult> {
   const profile = PROFILE_BY_PROVIDER[req.provider];
   if (!profile) {
-    return {
-      success: false,
-      error: `Provider „${req.provider}" ist im AI-Gateway nicht konfiguriert. ${UNAVAILABLE_HINT}`,
-    };
+    return gatewayFailure({
+      status: 400,
+      errorCode: 'BAD_REQUEST',
+      message: `Provider „${req.provider}" ist im AI-Gateway nicht konfiguriert. ${UNAVAILABLE_HINT}`,
+    });
   }
 
   const input = req.context
@@ -97,15 +191,20 @@ export async function processAIGatewayRequest(
   }
 
   try {
+    const authMode = resolveAuthMode(req);
+    const auth = await resolveClientAuth(authMode, sanitizeTenantId(req.tenantId), deps);
+    if ('success' in auth) return auth;
+
     const client = deps?.client ?? new AiGatewayEdgeClient({
       supabaseUrl: getSupabaseUrl(),
       apiKey: getSupabaseAnonKey(),
+      auth: auth.auth,
       endpoint: edgeFunctionUrl('ai-gateway'),
       fetchImpl: (input, init) => fetch(input, fnFetchInit(String(input), init)),
     });
 
     const resp = await client.generate({
-      tenant_id: req.tenantId ?? null,
+      tenant_id: auth.tenantId,
       feature: req.feature ?? 'ai_gateway_chat',
       task_type: 'chat',
       model_profile: profile,
@@ -126,10 +225,19 @@ export async function processAIGatewayRequest(
     };
   } catch (error: unknown) {
     if (error instanceof AiGatewayEdgeError) {
-      return { success: false, error: `${error.code}: ${error.message}` };
+      return gatewayFailure({
+        status: error.status,
+        errorCode: error.code,
+        message: error.message,
+        retryAfter: error.retryAfter,
+      });
     }
     const message = error instanceof Error ? error.message : String(error);
-    return { success: false, error: message || 'Gateway Error' };
+    return gatewayFailure({
+      status: 500,
+      errorCode: 'GATEWAY_ERROR',
+      message: message || 'Gateway Error',
+    });
   }
 }
 
@@ -144,10 +252,11 @@ export async function processAIGatewayStream(
 ): Promise<GatewayResult> {
   const profile = PROFILE_BY_PROVIDER[req.provider];
   if (!profile) {
-    return {
-      success: false,
-      error: `Provider „${req.provider}" ist im AI-Gateway nicht konfiguriert. ${UNAVAILABLE_HINT}`,
-    };
+    return gatewayFailure({
+      status: 400,
+      errorCode: 'BAD_REQUEST',
+      message: `Provider „${req.provider}" ist im AI-Gateway nicht konfiguriert. ${UNAVAILABLE_HINT}`,
+    });
   }
 
   const input = req.context
@@ -155,9 +264,14 @@ export async function processAIGatewayStream(
     : req.prompt;
 
   try {
+    const authMode = resolveAuthMode(req);
+    const auth = await resolveClientAuth(authMode, sanitizeTenantId(req.tenantId), deps);
+    if ('success' in auth) return auth;
+
     const client = deps?.client ?? new AiGatewayEdgeClient({
       supabaseUrl: getSupabaseUrl(),
       apiKey: getSupabaseAnonKey(),
+      auth: auth.auth,
       timeoutMs: req.timeoutMs ?? 90_000,
       endpoint: edgeFunctionUrl('ai-gateway'),
       fetchImpl: (input, init) => fetch(input, fnFetchInit(String(input), init)),
@@ -173,7 +287,7 @@ export async function processAIGatewayStream(
     let model: string | undefined;
     let tokensUsed: number | undefined;
     for await (const chunk of client.stream({
-      tenant_id: req.tenantId ?? null,
+      tenant_id: auth.tenantId,
       feature: req.feature ?? 'ai_gateway_chat',
       task_type: 'chat',
       model_profile: profile,
@@ -183,7 +297,11 @@ export async function processAIGatewayStream(
       max_tokens: req.maxTokens ?? 4096,
     })) {
       if (req.signal?.aborted) {
-        return { success: false, error: 'Abgebrochen. Es wurde nichts geschrieben.' };
+        return gatewayFailure({
+          status: 499,
+          errorCode: 'ABORTED',
+          message: 'Abgebrochen. Es wurde nichts geschrieben.',
+        });
       }
       if (chunk.event === 'delta' && chunk.text) {
         text += chunk.text;
@@ -197,14 +315,27 @@ export async function processAIGatewayStream(
       }
     }
     if (!text.trim()) {
-      return { success: false, error: 'Gateway ohne Ausgabe' };
+      return gatewayFailure({
+        status: 502,
+        errorCode: 'UPSTREAM_BAD_OUTPUT',
+        message: 'Gateway ohne Ausgabe',
+      });
     }
     return { success: true, provider, model, modelOutput: text, tokensUsed };
   } catch (error: unknown) {
     if (error instanceof AiGatewayEdgeError) {
-      return { success: false, error: `${error.code}: ${error.message}` };
+      return gatewayFailure({
+        status: error.status,
+        errorCode: error.code,
+        message: error.message,
+        retryAfter: error.retryAfter,
+      });
     }
     const message = error instanceof Error ? error.message : String(error);
-    return { success: false, error: message || 'Gateway Error' };
+    return gatewayFailure({
+      status: 500,
+      errorCode: 'GATEWAY_ERROR',
+      message: message || 'Gateway Error',
+    });
   }
 }

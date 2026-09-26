@@ -8,20 +8,18 @@
 -- Phase 1.2 adds: tenant_id (denormalized from runtime_executions), metadata
 
 alter table public.runtime_approval_gates
-  add column if not exists tenant_id uuid default gen_random_uuid(),
+  add column if not exists tenant_id uuid,
   add column if not exists metadata jsonb;
 
--- Backfill tenant_id from related execution
+-- Backfill tenant_id from related execution for all rows
+-- Use COALESCE to ensure rows without matches get a non-NULL value
 update public.runtime_approval_gates rg
-  set tenant_id = re.tenant_id
-  from public.runtime_executions re
-  where rg.execution_id = re.id
-    and rg.tenant_id is null;
+  set tenant_id = coalesce(
+    (select re.tenant_id from public.runtime_executions re where rg.execution_id = re.id),
+    gen_random_uuid()
+  )
+  where rg.tenant_id is null;
 
--- Remove default
-alter table public.runtime_approval_gates
-  alter column tenant_id drop default;
-
--- Add NOT NULL constraint
+-- Add NOT NULL constraint after backfill completes
 alter table public.runtime_approval_gates
   alter column tenant_id set not null;

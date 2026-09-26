@@ -28,9 +28,10 @@ const app = readFileSync(resolve(root, 'src/App.tsx'), 'utf8');
 const navShell = header + publicNav + mainLanding;
 
 describe('Landing ↔ Infrastruktur', () => {
-  it('Header-Scan bleibt kanonisch /audit', () => {
-    expect(header).toContain('to="/audit"');
-    expect(header).toContain('HERO_SCAN_CTA_LABEL');
+  it('Header entdoppelt den Hero-Scan mit sekundärem Dashboard-CTA', () => {
+    expect(header).toContain('to="/app/dashboard"');
+    expect(header).toContain('HERO_DASHBOARD_CTA_LABEL');
+    expect(titanHero).toContain('to="/audit"');
     expect(navShell).toContain('/audit');
   });
 

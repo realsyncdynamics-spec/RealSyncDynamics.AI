@@ -51,7 +51,7 @@ it('renders the Governance OS hero: category eyebrow, H1, six-stage loop and CTA
     'href',
     '/contact-sales?tier=enterprise&source=home-hero',
   );
-  expect(screen.getByText(/eu-central-1/i)).toBeInTheDocument();
+  expect(within(screen.getByTestId('hero-status')).getByText(/eu-central-1/i)).toBeInTheDocument();
 });
 
 it('keeps every in-page anchor resolvable', () => {

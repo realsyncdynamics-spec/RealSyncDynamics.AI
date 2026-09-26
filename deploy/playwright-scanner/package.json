@@ -4,9 +4,10 @@
   "description": "Headless Chromium microservice for DSGVO compliance scanning",
   "main": "dist/server.js",
   "scripts": {
-    "build": "esbuild src/server.ts --bundle --platform=node --outfile=dist/server.js --external:playwright",
+    "build": "esbuild server.ts --bundle --platform=node --target=node20 --format=esm --outfile=dist/server.js --external:playwright",
+    "typecheck": "tsc --noEmit",
     "start": "node dist/server.js",
-    "dev": "tsx src/server.ts"
+    "dev": "tsx server.ts"
   },
   "dependencies": {
     "playwright": "^1.44.0"
@@ -19,5 +20,6 @@
   },
   "engines": {
     "node": ">=20"
-  }
+  },
+  "type": "module"
 }

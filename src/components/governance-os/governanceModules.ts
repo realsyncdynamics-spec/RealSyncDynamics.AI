@@ -118,7 +118,7 @@ export const GOVERNANCE_MODULES: GovernanceModule[] = [
   {
     id: 'ambient-ai',
     label: 'Ambient AI',
-    icon: 'Radio',
+    icon: 'Activity',
     route: '/app/ambient-ai',
     status: 'beta',
     gate: { kind: 'module', module: 'monitoring' },

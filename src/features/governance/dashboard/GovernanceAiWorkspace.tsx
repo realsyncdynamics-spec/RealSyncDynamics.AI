@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { AiGatewayEdgeClient } from '../../../core/ai-gateway/edgeClient';
 import { getSupabaseAnonKey, getSupabaseUrl } from '../../../lib/supabaseUrl';
+import { getSupabase } from '../../../lib/supabase';
 import { useTenant } from '../../../core/access/TenantProvider';
 import { NextBestActionCard } from './NextBestActionCard';
 import { ASSISTANT_UNAVAILABLE } from '../AgentWidget/useAgentChat';
@@ -80,9 +81,14 @@ export function GovernanceAiWorkspace() {
     setMessages(isRetry ? base : (prev) => [...prev, { role: 'user', content: message }]);
 
     try {
+      // Sitzung und Mandant gehen mit: der Workspace laeuft angemeldet, und
+      // der Aufruf wird dem aktiven Mandanten zugerechnet.
+      const { data: sitzung } = await getSupabase().auth.getSession();
       const client = new AiGatewayEdgeClient({
         supabaseUrl: getSupabaseUrl(),
         apiKey: getSupabaseAnonKey(),
+        accessToken: sitzung.session?.access_token,
+        tenantId: activeTenantId ?? undefined,
       });
       const prior = isRetry ? base.slice(0, -1) : base;
       const history = [...prior.filter((m) => !m.error), { role: 'user' as const, content: message }]

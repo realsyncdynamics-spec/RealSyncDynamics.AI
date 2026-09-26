@@ -847,7 +847,13 @@ async function runAnonViaAiGateway(
     .map((m) => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`)
     .join('\n\n');
 
-  const client = new AiGatewayEdgeClient({ supabaseUrl: SUPABASE_URL, apiKey });
+  // Bearer = Service-Role: weist den Aufruf beim Gateway als internen aus.
+  // Der Anon-Key bleibt der `apikey`-Header fuer das Plattform-Gateway.
+  const client = new AiGatewayEdgeClient({
+    supabaseUrl: SUPABASE_URL,
+    apiKey,
+    accessToken: Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? undefined,
+  });
   try {
     const resp = await client.generate({
       feature:       'governance_agent_anon',
@@ -1010,7 +1016,12 @@ Regeln:
 function anonAiGatewayClient(): AiGatewayEdgeClient {
   const url = Deno.env.get('SUPABASE_URL')!;
   const anon = Deno.env.get('SUPABASE_ANON_KEY')!;
-  return new AiGatewayEdgeClient({ supabaseUrl: url, apiKey: anon, timeoutMs: 20_000 });
+  return new AiGatewayEdgeClient({
+    supabaseUrl: url,
+    apiKey: anon,
+    accessToken: Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? undefined,
+    timeoutMs: 20_000,
+  });
 }
 
 interface FindingPayload {

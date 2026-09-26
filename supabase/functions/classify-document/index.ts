@@ -121,7 +121,12 @@ Deno.serve(async (req) => {
     return jsonResponse(fallbackResult('AI_GATEWAY_NOT_CONFIGURED — SUPABASE_URL/ANON_KEY missing'));
   }
 
-  const client = new AiGatewayEdgeClient({ supabaseUrl, apiKey: anonKey });
+  // Bearer = Service-Role: weist den Aufruf beim Gateway als internen aus.
+  const client = new AiGatewayEdgeClient({
+    supabaseUrl,
+    apiKey: anonKey,
+    accessToken: Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? undefined,
+  });
 
   const input = [
     hint ? `Dateiname / Hinweis: ${hint}` : '',

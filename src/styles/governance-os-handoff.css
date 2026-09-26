@@ -817,6 +817,7 @@
 .rs-paper .rs-option[aria-checked='true'] { background: rgba(31, 61, 50, 0.08); }
 .rs-paper .rs-progress__bar { background: var(--color-rs-primary); }
 .rs-paper .rs-rec { background: rgba(31, 61, 50, 0.06); border-color: rgba(31, 61, 50, 0.3); }
+.rs-paper .rs-price-card--popular,
 .rs-paper .rs-price-card--popular:hover { background: rgba(31, 61, 50, 0.05); }
 .rs-paper .rs-pill--primary,
 .rs-paper .rs-step--active .rs-step__dot,

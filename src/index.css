@@ -1939,6 +1939,19 @@ html, body {
   color: var(--color-rs-fg-0);
 }
 
+/* Fest kodierte Primärflächen der älteren Seiten (Titan-Grau, Gold) und
+   deren fette Grotesk-Überschriften: im Papier-Scope Waldgrün und Serif. */
+.rs-paper :is(.surface-mono, .surface-gold) {
+  background: var(--color-rs-primary);
+  color: #F7F4EE;
+}
+.rs-paper :is(.surface-mono, .surface-gold):hover { background: var(--color-rs-primary-hover); }
+.rs-paper :is(h1, h2).font-display {
+  font-family: var(--font-rs-serif);
+  font-weight: 400;
+  letter-spacing: -0.015em;
+}
+
 .ga-context.rs-handoff {
   color-scheme: light;
   /* Startseite: Wechselbänder etwas dunkler als das Seitenpapier. */

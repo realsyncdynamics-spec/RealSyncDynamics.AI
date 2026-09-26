@@ -49,7 +49,7 @@ export function MainLanding() {
     >
       <SEOHead
         title="RealSyncDynamics.AI — AI Compliance Operations OS für Europa"
-        description="AI Compliance Operations OS für Europa. Entdecken. Klassifizieren. Durchsetzen. Beweisen. Free Audit starten."
+        description="Automatisiertes Audit, KI-Klassifizierung, Policy Enforcement und Evidence für DSGVO, EU AI Act und ISO 42001 — als AI Compliance Operations OS für Europa."
         canonical="/"
         ogTitle="AI Compliance Operations OS für Europa"
         ogDescription="RealSyncDynamics.AI — Governance-Infrastruktur für Europa. Free Audit starten."

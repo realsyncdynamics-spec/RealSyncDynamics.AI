@@ -1,7 +1,7 @@
 import { useState, type CSSProperties, type MouseEvent, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
-import { HERO_SCAN_CTA_LABEL } from '../governance-frontend/hero-content';
+import { HERO_DASHBOARD_CTA_LABEL } from '../governance-frontend/hero-content';
 import { PUBLIC_PRIMARY_NAV } from '../../config/public-nav';
 import {
   LANDING_MONO,
@@ -9,8 +9,6 @@ import {
 import {
   MODE_ACCENT,
   MODE_BG,
-  MODE_BUTTON_INK,
-  MODE_GLOW,
   MODE_HEADER_BG,
   MODE_HEADER_BG_OVERLAY,
   MODE_HEADER_BORDER,
@@ -20,7 +18,7 @@ import {
 
 /**
  * Claude Design / Replit SSOT header — gold diamond · REALSYNCDYNAMICS.AI
- * · Produkt / Evidence / Preise / Login · Free Audit → /audit
+ * · Produkt / Evidence / Preise / Login · sekundärer Dashboard-CTA
  * Nav strip from PUBLIC_PRIMARY_NAV (src/config/public-nav.ts).
  */
 
@@ -61,15 +59,14 @@ function NavItem({
 }
 
 /**
- * Primaer-Pill. Flaeche, Schrift und Schein folgen dem Farbmodus der
- * Startseite (`landing-mode.ts`); ohne `data-landing-mode` greift der
- * Gold-Rueckfall, also genau die bisherigen Werte.
+ * Sekundärer Header-CTA: bewusst ohne Primärfläche, damit der Audit-CTA
+ * im Hero die eindeutige Conversion-Aktion bleibt.
  */
-const scanCtaStyle: CSSProperties = {
+const headerCtaStyle: CSSProperties = {
   fontFamily: LANDING_MONO,
-  backgroundColor: MODE_ACCENT,
-  color: MODE_BUTTON_INK,
-  boxShadow: MODE_GLOW,
+  borderColor: MODE_ACCENT,
+  color: MODE_TEXT,
+  backgroundColor: 'transparent',
 };
 
 function DiamondMark() {
@@ -137,19 +134,19 @@ export function PublicDarkHeader({
           ))}
           {modeSwitch}
           <Link
-            to="/audit"
-            className="inline-flex items-center gap-1.5 rounded-full px-[18px] py-[10px] text-[11px] font-semibold transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--rsd-accent,#d6ad68)]"
-            style={scanCtaStyle}
+            to="/app/dashboard"
+            className="inline-flex items-center gap-1.5 rounded-full border px-[18px] py-[10px] text-[11px] font-semibold transition hover:bg-white/[0.05] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--rsd-accent,#d6ad68)]"
+            style={headerCtaStyle}
           >
-            {HERO_SCAN_CTA_LABEL} <span aria-hidden="true">→</span>
+            {HERO_DASHBOARD_CTA_LABEL} <span aria-hidden="true">→</span>
           </Link>
         </nav>
 
         <div className="ml-auto flex items-center gap-2 md:hidden">
           <Link
-            to="/audit"
-            className="rounded-full px-3.5 py-2 text-[10px] font-semibold"
-            style={scanCtaStyle}
+            to="/app/dashboard"
+            className="rounded-full border px-3.5 py-2 text-[10px] font-semibold"
+            style={headerCtaStyle}
           >
             Free Audit
           </Link>
@@ -190,12 +187,12 @@ export function PublicDarkHeader({
               />
             ))}
             <Link
-              to="/audit"
-              className="mt-3 block rounded-full px-4 py-3 text-center text-[11px] font-semibold"
-              style={scanCtaStyle}
+              to="/app/dashboard"
+              className="mt-3 block rounded-full border px-4 py-3 text-center text-[11px] font-semibold"
+              style={headerCtaStyle}
               onClick={() => setOpen(false)}
             >
-              {HERO_SCAN_CTA_LABEL} →
+              {HERO_DASHBOARD_CTA_LABEL} →
             </Link>
           </nav>
         </div>

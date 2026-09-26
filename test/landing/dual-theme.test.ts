@@ -102,11 +102,11 @@ describe('Landing — Europe-network', () => {
     expect(header).toContain('Produkt');
     expect(header).toContain('Evidence');
     expect(header).toContain('Preise');
-    expect(header).toContain('HERO_SCAN_CTA_LABEL');
-    expect(header).toContain('to="/audit"');
+    expect(header).toContain('HERO_DASHBOARD_CTA_LABEL');
+    expect(header).toContain('to="/app/dashboard"');
   });
 
-  it('renders Titan H1 + Operating Loop + Primary/Secondary CTAs', () => {
+  it('renders Titan H1 + Operating Loop + Primary/Secondary CTAs + trust strip', () => {
     render(createElement(MemoryRouter, null, createElement(MainLanding)));
     const h1 = screen.getByRole('heading', { level: 1 }).textContent ?? '';
     expect(h1).toMatch(/kontrollierbar/);
@@ -120,6 +120,9 @@ describe('Landing — Europe-network', () => {
     expect(screen.getAllByText(HERO_SCAN_CTA_LABEL).length).toBeGreaterThan(0);
     expect(screen.getByTestId('hero-primary-cta')).toHaveAttribute('href', '/audit');
     expect(screen.getByTestId('hero-secondary-cta')).toHaveAttribute('href', '#audit-trail');
+    expect(screen.getByTestId('hero-trust-strip')).toHaveTextContent('EU-Backend-Region');
+    expect(screen.getByTestId('hero-trust-strip')).toHaveTextContent('Consent-first Tracking');
+    expect(screen.getByTestId('hero-trust-strip')).toHaveTextContent('Evidence Vault');
 
     expect(HERO_HEADLINE_TEST_SUBSTRING).toBe('kontrollierbar');
   });

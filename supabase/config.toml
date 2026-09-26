@@ -241,6 +241,14 @@ verify_jwt = false
 [functions.memory-decay-worker]
 verify_jwt = false
 
+# email-auth-rescan: pg_cron 'website-rescan-daily' (03:30 UTC), taeglicher
+# SPF/DMARC/DKIM-Recheck aller Website-Domains mit Auto-Resolve. Bearer ist
+# der dedizierte Key aus Vault cron_website_rescan_key, gemappt auf das
+# Function Secret CRON_WEBSITE_RESCAN_KEY. Fail-closed im Handler: ohne
+# Secret 500, ohne passenden Header 401. service_role nur intern fuer DB.
+[functions.email-auth-rescan]
+verify_jwt = false
+
 # governance-erasure-sweeper: pg_cron-triggered (daily 03:00 UTC). No user JWT;
 # validates a Vault bearer token (governance_erasure_sweeper_token) itself.
 [functions.governance-erasure-sweeper]
@@ -266,8 +274,12 @@ verify_jwt = true
 [functions.enterprise-ai-os-agents-list]
 verify_jwt = false
 
+# enterprise-ai-os-agents-run: braucht eine echte Nutzersitzung. verify_jwt
+# ist nur das Plattform-Gate (laesst den Anon-Key durch); die eigentliche
+# Tenant-Autorisierung macht der Handler ueber requireAuthAndTenant aus
+# _shared/auth.ts — body.tenantId ist dort nur ein Claim.
 [functions.enterprise-ai-os-agents-run]
-verify_jwt = false
+verify_jwt = true
 
 [functions.enterprise-ai-os-evaluate]
 verify_jwt = false

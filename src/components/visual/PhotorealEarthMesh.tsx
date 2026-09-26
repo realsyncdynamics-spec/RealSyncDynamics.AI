@@ -1,11 +1,13 @@
 import { useFrame, useLoader, useThree } from '@react-three/fiber';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
+import type { KTX2Loader } from 'three/addons/loaders/KTX2Loader.js';
 import {
   EARTH_DAY_BOOT,
   detectEarthQuality,
   getEarthTextureSet,
   preloadImage,
+  shouldPreferGpuCompression,
   type EarthQuality,
   type EarthTextureSet,
 } from './earthTextures';
@@ -16,7 +18,7 @@ import {
  */
 
 /** Boot / low-tier day map path (also kept as literal for smoke tests). */
-export const EARTH_DAY_TEXTURE = '/textures/earth-day.jpg';
+export const EARTH_DAY_TEXTURE = '/textures/earth-day-2k.webp';
 
 /** Visual grade for shared Earth mesh. `landing-gold` = public Dark/Gold/Cream only. */
 export type EarthPalette = 'default' | 'landing-gold';
@@ -76,6 +78,39 @@ function loadTexture(url: string, anisotropy: number, colorSpace?: THREE.ColorSp
       reject,
     );
   });
+}
+
+function configureCompressedMap(
+  tex: THREE.CompressedTexture,
+  anisotropy: number,
+  colorSpace?: THREE.ColorSpace,
+) {
+  tex.colorSpace = colorSpace ?? THREE.SRGBColorSpace;
+  tex.anisotropy = anisotropy;
+  tex.wrapS = THREE.ClampToEdgeWrapping;
+  tex.wrapT = THREE.ClampToEdgeWrapping;
+  tex.minFilter = THREE.LinearMipmapLinearFilter;
+  tex.magFilter = THREE.LinearFilter;
+  tex.needsUpdate = true;
+}
+
+async function createKtx2Loader(gl: THREE.WebGLRenderer) {
+  const { KTX2Loader } = await import('three/addons/loaders/KTX2Loader.js');
+  return new KTX2Loader()
+    .setTranscoderPath('/basis/')
+    .setWorkerLimit(2)
+    .detectSupport(gl);
+}
+
+async function loadCompressedTexture(
+  loader: KTX2Loader,
+  url: string,
+  anisotropy: number,
+  colorSpace?: THREE.ColorSpace,
+) {
+  const tex = await loader.loadAsync(url);
+  configureCompressedMap(tex, anisotropy, colorSpace);
+  return tex;
 }
 
 /** Fresnel atmosphere rim — stronger scattering without neon cyberpunk. */
@@ -207,12 +242,13 @@ export function PhotorealEarthMesh({
   const maxTex = gl.capabilities.maxTextureSize;
   const [quality] = useState<EarthQuality>(() => {
     const base = qualityProp ?? detectEarthQuality({ reducedMotion });
-    // Cap to what the GPU can actually sample (8K needs ≥8192).
-    if (base === 'high' && maxTex < 8192) return 'medium';
-    if (base === 'medium' && maxTex < 4096) return 'low';
+    // Cap to what the GPU can actually sample (high = 4K, medium/low = 2K).
+    if (base === 'high' && maxTex < 4096) return 'medium';
+    if (base === 'medium' && maxTex < 2048) return 'low';
     return base;
   });
   const set = useMemo(() => getEarthTextureSet(quality), [quality]);
+  const preferGpuCompression = useMemo(() => shouldPreferGpuCompression(), []);
 
   // Cached boot map — never disposed by us (R3F loader cache owns it).
   const bootDay = useLoader(THREE.TextureLoader, EARTH_DAY_BOOT);
@@ -235,23 +271,57 @@ export function PhotorealEarthMesh({
     const owned: THREE.Texture[] = [];
 
     (async () => {
-      try {
-        if (set.day !== EARTH_DAY_BOOT) {
-          await preloadImage(set.day).catch(() => null);
-          if (cancelled) return;
-          const hi = await loadTexture(set.day, maxAniso);
-          if (cancelled) {
-            hi.dispose();
-            return;
+      let ktx2LoaderPromise: Promise<KTX2Loader> | null = null;
+      const getKtx2Loader = () => {
+        ktx2LoaderPromise ??= createKtx2Loader(gl);
+        return ktx2LoaderPromise;
+      };
+
+      const loadAdaptiveTexture = async (
+        ktx2Url: string | null,
+        webpUrl: string | null,
+        anisotropy: number,
+        colorSpace?: THREE.ColorSpace,
+      ) => {
+        if (preferGpuCompression && ktx2Url) {
+          try {
+            const loader = await getKtx2Loader();
+            return await loadCompressedTexture(loader, ktx2Url, anisotropy, colorSpace);
+          } catch {
+            // KTX2 requires WASM + a supported GPU target. Fall back to WebP.
           }
-          owned.push(hi);
-          setDayMap(hi);
+        }
+
+        if (!webpUrl) return null;
+        return loadTexture(webpUrl, anisotropy, colorSpace);
+      };
+
+      try {
+        if ((preferGpuCompression && set.dayKtx2) || set.day !== EARTH_DAY_BOOT) {
+          if (!(preferGpuCompression && set.dayKtx2)) {
+            await preloadImage(set.day).catch(() => null);
+          }
+          if (cancelled) return;
+          const hi = await loadAdaptiveTexture(set.dayKtx2, set.day, maxAniso);
+          if (hi) {
+            if (cancelled) {
+              hi.dispose();
+              return;
+            }
+            owned.push(hi);
+            setDayMap(hi);
+          }
         }
 
         const jobs: Promise<void>[] = [];
         if (set.nightEnabled && set.night) {
           jobs.push(
-            loadTexture(set.night, Math.min(8, maxAniso)).then((t) => {
+            loadAdaptiveTexture(
+              set.nightKtx2,
+              set.night,
+              Math.min(8, maxAniso),
+            ).then((t) => {
+              if (!t) return;
               if (cancelled) {
                 t.dispose();
                 return;
@@ -263,7 +333,13 @@ export function PhotorealEarthMesh({
         }
         if (set.cloudsEnabled && set.clouds) {
           jobs.push(
-            loadTexture(set.clouds, Math.min(8, maxAniso)).then((t) => {
+            loadAdaptiveTexture(
+              set.cloudsKtx2,
+              set.clouds,
+              Math.min(8, maxAniso),
+              THREE.NoColorSpace,
+            ).then((t) => {
+              if (!t) return;
               if (cancelled) {
                 t.dispose();
                 return;
@@ -275,7 +351,13 @@ export function PhotorealEarthMesh({
         }
         if (set.specularEnabled && set.specular) {
           jobs.push(
-            loadTexture(set.specular, 4, THREE.NoColorSpace).then((t) => {
+            loadAdaptiveTexture(
+              set.specularKtx2,
+              set.specular,
+              4,
+              THREE.NoColorSpace,
+            ).then((t) => {
+              if (!t) return;
               if (cancelled) {
                 t.dispose();
                 return;
@@ -291,6 +373,16 @@ export function PhotorealEarthMesh({
         }
       } catch {
         // Boot day alone remains readable.
+      } finally {
+        const loaderPromise = ktx2LoaderPromise as Promise<KTX2Loader> | null;
+        if (loaderPromise) {
+          try {
+            const loader: KTX2Loader = await loaderPromise;
+            loader.dispose();
+          } catch {
+            // Loader initialization failed; WebP fallback already handled it.
+          }
+        }
       }
     })();
 
@@ -298,7 +390,7 @@ export function PhotorealEarthMesh({
       cancelled = true;
       // Soft cancel only — dispose owned upgrades on true unmount below.
     };
-  }, [gl, set]);
+  }, [gl, preferGpuCompression, set]);
 
   // Dispose upgrade textures only when the mesh unmounts for real.
   useEffect(() => {

@@ -9,10 +9,10 @@ import {
   Share2, Sparkles,
   type LucideIcon,
 } from 'lucide-react';
-import { TAB_MODULES, DOCK_MODULES, canAccessModule, minimumPlanForModule } from './governanceModules';
+import { TAB_MODULES, DOCK_MODULES } from './governanceModules';
+import { useNavLock } from './useNavLock';
 import { ModuleStatusBadge } from './ModuleStatusBadge';
 import type { GovernanceModule } from './governanceBrowserTypes';
-import { useActivePlan } from '../../hooks/useModuleAccess';
 
 const ICON_MAP: Record<string, LucideIcon> = {
   Home, Globe, FileCheck2, Cpu, Bot, AlertTriangle, Activity,
@@ -33,11 +33,11 @@ function TabItem({ module, active }: { module: GovernanceModule; active: boolean
       to={module.route}
       className={`group flex items-center gap-1.5 px-3 py-2 text-xs font-medium whitespace-nowrap border-b-2 transition-colors ${
         active
-          ? 'border-[#e4cfa2] text-titanium-50 bg-obsidian-800'
+          ? 'border-[#00B8D4] text-titanium-50 bg-obsidian-800'
           : 'border-transparent text-titanium-400 hover:text-titanium-100 hover:bg-obsidian-800'
       }`}
     >
-      <Icon className={`h-3.5 w-3.5 shrink-0 ${active ? 'text-[#e4cfa2]' : 'text-titanium-600 group-hover:text-titanium-300'}`} />
+      <Icon className={`h-3.5 w-3.5 shrink-0 ${active ? 'text-[#00B8D4]' : 'text-titanium-600 group-hover:text-titanium-300'}`} />
       <span>{module.label}</span>
       <ModuleStatusBadge status={module.status} />
     </Link>
@@ -46,7 +46,8 @@ function TabItem({ module, active }: { module: GovernanceModule; active: boolean
 
 export function GovernanceTabs() {
   const { pathname } = useLocation();
-  const { plan } = useActivePlan();
+  // Schlösser aus tenant_entitlements (navAccess.ts) — identisch zur Seitenleiste.
+  const lockFor = useNavLock();
   const [dockOpen, setDockOpen] = useState(false);
 
   const isActive = (route: string) => {
@@ -65,8 +66,8 @@ export function GovernanceTabs() {
 
   // Primary strip: accessible only. Locked + roadmap live under „Mehr"
   // to keep tab density manageable without changing IA.
-  const accessibleTabs = TAB_MODULES.filter((m) => canAccessModule(m, plan));
-  const lockedTabs = TAB_MODULES.filter((m) => !canAccessModule(m, plan));
+  const accessibleTabs = TAB_MODULES.filter((m) => !lockFor({ route: m.route, module: m }).locked);
+  const lockedTabs = TAB_MODULES.filter((m) => lockFor({ route: m.route, module: m }).locked);
   const moreCount = lockedTabs.length + DOCK_MODULES.length;
 
   return (
@@ -106,13 +107,13 @@ export function GovernanceTabs() {
                       </div>
                       {lockedTabs.map((mod) => {
                         const Icon: LucideIcon = ICON_MAP[mod.icon] ?? Home;
-                        const minPlan = minimumPlanForModule(mod);
-                        const planLabel = PLAN_LABELS[minPlan] ?? minPlan;
+                        const minPlan = lockFor({ route: mod.route, module: mod }).minPlan;
+                        const planLabel = minPlan ? PLAN_LABELS[minPlan] ?? minPlan : null;
                         return (
                           <Link
                             key={mod.id}
                             to="/pricing"
-                            title={`Ab ${planLabel} verfügbar`}
+                            title={planLabel ? `Ab ${planLabel} verfügbar` : 'Im aktuellen Plan nicht enthalten'}
                             onClick={() => setDockOpen(false)}
                             className="flex items-center gap-2.5 px-3 py-2.5 text-xs text-titanium-500 hover:bg-obsidian-800 hover:text-titanium-300 transition-colors"
                           >
@@ -133,7 +134,7 @@ export function GovernanceTabs() {
                       </div>
                       {DOCK_MODULES.map((mod) => {
                         const Icon: LucideIcon = ICON_MAP[mod.icon] ?? Home;
-                        const allowed = canAccessModule(mod, plan);
+                        const allowed = !lockFor({ route: mod.route, module: mod }).locked;
                         return (
                           <Link
                             key={mod.id}

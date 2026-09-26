@@ -70,16 +70,55 @@ export function computeGovernanceScore(
 }
 
 /**
- * Score nur aus erfüllten Count-Queries. Abgelehnte Zähler als 0 zu lesen
- * würde 100 / „Sehr gut“ ergeben — das ist kein leerer Mandant.
+ * Status des Governance-Scores (Backend-Entscheid P0, 25.09.2026):
+ *   ok                — belastbare Datenbasis, `score` ist eine Zahl
+ *   insufficient_data — noch nichts zu bewerten (kein KPI-Snapshot ODER
+ *                       0 KI-Systeme und 0 Control-Mappings), `score` = null
+ *   unreliable        — eine Eingangsquelle ist fehlgeschlagen (RLS-/Netz-/
+ *                       RPC-Fehler), `score` = null; UI zeigt Fehlerzustand
+ */
+export type GovernanceScoreStatus = 'ok' | 'insufficient_data' | 'unreliable';
+
+export interface GovernanceScoreResult {
+  /** Nur bei `status === 'ok'` eine Zahl, sonst immer `null`. */
+  score: number | null;
+  status: GovernanceScoreStatus;
+}
+
+/**
+ * Datenbasis, ohne die der Score nichts aussagt. `null` = Zähler konnte
+ * nicht geladen werden (≠ 0).
+ */
+export interface ScoreDataBasis {
+  aiSystems: number | null;
+  controlMappings: number | null;
+}
+
+/**
+ * Score nur aus belastbaren Eingängen.
+ *
+ * Früher: `100 − Strafpunkte`, ein leerer Mandant ergab 100 / „Sehr gut“,
+ * weil „keine Daten“ als „keine Probleme“ gelesen wurde. Jetzt:
+ *   1. Eine fehlgeschlagene Quelle (Zähler, KPI-Snapshot, Datenbasis) ⇒ `unreliable`.
+ *   2. Kein KPI-Snapshot ⇒ `insufficient_data`.
+ *   3. 0 KI-Systeme UND 0 Control-Mappings ⇒ `insufficient_data`.
+ *   4. Sonst ⇒ `ok` mit Zahl.
  */
 export function computeGovernanceScoreIfReliable(
   countsReliable: boolean,
   counts: CockpitCounts,
-  posture?: CockpitPosture | null,
-): number | null {
-  if (!countsReliable) return null;
-  return computeGovernanceScore(counts, posture);
+  posture: CockpitPosture | null,
+  basis: ScoreDataBasis,
+  postureReliable = true,
+): GovernanceScoreResult {
+  if (!countsReliable || !postureReliable || basis.aiSystems === null || basis.controlMappings === null) {
+    return { score: null, status: 'unreliable' };
+  }
+  if (posture === null) return { score: null, status: 'insufficient_data' };
+  if (basis.aiSystems === 0 && basis.controlMappings === 0) {
+    return { score: null, status: 'insufficient_data' };
+  }
+  return { score: computeGovernanceScore(counts, posture), status: 'ok' };
 }
 
 /**

@@ -118,7 +118,7 @@ export const GOVERN_MODULES: ModuleDefinition[] = [
   { id: 'evidence_vault', area: 'govern', name: 'Evidence Vault', description: 'Manipulationssicherer Nachweisspeicher mit Hash-Chain, Retention und Legal Hold.', icon: 'Archive' },
   { id: 'audit_center', area: 'govern', name: 'Audit Center', description: 'Prüfpfad, Audit-Läufe und exportfähige Nachweispakete für Prüfer.', icon: 'ClipboardCheck' },
   { id: 'risk_register', area: 'govern', name: 'Risk Register', description: 'Zentrales Risikoregister mit Bewertung, Eigentümern und Maßnahmenverfolgung.', icon: 'AlertTriangle' },
-  { id: 'monitoring', area: 'govern', name: 'Monitoring', description: 'Kontinuierliche Runtime-Überwachung von Assets, Kontrollen und SLOs.', icon: 'Activity' },
+  { id: 'monitoring', area: 'govern', name: 'Monitoring', description: 'Runtime-Überwachung von Assets, Kontrollen und SLOs — dauerhafte Domain-Überwachung Coming Soon.', icon: 'Activity' },
   { id: 'compliance_reports', area: 'govern', name: 'Compliance Reports', description: 'Berichte je Rahmenwerk — PDF/JSON, revisionssicher signiert.', icon: 'FileText' },
 ];
 
@@ -566,7 +566,7 @@ export const PLANS: Plan[] = [
     yearlyPlanKey: 'starter_yearly',
     name: 'Starter',
     outcomeHeadline: 'Ein nachweisbares Governance-Fundament, das jeden Prüfer überzeugt.',
-    technicalSubheadline: 'Kontinuierlicher DSGVO- und AI-Act-Scan mit lückenloser Hash-Chain und exportierbarem Prüfpfad.',
+    technicalSubheadline: 'DSGVO- und AI-Act-Scan mit lückenloser Hash-Chain und exportierbarem Prüfpfad. Dauerhafte Domain-Überwachung: Coming Soon.',
     price: { monthlyEur: 79, yearlyEur: 790, oneTimeEur: null },
     // Jahres-Preis in Stripe nicht verdrahtet — siehe `yearlyCheckoutUnavailable`.
     yearlyCheckoutUnavailable: true,
@@ -628,7 +628,7 @@ export const PLANS: Plan[] = [
         'Technische Consent-Empfehlungen',
       ],
       automation_ops: [
-        'Kontinuierliches Monitoring',
+        'Kontinuierliches Monitoring (Coming Soon)',
         'E-Mail-Alert bei neuen Findings',
         '25 Automationsläufe pro Monat',
         '1 Governance-Bot mit 500 Antworten (Website)',
@@ -646,7 +646,7 @@ export const PLANS: Plan[] = [
     yearlyPlanKey: 'growth_yearly',
     name: 'Growth',
     outcomeHeadline: 'KI-Governance, die sich selbst überwacht — statt einmal im Jahr geprüft zu werden.',
-    technicalSubheadline: 'Tägliche Runtime-Läufe mit Drift Detection, Risk Register und Policy Engine über drei Rahmenwerke.',
+    technicalSubheadline: 'Runtime-Läufe mit Risk Register und Policy Engine über drei Rahmenwerke. Tägliches Drift-Monitoring: Coming Soon.',
     price: { monthlyEur: 249, yearlyEur: 2490, oneTimeEur: null },
     // Jahres-Preis in Stripe nicht verdrahtet — siehe `yearlyCheckoutUnavailable`.
     yearlyCheckoutUnavailable: true,
@@ -722,7 +722,7 @@ export const PLANS: Plan[] = [
         'Governance Score je Rahmenwerk',
       ],
       automation_ops: [
-        'Tägliches Monitoring mit Drift Detection',
+        'Tägliches Monitoring mit Drift Detection (Coming Soon)',
         'Behebungsvorschläge mit Code-Snippets',
         'API-Zugriff, Webhooks und Scheduler',
         '10 Bulk-Jobs pro Monat, 3 API-Schlüssel',
@@ -803,7 +803,7 @@ export const PLANS: Plan[] = [
         'White-Label-Berichte mit eigenem Logo',
       ],
       ai_governance: [
-        'Policy Packs: DSGVO, EU AI Act, ISO 27001, NIS2, TISAX',
+        'Policy Packs: DSGVO, EU AI Act, ISO 27001, NIS2 (live); TISAX Roadmap',
         'Branchenbibliothek vorkonfigurierter Governance-Profile',
         'Governance Agents für Prüfungen und Maßnahmen (Review-pflichtig)',
       ],
@@ -835,7 +835,7 @@ export const PLANS: Plan[] = [
     planKey: 'enterprise',
     yearlyPlanKey: 'enterprise_yearly',
     name: 'Enterprise',
-    outcomeHeadline: 'Konzernweite Governance über alle sechs Rahmenwerke — mit SLA und SSO.',
+    outcomeHeadline: 'Konzernweite Governance über aktive Policy Packs plus Framework-Roadmap — mit SLA und SSO.',
     technicalSubheadline: 'Multi-Tenant-Runtime für bis zu 5 Organisationen, zentrale Rechteverwaltung und individuell dimensionierte Scheduler- und Automation-Kontingente.',
     price: { monthlyEur: 1_249, yearlyEur: 12_490, oneTimeEur: null },
     priceOnRequest: true,
@@ -900,7 +900,7 @@ export const PLANS: Plan[] = [
         'Evidence Vault Enterprise mit 200 GB Nachweisspeicher',
       ],
       ai_governance: [
-        'Alle sechs Policy Packs: DSGVO, EU AI Act, ISO 27001, NIS2, TISAX, DORA',
+        'Policy Packs live: DSGVO, EU AI Act, ISO 27001, NIS2; TISAX/DORA Roadmap / auf Anfrage',
         'Erweiterte Analysen und Risk Scoring',
         'Eigene Richtlinien und Kontrollkataloge',
       ],
@@ -990,7 +990,7 @@ export const PLANS: Plan[] = [
         'Unbegrenzte Behebungspläne und Bulk Jobs',
       ],
       ai_governance: [
-        'Alle sechs Policy Packs je Mandant getrennt aktivierbar',
+        'Aktive Policy Packs je Mandant; TISAX/DORA Roadmap / auf Anfrage',
         'Mandantenspezifische Richtlinien und Kontrollkataloge',
       ],
       automation_ops: [
@@ -1090,6 +1090,66 @@ export const PLANS: Plan[] = [
       multi_tenant_reseller: [],
     },
     trialDays: 0,
+  },
+];
+
+// ─────────────────────────────────────────────────────────────────────────
+//  Runtime Credits — Shadow-Rating-Vertrag (noch NICHT verkäuflich)
+// ─────────────────────────────────────────────────────────────────────────
+
+/**
+ * Runtime Credits sind eine normalisierte Einheit für governed AI capacity.
+ * Sie sind ausdrücklich KEIN Euro-Guthaben und KEINE Provider-Token-Einheit.
+ *
+ * Die Reihenfolge bleibt: tatsächlicher Burn messen → Included festlegen →
+ * Packgröße → Preis → Margin-Floor. Bis dahin gibt es keine verkaufbare SKU.
+ */
+export type RuntimeClass =
+  | 'c0_local'
+  | 'c1_standard'
+  | 'c2_agent'
+  | 'c3_page_builder'
+  | 'c4_app_builder';
+
+export type ExecutionZone =
+  | 'device_local'
+  | 'eu_private'
+  | 'governed_cloud';
+
+export type RuntimeCreditPackAvailability = 'internal' | 'self_service' | 'contract';
+
+export interface RuntimeCreditRating {
+  runtimeClass: RuntimeClass;
+  executionZone: ExecutionZone;
+  /** Null bis echte Burn-Daten eine belastbare Kalibrierung erlauben. */
+  shadowCreditEstimate: number | null;
+  /** Phase 1 misst nur. Ein Wallet darf in diesem Schnitt nichts blockieren. */
+  walletEnforced: false;
+  /** Kein Kundenentgelt im Shadow-Modus. Credits sind keine Währung. */
+  customerCharge: 0;
+}
+
+export interface RuntimeCreditPack {
+  id: string;
+  label: string;
+  /** Null = Packgröße absichtlich noch nicht kalibriert. */
+  credits: number | null;
+  /** Muss 0 bleiben, solange availability='internal'. */
+  priceEur: number;
+  availability: RuntimeCreditPackAvailability;
+}
+
+/**
+ * Absichtlicher Nicht-Verkaufs-Stub. Er erzeugt weder Stripe-Produkte noch
+ * Entitlements und wird von ADDONS/PLANS nicht referenziert.
+ */
+export const RUNTIME_CREDIT_PACK_STUBS: readonly RuntimeCreditPack[] = [
+  {
+    id: 'runtime_credits_uncalibrated',
+    label: 'Runtime Credits · Calibration',
+    credits: null,
+    priceEur: 0,
+    availability: 'internal',
   },
 ];
 
@@ -1455,7 +1515,7 @@ export const BOOKABLE_MODULES: BookableModule[] = [
     bullets: [
       'Ein Unternehmen, eine Domain',
       'DSGVO und EU AI Act als Policy Packs',
-      'Kontinuierliches Monitoring statt Einmalprüfung',
+      'Kontinuierliches Monitoring (Coming Soon) statt Einmalprüfung',
       'Governance Score, Evidence Vault und Audit-Export',
       'Alerts bei neuen Findings',
     ],
@@ -1693,7 +1753,7 @@ export interface RuntimeStage {
  */
 export const RUNTIME_PIPELINE: RuntimeStage[] = [
   { id: 'source', label: 'Website / API', description: 'Ihre Systeme, Domains und Schnittstellen als Eingang der Runtime.', icon: 'Globe' },
-  { id: 'scan', label: 'Runtime Scan', description: 'Kontinuierliche Erfassung des Ist-Zustands über alle Assets.', icon: 'Radar' },
+  { id: 'scan', label: 'Runtime Scan', description: 'Erfassung des Ist-Zustands je Scan über alle Assets.', icon: 'Radar' },
   { id: 'policy', label: 'Policy Engine', description: 'Abgleich gegen versionierte Richtlinien und Rahmenwerke.', icon: 'Scale' },
   { id: 'evidence', label: 'Evidence Vault', description: 'Manipulationssichere Ablage jedes Nachweises mit Hash-Chain.', icon: 'Archive' },
   { id: 'risk', label: 'Risk Engine', description: 'Bewertung, Priorisierung und Eintrag ins Risikoregister.', icon: 'AlertTriangle' },
@@ -2826,7 +2886,7 @@ export function recommendPlan(input: RecommendationInput): PlanRecommendation {
   }
 
   if (score < 40) {
-    return { planId: 'growth', reason: `Governance Score ${score}/100 — kritische Lücken brauchen tägliches Monitoring und ein Risk Register.` };
+    return { planId: 'growth', reason: `Governance Score ${score}/100 — kritische Lücken brauchen ein Risk Register und priorisierte Fix-Pläne.` };
   }
   if (score < 70) {
     return { planId: 'growth', reason: `Governance Score ${score}/100 — Drift Detection hält den erreichten Stand stabil.` };

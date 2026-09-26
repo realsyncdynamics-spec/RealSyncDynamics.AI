@@ -1,4 +1,6 @@
 // GovernanceBrowserShell — browserartiger Governance-OS-Rahmen für alle /app/* Routen.
+// Handoff v2 §5: 248px-Seitenleiste, 56px-Kopfzeile, mobile Tab-Bar mit fünf Tabs;
+// alle übrigen Bereiche (Klassifizierung, Abrechnung, Module) im Burger-Menü.
 //
 // Layout ab `lg`: TopBar → [Sidebar + Canvas + GovernanceChatSidebar] → StatusBar
 // Darunter: TopBar → (Burger-Menü mit GovernanceTabs) → Canvas → MobileBottomNav
@@ -24,6 +26,9 @@ import {
 } from './commandCenterCatalog';
 import { RouteEntitlementGate } from '../../core/access/RouteEntitlementGate';
 import { AppGate } from '../../features/auth/AppGate';
+import { auditPathFor } from '../../features/audit/auditPrefill';
+import { MobileShellMenu } from './MobileShellMenu';
+import '../../styles/governance-os-app.css';
 
 interface GovernanceBrowserShellProps {
   children: React.ReactNode;
@@ -54,7 +59,7 @@ export function GovernanceBrowserShell({ children }: GovernanceBrowserShellProps
   const handleLoadUrl = (url: string) => setEmbeddedUrl(url);
   const handleCloseEmbed = () => setEmbeddedUrl(null);
   const handleScan = (url: string) => {
-    navigate(`/audit?target=${encodeURIComponent(url)}`);
+    navigate(auditPathFor(url, 'app-embedded-scan'));
     setEmbeddedUrl(null);
   };
 
@@ -72,14 +77,10 @@ export function GovernanceBrowserShell({ children }: GovernanceBrowserShellProps
     [navigate],
   );
 
-  const handleSubmitIntent = useCallback(
-    (text: string) => {
-      const trimmed = text.trim();
-      if (!trimmed) return;
-      navigate('/app/dashboard', { state: { agentOsIntent: trimmed } });
-    },
-    [navigate],
-  );
+  // Kein Freitext-Intent mehr (P0-5): Er ging per Router-State an
+  // `/app/dashboard`, gelesen wurde er nur von `AgentOsPanel`, das auf keiner
+  // erreichbaren Route gemountet ist — der Intent verpuffte. Ohne
+  // `onSubmitIntent` bietet die Palette nur ausführbare Befehle an.
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
@@ -100,7 +101,8 @@ export function GovernanceBrowserShell({ children }: GovernanceBrowserShellProps
 
   return (
     <AppGate>
-      <div className="os-chrome dashboard-context h-screen h-dvh flex flex-col bg-obsidian-950 text-titanium-100 overflow-hidden">
+      {/* `rs-app`: Handoff-v2-Palette für alle /app/*-Flächen (governance-os-app.css). */}
+      <div className="os-chrome dashboard-context rs-app h-screen h-dvh flex flex-col bg-obsidian-950 text-titanium-100 overflow-hidden">
         <BrowserTopBar
           mobileMenuOpen={mobileMenuOpen}
           onToggleMobile={() => setMobileMenuOpen((v) => !v)}
@@ -125,10 +127,11 @@ export function GovernanceBrowserShell({ children }: GovernanceBrowserShellProps
               if ((event.target as HTMLElement).closest('a')) setMobileMenuOpen(false);
             }}
           >
+            <MobileShellMenu />
             <GovernanceTabs />
             <button
               type="button"
-              className="w-full px-4 py-3 text-left text-sm text-titanium-200 bg-obsidian-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#e4cfa2]"
+              className="w-full px-4 py-3 text-left text-sm text-titanium-200 bg-obsidian-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#00B8D4]"
               onClick={() => {
                 setMobileMenuOpen(false);
                 setCommandCenterOpen(true);
@@ -179,7 +182,6 @@ export function GovernanceBrowserShell({ children }: GovernanceBrowserShellProps
           onClose={() => setCommandCenterOpen(false)}
           items={commandItems}
           onRun={handleRunCommand}
-          onSubmitIntent={handleSubmitIntent}
         />
       </div>
     </AppGate>

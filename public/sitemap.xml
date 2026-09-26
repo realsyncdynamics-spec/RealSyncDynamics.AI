@@ -247,6 +247,12 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://realsyncdynamicsai.de/frontend-builder</loc>
+    <lastmod>2026-09-24</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://realsyncdynamicsai.de/fuer-agenturen</loc>
     <lastmod>2026-05-09</lastmod>
     <changefreq>monthly</changefreq>

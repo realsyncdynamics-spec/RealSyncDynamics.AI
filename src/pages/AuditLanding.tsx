@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
-  ArrowLeft, ShieldCheck, AlertTriangle, CheckCircle2, Loader2, Send,
-  Globe, Mail, Building2, Gavel, ArrowRight, Linkedin, Share2, FileText,
-  Activity, MessageSquare, Sparkles,
+  ShieldCheck, AlertTriangle, CheckCircle2, Loader2,
+  Globe, Mail, ArrowRight, Linkedin, Share2, FileText,
+  Activity, Sparkles,
 } from 'lucide-react';
 
 import { getAffiliateRef } from '../lib/affiliate';
@@ -13,8 +13,9 @@ import { usePageMeta } from '../lib/usePageMeta';
 import { postEdgeFunction } from '../lib/edgeFunction';
 import { getSupabaseUrl } from '../lib/supabaseUrl';
 import { LegalDisclaimer } from '../components/LegalDisclaimer';
-import { ReportPreviewSection } from '../components/sections/ReportPreviewSection';
-import { AuditChatHero } from '../components/audit/AuditChatHero';
+import { AuditStepper, type AuditStepperInput } from '../components/audit/AuditStepper';
+import { readAuditPrefill } from '../features/audit/auditPrefill';
+import { HandoffTopBar } from '../components/handoff/HandoffTopBar';
 import { AuditCopilotPanel } from '../components/audit/AuditCopilotPanel';
 import {
   buildPostScanChoices,
@@ -90,32 +91,35 @@ export function AuditLanding() {
       'Technische Vorprüfung für Websites: Consent, Tracking, Drittanbieter-Skripte und mögliche DSGVO-/TDDDG-Risiken analysieren.',
     url: 'https://RealSyncDynamicsAI.de/audit',
   });
-  // Vorbelegung aus `?domain=`. Die Startseite schickt die dort getippte
-  // Adresse mit; ohne diese Zeile müsste der Besucher sie ein zweites Mal
-  // eingeben, was den Trichter genau an seiner engsten Stelle bricht.
-  // Nur als Startwert — danach gehört das Feld dem Besucher.
-  const [url, setUrl] = useState(() => {
-    const vorgabe = new URLSearchParams(window.location.search).get('domain');
-    return vorgabe ? vorgabe.trim().slice(0, 255) : '';
-  });
-  const [email, setEmail] = useState('');
-  const [company, setCompany] = useState('');
+  // Vorbelegung aus `?domain=` (kanonisch; `target`/`url`/`q` als Altlast,
+  // siehe `features/audit/auditPrefill.ts`). Startseite und die Suche oben in
+  // der App-Shell schicken die dort getippte Adresse mit; ohne diese Zeile
+  // müsste der Besucher sie ein zweites Mal eingeben, was den Trichter genau
+  // an seiner engsten Stelle bricht. Nur als Startwert — danach gehört das
+  // Feld dem Besucher.
+  const [url] = useState(() => readAuditPrefill(window.location.search));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [report, setReport] = useState<Report | null>(null);
-  const [classicForm, setClassicForm] = useState(false);
-  const [chatGen, setChatGen] = useState(0);
+  const [stepperGen, setStepperGen] = useState(0);
 
-  function resetForNewScan() {
+  /** Zurück aus Lauf/Fehler: Antworten behalten, Ergebnis verwerfen. */
+  function clearResult() {
     setReport(null);
-    setChatGen((n) => n + 1);
+    setError(null);
   }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  /** „Neuer Scan" aus dem Bericht: Stepper von vorn. */
+  function resetForNewScan() {
+    clearResult();
+    setStepperGen((n) => n + 1);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  async function runScan({ domain, email, company }: AuditStepperInput) {
     setLoading(true); setError(null); setReport(null);
     try {
-      const normalizedUrl = url.trim().match(/^https?:\/\//i) ? url.trim() : `https://${url.trim()}`;
+      const normalizedUrl = domain.match(/^https?:\/\//i) ? domain : `https://${domain}`;
       const params = new URLSearchParams(window.location.search);
       const plan = params.get('plan')?.trim().slice(0, 40) || undefined;
       const source = params.get('source')?.trim().slice(0, 200) || undefined;
@@ -123,8 +127,8 @@ export function AuditLanding() {
       // kein JWT-Zwang (sonst Abbruch für nicht eingeloggte Besucher).
       const data = await postEdgeFunction<Report>('gdpr-audit', {
         url: normalizedUrl,
-        email: email.trim(),
-        company: company.trim() || undefined,
+        email,
+        company: company || undefined,
         referral_code: getAffiliateRef() || undefined,
         plan,
         source,
@@ -156,151 +160,41 @@ export function AuditLanding() {
   }
 
   return (
-    <div className="flow-context min-h-screen bg-obsidian-950 text-titanium-100">
-      <Header />
+    <div className="rs-ui rs-page min-h-screen">
+      <HandoffTopBar />
 
-      <main className="px-4 sm:px-6 py-12 sm:py-16">
-        <div className="max-w-3xl mx-auto">
+      {/* Governance-OS-Handoff v2: vier Fragen → echter gdpr-audit-Scan →
+          Score aus dem Scan. Der vollständige Bericht folgt darunter. */}
+      <AuditStepper
+        key={stepperGen}
+        initialDomain={url}
+        running={loading}
+        error={error}
+        report={report}
+        onRun={(input) => { void runScan(input); }}
+        onReset={clearResult}
+      />
 
-          {!report && (
-            <div className="text-center mb-10">
-              <div className="inline-flex items-center gap-2 px-3 py-1 border border-titanium-700 bg-obsidian-900 text-titanium-200 text-xs font-bold uppercase tracking-wider rounded-none mb-5">
-                <ShieldCheck className="h-3 w-3" /> Kostenlos · Kein Account · 30 Sekunden
+      {report && (
+        <div className="flow-context bg-obsidian-950 text-titanium-100 border-t border-titanium-900">
+          <main className="px-4 sm:px-6 py-12 sm:py-16">
+            <div className="max-w-3xl mx-auto">
+              <div id="report" style={{ scrollMarginTop: 24 }}>
+                <div className="flex items-center gap-3 mb-6 pb-4 border-b border-titanium-900">
+                  <ShieldCheck className="h-5 w-5 text-emerald-400 shrink-0" />
+                  <div>
+                    <div className="text-[10px] font-mono uppercase tracking-wider text-titanium-500">Dein Scan-Ergebnis</div>
+                    <div className="font-display font-bold text-titanium-50 text-lg leading-tight">{report.domain}</div>
+                  </div>
+                </div>
+                <ReportView report={report} onRetry={resetForNewScan} />
               </div>
-              <h1 className="text-3xl sm:text-5xl font-display font-bold text-titanium-50 tracking-tight leading-tight mb-4">
-                Kostenloser DSGVO- und Tracking-Audit
-              </h1>
-              <p className="text-lg text-titanium-300 max-w-xl mx-auto leading-relaxed mb-4">
-                Der Free Audit ist Dein Einstieg in unsere Compliance-Plattform: 12 typische Compliance-Fallen
-                geprüft — von Tracking-ohne-Consent bis Cookie-Banner-Dark-Pattern. Score und Fix-Liste sofort,
-                Continuous Monitoring optional ab Starter.
-              </p>
-              <AuditMethodologyTags />
-              <div className="max-w-xl mx-auto text-left mt-4">
+              <div className="mt-10">
                 <LegalDisclaimer context="audit" />
               </div>
             </div>
-          )}
-
-          {error && !report && (
-            <div className="flex items-start gap-2 text-sm text-red-300 bg-red-950/40 border border-red-900 rounded-none p-3 mb-4">
-              <AlertTriangle className="h-5 w-5 shrink-0 mt-0.5" /><span>{error}</span>
-            </div>
-          )}
-
-          {/* Chat hero stays mounted across the scan transition so the in-chat
-              summary bubble (with #report CTA) remains visible. The full
-              ReportView renders below it once the scan completes. */}
-          {!classicForm && (
-            <>
-              <AuditChatHero
-                key={chatGen}
-                // Der Chat ist die voreingestellte Ansicht. Ohne diese Zeile
-                // bliebe die von der Startseite übergebene Adresse nur im
-                // klassischen Formular stehen, das hinter einem Umschalter
-                // liegt — der Besucher müsste sie ein zweites Mal eingeben.
-                initialDomain={url}
-                onScanComplete={(r) => {
-                  setReport(r);
-                  trackConversion('Lead', { content_name: 'dsgvo_audit' });
-                }}
-              />
-              {!report && (
-                <div className="mt-4 text-center">
-                  <button
-                    type="button"
-                    onClick={() => setClassicForm(true)}
-                    className="text-xs text-titanium-400 hover:text-titanium-200 underline transition-colors"
-                  >
-                    Lieber das klassische Formular?
-                  </button>
-                </div>
-              )}
-            </>
-          )}
-
-          {classicForm && !report && (
-            <>
-                  <div className="mb-3 flex items-center justify-between">
-                    <span className="text-[11px] text-titanium-500 font-mono uppercase tracking-wider">Klassisches Formular</span>
-                    <button
-                      type="button"
-                      onClick={() => setClassicForm(false)}
-                      className="inline-flex items-center gap-1.5 text-xs text-titanium-400 hover:text-titanium-200 underline transition-colors"
-                    >
-                      <MessageSquare className="h-3 w-3" /> Zum Chat
-                    </button>
-                  </div>
-                  <form onSubmit={handleSubmit} className="bg-obsidian-900 border border-titanium-900 p-6 sm:p-8 rounded-none space-y-4">
-                <Field label="Deine Website-URL" icon={<Globe className="h-3.5 w-3.5" />} required>
-                  <input
-                    type="text" required value={url} onChange={(e) => setUrl(e.target.value)}
-                    placeholder="kanzlei-mueller.de"
-                    className="w-full bg-obsidian-950 border border-titanium-900 px-3 py-2.5 text-base sm:text-sm rounded-none outline-none focus:border-titanium-100"
-                  />
-                </Field>
-
-                <Field label="E-Mail (für Report-Zustellung)" icon={<Mail className="h-3.5 w-3.5" />} required>
-                  <input
-                    type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
-                    placeholder="dein@kanzlei.de" autoComplete="email"
-                    className="w-full bg-obsidian-950 border border-titanium-900 px-3 py-2.5 text-base sm:text-sm rounded-none outline-none focus:border-titanium-100"
-                  />
-                </Field>
-
-                <Field label="Kanzlei / Firma (optional)" icon={<Building2 className="h-3.5 w-3.5" />}>
-                  <input
-                    type="text" value={company} onChange={(e) => setCompany(e.target.value)}
-                    placeholder="Kanzlei Müller & Partner"
-                    className="w-full bg-obsidian-950 border border-titanium-900 px-3 py-2.5 text-base sm:text-sm rounded-none outline-none focus:border-titanium-100"
-                  />
-                </Field>
-
-                <button
-                  type="submit" disabled={loading || !url || !email}
-                  className="surface-mono w-full inline-flex items-center justify-center gap-2 px-6 py-3 disabled:opacity-40 font-bold rounded-none"
-                >
-                  {loading
-                    ? (<><Loader2 className="h-4 w-4 animate-spin" /> Audit läuft …</>)
-                    : (<><Send className="h-4 w-4" /> Jetzt prüfen</>)}
-                </button>
-
-                <p className="text-[11px] text-titanium-500 text-center pt-1">
-                  Wir scannen Deine Site nur einmalig und speichern keine Inhalte. Email landet in unserem CRM für späteren Outreach.
-                  Verarbeitung gemäß <Link to="/legal/privacy" className="text-titanium-100 hover:underline">Datenschutzerklärung</Link>.
-                </p>
-              </form>
-            </>
-          )}
-
-          {!report && (
-            <>
-              <WhatGetsChecked />
-              <Pillars />
-            </>
-          )}
-
-          {report && (
-            <div id="report">
-              <div className="flex items-center gap-3 mb-6 pb-4 border-b border-titanium-900">
-                <ShieldCheck className="h-5 w-5 text-emerald-400 shrink-0" />
-                <div>
-                  <div className="text-[10px] font-mono uppercase tracking-wider text-titanium-500">Dein Scan-Ergebnis</div>
-                  <div className="font-display font-bold text-titanium-50 text-lg leading-tight">{report.domain}</div>
-                </div>
-              </div>
-              <ReportView report={report} onRetry={resetForNewScan} />
-            </div>
-          )}
+          </main>
         </div>
-      </main>
-
-      {!report && (
-        <ReportPreviewSection
-          eyebrow="Beispielreport · Was Sie nach dem Scan bekommen"
-          headline="Ihr eigener Audit sieht genauso aus."
-          subline="Bei jedem Free-Audit erhalten Sie diesen strukturierten Output. Kein Marketing-Mockup — die exakte Form, in der unsere Engine Findings dokumentiert."
-        />
       )}
 
       <Footer />
@@ -308,119 +202,6 @@ export function AuditLanding() {
   );
 }
 
-// ─── Header ────────────────────────────────────────────────────────────────
-
-function AuditMethodologyTags() {
-  const [trackerDb, setTrackerDb] = React.useState<{ version: string; updated_at: string; sources: string[] } | null>(null);
-  React.useEffect(() => {
-    fetch('/tracker-db-version.json')
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data) => data && setTrackerDb(data))
-      .catch(() => null);
-  }, []);
-  return (
-    <div className="inline-flex flex-wrap items-center justify-center gap-2 text-[10px] text-titanium-500 font-mono">
-      <span className="px-2 py-0.5 border border-titanium-800 bg-obsidian-900 rounded-none">
-        audit-engine: 2026.05.0
-      </span>
-      <span
-        className="px-2 py-0.5 border border-titanium-800 bg-obsidian-900 rounded-none"
-        title={trackerDb ? `Aktualisiert ${trackerDb.updated_at} · ${trackerDb.sources.join(' + ')}` : ''}
-      >
-        tracker-db: {trackerDb ? `${trackerDb.version} (${trackerDb.updated_at})` : '2026.05.0'}
-      </span>
-      <Link to="/legal/methodology" className="text-titanium-400 hover:text-titanium-200 underline">
-        Methodik
-      </Link>
-      <Link to="/grenzen" className="text-titanium-400 hover:text-titanium-200 underline">
-        Grenzen
-      </Link>
-    </div>
-  );
-}
-
-function Header() {
-  return (
-    <header className="h-14 border-b border-titanium-900 bg-obsidian-900 flex items-center px-4">
-      <Link to="/" className="p-1.5 rounded-none hover:bg-obsidian-800 text-titanium-400 hover:text-titanium-200 mr-3">
-        <ArrowLeft className="h-4 w-4" />
-      </Link>
-      <div className="flex items-center gap-2.5">
-        <div className="w-8 h-8 rounded-none bg-obsidian-950 border border-titanium-700 flex items-center justify-center">
-          <ShieldCheck className="h-4 w-4 text-titanium-100" />
-        </div>
-        <div className="leading-tight">
-          <div className="font-display font-bold text-sm tracking-tight text-titanium-50">DSGVO-Audit</div>
-          <div className="text-[11px] text-titanium-400 font-medium">Kostenlos · 30 Sek.</div>
-        </div>
-      </div>
-    </header>
-  );
-}
-
-// ─── WhatGetsChecked — SEO-friendly summary of audit scope ──────────────
-
-function WhatGetsChecked() {
-  const items = [
-    'Consent- und Tracking-Verhalten',
-    'Externe Dienste und Drittanbieter-Skripte',
-    'Mögliche Pre-Consent-Risiken',
-    'Technische Datenschutzindikatoren',
-    'AI-Act-relevante Hinweise, sofern anwendbar',
-    'Pflichtangaben: Impressum und Datenschutz',
-  ];
-  return (
-    <section aria-label="Was geprüft wird" className="mt-10">
-      <h2 className="text-xs font-bold text-titanium-500 uppercase tracking-[0.2em] mb-4 text-center">
-        Was geprüft wird
-      </h2>
-      <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 max-w-xl mx-auto">
-        {items.map((b) => (
-          <li
-            key={b}
-            className="flex items-center gap-2 text-sm text-titanium-300 bg-obsidian-900/60 border border-titanium-900 px-3 py-2 rounded-none"
-          >
-            <span className="text-titanium-100 text-xs">▸</span>
-            {b}
-          </li>
-        ))}
-      </ul>
-      <p className="mt-5 text-[11px] text-titanium-500 text-center max-w-xl mx-auto leading-relaxed">
-        Der Audit ersetzt keine individuelle Rechtsberatung und keine vollständige technische Prüfung.
-      </p>
-    </section>
-  );
-}
-
-// ─── Pillars (Trust elements unten auf der Form) ─────────────────────────
-
-function Pillars() {
-  const items = [
-    { law: 'DSGVO Art. 6 Abs. 1', issue: 'Tracker ohne Consent', max: 'Rechtsgrundlage erforderlich' },
-    { law: 'DSGVO Art. 13',       issue: 'Fehlende Datenschutzerklärung', max: 'Informationspflicht' },
-    { law: '§ 25 TDDDG',          issue: 'Cookies vor Consent', max: 'Einwilligung erforderlich' },
-    { law: '§ 5 TMG',             issue: 'Fehlendes Impressum', max: 'Anbieterkennzeichnung erforderlich' },
-  ];
-  return (
-    <div className="mt-12">
-      <h2 className="text-xs font-bold text-titanium-500 uppercase tracking-[0.2em] mb-4 text-center">Was wir prüfen</h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        {items.map((it) => (
-          <div key={it.law} className="p-4 bg-obsidian-900 border border-titanium-800 border-l-2 border-l-titanium-500 rounded-none">
-            <div className="flex items-center gap-2 mb-1.5">
-              <Gavel className="h-3.5 w-3.5 text-titanium-300" />
-              <span className="text-[10px] font-bold uppercase tracking-wider text-titanium-300">{it.law}</span>
-            </div>
-            <div className="font-display font-bold text-sm text-titanium-50">{it.issue}</div>
-            <div className="text-xs text-titanium-500 mt-0.5">Pflicht: {it.max}</div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// ─── Business Impact Mapping (statisch, severity-basiert) ────────────────
 const ISSUE_BUSINESS_IMPACT: Record<string, { businessImpact: string; effort: string; action: string }> = {
   critical: {
     businessImpact: 'Art. 83(5) DSGVO — Bußgeld bis 4 % des weltweiten Jahresumsatzes möglich.',
@@ -501,20 +282,20 @@ function TrialCtaBlock({ report }: { report: Report }) {
             14 Tage kostenlos · Starter Trial
           </p>
           <h2 className="font-display font-bold text-titanium-50 text-xl sm:text-2xl leading-tight">
-            Diesen Befund 14 Tage kostenlos überwachen
+            Diesen Befund 14 Tage kostenlos im Dashboard bearbeiten
           </h2>
         </div>
       </div>
 
       <p className="text-sm text-titanium-300 leading-relaxed mb-5 max-w-2xl">
-        RealSyncDynamicsAI übernimmt diesen Scan in Ihr Governance-Dashboard und prüft automatisch,
-        ob neue DSGVO-, Security- oder KI-Risiken entstehen.
+        RealSyncDynamicsAI übernimmt diesen Scan in Ihr Governance-Dashboard. Die automatische Prüfung
+        auf neue DSGVO-, Security- oder KI-Risiken (dauerhaftes Monitoring) ist Coming Soon.
         {(criticalCount > 0 || highCount > 0) && (
           <span className="block mt-2 text-amber-300 font-semibold">
             {criticalCount > 0 && `${criticalCount} ${criticalCount === 1 ? 'kritischer' : 'kritische'}`}
             {criticalCount > 0 && highCount > 0 && ' + '}
             {highCount > 0 && `${highCount} ${highCount === 1 ? 'hoher' : 'hohe'}`}
-            {' '}{criticalCount + highCount === 1 ? 'Befund' : 'Befunde'} — Monitoring empfohlen.
+            {' '}{criticalCount + highCount === 1 ? 'Befund' : 'Befunde'} — Nachverfolgung empfohlen.
           </span>
         )}
       </p>
@@ -547,7 +328,7 @@ function TrialCtaBlock({ report }: { report: Report }) {
           onClick={handleActivate}
           className="inline-flex items-center justify-center gap-2 border border-titanium-700 text-titanium-100 px-5 py-3 text-sm font-semibold hover:border-titanium-400 transition-colors"
         >
-          Monitoring für diese Domain starten
+          Scan ins Dashboard übernehmen
         </button>
       </div>
 
@@ -1034,19 +815,6 @@ function plainLanguageResult(critCount: number, medCount: number, lowCount: numb
   return `Es wurden keine kritischen DSGVO-Verstöße erkannt. ${findingsText} technische ${plural} empfohlen.`;
 }
 
-// ─── Form-Field-Helper ───────────────────────────────────────────────────
-
-function Field({ label, icon, required, children }: { label: string; icon?: React.ReactNode; required?: boolean; children: React.ReactNode }) {
-  return (
-    <label className="block">
-      <span className="text-xs font-bold text-titanium-400 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
-        {icon}{label}{required && <span className="text-red-400">*</span>}
-      </span>
-      {children}
-    </label>
-  );
-}
-
 // ─── DocumentGeneratorBlock ──────────────────────────────────────────────
 //
 // Nach dem Audit-Lauf können User pro Dokument-Typ ein HTML-Dokument
@@ -1085,14 +853,14 @@ function MonitoringActivationBlock({ report }: { report: Report }) {
             Continuous Compliance
           </div>
           <h3 className="font-display font-bold text-titanium-50 text-lg">
-            Monitoring aktivieren
+            Monitoring (Coming Soon)
           </h3>
         </div>
       </div>
       <p className="text-sm text-titanium-300 mb-5 leading-relaxed">
         Die technische Analyse hat mögliche DSGVO-, TDDDG- oder Tracking-Risiken identifiziert.
-        Mit kontinuierlichem Monitoring bleiben Änderungen an Tracking, externen Diensten und möglichen
-        Compliance-Risiken nachvollziehbar.
+        Kontinuierliches Monitoring, das Änderungen an Tracking, externen Diensten und möglichen
+        Compliance-Risiken nachvollziehbar hält, ist Coming Soon — bis dahin dokumentiert jeder erneute Scan den Stand.
       </p>
       <div className="flex flex-col sm:flex-row gap-2">
         <Link

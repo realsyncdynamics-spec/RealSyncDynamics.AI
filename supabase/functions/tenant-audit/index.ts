@@ -23,7 +23,7 @@
 //     gdpr_audit_id, score, severity }
 //
 // Storage:
-//   scan_runs   ← startScanRun(detector='gdpr-audit')
+//   scan_runs   ← startScanRun(detector='gdpr-audit')  (./pipeline.ts)
 //   findings    ← recordScanFinding pro Issue (category-Guess via id)
 //   gdpr_audits ← unverändert (durch internen gdpr-audit-Aufruf)
 //   runtime_events ← emitRuntimeEvent() an den Scan-Lifecycle-Übergängen
@@ -31,44 +31,17 @@
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { observeAal2 } from '../_shared/requireAal2.ts';
-import {
-  startScanRun,
-  recordScanFinding,
-  completeScanRun,
-  failScanRun,
-} from '../_shared/scan-pipeline.ts';
-import {
-  categoryFor,
-  confidenceFor,
-  evidenceLevelFor,
-} from '../_shared/audit-mapping.ts';
-import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
+import { handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
+import { runTenantAuditPipeline, type GdprAuditResponse } from './pipeline.ts';
 
 const URL_RE = /^https?:\/\/[^\s/$.?#].[^\s]*$/i;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-interface GdprAuditIssue {
-  id: string;
-  severity: 'critical' | 'high' | 'medium' | 'low' | 'info';
-  title: string;
-  detail: string;
-  paragraph_ref?: string;
-}
-
-interface GdprAuditResponse {
-  ok: boolean;
-  audit_id: string;
-  score: number;
-  severity: string;
-  domain: string;
-  issues: GdprAuditIssue[];
-  fetched_status: number | null;
-  fetched: boolean;
-  fetch_error: string | null;
-}
-
 // Issue → Finding-Mapping ist in _shared/audit-mapping.ts ausgelagert,
 // damit Vitest die pure Heuristik testen kann (kein Deno-Runtime).
+// Die Pipeline selbst (scan_run → findings → complete/fail) liegt in
+// ./pipeline.ts — dort ist auch der Fix für den scan_run_id-Destructuring-Bug
+// dokumentiert (test/edge/tenant-audit-pipeline.test.ts).
 
 Deno.serve(async (req) => {
   const preflight = handleOptions(req); if (preflight) return preflight;
@@ -128,125 +101,46 @@ Deno.serve(async (req) => {
   if (memErr) return jsonError(500, 'INTERNAL', memErr.message);
   if (!membership) return jsonError(403, 'FORBIDDEN', 'not a member of this tenant');
 
-  // 1. Pipeline starten — bevor der eigentliche Scan läuft, damit wir
-  //    den scan_run_id auch bei Detektor-Fehler reportable haben.
-  const started = await startScanRun(admin, {
-    tenant_id:  tenantId,
-    website_id: websiteId,
-    detector:   'gdpr-audit',
-    raw_payload: { url, triggered_by: userId },
-  });
-  if ('error' in started) return jsonError(500, 'PIPELINE_START_FAILED', started.error);
-  const { scan_run_id, correlation_id } = started;
-
-  await emitRuntimeEvent(admin, {
-    tenant_id: tenantId,
-    type: 'audit.scan_started',
-    correlation_id,
-    payload: { scan_run_id, url, website_id: websiteId, triggered_by: userId, detector: 'gdpr-audit' },
-  });
-
-  // 2. Internen gdpr-audit-Aufruf — Single-Source-of-Truth für die Regeln.
-  let auditResp: GdprAuditResponse;
-  try {
-    const r = await fetch(`${SUPABASE_URL}/functions/v1/gdpr-audit`, {
-      method:  'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        // gdpr-audit ist verify_jwt=false, braucht aber email — wir nutzen
-        // den user-email als technisches Identifikator (taucht im sales_lead
-        // auf, der ohnehin Lead-Tracking ist; OK für authenticated path).
-      },
-      body: JSON.stringify({
-        url,
-        email:  userResult.user.email ?? 'no-email@tenant-audit',
-        source: 'tenant-audit',
-      }),
-    });
-    if (!r.ok) {
-      const text = await r.text();
-      await failScanRun(admin, scan_run_id, 'GDPR_AUDIT_HTTP', `${r.status}: ${text.slice(0, 300)}`);
-      await emitRuntimeEvent(admin, {
-        tenant_id: tenantId, type: 'audit.scan_failed', severity: 'medium', correlation_id,
-        payload: { scan_run_id, error_code: 'GDPR_AUDIT_HTTP', status: r.status },
+  const result = await runTenantAuditPipeline({
+    // deno-lint-ignore no-explicit-any
+    admin: admin as any,
+    callGdprAudit: async () => {
+      const r = await fetch(`${SUPABASE_URL}/functions/v1/gdpr-audit`, {
+        method:  'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          // gdpr-audit ist verify_jwt=false, braucht aber email — wir nutzen
+          // den user-email als technisches Identifikator (taucht im sales_lead
+          // auf, der ohnehin Lead-Tracking ist; OK für authenticated path).
+        },
+        body: JSON.stringify({
+          url,
+          email:  userResult.user.email ?? 'no-email@tenant-audit',
+          source: 'tenant-audit',
+        }),
       });
-      return jsonError(502, 'DETECTOR_FAILED', `gdpr-audit returned ${r.status}`);
-    }
-    auditResp = await r.json() as GdprAuditResponse;
-  } catch (e) {
-    await failScanRun(admin, scan_run_id, 'GDPR_AUDIT_FETCH', String(e));
-    await emitRuntimeEvent(admin, {
-      tenant_id: tenantId, type: 'audit.scan_failed', severity: 'medium', correlation_id,
-      payload: { scan_run_id, error_code: 'GDPR_AUDIT_FETCH', message: (e as Error)?.message ?? String(e) },
-    });
-    return jsonError(502, 'DETECTOR_FAILED', `gdpr-audit fetch failed: ${(e as Error).message}`);
-  }
-
-  // 3. Issues → findings pumpen. Wir verschlucken einzelne Insert-Fehler
-  //    NICHT — wenn ein Insert scheitert, gehen wir auf failScanRun und
-  //    melden 500. Garantie: keine Halbdatenströme im Pipeline-Log.
-  for (const issue of auditResp.issues) {
-    const r = await recordScanFinding(admin, scan_run_id, correlation_id ?? '', {
-      tenant_id:   tenantId,
-      website_id:  websiteId,
-      category:    categoryFor(issue.id),
-      severity:    issue.severity,
-      detector:    'gdpr-audit',
-      summary:     issue.title.slice(0, 1000),
-      raw_payload: {
-        detail:        issue.detail,
-        paragraph_ref: issue.paragraph_ref ?? null,
-        original_id:   issue.id,
-        source_audit_id: auditResp.audit_id,
-      },
-      confidence_score:    confidenceFor(issue.id),
-      evidence_level:      evidenceLevelFor(issue.id),
-      verification_status: 'unverified',
-    });
-    if (!r.ok) {
-      await failScanRun(admin, scan_run_id, 'FINDING_INSERT', r.error ?? 'unknown');
-      await emitRuntimeEvent(admin, {
-        tenant_id: tenantId, type: 'audit.scan_failed', severity: 'medium', correlation_id,
-        payload: { scan_run_id, error_code: 'FINDING_INSERT', message: r.error ?? 'unknown' },
-      });
-      return jsonError(500, 'PIPELINE_INSERT_FAILED', r.error ?? 'unknown');
-    }
-  }
-
-  // 4. Pipeline abschließen — count + severity_max werden DB-seitig
-  //    aus den eben eingefügten findings aggregiert.
-  const completed = await completeScanRun(admin, scan_run_id);
-  if (!completed.ok) {
-    await emitRuntimeEvent(admin, {
-      tenant_id: tenantId, type: 'audit.scan_failed', severity: 'medium', correlation_id,
-      payload: { scan_run_id, error_code: 'PIPELINE_COMPLETE_FAILED', message: completed.error ?? 'unknown' },
-    });
-    return jsonError(500, 'PIPELINE_COMPLETE_FAILED', completed.error ?? 'unknown');
-  }
-
-  await emitRuntimeEvent(admin, {
-    tenant_id: tenantId,
-    type: 'audit.scan_completed',
-    severity: completed.severity_max === 'critical' || completed.severity_max === 'high' ? 'high' : 'info',
-    correlation_id,
-    payload: {
-      scan_run_id,
-      finding_count: completed.finding_count ?? auditResp.issues.length,
-      severity_max: completed.severity_max ?? null,
-      gdpr_audit_id: auditResp.audit_id,
-      score: auditResp.score,
+      if (!r.ok) return { httpStatus: r.status, text: await r.text() };
+      return await r.json() as GdprAuditResponse;
     },
-  });
+    emit: (args) => emitRuntimeEvent(admin, { tenant_id: tenantId, ...args }),
+  }, { tenantId, websiteId, url, userId });
+
+  if (!result.ok) {
+    const code = result.code === 'GDPR_AUDIT_HTTP' || result.code === 'GDPR_AUDIT_FETCH'
+      ? 'DETECTOR_FAILED'
+      : result.code === 'FINDING_INSERT' ? 'PIPELINE_INSERT_FAILED' : result.code;
+    return jsonError(result.status, code, result.message);
+  }
 
   return jsonResponse({
     ok:             true,
-    scan_run_id,
-    correlation_id,
-    finding_count:  completed.finding_count ?? auditResp.issues.length,
-    severity_max:   completed.severity_max ?? null,
-    gdpr_audit_id:  auditResp.audit_id,
-    score:          auditResp.score,
-    severity:       auditResp.severity,
+    scan_run_id:    result.scan_run_id,
+    correlation_id: result.correlation_id,
+    finding_count:  result.finding_count,
+    severity_max:   result.severity_max,
+    gdpr_audit_id:  result.gdpr_audit_id,
+    score:          result.score,
+    severity:       result.severity,
   });
 });
 

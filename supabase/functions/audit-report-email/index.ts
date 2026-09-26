@@ -10,8 +10,10 @@
 // Idempotent: skips send if email_sent_at already set.
 // Graceful: if RESEND_API_KEY missing, returns 200 with skipped=true.
 //
-// Auth: requires verify_jwt (caller must be authenticated). Frontend can call
-// directly after submission, OR a background cron sweeps un-sent audits.
+// Auth: verify_jwt=false (public fire-and-forget after free scan).
+// Must NEVER echo the recipient email in the HTTP response — UUID alone
+// must not leak PII. Residual risk: knowing the audit UUID can still trigger
+// a send (idempotent); harden with a one-time send token in a follow-up.
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { buildCorsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
@@ -95,7 +97,8 @@ Deno.serve(async (req) => {
   const sent = await resp.json();
   await supa.from('gdpr_audits').update({ email_sent_at: new Date().toISOString() }).eq('id', id);
 
-  return jsonResponse({ ok: true, sent_id: sent.id, to: audit.email }, 200, corsHeaders);
+  // P0 Privacy: do not return recipient email (to) in the public response.
+  return jsonResponse({ ok: true, sent_id: sent.id }, 200, corsHeaders);
 });
 
 async function getResendKey(supa: ReturnType<typeof createClient>): Promise<string | null> {

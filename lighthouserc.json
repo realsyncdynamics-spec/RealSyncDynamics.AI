@@ -1,0 +1,31 @@
+{
+  "ci": {
+    "collect": {
+      "url": [
+        "http://127.0.0.1:4173/",
+        "http://127.0.0.1:4173/pricing",
+        "http://127.0.0.1:4173/audit"
+      ],
+      "numberOfRuns": 2,
+      "settings": {
+        "preset": "desktop",
+        "chromeFlags": "--no-sandbox --disable-dev-shm-usage --disable-gpu --headless=new"
+      }
+    },
+    "assert": {
+      "assertions": {
+        "categories:performance": ["warn", { "minScore": 0.4 }],
+        "categories:accessibility": ["error", { "minScore": 0.8 }],
+        "categories:best-practices": ["warn", { "minScore": 0.7 }],
+        "categories:seo": ["error", { "minScore": 0.8 }],
+        "first-contentful-paint": ["warn", { "maxNumericValue": 4000 }],
+        "largest-contentful-paint": ["warn", { "maxNumericValue": 5500 }],
+        "cumulative-layout-shift": ["error", { "maxNumericValue": 0.25 }],
+        "errors-in-console": ["warn", { "minScore": 1 }]
+      }
+    },
+    "upload": {
+      "target": "temporary-public-storage"
+    }
+  }
+}

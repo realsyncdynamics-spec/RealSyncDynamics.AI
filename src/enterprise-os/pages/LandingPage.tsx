@@ -49,8 +49,8 @@ const MODULES = [
   },
   {
     icon: Activity,
-    title: 'Monitoring Timeline',
-    description: 'Kontinuierliche Überwachung von Cookies, Trackern, Drittanbietern und Zertifikaten in Echtzeit.',
+    title: 'Monitoring Timeline (Coming Soon)',
+    description: 'Geplant: dauerhafte Überwachung von Cookies, Trackern, Drittanbietern und Zertifikaten — heute als Scan-Historie.',
   },
   {
     icon: Cpu,
@@ -201,11 +201,11 @@ export function LandingPage() {
               <p className="mt-4 text-base leading-relaxed text-titanium-400">
                 Klassische Scanner liefern einen Schnappschuss und einen PDF-Report. RealSync Dynamics AI bleibt aktiv:
                 erkennt neue Risiken, sammelt Nachweise, klassifiziert KI-Systeme und hält Ihr Compliance-Team mit
-                automatisierten Workflows synchron — kontinuierlich, nicht einmalig.
+                automatisierten Workflows synchron. Dauerhafte Überwachung ist Coming Soon.
               </p>
               <ul className="mt-6 space-y-3">
                 {[
-                  'Kontinuierliches Monitoring statt einmaligem Scan',
+                  'Kontinuierliches Monitoring statt einmaligem Scan (Coming Soon)',
                   'C2PA-signierte Evidence statt unbeglaubigter Screenshots',
                   'EU AI Act Risikoklassifizierung pro KI-System',
                   'Autonome Agenten statt manueller Checklisten',
@@ -231,7 +231,7 @@ export function LandingPage() {
               <Card className="border-security-500/40 bg-security-500/5 p-5">
                 <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-security-400">Governance OS</p>
                 <ul className="mt-4 space-y-2.5 text-sm text-titanium-200">
-                  <li>Kontinuierliches Monitoring</li>
+                  <li>Kontinuierliches Monitoring (Coming Soon)</li>
                   <li>Lebendiges Evidence Vault</li>
                   <li>EU AI Act Use Case Registry</li>
                   <li>Autonome Compliance-Agenten</li>

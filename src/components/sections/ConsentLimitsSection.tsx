@@ -38,9 +38,9 @@ const LIMITS: LimitItem[] = [
   {
     icon: Activity,
     scope: 'Compliance-Infrastruktur',
-    label: 'Continuous Monitoring',
+    label: 'Continuous Monitoring (Coming Soon)',
     detail:
-      'Compliance ist kein einmaliger Zustand. Websites ändern sich, Marketing fügt Tags hinzu, Vendors rollen Updates aus. Tägliches Monitoring + Drift-Alerts statt einmaliger Banner-Setup.',
+      'Compliance ist kein einmaliger Zustand. Websites ändern sich, Marketing fügt Tags hinzu, Vendors rollen Updates aus. Geplant: tägliches Monitoring + Drift-Alerts statt einmaliger Banner-Setup — dauerhafte Überwachung ist Coming Soon.',
   },
   {
     icon: FileText,

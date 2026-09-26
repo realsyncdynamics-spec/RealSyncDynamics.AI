@@ -1,52 +1,81 @@
 /**
- * SSOT Hero-Copy — Replit visual reference (Dark/Gold Europe-network).
- *
- * H1: „AI Compliance Operations OS für Europa.“
- * Serif/gold emphasis exclusively on „Operations OS“.
+ * SSOT Hero-Copy — Dominik Go Homepage 2026-09-24 (Positionierungsbrief).
+ * Control-/Evidence-Layer für KI (nicht Website-Builder / CodeRabbit).
  */
 
 export type HeroHeadlineSegment = {
   text: string;
-  /** true → amber/gold serif emphasis (Operations OS only). */
+  /** true → Goldakzent. */
   accent?: boolean;
 };
 
 export const HERO_HEADLINE: readonly (readonly HeroHeadlineSegment[])[] = [
-  [{ text: 'AI Compliance' }],
-  [{ text: 'Operations OS', accent: true }],
-  [{ text: 'für Europa.' }],
+  [{ text: 'Machen Sie KI-Nutzung' }],
+  [{ text: 'kontrollierbar, nachweisbar' }],
+  [{ text: 'und' }, { text: 'auditbereit.', accent: true }],
 ];
 
+/** Brand Direction — production landing kicker. */
+export const GOVERNANCE_AI_HERO_KICKER = 'EU CONTROL & EVIDENCE LAYER FOR AI' as const;
+
+export const GOVERNANCE_AI_HERO_HEADLINE: readonly (readonly HeroHeadlineSegment[])[] = HERO_HEADLINE;
+
+/**
+ * Substring der sichtbaren H1 auf `/` (Handoff v2: „AI Compliance / Operations OS for Europe").
+ * Genutzt von tests/e2e/public-routes.spec.ts (FE-001).
+ */
+export const GOVERNANCE_AI_HERO_TEST_SUBSTRING = 'Operations OS' as const;
+
+export const GOVERNANCE_AI_HERO_SUBLINE =
+  'RealSyncDynamics.AI erkennt KI- und Compliance-Risiken, setzt Richtlinien durch und erzeugt kontinuierliche Evidenz für EU AI Act und DSGVO.' as const;
+
+export const GOVERNANCE_AI_HERO_MICRO =
+  'SCAN → BUILD → AUTOMATE → GOVERN' as const;
+
+export const BRAND_VALUE_PROPOSITION =
+  'RealSyncDynamics.AI ist die europäische Control- und Evidence-Layer für KI: Schatten-KI sichtbar machen, Verantwortlichkeiten klären und Audit-Evidenz laufend erzeugen — für EU AI Act und DSGVO.' as const;
+
+export const BRAND_PRODUCT_DESCRIPTION =
+  'RealSyncDynamics.AI erkennt KI- und Compliance-Risiken, setzt Richtlinien durch und erzeugt kontinuierliche Evidenz für EU AI Act und DSGVO. Scan Reality, Build Controls, Automate Evidence, Govern Continuously.' as const;
+
+/**
+ * Infrastrukturzeilen unter dem Operating Loop (belegte Bestandteile).
+ */
+export const HERO_INFRA_LINES: readonly (readonly string[])[] = [
+  ['EU-Hosting', 'DSGVO', 'EU AI Act'],
+  ['Audit Logs', 'Governance-by-Design', 'Evidence Vault'],
+];
+
+export const HERO_PLAN_ANCHOR_FREE = 'Governance-Scan' as const;
+
 export const HERO_HEADLINE_LINES: readonly string[] = HERO_HEADLINE.map((segments) =>
-  segments.map((s) => s.text).join(''),
+  segments.map((s) => s.text).join(' '),
 );
 
-export const HERO_HEADLINE_TEST_SUBSTRING = 'AI Compliance';
+export const HERO_HEADLINE_TEST_SUBSTRING = 'kontrollierbar';
 
 export const HERO_KICKER = {
   index: '01',
-  claim: 'GOVERNANCE-INFRASTRUKTUR FÜR EUROPA',
+  claim: 'CONTROL & EVIDENCE FÜR KI IN EUROPA',
   region: 'EU',
 } as const;
 
 export const HERO_EYEBROW = `→ ${HERO_KICKER.claim}` as const;
 
-/** Operating loop under the H1 — German Discover chain (Replit). */
-export const HERO_OPERATING_LOOP =
-  'Entdecken. Klassifizieren. Durchsetzen. Beweisen.' as const;
+export const HERO_OPERATING_LOOP = 'SCAN → BUILD → AUTOMATE → GOVERN' as const;
 
-export const HERO_EN_KICKER = 'AI Compliance Operations OS für Europa.' as const;
+export const HERO_EN_KICKER = 'Control and Evidence Layer for AI in Europe.' as const;
 
 export const SCAN_FUNNEL_MESSAGE =
-  'In Minuten scannen. In Stunden strukturieren. Dauerhaft kontrollieren.' as const;
+  'Scannen. Kontrollen bauen. Evidenz automatisieren. Dauerhaft steuern.' as const;
 
 export const CONTINUOUS_COMPLIANCE_NARRATIVE =
-  'RealSyncDynamics verbindet Ihre Systeme, Policies und Nachweise in einer lebenden Operations-Schicht.' as const;
+  'RealSyncDynamics verbindet Signale, Risiken, Policies und Audit-Evidence in einer laufenden Governance-Schicht.' as const;
 
 export const HERO_SUBLINE =
-  'Die laufende Governance-Schicht für regulierte KI-Systeme — EU-native by design.' as const;
+  'RealSyncDynamics.AI erkennt KI- und Compliance-Risiken, setzt Richtlinien durch und erzeugt kontinuierliche Evidenz für EU AI Act und DSGVO.' as const;
 
-export const HERO_VALUE_SUBLINE = 'Vermeide EU AI Act-Bußgelder.' as const;
+export const HERO_VALUE_SUBLINE = 'Schatten-KI sichtbar. Evidenz auditbereit.' as const;
 
 export const HERO_SCAN_BADGE = 'Kostenlos' as const;
 
@@ -55,34 +84,109 @@ export const HERO_SOCIAL_PROOF = 'Gebaut für regulierte KI in der EU.' as const
 export const HERO_SOCIAL_FRAMEWORKS = ['DSGVO', 'EU AI Act', 'ISO 42001'] as const;
 
 export const HERO_OUTCOMES: readonly string[] = [
-  'AI Inventory ohne Excel und Schattennutzung',
-  'Policies durchsetzen statt nur dokumentieren',
-  'Audit-Evidence laufend erzeugen, nicht kurz vor der Prüfung sammeln',
+  'Schatten-KI und fehlendes Inventar schließen',
+  'Verantwortlichkeiten und Freigaben klar zuweisen',
+  'Audit-Evidence laufend erzeugen statt manuell sammeln',
 ] as const;
 
 export const HERO_EU_LINE =
-  'Gebaut für EU AI Act, DSGVO und europäische Nachweispflichten.' as const;
+  'EU-Hosting, DSGVO, EU AI Act, Audit Logs, Governance-by-Design.' as const;
 
-/** Trust row — Replit SSOT (labels only). */
 export const HERO_PROOF_CHIPS = [
   'EU AI ACT READY',
-  'ISO 42001 ALIGNED',
   'DSGVO FIRST',
   'AUDIT TRAIL NATIVE',
+  'GOVERNANCE BY DESIGN',
 ] as const;
 
-/** Header primary CTA. */
-export const HERO_SCAN_CTA_LABEL = 'Free Audit starten' as const;
-/** Hero primary CTA (long form). */
-export const HERO_SCAN_CTA_LONG = 'Kostenlosen Audit starten' as const;
-/** Hero secondary CTA. */
-export const HERO_DASHBOARD_CTA_LABEL = 'Live Evidence ansehen' as const;
+/** Header + final CTA primary. */
+export const HERO_SCAN_CTA_LABEL = 'Governance-Scan starten' as const;
+export const HERO_SCAN_CTA_LONG = 'Governance-Scan starten' as const;
+/** Hero secondary CTA (Handoff v2, Ziel `/app/dashboard`). */
+export const HERO_DASHBOARD_CTA_LABEL = 'Live Dashboard ansehen' as const;
+/** Anker-CTA auf den Beispiel-Audit-Trail (`#audit-trail`, Titan-Referenzhero). */
+export const HERO_AUDIT_TRAIL_CTA_LABEL = 'Beispiel-Audit-Trail ansehen' as const;
 
 export const HERO_SCAN_PROMISE_LINE =
-  'Finde deine Compliance-Risiken — kostenlos analysieren' as const;
+  'Governance-Scan starten — Risiken und Evidence-Preview' as const;
 
 export const HERO_SCAN_CTA_PROMISE =
-  'URL eingeben — Top-3-Risiken und Evidence-Preview. Danach Activation, nicht nur der Score.' as const;
+  'URL oder Kontext eingeben — Risiken, Policy-Hinweise und Evidence-Preview. Danach Activation, nicht nur der Score.' as const;
+
+/** Homepage brief — Problem pains. */
+export const HOMEPAGE_PROBLEM_PAINS = [
+  {
+    title: 'Schatten-KI',
+    body: 'Tools und Modelle laufen außerhalb bekannter Inventare — ohne Freigabe und ohne Nachweis.',
+  },
+  {
+    title: 'Fehlendes Inventar',
+    body: 'Niemand hat die vollständige Liste der KI-Use-Cases, Websites und Datenflüsse.',
+  },
+  {
+    title: 'Unklare Verantwortlichkeit',
+    body: 'Rollen, Freigaben und Richtlinien sind verteilt oder fehlen — bis zur Prüfung.',
+  },
+  {
+    title: 'Manuelle Evidenz',
+    body: 'Nachweise werden kurz vor dem Audit zusammengesucht statt kontinuierlich erzeugt.',
+  },
+] as const;
+
+/** Four modules — fixed order. */
+export const HOMEPAGE_MODULES = [
+  {
+    id: 'scan',
+    title: 'Scan Reality',
+    body: 'KI-Use-Cases, Websites, Datenflüsse und Governance-Lücken sichtbar machen.',
+  },
+  {
+    id: 'build',
+    title: 'Build Controls',
+    body: 'Risikoklassifikation, Verantwortlichkeiten, Richtlinien und Freigaben aufsetzen.',
+  },
+  {
+    id: 'automate',
+    title: 'Automate Evidence',
+    body: 'Prüfungen, Monitoring und Evidenzsammlung automatisieren.',
+  },
+  {
+    id: 'govern',
+    title: 'Govern Continuously',
+    body: 'AI Inventory, Policy Enforcement, Audit Trail und Telemetrie im laufenden Betrieb.',
+  },
+] as const;
+
+export const HOMEPAGE_EVIDENCE_FLOW = [
+  'Signal',
+  'Risiko',
+  'Policy',
+  'Entscheidung',
+  'Audit Evidence',
+] as const;
+
+export const HOMEPAGE_EU_TRUST = [
+  'EU-Hosting',
+  'DSGVO',
+  'EU AI Act',
+  'Audit Logs',
+  'Governance-by-Design',
+] as const;
+
+export const HOMEPAGE_AUDIENCES = [
+  {
+    title: 'Compliance & Legal',
+    body: 'Nachweispflichten erfüllen, ohne Excel-Chaos kurz vor dem Audit.',
+  },
+  {
+    title: 'Security & Risk',
+    body: 'Schatten-KI und Governance-Lücken früh erkennen und steuern.',
+  },
+  {
+    title: 'Produkt & Engineering',
+    body: 'Richtlinien und Freigaben in den Betrieb legen — nicht nur in Confluence.',
+  },
+] as const;
 
 if (!HERO_HEADLINE_LINES.some((line) => line.includes(HERO_HEADLINE_TEST_SUBSTRING))) {
   throw new Error(

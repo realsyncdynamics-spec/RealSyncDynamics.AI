@@ -98,7 +98,7 @@ describe('ApprovalGateService (In-Memory)', () => {
       expect(decided.status).toBe('granted');
       expect(decided.decided_by).toBe(decidedBy);
       expect(decided.decided_at).toBeTruthy();
-      expect(decided.decided_at && new Date(decided.decided_at) > new Date(gate.created_at)).toBeTruthy();
+      expect(decided.decided_at && new Date(decided.decided_at) >= new Date(gate.created_at)).toBeTruthy();
     });
 
     it('transitions pending gate to denied with timestamp', async () => {

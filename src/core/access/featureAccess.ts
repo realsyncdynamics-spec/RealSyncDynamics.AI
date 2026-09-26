@@ -105,6 +105,7 @@ export const APP_FEATURE_ACCESS: readonly FeatureRequirement[] = [
 
   // ── Govern ──────────────────────────────────────────────────────────────
   { route: '/app/monitoring', label: 'Monitoring', allOf: ['monitoring.monthly'] },
+  { route: '/app/ambient-ai', label: 'Ambient AI Governance', allOf: ['monitoring.monthly'] },
   { route: '/app/security-signals', label: 'Security Signals', allOf: ['monitoring.monthly'] },
   { route: '/app/risks', label: 'Risikoregister', allOf: ['governance.risk_register'] },
   { route: '/app/risk-inventory', label: 'Risikoinventar', allOf: ['governance.risk_register'] },

@@ -31,8 +31,8 @@ const WHAT_IT_DOES = [
   },
   {
     icon: Activity,
-    title: 'Überwachen',
-    text: 'Prüft kontinuierlich auf neue Risiken (Drift) und schreibt jeden Nachweis in die Evidence-Chain.',
+    title: 'Überwachen (Coming Soon)',
+    text: 'Soll neue Risiken (Drift) erkennen und jeden Nachweis in die Evidence-Chain schreiben — dauerhafte Überwachung ist Coming Soon, kein laufender Dauerbetrieb.',
   },
 ];
 

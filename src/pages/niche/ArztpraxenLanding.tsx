@@ -58,7 +58,7 @@ const CONFIG: NicheConfig = {
     },
     {
       q: 'Was kostet das Monitoring nach dem kostenlosen Erstaudit?',
-      a: 'Der Erstaudit ist kostenlos. Kontinuierliches Monitoring mit wöchentlichen Re-Audits und Sofort-Alert bei Drift startet im Monitoring-Plan. Genaue Preise sobald die Stripe-Anbindung live ist — auf der Warteliste werden Sie als Erste informiert.',
+      a: 'Der Erstaudit ist kostenlos. Kontinuierliches Monitoring mit wöchentlichen Re-Audits und Alert bei Drift ist Coming Soon. Genaue Preise sobald die Stripe-Anbindung live ist — auf der Warteliste werden Sie als Erste informiert.',
     },
   ],
 };

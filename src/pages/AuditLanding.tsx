@@ -14,6 +14,7 @@ import { postEdgeFunction } from '../lib/edgeFunction';
 import { getSupabaseUrl } from '../lib/supabaseUrl';
 import { LegalDisclaimer } from '../components/LegalDisclaimer';
 import { AuditStepper, type AuditStepperInput } from '../components/audit/AuditStepper';
+import { readAuditPrefill } from '../features/audit/auditPrefill';
 import { HandoffTopBar } from '../components/handoff/HandoffTopBar';
 import { AuditCopilotPanel } from '../components/audit/AuditCopilotPanel';
 import {
@@ -90,14 +91,13 @@ export function AuditLanding() {
       'Technische Vorprüfung für Websites: Consent, Tracking, Drittanbieter-Skripte und mögliche DSGVO-/TDDDG-Risiken analysieren.',
     url: 'https://RealSyncDynamicsAI.de/audit',
   });
-  // Vorbelegung aus `?domain=`. Die Startseite schickt die dort getippte
-  // Adresse mit; ohne diese Zeile müsste der Besucher sie ein zweites Mal
-  // eingeben, was den Trichter genau an seiner engsten Stelle bricht.
-  // Nur als Startwert — danach gehört das Feld dem Besucher.
-  const [url] = useState(() => {
-    const vorgabe = new URLSearchParams(window.location.search).get('domain');
-    return vorgabe ? vorgabe.trim().slice(0, 255) : '';
-  });
+  // Vorbelegung aus `?domain=` (kanonisch; `target`/`url`/`q` als Altlast,
+  // siehe `features/audit/auditPrefill.ts`). Startseite und die Suche oben in
+  // der App-Shell schicken die dort getippte Adresse mit; ohne diese Zeile
+  // müsste der Besucher sie ein zweites Mal eingeben, was den Trichter genau
+  // an seiner engsten Stelle bricht. Nur als Startwert — danach gehört das
+  // Feld dem Besucher.
+  const [url] = useState(() => readAuditPrefill(window.location.search));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [report, setReport] = useState<Report | null>(null);
@@ -282,20 +282,20 @@ function TrialCtaBlock({ report }: { report: Report }) {
             14 Tage kostenlos · Starter Trial
           </p>
           <h2 className="font-display font-bold text-titanium-50 text-xl sm:text-2xl leading-tight">
-            Diesen Befund 14 Tage kostenlos überwachen
+            Diesen Befund 14 Tage kostenlos im Dashboard bearbeiten
           </h2>
         </div>
       </div>
 
       <p className="text-sm text-titanium-300 leading-relaxed mb-5 max-w-2xl">
-        RealSyncDynamicsAI übernimmt diesen Scan in Ihr Governance-Dashboard und prüft automatisch,
-        ob neue DSGVO-, Security- oder KI-Risiken entstehen.
+        RealSyncDynamicsAI übernimmt diesen Scan in Ihr Governance-Dashboard. Die automatische Prüfung
+        auf neue DSGVO-, Security- oder KI-Risiken (dauerhaftes Monitoring) ist Coming Soon.
         {(criticalCount > 0 || highCount > 0) && (
           <span className="block mt-2 text-amber-300 font-semibold">
             {criticalCount > 0 && `${criticalCount} ${criticalCount === 1 ? 'kritischer' : 'kritische'}`}
             {criticalCount > 0 && highCount > 0 && ' + '}
             {highCount > 0 && `${highCount} ${highCount === 1 ? 'hoher' : 'hohe'}`}
-            {' '}{criticalCount + highCount === 1 ? 'Befund' : 'Befunde'} — Monitoring empfohlen.
+            {' '}{criticalCount + highCount === 1 ? 'Befund' : 'Befunde'} — Nachverfolgung empfohlen.
           </span>
         )}
       </p>
@@ -328,7 +328,7 @@ function TrialCtaBlock({ report }: { report: Report }) {
           onClick={handleActivate}
           className="inline-flex items-center justify-center gap-2 border border-titanium-700 text-titanium-100 px-5 py-3 text-sm font-semibold hover:border-titanium-400 transition-colors"
         >
-          Monitoring für diese Domain starten
+          Scan ins Dashboard übernehmen
         </button>
       </div>
 
@@ -628,6 +628,7 @@ function ReportView({ report, onRetry }: { report: Report; onRetry: () => void }
       <AuditCopilotPanel
         issue={explainIssue ?? { id: '', severity: 'info', title: '', detail: '' }}
         domain={report.domain}
+        auditId={report.audit_id}
         open={!!explainIssue}
         onClose={() => setExplainIssue(null)}
       />
@@ -853,14 +854,14 @@ function MonitoringActivationBlock({ report }: { report: Report }) {
             Continuous Compliance
           </div>
           <h3 className="font-display font-bold text-titanium-50 text-lg">
-            Monitoring aktivieren
+            Monitoring (Coming Soon)
           </h3>
         </div>
       </div>
       <p className="text-sm text-titanium-300 mb-5 leading-relaxed">
         Die technische Analyse hat mögliche DSGVO-, TDDDG- oder Tracking-Risiken identifiziert.
-        Mit kontinuierlichem Monitoring bleiben Änderungen an Tracking, externen Diensten und möglichen
-        Compliance-Risiken nachvollziehbar.
+        Kontinuierliches Monitoring, das Änderungen an Tracking, externen Diensten und möglichen
+        Compliance-Risiken nachvollziehbar hält, ist Coming Soon — bis dahin dokumentiert jeder erneute Scan den Stand.
       </p>
       <div className="flex flex-col sm:flex-row gap-2">
         <Link

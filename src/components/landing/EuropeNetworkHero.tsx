@@ -45,7 +45,7 @@ function StaticEarth() {
         width={1376}
         height={768}
         className="absolute inset-0 h-full w-full scale-[1.12] object-cover object-[82%_44%]"
-        style={{ opacity: MODE_SHOT_OPACITY, filter: MODE_SHOT_FILTER }}
+        style={{ opacity: `calc(${MODE_SHOT_OPACITY} * 0.68)`, filter: MODE_SHOT_FILTER }}
         decoding="async"
       />
     </picture>
@@ -67,7 +67,7 @@ export function EuropeNetworkHero() {
       <StaticEarth />
 
       {use3d && (
-        <div className="absolute inset-y-[-8%] right-[-6%] w-[68%] min-w-[420px]">
+        <div className="absolute inset-y-[-8%] right-[-4%] w-[60%] min-w-[420px] opacity-60">
           <Suspense fallback={null}>
             <HeroEarthScene reducedMotion={reducedMotion} />
           </Suspense>
@@ -78,7 +78,7 @@ export function EuropeNetworkHero() {
         className="absolute inset-0"
         style={{
           background: [
-            `linear-gradient(102deg, ${modeVeil(100)} 0%, ${modeVeil(100)} 34%, ${modeVeil(92)} 46%, ${modeVeil(55)} 58%, transparent 74%)`,
+            `linear-gradient(102deg, ${modeVeil(100)} 0%, ${modeVeil(100)} 38%, ${modeVeil(94)} 50%, ${modeVeil(62)} 62%, transparent 78%)`,
             `linear-gradient(180deg, ${modeVeil(70)} 0%, transparent 22%, transparent 68%, ${modeVeil(96)} 100%)`,
             `radial-gradient(42% 70% at 18% -8%, rgba(255,255,255,0.11) 0%, transparent 62%)`,
             `radial-gradient(48% 42% at 78% 46%, ${modeAccent(14)} 0%, transparent 64%)`,

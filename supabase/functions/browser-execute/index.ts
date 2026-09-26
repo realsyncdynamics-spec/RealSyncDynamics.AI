@@ -43,7 +43,8 @@ function validateActions(actions: BrowserAction[]): string | null {
 }
 
 async function createApproval(
-  admin: ReturnType<typeof import('jsr:@supabase/supabase-js@2').createClient>,
+  // deno-lint-ignore no-explicit-any
+  admin: any,
   tenantId: string,
   actorEmail: string | undefined,
   sessionId: string,

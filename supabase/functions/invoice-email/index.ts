@@ -229,6 +229,10 @@ function renderInvoiceEmail(tenantName: string, inv: InvoiceRow): string {
           </tr>
         </table>
 
+        <p style="margin:0 0 16px 0;font-size:13px;line-height:1.6;color:#52525b;">
+          Gemäß § 19 UStG wird keine Umsatzsteuer berechnet.
+        </p>
+
         <p style="margin:24px 0 0 0;font-size:14px;line-height:1.6;color:#52525b;">
           Alle Rechnungen und Zahlungsinformationen finden Sie jederzeit im <strong>Abrechnung-Dashboard</strong> unter Ihrem Workspace.
         </p>

@@ -36,6 +36,9 @@ import { normalizePlanKey, planByKey } from '../_shared/pricing.generated.ts';
 // werden dürfen (Monats- und Jahresvariante).
 const ENTERPRISE_SELF_SERVICE_BLOCKED = new Set(['enterprise', 'enterprise_yearly']);
 
+// Pflichthinweis für Rechnungen eines Kleinunternehmers (§ 19 UStG).
+const KLEINUNTERNEHMER_HINWEIS = 'Gemäß § 19 UStG wird keine Umsatzsteuer berechnet.';
+
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -214,7 +217,7 @@ Deno.serve(async (req) => {
   }
 
   // Stripe-API-Aufrufe in try/catch: ohne Fang würde eine Exception (z.B.
-  // ungültiger STRIPE_SECRET_KEY oder fehlende Stripe-Tax-Adresse) Deno.serve
+  // ungültiger STRIPE_SECRET_KEY oder ein von Stripe abgelehnter Parameter) Deno.serve
   // mit einer Response ohne CORS-/JSON-Header verlassen — supabase-js meldet
   // das dann nur als generisches "Failed to send a request to the Edge
   // Function" ohne nutzbare Fehlermeldung im Frontend.
@@ -251,17 +254,34 @@ Deno.serve(async (req) => {
             },
             // Einmalkäufe erzeugen ohne dies keine Rechnung; für einen
             // B2B-Kauf muss ein Belegdokument existieren.
-            invoice_creation: { enabled: true },
+            // Kleinunternehmer nach § 19 UStG: Die Rechnung muss den Hinweis
+            // auf die Steuerbefreiung tragen. Abo-Rechnungen entstehen nicht
+            // hier, sondern aus der Subscription — für sie gilt die
+            // Standard-Fußzeile in den Stripe-Rechnungseinstellungen.
+            invoice_creation: {
+              enabled: true,
+              invoice_data: { footer: KLEINUNTERNEHMER_HINWEIS },
+            },
           }
         : { subscription_data: subscriptionData }),
       success_url: successUrl,
       cancel_url: cancelUrl,
       allow_promotion_codes: true,
-      // Stripe Tax: Regelbesteuerung aktiv. Stripe berechnet die USt anhand
-      // der Kundenadresse und der hinterlegten Tax-Registrierungen.
-      automatic_tax: { enabled: true },
+      // Kleinunternehmer nach § 19 UStG (bestätigt am 25.09.2026): Es wird
+      // keine Umsatzsteuer berechnet oder ausgewiesen. Deshalb bewusst KEIN
+      // `automatic_tax` (Stripe Tax) und KEIN `tax_id_collection` — ohne
+      // Steuerberechnung gibt es weder Reverse Charge noch eine Verwendung
+      // für die USt-IdNr. des Kunden. Der Kunde zahlt genau `unit_amount`
+      // des Preises aus public.products.
+      //
+      // Die Rechnungsadresse bleibt Pflicht: Name und Anschrift des
+      // Leistungsempfängers gehören auf die Rechnung (§ 14 Abs. 4 UStG;
+      // bei Kleinbetragsrechnungen bis 250 € nach § 33 UStDV nicht
+      // zwingend, buchhalterisch aber sinnvoll). `customer_update` schreibt
+      // Name und Adresse auf den Stripe-Customer, damit auch spätere
+      // Abo-Rechnungen sie tragen; Stripe erlaubt den Parameter, sobald
+      // `customer` gesetzt ist — unabhängig von `automatic_tax`.
       billing_address_collection: 'required',
-      tax_id_collection: { enabled: true },
       customer_update: { address: 'auto', name: 'auto' },
     });
 

@@ -1,3 +1,5 @@
+import { daysSince, formatAgeDe, SCAN_STALE_DAYS, WEBSITE_AUDIT_CTA_LABEL } from './dashboardSignals';
+
 /**
  * Bootstrap „Nächste Schritte“ from real workspace facts — no fake KPIs.
  *
@@ -19,6 +21,12 @@ export interface WorkspaceBootstrapInput {
   scanCount: number | null;
   /** Activation record status; `null` = unknown; `'none'` = no row. */
   activationStatus: ActivationBootstrapStatus | null;
+  /**
+   * created_at des jüngsten scan_runs-Eintrags. Nur scan_runs zählt —
+   * Scanner-/Seed-Events in governance_events sind kein Audit-Lauf.
+   */
+  lastScanRunAt?: string | null;
+  now?: number;
 }
 
 export interface BootstrapStep {
@@ -57,13 +65,27 @@ export function computeWorkspaceBootstrapSteps(
       level: 'high',
     });
   } else if (input.websiteCount !== null && input.scanCount === 0) {
+    // Ehrlich benannt: tenant-audit prüft HTML/Header, kein DNS/DMARC.
     steps.push({
       id: 'start-audit',
-      title: 'Audit starten',
-      detail: 'Domain ist hinterlegt — ersten Governance-Scan aus Websites auslösen.',
+      title: WEBSITE_AUDIT_CTA_LABEL,
+      detail: 'Domain ist hinterlegt — der Audit prüft HTML und Header der Website (keine DNS-/DMARC-Prüfung).',
       href: '/app/websites',
       level: 'high',
     });
+  } else if (input.websiteCount !== null && input.websiteCount > 0 && (input.scanCount ?? 0) > 0) {
+    // Nur mit echten scan_runs-Zeilen (derzeit plattformweit leer, bis der
+    // tenant-audit-Fix live ist): Hinweis auf erneuten Audit mit Alter.
+    const age = daysSince(input.lastScanRunAt ?? null, input.now);
+    if (age !== null && age >= SCAN_STALE_DAYS) {
+      steps.push({
+        id: 'rescan-audit',
+        title: `Website-Audit erneut starten (letzter Audit ${formatAgeDe(age)})`,
+        detail: `Der letzte Website-Audit ist älter als ${SCAN_STALE_DAYS} Tage — HTML und Header erneut prüfen.`,
+        href: '/app/websites',
+        level: 'medium',
+      });
+    }
   }
 
   if (

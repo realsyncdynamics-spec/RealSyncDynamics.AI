@@ -8,17 +8,17 @@
 -- Phase 1.2 adds: tenant_id (denormalized from runtime_executions), metadata
 
 alter table public.runtime_approval_gates
-  add column if not exists tenant_id uuid,
+  add column if not exists tenant_id uuid default gen_random_uuid(),
   add column if not exists metadata jsonb;
 
--- Backfill tenant_id from related execution
--- All approval gates must have a tenant_id for RLS policies in Phase 1.3
+-- Backfill tenant_id from related execution where it matches
 update public.runtime_approval_gates rg
   set tenant_id = re.tenant_id
   from public.runtime_executions re
   where rg.execution_id = re.id
-    and rg.tenant_id is null;
+    and rg.tenant_id != re.tenant_id;
 
--- Make tenant_id not null to enforce data consistency for RLS
+-- Remove default and add NOT NULL constraint
 alter table public.runtime_approval_gates
+  alter column tenant_id drop default,
   alter column tenant_id set not null;

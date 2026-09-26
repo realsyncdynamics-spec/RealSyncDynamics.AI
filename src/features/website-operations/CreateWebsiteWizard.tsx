@@ -6,6 +6,7 @@
 
 import { useState } from 'react';
 import { useSupabaseAuth } from '../supabase/SupabaseAuthContext';
+import { getSupabase } from '../../lib/supabase';
 import { useTenant } from '../../core/access/TenantProvider';
 import { Card } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
@@ -56,47 +57,43 @@ export function CreateWebsiteWizard({ onSuccess, onClose }: CreateWebsiteWizardP
 
     setIsLoading(true);
     try {
-      const response = await fetch('/functions/v1/website-operations-agent', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${user?.id}`,
-        },
-        body: JSON.stringify({
-          tenant_id: activeTenantId,
-          industry: formData.industry,
-          company_name: formData.company_name,
-          description: formData.description,
-          services: formData.services,
-          contact_email: formData.contact_email,
-          contact_phone: formData.contact_phone,
-          style_preferences: {
-            layout: formData.style_layout,
+      // Kanonischer Aufrufweg: `functions.invoke` haengt das Session-JWT an und
+      // trifft den Supabase-Host. Der fruehere Aufruf schickte die User-ID als
+      // Bearer-Token an einen relativen Pfad — kein Token und nicht einmal der
+      // richtige Host; die Function laesst das seit der Tenant-Pruefung nicht
+      // mehr durch.
+      const sb = getSupabase();
+      const { data: result, error: invokeError } = await sb.functions.invoke(
+        'website-operations-agent',
+        {
+          body: {
+            tenant_id: activeTenantId,
+            industry: formData.industry,
+            company_name: formData.company_name,
+            description: formData.description,
+            services: formData.services,
+            contact_email: formData.contact_email,
+            contact_phone: formData.contact_phone,
+            style_preferences: {
+              layout: formData.style_layout,
+            },
           },
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Generation failed: ${response.status}`);
-      }
-
-      const result = await response.json();
-
-      // Create project entry
-      const projectResponse = await fetch('/api/website-projects', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${user?.id}`,
         },
-        body: JSON.stringify(result),
-      });
+      );
 
-      if (!projectResponse.ok) {
-        throw new Error('Failed to create project');
+      if (invokeError) {
+        throw new Error(invokeError.message || 'Generation failed');
       }
 
-      const project = await projectResponse.json();
+      // Die Function legt die Zeile an und gibt den persistierten Stand
+      // zurueck. Der fruehere zweite Aufruf auf `/api/website-projects` ging
+      // an einen Endpunkt, den es im Repo nicht gibt — der Erfolg der
+      // Oberflaeche haette also nichts mit dem Gespeicherten zu tun gehabt.
+      const project = (result as { project?: WebsiteProject | null } | null)?.project;
+      if (!project) {
+        throw new Error('Generation returned no persisted project');
+      }
+
       onSuccess(project);
     } catch (err) {
       alert(`Error: ${err instanceof Error ? err.message : 'Unknown error'}`);

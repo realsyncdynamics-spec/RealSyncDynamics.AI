@@ -1845,7 +1845,11 @@ html, body {
    die Handoff-Tokens (`--color-rs-*`) und die ältere Obsidian/Titanium/
    Silver/Gold-Skala. App und Dashboard bleiben dunkel. Der Tokenname
    `cyan` bleibt aus Kompatibilität — er trägt hier Waldgrün. */
-.rs-paper {
+/* Das Cookie-Banner hängt an der App-Wurzel, außerhalb der Seiten-Scopes:
+   Über `:has` übernimmt es die Palette nur, solange eine Papier-Seite
+   gerendert ist — in App und Dashboard bleibt es dunkel. */
+.rs-paper,
+body:has(.rs-paper) .cookie-consent {
   color-scheme: light;
   --color-rs-hero:          #EFEAE1;
   --color-rs-bg-0:          #EFEAE1;
@@ -1934,9 +1938,25 @@ html, body {
   --color-emerald-950: #E4ECE6;
   --color-amber-300: #8A5A0B;
   --color-amber-400: #8A5A0B;
-
+  --color-amber-500: #2F6B53;
+  --color-orange-600: #1F3D32;
+}
+.rs-paper {
   background-color: var(--color-rs-hero);
   color: var(--color-rs-fg-0);
+}
+/* Banner-Buttons: grau-auf-weiß wäre auf Papier unlesbar → Waldgrün. */
+body:has(.rs-paper) .cookie-consent :is(button.bg-titanium-700, button.bg-security-500) {
+  background: var(--color-rs-primary);
+  border-color: var(--color-rs-primary);
+  color: #F7F4EE;
+}
+body:has(.rs-paper) .cookie-consent :is(button.bg-titanium-700, button.bg-security-500):hover {
+  background: var(--color-rs-primary-hover);
+}
+body:has(.rs-paper) .cookie-consent :is(p, div).font-display {
+  font-family: var(--font-rs-serif);
+  font-weight: 400;
 }
 
 /* Fest kodierte Primärflächen der älteren Seiten (Titan-Grau, Gold) und

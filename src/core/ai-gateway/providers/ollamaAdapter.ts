@@ -211,3 +211,18 @@ export function buildOllamaAuthorization(
   if (typeof btoa !== 'function') throw new Error('Base64 encoder unavailable');
   return `Basic ${btoa(value)}`;
 }
+
+
+export function buildOllamaAuthorization(
+  token?: string,
+  mode?: OllamaAuthMode,
+): string | undefined {
+  const value = token?.trim();
+  if (!value) return undefined;
+
+  const resolvedMode: OllamaAuthMode = mode ?? (value.includes(':') ? 'basic' : 'bearer');
+  if (resolvedMode === 'bearer') return `Bearer ${value}`;
+
+  if (typeof btoa !== 'function') throw new Error('Base64 encoder unavailable');
+  return `Basic ${btoa(value)}`;
+}

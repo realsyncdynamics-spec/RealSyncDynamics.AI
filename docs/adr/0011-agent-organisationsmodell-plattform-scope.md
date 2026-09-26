@@ -348,8 +348,8 @@ Datei ist mit einem datierten Hinweis korrigiert.
   `is_platform_operator()` zwischen ihnen unterscheidet, oder ob die Funktion
   bewusst grobkörnig `boolean` bleibt und feinere Prüfungen eigene Funktionen
   bekommen.
-- **Verhältnis zu ADR 0005**: ob `super_admin` (dort als Plattform-Rolle
-  festgeschrieben) durch `platform_operators` ersetzt wird oder daneben bestehen
-  bleibt. Zwei Plattform-Quellen nebeneinander wären der Zustand, den D5
-  vermeiden will (siehe B1).
-- **Der Fix zu B1** — Entscheid steht aus.
+- ~~Verhältnis zu ADR 0005~~ · ~~Fix zu B1~~ — **beide erledigt** und in
+  Produktion: B1 am 2026-09-15 (`20260915120000`), D5 am 2026-09-26
+  (`20260926120000`). `platform_operators` ist die einzige schreibbare
+  Quelle, `profiles.is_super_admin` deren Projektion — keine zweite Quelle.
+  Messung und Begründung im Kopf der Migration.

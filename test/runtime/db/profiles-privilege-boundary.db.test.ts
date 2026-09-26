@@ -227,7 +227,7 @@ d('B1 — profiles.is_super_admin ist clientseitig unveraenderlich', () => {
           [u.userId],
         );
       }),
-    ).rejects.toThrow(/unveraenderlich/);
+    ).rejects.toThrow(/42501|unveraenderlich|platform_operators/);
 
     expect(await istSuperAdmin(u.userId)).toBe(false);
   });
@@ -243,16 +243,34 @@ d('B1 — profiles.is_super_admin ist clientseitig unveraenderlich', () => {
     expect(rows[0]!.sec).toBe(false);
   });
 
-  it('service_role darf is_super_admin weiterhin setzen — der administrative Weg', async () => {
+  it('der administrative Weg fuehrt ueber platform_operators, nicht ueber profiles', async () => {
+    // GEAENDERT am 2026-09-26 durch D5 (20260926120000). Bis dahin pruefte
+    // dieser Test das Gegenteil: dass `service_role` das Flag direkt setzen
+    // DARF — damals richtig, weil das der administrative Weg war.
+    //
+    // Seit D5 ist `profiles.is_super_admin` eine Projektion von
+    // `platform_operators`. Ein direkter Schreibvorgang wuerde die Projektion
+    // von ihrer Quelle abkoppeln und ist deshalb auch fuer `service_role`
+    // gesperrt. Die Zusage „es gibt einen administrativen Weg" bleibt — sie
+    // zeigt nur woandershin. Genau das wird hier geprueft, statt die alte
+    // Erwartung stillschweigend zu streichen.
     const u = await seedProfil();
 
-    await ctx!.withClaims({ sub: u.userId, role: 'service_role' }, async () => {
-      await ctx!.client.query(
-        `UPDATE public.profiles SET is_super_admin = true WHERE id = $1`,
-        [u.userId],
-      );
-    });
+    await expect(
+      ctx!.withClaims({ sub: u.userId, role: 'service_role' }, async () => {
+        await ctx!.client.query(
+          `UPDATE public.profiles SET is_super_admin = true WHERE id = $1`,
+          [u.userId],
+        );
+      }),
+    ).rejects.toThrow(/platform_operators/);
+    expect(await istSuperAdmin(u.userId)).toBe(false);
 
+    // Und der Weg, der gilt:
+    await ctx!.client.query(
+      `INSERT INTO public.platform_operators (user_id) VALUES ($1)`,
+      [u.userId],
+    );
     expect(await istSuperAdmin(u.userId)).toBe(true);
   });
 

@@ -2,9 +2,9 @@
 
 > **Status:** Accepted · 2026-05-30
 > **Related:** ADR 0004 (Enterprise Identity), ADR 0006 (MFA/AAL2)
-> **Amended by:** ADR 0011 (2026-09-01) — die Plattform-Berechtigung der
-> Agenten-Organisationsebene liest aus `platform_operators`, nicht aus
-> `profiles.is_super_admin`. Dort auch Befund B1 zu dieser Spalte.
+> **Amended by:** ADR 0011 · umgesetzt 2026-09-26 (`20260926120000`):
+> `platform_operators` ist die einzige schreibbare Quelle der Plattformrolle,
+> `profiles.is_super_admin` deren Projektion, direkt nicht mehr setzbar.
 
 ## Kontext
 
@@ -21,7 +21,7 @@ IST: `memberships.role` CHECK = `owner, admin, editor, viewer_auditor`; Plattfor
 | `dpo` | Compliance (Hoheit) | DSFA/DPIA & Register freigeben/signieren, alles lesen, Evidence exportieren — **keine** Identity-/Billing-Verwaltung |
 | `editor` | Operate | Scans, Findings, Dokument-Entwürfe — keine Freigaben, keine Verwaltung |
 | `viewer_auditor` | Read | lesen + Evidence/Audit-Bundle exportieren — keine Änderungen |
-| `super_admin` *(Plattform, `profiles.is_super_admin`)* | RSD-intern | Cross-Tenant-Support, MFA-Reset — auditpflichtig |
+| `super_admin` *(Plattform, Quelle `platform_operators`)* | RSD-intern | Cross-Tenant-Support, MFA-Reset — auditpflichtig |
 
 **Verworfen:** `compliance_officer` (= `dpo`), `security_officer` (= `admin`). Keine Doppelrollen.
 

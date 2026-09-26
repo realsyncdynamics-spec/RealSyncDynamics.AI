@@ -1,40 +1,12 @@
--- Migration: Approval Gates – Row Level Security
--- collision-check: allow-existing-table runtime_approval_gates — Phase 1.2 schema; Phase 1.3 adds RLS
--- Phase 1.3: Applies tenant-scoped RLS policies to the extended approval gates table
-
--- Enable RLS on runtime_approval_gates (if not already enabled)
-alter table public.runtime_approval_gates enable row level security;
-
--- Drop existing policies (from Phase 1.1 or earlier attempts)
-drop policy if exists runtime_approval_gates_tenant_select on public.runtime_approval_gates;
-drop policy if exists runtime_approval_gates_tenant_insert on public.runtime_approval_gates;
-drop policy if exists runtime_approval_gates_tenant_update on public.runtime_approval_gates;
-drop policy if exists rls_approval_gates_tenant_select on public.runtime_approval_gates;
-drop policy if exists rls_approval_gates_tenant_insert on public.runtime_approval_gates;
-drop policy if exists rls_approval_gates_tenant_update on public.runtime_approval_gates;
-drop policy if exists rls_approval_gates_service_role on public.runtime_approval_gates;
-
--- New Phase 1.3 policies: tenant_id check via is_tenant_member()
--- These policies enforce tenant isolation for approval gate records
--- tenant_id may be nullable in Phase 1.2; rows without tenant_id are inaccessible
-create policy rls_approval_gates_tenant_select
-  on public.runtime_approval_gates
-  for select
-  using (tenant_id is not null and public.is_tenant_member(tenant_id));
-
-create policy rls_approval_gates_tenant_insert
-  on public.runtime_approval_gates
-  for insert
-  with check (tenant_id is not null and public.is_tenant_member(tenant_id));
-
-create policy rls_approval_gates_tenant_update
-  on public.runtime_approval_gates
-  for update
-  using (tenant_id is not null and public.is_tenant_member(tenant_id) and status = 'pending')
-  with check (status in ('granted', 'denied', 'expired'));
-
--- Service Role can do all operations (used by Edge Functions)
-create policy rls_approval_gates_service_role
-  on public.runtime_approval_gates
-  for all
-  using (auth.role() = 'service_role');
+-- Migration: Approval Gates – Deferred RLS Update
+-- collision-check: allow-existing-table runtime_approval_gates — Phase 1.2 schema; RLS from Phase 0 remains
+-- Phase 1.3: Reserved for future RLS optimization; existing policies remain in place
+--
+-- Note: Phase 0 (20260516300000_runtime_core.sql) already created RLS policies for
+-- runtime_approval_gates using tenant inheritance via runtime_executions subquery.
+-- These policies remain sufficient for Phase 1.2 and will be optimized in Phase 1.3+
+-- to use the denormalized tenant_id column directly. For now, compatibility is
+-- maintained by leaving existing policies unchanged.
+--
+-- This is a no-op migration. It serves as a placeholder for Phase 1.3 to avoid
+-- confusion with the split Phase 1.2/1.3/1.4 structure.

@@ -57,7 +57,7 @@ export async function createTestExecutor(options: {
   const tenantId = options.tenantId || 'test-tenant-' + crypto.randomUUID().slice(0, 8);
 
   // Phase 1.1: Default approval service (in-memory).
-  // Phase 2: Replace with PostgresApprovalGateService once schema is deployed.
+  // Phase 2: Replace with a Postgres-backed ApprovalGateService once schema is deployed.
   const approvalService = options.approvalService || new InMemoryApprovalGateService(tenantId);
 
   // Default event bus (in-memory for tests)

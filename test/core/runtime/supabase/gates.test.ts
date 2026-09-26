@@ -1,7 +1,6 @@
 /**
- * PostgreSQL-backed ApprovalGateService tests.
- * Phase 2: Deferred until schema migrations are deployed.
- * Phase 1.1 uses in-memory implementation only (see approvals.integration.test.ts).
+ * SupabaseApprovalGateService unit tests. The Supabase client is fully mocked,
+ * so these run without a Postgres instance. DB-backed E2E coverage follows in Phase 2.
  */
 import { describe, it, expect, vi } from 'vitest';
 import type { SupabaseClient } from '@supabase/supabase-js';

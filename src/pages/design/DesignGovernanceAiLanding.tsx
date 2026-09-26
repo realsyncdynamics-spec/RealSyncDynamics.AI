@@ -1,7 +1,9 @@
 /**
- * Production landing `/` — Governance OS Handoff v2 (2026-09-25).
- * Structure: Hero (Europa-Karte, Cyan) → Ticker → Problem → Module → Evidence Flow
- * → EU-Trust → Audiences → Preise → CTA → Footer.
+ * Production landing `/` — Governance OS Handoff v2 (2026-09-25),
+ * Positionierung 2026-09-26 (B2B-Funnel).
+ * Structure: Hero (Europa-Karte, Cyan) → Problem → Governance-Modell
+ * → Governance-Check → Agent Governance → Provider → Evidence → Prinzipien
+ * → Zielgruppen → Ticker → Preise → Conversion → Footer.
  *
  * Kein Dunkel/Cyan/Hell-Umschalter und kein Gold mehr auf `/`: `.rs-handoff`
  * mappt die `--ga-*`-Tokens der Folgesektionen auf die Handoff-Palette.
@@ -25,11 +27,7 @@ import {
   GA_PILL_GHOST,
   GA_PILL_PRIMARY,
 } from '../../components/landing/governance-ai-theme';
-import {
-  BRAND_VALUE_PROPOSITION,
-  HERO_AUDIT_TRAIL_CTA_LABEL,
-  HERO_SCAN_CTA_LABEL,
-} from '../../components/governance-frontend/hero-content';
+import { HERO_SCAN_CTA_LABEL } from '../../components/governance-frontend/hero-content';
 import { SEO_CONFIG } from '../../config/seo';
 import { PUBLIC_CTA } from '../../config/public-nav';
 
@@ -53,8 +51,9 @@ export function DesignGovernanceAiLanding() {
 
       <div className="relative z-10 flex min-h-screen flex-col">
         <GovernanceOsHero />
-        <RegulatoryTicker />
+        {/* Problem direkt nach dem Hero; die Normen-Laufleiste ist Kontext, kein Einstieg. */}
         <HomepageBriefSections />
+        <RegulatoryTicker />
         <GovernancePricingSection />
 
         <section
@@ -64,12 +63,13 @@ export function DesignGovernanceAiLanding() {
           aria-labelledby="next-heading"
         >
           <div className="mx-auto w-full max-w-[780px] text-center">
-            <SectionEyebrow>STARTEN</SectionEyebrow>
+            <SectionEyebrow>NÄCHSTER SCHRITT</SectionEyebrow>
             <span id="next-heading">
-              <SectionHeading centered>Kontrollierbar. Nachweisbar. Auditbereit.</SectionHeading>
+              <SectionHeading centered accent="Ihre Governance sollte mithalten.">Ihre KI-Landschaft wächst.</SectionHeading>
             </span>
             <p className="mx-auto mt-4 max-w-[46rem] text-pretty leading-[1.7]" style={{ color: GA_MUTED }}>
-              {BRAND_VALUE_PROPOSITION}
+              Machen Sie sichtbar, welche KI eingesetzt wird, welche Regeln gelten und welche Aktionen tatsächlich
+              ausgeführt wurden.
             </p>
             <div className="mt-[34px] flex flex-wrap justify-center gap-3.5">
               <Link
@@ -85,9 +85,9 @@ export function DesignGovernanceAiLanding() {
                 {HERO_SCAN_CTA_LABEL}
                 <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </Link>
-              <a href="#audit-trail" className={GA_PILL_GHOST} style={{ fontFamily: GA_SANS }}>
-                {HERO_AUDIT_TRAIL_CTA_LABEL}
-              </a>
+              <Link to="/contact-sales" className={GA_PILL_GHOST} style={{ fontFamily: GA_SANS }}>
+                Beratung anfragen
+              </Link>
             </div>
           </div>
         </section>

@@ -2,17 +2,18 @@
  * Startseiten-Hero — Governance OS Handoff v2 (Cyan, kein Gold).
  *
  * Werte aus HANDOFF.md §1 (hifi): Europa-Nachtkarte rechts mit Perspektive,
- * Tiefenebene, Overlays; Nav mit DE/EN; Badge; H1 Newsreader 80px; Loop
+ * Tiefenebene, Overlays; Nav mit DE/EN; H1 Newsreader 80px; Loop
  * DISCOVER → ASSESS → GOVERN → PROVE; zwei CTAs.
  *
- * Vertrag mit test/landing/canonical-scan-entry.test.tsx und
- * test/landing/homepage-hero.test.tsx: genau ein `[data-hero-cta="audit"]`,
- * `<a id="audit-cta" href="/audit">`, Zweit-CTA mit HERO_DASHBOARD_CTA_LABEL.
+ * Positionierung 2026-09-26: Einstieg über das Kontrollproblem (Hook statt
+ * Normen-Badge). Der Erst-CTA führt in den Governance-Check auf derselben
+ * Seite (`#governance-check`), der Zweit-CTA ins Governance-Modell. Vertrag:
+ * test/landing/homepage-hero.test.tsx.
  *
  * Die Karte ist das Handoff-Asset `public/europe-map-v2.png` (1052×1152) mit
  * WebP-Ableitung; beide Ebenen nutzen dieselbe Datei (ein Download).
  */
-import { useEffect, useId, useState } from 'react';
+import { type ReactNode, useEffect, useId, useState } from 'react';
 import { preload } from 'react-dom';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Menu, X } from 'lucide-react';
@@ -20,7 +21,6 @@ import '../../styles/governance-os-handoff.css';
 import { BrandWordmark } from '../handoff/BrandWordmark';
 import { LangToggle } from '../handoff/LangToggle';
 import { useLang } from '../../i18n/useLang';
-import { HERO_DASHBOARD_CTA_LABEL } from '../governance-frontend/hero-content';
 
 export const HERO_MAP_WEBP = '/europe-map-v2.webp';
 export const HERO_MAP_PNG = '/europe-map-v2.png';
@@ -40,6 +40,22 @@ function MapPicture({ priority }: { priority: boolean }) {
       />
     </picture>
   );
+}
+
+/**
+ * Anker auf `/` (`/#pricing`) als echtes `<a>`: react-router scrollt bei
+ * `<Link to="/#…">` auf derselben Seite nicht zum Ziel, der Browser schon.
+ */
+function NavItem({ to, className, onClick, children }: {
+  to: string;
+  className: string;
+  onClick?: () => void;
+  children: ReactNode;
+}) {
+  if (to.startsWith('/#')) {
+    return <a href={to} className={className} onClick={onClick}>{children}</a>;
+  }
+  return <Link to={to} className={className} onClick={onClick}>{children}</Link>;
 }
 
 export function GovernanceOsHero() {
@@ -65,17 +81,18 @@ export function GovernanceOsHero() {
     };
   }, [menuOpen]);
 
-  const dashboardLabel = lang === 'de' ? HERO_DASHBOARD_CTA_LABEL : t('cta2');
   const landingNav = lang === 'de'
     ? [
-        { label: 'Produkt', to: '/#product', prominent: true },
+        { label: 'Plattform', to: '/#governance-model', prominent: true },
+        { label: 'Agenten', to: '/#agent-governance', prominent: false },
         { label: 'Governance', to: '/governance-runtime', prominent: false },
         { label: 'Evidence', to: '/#evidence', prominent: false },
         { label: 'Preise', to: '/#pricing', prominent: true },
         { label: 'Login', to: '/login', prominent: false },
       ]
     : [
-        { label: 'Product', to: '/#product', prominent: true },
+        { label: 'Platform', to: '/#governance-model', prominent: true },
+        { label: 'Agents', to: '/#agent-governance', prominent: false },
         { label: 'Governance', to: '/governance-runtime', prominent: false },
         { label: 'Evidence', to: '/#evidence', prominent: false },
         { label: 'Pricing', to: '/#pricing', prominent: true },
@@ -107,20 +124,20 @@ export function GovernanceOsHero() {
         <BrandWordmark />
         <nav className="rs-nav__links" aria-label={t('mainNav')}>
           {landingNav.map((item) => (
-            <Link
+            <NavItem
               key={item.to}
               to={item.to}
               className={`rs-nav__link${item.prominent ? ' rs-nav__link--key' : ''}`}
             >
               {item.label}
-            </Link>
+            </NavItem>
           ))}
         </nav>
         <div className="rs-nav__tools">
           <LangToggle />
-          <Link to="/audit" className="rs-btn rs-btn--primary rs-btn--h40">
+          <a href="#governance-check" className="rs-btn rs-btn--primary rs-btn--h40">
             {t('cta')}
-          </Link>
+          </a>
         </div>
         <button
           type="button"
@@ -151,36 +168,37 @@ export function GovernanceOsHero() {
           </div>
           <nav className="flex flex-col gap-2" aria-label={t('mainNav')}>
             {landingNav.map((item) => (
-              <Link
+              <NavItem
                 key={item.to}
                 to={item.to}
                 className={`rs-menu__item${item.prominent ? ' rs-menu__item--key' : ''}`}
                 onClick={() => setMenuOpen(false)}
               >
                 {item.label}
-              </Link>
+              </NavItem>
             ))}
           </nav>
           <div className="mt-4 flex items-center gap-3">
             <LangToggle />
           </div>
-          <Link
-            to="/audit"
+          <a
+            href="#governance-check"
             className="rs-btn rs-btn--primary rs-btn--h52 mt-4 w-full"
             onClick={() => setMenuOpen(false)}
           >
             {t('cta')}
             <ArrowRight size={18} aria-hidden="true" />
-          </Link>
+          </a>
         </div>
       )}
 
       <div className="rs-hero__body">
         <div className="rs-hero__content">
-          <span className="rs-badge">
-            <span className="rs-badge__dot" aria-hidden="true" />
-            {t('heroBadge')}
-          </span>
+          <p className="rs-hero__hook">
+            <span>{t('heroHookA')}</span>{' '}
+            <span>{t('heroHookB')}</span>{' '}
+            <strong>{t('heroHookC')}</strong>
+          </p>
 
           <h1 id="hero-heading" className="rs-hero__h1">
             <span className="rs-hero__h1-line">{t('heroA')}</span>
@@ -204,24 +222,24 @@ export function GovernanceOsHero() {
           </ol>
 
           <div className="rs-hero__ctas" role="group" aria-label={t('heroActions')}>
-            <Link
-              id="audit-cta"
-              data-hero-cta="audit"
+            <a
+              id="check-cta"
+              data-hero-cta="check"
               data-testid="hero-primary-cta"
-              to="/audit"
+              href="#governance-check"
               className="rs-btn rs-btn--primary rs-btn--h52"
             >
               {t('cta')}
               <ArrowRight size={18} aria-hidden="true" />
-            </Link>
-            <Link
-              data-hero-cta="dashboard"
+            </a>
+            <a
+              data-hero-cta="explore"
               data-testid="hero-secondary-cta"
-              to="/app/dashboard"
+              href="#governance-model"
               className="rs-btn rs-btn--glass rs-btn--h52"
             >
-              {dashboardLabel}
-            </Link>
+              {t('ctaExplore')}
+            </a>
           </div>
 
           <p className="rs-hero__trust">{t('trustLine')}</p>

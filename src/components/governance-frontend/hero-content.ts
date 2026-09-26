@@ -21,10 +21,11 @@ export const GOVERNANCE_AI_HERO_KICKER = 'EU CONTROL & EVIDENCE LAYER FOR AI' as
 export const GOVERNANCE_AI_HERO_HEADLINE: readonly (readonly HeroHeadlineSegment[])[] = HERO_HEADLINE;
 
 /**
- * Substring der sichtbaren H1 auf `/` (Handoff v2: „AI Compliance / Operations OS for Europe").
+ * Substring der sichtbaren H1 auf `/` („Das Kontrollsystem für Ihre
+ * Unternehmens-KI.", `src/i18n/handoff.ts`, Positionierung 2026-09-26).
  * Genutzt von tests/e2e/public-routes.spec.ts (FE-001).
  */
-export const GOVERNANCE_AI_HERO_TEST_SUBSTRING = 'Operations OS' as const;
+export const GOVERNANCE_AI_HERO_TEST_SUBSTRING = 'Kontrollsystem' as const;
 
 export const GOVERNANCE_AI_HERO_SUBLINE =
   'RealSyncDynamics.AI erkennt KI- und Compliance-Risiken, setzt Richtlinien durch und erzeugt kontinuierliche Evidenz für EU AI Act und DSGVO.' as const;
@@ -113,78 +114,216 @@ export const HERO_SCAN_PROMISE_LINE =
 export const HERO_SCAN_CTA_PROMISE =
   'URL oder Kontext eingeben — Risiken, Policy-Hinweise und Evidence-Preview. Danach Activation, nicht nur der Score.' as const;
 
-/** Homepage brief — Problem pains. */
+/*
+ * Startseite `/` — Positionierung 2026-09-26 (B2B-Funnel).
+ *
+ * Reihenfolge: Problem → Governance-Modell → Governance-Check → Agent
+ * Governance → Provider-Neutralität → Evidence → Prinzipien → Zielgruppen.
+ *
+ * Claim-Regel: Jede Aussage hier ist durch Code belegt (Belege im PR). Der
+ * `status` einer Stufe kommt aus `src/product/implementation-status.ts` —
+ * wer dort etwas zurückstuft, muss es hier mitziehen.
+ */
+
+/** Wiedererkennung — sachlich, ohne Schadenssummen. */
 export const HOMEPAGE_PROBLEM_PAINS = [
-  {
-    title: 'Schatten-KI',
-    body: 'Tools und Modelle laufen außerhalb bekannter Inventare — ohne Freigabe und ohne Nachweis.',
-  },
-  {
-    title: 'Fehlendes Inventar',
-    body: 'Niemand hat die vollständige Liste der KI-Use-Cases, Websites und Datenflüsse.',
-  },
-  {
-    title: 'Unklare Verantwortlichkeit',
-    body: 'Rollen, Freigaben und Richtlinien sind verteilt oder fehlen — bis zur Prüfung.',
-  },
-  {
-    title: 'Manuelle Evidenz',
-    body: 'Nachweise werden kurz vor dem Audit zusammengesucht statt kontinuierlich erzeugt.',
-  },
+  'Mitarbeitende nutzen mehrere KI-Anbieter parallel.',
+  'Sensible Informationen landen möglicherweise in unterschiedlichen Systemen.',
+  'Einzelne Teams bauen eigene Automationen.',
+  'Erste Agenten führen selbstständig Aktionen aus.',
+  'Verantwortlichkeiten sind über Teams verteilt.',
+  'Freigaben laufen manuell über Chat oder E-Mail.',
+  'Niemand kann zentral beantworten, welche Regeln für welche KI gelten.',
+  'Im Nachhinein fehlt eine vollständige Nachweiskette.',
 ] as const;
 
-/** Four modules — fixed order. */
-export const HOMEPAGE_MODULES = [
+export type HomepageStageStatus = 'live' | 'preview';
+
+/** Governance-Modell: technische Funktion → Geschäftsnutzen. */
+export const HOMEPAGE_GOVERNANCE_STAGES: readonly {
+  id: string;
+  step: string;
+  title: string;
+  body: string;
+  status: HomepageStageStatus;
+}[] = [
   {
-    id: 'scan',
-    title: 'Scan Reality',
-    body: 'KI-Use-Cases, Websites, Datenflüsse und Governance-Lücken sichtbar machen.',
+    id: 'discover',
+    step: 'DISCOVER',
+    title: 'Wissen, welche KI tatsächlich eingesetzt wird.',
+    body: 'Ein zentrales Inventar bekannter KI-Systeme, Anbieter, Anwendungen und Verantwortlichkeiten.',
+    status: 'live',
   },
   {
-    id: 'build',
-    title: 'Build Controls',
-    body: 'Risikoklassifikation, Verantwortlichkeiten, Richtlinien und Freigaben aufsetzen.',
-  },
-  {
-    id: 'automate',
-    title: 'Automate Evidence',
-    body: 'Prüfungen, Monitoring und Evidenzsammlung automatisieren.',
+    id: 'assess',
+    step: 'ASSESS',
+    title: 'Risiken erkennen, bevor KI produktiv eskaliert.',
+    body: 'Anwendungen werden nach definierten Kriterien bewertet — Handlungsbedarf wird sichtbar.',
+    status: 'live',
   },
   {
     id: 'govern',
-    title: 'Govern Continuously',
-    body: 'AI Inventory, Policy Enforcement, Audit Trail und Telemetrie im laufenden Betrieb.',
+    step: 'GOVERN',
+    title: 'Festlegen, wer was mit welcher KI tun darf.',
+    body: 'Policies, Rollen und Freigaben steuern sensible oder kritische Aktionen.',
+    status: 'live',
   },
+  {
+    id: 'execute',
+    step: 'EXECUTE',
+    title: 'Agenten handeln — innerhalb definierter Grenzen.',
+    body: 'Vor der Ausführung stehen Identitäts-, Tenant-, Policy-, Risiko- und bei Bedarf Freigabeprüfung.',
+    status: 'preview',
+  },
+  {
+    id: 'prove',
+    step: 'PROVE',
+    title: 'Nachweisen, was tatsächlich passiert ist.',
+    body: 'Entscheidungen, Freigaben und Ausführungen können hash-verkettet dokumentiert werden.',
+    status: 'live',
+  },
+] as const;
+
+/** Authority Chain — serverseitige Reihenfolge einer Agenten-Aktion. */
+export const HOMEPAGE_AUTHORITY_CHAIN: readonly { step: string; body: string; conditional?: boolean }[] = [
+  { step: 'Request', body: 'Mensch oder Agent möchte eine Aktion ausführen.' },
+  { step: 'Identity', body: 'Wer fragt an — authentifiziert, nicht behauptet.' },
+  { step: 'Tenant', body: 'Welcher Mandant — serverseitig abgeleitet, nicht vom Client übernommen.' },
+  { step: 'Policy', body: 'Welche Regel gilt für diese Aktion?' },
+  { step: 'Risk', body: 'Wie kritisch ist sie im Kontext?' },
+  { step: 'Approval', body: 'Menschliche Freigabe, wenn die Policy sie verlangt.', conditional: true },
+  { step: 'Execution', body: 'Erst jetzt handelt der Execution-Provider.' },
+  { step: 'Verification', body: 'Ergebnis gegen die Entscheidung prüfen.' },
+  { step: 'Evidence', body: 'Entscheidung und Ausführung landen in der Nachweiskette.' },
+] as const;
+
+export const HOMEPAGE_AGENT_PRINCIPLES = [
+  'Der Agent entscheidet nicht selbst über seine Berechtigung.',
+  'Policies und Tenant-Zuordnung bleiben serverseitig autoritativ.',
+  'Frontend-State, LocalStorage oder Provider-Antworten sind nie Governance-Authority.',
+] as const;
+
+/**
+ * Serverseitig angebundene Provider (Adapter in `supabase/functions/_shared`).
+ * Grok/xAI und Mistral sind nicht angebunden und stehen deshalb nicht hier.
+ */
+export const HOMEPAGE_PROVIDERS = [
+  { name: 'OpenAI', note: 'Cloud' },
+  { name: 'Anthropic · Claude', note: 'Cloud' },
+  { name: 'Google · Gemini', note: 'Cloud · eingeschränkt' },
+  { name: 'Eigene Modelle · Ollama', note: 'EU-lokal' },
 ] as const;
 
 export const HOMEPAGE_EVIDENCE_FLOW = [
-  'Signal',
-  'Risiko',
-  'Policy',
   'Entscheidung',
-  'Audit Evidence',
+  'Freigabe',
+  'Ausführung',
+  'Verifikation',
+  'Evidence',
 ] as const;
 
-export const HOMEPAGE_EU_TRUST = [
-  'EU-Hosting',
-  'DSGVO',
-  'EU AI Act',
-  'Audit Logs',
-  'Governance-by-Design',
+/** Technische Prinzipien statt Siegel — jedes durch Code belegt. */
+export const HOMEPAGE_TRUST_PRINCIPLES = [
+  {
+    title: 'Tenant-Isolation',
+    body: 'Row-Level-Security in der Datenbank trennt Mandanten — nicht nur die App-Logik.',
+  },
+  {
+    title: 'Serverseitige Autorisierung',
+    body: 'Berechtigungen prüfen Edge Functions; privilegierte Schlüssel verlassen nie den Server.',
+  },
+  {
+    title: 'Policy Gates',
+    body: 'Entscheidungen: erlauben, warnen, blockieren, Freigabe verlangen — beobachtend oder durchsetzend konfigurierbar.',
+  },
+  {
+    title: 'Human Approval',
+    body: 'Freigaben nur durch berechtigte Rollen; jede Entscheidung wird protokolliert.',
+  },
+  {
+    title: 'Evidence Logging',
+    body: 'SHA-256-verkettete Einträge, gegen nachträgliche Änderung per Datenbank-Trigger gesperrt, mit Integritätsprüfung.',
+  },
+  {
+    title: 'Provider Separation',
+    body: 'Die Policy-Entscheidung liegt außerhalb der Modell-Adapter — kein Provider bewertet sich selbst.',
+  },
 ] as const;
 
+/** Primärer ICP — Unternehmen mit mehreren KI-Systemen oder Automationen. */
 export const HOMEPAGE_AUDIENCES = [
   {
-    title: 'Compliance & Legal',
-    body: 'Nachweispflichten erfüllen, ohne Excel-Chaos kurz vor dem Audit.',
+    title: 'KMU & Mid-Market',
+    body: 'Mehrere KI-Anbieter im Einsatz, aber keine zentrale Sicht auf Regeln und Verantwortliche.',
   },
   {
-    title: 'Security & Risk',
-    body: 'Schatten-KI und Governance-Lücken früh erkennen und steuern.',
+    title: 'Agenturen & Tech-Dienstleister',
+    body: 'Komplexe KI-Workflows für Kunden — mit nachweisbaren Freigaben statt Chat-Absprachen.',
   },
   {
-    title: 'Produkt & Engineering',
-    body: 'Richtlinien und Freigaben in den Betrieb legen — nicht nur in Confluence.',
+    title: 'Teams mit ersten Agenten',
+    body: 'Automationen und Agenten gehen produktiv — Governance und Nachweisbarkeit müssen mitwachsen.',
+  },
+] as const;
+
+/**
+ * Governance-Check auf `/` — reine Selbsteinschätzung im Browser. Kein
+ * Request, keine Speicherung: Das Ergebnis zählt nur die eigenen Antworten.
+ * `yes` bedeutet jeweils „die Kontrolle ist vorhanden".
+ */
+export const GOVERNANCE_CHECK_QUESTIONS: readonly {
+  id: string;
+  stage: 'DISCOVER' | 'ASSESS' | 'GOVERN' | 'PROVE';
+  question: string;
+  gap: string;
+}[] = [
+  {
+    id: 'providers',
+    stage: 'DISCOVER',
+    question: 'Wissen Sie, welche KI-Anbieter in Ihrem Unternehmen genutzt werden?',
+    gap: 'Kein zentrales Bild der eingesetzten KI-Anbieter.',
+  },
+  {
+    id: 'autonomous',
+    stage: 'DISCOVER',
+    question: 'Wissen Sie, welche Systeme oder Agenten selbstständig Aktionen ausführen können?',
+    gap: 'Unklar, welche Systeme ohne Menschen handeln.',
+  },
+  {
+    id: 'customer-data',
+    stage: 'ASSESS',
+    question: 'Ist geregelt, ob Kundendaten in KI-Systeme gelangen dürfen?',
+    gap: 'Keine Regel für Kundendaten in KI-Systemen.',
+  },
+  {
+    id: 'owners',
+    stage: 'GOVERN',
+    question: 'Gibt es für jedes KI-System eine verantwortliche Person?',
+    gap: 'Verantwortlichkeiten sind nicht zugeordnet.',
+  },
+  {
+    id: 'policies',
+    stage: 'GOVERN',
+    question: 'Gibt es zentrale Regeln, die für alle KI-Anbieter gelten?',
+    gap: 'Regeln gelten je Tool statt zentral.',
+  },
+  {
+    id: 'data-egress',
+    stage: 'GOVERN',
+    question: 'Ist kontrolliert, welche Daten an welchen Provider gehen dürfen?',
+    gap: 'Datenabfluss an Provider ist nicht gesteuert.',
+  },
+  {
+    id: 'approval',
+    stage: 'GOVERN',
+    question: 'Brauchen kritische KI-Aktionen eine menschliche Freigabe?',
+    gap: 'Kritische Aktionen laufen ohne Freigabe.',
+  },
+  {
+    id: 'logging',
+    stage: 'PROVE',
+    question: 'Werden KI-Entscheidungen und Ausführungen nachvollziehbar protokolliert?',
+    gap: 'Entscheidungen und Ausführungen sind nicht belegbar.',
   },
 ] as const;
 

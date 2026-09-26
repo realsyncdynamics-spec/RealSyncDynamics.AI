@@ -319,6 +319,18 @@
   box-shadow: 0 0 10px rgba(0, 184, 212, 0.9);
 }
 
+/* Einstieg über das Kontrollproblem (ersetzt das Normen-Badge). */
+.rs-hero__hook {
+  margin: 0;
+  max-width: 620px;
+  font-family: var(--font-rs-ui);
+  font-size: clamp(15px, 1.15vw, 17px);
+  line-height: 1.6;
+  color: var(--color-rs-fg-1);
+  text-wrap: balance;
+}
+.rs-hero__hook strong { font-weight: 600; color: var(--color-rs-cyan-light); }
+
 .rs-hero__h1 {
   margin: 22px 0 0;
   font-family: var(--font-rs-serif);

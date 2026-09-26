@@ -36,6 +36,16 @@ import {
   Wand2,
   ShieldCheck,
   AlertTriangle,
+  Bot,
+  BookOpen,
+  CalendarDays,
+  ChevronRight,
+  Folder,
+  Globe2,
+  Menu,
+  Mic,
+  Plus,
+  X,
 } from 'lucide-react';
 import {
   renderSite,
@@ -108,6 +118,76 @@ const STAGES: readonly string[] = [
   'Acht Analysedimensionen geprüft',
   'Frontend gerendert',
 ];
+
+const BUILDER_TEMPLATES = [
+  {
+    label: 'E-Commerce',
+    prompt: 'Moderner Onlineshop für eine deutsche Marke mit hochwertigem Produktfokus, klarer Navigation, Produktkategorien, Vertrauenselementen und conversionstarker Startseite.',
+    layout: 'commerce',
+  },
+  {
+    label: 'Portfolio & CV',
+    prompt: 'Elegantes Portfolio für eine kreative Fachkraft mit großem Intro, ausgewählten Projekten, Profil, Leistungen und klarer Kontaktmöglichkeit.',
+    layout: 'portfolio',
+  },
+  {
+    label: 'Technology & SaaS',
+    prompt: 'Premium SaaS-Website für ein B2B-Technologieprodukt mit klarer Value Proposition, Produktvorschau, Features, Integrationen, Security und Demo-CTA.',
+    layout: 'saas',
+  },
+  {
+    label: 'Blog & Editorial',
+    prompt: 'Modernes Editorial- und Blog-Design mit starken Titelbildern, Kategorien, Artikelseiten, Autorenprofilen und Newsletter-Bereich.',
+    layout: 'editorial',
+  },
+  {
+    label: 'Health & Wellness',
+    prompt: 'Vertrauenswürdige Website für eine Gesundheits- oder Wellness-Praxis mit Leistungen, Team, Bewertungen, FAQ und Termin-CTA.',
+    layout: 'health',
+  },
+  {
+    label: 'Education & E-Learning',
+    prompt: 'Moderne Bildungsplattform mit Kursübersicht, Lernpfaden, Dozenten, Ergebnissen und klarer Registrierung für neue Teilnehmer.',
+    layout: 'education',
+  },
+  {
+    label: 'Food & Beverage',
+    prompt: 'Hochwertige Website für Gastronomie oder Food-Marke mit starkem Hero, Angebot oder Speisekarte, Story, Galerie, Öffnungszeiten und Reservierung.',
+    layout: 'food',
+  },
+  {
+    label: 'Real Estate & Construction',
+    prompt: 'Premium Website für Immobilien oder Bau mit Projektübersicht, Leistungen, Referenzen, Kennzahlen und direkter Anfrage.',
+    layout: 'realestate',
+  },
+  {
+    label: 'Events & Celebrations',
+    prompt: 'Emotionale Event-Website mit großformatigem Storytelling, Ablauf, Location, Galerie, RSVP und wichtigen Informationen für Gäste.',
+    layout: 'events',
+  },
+  {
+    label: 'Fashion & Apparel',
+    prompt: 'Editoriale Fashion-Website mit mutiger Typografie, Kollektionen, Kampagnenflächen, Lookbook und klarer Produktnavigation.',
+    layout: 'fashion',
+  },
+  {
+    label: 'Professional Services',
+    prompt: 'Seriöse B2B-Website für Beratung oder professionelle Dienstleistungen mit Expertise, Leistungen, Cases, Team und Kontakt.',
+    layout: 'services',
+  },
+  {
+    label: 'Local Business',
+    prompt: 'Moderne lokale Unternehmenswebsite mit Leistungen, Referenzen, Standort, Öffnungszeiten, Kontakt und klarer mobiler Nutzerführung.',
+    layout: 'local',
+  },
+] as const;
+
+const BUILDER_NAV = [
+  { label: 'Chats', href: '/app/assistant', icon: MessageSquare },
+  { label: 'Projects', href: '/app/siteos', icon: Folder },
+  { label: 'Library', href: '/app/documents', icon: BookOpen },
+  { label: 'Scheduled', href: '/app/scheduler', icon: CalendarDays },
+] as const;
 
 function BuildOsChrome({ subtitle }: { subtitle?: string }) {
   return (
@@ -353,118 +433,17 @@ export default function BuildStudioPage() {
   // ── Einstieg: App-Builder Intent ──────────────────────────────────────
   if (!blueprint && !busy) {
     return (
-      <div className="min-h-screen bg-obsidian-950 text-titanium-50">
-        <BuildOsChrome />
-        {previewUntilSsot && <SsotPendingBanner />}
-        <div className="mx-auto max-w-3xl px-6 py-12">
-          <p className="mb-3 font-mono text-[10px] uppercase tracking-[0.2em] text-[#e4cfa2]">
-            App Builder · Intent → Blueprint · {STATUS_LABEL.preview}
-          </p>
-          <h1
-            className="font-display font-semibold text-titanium-50"
-            style={{ fontSize: OS_H1 }}
-          >
-            Was möchten Sie erstellen?
-          </h1>
-          {auditContext.domain && (
-            <div className="mt-4 border border-[#e4cfa2]/25 bg-[#e4cfa2]/5 px-4 py-3 text-sm text-titanium-200">
-              <div className="font-semibold text-titanium-100">
-                Neubau für {auditContext.domain}
-              </div>
-              <p className="mt-1 text-titanium-400">
-                Der Bau kennt Ihren Scan
-                {auditContext.auditId
-                  ? ` (Audit ${auditContext.auditId.slice(0, 8)})`
-                  : ''}
-                . Die Beschreibung unten ist ein Anfang — ergänzen Sie sie.
-              </p>
-            </div>
-          )}
-          <p className="mt-4 text-sm text-titanium-400 leading-relaxed max-w-2xl">
-            Beschreiben Sie App oder Website auf Deutsch. siteos-core erzeugt
-            Blueprint und Vorschau lokal. Live-Orchestrierung (Planner/Coder)
-            und Veröffentlichung bleiben {STATUS_LABEL.preview} /{' '}
-            {STATUS_LABEL['coming-soon']} — keine Fake-Deploy-URL.
-          </p>
-
-          <form onSubmit={submitPrompt} className="mt-8 space-y-4">
-            <div>
-              <label
-                htmlFor="build-brand"
-                className="block text-sm font-medium text-titanium-200"
-              >
-                Wie heißt Ihr Unternehmen?{' '}
-                <span className="text-titanium-500">(optional)</span>
-              </label>
-              <input
-                id="build-brand"
-                value={brand}
-                onChange={(e) => setBrand(e.target.value)}
-                placeholder="z. B. Studio Vogt Architekten"
-                className="mt-2 w-full border border-titanium-700 bg-obsidian-900 px-4 py-3 text-titanium-50 placeholder-titanium-500 transition-colors focus:border-[#e4cfa2]/60 focus:outline-none"
-              />
-            </div>
-
-            <label
-              htmlFor="build-prompt"
-              className="block text-sm font-medium text-titanium-200"
-            >
-              Ihre Beschreibung
-            </label>
-            <textarea
-              id="build-prompt"
-              value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-              rows={5}
-              autoFocus
-              placeholder="z. B. Hochwertige Website für ein Architekturbüro in Leipzig…"
-              className="w-full resize-none border border-titanium-700 bg-obsidian-900 px-4 py-4 text-titanium-50 placeholder-titanium-500 transition-colors focus:border-[#e4cfa2]/60 focus:outline-none"
-            />
-
-            {error && (
-              <div className="border border-red-700 bg-red-900/20 px-4 py-3 text-sm text-red-300">
-                {error}
-              </div>
-            )}
-
-            <button
-              type="submit"
-              className={`w-full px-6 py-3.5 text-sm font-semibold uppercase tracking-wider transition-colors ${OS_CREAM_BTN}`}
-            >
-              Blueprint erzeugen
-            </button>
-          </form>
-
-          <div className="mt-8">
-            <div className="mb-3 font-mono text-[10px] font-semibold uppercase tracking-[.16em] text-titanium-500">
-              Beispiele
-            </div>
-            <div className="space-y-2">
-              {EXAMPLES.map((example) => (
-                <button
-                  key={example}
-                  type="button"
-                  onClick={() => setDraft(example)}
-                  className="w-full border border-titanium-800 px-4 py-3 text-left text-sm text-titanium-300 transition-colors hover:border-[#e4cfa2]/40 hover:text-titanium-100"
-                >
-                  {example}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="mt-10 border-t border-titanium-800 pt-6 text-sm text-titanium-400">
-            Sie haben bereits eine Website?{' '}
-            <button
-              type="button"
-              onClick={() => navigate('/audit')}
-              className="text-[#e4cfa2] underline underline-offset-4 hover:text-[#f0e6d4]"
-            >
-              Bestehende Website analysieren
-            </button>
-          </div>
-        </div>
-      </div>
+      <BuilderStartShell
+        draft={draft}
+        setDraft={setDraft}
+        brand={brand}
+        setBrand={setBrand}
+        error={error}
+        onSubmit={submitPrompt}
+        auditDomain={auditContext.domain}
+        auditId={auditContext.auditId}
+        previewUntilSsot={previewUntilSsot}
+      />
     );
   }
 
@@ -709,6 +688,399 @@ export default function BuildStudioPage() {
         </section>
       </div>
     </div>
+  );
+}
+
+function BuilderStartShell({
+  draft,
+  setDraft,
+  brand,
+  setBrand,
+  error,
+  onSubmit,
+  auditDomain,
+  auditId,
+  previewUntilSsot,
+}: {
+  draft: string;
+  setDraft: (value: string) => void;
+  brand: string;
+  setBrand: (value: string) => void;
+  error: string;
+  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  auditDomain?: string | null;
+  auditId?: string | null;
+  previewUntilSsot: boolean;
+}) {
+  const navigate = useNavigate();
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+
+  return (
+    <div className="min-h-screen bg-obsidian-950 text-titanium-50">
+      {previewUntilSsot && <SsotPendingBanner />}
+
+      <div className="min-h-screen lg:grid lg:grid-cols-[280px_minmax(0,1fr)]">
+        <BuilderHomeSidebar className="hidden lg:flex" />
+
+        {mobileNavOpen && (
+          <div className="fixed inset-0 z-[70] lg:hidden">
+            <button
+              type="button"
+              aria-label="Navigation schließen"
+              className="absolute inset-0 bg-black/65 backdrop-blur-sm"
+              onClick={() => setMobileNavOpen(false)}
+            />
+            <BuilderHomeSidebar
+              className="absolute inset-y-0 left-0 flex w-[86vw] max-w-sm shadow-2xl"
+              onNavigate={() => setMobileNavOpen(false)}
+            />
+          </div>
+        )}
+
+        <main className="relative min-w-0 pb-64">
+          <header className="sticky top-0 z-30 flex items-center justify-between border-b border-titanium-900 bg-obsidian-950/90 px-4 py-3 backdrop-blur lg:hidden">
+            <button
+              type="button"
+              onClick={() => setMobileNavOpen(true)}
+              aria-label="Navigation öffnen"
+              className="grid h-10 w-10 place-items-center rounded-full border border-titanium-800 bg-obsidian-900 text-titanium-200"
+            >
+              <Menu size={18} />
+            </button>
+            <div className="text-center">
+              <div className="font-display text-sm font-semibold">RealSyncDynamics.AI</div>
+              <div className="font-mono text-[9px] uppercase tracking-[.16em] text-titanium-500">
+                Website Builder
+              </div>
+            </div>
+            <Link
+              to="/app"
+              aria-label="Command Center"
+              className="grid h-10 w-10 place-items-center rounded-full border border-titanium-800 bg-obsidian-900 text-titanium-300"
+            >
+              <Globe2 size={17} />
+            </Link>
+          </header>
+
+          <section className="mx-auto max-w-6xl px-4 pb-12 pt-8 sm:px-6 sm:pt-10 lg:px-8 lg:pt-12">
+            <div className="max-w-3xl">
+              <div className="mb-3 font-mono text-[10px] uppercase tracking-[.2em] text-[#e4cfa2]">
+                SiteOS · AI Website Builder · {STATUS_LABEL.preview}
+              </div>
+              <h1
+                className="font-display font-semibold text-titanium-50"
+                style={{ fontSize: OS_H1 }}
+              >
+                Was möchten Sie erstellen?
+              </h1>
+              <p className="mt-4 max-w-2xl text-sm leading-6 text-titanium-400 sm:text-base">
+                Wählen Sie eine Richtung oder beschreiben Sie Ihre Website direkt.
+                RealSync erzeugt denselben SiteOS-Blueprint, der anschließend im
+                vorhandenen visuellen Workspace weiterbearbeitet wird.
+              </p>
+            </div>
+
+            {auditDomain && (
+              <div className="mt-6 rounded-2xl border border-[#e4cfa2]/25 bg-[#e4cfa2]/5 px-4 py-3 text-sm text-titanium-200">
+                <div className="font-semibold text-titanium-100">
+                  Neubau für {auditDomain}
+                </div>
+                <p className="mt-1 text-titanium-400">
+                  Der Bau kennt Ihren Scan
+                  {auditId ? ` (Audit ${auditId.slice(0, 8)})` : ''}. Ergänzen Sie
+                  unten nur noch Ziel, Stil und gewünschte Funktionen.
+                </p>
+              </div>
+            )}
+
+            <div className="mt-10 flex items-end justify-between gap-4">
+              <div>
+                <div className="font-display text-xl font-semibold text-titanium-100">
+                  Startpunkte
+                </div>
+                <p className="mt-1 text-xs text-titanium-500">
+                  Ein Klick übernimmt nur die Beschreibung — gebaut wird weiterhin über den bestehenden SiteOS-Pfad.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => navigate('/audit')}
+                className="hidden items-center gap-2 rounded-full border border-titanium-800 px-3 py-2 text-xs text-titanium-400 transition hover:border-[#e4cfa2]/40 hover:text-titanium-100 sm:inline-flex"
+              >
+                <Globe2 size={13} /> Website analysieren
+              </button>
+            </div>
+
+            <div className="mt-5 grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-3">
+              {BUILDER_TEMPLATES.map((template, index) => (
+                <BuilderTemplateCard
+                  key={template.label}
+                  template={template}
+                  index={index}
+                  onSelect={() => setDraft(template.prompt)}
+                />
+              ))}
+            </div>
+          </section>
+
+          <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 p-3 sm:p-5 lg:left-[280px]">
+            <form
+              onSubmit={onSubmit}
+              className="pointer-events-auto mx-auto max-w-4xl overflow-hidden rounded-[28px] border border-titanium-800 bg-obsidian-900/95 shadow-2xl backdrop-blur-xl"
+            >
+              <div className="flex items-center justify-between border-b border-titanium-800 px-4 py-3 sm:px-5">
+                <div className="flex min-w-0 items-center gap-2">
+                  <Globe2 size={16} className="shrink-0 text-[#e4cfa2]" />
+                  <span className="truncate font-display text-sm font-semibold text-titanium-100">
+                    Website erstellen
+                  </span>
+                </div>
+                <span className="font-mono text-[9px] uppercase tracking-[.14em] text-titanium-600">
+                  {STATUS_LABEL.preview}
+                </span>
+              </div>
+
+              <div className="px-4 pb-3 pt-3 sm:px-5">
+                <label htmlFor="build-brand" className="sr-only">
+                  Unternehmen oder Marke
+                </label>
+                <input
+                  id="build-brand"
+                  value={brand}
+                  onChange={(event) => setBrand(event.target.value)}
+                  placeholder="Unternehmen / Marke (optional)"
+                  className="mb-2 w-full border-0 bg-transparent px-0 py-1 text-xs text-titanium-300 outline-none placeholder:text-titanium-600"
+                />
+
+                <label htmlFor="build-prompt" className="sr-only">
+                  Ihre Beschreibung
+                </label>
+                <textarea
+                  id="build-prompt"
+                  value={draft}
+                  onChange={(event) => setDraft(event.target.value)}
+                  rows={3}
+                  placeholder="Beschreiben Sie Ihre Website, Zielgruppe, Stil und wichtigste Funktionen …"
+                  className="max-h-40 min-h-[76px] w-full resize-none border-0 bg-transparent px-0 py-1 text-sm leading-6 text-titanium-50 outline-none placeholder:text-titanium-600"
+                />
+
+                {error && (
+                  <div className="mt-2 rounded-xl border border-red-700 bg-red-900/20 px-3 py-2 text-xs text-red-300">
+                    {error}
+                  </div>
+                )}
+
+                <div className="mt-3 flex items-center gap-2">
+                  <button
+                    type="button"
+                    disabled
+                    title="Datei-Import ist in diesem Builder noch nicht verdrahtet."
+                    aria-label="Datei hinzufügen (noch nicht verfügbar)"
+                    className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-titanium-800 text-titanium-600 disabled:cursor-not-allowed"
+                  >
+                    <Plus size={18} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => navigate('/audit')}
+                    className="hidden items-center gap-2 rounded-full border border-titanium-800 px-3 py-2 text-xs text-titanium-400 transition hover:border-[#e4cfa2]/40 hover:text-titanium-100 sm:inline-flex"
+                  >
+                    <Globe2 size={14} /> Bestehende Website
+                  </button>
+                  <div className="flex-1" />
+                  <button
+                    type="button"
+                    disabled
+                    title="Voice-Eingabe ist in der Web-App noch nicht freigeschaltet."
+                    aria-label="Voice-Eingabe (noch nicht verfügbar)"
+                    className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-titanium-800 text-titanium-600 disabled:cursor-not-allowed"
+                  >
+                    <Mic size={17} />
+                  </button>
+                  <button
+                    type="submit"
+                    aria-label="Website erzeugen"
+                    className={`grid h-10 w-10 shrink-0 place-items-center rounded-full transition ${OS_CREAM_BTN}`}
+                  >
+                    <ArrowRight size={17} />
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </main>
+      </div>
+    </div>
+  );
+}
+
+function BuilderHomeSidebar({
+  className,
+  onNavigate,
+}: {
+  className?: string;
+  onNavigate?: () => void;
+}) {
+  return (
+    <aside
+      className={`${className ?? ''} min-h-0 flex-col border-r border-titanium-900 bg-[#111310] px-4 py-5 text-titanium-200`}
+    >
+      <div className="flex items-center justify-between px-2">
+        <Link to="/" onClick={onNavigate} className="min-w-0">
+          <div className="font-display text-xl font-semibold tracking-tight text-titanium-50">
+            RealSync
+          </div>
+          <div className="font-mono text-[9px] uppercase tracking-[.18em] text-titanium-600">
+            Dynamics.AI · SiteOS
+          </div>
+        </Link>
+        {onNavigate && (
+          <button
+            type="button"
+            onClick={onNavigate}
+            aria-label="Navigation schließen"
+            className="grid h-9 w-9 place-items-center rounded-full border border-titanium-800 text-titanium-400 lg:hidden"
+          >
+            <X size={16} />
+          </button>
+        )}
+      </div>
+
+      <nav className="mt-8 space-y-1" aria-label="Builder Navigation">
+        {BUILDER_NAV.map((item) => {
+          const Icon = item.icon;
+          return (
+            <Link
+              key={item.label}
+              to={item.href}
+              onClick={onNavigate}
+              className="flex items-center gap-3 rounded-2xl px-3 py-3 text-sm text-titanium-300 transition hover:bg-black/25 hover:text-titanium-50"
+            >
+              <Icon size={17} />
+              <span>{item.label}</span>
+            </Link>
+          );
+        })}
+      </nav>
+
+      <div className="mt-7 flex items-center justify-between px-3">
+        <span className="text-xs font-medium text-titanium-600">Agents</span>
+        <Plus size={14} className="text-titanium-600" />
+      </div>
+      <div className="mt-2 space-y-1">
+        <Link
+          to="/app/agents"
+          onClick={onNavigate}
+          className="flex items-center gap-3 rounded-2xl px-3 py-3 text-sm text-titanium-400 transition hover:bg-black/25 hover:text-titanium-100"
+        >
+          <Bot size={17} /> Browse Agents <ChevronRight size={14} className="ml-auto" />
+        </Link>
+        <Link
+          to="/app/bots"
+          onClick={onNavigate}
+          className="flex items-center gap-3 rounded-2xl px-3 py-3 text-sm text-titanium-400 transition hover:bg-black/25 hover:text-titanium-100"
+        >
+          <MessageSquare size={17} /> Bots
+        </Link>
+      </div>
+
+      <div className="mt-7 px-3 text-xs font-medium text-titanium-600">Workspace</div>
+      <div className="mt-2 space-y-1">
+        <div className="rounded-2xl bg-black/25 px-3 py-3 text-sm text-titanium-50">
+          Website Builder
+        </div>
+        <Link
+          to="/app/siteos"
+          onClick={onNavigate}
+          className="block rounded-2xl px-3 py-3 text-sm text-titanium-400 transition hover:bg-black/25 hover:text-titanium-100"
+        >
+          SiteOS Projects
+        </Link>
+        <Link
+          to="/app/websites"
+          onClick={onNavigate}
+          className="block rounded-2xl px-3 py-3 text-sm text-titanium-400 transition hover:bg-black/25 hover:text-titanium-100"
+        >
+          Websites & Domains
+        </Link>
+      </div>
+
+      <div className="mt-auto pt-8">
+        <Link
+          to="/app"
+          onClick={onNavigate}
+          className="flex items-center gap-3 rounded-2xl border border-titanium-800 px-3 py-3 text-sm text-titanium-400 transition hover:border-[#e4cfa2]/35 hover:text-titanium-100"
+        >
+          <span className="grid h-8 w-8 place-items-center rounded-full bg-titanium-900 font-display text-xs text-titanium-200">
+            R
+          </span>
+          Command Center
+          <ChevronRight size={14} className="ml-auto" />
+        </Link>
+      </div>
+    </aside>
+  );
+}
+
+function BuilderTemplateCard({
+  template,
+  index,
+  onSelect,
+}: {
+  template: (typeof BUILDER_TEMPLATES)[number];
+  index: number;
+  onSelect: () => void;
+}) {
+  const variant = index % 4;
+
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      aria-label={`${template.label} Vorlage verwenden`}
+      className="group overflow-hidden rounded-[22px] border border-titanium-900 bg-obsidian-900 text-left transition duration-200 hover:-translate-y-0.5 hover:border-[#e4cfa2]/35 hover:shadow-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-[#e4cfa2]/50"
+    >
+      <div className="aspect-[16/10] overflow-hidden bg-gradient-to-br from-obsidian-800 to-obsidian-950 p-3">
+        <div className="h-full overflow-hidden rounded-xl border border-titanium-800/80 bg-[#f1eee8] p-2 text-[#161713] shadow-xl transition duration-300 group-hover:scale-[1.015]">
+          <div className="flex items-center gap-1 border-b border-black/10 pb-1.5">
+            <span className="h-1.5 w-1.5 rounded-full bg-black/20" />
+            <span className="h-1.5 w-1.5 rounded-full bg-black/20" />
+            <span className="h-1.5 w-1.5 rounded-full bg-black/20" />
+            <span className="ml-auto h-1.5 w-12 rounded-full bg-black/10" />
+          </div>
+          <div className={`mt-2 grid h-[calc(100%-14px)] gap-2 ${variant % 2 === 0 ? 'grid-cols-[1.15fr_.85fr]' : 'grid-cols-1'}`}>
+            <div className="flex min-w-0 flex-col justify-center rounded-md bg-[#161713] p-2 text-[#f1eee8]">
+              <span className="h-1.5 w-10 rounded-full bg-[#e4cfa2]/70" />
+              <span className="mt-2 h-2 w-4/5 rounded-full bg-white/80" />
+              <span className="mt-1 h-2 w-2/3 rounded-full bg-white/55" />
+              <span className="mt-2 h-1.5 w-3/5 rounded-full bg-white/20" />
+              <span className="mt-auto h-3 w-14 rounded-full bg-[#e4cfa2]" />
+            </div>
+            {variant % 2 === 0 ? (
+              <div className="grid grid-rows-2 gap-2">
+                <div className="rounded-md bg-black/10" />
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="rounded-md bg-black/15" />
+                  <div className="rounded-md bg-[#e4cfa2]/70" />
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-3 gap-2">
+                <div className="rounded-md bg-black/10" />
+                <div className="rounded-md bg-[#e4cfa2]/60" />
+                <div className="rounded-md bg-black/15" />
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+      <div className="flex items-center gap-3 px-4 py-3">
+        <span className="min-w-0 flex-1 truncate text-sm font-semibold text-titanium-100">
+          {template.label}
+        </span>
+        <ChevronRight size={15} className="text-titanium-600 transition group-hover:translate-x-0.5 group-hover:text-[#e4cfa2]" />
+      </div>
+    </button>
   );
 }
 

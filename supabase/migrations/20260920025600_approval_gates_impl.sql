@@ -11,14 +11,17 @@ alter table public.runtime_approval_gates
   add column if not exists tenant_id uuid default gen_random_uuid(),
   add column if not exists metadata jsonb;
 
--- Backfill tenant_id from related execution where it matches
+-- Backfill tenant_id from related execution
 update public.runtime_approval_gates rg
   set tenant_id = re.tenant_id
   from public.runtime_executions re
   where rg.execution_id = re.id
-    and rg.tenant_id != re.tenant_id;
+    and rg.tenant_id is null;
 
--- Remove default and add NOT NULL constraint
+-- Remove default
 alter table public.runtime_approval_gates
-  alter column tenant_id drop default,
+  alter column tenant_id drop default;
+
+-- Add NOT NULL constraint
+alter table public.runtime_approval_gates
   alter column tenant_id set not null;

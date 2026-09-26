@@ -54,6 +54,13 @@
     <link rel="alternate icon" type="image/png" href="/brand/logo-square-400.png" />
     <link rel="apple-touch-icon" href="/brand/logo-square-400.png" />
     <link rel="canonical" href="https://realsyncdynamicsai.de/" />
+    <!-- LCP: Der Europe-Network-Hero auf `/` rendert europe-globe.webp als
+         groesstes Element. Ohne Preload startet der Request erst, wenn der
+         Hero-Chunk geparst ist. Die beiden Display-Fonts tragen Headline und
+         Eyebrow im ersten Viewport — self-hosted, daher `crossorigin`. -->
+    <link rel="preload" as="image" href="/europe-globe.webp" type="image/webp" fetchpriority="high" />
+    <link rel="preload" as="font" href="/fonts/plus-jakarta-sans-latin.woff2" type="font/woff2" crossorigin />
+    <link rel="preload" as="font" href="/fonts/inter-tight-latin-600-normal.woff2" type="font/woff2" crossorigin />
 
     <!-- Performance: pre-connect zu kritischen Origins damit TLS-Handshake
          vor dem ersten Request läuft. Fonts werden self-hosted (public/fonts/),

@@ -935,6 +935,7 @@ function RoutesWithTracking() {
       <Route path="/kodee/connections" element={<ConnectionsView />} />
       <Route path="/billing/usage" element={<RequireAal2 action="Billing-Verwaltung"><UsageView /></RequireAal2>} />
       <Route path="/pricing" element={<PricingPage />} />
+      <Route path="/preise" element={<Navigate to="/pricing" replace />} />
       <Route path="/pricing/whatsapp" element={<WhatsAppPricingPage />} />
       {/* Pricing Detail Routes */}
       <Route path="/pricing/:slug" element={<PricingDetailPageWrapper />} />

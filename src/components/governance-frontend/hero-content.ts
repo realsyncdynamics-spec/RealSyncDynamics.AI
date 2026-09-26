@@ -104,6 +104,19 @@ export const HERO_SCAN_CTA_LABEL = 'Governance-Scan starten' as const;
 export const HERO_SCAN_CTA_LONG = 'Governance-Scan starten' as const;
 /** Hero secondary CTA (Handoff v2, Ziel `/app/dashboard`). */
 export const HERO_DASHBOARD_CTA_LABEL = 'Live Dashboard ansehen' as const;
+/** Copy and public destinations from the approved Europe screenshot (2026-09-25). */
+export const EUROPE_REFERENCE_HERO = {
+  description: [
+    'Runtime governance for regulated AI systems.',
+    'Continuous evidence. EU-native by design.',
+  ],
+  navigation: [
+    { label: { de: 'Produkt', en: 'Product' }, to: '#modules' },
+    { label: { de: 'Evidence', en: 'Evidence' }, to: '/evidence' },
+    { label: { de: 'Preise', en: 'Pricing' }, to: '/pricing' },
+    { label: { de: 'Login', en: 'Login' }, to: '/login' },
+  ],
+} as const;
 /** Anker-CTA auf den Beispiel-Audit-Trail (`#audit-trail`, Titan-Referenzhero). */
 export const HERO_AUDIT_TRAIL_CTA_LABEL = 'Beispiel-Audit-Trail ansehen' as const;
 

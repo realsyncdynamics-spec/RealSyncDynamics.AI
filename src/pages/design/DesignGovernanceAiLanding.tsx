@@ -1,11 +1,11 @@
 /**
- * Production landing `/` — Governance OS Handoff v2 (2026-09-25).
+ * Production landing `/` — Europe screenshot hero on the Governance OS landing.
  * Structure: Hero (Europa-Karte, Cyan) → Ticker → Problem → Module → Evidence Flow
  * → EU-Trust → Audiences → Preise → CTA → Footer.
  *
- * Kein Dunkel/Cyan/Hell-Umschalter und kein Gold mehr auf `/`: `.rs-handoff`
- * mappt die `--ga-*`-Tokens der Folgesektionen auf die Handoff-Palette.
- * Die Titan-Referenz (Modus-Umschalter) lebt weiter unter `/design/titan`.
+ * Ein zweifarbiger Hell/Dunkel-Umschalter ändert ausschließlich die Farb- und
+ * Bildtönung; `.rs-handoff` mappt die `--ga-*`-Tokens der Folgesektionen.
+ * Die ältere Titan-Referenz bleibt unter `/design/titan` erreichbar.
  */
 import { type PointerEvent as ReactPointerEvent } from 'react';
 import '../../styles/governance-landing-polish.css';
@@ -13,6 +13,7 @@ import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import { SEOHead } from '../../components/SEOHead';
 import { GovernanceOsHero } from '../../components/landing/GovernanceOsHero';
+import { ReferenceModeSwitch, useReferenceMode } from '../../components/landing/ReferenceModeSwitch';
 import { GovernanceFooter } from '../../components/landing/GovernanceFooter';
 import { RegulatoryTicker } from '../../components/landing/RegulatoryTicker';
 import { HomepageBriefSections } from '../../components/landing/HomepageBriefSections';
@@ -42,17 +43,19 @@ function trackCardSheen(event: ReactPointerEvent<HTMLDivElement>) {
 }
 
 export function DesignGovernanceAiLanding() {
+  const { mode, setMode } = useReferenceMode();
   return (
     <div
-      className="ga-context rs-handoff landing-context relative min-h-screen antialiased"
-      data-hero-visual="europe-map-v2"
+      className="ga-context ga-landing-modes rs-handoff landing-context relative min-h-screen antialiased"
+      data-landing-mode={mode === 'light' ? 'light' : 'cyan'}
+      data-hero-visual="europe-reference"
       style={{ backgroundColor: 'var(--ga-void)', color: 'var(--ga-text)' }}
       onPointerMove={trackCardSheen}
     >
       <SEOHead title={SEO_CONFIG['/'].title} description={SEO_CONFIG['/'].description} canonical="/" />
 
       <div className="relative z-10 flex min-h-screen flex-col">
-        <GovernanceOsHero />
+        <GovernanceOsHero modeSwitch={<ReferenceModeSwitch mode={mode} onChange={setMode} />} />
         <RegulatoryTicker />
         <HomepageBriefSections />
         <GovernancePricingSection />

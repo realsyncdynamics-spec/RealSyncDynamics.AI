@@ -1,7 +1,9 @@
 import { Link } from "react-router-dom";
-import { ArrowLeft, ArrowRight, ShieldCheck } from "lucide-react";
+import { ArrowRight, ShieldCheck } from "lucide-react";
 import { GovernanceRuntimeDashboard } from "../features/governance/GovernanceRuntimeDashboard";
 import { usePageMeta } from "../lib/usePageMeta";
+import { HandoffTopBar } from "../components/handoff/HandoffTopBar";
+import "../styles/governance-os-handoff.css";
 
 /**
  * /governance-runtime — public preview of the Operational AI Governance
@@ -17,25 +19,8 @@ export function GovernanceRuntimePage() {
   });
 
   return (
-    <div className="bg-hero-only min-h-screen flex flex-col text-titanium-50">
-      <header className="px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between border-b border-silver-700/30">
-        <Link
-          to="/"
-          className="inline-flex items-center gap-2 text-xs sm:text-sm text-silver-300 hover:text-titanium-50"
-        >
-          <ArrowLeft className="h-3.5 w-3.5" />
-          <span className="font-display font-bold tracking-tight text-titanium-50">
-            RealSyncDynamics.AI
-          </span>
-        </Link>
-
-        <Link
-          to="/contact-sales?intent=governance-runtime"
-          className="surface-mono inline-flex items-center gap-1.5 px-4 py-2 text-sm font-bold rounded-none"
-        >
-          Founding Access starten <ArrowRight className="h-3.5 w-3.5" />
-        </Link>
-      </header>
+    <div className="rs-ui rs-page min-h-screen flex flex-col text-titanium-50">
+      <HandoffTopBar active="governance" />
 
       <section className="px-4 sm:px-6 lg:px-8 pt-14 pb-10 sm:pt-20 sm:pb-16">
         <div className="max-w-5xl mx-auto">

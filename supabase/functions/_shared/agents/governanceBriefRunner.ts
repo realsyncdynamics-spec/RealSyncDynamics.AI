@@ -10,6 +10,8 @@
 
 import type { SupabaseClient } from 'jsr:@supabase/supabase-js@2';
 import { checkTenantQuota, recordChatHistory, type AdminLike } from '../llm-quota.ts';
+import { gatewayHeaders } from '../aiGateway/edgeClient.ts';
+import { internalGatewayConfig } from '../aiGateway/internalClient.ts';
 import {
   buildBriefPrompt,
   validateBriefPayload,
@@ -53,7 +55,7 @@ export async function generateGovernanceBriefForTenant(
 
   // 4. LLM über ai-gateway.
   const { system, user } = buildBriefPrompt(ctx);
-  const { payload, provider, model, usage } = await callGateway(system, user);
+  const { payload, provider, model, usage } = await callGateway(tenantId, system, user);
 
   // 5. Upsert (idempotent über UNIQUE(tenant_id, brief_date)).
   const { data: upserted, error: upErr } = await admin
@@ -161,21 +163,21 @@ interface GatewayResult {
   usage: { input_tokens?: number; output_tokens?: number };
 }
 
-// Aufruf des internen ai-gateway (Muster aus remediation-agent): anon-Key +
-// apikey-Header, op 'extract_json' mit strict-json-Profil für verlässliches JSON.
-async function callGateway(system: string, user: string): Promise<GatewayResult> {
-  const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
-  const ANON = Deno.env.get('SUPABASE_ANON_KEY')!;
+// Aufruf des internen ai-gateway über den Service-Pfad (x-internal-key =
+// AI_GATEWAY_INTERNAL_KEY, x-internal-caller = agent-os-runner). Der Cron
+// hat keinen Nutzer-JWT; der Anon-Key allein wird vom Gateway seit der
+// P0-Härtung abgelehnt. tenant_id geht mit, damit der Gateway pro Tenant
+// loggt und drosselt. op 'extract_json' mit strict-json für verlässliches JSON.
+async function callGateway(tenantId: string, system: string, user: string): Promise<GatewayResult> {
+  const cfg = internalGatewayConfig('agent-os-runner', (n) => Deno.env.get(n));
+  if (!cfg.ok) throw new Error(`ai-gateway not configured: missing ${cfg.missing.join(', ')}`);
 
-  const resp = await fetch(`${SUPABASE_URL}/functions/v1/ai-gateway`, {
+  const resp = await fetch(`${cfg.config.supabaseUrl}/functions/v1/ai-gateway`, {
     method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-      'authorization': `Bearer ${ANON}`,
-      'apikey': ANON,
-    },
+    headers: gatewayHeaders(cfg.config),
     body: JSON.stringify({
       op: 'extract_json',
+      tenant_id: tenantId,
       feature: 'governance_brief_daily',
       task_type: 'governance_reasoning',
       model_profile: 'strict-json',

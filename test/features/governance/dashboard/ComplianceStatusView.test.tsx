@@ -1,11 +1,12 @@
-import { describe, expect, it } from 'vitest';
-import { render } from '@testing-library/react';
+import { describe, expect, it, vi } from 'vitest';
+import { fireEvent, render } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { ComplianceStatusView } from '../../../../src/features/governance/dashboard/ComplianceStatusDashboard';
 import type { CockpitData } from '../../../../src/features/governance/cockpit/cockpitData';
 import {
   computeEvidenceHealth,
   computeOpenMeasures,
+  computeRiskDistribution,
   computeRiskIndex,
   EMPTY_SUMMARY_24H,
 } from '../../../../src/features/governance/dashboard/complianceStatus';
@@ -38,6 +39,8 @@ function fixture(overrides: Partial<CockpitData> = {}): CockpitData {
     counts,
     posture,
     score: overrides.score !== undefined ? overrides.score : computeGovernanceScore(counts, posture),
+    scoreStatus: overrides.scoreStatus ?? 'ok',
+    scoreBasis: overrides.scoreBasis ?? { aiSystems: 1, controlMappings: 1 },
     readiness: overrides.readiness !== undefined ? overrides.readiness : computeAuditReadiness(posture),
     readinessTrend: overrides.readinessTrend ?? null,
     actions: overrides.actions ?? [],
@@ -56,6 +59,7 @@ function fixture(overrides: Partial<CockpitData> = {}): CockpitData {
     ],
     assetFlows: overrides.assetFlows ?? [],
     partialFailures: overrides.partialFailures ?? [],
+    signals: overrides.signals,
   };
 }
 
@@ -110,14 +114,54 @@ describe('ComplianceStatusView', () => {
   });
 
   it('shows dashes instead of fake scores when the tenant is empty', () => {
-    const { getByText, queryByTestId } = rendered({
-      data: fixture(),
+    const { getByText, queryByTestId, getByTestId } = rendered({
+      data: fixture({ score: null, scoreStatus: 'insufficient_data', scoreBasis: { aiSystems: 0, controlMappings: 0 } }),
     });
     expect(getByText('Noch keine Governance-Daten')).toBeInTheDocument();
     expect(queryByTestId('governance-score')).toBeNull();
     expect(queryByTestId('risk-index')).toBeNull();
     expect(queryByTestId('evidence-health')).toBeNull();
     expect(queryByTestId('open-measures')).toBeNull();
+    // Compliance KPI row still renders — Governance-Score aus derselben
+    // Quelle wie Kachel/Karte: „Noch nicht bewertbar“, nie 100.
+    expect(getByTestId('compliance-kpi-row')).toBeInTheDocument();
+    expect(getByTestId('compliance-score-overall').textContent).toContain('Noch nicht bewertbar');
+    expect(getByTestId('compliance-score-overall').textContent).not.toMatch(/\b100\b/);
+    expect(getByTestId('compliance-critical-findings').textContent).toContain('—');
+  });
+
+  it('renders measured compliance KPIs including valid zero', () => {
+    const { getByTestId } = rendered({
+      data: fixture({ counts: { ...ZERO, incidents: 1 } }),
+      complianceKpi: {
+        score_overall: 0,
+        score_breakdown: {
+          score_gdpr: 0,
+          score_nis2: null,
+          score_dsa: null,
+          score_ai_act: null,
+          policy_compliance: null,
+          vendor_risk: null,
+          incident_response: null,
+          data_governance: null,
+        },
+        riskTrendDirection: 'stable',
+        criticalFindings: 0,
+        newIncidents: 0,
+        resolvedIncidents: null,
+        upcomingDeadlines: null,
+        policies: { documented: null, pending: null },
+        vendors: { active: null, highRisk: null },
+      },
+    });
+    // P0: Score overall = Governance-Score (90 aus 1 Vorfall), die
+    // compliance_score_history nur noch als Rahmenwerk-Hinweis.
+    expect(getByTestId('compliance-score-overall').textContent).toContain('Governance-Score90');
+    expect(getByTestId('compliance-score-overall').textContent).toContain('Rahmenwerk-Historie: GDPR 0');
+    expect(getByTestId('governance-score').textContent).toContain('90');
+    expect(getByTestId('compliance-critical-findings').textContent).toContain('Critical findings0');
+    expect(getByTestId('compliance-new-incidents').textContent).toContain('New incidents (24h)0');
+    expect(getByTestId('compliance-risk-trend').textContent).toMatch(/Stable/);
   });
 
   it('does not treat a partial load failure as an empty tenant', () => {
@@ -125,12 +169,171 @@ describe('ComplianceStatusView', () => {
       data: fixture({
         partialFailures: ['incidents: RLS'],
         score: null,
+        scoreStatus: 'unreliable',
       }),
     });
     expect(getByTestId('compliance-partial-failure')).toBeInTheDocument();
     expect(queryByText('Noch keine Governance-Daten')).toBeNull();
-    expect(getByTestId('governance-score').textContent).toContain('Score nicht verfügbar');
-    expect(getByTestId('governance-score').textContent).not.toMatch(/Sehr gut/);
+    // Fehlerzustand mit Retry — weder Leerzustand noch Zahl.
+    expect(getByTestId('governance-score-state-error').textContent).toContain('Score konnte nicht geladen werden');
+    expect(getByTestId('governance-score-state-retry')).toBeInTheDocument();
+    expect(queryByText('Noch nicht bewertbar')).toBeNull();
+    expect(getByTestId('governance-score').textContent).not.toMatch(/Sehr gut|100/);
+  });
+
+  it('calls onRetry from the score error state', () => {
+    const onRetry = vi.fn();
+    const { getByTestId } = rendered({
+      data: fixture({ partialFailures: ['kpi: rpc down'], score: null, scoreStatus: 'unreliable' }),
+      onRetry,
+    });
+    fireEvent.click(getByTestId('governance-score-state-retry'));
+    expect(onRetry).toHaveBeenCalledTimes(1);
+  });
+
+  it('P0-2: „Packs →“ trägt ein Schloss, wenn policy.packs fehlt (Free)', () => {
+    const { getByTestId, unmount } = rendered({
+      data: fixture({ counts: { ...ZERO, incidents: 1 } }),
+      packsLockTitle: 'Policy Packs — ab Starter',
+    });
+    const link = getByTestId('policy-coverage-packs-link');
+    expect(link).toHaveAttribute('data-locked', 'true');
+    expect(link).toHaveAttribute('title', 'Policy Packs — ab Starter');
+    expect(link.querySelector('svg')).not.toBeNull();
+    unmount();
+    const open = rendered({ data: fixture({ counts: { ...ZERO, incidents: 1 } }) });
+    const openLink = open.getByTestId('policy-coverage-packs-link');
+    expect(openLink).toHaveAttribute('data-locked', 'false');
+    expect(openLink.querySelector('svg')).toBeNull();
+  });
+
+  it('Addendum: ein Score-Wert auf allen Flächen — insufficient_data ⇒ KPI-Zeile und Karte „Noch nicht bewertbar“', () => {
+    const { getByTestId } = rendered({
+      data: fixture({
+        counts: { ...ZERO, incidents: 1 },
+        score: null,
+        scoreStatus: 'insufficient_data',
+        scoreBasis: { aiSystems: 0, controlMappings: 0 },
+      }),
+    });
+    expect(getByTestId('compliance-score-overall').textContent).toContain('Noch nicht bewertbar');
+    expect(getByTestId('governance-score').textContent).toContain('Noch nicht bewertbar');
+    expect(getByTestId('compliance-score-overall').textContent).not.toMatch(/\b100\b/);
+    expect(getByTestId('governance-score').textContent).not.toMatch(/\b100\b/);
+  });
+
+  it('Addendum: Residualrisiko nennt Hoch/Kritisch mit derselben Schwelle wie die Verteilung', () => {
+    const { getByTestId } = rendered({
+      data: fixture({
+        riskIndex: computeRiskIndex({ assetScores: [68, 0], newRisks24h: 0, openIncidents: 0, dsrOverdue: 0 }),
+        riskDistribution: computeRiskDistribution([68, 0]),
+      }),
+    });
+    expect(getByTestId('risk-index').textContent).toContain('1 Hoch/Kritisch (≥ 50)');
+    expect(getByTestId('risk-index-explainer').textContent).toMatch(/Mittelwert/);
+  });
+
+  it('Addendum: Kritische Befunde enthalten erhöhte Assets, mittlere Scanner-Befunde als Hinweis mit Alter', () => {
+    const { getByTestId } = rendered({
+      data: fixture({
+        counts: { ...ZERO, incidents: 1 },
+        signals: {
+          elevatedAssets: [{ id: 'w1', name: 'realsyncdynamicsai.de', score: 68, bucket: 'high' }],
+          findings: [{
+            id: 'f1', title: 'DMARC fehlt', level: 'medium', eventType: 'email_auth_finding',
+            source: 'website_scanner', createdAt: new Date(Date.now() - 89 * 86_400_000).toISOString(),
+            assetId: null, resolvedAt: null,
+          }],
+          lastScanAt: null,
+          latestEvidenceAt: null,
+        },
+      }),
+    });
+    expect(getByTestId('critical-findings-list').textContent).toContain('realsyncdynamicsai.de');
+    expect(getByTestId('medium-findings-hint').textContent).toMatch(/1 mittlerer Befund: DMARC fehlt · mittel · vor 89 Tagen/);
+  });
+
+  it('Addendum: behobener Befund (gepaart) zählt nicht und steht im Stream als „behoben“', () => {
+    const { getByTestId, queryByTestId } = rendered({
+      data: fixture({
+        counts: { ...ZERO, incidents: 1 },
+        recentEvents: [
+          { id: 'r1', title: 'DMARC gesetzt', eventType: 'email_auth_resolved', riskLevel: 'info', source: 'website_scanner', createdAt: '2026-09-20T08:00:00Z', resolvesEventId: 'f1' },
+          { id: 'f1', title: 'DMARC fehlt', eventType: 'email_auth_finding', riskLevel: 'medium', source: 'website_scanner', createdAt: '2026-06-27T23:02:04Z', resolvedAt: '2026-09-20T08:00:00Z' },
+          { id: 'f0', title: 'SPF fehlt', eventType: 'email_auth_finding', riskLevel: 'medium', source: 'website_scanner', createdAt: '2026-06-27T23:02:04Z', resolvedAt: '2026-09-25T21:04:48Z', resolvedManually: true },
+        ],
+        signals: {
+          elevatedAssets: [],
+          findings: [{
+            id: 'f1', title: 'DMARC fehlt', level: 'medium', eventType: 'email_auth_finding',
+            source: 'website_scanner', createdAt: '2026-06-27T23:02:04Z', assetId: null,
+            resolvedAt: '2026-09-20T08:00:00Z',
+          }],
+          lastScanAt: null,
+          latestEvidenceAt: null,
+        },
+      }),
+    });
+    expect(getByTestId('event-f1')).toHaveAttribute('data-resolved', 'true');
+    expect(getByTestId('event-f1-resolved').textContent).toBe('behoben am 20.09.');
+    expect(getByTestId('event-f0-resolved').textContent).toBe('behoben am 25.09. · manuell bestätigt');
+    expect(getByTestId('event-r1')).toHaveAttribute('data-resolved', 'false');
+    expect(queryByTestId('medium-findings-hint')).toBeNull();
+    expect(getByTestId('no-critical-findings')).toBeInTheDocument();
+  });
+
+  it('Addendum: Evidence mit einem 89 Tage alten Eintrag ⇒ „Zu wenig Daten“, kein 100', () => {
+    const { getByTestId } = rendered({
+      data: fixture({
+        counts: { ...ZERO, incidents: 1 },
+        evidenceHealth: computeEvidenceHealth({
+          coveragePercent: null, totalCount: 1, hashedCount: 1, newEvidence24h: 0, failedScans: 0,
+          latestEvidenceAt: new Date(Date.now() - 89 * 86_400_000).toISOString(),
+        }),
+      }),
+    });
+    const card = getByTestId('evidence-health');
+    expect(card.textContent).toContain('Zu wenig Daten');
+    expect(card.textContent).not.toContain('Prüfbar');
+    expect(getByTestId('evidence-freshness').textContent).toBe('Unter 3 Nachweisen kein Wert. Letzter Nachweis vor 89 Tagen.');
+  });
+
+  it('shows „Noch nicht bewertbar“ with a first step instead of 100 for an empty inventory', () => {
+    const { getByTestId } = rendered({
+      data: fixture({
+        counts: { ...ZERO },
+        score: null,
+        scoreStatus: 'insufficient_data',
+        scoreBasis: { aiSystems: 0, controlMappings: 0 },
+        riskIndex: computeRiskIndex({ assetScores: [10, 20], newRisks24h: 0, openIncidents: 0, dsrOverdue: 0 }),
+      }),
+    });
+    const card = getByTestId('governance-score');
+    expect(card.textContent).toContain('Noch nicht bewertbar');
+    expect(card.textContent).not.toMatch(/100|Sehr gut/);
+    expect(getByTestId('governance-score-state-first-step')).toHaveAttribute('href', '/app/onboarding');
+  });
+
+  it('explains a missing KPI snapshot without a first-step link when the inventory has data', () => {
+    const { getByTestId, queryByTestId } = rendered({
+      data: fixture({
+        counts: { ...ZERO, incidents: 1 },
+        score: null,
+        scoreStatus: 'insufficient_data',
+        scoreBasis: { aiSystems: 2, controlMappings: 0 },
+      }),
+    });
+    expect(getByTestId('governance-score').textContent).toContain('Noch nicht bewertbar');
+    expect(getByTestId('governance-score').textContent).toContain('KPI-Snapshot');
+    expect(queryByTestId('governance-score-state-first-step')).toBeNull();
+  });
+
+  it('Backend-Review A: Fußzeile ohne KPI-Snapshot sagt „Score noch nicht bewertbar“', () => {
+    const { container } = rendered({
+      data: fixture({ counts: { ...ZERO, incidents: 1 }, score: null, scoreStatus: 'insufficient_data', lastUpdated: null }),
+    });
+    expect(container.textContent).toContain('KPI-Snapshot noch nicht verfügbar — Score noch nicht bewertbar.');
+    expect(container.textContent).not.toContain('Echtzeit-Zählern');
   });
 
   it('lists prioritized open measures with deep links', () => {

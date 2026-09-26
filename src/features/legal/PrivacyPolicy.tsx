@@ -94,9 +94,10 @@ export function PrivacyPolicy() {
             der <Link to="/legal/sub-processors" className="text-security-400">Sub-Prozessoren-Seite</Link>.
           </p>
           <p>
-            Wesentliche Empfänger: Supabase (Frankfurt), Anthropic / Google / OpenAI
-            (USA, mit EU-DPA + SCCs nach Art. 46 DSGVO), Stripe (Irland), Hostinger
-            (Deutschland).
+            Wesentliche Empfänger: Cloudflare (Auslieferung der Website, globales
+            Edge-Netz, mit EU-DPA + SCCs), Supabase (Frankfurt), Anthropic / Google /
+            OpenAI (USA, mit EU-DPA + SCCs nach Art. 46 DSGVO), Stripe (Irland),
+            Hostinger (Deutschland).
           </p>
         </Section>
 

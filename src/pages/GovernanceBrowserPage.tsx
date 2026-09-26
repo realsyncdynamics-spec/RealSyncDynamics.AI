@@ -1,25 +1,20 @@
 /**
  * GovernanceBrowserPage — öffentliche, read-only Sicht auf die Governance-OS-Architektur.
- *
- * Zeigt Agenten, Approvals, Evidence, Risiken, Workflows, Connectoren der Demo-Org
- * (DemoAI GmbH). Alle Daten aus statischen Fixtures — keine Auth nötig.
- *
- * Tabs navigieren zwischen Übersichten; Daten werden aus bestehenden Views eingebettet.
  */
-import React, { useState, Suspense } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Lock, Bot, CheckCircle2, AlertTriangle, GitMerge, Plug, ArrowRight, X,
+  Lock, Bot, CheckCircle2, AlertTriangle, GitMerge, Plug, ArrowRight,
 } from 'lucide-react';
 import { DEMO_AI_GMBH } from '../lib/demo/demoAiGmbhFixture';
 import { DEMO_AGENTS } from '../features/governance/agents/demoAgents';
 import { AgentCard } from '../features/governance/agents/AgentCard';
 import { BrowserNav } from '../components/GovernanceBrowser/BrowserNav';
-import { AgentPeekPanel } from '../components/GovernanceBrowser/AgentPeekPanel';
 import { WorkflowDiscoveryPanel } from '../components/GovernanceBrowser/WorkflowDiscoveryPanel';
 import { ApprovalsView } from '../features/governance/ApprovalsView';
 import { AuditorConsoleView } from '../features/governance/AuditorConsoleView';
 import { ConnectorsView } from '../features/governance/ConnectorsView';
+import { SuspenseBoundary } from '../components/SuspenseBoundary';
 
 type Tab = 'agents' | 'approvals' | 'evidence' | 'risks' | 'workflows' | 'connectors';
 
@@ -29,7 +24,6 @@ export function GovernanceBrowserPage() {
 
   return (
     <div className="flex flex-col h-screen bg-obsidian-950 text-titanium-100">
-      {/* Lock Banner */}
       <div className="shrink-0 border-b border-titanium-800 bg-obsidian-900/50 px-4 sm:px-6 py-3 flex items-center gap-2 text-xs text-titanium-400">
         <Lock className="h-3.5 w-3.5" />
         <span>Öffentliche Governance Browser Vorschau von {DEMO_AI_GMBH.org.name}</span>
@@ -41,22 +35,17 @@ export function GovernanceBrowserPage() {
         </button>
       </div>
 
-      {/* Header */}
       <div className="shrink-0 border-b border-titanium-800 bg-obsidian-900 px-4 sm:px-6 py-6">
         <div className="max-w-6xl mx-auto">
-          <h1 className="font-display font-bold text-2xl text-titanium-50 mb-2">
-            Governance Browser
-          </h1>
+          <h1 className="font-display font-bold text-2xl text-titanium-50 mb-2">Governance Browser</h1>
           <p className="text-sm text-titanium-400">
             Erkennen Sie alle Agenten, Freigaben, Nachweise und Workflows, die in der Governance OS laufen.
           </p>
         </div>
       </div>
 
-      {/* Nav Tabs */}
       <BrowserNav activeTab={activeTab} onTabChange={setActiveTab} />
 
-      {/* Content */}
       <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6">
         <div className="max-w-6xl mx-auto">
           {activeTab === 'agents' && (
@@ -79,9 +68,9 @@ export function GovernanceBrowserPage() {
                 <CheckCircle2 className="h-5 w-5 text-emerald-300" />
                 Freigaben (Approvals)
               </h2>
-              <Suspense fallback={<div className="text-titanium-400">Laden …</div>}>
+              <SuspenseBoundary variant="panel" label="Freigaben werden geladen …">
                 <ApprovalsView />
-              </Suspense>
+              </SuspenseBoundary>
             </div>
           )}
 
@@ -89,11 +78,11 @@ export function GovernanceBrowserPage() {
             <div>
               <h2 className="font-display font-bold text-lg text-titanium-50 mb-4 flex items-center gap-2">
                 <AlertTriangle className="h-5 w-5 text-security-300" />
-                Evidence & Audit Trail
+                Evidence &amp; Audit Trail
               </h2>
-              <Suspense fallback={<div className="text-titanium-400">Laden …</div>}>
+              <SuspenseBoundary variant="panel" label="Evidence wird geladen …">
                 <AuditorConsoleView />
-              </Suspense>
+              </SuspenseBoundary>
             </div>
           )}
 
@@ -101,7 +90,7 @@ export function GovernanceBrowserPage() {
             <div>
               <h2 className="font-display font-bold text-lg text-titanium-50 mb-4 flex items-center gap-2">
                 <AlertTriangle className="h-5 w-5 text-amber-300" />
-                Risiken & KI-Einstufungen
+                Risiken &amp; KI-Einstufungen
               </h2>
               <div className="space-y-3">
                 {DEMO_AI_GMBH.aiSystems.map((ai) => (
@@ -145,15 +134,14 @@ export function GovernanceBrowserPage() {
                 <Plug className="h-5 w-5 text-purple-300" />
                 Connectoren
               </h2>
-              <Suspense fallback={<div className="text-titanium-400">Laden …</div>}>
+              <SuspenseBoundary variant="panel" label="Connectoren werden geladen …">
                 <ConnectorsView />
-              </Suspense>
+              </SuspenseBoundary>
             </div>
           )}
         </div>
       </div>
 
-      {/* Footer CTA */}
       <div className="shrink-0 border-t border-titanium-800 bg-obsidian-900 px-4 sm:px-6 py-4">
         <button
           onClick={() => navigate('/welcome?source=governance-browser-cta')}

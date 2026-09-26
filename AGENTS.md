@@ -9,17 +9,71 @@ Du bist der „RealSync Lead Architect“. Dein Fachgebiet ist die Entwicklung v
 - **Formen:** 90-Grad-Winkel (strikte Kanten, keine abgerundeten Ecken/Rounded Corners).
 - **Typografie:** Monospace-Schriften für technische Daten und Metadaten.
 
-### Ausnahme: Public Landing/Marketing ("European Enterprise Trust")
-- Öffentliche Marketing-Seiten (z. B. `/`) nutzen ein **Light-Theme**:
-  Slate-Neutrals (`slate-*`: #F8FAFC Background · #0F172A Text · #475569 Body)
-  statt Obsidian/Titanium.
-- Ruhige, leicht abgerundete Karten/Chips/Panels (10–14px via `rounded-chip` /
-  `rounded-card` / `rounded-panel`, definiert in `src/index.css`).
-- Primärakzent: Petrol (`petrol-700`, #0F766E) — dunkel genug für Light-Theme.
-  Security-Blue/Cyan nur im App/Dashboard.
-- Separate `LandingNavbar` (weiß/Slate) statt der dunklen `Navbar`.
-  App/Dashboard verwenden weiterhin die dunkle `Navbar`.
-- Monospace bleibt Pflicht für alle Metadaten, auch im Light-Theme.
+### Public Landing/Marketing: dunkel, Cyan trägt die Handlung
+
+Verbindlich. Die frühere Light-Theme-Regel (Slate + Petrol, `LandingNavbar`)
+ist aufgehoben — sie beschrieb eine Startseite, die so nicht mehr gebaut wird.
+
+**Dieses Dokument nennt keine Farbwerte.** Das ist Absicht, nicht Faulheit: Die
+Palette wurde seit Juni dreimal verschoben, und jede Fassung dieser Datei, die
+Hex-Werte wiederholt hat, war binnen Tagen falsch — zuletzt stand hier eine
+Tokenliste, die zwei Umbauten hinter der Wirklichkeit lag. Wer den geltenden
+Wert braucht, liest ihn dort, wo er steht; wer ihn ändert, ändert ihn an einer
+Stelle.
+
+- **Was `/` rendert, ist die Referenz.** Auf `c79231a` ist das
+  `pages/design/DesignGovernanceAiLanding` mit `GovernanceAiHeader`. Die
+  frühere Titan-Startseite (`MainLanding`, `PublicDarkHeader`) bleibt als
+  reversibler Rückfall auf `/design/titan` erreichbar — sie ist nicht mehr die
+  Referenz, aber auch nicht tot.
+- **Ein Tokensystem, nicht drei.** Die Werte der Startseite stehen zentral in
+  `src/index.css` (`.ga-context`). `components/landing/landing-theme.ts`
+  bedient nur noch die Rückfall-Route; wer sie für `/` liest, liest die
+  falsche Datei.
+- **Kein Farbmodus-Umschalter auf `/`.** Ein Schalter macht die geltende Farbe
+  zur Laufzeitwahl des Besuchers, und dann gibt es keinen Design-Lock mehr,
+  den man prüfen könnte. Wer eine zweite Fassung zeigen will, baut eine eigene
+  Vorschau-Route. (Die Schalter-Maschinerie aus #1465 liegt noch im Repo und
+  hängt an der Rückfall-Route, nicht an `/`.)
+- **Kanten bleiben hart.** `rounded-full` für Pills, sonst nichts —
+  `--radius-{xs..3xl}` sind in `@theme` auf 0 gezwungen. Die Trust-Radien
+  `rounded-chip` / `-card` / `-panel` gehören zur hellen Altfläche
+  (`LandingShell`, `LandingNavbar`, `pages/Landing.tsx`) und zu den
+  UI-Primitiven.
+- **Monospace** bleibt Pflicht für Metadaten.
+- **Inhalte** kommen aus den SSoT-Dateien (`hero-content.ts`, `pricing.ts`,
+  `implementation-status.ts`, `public-nav.ts`), nicht aus der Komponente.
+
+**Ein Teil von `components/landing/` hängt an nichts.** Gemessen auf
+`c79231a`: 10 von 47 Dateien ohne Importeur, darunter `ThemeSwitch.tsx` und
+`use-ga-theme.ts`. Die Zahl bewegt sich mit jedem Landing-PR; `npm run
+check:dead` nennt den jeweils aktuellen Stand.
+
+**Vor dem Wiederverwenden prüfen, ob die Datei noch hängt.** Eine Datei in
+`components/landing/` zu finden heißt nicht, dass sie gerendert wird.
+
+**Noch nicht migriert.** Der öffentliche Bereich hat fünf Kopf-Muster
+nebeneinander; nur das erste entspricht der Regel oben:
+
+| Muster | Art | Seiten auf `main` (c79231a) |
+|---|---|---|
+| `components/landing/GovernanceAiHeader` | die Referenz | 1 Seite |
+| `components/landing/PublicDarkHeader` | dunkel, Titan-Rückfall | 4 Seiten |
+| `components/LandingNavbar` | hell, Altbestand | 4 Seiten |
+| `enterprise-os/layout/PublicNav` | eigener Strang | 6 Seiten |
+| `pages/alternative/AlternativeLanding` | eigener `<header>` im Rahmen | 7 Seiten |
+
+Die Zahlen bewegen sich. Wer den aktuellen Stand braucht, zählt selbst — der
+Befehl misst den ausgecheckten Stand, nicht `main`:
+
+```bash
+for c in GovernanceAiHeader PublicDarkHeader LandingNavbar PublicNav AlternativeLanding; do
+  printf '%-22s %s\n' "$c" "$(git grep -l "$c" -- 'src/**/*.tsx' | grep -vc "$c.tsx")"
+done
+```
+
+Neue öffentliche Seiten bekommen den Referenz-Kopf. Bestehende werden
+schrittweise nachgezogen, nicht in einem Zug.
 
 ## Kontext RealSync Dynamics
 1. **Zielgruppe:** Creator, Behörden und Enterprise-Kunden in Europa.

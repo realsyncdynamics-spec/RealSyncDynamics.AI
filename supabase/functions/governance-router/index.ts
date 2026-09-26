@@ -39,7 +39,7 @@ import {
   requireQuota,
 } from '../_shared/entitlements.ts';
 import { getCurrentTotal, recordUsage } from '../_shared/usage.ts';
-import { createServerGatewayFromEnv } from '../_shared/aiGateway/serverFromEnv.ts';
+import { createServerGatewayFromEnv, localInferenceLabel } from '../_shared/aiGateway/serverFromEnv.ts';
 import {
   routeOfSlug,
   parseChatRequest,
@@ -310,6 +310,8 @@ async function handleChat(
     allowCloud: ctx.allowCloud,
     pdpMode: pep.mode,
     pdpDecision: pep.result?.decision ?? null,
+    // Offenlegung (Art. 50) muss den real bedienenden lokalen Provider nennen.
+    localLabel: localInferenceLabel(),
   });
 
   const started = Date.now();

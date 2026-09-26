@@ -373,7 +373,8 @@ function ScanSummary({ report }: { report: Report }) {
             state={{
               domain:          report.domain,
               score:           report.score,
-              email:           report.email,
+              // email bewusst nicht im router-state: sharebare Permalinks
+              // duerfen keine PII tragen (Backend #1558 + FE follow-up).
               created_at:      report.created_at,
               coverage:        report.coverage,
               coverage_notice: report.coverage_notice,

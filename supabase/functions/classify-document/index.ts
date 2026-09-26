@@ -5,7 +5,8 @@
 //   {
 //     text:        string;        // plain-text extract of a document
 //     hint?:       string;        // optional caller hint, e.g. file name
-//     tenant_id?:  string;        // for audit / future commit flow
+//     tenant_id:   string;        // required for AI classification (ai-gateway
+//                                  // checks membership with the caller's JWT)
 //   }
 //
 // Returns:
@@ -114,14 +115,26 @@ Deno.serve(async (req) => {
   }
   const hint = typeof body.hint === 'string' ? body.hint.trim() : '';
 
+  const tenantId = typeof body.tenant_id === 'string' ? body.tenant_id.trim() : '';
+
+  // Nutzerkontext: der Aufrufer (TaxDocumentsView via functions.invoke)
+  // schickt seinen Nutzer-JWT. Den reichen wir an ai-gateway durch, damit der
+  // Gateway Identität + Tenant-Mitgliedschaft selbst prüft (P0-Härtung).
+  // Kein Fallback auf service_role/anon: ohne Nutzer-JWT/tenant_id lehnt der
+  // Gateway ab und diese Function antwortet mit dem dokumentierten
+  // 200-Fallback (category UNKNOWN).
   const supabaseUrl = Deno.env.get('SUPABASE_URL');
-  const anonKey    = Deno.env.get('SUPABASE_ANON_KEY')
-                  ?? Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+  const anonKey    = Deno.env.get('SUPABASE_ANON_KEY');
   if (!supabaseUrl || !anonKey) {
     return jsonResponse(fallbackResult('AI_GATEWAY_NOT_CONFIGURED — SUPABASE_URL/ANON_KEY missing'));
   }
+  const userAuth = req.headers.get('Authorization') ?? '';
+  const userToken = userAuth.startsWith('Bearer ') ? userAuth.slice(7).trim() : '';
+  if (!userToken || !tenantId) {
+    return jsonResponse(fallbackResult('AI_GATEWAY_UNAUTHORIZED — user session and tenant_id required'));
+  }
 
-  const client = new AiGatewayEdgeClient({ supabaseUrl, apiKey: anonKey });
+  const client = new AiGatewayEdgeClient({ supabaseUrl, apiKey: anonKey, authToken: userToken });
 
   const input = [
     hint ? `Dateiname / Hinweis: ${hint}` : '',
@@ -132,6 +145,7 @@ Deno.serve(async (req) => {
 
   try {
     const resp = await client.extractJson<ClassificationOutput>({
+      tenant_id:     tenantId,
       feature:       'document_classification',
       task_type:     'extract_json',
       model_profile: 'strict-json',

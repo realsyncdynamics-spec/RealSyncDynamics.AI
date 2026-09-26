@@ -47,11 +47,15 @@ describe('implementation-status registry', () => {
       resolve('src/components/landing/PlatformCapabilitiesSection.tsx'),
       'utf8',
     );
-    // Replit `/` inlines PLATFORM_LIVE_ITEMS (no PlatformCapabilitiesSection / Roadmap on hero).
     expect(landing).toContain('PLATFORM_LIVE_ITEMS');
-    expect(landing).toContain('EuropeNetworkHero');
+    const titanHero = readFileSync(
+      resolve('src/components/landing/HeroTitanium.tsx'),
+      'utf8',
+    );
+    expect(landing).toContain('HeroTitanium');
+    expect(titanHero).toContain('EuropeNetworkHero');
     expect(landing).not.toContain('GovernanceSphereHost');
-    expect(landing).not.toContain('EuropeReliefBackdrop');
+    expect(titanHero).not.toContain('EuropeReliefBackdrop');
     expect(platform).toContain('PLATFORM_LIVE_ITEMS');
     expect(roadmap).toContain('PREVIEW_IMPLEMENTATION');
     expect(roadmap).toContain('COMING_SOON_IMPLEMENTATION');
@@ -64,18 +68,18 @@ describe('implementation-status registry', () => {
     }
   });
 
-  it('hero headline is Replit Dark/Gold SSOT lock', () => {
+  it('hero headline is Homepage Brief SSOT lock', () => {
     const hero = readFileSync(
       resolve('src/components/governance-frontend/hero-content.ts'),
       'utf8',
     );
-    expect(hero).toContain('AI Compliance');
-    expect(hero).toContain('Operations OS');
-    expect(hero).toContain('für Europa');
-    expect(hero).toContain("HERO_HEADLINE_TEST_SUBSTRING = 'AI Compliance'");
-    expect(hero).toContain("HERO_SCAN_CTA_LABEL = 'Free Audit starten'");
-    expect(hero).toContain("HERO_SCAN_CTA_LONG = 'Kostenlosen Audit starten'");
-    expect(hero).toContain("HERO_DASHBOARD_CTA_LABEL = 'Live Evidence ansehen'");
+    expect(hero).toContain('kontrollierbar');
+    expect(hero).toContain('nachweisbar');
+    expect(hero).toContain('auditbereit');
+    expect(hero).toContain("HERO_HEADLINE_TEST_SUBSTRING = 'kontrollierbar'");
+    expect(hero).toContain("HERO_SCAN_CTA_LABEL = 'Governance-Scan starten'");
+    expect(hero).toContain("HERO_SCAN_CTA_LONG = 'Governance-Scan starten'");
+    expect(hero).toContain("HERO_DASHBOARD_CTA_LABEL = 'Live Dashboard ansehen'");
     expect(hero).not.toContain('99.9');
     expect(hero).not.toContain('UPTIME');
   });

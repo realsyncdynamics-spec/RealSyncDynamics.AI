@@ -39,6 +39,8 @@ function fixture(overrides: Partial<CockpitData> = {}): CockpitData {
     counts,
     posture,
     score: overrides.score !== undefined ? overrides.score : computeGovernanceScore(counts, posture),
+    scoreStatus: overrides.scoreStatus ?? 'ok',
+    scoreBasis: overrides.scoreBasis ?? { aiSystems: 1, controlMappings: 1 },
     readiness: overrides.readiness !== undefined ? overrides.readiness : computeAuditReadiness(posture),
     readinessTrend: overrides.readinessTrend ?? null,
     actions: overrides.actions ?? [],

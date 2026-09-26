@@ -65,7 +65,7 @@ const PRICING_PRODUCT_JSONLD = {
   '@type': 'Product',
   name: 'RealSyncDynamics.AI Compliance Platform',
   description:
-    'EU-native DSGVO- und EU-AI-Act-Compliance-Infrastruktur mit Website-Audit, Consent-Timing-Analyse, Fix-Empfehlungen und Continuous Monitoring.',
+    'EU-native DSGVO- und EU-AI-Act-Compliance-Infrastruktur mit Website-Audit, Consent-Timing-Analyse, Fix-Empfehlungen und Evidence-Export. Dauerhafte Domain-Überwachung: Coming Soon.',
   brand: { '@type': 'Brand', name: 'RealSyncDynamics.AI' },
   offers: [
     {
@@ -253,10 +253,10 @@ function breadcrumbs(items: Array<{ name: string; url: string }>): Record<string
 export const SEO_CONFIG: Record<string, SEOConfig> = {
   // ─── Tier 1 — Hero / Top-Conversion ──────────────────────────────────────
   '/': {
-    // Europe-OS hero lock — matches hero-content.ts H1.
+    // Governance OS Handoff v2 — matches the H1 in GovernanceOsHero.
     title: 'RealSyncDynamics.AI — AI Compliance Operations OS for Europe',
     description:
-      'Runtime governance for regulated AI systems. Continuous evidence. EU-native by design. Free Audit starten — Acquisition-Scan, dann Governance OS.',
+      'Runtime-Governance für regulierte KI-Systeme: KI-Bestand erfassen, nach EU AI Act klassifizieren, Richtlinien durchsetzen, Evidenz nachweisen. DSGVO und EU AI Act, EU-Hosting. Free Audit starten.',
     canonical: `${SITE_URL}/`,
     ogTitle: 'AI Compliance Operations OS for Europe',
     ogDescription:
@@ -265,7 +265,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
   '/pricing': {
     title: 'Preise – Runtime-native AI-Governance-Plattform | RealSyncDynamics.AI',
     description:
-      'Free Audit (0 €), Starter (79 €), Growth (249 €), Agency (699 €), Enterprise (auf Anfrage). Runtime-native Governance: kontinuierliche Telemetrie, Policy-Engine, kryptografisch nachvollziehbare Evidenz. EU-Hosting, AVV inklusive.',
+      'Free Audit (0 €), Starter (79 €), Growth (249 €), Agency (699 €), Enterprise (auf Anfrage). Runtime-native Governance: Website-Scans, Policy-Engine, kryptografisch nachvollziehbare Evidenz. EU-Hosting, AVV inklusive.',
     canonical: `${SITE_URL}/pricing`,
     jsonLd: [
       PRICING_PRODUCT_JSONLD,
@@ -389,7 +389,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
   '/digitale-souveraenitaet': {
     title: 'Digitale Souveränität als Betriebsmodell | RealSyncDynamics.AI',
     description:
-      'Digitale Souveränität praktisch umsetzen: transparente Anbieterstruktur, nachweisbare DSGVO- & AI-Act-Governance, Kontrolle über Drittanbieter und Datenflüsse, Evidence Vault und kontinuierliches Monitoring — das Governance OS im Browser-Format.',
+      'Digitale Souveränität praktisch umsetzen: transparente Anbieterstruktur, nachweisbare DSGVO- & AI-Act-Governance, Kontrolle über Drittanbieter und Datenflüsse, Evidence Vault; dauerhafte Domain-Überwachung als Coming Soon — das Governance OS im Browser-Format.',
     canonical: `${SITE_URL}/digitale-souveraenitaet`,
     ogTitle: 'Digitale Souveränität als Betriebsmodell',
     ogDescription:
@@ -420,6 +420,17 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     jsonLd: breadcrumbs([
       { name: 'Home', url: '/' },
       { name: 'Founding Access', url: '/contact-sales' },
+    ]),
+  },
+
+  '/frontend-builder': {
+    title: 'Frontend Builder für SaaS, AI und B2B-Websites',
+    description:
+      'Wir planen, designen und bauen performante Frontends mit klarem Scope statt endloser Vorabstimmungen. Projekt jetzt qualifizieren.',
+    canonical: `${SITE_URL}/frontend-builder`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'Frontend Builder', url: '/frontend-builder' },
     ]),
   },
 
@@ -487,11 +498,21 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
   '/proliance-alternative': {
     title: 'Proliance Alternative — Web-Compliance-Automation | RealSyncDynamics.AI',
     description:
-      'Proliance ist Compliance-Suite. RealSyncDynamics.AI fokussiert auf Web-Compliance: Pre-Consent-Audit, Fix-Empfehlungen und Continuous Monitoring.',
+      'Proliance ist Compliance-Suite. RealSyncDynamics.AI fokussiert auf Web-Compliance: Pre-Consent-Audit, Fix-Empfehlungen und Audit-Trail; dauerhafte Überwachung Coming Soon.',
     canonical: `${SITE_URL}/proliance-alternative`,
     jsonLd: breadcrumbs([
       { name: 'Home', url: '/' },
       { name: 'Proliance Alternative', url: '/proliance-alternative' },
+    ]),
+  },
+  '/caralegal-alternative': {
+    title: 'caralegal Alternative — technische Governance-Runtime neben dem DSMS | RealSyncDynamics.AI',
+    description:
+      'caralegal ist ein DSMS für die Datenschutzorganisation. RealSyncDynamics.AI ist die technische Compliance-Runtime daneben: Detect, Govern, Enforce, Prove — Befund, Policy-Entscheidung, Nachweis.',
+    canonical: `${SITE_URL}/caralegal-alternative`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'caralegal Alternative', url: '/caralegal-alternative' },
     ]),
   },
 
@@ -1025,11 +1046,33 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
 };
 
 /**
- * Liefert SEO-Config für einen Pfad. Normalisiert trailing slash und fällt
- * auf DEFAULT_SEO zurück, wenn keine Map-Eintrag existiert (z.B. Auth-Pages
- * oder neue Routes ohne Eintrag).
+ * Geführter Flow (`/flow`, `/flow/*`, siehe `src/flow/flowRoutes.ts`):
+ * Prozess- und Funnel-Schritte, keine Inhaltsseiten. Der Namespace ist als
+ * Ganzes `noindex` — fail-closed auch für neue Schritte und unbekannte Slugs,
+ * die `App.tsx` über `/flow/*` ins Flow-Modul leitet. Ein Einzeleintrag je
+ * Schritt würde beides nicht abdecken, weil der Lookup unten exakt ist.
+ *
+ * Wirkt im gerenderten React-Dokument (`SEOHead`), nicht serverseitig: Die
+ * Flow-Routen werden nicht vorgerendert, ein Fetcher ohne JavaScript sieht
+ * weiterhin die generische SPA-Shell.
+ */
+const FLOW_NAMESPACE = '/flow';
+
+export function isFlowPath(path: string): boolean {
+  return path === FLOW_NAMESPACE || path.startsWith(`${FLOW_NAMESPACE}/`);
+}
+
+export const FLOW_SEO: SEOConfig = { ...DEFAULT_SEO, noIndex: true };
+
+/**
+ * Liefert SEO-Config für einen Pfad. Normalisiert trailing slash, setzt den
+ * Flow-Namespace auf `noindex` und fällt sonst auf DEFAULT_SEO zurück, wenn
+ * kein Map-Eintrag existiert (z.B. Auth-Pages oder neue Routes ohne Eintrag).
+ * Die Namespace-Prüfung steht vor dem Lookup, damit kein späterer
+ * Einzeleintrag sie still aushebelt.
  */
 export function getSeoForPath(pathname: string): SEOConfig {
   const path = pathname === '/' ? '/' : pathname.replace(/\/$/, '');
+  if (isFlowPath(path)) return FLOW_SEO;
   return SEO_CONFIG[path] ?? DEFAULT_SEO;
 }

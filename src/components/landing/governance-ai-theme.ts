@@ -1,34 +1,12 @@
-/**
- * Governance-AI-Landing — Design-Tokens.
- *
- * ## Zwei Varianten, ein Attribut
- *
- * Die Startseite tritt in zwei Ausprägungen auf, zwischen denen der Besucher
- * umschaltet (`data-ga-theme` auf dem Seiten-Wrapper, siehe `ThemeSwitch`):
- *
- *   titan  — gebürstetes Titan, Europa als Chromrelief mit Goldströmen,
- *            Inter Tight als Display-Schnitt. Standard beim ersten Aufruf.
- *   night  — Schwarz, Europa als fotografische Nachtaufnahme, Cyan-Akzent,
- *            Playfair Display als Display-Schnitt.
- *
- * ## Warum hier keine Hex-Werte mehr stehen
- *
- * Die Konstanten zeigen auf CSS-Variablen statt auf feste Farben. Dadurch
- * schaltet ein einziges Attribut die ganze Seite um — die Komponenten
- * behalten ihre bestehenden `style`-Angaben und werden trotzdem
- * themefähig. Die tatsächlichen Werte beider Paletten stehen gebündelt in
- * `src/index.css` unter `[data-ga-theme]`; wer eine Farbe ändern will,
- * ändert sie dort an genau einer Stelle für beide Varianten.
- *
- * Keine Preise, keine Copy, keine Limits — alles inhaltliche kommt aus den
- * SSoT-Dateien (`hero-content.ts`, `pricing.ts`, `implementation-status.ts`,
- * `runtimeVocab.ts`, `public-nav.ts`, `governanceModules.ts`).
+/** Brand Direction v1.0. Values live in src/index.css (.ga-context).
+ * Playfair Display for headlines, Inter for UI, monospace for metadata.
  */
 
 /** Schriftfamilien — Basis-Stack aus `landing-theme.ts` weiterverwendet. */
-export { LANDING_SANS as GA_SANS, LANDING_MONO as GA_MONO } from './landing-theme';
+export const GA_SANS = "'Inter', sans-serif";
+export { LANDING_MONO as GA_MONO } from './landing-theme';
 
-/** Display-Schnitt: Inter Tight, self-hosted (siehe `src/index.css`). */
+/** Display-Schnitt: Playfair Display, self-hosted (siehe `src/index.css`). */
 export const GA_DISPLAY = 'var(--ga-display)';
 
 // ── Flächen ─────────────────────────────────────────────────────────────
@@ -43,10 +21,22 @@ export const GA_MUTED = 'var(--ga-muted)';
 export const GA_TITAN = 'var(--ga-titan)';
 export const GA_SILVER = 'var(--ga-silver)';
 
-// ── Akzent: Champagner-Gold ─────────────────────────────────────────────
+// ── Akzent: Cyan (Aktion) ───────────────────────────────────────────────
+// Die Namen bleiben `GA_GOLD*`, damit die bestehenden Sektionen unverändert
+// weiterlaufen; sie bezeichnen die Akzentrolle, nicht mehr den Farbton. Unter
+// `.ga-vip` liefern dieselben Variablen Gold statt Cyan.
 export const GA_GOLD = 'var(--ga-accent)';
 export const GA_GOLD_LITE = 'var(--ga-accent-lite)';
 export const GA_GOLD_DEEP = 'var(--ga-accent-deep)';
+
+// ── VIP-Stufe: City-Light-Gold ──────────────────────────────────────────
+/** Nur Enterprise-Sektion und Agency-Tarif — nie als Aktionsfarbe. */
+export const GA_VIP = 'var(--ga-vip)';
+export const GA_VIP_LITE = 'var(--ga-vip-lite)';
+export const GA_VIP_DEEP = 'var(--ga-vip-deep)';
+
+/** Black-Glass-Fläche der Karten, Kacheln und Tafeln. */
+export const GA_GLASS = 'var(--ga-glass)';
 
 /** Status-Grün — ausschließlich für Betriebssignale, nie als Akzentfarbe. */
 export const GA_GREEN = 'var(--ga-green)';
@@ -87,7 +77,7 @@ export const GA_PILL_PRIMARY =
   'group relative inline-flex items-center justify-center gap-2 overflow-hidden rounded-full px-[28px] py-[15px] text-[14px] font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ga-accent-lite)] hover:brightness-[1.06]';
 
 export const GA_PILL_GHOST =
-  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full border border-[var(--ga-ghost-border)] bg-[var(--ga-ghost-face)] px-[26px] py-[14px] text-[14px] font-medium text-[var(--ga-text)] backdrop-blur-[8px] transition hover:border-[var(--ga-ghost-border-hover)] hover:bg-[var(--ga-ghost-face-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ga-silver)]/60';
+  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full border border-[var(--ga-ghost-border)] bg-[var(--ga-ghost-face)] px-[26px] py-[14px] text-[14px] font-semibold text-[var(--ga-text)] backdrop-blur-[8px] transition hover:border-[var(--ga-ghost-border-hover)] hover:bg-[var(--ga-ghost-face-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ga-silver)]/60';
 
 export const GA_EYEBROW_PILL =
   'inline-flex items-center gap-2.5 whitespace-nowrap rounded-full border border-[var(--ga-accent-border)] bg-[var(--ga-chip-face)] px-[13px] py-[7px] text-[11px] tracking-[.2em] text-[var(--ga-accent-lite)] backdrop-blur-[6px]';

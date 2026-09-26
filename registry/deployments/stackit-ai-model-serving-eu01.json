@@ -1,0 +1,1037 @@
+{
+  "schema_version": "1.0",
+  "deployment_id": "stackit-ai-model-serving-eu01",
+  "vendor_id": "schwarz-digits-cloud",
+  "brand": "STACKIT",
+  "product_name": "STACKIT AI Model Serving (Shared Models)",
+  "product_sku": "stackit-ai-model-serving",
+  "deployment_kind": "shared_serverless",
+  "listing_status": "active",
+  "infrastructure_operator": {
+    "vendor_id": null,
+    "name": null,
+    "status": "unknown",
+    "sources": [],
+    "captured_at": "2026-09-26",
+    "note": "Betreiber der Inferenz-Infrastruktur nicht ausdruecklich belegt."
+  },
+  "connector": {
+    "connector_type": "openai_compatible",
+    "api_base_url": "https://api.openai-compat.model-serving.eu01.onstackit.cloud/v1",
+    "api_paths": [
+      "/chat/completions",
+      "/completions",
+      "/models",
+      "/embeddings"
+    ],
+    "inventory_endpoint": {
+      "kind": "models_list",
+      "path_or_url": "/models"
+    },
+    "legacy_fallback_endpoint": null,
+    "sources": [
+      {
+        "url": "https://docs.stackit.cloud/products/data-and-ai/ai-model-serving/basics/available-shared-models/",
+        "captured_at": "2026-09-26",
+        "locator": "Base URL https://api.openai-compat.model-serving.eu01.onstackit.cloud/v1; /chat/completions, /completions, /models, /embeddings"
+      }
+    ],
+    "captured_at": "2026-09-26"
+  },
+  "inference_region": {
+    "scope": "country",
+    "country_codes": [
+      "DE"
+    ],
+    "provider_region_code": "eu01",
+    "locality": "Germany South",
+    "status": "claimed",
+    "sources": [
+      {
+        "url": "https://stackit.com/en/products/data-ai/stackit-ai-model-serving",
+        "captured_at": "2026-09-26",
+        "locator": "Region: Germany South (SKU ...-EU01)"
+      },
+      {
+        "url": "https://docs.stackit.cloud/products/data-and-ai/ai-model-serving/basics/available-shared-models/",
+        "captured_at": "2026-09-26",
+        "locator": "Base URL ...eu01..."
+      }
+    ],
+    "captured_at": "2026-09-26",
+    "note": "Recherche: konkrete Inferenz-Standortdetails je Shared-Modell im Vertrag pruefen."
+  },
+  "external_inference_egress": {
+    "value": null,
+    "status": "unknown",
+    "sources": [],
+    "captured_at": "2026-09-26",
+    "note": "Nicht belegt."
+  },
+  "jurisdiction": {
+    "provider_jurisdiction": {
+      "value": [
+        "DE"
+      ],
+      "status": "claimed",
+      "sources": [
+        {
+          "url": "https://stackit.com/en/asset/download/34534/file/STACKIT_data_processing_agreement.pdf?version=12",
+          "captured_at": "2026-09-26",
+          "locator": "Schwarz Digits Cloud GmbH & Co. KG, 74177 Bad Friedrichshall"
+        }
+      ],
+      "captured_at": "2026-09-26"
+    },
+    "infrastructure_jurisdiction": {
+      "value": [
+        "DE"
+      ],
+      "status": "claimed",
+      "sources": [
+        {
+          "url": "https://stackit.com/en/products/data-ai/stackit-ai-model-serving",
+          "captured_at": "2026-09-26",
+          "locator": "Region: Germany South"
+        }
+      ],
+      "captured_at": "2026-09-26"
+    },
+    "non_eu_parent_control": {
+      "value": null,
+      "status": "unknown",
+      "sources": [],
+      "captured_at": "2026-09-26",
+      "note": "Nicht belegt."
+    },
+    "eu_commission_seal": {
+      "status": "unknown",
+      "level": null,
+      "applies_to_sku": [],
+      "verification_status": "unknown",
+      "sources": [],
+      "captured_at": "2026-09-26",
+      "valid_from": null,
+      "valid_until": null,
+      "note": "Kein Beleg fuer ein EU-Souveraenitaets-Siegel in den ausgewerteten Quellen."
+    },
+    "third_country_access": {
+      "status": "access_possible",
+      "requires_subprocessor_review": true,
+      "verification_status": "claimed",
+      "sources": [
+        {
+          "url": "https://stackit.com/en/asset/download/34534/file/STACKIT_data_processing_agreement.pdf?version=12",
+          "captured_at": "2026-09-26",
+          "locator": "Drittlandtransfer, wenn in Leistungsbeschreibung/Service-Zertifikat vereinbart oder auf Weisung des Kunden; Subprozessorliste im DPA"
+        }
+      ],
+      "captured_at": "2026-09-26",
+      "note": "Vertraglich unter Bedingungen moeglich; Subprozessorliste pruefen. Nicht aus der Region 'Germany South' abgeleitet."
+    }
+  },
+  "capabilities": {
+    "chat": {
+      "support": "yes",
+      "status": "claimed",
+      "sources": [
+        {
+          "url": "https://docs.stackit.cloud/products/data-and-ai/ai-model-serving/basics/available-shared-models/",
+          "captured_at": "2026-09-26",
+          "locator": "/chat/completions"
+        }
+      ],
+      "captured_at": "2026-09-26"
+    },
+    "completions": {
+      "support": "yes",
+      "status": "claimed",
+      "sources": [
+        {
+          "url": "https://docs.stackit.cloud/products/data-and-ai/ai-model-serving/basics/available-shared-models/",
+          "captured_at": "2026-09-26",
+          "locator": "/completions"
+        }
+      ],
+      "captured_at": "2026-09-26"
+    },
+    "embeddings": {
+      "support": "yes",
+      "status": "claimed",
+      "sources": [
+        {
+          "url": "https://docs.stackit.cloud/products/data-and-ai/ai-model-serving/basics/available-shared-models/",
+          "captured_at": "2026-09-26",
+          "locator": "/embeddings, Embedding-Modelle"
+        }
+      ],
+      "captured_at": "2026-09-26"
+    },
+    "tools": {
+      "support": "model_dependent",
+      "status": "claimed",
+      "sources": [
+        {
+          "url": "https://docs.stackit.cloud/products/data-and-ai/ai-model-serving/basics/available-shared-models/",
+          "captured_at": "2026-09-26",
+          "locator": "Tool calling bei einzelnen Modellen"
+        }
+      ],
+      "captured_at": "2026-09-26"
+    },
+    "reasoning": {
+      "support": "model_dependent",
+      "status": "claimed",
+      "sources": [
+        {
+          "url": "https://docs.stackit.cloud/products/data-and-ai/ai-model-serving/basics/available-shared-models/",
+          "captured_at": "2026-09-26",
+          "locator": "reasoning bei einzelnen Modellen"
+        }
+      ],
+      "captured_at": "2026-09-26"
+    },
+    "json_object": {
+      "support": "unknown",
+      "status": "unknown",
+      "sources": [],
+      "captured_at": "2026-09-26"
+    },
+    "json_schema": {
+      "support": "unknown",
+      "status": "unknown",
+      "sources": [
+        {
+          "url": "https://docs.stackit.cloud/products/data-and-ai/ai-model-serving/faq/",
+          "captured_at": "2026-09-26",
+          "locator": "LengthFinishReasonError bei Structured Output"
+        }
+      ],
+      "captured_at": "2026-09-26",
+      "note": "Strict JSON Schema nicht eindeutig dokumentiert; FAQ nennt Structured-Output-Probleme. Modelltest zwingend."
+    },
+    "json_schema_strict": {
+      "support": "unknown",
+      "status": "unknown",
+      "sources": [],
+      "captured_at": "2026-09-26"
+    },
+    "tool_choice": {
+      "support": "unknown",
+      "status": "unknown",
+      "sources": [],
+      "captured_at": "2026-09-26"
+    },
+    "languages": {
+      "value": [],
+      "status": "unknown",
+      "sources": [],
+      "captured_at": "2026-09-26",
+      "note": "Modellabhaengig."
+    }
+  },
+  "certifications": [
+    {
+      "cert_id": "stackit-ai-model-serving-c5-type2",
+      "scheme": "BSI_C5_TYPE2",
+      "name": "BSI C5 Type 2",
+      "scope": "STACKIT AI Model Serving (laut Service Certificate)",
+      "applies_to_sku": [
+        "stackit-ai-model-serving"
+      ],
+      "status": "claimed",
+      "sources": [
+        {
+          "url": "https://stackit.com/en/asset/download/34346/file/Service_Certificate_STACKIT_AI_Model_Serving.pdf?version=10",
+          "captured_at": "2026-09-25",
+          "locator": "Service Certificate STACKIT AI Model Serving: C5 Type 2 (laut Recherche)",
+          "note": "Am 2026-09-26 lieferte die URL HTML statt PDF; nicht erneut pruefbar."
+        }
+      ],
+      "captured_at": "2026-09-25",
+      "valid_from": null,
+      "valid_until": null,
+      "note": "Nur Recherche-Stand 2026-09-25; offen, bis das Service Certificate erneut gelesen ist."
+    }
+  ],
+  "claims": [
+    {
+      "claim_id": "stackit-no-request-storage",
+      "claim_type": "request_retention",
+      "subject": {
+        "deployment_id": "stackit-ai-model-serving-eu01",
+        "model_ids": []
+      },
+      "value": false,
+      "statement": "Request-Daten werden nicht gespeichert.",
+      "status": "claimed",
+      "sources": [
+        {
+          "url": "https://docs.stackit.cloud/products/data-and-ai/ai-model-serving/faq/",
+          "captured_at": "2026-09-26",
+          "locator": "keine Speicherung von Request-Daten"
+        }
+      ],
+      "captured_at": "2026-09-26"
+    },
+    {
+      "claim_id": "stackit-no-training",
+      "claim_type": "training_on_customer_data",
+      "subject": {
+        "deployment_id": "stackit-ai-model-serving-eu01",
+        "model_ids": []
+      },
+      "value": false,
+      "statement": "Keine Nutzung zum Training.",
+      "status": "claimed",
+      "sources": [
+        {
+          "url": "https://docs.stackit.cloud/products/data-and-ai/ai-model-serving/faq/",
+          "captured_at": "2026-09-26",
+          "locator": "kein Training"
+        }
+      ],
+      "captured_at": "2026-09-26"
+    },
+    {
+      "claim_id": "stackit-operational-logs-30d",
+      "claim_type": "operational_log_retention",
+      "subject": {
+        "deployment_id": "stackit-ai-model-serving-eu01",
+        "model_ids": []
+      },
+      "value": {
+        "days": 30,
+        "fields": [
+          "email",
+          "subject_id"
+        ]
+      },
+      "statement": "Logs mit E-Mail/Subject-ID werden temporaer (30 Tage) vorgehalten.",
+      "status": "claimed",
+      "sources": [
+        {
+          "url": "https://stackit.com/en/asset/download/34346/file/Service_Certificate_STACKIT_AI_Model_Serving.pdf?version=10",
+          "captured_at": "2026-09-25",
+          "locator": "laut Recherche (Service Certificate)"
+        }
+      ],
+      "captured_at": "2026-09-25",
+      "note": "Nur Recherche-Stand; Service Certificate am 2026-09-26 nicht abrufbar."
+    },
+    {
+      "claim_id": "stackit-dpa",
+      "claim_type": "dpa_available",
+      "subject": {
+        "deployment_id": "stackit-ai-model-serving-eu01",
+        "model_ids": []
+      },
+      "value": true,
+      "statement": "Auftragsverarbeitungsvertrag (Art. 28 DSGVO) verfuegbar.",
+      "status": "claimed",
+      "sources": [
+        {
+          "url": "https://stackit.com/en/asset/download/34534/file/STACKIT_data_processing_agreement.pdf?version=12",
+          "captured_at": "2026-09-26",
+          "locator": "STACKIT Data Processing Agreement"
+        }
+      ],
+      "captured_at": "2026-09-26"
+    },
+    {
+      "claim_id": "stackit-subprocessors",
+      "claim_type": "subprocessors_engaged",
+      "subject": {
+        "deployment_id": "stackit-ai-model-serving-eu01",
+        "model_ids": []
+      },
+      "value": true,
+      "statement": "Der DPA enthaelt eine Subprozessorliste.",
+      "status": "claimed",
+      "sources": [
+        {
+          "url": "https://stackit.com/en/asset/download/34534/file/STACKIT_data_processing_agreement.pdf?version=12",
+          "captured_at": "2026-09-26",
+          "locator": "Subprozessorliste"
+        }
+      ],
+      "captured_at": "2026-09-26"
+    }
+  ],
+  "pricing": {
+    "scheme": "category",
+    "currency": "EUR",
+    "unit": "per_1m_tokens",
+    "vat": "unknown",
+    "categories": [
+      {
+        "category_id": "standard",
+        "display_name": "LLM Standard",
+        "kind": "llm",
+        "input_per_1m": 0.15,
+        "output_per_1m": 0.25,
+        "sources": [
+          {
+            "url": "https://stackit.com/en/products/data-ai/stackit-ai-model-serving",
+            "captured_at": "2026-09-26",
+            "locator": "standard: €0.15 input / €0.25 output je 1M Tokens"
+          }
+        ],
+        "captured_at": "2026-09-26"
+      },
+      {
+        "category_id": "plus",
+        "display_name": "LLM Plus",
+        "kind": "llm",
+        "input_per_1m": 0.45,
+        "output_per_1m": 0.65,
+        "sources": [
+          {
+            "url": "https://stackit.com/en/products/data-ai/stackit-ai-model-serving",
+            "captured_at": "2026-09-26",
+            "locator": "plus: €0.45 / €0.65"
+          }
+        ],
+        "captured_at": "2026-09-26"
+      },
+      {
+        "category_id": "premium",
+        "display_name": "LLM Premium",
+        "kind": "llm",
+        "input_per_1m": 1.5,
+        "output_per_1m": 1.75,
+        "sources": [
+          {
+            "url": "https://stackit.com/en/products/data-ai/stackit-ai-model-serving",
+            "captured_at": "2026-09-26",
+            "locator": "premium: €1.50 / €1.75"
+          }
+        ],
+        "captured_at": "2026-09-26"
+      },
+      {
+        "category_id": "embedding-standard",
+        "display_name": "Embedding Standard",
+        "kind": "embedding",
+        "input_per_1m": 0.02,
+        "output_per_1m": null,
+        "sources": [
+          {
+            "url": "https://stackit.com/en/products/data-ai/stackit-ai-model-serving",
+            "captured_at": "2026-09-26",
+            "locator": "embedding-standard: €0.02 input"
+          }
+        ],
+        "captured_at": "2026-09-26"
+      },
+      {
+        "category_id": "embedding-plus",
+        "display_name": "Embedding Plus",
+        "kind": "embedding",
+        "input_per_1m": 0.08,
+        "output_per_1m": null,
+        "sources": [
+          {
+            "url": "https://stackit.com/en/products/data-ai/stackit-ai-model-serving",
+            "captured_at": "2026-09-26",
+            "locator": "embedding-plus: €0.08 input"
+          }
+        ],
+        "captured_at": "2026-09-26"
+      }
+    ],
+    "modifiers": [],
+    "sources": [
+      {
+        "url": "https://stackit.com/en/products/data-ai/stackit-ai-model-serving",
+        "captured_at": "2026-09-26",
+        "locator": "Preise je Kategorie, Region Germany South, SKU 'Model Serving-llm-...-EU01'"
+      }
+    ],
+    "captured_at": "2026-09-26",
+    "note": "Preise gelten je Kategorie, nicht je Modell. Modelle tragen nur price_category laut Modellliste."
+  },
+  "models": [
+    {
+      "model_id": "gpt-oss-120b",
+      "api_model_id": "openai/gpt-oss-120b",
+      "display_name": "GPT-OSS 120B",
+      "model_type": "chat",
+      "availability": {
+        "value": "available",
+        "status": "claimed",
+        "sources": [
+          {
+            "url": "https://docs.stackit.cloud/products/data-and-ai/ai-model-serving/basics/available-shared-models/",
+            "captured_at": "2026-09-26",
+            "locator": "GPT-OSS 120B"
+          }
+        ],
+        "captured_at": "2026-09-26"
+      },
+      "model_origin": {
+        "developer": "OpenAI",
+        "developer_vendor_id": null,
+        "open_weights": null,
+        "status": "claimed",
+        "sources": [
+          {
+            "url": "https://docs.stackit.cloud/products/data-and-ai/ai-model-serving/basics/available-shared-models/",
+            "captured_at": "2026-09-26",
+            "locator": "GPT-OSS 120B: openai/gpt-oss-120b"
+          }
+        ],
+        "captured_at": "2026-09-26"
+      },
+      "capabilities": {
+        "context_window_tokens": {
+          "value": 131000,
+          "status": "claimed",
+          "sources": [
+            {
+              "url": "https://docs.stackit.cloud/products/data-and-ai/ai-model-serving/basics/available-shared-models/",
+              "captured_at": "2026-09-26",
+              "locator": "GPT-OSS 120B: 131K"
+            }
+          ],
+          "captured_at": "2026-09-26",
+          "note": "Quelle nennt 131k; als 131000 erfasst (Untergrenze, exakte Tokenzahl nicht angegeben)."
+        },
+        "tools": {
+          "support": "yes",
+          "status": "claimed",
+          "sources": [
+            {
+              "url": "https://docs.stackit.cloud/products/data-and-ai/ai-model-serving/basics/available-shared-models/",
+              "captured_at": "2026-09-26",
+              "locator": "GPT-OSS 120B: Tool calling"
+            }
+          ],
+          "captured_at": "2026-09-26"
+        },
+        "reasoning": {
+          "support": "yes",
+          "status": "claimed",
+          "sources": [
+            {
+              "url": "https://docs.stackit.cloud/products/data-and-ai/ai-model-serving/basics/available-shared-models/",
+              "captured_at": "2026-09-26",
+              "locator": "GPT-OSS 120B: reasoning"
+            }
+          ],
+          "captured_at": "2026-09-26"
+        }
+      },
+      "price_category": {
+        "value": "plus",
+        "status": "claimed",
+        "sources": [
+          {
+            "url": "https://docs.stackit.cloud/products/data-and-ai/ai-model-serving/basics/available-shared-models/",
+            "captured_at": "2026-09-26",
+            "locator": "GPT-OSS 120B: Kategorie plus"
+          }
+        ],
+        "captured_at": "2026-09-26"
+      }
+    },
+    {
+      "model_id": "qwen3.8-27b",
+      "api_model_id": "Qwen/Qwen3.8-27B",
+      "display_name": "Qwen3.8 27B",
+      "model_type": "chat",
+      "availability": {
+        "value": "available",
+        "status": "claimed",
+        "sources": [
+          {
+            "url": "https://docs.stackit.cloud/products/data-and-ai/ai-model-serving/basics/available-shared-models/",
+            "captured_at": "2026-09-26",
+            "locator": "Qwen3.8 27B"
+          }
+        ],
+        "captured_at": "2026-09-26"
+      },
+      "model_origin": {
+        "developer": "Qwen",
+        "developer_vendor_id": null,
+        "open_weights": null,
+        "status": "claimed",
+        "sources": [
+          {
+            "url": "https://docs.stackit.cloud/products/data-and-ai/ai-model-serving/basics/available-shared-models/",
+            "captured_at": "2026-09-26",
+            "locator": "Qwen3.8 27B: Qwen/Qwen3.8-27B"
+          }
+        ],
+        "captured_at": "2026-09-26"
+      },
+      "capabilities": {
+        "context_window_tokens": {
+          "value": 262000,
+          "status": "claimed",
+          "sources": [
+            {
+              "url": "https://docs.stackit.cloud/products/data-and-ai/ai-model-serving/basics/available-shared-models/",
+              "captured_at": "2026-09-26",
+              "locator": "Qwen3.8 27B: 262K"
+            }
+          ],
+          "captured_at": "2026-09-26",
+          "note": "Quelle nennt 262k; als 262000 erfasst (Untergrenze, exakte Tokenzahl nicht angegeben)."
+        },
+        "tools": {
+          "support": "yes",
+          "status": "claimed",
+          "sources": [
+            {
+              "url": "https://docs.stackit.cloud/products/data-and-ai/ai-model-serving/basics/available-shared-models/",
+              "captured_at": "2026-09-26",
+              "locator": "Qwen3.8 27B: Tool calling"
+            }
+          ],
+          "captured_at": "2026-09-26"
+        },
+        "reasoning": {
+          "support": "yes",
+          "status": "claimed",
+          "sources": [
+            {
+              "url": "https://docs.stackit.cloud/products/data-and-ai/ai-model-serving/basics/available-shared-models/",
+              "captured_at": "2026-09-26",
+              "locator": "Qwen3.8 27B: reasoning"
+            }
+          ],
+          "captured_at": "2026-09-26"
+        }
+      },
+      "price_category": {
+        "value": "plus",
+        "status": "claimed",
+        "sources": [
+          {
+            "url": "https://docs.stackit.cloud/products/data-and-ai/ai-model-serving/basics/available-shared-models/",
+            "captured_at": "2026-09-26",
+            "locator": "Qwen3.8 27B: Kategorie plus"
+          }
+        ],
+        "captured_at": "2026-09-26"
+      }
+    },
+    {
+      "model_id": "qwen3-vl-235b-a22b-instruct-fp8",
+      "api_model_id": "Qwen/Qwen3-VL-235B-A22B-Instruct-FP8",
+      "display_name": "Qwen3-VL 235B A22B Instruct (FP8)",
+      "model_type": "chat",
+      "availability": {
+        "value": "available",
+        "status": "claimed",
+        "sources": [
+          {
+            "url": "https://docs.stackit.cloud/products/data-and-ai/ai-model-serving/basics/available-shared-models/",
+            "captured_at": "2026-09-26",
+            "locator": "Qwen3-VL 235B A22B Instruct (FP8)"
+          }
+        ],
+        "captured_at": "2026-09-26"
+      },
+      "model_origin": {
+        "developer": "Qwen",
+        "developer_vendor_id": null,
+        "open_weights": null,
+        "status": "claimed",
+        "sources": [
+          {
+            "url": "https://docs.stackit.cloud/products/data-and-ai/ai-model-serving/basics/available-shared-models/",
+            "captured_at": "2026-09-26",
+            "locator": "Qwen3-VL 235B A22B Instruct (FP8): Qwen/Qwen3-VL-235B-A22B-Instruct-FP8"
+          }
+        ],
+        "captured_at": "2026-09-26"
+      },
+      "capabilities": {
+        "context_window_tokens": {
+          "value": 200000,
+          "status": "claimed",
+          "sources": [
+            {
+              "url": "https://docs.stackit.cloud/products/data-and-ai/ai-model-serving/basics/available-shared-models/",
+              "captured_at": "2026-09-26",
+              "locator": "Qwen3-VL 235B A22B Instruct (FP8): 200K"
+            }
+          ],
+          "captured_at": "2026-09-26",
+          "note": "Quelle nennt 200k; als 200000 erfasst (Untergrenze, exakte Tokenzahl nicht angegeben)."
+        },
+        "tools": {
+          "support": "yes",
+          "status": "claimed",
+          "sources": [
+            {
+              "url": "https://docs.stackit.cloud/products/data-and-ai/ai-model-serving/basics/available-shared-models/",
+              "captured_at": "2026-09-26",
+              "locator": "Qwen3-VL 235B A22B Instruct (FP8): Tool calling"
+            }
+          ],
+          "captured_at": "2026-09-26"
+        }
+      },
+      "price_category": {
+        "value": "premium",
+        "status": "claimed",
+        "sources": [
+          {
+            "url": "https://docs.stackit.cloud/products/data-and-ai/ai-model-serving/basics/available-shared-models/",
+            "captured_at": "2026-09-26",
+            "locator": "Qwen3-VL 235B A22B Instruct (FP8): Kategorie premium"
+          }
+        ],
+        "captured_at": "2026-09-26"
+      }
+    },
+    {
+      "model_id": "llama-3.3-70b-8bit",
+      "api_model_id": null,
+      "display_name": "Llama 3.3 70B (8-bit)",
+      "model_type": "chat",
+      "availability": {
+        "value": "available",
+        "status": "claimed",
+        "sources": [
+          {
+            "url": "https://docs.stackit.cloud/products/data-and-ai/ai-model-serving/basics/available-shared-models/",
+            "captured_at": "2026-09-26",
+            "locator": "Llama 3.3 70B (8-bit)"
+          }
+        ],
+        "captured_at": "2026-09-26"
+      },
+      "model_origin": {
+        "developer": null,
+        "developer_vendor_id": null,
+        "open_weights": null,
+        "status": "unknown",
+        "sources": [],
+        "captured_at": "2026-09-26"
+      },
+      "capabilities": {
+        "context_window_tokens": {
+          "value": 128000,
+          "status": "claimed",
+          "sources": [
+            {
+              "url": "https://docs.stackit.cloud/products/data-and-ai/ai-model-serving/basics/available-shared-models/",
+              "captured_at": "2026-09-26",
+              "locator": "Llama 3.3 70B (8-bit): 128K"
+            }
+          ],
+          "captured_at": "2026-09-26",
+          "note": "Quelle nennt 128k; als 128000 erfasst (Untergrenze, exakte Tokenzahl nicht angegeben)."
+        },
+        "tools": {
+          "support": "yes",
+          "status": "claimed",
+          "sources": [
+            {
+              "url": "https://docs.stackit.cloud/products/data-and-ai/ai-model-serving/basics/available-shared-models/",
+              "captured_at": "2026-09-26",
+              "locator": "Llama 3.3 70B (8-bit): Tool calling"
+            }
+          ],
+          "captured_at": "2026-09-26"
+        },
+        "languages": {
+          "value": [
+            "de"
+          ],
+          "status": "claimed",
+          "sources": [
+            {
+              "url": "https://docs.stackit.cloud/products/data-and-ai/ai-model-serving/basics/available-shared-models/",
+              "captured_at": "2026-09-26",
+              "locator": "Llama 3.3 70B: 8 Sprachen inkl. Deutsch"
+            }
+          ],
+          "captured_at": "2026-09-26",
+          "additional_unspecified": true,
+          "note": "Quelle: 8 Sprachen inkl. Deutsch; die uebrigen sind hier nicht erfasst."
+        }
+      },
+      "price_category": {
+        "value": "plus",
+        "status": "claimed",
+        "sources": [
+          {
+            "url": "https://docs.stackit.cloud/products/data-and-ai/ai-model-serving/basics/available-shared-models/",
+            "captured_at": "2026-09-26",
+            "locator": "Llama 3.3 70B (8-bit): Kategorie plus"
+          }
+        ],
+        "captured_at": "2026-09-26"
+      }
+    },
+    {
+      "model_id": "gpt-oss-20b",
+      "api_model_id": "openai/gpt-oss-20b",
+      "display_name": "GPT-OSS 20B",
+      "model_type": "chat",
+      "availability": {
+        "value": "available",
+        "status": "claimed",
+        "sources": [
+          {
+            "url": "https://docs.stackit.cloud/products/data-and-ai/ai-model-serving/basics/available-shared-models/",
+            "captured_at": "2026-09-26",
+            "locator": "GPT-OSS 20B"
+          }
+        ],
+        "captured_at": "2026-09-26"
+      },
+      "model_origin": {
+        "developer": "OpenAI",
+        "developer_vendor_id": null,
+        "open_weights": null,
+        "status": "claimed",
+        "sources": [
+          {
+            "url": "https://docs.stackit.cloud/products/data-and-ai/ai-model-serving/basics/available-shared-models/",
+            "captured_at": "2026-09-26",
+            "locator": "GPT-OSS 20B: openai/gpt-oss-20b"
+          }
+        ],
+        "captured_at": "2026-09-26"
+      },
+      "capabilities": {
+        "context_window_tokens": {
+          "value": 131000,
+          "status": "claimed",
+          "sources": [
+            {
+              "url": "https://docs.stackit.cloud/products/data-and-ai/ai-model-serving/basics/available-shared-models/",
+              "captured_at": "2026-09-26",
+              "locator": "GPT-OSS 20B: 131K"
+            }
+          ],
+          "captured_at": "2026-09-26",
+          "note": "Quelle nennt 131k; als 131000 erfasst (Untergrenze, exakte Tokenzahl nicht angegeben)."
+        }
+      },
+      "price_category": {
+        "value": "standard",
+        "status": "claimed",
+        "sources": [
+          {
+            "url": "https://docs.stackit.cloud/products/data-and-ai/ai-model-serving/basics/available-shared-models/",
+            "captured_at": "2026-09-26",
+            "locator": "GPT-OSS 20B: Kategorie standard"
+          }
+        ],
+        "captured_at": "2026-09-26"
+      }
+    },
+    {
+      "model_id": "gemma-4-31b",
+      "api_model_id": null,
+      "display_name": "Gemma 4 31B",
+      "model_type": "chat",
+      "availability": {
+        "value": "available",
+        "status": "claimed",
+        "sources": [
+          {
+            "url": "https://docs.stackit.cloud/products/data-and-ai/ai-model-serving/basics/available-shared-models/",
+            "captured_at": "2026-09-26",
+            "locator": "Gemma 4 31B"
+          }
+        ],
+        "captured_at": "2026-09-26"
+      },
+      "model_origin": {
+        "developer": null,
+        "developer_vendor_id": null,
+        "open_weights": null,
+        "status": "unknown",
+        "sources": [],
+        "captured_at": "2026-09-26"
+      },
+      "capabilities": {
+        "context_window_tokens": {
+          "value": 256000,
+          "status": "claimed",
+          "sources": [
+            {
+              "url": "https://docs.stackit.cloud/products/data-and-ai/ai-model-serving/basics/available-shared-models/",
+              "captured_at": "2026-09-26",
+              "locator": "Gemma 4 31B: 256K"
+            }
+          ],
+          "captured_at": "2026-09-26",
+          "note": "Quelle nennt 256k; als 256000 erfasst (Untergrenze, exakte Tokenzahl nicht angegeben)."
+        }
+      },
+      "price_category": {
+        "value": "plus",
+        "status": "claimed",
+        "sources": [
+          {
+            "url": "https://docs.stackit.cloud/products/data-and-ai/ai-model-serving/basics/available-shared-models/",
+            "captured_at": "2026-09-26",
+            "locator": "Gemma 4 31B: Kategorie plus"
+          }
+        ],
+        "captured_at": "2026-09-26"
+      }
+    },
+    {
+      "model_id": "qwen3.6-27b",
+      "api_model_id": null,
+      "display_name": "Qwen3.6 27B",
+      "model_type": "chat",
+      "availability": {
+        "value": "deprecated",
+        "status": "claimed",
+        "sources": [
+          {
+            "url": "https://docs.stackit.cloud/products/data-and-ai/ai-model-serving/basics/available-shared-models/",
+            "captured_at": "2026-09-26",
+            "locator": "Qwen3.6 27B (deprecated)"
+          }
+        ],
+        "captured_at": "2026-09-26"
+      },
+      "model_origin": {
+        "developer": null,
+        "developer_vendor_id": null,
+        "open_weights": null,
+        "status": "unknown",
+        "sources": [],
+        "captured_at": "2026-09-26"
+      },
+      "capabilities": {},
+      "price_category": {
+        "value": "plus",
+        "status": "claimed",
+        "sources": [
+          {
+            "url": "https://docs.stackit.cloud/products/data-and-ai/ai-model-serving/basics/available-shared-models/",
+            "captured_at": "2026-09-26",
+            "locator": "Qwen3.6 27B: Kategorie plus"
+          }
+        ],
+        "captured_at": "2026-09-26"
+      }
+    },
+    {
+      "model_id": "e5-mistral-7b-instruct",
+      "api_model_id": "intfloat/e5-mistral-7b-instruct",
+      "display_name": "E5 Mistral 7B Instruct",
+      "model_type": "embedding",
+      "availability": {
+        "value": "available",
+        "status": "claimed",
+        "sources": [
+          {
+            "url": "https://docs.stackit.cloud/products/data-and-ai/ai-model-serving/basics/available-shared-models/",
+            "captured_at": "2026-09-26",
+            "locator": "E5 Mistral 7B Instruct"
+          }
+        ],
+        "captured_at": "2026-09-26"
+      },
+      "model_origin": {
+        "developer": null,
+        "developer_vendor_id": null,
+        "open_weights": null,
+        "status": "unknown",
+        "sources": [],
+        "captured_at": "2026-09-26"
+      },
+      "capabilities": {
+        "embeddings": {
+          "support": "yes",
+          "status": "claimed",
+          "sources": [
+            {
+              "url": "https://docs.stackit.cloud/products/data-and-ai/ai-model-serving/basics/available-shared-models/",
+              "captured_at": "2026-09-26",
+              "locator": "E5 Mistral 7B Instruct: Embedding-Modell"
+            }
+          ],
+          "captured_at": "2026-09-26"
+        }
+      },
+      "price_category": {
+        "value": "embedding-standard",
+        "status": "claimed",
+        "sources": [
+          {
+            "url": "https://docs.stackit.cloud/products/data-and-ai/ai-model-serving/basics/available-shared-models/",
+            "captured_at": "2026-09-26",
+            "locator": "E5 Mistral 7B Instruct: Kategorie embedding-standard"
+          }
+        ],
+        "captured_at": "2026-09-26"
+      }
+    },
+    {
+      "model_id": "qwen3-vl-embedding-8b",
+      "api_model_id": "Qwen/Qwen3-VL-Embedding-8B",
+      "display_name": "Qwen3-VL Embedding 8B",
+      "model_type": "embedding",
+      "availability": {
+        "value": "available",
+        "status": "claimed",
+        "sources": [
+          {
+            "url": "https://docs.stackit.cloud/products/data-and-ai/ai-model-serving/basics/available-shared-models/",
+            "captured_at": "2026-09-26",
+            "locator": "Qwen3-VL Embedding 8B"
+          }
+        ],
+        "captured_at": "2026-09-26"
+      },
+      "model_origin": {
+        "developer": null,
+        "developer_vendor_id": null,
+        "open_weights": null,
+        "status": "unknown",
+        "sources": [],
+        "captured_at": "2026-09-26"
+      },
+      "capabilities": {
+        "embeddings": {
+          "support": "yes",
+          "status": "claimed",
+          "sources": [
+            {
+              "url": "https://docs.stackit.cloud/products/data-and-ai/ai-model-serving/basics/available-shared-models/",
+              "captured_at": "2026-09-26",
+              "locator": "Qwen3-VL Embedding 8B: Embedding-Modell"
+            }
+          ],
+          "captured_at": "2026-09-26"
+        }
+      },
+      "price_category": {
+        "value": "embedding-plus",
+        "status": "claimed",
+        "sources": [
+          {
+            "url": "https://docs.stackit.cloud/products/data-and-ai/ai-model-serving/basics/available-shared-models/",
+            "captured_at": "2026-09-26",
+            "locator": "Qwen3-VL Embedding 8B: Kategorie embedding-plus"
+          }
+        ],
+        "captured_at": "2026-09-26"
+      }
+    }
+  ],
+  "provenance": {
+    "captured_at": "2026-09-26",
+    "captured_by": "RealSyncDynamics Registry-Bootstrap (Agent im Auftrag von Dominik Steiner)",
+    "research_refs": [
+      "research/eu-ai-providers-2026-09-25.md",
+      "research/eu-llm-poc-plan-2026-09-25.md"
+    ]
+  }
+}

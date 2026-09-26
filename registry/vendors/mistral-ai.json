@@ -1,0 +1,121 @@
+{
+  "schema_version": "1.0",
+  "vendor_id": "mistral-ai",
+  "display_name": "Mistral AI",
+  "legal_name": {
+    "value": "Mistral AI",
+    "status": "claimed",
+    "sources": [
+      {
+        "url": "https://legal.mistral.ai/terms/data-processing-addendum",
+        "captured_at": "2026-09-26",
+        "locator": "Exhibit 1: Processor: Mistral AI, a French limited joint-stock corporation, incorporated in Paris, under number 952 418 325"
+      }
+    ],
+    "captured_at": "2026-09-26",
+    "note": "Franzoesische SAS (limited joint-stock corporation) laut DPA."
+  },
+  "brands": [
+    "Mistral AI",
+    "La Plateforme",
+    "Mistral Studio"
+  ],
+  "legal_seat_country": {
+    "value": [
+      "FR"
+    ],
+    "status": "claimed",
+    "sources": [
+      {
+        "url": "https://legal.mistral.ai/terms/data-processing-addendum",
+        "captured_at": "2026-09-26",
+        "locator": "registered offices at 15 rue des Halles, 75001 Paris, France"
+      }
+    ],
+    "captured_at": "2026-09-26"
+  },
+  "parent_organization": {
+    "value": null,
+    "status": "unknown",
+    "sources": [],
+    "captured_at": "2026-09-26",
+    "note": "Nicht in den ausgewerteten Quellen belegt."
+  },
+  "control_change": {
+    "status": "unknown",
+    "counterparty": null,
+    "as_of": null,
+    "verification_status": "unknown",
+    "sources": [],
+    "captured_at": "2026-09-26",
+    "note": "Kein Beleg zu Kontrollwechseln ausgewertet; bewusst nicht 'none'."
+  },
+  "certifications": [
+    {
+      "cert_id": "mistral-soc2-type2",
+      "scheme": "SOC2_TYPE2",
+      "name": "SOC 2 Type II",
+      "scope": "Unternehmen Mistral AI (Help-Center-Aussage ohne Produktnennung)",
+      "applies_to_sku": [],
+      "status": "claimed",
+      "sources": [
+        {
+          "url": "https://help.mistral.ai/en/articles/347638-do-you-have-soc-2-or-iso-27001-certification",
+          "captured_at": "2026-09-26",
+          "locator": "SOC 2 Type II and ISO 27001/27701"
+        }
+      ],
+      "captured_at": "2026-09-26",
+      "valid_from": null,
+      "valid_until": null,
+      "note": "Keinem Produkt zugeordnet (applies_to_sku leer)."
+    },
+    {
+      "cert_id": "mistral-iso-27001",
+      "scheme": "ISO_27001",
+      "name": "ISO/IEC 27001",
+      "scope": "Unternehmen Mistral AI (Help-Center-Aussage ohne Produktnennung)",
+      "applies_to_sku": [],
+      "status": "claimed",
+      "sources": [
+        {
+          "url": "https://help.mistral.ai/en/articles/347638-do-you-have-soc-2-or-iso-27001-certification",
+          "captured_at": "2026-09-26",
+          "locator": "SOC 2 Type II and ISO 27001/27701"
+        }
+      ],
+      "captured_at": "2026-09-26",
+      "valid_from": null,
+      "valid_until": null,
+      "note": "Keinem Produkt zugeordnet (applies_to_sku leer)."
+    },
+    {
+      "cert_id": "mistral-iso-27701",
+      "scheme": "ISO_27701",
+      "name": "ISO/IEC 27701",
+      "scope": "Unternehmen Mistral AI (Help-Center-Aussage ohne Produktnennung)",
+      "applies_to_sku": [],
+      "status": "claimed",
+      "sources": [
+        {
+          "url": "https://help.mistral.ai/en/articles/347638-do-you-have-soc-2-or-iso-27001-certification",
+          "captured_at": "2026-09-26",
+          "locator": "SOC 2 Type II and ISO 27001/27701"
+        }
+      ],
+      "captured_at": "2026-09-26",
+      "valid_from": null,
+      "valid_until": null,
+      "note": "Keinem Produkt zugeordnet (applies_to_sku leer)."
+    }
+  ],
+  "website": "https://mistral.ai",
+  "provenance": {
+    "captured_at": "2026-09-26",
+    "captured_by": "RealSyncDynamics Registry-Bootstrap (Agent im Auftrag von Dominik Steiner)",
+    "research_refs": [
+      "research/eu-ai-providers-2026-09-25.md",
+      "research/eu-llm-poc-plan-2026-09-25.md"
+    ]
+  }
+}

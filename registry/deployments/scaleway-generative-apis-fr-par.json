@@ -1,0 +1,979 @@
+{
+  "schema_version": "1.0",
+  "deployment_id": "scaleway-generative-apis-fr-par",
+  "vendor_id": "scaleway",
+  "brand": "Scaleway",
+  "product_name": "Scaleway Generative APIs",
+  "product_sku": "scaleway-generative-apis",
+  "deployment_kind": "shared_serverless",
+  "listing_status": "active",
+  "infrastructure_operator": {
+    "vendor_id": "scaleway",
+    "name": "Scaleway",
+    "status": "claimed",
+    "sources": [
+      {
+        "url": "https://www.scaleway.com/en/docs/generative-apis/reference-content/data-privacy/",
+        "captured_at": "2026-09-26",
+        "locator": "hosted on its infrastructure in Europe without interaction with third-party services"
+      }
+    ],
+    "captured_at": "2026-09-26"
+  },
+  "connector": {
+    "connector_type": "openai_compatible",
+    "api_base_url": "https://api.scaleway.ai/v1",
+    "api_paths": [
+      "/chat/completions",
+      "/responses",
+      "/embeddings",
+      "/batches"
+    ],
+    "inventory_endpoint": null,
+    "legacy_fallback_endpoint": null,
+    "sources": [
+      {
+        "url": "https://www.scaleway.com/en/docs/generative-apis/how-to/use-structured-outputs/",
+        "captured_at": "2026-09-26",
+        "locator": "base_url https://api.scaleway.ai/v1"
+      },
+      {
+        "url": "https://www.scaleway.com/en/developers/api/generative-apis",
+        "captured_at": "2026-09-25",
+        "locator": "Endpunkte laut Recherche"
+      }
+    ],
+    "captured_at": "2026-09-26",
+    "note": "Ein Modell-Inventar-Endpunkt ist in den ausgewerteten Quellen nicht belegt (inventory_endpoint=null)."
+  },
+  "inference_region": {
+    "scope": "country",
+    "country_codes": [
+      "FR"
+    ],
+    "provider_region_code": "fr-par",
+    "locality": "Paris",
+    "status": "claimed",
+    "sources": [
+      {
+        "url": "https://www.scaleway.com/en/developers/api/generative-apis",
+        "captured_at": "2026-09-25",
+        "locator": "Paris (fr-par) laut Recherche"
+      },
+      {
+        "url": "https://www.scaleway.com/en/docs/generative-apis/reference-content/data-privacy/",
+        "captured_at": "2026-09-26",
+        "locator": "Storage region: Paris, France"
+      }
+    ],
+    "captured_at": "2026-09-26",
+    "note": "Die Datenschutzseite nennt Paris als Speicherregion und Hosting 'in Europe'; fr-par als Inferenzregion stammt aus der Recherche."
+  },
+  "storage_region": {
+    "scope": "country",
+    "country_codes": [
+      "FR"
+    ],
+    "provider_region_code": "fr-par",
+    "locality": "Paris",
+    "status": "claimed",
+    "sources": [
+      {
+        "url": "https://www.scaleway.com/en/docs/generative-apis/reference-content/data-privacy/",
+        "captured_at": "2026-09-26",
+        "locator": "Storage region: Paris, France"
+      }
+    ],
+    "captured_at": "2026-09-26"
+  },
+  "external_inference_egress": {
+    "value": false,
+    "status": "claimed",
+    "sources": [
+      {
+        "url": "https://www.scaleway.com/en/docs/generative-apis/reference-content/data-privacy/",
+        "captured_at": "2026-09-26",
+        "locator": "hosted on its infrastructure in Europe without interaction with third-party services"
+      }
+    ],
+    "captured_at": "2026-09-26"
+  },
+  "jurisdiction": {
+    "provider_jurisdiction": {
+      "value": [
+        "FR"
+      ],
+      "status": "claimed",
+      "sources": [
+        {
+          "url": "https://www.scaleway.com/en/docs/generative-apis/reference-content/data-privacy/",
+          "captured_at": "2026-09-26",
+          "locator": "Verarbeiter Scaleway, 75008 Paris"
+        }
+      ],
+      "captured_at": "2026-09-26"
+    },
+    "infrastructure_jurisdiction": {
+      "value": [
+        "FR"
+      ],
+      "status": "claimed",
+      "sources": [
+        {
+          "url": "https://www.scaleway.com/en/docs/generative-apis/reference-content/data-privacy/",
+          "captured_at": "2026-09-26",
+          "locator": "Storage region: Paris, France"
+        }
+      ],
+      "captured_at": "2026-09-26"
+    },
+    "non_eu_parent_control": {
+      "value": null,
+      "status": "unknown",
+      "sources": [],
+      "captured_at": "2026-09-26",
+      "note": "Nicht belegt."
+    },
+    "eu_commission_seal": {
+      "status": "unknown",
+      "level": null,
+      "applies_to_sku": [],
+      "verification_status": "unknown",
+      "sources": [],
+      "captured_at": "2026-09-26",
+      "valid_from": null,
+      "valid_until": null,
+      "note": "Kein Beleg fuer ein EU-Souveraenitaets-Siegel in den ausgewerteten Quellen."
+    },
+    "third_country_access": {
+      "status": "unknown",
+      "requires_subprocessor_review": true,
+      "verification_status": "unknown",
+      "sources": [
+        {
+          "url": "https://www.scaleway.com/en/docs/generative-apis/reference-content/data-privacy/",
+          "captured_at": "2026-09-26",
+          "locator": "Weitergabe an Dritte, wenn fuer die Leistungserbringung noetig (Zahlung, Support)"
+        }
+      ],
+      "captured_at": "2026-09-26",
+      "note": "Keine ausdrueckliche Aussage zum Drittstaatenzugriff; Weitergabe an Dritte fuer Zahlung/Support moeglich -> Subprozessoren pruefen. Die Selbstauskunft zum US CLOUD Act ist als Claim erfasst, nicht als Flag."
+    }
+  },
+  "capabilities": {
+    "chat": {
+      "support": "yes",
+      "status": "claimed",
+      "sources": [
+        {
+          "url": "https://www.scaleway.com/en/developers/api/generative-apis",
+          "captured_at": "2026-09-25",
+          "locator": "Chat Completions /chat/completions"
+        }
+      ],
+      "captured_at": "2026-09-25"
+    },
+    "json_object": {
+      "support": "yes",
+      "status": "claimed",
+      "sources": [
+        {
+          "url": "https://www.scaleway.com/en/docs/generative-apis/how-to/use-structured-outputs/",
+          "captured_at": "2026-09-26",
+          "locator": "All LLMs in the Scaleway library support Structured outputs and JSON mode"
+        }
+      ],
+      "captured_at": "2026-09-26",
+      "note": "json_object ist laut Quelle Legacy."
+    },
+    "json_schema": {
+      "support": "yes",
+      "status": "claimed",
+      "sources": [
+        {
+          "url": "https://www.scaleway.com/en/docs/generative-apis/how-to/use-structured-outputs/",
+          "captured_at": "2026-09-26",
+          "locator": "All LLMs in the Scaleway library support Structured outputs and JSON mode"
+        }
+      ],
+      "captured_at": "2026-09-26"
+    },
+    "json_schema_strict": {
+      "support": "yes",
+      "status": "claimed",
+      "sources": [
+        {
+          "url": "https://www.scaleway.com/en/docs/generative-apis/how-to/use-structured-outputs/",
+          "captured_at": "2026-09-26",
+          "locator": "json_schema enforces a strict schema format"
+        }
+      ],
+      "captured_at": "2026-09-26"
+    },
+    "tools": {
+      "support": "model_dependent",
+      "status": "claimed",
+      "sources": [
+        {
+          "url": "https://www.scaleway.com/en/docs/generative-apis/reference-content/supported-models/",
+          "captured_at": "2026-09-26",
+          "locator": "Function calling je Modell"
+        }
+      ],
+      "captured_at": "2026-09-26",
+      "note": "gpt-oss-120b: Tool-Calling nicht ueber Chat Completions, nur ueber die Responses API."
+    },
+    "tool_choice": {
+      "support": "unknown",
+      "status": "unknown",
+      "sources": [],
+      "captured_at": "2026-09-26"
+    },
+    "responses_api": {
+      "support": "yes",
+      "status": "claimed",
+      "sources": [
+        {
+          "url": "https://www.scaleway.com/en/docs/generative-apis/how-to/use-structured-outputs/",
+          "captured_at": "2026-09-26",
+          "locator": "Responses API: keine Statefulness, nur function tools"
+        }
+      ],
+      "captured_at": "2026-09-26"
+    },
+    "batch": {
+      "support": "yes",
+      "status": "claimed",
+      "sources": [
+        {
+          "url": "https://www.scaleway.com/en/pricing/model-as-a-service/",
+          "captured_at": "2026-09-26",
+          "locator": "Batch: -50 %"
+        }
+      ],
+      "captured_at": "2026-09-26"
+    },
+    "embeddings": {
+      "support": "unknown",
+      "status": "unknown",
+      "sources": [
+        {
+          "url": "https://www.scaleway.com/en/developers/api/generative-apis",
+          "captured_at": "2026-09-25",
+          "locator": "/embeddings (laut Recherche)"
+        }
+      ],
+      "captured_at": "2026-09-25",
+      "note": "Pfad laut Recherche vorhanden; keine Embedding-Modelle erfasst."
+    },
+    "languages": {
+      "value": [],
+      "status": "unknown",
+      "sources": [],
+      "captured_at": "2026-09-26",
+      "note": "Sprachen sind modellabhaengig, siehe models[]."
+    }
+  },
+  "certifications": [],
+  "claims": [
+    {
+      "claim_id": "scw-zdr-default",
+      "claim_type": "zero_data_retention_default",
+      "subject": {
+        "deployment_id": "scaleway-generative-apis-fr-par",
+        "model_ids": []
+      },
+      "value": true,
+      "statement": "Zero data retention by default.",
+      "status": "claimed",
+      "sources": [
+        {
+          "url": "https://www.scaleway.com/en/docs/generative-apis/reference-content/data-privacy/",
+          "captured_at": "2026-09-26",
+          "locator": "Zero data retention by default"
+        }
+      ],
+      "captured_at": "2026-09-26"
+    },
+    {
+      "claim_id": "scw-abuse-error-retention",
+      "claim_type": "abuse_or_error_content_access",
+      "subject": {
+        "deployment_id": "scaleway-generative-apis-fr-par",
+        "model_ids": []
+      },
+      "value": {
+        "max_days": 14
+      },
+      "statement": "Bei Missbrauchsverdacht oder Fehleranalyse kann Inhalt bis zu zwei Wochen gespeichert werden.",
+      "status": "claimed",
+      "sources": [
+        {
+          "url": "https://www.scaleway.com/en/docs/generative-apis/reference-content/data-privacy/",
+          "captured_at": "2026-09-26",
+          "locator": "up to 2 weeks"
+        }
+      ],
+      "captured_at": "2026-09-26"
+    },
+    {
+      "claim_id": "scw-usage-metadata",
+      "claim_type": "usage_metadata_retention",
+      "subject": {
+        "deployment_id": "scaleway-generative-apis-fr-par",
+        "model_ids": []
+      },
+      "value": {
+        "max_months": 6,
+        "anonymized": true
+      },
+      "statement": "Anonymisierte Nutzungsdaten bis zu 6 Monate.",
+      "status": "claimed",
+      "sources": [
+        {
+          "url": "https://www.scaleway.com/en/docs/generative-apis/reference-content/data-privacy/",
+          "captured_at": "2026-09-26",
+          "locator": "anonymised usage data up to 6 months"
+        }
+      ],
+      "captured_at": "2026-09-26"
+    },
+    {
+      "claim_id": "scw-no-training",
+      "claim_type": "training_on_customer_data",
+      "subject": {
+        "deployment_id": "scaleway-generative-apis-fr-par",
+        "model_ids": []
+      },
+      "value": false,
+      "statement": "Kundendaten werden nicht zum Training verwendet.",
+      "status": "claimed",
+      "sources": [
+        {
+          "url": "https://www.scaleway.com/en/docs/generative-apis/reference-content/data-privacy/",
+          "captured_at": "2026-09-26",
+          "locator": "not used to train"
+        }
+      ],
+      "captured_at": "2026-09-26"
+    },
+    {
+      "claim_id": "scw-no-model-developer-access",
+      "claim_type": "model_developer_access",
+      "subject": {
+        "deployment_id": "scaleway-generative-apis-fr-par",
+        "model_ids": []
+      },
+      "value": false,
+      "statement": "Modellentwickler haben keinen Zugriff.",
+      "status": "claimed",
+      "sources": [
+        {
+          "url": "https://www.scaleway.com/en/docs/generative-apis/reference-content/data-privacy/",
+          "captured_at": "2026-09-26",
+          "locator": "model developers have no access"
+        }
+      ],
+      "captured_at": "2026-09-26"
+    },
+    {
+      "claim_id": "scw-third-party-sharing",
+      "claim_type": "third_party_access",
+      "subject": {
+        "deployment_id": "scaleway-generative-apis-fr-par",
+        "model_ids": []
+      },
+      "value": "service_delivery_only",
+      "statement": "Weitergabe an Dritte nur, wenn fuer die Leistungserbringung noetig (Zahlung, Support).",
+      "status": "claimed",
+      "sources": [
+        {
+          "url": "https://www.scaleway.com/en/docs/generative-apis/reference-content/data-privacy/",
+          "captured_at": "2026-09-26",
+          "locator": "when necessary for service delivery (payment, support)"
+        }
+      ],
+      "captured_at": "2026-09-26"
+    },
+    {
+      "claim_id": "scw-cloud-act-statement",
+      "claim_type": "extraterritorial_law_exposure",
+      "subject": {
+        "deployment_id": "scaleway-generative-apis-fr-par",
+        "model_ids": []
+      },
+      "value": "not_subject_claimed",
+      "statement": "Scaleway erklaert, nicht dem US CLOUD Act zu unterliegen.",
+      "status": "claimed",
+      "sources": [
+        {
+          "url": "https://www.scaleway.com/en/docs/generative-apis/reference-content/data-privacy/",
+          "captured_at": "2026-09-26",
+          "locator": "not subject to ... Cloud Act"
+        }
+      ],
+      "captured_at": "2026-09-26",
+      "note": "Reine Selbstauskunft des Anbieters; begruendet kein Immunitaets-Flag und keinen Drittstaaten-Ausschluss."
+    },
+    {
+      "claim_id": "scw-responses-stateless",
+      "claim_type": "stateless_processing",
+      "subject": {
+        "deployment_id": "scaleway-generative-apis-fr-par",
+        "model_ids": []
+      },
+      "value": true,
+      "statement": "Responses API ohne serverseitige Statefulness.",
+      "status": "claimed",
+      "sources": [
+        {
+          "url": "https://www.scaleway.com/en/docs/generative-apis/how-to/use-structured-outputs/",
+          "captured_at": "2026-09-26",
+          "locator": "Responses API: no statefulness"
+        }
+      ],
+      "captured_at": "2026-09-26"
+    }
+  ],
+  "pricing": {
+    "scheme": "per_model",
+    "currency": "EUR",
+    "unit": "per_1m_tokens",
+    "vat": "excluded",
+    "categories": [],
+    "modifiers": [
+      {
+        "modifier_id": "batch-discount",
+        "kind": "batch_discount",
+        "value": 0.5,
+        "description": "Batch-Verarbeitung -50 %.",
+        "sources": [
+          {
+            "url": "https://www.scaleway.com/en/pricing/model-as-a-service/",
+            "captured_at": "2026-09-26",
+            "locator": "Batch -50 %"
+          }
+        ],
+        "captured_at": "2026-09-26"
+      },
+      {
+        "modifier_id": "free-tier",
+        "kind": "free_tier",
+        "value": 1000000,
+        "description": "Free Tier: 1M Tokens.",
+        "sources": [
+          {
+            "url": "https://www.scaleway.com/en/pricing/model-as-a-service/",
+            "captured_at": "2026-09-26",
+            "locator": "Free tier 1M tokens"
+          }
+        ],
+        "captured_at": "2026-09-26"
+      }
+    ],
+    "sources": [
+      {
+        "url": "https://www.scaleway.com/en/pricing/model-as-a-service/",
+        "captured_at": "2026-09-26",
+        "locator": "Preise netto je 1M Tokens"
+      }
+    ],
+    "captured_at": "2026-09-26"
+  },
+  "models": [
+    {
+      "model_id": "qwen3.8-27b",
+      "api_model_id": "qwen3.8-27b",
+      "display_name": "Qwen3.8 27B",
+      "model_type": "chat",
+      "availability": {
+        "value": "available",
+        "status": "claimed",
+        "sources": [
+          {
+            "url": "https://www.scaleway.com/en/docs/generative-apis/reference-content/supported-models/",
+            "captured_at": "2026-09-26",
+            "locator": "qwen3.8-27b"
+          }
+        ],
+        "captured_at": "2026-09-26"
+      },
+      "model_origin": {
+        "developer": "Qwen",
+        "developer_vendor_id": null,
+        "open_weights": null,
+        "status": "claimed",
+        "sources": [
+          {
+            "url": "https://www.scaleway.com/en/docs/generative-apis/reference-content/supported-models/",
+            "captured_at": "2026-09-26",
+            "locator": "Provider: Qwen"
+          }
+        ],
+        "captured_at": "2026-09-26"
+      },
+      "capabilities": {
+        "context_window_tokens": {
+          "value": 256000,
+          "status": "claimed",
+          "sources": [
+            {
+              "url": "https://www.scaleway.com/en/docs/generative-apis/reference-content/supported-models/",
+              "captured_at": "2026-09-26",
+              "locator": "Context window 256k"
+            }
+          ],
+          "captured_at": "2026-09-26",
+          "note": "Quelle nennt 256k (Recherche: 262k – Abweichung, Seite gewinnt); als 256000 erfasst."
+        },
+        "json_schema": {
+          "support": "yes",
+          "status": "claimed",
+          "sources": [
+            {
+              "url": "https://www.scaleway.com/en/docs/generative-apis/reference-content/supported-models/",
+              "captured_at": "2026-09-26",
+              "locator": "Structured output: yes"
+            }
+          ],
+          "captured_at": "2026-09-26"
+        },
+        "tools": {
+          "support": "yes",
+          "status": "claimed",
+          "sources": [
+            {
+              "url": "https://www.scaleway.com/en/docs/generative-apis/reference-content/supported-models/",
+              "captured_at": "2026-09-26",
+              "locator": "Function calling: yes"
+            }
+          ],
+          "captured_at": "2026-09-26"
+        },
+        "parallel_tool_calls": {
+          "support": "yes",
+          "status": "claimed",
+          "sources": [
+            {
+              "url": "https://www.scaleway.com/en/docs/generative-apis/reference-content/supported-models/",
+              "captured_at": "2026-09-26",
+              "locator": "Parallel tool calling: yes"
+            }
+          ],
+          "captured_at": "2026-09-26"
+        },
+        "languages": {
+          "value": [
+            "en",
+            "fr",
+            "pt",
+            "de",
+            "ro",
+            "sv"
+          ],
+          "status": "claimed",
+          "sources": [
+            {
+              "url": "https://www.scaleway.com/en/docs/generative-apis/reference-content/supported-models/",
+              "captured_at": "2026-09-26",
+              "locator": "Supported languages: English, French, Portuguese, German, Romanian, Swedish + 70 weitere"
+            }
+          ],
+          "captured_at": "2026-09-26",
+          "additional_unspecified": true
+        }
+      },
+      "price": {
+        "input_per_1m": 0.6,
+        "output_per_1m": 3.3,
+        "status": "claimed",
+        "sources": [
+          {
+            "url": "https://www.scaleway.com/en/pricing/model-as-a-service/",
+            "captured_at": "2026-09-26",
+            "locator": "qwen3.8-27b"
+          }
+        ],
+        "captured_at": "2026-09-26",
+        "cached_input_per_1m": 0.12
+      }
+    },
+    {
+      "model_id": "gpt-oss-120b",
+      "api_model_id": "gpt-oss-120b",
+      "display_name": "gpt-oss-120b",
+      "model_type": "chat",
+      "availability": {
+        "value": "available",
+        "status": "claimed",
+        "sources": [
+          {
+            "url": "https://www.scaleway.com/en/docs/generative-apis/reference-content/supported-models/",
+            "captured_at": "2026-09-26",
+            "locator": "gpt-oss-120b"
+          }
+        ],
+        "captured_at": "2026-09-26"
+      },
+      "model_origin": {
+        "developer": "OpenAI",
+        "developer_vendor_id": null,
+        "open_weights": null,
+        "status": "claimed",
+        "sources": [
+          {
+            "url": "https://www.scaleway.com/en/docs/generative-apis/reference-content/supported-models/",
+            "captured_at": "2026-09-26",
+            "locator": "Provider: OpenAI"
+          }
+        ],
+        "captured_at": "2026-09-26"
+      },
+      "capabilities": {
+        "context_window_tokens": {
+          "value": 128000,
+          "status": "claimed",
+          "sources": [
+            {
+              "url": "https://www.scaleway.com/en/docs/generative-apis/reference-content/supported-models/",
+              "captured_at": "2026-09-26",
+              "locator": "Context window 128k"
+            }
+          ],
+          "captured_at": "2026-09-26",
+          "note": "Quelle nennt 128k; als 128000 erfasst (Untergrenze, exakte Tokenzahl nicht angegeben)."
+        },
+        "json_schema": {
+          "support": "yes",
+          "status": "claimed",
+          "sources": [
+            {
+              "url": "https://www.scaleway.com/en/docs/generative-apis/reference-content/supported-models/",
+              "captured_at": "2026-09-26",
+              "locator": "Structured output: yes"
+            }
+          ],
+          "captured_at": "2026-09-26"
+        },
+        "tools": {
+          "support": "partial",
+          "status": "claimed",
+          "sources": [
+            {
+              "url": "https://www.scaleway.com/en/docs/generative-apis/reference-content/supported-models/",
+              "captured_at": "2026-09-26",
+              "locator": "Function calling: yes; Chat Completions ohne Tool-Calling, Responses API verwenden"
+            }
+          ],
+          "captured_at": "2026-09-26",
+          "note": "Tool-Calling nur ueber die Responses API."
+        },
+        "languages": {
+          "value": [
+            "en"
+          ],
+          "status": "claimed",
+          "sources": [
+            {
+              "url": "https://www.scaleway.com/en/docs/generative-apis/reference-content/supported-models/",
+              "captured_at": "2026-09-26",
+              "locator": "Supported languages: English"
+            }
+          ],
+          "captured_at": "2026-09-26"
+        }
+      },
+      "price": {
+        "input_per_1m": 0.15,
+        "output_per_1m": 0.6,
+        "status": "claimed",
+        "sources": [
+          {
+            "url": "https://www.scaleway.com/en/pricing/model-as-a-service/",
+            "captured_at": "2026-09-26",
+            "locator": "gpt-oss-120b"
+          }
+        ],
+        "captured_at": "2026-09-26"
+      }
+    },
+    {
+      "model_id": "mistral-medium-3.5-128b",
+      "api_model_id": "mistral-medium-3.5-128b",
+      "display_name": "Mistral Medium 3.5 (128B)",
+      "model_type": "chat",
+      "availability": {
+        "value": "preview",
+        "status": "claimed",
+        "sources": [
+          {
+            "url": "https://www.scaleway.com/en/docs/generative-apis/reference-content/supported-models/",
+            "captured_at": "2026-09-26",
+            "locator": "mistral-medium-3.5-128b (Preview)"
+          }
+        ],
+        "captured_at": "2026-09-26"
+      },
+      "model_origin": {
+        "developer": "Mistral",
+        "developer_vendor_id": "mistral-ai",
+        "open_weights": null,
+        "status": "claimed",
+        "sources": [
+          {
+            "url": "https://www.scaleway.com/en/docs/generative-apis/reference-content/supported-models/",
+            "captured_at": "2026-09-26",
+            "locator": "Provider: Mistral"
+          }
+        ],
+        "captured_at": "2026-09-26"
+      },
+      "capabilities": {
+        "context_window_tokens": {
+          "value": 180000,
+          "status": "claimed",
+          "sources": [
+            {
+              "url": "https://www.scaleway.com/en/docs/generative-apis/reference-content/supported-models/",
+              "captured_at": "2026-09-26",
+              "locator": "Context window 180k"
+            }
+          ],
+          "captured_at": "2026-09-26",
+          "note": "Quelle nennt 180k; als 180000 erfasst (Untergrenze, exakte Tokenzahl nicht angegeben)."
+        },
+        "languages": {
+          "value": [
+            "de"
+          ],
+          "status": "claimed",
+          "sources": [
+            {
+              "url": "https://www.scaleway.com/en/docs/generative-apis/reference-content/supported-models/",
+              "captured_at": "2026-09-26",
+              "locator": "Supported languages inkl. German"
+            }
+          ],
+          "captured_at": "2026-09-26",
+          "additional_unspecified": true
+        }
+      },
+      "price": {
+        "input_per_1m": 1.5,
+        "output_per_1m": 7.5,
+        "status": "claimed",
+        "sources": [
+          {
+            "url": "https://www.scaleway.com/en/pricing/model-as-a-service/",
+            "captured_at": "2026-09-26",
+            "locator": "mistral-medium-3.5-128b"
+          }
+        ],
+        "captured_at": "2026-09-26"
+      }
+    },
+    {
+      "model_id": "mistral-small-3.2-24b-instruct-2506",
+      "api_model_id": "mistral-small-3.2-24b-instruct-2506",
+      "display_name": "Mistral Small 3.2 24B Instruct (2506)",
+      "model_type": "chat",
+      "availability": {
+        "value": "available",
+        "status": "claimed",
+        "sources": [
+          {
+            "url": "https://www.scaleway.com/en/docs/generative-apis/reference-content/supported-models/",
+            "captured_at": "2026-09-26",
+            "locator": "mistral-small-3.2-24b-instruct-2506"
+          }
+        ],
+        "captured_at": "2026-09-26"
+      },
+      "model_origin": {
+        "developer": "Mistral",
+        "developer_vendor_id": "mistral-ai",
+        "open_weights": null,
+        "status": "claimed",
+        "sources": [
+          {
+            "url": "https://www.scaleway.com/en/docs/generative-apis/reference-content/supported-models/",
+            "captured_at": "2026-09-26",
+            "locator": "Provider: Mistral"
+          }
+        ],
+        "captured_at": "2026-09-26"
+      },
+      "capabilities": {
+        "context_window_tokens": {
+          "value": 128000,
+          "status": "claimed",
+          "sources": [
+            {
+              "url": "https://www.scaleway.com/en/docs/generative-apis/reference-content/supported-models/",
+              "captured_at": "2026-09-26",
+              "locator": "Context window 128k"
+            }
+          ],
+          "captured_at": "2026-09-26",
+          "note": "Quelle nennt 128k; als 128000 erfasst (Untergrenze, exakte Tokenzahl nicht angegeben)."
+        },
+        "languages": {
+          "value": [
+            "de"
+          ],
+          "status": "claimed",
+          "sources": [
+            {
+              "url": "https://www.scaleway.com/en/docs/generative-apis/reference-content/supported-models/",
+              "captured_at": "2026-09-26",
+              "locator": "Supported languages inkl. German"
+            }
+          ],
+          "captured_at": "2026-09-26",
+          "additional_unspecified": true
+        }
+      },
+      "price": {
+        "input_per_1m": 0.15,
+        "output_per_1m": 0.35,
+        "status": "claimed",
+        "sources": [
+          {
+            "url": "https://www.scaleway.com/en/pricing/model-as-a-service/",
+            "captured_at": "2026-09-26",
+            "locator": "mistral-small-3.2-24b-instruct-2506"
+          }
+        ],
+        "captured_at": "2026-09-26"
+      }
+    },
+    {
+      "model_id": "qwen3.5-397b-a17b",
+      "api_model_id": "qwen3.5-397b-a17b",
+      "display_name": "Qwen3.5 397B A17B",
+      "model_type": "chat",
+      "availability": {
+        "value": "available",
+        "status": "claimed",
+        "sources": [
+          {
+            "url": "https://www.scaleway.com/en/docs/generative-apis/reference-content/supported-models/",
+            "captured_at": "2026-09-26",
+            "locator": "qwen3.5-397b-a17b"
+          }
+        ],
+        "captured_at": "2026-09-26"
+      },
+      "model_origin": {
+        "developer": "Qwen",
+        "developer_vendor_id": null,
+        "open_weights": null,
+        "status": "claimed",
+        "sources": [
+          {
+            "url": "https://www.scaleway.com/en/docs/generative-apis/reference-content/supported-models/",
+            "captured_at": "2026-09-26",
+            "locator": "Provider: Qwen"
+          }
+        ],
+        "captured_at": "2026-09-26"
+      },
+      "capabilities": {
+        "context_window_tokens": {
+          "value": 250000,
+          "status": "claimed",
+          "sources": [
+            {
+              "url": "https://www.scaleway.com/en/docs/generative-apis/reference-content/supported-models/",
+              "captured_at": "2026-09-26",
+              "locator": "Context window 250k"
+            }
+          ],
+          "captured_at": "2026-09-26",
+          "note": "Quelle nennt 250k; als 250000 erfasst (Untergrenze, exakte Tokenzahl nicht angegeben)."
+        }
+      },
+      "price": {
+        "input_per_1m": 0.6,
+        "output_per_1m": 3.6,
+        "status": "claimed",
+        "sources": [
+          {
+            "url": "https://www.scaleway.com/en/pricing/model-as-a-service/",
+            "captured_at": "2026-09-26",
+            "locator": "qwen3.5-397b-a17b"
+          }
+        ],
+        "captured_at": "2026-09-26"
+      }
+    },
+    {
+      "model_id": "qwen3-235b-a22b-instruct-2507",
+      "api_model_id": "qwen3-235b-a22b-instruct-2507",
+      "display_name": "Qwen3 235B A22B Instruct (2507)",
+      "model_type": "chat",
+      "availability": {
+        "value": "available",
+        "status": "claimed",
+        "sources": [
+          {
+            "url": "https://www.scaleway.com/en/docs/generative-apis/reference-content/supported-models/",
+            "captured_at": "2026-09-26",
+            "locator": "qwen3-235b-a22b-instruct-2507"
+          }
+        ],
+        "captured_at": "2026-09-26"
+      },
+      "model_origin": {
+        "developer": "Qwen",
+        "developer_vendor_id": null,
+        "open_weights": null,
+        "status": "claimed",
+        "sources": [
+          {
+            "url": "https://www.scaleway.com/en/docs/generative-apis/reference-content/supported-models/",
+            "captured_at": "2026-09-26",
+            "locator": "Provider: Qwen"
+          }
+        ],
+        "captured_at": "2026-09-26"
+      },
+      "capabilities": {
+        "context_window_tokens": {
+          "value": 250000,
+          "status": "claimed",
+          "sources": [
+            {
+              "url": "https://www.scaleway.com/en/docs/generative-apis/reference-content/supported-models/",
+              "captured_at": "2026-09-26",
+              "locator": "Context window 250k"
+            }
+          ],
+          "captured_at": "2026-09-26",
+          "note": "Quelle nennt 250k; als 250000 erfasst (Untergrenze, exakte Tokenzahl nicht angegeben)."
+        }
+      },
+      "price": {
+        "input_per_1m": 0.75,
+        "output_per_1m": 2.25,
+        "status": "claimed",
+        "sources": [
+          {
+            "url": "https://www.scaleway.com/en/pricing/model-as-a-service/",
+            "captured_at": "2026-09-26",
+            "locator": "qwen3-235b-a22b-instruct-2507"
+          }
+        ],
+        "captured_at": "2026-09-26"
+      }
+    }
+  ],
+  "provenance": {
+    "captured_at": "2026-09-26",
+    "captured_by": "RealSyncDynamics Registry-Bootstrap (Agent im Auftrag von Dominik Steiner)",
+    "research_refs": [
+      "research/eu-ai-providers-2026-09-25.md",
+      "research/eu-llm-poc-plan-2026-09-25.md"
+    ]
+  }
+}

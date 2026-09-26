@@ -1,0 +1,56 @@
+{
+  "schema_version": "1.0",
+  "vendor_id": "example-host-b",
+  "display_name": "Example Host B",
+  "legal_name": {
+    "value": "Example Host B GmbH",
+    "status": "claimed",
+    "sources": [
+      {
+        "url": "https://example.com/fixtures/source",
+        "captured_at": "2026-09-20",
+        "locator": "Impressum"
+      }
+    ],
+    "captured_at": "2026-09-20"
+  },
+  "brands": [
+    "Example Host B"
+  ],
+  "legal_seat_country": {
+    "value": [
+      "DE"
+    ],
+    "status": "claimed",
+    "sources": [
+      {
+        "url": "https://example.com/fixtures/source",
+        "captured_at": "2026-09-20",
+        "locator": "Impressum"
+      }
+    ],
+    "captured_at": "2026-09-20"
+  },
+  "parent_organization": {
+    "value": null,
+    "status": "unknown",
+    "sources": [],
+    "captured_at": "2026-09-20"
+  },
+  "control_change": {
+    "status": "unknown",
+    "counterparty": null,
+    "as_of": null,
+    "verification_status": "unknown",
+    "sources": [],
+    "captured_at": "2026-09-20",
+    "note": "Kein Beleg zu Kontrollwechseln ausgewertet; bewusst nicht 'none'."
+  },
+  "certifications": [],
+  "provenance": {
+    "captured_at": "2026-09-20",
+    "captured_by": "fixture",
+    "research_refs": [],
+    "notes": "Fiktiver Testdatensatz (is_example)."
+  }
+}

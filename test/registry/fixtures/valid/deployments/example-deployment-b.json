@@ -1,0 +1,172 @@
+{
+  "schema_version": "1.0",
+  "deployment_id": "example-deployment-b",
+  "vendor_id": "example-host-b",
+  "brand": null,
+  "product_name": "Example Product B",
+  "product_sku": "example-product-b",
+  "deployment_kind": "dedicated",
+  "listing_status": "preview",
+  "infrastructure_operator": {
+    "vendor_id": null,
+    "name": null,
+    "status": "unknown",
+    "sources": [],
+    "captured_at": "2026-09-20"
+  },
+  "connector": {
+    "connector_type": "other",
+    "api_base_url": null,
+    "api_paths": [],
+    "inventory_endpoint": null,
+    "legacy_fallback_endpoint": null,
+    "sources": [],
+    "captured_at": "2026-09-20"
+  },
+  "inference_region": {
+    "scope": "unknown",
+    "country_codes": [],
+    "provider_region_code": null,
+    "locality": null,
+    "status": "unknown",
+    "sources": [],
+    "captured_at": "2026-09-20",
+    "note": "Region nicht belegt."
+  },
+  "external_inference_egress": {
+    "value": true,
+    "status": "claimed",
+    "sources": [
+      {
+        "url": "https://example.com/fixtures/source",
+        "captured_at": "2026-09-20",
+        "locator": "Weiterleitung an Dritten"
+      }
+    ],
+    "captured_at": "2026-09-20"
+  },
+  "jurisdiction": {
+    "provider_jurisdiction": {
+      "value": [],
+      "status": "unknown",
+      "sources": [],
+      "captured_at": "2026-09-20"
+    },
+    "infrastructure_jurisdiction": {
+      "value": [],
+      "status": "unknown",
+      "sources": [],
+      "captured_at": "2026-09-20"
+    },
+    "non_eu_parent_control": {
+      "value": null,
+      "status": "unknown",
+      "sources": [],
+      "captured_at": "2026-09-20"
+    },
+    "eu_commission_seal": {
+      "status": "unknown",
+      "level": null,
+      "applies_to_sku": [],
+      "verification_status": "unknown",
+      "sources": [],
+      "captured_at": "2026-09-20",
+      "valid_from": null,
+      "valid_until": null,
+      "note": "Kein Beleg fuer ein EU-Souveraenitaets-Siegel in den ausgewerteten Quellen."
+    },
+    "third_country_access": {
+      "status": "unknown",
+      "requires_subprocessor_review": true,
+      "verification_status": "unknown",
+      "sources": [],
+      "captured_at": "2026-09-20"
+    }
+  },
+  "capabilities": {
+    "chat": {
+      "support": "yes",
+      "status": "claimed",
+      "sources": [
+        {
+          "url": "https://example.com/fixtures/source",
+          "captured_at": "2026-09-20",
+          "locator": "chat"
+        }
+      ],
+      "captured_at": "2026-09-20"
+    },
+    "json_schema_strict": {
+      "support": "unknown",
+      "status": "unknown",
+      "sources": [],
+      "captured_at": "2026-09-20"
+    }
+  },
+  "certifications": [],
+  "claims": [],
+  "pricing": {
+    "scheme": "per_model",
+    "currency": "USD",
+    "unit": "per_1m_tokens",
+    "vat": "unknown",
+    "categories": [],
+    "modifiers": [],
+    "sources": [
+      {
+        "url": "https://example.com/fixtures/source",
+        "captured_at": "2026-09-20",
+        "locator": "Preis"
+      }
+    ],
+    "captured_at": "2026-09-20"
+  },
+  "models": [
+    {
+      "model_id": "example-model-2",
+      "api_model_id": null,
+      "display_name": "Example Model 2",
+      "model_type": "chat",
+      "availability": {
+        "value": "available",
+        "status": "claimed",
+        "sources": [
+          {
+            "url": "https://example.com/fixtures/source",
+            "captured_at": "2026-09-20",
+            "locator": "Modell"
+          }
+        ],
+        "captured_at": "2026-09-20"
+      },
+      "model_origin": {
+        "developer": null,
+        "developer_vendor_id": null,
+        "open_weights": null,
+        "status": "unknown",
+        "sources": [],
+        "captured_at": "2026-09-20"
+      },
+      "capabilities": {},
+      "price": {
+        "input_per_1m": 1,
+        "output_per_1m": 2,
+        "status": "claimed",
+        "sources": [
+          {
+            "url": "https://example.com/fixtures/source",
+            "captured_at": "2026-09-20",
+            "locator": "Preis"
+          }
+        ],
+        "captured_at": "2026-09-20"
+      }
+    }
+  ],
+  "provenance": {
+    "captured_at": "2026-09-20",
+    "captured_by": "fixture",
+    "research_refs": [],
+    "notes": "Fiktiver Testdatensatz (is_example)."
+  }
+}

@@ -1,0 +1,744 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://realsyncdynamics.ai/schemas/registry/deployment.schema.json",
+  "title": "Registry-Deployment",
+  "description": "Bewertet wird das Deployment, nicht die Marke. Region, Jurisdiktion, Faehigkeiten und Claims haengen hier (bzw. am Modell). Diese Datei enthaelt NUR Fakten: kein Assessment-Ergebnis, keine Routing-Zulaessigkeit, kein Immunitaets-Flag (z. B. cloud_act_safe). Routing-Zulaessigkeit wird aus Fakten + Policy abgeleitet (supabase/functions/_shared/registry/residency.ts).",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": "1.0"
+    },
+    "deployment_id": {
+      "$ref": "common.schema.json#/$defs/slug"
+    },
+    "vendor_id": {
+      "$ref": "common.schema.json#/$defs/slug"
+    },
+    "brand": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "product_name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "product_sku": {
+      "description": "Produktkennung, auf die sich certifications[].applies_to_sku und eu_commission_seal.applies_to_sku beziehen.",
+      "$ref": "common.schema.json#/$defs/slug"
+    },
+    "deployment_kind": {
+      "enum": [
+        "shared_serverless",
+        "dedicated",
+        "self_hosted",
+        "on_premise",
+        "hybrid",
+        "unknown"
+      ]
+    },
+    "listing_status": {
+      "enum": [
+        "active",
+        "preview",
+        "retired"
+      ],
+      "description": "Pflegezustand des Registry-Eintrags, KEIN Compliance-Status."
+    },
+    "infrastructure_operator": {
+      "description": "Wer die Inferenz-Infrastruktur betreibt. vendor_id muss in der Registry existieren, falls gesetzt.",
+      "type": "object",
+      "allOf": [
+        {
+          "$ref": "common.schema.json#/$defs/factMeta"
+        }
+      ],
+      "properties": {
+        "vendor_id": {
+          "anyOf": [
+            {
+              "$ref": "common.schema.json#/$defs/slug"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "vendor_id",
+        "name"
+      ],
+      "unevaluatedProperties": false
+    },
+    "connector": {
+      "type": "object",
+      "properties": {
+        "connector_type": {
+          "enum": [
+            "openai_compatible",
+            "mistral_native",
+            "pharia_os",
+            "bedrock_converse",
+            "vertex_gemini",
+            "azure_openai",
+            "anthropic_messages",
+            "other"
+          ]
+        },
+        "api_base_url": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "uri"
+        },
+        "api_paths": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^/"
+          },
+          "uniqueItems": true
+        },
+        "inventory_endpoint": {
+          "description": "Aktueller Modell-/Settings-Endpunkt fuer das Inventar (Pfad relativ zu api_base_url oder absolute URL).",
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "enum": [
+                    "models_list",
+                    "catalog_api",
+                    "settings_endpoint"
+                  ]
+                },
+                "path_or_url": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "required": [
+                "kind",
+                "path_or_url"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "legacy_fallback_endpoint": {
+          "description": "Nur Legacy-Fallback (z. B. pharia_os /models_available). Darf nie der primaere Inventar-Endpunkt sein.",
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "path_or_url": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "note": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "path_or_url"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "sources": {
+          "$ref": "common.schema.json#/$defs/sources"
+        },
+        "captured_at": {
+          "$ref": "common.schema.json#/$defs/capturedAt"
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "connector_type",
+        "api_base_url",
+        "api_paths",
+        "inventory_endpoint",
+        "legacy_fallback_endpoint",
+        "sources",
+        "captured_at"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "description": "/models_available ist bei pharia_os nur Legacy-Fallback, nie das primaere Inventar.",
+          "if": {
+            "type": "object",
+            "properties": {
+              "inventory_endpoint": {
+                "type": "object"
+              }
+            },
+            "required": [
+              "inventory_endpoint"
+            ]
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "inventory_endpoint": {
+                "type": "object",
+                "properties": {
+                  "path_or_url": {
+                    "not": {
+                      "type": "string",
+                      "pattern": "/models_available/?$"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "inference_region": {
+      "$ref": "common.schema.json#/$defs/regionFact"
+    },
+    "storage_region": {
+      "$ref": "common.schema.json#/$defs/regionFact"
+    },
+    "control_plane_region": {
+      "$ref": "common.schema.json#/$defs/regionFact"
+    },
+    "external_inference_egress": {
+      "description": "true = Inferenz wird (auch teilweise) an einen externen Dritten weitergereicht. Unter strict_eu_sovereignty nie PASS.",
+      "$ref": "common.schema.json#/$defs/boolFact"
+    },
+    "jurisdiction": {
+      "type": "object",
+      "properties": {
+        "provider_jurisdiction": {
+          "$ref": "common.schema.json#/$defs/countryListFact"
+        },
+        "infrastructure_jurisdiction": {
+          "$ref": "common.schema.json#/$defs/countryListFact"
+        },
+        "non_eu_parent_control": {
+          "$ref": "common.schema.json#/$defs/boolFact"
+        },
+        "eu_commission_seal": {
+          "$ref": "common.schema.json#/$defs/euCommissionSeal"
+        },
+        "third_country_access": {
+          "$ref": "common.schema.json#/$defs/thirdCountryAccess"
+        }
+      },
+      "required": [
+        "provider_jurisdiction",
+        "infrastructure_jurisdiction",
+        "non_eu_parent_control",
+        "eu_commission_seal",
+        "third_country_access"
+      ],
+      "additionalProperties": false
+    },
+    "capabilities": {
+      "$ref": "common.schema.json#/$defs/capabilities"
+    },
+    "certifications": {
+      "type": "array",
+      "items": {
+        "$ref": "common.schema.json#/$defs/certification"
+      }
+    },
+    "claims": {
+      "type": "array",
+      "items": {
+        "$ref": "common.schema.json#/$defs/claim"
+      }
+    },
+    "pricing": {
+      "$ref": "#/$defs/pricing"
+    },
+    "models": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/model"
+      }
+    },
+    "provenance": {
+      "$ref": "common.schema.json#/$defs/provenance"
+    }
+  },
+  "required": [
+    "schema_version",
+    "deployment_id",
+    "vendor_id",
+    "brand",
+    "product_name",
+    "product_sku",
+    "deployment_kind",
+    "listing_status",
+    "infrastructure_operator",
+    "connector",
+    "inference_region",
+    "external_inference_egress",
+    "jurisdiction",
+    "capabilities",
+    "certifications",
+    "claims",
+    "pricing",
+    "models",
+    "provenance"
+  ],
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "description": "Kategorie-Preise (z. B. STACKIT Standard/Plus/Premium) sind keine Modellpreise: bei scheme=category traegt kein Modell einen eigenen price-Block, sondern nur price_category.",
+      "if": {
+        "type": "object",
+        "properties": {
+          "pricing": {
+            "type": "object",
+            "properties": {
+              "scheme": {
+                "const": "category"
+              }
+            },
+            "required": [
+              "scheme"
+            ]
+          }
+        },
+        "required": [
+          "pricing"
+        ]
+      },
+      "then": {
+        "type": "object",
+        "properties": {
+          "models": {
+            "type": "array",
+            "items": {
+              "not": {
+                "type": "object",
+                "required": [
+                  "price"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "type": "object",
+        "properties": {
+          "pricing": {
+            "type": "object",
+            "properties": {
+              "scheme": {
+                "const": "per_model"
+              }
+            },
+            "required": [
+              "scheme"
+            ]
+          }
+        },
+        "required": [
+          "pricing"
+        ]
+      },
+      "then": {
+        "type": "object",
+        "properties": {
+          "models": {
+            "type": "array",
+            "items": {
+              "not": {
+                "type": "object",
+                "required": [
+                  "price_category"
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "money": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 0
+    },
+    "pricing": {
+      "type": "object",
+      "properties": {
+        "scheme": {
+          "enum": [
+            "per_model",
+            "category",
+            "contract_only",
+            "unknown"
+          ]
+        },
+        "currency": {
+          "anyOf": [
+            {
+              "$ref": "common.schema.json#/$defs/currency"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "unit": {
+          "const": "per_1m_tokens"
+        },
+        "vat": {
+          "enum": [
+            "excluded",
+            "included",
+            "unknown"
+          ]
+        },
+        "categories": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "category_id": {
+                "$ref": "common.schema.json#/$defs/slug"
+              },
+              "display_name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "kind": {
+                "enum": [
+                  "llm",
+                  "embedding",
+                  "other"
+                ]
+              },
+              "input_per_1m": {
+                "$ref": "#/$defs/money"
+              },
+              "output_per_1m": {
+                "$ref": "#/$defs/money"
+              },
+              "sku_codes": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "sources": {
+                "type": "array",
+                "items": {
+                  "$ref": "common.schema.json#/$defs/source"
+                },
+                "minItems": 1
+              },
+              "captured_at": {
+                "$ref": "common.schema.json#/$defs/capturedAt"
+              }
+            },
+            "required": [
+              "category_id",
+              "display_name",
+              "kind",
+              "input_per_1m",
+              "output_per_1m",
+              "sources",
+              "captured_at"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "modifiers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "modifier_id": {
+                "$ref": "common.schema.json#/$defs/slug"
+              },
+              "kind": {
+                "enum": [
+                  "regional_multiplier",
+                  "batch_discount",
+                  "free_tier",
+                  "other"
+                ]
+              },
+              "value": {
+                "type": "number"
+              },
+              "description": {
+                "type": "string",
+                "minLength": 1
+              },
+              "sources": {
+                "type": "array",
+                "items": {
+                  "$ref": "common.schema.json#/$defs/source"
+                },
+                "minItems": 1
+              },
+              "captured_at": {
+                "$ref": "common.schema.json#/$defs/capturedAt"
+              }
+            },
+            "required": [
+              "modifier_id",
+              "kind",
+              "value",
+              "description",
+              "sources",
+              "captured_at"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "sources": {
+          "$ref": "common.schema.json#/$defs/sources"
+        },
+        "captured_at": {
+          "$ref": "common.schema.json#/$defs/capturedAt"
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "scheme",
+        "currency",
+        "unit",
+        "vat",
+        "categories",
+        "modifiers",
+        "sources",
+        "captured_at"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "scheme": {
+                "const": "category"
+              }
+            },
+            "required": [
+              "scheme"
+            ]
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "categories": {
+                "type": "array",
+                "minItems": 1
+              }
+            }
+          },
+          "else": {
+            "type": "object",
+            "properties": {
+              "categories": {
+                "type": "array",
+                "maxItems": 0
+              }
+            }
+          }
+        }
+      ]
+    },
+    "modelPrice": {
+      "type": "object",
+      "allOf": [
+        {
+          "$ref": "common.schema.json#/$defs/factMeta"
+        }
+      ],
+      "properties": {
+        "input_per_1m": {
+          "$ref": "#/$defs/money"
+        },
+        "output_per_1m": {
+          "$ref": "#/$defs/money"
+        },
+        "cached_input_per_1m": {
+          "$ref": "#/$defs/money"
+        }
+      },
+      "required": [
+        "input_per_1m",
+        "output_per_1m"
+      ],
+      "unevaluatedProperties": false
+    },
+    "model": {
+      "type": "object",
+      "properties": {
+        "model_id": {
+          "$ref": "common.schema.json#/$defs/modelKey"
+        },
+        "api_model_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1,
+          "description": "Exakte Modell-ID der API laut Quelle; null = nicht belegt."
+        },
+        "display_name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "model_type": {
+          "enum": [
+            "chat",
+            "embedding",
+            "reranker",
+            "ocr",
+            "audio",
+            "image",
+            "other"
+          ]
+        },
+        "availability": {
+          "type": "object",
+          "allOf": [
+            {
+              "$ref": "common.schema.json#/$defs/factMeta"
+            }
+          ],
+          "properties": {
+            "value": {
+              "enum": [
+                "available",
+                "preview",
+                "deprecated",
+                "unavailable",
+                "unknown"
+              ]
+            }
+          },
+          "required": [
+            "value"
+          ],
+          "unevaluatedProperties": false
+        },
+        "model_origin": {
+          "description": "Modellherkunft (Entwickler) – getrennt von der Inferenzregion.",
+          "type": "object",
+          "allOf": [
+            {
+              "$ref": "common.schema.json#/$defs/factMeta"
+            }
+          ],
+          "properties": {
+            "developer": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "developer_vendor_id": {
+              "anyOf": [
+                {
+                  "$ref": "common.schema.json#/$defs/slug"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "open_weights": {
+              "type": [
+                "boolean",
+                "null"
+              ]
+            }
+          },
+          "required": [
+            "developer",
+            "developer_vendor_id",
+            "open_weights"
+          ],
+          "unevaluatedProperties": false
+        },
+        "inference_region": {
+          "description": "Optional: modellspezifische Region, falls die Quelle sie pro Modell nennt. Ueberschreibt die Deployment-Region fuer dieses Modell.",
+          "$ref": "common.schema.json#/$defs/regionFact"
+        },
+        "capabilities": {
+          "$ref": "common.schema.json#/$defs/capabilities"
+        },
+        "price_category": {
+          "type": "object",
+          "allOf": [
+            {
+              "$ref": "common.schema.json#/$defs/factMeta"
+            }
+          ],
+          "properties": {
+            "value": {
+              "anyOf": [
+                {
+                  "$ref": "common.schema.json#/$defs/slug"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "value"
+          ],
+          "unevaluatedProperties": false
+        },
+        "price": {
+          "$ref": "#/$defs/modelPrice"
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "model_id",
+        "api_model_id",
+        "display_name",
+        "model_type",
+        "availability",
+        "model_origin",
+        "capabilities"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

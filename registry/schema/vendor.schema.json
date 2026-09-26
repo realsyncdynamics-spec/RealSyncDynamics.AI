@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://realsyncdynamics.ai/schemas/registry/vendor.schema.json",
+  "title": "Registry-Vendor (Rechtstraeger)",
+  "description": "Ein Vendor ist der Rechtstraeger (z. B. schwarz-digits-cloud), nicht die Marke (STACKIT). Keine Bewertung, keine Region: Regionen und Bewertungen gehoeren zum Deployment bzw. zum Assessment-Snapshot.",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": "1.0"
+    },
+    "vendor_id": {
+      "$ref": "common.schema.json#/$defs/slug"
+    },
+    "display_name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "legal_name": {
+      "$ref": "common.schema.json#/$defs/stringFact"
+    },
+    "brands": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "legal_seat_country": {
+      "$ref": "common.schema.json#/$defs/countryListFact"
+    },
+    "parent_organization": {
+      "$ref": "common.schema.json#/$defs/stringFact"
+    },
+    "control_change": {
+      "$ref": "common.schema.json#/$defs/controlChange"
+    },
+    "certifications": {
+      "description": "Unternehmensweite Zertifikate. Zaehlen fuer ein Deployment nur, wenn dessen product_sku in applies_to_sku steht.",
+      "type": "array",
+      "items": {
+        "$ref": "common.schema.json#/$defs/certification"
+      }
+    },
+    "website": {
+      "type": "string",
+      "format": "uri",
+      "pattern": "^https://"
+    },
+    "provenance": {
+      "$ref": "common.schema.json#/$defs/provenance"
+    }
+  },
+  "required": [
+    "schema_version",
+    "vendor_id",
+    "display_name",
+    "legal_name",
+    "brands",
+    "legal_seat_country",
+    "parent_organization",
+    "control_change",
+    "certifications",
+    "provenance"
+  ],
+  "additionalProperties": false
+}

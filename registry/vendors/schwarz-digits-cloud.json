@@ -1,0 +1,60 @@
+{
+  "schema_version": "1.0",
+  "vendor_id": "schwarz-digits-cloud",
+  "display_name": "Schwarz Digits Cloud (STACKIT)",
+  "legal_name": {
+    "value": "Schwarz Digits Cloud GmbH & Co. KG",
+    "status": "claimed",
+    "sources": [
+      {
+        "url": "https://stackit.com/en/asset/download/34534/file/STACKIT_data_processing_agreement.pdf?version=12",
+        "captured_at": "2026-09-26",
+        "locator": "Vertragspartei: Schwarz Digits Cloud GmbH & Co. KG, Am Campus 1, 74177 Bad Friedrichshall"
+      }
+    ],
+    "captured_at": "2026-09-26"
+  },
+  "brands": [
+    "STACKIT"
+  ],
+  "legal_seat_country": {
+    "value": [
+      "DE"
+    ],
+    "status": "claimed",
+    "sources": [
+      {
+        "url": "https://stackit.com/en/asset/download/34534/file/STACKIT_data_processing_agreement.pdf?version=12",
+        "captured_at": "2026-09-26",
+        "locator": "Am Campus 1, 74177 Bad Friedrichshall"
+      }
+    ],
+    "captured_at": "2026-09-26"
+  },
+  "parent_organization": {
+    "value": null,
+    "status": "unknown",
+    "sources": [],
+    "captured_at": "2026-09-26",
+    "note": "Nicht in den ausgewerteten Quellen belegt (Recherche: 'Schwarz-Gruppe' ohne Einzelbeleg)."
+  },
+  "control_change": {
+    "status": "unknown",
+    "counterparty": null,
+    "as_of": null,
+    "verification_status": "unknown",
+    "sources": [],
+    "captured_at": "2026-09-26",
+    "note": "Kein Beleg zu Kontrollwechseln ausgewertet; bewusst nicht 'none'."
+  },
+  "certifications": [],
+  "website": "https://stackit.com",
+  "provenance": {
+    "captured_at": "2026-09-26",
+    "captured_by": "RealSyncDynamics Registry-Bootstrap (Agent im Auftrag von Dominik Steiner)",
+    "research_refs": [
+      "research/eu-ai-providers-2026-09-25.md",
+      "research/eu-llm-poc-plan-2026-09-25.md"
+    ]
+  }
+}

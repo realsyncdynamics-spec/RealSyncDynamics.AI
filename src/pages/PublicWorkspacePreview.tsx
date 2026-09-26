@@ -5,6 +5,8 @@ import {
   Activity, Users, Settings, ArrowRight, Brain, Server, ShieldCheck, Lock,
 } from 'lucide-react';
 import { AiCore } from '../components/visual/AiCore';
+import { HandoffTopBar } from '../components/handoff/HandoffTopBar';
+import '../styles/governance-os-handoff.css';
 
 interface Tile {
   id: string;
@@ -116,7 +118,8 @@ export function PublicWorkspacePreview() {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-obsidian-950 text-titanium-100">
+    <div className="rs-ui rs-page min-h-screen bg-obsidian-950 text-titanium-100">
+      <HandoffTopBar />
       {/* Hero */}
       <div className="bg-gradient-to-b from-obsidian-900 to-obsidian-950 border-b border-titanium-900 px-4 py-14 sm:py-20">
         <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
@@ -140,13 +143,13 @@ export function PublicWorkspacePreview() {
           </p>
 
           <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3">
-            <button
-              onClick={() => navigate('/app')}
-              className="flex items-center justify-center gap-2 px-6 py-3 bg-security-600 text-white font-semibold hover:bg-security-500 transition-colors"
+            <Link
+              to="/login?next=/app/dashboard"
+              className="rs-btn rs-btn--primary rs-btn--h52"
             >
-              Dashboard öffnen
+              Anmelden & Dashboard öffnen
               <ArrowRight className="h-4 w-4" />
-            </button>
+            </Link>
             <button
               onClick={() => navigate('/audit?source=public-workspace')}
               className="flex items-center justify-center gap-2 px-6 py-3 border border-titanium-700 text-titanium-100 font-medium hover:bg-obsidian-800 transition-colors"
@@ -295,13 +298,13 @@ export function PublicWorkspacePreview() {
             Kostenlos starten — keine Kreditkarte erforderlich.
             EU-Hosting. DSGVO-konform by design.
           </p>
-          <button
-            onClick={() => navigate('/app')}
-            className="shrink-0 flex items-center gap-2 px-6 py-2.5 bg-security-600 text-white text-sm font-semibold hover:bg-security-500 transition-colors"
-          >
-            Dashboard öffnen
-            <ArrowRight className="h-4 w-4" />
-          </button>
+          <Link
+              to="/login?next=/app/dashboard"
+              className="rs-btn rs-btn--primary rs-btn--h52"
+            >
+              Anmelden & Dashboard öffnen
+              <ArrowRight className="h-4 w-4" />
+            </Link>
         </div>
       </div>
     </div>

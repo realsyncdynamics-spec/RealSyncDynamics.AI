@@ -21,6 +21,7 @@ import { decideNavLock } from '../../../components/governance-os/navAccess';
 import { navLockTitle } from '../../../components/governance-os/useNavLock';
 import { useLang } from '../../../i18n/useLang';
 import { tenantDisplayName } from './dashboardSignals';
+import { BrowserRuntimePanel } from './BrowserRuntimePanel';
 
 export function CommandCenterDashboard() {
   const { activeTenantId, tenants, loading: tenantLoading, entitlements, hasFeature } = useTenant();
@@ -101,6 +102,7 @@ export function CommandCenterDashboard() {
         error={error}
         onRetry={retry}
       />
+      <BrowserRuntimePanel activeTenantId={activeTenantId} />
       <ComplianceStatusView
         tenantName={tenantName}
         activeTenantId={activeTenantId}

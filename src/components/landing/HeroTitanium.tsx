@@ -89,7 +89,21 @@ export function HeroTitanium() {
             {HERO_OPERATING_LOOP}
           </p>
 
-          <div className="mt-10 flex flex-wrap items-stretch gap-3" role="group" aria-label="Hero-Aktionen">
+          <div
+            className="mt-7 flex flex-wrap items-center gap-x-5 gap-y-2 text-[0.72rem] tracking-[0.08em]"
+            data-testid="hero-trust-strip"
+            style={{ fontFamily: LANDING_MONO, color: MODE_MUTED }}
+            aria-label="Vertrauenssignale"
+          >
+            {['EU-Backend-Region', 'Consent-first Tracking', 'Evidence Vault'].map((item) => (
+              <span key={item} className="inline-flex items-center gap-2">
+                <span aria-hidden="true" style={{ color: MODE_ACCENT }}>✓</span>
+                {item}
+              </span>
+            ))}
+          </div>
+
+          <div className="mt-8 flex flex-wrap items-stretch gap-3" role="group" aria-label="Hero-Aktionen">
             <Link
               id="audit-cta"
               data-hero-cta="audit"

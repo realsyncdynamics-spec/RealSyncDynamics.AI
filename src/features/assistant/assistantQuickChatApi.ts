@@ -111,7 +111,10 @@ function resolveClient(deps?: QuickChatDeps): AiGatewayEdgeClient {
     throw new AiGatewayEdgeError(503, 'AI_GATEWAY_NOT_CONFIGURED',
       'Supabase-Zugangsdaten fehlen.');
   }
-  return new AiGatewayEdgeClient({ supabaseUrl: url, apiKey: key });
+  // Ausdrücklich anonym (öffentlicher Chip, Vertrag #1591). Derzeit ohne
+  // Aufrufer in src/. Nach dem Gateway-Deploy nimmt der Gateway anonym nur
+  // noch `mode: 'audit_anon'` an — dieser Pfad liefert dann 401.
+  return new AiGatewayEdgeClient({ supabaseUrl: url, apiKey: key, auth: { mode: 'anon' } });
 }
 
 function checkRateLimit(now: number): { allowed: boolean; retryAfterMs: number } {

@@ -13,7 +13,7 @@
 
 import { chromium, Browser, BrowserContext, Page, Request, Response } from 'playwright';
 import * as http from 'http';
-import { executeBrowserActions, type BrowserExecuteRequest } from './executor.js';
+import { assertPublicHttpUrl, executeBrowserActions, type BrowserExecuteRequest } from './executor.js';
 
 const PORT = parseInt(process.env.PORT ?? '3001', 10);
 const API_KEY = process.env.SCANNER_API_KEY ?? '';
@@ -338,6 +338,13 @@ const server = http.createServer(async (req, res) => {
   if (!targetUrl || !/^https?:\/\//.test(targetUrl)) {
     res.writeHead(400);
     return res.end(JSON.stringify({ ok: false, error: 'INVALID_URL' }));
+  }
+  try {
+    await assertPublicHttpUrl(targetUrl);
+  } catch (err) {
+    const code = err instanceof Error ? err.message : String(err);
+    res.writeHead(code === 'PRIVATE_NETWORK_BLOCKED' ? 403 : 400);
+    return res.end(JSON.stringify({ ok: false, error: code }));
   }
 
   if (activeSans >= MAX_CONCURRENT) {

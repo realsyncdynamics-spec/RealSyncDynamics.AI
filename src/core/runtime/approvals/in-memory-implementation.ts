@@ -6,7 +6,6 @@
  * Provides full contract: state machine enforcement, UUID generation,
  * timestamp management, and tenant isolation via injection.
  */
-import { randomUUID } from 'crypto';
 import type { ApprovalGateService, ApprovalGateRecord, OpenGateInput, DecideGateInput } from '../approvals';
 
 export class InMemoryApprovalGateService implements ApprovalGateService {
@@ -16,7 +15,7 @@ export class InMemoryApprovalGateService implements ApprovalGateService {
 
   async open(input: OpenGateInput): Promise<ApprovalGateRecord> {
     const gate: ApprovalGateRecord = {
-      id: randomUUID(),
+      id: crypto.randomUUID(),
       tenant_id: this.tenantId,
       execution_id: input.execution_id,
       status: 'pending',

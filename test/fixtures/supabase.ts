@@ -2,7 +2,6 @@
  * Test fixtures for Supabase and runtime services.
  * Provides utilities for integration and E2E tests.
  */
-import { randomUUID } from 'crypto';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { createClient } from '@supabase/supabase-js';
 import type { ExecutorDeps } from '../../src/core/runtime/executor';
@@ -55,7 +54,7 @@ export async function createTestExecutor(options: {
   tenantId?: string;
 }): Promise<Executor> {
   const supabase = options.supabase;
-  const tenantId = options.tenantId || 'test-tenant-' + randomUUID().slice(0, 8);
+  const tenantId = options.tenantId || 'test-tenant-' + crypto.randomUUID().slice(0, 8);
 
   // Phase 1.1: Default approval service (in-memory).
   // Phase 2: Replace with PostgresApprovalGateService once schema is deployed.

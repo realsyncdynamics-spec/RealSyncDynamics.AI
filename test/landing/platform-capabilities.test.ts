@@ -134,9 +134,9 @@ describe('Erreichbarkeit — fertige Seiten sind von der Startseite aus verlinkt
     expect(shell).toContain("to: '/branchen'");
   });
 
-  it('Header-CTA folgt der Governance-OS-Hierarchie', () => {
-    expect(shell).toContain('HERO_SCAN_CTA_LABEL');
-    expect(shell).toContain("/governance-runtime");
+  it('Header-CTA ist sekundär zum Hero-Scan und führt ins Dashboard', () => {
+    expect(shell).toContain('HERO_DASHBOARD_CTA_LABEL');
+    expect(shell).toContain('/app/dashboard');
     expect(shell).toContain('PublicDarkHeader');
   });
 });

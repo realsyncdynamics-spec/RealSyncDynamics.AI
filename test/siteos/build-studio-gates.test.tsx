@@ -147,9 +147,9 @@ describe('BuildStudioPage gates', () => {
     expect(screen.getByRole('link', { name: /Browse Agents/i })).toHaveAttribute('href', '/app/agents');
 
     fireEvent.click(screen.getByRole('button', { name: /Technology & SaaS Vorlage verwenden/i }));
-    expect(screen.getByLabelText('Ihre Beschreibung')).toHaveValue(
-      expect.stringContaining('B2B-Technologieprodukt'),
-    );
+    expect(
+      (screen.getByLabelText('Ihre Beschreibung') as HTMLTextAreaElement).value,
+    ).toContain('B2B-Technologieprodukt');
 
     expect(screen.getByRole('button', { name: /Datei hinzufügen/i })).toBeDisabled();
     expect(screen.getByRole('button', { name: /Voice-Eingabe/i })).toBeDisabled();

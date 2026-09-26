@@ -33,3 +33,10 @@ for (const route of publicRoutes) {
     ).toBeVisible();
   });
 }
+
+test('[FE-009] /preise leitet kanonisch auf /pricing weiter', async ({ page }) => {
+  const response = await page.goto('/preise', { waitUntil: 'domcontentloaded', timeout: 20000 });
+  expect(response?.status(), 'HTTP-Status fuer /preise').toBeLessThan(400);
+  await expect(page).toHaveURL(/\/pricing(?:[/?#]|$)/);
+  await expect(page.locator('#pricing-heading')).toBeVisible();
+});

@@ -253,14 +253,14 @@ function breadcrumbs(items: Array<{ name: string; url: string }>): Record<string
 export const SEO_CONFIG: Record<string, SEOConfig> = {
   // ─── Tier 1 — Hero / Top-Conversion ──────────────────────────────────────
   '/': {
-    // Governance OS Handoff v2 — matches the H1 in GovernanceOsHero.
-    title: 'RealSyncDynamics.AI — AI Compliance Operations OS for Europe',
+    // Governance-OS-Positionierung — matches the H1 in GovernanceOsHero.
+    title: 'RealSyncDynamics.AI — AI Governance OS für Unternehmens-KI',
     description:
-      'Runtime-Governance für regulierte KI-Systeme: KI-Bestand erfassen, nach EU AI Act klassifizieren, Richtlinien durchsetzen, Evidenz nachweisen. DSGVO und EU AI Act, EU-Hosting. Free Audit starten.',
+      'AI Governance OS: Identität, Policies, Risiko, Freigaben, Ausführung und Evidence für Modelle, Provider und Agenten in einer Control Plane. EU-Hosting.',
     canonical: `${SITE_URL}/`,
-    ogTitle: 'AI Compliance Operations OS for Europe',
+    ogTitle: 'Ihre KI kann handeln. Jetzt braucht sie Governance.',
     ogDescription:
-      'Runtime governance for regulated AI systems. Continuous evidence. EU-native by design.',
+      'Die Control Plane für Unternehmens-KI: Identität, Policies, Freigaben, Ausführung und Evidence über Modelle, Provider und Agenten hinweg.',
   },
   '/pricing': {
     title: 'Preise – Runtime-native AI-Governance-Plattform | RealSyncDynamics.AI',

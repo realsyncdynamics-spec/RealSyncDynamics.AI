@@ -264,7 +264,7 @@ function ShellWithMessage({
   backTo?: string;
 }) {
   return (
-    <div className="min-h-screen bg-obsidian-950 text-titanium-100">
+    <div className="min-h-screen rs-paper bg-obsidian-950 text-titanium-100">
       <header className="px-4 sm:px-6 lg:px-8 py-4 border-b border-silver-700/30 flex items-center justify-between">
         <Link
           to={backTo}
@@ -337,7 +337,7 @@ function NoUserShell({
   backTo?: string;
 }) {
   return (
-    <div className="min-h-screen bg-obsidian-950 text-titanium-100" data-testid="checkout-auth-required">
+    <div className="min-h-screen rs-paper bg-obsidian-950 text-titanium-100" data-testid="checkout-auth-required">
       <header className="px-4 sm:px-6 lg:px-8 py-4 border-b border-silver-700/30 flex items-center justify-between">
         <Link
           to={backTo}
@@ -432,7 +432,7 @@ function ConsentGateShell({
   const canSubmit = agreedToTerms && acknowledgedWithdrawal && !redirecting;
 
   return (
-    <div className="min-h-screen bg-obsidian-950 text-titanium-100">
+    <div className="min-h-screen rs-paper bg-obsidian-950 text-titanium-100">
       <header className="px-4 sm:px-6 lg:px-8 py-4 border-b border-silver-700/30 flex items-center justify-between">
         <Link
           to="/pricing"

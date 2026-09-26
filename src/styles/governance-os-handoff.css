@@ -319,6 +319,18 @@
   box-shadow: 0 0 10px rgba(0, 184, 212, 0.9);
 }
 
+/* Einstieg über das Kontrollproblem (ersetzt das Normen-Badge). */
+.rs-hero__hook {
+  margin: 0;
+  max-width: 620px;
+  font-family: var(--font-rs-ui);
+  font-size: clamp(15px, 1.15vw, 17px);
+  line-height: 1.6;
+  color: var(--color-rs-fg-1);
+  text-wrap: balance;
+}
+.rs-hero__hook strong { font-weight: 600; color: var(--color-rs-cyan-light); }
+
 .rs-hero__h1 {
   margin: 22px 0 0;
   font-family: var(--font-rs-serif);
@@ -744,4 +756,77 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .rs-progress__bar--indeterminate { animation: none; width: 100%; opacity: 0.6; }
+}
+
+/* ── „Papier & Waldgrün" (`.rs-paper`) ───────────────────────────────────
+   Startseite und die Seiten hinter ihren Buttons (Audit, Preise, Login).
+   Die Farben kommen über die Tokens aus `index.css` (`.rs-paper`); hier
+   stehen nur die Stellen, die oben fest kodiert sind (Blau-Verläufe,
+   Dunkel-Glas, weiße Schrift auf Dunkel) sowie Kanten und Schrift. */
+.rs-paper .rs-btn,
+.rs-paper .rs-chip,
+.rs-paper .rs-lang,
+.rs-paper .rs-input,
+.rs-paper .rs-card,
+.rs-paper .rs-alert,
+.rs-paper .rs-option,
+.rs-paper .rs-risk,
+.rs-paper .rs-rec,
+.rs-paper .rs-log,
+.rs-paper .rs-price-card,
+.rs-paper .rs-nav__link,
+.rs-paper .rs-nav__burger,
+.rs-paper .rs-menu__item { border-radius: 0; }
+
+.rs-paper .rs-btn--primary,
+.rs-paper .rs-btn--solid {
+  color: #F7F4EE;
+  background: var(--color-rs-primary);
+  border: 1px solid var(--color-rs-primary);
+  box-shadow: none;
+}
+.rs-paper .rs-btn--primary:not(:disabled):not([aria-disabled='true']):hover,
+.rs-paper .rs-btn--solid:not(:disabled):not([aria-disabled='true']):hover { background: var(--color-rs-primary-hover); }
+.rs-paper .rs-btn--glass {
+  color: var(--color-rs-fg-0);
+  background: transparent;
+  border: 1px solid var(--color-rs-fg-0);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+.rs-paper .rs-btn--glass:hover { background: rgba(31, 61, 50, 0.06); border-color: var(--color-rs-primary); }
+.rs-paper :is(.rs-btn, .rs-lang, .rs-chip, .rs-option, .rs-nav__link, .rs-nav__burger, .rs-menu__item):focus-visible {
+  outline: 2px solid var(--color-rs-primary);
+  outline-offset: 2px;
+}
+
+.rs-paper .rs-wordmark { color: var(--color-rs-fg-0); }
+.rs-paper .rs-wordmark__ai { color: var(--color-rs-primary); }
+.rs-paper .rs-nav__link:hover,
+.rs-paper .rs-chip:hover { background: rgba(31, 61, 50, 0.06); }
+.rs-paper .rs-chip--active,
+.rs-paper .rs-chip--active:hover { color: #F7F4EE; }
+.rs-paper .rs-nav__burger { background: transparent; border-color: var(--color-rs-border-strong); }
+.rs-paper .rs-menu { background: var(--color-rs-hero); }
+.rs-paper .rs-menu__item { background: var(--color-rs-bg-1); }
+
+.rs-paper .rs-input { background: var(--color-rs-bg-1); }
+.rs-paper .rs-input:focus { box-shadow: 0 0 0 3px rgba(31, 61, 50, 0.18); }
+.rs-paper .rs-alert { border-color: #D9A8A2; background: #F6E4E1; color: #7F1D1D; }
+
+.rs-paper .rs-option[aria-checked='true'] { background: rgba(31, 61, 50, 0.08); }
+.rs-paper .rs-progress__bar { background: var(--color-rs-primary); }
+.rs-paper .rs-rec { background: rgba(31, 61, 50, 0.06); border-color: rgba(31, 61, 50, 0.3); }
+.rs-paper .rs-price-card--popular,
+.rs-paper .rs-price-card--popular:hover { background: rgba(31, 61, 50, 0.05); }
+.rs-paper .rs-pill--primary,
+.rs-paper .rs-step--active .rs-step__dot,
+.rs-paper .rs-step--done .rs-step__dot { color: #F7F4EE; }
+.rs-paper .rs-pill--cyan { border-color: rgba(31, 61, 50, 0.3); background: rgba(31, 61, 50, 0.06); color: var(--color-rs-primary); }
+
+/* Überschriften im Buchschnitt wie auf der Startseite. */
+.rs-paper :is(.rs-login__title, .rs-login__quote, .rs-pricing__title, .rs-audit__title, .rs-audit__q, .rs-price-card__amount) {
+  font-family: var(--font-rs-serif);
+  font-weight: 400;
+  letter-spacing: -0.015em;
 }

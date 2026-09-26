@@ -20,6 +20,10 @@
  *              (§ 19 UStG, `COMPANY.taxMode`), „alle Daten in der EU" ist
  *              breiter als belegt; übrig bleibt, was stimmt.
  *   pricingFoot  wird nur angezeigt, wenn `COMPANY.taxMode === 'EXEMPT'`.
+ *   heroA–C, sub1, sub2, cta  Governance-OS-Positionierung: Kategorie ist
+ *              „AI Governance OS", nicht EU-AI-Act-Software. „Operations OS
+ *              for Europe" + „Für EU AI Act, DSGVO" rückten die Norm vor das
+ *              Produkt; der CTA führt in die Governance-Pipeline (`#pipeline`).
  *
  * `HANDOFF_EXTRA` enthält Strings, die im Prototyp als Literal standen
  * (Navigation, Badge, Loop, Formularlabels) — ebenfalls DE/EN.
@@ -255,6 +259,12 @@ export const HANDOFF_OVERRIDES: Record<Lang, Partial<Record<CopyKey, string>>> =
     auditFoot:
       'Ergebnis ohne Account. Domain und E-Mail werden für den Bericht gespeichert — Details in der Datenschutzerklärung.',
     pricingSub: 'Monatlich kündbar. Datenhaltung in der EU (Supabase Frankfurt).',
+    cta: 'Governance OS erleben',
+    heroA: 'Ihre KI kann handeln.',
+    heroB: 'Jetzt braucht sie',
+    heroC: 'Governance.',
+    sub1: 'RealSyncDynamics.AI verbindet Identität, Policies, Risiko, Freigabe, Ausführung und Evidence in einer Control Plane',
+    sub2: '— über Modelle, Provider und Agenten hinweg.',
   },
   en: {
     loginSub: 'Magic link by e-mail — no password.',
@@ -262,6 +272,12 @@ export const HANDOFF_OVERRIDES: Record<Lang, Partial<Record<CopyKey, string>>> =
     auditFoot:
       'Result without an account. Domain and e-mail are stored for the report — see the privacy policy.',
     pricingSub: 'Cancel monthly. Data stored in the EU (Supabase Frankfurt).',
+    cta: 'Experience the Governance OS',
+    heroA: 'Your AI can act.',
+    heroB: 'Now make it',
+    heroC: 'accountable.',
+    sub1: 'RealSyncDynamics.AI connects identity, policies, risk, approval, execution and evidence in one control plane',
+    sub2: '— across models, providers and agents.',
   },
 };
 
@@ -273,12 +289,16 @@ export const HANDOFF_EXTRA = {
     menuOpen: 'Navigation öffnen',
     menuClose: 'Navigation schließen',
     mainNav: 'Hauptnavigation',
-    heroBadge: 'EU AI Act · DSGVO · ISO 42001',
+    heroEyebrow: 'REALSYNCDYNAMICS.AI / GOVERNANCE OS',
+    ctaExplore: 'Architektur ansehen',
+    ctaEnterprise: 'Enterprise anfragen',
+    loopExecute: 'EXECUTE',
+    loopVerify: 'VERIFY',
     loopDiscover: 'DISCOVER',
     loopAssess: 'ASSESS',
     loopGovern: 'GOVERN',
     loopProve: 'PROVE',
-    trustLine: 'DSGVO · EU AI Act · ISO 42001 · EU-Hosting',
+    trustLine: 'Server-autoritative Tenants · Policy Gates · Hash-verkettete Evidence',
     heroActions: 'Hero-Aktionen',
     backHome: 'Zur Startseite',
     emailLabel: 'E-Mail',
@@ -344,12 +364,16 @@ export const HANDOFF_EXTRA = {
     menuOpen: 'Open navigation',
     menuClose: 'Close navigation',
     mainNav: 'Main navigation',
-    heroBadge: 'EU AI Act · GDPR · ISO 42001',
+    heroEyebrow: 'REALSYNCDYNAMICS.AI / GOVERNANCE OS',
+    ctaExplore: 'View the architecture',
+    ctaEnterprise: 'Enterprise inquiry',
+    loopExecute: 'EXECUTE',
+    loopVerify: 'VERIFY',
     loopDiscover: 'DISCOVER',
     loopAssess: 'ASSESS',
     loopGovern: 'GOVERN',
     loopProve: 'PROVE',
-    trustLine: 'GDPR · EU AI Act · ISO 42001 · EU hosting',
+    trustLine: 'Server-authoritative tenancy · Policy gates · Hash-chained evidence',
     heroActions: 'Hero actions',
     backHome: 'Back to home',
     emailLabel: 'E-mail',

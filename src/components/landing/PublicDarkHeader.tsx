@@ -9,8 +9,6 @@ import {
 import {
   MODE_ACCENT,
   MODE_BG,
-  MODE_BUTTON_INK,
-  MODE_GLOW,
   MODE_HEADER_BG,
   MODE_HEADER_BG_OVERLAY,
   MODE_HEADER_BORDER,
@@ -61,9 +59,8 @@ function NavItem({
 }
 
 /**
- * Primaer-Pill. Flaeche, Schrift und Schein folgen dem Farbmodus der
- * Startseite (`landing-mode.ts`); ohne `data-landing-mode` greift der
- * Gold-Rueckfall, also genau die bisherigen Werte.
+ * Sekundärer Header-CTA: bewusst ohne Primärfläche, damit der Audit-CTA
+ * im Hero die eindeutige Conversion-Aktion bleibt.
  */
 const headerCtaStyle: CSSProperties = {
   fontFamily: LANDING_MONO,

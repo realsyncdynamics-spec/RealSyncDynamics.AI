@@ -176,6 +176,7 @@ const REQUIRED_PUBLIC_FUNCTIONS = new Set([
   'memory-decay-worker',
   'sub-processor-notify',
   'website-maintenance-daily-cron',
+  'email-auth-rescan',
 
   // Enterprise AI OS public surfaces.
   'enterprise-ai-os-discovery-intake',

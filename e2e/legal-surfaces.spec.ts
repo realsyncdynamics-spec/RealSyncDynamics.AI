@@ -14,6 +14,10 @@ import { test, expect, request as playwrightRequest } from '@playwright/test';
  */
 
 const EXPECTED_SUB_PROCESSORS = [
+  // Cloudflare liefert die oeffentliche Website aus (Cloudflare Pages) und
+  // injiziert Web Analytics. Ohne diesen Eintrag fehlt der Hoster in der
+  // Art.-28-Liste — genau der Zustand, den dieser Branch behebt.
+  'Cloudflare, Inc.',
   'Supabase Inc.',
   'Anthropic, PBC',
   'Google LLC',
@@ -25,6 +29,7 @@ const EXPECTED_SUB_PROCESSORS = [
 ] as const;
 
 const EXPECTED_DPA_URLS = [
+  'https://www.cloudflare.com/cloudflare-customer-dpa/',
   'https://supabase.com/legal/dpa',
   'https://www.anthropic.com/legal/dpa',
   'https://cloud.google.com/terms/data-processing-addendum',

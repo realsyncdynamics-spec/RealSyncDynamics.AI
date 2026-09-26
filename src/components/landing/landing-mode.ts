@@ -1,8 +1,9 @@
 /**
  * Startseite: Gold / Cyan / Hell.
  *
- * Systempräferenz (`prefers-color-scheme`) gilt nur, solange der Nutzer
- * keinen Modus gespeichert hat. Eine explizite Wahl in localStorage gewinnt.
+ * Erster React-Render liest Storage oder prefers-color-scheme.
+ * Gespeicherte Wahl gewinnt; ohne Key folgt das OS und der Listener.
+ * Kein Inline-Boot in index.html — CSP verbietet script-src unsafe-inline.
  */
 import { useCallback, useEffect, useState } from 'react';
 
@@ -16,16 +17,16 @@ export const LANDING_MODE_LABEL: Record<LandingMode, string> = {
   light: 'Hell',
 };
 
-const STORAGE_KEY = 'rsd-landing-mode';
+export const STORAGE_KEY = 'rsd-landing-mode';
 
 const DEFAULT_MODE: LandingMode = 'gold';
 
-function parseMode(value: string | null): LandingMode | null {
+export function parseMode(value: string | null): LandingMode | null {
   if (value === 'cyan' || value === 'gold' || value === 'light') return value;
   return null;
 }
 
-function readStored(): LandingMode | null {
+export function readStored(): LandingMode | null {
   try {
     return parseMode(window.localStorage.getItem(STORAGE_KEY));
   } catch {
@@ -42,22 +43,16 @@ export function modeFromPrefersColorScheme(): LandingMode {
   }
 }
 
-function initialMode(): LandingMode {
+export function initialMode(): LandingMode {
+  if (typeof window === 'undefined') return DEFAULT_MODE;
   return readStored() ?? modeFromPrefersColorScheme();
 }
 
 export function useLandingMode(): { mode: LandingMode; setMode: (next: LandingMode) => void } {
-  const [mode, setModeState] = useState<LandingMode>(DEFAULT_MODE);
-  const [lockedByUser, setLockedByUser] = useState(false);
+  const [mode, setModeState] = useState<LandingMode>(initialMode);
 
   useEffect(() => {
-    const stored = readStored();
-    if (stored) {
-      setLockedByUser(true);
-      setModeState(stored);
-      return;
-    }
-    setModeState(modeFromPrefersColorScheme());
+    if (readStored()) return undefined;
     let mq: MediaQueryList | null = null;
     const onChange = (event: MediaQueryListEvent) => {
       if (readStored()) return;
@@ -67,7 +62,7 @@ export function useLandingMode(): { mode: LandingMode; setMode: (next: LandingMo
       mq = window.matchMedia('(prefers-color-scheme: light)');
       mq.addEventListener('change', onChange);
     } catch {
-      /* SSR / alte Engine */
+      /* alte Engine */
     }
     return () => {
       mq?.removeEventListener('change', onChange);
@@ -75,7 +70,6 @@ export function useLandingMode(): { mode: LandingMode; setMode: (next: LandingMo
   }, []);
 
   const setMode = useCallback((next: LandingMode) => {
-    setLockedByUser(true);
     setModeState(next);
     try {
       window.localStorage.setItem(STORAGE_KEY, next);
@@ -83,8 +77,6 @@ export function useLandingMode(): { mode: LandingMode; setMode: (next: LandingMo
       /* Sitzung nur */
     }
   }, []);
-
-  void lockedByUser;
 
   return { mode, setMode };
 }

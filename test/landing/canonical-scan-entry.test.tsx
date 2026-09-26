@@ -65,6 +65,8 @@ describe('Kanonischer Scan-Einstieg', () => {
 
   it('belegt das Audit-Formular aus ?domain= vor', () => {
     const quelle = readFileSync('src/pages/AuditLanding.tsx', 'utf8');
-    expect(quelle).toContain("get('domain')");
+    expect(quelle).toContain('readAuditPrefill(window.location.search)');
+    const helper = readFileSync('src/features/audit/auditPrefill.ts', 'utf8');
+    expect(helper).toContain("'domain'");
   });
 });

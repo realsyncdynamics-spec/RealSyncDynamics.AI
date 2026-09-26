@@ -5,6 +5,7 @@ import { ChatMessageView } from './ChatMessageView';
 import { useAgentChat } from './useAgentChat';
 import { useAnonChat } from './useAgentChat';
 import { AIDisclosureNotice } from './AIDisclosureNotice';
+import { AssistantRetry, UsRoutingBanner } from './AssistantNotices';
 
 // Floating compliance-assistant widget.
 //
@@ -99,13 +100,14 @@ function TenantWidget() {
         <AIDisclosureNotice variant="compact" />
 
         {chat.usRoutingRequired && (
-          <UsRoutingBanner onAck={chat.acknowledgeUsRouting} />
+          <UsRoutingBanner onAck={() => void chat.acknowledgeUsRouting()} />
         )}
 
         <div className="flex-1 space-y-4 overflow-y-auto p-4 scroll-smooth">
           {chat.messages.map((m) => (
             <ChatMessageView key={m.id} message={m} />
           ))}
+          {chat.canRetry && <AssistantRetry onRetry={() => void chat.retry()} />}
           <div ref={chat.bottomRef} />
         </div>
 
@@ -209,7 +211,7 @@ function AnonWidget({ open, onClose }: { open: boolean; onClose: () => void }) {
 
         <WidgetHeader
           label="KI-Assistent"
-          badge="Öffentlich · EU · keine Rechtsberatung"
+          badge="Öffentlich · keine Rechtsberatung"
           onReset={chat.reset}
           onClose={onClose}
         />
@@ -224,13 +226,14 @@ function AnonWidget({ open, onClose }: { open: boolean; onClose: () => void }) {
         )}
 
         {chat.usRoutingRequired && (
-          <UsRoutingBanner onAck={chat.acknowledgeUsRouting} />
+          <UsRoutingBanner onAck={() => void chat.acknowledgeUsRouting()} />
         )}
 
         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-4 scroll-smooth">
           {chat.messages.map((m) => (
             <ChatMessageView key={m.id} message={m} />
           ))}
+          {chat.canRetry && <AssistantRetry onRetry={() => void chat.retry()} />}
           <div ref={chat.bottomRef} />
         </div>
 
@@ -311,24 +314,5 @@ function WidgetHeader({
         </button>
       </div>
     </header>
-  );
-}
-
-function UsRoutingBanner({ onAck }: { onAck: () => void }) {
-  return (
-    <div className="border-b border-amber-400/30 bg-amber-400/10 p-3 text-[12px] text-amber-200">
-      <p className="font-semibold">Hinweis zur LLM-Routing-Geografie</p>
-      <p className="mt-1 text-amber-100/80">
-        Anthropic-direkt routet aktuell durch die USA. Bestätige einmalig, um fortzufahren.
-      </p>
-      <div className="mt-2 flex justify-end">
-        <button
-          onClick={onAck}
-          className="rounded-lg bg-amber-400 px-3 py-1 text-[12px] font-medium text-black transition-colors hover:bg-amber-300"
-        >
-          Verstanden, fortfahren
-        </button>
-      </div>
-    </div>
   );
 }

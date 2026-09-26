@@ -34,29 +34,13 @@ import { ChatMessageView } from '../../features/governance/AgentWidget/ChatMessa
 import { useAgentChat } from '../../features/governance/AgentWidget/useAgentChat';
 import { AssistantRetry, UsRoutingBanner } from '../../features/governance/AgentWidget/AssistantNotices';
 import { useTenant } from '../../core/access/TenantProvider';
+import { GOVERNANCE_AGENTS, type GovernanceAgentId } from './governanceAgents';
 
 export interface GovernanceChatSidebarProps {
   open: boolean;
   onClose: () => void;
 }
 
-const GOVERNANCE_AGENTS = [
-  { id: 'dsgvo', label: 'DSGVO Agent' },
-  { id: 'ai-act', label: 'AI Act Agent' },
-  { id: 'evidence', label: 'Evidence Agent' },
-  { id: 'risk', label: 'Risk Agent' },
-  { id: 'cookie', label: 'Cookie Agent' },
-  { id: 'tracking', label: 'Tracking Agent' },
-  { id: 'website', label: 'Website Agent' },
-  { id: 'avv', label: 'AVV Agent' },
-  { id: 'tom', label: 'TOM Agent' },
-  { id: 'vvz', label: 'VVZ Agent' },
-  { id: 'incident', label: 'Incident Agent' },
-  { id: 'audit', label: 'Audit Agent' },
-  { id: 'security-header', label: 'Security Header Agent' },
-  { id: 'third-country', label: 'Third Country Transfer Agent' },
-  { id: 'consent', label: 'Consent Agent' },
-] as const;
 
 interface ContextEntry {
   label: string;
@@ -95,14 +79,14 @@ export function GovernanceChatSidebar({ open, onClose }: GovernanceChatSidebarPr
   const location = useLocation();
   const navigate = useNavigate();
   const { activeTenantId } = useTenant();
-  const [selectedAgent, setSelectedAgent] = useState<string>('dsgvo');
+  const [selectedAgent, setSelectedAgent] = useState<GovernanceAgentId>('dsgvo');
   const [agentDropdownOpen, setAgentDropdownOpen] = useState(false);
   const [commandMenuOpen, setCommandMenuOpen] = useState(false);
   const [inputValue, setInputValue] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const {
     messages, isLoading, send, retry, canRetry, reset, bottomRef, usRoutingRequired, acknowledgeUsRouting,
-  } = useAgentChat(activeTenantId ?? null);
+  } = useAgentChat(activeTenantId ?? null, { agent: selectedAgent });
   const hasTenant = Boolean(activeTenantId);
   const context = getContext(location.pathname);
   const currentAgent = GOVERNANCE_AGENTS.find((a) => a.id === selectedAgent) ?? GOVERNANCE_AGENTS[0];

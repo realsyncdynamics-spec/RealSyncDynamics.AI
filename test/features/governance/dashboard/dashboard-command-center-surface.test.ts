@@ -33,10 +33,16 @@ describe('Command Center surface', () => {
 
   it('shows honest browser runtime capability boundaries', () => {
     expect(browserRuntime).toContain('RealSync Browser Runtime');
-    expect(browserRuntime).toContain('AGENT EXECUTOR NOT CONNECTED');
+    expect(browserRuntime).toContain('HEADLESS EXECUTOR READY');
+    expect(browserRuntime).toContain('EXECUTOR OFFLINE');
+    expect(browserRuntime).toContain('Governed Action Composer');
+    expect(browserRuntime).toContain('getBrowserExecutorHealth');
+    expect(browserRuntime).toContain('executeBrowserActions');
     expect(browserRuntime).toContain('realsync:browser-open');
     expect(browserRuntime).toContain('/app/approvals');
     expect(browserRuntime).toContain('/app/evidence');
     expect(browserRuntime).not.toContain('RUNTIME LIVE');
+    expect(browserRuntime).toContain("['autonomous', 'Autonomous', false");
+    expect(browserRuntime).toContain('Die eingebettete Browser-Preview ist noch kein Live-Video');
   });
 });

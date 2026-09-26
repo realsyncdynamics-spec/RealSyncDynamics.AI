@@ -3,7 +3,7 @@
  */
 
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import BuildStudioPage from '../../src/unified-entry/pages/BuildStudioPage';
 import { ENTITLEMENT_KEYS } from '../../shared/pricing';
@@ -127,5 +127,32 @@ describe('BuildStudioPage gates', () => {
       // resolveBuilderEntitlements reads the feature map first.
       expect(await screen.findByText(/Was möchten Sie erstellen/i)).toBeTruthy();
     }
+  });
+
+  it('uses the existing SiteOS flow behind the new template shell', async () => {
+    authState.isAuthenticated = true;
+    entState.tier = 'starter';
+    entState.features = {
+      'siteos.builder': 1,
+      'siteos.publish': 1,
+      'limit.sites': 1,
+    };
+
+    renderBuild();
+    expect(await screen.findByText(/Was möchten Sie erstellen/i)).toBeTruthy();
+
+    expect(screen.getByRole('link', { name: 'Projects' })).toHaveAttribute('href', '/app/siteos');
+    expect(screen.getByRole('link', { name: 'Library' })).toHaveAttribute('href', '/app/documents');
+    expect(screen.getByRole('link', { name: 'Scheduled' })).toHaveAttribute('href', '/app/scheduler');
+    expect(screen.getByRole('link', { name: /Browse Agents/i })).toHaveAttribute('href', '/app/agents');
+
+    fireEvent.click(screen.getByRole('button', { name: /Technology & SaaS Vorlage verwenden/i }));
+    expect(screen.getByLabelText('Ihre Beschreibung')).toHaveValue(
+      expect.stringContaining('B2B-Technologieprodukt'),
+    );
+
+    expect(screen.getByRole('button', { name: /Datei hinzufügen/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /Voice-Eingabe/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Website erzeugen' })).toBeEnabled();
   });
 });

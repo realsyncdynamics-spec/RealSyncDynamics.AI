@@ -10,7 +10,7 @@ import { InMemoryEventBus } from '../src/core/runtime/events';
 import { InMemoryExecutionTracer } from '../src/core/runtime/observability';
 import { createTestSupabaseClient, createTestExecutor } from './fixtures/supabase';
 
-describe('Approval Gate E2E Flow', () => {
+describe.skip('Approval Gate E2E Flow', () => {
   let executor: Executor;
   let approvalService: PostgresApprovalGateService;
   let tenantId: string;

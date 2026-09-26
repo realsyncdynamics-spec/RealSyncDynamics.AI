@@ -61,7 +61,7 @@ it('self-check result counts only the given answers and links to real routes', (
   expect(section.getByText('1 von 8 Kontrollen vorhanden')).toBeInTheDocument();
   expect(section.getByText(/2 von 8 beantwortet · 1 offen oder unklar/)).toBeInTheDocument();
   expect(section.getByRole('link', { name: /Governance-Scan starten/ })).toHaveAttribute('href', '/audit');
-  expect(section.getByRole('link', { name: 'Beratung anfragen' })).toHaveAttribute('href', '/contact-sales');
+  expect(section.getByRole('link', { name: 'Enterprise anfragen' })).toHaveAttribute('href', '/contact-sales?tier=enterprise&source=home-check');
 });
 
 it('uses the Europe map v2 with WebP + PNG sources and no colour-mode switch', () => {

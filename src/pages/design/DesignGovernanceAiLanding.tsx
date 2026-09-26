@@ -12,6 +12,7 @@
 import { type PointerEvent as ReactPointerEvent } from 'react';
 import '../../styles/governance-landing-polish.css';
 import { Link } from 'react-router-dom';
+import { CTA } from '../../content/runtimeVocab';
 import { ArrowRight } from 'lucide-react';
 import { SEOHead } from '../../components/SEOHead';
 import { GovernanceOsHero } from '../../components/landing/GovernanceOsHero';
@@ -85,8 +86,8 @@ export function DesignGovernanceAiLanding() {
                 {HERO_SCAN_CTA_LABEL}
                 <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </Link>
-              <Link to="/contact-sales" className={GA_PILL_GHOST} style={{ fontFamily: GA_SANS }}>
-                Beratung anfragen
+              <Link to="/contact-sales?tier=enterprise&source=home-cta" className={GA_PILL_GHOST} style={{ fontFamily: GA_SANS }}>
+                {CTA.enterprise}
               </Link>
             </div>
           </div>

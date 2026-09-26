@@ -4,10 +4,12 @@
  * Bewusst ohne Request und ohne Speicherung: Das Ergebnis zählt nur die
  * eigenen Antworten und nennt die offenen Kontrollen. Es erkennt nichts
  * automatisch und behauptet das auch nicht. Nächste Schritte führen auf
- * echte Routen: `/audit` (Domain-Scan mit Bericht) und `/contact-sales`.
+ * echte Routen: `/audit` (Domain-Scan mit Bericht) und `/contact-sales`
+ * (einzige Kontakt-CTA laut runtimeVocab: „Enterprise anfragen").
  */
 import { useId, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { CTA } from '../../content/runtimeVocab';
 import { ArrowRight } from 'lucide-react';
 import { GOVERNANCE_CHECK_QUESTIONS, HERO_SCAN_CTA_LABEL } from '../governance-frontend/hero-content';
 import { SectionEyebrow, SectionHeading } from './GovernanceSectionChrome';
@@ -149,7 +151,7 @@ export function GovernanceSelfCheck() {
 
             <div className="mt-6 border-t pt-5" style={{ borderColor: GA_LINE_SOFT }}>
               <p className="text-[0.9rem] leading-[1.6]" style={{ color: GA_MUTED }}>
-                Nächster Schritt: den Domain-Scan mit Bericht per E-Mail starten oder offene Punkte mit uns besprechen.
+                Nächster Schritt: den Domain-Scan mit Bericht per E-Mail starten oder offene Punkte für Ihr Unternehmen klären.
               </p>
               <div className="mt-4 flex flex-col gap-3">
                 <Link
@@ -165,8 +167,8 @@ export function GovernanceSelfCheck() {
                   {HERO_SCAN_CTA_LABEL}
                   <ArrowRight className="h-4 w-4" aria-hidden="true" />
                 </Link>
-                <Link to="/contact-sales" className={GA_PILL_GHOST} style={{ fontFamily: GA_SANS }}>
-                  Beratung anfragen
+                <Link to="/contact-sales?tier=enterprise&source=home-check" className={GA_PILL_GHOST} style={{ fontFamily: GA_SANS }}>
+                  {CTA.enterprise}
                 </Link>
               </div>
             </div>

@@ -5,6 +5,9 @@ import type {
   RiskLevel,
 } from './types';
 
+// Re-export types for external consumers
+export type { ApprovalGateRecord, ApprovalStatus, ExecutionInput, RiskLevel } from './types';
+
 /**
  * Approval-gate service contract. The executor never touches a gate row
  * directly — it talks to this service so the production impl (backed by
@@ -58,3 +61,6 @@ export function requiresApprovalGate(input: {
 export function defaultGateReason(skillId: string, input: ExecutionInput): string {
   return `Skill "${skillId}" requested for tenant ${input.tenant_id} by agent ${input.agent_id}`;
 }
+
+// Re-export Postgres implementation for use in production/Edge Functions
+export { PostgresApprovalGateService, createApprovalGateService } from './approvals/postgres-implementation';

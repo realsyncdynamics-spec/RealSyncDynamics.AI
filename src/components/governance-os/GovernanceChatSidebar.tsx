@@ -138,6 +138,10 @@ export function GovernanceChatSidebar({ open, onClose }: GovernanceChatSidebarPr
       navigate('/scan/start');
       return;
     }
+    if (action === 'Evidence öffnen') {
+      navigate('/app/evidence');
+      return;
+    }
     if (!hasTenant) return;
     void send(action);
   };

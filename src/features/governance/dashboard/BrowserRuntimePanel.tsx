@@ -108,13 +108,13 @@ export function BrowserRuntimePanel({ activeTenantId }: { activeTenantId: string
   const capabilities = useMemo(
     () => [
       { label: 'Navigate', available: executorConnected, icon: Globe2 },
-      { label: 'Scan', available: true, icon: ShieldCheck },
-      { label: 'Evidence', available: true, icon: FileCheck2 },
+      { label: 'Scan', available: Boolean(activeTenantId), icon: ShieldCheck },
+      { label: 'Evidence', available: Boolean(activeTenantId), icon: FileCheck2 },
       { label: 'Scroll', available: executorConnected, icon: ScrollText },
       { label: 'Click', available: executorConnected, icon: MousePointer2 },
       { label: 'Type', available: executorConnected, icon: Type },
     ],
-    [executorConnected],
+    [executorConnected, activeTenantId],
   );
 
   function submit(event: FormEvent) {
@@ -228,8 +228,26 @@ export function BrowserRuntimePanel({ activeTenantId }: { activeTenantId: string
           </p>
         </div>
         <div className="flex flex-wrap gap-2 text-[11px] font-mono">
-          <span className="border border-emerald-900 bg-emerald-950/30 px-2.5 py-1 text-emerald-300">NAVIGATION ACTIVE</span>
-          <span className="border border-cyan-900 bg-cyan-950/30 px-2.5 py-1 text-cyan-300">EVIDENCE ACTIVE</span>
+          {/* Navigation = clientseitige Preview, Evidence = Mandanten-Log —
+              beides nur mit aktivem Mandanten, sonst ehrlich „inaktiv“. */}
+          <span
+            className={
+              activeTenantId
+                ? 'border border-emerald-900 bg-emerald-950/30 px-2.5 py-1 text-emerald-300'
+                : 'border border-titanium-800 px-2.5 py-1 text-titanium-500'
+            }
+          >
+            {activeTenantId ? 'NAVIGATION ACTIVE' : 'NAVIGATION INACTIVE'}
+          </span>
+          <span
+            className={
+              activeTenantId
+                ? 'border border-cyan-900 bg-cyan-950/30 px-2.5 py-1 text-cyan-300'
+                : 'border border-titanium-800 px-2.5 py-1 text-titanium-500'
+            }
+          >
+            {activeTenantId ? 'EVIDENCE ACTIVE' : 'EVIDENCE INACTIVE'}
+          </span>
           <span
             className={
               executorConnected

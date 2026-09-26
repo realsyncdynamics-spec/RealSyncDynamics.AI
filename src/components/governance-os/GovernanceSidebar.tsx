@@ -5,7 +5,8 @@ import {
   Bell, CreditCard, Wrench, Bot, GitMerge, FileText,
   ClipboardCheck, ClipboardList, LayoutDashboard, ShieldAlert, ShieldCheck,
   MessagesSquare, Zap, Server, Layers, CalendarClock, Archive, Library,
-  Share2, Sparkles, Scale, Shield,
+  Share2, Sparkles, Scale, Shield, BadgeCheck, FileSearch, GitBranch,
+  ListChecks, MessageSquare, Store, Terminal,
   type LucideIcon,
 } from 'lucide-react';
 import { TAB_MODULES } from './governanceModules';
@@ -48,7 +49,8 @@ const ICON_MAP: Record<string, LucideIcon> = {
   Building2, BarChart3, Users, Settings, Bell, CreditCard, Wrench,
   GitMerge, FileText, ClipboardCheck, ClipboardList, LayoutDashboard,
   ShieldAlert, ShieldCheck, MessagesSquare, Zap, Server, Layers,
-  CalendarClock, Archive, Library, Share2, Sparkles,
+  CalendarClock, Archive, Library, Share2, Sparkles, Scale, BadgeCheck,
+  FileSearch, GitBranch, ListChecks, MessageSquare, Store, Terminal,
 };
 
 const NAV_ICONS: Record<ShellNavId, LucideIcon> = {

@@ -5,7 +5,7 @@ import {
   Terminal, AlertTriangle, Sparkles, ArrowLeft, Settings2, Wand2,
 } from 'lucide-react';
 import Markdown from 'react-markdown';
-import { processAIGatewayRequest, ModelProvider } from '../../core/ai-gateway/gateway';
+import { processAIGatewayRequest, ModelProvider, type GatewayResult } from '../../core/ai-gateway/gateway';
 import { KODEE_PERSONA } from './kodee-persona';
 import { ActionRunner, formatActionResult } from './ActionRunner';
 import { listConnections, type VpsConnection } from './connections/api';
@@ -13,7 +13,61 @@ import { isSupabaseConfigured } from '../../lib/supabase';
 import { runDiagnose } from './diagnose';
 import { useTenant } from '../../core/access/TenantProvider';
 
-type Msg = { role: 'user' | 'kodee'; text: string; status?: 'loading' | 'error' | 'success' };
+type GatewayErrorKind = 'unauthorized' | 'forbidden' | 'rate_limited' | 'generic';
+
+type Msg = {
+  role: 'user' | 'kodee';
+  text: string;
+  status?: 'loading' | 'error' | 'success';
+  /** Nur bei Gateway-Fehlern: steuert Hinweis, Login-Link und „Wiederholen“. */
+  errorKind?: GatewayErrorKind;
+  /** Nachricht, die „Wiederholen“ erneut sendet. */
+  retryPrompt?: string;
+};
+
+const NEUTRAL_ERROR = 'Die Anfrage konnte gerade nicht verarbeitet werden.';
+const LOGIN_HREF = `/welcome?next=${encodeURIComponent('/kodee')}`;
+
+/**
+ * Ehrliche Fehlerzustände aus dem Gateway-Vertrag (RSD Backend, vorläufig).
+ * Keine erfundenen Wartezeiten: ohne `Retry-After` nennen wir keine Zahl.
+ */
+export function describeGatewayFailure(res: GatewayResult): { kind: GatewayErrorKind; text: string } {
+  const code = res.errorCode;
+  if (code === 'UNAUTHORIZED' || (res.status === 401 && !code)) {
+    return { kind: 'unauthorized', text: 'Bitte erneut anmelden.' };
+  }
+  if (code === 'FORBIDDEN') {
+    return { kind: 'forbidden', text: 'Kein Zugriff auf diesen Workspace.' };
+  }
+  if (code === 'RATE_LIMITED' || res.status === 429) {
+    return {
+      kind: 'rate_limited',
+      text: res.retryAfter !== undefined
+        ? `Zu viele Anfragen — bitte in ${res.retryAfter} Sekunden erneut versuchen.`
+        : 'Zu viele Anfragen — bitte später erneut versuchen.',
+    };
+  }
+  if (code === 'TENANT_REQUIRED') {
+    return { kind: 'forbidden', text: 'Kein aktiver Workspace ausgewählt.' };
+  }
+  if (code === 'ENTITLEMENT') {
+    return { kind: 'forbidden', text: 'Diese Funktion ist im aktuellen Plan nicht enthalten.' };
+  }
+  if (code === 'QUOTA_EXCEEDED') {
+    return { kind: 'forbidden', text: 'Das Kontingent des aktuellen Plans ist ausgeschöpft.' };
+  }
+  if (code === 'NO_PROVIDER' || code === 'LM_STUDIO_NOT_CONFIGURED') {
+    return { kind: 'generic', text: 'Der KI-Dienst ist gerade nicht erreichbar.' };
+  }
+  if (code === 'POLICY_BLOCKED' || code === 'APPROVAL_REQUIRED') {
+    const detail = (res.error ?? '').replace(/^[A-Z_]+:\s*/, '');
+    return { kind: 'generic', text: detail ? `${NEUTRAL_ERROR} ${detail}` : NEUTRAL_ERROR };
+  }
+  // Lokale Hinweise ohne Gateway-Code (z. B. Provider nicht verfügbar) bleiben lesbar.
+  if (!code && res.error) return { kind: 'generic', text: res.error };
+  return { kind: 'generic', text: NEUTRAL_ERROR };
+}
 
 const QUICK_PROMPTS: { icon: React.ElementType<{ className?: string }>; label: string; prompt: string }[] = [
   {
@@ -70,11 +124,11 @@ export function KodeeView() {
     return () => { cancelled = true; };
   }, []);
 
-  const send = async (override?: string) => {
+  const send = async (override?: string, base: Msg[] = messages) => {
     const text = (override ?? input).trim();
     if (!text) return;
 
-    const next: Msg[] = [...messages, { role: 'user', text, status: 'success' }];
+    const next: Msg[] = [...base, { role: 'user', text, status: 'success' }];
     setMessages([...next, { role: 'kodee', text: '', status: 'loading' }]);
     setInput('');
 
@@ -85,17 +139,37 @@ export function KodeeView() {
         systemPrompt: KODEE_PERSONA,
         feature: 'kodee_chat',
         tenantId: activeTenantId,
+        // Der Gateway kappt Nutzeranfragen ohnehin still auf 2048 (#1591).
+        maxTokens: 2048,
       });
-      if (!res.success) throw new Error(res.error || 'Gateway-Fehler');
+      if (!res.success) {
+        const failure = describeGatewayFailure(res);
+        setMessages([...next, {
+          role: 'kodee',
+          text: failure.text,
+          status: 'error',
+          errorKind: failure.kind,
+          retryPrompt: text,
+        }]);
+        return;
+      }
       setMessages([...next, { role: 'kodee', text: res.modelOutput || '…', status: 'success' }]);
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Da ist etwas schiefgelaufen – versuch es nochmal oder wechsel das Modell.';
+    } catch {
       setMessages([...next, {
         role: 'kodee',
-        text: message,
+        text: NEUTRAL_ERROR,
         status: 'error',
+        errorKind: 'generic',
+        retryPrompt: text,
       }]);
     }
+  };
+
+  /** Fehlermeldung und die zugehörige Nutzernachricht entfernen, dann neu senden. */
+  const retry = (index: number) => {
+    const failed = messages[index];
+    if (!failed?.retryPrompt) return;
+    void send(failed.retryPrompt, messages.slice(0, Math.max(0, index - 1)));
   };
 
   return (
@@ -210,9 +284,33 @@ export function KodeeView() {
                       <span className="text-sm font-medium ml-1">Kodee tippt…</span>
                     </div>
                   ) : m.status === 'error' ? (
-                    <div className="bg-red-950/50 border border-red-900 text-red-300 px-4 py-3 rounded-none flex items-start gap-2.5">
+                    <div
+                      role={m.errorKind ? 'alert' : undefined}
+                      data-testid={m.errorKind ? `kodee-error-${m.errorKind}` : undefined}
+                      className="bg-red-950/50 border border-red-900 text-red-300 px-4 py-3 rounded-none flex items-start gap-2.5"
+                    >
                       <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
-                      <span className="text-sm">{m.text}</span>
+                      <div className="text-sm space-y-2">
+                        <span>{m.text}</span>
+                        {m.errorKind === 'unauthorized' && (
+                          <div>
+                            <Link to={LOGIN_HREF} className="underline text-red-200 hover:text-white">
+                              Zur Anmeldung
+                            </Link>
+                          </div>
+                        )}
+                        {(m.errorKind === 'generic' || m.errorKind === 'rate_limited') && m.retryPrompt && i === messages.length - 1 && (
+                          <div>
+                            <button
+                              type="button"
+                              onClick={() => retry(i)}
+                              className="border border-red-800 px-2.5 py-1 text-xs text-red-200 hover:bg-red-900/40"
+                            >
+                              Wiederholen
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   ) : m.role === 'user' ? (
                     m.text

@@ -21,7 +21,12 @@ main = "src/workers/index.ts"
 compatibility_date = "2026-07-20"
 compatibility_flags = ["nodejs_compat"]
 
+[vars]
+WORKER_POLICY_ROUTES_DEPLOY_FROZEN = "true"
+
 # KV Namespaces (Edge caching layer)
+# IDs below are placeholders only; do not run `wrangler kv create` and do not
+# treat them as live infrastructure in this frozen manifest.
 [[kv_namespaces]]
 binding = "POLICY_CACHE"
 id = "6c5f0c5d9e8b7a6f5e4d3c2b1a0f9e8d"

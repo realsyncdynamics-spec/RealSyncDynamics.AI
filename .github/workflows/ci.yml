@@ -23,6 +23,9 @@ concurrency:
   group: ci-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
+permissions:
+  contents: read
+
 jobs:
   # Die drei Teile des frueheren `build`-Jobs laufen parallel. Der Job
   # `build` unten fuehrt sie zusammen und behaelt damit den Namen, den die
@@ -106,17 +109,34 @@ jobs:
       - name: Build
         run: npm run build
 
+  opa:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Draft PR ueberspringt OPA-Pruefung
+        if: github.event_name == 'pull_request' && github.event.pull_request.draft
+        run: echo "::notice::Draft PR — OPA-Pruefung uebersprungen."
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        if: github.event_name != 'pull_request' || !github.event.pull_request.draft
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        if: github.event_name != 'pull_request' || !github.event.pull_request.draft
+        with:
+          node-version: '20'
+      - name: OPA / Conftest gate
+        if: github.event_name != 'pull_request' || !github.event.pull_request.draft
+        run: npm run check:opa
+
   # Sammelknoten mit dem bisherigen Check-Namen `build`.
   #
-  # `!cancelled()` statt des impliziten `success()`: Ohne diese Bedingung
-  # wuerde der Job bei einem roten Teil-Job UEBERSPRUNGEN — und ein
+  # `always() && !cancelled()` statt des impliziten `success()`: Ohne diese
+  # Bedingung wuerde der Job bei einem roten oder uebersprungenen Teil-Job
+  # UEBERSPRUNGEN — und ein
   # uebersprungener Required Check gilt fuer GitHub als bestanden. Der Job
   # muss also gerade dann laufen, wenn etwas rot ist, und selbst rot werden.
   #
   # Bei Drafts bleibt er uebersprungen, wie bisher der ganze `build`-Job.
   build:
-    needs: [gates, unit, spa]
-    if: ${{ !cancelled() && (github.event_name != 'pull_request' || !github.event.pull_request.draft) }}
+    needs: [gates, unit, spa, opa]
+    if: ${{ always() && !cancelled() && (github.event_name != 'pull_request' || !github.event.pull_request.draft) }}
     runs-on: ubuntu-latest
     steps:
       - name: Ergebnis der Teil-Jobs zusammenfuehren
@@ -124,11 +144,12 @@ jobs:
           GATES: ${{ needs.gates.result }}
           UNIT: ${{ needs.unit.result }}
           SPA: ${{ needs.spa.result }}
+          OPA: ${{ needs.opa.result }}
         run: |
           set -euo pipefail
-          echo "gates=$GATES unit=$UNIT spa=$SPA"
+          echo "gates=$GATES unit=$UNIT spa=$SPA opa=$OPA"
           rot=0
-          for teil in "gates=$GATES" "unit=$UNIT" "spa=$SPA"; do
+          for teil in "gates=$GATES" "unit=$UNIT" "spa=$SPA" "opa=$OPA"; do
             case "$teil" in
               *=success) ;;
               *) echo "::error::Teil-Job nicht erfolgreich: $teil"; rot=1 ;;

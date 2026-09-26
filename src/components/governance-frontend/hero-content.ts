@@ -103,7 +103,7 @@ export const HERO_PROOF_CHIPS = [
 export const HERO_SCAN_CTA_LABEL = 'Governance-Scan starten' as const;
 export const HERO_SCAN_CTA_LONG = 'Governance-Scan starten' as const;
 /** Hero secondary CTA (Handoff v2, Ziel `/app/dashboard`). */
-export const HERO_DASHBOARD_CTA_LABEL = 'Live Dashboard ansehen' as const;
+export const HERO_DASHBOARD_CTA_LABEL = 'Dashboard-Preview ansehen' as const;
 /** Anker-CTA auf den Beispiel-Audit-Trail (`#audit-trail`, Titan-Referenzhero). */
 export const HERO_AUDIT_TRAIL_CTA_LABEL = 'Beispiel-Audit-Trail ansehen' as const;
 

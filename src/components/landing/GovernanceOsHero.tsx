@@ -70,14 +70,14 @@ export function GovernanceOsHero() {
     ? [
         { label: 'Produkt', to: '/#product', prominent: true },
         { label: 'Governance', to: '/governance-runtime', prominent: false },
-        { label: 'Evidence', to: '/#evidence', prominent: false },
+        { label: 'Evidence', to: '/#audit-trail', prominent: false },
         { label: 'Preise', to: '/#pricing', prominent: true },
         { label: 'Login', to: '/login', prominent: false },
       ]
     : [
         { label: 'Product', to: '/#product', prominent: true },
         { label: 'Governance', to: '/governance-runtime', prominent: false },
-        { label: 'Evidence', to: '/#evidence', prominent: false },
+        { label: 'Evidence', to: '/#audit-trail', prominent: false },
         { label: 'Pricing', to: '/#pricing', prominent: true },
         { label: 'Login', to: '/login', prominent: false },
       ];
@@ -217,7 +217,7 @@ export function GovernanceOsHero() {
             <Link
               data-hero-cta="dashboard"
               data-testid="hero-secondary-cta"
-              to="/app/dashboard"
+              to="/preview"
               className="rs-btn rs-btn--glass rs-btn--h52"
             >
               {dashboardLabel}

@@ -162,7 +162,6 @@ describe('AnthropicAdapter.embed', () => {
 const SAMPLING_SUPPORTED = [
   // configured in this repo today
   'claude-sonnet-4-6',
-  'claude-sonnet-4-6-20250514',
   'claude-haiku-4-5',
   'claude-haiku-4-5-20251001',
   'claude-opus-4-1-20250805',

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import { Link } from 'react-router-dom';
 import {
   ArrowUp, Bot, Check, ChevronDown, Clock3, ExternalLink, FileText,
-  Globe2, History, Menu, Plus, Search, ShieldCheck, Sparkles, X,
+  Globe2, History, Menu, Plus, Radio, Search, ShieldCheck, Sparkles, X,
 } from 'lucide-react';
 import { AiGatewayEdgeClient } from '../../../core/ai-gateway/edgeClient';
 import { getSupabaseAnonKey, getSupabaseUrl } from '../../../lib/supabaseUrl';
@@ -34,6 +34,7 @@ const NAV = [
   { label: 'Websites', href: '/app/websites', icon: Globe2 },
   { label: 'Risiken', href: '/app/risks', icon: ShieldCheck },
   { label: 'Monitoring', href: '/app/monitoring', icon: Clock3 },
+  { label: 'Ambient AI', href: '/app/ambient-ai', icon: Radio },
   { label: 'Agenten', href: '/app/agents', icon: Bot },
   { label: 'Dokumente', href: '/app/documents', icon: FileText },
 ];

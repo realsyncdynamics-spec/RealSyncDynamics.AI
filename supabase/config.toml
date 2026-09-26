@@ -169,6 +169,19 @@ verify_jwt = false
 # `_rate_limits` existiert bereits), ai_tool_runs-Logging und Anbindung an
 # _shared/cost-cap.ts.
 #
+# P0-Härtung (fix/ai-gateway-auth-hardening): verify_jwt = true bleibt, ist
+# aber nur noch Plattform-Vorfilter (irgendein gültiges Projekt-JWT, auch der
+# Legacy-Anon-Key). Die eigentliche Prüfung macht die Function selbst:
+#   - Nutzerpfad: Nutzer-JWT + tenant_id via requireAuthAndTenant; Anon-Key
+#     und service_role als Bearer → 401.
+#   - Service-Pfad: x-internal-key gegen Edge-Secret AI_GATEWAY_INTERNAL_KEY.
+#   - Anon-Audit-Copilot (mode 'audit_anon'): fester Zweck/Prompt, IP-Hash-
+#     Limit, anon_chat_runs fail-closed. Braucht wegen verify_jwt = true den
+#     Legacy-Anon-Key als Bearer (supabase-js/AiGatewayEdgeClient tun das);
+#     der reine sb_publishable_-Key besteht den Vorfilter nicht.
+#   - Cloud-Kette (Anthropic/OpenAI): in keinem Pfad (allowCloudFallback=false,
+#     auch Service-Pfad). Ohne erreichbaren lokalen Provider fail-closed 503.
+#
 # Wirkt erst nach `supabase functions deploy ai-gateway`.
 [functions.ai-gateway]
 verify_jwt = true

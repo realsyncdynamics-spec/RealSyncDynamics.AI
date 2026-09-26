@@ -86,9 +86,16 @@ describe('builder gateway packing', () => {
   });
 });
 
+// Seit der P0-Härtung liegt die Request-Logik in handler.ts (vitest-
+// importierbar); index.ts verdrahtet nur Deno-Abhängigkeiten.
+const gatewaySource = (): string =>
+  ['index.ts', 'handler.ts']
+    .map((f) => readFileSync(resolve(__dirname, `../../supabase/functions/ai-gateway/${f}`), 'utf8'))
+    .join('\n');
+
 describe('ai-gateway stream op is registered', () => {
   it('allows op stream and generateStream on the Edge Function', () => {
-    const src = readFileSync(resolve(__dirname, '../../supabase/functions/ai-gateway/index.ts'), 'utf8');
+    const src = gatewaySource();
     expect(src).toMatch(/'stream'/);
     expect(src).toMatch(/generateStream/);
     expect(src).toMatch(/application\/x-ndjson/);
@@ -97,13 +104,15 @@ describe('ai-gateway stream op is registered', () => {
   });
 
   it('gates app_builder_code with membership and siteos.builder before the provider', () => {
-    const src = readFileSync(resolve(__dirname, '../../supabase/functions/ai-gateway/index.ts'), 'utf8');
-    expect(src).toMatch(/BUILDER_FEATURE = 'app_builder_code'/);
-    expect(src).toMatch(/requireAuthAndTenant/);
-    expect(src).toMatch(/gateFeature\(auth\.admin, auth\.tenantId, 'siteos\.builder'\)/);
-    const gateAt = src.indexOf('requireBuilderIfNeeded');
+    const index = readFileSync(resolve(__dirname, '../../supabase/functions/ai-gateway/index.ts'), 'utf8');
+    const src = readFileSync(resolve(__dirname, '../../supabase/functions/ai-gateway/handler.ts'), 'utf8');
+    const access = readFileSync(resolve(__dirname, '../../supabase/functions/_shared/aiGateway/access.ts'), 'utf8');
+    expect(access).toMatch(/BUILDER_FEATURE = 'app_builder_code'/);
+    expect(index).toMatch(/requireAuthAndTenant/);
+    expect(index).toMatch(/gateFeature\(admin, tenantId, 'siteos\.builder'\)/);
+    const gateAt = src.indexOf('deps.gateBuilder(auth.admin, auth.tenantId)');
     const generateAt = src.indexOf('gateway.generate');
-    const streamAt = src.indexOf('streamNdjson');
+    const streamAt = src.indexOf('streamNdjson(');
     expect(gateAt).toBeGreaterThan(-1);
     expect(generateAt).toBeGreaterThan(gateAt);
     expect(streamAt).toBeGreaterThan(gateAt);

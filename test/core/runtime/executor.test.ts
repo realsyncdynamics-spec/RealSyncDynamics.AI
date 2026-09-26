@@ -49,12 +49,15 @@ class FakeGates implements ApprovalGateService {
     const id = `gate_${++this.#seq}`;
     const row: ApprovalGateRecord = {
       id,
+      tenant_id: 'test-tenant',
       execution_id: input.execution_id,
       reason: input.reason,
       risk_level: input.risk_level,
       requested_action: input.requested_action,
       status: 'pending',
       created_at: new Date().toISOString(),
+      decided_at: null,
+      decided_by: null,
     };
     this.rows.set(id, row);
     return row;

@@ -2,6 +2,43 @@
 
 Stand: 2026-06-15 · Nur Recherche, keine Code-Änderungen.
 
+---
+
+> ## ✅ Status-Update 2026-09-26 — Konsolidierung abgeschlossen (PLAN_100 #11)
+>
+> Die unten dokumentierten Befunde (Stand 2026-06-15) sind durch den
+> **Governance-Refactor (2026-08)** aufgelöst. Verifizierter aktueller Stand:
+>
+> - **Eine** Single Source of Truth: **`shared/pricing.ts`** (importfrei,
+>   browser-/Node-/Deno-tauglich). Der Deno-Zwilling
+>   `supabase/functions/_shared/pricing.generated.ts` wird per
+>   `npm run sync:pricing` erzeugt; **`npm run check:pricing` erzwingt in CI
+>   Byte-Identität** (Drift-Test grün am 2026-09-26).
+> - `src/config/pricing.ts` **leitet ab** (`export * from '@/shared/pricing'`,
+>   `PRICING_TIERS = ORDERED_PLANS.map(toTier)`) — keine hart kodierten Tiers/Preise mehr.
+> - **Schema B** (`src/core/billing/types.ts`): `PlanKey` aliast jetzt den
+>   kanonischen Key; `bronze/silver/gold/enterprise_public` sind entfallen.
+> - **Schema C** (`src/core/auth/entitlements.ts`, `stripe-mapping.ts`,
+>   `plan-config.ts`): existieren nicht mehr.
+> - **`scale` → `partner`**: Der Tier „Scale" wurde in „Partner" umbenannt und
+>   ist als Begriff untersagt; Bestandsdaten werden über `normalizePlanKey()`
+>   transparent abgebildet (Legacy-Kompatibilität, kein aktiver Tier). UI-Treffer
+>   auf „Scale" sind das lucide-`Scale`-Icon, kein Tier.
+> - **`automationSkills.ts`**: nutzt durchgängig kanonische `TierId`
+>   (`free/starter/growth/agency`) — der als CRITICAL markierte Mismatch ist weg.
+>
+> **Bewusste, legitime Ausnahmen (keine Drift):**
+> - `src/lib/optimizer/tiers.ts` — eigenständiges DSGVO-Optimizer-Frontend
+>   (gratis/bronze/silber/gold/platin/diamant), per `planKey: TierId` an dieselbe
+>   SSoT gebrückt (bronze→starter … diamant→enterprise).
+> - `src/features/admin/CustomersView.tsx` — `bronze/silver/gold` nur als
+>   Farb-Lookup für Bestandskunden-Badges (`colors[plan] ?? colors.free`).
+> - Schema D (Website-Rebuild) — separates Produkt, unverändert kein Konflikt.
+>
+> Der historische Befund-Text unten bleibt als Audit-Archiv erhalten.
+
+---
+
 ## Zusammenfassung
 
 Im Code existieren **drei parallele, teilweise inkompatible Tier-Namensschemata**, plus ein

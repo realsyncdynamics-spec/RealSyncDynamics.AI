@@ -3,7 +3,7 @@
  *
  * Werte aus HANDOFF.md §1 (hifi): Europa-Nachtkarte rechts mit Perspektive,
  * Tiefenebene, Overlays; Nav mit DE/EN; Badge; H1 Newsreader 80px; Loop
- * DISCOVER → CLASSIFY → ENFORCE → PROVE; zwei CTAs.
+ * DISCOVER → ASSESS → GOVERN → PROVE; zwei CTAs.
  *
  * Vertrag mit test/landing/canonical-scan-entry.test.tsx und
  * test/landing/homepage-hero.test.tsx: genau ein `[data-hero-cta="audit"]`,
@@ -19,7 +19,6 @@ import { ArrowRight, Menu, X } from 'lucide-react';
 import '../../styles/governance-os-handoff.css';
 import { BrandWordmark } from '../handoff/BrandWordmark';
 import { LangToggle } from '../handoff/LangToggle';
-import { HANDOFF_NAV } from '../handoff/handoff-nav';
 import { useLang } from '../../i18n/useLang';
 import { HERO_DASHBOARD_CTA_LABEL } from '../governance-frontend/hero-content';
 
@@ -67,6 +66,21 @@ export function GovernanceOsHero() {
   }, [menuOpen]);
 
   const dashboardLabel = lang === 'de' ? HERO_DASHBOARD_CTA_LABEL : t('cta2');
+  const landingNav = lang === 'de'
+    ? [
+        { label: 'Produkt', to: '/#product', prominent: true },
+        { label: 'Governance', to: '/governance-runtime', prominent: false },
+        { label: 'Evidence', to: '/#evidence', prominent: false },
+        { label: 'Preise', to: '/#pricing', prominent: true },
+        { label: 'Login', to: '/login', prominent: false },
+      ]
+    : [
+        { label: 'Product', to: '/#product', prominent: true },
+        { label: 'Governance', to: '/governance-runtime', prominent: false },
+        { label: 'Evidence', to: '/#evidence', prominent: false },
+        { label: 'Pricing', to: '/#pricing', prominent: true },
+        { label: 'Login', to: '/login', prominent: false },
+      ];
 
   return (
     <section
@@ -92,13 +106,13 @@ export function GovernanceOsHero() {
       <header className="rs-nav">
         <BrandWordmark />
         <nav className="rs-nav__links" aria-label={t('mainNav')}>
-          {HANDOFF_NAV.map((item) => (
+          {landingNav.map((item) => (
             <Link
-              key={item.key}
+              key={item.to}
               to={item.to}
               className={`rs-nav__link${item.prominent ? ' rs-nav__link--key' : ''}`}
             >
-              {t(item.key)}
+              {item.label}
             </Link>
           ))}
         </nav>
@@ -136,14 +150,14 @@ export function GovernanceOsHero() {
             </button>
           </div>
           <nav className="flex flex-col gap-2" aria-label={t('mainNav')}>
-            {HANDOFF_NAV.map((item) => (
+            {landingNav.map((item) => (
               <Link
-                key={item.key}
+                key={item.to}
                 to={item.to}
                 className={`rs-menu__item${item.prominent ? ' rs-menu__item--key' : ''}`}
                 onClick={() => setMenuOpen(false)}
               >
-                {t(item.key)}
+                {item.label}
               </Link>
             ))}
           </nav>
@@ -176,8 +190,12 @@ export function GovernanceOsHero() {
             </span>
           </h1>
 
-          <ol className="rs-loop" aria-label="DISCOVER → CLASSIFY → ENFORCE → PROVE">
-            {(['loopDiscover', 'loopClassify', 'loopEnforce', 'loopProve'] as const).map((key, i) => (
+          <p className="rs-hero__subline">
+            {t('sub1')} {t('sub2')}
+          </p>
+
+          <ol className="rs-loop" aria-label="DISCOVER → ASSESS → GOVERN → PROVE">
+            {(['loopDiscover', 'loopAssess', 'loopGovern', 'loopProve'] as const).map((key, i) => (
               <li key={key}>
                 {i > 0 && <ArrowRight size={14} aria-hidden="true" />}
                 <span>{t(key)}</span>

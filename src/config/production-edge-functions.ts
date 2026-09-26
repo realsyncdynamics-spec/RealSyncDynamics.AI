@@ -10,6 +10,9 @@
  *
  * ## Stand der Messung
  *
+ * 2026-09-26T06:10Z, Supabase Management API gegen RealSyncDynamicsLive:
+ * **191 ACTIVE**, neu `browser-execute` v1 mit `verify_jwt=true`.
+ *
  * 2026-09-25T22:20Z, Drift-Guard (Lauf 36196220814) gegen das Live-Projekt:
  * **190 deployt, 190 Verzeichnisse**. Neu ist `email-auth-rescan` (PR #1585),
  * ausgerollt mit Deploy-Lauf 36194769211 auf `main` @ `8b44c43f`
@@ -77,10 +80,10 @@
  * Sie darf steigen, sobald jemand einen höheren Stand misst — und sie ist
  * kein Argument dafür, dass ein weiterer Deploy scheitern wird.
  */
-export const EDGE_FUNCTIONS_OBSERVED_MAX = 190;
+export const EDGE_FUNCTIONS_OBSERVED_MAX = 191;
 
 /** Datum der letzten Messung gegen das Live-Projekt. */
-export const PRODUCTION_EDGE_FUNCTIONS_MEASURED_AT = '2026-09-25T22:20Z';
+export const PRODUCTION_EDGE_FUNCTIONS_MEASURED_AT = '2026-09-26T06:10Z';
 
 /**
  * Die in Produktion aktiven Function-Slugs — alphabetisch, damit ein Diff
@@ -113,6 +116,7 @@ export const PRODUCTION_EDGE_FUNCTIONS: readonly string[] = [
   'bot-chat',
   'bot-voice-webhook',
   'browser-action-log',
+  'browser-execute',
   'bulk-scan',
   'business-metrics-cron',
   'c2pa-manifest-generate',
@@ -312,7 +316,6 @@ export interface UnbackedCaller {
 }
 
 export const UNBACKED_CALLERS: readonly UnbackedCaller[] = [
-  { slug: 'browser-execute', surface: '/app/dashboard — governed browser executor', publicPath: false },
   // ── Öffentlicher Trichter — wiegt am schwersten ────────────────────────
   //
   // Öffentlich dokumentierte, aber nicht existierende API-Endpunkte.

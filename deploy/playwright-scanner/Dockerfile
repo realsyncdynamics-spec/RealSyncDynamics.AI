@@ -1,52 +1,43 @@
-# Playwright Scanner Microservice
-# Node.js + Playwright + Chromium fuer DSGVO-Consent-Timing-Analysis
-#
-# Endpoints:
-#   POST /scan/full           — vollstaendiger Scan (Cookies, Tracker, Requests)
-#   POST /scan/consent-timing — misst welche Tracker VOR / NACH Consent-Click laden
-#   POST /scan/screenshot     — Screenshot + HTML-Dump der Seite
-#
-# Deployment: deploy/playwright-scanner/docker-compose.yml
-# Traefik-Label: scanner.realsyncdynamicsai.de (BasicAuth)
-# Memory: ~1.5 GB (Chromium)
+# Playwright Scanner Microservice — production image
+# Node 20 + Playwright Chromium. Build fails closed on TypeScript errors.
+
+FROM node:20-slim AS builder
+WORKDIR /app
+
+COPY package.json ./
+RUN npm install --no-audit --no-fund
+
+COPY tsconfig.json server.ts executor.ts ./
+RUN npm run typecheck
+RUN npm run build
 
 FROM node:20-slim
 
-# Chromium-Systemabhaengigkeiten fuer Playwright
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    libnss3 libnspr4 libatk1.0-0 libatk-bridge2.0-0 libcups2 \
-    libdrm2 libxkbcommon0 libxcomposite1 libxdamage1 libxfixes3 \
-    libxrandr2 libgbm1 libasound2 libpango-1.0-0 libcairo2 \
-    libx11-6 libxext6 libx11-xcb1 libxcb1 fonts-liberation \
-    ca-certificates wget gnupg curl && \
-    rm -rf /var/lib/apt/lists/*
+ENV NODE_ENV=production
+ENV PORT=3001
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 
 WORKDIR /app
 
-# Package-Dateien kopieren
-COPY package.json package-lock.json* ./
+COPY package.json ./
+RUN npm install --omit=dev --no-audit --no-fund
 
-# Dependencies installieren
-RUN npm ci --omit=dev
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates curl tini && \
+    rm -rf /var/lib/apt/lists/* && \
+    npx playwright install chromium --with-deps && \
+    chmod -R a+rX /ms-playwright
 
-# Playwright Chromium installieren (nur Chromium, kein Firefox/WebKit)
-RUN npx playwright install chromium --with-deps
+COPY --from=builder /app/dist ./dist
 
-# App-Source kopieren
-COPY server.ts tsconfig.json ./
-
-# TypeScript kompilieren
-RUN npx tsc --noEmit 2>/dev/null || true
-RUN npx esbuild server.ts --bundle --platform=node --target=node20 --outfile=server.js --external:playwright
-
-# Non-root User fuer Sicherheit
-RUN useradd -m -u 1001 scanner
-RUN chown -R scanner:scanner /app
+RUN useradd -m -u 1001 -s /bin/bash scanner && \
+    chown -R scanner:scanner /app /ms-playwright
 USER scanner
 
 EXPOSE 3001
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
-  CMD curl -f http://localhost:3001/health || exit 1
+  CMD-SHELL curl -fsS -H "Authorization: Bearer $SCANNER_API_KEY" http://localhost:3001/health || exit 1
 
-CMD ["node", "server.js"]
+ENTRYPOINT ["/usr/bin/tini", "--"]
+CMD ["node", "dist/server.js"]

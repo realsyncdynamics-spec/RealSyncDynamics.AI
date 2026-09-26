@@ -60,7 +60,7 @@ const TECH_STACK: TechItem[] = [
     icon: MapPin,
     label: 'EU-Hosting Made in Germany',
     detail:
-      'Keine Drittlanduebermittlung. Scanner laeuft in Frankfurt (Hetzner), Postgres in eu-central-1 (Supabase). Sub-Prozessoren-Liste oeffentlich, AVV nach Art. 28 DSGVO inklusive.',
+      'Keine Drittlanduebermittlung. Scanner laeuft in Frankfurt (Hostinger), Postgres in eu-central-1 (Supabase). Sub-Prozessoren-Liste oeffentlich, AVV nach Art. 28 DSGVO inklusive.',
     tag: 'Frankfurt · BSI C5-Track · ISO 27001',
   },
 ];

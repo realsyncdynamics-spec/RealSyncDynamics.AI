@@ -85,6 +85,7 @@
   letter-spacing: 0.06em;
   color: var(--color-rs-fg-1);
 }
+.rs-handoff .rs-hero__status > span { white-space: nowrap; }
 .rs-handoff .rs-hero__status-dot {
   display: inline-block;
   width: 7px;
@@ -161,6 +162,7 @@
     background: linear-gradient(180deg, var(--color-rs-hero) 0%, transparent 16%, transparent 45%, var(--color-rs-hero) 66%);
   }
   .rs-handoff .rs-hero__status { display: grid; grid-template-columns: 1fr; font-size: 11px; }
+  .rs-handoff .rs-hero__status > span { white-space: normal; }
 }
 
 /* ── Gemeinsame Bausteine der Folgesektionen ───────────────────────── */
@@ -193,6 +195,9 @@
   background: currentColor;
 }
 .rs-handoff .os-kicker b { font-weight: 500; color: var(--color-rs-fg-0); }
+/* Die globale Lesebreite für Absätze (`.ga-context section p`, 68ch) darf
+   die einzeilige Kennzeile nicht umbrechen. */
+.rs-handoff.ga-context section p.os-kicker { max-width: none; }
 
 /* Editoriale Großtypografie: Serif, Satzschreibung, kursive Akzentzeile. */
 .rs-handoff .os-display {
@@ -235,6 +240,7 @@
 }
 .rs-handoff .os-panel__bar {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
@@ -480,4 +486,5 @@
 }
 
 /* Harte Kanten auch für die gemeinsamen Pill-Buttons und Auswahl-Chips. */
-.rs-handoff :is(a, button, label).rounded-full { border-radius: 0; }
+.rs-handoff :is(a, button, label).rounded-full,
+.rs-handoff #pricing span.rounded-full { border-radius: 0; }

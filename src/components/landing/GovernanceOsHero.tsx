@@ -200,12 +200,12 @@ export function GovernanceOsHero() {
 
           {/* Systemzeile: nur belegte Fakten (Supabase-Region, Hash-Kette,
               Policy Decision Point) — technische Bezeichner, daher unübersetzt. */}
-          <p className="rs-hero__status" data-testid="hero-status">
+          <div className="rs-hero__status" data-testid="hero-status">
             <span><span className="rs-hero__status-dot" aria-hidden="true" />SYSTEM: GOVERNANCE OS</span>
             <span>REGION: EU-CENTRAL-1 · FRANKFURT</span>
             <span>EVIDENCE: SHA-256 HASH-CHAIN</span>
             <span>POLICY: DECISION POINT</span>
-          </p>
+          </div>
 
           <h1 id="hero-heading" className="rs-hero__h1">
             <span className="rs-hero__h1-line">{t('heroA')}</span>

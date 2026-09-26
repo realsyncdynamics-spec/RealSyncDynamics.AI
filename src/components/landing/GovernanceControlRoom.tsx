@@ -40,7 +40,7 @@ export function GovernanceControlRoom() {
 
           <dl className="m-0 grid grid-cols-2 gap-px md:grid-cols-5" style={{ backgroundColor: 'var(--color-rs-border)' }}>
             {CONTROL_ROOM_METRICS.map((metric) => (
-              <div key={metric.label} className="px-5 py-6" style={{ backgroundColor: 'var(--color-rs-bg-1)' }}>
+              <div key={metric.label} className="flex flex-col justify-between px-5 py-6" style={{ backgroundColor: 'var(--color-rs-bg-1)' }}>
                 <dt className="text-[11px] uppercase tracking-[0.12em]" style={{ fontFamily: 'var(--font-rs-mono)', color: 'var(--color-rs-fg-2)' }}>
                   {metric.label}
                 </dt>

@@ -34,9 +34,9 @@ const COLUMNS: readonly { title: string; body: React.ReactNode }[] = [
     title: 'BETRIEB',
     body: (
       <>
-        Alle Daten werden in Europa verarbeitet und gespeichert.
+        Datenhaltung in der EU (Supabase, eu-central-1 · Frankfurt).
         <br />
-        Volle Konformität mit der Datenschutz-Grundverordnung.
+        Unterstützt Ihre DSGVO- und EU-AI-Act-Kontrollen — die rechtliche Bewertung bleibt bei Ihnen.
       </>
     ),
   },
@@ -44,9 +44,9 @@ const COLUMNS: readonly { title: string; body: React.ReactNode }[] = [
     title: 'STANDARDS',
     body: (
       <>
-        DSGVO · EU AI Act · ISO 27001 · NIS2
+        Rahmenwerke: DSGVO · EU AI Act · ISO 27001 · NIS2
         <br />
-        C2PA-Standard · Deutsche Ingenieurskunst
+        C2PA Content Credentials
       </>
     ),
   },

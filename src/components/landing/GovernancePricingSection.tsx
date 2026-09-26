@@ -21,7 +21,7 @@ import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import { tierById, type PricingTier } from '../../config/pricing';
 import { GA_DISPLAY, GA_LINE_SOFT, GA_MONO, GA_MUTED, GA_TITAN } from './governance-ai-theme';
-import { SectionEyebrow, SectionHeading } from './GovernanceSectionChrome';
+import { SectionHeading } from './GovernanceSectionChrome';
 
 /**
  * Feste Reihenfolge auf `/`: drei Self-Service-Stufen plus Enterprise. Enterprise
@@ -48,8 +48,8 @@ export function GovernancePricingSection() {
       style={{ borderColor: GA_LINE_SOFT }}
       aria-labelledby="pricing-heading"
     >
-      <div className="mx-auto w-full max-w-[1500px]">
-        <SectionEyebrow>PLATTFORM</SectionEyebrow>
+      <div className="mx-auto w-full max-w-[1200px]">
+        <p className="os-kicker"><b>PLATTFORM</b> PREISE</p>
         <span id="pricing-heading">
           <SectionHeading accent="nach Governance-Tiefe.">Plattform-Zugang</SectionHeading>
         </span>
@@ -76,7 +76,7 @@ export function GovernancePricingSection() {
                     : undefined
                 }
               >
-                <div className="flex items-start justify-between gap-3">
+                <div className="flex flex-wrap items-start justify-between gap-3">
                   <p
                     className="text-[11px] tracking-[.2em]"
                     style={{ fontFamily: GA_MONO, color: 'var(--ga-accent)' }}

@@ -73,7 +73,7 @@ export function AuditPro() {
             <div className="flex items-start justify-between gap-4 flex-wrap">
               <div>
                 <div className="text-xs text-titanium-500 uppercase tracking-wider mb-1">Einmalkauf</div>
-                <div className="font-display text-4xl font-bold text-titanium-50 mb-1">499 € <span className="text-base font-normal text-titanium-400">netto</span></div>
+                <div className="font-display text-4xl font-bold text-titanium-50 mb-1">499 € <span className="text-base font-normal text-titanium-400">Endpreis</span></div>
                 <div className="text-xs text-titanium-500">5 Tage Lieferzeit · Re-Audit nach 30 Tagen inklusive</div>
               </div>
               <a href={STRIPE_PAYMENT_LINK} className="inline-flex items-center gap-2 px-6 py-3 bg-security-500 hover:bg-security-600 text-white font-bold rounded-none">

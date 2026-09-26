@@ -395,7 +395,7 @@ export default function EnterpriseKonfigurator() {
         </section>
 
         <p className="text-xs text-titanium/40 mt-8">
-          Alle Beträge netto zzgl. USt. Grundpreis und Bausteine stammen aus dem
+          Gemäß § 19 UStG wird keine Umsatzsteuer berechnet. Grundpreis und Bausteine stammen aus dem
           Produktkatalog ({PLANS.length} Produkte); Änderungen dort wirken hier
           unmittelbar.
         </p>

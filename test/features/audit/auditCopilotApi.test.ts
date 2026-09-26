@@ -2,6 +2,8 @@ import { describe, it, expect, vi } from 'vitest';
 import {
   generateFixSnippet,
   generateRemediationPlan,
+  auditAnonPayload,
+  sendAuditAnon,
   AiGatewayEdgeError,
   type AuditFindingInput,
 } from '../../../src/features/audit/auditCopilotApi';
@@ -30,6 +32,88 @@ const FINDING: AuditFindingInput = {
   detail: 'CSS-Anfrage an fonts.googleapis.com vor Cookie-Consent.',
   paragraph_ref: 'TTDSG § 25',
 };
+
+describe('auditAnonPayload', () => {
+  it('maps Cloudflare widget response to turnstile_token and preserves audit correlation', () => {
+    const payload = auditAnonPayload(
+      { 'cf-turnstile-response': '  widget-token  ' },
+      { question: '  Erkläre den Befund.  ', auditId: '44444444-4444-4444-8444-444444444444' },
+    );
+    expect(payload).toEqual({
+      mode: 'audit_anon',
+      turnstile_token: 'widget-token',
+      input: { question: 'Erkläre den Befund.', audit_id: '44444444-4444-4444-8444-444444444444' },
+    });
+    expect(payload).not.toHaveProperty('cf-turnstile-response');
+  });
+
+  it('accepts a pre-mapped token and rejects an empty widget response', () => {
+    expect(auditAnonPayload({ turnstile_token: 'server-token' }, { question: 'Frage' }).turnstile_token)
+      .toBe('server-token');
+    expect(() => auditAnonPayload({ 'cf-turnstile-response': '  ' }, { question: 'Frage' }))
+      .toThrowError(AiGatewayEdgeError);
+  });
+});
+
+describe('sendAuditAnon', () => {
+  it('fails clearly without calling the gateway when only the publishable key is configured', async () => {
+    const fetchImpl = vi.fn();
+    const result = await sendAuditAnon({
+      message: 'Frage?',
+      history: [],
+      turnstileToken: 'widget-token',
+    }, {
+      supabaseUrl: 'https://test.supabase.co',
+      supabaseAnonKey: 'sb_publishable_test',
+      fetchImpl,
+    });
+    expect(fetchImpl).not.toHaveBeenCalled();
+    expect(result).toMatchObject({ kind: 'error', error: { code: 'LEGACY_ANON_JWT_REQUIRED' } });
+  });
+
+  it('uses the legacy anon JWT only for the platform bearer prefilter', async () => {
+    const fetchImpl = vi.fn(async () => jsonResponse({ ok: true, output: 'Antwort' }));
+    await sendAuditAnon({ message: 'Frage?', history: [], turnstileToken: 'widget-token' }, {
+      supabaseUrl: 'https://test.supabase.co',
+      supabaseAnonKey: 'sb_publishable_test',
+      anonJwt: 'legacy-anon-jwt',
+      fetchImpl,
+    });
+    const call = fetchImpl.mock.calls[0] as unknown as [string, RequestInit] | undefined;
+    expect(call?.[1].headers).toMatchObject({
+      apikey: 'sb_publishable_test',
+      authorization: 'Bearer legacy-anon-jwt',
+    });
+  });
+
+  it('posts the mapped widget token to the direct Supabase ai-gateway endpoint', async () => {
+    const fetchImpl = vi.fn(async () => jsonResponse({
+      ok: true,
+      output: 'Antwort',
+      provider: 'lm_studio',
+    }));
+    const result = await sendAuditAnon({
+      message: 'Frage?',
+      history: [],
+      auditId: '44444444-4444-4444-8444-444444444444',
+      turnstileToken: 'widget-token',
+    }, {
+      supabaseUrl: 'https://test.supabase.co',
+      supabaseAnonKey: 'anon-key',
+      fetchImpl,
+    });
+    const call = fetchImpl.mock.calls[0] as unknown as [string, RequestInit] | undefined;
+    if (!call) throw new Error('expected fetch to be called');
+    expect(call[0]).toBe('https://test.supabase.co/functions/v1/ai-gateway');
+    expect(call[1].headers).toMatchObject({ apikey: 'anon-key', authorization: 'Bearer anon-key' });
+    expect(JSON.parse(call[1].body as string)).toEqual({
+      mode: 'audit_anon',
+      turnstile_token: 'widget-token',
+      input: { question: 'Aktuelle Frage: Frage?', audit_id: '44444444-4444-4444-8444-444444444444' },
+    });
+    expect(result).toMatchObject({ kind: 'ok', data: { response: 'Antwort' } });
+  });
+});
 
 describe('generateFixSnippet', () => {
   it('returns the parsed FixSnippet on success', async () => {

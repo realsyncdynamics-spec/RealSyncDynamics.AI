@@ -58,7 +58,7 @@ function updateChain(result: {
 
 // -------- Tests -------------------------------------------------------------
 
-describe.skip('SupabaseApprovalGateService.open', () => {
+describe('SupabaseApprovalGateService.open', () => {
   it('inserts a pending gate and returns the row', async () => {
     const ins = insertChain({ data: sampleRow, error: null });
     const sb = {
@@ -85,7 +85,7 @@ describe.skip('SupabaseApprovalGateService.open', () => {
     });
     expect(row.id).toBe('gate-1');
     expect(row.status).toBe('pending');
-    expect(row.decided_at).toBeUndefined();
+    expect(row.decided_at).toBeNull();
   });
 
   it('throws when insert fails', async () => {
@@ -104,7 +104,7 @@ describe.skip('SupabaseApprovalGateService.open', () => {
   });
 });
 
-describe.skip('SupabaseApprovalGateService.get', () => {
+describe('SupabaseApprovalGateService.get', () => {
   it('returns the mapped row when found', async () => {
     const sel = selectChain({ data: sampleRow, error: null });
     const sb = { from: () => ({ select: sel.select }) } as unknown as SupabaseClient;
@@ -124,7 +124,7 @@ describe.skip('SupabaseApprovalGateService.get', () => {
   });
 });
 
-describe.skip('SupabaseApprovalGateService.decide', () => {
+describe('SupabaseApprovalGateService.decide', () => {
   it('updates only pending rows and returns the row on success', async () => {
     const decided: GateRowFixture = {
       ...sampleRow,

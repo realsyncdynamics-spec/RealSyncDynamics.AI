@@ -52,6 +52,7 @@ export function CheckoutPage() {
   // 1. Validate planKey gegen die SSoT
   const validPlan: PlanKey | null = normalizePlanKey(planKey);
   const tier = validPlan ? tierByPlanKey(validPlan) : undefined;
+  const plan = validPlan ? planByKey(validPlan) : null;
 
   // 2. Free + Enterprise + Invalid: redirect away — diese Page nicht zustaendig
   useEffect(() => {
@@ -62,7 +63,6 @@ export function CheckoutPage() {
       window.location.href = '/pricing';
       return;
     }
-    const plan = validPlan ? planByKey(validPlan) : null;
     if (!plan) return;
     // Kaufmodus statt Plan-Name: `free` fuehrt ins kostenlose Audit,
     // `inquiry` (Partner) in den Vertriebskontakt.
@@ -100,7 +100,7 @@ export function CheckoutPage() {
       window.location.href = `/checkout/${plan.planKey}?${query.toString()}`;
       return;
     }
-  }, [planKey]);
+  }, [planKey, searchParams, validPlan, plan]);
 
   // 3. Auth-State + Membership-Lookup
   useEffect(() => {
@@ -231,9 +231,9 @@ export function CheckoutPage() {
   return (
     <ConsentGateShell
       planKey={validPlan}
+      plan={plan}
       tier={tier}
       userEmail={auth.userEmail}
-      isPilot={isPilot}
       agreedToTerms={agreedToTerms}
       onAgreedToTerms={setAgreedToTerms}
       acknowledgedWithdrawal={acknowledgedWithdrawal}
@@ -404,9 +404,9 @@ function NoUserShell({
 
 function ConsentGateShell({
   planKey,
+  plan,
   tier,
   userEmail,
-  isPilot,
   agreedToTerms,
   onAgreedToTerms,
   acknowledgedWithdrawal,
@@ -417,9 +417,9 @@ function ConsentGateShell({
   backTo = '/pricing',
 }: {
   planKey:                  string;
+  plan:                     { trialDays: number } | null;
   tier:                     { name: string; priceEur: number };
   userEmail:                string;
-  isPilot:                  boolean;
   agreedToTerms:            boolean;
   onAgreedToTerms:          (value: boolean) => void;
   acknowledgedWithdrawal:   boolean;
@@ -430,6 +430,7 @@ function ConsentGateShell({
   backTo?:                  string;
 }) {
   const canSubmit = agreedToTerms && acknowledgedWithdrawal && !redirecting;
+  const trialDays = plan?.trialDays ?? 0;
 
   return (
     <div className="min-h-screen rs-paper bg-obsidian-950 text-titanium-100">
@@ -456,17 +457,16 @@ function ConsentGateShell({
           <p className="text-center text-silver-300 text-sm sm:text-base mb-1">
             <span>{tier.priceEur} €</span> / Monat · monatlich kündbar · keine Setup-Gebühren
           </p>
-          {isPilot && (
+          {trialDays > 0 ? (
             <div className="mb-6 p-4 bg-emerald-950 border-2 border-emerald-600 rounded-sm text-center">
               <p className="font-mono font-bold text-base uppercase tracking-wider text-emerald-300 mb-1">
-                ✅ 14 TAGE KOSTENLOS
+                ✅ {trialDays} TAGE KOSTENLOS
               </p>
               <p className="font-mono text-xs text-emerald-200">
-                Keine Zahlung erforderlich. Abo startet automatisch nach der Testphase.
+                {trialDays} Tage kostenlos, danach Planpreis; gilt nur bei Erstbuchung (Server prüft).
               </p>
             </div>
-          )}
-          {!isPilot && (
+          ) : (
             <p className="text-center font-mono text-[10px] uppercase tracking-wider text-silver-500 mb-6">
               Erste Abbuchung sofort nach Bestellung
             </p>
@@ -571,7 +571,9 @@ function ConsentGateShell({
               </>
             ) : (
               <>
-                Jetzt zahlungspflichtig bestellen <ArrowRight className="h-4 w-4" />
+                {trialDays > 0
+                  ? <>Zur Stripe-Kasse — Server prüft Trial, Stripe zeigt 0 € bei Freigabe <ArrowRight className="h-4 w-4" /></>
+                  : <>Jetzt zahlungspflichtig bestellen <ArrowRight className="h-4 w-4" /></>}
               </>
             )}
           </button>

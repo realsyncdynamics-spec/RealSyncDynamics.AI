@@ -88,6 +88,20 @@ describe('CheckoutPage — Auth-Auflösung', () => {
     // eindeutig dem Ready-Bezahl-Gate vorbehalten. (Der Footer „…Keine
     // Setup-Gebühren" steht auch im Ladezustand und wäre daher ein Race.)
     await waitFor(() => expect(bodyText()).toMatch(/owner@example\.com/));
+    expect(bodyText()).toMatch(/14 Tage kostenlos, danach Planpreis; gilt nur bei Erstbuchung \(Server prüft\)\./i);
+    expect(bodyText()).toMatch(/Server prüft Trial, Stripe zeigt 0 € bei Freigabe/i);
+  });
+
+  it('zeigt bei trial-freien Plänen weiterhin den zahlungspflichtigen CTA', async () => {
+    getSession.mockResolvedValue({
+      data: { session: { user: { email: 'owner@example.com' } } },
+    });
+    limit.mockResolvedValue({ data: [{ tenant_id: 'tenant-1', role: 'owner' }] });
+
+    renderCheckout('agency');
+
+    await waitFor(() => expect(bodyText()).toMatch(/owner@example\.com/));
+    expect(bodyText()).toMatch(/Erste Abbuchung sofort nach Bestellung/i);
     expect(bodyText()).toMatch(/zahlungspflichtig bestellen/i);
   });
 

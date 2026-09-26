@@ -145,15 +145,16 @@ describe('Kein Erfolg ohne Wirkung', () => {
 
   it('create-trial-subscription: legt keinen Test über ein laufendes Abo', () => {
     const code = stripComments(FUNCTIONS['create-trial-subscription']);
-    expect(code).toContain('LIVE_SUBSCRIPTION_STATES');
+    expect(code).toContain('decideTrial');
     expect(code).toContain('SUBSCRIPTION_EXISTS');
     // Zweimal Absenden ist kein Fehler, sondern derselbe Zustand.
     expect(code).toContain('alreadyExisted');
   });
 
-  it('create-trial-subscription: bleibt bei Growth', () => {
+  it('create-trial-subscription: akzeptiert nur trial-fähige Self-Service-Pläne', () => {
     const code = stripComments(FUNCTIONS['create-trial-subscription']);
-    expect(code).toContain("body.planKey !== 'growth'");
+    expect(code).toContain('planByKey');
+    expect(code).toContain('plan.trialDays <= 0');
     expect(code).toContain('TRIAL_NOT_AVAILABLE');
   });
 });

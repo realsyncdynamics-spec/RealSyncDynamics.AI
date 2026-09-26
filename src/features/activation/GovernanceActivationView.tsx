@@ -23,6 +23,11 @@ import {
   Loader2,
 } from 'lucide-react';
 import { ModuleStatusBadge } from '../../components/governance-os/ModuleStatusBadge';
+import {
+  OS_ACCENT_TEXT,
+  OS_CREAM_BTN,
+  OS_FOCUS_BORDER,
+} from '../../components/governance-os/osChrome';
 import { useTenant } from '../../core/access/TenantProvider';
 import {
   EMPTY_ORGANIZATION,
@@ -69,7 +74,7 @@ const ACCEPTED_TYPES = 'XLSX · CSV · DOCX · PDF · JSON · VVT · DSFA · TOM
 
 function PreviewChip({ children }: { children: string }) {
   return (
-    <span className="font-mono text-[9px] uppercase tracking-widest px-1.5 py-0.5 bg-amber-950 text-amber-300 border border-amber-800">
+    <span className="badge-preview font-mono text-[9px] uppercase tracking-widest px-1.5 py-0.5">
       {children}
     </span>
   );
@@ -89,7 +94,7 @@ function Field({
   rows?: number;
 }) {
   const shared =
-    'w-full bg-obsidian-950 border border-titanium-800 text-sm text-titanium-100 px-3 py-2 outline-none focus:border-cyan-500 placeholder:text-titanium-600';
+    `w-full bg-obsidian-950 border border-titanium-800 text-sm text-titanium-100 px-3 py-2 outline-none ${OS_FOCUS_BORDER} placeholder:text-titanium-600`;
   return (
     <label className="block space-y-1.5">
       <span className="text-[11px] uppercase tracking-wider text-titanium-400 font-mono">{label}</span>
@@ -219,7 +224,7 @@ export function GovernanceActivationView() {
         <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex items-start gap-3">
             <div className="w-10 h-10 bg-obsidian-800 border border-titanium-800 flex items-center justify-center shrink-0">
-              <Sparkles className="h-5 w-5 text-cyan-400" />
+              <Sparkles className={`h-5 w-5 ${OS_ACCENT_TEXT}`} />
             </div>
             <div>
               <div className="flex flex-wrap items-center gap-2 mb-1">
@@ -247,7 +252,7 @@ export function GovernanceActivationView() {
           </div>
           <Link
             to="/app/dashboard"
-            className="text-[11px] font-mono uppercase tracking-wider text-titanium-500 hover:text-cyan-300 transition-colors shrink-0"
+            className={`text-[11px] font-mono uppercase tracking-wider text-titanium-500 hover:text-[#00B8D4] transition-colors shrink-0`}
           >
             ← Compliance Dashboard
           </Link>
@@ -293,11 +298,11 @@ export function GovernanceActivationView() {
                 onClick={() => setStep(s.id)}
                 className={`flex-1 min-w-[7.5rem] px-3 py-2.5 text-left transition-colors ${
                   active
-                    ? 'bg-obsidian-800 text-titanium-50'
+                    ? 'bg-obsidian-800 text-titanium-50 border-b-2 border-[#00B8D4]'
                     : 'bg-obsidian-950 text-titanium-500 hover:bg-obsidian-900 hover:text-titanium-200'
                 }`}
               >
-                <div className="font-mono text-[9px] tracking-widest text-cyan-500/80">
+                <div className={`font-mono text-[9px] tracking-widest ${active || done ? 'text-[#00B8D4]/90' : 'text-titanium-600'}`}>
                   {s.index}
                   {done ? ' · DONE' : active ? ' · ACTIVE' : ''}
                 </div>
@@ -310,7 +315,7 @@ export function GovernanceActivationView() {
         <section className="border border-titanium-900 bg-obsidian-900 p-5 sm:p-6 space-y-6">
           <div className="flex items-center justify-between gap-3">
             <h2 className="font-display font-semibold text-titanium-50 text-base">
-              <span className="font-mono text-cyan-400 mr-2">{stepMeta.index}</span>
+              <span className={`font-mono ${OS_ACCENT_TEXT} mr-2`}>{stepMeta.index}</span>
               {stepMeta.label}
             </h2>
             {step !== 'organization' && step !== 'scope' && <PreviewChip>Coming Soon</PreviewChip>}
@@ -325,7 +330,7 @@ export function GovernanceActivationView() {
                   setOrg({ ...org, company: v });
                   setSaveState('idle');
                 }}
-                placeholder="z. B. RealSync Dynamics GmbH"
+                placeholder="z. B. Muster GmbH"
               />
               <Field
                 label="Gesellschaften"
@@ -404,12 +409,12 @@ export function GovernanceActivationView() {
                       onClick={() => toggleScope(opt.id)}
                       className={`text-left p-3 border transition-colors flex items-start gap-2 ${
                         active
-                          ? 'border-cyan-400 bg-obsidian-800'
+                          ? 'border-[#00B8D4] bg-obsidian-800'
                           : 'border-titanium-800 bg-obsidian-950 hover:border-titanium-600'
                       }`}
                     >
                       {active ? (
-                        <CheckCircle2 className="h-4 w-4 text-cyan-300 shrink-0 mt-0.5" />
+                        <CheckCircle2 className={`h-4 w-4 ${OS_ACCENT_TEXT} shrink-0 mt-0.5`} />
                       ) : (
                         <ShieldCheck className="h-4 w-4 text-titanium-600 shrink-0 mt-0.5" />
                       )}
@@ -430,13 +435,13 @@ export function GovernanceActivationView() {
             <div className="space-y-4">
               <p className="text-sm text-titanium-400">
                 Auto-Blueprint Engine — Flow:{' '}
-                <span className="font-mono text-[11px] text-cyan-300/90">
+                <span className="font-mono text-[11px] text-[#00B8D4]/90">
                   ORGANIZATION → BLUEPRINT → Policies / Controls / Risks → Systems → Evidence → Owners → Tasks
                 </span>
               </p>
               <div className="border border-dashed border-titanium-800 bg-obsidian-950 p-5 space-y-3">
                 <div className="flex items-center gap-2">
-                  <Layers className="h-4 w-4 text-cyan-400" />
+                  <Layers className={`h-4 w-4 ${OS_ACCENT_TEXT}`} />
                   <span className="text-sm font-semibold text-titanium-100">Governance Blueprint</span>
                   <PreviewChip>Coming Soon</PreviewChip>
                 </div>
@@ -482,14 +487,14 @@ export function GovernanceActivationView() {
                 onDrop={onDrop}
                 className={`border border-dashed p-8 text-center transition-colors ${
                   dropActive
-                    ? 'border-cyan-400 bg-cyan-950/20'
+                    ? 'border-[#00B8D4] bg-[#00B8D4]/10'
                     : 'border-titanium-800 bg-obsidian-950'
                 }`}
               >
-                <FileUp className="h-8 w-8 text-cyan-400 mx-auto mb-3" />
+                <FileUp className={`h-8 w-8 ${OS_ACCENT_TEXT} mx-auto mb-3`} />
                 <p className="text-sm font-medium text-titanium-100">Bestehende Dokumente hier ablegen</p>
                 <p className="mt-2 text-[11px] font-mono text-titanium-500 tracking-wide">{ACCEPTED_TYPES}</p>
-                <label className="mt-4 inline-flex cursor-pointer items-center gap-2 px-3 py-2 border border-titanium-700 text-xs text-titanium-200 hover:border-cyan-500 hover:text-titanium-50 transition-colors">
+                <label className="mt-4 inline-flex cursor-pointer items-center gap-2 px-3 py-2 border border-titanium-700 text-xs text-titanium-200 hover:border-[#00B8D4] hover:text-titanium-50 transition-colors">
                   Dateien wählen
                   <input type="file" multiple className="hidden" onChange={onBrowse} />
                 </label>
@@ -521,7 +526,7 @@ export function GovernanceActivationView() {
             <div className="space-y-4">
               <div className="border border-titanium-900 bg-obsidian-950 p-5">
                 <div className="flex flex-wrap items-center gap-2 mb-2">
-                  <AlertCircle className="h-4 w-4 text-cyan-400" />
+                  <AlertCircle className={`h-4 w-4 ${OS_ACCENT_TEXT}`} />
                   <h3 className="text-sm font-semibold text-titanium-100">
                     Entscheidungen, die Aufmerksamkeit brauchen
                   </h3>
@@ -541,7 +546,7 @@ export function GovernanceActivationView() {
                   </span>
                 </div>
                 <p className="text-sm text-titanium-300">
-                  Unklarer KI-Anbieter: <span className="font-mono text-cyan-300">OpenAI</span>
+                  Unklarer KI-Anbieter: <span className={`font-mono ${OS_ACCENT_TEXT}`}>OpenAI</span>
                 </p>
                 <p className="mt-1 text-xs text-titanium-500">
                   Optionen: AI Service Provider / Processor / Third Party / Other
@@ -593,19 +598,19 @@ export function GovernanceActivationView() {
                 <ul className="space-y-1.5 text-sm text-titanium-300">
                   <li>
                     ·{' '}
-                    <Link to="/app/dashboard" className="text-cyan-300 hover:underline">
+                    <Link to="/app/dashboard" className="text-[#00B8D4] hover:underline">
                       Compliance Dashboard öffnen
                     </Link>
                   </li>
                   <li>
                     ·{' '}
-                    <Link to="/app/evidence" className="text-cyan-300 hover:underline">
+                    <Link to="/app/evidence" className="text-[#00B8D4] hover:underline">
                       Evidence prüfen
                     </Link>
                   </li>
                   <li>
                     ·{' '}
-                    <Link to="/app/modules" className="text-cyan-300 hover:underline">
+                    <Link to="/app/modules" className="text-[#00B8D4] hover:underline">
                       Module aktivieren
                     </Link>
                   </li>
@@ -641,7 +646,7 @@ export function GovernanceActivationView() {
                   type="button"
                   onClick={() => void persistOrgAndScope()}
                   disabled={saveState === 'saving' || !activeTenantId}
-                  className="inline-flex items-center gap-2 px-4 py-2 border border-titanium-700 text-sm text-titanium-200 hover:border-cyan-500 disabled:opacity-40 disabled:cursor-not-allowed transition"
+                  className="inline-flex items-center gap-2 px-4 py-2 border border-titanium-700 text-sm text-titanium-200 hover:border-[#00B8D4] disabled:opacity-40 disabled:cursor-not-allowed transition"
                 >
                   {saveState === 'saving' ? (
                     <>
@@ -661,14 +666,14 @@ export function GovernanceActivationView() {
                     saveState === 'saving' ||
                     ((step === 'organization' || step === 'scope') && !activeTenantId)
                   }
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-cyan-500 text-obsidian-950 text-sm font-semibold hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed transition"
+                  className={`inline-flex items-center gap-2 px-4 py-2 ${OS_CREAM_BTN} text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed transition`}
                 >
                   Continue Activation <ArrowRight className="h-4 w-4" />
                 </button>
               ) : (
                 <Link
                   to="/app/dashboard"
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-cyan-500 text-obsidian-950 text-sm font-semibold hover:brightness-110 transition"
+                  className={`inline-flex items-center gap-2 px-4 py-2 ${OS_CREAM_BTN} text-sm font-semibold transition`}
                 >
                   Zum Compliance Dashboard <ArrowRight className="h-4 w-4" />
                 </Link>

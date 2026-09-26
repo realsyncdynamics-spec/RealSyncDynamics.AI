@@ -12,6 +12,13 @@ on:
     branches:
       - main
 
+# Ein neuer Push auf denselben PR loest den laufenden E2E-Lauf ab; der alte
+# baut und testet einen ueberholten Stand. `main` und Merge Queue bleiben
+# unangetastet (`false`), dort wird abgenommen, nicht ueberholt.
+concurrency:
+  group: e2e-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   e2e:
     name: Playwright E2E

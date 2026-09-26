@@ -92,9 +92,8 @@ describe('command center catalog destinations', () => {
     );
     expect(resolveCommandPath(catalog.find((c) => c.id === 'mod-evidence')!)).toBe('/app/evidence');
     expect(resolveCommandPath(catalog.find((c) => c.id === 'mod-reports')!)).toBe('/app/reports');
-    expect(resolveCommandPath(catalog.find((c) => c.id === 'nav-assistant-workspace')!)).toBe(
-      '/app/assistant',
-    );
+    // Governance AI ist per Flag verborgen (src/config/featureFlags.ts).
+    expect(catalog.find((c) => c.id === 'nav-assistant-workspace')).toBeUndefined();
     expect(catalog.find((c) => c.id === 'action-assistant')!.actionId).toBe('open-assistant');
   });
 

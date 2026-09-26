@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, Globe, Mail, Loader2, AlertTriangle, Search } from 'lucide-react';
 import { usePageMeta } from '../../lib/usePageMeta';
-import { postEdgeFunction } from '../../lib/edgeFunction';
+import { isEdgeAuthRequiredError, postEdgeFunction } from '../../lib/edgeFunction';
 import { getAffiliateRef } from '../../lib/affiliate';
 import { LegalDisclaimer } from '../../components/LegalDisclaimer';
 import {
@@ -59,12 +59,18 @@ export function OptimizerScan() {
     setError(null);
     try {
       const normalizedUrl = url.trim().match(/^https?:\/\//i) ? url.trim() : `https://${url.trim()}`;
-      const report = await postEdgeFunction<AuditReport>('gdpr-audit', {
-        url: normalizedUrl,
-        email: email.trim(),
-        referral_code: getAffiliateRef() || undefined,
-        source: 'claude_code_optimizer',
-      });
+      // `gdpr-audit` ist öffentlich (verify_jwt=false). Free-Optimizer-Flow
+      // hat oft kein sb-auth-token — ohne requireAuth:false bricht der Call ab.
+      const report = await postEdgeFunction<AuditReport>(
+        'gdpr-audit',
+        {
+          url: normalizedUrl,
+          email: email.trim(),
+          referral_code: getAffiliateRef() || undefined,
+          source: 'claude_code_optimizer',
+        },
+        { requireAuth: false },
+      );
 
       const result: OptimizerScanResult = {
         auditId: report.audit_id,
@@ -85,7 +91,12 @@ export function OptimizerScan() {
       saveScanResult(result);
       navigate(stepById('ergebnis').path, { state: result });
     } catch (err) {
-      setError((err as Error).message);
+      const msg = (err as Error).message;
+      setError(
+        isEdgeAuthRequiredError(msg)
+          ? 'Scan-Aufruf erwartet keine Anmeldung, ist aber falsch verdrahtet. Bitte Seite neu laden und erneut versuchen.'
+          : msg,
+      );
     } finally {
       setLoading(false);
     }

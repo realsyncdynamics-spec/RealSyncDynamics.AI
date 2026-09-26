@@ -1,12 +1,19 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { fireEvent, render, screen } from '@testing-library/react';
-import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
+import { fireEvent, render, screen, within } from '@testing-library/react';
+import { Link, MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 
 vi.mock('../../../src/components/governance-os/PaymentGraceBanner', () => ({
   PaymentGraceBanner: () => null,
 }));
 vi.mock('../../../src/components/governance-os/GovernanceTabs', () => ({
-  GovernanceTabs: () => <div data-testid="tabs" />,
+  GovernanceTabs: () => <Link to="/app/evidence">Nachweise öffnen</Link>,
+}));
+// Die Seitenleiste ist ab `lg` die Modulnavigation — vorher lag sie als
+// Tab-Leiste oben. Der Mock traegt deshalb einen echten Link: Ohne ihn
+// haette der Desktop-Fall ueberhaupt keinen Navigationsweg, und der Test
+// unten wuerde ein Verhalten pruefen, das es so nicht mehr gibt.
+vi.mock('../../../src/components/governance-os/GovernanceSidebar', () => ({
+  GovernanceSidebar: () => <Link to="/app/evidence">Nachweise öffnen</Link>,
 }));
 vi.mock('../../../src/components/governance-os/GovernanceCanvas', () => ({
   GovernanceCanvas: ({ children }: { children: React.ReactNode }) => (
@@ -25,7 +32,18 @@ vi.mock('../../../src/components/governance-os/GovernanceChatSidebar', () => ({
   ),
 }));
 vi.mock('../../../src/components/governance-os/GovernanceAddressBar', () => ({
-  GovernanceAddressBar: () => <div data-testid="address-bar" />,
+  GovernanceAddressBar: ({ onLoadUrl }: { onLoadUrl: (url: string) => void }) => (
+    <button onClick={() => onLoadUrl('https://example.com')}>Website öffnen</button>
+  ),
+}));
+vi.mock('../../../src/components/governance-os/EmbeddedBrowserCanvas', () => ({
+  EmbeddedBrowserCanvas: () => <div data-testid="embedded-page" />,
+}));
+// Nav-Schlösser (MobileShellMenu) lesen tenant_entitlements über useTenant —
+// hier ohne TenantProvider: alles offen, Schloss-Logik prüft navAccess.test.ts.
+vi.mock('../../../src/components/governance-os/useNavLock', () => ({
+  useNavLock: () => () => ({ locked: false, missing: [], minPlan: null, source: 'none' }),
+  navLockTitle: (label: string) => label,
 }));
 vi.mock('../../../src/core/access/RouteEntitlementGate', () => ({
   RouteEntitlementGate: ({ children }: { children: React.ReactNode }) => <>{children}</>,
@@ -92,6 +110,43 @@ describe('GovernanceBrowserShell — Command Center', () => {
     expect(screen.getByRole('dialog', { name: 'Command Center' })).toBeInTheDocument();
   });
 
+  it('öffnet das mobile Systemmenü und schließt nach einer Modulwahl', () => {
+    renderShell();
+    fireEvent.click(screen.getByRole('button', { name: 'Systemmenü öffnen' }));
+    const menu = screen.getByRole('navigation', { name: 'Systemmenü' });
+    expect(screen.getByRole('button', { name: 'Systemmenü schließen' })).toHaveAttribute('aria-controls', menu.id);
+    fireEvent.click(within(menu).getByRole('link', { name: 'Nachweise öffnen' }));
+    expect(screen.queryByRole('navigation', { name: 'Systemmenü' })).not.toBeInTheDocument();
+    expect(screen.getByTestId('location')).toHaveTextContent('/app/evidence');
+  });
+
+  it('öffnet die Befehlssuche aus dem mobilen Menü', () => {
+    renderShell();
+    fireEvent.click(screen.getByRole('button', { name: 'Systemmenü öffnen' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Module und Aktionen suchen' }));
+    expect(screen.getByRole('dialog', { name: 'Command Center' })).toBeInTheDocument();
+    expect(screen.queryByRole('navigation', { name: 'Systemmenü' })).not.toBeInTheDocument();
+  });
+
+  it('schließt das mobile Menü mit Escape', () => {
+    renderShell();
+    fireEvent.click(screen.getByRole('button', { name: 'Systemmenü öffnen' }));
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(screen.queryByRole('navigation', { name: 'Systemmenü' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Systemmenü öffnen' })).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it.each(['/app/home', '/app/evidence'])('entfernt die Website beim Modulwechsel von %s', (initial) => {
+    renderShell(initial);
+    fireEvent.click(screen.getByRole('button', { name: 'Website öffnen' }));
+    expect(screen.getByTestId('embedded-page')).toBeInTheDocument();
+    // Modulwechsel ueber die Seitenleiste — der Weg, den der Desktop seit
+    // dem Wegfall der oberen Tab-Leiste tatsaechlich nimmt.
+    fireEvent.click(screen.getByRole('link', { name: 'Nachweise öffnen' }));
+    expect(screen.queryByTestId('embedded-page')).not.toBeInTheDocument();
+    expect(screen.getByTestId('location')).toHaveTextContent('/app/evidence');
+  });
+
   it('öffnet das Command Center mit Meta+K (Cmd)', () => {
     renderShell();
     fireEvent.keyDown(window, { key: 'k', metaKey: true });
@@ -115,6 +170,21 @@ describe('GovernanceBrowserShell — Command Center', () => {
 
     expect(screen.getByTestId('location')).toHaveTextContent('/app/evidence');
     expect(screen.queryByRole('dialog', { name: 'Command Center' })).not.toBeInTheDocument();
+  });
+
+  it('P0-5: Freitext ohne Treffer ist kein toter Intent — keine Navigation, ehrliches „Keine Treffer“', () => {
+    renderShell('/app/evidence');
+    fireEvent.keyDown(window, { key: 'k', ctrlKey: true });
+    const dialog = screen.getByRole('dialog', { name: 'Command Center' });
+    fireEvent.change(screen.getByLabelText('Was möchtest du erledigen?'), {
+      target: { value: 'xyzzy qwrt' },
+    });
+    expect(within(dialog).getByText(/Keine Treffer/)).toBeInTheDocument();
+    expect(within(dialog).queryByText(/Intent/)).toBeNull();
+    fireEvent.keyDown(window, { key: 'Enter' });
+    // Früher: navigate('/app/dashboard', { state: { agentOsIntent } }) — ohne Leser.
+    expect(screen.getByTestId('location')).toHaveTextContent('/app/evidence');
+    expect(within(dialog).getByText('Ausführen')).toBeInTheDocument();
   });
 
   it('schließt mit Escape und toggelt mit erneutem Ctrl+K', () => {

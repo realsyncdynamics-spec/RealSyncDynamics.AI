@@ -55,6 +55,15 @@ Disallow: /website-rundum-service
 User-agent: GPTBot
 Allow: /
 
+# OpenAI: Suchindex (OAI-SearchBot) und Abrufe im Auftrag eines Nutzers
+# (ChatGPT-User, auch Agent-/Cloud-Browser). Bisher nur ueber `*` erlaubt;
+# ausdruecklich, damit die Freigabe nicht an der Wildcard haengt.
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
 User-agent: ClaudeBot
 Allow: /
 

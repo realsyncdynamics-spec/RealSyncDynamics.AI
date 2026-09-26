@@ -51,9 +51,41 @@ describe('computeGovernanceScore', () => {
 });
 
 describe('computeGovernanceScoreIfReliable', () => {
-  it('returns null when count sources failed instead of scoring fallback zeros as 100', () => {
-    expect(computeGovernanceScoreIfReliable(false, ZERO, null)).toBeNull();
-    expect(computeGovernanceScoreIfReliable(true, ZERO, null)).toBe(100);
+  const POSTURE: CockpitPosture = { policiesEnabledPercent: 50, assetEvidencePercent: 50, assetMappingsPercent: 40 };
+  const WITH_DATA = { aiSystems: 2, controlMappings: 5 };
+  const EMPTY = { aiSystems: 0, controlMappings: 0 };
+
+  it('kein KPI-Snapshot ⇒ insufficient_data mit null (nicht 100, nicht 0)', () => {
+    const r = computeGovernanceScoreIfReliable(true, ZERO, null, WITH_DATA);
+    expect(r).toEqual({ score: null, status: 'insufficient_data' });
+  });
+
+  it('leerer Mandant (0 KI-Systeme und 0 Mappings) ⇒ insufficient_data mit null, auch mit Snapshot', () => {
+    expect(computeGovernanceScoreIfReliable(true, ZERO, POSTURE, EMPTY)).toEqual({ score: null, status: 'insufficient_data' });
+    expect(computeGovernanceScoreIfReliable(true, ZERO, null, EMPTY)).toEqual({ score: null, status: 'insufficient_data' });
+  });
+
+  it('nur KI-Systeme ODER nur Mappings reicht als Datenbasis', () => {
+    expect(computeGovernanceScoreIfReliable(true, ZERO, POSTURE, { aiSystems: 1, controlMappings: 0 }).status).toBe('ok');
+    expect(computeGovernanceScoreIfReliable(true, ZERO, POSTURE, { aiSystems: 0, controlMappings: 3 }).status).toBe('ok');
+  });
+
+  it('gültige Daten ⇒ ok mit Zahl (Normalfall)', () => {
+    // penalty = 100 − 10 = 90, posture avg = 50 → 0.6·90 + 0.4·50 = 74
+    expect(computeGovernanceScoreIfReliable(true, { ...ZERO, incidents: 1 }, POSTURE, WITH_DATA)).toEqual({ score: 74, status: 'ok' });
+  });
+
+  it('fehlgeschlagene Zähler / Snapshot-RPC / Datenbasis ⇒ unreliable mit null', () => {
+    expect(computeGovernanceScoreIfReliable(false, ZERO, POSTURE, WITH_DATA)).toEqual({ score: null, status: 'unreliable' });
+    expect(computeGovernanceScoreIfReliable(true, ZERO, null, WITH_DATA, false)).toEqual({ score: null, status: 'unreliable' });
+    expect(computeGovernanceScoreIfReliable(true, ZERO, POSTURE, { aiSystems: null, controlMappings: 1 })).toEqual({ score: null, status: 'unreliable' });
+    expect(computeGovernanceScoreIfReliable(true, ZERO, POSTURE, { aiSystems: 1, controlMappings: null })).toEqual({ score: null, status: 'unreliable' });
+  });
+
+  it('liefert für einen leeren Mandanten nie 100', () => {
+    const r = computeGovernanceScoreIfReliable(true, ZERO, null, EMPTY);
+    expect(r.score).not.toBe(100);
+    expect(r.score).toBeNull();
   });
 });
 

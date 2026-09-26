@@ -47,10 +47,16 @@ describe('implementation-status registry', () => {
       resolve('src/components/landing/PlatformCapabilitiesSection.tsx'),
       'utf8',
     );
-    expect(landing).toContain('PlatformCapabilitiesSection');
+    expect(landing).toContain('PLATFORM_LIVE_ITEMS');
+    const titanHero = readFileSync(
+      resolve('src/components/landing/HeroTitanium.tsx'),
+      'utf8',
+    );
+    expect(landing).toContain('HeroTitanium');
+    expect(titanHero).toContain('EuropeNetworkHero');
+    expect(landing).not.toContain('GovernanceSphereHost');
+    expect(titanHero).not.toContain('EuropeReliefBackdrop');
     expect(platform).toContain('PLATFORM_LIVE_ITEMS');
-    expect(landing).toContain('LandingRoadmapSection');
-    expect(landing).toContain('EuropeReliefBackdrop');
     expect(roadmap).toContain('PREVIEW_IMPLEMENTATION');
     expect(roadmap).toContain('COMING_SOON_IMPLEMENTATION');
   });
@@ -62,14 +68,18 @@ describe('implementation-status registry', () => {
     }
   });
 
-  it('hero headline is Governance OS preview lock', () => {
+  it('hero headline is Homepage Brief SSOT lock', () => {
     const hero = readFileSync(
       resolve('src/components/governance-frontend/hero-content.ts'),
       'utf8',
     );
-    expect(hero).toContain('AI Governance');
-    expect(hero).toContain('Running in Real');
-    expect(hero).toContain("HERO_HEADLINE_TEST_SUBSTRING = 'AI Governance'");
+    expect(hero).toContain('kontrollierbar');
+    expect(hero).toContain('nachweisbar');
+    expect(hero).toContain('auditbereit');
+    expect(hero).toContain("HERO_HEADLINE_TEST_SUBSTRING = 'kontrollierbar'");
+    expect(hero).toContain("HERO_SCAN_CTA_LABEL = 'Governance-Scan starten'");
+    expect(hero).toContain("HERO_SCAN_CTA_LONG = 'Governance-Scan starten'");
+    expect(hero).toContain("HERO_DASHBOARD_CTA_LABEL = 'Live Dashboard ansehen'");
     expect(hero).not.toContain('99.9');
     expect(hero).not.toContain('UPTIME');
   });

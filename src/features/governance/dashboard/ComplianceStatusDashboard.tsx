@@ -7,17 +7,38 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
-  Activity, AlertTriangle, ArrowRight, Bot, Clock, ChevronRight, FileCheck2, Globe2, LayoutTemplate, Loader2,
+  Activity, AlertTriangle, ArrowRight, Bot, Clock, ChevronRight, FileCheck2, Globe2, LayoutTemplate, Loader2, Lock,
   Minus, Radar, Rocket, ShieldCheck, Sparkles, TrendingDown, TrendingUp,
 } from 'lucide-react';
 import { useTenant } from '../../../core/access/TenantProvider';
+import { useEntitlements } from '../../../core/billing/useEntitlements';
+import { getSupabase } from '../../../lib/supabase';
+import {
+  EMPTY_COMPLIANCE_KPI_ROW,
+  formatMetric,
+  loadComplianceKpiRow,
+  type ComplianceKpiRow,
+  type RiskTrendDirection,
+} from '../../../lib/status/statusAdapter';
 import { Card, CardHeader, CardBody } from '../../../enterprise-os/components/Card';
 import { ScoreGauge } from '../../../enterprise-os/components/ScoreGauge';
 import { Button } from '../../../enterprise-os/components/Button';
 import { StatusBadge } from '../../../enterprise-os/components/Badge';
-import type { ScoreLevel } from '../cockpit/cockpitScore';
+import type { GovernanceScoreStatus, ScoreDataBasis, ScoreLevel } from '../cockpit/cockpitScore';
+import { GovernanceScoreState } from '../cockpit/GovernanceScoreState';
 import { scoreLabel, scoreLevel } from '../cockpit/cockpitScore';
 import { loadCockpitData, type CockpitData, type CockpitRuntimeEvent } from '../cockpit/cockpitData';
+import {
+  daysSince,
+  EVIDENCE_MIN_ENTRIES,
+  EVIDENCE_STALE_DAYS,
+  FINDING_LEVEL_LABEL,
+  formatAgeDe,
+  resolvedLabel,
+  RISK_BUCKET_LABEL,
+  summarizeFindings,
+  type DashboardSignals,
+} from './dashboardSignals';
 import { TrialBanner } from '../../workspace/TrialBanner';
 import {
   HIGH_RISK_ASSET_THRESHOLD,
@@ -36,11 +57,14 @@ import {
   type ActivationBootstrapStatus,
   type BootstrapStep,
 } from './workspaceBootstrapSteps';
+import { GOVERNANCE_AI_PATH, isGovernanceAiEnabled } from '../../../config/featureFlags';
 
 export function ComplianceStatusDashboard() {
   const { activeTenantId, tenants } = useTenant();
+  const { tier, loading: entitlementsLoading } = useEntitlements();
   const tenantName = tenants.find((t) => t.tenantId === activeTenantId)?.name ?? null;
   const [data, setData] = useState<CockpitData | null>(null);
+  const [complianceKpi, setComplianceKpi] = useState<ComplianceKpiRow>(EMPTY_COMPLIANCE_KPI_ROW);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [bootstrapSteps, setBootstrapSteps] = useState<BootstrapStep[]>([]);
@@ -49,6 +73,7 @@ export function ComplianceStatusDashboard() {
     let cancelled = false;
     if (!activeTenantId) {
       setData(null);
+      setComplianceKpi(EMPTY_COMPLIANCE_KPI_ROW);
       setLoading(false);
       setBootstrapSteps([]);
       return;
@@ -56,8 +81,17 @@ export function ComplianceStatusDashboard() {
     setLoading(true);
     setError(null);
     setData(null);
-    loadCockpitData(activeTenantId)
-      .then((next) => { if (!cancelled) setData(next); })
+    setComplianceKpi(EMPTY_COMPLIANCE_KPI_ROW);
+    const sb = getSupabase();
+    Promise.all([
+      loadCockpitData(activeTenantId),
+      loadComplianceKpiRow(sb, activeTenantId),
+    ])
+      .then(([cockpit, kpi]) => {
+        if (cancelled) return;
+        setData(cockpit);
+        setComplianceKpi(kpi);
+      })
       .catch((err) => { if (!cancelled) setError((err as Error)?.message ?? String(err)); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
@@ -100,9 +134,12 @@ export function ComplianceStatusDashboard() {
         tenantName={tenantName}
         activeTenantId={activeTenantId}
         data={data}
+        complianceKpi={complianceKpi}
         loading={loading}
         error={error}
         bootstrapSteps={bootstrapSteps}
+        livePlanId={tier}
+        entitlementsLoading={entitlementsLoading}
       />
     </>
   );
@@ -110,9 +147,9 @@ export function ComplianceStatusDashboard() {
 
 function DashboardControlPlane() {
   const tools = [
-    { href: '/app/bots', label: 'AI Agents & Bots', text: 'Bots anlegen, Kanäle und Fähigkeiten verwalten.', icon: Bot, accent: 'text-cyan-300' },
-    { href: '/app/agents', label: 'Agent Runtime', text: 'Enterprise-Agenten starten und Runs überwachen.', icon: Sparkles, accent: 'text-violet-300' },
-    { href: '/build', label: 'Frontend & Landing Builder', text: 'Prompt → Website → Vorschau mit SiteOS.', icon: LayoutTemplate, accent: 'text-sky-300' },
+    { href: '/app/bots', label: 'AI Agents & Bots', text: 'Bots anlegen, Kanäle und Fähigkeiten verwalten.', icon: Bot, accent: 'text-[#00B8D4]' },
+    { href: '/app/agents', label: 'Agent Runtime', text: 'Enterprise-Agenten starten und Runs überwachen.', icon: Sparkles, accent: 'text-[#C9D1E0]' },
+    { href: '/build', label: 'Frontend & Landing Builder', text: 'Prompt → Website → Vorschau mit SiteOS.', icon: LayoutTemplate, accent: 'text-[#00B8D4]' },
     { href: '/app/siteos/builder', label: 'Web App Builder', text: 'SiteOS-Workspace für bestehende Projekte öffnen.', icon: Globe2, accent: 'text-emerald-300' },
   ];
 
@@ -120,18 +157,18 @@ function DashboardControlPlane() {
     <section aria-label="Build and Agent Control Plane" data-testid="dashboard-control-plane" className="mt-4 rounded-2xl border border-titanium-800 bg-obsidian-900/90 overflow-hidden">
       <div className="px-5 py-4 border-b border-titanium-900 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#e4cfa2]">Operate · Build · Automate</p>
+          <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#00B8D4]">Operate · Build · Automate</p>
           <h2 className="mt-1 text-base font-semibold text-titanium-50">AI Control Plane</h2>
           <p className="mt-1 text-xs text-titanium-400">Direkter Zugriff auf Bots, Agenten und die produktiven SiteOS-Build-Flows.</p>
         </div>
-        <Link to="/app/modules" className="text-[10px] font-mono uppercase tracking-wider text-[#e4cfa2] hover:text-titanium-50">Alle Module →</Link>
+        <Link to="/app/modules" className="text-[10px] font-mono uppercase tracking-wider text-[#00B8D4] hover:text-titanium-50">Alle Module →</Link>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-px bg-titanium-900">
         {tools.map(({ href, label, text, icon: Icon, accent }) => (
-          <Link key={href} to={href} className="group bg-obsidian-900 px-5 py-4 hover:bg-obsidian-800 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#e4cfa2]">
+          <Link key={href} to={href} className="group bg-obsidian-900 px-5 py-4 hover:bg-obsidian-800 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#00B8D4]">
             <div className="flex items-center justify-between gap-3">
               <Icon className={`h-5 w-5 ${accent}`} />
-              <ArrowRight className="h-4 w-4 text-titanium-600 group-hover:text-[#e4cfa2] transition-colors" />
+              <ArrowRight className="h-4 w-4 text-titanium-600 group-hover:text-[#00B8D4] transition-colors" />
             </div>
             <p className="mt-4 text-sm font-semibold text-titanium-50">{label}</p>
             <p className="mt-1 text-xs leading-5 text-titanium-400">{text}</p>
@@ -146,18 +183,40 @@ export interface ComplianceStatusViewProps {
   tenantName: string | null;
   activeTenantId: string | null;
   data: CockpitData | null;
+  complianceKpi?: ComplianceKpiRow;
   loading: boolean;
   error: string | null;
   bootstrapSteps?: BootstrapStep[];
+  /**
+   * Live plan from tenant_entitlements / subscriptions (useEntitlements.tier).
+   * Required to claim "Abo aktiv" — URL ?plan= alone is not enough (fail-closed).
+   * `null` while entitlements still load → treat like sync pending.
+   */
+  livePlanId?: string | null;
+  /** True while entitlements are still loading after post-checkout redirect. */
+  entitlementsLoading?: boolean;
+  /** „Erneut laden“ im Score-Fehlerzustand. */
+  onRetry?: () => void;
+  /**
+   * Schloss am „Packs →“-Link (/app/policy-packs, Entitlement `policy.packs`).
+   * Tooltip-Text, wenn gesperrt; `null`/fehlend = offen. Kommt aus
+   * tenant_entitlements (CommandCenterDashboard), wie RouteEntitlementGate.
+   */
+  packsLockTitle?: string | null;
 }
 
 export function ComplianceStatusView({
   tenantName,
   activeTenantId,
   data,
+  complianceKpi = EMPTY_COMPLIANCE_KPI_ROW,
   loading,
   error,
   bootstrapSteps = [],
+  livePlanId = null,
+  entitlementsLoading = false,
+  onRetry,
+  packsLockTitle = null,
 }: ComplianceStatusViewProps) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -165,17 +224,28 @@ export function ComplianceStatusView({
   const postCheckoutSub = searchParams.get('subscription');
   const postCheckoutSync = searchParams.get('sync');
   const showPostCheckout = Boolean(postCheckoutPlan || postCheckoutSub || postCheckoutSync);
-  // Stripe paid ≠ entitlements synced. Never claim "Abo aktiv" while sync=pending.
-  const postCheckoutSyncPending =
+  // Stripe paid ≠ entitlements synced. Never claim "Abo aktiv" while sync=pending
+  // OR while live plan is still free / unknown (URL params alone are not proof).
+  const urlSaysPending =
     postCheckoutSync === 'pending' ||
     postCheckoutSub === 'pending' ||
     postCheckoutSub === 'pending_sync';
+  const FREE_PLAN_IDS = new Set(['free', 'free_audit']);
+  const livePlanUnlocked =
+    typeof livePlanId === 'string' &&
+    livePlanId.length > 0 &&
+    !FREE_PLAN_IDS.has(livePlanId);
+  const postCheckoutSyncPending =
+    urlSaysPending ||
+    (showPostCheckout && (entitlementsLoading || !livePlanUnlocked));
+  const postCheckoutUnlocked = showPostCheckout && !postCheckoutSyncPending && livePlanUnlocked;
   const isEmptyTenant = Boolean(
     data &&
     data.partialFailures.length === 0 &&
     data.openMeasures.total === 0 &&
     data.actions.length === 0 &&
     data.evidenceHealth.percent === null &&
+    data.evidenceHealth.totalCount === 0 &&
     data.riskIndex.score === null &&
     data.readiness === null,
   );
@@ -188,8 +258,8 @@ export function ComplianceStatusView({
       {/* Header */}
       <div className="flex flex-wrap items-start justify-between gap-4 border-b border-titanium-900 pb-4">
         <div>
-          <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#e4cfa2] flex items-center gap-2">
-            <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#e4cfa2] animate-pulse" aria-hidden />
+          <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#00B8D4] flex items-center gap-2">
+            <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#00B8D4] animate-pulse" aria-hidden />
             Governance Command Center
           </p>
           <h1 className="font-display font-bold text-titanium-50 tracking-tight mt-1 text-[clamp(1.25rem,1rem+1.2vw,1.75rem)]">
@@ -207,11 +277,13 @@ export function ComplianceStatusView({
               </Button>
             </Link>
           )}
-          <Link to="/app/assistant">
-            <Button variant="primary" size="md">
-              Governance AI
-            </Button>
-          </Link>
+          {isGovernanceAiEnabled() && (
+            <Link to={GOVERNANCE_AI_PATH}>
+              <Button variant="primary" size="md">
+                Governance AI
+              </Button>
+            </Link>
+          )}
         </div>
       </div>
 
@@ -243,13 +315,13 @@ export function ComplianceStatusView({
             <button
               type="button"
               onClick={() => navigate('/app/billing')}
-              className="inline-flex items-center justify-center gap-2 bg-[#e8ddc8] hover:bg-[#f0e6d4] text-obsidian-950 px-4 py-2 text-sm font-semibold font-mono uppercase tracking-wider"
+              className="inline-flex items-center justify-center gap-2 bg-[#1E5AFF] hover:bg-[#1641C4] text-white px-4 py-2 text-sm font-semibold font-mono uppercase tracking-wider"
             >
               Abrechnung prüfen <ArrowRight className="h-4 w-4" />
             </button>
             <Link
               to="/pricing"
-              className="inline-flex items-center justify-center gap-2 border border-titanium-700 text-titanium-200 px-4 py-2 text-sm font-medium hover:border-[#e4cfa2] hover:text-[#e4cfa2]"
+              className="inline-flex items-center justify-center gap-2 border border-titanium-700 text-titanium-200 px-4 py-2 text-sm font-medium hover:border-[#00B8D4] hover:text-[#00B8D4]"
             >
               Pläne
             </Link>
@@ -257,16 +329,16 @@ export function ComplianceStatusView({
         </div>
       )}
 
-      {showPostCheckout && activeTenantId && !postCheckoutSyncPending && (
+      {postCheckoutUnlocked && activeTenantId && (
         <div
-          className="border border-[#e4cfa2]/25 bg-[#e4cfa2]/5 p-5 space-y-3"
+          className="border border-[#00B8D4]/25 bg-[#00B8D4]/5 p-5 space-y-3"
           data-testid="post-checkout-domain-cta"
         >
           <div className="flex items-start gap-3">
-            <Globe2 className="h-5 w-5 text-[#e4cfa2] mt-0.5 shrink-0" />
+            <Globe2 className="h-5 w-5 text-[#00B8D4] mt-0.5 shrink-0" />
             <div>
               <h2 className="text-sm font-semibold text-titanium-50">
-                Abo aktiv{postCheckoutPlan ? ` · ${postCheckoutPlan}` : ''}
+                Abo aktiv{livePlanId ? ` · ${livePlanId}` : postCheckoutPlan ? ` · ${postCheckoutPlan}` : ''}
               </h2>
               <p className="text-sm text-titanium-300 mt-1">
                 Nächster Schritt: Kunden-Domain unter Websites verbinden.
@@ -282,7 +354,7 @@ export function ComplianceStatusView({
           <button
             type="button"
             onClick={() => navigate('/app/websites')}
-            className="inline-flex items-center justify-center gap-2 bg-[#e8ddc8] hover:bg-[#f0e6d4] text-obsidian-950 px-4 py-2 text-sm font-semibold font-mono uppercase tracking-wider"
+            className="inline-flex items-center justify-center gap-2 bg-[#1E5AFF] hover:bg-[#1641C4] text-white px-4 py-2 text-sm font-semibold font-mono uppercase tracking-wider"
           >
             Domain hinterlegen <ArrowRight className="h-4 w-4" />
           </button>
@@ -298,7 +370,7 @@ export function ComplianceStatusView({
           </p>
           <Link
             to="/welcome?next=/app/dashboard"
-            className="mt-4 inline-flex items-center gap-2 text-[#e4cfa2] text-sm font-semibold"
+            className="mt-4 inline-flex items-center gap-2 text-[#00B8D4] text-sm font-semibold"
           >
             Workspace einrichten <ArrowRight className="h-4 w-4" />
           </Link>
@@ -324,10 +396,14 @@ export function ComplianceStatusView({
         </div>
       )}
 
+      {activeTenantId && !loading && (
+        <ComplianceKpiStrip kpi={complianceKpi} governance={data} onRetry={onRetry} />
+      )}
+
       {isEmptyTenant && (
         <div className="border border-titanium-800 bg-obsidian-900 p-6 space-y-4" data-testid="empty-tenant-cta">
           <div className="flex items-start gap-4">
-            <Rocket className="h-6 w-6 text-[#e4cfa2] mt-0.5 shrink-0" />
+            <Rocket className="h-6 w-6 text-[#00B8D4] mt-0.5 shrink-0" />
             <div>
               <h2 className="text-lg font-semibold text-titanium-50">Noch keine Governance-Daten</h2>
               <p className="text-sm text-titanium-300 mt-1">
@@ -341,7 +417,7 @@ export function ComplianceStatusView({
               type="button"
               data-testid="cta-domain-hinterlegen"
               onClick={() => navigate('/app/websites')}
-              className="inline-flex items-center justify-center gap-2 bg-[#e8ddc8] hover:bg-[#f0e6d4] text-obsidian-950 px-4 py-2 text-sm font-semibold font-mono uppercase tracking-wider"
+              className="inline-flex items-center justify-center gap-2 bg-[#1E5AFF] hover:bg-[#1641C4] text-white px-4 py-2 text-sm font-semibold font-mono uppercase tracking-wider"
             >
               Domain hinterlegen
             </button>
@@ -378,13 +454,16 @@ export function ComplianceStatusView({
 
       {data && !isEmptyTenant && (
         <>
-          {/* Zone 1 — Top KPI strip */}
+          {/* Zone 1 — Top KPI strip (cockpit-derived; separate from score history row) */}
           <section aria-label="KPI-Strip">
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-px bg-titanium-900 border border-titanium-900">
               <ScoreCard
                 testId="governance-score"
                 eyebrow="Governance-Score"
                 score={data.score}
+                status={data.scoreStatus}
+                basis={data.scoreBasis}
+                onRetry={onRetry}
                 hint="Self-Assessment aus offenen Pflichten und KPI-Abdeckung. Keine Zertifizierung."
               />
               <RiskCard risk={data.riskIndex} />
@@ -415,13 +494,13 @@ export function ComplianceStatusView({
                   flows={data.assetFlows}
                   assetsFailed={data.partialFailures.some((f) => f.startsWith('assets:'))}
                 />
-                <PolicyCoveragePanel posture={data.posture} />
+                <PolicyCoveragePanel posture={data.posture} packsLockTitle={packsLockTitle} />
               </div>
 
               {data.summary24h && (
                 <section data-testid="summary-24h">
                   <div className="flex items-center gap-2 mb-3">
-                    <Clock className="h-4 w-4 text-[#e4cfa2]" />
+                    <Clock className="h-4 w-4 text-[#00B8D4]" />
                     <h2 className="font-display font-semibold text-titanium-50 text-sm">Letzte 24 Stunden</h2>
                   </div>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-titanium-900 border border-titanium-900">
@@ -439,6 +518,7 @@ export function ComplianceStatusView({
             {/* Zone 4 — Right rail: Critical Findings / Alerts / Tasks */}
             <aside className="xl:col-span-4 space-y-5" aria-label="Findings und Aufgaben">
               <CriticalFindingsRail
+                signals={data.signals}
                 actions={data.actions}
                 summary={data.summary24h}
                 bootstrapSteps={bootstrapSteps}
@@ -452,7 +532,7 @@ export function ComplianceStatusView({
           <p className="text-[11px] text-titanium-600 font-mono">
             {data.lastUpdated
               ? `KPI-Stand: ${data.lastUpdated}`
-              : 'KPI-Snapshot noch nicht verfügbar — Score aus Echtzeit-Zählern.'}
+              : 'KPI-Snapshot noch nicht verfügbar — Score noch nicht bewertbar.'}
             {' · '}
             <Link to="/app/dashboard" className="hover:text-titanium-300 underline">Workspace</Link>
             {' · '}
@@ -480,7 +560,7 @@ function EventStreamPanel({
         title="Event-Stream"
         subtitle="Neueste Governance-Events aus dem Mandanten."
         action={(
-          <Link to="/app/monitoring" className="text-[10px] font-mono uppercase tracking-wider text-[#e4cfa2] hover:text-[#e4cfa2]">
+          <Link to="/app/monitoring" className="text-[10px] font-mono uppercase tracking-wider text-[#00B8D4] hover:text-[#00B8D4]">
             Monitoring →
           </Link>
         )}
@@ -493,8 +573,13 @@ function EventStreamPanel({
         ) : (
           <ul className="divide-y divide-titanium-900 max-h-72 overflow-y-auto">
             {events.map((event) => (
-              <li key={event.id} className="px-5 py-3 flex items-start gap-3">
-                <Activity className={`h-3.5 w-3.5 mt-0.5 shrink-0 ${riskLevelColor(event.riskLevel)}`} />
+              <li
+                key={event.id}
+                className="px-5 py-3 flex items-start gap-3"
+                data-testid={`event-${event.id}`}
+                data-resolved={event.resolvedAt ? 'true' : 'false'}
+              >
+                <Activity className={`h-3.5 w-3.5 mt-0.5 shrink-0 ${event.resolvedAt ? 'text-titanium-600' : riskLevelColor(event.riskLevel)}`} />
                 <div className="min-w-0 flex-1">
                   <p className="text-sm text-titanium-100 truncate">{event.title}</p>
                   <p className="text-[10px] font-mono text-titanium-500 mt-0.5 truncate">
@@ -505,9 +590,15 @@ function EventStreamPanel({
                     {formatRelativeTime(event.createdAt)}
                   </p>
                 </div>
-                <span className={`font-mono text-[9px] uppercase tracking-wider shrink-0 ${riskLevelColor(event.riskLevel)}`}>
-                  {event.riskLevel}
-                </span>
+                {event.resolvedAt ? (
+                  <span className="font-mono text-[9px] uppercase tracking-wider shrink-0 max-w-[8.5rem] text-right leading-snug text-emerald-400" data-testid={`event-${event.id}-resolved`}>
+                    {resolvedLabel(event.resolvedAt, event.resolvedManually)}
+                  </span>
+                ) : (
+                  <span className={`font-mono text-[9px] uppercase tracking-wider shrink-0 ${riskLevelColor(event.riskLevel)}`}>
+                    {event.riskLevel}
+                  </span>
+                )}
               </li>
             ))}
           </ul>
@@ -538,7 +629,7 @@ function RiskDistributionPanel({
             ? 'Noch keine Assets mit Risk-Score.'
             : `${assetCount} Assets nach Risk-Score.`}
         action={(
-          <Link to="/app/risks" className="text-[10px] font-mono uppercase tracking-wider text-[#e4cfa2] hover:text-[#e4cfa2]">
+          <Link to="/app/risks" className="text-[10px] font-mono uppercase tracking-wider text-[#00B8D4] hover:text-[#00B8D4]">
             Risiken →
           </Link>
         )}
@@ -596,7 +687,7 @@ function AssetFlowsPanel({
                   to={flow.href}
                   className="flex items-center gap-3 px-5 py-3 hover:bg-obsidian-800 transition-colors"
                 >
-                  <Radar className="h-3.5 w-3.5 text-[#e4cfa2] shrink-0" />
+                  <Radar className="h-3.5 w-3.5 text-[#00B8D4] shrink-0" />
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-semibold text-titanium-50">{flow.label}</p>
                     <p className="text-[10px] font-mono text-titanium-500 mt-0.5">
@@ -616,7 +707,13 @@ function AssetFlowsPanel({
   );
 }
 
-function PolicyCoveragePanel({ posture }: { posture: CockpitData['posture'] }) {
+function PolicyCoveragePanel({
+  posture,
+  packsLockTitle = null,
+}: {
+  posture: CockpitData['posture'];
+  packsLockTitle?: string | null;
+}) {
   return (
     <Card data-testid="policy-coverage" className="bg-obsidian-900/80">
       <CardHeader
@@ -624,7 +721,14 @@ function PolicyCoveragePanel({ posture }: { posture: CockpitData['posture'] }) {
         title="Policy Coverage"
         subtitle="Aus dem letzten KPI-Snapshot — keine Schätzung."
         action={(
-          <Link to="/app/policy-packs" className="text-[10px] font-mono uppercase tracking-wider text-[#e4cfa2] hover:text-[#e4cfa2]">
+          <Link
+            to="/app/policy-packs"
+            title={packsLockTitle ?? undefined}
+            data-locked={packsLockTitle ? 'true' : 'false'}
+            data-testid="policy-coverage-packs-link"
+            className="inline-flex items-center gap-1 text-[10px] font-mono uppercase tracking-wider text-[#00B8D4] hover:text-[#00B8D4]"
+          >
+            {packsLockTitle && <Lock className="h-3 w-3" aria-label={packsLockTitle} />}
             Packs →
           </Link>
         )}
@@ -644,16 +748,66 @@ function PolicyCoveragePanel({ posture }: { posture: CockpitData['posture'] }) {
   );
 }
 
+interface CriticalFindingItem {
+  id: string;
+  level: 'critical' | 'high';
+  title: string;
+  detail: string;
+  href: string;
+}
+
+/**
+ * „Kritische Befunde“: Pflichten (Incidents/DSFA/DSR) + Assets im Bucket
+ * Hoch/Kritisch + Scanner-Befunde hoch/kritisch (mit Alter). Mittlere
+ * Scanner-Befunde nur als Hinweis. Rein, für Tests exportiert.
+ */
+export function collectCriticalFindings(
+  actions: CockpitData['actions'],
+  signals: DashboardSignals | null | undefined,
+  now: number = Date.now(),
+): { items: CriticalFindingItem[]; mediumHints: string[] } {
+  const items: CriticalFindingItem[] = actions
+    .filter((a): a is typeof a & { level: 'critical' | 'high' } => a.level === 'critical' || a.level === 'high')
+    .map((a) => ({ id: a.id, level: a.level, title: a.title, detail: a.detail, href: a.href }));
+  for (const asset of signals?.elevatedAssets ?? []) {
+    items.push({
+      id: `risk-${asset.id}`,
+      level: asset.bucket === 'critical' ? 'critical' : 'high',
+      title: asset.name,
+      detail: `Risiko-Score ${asset.score} · ${RISK_BUCKET_LABEL[asset.bucket]}`,
+      href: '/app/risk-inventory',
+    });
+  }
+  const findings = summarizeFindings(signals?.findings ?? []);
+  for (const f of findings.severe) {
+    const age = daysSince(f.createdAt, now);
+    items.push({
+      id: `finding-${f.id}`,
+      level: f.level === 'critical' ? 'critical' : 'high',
+      title: f.title,
+      detail: `Scanner-Befund · ${FINDING_LEVEL_LABEL[f.level]}${age === null ? '' : ` · ${formatAgeDe(age)}`}`,
+      href: '/app/websites',
+    });
+  }
+  const mediumHints = findings.medium.map((f) => {
+    const age = daysSince(f.createdAt, now);
+    return `${f.title} · ${FINDING_LEVEL_LABEL[f.level]}${age === null ? '' : ` · ${formatAgeDe(age)}`}`;
+  });
+  return { items, mediumHints };
+}
+
 function CriticalFindingsRail({
   actions,
   summary,
   bootstrapSteps,
+  signals,
 }: {
   actions: CockpitData['actions'];
   summary: CockpitData['summary24h'];
   bootstrapSteps: BootstrapStep[];
+  signals?: DashboardSignals;
 }) {
-  const critical = actions.filter((a) => a.level === 'critical' || a.level === 'high');
+  const { items: critical, mediumHints } = collectCriticalFindings(actions, signals);
 
   return (
     <>
@@ -661,15 +815,21 @@ function CriticalFindingsRail({
         <CardHeader
           eyebrow="Findings"
           title="Kritische Befunde"
-          subtitle="Priorisierte Pflichten aus Incidents, DSFA und DSR."
+          subtitle="Pflichten (Incidents, DSFA, DSR), erhöhte Risiko-Scores und Scanner-Befunde."
         />
         <CardBody className="p-0">
           {critical.length === 0 ? (
             <div className="px-5 py-6 text-center text-sm text-titanium-400" data-testid="no-critical-findings">
               <ShieldCheck className="h-5 w-5 mx-auto mb-2 text-emerald-400" />
               Keine kritischen oder hohen Befunde offen.
+              {mediumHints.length > 0 && (
+                <p className="mt-2 text-xs text-amber-300" data-testid="medium-findings-hint">
+                  {mediumHints.length === 1 ? '1 mittlerer Befund' : `${mediumHints.length} mittlere Befunde`}: {mediumHints.slice(0, 3).join(' · ')}
+                </p>
+              )}
             </div>
           ) : (
+            <>
             <ul className="divide-y divide-titanium-900" data-testid="critical-findings-list">
               {critical.slice(0, 6).map((action) => (
                 <li key={action.id}>
@@ -689,6 +849,12 @@ function CriticalFindingsRail({
                 </li>
               ))}
             </ul>
+            {mediumHints.length > 0 && (
+              <p className="px-5 py-3 text-xs text-amber-300 border-t border-titanium-900" data-testid="medium-findings-hint">
+                Hinweis — {mediumHints.length === 1 ? '1 mittlerer Befund' : `${mediumHints.length} mittlere Befunde`}: {mediumHints.slice(0, 3).join(' · ')}
+              </p>
+            )}
+            </>
           )}
         </CardBody>
       </Card>
@@ -699,7 +865,7 @@ function CriticalFindingsRail({
           title="Offene Alerts"
           subtitle={summary ? 'Aus dem 24h-Summary.' : '24h-Summary noch nicht verfügbar.'}
           action={(
-            <Link to="/app/alerts" className="text-[10px] font-mono uppercase tracking-wider text-[#e4cfa2] hover:text-[#e4cfa2]">
+            <Link to="/app/alerts" className="text-[10px] font-mono uppercase tracking-wider text-[#00B8D4] hover:text-[#00B8D4]">
               Alle →
             </Link>
           )}
@@ -830,10 +996,10 @@ function FrameworkStrip() {
   return (
     <section data-testid="framework-strip" aria-label="Compliance-Frameworks">
       <div className="flex items-center gap-2 mb-3">
-        <ShieldCheck className="h-4 w-4 text-[#e4cfa2]" />
+        <ShieldCheck className="h-4 w-4 text-[#00B8D4]" />
         <h2 className="font-display font-semibold text-titanium-50 text-sm">Frameworks</h2>
         <div className="flex-1 h-px bg-titanium-900" />
-        <Link to="/app/governance/frameworks" className="text-[10px] font-mono uppercase tracking-wider text-[#e4cfa2] hover:text-[#e4cfa2]">
+        <Link to="/app/governance/frameworks" className="text-[10px] font-mono uppercase tracking-wider text-[#00B8D4] hover:text-[#00B8D4]">
           Übersicht →
         </Link>
       </div>
@@ -870,23 +1036,203 @@ function FrameworkStrip() {
   );
 }
 
+/* ─── Compliance KPI row (score history + table digests) ───────────────── */
+
+function ComplianceKpiStrip({
+  kpi,
+  governance = null,
+  onRetry,
+}: {
+  kpi: ComplianceKpiRow;
+  /** Governance-Score (computeGovernanceScoreIfReliable) — einzige Score-Quelle. */
+  governance?: CockpitData | null;
+  onRetry?: () => void;
+}) {
+  const breakdownBits = [
+    { key: 'GDPR', value: kpi.score_breakdown.score_gdpr },
+    { key: 'NIS2', value: kpi.score_breakdown.score_nis2 },
+    { key: 'DSA', value: kpi.score_breakdown.score_dsa },
+    { key: 'AI Act', value: kpi.score_breakdown.score_ai_act },
+  ].filter((b) => b.value !== null);
+
+  return (
+    <section aria-label="Compliance-KPI" data-testid="compliance-kpi-row">
+      <div className="flex items-center justify-between gap-3 mb-3">
+        <div>
+          <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#00B8D4]">Compliance</p>
+          <h2 className="text-sm font-semibold text-titanium-50 mt-0.5">Score · Trend · Findings · Incidents</h2>
+        </div>
+        <p className="text-[10px] font-mono text-titanium-600 hidden sm:block">
+          Quellen: compliance_score_history · risk_dashboard_summary · incidents
+        </p>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-px bg-titanium-900 border border-titanium-900">
+        {/* P0: Dieselbe Zahl wie Kachel und Governance-Score-Karte — kein
+            zweiter Score aus compliance_score_history. Die Historie bleibt
+            nur als Rahmenwerk-Hinweis. */}
+        <GovernanceKpiScoreCard
+          governance={governance}
+          onRetry={onRetry}
+          hint={
+            breakdownBits.length > 0
+              ? `Rahmenwerk-Historie: ${breakdownBits.map((b) => `${b.key} ${formatMetric(b.value)}`).join(' · ')}`
+              : 'Self-Assessment · keine Zertifizierung.'
+          }
+        />
+        <TrendMetricCard direction={kpi.riskTrendDirection} />
+        <KpiMetricCard
+          testId="compliance-critical-findings"
+          label="Critical findings"
+          value={kpi.criticalFindings}
+          hint="Kritische Risiken aus risk_dashboard_summary."
+          danger={kpi.criticalFindings !== null && kpi.criticalFindings > 0}
+        />
+        <KpiMetricCard
+          testId="compliance-new-incidents"
+          label="New incidents (24h)"
+          value={kpi.newIncidents}
+          hint="Neu eröffnete Incidents der letzten 24 Stunden."
+          danger={kpi.newIncidents !== null && kpi.newIncidents > 0}
+        />
+      </div>
+    </section>
+  );
+}
+
+function GovernanceKpiScoreCard({
+  governance,
+  hint,
+  onRetry,
+}: {
+  governance: CockpitData | null;
+  hint: string;
+  onRetry?: () => void;
+}) {
+  const status = governance?.scoreStatus ?? null;
+  return (
+    <div className="bg-obsidian-900 px-5 py-5" data-testid="compliance-score-overall">
+      <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-titanium-500">Governance-Score</p>
+      {status === 'ok' && governance?.score != null ? (
+        <div className="mt-3">
+          <p className="font-mono text-4xl font-bold tabular-nums text-titanium-50">{governance.score}</p>
+          <p className="mt-2 text-[11px] text-titanium-500">{hint}</p>
+        </div>
+      ) : status === 'insufficient_data' || status === 'unreliable' ? (
+        <div className="mt-3 text-titanium-200">
+          <GovernanceScoreState
+            status={status}
+            basis={governance?.scoreBasis ?? null}
+            onRetry={onRetry}
+            testId="compliance-score-overall-state"
+          />
+        </div>
+      ) : (
+        <div className="mt-3">
+          <p className="font-mono text-4xl font-bold text-titanium-600">—</p>
+          <p className="mt-2 text-[11px] text-titanium-500">Wird geladen …</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function KpiMetricCard({
+  testId,
+  label,
+  value,
+  suffix = '',
+  hint,
+  danger = false,
+}: {
+  testId: string;
+  label: string;
+  value: number | null;
+  suffix?: string;
+  hint: string;
+  danger?: boolean;
+}) {
+  return (
+    <div className="bg-obsidian-900 px-5 py-5" data-testid={testId}>
+      <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-titanium-500">{label}</p>
+      {value === null ? (
+        <div className="mt-3">
+          <p className="font-mono text-4xl font-bold text-titanium-600">—</p>
+          <p className="mt-2 text-[11px] text-titanium-500">Unbekannt — keine Messung</p>
+        </div>
+      ) : (
+        <div className="mt-3">
+          <p className={`font-mono text-4xl font-bold tabular-nums ${danger ? 'text-red-400' : 'text-titanium-50'}`}>
+            {formatMetric(value, suffix)}
+          </p>
+          <p className="mt-2 text-[11px] text-titanium-500">{hint}</p>
+        </div>
+      )}
+      {value === null && <p className="mt-1 text-[11px] text-titanium-600">{hint}</p>}
+    </div>
+  );
+}
+
+function TrendMetricCard({ direction }: { direction: RiskTrendDirection | null }) {
+  const label =
+    direction === 'improving' ? 'Improving'
+      : direction === 'declining' ? 'Declining'
+        : direction === 'stable' ? 'Stable'
+          : null;
+  const Icon =
+    direction === 'improving' ? TrendingUp
+      : direction === 'declining' ? TrendingDown
+        : Minus;
+  const tone =
+    direction === 'improving' ? 'text-emerald-400'
+      : direction === 'declining' ? 'text-orange-400'
+        : direction === 'stable' ? 'text-[#00B8D4]'
+          : 'text-titanium-600';
+
+  return (
+    <div className="bg-obsidian-900 px-5 py-5" data-testid="compliance-risk-trend">
+      <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-titanium-500">Risk trend</p>
+      {direction === null || label === null ? (
+        <div className="mt-3">
+          <p className="font-mono text-4xl font-bold text-titanium-600">—</p>
+          <p className="mt-2 text-[11px] text-titanium-500">Kein Trend in compliance_score_history</p>
+        </div>
+      ) : (
+        <div className="mt-3 flex items-center gap-2">
+          <Icon className={`h-7 w-7 ${tone}`} />
+          <span className={`font-mono text-2xl font-bold ${tone}`}>{label}</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ─── KPI cards (preserved) ─────────────────────────────────────────────── */
 
 function ScoreCard({
   testId,
   eyebrow,
   score,
+  status,
+  basis,
+  onRetry,
   hint,
 }: {
   testId: string;
   eyebrow: string;
   score: number | null;
+  status: GovernanceScoreStatus;
+  basis?: ScoreDataBasis | null;
+  onRetry?: () => void;
   hint: string;
 }) {
   return (
     <Card className="bg-obsidian-900 flex flex-col items-center justify-center gap-3 py-6 border-0" data-testid={testId}>
       <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-titanium-500">{eyebrow}</p>
-      {score === null ? (
+      {status !== 'ok' ? (
+        <div className="text-titanium-200">
+          <GovernanceScoreState status={status} basis={basis} onRetry={onRetry} testId={`${testId}-state`} />
+        </div>
+      ) : score === null ? (
         <EmptyMetric value="–" caption="Score nicht verfügbar" />
       ) : (
         <>
@@ -912,9 +1258,14 @@ function RiskCard({ risk }: { risk: RiskIndex }) {
         </>
       )}
       <p className="px-4 text-center text-[11px] text-titanium-500 font-mono">
-        {risk.assetCount} Assets · {risk.highRiskAssets} ≥ {HIGH_RISK_ASSET_THRESHOLD}
+        {risk.assetCount} Assets · {risk.highRiskAssets} {RISK_BUCKET_LABEL.high}/{RISK_BUCKET_LABEL.critical} (≥ {HIGH_RISK_ASSET_THRESHOLD})
         {risk.newRisks24h > 0 ? ` · +${risk.newRisks24h} / 24h` : ''}
       </p>
+      {risk.score !== null && (
+        <p className="px-4 text-center text-[10px] text-titanium-600" data-testid="risk-index-explainer">
+          Gewichteter Mittelwert aller Assets — einzelne Assets stehen in der Risk Distribution.
+        </p>
+      )}
     </Card>
   );
 }
@@ -935,8 +1286,26 @@ function EvidenceCard({ health }: { health: EvidenceHealth }) {
         {health.hashedCount}/{health.totalCount} gehasht
         {health.failedScans > 0 ? ` · ${health.failedScans} Scan-Fehler` : ''}
       </p>
+      {evidenceFreshnessNote(health) && (
+        <p className="px-4 text-center text-[10px] text-titanium-600" data-testid="evidence-freshness">
+          {evidenceFreshnessNote(health)}
+        </p>
+      )}
     </Card>
   );
+}
+
+/** Alters-/Mengenhinweis unter der Evidence-Kachel; Schwellen aus dashboardSignals. */
+export function evidenceFreshnessNote(health: EvidenceHealth): string | null {
+  const age = health.latestAgeDays;
+  const ageText = age == null ? null : `Letzter Nachweis ${formatAgeDe(age)}.`;
+  if (health.freshness === 'insufficient') {
+    return [`Unter ${EVIDENCE_MIN_ENTRIES} Nachweisen kein Wert.`, ageText].filter(Boolean).join(' ');
+  }
+  if (health.freshness === 'stale') {
+    return `Letzter Nachweis ${formatAgeDe(age ?? 0)} — älter als ${EVIDENCE_STALE_DAYS} Tage.`;
+  }
+  return ageText;
 }
 
 function ReadinessCard({
@@ -1036,7 +1405,7 @@ function CoverageRow({ label, percent }: { label: string; percent: number }) {
         <span className="font-mono text-sm font-bold text-titanium-50">{pct}%</span>
       </div>
       <div className="mt-2 h-1.5 bg-titanium-900 w-full">
-        <div className="h-full bg-[#e4cfa2] transition-all duration-500" style={{ width: `${pct}%` }} />
+        <div className="h-full bg-[#00B8D4] transition-all duration-500" style={{ width: `${pct}%` }} />
       </div>
     </div>
   );

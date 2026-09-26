@@ -154,7 +154,7 @@ export function CostCalculator() {
                 <Info className="h-4 w-4 text-titanium-100 mt-0.5 shrink-0" />
                 <p className="text-xs text-silver-400 leading-relaxed">
                   Annahme: je Website ~3 Stunden Prüfaufwand pro Review. RealSync kann diesen Aufwand
-                  durch Automatisierung und Continuous Monitoring deutlich reduzieren.
+                  durch automatisierte Scans und priorisierte Befunde reduzieren (dauerhafte Überwachung: Coming Soon).
                 </p>
               </div>
             </div>

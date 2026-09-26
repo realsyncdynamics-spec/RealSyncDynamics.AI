@@ -16,6 +16,7 @@ import {
   GA_MUTED,
   GA_TEXT,
 } from './governance-ai-theme';
+import { SectionEyebrow, SectionIndex } from './GovernanceSectionChrome';
 
 /**
  * Automated product roadmap — rendered from implementation-status.ts.
@@ -122,16 +123,8 @@ export function LandingRoadmapSection() {
       className="ga-band-alt relative z-[1] border-t border-[#d0c3a4]/10 py-[72px] lg:py-[80px]"
     >
       <div className="mx-auto max-w-[1500px] px-[4vw]">
-        <p
-          className="inline-block rounded-full border px-[11px] py-[7px] text-[9px] font-medium tracking-[.23em]"
-          style={{
-            fontFamily: GA_MONO,
-            color: GA_GOLD_LITE,
-            borderColor: `${GA_GOLD_LITE}47`,
-          }}
-        >
-          ROADMAP
-        </p>
+        <SectionIndex number="07" label="STATUS" />
+        <SectionEyebrow>ROADMAP</SectionEyebrow>
         <h2
           className="mt-[18px] leading-[1.05] tracking-[-.03em]"
           style={{

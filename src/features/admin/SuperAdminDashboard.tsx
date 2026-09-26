@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { priceForPlanKey } from '@/shared/pricing';
-import { AlertTriangle, TrendingUp, Users, CreditCard, Zap, CheckCircle } from 'lucide-react';
+import { AlertTriangle, TrendingUp, Users, CreditCard, Zap, CheckCircle, ShieldCheck } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { AuthGate } from '../kodee/connections/AuthGate';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/Card';
@@ -202,7 +202,7 @@ function Inner({ session }: { session: Session }) {
         {/* Navigation Cards */}
         <div>
           <h2 className="font-display font-bold text-lg text-titanium-50 mb-4">Administration</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <Link to="/admin/customers">
               <Card variant="default" className="hover:border-security-blue/50 transition-colors cursor-pointer h-full">
                 <CardHeader>
@@ -215,6 +215,38 @@ function Inner({ session }: { session: Session }) {
                 <CardContent>
                   <p className="text-2xl font-bold text-security-blue">{metrics?.totalTenants || '—'}</p>
                   <p className="text-xs text-titanium-400 mt-1">Gesamt-Workspaces</p>
+                </CardContent>
+              </Card>
+            </Link>
+
+            <Link to="/admin/billing">
+              <Card variant="default" className="hover:border-security-blue/50 transition-colors cursor-pointer h-full">
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <CreditCard className="h-5 w-5" />
+                    Conversion Billing
+                  </CardTitle>
+                  <CardDescription>Failed/Open Payments · Re-Checkout Redirect</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-2xl font-bold text-rose-400">Failed/Open</p>
+                  <p className="text-xs text-titanium-400 mt-1">Anzeige + Portal/Checkout — keine Capture-Logik</p>
+                </CardContent>
+              </Card>
+            </Link>
+
+            <Link to="/admin/compliance">
+              <Card variant="default" className="hover:border-security-blue/50 transition-colors cursor-pointer h-full">
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <ShieldCheck className="h-5 w-5" />
+                    Compliance KPI
+                  </CardTitle>
+                  <CardDescription>Scores · Risk Trend · Findings · Incidents</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-2xl font-bold text-petrol">KPI Shell</p>
+                  <p className="text-xs text-titanium-400 mt-1">Anzeige only — null ≠ 0, keine erfundenen Scores</p>
                 </CardContent>
               </Card>
             </Link>

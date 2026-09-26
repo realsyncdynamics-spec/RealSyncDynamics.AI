@@ -1,0 +1,82 @@
+name: Feature request
+description: Propose a product, workflow, governance, or platform improvement
+title: "[Feature]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Describe the problem first, then the desired outcome. Keep policy authority, tenant boundaries, and evidence requirements explicit where relevant.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What user, operational, or governance problem should this solve?
+      placeholder: "Today, users cannot ... which causes ..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Desired outcome
+      description: Describe the behavior or capability you want, without prescribing unnecessary implementation details.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Product area
+      options:
+        - DISCOVER
+        - ASSESS
+        - GOVERN
+        - EVIDENCE / PROVE
+        - Marketing website
+        - App / dashboard
+        - Bots / voice
+        - Authentication / tenant access
+        - Billing / Stripe
+        - API / Edge Functions
+        - CI / CD
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: governance
+    attributes:
+      label: Governance and tenant impact
+      description: Note any policy, authorization, tenant isolation, privacy, audit, evidence, or human-approval implications. Write "None known" if not applicable.
+      placeholder: "Policy authority remains server-side; no client-authoritative tenant input; evidence event required after execution."
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: List observable conditions that would make the feature complete and testable.
+      placeholder: |
+        - [ ] ...
+        - [ ] ...
+        - [ ] ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Add mockups, references, related issues, constraints, or alternatives considered.
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Requester checks
+      options:
+        - label: I searched existing issues for a similar request.
+          required: true
+        - label: This request does not require secrets, credentials, or personal data to be posted.
+          required: true

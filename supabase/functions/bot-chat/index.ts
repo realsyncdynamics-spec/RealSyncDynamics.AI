@@ -29,6 +29,7 @@ import {
   buildBotPrompt, BotError,
 } from '../_shared/bots.ts';
 import { enforceBotMessage } from '../_shared/pdp/botmessage.ts';
+import { runRestaurantConversationTurn } from '../_shared/restaurant-conversation.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -126,7 +127,32 @@ Deno.serve(async (req) => {
       });
     }
 
-    const prompt = buildBotPrompt({ persona: bot.persona, history: priorHistory, userMessage: message });
+    const restaurantTurn = await runRestaurantConversationTurn(
+      admin,
+      bot,
+      conversationId,
+      message,
+      priorHistory,
+      { channel: 'chat', contact: contactLabel },
+    );
+    if (restaurantTurn) {
+      await insertMessage(admin, bot, conversationId, 'assistant', restaurantTurn.reply, {
+        runId: restaurantTurn.runId,
+        inputTokens: restaurantTurn.inputTokens,
+        outputTokens: restaurantTurn.outputTokens,
+        costUsd: restaurantTurn.costUsd,
+        metadata: restaurantTurn.metadata,
+      });
+      return jsonResponse({
+        ok: true,
+        conversation_id: conversationId,
+        reply: restaurantTurn.reply,
+        run_id: restaurantTurn.runId,
+        ...(restaurantTurn.orderId ? { order_id: restaurantTurn.orderId } : {}),
+      });
+    }
+
+    const prompt = buildBotPrompt({ persona: bot.persona, config: bot.config, history: priorHistory, userMessage: message });
 
     const ai = await runAiTool(admin, tenantId, null, 'bot_reply', prompt, {
       metadata: { bot_id: bot.id, conversation_id: conversationId, channel: 'chat' },

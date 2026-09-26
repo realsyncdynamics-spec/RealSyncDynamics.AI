@@ -1,5 +1,6 @@
 import { AiGatewayEdgeClient, AiGatewayEdgeError } from '../../core/ai-gateway/edgeClient';
 import { getSupabaseUrl, getSupabaseAnonKey } from '../../lib/supabaseUrl';
+import type { SimpleMsg } from '../governance/AgentWidget/agentApi';
 
 // Audit-Copilot helpers. Talk to the `ai-gateway` Edge Function via
 // `AiGatewayEdgeClient` and return structured payloads for the panel UI.
@@ -45,6 +46,127 @@ export interface AiGatewayClientDeps {
   supabaseUrl?: string;
   /** Test/SSR hook: override env-derived anon key. */
   supabaseAnonKey?: string;
+}
+
+export interface AuditAnonPayload {
+  mode: 'audit_anon';
+  turnstile_token: string;
+  input: { question: string; audit_id?: string };
+}
+
+/**
+ * Maps Cloudflare's native widget response field to the strict server contract.
+ * The browser-only `cf-turnstile-response` field is never sent to the gateway.
+ */
+export function auditAnonPayload(
+  widgetFields: { 'cf-turnstile-response'?: unknown; turnstile_token?: unknown },
+  input: { question: string; auditId?: string },
+): AuditAnonPayload {
+  const token = [widgetFields['cf-turnstile-response'], widgetFields.turnstile_token]
+    .find((value): value is string => typeof value === 'string' && value.trim().length > 0)?.trim();
+  if (!token || token.length > 2048) {
+    throw new AiGatewayEdgeError(400, 'TURNSTILE_MISSING', 'Bitte die Bot-Prüfung abschließen.');
+  }
+  const question = input.question.trim();
+  if (!question || question.length > 1000) {
+    throw new AiGatewayEdgeError(400, 'BAD_REQUEST', 'Die Frage muss zwischen 1 und 1000 Zeichen lang sein.');
+  }
+  return {
+    mode: 'audit_anon',
+    turnstile_token: token,
+    input: { question, ...(input.auditId ? { audit_id: input.auditId } : {}) },
+  };
+}
+
+export type AuditAnonChatResult =
+  | { kind: 'ok'; data: { response: string; history: SimpleMsg[] } }
+  | { kind: 'rate_limited' }
+  | { kind: 'llm_not_configured' }
+  | { kind: 'error'; error: { code: string; message: string } };
+
+export interface AuditAnonClientDeps extends AiGatewayClientDeps {
+  fetchImpl?: typeof fetch;
+  anonJwt?: string;
+}
+
+function auditConversationQuestion(message: string, history: SimpleMsg[]): string {
+  const current = `Aktuelle Frage: ${message.trim()}`;
+  if (current.length > 1000) {
+    throw new AiGatewayEdgeError(400, 'BAD_REQUEST', 'Die Frage darf höchstens 1000 Zeichen enthalten.');
+  }
+  const context = history.slice(-6).map((turn) =>
+    `${turn.role === 'user' ? 'Besucher' : 'Assistent'}: ${turn.content}`,
+  );
+  while (context.length > 0 && `${context.join('\n')}\n${current}`.length > 1000) context.shift();
+  const prior = context.join('\n');
+  if (!prior) return current;
+  const available = 1000 - current.length - 1;
+  return `${prior.slice(-available)}\n${current}`;
+}
+
+/** Send one anonymous chat turn through the server-guarded audit_anon path. */
+export async function sendAuditAnon(args: {
+  message: string;
+  history: SimpleMsg[];
+  auditId?: string;
+  turnstileToken: string;
+}, deps?: AuditAnonClientDeps): Promise<AuditAnonChatResult> {
+  const payload = auditAnonPayload(
+    { 'cf-turnstile-response': args.turnstileToken },
+    { question: auditConversationQuestion(args.message, args.history), auditId: args.auditId },
+  );
+  const supabaseUrl = deps?.supabaseUrl ?? getSupabaseUrl();
+  const anonKey = deps?.supabaseAnonKey ?? getSupabaseAnonKey();
+  const anonJwt = deps?.anonJwt?.trim() || import.meta.env.VITE_SUPABASE_ANON_JWT?.trim() || anonKey;
+  if (!anonJwt || anonJwt.startsWith('sb_publishable_')) {
+    return {
+      kind: 'error',
+      error: {
+        code: 'LEGACY_ANON_JWT_REQUIRED',
+        message: 'Für den Audit-Copilot fehlt der Legacy-Anon-JWT (VITE_SUPABASE_ANON_JWT), den das Gateway benötigt.',
+      },
+    };
+  }
+  const fetchImpl = deps?.fetchImpl ?? fetch.bind(globalThis);
+  let response: Response;
+  try {
+    response = await fetchImpl(`${supabaseUrl.replace(/\/$/, '')}/functions/v1/ai-gateway`, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        apikey: anonKey,
+        authorization: `Bearer ${anonJwt}`,
+      },
+      body: JSON.stringify(payload),
+    });
+  } catch {
+    return { kind: 'error', error: { code: 'NETWORK', message: 'Backend nicht erreichbar. Bitte erneut versuchen.' } };
+  }
+
+  let body: Record<string, unknown> = {};
+  try {
+    body = await response.json() as Record<string, unknown>;
+  } catch {
+    return { kind: 'error', error: { code: 'BAD_ENVELOPE', message: `Ungültige Server-Antwort (HTTP ${response.status}).` } };
+  }
+  if (!response.ok || body.ok !== true) {
+    const error = body.error && typeof body.error === 'object'
+      ? body.error as { code?: unknown; message?: unknown }
+      : {};
+    const code = typeof error.code === 'string' ? error.code : `HTTP_${response.status}`;
+    const message = typeof error.message === 'string' ? error.message : 'Anfrage fehlgeschlagen.';
+    if (response.status === 429 || code === 'RATE_LIMITED') return { kind: 'rate_limited' };
+    if (response.status === 503) return { kind: 'llm_not_configured' };
+    return { kind: 'error', error: { code, message } };
+  }
+
+  const responseText = typeof body.output === 'string' ? body.output : '';
+  const history: SimpleMsg[] = [
+    ...args.history,
+    { role: 'user', content: args.message.trim() },
+    { role: 'assistant', content: responseText },
+  ];
+  return { kind: 'ok', data: { response: responseText, history } };
 }
 
 function resolveClient(deps?: AiGatewayClientDeps): AiGatewayEdgeClient {

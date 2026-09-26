@@ -72,7 +72,7 @@ export function Security() {
 
           <Section title="EU-Hosting · Sub-Processors" icon={<Server className="h-5 w-5 text-security-400" />}>
             <p>
-              Alle produktiven Workloads laufen auf EU-Infrastruktur (Hetzner Frankfurt für Compute, Supabase EU-Frankfurt für Postgres + Edge Functions).
+              Alle produktiven Workloads laufen auf EU-Infrastruktur (Hostinger Frankfurt für Compute, Supabase EU-Frankfurt für Postgres + Edge Functions).
               Eine vollständige Liste der Sub-Processors mit Standort, Funktion und AVV-Status findest du unter
               {' '}<Link to="/legal/sub-processors" className="text-security-400 hover:text-security-300">/legal/sub-processors</Link>.
             </p>

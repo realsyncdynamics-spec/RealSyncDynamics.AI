@@ -142,6 +142,12 @@ verify_jwt = false
 [functions.browser-action-log]
 verify_jwt = false
 
+# Governed browser executor — browser clients must present a real user JWT.
+# Handler additionally resolves tenant membership before any service-role
+# write or outbound Playwright call.
+[functions.browser-execute]
+verify_jwt = true
+
 # AI Gateway — provider-neutral inference endpoint.
 #
 # Vorher stand hier verify_jwt = false mit dem Vermerk, die Auth komme "in a

@@ -312,6 +312,7 @@ export interface UnbackedCaller {
 }
 
 export const UNBACKED_CALLERS: readonly UnbackedCaller[] = [
+  { slug: 'browser-execute', surface: '/app/dashboard — governed browser executor', publicPath: false },
   // ── Öffentlicher Trichter — wiegt am schwersten ────────────────────────
   //
   // Öffentlich dokumentierte, aber nicht existierende API-Endpunkte.

@@ -35,7 +35,7 @@ it('renders the handoff hero: H1, badge, loop and the two CTAs', () => {
   expect(audit[0]).toHaveTextContent('Governance-Scan starten');
 
   const dashboard = screen.getByTestId('hero-secondary-cta');
-  expect(dashboard).toHaveAttribute('href', '/app/dashboard');
+  expect(dashboard).toHaveAttribute('href', '/preview');
   expect(dashboard).toHaveTextContent(HERO_DASHBOARD_CTA_LABEL);
 });
 
@@ -66,6 +66,7 @@ it('opens the mobile menu with all screens and closes on Escape', () => {
   const dialog = screen.getByRole('dialog');
   const menu = within(dialog);
   expect(menu.getByRole('link', { name: 'Preise' })).toHaveAttribute('href', '/#pricing');
+  expect(menu.getByRole('link', { name: 'Evidence' })).toHaveAttribute('href', '/#audit-trail');
   expect(menu.getByRole('link', { name: 'Governance' })).toHaveAttribute('href', '/governance-runtime');
   expect(menu.getByRole('link', { name: /Governance-Scan starten/ })).toHaveAttribute('href', '/audit');
   fireEvent.keyDown(window, { key: 'Escape' });

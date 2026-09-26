@@ -36,6 +36,8 @@ describe('Farbmodus — drei Paletten, ein Attribut', () => {
     expect(modeSrc).toContain('modeFromPrefersColorScheme');
     expect(modeSrc).toContain("(prefers-color-scheme: light)");
     expect(modeSrc).toContain('addEventListener');
+    expect(modeSrc).toContain('useState<LandingMode>(initialMode)');
+    expect(modeSrc).not.toContain('lockedByUser');
   });
 
   it('alle Paletten stehen in src/index.css und unterscheiden sich', () => {

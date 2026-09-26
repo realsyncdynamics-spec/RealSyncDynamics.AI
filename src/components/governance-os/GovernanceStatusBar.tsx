@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useTenant } from '../../core/access/TenantProvider';
 import { Shield, Activity, Layers } from 'lucide-react';
 import { listWebsitesForTenant } from '../../features/governance/scans/scansApi';
+import { tenantDisplayName } from '../../features/governance/dashboard/dashboardSignals';
 
 /**
  * Honest status strip — no fake “Production / Evidence Active” counters.
@@ -35,7 +36,7 @@ export function GovernanceStatusBar() {
       <StatusItem icon={<Activity className="h-3 w-3 text-amber-400" />} label="Monitoring Preview" />
       <div className="h-3 w-px bg-titanium-800 shrink-0" />
       {activeTenant ? (
-        <StatusItem label={`Mandant: ${activeTenant.name}`} />
+        <StatusItem label={`Mandant: ${tenantDisplayName(activeTenant.name, 'de')}`} />
       ) : (
         <StatusItem label="Nicht angemeldet" />
       )}

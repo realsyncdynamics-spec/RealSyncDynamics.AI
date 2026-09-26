@@ -26,6 +26,7 @@ import {
 } from './commandCenterCatalog';
 import { RouteEntitlementGate } from '../../core/access/RouteEntitlementGate';
 import { AppGate } from '../../features/auth/AppGate';
+import { auditPathFor } from '../../features/audit/auditPrefill';
 import { MobileShellMenu } from './MobileShellMenu';
 import '../../styles/governance-os-app.css';
 
@@ -58,7 +59,7 @@ export function GovernanceBrowserShell({ children }: GovernanceBrowserShellProps
   const handleLoadUrl = (url: string) => setEmbeddedUrl(url);
   const handleCloseEmbed = () => setEmbeddedUrl(null);
   const handleScan = (url: string) => {
-    navigate(`/audit?target=${encodeURIComponent(url)}`);
+    navigate(auditPathFor(url, 'app-embedded-scan'));
     setEmbeddedUrl(null);
   };
 
@@ -76,14 +77,10 @@ export function GovernanceBrowserShell({ children }: GovernanceBrowserShellProps
     [navigate],
   );
 
-  const handleSubmitIntent = useCallback(
-    (text: string) => {
-      const trimmed = text.trim();
-      if (!trimmed) return;
-      navigate('/app/dashboard', { state: { agentOsIntent: trimmed } });
-    },
-    [navigate],
-  );
+  // Kein Freitext-Intent mehr (P0-5): Er ging per Router-State an
+  // `/app/dashboard`, gelesen wurde er nur von `AgentOsPanel`, das auf keiner
+  // erreichbaren Route gemountet ist — der Intent verpuffte. Ohne
+  // `onSubmitIntent` bietet die Palette nur ausführbare Befehle an.
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
@@ -185,7 +182,6 @@ export function GovernanceBrowserShell({ children }: GovernanceBrowserShellProps
           onClose={() => setCommandCenterOpen(false)}
           items={commandItems}
           onRun={handleRunCommand}
-          onSubmitIntent={handleSubmitIntent}
         />
       </div>
     </AppGate>

@@ -4,6 +4,7 @@
  * Beta modules stay navigable and are labeled Beta.
  */
 import { GOVERNANCE_MODULES } from './governanceModules';
+import { GOVERNANCE_AI_PATH, isGovernanceAiEnabled } from '../../config/featureFlags';
 import type { ModuleStatus } from './governanceBrowserTypes';
 
 export type CommandState = 'ready' | 'preview' | 'coming_soon';
@@ -148,7 +149,9 @@ function moduleToCommand(mod: (typeof GOVERNANCE_MODULES)[number]): CommandDefin
 /** Stable catalog used by the Command Center UI and unit tests. */
 export function buildCommandCatalog(): CommandDefinition[] {
   const fromModules = GOVERNANCE_MODULES.map(moduleToCommand);
-  return [...ACTION_COMMANDS, ...EXTRA_NAV_COMMANDS, ...fromModules];
+  const all = [...ACTION_COMMANDS, ...EXTRA_NAV_COMMANDS, ...fromModules];
+  // Governance AI ist vorübergehend verborgen (src/config/featureFlags.ts).
+  return isGovernanceAiEnabled() ? all : all.filter((c) => c.path !== GOVERNANCE_AI_PATH);
 }
 
 function normalize(s: string): string {

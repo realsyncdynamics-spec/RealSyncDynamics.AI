@@ -47,7 +47,17 @@ describe('triggerTenantAudit', () => {
     vi.mocked(fetch).mockResolvedValue(respond(500, ''));
 
     await expect(triggerTenantAudit('t-1', 'example.de')).rejects.toThrow(
-      /nicht verf/,
+      /Website-Audit fehlgeschlagen.*HTTP 500/,
+    );
+  });
+
+  it('500 mit JSON-Fehler: Status sichtbar, Server-Detail als Zusatz (tenant-audit, Stand 25.09.)', async () => {
+    vi.mocked(fetch).mockResolvedValue(
+      respond(500, JSON.stringify({ ok: false, error: { message: 'scan_run_id missing' } })),
+    );
+
+    await expect(triggerTenantAudit('t-1', 'example.de')).rejects.toThrow(
+      /HTTP 500.*Details: scan_run_id missing/,
     );
   });
 

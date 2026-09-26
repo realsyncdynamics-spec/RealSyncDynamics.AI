@@ -8,6 +8,7 @@ import { AiGatewayEdgeClient } from '../../../core/ai-gateway/edgeClient';
 import { getSupabaseAnonKey, getSupabaseUrl } from '../../../lib/supabaseUrl';
 import { useTenant } from '../../../core/access/TenantProvider';
 import { NextBestActionCard } from './NextBestActionCard';
+import { ASSISTANT_UNAVAILABLE } from '../AgentWidget/useAgentChat';
 import {
   formatGovernanceAiSystemPrompt,
   loadGovernanceAiGrounding,
@@ -17,6 +18,8 @@ import {
 interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
+  /** Ehrliche Fehlermeldung statt Antwort — geht nicht in den Verlauf ans Modell. */
+  error?: boolean;
 }
 
 const STARTERS = [
@@ -65,20 +68,24 @@ export function GovernanceAiWorkspace() {
 
   const canSend = useMemo(() => input.trim().length > 0 && !sending, [input, sending]);
 
-  const send = async (preset?: string) => {
+  const send = async (preset?: string, isRetry = false) => {
     const message = (preset ?? input).trim();
     if (!message || sending) return;
 
-    setInput('');
+    // Bei „Erneut versuchen" die Fehlermeldung entfernen; die Nutzernachricht
+    // steht schon im Verlauf.
+    const base = isRetry ? messages.filter((m) => !m.error) : messages;
+    if (!isRetry) setInput('');
     setSending(true);
-    setMessages((prev) => [...prev, { role: 'user', content: message }]);
+    setMessages(isRetry ? base : (prev) => [...prev, { role: 'user', content: message }]);
 
     try {
       const client = new AiGatewayEdgeClient({
         supabaseUrl: getSupabaseUrl(),
         apiKey: getSupabaseAnonKey(),
       });
-      const history = [...messages, { role: 'user' as const, content: message }]
+      const prior = isRetry ? base.slice(0, -1) : base;
+      const history = [...prior.filter((m) => !m.error), { role: 'user' as const, content: message }]
         .slice(-12)
         .map((m) => `${m.role === 'user' ? 'Nutzer' : 'Governance AI'}: ${m.content}`)
         .join('\n\n');
@@ -93,14 +100,10 @@ export function GovernanceAiWorkspace() {
         temperature: 0.25,
       });
       setMessages((prev) => [...prev, { role: 'assistant', content: response.output.trim() || 'Keine Antwort generiert.' }]);
-    } catch (error) {
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: 'assistant',
-          content: `Die Anfrage konnte gerade nicht verarbeitet werden. ${error instanceof Error ? error.message : 'Bitte versuche es erneut.'}`,
-        },
-      ]);
+    } catch {
+      // Kein Rohtext aus dem Fehler, keine Ersatzantwort — ehrlich melden,
+      // „Erneut versuchen" wird unter der Meldung angeboten.
+      setMessages((prev) => [...prev, { role: 'assistant', content: ASSISTANT_UNAVAILABLE, error: true }]);
     } finally {
       setSending(false);
       textareaRef.current?.focus();
@@ -172,7 +175,7 @@ export function GovernanceAiWorkspace() {
               </div>
             ) : (
               <div className="space-y-8 pb-10">
-                {messages.map((message, index) => <div key={`${message.role}-${index}`} className={message.role === 'user' ? 'flex justify-end' : 'flex gap-3'}>{message.role === 'assistant' && <div className="mt-1 h-7 w-7 shrink-0 rounded-lg bg-slate-950 text-white flex items-center justify-center"><Sparkles className="h-3.5 w-3.5" /></div>}<div className={message.role === 'user' ? 'max-w-[85%] rounded-2xl rounded-br-md bg-slate-900 px-4 py-3 text-sm leading-6 text-white' : 'max-w-[85%] text-sm leading-7 text-slate-800 whitespace-pre-wrap'}>{message.content}</div></div>)}
+                {messages.map((message, index) => <div key={`${message.role}-${index}`} className={message.role === 'user' ? 'flex justify-end' : 'flex gap-3'}>{message.role === 'assistant' && <div className="mt-1 h-7 w-7 shrink-0 rounded-lg bg-slate-950 text-white flex items-center justify-center"><Sparkles className="h-3.5 w-3.5" /></div>}<div role={message.error ? 'alert' : undefined} className={message.role === 'user' ? 'max-w-[85%] rounded-2xl rounded-br-md bg-slate-900 px-4 py-3 text-sm leading-6 text-white' : message.error ? 'max-w-[85%] rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm leading-6 text-rose-800' : 'max-w-[85%] text-sm leading-7 text-slate-800 whitespace-pre-wrap'}>{message.content}{message.error && index === messages.length - 1 && !sending && <div className="mt-2"><button type="button" onClick={() => { const lastUser = [...messages].reverse().find((m) => m.role === 'user'); if (lastUser) void send(lastUser.content, true); }} className="rounded-lg border border-rose-300 px-3 py-1 text-xs font-medium text-rose-800 hover:bg-rose-100" data-testid="assistant-retry">Erneut versuchen</button></div>}</div></div>)}
                 {sending && <div className="flex gap-3"><div className="mt-1 h-7 w-7 rounded-lg bg-slate-950 text-white flex items-center justify-center"><Sparkles className="h-3.5 w-3.5" /></div><div className="flex items-center gap-1 py-2"><span className="h-1.5 w-1.5 rounded-full bg-slate-400 animate-bounce" /><span className="h-1.5 w-1.5 rounded-full bg-slate-400 animate-bounce [animation-delay:120ms]" /><span className="h-1.5 w-1.5 rounded-full bg-slate-400 animate-bounce [animation-delay:240ms]" /></div></div>}
                 <div ref={bottomRef} />
               </div>

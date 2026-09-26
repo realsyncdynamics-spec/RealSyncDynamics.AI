@@ -49,7 +49,6 @@ describe('commandCenterCatalog', () => {
     const pricing = catalog.find((c) => c.id === 'nav-pricing');
     const team = catalog.find((c) => c.id === 'nav-team-invite');
     const settings = catalog.find((c) => c.id === 'mod-settings');
-    const assistantPage = catalog.find((c) => c.id === 'nav-assistant-workspace');
 
     expect(resolveCommandPath(audit!)).toBe('/audit');
     expect(resolveCommandPath(domain!)).toBe('/app/websites');
@@ -57,7 +56,11 @@ describe('commandCenterCatalog', () => {
     expect(resolveCommandPath(pricing!)).toBe('/pricing');
     expect(resolveCommandPath(team!)).toBe('/app/team');
     expect(resolveCommandPath(settings!)).toBe('/app/settings');
-    expect(resolveCommandPath(assistantPage!)).toBe('/app/assistant');
+  });
+
+  it('blendet Governance AI (/app/assistant) bei abgeschaltetem Flag aus', () => {
+    expect(catalog.find((c) => c.id === 'nav-assistant-workspace')).toBeUndefined();
+    expect(catalog.some((c) => c.path === '/app/assistant')).toBe(false);
   });
 
   it('exposes the assistant as a non-navigation action', () => {

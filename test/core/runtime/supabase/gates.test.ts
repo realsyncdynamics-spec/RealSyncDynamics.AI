@@ -1,3 +1,8 @@
+/**
+ * PostgreSQL-backed ApprovalGateService tests.
+ * Phase 2: Deferred until schema migrations are deployed.
+ * Phase 1.1 uses in-memory implementation only (see approvals.integration.test.ts).
+ */
 import { describe, it, expect, vi } from 'vitest';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { SupabaseApprovalGateService } from '../../../../src/core/runtime/supabase';
@@ -80,7 +85,7 @@ describe('SupabaseApprovalGateService.open', () => {
     });
     expect(row.id).toBe('gate-1');
     expect(row.status).toBe('pending');
-    expect(row.decided_at).toBeUndefined();
+    expect(row.decided_at).toBeNull();
   });
 
   it('throws when insert fails', async () => {

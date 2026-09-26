@@ -628,6 +628,7 @@ function ReportView({ report, onRetry }: { report: Report; onRetry: () => void }
       <AuditCopilotPanel
         issue={explainIssue ?? { id: '', severity: 'info', title: '', detail: '' }}
         domain={report.domain}
+        auditId={report.audit_id}
         open={!!explainIssue}
         onClose={() => setExplainIssue(null)}
       />

@@ -162,7 +162,9 @@ const REQUIRED_PUBLIC_FUNCTIONS = new Set([
   'market-scanner',
   'ai-act-classify',
 
-  // AI gateway — browser calls it directly with bundled anon key.
+  // AI gateway — steht mit verify_jwt = true in config.toml (Vorfilter);
+  // Auth macht die Function selbst (Nutzer-JWT + tenant_id, x-internal-key,
+  // anon-Audit-Pfad). Eintrag bleibt, damit ein gelöschter Stanza auffällt.
   'ai-gateway',
 
   // Cron-triggered (GitHub Actions / pg_cron call anonymously).

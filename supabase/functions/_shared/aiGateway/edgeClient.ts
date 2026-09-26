@@ -1,7 +1,8 @@
 // Deno mirror of src/core/ai-gateway/edgeClient.ts.
 //
-// Sibling Edge Functions (governance-agent, audit-copilot, kodee) call
-// this client to route inference through the ai-gateway Edge Function,
+// Sibling Edge Functions (governance-agent, classify-document,
+// telegram-webhook) call this client to route inference through the
+// ai-gateway Edge Function,
 // rather than instantiating provider adapters directly. Keeps provider
 // selection + EU-routing policy + cost-tracking in a single seam.
 
@@ -11,9 +12,38 @@ import type {
 
 export interface EdgeClientConfig {
   supabaseUrl: string;
+  /** Projekt-Key für den `apikey`-Header (SUPABASE_ANON_KEY). Wird auch als
+   *  Bearer gesendet, wenn weder authToken noch ein Nutzer-JWT gesetzt ist —
+   *  das passiert nur noch die Plattform-JWT-Prüfung, NICHT die Gateway-
+   *  Autorisierung (seit P0-Härtung: Nutzer-JWT oder internalKey nötig). */
   apiKey: string;
+  /** Nutzer-access_token, wenn der Aufrufer im Nutzerkontext läuft
+   *  (Authorization: Bearer <JWT> wird durchgereicht). */
+  authToken?: string;
+  /** Wert von AI_GATEWAY_INTERNAL_KEY → Header `x-internal-key` (Service-Pfad). */
+  internalKey?: string;
+  /** Kennung des internen Aufrufers → Header `x-internal-caller` (wird geloggt). */
+  internalCaller?: string;
   fetchImpl?: typeof fetch;
   timeoutMs?: number;
+}
+
+/**
+ * Baut die Header für einen ai-gateway-Aufruf. Niemals den service_role-Key
+ * als apiKey/authToken übergeben — der Gateway akzeptiert ihn nicht als
+ * Service-Pfad (401), und er soll das Edge-Isolat nicht verlassen.
+ */
+export function gatewayHeaders(config: Pick<EdgeClientConfig, 'apiKey' | 'authToken' | 'internalKey' | 'internalCaller'>): Record<string, string> {
+  const headers: Record<string, string> = {
+    'content-type':  'application/json',
+    'apikey':         config.apiKey,
+    'authorization': `Bearer ${config.authToken || config.apiKey}`,
+  };
+  if (config.internalKey) {
+    headers['x-internal-key'] = config.internalKey;
+    if (config.internalCaller) headers['x-internal-caller'] = config.internalCaller;
+  }
+  return headers;
 }
 
 export type EdgeOp = 'generate' | 'extract_json' | 'embed' | 'stream';
@@ -81,11 +111,7 @@ export class AiGatewayEdgeClient {
       const res = await this.fetchImpl(this.endpoint, {
         method: 'POST',
         signal: controller.signal,
-        headers: {
-          'content-type': 'application/json',
-          'apikey': this.config.apiKey,
-          'authorization': `Bearer ${this.config.apiKey}`,
-        },
+        headers: gatewayHeaders(this.config),
         body: JSON.stringify({ op: 'stream', ...request } satisfies EdgeRequestBody),
       });
       if (!res.body) {
@@ -141,11 +167,7 @@ export class AiGatewayEdgeClient {
       const res = await this.fetchImpl(this.endpoint, {
         method: 'POST',
         signal: controller.signal,
-        headers: {
-          'content-type':  'application/json',
-          'apikey':         this.config.apiKey,
-          'authorization': `Bearer ${this.config.apiKey}`,
-        },
+        headers: gatewayHeaders(this.config),
         body: JSON.stringify({ op, ...request } satisfies EdgeRequestBody),
       });
 

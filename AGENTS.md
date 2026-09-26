@@ -45,9 +45,17 @@ Stelle.
   `implementation-status.ts`, `public-nav.ts`), nicht aus der Komponente.
 
 **Ein Teil von `components/landing/` hängt an nichts.** Gemessen auf
-`c79231a`: 10 von 47 Dateien ohne Importeur, darunter `ThemeSwitch.tsx` und
-`use-ga-theme.ts`. Die Zahl bewegt sich mit jedem Landing-PR; `npm run
-check:dead` nennt den jeweils aktuellen Stand.
+`d9c683b` nach diesem Aufraeumen: 22 von 48 Dateien ohne Importeur — der
+Grossteil sind Bausteine abgeloester Startseiten-Fassungen. Die Zahl bewegt sich mit jedem
+Landing-PR; `npm run check:dead` nennt den jeweils aktuellen Stand.
+
+`check:dead` ist dabei **kein Loeschbeleg**, sondern ein Verdacht: Es misst
+den Importgraphen und sieht weder dynamische Importe noch Referenzen aus
+Tests, Skripten, Registries oder CSS. Vor jeder Loeschung deshalb zusaetzlich
+repo-weit auf Dateinamen und Exportnamen greppen. Zwei Fallen sind belegt:
+Kandidaten haengen oft aneinander und muessen als Gruppe gehen, und
+`components/landing/GovernanceStatusBar.tsx` ist tot, waehrend die
+gleichnamige Datei unter `components/governance-os/` live ist.
 
 **Vor dem Wiederverwenden prüfen, ob die Datei noch hängt.** Eine Datei in
 `components/landing/` zu finden heißt nicht, dass sie gerendert wird.

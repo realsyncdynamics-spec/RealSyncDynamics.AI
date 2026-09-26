@@ -58,4 +58,11 @@ describe('Command Center surface', () => {
     expect(browserRuntime).toContain('EVIDENCE INACTIVE');
     expect(browserRuntime).not.toContain("{ label: 'Scan', available: true");
   });
+
+  it('wires free-text planning through browser-execute op plan', () => {
+    expect(browserRuntime).toContain('planBrowserTask');
+    expect(browserRuntime).toContain('browser-task-plan');
+    expect(browserRuntime).toContain('Plan ausführen');
+    expect(browserRuntime).not.toContain('Freitext-Agentenplanung ist noch nicht aktiviert');
+  });
 });

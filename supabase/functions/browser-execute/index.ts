@@ -1,5 +1,7 @@
 import { jsonError, jsonResponse, handleOptions } from '../_shared/gateway.ts';
 import { requireAuthAndTenant } from '../_shared/auth.ts';
+import { AiInvokeError, runAiTool } from '../_shared/ai.ts';
+import { MAX_TASK_CHARS, buildPlannerInput, parseBrowserPlan } from '../_shared/browser-plan.ts';
 
 type BrowserAction =
   | { type: 'navigate'; url: string }
@@ -12,11 +14,14 @@ type BrowserAction =
   | { type: 'screenshot' };
 
 interface BrowserExecuteBody {
-  op?: 'execute' | 'health';
+  op?: 'execute' | 'health' | 'plan';
   tenant_id?: string;
   session_id?: string;
   actions?: BrowserAction[];
   approval_id?: string;
+  /** op: 'plan' — Freitext-Aufgabe und optional die aktuelle Seite. */
+  task?: string;
+  current_url?: string;
 }
 
 const MUTATING_ACTIONS = new Set<BrowserAction['type']>(['click', 'type', 'select']);
@@ -138,6 +143,36 @@ Deno.serve(async (req: Request) => {
 
   const auth = await requireAuthAndTenant(req, body.tenant_id);
   if (auth instanceof Response) return auth;
+
+  // Freitext → Aktionsplan. Braucht keinen Executor und führt nichts aus;
+  // Tarif-Gate, Quota, Residency und Logging (ai_tool_runs) über runAiTool.
+  if (body.op === 'plan') {
+    const task = typeof body.task === 'string' ? body.task.trim() : '';
+    if (!task || task.length > MAX_TASK_CHARS) {
+      return jsonError(400, 'BAD_REQUEST', `task must be 1..${MAX_TASK_CHARS} chars`);
+    }
+    const currentUrl = typeof body.current_url === 'string' && /^https?:\/\//i.test(body.current_url)
+      ? body.current_url.slice(0, 2000)
+      : null;
+    try {
+      const ai = await runAiTool(
+        auth.admin,
+        auth.tenantId,
+        auth.user.id,
+        'browser_task_planner',
+        buildPlannerInput(task, currentUrl),
+        { maxInputChars: 4000, metadata: { source: 'browser-execute.plan' } },
+      );
+      const plan = parseBrowserPlan(ai.output);
+      if (plan.kind === 'invalid') {
+        return jsonError(502, 'PLAN_INVALID', plan.error, undefined, { run_id: ai.runId });
+      }
+      return jsonResponse({ ok: true, run_id: ai.runId, ...plan });
+    } catch (e) {
+      if (e instanceof AiInvokeError) return jsonError(e.status, e.code, e.message, undefined, e.details);
+      return jsonError(500, 'PLAN_FAILED', 'browser task planning failed');
+    }
+  }
 
   const scannerUrl = Deno.env.get('PLAYWRIGHT_SCANNER_URL');
   const scannerKey = Deno.env.get('PLAYWRIGHT_SCANNER_KEY');

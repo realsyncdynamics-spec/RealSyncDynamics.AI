@@ -1816,13 +1816,33 @@ html, body {
    Sektionen unter dem Hero lesen weiter die `--ga-*`-Variablen; dieser Scope
    stellt sie auf die Handoff-Palette (Cyan-Akzent, kein Gold) und die
    Titel-Schrift auf Inter Tight. Andere Design-Routen bleiben unberührt. */
+/* Governance-OS-Palette (Dark Titanium / Graphit, Cyan nur als System-
+   indikator). Gilt ausschließlich im Scope der Startseite `/`: Die
+   `--color-rs-*`-Werte werden hier überschrieben, App und Dashboard behalten
+   ihre Werte aus `@theme`. */
+.ga-context.rs-handoff {
+  --color-rs-hero:          #080B0F;
+  --color-rs-bg-0:          #0D1218;
+  --color-rs-bg-1:          #121922;
+  --color-rs-bg-2:          #18212B;
+  --color-rs-bg-3:          #1E2934;
+  --color-rs-fg-0:          #F2F5F7;
+  --color-rs-fg-1:          #A8B3BD;
+  --color-rs-fg-2:          #707E8B;
+  --color-rs-fg-3:          #56626E;
+  --color-rs-border:        #26323D;
+  --color-rs-border-strong: #34424F;
+  --color-rs-cyan:          #22D3EE;
+  --color-rs-cyan-light:    #67E8F9;
+}
+
 .ga-context.rs-handoff {
   color-scheme: dark;
   --ga-display: var(--font-rs-title);
   --ga-void: var(--color-rs-hero);
   --ga-deep: var(--color-rs-bg-0);
   --ga-mid: var(--color-rs-bg-1);
-  --ga-panel: rgba(13, 19, 34, 0.72);
+  --ga-panel: rgba(18, 25, 34, 0.78);
   --ga-text: var(--color-rs-fg-0);
   --ga-muted: var(--color-rs-fg-1);
   --ga-titan: var(--color-rs-fg-2);
@@ -1831,34 +1851,35 @@ html, body {
   --ga-accent: var(--color-rs-cyan);
   --ga-accent-lite: var(--color-rs-cyan-light);
   --ga-accent-deep: #0e8aa6;
-  --ga-accent-border: rgba(0, 184, 212, 0.35);
+  --ga-accent-border: rgba(34, 211, 238, 0.32);
   /* Die VIP-Stufe war Gold; im Handoff gibt es kein Gold. Violett ist die
      vorgesehene Sekundärfarbe (Management/Enterprise). */
-  --ga-vip: var(--color-rs-violet);
+  --ga-vip: var(--color-rs-fg-2);
   --ga-vip-lite: #a996ff;
   --ga-vip-deep: #5b3fd9;
   --ga-vip-border: rgba(124, 92, 255, 0.4);
   --ga-line: var(--color-rs-border);
-  --ga-line-soft: rgba(31, 43, 72, 0.7);
-  --ga-pill-face: linear-gradient(180deg, #2b66ff, var(--color-rs-primary));
-  --ga-pill-ink: #ffffff;
-  --ga-pill-shadow: 0 1px 0 rgba(255, 255, 255, 0.12) inset, 0 8px 24px rgba(30, 90, 255, 0.3);
-  --ga-ghost-face: rgba(13, 19, 34, 0.7);
-  --ga-ghost-face-hover: rgba(0, 184, 212, 0.1);
+  --ga-line-soft: rgba(38, 50, 61, 0.85);
+  /* Primäraktion in Titan-Weiß: Cyan bleibt Systemindikator. */
+  --ga-pill-face: linear-gradient(180deg, #F7F9FA, #D6DDE2);
+  --ga-pill-ink: #080B0F;
+  --ga-pill-shadow: 0 1px 0 rgba(255, 255, 255, 0.6) inset, 0 10px 30px rgba(0, 0, 0, 0.45);
+  --ga-ghost-face: rgba(18, 25, 34, 0.72);
+  --ga-ghost-face-hover: rgba(242, 245, 247, 0.06);
   --ga-ghost-border: var(--color-rs-border-strong);
   --ga-ghost-border-hover: var(--color-rs-cyan-light);
-  --ga-chip-face: rgba(0, 184, 212, 0.08);
+  --ga-chip-face: rgba(34, 211, 238, 0.06);
   --ga-h1-face: linear-gradient(var(--color-rs-fg-0), var(--color-rs-fg-0));
-  --ga-h1-accent: linear-gradient(var(--color-rs-cyan-light), var(--color-rs-cyan));
-  --ga-h2-accent: linear-gradient(var(--color-rs-cyan-light), var(--color-rs-cyan));
-  --ga-glass: linear-gradient(160deg, rgba(20, 32, 58, 0.72), rgba(13, 19, 34, 0.72) 60%);
-  --ga-band: linear-gradient(180deg, rgba(7, 11, 20, 0.6), rgba(7, 11, 20, 0.88));
-  --ga-band-alt: linear-gradient(180deg, rgba(7, 11, 20, 0.88), rgba(7, 11, 20, 0.6));
+  --ga-h1-accent: linear-gradient(var(--color-rs-fg-0), var(--color-rs-fg-1));
+  --ga-h2-accent: linear-gradient(180deg, var(--color-rs-fg-1), var(--color-rs-fg-2));
+  --ga-glass: linear-gradient(160deg, rgba(24, 33, 43, 0.9), rgba(18, 25, 34, 0.9) 60%);
+  --ga-band: var(--color-rs-hero);
+  --ga-band-alt: var(--color-rs-bg-0);
   --ga-status-bg: var(--color-rs-bg-0);
   --ga-ticker-bg: var(--color-rs-bg-0);
   --ga-footer-bg: var(--color-rs-bg-0);
-  --ga-price-face: linear-gradient(180deg, #ffffff 0%, var(--color-rs-cyan-light) 100%);
-  --ga-featured-shadow: 0 0 0 1px rgba(30, 90, 255, 0.45), 0 12px 32px rgba(0, 0, 0, 0.45);
+  --ga-price-face: linear-gradient(180deg, #ffffff 0%, var(--color-rs-fg-1) 100%);
+  --ga-featured-shadow: 0 0 0 1px rgba(242, 245, 247, 0.22), 0 24px 60px rgba(0, 0, 0, 0.55);
   font-feature-settings: "ss01", "cv11";
 }
 .rs-handoff .ga-vip {

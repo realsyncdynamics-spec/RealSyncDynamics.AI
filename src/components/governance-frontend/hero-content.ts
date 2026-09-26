@@ -21,11 +21,11 @@ export const GOVERNANCE_AI_HERO_KICKER = 'EU CONTROL & EVIDENCE LAYER FOR AI' as
 export const GOVERNANCE_AI_HERO_HEADLINE: readonly (readonly HeroHeadlineSegment[])[] = HERO_HEADLINE;
 
 /**
- * Substring der sichtbaren H1 auf `/` („Das Kontrollsystem für Ihre
- * Unternehmens-KI.", `src/i18n/handoff.ts`, Positionierung 2026-09-26).
+ * Substring der sichtbaren H1 auf `/` („Ihre KI kann handeln. Jetzt braucht
+ * sie Governance.", `src/i18n/handoff.ts`, Governance-OS-Positionierung).
  * Genutzt von tests/e2e/public-routes.spec.ts (FE-001).
  */
-export const GOVERNANCE_AI_HERO_TEST_SUBSTRING = 'Kontrollsystem' as const;
+export const GOVERNANCE_AI_HERO_TEST_SUBSTRING = 'kann handeln' as const;
 
 export const GOVERNANCE_AI_HERO_SUBLINE =
   'RealSyncDynamics.AI erkennt KI- und Compliance-Risiken, setzt Richtlinien durch und erzeugt kontinuierliche Evidenz für EU AI Act und DSGVO.' as const;
@@ -115,32 +115,23 @@ export const HERO_SCAN_CTA_PROMISE =
   'URL oder Kontext eingeben — Risiken, Policy-Hinweise und Evidence-Preview. Danach Activation, nicht nur der Score.' as const;
 
 /*
- * Startseite `/` — Positionierung 2026-09-26 (B2B-Funnel).
+ * Startseite `/` — Governance-OS-Positionierung (Enterprise Control Plane).
  *
- * Reihenfolge: Problem → Governance-Modell → Governance-Check → Agent
- * Governance → Provider-Neutralität → Evidence → Prinzipien → Zielgruppen.
+ * Kategorie: AI Governance OS — nicht „EU-AI-Act-Software". Compliance ist ein
+ * Ergebnis guter Governance, Governance ist das Produkt.
  *
- * Claim-Regel: Jede Aussage hier ist durch Code belegt (Belege im PR). Der
- * `status` einer Stufe kommt aus `src/product/implementation-status.ts` —
- * wer dort etwas zurückstuft, muss es hier mitziehen.
+ * Claim-Regel: Jede Aussage hier ist durch Code belegt (Belege im PR #1612).
+ * Alles, was Zahlen oder Statuswerte zeigt, ist als Beispiel gekennzeichnet
+ * (`DEMO_LABEL`) — es gibt keine Live-Kundendaten auf der Startseite.
  */
 
-/** Wiedererkennung — sachlich, ohne Schadenssummen. */
-export const HOMEPAGE_PROBLEM_PAINS = [
-  'Mitarbeitende nutzen mehrere KI-Anbieter parallel.',
-  'Sensible Informationen landen möglicherweise in unterschiedlichen Systemen.',
-  'Einzelne Teams bauen eigene Automationen.',
-  'Erste Agenten führen selbstständig Aktionen aus.',
-  'Verantwortlichkeiten sind über Teams verteilt.',
-  'Freigaben laufen manuell über Chat oder E-Mail.',
-  'Niemand kann zentral beantworten, welche Regeln für welche KI gelten.',
-  'Im Nachhinein fehlt eine vollständige Nachweiskette.',
-] as const;
+/** Kennzeichnung jeder Beispielfläche (Pipeline, Control Room, System-Story). */
+export const DEMO_LABEL = 'Beispielumgebung · Demo-Daten' as const;
 
 export type HomepageStageStatus = 'live' | 'preview';
 
-/** Governance-Modell: technische Funktion → Geschäftsnutzen. */
-export const HOMEPAGE_GOVERNANCE_STAGES: readonly {
+/** Geführte Produktdemonstration 01–07 (`GovernanceSystemStory`). */
+export const SYSTEM_STORY_CHAPTERS: readonly {
   id: string;
   step: string;
   title: string;
@@ -148,121 +139,236 @@ export const HOMEPAGE_GOVERNANCE_STAGES: readonly {
   status: HomepageStageStatus;
 }[] = [
   {
+    id: 'landscape',
+    step: 'AI LANDSCAPE',
+    title: 'KI wächst schneller als die Kontrolle darüber.',
+    body: 'Mehrere Anbieter, eigene Automationen, erste Agenten — und niemand kann zentral sagen, welche Regeln gelten.',
+    status: 'live',
+  },
+  {
     id: 'discover',
     step: 'DISCOVER',
-    title: 'Wissen, welche KI tatsächlich eingesetzt wird.',
-    body: 'Ein zentrales Inventar bekannter KI-Systeme, Anbieter, Anwendungen und Verantwortlichkeiten.',
+    title: 'Jedes KI-System bekommt einen Namen und einen Owner.',
+    body: 'Ein Inventar über Systeme, Anbieter, Anwendungen und Verantwortliche.',
     status: 'live',
   },
   {
     id: 'assess',
     step: 'ASSESS',
-    title: 'Risiken erkennen, bevor KI produktiv eskaliert.',
-    body: 'Anwendungen werden nach definierten Kriterien bewertet — Handlungsbedarf wird sichtbar.',
+    title: 'Risiko wird bewertet, bevor es eskaliert.',
+    body: 'Klassifizierung nach definierten Kriterien — Handlungsbedarf wird sichtbar.',
     status: 'live',
   },
   {
     id: 'govern',
     step: 'GOVERN',
-    title: 'Festlegen, wer was mit welcher KI tun darf.',
-    body: 'Policies, Rollen und Freigaben steuern sensible oder kritische Aktionen.',
+    title: 'Policies legen fest, wer was darf.',
+    body: 'Regeln, Rollen und Freigaben gelten für jedes System — nicht je Tool.',
     status: 'live',
   },
   {
     id: 'execute',
     step: 'EXECUTE',
-    title: 'Agenten handeln — innerhalb definierter Grenzen.',
-    body: 'Vor der Ausführung stehen Identitäts-, Tenant-, Policy-, Risiko- und bei Bedarf Freigabeprüfung.',
+    title: 'Ausgeführt wird erst nach der Entscheidung.',
+    body: 'Identität, Tenant, Policy, Risiko und bei Bedarf Freigabe stehen vor jeder Aktion.',
     status: 'preview',
+  },
+  {
+    id: 'verify',
+    step: 'VERIFY',
+    title: 'Das Ergebnis wird gegen die Entscheidung geprüft.',
+    body: 'Die Integrität der Nachweiskette lässt sich jederzeit nachrechnen.',
+    status: 'live',
   },
   {
     id: 'prove',
     step: 'PROVE',
-    title: 'Nachweisen, was tatsächlich passiert ist.',
-    body: 'Entscheidungen, Freigaben und Ausführungen können hash-verkettet dokumentiert werden.',
+    title: 'Jede Entscheidung bleibt belegbar.',
+    body: 'Entscheidungen und Freigaben landen SHA-256-verkettet in der Evidence Chain.',
     status: 'live',
   },
 ] as const;
 
-/** Authority Chain — serverseitige Reihenfolge einer Agenten-Aktion. */
-export const HOMEPAGE_AUTHORITY_CHAIN: readonly { step: string; body: string; conditional?: boolean }[] = [
-  { step: 'Request', body: 'Mensch oder Agent möchte eine Aktion ausführen.' },
-  { step: 'Identity', body: 'Wer fragt an — authentifiziert, nicht behauptet.' },
-  { step: 'Tenant', body: 'Welcher Mandant — serverseitig abgeleitet, nicht vom Client übernommen.' },
-  { step: 'Policy', body: 'Welche Regel gilt für diese Aktion?' },
-  { step: 'Risk', body: 'Wie kritisch ist sie im Kontext?' },
-  { step: 'Approval', body: 'Menschliche Freigabe, wenn die Policy sie verlangt.', conditional: true },
-  { step: 'Execution', body: 'Erst jetzt handelt der Execution-Provider.' },
-  { step: 'Verification', body: 'Ergebnis gegen die Entscheidung prüfen.' },
-  { step: 'Evidence', body: 'Entscheidung und Ausführung landen in der Nachweiskette.' },
+/** Beispielsysteme der System-Story — generisch, keine Kundendaten. */
+export const SYSTEM_STORY_ROWS: readonly {
+  system: string;
+  owner: string;
+  risk: 'niedrig' | 'mittel' | 'hoch';
+  policy: string;
+  execution: string;
+}[] = [
+  { system: 'Chat-Assistent (Cloud)', owner: 'IT', risk: 'mittel', policy: 'Keine Kundendaten', execution: 'erlaubt' },
+  { system: 'Support-Bot', owner: 'Service', risk: 'mittel', policy: 'Transparenzhinweis', execution: 'erlaubt' },
+  { system: 'Rechnungs-Agent', owner: 'Finance', risk: 'hoch', policy: 'Freigabe ab Schwelle', execution: 'Freigabe' },
+  { system: 'Code-Assistent', owner: 'Engineering', risk: 'niedrig', policy: 'Repo-Scope', execution: 'erlaubt' },
+  { system: 'Eigenes Modell (EU-lokal)', owner: 'Data', risk: 'mittel', policy: 'Nur EU-Region', execution: 'erlaubt' },
 ] as const;
 
-export const HOMEPAGE_AGENT_PRINCIPLES = [
-  'Der Agent entscheidet nicht selbst über seine Berechtigung.',
-  'Policies und Tenant-Zuordnung bleiben serverseitig autoritativ.',
-  'Frontend-State, LocalStorage oder Provider-Antworten sind nie Governance-Authority.',
+export type PipelineStatusTone = 'ok' | 'warn' | 'block' | 'idle';
+
+/** Signature Governance Pipeline — Szenarien mit Beispiel-Statuswerten. */
+export const PIPELINE_STAGES = [
+  'Request',
+  'Identity',
+  'Tenant',
+  'Policy',
+  'Risk',
+  'Approval',
+  'Execution',
+  'Verification',
+  'Evidence',
 ] as const;
+
+export type PipelineScenarioId = 'approval' | 'violation' | 'routine';
+
+export const PIPELINE_SCENARIOS: Record<
+  PipelineScenarioId,
+  {
+    label: string;
+    actor: string;
+    action: string;
+    /** Statuswert und Ton je Stufe, gleiche Reihenfolge wie PIPELINE_STAGES. */
+    results: readonly (readonly [string, PipelineStatusTone])[];
+  }
+> = {
+  approval: {
+    label: 'Freigabe erforderlich',
+    actor: 'finance-agent',
+    action: 'Zahlung an neuen Lieferanten auslösen',
+    results: [
+      ['RECEIVED', 'ok'],
+      ['VERIFIED', 'ok'],
+      ['RESOLVED', 'ok'],
+      ['REQUIRE APPROVAL', 'warn'],
+      ['HIGH', 'warn'],
+      ['APPROVED', 'ok'],
+      ['RELEASED', 'ok'],
+      ['SUCCESS', 'ok'],
+      ['RECORDED', 'ok'],
+    ],
+  },
+  violation: {
+    label: 'Policy-Verstoß',
+    actor: 'support-agent',
+    action: 'Kundendaten an externes Modell senden',
+    results: [
+      ['RECEIVED', 'ok'],
+      ['VERIFIED', 'ok'],
+      ['RESOLVED', 'ok'],
+      ['BLOCKED', 'block'],
+      ['—', 'idle'],
+      ['—', 'idle'],
+      ['NOT EXECUTED', 'block'],
+      ['—', 'idle'],
+      ['RECORDED', 'ok'],
+    ],
+  },
+  routine: {
+    label: 'Routine-Aktion',
+    actor: 'code-assistant',
+    action: 'Pull-Request-Beschreibung erstellen',
+    results: [
+      ['RECEIVED', 'ok'],
+      ['VERIFIED', 'ok'],
+      ['RESOLVED', 'ok'],
+      ['ALLOW', 'ok'],
+      ['LOW', 'ok'],
+      ['NOT REQUIRED', 'idle'],
+      ['RELEASED', 'ok'],
+      ['SUCCESS', 'ok'],
+      ['RECORDED', 'ok'],
+    ],
+  },
+};
+
+/** Index der Freigabe-Stufe — dort hält das Szenario `approval` an. */
+export const PIPELINE_APPROVAL_INDEX = PIPELINE_STAGES.indexOf('Approval');
+
+/** Agent Governance: was ein Agent ausdrücklich nicht darf. */
+export const AGENT_CANNOT = [
+  'seine eigene Identität bestimmen',
+  'seinen Tenant wählen',
+  'Policies außer Kraft setzen',
+  'eigene kritische Aktionen genehmigen',
+] as const;
+
+export const AGENT_LAYER = ['Identity', 'Tenant', 'Policy', 'Risk', 'Approval'] as const;
 
 /**
  * Serverseitig angebundene Provider (Adapter in `supabase/functions/_shared`).
- * Grok/xAI und Mistral sind nicht angebunden und stehen deshalb nicht hier.
+ * Grok/xAI, Mistral und MCP-Tool-Governance sind nicht angebunden und stehen
+ * deshalb nicht hier.
  */
 export const HOMEPAGE_PROVIDERS = [
   { name: 'OpenAI', note: 'Cloud' },
   { name: 'Anthropic · Claude', note: 'Cloud' },
   { name: 'Google · Gemini', note: 'Cloud · eingeschränkt' },
-  { name: 'Eigene Modelle · Ollama', note: 'EU-lokal' },
+  { name: 'Eigene Modelle', note: 'Ollama · LM Studio · EU-lokal' },
 ] as const;
 
-export const HOMEPAGE_EVIDENCE_FLOW = [
-  'Entscheidung',
-  'Freigabe',
-  'Ausführung',
-  'Verifikation',
-  'Evidence',
+/** Control Room — ausschließlich Beispielwerte, sichtbar gekennzeichnet. */
+export const CONTROL_ROOM_METRICS = [
+  { label: 'Aktive KI-Systeme', value: '12' },
+  { label: 'Policy-Entscheidungen · 7 Tage', value: '184' },
+  { label: 'Offene Freigaben', value: '3' },
+  { label: 'Blockierte Ausführungen', value: '2' },
+  { label: 'Evidence-Einträge', value: '1.248' },
 ] as const;
 
-/** Technische Prinzipien statt Siegel — jedes durch Code belegt. */
+/** Verdikte entsprechen dem Vokabular des Policy Decision Point. */
+export const CONTROL_ROOM_DECISIONS: readonly {
+  time: string;
+  actor: string;
+  action: string;
+  verdict: 'allow' | 'warn' | 'block' | 'require_approval' | 'log_only';
+}[] = [
+  { time: '09:41:12', actor: 'finance-agent', action: 'payment.create', verdict: 'require_approval' },
+  { time: '09:40:57', actor: 'support-agent', action: 'model.invoke · external', verdict: 'block' },
+  { time: '09:40:31', actor: 'code-assistant', action: 'repo.pr.describe', verdict: 'allow' },
+  { time: '09:39:48', actor: 'marketing-flow', action: 'content.publish', verdict: 'warn' },
+  { time: '09:39:02', actor: 'chat-assistant', action: 'model.invoke · eu-local', verdict: 'log_only' },
+] as const;
+
+/** Wirtschaftlicher Nutzen — ohne ROI-Zahlen. */
+export const HOMEPAGE_VALUE = [
+  'Zentrale Kontrolle über alle KI-Systeme',
+  'Weniger manuelle Freigaben per Chat und E-Mail',
+  'Weniger Tool-Wildwuchs',
+  'Klare Verantwortlichkeiten je System',
+  'Agenten mit definierten Grenzen',
+  'Wiederverwendbare Policies statt Einzelregeln',
+  'Nachvollziehbarkeit ohne Audit-Feuerwehr',
+  'Schnellere Freigabe neuer KI-Use-Cases',
+] as const;
+
+/** Executive-Sektion: eine Control Plane, drei Ebenen. */
+export const CONTROL_PLANE_LAYERS = [
+  { layer: 'EXECUTIVE', title: 'Sichtbarkeit, Verantwortung, Risiko', body: 'Welche KI läuft, wem sie gehört, wo das Risiko liegt.' },
+  { layer: 'GOVERNANCE', title: 'Policies, Freigaben, Evidence', body: 'Regeln setzen, Ausnahmen freigeben, Entscheidungen belegen.' },
+  { layer: 'ENGINEERING', title: 'Identität, Ausführung, Provider', body: 'Jeder Aufruf authentifiziert, entschieden und protokolliert.' },
+] as const;
+
+/** Vertrauen durch Architektur — jedes Prinzip durch Code belegt. */
 export const HOMEPAGE_TRUST_PRINCIPLES = [
   {
-    title: 'Tenant-Isolation',
-    body: 'Row-Level-Security in der Datenbank trennt Mandanten — nicht nur die App-Logik.',
+    title: 'Server-autoritative Mandanten',
+    body: 'Row-Level-Security trennt Tenants in der Datenbank; der Tenant wird serverseitig abgeleitet, nie vom Client übernommen.',
   },
   {
-    title: 'Serverseitige Autorisierung',
-    body: 'Berechtigungen prüfen Edge Functions; privilegierte Schlüssel verlassen nie den Server.',
-  },
-  {
-    title: 'Policy Gates',
-    body: 'Entscheidungen: erlauben, warnen, blockieren, Freigabe verlangen — beobachtend oder durchsetzend konfigurierbar.',
+    title: 'Policy-basierte Ausführung',
+    body: 'Der Policy Decision Point entscheidet: erlauben, warnen, blockieren, Freigabe verlangen — beobachtend oder durchsetzend.',
   },
   {
     title: 'Human Approval',
-    body: 'Freigaben nur durch berechtigte Rollen; jede Entscheidung wird protokolliert.',
+    body: 'Freigaben nur durch berechtigte Rollen; jede Entscheidung erzeugt einen Nachweis.',
   },
   {
-    title: 'Evidence Logging',
-    body: 'SHA-256-verkettete Einträge, gegen nachträgliche Änderung per Datenbank-Trigger gesperrt, mit Integritätsprüfung.',
+    title: 'Provider-Trennung',
+    body: 'Die Entscheidung liegt außerhalb der Modell-Adapter — kein Provider bewertet sich selbst.',
   },
   {
-    title: 'Provider Separation',
-    body: 'Die Policy-Entscheidung liegt außerhalb der Modell-Adapter — kein Provider bewertet sich selbst.',
-  },
-] as const;
-
-/** Primärer ICP — Unternehmen mit mehreren KI-Systemen oder Automationen. */
-export const HOMEPAGE_AUDIENCES = [
-  {
-    title: 'KMU & Mid-Market',
-    body: 'Mehrere KI-Anbieter im Einsatz, aber keine zentrale Sicht auf Regeln und Verantwortliche.',
-  },
-  {
-    title: 'Agenturen & Tech-Dienstleister',
-    body: 'Komplexe KI-Workflows für Kunden — mit nachweisbaren Freigaben statt Chat-Absprachen.',
-  },
-  {
-    title: 'Teams mit ersten Agenten',
-    body: 'Automationen und Agenten gehen produktiv — Governance und Nachweisbarkeit müssen mitwachsen.',
+    title: 'Prüfbare Evidence',
+    body: 'SHA-256-verkettete Einträge, gegen nachträgliche Änderung per Trigger gesperrt, mit Integritätsprüfung.',
   },
 ] as const;
 

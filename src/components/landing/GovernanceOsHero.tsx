@@ -5,9 +5,11 @@
  * Tiefenebene, Overlays; Nav mit DE/EN; H1 Newsreader 80px; Loop
  * DISCOVER → ASSESS → GOVERN → PROVE; zwei CTAs.
  *
- * Positionierung 2026-09-26: Einstieg über das Kontrollproblem (Hook statt
- * Normen-Badge). Der Erst-CTA führt in den Governance-Check auf derselben
- * Seite (`#governance-check`), der Zweit-CTA ins Governance-Modell. Vertrag:
+ * Governance-OS-Positionierung: Kategorie-Eyebrow statt Normen-Badge, H1
+ * „Ihre KI kann handeln. Jetzt braucht sie Governance.", Loop über alle
+ * sechs Stufen. Erst-CTA → interaktive Pipeline (`#pipeline`), Zweit-CTA →
+ * Architektur (`#architecture`), Enterprise als Textlink. Die Karte trägt
+ * die belegte Datengrenze (Supabase eu-central-1). Vertrag:
  * test/landing/homepage-hero.test.tsx.
  *
  * Die Karte ist das Handoff-Asset `public/europe-map-v2.png` (1052×1152) mit
@@ -83,18 +85,18 @@ export function GovernanceOsHero() {
 
   const landingNav = lang === 'de'
     ? [
-        { label: 'Plattform', to: '/#governance-model', prominent: true },
-        { label: 'Agenten', to: '/#agent-governance', prominent: false },
+        { label: 'Plattform', to: '/#system', prominent: true },
+        { label: 'Pipeline', to: '/#pipeline', prominent: false },
+        { label: 'Architektur', to: '/#architecture', prominent: false },
         { label: 'Governance', to: '/governance-runtime', prominent: false },
-        { label: 'Evidence', to: '/#evidence', prominent: false },
         { label: 'Preise', to: '/#pricing', prominent: true },
         { label: 'Login', to: '/login', prominent: false },
       ]
     : [
-        { label: 'Platform', to: '/#governance-model', prominent: true },
-        { label: 'Agents', to: '/#agent-governance', prominent: false },
+        { label: 'Platform', to: '/#system', prominent: true },
+        { label: 'Pipeline', to: '/#pipeline', prominent: false },
+        { label: 'Architecture', to: '/#architecture', prominent: false },
         { label: 'Governance', to: '/governance-runtime', prominent: false },
-        { label: 'Evidence', to: '/#evidence', prominent: false },
         { label: 'Pricing', to: '/#pricing', prominent: true },
         { label: 'Login', to: '/login', prominent: false },
       ];
@@ -119,6 +121,10 @@ export function GovernanceOsHero() {
       <div className="rs-hero__overlay rs-hero__fade-x" aria-hidden="true" />
       <div className="rs-hero__overlay rs-hero__vignette" aria-hidden="true" />
       <div className="rs-hero__overlay rs-hero__dots" aria-hidden="true" />
+      <p className="rs-hero__boundary">
+        <span className="rs-hero__boundary-dot" aria-hidden="true" />
+        {t('heroBoundary')}
+      </p>
 
       <header className="rs-nav">
         <BrandWordmark />
@@ -135,7 +141,7 @@ export function GovernanceOsHero() {
         </nav>
         <div className="rs-nav__tools">
           <LangToggle />
-          <a href="#governance-check" className="rs-btn rs-btn--primary rs-btn--h40">
+          <a href="#pipeline" className="rs-btn rs-btn--primary rs-btn--h40">
             {t('cta')}
           </a>
         </div>
@@ -182,7 +188,7 @@ export function GovernanceOsHero() {
             <LangToggle />
           </div>
           <a
-            href="#governance-check"
+            href="#pipeline"
             className="rs-btn rs-btn--primary rs-btn--h52 mt-4 w-full"
             onClick={() => setMenuOpen(false)}
           >
@@ -194,11 +200,7 @@ export function GovernanceOsHero() {
 
       <div className="rs-hero__body">
         <div className="rs-hero__content">
-          <p className="rs-hero__hook">
-            <span>{t('heroHookA')}</span>{' '}
-            <span>{t('heroHookB')}</span>{' '}
-            <strong>{t('heroHookC')}</strong>
-          </p>
+          <p className="rs-hero__eyebrow">{t('heroEyebrow')}</p>
 
           <h1 id="hero-heading" className="rs-hero__h1">
             <span className="rs-hero__h1-line">{t('heroA')}</span>
@@ -212,8 +214,8 @@ export function GovernanceOsHero() {
             {t('sub1')} {t('sub2')}
           </p>
 
-          <ol className="rs-loop" aria-label="DISCOVER → ASSESS → GOVERN → PROVE">
-            {(['loopDiscover', 'loopAssess', 'loopGovern', 'loopProve'] as const).map((key, i) => (
+          <ol className="rs-loop" aria-label="DISCOVER → ASSESS → GOVERN → EXECUTE → VERIFY → PROVE">
+            {(['loopDiscover', 'loopAssess', 'loopGovern', 'loopExecute', 'loopVerify', 'loopProve'] as const).map((key, i) => (
               <li key={key}>
                 {i > 0 && <ArrowRight size={14} aria-hidden="true" />}
                 <span>{t(key)}</span>
@@ -223,24 +225,33 @@ export function GovernanceOsHero() {
 
           <div className="rs-hero__ctas" role="group" aria-label={t('heroActions')}>
             <a
-              id="check-cta"
-              data-hero-cta="check"
+              id="pipeline-cta"
+              data-hero-cta="pipeline"
               data-testid="hero-primary-cta"
-              href="#governance-check"
+              href="#pipeline"
               className="rs-btn rs-btn--primary rs-btn--h52"
             >
               {t('cta')}
               <ArrowRight size={18} aria-hidden="true" />
             </a>
             <a
-              data-hero-cta="explore"
+              data-hero-cta="architecture"
               data-testid="hero-secondary-cta"
-              href="#governance-model"
+              href="#architecture"
               className="rs-btn rs-btn--glass rs-btn--h52"
             >
               {t('ctaExplore')}
             </a>
           </div>
+
+          <Link
+            to="/contact-sales?tier=enterprise&source=home-hero"
+            className="rs-hero__enterprise"
+            data-testid="hero-enterprise-link"
+          >
+            {t('ctaEnterprise')}
+            <ArrowRight size={14} aria-hidden="true" />
+          </Link>
 
           <p className="rs-hero__trust">{t('trustLine')}</p>
         </div>

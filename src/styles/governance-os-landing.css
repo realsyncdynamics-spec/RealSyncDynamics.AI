@@ -1,0 +1,429 @@
+/*
+ * Startseite `/` — Governance OS (Enterprise Control Plane).
+ *
+ * Alles hier ist auf `.rs-handoff` gescoped: Die Hero-Klassen (`rs-*`) teilt
+ * sich die Startseite mit Login, Audit und App — dort gilt weiter
+ * `governance-os-handoff.css`. Farben kommen aus den Tokens in `index.css`
+ * (`.ga-context.rs-handoff`); Cyan trägt nur Systemzustände.
+ */
+
+/* ── Hero ───────────────────────────────────────────────────────────── */
+
+.rs-handoff .rs-hero__fade-x {
+  background: linear-gradient(90deg, var(--color-rs-hero) 0%, var(--color-rs-hero) 34%, transparent 70%);
+}
+.rs-handoff .rs-hero__vignette {
+  background: linear-gradient(180deg, var(--color-rs-hero) 0%, transparent 18%, transparent 76%, var(--color-rs-hero) 100%);
+}
+/* Wärmeres Seitenlicht statt Blau-Glow: die Karte liest sich beleuchtet, nicht neonfarben. */
+.rs-handoff .rs-hero__glow {
+  background:
+    radial-gradient(55% 50% at 80% 40%, rgba(242, 245, 247, 0.07) 0%, transparent 70%),
+    radial-gradient(40% 40% at 72% 62%, rgba(34, 211, 238, 0.06) 0%, transparent 70%);
+}
+.rs-handoff .rs-hero__map-main {
+  filter: saturate(0.9) contrast(1.06) brightness(1.2);
+}
+
+.rs-handoff .rs-hero__eyebrow {
+  margin: 0;
+  font-family: var(--font-rs-mono);
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  color: var(--color-rs-fg-2);
+}
+
+.rs-handoff .rs-hero__h1 {
+  margin-top: 26px;
+  font-family: var(--font-rs-title);
+  font-weight: 600;
+  font-size: clamp(46px, 5.6vw, 88px);
+  line-height: 0.98;
+  letter-spacing: -0.045em;
+  color: var(--color-rs-fg-0);
+  text-shadow: none;
+}
+.rs-handoff .rs-hero__h1-accent {
+  color: transparent;
+  background-image: linear-gradient(180deg, var(--color-rs-fg-1), var(--color-rs-fg-2));
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+.rs-handoff .rs-hero__subline { color: var(--color-rs-fg-1); max-width: 600px; }
+
+.rs-handoff .rs-loop { color: var(--color-rs-fg-2); }
+
+.rs-handoff .rs-btn--primary {
+  color: var(--ga-pill-ink);
+  background: var(--ga-pill-face);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow: var(--ga-pill-shadow);
+}
+.rs-handoff .rs-btn--primary:not(:disabled):not([aria-disabled='true']):hover {
+  background: #ffffff;
+}
+.rs-handoff .rs-btn--primary:focus-visible,
+.rs-handoff .rs-btn--glass:focus-visible,
+.rs-handoff .rs-hero__enterprise:focus-visible {
+  outline: 2px solid var(--color-rs-cyan);
+  outline-offset: 3px;
+}
+.rs-handoff .rs-btn--glass {
+  background: rgba(18, 25, 34, 0.72);
+  border-color: var(--color-rs-border-strong);
+}
+.rs-handoff .rs-btn--glass:hover { border-color: var(--color-rs-fg-2); }
+
+.rs-handoff .rs-hero__enterprise {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 22px;
+  min-height: 44px;
+  font-family: var(--font-rs-ui);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-rs-fg-1);
+  text-decoration: none;
+  border-radius: 4px;
+}
+.rs-handoff .rs-hero__enterprise:hover { color: var(--color-rs-fg-0); }
+
+/* Belegte Datengrenze auf der Karte: macht die Karte zum Systemelement. */
+.rs-handoff .rs-hero__boundary {
+  position: absolute;
+  z-index: 2;
+  right: clamp(24px, 5vw, 72px);
+  bottom: clamp(28px, 6vh, 64px);
+  display: none;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  padding: 9px 14px;
+  border: 1px solid var(--color-rs-border-strong);
+  background: rgba(8, 11, 15, 0.72);
+  font-family: var(--font-rs-mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-rs-fg-1);
+}
+.rs-handoff .rs-hero__boundary-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 9999px;
+  background: var(--color-rs-cyan);
+}
+@media (min-width: 1024px) {
+  .rs-handoff .rs-hero__boundary { display: inline-flex; }
+}
+@media (max-width: 767px) {
+  .rs-handoff .rs-hero__h1 { font-size: 44px; letter-spacing: -0.04em; }
+}
+
+/* ── Gemeinsame Bausteine der Folgesektionen ───────────────────────── */
+
+.rs-handoff .os-section {
+  position: relative;
+  z-index: 1;
+  border-top: 1px solid var(--ga-line-soft);
+  padding: clamp(72px, 9vw, 136px) 4vw;
+}
+.rs-handoff .os-section--alt { background: var(--color-rs-bg-0); }
+.rs-handoff .os-inner { margin: 0 auto; width: 100%; max-width: 1200px; }
+
+.rs-handoff .os-kicker {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-family: var(--font-rs-mono);
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  color: var(--color-rs-fg-2);
+}
+.rs-handoff .os-kicker b { font-weight: 500; color: var(--color-rs-fg-0); }
+.rs-handoff .os-kicker::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--ga-line-soft);
+}
+
+/* Editoriale Großtypografie. */
+.rs-handoff .os-display {
+  margin: 28px 0 0;
+  font-family: var(--font-rs-title);
+  font-weight: 600;
+  font-size: clamp(40px, 6.4vw, 104px);
+  line-height: 0.95;
+  letter-spacing: -0.05em;
+  text-transform: uppercase;
+  color: var(--color-rs-fg-0);
+}
+.rs-handoff .os-display span { display: block; }
+.rs-handoff .os-display .os-dim { color: var(--color-rs-fg-2); }
+.rs-handoff .os-h2 {
+  margin: 24px 0 0;
+  max-width: 22ch;
+  font-family: var(--font-rs-title);
+  font-weight: 600;
+  font-size: clamp(32px, 3.6vw, 56px);
+  line-height: 1.02;
+  letter-spacing: -0.04em;
+  color: var(--color-rs-fg-0);
+}
+.rs-handoff .os-h2 .os-dim { color: var(--color-rs-fg-2); }
+.rs-handoff .os-lede {
+  margin: 20px 0 0;
+  max-width: 44rem;
+  font-size: clamp(16px, 1.2vw, 19px);
+  line-height: 1.6;
+  color: var(--color-rs-fg-1);
+  text-wrap: pretty;
+}
+
+.rs-handoff .os-panel {
+  border: 1px solid var(--color-rs-border);
+  background: linear-gradient(180deg, var(--color-rs-bg-1), var(--color-rs-bg-0));
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 30px 80px rgba(0, 0, 0, 0.45);
+}
+.rs-handoff .os-panel__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--color-rs-border);
+  font-family: var(--font-rs-mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-rs-fg-2);
+}
+
+.rs-handoff .os-demo-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 9px;
+  border: 1px dashed var(--color-rs-border-strong);
+  font-family: var(--font-rs-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-rs-fg-1);
+  white-space: nowrap;
+}
+
+.rs-handoff .os-status {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border: 1px solid var(--color-rs-border-strong);
+  font-family: var(--font-rs-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-rs-fg-2);
+  white-space: nowrap;
+}
+.rs-handoff .os-status--live { color: var(--color-rs-fg-0); border-color: var(--color-rs-fg-2); }
+
+.rs-handoff .os-tone-ok { color: var(--color-rs-cyan); }
+.rs-handoff .os-tone-warn { color: #F5B544; }
+.rs-handoff .os-tone-block { color: #F07178; }
+.rs-handoff .os-tone-idle { color: var(--color-rs-fg-2); }
+
+.rs-handoff .os-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-rs-fg-0);
+  text-decoration: underline;
+  text-decoration-color: var(--color-rs-border-strong);
+  text-underline-offset: 6px;
+}
+.rs-handoff .os-link:hover { text-decoration-color: var(--color-rs-fg-0); }
+.rs-handoff .os-link:focus-visible,
+.rs-handoff .os-chip:focus-visible,
+.rs-handoff .os-btn:focus-visible {
+  outline: 2px solid var(--color-rs-cyan);
+  outline-offset: 3px;
+}
+
+.rs-handoff .os-chip {
+  min-height: 40px;
+  padding: 0 16px;
+  border: 1px solid var(--color-rs-border-strong);
+  background: transparent;
+  font-family: var(--font-rs-ui);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-rs-fg-1);
+  cursor: pointer;
+}
+.rs-handoff .os-chip[aria-pressed='true'] {
+  border-color: var(--color-rs-fg-0);
+  color: var(--color-rs-fg-0);
+  background: rgba(242, 245, 247, 0.06);
+}
+
+.rs-handoff .os-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 18px;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  background: var(--ga-pill-face);
+  color: var(--ga-pill-ink);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.rs-handoff .os-btn--ghost {
+  border-color: var(--color-rs-border-strong);
+  background: transparent;
+  color: var(--color-rs-fg-0);
+}
+
+/* ── System-Story (sticky Demonstration) ───────────────────────────── */
+
+.rs-handoff .os-story { display: grid; gap: 32px; margin-top: 56px; }
+.rs-handoff .os-story__visual {
+  position: sticky;
+  top: 12px;
+  z-index: 2;
+  align-self: start;
+}
+.rs-handoff .os-story__chapter {
+  min-height: 56vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 24px 0;
+  border-left: 1px solid var(--color-rs-border);
+  padding-left: 24px;
+  transition: opacity 300ms ease, border-color 300ms ease;
+  opacity: 0.42;
+}
+.rs-handoff .os-story__chapter[data-active='true'] {
+  opacity: 1;
+  border-left-color: var(--color-rs-cyan);
+}
+@media (min-width: 1024px) {
+  .rs-handoff .os-story { grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); gap: 72px; }
+  .rs-handoff .os-story__visual { order: 2; top: 10vh; }
+  .rs-handoff .os-story__chapter { min-height: 72vh; }
+}
+
+.rs-handoff .os-inv { width: 100%; border-collapse: collapse; font-size: 13px; }
+.rs-handoff .os-inv th,
+.rs-handoff .os-inv td {
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--color-rs-border);
+  text-align: left;
+  white-space: nowrap;
+}
+.rs-handoff .os-inv th {
+  font-family: var(--font-rs-mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-rs-fg-2);
+}
+.rs-handoff .os-inv td { color: var(--color-rs-fg-0); }
+.rs-handoff .os-inv [data-col-hidden='true'] { display: none; }
+/* Mobil: System + zuletzt hinzugekommene Spalte — nichts wird abgeschnitten. */
+@media (max-width: 639px) {
+  .rs-handoff .os-inv [data-col-secondary='true'] { display: none; }
+  .rs-handoff .os-inv th,
+  .rs-handoff .os-inv td { padding: 9px 12px; white-space: normal; }
+}
+.rs-handoff .os-inv tr[data-unknown='true'] td { color: var(--color-rs-fg-2); font-style: italic; }
+.rs-handoff .os-inv td[data-reveal='true'] { animation: os-reveal 420ms ease both; }
+@keyframes os-reveal {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
+}
+.rs-handoff .os-chain {
+  display: flex;
+  gap: 6px;
+  padding: 14px 16px;
+  font-family: var(--font-rs-mono);
+  font-size: 10px;
+  color: var(--color-rs-fg-2);
+  overflow: hidden;
+}
+.rs-handoff .os-chain span {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 8px;
+  border: 1px solid var(--color-rs-border);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Governance Pipeline ───────────────────────────────────────────── */
+
+.rs-handoff .os-pipe { list-style: none; margin: 0; padding: 0; }
+.rs-handoff .os-pipe li {
+  display: grid;
+  grid-template-columns: 2.2rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 16px;
+  border-bottom: 1px solid var(--color-rs-border);
+  transition: background-color 300ms ease, opacity 300ms ease;
+}
+.rs-handoff .os-pipe li:last-child { border-bottom: 0; }
+.rs-handoff .os-pipe li[data-state='pending'] { opacity: 0.35; }
+.rs-handoff .os-pipe li[data-state='current'] { background: rgba(242, 245, 247, 0.04); }
+.rs-handoff .os-pipe li[data-state='hold'] { background: rgba(245, 181, 68, 0.07); }
+.rs-handoff .os-pipe li[data-state='gate'] { background: rgba(240, 113, 120, 0.08); }
+.rs-handoff .os-pipe__stage {
+  font-family: var(--font-rs-title);
+  font-size: clamp(16px, 1.6vw, 22px);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+  color: var(--color-rs-fg-0);
+}
+.rs-handoff .os-pipe__result {
+  font-family: var(--font-rs-mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+/* ── Agent-Schichtdiagramm ─────────────────────────────────────────── */
+
+.rs-handoff .os-stack { display: grid; gap: 0; }
+.rs-handoff .os-stack__node {
+  padding: 18px 20px;
+  border: 1px solid var(--color-rs-border);
+  background: var(--color-rs-bg-1);
+}
+.rs-handoff .os-stack__node--core {
+  border-color: var(--color-rs-fg-2);
+  background: linear-gradient(180deg, var(--color-rs-bg-2), var(--color-rs-bg-1));
+}
+.rs-handoff .os-stack__wire {
+  justify-self: center;
+  width: 1px;
+  height: 28px;
+  background: var(--color-rs-border-strong);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rs-handoff .os-story__chapter,
+  .rs-handoff .os-pipe li { transition: none; }
+  .rs-handoff .os-inv td[data-reveal='true'] { animation: none; }
+}

@@ -20,11 +20,10 @@
  *              (§ 19 UStG, `COMPANY.taxMode`), „alle Daten in der EU" ist
  *              breiter als belegt; übrig bleibt, was stimmt.
  *   pricingFoot  wird nur angezeigt, wenn `COMPANY.taxMode === 'EXEMPT'`.
- *   heroA–C, sub1, sub2, cta  Positionierung 2026-09-26: Der Hero beginnt
- *              beim Kontrollproblem des Unternehmens, nicht bei Regulierung.
- *              „Operations OS for Europe" + „Für EU AI Act, DSGVO" rückten
- *              die Norm vor den Nutzen; der CTA führt jetzt in den
- *              Governance-Check auf der Seite (`#governance-check`).
+ *   heroA–C, sub1, sub2, cta  Governance-OS-Positionierung: Kategorie ist
+ *              „AI Governance OS", nicht EU-AI-Act-Software. „Operations OS
+ *              for Europe" + „Für EU AI Act, DSGVO" rückten die Norm vor das
+ *              Produkt; der CTA führt in die Governance-Pipeline (`#pipeline`).
  *
  * `HANDOFF_EXTRA` enthält Strings, die im Prototyp als Literal standen
  * (Navigation, Badge, Loop, Formularlabels) — ebenfalls DE/EN.
@@ -260,12 +259,12 @@ export const HANDOFF_OVERRIDES: Record<Lang, Partial<Record<CopyKey, string>>> =
     auditFoot:
       'Ergebnis ohne Account. Domain und E-Mail werden für den Bericht gespeichert — Details in der Datenschutzerklärung.',
     pricingSub: 'Monatlich kündbar. Datenhaltung in der EU (Supabase Frankfurt).',
-    cta: 'KI-Governance prüfen',
-    heroA: 'Das Kontrollsystem für',
-    heroB: 'Ihre',
-    heroC: 'Unternehmens-KI.',
-    sub1: 'RealSyncDynamics.AI verbindet KI-Tools, Modelle und Agenten mit zentralen Regeln, Freigaben und überprüfbaren Nachweisen',
-    sub2: '— über Anbieter und Agenten hinweg.',
+    cta: 'Governance OS erleben',
+    heroA: 'Ihre KI kann handeln.',
+    heroB: 'Jetzt braucht sie',
+    heroC: 'Governance.',
+    sub1: 'RealSyncDynamics.AI verbindet Identität, Policies, Risiko, Freigabe, Ausführung und Evidence in einer Control Plane',
+    sub2: '— über Modelle, Provider und Agenten hinweg.',
   },
   en: {
     loginSub: 'Magic link by e-mail — no password.',
@@ -273,12 +272,12 @@ export const HANDOFF_OVERRIDES: Record<Lang, Partial<Record<CopyKey, string>>> =
     auditFoot:
       'Result without an account. Domain and e-mail are stored for the report — see the privacy policy.',
     pricingSub: 'Cancel monthly. Data stored in the EU (Supabase Frankfurt).',
-    cta: 'Check your AI governance',
-    heroA: 'The control system for',
-    heroB: 'your',
-    heroC: 'company AI.',
-    sub1: 'RealSyncDynamics.AI connects AI tools, models and agents to central rules, approvals and verifiable evidence',
-    sub2: '— across providers and agents.',
+    cta: 'Experience the Governance OS',
+    heroA: 'Your AI can act.',
+    heroB: 'Now make it',
+    heroC: 'accountable.',
+    sub1: 'RealSyncDynamics.AI connects identity, policies, risk, approval, execution and evidence in one control plane',
+    sub2: '— across models, providers and agents.',
   },
 };
 
@@ -290,15 +289,17 @@ export const HANDOFF_EXTRA = {
     menuOpen: 'Navigation öffnen',
     menuClose: 'Navigation schließen',
     mainNav: 'Hauptnavigation',
-    heroHookA: 'Ihre Mitarbeiter nutzen bereits KI.',
-    heroHookB: 'Ihre Agenten werden als Nächstes selbst handeln.',
-    heroHookC: 'Wer kontrolliert eigentlich, was sie dürfen?',
-    ctaExplore: 'Plattform entdecken',
+    heroEyebrow: 'REALSYNCDYNAMICS.AI / GOVERNANCE OS',
+    ctaExplore: 'Architektur ansehen',
+    ctaEnterprise: 'Enterprise anfragen',
+    heroBoundary: 'Data boundary · eu-central-1 · Frankfurt',
+    loopExecute: 'EXECUTE',
+    loopVerify: 'VERIFY',
     loopDiscover: 'DISCOVER',
     loopAssess: 'ASSESS',
     loopGovern: 'GOVERN',
     loopProve: 'PROVE',
-    trustLine: 'EU-Hosting Frankfurt · Tenant-Isolation · Hash-verkettete Evidence',
+    trustLine: 'Server-autoritative Tenants · Policy Gates · Hash-verkettete Evidence',
     heroActions: 'Hero-Aktionen',
     backHome: 'Zur Startseite',
     emailLabel: 'E-Mail',
@@ -364,15 +365,17 @@ export const HANDOFF_EXTRA = {
     menuOpen: 'Open navigation',
     menuClose: 'Close navigation',
     mainNav: 'Main navigation',
-    heroHookA: 'Your employees already use AI.',
-    heroHookB: 'Your agents will act on their own next.',
-    heroHookC: 'Who actually controls what they may do?',
-    ctaExplore: 'Explore the platform',
+    heroEyebrow: 'REALSYNCDYNAMICS.AI / GOVERNANCE OS',
+    ctaExplore: 'View the architecture',
+    ctaEnterprise: 'Enterprise inquiry',
+    heroBoundary: 'Data boundary · eu-central-1 · Frankfurt',
+    loopExecute: 'EXECUTE',
+    loopVerify: 'VERIFY',
     loopDiscover: 'DISCOVER',
     loopAssess: 'ASSESS',
     loopGovern: 'GOVERN',
     loopProve: 'PROVE',
-    trustLine: 'EU hosting Frankfurt · Tenant isolation · Hash-chained evidence',
+    trustLine: 'Server-authoritative tenancy · Policy gates · Hash-chained evidence',
     heroActions: 'Hero actions',
     backHome: 'Back to home',
     emailLabel: 'E-mail',

@@ -49,13 +49,16 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     status: 'live',
     group: 'surface',
     description:
-      'Positionierung 2026-09-26: H1 „Das Kontrollsystem für Ihre Unternehmens-KI.“; statische Europa-Karte (kein 3D-Globus); Problem → Governance-Modell → Governance-Check (Selbsteinschätzung im Browser, ohne Speicherung) → Agent Governance (Preview) → Provider → Evidence → Prinzipien → Preise → Conversion.',
+      'Governance OS: H1 „Ihre KI kann handeln. Jetzt braucht sie Governance.“; statische Europa-Karte mit Datengrenze eu-central-1 (kein 3D-Globus); System-Story 01–07 → Signature Pipeline (Beispielablauf im Browser) → Agent-Architektur (Preview) → Provider → Control Room (Beispielwerte, gekennzeichnet) → Nutzen → Executive → Prinzipien → Governance-Check → Plattform-Preise inkl. Enterprise auf Anfrage.',
     route: '/',
     evidence: [
       'src/pages/design/DesignGovernanceAiLanding.tsx',
       'src/components/landing/GovernanceOsHero.tsx',
       'src/components/landing/HomepageBriefSections.tsx',
       'src/components/landing/GovernanceSelfCheck.tsx',
+      'src/components/landing/GovernanceSystemStory.tsx',
+      'src/components/landing/GovernancePipelineDemo.tsx',
+      'src/components/landing/GovernanceControlRoom.tsx',
       'src/components/governance-frontend/hero-content.ts',
       'test/landing/homepage-hero.test.tsx',
     ],

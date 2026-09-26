@@ -12,7 +12,6 @@ import { Link } from 'react-router-dom';
 import { CTA } from '../../content/runtimeVocab';
 import { ArrowRight } from 'lucide-react';
 import { GOVERNANCE_CHECK_QUESTIONS, HERO_SCAN_CTA_LABEL } from '../governance-frontend/hero-content';
-import { SectionEyebrow, SectionHeading } from './GovernanceSectionChrome';
 import {
   GA_LINE_SOFT,
   GA_MONO,
@@ -44,18 +43,17 @@ export function GovernanceSelfCheck() {
   return (
     <section
       id="governance-check"
-      className="ga-band relative z-[1] scroll-mt-6 border-t px-[4vw] py-[clamp(56px,6vw,88px)]"
-      style={{ borderColor: GA_LINE_SOFT }}
+      className="os-section scroll-mt-6"
       aria-labelledby="check-heading"
     >
-      <div className="mx-auto w-full max-w-[1100px]">
-        <SectionEyebrow>GOVERNANCE-CHECK</SectionEyebrow>
-        <span id="check-heading">
-          <SectionHeading accent="in acht Fragen.">Wo steht Ihre KI-Governance?</SectionHeading>
-        </span>
-        <p className="mt-4 max-w-[44rem] text-pretty leading-[1.7]" style={{ color: GA_MUTED, fontFamily: GA_SANS }}>
-          Eine ehrliche Selbsteinschätzung, kein automatischer Scan: Das Ergebnis beruht ausschließlich auf Ihren
-          Antworten. Nichts wird gespeichert oder übertragen.
+      <div className="os-inner">
+        <p className="os-kicker"><b>GOVERNANCE-CHECK</b> ACHT FRAGEN</p>
+        <h2 id="check-heading" className="os-h2">
+          Wo steht Ihre KI-Governance? <span className="os-dim">Eine ehrliche Selbsteinschätzung.</span>
+        </h2>
+        <p className="os-lede">
+          Kein automatischer Scan: Das Ergebnis beruht ausschließlich auf Ihren Antworten. Nichts wird gespeichert
+          oder übertragen.
         </p>
 
         <div className="mt-10 grid gap-8 lg:grid-cols-[1.35fr_1fr]">

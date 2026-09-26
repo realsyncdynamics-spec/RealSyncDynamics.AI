@@ -253,14 +253,14 @@ function breadcrumbs(items: Array<{ name: string; url: string }>): Record<string
 export const SEO_CONFIG: Record<string, SEOConfig> = {
   // ─── Tier 1 — Hero / Top-Conversion ──────────────────────────────────────
   '/': {
-    // Positionierung 2026-09-26 — matches the H1 in GovernanceOsHero.
-    title: 'RealSyncDynamics.AI — AI Governance Platform für Unternehmens-KI',
+    // Governance-OS-Positionierung — matches the H1 in GovernanceOsHero.
+    title: 'RealSyncDynamics.AI — AI Governance OS für Unternehmens-KI',
     description:
-      'Das Kontrollsystem für Ihre Unternehmens-KI: KI-Systeme erfassen, Risiken bewerten, Regeln und Freigaben für Agenten steuern, Nachweise führen. EU-Hosting.',
+      'AI Governance OS: Identität, Policies, Risiko, Freigaben, Ausführung und Evidence für Modelle, Provider und Agenten in einer Control Plane. EU-Hosting.',
     canonical: `${SITE_URL}/`,
-    ogTitle: 'Das Kontrollsystem für Ihre Unternehmens-KI',
+    ogTitle: 'Ihre KI kann handeln. Jetzt braucht sie Governance.',
     ogDescription:
-      'AI Governance über Anbieter und Agenten hinweg: zentrale Regeln, Freigaben und überprüfbare Nachweise. EU-Hosting.',
+      'Die Control Plane für Unternehmens-KI: Identität, Policies, Freigaben, Ausführung und Evidence über Modelle, Provider und Agenten hinweg.',
   },
   '/pricing': {
     title: 'Preise – Runtime-native AI-Governance-Plattform | RealSyncDynamics.AI',

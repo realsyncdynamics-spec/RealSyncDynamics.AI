@@ -963,7 +963,7 @@ function BootstrapTasksRail({
   );
 }
 
-type FrameworkMaturity = 'live' | 'beta' | 'roadmap';
+type FrameworkMaturity = 'live' | 'beta' | 'preview' | 'roadmap';
 
 const FRAMEWORK_STRIP: Array<{
   id: string;
@@ -974,7 +974,7 @@ const FRAMEWORK_STRIP: Array<{
   { id: 'dsgvo', label: 'DSGVO', path: '/app/governance/dsgvo-directory', maturity: 'live' },
   { id: 'eu-ai-act', label: 'EU AI Act', path: '/app/governance/ai-act-assessment', maturity: 'beta' },
   { id: 'iso', label: 'ISO', path: '/app/governance/iso27001', maturity: 'beta' },
-  { id: 'nis2', label: 'NIS2', path: '/app/governance/nis2-incidents', maturity: 'beta' },
+  { id: 'nis2', label: 'NIS2', path: '/app/governance/nis2-incidents', maturity: 'preview' },
   // Honest Roadmap: no dedicated TISAX/DORA surface yet — not Policy Packs.
   { id: 'tisax', label: 'TISAX', path: null, maturity: 'roadmap' },
   { id: 'dora', label: 'DORA', path: null, maturity: 'roadmap' },
@@ -983,12 +983,14 @@ const FRAMEWORK_STRIP: Array<{
 const MATURITY_STYLE: Record<FrameworkMaturity, string> = {
   live: 'text-emerald-400 border-emerald-900/60 bg-emerald-950/40',
   beta: 'text-amber-400 border-amber-900/60 bg-amber-950/40',
+  preview: 'text-amber-300 border-amber-900/50 bg-amber-950/30',
   roadmap: 'text-titanium-500 border-titanium-800 bg-obsidian-950',
 };
 
 const MATURITY_LABEL: Record<FrameworkMaturity, string> = {
   live: 'Live',
   beta: 'Beta',
+  preview: 'Preview',
   roadmap: 'Roadmap',
 };
 

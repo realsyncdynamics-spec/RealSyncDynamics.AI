@@ -182,7 +182,9 @@ jobs:
                 issue_number: existing.number,
                 body: `❌ Weiterhin rot — ${link} (${when}).\n\nDer Befund besteht seit dem Öffnen dieses Issues fort.`,
               });
-              core.setFailed(`${guard} weiterhin rot — Issue #${existing.number} aktualisiert.`);
+              // Der rote Status gehört dem Guard, nicht dem Zusteller. Sobald das
+              // Issue gepflegt ist, hat dieser Workflow seine Aufgabe erfüllt.
+              core.notice(`${guard} weiterhin rot — Issue #${existing.number} aktualisiert.`);
               return;
             }
 
@@ -288,4 +290,6 @@ jobs:
               body,
               labels: [label],
             });
-            core.setFailed(`${guard} rot — Issue #${created.number} angelegt.`);
+            // Gleiches Prinzip beim Erstbefund: Das Signal bleibt das offene
+            // Issue, nicht ein zweiter roter Lauf des Beobachters.
+            core.notice(`${guard} rot — Issue #${created.number} angelegt.`);

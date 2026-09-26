@@ -508,7 +508,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
   '/caralegal-alternative': {
     title: 'caralegal Alternative — technische Governance-Runtime neben dem DSMS | RealSyncDynamics.AI',
     description:
-      'caralegal ist ein DSMS für die Datenschutzorganisation. RealSyncDynamics.AI ist die technische Compliance-Runtime daneben: Detect, Govern, Enforce, Prove — Befund, Policy-Entscheidung, Nachweis.',
+      'caralegal ist auf Datenschutz- und KI-Governance-Dokumentation ausgelegt. RealSyncDynamics.AI ist die technische Compliance-Runtime daneben: Detect, Govern, Enforce, Prove — Befund, Policy-Entscheidung, Nachweis.',
     canonical: `${SITE_URL}/caralegal-alternative`,
     jsonLd: breadcrumbs([
       { name: 'Home', url: '/' },

@@ -27,7 +27,9 @@ import {
  *
  * ## Warum diese Seite anders aufgebaut ist als die anderen Alternative-Seiten
  *
- * caralegal ist ein DSMS (System of Record für die Datenschutzorganisation).
+ * caralegal tritt als „Data Responsibility Plattform" auf und deckt Datenschutz-
+ * und KI-Governance-Dokumentation ab; in der hier verwendeten Einordnung ist das
+ * ein System of Record für die Datenschutzorganisation.
  * Ein Frontalvergleich „wer hat mehr DSGVO-Features" wäre hier strategisch
  * falsch: Er zwingt uns in eine Kategorie, in der ein etablierter Anbieter
  * den Heimvorteil hat, und verschenkt den Integrations-/Partnermarkt.
@@ -71,7 +73,10 @@ const PILLARS: Pillar[] = [
     capabilities: [
       { id: 'free-audit', role: 'Öffentlicher Einstiegs-Scan ohne Vertrag' },
       { id: 'gdpr-audit-module', role: 'Cookie-/Tracker-Befunde mit Bericht' },
-      { id: 'ai-act-classify', role: 'KI-Systeme nach Risikoklasse einordnen' },
+      {
+        id: 'ai-act-classify',
+        role: 'Gefundene KI-Systeme nach Risikoklasse einordnen — aus dem Befund, nicht aus dem gepflegten Inventar',
+      },
     ],
   },
   {
@@ -199,7 +204,8 @@ export function CaralegalAlternative() {
         sublineMaxWidth: 'max-w-3xl',
         subline: (
           <>
-            caralegal ist ein Datenschutz-Management-System — das{' '}
+            caralegal tritt als „Data Responsibility Plattform" auf; in der hier
+            verwendeten Einordnung ist das ein{' '}
             <strong className="text-titanium-50">System of Record</strong> für Prozesse,
             Dokumente und Verantwortlichkeiten. RealSyncDynamics.AI ist die{' '}
             <strong className="text-titanium-50">Governance Runtime</strong> darunter: Sie
@@ -219,7 +225,7 @@ export function CaralegalAlternative() {
         jsonLd: {
           headline: 'caralegal-Alternative — technische Governance-Runtime neben dem DSMS',
           description:
-            'caralegal ist ein DSMS für die Datenschutzorganisation. RealSyncDynamics.AI ist die technische Compliance-Runtime daneben: Detect, Govern, Enforce, Prove.',
+            'caralegal ist auf Datenschutz- und KI-Governance-Dokumentation ausgelegt. RealSyncDynamics.AI ist die technische Compliance-Runtime daneben: Detect, Govern, Enforce, Prove.',
           datePublished: '2026-09-15',
         },
       }}
@@ -318,14 +324,17 @@ export function CaralegalAlternative() {
           },
           {
             f: 'Rolle von KI',
-            o: 'KI unterstützt die Dokumentation',
-            r: 'KI ist selbst Gegenstand der Governance',
+            o: 'KI-Verzeichnis und Risikoklassifizierung als geführte Dokumentation',
+            r: 'Dieselbe Klassifizierung aus dem technischen Befund — plus Kontrolle und Protokoll am Aufrufpunkt',
           },
         ]}
       />
 
       <p className="text-xs text-titanium-500 leading-relaxed">
         Die Zeilen beschreiben Produktkategorien, keine Funktionsstände einzelner Anbieter.
+        „DSMS" ist dabei unsere Einordnung — caralegal beschreibt sich selbst als „Data
+        Responsibility Plattform" und bewirbt unter anderem ein KI-Verzeichnis mit
+        automatisierter Risikoklassifizierung nach KI-VO.
         Funktionsumfang und Positionierung von caralegal können sich ändern — maßgeblich ist
         die jeweils aktuelle Herstellerangabe unter{' '}
         <a

@@ -49,7 +49,7 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     status: 'live',
     group: 'surface',
     description:
-      'Governance OS: H1 „Ihre KI kann handeln. Jetzt braucht sie Governance.“; statische Europa-Karte mit Datengrenze eu-central-1 (kein 3D-Globus); System-Story 01–07 → Signature Pipeline (Beispielablauf im Browser) → Agent-Architektur (Preview) → Provider → Control Room (Beispielwerte, gekennzeichnet) → Nutzen → Executive → Prinzipien → Governance-Check → Plattform-Preise inkl. Enterprise auf Anfrage.',
+      'Governance OS: H1 „Ihre KI kann handeln. Jetzt braucht sie Governance.“; Papier & Waldgrün, Europa-Karte als Atlas-Druck, Systemzeile mit eu-central-1 (kein 3D-Globus); System-Story 01–07 → Signature Pipeline (Beispielablauf im Browser) → Agent-Architektur (Preview) → Provider → Control Room (Beispielwerte, gekennzeichnet) → Nutzen → Executive → Prinzipien → Governance-Check → Plattform-Preise inkl. Enterprise auf Anfrage.',
     route: '/',
     evidence: [
       'src/pages/design/DesignGovernanceAiLanding.tsx',

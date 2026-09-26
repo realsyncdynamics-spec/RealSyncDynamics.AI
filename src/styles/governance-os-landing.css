@@ -1,124 +1,166 @@
 /*
- * Startseite `/` — Governance OS (Enterprise Control Plane).
+ * Startseite `/` — Governance OS im Stil „Papier & Waldgrün".
+ *
+ * Natürlich und vertrauensvoll statt Nacht-Dashboard: warmes Papier, fast
+ * schwarze Serif-Überschriften (Newsreader) mit kursiver Akzentzeile in
+ * Waldgrün, Monospace für Systemangaben, harte Kanten. Waldgrün ist die
+ * einzige Handlungs- und Systemfarbe.
  *
  * Alles hier ist auf `.rs-handoff` gescoped: Die Hero-Klassen (`rs-*`) teilt
  * sich die Startseite mit Login, Audit und App — dort gilt weiter
  * `governance-os-handoff.css`. Farben kommen aus den Tokens in `index.css`
- * (`.ga-context.rs-handoff`); Cyan trägt nur Systemzustände.
+ * (`.ga-context.rs-handoff`).
  */
 
 /* ── Hero ───────────────────────────────────────────────────────────── */
 
+.rs-handoff .rs-hero { background: var(--color-rs-hero); }
+
 .rs-handoff .rs-hero__fade-x {
-  background: linear-gradient(90deg, var(--color-rs-hero) 0%, var(--color-rs-hero) 34%, transparent 70%);
+  background: linear-gradient(90deg, var(--color-rs-hero) 0%, var(--color-rs-hero) 36%, transparent 72%);
 }
 .rs-handoff .rs-hero__vignette {
-  background: linear-gradient(180deg, var(--color-rs-hero) 0%, transparent 18%, transparent 76%, var(--color-rs-hero) 100%);
+  background: linear-gradient(180deg, var(--color-rs-hero) 0%, transparent 16%, transparent 80%, var(--color-rs-hero) 100%);
 }
-/* Wärmeres Seitenlicht statt Blau-Glow: die Karte liest sich beleuchtet, nicht neonfarben. */
+/* Weiches Tageslicht von rechts oben statt Neon-Glow. */
 .rs-handoff .rs-hero__glow {
-  background:
-    radial-gradient(55% 50% at 80% 40%, rgba(242, 245, 247, 0.07) 0%, transparent 70%),
-    radial-gradient(40% 40% at 72% 62%, rgba(34, 211, 238, 0.06) 0%, transparent 70%);
+  background: radial-gradient(60% 55% at 78% 30%, rgba(255, 253, 248, 0.7) 0%, transparent 70%);
 }
+.rs-handoff .rs-hero__dots {
+  background-image: radial-gradient(rgba(27, 31, 28, 0.06) 1px, transparent 1.2px);
+}
+
+/*
+ * Europa-Karte als Atlas-Druck: Das Nachtbild wird invertiert und entsättigt,
+ * dann auf das Papier multipliziert. Aus Stadtlichtern werden Tinten-Punkte,
+ * aus Netzbögen feine Linien — dieselbe Datei, kein zweiter Download.
+ */
+/* Multiply auf dem Container: Die Kartenebene ist transformiert und damit ein
+   eigener Stacking-Context — dort hätte der Blend nichts, womit er mischt. */
+.rs-handoff .rs-hero__map { mix-blend-mode: multiply; opacity: 0.9; }
 .rs-handoff .rs-hero__map-main {
-  filter: saturate(0.9) contrast(1.06) brightness(1.2);
+  filter: grayscale(1) invert(1) sepia(0.28) contrast(1.12) brightness(1.02);
 }
+.rs-handoff .rs-hero__map-depth { display: none; }
+
+.rs-handoff .rs-nav__link:hover { background: rgba(31, 61, 50, 0.06); }
+.rs-handoff .rs-nav__burger { background: transparent; border-color: var(--color-rs-border-strong); border-radius: 0; }
+.rs-handoff .rs-nav__link,
+.rs-handoff .rs-lang,
+.rs-handoff .rs-menu__item { border-radius: 0; }
+.rs-handoff .rs-wordmark { color: var(--color-rs-fg-0); }
+.rs-handoff .rs-wordmark__ai { color: var(--color-rs-primary); }
+.rs-handoff .rs-menu { background: var(--color-rs-hero); }
+.rs-handoff .rs-menu__item { background: var(--color-rs-bg-1); }
 
 .rs-handoff .rs-hero__eyebrow {
   margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
   font-family: var(--font-rs-mono);
-  font-size: 11px;
-  letter-spacing: 0.22em;
-  color: var(--color-rs-fg-2);
+  font-size: 12px;
+  letter-spacing: 0.2em;
+  color: var(--color-rs-cyan);
+}
+.rs-handoff .rs-hero__eyebrow::before {
+  content: '';
+  width: 40px;
+  height: 1px;
+  background: currentColor;
+}
+
+/* Systemzeile: belegte Fakten, kein Siegel. */
+.rs-handoff .rs-hero__status {
+  margin: 22px 0 0;
+  display: inline-grid;
+  grid-template-columns: auto auto;
+  gap: 6px 22px;
+  padding: 12px 16px;
+  border: 1px solid var(--color-rs-border-strong);
+  background: rgba(247, 244, 238, 0.8);
+  font-family: var(--font-rs-mono);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  color: var(--color-rs-fg-1);
+}
+.rs-handoff .rs-hero__status-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-right: 8px;
+  border-radius: 9999px;
+  background: var(--color-rs-cyan);
+  box-shadow: 0 0 0 4px rgba(47, 107, 83, 0.14);
+  vertical-align: 1px;
 }
 
 .rs-handoff .rs-hero__h1 {
   margin-top: 26px;
-  font-family: var(--font-rs-title);
-  font-weight: 600;
-  font-size: clamp(46px, 5.6vw, 88px);
-  line-height: 0.98;
-  letter-spacing: -0.045em;
+  font-family: var(--font-rs-serif);
+  font-weight: 400;
+  font-size: clamp(48px, 5.4vw, 86px);
+  line-height: 1.02;
+  letter-spacing: -0.02em;
   color: var(--color-rs-fg-0);
   text-shadow: none;
 }
 .rs-handoff .rs-hero__h1-accent {
-  color: transparent;
-  background-image: linear-gradient(180deg, var(--color-rs-fg-1), var(--color-rs-fg-2));
-  -webkit-background-clip: text;
-  background-clip: text;
+  font-style: italic;
+  color: var(--color-rs-primary);
 }
 .rs-handoff .rs-hero__subline { color: var(--color-rs-fg-1); max-width: 600px; }
-
 .rs-handoff .rs-loop { color: var(--color-rs-fg-2); }
 
+.rs-handoff .rs-btn { border-radius: 0; }
 .rs-handoff .rs-btn--primary {
-  color: var(--ga-pill-ink);
-  background: var(--ga-pill-face);
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  box-shadow: var(--ga-pill-shadow);
+  color: #F7F4EE;
+  background: var(--color-rs-primary);
+  border: 1px solid var(--color-rs-primary);
+  box-shadow: none;
 }
 .rs-handoff .rs-btn--primary:not(:disabled):not([aria-disabled='true']):hover {
-  background: #ffffff;
-}
-.rs-handoff .rs-btn--primary:focus-visible,
-.rs-handoff .rs-btn--glass:focus-visible,
-.rs-handoff .rs-hero__enterprise:focus-visible {
-  outline: 2px solid var(--color-rs-cyan);
-  outline-offset: 3px;
+  background: var(--color-rs-primary-hover);
 }
 .rs-handoff .rs-btn--glass {
-  background: rgba(18, 25, 34, 0.72);
-  border-color: var(--color-rs-border-strong);
+  color: var(--color-rs-fg-0);
+  background: transparent;
+  border: 1px solid var(--color-rs-fg-0);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
 }
-.rs-handoff .rs-btn--glass:hover { border-color: var(--color-rs-fg-2); }
+.rs-handoff .rs-btn--glass:hover { background: rgba(31, 61, 50, 0.06); border-color: var(--color-rs-primary); }
+.rs-handoff :is(.rs-btn, .rs-nav__link, .rs-lang, .rs-menu__item, .rs-nav__burger, .rs-hero__enterprise):focus-visible {
+  outline: 2px solid var(--color-rs-primary);
+  outline-offset: 3px;
+}
 
 .rs-handoff .rs-hero__enterprise {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  margin-top: 22px;
+  margin-top: 20px;
   min-height: 44px;
   font-family: var(--font-rs-ui);
   font-size: 14px;
   font-weight: 500;
   color: var(--color-rs-fg-1);
-  text-decoration: none;
-  border-radius: 4px;
+  text-decoration: underline;
+  text-decoration-color: var(--color-rs-border-strong);
+  text-underline-offset: 5px;
 }
-.rs-handoff .rs-hero__enterprise:hover { color: var(--color-rs-fg-0); }
+.rs-handoff .rs-hero__enterprise:hover { color: var(--color-rs-fg-0); text-decoration-color: currentColor; }
 
-/* Belegte Datengrenze auf der Karte: macht die Karte zum Systemelement. */
-.rs-handoff .rs-hero__boundary {
-  position: absolute;
-  z-index: 2;
-  right: clamp(24px, 5vw, 72px);
-  bottom: clamp(28px, 6vh, 64px);
-  display: none;
-  align-items: center;
-  gap: 10px;
-  margin: 0;
-  padding: 9px 14px;
-  border: 1px solid var(--color-rs-border-strong);
-  background: rgba(8, 11, 15, 0.72);
-  font-family: var(--font-rs-mono);
-  font-size: 11px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--color-rs-fg-1);
-}
-.rs-handoff .rs-hero__boundary-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 9999px;
-  background: var(--color-rs-cyan);
-}
-@media (min-width: 1024px) {
-  .rs-handoff .rs-hero__boundary { display: inline-flex; }
-}
 @media (max-width: 767px) {
-  .rs-handoff .rs-hero__h1 { font-size: 44px; letter-spacing: -0.04em; }
+  .rs-handoff .rs-hero__h1 { font-size: 44px; }
+  .rs-handoff .rs-hero__eyebrow { font-size: 11px; letter-spacing: 0.12em; }
+  .rs-handoff .rs-hero__eyebrow::before { width: 24px; }
+  .rs-handoff .rs-hero__glow { display: none; }
+  .rs-handoff .rs-hero__vignette {
+    background: linear-gradient(180deg, var(--color-rs-hero) 0%, transparent 16%, transparent 45%, var(--color-rs-hero) 66%);
+  }
+  .rs-handoff .rs-hero__status { display: grid; grid-template-columns: 1fr; font-size: 11px; }
 }
 
 /* ── Gemeinsame Bausteine der Folgesektionen ───────────────────────── */
@@ -126,8 +168,9 @@
 .rs-handoff .os-section {
   position: relative;
   z-index: 1;
-  border-top: 1px solid var(--ga-line-soft);
-  padding: clamp(72px, 9vw, 136px) 4vw;
+  border-top: 1px solid var(--color-rs-border);
+  padding: clamp(72px, 9vw, 132px) 4vw;
+  background: var(--color-rs-hero);
 }
 .rs-handoff .os-section--alt { background: var(--color-rs-bg-0); }
 .rs-handoff .os-inner { margin: 0 auto; width: 100%; max-width: 1200px; }
@@ -135,58 +178,60 @@
 .rs-handoff .os-kicker {
   margin: 0;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
   font-family: var(--font-rs-mono);
-  font-size: 11px;
-  letter-spacing: 0.22em;
-  color: var(--color-rs-fg-2);
+  font-size: 12px;
+  letter-spacing: 0.2em;
+  color: var(--color-rs-cyan);
+}
+.rs-handoff .os-kicker::before {
+  content: '';
+  width: 40px;
+  height: 1px;
+  background: currentColor;
 }
 .rs-handoff .os-kicker b { font-weight: 500; color: var(--color-rs-fg-0); }
-.rs-handoff .os-kicker::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: var(--ga-line-soft);
-}
 
-/* Editoriale Großtypografie. */
+/* Editoriale Großtypografie: Serif, Satzschreibung, kursive Akzentzeile. */
 .rs-handoff .os-display {
   margin: 28px 0 0;
-  font-family: var(--font-rs-title);
-  font-weight: 600;
-  font-size: clamp(40px, 6.4vw, 104px);
-  line-height: 0.95;
-  letter-spacing: -0.05em;
-  text-transform: uppercase;
+  font-family: var(--font-rs-serif);
+  font-weight: 400;
+  font-size: clamp(42px, 6vw, 96px);
+  line-height: 1.02;
+  letter-spacing: -0.02em;
   color: var(--color-rs-fg-0);
 }
 .rs-handoff .os-display span { display: block; }
-.rs-handoff .os-display .os-dim { color: var(--color-rs-fg-2); }
+.rs-handoff :is(.os-display, .os-h2) .os-dim {
+  font-style: italic;
+  color: var(--color-rs-primary);
+}
 .rs-handoff .os-h2 {
   margin: 24px 0 0;
-  max-width: 22ch;
-  font-family: var(--font-rs-title);
-  font-weight: 600;
-  font-size: clamp(32px, 3.6vw, 56px);
-  line-height: 1.02;
-  letter-spacing: -0.04em;
+  max-width: 24ch;
+  font-family: var(--font-rs-serif);
+  font-weight: 400;
+  font-size: clamp(34px, 3.8vw, 58px);
+  line-height: 1.06;
+  letter-spacing: -0.015em;
   color: var(--color-rs-fg-0);
 }
-.rs-handoff .os-h2 .os-dim { color: var(--color-rs-fg-2); }
 .rs-handoff .os-lede {
   margin: 20px 0 0;
   max-width: 44rem;
   font-size: clamp(16px, 1.2vw, 19px);
-  line-height: 1.6;
+  line-height: 1.65;
   color: var(--color-rs-fg-1);
   text-wrap: pretty;
 }
 
 .rs-handoff .os-panel {
-  border: 1px solid var(--color-rs-border);
-  background: linear-gradient(180deg, var(--color-rs-bg-1), var(--color-rs-bg-0));
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 30px 80px rgba(0, 0, 0, 0.45);
+  border: 1px solid var(--color-rs-border-strong);
+  background: var(--color-rs-bg-1);
+  box-shadow: 0 18px 48px rgba(27, 31, 28, 0.07);
 }
 .rs-handoff .os-panel__bar {
   display: flex;
@@ -197,7 +242,7 @@
   border-bottom: 1px solid var(--color-rs-border);
   font-family: var(--font-rs-mono);
   font-size: 11px;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--color-rs-fg-2);
 }
@@ -210,7 +255,7 @@
   border: 1px dashed var(--color-rs-border-strong);
   font-family: var(--font-rs-mono);
   font-size: 10px;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--color-rs-fg-1);
   white-space: nowrap;
@@ -223,16 +268,16 @@
   border: 1px solid var(--color-rs-border-strong);
   font-family: var(--font-rs-mono);
   font-size: 10px;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--color-rs-fg-2);
   white-space: nowrap;
 }
-.rs-handoff .os-status--live { color: var(--color-rs-fg-0); border-color: var(--color-rs-fg-2); }
 
+/* Zustandsfarben: auf Papier dunkel genug für Fließtext-Kontrast. */
 .rs-handoff .os-tone-ok { color: var(--color-rs-cyan); }
-.rs-handoff .os-tone-warn { color: #F5B544; }
-.rs-handoff .os-tone-block { color: #F07178; }
+.rs-handoff .os-tone-warn { color: #8A5A0B; }
+.rs-handoff .os-tone-block { color: #9B2C2C; }
 .rs-handoff .os-tone-idle { color: var(--color-rs-fg-2); }
 
 .rs-handoff .os-link {
@@ -242,21 +287,19 @@
   min-height: 44px;
   font-size: 15px;
   font-weight: 600;
-  color: var(--color-rs-fg-0);
+  color: var(--color-rs-primary);
   text-decoration: underline;
   text-decoration-color: var(--color-rs-border-strong);
   text-underline-offset: 6px;
 }
-.rs-handoff .os-link:hover { text-decoration-color: var(--color-rs-fg-0); }
-.rs-handoff .os-link:focus-visible,
-.rs-handoff .os-chip:focus-visible,
-.rs-handoff .os-btn:focus-visible {
-  outline: 2px solid var(--color-rs-cyan);
+.rs-handoff .os-link:hover { text-decoration-color: currentColor; }
+.rs-handoff :is(.os-link, .os-chip, .os-btn):focus-visible {
+  outline: 2px solid var(--color-rs-primary);
   outline-offset: 3px;
 }
 
 .rs-handoff .os-chip {
-  min-height: 40px;
+  min-height: 44px;
   padding: 0 16px;
   border: 1px solid var(--color-rs-border-strong);
   background: transparent;
@@ -267,9 +310,9 @@
   cursor: pointer;
 }
 .rs-handoff .os-chip[aria-pressed='true'] {
-  border-color: var(--color-rs-fg-0);
-  color: var(--color-rs-fg-0);
-  background: rgba(242, 245, 247, 0.06);
+  border-color: var(--color-rs-primary);
+  color: #F7F4EE;
+  background: var(--color-rs-primary);
 }
 
 .rs-handoff .os-btn {
@@ -279,18 +322,20 @@
   gap: 8px;
   min-height: 44px;
   padding: 0 18px;
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  background: var(--ga-pill-face);
-  color: var(--ga-pill-ink);
+  border: 1px solid var(--color-rs-primary);
+  background: var(--color-rs-primary);
+  color: #F7F4EE;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
 }
+.rs-handoff .os-btn:hover { background: var(--color-rs-primary-hover); }
 .rs-handoff .os-btn--ghost {
-  border-color: var(--color-rs-border-strong);
+  border-color: var(--color-rs-fg-0);
   background: transparent;
   color: var(--color-rs-fg-0);
 }
+.rs-handoff .os-btn--ghost:hover { background: rgba(31, 61, 50, 0.06); }
 
 /* ── System-Story (sticky Demonstration) ───────────────────────────── */
 
@@ -306,15 +351,14 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding: 24px 0;
+  padding: 24px 0 24px 24px;
   border-left: 1px solid var(--color-rs-border);
-  padding-left: 24px;
   transition: opacity 300ms ease, border-color 300ms ease;
-  opacity: 0.42;
+  opacity: 0.45;
 }
 .rs-handoff .os-story__chapter[data-active='true'] {
   opacity: 1;
-  border-left-color: var(--color-rs-cyan);
+  border-left: 2px solid var(--color-rs-primary);
 }
 @media (min-width: 1024px) {
   .rs-handoff .os-story { grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); gap: 72px; }
@@ -334,7 +378,7 @@
   font-family: var(--font-rs-mono);
   font-size: 10px;
   font-weight: 500;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--color-rs-fg-2);
 }
@@ -358,14 +402,14 @@
   padding: 14px 16px;
   font-family: var(--font-rs-mono);
   font-size: 10px;
-  color: var(--color-rs-fg-2);
+  color: var(--color-rs-fg-1);
   overflow: hidden;
 }
 .rs-handoff .os-chain span {
   flex: 1;
   min-width: 0;
   padding: 6px 8px;
-  border: 1px solid var(--color-rs-border);
+  border: 1px solid var(--color-rs-border-strong);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -384,22 +428,20 @@
   transition: background-color 300ms ease, opacity 300ms ease;
 }
 .rs-handoff .os-pipe li:last-child { border-bottom: 0; }
-.rs-handoff .os-pipe li[data-state='pending'] { opacity: 0.35; }
-.rs-handoff .os-pipe li[data-state='current'] { background: rgba(242, 245, 247, 0.04); }
-.rs-handoff .os-pipe li[data-state='hold'] { background: rgba(245, 181, 68, 0.07); }
-.rs-handoff .os-pipe li[data-state='gate'] { background: rgba(240, 113, 120, 0.08); }
+.rs-handoff .os-pipe li[data-state='pending'] { opacity: 0.4; }
+.rs-handoff .os-pipe li[data-state='current'] { background: rgba(31, 61, 50, 0.05); }
+.rs-handoff .os-pipe li[data-state='hold'] { background: rgba(138, 90, 11, 0.08); }
+.rs-handoff .os-pipe li[data-state='gate'] { background: rgba(155, 44, 44, 0.07); }
 .rs-handoff .os-pipe__stage {
-  font-family: var(--font-rs-title);
-  font-size: clamp(16px, 1.6vw, 22px);
-  font-weight: 600;
-  letter-spacing: -0.02em;
-  text-transform: uppercase;
+  font-family: var(--font-rs-serif);
+  font-size: clamp(18px, 1.7vw, 24px);
+  font-weight: 400;
   color: var(--color-rs-fg-0);
 }
 .rs-handoff .os-pipe__result {
   font-family: var(--font-rs-mono);
   font-size: 11px;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
 }
 
@@ -408,22 +450,34 @@
 .rs-handoff .os-stack { display: grid; gap: 0; }
 .rs-handoff .os-stack__node {
   padding: 18px 20px;
-  border: 1px solid var(--color-rs-border);
+  border: 1px solid var(--color-rs-border-strong);
   background: var(--color-rs-bg-1);
 }
 .rs-handoff .os-stack__node--core {
-  border-color: var(--color-rs-fg-2);
-  background: linear-gradient(180deg, var(--color-rs-bg-2), var(--color-rs-bg-1));
+  border: 1px solid var(--color-rs-primary);
+  background: var(--color-rs-bg-2);
 }
 .rs-handoff .os-stack__wire {
   justify-self: center;
   width: 1px;
   height: 28px;
-  background: var(--color-rs-border-strong);
+  background: var(--color-rs-fg-2);
 }
+
+/* SectionHeading (Preise): Akzent kursiv wie die übrigen Überschriften. */
+.rs-handoff h2 em.not-italic { font-style: italic; }
 
 @media (prefers-reduced-motion: reduce) {
   .rs-handoff .os-story__chapter,
   .rs-handoff .os-pipe li { transition: none; }
   .rs-handoff .os-inv td[data-reveal='true'] { animation: none; }
 }
+
+/* Karten der Preis-Sektion: Papier trägt keine dunklen Schlagschatten. */
+.rs-handoff.ga-context .ga-card { box-shadow: none; }
+@media (hover: hover) and (pointer: fine) {
+  .rs-handoff.ga-context .ga-card:hover { border-color: var(--color-rs-primary); }
+}
+
+/* Harte Kanten auch für die gemeinsamen Pill-Buttons und Auswahl-Chips. */
+.rs-handoff :is(a, button, label).rounded-full { border-radius: 0; }

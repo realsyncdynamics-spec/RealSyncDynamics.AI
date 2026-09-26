@@ -8,8 +8,8 @@
  * Governance-OS-Positionierung: Kategorie-Eyebrow statt Normen-Badge, H1
  * „Ihre KI kann handeln. Jetzt braucht sie Governance.", Loop über alle
  * sechs Stufen. Erst-CTA → interaktive Pipeline (`#pipeline`), Zweit-CTA →
- * Architektur (`#architecture`), Enterprise als Textlink. Die Karte trägt
- * die belegte Datengrenze (Supabase eu-central-1). Vertrag:
+ * Architektur (`#architecture`), Enterprise als Textlink. Die Systemzeile
+ * nennt nur Belegtes (Supabase eu-central-1, Hash-Kette, PDP). Vertrag:
  * test/landing/homepage-hero.test.tsx.
  *
  * Die Karte ist das Handoff-Asset `public/europe-map-v2.png` (1052×1152) mit
@@ -121,10 +121,6 @@ export function GovernanceOsHero() {
       <div className="rs-hero__overlay rs-hero__fade-x" aria-hidden="true" />
       <div className="rs-hero__overlay rs-hero__vignette" aria-hidden="true" />
       <div className="rs-hero__overlay rs-hero__dots" aria-hidden="true" />
-      <p className="rs-hero__boundary">
-        <span className="rs-hero__boundary-dot" aria-hidden="true" />
-        {t('heroBoundary')}
-      </p>
 
       <header className="rs-nav">
         <BrandWordmark />
@@ -201,6 +197,15 @@ export function GovernanceOsHero() {
       <div className="rs-hero__body">
         <div className="rs-hero__content">
           <p className="rs-hero__eyebrow">{t('heroEyebrow')}</p>
+
+          {/* Systemzeile: nur belegte Fakten (Supabase-Region, Hash-Kette,
+              Policy Decision Point) — technische Bezeichner, daher unübersetzt. */}
+          <p className="rs-hero__status" data-testid="hero-status">
+            <span><span className="rs-hero__status-dot" aria-hidden="true" />SYSTEM: GOVERNANCE OS</span>
+            <span>REGION: EU-CENTRAL-1 · FRANKFURT</span>
+            <span>EVIDENCE: SHA-256 HASH-CHAIN</span>
+            <span>POLICY: DECISION POINT</span>
+          </p>
 
           <h1 id="hero-heading" className="rs-hero__h1">
             <span className="rs-hero__h1-line">{t('heroA')}</span>

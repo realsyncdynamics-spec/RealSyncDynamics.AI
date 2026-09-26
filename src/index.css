@@ -25,6 +25,25 @@
   unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
 }
 
+/* Newsreader 400 italic — Akzentzeile der Startseiten-Überschriften
+   (Papier/Waldgrün). Gleiche Quelle und Lizenz wie oben (fontsource, OFL). */
+@font-face {
+  font-family: 'Newsreader';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/newsreader-latin-400-italic.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Newsreader';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/newsreader-latin-ext-400-italic.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
 /* Inter Tight — Display-Schnitt der Governance-AI-Landing. Enger laufend als
    Inter; trägt H1/H2, Marke und Kennzahlen im Titan-Enterprise-Setz. */
 @font-face {
@@ -1816,33 +1835,38 @@ html, body {
    Sektionen unter dem Hero lesen weiter die `--ga-*`-Variablen; dieser Scope
    stellt sie auf die Handoff-Palette (Cyan-Akzent, kein Gold) und die
    Titel-Schrift auf Inter Tight. Andere Design-Routen bleiben unberührt. */
-/* Governance-OS-Palette (Dark Titanium / Graphit, Cyan nur als System-
-   indikator). Gilt ausschließlich im Scope der Startseite `/`: Die
+/* Startseiten-Palette „Papier & Waldgrün" (natürlich, vertrauensvoll):
+   warmes Papier, fast schwarze Schrift, tiefes Waldgrün als einzige
+   Handlungs- und Systemfarbe. Gilt ausschließlich im Scope von `/`: Die
    `--color-rs-*`-Werte werden hier überschrieben, App und Dashboard behalten
-   ihre Werte aus `@theme`. */
+   ihre Werte aus `@theme`. Der Tokenname `cyan` bleibt aus Kompatibilität —
+   er trägt hier Waldgrün. */
 .ga-context.rs-handoff {
-  --color-rs-hero:          #080B0F;
-  --color-rs-bg-0:          #0D1218;
-  --color-rs-bg-1:          #121922;
-  --color-rs-bg-2:          #18212B;
-  --color-rs-bg-3:          #1E2934;
-  --color-rs-fg-0:          #F2F5F7;
-  --color-rs-fg-1:          #A8B3BD;
-  --color-rs-fg-2:          #707E8B;
-  --color-rs-fg-3:          #56626E;
-  --color-rs-border:        #26323D;
-  --color-rs-border-strong: #34424F;
-  --color-rs-cyan:          #22D3EE;
-  --color-rs-cyan-light:    #67E8F9;
+  --color-rs-hero:          #EFEAE1;
+  --color-rs-bg-0:          #E8E2D7;
+  --color-rs-bg-1:          #F7F4EE;
+  --color-rs-bg-2:          #EDE7DC;
+  --color-rs-bg-3:          #E2DBCF;
+  --color-rs-fg-0:          #1B1F1C;
+  --color-rs-fg-1:          #454B47;
+  --color-rs-fg-2:          #5E665F;
+  --color-rs-fg-3:          #8A9089;
+  --color-rs-border:        #D6CFC2;
+  --color-rs-border-strong: #B9B0A0;
+  --color-rs-primary:       #1F3D32;
+  --color-rs-primary-hover: #16302A;
+  --color-rs-cyan:          #2F6B53;
+  --color-rs-cyan-light:    #3F8A6A;
+  --color-rs-success:       #2F6B53;
 }
 
 .ga-context.rs-handoff {
-  color-scheme: dark;
-  --ga-display: var(--font-rs-title);
+  color-scheme: light;
+  --ga-display: var(--font-rs-serif);
   --ga-void: var(--color-rs-hero);
   --ga-deep: var(--color-rs-bg-0);
   --ga-mid: var(--color-rs-bg-1);
-  --ga-panel: rgba(18, 25, 34, 0.78);
+  --ga-panel: rgba(247, 244, 238, 0.92);
   --ga-text: var(--color-rs-fg-0);
   --ga-muted: var(--color-rs-fg-1);
   --ga-titan: var(--color-rs-fg-2);
@@ -1850,37 +1874,50 @@ html, body {
   --ga-green: var(--color-rs-success);
   --ga-accent: var(--color-rs-cyan);
   --ga-accent-lite: var(--color-rs-cyan-light);
-  --ga-accent-deep: #0e8aa6;
-  --ga-accent-border: rgba(34, 211, 238, 0.32);
-  /* Die VIP-Stufe war Gold; im Handoff gibt es kein Gold. Violett ist die
-     vorgesehene Sekundärfarbe (Management/Enterprise). */
+  --ga-accent-deep: var(--color-rs-primary);
+  --ga-accent-border: rgba(31, 61, 50, 0.28);
   --ga-vip: var(--color-rs-fg-2);
-  --ga-vip-lite: #a996ff;
-  --ga-vip-deep: #5b3fd9;
-  --ga-vip-border: rgba(124, 92, 255, 0.4);
+  --ga-vip-lite: var(--color-rs-fg-1);
+  --ga-vip-deep: var(--color-rs-fg-0);
+  --ga-vip-border: var(--color-rs-border-strong);
   --ga-line: var(--color-rs-border);
-  --ga-line-soft: rgba(38, 50, 61, 0.85);
-  /* Primäraktion in Titan-Weiß: Cyan bleibt Systemindikator. */
-  --ga-pill-face: linear-gradient(180deg, #F7F9FA, #D6DDE2);
-  --ga-pill-ink: #080B0F;
-  --ga-pill-shadow: 0 1px 0 rgba(255, 255, 255, 0.6) inset, 0 10px 30px rgba(0, 0, 0, 0.45);
-  --ga-ghost-face: rgba(18, 25, 34, 0.72);
-  --ga-ghost-face-hover: rgba(242, 245, 247, 0.06);
-  --ga-ghost-border: var(--color-rs-border-strong);
-  --ga-ghost-border-hover: var(--color-rs-cyan-light);
-  --ga-chip-face: rgba(34, 211, 238, 0.06);
+  --ga-line-soft: var(--color-rs-border);
+  /* Primäraktion: volles Waldgrün, harte Kante, kein Glow. */
+  --ga-pill-face: linear-gradient(var(--color-rs-primary), var(--color-rs-primary));
+  --ga-pill-ink: #F7F4EE;
+  --ga-pill-shadow: none;
+  --ga-ghost-face: transparent;
+  --ga-ghost-face-hover: rgba(31, 61, 50, 0.06);
+  --ga-ghost-border: var(--color-rs-fg-0);
+  --ga-ghost-border-hover: var(--color-rs-primary);
+  --ga-chip-face: rgba(31, 61, 50, 0.05);
+  --ga-sheen: rgba(31, 61, 50, 0.06);
   --ga-h1-face: linear-gradient(var(--color-rs-fg-0), var(--color-rs-fg-0));
-  --ga-h1-accent: linear-gradient(var(--color-rs-fg-0), var(--color-rs-fg-1));
-  --ga-h2-accent: linear-gradient(180deg, var(--color-rs-fg-1), var(--color-rs-fg-2));
-  --ga-glass: linear-gradient(160deg, rgba(24, 33, 43, 0.9), rgba(18, 25, 34, 0.9) 60%);
+  --ga-h1-accent: linear-gradient(var(--color-rs-primary), var(--color-rs-primary));
+  --ga-h2-accent: linear-gradient(var(--color-rs-primary), var(--color-rs-primary));
+  --ga-glass: var(--color-rs-bg-1);
   --ga-band: var(--color-rs-hero);
   --ga-band-alt: var(--color-rs-bg-0);
   --ga-status-bg: var(--color-rs-bg-0);
   --ga-ticker-bg: var(--color-rs-bg-0);
   --ga-footer-bg: var(--color-rs-bg-0);
-  --ga-price-face: linear-gradient(180deg, #ffffff 0%, var(--color-rs-fg-1) 100%);
-  --ga-featured-shadow: 0 0 0 1px rgba(242, 245, 247, 0.22), 0 24px 60px rgba(0, 0, 0, 0.55);
+  --ga-price-face: linear-gradient(var(--color-rs-fg-0), var(--color-rs-fg-0));
+  --ga-featured-shadow: 0 0 0 1px var(--color-rs-primary);
   font-feature-settings: "ss01", "cv11";
+}
+/* Serif-Überschriften im Buchschnitt statt des globalen 700er-Locks. */
+.ga-context.rs-handoff :is(h2, h3) {
+  font-weight: 400 !important;
+}
+/* Papier trägt keine Glas-Schatten. */
+.ga-context.rs-handoff .ga-glass {
+  border-radius: 0;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+.ga-context.rs-handoff .ga-glass:hover { box-shadow: 0 12px 32px rgba(27, 31, 28, 0.08); }
+.ga-context.rs-handoff .ga-card::after {
+  background: linear-gradient(90deg, transparent, var(--color-rs-primary), transparent);
 }
 .rs-handoff .ga-vip {
   --ga-sheen: rgba(124, 92, 255, 0.16);

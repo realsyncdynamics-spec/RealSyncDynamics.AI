@@ -77,12 +77,12 @@ export function GovernanceSelfCheck() {
                             return (
                               <label
                                 key={opt.value}
-                                className="relative inline-flex cursor-pointer items-center rounded-full border px-4 py-[7px] text-[0.85rem] font-medium transition has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-[var(--ga-accent-lite)]"
+                                className="relative inline-flex min-h-[44px] cursor-pointer items-center rounded-full border px-4 py-[7px] text-[0.85rem] font-medium transition has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-[var(--ga-accent-lite)]"
                                 style={{
                                   fontFamily: GA_SANS,
-                                  borderColor: checked ? 'var(--ga-accent)' : 'var(--ga-line)',
-                                  backgroundColor: checked ? 'rgba(0,184,212,0.14)' : 'transparent',
-                                  color: checked ? 'var(--ga-text)' : GA_MUTED,
+                                  borderColor: checked ? 'var(--color-rs-primary)' : 'var(--color-rs-border-strong)',
+                                  backgroundColor: checked ? 'var(--color-rs-primary)' : 'transparent',
+                                  color: checked ? '#F7F4EE' : GA_MUTED,
                                 }}
                               >
                                 <input
@@ -108,7 +108,7 @@ export function GovernanceSelfCheck() {
 
           <aside
             className="h-fit border p-5 sm:p-6 lg:sticky lg:top-6"
-            style={{ borderColor: 'var(--ga-accent-border)', backgroundColor: 'rgba(0,184,212,0.05)' }}
+            style={{ borderColor: 'var(--color-rs-border-strong)', backgroundColor: 'var(--color-rs-bg-1)' }}
             aria-labelledby={`${baseId}-result`}
           >
             <p id={`${baseId}-result`} className="text-[11px] uppercase tracking-[0.16em]" style={{ fontFamily: GA_MONO, color: 'var(--ga-accent)' }}>

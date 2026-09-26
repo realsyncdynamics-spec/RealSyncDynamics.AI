@@ -1,5 +1,6 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.43.4";
+import { type SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.43.4";
 import { Anthropic } from "https://esm.sh/@anthropic-ai/sdk@0.20.6";
+import { requireAuthAndTenant } from "../_shared/auth.ts";
 
 interface RequestBody {
   tenantId: string;
@@ -16,12 +17,16 @@ interface RecommendationInput {
   estimatedSavingsMonthly?: number;
 }
 
-const supabase = createClient(
-  Deno.env.get("SUPABASE_URL") || "",
-  Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || ""
-);
+// Kein Service-Role-Client auf Modulebene mehr. `requireAuthAndTenant` gibt ihn
+// erst zurueck, nachdem die Mitgliedschaft geprueft ist — so ist der
+// RLS-umgehende Client gar nicht erreichbar, solange der Mandant unbestaetigt
+// ist. Der Vertrag von _shared/auth.ts verlangt genau das: "Use service_role
+// only AFTER membership in the target tenant is verified."
 
-async function analyzeComplianceTrends(tenantId: string): Promise<RecommendationInput[]> {
+async function analyzeComplianceTrends(
+  supabase: SupabaseClient,
+  tenantId: string,
+): Promise<RecommendationInput[]> {
   // Fetch compliance history for the tenant
   const { data: scores } = await supabase
     .from("compliance_score_history")
@@ -83,6 +88,7 @@ Return ONLY a JSON array of recommendations, no other text.`,
 }
 
 async function storeRecommendations(
+  supabase: SupabaseClient,
   tenantId: string,
   recommendations: RecommendationInput[]
 ): Promise<boolean> {
@@ -106,16 +112,39 @@ async function storeRecommendations(
 
 async function handleRequest(req: Request): Promise<Response> {
   const body = (await req.json()) as RequestBody;
-  const { tenantId, analysisType = "full" } = body;
 
-  if (!tenantId) {
-    return new Response(JSON.stringify({ error: "tenantId required" }), {
-      status: 400,
-    });
-  }
+  // Sicherheitsrelevanz: Vorher war `body.tenantId` die Autoritaet. Ein
+  // beliebiger Aufrufer mit dem oeffentlichen Anon-Key (er liegt im
+  // Frontend-Bundle und ist ein gueltiges JWT, das Plattform-verify_jwt also
+  // passiert) konnte damit einen fremden Mandanten benennen und
+  //   1. dessen compliance_score_history und risk_dashboard_summary lesen —
+  //      per Service-Role an RLS vorbei,
+  //   2. diese Daten an Anthropic schicken, auf Betreiberrechnung,
+  //   3. optimization_recommendations unter dem fremden Mandanten schreiben.
+  //
+  // Der Leseschritt macht das zu einem Datenabfluss, nicht nur zu einem
+  // Fremdschreiben: Compliance-Verlaeufe sind personenbezogen-nah und gehen
+  // hier an einen Auftragsverarbeiter (Art. 28 DSGVO, Art. 32 Abs. 1 lit. b —
+  // Vertraulichkeit). EU-AI-Act-Bezug: Art. 12 (Protokollierung) und Art. 26
+  // (Betreiberpflichten) setzen voraus, dass Governance-Daten dem richtigen
+  // Verantwortlichen zugeordnet bleiben.
+  //
+  // `requireAuthAndTenant` ist der kanonische Resolver aus _shared/auth.ts —
+  // derselbe, den website-operations-agent, enterprise-ai-os-agents-run und
+  // ai-gateway nutzen. Kein zweiter Auth-Pfad, keine eigene
+  // Membership-Abfrage. Der Body-Wert ist ab hier nur noch ein zu pruefender
+  // Claim; Autoritaet ist ausschliesslich `auth.tenantId`.
+  //
+  // Reihenfolge ist Absicht: Diese Pruefung steht vor der ersten Leseabfrage,
+  // vor dem Provider-Aufruf und vor dem ersten Write.
+  const auth = await requireAuthAndTenant(req, body.tenantId);
+  if (auth instanceof Response) return auth;
+
+  const tenantId = auth.tenantId;
+  const supabase = auth.admin;
 
   try {
-    const recommendations = await analyzeComplianceTrends(tenantId);
+    const recommendations = await analyzeComplianceTrends(supabase, tenantId);
 
     if (recommendations.length === 0) {
       return new Response(
@@ -124,7 +153,7 @@ async function handleRequest(req: Request): Promise<Response> {
       );
     }
 
-    const success = await storeRecommendations(tenantId, recommendations);
+    const success = await storeRecommendations(supabase, tenantId, recommendations);
 
     if (!success) {
       throw new Error("Failed to store recommendations");

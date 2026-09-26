@@ -1,6 +1,6 @@
 import { lookup } from 'node:dns/promises';
 import { isIP } from 'node:net';
-import type { BrowserContext, Page, Route } from 'playwright';
+import type { Browser, BrowserContext, Page, Route } from 'playwright';
 
 export type BrowserAction =
   | { type: 'navigate'; url: string }
@@ -28,10 +28,6 @@ export interface BrowserActionResult {
   error?: string;
 }
 
-interface BrowserLike {
-  newContext(options: Record<string, unknown>): Promise<BrowserContext>;
-}
-
 interface SessionState {
   context: BrowserContext;
   page: Page;
@@ -45,7 +41,6 @@ const MAX_TEXT_LENGTH = 10_000;
 const MAX_SELECTOR_LENGTH = 1_000;
 const MAX_WAIT_MS = 5_000;
 const sessions = new Map<string, SessionState>();
-const hostCache = new Map<string, { allowed: boolean; expiresAt: number }>();
 
 function isPrivateIp(address: string): boolean {
   const lower = address.toLowerCase();
@@ -57,34 +52,25 @@ function isPrivateIp(address: string): boolean {
     const second = Number(v4[1]);
     if (second >= 16 && second <= 31) return true;
   }
+  if (lower.startsWith('::ffff:')) return isPrivateIp(lower.slice('::ffff:'.length));
   if (lower.startsWith('fc') || lower.startsWith('fd') || lower.startsWith('fe80:')) return true;
   return false;
 }
 
 async function isPublicHost(host: string): Promise<boolean> {
   const key = host.toLowerCase();
-  const cached = hostCache.get(key);
-  if (cached && cached.expiresAt > Date.now()) return cached.allowed;
+  if (key === 'localhost' || key.endsWith('.localhost')) return false;
+  if (isIP(key)) return !isPrivateIp(key);
 
-  let allowed = true;
-  if (key === 'localhost' || key.endsWith('.localhost')) {
-    allowed = false;
-  } else if (isIP(key)) {
-    allowed = !isPrivateIp(key);
-  } else {
-    try {
-      const resolved = await lookup(key, { all: true, verbatim: true });
-      allowed = resolved.length > 0 && resolved.every((entry) => !isPrivateIp(entry.address));
-    } catch {
-      allowed = false;
-    }
+  try {
+    const resolved = await lookup(key, { all: true, verbatim: true });
+    return resolved.length > 0 && resolved.every((entry) => !isPrivateIp(entry.address));
+  } catch {
+    return false;
   }
-
-  hostCache.set(key, { allowed, expiresAt: Date.now() + 60_000 });
-  return allowed;
 }
 
-async function assertPublicHttpUrl(raw: string): Promise<URL> {
+export async function assertPublicHttpUrl(raw: string): Promise<URL> {
   let url: URL;
   try { url = new URL(raw); } catch { throw new Error('INVALID_URL'); }
   if (!['http:', 'https:'].includes(url.protocol)) throw new Error('INVALID_URL');
@@ -135,7 +121,7 @@ async function pruneSessions(): Promise<void> {
 }
 
 export async function executeBrowserActions(
-  browser: BrowserLike,
+  browser: Browser,
   input: BrowserExecuteRequest,
 ): Promise<BrowserActionResult[]> {
   if (!input.session_id || input.session_id.length > 200) throw new Error('INVALID_SESSION');

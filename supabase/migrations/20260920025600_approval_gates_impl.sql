@@ -16,10 +16,6 @@ update public.runtime_approval_gates rg
   from public.runtime_executions re
   where rg.execution_id = re.id and rg.tenant_id is null;
 
--- Add NOT NULL constraint for tenant_id now that it's backfilled
-alter table public.runtime_approval_gates
-  alter column tenant_id set not null;
-
 -- Indexes for query performance
 create index if not exists ix_approval_gates_tenant_created
   on public.runtime_approval_gates (tenant_id, created_at desc);

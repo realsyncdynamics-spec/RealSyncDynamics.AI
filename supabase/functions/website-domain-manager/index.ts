@@ -24,6 +24,33 @@ const SRK = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
 const admin = createClient(SUPABASE_URL, SRK, { auth: { persistSession: false } });
 
+/** Die Zone, deren Subdomains wir selbst verwalten. */
+const MANAGED_ZONE = 'realsyncdynamicsai.de';
+
+/**
+ * Gehoert diese Domain zu unserer verwalteten Zone?
+ *
+ * Die Punkt-Grenze ist der ganze Punkt. Vorher stand an beiden Aufrufstellen
+ * `domain.endsWith('realsyncdynamicsai.de')` — ohne fuehrenden Punkt. Damit
+ * galten auch `xrealsyncdynamicsai.de`, `boesrealsyncdynamicsai.de` und
+ * `meine-realsyncdynamicsai.de` als verwaltete Subdomain. Solche Domains kann
+ * jeder registrieren, und wer sie registriert, kontrolliert ihr DNS.
+ *
+ * Das hebelte die Preview-Regel im Dateikopf aus: eine Fremddomain wurde als
+ * verwaltet eingestuft, bestand damit den DNS-Check (er prueft nur, ob der
+ * Name aufloest) und konnte `cloudflare_status: 'active'` samt
+ * `dns_validated_at` erhalten — eine Domain-Anbindung ohne tatsaechliche
+ * Verifikation.
+ *
+ * Kleingeschrieben wird verglichen, weil DNS nicht zwischen Gross- und
+ * Kleinschreibung unterscheidet, `endsWith` aber schon. Dasselbe Idiom steht
+ * in `src/lib/sentry.ts` und `src/lib/csrf.ts`.
+ */
+function isManagedDomain(domain: string): boolean {
+  const host = domain.trim().toLowerCase();
+  return host === MANAGED_ZONE || host.endsWith(`.${MANAGED_ZONE}`);
+}
+
 interface DomainManagementRequest {
   project_id: string;
   tenant_id: string;
@@ -103,7 +130,7 @@ async function connectDomain(
     return { success: false, error: 'Invalid domain format', code: 'INVALID_DOMAIN' };
   }
 
-  const isSubdomain = domain.endsWith('realsyncdynamicsai.de');
+  const isSubdomain = isManagedDomain(domain);
   const domainType = isSubdomain ? 'subdomain' : 'custom';
 
   // Check if domain already exists
@@ -181,7 +208,7 @@ async function validateDomain(
   projectId: string,
   domain: string
 ): Promise<{ success: boolean; data?: unknown; error?: string; code?: string }> {
-  const isManagedSubdomain = domain.endsWith('realsyncdynamicsai.de');
+  const isManagedSubdomain = isManagedDomain(domain);
   const dnsValid = await checkDNSPropagation(domain);
 
   // Preview policy: only managed subdomains may become `active` from a DNS check.

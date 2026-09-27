@@ -99,9 +99,41 @@ describe('decideRateLimit — isolation by key', () => {
 describe('decideRateLimit — feature-specific limits', () => {
   it('reads from FEATURE_LIMITS when no override is provided', () => {
     expect(FEATURE_LIMITS.assistant_chip_quick_chat).toBeDefined();
-    expect(FEATURE_LIMITS.audit_copilot_remediation_plan?.perMinute).toBe(3);
+    expect(FEATURE_LIMITS['audit_copilot.fix_snippet']).toEqual({ perMinute: 6, perHour: 60 });
+    expect(FEATURE_LIMITS['audit_copilot.remediation_plan']).toEqual({ perMinute: 3, perHour: 20 });
+    expect(FEATURE_LIMITS.kodee_chat).toEqual({ perMinute: 6, perHour: 50 });
     expect(FEATURE_LIMITS.ai_act_classify?.perMinute).toBe(4);
     expect(FEATURE_LIMITS.ai_act_classify?.perHour).toBe(30);
+  });
+
+  it('applies the corrected caller feature overrides instead of falling back to DEFAULT_LIMITS', () => {
+    const cases = [
+      ['audit_copilot.fix_snippet', { perMinute: 6, perHour: 60 }],
+      ['audit_copilot.remediation_plan', { perMinute: 3, perHour: 20 }],
+      ['kodee_chat', { perMinute: 6, perHour: 50 }],
+    ] as const;
+
+    for (const [feature, limits] of cases) {
+      const stores = freshStores();
+      for (let i = 0; i < limits.perMinute; i++) {
+        expect(decideRateLimit({
+          key: feature,
+          feature,
+          now: i,
+          minuteWindows: stores.minute,
+          hourWindows: stores.hour,
+        }).ok).toBe(true);
+      }
+
+      const blocked = decideRateLimit({
+        key: feature,
+        feature,
+        now: limits.perMinute,
+        minuteWindows: stores.minute,
+        hourWindows: stores.hour,
+      });
+      expect(blocked.ok).toBe(false);
+    }
   });
 
   it('falls back to DEFAULT_LIMITS for unknown features', () => {

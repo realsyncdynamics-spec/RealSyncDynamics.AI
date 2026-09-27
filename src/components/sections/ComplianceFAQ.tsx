@@ -39,7 +39,7 @@ export const DEFAULT_COMPLIANCE_FAQ: FaqEntry[] = [
   {
     question: 'Wie geht es nach dem Audit weiter?',
     answer:
-      'Sie erhalten einen Report mit priorisierten Hinweisen. Optional können Sie kontinuierliches Monitoring aktivieren, einen Fix-Call zur technischen Einordnung buchen oder das DSGVO-Fix-Paket Light für die Umsetzung anfragen.',
+      'Sie erhalten einen Report mit priorisierten Hinweisen. Kontinuierliches Monitoring ist Coming Soon. Optional können Sie einen Fix-Call zur technischen Einordnung buchen oder das DSGVO-Fix-Paket Light für die Umsetzung anfragen.',
   },
 ];
 

@@ -506,9 +506,9 @@ export const pricingPlans: PricingPlan[] = [
     ],
     cta: {
       label: 'Enterprise anfragen',
-      href: '/contact-sales?intent=enterprise',
+      href: '/contact-sales?plan=enterprise&intent=enterprise',
     },
-    checkoutPath: '/contact-sales?intent=enterprise',
+    checkoutPath: '/contact-sales?plan=enterprise&intent=enterprise',
     problemsSolved: [
       'Anforderungen gehen über Standard-Pakete hinaus',
       'Besondere Compliance-Regeln notwendig',
@@ -575,9 +575,9 @@ export const pricingPlans: PricingPlan[] = [
     ],
     cta: {
       label: 'Enterprise anfragen',
-      href: '/contact-sales?intent=enterprise',
+      href: '/contact-sales?plan=partner&intent=enterprise',
     },
-    checkoutPath: '/contact-sales?intent=enterprise',
+    checkoutPath: '/contact-sales?plan=partner&intent=enterprise',
     problemsSolved: [
       'Zu viele einzelne Kundenprüfungen ohne zentrale Übersicht',
       'Kein einheitlicher Prüfstatus über alle Mandanten',
@@ -744,9 +744,9 @@ export const pricingPlans: PricingPlan[] = [
     ],
     cta: {
       label: 'Enterprise anfragen',
-      href: '/contact-sales?intent=enterprise',
+      href: '/contact-sales?plan=partner_yearly&intent=enterprise',
     },
-    checkoutPath: '/contact-sales?intent=enterprise',
+    checkoutPath: '/contact-sales?plan=partner_yearly&intent=enterprise',
     problemsSolved: [
       'Multi-Mandanten-Betrieb braucht verlässliche Jahreslaufzeiten',
       'Compliance-Budget soll planbar fürs ganze Jahr sein',

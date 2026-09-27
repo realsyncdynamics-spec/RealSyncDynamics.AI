@@ -216,6 +216,7 @@ function Inner({ session }: { session: Session }) {
           )}
 
         <div className="flex flex-wrap gap-2 text-xs">
+          <Link to="/admin/billing" className="px-3 py-1.5 bg-obsidian-900 border border-rose-800 hover:border-rose-500 text-rose-200 rounded-none">→ Conversion Failed/Open</Link>
           <Link to="/admin/system" className="px-3 py-1.5 bg-obsidian-900 border border-titanium-700 hover:border-security-500 text-titanium-200 rounded-none">→ System Health</Link>
           <Link to="/admin/leads" className="px-3 py-1.5 bg-obsidian-900 border border-titanium-700 hover:border-security-500 text-titanium-200 rounded-none">→ Leads</Link>
           <Link to="/admin/analytics" className="px-3 py-1.5 bg-obsidian-900 border border-titanium-700 hover:border-security-500 text-titanium-200 rounded-none">→ Analytics</Link>

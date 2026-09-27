@@ -3,10 +3,22 @@
 // Eigenständige, helle A4-Ansicht (ausserhalb der Governance-Shell), die
 // dieselben Cockpit-Daten verdichtet, einen SHA-256-Integritäts-Hash als
 // Übergabe-Anker ausweist und den Druckdialog (Als PDF speichern) auslöst.
+//
+// Score nur bei scoreStatus 'ok'. Sonst „Noch nicht bewertbar“ — die Mappe
+// druckt und hasht dann keinen Score (cockpitIntegrityPayload: score = null,
+// score_status geht mit ein). Bei unzuverlässigen Daten öffnet sich der
+// Druckdialog nicht automatisch.
 import { useEffect, useState } from 'react';
 import { useTenant } from '../../../core/access/TenantProvider';
 import { loadCockpitData, cockpitIntegrityHash, type CockpitData } from './cockpitData';
 import { scoreLabel } from './cockpitScore';
+import { tenantDisplayName } from '../dashboard/dashboardSignals';
+
+const SCORE_STATUS_LABEL: Record<CockpitData['scoreStatus'], string> = {
+  ok: 'bewertet',
+  insufficient_data: 'Noch nicht bewertbar — keine belastbare Datenbasis',
+  unreliable: 'Noch nicht bewertbar — Datenquellen nicht vollständig geladen',
+};
 
 const PRINT_CSS = `
   @page { size: A4; margin: 20mm; }
@@ -27,10 +39,13 @@ const PRINT_CSS = `
 
 export function CeoBriefPrintView() {
   const { activeTenantId, tenants } = useTenant();
-  const tenantName = tenants.find((t) => t.tenantId === activeTenantId)?.name ?? '—';
+  const rawTenantName = tenants.find((t) => t.tenantId === activeTenantId)?.name ?? null;
+  // Deutsche Prüfer-Mappe: „Workspace von …“ statt englischem Genitiv.
+  const tenantName = rawTenantName === null ? '—' : tenantDisplayName(rawTenantName, 'de');
   const [data, setData] = useState<CockpitData | null>(null);
   const [hash, setHash] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
   const generated = new Date();
   const generatedDate = generated.toISOString().slice(0, 10);
 
@@ -38,34 +53,55 @@ export function CeoBriefPrintView() {
     let cancelled = false;
     if (!activeTenantId) return;
     setData(null);
+    setError(null);
+    setHash('');
     loadCockpitData(activeTenantId)
       .then(async (d) => {
         if (cancelled) return;
         setData(d);
         setHash(await cockpitIntegrityHash(d, generatedDate));
-        // Druckdialog erst nach Render + Hash auslösen.
-        setTimeout(() => { if (!cancelled) window.print(); }, 400);
+        // Druckdialog erst nach Render + Hash auslösen — nicht bei
+        // unzuverlässigen Daten (Prüfer-Dokument mit Lücken).
+        if (d.scoreStatus !== 'unreliable') {
+          setTimeout(() => { if (!cancelled) window.print(); }, 400);
+        }
       })
       .catch((e) => { if (!cancelled) setError((e as Error)?.message ?? String(e)); });
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTenantId]);
+  }, [activeTenantId, reloadKey]);
+
+  const retryButton = (
+    <button type="button" onClick={() => setReloadKey((k) => k + 1)} style={{ padding: '8px 16px', cursor: 'pointer' }}>
+      Erneut laden
+    </button>
+  );
 
   if (!activeTenantId) {
     return <div style={{ padding: 40 }}>Bitte anmelden, um die Prüfer-Mappe zu erzeugen.</div>;
   }
   if (error) {
-    return <div style={{ padding: 40, color: '#b00' }}>Fehler: {error}</div>;
+    return (
+      <div style={{ padding: 40 }}>
+        <p style={{ color: '#b00' }}>Die Prüfer-Mappe konnte nicht erzeugt werden: {error}</p>
+        {retryButton}
+      </div>
+    );
   }
   if (!data) {
     return <div style={{ padding: 40 }}>Prüfer-Mappe wird erzeugt …</div>;
   }
 
+  const scored = data.scoreStatus === 'ok' && data.score !== null;
+  const failed = (name: string) => data.partialFailures.some((f) => f.startsWith(`${name}:`));
+  const countCell = (name: string, value: number) => (failed(name) ? 'nicht geladen' : value);
+
   return (
-    <div style={{ background: '#fff', minHeight: '100vh' }}>
+    <div style={{ background: '#fff', minHeight: '100vh' }} data-testid="ceo-brief">
       <style>{PRINT_CSS}</style>
 
-      <div className="no-print" style={{ textAlign: 'right' }}>
+      <div className="no-print" style={{ textAlign: 'right', display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+        {data.scoreStatus === 'unreliable' && retryButton}
         <button onClick={() => window.print()} style={{ padding: '8px 16px', cursor: 'pointer' }}>
           Drucken / als PDF speichern
         </button>
@@ -80,10 +116,10 @@ export function CeoBriefPrintView() {
 
         <h2>Gesamtbewertung</h2>
         <div className="kpi">
-          <div>
-            <b>{data.score === null ? '–' : `${data.score}/100`}</b>
+          <div data-testid="brief-score">
+            <b>{scored ? `${data.score}/100` : 'Noch nicht bewertbar'}</b>
             <span className="muted">
-              {data.score === null ? 'Governance-Score nicht verfügbar' : `Governance-Score · ${scoreLabel(data.score)}`}
+              {scored ? `Governance-Score · ${scoreLabel(data.score as number)}` : `Governance-Score · ${SCORE_STATUS_LABEL[data.scoreStatus]}`}
             </span>
           </div>
           <div>
@@ -95,11 +131,11 @@ export function CeoBriefPrintView() {
         <h2>Offene Posten</h2>
         <table>
           <tbody>
-            <tr><td>Offene Vorfälle</td><td>{data.counts.incidents}</td></tr>
-            <tr><td>Betroffenenanfragen überfällig</td><td>{data.counts.dsr.overdue}</td></tr>
-            <tr><td>Offene DSFA</td><td>{data.counts.dpias}</td></tr>
-            <tr><td>Vendoren ohne AVV</td><td>{data.counts.vendorsNoDpa}</td></tr>
-            <tr><td>Ausstehende Freigaben</td><td>{data.counts.approvals}</td></tr>
+            <tr><td>Offene Vorfälle</td><td>{countCell('incidents', data.counts.incidents)}</td></tr>
+            <tr><td>Betroffenenanfragen überfällig</td><td>{countCell('dsr', data.counts.dsr.overdue)}</td></tr>
+            <tr><td>Offene DSFA</td><td>{countCell('dpias', data.counts.dpias)}</td></tr>
+            <tr><td>Vendoren ohne AVV</td><td>{countCell('vendors', data.counts.vendorsNoDpa)}</td></tr>
+            <tr><td>Ausstehende Freigaben</td><td>{countCell('approvals', data.counts.approvals)}</td></tr>
           </tbody>
         </table>
 
@@ -136,7 +172,8 @@ export function CeoBriefPrintView() {
         )}
 
         <div className="hashbox mono">
-          <strong>Integritäts-Anker (SHA-256):</strong><br />{hash}
+          <strong>Integritäts-Anker (SHA-256):</strong><br /><span data-testid="brief-hash">{hash}</span>
+          <br /><span className="muted">Score-Status: {data.scoreStatus}{scored ? '' : ' · kein Score im Hash'}</span>
           <br /><span className="muted">Deterministisch über den Datenstand — Prüfer kann den Hash zur Verifikation ins Übergabe-Protokoll aufnehmen.</span>
         </div>
       </div>

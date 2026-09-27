@@ -16,6 +16,7 @@ import type { FindingSeverity } from '../../../types/governance/finding';
 import { withPerformanceMonitoring } from '../withPerformanceMonitoring';
 import { getSupabase } from '../../../lib/supabase';
 import { TenantCustomDomainPanel } from '../../website-operations/TenantCustomDomainPanel';
+import { WEBSITE_AUDIT_CTA_LABEL } from '../dashboard/dashboardSignals';
 
 interface WebsiteRow {
   id: string;
@@ -91,10 +92,12 @@ async function domainHintFromSession(): Promise<string | null> {
   }
 }
 
-function WebsiteCard({ row, onScan, scanning }: {
+function WebsiteCard({ row, onScan, scanning, scanError = null }: {
   row: WebsiteRow;
   onScan: (row: WebsiteRow) => void;
   scanning: boolean;
+  /** Fehler des letzten Audit-Starts für genau diese Domain (sichtbar an der Karte). */
+  scanError?: string | null;
 }) {
   const scan = row.lastScan;
   return (
@@ -145,12 +148,22 @@ function WebsiteCard({ row, onScan, scanning }: {
         <button
           onClick={() => onScan(row)}
           disabled={scanning}
-          className="flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-mono border border-titanium-800 text-titanium-400 hover:border-teal-700 hover:text-teal-400 transition-colors disabled:opacity-40"
+          className="flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-mono border border-titanium-800 text-titanium-400 hover:border-[#00B8D4]/60 hover:text-[#00B8D4] transition-colors disabled:opacity-40"
         >
           <RefreshCw className={`h-2.5 w-2.5 ${scanning ? 'animate-spin' : ''}`} />
-          Scannen
+          {WEBSITE_AUDIT_CTA_LABEL}
         </button>
       </div>
+      {scanError && (
+        <div
+          role="alert"
+          data-testid={`website-scan-error-${row.id}`}
+          className="flex items-start gap-1.5 border-t border-red-900 bg-red-950/40 px-4 py-2 text-[10px] font-mono text-red-400"
+        >
+          <AlertTriangle className="h-3 w-3 shrink-0 mt-px" />
+          {scanError}
+        </div>
+      )}
     </div>
   );
 }
@@ -174,7 +187,7 @@ function AddDomainModal({
           onChange={(e) => setValue(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter' && value.trim()) { onAdd(value.trim()); } }}
           placeholder="z.B. www.mein-unternehmen.de"
-          className="w-full bg-obsidian-950 border border-titanium-800 px-3 py-2 text-sm font-mono text-titanium-100 placeholder-titanium-700 outline-none focus:border-teal-600"
+          className="w-full bg-obsidian-950 border border-titanium-800 px-3 py-2 text-sm font-mono text-titanium-100 placeholder-titanium-700 outline-none focus:border-[#00B8D4]"
         />
         <div className="flex items-center gap-2 justify-end">
           <button onClick={onClose} className="px-3 py-1.5 text-xs font-mono text-titanium-500 border border-titanium-800 hover:text-titanium-300">
@@ -182,7 +195,7 @@ function AddDomainModal({
           </button>
           <button
             onClick={() => value.trim() && onAdd(value.trim())}
-            className="px-3 py-1.5 text-xs font-mono bg-teal-600 text-white hover:bg-teal-500"
+            className="px-3 py-1.5 text-xs font-mono bg-[#1E5AFF] text-white hover:bg-[#1641C4]"
           >
             Hinzufügen
           </button>
@@ -199,6 +212,7 @@ function _WebsiteGovernanceView() {
   const [rows, setRows] = useState<WebsiteRow[]>([]);
   const [search, setSearch] = useState('');
   const [scanning, setScanning] = useState<string | null>(null);
+  const [scanErrors, setScanErrors] = useState<Record<string, string>>({});
   const [addOpen, setAddOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loadingSites, setLoadingSites] = useState(false);
@@ -270,6 +284,7 @@ function _WebsiteGovernanceView() {
     if (!activeTenantId) { setError('Bitte einloggen.'); return; }
     setScanning(row.id);
     setError(null);
+    setScanErrors((prev) => { const next = { ...prev }; delete next[row.id]; return next; });
     try {
       await triggerTenantAudit(activeTenantId, row.domain, { website_id: row.id });
       const scans = await listScanRuns(activeTenantId, { limit: 200 });
@@ -279,7 +294,9 @@ function _WebsiteGovernanceView() {
         return { ...r, lastScan: latest };
       }));
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Scan fehlgeschlagen.');
+      const message = e instanceof Error ? e.message : 'Website-Audit fehlgeschlagen.';
+      setError(message);
+      setScanErrors((prev) => ({ ...prev, [row.id]: message }));
     } finally {
       setScanning(null);
     }
@@ -306,8 +323,8 @@ function _WebsiteGovernanceView() {
     <div className="min-h-screen bg-obsidian-950 text-titanium-100">
       <header className="h-14 border-b border-titanium-900 bg-obsidian-900 flex items-center justify-between px-4 shrink-0">
         <div className="flex items-center gap-2.5 min-w-0">
-          <div className="w-8 h-8 bg-gradient-to-br from-teal-700 to-blue-800 flex items-center justify-center shrink-0">
-            <Globe className="h-4 w-4 text-white" />
+          <div className="w-8 h-8 bg-obsidian-800 border border-[#00B8D4]/30 flex items-center justify-center shrink-0">
+            <Globe className="h-4 w-4 text-[#00B8D4]" />
           </div>
           <div className="leading-tight min-w-0">
             <div className="font-display font-bold text-sm tracking-tight text-titanium-50">Websites</div>
@@ -322,7 +339,7 @@ function _WebsiteGovernanceView() {
           <button
             onClick={() => setAddOpen(true)}
             disabled={signedOut}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono border border-titanium-800 text-titanium-400 hover:border-teal-700 hover:text-teal-400 transition-colors disabled:opacity-40"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono border border-titanium-800 text-titanium-400 hover:border-[#00B8D4]/60 hover:text-[#00B8D4] transition-colors disabled:opacity-40"
           >
             <Plus className="h-3.5 w-3.5" />
             Domain hinzufügen
@@ -370,15 +387,15 @@ function _WebsiteGovernanceView() {
         </div>
 
         {signedOut ? (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
+          <div className="flex flex-col items-center justify-center py-16 text-center" data-testid="websites-empty-signed-out">
             <LogIn className="h-8 w-8 mb-3 text-titanium-700" />
             <p className="font-mono text-sm text-titanium-300">Anmelden, um Ihre Domains zu sehen.</p>
             <p className="mt-2 max-w-md text-xs text-titanium-600">
-              Nach dem Login erscheinen hier das Unternehmen Ihres Mandanten und die registrierten Domains — keine Beispieldaten.
+              Nach dem Login erscheinen hier das Unternehmen Ihres Mandanten und die registrierten Domains — keine Beispieldaten und keine Fake-KPIs.
             </p>
             <a
               href="/welcome"
-              className="mt-5 px-4 py-2 text-xs font-mono border border-teal-700 text-teal-400 hover:bg-teal-950/40"
+              className="mt-5 px-4 py-2 text-xs font-mono border border-[#00B8D4]/50 text-[#00B8D4] hover:bg-[#00B8D4]/10"
             >
               Anmelden
             </a>
@@ -388,18 +405,21 @@ function _WebsiteGovernanceView() {
             Domains werden geladen…
           </div>
         ) : empty ? (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
+          <div className="flex flex-col items-center justify-center py-16 text-center" data-testid="websites-empty">
             <Globe className="h-8 w-8 mb-3 text-titanium-700" />
             {company && (
               <p className="font-display text-lg text-titanium-50 mb-1">{company}</p>
             )}
             <p className="font-mono text-sm text-titanium-400">Noch keine Domain hinterlegt.</p>
+            <p className="mt-2 max-w-md text-xs text-titanium-600">
+              Domains und Scan-Zähler bleiben leer (0), bis Sie eine Domain hinzufügen — keine Demo-Scores.
+            </p>
             {domainHint && (
-              <p className="mt-2 font-mono text-xs text-teal-400">Vorschlag aus dem Konto: {domainHint}</p>
+              <p className="mt-2 font-mono text-xs text-[#00B8D4]">Vorschlag aus dem Konto: {domainHint}</p>
             )}
             <button
               onClick={() => setAddOpen(true)}
-              className="mt-5 flex items-center gap-1.5 px-4 py-2 text-xs font-mono bg-teal-600 text-white hover:bg-teal-500"
+              className="mt-5 flex items-center gap-1.5 px-4 py-2 text-xs font-mono bg-[#1E5AFF] text-white hover:bg-[#1641C4]"
             >
               <Plus className="h-3.5 w-3.5" />
               {domainHint ? `${domainHint} übernehmen` : 'Erste Domain hinzufügen'}
@@ -418,6 +438,7 @@ function _WebsiteGovernanceView() {
                 row={row}
                 onScan={handleScan}
                 scanning={scanning === row.id}
+                scanError={scanErrors[row.id] ?? null}
               />
             ))}
           </div>

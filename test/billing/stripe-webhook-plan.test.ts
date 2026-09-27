@@ -79,8 +79,8 @@ describe('resolvePlanKey — Fallback via products', () => {
 
   it('fällt auf products.default_for_plan_key zurück wenn metadata fehlt', async () => {
     const r = await resolvePlanKey(
-      { price: { id: 'price_1TfsV8REjTWueUcGCdOO6bT2', metadata: {} } },
-      productsLookup({ price_1TfsV8REjTWueUcGCdOO6bT2: 'starter' }),
+      { price: { id: 'price_1UEmHiREjTWueUcGX2cfEi25', metadata: {} } },
+      productsLookup({ price_1UEmHiREjTWueUcGX2cfEi25: 'starter' }),
     );
     expect(r).toBe('starter');
   });

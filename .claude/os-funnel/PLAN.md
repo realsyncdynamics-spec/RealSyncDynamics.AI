@@ -37,6 +37,7 @@ den falschen Bestand. Wer ihn wörtlich ausführt, baut einen zweiten Trichter.
 | **B8** | Landing unterliegt dem **Design-Freeze** („Papier & Waldgrün", Tokens in `index.css`). | `CLAUDE.md` Abschnitt „Website bauen" | WP1 ändert Texte und Struktur, keine Tokens. |
 | **B9** | Oberhalb von Enterprise (1.249 €) steht im SSoT **Partner zu 1.999 €**. | `shared/pricing.ts` | Klären, ob Partner ein Programm (nicht öffentlich) oder eine Stufe ist — sonst widerspricht es „Enterprise ist die höchste Stufe" (**E-F4**). |
 | **B10** | Das Doku-Budget ist **exakt voll**: `docs/` 235/235 Dateien, 2.697/2.700 KB (`npm run check:context`, CI). | `.claude/context-budget.json`, `scripts/check-context-budget.mjs` | Jedes neue `docs/`-Dokument bricht CI. Dieser Plan liegt deshalb unter `.claude/`. Neue Specs nur gegen Archivierung eines alten Dokuments. |
+| **B11** | Kartenlose Testphasen **laufen nie ab**: `create-trial-subscription` schreibt `status='trialing'` + `trial_end` ohne Stripe-Subscription; der Entitlement-Resolver (`20260920130000_bots_quota_enforcement.sql`, `abo_wirksam`) prüft `trial_end` nicht, und kein Job setzt abgelaufene Testphasen zurück. | Migration `20260920130000`, `create-trial-subscription/index.ts` | Growth-Rechte ohne Ende. **WP2a** (Migration, separates GO): Resolver prüft `trial_end > now()`. WP2 erst danach mergen. |
 
 **Was schon richtig ist und bleibt:** Tenant-Auflösung über `memberships`
 (`create-trial-subscription`, `save-company-profile`), ehrliche
@@ -66,7 +67,7 @@ Die Sichten sind Labels auf dem Authority-Pfad. Kein zweites Enum, kein zweites 
 
 | ID | Frage | Status / Entscheidung | Begründung |
 |---|---|---|---|
-| **E-F1** | Angebotsmechanik nach dem Scan | ✅ **Entschieden: 14-Tage-Growth-Testphase.** Kein Stripe-Gratis-Code, keine manuelle Freischaltung. Starter-`trialDays` → 0. | Nutzt die deployte `create-trial-subscription`; kein neuer Zahlungsweg, keine Karte im Einstieg. |
+| **E-F1** | Angebotsmechanik nach dem Scan | ✅ **Entschieden: 14-Tage-Growth-Testphase.** Kein Stripe-Gratis-Code, keine manuelle Freischaltung. Starter-`trialDays` → 0 und Starter-`ctaLabel` ohne Trial-Versprechen. **Blocker:** kartenlose Testphasen laufen heute nie ab (B11) → WP2a vor WP2. | Nutzt die deployte `create-trial-subscription`; kein neuer Zahlungsweg, keine Karte im Einstieg. |
 | **E-F2** | Wo lebt das AI-OS-Setup? | ✅ **Entschieden: `/app/activation`.** `/setup-assistant` und `/unified-entry/onboarding` werden nicht erweitert. | Activation persistiert schon Org + Scope, ist live und im Post-Scan-Pfad verlinkt. |
 | **E-F3** | Hero-Headline | ✅ **Entschieden: „Die Kontrollschicht für KI im Unternehmen."** | Beschreibt, was heute läuft; die Agenten-Variante wäre überwiegend Coming Soon. |
 | **E-F4** | Partner 1.999 € | ⏳ offen: Programm (nicht öffentlich) oder Stufe | Empfehlung: Programm, `sellable`/öffentliche Anzeige prüfen |
@@ -82,7 +83,7 @@ E-F1–E-F3 ✅ entschieden (E-F4/E-F5 offen, nicht blockierend)
       ├─► WP1 Landing-Copy ─────────────┐
       ├─► WP5 Agent-Register-Quelle ────┤   (parallel möglich, keine Datei-Überschneidung)
       │                                 ▼
-      └─► WP2 Funnel auf /audit ──► WP3 AI-OS-Setup in Activation ──► WP4 Command-Center-Kacheln
+      └─► WP2a Trial-Ablauf (GO) ─► WP2 Funnel auf /audit ──► WP3 AI-OS-Setup in Activation ──► WP4 Command-Center-Kacheln
                                                                               │
                                                              WP6 Governed Evolution (nur Doku, jederzeit)
 ```
@@ -90,6 +91,7 @@ E-F1–E-F3 ✅ entschieden (E-F4/E-F5 offen, nicht blockierend)
 | WP | Titel | Dateien (Kern) | Risiko | Freigabe nötig für |
 |---|---|---|---|---|
 | **WP1** | Landing schärfen | `GovernanceOsHero.tsx`, `hero-content.ts`, `HomepageBriefSections.tsx`, `DesignGovernanceAiLanding.tsx` | niedrig | Landing-Claims (Einzel-Freigabe) |
+| **WP2a** | Trial-Ablauf erzwingen (Resolver prüft `trial_end`) | `supabase/migrations/*` (neu), Test gegen `abo_wirksam` | hoch | **Migration = separates GO** |
 | **WP2** | Funnel auf `/audit` ausrichten | `pages/AuditLanding.tsx`, `components/audit/PostScanChoiceRow.tsx`, `TrialOfferPage.tsx`, `SuccessPage.tsx`, `PostRegisterOnboardingPage.tsx` (nur Copy), `shared/pricing.ts` (Starter `trialDays`) | mittel | Preise/Angebot |
 | **WP3** | AI-OS-Setup (KI-Systeme, Bots, Daten, Freigaben) | `features/activation/*` — speichert in `governance_activations.organization` (JSONB, ohne Constraint) unter `aiSetup` | mittel | — (keine Migration) |
 | **WP4** | Command Center: Inventar · Agenten · Freigaben · Evidence | `features/governance/dashboard/*`, vorhandene APIs | niedrig | — |

@@ -40,9 +40,11 @@ describe('/assistant und /dashboard bleiben Aliase auf /app/dashboard', () => {
     expect(routeLine('/app/dashboard')).toContain('DashboardRouter');
   });
 
-  it('legt den Chat unter /app/assistant hinter AppGate', () => {
+  it('legt den Chat unter /app/assistant hinter AppGate und das Governance-AI-Flag', () => {
     expect(routeLine('/app/assistant')).toContain('<AppGate>');
-    expect(routeLine('/app/assistant')).toContain('GovernanceAiWorkspace');
+    // GovernanceAiRoute prüft GOVERNANCE_AI und lädt erst dann GovernanceAiWorkspace.
+    expect(routeLine('/app/assistant')).toContain('GovernanceAiRoute');
+    expect(app).not.toMatch(/import\(['"][^'"]*dashboard\/GovernanceAiWorkspace['"]\)/);
   });
 
   it('mountet die abgelöste parallele Chat-Seite nicht', () => {

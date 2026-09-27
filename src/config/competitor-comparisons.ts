@@ -42,7 +42,7 @@ const WHY_IT_MATTERS: Record<string, string> = {
   [CAPABILITIES.CONSENT_TIMING]:
     'Der häufigste Audit-Befund: Tracker feuern VOR Consent. Erkennbar nur mit präzisem Network-Trace gegen User-Interaction-Marker — kein Heuristik-Check.',
   [CAPABILITIES.MONITORING]:
-    'Compliance verfällt mit jedem Marketing-Tag-Update. Tägliches Monitoring + Drift-Detection statt einmalig auditieren.',
+    'Compliance verfällt mit jedem Marketing-Tag-Update. Bei uns heute: manueller Re-Scan mit Delta; tägliches Monitoring + Drift-Detection ist Coming Soon.',
   [CAPABILITIES.DSGVO_REPORT]:
     'PDF mit Risk-Score, Findings, Paragraphen-Bezug, Auto-Fix-Empfehlungen. DSB-tauglich, statt nur Cookie-Liste.',
   [CAPABILITIES.AI_ACT]:
@@ -69,7 +69,7 @@ export const COOKIEBOT_COMPARISON = {
       whyItMatters: WHY_IT_MATTERS[CAPABILITIES.WEBSITE_SCAN] },
     { capability: CAPABILITIES.CONSENT_TIMING, ours: 'yes' as const, theirs: 'no' as const,
       whyItMatters: WHY_IT_MATTERS[CAPABILITIES.CONSENT_TIMING] },
-    { capability: CAPABILITIES.MONITORING, ours: 'yes' as const, theirs: 'partial' as const, theirsNote: 'monatlich',
+    { capability: CAPABILITIES.MONITORING, ours: 'partial' as const, theirs: 'partial' as const, theirsNote: 'monatlich',
       whyItMatters: WHY_IT_MATTERS[CAPABILITIES.MONITORING] },
     { capability: CAPABILITIES.DSGVO_REPORT, ours: 'yes' as const, theirs: 'no' as const,
       whyItMatters: WHY_IT_MATTERS[CAPABILITIES.DSGVO_REPORT] },
@@ -98,7 +98,7 @@ export const ONETRUST_COMPARISON = {
       whyItMatters: WHY_IT_MATTERS[CAPABILITIES.WEBSITE_SCAN] },
     { capability: CAPABILITIES.CONSENT_TIMING, ours: 'yes' as const, theirs: 'no' as const,
       whyItMatters: WHY_IT_MATTERS[CAPABILITIES.CONSENT_TIMING] },
-    { capability: CAPABILITIES.MONITORING, ours: 'yes' as const, theirs: 'partial' as const, theirsNote: 'manuell',
+    { capability: CAPABILITIES.MONITORING, ours: 'partial' as const, theirs: 'partial' as const, theirsNote: 'manuell',
       whyItMatters: WHY_IT_MATTERS[CAPABILITIES.MONITORING] },
     { capability: CAPABILITIES.DSGVO_REPORT, ours: 'yes' as const, theirs: 'partial' as const, theirsNote: 'Workflow',
       whyItMatters: WHY_IT_MATTERS[CAPABILITIES.DSGVO_REPORT] },
@@ -127,7 +127,7 @@ export const DATAGUARD_COMPARISON = {
       whyItMatters: WHY_IT_MATTERS[CAPABILITIES.WEBSITE_SCAN] },
     { capability: CAPABILITIES.CONSENT_TIMING, ours: 'yes' as const, theirs: 'no' as const,
       whyItMatters: WHY_IT_MATTERS[CAPABILITIES.CONSENT_TIMING] },
-    { capability: CAPABILITIES.MONITORING, ours: 'yes' as const, theirs: 'no' as const,
+    { capability: CAPABILITIES.MONITORING, ours: 'partial' as const, theirs: 'no' as const,
       whyItMatters: WHY_IT_MATTERS[CAPABILITIES.MONITORING] },
     { capability: CAPABILITIES.DSGVO_REPORT, ours: 'yes' as const, theirs: 'partial' as const, theirsNote: 'manuell DSB',
       whyItMatters: WHY_IT_MATTERS[CAPABILITIES.DSGVO_REPORT] },

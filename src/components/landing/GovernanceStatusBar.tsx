@@ -20,8 +20,8 @@ const STANDARDS = 'DSGVO · EU AI ACT · ISO 27001';
 export function GovernanceStatusBar() {
   return (
     <div
-      className="relative z-20 flex h-[36px] items-center border-b bg-[rgba(0,0,0,.85)] px-[4vw]"
-      style={{ borderColor: GA_LINE_SOFT }}
+      className="relative z-20 flex h-[36px] items-center border-b  px-[4vw]"
+      style={{ borderColor: GA_LINE_SOFT, backgroundColor: 'var(--ga-status-bg, rgba(0,0,0,.85))' }}
       aria-label="Betriebsstatus"
     >
       <div

@@ -3,10 +3,12 @@
  *
  * `app-theme.ts` traegt nur, was der Handoff-Entwurf beisteuert und im Repo
  * fehlte: Rastermasse, Radien, Bewegung. Farben kommen aus `osChrome.ts`.
- * Der Test haelt genau das fest, weil es sonst beim naechsten Griff zum
- * Entwurf wieder verrutscht: Dort ist alles Cyan, und eine zweite
- * Akzentpalette im App-Chrome laesst sich in zwei Minuten einbauen und in
- * zwei Monaten nicht mehr herausloesen.
+ *
+ * Handoff v2 Phase 2: Der Eigentümer hat den Wechsel des App-Chrome von Gold
+ * auf die Handoff-Palette angeordnet — genau die „bewusste Entscheidung",
+ * die dieser Test verlangt hat. Die Regel dahinter bleibt: EINE
+ * Akzentpalette im App-Chrome. Geprüft wird deshalb jetzt umgekehrt, dass
+ * kein Gold neben dem neuen Akzent stehen bleibt.
  */
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -37,8 +39,8 @@ const osChromeSrc = readFileSync(
   'utf8',
 );
 
-/** Farbwerte des Entwurfs, die im App-Chrome nichts zu suchen haben. */
-const ENTWURF_CYAN = ['#00B8D4', '#4FD4E8', '#1E5AFF', '#1641C4', '#7FA0FF'];
+/** Goldwerte der Vorgaenger-Palette, die im App-Chrome nichts mehr zu suchen haben. */
+const ALT_GOLD = ['#d6ad68', '#e4cfa2', '#e8c98a', '#e8ddc8', 'rgba(214, 173, 104'];
 
 describe('App-Raster', () => {
   it('traegt die Rastermasse des Entwurfs', () => {
@@ -65,14 +67,13 @@ describe('Farbgrenze — osChrome bleibt SSoT', () => {
     ).toEqual([]);
   });
 
-  it('die Seitenleiste traegt keine Cyan-Werte des Entwurfs', () => {
-    for (const wert of ENTWURF_CYAN) {
-      expect(
-        sidebar.toLowerCase(),
-        `GovernanceSidebar traegt ${wert} — das App-Chrome ist auf Gold festgelegt ` +
-          '(osChrome.ts, index.css).',
-      ).not.toContain(wert.toLowerCase());
-    }
+  it('die Seitenleiste traegt keine Hex-Werte — Farben kommen aus Tokens', () => {
+    const hex = sidebar.match(/#[0-9A-Fa-f]{3,8}\b/g) ?? [];
+    expect(
+      hex,
+      `GovernanceSidebar traegt Farbwerte (${hex.join(', ')}). Farben gehoeren in ` +
+        'osChrome.ts bzw. die --color-rs-*-Tokens.',
+    ).toEqual([]);
   });
 
   it('die Seitenleiste liest ihre Akzente aus osChrome', () => {
@@ -125,45 +126,56 @@ describe('osChrome — entkoppelt von der Marketing-Palette', () => {
   });
 
   /**
-   * Die Werte, die vor der Entkopplung per Re-Export aus `landing-theme`
-   * kamen. Der Test friert sie zum Zeitpunkt des Schnitts ein: Die
-   * Entkopplung sollte die Darstellung nicht veraendern, und ein spaeterer
-   * Farbwechsel soll eine bewusste Entscheidung sein, kein Nebeneffekt.
+   * Die Handoff-v2-Werte (HANDOFF.md „Design Tokens"), eingefroren zum
+   * Palettenwechsel in Phase 2. Ein spaeterer Farbwechsel soll wieder eine
+   * bewusste Entscheidung sein, kein Nebeneffekt.
    */
-  const VOR_DER_ENTKOPPLUNG: Readonly<Record<string, string>> = {
-    OS_GOLD: '#d6ad68',
-    OS_BG: '#0a0a0b',
-    OS_CREAM: '#d6ad68',
-    OS_CREAM_ALT: '#e8c98a',
-    OS_CREAM_TEXT: '#0a0a0b',
+  const HANDOFF_V2: Readonly<Record<string, string>> = {
+    OS_GOLD: '#00B8D4',
+    OS_BG: '#070B14',
+    OS_CREAM: '#1E5AFF',
+    OS_CREAM_ALT: '#1641C4',
+    OS_CREAM_TEXT: '#FFFFFF',
     OS_H1: 'clamp(2.5rem, 1.2rem + 4.2vw, 4.25rem)',
     OS_H2: 'clamp(1.8125rem, 1.15rem + 2.3vw, 2.75rem)',
-    OS_LINE: 'rgba(214, 173, 104, 0.22)',
-    OS_MONO: "'DM Mono', 'JetBrains Mono', ui-monospace, monospace",
-    OS_MUTED: '#9a9aa1',
-    OS_PANEL: '#121214',
-    OS_SERIF: "'Playfair Display', Georgia, 'Times New Roman', serif",
-    OS_TEXT: '#f2eee6',
+    OS_LINE: '#1F2B48',
+    OS_MONO: "'JetBrains Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace",
+    OS_MUTED: '#8A95AC',
+    OS_PANEL: '#0D1322',
+    OS_SERIF: "'Newsreader', Georgia, 'Times New Roman', serif",
+    OS_TEXT: '#F2F5FA',
   };
 
-  it('traegt die Werte von vor dem Schnitt, unveraendert', () => {
+  it('traegt die Handoff-v2-Werte, unveraendert', () => {
     const werte: Record<string, unknown> = { ...osChrome };
-    for (const [name, wert] of Object.entries(VOR_DER_ENTKOPPLUNG)) {
-      expect(
-        werte[name],
-        `${name} weicht vom Stand vor der Entkopplung ab — der Schnitt sollte ` +
-          'verhaltensgleich sein.',
-      ).toBe(wert);
+    for (const [name, wert] of Object.entries(HANDOFF_V2)) {
+      expect(werte[name], `${name} weicht von den Handoff-v2-Tokens ab.`).toBe(wert);
     }
   });
 
-  it('das App-Chrome bleibt frei von Cyan', () => {
-    for (const wert of ENTWURF_CYAN) {
+  it('das App-Chrome traegt kein Gold der Vorgaenger-Palette mehr', () => {
+    for (const wert of ALT_GOLD) {
       expect(
         osChromeSrc.toLowerCase(),
-        `osChrome.ts traegt ${wert}. Die Regel im Kopf dieser Datei sagt ` +
-          '„No cyan/purple product chrome".',
+        `osChrome.ts traegt ${wert} — zwei Akzente im App-Chrome.`,
       ).not.toContain(wert.toLowerCase());
+    }
+  });
+
+  it('die Shell-Bausteine tragen kein Gold der Vorgaenger-Palette mehr', () => {
+    for (const datei of [
+      'BrowserTopBar.tsx',
+      'GovernanceSidebar.tsx',
+      'MobileBottomNavigation.tsx',
+      'GovernanceBrowserShell.tsx',
+      'GovernanceStatusBar.tsx',
+      'GovernanceTabs.tsx',
+      'CommandCenter.tsx',
+    ]) {
+      const src = readFileSync(resolve(root, 'src/components/governance-os', datei), 'utf8').toLowerCase();
+      for (const wert of ALT_GOLD) {
+        expect(src, `${datei} traegt ${wert}`).not.toContain(wert.toLowerCase());
+      }
     }
   });
 });

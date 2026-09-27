@@ -22,6 +22,20 @@ function fmt(ts: string | null): string {
   try { return new Date(ts).toLocaleString('de-DE'); } catch { return ts; }
 }
 
+function metadataText(metadata: Record<string, unknown> | undefined, key: string): string | null {
+  const value = metadata?.[key];
+  return typeof value === 'string' && value.trim() ? value.trim() : null;
+}
+
+function metadataNumber(metadata: Record<string, unknown> | undefined, key: string): number | null {
+  const value = metadata?.[key];
+  return typeof value === 'number' && Number.isFinite(value) ? value : null;
+}
+
+function money(value: number, currency: string): string {
+  return value.toLocaleString('de-DE', { style: 'currency', currency: currency || 'EUR' });
+}
+
 function BotInboxInner() {
   const { activeTenantId } = useTenant();
   const [tab, setTab] = useState<Tab>('conversations');
@@ -186,35 +200,116 @@ function OrdersPane({ tenantId }: { tenantId: string }) {
   if (!data || data.length === 0) return <EmptyBox msg="Keine Bestellungen." />;
   return (
     <div className="space-y-2">
-      {data.map((o) => (
-        <div key={o.id} className="border border-titanium-800 px-4 py-3">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <p className="text-sm text-titanium-100">{o.customer_name}</p>
-              <p className="font-mono text-[10px] text-titanium-500">{fmt(o.created_at)}{o.contact ? ` · ${o.contact}` : ''}</p>
+      {data.map((o) => {
+        const isRestaurant = o.metadata?.vertical === 'restaurant';
+        const fulfillment = metadataText(o.metadata, 'fulfillment');
+        const deliveryAddress = metadataText(o.metadata, 'delivery_address');
+        const pricingAuthority = metadataText(o.metadata, 'pricing_authority');
+        const subtotal = metadataNumber(o.metadata, 'subtotal');
+        const deliveryFee = metadataNumber(o.metadata, 'delivery_fee');
+        const customerConfirmed = o.metadata?.customer_confirmed === true;
+        const eta = metadataNumber(o.metadata, 'estimated_delivery_minutes');
+
+        return (
+          <div key={o.id} className="border border-titanium-800 px-4 py-3">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="text-sm text-titanium-100">{o.customer_name}</p>
+                  {isRestaurant && (
+                    <span className="border border-security-500/30 px-2 py-0.5 font-mono text-[9px] uppercase tracking-wider text-security-400">
+                      Restaurant
+                    </span>
+                  )}
+                  {fulfillment && (
+                    <span className="border border-titanium-700 px-2 py-0.5 font-mono text-[9px] uppercase tracking-wider text-titanium-400">
+                      {fulfillment === 'delivery' ? 'Lieferung' : fulfillment === 'pickup' ? 'Abholung' : fulfillment}
+                    </span>
+                  )}
+                </div>
+                <p className="font-mono text-[10px] text-titanium-500">
+                  {fmt(o.created_at)}{o.contact ? ` · ${o.contact}` : ''}
+                </p>
+                {deliveryAddress && (
+                  <p className="mt-1 text-xs text-titanium-400">Lieferadresse: {deliveryAddress}</p>
+                )}
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="font-mono text-xs text-titanium-200">
+                  {money(o.total_amount, o.currency)}
+                </span>
+                <StatusChip status={o.status} />
+                {o.status === 'new' && (
+                  <Button size="sm" variant="secondary" onClick={() => setStatus(o.id, 'confirmed')}>
+                    {isRestaurant ? 'Intern bestätigen' : 'Bestätigen'}
+                  </Button>
+                )}
+                {(o.status === 'new' || o.status === 'confirmed') && (
+                  <Button size="sm" variant="ghost" onClick={() => setStatus(o.id, 'fulfilled')}>Erfüllt</Button>
+                )}
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="font-mono text-xs text-titanium-200">
-                {o.total_amount.toLocaleString('de-DE', { style: 'currency', currency: o.currency || 'EUR' })}
-              </span>
-              <StatusChip status={o.status} />
-              {o.status === 'new' && (
-                <Button size="sm" variant="secondary" onClick={() => setStatus(o.id, 'confirmed')}>Bestätigen</Button>
-              )}
-              {(o.status === 'new' || o.status === 'confirmed') && (
-                <Button size="sm" variant="ghost" onClick={() => setStatus(o.id, 'fulfilled')}>Erfüllt</Button>
-              )}
-            </div>
+
+            {o.items.length > 0 && (
+              <ul className="mt-3 space-y-1 border-t border-titanium-900 pt-3 font-mono text-[11px] text-titanium-400">
+                {o.items.map((it, i) => {
+                  const unitPrice = typeof it.unit_price === 'number'
+                    ? it.unit_price
+                    : typeof it.price === 'number'
+                      ? it.price
+                      : null;
+                  const lineTotal = typeof it.line_total === 'number'
+                    ? it.line_total
+                    : unitPrice !== null
+                      ? unitPrice * (it.qty ?? 1)
+                      : null;
+                  return (
+                    <li key={it.item_id ?? i} className="flex flex-wrap justify-between gap-2">
+                      <span>{(it.qty ?? 1)}× {it.name}</span>
+                      {lineTotal !== null && (
+                        <span className="text-titanium-300">
+                          {money(lineTotal, o.currency)}
+                          {unitPrice !== null && (it.qty ?? 1) > 1 ? ` · ${money(unitPrice, o.currency)} / Stück` : ''}
+                        </span>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+
+            {isRestaurant && (
+              <div className="mt-3 grid gap-2 border-t border-titanium-900 pt-3 text-[11px] sm:grid-cols-2 lg:grid-cols-4">
+                <div>
+                  <p className="font-mono text-[9px] uppercase tracking-wider text-titanium-600">Kundenbestätigung</p>
+                  <p className={customerConfirmed ? 'text-emerald-400' : 'text-amber-400'}>
+                    {customerConfirmed ? 'bestätigt' : 'nicht nachgewiesen'}
+                  </p>
+                </div>
+                <div>
+                  <p className="font-mono text-[9px] uppercase tracking-wider text-titanium-600">Preisquelle</p>
+                  <p className={pricingAuthority ? 'text-emerald-400' : 'text-amber-400'}>
+                    {pricingAuthority === 'bots.config.restaurant.menu' ? 'serverseitiges Bot-Menü' : pricingAuthority ?? 'nicht ausgewiesen'}
+                  </p>
+                </div>
+                <div>
+                  <p className="font-mono text-[9px] uppercase tracking-wider text-titanium-600">Warenwert / Lieferung</p>
+                  <p className="text-titanium-300">
+                    {subtotal !== null ? money(subtotal, o.currency) : '—'}
+                    {deliveryFee !== null ? ` + ${money(deliveryFee, o.currency)}` : ''}
+                  </p>
+                </div>
+                <div>
+                  <p className="font-mono text-[9px] uppercase tracking-wider text-titanium-600">Lieferzeit-Richtwert</p>
+                  <p className="text-titanium-300">{eta !== null ? `ca. ${Math.round(eta)} Min.` : '—'}</p>
+                </div>
+              </div>
+            )}
+
+            {o.notes && <p className="mt-2 text-xs text-titanium-500">{o.notes}</p>}
           </div>
-          {o.items.length > 0 && (
-            <ul className="mt-2 space-y-0.5 font-mono text-[11px] text-titanium-400">
-              {o.items.map((it, i) => (
-                <li key={i}>{(it.qty ?? 1)}× {it.name}{typeof it.price === 'number' ? ` — ${it.price}` : ''}</li>
-              ))}
-            </ul>
-          )}
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

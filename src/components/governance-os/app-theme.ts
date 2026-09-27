@@ -5,17 +5,12 @@
  *
  * ## Warum hier keine Farben stehen
  *
- * Der Entwurf ist in Blau/Cyan gehalten. Das Repo hat die gegenteilige
- * Entscheidung getroffen und sie an zwei Stellen festgeschrieben:
- * `osChrome.ts` fuehrt die Landing-Palette als `OS_*` fuer `/app` und
- * `/build` weiter („No cyan/purple product chrome"), und `index.css`
- * spiegelt sie in `.os-chrome` / `.dashboard-context` („Product accent stays
- * gold — do not point at cyan / ai-cyan").
- *
- * Eine zweite Akzentpalette hier haette diese Regel nicht aufgehoben,
- * sondern nur unterlaufen: Die Seitenleiste haette Cyan getragen, TopBar,
- * Tabs, Statusleiste und Command Center daneben weiter Gold. Farben kommen
- * deshalb aus `osChrome.ts`, und nur daher.
+ * Farben der App stehen an genau einer Stelle: `osChrome.ts` (Rollen-
+ * Konstanten und Tailwind-Fragmente) mit der CSS-Bruecke
+ * `governance-os-app.css` (`.os-chrome.rs-app`, `--color-rs-*`). Seit
+ * Handoff v2 Phase 2 ist das die Handoff-Palette (Cyan/Primary) statt Gold.
+ * Eine zweite Palette hier wuerde genau die Doppelung erzeugen, die
+ * `osChrome.ts` verhindern soll.
  *
  * Diese Datei traegt, was der Entwurf beisteuert und was dort fehlt: die
  * Rastermasse der Shell, die Radienstaffel, die Bewegungskurve — alles
@@ -82,8 +77,7 @@ export const APP_DISABLED_OPACITY = 0.45;
  * `lib/governance/severityPalette.ts` folgend, das fuer Finding-Severity
  * dieselbe Aufgabe loest. Die Farbfamilien sind von dort uebernommen, damit
  * ein Nutzer, der Befunde und Klassen nebeneinander sieht, nicht zwei
- * Farbsprachen lernen muss. `sky` steht, wo der Entwurf Cyan vorsieht: Es
- * traegt dieselbe Aussage, ohne die Cyan-Sperre des App-Chrome zu brechen.
+ * Farbsprachen lernen muss. B traegt `cyan` wie im Entwurf.
  */
 export interface EnforcementClassStyle {
   /** Vollstaendige Badge-Klasse (border + bg + text). */
@@ -101,9 +95,9 @@ export const APP_CLASS_STYLES: Readonly<Record<'A' | 'B' | 'C' | 'D', Enforcemen
     bar: 'bg-emerald-500',
   },
   B: {
-    badge: 'border-sky-500/40 bg-sky-500/10 text-sky-200',
-    text: 'text-sky-300',
-    bar: 'bg-sky-500',
+    badge: 'border-cyan-500/40 bg-cyan-500/10 text-cyan-200',
+    text: 'text-cyan-300',
+    bar: 'bg-cyan-500',
   },
   C: {
     badge: 'border-amber-500/40 bg-amber-500/10 text-amber-200',

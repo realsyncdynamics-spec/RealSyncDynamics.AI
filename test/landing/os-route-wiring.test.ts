@@ -1,5 +1,5 @@
 /**
- * Replit Dark/Gold `/` — Europe-network hero + Free Audit → /audit.
+ * Replit Dark/Gold `/` — Europe-network hero + Governance-Scan → /audit.
  * AppGate / chunk-split security from #1363 stays intact on app routes.
  */
 import { readFileSync } from 'node:fs';
@@ -59,14 +59,14 @@ describe('Landing ↔ Infrastruktur', () => {
     expect(app).toMatch(/path="\/app\/activation"[^>]*AppGate/);
   });
 
-  it('Replit landing: Europe-network hero + Free Audit CTA', () => {
+  it('Replit landing: Europe-network hero + Governance-Scan CTAs', () => {
     expect(titanHero).toContain('EuropeNetworkHero');
     expect(mainLanding).toContain('PLATFORM_LIVE_ITEMS');
     expect(titanHero).toContain('id="audit-cta"');
     expect(titanHero).toContain('data-hero-cta="audit"');
-    // Genau ein Audit-CTA im Hero — der Marker sitzt seit der Titan-Umsetzung
-    // in HeroTitanium, MainLanding traegt ihn nicht mehr.
-    expect(titanHero.match(/data-hero-cta/g)?.length).toBe(1);
+    expect(titanHero).toContain('data-hero-cta="audit-trail"');
+    // Primary + Secondary im Hero (Homepage Brief); Marker in HeroTitanium.
+    expect(titanHero.match(/data-hero-cta/g)?.length).toBe(2);
     expect(mainLanding).not.toContain('data-hero-cta');
     expect(mainLanding).toContain('to="/audit"');
     expect(mainLanding).toContain('GovernanceRuntimeSection');

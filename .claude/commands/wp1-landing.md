@@ -4,7 +4,7 @@ description: WP1 Landing / schärfen (Kontrollschicht, Scan-CTA, Loop mit Learn=
 
 # WP1 — Landing `/` schärfen
 
-**Voraussetzung:** E-F3 (Headline) entschieden · **Branch:** `feat/wp1-landing-control-layer`
+**Voraussetzung:** E-F3 entschieden: Headline „Die Kontrollschicht für KI im Unternehmen." · **Branch:** `feat/wp1-landing-control-layer`
 **Freigabe:** Landing-Claims = Einzel-Freigabe im PR
 
 ## Rahmen (gilt für jede WP-Session)

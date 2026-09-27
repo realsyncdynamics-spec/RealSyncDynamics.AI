@@ -45,7 +45,7 @@ const SKILLS: SkillDef[] = [
     description:
       'Ordnet eine KI-Nutzung in die vier EU-AI-Act-Risikoklassen ein (prohibited/high/limited/minimal) und leitet die Pflichten ab. Keine Rechtsberatung.',
     triggers: ['ai act', 'ki-vo', 'ki verordnung', 'risikoklasse', 'annex iii', 'hochrisiko', 'transparenzpflicht', 'verbotene praktik', 'ai act klassifizierung'],
-    useCases: ['Nutzungs-Kategorie einer AI-Act-Risikoklasse zuordnen', 'Pflichten je Risikoklasse ableiten (Doku, Human Oversight, Audit-Trail)', 'Transparenz-/Offenlegungspflichten fuer Chatbots und generierte Inhalte pruefen'],
+    useCases: ['Nutzungs-Kategorie einer AI-Act-Risikoklasse zuordnen', 'Pflichten je Risikoklasse ableiten (Doku, Human Oversight, Prüfpfad)', 'Transparenz-/Offenlegungspflichten fuer Chatbots und generierte Inhalte pruefen'],
     guardrails: ['Diese Auswertung ist eine technische Heuristik und stellt keine Rechtsberatung dar. Fuer rechtsverbindliche Bewertungen wenden Sie sich an qualifizierte Fachleute.'],
     riskLevel: 'high', requiresWebResearch: false, requiresUserData: false, reviewRequired: true,
   },

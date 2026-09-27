@@ -71,14 +71,20 @@ describe('Skill-Registry — Kopie und Quelle stimmen ueberein', () => {
   );
 
   it.each(ALL_SKILLS.map((s) => [s.key, s] as const))(
-    '%s: jeder Trigger der Quelle steht in der Kopie',
+    '%s: die Trigger der Kopie sind genau die der Quelle',
     (key, skill) => {
-      // Die Trigger entscheiden, welcher Skill gewaehlt wird. Fehlt einer,
-      // faellt die Anfrage auf einen anderen Skill oder ins Leere.
+      // Die Trigger entscheiden, welcher Skill gewaehlt wird. Die Pruefung
+      // laeuft in beide Richtungen: fehlt einer in der Kopie, faellt die
+      // Anfrage auf einen anderen Skill oder ins Leere; bleibt einer in der
+      // Kopie stehen, den die Quelle entfernt hat, routet die API weiter
+      // Anfragen, die die Seite nicht mehr erkennt.
       const b = block(key);
-      for (const trigger of skill.triggers) {
-        expect(b, `Trigger "${trigger}" fehlt bei ${key}`).toContain(`'${trigger}'`);
-      }
+      const liste = /triggers: \[([^\]]*)\]/.exec(b);
+      expect(liste, `triggers-Liste von ${key} fehlt in der Kopie`).not.toBeNull();
+      const inKopie = [...liste![1].matchAll(/'([^']*)'/g)].map((m) => m[1]);
+      expect([...inKopie].sort(), `Trigger von ${key} weichen ab`).toEqual(
+        [...skill.triggers].sort(),
+      );
     },
   );
 

@@ -156,21 +156,34 @@ SECURITY DEFINER
 SET search_path TO 'public', 'pg_temp'
 AS $fn$
 DECLARE
-    ziel UUID := COALESCE(NEW.user_id, OLD.user_id);
+    ziel UUID;
     soll BOOLEAN;
 BEGIN
-    -- Bei DELETE ist die Zeile hier bereits fort, EXISTS liefert dann false.
-    SELECT EXISTS (
-        SELECT 1 FROM public.platform_operators po
-         WHERE po.user_id = ziel AND po.active
-    ) INTO soll;
+    -- BEIDE Konten nachziehen, das alte und das neue. Bei INSERT ist OLD NULL,
+    -- bei DELETE ist NEW NULL; beides wird übersprungen.
+    --
+    -- Die erste Fassung nahm nur COALESCE(NEW.user_id, OLD.user_id). Ein
+    -- UPDATE, das `user_id` umhängt, gab dann dem neuen Konto das Flag und
+    -- liess es beim alten stehen — das alte behielt Plattformrechte ohne
+    -- Zeile in dieser Tabelle, und die 30 Policies, die das Flag lesen,
+    -- hätten es weiter durchgelassen. Nachgestellt, bevor es behoben wurde;
+    -- gefunden von der Codex-Review auf #1619.
+    FOREACH ziel IN ARRAY ARRAY[OLD.user_id, NEW.user_id] LOOP
+        CONTINUE WHEN ziel IS NULL;
 
-    PERFORM set_config('rsd.platform_operator_sync', '1', true);
-    UPDATE public.profiles
-       SET is_super_admin = soll
-     WHERE id = ziel
-       AND is_super_admin IS DISTINCT FROM soll;
-    PERFORM set_config('rsd.platform_operator_sync', '', true);
+        -- Bei DELETE ist die Zeile hier bereits fort, EXISTS liefert dann false.
+        SELECT EXISTS (
+            SELECT 1 FROM public.platform_operators po
+             WHERE po.user_id = ziel AND po.active
+        ) INTO soll;
+
+        PERFORM set_config('rsd.platform_operator_sync', '1', true);
+        UPDATE public.profiles
+           SET is_super_admin = soll
+         WHERE id = ziel
+           AND is_super_admin IS DISTINCT FROM soll;
+        PERFORM set_config('rsd.platform_operator_sync', '', true);
+    END LOOP;
 
     RETURN NULL;
 END;

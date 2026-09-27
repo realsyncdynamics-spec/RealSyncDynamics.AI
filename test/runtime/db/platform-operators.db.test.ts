@@ -183,6 +183,25 @@ d('D5 — platform_operators als einzige Quelle der Plattform-Rolle', () => {
     expect(await flag(b.userId)).toBe(false);
   });
 
+  it('Umhaengen der user_id nimmt dem alten Konto das Flag', async () => {
+    // Befund der Codex-Review auf #1619: Die erste Fassung der Projektion
+    // zog nur NEW.user_id nach. Ein UPDATE, das die Zeile auf ein anderes
+    // Konto umhaengt, liess dem alten Konto das Flag — Plattformrechte ohne
+    // Zeile in der Quelle. Genau die Abweichung, die es nicht geben darf.
+    const alt = await seedNutzer();
+    const neu = await seedNutzer();
+    await ctx!.client.query(`INSERT INTO public.platform_operators (user_id) VALUES ($1)`, [alt.userId]);
+    expect(await flag(alt.userId)).toBe(true);
+
+    await ctx!.client.query(
+      `UPDATE public.platform_operators SET user_id = $2 WHERE user_id = $1`,
+      [alt.userId, neu.userId],
+    );
+
+    expect(await flag(alt.userId), 'altes Konto darf das Flag nicht behalten').toBe(false);
+    expect(await flag(neu.userId)).toBe(true);
+  });
+
   // ── 4. Die Projektion laesst sich nicht umgehen ─────────────────────────
 
   it('ein eingeloggter Nutzer kann das Flag weiterhin nicht setzen (B1 bleibt)', async () => {

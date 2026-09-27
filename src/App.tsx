@@ -50,6 +50,7 @@ const AuditShare = lazy(() => import('./pages/AuditShare').then((m) => ({ defaul
 const AiActFaq = lazy(() => import('./pages/AiActFaq').then((m) => ({ default: m.AiActFaq })));
 const SchremsIIErklaert = lazy(() => import('./pages/SchremsIIErklaert').then((m) => ({ default: m.SchremsIIErklaert })));
 const OnboardingErklaert = lazy(() => import('./pages/OnboardingErklaert').then((m) => ({ default: m.OnboardingErklaert })));
+const KiGovernanceFuenfSchritte = lazy(() => import('./pages/KiGovernanceFuenfSchritte').then((m) => ({ default: m.KiGovernanceFuenfSchritte })));
 const BaitMaRiskGuide = lazy(() => import('./pages/BaitMaRiskGuide').then((m) => ({ default: m.BaitMaRiskGuide })));
 const NewsletterConfirm = lazy(() => import('./pages/NewsletterConfirm').then((m) => ({ default: m.NewsletterConfirm })));
 const CaseStudies = lazy(() => import('./pages/CaseStudies').then((m) => ({ default: m.CaseStudies })));
@@ -592,6 +593,7 @@ function RoutesWithTracking() {
       <Route path="/ai-act-faq" element={<AiActFaq />} />
       <Route path="/schrems-ii-erklaert" element={<SchremsIIErklaert />} />
       <Route path="/onboarding-erklaert" element={<OnboardingErklaert />} />
+      <Route path="/ki-governance-in-5-schritten" element={<KiGovernanceFuenfSchritte />} />
       <Route path="/bait-marisk-compliance-guide" element={<BaitMaRiskGuide />} />
       <Route path="/newsletter/confirm" element={<NewsletterConfirm />} />
       <Route path="/case-studies" element={<CaseStudies />} />

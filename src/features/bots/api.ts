@@ -40,6 +40,7 @@ export async function createBot(args: CreateBotArgs): Promise<Bot> {
     persona: args.persona ?? null,
     greeting: args.greeting ?? null,
     capabilities: args.capabilities ?? { appointments: false, orders: false },
+    config: args.config ?? {},
     enabled: args.enabled ?? true,
   }).select('*').single();
   if (error) throw new Error(`createBot: ${error.message}`);

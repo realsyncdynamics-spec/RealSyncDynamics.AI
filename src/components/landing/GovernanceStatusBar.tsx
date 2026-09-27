@@ -1,6 +1,4 @@
 import { GA_GREEN, GA_LINE_SOFT, GA_MONO, GA_SILVER, GA_TITAN } from './governance-ai-theme';
-import { ThemeSwitch } from './ThemeSwitch';
-import type { GaTheme } from './use-ga-theme';
 
 /**
  * Betriebsleiste über dem Header — das erste Enterprise-Signal der Seite.
@@ -19,17 +17,11 @@ import type { GaTheme } from './use-ga-theme';
  */
 const STANDARDS = 'DSGVO · EU AI ACT · ISO 27001';
 
-export function GovernanceStatusBar({
-  theme,
-  onThemeChange,
-}: {
-  theme: GaTheme;
-  onThemeChange: (next: GaTheme) => void;
-}) {
+export function GovernanceStatusBar() {
   return (
     <div
-      className="relative z-20 flex h-[36px] items-center border-b bg-[rgba(14,15,18,.9)] px-[4vw]"
-      style={{ borderColor: GA_LINE_SOFT }}
+      className="relative z-20 flex h-[36px] items-center border-b  px-[4vw]"
+      style={{ borderColor: GA_LINE_SOFT, backgroundColor: 'var(--ga-status-bg, rgba(0,0,0,.85))' }}
       aria-label="Betriebsstatus"
     >
       <div
@@ -49,12 +41,7 @@ export function GovernanceStatusBar({
         </span>
         <span className="hidden md:inline">HOSTING IN EUROPA</span>
 
-        <span className="ml-auto flex items-center gap-5">
-          <span className="hidden lg:inline">{STANDARDS}</span>
-          <span className="pointer-events-auto">
-            <ThemeSwitch theme={theme} onChange={onThemeChange} />
-          </span>
-        </span>
+        <span className="ml-auto hidden lg:inline">{STANDARDS}</span>
       </div>
     </div>
   );

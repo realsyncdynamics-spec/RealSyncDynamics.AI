@@ -32,6 +32,7 @@ import Anthropic from 'npm:@anthropic-ai/sdk@0.32.1';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { audit } from '../_shared/auditLog.ts';
 import { AGENT_TOOLS, dispatchTool, SYSTEM_PROMPT } from '../_shared/agent-tools.ts';
+import { agentFocusPrompt } from '../_shared/agent-focus.ts';
 import { sha256Hex } from '../_shared/hash.ts';
 import { checkAnonRateLimit } from '../_shared/anonRateLimit.ts';
 import {
@@ -42,6 +43,7 @@ import {
   type AnonAuditCompletion,
 } from '../_shared/anonAudit.ts';
 import { AiGatewayEdgeClient, AiGatewayEdgeError } from '../_shared/aiGateway/edgeClient.ts';
+import { internalGatewayConfig } from '../_shared/aiGateway/internalClient.ts';
 import type { ModelProfile } from '../_shared/aiGateway/types.ts';
 import { checkTenantQuota, checkAnonQuota, recordChatHistory } from '../_shared/llm-quota.ts';
 import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
@@ -427,6 +429,15 @@ async function handleChat(
   const effectiveModel = getModelId(selectedTier);
   const maxTokens = selectedTier === 'haiku' ? MAX_TOKENS_HAIKU : MAX_TOKENS_SONNET;
 
+  // Agent-Auswahl im Assistenten: Fokus-Block nach dem gecachten
+  // Basis-Prompt, damit der Cache-Prefix (Tools + SYSTEM_PROMPT) für alle
+  // Agenten gleich bleibt. Unbekannte IDs ⇒ kein Zusatz.
+  const focusPrompt = agentFocusPrompt(body.agent);
+  const systemBlocks: Anthropic.TextBlockParam[] = [
+    { type: 'text', text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } },
+    ...(focusPrompt ? [{ type: 'text' as const, text: focusPrompt }] : []),
+  ];
+
   const client = new Anthropic({ apiKey });
   const toolCallsLog: Array<{ tool: string; input: unknown; output: unknown; iter: number }> = [];
   let totalIn = 0;
@@ -447,7 +458,7 @@ async function handleChat(
         // a 5-minute window. Marking them cacheable cuts the input-
         // token cost for these blocks by ~90% on cache hits, which
         // is the dominant input cost driver for tool-heavy chats.
-        system: [{ type: 'text', text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
+        system: systemBlocks,
         tools: AGENT_TOOLS.map((t, i) =>
           // Mark only the LAST tool with cache_control — Anthropic
           // caches everything up to and including that marker, so
@@ -550,7 +561,13 @@ async function handleChat(
     action: 'agent.chat',
     target_type: 'agent_session',
     target_id: sessionId,
-    payload: { iterations: toolCallsLog.length, outcome, tools: toolCallsLog.map((t) => t.tool) },
+    payload: {
+      iterations: toolCallsLog.length,
+      outcome,
+      tools: toolCallsLog.map((t) => t.tool),
+      // Nur validierte IDs (focusPrompt != null) — nie Client-Freitext.
+      agent: focusPrompt ? body.agent : null,
+    },
   });
 
   // Per-run history for user/tenant-facing review + quota counting.
@@ -830,14 +847,14 @@ async function runAnonViaAnthropic(
 async function runAnonViaAiGateway(
   transcript: SimpleMsg[],
 ): Promise<{ text: string; inputTokens: number; outputTokens: number } | Response> {
-  const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
-  // Prefer anon key for cross-function calls; service role would also
-  // work but anon matches the public/anon trust boundary of this path.
-  const apiKey = Deno.env.get('SUPABASE_ANON_KEY')
-              ?? Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-  if (!SUPABASE_URL || !apiKey) {
+  // Service-Pfad des ai-gateway: der anon-Chat hat keinen Nutzer-JWT, die
+  // Drosselung (IP-Limit, Monatskontingent, Audit) passiert hier vorher.
+  // Autorisiert wird über x-internal-key (AI_GATEWAY_INTERNAL_KEY), nicht
+  // über einen Bearer — service_role wird bewusst NICHT mehr verwendet.
+  const gw = internalGatewayConfig('governance-agent', (n) => Deno.env.get(n));
+  if (!gw.ok) {
     return jsonError(503, 'AI_GATEWAY_NOT_CONFIGURED',
-      'SUPABASE_URL or SUPABASE_ANON_KEY missing for ai_gateway provider.');
+      `ai_gateway provider not configured (missing ${gw.missing.join(', ')}).`);
   }
 
   // The native op API takes a single `input` string. Fold the
@@ -847,7 +864,7 @@ async function runAnonViaAiGateway(
     .map((m) => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`)
     .join('\n\n');
 
-  const client = new AiGatewayEdgeClient({ supabaseUrl: SUPABASE_URL, apiKey });
+  const client = new AiGatewayEdgeClient(gw.config);
   try {
     const resp = await client.generate({
       feature:       'governance_agent_anon',
@@ -865,6 +882,12 @@ async function runAnonViaAiGateway(
     };
   } catch (err) {
     if (err instanceof AiGatewayEdgeError) {
+      // Strukturierte Logzeile (ohne Prompt): seit 26.09. endet ein nicht
+      // erreichbarer lokaler Provider fail-closed mit 503 (keine Cloud-Kette).
+      console.error(JSON.stringify({
+        level: 'warn', scope: 'ai_gateway_call_failed', caller: 'governance-agent',
+        feature: 'governance_agent_anon', status: err.status, code: err.code,
+      }));
       return jsonError(err.status === 200 ? 502 : err.status, err.code, err.message);
     }
     throw err;
@@ -1004,13 +1027,17 @@ Regeln:
 - Wenn der Befund nicht via Snippet behebbar ist (z. B. Prozess-Issue),
   setze snippet auf "" und beschreibe im notes-Feld die manuellen Schritte.`;
 
-// Server-seitiger ai-gateway-Client für die anon-Copilot-Tools. Nutzt den
-// Anon-Key (wie governanceBriefRunner / remediation-agent); die ai-gateway
-// Edge Function erzwingt Provider-Kette + EU-Routing + Cost-Cap.
+// Server-seitiger ai-gateway-Client für die anon-Copilot-Tools. Service-Pfad
+// (x-internal-key + x-internal-caller: governance-agent); die Drosselung der
+// anonymen Nutzer passiert vorher in anonGate. Fehlt die Konfiguration, wirft
+// der Client — die Aufrufer degradieren sichtbar (degraded: true).
 function anonAiGatewayClient(): AiGatewayEdgeClient {
-  const url = Deno.env.get('SUPABASE_URL')!;
-  const anon = Deno.env.get('SUPABASE_ANON_KEY')!;
-  return new AiGatewayEdgeClient({ supabaseUrl: url, apiKey: anon, timeoutMs: 20_000 });
+  const gw = internalGatewayConfig('governance-agent', (n) => Deno.env.get(n));
+  if (!gw.ok) {
+    throw new AiGatewayEdgeError(503, 'AI_GATEWAY_NOT_CONFIGURED',
+      `ai_gateway not configured (missing ${gw.missing.join(', ')})`);
+  }
+  return new AiGatewayEdgeClient({ ...gw.config, timeoutMs: 20_000 });
 }
 
 interface FindingPayload {
@@ -1083,6 +1110,10 @@ async function handleExplainFindingAnon(req: Request, body: Record<string, unkno
     });
   } catch (err) {
     const code = err instanceof AiGatewayEdgeError ? err.code : 'LLM_UNAVAILABLE';
+    console.error(JSON.stringify({
+      level: 'warn', scope: 'ai_gateway_call_failed', caller: 'governance-agent', op: 'explain_finding',
+      status: err instanceof AiGatewayEdgeError ? err.status : null, code, degraded: true,
+    }));
     await finishAnon(admin, requestId, startedAt, { outcome: 'error', error_code: code });
     // Sichtbare Degradierung statt Fehler — das Copilot-Panel bleibt nutzbar.
     return jsonResponse({
@@ -1162,6 +1193,10 @@ async function handleGenerateFixSnippetAnon(req: Request, body: Record<string, u
     });
   } catch (err) {
     const code = err instanceof AiGatewayEdgeError ? err.code : 'LLM_UNAVAILABLE';
+    console.error(JSON.stringify({
+      level: 'warn', scope: 'ai_gateway_call_failed', caller: 'governance-agent', op: 'generate_fix_snippet',
+      status: err instanceof AiGatewayEdgeError ? err.status : null, code, degraded: true,
+    }));
     await finishAnon(admin, requestId, startedAt, { outcome: 'error', error_code: code });
     // Sichtbare Degradierung statt Fehler — das Copilot-Panel bleibt nutzbar.
     return jsonResponse({

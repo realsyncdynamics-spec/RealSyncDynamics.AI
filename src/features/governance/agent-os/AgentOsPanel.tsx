@@ -53,7 +53,7 @@ function stepIcon(state: StepExecutionState) {
   if (state.status === 'succeeded') return <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />;
   if (state.status === 'failed') return <XCircle className="h-3.5 w-3.5 text-rose-400" />;
   if (state.status === 'blocked') return <ShieldAlert className="h-3.5 w-3.5 text-amber-400" />;
-  if (state.status === 'running') return <Loader2 className="h-3.5 w-3.5 animate-spin text-[#e4cfa2]" />;
+  if (state.status === 'running') return <Loader2 className="h-3.5 w-3.5 animate-spin text-[#00B8D4]" />;
   if (state.status === 'awaiting_approval') return <AlertTriangle className="h-3.5 w-3.5 text-amber-400" />;
   return <CircleDashed className="h-3.5 w-3.5 text-titanium-600" />;
 }
@@ -63,7 +63,7 @@ function badgeClass(maturity: ImplementationStatus | 'spec_only'): string {
     case 'live':
       return 'border-emerald-700 text-emerald-300 bg-emerald-950/40';
     case 'preview':
-      return 'border-[#e4cfa2]/40 text-[#e4cfa2] bg-[#e4cfa2]/5';
+      return 'border-[#00B8D4]/40 text-[#00B8D4] bg-[#00B8D4]/5';
     case 'coming-soon':
       return 'border-titanium-800 text-titanium-500 bg-obsidian-800';
     case 'spec_only':
@@ -120,7 +120,7 @@ export function AgentOsPanel() {
     >
       <div className="flex flex-wrap items-start justify-between gap-3 border-b border-titanium-900 px-5 py-4">
         <div className="min-w-0 max-w-2xl">
-          <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#e4cfa2] flex items-center gap-2">
+          <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#00B8D4] flex items-center gap-2">
             <Sparkles className="h-3 w-3 shrink-0" aria-hidden />
             RealSync Agent OS™ · Vorschau
           </p>
@@ -165,7 +165,7 @@ export function AgentOsPanel() {
                   key={prompt}
                   type="button"
                   onClick={() => setIntent(prompt)}
-                  className="border border-titanium-800 px-2 py-1 font-mono text-[10px] text-titanium-400 hover:border-[#e4cfa2]/40 hover:text-[#e4cfa2] max-w-[16rem] truncate"
+                  className="border border-titanium-800 px-2 py-1 font-mono text-[10px] text-titanium-400 hover:border-[#00B8D4]/40 hover:text-[#00B8D4] max-w-[16rem] truncate"
                   title={prompt}
                 >
                   {prompt.length > 36 ? `${prompt.slice(0, 36)}…` : prompt}
@@ -354,8 +354,8 @@ function FindingCard({
                 onClick={() => onAction(action.id)}
                 className={`border px-3 py-1.5 text-xs font-medium ${
                   choice?.action === action.id
-                    ? 'border-[#e4cfa2] text-[#e4cfa2] bg-[#e4cfa2]/10'
-                    : 'border-titanium-700 text-titanium-200 hover:border-[#e4cfa2]/50'
+                    ? 'border-[#00B8D4] text-[#00B8D4] bg-[#00B8D4]/10'
+                    : 'border-titanium-700 text-titanium-200 hover:border-[#00B8D4]/50'
                 }`}
               >
                 {action.label}
@@ -391,7 +391,7 @@ function MeshAgentCard({ agent }: { agent: MeshAgent }) {
     <li
       className={`flex items-start justify-between gap-2 border px-3 py-2.5 ${
         agent.runnable
-          ? 'border-[#e4cfa2]/30 bg-[#e4cfa2]/5'
+          ? 'border-[#00B8D4]/30 bg-[#00B8D4]/5'
           : 'border-titanium-900 bg-obsidian-950/50'
       }`}
     >
@@ -421,14 +421,14 @@ function MeshRoster() {
   return (
     <div data-testid="agent-os-mesh-roster">
       <div className="mb-3 flex flex-wrap items-center gap-2">
-        <Bot className="h-4 w-4 text-[#e4cfa2]" />
+        <Bot className="h-4 w-4 text-[#00B8D4]" />
         <h3 className="text-sm font-semibold text-titanium-50">Specialist Mesh</h3>
         <span className="font-mono text-[10px] text-titanium-600">
           Orchestrator → Mesh · Compliance Preview · rest Coming Soon
         </span>
       </div>
 
-      <p className="mb-2 font-mono text-[10px] uppercase tracking-[0.18em] text-[#e4cfa2]">
+      <p className="mb-2 font-mono text-[10px] uppercase tracking-[0.18em] text-[#00B8D4]">
         Preview
       </p>
       <ul className="mb-4 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2">
@@ -458,7 +458,7 @@ function ProductIntegrityPanel() {
     <div data-testid="agent-os-integrity-panel" className="border border-titanium-900 bg-obsidian-950/40 p-4">
       <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
         <div>
-          <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#e4cfa2]">Product Evolution</p>
+          <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#00B8D4]">Product Evolution</p>
           <h3 className="text-sm font-semibold text-titanium-50">Integrity Panel · read-only</h3>
         </div>
         <span className={`font-mono text-[9px] uppercase tracking-widest px-1.5 py-0.5 border ${badgeClass('preview')}`}>

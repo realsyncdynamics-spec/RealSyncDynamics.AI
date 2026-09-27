@@ -23,6 +23,7 @@ import {
 } from './scansApi';
 import type { ScanRun } from '../../../types/governance/scan-run';
 import { SEVERITY_PALETTE } from '../../../lib/governance/severityPalette';
+import { WEBSITE_AUDIT_CTA_LABEL } from '../dashboard/dashboardSignals';
 
 const SEVERITY_COLOR: Record<string, string> = {
   critical: SEVERITY_PALETTE.critical.text,
@@ -129,7 +130,7 @@ function ScansList({ tenantId }: { tenantId: string }) {
               <AlertTriangle className="h-6 w-6 text-amber-400 mx-auto mb-3" />
               <h3 className="font-display font-semibold text-titanium-50 mb-1">Noch keine Scans</h3>
               <p className="text-sm text-titanium-400 mb-4">
-                Trage oben eine Website ein und drücke „Scan starten" — der Lauf erscheint dann hier.
+                Trage oben eine Website ein und drücke „{WEBSITE_AUDIT_CTA_LABEL}" — der Lauf erscheint dann hier.
               </p>
               <Link
                 to="/audit"
@@ -214,7 +215,7 @@ function WebsitesSection({
       </form>
 
       {err ? (
-        <div className="mb-3 border border-rose-500/40 bg-rose-500/10 text-rose-200 text-sm p-2">
+        <div role="alert" data-testid="scan-start-error" className="mb-3 border border-rose-500/40 bg-rose-500/10 text-rose-200 text-sm p-2">
           {err}
         </div>
       ) : null}
@@ -242,7 +243,7 @@ function WebsitesSection({
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs border border-titanium-700 text-titanium-100 hover:border-titanium-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   {scanning ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />}
-                  Scan starten
+                  {WEBSITE_AUDIT_CTA_LABEL}
                 </button>
               </li>
             );

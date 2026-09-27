@@ -24,6 +24,9 @@ import {
   PRODUCT_AREAS,
 } from '@/shared/pricing';
 
+/** Rahmenwerke ohne aktives Policy Pack (Roadmap / auf Anfrage). */
+const ROADMAP_MODULE_IDS: ReadonlySet<string> = new Set(['tisax', 'dora']);
+
 interface LocationState {
   profile?: GovernanceProfile;
   recommendation?: Recommendation;
@@ -293,12 +296,23 @@ function RecommendationBody({
                       {area.label}
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      {modules.map((module) => (
-                        <div key={module.id} className="flex items-center gap-2">
-                          <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
-                          <span className="text-sm text-titanium-300">{module.name}</span>
-                        </div>
-                      ))}
+                      {modules.map((module) => {
+                        // TISAX/DORA sind Roadmap (implementation-status:
+                        // framework-tisax-dora = coming-soon) — kein Häkchen
+                        // als aktives Policy Pack.
+                        const roadmap = ROADMAP_MODULE_IDS.has(module.id);
+                        return (
+                          <div key={module.id} className="flex items-center gap-2">
+                            <CheckCircle2
+                              className={`h-4 w-4 shrink-0 ${roadmap ? 'text-titanium-600' : 'text-emerald-400'}`}
+                            />
+                            <span className="text-sm text-titanium-300">
+                              {module.name}
+                              {roadmap && <span className="ml-1 text-titanium-500">(Roadmap)</span>}
+                            </span>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 );

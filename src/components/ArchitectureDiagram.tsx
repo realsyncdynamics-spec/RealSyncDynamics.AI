@@ -38,16 +38,17 @@ const LAYERS: Layer[] = [
   },
   {
     id: 'cdn',
-    label: 'GitHub Pages CDN',
+    label: 'Cloudflare Pages',
     sub: 'Edge-Static-Hosting · kein PII-Storage',
-    region: 'Global Edge',
+    region: 'Global Anycast-Edge',
     controls: [
       'Statische Assets — keine User-Daten persistiert',
       'IP-Adressen in Edge-Logs nur für Abuse-Detection',
-      'kein eigenes Cookie-Setting durch CDN',
-      'Custom-Domain-CNAME → GitHub Pages',
+      'kein eigenes Cookie-Setting durch das CDN',
+      'Custom-Domain-CNAME → <projekt>.pages.dev (proxied)',
+      'Cloudflare Web Analytics (cookiefrei) wird vom Edge injiziert',
     ],
-    subProcessor: 'GitHub Inc. (Microsoft) — DPA, EU-SCCs',
+    subProcessor: 'Cloudflare, Inc. — DPA, EU-SCCs',
   },
   {
     id: 'frontend',

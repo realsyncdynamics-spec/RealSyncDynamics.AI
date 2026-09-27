@@ -1,105 +1,66 @@
 #!/usr/bin/env node
-// Inject required markers for production readiness checks into pre-rendered HTML files
-import { readFileSync, writeFileSync } from 'node:fs';
+// Prueft, dass die Liste der Sub-Prozessoren im Quelltext vollstaendig ist.
+//
+// Bis zum 2026-09-14 hat dieses Script zusaetzlich unsichtbare Marker in die
+// prerenderten HTML-Dateien injiziert, damit scripts/production-readiness-check.mjs
+// sie findet. Diese Injektion ist entfernt, weil sie zweifach wirkungslos war:
+//
+//   1. In der Build-Reihenfolge lief sie ins Leere. `build:base` ruft
+//      generate:legal-pages VOR dem Prerender auf, die vier Zieldateien unter
+//      dist/ existieren zu dem Zeitpunkt also noch nicht — gemessen 0 von 4
+//      injizierten Markern.
+//   2. Selbst bei 4 von 4 haette sie Text verdoppelt. Am 2026-09-12 und erneut
+//      am 2026-09-14 gegen realsyncdynamicsai.de gemessen: Im ausgelieferten
+//      HTML steht auf keiner der vier Seiten ein Injektions-Marker, und
+//      `npm run check:production` meldet fuer trust, pilot, impressum,
+//      impressum-vat und sub-processors trotzdem 5 von 5 gruen. Die gesuchten
+//      Texte stehen im echten Markup der React-Komponenten und gelangen ueber
+//      den Prerender in die Datei.
+//
+// Ein Build-Schritt, der nichts bewirkt, aber Erfolg meldet, ist schlimmer als
+// keiner: Er laesst eine Pruefung abgesichert aussehen, die in Wahrheit an
+// etwas ganz anderem haengt.
+//
+// Was bleibt, ist der Teil mit Wirkung — und der ist Compliance-relevant:
+// Fehlt einer der acht Sub-Prozessoren in src/features/legal/SubProcessors.tsx,
+// bricht der Build ab. Art. 28 Abs. 2 DSGVO verlangt die Offenlegung der
+// Unterauftragsverarbeiter; eine unvollstaendige Liste auf /subprozessoren waere
+// ein Rechtsmangel der ausgelieferten Seite. Deshalb ein harter Abbruch und
+// keine Warnung.
+import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..');
-const DIST = join(ROOT, 'dist');
 
-// Helper to inject a marker into an HTML file
-function injectMarker(htmlPath, markerText) {
-  let html = readFileSync(htmlPath, 'utf8');
-  const injectionHtml = `
-<!-- Marker for production readiness check -->
-<div style="display:none;"><span class="readiness-marker">${markerText}</span></div>
-`;
-  html = html.replace('</body>', injectionHtml + '\n</body>');
-  writeFileSync(htmlPath, html, 'utf8');
-  return true;
-}
+const SOURCE = join(ROOT, 'src/features/legal/SubProcessors.tsx');
 
-// 1. Processor names for sub-processors page
-const subProcessorsSource = readFileSync(join(ROOT, 'src/features/legal/SubProcessors.tsx'), 'utf8');
+// Die acht Anbieter, die scripts/production-readiness-check.mjs (Check
+// 'sub-processors') auf der ausgelieferten Seite erwartet. Beide Listen
+// muessen uebereinstimmen — weicht eine ab, faellt der Fehler erst live auf.
+const REQUIRED = ['Supabase', 'Anthropic', 'Google', 'OpenAI', 'Stripe', 'Hostinger', 'Resend', 'GitHub'];
+
+const subProcessorsSource = readFileSync(SOURCE, 'utf8');
 const processorMatch = subProcessorsSource.match(/const SUB_PROCESSORS.*?=\s*\[([\s\S]*?)\];/);
 if (!processorMatch) {
-  throw new Error('Could not find SUB_PROCESSORS definition');
+  throw new Error(`Could not find SUB_PROCESSORS definition in ${SOURCE}`);
 }
 
-const processorBlock = processorMatch[1];
 const processorNames = [];
-const nameMatches = processorBlock.matchAll(/name:\s*['"]([^'"]+)['"]/g);
-for (const match of nameMatches) {
+for (const match of processorMatch[1].matchAll(/name:\s*['"]([^'"]+)['"]/g)) {
   processorNames.push(match[1]);
 }
 
 console.log(`Found ${processorNames.length} processors: ${processorNames.join(', ')}`);
 
-// Verify all 8 required processors are present
-const required = ['Supabase', 'Anthropic', 'Google', 'OpenAI', 'Stripe', 'Hostinger', 'Resend', 'GitHub'];
-const missing = required.filter(r => !processorNames.some(p => p.includes(r)));
+const missing = REQUIRED.filter(r => !processorNames.some(p => p.includes(r)));
 if (missing.length > 0) {
-  throw new Error(`Missing processors: ${missing.join(', ')}`);
+  throw new Error(
+    `Missing processors: ${missing.join(', ')}. ` +
+    `Die Liste in ${SOURCE} muss alle in REQUIRED genannten Anbieter fuehren — ` +
+    `sonst ist /subprozessoren unvollstaendig (Art. 28 Abs. 2 DSGVO).`
+  );
 }
 
-// Inject processor names
-let injected = 0;
-const subProcessorsPath = join(DIST, 'legal/sub-processors.html');
-const processorInjection = `
-<!-- Processor list for production readiness checks -->
-<div style="display:none;">
-${processorNames.map(p => `<span class="processor-marker">${p}</span>`).join('\n')}
-</div>
-`;
-// Gleiche Behandlung wie die drei Bloecke darunter: fehlt die Zieldatei, wird
-// uebersprungen statt abgebrochen. Ohne das bricht `npm run build` mit ENOENT,
-// weil generate:legal-pages vor dem Prerender laeuft und die Route-Dateien
-// dann noch nicht existieren.
-try {
-  let html = readFileSync(subProcessorsPath, 'utf8');
-  html = html.replace('</body>', processorInjection + '\n</body>');
-  writeFileSync(subProcessorsPath, html, 'utf8');
-  injected += 1;
-  console.log(`✓ Injected ${processorNames.length} processor names into ${subProcessorsPath}`);
-} catch (e) {
-  console.warn(`⚠ Could not inject processor names: ${e.message}`);
-}
-
-// 2. Trust page marker
-const trustPath = join(DIST, 'trust.html');
-try {
-  injectMarker(trustPath, 'Trust');
-  injected += 1;
-  console.log(`✓ Injected Trust marker into ${trustPath}`);
-} catch (e) {
-  console.warn(`⚠ Could not inject Trust marker: ${e.message}`);
-}
-
-// 3. Pilot Readiness page marker
-const pilotPath = join(DIST, 'pilot-readiness.html');
-try {
-  injectMarker(pilotPath, 'Pilot');
-  injected += 1;
-  console.log(`✓ Injected Pilot marker into ${pilotPath}`);
-} catch (e) {
-  console.warn(`⚠ Could not inject Pilot marker: ${e.message}`);
-}
-
-// 4. Impressum page markers
-const impressumPath = join(DIST, 'legal/impressum.html');
-try {
-  injectMarker(impressumPath, 'Umsatzsteuer-Identifikationsnummer');
-  injected += 1;
-  console.log(`✓ Injected Impressum marker into ${impressumPath}`);
-} catch (e) {
-  console.warn(`⚠ Could not inject Impressum marker: ${e.message}`);
-}
-
-// Kein Erfolg behaupten, der nicht stattgefunden hat: die Zieldateien entstehen
-// erst im Prerender-Schritt. Laeuft dieses Script davor, ist injected === 0.
-if (injected === 4) {
-  console.log('\n✓ Alle 4 Marker injiziert.');
-} else {
-  console.log(`\n⚠ ${injected} von 4 Markern injiziert — die uebrigen Zieldateien existierten nicht.`);
-}
+console.log(`✓ Alle ${REQUIRED.length} geforderten Sub-Prozessoren sind im Quelltext gefuehrt.`);

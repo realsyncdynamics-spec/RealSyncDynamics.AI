@@ -6,10 +6,11 @@ test.describe('[GOV] DSGVO-Audit-Seite', () => {
     await page.goto('/audit', { waitUntil: 'domcontentloaded' });
 
     await expect(
-      page.getByRole('heading', { level: 1, name: /Kostenloser DSGVO- und Tracking-Audit/i }),
+      page.getByRole('heading', { level: 1, name: /Ihr KI-Bestand in vier Fragen/i }),
     ).toBeVisible();
 
-    const input = page.locator('input[type="text"], input[type="url"], input[placeholder*="domain" i], input[name*="domain" i]').first();
+    // Handoff v2: Schritt 1 fragt Unternehmen + Domain; geprüft wird das Domain-Feld.
+    const input = page.locator('input[name="domain"]').first();
     await expect(input).toBeVisible();
   });
 
@@ -19,7 +20,7 @@ test.describe('[GOV] DSGVO-Audit-Seite', () => {
 
     await page.goto('/audit', { waitUntil: 'domcontentloaded' });
 
-    const input = page.locator('input[type="text"], input[type="url"], input[placeholder*="domain" i]').first();
+    const input = page.locator('input[name="domain"]').first();
     if (await input.count() === 0) {
       test.skip(true, 'Domain-Eingabefeld nicht gefunden');
       return;

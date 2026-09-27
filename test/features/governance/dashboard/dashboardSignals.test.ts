@@ -4,6 +4,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import {
+  attentionEmptyReason,
   daysSince,
   ELEVATED_RISK_THRESHOLD,
   elevatedAssetsOf,
@@ -311,5 +312,41 @@ describe('Behebung — realer Payload (email_auth_resolved, manual_owner_approve
     expect(parseResolvePayload({ resolves_event_id: 'x', check: 'mx', source: 'robot', checked_at: 'nie' })).toMatchObject({
       resolves_event_id: 'x', check: null, source: null, checked_at: null,
     });
+  });
+});
+
+describe('attentionEmptyReason — leeres Inventar ist keine Entwarnung', () => {
+  it('0 KI-Systeme UND 0 Control-Mappings ⇒ keine Datengrundlage', () => {
+    expect(attentionEmptyReason({ aiSystems: 0, controlMappings: 0 })).toBe('no_basis');
+  });
+
+  it('ein einziger Eintrag auf einer der beiden Achsen genügt für eine echte Entwarnung', () => {
+    expect(attentionEmptyReason({ aiSystems: 1, controlMappings: 0 })).toBe('clear');
+    expect(attentionEmptyReason({ aiSystems: 0, controlMappings: 1 })).toBe('clear');
+  });
+
+  it('nicht ladbare Zaehler behaupten keine Unbedenklichkeit', () => {
+    expect(attentionEmptyReason({ aiSystems: null, controlMappings: 0 })).toBe('no_basis');
+    expect(attentionEmptyReason({ aiSystems: 0, controlMappings: null })).toBe('no_basis');
+    expect(attentionEmptyReason(null)).toBe('no_basis');
+    expect(attentionEmptyReason(undefined)).toBe('no_basis');
+  });
+
+  // Negativprobe: Die Schwelle muss die des Scores sein. Waere sie ein ODER
+  // (aiSystems === 0 || controlMappings === 0), wuerde ein Mandant mit
+  // erfassten KI-Systemen, aber noch ohne Mapping faelschlich als
+  // datenlos gelten — und die Karte widerspraeche dem Score darueber,
+  // der in genau diesem Fall eine Zahl zeigt.
+  it('Schwelle ist UND, nicht ODER — deckungsgleich mit computeGovernanceScoreIfReliable Regel 3', () => {
+    const scoreHaetteZahl = (b: { aiSystems: number; controlMappings: number }) =>
+      !(b.aiSystems === 0 && b.controlMappings === 0);
+    for (const b of [
+      { aiSystems: 0, controlMappings: 0 },
+      { aiSystems: 3, controlMappings: 0 },
+      { aiSystems: 0, controlMappings: 7 },
+      { aiSystems: 3, controlMappings: 7 },
+    ]) {
+      expect(attentionEmptyReason(b) === 'clear').toBe(scoreHaetteZahl(b));
+    }
   });
 });

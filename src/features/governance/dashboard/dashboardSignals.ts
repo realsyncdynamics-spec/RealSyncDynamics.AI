@@ -372,3 +372,33 @@ export function tenantDisplayName(name: string, lang: 'de' | 'en' = 'de'): strin
   const m = /^(.+?)['’`]s Workspace$/.exec(name.trim());
   return m ? `Workspace von ${m[1]}` : name;
 }
+
+/* ─── Leeres Inventar ist keine Entwarnung ─── */
+
+/**
+ * Warum „Braucht Aufmerksamkeit“ leer ist.
+ *
+ * `no_basis`  — es gibt nichts zu bewerten (0 KI-Systeme UND 0
+ *               Control-Mappings), oder die Datenbasis war nicht ladbar.
+ * `clear`     — ein Inventar ist da und daran ist nichts offen.
+ *
+ * Nur `clear` ist eine Entwarnung. Bei leerem Inventar sind alle Aussagen
+ * der Liste („keine unklassifizierten Systeme“, „keine offenen Maßnahmen“ …)
+ * trivial wahr und lesen sich trotzdem als Unbedenklichkeitsbescheinigung —
+ * dieselbe Verwechslung von „nichts gemessen“ mit „nichts gefunden“, die der
+ * Score seit `computeGovernanceScoreIfReliable` ausdrücklich vermeidet.
+ *
+ * Schwelle absichtlich identisch zu dessen Regel 3: Die beiden Karten stehen
+ * übereinander auf derselben Seite und dürfen sich nicht widersprechen.
+ * Nicht ladbare Zähler (`null`) gelten ebenfalls nicht als Entwarnung —
+ * im Zweifel keine Unbedenklichkeit behaupten.
+ */
+export type AttentionEmptyReason = 'no_basis' | 'clear';
+
+export function attentionEmptyReason(
+  basis: { aiSystems: number | null; controlMappings: number | null } | null | undefined,
+): AttentionEmptyReason {
+  if (!basis) return 'no_basis';
+  if (basis.aiSystems === null || basis.controlMappings === null) return 'no_basis';
+  return basis.aiSystems === 0 && basis.controlMappings === 0 ? 'no_basis' : 'clear';
+}

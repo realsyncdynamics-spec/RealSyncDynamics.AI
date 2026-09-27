@@ -18,10 +18,40 @@ import {
   BrowserExecutorError,
   executeBrowserActions,
   getBrowserExecutorHealth,
+  planBrowserTask,
   type BrowserExecutorAction,
+  type BrowserPlanStep,
 } from '../browser/browserExecutorClient';
 
 type AgentMode = 'assist' | 'copilot' | 'autonomous';
+type RunOutcome = 'ok' | 'approval' | 'error';
+type StepStatus = 'pending' | 'running' | 'done' | 'approval' | 'error';
+
+const MUTATING: ReadonlySet<BrowserExecutorAction['type']> = new Set(['click', 'type', 'select']);
+
+/** Kurzbeschreibung eines Plan-Schritts für die Liste. */
+export function describeAction(action: BrowserExecutorAction): string {
+  switch (action.type) {
+    case 'navigate': return `Öffnen: ${action.url}`;
+    case 'scroll': return `Scrollen ${action.direction === 'up' ? 'nach oben' : 'nach unten'}${action.amount ? ` (${action.amount}px)` : ''}`;
+    case 'click': return `Klicken: ${action.selector}`;
+    case 'type': return `Eingeben in ${action.selector}: „${action.text}“`;
+    case 'select': return `Auswählen in ${action.selector}: ${action.value}`;
+    case 'extract': return action.selector ? `Text lesen: ${action.selector}` : 'Seitentext lesen';
+    case 'wait': return `Warten ${action.milliseconds} ms`;
+    case 'screenshot': return 'Screenshot';
+  }
+}
+
+function planErrorMessage(error: unknown): string {
+  if (error instanceof BrowserExecutorError) {
+    if (error.status === 403) return 'Freitext-Planung ist ab dem Starter-Tarif enthalten.';
+    if (error.code === 'QUOTA_EXCEEDED') return 'Das KI-Kontingent dieses Monats ist aufgebraucht.';
+    if (error.code === 'PLAN_INVALID') return 'Der Planer hat keinen gültigen Plan geliefert. Bitte die Aufgabe konkreter formulieren.';
+    if (error.status === 401) return 'Bitte erneut anmelden.';
+  }
+  return 'Planung fehlgeschlagen. Bitte später erneut versuchen.';
+}
 type RuntimeActionType = Exclude<BrowserExecutorAction['type'], 'wait'>;
 
 function normalizeUrl(value: string): string | null {
@@ -35,6 +65,14 @@ function normalizeUrl(value: string): string | null {
   } catch {
     return null;
   }
+}
+
+/** Eingabe ist eine URL (kein Leerzeichen, Protokoll oder Punkt) — sonst Aufgabe. */
+export function urlFromInput(value: string): string | null {
+  const raw = value.trim();
+  if (!raw || /\s/.test(raw)) return null;
+  if (!/^https?:\/\//i.test(raw) && !raw.includes('.')) return null;
+  return normalizeUrl(raw);
 }
 
 function openGovernedBrowser(url: string) {
@@ -80,6 +118,13 @@ export function BrowserRuntimePanel({ activeTenantId }: { activeTenantId: string
   const [pendingApprovalId, setPendingApprovalId] = useState<string | null>(null);
   const [pendingAction, setPendingAction] = useState<BrowserExecutorAction | null>(null);
   const [actionResult, setActionResult] = useState<string | null>(null);
+  const [planning, setPlanning] = useState(false);
+  const [plan, setPlan] = useState<{ summary: string; steps: BrowserPlanStep[] } | null>(null);
+  const [stepStatus, setStepStatus] = useState<StepStatus[]>([]);
+  const [runningPlan, setRunningPlan] = useState(false);
+  const [lastUrl, setLastUrl] = useState<string | null>(null);
+  /** Plan-Schritt, dessen Freigabe gerade aussteht (für den Status nach „Freigegeben ausführen“). */
+  const [pendingStepIndex, setPendingStepIndex] = useState<number | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -108,19 +153,19 @@ export function BrowserRuntimePanel({ activeTenantId }: { activeTenantId: string
   const capabilities = useMemo(
     () => [
       { label: 'Navigate', available: executorConnected, icon: Globe2 },
-      { label: 'Scan', available: true, icon: ShieldCheck },
-      { label: 'Evidence', available: true, icon: FileCheck2 },
+      { label: 'Scan', available: Boolean(activeTenantId), icon: ShieldCheck },
+      { label: 'Evidence', available: Boolean(activeTenantId), icon: FileCheck2 },
       { label: 'Scroll', available: executorConnected, icon: ScrollText },
       { label: 'Click', available: executorConnected, icon: MousePointer2 },
       { label: 'Type', available: executorConnected, icon: Type },
     ],
-    [executorConnected],
+    [executorConnected, activeTenantId],
   );
 
   function submit(event: FormEvent) {
     event.preventDefault();
     setMessage(null);
-    const url = normalizeUrl(task);
+    const url = urlFromInput(task);
     if (url) {
       openGovernedBrowser(url);
       setMessage(
@@ -130,11 +175,66 @@ export function BrowserRuntimePanel({ activeTenantId }: { activeTenantId: string
       );
       return;
     }
-    setMessage(
-      executorConnected
-        ? 'Freitext-Agentenplanung ist noch nicht aktiviert. Nutze den Governed Action Composer für kontrollierte Browser-Aktionen.'
-        : 'Freitext-Agentensteuerung benötigt einen erreichbaren serverseitigen Browser Executor.',
-    );
+    void planTask(task.trim());
+  }
+
+  async function planTask(text: string) {
+    if (!text) return;
+    if (!activeTenantId) {
+      setMessage('Freitext-Planung braucht einen aktiven Mandanten.');
+      return;
+    }
+    setPlanning(true);
+    setPlan(null);
+    setStepStatus([]);
+    setPendingStepIndex(null);
+    setActionResult(null);
+    try {
+      const response = await planBrowserTask({ tenantId: activeTenantId, task: text, currentUrl: lastUrl });
+      if (response.kind === 'refused') {
+        setMessage(`Nicht geplant: ${response.reason}`);
+        return;
+      }
+      setPlan({ summary: response.summary, steps: response.steps });
+      setStepStatus(response.steps.map(() => 'pending'));
+      setMessage(
+        executorConnected
+          ? 'Plan erstellt. Prüfe die Schritte und führe sie einzeln oder im Co-Pilot-Modus nacheinander aus.'
+          : 'Plan erstellt. Zum Ausführen muss der serverseitige Browser Executor erreichbar sein.',
+      );
+    } catch (error) {
+      setMessage(planErrorMessage(error));
+    } finally {
+      setPlanning(false);
+    }
+  }
+
+  function setStep(index: number, status: StepStatus) {
+    setStepStatus((prev) => prev.map((s, i) => (i === index ? status : s)));
+  }
+
+  async function runStep(index: number, approvalId?: string): Promise<RunOutcome> {
+    if (!plan) return 'error';
+    setStep(index, 'running');
+    const outcome = await runAction(plan.steps[index].action, approvalId);
+    setStep(index, outcome === 'ok' ? 'done' : outcome);
+    setPendingStepIndex(outcome === 'approval' ? index : null);
+    return outcome;
+  }
+
+  /** Co-Pilot: offene Schritte der Reihe nach; Stopp bei Freigabe oder Fehler. */
+  async function runPlan() {
+    if (!plan) return;
+    setRunningPlan(true);
+    try {
+      for (let i = 0; i < plan.steps.length; i++) {
+        if (stepStatus[i] === 'done') continue;
+        const outcome = await runStep(i);
+        if (outcome !== 'ok') break;
+      }
+    } finally {
+      setRunningPlan(false);
+    }
   }
 
   function buildAction(): BrowserExecutorAction | null {
@@ -166,8 +266,8 @@ export function BrowserRuntimePanel({ activeTenantId }: { activeTenantId: string
     }
   }
 
-  async function runAction(action: BrowserExecutorAction, approvalId?: string) {
-    if (!activeTenantId || !sessionId || !executorConnected) return;
+  async function runAction(action: BrowserExecutorAction, approvalId?: string): Promise<RunOutcome> {
+    if (!activeTenantId || !sessionId || !executorConnected) return 'error';
     setExecuting(true);
     setActionResult(null);
     try {
@@ -179,7 +279,9 @@ export function BrowserRuntimePanel({ activeTenantId }: { activeTenantId: string
       });
       setPendingApprovalId(null);
       setPendingAction(null);
+      if (action.type === 'navigate') setLastUrl(action.url);
       setActionResult(resultSummary(response.result));
+      return 'ok';
     } catch (error) {
       if (error instanceof BrowserExecutorError && error.code === 'APPROVAL_REQUIRED') {
         const approvalIdFromError = approvalIdFrom(error);
@@ -187,12 +289,13 @@ export function BrowserRuntimePanel({ activeTenantId }: { activeTenantId: string
           setPendingApprovalId(approvalIdFromError);
           setPendingAction(action);
           setActionResult('Diese Aktion wurde nicht ausgeführt. Sie wartet auf eine menschliche Freigabe.');
-          return;
+          return 'approval';
         }
       }
       setActionResult(
         error instanceof Error ? error.message : 'Browser-Aktion fehlgeschlagen.',
       );
+      return 'error';
     } finally {
       setExecuting(false);
     }
@@ -228,8 +331,26 @@ export function BrowserRuntimePanel({ activeTenantId }: { activeTenantId: string
           </p>
         </div>
         <div className="flex flex-wrap gap-2 text-[11px] font-mono">
-          <span className="border border-emerald-900 bg-emerald-950/30 px-2.5 py-1 text-emerald-300">NAVIGATION ACTIVE</span>
-          <span className="border border-cyan-900 bg-cyan-950/30 px-2.5 py-1 text-cyan-300">EVIDENCE ACTIVE</span>
+          {/* Navigation = clientseitige Preview, Evidence = Mandanten-Log —
+              beides nur mit aktivem Mandanten, sonst ehrlich „inaktiv“. */}
+          <span
+            className={
+              activeTenantId
+                ? 'border border-emerald-900 bg-emerald-950/30 px-2.5 py-1 text-emerald-300'
+                : 'border border-titanium-800 px-2.5 py-1 text-titanium-500'
+            }
+          >
+            {activeTenantId ? 'NAVIGATION ACTIVE' : 'NAVIGATION INACTIVE'}
+          </span>
+          <span
+            className={
+              activeTenantId
+                ? 'border border-cyan-900 bg-cyan-950/30 px-2.5 py-1 text-cyan-300'
+                : 'border border-titanium-800 px-2.5 py-1 text-titanium-500'
+            }
+          >
+            {activeTenantId ? 'EVIDENCE ACTIVE' : 'EVIDENCE INACTIVE'}
+          </span>
           <span
             className={
               executorConnected
@@ -250,21 +371,23 @@ export function BrowserRuntimePanel({ activeTenantId }: { activeTenantId: string
         <div className="border-b border-titanium-800 p-5 xl:border-b-0 xl:border-r">
           <form onSubmit={submit}>
             <label htmlFor="browser-runtime-task" className="text-xs font-semibold uppercase tracking-[0.16em] text-titanium-400">
-              Was soll RealSync im Browser öffnen?
+              Was soll RealSync im Browser tun?
             </label>
             <div className="mt-3 flex flex-col gap-2 sm:flex-row">
               <input
                 id="browser-runtime-task"
                 value={task}
                 onChange={(event) => setTask(event.target.value)}
-                placeholder="URL öffnen, z. B. example.com"
+                placeholder="URL oder Aufgabe, z. B. „Prüfe, ob example.com einen Cookie-Banner zeigt“"
+                maxLength={1000}
                 className="min-w-0 flex-1 border border-titanium-700 bg-obsidian-900 px-3 py-3 text-sm text-titanium-100 outline-none placeholder:text-titanium-600 focus:border-cyan-500"
               />
               <button
                 type="submit"
-                className="inline-flex items-center justify-center gap-2 bg-cyan-500 px-4 py-3 text-sm font-semibold text-obsidian-950 hover:bg-cyan-400"
+                disabled={planning || !task.trim()}
+                className="inline-flex items-center justify-center gap-2 bg-cyan-500 px-4 py-3 text-sm font-semibold text-obsidian-950 hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-45"
               >
-                Browser öffnen
+                {planning ? 'Plane…' : !task.trim() || urlFromInput(task) ? 'Browser öffnen' : 'Planen'}
                 <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </button>
             </div>
@@ -276,13 +399,75 @@ export function BrowserRuntimePanel({ activeTenantId }: { activeTenantId: string
             </div>
           )}
 
+          {plan && (
+            <div className="mt-3 border border-cyan-900 bg-obsidian-900 p-4" data-testid="browser-task-plan">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="text-xs font-semibold uppercase tracking-[0.16em] text-cyan-300">Aktionsplan</div>
+                  {plan.summary && <p className="mt-1 text-sm text-titanium-200">{plan.summary}</p>}
+                </div>
+                {mode === 'copilot' && (
+                  <button
+                    type="button"
+                    onClick={() => void runPlan()}
+                    disabled={!executorConnected || executing || runningPlan || stepStatus.every((st) => st === 'done')}
+                    className="inline-flex items-center gap-2 bg-cyan-500 px-3 py-2 text-xs font-semibold text-obsidian-950 disabled:cursor-not-allowed disabled:opacity-45"
+                  >
+                    {runningPlan ? 'Läuft…' : 'Plan ausführen'}
+                    <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+                  </button>
+                )}
+              </div>
+              <ol className="mt-3 space-y-2">
+                {plan.steps.map((step, index) => {
+                  const status = stepStatus[index] ?? 'pending';
+                  return (
+                    <li key={index} className="flex items-start gap-3 border border-titanium-800 px-3 py-2" data-testid="browser-plan-step">
+                      <span className="mt-0.5 font-mono text-[10px] text-titanium-500">{index + 1}</span>
+                      <div className="min-w-0 flex-1">
+                        <div className="break-words text-xs text-titanium-100">{describeAction(step.action)}</div>
+                        {step.reason && <div className="mt-0.5 text-[11px] text-titanium-500">{step.reason}</div>}
+                        {MUTATING.has(step.action.type) && (
+                          <div className="mt-1 inline-flex items-center gap-1 text-[10px] font-mono uppercase text-amber-300">
+                            <LockKeyhole className="h-3 w-3" aria-hidden="true" /> Freigabe nötig
+                          </div>
+                        )}
+                      </div>
+                      <span
+                        className={`shrink-0 font-mono text-[10px] uppercase ${
+                          status === 'done' ? 'text-emerald-300'
+                            : status === 'error' ? 'text-red-300'
+                              : status === 'approval' ? 'text-amber-300'
+                                : status === 'running' ? 'text-cyan-300' : 'text-titanium-500'
+                        }`}
+                      >
+                        {status === 'done' ? 'erledigt' : status === 'error' ? 'Fehler' : status === 'approval' ? 'wartet' : status === 'running' ? 'läuft' : 'offen'}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => void runStep(index)}
+                        disabled={!executorConnected || executing || runningPlan || status === 'done'}
+                        className="shrink-0 border border-cyan-800 px-2 py-1 text-[11px] text-cyan-200 disabled:cursor-not-allowed disabled:opacity-45"
+                      >
+                        Ausführen
+                      </button>
+                    </li>
+                  );
+                })}
+              </ol>
+              <p className="mt-2 text-[10px] text-titanium-600">
+                Jeder Schritt läuft einzeln durch Policy, Risiko-Bewertung und Evidenz. Klick, Eingabe und Auswahl warten auf eine menschliche Freigabe.
+              </p>
+            </div>
+          )}
+
           <div className="mt-5">
             <div className="mb-2 text-xs font-semibold uppercase tracking-[0.16em] text-titanium-400">Agent Mode</div>
             <div className="grid gap-2 sm:grid-cols-3">
               {([
                 ['assist', 'Assist', true, 'Mensch führt, Governance protokolliert'],
                 ['copilot', 'Co-Pilot', executorConnected, 'Governed Browser Actions aktiv'],
-                ['autonomous', 'Autonomous', false, 'Agenten-Planer noch nicht freigegeben'],
+                ['autonomous', 'Autonomous', false, 'Autonome Ausführung ohne Freigabe ist gesperrt'],
               ] as const).map(([id, label, enabled, description]) => (
                 <button
                   key={id}
@@ -412,7 +597,9 @@ export function BrowserRuntimePanel({ activeTenantId }: { activeTenantId: string
                   <button
                     type="button"
                     disabled={executing}
-                    onClick={() => void runAction(pendingAction, pendingApprovalId)}
+                    onClick={() => void (pendingStepIndex !== null
+                      ? runStep(pendingStepIndex, pendingApprovalId)
+                      : runAction(pendingAction, pendingApprovalId))}
                     className="border border-cyan-800 px-3 py-2.5 text-xs font-medium text-cyan-200 disabled:opacity-45"
                   >
                     Nach Freigabe erneut ausführen

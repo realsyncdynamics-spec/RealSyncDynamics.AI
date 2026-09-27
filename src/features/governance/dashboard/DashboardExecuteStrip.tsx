@@ -16,11 +16,12 @@ export function DashboardExecuteStrip() {
             Ausführen
           </p>
           <p className="mt-1 text-sm text-titanium-200">
-            Compliance-Preview (DSGVO / EU AI Act). Mesh und Coming-Soon liegen unter Agents.
+            Compliance-Audit einer Domain starten (DSGVO / EU AI Act). Agenten laufen unter{' '}
+            <Link to="/app/agents" className="text-[#00B8D4] hover:underline">Agents</Link>.
           </p>
         </div>
         <Link
-          to="/app/agents"
+          to="/audit"
           className="inline-flex items-center gap-2 bg-[#1E5AFF] hover:bg-[#1641C4] text-white px-4 py-2 text-sm font-semibold font-mono uppercase tracking-wider"
         >
           Prüfung öffnen <ArrowRight className="h-4 w-4" />

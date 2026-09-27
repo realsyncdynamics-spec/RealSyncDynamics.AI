@@ -146,9 +146,16 @@ describe('AiSystemDetailView', () => {
 
   it('markiert eine Stufenwahl als Entwurf, weil es keinen Speicherpfad gibt', async () => {
     renderAt('/app/ai-systems/a1');
-    await waitFor(() => expect(screen.getByRole('button', { name: /Hochrisiko/ })).toBeInTheDocument());
-    fireEvent.click(screen.getByRole('button', { name: /Hochrisiko/ }));
-    expect(screen.getByRole('button', { name: /Hochrisiko/ })).toHaveAttribute('aria-pressed', 'true');
+    const hochrisiko = () => screen.getByRole('button', { name: /Hochrisiko/ });
+    await waitFor(() => expect(hochrisiko()).toBeInTheDocument());
+    // Der Mount-Effekt in ClassificationDetail (setTier(storedTier)) ist passiv und
+    // kann unter Last erst NACH dem ersten Klick laufen und ihn überschreiben —
+    // so war der Test flaky. Klick wiederholen, bis die Wahl steht; setTier setzt
+    // (nicht toggeln), wiederholte Klicks sind also folgenlos.
+    await waitFor(() => {
+      fireEvent.click(hochrisiko());
+      expect(hochrisiko()).toHaveAttribute('aria-pressed', 'true');
+    });
     expect(screen.getByTestId('draft-unsaved')).toHaveTextContent('Entwurf · nicht gespeichert');
     // Pflichten folgen der gewählten Stufe
     expect(screen.getByTestId('obligations')).toHaveTextContent('Art. 9');

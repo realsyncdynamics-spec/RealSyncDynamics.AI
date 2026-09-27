@@ -25,6 +25,25 @@
   unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
 }
 
+/* Newsreader 400 italic — Akzentzeile der Startseiten-Überschriften
+   (Papier/Waldgrün). Gleiche Quelle und Lizenz wie oben (fontsource, OFL). */
+@font-face {
+  font-family: 'Newsreader';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/newsreader-latin-400-italic.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Newsreader';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/newsreader-latin-ext-400-italic.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
 /* Inter Tight — Display-Schnitt der Governance-AI-Landing. Enger laufend als
    Inter; trägt H1/H2, Marke und Kennzahlen im Titan-Enterprise-Setz. */
 @font-face {
@@ -1816,13 +1835,152 @@ html, body {
    Sektionen unter dem Hero lesen weiter die `--ga-*`-Variablen; dieser Scope
    stellt sie auf die Handoff-Palette (Cyan-Akzent, kein Gold) und die
    Titel-Schrift auf Inter Tight. Andere Design-Routen bleiben unberührt. */
+/* „Papier & Waldgrün" (natürlich, vertrauensvoll): warmes Papier, fast
+   schwarze Schrift, tiefes Waldgrün als einzige Handlungs- und Systemfarbe.
+
+   Ein Scope für die Startseite und die Seiten hinter ihren Buttons
+   (`/audit`, `/pricing`, `/login`, `/contact-sales`, Checkout, Content-Seiten,
+   `/governance-runtime`). Wie `.eos-light` kippt es Paletten über ihre
+   CSS-Variablen, ohne Komponenten-Klassen anzufassen — beide Familien:
+   die Handoff-Tokens (`--color-rs-*`) und die ältere Obsidian/Titanium/
+   Silver/Gold-Skala. App und Dashboard bleiben dunkel. Der Tokenname
+   `cyan` bleibt aus Kompatibilität — er trägt hier Waldgrün. */
+/* Das Cookie-Banner hängt an der App-Wurzel, außerhalb der Seiten-Scopes:
+   Über `:has` übernimmt es die Palette nur, solange eine Papier-Seite
+   gerendert ist — in App und Dashboard bleibt es dunkel. */
+.rs-paper,
+body:has(.rs-paper) .cookie-consent {
+  color-scheme: light;
+  --color-rs-hero:          #EFEAE1;
+  --color-rs-bg-0:          #EFEAE1;
+  --color-rs-bg-1:          #F7F4EE;
+  --color-rs-bg-2:          #EDE7DC;
+  --color-rs-bg-3:          #E2DBCF;
+  --color-rs-fg-0:          #1B1F1C;
+  --color-rs-fg-1:          #454B47;
+  --color-rs-fg-2:          #5E665F;
+  --color-rs-fg-3:          #8A9089;
+  --color-rs-border:        #D6CFC2;
+  --color-rs-border-strong: #B9B0A0;
+  --color-rs-primary:       #1F3D32;
+  --color-rs-primary-hover: #16302A;
+  --color-rs-primary-light: #2F6B53;
+  --color-rs-cyan:          #2F6B53;
+  --color-rs-cyan-light:    #3F8A6A;
+  --color-rs-success:       #2F6B53;
+  --color-rs-violet:        #1F3D32;
+
+  /* Ältere Skalen: Flächen → Papier, Schrift → Tinte, Akzente → Waldgrün. */
+  --color-obsidian-950: #EFEAE1;
+  --color-obsidian-900: #F7F4EE;
+  --color-obsidian-800: #E8E2D7;
+  --color-obsidian-700: #E2DBCF;
+  --color-obsidian-600: #D6CFC2;
+  --color-obsidian-500: #B9B0A0;
+  --color-obsidian-400: #8A9089;
+  --color-obsidian-300: #5E665F;
+  --color-obsidian-200: #454B47;
+  --color-obsidian-100: #2A2F2B;
+  --color-obsidian-50:  #1B1F1C;
+
+  --color-titanium-50:  #1B1F1C;
+  --color-titanium-100: #1B1F1C;
+  --color-titanium-200: #2A2F2B;
+  --color-titanium-300: #454B47;
+  --color-titanium-400: #5E665F;
+  --color-titanium-500: #5E665F;
+  --color-titanium-600: #8A9089;
+  --color-titanium-700: #B9B0A0;
+  --color-titanium-800: #D6CFC2;
+  --color-titanium-900: #E2DBCF;
+
+  --color-silver-50:  #1B1F1C;
+  --color-silver-100: #1B1F1C;
+  --color-silver-300: #454B47;
+  --color-silver-400: #5E665F;
+  --color-silver-500: #5E665F;
+  --color-silver-700: #B9B0A0;
+  --color-silver-900: #E2DBCF;
+
+  --color-gold-50:  #E4ECE6;
+  --color-gold-100: #D3E1D7;
+  --color-gold-200: #2F6B53;
+  --color-gold-300: #1F3D32;
+  --color-gold-400: #2F6B53;
+  --color-gold-500: #1F3D32;
+  --color-gold-600: #2F6B53;
+  --color-gold-700: #16302A;
+  --color-gold-800: #16302A;
+  --color-gold-900: #D3E1D7;
+
+  --color-security-400: #2F6B53;
+  --color-security-500: #1F3D32;
+  --color-security-600: #16302A;
+  --color-cyan-300: #2F6B53;
+  --color-cyan-400: #2F6B53;
+  --color-cyan-500: #1F3D32;
+  --color-cyan-600: #1F3D32;
+  --color-cyan-700: #2F6B53;
+  --color-brass-100: #1B1F1C;
+
+  /* Statusfarben: auf Papier dunkel genug für Text, Flächen hell. */
+  --color-red-100: #7F1D1D;
+  --color-red-200: #7F1D1D;
+  --color-red-300: #9B2C2C;
+  --color-red-400: #9B2C2C;
+  --color-red-900: #E8C4C0;
+  --color-red-950: #F6E4E1;
+  --color-emerald-200: #1F3D32;
+  --color-emerald-300: #2F6B53;
+  --color-emerald-400: #2F6B53;
+  --color-emerald-600: #2F6B53;
+  --color-emerald-900: #C9DCCF;
+  --color-emerald-950: #E4ECE6;
+  --color-amber-300: #8A5A0B;
+  --color-amber-400: #8A5A0B;
+  --color-amber-500: #2F6B53;
+  --color-orange-600: #1F3D32;
+}
+.rs-paper {
+  background-color: var(--color-rs-hero);
+  color: var(--color-rs-fg-0);
+}
+/* Banner-Buttons: grau-auf-weiß wäre auf Papier unlesbar → Waldgrün. */
+body:has(.rs-paper) .cookie-consent :is(button.bg-titanium-700, button.bg-security-500) {
+  background: var(--color-rs-primary);
+  border-color: var(--color-rs-primary);
+  color: #F7F4EE;
+}
+body:has(.rs-paper) .cookie-consent :is(button.bg-titanium-700, button.bg-security-500):hover {
+  background: var(--color-rs-primary-hover);
+}
+body:has(.rs-paper) .cookie-consent :is(p, div).font-display {
+  font-family: var(--font-rs-serif);
+  font-weight: 400;
+}
+
+/* Fest kodierte Primärflächen der älteren Seiten (Titan-Grau, Gold) und
+   deren fette Grotesk-Überschriften: im Papier-Scope Waldgrün und Serif. */
+.rs-paper :is(.surface-mono, .surface-gold) {
+  background: var(--color-rs-primary);
+  color: #F7F4EE;
+}
+.rs-paper :is(.surface-mono, .surface-gold):hover { background: var(--color-rs-primary-hover); }
+.rs-paper :is(h1, h2).font-display {
+  font-family: var(--font-rs-serif);
+  font-weight: 400;
+  letter-spacing: -0.015em;
+}
+
 .ga-context.rs-handoff {
-  color-scheme: dark;
-  --ga-display: var(--font-rs-title);
+  color-scheme: light;
+  /* Startseite: Wechselbänder etwas dunkler als das Seitenpapier. */
+  --color-rs-bg-0: #E8E2D7;
+  --ga-display: var(--font-rs-serif);
   --ga-void: var(--color-rs-hero);
   --ga-deep: var(--color-rs-bg-0);
   --ga-mid: var(--color-rs-bg-1);
-  --ga-panel: rgba(13, 19, 34, 0.72);
+  --ga-panel: rgba(247, 244, 238, 0.92);
   --ga-text: var(--color-rs-fg-0);
   --ga-muted: var(--color-rs-fg-1);
   --ga-titan: var(--color-rs-fg-2);
@@ -1830,36 +1988,50 @@ html, body {
   --ga-green: var(--color-rs-success);
   --ga-accent: var(--color-rs-cyan);
   --ga-accent-lite: var(--color-rs-cyan-light);
-  --ga-accent-deep: #0e8aa6;
-  --ga-accent-border: rgba(0, 184, 212, 0.35);
-  /* Die VIP-Stufe war Gold; im Handoff gibt es kein Gold. Violett ist die
-     vorgesehene Sekundärfarbe (Management/Enterprise). */
-  --ga-vip: var(--color-rs-violet);
-  --ga-vip-lite: #a996ff;
-  --ga-vip-deep: #5b3fd9;
-  --ga-vip-border: rgba(124, 92, 255, 0.4);
+  --ga-accent-deep: var(--color-rs-primary);
+  --ga-accent-border: rgba(31, 61, 50, 0.28);
+  --ga-vip: var(--color-rs-fg-2);
+  --ga-vip-lite: var(--color-rs-fg-1);
+  --ga-vip-deep: var(--color-rs-fg-0);
+  --ga-vip-border: var(--color-rs-border-strong);
   --ga-line: var(--color-rs-border);
-  --ga-line-soft: rgba(31, 43, 72, 0.7);
-  --ga-pill-face: linear-gradient(180deg, #2b66ff, var(--color-rs-primary));
-  --ga-pill-ink: #ffffff;
-  --ga-pill-shadow: 0 1px 0 rgba(255, 255, 255, 0.12) inset, 0 8px 24px rgba(30, 90, 255, 0.3);
-  --ga-ghost-face: rgba(13, 19, 34, 0.7);
-  --ga-ghost-face-hover: rgba(0, 184, 212, 0.1);
-  --ga-ghost-border: var(--color-rs-border-strong);
-  --ga-ghost-border-hover: var(--color-rs-cyan-light);
-  --ga-chip-face: rgba(0, 184, 212, 0.08);
+  --ga-line-soft: var(--color-rs-border);
+  /* Primäraktion: volles Waldgrün, harte Kante, kein Glow. */
+  --ga-pill-face: linear-gradient(var(--color-rs-primary), var(--color-rs-primary));
+  --ga-pill-ink: #F7F4EE;
+  --ga-pill-shadow: none;
+  --ga-ghost-face: transparent;
+  --ga-ghost-face-hover: rgba(31, 61, 50, 0.06);
+  --ga-ghost-border: var(--color-rs-fg-0);
+  --ga-ghost-border-hover: var(--color-rs-primary);
+  --ga-chip-face: rgba(31, 61, 50, 0.05);
+  --ga-sheen: rgba(31, 61, 50, 0.06);
   --ga-h1-face: linear-gradient(var(--color-rs-fg-0), var(--color-rs-fg-0));
-  --ga-h1-accent: linear-gradient(var(--color-rs-cyan-light), var(--color-rs-cyan));
-  --ga-h2-accent: linear-gradient(var(--color-rs-cyan-light), var(--color-rs-cyan));
-  --ga-glass: linear-gradient(160deg, rgba(20, 32, 58, 0.72), rgba(13, 19, 34, 0.72) 60%);
-  --ga-band: linear-gradient(180deg, rgba(7, 11, 20, 0.6), rgba(7, 11, 20, 0.88));
-  --ga-band-alt: linear-gradient(180deg, rgba(7, 11, 20, 0.88), rgba(7, 11, 20, 0.6));
+  --ga-h1-accent: linear-gradient(var(--color-rs-primary), var(--color-rs-primary));
+  --ga-h2-accent: linear-gradient(var(--color-rs-primary), var(--color-rs-primary));
+  --ga-glass: var(--color-rs-bg-1);
+  --ga-band: var(--color-rs-hero);
+  --ga-band-alt: var(--color-rs-bg-0);
   --ga-status-bg: var(--color-rs-bg-0);
   --ga-ticker-bg: var(--color-rs-bg-0);
   --ga-footer-bg: var(--color-rs-bg-0);
-  --ga-price-face: linear-gradient(180deg, #ffffff 0%, var(--color-rs-cyan-light) 100%);
-  --ga-featured-shadow: 0 0 0 1px rgba(30, 90, 255, 0.45), 0 12px 32px rgba(0, 0, 0, 0.45);
+  --ga-price-face: linear-gradient(var(--color-rs-fg-0), var(--color-rs-fg-0));
+  --ga-featured-shadow: 0 0 0 1px var(--color-rs-primary);
   font-feature-settings: "ss01", "cv11";
+}
+/* Serif-Überschriften im Buchschnitt statt des globalen 700er-Locks. */
+.ga-context.rs-handoff :is(h2, h3) {
+  font-weight: 400 !important;
+}
+/* Papier trägt keine Glas-Schatten. */
+.ga-context.rs-handoff .ga-glass {
+  border-radius: 0;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+.ga-context.rs-handoff .ga-glass:hover { box-shadow: 0 12px 32px rgba(27, 31, 28, 0.08); }
+.ga-context.rs-handoff .ga-card::after {
+  background: linear-gradient(90deg, transparent, var(--color-rs-primary), transparent);
 }
 .rs-handoff .ga-vip {
   --ga-sheen: rgba(124, 92, 255, 0.16);

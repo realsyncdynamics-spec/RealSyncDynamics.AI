@@ -37,6 +37,7 @@ const CRON_SLUGS = [
   'governance-analytics-aggregator',
   'sub-processor-notify',
   'website-maintenance-daily-cron',
+  'email-auth-rescan',
 ] as const;
 
 describe('Cron-Functions: verify_jwt=false ist deklariert und selbst geprüft', () => {
@@ -77,6 +78,7 @@ describe('Cron-Functions: verify_jwt=false ist deklariert und selbst geprüft', 
       'memory-decay-worker',
       'sub-processor-notify',
       'website-maintenance-daily-cron',
+      'email-auth-rescan',
     ]) {
       expect(lint).toContain(`'${slug}'`);
     }

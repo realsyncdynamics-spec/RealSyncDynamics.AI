@@ -1,5 +1,5 @@
 /**
- * Replit Dark/Gold `/` — Europe-network hero + Free Audit → /audit.
+ * Replit Dark/Gold `/` — Europe-network hero + Governance-Scan → /audit.
  * AppGate / chunk-split security from #1363 stays intact on app routes.
  */
 import { readFileSync } from 'node:fs';
@@ -9,6 +9,14 @@ import { PUBLIC_NAV_GROUPS } from '../../src/config/public-nav';
 
 const root = resolve(__dirname, '../..');
 const mainLanding = readFileSync(resolve(root, 'src/pages/MainLanding.tsx'), 'utf8');
+// Hero-Markup liegt seit der Titan-Umsetzung in HeroTitanium.
+const titanHero = readFileSync(resolve(root, 'src/components/landing/HeroTitanium.tsx'), 'utf8');
+// Die Runtime-Stationen sitzen seit der Entwurfsumsetzung in einer eigenen
+// Sektion, nicht mehr als „DAS BETRIEBSSYSTEM" inline in MainLanding.
+const runtimeStations = readFileSync(
+  resolve(root, 'src/components/landing/GovernanceRuntimeSection.tsx'),
+  'utf8',
+);
 const header = readFileSync(resolve(root, 'src/components/landing/PublicDarkHeader.tsx'), 'utf8');
 const publicNav = readFileSync(resolve(root, 'src/config/public-nav.ts'), 'utf8');
 const channel = readFileSync(resolve(root, 'src/components/landing/LandingChannelTools.tsx'), 'utf8');
@@ -51,14 +59,18 @@ describe('Landing ↔ Infrastruktur', () => {
     expect(app).toMatch(/path="\/app\/activation"[^>]*AppGate/);
   });
 
-  it('Replit landing: Europe-network hero + Free Audit CTA', () => {
-    expect(mainLanding).toContain('EuropeNetworkHero');
+  it('Replit landing: Europe-network hero + Governance-Scan CTAs', () => {
+    expect(titanHero).toContain('EuropeNetworkHero');
     expect(mainLanding).toContain('PLATFORM_LIVE_ITEMS');
-    expect(mainLanding).toContain('id="audit-cta"');
-    expect(mainLanding).toContain('data-hero-cta="audit"');
-    expect(mainLanding.match(/data-hero-cta/g)?.length).toBe(1);
+    expect(titanHero).toContain('id="audit-cta"');
+    expect(titanHero).toContain('data-hero-cta="audit"');
+    expect(titanHero).toContain('data-hero-cta="audit-trail"');
+    // Primary + Secondary im Hero (Homepage Brief); Marker in HeroTitanium.
+    expect(titanHero.match(/data-hero-cta/g)?.length).toBe(2);
+    expect(mainLanding).not.toContain('data-hero-cta');
     expect(mainLanding).toContain('to="/audit"');
-    expect(mainLanding).toContain('DAS BETRIEBSSYSTEM');
+    expect(mainLanding).toContain('GovernanceRuntimeSection');
+    expect(runtimeStations).toContain('GOVERNANCE RUNTIME');
     expect(mainLanding).not.toContain('Demo buchen');
     expect(mainLanding).not.toContain('GovernanceSphereHost');
     expect(mainLanding).not.toContain('HeroEuropeSunrise');

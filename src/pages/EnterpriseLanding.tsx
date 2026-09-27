@@ -275,7 +275,7 @@ export function EnterpriseLanding() {
               'REST API + Webhooks',
               'Priority Support mit vereinbarter Reaktionszeit',
               'Custom Training + Onboarding',
-              'Policy Packs und prüffähige Nachweise (ISO 27001, DORA, NIS2, TISAX)',
+              'Policy Packs und prüffähige Nachweise (ISO 27001, NIS2 live; TISAX/DORA Roadmap)',
               'Nutzer- und API-Schlüssel-Kontingente nach Vereinbarung',
               'Custom Dashboards & Reports',
               'AI Model Selection (Claude, GPT, Gemma)',

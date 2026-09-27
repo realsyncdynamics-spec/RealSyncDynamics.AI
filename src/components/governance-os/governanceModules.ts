@@ -116,6 +116,15 @@ export const GOVERNANCE_MODULES: GovernanceModule[] = [
     description: 'Laufende Überwachung von Assets und Kontrollen',
   },
   {
+    id: 'ambient-ai',
+    label: 'Ambient AI',
+    icon: 'Activity',
+    route: '/app/ambient-ai',
+    status: 'beta',
+    gate: { kind: 'module', module: 'monitoring' },
+    description: 'Governance für Wearables, Sensoren und physische KI-Runtimes',
+  },
+  {
     id: 'security-signals',
     label: 'Security Signals',
     icon: 'ShieldAlert',
@@ -159,6 +168,15 @@ export const GOVERNANCE_MODULES: GovernanceModule[] = [
     status: 'beta',
     gate: { kind: 'module', module: 'alerts' },
     description: 'Benachrichtigungen bei neuen Findings',
+  },
+  {
+    id: 'actions',
+    label: 'Action Center',
+    icon: 'ListChecks',
+    route: '/app/actions',
+    status: 'beta',
+    gate: { kind: 'module', module: 'remediation' },
+    description: 'Mandantenweite Maßnahmen aus Incidents, DSRs und DSFA-Reviews',
   },
   {
     id: 'remediation',

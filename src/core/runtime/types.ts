@@ -97,13 +97,15 @@ export interface ExecutionRecord {
 
 export interface ApprovalGateRecord {
   id: string;
+  tenant_id: string;
   execution_id: string;
   reason: string;
   risk_level: RiskLevel;
   requested_action: string;
   status: ApprovalStatus;
   created_at: string;
-  decided_at?: string;
+  decided_at: string | null;
+  decided_by: string | null;
 }
 
 export type RuntimeEventName =

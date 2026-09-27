@@ -197,7 +197,7 @@ export function ContactSales() {
 
   if (done) {
     return (
-      <div className="min-h-screen bg-obsidian-950 text-titanium-100 flex items-center justify-center px-4 py-10">
+      <div className="min-h-screen rs-paper bg-obsidian-950 text-titanium-100 flex items-center justify-center px-4 py-10">
         <div className="max-w-md w-full bg-obsidian-900 border border-emerald-900 p-8 text-center rounded-none">
           <CheckCircle2 className="h-12 w-12 text-emerald-400 mx-auto mb-4" />
           <h1 className="font-display text-2xl font-bold text-titanium-50 mb-2">Danke — unser AI Agent übernimmt.</h1>
@@ -236,7 +236,7 @@ export function ContactSales() {
   const submitLabel = showFoundingCopy ? 'Founding Access anfragen' : 'Anfrage senden';
 
   return (
-    <div className="min-h-screen bg-obsidian-950 text-titanium-100">
+    <div className="min-h-screen rs-paper bg-obsidian-950 text-titanium-100">
       <header className="h-14 border-b border-titanium-900 bg-obsidian-900 flex items-center px-4">
         <Link to="/" className="p-1.5 rounded-none hover:bg-obsidian-800 text-titanium-400 hover:text-titanium-200 mr-3">
           <ArrowLeft className="h-4 w-4" />

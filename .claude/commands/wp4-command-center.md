@@ -42,7 +42,9 @@ Bestand:
   (TrialBanner → HandoffOverview → BrowserRuntimePanel → ComplianceStatusView → DashboardExecuteStrip)
 - src/features/governance/cockpit/cockpitData.ts (score, riskIndex, evidenceHealth,
   actions, summary24h, recentEvents — echte RPCs)
-- src/features/ai-governance/useAiGovernanceData.ts (ai_systems)
+- ai_systems: NICHT über useAiGovernanceData (fällt bei leerer Tabelle oder Fehler auf
+  demoAiSystems zurück). Eigener RLS-gebundener Count-Helper, der leer und Fehler
+  unterscheidbar zurückgibt.
 - src/features/governance/aiActRiskInventoryApi.ts (ai_act_risk_inventory)
 - src/features/governance/approvalsApi.ts (governance_approvals)
 - src/features/activation/activationApi.ts (organization.aiSetup aus WP3)
@@ -51,11 +53,16 @@ Bestand:
 Aufgaben:
 1. Eine Komponente OsControlStrip.tsx im dashboard-Ordner, eingehängt direkt nach
    HandoffOverview. Fünf Kacheln:
-   - KI-Inventar: Anzahl ai_systems des Mandanten; 0 → Empty State mit Link
-     /app/activation
-   - Bot-/Agent-Register: Einträge je Status live/preview/coming-soon aus WP5;
-     Link /app/ai-systems/agents
-   - Offene Risiken: aus cockpitData.riskIndex (keine neue Abfrage)
+   - KI-Inventar: Anzahl ai_systems des Mandanten über den eigenen Count-Helper
+     (nie Demo-Fallback); 0 → Empty State mit Link /app/activation
+   - Bots/Agenten des Mandanten: aus organization.aiSetup.botsAgents (WP3), NICHT
+     aus dem globalen WP5-Katalog; leer → Empty State mit Link /app/activation.
+     Der Katalog (live/preview/coming-soon) erscheint nur als separat beschrifteter
+     Link „Verfügbare Agenten" auf /app/ai-systems/agents, nicht als Mandantenzahl.
+   - Residualrisiko: cockpitData.riskIndex.score ist ein gewichteter Index 0–100,
+     KEINE Anzahl. Beschriftung „Residualrisiko (Index 0–100)"; eine Anzahl nur,
+     wenn sie aus einer echten Zählquelle stammt (z. B. offene Einträge in
+     ai_act_risk_inventory)
    - Wartende Freigaben: governance_approvals mit offenem Status; Tabelle leer
      → „Keine Freigaben offen", nicht „0 %"
    - Evidence-Status: aus cockpitData.evidenceHealth

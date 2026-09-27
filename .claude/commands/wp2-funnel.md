@@ -60,6 +60,14 @@ A) E-F1 = 14-Tage-Growth-Trial behalten
       „Der Scan ist kostenlos. Den Governance-Workspace testen Sie 14 Tage im
       Growth-Paket (249 € / Monat, monatlich kündbar)."
       Preis aus shared/pricing.ts lesen, nicht hart codieren.
+   3. Trial im kanonischen Pfad tatsächlich anlegen: Heute ruft nur
+      PostRegisterOnboardingPage (verworfener Pfad) create-trial-subscription auf.
+      Den BESTEHENDEN Aufruf (postEdgeFunction('create-trial-subscription',
+      { planKey: 'growth' })) in den Abschluss von /app/activation übernehmen —
+      per Button „Growth 14 Tage testen", nicht automatisch. Das ist keine neue
+      Zahlungslogik, sondern die deployte Function am richtigen Ort.
+      Solange dieser Aufruf im kanonischen Pfad fehlt, darf die Trial-Copy dort
+      NICHT erscheinen (Test: Copy nur, wenn der Aufruf erreichbar ist).
 
 B) E-F1 = Gratis-Code 1 Monat Growth
    1. Wie A.1.
@@ -83,6 +91,7 @@ Nicht tun: neue Zahlungslogik, neue Edge Function, Coupon-Tabelle, Stripe-API-Ca
 
 Akzeptanz:
 - Ein Angebots-Text, eine Quelle, Preis aus SSoT
+- Wer den Trial-Text im kanonischen Pfad sieht, kann die Trial dort auch anlegen
 - Starter ohne Trial im SSoT, Pricing-Checks grün
 - Keine Verlinkung auf /unified-entry/scan aus Landing oder /audit
 - Tests: test/content/pricingContent.test.ts und betroffene Audit-Tests grün

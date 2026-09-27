@@ -39,13 +39,18 @@ Verification → Evidence`, siehe `.claude/os-funnel/PLAN.md` §2).
   Inverkehrbringen weiterlernen, Änderungen **nicht** als wesentlich, wenn sie vom
   Anbieter **vorab festgelegt** und in der technischen Dokumentation beschrieben
   wurden.
-- Daraus folgt für das Produkt:
-  - Jeder Mandant deklariert vorab einen **Änderungsraum** (welche Parameter,
-    welche Grenzen, welche Objekte).
-  - Vorschläge außerhalb davon erhalten automatisch den Status
-    `substantial_modification_candidate` → Stopp, menschliche Freigabe,
-    Hinweis auf mögliche erneute Konformitätsbewertung.
-  - Der Änderungsraum selbst ist versioniert und Evidence-pflichtig.
+- Daraus folgt für das Produkt — zwei getrennte Grenzen:
+  - **Anbieter-Änderungsraum (Art. 43 Abs. 4):** vom Anbieter bei der
+    ursprünglichen Konformitätsbewertung vorab festgelegt und in der technischen
+    Dokumentation (Anhang IV Nr. 2 Buchst. f) beschrieben. Nur Änderungen
+    **innerhalb dieses Raums** können als `in_scope` gelten.
+  - **Mandanten-Richtlinie:** Der Mandant kann den Raum für sich nur **enger**
+    ziehen, nie erweitern. Eine Mandanten-Deklaration begründet für sich allein
+    keine Ausnahme nach Art. 43 Abs. 4.
+  - Vorschläge außerhalb des Anbieter-Raums, rein mandanten-definierte Änderungen
+    oder nicht zuordenbare Änderungen erhalten `substantial_modification_candidate`
+    → Stopp, menschliche Freigabe, fachliche/konformitätsrechtliche Prüfung.
+  - Beide Räume sind versioniert und Evidence-pflichtig.
 
 *Rechtliche Einordnung ist vor Umsetzung mit einer fachkundigen Stelle zu prüfen.*
 

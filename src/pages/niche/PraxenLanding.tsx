@@ -7,7 +7,7 @@ const PRAXEN_CONFIG: NicheConfig = {
   eyebrow: 'Für Arzt-, Zahnarzt-, Therapie-Praxen',
   headline: 'DSGVO + Patientendaten-Schutz für Praxis-Websites — versteckte Risiken sichtbar machen.',
   subline:
-    'Online-Terminbuchung, Kontaktformulare, Plugin-Wildwuchs — und jedes Theme-Update kann den Compliance-Stand kippen. Wir überwachen Ihre Praxis-Website kontinuierlich auf Patientendaten-Risiken (Doctolib-Embeds bis Google-Fonts-IP-Übermittlung) und alarmieren bei Drift. Der kostenlose Audit ist Ihr Einstieg, das Monitoring ist die eigentliche Compliance-Versicherung.',
+    'Online-Terminbuchung, Kontaktformulare, Plugin-Wildwuchs — und jedes Theme-Update kann den Compliance-Stand kippen. Wir prüfen Ihre Praxis-Website auf Patientendaten-Risiken (Doctolib-Embeds bis Google-Fonts-IP-Übermittlung). Der kostenlose Audit ist Ihr Einstieg; dauerhaftes Monitoring mit Drift-Alerts ist Coming Soon.',
   primaryCtaHref: '/audit?source=fuer-praxen',
   painCards: [
     {

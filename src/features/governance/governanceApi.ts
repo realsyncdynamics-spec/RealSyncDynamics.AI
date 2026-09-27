@@ -114,6 +114,26 @@ export async function fetchTenantEvents(tenantId: string, limit = 50): Promise<D
   return (data ?? []) as DbGovernanceEvent[];
 }
 
+/**
+ * Befund- und Behebungs-Events des Mandanten: governance_events mit
+ * event_type `*finding` (z. B. email_auth_finding vom website_scanner) oder
+ * `*_resolved` (append-only Behebung mit payload.resolves_event_id), neueste
+ * zuerst. Eigene Abfrage, damit Befunde nicht hinter den letzten 12
+ * Stream-Events verschwinden. Wirft bei Fehler.
+ */
+export async function fetchTenantFindingEvents(tenantId: string, limit = 50): Promise<DbGovernanceEvent[]> {
+  const sb = getSupabase();
+  const { data, error } = await sb
+    .from('governance_events')
+    .select('*')
+    .eq('tenant_id', tenantId)
+    .or('event_type.like.*finding,event_type.like.*_resolved')
+    .order('created_at', { ascending: false })
+    .limit(limit);
+  if (error) throw new Error(error.message);
+  return (data ?? []) as DbGovernanceEvent[];
+}
+
 export async function countTenantEvents(tenantId: string): Promise<number> {
   const sb = getSupabase();
   const { count, error } = await sb
@@ -187,6 +207,21 @@ export async function fetchTenantAssets(tenantId: string): Promise<DbGovernanceA
     .order('updated_at', { ascending: false });
   if (error) throw new Error(error.message);
   return (data ?? []) as DbGovernanceAsset[];
+}
+
+/**
+ * Anzahl Control-Mappings über alle Assets des Mandanten (HEAD-Count).
+ * Wirft bei Fehler — ein RLS-/Netzfehler ist kein „0 Mappings“
+ * (Eingang der Score-Zuverlässigkeit, cockpitScore.ts).
+ */
+export async function countTenantControlMappings(tenantId: string): Promise<number> {
+  const sb = getSupabase();
+  const { count, error } = await sb
+    .from('asset_control_mappings')
+    .select('id, governance_assets!inner(tenant_id)', { count: 'exact', head: true })
+    .eq('governance_assets.tenant_id', tenantId);
+  if (error) throw new Error(error.message);
+  return count ?? 0;
 }
 
 export async function fetchTenantPolicies(tenantId: string): Promise<DbGovernancePolicy[]> {

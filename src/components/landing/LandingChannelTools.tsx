@@ -15,8 +15,12 @@ import {
 
 /**
  * Channel tools — Dominik Dark/Gold chrome; status from product registry.
+ *
+ * Die Daten sind exportiert, weil die Design-Vorschau
+ * (`GovernanceToolsSection`) dieselben Kanäle in anderer Optik zeigt. Zwei
+ * Kopien derselben Liste liefen auseinander, sobald ein Kanal dazukommt.
  */
-const TOOLS = [
+export const CHANNEL_TOOLS = [
   {
     eyebrow: 'AUTOMATION · WHATSAPP',
     title: 'WhatsApp Bot',
@@ -89,7 +93,7 @@ export function LandingChannelTools() {
         </div>
 
         <div className="grid gap-[14px] sm:grid-cols-2">
-          {TOOLS.map(({ eyebrow, title, icon: Icon, text, bullets, href, cta, registryId }) => {
+          {CHANNEL_TOOLS.map(({ eyebrow, title, icon: Icon, text, bullets, href, cta, registryId }) => {
             const live = isImplementationLive(registryId);
             const item = getImplementation(registryId);
             const status = item?.status ?? 'coming-soon';

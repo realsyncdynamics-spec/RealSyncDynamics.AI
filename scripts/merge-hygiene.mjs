@@ -55,7 +55,8 @@ function migrationTimestamp(filename) {
 
 function migrationsOnMain() {
   try {
-    const out = git(`ls-tree --name-only ${baseRef} supabase/migrations`);
+    // Abschließender Slash: sonst liefert ls-tree nur den Ordnernamen, nicht die Dateien.
+    const out = git(`ls-tree --name-only ${baseRef} supabase/migrations/`);
     return new Set(out ? out.split(/\r?\n/).filter(Boolean) : []);
   } catch {
     return new Set();
@@ -71,22 +72,37 @@ function timestampsOnMain() {
   return map;
 }
 
+/** Netzwerkfehler der GitHub-API (Socket-Abbruch o. Ä.) — nur für die Überlappungs-Prüfung relevant. */
+let githubApiDegraded = false;
+
 async function githubJson(url) {
   const token = process.env.GH_TOKEN || process.env.GITHUB_TOKEN;
   if (!token || !process.env.GITHUB_REPOSITORY) return null;
-  const response = await fetch(url, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      Accept: 'application/vnd.github+json',
-      'X-GitHub-Api-Version': '2022-11-28',
-      'User-Agent': 'realsync-merge-hygiene',
-    },
-  });
-  if (!response.ok) {
-    console.warn(`GitHub API ${response.status} ${url}`);
-    return null;
+  // Ein geworfener fetch (z. B. UND_ERR_SOCKET) darf den Lauf nicht abbrechen:
+  // sonst bleibt hygiene.json leer und der Kommentar-Schritt scheitert.
+  // Blocker (Migrationen) hängen nicht an der API.
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    try {
+      const response = await fetch(url, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: 'application/vnd.github+json',
+          'X-GitHub-Api-Version': '2022-11-28',
+          'User-Agent': 'realsync-merge-hygiene',
+        },
+      });
+      if (!response.ok) {
+        console.warn(`GitHub API ${response.status} ${url}`);
+        return null;
+      }
+      return await response.json();
+    } catch (error) {
+      console.warn(`GitHub API nicht erreichbar (Versuch ${attempt}/3): ${url} — ${error?.cause?.code ?? error?.message ?? error}`);
+      if (attempt < 3) await new Promise((resolve) => setTimeout(resolve, 1000 * 2 ** (attempt - 1)));
+    }
   }
-  return response.json();
+  githubApiDegraded = true;
+  return null;
 }
 
 async function siblingOverlaps(localFiles) {
@@ -183,6 +199,9 @@ if (hotTouched.length) {
 }
 
 const overlaps = await siblingOverlaps(files);
+if (githubApiDegraded) {
+  warnings.push('GitHub API zeitweise nicht erreichbar — Überlappung mit offenen PRs evtl. unvollständig.');
+}
 const hotOverlaps = overlaps.filter((o) => o.hot.length > 0);
 for (const overlap of hotOverlaps) {
   warnings.push(

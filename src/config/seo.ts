@@ -53,9 +53,9 @@ export interface SEOConfig {
 const SITE_URL = 'https://realsyncdynamicsai.de';
 
 export const DEFAULT_SEO: SEOConfig = {
-  title: 'RealSyncDynamics.AI — Das Governance OS für DSGVO & EU AI Act',
+  title: 'RealSyncDynamics.AI — The Governance OS for Autonomous AI',
   description:
-    'Das Governance OS für DSGVO und EU AI Act: AI-Systeme, Websites, Agents und Datenflüsse erfassen, Risiken bewerten, Governance durchsetzen und Nachweise führen.',
+    'Die Control Plane für Enterprise-KI: Any model. Any agent. One control plane. EU AI Act, DSGVO und ISO 42001 als nachweisbare Proof-Layer.',
 };
 
 // ─── JSON-LD Templates (re-used) ─────────────────────────────────────────────
@@ -254,13 +254,22 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
   // ─── Tier 1 — Hero / Top-Conversion ──────────────────────────────────────
   '/': {
     // Governance-OS-Positionierung — matches the H1 in GovernanceOsHero.
-    title: 'RealSyncDynamics.AI — AI Governance OS für Unternehmens-KI',
+    title: 'RealSyncDynamics.AI — The Governance OS for Autonomous AI',
     description:
-      'AI Governance OS: Identität, Policies, Risiko, Freigaben, Ausführung und Evidence für Modelle, Provider und Agenten in einer Control Plane. EU-Hosting.',
+      'RealSyncDynamics.AI ist die Control Plane für Enterprise-KI: Any model. Any agent. One control plane. EU AI Act, DSGVO und ISO 42001 als Evidence-Proof-Layer.',
     canonical: `${SITE_URL}/`,
-    ogTitle: 'Ihre KI kann handeln. Jetzt braucht sie Governance.',
+    ogTitle: 'The Governance OS for Autonomous AI',
     ogDescription:
-      'Die Control Plane für Unternehmens-KI: Identität, Policies, Freigaben, Ausführung und Evidence über Modelle, Provider und Agenten hinweg.',
+      'Europa braucht Kontrolle über Frontier-KI: RealSyncDynamics.AI baut die Kontroll-, Autorisierungs- und Evidence-Layer zwischen Unternehmen und KI.',
+  },
+  '/design/titan': {
+    title: 'RealSyncDynamics.AI — Titan-Fallbackroute der Governance-Landing',
+    description:
+      'Fallbackroute der Landing-Positionierung (Legacy-Titan): Control Plane für Enterprise-KI mit Policies, Freigaben, Ausführung und Evidence als Proof-Layer.',
+    canonical: `${SITE_URL}/design/titan`,
+    ogTitle: 'Titan-Fallbackroute der Governance-Landing',
+    ogDescription:
+      'Fallbackroute: Any model. Any agent. One control plane.',
   },
   '/pricing': {
     title: 'Preise – Runtime-native AI-Governance-Plattform | RealSyncDynamics.AI',

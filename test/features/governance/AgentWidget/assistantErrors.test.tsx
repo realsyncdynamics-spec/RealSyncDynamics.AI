@@ -148,6 +148,23 @@ describe('GovernanceChatSidebar (App-Shell-Assistent)', () => {
     expect(screen.queryByText(ASSISTANT_UNAVAILABLE)).not.toBeInTheDocument();
   });
 
+  it('schickt den gewählten Agenten mit (Standard DSGVO, nach Wechsel AI Act)', async () => {
+    responses = [OK('eins'), OK('zwei')];
+    renderSidebar();
+    const box = screen.getByPlaceholderText(/Was möchtest du/);
+    fireEvent.change(box, { target: { value: 'Frage 1' } });
+    fireEvent.keyDown(box, { key: 'Enter' });
+    await waitFor(() => expect(screen.getByText('eins')).toBeInTheDocument());
+    expect(calls[0].body.agent).toBe('dsgvo');
+
+    fireEvent.click(screen.getByText('DSGVO Agent'));
+    fireEvent.click(screen.getByText('AI Act Agent'));
+    fireEvent.change(box, { target: { value: 'Frage 2' } });
+    fireEvent.keyDown(box, { key: 'Enter' });
+    await waitFor(() => expect(screen.getByText('zwei')).toBeInTheDocument());
+    expect(calls[1].body.agent).toBe('ai-act');
+  });
+
   it('412: US-Routing-Hinweis erscheint, statt die Nachricht still zu verwerfen', async () => {
     responses = [HTTP(412)];
     renderSidebar();

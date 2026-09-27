@@ -61,7 +61,3 @@ export function requiresApprovalGate(input: {
 export function defaultGateReason(skillId: string, input: ExecutionInput): string {
   return `Skill "${skillId}" requested for tenant ${input.tenant_id} by agent ${input.agent_id}`;
 }
-
-// Postgres implementation deferred to Phase 1.2+ (requires schema deployment).
-// Phase 1.1 ships interface + in-memory test implementation only.
-// export { PostgresApprovalGateService, createApprovalGateService } from './approvals/postgres-implementation';

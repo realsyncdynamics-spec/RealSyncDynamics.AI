@@ -821,6 +821,16 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
       { name: 'Onboarding erklärt', url: '/onboarding-erklaert' },
     ]),
   },
+  '/ki-governance-in-5-schritten': {
+    title: 'KI-Governance in 5 Schritten — vom KI-Register zum laufenden Betrieb | RealSyncDynamics.AI',
+    description:
+      'Unternehmen verstehen, KI-Register aufbauen, Governance-Regeln aktivieren, Nachweise erzeugen, KI sicher betreiben — mehr als eine KI-Richtlinie: ein Betriebssystem für KI-Governance.',
+    canonical: `${SITE_URL}/ki-governance-in-5-schritten`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'KI-Governance in 5 Schritten', url: '/ki-governance-in-5-schritten' },
+    ]),
+  },
   '/schrems-ii-erklaert': {
     title: 'Schrems II erklärt — Was EuGH-Urteil C-311/18 bedeutet | RealSyncDynamics.AI',
     description:

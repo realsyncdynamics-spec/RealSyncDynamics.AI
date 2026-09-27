@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AudioLines, Loader2, X, RotateCcw, Send, AlertTriangle, ShieldCheck, Code2 } from 'lucide-react';
-import { sendChatAnon, type SimpleMsg } from '../../features/governance/AgentWidget/agentApi';
+import type { SimpleMsg } from '../../features/governance/AgentWidget/agentApi';
 import {
-  generateFixSnippet,
-  AiGatewayEdgeError,
+  sendAuditAnon,
+  type AuditAnonChatResult,
   type AuditCmsTarget,
-  type FixSnippet,
 } from '../../features/audit/auditCopilotApi';
+import { AuditTurnstileWidget } from './AuditTurnstileWidget';
 
 type Severity = 'critical' | 'high' | 'medium' | 'low' | 'info';
 
@@ -21,11 +21,12 @@ interface Issue {
 interface AuditCopilotPanelProps {
   issue: Issue;
   domain: string;
+  auditId?: string;
   open: boolean;
   onClose: () => void;
 }
 
-type Phase = 'idle' | 'loading' | 'ready' | 'error' | 'rate_limited' | 'us_routing';
+type Phase = 'idle' | 'loading' | 'ready' | 'error' | 'rate_limited';
 
 const CMS_OPTIONS: Array<{ value: AuditCmsTarget; label: string }> = [
   { value: 'wordpress',   label: 'WordPress' },
@@ -52,41 +53,38 @@ const SEV_LABEL: Record<Severity, string> = {
 };
 
 function buildInitialPrompt(issue: Issue, domain: string): string {
-  const ref = issue.paragraph_ref ? `\nRechtsgrundlage: ${issue.paragraph_ref}` : '';
+  const ref = issue.paragraph_ref ? `\nRechtsgrundlage: ${issue.paragraph_ref.slice(0, 80)}` : '';
   return [
-    `Erklär mir bitte diesen Befund aus dem DSGVO-Audit von ${domain}:`,
-    '',
+    `Erklär diesen DSGVO-Audit-Befund von ${domain.slice(0, 90)}:`,
     `Severity: ${SEV_LABEL[issue.severity]}`,
-    `Titel: ${issue.title}`,
-    `Detail: ${issue.detail}${ref}`,
-    '',
-    'Ich brauche:',
-    '1. Was das technisch bedeutet (welches Signal wurde beobachtet)',
-    '2. Welche regulatorische Pflicht daraus folgt (DSGVO/TDDDG/AI-Act-Bezug)',
-    '3. Wie man das praktisch behebt (Code-Snippet wenn möglich, sonst Schritte für gängige CMS wie WordPress/Shopify/Webflow)',
-    '',
-    'Bitte direkt, ohne Marketing-Sprech, und ohne Bußgeld-/Abmahn-Wording — die rechtliche Würdigung obliegt DSB/Fachjurist.',
+    `Titel: ${issue.title.slice(0, 120)}`,
+    `Detail: ${issue.detail.slice(0, 220)}${ref}`,
+    'Nenne kurz das technische Signal, relevante DSGVO/TDDDG/AI-Act-Pflichten und konkrete Abhilfe (gern als Code-Snippet).',
+    'Direkt, ohne Marketing-, Bußgeld- oder Abmahn-Wording; keine Rechtsberatung.',
   ].join('\n');
 }
 
-export function AuditCopilotPanel({ issue, domain, open, onClose }: AuditCopilotPanelProps) {
+export function AuditCopilotPanel({ issue, domain, auditId, open, onClose }: AuditCopilotPanelProps) {
   const [phase, setPhase] = useState<Phase>('idle');
   const [bubbles, setBubbles] = useState<Bubble[]>([]);
   const [history, setHistory] = useState<SimpleMsg[]>([]);
   const [input, setInput] = useState('');
-  const [usRoutingAck, setUsRoutingAck] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const [turnstileResetKey, setTurnstileResetKey] = useState(0);
   const [snippetCms, setSnippetCms] = useState<AuditCmsTarget>('wordpress');
   const [snippetLoading, setSnippetLoading] = useState(false);
-  const sessionIdRef = useRef<string>(crypto.randomUUID());
   const bottomRef = useRef<HTMLDivElement>(null);
   const sendInProgress = useRef(false);
 
   const send = useCallback(
     async (text: string, isAuto = false) => {
-      if (sendInProgress.current) return;
+      if (sendInProgress.current || !turnstileToken) return;
       const message = text.trim();
       if (!message) return;
       sendInProgress.current = true;
+      const token = turnstileToken;
+      setTurnstileToken(null);
+      setTurnstileResetKey((value) => value + 1);
 
       setPhase('loading');
       setBubbles((prev) => {
@@ -110,19 +108,26 @@ export function AuditCopilotPanel({ issue, domain, open, onClose }: AuditCopilot
         ];
       });
 
-      const result = await sendChatAnon({
-        session_id: sessionIdRef.current,
-        message,
-        history,
-        acknowledge_us_routing: usRoutingAck || undefined,
-      });
-
-      sendInProgress.current = false;
-
-      if (result.kind === 'us_routing_required') {
-        setPhase('us_routing');
-        setBubbles((prev) => prev.filter((b) => b.id !== 'loading' && b.id !== 'auto-frame'));
+      let result: AuditAnonChatResult;
+      try {
+        result = await sendAuditAnon({
+          auditId,
+          message,
+          history,
+          turnstileToken: token,
+        });
+      } catch (err) {
+        setBubbles((prev) => prev.filter((b) => b.id !== 'loading').concat({
+          id: crypto.randomUUID(),
+          role: 'assistant',
+          content: err instanceof Error ? err.message : 'Anfrage fehlgeschlagen.',
+          isError: true,
+        }));
+        setPhase('error');
+        sendInProgress.current = false;
         return;
+      } finally {
+        sendInProgress.current = false;
       }
       if (result.kind === 'rate_limited') {
         setPhase('rate_limited');
@@ -157,15 +162,14 @@ export function AuditCopilotPanel({ issue, domain, open, onClose }: AuditCopilot
       );
       setPhase('error');
     },
-    [history, issue.title, usRoutingAck],
+    [auditId, history, issue.title, turnstileToken],
   );
 
-  // Kick off the auto-explanation when the panel first opens.
+  // Start the explanation only after the first Turnstile token is ready.
   useEffect(() => {
-    if (!open) return;
-    if (phase !== 'idle') return;
+    if (!open || !turnstileToken || phase !== 'idle' || bubbles.length > 0) return;
     send(buildInitialPrompt(issue, domain), true);
-  }, [open, phase, issue, domain, send]);
+  }, [open, phase, issue, domain, send, turnstileToken, bubbles.length]);
 
   // ESC closes.
   useEffect(() => {
@@ -189,56 +193,87 @@ export function AuditCopilotPanel({ issue, domain, open, onClose }: AuditCopilot
       setBubbles([]);
       setHistory([]);
       setInput('');
-      sessionIdRef.current = crypto.randomUUID();
+      setTurnstileToken(null);
+      setTurnstileResetKey((value) => value + 1);
     }
   }, [open]);
 
   function onUserSend() {
     const trimmed = input.trim();
-    if (!trimmed || phase === 'loading') return;
+    if (!trimmed || phase === 'loading' || !turnstileToken) return;
     setInput('');
     send(trimmed, false);
   }
 
   async function onGenerateSnippet() {
-    if (snippetLoading) return;
+    if (snippetLoading || sendInProgress.current || !turnstileToken) return;
+    sendInProgress.current = true;
     setSnippetLoading(true);
+    setPhase('loading');
+    const token = turnstileToken;
+    setTurnstileToken(null);
+    setTurnstileResetKey((value) => value + 1);
     const loadingId = crypto.randomUUID();
     setBubbles((prev) => [
       ...prev,
       { id: loadingId, role: 'assistant', content: '', isLoading: true },
     ]);
     try {
-      const snippet = await generateFixSnippet(issue, snippetCms);
+      const request = [
+        `Erstelle einen knappen, kopierfähigen Code- oder Konfigurationsschnipsel für ${snippetCms} als technische Maßnahme zu einem Audit-Befund.`,
+        `Domain: ${domain.slice(0, 100)}.`,
+        `Severity: ${SEV_LABEL[issue.severity]}. Befund: ${issue.title.slice(0, 150)}. ${issue.detail.slice(0, 350)}`,
+        issue.paragraph_ref ? `Rechtsgrundlage: ${issue.paragraph_ref.slice(0, 100)}.` : '',
+        'Gib einen passenden Codeblock und danach höchstens zwei kurze Umsetzungshinweise aus; keine Rechtsberatung.',
+      ].filter(Boolean).join('\n');
+      const result = await sendAuditAnon({
+        auditId,
+        message: request,
+        history,
+        turnstileToken: token,
+      });
+      if (result.kind === 'rate_limited') {
+        setPhase('rate_limited');
+        setBubbles((prev) => prev.filter((b) => b.id !== loadingId));
+        return;
+      }
+      if (result.kind !== 'ok') {
+        const errorMessage = result.kind === 'llm_not_configured'
+          ? 'Der Assistent ist gerade nicht konfiguriert. Bitte später erneut versuchen.'
+          : result.error.message;
+        setPhase('error');
+        setBubbles((prev) => prev.filter((b) => b.id !== loadingId).concat({
+          id: crypto.randomUUID(),
+          role: 'assistant',
+          content: `Snippet konnte nicht erzeugt werden: ${errorMessage}`,
+          isError: true,
+        }));
+        return;
+      }
+      setHistory(result.data.history);
       setBubbles((prev) =>
         prev.filter((b) => b.id !== loadingId).concat({
           id: crypto.randomUUID(),
           role: 'assistant',
-          content: renderSnippetBubble(snippet),
+          content: result.data.response || '(Kein Snippet generiert.)',
         }),
       );
+      setPhase('ready');
     } catch (err) {
-      const msg = err instanceof AiGatewayEdgeError
-        ? `Snippet konnte nicht erzeugt werden: ${err.message}`
-        : 'Snippet konnte nicht erzeugt werden.';
+      const msg = err instanceof Error ? err.message : 'Snippet konnte nicht erzeugt werden.';
       setBubbles((prev) =>
         prev.filter((b) => b.id !== loadingId).concat({
           id: crypto.randomUUID(),
           role: 'assistant',
-          content: msg,
+          content: `Snippet konnte nicht erzeugt werden: ${msg}`,
           isError: true,
         }),
       );
+      setPhase('error');
     } finally {
       setSnippetLoading(false);
+      sendInProgress.current = false;
     }
-  }
-
-  function ackUsRouting() {
-    setUsRoutingAck(true);
-    setPhase('idle');
-    setBubbles([]);
-    setHistory([]);
   }
 
   if (!open) return null;
@@ -282,24 +317,6 @@ export function AuditCopilotPanel({ issue, domain, open, onClose }: AuditCopilot
           <span className="font-semibold">KI-System (Art. 52 EU AI Act):</span> Die Erklärungen werden von einer KI generiert. Keine Rechtsberatung – Prüfung durch Spezialist empfohlen.
         </div>
 
-        {phase === 'us_routing' && (
-          <div className="border-b border-amber-400/30 bg-amber-400/10 p-3 text-[12px] text-amber-200">
-            <p className="font-semibold">Hinweis zur LLM-Routing-Geografie</p>
-            <p className="mt-1 text-amber-100/80">
-              Anthropic-direkt routet aktuell durch die USA. Bestätige einmalig, um die Erklärung zu starten.
-            </p>
-            <div className="mt-2 flex justify-end">
-              <button
-                type="button"
-                onClick={ackUsRouting}
-                className="rounded-none bg-amber-400 px-3 py-1 text-[12px] font-medium text-black transition-colors hover:bg-amber-300"
-              >
-                Verstanden, fortfahren
-              </button>
-            </div>
-          </div>
-        )}
-
         {phase === 'rate_limited' && (
           <div className="border-b border-orange-400/30 bg-orange-400/10 px-4 py-2 text-[12px] text-orange-200">
             Anfrage-Limit erreicht (5/min). Bitte in einer Minute erneut.
@@ -309,7 +326,7 @@ export function AuditCopilotPanel({ issue, domain, open, onClose }: AuditCopilot
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
           {bubbles.length === 0 && phase === 'idle' && (
             <div className="flex items-center justify-center h-full text-xs text-titanium-500">
-              <Loader2 className="h-4 w-4 animate-spin mr-2" /> Wird vorbereitet …
+              <ShieldCheck className="h-4 w-4 mr-2" /> Bitte Bot-Schutz abschließen …
             </div>
           )}
           {bubbles.map((b) => (
@@ -319,6 +336,11 @@ export function AuditCopilotPanel({ issue, domain, open, onClose }: AuditCopilot
         </div>
 
         <div className="border-t border-titanium-900 p-3 space-y-2">
+          <AuditTurnstileWidget
+            siteKey={import.meta.env.VITE_TURNSTILE_SITE_KEY}
+            resetKey={turnstileResetKey}
+            onToken={setTurnstileToken}
+          />
           <div className="flex items-center gap-2">
             <select
               value={snippetCms}
@@ -334,7 +356,7 @@ export function AuditCopilotPanel({ issue, domain, open, onClose }: AuditCopilot
             <button
               type="button"
               onClick={onGenerateSnippet}
-              disabled={snippetLoading || phase === 'loading' || phase === 'us_routing'}
+              disabled={snippetLoading || phase === 'loading'}
               className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-medium border border-titanium-800 text-titanium-200 hover:border-titanium-600 hover:text-titanium-50 disabled:opacity-40 disabled:cursor-not-allowed rounded-none"
             >
               {snippetLoading
@@ -350,13 +372,13 @@ export function AuditCopilotPanel({ issue, domain, open, onClose }: AuditCopilot
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') onUserSend(); }}
               placeholder={phase === 'loading' ? 'Antwort wird generiert …' : 'Folgefrage stellen …'}
-              disabled={phase === 'loading' || phase === 'us_routing'}
+              disabled={phase === 'loading'}
               className="flex-1 bg-obsidian-900 border border-titanium-900 px-3 py-2 text-sm rounded-none outline-none focus:border-titanium-100 disabled:opacity-50 placeholder:text-titanium-600"
             />
             <button
               type="button"
               onClick={onUserSend}
-              disabled={phase === 'loading' || !input.trim()}
+              disabled={phase === 'loading' || !input.trim() || !turnstileToken}
               aria-label="Senden"
               className="flex h-9 w-9 items-center justify-center bg-titanium-50 text-obsidian-950 hover:bg-titanium-200 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
             >
@@ -372,14 +394,6 @@ export function AuditCopilotPanel({ issue, domain, open, onClose }: AuditCopilot
   );
 }
 
-function renderSnippetBubble(snippet: FixSnippet): string {
-  const header = `**Code-Snippet (${snippet.cms} · ${snippet.language})**`;
-  const code = snippet.snippet
-    ? '```' + snippet.language + '\n' + snippet.snippet + '\n```'
-    : '(Kein Snippet — siehe Hinweis.)';
-  const notes = snippet.notes ? `\n\n${snippet.notes}` : '';
-  return `${header}\n\n${code}${notes}`;
-}
 
 function BubbleView({ bubble }: { bubble: Bubble }) {
   if (bubble.role === 'system-context') {

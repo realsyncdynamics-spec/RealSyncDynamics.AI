@@ -1,66 +1,42 @@
 /**
- * „The Governance AI" — production landing surface for RealSyncDynamics.AI.
+ * Production landing `/` — Governance OS (Enterprise Control Plane).
  *
- * Umsetzung des Hausstandards „Hollywood Enterprise VIP" (siehe `CLAUDE.md`):
- * True Black, Cyan `#22c3e6` als Aktionsfarbe, City-Light-Gold `#f2c98a` als
- * VIP-Stufe für Enterprise und Agency, Playfair Display als Display-Schnitt.
- * Hinter allem die Erde vor der Milchstraße.
+ * Kategorie: AI Governance OS, nicht EU-AI-Act-Software. Die Seite ist eine
+ * geführte Produktdemonstration:
+ * Hero → 01–07 System-Story → Signature Pipeline → Architektur (Agenten)
+ * → Provider → Control Room (Beispiel) → Nutzen → Executive → Prinzipien
+ * → Governance-Check → Plattform-Preise → Conversion → Footer.
  *
- * ## Production shell
- *
- * The visual layer remains isolated in `.ga-context`; authenticated product
- * data continues to live behind the existing `/app/*` gates and Supabase RLS.
- * This component composes the public acquisition surface only.
- *
- * ## Inhalt kommt aus den SSoT-Dateien
- *
- * Copy, Preise, Roadmap, Module und Navigation lesen die Sektionen selbst aus
- * `hero-content.ts`, `pricing.ts`, `implementation-status.ts`,
- * `governanceModules.ts` und `public-nav.ts`. Diese Datei komponiert nur die
- * Reihenfolge — sie verdrahtet keinen Text fest.
+ * Palette und Tokens: `.ga-context.rs-handoff` in `index.css` (nur `/`),
+ * Sektionsstile in `styles/governance-os-landing.css`. Kein Farbmodus-
+ * Umschalter; die Titan-Referenz lebt unter `/design/titan`.
  */
 import { type PointerEvent as ReactPointerEvent } from 'react';
 import '../../styles/governance-landing-polish.css';
+import '../../styles/governance-os-landing.css';
 import { Link } from 'react-router-dom';
+import { CTA } from '../../content/runtimeVocab';
 import { ArrowRight } from 'lucide-react';
 import { SEOHead } from '../../components/SEOHead';
-import { GovernanceAiBackdrop } from '../../components/landing/GovernanceAiBackdrop';
-import { GovernanceAiHero } from '../../components/landing/GovernanceAiHero';
-import { GovernanceStatusBar } from '../../components/landing/GovernanceStatusBar';
-import { GovernanceLoopBand } from '../../components/landing/GovernanceLoopBand';
+import { GovernanceOsHero } from '../../components/landing/GovernanceOsHero';
 import { GovernanceFooter } from '../../components/landing/GovernanceFooter';
-import { RegulatoryTicker } from '../../components/landing/RegulatoryTicker';
-import { WorkspacePreviewSection } from '../../components/landing/WorkspacePreviewSection';
-import { GovernanceToolsSection } from '../../components/landing/GovernanceToolsSection';
-import { PlatformCapabilitiesSection } from '../../components/landing/PlatformCapabilitiesSection';
-import { RuntimeLayersSection } from '../../components/landing/RuntimeLayersSection';
-import { EvidenceTrustSection } from '../../components/landing/EvidenceTrustSection';
-import { GovernancePricingSection } from '../../components/landing/GovernancePricingSection';
-import { LandingRoadmapSection } from '../../components/landing/LandingRoadmapSection';
-import { GovernanceEnterpriseSection } from '../../components/landing/GovernanceEnterpriseSection';
-import { GovernanceAiHeader } from '../../components/landing/GovernanceAiHeader';
-import { SectionEyebrow, SectionHeading } from '../../components/landing/GovernanceSectionChrome';
+import { GovernanceSystemStory } from '../../components/landing/GovernanceSystemStory';
+import { GovernancePipelineDemo } from '../../components/landing/GovernancePipelineDemo';
+import { GovernanceControlRoom } from '../../components/landing/GovernanceControlRoom';
+import { GovernanceSelfCheck } from '../../components/landing/GovernanceSelfCheck';
 import {
-  GA_DISPLAY,
-  GA_LINE_SOFT,
-  GA_MONO,
-  GA_MUTED,
-  GA_PILL_GHOST,
-  GA_PILL_PRIMARY,
-  GA_SILVER,
-} from '../../components/landing/governance-ai-theme';
-import { POLICY_PACKS } from '../../components/landing/policy-packs';
-import { CONTINUOUS_COMPLIANCE_NARRATIVE } from '../../components/governance-frontend/hero-content';
-import { CTA } from '../../content/runtimeVocab';
+  ArchitectureSection,
+  ExecutiveSection,
+  PrinciplesSection,
+  ProvidersSection,
+  ValueSection,
+} from '../../components/landing/HomepageBriefSections';
+import { GovernancePricingSection } from '../../components/landing/GovernancePricingSection';
+import { GA_PILL_GHOST, GA_PILL_PRIMARY, GA_SANS } from '../../components/landing/governance-ai-theme';
+import { HERO_SCAN_CTA_LABEL } from '../../components/governance-frontend/hero-content';
+import { SEO_CONFIG } from '../../config/seo';
 import { PUBLIC_CTA } from '../../config/public-nav';
 
-/**
- * Gold-Schimmer folgt dem Zeiger über die Karten.
- *
- * Ein Handler auf dem Seiten-Wrapper statt einer je Karte: Die Seite trägt
- * mehr als vierzig `.ga-card`-Flächen, und `pointermove` auf jeder einzelnen
- * wäre spürbar teurer als ein `closest()` pro Bewegung.
- */
 function trackCardSheen(event: ReactPointerEvent<HTMLDivElement>) {
   const card = (event.target as HTMLElement).closest?.('.ga-card');
   if (!(card instanceof HTMLElement)) return;
@@ -72,91 +48,53 @@ function trackCardSheen(event: ReactPointerEvent<HTMLDivElement>) {
 export function DesignGovernanceAiLanding() {
   return (
     <div
-      className="ga-context relative min-h-screen antialiased"
+      className="rs-paper ga-context rs-handoff landing-context relative min-h-screen antialiased"
+      data-hero-visual="europe-map-v2"
       style={{ backgroundColor: 'var(--ga-void)', color: 'var(--ga-text)' }}
       onPointerMove={trackCardSheen}
     >
-      <SEOHead
-        title="RealSyncDynamics.AI — Das OS für den sicheren Einsatz von KI im Unternehmen"
-        description="EU AI Act, DSGVO, ISO 42001 und interne Richtlinien in einer kontinuierlichen Governance-Schicht über KI-Systeme, Daten und Anbieter."
-        canonical="/"
-        ogTitle="Das Governance OS für den sicheren Einsatz von KI"
-        ogDescription="RealSyncDynamics.AI verbindet Governance, Evidence und kontrollierte KI-Ausführung in einer EU-nativen Operations-Schicht."
-      />
-
-      <GovernanceAiBackdrop />
+      <SEOHead title={SEO_CONFIG['/'].title} description={SEO_CONFIG['/'].description} canonical="/" />
 
       <div className="relative z-10 flex min-h-screen flex-col">
-        <GovernanceStatusBar />
-        <GovernanceAiHeader />
-
-        <GovernanceAiHero />
-
-        <RegulatoryTicker />
-        <GovernanceLoopBand />
-
-        <WorkspacePreviewSection />
-        <GovernanceToolsSection />
-        <PlatformCapabilitiesSection />
-        <RuntimeLayersSection />
-        <EvidenceTrustSection />
+        <GovernanceOsHero />
+        <GovernanceSystemStory />
+        <GovernancePipelineDemo />
+        <ArchitectureSection />
+        <ProvidersSection />
+        <GovernanceControlRoom />
+        <ValueSection />
+        <ExecutiveSection />
+        <PrinciplesSection />
+        <GovernanceSelfCheck />
         <GovernancePricingSection />
-        <LandingRoadmapSection />
-        <GovernanceEnterpriseSection />
 
-        <section
-          id="next"
-          className="ga-band relative z-[1] border-t px-[4vw] py-[clamp(60px,6vw,92px)]"
-          style={{ borderColor: GA_LINE_SOFT }}
-          aria-labelledby="next-heading"
-        >
-          <div className="mx-auto w-full max-w-[780px] text-center">
-            <SectionEyebrow>ONE GOVERNANCE PLANE</SectionEyebrow>
-            <span id="next-heading">
-              <SectionHeading centered>Governance statt Checkliste.</SectionHeading>
-            </span>
-            <p
-              className="mx-auto mt-4 max-w-[46rem] text-pretty leading-[1.7]"
-              style={{ color: GA_MUTED }}
-            >
-              {CONTINUOUS_COMPLIANCE_NARRATIVE}
+        <section id="next" className="os-section" aria-labelledby="next-heading">
+          <div className="os-inner text-center">
+            <h2 id="next-heading" className="os-display" style={{ fontSize: 'clamp(36px, 5vw, 84px)' }}>
+              <span>Ihre KI-Landschaft wächst.</span>
+              <span className="os-dim">Ihre Governance sollte mithalten.</span>
+            </h2>
+            <p className="os-lede" style={{ marginInline: 'auto' }}>
+              Machen Sie sichtbar, welche KI eingesetzt wird, welche Regeln gelten und welche Aktionen tatsächlich
+              ausgeführt wurden.
             </p>
-
-            <div className="mt-6 flex flex-wrap justify-center gap-2">
-              {POLICY_PACKS.map((pack) => (
-                <span
-                  key={pack.label}
-                  className={`whitespace-nowrap rounded border px-3 py-[7px] text-[11px] tracking-[.14em] ${
-                    pack.next ? 'border-dashed' : ''
-                  }`}
-                  style={{
-                    fontFamily: GA_MONO,
-                    borderColor: GA_LINE_SOFT,
-                    color: pack.next ? 'var(--ga-titan)' : GA_SILVER,
-                  }}
-                >
-                  {pack.label}
-                </span>
-              ))}
-            </div>
-
-            <div className="mt-[34px] flex flex-wrap justify-center gap-3.5">
+            <div className="mt-[40px] flex flex-wrap justify-center gap-3.5">
               <Link
                 to={PUBLIC_CTA.to}
                 className={`${GA_PILL_PRIMARY} ga-pill-sheen`}
                 style={{
-                  fontFamily: GA_DISPLAY,
+                  fontFamily: GA_SANS,
                   backgroundImage: 'var(--ga-pill-face)',
                   color: 'var(--ga-pill-ink)',
                   boxShadow: 'var(--ga-pill-shadow)',
                 }}
               >
-                {CTA.startFreeAudit}
+                {HERO_SCAN_CTA_LABEL}
                 <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </Link>
-              <a href="#pricing" className={GA_PILL_GHOST} style={{ fontFamily: GA_DISPLAY }}>
-                Preise ansehen
-              </a>
+              <Link to="/contact-sales?tier=enterprise&source=home-cta" className={GA_PILL_GHOST} style={{ fontFamily: GA_SANS }}>
+                {CTA.enterprise}
+              </Link>
             </div>
           </div>
         </section>

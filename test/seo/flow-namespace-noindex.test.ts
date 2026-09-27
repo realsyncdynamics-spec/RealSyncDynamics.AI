@@ -70,6 +70,14 @@ describe('SEO: /flow-Namespace ist noindex', () => {
     expect(shadowed).toEqual([]);
   });
 
+  it('hält die Homepage-SEO auf der Control-Plane-Positionierung', () => {
+    expect(SEO_CONFIG['/'].title).toBe('RealSyncDynamics.AI — The Governance OS for Autonomous AI');
+    expect(SEO_CONFIG['/'].description).toContain('Control Plane für Enterprise-KI');
+    expect(SEO_CONFIG['/'].description).toContain('Any model. Any agent. One control plane.');
+    expect(SEO_CONFIG['/'].ogTitle).toBe('The Governance OS for Autonomous AI');
+    expect(SEO_CONFIG['/'].ogDescription).toContain('Kontroll-, Autorisierungs- und Evidence-Layer');
+  });
+
   it('prüft den Namespace vor dem Map-Lookup (Reihenfolge im Quelltext)', () => {
     const source = readFileSync(resolve(__dirname, '../../src/config/seo.ts'), 'utf8');
     const fn = source.slice(source.indexOf('export function getSeoForPath'));

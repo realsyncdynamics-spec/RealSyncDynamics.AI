@@ -13,11 +13,17 @@
 
 import { chromium, Browser, BrowserContext, Page, Request, Response } from 'playwright';
 import * as http from 'http';
+import { assertPublicHttpUrl, executeBrowserActions, type BrowserExecuteRequest } from './executor.js';
 
 const PORT = parseInt(process.env.PORT ?? '3001', 10);
 const API_KEY = process.env.SCANNER_API_KEY ?? '';
 const MAX_CONCURRENT = parseInt(process.env.MAX_CONCURRENT ?? '3', 10);
 const DEFAULT_TIMEOUT = 30_000;
+
+if (!API_KEY) {
+  console.error('[playwright-scanner] FATAL: SCANNER_API_KEY is required');
+  process.exit(1);
+}
 
 // ─── Tracker-Patterns (synchronisiert mit cookie-scan/index.ts) ──────────────
 const TRACKER_PATTERNS = [
@@ -278,13 +284,11 @@ const server = http.createServer(async (req, res) => {
   res.setHeader('Content-Type', 'application/json');
   res.setHeader('Access-Control-Allow-Origin', '*');
 
-  // Auth-Check
-  if (API_KEY) {
-    const provided = req.headers['x-api-key'] ?? req.headers['authorization']?.replace('Bearer ', '');
-    if (provided !== API_KEY) {
-      res.writeHead(401);
-      return res.end(JSON.stringify({ ok: false, error: 'UNAUTHORIZED' }));
-    }
+  // Auth-Check — required for health, scans and executor.
+  const provided = req.headers['x-api-key'] ?? req.headers['authorization']?.replace(/^Bearer\s+/i, '');
+  if (provided !== API_KEY) {
+    res.writeHead(401);
+    return res.end(JSON.stringify({ ok: false, error: 'UNAUTHORIZED' }));
   }
 
   if (url === '/health' && method === 'GET') {
@@ -305,16 +309,42 @@ const server = http.createServer(async (req, res) => {
     req.on('error', reject);
   });
 
-  let parsed: { url?: string; timeout?: number };
+  let parsed: unknown;
   try { parsed = JSON.parse(body); } catch {
     res.writeHead(400);
     return res.end(JSON.stringify({ ok: false, error: 'INVALID_JSON' }));
   }
 
-  const targetUrl = (parsed.url ?? '').trim();
+  if (url === '/execute') {
+    try {
+      const execBody = parsed as BrowserExecuteRequest;
+      const results = await executeBrowserActions(await getBrowser(), execBody);
+      res.writeHead(200);
+      return res.end(JSON.stringify({
+        ok: true,
+        session_id: execBody.session_id,
+        results,
+      }));
+    } catch (err) {
+      const code = err instanceof Error ? err.message : String(err);
+      const status = code === 'PRIVATE_NETWORK_BLOCKED' ? 403 : 400;
+      res.writeHead(status);
+      return res.end(JSON.stringify({ ok: false, error: code }));
+    }
+  }
+
+  const scanBody = parsed as { url?: string; timeout?: number };
+  const targetUrl = (scanBody.url ?? '').trim();
   if (!targetUrl || !/^https?:\/\//.test(targetUrl)) {
     res.writeHead(400);
     return res.end(JSON.stringify({ ok: false, error: 'INVALID_URL' }));
+  }
+  try {
+    await assertPublicHttpUrl(targetUrl);
+  } catch (err) {
+    const code = err instanceof Error ? err.message : String(err);
+    res.writeHead(code === 'PRIVATE_NETWORK_BLOCKED' ? 403 : 400);
+    return res.end(JSON.stringify({ ok: false, error: code }));
   }
 
   if (activeSans >= MAX_CONCURRENT) {
@@ -323,7 +353,7 @@ const server = http.createServer(async (req, res) => {
   }
 
   activeSans++;
-  const timeout = Math.min(parsed.timeout ?? DEFAULT_TIMEOUT, 60_000);
+  const timeout = Math.min(scanBody.timeout ?? DEFAULT_TIMEOUT, 60_000);
 
   try {
     let result: unknown;
@@ -335,7 +365,7 @@ const server = http.createServer(async (req, res) => {
       result = await scanScreenshot(targetUrl, timeout);
     } else {
       res.writeHead(404);
-      return res.end(JSON.stringify({ ok: false, error: 'NOT_FOUND', available: ['/health', '/scan/full', '/scan/consent-timing', '/scan/screenshot'] }));
+      return res.end(JSON.stringify({ ok: false, error: 'NOT_FOUND', available: ['/health', '/scan/full', '/scan/consent-timing', '/scan/screenshot', '/execute'] }));
     }
     res.writeHead(200);
     res.end(JSON.stringify(result));
@@ -351,7 +381,7 @@ const server = http.createServer(async (req, res) => {
 server.listen(PORT, () => {
   console.log(`[playwright-scanner] Listening on port ${PORT}`);
   console.log(`[playwright-scanner] MAX_CONCURRENT=${MAX_CONCURRENT}`);
-  console.log(`[playwright-scanner] API_KEY=${API_KEY ? '***set***' : 'NOT SET — insecure!'}`);
+  console.log('[playwright-scanner] API_KEY=***set***');
 });
 
 // Graceful shutdown

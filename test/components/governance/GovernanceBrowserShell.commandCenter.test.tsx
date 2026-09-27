@@ -39,6 +39,12 @@ vi.mock('../../../src/components/governance-os/GovernanceAddressBar', () => ({
 vi.mock('../../../src/components/governance-os/EmbeddedBrowserCanvas', () => ({
   EmbeddedBrowserCanvas: () => <div data-testid="embedded-page" />,
 }));
+// Nav-Schlösser (MobileShellMenu) lesen tenant_entitlements über useTenant —
+// hier ohne TenantProvider: alles offen, Schloss-Logik prüft navAccess.test.ts.
+vi.mock('../../../src/components/governance-os/useNavLock', () => ({
+  useNavLock: () => () => ({ locked: false, missing: [], minPlan: null, source: 'none' }),
+  navLockTitle: (label: string) => label,
+}));
 vi.mock('../../../src/core/access/RouteEntitlementGate', () => ({
   RouteEntitlementGate: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
@@ -164,6 +170,21 @@ describe('GovernanceBrowserShell — Command Center', () => {
 
     expect(screen.getByTestId('location')).toHaveTextContent('/app/evidence');
     expect(screen.queryByRole('dialog', { name: 'Command Center' })).not.toBeInTheDocument();
+  });
+
+  it('P0-5: Freitext ohne Treffer ist kein toter Intent — keine Navigation, ehrliches „Keine Treffer“', () => {
+    renderShell('/app/evidence');
+    fireEvent.keyDown(window, { key: 'k', ctrlKey: true });
+    const dialog = screen.getByRole('dialog', { name: 'Command Center' });
+    fireEvent.change(screen.getByLabelText('Was möchtest du erledigen?'), {
+      target: { value: 'xyzzy qwrt' },
+    });
+    expect(within(dialog).getByText(/Keine Treffer/)).toBeInTheDocument();
+    expect(within(dialog).queryByText(/Intent/)).toBeNull();
+    fireEvent.keyDown(window, { key: 'Enter' });
+    // Früher: navigate('/app/dashboard', { state: { agentOsIntent } }) — ohne Leser.
+    expect(screen.getByTestId('location')).toHaveTextContent('/app/evidence');
+    expect(within(dialog).getByText('Ausführen')).toBeInTheDocument();
   });
 
   it('schließt mit Escape und toggelt mit erneutem Ctrl+K', () => {

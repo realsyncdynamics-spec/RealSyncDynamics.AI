@@ -397,7 +397,7 @@ export function ComplianceStatusView({
       )}
 
       {activeTenantId && !loading && (
-        <ComplianceKpiStrip kpi={complianceKpi} governance={data} onRetry={onRetry} />
+        <ComplianceKpiStrip kpi={complianceKpi} governance={data} error={error} onRetry={onRetry} />
       )}
 
       {isEmptyTenant && (
@@ -1041,9 +1041,12 @@ function FrameworkStrip() {
 function ComplianceKpiStrip({
   kpi,
   governance = null,
+  error = null,
   onRetry,
 }: {
   kpi: ComplianceKpiRow;
+  /** Ladefehler von loadCockpitData — sonst hinge die Score-Karte auf „Wird geladen“. */
+  error?: string | null;
   /** Governance-Score (computeGovernanceScoreIfReliable) — einzige Score-Quelle. */
   governance?: CockpitData | null;
   onRetry?: () => void;
@@ -1072,6 +1075,7 @@ function ComplianceKpiStrip({
             nur als Rahmenwerk-Hinweis. */}
         <GovernanceKpiScoreCard
           governance={governance}
+          error={error}
           onRetry={onRetry}
           hint={
             breakdownBits.length > 0
@@ -1102,10 +1106,12 @@ function ComplianceKpiStrip({
 function GovernanceKpiScoreCard({
   governance,
   hint,
+  error = null,
   onRetry,
 }: {
   governance: CockpitData | null;
   hint: string;
+  error?: string | null;
   onRetry?: () => void;
 }) {
   const status = governance?.scoreStatus ?? null;
@@ -1125,6 +1131,20 @@ function GovernanceKpiScoreCard({
             onRetry={onRetry}
             testId="compliance-score-overall-state"
           />
+        </div>
+      ) : error && !governance ? (
+        <div className="mt-3" data-testid="compliance-score-overall-error">
+          <p className="font-mono text-4xl font-bold text-titanium-600">—</p>
+          <p className="mt-2 text-[11px] text-amber-300">Score konnte nicht geladen werden.</p>
+          {onRetry && (
+            <button
+              type="button"
+              onClick={onRetry}
+              className="mt-2 text-[11px] font-mono uppercase tracking-wider text-[#00B8D4] hover:underline"
+            >
+              Erneut laden
+            </button>
+          )}
         </div>
       ) : (
         <div className="mt-3">

@@ -167,15 +167,17 @@ export function groupByCause(broken) {
 //
 // ## Wie die Antworten der Dispatch-Jobs zugeordnet werden
 //
-// `net._http_response` enthaelt auch Antworten anderer `net.http_*`-Aufrufe.
-// Wuerde der Guard sie ungefiltert zaehlen, reichen fremde 401/5xx fuer einen
-// Rot-Befund ohne Cron-Drift. Deshalb korrelieren wir ueber Zeit:
-// Nur Antworten, die innerhalb von zwei Minuten nach einem
-// `dispatch_cron_function`-Lauf eintreffen, zaehlen fuer Klasse C.
+// `net._http_response` enthaelt auch Antworten anderer `net.http_*`-Aufrufe
+// (`business-metrics-cron-15min` ruft `net.http_post` direkt im selben
+// */15-Takt auf, dazu Trigger wie Stripe-Webhook und Welcome-Mail). Ein
+// Zeitfenster trennt das nicht: fremde 401/5xx erzeugten Rot-Befunde, fremde
+// 2xx verdeckten einen Dispatch ohne Antwort.
 //
-// Die Korrelation bleibt absichtlich einfach (kein Job↔Antwort-Matching per
-// ID): sie trennt Cron-Dispatch robust von Fremdverkehr, ohne eine Zuordnung
-// zu erfinden, die `pg_net` nicht garantiert hergibt.
+// Deshalb exakt ueber die Request-ID: `dispatch_cron_function` schreibt die ID
+// jedes `net.http_post` nach `public.cron_dispatch_requests`
+// (Migration 20260927170000), und `net._http_response.id` ist dieselbe ID.
+// Gezaehlt werden nur Dispatches, die aelter als zwei Minuten sind — juengere
+// koennen noch unterwegs sein.
 //
 // `net._http_response` haelt nur rund sechs Stunden vor — das Fenster ist
 // deshalb bewusst kurz und wird in der Ausgabe mitgenannt.
@@ -183,13 +185,11 @@ export function groupByCause(broken) {
 export const SQL_ANTWORTEN = `
 WITH fenster AS (SELECT now() - interval '6 hours' AS ab),
 dispatch_laeufe AS (
-  SELECT d.start_time
-  FROM cron.job_run_details d
-  JOIN cron.job j ON j.jobid = d.jobid
+  SELECT q.request_id
+  FROM public.cron_dispatch_requests q
   CROSS JOIN fenster f
-  WHERE d.start_time >= f.ab
-    AND j.active
-    AND j.command LIKE '%dispatch_cron_function%'
+  WHERE q.dispatched_at >= f.ab
+    AND q.dispatched_at < now() - interval '2 minutes'
 ),
 antworten AS (
   SELECT coalesce(r.status_code::text, '(keine Antwort)') AS status,
@@ -197,14 +197,8 @@ antworten AS (
          min(r.created)::text AS von,
          max(r.created)::text AS bis,
          left(coalesce(r.content, ''), 200) AS beispiel
-  FROM net._http_response r, fenster f
-  WHERE r.created >= f.ab
-    AND EXISTS (
-      SELECT 1
-      FROM dispatch_laeufe l
-      WHERE r.created >= l.start_time
-        AND r.created <= l.start_time + interval '2 minutes'
-    )
+  FROM dispatch_laeufe l
+  JOIN net._http_response r ON r.id = l.request_id
   GROUP BY 1, left(coalesce(r.content, ''), 200)
 ),
 laeufe AS (
@@ -213,7 +207,7 @@ laeufe AS (
 )
 SELECT 'antwort' AS art, a.status, a.anzahl, a.von, a.bis, a.beispiel FROM antworten a
 UNION ALL
-SELECT 'dispatch', NULL, l.anzahl, NULL, NULL, NULL FROM laeufe l;`;
+SELECT 'dispatch', NULL, l.anzahl, NULL, NULL, NULL FROM laeufe l;`
 
 /**
  * Groesster erwarteter Abstand zwischen zwei Laeufen, in Minuten.
@@ -382,12 +376,22 @@ if (direkt) {
     return resp.json();
   }
 
-  let rows, antwortZeilen;
+  let rows;
   try {
-    [rows, antwortZeilen] = await Promise.all([frage(SQL), frage(SQL_ANTWORTEN)]);
+    rows = await frage(SQL);
   } catch (e) {
     console.error('⚠️  Cron-Abfrage nicht ausfuehrbar (Infra, kein Befund):', e.message);
     process.exit(0);
+  }
+
+  // Die Antwort-Ebene darf die Job-Ebene nicht mitreissen: Scheitert nur
+  // diese Abfrage (z. B. solange cron_dispatch_requests noch nicht migriert
+  // ist), werden A und B trotzdem bewertet und C als nicht auswertbar gemeldet.
+  let antwortZeilen = null;
+  try {
+    antwortZeilen = await frage(SQL_ANTWORTEN);
+  } catch (e) {
+    console.error('⚠️  Antwort-Abfrage nicht ausfuehrbar:', e.message);
   }
 
   // Format-Wachhund wie bei den anderen Guards: keine Zeile heisst, dass

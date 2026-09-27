@@ -28,6 +28,7 @@ const DemoTourDashboard = lazy(() => import('./pages/DemoTourDashboard').then((m
 const DesignLedgerLanding = lazy(() => import('./pages/design/DesignLedgerLanding').then((m) => ({ default: m.DesignLedgerLanding })));
 const DesignTribunalLanding = lazy(() => import('./pages/design/DesignTribunalLanding').then((m) => ({ default: m.DesignTribunalLanding })));
 const MainLanding = lazy(() => import('./pages/MainLanding').then((m) => ({ default: m.MainLanding })));
+const GovernanceRuntimeLayerPage = lazy(() => import('./pages/GovernanceRuntimeLayerPage').then((m) => ({ default: m.GovernanceRuntimeLayerPage })));
 const ScanStartPage = lazy(() => import('./pages/product-entry-points/ScanStartPage').then((m) => ({ default: m.ScanStartPage })));
 const ChatbotStartPage = lazy(() => import('./pages/product-entry-points/ChatbotStartPage').then((m) => ({ default: m.ChatbotStartPage })));
 const PhonebotStartPage = lazy(() => import('./pages/product-entry-points/PhonebotStartPage').then((m) => ({ default: m.PhonebotStartPage })));
@@ -502,6 +503,7 @@ function RoutesWithTracking() {
       {/* Reversible design references; no duplicate backend/runtime paths. */}
       <Route path="/design/governance-ai" element={<DesignGovernanceAiLanding />} />
       <Route path="/design/titan" element={<MainLanding />} />
+      <Route path="/governance-runtime-layer" element={<GovernanceRuntimeLayerPage />} />
       <Route path="/design/ledger" element={<DesignLedgerLanding />} />
       <Route path="/design/tribunal" element={<DesignTribunalLanding />} />
 

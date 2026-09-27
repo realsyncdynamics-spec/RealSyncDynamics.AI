@@ -1,0 +1,249 @@
+{
+  "zweck": "Bestand an `Math.random()` in src/ — eingeordnet, damit neue Fundstellen auffallen. Gepflegt von scripts/check-fabricated-results.mjs.",
+  "arten": {
+    "ZUFALL": "Zufall gehoert hierher: Jitter, Sampling, Dekoration, Animation.",
+    "ID": "Kennung fuer Zustand, Warteschlange oder Korrelation. Behauptet nichts ueber die Welt.",
+    "DEMO": "Beispieldaten, die als solche gekennzeichnet sind — sichtbar fuer den Nutzer, nicht nur im Code.",
+    "BEFUND": "Ein erfundener Wert, der als Messung gelesen wird. Gehoert behoben; der Eintrag nennt den PR."
+  },
+  "bestand": [
+    {
+      "datei": "src/components/governance-frontend/GovernanceSphereScene.tsx",
+      "fundstellen": 3,
+      "art": "ZUFALL",
+      "grund": "Partikelpositionen der 3D-Szene (Radius, Phi, Theta). Dekoration; eine feste Liste saehe gleichfoermig aus.",
+      "seit": "2026-09-14"
+    },
+    {
+      "datei": "src/components/governance-frontend/SphereSpaceBackground.tsx",
+      "fundstellen": 3,
+      "art": "ZUFALL",
+      "grund": "Partikelpositionen des Hintergrunds. Wie oben: Dekoration, keine Aussage.",
+      "seit": "2026-09-14"
+    },
+    {
+      "datei": "src/components/landing/WorkspacePreviewSection.tsx",
+      "fundstellen": 1,
+      "art": "DEMO",
+      "grund": "`randomHash()` fuer die Evidence-Chain der Vorschau. Die Datei fuehrt den Abschnitt 'Beispieldaten, und zwar sichtbar' — der Besucher hat keinen Mandanten, und die Section sagt das.",
+      "seit": "2026-09-14"
+    },
+    {
+      "datei": "src/components/sections/LiveFindingsSection.tsx",
+      "fundstellen": 2,
+      "art": "DEMO",
+      "grund": "`mockEvidence()` erzeugt Zeitstempel und einen `sha256:`-Platzhalter fuer die Beispiel-Befunde. Die Section traegt sichtbar die Zeile 'Audit-Engine · Beispiel-Befunde'.",
+      "seit": "2026-09-14"
+    },
+    {
+      "datei": "src/core/ai-gateway/providers/anthropicAdapter.ts",
+      "fundstellen": 1,
+      "art": "ID",
+      "grund": "Handgebautes UUIDv4 zur Korrelation eines Requests. Kennung, keine Messung.",
+      "seit": "2026-09-14"
+    },
+    {
+      "datei": "src/core/ai-gateway/providers/lmStudioAdapter.ts",
+      "fundstellen": 1,
+      "art": "ID",
+      "grund": "Handgebautes UUIDv4 zur Korrelation eines Requests.",
+      "seit": "2026-09-14"
+    },
+    {
+      "datei": "src/core/ai-gateway/providers/openaiAdapter.ts",
+      "fundstellen": 1,
+      "art": "ID",
+      "grund": "Handgebautes UUIDv4 zur Korrelation eines Requests.",
+      "seit": "2026-09-14"
+    },
+    {
+      "datei": "src/core/ai-gateway/router.ts",
+      "fundstellen": 1,
+      "art": "ID",
+      "grund": "Handgebautes UUIDv4 zur Korrelation eines Routing-Vorgangs.",
+      "seit": "2026-09-14"
+    },
+    {
+      "datei": "src/core/runtime/executor.ts",
+      "fundstellen": 1,
+      "art": "ID",
+      "grund": "`exec_<zeit>_<zufall>` benennt einen Lauf. Kollisionsschutz, kein Geheimnis.",
+      "seit": "2026-09-14"
+    },
+    {
+      "datei": "src/core/social-orchestrator/distributionQueue.ts",
+      "fundstellen": 2,
+      "art": "ID",
+      "grund": "`dlq_…` und `audit_…` benennen Eintraege der Warteschlange.",
+      "seit": "2026-09-14"
+    },
+    {
+      "datei": "src/features/api/OAuth2ConfigView.tsx",
+      "fundstellen": 1,
+      "art": "ID",
+      "grund": "Listenschluessel im UI-Zustand, verlaesst die Komponente nicht.",
+      "seit": "2026-09-14"
+    },
+    {
+      "datei": "src/features/governance/BulkOperationsView.tsx",
+      "fundstellen": 1,
+      "art": "BEFUND",
+      "grund": "`totalRows` des neuen Jobs gewuerfelt, dazu eine im Quelltext festgeschriebene Import-Historie. Behoben in PR #1374.",
+      "seit": "2026-09-14"
+    },
+    {
+      "datei": "src/features/governance/ComplianceMonitoringDashboard.tsx",
+      "fundstellen": 1,
+      "art": "BEFUND",
+      "grund": "'Ø Zeit bis Loesung' je geloestem Alert gewuerfelt — echte Alert-Zeilen, erfundene Kennzahl. Behoben in PR #1374.",
+      "seit": "2026-09-14"
+    },
+    {
+      "datei": "src/features/governance/ComplianceReportView.tsx",
+      "fundstellen": 1,
+      "art": "ID",
+      "grund": "Handgebautes UUIDv4 fuer eine Report-Kennung.",
+      "seit": "2026-09-14"
+    },
+    {
+      "datei": "src/features/governance/IntegrationsView.tsx",
+      "fundstellen": 1,
+      "art": "BEFUND",
+      "grund": "Signing Secret clientseitig gewuerfelt. Die Route zeigt seit PR #1374 auf /app/webhooks; die Datei ist verwaist und wartet auf die Loesch-Freigabe (CLAUDE.md §10).",
+      "seit": "2026-09-14"
+    },
+    {
+      "datei": "src/features/governance/analytics/ExportModal.tsx",
+      "fundstellen": 1,
+      "art": "BEFUND",
+      "grund": "Fortschrittsbalken lief per Zufall auf 90 %, waehrend der Server keinen Fortschritt meldet. Behoben in PR #1374.",
+      "seit": "2026-09-14"
+    },
+    {
+      "datei": "src/features/governance/terminal/agents/AuditAgent.ts",
+      "fundstellen": 3,
+      "art": "BEFUND",
+      "grund": "`getSeal()` gab einen erfundenen SHA-256 als Siegel zurueck, dazu gewuerfelte Dateigroesse und 'N items sealed'. Behoben in PR #1375.",
+      "seit": "2026-09-14"
+    },
+    {
+      "datei": "src/features/governance/terminal/agents/PaymentAgent.ts",
+      "fundstellen": 1,
+      "art": "BEFUND",
+      "grund": "Rechnungsnummern aus `Math.random()` — kollisionsfaehig und an keinen Vorgang gebunden. Behoben in PR #1376.",
+      "seit": "2026-09-14"
+    },
+    {
+      "datei": "src/features/governance/terminal/useAgenticTerminal.ts",
+      "fundstellen": 3,
+      "art": "BEFUND",
+      "grund": "`/scan` baute ein `mockScan`: Findings-Zahl, Risiko-Stufe und Anzahl klassifizierter KI-Systeme gewuerfelt. Behoben in PR #1375.",
+      "seit": "2026-09-14"
+    },
+    {
+      "datei": "src/hooks/useSyntheticRuntimeStream.ts",
+      "fundstellen": 1,
+      "art": "ZUFALL",
+      "grund": "Wartezeit zwischen zwei Ereignissen der Demo-Runtime. Jitter, kein Inhalt.",
+      "seit": "2026-09-14"
+    },
+    {
+      "datei": "src/lib/auditLogger.ts",
+      "fundstellen": 1,
+      "art": "ID",
+      "grund": "`log_<zeit>_<zufall>` benennt einen Logeintrag.",
+      "seit": "2026-09-14"
+    },
+    {
+      "datei": "src/lib/circuit-breaker.ts",
+      "fundstellen": 1,
+      "art": "ZUFALL",
+      "grund": "Jitter auf den exponentiellen Backoff. Genau die Stelle, an der Zufall hingehoert: er verhindert, dass alle Aufrufer gleichzeitig erneut anklopfen.",
+      "seit": "2026-09-14"
+    },
+    {
+      "datei": "src/lib/enterprise-ai-os/agents/audit-agent.ts",
+      "fundstellen": 1,
+      "art": "ID",
+      "grund": "`auditTraceId` korreliert Logzeilen eines Laufs. Kennung, kein Nachweis — das Siegel entsteht serverseitig.",
+      "seit": "2026-09-14"
+    },
+    {
+      "datei": "src/lib/performance/usePerformanceMonitor.ts",
+      "fundstellen": 1,
+      "art": "ID",
+      "grund": "Name einer React-Ref, damit zwei Instanzen derselben Sektion unterscheidbar bleiben.",
+      "seit": "2026-09-14"
+    },
+    {
+      "datei": "src/lib/performance/webVitals.ts",
+      "fundstellen": 1,
+      "art": "ZUFALL",
+      "grund": "10-%-Stichprobe fuer die Uebertragung guter Messwerte. Sampling, keine erfundene Zahl — der Messwert selbst ist echt.",
+      "seit": "2026-09-14"
+    },
+    {
+      "datei": "src/lib/request-queue.ts",
+      "fundstellen": 1,
+      "art": "ID",
+      "grund": "Kennung eines Eintrags in der Prioritaets-Warteschlange. Lebt nur im Speicher der Queue-Instanz, wird nie angezeigt und nie persistiert.",
+      "seit": "2026-09-14"
+    },
+    {
+      "datei": "src/lib/syntheticRuntimeEvents.ts",
+      "fundstellen": 1,
+      "art": "DEMO",
+      "grund": "Waehlt ein Ereignis aus dem Pool der Interactive Runtime Demo. Der Dateikopf sagt 'DEMO-RUNTIME' in Grossbuchstaben.",
+      "seit": "2026-09-14"
+    },
+    {
+      "datei": "src/lib/useBrowserSession.ts",
+      "fundstellen": 1,
+      "art": "ID",
+      "grund": "`bs_…` benennt eine Browser-Sitzung fuer die Zuordnung anonymer Scans.",
+      "seit": "2026-09-14"
+    },
+    {
+      "datei": "src/pages/AiActWorkflows.tsx",
+      "fundstellen": 1,
+      "art": "ID",
+      "grund": "`wf_…` benennt einen Workflow-Entwurf im lokalen Zustand.",
+      "seit": "2026-09-14"
+    },
+    {
+      "datei": "src/pages/MainLanding.tsx",
+      "fundstellen": 2,
+      "art": "DEMO",
+      "grund": "Siegelzeile (Kettenhoehe, Hash, Alter). Im Code ausdruecklich: 'eine Illustration des Mechanismus, keine Betriebszahl — der Besucher hat keinen Mandanten'. Das ist die Referenz, wie so etwas aussehen soll.",
+      "seit": "2026-09-14"
+    },
+    {
+      "datei": "src/pages/Welcome.tsx",
+      "fundstellen": 1,
+      "art": "BEFUND",
+      "grund": "Stiller Rueckfall auf schwachen Zufall bei der Erzeugung des API-Keys `rsd_live_…`. Behoben in PR #1377.",
+      "seit": "2026-09-14"
+    },
+    {
+      "datei": "src/pages/design/DesignGovernanceLanding.tsx",
+      "fundstellen": 1,
+      "art": "DEMO",
+      "grund": "Hash-Illustration `randomHash()` auf der Design-Vorschau /design/governance. Die Seite ist durchgaengig gekennzeichnet — Dateikopf 'Not live /. Honest Preview', Titel 'The Governance AI (Preview)', Footer 'Design Preview (nicht Live-/)' — und in implementation-status.ts als preview registriert. Kommt mit PR #1380; der Eintrag steht vorab, damit die Ratsche beim Merge nicht rot wird.",
+      "seit": "2026-09-14"
+    },
+    {
+      "datei": "src/types/evidence-graph.ts",
+      "fundstellen": 2,
+      "art": "ID",
+      "grund": "Rueckfall fuer `createNodeId()`, wenn `crypto.randomUUID` fehlt. Knotenkennung im Graphen, kein Geheimnis und kein Nachweis.",
+      "seit": "2026-09-14"
+    },
+    {
+      "datei": "src/types/runtime-event.ts",
+      "fundstellen": 1,
+      "art": "ID",
+      "grund": "Rueckfall-Kennung im UUID-Layout. Der Kommentar daneben stellt klar: 'KEIN echtes UUIDv4, KEIN Crypto-Anspruch'.",
+      "seit": "2026-09-14"
+    }
+  ]
+}

@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { ArrowRight, CheckCircle2, Loader2, AlertTriangle } from 'lucide-react';
+import { ensureCsrfCookie } from '../../lib/csrf';
+import { edgeFunctionUrl, fnFetchInit, shouldUseFnProxy } from '../../lib/fn-proxy';
 
 /**
  * WaitlistForm — Anmeldeformular der Warteliste (/warteliste).
@@ -14,18 +16,13 @@ import { ArrowRight, CheckCircle2, Loader2, AlertTriangle } from 'lucide-react';
  * Die zurueckgegebene Position kommt aus der Datenbank (BIGSERIAL) — es wird
  * nie eine Zahl geschaetzt oder hochgezaehlt. Ohne erreichbares Backend zeigt
  * das Formular einen Fehler statt einer falschen Erfolgsmeldung.
+ *
+ * Production: same-origin `/api/fn/sales-lead` + CSRF.
+ * Localhost: `${getSupabaseUrl()}/functions/v1/sales-lead`.
  */
 
-/** Gemeinsamer Endpunkt fuer Anmeldung (POST) und Zaehler (GET ?mode=waitlist). */
+/** Path-Suffix for contract tests / waitlist counter GET (direct Supabase). */
 export const WAITLIST_ENDPOINT = '/functions/v1/sales-lead';
-
-/**
- * Lazy statt Modul-Konstante: die Env wird erst beim Absenden gelesen, damit
- * Tests sie stubben koennen und ein spaet injizierter Wert nicht ignoriert wird.
- */
-function supabaseUrl(): string | undefined {
-  return import.meta.env.VITE_SUPABASE_URL as string | undefined;
-}
 
 export const WAITLIST_INTERESTS = [
   { value: 'runtime', label: 'Governance Runtime' },
@@ -56,12 +53,6 @@ export function WaitlistForm({ source = 'warteliste', compact = false, id }: Pro
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const baseUrl = supabaseUrl();
-    if (!baseUrl) {
-      setError('Die Anmeldung ist gerade nicht erreichbar. Bitte schreiben Sie uns direkt.');
-      return;
-    }
-
     const data = new FormData(event.currentTarget);
     // utm_*-Parameter aus der aktuellen URL uebernehmen — die Zuordnung von
     // Kampagne zu Anmeldung passiert serverseitig, nicht ueber Cookies.
@@ -74,7 +65,9 @@ export function WaitlistForm({ source = 'warteliste', compact = false, id }: Pro
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${baseUrl}${WAITLIST_ENDPOINT}`, {
+      if (shouldUseFnProxy()) await ensureCsrfCookie();
+      const url = edgeFunctionUrl('sales-lead');
+      const res = await fetch(url, fnFetchInit(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -91,7 +84,7 @@ export function WaitlistForm({ source = 'warteliste', compact = false, id }: Pro
           referrer: typeof document !== 'undefined' ? document.referrer || undefined : undefined,
           utm,
         }),
-      });
+      }));
       const payload = await res.json().catch(() => ({}));
       if (!res.ok || !payload?.ok) {
         throw new Error(payload?.error?.message ?? `Anmeldung fehlgeschlagen (HTTP ${res.status}).`);

@@ -18,6 +18,35 @@ interface SupabaseAdminClient {
   };
 }
 
+export interface AuditResult {
+  ok: boolean;
+  error?: string;
+}
+
+function reportAuditFailure(
+  args: { action: string; target_type: string; target_id: string | null; tenant_id: string },
+  message: string,
+): void {
+  console.error(JSON.stringify({
+    level: 'error',
+    scope: 'audit_log_failed',
+    action: args.action,
+    target_type: args.target_type,
+    target_id: args.target_id,
+    tenant_id: args.tenant_id,
+    error: message,
+  }));
+}
+
+/**
+ * Schreibt einen Eintrag in governance_admin_log.
+ *
+ * supabase-js wirft bei DB-Fehlern NICHT, sondern liefert `{ error }` — der
+ * Rückgabewert wird deshalb ausdrücklich geprüft (vorher ging ein
+ * fehlgeschlagener Insert still verloren, weil nur das `catch` loggte).
+ * Beide Fehlerpfade werden strukturiert geloggt und als `{ ok: false }`
+ * zurückgegeben; Aufrufer kritischer Mutationen können darauf reagieren.
+ */
 export async function audit(
   admin: SupabaseAdminClient,
   args: {
@@ -29,9 +58,9 @@ export async function audit(
     target_id: string | null;
     payload?: Record<string, unknown>;
   },
-): Promise<void> {
+): Promise<AuditResult> {
   try {
-    await admin.from('governance_admin_log').insert({
+    const { error } = await admin.from('governance_admin_log').insert({
       tenant_id:      args.tenant_id,
       actor_user_id:  args.actor_user_id,
       actor_email:    args.actor_email,
@@ -40,15 +69,18 @@ export async function audit(
       target_id:      args.target_id,
       payload:        args.payload ?? {},
     });
+    if (error) {
+      const message =
+        typeof error === 'object' && error !== null && 'message' in error
+          ? String((error as { message: unknown }).message)
+          : String(error);
+      reportAuditFailure(args, message);
+      return { ok: false, error: message };
+    }
+    return { ok: true };
   } catch (e) {
-    console.error(JSON.stringify({
-      level: 'error',
-      scope: 'audit_log_failed',
-      action: args.action,
-      target_type: args.target_type,
-      target_id: args.target_id,
-      tenant_id: args.tenant_id,
-      error: (e as Error)?.message ?? String(e),
-    }));
+    const message = (e as Error)?.message ?? String(e);
+    reportAuditFailure(args, message);
+    return { ok: false, error: message };
   }
 }

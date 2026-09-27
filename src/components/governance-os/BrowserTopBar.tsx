@@ -1,8 +1,14 @@
-import { Link, useNavigate } from 'react-router-dom';
-import { Sparkles, Menu, X, FileCheck2, FileBarChart2, Search, LogOut } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Sparkles, Menu, X, FileCheck2, FileBarChart2, Search, LogOut, ShieldCheck } from 'lucide-react';
 import { GovernanceAddressBar } from './GovernanceAddressBar';
 import { useSupabaseAuth } from '../../features/supabase/SupabaseAuthContext';
-import { OS_CREAM_BTN, OS_FOCUS_RING } from './osChrome';
+import { LangToggle } from '../handoff/LangToggle';
+import { useLang } from '../../i18n/useLang';
+import { initialsFromEmail } from '../../features/governance/handoff/enforcementModel';
+import { OS_FOCUS_RING } from './osChrome';
+import { APP_HEADER_HEIGHT } from './app-theme';
+import { SHELL_TITLES, activeShellNav } from './shellNav';
+import '../../styles/governance-os-app.css';
 
 interface BrowserTopBarProps {
   mobileMenuOpen: boolean;
@@ -13,6 +19,15 @@ interface BrowserTopBarProps {
   activeEmbedUrl?: string;
 }
 
+/**
+ * Kopfzeile der App — Handoff v2 §5 (56px, Titel 15px Inter Tight + Sub 13px).
+ *
+ * Rechts: Command Center (⌘K), Landing · Preise, DE/EN, „EU · Frankfurt"
+ * (Supabase-Region eu-central-1), Avatar mit Initialen des echten Nutzers.
+ * „RUNTIME LIVE" aus dem Entwurf fehlt bewusst: Es gibt keinen Laufzeit-
+ * Status, der diese Aussage deckt. „Login" entfällt, weil hier nur
+ * angemeldete Nutzer landen — an seiner Stelle steht „Abmelden".
+ */
 export function BrowserTopBar({
   mobileMenuOpen,
   onToggleMobile,
@@ -22,7 +37,11 @@ export function BrowserTopBar({
   activeEmbedUrl,
 }: BrowserTopBarProps) {
   const navigate = useNavigate();
-  const { logout, isAuthenticated } = useSupabaseAuth();
+  const { pathname } = useLocation();
+  const { logout, isAuthenticated, user } = useSupabaseAuth();
+  const { t } = useLang();
+  const titles = SHELL_TITLES[activeShellNav(pathname) ?? 'app'];
+  const initials = initialsFromEmail(user?.email ?? null);
 
   async function handleSignOut() {
     await logout();
@@ -31,86 +50,96 @@ export function BrowserTopBar({
   }
 
   return (
-    <header className="h-14 shrink-0 bg-obsidian-900/95 border-b border-titanium-900/80 backdrop-blur-md flex items-center gap-3 px-3 sm:px-4">
+    <header className="rs-apphead rs-ui" style={{ minHeight: APP_HEADER_HEIGHT }}>
       {/* Mobile-Menü Toggle — system drawer entry */}
       <button
+        type="button"
         onClick={onToggleMobile}
-        className={`lg:hidden text-titanium-400 hover:text-titanium-100 focus-visible:outline-none ${OS_FOCUS_RING}`}
+        className={`rs-apphead__icon-btn lg:hidden ${OS_FOCUS_RING}`}
         aria-label={mobileMenuOpen ? 'Systemmenü schließen' : 'Systemmenü öffnen'}
         aria-expanded={mobileMenuOpen}
+        aria-controls={mobileMenuOpen ? 'governance-mobile-menu' : undefined}
       >
         {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
       </button>
 
-      {/* Logo + Produktname — OS system-bar identity */}
-      <Link to="/app/dashboard" className="flex items-center gap-2 shrink-0">
-        <div className="w-7 h-7 bg-[#e4cfa2] flex items-center justify-center">
-          <Sparkles className="h-4 w-4 text-obsidian-950" />
-        </div>
-        <div className="hidden sm:flex flex-col leading-none">
-          <span className="font-display font-bold text-[11px] text-titanium-50 tracking-tight">
-            Governance OS
-          </span>
-          <span className="font-mono text-[9px] text-[#e4cfa2]/80 tracking-wide">
-            SYSTEM · DSGVO · EU AI Act
-          </span>
-        </div>
+      {/* Logo-Mark nur mobil — ab lg trägt die Seitenleiste die Marke. */}
+      <Link to="/app/dashboard" className="rs-logo-mark lg:hidden" aria-label="Governance OS — Übersicht">
+        <ShieldCheck className="h-4 w-4" aria-hidden="true" />
       </Link>
 
-      {/* Address Bar — onLoadUrl für echte URLs, sonst Audit-Navigation */}
-      <GovernanceAddressBar onLoadUrl={onLoadUrl} activeUrl={activeEmbedUrl} />
+      <div className="flex min-w-0 flex-col">
+        <span className="rs-apphead__title">{t(titles.title)}</span>
+        <span className="rs-apphead__sub hidden sm:block">{t(titles.sub)}</span>
+      </div>
 
-      {/* Rechte CTA-Buttons */}
-      <div className="flex items-center gap-1.5 shrink-0">
+      {/* Address Bar — echte URLs öffnen die eingebettete Ansicht. */}
+      <div className="hidden min-w-0 flex-1 justify-center xl:flex">
+        <GovernanceAddressBar onLoadUrl={onLoadUrl} activeUrl={activeEmbedUrl} />
+      </div>
+      <div className="flex-1 xl:hidden" />
+
+      <div className="flex shrink-0 items-center gap-1.5">
         <button
           type="button"
           onClick={onOpenCommandCenter}
-          className={`hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-titanium-300 bg-obsidian-800 border border-titanium-800 hover:border-[#e4cfa2]/40 hover:text-titanium-50 transition-colors focus-visible:outline-none ${OS_FOCUS_RING}`}
+          className="rs-chip-sm hidden sm:inline-flex"
           aria-label="Command Center öffnen"
         >
-          <Search className="h-3.5 w-3.5 text-[#e4cfa2]/80" />
-          <span className="hidden lg:inline">Suchen</span>
-          <kbd className="ml-0.5 hidden md:inline font-mono text-[9px] text-titanium-600 border border-titanium-800 px-1 py-0.5">
-            ⌘K
-          </kbd>
+          <Search className="h-3.5 w-3.5" aria-hidden="true" />
+          <span className="hidden lg:inline">{t('shellSearch')}</span>
+          <kbd className="rs-kbd hidden md:inline">⌘K</kbd>
+        </button>
+        <button type="button" onClick={() => navigate('/audit')} className="rs-chip-sm rs-chip-sm--primary hidden md:inline-flex">
+          {t('shellAudit')}
         </button>
         <button
-          onClick={() => navigate('/audit')}
-          className="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-titanium-200 bg-obsidian-800 border border-titanium-800 hover:border-titanium-600 hover:text-titanium-50 transition-colors"
-        >
-          Audit starten
-        </button>
-        <button
+          type="button"
           onClick={() => navigate('/app/evidence')}
-          className="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-titanium-200 bg-obsidian-800 border border-titanium-800 hover:border-titanium-600 hover:text-titanium-50 transition-colors"
+          className="rs-apphead__icon-btn hidden md:inline-grid lg:hidden"
+          aria-label={t('shellEvidence')}
+          title={t('shellEvidence')}
         >
-          <FileCheck2 className="h-3.5 w-3.5" />
-          Evidence
+          <FileCheck2 className="h-4 w-4" />
         </button>
         <button
+          type="button"
           onClick={() => navigate('/app/reports')}
-          className="hidden lg:flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-titanium-200 bg-obsidian-800 border border-titanium-800 hover:border-titanium-600 hover:text-titanium-50 transition-colors"
+          className="rs-apphead__icon-btn hidden md:inline-grid lg:hidden"
+          aria-label={t('shellReport')}
+          title={t('shellReport')}
         >
-          <FileBarChart2 className="h-3.5 w-3.5" />
-          Bericht
+          <FileBarChart2 className="h-4 w-4" />
         </button>
-        <button
-          onClick={onOpenAssistant}
-          className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium ${OS_CREAM_BTN} transition-colors`}
-        >
-          <Sparkles className="h-3.5 w-3.5" />
-          <span className="hidden sm:inline">Assistent</span>
+        <Link to="/" className="rs-chip-sm hidden 2xl:inline-flex">
+          {t('shellLanding')}
+        </Link>
+        <Link to="/pricing" className="rs-chip-sm hidden 2xl:inline-flex">
+          {t('shellPricing')}
+        </Link>
+        <span className="hidden sm:inline-flex">
+          <LangToggle />
+        </span>
+        <span className="rs-region hidden lg:inline-flex">{t('shellRegion')}</span>
+        <button type="button" onClick={onOpenAssistant} className="rs-chip-sm">
+          <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
+          <span className="hidden sm:inline">{t('shellAssistant')}</span>
         </button>
         {isAuthenticated && (
           <button
             type="button"
             onClick={() => void handleSignOut()}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-titanium-400 bg-obsidian-800 border border-titanium-800 hover:border-red-800 hover:text-red-300 transition-colors"
+            className="rs-apphead__icon-btn"
             aria-label="Abmelden"
+            title={t('shellLogout')}
           >
-            <LogOut className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">Abmelden</span>
+            <LogOut className="h-4 w-4" />
           </button>
+        )}
+        {initials && (
+          <span className="rs-avatar" title={user?.email} aria-label={user?.email} data-testid="shell-avatar">
+            {initials}
+          </span>
         )}
       </div>
     </header>

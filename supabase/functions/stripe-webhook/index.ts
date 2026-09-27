@@ -11,6 +11,13 @@ import Stripe from 'npm:stripe@16.12.0';
 import { createClient, type SupabaseClient } from 'jsr:@supabase/supabase-js@2';
 import { reportServerConversion } from '../_shared/conversions-api.ts';
 import { normalizePlanKey, planByKey } from '../_shared/pricing.generated.ts';
+import {
+  pickPlanItem,
+  syncSubscriptionFromStripe,
+} from '../_shared/stripe-subscription-sync.ts';
+
+// Re-export for unit tests that import pickPlanItem from this module.
+export { pickPlanItem };
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -189,21 +196,6 @@ Deno.serve(async (req) => {
   });
 });
 
-/**
- * Die Position, die den Plan trägt.
- *
- * Seit Add-ons Positionen desselben Abos sind, ist `items.data[0]` nicht
- * mehr zwangsläufig der Plan — Stripe garantiert keine Reihenfolge. Der Plan
- * ist die Position, deren Price **kein** Add-on-Price ist; nur wenn das
- * nichts ergibt, bleibt es beim ersten Eintrag.
- */
-export function pickPlanItem(
-  items: readonly Stripe.SubscriptionItem[],
-  addonPriceIds: ReadonlySet<string>,
-): Stripe.SubscriptionItem | undefined {
-  return items.find((i) => !addonPriceIds.has(i.price?.id ?? '')) ?? items[0];
-}
-
 async function addonPriceMap(admin: SupabaseClient): Promise<Map<string, { addon_id: string; product_id: string | null }>> {
   const map = new Map<string, { addon_id: string; product_id: string | null }>();
   const { data, error } = await admin
@@ -328,112 +320,16 @@ async function syncAddonItems(admin: SupabaseClient, sub: Stripe.Subscription): 
 
 // deno-lint-ignore no-explicit-any
 async function syncSubscription(admin: SupabaseAdminClient, sub: Stripe.Subscription): Promise<boolean> {
-  const tenantId =
-    (sub.metadata && sub.metadata.tenant_id) ||
-    (typeof sub.customer === 'object' ? sub.customer?.metadata?.tenant_id : undefined);
-
-  if (!tenantId) {
-    throw new Error(`subscription ${sub.id} has no metadata.tenant_id (set it on Customer or Subscription)`);
-  }
-
   // Add-on-Prices sind keine Plan-Prices: Der Plan ist die Position, die
   // keinem Add-on gehört (pickPlanItem). Ein Add-on-Price als Plan gelesen
   // ergäbe `free_audit` und nähme dem Kunden sein Abo.
+  //
+  // Konflikt-Ziel tenant_id (nicht stripe_subscription_id): Free-Tier-Zeile
+  // mit NULL stripe_subscription_id wird durch das bezahlte Abo ersetzt.
+  // Terminal events for a superseded subscription are ignored inside the
+  // shared helper so a late deleted-event cannot wipe a newer paid plan.
   const addonPrices = await addonPriceMap(admin as unknown as SupabaseClient);
-  const item = pickPlanItem(sub.items.data, new Set(addonPrices.keys()));
-  const planKey = await resolvePlanKey(admin, item);
-
-  // Beginn des Zahlungsverzugs festhalten — der Anker der Grace Period.
-  //
-  // Der Zeitstempel wird beim **ersten** Wechsel nach `past_due` gesetzt und
-  // danach nicht mehr angefasst. Stripe schickt zu einem Verzug mehrere
-  // Ereignisse; würde jedes davon den Zeitstempel neu setzen, verlängerte sich
-  // die Grace Period stillschweigend bei jedem Zustellversuch und liefe nie
-  // ab. Deshalb wird der vorhandene Wert gelesen und behalten.
-  //
-  // Jeder andere Status leert ihn: Nach erfolgreicher Zahlung ist der Verzug
-  // vorbei, und beim nächsten Mal beginnt die Frist neu.
-  let pastDueSince: string | null = null;
-  if (sub.status === 'past_due') {
-    const { data: vorhanden } = await admin
-      .from('subscriptions')
-      .select('past_due_since')
-      .eq('stripe_subscription_id', sub.id)
-      .maybeSingle();
-    pastDueSince = (vorhanden?.past_due_since as string | null) ?? new Date().toISOString();
-  }
-
-  const row = {
-    tenant_id: tenantId,
-    stripe_customer_id: typeof sub.customer === 'string' ? sub.customer : sub.customer.id,
-    stripe_subscription_id: sub.id,
-    stripe_product_id: typeof item?.price?.product === 'string' ? item.price.product : item?.price?.product?.id ?? null,
-    stripe_price_id: item?.price?.id ?? null,
-    plan_key: planKey,
-    billing_interval: item?.price?.recurring?.interval ?? 'month',
-    status: sub.status,
-    quantity: item?.quantity ?? 1,
-    cancel_at_period_end: sub.cancel_at_period_end,
-    current_period_end: sub.current_period_end
-      ? new Date(sub.current_period_end * 1000).toISOString()
-      : null,
-    unit_amount_cents: item?.price?.unit_amount ?? null,
-    currency: item?.price?.currency ?? null,
-    trial_start: sub.trial_start ? new Date(sub.trial_start * 1000).toISOString() : null,
-    trial_end: sub.trial_end ? new Date(sub.trial_end * 1000).toISOString() : null,
-    canceled_at: sub.canceled_at ? new Date(sub.canceled_at * 1000).toISOString() : null,
-    started_at: sub.start_date ? new Date(sub.start_date * 1000).toISOString() : null,
-    past_due_since: pastDueSince,
-  };
-
-  // Konflikt-Ziel ist tenant_id, NICHT stripe_subscription_id.
-  //
-  // `subscriptions` traegt zwei UNIQUE-Constraints: auf tenant_id (seit
-  // 20260811020621) und auf stripe_subscription_id. Fachlich gilt "genau ein
-  // Abo pro Tenant" — deshalb ist tenant_id das richtige Konflikt-Ziel.
-  // create-trial-subscription macht das bereits so; dieser Pfad war der
-  // letzte, der noch auf stripe_subscription_id auflief.
-  //
-  // Warum das ein Deadlock war: Der Trigger aus 20260802000000 legt fuer jeden
-  // neuen Tenant eine Free-Tier-Zeile an, deren stripe_subscription_id NULL
-  // ist. Postgres behandelt NULLs in Unique-Indizes als verschieden, also
-  // greift ein ON CONFLICT (stripe_subscription_id) dort nie — der Upsert
-  // wurde zum INSERT und verletzte subscriptions_tenant_id_key (23505). Der
-  // Handler warf, der Idempotenz-Eintrag wurde zurueckgerollt, Stripe
-  // wiederholte, das Ergebnis blieb gleich. Die erste bezahlte Subscription
-  // eines Tenants konnte so nie provisioniert werden.
-  //
-  // Mit tenant_id trifft der Upsert die Free-Tier-Zeile und ersetzt sie durch
-  // das bezahlte Abo — genau das gewuenschte Verhalten.
-  //
-  // Schutz gegen verspaetete Ereignisse: Stripe garantiert keine Reihenfolge.
-  // Wechselt ein Tenant von Abo A auf Abo B und trifft danach noch ein
-  // `customer.subscription.deleted` fuer A ein, wuerde ein ungeschuetzter
-  // Upsert auf tenant_id das frische Abo B mit dem Endzustand von A
-  // ueberschreiben — der Kunde verlore seinen Zugang. Ein terminales Ereignis
-  // fuer eine ANDERE als die gespeicherte Subscription wird deshalb ignoriert.
-  const TERMINALE_STATUS = ['canceled', 'incomplete_expired'];
-  if (TERMINALE_STATUS.includes(sub.status)) {
-    const { data: aktuell } = await admin
-      .from('subscriptions')
-      .select('stripe_subscription_id')
-      .eq('tenant_id', tenantId)
-      .maybeSingle();
-    const gespeicherte = aktuell?.stripe_subscription_id as string | null | undefined;
-    if (gespeicherte && gespeicherte !== sub.id) {
-      console.log(
-        `[stripe-webhook] ${sub.status} fuer ${sub.id} ignoriert — Tenant ${tenantId} ` +
-        `haelt bereits ${gespeicherte}. Verspaetetes Ereignis einer abgeloesten Subscription.`,
-      );
-      return false;
-    }
-  }
-
-  const { error } = await admin
-    .from('subscriptions')
-    .upsert(row, { onConflict: 'tenant_id' });
-  if (error) throw error;
-  return true;
+  return syncSubscriptionFromStripe(admin, sub, new Set(addonPrices.keys()));
 }
 
 // Einmalkauf als Entitlement-Grant festhalten (z.B. Governance Launch, 349 €).
@@ -597,32 +493,9 @@ async function resolveOneTimePlanKey(
 // Jeder Kandidat wird über die Pricing-SSoT normalisiert: Altdaten wie
 // `scale` werden auf `partner` abgebildet, unbekannte Keys verworfen. So
 // landet niemals ein Plan-Bezeichner in `subscriptions.plan_key`, den das
-// Berechtigungsmodell nicht auflösen kann.
-//
-// Bevorzugt `price.metadata.plan_key` (im Stripe-Dashboard am Preis gesetzt).
-// Fehlt es — ein häufiger Konfigurationsfehler — wird der Plan aus
-// public.products via `stripe_price_id` aufgelöst, statt stillschweigend auf
-// 'free' zu fallen. Sonst bekäme ein zahlender Kunde keine Entitlements,
-// obwohl der Preis korrekt in der DB verdrahtet ist. Erst wenn auch das
-// nichts findet, greift 'free'.
-// deno-lint-ignore no-explicit-any
-async function resolvePlanKey(admin: SupabaseAdminClient, item: Stripe.SubscriptionItem | undefined): Promise<string> {
-  const fromMeta = normalizePlanKey(item?.price?.metadata?.plan_key);
-  if (fromMeta) return fromMeta;
-
-  const priceId = item?.price?.id;
-  if (priceId) {
-    const { data } = await admin
-      .from('products')
-      .select('default_for_plan_key')
-      .eq('stripe_price_id', priceId)
-      .maybeSingle();
-    const fromProducts = normalizePlanKey(data?.default_for_plan_key);
-    if (fromProducts) return fromProducts;
-  }
-
-  return 'free_audit';
-}
+// Prefer price.metadata.plan_key; else products.default_for_plan_key (UEm live
+// catalog); else free_audit. Shared with stripe-checkout-verify via
+// `_shared/stripe-subscription-sync.ts`.
 
 // deno-lint-ignore no-explicit-any
 async function syncInvoice(admin: SupabaseAdminClient, inv: Stripe.Invoice): Promise<void> {

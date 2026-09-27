@@ -129,7 +129,7 @@ export default function EnterpriseKonfigurator() {
       ...chosenContractItems.map((c) => c.label),
     ].join(', ');
     const params = new URLSearchParams({
-      tier: 'enterprise',
+      plan: 'enterprise',
       source: 'enterprise-konfigurator',
       intent: summary.slice(0, 100),
     });

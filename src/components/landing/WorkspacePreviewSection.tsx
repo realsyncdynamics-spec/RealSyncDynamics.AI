@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { GOVERNANCE_MODULES } from '../governance-os/governanceModules';
 import { COMPLIANCE_NODES } from './governance-nodes';
 import { prefersReducedMotion } from './prefers-reduced-motion';
+import { POLICY_PACKS } from './policy-packs';
 import {
   GA_DISPLAY,
   GA_GOLD,
@@ -42,15 +43,25 @@ const TILES: readonly (readonly [string, string, string])[] = [
   ['3', '', 'KI-SYSTEME IM REGISTER'],
 ];
 
-/** Reifegrade je Policy Pack. TISAX/DORA sind Roadmap — daher ohne Balken. */
-const FRAMEWORKS: readonly (readonly [string, number, string])[] = [
-  ['DSGVO', 82, '82 %'],
-  ['EU AI ACT', 64, '64 %'],
-  ['ISO 27001', 55, '55 %'],
-  ['NIS2', 28, '28 %'],
-  ['TISAX', 0, 'NEXT'],
-  ['DORA', 0, 'NEXT'],
-];
+/**
+ * Beispiel-Reifegrade je Policy Pack.
+ *
+ * Welche Packs die Seite zeigt und wie sie heißen, steht in `policy-packs.ts`
+ * — dieselbe Liste trägt die Trust-Rail im Hero. Hier stehen nur die
+ * Beispielwerte; angekündigte Packs (`next`) bekommen keinen Balken, sondern
+ * „NEXT".
+ */
+const MATURITY: Record<string, readonly [number, string]> = {
+  GDPR: [82, '82 %'],
+  EU_AI_ACT: [64, '64 %'],
+  ISO_27001: [55, '55 %'],
+  NIS2: [28, '28 %'],
+};
+
+const FRAMEWORKS: readonly (readonly [string, number, string])[] = POLICY_PACKS.map((pack) => {
+  const maturity = pack.next ? undefined : MATURITY[pack.code];
+  return [pack.label.toUpperCase(), maturity?.[0] ?? 0, maturity?.[1] ?? 'NEXT'] as const;
+});
 
 type Severity = 'high' | 'mid' | 'low';
 
@@ -210,7 +221,7 @@ export function WorkspacePreviewSection() {
                       color: active ? GA_TEXT : GA_MUTED,
                       borderLeftColor: active ? GA_GOLD : 'transparent',
                       background: active
-                        ? 'linear-gradient(90deg, rgba(201,139,82,.16), transparent)'
+                        ? 'linear-gradient(90deg, rgba(34,195,230,.16), transparent)'
                         : undefined,
                     }}
                   >
@@ -294,7 +305,8 @@ export function WorkspacePreviewSection() {
                           className="block h-full no-underline"
                           style={{
                             width: `${percent}%`,
-                            background: 'linear-gradient(90deg, #8a6a24, #e6c98a)',
+                            background:
+                              'linear-gradient(90deg, var(--ga-accent-deep), var(--ga-accent-lite))',
                           }}
                         />
                       </div>
@@ -390,9 +402,9 @@ export function WorkspacePreviewSection() {
                     <span
                       className="rounded-full px-[18px] py-[11px] text-[13px] font-semibold"
                       style={{
-                        color: '#14100b',
-                        background:
-                          'linear-gradient(135deg, #f0d6b6 0%, #c98b52 48%, #a06a36 74%, #e5bd93 100%)',
+                        // Aktion, also Cyan — Gold bleibt der VIP-Stufe.
+                        color: 'var(--ga-pill-ink)',
+                        background: 'var(--ga-pill-face)',
                       }}
                     >
                       Session starten

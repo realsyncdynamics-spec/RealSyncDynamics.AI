@@ -298,7 +298,7 @@ export const FLOW_STEPS: Record<string, FlowStep> = {
   },
 
   // Agency ist wieder self_service (Dominik-Landing 2026-09): Live-Price
-  // `price_1TfsV9REjTWueUcGxJIBHYgC` in public.products. Partner bleibt legacy.
+  // Live catalog via public.products.default_for_plan_key (UEm, #1362). Partner bleibt legacy.
   'pricing.checkoutAgency': {
     id: 'pricing.checkoutAgency',
     slug: 'checkout/agency',

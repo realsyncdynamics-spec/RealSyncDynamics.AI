@@ -4,6 +4,8 @@ import {
   ArrowLeft, ArrowRight, Cookie, AlertTriangle, CheckCircle2, Globe, Send, Loader2,
   ShieldCheck, Eye, Activity, Mail, CheckCircle,
 } from 'lucide-react';
+import { ensureCsrfCookie } from '../lib/csrf';
+import { edgeFunctionUrl, fnFetchInit, shouldUseFnProxy } from '../lib/fn-proxy';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
 
@@ -518,7 +520,9 @@ function EmailCaptureCard({ result }: { result: ScanResult }) {
         `Consent-Manager: ${result.consent_manager_detected ? 'detected' : 'not detected'}`,
       ].join(' · ');
 
-      const resp = await fetch(`${SUPABASE_URL}/functions/v1/sales-lead`, {
+      if (shouldUseFnProxy()) await ensureCsrfCookie();
+      const url = edgeFunctionUrl('sales-lead');
+      const resp = await fetch(url, fnFetchInit(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -527,7 +531,7 @@ function EmailCaptureCard({ result }: { result: ScanResult }) {
           path: '/cookie-scanner',
           message,
         }),
-      });
+      }));
       if (!resp.ok) {
         const data = await resp.json().catch(() => null);
         setError(data?.error?.message ?? `Versand fehlgeschlagen (HTTP ${resp.status})`);

@@ -4,6 +4,7 @@
  * Edge Function verifies via memberships — it never wins over Authz.
  */
 import { getSupabase } from '../../../lib/supabase';
+import { edgeFunctionUrl, fnFetchInit } from '../../../lib/fn-proxy';
 import type { BuilderProjectRecord, PersistOp, ProjectListItem } from './contract';
 
 export type PersistApiError = {
@@ -46,43 +47,46 @@ async function invoke(
     return { kind: 'error', status: 403, code: 'FORBIDDEN', message: 'no verified tenant' };
   }
   const sb = getSupabase();
-  const { data, error } = await sb.functions.invoke('siteos/code-persist', {
-    body: { op, tenant_id: tenantId, ...extra },
-  });
-  if (error) {
-    const status = (error as { context?: { status?: number } }).context?.status;
-    const context = (error as { context?: Response }).context;
-    let code: string | undefined;
-    let message = (error as { message?: string }).message ?? 'Persistenz fehlgeschlagen';
-    if (context) {
-      try {
-        const body = (await context.clone().json()) as EnvelopeErr;
-        code = body?.error?.code;
-        if (body?.error?.message) message = body.error.message;
-      } catch {
-        /* keep */
-      }
-    }
-    if (status === 404 && code === 'UNKNOWN_ENDPOINT') {
+  const { data: sessionData } = await sb.auth.getSession();
+  const token = sessionData.session?.access_token;
+  if (!token) {
+    return { kind: 'error', status: 401, code: 'UNAUTHORIZED', message: 'not signed in' };
+  }
+  const url = edgeFunctionUrl('siteos/code-persist');
+  let resp: Response;
+  try {
+    resp = await fetch(url, fnFetchInit(url, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ op, tenant_id: tenantId, ...extra }),
+    }));
+  } catch {
+    return { kind: 'error', message: 'Persistenz nicht erreichbar' };
+  }
+  let parsed: EnvelopeOk | EnvelopeErr | null = null;
+  try {
+    parsed = (await resp.json()) as EnvelopeOk | EnvelopeErr;
+  } catch {
+    return { kind: 'error', status: resp.status, message: 'Ungültige Server-Antwort' };
+  }
+  if (!resp.ok || !parsed || (parsed as EnvelopeErr).ok === false) {
+    const err = parsed as EnvelopeErr | null;
+    const code = err?.error?.code;
+    const message = err?.error?.message ?? 'Persistenz fehlgeschlagen';
+    if (resp.status === 404 && code === 'UNKNOWN_ENDPOINT') {
       return {
         kind: 'error',
-        status,
+        status: 404,
         code,
         message: 'Der Endpunkt siteos/code-persist ist im Router noch nicht ausgerollt.',
       };
     }
-    return { kind: 'error', status, code, message };
+    return { kind: 'error', status: resp.status, code, message };
   }
-  const envelope = data as EnvelopeOk | EnvelopeErr | null;
-  if (!envelope || (envelope as EnvelopeErr).ok === false) {
-    const err = envelope as EnvelopeErr | null;
-    return {
-      kind: 'error',
-      code: err?.error?.code,
-      message: err?.error?.message ?? 'Ungültige Server-Antwort',
-    };
-  }
-  return { kind: 'ok', data: envelope as EnvelopeOk };
+  return { kind: 'ok', data: parsed as EnvelopeOk };
 }
 
 export async function listBuilderProjects(tenantId: string): Promise<PersistApiResult<ProjectListItem[]>> {

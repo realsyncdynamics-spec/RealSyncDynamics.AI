@@ -14,6 +14,7 @@ import Anthropic from 'npm:@anthropic-ai/sdk@0.32.1';
 import { GoogleGenAI } from 'npm:@google/genai@1.29.0';
 import OpenAI from 'npm:openai@4.77.0';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
+import { supportsSamplingParams } from './aiGateway/anthropicAdapter.ts';
 
 // Edge-Function-Project-Secrets müssen per Dashboard/CLI gesetzt werden.
 // Wenn nicht da: Fallback auf Supabase Vault via SECURITY-DEFINER-RPC.
@@ -144,15 +145,18 @@ async function callAnthropic(req: ProviderRequest): Promise<ProviderResult> {
     ? [{ type: 'text' as const, text: req.systemPrompt, cache_control: { type: 'ephemeral' as const } }]
     : undefined;
 
-  // Anthropic deprecated `temperature` for Claude 4.x+ models — passing it
-  // returns 400 invalid_request_error. Pass it only for older model IDs.
+  // Sampling params are version-gated: Anthropic removed them with the 4.7
+  // generation, so sending one to a newer model fails the request with HTTP
+  // 400 while omitting one on an older model silently drops the tool's
+  // configured temperature. Shares the gate with the ai-gateway adapter so
+  // both Anthropic call paths classify a model id the same way.
   const params: AnthropicMessageParams & { temperature?: number } = {
     model: req.modelId,
     max_tokens: req.maxTokens,
     system: systemBlocks,
     messages: [{ role: 'user', content: req.userPrompt }],
   };
-  if (!/^claude-(opus|sonnet|haiku)-4/.test(req.modelId)) {
+  if (supportsSamplingParams(req.modelId)) {
     params.temperature = req.temperature;
   }
 

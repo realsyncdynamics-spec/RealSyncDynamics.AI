@@ -17,7 +17,6 @@ interface MonitoringMetrics {
   remediation_tasks_pending: number;
   remediation_tasks_completed: number;
   auto_remediation_success_rate: number;
-  last_monitoring_run: string | null;
   avg_time_to_resolve: number | null;
 }
 
@@ -52,7 +51,7 @@ export function ComplianceMonitoringDashboard() {
       // Fetch alerts
       const { data: alertsData } = await getSupabase()
         .from('compliance_alert_log')
-        .select('id, severity, status, created_at')
+        .select('id, severity, status, created_at, resolved_at')
         .eq('tenant_id', activeTenantId)
         .order('created_at', { ascending: false });
 
@@ -80,12 +79,21 @@ export function ComplianceMonitoringDashboard() {
       const totalRemediation = remediationData?.length || 0;
       const successRate = totalRemediation > 0 ? (remediationCompleted / totalRemediation) * 100 : 0;
 
-      // Calculate average time to resolve
-      const resolvedAlerts = alertsData?.filter((a) => a.status === 'resolved' && a.created_at) || [];
-      const avgTimeMs = resolvedAlerts.length > 0
-        ? resolvedAlerts.reduce((sum, a) => sum + (Math.random() * 24 * 60 * 60 * 1000), 0) / resolvedAlerts.length
+      // Durchschnittliche Zeit bis zur Lösung — aus created_at/resolved_at der
+      // gelösten Alerts. Vorher stand hier ein Math.random()-Wert: eine
+      // Compliance-Kennzahl, die bei jedem Reload eine andere Zahl zeigte.
+      // Ohne verwertbare Zeitstempel gibt es keine Kennzahl, nicht irgendeine.
+      const resolutionSpansMs = (alertsData ?? [])
+        .filter((a) => a.status === 'resolved' && a.created_at && a.resolved_at)
+        .map((a) => new Date(a.resolved_at as string).getTime() - new Date(a.created_at).getTime())
+        .filter((ms) => Number.isFinite(ms) && ms >= 0);
+      const avgTimeHours = resolutionSpansMs.length > 0
+        ? Math.round(
+            resolutionSpansMs.reduce((sum, ms) => sum + ms, 0)
+              / resolutionSpansMs.length
+              / (60 * 60 * 1000),
+          )
         : null;
-      const avgTimeHours = avgTimeMs ? Math.round(avgTimeMs / (60 * 60 * 1000)) : null;
 
       setMetrics({
         total_rules: totalRules,
@@ -98,7 +106,6 @@ export function ComplianceMonitoringDashboard() {
         remediation_tasks_pending: remediationPending,
         remediation_tasks_completed: remediationCompleted,
         auto_remediation_success_rate: successRate,
-        last_monitoring_run: new Date().toISOString(),
         avg_time_to_resolve: avgTimeHours,
       });
 
@@ -186,7 +193,7 @@ export function ComplianceMonitoringDashboard() {
       </div>
 
       {/* Key Metrics Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
         <MetricCard
           label="Active Rules"
           value={`${metrics.enabled_rules}/${metrics.total_rules}`}
@@ -218,6 +225,21 @@ export function ComplianceMonitoringDashboard() {
           subtext={`${Math.round(metrics.auto_remediation_success_rate)}% success`}
           icon={<CheckCircle2 className="h-5 w-5" />}
           color="bg-blue-950 border-blue-900"
+        />
+
+        {/* Die Kennzahl wurde bisher berechnet, aber nie angezeigt — und der
+            berechnete Wert war gewürfelt. Jetzt echt, und „—", solange keine
+            gelösten Alerts mit Zeitstempel vorliegen. */}
+        <MetricCard
+          label="Ø Zeit bis Lösung"
+          value={metrics.avg_time_to_resolve === null ? '—' : `${metrics.avg_time_to_resolve} h`}
+          subtext={
+            metrics.avg_time_to_resolve === null
+              ? 'noch kein gelöster Alert'
+              : 'aus gelösten Alerts'
+          }
+          icon={<Clock className="h-5 w-5" />}
+          color="bg-violet-950 border-violet-900"
         />
       </div>
 

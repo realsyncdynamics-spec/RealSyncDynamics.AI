@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Loader2, Send, AlertTriangle, CheckCircle2, Wrench } from 'lucide-react';
-
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+import { ensureCsrfCookie } from '../lib/csrf';
+import { edgeFunctionUrl, fnFetchInit, shouldUseFnProxy } from '../lib/fn-proxy';
 
 /**
  * /fix-paket — public request form for the DSGVO-Fix-Paket Light service.
@@ -55,13 +54,11 @@ export function FixPaket() {
       if (sourceTag) lines.push(`Source-Tag: ${sourceTag}`);
       if (message.trim()) lines.push('', message.trim());
 
-      const resp = await fetch(`${SUPABASE_URL}/functions/v1/sales-lead`, {
+      if (shouldUseFnProxy()) await ensureCsrfCookie();
+      const url = edgeFunctionUrl('sales-lead');
+      const resp = await fetch(url, fnFetchInit(url, {
         method: 'POST',
-        headers: {
-          apikey: SUPABASE_ANON_KEY,
-          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: name.trim() || undefined,
           email: email.trim().toLowerCase(),
@@ -70,7 +67,7 @@ export function FixPaket() {
           source: 'fix_package',
           path: '/fix-paket',
         }),
-      });
+      }));
       if (!resp.ok) {
         const txt = await resp.text().catch(() => '');
         throw new Error(`Anfrage fehlgeschlagen (${resp.status}). ${txt.slice(0, 200)}`);

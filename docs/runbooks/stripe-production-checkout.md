@@ -31,18 +31,18 @@ preview without writing.
 
 Table: `public.products`
 
-Live catalog (`acct_1TYVIyREjTWueUcG`, livemode) — migration `20260912055500_stripe_live_catalog_price_ids.sql`:
+Live catalog (`acct_1TYVIyREjTWueUcG`) — UEm* active tax-incl. prices (`20260913000000`):
 
 | plan_key | stripe_price_id | notes |
 |---|---|---|
-| `starter` | `price_1TfsV8REjTWueUcGCdOO6bT2` | €79/mo · self-service |
-| `growth` | `price_1TfsV4REjTWueUcGsGSfjudu` | €249/mo · self-service |
-| `agency` | `price_1TfsV9REjTWueUcGxJIBHYgC` | €699/mo · self-service |
-| `enterprise` | `price_1TxLdLREjTWueUcGRaXie8Vs` | €1249/mo · **inquiry only** |
-| `partner` | `price_1TntAwREjTWueUcGh3FKldMF` | €1999/mo · legacy Scale |
-| `governance_launch` | `price_1U3lQNREjTWueUcG6LX7WIQU` | €349 one-time |
+| `starter` | `price_1UEmHiREjTWueUcGX2cfEi25` | €79/mo |
+| `growth` | `price_1UEmHmREjTWueUcGiCQMB8H4` | €249/mo |
+| `agency` | `price_1UEmHoREjTWueUcGqeO4LGud` | €699/mo |
+| `enterprise` | `price_1UEmHqREjTWueUcG0oqZkb5O` | inquiry |
+| `partner` | `price_1UEmHsREjTWueUcGFlIItOiz` | legacy Scale |
+| `governance_launch` | `price_1UEmHtREjTWueUcGhjY7Gvhp` | €349 once |
 
-No yearly prices exist in Stripe. Yearly `default_for_plan_key` rows keep non-`price_*` sentinels.
+No yearly Stripe prices; yearly rows keep non-`price_*` sentinels.
 
 ```sql
 SELECT

@@ -5,7 +5,7 @@
 //
 // ai-gateway is browser-facing with verify_jwt=false, called with the
 // bundled anon key from at least three features (assistant_chip_quick_chat,
-// audit_copilot_*, kodee_vps_advisor). Client-side abuse guards in those
+// audit_copilot.* and kodee_chat). Client-side abuse guards in those
 // callers are trivially bypassable; this is the server-side backstop.
 
 export interface RateLimitConfig {
@@ -24,9 +24,9 @@ export const DEFAULT_LIMITS: RateLimitConfig = { perMinute: 10, perHour: 100 };
  */
 export const FEATURE_LIMITS: Record<string, RateLimitConfig> = {
   assistant_chip_quick_chat:       { perMinute: 12, perHour: 120 },
-  audit_copilot_fix_snippet:       { perMinute: 6,  perHour: 60  },
-  audit_copilot_remediation_plan:  { perMinute: 3,  perHour: 20  },
-  kodee_vps_advisor:               { perMinute: 6,  perHour: 50  },
+  'audit_copilot.fix_snippet':     { perMinute: 6,  perHour: 60  },
+  'audit_copilot.remediation_plan':{ perMinute: 3,  perHour: 20  },
+  kodee_chat:                      { perMinute: 6,  perHour: 50  },
   openai_compat:                   { perMinute: 8,  perHour: 80  },
   ai_act_classify:                 { perMinute: 4,  perHour: 30  },
 };

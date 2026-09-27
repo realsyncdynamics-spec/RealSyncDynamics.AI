@@ -16,6 +16,7 @@
  */
 import { AiGatewayEdgeClient, AiGatewayEdgeError } from './edgeClient';
 import { getSupabaseUrl, getSupabaseAnonKey } from '../../lib/supabaseUrl';
+import { edgeFunctionUrl, fnFetchInit } from '../../lib/fn-proxy';
 import type { ModelProfile } from './types';
 
 export type ModelProvider = 'gemini' | 'openai' | 'claude';
@@ -99,6 +100,8 @@ export async function processAIGatewayRequest(
     const client = deps?.client ?? new AiGatewayEdgeClient({
       supabaseUrl: getSupabaseUrl(),
       apiKey: getSupabaseAnonKey(),
+      endpoint: edgeFunctionUrl('ai-gateway'),
+      fetchImpl: (input, init) => fetch(input, fnFetchInit(String(input), init)),
     });
 
     const resp = await client.generate({
@@ -156,6 +159,8 @@ export async function processAIGatewayStream(
       supabaseUrl: getSupabaseUrl(),
       apiKey: getSupabaseAnonKey(),
       timeoutMs: req.timeoutMs ?? 90_000,
+      endpoint: edgeFunctionUrl('ai-gateway'),
+      fetchImpl: (input, init) => fetch(input, fnFetchInit(String(input), init)),
     });
     if (typeof client.stream !== 'function') {
       const fallback = await processAIGatewayRequest(req, deps);

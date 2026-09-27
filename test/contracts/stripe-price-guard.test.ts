@@ -39,15 +39,17 @@ describe('stripe-checkout akzeptiert nur echte Stripe-Preise', () => {
     expect(SOURCE).not.toContain("!p.stripe_price_id.startsWith('internal_default_')");
   });
 
-  // Exakt die Live-Prices aus acct_1TYVIyREjTWueUcG (Dominik 2026-09-12).
+  // Exakt die Live-Prices aus acct_1TYVIyREjTWueUcG (UEm tax-inclusive, #1362).
+  // Resolution at runtime is ONLY via public.products.default_for_plan_key —
+  // these IDs document the catalog; they are not hardcoded in checkout.
   const LIVE_VALUES: Array<[string, string, boolean]> = [
-    ['starter', 'price_1TfsV8REjTWueUcGCdOO6bT2', true],
-    ['growth', 'price_1TfsV4REjTWueUcGsGSfjudu', true],
-    ['agency', 'price_1TfsV9REjTWueUcGxJIBHYgC', true],
-    ['governance_launch', 'price_1U3lQNREjTWueUcG6LX7WIQU', true],
-    // Enterprise Price existiert live — aber purchaseMode=inquiry, kein Checkout.
-    ['enterprise', 'price_1TxLdLREjTWueUcGRaXie8Vs', true],
-    ['partner', 'price_1TntAwREjTWueUcGh3FKldMF', true],
+    ['starter', 'price_1UEmHiREjTWueUcGX2cfEi25', true],
+    ['growth', 'price_1UEmHmREjTWueUcGiCQMB8H4', true],
+    ['agency', 'price_1UEmHoREjTWueUcGqeO4LGud', true],
+    ['governance_launch', 'price_1UEmHtREjTWueUcGhjY7Gvhp', true],
+    // Enterprise Price exists live — but purchaseMode=inquiry, kein Checkout.
+    ['enterprise', 'price_1UEmHqREjTWueUcG0oqZkb5O', true],
+    ['partner', 'price_1UEmHsREjTWueUcGFlIItOiz', true],
     // Platzhalter — sehen wie eine Price aus, sind aber keine.
     ['starter_yearly', 'STRIPE_PRICE_STARTER_YEARLY_XXX', false],
     ['growth_yearly', 'STRIPE_PRICE_GROWTH_YEARLY_XXX', false],
@@ -57,6 +59,8 @@ describe('stripe-checkout akzeptiert nur echte Stripe-Preise', () => {
     // Sentinels mit abweichendem Präfix und ein leerer Wert.
     ['free_tier', 'internal_free_tier', false],
     ['free_audit', '', false],
+    // Inactive pre-#1362 catalog — must never be re-seeded as defaults.
+    ['starter_inactive_tfsv', 'price_1TfsV8REjTWueUcGCdOO6bT2', true],
   ];
 
   for (const [planKey, priceId, expected] of LIVE_VALUES) {
@@ -124,7 +128,13 @@ describe('stripe-checkout akzeptiert nur echte Stripe-Preise', () => {
       expect(enterprise.priceOnRequest).toBe(true);
       expect(enterprise.yearlyCheckoutUnavailable).toBe(true);
       expect(SOURCE).toContain('ENTERPRISE_SELF_SERVICE_BLOCKED');
-      expect(isLiveStripePrice('price_1TxLdLREjTWueUcGRaXie8Vs')).toBe(true);
+      expect(isLiveStripePrice('price_1UEmHqREjTWueUcG0oqZkb5O')).toBe(true);
+    });
+
+    it('checkout resolves prices only via default_for_plan_key (no hardcoded TfsV)', () => {
+      expect(SOURCE).toContain("eq('default_for_plan_key'");
+      expect(SOURCE).not.toContain('price_1TfsV');
+      expect(SOURCE).not.toContain('price_1TxLd');
     });
   });
 });

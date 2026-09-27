@@ -4,7 +4,7 @@
  * Druck/Hash bei status ≠ ok.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import type { CockpitData } from '../../../../src/features/governance/cockpit/cockpitData';
 
@@ -192,8 +192,9 @@ describe('„Braucht Aufmerksamkeit“ — Leerzustände ohne positive Aussage a
     renderAttention(cockpit({ signals: noSignals }));
     const box = await screen.findByTestId('attention-nodata');
     expect(box.textContent).toContain('Noch nichts zu bewerten');
-    expect(screen.getByRole('link', { name: /Erstes KI-System erfassen/ })).toHaveAttribute('href', '/app/ai-systems');
-    expect(screen.getByRole('link', { name: /Website-Audit starten/ })).toHaveAttribute('href', '/app/websites');
+    // Die Score-Karte trägt denselben Einstieg — deshalb im Kasten suchen.
+    expect(within(box).getByRole('link', { name: /Erstes KI-System erfassen/ })).toHaveAttribute('href', '/app/onboarding');
+    expect(within(box).getByRole('link', { name: /Website-Audit starten/ })).toHaveAttribute('href', '/app/websites');
     expect(screen.queryByTestId('attention-empty')).toBeNull();
   });
 

@@ -331,7 +331,8 @@ export function HandoffOverview({
               <div data-testid="attention-nodata">
                 <p className="rs-note">{t('attentionNoData')}</p>
                 <div className="mt-3 flex flex-wrap gap-4">
-                  <Link to="/app/ai-systems" className="rs-note rs-cyan">
+                  {/* Gleiches Ziel wie der Einstieg in der Score-Karte: dort wird angelegt. */}
+                  <Link to="/app/onboarding" className="rs-note rs-cyan">
                     {t('attentionNoDataSystem')} →
                   </Link>
                   <Link to="/app/websites" className="rs-note rs-cyan">

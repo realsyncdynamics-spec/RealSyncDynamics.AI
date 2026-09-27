@@ -32,6 +32,7 @@ import Anthropic from 'npm:@anthropic-ai/sdk@0.32.1';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { audit } from '../_shared/auditLog.ts';
 import { AGENT_TOOLS, dispatchTool, SYSTEM_PROMPT } from '../_shared/agent-tools.ts';
+import { agentFocusPrompt } from '../_shared/agent-focus.ts';
 import { sha256Hex } from '../_shared/hash.ts';
 import { checkAnonRateLimit } from '../_shared/anonRateLimit.ts';
 import {
@@ -428,6 +429,15 @@ async function handleChat(
   const effectiveModel = getModelId(selectedTier);
   const maxTokens = selectedTier === 'haiku' ? MAX_TOKENS_HAIKU : MAX_TOKENS_SONNET;
 
+  // Agent-Auswahl im Assistenten: Fokus-Block nach dem gecachten
+  // Basis-Prompt, damit der Cache-Prefix (Tools + SYSTEM_PROMPT) für alle
+  // Agenten gleich bleibt. Unbekannte IDs ⇒ kein Zusatz.
+  const focusPrompt = agentFocusPrompt(body.agent);
+  const systemBlocks: Anthropic.TextBlockParam[] = [
+    { type: 'text', text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } },
+    ...(focusPrompt ? [{ type: 'text' as const, text: focusPrompt }] : []),
+  ];
+
   const client = new Anthropic({ apiKey });
   const toolCallsLog: Array<{ tool: string; input: unknown; output: unknown; iter: number }> = [];
   let totalIn = 0;
@@ -448,7 +458,7 @@ async function handleChat(
         // a 5-minute window. Marking them cacheable cuts the input-
         // token cost for these blocks by ~90% on cache hits, which
         // is the dominant input cost driver for tool-heavy chats.
-        system: [{ type: 'text', text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
+        system: systemBlocks,
         tools: AGENT_TOOLS.map((t, i) =>
           // Mark only the LAST tool with cache_control — Anthropic
           // caches everything up to and including that marker, so
@@ -551,7 +561,13 @@ async function handleChat(
     action: 'agent.chat',
     target_type: 'agent_session',
     target_id: sessionId,
-    payload: { iterations: toolCallsLog.length, outcome, tools: toolCallsLog.map((t) => t.tool) },
+    payload: {
+      iterations: toolCallsLog.length,
+      outcome,
+      tools: toolCallsLog.map((t) => t.tool),
+      // Nur validierte IDs (focusPrompt != null) — nie Client-Freitext.
+      agent: focusPrompt ? body.agent : null,
+    },
   });
 
   // Per-run history for user/tenant-facing review + quota counting.

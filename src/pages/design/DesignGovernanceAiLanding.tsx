@@ -1,35 +1,39 @@
 /**
- * Production landing `/` — Governance OS Handoff v2 (2026-09-25).
- * Structure: Hero (Europa-Karte, Cyan) → Ticker → Problem → Module → Evidence Flow
- * → EU-Trust → Audiences → Preise → CTA → Footer.
+ * Production landing `/` — Governance OS (Enterprise Control Plane).
  *
- * Kein Dunkel/Cyan/Hell-Umschalter und kein Gold mehr auf `/`: `.rs-handoff`
- * mappt die `--ga-*`-Tokens der Folgesektionen auf die Handoff-Palette.
- * Die Titan-Referenz (Modus-Umschalter) lebt weiter unter `/design/titan`.
+ * Kategorie: AI Governance OS, nicht EU-AI-Act-Software. Die Seite ist eine
+ * geführte Produktdemonstration:
+ * Hero → 01–07 System-Story → Signature Pipeline → Architektur (Agenten)
+ * → Provider → Control Room (Beispiel) → Nutzen → Executive → Prinzipien
+ * → Governance-Check → Plattform-Preise → Conversion → Footer.
+ *
+ * Palette und Tokens: `.ga-context.rs-handoff` in `index.css` (nur `/`),
+ * Sektionsstile in `styles/governance-os-landing.css`. Kein Farbmodus-
+ * Umschalter; die Titan-Referenz lebt unter `/design/titan`.
  */
 import { type PointerEvent as ReactPointerEvent } from 'react';
 import '../../styles/governance-landing-polish.css';
+import '../../styles/governance-os-landing.css';
 import { Link } from 'react-router-dom';
+import { CTA } from '../../content/runtimeVocab';
 import { ArrowRight } from 'lucide-react';
 import { SEOHead } from '../../components/SEOHead';
 import { GovernanceOsHero } from '../../components/landing/GovernanceOsHero';
 import { GovernanceFooter } from '../../components/landing/GovernanceFooter';
-import { RegulatoryTicker } from '../../components/landing/RegulatoryTicker';
-import { HomepageBriefSections } from '../../components/landing/HomepageBriefSections';
+import { GovernanceSystemStory } from '../../components/landing/GovernanceSystemStory';
+import { GovernancePipelineDemo } from '../../components/landing/GovernancePipelineDemo';
+import { GovernanceControlRoom } from '../../components/landing/GovernanceControlRoom';
+import { GovernanceSelfCheck } from '../../components/landing/GovernanceSelfCheck';
+import {
+  ArchitectureSection,
+  ExecutiveSection,
+  PrinciplesSection,
+  ProvidersSection,
+  ValueSection,
+} from '../../components/landing/HomepageBriefSections';
 import { GovernancePricingSection } from '../../components/landing/GovernancePricingSection';
-import { SectionEyebrow, SectionHeading } from '../../components/landing/GovernanceSectionChrome';
-import {
-  GA_SANS,
-  GA_LINE_SOFT,
-  GA_MUTED,
-  GA_PILL_GHOST,
-  GA_PILL_PRIMARY,
-} from '../../components/landing/governance-ai-theme';
-import {
-  BRAND_VALUE_PROPOSITION,
-  HERO_AUDIT_TRAIL_CTA_LABEL,
-  HERO_SCAN_CTA_LABEL,
-} from '../../components/governance-frontend/hero-content';
+import { GA_PILL_GHOST, GA_PILL_PRIMARY, GA_SANS } from '../../components/landing/governance-ai-theme';
+import { HERO_SCAN_CTA_LABEL } from '../../components/governance-frontend/hero-content';
 import { SEO_CONFIG } from '../../config/seo';
 import { PUBLIC_CTA } from '../../config/public-nav';
 
@@ -44,7 +48,7 @@ function trackCardSheen(event: ReactPointerEvent<HTMLDivElement>) {
 export function DesignGovernanceAiLanding() {
   return (
     <div
-      className="ga-context rs-handoff landing-context relative min-h-screen antialiased"
+      className="rs-paper ga-context rs-handoff landing-context relative min-h-screen antialiased"
       data-hero-visual="europe-map-v2"
       style={{ backgroundColor: 'var(--ga-void)', color: 'var(--ga-text)' }}
       onPointerMove={trackCardSheen}
@@ -53,25 +57,28 @@ export function DesignGovernanceAiLanding() {
 
       <div className="relative z-10 flex min-h-screen flex-col">
         <GovernanceOsHero />
-        <RegulatoryTicker />
-        <HomepageBriefSections />
+        <GovernanceSystemStory />
+        <GovernancePipelineDemo />
+        <ArchitectureSection />
+        <ProvidersSection />
+        <GovernanceControlRoom />
+        <ValueSection />
+        <ExecutiveSection />
+        <PrinciplesSection />
+        <GovernanceSelfCheck />
         <GovernancePricingSection />
 
-        <section
-          id="next"
-          className="ga-band relative z-[1] border-t px-[4vw] py-[clamp(60px,6vw,92px)]"
-          style={{ borderColor: GA_LINE_SOFT }}
-          aria-labelledby="next-heading"
-        >
-          <div className="mx-auto w-full max-w-[780px] text-center">
-            <SectionEyebrow>STARTEN</SectionEyebrow>
-            <span id="next-heading">
-              <SectionHeading centered>Kontrollierbar. Nachweisbar. Auditbereit.</SectionHeading>
-            </span>
-            <p className="mx-auto mt-4 max-w-[46rem] text-pretty leading-[1.7]" style={{ color: GA_MUTED }}>
-              {BRAND_VALUE_PROPOSITION}
+        <section id="next" className="os-section" aria-labelledby="next-heading">
+          <div className="os-inner text-center">
+            <h2 id="next-heading" className="os-display" style={{ fontSize: 'clamp(36px, 5vw, 84px)' }}>
+              <span>Ihre KI-Landschaft wächst.</span>
+              <span className="os-dim">Ihre Governance sollte mithalten.</span>
+            </h2>
+            <p className="os-lede" style={{ marginInline: 'auto' }}>
+              Machen Sie sichtbar, welche KI eingesetzt wird, welche Regeln gelten und welche Aktionen tatsächlich
+              ausgeführt wurden.
             </p>
-            <div className="mt-[34px] flex flex-wrap justify-center gap-3.5">
+            <div className="mt-[40px] flex flex-wrap justify-center gap-3.5">
               <Link
                 to={PUBLIC_CTA.to}
                 className={`${GA_PILL_PRIMARY} ga-pill-sheen`}
@@ -85,9 +92,9 @@ export function DesignGovernanceAiLanding() {
                 {HERO_SCAN_CTA_LABEL}
                 <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </Link>
-              <a href="#audit-trail" className={GA_PILL_GHOST} style={{ fontFamily: GA_SANS }}>
-                {HERO_AUDIT_TRAIL_CTA_LABEL}
-              </a>
+              <Link to="/contact-sales?tier=enterprise&source=home-cta" className={GA_PILL_GHOST} style={{ fontFamily: GA_SANS }}>
+                {CTA.enterprise}
+              </Link>
             </div>
           </div>
         </section>

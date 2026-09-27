@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import { Suspense, lazy, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, generatePath, useParams } from 'react-router-dom';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { SEOHead } from './components/SEOHead';
 import { RequireAal2 } from './core/access/RequireAal2';
@@ -455,6 +455,12 @@ import { DemoModeProvider } from './core/demo/DemoModeProvider';
 import { EnvironmentProvider } from './features/governance/EnvironmentContext';
 import { useTrackPageview } from './lib/track';
 import { initMarketingPixels } from './lib/pixels';
+
+/** Legacy-Redirect mit Pfad-Parametern — `<Navigate to="/x/:id">` setzt `:id` nicht ein. */
+function ParamRedirect({ to }: { to: string }) {
+  const params = useParams();
+  return <Navigate to={generatePath(to, params as Record<string, string>)} replace />;
+}
 
 const ROUTER_BASENAME = import.meta.env.BASE_URL.replace(/\/$/, '') || undefined;
 
@@ -963,8 +969,8 @@ function RoutesWithTracking() {
       <Route path="/governance/webhooks" element={<Navigate to="/app/webhooks" replace />} />
       <Route path="/governance/onboarding" element={<Navigate to="/app/onboarding" replace />} />
       <Route path="/governance/mappings" element={<Navigate to="/app/mappings" replace />} />
-      <Route path="/governance/events/:eventId" element={<Navigate to="/app/events/:eventId" replace />} />
-      <Route path="/governance/assets/:assetId" element={<Navigate to="/app/assets/:assetId" replace />} />
+      <Route path="/governance/events/:eventId" element={<ParamRedirect to="/app/events/:eventId" />} />
+      <Route path="/governance/assets/:assetId" element={<ParamRedirect to="/app/assets/:assetId" />} />
       <Route path="/governance/approvals" element={<Navigate to="/app/approvals" replace />} />
       <Route path="/governance/admin-log" element={<Navigate to="/app/admin-log" replace />} />
       <Route path="/governance/policies/templates" element={<Navigate to="/app/policies/templates" replace />} />
@@ -975,11 +981,11 @@ function RoutesWithTracking() {
       <Route path="/governance/connectors" element={<Navigate to="/app/connectors" replace />} />
       <Route path="/governance/vendors" element={<Navigate to="/app/vendors" replace />} />
       <Route path="/governance/remediation" element={<Navigate to="/app/remediation" replace />} />
-      <Route path="/governance/remediation/:planId" element={<Navigate to="/app/remediation/:planId" replace />} />
+      <Route path="/governance/remediation/:planId" element={<ParamRedirect to="/app/remediation/:planId" />} />
       <Route path="/governance/costs" element={<Navigate to="/app/costs" replace />} />
       <Route path="/governance/auditor" element={<Navigate to="/app/evidence" replace />} />
       <Route path="/governance/scans" element={<Navigate to="/app/scans" replace />} />
-      <Route path="/governance/scans/:scanId" element={<Navigate to="/app/scans/:scanId" replace />} />
+      <Route path="/governance/scans/:scanId" element={<ParamRedirect to="/app/scans/:scanId" />} />
       <Route path="/governance/risk-inventory" element={<Navigate to="/app/risk-inventory" replace />} />
       {/* Operations Runtime — auth-gated inventory / warenwirtschaft module.
           NOT linked from the public navbar; tenants reach it from the

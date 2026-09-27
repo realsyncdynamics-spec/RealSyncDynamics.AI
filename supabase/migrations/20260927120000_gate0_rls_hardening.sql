@@ -194,3 +194,12 @@ CREATE POLICY memberships_delete
 -- (ApiUsageStats liest api_monthly_usage weiter), anon und Fremde nichts.
 ALTER VIEW public.agent_token_usage_analytics SET (security_invoker = on);
 ALTER VIEW public.api_monthly_usage SET (security_invoker = on);
+
+-- ─── 6. Helfer nicht für anon öffnen ─────────────────────────────────────────
+-- Neue SECURITY-DEFINER-Funktionen erben EXECUTE für PUBLIC. Die Policies oben
+-- laufen als authenticated; anon braucht die Helfer nicht
+-- (Invariante: test/runtime/db/security-regressions.db.test.ts).
+REVOKE EXECUTE ON FUNCTION public.is_tenant_owner(uuid)  FROM PUBLIC, anon;
+REVOKE EXECUTE ON FUNCTION public.is_tenant_writer(uuid) FROM PUBLIC, anon;
+GRANT  EXECUTE ON FUNCTION public.is_tenant_owner(uuid)  TO authenticated, service_role;
+GRANT  EXECUTE ON FUNCTION public.is_tenant_writer(uuid) TO authenticated, service_role;

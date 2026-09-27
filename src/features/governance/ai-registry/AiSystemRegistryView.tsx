@@ -10,7 +10,7 @@
  * Zeilenklick → /app/ai-systems/:id (Klassifizierung).
  */
 import { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useTenant } from '../../../core/access/TenantProvider';
 import { fetchTenantAssets, type DbGovernanceAsset } from '../governanceApi';
 import { listConnectors, type ConnectorRegistryEntry } from '../gatesApi';
@@ -20,6 +20,7 @@ import {
   art50Of,
   classifyAsset,
   isAiSystemAsset,
+  isHighRiskAiSystem,
   tierOf,
   type AssetClassification,
   type EnforcementClass,
@@ -56,8 +57,12 @@ export function AiSystemRegistryView() {
   const { t } = useLang();
   const [filter, setFilter] = useState<Filter>('all');
   const [state] = useTenantLoad(activeTenantId, loadRows);
+  // Drill-down aus der Hochrisiko-Kachel: ?risk=high (Definition: isHighRiskAiSystem).
+  const [params, setParams] = useSearchParams();
+  const highRiskOnly = params.get('risk') === 'high';
 
-  const rows = state.status === 'ready' ? state.data : [];
+  const allRows = state.status === 'ready' ? state.data : [];
+  const rows = highRiskOnly ? allRows.filter((r) => isHighRiskAiSystem(r.asset)) : allRows;
   const counts = useMemo(() => {
     const c: Record<Filter, number> = { all: rows.length, A: 0, B: 0, C: 0, D: 0 };
     for (const r of rows) c[r.cls.klasse] += 1;
@@ -87,6 +92,23 @@ export function AiSystemRegistryView() {
         </Link>
       </div>
 
+      {highRiskOnly && (
+        <p className="rs-note" data-testid="ai-systems-risk-filter">
+          {t('filterHighRisk')}{' '}
+          <button
+            type="button"
+            className="rs-cyan underline underline-offset-2"
+            onClick={() => {
+              const next = new URLSearchParams(params);
+              next.delete('risk');
+              setParams(next, { replace: true });
+            }}
+          >
+            {t('filterClear')}
+          </button>
+        </p>
+      )}
+
       {state.status === 'error' && <WarnToast error>{t('loadFailed')}</WarnToast>}
       {state.status === 'idle' && <p className="rs-muted">{t('noTenant')}</p>}
 
@@ -102,7 +124,12 @@ export function AiSystemRegistryView() {
               <span>{t('colStatus')}</span>
             </div>
             {state.status === 'loading' && <div className="rs-empty">{t('loading')}</div>}
-            {state.status === 'ready' && rows.length === 0 && (
+            {state.status === 'ready' && highRiskOnly && allRows.length > 0 && rows.length === 0 && (
+              <div className="rs-empty" data-testid="ai-systems-risk-empty">
+                <p>{t('filterHighRiskNone')}</p>
+              </div>
+            )}
+            {state.status === 'ready' && allRows.length === 0 && (
               <div className="rs-empty" data-testid="ai-systems-empty">
                 <p className="font-semibold text-[color:var(--color-rs-fg-0)]">{t('systemsNone')}</p>
                 <p className="mt-1">{t('systemsNoneSub')}</p>

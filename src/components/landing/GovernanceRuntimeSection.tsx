@@ -20,12 +20,8 @@ import {
  *
  * ## Warum sechs Stationen und nicht vier
  *
- * Der Hero trägt `DISCOVER → CLASSIFY → ENFORCE → PROVE` — die Kurzform für
- * das Versprechen in einer Zeile. Diese Sektion ist die ausführliche
- * Fassung: Sie trennt `ASSESS` von `DISCOVER` und `EVIDENCE` von `AUDIT`,
- * weil das die Schritte sind, an denen in der Praxis Arbeit anfällt. Beide
- * Ketten stehen so im Entwurf; sie widersprechen sich nicht, sie haben
- * unterschiedliche Auflösung.
+ * Der Hero trägt `DISCOVER → ASSESS → GOVERN → EXECUTE → VERIFY → PROVE`.
+ * Diese Sektion ist die ausgeschriebene Fassung mit deutschen Erklärsätzen.
  */
 
 type RuntimeStation = {
@@ -39,33 +35,21 @@ const STATIONS: readonly RuntimeStation[] = [
   {
     n: '01',
     title: 'DISCOVER',
-    text: 'KI-Systeme, Anwendungen, Datenflüsse und relevante Verarbeitungsvorgänge erfassen.',
+    text: 'Entdecken, welche KI läuft.',
   },
   {
     n: '02',
     title: 'ASSESS',
-    text: 'Risiken bewerten und Systeme gegen Governance-, DSGVO- und EU-AI-Act-Kriterien prüfen.',
+    text: 'Risiko bewerten.',
   },
   {
     n: '03',
     title: 'GOVERN',
-    text: 'Verbindliche Policies, Verantwortlichkeiten und Kontrollanforderungen zentral definieren.',
+    text: 'Steuern, was sie darf.',
   },
-  {
-    n: '04',
-    title: 'ENFORCE',
-    text: 'Governance-Regeln operativ durchsetzen und Abweichungen kontrolliert behandeln.',
-  },
-  {
-    n: '05',
-    title: 'EVIDENCE',
-    text: 'Prüfungen, Entscheidungen, Änderungen und Kontrollen nachvollziehbar dokumentieren.',
-  },
-  {
-    n: '06',
-    title: 'AUDIT',
-    text: 'Eine konsistente Governance-Historie für Management, interne Kontrollen und Audits bereitstellen.',
-  },
+  { n: '04', title: 'EXECUTE', text: 'Ausführung kontrollieren.' },
+  { n: '05', title: 'VERIFY', text: 'Verifizieren, was wirklich passiert ist.' },
+  { n: '06', title: 'PROVE', text: 'Compliance mit Evidence beweisen.' },
 ];
 
 export function GovernanceRuntimeSection() {
@@ -86,8 +70,8 @@ export function GovernanceRuntimeSection() {
           className="mt-4 max-w-2xl text-[clamp(1.75rem,1.1rem+2vw,2.5rem)] leading-[1.12] tracking-[-0.03em]"
           style={{ fontWeight: 600, color: LANDING_TEXT }}
         >
-          Von der KI-Nutzung zur{' '}
-          <span style={{ color: LANDING_ACCENT }}>kontrollierten KI-Organisation.</span>
+          Der operative Governance-Zyklus für{' '}
+          <span style={{ color: LANDING_ACCENT }}>autonome Enterprise-KI.</span>
         </h2>
 
         <div className="relative mt-[46px]">

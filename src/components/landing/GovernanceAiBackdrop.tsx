@@ -24,14 +24,22 @@
  */
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { useTexture } from '@react-three/drei';
 import * as THREE from 'three';
+import type { KTX2Loader } from 'three/addons/loaders/KTX2Loader.js';
 import {
   detectEarthQuality,
   getEarthTextureSet,
+  shouldPreferGpuCompression,
   type EarthTextureSet,
 } from '../visual/earthTextures';
 import { prefersReducedMotion } from './prefers-reduced-motion';
+
+const MILKY_WAY_WIDTH = 2048;
+const MILKY_WAY_HEIGHT = 1024;
+const MILKY_WAY_FOG_COUNT = 700;
+const MILKY_WAY_DARK_CLOUD_COUNT = 120;
+const MILKY_WAY_BAND_STAR_COUNT = 12000;
+const MILKY_WAY_FIELD_STAR_COUNT = 4200;
 
 /** Deterministischer PRNG — die Milchstraße soll bei jedem Aufruf gleich aussehen. */
 function seeded(seed: number): () => number {
@@ -43,31 +51,33 @@ function seeded(seed: number): () => number {
  * Milchstraße als Equirect-Panorama, prozedural auf ein Canvas gezeichnet.
  *
  * Ein echtes Panoramafoto wäre mehrere Megabyte schwer für eine Fläche, die
- * hinter der Seite zu 90 % abgedeckt ist. Das Band aus Nebelschleiern,
- * Dunkelwolken und verdichteten Sternen liest sich an dieser Größe identisch.
+ * hinter der Seite zu 90 % abgedeckt ist. 2048×1024 genügt bei max. 1,75 DPR
+ * für diesen weich gezeichneten Hintergrund und senkt den rohen RGBA-Canvas
+ * von rund 32 MiB auf 8 MiB. Das Band aus Nebelschleiern, Dunkelwolken und
+ * verdichteten Sternen bleibt pro Fläche ähnlich dicht.
  */
 function useMilkyWayTexture(): THREE.Texture | null {
   return useMemo(() => {
     if (typeof document === 'undefined') return null;
     const canvas = document.createElement('canvas');
-    canvas.width = 4096;
-    canvas.height = 2048;
+    canvas.width = MILKY_WAY_WIDTH;
+    canvas.height = MILKY_WAY_HEIGHT;
     const ctx = canvas.getContext('2d');
     if (!ctx) return null;
 
     ctx.fillStyle = '#000';
-    ctx.fillRect(0, 0, 4096, 2048);
+    ctx.fillRect(0, 0, MILKY_WAY_WIDTH, MILKY_WAY_HEIGHT);
     const rand = seeded(97);
 
     // Band, leicht gekippt: erst Nebel, dann Dunkelwolken, dann Sterne.
     ctx.save();
-    ctx.translate(2048, 1024);
+    ctx.translate(MILKY_WAY_WIDTH / 2, MILKY_WAY_HEIGHT / 2);
     ctx.rotate(-0.28);
 
-    for (let i = 0; i < 1400; i++) {
-      const x = (rand() - 0.5) * 5200;
-      const y = (rand() - 0.5) * 2 * (90 + 120 * rand() ** 2.2);
-      const r = 40 + rand() * 160;
+    for (let i = 0; i < MILKY_WAY_FOG_COUNT; i++) {
+      const x = (rand() - 0.5) * MILKY_WAY_WIDTH * 1.27;
+      const y = (rand() - 0.5) * 2 * (45 + 60 * rand() ** 2.2);
+      const r = 20 + rand() * 80;
       const grad = ctx.createRadialGradient(x, y, 0, x, y, r);
       const warm = rand() < 0.55;
       grad.addColorStop(
@@ -81,10 +91,10 @@ function useMilkyWayTexture(): THREE.Texture | null {
       ctx.fillRect(x - r, y - r, r * 2, r * 2);
     }
 
-    for (let i = 0; i < 260; i++) {
-      const x = (rand() - 0.5) * 5200;
-      const y = (rand() - 0.5) * 160;
-      const r = 30 + rand() * 110;
+    for (let i = 0; i < MILKY_WAY_DARK_CLOUD_COUNT; i++) {
+      const x = (rand() - 0.5) * MILKY_WAY_WIDTH * 1.27;
+      const y = (rand() - 0.5) * 80;
+      const r = 15 + rand() * 55;
       const grad = ctx.createRadialGradient(x, y, 0, x, y, r);
       grad.addColorStop(0, `rgba(0,0,0,${0.25 + rand() * 0.35})`);
       grad.addColorStop(1, 'rgba(0,0,0,0)');
@@ -92,10 +102,10 @@ function useMilkyWayTexture(): THREE.Texture | null {
       ctx.fillRect(x - r, y - r, r * 2, r * 2);
     }
 
-    for (let i = 0; i < 26000; i++) {
-      const x = (rand() - 0.5) * 5200;
-      const y = (rand() - 0.5) * 2 * (60 + 260 * rand() ** 1.6);
-      const r = rand() < 0.02 ? 1.4 + rand() * 1.2 : 0.3 + rand() * 0.8;
+    for (let i = 0; i < MILKY_WAY_BAND_STAR_COUNT; i++) {
+      const x = (rand() - 0.5) * MILKY_WAY_WIDTH * 1.27;
+      const y = (rand() - 0.5) * 2 * (30 + 130 * rand() ** 1.6);
+      const r = rand() < 0.02 ? 1 + rand() * 0.9 : 0.25 + rand() * 0.65;
       const alpha = 0.35 + rand() * 0.65;
       ctx.fillStyle =
         rand() < 0.15 ? `rgba(255,225,190,${alpha})` : `rgba(235,240,255,${alpha})`;
@@ -106,10 +116,10 @@ function useMilkyWayTexture(): THREE.Texture | null {
     ctx.restore();
 
     // Streusterne über die ganze Kugel, damit das Band nicht freisteht.
-    for (let i = 0; i < 9000; i++) {
-      const x = rand() * 4096;
-      const y = rand() * 2048;
-      const r = rand() < 0.03 ? 1.4 + rand() * 1.4 : 0.3 + rand() * 0.9;
+    for (let i = 0; i < MILKY_WAY_FIELD_STAR_COUNT; i++) {
+      const x = rand() * MILKY_WAY_WIDTH;
+      const y = rand() * MILKY_WAY_HEIGHT;
+      const r = rand() < 0.03 ? 1 + rand() * 1.1 : 0.25 + rand() * 0.75;
       const alpha = 0.3 + rand() * 0.7;
       const roll = rand();
       ctx.fillStyle =
@@ -157,8 +167,9 @@ const STAR_COUNT = 1800;
 
 /**
  * Sternenfeld mit echter Tiefe: Die Punkte fliegen auf die Kamera zu und
- * werden hinter ihr wieder nach hinten gesetzt. Das ist die einzige Bewegung,
- * die dem Hintergrund Raum gibt — die Erde selbst dreht sich fast unmerklich.
+ * werden hinter ihr wieder nach hinten gesetzt. Die Z-Bewegung läuft komplett
+ * im Vertex-Shader. Dadurch entfällt pro Frame die CPU-Schleife über 1.800
+ * Sterne samt Upload des Positions-Buffers zur GPU.
  */
 function Starfield({ animate }: { animate: boolean }) {
   const points = useRef<THREE.Points>(null);
@@ -172,7 +183,8 @@ function Starfield({ animate }: { animate: boolean }) {
     for (let i = 0; i < STAR_COUNT; i++) {
       positions[i * 3] = (rand() - 0.5) * 160;
       positions[i * 3 + 1] = (rand() - 0.5) * 100;
-      positions[i * 3 + 2] = -rand() * 200;
+      // Stationärer Zyklusbereich [-192, 8]: der Shader wickelt exakt über 200 Einheiten.
+      positions[i * 3 + 2] = 8 - rand() * 200;
 
       const roll = rand();
       const colour =
@@ -204,7 +216,10 @@ function Starfield({ animate }: { animate: boolean }) {
           uniform float uPixelRatio;
           void main() {
             vColor = color;
-            vec4 mv = modelViewMatrix * vec4(position, 1.0);
+            vec3 animatedPosition = position;
+            float depthOffset = 8.0 - position.z;
+            animatedPosition.z = 8.0 - mod(depthOffset + uTime * 2.0, 200.0);
+            vec4 mv = modelViewMatrix * vec4(animatedPosition, 1.0);
             vTwinkle = 0.55 + 0.45 * sin(uTime * 1.7 + position.x * 3.1 + position.y * 2.3);
             gl_PointSize = aSize * uPixelRatio * (140.0 / -mv.z);
             gl_Position = projectionMatrix * mv;
@@ -236,13 +251,6 @@ function Starfield({ animate }: { animate: boolean }) {
 
     material.uniforms.uTime.value = state.clock.elapsedTime;
     mesh.rotation.z += delta * 0.006;
-
-    const array = geometry.attributes.position.array as Float32Array;
-    for (let i = 2; i < array.length; i += 3) {
-      array[i] += delta * 2;
-      if (array[i] > 8) array[i] -= 200;
-    }
-    geometry.attributes.position.needsUpdate = true;
   });
 
   return <points ref={points} geometry={geometry} material={material} />;
@@ -325,6 +333,160 @@ function placeEarth(viewportWidth: number, aspect: number) {
   };
 }
 
+type LoadedEarthMaps = {
+  map: THREE.Texture;
+  emissiveMap: THREE.Texture;
+  specularMap: THREE.Texture;
+  cloudMap: THREE.Texture;
+};
+
+function configureEarthMap(
+  texture: THREE.Texture,
+  colorSpace: THREE.ColorSpace,
+  anisotropy: number,
+) {
+  texture.colorSpace = colorSpace;
+  texture.anisotropy = anisotropy;
+  texture.wrapS = THREE.ClampToEdgeWrapping;
+  texture.wrapT = THREE.ClampToEdgeWrapping;
+  texture.minFilter = THREE.LinearMipmapLinearFilter;
+  texture.magFilter = THREE.LinearFilter;
+  texture.needsUpdate = true;
+}
+
+function loadWebpTexture(
+  url: string,
+  colorSpace: THREE.ColorSpace,
+  anisotropy: number,
+): Promise<THREE.Texture> {
+  return new Promise((resolve, reject) => {
+    new THREE.TextureLoader().load(
+      url,
+      (texture) => {
+        configureEarthMap(texture, colorSpace, anisotropy);
+        resolve(texture);
+      },
+      undefined,
+      reject,
+    );
+  });
+}
+
+async function createBackdropKtx2Loader(gl: THREE.WebGLRenderer) {
+  const { KTX2Loader } = await import('three/addons/loaders/KTX2Loader.js');
+  return new KTX2Loader()
+    .setTranscoderPath('/basis/')
+    .setWorkerLimit(2)
+    .detectSupport(gl);
+}
+
+async function loadAdaptiveEarthMap({
+  preferGpuCompression,
+  ktx2Url,
+  webpUrl,
+  colorSpace,
+  anisotropy,
+  loader,
+}: {
+  preferGpuCompression: boolean;
+  ktx2Url: string | null;
+  webpUrl: string;
+  colorSpace: THREE.ColorSpace;
+  anisotropy: number;
+  loader: () => Promise<KTX2Loader>;
+}): Promise<THREE.Texture> {
+  if (preferGpuCompression && ktx2Url) {
+    try {
+      const ktx2Loader = await loader();
+      const texture = await ktx2Loader.loadAsync(ktx2Url);
+      configureEarthMap(texture, colorSpace, anisotropy);
+      return texture;
+    } catch {
+      // KTX2 is an optimization only. Any WASM/GPU/load failure falls back to WebP.
+    }
+  }
+
+  return loadWebpTexture(webpUrl, colorSpace, anisotropy);
+}
+
+function useAdaptiveEarthMaps(set: EarthTextureSet): LoadedEarthMaps | null {
+  const gl = useThree((state) => state.gl);
+  const [maps, setMaps] = useState<LoadedEarthMaps | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    let owned: THREE.Texture[] = [];
+    let loaderPromise: Promise<KTX2Loader> | null = null;
+    const preferGpuCompression = shouldPreferGpuCompression();
+    const maxAnisotropy = gl.capabilities.getMaxAnisotropy();
+
+    const getLoader = () => {
+      loaderPromise ??= createBackdropKtx2Loader(gl);
+      return loaderPromise;
+    };
+
+    (async () => {
+      const [map, emissiveMap, specularMap, cloudMap] = await Promise.all([
+        loadAdaptiveEarthMap({
+          preferGpuCompression,
+          ktx2Url: set.dayKtx2,
+          webpUrl: set.day,
+          colorSpace: THREE.SRGBColorSpace,
+          anisotropy: Math.min(set.anisotropy, maxAnisotropy),
+          loader: getLoader,
+        }),
+        loadAdaptiveEarthMap({
+          preferGpuCompression,
+          ktx2Url: set.nightKtx2,
+          webpUrl: set.night ?? set.day,
+          colorSpace: THREE.SRGBColorSpace,
+          anisotropy: Math.min(8, maxAnisotropy),
+          loader: getLoader,
+        }),
+        loadAdaptiveEarthMap({
+          preferGpuCompression,
+          ktx2Url: set.specularKtx2,
+          webpUrl: set.specular ?? set.day,
+          colorSpace: THREE.NoColorSpace,
+          anisotropy: Math.min(4, maxAnisotropy),
+          loader: getLoader,
+        }),
+        loadAdaptiveEarthMap({
+          preferGpuCompression,
+          ktx2Url: set.cloudsKtx2,
+          webpUrl: set.clouds ?? set.day,
+          colorSpace: THREE.NoColorSpace,
+          anisotropy: Math.min(8, maxAnisotropy),
+          loader: getLoader,
+        }),
+      ]);
+
+      owned = [map, emissiveMap, specularMap, cloudMap];
+
+      if (cancelled) {
+        for (const texture of owned) texture.dispose();
+        owned = [];
+        return;
+      }
+
+      setMaps({ map, emissiveMap, specularMap, cloudMap });
+    })().catch(() => {
+      // Decorative scene: the outer component keeps the black/cyan fallback readable.
+    });
+
+    return () => {
+      cancelled = true;
+      for (const texture of owned) texture.dispose();
+      owned = [];
+      if (loaderPromise) {
+        void loaderPromise.then((loader) => loader.dispose()).catch(() => undefined);
+      }
+    };
+  }, [gl, set]);
+
+  return maps;
+}
+
 /**
  * @param set Texturstufe. Der Aufrufer stellt sicher, dass Nacht-, Wolken- und
  *   Specular-Karte gesetzt sind — auf der `low`-Stufe, wo sie fehlen, läuft die
@@ -337,21 +499,10 @@ function Earth({ animate, set }: { animate: boolean; set: EarthTextureSet }) {
   const sun = useRef<THREE.DirectionalLight>(null);
   const viewport = useThree((state) => state.viewport);
 
-  const maps = useTexture({
-    map: set.day,
-    emissiveMap: set.night ?? set.day,
-    specularMap: set.specular ?? set.day,
-  });
-  const cloudMap = useTexture(set.clouds ?? set.day);
+  const maps = useAdaptiveEarthMaps(set);
 
   const atmosphere = useMemo(atmosphereMaterial, []);
   useEffect(() => () => atmosphere.dispose(), [atmosphere]);
-
-  useEffect(() => {
-    maps.map.colorSpace = THREE.SRGBColorSpace;
-    maps.emissiveMap.colorSpace = THREE.SRGBColorSpace;
-    cloudMap.colorSpace = THREE.SRGBColorSpace;
-  }, [maps, cloudMap]);
 
   const { scale, x: offsetX, y: offsetY } = placeEarth(viewport.width, viewport.aspect);
 
@@ -384,6 +535,8 @@ function Earth({ animate, set }: { animate: boolean; set: EarthTextureSet }) {
     }
   });
 
+  if (!maps) return null;
+
   return (
     <>
       <ambientLight color={0x2a3a55} intensity={0.16} />
@@ -411,7 +564,7 @@ function Earth({ animate, set }: { animate: boolean; set: EarthTextureSet }) {
 
         <mesh ref={clouds} rotation={[0, EUROPE_FACING_Y, 0]}>
           <sphereGeometry args={[1.008, 96, 96]} />
-          <meshLambertMaterial map={cloudMap} transparent opacity={0.35} depthWrite={false} />
+          <meshLambertMaterial map={maps.cloudMap} transparent opacity={0.35} depthWrite={false} />
         </mesh>
 
         <mesh material={atmosphere}>

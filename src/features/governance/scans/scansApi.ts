@@ -164,7 +164,7 @@ function scanErrorForStatus(status: number): string {
   if (status === 405) return 'Scan-Dienst nicht unter dieser Adresse erreichbar (HTTP 405).';
   if (status === 429) return 'Scan-Limit erreicht. Bitte später erneut versuchen.';
   if (status === 504) return 'Der Scan hat zu lange gedauert (Timeout).';
-  if (status >= 500)  return 'Der Scan-Dienst ist derzeit nicht verfügbar.';
+  if (status >= 500)  return `Website-Audit fehlgeschlagen — der Audit-Dienst meldet einen Serverfehler (HTTP ${status}). Bitte später erneut versuchen.`;
   return `Scan fehlgeschlagen (HTTP ${status}).`;
 }
 
@@ -223,8 +223,14 @@ export async function triggerTenantAudit(
     }
   }
 
-  if (!r.ok || !body.ok || !body.scan_run_id) {
-    throw new Error(body.error?.message ?? scanErrorForStatus(r.status));
+  if (!r.ok) {
+    // 5xx u. a. (tenant-audit antwortet derzeit mit 500): Status immer
+    // sichtbar, Server-Detail nur als Zusatz — nie still verschlucken.
+    const detail = body.error?.message;
+    throw new Error(detail ? `${scanErrorForStatus(r.status)} Details: ${detail}` : scanErrorForStatus(r.status));
+  }
+  if (!body.ok || !body.scan_run_id) {
+    throw new Error(body.error?.message ?? 'Website-Audit fehlgeschlagen — der Audit-Dienst hat keinen Lauf angelegt.');
   }
   return {
     scan_run_id:   body.scan_run_id,

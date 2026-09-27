@@ -9,8 +9,9 @@ import type {
 //
 // EU-lokaler/On-Prem-Inferenz-Provider (CLAUDE.md §2: „Ollama (EU-lokal,
 // Fallback)"). Spricht die dokumentierte Ollama-REST-API gegen einen vom
-// Betreiber kontrollierten Host (OLLAMA_BASE_URL) — keine fremde Cloud, kein
-// Proxy, kein API-Key. Wird als lokaler Provider-Slot des ServerAiGateway
+// Betreiber kontrollierten Host (OLLAMA_BASE_URL/OLLAMA_URL) — keine fremde
+// Cloud. Optionaler Schutz vor dem Host wird ueber OLLAMA_AUTH_TOKEN plus
+// optional OLLAMA_AUTH_MODE (basic|bearer) bedient. Wird als lokaler Provider-Slot des ServerAiGateway
 // eingesetzt, wenn AI_LOCAL_PROVIDER=ollama gesetzt ist (siehe serverFromEnv).
 //
 // Architektur-Hinweis: Der Router nutzt EINEN lokalen Adapter für alle
@@ -22,10 +23,14 @@ import type {
 // generateStream ist optional (AiProviderAdapter) und hier bewusst nicht
 // implementiert: der Aufrufer fällt auf generate() zurück.
 
+export type OllamaAuthMode = 'basic' | 'bearer';
+
 export interface OllamaConfig {
   model: string;
   embeddingModel?: string;
   baseUrl?: string;
+  authToken?: string;
+  authMode?: OllamaAuthMode;
   fetchImpl?: typeof fetch;
 }
 
@@ -50,15 +55,24 @@ export class OllamaAdapter implements AiProviderAdapter {
   readonly id = 'ollama' as const;
   private readonly fetchImpl: typeof fetch;
   private readonly baseUrl: string;
+  private readonly authHeader?: string;
 
   constructor(private readonly config: OllamaConfig) {
     this.fetchImpl = config.fetchImpl ?? fetch.bind(globalThis);
     this.baseUrl = (config.baseUrl ?? 'http://localhost:11434').replace(/\/+$/, '');
+    this.authHeader = buildOllamaAuthorization(config.authToken, config.authMode);
+  }
+
+  private headers(withJson = false): Record<string, string> {
+    return {
+      ...(withJson ? { 'content-type': 'application/json' } : {}),
+      ...(this.authHeader ? { authorization: this.authHeader } : {}),
+    };
   }
 
   async health(): Promise<AiProviderHealth> {
     try {
-      const res = await this.fetchImpl(`${this.baseUrl}/api/tags`, { method: 'GET' });
+      const res = await this.fetchImpl(`${this.baseUrl}/api/tags`, { method: 'GET', headers: this.headers() });
       if (!res.ok) return { ok: false, error: `Ollama HTTP ${res.status}` };
       const json = (await res.json()) as OllamaTagsResponse;
       const models = (json.models ?? []).map((m) => m.name ?? '').filter(Boolean);
@@ -101,7 +115,7 @@ export class OllamaAdapter implements AiProviderAdapter {
     try {
       const res = await this.fetchImpl(`${this.baseUrl}/api/embeddings`, {
         method: 'POST',
-        headers: { 'content-type': 'application/json' },
+        headers: this.headers(true),
         signal: controller.signal,
         body: JSON.stringify({ model, prompt: request.input }),
       });
@@ -144,7 +158,7 @@ export class OllamaAdapter implements AiProviderAdapter {
 
       const res = await this.fetchImpl(`${this.baseUrl}/api/chat`, {
         method: 'POST',
-        headers: { 'content-type': 'application/json' },
+        headers: this.headers(true),
         signal: controller.signal,
         body: JSON.stringify(body),
       });
@@ -181,4 +195,19 @@ export class OllamaAdapter implements AiProviderAdapter {
       latency_ms: Date.now() - started,
     };
   }
+}
+
+
+export function buildOllamaAuthorization(
+  token?: string,
+  mode?: OllamaAuthMode,
+): string | undefined {
+  const value = token?.trim();
+  if (!value) return undefined;
+
+  const resolvedMode: OllamaAuthMode = mode ?? (value.includes(':') ? 'basic' : 'bearer');
+  if (resolvedMode === 'bearer') return `Bearer ${value}`;
+
+  if (typeof btoa !== 'function') throw new Error('Base64 encoder unavailable');
+  return `Basic ${btoa(value)}`;
 }

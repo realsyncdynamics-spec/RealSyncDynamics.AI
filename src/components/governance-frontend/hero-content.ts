@@ -66,7 +66,7 @@ export const HERO_EYEBROW = `→ ${HERO_KICKER.claim}` as const;
 
 export const HERO_OPERATING_LOOP = 'DISCOVER → ASSESS → GOVERN → EXECUTE → VERIFY → PROVE' as const;
 
-export const HERO_EN_KICKER = 'Control and Evidence Layer for AI in Europe.' as const;
+export const HERO_EN_KICKER = 'The Governance OS for Autonomous AI.' as const;
 
 export const SCAN_FUNNEL_MESSAGE =
   'Entdecken. Bewerten. Steuern. Ausführen. Verifizieren. Mit Evidence beweisen.' as const;
@@ -295,20 +295,48 @@ export const AGENT_CANNOT = [
 
 export const AGENT_LAYER = ['Identity', 'Tenant', 'Policy', 'Risk', 'Approval'] as const;
 
-/**
- * Serverseitig angebundene Provider (Adapter in `supabase/functions/_shared`).
- * Grok/xAI, Mistral und MCP-Tool-Governance sind nicht angebunden und stehen
- * deshalb nicht hier.
- */
+export const AGENT_GOVERNANCE_RUNTIME_SUMMARY = {
+  de: 'Werkzeugzugriffe, Berechtigungen, Risikoklassen, Human-in-the-loop-Freigaben, Budget- und Quotenlimits, Datenzugriffe, Provider-Auswahl, Ausführungsrichtlinien und Evidence-Logs.',
+  en: 'Tool access, permissions, risk classes, human-in-the-loop approvals, budget/quota limits, data access, provider selection, execution policies, and evidence logs.',
+} as const;
+
+export const AGENT_GOVERNANCE_RUNTIME_EXAMPLE = {
+  de: 'Beispiel: Ein Security-Agent erkennt eine Schwachstelle; eine Änderung am Produktionssystem erfolgt erst nach Policy-Entscheidung und — falls gefordert — menschlicher Freigabe.',
+  en: 'Example: A security agent may detect a vulnerability; it may change a production system only after policy evaluation and, if required, human approval.',
+} as const;
+
+export const PROVIDER_PLANNED_BADGE = {
+  de: 'Geplant',
+  en: 'Planned',
+} as const;
+
+/** Live sichtbare Providerpfade der Landing (getrennt von Roadmap-Pfaden). */
 export const HOMEPAGE_PROVIDERS = [
   { name: 'OpenAI', note: 'Cloud' },
   { name: 'Anthropic · Claude', note: 'Cloud' },
   { name: 'Google · Gemini', note: 'Cloud' },
-  { name: 'Mistral', note: 'EU provider option' },
-  { name: 'STACKIT', note: 'EU option · planned' },
   { name: 'Eigene Modelle', note: 'Lokal / EU-betrieben' },
-  { name: 'Future models', note: 'under one governance layer' },
 ] as const;
+
+/** Geplante Providerpfade — bewusst getrennt von live angebundenen Providern. */
+export const HOMEPAGE_PLANNED_PROVIDERS = [
+  { name: 'Mistral', note: 'Roadmap · noch nicht live angebunden' },
+  { name: 'STACKIT', note: 'Roadmap · noch nicht live angebunden' },
+  { name: 'Future models', note: 'Roadmap · unter derselben Governance-Schicht' },
+] as const;
+
+const LIVE_PROVIDER_NAMES = HOMEPAGE_PROVIDERS.map((provider) => provider.name).join(', ');
+const PLANNED_PROVIDER_NAMES = HOMEPAGE_PLANNED_PROVIDERS.map((provider) => provider.name).join(', ');
+
+export const PROVIDER_NEUTRALITY_SUMMARY = {
+  de: `${LIVE_PROVIDER_NAMES} laufen heute unter derselben Governance-Schicht; ${PLANNED_PROVIDER_NAMES} sind als Providerpfade geplant.`,
+  en: `${LIVE_PROVIDER_NAMES} run today under the same governance layer; ${PLANNED_PROVIDER_NAMES} are planned as provider paths.`,
+} as const;
+
+export const PROVIDER_PLANNED_DISCLAIMER = {
+  de: 'Geplant markiert Optionen, die als Provider-Pfad vorgesehen, aber noch nicht live angebunden sind.',
+  en: 'Planned marks options that are intended as provider paths but are not live integrations yet.',
+} as const;
 
 /** Control Room — ausschließlich Beispielwerte, sichtbar gekennzeichnet. */
 export const CONTROL_ROOM_METRICS = [

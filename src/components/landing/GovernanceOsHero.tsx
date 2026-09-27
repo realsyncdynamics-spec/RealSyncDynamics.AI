@@ -3,7 +3,7 @@
  *
  * Werte aus HANDOFF.md §1 (hifi): Europa-Nachtkarte rechts mit Perspektive,
  * Tiefenebene, Overlays; Nav mit DE/EN; H1 Newsreader 80px; Loop
- * DISCOVER → ASSESS → GOVERN → PROVE; zwei CTAs.
+ * DISCOVER → ASSESS → GOVERN → EXECUTE → VERIFY → PROVE; zwei CTAs.
  *
  * Governance-OS-Positionierung: Kategorie-Eyebrow statt Normen-Badge, H1
  * „Europa braucht kein weiteres Frontier-Modell. Europa braucht Kontrolle

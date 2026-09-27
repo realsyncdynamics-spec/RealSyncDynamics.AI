@@ -289,7 +289,7 @@ export const HANDOFF_EXTRA = {
     menuOpen: 'Navigation öffnen',
     menuClose: 'Navigation schließen',
     mainNav: 'Hauptnavigation',
-    heroEyebrow: 'REALSYNCDYNAMICS.AI / THE GOVERNANCE OS FOR AUTONOMOUS AI',
+    heroEyebrow: 'REALSYNCDYNAMICS.AI / GOVERNANCE OS FÜR AUTONOME KI',
     ctaExplore: 'Architektur ansehen',
     ctaEnterprise: 'Enterprise anfragen',
     loopExecute: 'EXECUTE',

@@ -9,17 +9,28 @@
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import {
+  AGENT_GOVERNANCE_RUNTIME_EXAMPLE,
+  AGENT_GOVERNANCE_RUNTIME_SUMMARY,
   AGENT_CANNOT,
   AGENT_LAYER,
   CONTROL_PLANE_LAYERS,
   HOMEPAGE_PROVIDERS,
+  HOMEPAGE_PLANNED_PROVIDERS,
   HOMEPAGE_TRUST_PRINCIPLES,
   HOMEPAGE_VALUE,
+  PROVIDER_PLANNED_BADGE,
+  PROVIDER_PLANNED_DISCLAIMER,
+  PROVIDER_NEUTRALITY_SUMMARY,
 } from '../governance-frontend/hero-content';
+import { useLang } from '../../i18n/useLang';
 
 const MONO = { fontFamily: 'var(--font-rs-mono)' } as const;
 
 export function ArchitectureSection() {
+  const { lang } = useLang();
+  const runtimeSummary = AGENT_GOVERNANCE_RUNTIME_SUMMARY[lang] ?? AGENT_GOVERNANCE_RUNTIME_SUMMARY.de;
+  const runtimeExample = AGENT_GOVERNANCE_RUNTIME_EXAMPLE[lang] ?? AGENT_GOVERNANCE_RUNTIME_EXAMPLE.de;
+
   return (
     <section id="architecture" className="os-section scroll-mt-4" aria-labelledby="architecture-heading">
       <div className="os-inner grid gap-14 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
@@ -36,16 +47,14 @@ export function ArchitectureSection() {
             serverseitig, nicht der Agent und nicht der Provider.
           </p>
           <div className="os-panel mt-7 px-5 py-5">
-            <p className="m-0 text-[11px] tracking-[0.16em]" style={{ ...MONO, color: 'var(--color-rs-cyan)' }}>
+            <h3 className="m-0 text-[11px] tracking-[0.16em]" style={{ ...MONO, color: 'var(--color-rs-cyan)' }}>
               AGENT GOVERNANCE RUNTIME
-            </p>
+            </h3>
             <p className="m-0 mt-2 text-[14px] leading-[1.7]" style={{ color: 'var(--color-rs-fg-1)' }}>
-              Tool access, permissions, risk classes, human-in-the-loop approvals, budget/quota limits,
-              data access, provider selection, execution policies und Evidence Logs.
+              {runtimeSummary}
             </p>
             <p className="m-0 mt-3 text-[13px]" style={{ color: 'var(--color-rs-fg-2)' }}>
-              Beispiel: Ein Security-Agent erkennt eine Schwachstelle; eine Änderung am Produktionssystem
-              erfolgt erst nach Policy-Entscheidung und — falls gefordert — menschlicher Freigabe.
+              {runtimeExample}
             </p>
           </div>
           <ul className="mt-8 grid gap-3 p-0" style={{ listStyle: 'none' }}>
@@ -96,6 +105,11 @@ export function ArchitectureSection() {
 }
 
 export function ProvidersSection() {
+  const { lang } = useLang();
+  const providerSummary = PROVIDER_NEUTRALITY_SUMMARY[lang] ?? PROVIDER_NEUTRALITY_SUMMARY.de;
+  const providerPlannedBadge = PROVIDER_PLANNED_BADGE[lang] ?? PROVIDER_PLANNED_BADGE.de;
+  const providerPlannedDisclaimer = PROVIDER_PLANNED_DISCLAIMER[lang] ?? PROVIDER_PLANNED_DISCLAIMER.de;
+
   return (
     <section id="providers" className="os-section os-section--alt" aria-labelledby="providers-heading">
       <div className="os-inner">
@@ -105,8 +119,7 @@ export function ProvidersSection() {
           <span className="os-dim">One control plane.</span>
         </h2>
         <p className="os-lede mt-5">
-          OpenAI, Anthropic, Gemini, Mistral, STACKIT, lokale Modelle und künftige Modelle laufen unter
-          derselben Governance-Schicht.
+          {providerSummary}
         </p>
 
         <div className="mt-12">
@@ -116,17 +129,34 @@ export function ProvidersSection() {
               RealSyncDynamics.AI — Identity · Tenant · Policy · Approval · Evidence
             </p>
           </div>
-          <div className="grid grid-cols-2 gap-px lg:grid-cols-4" style={{ backgroundColor: 'var(--color-rs-border)', marginTop: 1 }}>
+          <ul className="grid grid-cols-2 gap-px p-0 lg:grid-cols-4" style={{ listStyle: 'none', backgroundColor: 'var(--color-rs-border)', marginTop: 1 }}>
             {HOMEPAGE_PROVIDERS.map((provider) => (
-              <div key={provider.name} className="px-5 py-5" style={{ backgroundColor: 'var(--color-rs-bg-1)' }}>
+              <li key={provider.name} className="px-5 py-5" style={{ backgroundColor: 'var(--color-rs-bg-1)' }}>
                 <p className="m-0 text-[16px] font-medium" style={{ color: 'var(--color-rs-fg-0)' }}>{provider.name}</p>
                 <p className="m-0 mt-1 text-[11px] uppercase tracking-[0.12em]" style={{ ...MONO, color: 'var(--color-rs-fg-2)' }}>{provider.note}</p>
-              </div>
+              </li>
             ))}
-          </div>
+          </ul>
+          <ul className="grid grid-cols-1 gap-px p-0 lg:grid-cols-2" style={{ listStyle: 'none', backgroundColor: 'var(--color-rs-border)', marginTop: 1 }}>
+            {HOMEPAGE_PLANNED_PROVIDERS.map((provider) => (
+              <li key={provider.name} className="px-5 py-5" style={{ backgroundColor: 'var(--color-rs-bg-1)' }}>
+                <div className="flex items-center gap-2">
+                  <p className="m-0 text-[16px] font-medium" style={{ color: 'var(--color-rs-fg-0)' }}>
+                    {provider.name}
+                    <span className="sr-only"> ({providerPlannedBadge})</span>
+                  </p>
+                  <span aria-hidden="true" className="os-status" style={{ marginTop: 0 }}>{providerPlannedBadge}</span>
+                </div>
+                <p className="m-0 mt-1 text-[11px] uppercase tracking-[0.12em]" style={{ ...MONO, color: 'var(--color-rs-fg-2)' }}>{provider.note}</p>
+              </li>
+            ))}
+          </ul>
           <p className="mt-5 text-[13px]" style={{ color: 'var(--color-rs-fg-2)' }}>
             Provider-Neutralität ist Kern des Produkts: Intelligence- und Execution-Provider haben keine
             Policy Authority.
+          </p>
+          <p className="mt-2 text-[12px]" style={{ color: 'var(--color-rs-fg-2)' }}>
+            {providerPlannedDisclaimer}
           </p>
         </div>
       </div>

@@ -262,6 +262,15 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     ogDescription:
       'Europa braucht Kontrolle über Frontier-KI: RealSyncDynamics.AI baut die Kontroll-, Autorisierungs- und Evidence-Layer zwischen Unternehmen und KI.',
   },
+  '/design/titan': {
+    title: 'RealSyncDynamics.AI — Titan-Fallbackroute der Governance-Landing',
+    description:
+      'Fallbackroute der Landing-Positionierung (Legacy-Titan): Control Plane für Enterprise-KI mit Policies, Freigaben, Ausführung und Evidence als Proof-Layer.',
+    canonical: `${SITE_URL}/design/titan`,
+    ogTitle: 'Titan-Fallbackroute der Governance-Landing',
+    ogDescription:
+      'Fallbackroute: Any model. Any agent. One control plane.',
+  },
   '/pricing': {
     title: 'Preise – Runtime-native AI-Governance-Plattform | RealSyncDynamics.AI',
     description:

@@ -8,6 +8,63 @@ export type AiResidency = 'cloud' | 'eu_local';
 
 export type QuotaKey = 'limit.llm_queries_monthly' | 'limit.ai_calls_monthly';
 
+export type ModelCapabilityTier = 'standard' | 'advanced' | 'frontier';
+
+export type ExecutionScope = 'read_only' | 'external_write' | 'privileged';
+
+export interface ModelGovernanceControlInput {
+  capabilityTier: ModelCapabilityTier;
+  executionScope: ExecutionScope;
+  sensitiveData: boolean;
+  residency: AiResidency;
+}
+
+export interface ModelGovernanceControls {
+  policyGateRequired: boolean;
+  humanApprovalRequired: boolean;
+  evidenceRequired: true;
+  reasons: readonly string[];
+}
+
+/**
+ * Capability-first control decision.
+ *
+ * "Frontier" is deliberately not derived from a provider or brand name.
+ * The model/deployment registry assigns the capability tier; this function
+ * only converts that server-authoritative classification plus execution
+ * context into governance requirements.
+ */
+export function modelGovernanceControls(
+  input: ModelGovernanceControlInput,
+): ModelGovernanceControls {
+  const reasons: string[] = [];
+
+  if (input.capabilityTier === 'frontier') reasons.push('frontier_capability');
+  if (input.executionScope === 'external_write') reasons.push('external_write');
+  if (input.executionScope === 'privileged') reasons.push('privileged_execution');
+  if (input.sensitiveData) reasons.push('sensitive_data');
+  if (input.residency === 'cloud') reasons.push('cloud_processing');
+
+  const policyGateRequired =
+    input.capabilityTier === 'frontier' ||
+    input.executionScope !== 'read_only' ||
+    input.sensitiveData;
+
+  const humanApprovalRequired =
+    input.executionScope === 'privileged' ||
+    (
+      input.capabilityTier === 'frontier' &&
+      (input.executionScope === 'external_write' || input.sensitiveData)
+    );
+
+  return {
+    policyGateRequired,
+    humanApprovalRequired,
+    evidenceRequired: true,
+    reasons,
+  };
+}
+
 export interface ExpansionInputs {
   hasAutomations: boolean;
   aiCallsMonthly: number | null;
@@ -189,6 +246,7 @@ export interface GovernanceMeta {
     decision: string | null;
   };
   processors: readonly string[];
+  controls: ModelGovernanceControls;
 }
 
 export function governanceMeta(args: {
@@ -199,6 +257,12 @@ export function governanceMeta(args: {
   pdpDecision: string | null;
   /** Art.-50-Label des lokalen Providers; Default nennt LM Studio. */
   localLabel?: string;
+  /** Capability tier comes from the governed model/deployment registry. */
+  capabilityTier?: ModelCapabilityTier;
+  /** Execution scope is determined by the requested tool/action, not the model. */
+  executionScope?: ExecutionScope;
+  /** True when the governed request contains special/sensitive business data. */
+  sensitiveData?: boolean;
 }): GovernanceMeta {
   return {
     disclosure: ART50_DISCLOSURE_DE,
@@ -206,5 +270,11 @@ export function governanceMeta(args: {
     expansion_stage: args.stage,
     pdp: { mode: args.pdpMode, decision: args.pdpDecision },
     processors: processorsFor(args.allowCloud, args.residency, args.localLabel),
+    controls: modelGovernanceControls({
+      capabilityTier: args.capabilityTier ?? 'standard',
+      executionScope: args.executionScope ?? 'read_only',
+      sensitiveData: args.sensitiveData ?? false,
+      residency: args.residency,
+    }),
   };
 }

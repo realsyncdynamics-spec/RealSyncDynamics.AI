@@ -2,6 +2,30 @@
 // Spiegelt die Tabellen aus 20260628120000_bots_foundation.sql.
 
 export type BotChannel = 'chat' | 'voice' | 'telegram' | 'whatsapp';
+export type BotVertical = 'general' | 'restaurant';
+
+export interface RestaurantMenuItem {
+  id: string;
+  name: string;
+  price: number;
+  available?: boolean;
+}
+
+export interface RestaurantBotConfig {
+  business_name?: string;
+  order_mode?: 'pickup' | 'delivery' | 'both';
+  minimum_order?: number;
+  delivery_fee?: number;
+  estimated_delivery_minutes?: number;
+  currency?: string;
+  menu?: RestaurantMenuItem[];
+}
+
+export interface BotConfig {
+  vertical?: BotVertical;
+  restaurant?: RestaurantBotConfig;
+  [key: string]: unknown;
+}
 
 export interface BotCapabilities {
   appointments?: boolean;
@@ -17,7 +41,7 @@ export interface Bot {
   persona: string | null;
   greeting: string | null;
   capabilities: BotCapabilities;
-  config: Record<string, unknown>;
+  config: BotConfig;
   enabled: boolean;
   created_at: string;
   updated_at: string;
@@ -67,9 +91,12 @@ export interface BotAppointment {
 }
 
 export interface BotOrderItem {
+  item_id?: string;
   name: string;
   qty?: number;
   price?: number;
+  unit_price?: number;
+  line_total?: number;
 }
 
 export interface BotOrder {
@@ -84,6 +111,7 @@ export interface BotOrder {
   currency: string;
   status: 'new' | 'confirmed' | 'fulfilled' | 'cancelled';
   notes: string | null;
+  metadata: Record<string, unknown>;
   created_at: string;
 }
 
@@ -95,6 +123,7 @@ export interface CreateBotArgs {
   persona?: string | null;
   greeting?: string | null;
   capabilities?: BotCapabilities;
+  config?: BotConfig;
   enabled?: boolean;
 }
 

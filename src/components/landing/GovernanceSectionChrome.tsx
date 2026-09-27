@@ -1,7 +1,6 @@
 import type { ReactNode } from 'react';
 import {
   GA_DISPLAY,
-  GA_GOLD_LITE,
   GA_GOLD_TEXT_H2,
   GA_H2,
   GA_LINE_SOFT,
@@ -26,7 +25,7 @@ export function SectionIndex({ number, label }: { number: string; label: string 
       className="mb-[22px] flex items-center gap-4 text-[11px] tracking-[.2em]"
       style={{ fontFamily: GA_MONO, color: GA_TITAN }}
     >
-      <b className="font-medium" style={{ color: GA_GOLD_LITE }}>
+      <b className="font-medium" style={{ color: 'var(--ga-accent)' }}>
         {number}
       </b>
       <span>{label}</span>
@@ -41,8 +40,11 @@ export function SectionEyebrow({ children }: { children: ReactNode }) {
       className="m-0 inline-block whitespace-nowrap rounded-full border px-[13px] py-[7px] text-[11px] tracking-[.2em]"
       style={{
         fontFamily: GA_MONO,
-        borderColor: 'rgba(201,162,74,.42)',
-        color: GA_GOLD_LITE,
+        // Über Tokens statt fest: Unter `.ga-vip` wird die Pille dadurch
+        // golden, ohne dass die Sektion etwas davon wissen muss.
+        borderColor: 'var(--ga-accent-border)',
+        backgroundColor: 'var(--ga-chip-face)',
+        color: 'var(--ga-accent)',
       }}
     >
       {children}
@@ -66,7 +68,7 @@ export function SectionHeading({
   return (
     <h2
       className={`mt-5 leading-[1.06] tracking-[-.03em] ${centered ? 'mx-auto max-w-none' : 'max-w-[24ch]'}`}
-      style={{ fontFamily: GA_DISPLAY, fontWeight: 600, fontSize: GA_H2, color: GA_TEXT }}
+      style={{ fontFamily: GA_DISPLAY, fontWeight: 700, fontSize: GA_H2, color: GA_TEXT }}
     >
       {children}
       {accent && (

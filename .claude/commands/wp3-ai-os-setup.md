@@ -4,7 +4,7 @@ description: WP3 AI-OS-Setup in Governance Activation (ohne Migration)
 
 # WP3 — AI-OS-Setup in Governance Activation
 
-**Voraussetzung:** E-F2 = `/app/activation` · **Branch:** `feat/wp3-activation-ai-setup`
+**Voraussetzung:** ✅ E-F2 entschieden (2026-09-27): `/app/activation` · **Branch:** `feat/wp3-activation-ai-setup`
 
 ## Rahmen (gilt für jede WP-Session)
 

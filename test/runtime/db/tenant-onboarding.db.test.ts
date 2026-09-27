@@ -156,18 +156,30 @@ d('tenant_onboarding', () => {
       expect(rows).toEqual([]);
     });
 
+    // Der Wert wird beim INSERT zurueckdatiert, nicht per UPDATE: Der Trigger
+    // ist BEFORE UPDATE, ein INSERT mit ausdruecklichem `updated_at` geht also
+    // unveraendert durch — ein UPDATE wuerde die Ruecksetzung sofort wieder
+    // ueberschreiben.
+    //
+    // Der erste Entwurf verglich statt dessen den Wert vor und nach einem
+    // UPDATE mit `>=`. Das war wirkungslos, und zwar doppelt: `>=` besteht
+    // auch ohne Trigger, und `now()` ist in PostgreSQL auf den
+    // Transaktionsbeginn festgenagelt — das Harnisch faehrt jeden Test in
+    // EINER Transaktion, Insert und Update bekommen also denselben
+    // Zeitstempel. Der Test konnte nie fehlschlagen. Gefunden hat es die
+    // Codex-Review auf PR #1669, nicht der Autor.
     it('zieht updated_at bei jeder Aenderung nach', async () => {
       const { tenantId } = await createTenantWithMember(ctx);
-      await ctx.client.query(`INSERT INTO public.tenant_onboarding(tenant_id) VALUES ($1)`, [tenantId]);
-      const { rows: vorher } = await ctx.client.query<{ updated_at: Date }>(
-        `SELECT updated_at FROM public.tenant_onboarding WHERE tenant_id=$1`,
+      const { rows: start } = await ctx.client.query<{ updated_at: Date }>(
+        `INSERT INTO public.tenant_onboarding(tenant_id, updated_at)
+         VALUES ($1, now() - interval '1 hour') RETURNING updated_at`,
         [tenantId],
       );
       const { rows: nachher } = await ctx.client.query<{ updated_at: Date }>(
         `UPDATE public.tenant_onboarding SET step = step + 1 WHERE tenant_id=$1 RETURNING updated_at`,
         [tenantId],
       );
-      expect(nachher[0]!.updated_at.getTime()).toBeGreaterThanOrEqual(vorher[0]!.updated_at.getTime());
+      expect(nachher[0]!.updated_at.getTime()).toBeGreaterThan(start[0]!.updated_at.getTime());
     });
   });
 });

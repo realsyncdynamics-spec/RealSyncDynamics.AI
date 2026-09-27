@@ -197,7 +197,8 @@ Siehe auch: [`docs/QA_VISUAL_FUNCTIONAL_TESTRUN.md`](docs/QA_VISUAL_FUNCTIONAL_T
 
 Single Source of Truth: [`src/config/pricing.ts`](src/config/pricing.ts).
 Live unter `/pricing`. Aktuelle Tiers: Free Audit · Starter (79 €) ·
-Growth (249 €) · Agency (699 €) · Enterprise (ab 1.500 €). Details +
+Growth (249 €) · Agency (699 €) · Enterprise (1.249 €, höchste Stufe). Gemäß § 19 UStG
+wird keine Umsatzsteuer ausgewiesen. Details +
 Feature-Listen pro Tier siehe [`ROADMAP.md`](ROADMAP.md).
 
 Plans werden in Stripe verwaltet, gemappt via `public.products`.

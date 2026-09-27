@@ -44,7 +44,7 @@ Was bewusst *nicht* in Phase A ist: eigene CMS-Plugins, eigenes CRM/IAM/Ticket-S
 | Starter | 79 EUR/Monat | Kleine Unternehmen, Freelancer, lokale Businesses |
 | Growth / Business | 249 EUR/Monat | KMU, E-Commerce, SaaS — **Hauptprodukt** |
 | Agency Suite | 699 EUR/Monat | Webagenturen, Datenschutzberater, IT-Dienstleister |
-| Enterprise | ab 1.500 EUR/Monat | Konzerne, Oeffentliche Stellen, Healthcare, Banken |
+| Enterprise | 1.249 EUR/Monat (höchste Stufe) | Konzerne, Oeffentliche Stellen, Healthcare, Banken |
 
 ### Free Audit
 - URL Scan + Compliance Score
@@ -68,7 +68,7 @@ Was bewusst *nicht* in Phase A ist: eigene CMS-Plugins, eigenes CRM/IAM/Ticket-S
 - API-Zugriff + Kundenverwaltung
 - Automatische Reports + Prioritaets-Scans
 
-### Enterprise (ab 1.500 EUR/Monat)
+### Enterprise (1.249 EUR/Monat, höchste Stufe)
 - Individuelle Regeln + SLA + Hosting-Optionen
 - Compliance API + AI Act Module + DSB Integration
 - Continuous Compliance + Evidence Vault + Audit Trails

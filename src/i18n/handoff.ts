@@ -75,7 +75,7 @@ export const HANDOFF_COPY = {
     monthly: "Monatlich",
     yearly: "Jährlich",
     popular: "Beliebt",
-    pricingFoot: "Hinweis: Rechnungsstellung ohne Ausweis von Umsatzsteuer gemäß § 19 UStG (Kleinunternehmer). Enterprise auf Anfrage.",
+    pricingFoot: "Gemäß § 19 UStG wird keine Umsatzsteuer ausgewiesen (Kleinunternehmer). Enterprise auf Anfrage.",
     navOverview: "Übersicht",
     navSystems: "KI-Systeme",
     navClassify: "Klassifizierung",

@@ -13,6 +13,10 @@ on:
     - cron: '0 6 * * 4'
   workflow_dispatch:
 
+concurrency:
+  group: tracker-db-version-update
+  cancel-in-progress: false
+
 permissions:
   contents: write
 
@@ -76,4 +80,16 @@ jobs:
           fi
           git add public/tracker-db-version.json
           git commit -m "chore(tracker-db): bump to ${{ steps.compute.outputs.new_version }}"
-          git push
+          # Rebase auf aktuellen main-Stand und versuche Push mit Retries,
+          # falls zwischenzeitlich weitere Commits auf main landen.
+          for attempt in 1 2 3; do
+            git pull --rebase origin main
+            if git push origin HEAD:main; then
+              exit 0
+            fi
+            if [ "$attempt" -lt 3 ]; then
+              sleep 2
+            fi
+          done
+          echo "Push failed after retries due to concurrent updates on main."
+          exit 1

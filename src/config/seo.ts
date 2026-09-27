@@ -53,9 +53,9 @@ export interface SEOConfig {
 const SITE_URL = 'https://realsyncdynamicsai.de';
 
 export const DEFAULT_SEO: SEOConfig = {
-  title: 'RealSyncDynamics.AI — Das Governance OS für DSGVO & EU AI Act',
+  title: 'RealSyncDynamics.AI — The Governance OS for Autonomous AI',
   description:
-    'Das Governance OS für DSGVO und EU AI Act: AI-Systeme, Websites, Agents und Datenflüsse erfassen, Risiken bewerten, Governance durchsetzen und Nachweise führen.',
+    'Die Control Plane für Enterprise-KI: Any model. Any agent. One control plane. EU AI Act, DSGVO und ISO 42001 als nachweisbare Proof-Layer.',
 };
 
 // ─── JSON-LD Templates (re-used) ─────────────────────────────────────────────
@@ -253,14 +253,23 @@ function breadcrumbs(items: Array<{ name: string; url: string }>): Record<string
 export const SEO_CONFIG: Record<string, SEOConfig> = {
   // ─── Tier 1 — Hero / Top-Conversion ──────────────────────────────────────
   '/': {
-    // Governance OS Handoff v2 — matches the H1 in GovernanceOsHero.
-    title: 'RealSyncDynamics.AI — AI Compliance Operations OS for Europe',
+    // Governance-OS-Positionierung — matches the H1 in GovernanceOsHero.
+    title: 'RealSyncDynamics.AI — The Governance OS for Autonomous AI',
     description:
-      'Runtime-Governance für regulierte KI-Systeme: KI-Bestand erfassen, nach EU AI Act klassifizieren, Richtlinien durchsetzen, Evidenz nachweisen. DSGVO und EU AI Act, EU-Hosting. Free Audit starten.',
+      'RealSyncDynamics.AI ist die Control Plane für Enterprise-KI: Any model. Any agent. One control plane. EU AI Act, DSGVO und ISO 42001 als Evidence-Proof-Layer.',
     canonical: `${SITE_URL}/`,
-    ogTitle: 'AI Compliance Operations OS for Europe',
+    ogTitle: 'The Governance OS for Autonomous AI',
     ogDescription:
-      'Runtime governance for regulated AI systems. Continuous evidence. EU-native by design.',
+      'Europa braucht Kontrolle über Frontier-KI: RealSyncDynamics.AI baut die Kontroll-, Autorisierungs- und Evidence-Layer zwischen Unternehmen und KI.',
+  },
+  '/design/titan': {
+    title: 'RealSyncDynamics.AI — Titan-Fallbackroute der Governance-Landing',
+    description:
+      'Fallbackroute der Landing-Positionierung (Legacy-Titan): Control Plane für Enterprise-KI mit Policies, Freigaben, Ausführung und Evidence als Proof-Layer.',
+    canonical: `${SITE_URL}/design/titan`,
+    ogTitle: 'Titan-Fallbackroute der Governance-Landing',
+    ogDescription:
+      'Fallbackroute: Any model. Any agent. One control plane.',
   },
   '/pricing': {
     title: 'Preise – Runtime-native AI-Governance-Plattform | RealSyncDynamics.AI',
@@ -508,7 +517,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
   '/caralegal-alternative': {
     title: 'caralegal Alternative — technische Governance-Runtime neben dem DSMS | RealSyncDynamics.AI',
     description:
-      'caralegal ist ein DSMS für die Datenschutzorganisation. RealSyncDynamics.AI ist die technische Compliance-Runtime daneben: Detect, Govern, Enforce, Prove — Befund, Policy-Entscheidung, Nachweis.',
+      'caralegal ist auf Datenschutz- und KI-Governance-Dokumentation ausgelegt. RealSyncDynamics.AI ist die technische Compliance-Runtime daneben: Detect, Govern, Enforce, Prove — Befund, Policy-Entscheidung, Nachweis.',
     canonical: `${SITE_URL}/caralegal-alternative`,
     jsonLd: breadcrumbs([
       { name: 'Home', url: '/' },

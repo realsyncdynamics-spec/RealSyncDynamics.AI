@@ -485,6 +485,7 @@ export function HandoffOverview({
           value={has('assets') ? aiAssets.length : null}
           sub={has('assets') ? (aiAssets.length === 0 ? t('kSystemsNone') : t('kSystemsSub', { n: unclassified.length })) : null}
           testId="kpi-systems"
+          to="/app/ai-systems"
         />
         <StatCard
           label={t('kHigh')}
@@ -492,12 +493,14 @@ export function HandoffOverview({
           sub={has('assets') ? t('kHighSubReal') : null}
           accent="var(--color-rs-warning)"
           testId="kpi-high"
+          to="/app/ai-systems"
         />
         <StatCard
           label={t('kPolicies')}
           value={has('policies') ? enabledPolicies.length : null}
           sub={has('policies') ? t('kPoliciesSubReal', { n: logOnly.length }) : null}
           testId="kpi-policies"
+          to="/app/policy-packs"
         />
         <StatCard
           label={t('kEvidence')}
@@ -505,6 +508,7 @@ export function HandoffOverview({
           sub={evidenceHashed === null ? null : t('kEvidenceSubReal', { n: evidenceHashed })}
           accent="var(--color-rs-cyan)"
           testId="kpi-evidence"
+          to="/app/evidence"
         />
 
         <Panel className="rs-dash__wide" testId="overview-classes">

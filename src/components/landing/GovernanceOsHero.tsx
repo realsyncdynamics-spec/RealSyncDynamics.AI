@@ -2,26 +2,28 @@
  * Startseiten-Hero — Governance OS Handoff v2 (Cyan, kein Gold).
  *
  * Werte aus HANDOFF.md §1 (hifi): Europa-Nachtkarte rechts mit Perspektive,
- * Tiefenebene, Overlays; Nav mit DE/EN; Badge; H1 Newsreader 80px; Loop
- * DISCOVER → CLASSIFY → ENFORCE → PROVE; zwei CTAs.
+ * Tiefenebene, Overlays; Nav mit DE/EN; H1 Newsreader 80px; Loop
+ * DISCOVER → ASSESS → GOVERN → EXECUTE → VERIFY → PROVE; zwei CTAs.
  *
- * Vertrag mit test/landing/canonical-scan-entry.test.tsx und
- * test/landing/homepage-hero.test.tsx: genau ein `[data-hero-cta="audit"]`,
- * `<a id="audit-cta" href="/audit">`, Zweit-CTA mit HERO_DASHBOARD_CTA_LABEL.
+ * Governance-OS-Positionierung: Kategorie-Eyebrow statt Normen-Badge, H1
+ * „Europa braucht kein weiteres Frontier-Modell. Europa braucht Kontrolle
+ * über Frontier-KI.", Loop über alle
+ * sechs Stufen. Erst-CTA → interaktive Pipeline (`#pipeline`), Zweit-CTA →
+ * Architektur (`#architecture`), Enterprise als Textlink. Die Systemzeile
+ * nennt nur Belegtes (Supabase eu-central-1, Hash-Kette, PDP). Vertrag:
+ * test/landing/homepage-hero.test.tsx.
  *
  * Die Karte ist das Handoff-Asset `public/europe-map-v2.png` (1052×1152) mit
  * WebP-Ableitung; beide Ebenen nutzen dieselbe Datei (ein Download).
  */
-import { useEffect, useId, useState } from 'react';
+import { type ReactNode, useEffect, useId, useState } from 'react';
 import { preload } from 'react-dom';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Menu, X } from 'lucide-react';
 import '../../styles/governance-os-handoff.css';
 import { BrandWordmark } from '../handoff/BrandWordmark';
 import { LangToggle } from '../handoff/LangToggle';
-import { HANDOFF_NAV } from '../handoff/handoff-nav';
 import { useLang } from '../../i18n/useLang';
-import { HERO_DASHBOARD_CTA_LABEL } from '../governance-frontend/hero-content';
 
 export const HERO_MAP_WEBP = '/europe-map-v2.webp';
 export const HERO_MAP_PNG = '/europe-map-v2.png';
@@ -41,6 +43,22 @@ function MapPicture({ priority }: { priority: boolean }) {
       />
     </picture>
   );
+}
+
+/**
+ * Anker auf `/` (`/#pricing`) als echtes `<a>`: react-router scrollt bei
+ * `<Link to="/#…">` auf derselben Seite nicht zum Ziel, der Browser schon.
+ */
+function NavItem({ to, className, onClick, children }: {
+  to: string;
+  className: string;
+  onClick?: () => void;
+  children: ReactNode;
+}) {
+  if (to.startsWith('/#')) {
+    return <a href={to} className={className} onClick={onClick}>{children}</a>;
+  }
+  return <Link to={to} className={className} onClick={onClick}>{children}</Link>;
 }
 
 export function GovernanceOsHero() {
@@ -66,7 +84,23 @@ export function GovernanceOsHero() {
     };
   }, [menuOpen]);
 
-  const dashboardLabel = lang === 'de' ? HERO_DASHBOARD_CTA_LABEL : t('cta2');
+  const landingNav = lang === 'de'
+    ? [
+        { label: 'Plattform', to: '/#system', prominent: true },
+        { label: 'Pipeline', to: '/#pipeline', prominent: false },
+        { label: 'Architektur', to: '/#architecture', prominent: false },
+        { label: 'Governance', to: '/governance-runtime', prominent: false },
+        { label: 'Preise', to: '/#pricing', prominent: true },
+        { label: 'Login', to: '/login', prominent: false },
+      ]
+    : [
+        { label: 'Platform', to: '/#system', prominent: true },
+        { label: 'Pipeline', to: '/#pipeline', prominent: false },
+        { label: 'Architecture', to: '/#architecture', prominent: false },
+        { label: 'Governance', to: '/governance-runtime', prominent: false },
+        { label: 'Pricing', to: '/#pricing', prominent: true },
+        { label: 'Login', to: '/login', prominent: false },
+      ];
 
   return (
     <section
@@ -92,21 +126,21 @@ export function GovernanceOsHero() {
       <header className="rs-nav">
         <BrandWordmark />
         <nav className="rs-nav__links" aria-label={t('mainNav')}>
-          {HANDOFF_NAV.map((item) => (
-            <Link
-              key={item.key}
+          {landingNav.map((item) => (
+            <NavItem
+              key={item.to}
               to={item.to}
               className={`rs-nav__link${item.prominent ? ' rs-nav__link--key' : ''}`}
             >
-              {t(item.key)}
-            </Link>
+              {item.label}
+            </NavItem>
           ))}
         </nav>
         <div className="rs-nav__tools">
           <LangToggle />
-          <Link to="/audit" className="rs-btn rs-btn--primary rs-btn--h40">
+          <a href="#pipeline" className="rs-btn rs-btn--primary rs-btn--h40">
             {t('cta')}
-          </Link>
+          </a>
         </div>
         <button
           type="button"
@@ -136,37 +170,53 @@ export function GovernanceOsHero() {
             </button>
           </div>
           <nav className="flex flex-col gap-2" aria-label={t('mainNav')}>
-            {HANDOFF_NAV.map((item) => (
-              <Link
-                key={item.key}
+            {landingNav.map((item) => (
+              <NavItem
+                key={item.to}
                 to={item.to}
                 className={`rs-menu__item${item.prominent ? ' rs-menu__item--key' : ''}`}
                 onClick={() => setMenuOpen(false)}
               >
-                {t(item.key)}
-              </Link>
+                {item.label}
+              </NavItem>
             ))}
           </nav>
           <div className="mt-4 flex items-center gap-3">
             <LangToggle />
           </div>
-          <Link
-            to="/audit"
+          <a
+            href="#pipeline"
             className="rs-btn rs-btn--primary rs-btn--h52 mt-4 w-full"
             onClick={() => setMenuOpen(false)}
           >
             {t('cta')}
             <ArrowRight size={18} aria-hidden="true" />
-          </Link>
+          </a>
         </div>
       )}
 
       <div className="rs-hero__body">
         <div className="rs-hero__content">
-          <span className="rs-badge">
-            <span className="rs-badge__dot" aria-hidden="true" />
-            {t('heroBadge')}
-          </span>
+          <p className="rs-hero__eyebrow">{t('heroEyebrow')}</p>
+
+          {/* Systemzeile: nur belegte Fakten (Supabase-Region, Hash-Kette,
+              Policy Decision Point) — technische Bezeichner, daher unübersetzt. */}
+          <dl className="rs-hero__status" data-testid="hero-status">
+            {([
+              ['SYSTEM', 'GOVERNANCE OS'],
+              ['REGION', 'EU-CENTRAL-1 · FRANKFURT'],
+              ['EVIDENCE', 'SHA-256 HASH-CHAIN'],
+              ['POLICY', 'DECISION POINT'],
+            ] as const).map(([key, value], i) => (
+              <div key={key} className="rs-hero__status-cell">
+                <dt className="rs-hero__status-key">{key}</dt>
+                <dd className="rs-hero__status-val">
+                  {i === 0 && <span className="rs-hero__status-dot" aria-hidden="true" />}
+                  {value}
+                </dd>
+              </div>
+            ))}
+          </dl>
 
           <h1 id="hero-heading" className="rs-hero__h1">
             <span className="rs-hero__h1-line">{t('heroA')}</span>
@@ -176,8 +226,12 @@ export function GovernanceOsHero() {
             </span>
           </h1>
 
-          <ol className="rs-loop" aria-label="DISCOVER → CLASSIFY → ENFORCE → PROVE">
-            {(['loopDiscover', 'loopClassify', 'loopEnforce', 'loopProve'] as const).map((key, i) => (
+          <p className="rs-hero__subline">
+            {t('sub1')} {t('sub2')}
+          </p>
+
+          <ol className="rs-loop" aria-label="DISCOVER → ASSESS → GOVERN → EXECUTE → VERIFY → PROVE">
+            {(['loopDiscover', 'loopAssess', 'loopGovern', 'loopExecute', 'loopVerify', 'loopProve'] as const).map((key, i) => (
               <li key={key}>
                 {i > 0 && <ArrowRight size={14} aria-hidden="true" />}
                 <span>{t(key)}</span>
@@ -186,25 +240,34 @@ export function GovernanceOsHero() {
           </ol>
 
           <div className="rs-hero__ctas" role="group" aria-label={t('heroActions')}>
-            <Link
-              id="audit-cta"
-              data-hero-cta="audit"
+            <a
+              id="pipeline-cta"
+              data-hero-cta="pipeline"
               data-testid="hero-primary-cta"
-              to="/audit"
+              href="#pipeline"
               className="rs-btn rs-btn--primary rs-btn--h52"
             >
               {t('cta')}
               <ArrowRight size={18} aria-hidden="true" />
-            </Link>
-            <Link
-              data-hero-cta="dashboard"
+            </a>
+            <a
+              data-hero-cta="architecture"
               data-testid="hero-secondary-cta"
-              to="/app/dashboard"
+              href="#architecture"
               className="rs-btn rs-btn--glass rs-btn--h52"
             >
-              {dashboardLabel}
-            </Link>
+              {t('ctaExplore')}
+            </a>
           </div>
+
+          <Link
+            to="/contact-sales?tier=enterprise&source=home-hero"
+            className="rs-hero__enterprise"
+            data-testid="hero-enterprise-link"
+          >
+            {t('ctaEnterprise')}
+            <ArrowRight size={14} aria-hidden="true" />
+          </Link>
 
           <p className="rs-hero__trust">{t('trustLine')}</p>
         </div>

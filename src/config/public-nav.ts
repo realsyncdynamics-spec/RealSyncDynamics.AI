@@ -382,9 +382,9 @@ export const PUBLIC_FOOTER_LINKS: PublicNavLeaf[] = [
 ];
 
 export const PUBLIC_CTA = {
-  /** Acquisition CTA — Replit SSOT Free Audit (never „Demo“ / „testen“). */
-  label: 'Kostenlosen Audit starten',
-  shortLabel: 'Free Audit',
+  /** Acquisition CTA — Dominik Go Homepage 2026-09-24 (never Demo/Pilot/Call). */
+  label: 'Governance-Scan starten',
+  shortLabel: 'Governance-Scan',
   to: '/audit',
 } as const;
 
@@ -410,3 +410,12 @@ export function badgeLabel(badge: NavBadge | undefined): string | null {
   if (badge === 'coming-soon') return 'Coming Soon';
   return null;
 }
+
+/** Brand Direction v1.0 — production landing navigation. */
+export const GOVERNANCE_PRIMARY_NAV: readonly PublicNavLeaf[] = [
+  { label: 'Produkt', to: '/#product' },
+  { label: 'Compliance', to: '/ai-act-governance' },
+  { label: 'Evidence', to: '/#evidence' },
+  { label: 'Preise', to: '/#pricing' },
+  { label: 'Login', to: '/welcome' },
+];

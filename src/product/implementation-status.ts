@@ -49,7 +49,7 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     status: 'live',
     group: 'surface',
     description:
-      'Governance OS: H1 „Europa braucht kein weiteres Frontier-Modell. Europa braucht Kontrolle über Frontier-KI.“; Papier & Waldgrün, Europa-Karte als Atlas-Druck, Systemzeile mit eu-central-1 (kein 3D-Globus); System-Story 01–07 → Signature Pipeline (Beispielablauf im Browser) → Agent-Architektur (Preview) → Provider-Neutralität → Control Room (Beispielwerte, gekennzeichnet) → Nutzen → Executive → Prinzipien → Governance-Check → Plattform-Preise inkl. Enterprise auf Anfrage.',
+      'Governance OS: H1 „Die Kontrollschicht für KI im Unternehmen.“ (E-F3), Primär-CTA in den Scan (/audit), Sekundär-CTA Enterprise; Papier & Waldgrün, Europa-Karte als Atlas-Druck, Systemzeile mit eu-central-1 (kein 3D-Globus); System-Story 01–07 → Signature Pipeline (Beispielablauf im Browser) → Agent-Architektur (Preview) inkl. Zielbild „AI Governance OS“ mit Control Loop (Learn = Coming Soon) und Einstiegspfad → Provider-Neutralität → Control Room (Beispielwerte, gekennzeichnet) → Nutzen → Executive → Prinzipien → Governance-Check → Plattform-Preise inkl. Enterprise auf Anfrage.',
     route: '/',
     evidence: [
       'src/pages/design/DesignGovernanceAiLanding.tsx',

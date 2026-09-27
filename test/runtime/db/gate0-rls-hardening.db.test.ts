@@ -182,6 +182,33 @@ d('Gate 0 — RLS-Härtung', () => {
     });
   });
 
+  describe('Views über gehärtete Tabellen umgehen die RLS nicht', () => {
+    beforeEach(async () => {
+      await q(
+        `INSERT INTO public.tenant_memberships(tenant_id, user_id, role) VALUES ($1,$2,'owner') ON CONFLICT DO NOTHING`,
+        [ids.tB, ids.ownerB],
+      );
+      // api_calls.api_key_id hat einen FK auf api_keys — für die Fixture ohne
+      // Schlüssel-Setup nur hier die Trigger (inkl. FK) umgehen.
+      await q(`SET LOCAL session_replication_role = replica`);
+      await q(
+        `INSERT INTO public.api_calls(tenant_id, api_key_id, endpoint, method, request_path)
+         VALUES ($1, gen_random_uuid(), 'e', 'GET', '/')`,
+        [ids.tA],
+      );
+      await q(`SET LOCAL session_replication_role = origin`);
+    });
+
+    it.each(['agent_token_usage_analytics', 'api_monthly_usage'])(
+      '%s: anon und fremde Mandanten sehen nichts, Mitglieder ihren Mandanten',
+      async (view) => {
+        expect(await attempt(anon, `SELECT 1 FROM public.${view}`)).toBe('deny');
+        expect(await attempt(user(ids.ownerB), `SELECT 1 FROM public.${view}`)).toBe('deny');
+        expect(await attempt(user(ids.owner), `SELECT 1 FROM public.${view}`)).toBe('allow');
+      },
+    );
+  });
+
   describe('Keine direkten Member-Mutationen auf KI-Governance-Tabellen', () => {
     it('Viewer, Editor und Owner können AI-Systeme nicht direkt anlegen, ändern oder löschen', async () => {
       for (const who of [ids.viewer, ids.editor, ids.owner]) {

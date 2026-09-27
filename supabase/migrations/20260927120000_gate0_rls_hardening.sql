@@ -184,3 +184,13 @@ CREATE POLICY memberships_delete
     public.is_tenant_owner(tenant_id)
     OR (public.is_tenant_owner_or_admin(tenant_id) AND role <> 'owner')
   );
+
+-- ─── 5. Views über gehärtete Tabellen: RLS nicht mehr umgehen ────────────────
+-- Beide Views laufen ohne security_invoker mit den Rechten ihres Owners und
+-- umgehen damit die RLS der Basistabelle. Verifiziert: anon las über
+-- agent_token_usage_analytics bzw. api_monthly_usage Zeilen fremder Mandanten,
+-- obwohl der direkte Tabellenzugriff 0 Zeilen liefert. Mit security_invoker
+-- gilt die Policy der Basistabelle: Mitglieder sehen ihren Mandanten
+-- (ApiUsageStats liest api_monthly_usage weiter), anon und Fremde nichts.
+ALTER VIEW public.agent_token_usage_analytics SET (security_invoker = on);
+ALTER VIEW public.api_monthly_usage SET (security_invoker = on);

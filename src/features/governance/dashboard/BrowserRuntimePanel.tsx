@@ -14,6 +14,7 @@ import {
   Type,
 } from 'lucide-react';
 import { useBrowserSession } from '../../../lib/useBrowserSession';
+import { useTenant } from '../../../core/access/TenantProvider';
 import {
   BrowserExecutorError,
   executeBrowserActions,
@@ -75,6 +76,28 @@ export function urlFromInput(value: string): string | null {
   return normalizeUrl(raw);
 }
 
+export type RuntimeBadgeState = 'active' | 'preview' | 'inactive';
+
+/**
+ * Statusanzeigen der Runtime — nur aus geprüften Zuständen:
+ *   navigation  active  = serverseitiger Executor erreichbar (Health-Probe)
+ *               preview = nur clientseitige Browser-Preview (öffnet den Audit-Pfad)
+ *   evidence    active  = Executor erreichbar; nur seine Aktionen erzeugen
+ *               Evidence (browser-execute → governance_evidence). Die Preview
+ *               schreibt keine.
+ * Ohne mitgliedschaftsgebundenen Mandanten ist beides inaktiv.
+ */
+export function runtimeStatus(input: { tenantBound: boolean; executorConnected: boolean }): {
+  navigation: RuntimeBadgeState;
+  evidence: RuntimeBadgeState;
+} {
+  if (!input.tenantBound) return { navigation: 'inactive', evidence: 'inactive' };
+  return {
+    navigation: input.executorConnected ? 'active' : 'preview',
+    evidence: input.executorConnected ? 'active' : 'inactive',
+  };
+}
+
 function openGovernedBrowser(url: string) {
   window.dispatchEvent(new CustomEvent('realsync:browser-open', { detail: { url } }));
 }
@@ -105,6 +128,9 @@ function resultSummary(result: unknown): string {
 
 export function BrowserRuntimePanel({ activeTenantId }: { activeTenantId: string | null }) {
   const sessionId = useBrowserSession();
+  const { tenants } = useTenant();
+  // Aktiver Mandant stammt aus der RLS-gescopten memberships-Liste (TenantProvider).
+  const tenantBound = activeTenantId !== null && (tenants ?? []).some((t) => t.tenantId === activeTenantId);
   const [mode, setMode] = useState<AgentMode>('assist');
   const [task, setTask] = useState('');
   const [message, setMessage] = useState<string | null>(null);
@@ -154,13 +180,14 @@ export function BrowserRuntimePanel({ activeTenantId }: { activeTenantId: string
     () => [
       { label: 'Navigate', available: executorConnected, icon: Globe2 },
       { label: 'Scan', available: Boolean(activeTenantId), icon: ShieldCheck },
-      { label: 'Evidence', available: Boolean(activeTenantId), icon: FileCheck2 },
+      { label: 'Evidence', available: tenantBound && executorConnected, icon: FileCheck2 },
       { label: 'Scroll', available: executorConnected, icon: ScrollText },
       { label: 'Click', available: executorConnected, icon: MousePointer2 },
       { label: 'Type', available: executorConnected, icon: Type },
     ],
-    [executorConnected, activeTenantId],
+    [executorConnected, activeTenantId, tenantBound],
   );
+  const status = runtimeStatus({ tenantBound, executorConnected });
 
   function submit(event: FormEvent) {
     event.preventDefault();
@@ -331,25 +358,30 @@ export function BrowserRuntimePanel({ activeTenantId }: { activeTenantId: string
           </p>
         </div>
         <div className="flex flex-wrap gap-2 text-[11px] font-mono">
-          {/* Navigation = clientseitige Preview, Evidence = Mandanten-Log —
-              beides nur mit aktivem Mandanten, sonst ehrlich „inaktiv“. */}
+          {/* Nur geprüfte Zustände — siehe runtimeStatus(). */}
           <span
+            data-testid="runtime-badge-navigation"
             className={
-              activeTenantId
+              status.navigation === 'active'
                 ? 'border border-emerald-900 bg-emerald-950/30 px-2.5 py-1 text-emerald-300'
                 : 'border border-titanium-800 px-2.5 py-1 text-titanium-500'
             }
           >
-            {activeTenantId ? 'NAVIGATION ACTIVE' : 'NAVIGATION INACTIVE'}
+            {status.navigation === 'active'
+              ? 'NAVIGATION ACTIVE'
+              : status.navigation === 'preview'
+                ? 'NAVIGATION PREVIEW'
+                : 'NAVIGATION INACTIVE'}
           </span>
           <span
+            data-testid="runtime-badge-evidence"
             className={
-              activeTenantId
+              status.evidence === 'active'
                 ? 'border border-cyan-900 bg-cyan-950/30 px-2.5 py-1 text-cyan-300'
                 : 'border border-titanium-800 px-2.5 py-1 text-titanium-500'
             }
           >
-            {activeTenantId ? 'EVIDENCE ACTIVE' : 'EVIDENCE INACTIVE'}
+            {status.evidence === 'active' ? 'EVIDENCE ACTIVE' : 'EVIDENCE INACTIVE'}
           </span>
           <span
             className={
@@ -637,8 +669,8 @@ export function BrowserRuntimePanel({ activeTenantId }: { activeTenantId: string
           <dl className="mt-4 divide-y divide-titanium-800 border border-titanium-800 bg-obsidian-900 text-xs">
             <div className="flex items-center justify-between gap-3 px-3 py-3">
               <dt className="text-titanium-500">Tenant authority</dt>
-              <dd className={activeTenantId ? 'text-emerald-300' : 'text-amber-300'}>
-                {activeTenantId ? 'membership-bound' : 'not resolved'}
+              <dd className={tenantBound ? 'text-emerald-300' : 'text-amber-300'}>
+                {tenantBound ? 'membership-bound' : 'not resolved'}
               </dd>
             </div>
             <div className="flex items-center justify-between gap-3 px-3 py-3">

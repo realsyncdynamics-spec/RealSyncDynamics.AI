@@ -133,6 +133,16 @@ If step 8 succeeds but step 9 doesn't, the subscription was written through a se
 
 **Fix**: copy real Price ID from Stripe Dashboard → Products → [plan] → Pricing section. UPDATE the products row.
 
+**Gemessen 2026-09-27** (Live-Projekt, read-only, `public.products` + `vault.decrypted_secrets`):
+`stripe_secret_key` (`sk_live_`) und `stripe_webhook_secret` liegen im Vault. Echte
+`price_`-IDs haben `starter`, `growth`, `governance_launch` (sowie Legacy `agency`,
+`partner`, `enterprise`). **Platzhalter** tragen `starter_yearly`, `growth_yearly`,
+`agency_yearly`, `partner_yearly` (`STRIPE_PRICE_*_YEARLY_XXX`). Ein
+`PRICE_NOT_CONFIGURED` im QA-Test vom 2026-09-04 passt genau zur Jahresabrechnung;
+das Frontend sperrt sie bereits (`yearlyCheckoutUnavailable` in `shared/pricing.ts`,
+Abfangen in `CheckoutPage.tsx`). Offen ist allein der Betreiberschritt: Jahres-Prices
+in Stripe anlegen, IDs eintragen, dann `yearlyCheckoutUnavailable` entfernen.
+
 ### `STRIPE_SECRET_KEY missing`
 
 Edge Function returns `503` with `STRIPE_NOT_CONFIGURED`.

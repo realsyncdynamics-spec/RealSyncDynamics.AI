@@ -30,18 +30,18 @@ export function LandingDarkBand() {
           className="text-[9px] tracking-[.22em]"
           style={{ fontFamily: LANDING_MONO, color: LANDING_ACCENT }}
         >
-          ONE OPERATIONAL PLANE
+          THE GOVERNANCE OS FOR AUTONOMOUS AI
         </p>
         <h2
           className="mt-3 text-[clamp(32px,4vw,52px)] leading-none tracking-[-.03em]"
           style={{ fontFamily: LANDING_SERIF, fontWeight: 500, color: LANDING_TEXT }}
         >
-          Detect. Govern. Prove.
+          Any model. Any agent. One control plane.
         </h2>
       </div>
       <p className="max-w-md text-[13px] leading-[1.7]" style={{ color: LANDING_MUTED }}>
-        Runtime für KI-Risiken, Policies und Evidence — für Module mit Status
-        LIVE. Preview und Next stehen auf der Roadmap.
+        RealSyncDynamics.AI ist die Control Plane für Enterprise-KI: Kontrolle, Autorisierung und Evidence
+        zwischen Unternehmen und KI — nicht ein weiteres Modell.
       </p>
       <Link
         to="/governance-runtime"

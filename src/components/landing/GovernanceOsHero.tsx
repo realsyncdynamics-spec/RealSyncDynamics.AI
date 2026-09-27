@@ -3,10 +3,11 @@
  *
  * Werte aus HANDOFF.md §1 (hifi): Europa-Nachtkarte rechts mit Perspektive,
  * Tiefenebene, Overlays; Nav mit DE/EN; H1 Newsreader 80px; Loop
- * DISCOVER → ASSESS → GOVERN → PROVE; zwei CTAs.
+ * DISCOVER → ASSESS → GOVERN → EXECUTE → VERIFY → PROVE; zwei CTAs.
  *
  * Governance-OS-Positionierung: Kategorie-Eyebrow statt Normen-Badge, H1
- * „Ihre KI kann handeln. Jetzt braucht sie Governance.", Loop über alle
+ * „Europa braucht kein weiteres Frontier-Modell. Europa braucht Kontrolle
+ * über Frontier-KI.", Loop über alle
  * sechs Stufen. Erst-CTA → interaktive Pipeline (`#pipeline`), Zweit-CTA →
  * Architektur (`#architecture`), Enterprise als Textlink. Die Systemzeile
  * nennt nur Belegtes (Supabase eu-central-1, Hash-Kette, PDP). Vertrag:

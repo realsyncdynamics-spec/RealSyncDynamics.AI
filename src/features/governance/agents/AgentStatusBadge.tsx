@@ -1,16 +1,10 @@
-import type { AgentRiskLevel, AgentStatus } from './types';
+import { STATUS_LABEL, type ImplementationStatus } from '../../../product/implementation-status';
+import type { AgentRiskLevel } from './types';
 
-const STATUS_LABEL: Record<AgentStatus, string> = {
-  active:          'Aktiv',
-  paused:          'Pausiert',
-  review_required: 'Review erforderlich',
-  disabled:        'Deaktiviert',
-};
-const STATUS_CLS: Record<AgentStatus, string> = {
-  active:          'bg-emerald-500/15 text-emerald-200 border-emerald-500/40',
-  paused:          'bg-sky-500/15 text-sky-200 border-sky-500/40',
-  review_required: 'bg-amber-500/15 text-amber-200 border-amber-500/40',
-  disabled:        'bg-titanium-800/30 text-titanium-300 border-titanium-700',
+const MATURITY_CLS: Record<ImplementationStatus, string> = {
+  live:          'bg-emerald-500/15 text-emerald-200 border-emerald-500/40',
+  preview:       'bg-sky-500/15 text-sky-200 border-sky-500/40',
+  'coming-soon': 'bg-titanium-800/30 text-titanium-300 border-titanium-700',
 };
 
 const RISK_LABEL: Record<AgentRiskLevel, string> = {
@@ -26,10 +20,11 @@ const RISK_CLS: Record<AgentRiskLevel, string> = {
   critical: 'bg-rose-500/15 text-rose-200 border-rose-500/40',
 };
 
-export function AgentStatusBadge({ status }: { status: AgentStatus }) {
+/** Reifegrad-Badge — Beschriftung ausschließlich aus implementation-status.ts. */
+export function AgentMaturityBadge({ maturity }: { maturity: ImplementationStatus }) {
   return (
-    <span className={`inline-flex items-center gap-1 border px-2 py-0.5 font-mono text-[10px] uppercase tracking-wide ${STATUS_CLS[status]}`}>
-      {STATUS_LABEL[status]}
+    <span className={`inline-flex items-center gap-1 border px-2 py-0.5 font-mono text-[10px] uppercase tracking-wide ${MATURITY_CLS[maturity]}`}>
+      {STATUS_LABEL[maturity]}
     </span>
   );
 }

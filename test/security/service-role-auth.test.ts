@@ -18,7 +18,11 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { resolve, join } from 'node:path';
-import { timingSafeEqual } from '../../supabase/functions/_shared/auth';
+// Import aus dem Deno-freien Modul, NICHT aus auth.ts: dessen
+// `jsr:@supabase/supabase-js@2` ist ausserhalb von Deno nicht auflösbar und
+// haette den Typecheck gebrochen (tsconfig schliesst supabase/functions aus,
+// ein Import aus test/ zieht die Datei aber trotzdem ins Programm).
+import { timingSafeEqual } from '../../supabase/functions/_shared/timingSafeEqual';
 
 // ── timingSafeEqual ────────────────────────────────────────────────────────
 

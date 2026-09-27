@@ -12,6 +12,7 @@
 
 import { createClient, type SupabaseClient } from 'jsr:@supabase/supabase-js@2';
 import { jsonError } from './gateway.ts';
+import { timingSafeEqual } from './timingSafeEqual.ts';
 
 export interface AuthUser {
   id: string;
@@ -126,16 +127,10 @@ export async function requireAuthAndTenant(
   return { ...auth, tenantId: clientTenantId };
 }
 
-/**
- * Constant-time string comparison. Keeps the response time from revealing how
- * much of a token was guessed correctly.
- */
-export function timingSafeEqual(a: string, b: string): boolean {
-  if (a.length !== b.length) return false;
-  let diff = 0;
-  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
-  return diff === 0;
-}
+// Liegt in einer eigenen, Deno-freien Datei, damit Tests die Funktion
+// importieren koennen, ohne den `jsr:`-Specifier oben in das TS-Programm des
+// Frontends zu ziehen. Re-Export, damit Aufrufer sie weiter hier finden.
+export { timingSafeEqual };
 
 /**
  * Machine-caller gate for endpoints that are NOT invoked by a human: pg_cron

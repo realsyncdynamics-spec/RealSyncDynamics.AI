@@ -3,10 +3,11 @@
  *
  * Werte aus HANDOFF.md §1 (hifi): Europa-Nachtkarte rechts mit Perspektive,
  * Tiefenebene, Overlays; Nav mit DE/EN; H1 Newsreader 80px; Loop
- * DISCOVER → ASSESS → GOVERN → PROVE; zwei CTAs.
+ * DISCOVER → ASSESS → GOVERN → EXECUTE → VERIFY → PROVE; zwei CTAs.
  *
  * Governance-OS-Positionierung: Kategorie-Eyebrow statt Normen-Badge, H1
- * „Ihre KI kann handeln. Jetzt braucht sie Governance.", Loop über alle
+ * „Europa braucht kein weiteres Frontier-Modell. Europa braucht Kontrolle
+ * über Frontier-KI.", Loop über alle
  * sechs Stufen. Erst-CTA → interaktive Pipeline (`#pipeline`), Zweit-CTA →
  * Architektur (`#architecture`), Enterprise als Textlink. Die Systemzeile
  * nennt nur Belegtes (Supabase eu-central-1, Hash-Kette, PDP). Vertrag:
@@ -200,12 +201,22 @@ export function GovernanceOsHero() {
 
           {/* Systemzeile: nur belegte Fakten (Supabase-Region, Hash-Kette,
               Policy Decision Point) — technische Bezeichner, daher unübersetzt. */}
-          <div className="rs-hero__status" data-testid="hero-status">
-            <span><span className="rs-hero__status-dot" aria-hidden="true" />SYSTEM: GOVERNANCE OS</span>
-            <span>REGION: EU-CENTRAL-1 · FRANKFURT</span>
-            <span>EVIDENCE: SHA-256 HASH-CHAIN</span>
-            <span>POLICY: DECISION POINT</span>
-          </div>
+          <dl className="rs-hero__status" data-testid="hero-status">
+            {([
+              ['SYSTEM', 'GOVERNANCE OS'],
+              ['REGION', 'EU-CENTRAL-1 · FRANKFURT'],
+              ['EVIDENCE', 'SHA-256 HASH-CHAIN'],
+              ['POLICY', 'DECISION POINT'],
+            ] as const).map(([key, value], i) => (
+              <div key={key} className="rs-hero__status-cell">
+                <dt className="rs-hero__status-key">{key}</dt>
+                <dd className="rs-hero__status-val">
+                  {i === 0 && <span className="rs-hero__status-dot" aria-hidden="true" />}
+                  {value}
+                </dd>
+              </div>
+            ))}
+          </dl>
 
           <h1 id="hero-heading" className="rs-hero__h1">
             <span className="rs-hero__h1-line">{t('heroA')}</span>

@@ -12,6 +12,7 @@ import { LandingDarkBand } from '../components/landing/LandingDarkBand';
 import { GovernanceRuntimeSection } from '../components/landing/GovernanceRuntimeSection';
 import { LandingRoadmapSection } from '../components/landing/LandingRoadmapSection';
 import { EnterpriseAccessSection } from '../components/landing/EnterpriseAccessSection';
+import { DEFAULT_SEO, SEO_CONFIG } from '../config/seo';
 import { PLATFORM_LIVE_ITEMS, STATUS_LABEL } from '../product/implementation-status';
 import { useStagedReveal } from '../hooks/useStagedReveal';
 import {
@@ -36,6 +37,7 @@ import {
 export function MainLanding() {
   const revealRoot = useStagedReveal<HTMLElement>();
   const { mode, setMode } = useLandingMode();
+  const seo = SEO_CONFIG['/design/titan'] ?? DEFAULT_SEO;
 
   return (
     <div
@@ -48,11 +50,11 @@ export function MainLanding() {
       }}
     >
       <SEOHead
-        title="RealSyncDynamics.AI — AI Compliance Operations OS für Europa"
-        description="AI Compliance Operations OS für Europa. Entdecken. Klassifizieren. Durchsetzen. Beweisen. Free Audit starten."
-        canonical="/"
-        ogTitle="AI Compliance Operations OS für Europa"
-        ogDescription="RealSyncDynamics.AI — Governance-Infrastruktur für Europa. Free Audit starten."
+        title={seo.title}
+        description={seo.description}
+        canonical={seo.canonical}
+        ogTitle={seo.ogTitle}
+        ogDescription={seo.ogDescription}
       />
 
       <PublicDarkHeader overlay modeSwitch={<LandingModeSwitch mode={mode} onChange={setMode} />} />

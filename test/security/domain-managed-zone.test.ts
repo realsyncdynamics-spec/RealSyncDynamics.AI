@@ -117,3 +117,25 @@ describe('website-domain-manager: die Preview-Regel steht weiterhin', () => {
     }
   });
 });
+
+describe('website-domain-manager: eine Schreibweise fuer alle DB-Zugriffe', () => {
+  // `website_domains.domain` ist case-sensitiv UNIQUE, DNS nicht. Wird nur die
+  // Zonenpruefung normalisiert, kann ein zweiter Mandant dieselbe Domain in
+  // anderer Schreibweise anlegen und per validateDomain aktivieren.
+  it('normalisiert die Domain einmal im Handler', () => {
+    expect(code).toContain('const domain = normalizeDomain(body.domain)');
+    expect(code).toMatch(/\(raw \?\? ''\)\.trim\(\)\.toLowerCase\(\)/);
+  });
+
+  it('keine Aktion bekommt die Rohschreibweise aus dem Body', () => {
+    expect(code).not.toMatch(/body\.domain \|\| ''/);
+    for (const aufruf of [
+      'connectDomain(body.project_id, body.tenant_id, domain)',
+      'validateDomain(body.project_id, domain)',
+      'disconnectDomain(body.project_id, domain)',
+      'checkSSL(domain)',
+    ]) {
+      expect(code, `${aufruf} fehlt`).toContain(aufruf);
+    }
+  });
+});

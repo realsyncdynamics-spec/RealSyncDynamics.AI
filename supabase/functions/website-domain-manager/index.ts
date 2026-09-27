@@ -51,6 +51,19 @@ function isManagedDomain(domain: string): boolean {
   return host === MANAGED_ZONE || host.endsWith(`.${MANAGED_ZONE}`);
 }
 
+/**
+ * Kanonische Schreibweise einer Domain fuer alle DB-Lese- und Schreibzugriffe.
+ *
+ * `website_domains.domain` ist ein gewoehnliches `VARCHAR UNIQUE` und
+ * unterscheidet Gross- und Kleinschreibung, DNS nicht. Ohne diese
+ * Normalisierung koennte ein zweiter Mandant `APP.REALSYNCDYNAMICSAI.DE`
+ * anlegen, obwohl `app.realsyncdynamicsai.de` vergeben ist — und
+ * `validateDomain` wuerde den Doppelgaenger aktivieren.
+ */
+function normalizeDomain(raw: string | undefined): string {
+  return (raw ?? '').trim().toLowerCase();
+}
+
 interface DomainManagementRequest {
   project_id: string;
   tenant_id: string;
@@ -88,19 +101,21 @@ Deno.serve(async (req) => {
       return jsonError(404, 'PROJECT_NOT_FOUND', 'project does not exist');
     }
 
+    const domain = normalizeDomain(body.domain);
+
     let result;
     switch (body.action) {
       case 'connect-domain':
-        result = await connectDomain(body.project_id, body.tenant_id, body.domain || '');
+        result = await connectDomain(body.project_id, body.tenant_id, domain);
         break;
       case 'validate-domain':
-        result = await validateDomain(body.project_id, body.domain || '');
+        result = await validateDomain(body.project_id, domain);
         break;
       case 'disconnect-domain':
-        result = await disconnectDomain(body.project_id, body.domain || '');
+        result = await disconnectDomain(body.project_id, domain);
         break;
       case 'check-ssl':
-        result = await checkSSL(body.domain || '');
+        result = await checkSSL(domain);
         break;
       default:
         return jsonError(400, 'INVALID_ACTION', 'unknown action');

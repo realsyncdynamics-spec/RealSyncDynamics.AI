@@ -8,8 +8,8 @@
  * Governance-OS-Positionierung: Kategorie-Eyebrow statt Normen-Badge, H1
  * „Die Kontrollschicht für KI im Unternehmen." (Entscheidung E-F3, Copy in
  * `src/i18n/handoff.ts`), Loop über alle sechs Stufen. Erst-CTA → Scan
- * (`PUBLIC_CTA.to` = `/audit`), Zweit-CTA → Enterprise-Gespräch
- * (`/contact-sales`), Architektur als Textlink. Die Systemzeile nennt nur
+ * (`PUBLIC_CTA.to` = `/audit`), Zweit-CTA → Enterprise-Anfrage
+ * (`/contact-sales`, Label aus der CTA-SSoT), Architektur als Textlink. Die Systemzeile nennt nur
  * Belegtes (Supabase eu-central-1, Hash-Kette, PDP). Vertrag:
  * test/landing/homepage-hero.test.tsx.
  *
@@ -25,10 +25,7 @@ import { BrandWordmark } from '../handoff/BrandWordmark';
 import { LangToggle } from '../handoff/LangToggle';
 import { useLang } from '../../i18n/useLang';
 import { PUBLIC_CTA } from '../../config/public-nav';
-import {
-  HERO_ENTERPRISE_TALK_CTA_LABEL,
-  HERO_FREE_SCAN_CTA_LABEL,
-} from '../governance-frontend/hero-content';
+import { HERO_FREE_SCAN_CTA_LABEL } from '../governance-frontend/hero-content';
 
 export const HERO_MAP_WEBP = '/europe-map-v2.webp';
 export const HERO_MAP_PNG = '/europe-map-v2.png';
@@ -267,7 +264,8 @@ export function GovernanceOsHero() {
               to={HERO_ENTERPRISE_LINK}
               className="rs-btn rs-btn--glass rs-btn--h52"
             >
-              {HERO_ENTERPRISE_TALK_CTA_LABEL[lang] ?? HERO_ENTERPRISE_TALK_CTA_LABEL.de}
+              {/* CTA-SSoT: einzige kontaktbasierte CTA (runtimeVocab.CTA.enterprise). */}
+              {t('ctaEnterprise')}
             </Link>
           </div>
 

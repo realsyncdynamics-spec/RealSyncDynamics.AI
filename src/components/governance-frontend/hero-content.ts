@@ -122,11 +122,15 @@ export const HERO_FREE_SCAN_CTA_LABEL = {
   en: 'Start the free AI / GDPR scan',
 } as const;
 
-/** Sekundär-CTA im Hero — Ziel bleibt der bestehende `/contact-sales`-Link. */
-export const HERO_ENTERPRISE_TALK_CTA_LABEL = {
-  de: 'Enterprise sprechen',
-  en: 'Talk to enterprise',
-} as const;
+/*
+ * Der Sekundär-CTA im Hero trägt bewusst KEIN eigenes Label hier: Das WP1-Brief
+ * nennt „Enterprise sprechen", die CTA-SSoT des Repos lässt aber genau eine
+ * kontaktbasierte CTA zu — `runtimeVocab.CTA.enterprise` („Enterprise anfragen",
+ * bilingual über `t('ctaEnterprise')`). Siehe `.github/workflows/cta-enforcement.yml`
+ * und test/content/ctaDiscipline.test.ts. Ein zweites Kontakt-Label wäre genau
+ * die Dublette, die das Brief an anderer Stelle verbietet. Entscheidung über die
+ * Wortwahl liegt beim Merge (siehe PR).
+ */
 /** Hero secondary CTA (Handoff v2, Ziel `/app/dashboard`). */
 export const HERO_DASHBOARD_CTA_LABEL = 'Live Dashboard ansehen' as const;
 /** Anker-CTA auf den Beispiel-Audit-Trail (`#audit-trail`, Titan-Referenzhero). */

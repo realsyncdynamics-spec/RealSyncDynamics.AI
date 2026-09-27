@@ -16,6 +16,7 @@ import {
   PROVIDER_NEUTRALITY_SUMMARY,
 } from '../../src/components/governance-frontend/hero-content';
 import { getImplementation, STATUS_LABEL } from '../../src/product/implementation-status';
+import { CTA } from '../../src/content/runtimeVocab';
 
 function stubMotion(reduce: boolean) {
   vi.stubGlobal('matchMedia', vi.fn((query: string) => ({
@@ -74,9 +75,11 @@ it('renders the Governance OS hero: category eyebrow, H1, six-stage loop and CTA
   expect(primary[0]).toHaveTextContent('Kostenlosen KI-/DSGVO-Scan starten');
   expect(screen.getByTestId('hero-primary-cta')).toBe(primary[0]);
 
+  // Sekundär-CTA = Enterprise. Label aus der CTA-SSoT (einzige kontaktbasierte
+  // CTA, runtimeVocab.CTA.enterprise) — kein zweites Kontakt-Label.
   const secondary = screen.getByTestId('hero-secondary-cta');
   expect(secondary).toHaveAttribute('href', '/contact-sales?tier=enterprise&source=home-hero');
-  expect(secondary).toHaveTextContent('Enterprise sprechen');
+  expect(secondary).toHaveTextContent(CTA.enterprise);
 
   // Der Architektur-Einstieg bleibt erreichbar (jetzt als Textlink).
   expect(screen.getByTestId('hero-architecture-link')).toHaveAttribute('href', '#architecture');
@@ -214,7 +217,7 @@ it('switches DE → EN and persists the language', () => {
   expect(screen.getByTestId('hero-primary-cta')).toHaveAttribute('id', 'scan-cta');
   expect(screen.getByText(AGENT_GOVERNANCE_RUNTIME_SUMMARY.en)).toBeInTheDocument();
   expect(screen.getByText(PROVIDER_NEUTRALITY_SUMMARY.en)).toBeInTheDocument();
-  expect(screen.getByTestId('hero-secondary-cta')).toHaveTextContent('Talk to enterprise');
+  expect(screen.getByTestId('hero-secondary-cta')).toHaveTextContent('Enterprise inquiry');
   expect(screen.getByTestId('hero-architecture-link')).toHaveTextContent('View the architecture');
   view.unmount();
   mount();

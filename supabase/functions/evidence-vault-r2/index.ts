@@ -167,10 +167,18 @@ serve(async (req) => {
       }
     );
   } catch (error) {
+    console.error(
+      JSON.stringify({
+        level: "error",
+        scope: "evidence_vault_failed",
+        error: error instanceof Error ? error.message : String(error),
+      })
+    );
+
     return new Response(
       JSON.stringify({
         success: false,
-        error: error instanceof Error ? error.message : String(error),
+        error: "Internal server error",
       }),
       {
         status: 500,

@@ -96,10 +96,18 @@ serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
+    console.error(
+      JSON.stringify({
+        level: "error",
+        scope: "cache_invalidation_failed",
+        error: error instanceof Error ? error.message : String(error),
+      })
+    );
+
     const response: InvalidateResponse = {
       success: false,
       message: "Cache invalidation failed",
-      error: error instanceof Error ? error.message : String(error),
+      error: "Internal server error",
     };
 
     return new Response(JSON.stringify(response), {

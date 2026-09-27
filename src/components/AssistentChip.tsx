@@ -86,7 +86,7 @@ export function AssistentChip() {
         aria-haspopup="dialog"
         aria-hidden={faded ? true : undefined}
         tabIndex={faded ? -1 : 0}
-        className={`${positionClass} inline-flex items-center gap-2 pl-2 pr-4 py-1.5 rounded-full backdrop-blur-md transition-all duration-200 motion-reduce:transition-none motion-reduce:hover:scale-100 hover:scale-[1.03] ${
+        className={`${positionClass} inline-flex items-center gap-0 sm:gap-2 p-1.5 sm:pl-2 sm:pr-4 sm:py-1.5 rounded-full backdrop-blur-md transition-all duration-200 motion-reduce:transition-none motion-reduce:hover:scale-100 hover:scale-[1.03] ${
           faded
             ? 'opacity-0 translate-y-2 pointer-events-none'
             : 'opacity-100 translate-y-0'
@@ -109,7 +109,7 @@ export function AssistentChip() {
         >
           <Mic className="h-4 w-4" style={{ color: '#e4cfa2' }} />
         </span>
-        <span className="text-sm font-medium tracking-tight" style={{ color: '#e8ddc8' }}>
+        <span className="hidden sm:inline text-sm font-medium tracking-tight" style={{ color: '#e8ddc8' }}>
           Grok Bot
         </span>
       </button>

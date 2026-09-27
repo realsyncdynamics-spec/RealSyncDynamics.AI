@@ -100,3 +100,7 @@ schrittweise nachgezogen, nicht in einem Zug.
 - Nutze für technische Metadaten immer Monospace-Formatierung.
 - Vermeide verspielte Sprache; wir bauen Infrastruktur, kein Spielzeug.
 - Code-Outputs immer in TypeScript/Tailwind-CSS im RealSync-Design-System (Hard-Edge).
+
+## PR-Triage-Policy (verbindlich)
+
+Wer offene PRs mergt, schließt, rebased oder neu anlegt, liest vorher `.github/PR_TRIAGE_POLICY.md` und hält sich daran. Sie regelt Einzel-Freigaben, Security-Vorrang, Konflikt- und Hotspot-Wege, WIP-Stopp und feste Produktentscheidungen (u. a. Enterprise 1.249 € als höchste Stufe).

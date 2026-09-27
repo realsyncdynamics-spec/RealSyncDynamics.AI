@@ -24,11 +24,11 @@ export function About() {
               <Shield className="h-3 w-3" /> Made in Germany · EU-Hosted · DSGVO-by-Design
             </div>
             <h1 className="text-3xl sm:text-5xl font-display font-bold text-titanium-50 tracking-tight leading-tight mb-4">
-              Wir bauen die <span className="text-security-400">EU-souveräne</span> KI-Compliance-Plattform.
+              Wir bauen die <span className="text-security-400">Control Plane</span> für Enterprise-KI in Europa.
             </h1>
             <p className="text-lg text-titanium-300 leading-relaxed">
-              RealSync Dynamics existiert, weil DSGVO + AI Act + BAIT + DORA für deutsche Mittelständler ein Dschungel sind —
-              und weil US-SaaS-Lösungen (OneTrust, Usercentrics, OpenAI direkt) entweder zu teuer, nicht-souverän oder beides sind.
+              RealSync Dynamics existiert, weil Unternehmen Kontrolle über frontierfähige KI brauchen — nicht
+              noch ein weiteres Modell. DSGVO, EU AI Act, BAIT und DORA bleiben dabei der Proof-Layer.
             </p>
           </div>
 

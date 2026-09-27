@@ -10,34 +10,35 @@ export type HeroHeadlineSegment = {
 };
 
 export const HERO_HEADLINE: readonly (readonly HeroHeadlineSegment[])[] = [
-  [{ text: 'Machen Sie KI-Nutzung' }],
-  [{ text: 'kontrollierbar, nachweisbar' }],
-  [{ text: 'und' }, { text: 'auditbereit.', accent: true }],
+  [{ text: 'Europa braucht kein weiteres' }],
+  [{ text: 'Frontier-Modell.' }],
+  [{ text: 'Europa braucht Kontrolle über' }, { text: 'Frontier-KI.', accent: true }],
 ];
 
 /** Brand Direction — production landing kicker. */
-export const GOVERNANCE_AI_HERO_KICKER = 'EU CONTROL & EVIDENCE LAYER FOR AI' as const;
+export const GOVERNANCE_AI_HERO_KICKER = 'THE GOVERNANCE OS FOR AUTONOMOUS AI' as const;
 
 export const GOVERNANCE_AI_HERO_HEADLINE: readonly (readonly HeroHeadlineSegment[])[] = HERO_HEADLINE;
 
 /**
- * Substring der sichtbaren H1 auf `/` („Ihre KI kann handeln. Jetzt braucht
- * sie Governance.", `src/i18n/handoff.ts`, Governance-OS-Positionierung).
+ * Substring der sichtbaren H1 auf `/` („Europa braucht kein weiteres
+ * Frontier-Modell. Europa braucht Kontrolle über Frontier-KI.",
+ * `src/i18n/handoff.ts`, Governance-OS-Positionierung).
  * Genutzt von tests/e2e/public-routes.spec.ts (FE-001).
  */
-export const GOVERNANCE_AI_HERO_TEST_SUBSTRING = 'kann handeln' as const;
+export const GOVERNANCE_AI_HERO_TEST_SUBSTRING = 'Frontier-KI' as const;
 
 export const GOVERNANCE_AI_HERO_SUBLINE =
-  'RealSyncDynamics.AI erkennt KI- und Compliance-Risiken, setzt Richtlinien durch und erzeugt kontinuierliche Evidenz für EU AI Act und DSGVO.' as const;
+  'RealSyncDynamics.AI ist die Control Plane für Enterprise-KI. Wir bauen nicht die Intelligenz selbst. Wir bauen die Kontroll-, Autorisierungs- und Evidenzschicht zwischen Unternehmen und KI.' as const;
 
 export const GOVERNANCE_AI_HERO_MICRO =
-  'SCAN → BUILD → AUTOMATE → GOVERN' as const;
+  'DISCOVER → ASSESS → GOVERN → EXECUTE → VERIFY → PROVE' as const;
 
 export const BRAND_VALUE_PROPOSITION =
-  'RealSyncDynamics.AI ist die europäische Control- und Evidence-Layer für KI: Schatten-KI sichtbar machen, Verantwortlichkeiten klären und Audit-Evidenz laufend erzeugen — für EU AI Act und DSGVO.' as const;
+  'The Governance OS for Autonomous AI. Any model. Any agent. One control plane.' as const;
 
 export const BRAND_PRODUCT_DESCRIPTION =
-  'RealSyncDynamics.AI erkennt KI- und Compliance-Risiken, setzt Richtlinien durch und erzeugt kontinuierliche Evidenz für EU AI Act und DSGVO. Scan Reality, Build Controls, Automate Evidence, Govern Continuously.' as const;
+  'RealSyncDynamics.AI ist die Control Plane für Enterprise-KI: Identität, Tenant, Policy, Risiko, Freigabe, Ausführung, Verifikation und Evidence in einer Governance-Schicht über Modelle, Agenten und Provider.' as const;
 
 /**
  * Infrastrukturzeilen unter dem Operating Loop (belegte Bestandteile).
@@ -53,51 +54,51 @@ export const HERO_HEADLINE_LINES: readonly string[] = HERO_HEADLINE.map((segment
   segments.map((s) => s.text).join(' '),
 );
 
-export const HERO_HEADLINE_TEST_SUBSTRING = 'kontrollierbar';
+export const HERO_HEADLINE_TEST_SUBSTRING = 'Frontier-KI';
 
 export const HERO_KICKER = {
   index: '01',
-  claim: 'CONTROL & EVIDENCE FÜR KI IN EUROPA',
+  claim: 'THE GOVERNANCE OS FOR AUTONOMOUS AI',
   region: 'EU',
 } as const;
 
 export const HERO_EYEBROW = `→ ${HERO_KICKER.claim}` as const;
 
-export const HERO_OPERATING_LOOP = 'SCAN → BUILD → AUTOMATE → GOVERN' as const;
+export const HERO_OPERATING_LOOP = 'DISCOVER → ASSESS → GOVERN → EXECUTE → VERIFY → PROVE' as const;
 
-export const HERO_EN_KICKER = 'Control and Evidence Layer for AI in Europe.' as const;
+export const HERO_EN_KICKER = 'The Governance OS for Autonomous AI.' as const;
 
 export const SCAN_FUNNEL_MESSAGE =
-  'Scannen. Kontrollen bauen. Evidenz automatisieren. Dauerhaft steuern.' as const;
+  'Entdecken. Bewerten. Steuern. Ausführen. Verifizieren. Mit Evidence beweisen.' as const;
 
 export const CONTINUOUS_COMPLIANCE_NARRATIVE =
-  'RealSyncDynamics verbindet Signale, Risiken, Policies und Audit-Evidence in einer laufenden Governance-Schicht.' as const;
+  'RealSyncDynamics verbindet Identität, Policies, Risiko, Freigaben, Ausführung, Verifikation und Evidence in einer laufenden Governance-Schicht.' as const;
 
 export const HERO_SUBLINE =
-  'RealSyncDynamics.AI erkennt KI- und Compliance-Risiken, setzt Richtlinien durch und erzeugt kontinuierliche Evidenz für EU AI Act und DSGVO.' as const;
+  'RealSyncDynamics.AI ist die Control Plane für Enterprise-KI. Any model. Any agent. One control plane.' as const;
 
-export const HERO_VALUE_SUBLINE = 'Schatten-KI sichtbar. Evidenz auditbereit.' as const;
+export const HERO_VALUE_SUBLINE = 'Kontrolle durchsetzen. Evidence jederzeit belegbar.' as const;
 
 export const HERO_SCAN_BADGE = 'Kostenlos' as const;
 
-export const HERO_SOCIAL_PROOF = 'Gebaut für regulierte KI in der EU.' as const;
+export const HERO_SOCIAL_PROOF = 'Provider-neutral für Enterprise-KI in der EU.' as const;
 
 export const HERO_SOCIAL_FRAMEWORKS = ['DSGVO', 'EU AI Act', 'ISO 42001'] as const;
 
 export const HERO_OUTCOMES: readonly string[] = [
-  'Schatten-KI und fehlendes Inventar schließen',
-  'Verantwortlichkeiten und Freigaben klar zuweisen',
-  'Audit-Evidence laufend erzeugen statt manuell sammeln',
+  'Sichtbar machen, welche KI tatsächlich läuft',
+  'Policies, Freigaben und Ausführung zentral steuern',
+  'Evidence kontinuierlich erzeugen und Compliance beweisen',
 ] as const;
 
 export const HERO_EU_LINE =
-  'EU-Hosting, DSGVO, EU AI Act, Audit Logs, Governance-by-Design.' as const;
+  'EU-Hosting, DSGVO, EU AI Act, ISO 42001 und Audit-Evidence als Proof-Layer.' as const;
 
 export const HERO_PROOF_CHIPS = [
-  'EU AI ACT READY',
-  'DSGVO FIRST',
-  'AUDIT TRAIL NATIVE',
-  'GOVERNANCE BY DESIGN',
+  'EU AI ACT',
+  'DSGVO',
+  'ISO 42001',
+  'EU HOSTING',
 ] as const;
 
 /** Header + final CTA primary. */
@@ -294,17 +295,48 @@ export const AGENT_CANNOT = [
 
 export const AGENT_LAYER = ['Identity', 'Tenant', 'Policy', 'Risk', 'Approval'] as const;
 
-/**
- * Serverseitig angebundene Provider (Adapter in `supabase/functions/_shared`).
- * Grok/xAI, Mistral und MCP-Tool-Governance sind nicht angebunden und stehen
- * deshalb nicht hier.
- */
+export const AGENT_GOVERNANCE_RUNTIME_SUMMARY = {
+  de: 'Werkzeugzugriffe, Berechtigungen, Risikoklassen, Human-in-the-loop-Freigaben, Budget- und Quotenlimits, Datenzugriffe, Provider-Auswahl, Ausführungsrichtlinien und Evidence-Logs.',
+  en: 'Tool access, permissions, risk classes, human-in-the-loop approvals, budget/quota limits, data access, provider selection, execution policies, and evidence logs.',
+} as const;
+
+export const AGENT_GOVERNANCE_RUNTIME_EXAMPLE = {
+  de: 'Beispiel: Ein Security-Agent erkennt eine Schwachstelle; eine Änderung am Produktionssystem erfolgt erst nach Policy-Entscheidung und — falls gefordert — menschlicher Freigabe.',
+  en: 'Example: A security agent may detect a vulnerability; it may change a production system only after policy evaluation and, if required, human approval.',
+} as const;
+
+export const PROVIDER_PLANNED_BADGE = {
+  de: 'Geplant',
+  en: 'Planned',
+} as const;
+
+/** Live sichtbare Providerpfade der Landing (getrennt von Roadmap-Pfaden). */
 export const HOMEPAGE_PROVIDERS = [
   { name: 'OpenAI', note: 'Cloud' },
   { name: 'Anthropic · Claude', note: 'Cloud' },
-  { name: 'Google · Gemini', note: 'Cloud · eingeschränkt' },
-  { name: 'Eigene Modelle', note: 'Ollama · LM Studio · EU-lokal' },
+  { name: 'Google · Gemini', note: 'Cloud' },
+  { name: 'Eigene Modelle', note: 'Lokal / EU-betrieben' },
 ] as const;
+
+/** Geplante Providerpfade — bewusst getrennt von live angebundenen Providern. */
+export const HOMEPAGE_PLANNED_PROVIDERS = [
+  { name: 'Mistral', note: 'Roadmap · noch nicht live angebunden' },
+  { name: 'STACKIT', note: 'Roadmap · noch nicht live angebunden' },
+  { name: 'Future models', note: 'Roadmap · unter derselben Governance-Schicht' },
+] as const;
+
+const LIVE_PROVIDER_NAMES = HOMEPAGE_PROVIDERS.map((provider) => provider.name).join(', ');
+const PLANNED_PROVIDER_NAMES = HOMEPAGE_PLANNED_PROVIDERS.map((provider) => provider.name).join(', ');
+
+export const PROVIDER_NEUTRALITY_SUMMARY = {
+  de: `${LIVE_PROVIDER_NAMES} laufen heute unter derselben Governance-Schicht; ${PLANNED_PROVIDER_NAMES} sind als Providerpfade geplant.`,
+  en: `${LIVE_PROVIDER_NAMES} run today under the same governance layer; ${PLANNED_PROVIDER_NAMES} are planned as provider paths.`,
+} as const;
+
+export const PROVIDER_PLANNED_DISCLAIMER = {
+  de: 'Geplant markiert Optionen, die als Provider-Pfad vorgesehen, aber noch nicht live angebunden sind.',
+  en: 'Planned marks options that are intended as provider paths but are not live integrations yet.',
+} as const;
 
 /** Control Room — ausschließlich Beispielwerte, sichtbar gekennzeichnet. */
 export const CONTROL_ROOM_METRICS = [

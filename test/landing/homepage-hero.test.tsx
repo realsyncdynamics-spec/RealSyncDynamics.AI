@@ -7,7 +7,11 @@ import { act, cleanup, fireEvent, render, screen, within } from '@testing-librar
 import { MemoryRouter } from 'react-router-dom';
 import { DesignGovernanceAiLanding } from '../../src/pages/design/DesignGovernanceAiLanding';
 import { resetLangForTests } from '../../src/i18n/useLang';
-import { DEMO_LABEL } from '../../src/components/governance-frontend/hero-content';
+import {
+  AGENT_GOVERNANCE_RUNTIME_SUMMARY,
+  DEMO_LABEL,
+  PROVIDER_NEUTRALITY_SUMMARY,
+} from '../../src/components/governance-frontend/hero-content';
 
 function stubMotion(reduce: boolean) {
   vi.stubGlobal('matchMedia', vi.fn((query: string) => ({
@@ -27,21 +31,28 @@ const mount = () => render(<MemoryRouter initialEntries={['/']}><DesignGovernanc
 
 it('renders the Governance OS hero: category eyebrow, H1, six-stage loop and CTAs', () => {
   const view = mount();
-  expect(screen.getByText('REALSYNCDYNAMICS.AI / GOVERNANCE OS')).toBeInTheDocument();
+  expect(screen.getByText('REALSYNCDYNAMICS.AI / GOVERNANCE OS FÜR AUTONOME KI')).toBeInTheDocument();
   const h1 = screen.getByRole('heading', { level: 1 });
-  expect(h1).toHaveTextContent('Ihre KI kann handeln.');
-  expect(h1.querySelector('.rs-hero__h1-accent')).toHaveTextContent('Governance.');
+  expect(h1).toHaveTextContent('Europa braucht kein weiteres Frontier-Modell.');
+  expect(h1.querySelector('.rs-hero__h1-accent')).toHaveTextContent('Frontier-KI.');
   // Regulierung ist nicht die Produktidentität: kein Normen-Badge im Hero.
   expect(screen.queryByText('EU AI Act · DSGVO · ISO 42001')).toBeNull();
   const loop = view.container.querySelector('.rs-loop') as HTMLElement;
   for (const word of ['DISCOVER', 'ASSESS', 'GOVERN', 'EXECUTE', 'VERIFY', 'PROVE']) {
     expect(within(loop).getByText(word)).toBeInTheDocument();
   }
+  expect(screen.getByText(AGENT_GOVERNANCE_RUNTIME_SUMMARY.de)).toBeInTheDocument();
+  expect(screen.getByText(PROVIDER_NEUTRALITY_SUMMARY.de)).toBeInTheDocument();
+  expect(screen.getByText('STACKIT')).toBeInTheDocument();
+  expect(screen.getAllByText('Geplant').length).toBeGreaterThan(0);
+  expect(
+    screen.getByText(/Geplant markiert Optionen, die als Provider-Pfad vorgesehen/),
+  ).toBeInTheDocument();
 
   const primary = view.container.querySelectorAll('[data-hero-cta="pipeline"]');
   expect(primary).toHaveLength(1);
   expect(primary[0]).toHaveAttribute('href', '#pipeline');
-  expect(primary[0]).toHaveTextContent('Governance OS erleben');
+  expect(primary[0]).toHaveTextContent('Governance-Scan starten');
 
   const secondary = screen.getByTestId('hero-secondary-cta');
   expect(secondary).toHaveAttribute('href', '#architecture');
@@ -135,7 +146,10 @@ it('switches DE → EN and persists the language', () => {
   const view = mount();
   fireEvent.click(screen.getAllByTestId('lang-toggle')[0]);
   expect(localStorage.getItem('rsd-lang')).toBe('en');
-  expect(screen.getByText('Experience the Governance OS', { selector: '#pipeline-cta' })).toBeInTheDocument();
+  expect(screen.getByText('REALSYNCDYNAMICS.AI / THE GOVERNANCE OS FOR AUTONOMOUS AI')).toBeInTheDocument();
+  expect(screen.getByText('Start governance scan', { selector: '#pipeline-cta' })).toBeInTheDocument();
+  expect(screen.getByText(AGENT_GOVERNANCE_RUNTIME_SUMMARY.en)).toBeInTheDocument();
+  expect(screen.getByText(PROVIDER_NEUTRALITY_SUMMARY.en)).toBeInTheDocument();
   expect(screen.getByTestId('hero-secondary-cta')).toHaveTextContent('View the architecture');
   view.unmount();
   mount();
@@ -149,7 +163,7 @@ it('opens the mobile menu with all screens and closes on Escape', () => {
   const menu = within(dialog);
   expect(menu.getByRole('link', { name: 'Preise' })).toHaveAttribute('href', '/#pricing');
   expect(menu.getByRole('link', { name: 'Governance' })).toHaveAttribute('href', '/governance-runtime');
-  expect(menu.getByRole('link', { name: /Governance OS erleben/ })).toHaveAttribute('href', '#pipeline');
+  expect(menu.getByRole('link', { name: /Governance-Scan starten/ })).toHaveAttribute('href', '#pipeline');
   fireEvent.keyDown(window, { key: 'Escape' });
   expect(screen.queryByRole('dialog')).toBeNull();
 });

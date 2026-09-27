@@ -7,6 +7,10 @@ import {
   detectConsentBanner,
   hasEqualRejectButton,
   findImpressumLink,
+  deepCheckImprint,
+  decodeCloudflareEmailHex,
+  extractCloudflareEmails,
+  hasEmailContact,
   SEVERITY_WEIGHTS,
   type Issue,
 } from '../../supabase/functions/gdpr-audit/checks';
@@ -308,3 +312,55 @@ describe('scoreReport', () => {
     expect(SEVERITY_WEIGHTS.info).toBe(0);
   });
 });
+
+describe('Impressum-Kontakt (Cloudflare Email Protection)', () => {
+  // Live-Snippet von https://realsyncdynamicsai.de/impressum (2026-09-24):
+  // CF ersetzt Klartext-E-Mail durch data-cfemail / email-protection#.
+  const CF_IMPRINT = `<!doctype html><html lang="de"><body>
+<section><h2>Kontakt</h2>
+<p>Telefon: <a href="tel:+4917640132161">+49 176 4013 2161</a><br>
+E-Mail: <a href="/cdn-cgi/l/email-protection#f39a9d959cb38196929f808a9d90978a9d929e9a9080929add9796"><span class="__cf_email__" data-cfemail="93fafdf5fcd3e1f6f2ffe0eafdf0f7eafdf2fefaf0e0f2fabdf7f6">[email&#160;protected]</span></a><br>
+Datenschutz: <a href="/cdn-cgi/l/email-protection#d4a4a6bda2b5b7ad94a6b1b5b8a7adbab7b0adbab5b9bdb7a7b5bdfab0b1"><span class="__cf_email__" data-cfemail="d4a4a6bda2b5b7ad94a6b1b5b8a7adbab7b0adbab5b9bdb7a7b5bdfab0b1">[email&#160;protected]</span></a>
+</p>
+<p><strong>Rechtsform:</strong> Einzelunternehmen, vertreten durch den Inhaber Dominik Steiner.</p>
+<p>Schwarzburger Str. 31<br>98724 Neuhaus am Rennweg</p>
+</section></body></html>`;
+
+  it('decodiert data-cfemail zu Klartext-Adressen', () => {
+    expect(decodeCloudflareEmailHex('93fafdf5fcd3e1f6f2ffe0eafdf0f7eafdf2fefaf0e0f2fabdf7f6')).toBe(
+      'info@realsyncdynamicsai.de',
+    );
+    expect(extractCloudflareEmails(CF_IMPRINT)).toEqual(
+      expect.arrayContaining(['info@realsyncdynamicsai.de', 'privacy@realsyncdynamicsai.de']),
+    );
+  });
+
+  it('erkennt CF-obfuskierte Email als Kontaktnachweis', () => {
+    expect(hasEmailContact(CF_IMPRINT, 'Telefon: +49 176 4013 2161')).toBe(true);
+  });
+
+  it('meldet kein sub_imprint_no_contact bei CF-Email + Telefon', () => {
+    const ids = deepCheckImprint(CF_IMPRINT).map((i) => i.id);
+    expect(ids).not.toContain('sub_imprint_no_contact');
+  });
+
+  it('meldet sub_imprint_no_contact wenn wirklich kein Kontakt', () => {
+    const html = `<!doctype html><body>
+      <p>Rechtsform: GmbH</p>
+      <p>Musterstrasse 1<br>12345 Berlin</p>
+    </body>`;
+    const ids = deepCheckImprint(html).map((i) => i.id);
+    expect(ids).toContain('sub_imprint_no_contact');
+  });
+
+  it('meldet sub_imprint_no_contact bei Telefon ohne Email (und ohne CF)', () => {
+    const html = `<!doctype html><body>
+      <p>Rechtsform: GmbH</p>
+      <p>Musterstrasse 1<br>12345 Berlin</p>
+      <p>Telefon: <a href="tel:+491761234567">+49 176 1234567</a></p>
+    </body>`;
+    const ids = deepCheckImprint(html).map((i) => i.id);
+    expect(ids).toContain('sub_imprint_no_contact');
+  });
+});
+

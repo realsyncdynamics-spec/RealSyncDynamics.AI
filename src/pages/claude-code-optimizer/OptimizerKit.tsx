@@ -326,7 +326,7 @@ export const OPTIMIZER_PACKAGES: OptimizerPackage[] = [
     does: [
       'Priorisierter Fix-Plan pro Befund',
       'Konkrete Handlungsempfehlungen & Aufwandsschätzung',
-      'Wöchentliches Re-Scan-Monitoring',
+      'Wöchentliches Re-Scan-Monitoring (Coming Soon)',
       'DSGVO-Dokumente aus den Befunden',
     ],
     highlighted: true,
@@ -338,7 +338,7 @@ export const OPTIMIZER_PACKAGES: OptimizerPackage[] = [
     tagline: 'Fehler automatisch beheben lassen',
     does: [
       'Automatische Fix-Vorschläge als Code (Claude Code)',
-      'Kontinuierliche Optimierung & Drift-Alerts',
+      'Kontinuierliche Optimierung & Drift-Alerts (Coming Soon)',
       'Evidence-Chain für jeden Fix',
       'Alles aus Starter',
     ],

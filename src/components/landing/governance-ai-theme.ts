@@ -1,36 +1,10 @@
-/**
- * Governance-AI-Landing — Design-Tokens („Hollywood Enterprise VIP").
- *
- * ## Eine Palette
- *
- * True Black als Fläche, Cyan `#22c3e6` als Aktionsfarbe (Pills, Eyebrows,
- * Loop), City-Light-Gold `#f2c98a` als VIP-Sekundärakzent für die
- * Enterprise-Stufe und den Agency-Tarif, Ice White für Headlines. Playfair
- * Display trägt die Display-Schnitte, Inter den Fließtext, JetBrains Mono die
- * Daten. Der Hausstandard steht in `CLAUDE.md`.
- *
- * Eine frühere Fassung bot zwei umschaltbare Varianten („titan"/„night") an.
- * Der Schalter ist entfallen — es gibt nur noch diesen einen Standard.
- *
- * ## Warum hier keine Hex-Werte stehen
- *
- * Die Konstanten zeigen auf CSS-Variablen statt auf feste Farben. Die
- * tatsächlichen Werte stehen gebündelt in `src/index.css` unter
- * `.ga-context`; wer eine Farbe ändern will, ändert sie dort an genau einer
- * Stelle. `.ga-vip` hängt sich darüber und tauscht den Akzent auf Gold, ohne
- * dass die Komponenten davon wissen müssen.
- *
- * Die Tokens hängen bewusst **nicht** an `.landing-context`: Live `/` steht
- * unter Design-Lock (Gold/Cream, `landing-theme.ts`) und darf sich hier nicht
- * mitverändern.
- *
- * Keine Preise, keine Copy, keine Limits — alles inhaltliche kommt aus den
- * SSoT-Dateien (`hero-content.ts`, `pricing.ts`, `implementation-status.ts`,
- * `runtimeVocab.ts`, `public-nav.ts`, `governanceModules.ts`).
+/** Brand Direction v1.0. Values live in src/index.css (.ga-context).
+ * Playfair Display for headlines, Inter for UI, monospace for metadata.
  */
 
 /** Schriftfamilien — Basis-Stack aus `landing-theme.ts` weiterverwendet. */
-export { LANDING_SANS as GA_SANS, LANDING_MONO as GA_MONO } from './landing-theme';
+export const GA_SANS = "'Inter', sans-serif";
+export { LANDING_MONO as GA_MONO } from './landing-theme';
 
 /** Display-Schnitt: Playfair Display, self-hosted (siehe `src/index.css`). */
 export const GA_DISPLAY = 'var(--ga-display)';
@@ -103,7 +77,7 @@ export const GA_PILL_PRIMARY =
   'group relative inline-flex items-center justify-center gap-2 overflow-hidden rounded-full px-[28px] py-[15px] text-[14px] font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ga-accent-lite)] hover:brightness-[1.06]';
 
 export const GA_PILL_GHOST =
-  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full border border-[var(--ga-ghost-border)] bg-[var(--ga-ghost-face)] px-[26px] py-[14px] text-[14px] font-medium text-[var(--ga-text)] backdrop-blur-[8px] transition hover:border-[var(--ga-ghost-border-hover)] hover:bg-[var(--ga-ghost-face-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ga-silver)]/60';
+  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full border border-[var(--ga-ghost-border)] bg-[var(--ga-ghost-face)] px-[26px] py-[14px] text-[14px] font-semibold text-[var(--ga-text)] backdrop-blur-[8px] transition hover:border-[var(--ga-ghost-border-hover)] hover:bg-[var(--ga-ghost-face-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ga-silver)]/60';
 
 export const GA_EYEBROW_PILL =
   'inline-flex items-center gap-2.5 whitespace-nowrap rounded-full border border-[var(--ga-accent-border)] bg-[var(--ga-chip-face)] px-[13px] py-[7px] text-[11px] tracking-[.2em] text-[var(--ga-accent-lite)] backdrop-blur-[6px]';

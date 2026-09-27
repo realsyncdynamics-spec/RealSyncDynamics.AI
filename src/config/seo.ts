@@ -53,9 +53,9 @@ export interface SEOConfig {
 const SITE_URL = 'https://realsyncdynamicsai.de';
 
 export const DEFAULT_SEO: SEOConfig = {
-  title: 'RealSyncDynamics.AI — Das Governance OS für DSGVO & EU AI Act',
+  title: 'RealSyncDynamics.AI — The Governance OS for Autonomous AI',
   description:
-    'Das Governance OS für DSGVO und EU AI Act: AI-Systeme, Websites, Agents und Datenflüsse erfassen, Risiken bewerten, Governance durchsetzen und Nachweise führen.',
+    'Die Control Plane für Enterprise-KI: Any model. Any agent. One control plane. EU AI Act, DSGVO und ISO 42001 als nachweisbare Proof-Layer.',
 };
 
 // ─── JSON-LD Templates (re-used) ─────────────────────────────────────────────
@@ -65,7 +65,7 @@ const PRICING_PRODUCT_JSONLD = {
   '@type': 'Product',
   name: 'RealSyncDynamics.AI Compliance Platform',
   description:
-    'EU-native DSGVO- und EU-AI-Act-Compliance-Infrastruktur mit Website-Audit, Consent-Timing-Analyse, Fix-Empfehlungen und Continuous Monitoring.',
+    'EU-native DSGVO- und EU-AI-Act-Compliance-Infrastruktur mit Website-Audit, Consent-Timing-Analyse, Fix-Empfehlungen und Evidence-Export. Dauerhafte Domain-Überwachung: Coming Soon.',
   brand: { '@type': 'Brand', name: 'RealSyncDynamics.AI' },
   offers: [
     {
@@ -253,19 +253,28 @@ function breadcrumbs(items: Array<{ name: string; url: string }>): Record<string
 export const SEO_CONFIG: Record<string, SEOConfig> = {
   // ─── Tier 1 — Hero / Top-Conversion ──────────────────────────────────────
   '/': {
-    // Europe-OS hero lock — matches hero-content.ts H1.
-    title: 'RealSyncDynamics.AI — AI Compliance Operations OS for Europe',
+    // Governance-OS-Positionierung — matches the H1 in GovernanceOsHero.
+    title: 'RealSyncDynamics.AI — The Governance OS for Autonomous AI',
     description:
-      'Runtime governance for regulated AI systems. Continuous evidence. EU-native by design. Free Audit starten — Acquisition-Scan, dann Governance OS.',
+      'RealSyncDynamics.AI ist die Control Plane für Enterprise-KI: Any model. Any agent. One control plane. EU AI Act, DSGVO und ISO 42001 als Evidence-Proof-Layer.',
     canonical: `${SITE_URL}/`,
-    ogTitle: 'AI Compliance Operations OS for Europe',
+    ogTitle: 'The Governance OS for Autonomous AI',
     ogDescription:
-      'Runtime governance for regulated AI systems. Continuous evidence. EU-native by design.',
+      'Europa braucht Kontrolle über Frontier-KI: RealSyncDynamics.AI baut die Kontroll-, Autorisierungs- und Evidence-Layer zwischen Unternehmen und KI.',
+  },
+  '/design/titan': {
+    title: 'RealSyncDynamics.AI — Titan-Fallbackroute der Governance-Landing',
+    description:
+      'Fallbackroute der Landing-Positionierung (Legacy-Titan): Control Plane für Enterprise-KI mit Policies, Freigaben, Ausführung und Evidence als Proof-Layer.',
+    canonical: `${SITE_URL}/design/titan`,
+    ogTitle: 'Titan-Fallbackroute der Governance-Landing',
+    ogDescription:
+      'Fallbackroute: Any model. Any agent. One control plane.',
   },
   '/pricing': {
     title: 'Preise – Runtime-native AI-Governance-Plattform | RealSyncDynamics.AI',
     description:
-      'Free Audit (0 €), Starter (79 €), Growth (249 €), Agency (699 €), Enterprise (auf Anfrage). Runtime-native Governance: kontinuierliche Telemetrie, Policy-Engine, kryptografisch nachvollziehbare Evidenz. EU-Hosting, AVV inklusive.',
+      'Free Audit (0 €), Starter (79 €), Growth (249 €), Agency (699 €), Enterprise (auf Anfrage). Runtime-native Governance: Website-Scans, Policy-Engine, kryptografisch nachvollziehbare Evidenz. EU-Hosting, AVV inklusive.',
     canonical: `${SITE_URL}/pricing`,
     jsonLd: [
       PRICING_PRODUCT_JSONLD,
@@ -389,7 +398,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
   '/digitale-souveraenitaet': {
     title: 'Digitale Souveränität als Betriebsmodell | RealSyncDynamics.AI',
     description:
-      'Digitale Souveränität praktisch umsetzen: transparente Anbieterstruktur, nachweisbare DSGVO- & AI-Act-Governance, Kontrolle über Drittanbieter und Datenflüsse, Evidence Vault und kontinuierliches Monitoring — das Governance OS im Browser-Format.',
+      'Digitale Souveränität praktisch umsetzen: transparente Anbieterstruktur, nachweisbare DSGVO- & AI-Act-Governance, Kontrolle über Drittanbieter und Datenflüsse, Evidence Vault; dauerhafte Domain-Überwachung als Coming Soon — das Governance OS im Browser-Format.',
     canonical: `${SITE_URL}/digitale-souveraenitaet`,
     ogTitle: 'Digitale Souveränität als Betriebsmodell',
     ogDescription:
@@ -420,6 +429,17 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     jsonLd: breadcrumbs([
       { name: 'Home', url: '/' },
       { name: 'Founding Access', url: '/contact-sales' },
+    ]),
+  },
+
+  '/frontend-builder': {
+    title: 'Frontend Builder für SaaS, AI und B2B-Websites',
+    description:
+      'Wir planen, designen und bauen performante Frontends mit klarem Scope statt endloser Vorabstimmungen. Projekt jetzt qualifizieren.',
+    canonical: `${SITE_URL}/frontend-builder`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'Frontend Builder', url: '/frontend-builder' },
     ]),
   },
 
@@ -487,7 +507,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
   '/proliance-alternative': {
     title: 'Proliance Alternative — Web-Compliance-Automation | RealSyncDynamics.AI',
     description:
-      'Proliance ist Compliance-Suite. RealSyncDynamics.AI fokussiert auf Web-Compliance: Pre-Consent-Audit, Fix-Empfehlungen und Continuous Monitoring.',
+      'Proliance ist Compliance-Suite. RealSyncDynamics.AI fokussiert auf Web-Compliance: Pre-Consent-Audit, Fix-Empfehlungen und Audit-Trail; dauerhafte Überwachung Coming Soon.',
     canonical: `${SITE_URL}/proliance-alternative`,
     jsonLd: breadcrumbs([
       { name: 'Home', url: '/' },
@@ -497,7 +517,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
   '/caralegal-alternative': {
     title: 'caralegal Alternative — technische Governance-Runtime neben dem DSMS | RealSyncDynamics.AI',
     description:
-      'caralegal ist ein DSMS für die Datenschutzorganisation. RealSyncDynamics.AI ist die technische Compliance-Runtime daneben: Detect, Govern, Enforce, Prove — Befund, Policy-Entscheidung, Nachweis.',
+      'caralegal ist auf Datenschutz- und KI-Governance-Dokumentation ausgelegt. RealSyncDynamics.AI ist die technische Compliance-Runtime daneben: Detect, Govern, Enforce, Prove — Befund, Policy-Entscheidung, Nachweis.',
     canonical: `${SITE_URL}/caralegal-alternative`,
     jsonLd: breadcrumbs([
       { name: 'Home', url: '/' },

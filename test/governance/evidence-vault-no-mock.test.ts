@@ -44,7 +44,9 @@ describe('EvidenceVaultView — keine Demo-Daten im Live-Pfad', () => {
 
 describe('/app/evidence ist auth-gegatet', () => {
   it('hängt hinter AppGate, analog zum Dashboard', () => {
-    const route = app.match(/<Route\s+path="\/app\/evidence"(?!-)[\s\S]*?\/>/);
+    // Das Element enthält seit Handoff v2 mehrere Komponenten — bis zum
+    // schließenden AppGate lesen, nicht bis zum ersten „/>".
+    const route = app.match(/<Route\s+path="\/app\/evidence"(?!-)[\s\S]*?<\/AppGate>\}\s*\/>/);
     expect(route, 'Route /app/evidence nicht gefunden').toBeTruthy();
     expect(route?.[0]).toContain('<AppGate>');
     expect(route?.[0]).toContain('EvidenceVaultView');

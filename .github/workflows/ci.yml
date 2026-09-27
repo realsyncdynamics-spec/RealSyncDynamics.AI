@@ -69,7 +69,7 @@ jobs:
       # bleiben. Vorher lagen Providerpreise an vier Stellen gleichzeitig
       # (ai_tools, MODEL_PRICING, zwei Schaetzfunktionen im governance-agent),
       # drei davon mit falschen Zahlen.
-      - name: Modellpreis-Kanonizitaet (SSoT, Deno-Zwilling)
+      - name: Modellpreis-Kanonizitaet (SSoT, Deno-Zwilling, Seed-Migration)
         run: npm run check:model-prices
       - name: Kontingent-Kanonizitaet (Ratsche gegen neue Divergenzen)
         run: npm run check:limits

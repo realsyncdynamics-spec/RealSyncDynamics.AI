@@ -46,6 +46,16 @@
  * erzwingt, dass beide byte-identisch bleiben.
  *
  * Änderungen also ausschließlich hier, danach `npm run sync:model-prices`.
+ *
+ * ── Laufzeittabelle ──────────────────────────────────────────────────────
+ *
+ * `public.ai_model_prices` trägt dieselben Preise mit Geltungsdauer. Ihr
+ * Seed wird aus dieser Datei generiert (`npm run gen:model-prices`) und muss
+ * wortgleich in der NEUESTEN `supabase/migrations/*_canonical_model_prices.sql`
+ * stehen. Ändert sich hier ein Preis, ist deshalb zusätzlich eine neue
+ * Migration mit diesem Suffix fällig — der generierte Block schließt die alte
+ * Zeile und eröffnet eine neue, statt sie zu überschreiben.
+ * `npm run check:model-prices` prüft beides.
  */
 
 /** Anbieter, für die Preise hinterlegt sind. */

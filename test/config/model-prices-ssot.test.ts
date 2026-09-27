@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -14,6 +14,7 @@ import {
 } from '../../shared/model-prices';
 
 import { buildGenerated } from '../../scripts/sync-model-prices.mjs';
+import { MIGRATION_SUFFIX, buildModelPricesSql } from '../../scripts/generate-model-prices-sql';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const SOURCE = join(ROOT, 'shared', 'model-prices.ts');
@@ -30,6 +31,21 @@ describe('Einkaufspreis-SSoT: Deno-Zwilling', () => {
     // Der Zwilling wird in Deno gebündelt. Ein Import hierher bräche erst im
     // Deploy — deshalb fällt er hier auf. buildGenerated wirft in dem Fall.
     expect(() => buildGenerated(readFileSync(SOURCE, 'utf8'))).not.toThrow();
+  });
+});
+
+describe('Einkaufspreis-SSoT: Seed-Migration', () => {
+  it('die neueste *_canonical_model_prices.sql entspricht shared/model-prices.ts', () => {
+    // Migrationen sind unveränderlich. Ändert sich ein Preis, ist eine NEUE
+    // Migration mit demselben Suffix fällig; geprüft wird immer die neueste.
+    const migrationsDir = join(ROOT, 'supabase', 'migrations');
+    const seedMigration = readdirSync(migrationsDir)
+      .filter((f) => f.endsWith(MIGRATION_SUFFIX))
+      .sort()
+      .pop();
+    expect(seedMigration, 'Seed-Migration nicht gefunden').toBeDefined();
+    const sql = readFileSync(join(migrationsDir, seedMigration!), 'utf8');
+    expect(sql).toContain(buildModelPricesSql());
   });
 });
 

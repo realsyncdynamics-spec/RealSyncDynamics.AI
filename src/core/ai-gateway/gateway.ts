@@ -15,6 +15,7 @@
  * Seitdem gilt: entweder eine echte Modellantwort oder ein ehrlicher Fehler.
  */
 import { AiGatewayEdgeClient, AiGatewayEdgeError } from './edgeClient';
+import { getSupabase } from '../../lib/supabase';
 import { getSupabaseUrl, getSupabaseAnonKey } from '../../lib/supabaseUrl';
 import { edgeFunctionUrl, fnFetchInit } from '../../lib/fn-proxy';
 import type { ModelProfile } from './types';
@@ -76,6 +77,23 @@ export interface GatewayDeps {
   client?: Pick<AiGatewayEdgeClient, 'generate'> & Partial<Pick<AiGatewayEdgeClient, 'stream'>>;
 }
 
+async function createBrowserGatewayClient(timeoutMs?: number): Promise<AiGatewayEdgeClient> {
+  const { data, error } = await getSupabase().auth.getSession();
+  const accessToken = data.session?.access_token;
+  if (error || !accessToken) {
+    throw new AiGatewayEdgeError(401, 'UNAUTHORIZED', 'Keine aktive Nutzersitzung.');
+  }
+
+  return new AiGatewayEdgeClient({
+    supabaseUrl: getSupabaseUrl(),
+    apiKey: getSupabaseAnonKey(),
+    authToken: accessToken,
+    timeoutMs,
+    endpoint: edgeFunctionUrl('ai-gateway'),
+    fetchImpl: (input, init) => fetch(input, fnFetchInit(String(input), init)),
+  });
+}
+
 export async function processAIGatewayRequest(
   req: GatewayRequest,
   deps?: GatewayDeps,
@@ -97,12 +115,7 @@ export async function processAIGatewayRequest(
   }
 
   try {
-    const client = deps?.client ?? new AiGatewayEdgeClient({
-      supabaseUrl: getSupabaseUrl(),
-      apiKey: getSupabaseAnonKey(),
-      endpoint: edgeFunctionUrl('ai-gateway'),
-      fetchImpl: (input, init) => fetch(input, fnFetchInit(String(input), init)),
-    });
+    const client = deps?.client ?? await createBrowserGatewayClient();
 
     const resp = await client.generate({
       tenant_id: req.tenantId ?? null,
@@ -155,13 +168,7 @@ export async function processAIGatewayStream(
     : req.prompt;
 
   try {
-    const client = deps?.client ?? new AiGatewayEdgeClient({
-      supabaseUrl: getSupabaseUrl(),
-      apiKey: getSupabaseAnonKey(),
-      timeoutMs: req.timeoutMs ?? 90_000,
-      endpoint: edgeFunctionUrl('ai-gateway'),
-      fetchImpl: (input, init) => fetch(input, fnFetchInit(String(input), init)),
-    });
+    const client = deps?.client ?? await createBrowserGatewayClient(req.timeoutMs ?? 90_000);
     if (typeof client.stream !== 'function') {
       const fallback = await processAIGatewayRequest(req, deps);
       if (fallback.success && fallback.modelOutput) onDelta(fallback.modelOutput);

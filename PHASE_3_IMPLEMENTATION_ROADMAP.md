@@ -58,7 +58,7 @@ tenant/{tenant_id}/{evidence_type}/{year}/{month}/{filename}
 ## STEP 3: Deploy Evidence Vault Edge Function (20 minutes)
 
 ### Function Implementation
-Create `supabase/functions/evidence-vault/index.ts`:
+Create `supabase/functions/evidence-vault-r2/index.ts`:
 
 ```typescript
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
@@ -278,7 +278,7 @@ curl "https://your-project.supabase.co/functions/v1/evidence-vault/api/evidence/
 ```
 
 ### Confirmation Checklist
-- [ ] Edge function created at `supabase/functions/evidence-vault/index.ts`
+- [ ] Edge function created at `supabase/functions/evidence-vault-r2/index.ts`
 - [ ] R2 binding added to wrangler.toml
 - [ ] Function deployed successfully
 - [ ] Upload endpoint tested (curl returns success)

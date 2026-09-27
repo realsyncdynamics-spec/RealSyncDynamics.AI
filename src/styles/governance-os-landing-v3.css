@@ -1,0 +1,258 @@
+/*
+ * Governance OS Landing v3 — canonical `/` visual layer.
+ *
+ * Direction: graphite / ink / ice with cyan as the single interaction color.
+ * Warm gold is reserved for enterprise/VIP emphasis only. Risk colors remain
+ * semantic tokens and are deliberately not reused as brand/action colors.
+ *
+ * This file is loaded after the legacy handoff styles and is scoped to the
+ * canonical `.ga-context.rs-handoff` landing. App/dashboard and `/design/titan`
+ * are unaffected.
+ */
+
+.ga-context.rs-handoff {
+  color-scheme: dark;
+
+  --color-rs-hero: #05080d;
+  --color-rs-bg-0: #080d14;
+  --color-rs-bg-1: #0c121b;
+  --color-rs-bg-2: #111925;
+  --color-rs-bg-3: #172230;
+
+  --color-rs-fg-0: #f4f7fb;
+  --color-rs-fg-1: #b8c3cf;
+  --color-rs-fg-2: #7f8d9d;
+  --color-rs-fg-3: #5f6c7a;
+
+  --color-rs-border: rgba(163, 181, 199, 0.14);
+  --color-rs-border-strong: rgba(163, 181, 199, 0.26);
+
+  --color-rs-primary: #16c7d9;
+  --color-rs-primary-hover: #43d8e6;
+  --color-rs-primary-light: #73e4ee;
+  --color-rs-cyan: #16c7d9;
+  --color-rs-cyan-light: #73e4ee;
+  --color-rs-success: #37c990;
+  --color-rs-violet: #9a8cff;
+
+  --ga-void: var(--color-rs-hero);
+  --ga-deep: var(--color-rs-bg-0);
+  --ga-mid: var(--color-rs-bg-1);
+  --ga-panel: rgba(12, 18, 27, 0.9);
+  --ga-text: var(--color-rs-fg-0);
+  --ga-muted: var(--color-rs-fg-1);
+  --ga-titan: var(--color-rs-fg-2);
+  --ga-silver: #d9e1e9;
+  --ga-green: var(--color-rs-success);
+
+  --ga-accent: var(--color-rs-primary);
+  --ga-accent-lite: var(--color-rs-primary-light);
+  --ga-accent-deep: #0d8f9d;
+  --ga-accent-border: rgba(22, 199, 217, 0.42);
+
+  --ga-vip: #d7b46a;
+  --ga-vip-lite: #ead29b;
+  --ga-vip-deep: #9f7b38;
+  --ga-vip-border: rgba(215, 180, 106, 0.38);
+
+  --ga-line: rgba(163, 181, 199, 0.14);
+  --ga-line-soft: rgba(163, 181, 199, 0.08);
+  --ga-sheen: rgba(22, 199, 217, 0.08);
+
+  --ga-pill-face: linear-gradient(180deg, #5de0ea 0%, #16c7d9 100%);
+  --ga-pill-ink: #031014;
+  --ga-pill-shadow: 0 12px 34px rgba(0, 0, 0, 0.34), 0 0 28px rgba(22, 199, 217, 0.14);
+  --ga-ghost-face: rgba(255, 255, 255, 0.015);
+  --ga-ghost-face-hover: rgba(22, 199, 217, 0.07);
+  --ga-ghost-border: rgba(184, 195, 207, 0.34);
+  --ga-ghost-border-hover: rgba(115, 228, 238, 0.72);
+  --ga-chip-face: rgba(22, 199, 217, 0.06);
+
+  --ga-h1-face: linear-gradient(#f7f9fc, #dfe7ef);
+  --ga-h1-accent: linear-gradient(180deg, #8aedf3 0%, #16c7d9 62%, #0d8f9d 100%);
+  --ga-h2-accent: var(--ga-h1-accent);
+  --ga-glass: linear-gradient(155deg, rgba(17, 25, 37, 0.94), rgba(8, 13, 20, 0.9));
+  --ga-band: #05080d;
+  --ga-band-alt: #080d14;
+  --ga-status-bg: #0c121b;
+  --ga-ticker-bg: #080d14;
+  --ga-footer-bg: #05080d;
+  --ga-price-face: linear-gradient(#f4f7fb, #b8c3cf);
+  --ga-featured-shadow: 0 0 0 1px rgba(22, 199, 217, 0.48), 0 24px 70px rgba(0, 0, 0, 0.28);
+
+  background:
+    radial-gradient(circle at 78% 4%, rgba(22, 199, 217, 0.09), transparent 27rem),
+    radial-gradient(circle at 12% 44%, rgba(91, 112, 136, 0.07), transparent 32rem),
+    var(--color-rs-hero);
+}
+
+/* Typography: technical enterprise, not editorial lifestyle. */
+.ga-context.rs-handoff .rs-hero__h1,
+.ga-context.rs-handoff .os-display,
+.ga-context.rs-handoff .os-h2,
+.ga-context.rs-handoff :is(h2, h3) {
+  font-family: var(--font-rs-ui) !important;
+  font-style: normal;
+  font-weight: 560 !important;
+  letter-spacing: -0.035em;
+}
+
+.ga-context.rs-handoff :is(.rs-hero__h1-accent, .os-dim) {
+  font-style: normal;
+  color: var(--color-rs-primary);
+}
+
+.ga-context.rs-handoff .rs-hero__h1 {
+  font-size: clamp(48px, 6vw, 92px);
+  line-height: 0.98;
+  max-width: 13ch;
+}
+
+.ga-context.rs-handoff .rs-hero__subline,
+.ga-context.rs-handoff .os-lede {
+  color: var(--color-rs-fg-1);
+}
+
+/* Hero: remove paper/atlas treatment; make the map a restrained control-plane signal. */
+.ga-context.rs-handoff .rs-hero {
+  background:
+    linear-gradient(90deg, rgba(5, 8, 13, 1) 0%, rgba(5, 8, 13, 0.98) 42%, rgba(5, 8, 13, 0.72) 67%, rgba(5, 8, 13, 0.42) 100%),
+    var(--color-rs-hero);
+}
+
+.ga-context.rs-handoff .rs-hero__fade-x {
+  background: linear-gradient(90deg, #05080d 0%, #05080d 38%, rgba(5, 8, 13, 0.82) 58%, transparent 86%);
+}
+
+.ga-context.rs-handoff .rs-hero__vignette {
+  background: linear-gradient(180deg, #05080d 0%, transparent 14%, transparent 72%, #05080d 100%);
+}
+
+.ga-context.rs-handoff .rs-hero__glow {
+  display: block;
+  background: radial-gradient(55% 52% at 78% 32%, rgba(22, 199, 217, 0.12), transparent 72%);
+}
+
+.ga-context.rs-handoff .rs-hero__dots {
+  background-image: radial-gradient(rgba(115, 228, 238, 0.1) 0.8px, transparent 1px);
+}
+
+.ga-context.rs-handoff .rs-hero__map {
+  mix-blend-mode: screen;
+  opacity: 0.72;
+}
+
+.ga-context.rs-handoff .rs-hero__map-main {
+  filter: saturate(0.72) hue-rotate(-5deg) brightness(0.72) contrast(1.2);
+}
+
+.ga-context.rs-handoff .rs-hero__status {
+  border: 1px solid var(--color-rs-border-strong);
+  background: rgba(8, 13, 20, 0.78);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.025);
+  backdrop-filter: blur(12px);
+}
+
+.ga-context.rs-handoff .rs-hero__status-dot {
+  background: var(--color-rs-primary);
+  box-shadow: 0 0 0 4px rgba(22, 199, 217, 0.1), 0 0 18px rgba(22, 199, 217, 0.22);
+}
+
+/* Navigation and controls: precise, low-noise, cyan only for action. */
+.ga-context.rs-handoff .rs-nav__link:hover,
+.ga-context.rs-handoff .rs-btn--glass:hover {
+  background: rgba(22, 199, 217, 0.06);
+}
+
+.ga-context.rs-handoff .rs-menu,
+.ga-context.rs-handoff .rs-menu__item {
+  background: rgba(8, 13, 20, 0.98);
+}
+
+.ga-context.rs-handoff .rs-btn--primary,
+.ga-context.rs-handoff :is(.surface-mono, .surface-gold) {
+  color: #031014;
+  background: var(--color-rs-primary);
+  border-color: var(--color-rs-primary);
+  box-shadow: none;
+}
+
+.ga-context.rs-handoff .rs-btn--primary:not(:disabled):not([aria-disabled='true']):hover,
+.ga-context.rs-handoff :is(.surface-mono, .surface-gold):hover {
+  background: var(--color-rs-primary-hover);
+}
+
+.ga-context.rs-handoff .rs-btn--glass {
+  color: var(--color-rs-fg-0);
+  border-color: var(--color-rs-border-strong);
+  background: rgba(255,255,255,0.01);
+}
+
+/* Sections: alternating graphite depth instead of beige bands. */
+.ga-context.rs-handoff .os-section {
+  border-top-color: var(--color-rs-border);
+  background: rgba(5, 8, 13, 0.96);
+}
+
+.ga-context.rs-handoff .os-section--alt {
+  background: rgba(8, 13, 20, 0.98);
+}
+
+.ga-context.rs-handoff .os-panel,
+.ga-context.rs-handoff .ga-glass {
+  border: 1px solid var(--color-rs-border);
+  border-radius: 0;
+  background: linear-gradient(155deg, rgba(17, 25, 37, 0.94), rgba(8, 13, 20, 0.9));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.025), 0 20px 60px rgba(0,0,0,0.18);
+  backdrop-filter: blur(12px);
+}
+
+.ga-context.rs-handoff .ga-glass:hover,
+.ga-context.rs-handoff .os-panel:hover {
+  border-color: rgba(22, 199, 217, 0.28);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.035), 0 24px 72px rgba(0,0,0,0.24);
+}
+
+.ga-context.rs-handoff .ga-card::before {
+  background: radial-gradient(260px 180px at var(--ga-mx, 50%) var(--ga-my, 0%), rgba(22, 199, 217, 0.09), transparent 70%);
+}
+
+.ga-context.rs-handoff .ga-card::after {
+  background: linear-gradient(90deg, transparent, rgba(22, 199, 217, 0.9), transparent);
+}
+
+/* VIP/enterprise is intentionally warm and isolated from risk-medium semantics. */
+.ga-context.rs-handoff .ga-vip {
+  --ga-accent: #d7b46a;
+  --ga-accent-lite: #ead29b;
+  --ga-accent-deep: #9f7b38;
+  --ga-accent-border: rgba(215, 180, 106, 0.38);
+  --ga-sheen: rgba(215, 180, 106, 0.09);
+  --ga-h1-accent: linear-gradient(180deg, #f0dda9, #d7b46a 62%, #9f7b38);
+  --ga-h2-accent: var(--ga-h1-accent);
+  --ga-pill-face: linear-gradient(180deg, #ead29b, #d7b46a);
+  --ga-pill-ink: #171107;
+  --ga-ghost-face-hover: rgba(215, 180, 106, 0.07);
+  --ga-chip-face: rgba(215, 180, 106, 0.06);
+}
+
+/* Semantic status colors stay independent from brand/VIP tokens. */
+.ga-context.rs-handoff .os-tone-ok { color: #4ad9a2; }
+.ga-context.rs-handoff .os-tone-warn { color: #f0b44d; }
+.ga-context.rs-handoff .os-tone-block { color: #ff6b6b; }
+
+@media (max-width: 767px) {
+  .ga-context.rs-handoff .rs-hero__h1 {
+    font-size: clamp(42px, 13vw, 62px);
+    max-width: 11ch;
+  }
+
+  .ga-context.rs-handoff .rs-hero__map { opacity: 0.32; }
+  .ga-context.rs-handoff .rs-hero__fade-x {
+    background: linear-gradient(180deg, rgba(5,8,13,0.7), #05080d 70%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ga-context.rs-handoff .rs-hero__status-dot { box-shadow: none; }
+}

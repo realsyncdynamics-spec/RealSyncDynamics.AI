@@ -9,9 +9,14 @@ import { DesignGovernanceAiLanding } from '../../src/pages/design/DesignGovernan
 import { resetLangForTests } from '../../src/i18n/useLang';
 import {
   AGENT_GOVERNANCE_RUNTIME_SUMMARY,
+  AGENT_RUNTIME_BOUNDARY,
   DEMO_LABEL,
+  GOVERNANCE_AI_HERO_TEST_SUBSTRING,
+  GOVERNANCE_OS_ENTRY_PATH,
   PROVIDER_NEUTRALITY_SUMMARY,
 } from '../../src/components/governance-frontend/hero-content';
+import { getImplementation, STATUS_LABEL } from '../../src/product/implementation-status';
+import { CTA } from '../../src/content/runtimeVocab';
 
 function stubMotion(reduce: boolean) {
   vi.stubGlobal('matchMedia', vi.fn((query: string) => ({
@@ -31,10 +36,24 @@ const mount = () => render(<MemoryRouter initialEntries={['/']}><DesignGovernanc
 
 it('renders the Governance OS hero: category eyebrow, H1, six-stage loop and CTAs', () => {
   const view = mount();
-  expect(screen.getByText('REALSYNCDYNAMICS.AI / GOVERNANCE OS FÜR AUTONOME KI')).toBeInTheDocument();
+  expect(screen.getByText('REALSYNCDYNAMICS.AI / KONTROLL- UND NACHWEISSCHICHT FÜR KI')).toBeInTheDocument();
   const h1 = screen.getByRole('heading', { level: 1 });
-  expect(h1).toHaveTextContent('Europa braucht kein weiteres Frontier-Modell.');
-  expect(h1.querySelector('.rs-hero__h1-accent')).toHaveTextContent('Frontier-KI.');
+  // E-F3 (2026-09-27): verbindliche H1 — genau dieser Satz, nicht „Governance OS
+  // für KI-Agenten". `textContent` fügt die drei Zeilen-Spans ohne Trenner
+  // zusammen, deshalb der normalisierte Vergleich auf den ganzen Satz.
+  expect((h1.textContent ?? '').replace(/\s+/g, ' ').trim()).toBe(
+    'Die Kontrollschicht für KI im Unternehmen.',
+  );
+  expect(h1.querySelector('.rs-hero__h1-accent')).toHaveTextContent('Unternehmen.');
+  // FE-001 prüft `/` über diese Konstante — sie muss in der echten H1 stehen.
+  expect(h1.textContent).toContain(GOVERNANCE_AI_HERO_TEST_SUBSTRING);
+  expect(
+    screen.getByText(
+      'RealSyncDynamics.AI macht sichtbar, welche KI-Systeme, Bots und Agenten im Einsatz sind, welche Daten sie nutzen, welche Regeln gelten und welche Nachweise entstehen.',
+    ),
+  ).toBeInTheDocument();
+  // Kein „autonome KI" mehr im Hero — Agenten-Autonomie ist nicht live.
+  expect(view.container.querySelector('.rs-hero')!.textContent).not.toMatch(/autonom/i);
   // Regulierung ist nicht die Produktidentität: kein Normen-Badge im Hero.
   expect(screen.queryByText('EU AI Act · DSGVO · ISO 42001')).toBeNull();
   const loop = view.container.querySelector('.rs-loop') as HTMLElement;
@@ -49,19 +68,22 @@ it('renders the Governance OS hero: category eyebrow, H1, six-stage loop and CTA
     screen.getByText(/Geplant markiert Optionen, die als Provider-Pfad vorgesehen/),
   ).toBeInTheDocument();
 
-  const primary = view.container.querySelectorAll('[data-hero-cta="pipeline"]');
+  // Primär-CTA führt in den Scan, nicht in die Demo-Pipeline.
+  const primary = view.container.querySelectorAll('[data-hero-cta="audit"]');
   expect(primary).toHaveLength(1);
-  expect(primary[0]).toHaveAttribute('href', '#pipeline');
-  expect(primary[0]).toHaveTextContent('Governance-Scan starten');
+  expect(primary[0]).toHaveAttribute('href', '/audit');
+  expect(primary[0]).toHaveTextContent('Kostenlosen KI-/DSGVO-Scan starten');
+  expect(screen.getByTestId('hero-primary-cta')).toBe(primary[0]);
 
+  // Sekundär-CTA = Enterprise. Label aus der CTA-SSoT (einzige kontaktbasierte
+  // CTA, runtimeVocab.CTA.enterprise) — kein zweites Kontakt-Label.
   const secondary = screen.getByTestId('hero-secondary-cta');
-  expect(secondary).toHaveAttribute('href', '#architecture');
-  expect(secondary).toHaveTextContent('Architektur ansehen');
+  expect(secondary).toHaveAttribute('href', '/contact-sales?tier=enterprise&source=home-hero');
+  expect(secondary).toHaveTextContent(CTA.enterprise);
 
-  expect(screen.getByTestId('hero-enterprise-link')).toHaveAttribute(
-    'href',
-    '/contact-sales?tier=enterprise&source=home-hero',
-  );
+  // Der Architektur-Einstieg bleibt erreichbar (jetzt als Textlink).
+  expect(screen.getByTestId('hero-architecture-link')).toHaveAttribute('href', '#architecture');
+  expect(screen.getByTestId('hero-architecture-link')).toHaveTextContent('Architektur ansehen');
   expect(within(screen.getByTestId('hero-status')).getByText(/eu-central-1/i)).toBeInTheDocument();
 });
 
@@ -73,6 +95,50 @@ it('keeps every in-page anchor resolvable', () => {
     const id = a.getAttribute('href')!.replace(/^\/?#/, '');
     expect(view.container.querySelector(`#${id}`), id).not.toBeNull();
   }
+});
+
+it('shows the AI Governance OS target picture inside the architecture section', () => {
+  const view = mount();
+  const architecture = view.container.querySelector('#architecture') as HTMLElement;
+  const target = screen.getByTestId('governance-os-target');
+
+  // Wiederverwendete Sektion, keine neue Sektion daneben.
+  expect(architecture.contains(target)).toBe(true);
+  expect(view.container.querySelectorAll('section#architecture')).toHaveLength(1);
+
+  for (const step of ['observe', 'evaluate', 'decide', 'act', 'verify', 'record', 'learn']) {
+    expect(screen.getByTestId(`loop-stage-${step}`)).toBeInTheDocument();
+  }
+
+  // Genau eine Loop-Stufe trägt einen Statuswert, und zwar Learn = COMING SOON.
+  const learn = screen.getByTestId('loop-stage-learn');
+  expect(within(learn).getByText(STATUS_LABEL['coming-soon'])).toBeInTheDocument();
+  const badgesImLoop = Array.from(
+    target.querySelectorAll('[data-testid^="loop-stage-"] .os-status'),
+  );
+  expect(badgesImLoop).toHaveLength(1);
+  expect(badgesImLoop[0]).toHaveTextContent(STATUS_LABEL['coming-soon']);
+
+  expect(screen.getByText(AGENT_RUNTIME_BOUNDARY)).toBeInTheDocument();
+});
+
+it('reads every entry-path status from implementation-status, never from landing copy', () => {
+  mount();
+  const pfad = screen.getByTestId('governance-os-entry-path');
+  expect(pfad.children).toHaveLength(GOVERNANCE_OS_ENTRY_PATH.length);
+
+  // Erwartete Reihenfolge laut Brief — Scan live, Core live, Agenten Preview,
+  // Agent OS Premium Coming Soon. Der Wert kommt aus der Registry, nicht aus
+  // dieser Zeile: fällt ein Status dort, fällt dieser Test.
+  const erwartet = ['live', 'live', 'preview', 'coming-soon'] as const;
+  GOVERNANCE_OS_ENTRY_PATH.forEach((stage, i) => {
+    const item = getImplementation(stage.statusId);
+    expect(item, stage.statusId).toBeDefined();
+    expect(item!.status, stage.statusId).toBe(erwartet[i]);
+    const cell = screen.getByTestId(`entry-stage-${stage.statusId}`);
+    expect(within(cell).getByText(stage.label)).toBeInTheDocument();
+    expect(within(cell).getByText(STATUS_LABEL[item!.status])).toBeInTheDocument();
+  });
 });
 
 it('labels every surface with example values as demo data', () => {
@@ -146,11 +212,13 @@ it('switches DE → EN and persists the language', () => {
   const view = mount();
   fireEvent.click(screen.getAllByTestId('lang-toggle')[0]);
   expect(localStorage.getItem('rsd-lang')).toBe('en');
-  expect(screen.getByText('REALSYNCDYNAMICS.AI / THE GOVERNANCE OS FOR AUTONOMOUS AI')).toBeInTheDocument();
-  expect(screen.getByText('Start governance scan', { selector: '#pipeline-cta' })).toBeInTheDocument();
+  expect(screen.getByText('REALSYNCDYNAMICS.AI / CONTROL AND EVIDENCE LAYER FOR AI')).toBeInTheDocument();
+  expect(screen.getByTestId('hero-primary-cta')).toHaveTextContent('Start the free AI / GDPR scan');
+  expect(screen.getByTestId('hero-primary-cta')).toHaveAttribute('id', 'scan-cta');
   expect(screen.getByText(AGENT_GOVERNANCE_RUNTIME_SUMMARY.en)).toBeInTheDocument();
   expect(screen.getByText(PROVIDER_NEUTRALITY_SUMMARY.en)).toBeInTheDocument();
-  expect(screen.getByTestId('hero-secondary-cta')).toHaveTextContent('View the architecture');
+  expect(screen.getByTestId('hero-secondary-cta')).toHaveTextContent('Enterprise inquiry');
+  expect(screen.getByTestId('hero-architecture-link')).toHaveTextContent('View the architecture');
   view.unmount();
   mount();
   expect(screen.getAllByTestId('lang-toggle')[0]).toHaveAttribute('data-lang', 'en');

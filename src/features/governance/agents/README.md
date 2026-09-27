@@ -63,16 +63,20 @@ Abgelöst: `demoAgents.ts` (`DEMO_AGENTS`, Status „active") und der Typ
 
 Plan (nicht Teil dieses PRs):
 
-1. **Tabelle** `governance_agents` mit RLS pro Tenant.
+1. **Mandanten-Tabelle** mit RLS pro Tenant, die Katalog-Einträge (`GovernedAgentEntry.id`)
+   einem Mandanten zuordnet — Migration, separates GO. `governance_agent_registry`
+   (Migration `20260817000000`) trägt die nötigen Felder heute nicht.
 2. **Edge Function** `agent-execute`, die einen Agent-Lauf triggert:
-   - Lädt den Agent-Record
-   - Validiert das geplante Tool gegen `tools[]`
-   - Validiert die geplante Aktion **nicht** in `forbiddenActions[]`
-   - Lädt die Run-Daten, prüft ob `requiresHumanReview`-Punkte getroffen sind → wenn ja, pausiert und legt einen `approvals`-Eintrag an
-   - Schreibt jeden Schritt in den Evidence Vault
-3. **Approval-View** (existiert bereits unter `/governance/approvals`) zeigt offene Reviews
-4. **lastRunAt** wird beim Abschluss aktualisiert
+   - Lädt den Katalog-Eintrag und die Mandanten-Zuordnung
+   - Validiert die geplante Aktion gegen `allowedActions[]` (Default-Deny)
+   - Lehnt jede Aktion aus `forbiddenActions[]` ab
+   - `reviewMode: 'always'` oder ein getroffener `reviewPoints`-Punkt → pausiert und legt
+     einen Eintrag in `governance_approvals` an
+   - Schreibt Nachweise gemäß `evidenceRequirement` in den Evidence Vault
+3. **Lauf-Datensatz** (eigenes Modell, nicht Teil von `GovernedAgentEntry`): Start, Ende,
+   Ergebnis, Evidence-Referenzen — der Katalog selbst kennt keine Läufe.
+4. **Approval-View** (existiert bereits unter `/governance/approvals`) zeigt offene Reviews
 
 ## Route
 
-`/governance/agents` (lazy-loaded, siehe `src/App.tsx`)
+`/app/ai-systems/agents` (lazy-loaded, siehe `src/App.tsx`); öffentliche Vorschau des Katalogs unter `/governance-browser`

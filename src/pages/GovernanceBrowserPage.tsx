@@ -39,7 +39,9 @@ export function GovernanceBrowserPage() {
         <div className="max-w-6xl mx-auto">
           <h1 className="font-display font-bold text-2xl text-titanium-50 mb-2">Governance Browser</h1>
           <p className="text-sm text-titanium-400">
-            Erkennen Sie alle Agenten, Freigaben, Nachweise und Workflows, die in der Governance OS laufen.
+            So führt das Governance OS Agenten, Freigaben, Nachweise und Workflows — gezeigt an einem
+            Beispielmandanten. Der Reifegrad je Agent steht an der Karte: PREVIEW ist eingeschränkt
+            verfügbar, COMING SOON ist Roadmap.
           </p>
         </div>
       </div>
@@ -54,6 +56,11 @@ export function GovernanceBrowserPage() {
                 <Bot className="h-5 w-5 text-cyan-300" />
                 Agenten &amp; Bots im Katalog ({AGENT_CATALOG.length})
               </h2>
+              <p className="mb-4 text-xs text-titanium-400">
+                Katalog der Agenten- und Bot-Typen, kein laufender Bestand. Als Preview-Lauf ausführbar:{' '}
+                {AGENT_CATALOG.filter((a) => a.runnable).map((a) => a.name).join(', ') || 'derzeit keiner'}.
+                Alle Aktionen mit Außenwirkung brauchen eine Freigabe.
+              </p>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {AGENT_CATALOG.map((agent) => (
                   <AgentCard key={agent.id} agent={agent} />

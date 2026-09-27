@@ -67,7 +67,7 @@ export async function createServerGatewayFromEnv(opts: {
   const requireLocal = opts.requireLmStudio ?? true;
   const localProvider = resolveLocalProvider();
   const localBaseUrl = localProvider === 'ollama'
-    ? Deno.env.get('OLLAMA_BASE_URL')
+    ? (Deno.env.get('OLLAMA_BASE_URL') ?? Deno.env.get('OLLAMA_URL'))
     : Deno.env.get('LM_STUDIO_BASE_URL');
 
   if (!localBaseUrl && requireLocal) {
@@ -75,7 +75,9 @@ export async function createServerGatewayFromEnv(opts: {
       ok: false,
       status: 503,
       code: localProvider === 'ollama' ? 'LOCAL_NOT_CONFIGURED' : 'LM_STUDIO_NOT_CONFIGURED',
-      message: localProvider === 'ollama' ? 'OLLAMA_BASE_URL not set' : 'LM_STUDIO_BASE_URL not set',
+      message: localProvider === 'ollama'
+        ? 'OLLAMA_BASE_URL/OLLAMA_URL not set'
+        : 'LM_STUDIO_BASE_URL not set',
     };
   }
 
@@ -106,7 +108,13 @@ export async function createServerGatewayFromEnv(opts: {
   // Ollama als lokalen Slot injizieren, wenn gewählt UND konfiguriert. Sonst
   // baut ServerAiGateway den Default-LM-Studio-Adapter aus lmStudioBaseUrl.
   const localAdapter = localProvider === 'ollama' && localBaseUrl
-    ? new OllamaAdapter({ baseUrl: localBaseUrl, model: OLLAMA_MODEL, embeddingModel: OLLAMA_EMBED_MODEL })
+    ? new OllamaAdapter({
+        baseUrl: localBaseUrl,
+        model: OLLAMA_MODEL,
+        embeddingModel: OLLAMA_EMBED_MODEL,
+        authToken: Deno.env.get('OLLAMA_AUTH_TOKEN') ?? undefined,
+        authMode: parseOllamaAuthMode(Deno.env.get('OLLAMA_AUTH_MODE')),
+      })
     : undefined;
 
   return {
@@ -142,4 +150,12 @@ async function readVaultSecret(name: string): Promise<string | null> {
   } catch {
     return null;
   }
+}
+
+
+function parseOllamaAuthMode(value: string | undefined): 'basic' | 'bearer' | undefined {
+  const normalized = value?.trim().toLowerCase();
+  if (!normalized) return undefined;
+  if (normalized === 'basic' || normalized === 'bearer') return normalized;
+  return undefined;
 }

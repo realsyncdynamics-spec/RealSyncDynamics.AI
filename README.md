@@ -197,7 +197,7 @@ Siehe auch: [`docs/QA_VISUAL_FUNCTIONAL_TESTRUN.md`](docs/QA_VISUAL_FUNCTIONAL_T
 
 Single Source of Truth: [`src/config/pricing.ts`](src/config/pricing.ts).
 Live unter `/pricing`. Aktuelle Tiers: Free Audit · Starter (79 €) ·
-Growth (249 €) · Agency (699 €) · Enterprise (1.249 €, höchste Stufe). Gemäß § 19 UStG
+Growth (249 €) · Agency (699 €) · Enterprise (höchste Stufe, auf Anfrage). Gemäß § 19 UStG
 wird keine Umsatzsteuer ausgewiesen. Details +
 Feature-Listen pro Tier siehe [`ROADMAP.md`](ROADMAP.md).
 

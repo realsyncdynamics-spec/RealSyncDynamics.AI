@@ -408,8 +408,11 @@ export class AiGatewayEdgeClient {
         throw errorFrom(res, undefined, CODE_BY_STATUS[res.status] ?? 'BAD_ENVELOPE', `gateway returned non-JSON (HTTP ${res.status})`);
       }
 
-      if (envelope.ok === false) {
-        throw errorFrom(res, envelope.error, CODE_BY_STATUS[res.status] ?? 'UPSTREAM', `gateway HTTP ${res.status}`);
+      // Nicht-2xx ist nie ein Erfolg, auch ohne `{ok:false}`-Umschlag — etwa
+      // die 401 der Plattform (`verify_jwt`) bei abgelaufenem Nutzer-JWT.
+      if (!res.ok || envelope?.ok === false) {
+        const wire = envelope && envelope.ok === false ? envelope.error : undefined;
+        throw errorFrom(res, wire, CODE_BY_STATUS[res.status] ?? 'UPSTREAM', `gateway HTTP ${res.status}`);
       }
 
       return {

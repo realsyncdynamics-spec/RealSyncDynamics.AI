@@ -52,8 +52,8 @@ export function CommandCenterDashboard() {
   const [error, setError] = useState<string | null>(null);
   const [bootstrapSteps, setBootstrapSteps] = useState<BootstrapStep[]>([]);
   const [complianceKpi, setComplianceKpi] = useState<ComplianceKpiRow>(EMPTY_COMPLIANCE_KPI_ROW);
-  // „Erneut laden“ im Score-Fehlerzustand: erhöht den Schlüssel und lädt die
-  // Cockpit-Daten neu (kein Seiten-Reload).
+  // „Erneut laden“: erhöht den Schlüssel und lädt ALLE Dashboard-Quellen neu
+  // (Cockpit, KPI-Zeile, Übersicht, Workspace-Schritte) — kein Seiten-Reload.
   const [reloadKey, setReloadKey] = useState(0);
   const retry = useCallback(() => setReloadKey((k) => k + 1), []);
 
@@ -110,7 +110,7 @@ export function CommandCenterDashboard() {
       }));
     })();
     return () => { cancelled = true; };
-  }, [activeTenantId]);
+  }, [activeTenantId, reloadKey]);
 
   return (
     <>
@@ -123,6 +123,7 @@ export function CommandCenterDashboard() {
         loading={loading}
         error={error}
         onRetry={retry}
+        reloadKey={reloadKey}
       />
       <BrowserRuntimePanel activeTenantId={activeTenantId} />
       <ComplianceStatusView

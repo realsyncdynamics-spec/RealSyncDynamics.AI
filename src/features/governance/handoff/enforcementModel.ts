@@ -51,6 +51,18 @@ export function isAiSystemAsset(asset: Pick<DbGovernanceAsset, 'asset_type'>): b
   return asset.asset_type === 'ai_system';
 }
 
+/**
+ * „Hochrisiko“ im Dashboard — EINE Definition: KI-System mit EU-AI-Act-Klasse
+ * `high` oder `prohibited`. Nicht der Risiko-Score (der heißt „erhöhter
+ * Risiko-Score“) und nie `unknown` — unklassifiziert wird getrennt gezählt.
+ */
+export function isHighRiskAiSystem(asset: Pick<DbGovernanceAsset, 'asset_type' | 'ai_act_class'>): boolean {
+  return isAiSystemAsset(asset) && (asset.ai_act_class === 'high' || asset.ai_act_class === 'prohibited');
+}
+
+/** Drill-down-Ziel der Hochrisiko-Kachel. */
+export const HIGH_RISK_SYSTEMS_ROUTE = '/app/ai-systems?risk=high';
+
 export type ClassSource = 'connector' | 'system_type' | 'fallback';
 
 export interface AssetClassification {

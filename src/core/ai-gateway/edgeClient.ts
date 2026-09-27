@@ -23,14 +23,26 @@ import type {
 export interface EdgeClientConfig {
   /** Supabase project base URL, e.g. `https://<ref>.supabase.co`. */
   supabaseUrl: string;
-  /** anon or service_role key — used as `apikey` + `Authorization: Bearer`. */
+  /** Oeffentlicher Projekt-Key fuer den `apikey`-Header. */
   apiKey: string;
+  /** Nutzer-access_token fuer den Gateway-Nutzerpfad. */
+  authToken?: string;
   /** Defaults to global `fetch`. Injected in tests. */
   fetchImpl?: typeof fetch;
   /** Request timeout. */
   timeoutMs?: number;
   /** Override POST URL (CSRF proxy `/api/fn/ai-gateway`). */
   endpoint?: string;
+}
+
+export function gatewayHeaders(
+  config: Pick<EdgeClientConfig, 'apiKey' | 'authToken'>,
+): Record<string, string> {
+  return {
+    'content-type': 'application/json',
+    'apikey': config.apiKey,
+    'authorization': `Bearer ${config.authToken || config.apiKey}`,
+  };
 }
 
 export type EdgeOp = 'generate' | 'extract_json' | 'embed' | 'stream';
@@ -100,11 +112,7 @@ export class AiGatewayEdgeClient {
       const res = await this.fetchImpl(this.endpoint, {
         method: 'POST',
         signal: controller.signal,
-        headers: {
-          'content-type': 'application/json',
-          'apikey': this.config.apiKey,
-          'authorization': `Bearer ${this.config.apiKey}`,
-        },
+        headers: gatewayHeaders(this.config),
         body: JSON.stringify({ op: 'stream', ...request } satisfies EdgeRequestBody),
       });
       if (!res.body) {
@@ -162,11 +170,7 @@ export class AiGatewayEdgeClient {
       const res = await this.fetchImpl(this.endpoint, {
         method: 'POST',
         signal: controller.signal,
-        headers: {
-          'content-type':  'application/json',
-          'apikey':         this.config.apiKey,
-          'authorization': `Bearer ${this.config.apiKey}`,
-        },
+        headers: gatewayHeaders(this.config),
         body: JSON.stringify({ op, ...request } satisfies EdgeRequestBody),
       });
 

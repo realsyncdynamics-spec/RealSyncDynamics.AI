@@ -332,6 +332,17 @@ export const GOVERNANCE_MODULES: GovernanceModule[] = [
     description: 'Aktive Rahmenwerke des Plans verwalten',
   },
   {
+    id: 'control-coverage',
+    label: 'Control Coverage',
+    icon: 'ListChecks',
+    route: '/app/mappings',
+    status: 'beta',
+    // /app/mappings ist heute bewusst nicht im RouteEntitlementGate.
+    // Navigation darf deshalb kein strengeres oder anderes Gate erfinden.
+    gate: { kind: 'all' },
+    description: 'Aktiver Control-Scope, Umsetzungsstatus und Asset-Zuordnungen',
+  },
+  {
     id: 'documents',
     label: 'Dokumente',
     icon: 'FileText',

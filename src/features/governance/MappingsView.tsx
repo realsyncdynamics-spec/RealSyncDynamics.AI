@@ -127,7 +127,13 @@ function Inner() {
       </header>
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6">
-        <ControlCoveragePanel summary={coverage} error={coverageError} loading={Boolean(activeTenantId) && coverage === null && coverageError === null} />
+        {activeTenantId && (
+          <ControlCoveragePanel
+            summary={coverage}
+            error={coverageError}
+            loading={coverage === null && coverageError === null}
+          />
+        )}
 
         {error && (
           <div className="mb-4 flex items-start gap-2.5 text-sm text-red-300 bg-red-950/50 border border-red-900 rounded-none p-3">

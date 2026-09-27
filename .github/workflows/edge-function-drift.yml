@@ -39,4 +39,9 @@ jobs:
           # Prod-Teil sauber (Exit 0) und prueft nur die Repo-Konsistenz.
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+          # Ist das Secret vorhanden, darf ein uebersprungener Prod-Check NICHT
+          # als "kein Drift" durchgehen — sonst meldet der Guard gruen, ohne
+          # geprueft zu haben (Befund F-06, AUDIT/18_FINDINGS.md). Bei Forks
+          # bleibt der Ausdruck leer und das Skip-Verhalten gilt weiter.
+          EDGE_DRIFT_REQUIRE_PROD: ${{ secrets.SUPABASE_ACCESS_TOKEN != '' && '1' || '' }}
         run: node scripts/check-edge-function-drift.mjs

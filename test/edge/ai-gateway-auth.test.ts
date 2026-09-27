@@ -872,6 +872,13 @@ describe('ai-gateway — Turnstile nur auf audit_anon, fail-closed', () => {
     expect(h.gatewayBuilds).toBe(0);
   };
 
+  it('akzeptiert das native Widget-Feld cf-turnstile-response als Token-Alias', async () => {
+    const h = makeHarness();
+    const res = await h.handler(opReq({ mode: 'audit_anon', 'cf-turnstile-response': 'widget-token', input: q }, ip));
+    expect(res.status).toBe(200);
+    expect(h.turnstileCalls[0].body.response).toBe('widget-token');
+  });
+
   it.each([
     ['fehlt', { mode: 'audit_anon', input: q }],
     ['leer', withToken('   ')],
@@ -899,18 +906,18 @@ describe('ai-gateway — Turnstile nur auf audit_anon, fail-closed', () => {
     ['success=false (invalid-input-response)', async () => new Response(JSON.stringify({ success: false, 'error-codes': ['invalid-input-response'] }), { status: 200 })],
     ['success=false (timeout-or-duplicate, Replay)', async () => new Response(JSON.stringify({ success: false, 'error-codes': ['timeout-or-duplicate'] }), { status: 200 })],
     ['Siteverify HTTP 500', async () => new Response('oops', { status: 500 })],
-    ['Netzwerkfehler', async () => { throw new TypeError('fetch failed'); }],
-    ['Timeout/Abbruch', async () => { throw new DOMException('The operation was aborted.', 'AbortError'); }],
+    ['Netzwerkfehler', async () => { throw new TypeError('fetch failed'); }, 2],
+    ['Timeout/Abbruch', async () => { throw new DOMException('The operation was aborted.', 'AbortError'); }, 2],
     ['kaputtes JSON', async () => new Response('<html>', { status: 200 })],
     ['falscher Hostname', turnstileOk({ hostname: 'evil.example' })],
     ['Hostname fehlt', turnstileOk({ hostname: undefined })],
     ['falsche Action', turnstileOk({ action: 'login' })],
-  ])('%s → 403 TURNSTILE_FAILED, kein Log, kein Provider', async (_n, mock) => {
+  ])('%s → 403 TURNSTILE_FAILED, kein Log, kein Provider', async (_n, mock, expectedAttempts = 1) => {
     const h = makeHarness({ turnstile: mock as TurnstileMock });
     const res = await h.handler(opReq(withToken(), ip));
     expect(res.status).toBe(403);
     expect(await errCode(res)).toBe('TURNSTILE_FAILED');
-    expect(h.turnstileCalls).toHaveLength(1);
+    expect(h.turnstileCalls).toHaveLength(expectedAttempts);
     nothingHappened(h);
     expect(h.logs.some((l) => l.event === 'turnstile_rejected' && l.code === 'TURNSTILE_FAILED')).toBe(true);
   });
@@ -918,7 +925,12 @@ describe('ai-gateway — Turnstile nur auf audit_anon, fail-closed', () => {
   it('Siteverify-Aufruf: POST an Cloudflare mit secret/response/remoteip=CF-Connecting-IP; Secret/Token nie im Log oder in der Antwort', async () => {
     const h = makeHarness({ turnstile: async () => new Response(JSON.stringify({ success: false }), { status: 200 }) });
     const res = await h.handler(opReq(withToken('tok-geheim'), ip));
-    expect(h.turnstileCalls).toEqual([{ url: TURNSTILE_VERIFY_URL, body: { secret: TURNSTILE_SECRET, response: 'tok-geheim', remoteip: '198.51.100.9' } }]);
+    expect(h.turnstileCalls).toHaveLength(1);
+    expect(h.turnstileCalls[0]).toMatchObject({
+      url: TURNSTILE_VERIFY_URL,
+      body: { secret: TURNSTILE_SECRET, response: 'tok-geheim', remoteip: '198.51.100.9' },
+    });
+    expect(h.turnstileCalls[0].body.idempotency_key).toMatch(/^[0-9a-f-]{36}$/i);
     const txt = await res.text();
     const logs = JSON.stringify(h.logs);
     for (const s of [TURNSTILE_SECRET, 'tok-geheim', '198.51.100.9']) {
@@ -932,18 +944,21 @@ describe('ai-gateway — Turnstile nur auf audit_anon, fail-closed', () => {
     const { 'cf-connecting-ip': _drop, ...noCf } = ip;
     const res = await h.handler(opReq(withToken(), noCf));
     expect(res.status).toBe(200);
-    expect(h.turnstileCalls[0].body).toEqual({ secret: TURNSTILE_SECRET, response: 'tok-ok' });
+    expect(h.turnstileCalls[0].body).toMatchObject({ secret: TURNSTILE_SECRET, response: 'tok-ok' });
+    expect(h.turnstileCalls[0].body).not.toHaveProperty('remoteip');
   });
 
-  it('gültiger Token → 200; Action darf fehlen; Hostnamen per TURNSTILE_ALLOWED_HOSTNAMES überschreibbar', async () => {
+  it('gültiger Token → 200; Action darf fehlen; Pages-Preview-Wildcard ergänzt den Default-Allowlist', async () => {
     const h1 = makeHarness({ turnstile: turnstileOk({ action: '' }) });
     expect((await h1.handler(opReq(withToken(), ip))).status).toBe(200);
     const h2 = makeHarness({ turnstile: turnstileOk({ hostname: 'www.realsyncdynamicsai.de' }) });
     expect((await h2.handler(opReq(withToken(), ip))).status).toBe(200);
-    const h3 = makeHarness({ env: { TURNSTILE_ALLOWED_HOSTNAMES: 'preview.realsyncdynamics-ai.pages.dev' }, turnstile: turnstileOk({ hostname: 'preview.realsyncdynamics-ai.pages.dev' }) });
+    const h3 = makeHarness({ env: { TURNSTILE_ALLOWED_HOSTNAMES: '*.realsyncdynamics-ai.pages.dev' }, turnstile: turnstileOk({ hostname: 'preview.realsyncdynamics-ai.pages.dev' }) });
     expect((await h3.handler(opReq(withToken(), ip))).status).toBe(200);
-    const h4 = makeHarness({ env: { TURNSTILE_ALLOWED_HOSTNAMES: 'preview.realsyncdynamics-ai.pages.dev' } });
-    expect((await h4.handler(opReq(withToken(), ip))).status).toBe(403);
+    const h4 = makeHarness({ env: { TURNSTILE_ALLOWED_HOSTNAMES: '*.realsyncdynamics-ai.pages.dev' }, turnstile: turnstileOk({ hostname: 'realsyncdynamics-ai.pages.dev' }) });
+    expect((await h4.handler(opReq(withToken(), ip))).status).toBe(200);
+    const h5 = makeHarness({ env: { TURNSTILE_ALLOWED_HOSTNAMES: '*.realsyncdynamics-ai.pages.dev' }, turnstile: turnstileOk({ hostname: 'deep.preview.realsyncdynamics-ai.pages.dev' }) });
+    expect((await h5.handler(opReq(withToken(), ip))).status).toBe(403);
   });
 
   it('Turnstile läuft VOR dem Rate-Limit: abgelehnte Anfragen verbrauchen kein Kontingent', async () => {
@@ -959,12 +974,31 @@ describe('ai-gateway — Turnstile nur auf audit_anon, fail-closed', () => {
     expect((await h.handler(opReq(withToken(), ip))).status).toBe(429);
   });
 
-  it('Timeout der Siteverify greift (fetch hängt → Abbruch → 403)', async () => {
-    const hanging = ((_u: string, init: RequestInit) => new Promise<Response>((_res, rej) => {
-      init.signal?.addEventListener('abort', () => rej(new DOMException('aborted', 'AbortError')));
-    })) as unknown as typeof fetch;
-    const r = await verifyTurnstile({ body: { turnstile_token: 't' }, remoteIp: null, env: (n) => (n === 'TURNSTILE_SECRET_KEY' ? 's' : undefined), fetchImpl: hanging, timeoutMs: 20 });
-    expect(r).toMatchObject({ ok: false, status: 403, code: 'TURNSTILE_FAILED', reason: 'timeout' });
+  it('Timeout-Retry verwendet denselben idempotency_key', async () => {
+    const bodies: Array<Record<string, string>> = [];
+    let attempt = 0;
+    const timeoutThenSuccess = (async (_url: string | URL | Request, init?: RequestInit) => {
+      bodies.push(JSON.parse(String(init?.body)) as Record<string, string>);
+      attempt++;
+      if (attempt === 1) {
+        return await new Promise<Response>((_resolve, reject) => {
+          init?.signal?.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError')));
+        });
+      }
+      return new Response(JSON.stringify({ success: true, hostname: 'realsyncdynamicsai.de', action: 'audit_copilot' }), { status: 200 });
+    }) as typeof fetch;
+    const r = await verifyTurnstile({
+      body: { turnstile_token: 't' },
+      remoteIp: null,
+      env: (n) => (n === 'TURNSTILE_SECRET_KEY' ? 's' : undefined),
+      fetchImpl: timeoutThenSuccess,
+      timeoutMs: 10,
+      createIdempotencyKey: () => '11111111-1111-4111-8111-111111111111',
+    });
+    expect(r).toMatchObject({ ok: true, hostname: 'realsyncdynamicsai.de', action: 'audit_copilot' });
+    expect(bodies).toHaveLength(2);
+    expect(bodies[0].idempotency_key).toBe('11111111-1111-4111-8111-111111111111');
+    expect(bodies[1]).toEqual(bodies[0]);
   });
 
   it('eingeloggter Pfad unverändert: kein Token nötig, keine Siteverify', async () => {

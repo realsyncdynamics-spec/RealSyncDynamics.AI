@@ -3,6 +3,7 @@
  * (`--color-rs-*`) bzw. `CLASS_COLOR_VAR`; Maße aus governance-os-app.css.
  */
 import type { CSSProperties, ReactNode } from 'react';
+import { Link } from 'react-router-dom';
 import { AlertTriangle } from 'lucide-react';
 import { ENFORCEMENT_CLASSES } from '../../../../shared/enforcement-classes';
 import { CLASS_COLOR_VAR, tierDefinition, type EnforcementClass, type TierId } from './enforcementModel';
@@ -85,22 +86,33 @@ export function StatCard({
   sub,
   accent,
   testId,
+  to,
 }: {
   label: string;
   value: number | null;
   sub?: string | null;
   accent?: string;
   testId?: string;
+  /** Optionales Ziel — macht die Kachel zum Link in den zugehörigen Bereich. */
+  to?: string;
 }) {
-  return (
-    <Panel testId={testId}>
+  const body = (
+    <>
       <div className="rs-kpi__label">{label}</div>
       <div className="rs-kpi__value" style={accent ? { color: accent } : undefined}>
         {value === null ? '—' : value}
       </div>
       {sub ? <div className="rs-kpi__sub">{sub}</div> : null}
-    </Panel>
+    </>
   );
+  if (to) {
+    return (
+      <Link to={to} className="rs-panel rs-kpi-link" data-testid={testId}>
+        {body}
+      </Link>
+    );
+  }
+  return <Panel testId={testId}>{body}</Panel>;
 }
 
 export function formatDateTime(iso: string | null | undefined, lang: 'de' | 'en'): string {

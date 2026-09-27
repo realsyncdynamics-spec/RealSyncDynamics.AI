@@ -57,6 +57,17 @@ export function GovernanceBrowserShell({ children }: GovernanceBrowserShellProps
   }, [location.key]);
 
   const handleLoadUrl = (url: string) => setEmbeddedUrl(url);
+
+  useEffect(() => {
+    const onOpenBrowser = (event: Event) => {
+      const custom = event as CustomEvent<{ url?: string }>;
+      const requestedUrl = custom.detail?.url?.trim();
+      if (!requestedUrl) return;
+      handleLoadUrl(requestedUrl);
+    };
+    window.addEventListener('realsync:browser-open', onOpenBrowser);
+    return () => window.removeEventListener('realsync:browser-open', onOpenBrowser);
+  }, []);
   const handleCloseEmbed = () => setEmbeddedUrl(null);
   const handleScan = (url: string) => {
     navigate(auditPathFor(url, 'app-embedded-scan'));

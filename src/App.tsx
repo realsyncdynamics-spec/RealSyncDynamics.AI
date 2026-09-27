@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import { Suspense, lazy, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, generatePath, useParams } from 'react-router-dom';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { SEOHead } from './components/SEOHead';
 import { RequireAal2 } from './core/access/RequireAal2';
@@ -337,6 +337,7 @@ const GovernanceComplianceReportView = lazy(() => import('./features/governance/
 const GovernanceDpiasView = lazy(() => import('./features/governance/DpiasView').then((m) => ({ default: m.DpiasView })));
 const GovernanceDsrTrackerView = lazy(() => import('./features/governance/DsrTrackerView').then((m) => ({ default: m.DsrTrackerView })));
 const GovernanceIncidentsView = lazy(() => import('./features/governance/IncidentsView').then((m) => ({ default: m.IncidentsView })));
+const ActionCenterView = lazy(() => import('./features/governance/ActionCenterView').then((m) => ({ default: m.ActionCenterView })));
 const RiskCenterView = lazy(() => import('./features/governance/risks/RiskCenterView').then((m) => ({ default: m.RiskCenterView })));
 const SecuritySignalsView = lazy(() => import('./features/governance/security-signals/SecuritySignalsView').then((m) => ({ default: m.SecuritySignalsView })));
 const GovernanceConnectorsView = lazy(() => import('./features/governance/ConnectorsView').then((m) => ({ default: m.ConnectorsView })));
@@ -350,6 +351,7 @@ const GovernanceScanDetailView = lazy(() => import('./features/governance/scans/
 const AiActRiskInventoryView = lazy(() => import('./features/governance/AiActRiskInventoryView').then((m) => ({ default: m.AiActRiskInventoryView })));
 const AiActDataGovernanceView = lazy(() => import('./features/governance/data-governance/AiActDataGovernanceView').then((m) => ({ default: m.AiActDataGovernanceView })));
 const MonitoringRuntimeView = lazy(() => import('./features/governance/monitoring/MonitoringRuntimeView').then((m) => ({ default: m.MonitoringRuntimeView })));
+const AmbientAiGovernanceView = lazy(() => import('./features/governance/ambient/AmbientAiGovernanceView').then((m) => ({ default: m.AmbientAiGovernanceView })));
 const AdminSocialPreviewPage = lazy(() => import('./features/admin/social/SocialPreviewPage').then((m) => ({ default: m.AdminSocialPreviewPage })));
 const RemediationPlansView      = lazy(() => import('./features/governance/remediation/RemediationPlansView').then((m) => ({ default: m.RemediationPlansView })));
 const RemediationPlanDetailView = lazy(() => import('./features/governance/remediation/RemediationPlanDetailView').then((m) => ({ default: m.RemediationPlanDetailView })));
@@ -453,6 +455,12 @@ import { DemoModeProvider } from './core/demo/DemoModeProvider';
 import { EnvironmentProvider } from './features/governance/EnvironmentContext';
 import { useTrackPageview } from './lib/track';
 import { initMarketingPixels } from './lib/pixels';
+
+/** Legacy-Redirect mit Pfad-Parametern — `<Navigate to="/x/:id">` setzt `:id` nicht ein. */
+function ParamRedirect({ to }: { to: string }) {
+  const params = useParams();
+  return <Navigate to={generatePath(to, params as Record<string, string>)} replace />;
+}
 
 const ROUTER_BASENAME = import.meta.env.BASE_URL.replace(/\/$/, '') || undefined;
 
@@ -851,11 +859,13 @@ function RoutesWithTracking() {
       <Route path="/app/evidence" element={<AppGate><GovernanceBrowserShell><EvidenceChainPanel /><EvidenceVaultView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/evidence/auditor" element={<AppGate><GovernanceBrowserShell><RequireAal2 action="Evidence-Export"><GovernanceAuditorConsoleView /></RequireAal2></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/monitoring" element={<AppGate><GovernanceBrowserShell><MonitoringRuntimeView /></GovernanceBrowserShell></AppGate>} />
+      <Route path="/app/ambient-ai" element={<AppGate><GovernanceBrowserShell><AmbientAiGovernanceView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/vendors" element={<AppGate><GovernanceBrowserShell><GovernanceVendorInventoryView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/reports" element={<AppGate><GovernanceBrowserShell><ReportsGrid /><GovernanceComplianceReportView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/dpia" element={<AppGate><GovernanceBrowserShell><GovernanceDpiasView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/dsr" element={<AppGate><GovernanceBrowserShell><GovernanceDsrTrackerView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/incidents" element={<AppGate><GovernanceBrowserShell><GovernanceIncidentsView /></GovernanceBrowserShell></AppGate>} />
+      <Route path="/app/actions" element={<AppGate><GovernanceBrowserShell><ActionCenterView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/remediation" element={<AppGate><GovernanceBrowserShell><RemediationPlansView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/remediation/:planId" element={<AppGate><GovernanceBrowserShell><RemediationPlanDetailView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/keys" element={<AppGate><GovernanceBrowserShell><GovernanceKeysView /></GovernanceBrowserShell></AppGate>} />
@@ -959,8 +969,8 @@ function RoutesWithTracking() {
       <Route path="/governance/webhooks" element={<Navigate to="/app/webhooks" replace />} />
       <Route path="/governance/onboarding" element={<Navigate to="/app/onboarding" replace />} />
       <Route path="/governance/mappings" element={<Navigate to="/app/mappings" replace />} />
-      <Route path="/governance/events/:eventId" element={<Navigate to="/app/events/:eventId" replace />} />
-      <Route path="/governance/assets/:assetId" element={<Navigate to="/app/assets/:assetId" replace />} />
+      <Route path="/governance/events/:eventId" element={<ParamRedirect to="/app/events/:eventId" />} />
+      <Route path="/governance/assets/:assetId" element={<ParamRedirect to="/app/assets/:assetId" />} />
       <Route path="/governance/approvals" element={<Navigate to="/app/approvals" replace />} />
       <Route path="/governance/admin-log" element={<Navigate to="/app/admin-log" replace />} />
       <Route path="/governance/policies/templates" element={<Navigate to="/app/policies/templates" replace />} />
@@ -971,11 +981,11 @@ function RoutesWithTracking() {
       <Route path="/governance/connectors" element={<Navigate to="/app/connectors" replace />} />
       <Route path="/governance/vendors" element={<Navigate to="/app/vendors" replace />} />
       <Route path="/governance/remediation" element={<Navigate to="/app/remediation" replace />} />
-      <Route path="/governance/remediation/:planId" element={<Navigate to="/app/remediation/:planId" replace />} />
+      <Route path="/governance/remediation/:planId" element={<ParamRedirect to="/app/remediation/:planId" />} />
       <Route path="/governance/costs" element={<Navigate to="/app/costs" replace />} />
       <Route path="/governance/auditor" element={<Navigate to="/app/evidence" replace />} />
       <Route path="/governance/scans" element={<Navigate to="/app/scans" replace />} />
-      <Route path="/governance/scans/:scanId" element={<Navigate to="/app/scans/:scanId" replace />} />
+      <Route path="/governance/scans/:scanId" element={<ParamRedirect to="/app/scans/:scanId" />} />
       <Route path="/governance/risk-inventory" element={<Navigate to="/app/risk-inventory" replace />} />
       {/* Operations Runtime — auth-gated inventory / warenwirtschaft module.
           NOT linked from the public navbar; tenants reach it from the

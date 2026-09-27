@@ -31,6 +31,7 @@ const api = vi.hoisted(() => ({
   fetchTenantFindingEvents: vi.fn(),
   fetchTenantEvidence: vi.fn(),
   listScanRuns: vi.fn(),
+  listOpenFindingsForTenant: vi.fn(),
 }));
 vi.mock('../../src/features/governance/incidentsApi', () => ({
   countOpenIncidents: api.countOpenIncidents, fetchTenantIncidents: api.fetchTenantIncidents,
@@ -48,7 +49,10 @@ vi.mock('../../src/features/governance/governanceApi', () => ({
   fetchTenantFindingEvents: api.fetchTenantFindingEvents,
   fetchTenantEvidence: api.fetchTenantEvidence,
 }));
-vi.mock('../../src/features/governance/scans/scansApi', () => ({ listScanRuns: api.listScanRuns }));
+vi.mock('../../src/features/governance/scans/scansApi', () => ({
+  listScanRuns: api.listScanRuns,
+  listOpenFindingsForTenant: api.listOpenFindingsForTenant,
+}));
 
 import {
   cockpitIntegrityHash,
@@ -89,6 +93,7 @@ function emptyTenant() {
   api.fetchTenantFindingEvents.mockResolvedValue([]);
   api.fetchTenantEvidence.mockResolvedValue([]);
   api.listScanRuns.mockResolvedValue([]);
+  api.listOpenFindingsForTenant.mockResolvedValue([]);
 }
 
 function rpcReturns(latest: { data: unknown; error: unknown }) {
@@ -294,5 +299,123 @@ describe('loadCockpitData — Dashboard-Signale (Addendum)', () => {
     const d = await loadCockpitData('t1');
     expect(d.signals?.findings).toBeNull();
     expect(d.partialFailures.some((f) => f.startsWith('findings:'))).toBe(true);
+  });
+});
+
+describe('Befunde des Website-Audits (findings-Tabelle)', () => {
+  it('offener Tabellen-Befund landet in signals.findings, mit Drill-down auf den Scan', async () => {
+    rpcReturns({ data: [], error: null });
+    api.listOpenFindingsForTenant.mockResolvedValue([{
+      id: 'fx1', severity: 'high', status: 'open', summary: 'Kein Cookie-Banner', detector: 'gdpr-audit',
+      scan_run_id: 'run-1', website_id: 'w1', created_at: '2026-09-26T10:00:00Z',
+    }]);
+    const d = await loadCockpitData('t1');
+    expect(api.listOpenFindingsForTenant).toHaveBeenCalledWith('t1');
+    expect(d.signals?.findings).toEqual([
+      expect.objectContaining({ id: 'fx1', level: 'high', resolvedAt: null, href: '/app/scans/run-1' }),
+    ]);
+  });
+
+  it('findings-Tabelle nicht ladbar ⇒ findings null + partialFailure (keine Aussage)', async () => {
+    rpcReturns({ data: [], error: null });
+    api.listOpenFindingsForTenant.mockRejectedValue(new Error('rls'));
+    const d = await loadCockpitData('t1');
+    expect(d.signals?.findings).toBeNull();
+    expect(d.partialFailures.some((f) => f.startsWith('findings-table:'))).toBe(true);
+  });
+});
+
+describe('Gate 1 — Datenwahrheit im Cockpit-Lader', () => {
+  it('Snapshot ohne Asset-Messung (asset_count 0, Mandant hat Assets) ⇒ Posture nicht gemessen, kein Score aus Nullen', async () => {
+    api.fetchTenantAssets.mockResolvedValue([aiAsset('a1'), websiteAsset('w1')]);
+    rpcReturns({ data: [{ ...SNAPSHOT, asset_count: 0, policies_enabled_percent: 0, assets_with_evidence_percent: 0, assets_with_mappings_percent: 0 }], error: null });
+    const d = await loadCockpitData('t1');
+    expect(d.postureStatus).toBe('not_measured');
+    expect(d.posture).toBeNull();
+    expect(d.readiness).toBeNull();
+    expect(d.readinessTrend).toBeNull();
+    expect(d.lastUpdated).toBeNull();
+    expect(d.scoreStatus).toBe('insufficient_data');
+    expect(d.score).toBeNull();
+  });
+
+  it('Snapshot kennt die Assets ⇒ Posture gemessen und im Score', async () => {
+    api.fetchTenantAssets.mockResolvedValue([aiAsset('a1'), websiteAsset('w1')]);
+    rpcReturns({ data: [{ ...SNAPSHOT, asset_count: 2 }], error: null });
+    const d = await loadCockpitData('t1');
+    expect(d.postureStatus).toBe('measured');
+    expect(d.posture?.policiesEnabledPercent).toBe(50);
+    expect(d.scoreStatus).toBe('ok');
+    expect(d.readiness).toBe(40);
+  });
+
+  it('kein Snapshot ⇒ postureStatus missing; Snapshot-RPC-Fehler ⇒ error', async () => {
+    rpcReturns({ data: [], error: null });
+    expect((await loadCockpitData('t1')).postureStatus).toBe('missing');
+    rpcReturns({ data: null, error: { message: 'rpc down' } });
+    expect((await loadCockpitData('t1')).postureStatus).toBe('error');
+  });
+
+  it('24h-Summary-Fehler landet in partialFailures statt still null', async () => {
+    rpc.mockImplementation((name: string) => {
+      if (name === 'governance_24h_summary') return Promise.resolve({ data: null, error: { message: 'boom' } });
+      return Promise.resolve({ data: [], error: null });
+    });
+    const d = await loadCockpitData('t1');
+    expect(d.summary24h).toBeNull();
+    expect(d.partialFailures).toContain('summary-24h: boom');
+  });
+
+  it('governance-dpias { ok: false } ⇒ dpia-list als Fehler, nicht als leere Liste', async () => {
+    rpcReturns({ data: [], error: null });
+    api.listDpias.mockResolvedValue({ ok: false, error: { code: 'NETWORK', message: 'offline' } });
+    const d = await loadCockpitData('t1');
+    expect(d.partialFailures).toContain('dpia-list: offline');
+  });
+});
+
+describe('sourcesOk', () => {
+  it('true nur ohne Fehler der genannten Quellen', async () => {
+    const { sourcesOk, ACTION_SOURCES } = await import('../../src/features/governance/cockpit/cockpitData');
+    expect(sourcesOk({ partialFailures: [] }, ACTION_SOURCES)).toBe(true);
+    expect(sourcesOk({ partialFailures: ['kpi: x'] }, ACTION_SOURCES)).toBe(true);
+    expect(sourcesOk({ partialFailures: ['dsr-list: x'] }, ACTION_SOURCES)).toBe(false);
+    // Präfix exakt: „dsr:“ (Zähler) ist nicht „dsr-list:“.
+    expect(sourcesOk({ partialFailures: ['dsr: x'] }, ACTION_SOURCES)).toBe(true);
+    expect(sourcesOk(null, ACTION_SOURCES)).toBe(false);
+  });
+});
+
+describe('mergeFindingSources — ein Befund, zwei Speicher', () => {
+  const event = (id: string, payload: Record<string, unknown> = {}) => ({
+    id, tenant_id: 't1', asset_id: null, policy_id: null, event_type: 'email_auth_finding',
+    event_source: 'website_scanner', title: 'DMARC fehlt', summary: null, risk_level: 'medium',
+    actor_email: null, vendor: null, model_name: null, data_types: [], policy_action: null,
+    payload, created_at: '2026-09-26T10:00:00Z',
+  });
+  const row = (id: string, event_id: string | null = null) => ({
+    id, severity: 'medium' as const, status: 'open' as const, summary: 'DMARC fehlt', detector: 'email-auth-rescan',
+    scan_run_id: null, website_id: 'w1', created_at: '2026-09-26T10:00:00Z', event_id,
+  });
+
+  it('Event mit payload.finding_id der Tabellenzeile ⇒ nur einmal (Tabelle gewinnt)', async () => {
+    const { mergeFindingSources } = await import('../../src/features/governance/cockpit/cockpitData');
+    const merged = mergeFindingSources(
+      [event('ev1', { finding_id: 'fx1' })] as never,
+      [row('fx1')] as never,
+    );
+    expect(merged.map((f) => f.id)).toEqual(['fx1']);
+  });
+
+  it('Legacy-Zwilling über raw_payload.event_id ⇒ ebenfalls nur einmal', async () => {
+    const { mergeFindingSources } = await import('../../src/features/governance/cockpit/cockpitData');
+    const merged = mergeFindingSources([event('legacy-ev')] as never, [row('fx2', 'legacy-ev')] as never);
+    expect(merged.map((f) => f.id)).toEqual(['fx2']);
+  });
+
+  it('unverbundene Befunde bleiben beide erhalten', async () => {
+    const { mergeFindingSources } = await import('../../src/features/governance/cockpit/cockpitData');
+    const merged = mergeFindingSources([event('ev3')] as never, [row('fx3')] as never);
+    expect(merged.map((f) => f.id).sort()).toEqual(['ev3', 'fx3']);
   });
 });

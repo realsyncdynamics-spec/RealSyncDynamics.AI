@@ -217,6 +217,22 @@ describe('„Braucht Aufmerksamkeit“ — Leerzustände ohne positive Aussage a
     expect(await screen.findByTestId('attention-empty')).toBeInTheDocument();
   });
 
+  it('nur offene Befunde niedriger Stufe ⇒ Hinweis mit Anzahl statt „Nichts offen“', async () => {
+    renderAttention(cockpit({
+      signals: {
+        ...noSignals,
+        lastScanAt: '2026-09-01T10:00:00Z',
+        findings: [{
+          id: 'fl', title: 'Info-Header fehlt', level: 'low', eventType: 'finding', source: 'gdpr-audit',
+          createdAt: '2026-09-26T10:00:00Z', assetId: null, resolvedAt: null, href: '/app/scans/run-1',
+        }],
+      },
+    }));
+    const box = await screen.findByTestId('attention-minor');
+    expect(box.textContent).toContain('1 offene Befunde niedriger Stufe');
+    expect(screen.queryByTestId('attention-empty')).toBeNull();
+  });
+
   it('offener Befund aus dem Website-Audit ⇒ Eintrag mit Link auf den Scan', async () => {
     renderAttention(cockpit({
       signals: {

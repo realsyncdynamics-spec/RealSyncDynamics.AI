@@ -54,8 +54,12 @@ export async function getScanRun(scanRunId: string): Promise<ScanRun | null> {
   return (data as ScanRun | null) ?? null;
 }
 
-/** Status, in denen ein Befund noch Handlung verlangt. */
-export const OPEN_FINDING_STATUSES: readonly FindingStatus[] = ['open', 'acknowledged'];
+/**
+ * Status, in denen ein Befund noch nicht erledigt ist. `fixed` gehört dazu:
+ * Die Behebung ist gemeldet, aber erst die Nachprüfung setzt `resolved`
+ * (FINDING_NEXT_STATUS; der Report zählt `fixed` noch mit 50 %).
+ */
+export const OPEN_FINDING_STATUSES: readonly FindingStatus[] = ['open', 'acknowledged', 'fixed'];
 
 /** Schlanke Befund-Zeile fürs Dashboard (kein raw_payload). */
 export type OpenFindingRow = Pick<

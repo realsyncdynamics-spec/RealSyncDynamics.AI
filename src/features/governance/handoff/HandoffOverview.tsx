@@ -16,7 +16,7 @@ import { fetchTenantAssets, fetchTenantEvidence, fetchTenantPolicies } from '../
 import { listConnectors } from '../gatesApi';
 import { listTenantMappings } from '../../policy-packs/policyPacksApi';
 import type { CockpitData } from '../cockpit/cockpitData';
-import { attentionEmptyKind, riskAttentionSignals } from '../dashboard/dashboardSignals';
+import { attentionEmptyKind, openFindings, riskAttentionSignals } from '../dashboard/dashboardSignals';
 import { GovernanceScoreState } from '../cockpit/GovernanceScoreState';
 import { useLang } from '../../../i18n/useLang';
 import {
@@ -318,6 +318,15 @@ export function HandoffOverview({
               <p className="rs-note" data-testid="attention-unavailable">
                 {t('attentionUnavailable')}
               </p>
+            ) : emptyKind === 'minor_open' ? (
+              <div data-testid="attention-minor">
+                <p className="rs-note">
+                  {t('attentionMinorOpen', { n: openFindings(data?.signals?.findings ?? []).length })}
+                </p>
+                <Link to="/app/scans" className="rs-note rs-cyan mt-3 inline-block">
+                  {t('attentionMinorOpenLink')} →
+                </Link>
+              </div>
             ) : emptyKind === 'no_data' ? (
               <div data-testid="attention-nodata">
                 <p className="rs-note">{t('attentionNoData')}</p>

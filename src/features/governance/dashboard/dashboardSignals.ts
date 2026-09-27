@@ -115,6 +115,8 @@ export interface ScanFinding {
   resolvedManually?: boolean;
   /** Ziel des Drill-downs; fehlt ⇒ Website-Übersicht. */
   href?: string;
+  /** Status `fixed`: Behebung gemeldet, Nachprüfung (Re-Scan) steht aus — weiter offen. */
+  awaitingVerification?: boolean;
 }
 
 /** Befund-Events: `*_finding` (z. B. email_auth_finding vom website_scanner). */
@@ -274,6 +276,7 @@ export function findingsFromTable(rows: readonly OpenFindingRow[]): ScanFinding[
     assetId: null,
     resolvedAt: null,
     href: row.scan_run_id ? `/app/scans/${row.scan_run_id}` : '/app/websites',
+    awaitingVerification: row.status === 'fixed',
   }));
 }
 
@@ -367,7 +370,9 @@ export function riskAttentionSignals(
     out.push({
       id: `finding-${f.id}`,
       title: f.title,
-      reason: `Scanner-Befund · ${FINDING_LEVEL_LABEL[f.level]}${age === null ? '' : ` · ${formatAgeDe(age)}`}`,
+      reason: `Scanner-Befund · ${FINDING_LEVEL_LABEL[f.level]}${age === null ? '' : ` · ${formatAgeDe(age)}`}${
+        f.awaitingVerification ? ' · behoben gemeldet, Nachprüfung ausstehend' : ''
+      }`,
       href: f.href ?? '/app/websites',
     });
   }
@@ -382,9 +387,15 @@ export function riskAttentionSignals(
  *   no_data       — es gibt noch nichts, das bewertet werden könnte (kein
  *                   Asset, kein Audit-Lauf, kein Befund). Leere Daten sind
  *                   kein „Nichts offen“.
- *   nothing_open  — Datenbasis vorhanden, alle Quellen geladen, nichts offen.
+ *   minor_open    — nichts mit Handlungsbedarf, aber offene Befunde unterhalb
+ *                   der Aufmerksamkeitsschwelle (niedrig/Info). Die dürfen
+ *                   nicht als „keine offenen Befunde“ erscheinen.
+ *   nothing_open  — Datenbasis vorhanden, alle Quellen geladen, kein Befund offen.
+ *
+ * Voraussetzung: riskAttentionSignals() hat keine Einträge geliefert — offene
+ * Befunde ab „mittel“ landen dort und nie hier.
  */
-export type AttentionEmptyKind = 'unavailable' | 'no_data' | 'nothing_open';
+export type AttentionEmptyKind = 'unavailable' | 'no_data' | 'minor_open' | 'nothing_open';
 
 export function attentionEmptyKind(input: {
   /** Alle Quellen der Liste geladen, keine fehlgeschlagen. */
@@ -397,6 +408,7 @@ export function attentionEmptyKind(input: {
   findings: readonly ScanFinding[] | null;
 }): AttentionEmptyKind {
   if (!input.sourcesComplete || input.findings === null) return 'unavailable';
+  if (openFindings(input.findings).length > 0) return 'minor_open';
   const hasBasis = input.assetCount > 0 || input.lastScanAt !== null || input.findings.length > 0;
   return hasBasis ? 'nothing_open' : 'no_data';
 }

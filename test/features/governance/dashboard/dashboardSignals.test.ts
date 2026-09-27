@@ -330,6 +330,13 @@ describe('Befunde aus der findings-Tabelle (Website-Audit)', () => {
     });
   });
 
+  it('Status fixed bleibt offen, bis die Nachprüfung resolved setzt — mit Hinweis', () => {
+    const f = findingsFromTable([row({ status: 'fixed' })]);
+    expect(f[0]).toMatchObject({ resolvedAt: null, awaitingVerification: true });
+    const out = riskAttentionSignals({ elevatedAssets: [], findings: f, lastScanAt: iso(2), latestEvidenceAt: null }, NOW);
+    expect(out[0].reason).toBe('Scanner-Befund · hoch · vor 2 Tagen · behoben gemeldet, Nachprüfung ausstehend');
+  });
+
   it('ohne Scan-Lauf ⇒ Website-Übersicht', () => {
     expect(findingsFromTable([row({ scan_run_id: null })])[0].href).toBe('/app/websites');
   });
@@ -367,12 +374,22 @@ describe('Leerzustand „Braucht Aufmerksamkeit“ — keine positive Aussage au
   it('Datenbasis vorhanden und alles geladen ⇒ nothing_open', () => {
     expect(attentionEmptyKind({ ...base, assetCount: 1 })).toBe('nothing_open');
     expect(attentionEmptyKind({ ...base, lastScanAt: iso(1) })).toBe('nothing_open');
+    // Nur behobene Befunde ⇒ Datenbasis vorhanden, nichts offen.
     expect(attentionEmptyKind({
       ...base,
-      findings: findingsFromTable([{
-        id: 'x', severity: 'low', status: 'open', summary: 's', detector: 'd',
-        scan_run_id: null, website_id: null, created_at: iso(1),
-      }]),
+      findings: pairFindings([
+        ev('r1', 'email_auth_resolved', iso(1), { payload: { resolves_event_id: 'f1' } }),
+        ev('f1', 'email_auth_finding', iso(5)),
+      ]),
     })).toBe('nothing_open');
+  });
+
+  it('offene Befunde nur niedriger Stufe ⇒ minor_open, nie „keine offenen Befunde“', () => {
+    const low = findingsFromTable([{
+      id: 'x', severity: 'low', status: 'open', summary: 's', detector: 'd',
+      scan_run_id: null, website_id: null, created_at: iso(1),
+    }]);
+    expect(riskAttentionSignals({ elevatedAssets: [], findings: low, lastScanAt: null, latestEvidenceAt: null }, NOW)).toEqual([]);
+    expect(attentionEmptyKind({ ...base, findings: low })).toBe('minor_open');
   });
 });

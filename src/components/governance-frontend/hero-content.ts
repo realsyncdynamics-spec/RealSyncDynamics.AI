@@ -10,34 +10,35 @@ export type HeroHeadlineSegment = {
 };
 
 export const HERO_HEADLINE: readonly (readonly HeroHeadlineSegment[])[] = [
-  [{ text: 'Machen Sie KI-Nutzung' }],
-  [{ text: 'kontrollierbar, nachweisbar' }],
-  [{ text: 'und' }, { text: 'auditbereit.', accent: true }],
+  [{ text: 'Europa braucht kein weiteres' }],
+  [{ text: 'Frontier-Modell.' }],
+  [{ text: 'Europa braucht Kontrolle über' }, { text: 'Frontier-KI.', accent: true }],
 ];
 
 /** Brand Direction — production landing kicker. */
-export const GOVERNANCE_AI_HERO_KICKER = 'EU CONTROL & EVIDENCE LAYER FOR AI' as const;
+export const GOVERNANCE_AI_HERO_KICKER = 'THE GOVERNANCE OS FOR AUTONOMOUS AI' as const;
 
 export const GOVERNANCE_AI_HERO_HEADLINE: readonly (readonly HeroHeadlineSegment[])[] = HERO_HEADLINE;
 
 /**
- * Substring der sichtbaren H1 auf `/` („Ihre KI kann handeln. Jetzt braucht
- * sie Governance.", `src/i18n/handoff.ts`, Governance-OS-Positionierung).
+ * Substring der sichtbaren H1 auf `/` („Europa braucht kein weiteres
+ * Frontier-Modell. Europa braucht Kontrolle über Frontier-KI.",
+ * `src/i18n/handoff.ts`, Governance-OS-Positionierung).
  * Genutzt von tests/e2e/public-routes.spec.ts (FE-001).
  */
-export const GOVERNANCE_AI_HERO_TEST_SUBSTRING = 'kann handeln' as const;
+export const GOVERNANCE_AI_HERO_TEST_SUBSTRING = 'Frontier-KI' as const;
 
 export const GOVERNANCE_AI_HERO_SUBLINE =
-  'RealSyncDynamics.AI erkennt KI- und Compliance-Risiken, setzt Richtlinien durch und erzeugt kontinuierliche Evidenz für EU AI Act und DSGVO.' as const;
+  'RealSyncDynamics.AI ist die Control Plane für Enterprise-KI. Wir bauen nicht die Intelligenz selbst. Wir bauen die Kontroll-, Autorisierungs- und Evidenzschicht zwischen Unternehmen und KI.' as const;
 
 export const GOVERNANCE_AI_HERO_MICRO =
-  'SCAN → BUILD → AUTOMATE → GOVERN' as const;
+  'DISCOVER → ASSESS → GOVERN → EXECUTE → VERIFY → PROVE' as const;
 
 export const BRAND_VALUE_PROPOSITION =
-  'RealSyncDynamics.AI ist die europäische Control- und Evidence-Layer für KI: Schatten-KI sichtbar machen, Verantwortlichkeiten klären und Audit-Evidenz laufend erzeugen — für EU AI Act und DSGVO.' as const;
+  'The Governance OS for Autonomous AI. Any model. Any agent. One control plane.' as const;
 
 export const BRAND_PRODUCT_DESCRIPTION =
-  'RealSyncDynamics.AI erkennt KI- und Compliance-Risiken, setzt Richtlinien durch und erzeugt kontinuierliche Evidenz für EU AI Act und DSGVO. Scan Reality, Build Controls, Automate Evidence, Govern Continuously.' as const;
+  'RealSyncDynamics.AI ist die Control Plane für Enterprise-KI: Identität, Tenant, Policy, Risiko, Freigabe, Ausführung, Verifikation und Evidence in einer Governance-Schicht über Modelle, Agenten und Provider.' as const;
 
 /**
  * Infrastrukturzeilen unter dem Operating Loop (belegte Bestandteile).
@@ -53,51 +54,51 @@ export const HERO_HEADLINE_LINES: readonly string[] = HERO_HEADLINE.map((segment
   segments.map((s) => s.text).join(' '),
 );
 
-export const HERO_HEADLINE_TEST_SUBSTRING = 'kontrollierbar';
+export const HERO_HEADLINE_TEST_SUBSTRING = 'Frontier-KI';
 
 export const HERO_KICKER = {
   index: '01',
-  claim: 'CONTROL & EVIDENCE FÜR KI IN EUROPA',
+  claim: 'THE GOVERNANCE OS FOR AUTONOMOUS AI',
   region: 'EU',
 } as const;
 
 export const HERO_EYEBROW = `→ ${HERO_KICKER.claim}` as const;
 
-export const HERO_OPERATING_LOOP = 'SCAN → BUILD → AUTOMATE → GOVERN' as const;
+export const HERO_OPERATING_LOOP = 'DISCOVER → ASSESS → GOVERN → EXECUTE → VERIFY → PROVE' as const;
 
 export const HERO_EN_KICKER = 'Control and Evidence Layer for AI in Europe.' as const;
 
 export const SCAN_FUNNEL_MESSAGE =
-  'Scannen. Kontrollen bauen. Evidenz automatisieren. Dauerhaft steuern.' as const;
+  'Entdecken. Bewerten. Steuern. Ausführen. Verifizieren. Mit Evidence beweisen.' as const;
 
 export const CONTINUOUS_COMPLIANCE_NARRATIVE =
-  'RealSyncDynamics verbindet Signale, Risiken, Policies und Audit-Evidence in einer laufenden Governance-Schicht.' as const;
+  'RealSyncDynamics verbindet Identität, Policies, Risiko, Freigaben, Ausführung, Verifikation und Evidence in einer laufenden Governance-Schicht.' as const;
 
 export const HERO_SUBLINE =
-  'RealSyncDynamics.AI erkennt KI- und Compliance-Risiken, setzt Richtlinien durch und erzeugt kontinuierliche Evidenz für EU AI Act und DSGVO.' as const;
+  'RealSyncDynamics.AI ist die Control Plane für Enterprise-KI. Any model. Any agent. One control plane.' as const;
 
-export const HERO_VALUE_SUBLINE = 'Schatten-KI sichtbar. Evidenz auditbereit.' as const;
+export const HERO_VALUE_SUBLINE = 'Kontrolle durchsetzen. Evidence jederzeit belegbar.' as const;
 
 export const HERO_SCAN_BADGE = 'Kostenlos' as const;
 
-export const HERO_SOCIAL_PROOF = 'Gebaut für regulierte KI in der EU.' as const;
+export const HERO_SOCIAL_PROOF = 'Provider-neutral für Enterprise-KI in der EU.' as const;
 
 export const HERO_SOCIAL_FRAMEWORKS = ['DSGVO', 'EU AI Act', 'ISO 42001'] as const;
 
 export const HERO_OUTCOMES: readonly string[] = [
-  'Schatten-KI und fehlendes Inventar schließen',
-  'Verantwortlichkeiten und Freigaben klar zuweisen',
-  'Audit-Evidence laufend erzeugen statt manuell sammeln',
+  'Sichtbar machen, welche KI tatsächlich läuft',
+  'Policies, Freigaben und Ausführung zentral steuern',
+  'Evidence kontinuierlich erzeugen und Compliance beweisen',
 ] as const;
 
 export const HERO_EU_LINE =
-  'EU-Hosting, DSGVO, EU AI Act, Audit Logs, Governance-by-Design.' as const;
+  'EU-Hosting, DSGVO, EU AI Act, ISO 42001 und Audit-Evidence als Proof-Layer.' as const;
 
 export const HERO_PROOF_CHIPS = [
-  'EU AI ACT READY',
-  'DSGVO FIRST',
-  'AUDIT TRAIL NATIVE',
-  'GOVERNANCE BY DESIGN',
+  'EU AI ACT',
+  'DSGVO',
+  'ISO 42001',
+  'EU HOSTING',
 ] as const;
 
 /** Header + final CTA primary. */
@@ -302,8 +303,11 @@ export const AGENT_LAYER = ['Identity', 'Tenant', 'Policy', 'Risk', 'Approval'] 
 export const HOMEPAGE_PROVIDERS = [
   { name: 'OpenAI', note: 'Cloud' },
   { name: 'Anthropic · Claude', note: 'Cloud' },
-  { name: 'Google · Gemini', note: 'Cloud · eingeschränkt' },
-  { name: 'Eigene Modelle', note: 'Ollama · LM Studio · EU-lokal' },
+  { name: 'Google · Gemini', note: 'Cloud' },
+  { name: 'Mistral', note: 'EU provider option' },
+  { name: 'STACKIT', note: 'EU option · planned' },
+  { name: 'Eigene Modelle', note: 'Lokal / EU-betrieben' },
+  { name: 'Future models', note: 'under one governance layer' },
 ] as const;
 
 /** Control Room — ausschließlich Beispielwerte, sichtbar gekennzeichnet. */

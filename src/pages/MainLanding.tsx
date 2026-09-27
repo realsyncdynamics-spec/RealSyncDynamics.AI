@@ -48,11 +48,11 @@ export function MainLanding() {
       }}
     >
       <SEOHead
-        title="RealSyncDynamics.AI — AI Compliance Operations OS für Europa"
-        description="AI Compliance Operations OS für Europa. Entdecken. Klassifizieren. Durchsetzen. Beweisen. Free Audit starten."
+        title="RealSyncDynamics.AI — The Governance OS for Autonomous AI"
+        description="Die Control Plane für Enterprise-KI: Any model. Any agent. One control plane. EU AI Act, DSGVO und ISO 42001 als nachweisbare Proof-Layer."
         canonical="/"
-        ogTitle="AI Compliance Operations OS für Europa"
-        ogDescription="RealSyncDynamics.AI — Governance-Infrastruktur für Europa. Free Audit starten."
+        ogTitle="The Governance OS for Autonomous AI"
+        ogDescription="RealSyncDynamics.AI ist die Control Plane für Enterprise-KI. Compliance (EU AI Act, DSGVO, ISO 42001) wird als Evidence-Layer nachgewiesen."
       />
 
       <PublicDarkHeader overlay modeSwitch={<LandingModeSwitch mode={mode} onChange={setMode} />} />

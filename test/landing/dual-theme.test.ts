@@ -109,9 +109,9 @@ describe('Landing — Europe-network', () => {
   it('renders Titan H1 + Operating Loop + Primary/Secondary CTAs', () => {
     render(createElement(MemoryRouter, null, createElement(MainLanding)));
     const h1 = screen.getByRole('heading', { level: 1 }).textContent ?? '';
-    expect(h1).toMatch(/kontrollierbar/);
-    expect(h1).toMatch(/nachweisbar/);
-    expect(h1).toMatch(/auditbereit/);
+    expect(h1).toMatch(/Europa braucht kein weiteres/i);
+    expect(h1).toMatch(/Frontier-Modell/i);
+    expect(h1).toMatch(/Frontier-KI/i);
 
     // Operating Loop als Pfeilkette, nicht als Satzreihe.
     expect(screen.getAllByText(HERO_OPERATING_LOOP).length).toBeGreaterThan(0);
@@ -121,7 +121,7 @@ describe('Landing — Europe-network', () => {
     expect(screen.getByTestId('hero-primary-cta')).toHaveAttribute('href', '/audit');
     expect(screen.getByTestId('hero-secondary-cta')).toHaveAttribute('href', '#audit-trail');
 
-    expect(HERO_HEADLINE_TEST_SUBSTRING).toBe('kontrollierbar');
+    expect(HERO_HEADLINE_TEST_SUBSTRING).toBe('Frontier-KI');
   });
 
   it('zeigt Beispielansicht + Das Betriebssystem below the fold', () => {
@@ -139,7 +139,7 @@ describe('Landing — Europe-network', () => {
     expect(landing).toContain('GovernanceRuntimeSection');
     expect(landing).not.toContain('DAS BETRIEBSSYSTEM');
     expect(runtimeStations).toContain('GOVERNANCE RUNTIME');
-    for (const station of ['DISCOVER', 'ASSESS', 'GOVERN', 'ENFORCE', 'EVIDENCE', 'AUDIT']) {
+    for (const station of ['DISCOVER', 'ASSESS', 'GOVERN', 'EXECUTE', 'VERIFY', 'PROVE']) {
       expect(runtimeStations, `Station ${station} fehlt`).toContain(`'${station}'`);
     }
     expect(runtimePanel).toContain('data-demo-kpis');

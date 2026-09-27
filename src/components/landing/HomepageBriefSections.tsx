@@ -35,6 +35,19 @@ export function ArchitectureSection() {
             Agenten planen, analysieren und handeln. Über ihre Berechtigung entscheidet die Governance-Schicht —
             serverseitig, nicht der Agent und nicht der Provider.
           </p>
+          <div className="os-panel mt-7 px-5 py-5">
+            <p className="m-0 text-[11px] tracking-[0.16em]" style={{ ...MONO, color: 'var(--color-rs-cyan)' }}>
+              AGENT GOVERNANCE RUNTIME
+            </p>
+            <p className="m-0 mt-2 text-[14px] leading-[1.7]" style={{ color: 'var(--color-rs-fg-1)' }}>
+              Tool access, permissions, risk classes, human-in-the-loop approvals, budget/quota limits,
+              data access, provider selection, execution policies und Evidence Logs.
+            </p>
+            <p className="m-0 mt-3 text-[13px]" style={{ color: 'var(--color-rs-fg-2)' }}>
+              Beispiel: Ein Security-Agent erkennt eine Schwachstelle; eine Änderung am Produktionssystem
+              erfolgt erst nach Policy-Entscheidung und — falls gefordert — menschlicher Freigabe.
+            </p>
+          </div>
           <ul className="mt-8 grid gap-3 p-0" style={{ listStyle: 'none' }}>
             {AGENT_CANNOT.map((item) => (
               <li key={item} className="flex items-baseline gap-4 border-b pb-3 text-[16px]" style={{ borderColor: 'var(--color-rs-border)', color: 'var(--color-rs-fg-0)' }}>
@@ -88,9 +101,13 @@ export function ProvidersSection() {
       <div className="os-inner">
         <p className="os-kicker"><b>PROVIDER-NEUTRAL</b> INTELLIGENCE LAYER</p>
         <h2 id="providers-heading" className="os-display" style={{ fontSize: 'clamp(34px, 4.6vw, 72px)' }}>
-          <span>Ihre Modelle sind austauschbar.</span>
-          <span className="os-dim">Ihre Governance nicht.</span>
+          <span>Any model. Any agent.</span>
+          <span className="os-dim">One control plane.</span>
         </h2>
+        <p className="os-lede mt-5">
+          OpenAI, Anthropic, Gemini, Mistral, STACKIT, lokale Modelle und künftige Modelle laufen unter
+          derselben Governance-Schicht.
+        </p>
 
         <div className="mt-12">
           <div className="os-panel px-6 py-6">
@@ -108,7 +125,8 @@ export function ProvidersSection() {
             ))}
           </div>
           <p className="mt-5 text-[13px]" style={{ color: 'var(--color-rs-fg-2)' }}>
-            Intelligence- und Execution-Provider, keine Policy Authority. Weitere Provider auf Anfrage.
+            Provider-Neutralität ist Kern des Produkts: Intelligence- und Execution-Provider haben keine
+            Policy Authority.
           </p>
         </div>
       </div>

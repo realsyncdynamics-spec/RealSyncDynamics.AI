@@ -1,10 +1,10 @@
 ---
-description: WP2 Funnel auf /audit ausrichten (Angebots-Copy aus SSoT, Starter-Trial-Drift)
+description: WP2 Funnel auf /audit ausrichten (Growth-Trial-Angebot aus SSoT, Starter-Trial-Drift)
 ---
 
 # WP2 — Funnel auf `/audit` ausrichten
 
-**Voraussetzung:** E-F1 (Angebot) und E-F5 entschieden · **Branch:** `feat/wp2-audit-funnel-offer`
+**Voraussetzung:** E-F1 entschieden: 14-Tage-Growth-Testphase, kein Stripe-Gratis-Code · **Branch:** `feat/wp2-audit-funnel-offer`
 **Freigabe:** Preise/Angebot = Einzel-Freigabe im PR
 
 ## Rahmen (gilt für jede WP-Session)
@@ -50,44 +50,35 @@ Bestand:
   PostRegisterOnboardingPage.tsx (nur Copy)
 - shared/pricing.ts (trialDays), supabase/functions/create-trial-subscription (nur lesen)
 
-Aufgaben (Variante nach E-F1):
+Entschiedene Angebotsmechanik:
+- Der kostenlose Scan bleibt der Lead-Einstieg.
+- Danach wird die bestehende 14-Tage-Growth-Testphase genutzt.
+- Es wird kein Stripe-Gratis-Code und keine Code-Einlösung gebaut.
 
-A) E-F1 = 14-Tage-Growth-Trial behalten
-   1. shared/pricing.ts: Starter trialDays 14 → 0 (Copy und Edge Function sagen
-      „nur Growth"). Danach npm run sync:pricing, check:pricing, check:offer-prices.
-   2. Angebots-Copy an EINER Stelle (Konstante), von TrialOfferPage, SuccessPage,
-      PostRegisterOnboardingPage und PostScanChoiceRow gelesen:
-      „Der Scan ist kostenlos. Den Governance-Workspace testen Sie 14 Tage im
-      Growth-Paket (249 € / Monat, monatlich kündbar)."
-      Preis aus shared/pricing.ts lesen, nicht hart codieren.
-   3. Trial im kanonischen Pfad tatsächlich anlegen: Heute ruft nur
-      PostRegisterOnboardingPage (verworfener Pfad) create-trial-subscription auf.
-      Den BESTEHENDEN Aufruf (postEdgeFunction('create-trial-subscription',
-      { planKey: 'growth' })) in den Abschluss von /app/activation übernehmen —
-      per Button „Growth 14 Tage testen", nicht automatisch. Das ist keine neue
-      Zahlungslogik, sondern die deployte Function am richtigen Ort.
-      Solange dieser Aufruf im kanonischen Pfad fehlt, darf die Trial-Copy dort
-      NICHT erscheinen (Test: Copy nur, wenn der Aufruf erreichbar ist).
+Aufgaben:
+1. shared/pricing.ts: Starter trialDays 14 → 0 (Copy und Edge Function sagen
+   „nur Growth"). Danach npm run sync:pricing, check:pricing, check:offer-prices.
+2. Angebots-Copy an EINER Stelle (Konstante), von TrialOfferPage, SuccessPage,
+   PostRegisterOnboardingPage und PostScanChoiceRow gelesen:
+   „Der Scan ist kostenlos. Den Governance-Workspace testen Sie 14 Tage im
+   Growth-Paket (249 € / Monat, monatlich kündbar)."
+   Preis aus shared/pricing.ts lesen, nicht hart codieren.
+3. Trial im kanonischen Pfad tatsächlich anlegen: Heute ruft nur
+   PostRegisterOnboardingPage (verworfener Pfad) create-trial-subscription auf.
+   Den BESTEHENDEN Aufruf (postEdgeFunction('create-trial-subscription',
+   { planKey: 'growth' })) in den Abschluss von /app/activation übernehmen —
+   per Button „Growth 14 Tage testen", nicht automatisch. Das ist keine neue
+   Zahlungslogik, sondern die deployte Function am richtigen Ort.
+   Solange dieser Aufruf im kanonischen Pfad fehlt, darf die Trial-Copy dort
+   NICHT erscheinen (Test: Copy nur, wenn der Aufruf erreichbar ist).
+4. PostScanChoiceRow: Karte „Governance-Workspace einrichten" (Ziel /app/activation)
+   als primären nächsten Schritt nach dem Scan hervorheben; Badges unverändert ehrlich.
+5. SuccessPage/Onboarding-Erfolg: „Ihr AI Governance Workspace ist vorbereitet."
+   statt „Growth ist bereit." / „🎉 Willkommen" — Trial-Text nur, wenn die Trial
+   tatsächlich angelegt wurde.
 
-B) E-F1 = Gratis-Code 1 Monat Growth
-   1. Wie A.1.
-   2. KEINE Code-Einlösung bauen. Copy:
-      „Der Scan ist kostenlos. Für den Governance-Workspace erhalten Sie einen
-      Gratis-Code für den ersten Monat des Growth-Pakets (249 €, monatlich
-      kündbar). Einlösung im Checkout."
-   3. Einlösung erfolgt über den bestehenden Stripe-Checkout
-      (allow_promotion_codes: true). Den Promotion-Code legt Dominik im
-      Stripe-Dashboard an — NICHT in dieser Session. Bis dahin Badge PREVIEW und
-      Hinweis „Freischaltung manuell über Sales".
-
-In beiden Varianten:
-- PostScanChoiceRow: Karte „Governance-Workspace einrichten" (Ziel /app/activation)
-  als primären nächsten Schritt nach dem Scan hervorheben; Badges unverändert ehrlich.
-- SuccessPage/Onboarding-Erfolg: „Ihr AI Governance Workspace ist vorbereitet."
-  statt „Growth ist bereit." / „🎉 Willkommen" — Trial-Text nur, wenn die Trial
-  tatsächlich angelegt wurde.
-
-Nicht tun: neue Zahlungslogik, neue Edge Function, Coupon-Tabelle, Stripe-API-Calls.
+Nicht tun: neue Zahlungslogik, neue Edge Function, Coupon-Tabelle, Stripe-API-Calls,
+Stripe-Promotion-Code, Code-Einlösung.
 
 Akzeptanz:
 - Ein Angebots-Text, eine Quelle, Preis aus SSoT

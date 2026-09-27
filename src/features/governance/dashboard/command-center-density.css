@@ -1,16 +1,19 @@
-/* Preview-Dichte für das Live-Dashboard — Werte bleiben RLS. */
+/* Preview-Dichte für das Live-Dashboard — Werte bleiben RLS.
+   Tokens live in .dashboard-context (src/styles/context-themes.css).
+   This file is a legacy selector binding. Delete only after the
+   Command Center h1 and KPI cards consume var(--dash-*) directly. */
 [data-testid="compliance-status-dashboard"] h1 {
-  font-size: 22px;
+  font-size: var(--dash-title-size);
   letter-spacing: -0.02em;
 }
 @media (min-width: 640px) {
   [data-testid="compliance-status-dashboard"] h1 {
-    font-size: 28px;
+    font-size: var(--dash-title-size-sm);
   }
 }
 [data-testid="governance-score"],
 [data-testid="risk-index"],
 [data-testid="evidence-health"],
 [data-testid="audit-readiness"] {
-  min-height: 120px;
+  min-height: var(--dash-kpi-min-height);
 }

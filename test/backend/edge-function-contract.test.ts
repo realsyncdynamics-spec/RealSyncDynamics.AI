@@ -68,6 +68,8 @@ const CALL_PATTERNS: readonly RegExp[] = [
   /functions\.invoke\s*(?:<[^()]*>)?\(\s*['"]([a-z0-9/-]+)['"]/g,
   /(?:postEdgeFunction|getEdgeFunction|callEdgeFunction|invokeFunction)\s*(?:<[^()]*>)?\(\s*['"]([a-z0-9/-]+)['"]/g,
   /\/functions\/v1\/([a-z0-9/-]+)/g,
+  /\/api\/fn\/([a-z0-9/-]+)/g,
+  /edgeFunctionUrl\(\s*['"]([a-z0-9/-]+)['"]/g,
 ];
 
 /**

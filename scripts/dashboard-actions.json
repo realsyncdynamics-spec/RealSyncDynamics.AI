@@ -1,0 +1,112 @@
+{
+  "zweck": "Inventar der verkaufsrelevanten Dashboard-Aktionen (Issue #1381, Phase 1). Jede Zeile nennt Route, Komponente, Handler, Backend und Zustand — belegt am Code, nicht behauptet. Gepflegt von scripts/check-dashboard-actions.mjs.",
+  "abdeckung": "P0-Flächen aus Issue #1381: Bots, Agent Runtime, Automation Builder, Frontend/Landing Builder, Web App Builder, Domains. Sekundäre Dashboard-Module folgen (P1).",
+  "zustaende": {
+    "IMPLEMENTED": "Führt aus, persistiert und zeigt das Ergebnis. Entitlement und Limit werden serverseitig geprüft, wo die Aktion kostenpflichtig ist.",
+    "PARTIAL": "Führt wirklich aus und persistiert, aber mindestens ein Abnahme-Gate aus Issue #1381 §8 fehlt. Das fehlende Gate steht in `luecke`.",
+    "BROKEN": "Es gibt einen echten Backend-Pfad, aber er liefert im aktuellen Stand kein Ergebnis — fehlende Bindung, unpassender Antwort-Vertrag oder toter Zweig. Der Grund steht in `luecke`. Abgrenzung zu NOT_IMPLEMENTED: dort fehlt der Pfad, hier ist er vorhanden und geschlossen.",
+    "CLIENT_ONLY": "Führt aus und behält das Ergebnis, aber ausschliesslich im Browser. Kein serverseitiger Pfad, keine Mandantenbindung — nach Gerätewechsel oder geleertem Speicher weg.",
+    "NOT_IMPLEMENTED": "Kein Ausführungspfad. Die Fläche darf nichts behaupten, was sie nicht tut.",
+    "BLOCKED": "Kanonische Infrastruktur fehlt (z. B. Preis/Entitlement). Wird nicht erfunden — siehe Issue #1381 §12."
+  },
+  "aktionen": [
+    {
+      "id": "bots.create",
+      "route": "/app/bots",
+      "komponente": "src/features/bots/BotsView.tsx",
+      "aktion": "Bot erstellen",
+      "handler": "src/features/bots/BotsView.tsx",
+      "backend": "src/features/bots/api.ts",
+      "persistenz": "bots",
+      "entitlement": "bots.enabled",
+      "status": "PARTIAL",
+      "luecke": "hasFeature('bots.enabled') wird nur im Client geprueft (BotsView.tsx:31). Serverseitig gibt es nichts: die Produktions-Policies bots tenant-insert/update/delete pruefen ausschliesslich is_tenant_member(tenant_id). Kein limit.bots, keine Usage. Wer die REST-Schnittstelle direkt anspricht, umgeht die Oberflaeche vollstaendig. Gate 4 aus Issue #1381 §8 fehlt.",
+      "beleg": "BotsView.tsx:116 onClick={handleCreate} · api.ts:33-45 createBot schreibt nach bots und liest die Zeile zurück",
+      "seit": "2026-09-14"
+    },
+    {
+      "id": "agent.run",
+      "route": "/app/agents",
+      "komponente": "src/features/governance/agents/AgentsCenterView.tsx",
+      "aktion": "Agent-Run starten",
+      "handler": "src/features/governance/agents/agentsApi.ts",
+      "backend": "supabase/functions/enterprise-ai-os-agents-run/index.ts",
+      "persistenz": "enterprise_agent_runs",
+      "entitlement": "limit.agent_runs_monthly wird per recordUsage GEZAEHLT (:132), aber nirgends GEPRUEFT — kein gateFeature, kein consumeUsage, kein getCurrentTotal.",
+      "status": "PARTIAL",
+      "luecke": "SICHERHEIT, nicht nur ein fehlendes Gate. Die Function ist mit verify_jwt=False deployed (Status ACTIVE) und enthaelt keinerlei Authentifizierung: der Handler (:503-517) liest den JSON-Body und ruft executeAgent(input) auf, ohne auth.getUser, ohne memberships-Pruefung, ohne Auswertung des Authorization-Headers. Der eigene Dateikopf sagt es offen: 'Authorization: Bearer <user JWT> (optional, uses anon key if not provided)'. Die tenantId kommt AUS DEM BODY (:54) und fliesst in einen Service-Role-Client, der RLS umgeht. Daraus folgen drei Dinge: (1) Fremddaten-Lesen — executeDiscoveryAgent liest ai_systems .eq('tenant_id', tenantId) (:205-208) und gibt id, name, risk_level und created_at als findings an den Aufrufer zurueck. (2) Fremdschreiben — enterprise_agent_runs wird mit der uebergebenen tenant_id beschrieben (:104-106). (3) Fremdabrechnung — recordUsage schreibt limit.agent_runs_monthly auf diesen Mandanten (:132), und der Kommentar :29-31 sagt, dass stripe-meter-sync die Overage abrechnet. Zusaetzlich fehlt jede Durchsetzung des Kontingents. Damit ist Gate 4 aus Issue #1381 §8 nicht nur offen, sondern invertiert. Fix gehoert in einen eigenen PR, nicht in dieses Inventar.",
+      "beleg": "supabase/functions/enterprise-ai-os-agents-run/index.ts:503-517 Handler ohne Auth; :5 'Authorization: Bearer <user JWT> (optional, uses anon key if not provided)'; :54 tenantId aus dem Request-Body; :83-90 Service-Role-Client; :104-106 Insert in enterprise_agent_runs mit dieser tenant_id; :132 recordUsage(limit.agent_runs_monthly); :205-208 Lesen aus ai_systems nach tenantId, Rueckgabe als findings. Deployment-Stand der Produktion: verify_jwt=False, Status ACTIVE, Version aktuell. NICHT empirisch geprueft — eine Probe gegen die Produktion wurde bewusst nicht ausgefuehrt.",
+      "seit": "2026-09-14"
+    },
+    {
+      "id": "automation.run",
+      "route": "/app/automations",
+      "komponente": "src/features/automations/AutomationSkillsView.tsx",
+      "aktion": "Automatisierungs-Skill nutzen",
+      "handler": "src/features/automations/AutomationSkillRunner.tsx",
+      "backend": "supabase/functions/automation-trigger/index.ts",
+      "persistenz": "automation_runs, automation_run_events, automation_outputs (Migration 20260614100000_automation_skills.sql, je mit tenant-read RLS)",
+      "entitlement": "ai.tool.automations via gateFeature (automation-trigger:74) und limit.automation_runs_monthly als Quota-Pruefung (:82-90); gezaehlt wird erst im Callback (automation-callback:129)",
+      "status": "BROKEN",
+      "luecke": "Engine, Schema, Gate und Zaehler existieren; der Pfad ist an vier Stellen unterbrochen, und der erste Bruch liegt frueher als zunaechst dokumentiert. (1) automation-trigger:65 liest die Spalte `title` aus automation_skills — die Tabelle hat keine solche Spalte, sie heisst `name`. PostgREST antwortet mit 400/42703, der Fehler laeuft in :67 und die Function gibt 500 INTERNAL zurueck. Das passiert VOR der Status-Pruefung, VOR der n8n-Bindungspruefung, VOR gateFeature und VOR der Quota. Jeder Klick endet dort. (2) Erst danach griffe :70: alle sechs Skills in der Produktion haben n8n_workflow_id NULL, also 409 NOT_BOUND. (3) Der Antwort-Vertrag passt nicht: der Runner liest body.result (AutomationSkillRunner.tsx:71), der Trigger liefert { ok, run_id, n8n_execution_id }. (4) Kein Run-Verlauf: automation_outputs wird von keiner Oberflaeche gelesen. Damit fehlen aus Issue #1381 §8 die Gates 4 bis 7. Alle uebrigen Skill-CTAs sind <Link>.",
+      "beleg": "Gemessen an der Produktionsdatenbank (Projekt RealSyncDynamicsLive, eu-central-1), nicht erschlossen: information_schema fuehrt fuer automation_skills die Spalten id, name, category, description, status, required_plan, input_schema, output_schema, n8n_workflow_id, created_at, updated_at — kein `title`. REST-Probe: select=...,title -> HTTP 400 {\"code\":\"42703\",\"message\":\"column automation_skills.title does not exist\"}; dieselbe Abfrage mit `name` -> HTTP 200. Alle sechs Skill-Zeilen haben n8n_workflow_id NULL. automation_runs, automation_run_events, automation_outputs und usage_events fuer limit.automation_runs_monthly enthalten je 0 Zeilen — es hat nie ein Run stattgefunden. Code: automation-trigger/index.ts:65 .select('id, status, n8n_workflow_id, title') und :124 skill.title.",
+      "seit": "2026-09-14"
+    },
+    {
+      "id": "builder.landing.save",
+      "route": "/build",
+      "komponente": "src/unified-entry/pages/BuildStudioPage.tsx",
+      "aktion": "Landing-Projekt bauen und behalten",
+      "handler": "src/features/siteos/buildSession.ts",
+      "backend": null,
+      "persistenz": "localStorage",
+      "entitlement": null,
+      "status": "CLIENT_ONLY",
+      "luecke": "Gate 5: Die Build-Session liegt nur im localStorage des Browsers (buildSession.ts:290/308). Sie übersteht F5 im selben Browser, ist aber kein mandantengebundenes Projekt — anderer Rechner, anderer Browser oder geleerter Speicher heisst: weg. Kein Eintrag in Supabase, keine Zuordnung zum Tenant.",
+      "beleg": "buildSession.ts:290 localStorage.getItem · :308 localStorage.setItem · keine functions.invoke- oder .from()-Aufrufe in der Datei",
+      "seit": "2026-09-14"
+    },
+    {
+      "id": "builder.webapp.publish",
+      "route": "/app/siteos/builder",
+      "komponente": "src/unified-entry/pages/PreviewSelectionPage.tsx",
+      "aktion": "Projekt bauen und veröffentlichen",
+      "handler": "src/features/siteos/siteOsApi.ts",
+      "backend": "src/features/siteos/siteOsApi.ts",
+      "persistenz": "siteos (Edge Functions + Tabellen)",
+      "entitlement": "siteos.* (Publish-Gate serverseitig)",
+      "status": "IMPLEMENTED",
+      "luecke": "",
+      "beleg": "siteOsApi.ts:177 buildSite · :424 evaluatePublish ruft functions.invoke('siteos/publish-gate') · elf functions.invoke- und sieben .from()-Aufrufe in der Datei · PreviewSelectionPage importiert features/billing/checkout für den Kauf",
+      "seit": "2026-09-14"
+    },
+    {
+      "id": "domain.add",
+      "route": "/app/websites",
+      "komponente": "src/features/governance/websites/WebsiteGovernanceView.tsx",
+      "aktion": "Domain hinzufügen",
+      "handler": "src/features/governance/scans/scansApi.ts",
+      "backend": "src/features/governance/scans/scansApi.ts",
+      "persistenz": "websites",
+      "entitlement": "RLS websites_tenant_insert",
+      "status": "PARTIAL",
+      "luecke": "Keine Pruefung gegen limit.domains, und das nicht nur im Client: die RLS-Policy websites_tenant_insert in der Produktion prueft ausschliesslich is_tenant_member(tenant_id) — kein Entitlement, kein Limit. Der Insert laeuft direkt aus dem Browser. Gate 4 aus Issue #1381 §8 fehlt.",
+      "beleg": "WebsiteGovernanceView.tsx:11 importiert addWebsiteForTenant · :168 'Domain hinzufügen' · supabase/migrations/20260825204748_fix_websites_authenticated_crud_rls.sql:28 CREATE POLICY websites_tenant_insert",
+      "seit": "2026-09-14"
+    },
+    {
+      "id": "domain.scan",
+      "route": "/app/websites",
+      "komponente": "src/features/governance/websites/WebsiteGovernanceView.tsx",
+      "aktion": "Scan starten",
+      "handler": "src/features/governance/scans/scansApi.ts",
+      "backend": "src/features/governance/scans/scansApi.ts",
+      "persistenz": "scan_runs, findings",
+      "entitlement": "Scan-Kontingent",
+      "status": "PARTIAL",
+      "luecke": "Keine serverseitige Kontingentpruefung — das ist jetzt belegt, nicht nur unbelegt: tenant-audit enthaelt kein gateFeature, kein consumeUsage, kein recordUsage und kein getCurrentTotal. Geprueft werden ausschliesslich JWT (verify_jwt=True) und Tenant-Mitgliedschaft. Ein Mandant kann unbegrenzt scannen; Gate 4 aus Issue #1381 §8 fehlt.",
+      "beleg": "supabase/functions/tenant-audit/index.ts, 299 Zeilen, ohne einen einzigen Treffer fuer gateFeature/consumeUsage/recordUsage/getCurrentTotal; Dateikopf :7-10 nennt als Zweck nur die Auth-Bruecke zu gdpr-audit. Deployment: verify_jwt=True, Status ACTIVE.",
+      "seit": "2026-09-14"
+    }
+  ]
+}

@@ -5,12 +5,17 @@
 // Body: { session_id: string, tenant_id: uuid }
 //
 // Looks up the Stripe Checkout Session by ID, verifies it completed
-// successfully, and returns subscription details. If not yet synced,
-// triggers the webhook-like sync via stripe-webhook handler.
+// successfully, and returns subscription details. If the row is not yet in
+// public.subscriptions (webhook lag), reconciles via the same upsert path as
+// stripe-webhook — never claims "Abo aktiv" while still pending.
 
 import Stripe from 'npm:stripe@16.12.0';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
+import { handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
+import {
+  loadAddonPriceIds,
+  syncSubscriptionFromStripe,
+} from '../_shared/stripe-subscription-sync.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
@@ -60,44 +65,82 @@ Deno.serve(async (req) => {
   if (!membership) return jsonError(403, 'FORBIDDEN', 'not a member of this tenant');
 
   try {
-    // Fetch session from Stripe
     const session = await stripe.checkout.sessions.retrieve(body.session_id, {
       expand: ['line_items', 'subscription'],
     });
+
+    // Fail-closed: incomplete / unpaid sessions must not unlock entitlements.
+    if (session.status !== 'complete') {
+      return jsonError(400, 'SESSION_INCOMPLETE', `checkout session status=${session.status ?? 'unknown'}`);
+    }
+    if (session.payment_status !== 'paid' && session.payment_status !== 'no_payment_required') {
+      return jsonError(
+        400,
+        'PAYMENT_INCOMPLETE',
+        `checkout payment_status=${session.payment_status ?? 'unknown'}`,
+      );
+    }
 
     if (!session.subscription) {
       return jsonError(400, 'NO_SUBSCRIPTION', 'checkout session has no subscription');
     }
 
-    // Verify tenant_id matches
     const sessionTenantId = session.metadata?.tenant_id;
     if (sessionTenantId !== body.tenant_id) {
       return jsonError(403, 'TENANT_MISMATCH', 'session tenant_id does not match');
     }
 
-    // Lookup subscription in DB (may not be synced yet if webhook is delayed)
-    const { data: subscription, error: subErr } = await admin
-      .from('subscriptions')
-      .select('*')
-      .eq('stripe_subscription_id', typeof session.subscription === 'string' ? session.subscription : session.subscription.id)
-      .maybeSingle();
+    const stripeSubId =
+      typeof session.subscription === 'string'
+        ? session.subscription
+        : session.subscription.id;
 
-    if (subErr) return jsonError(500, 'INTERNAL', subErr.message);
+    const loadDbRow = async () => {
+      const { data, error } = await admin
+        .from('subscriptions')
+        .select('*')
+        .eq('stripe_subscription_id', stripeSubId)
+        .maybeSingle();
+      if (error) throw new Error(error.message);
+      return data;
+    };
+
+    let subscription = await loadDbRow();
+
+    // Webhook lag / missed delivery: reconcile from Stripe using the same
+    // upsert as stripe-webhook. Requires stripe_secret_key only (no webhook
+    // secret) — this is the conversion unlock path when webhook is delayed.
+    if (!subscription) {
+      try {
+        const stripeSub =
+          typeof session.subscription === 'object' && session.subscription !== null
+            ? session.subscription
+            : await stripe.subscriptions.retrieve(stripeSubId, {
+              expand: ['items.data.price', 'customer'],
+            });
+        const addonIds = await loadAddonPriceIds(admin);
+        await syncSubscriptionFromStripe(admin, stripeSub, addonIds);
+        subscription = await loadDbRow();
+      } catch (reconcileErr) {
+        console.warn(
+          `[stripe-checkout-verify] reconcile failed for ${stripeSubId}: ${(reconcileErr as Error).message}`,
+        );
+      }
+    }
 
     if (!subscription) {
-      // Webhook hasn't synced yet; return pending state with expected subscription ID
       return jsonResponse({
         ok: true,
         pending: true,
         subscription: {
-          id: typeof session.subscription === 'string' ? session.subscription : session.subscription.id,
+          id: stripeSubId,
           status: 'pending_sync',
           tenant_id: body.tenant_id,
         },
       });
     }
 
-    return jsonResponse({ ok: true, subscription });
+    return jsonResponse({ ok: true, pending: false, subscription });
   } catch (e) {
     return jsonError(502, 'STRIPE_ERROR', `stripe verification failed: ${(e as Error).message}`);
   }

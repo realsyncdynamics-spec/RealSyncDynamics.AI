@@ -13,9 +13,12 @@
  *   { new, contacted, qualified, lost, won }. The funnel-stage signal
  *   instead rides in `use_case` (free text, 50-char cap) plus a structured
  *   message body. See FixPaket.tsx for the same pattern.
+ *
+ * Uses getSupabaseUrl() (not raw VITE_SUPABASE_URL) so a deploy without the
+ * env still reaches the production project. sendBeacon cannot set CSRF
+ * headers, so this stays on the direct Supabase origin (no SPA CSRF guard).
  */
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+import { getSupabaseAnonKey, getSupabaseUrl } from './supabaseUrl';
 
 export type UpgradePlan = 'starter' | 'growth';
 
@@ -23,7 +26,9 @@ export function trackUpgradeClick(
   plan: UpgradePlan,
   opts: { auditId?: string | null; source?: string; email?: string } = {},
 ): void {
-  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return;
+  const supabaseUrl = getSupabaseUrl();
+  const anonKey = getSupabaseAnonKey();
+  if (!supabaseUrl || !anonKey) return;
 
   const lines: string[] = [];
   lines.push(`Upgrade-Plan: ${plan}`);
@@ -45,14 +50,14 @@ export function trackUpgradeClick(
     // Prefer the sendBeacon API so the request survives a fast page-nav.
     if (typeof navigator !== 'undefined' && typeof navigator.sendBeacon === 'function') {
       const blob = new Blob([body], { type: 'application/json' });
-      navigator.sendBeacon(`${SUPABASE_URL}/functions/v1/sales-lead`, blob);
+      navigator.sendBeacon(`${supabaseUrl}/functions/v1/sales-lead`, blob);
       return;
     }
-    void fetch(`${SUPABASE_URL}/functions/v1/sales-lead`, {
+    void fetch(`${supabaseUrl}/functions/v1/sales-lead`, {
       method: 'POST',
       headers: {
-        apikey: SUPABASE_ANON_KEY,
-        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        apikey: anonKey,
+        Authorization: `Bearer ${anonKey}`,
         'Content-Type': 'application/json',
       },
       body,

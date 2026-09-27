@@ -1,5 +1,6 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { getSupabaseUrl, getSupabaseAnonKey } from './supabaseUrl';
+import { SPA_AUTH_OPTIONS, stripSensitiveAuthFromLocation } from './auth-session';
 
 // URL und anon-Key werden zentral über `supabaseUrl.ts` aufgelöst. Beide Werte
 // sind öffentlich (sie landen ohnehin im Bundle) und greifen auf die
@@ -14,8 +15,16 @@ let cached: SupabaseClient | null = null;
 export function getSupabase(): SupabaseClient {
   if (!cached) {
     cached = createClient(url, anonKey, {
-      auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
+      // PKCE: kein Implicit-#access_token. detectSessionInUrl liest ?code=
+      // zuerst (initialize/getSession); erst danach Query/Hash säubern —
+      // sonst ist der Code weg, bevor GoTrue tauscht.
+      auth: SPA_AUTH_OPTIONS,
     });
+    if (typeof window !== 'undefined') {
+      void cached.auth.getSession().finally(() => {
+        stripSensitiveAuthFromLocation();
+      });
+    }
   }
   return cached;
 }

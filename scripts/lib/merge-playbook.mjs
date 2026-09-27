@@ -10,7 +10,6 @@ export const HOT_FILES = [
   'shared/pricing.ts',
   'src/config/pricing.ts',
   'src/index.css',
-  'tailwind.config.ts',
   'package.json',
   'package-lock.json',
   'src/features/governance/dashboard/FreeTierDashboard.tsx',

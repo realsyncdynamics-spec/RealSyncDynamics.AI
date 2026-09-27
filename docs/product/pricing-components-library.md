@@ -268,7 +268,7 @@ px-3 py-1 rounded (kein radius noch, wenn Design-Lock sagt)
 
 **Buttons** (CTA):
 ```
-Highlight: surface-gold class (definiert in tailwind.config.ts)
+Highlight: surface-gold class (definiert in src/index.css)
 Regular: border border-silver-500 hover:border-gold-400
 ```
 

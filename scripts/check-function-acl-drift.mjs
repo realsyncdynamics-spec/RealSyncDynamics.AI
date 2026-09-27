@@ -111,6 +111,10 @@ const FORBIDDEN_CLIENT = [
   'audit_jobs_complete',
   'bulk_scan_claim_next',
   'distribution_queue_claim_next',
+  // Einziger Loeschpfad fuer Evidence, ohne Aufruferpruefung im Koerper.
+  // Stand 2026-09-27 in Prod fuer anon ausfuehrbar, obwohl die Migration nur
+  // service_role wollte (20260927114512).
+  'ai_evidence_purge_expired',
 ];
 
 // ── Ausfuehrung ──────────────────────────────────────────────────────────────

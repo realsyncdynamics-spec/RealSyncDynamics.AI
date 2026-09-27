@@ -4,6 +4,17 @@
 // KPI-Snapshots, Asset-Risk-Scores und Evidence-Hashes — keine Mock-Fallbacks.
 
 import type { CockpitCounts, ScoreLevel } from '../cockpit/cockpitScore';
+import {
+  daysSince,
+  ELEVATED_RISK_THRESHOLD,
+  EVIDENCE_MIN_ENTRIES,
+  EVIDENCE_STALE_DAYS,
+  RISK_BUCKET_LABEL,
+  RISK_BUCKET_ORDER,
+  RISK_THRESHOLDS,
+  riskBucketFor,
+  type RiskBucketId,
+} from './dashboardSignals';
 
 export interface EvidenceSignal {
   content_hash: string | null;
@@ -43,6 +54,14 @@ export interface EvidenceHealth {
   failedScans: number;
   level: ScoreLevel | 'unknown';
   label: string;
+  /**
+   * `insufficient` = weniger als EVIDENCE_MIN_ENTRIES Nachweise (kein Wert);
+   * `stale` = letzter Nachweis älter als EVIDENCE_STALE_DAYS;
+   * `fresh` = jünger; `unknown` = Alter nicht bekannt.
+   */
+  freshness?: 'fresh' | 'stale' | 'insufficient' | 'unknown';
+  /** Alter des jüngsten Nachweises in Tagen; `null` = unbekannt. */
+  latestAgeDays?: number | null;
 }
 
 export interface RiskIndex {
@@ -65,8 +84,13 @@ export interface OpenMeasures {
   vendorsNoDpa: number;
 }
 
-/** Asset-Risk-Score ≥ 70 gilt im Register als erhöht (siehe GovernanceDashboardView). */
-export const HIGH_RISK_ASSET_THRESHOLD = 70;
+/**
+ * Ab diesem Asset-Risk-Score zählt ein Asset als erhöht (Bucket Hoch oder
+ * Kritisch) — dieselbe Schwelle wie die Risk Distribution
+ * (dashboardSignals.RISK_THRESHOLDS). Vorher 70: Kachel („0 ≥ 70“) und
+ * Verteilung („1 Hoch“) widersprachen sich.
+ */
+export const HIGH_RISK_ASSET_THRESHOLD = ELEVATED_RISK_THRESHOLD;
 
 export function computeOpenMeasures(counts: CockpitCounts): OpenMeasures {
   return {
@@ -91,6 +115,10 @@ export function computeOpenMeasures(counts: CockpitCounts): OpenMeasures {
  *
  * Mix: 70 % KPI-Abdeckung + 30 % Hash-Anteil, abzüglich 8 Punkte je
  * fehlgeschlagenem Scan (24 h).
+ *
+ * Alter und Menge zählen mit: unter EVIDENCE_MIN_ENTRIES Nachweisen kein
+ * Wert („Zu wenig Daten“); ist der jüngste Nachweis älter als
+ * EVIDENCE_STALE_DAYS, heißt es „Veraltet“ statt „Prüfbar“.
  */
 export function computeEvidenceHealth(input: {
   coveragePercent: number | null;
@@ -99,6 +127,9 @@ export function computeEvidenceHealth(input: {
   totalCount?: number;
   newEvidence24h: number;
   failedScans: number;
+  /** created_at des jüngsten Nachweises; fehlt ⇒ Alter unbekannt. */
+  latestEvidenceAt?: string | null;
+  now?: number;
 }): EvidenceHealth {
   const rows = input.evidence ?? [];
   const totalCount = input.totalCount ?? rows.length;
@@ -117,6 +148,24 @@ export function computeEvidenceHealth(input: {
       failedScans: input.failedScans,
       level: 'unknown',
       label: 'Keine Evidence',
+      freshness: 'unknown',
+      latestAgeDays: null,
+    };
+  }
+
+  const latestAgeDays = daysSince(input.latestEvidenceAt ?? null, input.now);
+
+  if (totalCount > 0 && totalCount < EVIDENCE_MIN_ENTRIES) {
+    return {
+      percent: null,
+      hashedCount,
+      totalCount,
+      newEvidence24h: input.newEvidence24h,
+      failedScans: input.failedScans,
+      level: 'unknown',
+      label: 'Zu wenig Daten',
+      freshness: 'insufficient',
+      latestAgeDays,
     };
   }
 
@@ -124,6 +173,8 @@ export function computeEvidenceHealth(input: {
   const hashPart = hashedShare ?? coverage;
   const blended = Math.round(0.7 * coverage + 0.3 * hashPart);
   const percent = clamp(blended - input.failedScans * 8);
+  const stale = latestAgeDays !== null && latestAgeDays > EVIDENCE_STALE_DAYS;
+  const level = healthLevel(percent);
 
   return {
     percent,
@@ -131,8 +182,11 @@ export function computeEvidenceHealth(input: {
     totalCount,
     newEvidence24h: input.newEvidence24h,
     failedScans: input.failedScans,
-    level: healthLevel(percent),
-    label: evidenceLabel(percent, totalCount),
+    // Veraltete Nachweise nie grün: höchstens „medium“.
+    level: stale && (level === 'passed' || level === 'low') ? 'medium' : level,
+    label: stale ? 'Veraltet' : evidenceLabel(percent, totalCount),
+    freshness: stale ? 'stale' : latestAgeDays === null ? 'unknown' : 'fresh',
+    latestAgeDays,
   };
 }
 
@@ -207,24 +261,18 @@ function evidenceLabel(percent: number, totalCount: number): string {
   return 'Nicht prüfbar';
 }
 
+// Residualrisiko und Risk Distribution nutzen dieselben Schwellen
+// (dashboardSignals.RISK_THRESHOLDS) und dieselben Bucket-Bezeichnungen.
 function riskLevel(score: number): ScoreLevel {
-  if (score >= 70) return 'critical';
-  if (score >= 50) return 'high';
-  if (score >= 30) return 'medium';
-  if (score >= 15) return 'low';
-  return 'passed';
+  return riskBucketFor(score);
 }
 
 function riskLabel(score: number): string {
-  if (score >= 70) return 'Kritisch';
-  if (score >= 50) return 'Erhöht';
-  if (score >= 30) return 'Moderat';
-  if (score >= 15) return 'Gering';
-  return 'Stabil';
+  return RISK_BUCKET_LABEL[riskBucketFor(score)];
 }
 
 /** Buckets für die Risk-Distribution (Asset-Risk-Scores). Höher = schlechter. */
-export type RiskBucketId = 'critical' | 'high' | 'medium' | 'low' | 'passed';
+export type { RiskBucketId };
 
 export interface RiskBucket {
   id: RiskBucketId;
@@ -240,13 +288,8 @@ export interface AssetFlowItem {
   href: string;
 }
 
-const RISK_BUCKETS: Array<{ id: RiskBucketId; label: string; min: number }> = [
-  { id: 'critical', label: 'Kritisch', min: 70 },
-  { id: 'high', label: 'Hoch', min: 50 },
-  { id: 'medium', label: 'Mittel', min: 30 },
-  { id: 'low', label: 'Gering', min: 15 },
-  { id: 'passed', label: 'Stabil', min: 0 },
-];
+/** Für Hinweise im UI („Hoch ab 50“) — aus derselben Quelle wie die Buckets. */
+export const RISK_BUCKET_MIN: Record<RiskBucketId, number> = { ...RISK_THRESHOLDS, passed: 0 };
 
 const ASSET_FLOW_META: Record<string, { label: string; href: string }> = {
   website: { label: 'Websites', href: '/app/websites' },
@@ -266,10 +309,9 @@ export function computeRiskDistribution(assetScores: number[]): RiskBucket[] {
     critical: 0, high: 0, medium: 0, low: 0, passed: 0,
   };
   for (const score of assetScores) {
-    const bucket = RISK_BUCKETS.find((b) => score >= b.min) ?? RISK_BUCKETS[RISK_BUCKETS.length - 1];
-    counts[bucket.id] += 1;
+    counts[riskBucketFor(score)] += 1;
   }
-  return RISK_BUCKETS.map((b) => ({ id: b.id, label: b.label, count: counts[b.id] }));
+  return RISK_BUCKET_ORDER.map((id) => ({ id, label: RISK_BUCKET_LABEL[id], count: counts[id] }));
 }
 
 /** Aggregiert Asset-Typen für den Flow-Bereich. Unbekannte Typen werden übersprungen. */

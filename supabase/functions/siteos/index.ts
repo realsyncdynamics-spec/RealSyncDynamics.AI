@@ -11,6 +11,8 @@
 //   POST /functions/v1/siteos/refine-anon      Anweisung -> neue Version, ohne Konto
 //   POST /functions/v1/siteos/session          Sitzung lesen, ohne Konto
 //   POST /functions/v1/siteos/claim            Sitzung -> Mandant (idempotent)
+//   POST /functions/v1/siteos/code-persist     Web-App-Builder Dateibaum (nicht Puck)
+// 2026-09-18: gezieltes Production-Redeploy (siteos + ai-gateway), nicht die Flotte.
 //
 // ## Warum ein Router und nicht vier Functions
 //
@@ -45,6 +47,7 @@ import { handle as edit } from './handlers/edit.ts';
 import { handle as runtimeScan } from './handlers/runtime-scan.ts';
 import { handle as publishGate, handleApprove as publishApprove } from './handlers/publish-gate.ts';
 import { handleBuildAnon, handleClaim, handleGetSession, handleRefineAnon } from './handlers/anonymous.ts';
+import { handle as codePersist } from './handlers/code-persist.ts';
 
 const routes: Record<string, (req: Request) => Response | Promise<Response>> = {
   'agents': agents,
@@ -63,6 +66,8 @@ const routes: Record<string, (req: Request) => Response | Promise<Response>> = {
   'refine-anon': handleRefineAnon,
   'session': handleGetSession,
   'claim': handleClaim,
+  // Web App Builder file trees. Distinct from Puck `edit` / siteos_blueprints.
+  'code-persist': codePersist,
 };
 
 Deno.serve((req) => {

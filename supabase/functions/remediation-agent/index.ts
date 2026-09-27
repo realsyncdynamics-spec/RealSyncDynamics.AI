@@ -3,6 +3,8 @@
 // POST /functions/v1/remediation-agent
 // Authorization: Bearer <user JWT>
 // Body: { op, tenant_id, ... }
+// ai-gateway-Aufrufe laufen mit dem Nutzer-JWT des Aufrufers + tenant_id
+// (P0-Härtung ai-gateway, kein Anon-Key mehr).
 //
 // Ops:
 //   - create_remediation_plan   { tenant_id, finding_id, evidence_id?,
@@ -98,6 +100,9 @@ Deno.serve(async (req) => {
 
   const tenant_id = String(body.tenant_id ?? '');
   if (!tenant_id) return jsonError(400, 'BAD_REQUEST', 'tenant_id required');
+  // ai-gateway verlangt seit der P0-Härtung Nutzer-JWT + tenant_id
+  // (requireAuthAndTenant). Wir reichen den geprüften Nutzer-Token durch.
+  const ai: AiCtx = { authToken: auth.slice('Bearer '.length), tenantId: tenant_id };
 
   // Tenant membership check.
   const { data: mem } = await admin.from('memberships')
@@ -107,13 +112,13 @@ Deno.serve(async (req) => {
   try {
     switch (op) {
       case 'create_remediation_plan':
-        return await handleCreatePlan(admin, tenant_id, userId, body);
+        return await handleCreatePlan(admin, tenant_id, userId, body, ai);
       case 'generate_fix_snippet':
-        return await handleGenerateSnippet(admin, tenant_id, userId, body);
+        return await handleGenerateSnippet(admin, tenant_id, userId, body, ai);
       case 'prepare_github_issue':
-        return await handlePrepareIssue(admin, tenant_id, userId, body);
+        return await handlePrepareIssue(admin, tenant_id, userId, body, ai);
       case 'prepare_pr_comment':
-        return await handlePrepareComment(admin, tenant_id, userId, body);
+        return await handlePrepareComment(admin, tenant_id, userId, body, ai);
       default:
         return jsonError(400, 'BAD_REQUEST', `unhandled op: ${op}`);
     }
@@ -132,7 +137,7 @@ interface PlanPayload {
 }
 
 // deno-lint-ignore no-explicit-any
-async function handleCreatePlan(admin: SupabaseAdminClient, tenant_id: string, userId: string, body: Record<string, unknown>): Promise<Response> {
+async function handleCreatePlan(admin: SupabaseAdminClient, tenant_id: string, userId: string, body: Record<string, unknown>, ai: AiCtx): Promise<Response> {
   const finding_id  = String(body.finding_id ?? '');
   const evidence_id = body.evidence_id ? String(body.evidence_id) : null;
   if (!finding_id) return jsonError(400, 'BAD_REQUEST', 'finding_id required');
@@ -152,7 +157,7 @@ async function handleCreatePlan(admin: SupabaseAdminClient, tenant_id: string, u
     system:     CREATE_PLAN_SYSTEM_PROMPT,
     user_input: `Affected system: ${system}\nTechnology: ${technology}\n\nFinding:\n${findingText}`,
     validator:  validatePlanPayload,
-  });
+  }, ai);
 
   // Persist plan.
   const { data: row, error: insErr } = await admin
@@ -254,7 +259,7 @@ interface SnippetPayload {
 }
 
 // deno-lint-ignore no-explicit-any
-async function handleGenerateSnippet(admin: SupabaseAdminClient, tenant_id: string, userId: string, body: Record<string, unknown>): Promise<Response> {
+async function handleGenerateSnippet(admin: SupabaseAdminClient, tenant_id: string, userId: string, body: Record<string, unknown>, ai: AiCtx): Promise<Response> {
   const plan_id = String(body.plan_id ?? '');
   if (!plan_id) return jsonError(400, 'BAD_REQUEST', 'plan_id required');
 
@@ -268,7 +273,7 @@ async function handleGenerateSnippet(admin: SupabaseAdminClient, tenant_id: stri
     system:     SNIPPET_SYSTEM_PROMPT,
     user_input: `Plan-Zusammenfassung: ${plan.summary}\nTechnologie: ${plan.technology}\nSystem: ${plan.affected_system}\n\nErzeuge EINEN zusätzlichen, granularen Snippet zur Konkretisierung.`,
     validator:  validateSnippetPayload,
-  });
+  }, ai);
 
   const next = [...(plan.snippets ?? []), snippet];
   const { error: updErr } = await admin.from('remediation_plans')
@@ -317,7 +322,7 @@ interface IssuePayload {
 }
 
 // deno-lint-ignore no-explicit-any
-async function handlePrepareIssue(admin: SupabaseAdminClient, tenant_id: string, userId: string, body: Record<string, unknown>): Promise<Response> {
+async function handlePrepareIssue(admin: SupabaseAdminClient, tenant_id: string, userId: string, body: Record<string, unknown>, ai: AiCtx): Promise<Response> {
   const plan_id = String(body.plan_id ?? '');
   if (!plan_id) return jsonError(400, 'BAD_REQUEST', 'plan_id required');
 
@@ -331,7 +336,7 @@ async function handlePrepareIssue(admin: SupabaseAdminClient, tenant_id: string,
     system:     ISSUE_SYSTEM_PROMPT,
     user_input: `Plan: ${plan.summary}\nSchritte: ${JSON.stringify(plan.steps)}`,
     validator:  validateIssuePayload,
-  });
+  }, ai);
 
   await emitEvent(admin, tenant_id, plan_id, userId, 'github.issue.prepared', { issue });
 
@@ -373,7 +378,7 @@ interface PrCommentPayload {
 }
 
 // deno-lint-ignore no-explicit-any
-async function handlePrepareComment(admin: SupabaseAdminClient, tenant_id: string, userId: string, body: Record<string, unknown>): Promise<Response> {
+async function handlePrepareComment(admin: SupabaseAdminClient, tenant_id: string, userId: string, body: Record<string, unknown>, ai: AiCtx): Promise<Response> {
   const plan_id = String(body.plan_id ?? '');
   if (!plan_id) return jsonError(400, 'BAD_REQUEST', 'plan_id required');
 
@@ -389,7 +394,7 @@ async function handlePrepareComment(admin: SupabaseAdminClient, tenant_id: strin
     system:     COMMENT_SYSTEM_PROMPT,
     user_input: `Plan: ${plan.summary}\nHunk-Kontext:\n${hunk_context || '(none)'}`,
     validator:  validateCommentPayload,
-  });
+  }, ai);
 
   await emitEvent(admin, tenant_id, plan_id, userId, 'pull_request.comment.created', { comment });
 
@@ -428,26 +433,34 @@ interface AiCallArgs<T> {
   validator:  (raw: unknown) => T;
 }
 
-async function aiGenerate<T>(args: AiCallArgs<T>): Promise<T> {
+/** Nutzer-Kontext für ai-gateway: Nutzer-JWT (Bearer) + aktiver Tenant. */
+interface AiCtx {
+  authToken: string;
+  tenantId:  string;
+}
+
+async function aiGenerate<T>(args: AiCallArgs<T>, ai: AiCtx): Promise<T> {
   const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
   const ANON = Deno.env.get('SUPABASE_ANON_KEY')!;
 
+  // Vertrag ai-gateway (Nutzerpfad): `Authorization: Bearer <Nutzer-JWT>`,
+  // `apikey: <anon>`, `tenant_id` im Body; `input` ist ein String, der
+  // Systemprompt gehört in `system_prompt` (Objekt-input → 400).
   const resp = await fetch(`${SUPABASE_URL}/functions/v1/ai-gateway`, {
     method: 'POST',
     headers: {
       'content-type':  'application/json',
-      'authorization': `Bearer ${ANON}`,
+      'authorization': `Bearer ${ai.authToken}`,
       'apikey':         ANON,
     },
     body: JSON.stringify({
       op:            'extract_json',
+      tenant_id:      ai.tenantId,
       feature:        args.feature,
       task_type:      args.task_type,
       model_profile: 'strict-json',
-      input: {
-        system: args.system,
-        user:   args.user_input,
-      },
+      input:          args.user_input,
+      system_prompt:  args.system,
     }),
   });
 

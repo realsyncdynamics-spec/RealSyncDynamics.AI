@@ -4,13 +4,31 @@ on:
   workflow_dispatch:
   pull_request:
     branches: [main]
+    # Default types omit ready_for_review. Without it, skipping drafts
+    # would mean marking a PR ready never starts CI.
+    types: [opened, synchronize, reopened, ready_for_review]
   merge_group:
     branches: [main]
   push:
     branches: [main, feat/governance-ai-product]
 
+# Ein Push auf einen PR loest den vorigen Lauf desselben PR ab: der alte
+# prueft ohnehin einen ueberholten Stand. Gemessen am 2026-09-21 auf #1499:
+# vier volle Ketten in 30 Minuten fuer denselben Zwei-Dateien-Diff, weil jeder
+# Sync mit `main` neu startete, waehrend der vorige Lauf noch lief.
+#
+# Fuer `main` und die Merge Queue bleibt es bei `false`: Dort wird nichts
+# ueberholt, dort wird abgenommen.
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
-  build:
+  # Die drei Teile des frueheren `build`-Jobs laufen parallel. Der Job
+  # `build` unten fuehrt sie zusammen und behaelt damit den Namen, den die
+  # Branch Protection als Required Check kennt.
+  gates:
+    if: github.event_name != 'pull_request' || !github.event.pull_request.draft
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
@@ -58,37 +76,183 @@ jobs:
       # prueft der Guard den Betrag, nicht den Plannamen.
       - name: Angebots-Sicherheit (Ratsche gegen Preise ohne Kaufpfad)
         run: npm run check:offer-prices
+
+  unit:
+    if: github.event_name != 'pull_request' || !github.event.pull_request.draft
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
       - name: Unit tests
         run: npm test
+
+  spa:
+    if: github.event_name != 'pull_request' || !github.event.pull_request.draft
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      # `build` = build:base + prerender:safe (Prerender-Fehler nicht fatal).
+      # Die strenge Variante `build:full` laeuft weiter im Pages-Workflow;
+      # sie darf nicht durch diesen Job ersetzt werden.
       - name: Build
         run: npm run build
 
+  # Sammelknoten mit dem bisherigen Check-Namen `build`.
+  #
+  # `!cancelled()` statt des impliziten `success()`: Ohne diese Bedingung
+  # wuerde der Job bei einem roten Teil-Job UEBERSPRUNGEN — und ein
+  # uebersprungener Required Check gilt fuer GitHub als bestanden. Der Job
+  # muss also gerade dann laufen, wenn etwas rot ist, und selbst rot werden.
+  #
+  # Bei Drafts bleibt er uebersprungen, wie bisher der ganze `build`-Job.
+  build:
+    needs: [gates, unit, spa]
+    if: ${{ !cancelled() && (github.event_name != 'pull_request' || !github.event.pull_request.draft) }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ergebnis der Teil-Jobs zusammenfuehren
+        env:
+          GATES: ${{ needs.gates.result }}
+          UNIT: ${{ needs.unit.result }}
+          SPA: ${{ needs.spa.result }}
+        run: |
+          set -euo pipefail
+          echo "gates=$GATES unit=$UNIT spa=$SPA"
+          rot=0
+          for teil in "gates=$GATES" "unit=$UNIT" "spa=$SPA"; do
+            case "$teil" in
+              *=success) ;;
+              *) echo "::error::Teil-Job nicht erfolgreich: $teil"; rot=1 ;;
+            esac
+          done
+          exit "$rot"
+
   db:
+    if: github.event_name != 'pull_request' || !github.event.pull_request.draft
     runs-on: ubuntu-latest
     name: Migration validation
-    services:
-      postgres:
-        image: pgvector/pgvector:pg15
-        env:
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: postgres
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+    # KEIN `services:`-Block mehr — bewusst.
+    #
+    # Einen Service-Container zieht der Runner VOR dem ersten Step, in einer
+    # Phase ohne jede Wiederholung. Am 2026-09-18 ist genau daran ein
+    # Migrations-PR haengengeblieben: Step 2 „Initialize containers" scheiterte
+    # am Docker-Hub-Pull, die Steps 5/9/10 wurden SKIPPED, und der Job liess
+    # sich ohne Schreibrecht auf den Workflow nicht neu starten (403). Der
+    # Befund stand damit unter einem roten Check, der nichts ueber die
+    # Migrationen aussagte.
+    #
+    # Als eigener Step ist der Pull wiederholbar, und ein Fehlschlag traegt den
+    # Namen seiner Ursache statt „Initialize containers".
     env:
       PGHOST: localhost
       PGUSER: postgres
       PGPASSWORD: postgres
       PGDATABASE: postgres
+      # Tag UND Digest: der Tag bleibt lesbar, der Digest bindet den Inhalt
+      # fest — dieselbe Konvention wie die per SHA gepinnten Actions.
+      # Auffrischen:
+      #   docker buildx imagetools inspect pgvector/pgvector:pg15 | head -2
+      POSTGRES_IMAGE: pgvector/pgvector:pg15@sha256:a947c45cdc5906a1bc951f20a8709e321256343ee0f251e4ae00b5e7def4e6da
+      POSTGRES_CONTAINER: ci-postgres
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           fetch-depth: 0
+
+      # Schneller Pfad fuer PRs ohne DB-Bezug.
+      #
+      # Der Check `Migration validation` entsteht weiter auf jedem Ready-PR
+      # (ein per `paths:` uebersprungener Workflow liesse einen Required Check
+      # auf „expected" stehen und blockierte den Merge). Er beendet sich aber
+      # in Sekunden, wenn der Diff gegen `main` keine der Pfade unten beruehrt.
+      #
+      # Die Liste ist bewusst WEIT. Sie deckt alles ab, was das Schema, die
+      # DB-Tests oder deren Umgebung veraendert — auch mittelbar: `shared/`
+      # (Pricing-SSoT, aus der `sync:pricing` den Deno-Zwilling und die
+      # Plan-Katalog-Migration erzeugt), die Skripte dieser Erzeugung, die
+      # Vitest-Konfiguration, die Lockfile und diese Datei selbst. Wer die
+      # Liste enger zieht, baut den Fake-Success, den dieser Job verhindern
+      # soll. Im Zweifel: hinzufuegen. Kein PR-Event (push, merge_group,
+      # workflow_dispatch) und jeder Fehler bei der Erkennung: voller Lauf.
+      - name: DB-relevante Aenderungen erkennen
+        id: relevant
+        env:
+          EVENT: ${{ github.event_name }}
+        run: |
+          set -uo pipefail
+          if [ "$EVENT" != "pull_request" ]; then
+            echo "Kein PR-Event ($EVENT): voller Lauf."
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if ! changed=$(git diff --name-only origin/main...HEAD); then
+            echo "::warning::Diff gegen origin/main nicht ermittelbar — voller Lauf."
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          muster='^(supabase/|shared/|test/runtime/db/|test/db/|scripts/test-db/|scripts/sync-shared-pricing\.mjs|scripts/generate-plan-catalog-sql\.ts|\.github/workflows/ci\.yml|package\.json|package-lock\.json|vitest\.config\.ts|test/setup\.ts)'
+          treffer=$(printf '%s\n' "$changed" | grep -E "$muster" || true)
+          if [ -n "$treffer" ]; then
+            echo "DB-relevante Aenderungen:"
+            printf '  %s\n' $treffer
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::Migration validation: keine DB-relevanten Dateien im Diff gegen main — Postgres, Migrationen und DB-Tests uebersprungen. Die Append-only-Pruefung laeuft trotzdem."
+            printf '%s\n' "$changed" | sed 's/^/  /'
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Postgres starten (Pull mit Wiederholung)
+        if: steps.relevant.outputs.run == 'true'
+        run: |
+          set -euo pipefail
+          for versuch in 1 2 3 4; do
+            if docker pull "$POSTGRES_IMAGE"; then
+              geholt=1
+              break
+            fi
+            if [ "$versuch" = 4 ]; then
+              echo "::warning::Pull von $POSTGRES_IMAGE fehlgeschlagen (Versuch 4/4)"
+              break
+            fi
+            wartezeit=$((versuch * versuch * 5))
+            echo "::warning::Pull von $POSTGRES_IMAGE fehlgeschlagen (Versuch $versuch/4) — neuer Versuch in ${wartezeit}s"
+            sleep "$wartezeit"
+          done
+          if [ "${geholt:-0}" != 1 ]; then
+            echo "::error::Image $POSTGRES_IMAGE nach vier Versuchen nicht erreichbar — Registry-Stoerung, kein Befund an den Migrationen."
+            exit 1
+          fi
+          docker run --detach --name "$POSTGRES_CONTAINER" \
+            --env POSTGRES_PASSWORD=postgres \
+            --env POSTGRES_DB=postgres \
+            --publish 5432:5432 \
+            "$POSTGRES_IMAGE"
+      - name: Auf Postgres warten
+        if: steps.relevant.outputs.run == 'true'
+        run: |
+          set -euo pipefail
+          for _ in $(seq 1 60); do
+            if docker exec "$POSTGRES_CONTAINER" pg_isready -U postgres -d postgres >/dev/null 2>&1; then
+              echo "Postgres ist bereit."
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "::error::Postgres war nach 120s nicht bereit."
+          docker logs "$POSTGRES_CONTAINER" || true
+          exit 1
       - name: Bootstrap Supabase-equivalent stubs
+        if: steps.relevant.outputs.run == 'true'
         run: |
           psql -v ON_ERROR_STOP=1 <<'SQL'
           -- `extensions` MUSS vor pgcrypto angelegt werden: Migrationen und
@@ -158,6 +322,7 @@ jobs:
           CREATE OR REPLACE FUNCTION storage.foldername(name text) RETURNS text[] LANGUAGE sql IMMUTABLE AS $$ SELECT string_to_array(regexp_replace(name, '/[^/]*$', ''), '/') $$;
           SQL
       - name: Apply all migrations in order
+        if: steps.relevant.outputs.run == 'true'
         run: |
           set -e
           for f in supabase/migrations/*.sql; do
@@ -181,6 +346,7 @@ jobs:
       # Entscheidung stehen — ein pauschales `GRANT ... ON ALL TABLES` an
       # dieser Stelle haette sie ueberschrieben.
       - name: Grant Supabase-equivalent table privileges
+        if: steps.relevant.outputs.run == 'true'
         run: |
           psql -v ON_ERROR_STOP=1 <<'SQL'
           GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role;
@@ -252,10 +418,12 @@ jobs:
       # Deshalb hier, und bewusst NACH den Migrationen: schlaegt eine Migration
       # fehl, faellt der Job sofort, ohne erst zu installieren.
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        if: steps.relevant.outputs.run == 'true'
         with:
           node-version: '20'
           cache: npm
       - name: Install dependencies (fuer die DB-Tests)
+        if: steps.relevant.outputs.run == 'true'
         run: npm ci
 
       # Die Zusagen des Governance OS, die in der DATENBANK stehen und nicht
@@ -291,6 +459,7 @@ jobs:
       # Datei. Ausgenommen und benannt, nicht still uebersprungen; ihre
       # heutigen Zusagen deckt addon-entitlements.db.test.ts ab.
       - name: DB-Integrationstests gegen das voll migrierte Schema
+        if: steps.relevant.outputs.run == 'true'
         env:
           TEST_DB_URL: postgresql://postgres:postgres@localhost:5432/postgres
           REQUIRE_DB_TESTS: '1'
@@ -300,6 +469,9 @@ jobs:
           echo "$dateien"
           npx vitest run $dateien --no-file-parallelism
 
+      # Laeuft auf jedem PR, auch auf dem schnellen Pfad: billig, und genau
+      # die Regel, die ein Diff ohne DB-Bezug nicht brechen kann — aber ein
+      # Diff, der die Muster oben umgeht, schon.
       - name: Verify migrations are append-only
         if: github.event_name == 'pull_request' && !contains(github.event.pull_request.title, '[hotfix]')
         run: |

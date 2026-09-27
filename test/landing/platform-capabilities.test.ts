@@ -206,6 +206,11 @@ describe('Hero-Panel — Beispiel ist als Beispiel gekennzeichnet', () => {
     resolve(__dirname, '../../src/pages/MainLanding.tsx'),
     'utf8',
   );
+  // Der Hero sitzt seit der Titan-Umsetzung in HeroTitanium.
+  const titanHero = readFileSync(
+    resolve(__dirname, '../../src/components/landing/HeroTitanium.tsx'),
+    'utf8',
+  );
   const sphereNodes = readFileSync(
     resolve(__dirname, '../../src/components/governance-frontend/governance-sphere-nodes.ts'),
     'utf8',
@@ -214,15 +219,23 @@ describe('Hero-Panel — Beispiel ist als Beispiel gekennzeichnet', () => {
     resolve(__dirname, '../../src/components/landing/WorkspacePreviewSection.tsx'),
     'utf8',
   );
+  // Die Beispielansicht sitzt seit der Entwurfsumsetzung in einer eigenen
+  // Komponente, nicht mehr als KPI-Streifen inline in MainLanding.
+  const runtimePanel = readFileSync(
+    resolve(__dirname, '../../src/components/landing/RuntimePreviewPanel.tsx'),
+    'utf8',
+  );
 
   it('das Panel nennt sich nicht mehr „LIVE“', () => {
     expect(landing).not.toContain('GOVERNANCE RUNTIME · LIVE');
-    expect(landing).toContain('EuropeReliefBackdrop');
+    expect(titanHero).toContain('EuropeNetworkHero');
     expect(landing).not.toContain('GovernanceSphereHost');
+    expect(runtimePanel).toContain('data-demo-kpis');
+    expect(runtimePanel).toMatch(/DEMO\s*\/\s*SIMULATED/);
     expect(workspacePreview).toContain('DEMO · BEISPIELDATEN');
     expect(workspacePreview).toContain('BEISPIELANSICHT');
-    expect(landing).toContain('id="audit-cta"');
-    expect(landing).toContain('data-hero-cta="audit"');
+    expect(titanHero).toContain('id="audit-cta"');
+    expect(titanHero).toContain('data-hero-cta="audit"');
     expect(landing).not.toContain('HeroEuropeSunrise');
     expect(sphereNodes).toMatch(/DEMO\s*\/\s*SIMULATED/);
   });

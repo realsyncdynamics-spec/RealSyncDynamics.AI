@@ -302,6 +302,12 @@ export interface OptimizerPackage {
 function canonicalPrice(planKey: TierId): string {
   const tier = tierById(planKey);
   if (!tier) return 'individuell';
+  // Vertragsplaene (`priceOnRequest`) duerfen keinen Betrag ausweisen: Der
+  // Betrag in der SSoT ist eine interne Referenzgroesse, kein oeffentlich
+  // zugesicherter Festpreis — der Checkout kann ihn nicht erfuellen. Gleiche
+  // Regel wie in `PricingPage`; wer nur auf `priceEur === 0` prueft, druckt
+  // fuer Enterprise `1.249 €/Mo.` und widerspricht damit `/pricing`.
+  if (tier.priceOnRequest) return 'Auf Anfrage';
   if (tier.priceEur === 0) return planKey === 'free' ? '0 €' : 'individuell';
   return `${tier.priceString} €/Mo.`;
 }

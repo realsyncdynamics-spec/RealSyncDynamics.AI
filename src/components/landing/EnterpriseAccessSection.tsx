@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { ArrowRight, Building2, Headset, KeyRound, ShieldCheck } from 'lucide-react';
-import { tierById } from '../../config/pricing';
+import { tierById, tierPriceLabel } from '../../config/pricing';
 import { CTA } from '../../content/runtimeVocab';
 
 /**
@@ -70,7 +70,7 @@ export function EnterpriseAccessSection() {
             <p className="mt-3 text-sm leading-relaxed text-white/40">{tier.subline}</p>
 
             <div className="mt-8 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-              <span className="text-3xl font-semibold text-white">{tier.priceString} €</span>
+              <span className="text-3xl font-semibold text-white">{tierPriceLabel(tier)}</span>
               <span className="font-mono text-[11px] uppercase tracking-[.18em] text-white/40">
                 {tier.priceSuffix}
               </span>

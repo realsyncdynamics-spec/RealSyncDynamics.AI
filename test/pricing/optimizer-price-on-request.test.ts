@@ -19,7 +19,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { OPTIMIZER_PACKAGES } from '../../src/pages/claude-code-optimizer/OptimizerKit';
-import { tierById, type TierId } from '../../src/config/pricing';
+import { tierById } from '../../src/config/pricing';
 
 describe('Optimizer-Pakete weisen keinen Preis ohne Deckung aus', () => {
   it('jedes Paket verweist auf einen Plan der SSoT', () => {
@@ -27,13 +27,13 @@ describe('Optimizer-Pakete weisen keinen Preis ohne Deckung aus', () => {
     // unbekanntem Key würde von `tierById` mit `undefined` beantwortet und
     // stillschweigend übersprungen.
     for (const pkg of OPTIMIZER_PACKAGES) {
-      expect(tierById(pkg.key as TierId), `Paket "${pkg.name}"`).toBeDefined();
+      expect(tierById(pkg.key), `Paket "${pkg.name}"`).toBeDefined();
     }
   });
 
   it('ein Auf-Anfrage-Plan zeigt „Auf Anfrage" statt eines Betrags', () => {
     const onRequest = OPTIMIZER_PACKAGES.filter(
-      (pkg) => tierById(pkg.key as TierId)?.priceOnRequest === true,
+      (pkg) => tierById(pkg.key)?.priceOnRequest === true,
     );
     // Die Liste darf nicht leer sein — sonst prüft der Test nichts mehr,
     // etwa weil Enterprise aus den Paketen entfernt wurde.
@@ -51,13 +51,15 @@ describe('Optimizer-Pakete weisen keinen Preis ohne Deckung aus', () => {
     // Gegenprobe: Der Fix darf nicht dazu führen, dass alle Karten
     // „Auf Anfrage" zeigen und Starter/Growth ihren Preis verschweigen.
     const fixed = OPTIMIZER_PACKAGES.filter((pkg) => {
-      const tier = tierById(pkg.key as TierId);
+      const tier = tierById(pkg.key);
       return tier !== undefined && !tier.priceOnRequest && tier.priceEur > 0;
     });
     expect(fixed.length).toBeGreaterThan(0);
 
+    // Genau der Betrag aus der SSoT — eine bloße Ziffernprüfung ließe einen
+    // falschen Betrag (Jahrespreis, veraltetes Literal) grün durch.
     for (const pkg of fixed) {
-      expect(pkg.price, `Paket "${pkg.name}"`).toMatch(/\d/);
+      expect(pkg.price, `Paket "${pkg.name}"`).toBe(`${tierById(pkg.key)!.priceString} €/Mo.`);
     }
   });
 });

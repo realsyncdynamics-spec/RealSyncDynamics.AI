@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Bot, Info, MousePointerClick, Check } from 'lucide-react';
-import { tierById, type TierId } from '../../config/pricing';
+import { tierById, tierPriceLabel, type TierId } from '../../config/pricing';
 
 /**
  * Gemeinsames Kit für den Claude-Code-Optimizer-Flow.
@@ -289,7 +289,7 @@ export function SecondaryLink({
 // unterschiedliche Preise.
 
 export interface OptimizerPackage {
-  key: string;             // Stripe/Pricing-Plan-Key
+  key: TierId;             // Stripe/Pricing-Plan-Key
   name: string;
   price: string;
   tagline: string;
@@ -302,14 +302,10 @@ export interface OptimizerPackage {
 function canonicalPrice(planKey: TierId): string {
   const tier = tierById(planKey);
   if (!tier) return 'individuell';
-  // Vertragsplaene (`priceOnRequest`) duerfen keinen Betrag ausweisen: Der
-  // Betrag in der SSoT ist eine interne Referenzgroesse, kein oeffentlich
-  // zugesicherter Festpreis — der Checkout kann ihn nicht erfuellen. Gleiche
-  // Regel wie in `PricingPage`; wer nur auf `priceEur === 0` prueft, druckt
-  // fuer Enterprise `1.249 €/Mo.` und widerspricht damit `/pricing`.
-  if (tier.priceOnRequest) return 'Auf Anfrage';
-  if (tier.priceEur === 0) return planKey === 'free' ? '0 €' : 'individuell';
-  return `${tier.priceString} €/Mo.`;
+  // Vertragspläne (`priceOnRequest`) behandelt `tierPriceLabel` — hier nur
+  // zu prüfen, ob `priceEur === 0` ist, druckte für Enterprise `1.249 €/Mo.`.
+  if (tier.priceEur === 0 && !tier.priceOnRequest) return planKey === 'free' ? '0 €' : 'individuell';
+  return tierPriceLabel(tier, ' €/Mo.');
 }
 
 export const OPTIMIZER_PACKAGES: OptimizerPackage[] = [

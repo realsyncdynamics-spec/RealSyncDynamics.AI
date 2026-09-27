@@ -2,7 +2,7 @@
 
 **Stand:** 2026-09-27 · gemessen gegen `main@f392939`
 **Owner:** Dominik Steiner
-**Status:** Plan verbindlich, Umsetzung erst nach den Entscheidungen in §3
+**Status:** Plan verbindlich · E-F1–E-F3 entschieden (2026-09-27), WP1–WP6 freigegeben
 
 > Leitsatz: Kein neuer KI-Hype-Layer. Das bestehende Produkt wird so geschärft,
 > dass realsyncdynamicsai.de einen klaren SaaS-Funnel verkauft:
@@ -29,8 +29,8 @@ den falschen Bestand. Wer ihn wörtlich ausführt, baut einen zweiten Trichter.
 |---|---|---|---|
 | **B1** | `/unified-entry/scan` ist **als kanonischer Einstieg verworfen**. Die Seite erfindet `auditId = urlscan-<Zeitstempel>` und schreibt keinen Datensatz. Kanonisch sind `/audit` + `gdpr_audits`. | `docs/product/canonical-funnel-decision.md` §1 · `ScanEntryPage.tsx` Z. 69 | Funnel-Arbeit läuft über `/audit` (`AuditLanding` mit `PostScanChoiceRow`) → `/welcome` → `/app/activation`. `ScanEntryPage` wird **nicht** ausgebaut. |
 | **B2** | Die Landing-CTA zeigt **bereits** auf `/audit`. | `src/config/public-nav.ts` `PUBLIC_CTA.to = '/audit'` | WP1 ist reine Copy-Arbeit, keine Routing-Änderung. |
-| **B3** | Es gibt **drei** Einrichtungsstrecken: `/unified-entry/onboarding` (Branche + 3 Fragen + Trial), `/setup-assistant` (setzt `onboarded_at`, dorthin leitet `/welcome`), `/app/activation` (Governance Activation, live, Org + Scope persistiert). | `PostRegisterOnboardingPage.tsx`, `features/onboarding/SetupAssistant.tsx`, `docs/product/governance-activation.md` | Das AI-OS-Setup (KI-Systeme, Bots, Daten, Freigaben) gehört in **eine** davon — Entscheidung **E-F2**. Keine vierte Strecke. |
-| **B4** | Trial-Drift: `shared/pricing.ts` gibt **Starter und Growth** `trialDays: 14`. Edge Function und Copy sagen „nur Growth". `trialDays` steuert neue Stripe-Checkout-Sessions — Starter-Käufer bekommen also 14 Tage, die nirgends beworben sind. | `shared/pricing.ts` Starter-Block, `create-trial-subscription/index.ts`, `TrialOfferPage.tsx` | Vor jeder neuen Angebotsmechanik SSoT bereinigen (**E-F1**). |
+| **B3** | Es gibt **drei** Einrichtungsstrecken: `/unified-entry/onboarding` (Branche + 3 Fragen + Trial), `/setup-assistant` (setzt `onboarded_at`, dorthin leitet `/welcome`), `/app/activation` (Governance Activation, live, Org + Scope persistiert). | `PostRegisterOnboardingPage.tsx`, `features/onboarding/SetupAssistant.tsx`, `docs/product/governance-activation.md` | Das AI-OS-Setup (KI-Systeme, Bots, Daten, Freigaben) gehört in **eine** davon — Entschieden (**E-F2**): `/app/activation`. Keine vierte Strecke. |
+| **B4** | Trial-Drift: `shared/pricing.ts` gibt **Starter und Growth** `trialDays: 14`. Edge Function und Copy sagen „nur Growth". `trialDays` steuert neue Stripe-Checkout-Sessions — Starter-Käufer bekommen also 14 Tage, die nirgends beworben sind. | `shared/pricing.ts` Starter-Block, `create-trial-subscription/index.ts`, `TrialOfferPage.tsx` | Starter-`trialDays` → 0 in WP2 (**E-F1** entschieden). |
 | **B5** | Ein Gratis-Code-System **existiert nicht**. Vorhanden ist nur `allow_promotion_codes: true` in `stripe-checkout`. | `supabase/functions/stripe-checkout/index.ts` | „1 Monat Growth per Code" ist ohne Code-Änderung nur als **Stripe-Promotion-Code** machbar (Karte nötig) — oder als manuelle Freischaltung. |
 | **B6** | Agenten stehen in **vier** Quellen: `AGENT_MESH` (ehrlich: nur Compliance preview), `DEMO_AGENTS` (4 × `status: 'active'`, im Register als „Aktiv" gezählt), `AgentsCenterView` (Skills), DB-Tabelle `governance_agent_registry` (nur `active/archived/deprecated`). | `core/realsync-os/agentMesh.ts`, `features/governance/agents/demoAgents.ts`, Migration `20260817000000` | Das Register zeigt heute „4 Aktiv" für Demo-Daten — Overclaim-Risiko. WP5 führt eine Quelle ein. |
 | **B7** | `/app/dashboard` ist **bereits** das Command Center mit echten RPCs (`governance_kpi_latest_snapshot`, `governance_24h_summary`, Evidence-Health, Risk-Index, Maßnahmen). Es fehlen Kacheln für KI-Inventar, Agent-Register und Freigaben. Quellen existieren: `ai_systems`, `ai_act_risk_inventory`, `governance_approvals`. | `CommandCenterDashboard.tsx`, `cockpit/cockpitData.ts`, `approvalsApi.ts` | WP4 ergänzt eine Kachelreihe, kein zweites Dashboard. |
@@ -60,22 +60,24 @@ Die Sichten sind Labels auf dem Authority-Pfad. Kein zweites Enum, kein zweites 
 
 ---
 
-## 3. Entscheidungen, die vor dem Bau fallen müssen
+## 3. Entscheidungen
 
-| ID | Frage | Optionen | Empfehlung |
+**Entschieden am 2026-09-27 (Dominik Steiner):** E-F1 = (a), E-F2 = (a), E-F3 = „Die Kontrollschicht für KI im Unternehmen." — WP1–WP3 sind damit freigegeben. E-F4 und E-F5 bleiben offen und blockieren WP1–WP3 nicht.
+
+| ID | Frage | Status / Entscheidung | Begründung |
 |---|---|---|---|
-| **E-F1** | Angebotsmechanik nach dem Scan | (a) 14-Tage-Growth-Trial behalten · (b) Stripe-Promotion-Code „1 Monat Growth" (100 %, `duration: once`) · (c) manuelle Freischaltung per Sales | **(a) jetzt, (b) als eigener WP** nach SSoT-Bereinigung. (b) braucht Karte im Checkout und einen Stripe-Dashboard-Schritt; das ist eine Preis-/Angebotsänderung mit Einzel-Freigabe. Starter-`trialDays` in jedem Fall auf 0. |
-| **E-F2** | Wo lebt das AI-OS-Setup? | (a) `/app/activation` (Discovery-Schritt) · (b) `/setup-assistant` · (c) `/unified-entry/onboarding` | **(a)** — Activation persistiert schon Org + Scope, ist live und im Post-Scan-Pfad verlinkt. (c) hängt am verworfenen Trichter. |
-| **E-F3** | Hero-Headline | „Die Kontrollschicht für KI im Unternehmen." · „Das Governance OS für kontrollierbare KI-Agenten." | **Erste** — sie beschreibt, was heute läuft. Die zweite verspricht Agenten-Betrieb, der überwiegend Coming Soon ist. |
-| **E-F4** | Partner 1.999 € | Programm (nicht öffentlich) · Stufe | Programm, `sellable`/öffentliche Anzeige prüfen |
-| **E-F5** | `/unified-entry/scan` | behalten für Builder-Pfad · auf `/audit` umleiten | Behalten, aber **nicht** aus Landing/Funnel verlinken |
+| **E-F1** | Angebotsmechanik nach dem Scan | ✅ **Entschieden: 14-Tage-Growth-Testphase.** Kein Stripe-Gratis-Code, keine manuelle Freischaltung. Starter-`trialDays` → 0. | Nutzt die deployte `create-trial-subscription`; kein neuer Zahlungsweg, keine Karte im Einstieg. |
+| **E-F2** | Wo lebt das AI-OS-Setup? | ✅ **Entschieden: `/app/activation`.** `/setup-assistant` und `/unified-entry/onboarding` werden nicht erweitert. | Activation persistiert schon Org + Scope, ist live und im Post-Scan-Pfad verlinkt. |
+| **E-F3** | Hero-Headline | ✅ **Entschieden: „Die Kontrollschicht für KI im Unternehmen."** | Beschreibt, was heute läuft; die Agenten-Variante wäre überwiegend Coming Soon. |
+| **E-F4** | Partner 1.999 € | ⏳ offen: Programm (nicht öffentlich) oder Stufe | Empfehlung: Programm, `sellable`/öffentliche Anzeige prüfen |
+| **E-F5** | `/unified-entry/scan` | ⏳ offen: behalten für Builder-Pfad oder auf `/audit` umleiten | Empfehlung: Behalten, aber **nicht** aus Landing/Funnel verlinken |
 
 ---
 
 ## 4. Arbeitspakete und Reihenfolge
 
 ```
-E-F1…E-F5 entscheiden
+E-F1–E-F3 ✅ entschieden (E-F4/E-F5 offen, nicht blockierend)
       │
       ├─► WP1 Landing-Copy ─────────────┐
       ├─► WP5 Agent-Register-Quelle ────┤   (parallel möglich, keine Datei-Überschneidung)

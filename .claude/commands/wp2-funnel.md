@@ -4,7 +4,7 @@ description: WP2 Funnel auf /audit ausrichten (Angebots-Copy aus SSoT, Starter-T
 
 # WP2 — Funnel auf `/audit` ausrichten
 
-**Voraussetzung:** E-F1 (Angebot) und E-F5 entschieden · **Branch:** `feat/wp2-audit-funnel-offer`
+**Voraussetzung:** ✅ E-F1 entschieden (2026-09-27): 14-Tage-Growth-Testphase. E-F5 offen, nicht blockierend · **Branch:** `feat/wp2-audit-funnel-offer`
 **Freigabe:** Preise/Angebot = Einzel-Freigabe im PR
 
 ## Rahmen (gilt für jede WP-Session)
@@ -50,9 +50,8 @@ Bestand:
   PostRegisterOnboardingPage.tsx (nur Copy)
 - shared/pricing.ts (trialDays), supabase/functions/create-trial-subscription (nur lesen)
 
-Aufgaben (Variante nach E-F1):
+Aufgaben (E-F1 = 14-Tage-Growth-Testphase — verbindlich, keine Alternative):
 
-A) E-F1 = 14-Tage-Growth-Trial behalten
    1. shared/pricing.ts: Starter trialDays 14 → 0 (Copy und Edge Function sagen
       „nur Growth"). Danach npm run sync:pricing, check:pricing, check:offer-prices.
    2. Angebots-Copy an EINER Stelle (Konstante), von TrialOfferPage, SuccessPage,
@@ -69,18 +68,10 @@ A) E-F1 = 14-Tage-Growth-Trial behalten
       Solange dieser Aufruf im kanonischen Pfad fehlt, darf die Trial-Copy dort
       NICHT erscheinen (Test: Copy nur, wenn der Aufruf erreichbar ist).
 
-B) E-F1 = Gratis-Code 1 Monat Growth
-   1. Wie A.1.
-   2. KEINE Code-Einlösung bauen. Copy:
-      „Der Scan ist kostenlos. Für den Governance-Workspace erhalten Sie einen
-      Gratis-Code für den ersten Monat des Growth-Pakets (249 €, monatlich
-      kündbar). Einlösung im Checkout."
-   3. Einlösung erfolgt über den bestehenden Stripe-Checkout
-      (allow_promotion_codes: true). Den Promotion-Code legt Dominik im
-      Stripe-Dashboard an — NICHT in dieser Session. Bis dahin Badge PREVIEW und
-      Hinweis „Freischaltung manuell über Sales".
+Ausdrücklich NICHT: Gratis-Code, Stripe-Promotion-Code, Coupon-Einlösung,
+manuelle Freischaltung als Angebot.
 
-In beiden Varianten:
+Zusätzlich:
 - PostScanChoiceRow: Karte „Governance-Workspace einrichten" (Ziel /app/activation)
   als primären nächsten Schritt nach dem Scan hervorheben; Badges unverändert ehrlich.
 - SuccessPage/Onboarding-Erfolg: „Ihr AI Governance Workspace ist vorbereitet."

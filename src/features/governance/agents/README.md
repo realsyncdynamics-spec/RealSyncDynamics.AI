@@ -8,7 +8,7 @@ Ein **Register** im Sinne einer Governance-Disziplin: jeder Agent wird mit Typ, 
 
 Phase A (dieser PR): reine **Anzeige**. Der View **führt keine Agenten aus**.
 
-Spätere Phasen: Die Runtime-Ausführung (n8n, Edge-Functions) liest dieselbe Datenstruktur (`GovernanceAgent`) und ist an die hier dokumentierten Restriktionen gebunden — `restrictedActions` und `requiresHumanReview` werden als Constraints in den Runtime-Loop einprogrammiert.
+Spätere Phasen: Die Runtime-Ausführung (n8n, Edge-Functions) liest dieselbe Datenstruktur (`GovernedAgentEntry`) und ist an die hier dokumentierten Restriktionen gebunden — `forbiddenActions` und `reviewPoints` werden als Constraints in den Runtime-Loop einprogrammiert.
 
 ## Warum brauchen Agenten Permissions?
 
@@ -16,7 +16,7 @@ Agentic AI ist eine **neue** Compliance-Disziplin. Aktuelle Forschung (u. a. EU-
 
 Konsequenz: Jeder Agent hat eine **expliziter Whitelist** (`tools`, `permissions`). Wer nicht in der Whitelist steht, ist verboten — Default-Deny.
 
-## Warum gibt es `restrictedActions`?
+## Warum gibt es `forbiddenActions`?
 
 Whitelist + Restricted-List ist Redundanz mit Absicht. Die Whitelist sagt „darf X". Die Restricted-List sagt „darf NIE Y" — auch dann nicht, wenn Y „in der Nähe" eines erlaubten Tools liegt. Beispiele:
 
@@ -34,18 +34,30 @@ Aus dem Direktiv: **keine automatische Rechtsfreigabe**. Konkret:
 
 `requiresHumanReview` ist pro Agent eine Liste mit Trigger-Punkten — kein freier Text, sondern feste Schritte, die der Runtime-Loop erkennt und vor Ausführung pausiert.
 
-## Initial-Set (6 Agenten)
+## Katalog (WP5, 2026-09-27)
 
-Quelle: `src/features/governance/agents/demoAgents.ts`
+Quelle: `src/features/governance/agents/agentCatalog.ts` (`AGENT_CATALOG`, Typ `GovernedAgentEntry`).
+Genutzt von `/app/ai-systems/agents` und `/governance-browser`.
 
-| Agent | Typ | Risk | Status (Default) |
-|---|---|---|---|
-| Website Drift Agent | detection | medium | active |
-| AI Risk Agent | classification | high | review_required |
-| Evidence Agent | evidence | low | active |
-| Policy Agent | policy | medium | active |
-| Triage Agent | triage | low | active |
-| Developer Remediation Agent | remediation | high | paused |
+Reifegrad wird **abgeleitet**, nie gesetzt: Mesh-Agenten aus `AGENT_MESH`,
+übrige aus `src/product/implementation-status.ts`, ohne Beleg `coming-soon`.
+Ausführbar (`runnable`) ist nur, was `AGENT_MESH` als Preview-Lauf belegt.
+
+| Eintrag | Art | Statusquelle |
+|---|---|---|
+| Compliance Agent | Agent | `agentMesh:compliance` |
+| Evidence / Security / Onboarding Agent | Agent | `agentMesh:*` |
+| Website Chatbot · Voice Bot · WhatsApp Bot | Bot | `implementation-status:channel-bots` |
+| Browser Agent | Agent | `implementation-status:agent-os-chrome-side-panel` |
+| Builder Agent | Agent | `implementation-status:web-builder` |
+| Workflow Agent | Agent | keine → `coming-soon` |
+
+Browser- und Builder-Agent tragen fest `publish_without_approval`,
+`submit_forms`, `trigger_purchase`, `transfer_customer_data` als verbotene
+Aktionen und `reviewMode: 'always'` (Test: `test/governance/agentRegistry.test.ts`).
+
+Abgelöst: `demoAgents.ts` (`DEMO_AGENTS`, Status „active") und der Typ
+`GovernanceAgent`; `AgentPeekPanel` war unbenutzt und ist entfallen.
 
 ## Wie wird die Runtime-Ausführung angebunden?
 
@@ -55,7 +67,7 @@ Plan (nicht Teil dieses PRs):
 2. **Edge Function** `agent-execute`, die einen Agent-Lauf triggert:
    - Lädt den Agent-Record
    - Validiert das geplante Tool gegen `tools[]`
-   - Validiert die geplante Aktion **nicht** in `restrictedActions[]`
+   - Validiert die geplante Aktion **nicht** in `forbiddenActions[]`
    - Lädt die Run-Daten, prüft ob `requiresHumanReview`-Punkte getroffen sind → wenn ja, pausiert und legt einen `approvals`-Eintrag an
    - Schreibt jeden Schritt in den Evidence Vault
 3. **Approval-View** (existiert bereits unter `/governance/approvals`) zeigt offene Reviews

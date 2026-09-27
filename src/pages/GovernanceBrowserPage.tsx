@@ -7,7 +7,7 @@ import {
   Lock, Bot, CheckCircle2, AlertTriangle, GitMerge, Plug, ArrowRight,
 } from 'lucide-react';
 import { DEMO_AI_GMBH } from '../lib/demo/demoAiGmbhFixture';
-import { DEMO_AGENTS } from '../features/governance/agents/demoAgents';
+import { AGENT_CATALOG } from '../features/governance/agents/agentCatalog';
 import { AgentCard } from '../features/governance/agents/AgentCard';
 import { BrowserNav } from '../components/GovernanceBrowser/BrowserNav';
 import { WorkflowDiscoveryPanel } from '../components/GovernanceBrowser/WorkflowDiscoveryPanel';
@@ -52,10 +52,10 @@ export function GovernanceBrowserPage() {
             <div>
               <h2 className="font-display font-bold text-lg text-titanium-50 mb-4 flex items-center gap-2">
                 <Bot className="h-5 w-5 text-cyan-300" />
-                Governance-Agenten ({DEMO_AGENTS.length})
+                Agenten &amp; Bots im Katalog ({AGENT_CATALOG.length})
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {DEMO_AGENTS.map((agent) => (
+                {AGENT_CATALOG.map((agent) => (
                   <AgentCard key={agent.id} agent={agent} />
                 ))}
               </div>

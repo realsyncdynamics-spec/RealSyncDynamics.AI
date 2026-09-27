@@ -1,60 +1,71 @@
 /**
- * Typen fuer das Agent-Register (kontrollierte Governance-Agenten).
+ * Typen für das Agent-/Bot-Register (kontrollierte OS-Objekte).
  *
- * Diese Registry ist die kontrollierte Sicht auf alle Governance-Agenten:
- * was sie tun, welche Werkzeuge sie nutzen, was sie NICHT tun, und an
- * welchen Punkten Human Review zwingend ist.
+ * Das Register ist ein **Katalog** der Agenten- und Bot-Typen, die das
+ * Governance OS führt — kein Mandanten-Datenbestand. Jeder Eintrag sagt, was
+ * das Objekt darf, was es nie darf, wann ein Mensch freigibt und welche
+ * Nachweise entstehen.
  *
- * Der View ist Phase A reine Anzeige — Agenten werden NICHT vom View
- * ausgefuehrt. Die spaetere Runtime-Ausfuehrung (n8n / Edge-Functions)
- * liest dieselbe Datenstruktur und ist ueber `restrictedActions` und
- * `requiresHumanReview` gebunden.
+ * Der Reifegrad (`maturity`) wird nicht hier gesetzt, sondern aus einer
+ * belegten Quelle abgeleitet (`AGENT_MESH` oder `implementation-status.ts`),
+ * siehe `agentCatalog.ts`. So kann das Register keinen Status behaupten, den
+ * die Runtime nicht trägt.
+ *
+ * Abgelöst (WP5, 2026-09-27): `GovernanceAgent` mit `status: 'active' | …`
+ * und das Demo-Set `DEMO_AGENTS`. Deren Felder sind hier aufgegangen:
+ * `ownerRole` → `owner`, `restrictedActions` → `forbiddenActions`,
+ * `requiresHumanReview` → `reviewMode` + `reviewPoints`,
+ * `tools`/`permissions` → `allowedActions` + `dataAccess`.
+ * `lastRunAt` und `evidenceRefs` entfallen — ein Katalog hat keine Läufe.
  */
+import type { ImplementationStatus } from '../../../product/implementation-status';
 
-export type AgentType =
-  | 'detection'
-  | 'classification'
+export type AgentKind = 'agent' | 'bot';
+
+export type GovernedAgentType =
+  | 'compliance'
   | 'evidence'
-  | 'policy'
-  | 'triage'
-  | 'remediation';
-
-export type AgentStatus =
-  | 'active'
-  | 'paused'
-  | 'review_required'
-  | 'disabled';
+  | 'security'
+  | 'onboarding'
+  | 'website_chat'
+  | 'voice'
+  | 'whatsapp'
+  | 'browser'
+  | 'builder'
+  | 'workflow';
 
 export type AgentRiskLevel = 'low' | 'medium' | 'high' | 'critical';
 
-export interface GovernanceAgent {
+/** Wann ein Mensch vor der Ausführung freigibt. */
+export type AgentReviewMode = 'always' | 'on_risk' | 'none';
+
+/** Welche Nachweise ein Lauf erzeugen muss. */
+export type AgentEvidenceRequirement = 'every_action' | 'on_decision' | 'none';
+
+export interface GovernedAgentEntry {
   id: string;
+  kind: AgentKind;
+  agentType: GovernedAgentType;
   name: string;
-  type: AgentType;
-  status: AgentStatus;
-  riskLevel: AgentRiskLevel;
-
-  /** Erlaubte Werkzeuge / Tools. */
-  tools: string[];
-
-  /** Erlaubte Berechtigungen. */
-  permissions: string[];
-
-  /** Aktionen, die der Agent NIE eigenstaendig ausfuehren darf. */
-  restrictedActions: string[];
-
-  /** Schritte/Punkte, an denen Human Review zwingend ist. */
-  requiresHumanReview: string[];
-
-  /** Letzter Lauf (ISO-Timestamp) oder null, wenn nie. */
-  lastRunAt: string | null;
-
   /** Verantwortliche Rolle (z. B. „governance.owner", „dsb"). */
-  ownerRole: string;
-
-  /** Pointer in das Evidence-System (Hash, Pfad, ID). */
-  evidenceRefs: string[];
-
-  /** Kurze Beschreibung (DE). */
-  description: string;
+  owner: string;
+  /** Zweck in einem Satz (DE). */
+  purpose: string;
+  /** Datenklassen, auf die das Objekt zugreifen darf. */
+  dataAccess: readonly string[];
+  /** Erlaubte Aktionen (Whitelist, Default-Deny). */
+  allowedActions: readonly string[];
+  /** Aktionen, die das Objekt NIE eigenständig ausführen darf. */
+  forbiddenActions: readonly string[];
+  reviewMode: AgentReviewMode;
+  /** Feste Punkte, an denen der Lauf für eine Freigabe anhält. */
+  reviewPoints: readonly string[];
+  riskLevel: AgentRiskLevel;
+  evidenceRequirement: AgentEvidenceRequirement;
+  /** Abgeleitet aus AGENT_MESH bzw. implementation-status.ts — nie frei gesetzt. */
+  maturity: ImplementationStatus;
+  /** Nur true, wenn die Quelle einen Preview-/Live-Lauf belegt. */
+  runnable: boolean;
+  /** Woher `maturity` und `runnable` stammen (für Tests und Transparenz). */
+  statusSource: string;
 }

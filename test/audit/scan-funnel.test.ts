@@ -21,12 +21,12 @@ describe('scan funnel copy SSOT', () => {
     expect(HERO_SCAN_CTA_LABEL).toBe('Governance-Scan starten');
     expect(HERO_SCAN_CTA_LONG).toBe('Governance-Scan starten');
     expect(HERO_DASHBOARD_CTA_LABEL).toBe('Live Dashboard ansehen');
-    expect(HERO_OPERATING_LOOP).toBe('SCAN → BUILD → AUTOMATE → GOVERN');
+    expect(HERO_OPERATING_LOOP).toBe('DISCOVER → ASSESS → GOVERN → EXECUTE → VERIFY → PROVE');
     expect(HERO_SCAN_PROMISE_LINE.toLowerCase()).not.toContain('demo');
     expect(HERO_SCAN_CTA_LABEL.toLowerCase()).not.toContain('testen');
     expect(HERO_SCAN_CTA_LONG.toLowerCase()).not.toContain('testen');
     expect(SCAN_FUNNEL_MESSAGE).toBe(
-      'Scannen. Kontrollen bauen. Evidenz automatisieren. Dauerhaft steuern.',
+      'Entdecken. Bewerten. Steuern. Ausführen. Verifizieren. Mit Evidence beweisen.',
     );
     expect(CONTINUOUS_COMPLIANCE_NARRATIVE.length).toBeGreaterThan(20);
     expect(PUBLIC_CTA.label).toBe(HERO_SCAN_CTA_LONG);

@@ -24,7 +24,6 @@ import { Link } from 'react-router-dom';
 import { ArrowRight, Building2, Headset, KeyRound, ShieldCheck } from 'lucide-react';
 import { tierById } from '../../config/pricing';
 import { CTA } from '../../content/runtimeVocab';
-import { POLICY_PACK_COUNT } from './policy-packs';
 import { GA_DISPLAY, GA_LINE_SOFT, GA_MONO, GA_MUTED, GA_TEXT, GA_TITAN } from './governance-ai-theme';
 import { SectionEyebrow, SectionHeading, SectionIndex } from './GovernanceSectionChrome';
 
@@ -171,8 +170,8 @@ export function GovernanceEnterpriseSection() {
             />
             <AccessCard
               icon={ShieldCheck}
-              title={`Alle ${POLICY_PACK_COUNT === 6 ? 'sechs' : POLICY_PACK_COUNT} Rahmenwerke`}
-              text="DSGVO, EU AI Act, ISO 27001, NIS2, TISAX und DORA als aktive Policy Packs."
+              title="Aktive Policy Packs + Roadmap"
+              text="Live: DSGVO, EU AI Act, ISO 27001, NIS2. TISAX und DORA: Roadmap / auf Anfrage — kein Fake-LIVE, kein Policy-Packs-Alias."
             />
             <AccessCard
               icon={KeyRound}

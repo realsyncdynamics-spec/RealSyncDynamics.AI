@@ -1,59 +1,62 @@
 /**
- * Static Europe network hero graphic — Replit SSOT.
- * Illustrative map + node mesh. NOT an interactive globe/sphere.
- *
- * Die Tonung folgt dem Farbmodus der Seite (`landing-mode.ts`): Gold über
- * einem warm gefilterten Chromrelief, Cyan über der ungefilterten
- * Nachtaufnahme. Dieselbe Aufnahme, dieselben Knoten — nur die Farbe
- * wechselt.
- *
- * Die Knotenfarben stehen als `style`, nicht als `fill`/`stroke`-Attribut:
- * `var()` ist in SVG-Präsentationsattributen nicht verlässlich, in der
- * CSS-Deklaration dagegen schon.
+ * Public `/` hero backdrop.
+ * Photoreal Earth (shared mesh) with a slow idle spin.
+ * Gold corridor overlay is gone. Copy stays on the left veil.
  */
-import {
-  MODE_ACCENT,
-  MODE_ACCENT_SOFT,
-  MODE_SHOT_FILTER,
-  MODE_SHOT_OPACITY,
-  modeAccent,
-  modeVeil,
-} from './landing-mode';
+import { lazy, Suspense, useEffect, useState } from 'react';
+import { MODE_SHOT_FILTER, MODE_SHOT_OPACITY, modeAccent, modeVeil } from './landing-mode';
 
-/** Approximate node positions (% of box) over Europe framing. */
-const NODES: readonly { x: number; y: number; r?: number }[] = [
-  { x: 42, y: 28, r: 3.2 },
-  { x: 48, y: 34, r: 2.4 },
-  { x: 55, y: 30, r: 2.8 },
-  { x: 61, y: 38, r: 2.2 },
-  { x: 52, y: 44, r: 3.5 },
-  { x: 45, y: 48, r: 2.1 },
-  { x: 58, y: 52, r: 2.6 },
-  { x: 66, y: 46, r: 2.3 },
-  { x: 70, y: 36, r: 2.0 },
-  { x: 38, y: 40, r: 2.2 },
-  { x: 50, y: 58, r: 2.4 },
-  { x: 63, y: 58, r: 2.0 },
-];
+const HeroEarthScene = lazy(() => import('./HeroEarthScene'));
 
-const EDGES: readonly [number, number][] = [
-  [0, 1],
-  [1, 2],
-  [2, 3],
-  [1, 4],
-  [4, 5],
-  [4, 6],
-  [3, 7],
-  [2, 8],
-  [5, 9],
-  [6, 10],
-  [6, 11],
-  [7, 11],
-  [0, 9],
-  [4, 7],
-];
+function usePrefersReducedMotion(): boolean {
+  const [reduced, setReduced] = useState(false);
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return;
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const update = () => setReduced(mq.matches);
+    update();
+    mq.addEventListener('change', update);
+    return () => mq.removeEventListener('change', update);
+  }, []);
+  return reduced;
+}
+
+function useWebGlAvailable(): boolean {
+  const [ok, setOk] = useState(false);
+  useEffect(() => {
+    try {
+      const canvas = document.createElement('canvas');
+      const gl = canvas.getContext('webgl2') || canvas.getContext('webgl');
+      setOk(Boolean(gl));
+    } catch {
+      setOk(false);
+    }
+  }, []);
+  return ok;
+}
+
+function StaticEarth() {
+  return (
+    <picture>
+      <source srcSet="/europe-globe.webp" type="image/webp" />
+      <img
+        src="/europe-globe.jpg"
+        alt=""
+        width={1376}
+        height={768}
+        className="absolute inset-0 h-full w-full scale-[1.12] object-cover object-[82%_44%]"
+        style={{ opacity: MODE_SHOT_OPACITY, filter: MODE_SHOT_FILTER }}
+        decoding="async"
+      />
+    </picture>
+  );
+}
 
 export function EuropeNetworkHero() {
+  const reducedMotion = usePrefersReducedMotion();
+  const webgl = useWebGlAvailable();
+  const use3d = webgl && !reducedMotion;
+
   return (
     <div
       className="pointer-events-none absolute inset-0 overflow-hidden"
@@ -61,82 +64,27 @@ export function EuropeNetworkHero() {
       data-hero-visual="europe-network-static"
       data-hero-interactive="false"
     >
-      <picture>
-        <source srcSet="/europe-globe.webp" type="image/webp" />
-        <img
-          src="/europe-globe.jpg"
-          alt=""
-          width={1376}
-          height={768}
-          className="absolute inset-0 h-full w-full scale-[1.08] object-cover object-[68%_42%]"
-          style={{ opacity: MODE_SHOT_OPACITY, filter: MODE_SHOT_FILTER }}
-          decoding="async"
-        />
-      </picture>
+      <StaticEarth />
 
-      {/* Veil — keeps left copy readable; map glows on the right */}
+      {use3d && (
+        <div className="absolute inset-y-[-8%] right-[-6%] w-[68%] min-w-[420px]">
+          <Suspense fallback={null}>
+            <HeroEarthScene reducedMotion={reducedMotion} />
+          </Suspense>
+        </div>
+      )}
+
       <div
         className="absolute inset-0"
         style={{
           background: [
-            `linear-gradient(105deg, ${modeVeil(100)} 0%, ${modeVeil(80)} 32%, ${modeVeil(40)} 52%, transparent 72%)`,
-            `linear-gradient(180deg, ${modeVeil(53)} 0%, transparent 28%, transparent 70%, ${modeVeil(93)} 100%)`,
-            `radial-gradient(55% 50% at 72% 42%, ${modeAccent(20)} 0%, transparent 62%)`,
+            `linear-gradient(102deg, ${modeVeil(100)} 0%, ${modeVeil(100)} 34%, ${modeVeil(92)} 46%, ${modeVeil(55)} 58%, transparent 74%)`,
+            `linear-gradient(180deg, ${modeVeil(70)} 0%, transparent 22%, transparent 68%, ${modeVeil(96)} 100%)`,
+            `radial-gradient(42% 70% at 18% -8%, rgba(255,255,255,0.11) 0%, transparent 62%)`,
+            `radial-gradient(48% 42% at 78% 46%, ${modeAccent(14)} 0%, transparent 64%)`,
           ].join(','),
         }}
       />
-
-      {/* Amber network mesh */}
-      <svg
-        className="absolute inset-0 h-full w-full opacity-90"
-        viewBox="0 0 100 100"
-        preserveAspectRatio="none"
-      >
-        <defs>
-          <filter id="eu-net-glow" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur stdDeviation="0.35" result="blur" />
-            <feMerge>
-              <feMergeNode in="blur" />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
-          </filter>
-        </defs>
-        {EDGES.map(([a, b], i) => {
-          const from = NODES[a];
-          const to = NODES[b];
-          return (
-            <line
-              key={`e-${i}`}
-              x1={from.x}
-              y1={from.y}
-              x2={to.x}
-              y2={to.y}
-              style={{ stroke: MODE_ACCENT_SOFT }}
-              strokeWidth="0.18"
-              opacity="0.55"
-              filter="url(#eu-net-glow)"
-            />
-          );
-        })}
-        {NODES.map((n, i) => (
-          <g key={`n-${i}`} filter="url(#eu-net-glow)">
-            <circle
-              cx={n.x}
-              cy={n.y}
-              r={(n.r ?? 2.2) * 1.8}
-              style={{ fill: MODE_ACCENT }}
-              opacity="0.12"
-            />
-            <circle
-              cx={n.x}
-              cy={n.y}
-              r={n.r ?? 2.2}
-              style={{ fill: MODE_ACCENT_SOFT }}
-              opacity="0.9"
-            />
-          </g>
-        ))}
-      </svg>
     </div>
   );
 }

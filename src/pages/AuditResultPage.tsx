@@ -2,16 +2,18 @@ import { useEffect, useState } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
 import { AuditResultView, type AuditResultFinding } from '../features/audit/AuditResultView';
 import { rememberPendingAudit } from '../features/audit/pendingAudit';
+import { SEOHead } from '../components/SEOHead';
 
 // AuditResultPage — sharable permalink for an audit result.
 //
 // Datenfluss:
-//   1. Warm-Navigation aus dem Audit-Chat: AuditChatHero passt den vollen
-//      Report per `navigate(..., { state })` durch — wir nehmen ihn direkt.
-//      Inklusive PII (email), die in der Permalink-RPC bewusst fehlt.
+//   1. Warm-Navigation aus dem Audit-Chat: AuditChatHero reicht non-PII
+//      Report-Felder per `navigate(..., { state })` durch (kein email).
 //   2. Cold-Load (Reload, Deep-Link, Bookmark, Share, neuer Tab): die
 //      `audit_share_get(uuid)` RPC liefert non-PII Felder (score, severity,
 //      issues, domain, created_at) fuer jede `is_shareable=true` Audit-Row.
+//   E-Mail kommt weder aus API (gdpr-audit / audit_share_get) noch aus
+//   router-state — sharebare Views zeigen keine Report-E-Mail.
 //
 // Damit verschwindet die alte "Keine Befunde geladen" Anzeige bei jedem
 // Reload — vorausgesetzt der Audit existiert und ist nicht revoked.
@@ -22,7 +24,6 @@ const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string | und
 interface AuditReportState {
   domain?:          string;
   score?:           number;
-  email?:           string;
   created_at?:      string;
   coverage?:        'full' | 'limited' | 'failed';
   coverage_notice?: string | null;
@@ -104,17 +105,23 @@ export function AuditResultPage() {
   useEffect(() => { rememberPendingAudit(auditId); }, [auditId]);
 
   return (
-    <AuditResultView
-      auditId={auditId}
-      domain={domain}
-      score={score}
-      email={initialReport.email}
-      createdAt={createdAt}
-      coverage={initialReport.coverage}
-      coverageNotice={initialReport.coverage_notice ?? undefined}
-      findings={findings}
-      loading={loading}
-      error={error}
-    />
+    <>
+      <SEOHead
+        title={domain ? `Audit · ${domain}` : 'Audit-Ergebnis'}
+        description="DSGVO-Audit-Ergebnis — nicht zur Indexierung bestimmt."
+        noIndex
+      />
+      <AuditResultView
+        auditId={auditId}
+        domain={domain}
+        score={score}
+        createdAt={createdAt}
+        coverage={initialReport.coverage}
+        coverageNotice={initialReport.coverage_notice ?? undefined}
+        findings={findings}
+        loading={loading}
+        error={error}
+      />
+    </>
   );
 }

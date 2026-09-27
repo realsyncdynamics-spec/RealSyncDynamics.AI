@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { OllamaAdapter } from '../../../src/core/ai-gateway/providers/ollamaAdapter';
+import { OllamaAdapter, buildOllamaAuthorization } from '../../../src/core/ai-gateway/providers/ollamaAdapter';
 import type { AiGatewayRequest } from '../../../src/core/ai-gateway/types';
 
 function req(over: Partial<AiGatewayRequest> = {}): AiGatewayRequest {
@@ -87,5 +87,48 @@ describe('OllamaAdapter', () => {
     expect(r.output).toEqual([0.5, 0.6]);
     const body = JSON.parse((fetchImpl as unknown as ReturnType<typeof vi.fn>).mock.calls[0][1].body);
     expect(body.model).toBe('nomic-embed-text');
+  });
+});
+
+
+describe('Ollama auth compatibility', () => {
+  it('infers Basic auth from user:password tokens', () => {
+    expect(buildOllamaAuthorization('kodee:secret')).toBe(`Basic ${btoa('kodee:secret')}`);
+  });
+
+  it('infers Bearer auth from opaque tokens', () => {
+    expect(buildOllamaAuthorization('abc123')).toBe('Bearer abc123');
+  });
+
+  it('respects explicit auth mode overrides', () => {
+    expect(buildOllamaAuthorization('abc123', 'basic')).toBe(`Basic ${btoa('abc123')}`);
+    expect(buildOllamaAuthorization('kodee:secret', 'bearer')).toBe('Bearer kodee:secret');
+  });
+
+  it('sends auth on health, chat and embeddings requests', async () => {
+    const calls: Array<{ url: string; init?: RequestInit }> = [];
+    const fetchImpl = vi.fn(async (url: string, init?: RequestInit) => {
+      calls.push({ url, init });
+      if (url.endsWith('/api/tags')) return jsonResponse({ models: [] });
+      if (url.endsWith('/api/embeddings')) return jsonResponse({ embedding: [0.1] });
+      return jsonResponse({ message: { content: 'ok' } });
+    }) as unknown as typeof fetch;
+
+    const a = new OllamaAdapter({
+      model: 'gemma3:4b',
+      embeddingModel: 'nomic-embed-text',
+      baseUrl: 'https://ollama.example.test',
+      authToken: 'kodee:secret',
+      fetchImpl,
+    });
+
+    await a.health();
+    await a.generate(req());
+    await a.embed(req({ task_type: 'embed' }));
+
+    for (const call of calls) {
+      const headers = new Headers(call.init?.headers);
+      expect(headers.get('authorization')).toBe(`Basic ${btoa('kodee:secret')}`);
+    }
   });
 });

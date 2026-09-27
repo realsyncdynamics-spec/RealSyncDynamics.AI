@@ -51,7 +51,7 @@ export function BaitCompliance() {
               <li className="flex items-start gap-2"><CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" /><span><strong className="text-titanium-50">Append-only Audit-Trail</strong> über alle Datenverarbeitungs-Aktionen (Postgres-Trigger blockt UPDATE/DELETE)</span></li>
               <li className="flex items-start gap-2"><CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" /><span><strong className="text-titanium-50">Auslagerungs-Register</strong> mit AVV-Status pro Sub-Processor + Risiko-Klassifikation</span></li>
               <li className="flex items-start gap-2"><CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" /><span><strong className="text-titanium-50">EU-souveräner KI-Pfad</strong> via Ollama-Local — kein US-Cloud-Default für Kreditscoring/Underwriting</span></li>
-              <li className="flex items-start gap-2"><CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" /><span><strong className="text-titanium-50">Versionierte Compliance-Rules</strong> die BAIT-/MaRisk-/DORA-Mapping aktuell halten</span></li>
+              <li className="flex items-start gap-2"><CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" /><span><strong className="text-titanium-50">Versionierte Compliance-Rules</strong> die BAIT-/MaRisk-Mapping aktuell halten (DORA-Policy-Pack: Roadmap)</span></li>
               <li className="flex items-start gap-2"><CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" /><span><strong className="text-titanium-50">Vor-Notifikation-Vorlagen</strong> für AT-4.5-Auslagerungs-Anzeigen an die BaFin</span></li>
             </ul>
           </Section>

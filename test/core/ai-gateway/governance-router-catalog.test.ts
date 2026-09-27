@@ -11,6 +11,8 @@ import {
   nextExpansionHint,
   ART50_DISCLOSURE_DE,
   MODEL_ALIASES,
+  modelGovernanceControls,
+  governanceMeta,
   type ExpansionStage,
 } from '../../../src/core/ai-gateway/governanceRouterCatalog';
 
@@ -128,6 +130,64 @@ describe('Art. 50 und Auftragsverarbeiter', () => {
   it('Expansion-Hinweis endet auf Sovereign', () => {
     expect(nextExpansionHint('observe')).toMatch(/Starter/);
     expect(nextExpansionHint('sovereign')).toBeNull();
+  });
+});
+
+describe('Frontier governance controls', () => {
+  it('treats frontier as a capability class, not a provider alias', () => {
+    const controls = modelGovernanceControls({
+      capabilityTier: 'frontier',
+      executionScope: 'read_only',
+      sensitiveData: false,
+      residency: 'cloud',
+    });
+
+    expect(controls.policyGateRequired).toBe(true);
+    expect(controls.humanApprovalRequired).toBe(false);
+    expect(controls.evidenceRequired).toBe(true);
+    expect(controls.reasons).toContain('frontier_capability');
+  });
+
+  it('requires human approval for frontier external writes', () => {
+    const controls = modelGovernanceControls({
+      capabilityTier: 'frontier',
+      executionScope: 'external_write',
+      sensitiveData: false,
+      residency: 'cloud',
+    });
+
+    expect(controls.policyGateRequired).toBe(true);
+    expect(controls.humanApprovalRequired).toBe(true);
+    expect(controls.reasons).toContain('external_write');
+  });
+
+  it('always requires approval for privileged execution', () => {
+    const controls = modelGovernanceControls({
+      capabilityTier: 'standard',
+      executionScope: 'privileged',
+      sensitiveData: false,
+      residency: 'eu_local',
+    });
+
+    expect(controls.humanApprovalRequired).toBe(true);
+    expect(controls.reasons).toContain('privileged_execution');
+  });
+
+  it('adds control metadata to the governance response without changing routing', () => {
+    const meta = governanceMeta({
+      residency: 'cloud',
+      stage: 'growth',
+      allowCloud: true,
+      pdpMode: 'enforce',
+      pdpDecision: 'allow',
+      capabilityTier: 'frontier',
+      executionScope: 'external_write',
+      sensitiveData: true,
+    });
+
+    expect(meta.controls.policyGateRequired).toBe(true);
+    expect(meta.controls.humanApprovalRequired).toBe(true);
+    expect(meta.controls.evidenceRequired).toBe(true);
   });
 });
 

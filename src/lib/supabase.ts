@@ -32,8 +32,3 @@ export function getSupabase(): SupabaseClient {
 export function isSupabaseConfigured(): boolean {
   return Boolean(url && anonKey);
 }
-
-// Alias for compatibility with callers that expect createSupabaseClient
-export function createSupabaseClient(): SupabaseClient {
-  return getSupabase();
-}

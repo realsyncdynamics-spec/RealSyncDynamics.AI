@@ -16,7 +16,7 @@ import { fetchTenantAssets, fetchTenantEvidence, fetchTenantPolicies } from '../
 import { listConnectors } from '../gatesApi';
 import { listTenantMappings } from '../../policy-packs/policyPacksApi';
 import type { CockpitData } from '../cockpit/cockpitData';
-import { riskAttentionSignals } from '../dashboard/dashboardSignals';
+import { attentionEmptyKind, openFindings, riskAttentionSignals } from '../dashboard/dashboardSignals';
 import { GovernanceScoreState } from '../cockpit/GovernanceScoreState';
 import { useLang } from '../../../i18n/useLang';
 import {
@@ -26,7 +26,9 @@ import {
   classifiedSystemClasses,
   classifyAsset,
   frameworkProgress,
+  HIGH_RISK_SYSTEMS_ROUTE,
   isAiSystemAsset,
+  isHighRiskAiSystem,
   shortHash,
   type EnforcementClass,
 } from './enforcementModel';
@@ -73,6 +75,7 @@ export function HandoffOverview({
   loading = false,
   error = null,
   onRetry,
+  reloadKey = 0,
 }: {
   activeTenantId: string | null;
   data: CockpitData | null;
@@ -80,9 +83,11 @@ export function HandoffOverview({
   /** loadCockpitData abgelehnt — Score-Fehlerzustand, kein Leerzustand. */
   error?: string | null;
   onRetry?: () => void;
+  /** Erhöht beim „Erneut laden“ des Dashboards — lädt auch diese Kacheln neu. */
+  reloadKey?: number;
 }) {
   const { t, lang } = useLang();
-  const [state] = useTenantLoad(activeTenantId, loadOverview);
+  const [state] = useTenantLoad(activeTenantId, loadOverview, [reloadKey]);
   if (!activeTenantId) return null;
 
   const ready = state.status === 'ready' ? state.data : null;
@@ -90,7 +95,7 @@ export function HandoffOverview({
 
   const aiAssets = ready ? ready.assets.filter(isAiSystemAsset) : [];
   const unclassified = aiAssets.filter((a) => a.ai_act_class === 'unknown');
-  const high = aiAssets.filter((a) => a.ai_act_class === 'high' || a.ai_act_class === 'prohibited');
+  const high = aiAssets.filter(isHighRiskAiSystem);
   const enabledPolicies = ready ? ready.policies.filter((p) => p.enabled) : [];
   const logOnly = enabledPolicies.filter((p) => p.action === 'log');
   const classes = ready ? classifiedSystemClasses(ready.assets, ready.connectors) : [];
@@ -126,6 +131,16 @@ export function HandoffOverview({
   const score = scoreStatus === 'ok' ? data?.score ?? null : null;
   const cockpitHas = (name: string) =>
     data !== null && !data.partialFailures.some((f) => f.startsWith(`${name}:`));
+  // Leerzustand von „Braucht Aufmerksamkeit“: nur „Nichts offen“, wenn alle
+  // Quellen der Liste geladen sind UND es überhaupt etwas zu bewerten gibt.
+  const attentionSources = ['incident-list', 'dpia-list', 'dsr-list', 'assets', 'findings', 'findings-table', 'scan-latest'];
+  const emptyKind = attentionEmptyKind({
+    sourcesComplete:
+      !error && data !== null && has('assets') && has('connectors') && attentionSources.every(cockpitHas),
+    assetCount: ready ? ready.assets.length : 0,
+    lastScanAt: data?.signals?.lastScanAt ?? null,
+    findings: data?.signals?.findings ?? null,
+  });
   const evidenceTotal = cockpitHas('evidence-total') ? data!.evidenceHealth.totalCount : null;
   const evidenceHashed = cockpitHas('evidence-hashed') ? data!.evidenceHealth.hashedCount : null;
   const trend = data?.readinessTrend ?? null;
@@ -165,6 +180,7 @@ export function HandoffOverview({
               <GovernanceScoreState
                 status={scoreStatus}
                 basis={data?.scoreBasis ?? null}
+                postureStatus={data?.postureStatus}
                 onRetry={onRetry}
                 testId="overview-score-state"
               />
@@ -222,7 +238,7 @@ export function HandoffOverview({
           sub={has('assets') ? t('kHighSubReal') : null}
           accent="var(--color-rs-warning)"
           testId="kpi-high"
-          to="/app/ai-systems"
+          to={HIGH_RISK_SYSTEMS_ROUTE}
         />
         <StatCard
           label={t('kPolicies')}
@@ -300,13 +316,41 @@ export function HandoffOverview({
         <h2 id="attention-heading" className="rs-overline mb-3">
           {t('attention')}
         </h2>
-        {!ready ? (
+        {!ready || (loading && !data) ? (
           <p className="rs-note">{t('loading')}</p>
         ) : attention.length === 0 ? (
           <Panel>
-            <p className="rs-note" data-testid="attention-empty">
-              {t('attentionNone')}
-            </p>
+            {emptyKind === 'unavailable' ? (
+              <p className="rs-note" data-testid="attention-unavailable">
+                {t('attentionUnavailable')}
+              </p>
+            ) : emptyKind === 'minor_open' ? (
+              <div data-testid="attention-minor">
+                <p className="rs-note">
+                  {t('attentionMinorOpen', { n: openFindings(data?.signals?.findings ?? []).length })}
+                </p>
+                <Link to="/app/scans" className="rs-note rs-cyan mt-3 inline-block">
+                  {t('attentionMinorOpenLink')} →
+                </Link>
+              </div>
+            ) : emptyKind === 'no_data' ? (
+              <div data-testid="attention-nodata">
+                <p className="rs-note">{t('attentionNoData')}</p>
+                <div className="mt-3 flex flex-wrap gap-4">
+                  {/* Gleiches Ziel wie der Einstieg in der Score-Karte: dort wird angelegt. */}
+                  <Link to="/app/onboarding" className="rs-note rs-cyan">
+                    {t('attentionNoDataSystem')} →
+                  </Link>
+                  <Link to="/app/websites" className="rs-note rs-cyan">
+                    {t('attentionNoDataAudit')} →
+                  </Link>
+                </div>
+              </div>
+            ) : (
+              <p className="rs-note" data-testid="attention-empty">
+                {t('attentionNone')}
+              </p>
+            )}
           </Panel>
         ) : (
           <div className="rs-attention">

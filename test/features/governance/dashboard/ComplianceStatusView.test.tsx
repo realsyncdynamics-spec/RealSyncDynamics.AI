@@ -528,8 +528,9 @@ describe('Gate 1 — Ladefehler sind nie „alles gut“', () => {
   });
 
   it('alle Quellen geladen ⇒ echte Leerzustände bleiben', () => {
-    const { getByTestId } = rendered({ data: fixture() });
+    // Ein offener Posten, damit nicht die Einstiegsansicht des leeren Mandanten greift.
+    const { getByTestId } = rendered({ data: fixture({ counts: { ...ZERO, approvals: 1 } }) });
     expect(getByTestId('no-critical-findings')).toBeInTheDocument();
-    expect(getByTestId('open-measures').textContent).toContain('0 offene Posten');
+    expect(getByTestId('open-measures').textContent).toContain('1 offene Posten');
   });
 });

@@ -1,16 +1,25 @@
 // Monitoring-Kopfzeile — reine Ableitung aus echten Mandantenquellen (Gate 1).
 // Ohne React/Supabase, damit sie ohne Umgebung testbar ist.
-import type { Summary24h } from '../dashboard/complianceStatus';
+//
+// Quelle der Wahrheit ist `monitoring_sources`: Der Scheduler
+// (governance-monitoring-scheduler) setzt dort status, last_scan_at und
+// next_scan_at. `scan_runs` kommt vom separaten Website-Audit (tenant-audit)
+// und zählt nur beim „letzten Scan“ mit.
 
-/** Scan-Läufe, die für „Scans (24 h)“ höchstens geladen werden. */
-export const SCAN_WINDOW_LIMIT = 200;
+/** Schlanke Zeile aus `monitoring_sources`. */
+export interface MonitoringSourceRow {
+  status: 'pending' | 'active' | 'paused' | 'error' | string;
+  last_scan_at: string | null;
+  next_scan_at: string | null;
+}
 
 export type MonitoringStatus = 'active' | 'no_sources' | 'unknown';
 
 export interface MonitoringHeader {
   status: MonitoringStatus;
-  assets: string;
-  scans24h: string;
+  /** „aktiv/gesamt“ der Monitoring-Quellen. */
+  sources: string;
+  failingSources: string;
   openIncidents: string;
   lastScan: string;
   nextScan: string;
@@ -32,37 +41,57 @@ function clockDe(iso: string, now: number): string {
   return sameDay ? time : `${at.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', timeZone: 'Europe/Berlin' })} ${time}`;
 }
 
+function latest(values: ReadonlyArray<string | null | undefined>): string | null {
+  let best: string | null = null;
+  for (const v of values) {
+    if (v && (best === null || new Date(v).getTime() > new Date(best).getTime())) best = v;
+  }
+  return best;
+}
+
+function earliest(values: ReadonlyArray<string | null | undefined>): string | null {
+  let best: string | null = null;
+  for (const v of values) {
+    if (v && (best === null || new Date(v).getTime() < new Date(best).getTime())) best = v;
+  }
+  return best;
+}
+
 /**
  * Kopfzeile aus echten Quellen. `null` = Quelle nicht ladbar ⇒ „—“ (nie eine
- * Ersatzzahl). Status „aktiv“ nur mit aktiver Monitoring-Quelle laut
- * governance_24h_summary.
+ * Ersatzzahl). „AKTIV“ nur mit mindestens einer aktiven Monitoring-Quelle.
  */
 export function buildMonitoringHeader(input: {
-  assets: number | null;
+  sources: ReadonlyArray<MonitoringSourceRow> | null;
   openIncidents: number | null;
-  scanRuns: ReadonlyArray<{ created_at: string }> | null;
-  summary: Summary24h | null;
-  summaryFailed: boolean;
+  /** Neuester Website-Audit-Lauf (scan_runs); `null` = nicht ladbar. */
+  latestAuditRuns: ReadonlyArray<{ created_at: string }> | null;
   now?: number;
 }): MonitoringHeader {
   const now = input.now ?? Date.now();
-  const runs = input.scanRuns;
-  let scans24h = '—';
-  if (runs) {
-    const recent = runs.filter((r) => now - new Date(r.created_at).getTime() <= 86_400_000).length;
-    scans24h = runs.length >= SCAN_WINDOW_LIMIT && recent === runs.length ? `${recent}+` : String(recent);
+  const sources = input.sources;
+  const active = sources?.filter((s) => s.status === 'active') ?? null;
+
+  const status: MonitoringStatus = sources === null ? 'unknown' : active!.length > 0 ? 'active' : 'no_sources';
+
+  let lastScan = '—';
+  if (sources !== null && input.latestAuditRuns !== null) {
+    const last = latest([...sources.map((s) => s.last_scan_at), input.latestAuditRuns[0]?.created_at]);
+    lastScan = last ? relativeDe(last, now) : 'Noch kein Scan';
   }
-  const status: MonitoringStatus = input.summaryFailed || input.summary === null
-    ? 'unknown'
-    : input.summary.active_sources > 0 ? 'active' : 'no_sources';
+
+  let nextScan = '—';
+  if (active !== null) {
+    const next = earliest(active.map((s) => s.next_scan_at));
+    nextScan = active.length === 0 ? 'Keine aktive Quelle' : next ? clockDe(next, now) : 'Nicht geplant';
+  }
+
   return {
     status,
-    assets: input.assets === null ? '—' : String(input.assets),
-    scans24h,
+    sources: sources === null ? '—' : `${active!.length}/${sources.length}`,
+    failingSources: sources === null ? '—' : String(sources.filter((s) => s.status === 'error').length),
     openIncidents: input.openIncidents === null ? '—' : String(input.openIncidents),
-    lastScan: runs === null ? '—' : runs.length === 0 ? 'Noch kein Scan' : relativeDe(runs[0].created_at, now),
-    nextScan: input.summaryFailed || input.summary === null
-      ? '—'
-      : input.summary.next_scan_at ? clockDe(input.summary.next_scan_at, now) : 'Nicht geplant',
+    lastScan,
+    nextScan,
   };
 }

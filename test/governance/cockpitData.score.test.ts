@@ -385,3 +385,37 @@ describe('sourcesOk', () => {
     expect(sourcesOk(null, ACTION_SOURCES)).toBe(false);
   });
 });
+
+describe('mergeFindingSources — ein Befund, zwei Speicher', () => {
+  const event = (id: string, payload: Record<string, unknown> = {}) => ({
+    id, tenant_id: 't1', asset_id: null, policy_id: null, event_type: 'email_auth_finding',
+    event_source: 'website_scanner', title: 'DMARC fehlt', summary: null, risk_level: 'medium',
+    actor_email: null, vendor: null, model_name: null, data_types: [], policy_action: null,
+    payload, created_at: '2026-09-26T10:00:00Z',
+  });
+  const row = (id: string, event_id: string | null = null) => ({
+    id, severity: 'medium' as const, status: 'open' as const, summary: 'DMARC fehlt', detector: 'email-auth-rescan',
+    scan_run_id: null, website_id: 'w1', created_at: '2026-09-26T10:00:00Z', event_id,
+  });
+
+  it('Event mit payload.finding_id der Tabellenzeile ⇒ nur einmal (Tabelle gewinnt)', async () => {
+    const { mergeFindingSources } = await import('../../src/features/governance/cockpit/cockpitData');
+    const merged = mergeFindingSources(
+      [event('ev1', { finding_id: 'fx1' })] as never,
+      [row('fx1')] as never,
+    );
+    expect(merged.map((f) => f.id)).toEqual(['fx1']);
+  });
+
+  it('Legacy-Zwilling über raw_payload.event_id ⇒ ebenfalls nur einmal', async () => {
+    const { mergeFindingSources } = await import('../../src/features/governance/cockpit/cockpitData');
+    const merged = mergeFindingSources([event('legacy-ev')] as never, [row('fx2', 'legacy-ev')] as never);
+    expect(merged.map((f) => f.id)).toEqual(['fx2']);
+  });
+
+  it('unverbundene Befunde bleiben beide erhalten', async () => {
+    const { mergeFindingSources } = await import('../../src/features/governance/cockpit/cockpitData');
+    const merged = mergeFindingSources([event('ev3')] as never, [row('fx3')] as never);
+    expect(merged.map((f) => f.id).sort()).toEqual(['ev3', 'fx3']);
+  });
+});

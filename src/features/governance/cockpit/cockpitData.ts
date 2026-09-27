@@ -14,10 +14,10 @@ import {
   fetchTenantAssets, fetchTenantEvents, fetchTenantEvidence, fetchTenantFindingEvents,
   type DbGovernanceEvent,
 } from '../governanceApi';
-import { listOpenFindingsForTenant, listScanRuns } from '../scans/scansApi';
+import { listOpenFindingsForTenant, listScanRuns, type OpenFindingRow } from '../scans/scansApi';
 import {
   elevatedAssetsOf, findingsFromTable, pairFindings, resolutionIndex, resolvesEventIdOf,
-  type DashboardSignals, type Resolution,
+  type DashboardSignals, type Resolution, type ScanFinding,
 } from '../dashboard/dashboardSignals';
 import type { DbGovernanceKpiSnapshot } from '../analytics/types';
 import {
@@ -125,6 +125,29 @@ export function sourcesOk(
 ): boolean {
   if (!data) return false;
   return !data.partialFailures.some((failure) => names.some((name) => failure.startsWith(`${name}:`)));
+}
+
+/**
+ * Befunde aus beiden Speichern, ohne Doppelte. email-auth-rescan schreibt
+ * denselben Befund als `findings`-Zeile und als governance_events-Befund
+ * (payload.finding_id ↔ raw_payload.event_id). Die Tabellenzeile ist
+ * kanonisch (Status, „behoben, wartet auf Nachprüfung“); ihr Event-Zwilling
+ * fällt weg.
+ */
+export function mergeFindingSources(
+  events: DbGovernanceEvent[],
+  rows: readonly OpenFindingRow[],
+): ScanFinding[] {
+  const tableIds = new Set(rows.map((row) => row.id));
+  const twinEventIds = new Set(rows.map((row) => row.event_id).filter((id): id is string => Boolean(id)));
+  for (const event of events) {
+    const findingId = event.payload?.finding_id;
+    if (typeof findingId === 'string' && tableIds.has(findingId)) twinEventIds.add(event.id);
+  }
+  return [
+    ...pairFindings(events).filter((finding) => !twinEventIds.has(finding.id)),
+    ...findingsFromTable(rows),
+  ];
 }
 
 /** Schlanke Runtime-Events für den Command-Center-Stream (kein Payload). */
@@ -348,7 +371,7 @@ export async function loadCockpitData(tenantId: string): Promise<CockpitData> {
     // Beide Befund-Quellen oder keine Aussage: fehlt eine, wäre „keine
     // offenen Befunde“ unbelegt.
     findings: findingEvents.status === 'fulfilled' && openFindingRows.status === 'fulfilled'
-      ? [...pairFindings(findingEvents.value), ...findingsFromTable(openFindingRows.value)]
+      ? mergeFindingSources(findingEvents.value, openFindingRows.value)
       : null,
     // Nur scan_runs: Scanner-/Seed-Events sind kein Beleg für einen Audit-Lauf.
     lastScanAt: val(latestScanRuns, [])[0]?.created_at ?? null,

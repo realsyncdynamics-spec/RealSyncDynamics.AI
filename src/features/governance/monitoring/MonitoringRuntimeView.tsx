@@ -6,12 +6,11 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { MonitoringSurface } from '../../../pages/MonitoringPage';
 import { useTenant } from '../../../core/access/TenantProvider';
-import { fetchTenantAssets } from '../governanceApi';
+import { getSupabase } from '../../../lib/supabase';
 import { countOpenIncidents } from '../incidentsApi';
 import { listScanRuns } from '../scans/scansApi';
-import { fetch24hSummary } from '../cockpit/cockpitData';
 import {
-  buildMonitoringHeader, SCAN_WINDOW_LIMIT, type MonitoringHeader, type MonitoringStatus,
+  buildMonitoringHeader, type MonitoringHeader, type MonitoringSourceRow, type MonitoringStatus,
 } from './monitoringHeader';
 import { AuthGate } from '../../kodee/connections/AuthGate';
 import { withPerformanceMonitoring } from '../withPerformanceMonitoring';
@@ -26,9 +25,17 @@ const STATUS_BADGE: Record<MonitoringStatus, { label: string; className: string;
   unknown: { label: 'STATUS UNBEKANNT', className: 'text-titanium-500', pulse: false },
 };
 
-const EMPTY_HEADER = buildMonitoringHeader({
-  assets: null, openIncidents: null, scanRuns: null, summary: null, summaryFailed: false,
-});
+const EMPTY_HEADER = buildMonitoringHeader({ sources: null, openIncidents: null, latestAuditRuns: null });
+
+/** Monitoring-Quellen des Mandanten (RLS-gescoped); wirft bei Fehler. */
+async function fetchMonitoringSources(tenantId: string): Promise<MonitoringSourceRow[]> {
+  const { data, error } = await getSupabase()
+    .from('monitoring_sources')
+    .select('status,last_scan_at,next_scan_at')
+    .eq('tenant_id', tenantId);
+  if (error) throw new Error(error.message);
+  return (data ?? []) as MonitoringSourceRow[];
+}
 
 /** Beispieldaten-Hinweis: diese Abschnitte sind noch nicht an den Mandanten angebunden. */
 function PreviewNotice() {
@@ -649,18 +656,15 @@ export function MonitoringRuntimeView() {
     setHeader(EMPTY_HEADER);
     if (!activeTenantId) return;
     void Promise.allSettled([
-      fetchTenantAssets(activeTenantId),
+      fetchMonitoringSources(activeTenantId),
       countOpenIncidents(activeTenantId),
-      listScanRuns(activeTenantId, { limit: SCAN_WINDOW_LIMIT }),
-      fetch24hSummary(activeTenantId),
-    ]).then(([assets, incidents, runs, summary]) => {
+      listScanRuns(activeTenantId, { limit: 1 }),
+    ]).then(([sources, incidents, runs]) => {
       if (cancelled) return;
       setHeader(buildMonitoringHeader({
-        assets: assets.status === 'fulfilled' ? assets.value.length : null,
+        sources: sources.status === 'fulfilled' ? sources.value : null,
         openIncidents: incidents.status === 'fulfilled' ? incidents.value : null,
-        scanRuns: runs.status === 'fulfilled' ? runs.value : null,
-        summary: summary.status === 'fulfilled' ? summary.value : null,
-        summaryFailed: summary.status === 'rejected',
+        latestAuditRuns: runs.status === 'fulfilled' ? runs.value : null,
       }));
     });
     return () => { cancelled = true; };
@@ -693,8 +697,8 @@ export function MonitoringRuntimeView() {
 
         {/* Metriken-Reihe */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-px bg-titanium-900">
-          <MetricCard label="Überwachte Assets" value={header.assets} />
-          <MetricCard label="Scans (24 h)"       value={header.scans24h} />
+          <MetricCard label="Aktive Quellen"     value={header.sources} />
+          <MetricCard label="Quellen mit Fehler" value={header.failingSources} valueClass={header.failingSources !== '—' && header.failingSources !== '0' ? 'text-red-400' : undefined} />
           <MetricCard label="Offene Vorfälle"    value={header.openIncidents} valueClass={header.openIncidents !== '—' && header.openIncidents !== '0' ? 'text-red-400' : undefined} />
           <MetricCard label="Letzter Scan"       value={header.lastScan} valueClass="text-teal-400" />
           <MetricCard label="Nächster Scan"      value={header.nextScan} />

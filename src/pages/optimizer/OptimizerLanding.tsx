@@ -27,7 +27,7 @@ const TIERS: { name: string; highlight?: boolean; feature: string }[] = [
   { name: 'Gratis', feature: 'Score + Kategorie-Übersicht' },
   { name: 'Bronze', feature: 'Vollständiger Bericht + Fix-Anleitung' },
   { name: 'Silber', highlight: true, feature: 'Auto-Fix für ausgewählte Befunde' },
-  { name: 'Gold', feature: 'Kontinuierliches Monitoring' },
+  { name: 'Gold', feature: 'Kontinuierliches Monitoring (Coming Soon)' },
   { name: 'Platin', feature: 'Priorisierte Analyse + Reports' },
   { name: 'Diamant', feature: 'Dedizierter Umfang + SLA' },
 ];

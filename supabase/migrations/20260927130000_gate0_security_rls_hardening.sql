@@ -1,43 +1,12 @@
--- Gate 0 — Security Hardening (Mandantentrennung vor jeder Dashboard-Arbeit)
+-- Gate 0 — Ergänzung zu #1629 (Mandantentrennung vor jeder Dashboard-Arbeit)
 --
--- Gemessen am 2026-09-27 gegen das voll migrierte Schema (alle Migrationen,
--- CI-Bootstrap): Drei Klassen von Lücken, jede einzeln geprüft — nicht
--- pauschal geändert.
+-- #1629 (20260927120000_gate0_rls_hardening.sql) härtet die „Service role“-
+-- Policies, die KI-Governance-Tabellen, ai_evidence_events, memberships und
+-- die Views agent_token_usage_analytics/api_monthly_usage. Diese Migration
+-- trägt nur, was dort fehlt — gemessen am 2026-09-27 gegen das voll migrierte
+-- Schema, jeder Fall einzeln geprüft. Sie ist unabhängig von #1629 lauffähig.
 --
--- 1. Policies mit `true`, die als „Service role …“ benannt sind, aber ohne
---    `TO service_role` angelegt wurden. Sie gelten damit für PUBLIC, also
---    auch für anon und authenticated. service_role umgeht RLS ohnehin
---    (BYPASSRLS); die Policies haben für den Server-Weg nie etwas bewirkt,
---    für den Browser dagegen alles geöffnet:
---      governance_audit_log        INSERT  → Prüfpfad fälschbar
---      website_compliance_reports  INSERT  → Berichte für fremde Mandanten anlegbar
---                                  UPDATE  → heute nur durch die SELECT-Policy
---                                            (20260924033000) gebremst; mitgehärtet
---      deployment_logs             INSERT
---      dashboard_notifications     INSERT  → Benachrichtigungen an beliebige Nutzer
---      api_calls                   INSERT  → Nutzungszähler fremder Mandanten manipulierbar
---      email_notifications         INSERT
---      agent_token_usage           INSERT, SELECT → Verbrauch aller Mandanten lesbar
---      agent_configuration         ALL     → Budgets fremder Mandanten lesbar und änderbar
---    Korrektur: `ALTER POLICY … TO service_role`. Die Policies bleiben
---    bestehen, nur ihre Rollenbindung wird korrekt. Legitime Schreiber sind
---    ausschliesslich Edge Functions mit Admin-Client und SECURITY-DEFINER-
---    Funktionen (Tabelleneigentümer, umgehen RLS) — beide unberührt.
---    agent_token_usage behält eine Leseregel für Mitglieder des eigenen
---    Mandanten.
---
---    Bewusst NICHT geändert (geprüft, gewollt):
---      * Read-all-Policies auf Referenzkatalogen ohne tenant_id
---        (framework_controls, compliance_frameworks, iso_control_*,
---        policy_pack_*, agent_profiles, workflow_templates,
---        webhook_event_types, sub_processor_changes).
---      * sub_processor_subscriptions „sp_sub_anon_insert“: öffentliche
---        Anmeldung für Art.-28-Hinweise, laut 20260507140000 so gewollt.
---        Restrisiko (frei wählbare tenant_id beim Anmelden) ist im PR
---        dokumentiert und gehört in eine eigene Entscheidung.
---      * webhook_deliveries: im Endschema bereits auf service_role gebunden.
---
--- 2. scan_results — die Lese-Policy aus 20260714000002 vergleicht
+-- 1. scan_results — die Lese-Policy aus 20260714000002 vergleicht
 --    `tenant_id = (SELECT tenant_id FROM auth.users …)`. auth.users hat
 --    keine Spalte tenant_id; Postgres bindet den Namen deshalb an die ÄUSSERE
 --    Zeile (scan_results.tenant_id). Die Bedingung lautet effektiv
@@ -46,30 +15,24 @@
 --    Abfrage bricht mit „permission denied for table users“ ab. Die Tabelle
 --    ist damit für jeden Browser-Nutzer unlesbar (auch den eigenen Mandanten),
 --    und ein künftiger Grant auf auth.users öffnete das Cross-Tenant-Leck.
---    Korrektur: kanonische Mitgliedschaft über public.is_tenant_member
---    (→ public.memberships).
+--    Korrektur: kanonische Mitgliedschaft über public.is_tenant_member.
 --
--- 3. SECURITY-DEFINER-Funktionen mit p_tenant_id ohne Mitgliedschaftsprüfung,
+-- 2. SECURITY-DEFINER-Funktionen mit p_tenant_id ohne Mitgliedschaftsprüfung,
 --    aber für authenticated ausführbar: mcp_plan_limits, mcp_quota_state,
 --    mcp_active_key_count, llm_quota_for_tenant, llm_quota_used_for_tenant.
+--    Ein fremder Nutzer las Plan, Kontingent und Key-Anzahl jedes Mandanten.
 --    Einzige Aufrufer sind Edge Functions über den Admin-Client
 --    (mcp-api-key-manager, governance-agent, _shared/llm-quota.ts).
 --    Korrektur: dieselbe Regel wie tenant_entitlements() (20260920130000):
 --    service_role sieht alles, ein Nutzer nur seinen eigenen Mandanten,
 --    alle anderen nichts (Tabellenfunktionen: keine Zeile; Skalare: NULL).
 --
--- 4. Views über gehärtete Tabellen: agent_token_usage_analytics und
---    api_monthly_usage liefen ohne security_invoker mit den Rechten ihres
---    Eigentümers und umgingen damit die RLS der Basistabelle — anon las über
---    sie Zeilen fremder Mandanten, obwohl der direkte Zugriff 0 Zeilen
---    liefert. Mit security_invoker gilt die Policy der Basistabelle.
---    Identisch mit #1629 (dort gefunden); idempotent, falls beide landen.
---    Folge-Befund: Die Lese-Policy auf api_calls prüft gegen
---    tenant_memberships (einmal befüllt, kein Sync-Trigger). Erst durch
---    security_invoker greift sie wirklich — Mitglieder, die nur in
---    memberships stehen, sähen ihre eigene API-Nutzung (ApiUsageStats) nicht
---    mehr. Deshalb additiv eine Leseregel über die kanonische Mitgliedschaft
---    (is_tenant_member → public.memberships); die alte Policy bleibt.
+-- 3. api_calls — die Lese-Policy prüft gegen tenant_memberships (einmal
+--    befüllt, kein Sync-Trigger). Solange api_monthly_usage die RLS umging,
+--    fiel das nicht auf. Mit security_invoker (#1629) greift sie wirklich:
+--    Mitglieder, die nur in memberships stehen, sähen ihre eigene
+--    API-Nutzung (ApiUsageStats) nicht mehr. Additive Leseregel über die
+--    kanonische Mitgliedschaft; die alte Policy bleibt.
 --
 -- Kanonische Mandanten-Autorität bleibt: JWT → public.memberships →
 -- tenant_id. tenant_memberships wird hier nicht verwendet.
@@ -77,54 +40,14 @@
 -- Nicht destruktiv: keine Tabelle, Spalte, Funktion oder Policy entfernt.
 -- Geprüft durch test/runtime/db/gate0-security-hardening.db.test.ts.
 
--- ─── 1. Service-Role-Policies korrekt binden ────────────────────────────────
-
-DO $$
-DECLARE
-  r record;
-BEGIN
-  FOR r IN
-    SELECT * FROM (VALUES
-      ('governance_audit_log',       'Service role can insert audit entries'),
-      ('website_compliance_reports', 'Service role can insert/update reports'),
-      ('website_compliance_reports', 'Service role can update reports'),
-      ('deployment_logs',            'Service role can insert logs'),
-      ('dashboard_notifications',    'Service role can create notifications'),
-      ('api_calls',                  'api_calls service_role_insert'),
-      ('email_notifications',        'email_notifications service_role_insert'),
-      ('agent_token_usage',          'Service role can insert token usage'),
-      ('agent_token_usage',          'Service role can view token usage'),
-      ('agent_configuration',        'Service role can manage agent config')
-    ) AS v(tbl, pol)
-  LOOP
-    IF EXISTS (
-      SELECT 1 FROM pg_policies
-      WHERE schemaname = 'public' AND tablename = r.tbl AND policyname = r.pol
-    ) THEN
-      EXECUTE format('ALTER POLICY %I ON public.%I TO service_role', r.pol, r.tbl);
-    ELSE
-      -- Kein stilles Überspringen: Fehlt die Policy, ist das Schema anders als
-      -- gemessen. Die Invariante im DB-Test fängt eine umbenannte Variante.
-      RAISE NOTICE 'gate0: Policy % auf % nicht vorhanden — übersprungen', r.pol, r.tbl;
-    END IF;
-  END LOOP;
-END $$;
-
--- Mitglieder lesen den Token-Verbrauch ihres eigenen Mandanten weiter.
-DROP POLICY IF EXISTS "agent_token_usage tenant_member_read" ON public.agent_token_usage;
-CREATE POLICY "agent_token_usage tenant_member_read"
-  ON public.agent_token_usage FOR SELECT
-  TO authenticated
-  USING (public.is_tenant_member(tenant_id));
-
--- ─── 2. scan_results: kanonische Mitgliedschaft ─────────────────────────────
+-- ─── 1. scan_results: kanonische Mitgliedschaft ─────────────────────────────
 
 ALTER POLICY "Users can view their tenant's scan results"
   ON public.scan_results
   TO authenticated
   USING (public.is_tenant_member(tenant_id));
 
--- ─── 3. SECURITY-DEFINER-Funktionen: Mitgliedschafts-Guard ──────────────────
+-- ─── 2. SECURITY-DEFINER-Funktionen: Mitgliedschafts-Guard ──────────────────
 --
 -- Gleiche Signaturen und Rückgabetypen, gleiche Rechte (CREATE OR REPLACE
 -- behält die ACL). Nur der Guard kommt hinzu.
@@ -219,10 +142,7 @@ AS $$
   END;
 $$;
 
--- ─── 4. Views über gehärteten Tabellen: RLS nicht mehr umgehen ──────────────
-
-ALTER VIEW public.agent_token_usage_analytics SET (security_invoker = on);
-ALTER VIEW public.api_monthly_usage SET (security_invoker = on);
+-- ─── 3. api_calls: Leseregel über die kanonische Mitgliedschaft ─────────────
 
 DROP POLICY IF EXISTS "api_calls member_read_canonical" ON public.api_calls;
 CREATE POLICY "api_calls member_read_canonical"

@@ -1,23 +1,22 @@
 /**
- * Gate 0 — Security Hardening (20260927130000_gate0_security_rls_hardening.sql).
+ * Gate 0 — Ergänzung zu #1629 (20260927130000_gate0_security_rls_hardening.sql).
  *
- * Drei Zugriffsklassen, je mit Negativtest (fremder Mandant, anon) und dem
- * legitimen Server-Weg (service_role), damit die Härtung nichts bricht:
+ * Nur die Teile, die #1629 nicht abdeckt — je mit Negativtest (fremder
+ * Mandant, anon) und dem legitimen Weg (Mitglied, service_role):
  *
- *   1. „Service role …“-Policies, die ohne `TO service_role` für PUBLIC
- *      galten → Browser konnte Prüfpfad, Berichte, Benachrichtigungen,
- *      Zähler und Agent-Budgets fremder Mandanten schreiben/lesen.
- *   2. scan_results: `tenant_id = (SELECT tenant_id FROM auth.users …)` —
+ *   1. scan_results: `tenant_id = (SELECT tenant_id FROM auth.users …)` —
  *      auth.users hat keine Spalte tenant_id, der Name bindet an die äußere
  *      Zeile, die Bedingung ist immer wahr. Heute bricht sie nur ab, weil
  *      authenticated auth.users nicht lesen darf („permission denied") — die
  *      Tabelle war für Mitglieder unlesbar, ein Grant hätte sie geöffnet.
- *   3. SECURITY-DEFINER-Funktionen mit p_tenant_id ohne Mitgliedschaftsprüfung
+ *   2. SECURITY-DEFINER-Funktionen mit p_tenant_id ohne Mitgliedschaftsprüfung
  *      (mcp_*, llm_quota_*), aber für authenticated ausführbar.
+ *   3. api_calls: Leseregel über public.memberships statt nur über das nicht
+ *      synchronisierte tenant_memberships.
  *
- * Läuft gegen das voll migrierte Schema (CI-db-Job). Die Rollen werden echt
- * gewechselt (SET LOCAL ROLE), auth.uid()/auth.role() lesen die JWT-Claims —
- * derselbe Weg wie in Supabase, kein nachgebauter.
+ * Läuft gegen das voll migrierte Schema (CI-db-Job), mit und ohne #1629. Die
+ * Rollen werden echt gewechselt (SET LOCAL ROLE), auth.uid()/auth.role() lesen
+ * die JWT-Claims — derselbe Weg wie in Supabase, kein nachgebauter.
  */
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { closeDb, createTenantWithMember, openDb, requireDbOrFail, type DbCtx } from './db-helpers';
@@ -46,204 +45,27 @@ async function als<T>(ctx: DbCtx, rolle: Rolle, sub: string | null, fn: () => Pr
   }
 }
 
-/** RLS-Verstoß (WITH CHECK) oder fehlendes Recht: beides SQLSTATE 42501. */
+/** Fehlendes Recht (z. B. EXECUTE für anon): SQLSTATE 42501. */
 const VERWEIGERT = { code: '42501' };
 
 interface Welt {
   a: { tenantId: string; userId: string };
   b: { tenantId: string; userId: string };
-  projektB: string;
   apiKeyB: string;
 }
 
 async function welt(ctx: DbCtx): Promise<Welt> {
   const a = await createTenantWithMember(ctx);
   const b = await createTenantWithMember(ctx);
-  const { rows: p } = await ctx.client.query<{ id: string }>(
-    `INSERT INTO public.website_projects (tenant_id, name, industry) VALUES ($1, 'b-site', 'test') RETURNING id`,
-    [b.tenantId],
-  );
   const { rows: k } = await ctx.client.query<{ id: string }>(
     `INSERT INTO public.api_keys (tenant_id, name, key_hash, key_prefix)
      VALUES ($1, 'b-key', md5(random()::text), 'rs_live_b123') RETURNING id`,
     [b.tenantId],
   );
-  return { a, b, projektB: p[0]!.id, apiKeyB: k[0]!.id };
+  return { a, b, apiKeyB: k[0]!.id };
 }
 
-/**
- * Je Tabelle ein vollständiger, constraint-gültiger Insert für Mandant B —
- * scheitert er, dann an der Policy, nicht an Pflichtfeldern oder FKs.
- */
-function inserts(w: Welt): Array<{ tabelle: string; sql: string; params: unknown[] }> {
-  const t = w.b.tenantId;
-  return [
-    {
-      tabelle: 'governance_audit_log',
-      sql: `INSERT INTO public.governance_audit_log (tenant_id, action, resource_type, resource_id, user_id)
-            VALUES ($1, 'policy.delete', 'policy', 'x', $2)`,
-      params: [t, w.b.userId],
-    },
-    {
-      tabelle: 'dashboard_notifications',
-      sql: `INSERT INTO public.dashboard_notifications (tenant_id, user_id, type, title, body)
-            VALUES ($1, $2, 'alert', 'phish', 'klick hier')`,
-      params: [t, w.b.userId],
-    },
-    {
-      tabelle: 'email_notifications',
-      sql: `INSERT INTO public.email_notifications (tenant_id, recipient_email, event_type, subject, body)
-            VALUES ($1, 'x@example.com', 'quota_warning', 's', 'b')`,
-      params: [t],
-    },
-    {
-      tabelle: 'agent_token_usage',
-      sql: `INSERT INTO public.agent_token_usage (tenant_id, tokens_used, prompt_type) VALUES ($1, 999999, 'x')`,
-      params: [t],
-    },
-    {
-      tabelle: 'api_calls',
-      sql: `INSERT INTO public.api_calls (tenant_id, api_key_id, endpoint, method, request_path)
-            VALUES ($1, $2, '/x', 'GET', '/x')`,
-      params: [t, w.apiKeyB],
-    },
-    {
-      tabelle: 'deployment_logs',
-      sql: `INSERT INTO public.deployment_logs (project_id, tenant_id, event_type, title)
-            VALUES ($1, $2, 'deploy', 'gefälscht')`,
-      params: [w.projektB, t],
-    },
-    {
-      tabelle: 'website_compliance_reports',
-      sql: `INSERT INTO public.website_compliance_reports (project_id, tenant_id, overall_score)
-            VALUES ($1, $2, 100)`,
-      params: [w.projektB, t],
-    },
-  ];
-}
-
-d('Gate 0 · Klasse 1 — Service-Role-Policies', () => {
-  let ctx: DbCtx | null = null;
-  beforeEach(async () => { ctx = await openDb(); });
-  afterEach(async () => { await closeDb(ctx); ctx = null; });
-
-  it('Invariante: keine `true`-Policy für anon/authenticated/PUBLIC auf Mandantendaten', async () => {
-    // Über das GESAMTE Schema formuliert: Eine neue Tabelle mit tenant_id und
-    // demselben Fehler lässt diesen Test fallen, ohne dass jemand ihn pflegt.
-    const { rows } = await ctx!.client.query<{ tabelle: string; policy: string; cmd: string }>(`
-      SELECT p.tablename AS tabelle, p.policyname AS policy, p.cmd
-        FROM pg_policies p
-       WHERE p.schemaname = 'public'
-         AND (coalesce(p.qual, '') = 'true' OR coalesce(p.with_check, '') = 'true')
-         AND NOT (p.roles <@ ARRAY['service_role']::name[])
-         AND EXISTS (
-           SELECT 1 FROM information_schema.columns c
-            WHERE c.table_schema = 'public' AND c.table_name = p.tablename AND c.column_name = 'tenant_id'
-         )
-       ORDER BY 1, 2`);
-    // Einzige bewusste Ausnahme: öffentliche Anmeldung für Art.-28-Hinweise
-    // (20260507140000). Restrisiko im PR dokumentiert.
-    const erlaubt = new Set(['sub_processor_subscriptions/sp_sub_anon_insert']);
-    const offen = rows.filter((r) => !erlaubt.has(`${r.tabelle}/${r.policy}`));
-    expect(offen, JSON.stringify(offen)).toEqual([]);
-  });
-
-  it('lässt auf den gehärteten Tabellen keine Client-Schreib-Policy zu', async () => {
-    // Namensunabhängig: gilt auch, wenn ein paralleler PR (#1629) dieselben
-    // Policies unter neuen Namen neu anlegt. Lese-Policies (SELECT) für
-    // Mitglieder sind erlaubt und hier nicht Gegenstand.
-    const { rows } = await ctx!.client.query<{ tablename: string; policyname: string; cmd: string; roles: string }>(`
-      SELECT tablename, policyname, cmd, roles::text AS roles FROM pg_policies
-       WHERE schemaname = 'public'
-         AND tablename IN ('governance_audit_log','website_compliance_reports','deployment_logs',
-                           'dashboard_notifications','api_calls','email_notifications',
-                           'agent_token_usage','agent_configuration')
-         AND cmd <> 'SELECT'
-         AND (coalesce(qual, '') = 'true' OR coalesce(with_check, '') = 'true')
-         AND NOT (roles <@ ARRAY['service_role']::name[])`);
-    expect(rows, JSON.stringify(rows)).toEqual([]);
-  });
-
-  it('verweigert authenticated (auch als Mitglied) und anon jeden direkten Insert', async () => {
-    const w = await welt(ctx!);
-    for (const ins of inserts(w)) {
-      // Mitglied des Zielmandanten — der Prüfpfad darf auch vom eigenen Nutzer
-      // nicht direkt beschrieben werden.
-      await expect(
-        als(ctx!, 'authenticated', w.b.userId, () => ctx!.client.query(ins.sql, ins.params)),
-        `${ins.tabelle} · Mitglied`,
-      ).rejects.toMatchObject(VERWEIGERT);
-      // Fremder Mandant.
-      await expect(
-        als(ctx!, 'authenticated', w.a.userId, () => ctx!.client.query(ins.sql, ins.params)),
-        `${ins.tabelle} · fremd`,
-      ).rejects.toMatchObject(VERWEIGERT);
-      await expect(
-        als(ctx!, 'anon', null, () => ctx!.client.query(ins.sql, ins.params)),
-        `${ins.tabelle} · anon`,
-      ).rejects.toMatchObject(VERWEIGERT);
-    }
-  });
-
-  it('erhält den legitimen Server-Schreibweg (service_role) für alle Tabellen', async () => {
-    const w = await welt(ctx!);
-    for (const ins of inserts(w)) {
-      const res = await als(ctx!, 'service_role', null, () => ctx!.client.query(ins.sql, ins.params));
-      expect(res.rowCount, ins.tabelle).toBe(1);
-    }
-  });
-
-  it('website_compliance_reports: authenticated kann Berichte nicht überschreiben, service_role schon', async () => {
-    const w = await welt(ctx!);
-    const { rows } = await ctx!.client.query<{ id: string }>(
-      `INSERT INTO public.website_compliance_reports (project_id, tenant_id, overall_score)
-       VALUES ($1, $2, 20) RETURNING id`,
-      [w.projektB, w.b.tenantId],
-    );
-    const id = rows[0]!.id;
-    const upd = `UPDATE public.website_compliance_reports SET overall_score = 100 WHERE id = $1`;
-    for (const user of [w.b.userId, w.a.userId]) {
-      const r = await als(ctx!, 'authenticated', user, () => ctx!.client.query(upd, [id]));
-      expect(r.rowCount).toBe(0);
-    }
-    const srv = await als(ctx!, 'service_role', null, () => ctx!.client.query(upd, [id]));
-    expect(srv.rowCount).toBe(1);
-  });
-
-  it('agent_configuration: kein Browser-Zugriff, Server liest und schreibt', async () => {
-    const w = await welt(ctx!);
-    await ctx!.client.query(
-      `INSERT INTO public.agent_configuration (tenant_id) VALUES ($1) ON CONFLICT (tenant_id) DO NOTHING`,
-      [w.b.tenantId],
-    );
-    const upd = `UPDATE public.agent_configuration SET monthly_token_budget = 999999999 WHERE tenant_id = $1`;
-    const fremd = await als(ctx!, 'authenticated', w.a.userId, () => ctx!.client.query(upd, [w.b.tenantId]));
-    expect(fremd.rowCount).toBe(0);
-    const lesen = await als(ctx!, 'authenticated', w.a.userId, () =>
-      ctx!.client.query(`SELECT 1 FROM public.agent_configuration WHERE tenant_id = $1`, [w.b.tenantId]));
-    expect(lesen.rowCount).toBe(0);
-    const srv = await als(ctx!, 'service_role', null, () => ctx!.client.query(upd, [w.b.tenantId]));
-    expect(srv.rowCount).toBe(1);
-  });
-
-  it('agent_token_usage: Mitglied liest nur den eigenen Mandanten', async () => {
-    const w = await welt(ctx!);
-    await ctx!.client.query(
-      `INSERT INTO public.agent_token_usage (tenant_id, tokens_used, prompt_type) VALUES ($1, 10, 'a'), ($2, 20, 'b')`,
-      [w.a.tenantId, w.b.tenantId],
-    );
-    const sel = `SELECT tenant_id FROM public.agent_token_usage WHERE tenant_id = ANY($1::uuid[])`;
-    const both = [[w.a.tenantId, w.b.tenantId]];
-    const alsA = await als(ctx!, 'authenticated', w.a.userId, () => ctx!.client.query(sel, both));
-    expect(alsA.rows.map((r) => r.tenant_id)).toEqual([w.a.tenantId]);
-    const anon = await als(ctx!, 'anon', null, () => ctx!.client.query(sel, both));
-    expect(anon.rowCount).toBe(0);
-    const srv = await als(ctx!, 'service_role', null, () => ctx!.client.query(sel, both));
-    expect(srv.rowCount).toBe(2);
-  });
-});
-
-d('Gate 0 · Klasse 2 — scan_results', () => {
+d('Gate 0 · scan_results', () => {
   let ctx: DbCtx | null = null;
   beforeEach(async () => { ctx = await openDb(); });
   afterEach(async () => { await closeDb(ctx); ctx = null; });
@@ -278,7 +100,7 @@ d('Gate 0 · Klasse 2 — scan_results', () => {
   });
 });
 
-d('Gate 0 · Klasse 3 — SECURITY-DEFINER-Funktionen (mcp_*, llm_quota_*)', () => {
+d('Gate 0 · SECURITY-DEFINER-Funktionen (mcp_*, llm_quota_*)', () => {
   let ctx: DbCtx | null = null;
   beforeEach(async () => { ctx = await openDb(); });
   afterEach(async () => { await closeDb(ctx); ctx = null; });
@@ -356,38 +178,33 @@ d('Gate 0 · Klasse 3 — SECURITY-DEFINER-Funktionen (mcp_*, llm_quota_*)', () 
   });
 });
 
-d('Gate 0 · Klasse 4 — Views über gehärteten Tabellen', () => {
+d('Gate 0 · api_calls — Leseregel über die kanonische Mitgliedschaft', () => {
   let ctx: DbCtx | null = null;
   beforeEach(async () => { ctx = await openDb(); });
   afterEach(async () => { await closeDb(ctx); ctx = null; });
 
-  it('agent_token_usage_analytics und api_monthly_usage: kein Fremdzugriff, Mitglied sieht den eigenen Mandanten', async () => {
+  it('Mitglied ohne tenant_memberships-Zeile liest die eigene API-Nutzung, Fremde und anon nicht', async () => {
     const w = await welt(ctx!);
-    // Drift-Fall nachbilden: Das Mitglied steht nur in der kanonischen
-    // memberships-Tabelle. Die alte api_calls-Leseregel prüfte gegen
-    // tenant_memberships und hätte es nach security_invoker ausgesperrt.
+    // Drift-Fall: Das Mitglied steht nur in der kanonischen memberships-
+    // Tabelle. Die alte Leseregel prüft allein gegen tenant_memberships.
     await ctx!.client.query(`DELETE FROM public.tenant_memberships WHERE user_id = $1`, [w.b.userId]);
-    await ctx!.client.query(
-      `INSERT INTO public.agent_token_usage (tenant_id, tokens_used, prompt_type) VALUES ($1, 7, 'x')`,
-      [w.b.tenantId],
-    );
     await ctx!.client.query(
       `INSERT INTO public.api_calls (tenant_id, api_key_id, endpoint, method, request_path)
        VALUES ($1, $2, '/x', 'GET', '/x')`,
       [w.b.tenantId, w.apiKeyB],
     );
-    const views = ['agent_token_usage_analytics', 'api_monthly_usage'];
-    const zaehle = (view: string) =>
-      ctx!.client.query(`SELECT 1 FROM public.${view} WHERE tenant_id = $1`, [w.b.tenantId]);
-
-    for (const view of views) {
-      // Vor der Korrektur: anon las hier die Zeile von Mandant B.
-      const anon = await als(ctx!, 'anon', null, () => zaehle(view));
-      expect(anon.rowCount, `${view} · anon`).toBe(0);
-      const fremd = await als(ctx!, 'authenticated', w.a.userId, () => zaehle(view));
-      expect(fremd.rowCount, `${view} · fremd`).toBe(0);
-      const mitglied = await als(ctx!, 'authenticated', w.b.userId, () => zaehle(view));
-      expect(mitglied.rowCount, `${view} · Mitglied`).toBe(1);
+    // Direkt auf der Tabelle — und über die View, die ApiUsageStats liest.
+    // Die View läuft mit #1629 als security_invoker und greift dann genau
+    // auf diese Leseregel zurück.
+    for (const quelle of ['api_calls', 'api_monthly_usage']) {
+      const lies = () => ctx!.client.query(`SELECT 1 FROM public.${quelle} WHERE tenant_id = $1`, [w.b.tenantId]);
+      const mitglied = await als(ctx!, 'authenticated', w.b.userId, lies);
+      expect(mitglied.rowCount, `${quelle} · Mitglied`).toBe(1);
     }
+    const lies = () => ctx!.client.query(`SELECT 1 FROM public.api_calls WHERE tenant_id = $1`, [w.b.tenantId]);
+    const fremd = await als(ctx!, 'authenticated', w.a.userId, lies);
+    expect(fremd.rowCount, 'fremd').toBe(0);
+    const anon = await als(ctx!, 'anon', null, lies);
+    expect(anon.rowCount, 'anon').toBe(0);
   });
 });

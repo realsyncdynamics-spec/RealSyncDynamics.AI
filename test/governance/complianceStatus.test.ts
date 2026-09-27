@@ -75,7 +75,8 @@ describe('computeEvidenceHealth', () => {
     // coverage 40, hashedShare 100 → 0.7*40 + 0.3*100 = 58; −16 = 42
     const withPenalty = computeEvidenceHealth({
       coveragePercent: 40,
-      evidence: [{ content_hash: HASH }],
+      // ≥ EVIDENCE_MIN_ENTRIES Nachweise, sonst „Zu wenig Daten“.
+      evidence: [{ content_hash: HASH }, { content_hash: HASH }, { content_hash: HASH }],
       newEvidence24h: 0,
       failedScans: 2,
     });
@@ -84,7 +85,7 @@ describe('computeEvidenceHealth', () => {
 
     const clamped = computeEvidenceHealth({
       coveragePercent: 10,
-      evidence: [{ content_hash: null }],
+      evidence: [{ content_hash: null }, { content_hash: null }, { content_hash: null }],
       newEvidence24h: 0,
       failedScans: 20,
     });
@@ -147,9 +148,11 @@ describe('computeRiskIndex', () => {
       openIncidents: 0,
       dsrOverdue: 0,
     });
+    // Schwelle = Bucket „Hoch“ der Risk Distribution (50), nicht mehr 70.
+    expect(HIGH_RISK_ASSET_THRESHOLD).toBe(50);
     expect(risk.highRiskAssets).toBe(2);
-    expect(risk.avgAssetRisk).toBe(60);
-    expect(risk.score).toBe(36); // 0.6*60 + 0.4*0
+    expect(risk.avgAssetRisk).toBe(53);
+    expect(risk.score).toBe(32); // 0.6*53 + 0.4*0
     expect(risk.level).toBe('medium');
   });
 
@@ -163,7 +166,7 @@ describe('computeRiskIndex', () => {
     // 2*15 + 1*18 + 1*8 = 56
     expect(risk.score).toBe(56);
     expect(risk.level).toBe('high');
-    expect(risk.label).toBe('Erhöht');
+    expect(risk.label).toBe('Hoch'); // gleiche Bezeichnung wie der Bucket der Risk Distribution
   });
 
   it('blends asset average with operational load', () => {

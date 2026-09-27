@@ -24,7 +24,7 @@ export function AiGovernancePage() {
           </h1>
           <p className="mt-5 text-base leading-relaxed text-titanium-400 sm:text-lg">
             Der EU AI Act verlangt eine Risikoklassifizierung für jedes eingesetzte KI-System. Die AI Use Case
-            Registry erfasst, klassifiziert und überwacht Ihre KI-Systeme kontinuierlich.
+            Registry erfasst und klassifiziert Ihre KI-Systeme.
           </p>
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Link to="/os/pricing">

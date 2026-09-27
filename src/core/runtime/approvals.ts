@@ -5,6 +5,9 @@ import type {
   RiskLevel,
 } from './types';
 
+// Re-export types for external consumers
+export type { ApprovalGateRecord, ApprovalStatus, ExecutionInput, RiskLevel } from './types';
+
 /**
  * Approval-gate service contract. The executor never touches a gate row
  * directly — it talks to this service so the production impl (backed by

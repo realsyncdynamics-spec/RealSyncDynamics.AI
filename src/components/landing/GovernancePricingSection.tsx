@@ -21,13 +21,19 @@ import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import { tierById, type PricingTier } from '../../config/pricing';
 import { GA_DISPLAY, GA_LINE_SOFT, GA_MONO, GA_MUTED, GA_TITAN } from './governance-ai-theme';
-import { SectionEyebrow, SectionHeading, SectionIndex } from './GovernanceSectionChrome';
+import { SectionHeading } from './GovernanceSectionChrome';
 
-/** Feste Reihenfolge wie auf `/` — Growth steht in der Mitte. */
-const LANDING_PLAN_IDS = ['starter', 'growth', 'agency'] as const;
+/**
+ * Feste Reihenfolge auf `/`: drei Self-Service-Stufen plus Enterprise. Enterprise
+ * zeigt „Auf Anfrage" (`priceOnRequest`) und führt auf die Anfrage-Strecke.
+ */
+const LANDING_PLAN_IDS = ['starter', 'growth', 'agency', 'enterprise'] as const;
 
-/** Agency erbt die VIP-Stufe; Starter und Growth bleiben auf der Aktionsfarbe. */
-const VIP_TIERS = new Set<string>(['agency']);
+/**
+ * Keine farbliche VIP-Stufe mehr: In der Governance-OS-Palette trägt Cyan nur
+ * Systemzustände, die Stufen unterscheiden sich über Inhalt, nicht über Farbe.
+ */
+const VIP_TIERS = new Set<string>();
 
 export function GovernancePricingSection() {
   const tiers = LANDING_PLAN_IDS.map((id) => tierById(id)).filter(
@@ -42,18 +48,16 @@ export function GovernancePricingSection() {
       style={{ borderColor: GA_LINE_SOFT }}
       aria-labelledby="pricing-heading"
     >
-      <div className="mx-auto w-full max-w-[1500px]">
-        <SectionIndex number="06" label="TARIFE" />
-        <SectionEyebrow>PREISE</SectionEyebrow>
+      <div className="mx-auto w-full max-w-[1200px]">
+        <p className="os-kicker"><b>PLATTFORM</b> PREISE</p>
         <span id="pricing-heading">
-          <SectionHeading accent="Governance Runtime.">Pläne für die</SectionHeading>
+          <SectionHeading accent="nach Governance-Tiefe.">Plattform-Zugang</SectionHeading>
         </span>
         <p className="mt-4 max-w-[660px] text-pretty leading-[1.7]" style={{ color: GA_MUTED }}>
-          Live-Tarife aus dem Produktkatalog — Starter, Growth und Agency starten self-service über
-          Stripe.
+          Monatlich abgerechnet. Enterprise mit Multi-Tenant-Runtime, SSO und SLA nach Vereinbarung.
         </p>
 
-        <div className="mt-[38px] grid gap-3.5 md:grid-cols-3">
+        <div className="mt-[38px] grid gap-3.5 md:grid-cols-2 xl:grid-cols-4">
           {tiers.map((tier) => {
             const featured = tier.highlight || tier.id === 'growth';
             const vip = VIP_TIERS.has(tier.id);
@@ -67,12 +71,12 @@ export function GovernancePricingSection() {
                     ? {
                         borderColor: 'var(--ga-accent-border)',
                         boxShadow:
-                          '0 0 0 1px rgba(34,195,230,.3), 0 30px 80px rgba(0,0,0,.65), 0 0 70px rgba(34,195,230,.28)',
+                          'var(--ga-featured-shadow, 0 0 0 1px rgba(34,195,230,.3), 0 30px 80px rgba(0,0,0,.65), 0 0 70px rgba(34,195,230,.28))',
                       }
                     : undefined
                 }
               >
-                <div className="flex items-start justify-between gap-3">
+                <div className="flex flex-wrap items-start justify-between gap-3">
                   <p
                     className="text-[11px] tracking-[.2em]"
                     style={{ fontFamily: GA_MONO, color: 'var(--ga-accent)' }}
@@ -98,13 +102,14 @@ export function GovernancePricingSection() {
                   style={{
                     fontFamily: GA_DISPLAY,
                     backgroundImage:
-                      'linear-gradient(180deg, #fff 0%, var(--ga-accent) 100%)',
+                      'var(--ga-price-face, linear-gradient(180deg, #fff 0%, var(--ga-accent) 100%))',
                     backgroundClip: 'text',
                     WebkitBackgroundClip: 'text',
                     color: 'transparent',
                   }}
                 >
-                  {tier.priceEur} €
+                  {tier.priceOnRequest ? 'Auf Anfrage' : `${tier.priceString} €`}
+                  {tier.priceOnRequest ? null : (
                   <span
                     className="ml-2 text-[11px] tracking-[.14em]"
                     style={{
@@ -116,6 +121,7 @@ export function GovernancePricingSection() {
                   >
                     / MONAT
                   </span>
+                  )}
                 </h3>
 
                 <p className="mt-3 text-[14px] leading-[1.6]" style={{ color: GA_MUTED }}>
@@ -156,7 +162,7 @@ export function GovernancePricingSection() {
                       : {
                           // Akzent statt Ghost-Kante: Agency trägt damit seine
                           // Gold-Stufe auch auf dem Button, Starter bleibt Cyan.
-                          backgroundColor: 'rgba(0,0,0,.6)',
+                          backgroundColor: 'var(--ga-ghost-face)',
                           color: 'var(--ga-accent-lite)',
                           border: '1px solid var(--ga-accent-border)',
                         }
@@ -169,14 +175,6 @@ export function GovernancePricingSection() {
             );
           })}
         </div>
-
-        <p
-          className="mt-7 text-[11px] leading-[1.7] tracking-[.08em]"
-          style={{ fontFamily: GA_MONO, color: 'var(--ga-vip)' }}
-        >
-          Upgrade-Leiter: Einzel-Domain → Starter · SaaS → Growth · Agentur → Agency ·
-          DSB/Enterprise → Anfrage
-        </p>
 
         <div className="mt-6 text-center">
           <Link

@@ -4,7 +4,9 @@
  */
 import { describe, expect, it } from 'vitest';
 import {
+  attentionEmptyKind,
   daysSince,
+  findingsFromTable,
   ELEVATED_RISK_THRESHOLD,
   elevatedAssetsOf,
   EVIDENCE_MIN_ENTRIES,
@@ -311,5 +313,66 @@ describe('Behebung — realer Payload (email_auth_resolved, manual_owner_approve
     expect(parseResolvePayload({ resolves_event_id: 'x', check: 'mx', source: 'robot', checked_at: 'nie' })).toMatchObject({
       resolves_event_id: 'x', check: null, source: null, checked_at: null,
     });
+  });
+});
+
+describe('Befunde aus der findings-Tabelle (Website-Audit)', () => {
+  const row = (over: Record<string, unknown> = {}) => ({
+    id: 'fx1', severity: 'high' as const, status: 'open' as const, summary: 'Kein Cookie-Banner',
+    detector: 'gdpr-audit', scan_run_id: 'run-1', website_id: 'w1', created_at: iso(2), ...over,
+  });
+
+  it('bildet offene Befunde ab und verlinkt auf den erzeugenden Scan-Lauf', () => {
+    const [f] = findingsFromTable([row()]);
+    expect(f).toMatchObject({
+      id: 'fx1', title: 'Kein Cookie-Banner', level: 'high', source: 'gdpr-audit',
+      resolvedAt: null, href: '/app/scans/run-1',
+    });
+  });
+
+  it('ohne Scan-Lauf ⇒ Website-Übersicht', () => {
+    expect(findingsFromTable([row({ scan_run_id: null })])[0].href).toBe('/app/websites');
+  });
+
+  it('Tabellen-Befund erscheint in „Braucht Aufmerksamkeit“ mit Drill-down auf den Scan', () => {
+    const out = riskAttentionSignals(
+      { elevatedAssets: [], findings: findingsFromTable([row()]), lastScanAt: iso(2), latestEvidenceAt: null },
+      NOW,
+    );
+    expect(out).toHaveLength(1);
+    expect(out[0]).toMatchObject({ id: 'finding-fx1', href: '/app/scans/run-1' });
+    expect(out[0].reason).toBe('Scanner-Befund · hoch · vor 2 Tagen');
+  });
+
+  it('zählt als kritischer Befund', () => {
+    expect(summarizeFindings(findingsFromTable([row(), row({ id: 'fx2', severity: 'medium' })]))).toMatchObject({
+      severe: [expect.objectContaining({ id: 'fx1' })],
+      medium: [expect.objectContaining({ id: 'fx2' })],
+    });
+  });
+});
+
+describe('Leerzustand „Braucht Aufmerksamkeit“ — keine positive Aussage aus leeren Daten', () => {
+  const base = { sourcesComplete: true, assetCount: 0, lastScanAt: null, findings: [] };
+
+  it('leerer Workspace ⇒ no_data, nicht „Nichts offen“', () => {
+    expect(attentionEmptyKind(base)).toBe('no_data');
+  });
+
+  it('fehlgeschlagene oder ungeladene Quelle ⇒ unavailable (fail closed)', () => {
+    expect(attentionEmptyKind({ ...base, sourcesComplete: false, assetCount: 3 })).toBe('unavailable');
+    expect(attentionEmptyKind({ ...base, assetCount: 3, findings: null })).toBe('unavailable');
+  });
+
+  it('Datenbasis vorhanden und alles geladen ⇒ nothing_open', () => {
+    expect(attentionEmptyKind({ ...base, assetCount: 1 })).toBe('nothing_open');
+    expect(attentionEmptyKind({ ...base, lastScanAt: iso(1) })).toBe('nothing_open');
+    expect(attentionEmptyKind({
+      ...base,
+      findings: findingsFromTable([{
+        id: 'x', severity: 'low', status: 'open', summary: 's', detector: 'd',
+        scan_run_id: null, website_id: null, created_at: iso(1),
+      }]),
+    })).toBe('nothing_open');
   });
 });

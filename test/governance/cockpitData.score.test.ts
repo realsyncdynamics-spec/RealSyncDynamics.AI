@@ -31,6 +31,7 @@ const api = vi.hoisted(() => ({
   fetchTenantFindingEvents: vi.fn(),
   fetchTenantEvidence: vi.fn(),
   listScanRuns: vi.fn(),
+  listOpenFindingsForTenant: vi.fn(),
 }));
 vi.mock('../../src/features/governance/incidentsApi', () => ({
   countOpenIncidents: api.countOpenIncidents, fetchTenantIncidents: api.fetchTenantIncidents,
@@ -48,7 +49,10 @@ vi.mock('../../src/features/governance/governanceApi', () => ({
   fetchTenantFindingEvents: api.fetchTenantFindingEvents,
   fetchTenantEvidence: api.fetchTenantEvidence,
 }));
-vi.mock('../../src/features/governance/scans/scansApi', () => ({ listScanRuns: api.listScanRuns }));
+vi.mock('../../src/features/governance/scans/scansApi', () => ({
+  listScanRuns: api.listScanRuns,
+  listOpenFindingsForTenant: api.listOpenFindingsForTenant,
+}));
 
 import {
   cockpitIntegrityHash,
@@ -89,6 +93,7 @@ function emptyTenant() {
   api.fetchTenantFindingEvents.mockResolvedValue([]);
   api.fetchTenantEvidence.mockResolvedValue([]);
   api.listScanRuns.mockResolvedValue([]);
+  api.listOpenFindingsForTenant.mockResolvedValue([]);
 }
 
 function rpcReturns(latest: { data: unknown; error: unknown }) {
@@ -294,5 +299,28 @@ describe('loadCockpitData — Dashboard-Signale (Addendum)', () => {
     const d = await loadCockpitData('t1');
     expect(d.signals?.findings).toBeNull();
     expect(d.partialFailures.some((f) => f.startsWith('findings:'))).toBe(true);
+  });
+});
+
+describe('Befunde des Website-Audits (findings-Tabelle)', () => {
+  it('offener Tabellen-Befund landet in signals.findings, mit Drill-down auf den Scan', async () => {
+    rpcReturns({ data: [], error: null });
+    api.listOpenFindingsForTenant.mockResolvedValue([{
+      id: 'fx1', severity: 'high', status: 'open', summary: 'Kein Cookie-Banner', detector: 'gdpr-audit',
+      scan_run_id: 'run-1', website_id: 'w1', created_at: '2026-09-26T10:00:00Z',
+    }]);
+    const d = await loadCockpitData('t1');
+    expect(api.listOpenFindingsForTenant).toHaveBeenCalledWith('t1');
+    expect(d.signals?.findings).toEqual([
+      expect.objectContaining({ id: 'fx1', level: 'high', resolvedAt: null, href: '/app/scans/run-1' }),
+    ]);
+  });
+
+  it('findings-Tabelle nicht ladbar ⇒ findings null + partialFailure (keine Aussage)', async () => {
+    rpcReturns({ data: [], error: null });
+    api.listOpenFindingsForTenant.mockRejectedValue(new Error('rls'));
+    const d = await loadCockpitData('t1');
+    expect(d.signals?.findings).toBeNull();
+    expect(d.partialFailures.some((f) => f.startsWith('findings-table:'))).toBe(true);
   });
 });

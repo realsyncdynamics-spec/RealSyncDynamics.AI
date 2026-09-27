@@ -16,7 +16,7 @@ import { fetchTenantAssets, fetchTenantEvidence, fetchTenantPolicies } from '../
 import { listConnectors } from '../gatesApi';
 import { listTenantMappings } from '../../policy-packs/policyPacksApi';
 import type { CockpitData } from '../cockpit/cockpitData';
-import { riskAttentionSignals } from '../dashboard/dashboardSignals';
+import { attentionEmptyKind, riskAttentionSignals } from '../dashboard/dashboardSignals';
 import { GovernanceScoreState } from '../cockpit/GovernanceScoreState';
 import { useLang } from '../../../i18n/useLang';
 import {
@@ -126,6 +126,16 @@ export function HandoffOverview({
   const score = scoreStatus === 'ok' ? data?.score ?? null : null;
   const cockpitHas = (name: string) =>
     data !== null && !data.partialFailures.some((f) => f.startsWith(`${name}:`));
+  // Leerzustand von „Braucht Aufmerksamkeit“: nur „Nichts offen“, wenn alle
+  // Quellen der Liste geladen sind UND es überhaupt etwas zu bewerten gibt.
+  const attentionSources = ['incident-list', 'dpia-list', 'dsr-list', 'assets', 'findings', 'findings-table', 'scan-latest'];
+  const emptyKind = attentionEmptyKind({
+    sourcesComplete:
+      !error && data !== null && has('assets') && has('connectors') && attentionSources.every(cockpitHas),
+    assetCount: ready ? ready.assets.length : 0,
+    lastScanAt: data?.signals?.lastScanAt ?? null,
+    findings: data?.signals?.findings ?? null,
+  });
   const evidenceTotal = cockpitHas('evidence-total') ? data!.evidenceHealth.totalCount : null;
   const evidenceHashed = cockpitHas('evidence-hashed') ? data!.evidenceHealth.hashedCount : null;
   const trend = data?.readinessTrend ?? null;
@@ -300,13 +310,31 @@ export function HandoffOverview({
         <h2 id="attention-heading" className="rs-overline mb-3">
           {t('attention')}
         </h2>
-        {!ready ? (
+        {!ready || (loading && !data) ? (
           <p className="rs-note">{t('loading')}</p>
         ) : attention.length === 0 ? (
           <Panel>
-            <p className="rs-note" data-testid="attention-empty">
-              {t('attentionNone')}
-            </p>
+            {emptyKind === 'unavailable' ? (
+              <p className="rs-note" data-testid="attention-unavailable">
+                {t('attentionUnavailable')}
+              </p>
+            ) : emptyKind === 'no_data' ? (
+              <div data-testid="attention-nodata">
+                <p className="rs-note">{t('attentionNoData')}</p>
+                <div className="mt-3 flex flex-wrap gap-4">
+                  <Link to="/app/ai-systems" className="rs-note rs-cyan">
+                    {t('attentionNoDataSystem')} →
+                  </Link>
+                  <Link to="/app/websites" className="rs-note rs-cyan">
+                    {t('attentionNoDataAudit')} →
+                  </Link>
+                </div>
+              </div>
+            ) : (
+              <p className="rs-note" data-testid="attention-empty">
+                {t('attentionNone')}
+              </p>
+            )}
           </Panel>
         ) : (
           <div className="rs-attention">

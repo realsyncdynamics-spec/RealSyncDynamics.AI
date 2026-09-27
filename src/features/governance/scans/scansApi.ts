@@ -54,6 +54,32 @@ export async function getScanRun(scanRunId: string): Promise<ScanRun | null> {
   return (data as ScanRun | null) ?? null;
 }
 
+/** Status, in denen ein Befund noch Handlung verlangt. */
+export const OPEN_FINDING_STATUSES: readonly FindingStatus[] = ['open', 'acknowledged'];
+
+/** Schlanke Befund-Zeile fürs Dashboard (kein raw_payload). */
+export type OpenFindingRow = Pick<
+  Finding,
+  'id' | 'severity' | 'status' | 'summary' | 'detector' | 'scan_run_id' | 'website_id' | 'created_at'
+>;
+
+/**
+ * Offene Befunde eines Mandanten aus der kanonischen `findings`-Tabelle —
+ * dorthin schreibt der Website-Audit (tenant-audit). Neueste zuerst.
+ * Wirft bei RLS-/Netzfehler; der Aufrufer darf das nicht als „0 Befunde“ lesen.
+ */
+export async function listOpenFindingsForTenant(tenantId: string, limit = 50): Promise<OpenFindingRow[]> {
+  const sb = getSupabase();
+  const { data, error } = await sb.from('findings')
+    .select('id,severity,status,summary,detector,scan_run_id,website_id,created_at')
+    .eq('tenant_id', tenantId)
+    .in('status', [...OPEN_FINDING_STATUSES])
+    .order('created_at', { ascending: false })
+    .limit(limit);
+  if (error) throw new Error(error.message);
+  return (data ?? []) as OpenFindingRow[];
+}
+
 /** All findings produced by a scan_run. */
 export async function listFindingsForScan(scanRunId: string): Promise<Finding[]> {
   const sb = getSupabase();

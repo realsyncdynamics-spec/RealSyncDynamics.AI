@@ -14,9 +14,10 @@ import {
   fetchTenantAssets, fetchTenantEvents, fetchTenantEvidence, fetchTenantFindingEvents,
   type DbGovernanceEvent,
 } from '../governanceApi';
-import { listScanRuns } from '../scans/scansApi';
+import { listOpenFindingsForTenant, listScanRuns } from '../scans/scansApi';
 import {
-  elevatedAssetsOf, pairFindings, resolutionIndex, resolvesEventIdOf, type DashboardSignals, type Resolution,
+  elevatedAssetsOf, findingsFromTable, pairFindings, resolutionIndex, resolvesEventIdOf,
+  type DashboardSignals, type Resolution,
 } from '../dashboard/dashboardSignals';
 import type { DbGovernanceKpiSnapshot } from '../analytics/types';
 import {
@@ -153,7 +154,7 @@ export async function loadCockpitData(tenantId: string): Promise<CockpitData> {
     incidentsCount, dpiasCount, dsrCount, approvalsCount, vendorsCount,
     latestKpi, kpiRange, incidentList, dpiaList, dsrList,
     summary24hRaw, assets, evidenceTotal, evidenceHashed, eventsRaw, mappingsCount,
-    findingEvents, latestEvidenceRows, latestScanRuns,
+    findingEvents, latestEvidenceRows, latestScanRuns, openFindingRows,
   ] = await Promise.allSettled([
     countOpenIncidents(tenantId),
     countOpenDpias(tenantId),
@@ -174,6 +175,10 @@ export async function loadCockpitData(tenantId: string): Promise<CockpitData> {
     fetchTenantFindingEvents(tenantId),
     fetchTenantEvidence(tenantId, 1),
     listScanRuns(tenantId, { limit: 1 }),
+    // Kanonische Befunde des Website-Audits (tenant-audit schreibt `findings`,
+    // nicht governance_events). In einer Promise-Kette, damit auch ein
+    // synchroner Fehler als Teilausfall landet statt das Cockpit zu leeren.
+    Promise.resolve().then(() => listOpenFindingsForTenant(tenantId)),
   ]);
 
   const counts: CockpitCounts = {
@@ -260,6 +265,7 @@ export async function loadCockpitData(tenantId: string): Promise<CockpitData> {
     failureOf('findings', findingEvents),
     failureOf('evidence-latest', latestEvidenceRows),
     failureOf('scan-latest', latestScanRuns),
+    failureOf('findings-table', openFindingRows),
   ].filter((item): item is string => item !== null);
 
   const countsReliable = [
@@ -276,7 +282,11 @@ export async function loadCockpitData(tenantId: string): Promise<CockpitData> {
 
   const signals: DashboardSignals = {
     elevatedAssets: assets.status === 'fulfilled' ? elevatedAssetsOf(assets.value) : null,
-    findings: findingEvents.status === 'fulfilled' ? pairFindings(findingEvents.value) : null,
+    // Beide Befund-Quellen oder keine Aussage: fehlt eine, wäre „keine
+    // offenen Befunde“ unbelegt.
+    findings: findingEvents.status === 'fulfilled' && openFindingRows.status === 'fulfilled'
+      ? [...pairFindings(findingEvents.value), ...findingsFromTable(openFindingRows.value)]
+      : null,
     // Nur scan_runs: Scanner-/Seed-Events sind kein Beleg für einen Audit-Lauf.
     lastScanAt: val(latestScanRuns, [])[0]?.created_at ?? null,
     latestEvidenceAt,

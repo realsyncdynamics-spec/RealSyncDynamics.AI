@@ -7,6 +7,7 @@
 // klassifizieren.
 
 import type { GovernanceRiskLevel } from '../types';
+import type { OpenFindingRow } from '../scans/scansApi';
 
 /* ─── Risiko-Schwellen (Asset-Risk-Score 0..100, höher = schlechter) ─── */
 
@@ -112,6 +113,8 @@ export interface ScanFinding {
   resolvedAt: string | null;
   /** Behebung per payload.source === 'manual_owner_approved'. */
   resolvedManually?: boolean;
+  /** Ziel des Drill-downs; fehlt ⇒ Website-Übersicht. */
+  href?: string;
 }
 
 /** Befund-Events: `*_finding` (z. B. email_auth_finding vom website_scanner). */
@@ -255,6 +258,25 @@ export function pairFindings(
     }));
 }
 
+/**
+ * Offene Befunde aus der kanonischen `findings`-Tabelle (Website-Audit via
+ * tenant-audit). Der Status-Filter läuft bereits in der Abfrage; hier nur die
+ * Abbildung — mit Drill-down auf den erzeugenden Scan-Lauf.
+ */
+export function findingsFromTable(rows: readonly OpenFindingRow[]): ScanFinding[] {
+  return rows.map((row) => ({
+    id: row.id,
+    title: row.summary,
+    level: row.severity,
+    eventType: 'finding',
+    source: row.detector,
+    createdAt: row.created_at,
+    assetId: null,
+    resolvedAt: null,
+    href: row.scan_run_id ? `/app/scans/${row.scan_run_id}` : '/app/websites',
+  }));
+}
+
 /** Nur offene (nicht behobene) Befunde. */
 export function openFindings(findings: readonly ScanFinding[]): ScanFinding[] {
   return findings.filter((f) => !f.resolvedAt);
@@ -346,10 +368,37 @@ export function riskAttentionSignals(
       id: `finding-${f.id}`,
       title: f.title,
       reason: `Scanner-Befund · ${FINDING_LEVEL_LABEL[f.level]}${age === null ? '' : ` · ${formatAgeDe(age)}`}`,
-      href: '/app/websites',
+      href: f.href ?? '/app/websites',
     });
   }
   return out;
+}
+
+/**
+ * Was „Braucht Aufmerksamkeit“ zeigt, wenn keine Einträge vorliegen:
+ *
+ *   unavailable   — eine Quelle ist fehlgeschlagen oder noch nicht geladen.
+ *                   Dann ist keine Aussage möglich (fail closed).
+ *   no_data       — es gibt noch nichts, das bewertet werden könnte (kein
+ *                   Asset, kein Audit-Lauf, kein Befund). Leere Daten sind
+ *                   kein „Nichts offen“.
+ *   nothing_open  — Datenbasis vorhanden, alle Quellen geladen, nichts offen.
+ */
+export type AttentionEmptyKind = 'unavailable' | 'no_data' | 'nothing_open';
+
+export function attentionEmptyKind(input: {
+  /** Alle Quellen der Liste geladen, keine fehlgeschlagen. */
+  sourcesComplete: boolean;
+  /** Anzahl aller Assets des Mandanten (Websites legen per Trigger eins an). */
+  assetCount: number;
+  /** Jüngster Audit-Lauf laut scan_runs. */
+  lastScanAt: string | null;
+  /** Befunde inkl. behobener; `null` = nicht ladbar. */
+  findings: readonly ScanFinding[] | null;
+}): AttentionEmptyKind {
+  if (!input.sourcesComplete || input.findings === null) return 'unavailable';
+  const hasBasis = input.assetCount > 0 || input.lastScanAt !== null || input.findings.length > 0;
+  return hasBasis ? 'nothing_open' : 'no_data';
 }
 
 export const FINDING_LEVEL_LABEL: Record<GovernanceRiskLevel, string> = {

@@ -40,9 +40,18 @@ export function usePerformanceMonitor(
     const renderNumber = renderCountRef.current;
 
     // Measure the render time using the next paint after mount
+    const mountedAt = performance.now();
     const observer = new PerformanceObserver((list) => {
       for (const entry of list.getEntries()) {
-        if (entry.name.includes(componentName) || entry.duration > threshold) {
+        // paint-/LCP-Einträge tragen duration=0 — das Timing steckt in
+        // startTime bzw. renderTime/loadTime (gleiches Muster wie webVitals.ts).
+        // Gemessen wird Mount → nächster Paint; frühere (gepufferte) Paints
+        // gehören nicht zu diesem Render.
+        const lcp = entry as PerformanceEntry & { renderTime?: number; loadTime?: number };
+        const paintedAt = lcp.renderTime || lcp.loadTime || entry.startTime;
+        if (paintedAt < mountedAt) continue;
+        const duration = paintedAt - mountedAt;
+        if (entry.name.includes(componentName) || duration > threshold) {
           slowRenderCountRef.current += 1;
           Sentry.captureMessage(`Slow component render: ${componentName}#${renderNumber}`, {
             level: 'debug',
@@ -50,7 +59,7 @@ export function usePerformanceMonitor(
               performance: {
                 component: componentName,
                 render_number: renderNumber,
-                duration_ms: Math.round(entry.duration),
+                duration_ms: Math.round(duration),
                 slow_render_count: slowRenderCountRef.current,
               },
             },

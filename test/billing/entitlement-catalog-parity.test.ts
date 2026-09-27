@@ -1,5 +1,5 @@
 /**
- * Entitlement-Katalog ↔ PLAN_ENTITLEMENTS — Paritaet der Migration.
+ * Entitlement-Katalog ↔ PLAN_ENTITLEMENTS — Paritaet der Spiegel-Migration.
  *
  * `scripts/check-entitlement-parity.mjs` vergleicht die Live-DB mit der
  * Quelle, braucht dafuer aber Zugangsdaten. Dieser Test braucht keine: er
@@ -11,16 +11,42 @@
  * `bots.appointments` und `bots.orders` existierten in keinem Plan und nicht
  * einmal im Vokabular — appointment-book und order-intake lehnten deshalb
  * jeden Tenant ab, unabhaengig vom Plan.
+ *
+ * ── Warum „die neueste" und nicht eine feste Datei (2026-09-27) ────────────
+ *
+ * Bis hierhin war dieser Test auf `20260920120000` festgenagelt. Das hielt,
+ * bis eine spaetere Migration einen Key vergab:
+ * `20260924000000_frontend_modernization_tool.sql` trug
+ * `frontend.modernization` fuer sieben Plaene in die DB. Die Quelle konnte
+ * dem nicht folgen, ohne dass dieser Test rot wird — und die angewandte
+ * Migration zu editieren, um ihn gruen zu machen, waere genau der Griff, den
+ * `CLAUDE.md` verbietet. Der Zweck des Tests war richtig, seine Verankerung
+ * an einer einzelnen Datei ist gealtert.
+ *
+ * Seither gilt: Jede Aenderung an PLAN_ENTITLEMENTS bringt eine **neue**
+ * vollstaendige Spiegel-Migration mit (`npm run gen:entitlement-mirror`), und
+ * dieser Test vergleicht die Quelle gegen die **jeweils neueste**. Die
+ * aelteren bleiben unberuehrt, weil sie angewandt sind.
  */
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 import { ENTITLEMENT_KEYS, PLAN_ENTITLEMENTS, planGrants, type EntitlementKey } from '../../shared/pricing';
+import { neuesteSpiegelMigration } from '../../scripts/generate-entitlement-mirror-sql';
 
-const MIGRATION = resolve(
-  __dirname,
-  '../../supabase/migrations/20260920120000_entitlement_catalog_ssot_parity.sql',
+const MIGRATIONS_DIR = resolve(__dirname, '../../supabase/migrations');
+
+/** Die jeweils neueste Spiegel-Migration — dieselbe Auswahl wie im Generator. */
+const MIGRATION = resolve(MIGRATIONS_DIR, neuesteSpiegelMigration());
+
+/**
+ * Die erste Spiegel-Migration. Sie hat die drei Bot-Capability-Keys ins
+ * Vokabular gebracht; das gehoert an diese Datei, nicht an „die neueste".
+ */
+const ERSTE_MIGRATION = resolve(
+  MIGRATIONS_DIR,
+  '20260920120000_entitlement_catalog_ssot_parity.sql',
 );
 
 type Zuordnung = Record<string, Record<string, number>>;
@@ -55,7 +81,7 @@ function vokabularAusMigration(sql: string): string[] {
 const sql = readFileSync(MIGRATION, 'utf8');
 const migration = zuordnungAusMigration(sql);
 
-describe('Migration 20260920120000 — Katalog aus PLAN_ENTITLEMENTS', () => {
+describe('Neueste Spiegel-Migration — Katalog aus PLAN_ENTITLEMENTS', () => {
   it('kennt genau die Plaene der Quelle', () => {
     expect(Object.keys(migration).sort()).toEqual(Object.keys(PLAN_ENTITLEMENTS).sort());
   });
@@ -77,12 +103,6 @@ describe('Migration 20260920120000 — Katalog aus PLAN_ENTITLEMENTS', () => {
     }
   });
 
-  it('legt die drei Bot-Capability-Keys im Vokabular an', () => {
-    const neu = vokabularAusMigration(sql);
-    expect(neu).toEqual(['bots.chat', 'bots.appointments', 'bots.orders']);
-    for (const key of neu) expect(ENTITLEMENT_KEYS).toContain(key);
-  });
-
   it('schreibt Jahresvarianten mit (Join auf plan_key und plan_key_yearly)', () => {
     expect(sql).toMatch(/p\.default_for_plan_key = z\.plan_key\s*\n\s*OR p\.default_for_plan_key = z\.plan_key \|\| '_yearly'/);
   });
@@ -92,6 +112,26 @@ describe('Migration 20260920120000 — Katalog aus PLAN_ENTITLEMENTS', () => {
     expect(sql).not.toMatch(/\bDELETE\b/i);
     expect(sql).not.toMatch(/\bDROP\b/i);
     expect(sql).not.toMatch(/\bTRUNCATE\b/i);
+  });
+
+  it('bricht ab, wenn ein Key der Quelle im Vokabular fehlt', () => {
+    // Ohne diesen Waechter ueberspringt der INNER JOIN eine Zuordnung mit
+    // unbekanntem Key still — dieselbe leise Klasse Fehler, gegen die der
+    // Entitlement-Guard gebaut wurde. Nur die erste Spiegel-Migration legte
+    // Keys selbst an; seither traegt sie die Feature-Migration ein.
+    if (MIGRATION === ERSTE_MIGRATION) return;
+    expect(sql).toMatch(/RAISE EXCEPTION/);
+    expect(sql).toContain('Entitlement-Vokabular unvollstaendig');
+  });
+});
+
+describe('20260920120000 — hier kamen die drei Bot-Keys ins Vokabular', () => {
+  const ersteSql = readFileSync(ERSTE_MIGRATION, 'utf8');
+
+  it('legt die drei Bot-Capability-Keys im Vokabular an', () => {
+    const neu = vokabularAusMigration(ersteSql);
+    expect(neu).toEqual(['bots.chat', 'bots.appointments', 'bots.orders']);
+    for (const key of neu) expect(ENTITLEMENT_KEYS).toContain(key);
   });
 });
 

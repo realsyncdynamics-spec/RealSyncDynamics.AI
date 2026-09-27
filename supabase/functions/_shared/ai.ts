@@ -13,12 +13,24 @@ import { gateFeature, EntitlementError } from './entitlements.ts';
 import { recordUsage, getCurrentTotal, UsageError } from './usage.ts';
 import { callProvider, ProviderError } from './providers.ts';
 import { reserveLlmBudget, settleLlmBudget, CostCapError } from './cost-cap.ts';
+import type { ExecutionZone, RuntimeClass } from './pricing.generated.ts';
 
 export interface RunAiToolOptions {
-  /** Forwarded to ai_tool_runs.metadata. */
+  /** Forwarded to ai_tool_runs.metadata. Shadow fields below override collisions. */
   metadata?: Record<string, unknown>;
   /** Override the tool's input character cap (default 200000). */
   maxInputChars?: number;
+  /**
+   * Shadow-Rating class. runAiTool itself is a single-provider/no-tool path,
+   * therefore c1_standard is the default. Higher-order callers may opt up.
+   */
+  runtimeClass?: RuntimeClass;
+  /** Orchestrator-level tool calls outside the provider SDK. */
+  toolCalls?: number;
+  /** Orchestrator-level retries; provider-internal retries are not inferred. */
+  retryCount?: number;
+  /** Independent verifier runs attached to this invocation. */
+  verifierRuns?: number;
 }
 
 export interface RunAiToolResult {
@@ -57,6 +69,45 @@ interface ToolRow {
 }
 
 type Residency = 'cloud' | 'eu_local';
+type ProviderClass = 'local_open' | 'managed_cloud';
+
+function nonNegativeInt(value: number | undefined): number {
+  if (!Number.isFinite(value)) return 0;
+  return Math.max(0, Math.trunc(value ?? 0));
+}
+
+function buildShadowRatingTelemetry(args: {
+  runtimeClass: RuntimeClass;
+  residency: Residency;
+  provider: ToolRow['model_provider'];
+  modelRef: string;
+  toolCalls: number;
+  retryCount: number;
+  verifierRuns: number;
+  durationMs: number;
+  actualProviderCostUsd: number | null;
+}) {
+  const executionZone: ExecutionZone =
+    args.residency === 'eu_local' ? 'eu_private' : 'governed_cloud';
+  const providerClass: ProviderClass =
+    args.provider === 'ollama' ? 'local_open' : 'managed_cloud';
+
+  return {
+    runtime_class: args.runtimeClass,
+    execution_zone: executionZone,
+    provider_class: providerClass,
+    model_ref: args.modelRef,
+    tool_calls: nonNegativeInt(args.toolCalls),
+    retry_count: nonNegativeInt(args.retryCount),
+    verifier_runs: nonNegativeInt(args.verifierRuns),
+    duration_ms: args.durationMs,
+    actual_provider_cost_usd: args.actualProviderCostUsd,
+    shadow_rating_status: 'uncalibrated' as const,
+    shadow_credit_estimate: 0,
+    wallet_enforced: false as const,
+    customer_charge: 0 as const,
+  };
+}
 
 async function resolveResidency(
   admin: SupabaseClient,
@@ -83,6 +134,7 @@ export async function runAiTool(
   opts: RunAiToolOptions = {},
 ): Promise<RunAiToolResult> {
   const maxInputChars = opts.maxInputChars ?? 200_000;
+  const runtimeClass: RuntimeClass = opts.runtimeClass ?? 'c1_standard';
   if (typeof input !== 'string') throw new AiInvokeError('input must be a string', 'BAD_REQUEST', 400);
   if (input.length > maxInputChars) {
     throw new AiInvokeError(`input too large (>${maxInputChars} chars)`, 'BAD_REQUEST', 400);
@@ -204,6 +256,18 @@ export async function runAiTool(
       : (result.inputTokens / 1_000_000) * Number(tool.cost_input_per_million_usd) +
         (result.outputTokens / 1_000_000) * Number(tool.cost_output_per_million_usd);
 
+    const shadowRating = buildShadowRatingTelemetry({
+      runtimeClass,
+      residency,
+      provider: effectiveProvider,
+      modelRef: effectiveModelId,
+      toolCalls: opts.toolCalls ?? 0,
+      retryCount: opts.retryCount ?? 0,
+      verifierRuns: opts.verifierRuns ?? 0,
+      durationMs,
+      actualProviderCostUsd: Number(costUsd.toFixed(6)),
+    });
+
     const { data: run } = await admin.from('ai_tool_runs').insert({
       tenant_id: tenantId,
       tool_id: tool.id,
@@ -215,7 +279,12 @@ export async function runAiTool(
       cost_usd: costUsd,
       duration_ms: durationMs,
       status: 'success',
-      metadata: { ...(opts.metadata ?? {}), residency, provider: effectiveProvider },
+      metadata: {
+        ...(opts.metadata ?? {}),
+        residency,
+        provider: effectiveProvider,
+        ...shadowRating,
+      },
     }).select('id').single();
 
     const totalTokens = result.inputTokens + result.outputTokens;
@@ -269,6 +338,18 @@ export async function runAiTool(
                 : 'INTERNAL';
     const message = (e as Error).message ?? String(e);
 
+    const shadowRating = buildShadowRatingTelemetry({
+      runtimeClass,
+      residency,
+      provider: effectiveProvider,
+      modelRef: effectiveModelId,
+      toolCalls: opts.toolCalls ?? 0,
+      retryCount: opts.retryCount ?? 0,
+      verifierRuns: opts.verifierRuns ?? 0,
+      durationMs,
+      actualProviderCostUsd: null,
+    });
+
     await admin.from('ai_tool_runs').insert({
       tenant_id: tenantId,
       tool_id: tool.id,
@@ -278,7 +359,12 @@ export async function runAiTool(
       status: 'error',
       error_code: code,
       error_message: message,
-      metadata: { ...(opts.metadata ?? {}), residency, provider: effectiveProvider },
+      metadata: {
+        ...(opts.metadata ?? {}),
+        residency,
+        provider: effectiveProvider,
+        ...shadowRating,
+      },
     });
 
     const status = code === 'PROVIDER_NOT_CONFIGURED' ? 503

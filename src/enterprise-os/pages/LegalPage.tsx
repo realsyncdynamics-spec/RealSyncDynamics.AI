@@ -1,6 +1,7 @@
 import React from 'react';
 import { PublicNav } from '../layout/PublicNav';
 import { PublicFooter } from '../layout/PublicFooter';
+import { COMPANY } from '../../config/company';
 
 interface LegalSection {
   heading: string;
@@ -60,7 +61,7 @@ export function DatenschutzPage() {
         {
           heading: '1. Verantwortlicher',
           body: [
-            'Verantwortlicher für die Datenverarbeitung auf dieser Plattform ist RealSync Dynamics.AI (Kontaktdaten siehe Impressum). Bei Fragen zum Datenschutz wenden Sie sich an unseren Datenschutzbeauftragten über die im Impressum genannten Kontaktwege.',
+            'Verantwortlicher für die Datenverarbeitung auf dieser Plattform ist RealSync Dynamics, Einzelunternehmen, Inhaber Dominik Steiner (Kontaktdaten siehe Impressum). Bei Fragen zum Datenschutz wenden Sie sich an die im Impressum genannten Kontaktwege.',
           ],
         },
         {
@@ -100,39 +101,46 @@ export function DatenschutzPage() {
 }
 
 export function ImpressumPage() {
+  // Abgeglichen mit dem rechtsverbindlichen Impressum (/legal/impressum) über
+  // src/config/company.ts — keine Platzhalter für Geschäftsführung/HRB, da
+  // RealSync Dynamics ein Einzelunternehmen ohne Handelsregistereintrag ist.
+  const { street, postalCode, city } = COMPANY.headquartersAddress;
   return (
     <LegalPage
       title="Impressum"
-      updatedAt="Juni 2026"
+      updatedAt="September 2026"
       sections={[
         {
-          heading: 'Angaben gemäß § 5 TMG',
+          heading: 'Angaben gemäß § 5 DDG',
           body: [
-            'RealSync Dynamics.AI',
-            '[Straße & Hausnummer]',
-            '[PLZ & Ort], Deutschland',
+            COMPANY.companyName,
+            street,
+            `${postalCode} ${city}, Deutschland`,
           ],
         },
         {
+          heading: 'Rechtsform',
+          body: ['Einzelunternehmen, vertreten durch den Inhaber Dominik Steiner.'],
+        },
+        {
           heading: 'Kontakt',
-          body: ['E-Mail: kontakt@realsyncdynamicsai.de', 'Telefon: [Telefonnummer]'],
+          body: [
+            `E-Mail: ${COMPANY.supportEmail}`,
+            ...(COMPANY.supportPhoneOptional ? [`Telefon: ${COMPANY.supportPhoneOptional}`] : []),
+          ],
         },
         {
-          heading: 'Vertreten durch',
-          body: ['[Name der Geschäftsführung]'],
+          heading: 'Handelsregister',
+          body: ['Einzelunternehmen, nicht im Handelsregister eingetragen.'],
         },
         {
-          heading: 'Registereintrag',
-          body: ['Eintragung im Handelsregister.', 'Registergericht: [Registergericht]', 'Registernummer: [HRB-Nummer]'],
-        },
-        {
-          heading: 'Umsatzsteuer-ID',
-          body: ['Umsatzsteuer-Identifikationsnummer gemäß § 27a Umsatzsteuergesetz: [USt-IdNr.]'],
+          heading: 'Umsatzsteuer',
+          body: ['Kleinunternehmer i. S. v. § 19 UStG — es wird keine Umsatzsteuer ausgewiesen.'],
         },
         {
           heading: 'Hinweis',
           body: [
-            'Diese Seite ist Teil des Klick-Prototyps „Governance OS Browser" (Phase 2) und enthält Platzhalterangaben. Das rechtsverbindliche Impressum der Plattform finden Sie unter /impressum.',
+            'Diese Seite ist Teil des Klick-Prototyps „Governance OS Browser". Maßgeblich ist das rechtsverbindliche Impressum unter /legal/impressum.',
           ],
         },
       ]}

@@ -6,7 +6,7 @@ const escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 const publicRoutes = [
   { id: 'FE-001', path: '/', label: 'Startseite', heading: new RegExp(escapeRegex(GOVERNANCE_AI_HERO_TEST_SUBSTRING), 'i') },
-  { id: 'FE-003', path: '/audit', label: 'Audit', heading: /Kostenloser DSGVO- und Tracking-Audit/i },
+  { id: 'FE-003', path: '/audit', label: 'Audit', heading: /Ihr KI-Bestand in vier Fragen/i },
   { id: 'FE-004', path: '/ai-act/', label: 'AI Act', heading: /AI Act compliance without a consulting engagement/i },
   { id: 'FE-005', path: '/oeffentliche-verwaltung/', label: 'Öffentliche Verwaltung', heading: /KI in der öffentlichen Verwaltung/i },
   { id: 'FE-006', path: '/healthtech', label: 'HealthTech', heading: /KI in HealthTech/i },

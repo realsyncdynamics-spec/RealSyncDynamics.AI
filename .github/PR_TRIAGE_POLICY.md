@@ -18,6 +18,9 @@ Als Security-PR gilt jeder PR mit mindestens einem dieser Merkmale:
 - er behebt einen CodeQL-Befund
 - er ist ein Dependabot-Security-Update
 - er ändert Auth, RLS-Policies, Secrets oder Keys
+- er behebt eine bestätigte Sicherheitslücke, auch außerhalb der genannten Bereiche (z. B. XSS, SSRF, unsichere Dateiverarbeitung, Kryptografie), unabhängig von Titel oder Label
+
+Die Liste ist nicht abschließend. Im Zweifel gilt ein PR als Security-PR.
 
 Security-PRs werden vor allen anderen Phasen vorgelegt und warten nicht auf ihre Phase.
 

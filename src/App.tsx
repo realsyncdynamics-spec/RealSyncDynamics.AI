@@ -534,6 +534,11 @@ function RoutesWithTracking() {
       <Route path="/governance-complexity-score"   element={<GovernanceScorePage />} />
       <Route path="/ai-act"     element={<AiActPage />} />
       <Route path="/ai-governance" element={<Navigate to="/ai-act" replace />} />
+      {/* Deutsche Alias-URLs (Ads, getippte Adressen). Serverseitig 301 via public/_redirects. */}
+      <Route path="/preise" element={<Navigate to="/pricing" replace />} />
+      <Route path="/produkt" element={<Navigate to="/runtime" replace />} />
+      <Route path="/loesungen" element={<Navigate to="/branchen" replace />} />
+      <Route path="/demo" element={<Navigate to="/demo-tour" replace />} />
       <Route path="/ai-dsgvo-bot" element={<AiDsgvoBotPage />} />
       {/* Warteliste. /waitlist ist das englische Alias und leitet weiter —
           serverseitig via public/_redirects (301), hier fuer die
@@ -879,6 +884,7 @@ function RoutesWithTracking() {
       <Route path="/app/approvals" element={<AppGate><GovernanceBrowserShell><GovernanceApprovalsView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/admin-log" element={<AppGate><GovernanceBrowserShell><GovernanceAdminLogView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/governance/gates" element={<AppGate><GovernanceBrowserShell><GovernanceApprovalGatesView /></GovernanceBrowserShell></AppGate>} />
+      <Route path="/app/governance" element={<Navigate to="/app/governance/start" replace />} />
       <Route path="/app/governance/start" element={<AppGate><GovernanceBrowserShell><GovernanceHomeView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/governance/evidence" element={<AppGate><GovernanceBrowserShell><GovernanceEvidenceIntegrityView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/governance/connectors" element={<AppGate><GovernanceBrowserShell><GovernanceConnectorRegistryView /></GovernanceBrowserShell></AppGate>} />

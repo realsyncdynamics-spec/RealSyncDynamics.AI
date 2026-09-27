@@ -1,5 +1,5 @@
 /**
- * Gate 0 — Security Hardening (20260927120000_gate0_security_rls_hardening.sql).
+ * Gate 0 — Security Hardening (20260927130000_gate0_security_rls_hardening.sql).
  *
  * Drei Zugriffsklassen, je mit Negativtest (fremder Mandant, anon) und dem
  * legitimen Server-Weg (service_role), damit die Härtung nichts bricht:
@@ -148,22 +148,20 @@ d('Gate 0 · Klasse 1 — Service-Role-Policies', () => {
     expect(offen, JSON.stringify(offen)).toEqual([]);
   });
 
-  it('bindet alle zehn gehärteten Policies ausschliesslich an service_role', async () => {
-    const { rows } = await ctx!.client.query<{ tablename: string; policyname: string; roles: string }>(`
-      SELECT tablename, policyname, roles::text AS roles FROM pg_policies
-       WHERE schemaname = 'public' AND (tablename, policyname) IN (
-         ('governance_audit_log','Service role can insert audit entries'),
-         ('website_compliance_reports','Service role can insert/update reports'),
-         ('website_compliance_reports','Service role can update reports'),
-         ('deployment_logs','Service role can insert logs'),
-         ('dashboard_notifications','Service role can create notifications'),
-         ('api_calls','api_calls service_role_insert'),
-         ('email_notifications','email_notifications service_role_insert'),
-         ('agent_token_usage','Service role can insert token usage'),
-         ('agent_token_usage','Service role can view token usage'),
-         ('agent_configuration','Service role can manage agent config'))`);
-    expect(rows).toHaveLength(10);
-    for (const r of rows) expect(r.roles, `${r.tablename}/${r.policyname}`).toBe('{service_role}');
+  it('lässt auf den gehärteten Tabellen keine Client-Schreib-Policy zu', async () => {
+    // Namensunabhängig: gilt auch, wenn ein paralleler PR (#1629) dieselben
+    // Policies unter neuen Namen neu anlegt. Lese-Policies (SELECT) für
+    // Mitglieder sind erlaubt und hier nicht Gegenstand.
+    const { rows } = await ctx!.client.query<{ tablename: string; policyname: string; cmd: string; roles: string }>(`
+      SELECT tablename, policyname, cmd, roles::text AS roles FROM pg_policies
+       WHERE schemaname = 'public'
+         AND tablename IN ('governance_audit_log','website_compliance_reports','deployment_logs',
+                           'dashboard_notifications','api_calls','email_notifications',
+                           'agent_token_usage','agent_configuration')
+         AND cmd <> 'SELECT'
+         AND (coalesce(qual, '') = 'true' OR coalesce(with_check, '') = 'true')
+         AND NOT (roles <@ ARRAY['service_role']::name[])`);
+    expect(rows, JSON.stringify(rows)).toEqual([]);
   });
 
   it('verweigert authenticated (auch als Mitglied) und anon jeden direkten Insert', async () => {

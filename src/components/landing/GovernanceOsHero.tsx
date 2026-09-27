@@ -6,11 +6,11 @@
  * DISCOVER → ASSESS → GOVERN → EXECUTE → VERIFY → PROVE; zwei CTAs.
  *
  * Governance-OS-Positionierung: Kategorie-Eyebrow statt Normen-Badge, H1
- * „Europa braucht kein weiteres Frontier-Modell. Europa braucht Kontrolle
- * über Frontier-KI.", Loop über alle
- * sechs Stufen. Erst-CTA → interaktive Pipeline (`#pipeline`), Zweit-CTA →
- * Architektur (`#architecture`), Enterprise als Textlink. Die Systemzeile
- * nennt nur Belegtes (Supabase eu-central-1, Hash-Kette, PDP). Vertrag:
+ * „Die Kontrollschicht für KI im Unternehmen." (Entscheidung E-F3, Copy in
+ * `src/i18n/handoff.ts`), Loop über alle sechs Stufen. Erst-CTA → Scan
+ * (`PUBLIC_CTA.to` = `/audit`), Zweit-CTA → Enterprise-Anfrage
+ * (`/contact-sales`, Label aus der CTA-SSoT), Architektur als Textlink. Die Systemzeile nennt nur
+ * Belegtes (Supabase eu-central-1, Hash-Kette, PDP). Vertrag:
  * test/landing/homepage-hero.test.tsx.
  *
  * Die Karte ist das Handoff-Asset `public/europe-map-v2.png` (1052×1152) mit
@@ -24,9 +24,14 @@ import '../../styles/governance-os-handoff.css';
 import { BrandWordmark } from '../handoff/BrandWordmark';
 import { LangToggle } from '../handoff/LangToggle';
 import { useLang } from '../../i18n/useLang';
+import { PUBLIC_CTA } from '../../config/public-nav';
+import { HERO_FREE_SCAN_CTA_LABEL } from '../governance-frontend/hero-content';
 
 export const HERO_MAP_WEBP = '/europe-map-v2.webp';
 export const HERO_MAP_PNG = '/europe-map-v2.png';
+
+/** Bestehender Enterprise-Einstieg — Ziel unverändert. */
+const HERO_ENTERPRISE_LINK = '/contact-sales?tier=enterprise&source=home-hero';
 
 function MapPicture({ priority }: { priority: boolean }) {
   return (
@@ -218,8 +223,11 @@ export function GovernanceOsHero() {
             ))}
           </dl>
 
+          {/* Das Leerzeichen zwischen den Zeilen rendert nicht (beide Spans sind
+              `display: block`), hält aber `textContent` als lesbaren Satz —
+              darauf greifen FE-001 und der Hero-Vertrag zu. */}
           <h1 id="hero-heading" className="rs-hero__h1">
-            <span className="rs-hero__h1-line">{t('heroA')}</span>
+            <span className="rs-hero__h1-line">{t('heroA')}</span>{' '}
             <span className="rs-hero__h1-line">
               <span className="rs-hero__h1-nowrap">{t('heroB')}</span>{' '}
               <span className="rs-hero__h1-accent">{t('heroC')}</span>
@@ -240,34 +248,37 @@ export function GovernanceOsHero() {
           </ol>
 
           <div className="rs-hero__ctas" role="group" aria-label={t('heroActions')}>
-            <a
-              id="pipeline-cta"
-              data-hero-cta="pipeline"
+            <Link
+              id="scan-cta"
+              data-hero-cta="audit"
               data-testid="hero-primary-cta"
-              href="#pipeline"
+              to={PUBLIC_CTA.to}
               className="rs-btn rs-btn--primary rs-btn--h52"
             >
-              {t('cta')}
+              {HERO_FREE_SCAN_CTA_LABEL[lang] ?? HERO_FREE_SCAN_CTA_LABEL.de}
               <ArrowRight size={18} aria-hidden="true" />
-            </a>
-            <a
-              data-hero-cta="architecture"
+            </Link>
+            <Link
+              data-hero-cta="enterprise"
               data-testid="hero-secondary-cta"
-              href="#architecture"
+              to={HERO_ENTERPRISE_LINK}
               className="rs-btn rs-btn--glass rs-btn--h52"
             >
-              {t('ctaExplore')}
-            </a>
+              {/* CTA-SSoT: einzige kontaktbasierte CTA (runtimeVocab.CTA.enterprise). */}
+              {t('ctaEnterprise')}
+            </Link>
           </div>
 
-          <Link
-            to="/contact-sales?tier=enterprise&source=home-hero"
+          {/* Der Architektur-Einstieg bleibt erreichbar, jetzt als Textlink —
+              die Buttonplätze tragen Scan und Enterprise. */}
+          <a
+            href="#architecture"
             className="rs-hero__enterprise"
-            data-testid="hero-enterprise-link"
+            data-testid="hero-architecture-link"
           >
-            {t('ctaEnterprise')}
+            {t('ctaExplore')}
             <ArrowRight size={14} aria-hidden="true" />
-          </Link>
+          </a>
 
           <p className="rs-hero__trust">{t('trustLine')}</p>
         </div>

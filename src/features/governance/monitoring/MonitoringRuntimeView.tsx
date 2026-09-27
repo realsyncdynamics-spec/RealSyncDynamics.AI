@@ -6,13 +6,52 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { MonitoringSurface } from '../../../pages/MonitoringPage';
 import { useTenant } from '../../../core/access/TenantProvider';
-import { fetchTenantAssets, fetchTenantEvents } from '../governanceApi';
+import { getSupabase } from '../../../lib/supabase';
 import { countOpenIncidents } from '../incidentsApi';
+import { listScanRuns } from '../scans/scansApi';
+import {
+  buildMonitoringHeader, type MonitoringHeader, type MonitoringSourceRow, type MonitoringStatus,
+} from './monitoringHeader';
 import { AuthGate } from '../../kodee/connections/AuthGate';
 import { withPerformanceMonitoring } from '../withPerformanceMonitoring';
 
 // ---------------------------------------------------------------------------
-// Mock-Daten
+// Kopfzeile — nur echte Mandantendaten (Gate 1)
+// ---------------------------------------------------------------------------
+
+const STATUS_BADGE: Record<MonitoringStatus, { label: string; className: string; pulse: boolean }> = {
+  active: { label: 'AKTIV', className: 'text-teal-400', pulse: true },
+  no_sources: { label: 'KEINE AKTIVE QUELLE', className: 'text-amber-300', pulse: false },
+  unknown: { label: 'STATUS UNBEKANNT', className: 'text-titanium-500', pulse: false },
+};
+
+const EMPTY_HEADER = buildMonitoringHeader({ sources: null, openIncidents: null, latestAuditRuns: null });
+
+/** Monitoring-Quellen des Mandanten (RLS-gescoped); wirft bei Fehler. */
+async function fetchMonitoringSources(tenantId: string): Promise<MonitoringSourceRow[]> {
+  const { data, error } = await getSupabase()
+    .from('monitoring_sources')
+    .select('status,last_scan_at,next_scan_at')
+    .eq('tenant_id', tenantId);
+  if (error) throw new Error(error.message);
+  return (data ?? []) as MonitoringSourceRow[];
+}
+
+/** Beispieldaten-Hinweis: diese Abschnitte sind noch nicht an den Mandanten angebunden. */
+function PreviewNotice() {
+  return (
+    <div
+      role="note"
+      data-testid="monitoring-preview-notice"
+      className="mx-6 mt-4 border border-amber-900 bg-amber-950/20 px-3 py-2 font-mono text-[11px] text-amber-300"
+    >
+      VORSCHAU · Beispieldaten, nicht Ihr Mandant. Diese Abschnitte sind noch nicht an echte Monitoring-Daten angebunden.
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Beispieldaten (Vorschau, nicht mandantenbezogen)
 // ---------------------------------------------------------------------------
 
 type DomainStatus = 'ok' | 'warning' | 'error' | 'critical';
@@ -554,7 +593,10 @@ function AlertRulesPanel() {
               <button
                 type="button"
                 onClick={() => toggleRule(rule.id)}
-                className={`relative inline-flex h-4 w-7 shrink-0 items-center border-0 transition-colors focus:outline-none ${
+                // Vorschau: keine Speicherung — ein Umschalten wäre reiner Client-State.
+                disabled
+                title="Vorschau — Alert-Regeln sind noch nicht speicherbar"
+                className={`relative inline-flex h-4 w-7 shrink-0 items-center border-0 transition-colors focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed ${
                   rule.active ? 'bg-teal-500' : 'bg-titanium-700'
                 }`}
                 aria-label={rule.active ? 'Deaktivieren' : 'Aktivieren'}
@@ -580,7 +622,9 @@ function AlertRulesPanel() {
       <div className="px-4 py-3 border-t border-titanium-900">
         <button
           type="button"
-          className="w-full font-mono text-[10px] uppercase tracking-wider text-teal-400 hover:text-teal-300 border border-teal-900 hover:border-teal-700 px-3 py-1.5 transition-colors"
+          disabled
+          title="Vorschau — Alert-Regeln sind noch nicht speicherbar"
+          className="w-full font-mono text-[10px] uppercase tracking-wider text-teal-400 border border-teal-900 px-3 py-1.5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           + Regel hinzufügen
         </button>
@@ -604,29 +648,29 @@ const TAB_LABELS: Record<AssetTab, string> = {
 
 export function MonitoringRuntimeView() {
   const { activeTenantId } = useTenant();
-  const [assetCount, setAssetCount] = useState<string>('18');
-  const [alertCount, setAlertCount] = useState<string>('4');
-  const [lastCheck, setLastCheck] = useState<string>('vor 3 Min.');
+  const [header, setHeader] = useState<MonitoringHeader>(EMPTY_HEADER);
   const [activeTab, setActiveTab] = useState<AssetTab>('websites');
 
   useEffect(() => {
+    let cancelled = false;
+    setHeader(EMPTY_HEADER);
     if (!activeTenantId) return;
-    fetchTenantAssets(activeTenantId).then((a) => {
-      if (a.length > 0) setAssetCount(String(a.length));
-    }).catch(() => {});
-    countOpenIncidents(activeTenantId).then((n) => setAlertCount(String(n))).catch(() => {});
-    fetchTenantEvents(activeTenantId, 1).then((evs) => {
-      if (evs.length > 0) {
-        const diffMs = Date.now() - new Date(evs[0].created_at).getTime();
-        const diffMin = Math.floor(diffMs / 60_000);
-        const ts = diffMin < 60 ? `vor ${diffMin} Min.`
-          : diffMin < 1440 ? `vor ${Math.floor(diffMin / 60)} Std.`
-          : `vor ${Math.floor(diffMin / 1440)} Tag${Math.floor(diffMin / 1440) !== 1 ? 'en' : ''}`;
-        setLastCheck(ts);
-      }
-    }).catch(() => {});
+    void Promise.allSettled([
+      fetchMonitoringSources(activeTenantId),
+      countOpenIncidents(activeTenantId),
+      listScanRuns(activeTenantId, { limit: 1 }),
+    ]).then(([sources, incidents, runs]) => {
+      if (cancelled) return;
+      setHeader(buildMonitoringHeader({
+        sources: sources.status === 'fulfilled' ? sources.value : null,
+        openIncidents: incidents.status === 'fulfilled' ? incidents.value : null,
+        latestAuditRuns: runs.status === 'fulfilled' ? runs.value : null,
+      }));
+    });
+    return () => { cancelled = true; };
   }, [activeTenantId]);
 
+  const badge = STATUS_BADGE[header.status];
 
   return (
     <div className="min-h-screen bg-obsidian-950 text-titanium-100">
@@ -640,9 +684,9 @@ export function MonitoringRuntimeView() {
               <h1 className="text-lg font-semibold tracking-tight text-titanium-50 leading-none">
                 Monitoring Runtime
               </h1>
-              <span className="inline-flex items-center gap-1.5 font-mono text-[11px] text-teal-400">
-                <span className="inline-block h-2 w-2 rounded-full bg-teal-400 motion-safe:animate-pulse" />
-                AKTIV
+              <span className={`inline-flex items-center gap-1.5 font-mono text-[11px] ${badge.className}`} data-testid="monitoring-status">
+                <span className={`inline-block h-2 w-2 rounded-full bg-current ${badge.pulse ? 'motion-safe:animate-pulse' : ''}`} />
+                {badge.label}
               </span>
             </div>
             <p className="mt-1 font-mono text-[10px] text-titanium-500 uppercase tracking-wider">
@@ -653,11 +697,11 @@ export function MonitoringRuntimeView() {
 
         {/* Metriken-Reihe */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-px bg-titanium-900">
-          <MetricCard label="Überwachte Assets" value={assetCount} />
-          <MetricCard label="Scans heute"        value="142" />
-          <MetricCard label="Aktive Alerts"      value={alertCount} valueClass="text-red-400" />
-          <MetricCard label="Letzte Prüfung"     value={lastCheck} valueClass="text-teal-400" />
-          <MetricCard label="Nächste Prüfung"    value="07:45" />
+          <MetricCard label="Aktive Quellen"     value={header.sources} />
+          <MetricCard label="Quellen mit Fehler" value={header.failingSources} valueClass={header.failingSources !== '—' && header.failingSources !== '0' ? 'text-red-400' : undefined} />
+          <MetricCard label="Offene Vorfälle"    value={header.openIncidents} valueClass={header.openIncidents !== '—' && header.openIncidents !== '0' ? 'text-red-400' : undefined} />
+          <MetricCard label="Letzter Scan"       value={header.lastScan} valueClass="text-teal-400" />
+          <MetricCard label="Nächster Scan"      value={header.nextScan} />
         </div>
       </section>
 
@@ -682,6 +726,7 @@ export function MonitoringRuntimeView() {
           ))}
         </div>
 
+        <PreviewNotice />
         {/* Tab-Inhalt */}
         <div className="py-2">
           {activeTab === 'websites'    && <WebsitesTab />}
@@ -693,6 +738,7 @@ export function MonitoringRuntimeView() {
 
       {/* ── Sektion 3: Alerts + Regeln ── */}
       <section className="border-b border-titanium-900">
+        <PreviewNotice />
         <div className="grid grid-cols-1 lg:grid-cols-3 divide-y lg:divide-y-0 lg:divide-x divide-titanium-900">
           {/* Linke Spalte — Aktive Alerts (2/3) */}
           <div className="lg:col-span-2">

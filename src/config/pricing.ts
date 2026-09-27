@@ -330,8 +330,8 @@ const PLAN_ACCENT: Record<PlanId, { border: string; text: string; ring: string }
   agency:     { border: 'border-t-violet-400',   text: 'text-violet-400',   ring: 'ring-violet-400/30' },
   enterprise: { border: 'border-t-emerald-400',  text: 'text-emerald-400',  ring: 'ring-emerald-400/30' },
   partner:    { border: 'border-t-gold-400',     text: 'text-gold-400',     ring: 'ring-gold-400/30' },
-  // Einmalprodukt: `petrol` ist der bestehende Landing-Akzent aus
-  // tailwind.config.ts — kein neues Design-Token, keine neue Variante.
+  // Einmalprodukt: `petrol` ist der bestehende Landing-Akzent aus dem
+  // `@theme`-Block in src/index.css — kein neues Token, keine neue Variante.
   governance_launch: { border: 'border-t-petrol', text: 'text-petrol', ring: 'ring-petrol/30' },
 };
 

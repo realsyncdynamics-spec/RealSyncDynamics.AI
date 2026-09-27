@@ -47,12 +47,19 @@ function normalizeSeverity(value: string | undefined): OptimizerSeverity {
 export async function runOptimizerScan(rawUrl: string, scannedAt: string): Promise<OptimizerScanResult> {
   const url = normalizeUrl(rawUrl);
 
-  const report = await postEdgeFunction<GdprAuditReport>('gdpr-audit', {
-    url,
-    // Öffentlicher Erst-Scan: keine E-Mail nötig, Backend akzeptiert leer.
-    email: '',
-    source: 'optimizer',
-  });
+  // `gdpr-audit` ist öffentlich (verify_jwt=false) für den anonymen Free-Scan.
+  // Ohne `requireAuth: false` erzwingt postEdgeFunction ein JWT aus localStorage
+  // und Free-User sterben VOR dem Request mit „Nicht authentifiziert…“.
+  const report = await postEdgeFunction<GdprAuditReport>(
+    'gdpr-audit',
+    {
+      url,
+      // Öffentlicher Erst-Scan: keine E-Mail nötig, Backend akzeptiert leer.
+      email: '',
+      source: 'optimizer',
+    },
+    { requireAuth: false },
+  );
 
   const issues: OptimizerIssue[] = (report.issues ?? []).map((i, idx) => ({
     id: i.id ?? `issue-${idx}`,

@@ -3,10 +3,14 @@
 interface ImportMetaEnv {
   readonly VITE_SUPABASE_URL?: string;
   readonly VITE_SUPABASE_ANON_KEY?: string;
+  readonly VITE_SUPABASE_ANON_JWT?: string;
+  readonly VITE_TURNSTILE_SITE_KEY?: string;
   readonly VITE_AUTH_GOOGLE_ENABLED?: string;
   readonly VITE_AUTH_AZURE_ENABLED?: string;
   readonly VITE_AUTH_LINKEDIN_ENABLED?: string;
   readonly VITE_AUTH_GITHUB_ENABLED?: string;
+  /** 'true' schaltet Governance AI (/app/assistant) ein. Standard: aus. */
+  readonly VITE_GOVERNANCE_AI_ENABLED?: string;
   readonly VITE_META_PIXEL_ID?: string;
   readonly VITE_TIKTOK_PIXEL_ID?: string;
   readonly VITE_GA4_MEASUREMENT_ID?: string;

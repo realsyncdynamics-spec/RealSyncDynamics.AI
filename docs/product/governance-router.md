@@ -53,3 +53,16 @@ Kein Eintrag in `pdp_shadow_log` in diesem Schnitt: die Quellenliste ist eine ge
 - Residenz-RPC bleibt fail-open auf `cloud` (wie `runAiTool`); Fail-closed wäre ein eigener Schnitt
 - Kein zweiter Provider-Marktplatz
 - `ai-gateway` bleibt JWT-pflichtig
+
+## Lokaler Provider (EU-lokal): LM Studio oder Ollama
+
+Der lokale/EU-lokale Inferenz-Slot ist per Env wählbar — Default unverändert:
+
+- `AI_LOCAL_PROVIDER=lm_studio` (Default) → `LM_STUDIO_BASE_URL`, bisheriges Verhalten, byte-identisch.
+- `AI_LOCAL_PROVIDER=ollama` → `OLLAMA_BASE_URL` (kein Default; muss gesetzt sein), Ollama-Adapter (CLAUDE.md §2: „Ollama (EU-lokal, Fallback)"). Modelle: `OLLAMA_MODEL` (Default `llama3.1:8b`) und `OLLAMA_EMBED_MODEL` (Default `nomic-embed-text`).
+
+Der Router nutzt **einen** lokalen Adapter für alle lokalen Profile (`fast-local`/`quality-local`/`strict-json`/`embed-default`), daher genau ein Chat- und ein Embedding-Modell — die fast/quality-Trennung ist im lokalen Slot heute nicht ausdrückbar.
+
+Umschalten ist ein bewusster Betreiberschritt. Beim Umschalten auf `ollama` nennt die Art.-50-Offenlegung (`_governance.processors`) automatisch „EU-lokale Inferenz (Ollama)" statt LM Studio — die Kennzeichnung folgt dem real bedienenden Provider (`localInferenceLabel()` in `serverFromEnv.ts`).
+
+> Stand der Messung (2026-09-19, gegen Produktion): `profiles.ai_data_residency` = 6× `cloud`, 0× `eu_local`; `ai_tool_runs` mit `tool_key='governance_router'` = 0. Der EU-lokale Pfad hat heute keine Nutzer — dies ist Vorlauf-Capability, kein Fix eines Live-Ausfalls.

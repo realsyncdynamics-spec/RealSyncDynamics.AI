@@ -3,16 +3,20 @@ import { defineConfig, devices } from '@playwright/test';
 /**
  * Playwright config — App-interne Suite unter ./e2e
  *
- * Lokal:
- *   npx playwright install chromium
- *   npm run build && npx vite preview --port 4173
- *   npm run e2e
- *
- * CI läuft über die Katalog-Suite (`npm run test:e2e`, playwright.catalog.config.ts).
- * Diese Datei bleibt für `npm run e2e` und lokale App-Pfade.
+ * launchOptions.args (nicht `launchArgs` — das Feld ignoriert Playwright).
  */
 const BASE_URL = process.env.TEST_BASE_URL ?? process.env.E2E_BASE_URL ?? 'http://127.0.0.1:4173';
 const isLocalTarget = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i.test(BASE_URL);
+
+const CI_LAUNCH_ARGS = [
+  '--disable-dev-shm-usage',
+  '--disable-gpu',
+  '--no-sandbox',
+  '--disable-setuid-sandbox',
+  '--mute-audio',
+  '--disable-extensions',
+  '--disable-background-networking',
+];
 
 export default defineConfig({
   testDir: './e2e',
@@ -30,19 +34,17 @@ export default defineConfig({
     baseURL: BASE_URL,
     trace: process.env.CI ? 'retain-on-failure' : 'on-first-retry',
     screenshot: process.env.CI ? 'only-on-failure' : 'off',
-    video: process.env.CI ? 'retain-on-failure' : 'off',
+    video: 'off',
     actionTimeout: process.env.CI ? 12_000 : 0,
     navigationTimeout: process.env.CI ? 20_000 : 0,
+    launchOptions: {
+      args: process.env.CI ? CI_LAUNCH_ARGS : ['--disable-dev-shm-usage', '--mute-audio'],
+    },
   },
   projects: [
     {
       name: 'chromium',
-      use: {
-        ...devices['Desktop Chrome'],
-        ...(process.env.CI && {
-          launchArgs: ['--disable-dev-shm-usage', '--disable-gpu'],
-        }),
-      },
+      use: { ...devices['Desktop Chrome'] },
     },
   ],
   webServer: isLocalTarget

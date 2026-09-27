@@ -14,11 +14,19 @@ import {
 import { countRiskInventory } from '../governance/aiActRiskInventoryApi';
 import { getSupabase } from '../../lib/supabase';
 import { listCatalog, listActivations, listTenantMappings, setPackActive, type PolicyPack, type PacksError } from './policyPacksApi';
+import { cheapestPlanForKeys } from '../../core/access/featureAccess';
+import { planById } from '@/shared/pricing';
+
+/** Mindestplan aus PLAN_ENTITLEMENTS statt Literal (früher fälschlich „Agency“; tatsächlich Starter). */
+const PACKS_MIN_PLAN = (() => {
+  const id = cheapestPlanForKeys(['policy.packs']);
+  return id ? planById(id).name : null;
+})();
 
 /**
  * /app/policy-packs — Policy Packs Marketplace: aktivierbare, vorkonfigurierte
  * Compliance-Regelwerke (DSGVO, EU AI Act, NIS2, DORA, ISO 27001, TISAX + Kombi).
- * Ab Agency (Entitlement policy.packs). Abdeckung wird gegen die
+ * Ab dem günstigsten Plan mit Entitlement policy.packs (PLAN_ENTITLEMENTS, heute Starter). Abdeckung wird gegen die
  * asset_control_mappings des Tenants berechnet.
  */
 export function PolicyPacksView() {
@@ -28,7 +36,10 @@ export function PolicyPacksView() {
 function errorMessage(e: PacksError): string {
   switch (e.kind) {
     case 'forbidden': return 'Kein Zugriff auf diesen Mandanten.';
-    case 'payment_required': return 'Policy Packs sind erst ab Agency verfügbar.';
+    case 'payment_required':
+      return PACKS_MIN_PLAN
+        ? `Policy Packs sind erst ab ${PACKS_MIN_PLAN} verfügbar.`
+        : 'Policy Packs sind im aktuellen Plan nicht enthalten.';
     default: return e.message;
   }
 }
@@ -145,7 +156,9 @@ function PacksInner() {
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
             <div className="text-xs text-titanium-300">
               <p className="font-semibold text-amber-300">Policy Packs sind in deinem Plan nicht freigeschaltet.</p>
-              <p className="mt-1">Vorkonfigurierte Compliance-Regelwerke sind ab <strong>Agency</strong> aktivierbar.</p>
+              {PACKS_MIN_PLAN && (
+                <p className="mt-1">Vorkonfigurierte Compliance-Regelwerke sind ab <strong>{PACKS_MIN_PLAN}</strong> aktivierbar.</p>
+              )}
             </div>
           </div>
         )}

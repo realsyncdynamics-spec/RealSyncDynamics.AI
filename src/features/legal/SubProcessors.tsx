@@ -69,10 +69,22 @@ const SUB_PROCESSORS: SubProcessor[] = [
     status: 'available',
   },
   {
+    name: 'Cloudflare, Inc.',
+    purpose:
+      'Auslieferung der oeffentlichen Website (Cloudflare Pages), Edge-/CDN-Zustellung und Web Analytics',
+    data_categories: [
+      'IP-Adresse + User-Agent (Edge-Logs)',
+      'Seitenaufruf-Messwerte (Cloudflare Web Analytics, cookiefrei)',
+    ],
+    region: 'Global Anycast-Edge, USA (mit EU-DPA + SCCs)',
+    dpa_url: 'https://www.cloudflare.com/cloudflare-customer-dpa/',
+    status: 'available',
+  },
+  {
     name: 'GitHub, Inc. (Microsoft Corporation)',
-    purpose: 'Statisches Frontend-Hosting via GitHub Pages CDN, Repository-Hosting',
-    data_categories: ['IP-Adresse + User-Agent (HTTP-Logs, kein PII-Storage)'],
-    region: 'Global CDN (Edge), USA (mit EU-DPA + SCCs)',
+    purpose: 'Repository-Hosting und CI (GitHub Actions) — kein Hosting der oeffentlichen Website',
+    data_categories: ['Commit-Metadaten der Mitwirkenden (kein Besucher-Traffic)'],
+    region: 'USA (mit EU-DPA + SCCs)',
     dpa_url: 'https://github.com/customer-terms/github-data-protection-agreement',
     status: 'available',
   },

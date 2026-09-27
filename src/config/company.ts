@@ -2,7 +2,7 @@
  * Zentrale Unternehmenskonfiguration für RealSyncDynamics.AI
  *
  * Diese Datei ist die Single Source of Truth für alle Unternehmensdaten:
- * - Rechtliche Form (aktuell: UG, später: GmbH)
+ * - Rechtliche Form (aktuell: Einzelunternehmen; später optional UG/GmbH)
  * - Firmennamen und Kontaktinformationen
  * - Impressum- und Rechnungsdaten
  * - Stripe-Integration
@@ -10,11 +10,11 @@
  *
  * Änderungen hier propagieren überall — niemals duplizieren.
  *
- * Umwandlung auf GmbH: Setzen Sie einfach legalForm: 'GmbH' und companyName
- * wird automatisch angepasst. Kein Code-Redeploy nötig.
+ * Bindend abgeglichen mit /legal/impressum (src/features/legal/Impressum.tsx).
+ * Umwandlung auf UG/GmbH: legalForm setzen und registryEntry ergänzen.
  */
 
-export type LegalForm = 'UG' | 'GmbH';
+export type LegalForm = 'Einzelunternehmen' | 'UG' | 'GmbH';
 
 export interface CompanyConfig {
   // ─── Legal Identity ──────────────────────────────────────────────────────
@@ -33,7 +33,7 @@ export interface CompanyConfig {
   supportPhoneOptional?: string;
 
   // ─── Legal Registration (Impressum §5 TMG / §18 MStV) ────────────────────
-  /** Handelsregister-Eintrag (z.B. "HRB 12345 (Amtsgericht Jena)") */
+  /** Handelsregister-Eintrag (z.B. "HRB 12345 (Amtsgericht Jena)") — null bei Einzelunternehmen */
   registryEntry: string | null;
   /** Umsatzsteuer-Identifikationsnummer */
   vatId: string | null;
@@ -53,7 +53,7 @@ export interface CompanyConfig {
   stripePublishableKey: string;
 
   // ─── Tax & Compliance ────────────────────────────────────────────────────
-  /** Tax mode: "EU_STANDARD" (VAT) oder "EXEMPT" (non-profit) */
+  /** Tax mode: "EU_STANDARD" (VAT) oder "EXEMPT" (Kleinunternehmer / non-profit) */
   taxMode: 'EU_STANDARD' | 'EXEMPT';
   /** DSGVO/EU-AI-Act Compliance Hinweis */
   complianceDisclaimer: string;
@@ -71,42 +71,42 @@ export interface CompanyConfig {
  * Zentrale Company Config — ändern Sie hier, um bundesweit auszurollen.
  *
  * WICHTIG:
- * - Alle VAT/Registry-Felder müssen vor Production-Go-Live gesetzt sein
+ * - Abgleich mit Impressum: Einzelunternehmen, Neuhaus am Rennweg, kein HRB
  * - Stripe-Keys kommen aus .env: VITE_STRIPE_PUBLISHABLE_KEY
- * - legalForm muss 'UG' oder 'GmbH' sein (definiert Impressum, Verträge, etc.)
+ * - registryEntry bleibt null, solange legalForm === 'Einzelunternehmen'
  */
 export const COMPANY: CompanyConfig = {
-  companyName: 'RealSync Dynamics AI',
-  legalForm: 'UG',
+  companyName: 'RealSync Dynamics',
+  legalForm: 'Einzelunternehmen',
   futureLegalForm: 'GmbH',
 
   country: 'Germany',
   headquartersAddress: {
-    street: 'Lutherstr. 32',
-    postalCode: '07743',
-    city: 'Jena',
+    street: 'Schwarzburger Str. 31',
+    postalCode: '98724',
+    city: 'Neuhaus am Rennweg',
   },
-  supportEmail: 'support@realsyncdynamicsai.de',
-  supportPhoneOptional: '+49 (0) 3641 ???',
+  supportEmail: 'info@realsyncdynamicsai.de',
+  supportPhoneOptional: '+49 176 4013 2161',
 
-  // Will be loaded from env
+  // Will be loaded from env / bleibt null für Einzelunternehmen
   registryEntry: null,
   vatId: null,
   economicId: null,
 
   billingAddress: {
-    street: 'Lutherstr. 32',
-    postalCode: '07743',
-    city: 'Jena',
+    street: 'Schwarzburger Str. 31',
+    postalCode: '98724',
+    city: 'Neuhaus am Rennweg',
     country: 'Germany',
   },
 
   stripeAccountMode: 'test', // Switch to 'live' for production
   stripePublishableKey: (import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY as string) || '',
 
-  taxMode: 'EU_STANDARD',
+  taxMode: 'EXEMPT',
   complianceDisclaimer:
-    'RealSync Dynamics AI ist eine Compliance-Support-Plattform. Keine Rechtsberatung. ' +
+    'RealSync Dynamics / RealSyncDynamics.AI ist eine Compliance-Support-Plattform. Keine Rechtsberatung. ' +
     'Die Ergebnisse dienen der technischen und organisatorischen Compliance-Unterstützung.',
 
   website: 'https://realsyncdynamicsai.de',
@@ -118,12 +118,15 @@ export const COMPANY: CompanyConfig = {
 
 /**
  * Vollständiger Company-Display-Name mit Legal Form
- * z.B. "RealSync Dynamics AI UG (haftungsbeschränkt)"
+ * z.B. "RealSync Dynamics · Einzelunternehmen" bzw. "… UG (haftungsbeschränkt)"
  */
 export function getCompanyDisplayName(includeEntity = true): string {
   const base = COMPANY.companyName;
   if (!includeEntity) return base;
 
+  if (COMPANY.legalForm === 'Einzelunternehmen') {
+    return `${base} · Einzelunternehmen`;
+  }
   if (COMPANY.legalForm === 'UG') {
     return `${base} UG (haftungsbeschränkt)`;
   }
@@ -149,13 +152,19 @@ export function getBillingAddress(): string {
   return `${street}, ${postalCode} ${city}, ${country}`;
 }
 
+/** Einzelunternehmen braucht keinen Handelsregister-Eintrag. */
+export function requiresRegistryEntry(legalForm: LegalForm = COMPANY.legalForm): boolean {
+  return legalForm === 'UG' || legalForm === 'GmbH';
+}
+
 /**
- * Validiert, ob die Konfiguration für Production-Start bereit ist
+ * Validiert, ob die Konfiguration für Production-Start bereit ist.
+ * HRB ist nur bei UG/GmbH Pflicht; Kleinunternehmer ohne USt-IdNr. ist zulässig.
  */
 export function isProductionReady(): boolean {
+  const registryOk = !requiresRegistryEntry() || COMPANY.registryEntry !== null;
   return (
-    COMPANY.vatId !== null &&
-    COMPANY.registryEntry !== null &&
+    registryOk &&
     COMPANY.stripeAccountMode === 'live' &&
     COMPANY.stripePublishableKey !== ''
   );
@@ -172,15 +181,13 @@ export function isBetaReady(): boolean {
 }
 
 /**
- * Gibt Fehler zurück, wenn kritische Felder fehlen
+ * Gibt Fehler zurück, wenn kritische Felder fehlen.
+ * Fehlendes HRB ist kein Blocker für Einzelunternehmen.
  */
 export function getProductionValidationErrors(): string[] {
   const errors: string[] = [];
 
-  if (!COMPANY.vatId) {
-    errors.push('VAT ID (USt-IdNr.) ist erforderlich');
-  }
-  if (!COMPANY.registryEntry) {
+  if (requiresRegistryEntry() && !COMPANY.registryEntry) {
     errors.push('Handelsregister-Eintrag (HRB) ist erforderlich');
   }
   if (COMPANY.stripeAccountMode !== 'live') {

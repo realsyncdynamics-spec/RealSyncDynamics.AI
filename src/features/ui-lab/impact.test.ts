@@ -44,4 +44,15 @@ describe('analyzeDraft', () => {
     expect(cards[0]?.status).toBe('unmapped');
     expect(mergeBlocked(cards)).toBe(true);
   });
+
+  it('enforces industrial-radius-lock: baseline 0 passes, any other value blocks', () => {
+    const zeroCards = analyzeDraft(draftWith({ '--context-radius-card': '0' }));
+    expect(zeroCards[0]?.status).not.toBe('blocked');
+    expect(mergeBlocked(zeroCards)).toBe(false);
+
+    const nonZeroCards = analyzeDraft(draftWith({ '--context-radius-card': '4px' }));
+    expect(nonZeroCards[0]?.status).toBe('blocked');
+    expect(nonZeroCards[0]?.risk).toBe('high');
+    expect(mergeBlocked(nonZeroCards)).toBe(true);
+  });
 });

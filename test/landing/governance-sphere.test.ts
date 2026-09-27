@@ -9,6 +9,7 @@ import {
 import {
   detectEarthQuality,
   getEarthTextureSet,
+  shouldPreferGpuCompression,
 } from '../../src/components/visual/earthTextures';
 
 describe('Governance Sphere — demo contract', () => {
@@ -35,13 +36,14 @@ describe('Governance Sphere — demo contract', () => {
       'utf8',
     );
     const landing = readFileSync(resolve(__dirname, '../../src/pages/MainLanding.tsx'), 'utf8');
+    const titanHero = readFileSync(resolve(__dirname, '../../src/components/landing/HeroTitanium.tsx'), 'utf8');
     expect(host).toContain('lazy(');
     expect(host).toContain('prefers-reduced-motion');
     expect(host).toContain('GovernanceSphereFallback');
     expect(host).toContain('SPHERE_DEMO_LABEL');
     expect(host).toContain('DEMO DATA');
     expect(landing).not.toContain('GovernanceSphereHost');
-    expect(landing).toContain('EuropeNetworkHero');
+    expect(titanHero).toContain('EuropeNetworkHero');
   });
 
   it('renders photoreal Earth (day texture), not wireframe-only mesh', () => {
@@ -64,9 +66,9 @@ describe('Governance Sphere — demo contract', () => {
     expect(scene).toContain('PhotorealEarthMesh');
     expect(scene).not.toMatch(/\bwireframe\b/);
     expect(scene).not.toContain('icosahedronGeometry');
-    expect(mesh).toContain('/textures/earth-day.jpg');
+    expect(mesh).toContain('/textures/earth-day-2k.webp');
     expect(mesh).toContain('meshBasicMaterial');
-    expect(textures).toContain('earth-day-8k.jpg');
+    expect(textures).toContain('earth-day-4k.webp');
     expect(mesh).toMatch(/uNight|night/i);
     expect(mesh).toMatch(/uClouds|clouds/i);
     expect(fallback).toContain('/europe-globe');
@@ -75,12 +77,16 @@ describe('Governance Sphere — demo contract', () => {
   it('ships adaptive day/night/cloud/specular texture assets', () => {
     const root = resolve(__dirname, '../../public/textures');
     for (const file of [
-      'earth-day.jpg',
-      'earth-day-4k.jpg',
-      'earth-day-8k.jpg',
-      'earth-night.jpg',
-      'earth-clouds.jpg',
-      'earth-specular.jpg',
+      'earth-day-2k.webp',
+      'earth-day-4k.webp',
+      'earth-night-2k.webp',
+      'earth-clouds-2k.webp',
+      'earth-specular-1k.webp',
+      'earth-day-2k.ktx2',
+      'earth-day-4k.ktx2',
+      'earth-night-2k.ktx2',
+      'earth-clouds-2k.ktx2',
+      'earth-specular-1k.ktx2',
       'README.md',
     ]) {
       expect(existsSync(resolve(root, file)), file).toBe(true);
@@ -89,10 +95,27 @@ describe('Governance Sphere — demo contract', () => {
 
   it('maps quality tiers to progressive texture paths', () => {
     expect(detectEarthQuality({ reducedMotion: true })).toBe('low');
-    expect(getEarthTextureSet('low').day).toBe('/textures/earth-day.jpg');
-    expect(getEarthTextureSet('medium').day).toBe('/textures/earth-day-4k.jpg');
-    expect(getEarthTextureSet('high').day).toBe('/textures/earth-day-8k.jpg');
+    expect(getEarthTextureSet('low').day).toBe('/textures/earth-day-2k.webp');
+    expect(getEarthTextureSet('medium').day).toBe('/textures/earth-day-2k.webp');
+    expect(getEarthTextureSet('high').day).toBe('/textures/earth-day-4k.webp');
+    expect(getEarthTextureSet('medium').dayKtx2).toBe('/textures/earth-day-2k.ktx2');
+    expect(getEarthTextureSet('high').dayKtx2).toBe('/textures/earth-day-4k.ktx2');
     expect(getEarthTextureSet('high').cloudsEnabled).toBe(true);
     expect(getEarthTextureSet('low').nightEnabled).toBe(false);
+  });
+
+  it('targets KTX2 at memory-constrained devices without slow-network regression', () => {
+    expect(shouldPreferGpuCompression({ deviceMemory: 4, effectiveType: '4g' })).toBe(true);
+    expect(shouldPreferGpuCompression({ deviceMemory: 8, effectiveType: '4g' })).toBe(false);
+    expect(shouldPreferGpuCompression({ deviceMemory: 4, effectiveType: '3g' })).toBe(false);
+    expect(
+      shouldPreferGpuCompression({ deviceMemory: 4, effectiveType: '4g', saveData: true }),
+    ).toBe(false);
+  });
+
+  it('ships the Basis transcoder required by KTX2Loader', () => {
+    const root = resolve(__dirname, '../../public/basis');
+    expect(existsSync(resolve(root, 'basis_transcoder.js'))).toBe(true);
+    expect(existsSync(resolve(root, 'basis_transcoder.wasm'))).toBe(true);
   });
 });

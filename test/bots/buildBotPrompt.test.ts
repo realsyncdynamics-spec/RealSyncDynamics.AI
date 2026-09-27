@@ -26,6 +26,42 @@ describe('buildBotPrompt', () => {
     expect(out.indexOf('[Unternehmens-Kontext und Persona]')).toBeLessThan(out.indexOf('[Neue Nachricht]'));
   });
 
+  it('bindet das Restaurant-Profil als kontrollierten Kontext ein', () => {
+    const out = buildBotPrompt({
+      config: {
+        vertical: 'restaurant',
+        restaurant: {
+          business_name: 'Pizzeria Bella Napoli',
+          order_mode: 'both',
+          minimum_order: 15,
+          delivery_fee: 2.5,
+          estimated_delivery_minutes: 40,
+          currency: 'EUR',
+        },
+      },
+      userMessage: 'Ich möchte eine Pizza bestellen.',
+    });
+
+    expect(out).toContain('[Branchenprofil]');
+    expect(out).toContain('Vertical: Restaurant / Pizza-Service');
+    expect(out).toContain('Unternehmen: Pizzeria Bella Napoli');
+    expect(out).toContain('Bestellmodus: Lieferung und Abholung');
+    expect(out).toContain('Mindestbestellwert: 15.00 EUR');
+    expect(out).toContain('Konfigurierte Liefergebühr: 2.50 EUR');
+    expect(out).toContain('Lieferzeit-Richtwert: ca. 40 Minuten (nicht verbindlich)');
+    expect(out).toContain('Erfinde keine Produkte, Preise, Verfügbarkeiten, Rabatte oder Lieferzeiten.');
+    expect(out).toContain('gilt erst nach bestätigtem Backend-Ergebnis als erfolgreich');
+  });
+
+  it('ignoriert unbekannte Branchenkonfiguration im Prompt', () => {
+    const out = buildBotPrompt({
+      config: { vertical: 'unknown', restaurant: { business_name: 'Nicht verwenden' } },
+      userMessage: 'Hallo',
+    });
+    expect(out).not.toContain('[Branchenprofil]');
+    expect(out).not.toContain('Nicht verwenden');
+  });
+
   it('rendert den Verlauf mit Nutzer/Assistent-Labels in Reihenfolge', () => {
     const out = buildBotPrompt({
       history: [

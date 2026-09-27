@@ -12,7 +12,7 @@ import {
   processAIGatewayRequest,
   type GatewayRequest,
 } from '../../src/core/ai-gateway/gateway';
-import { AiGatewayEdgeError } from '../../src/core/ai-gateway/edgeClient';
+import { AiGatewayEdgeError, gatewayHeaders } from '../../src/core/ai-gateway/edgeClient';
 
 function okClient(output = 'echte Modellantwort') {
   return {
@@ -106,5 +106,20 @@ describe('processAIGatewayRequest — Routing ueber die Edge-Function', () => {
     const client = { generate: vi.fn().mockRejectedValue(new Error('offline')) };
     const res = await processAIGatewayRequest(base, { client });
     expect(res).toEqual({ success: false, error: 'offline' });
+  });
+});
+
+
+describe('AiGatewayEdgeClient — Browser-Authentifizierung', () => {
+  it('sendet den Nutzer-access_token als Bearer und den anon-Key nur als apikey', () => {
+    expect(gatewayHeaders({ apiKey: 'anon-public', authToken: 'user-access-token' })).toEqual({
+      'content-type': 'application/json',
+      'apikey': 'anon-public',
+      'authorization': 'Bearer user-access-token',
+    });
+  });
+
+  it('faellt ohne Nutzertoken nur auf den Projekt-Key zurueck', () => {
+    expect(gatewayHeaders({ apiKey: 'anon-public' }).authorization).toBe('Bearer anon-public');
   });
 });

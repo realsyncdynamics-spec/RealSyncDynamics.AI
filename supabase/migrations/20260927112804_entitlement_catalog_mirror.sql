@@ -1,6 +1,6 @@
 -- Spiegel: Entitlement-Katalog auf PLAN_ENTITLEMENTS (shared/pricing.ts).
 --
--- Erzeugt von scripts/generate-entitlement-mirror-sql.ts (20260927120000).
+-- Erzeugt von scripts/generate-entitlement-mirror-sql.ts (20260927112804).
 -- NICHT von Hand bearbeiten — neu erzeugen, wenn sich die Quelle aendert.
 --
 -- Diese Datei ist die jeweils gueltige Spiegelung der Quelle. Aendert sich

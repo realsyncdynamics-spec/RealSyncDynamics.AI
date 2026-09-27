@@ -5,6 +5,10 @@
  * Wenig Text, starke Aussagen: Detailwissen liegt auf Unterseiten
  * (`/agent-governance`, `/governance-runtime`, `/evidence-vault`). Inhalte
  * stehen in `hero-content.ts`; hier nur Darstellung.
+ *
+ * Das Zielbild „AI Governance OS" (Control Loop + Einstiegspfad) hängt als
+ * Block in der Architektur-Sektion, nicht als eigene Sektion. Statuswörter
+ * kommen aus `STATUS_LABEL`, der Stand aus `implementation-status.ts`.
  */
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
@@ -13,7 +17,12 @@ import {
   AGENT_GOVERNANCE_RUNTIME_SUMMARY,
   AGENT_CANNOT,
   AGENT_LAYER,
+  AGENT_RUNTIME_BOUNDARY,
   CONTROL_PLANE_LAYERS,
+  GOVERNANCE_OS_ENTRY_PATH,
+  GOVERNANCE_OS_LOOP,
+  GOVERNANCE_OS_TARGET_KICKER,
+  GOVERNANCE_OS_TARGET_LEDE,
   HOMEPAGE_PROVIDERS,
   HOMEPAGE_PLANNED_PROVIDERS,
   HOMEPAGE_TRUST_PRINCIPLES,
@@ -22,6 +31,7 @@ import {
   PROVIDER_PLANNED_DISCLAIMER,
   PROVIDER_NEUTRALITY_SUMMARY,
 } from '../governance-frontend/hero-content';
+import { getImplementation, STATUS_LABEL } from '../../product/implementation-status';
 import { useLang } from '../../i18n/useLang';
 
 const MONO = { fontFamily: 'var(--font-rs-mono)' } as const;
@@ -100,7 +110,95 @@ export function ArchitectureSection() {
           </div>
         </div>
       </div>
+
+      <GovernanceOsTarget />
     </section>
+  );
+}
+
+/**
+ * Zielbild „AI Governance OS" — Control Loop + Einstiegspfad, innerhalb der
+ * Architektur-Sektion (keine eigene Sektion, WP1).
+ *
+ * Statuswörter kommen ausschließlich aus `STATUS_LABEL`; der Stand jeder
+ * Einstiegsstufe aus `getImplementation(statusId)`.
+ */
+function GovernanceOsTarget() {
+  const { lang } = useLang();
+  const lede = GOVERNANCE_OS_TARGET_LEDE[lang] ?? GOVERNANCE_OS_TARGET_LEDE.de;
+
+  return (
+    <div className="os-inner mt-16" data-testid="governance-os-target">
+      <p className="os-kicker"><b>{GOVERNANCE_OS_TARGET_KICKER}</b></p>
+      <h3
+        id="governance-os-target-heading"
+        className="m-0 mt-4 text-[clamp(24px,2.6vw,38px)] tracking-[-0.01em]"
+        style={{ fontFamily: 'var(--font-rs-serif)', color: 'var(--color-rs-fg-0)' }}
+      >
+        AI Governance OS
+      </h3>
+      <p className="os-lede mt-4">{lede}</p>
+
+      <ol
+        className="mt-8 grid gap-px p-0 sm:grid-cols-2 lg:grid-cols-4"
+        style={{ listStyle: 'none', backgroundColor: 'var(--color-rs-border)' }}
+        aria-label="Control Loop: Observe, Evaluate, Decide, Act, Verify, Record, Learn"
+      >
+        {GOVERNANCE_OS_LOOP.map((stage) => (
+          <li
+            key={stage.step}
+            className="px-5 py-5"
+            style={{ backgroundColor: 'var(--color-rs-bg-1)' }}
+            data-testid={`loop-stage-${stage.step.toLowerCase()}`}
+          >
+            <div className="flex items-baseline justify-between gap-2">
+              <p className="m-0 text-[11px] tracking-[0.16em]" style={{ ...MONO, color: 'var(--color-rs-cyan)' }}>
+                {stage.step}
+              </p>
+              {stage.status && (
+                <span className="os-status" style={{ marginTop: 0 }}>{STATUS_LABEL[stage.status]}</span>
+              )}
+            </div>
+            <p className="m-0 mt-2 text-[15px] leading-[1.5]" style={{ color: 'var(--color-rs-fg-0)' }}>
+              {stage.title}
+            </p>
+          </li>
+        ))}
+      </ol>
+
+      <ol
+        className="mt-10 grid gap-px p-0 sm:grid-cols-2 lg:grid-cols-4"
+        style={{ listStyle: 'none', backgroundColor: 'var(--color-rs-border)' }}
+        aria-label="Einstiegspfad"
+        data-testid="governance-os-entry-path"
+      >
+        {GOVERNANCE_OS_ENTRY_PATH.map((stage, i) => {
+          // Der Modulguard in hero-content.ts schlägt an, bevor eine unbekannte
+          // ID hier ankommen kann — kein stiller Default.
+          const status = getImplementation(stage.statusId)!.status;
+          return (
+            <li
+              key={stage.statusId}
+              className="px-5 py-5"
+              style={{ backgroundColor: 'var(--color-rs-bg-0)' }}
+              data-testid={`entry-stage-${stage.statusId}`}
+            >
+              <span className="text-[11px]" style={{ ...MONO, color: 'var(--color-rs-fg-2)' }} aria-hidden="true">
+                {String(i + 1).padStart(2, '0')}
+              </span>
+              <p className="m-0 mt-3 text-[16px] font-medium leading-[1.4]" style={{ color: 'var(--color-rs-fg-0)' }}>
+                {stage.label}
+              </p>
+              <span className="os-status mt-3">{STATUS_LABEL[status]}</span>
+            </li>
+          );
+        })}
+      </ol>
+
+      <p className="mt-8 text-[clamp(18px,1.8vw,24px)] leading-[1.5]" style={{ fontFamily: 'var(--font-rs-serif)', color: 'var(--color-rs-fg-0)' }}>
+        {AGENT_RUNTIME_BOUNDARY}
+      </p>
+    </div>
   );
 }
 

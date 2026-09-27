@@ -2,7 +2,7 @@ import Fastify from 'fastify';
 import rateLimit from '@fastify/rate-limit';
 import { testConnection } from './services/supabase.js';
 import { authenticateRequest, logRequestUsage, requireScope } from './auth/api-key.js';
-import { getQuotaState, secondsUntilQuotaReset } from './services/api-keys-db.js';
+import { countsAgainstQuota, decideQuota, getQuotaState } from './services/api-keys-db.js';
 import { RateLimitError } from './services/rate-window.js';
 import { MctAuthContext } from './types/index.js';
 import {
@@ -153,24 +153,9 @@ async function start() {
     // entscheidet zweifach: enthält er überhaupt API-Zugriff (ab Agency), und
     // ist das Monatskontingent noch offen? Beides steht in plan_catalog, der
     // aus shared/pricing.ts erzeugten Projektion.
-    const quota = await getQuotaState(auth.tenantId);
-    if (quota && !quota.allowed) {
-      if (!quota.apiAccess) {
-        return reply.code(403).send({
-          error: 'PLAN_WITHOUT_API',
-          message: `Der Plan "${quota.planKey}" enthält keinen API-Zugriff. MCP-Zugriff ist ab Agency verfügbar.`,
-        });
-      }
-
-      const retryAfter = secondsUntilQuotaReset();
-      return reply
-        .code(429)
-        .header('Retry-After', String(retryAfter))
-        .send({
-          error: 'QUOTA_EXCEEDED',
-          message: `Monatskontingent ausgeschöpft (${quota.used} / ${quota.limitCalls}).`,
-          retry_after_seconds: retryAfter,
-        });
+    const rejection = decideQuota(await getQuotaState(auth.tenantId));
+    if (rejection) {
+      return reply.code(rejection.status).headers(rejection.headers).send(rejection.body);
     }
   });
 
@@ -188,7 +173,8 @@ async function start() {
       // gehört in den Prüfpfad, aber nicht in die Verbrauchszahl. Sonst zählt
       // ein Agent in einer Schleife Aufrufe mit, für die er nie eine Antwort
       // bekommen hat, und drosselt sich zusätzlich selbst aus dem Kontingent.
-      countAgainstQuota: reply.statusCode !== 429,
+      // 503 (Kontingent nicht pruefbar) ebenso wenig.
+      countAgainstQuota: countsAgainstQuota(reply.statusCode),
     });
   });
 

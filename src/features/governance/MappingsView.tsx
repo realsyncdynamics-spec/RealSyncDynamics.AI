@@ -12,6 +12,13 @@ import {
 import { upsertMapping, deleteMapping } from './resourcesApi';
 import { withPerformanceMonitoring } from './withPerformanceMonitoring';
 import type { GovernanceControlStatus } from './types';
+import {
+  listCatalog,
+  listActivations,
+  listTenantMappings as listPackMappings,
+} from '../policy-packs/policyPacksApi';
+import { frameworkLabel } from '../../lib/policy-packs/coverage';
+import { buildControlCoverage, type ControlCoverageSummary } from './controlCoverage';
 
 /**
  * /governance/mappings — Asset × Framework-Control matrix. Cell
@@ -54,11 +61,15 @@ function Inner() {
   const [controls, setControls] = useState<DbFrameworkControl[] | null>(null);
   const [mappings, setMappings] = useState<DbAssetControlMapping[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [coverage, setCoverage] = useState<ControlCoverageSummary | null>(null);
+  const [coverageError, setCoverageError] = useState<string | null>(null);
   const [editing, setEditing] = useState<{ asset: DbGovernanceAsset; control: DbFrameworkControl; existing: DbAssetControlMapping | null } | null>(null);
 
   const reload = async () => {
     if (!activeTenantId) return;
     setError(null);
+    setCoverageError(null);
+    setCoverage(null);
     try {
       const [a, c, m] = await Promise.all([
         fetchTenantAssets(activeTenantId),
@@ -68,6 +79,17 @@ function Inner() {
       setAssets(a); setControls(c); setMappings(m);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Laden fehlgeschlagen');
+    }
+
+    try {
+      const [catalog, activations, packMappings] = await Promise.all([
+        listCatalog(),
+        listActivations(activeTenantId),
+        listPackMappings(activeTenantId),
+      ]);
+      setCoverage(buildControlCoverage(catalog, activations, packMappings));
+    } catch (e) {
+      setCoverageError(e instanceof Error ? e.message : 'Control-Coverage nicht verfügbar');
     }
   };
 
@@ -105,6 +127,8 @@ function Inner() {
       </header>
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6">
+        <ControlCoveragePanel summary={coverage} error={coverageError} loading={Boolean(activeTenantId) && coverage === null && coverageError === null} />
+
         {error && (
           <div className="mb-4 flex items-start gap-2.5 text-sm text-red-300 bg-red-950/50 border border-red-900 rounded-none p-3">
             <AlertTriangle className="h-5 w-5 shrink-0 mt-0.5" />
@@ -317,6 +341,129 @@ function MappingEditor({
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+
+function ControlCoveragePanel({
+  summary,
+  error,
+  loading,
+}: {
+  summary: ControlCoverageSummary | null;
+  error: string | null;
+  loading: boolean;
+}) {
+  if (error) {
+    return (
+      <section className="mb-6 border border-rose-900 bg-rose-950/30 p-4" data-testid="control-coverage">
+        <div className="text-[10px] font-mono uppercase tracking-[0.18em] text-rose-300">Control Coverage</div>
+        <p className="text-sm text-rose-200 mt-2">Nicht verfügbar: {error}</p>
+        <p className="text-[11px] text-titanium-500 mt-2">Die Asset-Control-Matrix darunter bleibt unabhängig nutzbar.</p>
+      </section>
+    );
+  }
+
+  if (loading || !summary) {
+    return (
+      <section className="mb-6 border border-titanium-900 bg-obsidian-900/40 p-5" data-testid="control-coverage">
+        <div className="flex items-center gap-2 text-titanium-500 text-sm">
+          <Loader2 className="h-4 w-4 animate-spin" /> Control-Scope wird geladen …
+        </div>
+      </section>
+    );
+  }
+
+  if (summary.coverage === null) {
+    return (
+      <section className="mb-6 border border-titanium-900 bg-obsidian-900/40 p-5" data-testid="control-coverage">
+        <div className="text-[10px] font-mono uppercase tracking-[0.18em] text-amber-300">Control Coverage</div>
+        <div className="mt-3 text-2xl font-display font-bold text-titanium-50">Noch nicht bewertet</div>
+        <p className="text-sm text-titanium-400 mt-1">Kein aktiver Policy-Pack-Control-Scope für diesen Mandanten.</p>
+        <Link to="/app/policy-packs" className="inline-block mt-3 text-sm font-semibold text-amber-300 hover:text-amber-200">
+          Policy Packs verwalten →
+        </Link>
+      </section>
+    );
+  }
+
+  const cov = summary.coverage;
+  return (
+    <section className="mb-6 space-y-3" data-testid="control-coverage">
+      <div className="border border-titanium-900 bg-obsidian-900/50 p-5">
+        <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
+          <div>
+            <div className="text-[10px] font-mono uppercase tracking-[0.18em] text-amber-300">Control Coverage</div>
+            <h2 className="font-display font-bold text-xl text-titanium-50 mt-1">Aktiver Governance-Control-Scope</h2>
+            <p className="text-[12px] text-titanium-400 mt-1">
+              {summary.activePackCount} aktive Policy Packs · {cov.total} eindeutige Controls
+            </p>
+          </div>
+          <div className="lg:text-right">
+            <div className="text-4xl font-display font-bold text-titanium-50">{cov.percent}%</div>
+            <div className="text-[11px] text-titanium-400">Implementation Coverage</div>
+            <div className="text-[10px] text-titanium-500 mt-1">implementiert ÷ (Scope − N/A)</div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-2 mt-5">
+          <CoverageMetric label="Im Scope" value={cov.total} />
+          <CoverageMetric label="Implementiert" value={cov.implemented} tone="good" />
+          <CoverageMetric label="In Arbeit" value={cov.inProgress} tone="info" />
+          <CoverageMetric label="Lücken" value={cov.gap} tone="danger" />
+          <CoverageMetric label="Offen" value={cov.notStarted} tone="warn" />
+          <CoverageMetric label="N/A" value={cov.notApplicable} />
+        </div>
+
+        <p className="text-[11px] text-titanium-500 mt-4">
+          Quelle: aktive Policy-Pack-Controls + tenant-gescopte Asset-Control-Mappings. Mehrere Asset-Status pro Control werden konservativ zusammengeführt.
+        </p>
+      </div>
+
+      {summary.frameworks.length > 0 && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2">
+          {summary.frameworks.map(({ framework, coverage }) => (
+            <div key={framework} className="border border-titanium-900 bg-obsidian-900/40 p-4">
+              <div className="text-[10px] font-mono uppercase tracking-wider text-titanium-500">{frameworkLabel(framework)}</div>
+              <div className="flex items-end justify-between gap-3 mt-2">
+                <div className="text-2xl font-display font-bold text-titanium-50">{coverage.percent}%</div>
+                <div className="text-[10px] text-titanium-500">{coverage.implemented}/{coverage.total - coverage.notApplicable} implementiert</div>
+              </div>
+              <div className="mt-2 h-1 bg-obsidian-950 overflow-hidden">
+                <div className="h-full bg-amber-400" style={{ width: coverage.percent + '%' }} />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function CoverageMetric({
+  label,
+  value,
+  tone,
+}: {
+  label: string;
+  value: number;
+  tone?: 'good' | 'info' | 'warn' | 'danger';
+}) {
+  const cls = tone === 'good'
+    ? 'text-emerald-300'
+    : tone === 'info'
+      ? 'text-sky-300'
+      : tone === 'warn'
+        ? 'text-amber-300'
+        : tone === 'danger'
+          ? 'text-rose-300'
+          : 'text-titanium-100';
+
+  return (
+    <div className="border border-titanium-900 bg-obsidian-950/40 p-3">
+      <div className={`text-2xl font-display font-bold tabular-nums ${cls}`}>{value}</div>
+      <div className="text-[10px] font-mono uppercase tracking-wider text-titanium-500 mt-1">{label}</div>
     </div>
   );
 }

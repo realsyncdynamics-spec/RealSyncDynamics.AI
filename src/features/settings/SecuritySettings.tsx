@@ -68,6 +68,12 @@ export function SecuritySettings() {
     await refresh();
   });
   const removeFactor = () => run(async () => {
+    // Verifizierte Faktoren lassen sich nur mit AAL2 entfernen (GoTrue lehnt
+    // sonst ab). Früh und verständlich abbrechen, Recovery-Code bleibt der Weg.
+    const hasVerified = (status?.factors ?? []).some((f) => f.status === 'verified');
+    if (hasVerified && status?.currentLevel !== 'aal2') {
+      throw new Error('Zum Entfernen von MFA wird eine AAL2-Session benötigt. Alternativ Recovery-Code einlösen.');
+    }
     await removeAllTotpFactors();
     await refresh();
   });
@@ -127,6 +133,15 @@ export function SecuritySettings() {
                 AAL: {status?.currentLevel ?? '—'} · Faktoren: {status?.factorCount ?? 0}
                 {(status?.pendingCount ?? 0) > 0 && ' · Einrichtung nicht abgeschlossen'}
               </div>
+              {(status?.factors?.length ?? 0) > 0 && (
+                <ul className="mt-2 space-y-1">
+                  {status?.factors.map((factor) => (
+                    <li key={factor.id} className="font-mono text-[11px] text-titanium-300">
+                      {factor.friendlyName ?? 'TOTP'} · {factor.status}
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
           </div>
         </section>

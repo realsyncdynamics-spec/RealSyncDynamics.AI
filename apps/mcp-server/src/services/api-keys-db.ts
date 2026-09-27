@@ -184,22 +184,107 @@ export interface QuotaState {
  * aus `tenant_entitlements()`: dessen Werte für `limit.api_calls_monthly`
  * stammen aus einer Migration vom Juni und weichen von der Quelle ab.
  */
-export async function getQuotaState(tenantId: string): Promise<QuotaState | null> {
+export type QuotaLookup =
+  | { status: 'ok'; state: QuotaState }
+  /** RPC fehlgeschlagen — Zustand unbekannt. */
+  | { status: 'error' }
+  /** Keine Zeile: der Plan des Tenants fehlt in `plan_catalog` oder es gibt keinen. */
+  | { status: 'no_plan' };
+
+export async function getQuotaState(tenantId: string): Promise<QuotaLookup> {
   const { data, error } = await supabase.rpc('mcp_quota_state', { p_tenant_id: tenantId });
 
-  if (error || !data || data.length === 0) {
-    if (error) console.error('Quota check failed:', error.message);
-    return null;
+  if (error) {
+    console.error('Quota check failed:', error.message);
+    return { status: 'error' };
+  }
+  if (!data || data.length === 0) {
+    console.warn(`Quota check: kein Plan fuer Tenant ${tenantId} in plan_catalog`);
+    return { status: 'no_plan' };
   }
 
   const [row] = data;
   return {
-    allowed: row.allowed,
-    apiAccess: row.api_access,
-    used: Number(row.used),
-    limitCalls: row.limit_calls,
-    planKey: row.plan_key,
+    status: 'ok',
+    state: {
+      allowed: row.allowed,
+      apiAccess: row.api_access,
+      used: Number(row.used),
+      limitCalls: row.limit_calls,
+      planKey: row.plan_key,
+    },
   };
+}
+
+/** Sekunden, nach denen ein Client bei unbekanntem Kontingent erneut fragen soll. */
+export const QUOTA_UNAVAILABLE_RETRY_SECONDS = 30;
+
+export interface QuotaRejection {
+  status: 403 | 429 | 503;
+  headers: Record<string, string>;
+  body: Record<string, unknown>;
+}
+
+/**
+ * Entscheidet ueber einen Request anhand des Kontingents — fail-closed.
+ *
+ * `null` heisst durchlassen. Frueher liess ein fehlgeschlagener oder leerer
+ * Kontingent-Check den Request ungeprueft durch: ohne Plan-Gate und ohne
+ * Kontingent. Jetzt gilt: RPC-Fehler → 503 mit kurzem Retry-After, kein Plan
+ * → 403 wie ein Plan ohne API-Zugriff.
+ */
+export function decideQuota(lookup: QuotaLookup, now: Date = new Date()): QuotaRejection | null {
+  if (lookup.status === 'error') {
+    return {
+      status: 503,
+      headers: { 'Retry-After': String(QUOTA_UNAVAILABLE_RETRY_SECONDS) },
+      body: {
+        error: 'QUOTA_UNAVAILABLE',
+        message: 'Kontingent derzeit nicht pruefbar. Bitte spaeter erneut versuchen.',
+        retry_after_seconds: QUOTA_UNAVAILABLE_RETRY_SECONDS,
+      },
+    };
+  }
+  if (lookup.status === 'no_plan') {
+    return {
+      status: 403,
+      headers: {},
+      body: {
+        error: 'PLAN_WITHOUT_API',
+        message: 'Fuer diesen Mandanten ist kein Plan mit API-Zugriff hinterlegt. MCP-Zugriff ist ab Agency verfügbar.',
+      },
+    };
+  }
+
+  const quota = lookup.state;
+  if (quota.allowed) return null;
+
+  if (!quota.apiAccess) {
+    return {
+      status: 403,
+      headers: {},
+      body: {
+        error: 'PLAN_WITHOUT_API',
+        message: `Der Plan "${quota.planKey}" enthält keinen API-Zugriff. MCP-Zugriff ist ab Agency verfügbar.`,
+      },
+    };
+  }
+
+  const retryAfter = secondsUntilQuotaReset(now);
+  return {
+    status: 429,
+    headers: { 'Retry-After': String(retryAfter) },
+    body: {
+      error: 'QUOTA_EXCEEDED',
+      message: `Monatskontingent ausgeschöpft (${quota.used} / ${quota.limitCalls}).`,
+      retry_after_seconds: retryAfter,
+    },
+  };
+}
+
+/** Abweisungen ohne erbrachte Leistung zaehlen nicht gegen das Kontingent. */
+export function countsAgainstQuota(statusCode: number): boolean {
+  return statusCode !== 429 && statusCode !== 503;
 }
 
 /** Sekunden bis zum Beginn des nächsten Kalendermonats (UTC) — für Retry-After. */

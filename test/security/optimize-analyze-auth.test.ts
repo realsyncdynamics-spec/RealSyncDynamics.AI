@@ -1,5 +1,6 @@
 /**
  * optimize-analyze: Autorisierung vor Wirkung.
+ * Regressionstest fuer die kanonische Tenant-Grenze.
  *
  * ## Warum es diesen Test gibt
  *

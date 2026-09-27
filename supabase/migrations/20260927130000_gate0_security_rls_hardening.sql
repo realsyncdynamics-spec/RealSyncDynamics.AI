@@ -58,6 +58,19 @@
 --    service_role sieht alles, ein Nutzer nur seinen eigenen Mandanten,
 --    alle anderen nichts (Tabellenfunktionen: keine Zeile; Skalare: NULL).
 --
+-- 4. Views über gehärtete Tabellen: agent_token_usage_analytics und
+--    api_monthly_usage liefen ohne security_invoker mit den Rechten ihres
+--    Eigentümers und umgingen damit die RLS der Basistabelle — anon las über
+--    sie Zeilen fremder Mandanten, obwohl der direkte Zugriff 0 Zeilen
+--    liefert. Mit security_invoker gilt die Policy der Basistabelle.
+--    Identisch mit #1629 (dort gefunden); idempotent, falls beide landen.
+--    Folge-Befund: Die Lese-Policy auf api_calls prüft gegen
+--    tenant_memberships (einmal befüllt, kein Sync-Trigger). Erst durch
+--    security_invoker greift sie wirklich — Mitglieder, die nur in
+--    memberships stehen, sähen ihre eigene API-Nutzung (ApiUsageStats) nicht
+--    mehr. Deshalb additiv eine Leseregel über die kanonische Mitgliedschaft
+--    (is_tenant_member → public.memberships); die alte Policy bleibt.
+--
 -- Kanonische Mandanten-Autorität bleibt: JWT → public.memberships →
 -- tenant_id. tenant_memberships wird hier nicht verwendet.
 --
@@ -205,3 +218,14 @@ AS $$
           AND occurred_at >= date_trunc('month', now() AT TIME ZONE 'UTC'))
   END;
 $$;
+
+-- ─── 4. Views über gehärteten Tabellen: RLS nicht mehr umgehen ──────────────
+
+ALTER VIEW public.agent_token_usage_analytics SET (security_invoker = on);
+ALTER VIEW public.api_monthly_usage SET (security_invoker = on);
+
+DROP POLICY IF EXISTS "api_calls member_read_canonical" ON public.api_calls;
+CREATE POLICY "api_calls member_read_canonical"
+  ON public.api_calls FOR SELECT
+  TO authenticated
+  USING (public.is_tenant_member(tenant_id));

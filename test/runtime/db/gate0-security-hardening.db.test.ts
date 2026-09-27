@@ -355,3 +355,39 @@ d('Gate 0 · Klasse 3 — SECURITY-DEFINER-Funktionen (mcp_*, llm_quota_*)', () 
     ).rejects.toMatchObject(VERWEIGERT);
   });
 });
+
+d('Gate 0 · Klasse 4 — Views über gehärteten Tabellen', () => {
+  let ctx: DbCtx | null = null;
+  beforeEach(async () => { ctx = await openDb(); });
+  afterEach(async () => { await closeDb(ctx); ctx = null; });
+
+  it('agent_token_usage_analytics und api_monthly_usage: kein Fremdzugriff, Mitglied sieht den eigenen Mandanten', async () => {
+    const w = await welt(ctx!);
+    // Drift-Fall nachbilden: Das Mitglied steht nur in der kanonischen
+    // memberships-Tabelle. Die alte api_calls-Leseregel prüfte gegen
+    // tenant_memberships und hätte es nach security_invoker ausgesperrt.
+    await ctx!.client.query(`DELETE FROM public.tenant_memberships WHERE user_id = $1`, [w.b.userId]);
+    await ctx!.client.query(
+      `INSERT INTO public.agent_token_usage (tenant_id, tokens_used, prompt_type) VALUES ($1, 7, 'x')`,
+      [w.b.tenantId],
+    );
+    await ctx!.client.query(
+      `INSERT INTO public.api_calls (tenant_id, api_key_id, endpoint, method, request_path)
+       VALUES ($1, $2, '/x', 'GET', '/x')`,
+      [w.b.tenantId, w.apiKeyB],
+    );
+    const views = ['agent_token_usage_analytics', 'api_monthly_usage'];
+    const zaehle = (view: string) =>
+      ctx!.client.query(`SELECT 1 FROM public.${view} WHERE tenant_id = $1`, [w.b.tenantId]);
+
+    for (const view of views) {
+      // Vor der Korrektur: anon las hier die Zeile von Mandant B.
+      const anon = await als(ctx!, 'anon', null, () => zaehle(view));
+      expect(anon.rowCount, `${view} · anon`).toBe(0);
+      const fremd = await als(ctx!, 'authenticated', w.a.userId, () => zaehle(view));
+      expect(fremd.rowCount, `${view} · fremd`).toBe(0);
+      const mitglied = await als(ctx!, 'authenticated', w.b.userId, () => zaehle(view));
+      expect(mitglied.rowCount, `${view} · Mitglied`).toBe(1);
+    }
+  });
+});

@@ -73,10 +73,10 @@ describe('implementation-status registry', () => {
       resolve('src/components/governance-frontend/hero-content.ts'),
       'utf8',
     );
-    expect(hero).toContain('kontrollierbar');
-    expect(hero).toContain('nachweisbar');
-    expect(hero).toContain('auditbereit');
-    expect(hero).toContain("HERO_HEADLINE_TEST_SUBSTRING = 'kontrollierbar'");
+    expect(hero).toContain('Europa braucht kein weiteres');
+    expect(hero).toContain('Frontier-Modell');
+    expect(hero).toContain('Frontier-KI');
+    expect(hero).toContain("HERO_HEADLINE_TEST_SUBSTRING = 'Frontier-KI'");
     expect(hero).toContain("HERO_SCAN_CTA_LABEL = 'Governance-Scan starten'");
     expect(hero).toContain("HERO_SCAN_CTA_LONG = 'Governance-Scan starten'");
     expect(hero).toContain("HERO_DASHBOARD_CTA_LABEL = 'Live Dashboard ansehen'");

@@ -5,6 +5,8 @@ import type {
   RuntimeEvent,
   RuntimeEventName,
 } from './types';
+// Re-export types for external consumers
+export type { ExecutionInput, ExecutionRecord, ExecutionStatus, RuntimeEvent, RuntimeEventName } from './types';
 import type { SkillRegistry } from './registry';
 import type { PermissionChecker } from './permissions';
 import type { ExecutionTracer } from './observability';

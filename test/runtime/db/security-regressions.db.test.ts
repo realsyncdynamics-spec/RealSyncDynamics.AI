@@ -305,6 +305,20 @@ d('Schema-weite Invarianten fuer SECURITY DEFINER', () => {
     expect(rows.map((r) => r.proname)).toEqual([]);
   });
 
+  it('ai_evidence_purge_expired ist nur fuer service_role ausfuehrbar', async () => {
+    // Prueft den Koerper nicht gegen den Aufrufer. In Prod war sie fuer anon
+    // offen, weil REVOKE FROM PUBLIC die direkten Supabase-Default-Grants
+    // nicht erfasst (20260927114512).
+    const { rows } = await ctx!.client.query<{ anon: boolean; auth: boolean; svc: boolean }>(`
+      SELECT has_function_privilege('anon', f, 'EXECUTE') AS anon,
+             has_function_privilege('authenticated', f, 'EXECUTE') AS auth,
+             has_function_privilege('service_role', f, 'EXECUTE') AS svc
+      FROM (SELECT 'public.ai_evidence_purge_expired(uuid,boolean)'::regprocedure AS f) x
+    `);
+
+    expect(rows[0]).toEqual({ anon: false, auth: false, svc: true });
+  });
+
   it('die sieben Client-RPCs behalten authenticated — sonst waere es der 23.08. erneut', async () => {
     // Diese sieben stehen auch in REQUIRED_AUTHENTICATED von
     // scripts/check-function-acl-drift.mjs. Wer sie mitentzieht, wiederholt

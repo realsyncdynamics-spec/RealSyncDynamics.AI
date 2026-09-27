@@ -90,3 +90,29 @@ export async function executeBrowserActions(input: {
     approval_id: input.approvalId,
   }) as Promise<BrowserExecutorResponse>;
 }
+
+export interface BrowserPlanStep {
+  action: BrowserExecutorAction;
+  reason: string;
+}
+
+export type BrowserPlanResponse =
+  | { ok: true; kind: 'plan'; run_id: string | null; summary: string; steps: BrowserPlanStep[] }
+  | { ok: true; kind: 'refused'; run_id: string | null; reason: string };
+
+/**
+ * Freitext → geprüfter Aktionsplan (browser_task_planner). Führt nichts aus;
+ * jeder Schritt geht danach einzeln über `executeBrowserActions`.
+ */
+export async function planBrowserTask(input: {
+  tenantId: string;
+  task: string;
+  currentUrl?: string | null;
+}): Promise<BrowserPlanResponse> {
+  return invokeBrowserExecutor({
+    op: 'plan',
+    tenant_id: input.tenantId,
+    task: input.task,
+    current_url: input.currentUrl ?? undefined,
+  }) as Promise<BrowserPlanResponse>;
+}

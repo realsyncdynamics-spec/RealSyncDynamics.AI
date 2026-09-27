@@ -45,4 +45,24 @@ describe('Command Center surface', () => {
     expect(browserRuntime).toContain("['autonomous', 'Autonomous', false");
     expect(browserRuntime).toContain('Die eingebettete Browser-Preview ist noch kein Live-Video');
   });
+
+  it('wires compliance KPIs and live plan into the status view', () => {
+    expect(command).toContain('loadComplianceKpiRow');
+    expect(command).toContain('complianceKpi={complianceKpi}');
+    expect(command).toContain('livePlanId={tier}');
+    expect(command).toContain('entitlementsLoading={entitlementsLoading}');
+  });
+
+  it('does not hardcode runtime badges as active', () => {
+    expect(browserRuntime).toContain('NAVIGATION INACTIVE');
+    expect(browserRuntime).toContain('EVIDENCE INACTIVE');
+    expect(browserRuntime).not.toContain("{ label: 'Scan', available: true");
+  });
+
+  it('wires free-text planning through browser-execute op plan', () => {
+    expect(browserRuntime).toContain('planBrowserTask');
+    expect(browserRuntime).toContain('browser-task-plan');
+    expect(browserRuntime).toContain('Plan ausführen');
+    expect(browserRuntime).not.toContain('Freitext-Agentenplanung ist noch nicht aktiviert');
+  });
 });

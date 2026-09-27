@@ -97,7 +97,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="rs-ui rs-login">
+    <div className="rs-paper rs-ui rs-login">
       <SEOHead
         title="Anmelden | RealSyncDynamics.AI"
         description="Anmeldung per Magic Link — kein Passwort. Auth über Supabase EU (Frankfurt)."

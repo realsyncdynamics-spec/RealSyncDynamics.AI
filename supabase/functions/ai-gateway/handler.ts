@@ -25,7 +25,7 @@
 // index.ts baut den Gateway mit allowCloudFallback=false; `cloud-fallback`
 // wird im Nutzer- und im Service-Pfad mit 400 abgelehnt.
 
-import type { AiGatewayRequest, AiStreamChunk } from '../_shared/aiGateway/types.ts';
+import type { AiGatewayRequest, AiGatewayUsage, AiStreamChunk } from '../_shared/aiGateway/types.ts';
 import {
   routeOf,
   modelsResponse,
@@ -94,6 +94,33 @@ export interface GatewayLike {
   generateStream(req: AiGatewayRequest): AsyncIterable<AiStreamChunk>;
 }
 
+/**
+ * Verbrauchsbuchung pro Mandant (#1646). tenantId kommt ausschließlich aus
+ * dem aufgelösten Principal: im Nutzerpfad aus requireAuthAndTenant, im
+ * Service-Pfad aus dem Body eines per x-internal-key authentifizierten
+ * Aufrufers. Ohne Mandant wird nichts gebucht.
+ */
+export interface UsageBooking {
+  tenantId: string;
+  path: 'user' | 'service';
+  userId: string | null;
+  internalCaller: InternalCaller | null;
+  feature: string;
+  route: string;
+  /** Summe aus total_tokens bzw. input+output; 0, wenn der Provider nichts meldet. */
+  tokens: number;
+}
+
+/** Tokens aus einer Provider-Antwort; unbekannt → 0 (keine erfundene Zahl). */
+export function usageTokens(usage: AiGatewayUsage | undefined | null): number {
+  if (!usage) return 0;
+  const total = typeof usage.total_tokens === 'number' && Number.isFinite(usage.total_tokens)
+    ? usage.total_tokens
+    : (Number.isFinite(usage.input_tokens) ? usage.input_tokens ?? 0 : 0)
+      + (Number.isFinite(usage.output_tokens) ? usage.output_tokens ?? 0 : 0);
+  return total > 0 ? Math.floor(total) : 0;
+}
+
 export interface PdpVerdict {
   decision: string;
   reasons: Array<{ text_de: string }>;
@@ -118,6 +145,12 @@ export interface GatewayHandlerDeps {
   now?: () => number;
   log?: (line: Record<string, unknown>) => void;
   newId?: () => string;
+  /**
+   * Bucht einen erfolgreichen Aufruf auf den Mandanten (usage_events).
+   * Fehler hier brechen die Antwort nicht — sie werden geloggt. Fehlt die
+   * Abhängigkeit, wird nicht gebucht.
+   */
+  recordUsage?: (booking: UsageBooking) => Promise<void>;
   /** Rate-Limit-Speicher; Default: modulweite Maps (pro Isolate). */
   minuteWindows?: Map<string, WindowState>;
   hourWindows?: Map<string, WindowState>;
@@ -240,6 +273,26 @@ export function createAiGatewayHandler(deps: GatewayHandlerDeps): (req: Request)
       model_profile: request.model_profile,
       max_tokens: request.max_tokens ?? null,
     });
+  }
+
+  // ── Verbrauch dem Mandanten zuordnen (#1646) ───────────────────────
+
+  async function bookUsage(p: Principal, route: string, feature: string, usage: AiGatewayUsage | undefined | null): Promise<void> {
+    if (!deps.recordUsage || !p.tenantId) return;
+    const booking: UsageBooking = {
+      tenantId: p.tenantId,
+      path: p.kind,
+      userId: p.kind === 'user' ? p.userId : null,
+      internalCaller: p.kind === 'service' ? p.caller : null,
+      feature,
+      route,
+      tokens: usageTokens(usage),
+    };
+    try {
+      await deps.recordUsage(booking);
+    } catch (e) {
+      log({ scope: 'ai-gateway-usage', event: 'record_failed', tenant_id: p.tenantId, feature, error: String((e as Error)?.message ?? e).slice(0, 200) });
+    }
   }
 
   // ── Anonymer Audit-Copilot (mode: 'audit_anon') ───────────────────
@@ -428,10 +481,18 @@ export function createAiGatewayHandler(deps: GatewayHandlerDeps): (req: Request)
     const gateway = await deps.buildGateway();
     if (gateway instanceof Response) return gateway;
 
-    if (op === 'generate')     return jsonResponse({ ok: true, ...(await gateway.generate(request)), ...extra }, 200, corsHeaders);
-    if (op === 'extract_json') return jsonResponse({ ok: true, ...(await gateway.extractJson(request)), ...extra }, 200, corsHeaders);
-    if (op === 'embed')        return jsonResponse({ ok: true, ...(await gateway.embed(request)), ...extra }, 200, corsHeaders);
-    if (op === 'stream')       return streamNdjson(gateway, request, governance);
+    const call = op === 'generate' ? gateway.generate
+      : op === 'extract_json' ? gateway.extractJson
+      : op === 'embed' ? gateway.embed
+      : null;
+    if (call) {
+      const result = await call.call(gateway, request);
+      await bookUsage(principal, '/', request.feature, result.usage as AiGatewayUsage | undefined);
+      return jsonResponse({ ok: true, ...result, ...extra }, 200, corsHeaders);
+    }
+    if (op === 'stream') {
+      return streamNdjson(gateway, request, governance, (usage) => bookUsage(principal, '/', request.feature, usage));
+    }
     return jsonError(400, 'BAD_REQUEST', `unknown op: ${op}`, corsHeaders);
   }
 
@@ -470,8 +531,11 @@ export function createAiGatewayHandler(deps: GatewayHandlerDeps): (req: Request)
     if (gateway instanceof Response) return gateway;
 
     try {
-      if (body.stream === true) return streamOpenAiCompat(gateway, request);
+      if (body.stream === true) {
+        return streamOpenAiCompat(gateway, request, (usage) => bookUsage(principal, '/v1/chat/completions', request.feature, usage));
+      }
       const response = parsed.wantsJson ? await gateway.extractJson(request) : await gateway.generate(request);
+      await bookUsage(principal, '/v1/chat/completions', request.feature, response.usage as AiGatewayUsage | undefined);
       // deno-lint-ignore no-explicit-any
       return jsonResponse(formatChatResponse(response as any, request.model_profile), 200, corsHeaders);
     } catch (error) {
@@ -511,6 +575,7 @@ function streamNdjson(
   gateway: GatewayLike,
   request: AiGatewayRequest,
   governance: { decision: string; reasons: string[] } | undefined,
+  onDone?: (usage: AiGatewayUsage | undefined) => Promise<void>,
 ): Response {
   const encoder = new TextEncoder();
   const stream = new ReadableStream<Uint8Array>({
@@ -519,6 +584,7 @@ function streamNdjson(
       try {
         for await (const chunk of gateway.generateStream(request)) {
           send({ ok: true, ...chunk, ...(governance && chunk.event === 'done' ? { governance } : {}) });
+          if (chunk.event === 'done' && onDone) await onDone(chunk.usage);
         }
       } catch (error) {
         const mapped = mapGatewayError(error);
@@ -534,7 +600,11 @@ function streamNdjson(
   });
 }
 
-function streamOpenAiCompat(gateway: GatewayLike, request: AiGatewayRequest): Response {
+function streamOpenAiCompat(
+  gateway: GatewayLike,
+  request: AiGatewayRequest,
+  onDone?: (usage: AiGatewayUsage | undefined) => Promise<void>,
+): Response {
   const encoder = new TextEncoder();
   const id = `chatcmpl-${request.trace_id ?? crypto.randomUUID()}`;
   const stream = new ReadableStream<Uint8Array>({
@@ -547,6 +617,7 @@ function streamOpenAiCompat(gateway: GatewayLike, request: AiGatewayRequest): Re
           }
           if (chunk.event === 'done') {
             send({ id, object: 'chat.completion.chunk', choices: [{ index: 0, delta: {}, finish_reason: 'stop' }] });
+            if (onDone) await onDone(chunk.usage);
           }
         }
         controller.enqueue(encoder.encode('data: [DONE]\n\n'));

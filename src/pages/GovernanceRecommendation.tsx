@@ -285,35 +285,44 @@ function RecommendationBody({
 
           {/* Plan benefits */}
           <div className="border border-titanium-700 bg-obsidian-900 p-6 rounded-none space-y-4">
-            <h2 className="font-display font-bold text-titanium-50 text-lg mb-4">Was ist inbegriffen</h2>
-            <div className="space-y-4">
+            <h2 className="font-display font-bold text-titanium-50 text-lg mb-1">Was ist inbegriffen</h2>
+            <p className="text-sm text-titanium-400 mb-4">
+              Jeder Baustein mit einer kurzen Erklärung, was der Begriff bedeutet.
+            </p>
+            <div className="space-y-6">
               {PRODUCT_AREAS.map((area) => {
                 const modules = modulesForArea(plan, area.id);
                 if (modules.length === 0) return null;
                 return (
                   <div key={area.id}>
-                    <div className="mb-2 font-mono text-[10px] uppercase tracking-[0.16em] text-titanium-500">
+                    <div className="mb-1 font-mono text-[10px] uppercase tracking-[0.16em] text-titanium-500">
                       {area.label}
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <p className="mb-3 text-xs leading-relaxed text-titanium-500">{area.summary}</p>
+                    <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3">
                       {modules.map((module) => {
                         // TISAX/DORA sind Roadmap (implementation-status:
                         // framework-tisax-dora = coming-soon) — kein Häkchen
                         // als aktives Policy Pack.
                         const roadmap = ROADMAP_MODULE_IDS.has(module.id);
                         return (
-                          <div key={module.id} className="flex items-center gap-2">
-                            <CheckCircle2
-                              className={`h-4 w-4 shrink-0 ${roadmap ? 'text-titanium-600' : 'text-emerald-400'}`}
-                            />
-                            <span className="text-sm text-titanium-300">
-                              {module.name}
-                              {roadmap && <span className="ml-1 text-titanium-500">(Roadmap)</span>}
-                            </span>
+                          <div key={module.id}>
+                            <dt className="flex items-center gap-2 text-sm font-semibold text-titanium-100">
+                              <CheckCircle2
+                                className={`h-4 w-4 shrink-0 ${roadmap ? 'text-titanium-600' : 'text-emerald-400'}`}
+                              />
+                              <span>
+                                {module.name}
+                                {roadmap && <span className="ml-1 font-normal text-titanium-500">(Roadmap)</span>}
+                              </span>
+                            </dt>
+                            <dd className="mt-0.5 pl-6 text-xs leading-relaxed text-titanium-400">
+                              {module.description}
+                            </dd>
                           </div>
                         );
                       })}
-                    </div>
+                    </dl>
                   </div>
                 );
               })}

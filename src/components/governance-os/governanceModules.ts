@@ -143,6 +143,15 @@ export const GOVERNANCE_MODULES: GovernanceModule[] = [
     description: 'Auftragsverarbeiter und Drittparteienrisiko',
   },
   {
+    id: 'vendor-exposure',
+    label: 'Vendor Exposure',
+    icon: 'ShieldAlert',
+    route: '/app/vendor-exposure',
+    status: 'beta',
+    gate: { kind: 'module', module: 'policy_engine' },
+    description: 'Executive Drittparteien-Exposure aus Risiko, DPA und Transferstatus',
+  },
+  {
     id: 'reports',
     label: 'Berichte',
     icon: 'BarChart3',

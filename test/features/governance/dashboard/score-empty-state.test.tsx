@@ -175,6 +175,14 @@ describe('„Braucht Aufmerksamkeit“ (Addendum P0-3)', () => {
     expect(await screen.findByTestId('attention-empty')).toBeInTheDocument();
     expect(screen.queryByTestId('attention-item')).toBeNull();
   });
+
+  it('Posture nicht gemessen ⇒ eigener Hinweis statt „kein Snapshot“', async () => {
+    renderTile({
+      data: cockpit({ postureStatus: 'not_measured', scoreBasis: { aiSystems: 2, controlMappings: 0 } }),
+    });
+    const state = await screen.findByTestId('overview-score-state-empty');
+    expect(state.textContent).toContain('noch nicht gemessen');
+  });
 });
 
 describe('„Braucht Aufmerksamkeit“ — Leerzustände ohne positive Aussage aus fehlenden Daten', () => {

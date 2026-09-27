@@ -490,3 +490,46 @@ describe('ComplianceStatusView', () => {
     expect(queryByTestId('post-checkout-domain-cta')).toBeNull();
   });
 });
+
+describe('Gate 1 — Ladefehler sind nie „alles gut“', () => {
+  it('Pflichten-Quelle fehlgeschlagen ⇒ keine grünen „keine Befunde“/„keine Pflichten“', () => {
+    const { getByTestId, queryByTestId } = rendered({
+      data: fixture({ partialFailures: ['dsr-list: rls'] }),
+    });
+    expect(getByTestId('critical-findings-incomplete')).toBeInTheDocument();
+    expect(queryByTestId('no-critical-findings')).toBeNull();
+    expect(getByTestId('open-actions-incomplete')).toBeInTheDocument();
+    expect(queryByTestId('no-open-actions')).toBeNull();
+  });
+
+  it('Befund-Lader fehlgeschlagen ⇒ Befunde unvollständig, Pflichten weiter ehrlich leer', () => {
+    const { getByTestId, queryByTestId } = rendered({
+      data: fixture({ partialFailures: ['findings: rls'] }),
+    });
+    expect(getByTestId('critical-findings-incomplete')).toBeInTheDocument();
+    expect(queryByTestId('open-actions-incomplete')).toBeNull();
+  });
+
+  it('Zähler fehlgeschlagen ⇒ „—“ statt Ersatz-0 und keine Summe', () => {
+    const { getByTestId } = rendered({
+      data: fixture({ partialFailures: ['incidents: offline'] }),
+    });
+    const card = getByTestId('open-measures');
+    expect(card.textContent).toContain('Offene Posten nicht vollständig ladbar');
+    expect(card.textContent).not.toContain('0 offene Posten');
+    expect(card.textContent).toContain('—');
+  });
+
+  it('24h-Summary fehlgeschlagen ⇒ Alerts „nicht verfügbar“, nicht „noch nicht geliefert“', () => {
+    const { getByTestId } = rendered({
+      data: fixture({ partialFailures: ['summary-24h: boom'] }),
+    });
+    expect(getByTestId('alerts-rail-failed')).toBeInTheDocument();
+  });
+
+  it('alle Quellen geladen ⇒ echte Leerzustände bleiben', () => {
+    const { getByTestId } = rendered({ data: fixture() });
+    expect(getByTestId('no-critical-findings')).toBeInTheDocument();
+    expect(getByTestId('open-measures').textContent).toContain('0 offene Posten');
+  });
+});

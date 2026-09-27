@@ -55,10 +55,13 @@ async function fetchKpiSnapshotRange(tenantId: string, start: string, end: strin
   return (data || []) as DbGovernanceKpiSnapshot[];
 }
 
-async function fetch24hSummary(tenantId: string): Promise<Summary24h | null> {
+// `null` = RPC lieferte keine Zeile. Ein RPC-Fehler wirft und landet in
+// `partialFailures` (früher still `null` — nicht unterscheidbar von „leer“).
+export async function fetch24hSummary(tenantId: string): Promise<Summary24h | null> {
   const sb = getSupabase();
   const { data, error } = await sb.rpc('governance_24h_summary', { p_tenant_id: tenantId });
-  if (error || data == null) return null;
+  if (error) throw new Error(error.message || 'governance_24h_summary fehlgeschlagen');
+  if (data == null) return null;
   const row = (Array.isArray(data) ? data[0] : data) as Partial<Summary24h> | undefined;
   if (!row || typeof row !== 'object') return null;
   return {
@@ -74,6 +77,54 @@ async function fetch24hSummary(tenantId: string): Promise<Summary24h | null> {
     pending_sources: Number(row.pending_sources) || 0,
     next_scan_at: typeof row.next_scan_at === 'string' ? row.next_scan_at : null,
   };
+}
+
+/**
+ * governance-dpias antwortet bei Fehlern mit `{ ok: false }` statt zu werfen.
+ * Ohne diese Umwandlung ergäbe ein Fehler eine leere DSFA-Liste — und damit
+ * „keine offenen Pflichten“.
+ */
+async function listDpiasOrThrow(tenantId: string) {
+  const result = await listDpias(tenantId);
+  if (!result.ok) throw new Error(result.error?.message ?? 'governance-dpias list fehlgeschlagen');
+  return result;
+}
+
+/**
+ * Misst der KPI-Snapshot die Posture wirklich? Der Aggregator fällt bei
+ * fehlenden Metrik-RPCs still auf 0 zurück (get_asset_metrics & Co. stehen in
+ * keiner Migration). Ein Snapshot mit `asset_count` 0, während der Mandant
+ * Assets hat, ist deshalb keine Messung — seine 0-%-Werte dürfen weder in den
+ * Score noch in die Audit-Readiness eingehen.
+ */
+export function snapshotMeasuresPosture(
+  snapshot: Pick<DbGovernanceKpiSnapshot, 'asset_count'>,
+  liveAssetCount: number | null,
+): boolean {
+  if (liveAssetCount === null) return false;
+  return !(liveAssetCount > 0 && Number(snapshot.asset_count) === 0);
+}
+
+/** Posture-Quelle: gemessen, kein Snapshot, Snapshot ohne Messung, Fehler. */
+export type PostureStatus = 'measured' | 'missing' | 'not_measured' | 'error';
+
+/** Teillader, aus denen die Pflichten-/Maßnahmenliste (`actions`) entsteht. */
+export const ACTION_SOURCES = ['incident-list', 'dpia-list', 'dsr-list'] as const;
+/** Teillader der offenen Posten (`counts` / `openMeasures`). */
+export const COUNT_SOURCES = ['incidents', 'dpias', 'dsr', 'approvals', 'vendors'] as const;
+/** Teillader der Risiko-/Befundsignale. */
+export const SIGNAL_SOURCES = ['assets', 'findings', 'findings-table'] as const;
+
+/**
+ * Sind alle genannten Teillader erfolgreich? Nur dann darf eine leere Liste
+ * oder eine 0 als „nichts offen“ gelesen werden.
+ */
+export function sourcesOk(
+  data: Pick<CockpitData, 'partialFailures'> | null | undefined,
+  names: readonly string[],
+): boolean {
+  if (!data) return false;
+  return !data.partialFailures.some((failure) => names.some((name) => failure.startsWith(`${name}:`)));
 }
 
 /** Schlanke Runtime-Events für den Command-Center-Stream (kein Payload). */
@@ -114,6 +165,11 @@ export interface CockpitData {
   riskDistribution: RiskBucket[];
   /** Asset-/KI-Flows nach Typ. Leer wenn keine Assets. */
   assetFlows: AssetFlowItem[];
+  /**
+   * Posture-Quelle (optional für bestehende Fixtures). `not_measured`: Snapshot
+   * vorhanden, misst aber nichts — `posture` ist dann `null`.
+   */
+  postureStatus?: PostureStatus;
   /** Abgelehnte Teillader — Dashboard darf das nicht als leeren Mandanten lesen. */
   partialFailures: string[];
   /**
@@ -164,7 +220,7 @@ export async function loadCockpitData(tenantId: string): Promise<CockpitData> {
     fetchLatestKpiSnapshot(tenantId),
     fetchKpiSnapshotRange(tenantId, since, today),
     fetchTenantIncidents(tenantId),
-    listDpias(tenantId),
+    listDpiasOrThrow(tenantId),
     fetchTenantDsrs(tenantId),
     fetch24hSummary(tenantId),
     fetchTenantAssets(tenantId),
@@ -190,7 +246,13 @@ export async function loadCockpitData(tenantId: string): Promise<CockpitData> {
   };
 
   const snap = val(latestKpi, null);
-  const posture: CockpitPosture | null = snap
+  const liveAssetCount = assets.status === 'fulfilled' ? assets.value.length : null;
+  const postureStatus: PostureStatus =
+    latestKpi.status === 'rejected' ? 'error'
+      : snap === null ? 'missing'
+        : snapshotMeasuresPosture(snap, liveAssetCount) ? 'measured'
+          : 'not_measured';
+  const posture: CockpitPosture | null = snap && postureStatus === 'measured'
     ? {
         policiesEnabledPercent: snap.policies_enabled_percent,
         assetEvidencePercent: snap.assets_with_evidence_percent,
@@ -200,7 +262,8 @@ export async function loadCockpitData(tenantId: string): Promise<CockpitData> {
 
   const range = val(kpiRange, []);
   let readinessTrend: CockpitData['readinessTrend'] = null;
-  if (range.length >= 2) {
+  // Trend nur aus messenden Snapshots — sonst wäre es ein Trend über Nullen.
+  if (postureStatus === 'measured' && range.length >= 2) {
     const a = range[0].assets_with_mappings_percent;
     const b = range[range.length - 1].assets_with_mappings_percent;
     const direction = b > a ? 'up' : b < a ? 'down' : 'flat';
@@ -210,7 +273,7 @@ export async function loadCockpitData(tenantId: string): Promise<CockpitData> {
 
   const actions = prioritizeActions({
     incidents: val(incidentList, []),
-    dpias: val(dpiaList, { ok: false } as Awaited<ReturnType<typeof listDpias>>).dpias ?? [],
+    dpias: val(dpiaList, { ok: false } as Awaited<ReturnType<typeof listDpiasOrThrow>>).dpias ?? [],
     dsrs: val(dsrList, []),
   });
 
@@ -299,7 +362,8 @@ export async function loadCockpitData(tenantId: string): Promise<CockpitData> {
     scoreBasis,
     readiness: computeAuditReadiness(posture),
     readinessTrend, actions,
-    lastUpdated: snap?.captured_date ?? null,
+    lastUpdated: posture ? snap?.captured_date ?? null : null,
+    postureStatus,
     evidenceHealth, riskIndex, openMeasures, summary24h,
     recentEvents, riskDistribution, assetFlows,
     partialFailures,

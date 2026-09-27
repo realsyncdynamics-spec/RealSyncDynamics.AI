@@ -26,7 +26,9 @@ import {
   classifiedSystemClasses,
   classifyAsset,
   frameworkProgress,
+  HIGH_RISK_SYSTEMS_ROUTE,
   isAiSystemAsset,
+  isHighRiskAiSystem,
   shortHash,
   type EnforcementClass,
 } from './enforcementModel';
@@ -73,6 +75,7 @@ export function HandoffOverview({
   loading = false,
   error = null,
   onRetry,
+  reloadKey = 0,
 }: {
   activeTenantId: string | null;
   data: CockpitData | null;
@@ -80,9 +83,11 @@ export function HandoffOverview({
   /** loadCockpitData abgelehnt — Score-Fehlerzustand, kein Leerzustand. */
   error?: string | null;
   onRetry?: () => void;
+  /** Erhöht beim „Erneut laden“ des Dashboards — lädt auch diese Kacheln neu. */
+  reloadKey?: number;
 }) {
   const { t, lang } = useLang();
-  const [state] = useTenantLoad(activeTenantId, loadOverview);
+  const [state] = useTenantLoad(activeTenantId, loadOverview, [reloadKey]);
   if (!activeTenantId) return null;
 
   const ready = state.status === 'ready' ? state.data : null;
@@ -90,7 +95,7 @@ export function HandoffOverview({
 
   const aiAssets = ready ? ready.assets.filter(isAiSystemAsset) : [];
   const unclassified = aiAssets.filter((a) => a.ai_act_class === 'unknown');
-  const high = aiAssets.filter((a) => a.ai_act_class === 'high' || a.ai_act_class === 'prohibited');
+  const high = aiAssets.filter(isHighRiskAiSystem);
   const enabledPolicies = ready ? ready.policies.filter((p) => p.enabled) : [];
   const logOnly = enabledPolicies.filter((p) => p.action === 'log');
   const classes = ready ? classifiedSystemClasses(ready.assets, ready.connectors) : [];
@@ -175,6 +180,7 @@ export function HandoffOverview({
               <GovernanceScoreState
                 status={scoreStatus}
                 basis={data?.scoreBasis ?? null}
+                postureStatus={data?.postureStatus}
                 onRetry={onRetry}
                 testId="overview-score-state"
               />
@@ -232,7 +238,7 @@ export function HandoffOverview({
           sub={has('assets') ? t('kHighSubReal') : null}
           accent="var(--color-rs-warning)"
           testId="kpi-high"
-          to="/app/ai-systems"
+          to={HIGH_RISK_SYSTEMS_ROUTE}
         />
         <StatCard
           label={t('kPolicies')}

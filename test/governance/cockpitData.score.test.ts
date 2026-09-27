@@ -324,3 +324,64 @@ describe('Befunde des Website-Audits (findings-Tabelle)', () => {
     expect(d.partialFailures.some((f) => f.startsWith('findings-table:'))).toBe(true);
   });
 });
+
+describe('Gate 1 — Datenwahrheit im Cockpit-Lader', () => {
+  it('Snapshot ohne Asset-Messung (asset_count 0, Mandant hat Assets) ⇒ Posture nicht gemessen, kein Score aus Nullen', async () => {
+    api.fetchTenantAssets.mockResolvedValue([aiAsset('a1'), websiteAsset('w1')]);
+    rpcReturns({ data: [{ ...SNAPSHOT, asset_count: 0, policies_enabled_percent: 0, assets_with_evidence_percent: 0, assets_with_mappings_percent: 0 }], error: null });
+    const d = await loadCockpitData('t1');
+    expect(d.postureStatus).toBe('not_measured');
+    expect(d.posture).toBeNull();
+    expect(d.readiness).toBeNull();
+    expect(d.readinessTrend).toBeNull();
+    expect(d.lastUpdated).toBeNull();
+    expect(d.scoreStatus).toBe('insufficient_data');
+    expect(d.score).toBeNull();
+  });
+
+  it('Snapshot kennt die Assets ⇒ Posture gemessen und im Score', async () => {
+    api.fetchTenantAssets.mockResolvedValue([aiAsset('a1'), websiteAsset('w1')]);
+    rpcReturns({ data: [{ ...SNAPSHOT, asset_count: 2 }], error: null });
+    const d = await loadCockpitData('t1');
+    expect(d.postureStatus).toBe('measured');
+    expect(d.posture?.policiesEnabledPercent).toBe(50);
+    expect(d.scoreStatus).toBe('ok');
+    expect(d.readiness).toBe(40);
+  });
+
+  it('kein Snapshot ⇒ postureStatus missing; Snapshot-RPC-Fehler ⇒ error', async () => {
+    rpcReturns({ data: [], error: null });
+    expect((await loadCockpitData('t1')).postureStatus).toBe('missing');
+    rpcReturns({ data: null, error: { message: 'rpc down' } });
+    expect((await loadCockpitData('t1')).postureStatus).toBe('error');
+  });
+
+  it('24h-Summary-Fehler landet in partialFailures statt still null', async () => {
+    rpc.mockImplementation((name: string) => {
+      if (name === 'governance_24h_summary') return Promise.resolve({ data: null, error: { message: 'boom' } });
+      return Promise.resolve({ data: [], error: null });
+    });
+    const d = await loadCockpitData('t1');
+    expect(d.summary24h).toBeNull();
+    expect(d.partialFailures).toContain('summary-24h: boom');
+  });
+
+  it('governance-dpias { ok: false } ⇒ dpia-list als Fehler, nicht als leere Liste', async () => {
+    rpcReturns({ data: [], error: null });
+    api.listDpias.mockResolvedValue({ ok: false, error: { code: 'NETWORK', message: 'offline' } });
+    const d = await loadCockpitData('t1');
+    expect(d.partialFailures).toContain('dpia-list: offline');
+  });
+});
+
+describe('sourcesOk', () => {
+  it('true nur ohne Fehler der genannten Quellen', async () => {
+    const { sourcesOk, ACTION_SOURCES } = await import('../../src/features/governance/cockpit/cockpitData');
+    expect(sourcesOk({ partialFailures: [] }, ACTION_SOURCES)).toBe(true);
+    expect(sourcesOk({ partialFailures: ['kpi: x'] }, ACTION_SOURCES)).toBe(true);
+    expect(sourcesOk({ partialFailures: ['dsr-list: x'] }, ACTION_SOURCES)).toBe(false);
+    // Präfix exakt: „dsr:“ (Zähler) ist nicht „dsr-list:“.
+    expect(sourcesOk({ partialFailures: ['dsr: x'] }, ACTION_SOURCES)).toBe(true);
+    expect(sourcesOk(null, ACTION_SOURCES)).toBe(false);
+  });
+});

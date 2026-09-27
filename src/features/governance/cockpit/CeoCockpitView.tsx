@@ -155,7 +155,7 @@ export function CeoCockpitView() {
             <Card className="md:col-span-1 flex flex-col items-center justify-center gap-3 py-6 bg-obsidian-900">
               {data.scoreStatus !== 'ok' ? (
                 <div className="text-titanium-200">
-                  <GovernanceScoreState status={data.scoreStatus} basis={data.scoreBasis} onRetry={retry} testId="cockpit-score-state" />
+                  <GovernanceScoreState status={data.scoreStatus} basis={data.scoreBasis} postureStatus={data.postureStatus} onRetry={retry} testId="cockpit-score-state" />
                 </div>
               ) : data.score === null ? (
                 <>

@@ -25,7 +25,7 @@ const STUDIES: CaseStudy[] = [
     company: 'Anonymisierter Online-Shop (Shopify)',
     size: '1 Domain · ~50 k Besucher/Monat',
     challenge: 'Nach einem Theme-Update wurden 7 Tracker vor dem Cookie-Consent geladen — darunter Meta Pixel und Google Analytics. Das Team bemerkte den Drift erst 4 Wochen später bei einem manuellen Audit.',
-    solution: 'Tägliches Monitoring mit Drift-Detection ab Tag 1. Bei Pre-Consent-Request automatischer Alert per E-Mail inkl. Code-Snippet zum Fix.',
+    solution: 'Re-Scan nach jedem Theme-Update (Shopify-Webhook) mit Drift-Vergleich gegen den letzten Lauf und Code-Snippet zum Fix. Tägliches Monitoring mit E-Mail-Alert: Coming Soon.',
     outcome: 'Drift innerhalb von 2 h entdeckt und behoben. Keine manuellen Audits mehr notwendig.',
     metrics: [
       { label: 'Time-to-detect', value: '<2 h' },
@@ -55,7 +55,7 @@ const STUDIES: CaseStudy[] = [
     company: 'Anonymisierte Webagentur (DACH)',
     size: '12 Mitarbeitende · 28 Kundenseiten',
     challenge: 'Manuelle DSGVO-Audits für 28 Kundenseiten alle 6 Monate. Aufwand: ~3 Tage pro Audit-Zyklus. Keine Skalierbarkeit für Wachstum.',
-    solution: 'Multi-Tenant-Dashboard: alle 28 Domains auf einem Blick, tägliches Monitoring, White-Label-Reports für Endkunden, API-Export in bestehendes Reporting.',
+    solution: 'Multi-Tenant-Dashboard: alle 28 Domains auf einem Blick, tägliches Monitoring (Coming Soon), White-Label-Reports für Endkunden, API-Export in bestehendes Reporting.',
     outcome: 'Audit-Zyklus von 3 Tagen auf 30 Minuten reduziert. Jede Kundenseite erhält automatisch monatlichen Compliance-Report.',
     metrics: [
       { label: 'Audit-Aufwand', value: '−94 %' },

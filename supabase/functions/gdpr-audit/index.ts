@@ -326,11 +326,13 @@ async function handleAudit(req: Request): Promise<Response> {
   }).select('id').single();
   if (auditErr) return jsonError(500, 'INTERNAL', auditErr.message);
 
+  // P0 Privacy: never return raw email on the public response.
+  // Email stays persisted for CRM / audit-report-email delivery.
+  // Shareable permalink + FE navigate.state must not receive PII here.
   return jsonResponse({
     ok: true,
     audit_id: auditRow!.id,
     created_at: new Date().toISOString(),
-    email: email || null,
     score,
     severity,
     domain,

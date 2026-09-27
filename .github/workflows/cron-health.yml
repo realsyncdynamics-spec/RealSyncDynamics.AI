@@ -10,8 +10,16 @@ name: Cron Health Guard
 # bestehenden Guards pruefen Migrationen, Function-Existenz und Funktions-ACLs
 # — ob ein Job tatsaechlich laeuft, prueft keiner.
 #
-# CLAUDE.md §5 warnt genau davor: „Pruefen also nicht an `cron.job`, sondern an
-# `cron.job_run_details.status`." Dieser Guard tut das.
+# Erste Ebene: nicht an `cron.job` pruefen, sondern an
+# `cron.job_run_details.status` — ein registrierter Job ist kein laufender.
+#
+# Zweite Ebene (seit 2026-09-15): die HTTP-Antwort. Vom 2026-09-10 bis zum
+# 2026-09-15 fielen neun von elf Dispatch-Jobs aus und dieser Guard blieb
+# gruen — `dispatch_cron_function` setzte den Aufruf ab, `job_run_details`
+# meldete `succeeded`, und die 401 der Empfaenger stand nur in
+# `net._http_response`. Geprueft wird jetzt die Zusage selbst: Jeder aktive
+# produktive Job muss innerhalb seiner Kadenz eine erfolgreiche
+# Function-Ausfuehrung erzeugen. Runbook: docs/runbooks/cron-vault-secrets.md
 #
 # Gemeldet wird ueber `drift-alert.yml`, das diesen Workflow per `workflow_run`
 # beobachtet und bei Rot ein Issue offen haelt.

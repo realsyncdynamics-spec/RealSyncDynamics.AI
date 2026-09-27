@@ -48,7 +48,7 @@ const GROUPS: LandingGroup[] = [
     title: 'Haupt- & Marketing-Landings',
     Icon: Home,
     entries: [
-      { path: '/', title: 'MainLanding', description: 'Unternehmenshauptseite (Earth-at-Night Hero).', badge: 'Design-Lock' },
+      { path: '/', title: 'The Governance AI', description: 'Produktive Unternehmenshauptseite: Governance OS mit Audit-, Auth-, Pricing- und App-Handoff.', badge: 'Live' },
       { path: '/landing', title: 'Landing', description: 'Klassische Marketing-Landing.' },
       { path: '/aetheros', title: 'AetherOS', description: '3D-Konzept-Landing.' },
       { path: '/realsync-landing', title: 'RealSyncDynamics', description: 'Marken-Landing RealSyncDynamics.AI.' },

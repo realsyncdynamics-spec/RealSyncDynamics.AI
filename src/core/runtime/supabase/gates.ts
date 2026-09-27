@@ -82,6 +82,7 @@ export class SupabaseApprovalGateService implements ApprovalGateService {
 
 interface GateRow {
   id: string;
+  tenant_id: string;
   execution_id: string;
   reason: string;
   risk_level: RiskLevel;
@@ -89,17 +90,20 @@ interface GateRow {
   status: ApprovalStatus;
   created_at: string;
   decided_at: string | null;
+  decided_by: string | null;
 }
 
 function mapRow(row: GateRow): ApprovalGateRecord {
   return {
     id: row.id,
+    tenant_id: row.tenant_id,
     execution_id: row.execution_id,
     reason: row.reason,
     risk_level: row.risk_level,
     requested_action: row.requested_action,
     status: row.status,
     created_at: row.created_at,
-    decided_at: row.decided_at ?? undefined,
+    decided_at: row.decided_at,
+    decided_by: row.decided_by,
   };
 }

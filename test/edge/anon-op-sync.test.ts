@@ -29,7 +29,9 @@ function opsFromMigrations(): string[] {
     // Nur Definitionen des op-CHECKs, nicht jedes Vorkommen von `op in (`.
     const match = /anon_chat_runs_op_check[\s\S]{0,200}?check\s*\(\s*op\s+in\s*\(([\s\S]*?)\)\s*\)/i.exec(sql);
     if (match) {
-      last = [...match[1].matchAll(/'([a-z_]+)'/g)].map((m) => m[1]).sort();
+      // Kommentare sind keine CHECK-Werte (z. B. `mode 'audit_anon'`).
+      const checkBody = match[1].replace(/--.*$/gm, '');
+      last = [...checkBody.matchAll(/'([a-z_]+)'/g)].map((m) => m[1]).sort();
     }
   }
   return last ?? [];

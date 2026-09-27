@@ -66,7 +66,7 @@ export function usePerformanceMonitor(
     });
 
     try {
-      observer.observe({ entryTypes: ['longest-largest-contentful-paint', 'paint'] });
+      observer.observe({ entryTypes: ['largest-contentful-paint', 'paint'] });
     } catch (e) {
       // PerformanceObserver not fully supported
       observer.disconnect();

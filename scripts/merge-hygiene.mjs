@@ -72,7 +72,7 @@ function timestampsOnMain() {
   return map;
 }
 
-/** Netzwerkfehler der GitHub-API (Socket-Abbruch o. Ä.) — nur für die Überlappungs-Prüfung relevant. */
+/** GitHub-API lieferte nichts Verwertbares (Netzwerk- oder HTTP-Fehler) — nur für die Überlappungs-Prüfung relevant. */
 let githubApiDegraded = false;
 
 async function githubJson(url) {
@@ -91,15 +91,15 @@ async function githubJson(url) {
           'User-Agent': 'realsync-merge-hygiene',
         },
       });
-      if (!response.ok) {
-        console.warn(`GitHub API ${response.status} ${url}`);
-        return null;
-      }
-      return await response.json();
+      if (response.ok) return await response.json();
+      console.warn(`GitHub API ${response.status} ${url} (Versuch ${attempt}/3)`);
+      // 5xx und Rate-Limits (403/429) sind vorübergehend — erneut versuchen.
+      const transient = response.status >= 500 || response.status === 429 || response.status === 403;
+      if (!transient) break;
     } catch (error) {
       console.warn(`GitHub API nicht erreichbar (Versuch ${attempt}/3): ${url} — ${error?.cause?.code ?? error?.message ?? error}`);
-      if (attempt < 3) await new Promise((resolve) => setTimeout(resolve, 1000 * 2 ** (attempt - 1)));
     }
+    if (attempt < 3) await new Promise((resolve) => setTimeout(resolve, 1000 * 2 ** (attempt - 1)));
   }
   githubApiDegraded = true;
   return null;
@@ -154,14 +154,28 @@ const addedMigrations = files.filter(
   (f) => f.startsWith('supabase/migrations/') && f.endsWith('.sql'),
 );
 
-for (const file of addedMigrations) {
-  if (onMain.has(file)) {
-    const dirty = git(`diff --name-only ${baseRef} -- ${file}`);
-    if (dirty) {
-      blockers.push(
-        `Bestehende Migration geändert: ${file}. Append-only — neue Migration schreiben, außer PR-Titel enthält [hotfix].`,
-      );
-    }
+// [hotfix] im PR-Titel erlaubt das Ändern bestehender Migrationen (dann Warnung
+// statt Blocker). Titel aus der Workflow-Umgebung, sonst über die API.
+async function prTitle() {
+  if (process.env.PR_TITLE) return process.env.PR_TITLE;
+  const repo = process.env.GITHUB_REPOSITORY;
+  const number = process.env.PR_NUMBER;
+  if (!repo || !number) return '';
+  const pull = await githubJson(`https://api.github.com/repos/${repo}/pulls/${number}`);
+  return typeof pull?.title === 'string' ? pull.title : '';
+}
+
+const changedExisting = addedMigrations.filter(
+  (file) => onMain.has(file) && git(`diff --name-only ${baseRef} -- ${file}`),
+);
+const isHotfix = changedExisting.length > 0 && /\[hotfix\]/i.test(await prTitle());
+for (const file of changedExisting) {
+  if (isHotfix) {
+    warnings.push(`Bestehende Migration geändert (erlaubt durch [hotfix] im PR-Titel): ${file}.`);
+  } else {
+    blockers.push(
+      `Bestehende Migration geändert: ${file}. Append-only — neue Migration schreiben, außer PR-Titel enthält [hotfix].`,
+    );
   }
 }
 

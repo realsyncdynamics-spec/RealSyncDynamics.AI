@@ -1,6 +1,6 @@
 {
   "zweck": "Inventar der verkaufsrelevanten Dashboard-Aktionen (Issue #1381, Phase 1). Jede Zeile nennt Route, Komponente, Handler, Backend und Zustand — belegt am Code, nicht behauptet. Gepflegt von scripts/check-dashboard-actions.mjs.",
-  "abdeckung": "P0-Flächen aus Issue #1381: Bots, Agent Runtime, Automation Builder, Frontend/Landing Builder, Web App Builder, Domains. Sekundäre Dashboard-Module folgen (P1).",
+  "abdeckung": "P0-Flächen aus Issue #1381: Bots, Agent Runtime, Automation Builder, Frontend/Landing Builder, Web App Builder, Domains. Sekundäre Dashboard-Module folgen (P1); begonnen mit den Agenten-Unterflächen /app/agents/automation und /app/agents/support.",
   "zustaende": {
     "IMPLEMENTED": "Führt aus, persistiert und zeigt das Ergebnis. Entitlement und Limit werden serverseitig geprüft, wo die Aktion kostenpflichtig ist.",
     "PARTIAL": "Führt wirklich aus und persistiert, aber mindestens ein Abnahme-Gate aus Issue #1381 §8 fehlt. Das fehlende Gate steht in `luecke`.",
@@ -48,8 +48,8 @@
       "persistenz": "automation_runs, automation_run_events, automation_outputs (Migration 20260614100000_automation_skills.sql, je mit tenant-read RLS)",
       "entitlement": "ai.tool.automations via gateFeature (automation-trigger:74) und limit.automation_runs_monthly als Quota-Pruefung (:82-90); gezaehlt wird erst im Callback (automation-callback:129)",
       "status": "BROKEN",
-      "luecke": "Engine, Schema, Gate und Zaehler existieren; der Pfad ist an vier Stellen unterbrochen, und der erste Bruch liegt frueher als zunaechst dokumentiert. (1) automation-trigger:65 liest die Spalte `title` aus automation_skills — die Tabelle hat keine solche Spalte, sie heisst `name`. PostgREST antwortet mit 400/42703, der Fehler laeuft in :67 und die Function gibt 500 INTERNAL zurueck. Das passiert VOR der Status-Pruefung, VOR der n8n-Bindungspruefung, VOR gateFeature und VOR der Quota. Jeder Klick endet dort. (2) Erst danach griffe :70: alle sechs Skills in der Produktion haben n8n_workflow_id NULL, also 409 NOT_BOUND. (3) Der Antwort-Vertrag passt nicht: der Runner liest body.result (AutomationSkillRunner.tsx:71), der Trigger liefert { ok, run_id, n8n_execution_id }. (4) Kein Run-Verlauf: automation_outputs wird von keiner Oberflaeche gelesen. Damit fehlen aus Issue #1381 §8 die Gates 4 bis 7. Alle uebrigen Skill-CTAs sind <Link>.",
-      "beleg": "Gemessen an der Produktionsdatenbank (Projekt RealSyncDynamicsLive, eu-central-1), nicht erschlossen: information_schema fuehrt fuer automation_skills die Spalten id, name, category, description, status, required_plan, input_schema, output_schema, n8n_workflow_id, created_at, updated_at — kein `title`. REST-Probe: select=...,title -> HTTP 400 {\"code\":\"42703\",\"message\":\"column automation_skills.title does not exist\"}; dieselbe Abfrage mit `name` -> HTTP 200. Alle sechs Skill-Zeilen haben n8n_workflow_id NULL. automation_runs, automation_run_events, automation_outputs und usage_events fuer limit.automation_runs_monthly enthalten je 0 Zeilen — es hat nie ein Run stattgefunden. Code: automation-trigger/index.ts:65 .select('id, status, n8n_workflow_id, title') und :124 skill.title.",
+      "luecke": "Engine, Schema, Gate und Zaehler existieren; der Pfad ist an vier Stellen unterbrochen, und der erste Bruch liegt frueher als zunaechst dokumentiert. (1) automation-trigger:65 liest die Spalte `title` aus automation_skills — die Tabelle hat keine solche Spalte, sie heisst `name`. PostgREST antwortet mit 400/42703, der Fehler laeuft in :67 und die Function gibt 500 INTERNAL zurueck. Das passiert VOR der Status-Pruefung, VOR der n8n-Bindungspruefung, VOR gateFeature und VOR der Quota. Jeder Klick endet dort. (2) Erst danach griffe :70: alle sechs Skills in der Produktion haben n8n_workflow_id NULL, also 409 NOT_BOUND. (3) Der Antwort-Vertrag passt nicht: der Runner liest body.result (AutomationSkillRunner.tsx:71), der Trigger liefert { ok, run_id, n8n_execution_id }. (4) Kein Run-Verlauf: automation_outputs wird von keiner Oberflaeche gelesen. Damit fehlen aus Issue #1381 §8 die Gates 4 bis 7. Alle uebrigen Skill-CTAs sind <Link>, und zwei davon zeigen ins Leere: die beiden Beta-Skills verlinken auf ?skill=meeting und ?skill=feedback, ihre Ids heissen aber meeting-compliance und screenshot-feedback. AutomationSkillsView.tsx:133 vergleicht highlightId === skill.id, die Hervorhebung greift also nie — \"Workflow ansehen\" navigiert auf dieselbe Seite und bewirkt nichts.",
+      "beleg": "Gemessen an der Produktionsdatenbank (Projekt RealSyncDynamicsLive, eu-central-1), nicht erschlossen: information_schema fuehrt fuer automation_skills die Spalten id, name, category, description, status, required_plan, input_schema, output_schema, n8n_workflow_id, created_at, updated_at — kein `title`. REST-Probe: select=...,title -> HTTP 400 {\"code\":\"42703\",\"message\":\"column automation_skills.title does not exist\"}; dieselbe Abfrage mit `name` -> HTTP 200. Alle sechs Skill-Zeilen haben n8n_workflow_id NULL. automation_runs, automation_run_events, automation_outputs und usage_events fuer limit.automation_runs_monthly enthalten je 0 Zeilen — es hat nie ein Run stattgefunden. Code: automation-trigger/index.ts:65 .select('id, status, n8n_workflow_id, title') und :124 skill.title. Beta-CTAs am 2026-09-27 nachgemessen: automationSkills.ts:95 id meeting-compliance gegen :109 href /app/automations?skill=meeting, :112 id screenshot-feedback gegen :127 href /app/automations?skill=feedback.",
       "seit": "2026-09-14"
     },
     {
@@ -107,6 +107,34 @@
       "luecke": "Keine serverseitige Kontingentpruefung — das ist jetzt belegt, nicht nur unbelegt: tenant-audit enthaelt kein gateFeature, kein consumeUsage, kein recordUsage und kein getCurrentTotal. Geprueft werden ausschliesslich JWT (verify_jwt=True) und Tenant-Mitgliedschaft. Ein Mandant kann unbegrenzt scannen; Gate 4 aus Issue #1381 §8 fehlt.",
       "beleg": "supabase/functions/tenant-audit/index.ts, 299 Zeilen, ohne einen einzigen Treffer fuer gateFeature/consumeUsage/recordUsage/getCurrentTotal; Dateikopf :7-10 nennt als Zweck nur die Auth-Bruecke zu gdpr-audit. Deployment: verify_jwt=True, Status ACTIVE.",
       "seit": "2026-09-14"
+    },
+    {
+      "id": "automation.suggestions.decide",
+      "route": "/app/agents/automation",
+      "komponente": "src/features/agents/AutomationAgentPage.tsx",
+      "aktion": "Automatisierungs-Vorschlag annehmen oder ablehnen",
+      "handler": "src/features/agents/components/AutomationSuggestionCard.tsx",
+      "backend": null,
+      "persistenz": "keine",
+      "entitlement": null,
+      "status": "CLIENT_ONLY",
+      "luecke": "Gate 5: \"Annehmen\" und \"Ablehnen\" rufen ausschliesslich setLocalStatus (AutomationSuggestionCard.tsx:83/90), \"Zuruecksetzen\" ebenso (:102). Das Status-Abzeichen springt sichtbar auf \"Angenommen\" bzw. \"Abgelehnt\", geschrieben wird nichts. Die Spalte automation_suggestions.status existiert und wird vom Parent gelesen (AutomationAgentPage.tsx:132-134) — es schreibt nur niemand hinein. Strenger als builder.landing.save: hier gibt es nicht einmal localStorage, und der Zustand ueberlebt nicht einmal einen Tab-Wechsel, weil der Parent bei jedem activeTab-Wechsel setSuggestions(null) setzt und neu laedt — die Karten montieren neu und localStatus faellt auf den DB-Wert zurueck. Derzeit nicht erreichbar, weil die Tabelle leer ist und kein Erzeuger existiert: der Defekt ist latent, nicht aktiv. Sobald irgendein Erzeuger Vorschlaege eintraegt, taeuscht die Flaeche.",
+      "beleg": "Gemessen an der Produktionsdatenbank (Projekt RealSyncDynamicsLive, eu-central-1) am 2026-09-26: automation_suggestions 0 Zeilen, customer_workflows 0, agent_actions_log 0, workflow_templates 11. Repoweit ist AutomationAgentPage.tsx:132 der EINZIGE Treffer auf automation_suggestions — kein Insert, kein Update, kein Erzeuger in src/ oder supabase/functions/. Code: AutomationSuggestionCard.tsx:49 useState(suggestion.status), :83 onClick setLocalStatus('accepted'), :90 setLocalStatus('rejected'), :102 setLocalStatus('new'); keine .from()- und keine functions.invoke-Aufrufe in der Datei. Die vier Ladepfade der Seite sind dagegen sauber: echte tenant-gefilterte Reads mit echter Fehleranzeige und Unterscheidung von \"laedt\" (null) und \"leer\" ([]).",
+      "seit": "2026-09-27"
+    },
+    {
+      "id": "support.question.submit",
+      "route": "/app/agents/support",
+      "komponente": "src/features/agents/SupportAgentPage.tsx",
+      "aktion": "Support-Frage absenden",
+      "handler": "src/features/agents/SupportAgentPage.tsx",
+      "backend": "src/features/agents/SupportAgentPage.tsx",
+      "persistenz": "agent_actions_log (action_type support_question, status pending)",
+      "entitlement": null,
+      "status": "PARTIAL",
+      "luecke": "Der Schreibvorgang selbst ist in Ordnung: handleSubmitQuestion schreibt eine Zeile nach agent_actions_log mit action_type support_question und status pending, zeigt echte Fehler an und laedt die Liste neu — das uebersteht F5. Falsch ist die Zusage darueber. Die Erfolgsbox sagt \"Der Support-Agent antwortet in Kuerze — Antworten erscheinen in der Wissensbasis\", und dafuer gibt es keinen Verarbeiter: action_type support_question kommt repoweit nur in dieser einen Datei vor (zwei Reads, ein Insert), es gibt keine Edge Function, keinen Cron und keinen Agenten, der den Typ liest. agent_knowledge_base wird ausschliesslich von onboarding-orchestrator beschrieben (eine Zeile \"Onboarding company context\" je Mandant), nie mit einer Antwort. Die Zeile bleibt dauerhaft auf pending. Der Code-Kommentar (:258-259) sagt das korrekt (\"es gibt noch kein KI-Backend\"), der Nutzertext sagt das Gegenteil — das ist der §24-Fall: die Flaeche behauptet etwas, was sie nicht tut. Dazu fehlt jedes Entitlement und jede Mengenbegrenzung; Gate 4 aus Issue #1381 §8 fehlt.",
+      "beleg": "Code: SupportAgentPage.tsx:266-271 insert in agent_actions_log mit action_type 'support_question' und status 'pending' (deshalb ist der Backend-Pfad diese Datei selbst — der PostgREST-Aufruf liegt inline in der Komponente, wie bei bots.create in api.ts); :340-346 die Erfolgsbox mit dem Versprechen \"antwortet in Kuerze — Antworten erscheinen in der Wissensbasis\"; :159 und :237 die beiden Reads auf denselben action_type. Repoweite Suche nach support_question am 2026-09-27 gegen origin/main: genau diese drei Fundstellen, alle in dieser Datei. Repoweite Suche nach agent_knowledge_base: nur SupportAgentPage.tsx:182/:239 (Reads) und supabase/functions/onboarding-orchestrator/index.ts:73 (ein Insert \"Onboarding company context\"). Live gemessen: agent_actions_log 0 Zeilen.",
+      "seit": "2026-09-27"
     }
   ]
 }

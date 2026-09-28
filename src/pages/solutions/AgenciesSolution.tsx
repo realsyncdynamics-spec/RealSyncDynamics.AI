@@ -1,13 +1,14 @@
 import { Link } from 'react-router-dom';
 import { ArrowRight, Check, Globe, Users, TrendingUp, Lock } from 'lucide-react';
 import { Logo } from '../../components/Logo';
-import { planById, formatPriceEur } from '@/shared/pricing';
+import { planById, addonById, formatPriceEur } from '@/shared/pricing';
 
 export function AgenciesSolution() {
   // COMMERCIAL-SSOT: Preis und Kontingente kommen aus der Quelle, damit die
   // Seite nicht erneut von ihr wegdriftet. Canonical migration tracked in
   // Phase 2.
   const agency = planById('agency');
+  const whiteLabel = addonById('white_label');
 
   return (
     <div className="bg-hero-only min-h-screen flex flex-col text-titanium-50">
@@ -227,10 +228,17 @@ export function AgenciesSolution() {
             <p className="text-silver-400 mb-6">{agency.technicalSubheadline}</p>
             <ul className="space-y-3 text-sm text-silver-300 mb-8 max-w-lg mx-auto text-left">
               {[
-                'White-Label-Berichte (dein Logo, deine Domain)',
+                // Der Plan gewaehrt `whiteLabelReports` — Berichte unter
+                // eigenem Logo. Eigene Domain ist das `white_label`-Add-on
+                // und steht deshalb unter der Liste, nicht darin.
+                'White-Label-Berichte mit deinem Logo',
                 `Bis zu ${agency.limits.sites} Kunden-Sites auf ${agency.limits.domains} Domains`,
                 `${agency.limits.seats} Team-Plätze`,
-                'DSGVO, EU AI Act, ISO 27001, NIS2 und TISAX',
+                // Nur die live geschalteten Policy Packs. TISAX steht in der
+                // SSoT als Roadmap (`framework-tisax-dora` = coming-soon) und
+                // gehoert damit nicht in eine Leistungszusage ueber dem
+                // Kaufen-Button.
+                'Policy Packs: DSGVO, EU AI Act, ISO 27001 und NIS2',
                 `Evidence Vault mit ${agency.limits.evidenceStorageGb} GB Nachweisspeicher`,
                 `REST-API (${agency.limits.apiCallsPerMonth.toLocaleString('de-DE')} Calls/Monat) und Webhooks`,
                 'Scheduler, Bulk Jobs und signierter Herkunftsnachweis',
@@ -242,7 +250,17 @@ export function AgenciesSolution() {
                 </li>
               ))}
             </ul>
-            <Link to="/checkout/agency" className="surface-mono inline-block px-8 py-3 font-bold">
+            <p className="text-xs text-silver-400 mb-6 max-w-lg mx-auto text-left">
+              TISAX ist in Vorbereitung und nicht Teil des Pakets.
+              {whiteLabel
+                ? ` Vollständiges Branding mit eigener Domain ist das White-Label-Add-on (${formatPriceEur(whiteLabel.priceEur)} ${whiteLabel.priceNote ?? '/ Monat'}).`
+                : ''}
+            </p>
+            {/* `source` traegt die Attribution: `readUtm()` in
+                src/lib/marketingAnalytics.ts liest `utm_source ?? source`.
+                Ohne den Parameter wuerden Agency-Abschluesse als „direct"
+                verbucht — die Geschwister-CTAs dieser Seite setzen ihn auch. */}
+            <Link to="/checkout/agency?source=solution-page" className="surface-mono inline-block px-8 py-3 font-bold">
               {agency.ctaLabel}
             </Link>
           </div>

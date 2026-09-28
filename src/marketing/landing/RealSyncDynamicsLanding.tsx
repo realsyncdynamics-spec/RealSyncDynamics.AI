@@ -488,7 +488,7 @@ export const RealSyncDynamicsLanding = () => {
                   <li>✓ Bis zu 10 Kunden-Sites</li>
                   <li>✓ REST-API + Webhooks</li>
                 </ul>
-                <Link to="/checkout/agency" className="block text-center w-full bg-slate-800 hover:bg-slate-700 py-2 rounded text-sm transition">
+                <Link to="/checkout/agency?source=realsync-landing" className="block text-center w-full bg-slate-800 hover:bg-slate-700 py-2 rounded text-sm transition">
                   Buchen
                 </Link>
               </div>

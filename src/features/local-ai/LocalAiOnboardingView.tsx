@@ -279,11 +279,14 @@ export function LocalAiOnboardingView() {
   const probe = flow.probe;
   const installedModels = probe?.ok ? probe.data.models : [];
   const currentTest = flow.test?.ok && flow.test.data.model === flow.model ? flow.test.data : null;
-  // Basistest: irgendein in dieser Sitzung bestandener Test oder der gespeicherte.
+  // Basistest: irgendein in dieser Sitzung bestandener Test oder der gespeicherte —
+  // ein gespeicherter Test gegen ein Cloud-Modell zählt nie.
   const baseTest: GovernanceTestSummary | null =
     flow.test?.ok && flow.test.data.overall === 'success'
       ? summarizeTest(flow.test.data)
-      : flow.savedProfile?.test_result ?? null;
+      : flow.savedProfile?.test_result && !isCloudModel(flow.savedProfile.test_result.model)
+        ? flow.savedProfile.test_result
+        : null;
 
   const checkConnection = async () => {
     patch({ probing: true, test: null });

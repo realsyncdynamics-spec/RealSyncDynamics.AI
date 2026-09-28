@@ -14,6 +14,7 @@
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
+import { requireAuthAndTenant } from '../_shared/auth.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SRK = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -62,6 +63,53 @@ Deno.serve(async (req) => {
 
     if (!body.action) {
       return jsonError(400, 'INVALID_INPUT', 'action required');
+    }
+
+    // Sicherheitsrelevanz: Die fuenf Einzelaktionen pruefen bis hier keine
+    // Mitgliedschaft. Autoritaet war allein `project_id` aus dem Body — und
+    // der Kommentar an `run-daily-maintenance` unten ("Einzelscans bleiben
+    // JWT-gated") beruht auf einer Annahme, die nicht traegt: Der oeffentliche
+    // Anon-Key liegt im Frontend-Bundle und ist ein gueltiges JWT, passiert das
+    // Plattform-verify_jwt also. Gemessen am 2026-09-26 gegen die deployte
+    // Function: mit diesem Key erreichte ein fremder Aufrufer die Validierung.
+    // Mit einer gueltigen fremden project_id waere daraus ein Scan auf
+    // Betreiberressourcen und eine deployment_logs-Zeile im fremden Mandanten
+    // geworden (Art. 32 Abs. 1 lit. b DSGVO — Vertraulichkeit; EU AI Act
+    // Art. 12/26 — Zuordnung der Governance-Daten zum Verantwortlichen).
+    //
+    // ZWEI Pruefungen, nicht eine — und das ist der Kern:
+    //   1. `requireAuthAndTenant` belegt, dass der Aufrufer Mitglied des
+    //      genannten Mandanten ist (401 / 400 / 403). Kanonischer Resolver aus
+    //      _shared/auth.ts, derselbe wie in website-operations-agent,
+    //      enterprise-ai-os-agents-run, ai-gateway und optimize-analyze.
+    //   2. Danach muss das Projekt DIESEM Mandanten gehoeren. Ohne Schritt 2
+    //      bliebe die Luecke offen: Ein Mitglied von Mandant A koennte A's
+    //      tenant_id (Pruefung bestanden!) mit einer project_id aus Mandant B
+    //      verbinden und weiter fremd scannen und schreiben.
+    //
+    // `run-daily-maintenance` bleibt unberuehrt — es traegt sein eigenes,
+    // korrektes Tor (Service-Role-Bearer) und kennt keine einzelne project_id.
+    if (body.action !== 'run-daily-maintenance') {
+      const auth = await requireAuthAndTenant(req, body.tenant_id);
+      if (auth instanceof Response) return auth;
+
+      if (!body.project_id) {
+        return jsonError(400, 'INVALID_INPUT', 'project_id required');
+      }
+
+      const { data: projekt } = await auth.admin
+        .from('website_projects')
+        .select('id')
+        .eq('id', body.project_id)
+        .eq('tenant_id', auth.tenantId)
+        .maybeSingle();
+
+      // 404 statt 403: Ein 403 wuerde verraten, dass die project_id existiert —
+      // nur eben in einem fremden Mandanten. Dieselbe Erwaegung wie bei der
+      // Entscheidung gegen TENANT_NOT_FOUND in website-operations-agent.
+      if (!projekt) {
+        return jsonError(404, 'PROJECT_NOT_FOUND', 'project not found in this tenant');
+      }
     }
 
     let result;

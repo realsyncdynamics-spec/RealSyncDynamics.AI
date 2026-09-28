@@ -27,7 +27,7 @@ const TRIO = [
 ] as const;
 
 /**
- * Die vier Rest-Jobs. Sie liefen bis `20260915110500` mit dem Vault-Eintrag
+ * Die vier Rest-Jobs. Sie liefen bis `20260928120500` mit dem Vault-Eintrag
  * `service_role_key` als Inbound-Bearer — ausdrücklich als Zwischenzustand
  * (siehe Kopf von `20260912180000`). Gemessen am 2026-09-15 trug dieser
  * Zwischenzustand nicht: alle vier antworteten mit 401. Seitdem gilt für sie
@@ -158,9 +158,9 @@ describe('Cron-Rest-Jobs: kein service_role_key mehr im Cron-Pfad', () => {
     });
   }
 
-  it('Migration 20260915110500 stellt alle vier Jobs auf Vault cron_* um', () => {
+  it('Migration 20260928120500 stellt alle vier Jobs auf Vault cron_* um', () => {
     const sql = readFileSync(
-      'supabase/migrations/20260915110500_cron_rest_dedicated_keys.sql',
+      'supabase/migrations/20260928120500_cron_rest_dedicated_keys.sql',
       'utf8',
     );
     for (const { vault, job } of REST) {
@@ -178,5 +178,66 @@ describe('Cron-Rest-Jobs: kein service_role_key mehr im Cron-Pfad', () => {
       expect(runbook).toContain(vault);
       expect(runbook).toContain(env);
     }
+  });
+});
+
+/**
+ * email-auth-rescan (website-rescan-daily) — gleicher Vertrag wie das Trio,
+ * aber mit Constant-Time-Vergleich in logic.ts (checkCronAuth) statt `!==`
+ * in index.ts. Die Verhaltens-Tests (401/500 ohne DB-/DNS-Zugriff) stehen in
+ * test/edge/email-auth-rescan.test.ts; hier nur der Quelltext-Vertrag.
+ */
+describe('email-auth-rescan: dedizierter CRON_WEBSITE_RESCAN_KEY, fail-closed', () => {
+  const index = () => readFileSync('supabase/functions/email-auth-rescan/index.ts', 'utf8');
+  const logic = () => readFileSync('supabase/functions/email-auth-rescan/logic.ts', 'utf8');
+
+  it('liest CRON_WEBSITE_RESCAN_KEY und nennt den Vault-Namen', () => {
+    expect(index()).toContain("Deno.env.get('CRON_WEBSITE_RESCAN_KEY')");
+    expect(index()).toContain('cron_website_rescan_key');
+    expect(index()).toContain('checkCronAuth(');
+  });
+
+  it('leerer Key → 500, falscher Bearer → 401 "cron only", Constant-Time-Vergleich', () => {
+    const src = logic();
+    expect(src).toMatch(/if \(!CRON_KEY\)/);
+    expect(src).toMatch(/status: 500/);
+    expect(src).toMatch(/status: 401/);
+    expect(src).toContain('cron only');
+    expect(src).toMatch(/timingSafeEqual\(header, `Bearer \$\{CRON_KEY\}`\)/);
+  });
+
+  it('inbound Auth vergleicht nicht gegen SERVICE_ROLE', () => {
+    for (const text of [index(), logic()]) {
+      expect(text).not.toMatch(/Bearer \$\{(SERVICE_KEY|SERVICE_ROLE|SRK|SUPABASE_SERVICE_ROLE_KEY)\}/);
+      expect(text).not.toContain('service role required');
+    }
+  });
+
+  it('config.toml: verify_jwt=false mit Hinweis auf Vault → Function Secret', () => {
+    const toml = readFileSync('supabase/config.toml', 'utf8');
+    const i = toml.indexOf('[functions.email-auth-rescan]');
+    expect(i).toBeGreaterThanOrEqual(0);
+    expect(toml.slice(i, i + 80)).toMatch(/verify_jwt\s*=\s*false/);
+    const before = toml.slice(Math.max(0, i - 600), i);
+    expect(before).toContain('cron_website_rescan_key');
+    expect(before).toContain('CRON_WEBSITE_RESCAN_KEY');
+  });
+
+  it('Migration 20260925210000 plant website-rescan-daily mit Vault cron_website_rescan_key', () => {
+    const sql = readFileSync('supabase/migrations/20260925210000_email_auth_rescan.sql', 'utf8');
+    expect(sql).toContain("'website-rescan-daily'");
+    expect(sql).toContain("'30 3 * * *'");
+    expect(sql).toContain("'email-auth-rescan'");
+    expect(sql).toContain("'cron_website_rescan_key'");
+    expect(sql).toContain('dispatch_cron_function');
+    expect(sql).toMatch(/cron\.unschedule\('website-rescan-daily'\)/);
+    expect(sql).not.toMatch(/'service_role_key'/);
+  });
+
+  it('Runbook führt Vault-Namen und Function Secret', () => {
+    const md = readFileSync('docs/runbooks/cron-vault-secrets.md', 'utf8');
+    expect(md).toContain('cron_website_rescan_key');
+    expect(md).toContain('CRON_WEBSITE_RESCAN_KEY');
+    expect(md).toContain('website-rescan-daily');
   });
 });

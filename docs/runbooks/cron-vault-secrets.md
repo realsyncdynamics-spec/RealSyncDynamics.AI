@@ -1,8 +1,8 @@
 # Runbook: Vault-Secrets für den Cron-Dispatch
 
 **Zielgruppe**: Betreiber (Supabase-SQL-Editor und Function Secrets der Produktion).
-**Warum nicht automatisiert**: Die Werte sind Cron-Keys. Sie gehören nicht in eine
-Migration, nicht in die Git-History, nicht in CI — CLAUDE.md §4 verbietet es.
+**Warum nicht automatisiert**: Cron-Keys gehören nicht in Migration, Git-History
+oder CI (CLAUDE.md §4).
 
 ---
 
@@ -22,14 +22,16 @@ für PostgREST/Admin dienen — nie als Inbound-Credential.
 | `daily-digest` | `daily-digest` | `cron_daily_digest_key` | `CRON_DAILY_DIGEST_KEY` |
 | `sub-processor-notify-daily` | `sub-processor-notify` | `cron_sub_processor_notify_key` | `CRON_SUB_PROCESSOR_NOTIFY_KEY` |
 | `audit-email-drip-daily` | `audit-drip-cron` | `cron_audit_drip_key` | `CRON_AUDIT_DRIP_KEY` |
+| `website-rescan-daily` | `email-auth-rescan` | `cron_website_rescan_key` | `CRON_WEBSITE_RESCAN_KEY` |
 
 `verify_jwt = false` bleibt (Drift-Guard). Ohne passenden Cron-Bearer ist die
 Function trotzdem nicht öffentlich aufrufbar.
 
 Git-Align: `20260912180000` schreibt die Trio-Jobs auf `cron_*`,
-`20260915110500` die vier übrigen. **Danach reicht kein Cron-Pfad mehr
-`service_role_key` weiter.** Ältere Migrationen bleiben historisch darauf;
-nach dem Apply muss `cron.job.command` die `cron_*` Namen tragen.
+`20260928120500` die vier übrigen; `20260925210000` plant `website-rescan-daily`
+direkt auf `cron_website_rescan_key`. **Danach reicht kein Cron-Pfad mehr
+`service_role_key` weiter.** Nach dem Apply muss `cron.job.command` die
+`cron_*` Namen tragen.
 
 ---
 
@@ -40,9 +42,9 @@ Dispatch-Jobs antworten mit HTTP 401**. Grün ist allein `agent-os-runner`, mit
 einem Secret, das älter ist als die Rotation. Zwei Ursachen:
 
 1. **Trio** — die `cron_*` Vault-Secrets existieren seit 2026-09-10, die
-   Job-Kommandos zeigen darauf, die **Function Secrets** fehlen. Es fehlt genau
-   der Betreiberschritt unten, sonst nichts.
-2. **Die vier übrigen** — bis `20260915110500` auf `service_role_key`; auch
+   Job-Kommandos zeigen darauf, die **Function Secrets** fehlen (Betreiberschritt
+   unten).
+2. **Die vier übrigen** — bis `20260928120500` auf `service_role_key`; auch
    dieser Wert wird nicht akzeptiert. Der Zwischenzustand aus `20260912180000`
    hat nie getragen.
 
@@ -52,17 +54,14 @@ einem Secret, das älter ist als die Rotation. Zwei Ursachen:
 `net._http_response`, und die Tabelle hält nur rund sechs Stunden vor. Wer an
 der Job-Ebene misst, sieht einen grünen Cron über einer toten Funktionskette.
 
-## Was währenddessen nicht passiert
+Ausgefallen war Zugesagtes: Scheduler (ab Growth verkauft), Governance-Sentinel,
+Memory-Verfall (RFC-003), Audit-Recheck, Drip-Mails, Digest, Sub-Processor-Notice
+(Art. 28 DSGVO).
 
-Kein Nebenläufiges, sondern zugesagte Funktion: **`scheduler-dispatch`** (ab
-Growth verkauft), **`governance-monitoring-scheduler`** (Sentinel-Schleife),
-**`memory-decay-worker`** (RFC-003 — ohne ihn verfällt kein Memory), dazu
-Audit-Recheck, Drip-Mails, Digest und die Sub-Processor-Notice (Art. 28 DSGVO).
+## Behebung / Abgleich (Dominik — Dashboard)
 
-## Behebung (Dominik — Dashboard)
-
-Im SQL-Editor/Vault und unter Function Secrets der Produktion. Nur anlegen, wenn
-der Eintrag fehlt — bereits gesetzte `cron_*` Keys nicht überschreiben.
+Im SQL-Editor / Vault und unter Function Secrets der Produktion. Nur anlegen,
+wenn der Eintrag fehlt — live gesetzte `cron_*` Keys nicht überschreiben.
 
 ```sql
 -- Werte nicht aus dem Repo übernehmen; je Zeile ein eigener Zufallswert.
@@ -73,6 +72,7 @@ select vault.create_secret('<cron-key>', 'cron_audit_recheck_key');
 select vault.create_secret('<cron-key>', 'cron_daily_digest_key');
 select vault.create_secret('<cron-key>', 'cron_sub_processor_notify_key');
 select vault.create_secret('<cron-key>', 'cron_audit_drip_key');
+select vault.create_secret('<cron-key>', 'cron_website_rescan_key');
 ```
 
 Danach **denselben Wert** als Function Secret setzen (Namenspaare in der
@@ -82,6 +82,16 @@ Wert sehen.
 
 > ⚠️ Keinen Schlüssel in ein Issue, einen PR, eine Migration oder einen
 > Chatverlauf kopieren. SQL-Editor und Function-Secrets-UI sind die einzigen Orte.
+
+### `website-rescan-daily` → `email-auth-rescan` (neu, 2026-09-25)
+
+Täglich 03:30 UTC SPF/DMARC/DKIM-Recheck mit Auto-Resolve. Reihenfolge nach
+dem Merge: Vault-Eintrag + Function Secret (derselbe Zufallswert, s. o.) →
+Migration `20260925210000_email_auth_rescan.sql` → Deploy-Workflow.
+Fail-closed, nichts wird geschrieben: Vault fehlt → Lauf `failed` ohne
+HTTP-Request; Secret fehlt → `500 CRON_KEY_MISSING`; Werte verschieden →
+`401 cron only`. Probelauf ohne Writes: `POST` mit Cron-Bearer und Body
+`{"trigger":"manual","dry_run":true}`.
 
 ## Prüfen, dass es gewirkt hat
 
@@ -101,8 +111,8 @@ group by status_code order by status_code;
 ```
 
 Erwartung: **keine einzige 401.** Jede 401 ist ein Job, dessen Secret-Paar nicht
-zusammenpasst. Ergänzend `cron.job_run_details` lesen — ein fehlendes
-Vault-Secret meldet sich dort, nicht in der Antwort.
+zusammenpasst. Ein fehlendes Vault-Secret meldet sich dagegen in
+`cron.job_run_details`, nicht in der Antwort.
 
 ## Wer meldet das künftig
 
@@ -111,13 +121,13 @@ prüft den **letzten** Lauf je aktivem Job; `drift-alert.yml` hält daraus ein
 Issue offen und schließt es selbst wieder.
 
 > ⚠️ **Der Guard beobachtet die falsche Ebene.** Er liest
-> `cron.job_run_details.status` — und der stand während des ganzen Ausfalls vom
-> 2026-09-10 bis 2026-09-15 auf `succeeded`. Ein Guard, der die HTTP-Antwort
-> nicht ansieht, kann diesen Fehler nicht finden. Die Erweiterung ist ein
-> eigener Schritt und noch nicht gebaut.
+> `cron.job_run_details.status` — der stand während des ganzen Ausfalls
+> (2026-09-10 bis -15) auf `succeeded`. Ohne Blick auf die HTTP-Antwort kann er
+> diesen Fehler nicht finden. Die Erweiterung ist ein eigener Schritt und noch
+> nicht gebaut.
 
-## Verwandter, noch offener Punkt
+## Verwandter Punkt
 
-`agent-os-runner-hourly` / `-daily` tragen ältere Fehlläufe aus der GUC-Zeit.
-Ihre jüngsten Läufe sind grün — repariert, die Historie bleibt. Der Guard
-bewertet den letzten Lauf, nicht die Fehlerquote.
+`agent-os-runner-hourly`/`-daily` (`agent_os_runner_token`) tragen alte
+Fehlläufe aus der GUC-Zeit; die jüngsten Läufe sind grün (der Guard bewertet
+nur den letzten Lauf).

@@ -16,6 +16,8 @@
     "lint": "tsc --noEmit",
     "sync:pricing": "node scripts/sync-shared-pricing.mjs",
     "check:pricing": "node scripts/sync-shared-pricing.mjs --check && tsx scripts/generate-plan-catalog-sql.ts --check",
+    "sync:model-prices": "node scripts/sync-model-prices.mjs",
+    "check:model-prices": "node scripts/sync-model-prices.mjs --check",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:db": "bash -c 'export TEST_DB_URL=$(bash scripts/test-db/up.sh) && echo \"Using $TEST_DB_URL\" && vitest run test/runtime/db/ --no-file-parallelism'",
@@ -54,6 +56,7 @@
     "merge:hygiene": "node scripts/merge-hygiene.mjs",
     "check:landing-claims": "node scripts/check-landing-claims.mjs",
     "check:context": "node scripts/check-context-budget.mjs",
+    "check:dead": "node scripts/check-dead-code.mjs",
     "check:fabrication": "node scripts/check-fabricated-results.mjs",
     "check:dashboard": "node scripts/check-dashboard-actions.mjs",
     "migrate:rename": "node scripts/rename-migration.mjs"

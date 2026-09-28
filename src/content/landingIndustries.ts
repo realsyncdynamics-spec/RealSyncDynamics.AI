@@ -48,8 +48,8 @@ export interface LandingIndustry {
 }
 
 const RUNTIME_VALUE: LandingIndustryValue = {
-  title: 'Kontinuierliches Monitoring',
-  text: 'Websites, Datenflüsse und KI-Systeme werden rund um die Uhr überwacht — Risiken werden sichtbar, sobald sie entstehen, nicht erst im Jahres-Audit.',
+  title: 'Kontinuierliches Monitoring (Coming Soon)',
+  text: 'Geplant: Websites, Datenflüsse und KI-Systeme dauerhaft überwachen, damit Risiken sichtbar werden, sobald sie entstehen. Heute: Scans auf Knopfdruck statt nur im Jahres-Audit.',
 };
 const EVIDENCE_VALUE: LandingIndustryValue = {
   title: 'Revisionssicherer Nachweis',
@@ -64,7 +64,7 @@ export const LANDING_INDUSTRIES: LandingIndustry[] = [
     text: 'Patientendaten, Praxis- & Klinik-Software, KI-Diagnostik — Art. 9 DSGVO und Hochrisiko-KI lückenlos belegt.',
     eyebrow: 'GESUNDHEITSWESEN',
     headline: 'Compliance für Gesundheitsdaten und KI-Diagnostik',
-    intro: 'Patientendaten sind besondere Kategorien nach Art. 9 DSGVO, KI-Diagnostik ist Hochrisiko nach EU AI Act. RealSync überwacht Praxis-, Klinik- und MVZ-Systeme kontinuierlich und macht jeden Zugriff und jede KI-Entscheidung revisionssicher nachweisbar.',
+    intro: 'Patientendaten sind besondere Kategorien nach Art. 9 DSGVO, KI-Diagnostik ist Hochrisiko nach EU AI Act. RealSync prüft Praxis-, Klinik- und MVZ-Systeme und macht jeden Zugriff und jede KI-Entscheidung revisionssicher nachweisbar.',
     refs: ['Art. 9 DSGVO', 'EU AI Act Annex III', 'MDR', 'DSFA-Pflicht'],
     risks: [
       'Gesundheitsdaten ohne erhöhten Schutz nach Art. 9',
@@ -106,7 +106,7 @@ export const LANDING_INDUSTRIES: LandingIndustry[] = [
     text: 'Consent, Tracking und Empfehlungs-KI im Griff — vom Cookie-Banner bis zur Produktempfehlung.',
     eyebrow: 'HANDEL & E-COMMERCE',
     headline: 'Consent, Tracking und Empfehlungs-KI sauber belegt',
-    intro: 'Jeder Shop kombiniert Tracking, Consent-Management und zunehmend Empfehlungs- und Pricing-KI. RealSync überwacht Cookie-Banner, Tags und Algorithmen kontinuierlich und verhindert, dass aus einem fehlenden Consent eine Abmahnung wird.',
+    intro: 'Jeder Shop kombiniert Tracking, Consent-Management und zunehmend Empfehlungs- und Pricing-KI. RealSync prüft Cookie-Banner, Tags und Algorithmen und hilft zu verhindern, dass aus einem fehlenden Consent eine Abmahnung wird.',
     refs: ['DSGVO Art. 6', 'TDDDG', 'EU AI Act', 'P2B-Verordnung'],
     risks: [
       'Tracking/Analytics vor Einwilligung (Consent-Verstoß)',
@@ -116,7 +116,7 @@ export const LANDING_INDUSTRIES: LandingIndustry[] = [
     ],
     value: [
       RUNTIME_VALUE,
-      { title: 'Consent in Echtzeit geprüft', text: 'Tags und Tracker werden gegen den tatsächlichen Consent-Status abgeglichen — Abweichungen lösen sofort einen Alert aus.' },
+      { title: 'Consent-Status geprüft', text: 'Tags und Tracker werden beim Scan gegen den tatsächlichen Consent-Status abgeglichen; automatische Alerts bei Abweichungen sind Coming Soon.' },
       EVIDENCE_VALUE,
     ],
   },
@@ -169,7 +169,7 @@ export const LANDING_INDUSTRIES: LandingIndustry[] = [
     text: 'IoT-Telemetrie, Predictive Maintenance und Lieferketten — Datenflüsse und KI revisionssicher belegt.',
     eyebrow: 'INDUSTRIE & FERTIGUNG',
     headline: 'Governance für IoT, Predictive Maintenance und Lieferketten',
-    intro: 'Vernetzte Anlagen, Predictive-Maintenance-Modelle und digitale Lieferketten erzeugen riesige Datenflüsse — oft mit Personenbezug und KI-Beteiligung. RealSync überwacht diese kontinuierlich und macht Datenflüsse wie KI-Einsatz revisionssicher belegbar.',
+    intro: 'Vernetzte Anlagen, Predictive-Maintenance-Modelle und digitale Lieferketten erzeugen riesige Datenflüsse — oft mit Personenbezug und KI-Beteiligung. RealSync erfasst diese und macht Datenflüsse wie KI-Einsatz revisionssicher belegbar.',
     refs: ['DSGVO', 'EU AI Act', 'NIS-2', 'EU Data Act'],
     risks: [
       'IoT-Telemetrie mit Personenbezug ohne Rechtsgrundlage',
@@ -211,7 +211,7 @@ export const LANDING_INDUSTRIES: LandingIndustry[] = [
     text: 'Tracking, Consent und Kampagnen-KI für viele Kunden — mandantengetrennt und White-Label.',
     eyebrow: 'MARKETING & AGENTUREN',
     headline: 'Tracking & Kampagnen-KI für viele Kunden im Griff',
-    intro: 'Agenturen verantworten Tracking, Consent und zunehmend Kampagnen-KI auf fremden Domains. RealSync überwacht alle Kundenauftritte mandantengetrennt, deckt Consent-Lücken auf und liefert den Nachweis — White-Label im eigenen Auftritt.',
+    intro: 'Agenturen verantworten Tracking, Consent und zunehmend Kampagnen-KI auf fremden Domains. RealSync prüft alle Kundenauftritte mandantengetrennt, deckt Consent-Lücken auf und liefert den Nachweis — White-Label im eigenen Auftritt.',
     refs: ['DSGVO Art. 28', 'TDDDG', 'EU AI Act', 'Consent-Mode'],
     risks: [
       'Tracking auf Kundenseiten ohne wirksamen Consent',
@@ -250,10 +250,10 @@ export const LANDING_INDUSTRIES: LandingIndustry[] = [
     slug: 'energie-versorger',
     icon: Zap,
     title: 'Energie & Versorger',
-    text: 'Kritische Infrastruktur und KRITIS — kontinuierliches Monitoring statt jährlicher Stichprobe.',
+    text: 'Kritische Infrastruktur und KRITIS — regelmäßige Scans statt jährlicher Stichprobe; kontinuierliches Monitoring Coming Soon.',
     eyebrow: 'ENERGIE & VERSORGER',
-    headline: 'KRITIS-Compliance, kontinuierlich statt stichprobenhaft',
-    intro: 'Energie- und Versorgungsunternehmen sind kritische Infrastruktur — mit hohen Pflichten aus NIS-2 und KRITIS und wachsendem KI-Einsatz in Netz- und Lastmanagement. RealSync überwacht durchgehend, statt einmal im Jahr eine Stichprobe zu ziehen.',
+    headline: 'KRITIS-Compliance, nachweisbar statt stichprobenhaft',
+    intro: 'Energie- und Versorgungsunternehmen sind kritische Infrastruktur — mit hohen Pflichten aus NIS-2 und KRITIS und wachsendem KI-Einsatz in Netz- und Lastmanagement. RealSync prüft regelmäßig, statt einmal im Jahr eine Stichprobe zu ziehen; durchgehende Überwachung ist Coming Soon.',
     refs: ['KRITIS', 'NIS-2', 'DSGVO', 'EU AI Act'],
     risks: [
       'KRITIS-/NIS-2-Pflichten nur jährlich geprüft',
@@ -263,7 +263,7 @@ export const LANDING_INDUSTRIES: LandingIndustry[] = [
     ],
     value: [
       RUNTIME_VALUE,
-      { title: 'Durchgehende Überwachung', text: 'Statt jährlicher Audits läuft die Kontrolle permanent — Abweichungen werden sofort sichtbar.' },
+      { title: 'Durchgehende Überwachung (Coming Soon)', text: 'Geplant: Kontrolle permanent statt jährlicher Audits, damit Abweichungen sofort sichtbar werden.' },
       EVIDENCE_VALUE,
     ],
   },
@@ -274,7 +274,7 @@ export const LANDING_INDUSTRIES: LandingIndustry[] = [
     text: 'Lernplattformen, Forschungs- und Minderjährigendaten — sensibel verarbeitet, sauber nachgewiesen.',
     eyebrow: 'BILDUNG & FORSCHUNG',
     headline: 'Schutz für Lern-, Forschungs- und Minderjährigendaten',
-    intro: 'Lernplattformen verarbeiten oft Daten Minderjähriger, Forschung sensible Datensätze, und KI hält in Prüfung und Bewertung Einzug. RealSync überwacht diese Verarbeitungen kontinuierlich und sorgt für saubere, nachweisbare Grundlagen.',
+    intro: 'Lernplattformen verarbeiten oft Daten Minderjähriger, Forschung sensible Datensätze, und KI hält in Prüfung und Bewertung Einzug. RealSync prüft diese Verarbeitungen und sorgt für saubere, nachweisbare Grundlagen.',
     refs: ['DSGVO Art. 8', 'EU AI Act', 'Forschungsklauseln', 'TDDDG'],
     risks: [
       'Daten Minderjähriger ohne wirksame Einwilligung',
@@ -295,7 +295,7 @@ export const LANDING_INDUSTRIES: LandingIndustry[] = [
     text: 'Telematik, Tracking und Routing-KI — personenbezogene Bewegungsdaten DSGVO-konform behandelt.',
     eyebrow: 'LOGISTIK & MOBILITÄT',
     headline: 'Bewegungsdaten und Routing-KI DSGVO-konform',
-    intro: 'Telematik, Fahrer-Tracking und Routing-KI erzeugen personenbezogene Bewegungsdaten mit hohem Schutzbedarf. RealSync überwacht diese Datenflüsse und KI-Systeme kontinuierlich und macht den korrekten Umgang revisionssicher belegbar.',
+    intro: 'Telematik, Fahrer-Tracking und Routing-KI erzeugen personenbezogene Bewegungsdaten mit hohem Schutzbedarf. RealSync prüft diese Datenflüsse und KI-Systeme und macht den korrekten Umgang revisionssicher belegbar.',
     refs: ['DSGVO', 'EU AI Act', 'BetrVG', 'EU Data Act'],
     risks: [
       'Fahrer-/Telematik-Tracking ohne Rechtsgrundlage',

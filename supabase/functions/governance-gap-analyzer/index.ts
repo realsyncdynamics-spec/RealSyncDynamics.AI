@@ -106,13 +106,13 @@ Deno.serve(async (req) => {
       })
       .eq('tenant_id', body.tenant_id);
 
-    return jsonResponse(200, {
+    return jsonResponse({
       ok: true,
       gaps_created: totalGapsCreated,
       critical_gaps: criticalCount,
       trigger: body.trigger || 'manual',
       timestamp: new Date().toISOString(),
-    });
+    }, 200);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     return jsonError(500, 'INTERNAL', message);

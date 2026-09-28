@@ -1,3 +1,7 @@
+/**
+ * SupabaseApprovalGateService unit tests. The Supabase client is fully mocked,
+ * so these run without a Postgres instance. DB-backed E2E coverage follows in Phase 2.
+ */
 import { describe, it, expect, vi } from 'vitest';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { SupabaseApprovalGateService } from '../../../../src/core/runtime/supabase';
@@ -80,7 +84,7 @@ describe('SupabaseApprovalGateService.open', () => {
     });
     expect(row.id).toBe('gate-1');
     expect(row.status).toBe('pending');
-    expect(row.decided_at).toBeUndefined();
+    expect(row.decided_at).toBeNull();
   });
 
   it('throws when insert fails', async () => {

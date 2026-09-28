@@ -40,7 +40,7 @@ export function ApiSetupWizard() {
 
   useEffect(() => {
     if (!accessLoading && !hasAccess) {
-      navigate('/app/api?noAccess=true', { replace: true });
+      navigate('/app/billing?source=api-setup', { replace: true });
     }
   }, [accessLoading, hasAccess, navigate]);
 

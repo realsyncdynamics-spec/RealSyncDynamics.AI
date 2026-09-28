@@ -277,7 +277,9 @@ geloggt, damit ein stiller Ausfall des Prüfpfads auffällt.
 - **Ablauf und Widerruf** wirken sofort, weil bei jedem Request geprüft wird.
 - **Plan-Gate und Kontingent.** MCP-Zugriff setzt die `api`-Berechtigung voraus
   (ab Agency). Pläne ohne sie erhalten 403, ein ausgeschöpftes Monatskontingent
-  429 mit `Retry-After`. Die Zahlen stammen aus `plan_catalog` — der aus
+  429 mit `Retry-After`. Ist das Kontingent nicht prüfbar, gilt fail-closed:
+  503 `QUOTA_UNAVAILABLE` (Retry-After 30 s); fehlt der Plan in `plan_catalog`,
+  403. Die Zahlen stammen aus `plan_catalog` — der aus
   `shared/pricing.ts` erzeugten Projektion, die `npm run check:pricing` gegen
   die Quelle prüft.
 - **Ratenbegrenzung auf zwei Ebenen.** Das Monatskontingent allein genügt

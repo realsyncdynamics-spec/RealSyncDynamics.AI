@@ -35,8 +35,8 @@ function SceneLights({
   });
   return (
     <>
-      <ambientLight intensity={0.28} />
-      <directionalLight ref={key} position={[4.5, 1.2, 2.8]} intensity={2.1} color="#fff6e8" />
+      <ambientLight intensity={0.48} color="#fff6ea" />
+      <directionalLight ref={key} position={[4.5, 1.2, 2.8]} intensity={2.7} color="#fff8ee" />
       <directionalLight position={[-3.5, -1.5, -2]} intensity={0.35} color="#6ec8ff" />
     </>
   );
@@ -120,7 +120,7 @@ export interface PhotorealEarthSceneProps {
 
 export function PhotorealEarthScene({ reducedMotion = false }: PhotorealEarthSceneProps) {
   const controls = useRef<WelcomeControls>({
-    rotY: 0,
+    rotY: -1.22,
     velY: 0,
     pointer: { x: 0, y: 0 },
     dragging: false,

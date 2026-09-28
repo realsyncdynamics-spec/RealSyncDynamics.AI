@@ -190,6 +190,7 @@ evidence_list — Listet Compliance-Nachweise (Evidence-Snapshots) des Tenants.
 | `400` | Unbekannter Framework-Schlüssel | gültige Schlüssel stehen in der Meldung; **nicht** als „keine Controls" deuten |
 | `413` | JSON-RPC-Stapel zu groß (Standard: über 20 Nachrichten) | Stapel aufteilen |
 | `429` | Monatskontingent ausgeschöpft **oder** Ratenbegrenzung | `Retry-After` beachten, nicht sofort erneut anfragen |
+| `503` | Kontingent derzeit nicht prüfbar (`QUOTA_UNAVAILABLE`) — der Request wird abgewiesen, nicht ungeprüft durchgelassen | `Retry-After` (30 s) beachten, dann erneut versuchen |
 | `501` | Endpunkt noch nicht implementiert | als „nicht verfügbar" melden, **nicht** als Befund |
 | `500` | Fehler im Dienst | begrenzt wiederholen |
 

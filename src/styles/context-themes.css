@@ -255,6 +255,13 @@
   --color-titanium-800: #324158;
   --color-titanium-900: #263349;
 
+  /* Die Basisfarben ohne Skalenstufe (definiert in src/index.css) müssen den
+     Scope-Overrides oben folgen, sonst setzt `bg-obsidian` im Dashboard das
+     Near-Black des Landing-Themes neben die blaustichigen Panels dieses
+     Kontexts. Werte identisch mit obsidian-900 und titanium-200 hier. */
+  --color-obsidian: #0f172a;
+  --color-titanium: #d3ddeb;
+
   /* Command Center density — consumed by command-center-density.css.
      Landing and SiteOS stay out of this graph. */
   --dash-title-size: 22px;

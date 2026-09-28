@@ -9,7 +9,7 @@
 // Historie: Der ursprüngliche Job schickte den Anon-Key (Migration
 // 20260507140000, Variable v_anon_key) — ein gültiges JWT, deshalb reicht
 // Gateway-JWT nicht. 20260910190000 stellte auf den Service-Role-Bearer um,
-// 20260915110500 auf den dedizierten Cron-Key oben.
+// 20260928120500 auf den dedizierten Cron-Key oben.
 //
 // Holt pending changes (notify_at <= now, notified_at IS NULL), iteriert
 // über alle aktiven Subscriptions, sendet 30-Tage-Vorab-Notice via Resend,

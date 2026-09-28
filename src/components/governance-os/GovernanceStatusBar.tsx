@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useTenant } from '../../core/access/TenantProvider';
 import { Shield, Activity, Layers } from 'lucide-react';
 import { listWebsitesForTenant } from '../../features/governance/scans/scansApi';
+import { tenantDisplayName } from '../../features/governance/dashboard/dashboardSignals';
 
 /**
  * Honest status strip — no fake “Production / Evidence Active” counters.
@@ -30,12 +31,12 @@ export function GovernanceStatusBar() {
 
   return (
     <div className="h-6 shrink-0 bg-obsidian-950 border-t border-titanium-900 flex items-center gap-4 px-3 overflow-x-auto scrollbar-none">
-      <StatusItem icon={<Layers className="h-3 w-3 text-[#e4cfa2]" />} label="Governance OS" accent />
+      <StatusItem icon={<Layers className="h-3 w-3 text-[#00B8D4]" />} label="Governance OS" accent />
       <StatusItem icon={<Shield className="h-3 w-3 text-titanium-500" />} label="EU · DSGVO · AI Act" />
       <StatusItem icon={<Activity className="h-3 w-3 text-amber-400" />} label="Monitoring Preview" />
       <div className="h-3 w-px bg-titanium-800 shrink-0" />
       {activeTenant ? (
-        <StatusItem label={`Mandant: ${activeTenant.name}`} />
+        <StatusItem label={`Mandant: ${tenantDisplayName(activeTenant.name, 'de')}`} />
       ) : (
         <StatusItem label="Nicht angemeldet" />
       )}
@@ -63,7 +64,7 @@ function StatusItem({
   return (
     <div className={`flex items-center gap-1 shrink-0 ${className}`}>
       {icon}
-      <span className={`font-mono text-[9px] uppercase tracking-wide ${accent ? 'text-[#e4cfa2]' : 'text-titanium-600'}`}>
+      <span className={`font-mono text-[9px] uppercase tracking-wide ${accent ? 'text-[#00B8D4]' : 'text-titanium-600'}`}>
         {label}
       </span>
     </div>

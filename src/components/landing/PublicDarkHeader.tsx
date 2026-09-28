@@ -1,26 +1,28 @@
-import { useState, type CSSProperties, type MouseEvent } from 'react';
+import { useState, type CSSProperties, type MouseEvent, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
 import { HERO_SCAN_CTA_LABEL } from '../governance-frontend/hero-content';
+import { PUBLIC_PRIMARY_NAV } from '../../config/public-nav';
 import {
-  LANDING_ACCENT,
-  LANDING_BG,
-  LANDING_BUTTON,
-  LANDING_BUTTON_TEXT,
   LANDING_MONO,
-  LANDING_MUTED,
-  LANDING_TEXT,
 } from './landing-theme';
+import {
+  MODE_ACCENT,
+  MODE_BG,
+  MODE_BUTTON_INK,
+  MODE_GLOW,
+  MODE_HEADER_BG,
+  MODE_HEADER_BG_OVERLAY,
+  MODE_HEADER_BORDER,
+  MODE_MUTED,
+  MODE_TEXT,
+} from './landing-mode';
 
 /**
- * Replit Nr.1 SSOT header — gold diamond mark · REALSYNCDYNAMICS.AI
- * · Produkt / Evidence / Preise · Free Audit → /audit
+ * Claude Design / Replit SSOT header — gold diamond · REALSYNCDYNAMICS.AI
+ * · Produkt / Evidence / Preise / Login · Free Audit → /audit
+ * Nav strip from PUBLIC_PRIMARY_NAV (src/config/public-nav.ts).
  */
-const LINKS = [
-  { label: 'Produkt', to: '/#product' },
-  { label: 'Evidence', to: '/#evidence' },
-  { label: 'Preise', to: '/#pricing' },
-] as const;
 
 function NavItem({
   to,
@@ -35,12 +37,12 @@ function NavItem({
 }) {
   const shared = {
     className: `text-[13px] transition-colors focus-visible:outline-none focus-visible:underline focus-visible:underline-offset-4${className ? ` ${className}` : ''}`,
-    style: { color: LANDING_MUTED } as CSSProperties,
+    style: { color: MODE_MUTED } as CSSProperties,
     onMouseEnter: (e: MouseEvent<HTMLAnchorElement>) => {
-      e.currentTarget.style.color = LANDING_TEXT;
+      e.currentTarget.style.color = MODE_TEXT;
     },
     onMouseLeave: (e: MouseEvent<HTMLAnchorElement>) => {
-      e.currentTarget.style.color = LANDING_MUTED;
+      e.currentTarget.style.color = MODE_MUTED;
     },
   };
 
@@ -58,11 +60,16 @@ function NavItem({
   );
 }
 
+/**
+ * Primaer-Pill. Flaeche, Schrift und Schein folgen dem Farbmodus der
+ * Startseite (`landing-mode.ts`); ohne `data-landing-mode` greift der
+ * Gold-Rueckfall, also genau die bisherigen Werte.
+ */
 const scanCtaStyle: CSSProperties = {
   fontFamily: LANDING_MONO,
-  backgroundColor: LANDING_BUTTON,
-  color: LANDING_BUTTON_TEXT,
-  boxShadow: '0 0 28px rgba(214, 173, 104, 0.22)',
+  backgroundColor: MODE_ACCENT,
+  color: MODE_BUTTON_INK,
+  boxShadow: MODE_GLOW,
 };
 
 function DiamondMark() {
@@ -75,12 +82,12 @@ function DiamondMark() {
         height="16.26"
         rx="1.2"
         transform="rotate(45 14 2.5)"
-        stroke={LANDING_ACCENT}
+        style={{ stroke: MODE_ACCENT }}
         strokeWidth="1.4"
       />
       <path
         d="M14 8.2v11.6M8.2 14h11.6"
-        stroke={LANDING_ACCENT}
+        style={{ stroke: MODE_ACCENT }}
         strokeWidth="1.15"
         strokeLinecap="square"
       />
@@ -88,38 +95,50 @@ function DiamondMark() {
   );
 }
 
-export function PublicDarkHeader({ overlay = false }: { overlay?: boolean }) {
+export function PublicDarkHeader({
+  overlay = false,
+  modeSwitch,
+}: {
+  overlay?: boolean;
+  /** Slot links neben der Pill — auf `/` sitzt hier der Farbmodus-Schalter. */
+  modeSwitch?: ReactNode;
+}) {
   const [open, setOpen] = useState(false);
 
   return (
     <header
-      className={`${overlay ? 'absolute bg-[rgba(10,10,11,0.35)]' : 'sticky bg-[rgba(10,10,11,0.82)]'} inset-x-0 top-0 z-30 border-b border-white/[0.06] backdrop-blur-[18px]`}
-      style={{ color: LANDING_TEXT }}
+      className={`${overlay ? 'absolute' : 'sticky'} inset-x-0 top-0 z-30 border-b backdrop-blur-[18px]`}
+      style={{
+        color: MODE_TEXT,
+        borderColor: MODE_HEADER_BORDER,
+        backgroundColor: overlay ? MODE_HEADER_BG_OVERLAY : MODE_HEADER_BG,
+      }}
     >
       <div className="mx-auto flex h-[72px] max-w-[1280px] items-center gap-6 px-[4vw]">
         <Link
           to="/"
-          className="flex min-w-0 items-center gap-2.5 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d6ad68]/60"
-          style={{ color: LANDING_TEXT }}
+          className="flex min-w-0 items-center gap-2.5 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--rsd-accent,#d6ad68)]/60"
+          style={{ color: MODE_TEXT }}
         >
           <span className="grid h-7 w-7 shrink-0 place-items-center">
             <DiamondMark />
           </span>
           <span
-            className="truncate text-[12px] font-semibold tracking-[0.14em]"
-            style={{ fontFamily: LANDING_MONO }}
+            className="truncate text-[13px] font-semibold tracking-tight"
+            style={{ fontFamily: LANDING_MONO, letterSpacing: '0.04em' }}
           >
-            REALSYNCDYNAMICS.AI
+            RealSyncDynamics.AI
           </span>
         </Link>
 
         <nav className="ml-auto hidden items-center gap-7 md:flex" aria-label="Hauptnavigation">
-          {LINKS.map((item) => (
+          {PUBLIC_PRIMARY_NAV.map((item) => (
             <NavItem key={item.to} {...item} />
           ))}
+          {modeSwitch}
           <Link
             to="/audit"
-            className="inline-flex items-center gap-1.5 rounded-full px-[18px] py-[10px] text-[11px] font-semibold transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d6ad68]"
+            className="inline-flex items-center gap-1.5 rounded-full px-[18px] py-[10px] text-[11px] font-semibold transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--rsd-accent,#d6ad68)]"
             style={scanCtaStyle}
           >
             {HERO_SCAN_CTA_LABEL} <span aria-hidden="true">→</span>
@@ -136,8 +155,8 @@ export function PublicDarkHeader({ overlay = false }: { overlay?: boolean }) {
           </Link>
           <button
             type="button"
-            className="rounded-md p-1.5 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d6ad68]/60"
-            style={{ color: LANDING_TEXT }}
+            className="rounded-md p-1.5 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--rsd-accent,#d6ad68)]/60"
+            style={{ color: MODE_TEXT }}
             aria-expanded={open}
             aria-controls="public-dark-mobile-nav"
             aria-label={open ? 'Menü schließen' : 'Menü öffnen'}
@@ -152,12 +171,16 @@ export function PublicDarkHeader({ overlay = false }: { overlay?: boolean }) {
         <div
           id="public-dark-mobile-nav"
           className="border-t border-white/[0.06] px-6 py-4 backdrop-blur-md md:hidden"
-          style={{ backgroundColor: `${LANDING_BG}fa` }}
+          style={{
+            borderColor: MODE_HEADER_BORDER,
+            backgroundColor: `color-mix(in srgb, ${MODE_BG} 94%, transparent)`,
+          }}
           role="dialog"
           aria-label="Navigation"
         >
+          {modeSwitch && <div className="mb-3">{modeSwitch}</div>}
           <nav aria-label="Mobile Navigation" className="flex flex-col">
-            {LINKS.map((item) => (
+            {PUBLIC_PRIMARY_NAV.map((item) => (
               <NavItem
                 key={item.to}
                 to={item.to}

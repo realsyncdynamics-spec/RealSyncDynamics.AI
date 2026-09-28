@@ -35,7 +35,7 @@ RealSyncDynamics.AI betreibt DSGVO, EU AI Act, Evidence, Monitoring und Automati
 
 9. ⬜ Produkt-Narrativ vereinheitlichen: überall „Governance OS", nirgends „Scanner/Cookie-Tool/Generator".
 10. ⬜ **Eine** Landingpage: Nischen-Seiten (Agenturen, Arztpraxen, Kanzleien, Shopify, WordPress, ChatGPT) zu einer Story mit Segment-Sektionen zusammenführen statt parallel pflegen.
-11. ⬜ Plan-/Tier-Namen vereinheitlichen (Single Source of Truth `src/config/pricing.ts`, keine Abweichungen in Doku/UI).
+11. ✅ Plan-/Tier-Namen vereinheitlicht: **eine** SSoT `shared/pricing.ts` (importfrei, Deno-Zwilling `supabase/functions/_shared/pricing.generated.ts` + Drift-Test `npm run check:pricing` in CI). `src/config/pricing.ts` leitet ab (`export * from '@/shared/pricing'`). Legacy `bronze/silver/gold` entfallen; `scale`→`partner` via `normalizePlanKey()`. Optimizer-Tiers (gratis…diamant) sind ein eigenes Produkt-Frontend, per `planKey` an dieselbe SSoT gebrückt. Details: `docs/audit/plan-tier-consistency.md` (Status-Update 2026-09-26).
 12. ⬜ **Ein** Dashboard: Governance-OS-Views (Risk, Alerts, Monitoring, DPIAs, Incidents, Approvals) unter einer kohärenten Navigation bündeln.
 13. ⬜ App-Struktur entwirren: `src/enterprise-os` vs. `src/features` vs. `src/lib/enterprise-ai-os` — eine klare Schichtung, dokumentiert.
 14. ✅ `governance-os-complete.html` (66 KB Prototyp) archiviert nach `.archive/root-docs/` — keine doppelte Wahrheit im Root.

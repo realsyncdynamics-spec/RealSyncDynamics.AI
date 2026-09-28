@@ -151,10 +151,10 @@ Deno.serve(async (req) => {
     if (updateErr) return jsonError(500, 'INTERNAL', updateErr.message);
   }
 
-  return jsonResponse(200, {
+  return jsonResponse({
     ok: true,
     message: `Step ${body.step} saved`,
     workflow_id: workflow.id,
     current_step: body.step,
-  });
+  }, 200);
 });

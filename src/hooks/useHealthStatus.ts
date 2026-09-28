@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { getSupabaseUrl, getSupabaseAnonKey } from '../lib/supabaseUrl';
 
 /**
  * useHealthStatus — pollt den oeffentlichen /health-Edge-Endpoint und liefert
@@ -24,8 +25,8 @@ interface HealthState {
   pulse: boolean;
 }
 
-const SUPABASE_URL = (import.meta.env.VITE_SUPABASE_URL ?? '') as string;
-const ANON_KEY = (import.meta.env.VITE_SUPABASE_ANON_KEY ?? '') as string;
+const SUPABASE_URL = getSupabaseUrl();
+const ANON_KEY = getSupabaseAnonKey();
 const ENDPOINT = SUPABASE_URL ? `${SUPABASE_URL}/functions/v1/health` : null;
 
 // Alle 60s neu pruefen — haeufiger waere fuer eine Marketing-Seite Overkill.

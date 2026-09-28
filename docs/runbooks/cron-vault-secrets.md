@@ -51,12 +51,10 @@ einem Secret, das älter ist als die Rotation. Zwei Ursachen:
 **Warum das fünf Tage unbemerkt blieb**, und das ist der eigentliche Befund:
 `cron.job_run_details` meldet `succeeded` / `1 row` — das bezeugt nur, dass
 `net.http_post` die Anfrage eingereiht hat. Die 401 steht ausschließlich in
-`net._http_response`, und die Tabelle hält nur rund sechs Stunden vor. Wer an
-der Job-Ebene misst, sieht einen grünen Cron über einer toten Funktionskette.
+`net._http_response`, und die Tabelle hält nur rund sechs Stunden vor.
 
-Ausgefallen war Zugesagtes: Scheduler (ab Growth verkauft), Governance-Sentinel,
-Memory-Verfall (RFC-003), Audit-Recheck, Drip-Mails, Digest, Sub-Processor-Notice
-(Art. 28 DSGVO).
+Ausgefallen: Scheduler, Governance-Sentinel, Memory-Verfall (RFC-003),
+Audit-Recheck, Drip-Mails, Digest, Sub-Processor-Notice (Art. 28 DSGVO).
 
 ## Behebung / Abgleich (Dominik — Dashboard)
 
@@ -86,8 +84,8 @@ Wert sehen.
 ### `website-rescan-daily` → `email-auth-rescan` (neu, 2026-09-25)
 
 Täglich 03:30 UTC SPF/DMARC/DKIM-Recheck mit Auto-Resolve. Reihenfolge nach
-dem Merge: Vault-Eintrag + Function Secret (derselbe Zufallswert, s. o.) →
-Migration `20260925210000_email_auth_rescan.sql` → Deploy-Workflow.
+dem Merge: Vault-Eintrag + Function Secret → Migration
+`20260925210000_email_auth_rescan.sql` → Deploy-Workflow.
 Fail-closed, nichts wird geschrieben: Vault fehlt → Lauf `failed` ohne
 HTTP-Request; Secret fehlt → `500 CRON_KEY_MISSING`; Werte verschieden →
 `401 cron only`. Probelauf ohne Writes: `POST` mit Cron-Bearer und Body
@@ -97,12 +95,10 @@ HTTP-Request; Secret fehlt → `500 CRON_KEY_MISSING`; Werte verschieden →
 
 Der nächste Lauf kommt binnen 15 Minuten (`scan-scheduler-dispatch`).
 
-**Die Job-Ebene allein beweist nichts** — sie meldet `succeeded`, sobald die
-Anfrage eingereiht ist, auch wenn die Function sie abweist. Maßgeblich ist die
-Antwort:
+**Die Job-Ebene allein beweist nichts** (`succeeded` heißt nur: eingereiht).
+Maßgeblich ist die Antwort:
 
 ```sql
--- net._http_response haelt nur rund sechs Stunden vor.
 select status_code, count(*) as n, min(created) as von, max(created) as bis,
        left((array_agg(content order by created desc))[1], 120) as letzte_antwort
 from net._http_response
@@ -122,9 +118,8 @@ Issue offen und schließt es selbst wieder.
 
 > ⚠️ **Der Guard beobachtet die falsche Ebene.** Er liest
 > `cron.job_run_details.status` — der stand während des ganzen Ausfalls
-> (2026-09-10 bis -15) auf `succeeded`. Ohne Blick auf die HTTP-Antwort kann er
-> diesen Fehler nicht finden. Die Erweiterung ist ein eigener Schritt und noch
-> nicht gebaut.
+> (2026-09-10 bis -15) auf `succeeded`. Die Erweiterung ist ein eigener Schritt
+> und noch nicht gebaut.
 
 ## Verwandter Punkt
 

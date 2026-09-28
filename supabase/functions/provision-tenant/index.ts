@@ -436,9 +436,16 @@ Deno.serve(async (req) => {
   }
 
   const finishedAt = new Date().toISOString();
-  await admin.from('tenant_provisioning_runs').update({
+  // Nur speichern, solange dieser Lauf die Sperre haelt (updated_at = startedAt):
+  // ein Lauf, der LOCK_MS ueberschritten hat, darf das Ergebnis eines neueren
+  // Laufs nicht ueberschreiben. Ein nicht gespeicherter Stand ist kein Erfolg.
+  const { data: saved, error: saveErr } = await admin.from('tenant_provisioning_runs').update({
     status, steps, finished_at: finishedAt, updated_at: finishedAt, completed_at: completedAt,
-  }).eq('tenant_id', tenantId);
+  }).eq('tenant_id', tenantId).eq('updated_at', startedAt).select('id');
+  if (saveErr || !saved?.length) {
+    console.error('[provision-tenant] run persist failed', saveErr);
+    return jsonError(500, 'INTERNAL', 'run persist failed');
+  }
 
   const installer = c.key
     ? {

@@ -174,6 +174,11 @@ describe('provision-tenant — Quelltext-Vertraege', () => {
     for (const p of persisted) expect(p).not.toMatch(/rawToken|ingest_token/);
     expect(FN).toContain('key_hash: await sha256Hex(token)');
   });
+  it('speichert das Laufergebnis nur unter eigener Sperre und meldet Fehlschlag', () => {
+    expect(FN).toMatch(/completed_at: completedAt,\s*\}\)\.eq\('tenant_id', tenantId\)\.eq\('updated_at', startedAt\)\.select\('id'\)/);
+    expect(FN).toContain("if (saveErr || !saved?.length)");
+    expect(FN).toContain("'run persist failed'");
+  });
   it('gated den Boot-Key wie governance-keys ueber api.access', () => {
     expect(FN).toContain("hasFeature(ent, 'api.access')");
     expect(FN).toContain("'not_entitled:api.access'");

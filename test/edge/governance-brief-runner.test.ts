@@ -20,7 +20,7 @@ describe('Governance-Brief-Runner — Payload und Fehlertext', () => {
   });
 
   it('describeGatewayError liefert Status + stabilen Code + gekürzte Meldung', async () => {
-    const { describeGatewayError } = await import('../../supabase/functions/_shared/agents/governanceBriefRunner.ts');
+    const { describeGatewayError } = await import('../../supabase/functions/_shared/agents/gatewayErrorText.ts');
     const resp = new Response(JSON.stringify({ ok: false, error: { code: 'UPSTREAM_REJECTED', message: 'm'.repeat(500) } }), { status: 502 });
     const msg = await describeGatewayError(resp);
     expect(msg.startsWith('ai-gateway 502 UPSTREAM_REJECTED: ')).toBe(true);

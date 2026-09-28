@@ -12,6 +12,7 @@ import type { SupabaseClient } from 'jsr:@supabase/supabase-js@2';
 import { checkTenantQuota, recordChatHistory, type AdminLike } from '../llm-quota.ts';
 import { gatewayHeaders } from '../aiGateway/edgeClient.ts';
 import { internalGatewayConfig } from '../aiGateway/internalClient.ts';
+import { describeGatewayError } from './gatewayErrorText.ts';
 import {
   buildBriefPrompt,
   validateBriefPayload,
@@ -216,23 +217,4 @@ async function callGateway(tenantId: string, system: string, user: string): Prom
     model: json.model ?? 'unknown',
     usage: json.usage ?? {},
   };
-}
-
-/**
- * Fehlertext für den Runner-Report (landet in agent-os-runner → errors[]):
- * HTTP-Status + stabiler Gateway-Code + gekürzte Meldung. Keine Prompts.
- */
-export async function describeGatewayError(resp: Response): Promise<string> {
-  const txt = await resp.text().catch(() => '');
-  let code = '';
-  let message = '';
-  try {
-    const j = JSON.parse(txt) as { error?: { code?: string; message?: string } };
-    code = j.error?.code ?? '';
-    message = j.error?.message ?? '';
-  } catch {
-    message = txt;
-  }
-  const short = message.replace(/\s+/g, ' ').trim().slice(0, 200);
-  return `ai-gateway ${resp.status}${code ? ` ${code}` : ''}${short ? `: ${short}` : ''}`;
 }

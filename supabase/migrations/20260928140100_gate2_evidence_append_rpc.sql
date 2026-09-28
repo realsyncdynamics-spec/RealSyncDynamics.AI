@@ -17,9 +17,10 @@
 --
 -- Der Hash selbst bleibt in der Edge Function (RFC-8785-JCS aus
 -- evidence-hash.ts); die Datenbank prüft nur, woran angehängt wird.
--- Rein additiv: keine Tabelle, Spalte oder Policy wird geändert. Andere
--- Schreiber (email-auth-rescan, governance-approvals, browser-execute) sind
--- unverändert; sie auf diesen Pfad umzustellen ist ein eigener Schritt.
+-- Rein additiv: keine Tabelle, Spalte oder Policy wird geändert. Nutzer:
+-- tenant-audit und email-auth-rescan (beide schreiben dieselbe Kette pro
+-- Mandant). governance-approvals und browser-execute schreiben weiterhin
+-- direkt; sie auf diesen Pfad umzustellen ist ein eigener Schritt.
 
 CREATE OR REPLACE FUNCTION public.append_governance_evidence(
   p_row jsonb,

@@ -10,7 +10,7 @@ import type { AssetRow, EventRow, WebsiteRow } from './logic.ts';
 import { EVENT_FINDING, EVENT_RESOLVED } from './logic.ts';
 
 // deno-lint-ignore no-explicit-any
-export type ServiceClient = { from(table: string): any };
+export type ServiceClient = { from(table: string): any; rpc(fn: string, args: Record<string, unknown>): any };
 
 type PgResult<T> = { data: T | null; error: { message: string; code?: string } | null };
 
@@ -69,9 +69,13 @@ export function createSupabaseRepo(db: ServiceClient): RescanRepo {
       return rows[0]?.content_hash ?? null;
     },
 
-    async insertEvidence(row) {
-      const r: PgResult<{ id: string }> = await db.from('governance_evidence').insert(row).select('id').single();
-      return unwrap(r, 'governance_evidence insert');
+    async appendEvidence(row, expectedPreviousHash) {
+      const r: PgResult<string | null> = await db.rpc('append_governance_evidence', {
+        p_row: row,
+        p_expected_previous_hash: expectedPreviousHash,
+      });
+      if (r.error) throw new Error(`append_governance_evidence: ${r.error.message}`);
+      return r.data ? { id: r.data } : 'conflict';
     },
 
     async insertEvent(row) {

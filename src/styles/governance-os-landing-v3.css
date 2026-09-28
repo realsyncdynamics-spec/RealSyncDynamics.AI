@@ -86,11 +86,19 @@
     var(--color-rs-hero);
 }
 
-/* Typography: technical enterprise, not editorial lifestyle. */
+/*
+ * Typography: technical enterprise, not editorial lifestyle.
+ *
+ * Der `:not([style*="font-rs-mono"])`-Ausschluss ist Pflicht, nicht Kosmetik:
+ * AGENTS.md verlangt Monospace für Metadaten, und Überschriften wie das Label
+ * „AGENT GOVERNANCE RUNTIME" (`HomepageBriefSections.tsx`) setzen die Mono-Familie
+ * per Inline-Style. Ein `!important` im Stylesheet schlägt einen normalen
+ * Inline-Style — ohne den Ausschluss würden diese Labels in der UI-Schrift rendern.
+ */
 .ga-context.rs-handoff .rs-hero__h1,
 .ga-context.rs-handoff .os-display,
 .ga-context.rs-handoff .os-h2,
-.ga-context.rs-handoff :is(h2, h3) {
+.ga-context.rs-handoff :is(h2, h3):not([style*='font-rs-mono']) {
   font-family: var(--font-rs-ui) !important;
   font-style: normal;
   font-weight: 560 !important;

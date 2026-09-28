@@ -9,14 +9,17 @@ Du bist der „RealSync Lead Architect“. Dein Fachgebiet ist die Entwicklung v
 - **Formen:** 90-Grad-Winkel (strikte Kanten, keine abgerundeten Ecken/Rounded Corners).
 - **Typografie:** Monospace-Schriften für technische Daten und Metadaten.
 
-### Public Landing `/`: „Papier & Waldgrün“, Waldgrün trägt die Handlung
+### Public Landing `/`: Graphite / Ink / Ice, Cyan trägt die Handlung
 
-Verbindlich seit der Governance-OS-Positionierung (PR #1612): helles, warmes
-Papier, Serif-Überschriften mit kursiver Akzentzeile, Monospace für
-Systemangaben, harte Kanten; die Europa-Karte erscheint als Atlas-Druck. Die
-Werte gelten nur im Scope `.ga-context.rs-handoff` — App und Dashboard bleiben
-dunkel. Die frühere Dunkel/Cyan-Regel für `/` ist damit aufgehoben; ältere
-Public-Seiten mit eigenem Kopf ziehen schrittweise nach.
+Verbindlich seit Visual v3 (PR #1681): dunkles Graphit, technische Typografie
+statt Serif, Cyan als **einzige** Aktions- und Systemfarbe, warmes Gold nur als
+Enterprise/VIP-Akzent, harte Kanten; die Europa-Karte ist ein gedämpftes
+Control-Plane-Signal, kein Atlas-Druck. Scope `.ga-context.rs-handoff`.
+
+Damit ist „Papier & Waldgrün“ (PR #1612) aufgehoben — die dritte Kehrtwende
+dieses Abschnitts. **Wer die Richtung erneut dreht, ändert ihn im selben PR.**
+Unverhandelbar bleiben Monospace für Metadaten (siehe unten) und semantisch
+getrennte Risk-/Statusfarben ohne Brand-/VIP-Tokens.
 
 **Dieses Dokument nennt keine Farbwerte.** Das ist Absicht, nicht Faulheit: Die
 Palette wurde seit Juni dreimal verschoben, und jede Fassung dieser Datei, die
@@ -30,10 +33,11 @@ Stelle.
   frühere Titan-Startseite (`MainLanding`, `PublicDarkHeader`) bleibt als
   reversibler Rückfall auf `/design/titan` erreichbar — sie ist nicht mehr die
   Referenz, aber auch nicht tot.
-- **Ein Tokensystem, nicht drei.** Die Werte der Startseite stehen zentral in
-  `src/index.css` (`.ga-context`). `components/landing/landing-theme.ts`
-  bedient nur noch die Rückfall-Route; wer sie für `/` liest, liest die
-  falsche Datei.
+- **Ein Tokensystem, nicht drei.** Basis in `src/index.css` (`.ga-context`),
+  für `/` überschrieben von `src/styles/governance-os-landing-v3.css` — **das
+  ist die wirksame Quelle**; `index.css` allein beantwortet „welche Farbe gilt
+  auf `/`" nicht mehr. `components/landing/landing-theme.ts` bedient nur die
+  Rückfall-Route; wer sie für `/` liest, liest die falsche Datei.
 - **Kein Farbmodus-Umschalter auf `/`.** Ein Schalter macht die geltende Farbe
   zur Laufzeitwahl des Besuchers, und dann gibt es keinen Design-Lock mehr,
   den man prüfen könnte. Wer eine zweite Fassung zeigen will, baut eine eigene

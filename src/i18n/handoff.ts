@@ -20,6 +20,16 @@
  *              (§ 19 UStG, `COMPANY.taxMode`), „alle Daten in der EU" ist
  *              breiter als belegt; übrig bleibt, was stimmt.
  *   pricingFoot  wird nur angezeigt, wenn `COMPANY.taxMode === 'EXEMPT'`.
+ *   heroA–C, sub1, sub2  Positionierung nach Entscheidung E-F3 (2026-09-27):
+ *              „Die Kontrollschicht für KI im Unternehmen." Kategorie bleibt
+ *              Governance, nicht EU-AI-Act-Software; Compliance ist
+ *              Proof-Layer unter der Control-Plane-These. `heroA` ist die erste
+ *              Zeile, `heroB` + `heroC` (Akzent) die zweite — zusammen genau
+ *              der beschlossene Satz.
+ *   cta        Der Header-CTA führt weiter in die Governance-Pipeline
+ *              (`#pipeline`). Der Primär-CTA im Hero führt in den Scan
+ *              (`PUBLIC_CTA.to` = `/audit`) und trägt sein eigenes Label aus
+ *              `hero-content.ts` (`HERO_FREE_SCAN_CTA_LABEL`).
  *
  * `HANDOFF_EXTRA` enthält Strings, die im Prototyp als Literal standen
  * (Navigation, Badge, Loop, Formularlabels) — ebenfalls DE/EN.
@@ -35,13 +45,13 @@ export const HANDOFF_COPY = {
   de: {
     navProduct: "Produkt",
     navPricing: "Preise",
-    cta: "Free Audit starten",
+    cta: "Governance-Scan starten",
     cta2: "Live Dashboard ansehen",
-    heroA: "AI Compliance",
-    heroB: "Operations OS",
-    heroC: "for Europe",
-    sub1: "Runtime-Governance für regulierte KI-Systeme.",
-    sub2: "Kontinuierliche Evidenz. EU-nativ by design.",
+    heroA: "Europa braucht kein weiteres Frontier-Modell.",
+    heroB: "Europa braucht Kontrolle über",
+    heroC: "Frontier-KI.",
+    sub1: "RealSyncDynamics.AI ist die Control Plane für Enterprise-KI.",
+    sub2: "Wir bauen nicht die Intelligenz selbst. Wir bauen die Kontroll-, Autorisierungs- und Evidenzschicht zwischen Unternehmen und KI.",
     loginTitle: "Anmelden",
     loginSub: "Magic Link per E-Mail — kein Passwort, kein Drittanbieter.",
     loginBtn: "Magic Link senden",
@@ -141,13 +151,13 @@ export const HANDOFF_COPY = {
   en: {
     navProduct: "Product",
     navPricing: "Pricing",
-    cta: "Start free audit",
+    cta: "Start governance scan",
     cta2: "View live dashboard",
-    heroA: "AI Compliance",
-    heroB: "Operations OS",
-    heroC: "for Europe",
-    sub1: "Runtime governance for regulated AI systems.",
-    sub2: "Continuous evidence. EU-native by design.",
+    heroA: "The Governance OS",
+    heroB: "for Autonomous",
+    heroC: "AI",
+    sub1: "RealSyncDynamics.AI is the control plane for enterprise AI.",
+    sub2: "Any model. Any agent. One control plane.",
     loginTitle: "Sign in",
     loginSub: "Magic link by e-mail — no password, no third party.",
     loginBtn: "Send magic link",
@@ -255,6 +265,12 @@ export const HANDOFF_OVERRIDES: Record<Lang, Partial<Record<CopyKey, string>>> =
     auditFoot:
       'Ergebnis ohne Account. Domain und E-Mail werden für den Bericht gespeichert — Details in der Datenschutzerklärung.',
     pricingSub: 'Monatlich kündbar. Datenhaltung in der EU (Supabase Frankfurt).',
+    cta: 'Governance-Scan starten',
+    heroA: 'Die Kontrollschicht',
+    heroB: 'für KI im',
+    heroC: 'Unternehmen.',
+    sub1: 'RealSyncDynamics.AI macht sichtbar, welche KI-Systeme, Bots und Agenten im Einsatz sind,',
+    sub2: 'welche Daten sie nutzen, welche Regeln gelten und welche Nachweise entstehen.',
   },
   en: {
     loginSub: 'Magic link by e-mail — no password.',
@@ -262,6 +278,12 @@ export const HANDOFF_OVERRIDES: Record<Lang, Partial<Record<CopyKey, string>>> =
     auditFoot:
       'Result without an account. Domain and e-mail are stored for the report — see the privacy policy.',
     pricingSub: 'Cancel monthly. Data stored in the EU (Supabase Frankfurt).',
+    cta: 'Start governance scan',
+    heroA: 'The control layer',
+    heroB: 'for AI in the',
+    heroC: 'enterprise.',
+    sub1: 'RealSyncDynamics.AI shows which AI systems, bots and agents are in use,',
+    sub2: 'which data they use, which rules apply and which evidence is produced.',
   },
 };
 
@@ -273,12 +295,19 @@ export const HANDOFF_EXTRA = {
     menuOpen: 'Navigation öffnen',
     menuClose: 'Navigation schließen',
     mainNav: 'Hauptnavigation',
-    heroBadge: 'EU AI Act · DSGVO · ISO 42001',
+    // Claim-Audit WP1: „für autonome KI" versprach eine Agenten-Autonomie, die
+    // laut implementation-status.ts Preview/Coming-Soon ist. Belegt ist die
+    // Kontroll- und Nachweisschicht.
+    heroEyebrow: 'REALSYNCDYNAMICS.AI / KONTROLL- UND NACHWEISSCHICHT FÜR KI',
+    ctaExplore: 'Architektur ansehen',
+    ctaEnterprise: 'Enterprise anfragen',
+    loopExecute: 'EXECUTE',
+    loopVerify: 'VERIFY',
     loopDiscover: 'DISCOVER',
-    loopClassify: 'CLASSIFY',
-    loopEnforce: 'ENFORCE',
+    loopAssess: 'ASSESS',
+    loopGovern: 'GOVERN',
     loopProve: 'PROVE',
-    trustLine: 'DSGVO · EU AI Act · ISO 42001 · EU-Hosting',
+    trustLine: 'Any model · Any agent · One control plane · Evidence als Proof-Layer',
     heroActions: 'Hero-Aktionen',
     backHome: 'Zur Startseite',
     emailLabel: 'E-Mail',
@@ -344,12 +373,16 @@ export const HANDOFF_EXTRA = {
     menuOpen: 'Open navigation',
     menuClose: 'Close navigation',
     mainNav: 'Main navigation',
-    heroBadge: 'EU AI Act · GDPR · ISO 42001',
+    heroEyebrow: 'REALSYNCDYNAMICS.AI / CONTROL AND EVIDENCE LAYER FOR AI',
+    ctaExplore: 'View the architecture',
+    ctaEnterprise: 'Enterprise inquiry',
+    loopExecute: 'EXECUTE',
+    loopVerify: 'VERIFY',
     loopDiscover: 'DISCOVER',
-    loopClassify: 'CLASSIFY',
-    loopEnforce: 'ENFORCE',
+    loopAssess: 'ASSESS',
+    loopGovern: 'GOVERN',
     loopProve: 'PROVE',
-    trustLine: 'GDPR · EU AI Act · ISO 42001 · EU hosting',
+    trustLine: 'Any model · Any agent · One control plane · Evidence as proof layer',
     heroActions: 'Hero actions',
     backHome: 'Back to home',
     emailLabel: 'E-mail',

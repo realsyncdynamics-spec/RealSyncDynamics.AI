@@ -27,7 +27,11 @@ export const TURNSTILE_TIMEOUT_MS = 5_000;
 /** Erwartete Action, falls das Widget eine setzt (data-action="audit_copilot"). */
 export const TURNSTILE_EXPECTED_ACTION = 'audit_copilot';
 /** Standard-Hostnamen; per Env TURNSTILE_ALLOWED_HOSTNAMES (kommagetrennt) überschreibbar. */
-export const TURNSTILE_DEFAULT_HOSTNAMES = ['realsyncdynamicsai.de', 'www.realsyncdynamicsai.de'] as const;
+export const TURNSTILE_DEFAULT_HOSTNAMES = [
+  'realsyncdynamicsai.de',
+  'www.realsyncdynamicsai.de',
+  'realsyncdynamics-ai.pages.dev',
+] as const;
 
 export type TurnstileResult =
   | { ok: true; hostname: string | null; action: string | null }
@@ -37,19 +41,35 @@ function fail(status: number, code: string, reason: string, message: string): Tu
   return { ok: false, status, code, message, reason };
 }
 
-/** Liest `turnstile_token` aus dem Body (oberste Ebene). */
+/** Liest den Servernamen oder das native Cloudflare-Widget-Feld (oberste Ebene). */
 export function readTurnstileToken(body: unknown): string | null {
-  const t = body && typeof body === 'object' ? (body as { turnstile_token?: unknown }).turnstile_token : undefined;
-  if (typeof t !== 'string') return null;
-  const s = t.trim();
-  if (s.length === 0 || s.length > TURNSTILE_TOKEN_MAX_CHARS) return null;
-  return s;
+  if (!body || typeof body !== 'object') return null;
+  const fields = body as { turnstile_token?: unknown; 'cf-turnstile-response'?: unknown };
+  for (const candidate of [fields.turnstile_token, fields['cf-turnstile-response']]) {
+    if (typeof candidate !== 'string') continue;
+    const token = candidate.trim();
+    if (token.length > 0 && token.length <= TURNSTILE_TOKEN_MAX_CHARS) return token;
+  }
+  return null;
 }
 
 export function allowedHostnames(env: (name: string) => string | undefined): string[] {
   const raw = env('TURNSTILE_ALLOWED_HOSTNAMES');
   const list = (raw ?? '').split(',').map((h) => h.trim().toLowerCase()).filter(Boolean);
-  return list.length > 0 ? list : [...TURNSTILE_DEFAULT_HOSTNAMES];
+  return [...new Set([...TURNSTILE_DEFAULT_HOSTNAMES, ...list])];
+}
+
+/** Unterstützt exakte Hostnamen und genau ein DNS-Label bei `*.domain`. */
+export function isTurnstileHostnameAllowed(hostname: string, allowed: string[]): boolean {
+  const host = hostname.trim().toLowerCase();
+  return allowed.some((entry) => {
+    const pattern = entry.trim().toLowerCase();
+    if (!pattern.startsWith('*.')) return host === pattern;
+    const suffix = pattern.slice(1);
+    if (!host.endsWith(suffix)) return false;
+    const label = host.slice(0, -suffix.length);
+    return label.length > 0 && !label.includes('.');
+  });
 }
 
 export interface VerifyTurnstileArgs {
@@ -59,6 +79,8 @@ export interface VerifyTurnstileArgs {
   env: (name: string) => string | undefined;
   fetchImpl?: typeof fetch;
   timeoutMs?: number;
+  /** Deterministic UUID source for tests; production uses crypto.randomUUID(). */
+  createIdempotencyKey?: () => string;
 }
 
 /**
@@ -77,25 +99,37 @@ export async function verifyTurnstile(args: VerifyTurnstileArgs): Promise<Turnst
 
   const payload: Record<string, string> = { secret, response: token };
   if (args.remoteIp) payload.remoteip = args.remoteIp;
+  payload.idempotency_key = (args.createIdempotencyKey ?? (() => crypto.randomUUID()))();
 
   const fetchImpl = args.fetchImpl ?? fetch.bind(globalThis);
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), args.timeoutMs ?? TURNSTILE_TIMEOUT_MS);
-  let data: { success?: unknown; hostname?: unknown; action?: unknown; 'error-codes'?: unknown };
-  try {
-    const res = await fetchImpl(TURNSTILE_VERIFY_URL, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(payload),
-      signal: controller.signal,
-    });
-    if (!res.ok) return fail(403, 'TURNSTILE_FAILED', `http_${res.status}`, 'Bot-Prüfung fehlgeschlagen.');
-    data = await res.json();
-  } catch (e) {
-    const reason = (e as Error)?.name === 'AbortError' ? 'timeout' : 'network';
-    return fail(403, 'TURNSTILE_FAILED', reason, 'Bot-Prüfung fehlgeschlagen.');
-  } finally {
-    clearTimeout(timer);
+  let data: { success?: unknown; hostname?: unknown; action?: unknown; 'error-codes'?: unknown } | null = null;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), args.timeoutMs ?? TURNSTILE_TIMEOUT_MS);
+    try {
+      const res = await fetchImpl(TURNSTILE_VERIFY_URL, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(payload),
+        signal: controller.signal,
+      });
+      if (!res.ok) return fail(403, 'TURNSTILE_FAILED', `http_${res.status}`, 'Bot-Prüfung fehlgeschlagen.');
+      try {
+        data = await res.json();
+      } catch {
+        return fail(403, 'TURNSTILE_FAILED', 'invalid_json', 'Bot-Prüfung fehlgeschlagen.');
+      }
+      break;
+    } catch (e) {
+      if (attempt === 1) {
+        const reason = (e as Error)?.name === 'AbortError' ? 'timeout' : 'network';
+        return fail(403, 'TURNSTILE_FAILED', reason, 'Bot-Prüfung fehlgeschlagen.');
+      }
+      // A timeout/network drop may happen after Cloudflare processed the token.
+      // Retry once with the identical payload and idempotency_key.
+    } finally {
+      clearTimeout(timer);
+    }
   }
 
   if (!data || typeof data !== 'object' || data.success !== true) {
@@ -103,7 +137,7 @@ export async function verifyTurnstile(args: VerifyTurnstileArgs): Promise<Turnst
     return fail(403, 'TURNSTILE_FAILED', codes ? `rejected:${codes}` : 'rejected', 'Bot-Prüfung fehlgeschlagen.');
   }
   const hostname = typeof data.hostname === 'string' ? data.hostname.toLowerCase() : null;
-  if (!hostname || !allowedHostnames(args.env).includes(hostname)) {
+  if (!hostname || !isTurnstileHostnameAllowed(hostname, allowedHostnames(args.env))) {
     return fail(403, 'TURNSTILE_FAILED', 'hostname_mismatch', 'Bot-Prüfung fehlgeschlagen.');
   }
   const action = typeof data.action === 'string' && data.action !== '' ? data.action : null;

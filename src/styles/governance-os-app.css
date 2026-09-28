@@ -352,6 +352,9 @@
   .rs-attention { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 .rs-attention__card { display: flex; flex-direction: column; gap: 8px; text-decoration: none; color: inherit; }
+.rs-kpi-link { display: block; text-decoration: none; color: inherit; transition: border-color .15s; }
+.rs-kpi-link:hover { border-color: var(--color-rs-cyan); }
+.rs-kpi-link:focus-visible { outline: 2px solid var(--color-rs-cyan); outline-offset: 2px; }
 
 /* ── Klassen / Stufen ──────────────────────────────────────────────────── */
 .rs-classbadge {

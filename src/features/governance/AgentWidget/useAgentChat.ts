@@ -48,7 +48,13 @@ function unavailableMessage(): ChatMessage {
 
 const STORAGE_KEY = (tenantId: string) => `rsd_agent_session_${tenantId}`;
 
-export function useAgentChat(tenantId: string | null) {
+export interface UseAgentChatOptions {
+  /** Gewählter Fachagent (GovernanceChatSidebar); ohne Angabe Standard-Assistent. */
+  agent?: string;
+}
+
+export function useAgentChat(tenantId: string | null, options: UseAgentChatOptions = {}) {
+  const { agent } = options;
   const [messages, setMessages] = useState<ChatMessage[]>([WELCOME]);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -105,6 +111,7 @@ export function useAgentChat(tenantId: string | null) {
           message,
           session_id: sessionId ?? undefined,
           acknowledge_us_routing: ackUsRouting || undefined,
+          agent,
         });
       } catch (err) {
         result = {
@@ -179,7 +186,7 @@ export function useAgentChat(tenantId: string | null) {
       setIsLoading(false);
       scrollToBottom();
     },
-    [isLoading, scrollToBottom, sessionId, tenantId],
+    [agent, isLoading, scrollToBottom, sessionId, tenantId],
   );
 
   const send = useCallback((text: string) => sendWith(text, usRoutingAck), [sendWith, usRoutingAck]);

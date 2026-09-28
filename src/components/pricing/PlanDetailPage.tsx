@@ -24,9 +24,13 @@ export function PlanDetailPage({ planSlug }: PlanDetailPageProps) {
     );
   }
 
-  const planIndex = ALL_PLAN_SLUGS.indexOf(planSlug);
-  const prevPlan = planIndex > 0 ? ALL_PLAN_SLUGS[planIndex - 1] : null;
-  const nextPlan = planIndex < ALL_PLAN_SLUGS.length - 1 ? ALL_PLAN_SLUGS[planIndex + 1] : null;
+  // Vor/Zurück nur innerhalb desselben Abrechnungsintervalls — sonst springt
+  // Agency (monatlich) auf Starter (jährlich), weil pricingPlans beide mischt.
+  const isYearly = (slug: string) => slug.endsWith('_yearly');
+  const navSlugs = ALL_PLAN_SLUGS.filter((slug) => isYearly(slug) === isYearly(planSlug));
+  const planIndex = navSlugs.indexOf(planSlug);
+  const prevPlan = planIndex > 0 ? navSlugs[planIndex - 1] : null;
+  const nextPlan = planIndex >= 0 && planIndex < navSlugs.length - 1 ? navSlugs[planIndex + 1] : null;
 
   return (
     <div className="bg-hero-only min-h-screen flex flex-col text-titanium-50" data-testid={`plan-detail-${plan.slug}`}>

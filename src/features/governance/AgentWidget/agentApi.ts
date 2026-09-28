@@ -43,6 +43,8 @@ export async function sendChat(args: {
   message: string;
   session_id?: string;
   acknowledge_us_routing?: boolean;
+  /** Agent-ID aus der Assistent-Auswahl; der Server setzt daraus den Fokus. */
+  agent?: string;
 }): Promise<ChatResult> {
   const sb = getSupabase();
   const { data, error } = await sb.functions.invoke('governance-agent', {

@@ -8,9 +8,11 @@
  * nur Ereignisse, die tatsächlich stattfinden (Anfrage gesendet, Antwort da,
  * Fehler).
  *
- * Rahmenwerke, Systeme und Rolle bleiben im Browser: Sie steuern die
- * Plan-Empfehlung, werden aber nicht gespeichert (dafür gibt es noch kein
- * Backend-Feld).
+ * Rahmenwerke, Systeme, Rolle und Datenhaltung bleiben im Browser: Sie
+ * steuern die Plan-Empfehlung und landen im lokalen Scan-Profil, damit der
+ * Setup-Assistent nach der Registrierung nicht dasselbe noch einmal fragt
+ * (gestuftes Onboarding, `features/onboarding/scanProfile.ts`). Ins Backend
+ * geht davon nichts — dafür gibt es noch kein Feld.
  */
 import { useId, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
@@ -20,6 +22,7 @@ import { useLang } from '../../i18n/useLang';
 import type { HandoffKey } from '../../i18n/handoff';
 import { enforcementClassOf } from '../../../shared/enforcement-classes';
 import { formatPriceEur, tierById, type TierId } from '../../config/pricing';
+import { saveScanProfile, type ScanResidency, type ScanRole } from '../../features/onboarding/scanProfile';
 
 export interface AuditStepperIssue {
   id: string;
@@ -40,7 +43,7 @@ export interface AuditStepperInput {
   company: string;
 }
 
-type Role = 'self' | 'team' | 'agency' | 'enterprise';
+type Role = ScanRole;
 
 const FRAMEWORKS: ReadonlyArray<{ id: string; label: string; comingSoon?: boolean }> = [
   { id: 'dsgvo', label: 'DSGVO' },
@@ -67,6 +70,12 @@ const ROLES: ReadonlyArray<{ id: Role; key: HandoffKey }> = [
   { id: 'team', key: 'roleTeam' },
   { id: 'agency', key: 'roleAgency' },
   { id: 'enterprise', key: 'roleEnterprise' },
+];
+
+const RESIDENCIES: ReadonlyArray<{ id: ScanResidency; key: HandoffKey }> = [
+  { id: 'local', key: 'residencyLocal' },
+  { id: 'eu_cloud', key: 'residencyEu' },
+  { id: 'hybrid', key: 'residencyHybrid' },
 ];
 
 const STEP_KEYS: readonly HandoffKey[] = ['stepCompany', 'stepFrameworks', 'stepSystems', 'stepRole', 'stepResult'];
@@ -151,6 +160,7 @@ export function AuditStepper({
   const [frameworks, setFrameworks] = useState<string[]>(['dsgvo', 'ai_act']);
   const [systems, setSystems] = useState<string[]>([]);
   const [role, setRole] = useState<Role | null>(null);
+  const [residency, setResidency] = useState<ScanResidency | null>(null);
   const [started, setStarted] = useState(false);
 
   const stepValid = [
@@ -165,6 +175,7 @@ export function AuditStepper({
   const start = () => {
     setStarted(true);
     setStep(4);
+    saveScanProfile({ company: company.trim(), domain: domain.trim(), frameworks, systems, role, residency });
     onRun({ domain: domain.trim(), email: email.trim(), company: company.trim() });
   };
 
@@ -333,20 +344,38 @@ export function AuditStepper({
           )}
 
           {step === 3 && (
-            <div className="rs-audit__options rs-audit__options--grid" role="radiogroup" aria-label={t('stepRole')}>
-              {ROLES.map((r) => (
-                <button
-                  key={r.id}
-                  type="button"
-                  role="radio"
-                  className="rs-option"
-                  aria-checked={role === r.id}
-                  onClick={() => setRole(r.id)}
-                >
-                  {t(r.key)}
-                </button>
-              ))}
-            </div>
+            <>
+              <div className="rs-audit__options rs-audit__options--grid" role="radiogroup" aria-label={t('stepRole')}>
+                {ROLES.map((r) => (
+                  <button
+                    key={r.id}
+                    type="button"
+                    role="radio"
+                    className="rs-option"
+                    aria-checked={role === r.id}
+                    onClick={() => setRole(r.id)}
+                  >
+                    {t(r.key)}
+                  </button>
+                ))}
+              </div>
+              {/* Optional: nur Einordnung für das spätere Setup, kein Pflichtfeld. */}
+              <p className="rs-overline rs-label" style={{ marginTop: 20 }}>{t('residencyLabel')}</p>
+              <div className="rs-audit__options" role="radiogroup" aria-label={t('residencyLabel')}>
+                {RESIDENCIES.map((r) => (
+                  <button
+                    key={r.id}
+                    type="button"
+                    role="radio"
+                    className="rs-option"
+                    aria-checked={residency === r.id}
+                    onClick={() => setResidency((cur) => (cur === r.id ? null : r.id))}
+                  >
+                    {t(r.key)}
+                  </button>
+                ))}
+              </div>
+            </>
           )}
 
           {step === 4 && !done && (

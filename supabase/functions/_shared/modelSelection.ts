@@ -117,32 +117,10 @@ export function getModelId(tier: ModelTier): string {
   return tier === 'haiku' ? 'claude-haiku-4-5-20251001' : 'claude-sonnet-4-6-20250514';
 }
 
-export const MODEL_PRICING = {
-  haiku: { input: 0.80, output: 4.00 },      // $0.80/$4.00 per 1M tokens
-  sonnet: { input: 3.00, output: 15.00 },    // $3.00/$15.00 per 1M tokens
-};
-
-export function estimateSavings(
-  routedToHaiku: number,   // % of queries that could use Haiku
-  avgInputTokens: number,  // typical input token count
-  avgOutputTokens: number, // typical output token count
-): { savings: number; percentage: number } {
-  const perQuery = {
-    sonnet: (avgInputTokens * MODEL_PRICING.sonnet.input + avgOutputTokens * MODEL_PRICING.sonnet.output) / 1_000_000,
-    haiku: (avgInputTokens * MODEL_PRICING.haiku.input + avgOutputTokens * MODEL_PRICING.haiku.output) / 1_000_000,
-  };
-
-  // Cost if all queries used Sonnet
-  const allSonnet = 100 * perQuery.sonnet;
-
-  // Cost with smart routing
-  const hybrid = (routedToHaiku * perQuery.haiku) + ((100 - routedToHaiku) * perQuery.sonnet);
-
-  return {
-    savings: (allSonnet - hybrid) / allSonnet,
-    percentage: Math.round(((allSonnet - hybrid) / allSonnet) * 100),
-  };
-}
+// Preise stehen hier nicht mehr. Bis Schritt C der Einkaufspreis-SSoT lag
+// hier MODEL_PRICING mit Haiku zu $0,80/$4,00 — 20 % unter dem echten Preis —
+// und eine aufruferlose Sparrechnung darauf. Kosten kommen jetzt ausschließlich
+// aus _shared/providerCost.ts, das aus shared/model-prices.ts rechnet.
 
 /**
  * Example usage in governance-agent/index.ts:

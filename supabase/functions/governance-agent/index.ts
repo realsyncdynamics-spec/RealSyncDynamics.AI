@@ -47,7 +47,15 @@ import { internalGatewayConfig } from '../_shared/aiGateway/internalClient.ts';
 import type { ModelProfile } from '../_shared/aiGateway/types.ts';
 import { checkTenantQuota, checkAnonQuota, recordChatHistory } from '../_shared/llm-quota.ts';
 import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
-import { selectModel, getModelId, MODEL_PRICING } from '../_shared/modelSelection.ts';
+import { selectModel, getModelId } from '../_shared/modelSelection.ts';
+import {
+  NO_USAGE,
+  addUsage,
+  fromAnthropicUsage,
+  providerCostUsd,
+  type AnthropicUsage,
+  type TokenUsage,
+} from '../_shared/providerCost.ts';
 
 interface SupabaseAdminClient {
   from(table: string): {
@@ -442,6 +450,10 @@ async function handleChat(
   const toolCallsLog: Array<{ tool: string; input: unknown; output: unknown; iter: number }> = [];
   let totalIn = 0;
   let totalOut = 0;
+  // Alle vier Preisarten über die ganze Tool-Schleife. totalIn/totalOut oben
+  // bleiben, was agent_runs.input_tokens/output_tokens schon immer war
+  // (Anthropics input_tokens, ohne Cache); nur die Kosten brauchen mehr.
+  let usage: TokenUsage = NO_USAGE;
   let finalText = '';
   let outcome: 'success' | 'tool_error' | 'llm_error' | 'budget_exceeded' | 'timeout' = 'success';
   let errorMessage: string | null = null;
@@ -472,6 +484,10 @@ async function handleChat(
       });
       totalIn += resp.usage.input_tokens;
       totalOut += resp.usage.output_tokens;
+      // System-Prompt und Tool-Katalog sind gecacht (siehe oben). Die
+      // Cache-Tokens stehen bei Anthropic NEBEN input_tokens — ohne sie
+      // fehlen Cache-Writes (×1,25) und Cache-Reads (×0,10) in den Kosten.
+      usage = addUsage(usage, fromAnthropicUsage(resp.usage as AnthropicUsage));
 
       if (resp.stop_reason === 'end_turn') {
         finalText = resp.content
@@ -547,7 +563,7 @@ async function handleChat(
     llm_model: effectiveModel,
     input_tokens: totalIn,
     output_tokens: totalOut,
-    cost_usd: estimateCostUsFromModel(effectiveModel, totalIn, totalOut),
+    cost_usd: agentRunCostUsd(effectiveModel, usage),
     duration_ms: durationMs,
     outcome,
     error_message: errorMessage,
@@ -914,23 +930,23 @@ async function getLlmApiKey(admin: SupabaseAdminClient): Promise<string | null> 
   return typeof data === 'string' ? data : null;
 }
 
-function estimateCostUsd(model: string, inTok: number, outTok: number): number {
-  // Rough Anthropic pricing as of 2026-05. Reporting is best-effort; the
-  // canonical cost lives in `token_usage` once we wire that pipeline.
-  const m = model.toLowerCase();
-  const [inRate, outRate] = m.includes('opus')   ? [15, 75]
-                          : m.includes('sonnet') ? [3, 15]
-                          : m.includes('haiku')  ? [0.8, 4]
-                          : [3, 15];
-  return +(inTok / 1_000_000 * inRate + outTok / 1_000_000 * outRate).toFixed(6);
-}
-
-// Optimized cost estimation using MODEL_PRICING from modelSelection
-function estimateCostUsFromModel(modelId: string, inTok: number, outTok: number): number {
-  const m = modelId.toLowerCase();
-  const isHaiku = m.includes('haiku');
-  const pricing = isHaiku ? MODEL_PRICING.haiku : MODEL_PRICING.sonnet;
-  return +(inTok / 1_000_000 * pricing.input + outTok / 1_000_000 * pricing.output).toFixed(6);
+/**
+ * agent_runs.cost_usd aus der Einkaufspreis-SSoT (providerCost.ts).
+ *
+ * Unbekanntes Modell → NULL, nicht Sonnet: die Spalte ist nullable, und eine
+ * fehlende Zahl lässt sich nachtragen, eine erfundene nicht. Genau dieses
+ * stille Raten war der Defekt der beiden Schätzfunktionen, die hier standen.
+ */
+function agentRunCostUsd(modelId: string, usage: TokenUsage): number | null {
+  const usd = providerCostUsd('anthropic', modelId, usage);
+  if (usd === null) {
+    console.warn(JSON.stringify({
+      level: 'warn', scope: 'model_price_missing', caller: 'governance-agent',
+      model_id: modelId, cost_usd: null,
+    }));
+    return null;
+  }
+  return +usd.toFixed(6);
 }
 
 /**

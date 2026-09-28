@@ -18,7 +18,7 @@ export function OriginalComplianceHero() {
   return (
     <section
       id="product"
-      className="relative isolate min-h-[min(920px,100svh)] overflow-hidden border-b"
+      className="relative isolate min-h-[100svh] overflow-hidden border-b"
       style={{ borderColor: 'rgba(255,255,255,.07)', backgroundColor: '#0a0a0b' }}
       aria-labelledby="original-hero-heading"
       data-testid="original-compliance-hero"
@@ -36,7 +36,7 @@ export function OriginalComplianceHero() {
         }}
       />
 
-      <div className="relative z-10 mx-auto flex min-h-[min(920px,100svh)] max-w-[1280px] items-center px-[4vw] pb-16 pt-32 sm:pb-20 sm:pt-36">
+      <div className="relative z-10 mx-auto flex min-h-[100svh] max-w-[1280px] items-center px-[4vw] pb-12 pt-28 sm:pb-16 sm:pt-32">
         <div className="w-full max-w-[760px]">
           <p
             className="mb-5 text-[10px] font-semibold uppercase tracking-[0.26em] sm:text-[11px]"

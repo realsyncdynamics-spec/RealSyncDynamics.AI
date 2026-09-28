@@ -58,6 +58,8 @@ Content-Type: application/json
 - **502 PROVIDER_ERROR** — model API failed.
 - **503 PROVIDER_NOT_CONFIGURED** — env key missing for the tool's provider
   (`ANTHROPIC_API_KEY` / `GEMINI_API_KEY` / `OPENAI_API_KEY`).
+- **503 MODEL_PRICE_MISSING** — no purchase price in `shared/model-prices.ts`
+  for the tool's provider/model; nothing was reserved or called.
 
 ## Pipeline
 
@@ -90,6 +92,11 @@ the audit log that caching is actually hitting.
 
 Add or change tools by `INSERT … ON CONFLICT (key) DO UPDATE SET …` on
 `public.ai_tools`. Required columns: `key`, `name`, `model_provider`,
-`model_id`, `cost_input_per_million_usd`, `cost_output_per_million_usd`.
+`model_id`. The purchase price comes only from `shared/model-prices.ts`
+(`npm run sync:model-prices` after a change); a cloud tool whose
+`(model_provider, model_id)` has no price there fails with
+`503 MODEL_PRICE_MISSING` before any budget is reserved or provider called.
+`cost_input_per_million_usd` / `cost_output_per_million_usd` are deprecated
+and no longer read.
 A new tool key automatically requires the matching `ai.tool.<key>`
 entitlement to exist; bind it to plans via `product_entitlements`.

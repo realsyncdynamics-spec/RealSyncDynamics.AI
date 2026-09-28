@@ -100,6 +100,46 @@ describe('AI onboarding automation profile', () => {
   });
 });
 
+describe('native executors', () => {
+  const skills: SkillRow[] = [{ id: 'dsgvo-audit', status: 'available', n8n_workflow_id: null }];
+
+  it('marks the free audit ready via its native path, even without automation entitlement', () => {
+    expect(resolveSkillSelections({
+      recommendedIds: ['dsgvo-audit'],
+      skills,
+      automationEntitled: false,
+      entitlements: [ent('website.scan', 1)],
+    })[0]).toEqual({
+      skill_id: 'dsgvo-audit',
+      state: 'ready',
+      reason: 'native_path_entitled',
+      executor: 'native',
+      native_route: '/audit',
+    });
+  });
+
+  it('does not use the native path without its own entitlement', () => {
+    expect(resolveSkillSelections({
+      recommendedIds: ['dsgvo-audit'],
+      skills,
+      automationEntitled: true,
+      entitlements: [ent('website.scan', 0)],
+    })[0]).toMatchObject({ state: 'needs_binding', executor: null });
+  });
+});
+
+describe('audit entry', () => {
+  const fn = readFileSync(
+    resolve(__dirname, '../../supabase/functions/onboarding-automation-profile/index.ts'),
+    'utf8',
+  );
+
+  it('uses a source value allowed by the inventory_audit_events CHECK constraint', () => {
+    expect(fn).toContain("source: 'api'");
+    expect(fn).toContain('auditError');
+  });
+});
+
 describe('SetupAssistant integration', () => {
   const source = readFileSync(
     resolve(__dirname, '../../src/features/onboarding/SetupAssistant.tsx'),

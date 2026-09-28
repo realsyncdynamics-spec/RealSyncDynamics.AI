@@ -100,6 +100,7 @@ Deno.serve(async (req) => {
     recommendedIds,
     skills: (skillData ?? []) as SkillRow[],
     automationEntitled,
+    entitlements,
   });
 
   const now = new Date().toISOString();
@@ -159,21 +160,28 @@ Deno.serve(async (req) => {
     }
   }
 
-  await admin.from('inventory_audit_events').insert({
+  // `source` ist per CHECK auf ui|api|import|agent|migration begrenzt — der
+  // Funktionsname steht deshalb in `reason`. Ein fehlgeschlagener Audit-
+  // Eintrag wird gemeldet statt still verschluckt.
+  const { error: auditError } = await admin.from('inventory_audit_events').insert({
     tenant_id: body.tenant_id,
     actor_user_id: userData.user.id,
     action: 'ONBOARDING_AUTOMATION_PROFILE',
     target_type: 'tenant',
     target_id: body.tenant_id,
     new_value: automationProfile,
-    reason: 'AI-assisted onboarding automation profile generated from entitlements and explicit setup choices',
-    source: 'onboarding-automation-profile',
+    reason: 'onboarding-automation-profile: rule-based automation profile from entitlements and explicit setup choices',
+    source: 'api',
     occurred_at: now,
   });
+  if (auditError) {
+    console.error('onboarding-automation-profile: audit insert failed', auditError.message);
+  }
 
   return json({
     ok: true,
     persisted: true,
+    audited: !auditError,
     automation_profile: automationProfile,
   });
 });

@@ -45,7 +45,7 @@ export async function generateViaRealSyncGateway(args: {
 
   const res = await processAIGatewayRequest({
     prompt: packed,
-    provider: 'openai',
+    provider: 'local',
     systemPrompt: BUILDER_SYSTEM_PROMPT,
     feature: 'app_builder_code',
     tenantId: args.tenantId,
@@ -81,7 +81,7 @@ export async function generateViaRealSyncGatewayStream(
   const res = await processAIGatewayStream(
     {
       prompt: packed,
-      provider: 'openai',
+      provider: 'local',
       systemPrompt: BUILDER_SYSTEM_PROMPT,
       feature: 'app_builder_code',
       tenantId: args.tenantId,

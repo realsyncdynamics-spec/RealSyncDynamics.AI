@@ -14,6 +14,7 @@ import {
   profileKey,
   registerProfileWithTenant,
   ProfileError,
+  assertActivatable,
   type KeyValueStorage,
 } from '@/src/features/local-ai/profileStore';
 import type { LocalAiRuntimeProfile } from '@/src/features/local-ai/types';
@@ -84,6 +85,15 @@ describe('profile storage', () => {
     expect(parseProfile({ ...PASSED, schema_version: 2 })).toBeNull();
   });
 
+  it('never loads a cloud-model profile as enabled, even one stored before the block', () => {
+    const cloud = 'gpt-oss:120b-cloud';
+    const stored = { ...PASSED, model: cloud, test_result: { ...PASSED.test_result!, model: cloud } };
+    const s = memoryStorage();
+    s.setItem(profileKey('t-1'), JSON.stringify(stored));
+    expect(loadProfile('t-1', s)?.enabled).toBe(false);
+    expect(() => assertActivatable(stored)).toThrow(/Cloud-Modell/);
+  });
+
   it('downgrades enabled when the stored test is not a success', () => {
     const p = parseProfile({ ...PASSED, test_result: null });
     expect(p?.enabled).toBe(false);
@@ -101,6 +111,13 @@ describe('registerProfileWithTenant (fail-closed edge abstraction)', () => {
     expect(notDeployed).toMatchObject({ ok: false, code: 'BACKEND_NOT_DEPLOYED' });
     const forbidden = await registerProfileWithTenant(PASSED, 't-1', async () => ({ data: null, error: { context: { status: 403 } } }));
     expect(forbidden).toMatchObject({ ok: false, code: 'NOT_AUTHORIZED' });
+  });
+
+  it('never reports a cloud model as a device-local runtime', async () => {
+    const invoke = vi.fn();
+    const r = await registerProfileWithTenant({ ...PASSED, model: 'glm-4.6:cloud' }, 't-1', invoke);
+    expect(r).toMatchObject({ ok: false, code: 'CLOUD_MODEL' });
+    expect(invoke).not.toHaveBeenCalled();
   });
 
   it('does not count an unconfirmed response as registered', async () => {

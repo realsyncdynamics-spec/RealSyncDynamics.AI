@@ -409,7 +409,9 @@ verify_jwt = false
 # bot-chat, appointment-book, order-intake werden vom öffentlichen Web-Widget
 # ohne JWT aufgerufen; bot-voice-webhook vom Telefonie-Provider (Twilio o.ä.).
 # Zugriffskontrolle läuft über das Paar (tenant_id, bot_id) + Feature-Gates
-# (bots.enabled / bots.voice) innerhalb der Functions.
+# (bots.enabled / bots.voice) innerhalb der Functions. Ausnahme
+# bot-voice-webhook: Twilio-Signatur + Tenant aus voice_number_bindings
+# (angerufene Nummer); der JSON-Modus verlangt ein User-JWT + Mitgliedschaft.
 [functions.bot-chat]
 verify_jwt = false
 

@@ -2968,15 +2968,21 @@ export const PRICING_TAX_NOTE_EXEMPT =
 
 export type PricingTaxMode = 'EU_STANDARD' | 'EXEMPT';
 
+/**
+ * Steuermodus der Firma — die eine Stelle, an der er gesetzt wird.
+ * `EXEMPT` = Kleinunternehmer nach § 19 UStG (Impressum, AGB § 4). Beim Wechsel
+ * zur Regelbesteuerung hier auf `EU_STANDARD` stellen: `COMPANY.taxMode`
+ * (Frontend) und `pricing.generated.ts` (Edge Functions) folgen daraus.
+ */
+export const PRICING_TAX_MODE: PricingTaxMode = 'EXEMPT';
+
 /** Steuerhinweis für den Steuermodus der Firma (`COMPANY.taxMode`). */
 export function pricingTaxNote(mode: PricingTaxMode): string {
   return mode === 'EXEMPT' ? PRICING_TAX_NOTE_EXEMPT : PRICING_TAX_NOTE_STANDARD;
 }
 
 /**
- * Gültiger Steuerhinweis. RealSync Dynamics AI ist Kleinunternehmer
- * (§ 19 UStG, `COMPANY.taxMode = 'EXEMPT'`, Impressum, AGB § 4) — Preise
- * werden ohne Umsatzsteuer ausgewiesen. Beim Wechsel zur Regelbesteuerung
- * `COMPANY.taxMode` umstellen; Konsumenten nutzen `pricingTaxNote()`.
+ * Gültiger Steuerhinweis, abgeleitet aus `PRICING_TAX_MODE`. Für Konsumenten
+ * ohne Zugriff auf `COMPANY` (Edge Functions über `pricing.generated.ts`).
  */
-export const PRICING_TAX_NOTE = PRICING_TAX_NOTE_EXEMPT;
+export const PRICING_TAX_NOTE = pricingTaxNote(PRICING_TAX_MODE);

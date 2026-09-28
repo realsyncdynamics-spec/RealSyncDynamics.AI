@@ -86,7 +86,7 @@ const REQUIRED_AUTHENTICATED = [
   'governance_kpi_timeseries_data',
   'incident_correlation_export',
   'runtime_events_verify_chain',
-  // Gate 2 (20260928100000): einziger Client-Schreibpfad für findings.status.
+  // Gate 2 (20260928140000): einziger Client-Schreibpfad für findings.status.
   'set_finding_status',
   'siteos_site_overview',
   'tenant_entitlements',

@@ -1,6 +1,6 @@
 /**
  * Gate 2 · Finding-Status nur über public.set_finding_status
- * (20260928100000_gate2_finding_status_rpc.sql).
+ * (20260928140000_gate2_finding_status_rpc.sql).
  *
  * Vorher: Der Client schrieb findings.status per UPDATE; ohne UPDATE-Policy
  * traf das unter RLS 0 Zeilen, ohne Fehler — die UI meldete Erfolg.

@@ -50,6 +50,8 @@ export interface SEOConfig {
   jsonLd?: Record<string, unknown> | Record<string, unknown>[];
 }
 
+import { lv2FaqJsonLd } from '../components/landing/v2/landing-v2-content';
+
 const SITE_URL = 'https://realsyncdynamicsai.de';
 
 export const DEFAULT_SEO: SEOConfig = {
@@ -250,19 +252,43 @@ function breadcrumbs(items: Array<{ name: string; url: string }>): Record<string
 
 // ─── Route → SEO-Config Map ──────────────────────────────────────────────────
 
+const LANDING_V2_JSONLD: Record<string, unknown>[] = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    name: 'RealSyncDynamics.AI',
+    url: SITE_URL,
+    logo: `${SITE_URL}/og-image.png`,
+    address: {
+      '@type': 'PostalAddress',
+      streetAddress: 'Schwarzburger Str. 31',
+      postalCode: '98724',
+      addressLocality: 'Neuhaus am Rennweg',
+      addressCountry: 'DE',
+    },
+  },
+  PRICING_PRODUCT_JSONLD,
+  lv2FaqJsonLd(),
+];
+
 export const SEO_CONFIG: Record<string, SEOConfig> = {
   // ─── Tier 1 — Hero / Top-Conversion ──────────────────────────────────────
   '/': {
-    // Kontrollschicht-Positionierung — matches the H1 in GovernanceOsHero
-    // (HANDOFF_OVERRIDES.de: "Die Kontrollschicht für KI im Unternehmen.")
-    // and the static <title> in index.html.
-    title: 'KI-Governance & Kontrollschicht | RealSyncDynamics.AI',
+    title: 'RealSyncDynamics.AI – AI Compliance Operations OS für Europa | EU AI Act & DSGVO',
     description:
-      'Kontroll- und Nachweisschicht für Enterprise-KI: Systeme erfassen, Risiken bewerten, Policies steuern und Evidence für DSGVO und EU AI Act erzeugen.',
+      'Discover, Classify, Enforce, Prove: KI-Inventar, Risikoklassen nach EU AI Act, Policies zur Laufzeit und Hash-Chain-Evidenz – EU-hosted in Frankfurt. Free Audit ohne Kreditkarte.',
     canonical: `${SITE_URL}/`,
-    ogTitle: 'Die Kontrollschicht für KI im Unternehmen | RealSyncDynamics.AI',
+    ogTitle: 'AI Compliance Operations OS for Europe',
     ogDescription:
-      'Enterprise-KI sichtbar machen, Regeln durchsetzen und Entscheidungen mit Evidence belegen — provider-neutral und EU-fokussiert.',
+      'EU AI Act, DSGVO und ISO/IEC 42001 als Betriebsaufgabe: Inventar, Risikoklassen, Runtime-Policies und prüffähige Evidenz aus einer Plattform.',
+    jsonLd: LANDING_V2_JSONLD,
+  },
+  '/design/landing-v2': {
+    title: 'RealSyncDynamics.AI – Landing v2 (Design-Referenz)',
+    description:
+      'Design-Referenz der Startseite „AI Compliance Operations OS für Europa“. Kanonisch ist /.',
+    canonical: `${SITE_URL}/`,
+    noIndex: true,
   },
   '/design/titan': {
     title: 'RealSyncDynamics.AI — Titan-Fallbackroute der Governance-Landing',

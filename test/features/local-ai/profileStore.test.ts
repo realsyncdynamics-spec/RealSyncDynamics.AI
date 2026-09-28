@@ -92,28 +92,30 @@ describe('profile storage', () => {
 
 describe('registerProfileWithTenant (fail-closed edge abstraction)', () => {
   it('reports BACKEND_NOT_CONFIGURED without a backend', async () => {
-    const r = await registerProfileWithTenant(PASSED, null);
+    const r = await registerProfileWithTenant(PASSED, 't-1', null);
     expect(r).toMatchObject({ ok: false, code: 'BACKEND_NOT_CONFIGURED' });
   });
 
   it('maps 404 to BACKEND_NOT_DEPLOYED and 403 to NOT_AUTHORIZED', async () => {
-    const notDeployed = await registerProfileWithTenant(PASSED, async () => ({ data: null, error: { context: { status: 404 } } }));
+    const notDeployed = await registerProfileWithTenant(PASSED, 't-1', async () => ({ data: null, error: { context: { status: 404 } } }));
     expect(notDeployed).toMatchObject({ ok: false, code: 'BACKEND_NOT_DEPLOYED' });
-    const forbidden = await registerProfileWithTenant(PASSED, async () => ({ data: null, error: { context: { status: 403 } } }));
+    const forbidden = await registerProfileWithTenant(PASSED, 't-1', async () => ({ data: null, error: { context: { status: 403 } } }));
     expect(forbidden).toMatchObject({ ok: false, code: 'NOT_AUTHORIZED' });
   });
 
   it('does not count an unconfirmed response as registered', async () => {
-    const r = await registerProfileWithTenant(PASSED, async () => ({ data: { ok: true }, error: null }));
+    const r = await registerProfileWithTenant(PASSED, 't-1', async () => ({ data: { ok: true }, error: null }));
     expect(r).toMatchObject({ ok: false, code: 'BACKEND_ERROR' });
   });
 
   it('never sends tenant_id or the runtime URL', async () => {
     const invoke = vi.fn().mockResolvedValue({ data: { registered_at: '2026-09-28T10:00:00Z' }, error: null });
-    const r = await registerProfileWithTenant(PASSED, invoke);
+    const r = await registerProfileWithTenant(PASSED, 't-1', invoke);
     expect(r.ok).toBe(true);
     const body = invoke.mock.calls[0][1].body;
     expect(body).not.toHaveProperty('tenant_id');
+    // Nur ein Auswahl-Hinweis aus dem verifizierten Kontext — der Server prüft die Mitgliedschaft.
+    expect(body.tenant_hint).toBe('t-1');
     expect(body).not.toHaveProperty('runtime_url');
     expect(invoke.mock.calls[0][0]).toBe('local-ai-runtime');
   });

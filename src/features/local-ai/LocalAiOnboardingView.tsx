@@ -328,7 +328,7 @@ export function LocalAiOnboardingView() {
   const register = async () => {
     if (!flow.savedProfile) return;
     setRegistering(true);
-    setRegistration(await registerProfileWithTenant(flow.savedProfile));
+    setRegistration(await registerProfileWithTenant(flow.savedProfile, verifiedTenantId));
     setRegistering(false);
   };
 

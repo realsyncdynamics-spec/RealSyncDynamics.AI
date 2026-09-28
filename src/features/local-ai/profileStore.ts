@@ -167,11 +167,14 @@ function defaultInvoke(): InvokeFn | null {
 
 /**
  * Meldet Metadaten des Profils an den Mandanten. Gesendet werden nur Rolle,
- * Modell und Testergebnis — keine Runtime-URL (LAN-Topologie bleibt lokal)
- * und keine tenant_id (die Edge Function nimmt sie aus dem JWT).
+ * Modell und Testergebnis — keine Runtime-URL (LAN-Topologie bleibt lokal).
+ * `tenant_hint` ist der im TenantProvider verifizierte aktive Mandant; die
+ * Edge Function prüft ihn gegen die Mitgliedschaften des JWT-Nutzers und
+ * wählt damit nur aus — er begründet nie Zugriff.
  */
 export async function registerProfileWithTenant(
   profile: LocalAiRuntimeProfile,
+  verifiedTenantId: string | null,
   invoke: InvokeFn | null = defaultInvoke(),
 ): Promise<RegistrationResult> {
   if (!invoke) {
@@ -182,6 +185,7 @@ export async function registerProfileWithTenant(
     result = await invoke(LOCAL_AI_EDGE_FUNCTION, {
       body: {
         action: 'register_profile',
+        tenant_hint: verifiedTenantId,
         profile_name: profile.profile_name,
         role: profile.role,
         model: profile.model,

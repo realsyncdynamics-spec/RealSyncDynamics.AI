@@ -18,6 +18,8 @@ interface SetupState {
   org_name: string;
   org_size_employees?: number;
   residency_policy: ResidencyPolicy;
+  /** Nur schreiben, wenn Scan oder Nutzer einen Modus gewählt haben — nie den Default. */
+  residency_chosen: boolean;
   ai_systems: string[];
 }
 
@@ -68,9 +70,11 @@ const SCAN_SYSTEM_TO_SETUP: Record<string, string> = {
   hr: 'custom',
   scoring: 'custom',
 };
+// „EU-Cloud" im Scan heißt nicht „alles an Cloud-Anbieter" (`enforce_cloud`
+// schaltet den Datenschutzmodus ab) — deshalb nur als Hybrid vorschlagen.
 const SCAN_RESIDENCY_TO_POLICY: Record<NonNullable<ScanProfile['residency']>, ResidencyPolicy> = {
   local: 'enforce_eu_local',
-  eu_cloud: 'enforce_cloud',
+  eu_cloud: 'user_choice',
   hybrid: 'user_choice',
 };
 
@@ -83,6 +87,7 @@ function initialStateFromScan(scan: ScanProfile | null): SetupState {
     tenant_type: scan?.role ? ROLE_TO_ORG[scan.role] : 'sme',
     org_name: scan?.company ?? '',
     residency_policy: scan?.residency ? SCAN_RESIDENCY_TO_POLICY[scan.residency] : 'user_choice',
+    residency_chosen: Boolean(scan?.residency),
     ai_systems: systems,
   };
 }
@@ -179,18 +184,25 @@ export function SetupAssistant() {
       // Betriebsmodus: dieselbe Spalte wie in den KI-Datenhaltungs-Einstellungen.
       // Nur der Owner darf sie setzen (RLS) — scheitert das, bleibt das Setup
       // trotzdem gültig; der Modus ist dort jederzeit nachholbar.
-      const { error: residencyError } = await supabase
-        .from('tenants')
-        .update({ ai_data_residency_policy: state.residency_policy })
-        .eq('id', activeTenantId);
-      if (residencyError) {
-        console.warn('Setup: Betriebsmodus nicht gespeichert:', residencyError.message);
+      // Ohne aktive Wahl bleibt eine bestehende Policy unangetastet.
+      if (state.residency_chosen) {
+        const { error: residencyError } = await supabase
+          .from('tenants')
+          .update({ ai_data_residency_policy: state.residency_policy })
+          .eq('id', activeTenantId);
+        if (residencyError) {
+          console.warn('Setup: Betriebsmodus nicht gespeichert:', residencyError.message);
+        }
       }
 
-      // Genutzte KI-Systeme ins (noch lokale) Firmenprofil — Grundlage für
-      // das KI-Register. Bestehende Felder bleiben erhalten.
+      // Genutzte KI-Systeme ins (noch lokale) Firmenprofil — eigenes Feld,
+      // damit die Branchen-Tools (`usedTools`) unberührt bleiben. Ergänzt,
+      // nicht ersetzt.
       const profile = loadCompanyProfile(activeTenantId);
-      saveCompanyProfile(activeTenantId, { ...profile, usedTools: state.ai_systems });
+      saveCompanyProfile(activeTenantId, {
+        ...profile,
+        aiSystems: Array.from(new Set([...profile.aiSystems, ...state.ai_systems])),
+      });
       clearScanProfile();
 
       // Refresh tenant context
@@ -212,6 +224,9 @@ export function SetupAssistant() {
 
   const handleSkip = async () => {
     // Mark onboarded with defaults
+    // Scan-Antworten auch beim Überspringen verwerfen — sonst würden sie auf
+    // einem geteilten Browser dem nächsten Konto vorgeschlagen.
+    clearScanProfile();
     setLoading(true);
     try {
       const supabase = getSupabase();
@@ -411,7 +426,7 @@ export function SetupAssistant() {
                         type="button"
                         role="radio"
                         aria-checked={active}
-                        onClick={() => setState((prev) => ({ ...prev, residency_policy: opt.id }))}
+                        onClick={() => setState((prev) => ({ ...prev, residency_policy: opt.id, residency_chosen: true }))}
                         className={`text-left p-4 rounded-lg border transition-colors ${
                           active
                             ? 'border-cyan-400 bg-slate-700'

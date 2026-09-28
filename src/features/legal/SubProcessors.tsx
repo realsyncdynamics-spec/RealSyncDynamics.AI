@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Shield, ExternalLink, CheckCircle2, AlertCircle } from 'lucide-react';
+import { getSupabaseUrl, getSupabaseAnonKey } from '../../lib/supabaseUrl';
 
 interface SubProcessor {
   name: string;
@@ -205,8 +206,8 @@ function SubProcessorSubscribeForm() {
   const [status, setStatus] = React.useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
   const [errorMsg, setErrorMsg] = React.useState('');
 
-  const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string | undefined;
-  const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
+  const SUPABASE_URL = getSupabaseUrl();
+  const SUPABASE_ANON_KEY = getSupabaseAnonKey();
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();

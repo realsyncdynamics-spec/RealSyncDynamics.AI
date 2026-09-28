@@ -195,7 +195,7 @@ function GovernanceOsTarget() {
         })}
       </ol>
 
-      <p className="mt-8 text-[clamp(18px,1.8vw,24px)] leading-[1.5]" style={{ fontFamily: 'var(--font-rs-serif)', color: 'var(--color-rs-fg-0)' }}>
+      <p className="mt-8 text-[clamp(18px,1.8vw,24px)] leading-[1.5]" style={{ fontFamily: 'var(--font-rs-ui)', color: 'var(--color-rs-fg-0)' }}>
         {AGENT_RUNTIME_BOUNDARY}
       </p>
     </div>
@@ -223,7 +223,7 @@ export function ProvidersSection() {
         <div className="mt-12">
           <div className="os-panel px-6 py-6">
             <p className="m-0 text-[11px] tracking-[0.16em]" style={{ ...MONO, color: 'var(--color-rs-cyan)' }}>GOVERNANCE LAYER</p>
-            <p className="m-0 mt-2 text-[clamp(22px,2.2vw,32px)] tracking-[-0.01em]" style={{ fontFamily: 'var(--font-rs-serif)', color: 'var(--color-rs-fg-0)' }}>
+            <p className="m-0 mt-2 text-[clamp(22px,2.2vw,32px)] tracking-[-0.01em]" style={{ fontFamily: 'var(--font-rs-ui)', color: 'var(--color-rs-fg-0)' }}>
               RealSyncDynamics.AI — Identity · Tenant · Policy · Approval · Evidence
             </p>
           </div>

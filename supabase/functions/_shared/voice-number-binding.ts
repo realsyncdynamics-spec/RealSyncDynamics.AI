@@ -1,7 +1,7 @@
 // Rufnummer → Bot → Tenant für eingehende Anrufe.
 //
 // Einzige Quelle für den Tenant eines Anrufs ist `voice_number_bindings`
-// (Migration 20260927143000_voice_runtime_foundation.sql): die angerufene
+// (Migration 20260928130000_voice_runtime_foundation.sql): die angerufene
 // Nummer, serverseitig aufgelöst. Niemals Query-Parameter, Body-Felder oder
 // Provider-Payload — die kontrolliert der Aufrufer.
 //

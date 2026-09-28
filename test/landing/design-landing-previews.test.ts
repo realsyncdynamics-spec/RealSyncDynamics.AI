@@ -1,8 +1,8 @@
 /**
  * Design landing routing contract.
  *
- * The Governance-AI surface is the approved live root; older visual concepts
- * remain available only as reversible design references.
+ * The original Dark/Gold/Cream Europe surface is the approved live root;
+ * the Governance-AI paper design remains available as a reversible reference.
  */
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -11,9 +11,9 @@ import { describe, expect, it } from 'vitest';
 const root = resolve(__dirname, '../..');
 
 describe('design landing previews', () => {
-  it('serves Governance AI on / and keeps older design references reversible', () => {
+  it('serves the original dark/gold frontend on / and keeps design references reversible', () => {
     const app = readFileSync(resolve(root, 'src/App.tsx'), 'utf8');
-    expect(app).toMatch(/path="\/"\s+element=\{<DesignGovernanceAiLanding/);
+    expect(app).toMatch(/path="\/"\s+element=\{<MainLanding/);
     expect(app).toContain('path="/design/governance-ai"');
     expect(app).toContain('path="/design/titan"');
     expect(app).toContain('path="/design/ledger"');

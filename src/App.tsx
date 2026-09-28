@@ -11,8 +11,8 @@ import { SupabaseAuthProvider } from './features/supabase/SupabaseAuthContext';
 import { ProtectedRoute } from './features/demo/ProtectedRoute';
 import { AppGate } from './features/auth/AppGate';
 import { DemoTourProvider } from './core/demo/DemoTourContext';
-// ── Public entry: Claude-Design Governance AI surface on / — eager for LCP
-import { DesignGovernanceAiLanding } from './pages/design/DesignGovernanceAiLanding';
+// ── Public entry: original Dark/Gold/Cream Europe hero on / — eager for LCP
+import { MainLanding } from './pages/MainLanding';
 import { LogoutPage } from './pages/LogoutPage';
 import { Welcome } from './pages/Welcome';
 // FlowProvider stays eager (wraps Routes at root); FlowStepRoute is lazy below.
@@ -25,9 +25,9 @@ const DemoTourStartPage = lazy(() => import('./pages/DemoTourStartPage').then((m
 const DemoTourSignupPage = lazy(() => import('./pages/DemoTourSignupPage').then((m) => ({ default: m.DemoTourSignupPage })));
 const DemoTourCheckoutPage = lazy(() => import('./pages/DemoTourCheckoutPage').then((m) => ({ default: m.DemoTourCheckoutPage })));
 const DemoTourDashboard = lazy(() => import('./pages/DemoTourDashboard').then((m) => ({ default: m.DemoTourDashboard })));
+const DesignGovernanceAiLanding = lazy(() => import('./pages/design/DesignGovernanceAiLanding').then((m) => ({ default: m.DesignGovernanceAiLanding })));
 const DesignLedgerLanding = lazy(() => import('./pages/design/DesignLedgerLanding').then((m) => ({ default: m.DesignLedgerLanding })));
 const DesignTribunalLanding = lazy(() => import('./pages/design/DesignTribunalLanding').then((m) => ({ default: m.DesignTribunalLanding })));
-const MainLanding = lazy(() => import('./pages/MainLanding').then((m) => ({ default: m.MainLanding })));
 const GovernanceRuntimeLayerPage = lazy(() => import('./pages/GovernanceRuntimeLayerPage').then((m) => ({ default: m.GovernanceRuntimeLayerPage })));
 const ScanStartPage = lazy(() => import('./pages/product-entry-points/ScanStartPage').then((m) => ({ default: m.ScanStartPage })));
 const ChatbotStartPage = lazy(() => import('./pages/product-entry-points/ChatbotStartPage').then((m) => ({ default: m.ChatbotStartPage })));
@@ -500,7 +500,7 @@ function RoutesWithTracking() {
           <Route path="/demo-tour/checkout" element={<DemoTourProvider><DemoTourCheckoutPage /></DemoTourProvider>} />
           <Route path="/demo-tour/dashboard" element={<DemoTourProvider><DemoTourDashboard /></DemoTourProvider>} />
       {/* Public — Claude Design visual layer, existing RealSync backend routes. */}
-      <Route path="/" element={<DesignGovernanceAiLanding />} />
+      <Route path="/" element={<MainLanding />} />
 
       {/* Reversible design references; no duplicate backend/runtime paths. */}
       <Route path="/design/governance-ai" element={<DesignGovernanceAiLanding />} />

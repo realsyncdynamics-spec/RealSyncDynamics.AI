@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -64,10 +65,11 @@ describe('SPA CSP (Pages + meta)', () => {
   // es läuft nicht und erzeugt nur einen CSP-Fehler in der Konsole.
   it('index.html has no executable inline scripts', () => {
     const html = readFileSync(join(ROOT, 'index.html'), 'utf-8');
-    const inline = [...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)]
-      .filter(([, attrs, body]) => !/\bsrc=/.test(attrs) && body.trim() !== '')
-      .filter(([, attrs]) => !/type="application\/(ld\+)?json"/.test(attrs));
-    expect(inline.map(([tag]) => tag.slice(0, 80))).toEqual([]);
+    const document = new DOMParser().parseFromString(html, 'text/html');
+    const inline = [...document.querySelectorAll('script:not([src])')]
+      .filter((s) => !/^application\/(ld\+)?json$/i.test(s.getAttribute('type') ?? ''))
+      .filter((s) => (s.textContent ?? '').trim() !== '');
+    expect(inline.map((s) => s.outerHTML.slice(0, 80))).toEqual([]);
   });
 
   it('keeps consent-gated tracker hosts so pixels.ts can load after opt-in', () => {

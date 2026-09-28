@@ -50,6 +50,8 @@ export interface SEOConfig {
   jsonLd?: Record<string, unknown> | Record<string, unknown>[];
 }
 
+import { lv2FaqJsonLd } from '../components/landing/v2/landing-v2-content';
+
 const SITE_URL = 'https://realsyncdynamicsai.de';
 
 export const DEFAULT_SEO: SEOConfig = {
@@ -263,6 +265,33 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     ogTitle: 'Die Kontrollschicht für KI im Unternehmen | RealSyncDynamics.AI',
     ogDescription:
       'Enterprise-KI sichtbar machen, Regeln durchsetzen und Entscheidungen mit Evidence belegen — provider-neutral und EU-fokussiert.',
+  },
+  '/design/landing-v2': {
+    title: 'RealSyncDynamics.AI – AI Compliance Operations OS für Europa | EU AI Act & DSGVO',
+    description:
+      'Discover, Classify, Enforce, Prove: KI-Inventar, Risikoklassen nach EU AI Act, Policies zur Laufzeit und Hash-Chain-Evidenz – EU-hosted in Frankfurt. Free Audit ohne Kreditkarte.',
+    canonical: `${SITE_URL}/design/landing-v2`,
+    ogTitle: 'AI Compliance Operations OS for Europe',
+    ogDescription:
+      'EU AI Act, DSGVO und ISO/IEC 42001 als Betriebsaufgabe: Inventar, Risikoklassen, Runtime-Policies und prüffähige Evidenz aus einer Plattform.',
+    jsonLd: [
+      {
+        '@context': 'https://schema.org',
+        '@type': 'Organization',
+        name: 'RealSyncDynamics.AI',
+        url: SITE_URL,
+        logo: `${SITE_URL}/og-image.png`,
+        address: {
+          '@type': 'PostalAddress',
+          streetAddress: 'Schwarzburger Str. 31',
+          postalCode: '98724',
+          addressLocality: 'Neuhaus am Rennweg',
+          addressCountry: 'DE',
+        },
+      },
+      PRICING_PRODUCT_JSONLD,
+      lv2FaqJsonLd(),
+    ],
   },
   '/design/titan': {
     title: 'RealSyncDynamics.AI — Titan-Fallbackroute der Governance-Landing',

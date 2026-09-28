@@ -1,18 +1,90 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../lib/useAuth';
 import { useTenant } from '../../core/access/TenantProvider';
 import { getSupabase } from '../../lib/supabase';
 import { safeInternalPath } from '../../lib/safeInternalPath';
-import { Building2, Users, Briefcase, User, ArrowRight, CheckCircle2, AlertCircle } from 'lucide-react';
+import { loadCompanyProfile, saveCompanyProfile } from '../company/companyProfileLocal';
+import { clearScanProfile, loadScanProfile, type ScanProfile } from './scanProfile';
+import { Building2, Users, Briefcase, User, ArrowRight, CheckCircle2, AlertCircle, Server, Cloud, Shuffle, Sparkles } from 'lucide-react';
 
 type OrgType = 'freelancer' | 'sme' | 'agency' | 'enterprise';
-type Step = 'org-type' | 'org-details' | 'welcome';
+type Step = 'org-type' | 'org-details' | 'operations' | 'welcome';
+// Werte entsprechen `tenants.ai_data_residency_policy` (siehe AiResidencySettings).
+type ResidencyPolicy = 'enforce_eu_local' | 'enforce_cloud' | 'user_choice';
 
 interface SetupState {
   tenant_type: OrgType;
   org_name: string;
   org_size_employees?: number;
+  residency_policy: ResidencyPolicy;
+  ai_systems: string[];
+}
+
+const RESIDENCY_OPTIONS: Array<{ id: ResidencyPolicy; label: string; description: string; icon: React.ReactNode }> = [
+  {
+    id: 'enforce_eu_local',
+    label: 'Lokal',
+    description: 'KI läuft im eigenen Haus (z. B. Ollama). Keine Daten an Cloud-Anbieter.',
+    icon: <Server className="w-5 h-5" />,
+  },
+  {
+    id: 'enforce_cloud',
+    label: 'Cloud',
+    description: 'KI über Cloud-Anbieter (z. B. ChatGPT, Claude, Gemini).',
+    icon: <Cloud className="w-5 h-5" />,
+  },
+  {
+    id: 'user_choice',
+    label: 'Hybrid',
+    description: 'Beides — pro Anwendungsfall entschieden. Später änderbar.',
+    icon: <Shuffle className="w-5 h-5" />,
+  },
+];
+
+const AI_SYSTEM_OPTIONS: Array<{ id: string; label: string }> = [
+  { id: 'chatgpt', label: 'ChatGPT' },
+  { id: 'claude', label: 'Claude' },
+  { id: 'gemini', label: 'Gemini' },
+  { id: 'm365', label: 'Microsoft 365 Copilot' },
+  { id: 'ollama', label: 'Ollama / lokale Modelle' },
+  { id: 'chatbot', label: 'Website-Chatbot' },
+  { id: 'code_agent', label: 'Code-Agent' },
+  { id: 'custom', label: 'Eigene Modelle / API' },
+];
+
+// Scan-Rolle → Organisationstyp, Scan-System → Setup-System.
+const ROLE_TO_ORG: Record<NonNullable<ScanProfile['role']>, OrgType> = {
+  self: 'freelancer',
+  team: 'sme',
+  agency: 'agency',
+  enterprise: 'enterprise',
+};
+const SCAN_SYSTEM_TO_SETUP: Record<string, string> = {
+  chatgpt: 'chatgpt',
+  m365: 'm365',
+  chatbot: 'chatbot',
+  code: 'code_agent',
+  hr: 'custom',
+  scoring: 'custom',
+};
+const SCAN_RESIDENCY_TO_POLICY: Record<NonNullable<ScanProfile['residency']>, ResidencyPolicy> = {
+  local: 'enforce_eu_local',
+  eu_cloud: 'enforce_cloud',
+  hybrid: 'user_choice',
+};
+
+/** Startwerte aus dem Free-Audit-Scan — vorgeschlagen, nie erzwungen. */
+function initialStateFromScan(scan: ScanProfile | null): SetupState {
+  const systems = Array.from(
+    new Set((scan?.systems ?? []).map((id) => SCAN_SYSTEM_TO_SETUP[id]).filter(Boolean)),
+  );
+  return {
+    tenant_type: scan?.role ? ROLE_TO_ORG[scan.role] : 'sme',
+    org_name: scan?.company ?? '',
+    residency_policy: scan?.residency ? SCAN_RESIDENCY_TO_POLICY[scan.residency] : 'user_choice',
+    ai_systems: systems,
+  };
 }
 
 const ORG_TYPES: Array<{ id: OrgType; label: string; description: string; icon: React.ReactNode }> = [
@@ -49,10 +121,8 @@ export function SetupAssistant() {
   const { user } = useAuth();
   const { activeTenantId, refresh } = useTenant();
   const [step, setStep] = useState<Step>('org-type');
-  const [state, setState] = useState<SetupState>({
-    tenant_type: 'sme',
-    org_name: '',
-  });
+  const scan = useMemo(() => loadScanProfile(), []);
+  const [state, setState] = useState<SetupState>(() => initialStateFromScan(scan));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>();
 
@@ -67,12 +137,24 @@ export function SetupAssistant() {
     setStep('org-details');
   };
 
-  const handleContinueDetails = async () => {
+  const handleContinueDetails = () => {
     if (!state.org_name.trim()) {
       setError('Bitte geben Sie den Namen Ihrer Organisation ein.');
       return;
     }
+    setError(undefined);
+    setStep('operations');
+  };
 
+  const toggleSystem = (id: string) =>
+    setState((prev) => ({
+      ...prev,
+      ai_systems: prev.ai_systems.includes(id)
+        ? prev.ai_systems.filter((x) => x !== id)
+        : [...prev.ai_systems, id],
+    }));
+
+  const handleFinish = async () => {
     setLoading(true);
     setError(undefined);
 
@@ -93,6 +175,23 @@ export function SetupAssistant() {
         setError(`Update failed: ${updateError.message}`);
         return;
       }
+
+      // Betriebsmodus: dieselbe Spalte wie in den KI-Datenhaltungs-Einstellungen.
+      // Nur der Owner darf sie setzen (RLS) — scheitert das, bleibt das Setup
+      // trotzdem gültig; der Modus ist dort jederzeit nachholbar.
+      const { error: residencyError } = await supabase
+        .from('tenants')
+        .update({ ai_data_residency_policy: state.residency_policy })
+        .eq('id', activeTenantId);
+      if (residencyError) {
+        console.warn('Setup: Betriebsmodus nicht gespeichert:', residencyError.message);
+      }
+
+      // Genutzte KI-Systeme ins (noch lokale) Firmenprofil — Grundlage für
+      // das KI-Register. Bestehende Felder bleiben erhalten.
+      const profile = loadCompanyProfile(activeTenantId);
+      saveCompanyProfile(activeTenantId, { ...profile, usedTools: state.ai_systems });
+      clearScanProfile();
 
       // Refresh tenant context
       await refresh();
@@ -151,6 +250,12 @@ export function SetupAssistant() {
               <p className="text-slate-400 text-lg">
                 Wir passen die Plattform an deine Bedürfnisse an.
               </p>
+              {scan?.role && (
+                <p className="mt-3 inline-flex items-center gap-2 text-sm text-cyan-300">
+                  <Sparkles className="w-4 h-4" />
+                  Aus deinem Scan vorgeschlagen — bitte bestätigen.
+                </p>
+              )}
             </div>
 
             <div className="grid gap-4">
@@ -158,7 +263,9 @@ export function SetupAssistant() {
                 <button
                   key={orgType.id}
                   onClick={() => handleSelectOrgType(orgType.id)}
-                  className="text-left p-5 rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 hover:border-cyan-400 transition-all cursor-pointer group"
+                  className={`text-left p-5 rounded-xl border bg-slate-800 hover:bg-slate-700 hover:border-cyan-400 transition-all cursor-pointer group ${
+                    scan?.role && state.tenant_type === orgType.id ? 'border-cyan-400' : 'border-slate-700'
+                  }`}
                 >
                   <div className="flex items-start gap-4">
                     <div className="mt-1 text-cyan-400 group-hover:scale-110 transition-transform">
@@ -274,7 +381,109 @@ export function SetupAssistant() {
           </div>
         )}
 
-        {/* Step 3: Welcome / Success */}
+        {/* Step 3: Betrieb — Betriebsmodus + genutzte KI-Systeme */}
+        {step === 'operations' && (
+          <div className="animate-fade-in">
+            <div className="mb-8">
+              <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">
+                Wie nutzt ihr KI?
+              </h1>
+              <p className="text-slate-400 text-lg">
+                Damit dein Dashboard nicht leer startet. Alles später änderbar.
+              </p>
+              {scan && (
+                <p className="mt-3 inline-flex items-center gap-2 text-sm text-cyan-300">
+                  <Sparkles className="w-4 h-4" />
+                  Vorausgefüllt aus deinem Scan{scan.domain ? ` von ${scan.domain}` : ''}.
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-6 bg-slate-800 p-6 rounded-xl border border-slate-700">
+              <div>
+                <p className="block text-sm font-medium text-white mb-3">Betriebsmodus</p>
+                <div className="grid gap-3 sm:grid-cols-3" role="radiogroup" aria-label="Betriebsmodus">
+                  {RESIDENCY_OPTIONS.map((opt) => {
+                    const active = state.residency_policy === opt.id;
+                    return (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        role="radio"
+                        aria-checked={active}
+                        onClick={() => setState((prev) => ({ ...prev, residency_policy: opt.id }))}
+                        className={`text-left p-4 rounded-lg border transition-colors ${
+                          active
+                            ? 'border-cyan-400 bg-slate-700'
+                            : 'border-slate-600 bg-slate-800 hover:border-slate-500'
+                        }`}
+                      >
+                        <span className="flex items-center gap-2 text-white font-semibold text-sm">
+                          <span className="text-cyan-400">{opt.icon}</span>
+                          {opt.label}
+                        </span>
+                        <span className="block text-xs text-slate-400 mt-1.5">{opt.description}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div>
+                <p className="block text-sm font-medium text-white mb-3">
+                  Welche KI-Systeme sind schon im Einsatz? (optional)
+                </p>
+                <div className="flex flex-wrap gap-2" role="group" aria-label="KI-Systeme">
+                  {AI_SYSTEM_OPTIONS.map((opt) => {
+                    const active = state.ai_systems.includes(opt.id);
+                    return (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        aria-pressed={active}
+                        onClick={() => toggleSystem(opt.id)}
+                        className={`px-3 py-1.5 rounded-full border text-sm transition-colors ${
+                          active
+                            ? 'border-cyan-400 bg-cyan-500/15 text-cyan-200'
+                            : 'border-slate-600 text-slate-300 hover:border-slate-500'
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {error && (
+                <div className="p-3 rounded-lg bg-red-900/30 border border-red-800 flex gap-2">
+                  <AlertCircle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
+                  <p className="text-sm text-red-300">{error}</p>
+                </div>
+              )}
+            </div>
+
+            <div className="mt-8 flex gap-3 justify-between">
+              <button
+                onClick={() => setStep('org-details')}
+                disabled={loading}
+                className="px-4 py-2.5 text-slate-400 hover:text-white text-sm transition-colors disabled:opacity-50"
+              >
+                Zurück
+              </button>
+              <button
+                onClick={handleFinish}
+                disabled={loading}
+                className="px-6 py-2.5 rounded-lg bg-cyan-500 hover:bg-cyan-600 text-slate-950 text-sm font-semibold transition-colors disabled:opacity-50 flex items-center gap-2"
+              >
+                Setup abschließen
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Step 4: Welcome / Success */}
         {step === 'welcome' && (
           <div className="animate-fade-in text-center">
             <div className="flex justify-center mb-6">

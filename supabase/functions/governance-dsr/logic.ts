@@ -5,8 +5,9 @@
 export const REQUEST_TYPES = ['access', 'erasure', 'portability', 'rectification', 'restriction', 'objection'] as const;
 export const STATUSES = ['received', 'in_progress', 'pending_verification', 'completed', 'rejected', 'overdue'] as const;
 export const TERMINAL: readonly string[] = ['completed', 'rejected'];
-// Roles allowed to write. 'viewer' keeps read-only access via RLS.
-export const WRITER_ROLES: readonly string[] = ['owner', 'admin', 'member'];
+// Must match memberships_role_check (owner | admin | dpo | editor | viewer_auditor).
+// viewer_auditor stays read-only via RLS. There is no membership role `member`.
+export const WRITER_ROLES: readonly string[] = ['owner', 'admin', 'dpo', 'editor'];
 
 export function isWriterRole(role: string | null | undefined): boolean {
   return !!role && WRITER_ROLES.includes(role);

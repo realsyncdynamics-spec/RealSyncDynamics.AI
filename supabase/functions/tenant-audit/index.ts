@@ -109,7 +109,7 @@ Deno.serve(async (req) => {
   // Rate-Limit pro Mandant. gdpr-audit lässt den internen Aufruf an seinem
   // IP-Limit vorbei (sonst teilten sich alle Mandanten 5 Scans/Stunde), also
   // begrenzen wir hier. Verbindlich ist der Trigger auf scan_runs
-  // (20260928150000, Advisory-Lock je Mandant); diese Vorabprüfung spart nur
+  // (20260928181700, Advisory-Lock je Mandant); diese Vorabprüfung spart nur
   // den Pipeline-Start. Zählfehler ⇒ kein Scan (fail-closed).
   const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
   const { count: recentRuns, error: countErr } = await admin

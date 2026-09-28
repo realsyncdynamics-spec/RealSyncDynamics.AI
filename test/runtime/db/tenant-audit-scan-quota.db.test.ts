@@ -1,6 +1,6 @@
 /**
  * Gate 2 · Website-Scans pro Mandant atomar begrenzt
- * (20260928150000_tenant_audit_scan_quota.sql).
+ * (20260928181700_tenant_audit_scan_quota.sql).
  *
  * Review #1711: Zählen und Anlegen des Laufs waren zwei Aufrufe; parallele
  * Anfragen überschritten das Limit. Jetzt weist ein BEFORE-INSERT-Trigger den

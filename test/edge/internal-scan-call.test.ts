@@ -87,7 +87,7 @@ describe('tenant-audit: interner Aufruf + Limit pro Mandant', () => {
   });
 
   it('das verbindliche Limit liegt atomar in der Datenbank und entspricht der Konstante', () => {
-    const sql = readFileSync('supabase/migrations/20260928150000_tenant_audit_scan_quota.sql', 'utf8');
+    const sql = readFileSync('supabase/migrations/20260928181700_tenant_audit_scan_quota.sql', 'utf8');
     expect(sql).toContain('pg_advisory_xact_lock');
     expect(sql).toMatch(/BEFORE INSERT ON public\.scan_runs/);
     expect(sql).toContain(`v_limit CONSTANT integer := ${TENANT_SCAN_LIMIT_PER_HOUR};`);

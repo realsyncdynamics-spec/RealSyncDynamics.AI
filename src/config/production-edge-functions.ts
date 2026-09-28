@@ -80,10 +80,10 @@
  * Sie darf steigen, sobald jemand einen höheren Stand misst — und sie ist
  * kein Argument dafür, dass ein weiterer Deploy scheitern wird.
  */
-export const EDGE_FUNCTIONS_OBSERVED_MAX = 191;
+export const EDGE_FUNCTIONS_OBSERVED_MAX = 192;
 
 /** Datum der letzten Messung gegen das Live-Projekt. */
-export const PRODUCTION_EDGE_FUNCTIONS_MEASURED_AT = '2026-09-26T06:10Z';
+export const PRODUCTION_EDGE_FUNCTIONS_MEASURED_AT = '2026-09-28T12:36Z';
 
 /**
  * Die in Produktion aktiven Function-Slugs — alphabetisch, damit ein Diff
@@ -200,6 +200,7 @@ export const PRODUCTION_EDGE_FUNCTIONS: readonly string[] = [
   'kodee-onboard',
   'legal-embed',
   'legal-retrieve',
+  'local-ai-runtime',
   'log-tool-run',
   'maintenance-schedule',
   'market-scanner',

@@ -32,7 +32,7 @@ import { evidenceContentHash } from '../../supabase/functions/_shared/evidence-h
 
 const root = (p: string) => resolve(__dirname, '../..', p);
 const FN = readFileSync(root('supabase/functions/provision-tenant/index.ts'), 'utf8');
-const SQL = readFileSync(root('supabase/migrations/20260928140000_tenant_boot_provisioning.sql'), 'utf8');
+const SQL = readFileSync(root('supabase/migrations/20260928150000_tenant_boot_provisioning.sql'), 'utf8');
 const INGEST = readFileSync(root('supabase/functions/governance-ingest/index.ts'), 'utf8');
 
 const done = (step: BootStepResult['step']): BootStepResult => ({ step, status: 'done' });

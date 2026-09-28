@@ -13,6 +13,7 @@ import type {
   AgentAutonomyLevel,
   AgentStatus,
 } from '../../../lib/enterprise-ai-os/agents/types';
+import { getSupabaseUrl, getSupabaseAnonKey } from '../../../lib/supabaseUrl';
 
 export { enterpriseAgents };
 export type { AgentId };
@@ -123,8 +124,8 @@ export async function runAgent(input: {
  * limit. Returns the most recent runs ordered newest first.
  */
 export async function fetchAgentRuns(tenantId?: string, limit = 25): Promise<AgentRunRow[]> {
-  const base = import.meta.env.VITE_SUPABASE_URL as string | undefined;
-  const anon = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
+  const base = getSupabaseUrl();
+  const anon = getSupabaseAnonKey();
   if (!base || !anon) throw new Error('Supabase nicht konfiguriert');
   const url = new URL(`${base}/functions/v1/enterprise-ai-os-agent-runs-list`);
   if (tenantId) url.searchParams.set('tenantId', tenantId);

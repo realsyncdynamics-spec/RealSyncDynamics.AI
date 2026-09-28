@@ -20,7 +20,12 @@ import { edgeFunctionUrl, fnFetchInit } from '../../lib/fn-proxy';
 import { getSupabase } from '../../lib/supabase';
 import type { ModelProfile } from './types';
 
-export type ModelProvider = 'gemini' | 'openai' | 'claude';
+/**
+ * UI-Providerwahl. `local` = EU-lokales Modell über das Gateway
+ * (Profil `quality-local`). Die Cloud-Namen bleiben als Typ erhalten, damit
+ * alte Aufrufer ehrlich abgelehnt statt still umgebogen werden.
+ */
+export type ModelProvider = 'local' | 'gemini' | 'openai' | 'claude';
 
 export interface GatewayRequest {
   prompt: string;
@@ -109,21 +114,22 @@ function failureFrom(error: unknown): GatewayResult {
 /**
  * Zuordnung der UI-Providerwahl auf ein Modellprofil des Gateways.
  *
- * `null` heisst: Das Gateway kann diesen Provider heute nicht bedienen.
- * Stand `src/core/ai-gateway/config.ts` faehrt kein Profil auf Anthropic,
- * und Google/Gemini ist dort ueberhaupt kein Provider. Diese beiden Faelle
- * werden deshalb ehrlich abgelehnt statt still auf ein anderes Modell
- * umgebogen — sonst stuende in der Oberflaeche „Claude" ueber einer
- * Antwort, die ein anderes Modell erzeugt hat.
+ * `null` heisst: Das Gateway kann diesen Provider nicht bedienen. Seit der
+ * Entscheidung vom 26.09. baut `ai-gateway` ohne Cloud-Kette
+ * (`allowCloudFallback: false`) und lehnt `cloud-fallback` in Nutzer- und
+ * Service-Pfad ab. Cloud-Provider werden deshalb ehrlich abgelehnt statt
+ * still auf ein anderes Modell umgebogen — sonst stuende in der Oberflaeche
+ * „GPT" ueber einer Antwort, die ein lokales Modell erzeugt hat.
  */
 const PROFILE_BY_PROVIDER: Record<ModelProvider, ModelProfile | null> = {
-  openai: 'cloud-fallback',
+  local: 'quality-local',
+  openai: null,
   claude: null,
   gemini: null,
 };
 
 const UNAVAILABLE_HINT =
-  'Ueber das EU-Gateway ist derzeit nur OpenAI erreichbar — bitte diesen Provider waehlen.';
+  'Cloud-Modelle sind im EU-Gateway abgeschaltet — bitte „Lokales Modell (EU)" waehlen.';
 
 /**
  * Test-Hook nach dem Vorbild von `features/assistant/assistantQuickChatApi`:

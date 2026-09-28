@@ -10,8 +10,8 @@
 //   transition (id, status, note?, authority_reference?)
 //
 // Writes go to public.incidents — the table the SPA reads via RLS
-// (incidentsApi.fetchTenantIncidents). Tenant-membership gated: owner, admin
-// and member may write; viewer and non-members get 403. The JWT is verified
+// (incidentsApi.fetchTenantIncidents). Tenant-membership gated: owner, admin,
+// dpo and editor may write; viewer_auditor and non-members get 403. The JWT is verified
 // in-function (config.toml keeps verify_jwt = false like the other
 // governance-* functions).
 //

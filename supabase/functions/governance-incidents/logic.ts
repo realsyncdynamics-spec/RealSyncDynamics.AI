@@ -9,7 +9,9 @@ export const SEVERITIES: readonly string[] = ['low', 'medium', 'high', 'critical
 export const STATUSES: readonly string[] = [
   'open', 'investigating', 'contained', 'resolved', 'reported_to_authority',
 ];
-export const WRITER_ROLES: readonly string[] = ['owner', 'admin', 'member'];
+// Must match the memberships_role_check constraint
+// (owner | admin | dpo | editor | viewer_auditor). viewer_auditor is read-only.
+export const WRITER_ROLES: readonly string[] = ['owner', 'admin', 'dpo', 'editor'];
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 

@@ -13,6 +13,7 @@ import {
   buildTransitionPatch,
   isWriterRole,
   STATUSES,
+  WRITER_ROLES,
 } from '../../supabase/functions/governance-incidents/logic';
 
 const TENANT = '11111111-2222-4333-8444-555555555555';
@@ -85,12 +86,23 @@ describe('governance-incidents — buildTransitionPatch', () => {
 });
 
 describe('governance-incidents — roles', () => {
-  it('lets owner, admin and member write, not viewer or outsiders', () => {
+  it('lets owner, admin, dpo and editor write, not viewer_auditor or outsiders', () => {
     expect(isWriterRole('owner')).toBe(true);
     expect(isWriterRole('admin')).toBe(true);
-    expect(isWriterRole('member')).toBe(true);
-    expect(isWriterRole('viewer')).toBe(false);
+    expect(isWriterRole('dpo')).toBe(true);
+    expect(isWriterRole('editor')).toBe(true);
+    expect(isWriterRole('viewer_auditor')).toBe(false);
     expect(isWriterRole(null)).toBe(false);
+  });
+
+  it('does not accept roles the memberships constraint does not know', () => {
+    expect(isWriterRole('member')).toBe(false);
+    expect(isWriterRole('viewer')).toBe(false);
+  });
+
+  it('only lists roles allowed by memberships_role_check', () => {
+    const allowed = ['owner', 'admin', 'dpo', 'editor', 'viewer_auditor'];
+    for (const r of WRITER_ROLES) expect(allowed).toContain(r);
   });
 });
 

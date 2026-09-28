@@ -23,7 +23,7 @@ export function HeroV2() {
   return (
     <section id="top" className="lv2-hero" aria-labelledby="lv2-hero-title">
       <div className="lv2-hero__map" aria-hidden="true">
-        <img src="/europe-globe.webp" alt="" loading="eager" decoding="async" fetchPriority="high" />
+        <img src="/europe-map-v2.png" alt="" loading="eager" decoding="async" fetchPriority="high" />
       </div>
 
       <div className="lv2__wrap lv2-hero__inner">

@@ -104,7 +104,7 @@ export function PricingV2() {
                   className={`lv2-btn ${featured ? 'lv2-btn--gold' : 'lv2-btn--glass'}`}
                   data-plan-cta={plan.id}
                 >
-                  {plan.purchaseMode === 'inquiry' ? CTA.enterprise : `${plan.name} starten`}
+                  {plan.purchaseMode === 'inquiry' ? CTA.enterprise : plan.ctaLabel}
                 </Link>
               </li>
             );

@@ -57,16 +57,19 @@ const COLUMNS = [
       { label: 'Plattform', to: '/runtime' },
       { label: 'Evidence Vault', to: '/evidence' },
       { label: 'Preise', to: '/pricing' },
+      { label: 'Roadmap', to: '/roadmap' },
       { label: 'Changelog', to: '/changelog' },
     ],
   },
   {
     title: 'Governance',
     links: [
+      { label: 'Governance Runtime', to: '/governance-runtime' },
+      { label: 'Agent Governance', to: '/agent-governance' },
       { label: 'Trust Center', to: '/trust' },
       { label: 'AVV (Art. 28 DSGVO)', to: '/legal/avv' },
+      { label: 'Sub-Prozessoren', to: '/legal/sub-processors' },
       { label: 'Security', to: '/security' },
-      { label: 'EU AI Act', to: '/ai-act' },
     ],
   },
   {
@@ -75,7 +78,8 @@ const COLUMNS = [
       { label: 'Impressum', to: '/impressum' },
       { label: 'Datenschutz', to: '/datenschutz' },
       { label: 'AGB', to: '/agb' },
-      { label: 'Kontakt', to: '/contact-sales' },
+      { label: 'Widerruf', to: '/legal/widerruf' },
+      { label: 'Kontakt', to: '/kontakt' },
     ],
   },
 ] as const;

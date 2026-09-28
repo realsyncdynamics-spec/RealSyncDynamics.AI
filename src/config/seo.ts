@@ -53,9 +53,9 @@ export interface SEOConfig {
 const SITE_URL = 'https://realsyncdynamicsai.de';
 
 export const DEFAULT_SEO: SEOConfig = {
-  title: 'RealSyncDynamics.AI — The Governance OS for Autonomous AI',
+  title: 'AI Compliance Operations OS for Europe | RealSyncDynamics.AI',
   description:
-    'Die Control Plane für Enterprise-KI: Any model. Any agent. One control plane. EU AI Act, DSGVO und ISO 42001 als nachweisbare Proof-Layer.',
+    'EU-native AI Governance: KI-Systeme entdecken, klassifizieren, Policies durchsetzen und Entscheidungen mit Evidence für DSGVO und EU AI Act belegen.',
 };
 
 // ─── JSON-LD Templates (re-used) ─────────────────────────────────────────────
@@ -253,14 +253,14 @@ function breadcrumbs(items: Array<{ name: string; url: string }>): Record<string
 export const SEO_CONFIG: Record<string, SEOConfig> = {
   // ─── Tier 1 — Hero / Top-Conversion ──────────────────────────────────────
   '/': {
-    // Governance-OS-Positionierung — matches the H1 in GovernanceOsHero.
-    title: 'RealSyncDynamics.AI — The Governance OS for Autonomous AI',
+    // Canonical original hero: Dark/Gold/Cream · Europe night network.
+    title: 'AI Compliance Operations OS for Europe | RealSyncDynamics.AI',
     description:
-      'RealSyncDynamics.AI ist die Control Plane für Enterprise-KI: Any model. Any agent. One control plane. EU AI Act, DSGVO und ISO 42001 als Evidence-Proof-Layer.',
+      'EU-native AI Governance: KI-Systeme entdecken, klassifizieren, Policies durchsetzen und Entscheidungen mit Evidence für DSGVO und EU AI Act belegen.',
     canonical: `${SITE_URL}/`,
-    ogTitle: 'The Governance OS for Autonomous AI',
+    ogTitle: 'AI Compliance Operations OS for Europe',
     ogDescription:
-      'Europa braucht Kontrolle über Frontier-KI: RealSyncDynamics.AI baut die Kontroll-, Autorisierungs- und Evidence-Layer zwischen Unternehmen und KI.',
+      'Discover → Classify → Enforce → Prove. Governance, Policy Enforcement und Evidence für Enterprise-KI in Europa.',
   },
   '/design/titan': {
     title: 'RealSyncDynamics.AI — Titan-Fallbackroute der Governance-Landing',

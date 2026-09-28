@@ -40,6 +40,7 @@ import { join, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 const WORKFLOWS = resolve(__dirname, '../../.github/workflows');
+const DRIFT_ALERT_PATH = join(WORKFLOWS, 'drift-alert.yml');
 
 /**
  * Workflows, deren Verweise noch nicht gepinnt sind — mit Grund.
@@ -123,6 +124,7 @@ describe('Actions sind auf einen Commit-SHA gepinnt', () => {
 
 describe('Drift Alert kann laufen', () => {
   const driftAlert = REFS.filter((r) => r.file === 'drift-alert.yml');
+  const src = readFileSync(DRIFT_ALERT_PATH, 'utf8');
 
   it('nutzt github-script gepinnt', () => {
     // Genau dieser Verweis hat den Workflow seit dem 2026-08-30 wirkungslos
@@ -130,5 +132,13 @@ describe('Drift Alert kann laufen', () => {
     const script = driftAlert.find((r) => r.uses.startsWith('actions/github-script@'));
     expect(script, 'drift-alert.yml nutzt github-script nicht mehr').toBeDefined();
     expect(isPinned(script!.uses)).toBe(true);
+  });
+
+  it('meldet Befunde per Issue, ohne selbst rot zu werden', () => {
+    // Der verlinkte Lauf 35724944325 war nur deshalb rot, weil der Zusteller
+    // nach erfolgreichem Issue-Create selbst `setFailed` rief. Rot bleiben
+    // soll der beobachtete Guard; der Zusteller ist fertig, sobald er meldet.
+    expect(src).not.toContain('core.setFailed(');
+    expect(src).toContain('core.notice(');
   });
 });

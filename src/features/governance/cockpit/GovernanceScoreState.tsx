@@ -14,6 +14,7 @@ import { Link } from 'react-router-dom';
 import { AlertTriangle, ArrowRight, RotateCcw } from 'lucide-react';
 import { useLang } from '../../../i18n/useLang';
 import type { GovernanceScoreStatus, ScoreDataBasis } from './cockpitScore';
+import type { PostureStatus } from './cockpitData';
 
 /** Erster Schritt bei leerem Inventar: echter Anlege-Pfad (governance-resources create_asset). */
 export const SCORE_FIRST_STEP_ROUTE = '/app/onboarding';
@@ -21,12 +22,14 @@ export const SCORE_FIRST_STEP_ROUTE = '/app/onboarding';
 export interface GovernanceScoreStateProps {
   status: Exclude<GovernanceScoreStatus, 'ok'>;
   basis?: ScoreDataBasis | null;
+  /** `not_measured`: Snapshot vorhanden, misst Policy-/Evidence-Abdeckung aber nicht. */
+  postureStatus?: PostureStatus | null;
   /** Neu laden der Score-Quellen; ohne Callback lädt der Button die Seite neu. */
   onRetry?: () => void;
   testId?: string;
 }
 
-export function GovernanceScoreState({ status, basis, onRetry, testId = 'score-state' }: GovernanceScoreStateProps) {
+export function GovernanceScoreState({ status, basis, postureStatus, onRetry, testId = 'score-state' }: GovernanceScoreStateProps) {
   const { t } = useLang();
 
   if (status === 'unreliable') {
@@ -54,7 +57,11 @@ export function GovernanceScoreState({ status, basis, onRetry, testId = 'score-s
     <div className="flex flex-col items-center gap-2 px-4 text-center" data-testid={`${testId}-empty`}>
       <p className="text-sm font-semibold">{t('scoreNotRatable')}</p>
       <p className="text-xs opacity-75">
-        {emptyInventory ? t('scoreNotRatableEmpty') : t('scoreNotRatableSnapshot')}
+        {emptyInventory
+          ? t('scoreNotRatableEmpty')
+          : postureStatus === 'not_measured'
+            ? t('scoreNotRatablePosture')
+            : t('scoreNotRatableSnapshot')}
       </p>
       {emptyInventory && (
         <Link

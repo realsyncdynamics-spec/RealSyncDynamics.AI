@@ -108,6 +108,9 @@ export class LMStudioAdapter implements AiProviderAdapter {
         body: JSON.stringify({
           model,
           stream: true,
+          // Ohne diese Option liefert der OpenAI-kompatible Stream keine
+          // usage-Zeile; der Gateway könnte gestreamte Tokens nicht buchen.
+          stream_options: { include_usage: true },
           messages: [
             ...(request.system_prompt ? [{ role: 'system', content: request.system_prompt }] : []),
             { role: 'user', content: request.input },

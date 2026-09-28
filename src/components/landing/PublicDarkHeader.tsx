@@ -98,10 +98,16 @@ function DiamondMark() {
 export function PublicDarkHeader({
   overlay = false,
   modeSwitch,
+  ctaLabel = HERO_SCAN_CTA_LABEL,
+  compactNavAtLg = false,
 }: {
   overlay?: boolean;
   /** Slot links neben der Pill — auf `/` sitzt hier der Farbmodus-Schalter. */
   modeSwitch?: ReactNode;
+  /** Canonical hero uses the original “Free Audit starten” label. */
+  ctaLabel?: string;
+  /** Keep the hero nav on one line; collapse earlier on narrower previews. */
+  compactNavAtLg?: boolean;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -131,7 +137,7 @@ export function PublicDarkHeader({
           </span>
         </Link>
 
-        <nav className="ml-auto hidden items-center gap-7 md:flex" aria-label="Hauptnavigation">
+        <nav className={`ml-auto hidden items-center gap-7 ${compactNavAtLg ? 'lg:flex' : 'md:flex'}`} aria-label="Hauptnavigation">
           {PUBLIC_PRIMARY_NAV.map((item) => (
             <NavItem key={item.to} {...item} />
           ))}
@@ -141,11 +147,11 @@ export function PublicDarkHeader({
             className="inline-flex items-center gap-1.5 rounded-full px-[18px] py-[10px] text-[11px] font-semibold transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--rsd-accent,#d6ad68)]"
             style={scanCtaStyle}
           >
-            {HERO_SCAN_CTA_LABEL} <span aria-hidden="true">→</span>
+            {ctaLabel} <span aria-hidden="true">→</span>
           </Link>
         </nav>
 
-        <div className="ml-auto flex items-center gap-2 md:hidden">
+        <div className={`ml-auto flex items-center gap-2 ${compactNavAtLg ? 'lg:hidden' : 'md:hidden'}`}>
           <Link
             to="/audit"
             className="rounded-full px-3.5 py-2 text-[10px] font-semibold"
@@ -170,7 +176,7 @@ export function PublicDarkHeader({
       {open && (
         <div
           id="public-dark-mobile-nav"
-          className="border-t border-white/[0.06] px-6 py-4 backdrop-blur-md md:hidden"
+          className={`border-t border-white/[0.06] px-6 py-4 backdrop-blur-md ${compactNavAtLg ? 'lg:hidden' : 'md:hidden'}`}
           style={{
             borderColor: MODE_HEADER_BORDER,
             backgroundColor: `color-mix(in srgb, ${MODE_BG} 94%, transparent)`,

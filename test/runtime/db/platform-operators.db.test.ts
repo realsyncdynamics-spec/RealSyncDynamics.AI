@@ -202,6 +202,30 @@ d('D5 — platform_operators als einzige Quelle der Plattform-Rolle', () => {
     expect(await flag(neu.userId)).toBe(true);
   });
 
+  it('ein Operator ohne Profilzeile bekommt Profil und Flag', async () => {
+    // Ohne Zeile ginge das Sync-UPDATE ins Leere, und seit der Waechter auch
+    // INSERT sperrt, bekaeme ein spaeter angelegtes Profil das Flag nie mehr.
+    // Hinweis der CodeRabbit-Review auf #1619.
+    const u = await seedNutzer();
+    await ctx!.client.query(`DELETE FROM public.profiles WHERE id = $1`, [u.userId]);
+
+    await ctx!.client.query(`INSERT INTO public.platform_operators (user_id) VALUES ($1)`, [u.userId]);
+    expect(await flag(u.userId)).toBe(true);
+  });
+
+  it('ein inaktiver Operator legt kein Profil an', async () => {
+    const u = await seedNutzer();
+    await ctx!.client.query(`DELETE FROM public.profiles WHERE id = $1`, [u.userId]);
+
+    await ctx!.client.query(
+      `INSERT INTO public.platform_operators (user_id, active) VALUES ($1, false)`, [u.userId],
+    );
+    const { rows } = await ctx!.client.query<{ n: number }>(
+      `SELECT count(*)::int AS n FROM public.profiles WHERE id = $1`, [u.userId],
+    );
+    expect(rows[0]!.n).toBe(0);
+  });
+
   // ── 4. Die Projektion laesst sich nicht umgehen ─────────────────────────
 
   it('ein eingeloggter Nutzer kann das Flag weiterhin nicht setzen (B1 bleibt)', async () => {
@@ -279,8 +303,8 @@ d('D5 — platform_operators als einzige Quelle der Plattform-Rolle', () => {
     const { rows } = await ctx!.client.query<{ n: string }>(
       `SELECT count(*)::int AS n
          FROM public.profiles p
-         FULL JOIN public.platform_operators po
-           ON po.user_id = p.id AND po.active
+         FULL JOIN (SELECT user_id FROM public.platform_operators WHERE active) po
+           ON po.user_id = p.id
         WHERE coalesce(p.is_super_admin, false) IS DISTINCT FROM (po.user_id IS NOT NULL)`,
     );
     expect(Number(rows[0]!.n)).toBe(0);

@@ -177,6 +177,19 @@ BEGIN
              WHERE po.user_id = ziel AND po.active
         ) INTO soll;
 
+        -- Ohne Profilzeile ginge das UPDATE ins Leere, und seit der Waechter
+        -- auch INSERT sperrt, bekaeme ein spaeter angelegtes Profil das Flag
+        -- nie mehr. Deshalb die Zeile hier anlegen — nur wenn das Konto
+        -- Operator ist, nie bei DELETE oder active=false. Mit dem Default
+        -- false, den der Waechter durchlaesst; das Flag setzt erst das UPDATE
+        -- darunter. Live gemessen: heute hat jedes Konto ein Profil
+        -- (on_auth_user_created), der Fall ist also Absicherung, kein Befund.
+        -- Hinweis der CodeRabbit-Review auf #1619.
+        IF soll THEN
+            INSERT INTO public.profiles (id) VALUES (ziel)
+            ON CONFLICT (id) DO NOTHING;
+        END IF;
+
         PERFORM set_config('rsd.platform_operator_sync', '1', true);
         UPDATE public.profiles
            SET is_super_admin = soll

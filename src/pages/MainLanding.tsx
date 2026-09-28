@@ -4,8 +4,8 @@ import { SEOHead } from '../components/SEOHead';
 import { LandingChannelTools } from '../components/landing/LandingChannelTools';
 import { LandingPricingSection } from '../components/landing/LandingPricingSection';
 import { PublicDarkHeader } from '../components/landing/PublicDarkHeader';
-import { HeroTitanium } from '../components/landing/HeroTitanium';
-import { LandingModeSwitch } from '../components/landing/LandingModeSwitch';
+import { OriginalComplianceHero } from '../components/landing/OriginalComplianceHero';
+import { OriginalThemeToggle } from '../components/landing/OriginalThemeToggle';
 import { MODE_BG, MODE_MUTED, MODE_TEXT, modeVeil, useLandingMode } from '../components/landing/landing-mode';
 import { RuntimePreviewPanel } from '../components/landing/RuntimePreviewPanel';
 import { LandingDarkBand } from '../components/landing/LandingDarkBand';
@@ -30,14 +30,16 @@ import {
 } from '../components/governance-frontend/hero-content';
 
 /**
- * Replit SSOT public `/` — Dark/Gold Europe-network (static), not interactive sphere.
- * KPI strip mirrors Replit chrome as illustrative demo values (not live production metrics).
+ * Canonical public `/` — original Dark/Gold/Cream Europe hero.
+ * The hero follows the approved reference: Europe night image + gold network,
+ * serif headline, gold actions and real monthly pricing anchors. No fake KPIs.
  */
 
 export function MainLanding() {
   const revealRoot = useStagedReveal<HTMLElement>();
-  const { mode, setMode } = useLandingMode();
-  const seo = SEO_CONFIG['/design/titan'] ?? DEFAULT_SEO;
+  const { mode: storedMode, setMode } = useLandingMode();
+  const mode = storedMode === 'light' ? 'light' : 'gold';
+  const seo = SEO_CONFIG['/'] ?? DEFAULT_SEO;
 
   return (
     <div
@@ -57,10 +59,15 @@ export function MainLanding() {
         ogDescription={seo.ogDescription}
       />
 
-      <PublicDarkHeader overlay modeSwitch={<LandingModeSwitch mode={mode} onChange={setMode} />} />
+      <PublicDarkHeader
+        overlay
+        ctaLabel="Free Audit starten"
+        compactNavAtLg
+        modeSwitch={<OriginalThemeToggle mode={mode} onChange={setMode} />}
+      />
 
       <main ref={revealRoot} className="relative z-10">
-        <HeroTitanium />
+        <OriginalComplianceHero />
 
         <RuntimePreviewPanel />
 

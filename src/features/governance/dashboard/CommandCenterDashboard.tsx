@@ -5,6 +5,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useTenant } from '../../../core/access/TenantProvider';
+import { useTenantDataVersion } from '../tenantDataEvents';
 import { useEntitlements } from '../../../core/billing/useEntitlements';
 import { getSupabase } from '../../../lib/supabase';
 import {
@@ -32,6 +33,7 @@ import { BrowserRuntimePanel } from './BrowserRuntimePanel';
 
 export function CommandCenterDashboard() {
   const { activeTenantId, tenants, loading: tenantLoading, entitlements, hasFeature } = useTenant();
+  const dataVersion = useTenantDataVersion(activeTenantId);
   // Schloss für „Packs →“ aus tenant_entitlements (policy.packs) — dieselbe
   // Quelle wie RouteEntitlementGate und die Sidebar. Plan nur Legacy-Fallback,
   // für /app/policy-packs nicht relevant (Route steht im Register).
@@ -73,7 +75,7 @@ export function CommandCenterDashboard() {
       .catch((err) => { if (!cancelled) setError((err as Error)?.message ?? String(err)); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
-  }, [activeTenantId, reloadKey]);
+  }, [activeTenantId, reloadKey, dataVersion]);
 
   // Trend · Findings · Incidents (24h) — eigene Quelle, ein Fehler hier darf
   // den Score nicht blockieren; Fallback bleibt „keine Messung“.
@@ -85,7 +87,7 @@ export function CommandCenterDashboard() {
       .then((kpi) => { if (!cancelled) setComplianceKpi(kpi); })
       .catch(() => { /* bleibt EMPTY_COMPLIANCE_KPI_ROW */ });
     return () => { cancelled = true; };
-  }, [activeTenantId, reloadKey]);
+  }, [activeTenantId, reloadKey, dataVersion]);
 
   useEffect(() => {
     let cancelled = false;
@@ -110,7 +112,7 @@ export function CommandCenterDashboard() {
       }));
     })();
     return () => { cancelled = true; };
-  }, [activeTenantId, reloadKey]);
+  }, [activeTenantId, reloadKey, dataVersion]);
 
   return (
     <>

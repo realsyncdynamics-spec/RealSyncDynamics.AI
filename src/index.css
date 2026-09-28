@@ -1853,8 +1853,10 @@ html, body {
    kanonische Landing außen vor: sie trägt `rs-paper` weiterhin am Wrapper,
    ist seit Visual v3 aber dunkel. Ohne den Ausschluss bekäme ein
    Erstbesucher ein helles Papier-Banner mit Waldgrün-Buttons vor einer
-   Graphit-Seite. Das Banner braucht hier keine eigenen Werte — sein
-   Default ist schon dunkel. */
+   Graphit-Seite. Die Flächen stimmen dann von selbst (`bg-obsidian-900`),
+   die Akzente nicht — den Cyan-Ersatz für Buttons, Link und Icon setzt
+   `styles/governance-os-landing-v3.css` mit dem disjunkten Gegenstück
+   `body:has(.rs-paper[data-landing-design='governance-v3'])`. */
 .rs-paper,
 body:has(.rs-paper:not([data-landing-design='governance-v3'])) .cookie-consent {
   color-scheme: light;

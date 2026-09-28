@@ -63,7 +63,9 @@ export function createSupabaseRepo(db: ServiceClient): RescanRepo {
         .select('content_hash')
         .eq('tenant_id', tenantId)
         .not('content_hash', 'is', null)
+        // Same order as append_governance_evidence, so both see the same head.
         .order('created_at', { ascending: false })
+        .order('id', { ascending: false })
         .limit(1);
       const rows = unwrap(r, 'governance_evidence');
       return rows[0]?.content_hash ?? null;

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, ArrowRight, Bot, ShieldCheck, KeyRound, Check,
-  AlertTriangle, Loader2, Copy, ShieldAlert, Rocket,
+  AlertTriangle, Loader2, Copy, ShieldAlert, Rocket, Building2,
 } from 'lucide-react';
 import { useTenant } from '../../core/access/TenantProvider';
 import { AuthGate } from '../kodee/connections/AuthGate';
@@ -15,17 +15,20 @@ import type {
 import { withPerformanceMonitoring } from './withPerformanceMonitoring';
 
 /**
- * /governance/onboarding — first-time wizard. Steps:
+ * /governance/onboarding — first-time wizard, sprachlich deckungsgleich mit
+ * der Marketing-Seite /ki-governance-in-5-schritten:
  *
- *   1. Asset    — create the customer's first governed system
- *   2. Policy   — optional first rule (defaults block PII to
- *                 external LLMs)
- *   3. Key      — mint the first rsd_gov_… ingest token (one-time
- *                 reveal)
- *   4. Done     — summary + extension install + next steps
+ *   1. Unternehmen verstehen  — Überblick (Tenant + was folgt), speichert nichts
+ *   2. KI-Register aufbauen   — erstes governed System (Asset)
+ *   3. Governance-Regeln      — optionale erste Policy (Default: PII nicht an
+ *                               externe LLMs)
+ *   4. Nachweise erzeugen     — erster rsd_gov_… Ingest-Token (einmalige
+ *                               Anzeige); ab hier landet jedes Ereignis im
+ *                               Audit-Log
+ *   5. KI sicher betreiben    — Zusammenfassung, Extension, erster Event
  *
- * Each step uses the same Edge Functions as the standalone CRUD
- * surfaces, so onboarding artefacts are first-class.
+ * Schritte 2–4 nutzen dieselben Edge Functions wie die CRUD-Oberflächen,
+ * Onboarding-Artefakte sind also vollwertig.
  */
 function _OnboardingView() {
   return <AuthGate>{() => <Inner />}</AuthGate>;
@@ -37,7 +40,7 @@ export const OnboardingView = withPerformanceMonitoring(
   { threshold: 500, maxRenders: 10 }
 );
 
-type Step = 1 | 2 | 3 | 4;
+type Step = 1 | 2 | 3 | 4 | 5;
 
 function Inner() {
   const navigate = useNavigate();
@@ -71,25 +74,31 @@ function Inner() {
       </select>
     ) : undefined}>
       {step === 1 && (
-        <AssetStep
-          tenantId={activeTenantId}
-          onDone={(id) => { setAssetId(id); setStep(2); }}
+        <OverviewStep
+          tenantName={tenants.find((t) => t.tenantId === activeTenantId)?.name ?? null}
+          onDone={() => setStep(2)}
         />
       )}
       {step === 2 && (
-        <PolicyStep
+        <AssetStep
           tenantId={activeTenantId}
-          onDone={(id) => { setPolicyId(id); setStep(3); }}
-          onSkip={() => setStep(3)}
+          onDone={(id) => { setAssetId(id); setStep(3); }}
         />
       )}
       {step === 3 && (
-        <KeyStep
+        <PolicyStep
           tenantId={activeTenantId}
-          onDone={(name, raw) => { setKeyName(name); setToken(raw); setStep(4); }}
+          onDone={(id) => { setPolicyId(id); setStep(4); }}
+          onSkip={() => setStep(4)}
         />
       )}
       {step === 4 && (
+        <KeyStep
+          tenantId={activeTenantId}
+          onDone={(name, raw) => { setKeyName(name); setToken(raw); setStep(5); }}
+        />
+      )}
+      {step === 5 && (
         <DoneStep
           assetId={assetId}
           policyId={policyId}
@@ -102,7 +111,52 @@ function Inner() {
   );
 }
 
-/* ── Step 1: Asset ─────────────────────────────────────────────── */
+/* ── Step 1: Überblick ─────────────────────────────────────────── */
+
+const WEG = [
+  { n: 2, titel: 'KI-Register aufbauen', text: 'Erstes KI-System mit Typ, Anbieter und AI-Act-Klasse erfassen.' },
+  { n: 3, titel: 'Governance-Regeln aktivieren', text: 'Eine Policy, die bei Verstößen automatisch greift.' },
+  { n: 4, titel: 'Nachweise erzeugen', text: 'Ingest-Key anlegen — ab dann landet jedes Ereignis im Audit-Log.' },
+  { n: 5, titel: 'KI sicher betreiben', text: 'Extension oder SDK verbinden, erster Event, Dashboard.' },
+];
+
+function OverviewStep({
+  tenantName, onDone,
+}: { tenantName: string | null; onDone: () => void }) {
+  return (
+    <StepCard
+      icon={<Building2 />}
+      eyebrow="Schritt 1 von 5"
+      title="Unternehmen verstehen"
+      subtitle={`Wir richten die Governance für ${tenantName ? `„${tenantName}"` : 'Deinen Workspace'} ein. Kein Fragebogen: Jeder weitere Schritt legt etwas an, das dauerhaft im System bleibt.`}
+    >
+      <ol className="border border-titanium-900 bg-obsidian-950/60 divide-y divide-titanium-900">
+        {WEG.map((w) => (
+          <li key={w.n} className="flex items-start gap-3 p-3">
+            <span className="inline-flex items-center justify-center w-5 h-5 shrink-0 rounded-none border border-titanium-700 text-[11px] font-mono text-titanium-400">
+              {w.n}
+            </span>
+            <div>
+              <div className="text-sm font-semibold text-titanium-100">{w.titel}</div>
+              <div className="text-[13px] text-titanium-400 leading-relaxed">{w.text}</div>
+            </div>
+          </li>
+        ))}
+      </ol>
+      <div className="flex items-center justify-end pt-5">
+        <button
+          type="button"
+          onClick={onDone}
+          className="inline-flex items-center gap-2 px-5 py-2.5 bg-amber-500 text-obsidian-950 text-sm font-bold rounded-none hover:bg-amber-400"
+        >
+          Los geht&apos;s <ArrowRight className="h-4 w-4" />
+        </button>
+      </div>
+    </StepCard>
+  );
+}
+
+/* ── Step 2: KI-Register (Asset) ───────────────────────────────── */
 
 const ASSET_TYPES: GovernanceAssetType[] = [
   'ai_system', 'website', 'agent', 'model', 'api', 'workflow', 'vendor', 'dataset', 'repository',
@@ -137,9 +191,9 @@ function AssetStep({
   return (
     <StepCard
       icon={<Bot />}
-      eyebrow="Schritt 1 von 4"
-      title="Erstes Asset"
-      subtitle="Lege Dein erstes governed System an — z. B. Deinen Chatbot, Deine Website oder einen Agent."
+      eyebrow="Schritt 2 von 5"
+      title="KI-Register aufbauen"
+      subtitle="Lege Dein erstes KI-System im Register an — z. B. Deinen Chatbot, Deine Website oder einen Agent. Anbieter und AI-Act-Klasse machen es bewertbar."
     >
       <form onSubmit={submit} className="space-y-3">
         <Field label="Name">
@@ -193,7 +247,7 @@ function AssetStep({
   );
 }
 
-/* ── Step 2: Policy ────────────────────────────────────────────── */
+/* ── Step 3: Regeln (Policy) ────────────────────────────────────────────── */
 
 const POLICY_TYPES: GovernancePolicyType[] = [
   'data_transfer', 'human_review', 'logging_required', 'vendor_restriction',
@@ -239,9 +293,9 @@ function PolicyStep({
   return (
     <StepCard
       icon={<ShieldCheck />}
-      eyebrow="Schritt 2 von 4"
-      title="Erste Policy"
-      subtitle="Lege eine Regel an, die bei Verstößen automatisch greift. Beispiel: PII darf nicht an externe LLMs."
+      eyebrow="Schritt 3 von 5"
+      title="Governance-Regeln aktivieren"
+      subtitle="Lege eine Regel an, die bei Verstößen automatisch greift — keine Richtlinie im PDF, sondern aktive Durchsetzung. Beispiel: PII darf nicht an externe LLMs."
     >
       <div className="mb-4 border border-amber-500/30 bg-amber-500/5 p-3 text-[12px] text-amber-200 leading-relaxed">
         <strong className="text-amber-100">Tipp:</strong> 10 fertige Best-Practice-Policies (GDPR · AI Act · SOC 2 · Schrems) gibt's in der{' '}
@@ -307,7 +361,7 @@ function PolicyStep({
   );
 }
 
-/* ── Step 3: Key ───────────────────────────────────────────────── */
+/* ── Step 4: Nachweise (Key) ───────────────────────────────────────────────── */
 
 function KeyStep({
   tenantId, onDone,
@@ -328,9 +382,9 @@ function KeyStep({
   return (
     <StepCard
       icon={<KeyRound />}
-      eyebrow="Schritt 3 von 4"
-      title="Ingest-Key generieren"
-      subtitle="Der Key authentifiziert Browser-Extension, SDK und Agent-Runtime gegen die Ingest-API."
+      eyebrow="Schritt 4 von 5"
+      title="Nachweise erzeugen"
+      subtitle="Der Ingest-Key verbindet Browser-Extension, SDK und Agent-Runtime mit der Ingest-API. Ab dann wird jedes Ereignis im Audit-Log als Nachweis festgehalten."
     >
       <form onSubmit={submit} className="space-y-3">
         <Field label="Bezeichnung">
@@ -364,7 +418,7 @@ function KeyStep({
   );
 }
 
-/* ── Step 4: Done ──────────────────────────────────────────────── */
+/* ── Step 5: Betrieb (Done) ──────────────────────────────────────────────── */
 
 function DoneStep({
   assetId, policyId, keyName, token, onFinish,
@@ -384,14 +438,14 @@ function DoneStep({
   return (
     <StepCard
       icon={<Rocket />}
-      eyebrow="Schritt 4 von 4"
-      title="Fertig"
-      subtitle="Du hast die Governance Runtime aktiviert. Speichere den Token, lade die Extension oder ruf den ersten Event via curl."
+      eyebrow="Schritt 5 von 5"
+      title="KI sicher betreiben"
+      subtitle="Die Governance Runtime ist aktiv. Speichere den Token, verbinde die Extension oder schick den ersten Event — danach läuft Governance im Betrieb, nicht als Einmal-Aktion."
     >
       <div className="space-y-4">
         <div className="border border-titanium-900 bg-obsidian-950/60 p-3 space-y-1.5">
-          <CheckLine done={!!assetId}>Asset angelegt</CheckLine>
-          <CheckLine done={!!policyId}>Policy angelegt (optional)</CheckLine>
+          <CheckLine done={!!assetId}>KI-System im Register</CheckLine>
+          <CheckLine done={!!policyId}>Governance-Regel aktiv (optional)</CheckLine>
           <CheckLine done={!!token}>Ingest-Key „{keyName}" generiert</CheckLine>
         </div>
 
@@ -480,7 +534,7 @@ function Shell({
             </div>
             <div className="leading-tight">
               <div className="font-display font-bold text-sm tracking-tight text-titanium-50">Governance Onboarding</div>
-              <div className="text-[11px] text-titanium-400 font-medium">4 Schritte zur produktiven Runtime</div>
+              <div className="text-[11px] text-titanium-400 font-medium">5 Schritte zur laufenden KI-Governance</div>
             </div>
           </div>
         </div>
@@ -498,10 +552,11 @@ function Shell({
 
 function Progress({ step }: { step: Step }) {
   const steps: Array<{ n: Step; label: string }> = [
-    { n: 1, label: 'Asset' },
-    { n: 2, label: 'Policy' },
-    { n: 3, label: 'Key' },
-    { n: 4, label: 'Fertig' },
+    { n: 1, label: 'Überblick' },
+    { n: 2, label: 'Register' },
+    { n: 3, label: 'Regeln' },
+    { n: 4, label: 'Nachweise' },
+    { n: 5, label: 'Betrieb' },
   ];
   return (
     <div className="border-b border-titanium-900 bg-obsidian-900/50 px-4 py-3">

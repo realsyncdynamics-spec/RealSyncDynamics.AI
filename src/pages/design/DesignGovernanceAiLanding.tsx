@@ -7,13 +7,15 @@
  * → Provider → Control Room (Beispiel) → Nutzen → Executive → Prinzipien
  * → Governance-Check → Plattform-Preise → Conversion → Footer.
  *
- * Palette und Tokens: `.ga-context.rs-handoff` in `index.css` (nur `/`),
- * Sektionsstile in `styles/governance-os-landing.css`. Kein Farbmodus-
- * Umschalter; die Titan-Referenz lebt unter `/design/titan`.
+ * Visual v3: Graphite / Ink / Ice, Cyan als alleinige Aktionsfarbe, warmes
+ * Gold nur für Enterprise/VIP. Semantische Risk-Farben bleiben getrennt.
+ * Der v3-Layer ist nur auf `/` gescoped; `/design/titan` und App bleiben
+ * unverändert.
  */
 import { type PointerEvent as ReactPointerEvent } from 'react';
 import '../../styles/governance-landing-polish.css';
 import '../../styles/governance-os-landing.css';
+import '../../styles/governance-os-landing-v3.css';
 import { Link } from 'react-router-dom';
 import { CTA } from '../../content/runtimeVocab';
 import { ArrowRight } from 'lucide-react';
@@ -50,6 +52,7 @@ export function DesignGovernanceAiLanding() {
     <div
       className="rs-paper ga-context rs-handoff landing-context relative min-h-screen antialiased"
       data-hero-visual="europe-map-v2"
+      data-landing-design="governance-v3"
       style={{ backgroundColor: 'var(--ga-void)', color: 'var(--ga-text)' }}
       onPointerMove={trackCardSheen}
     >

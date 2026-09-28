@@ -40,6 +40,8 @@ interface WebsiteGenerationRequest {
 }
 
 interface GeneratedWebsite {
+  /** Der persistierte Projektdatensatz — Quelle fuer die Oberflaeche. */
+  project: Record<string, unknown> | null;
   project_id: string;
   html: string;
   css: string;
@@ -117,8 +119,15 @@ Deno.serve(async (req) => {
     // 3. Generate website using AI
     const website = await generateWebsiteWithAI(body, project.id);
 
-    // Discriminant: success is a literal. html/css exist only on the true branch.
     if (website.success === false) {
+      // Fail closed. Vorher lief der Ablauf hier weiter, und zwar bis zum Ende:
+      // Schritt 4 pruefte die Compliance gegen `website.html || ''`, Schritt 5
+      // schrieb das Projekt mit `generated_html: undefined` auf
+      // `status: 'preview'`, Schritt 6 legte ein Deployment-Log mit
+      // `status: 'success'` und dem Titel "Website Generated" an. Der Aufrufer
+      // bekam 200 mit leerem HTML. Ein ausgefallener Provider war damit von
+      // einem geglueckten Lauf weder an der Antwort noch am Log zu
+      // unterscheiden.
       await admin.from('deployment_logs').insert({
         project_id: project.id,
         tenant_id: tenantId,
@@ -128,39 +137,62 @@ Deno.serve(async (req) => {
         message: website.error,
         triggered_by: 'automation',
       });
-    }
 
-    const html = website.success === true ? website.html : '';
-    const css = website.success === true ? website.css : '';
-    const sections = website.sections;
-    const seo = website.seo;
-    const aiDisclosures = website.aiDisclosures;
+      return jsonError(502, 'PROVIDER_UNAVAILABLE', website.error || 'ai generation failed');
+    }
 
     // 4. Run compliance checks
     const complianceResult = await runComplianceChecks(
-      html,
+      website.html || '',
       project.id,
       tenantId,
-      aiDisclosures,
+      website.aiDisclosures || []
     );
 
-    // 5. Store generated content
-    await admin
+    // 5. Store generated content — der Rueckgabewert ist der persistierte
+    // Stand, nicht das, was wir zu schreiben glaubten. Die Oberflaeche zeigt
+    // damit die Zeile, die auch nach einem Reload in der Datenbank steht.
+    const { data: persisted, error: persistError } = await admin
       .from('website_projects')
       .update({
         status: 'preview',
         configuration: {
           ...project.configuration,
-          generated_html: html,
-          generated_css: css,
-          sections,
-          seo_metadata: seo,
-          ai_disclosures: aiDisclosures,
+          generated_html: website.html,
+          generated_css: website.css,
+          sections: website.sections,
+          seo_metadata: website.seo,
+          ai_disclosures: website.aiDisclosures,
         },
         compliance_score: complianceResult.score,
         compliance_findings: complianceResult.findings,
       })
-      .eq('id', project.id);
+      .eq('id', project.id)
+      .select('id, name, industry, status, compliance_score, preview_url, deployment_url, last_deployed_at, created_at')
+      .single();
+
+    // Scheitert das Speichern, ist nichts gebaut, was der Nutzer wiederfindet:
+    // kein Erfolgs-Log, keine 200. Der Provider-Aufruf ist zu diesem Zeitpunkt
+    // bereits bezahlt; das sagt die Fehlermeldung, damit ein Retry bewusst
+    // passiert und nicht als stiller Doppelbezug.
+    if (persistError || !persisted) {
+      console.error('[website-operations-agent] persist failed', persistError);
+      await admin.from('deployment_logs').insert({
+        project_id: project.id,
+        tenant_id: tenantId,
+        event_type: 'build',
+        status: 'failed',
+        title: 'Website Generation Not Saved',
+        message: 'Generated content could not be persisted',
+        details: { error: persistError?.message ?? 'no row returned' },
+        triggered_by: 'automation',
+      });
+      return jsonError(
+        500,
+        'DB_UPDATE',
+        'website generated but could not be saved; the project remains a draft',
+      );
+    }
 
     // 6. Log deployment event
     await admin.from('deployment_logs').insert({
@@ -171,23 +203,29 @@ Deno.serve(async (req) => {
       title: 'Website Generated',
       message: `Generated website for ${body.company_name}`,
       details: {
-        sections,
+        sections: website.sections,
         compliance_score: complianceResult.score,
       },
       triggered_by: 'automation',
     });
 
     const response: GeneratedWebsite = {
+      project: persisted,
       project_id: project.id,
-      html,
-      css,
-      sections,
-      seo_metadata: seo,
+      html: website.html || '',
+      css: website.css || '',
+      sections: website.sections,
+      seo_metadata: website.seo,
       compliance_status: complianceResult.score >= 75 ? 'compliant' : 'review_needed',
       preview_url: `https://${project.id}.preview.realsyncdynamics.pages.dev`,
     };
 
-    return jsonResponse(200, response);
+    // `jsonResponse(body, status)` — Body zuerst. Der Dreher liess
+    // `new Response(..., { status: <Objekt> })` werfen; der Erfolgsfall
+    // landete im catch und antwortete 500, nachdem Projekt, Provider-Aufruf
+    // und Erfolgs-Log bereits geschrieben waren. `jsonError` nimmt den
+    // Status zuerst — daher die Verwechslung.
+    return jsonResponse(response, 200);
   } catch (err) {
     console.error('Error in website-operations-agent:', err);
     return jsonError(500, 'INTERNAL_ERROR', err instanceof Error ? err.message : 'Unknown error');
@@ -198,6 +236,9 @@ Deno.serve(async (req) => {
 // AI Website Generation using Claude
 // ============================================================================
 
+// Erfolg ist ein Literal: html/css existieren nur im Erfolgszweig, error nur
+// im Fehlerzweig. Nach `website.success === false` mit Ausstieg ist
+// `website` fuer den Rest des Handlers als Erfolg eingeengt.
 type AIGenerationResult =
   | {
       success: true;
@@ -217,7 +258,7 @@ type AIGenerationResult =
 
 async function generateWebsiteWithAI(
   req: WebsiteGenerationRequest,
-  projectId: string,
+  projectId: string
 ): Promise<AIGenerationResult> {
   const industryTemplates: Record<string, string> = {
     'tattoo-studio': 'professional portfolio with gallery, artist profiles, and booking CTA',
@@ -310,6 +351,7 @@ Return ONLY the JSON object, nothing else.`;
       };
     }
 
+    // Parse JSON response
     const generated = JSON.parse(content) as {
       html: string;
       css: string;
@@ -356,11 +398,12 @@ async function runComplianceChecks(
   html: string,
   projectId: string,
   tenantId: string,
-  aiDisclosures: string[],
+  aiDisclosures: string[]
 ): Promise<ComplianceResult> {
   const findings: ComplianceResult['findings'] = [];
   let score = 100;
 
+  // 1. Check for cookie consent
   if (!html.includes('cookie') && !html.includes('consent')) {
     findings.push({
       category: 'cookies',
@@ -371,6 +414,7 @@ async function runComplianceChecks(
     score -= 20;
   }
 
+  // 2. Check for privacy policy
   if (!html.includes('datenschutz') && !html.includes('privacy')) {
     findings.push({
       category: 'legal_pages',
@@ -381,6 +425,7 @@ async function runComplianceChecks(
     score -= 15;
   }
 
+  // 3. Check for Impressum (legal requirement for German businesses)
   if (!html.includes('impressum') && !html.includes('legal')) {
     findings.push({
       category: 'legal_pages',
@@ -391,6 +436,7 @@ async function runComplianceChecks(
     score -= 15;
   }
 
+  // 4. AI Disclosure
   if (!aiDisclosures.length) {
     findings.push({
       category: 'ai_disclosure',
@@ -401,6 +447,7 @@ async function runComplianceChecks(
     score -= 10;
   }
 
+  // 5. Tracking/Analytics
   if (html.includes('google-analytics') || html.includes('ga.js')) {
     findings.push({
       category: 'tracking',
@@ -411,6 +458,7 @@ async function runComplianceChecks(
     score -= 5;
   }
 
+  // 6. External resources
   const externalCount = (html.match(/https?:\/\/(?!realsyncdynamics)/gi) || []).length;
   if (externalCount > 5) {
     findings.push({
@@ -422,6 +470,7 @@ async function runComplianceChecks(
     score -= 5;
   }
 
+  // Store compliance report
   await admin.from('website_compliance_reports').insert({
     project_id: projectId,
     tenant_id: tenantId,

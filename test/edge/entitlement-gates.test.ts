@@ -266,8 +266,22 @@ describe('Welle 5 — der Aufrufer des website-operations-agent', () => {
   it('gibt den persistierten Datensatz zurueck statt eines behaupteten Erfolgs', () => {
     const src = quelle('website-operations-agent');
     // Der Response traegt die Zeile, die das UPDATE zurueckgemeldet hat.
-    expect(src).toContain('project: persisted ?? null');
+    expect(src).toContain('project: persisted,');
     expect(src).toMatch(/\.eq\('id', project\.id\)\s*\n\s*\.select\(/);
+  });
+
+  it('meldet keinen Erfolg, wenn das Speichern scheitert', () => {
+    const src = quelle('website-operations-agent');
+    // Ohne diese Pruefung schrieb die Function bei einem fehlgeschlagenen
+    // UPDATE trotzdem ein Erfolgs-Log und antwortete 200 mit `project: null`.
+    expect(src).toContain('const { data: persisted, error: persistError }');
+    const pruefung = src.indexOf('if (persistError || !persisted)');
+    const erfolgsLog = src.indexOf("title: 'Website Generated'");
+    const antwort = src.indexOf('jsonResponse(response, 200)');
+    expect(pruefung, 'Fehlerpruefung nach dem UPDATE fehlt').toBeGreaterThan(-1);
+    expect(pruefung, 'Fehlerpruefung muss vor dem Erfolgs-Log stehen').toBeLessThan(erfolgsLog);
+    expect(pruefung, 'Fehlerpruefung muss vor der Antwort stehen').toBeLessThan(antwort);
+    expect(src).toContain("jsonError(\n        500,\n        'DB_UPDATE',");
   });
 
   it('gibt den Erfolg als Body zurueck, nicht als Status', () => {

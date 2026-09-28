@@ -152,7 +152,7 @@ Deno.serve(async (req) => {
     // 5. Store generated content — der Rueckgabewert ist der persistierte
     // Stand, nicht das, was wir zu schreiben glaubten. Die Oberflaeche zeigt
     // damit die Zeile, die auch nach einem Reload in der Datenbank steht.
-    const { data: persisted } = await admin
+    const { data: persisted, error: persistError } = await admin
       .from('website_projects')
       .update({
         status: 'preview',
@@ -171,6 +171,29 @@ Deno.serve(async (req) => {
       .select('id, name, industry, status, compliance_score, preview_url, deployment_url, last_deployed_at, created_at')
       .single();
 
+    // Scheitert das Speichern, ist nichts gebaut, was der Nutzer wiederfindet:
+    // kein Erfolgs-Log, keine 200. Der Provider-Aufruf ist zu diesem Zeitpunkt
+    // bereits bezahlt; das sagt die Fehlermeldung, damit ein Retry bewusst
+    // passiert und nicht als stiller Doppelbezug.
+    if (persistError || !persisted) {
+      console.error('[website-operations-agent] persist failed', persistError);
+      await admin.from('deployment_logs').insert({
+        project_id: project.id,
+        tenant_id: tenantId,
+        event_type: 'build',
+        status: 'failed',
+        title: 'Website Generation Not Saved',
+        message: 'Generated content could not be persisted',
+        details: { error: persistError?.message ?? 'no row returned' },
+        triggered_by: 'automation',
+      });
+      return jsonError(
+        500,
+        'DB_UPDATE',
+        'website generated but could not be saved; the project remains a draft',
+      );
+    }
+
     // 6. Log deployment event
     await admin.from('deployment_logs').insert({
       project_id: project.id,
@@ -187,7 +210,7 @@ Deno.serve(async (req) => {
     });
 
     const response: GeneratedWebsite = {
-      project: persisted ?? null,
+      project: persisted,
       project_id: project.id,
       html: website.html || '',
       css: website.css || '',

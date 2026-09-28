@@ -230,7 +230,7 @@ verify_jwt = false
 # ── Cron-triggered (pg_cron / GitHub Actions) ──
 #
 # Die vier Jobs daily-digest, audit-drip-cron, audit-recheck-weekly und
-# sub-processor-notify liefen bis 20260928120500 mit dem Vault-Eintrag
+# sub-processor-notify liefen bis 20260928183000 mit dem Vault-Eintrag
 # service_role_key als Inbound-Bearer. Seitdem tragen sie eigene Keys:
 # Vault cron_daily_digest_key / cron_audit_drip_key / cron_audit_recheck_key /
 # cron_sub_processor_notify_key, gemappt auf die Function Secrets
@@ -382,7 +382,7 @@ verify_jwt = false
 
 # sub-processor-notify: pg_cron daily 08:00. Alter Job schickte den Anon-Key
 # (20260507140000). Anon-JWT passiert das Gateway; eigener Bearer-Check —
-# seit 20260928120500 gegen CRON_SUB_PROCESSOR_NOTIFY_KEY.
+# seit 20260928183000 gegen CRON_SUB_PROCESSOR_NOTIFY_KEY.
 [functions.sub-processor-notify]
 verify_jwt = false
 

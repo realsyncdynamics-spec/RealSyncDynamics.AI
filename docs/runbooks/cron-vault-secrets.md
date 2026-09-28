@@ -28,7 +28,7 @@ für PostgREST/Admin dienen — nie als Inbound-Credential.
 Function trotzdem nicht öffentlich aufrufbar.
 
 Git-Align: `20260912180000` schreibt die Trio-Jobs auf `cron_*`,
-`20260928120500` die vier übrigen; `20260925210000` plant `website-rescan-daily`
+`20260928183000` die vier übrigen; `20260925210000` plant `website-rescan-daily`
 direkt auf `cron_website_rescan_key`. **Danach reicht kein Cron-Pfad mehr
 `service_role_key` weiter.** Nach dem Apply muss `cron.job.command` die
 `cron_*` Namen tragen.
@@ -44,7 +44,7 @@ einem Secret, das älter ist als die Rotation. Zwei Ursachen:
 1. **Trio** — die `cron_*` Vault-Secrets existieren seit 2026-09-10, die
    Job-Kommandos zeigen darauf, die **Function Secrets** fehlen (Betreiberschritt
    unten).
-2. **Die vier übrigen** — bis `20260928120500` auf `service_role_key`; auch
+2. **Die vier übrigen** — bis `20260928183000` auf `service_role_key`; auch
    dieser Wert wird nicht akzeptiert. Der Zwischenzustand aus `20260912180000`
    hat nie getragen.
 

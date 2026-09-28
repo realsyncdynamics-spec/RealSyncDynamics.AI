@@ -27,7 +27,7 @@ const TRIO = [
 ] as const;
 
 /**
- * Die vier Rest-Jobs. Sie liefen bis `20260928120500` mit dem Vault-Eintrag
+ * Die vier Rest-Jobs. Sie liefen bis `20260928183000` mit dem Vault-Eintrag
  * `service_role_key` als Inbound-Bearer — ausdrücklich als Zwischenzustand
  * (siehe Kopf von `20260912180000`). Gemessen am 2026-09-15 trug dieser
  * Zwischenzustand nicht: alle vier antworteten mit 401. Seitdem gilt für sie
@@ -158,9 +158,9 @@ describe('Cron-Rest-Jobs: kein service_role_key mehr im Cron-Pfad', () => {
     });
   }
 
-  it('Migration 20260928120500 stellt alle vier Jobs auf Vault cron_* um', () => {
+  it('Migration 20260928183000 stellt alle vier Jobs auf Vault cron_* um', () => {
     const sql = readFileSync(
-      'supabase/migrations/20260928120500_cron_rest_dedicated_keys.sql',
+      'supabase/migrations/20260928183000_cron_rest_dedicated_keys.sql',
       'utf8',
     );
     for (const { vault, job } of REST) {

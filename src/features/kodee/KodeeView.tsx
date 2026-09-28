@@ -100,7 +100,7 @@ const QUICK_PROMPTS: { icon: React.ElementType<{ className?: string }>; label: s
 export function KodeeView() {
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState('');
-  const [provider, setProvider] = useState<ModelProvider>('gemini');
+  const [provider, setProvider] = useState<ModelProvider>('local');
   const [connections, setConnections] = useState<VpsConnection[]>([]);
   const [activeConnectionId, setActiveConnectionId] = useState<string | null>(null);
   const [diagnosing, setDiagnosing] = useState(false);
@@ -222,9 +222,7 @@ export function KodeeView() {
             onChange={(e) => setProvider(e.target.value as ModelProvider)}
             className="bg-obsidian-950 border border-titanium-900 text-titanium-200 text-xs rounded-none px-2 py-1.5 outline-none cursor-pointer font-medium hover:bg-obsidian-800"
           >
-            <option value="gemini">Gemini 3.1 Pro</option>
-            <option value="claude">Claude 4.6</option>
-            <option value="openai">GPT-5</option>
+            <option value="local">Lokales Modell (EU)</option>
           </select>
         </div>
       </header>

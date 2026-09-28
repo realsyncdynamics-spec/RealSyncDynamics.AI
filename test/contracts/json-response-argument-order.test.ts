@@ -38,19 +38,30 @@ function tsFiles(dir: string): string[] {
   });
 }
 
-/** Jede Stelle, an der das erste Argument eine Zahl ist. */
+/**
+ * `jsonResponse(` gefolgt von einer Zahl — also dem Status an der Stelle, an
+ * der der Body stehen muss.
+ *
+ * Geprueft wird der ganze Quelltext, nicht Zeile fuer Zeile: `\s` umfasst
+ * Zeilenumbrueche, und ein umgebrochener Aufruf wie
+ * `jsonResponse(\n  200,\n  payload)` ist genauso falsch wie der einzeilige.
+ * Die Zeilennummer im Befund ist die der oeffnenden Klammer.
+ */
+const REVERSED = /\bjsonResponse\(\s*\d/g;
+
+function reversedIn(source: string, label: string): string[] {
+  return [...source.matchAll(REVERSED)].map((m) => {
+    const zeile = source.slice(0, m.index).split('\n').length;
+    const auszug = source.slice(m.index, m.index! + 80).replace(/\s+/g, ' ');
+    return `${label}:${zeile} → ${auszug}`;
+  });
+}
+
+/** Jede Stelle im Function-Baum, an der das erste Argument eine Zahl ist. */
 function reversedCalls(): string[] {
-  const hits: string[] = [];
-  for (const file of tsFiles(FUNCTIONS)) {
-    readFileSync(file, 'utf-8').split('\n').forEach((line, i) => {
-      // `jsonResponse(` gefolgt von einer Zahl — also dem Status an der
-      // Stelle, an der der Body stehen muss.
-      if (/\bjsonResponse\(\s*\d/.test(line)) {
-        hits.push(`${relative(ROOT, file)}:${i + 1} → ${line.trim().slice(0, 80)}`);
-      }
-    });
-  }
-  return hits;
+  return tsFiles(FUNCTIONS).flatMap((file) =>
+    reversedIn(readFileSync(file, 'utf-8'), relative(ROOT, file)),
+  );
 }
 
 describe('jsonResponse — Body zuerst, Status danach', () => {
@@ -68,6 +79,15 @@ describe('jsonResponse — Body zuerst, Status danach', () => {
       reversedCalls(),
       'jsonResponse(status, body) wirft RangeError und wird zu 500 — nachdem die Arbeit getan ist.',
     ).toEqual([]);
+  });
+
+  it('erkennt auch umgebrochene Aufrufe (sonst waere der Guard zeilenblind)', () => {
+    const einzeilig = 'return jsonResponse(200, payload);';
+    const umgebrochen = 'return jsonResponse(\n  200,\n  payload,\n);';
+    const richtig = 'return jsonResponse(\n  { ok: true },\n  200,\n);';
+    expect(reversedIn(einzeilig, 'x')).toHaveLength(1);
+    expect(reversedIn(umgebrochen, 'x')).toHaveLength(1);
+    expect(reversedIn(richtig, 'x')).toEqual([]);
   });
 
   it('die Signatur ist noch die, auf die dieser Guard sich stuetzt', () => {

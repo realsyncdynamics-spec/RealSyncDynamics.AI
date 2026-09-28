@@ -16,6 +16,23 @@
 // Bewusst kein "Best of beide" — der Edge-Function-Output speist nur die
 // Vorauswahl der Kategorien, finale Klassifikation läuft deterministisch
 // durch die Q&A im Frontend.
+//
+// ## Schranken des anonymen Pfads
+//
+// Öffentlich heißt hier: ohne jedes Token erreichbar, und jeder Aufruf löst
+// einen bezahlten Provider-Call auf Betreiber-Keys aus. Deshalb gilt für
+// diese Function dasselbe Verfahren wie für die anderen anonymen
+// LLM-Flächen (governance-agent, siteos, ai-gateway `audit_anon`):
+//
+//   1. Reserve-Insert in `anon_chat_runs` VOR der Arbeit. Schlägt er fehl,
+//      antwortet die Function 503 und arbeitet nicht (fail-closed).
+//   2. Kontingent je IP-Hash über 24 Stunden, gezählt IN DER DATENBANK.
+//   3. Abschluss-Update mit Modell, Tokens, Dauer und Ergebnis.
+//
+// Der Free-Tier bleibt offen — das Werkzeug ist weiter ohne Konto benutzbar.
+// Abgewiesene Aufrufe kosten den Besucher nichts: das Frontend fällt bei
+// jeder Nicht-200-Antwort auf `extractSignalsLocal()` zurück
+// (deterministisch, ohne Provider), siehe src/lib/ai-act/signal-extraction.ts.
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import {
@@ -25,14 +42,49 @@ import {
 } from '../_shared/aiGateway/rateLimit.ts';
 import { sha256Hex } from '../_shared/hash.ts';
 import { corsHeaders, handleOptions, jsonResponse } from '../_shared/gateway.ts';
+import {
+  reserveAnonAudit,
+  completeAnonAudit,
+  extractPayloadKeys,
+  type AnonOp,
+} from '../_shared/anonAudit.ts';
 
-// Per-instance rate-limit windows. Same pattern as ai-gateway: this
-// endpoint is verify_jwt=false and called from the browser, every call
-// triggers a paid OpenAI/Anthropic completion. Without a server-side
-// throttle a single visitor can run up an unbounded LLM bill.
+// Erste, billige Bremse gegen Wiederholung im selben Ausführungskontext.
+//
+// Was sie NICHT leistet — am 2026-09-27 gegen die deployte Function gemessen:
+// Bei 11 aufeinanderfolgenden Anfragen aus derselben Quelle hat das
+// dokumentierte Limit (4/Minute, FEATURE_LIMITS['ai_act_classify']) NICHT
+// EINMAL gegriffen — 11× HTTP 200 und 11 verschiedene Ausführungskontexte in
+// den Plattform-Logs. Der Zähler liegt im Arbeitsspeicher des Isolate, und
+// die Plattform verteilt Anfragen darauf; er kann per Konstruktion nicht
+// zuverlässig greifen. Die tragende Schranke ist deshalb das Kontingent
+// unten, das in der Datenbank steht und Kaltstarts wie Isolate überlebt.
+// Diese Maps bleiben, weil sie nichts kosten und Bursts im selben Kontext
+// abfangen — sie sind nur nicht mehr die Begründung.
 const MINUTE_WINDOWS = new Map<string, WindowState>();
 const HOUR_WINDOWS   = new Map<string, WindowState>();
+
+// Der IP-Hash bleibt gesalzen (unverändert). Die anderen anonymen Pfade
+// schreiben nach `anon_chat_runs.ip_hash` heute rohes sha256(IP); diese
+// Function salzt. Beides bewusst nicht angeglichen: Die Spalte wird laut
+// Migration 20260606000000 ohnehin auf einen HMAC-Schlüssel umgestellt
+// (P2-impl-2, siehe _shared/subject-ref.ts), und das ist eine eigene
+// Operation über alle Pfade. Fürs Kontingent genügt Konsistenz innerhalb
+// dieser Operation, und ein gesalzener Hash ist nicht der schlechtere.
 const IP_HASH_SALT = Deno.env.get('AI_GATEWAY_IP_HASH_SALT') ?? 'ai-gateway-default-salt';
+
+/** Wert für `anon_chat_runs.op`. Neu per Migration 20260927100000. */
+const ANON_OP: AnonOp = 'ai_act_classify_anon';
+
+// 20 Klassifikationen je IP-Hash und 24 Stunden.
+//
+// Bemessung: Eine echte Nutzung beschreibt ein KI-System, vielleicht eine
+// Handvoll. 20 lässt auch eine geteilte Büro-IP durch und begrenzt den
+// Schaden je Quelle auf rund 0,25 USD am Tag, selbst beim teureren der
+// beiden Anbieter. Zum Vergleich: siteos lässt 10 anonyme Entwürfe je Tag zu
+// (ANON_BUILD_QUOTA_PER_DAY) — dort kostet ein Aufruf deutlich mehr.
+const QUOTA_PER_DAY   = 20;
+const QUOTA_WINDOW_MS = 24 * 60 * 60 * 1000;
 
 interface SignalMatch {
   useCaseId: string;
@@ -40,6 +92,30 @@ interface SignalMatch {
   matchedTriggers: string[];
   confidence: 'low' | 'medium' | 'high';
 }
+
+/**
+ * Was ein Provider-Call zurückgibt — samt dem, was ins Protokoll gehört.
+ *
+ * Modell und Tokens sind nicht Zierrat: Ohne sie steht in `anon_chat_runs`
+ * die Anfrage, aber nicht ihr Preis, und die beiden Anbieter unterscheiden
+ * sich je Aufruf um mehr als das Zwanzigfache. Tokens können fehlen, wenn
+ * ein Provider das `usage`-Feld nicht mitschickt — dann bleibt die Spalte
+ * leer, statt eine Null zu behaupten.
+ */
+interface LlmResult {
+  matches: SignalMatch[];
+  hint: string | null;
+  model: string;
+  inputTokens?: number;
+  outputTokens?: number;
+}
+
+const OPENAI_MODEL    = 'gpt-4o-mini';
+const ANTHROPIC_MODEL = 'claude-haiku-4-5-20251001';
+
+/** Wie in siteos/handlers/anonymous.ts — derselbe Client, dieselbe Form. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AdminClient = ReturnType<typeof createClient<any, 'public', any>>;
 
 Deno.serve(async (req) => {
   const preflight = handleOptions(req);
@@ -57,8 +133,35 @@ Deno.serve(async (req) => {
     return jsonError(400, 'DESCRIPTION_TOO_LONG', 'max 4000 Zeichen');
   }
 
+  const startedAt = Date.now();
+  const requestId = crypto.randomUUID();
   const ip = clientIp(req.headers);
   const ipHash = await sha256Hex(ip + ':' + IP_HASH_SALT);
+  const ua = req.headers.get('user-agent');
+  const uaHash = ua ? await sha256Hex(ua) : undefined;
+
+  const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
+  const SRK = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+  const admin: AdminClient = createClient(SUPABASE_URL, SRK, { auth: { persistSession: false } });
+
+  // (1) Prüfpfad vor der Arbeit. Ohne Zeile keine Arbeit — dieselbe Regel
+  // wie in governance-agent und siteos. `payload_keys` führt nur
+  // Schlüsselnamen, nie die Beschreibung des Users.
+  try {
+    await reserveAnonAudit(admin, {
+      request_id: requestId,
+      op: ANON_OP,
+      ip_hash: ipHash,
+      user_agent_hash: uaHash,
+      payload_keys: extractPayloadKeys(body as Record<string, unknown>),
+    });
+  } catch (e) {
+    return jsonError(503, 'AUDIT_UNAVAILABLE',
+      `anon path refused: audit log not writable (${(e as Error).message})`);
+  }
+
+  // (2) Billige Bremse im Ausführungskontext. Siehe Kommentar an
+  // MINUTE_WINDOWS: greift nicht zuverlässig, kostet aber nichts.
   const decision = decideRateLimit({
     key: `${ipHash}:ai_act_classify`,
     feature: 'ai_act_classify',
@@ -68,6 +171,11 @@ Deno.serve(async (req) => {
   });
   if (!decision.ok) {
     const retryAfterSec = Math.max(1, Math.ceil(decision.retryAfterMs / 1000));
+    await completeAnonAudit(admin, requestId, {
+      outcome: 'rate_limited',
+      error_code: `RATE_LIMITED_${decision.scope.toUpperCase()}`,
+      duration_ms: Date.now() - startedAt,
+    });
     return new Response(
       JSON.stringify({
         ok: false,
@@ -89,25 +197,46 @@ Deno.serve(async (req) => {
     );
   }
 
-  // Registry laden — wir kopieren sie hier inline statt sie aus dem Frontend
-  // zu importieren, damit die Edge-Function deploy-stabil ist.
-  const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
-  const SRK = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-  const admin = createClient(SUPABASE_URL, SRK, { auth: { persistSession: false } });
+  // (3) Die tragende Schranke: Kontingent aus der Datenbank.
+  const quota = await checkClassifyQuota(admin, ipHash, requestId);
+  if (quota.status === 'unavailable') {
+    // Fail closed, aus demselben Grund wie beim Prüfpfad: Ein Kontingent,
+    // das bei jedem Lesefehler alles durchlässt, ist keines.
+    await completeAnonAudit(admin, requestId, {
+      outcome: 'error', error_code: 'QUOTA_UNAVAILABLE', duration_ms: Date.now() - startedAt,
+    });
+    return jsonError(503, 'QUOTA_UNAVAILABLE', 'anon path refused: quota not readable');
+  }
+  if (quota.status === 'exceeded') {
+    await completeAnonAudit(admin, requestId, {
+      outcome: 'rate_limited', error_code: 'QUOTA_EXCEEDED', duration_ms: Date.now() - startedAt,
+    });
+    return jsonError(
+      429,
+      'QUOTA_EXCEEDED',
+      `Kontingent erschöpft: ${QUOTA_PER_DAY} Klassifikationen in 24 Stunden. ` +
+      `Die lokale Vorauswahl im Browser arbeitet weiter.`,
+    );
+  }
 
   // LLM-Key-Hierarchie: erst aus Supabase Vault probieren, sonst Env-Vars.
   const openaiKey = await getSecret(admin, 'OPENAI_API_KEY');
   const anthropicKey = openaiKey ? null : await getSecret(admin, 'ANTHROPIC_API_KEY');
 
   if (!openaiKey && !anthropicKey) {
+    await completeAnonAudit(admin, requestId, {
+      outcome: 'error', error_code: 'LLM_NOT_CONFIGURED', duration_ms: Date.now() - startedAt,
+    });
     return jsonError(400, 'LLM_NOT_CONFIGURED',
       'Weder OPENAI_API_KEY noch ANTHROPIC_API_KEY im Supabase-Vault konfiguriert. Frontend nutzt lokalen Fallback.');
   }
 
+  // Registry laden — wir kopieren sie hier inline statt sie aus dem Frontend
+  // zu importieren, damit die Edge-Function deploy-stabil ist.
   const registry = ANNEX_III_REGISTRY_INLINE;
   const systemPrompt = buildSystemPrompt(registry);
 
-  let llmOutput: { matches: SignalMatch[]; hint: string | null };
+  let llmOutput: LlmResult;
   try {
     if (openaiKey) {
       llmOutput = await callOpenAI(openaiKey, systemPrompt, description);
@@ -115,12 +244,27 @@ Deno.serve(async (req) => {
       llmOutput = await callAnthropic(anthropicKey!, systemPrompt, description);
     }
   } catch (e) {
+    await completeAnonAudit(admin, requestId, {
+      outcome: 'error',
+      error_code: 'LLM_CALL_FAILED',
+      model: openaiKey ? OPENAI_MODEL : ANTHROPIC_MODEL,
+      duration_ms: Date.now() - startedAt,
+    });
     return jsonError(500, 'LLM_CALL_FAILED', `LLM-Call: ${(e as Error).message}`);
   }
 
   // Sanity-check: useCaseIds müssen in der Registry existieren
   const validIds = new Set(registry.use_cases.map((uc) => uc.id));
   const filtered = llmOutput.matches.filter((m) => validIds.has(m.useCaseId));
+
+  // (4) Abschluss mit Modell und Tokens — das, was vorher nirgends stand.
+  await completeAnonAudit(admin, requestId, {
+    outcome: 'success',
+    model: llmOutput.model,
+    input_tokens: llmOutput.inputTokens,
+    output_tokens: llmOutput.outputTokens,
+    duration_ms: Date.now() - startedAt,
+  });
 
   return jsonResponse({
     matches: filtered,
@@ -129,7 +273,49 @@ Deno.serve(async (req) => {
   });
 });
 
-async function getSecret(admin: ReturnType<typeof createClient>, name: string): Promise<string | null> {
+/**
+ * Zählt die Klassifikationen dieses IP-Hashes im laufenden 24-Stunden-Fenster.
+ *
+ * `head: true` mit `count: 'exact'` holt nur die Zahl, keine Zeilen.
+ *
+ * Zwei Ausschlüsse, beide notwendig:
+ *
+ *   * `request_id != requestId` — die Reservierung DIESER Anfrage steht
+ *     schon in der Tabelle (der Prüfpfad kommt vor dem Kontingent). Ohne
+ *     den Ausschluss wäre das Kontingent still um eins kleiner als die
+ *     Zahl, die hier steht.
+ *   * `outcome != 'rate_limited'` — abgewiesene Anfragen haben keinen
+ *     Provider erreicht und nichts gekostet. Würden sie mitzählen, könnte
+ *     ein Burst hinter einer geteilten IP das Tageskontingent aufbrauchen,
+ *     ohne dass je eine Klassifikation zustande kam.
+ */
+async function checkClassifyQuota(
+  admin: AdminClient,
+  ipHash: string,
+  requestId: string,
+): Promise<{ status: 'ok' | 'exceeded' | 'unavailable'; used: number }> {
+  const since = new Date(Date.now() - QUOTA_WINDOW_MS).toISOString();
+  const { count, error } = await admin
+    .from('anon_chat_runs')
+    .select('id', { count: 'exact', head: true })
+    .eq('op', ANON_OP)
+    .eq('ip_hash', ipHash)
+    .gte('occurred_at', since)
+    .neq('request_id', requestId)
+    .neq('outcome', 'rate_limited');
+
+  if (error || count === null || count === undefined) {
+    console.error(JSON.stringify({
+      level: 'error',
+      scope: 'ai_act_classify_quota_unreadable',
+      error: error?.message ?? 'no count',
+    }));
+    return { status: 'unavailable', used: 0 };
+  }
+  return { status: count >= QUOTA_PER_DAY ? 'exceeded' : 'ok', used: count };
+}
+
+async function getSecret(admin: AdminClient, name: string): Promise<string | null> {
   // Versuche Vault, dann Env
   try {
     const { data, error } = await admin.rpc('get_app_secret', { secret_name: name });
@@ -170,7 +356,7 @@ Antwort-Format (JSON):
 }`;
 }
 
-async function callOpenAI(apiKey: string, systemPrompt: string, userText: string): Promise<{ matches: SignalMatch[]; hint: string | null }> {
+async function callOpenAI(apiKey: string, systemPrompt: string, userText: string): Promise<LlmResult> {
   const resp = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -178,7 +364,7 @@ async function callOpenAI(apiKey: string, systemPrompt: string, userText: string
       'content-type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'gpt-4o-mini',
+      model: OPENAI_MODEL,
       response_format: { type: 'json_object' },
       temperature: 0.1,
       messages: [
@@ -198,10 +384,16 @@ async function callOpenAI(apiKey: string, systemPrompt: string, userText: string
   if (!content) throw new Error('OpenAI: empty response');
 
   const parsed = JSON.parse(content);
-  return { matches: parsed.matches ?? [], hint: parsed.hint ?? null };
+  return {
+    matches: parsed.matches ?? [],
+    hint: parsed.hint ?? null,
+    model: typeof json.model === 'string' ? json.model : OPENAI_MODEL,
+    inputTokens:  numOrUndefined(json.usage?.prompt_tokens),
+    outputTokens: numOrUndefined(json.usage?.completion_tokens),
+  };
 }
 
-async function callAnthropic(apiKey: string, systemPrompt: string, userText: string): Promise<{ matches: SignalMatch[]; hint: string | null }> {
+async function callAnthropic(apiKey: string, systemPrompt: string, userText: string): Promise<LlmResult> {
   const resp = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
@@ -210,7 +402,7 @@ async function callAnthropic(apiKey: string, systemPrompt: string, userText: str
       'content-type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'claude-haiku-4-5-20251001',
+      model: ANTHROPIC_MODEL,
       max_tokens: 2000,
       system: systemPrompt + '\n\nWICHTIG: Antworte NUR mit dem JSON-Objekt, keine Markdown-Code-Fences.',
       messages: [{ role: 'user', content: userText }],
@@ -229,7 +421,21 @@ async function callAnthropic(apiKey: string, systemPrompt: string, userText: str
   // Strip potential markdown fences if Claude added them anyway
   const cleaned = content.replace(/^```(?:json)?\s*|\s*```$/g, '').trim();
   const parsed = JSON.parse(cleaned);
-  return { matches: parsed.matches ?? [], hint: parsed.hint ?? null };
+  return {
+    matches: parsed.matches ?? [],
+    hint: parsed.hint ?? null,
+    model: typeof json.model === 'string' ? json.model : ANTHROPIC_MODEL,
+    inputTokens:  numOrUndefined(json.usage?.input_tokens),
+    outputTokens: numOrUndefined(json.usage?.output_tokens),
+  };
+}
+
+/**
+ * Nur echte Zahlen ins Protokoll. Fehlt `usage`, bleibt die Spalte NULL —
+ * eine 0 wäre die Behauptung, der Aufruf habe nichts verbraucht.
+ */
+function numOrUndefined(v: unknown): number | undefined {
+  return typeof v === 'number' && Number.isFinite(v) ? v : undefined;
 }
 
 function jsonError(status: number, code: string, message: string): Response {

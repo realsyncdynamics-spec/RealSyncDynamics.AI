@@ -4,7 +4,7 @@
  * Druck/Hash bei status ≠ ok.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import type { CockpitData } from '../../../../src/features/governance/cockpit/cockpitData';
 
@@ -174,5 +174,87 @@ describe('„Braucht Aufmerksamkeit“ (Addendum P0-3)', () => {
     );
     expect(await screen.findByTestId('attention-empty')).toBeInTheDocument();
     expect(screen.queryByTestId('attention-item')).toBeNull();
+  });
+
+  it('Posture nicht gemessen ⇒ eigener Hinweis statt „kein Snapshot“', async () => {
+    renderTile({
+      data: cockpit({ postureStatus: 'not_measured', scoreBasis: { aiSystems: 2, controlMappings: 0 } }),
+    });
+    const state = await screen.findByTestId('overview-score-state-empty');
+    expect(state.textContent).toContain('noch nicht gemessen');
+  });
+});
+
+describe('„Braucht Aufmerksamkeit“ — Leerzustände ohne positive Aussage aus fehlenden Daten', () => {
+  const noSignals = { elevatedAssets: [], findings: [], lastScanAt: null, latestEvidenceAt: null };
+
+  function renderAttention(data: CockpitData, extra: Partial<Parameters<typeof HandoffOverview>[0]> = {}) {
+    return render(
+      <MemoryRouter>
+        <HandoffOverview activeTenantId="t1" data={data} {...extra} />
+      </MemoryRouter>,
+    );
+  }
+
+  it('leerer Workspace ⇒ „Noch nichts zu bewerten“ mit Einstiegen, nie „Nichts offen“', async () => {
+    renderAttention(cockpit({ signals: noSignals }));
+    const box = await screen.findByTestId('attention-nodata');
+    expect(box.textContent).toContain('Noch nichts zu bewerten');
+    // Die Score-Karte trägt denselben Einstieg — deshalb im Kasten suchen.
+    expect(within(box).getByRole('link', { name: /Erstes KI-System erfassen/ })).toHaveAttribute('href', '/app/onboarding');
+    expect(within(box).getByRole('link', { name: /Website-Audit starten/ })).toHaveAttribute('href', '/app/websites');
+    expect(screen.queryByTestId('attention-empty')).toBeNull();
+  });
+
+  it('Befund-Quelle fehlgeschlagen ⇒ keine Aussage statt „Nichts offen“', async () => {
+    renderAttention(cockpit({
+      signals: { ...noSignals, lastScanAt: '2026-09-01T10:00:00Z' },
+      partialFailures: ['findings-table: rls'],
+    }));
+    expect(await screen.findByTestId('attention-unavailable')).toBeInTheDocument();
+    expect(screen.queryByTestId('attention-empty')).toBeNull();
+    expect(screen.queryByTestId('attention-nodata')).toBeNull();
+  });
+
+  it('Cockpit-Ladefehler ⇒ keine Aussage', async () => {
+    renderAttention(cockpit({ signals: { ...noSignals, lastScanAt: '2026-09-01T10:00:00Z' } }), { error: 'boom' });
+    expect(await screen.findByTestId('attention-unavailable')).toBeInTheDocument();
+  });
+
+  it('Audit gelaufen, alles geladen, nichts offen ⇒ „Nichts offen“', async () => {
+    renderAttention(cockpit({ signals: { ...noSignals, lastScanAt: '2026-09-01T10:00:00Z' } }));
+    expect(await screen.findByTestId('attention-empty')).toBeInTheDocument();
+  });
+
+  it('nur offene Befunde niedriger Stufe ⇒ Hinweis mit Anzahl statt „Nichts offen“', async () => {
+    renderAttention(cockpit({
+      signals: {
+        ...noSignals,
+        lastScanAt: '2026-09-01T10:00:00Z',
+        findings: [{
+          id: 'fl', title: 'Info-Header fehlt', level: 'low', eventType: 'finding', source: 'gdpr-audit',
+          createdAt: '2026-09-26T10:00:00Z', assetId: null, resolvedAt: null, href: '/app/scans/run-1',
+        }],
+      },
+    }));
+    const box = await screen.findByTestId('attention-minor');
+    expect(box.textContent).toContain('1 offene Befunde niedriger Stufe');
+    expect(screen.queryByTestId('attention-empty')).toBeNull();
+  });
+
+  it('offener Befund aus dem Website-Audit ⇒ Eintrag mit Link auf den Scan', async () => {
+    renderAttention(cockpit({
+      signals: {
+        ...noSignals,
+        lastScanAt: '2026-09-01T10:00:00Z',
+        findings: [{
+          id: 'fx1', title: 'Kein Cookie-Banner', level: 'high', eventType: 'finding', source: 'gdpr-audit',
+          createdAt: '2026-09-26T10:00:00Z', assetId: null, resolvedAt: null, href: '/app/scans/run-1',
+        }],
+      },
+    }));
+    const [item] = await screen.findAllByTestId('attention-item');
+    expect(item.textContent).toContain('Kein Cookie-Banner');
+    expect(item).toHaveAttribute('href', '/app/scans/run-1');
   });
 });

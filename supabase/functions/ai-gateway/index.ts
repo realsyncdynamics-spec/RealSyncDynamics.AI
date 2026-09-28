@@ -40,7 +40,8 @@ import { requireAuthAndTenant } from '../_shared/auth.ts';
 import { EntitlementError, gateFeature } from '../_shared/entitlements.ts';
 import { completeAnonAudit, reserveAnonAudit } from '../_shared/anonAudit.ts';
 import type { AnonAuditLog } from '../_shared/aiGateway/anonAuditCopilot.ts';
-import { createAiGatewayHandler, type GatewayLike } from './handler.ts';
+import { recordUsage } from '../_shared/usage.ts';
+import { createAiGatewayHandler, type GatewayLike, type UsageBooking } from './handler.ts';
 
 // Per-instance rate-limit windows (pro Edge-Isolate, verfallen beim
 // Cold-Start). Schlüssel seit der P0-Härtung: Nutzer/Tenant/interner
@@ -169,6 +170,23 @@ async function anonAuditLog(): Promise<AnonAuditLog | null> {
   };
 }
 
+// Verbrauch je Mandant (#1646): dieselben Schlüssel wie _shared/ai.ts.
+// Nur Buchung, keine Kontingentsperre — die bleibt ein eigener Schritt.
+async function recordGatewayUsage(b: UsageBooking): Promise<void> {
+  const admin = await getPdpAdmin();
+  if (!admin) throw new Error('usage admin client not configured');
+  const meta = {
+    source: 'ai-gateway',
+    route: b.route,
+    feature: b.feature,
+    path: b.path,
+    ...(b.userId ? { user_id: b.userId } : {}),
+    ...(b.internalCaller ? { internal_caller: b.internalCaller } : {}),
+  };
+  await recordUsage(admin, b.tenantId, 'limit.ai_calls_monthly', 1, meta);
+  if (b.tokens > 0) await recordUsage(admin, b.tenantId, 'limit.ai_tokens_monthly', b.tokens, meta);
+}
+
 Deno.serve(createAiGatewayHandler({
   env: (name) => Deno.env.get(name),
   requireAuthAndTenant,
@@ -176,6 +194,7 @@ Deno.serve(createAiGatewayHandler({
   buildGateway,
   pdpCheck,
   anonAuditLog,
+  recordUsage: recordGatewayUsage,
   minuteWindows: MINUTE_WINDOWS,
   hourWindows: HOUR_WINDOWS,
 }));

@@ -181,6 +181,23 @@ describe('AiGatewayEdgeClient', () => {
       });
     });
 
+    it('treats a non-2xx JSON body without error envelope as an error', async () => {
+      // Plattform-401 von verify_jwt: JSON, aber kein {ok:false,error}.
+      const fetchImpl = vi.fn(async () => jsonResponse({ msg: 'Invalid JWT' }, 401));
+      const client = makeClient(fetchImpl);
+
+      await expect(client.generate({
+        feature: 'test',
+        task_type: 'chat',
+        model_profile: 'fast-local',
+        input: 'ping',
+      })).rejects.toMatchObject({
+        name: 'AiGatewayEdgeError',
+        status: 401,
+        code: 'UNAUTHORIZED',
+      });
+    });
+
     it('propagates AiGatewayEdgeError with the correct properties', async () => {
       try {
         const err = new AiGatewayEdgeError(400, 'BAD_REQUEST', 'unknown model_profile');

@@ -215,9 +215,19 @@ Deno.serve(async (req) => {
       return json({ ok: false, error: { code: 'PROFILE_WRITE_FAILED', message: updateError.message } }, 500);
     }
   } else {
-    // SetupAssistant kennt keine Branche. Deshalb hier keine Branche erfinden:
-    // Ohne bestehendes company_profiles-Profil wird nur die Planung zurückgegeben.
-    // Der sektorbasierte Orchestrator kann das Profil später kanonisch anlegen.
+    // SetupAssistant kennt Organisationsform, aber keine Branche. "generic" ist
+    // der kanonische neutrale Sektor und aktiviert keine branchenspezifischen
+    // Policy-Packs. So wird das Automation-Profil persistiert, ohne aus KMU/
+    // Enterprise eine Branche zu erfinden.
+    const { error: insertError } = await admin.from('company_profiles').insert({
+      tenant_id: body.tenant_id,
+      sector: 'generic',
+      onboarding_answers: { automation_profile: automationProfile },
+      updated_at: now,
+    });
+    if (insertError) {
+      return json({ ok: false, error: { code: 'PROFILE_WRITE_FAILED', message: insertError.message } }, 500);
+    }
   }
 
   await admin.from('inventory_audit_events').insert({
@@ -234,7 +244,7 @@ Deno.serve(async (req) => {
 
   return json({
     ok: true,
-    persisted: Boolean(existing),
+    persisted: true,
     automation_profile: automationProfile,
   });
 });

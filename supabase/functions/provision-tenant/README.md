@@ -41,7 +41,9 @@ Stand je Tenant in `tenant_provisioning_runs` (lesbar für Mitglieder per RLS).
 - **`verified` nur durch ein Event.** `governance-ingest` setzt
   `first_event_at` beim ersten angenommenen Event. Es gibt keinen Klick, der
   „installiert" behauptet.
-- **Lauf-Sperre** (2 min) verhindert parallele Boots, die die Chain gabeln.
+- **Lauf-Sperre** (2 min) verhindert parallele Boots. Evidence wird über
+  `append_governance_evidence` (Compare-and-Swap auf den Kettenkopf, wie
+  tenant-audit) angehängt — auch gegen andere Schreiber verzweigt die Chain nicht.
 
 ## Nicht in diesem Release
 

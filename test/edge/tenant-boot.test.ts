@@ -179,6 +179,11 @@ describe('provision-tenant — Quelltext-Vertraege', () => {
     expect(FN).toContain("if (saveErr || !saved?.length)");
     expect(FN).toContain("'run persist failed'");
   });
+  it('haengt Evidence nur per Compare-and-Swap an (keine verzweigte Kette)', () => {
+    expect(FN).toContain("rpc('append_governance_evidence'");
+    expect(FN).toContain('p_expected_previous_hash: previousHash');
+    expect(FN).not.toMatch(/from\('governance_evidence'\)\.insert/);
+  });
   it('gated den Boot-Key wie governance-keys ueber api.access', () => {
     expect(FN).toContain("hasFeature(ent, 'api.access')");
     expect(FN).toContain("'not_entitled:api.access'");

@@ -43,6 +43,7 @@ import {
 
 const ADMIN_ROLES = ['owner', 'admin'];
 const LOCK_MS = 2 * 60 * 1000;
+const EVIDENCE_APPEND_ATTEMPTS = 5;
 const BOOT_KEY_SOURCES = ['website_scanner'];
 
 interface Ctx {
@@ -259,7 +260,9 @@ async function chainHead(c: Ctx): Promise<string | null> {
   const { data, error } = await c.admin
     .from('governance_evidence').select('content_hash')
     .eq('tenant_id', c.tenantId).not('content_hash', 'is', null)
-    .order('created_at', { ascending: false }).limit(1).maybeSingle();
+    // Gleiche Reihenfolge wie append_governance_evidence, damit beide denselben Kopf sehen.
+    .order('created_at', { ascending: false }).order('id', { ascending: false })
+    .limit(1).maybeSingle();
   if (error) throw error;
   return (data?.content_hash as string | undefined) ?? null;
 }
@@ -281,22 +284,31 @@ async function appendLifecycle(
     payload: { step, trigger: c.trigger, ...detail },
   }).select('id').single();
   if (ee) throw ee;
-  const snapshot = lifecycleSnapshot({
-    tenantId: c.tenantId, step, action, detail, occurredAt, previousHash: await chainHead(c),
-  });
-  const contentHash = await evidenceContentHash(snapshot);
-  const { error } = await c.admin.from('governance_evidence').insert({
-    tenant_id: c.tenantId,
-    event_id: ev.id,
-    asset_id: step === 'catalog' ? c.websiteAssetId : null,
-    evidence_type: 'json',
-    title: `Tenant-Boot: ${action}`,
-    content_hash: contentHash,
-    previous_hash: snapshot.previous_hash,
-    metadata: { snapshot, hash_method: EVIDENCE_HASH_METHOD },
-  });
-  if (error) throw error;
-  return contentHash;
+  // Anhaengen per Compare-and-Swap auf den Kettenkopf (append_governance_evidence,
+  // Advisory-Lock je Tenant): andere Schreiber derselben Kette (tenant-audit,
+  // email-auth-rescan) koennen dazwischenkommen — dann neu lesen, neu hashen,
+  // erneut versuchen. Die Kette verzweigt nie.
+  for (let attempt = 0; attempt < EVIDENCE_APPEND_ATTEMPTS; attempt++) {
+    const previousHash = await chainHead(c);
+    const snapshot = lifecycleSnapshot({ tenantId: c.tenantId, step, action, detail, occurredAt, previousHash });
+    const contentHash = await evidenceContentHash(snapshot);
+    const { data, error } = await c.admin.rpc('append_governance_evidence', {
+      p_row: {
+        tenant_id: c.tenantId,
+        event_id: ev.id,
+        asset_id: step === 'catalog' ? c.websiteAssetId : null,
+        evidence_type: 'json',
+        title: `Tenant-Boot: ${action}`,
+        content_hash: contentHash,
+        previous_hash: previousHash,
+        metadata: { snapshot, hash_method: EVIDENCE_HASH_METHOD },
+      },
+      p_expected_previous_hash: previousHash,
+    });
+    if (error) throw error;
+    if (data) return contentHash;
+  }
+  throw new Error(`evidence chain head kept moving (${EVIDENCE_APPEND_ATTEMPTS} attempts)`);
 }
 
 const LIFECYCLE_ACTION: Partial<Record<BootStepId, string>> = {

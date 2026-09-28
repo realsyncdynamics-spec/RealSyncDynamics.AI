@@ -10,7 +10,7 @@ name: Backend Services CI
 on:
   push:
     branches: [main]
-    paths: ['services/**', 'worker/**', 'apps/**', '.github/workflows/backend-services-ci.yml']
+    paths: ['services/**', 'deploy/playwright-scanner/**', 'worker/**', 'apps/**', '.github/workflows/backend-services-ci.yml']
   pull_request:
     paths: ['services/**', 'worker/**', 'apps/**', '.github/workflows/backend-services-ci.yml']
   workflow_dispatch:
@@ -24,6 +24,7 @@ jobs:
         include:
           - { dir: services/openclaw-agent,          check: 'npm run typecheck' }
           - { dir: services/playwright-scanner,       check: 'npm run typecheck' }
+          - { dir: deploy/playwright-scanner,         check: 'npm run typecheck && npm run build' }
           - { dir: apps/agent-runtime,                check: 'npm run typecheck && npm test' }
           # Worker importiert ../src/rules (Repo-Root) → reiner Typecheck ohne Emit,
           # damit keine .js-Artefakte ausserhalb des Worker-Verzeichnisses entstehen.

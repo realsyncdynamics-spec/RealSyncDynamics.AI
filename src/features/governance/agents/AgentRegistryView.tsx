@@ -1,47 +1,49 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, AlertTriangle, Bot } from 'lucide-react';
-import { DEMO_AGENTS } from './demoAgents';
+import { AGENT_CATALOG, countByMaturity } from './agentCatalog';
 import { AgentCard } from './AgentCard';
 import { AuthGate } from '../../kodee/connections/AuthGate';
-import type { AgentStatus, GovernanceAgent } from './types';
+import { STATUS_LABEL, type ImplementationStatus } from '../../../product/implementation-status';
 
 /**
- * /governance/agents (+ /app/ai-systems) — Agent-Register.
+ * /app/ai-systems/agents — Agent-/Bot-Register.
  *
- * Auth-gated: das Register ist eine Workspace-Sicht, keine oeffentliche
- * Seite — ohne Session erscheint der AuthGate, nicht das Demo-Set.
+ * Auth-gated: das Register ist eine Workspace-Sicht, keine öffentliche Seite.
  *
- * Phase A: rendert das fest definierte Initial-Set (DEMO_AGENTS), das im
- * View klar als Beispiel-Set markiert ist. Spaeter laed der View aus einer
- * Supabase-Tabelle (z. B. governance_agents), die dieselbe Typdefinition
- * haelt. Die View bleibt identisch — es aendert sich nur die Datenquelle.
+ * Quelle ist der Katalog `AGENT_CATALOG` (agentCatalog.ts). Er beschreibt,
+ * welche Agenten- und Bot-Typen das Governance OS als kontrollierte Objekte
+ * führt — kein Mandanten-Bestand. Der Reifegrad kommt aus AGENT_MESH bzw.
+ * implementation-status.ts; der View stuft nichts hoch.
  */
 export function AgentRegistryView() {
   return <AuthGate>{() => <AgentRegistryInner />}</AuthGate>;
 }
 
+type Filter = ImplementationStatus | 'all';
+
+const FILTERS: readonly { id: Filter; label: string }[] = [
+  { id: 'all', label: 'Alle' },
+  { id: 'live', label: STATUS_LABEL.live },
+  { id: 'preview', label: STATUS_LABEL.preview },
+  { id: 'coming-soon', label: STATUS_LABEL['coming-soon'] },
+];
+
 function AgentRegistryInner() {
-  const [filter, setFilter] = useState<AgentStatus | 'all'>('all');
+  const [filter, setFilter] = useState<Filter>('all');
 
-  const agents: GovernanceAgent[] = DEMO_AGENTS;
-  const filtered = useMemo(() => {
-    if (filter === 'all') return agents;
-    return agents.filter((a) => a.status === filter);
-  }, [agents, filter]);
-
-  const counts = useMemo(() => ({
-    total:           agents.length,
-    active:          agents.filter((a) => a.status === 'active').length,
-    review_required: agents.filter((a) => a.status === 'review_required').length,
-    paused:          agents.filter((a) => a.status === 'paused').length,
-  }), [agents]);
+  const agents = AGENT_CATALOG;
+  const filtered = useMemo(
+    () => (filter === 'all' ? agents : agents.filter((a) => a.maturity === filter)),
+    [agents, filter],
+  );
+  const counts = useMemo(() => countByMaturity(agents), [agents]);
 
   return (
     <div className="min-h-screen bg-obsidian-950 text-titanium-100">
       <header className="flex h-14 items-center justify-between border-b border-titanium-900 bg-obsidian-900 px-4">
         <div className="flex items-center gap-3">
-          <Link to="/" className="p-1.5 text-titanium-400 hover:bg-obsidian-800 hover:text-titanium-200">
+          <Link to="/app/dashboard" className="p-1.5 text-titanium-400 hover:bg-obsidian-800 hover:text-titanium-200">
             <ArrowLeft className="h-4 w-4" />
           </Link>
           <div className="flex items-center gap-2.5">
@@ -50,10 +52,10 @@ function AgentRegistryInner() {
             </div>
             <div>
               <h1 className="font-display text-sm font-semibold tracking-tight text-titanium-50">
-                Agenten-Register
+                Agenten- &amp; Bot-Register
               </h1>
               <p className="font-mono text-[10px] uppercase tracking-wider text-titanium-500">
-                Kontrollierte Governance-Agenten · Human Review verbindlich
+                Kontrollierte OS-Objekte · Policy · Freigabe · Evidence
               </p>
             </div>
           </div>
@@ -66,42 +68,36 @@ function AgentRegistryInner() {
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-300" />
             <div>
               <p className="text-sm text-titanium-50">
-                Diese Liste ist die kontrollierte Sicht auf alle Governance-Agenten — was sie
-                duerfen, was sie nicht duerfen, und wann Human Review zwingend ist.
+                Katalog der Agenten und Bots, die das Governance OS führt: was sie dürfen, was sie nie
+                dürfen, wann ein Mensch freigibt und welche Nachweise entstehen.
               </p>
               <p className="mt-1 text-[12px] text-titanium-300">
-                Phase A: Anzeige aus dem Initial-Set. Die spaetere Runtime-Ausfuehrung (n8n /
-                Edge-Functions) liest dieselbe Datenstruktur und ist an die hier definierten
-                Restriktionen gebunden.
-              </p>
-              <p className="mt-2 font-mono text-[10px] uppercase tracking-wider text-titanium-500">
-                demo runtime · sample agent registry · not live customer data
+                Das ist kein Bestand Ihres Mandanten. Der Reifegrad je Eintrag stammt aus dem belegten
+                Implementierungsstatus. Ausführbar ist derzeit nur, was als Preview-Lauf markiert ist.
               </p>
             </div>
           </div>
         </div>
 
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-          <Stat label="Agenten insgesamt" value={counts.total} />
-          <Stat label="Aktiv" value={counts.active} tone="emerald" />
-          <Stat label="Review erforderlich" value={counts.review_required} tone="amber" />
-          <Stat label="Pausiert" value={counts.paused} tone="sky" />
+          <Stat label="Einträge im Katalog" value={agents.length} />
+          <Stat label={STATUS_LABEL.live} value={counts.live} tone="emerald" />
+          <Stat label={STATUS_LABEL.preview} value={counts.preview} tone="sky" />
+          <Stat label={STATUS_LABEL['coming-soon']} value={counts['coming-soon']} />
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <FilterButton active={filter === 'all'} onClick={() => setFilter('all')}>Alle</FilterButton>
-          <FilterButton active={filter === 'active'} onClick={() => setFilter('active')}>Aktiv</FilterButton>
-          <FilterButton active={filter === 'review_required'} onClick={() => setFilter('review_required')}>
-            Review erforderlich
-          </FilterButton>
-          <FilterButton active={filter === 'paused'} onClick={() => setFilter('paused')}>Pausiert</FilterButton>
-          <FilterButton active={filter === 'disabled'} onClick={() => setFilter('disabled')}>Deaktiviert</FilterButton>
+          {FILTERS.map((f) => (
+            <FilterButton key={f.id} active={filter === f.id} onClick={() => setFilter(f.id)}>
+              {f.label}
+            </FilterButton>
+          ))}
         </div>
 
         <div className="space-y-3">
           {filtered.length === 0 ? (
             <p className="border border-titanium-800 bg-obsidian-900 p-6 text-center text-sm text-titanium-400">
-              Keine Agenten in dieser Ansicht.
+              Keine Einträge in dieser Ansicht.
             </p>
           ) : (
             filtered.map((agent) => <AgentCard key={agent.id} agent={agent} />)
@@ -112,9 +108,8 @@ function AgentRegistryInner() {
   );
 }
 
-function Stat({ label, value, tone }: { label: string; value: number; tone?: 'amber' | 'sky' | 'emerald' }) {
+function Stat({ label, value, tone }: { label: string; value: number; tone?: 'sky' | 'emerald' }) {
   const toneCls =
-    tone === 'amber'   ? 'text-amber-300'    :
     tone === 'sky'     ? 'text-sky-300'      :
     tone === 'emerald' ? 'text-emerald-300'  :
     'text-titanium-50';

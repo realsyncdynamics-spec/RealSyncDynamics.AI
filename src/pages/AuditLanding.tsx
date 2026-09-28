@@ -160,7 +160,7 @@ export function AuditLanding() {
   }
 
   return (
-    <div className="rs-ui rs-page min-h-screen">
+    <div className="rs-paper rs-ui rs-page min-h-screen">
       <HandoffTopBar />
 
       {/* Governance-OS-Handoff v2: vier Fragen → echter gdpr-audit-Scan →
@@ -628,6 +628,7 @@ function ReportView({ report, onRetry }: { report: Report; onRetry: () => void }
       <AuditCopilotPanel
         issue={explainIssue ?? { id: '', severity: 'info', title: '', detail: '' }}
         domain={report.domain}
+        auditId={report.audit_id}
         open={!!explainIssue}
         onClose={() => setExplainIssue(null)}
       />

@@ -50,12 +50,14 @@ export interface SEOConfig {
   jsonLd?: Record<string, unknown> | Record<string, unknown>[];
 }
 
+import { lv2FaqJsonLd } from '../components/landing/v2/landing-v2-content';
+
 const SITE_URL = 'https://realsyncdynamicsai.de';
 
 export const DEFAULT_SEO: SEOConfig = {
-  title: 'RealSyncDynamics.AI — Das Governance OS für DSGVO & EU AI Act',
+  title: 'KI-Governance & Kontrollschicht | RealSyncDynamics.AI',
   description:
-    'Das Governance OS für DSGVO und EU AI Act: AI-Systeme, Websites, Agents und Datenflüsse erfassen, Risiken bewerten, Governance durchsetzen und Nachweise führen.',
+    'Kontroll- und Nachweisschicht für Enterprise-KI: Systeme erfassen, Risiken bewerten, Policies steuern und Evidence für DSGVO und EU AI Act erzeugen.',
 };
 
 // ─── JSON-LD Templates (re-used) ─────────────────────────────────────────────
@@ -250,17 +252,52 @@ function breadcrumbs(items: Array<{ name: string; url: string }>): Record<string
 
 // ─── Route → SEO-Config Map ──────────────────────────────────────────────────
 
+const LANDING_V2_JSONLD: Record<string, unknown>[] = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    name: 'RealSyncDynamics.AI',
+    url: SITE_URL,
+    logo: `${SITE_URL}/og-image.png`,
+    address: {
+      '@type': 'PostalAddress',
+      streetAddress: 'Schwarzburger Str. 31',
+      postalCode: '98724',
+      addressLocality: 'Neuhaus am Rennweg',
+      addressCountry: 'DE',
+    },
+  },
+  PRICING_PRODUCT_JSONLD,
+  lv2FaqJsonLd(),
+];
+
 export const SEO_CONFIG: Record<string, SEOConfig> = {
   // ─── Tier 1 — Hero / Top-Conversion ──────────────────────────────────────
   '/': {
-    // Governance OS Handoff v2 — matches the H1 in GovernanceOsHero.
-    title: 'RealSyncDynamics.AI — AI Compliance Operations OS for Europe',
+    title: 'RealSyncDynamics.AI – AI Compliance Operations OS für Europa | EU AI Act & DSGVO',
     description:
-      'Runtime-Governance für regulierte KI-Systeme: KI-Bestand erfassen, nach EU AI Act klassifizieren, Richtlinien durchsetzen, Evidenz nachweisen. DSGVO und EU AI Act, EU-Hosting. Free Audit starten.',
+      'Discover, Classify, Enforce, Prove: KI-Inventar, Risikoklassen nach EU AI Act, Policies zur Laufzeit und Hash-Chain-Evidenz – EU-hosted in Frankfurt. Free Audit ohne Kreditkarte.',
     canonical: `${SITE_URL}/`,
     ogTitle: 'AI Compliance Operations OS for Europe',
     ogDescription:
-      'Runtime governance for regulated AI systems. Continuous evidence. EU-native by design.',
+      'EU AI Act, DSGVO und ISO/IEC 42001 als Betriebsaufgabe: Inventar, Risikoklassen, Runtime-Policies und prüffähige Evidenz aus einer Plattform.',
+    jsonLd: LANDING_V2_JSONLD,
+  },
+  '/design/landing-v2': {
+    title: 'RealSyncDynamics.AI – Landing v2 (Design-Referenz)',
+    description:
+      'Design-Referenz der Startseite „AI Compliance Operations OS für Europa“. Kanonisch ist /.',
+    canonical: `${SITE_URL}/`,
+    noIndex: true,
+  },
+  '/design/titan': {
+    title: 'RealSyncDynamics.AI — Titan-Fallbackroute der Governance-Landing',
+    description:
+      'Fallbackroute der Landing-Positionierung (Legacy-Titan): Control Plane für Enterprise-KI mit Policies, Freigaben, Ausführung und Evidence als Proof-Layer.',
+    canonical: `${SITE_URL}/design/titan`,
+    ogTitle: 'Titan-Fallbackroute der Governance-Landing',
+    ogDescription:
+      'Fallbackroute: Any model. Any agent. One control plane.',
   },
   '/pricing': {
     title: 'Preise – Runtime-native AI-Governance-Plattform | RealSyncDynamics.AI',
@@ -508,7 +545,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
   '/caralegal-alternative': {
     title: 'caralegal Alternative — technische Governance-Runtime neben dem DSMS | RealSyncDynamics.AI',
     description:
-      'caralegal ist ein DSMS für die Datenschutzorganisation. RealSyncDynamics.AI ist die technische Compliance-Runtime daneben: Detect, Govern, Enforce, Prove — Befund, Policy-Entscheidung, Nachweis.',
+      'caralegal ist auf Datenschutz- und KI-Governance-Dokumentation ausgelegt. RealSyncDynamics.AI ist die technische Compliance-Runtime daneben: Detect, Govern, Enforce, Prove — Befund, Policy-Entscheidung, Nachweis.',
     canonical: `${SITE_URL}/caralegal-alternative`,
     jsonLd: breadcrumbs([
       { name: 'Home', url: '/' },
@@ -810,6 +847,16 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     jsonLd: breadcrumbs([
       { name: 'Home', url: '/' },
       { name: 'Onboarding erklärt', url: '/onboarding-erklaert' },
+    ]),
+  },
+  '/ki-governance-in-5-schritten': {
+    title: 'KI-Governance in 5 Schritten — vom KI-Register zum laufenden Betrieb | RealSyncDynamics.AI',
+    description:
+      'Unternehmen verstehen, KI-Register aufbauen, Governance-Regeln aktivieren, Nachweise erzeugen, KI sicher betreiben — mehr als eine KI-Richtlinie: ein Betriebssystem für KI-Governance.',
+    canonical: `${SITE_URL}/ki-governance-in-5-schritten`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'KI-Governance in 5 Schritten', url: '/ki-governance-in-5-schritten' },
     ]),
   },
   '/schrems-ii-erklaert': {

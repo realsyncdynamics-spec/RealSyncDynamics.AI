@@ -17,7 +17,7 @@ export function GovernanceRuntimePage() {
   });
 
   return (
-    <div className="bg-hero-only min-h-screen flex flex-col text-titanium-50">
+    <div className="rs-paper bg-hero-only min-h-screen flex flex-col text-titanium-50">
       <header className="px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between border-b border-silver-700/30">
         <Link
           to="/"

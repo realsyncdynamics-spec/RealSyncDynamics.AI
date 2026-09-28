@@ -501,7 +501,8 @@ function RoutesWithTracking() {
           <Route path="/demo-tour/checkout" element={<DemoTourProvider><DemoTourCheckoutPage /></DemoTourProvider>} />
           <Route path="/demo-tour/dashboard" element={<DemoTourProvider><DemoTourDashboard /></DemoTourProvider>} />
       {/* Public — Claude Design visual layer, existing RealSync backend routes. */}
-      <Route path="/" element={<DesignGovernanceAiLanding />} />
+      {/* Public `/` = Landing v2 (Claude-Design-Handoff). Governance-OS-Landing bleibt unter /design/governance-ai. */}
+      <Route path="/" element={<LandingV2 />} />
 
       {/* Reversible design references; no duplicate backend/runtime paths. */}
       <Route path="/design/governance-ai" element={<DesignGovernanceAiLanding />} />

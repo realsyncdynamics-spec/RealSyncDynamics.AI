@@ -216,11 +216,14 @@ limit 1;
 
 Trigger it. Without a Bearer the function only sends within 10 minutes of
 `created_at` (the post-scan browser call); for older audits it needs the
-service-role key — export it locally in your shell, never in a browser:
+service-role key — export it locally in your shell, never in a browser. The
+header goes in via stdin (`-H @-` plus a bash here-string), so the key never
+shows up in the process list the way a `-H "…$KEY"` argument would:
 
 ```bash
-curl -sS -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
-  "https://ebljyceifhnlzhjfyxup.supabase.co/functions/v1/audit-report-email?id=PASTE_UUID_HERE"
+curl -sS -H @- \
+  "https://ebljyceifhnlzhjfyxup.supabase.co/functions/v1/audit-report-email?id=PASTE_UUID_HERE" \
+  <<<"Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY"
 ```
 
 Expect: `{ "ok": true, "sent_id": "..." }` (not `skipped: "no_api_key"`,
@@ -236,9 +239,9 @@ select email_sent_at from public.gdpr_audits where id = 'PASTE_UUID_HERE';
 
 ```sql
 select
-  'curl -sS -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" "https://ebljyceifhnlzhjfyxup.supabase.co/functions/v1/audit-report-email?id='
+  'curl -sS -H @- "https://ebljyceifhnlzhjfyxup.supabase.co/functions/v1/audit-report-email?id='
   || id
-  || '"'
+  || '" <<<"Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY"'
   as cmd
 from public.gdpr_audits
 where email_sent_at is null and fetched_status = 200

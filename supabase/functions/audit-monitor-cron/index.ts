@@ -13,7 +13,8 @@
  *
  * Was dieser Job tut:
  * 1. Holt alle aktiven Monitoring-Domains aus monitored_domains
- * 2. Scannt jede Domain (fetch für Starter/Growth, Playwright für Agency/Enterprise)
+ * 2. Scannt jede fällige Domain — Takt aus `monitoring.daily` / `monitoring.monthly`,
+ *    Playwright statt fetch bei `monitoring.browser_scan` (alles aus dem Abo)
  * 3. Drift-Detection gegen letzten Scan
  * 4. E-Mail-Alert via Resend bei neuen kritischen Findings
  * 5. Persistiert in audit_monitor_results
@@ -21,7 +22,8 @@
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { corsHeaders, handleOptions, jsonResponse } from '../_shared/gateway.ts';
-import { loadEntitlementsForTenant, hasFeature } from '../_shared/entitlements.ts';
+import { loadEntitlementsForTenant, hasFeature, type Entitlements } from '../_shared/entitlements.ts';
+import { erlaubteKadenz, KADENZ_ABSTAND_MS, type Kadenz } from '../_shared/monitoring-cadence.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_KEY  = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -34,7 +36,8 @@ const PW_KEY       = Deno.env.get('PLAYWRIGHT_SCANNER_KEY') ?? '';
 // ---------------------------------------------------------------------------
 interface MonitoredDomain {
   id: string; tenant_id: string; domain: string;
-  tier: 'starter' | 'growth' | 'agency' | 'enterprise';
+  /** Kopie des Plan-Namens beim Anlegen — nicht maßgeblich, siehe monitorEntitlements(). */
+  tier: string | null;
   last_scan_at: string | null; last_risk_score: number | null;
   last_trackers: string[]; alert_email: string | null; active: boolean;
 }
@@ -136,29 +139,48 @@ async function sendAlert(domain: MonitoredDomain, drift: DriftReport, scan: Scan
 }
 
 // ---------------------------------------------------------------------------
-// Darf dieser Tenant E-Mail-Alerts bekommen? (`alerts.email`, ab Starter)
+// Was steht diesem Tenant zu? — Takt, Scan-Art, Alarm
 // ---------------------------------------------------------------------------
-// Der Scan und das Ergebnis in audit_monitor_results hängen nicht am Plan —
-// nur der Versand. Schlägt das Laden der Entitlements fehl, wird nicht
-// gesendet (fail closed), damit ein Datenbankfehler keinen kostenlosen
-// Versand freischaltet; der Grund steht im Log.
-async function mayAlert(supabase: ReturnType<typeof createClient>, tenantId: string): Promise<boolean> {
-  try {
-    const ent = await loadEntitlementsForTenant(supabase, tenantId);
-    return hasFeature(ent, 'alerts.email');
-  } catch (err) {
-    console.warn(`[monitor] entitlements for ${tenantId} unavailable, alert suppressed:`, err);
-    return false;
-  }
+// Alle drei hängen am Abo, nicht an `monitored_domains.tier`. Diese Spalte ist
+// eine Kopie des Plan-Namens aus dem Moment, in dem die Domain angelegt wurde,
+// und sagt nach einem Planwechsel nichts mehr. Bis 2026-09-28 entschieden hier
+// zwei Plan-Name-Vergleiche (`tier === 'starter'`, `['agency','enterprise']
+// .includes(tier)`) — Zielarchitektur §10 verlangt Berechtigungen, damit der
+// Umbau auf BASE + MODULE + SCALE eine Katalogänderung bleibt.
+//
+// Eine Verhaltensänderung ist damit verbunden, freigegeben am 2026-09-28:
+// Free bekam bisher den täglichen Takt, weil „alles außer Starter" täglich lief.
+// Der Katalog sagt Free kein Monitoring zu; jetzt gilt der Katalog. Gemessen
+// trifft das niemanden — `monitored_domains` war zu dem Zeitpunkt leer.
+interface MonitorEntitlements {
+  /** `null` = der Plan enthält kein Monitoring. */
+  cadence: Kadenz | null;
+  browserScan: boolean;
+  alerts: boolean;
 }
 
-// ---------------------------------------------------------------------------
-// shouldScan heute?
-// ---------------------------------------------------------------------------
-function shouldScan(d: MonitoredDomain): boolean {
+function monitorEntitlements(ent: Entitlements): MonitorEntitlements {
+  // Welche Kadenz ein Plan trägt, entscheidet genau eine Regel — dieselbe,
+  // mit der `governance-monitoring-scheduler` drosselt. Eine zweite Auslegung
+  // hier wäre die Drift, die `_shared/monitoring-cadence.ts` verhindern soll.
+  return {
+    cadence: erlaubteKadenz(hasFeature(ent, 'monitoring.daily'), hasFeature(ent, 'monitoring.monthly')),
+    browserScan: hasFeature(ent, 'monitoring.browser_scan'),
+    alerts: hasFeature(ent, 'alerts.email'),
+  };
+}
+
+// Der Cron läuft einmal täglich. Startet ein Lauf ein paar Minuten früher als
+// der letzte geendet hat, darf die Domain den Tag nicht auslassen — deshalb
+// gilt eine Domain 4 Stunden vor Ablauf der Kadenz als fällig. (Vorher fest
+// 20 h für täglich und 720 h für monatlich; täglich bleibt bei 20 h, monatlich
+// wird um diese 4 h früher fällig.)
+const FAELLIG_TOLERANZ_MS = 4 * 3_600_000;
+
+function isDue(d: MonitoredDomain, cadence: Kadenz): boolean {
   if (!d.last_scan_at) return true;
-  const hrs = (Date.now() - new Date(d.last_scan_at).getTime()) / 36e5;
-  return d.tier === 'starter' ? hrs >= 720 : hrs >= 20; // starter=30d, rest=täglich
+  const elapsed = Date.now() - new Date(d.last_scan_at).getTime();
+  return elapsed >= KADENZ_ABSTAND_MS[cadence] - FAELLIG_TOLERANZ_MS;
 }
 
 // ---------------------------------------------------------------------------
@@ -191,18 +213,43 @@ Deno.serve(async (req: Request) => {
 
     console.log(`[monitor] ${domains.length} domains to check`);
 
-    for (const d of domains as MonitoredDomain[]) {
-      if (!shouldScan(d)) { console.log(`[monitor] skip ${d.domain}`); continue; }
-      console.log(`[monitor] scan ${d.domain} (tier=${d.tier})`);
+    // Einmal je Tenant und Lauf — mehrere Domains eines Mandanten teilen sich
+    // denselben Abo-Stand. `null` = nicht ladbar.
+    const entCache = new Map<string, MonitorEntitlements | null>();
+    const entitlementsFor = async (tenantId: string): Promise<MonitorEntitlements | null> => {
+      if (entCache.has(tenantId)) return entCache.get(tenantId)!;
+      let me: MonitorEntitlements | null = null;
       try {
-        const scan = ['agency','enterprise'].includes(d.tier) && PW_URL
+        me = monitorEntitlements(await loadEntitlementsForTenant(supabase, tenantId));
+      } catch (err) {
+        console.warn(`[monitor] entitlements for ${tenantId} unavailable:`, err);
+      }
+      entCache.set(tenantId, me);
+      return me;
+    };
+
+    for (const d of domains as MonitoredDomain[]) {
+      const me = await entitlementsFor(d.tenant_id);
+      // Fail closed: Ohne Abo-Stand weder scannen (Playwright kostet) noch
+      // alarmieren. Als Fehler im Protokoll, nicht als stilles Überspringen —
+      // sonst sähe ein dauerhaft kaputter RPC aus wie „nichts fällig".
+      if (!me) {
+        log.push({ domain: d.domain, ok: false, drift: false, alerted: false, err: 'entitlements unavailable' });
+        continue;
+      }
+      if (me.cadence === null) { console.log(`[monitor] skip ${d.domain}: plan has no monitoring`); continue; }
+      if (!isDue(d, me.cadence)) { console.log(`[monitor] skip ${d.domain}`); continue; }
+      const useBrowser = me.browserScan && PW_URL !== '';
+      console.log(`[monitor] scan ${d.domain} (${me.cadence}, ${useBrowser ? 'playwright' : 'fetch'})`);
+      try {
+        const scan = useBrowser
           ? await scanWithPlaywright(d.domain)
           : await scanWithFetch(d.domain);
 
         const drift = d.last_scan_at ? detectDrift(scan, d) : { has_drift: false, new_trackers: [], removed_trackers: [], score_delta: 0, new_critical_issues: [] };
         let alerted = false;
         if (drift.has_drift || drift.new_critical_issues.length > 0) {
-          if (await mayAlert(supabase, d.tenant_id)) {
+          if (me.alerts) {
             await sendAlert(d, drift, scan);
             alerted = true;
           } else {

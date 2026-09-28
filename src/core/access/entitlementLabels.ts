@@ -61,6 +61,7 @@ export const ENTITLEMENT_LABELS = {
   'limit.team_seats': 'Team-Plätze',
   'limit.whatsapp_conversations_monthly': 'WhatsApp-Konversationen pro Monat',
   'limit.workflow_runs_monthly': 'Workflow-Läufe pro Monat',
+  'monitoring.browser_scan': 'Monitoring mit echtem Browser',
   'monitoring.daily': 'Tägliches Monitoring',
   'monitoring.drift': 'Drift-Erkennung',
   'monitoring.monthly': 'Monatliches Monitoring',

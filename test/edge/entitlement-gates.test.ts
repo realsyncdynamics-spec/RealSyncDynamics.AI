@@ -153,10 +153,15 @@ describe('Welle 3 — was neben dem Gate repariert wurde', () => {
     expect(trigger.indexOf('await logAlert(')).toBeLessThan(trigger.indexOf("hasFeature(entitlements, 'alerts.email')"));
     expect(trigger).toContain('email_skipped_entitlement_missing');
 
+    // Seit 2026-09-28 lädt audit-monitor-cron die Berechtigungen einmal je
+    // Mandant (Takt, Browser-Scan, Alarm) statt über ein eigenes `mayAlert`.
+    // Die Aussage bleibt dieselbe: Der Versand hängt an `alerts.email`, das
+    // Ergebnis wird davon unabhängig gespeichert.
     const cron = quelle('audit-monitor-cron');
-    expect(cron).toMatch(/if \(await mayAlert\(supabase, d\.tenant_id\)\)/);
+    expect(cron).toMatch(/alerts: hasFeature\(ent, 'alerts\.email'\)/);
+    expect(cron).toMatch(/if \(me\.alerts\) \{\s*await sendAlert\(/);
     // Ergebnis wird auch ohne Versand gespeichert.
-    expect(cron.indexOf('mayAlert(supabase')).toBeLessThan(cron.indexOf("from('audit_monitor_results').insert"));
+    expect(cron.indexOf('if (me.alerts)')).toBeLessThan(cron.indexOf("from('audit_monitor_results').insert"));
   });
 
   it('governance-risk-score bleibt bewusst ohne Plan-Gate', () => {

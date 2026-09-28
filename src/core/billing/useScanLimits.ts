@@ -27,7 +27,7 @@ export interface ScanLimitStatus {
  * hinterlegt, greift die Zählung ohne Codeänderung.
  */
 export function useScanLimits(): ScanLimitStatus | null {
-  const { tier, getLimit } = useEntitlements();
+  const { getLimit } = useEntitlements();
   const { activeTenantId } = useTenant();
   const [status, setStatus] = useState<ScanLimitStatus | null>(null);
   const [loading, setLoading] = useState(true);
@@ -38,13 +38,13 @@ export function useScanLimits(): ScanLimitStatus | null {
       return;
     }
 
-    // Kontingente gab es nur im Free-Plan.
-    if (tier !== 'free') {
-      setStatus(null);
-      setLoading(false);
-      return;
-    }
-
+    // Hier stand bis 2026-09-28 `if (tier !== 'free') return` — ein
+    // Plan-Name-Vergleich vor der eigentlichen Pruefung. Er war seit dem
+    // 2026-08-24 folgenlos, weil jeder Plan -1 traegt, haette unter
+    // BASE + MODULE + SCALE aber jedem bezahlten Plan still ein unbegrenztes
+    // Kontingent gegeben, egal was der Katalog sagt. Allein der Wert
+    // entscheidet (Zielarchitektur §10, `check:plan-gates`).
+    //
     // Unbegrenzt (`-1`) oder gar kein Wert → nicht zählen und nicht abfragen.
     //
     // Vorher stand hier `getLimit(...) || 3`. Dieser Rückfall hätte das
@@ -98,7 +98,7 @@ export function useScanLimits(): ScanLimitStatus | null {
     } finally {
       setLoading(false);
     }
-  }, [activeTenantId, tier, getLimit]);
+  }, [activeTenantId, getLimit]);
 
   useEffect(() => {
     void fetchScanStatus();

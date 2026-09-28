@@ -68,12 +68,27 @@ const EXEMPT = new Set([
  * nicht darunter, weil die linke Seite nicht plan-artig heisst — genau die
  * Sorte Fehlalarm, die eine Ratsche unbrauchbar macht.
  */
+const PLAN_VAR = String.raw`(?:\w+\.)?(?:plan|tier|planId|planKey|currentPlan|planName)`;
+const PLAN_LIT = `['"](${PLAN_NAMES.join('|')})['"]`;
+
 const GATE_PATTERN = new RegExp(
-  String.raw`\b(?:\w+\.)?(?:plan|tier|planId|planKey|currentPlan|planName)\s*(?:===|!==|==|!=)\s*['"](` +
-    PLAN_NAMES.join('|') +
-    String.raw`)['"]`,
+  String.raw`\b${PLAN_VAR}\s*(?:===|!==|==|!=)\s*${PLAN_LIT}`,
   'g',
 );
+
+/**
+ * Dieselbe Frage als Liste: `['agency','enterprise'].includes(d.tier)`.
+ *
+ * Bis 2026-09-28 sah der Prüfer nur Gleichheit. Genau so lag in
+ * `audit-monitor-cron` ein echtes Gate (Browser-Scan nur für zwei Pläne)
+ * unbemerkt neben der Stelle, die die Grundlinie führte. Gemeldet wird je
+ * Plan-Name in der Liste — die Liste ist das Gate, jeder Name darin ein Teil.
+ */
+const INCLUDES_PATTERN = new RegExp(
+  String.raw`\[((?:\s*['"][\w-]+['"]\s*,?)+)\]\s*\.includes\(\s*${PLAN_VAR}\s*\)`,
+  'g',
+);
+const LIST_ITEM = new RegExp(PLAN_LIT, 'g');
 
 function walk(dir, out = []) {
   let entries;
@@ -108,6 +123,15 @@ function findGates() {
         let m;
         while ((m = GATE_PATTERN.exec(line)) !== null) {
           found.push({ datei: rel, zeile: i + 1, plan: m[1], code: trimmed.slice(0, 160) });
+        }
+
+        INCLUDES_PATTERN.lastIndex = 0;
+        while ((m = INCLUDES_PATTERN.exec(line)) !== null) {
+          LIST_ITEM.lastIndex = 0;
+          let item;
+          while ((item = LIST_ITEM.exec(m[1])) !== null) {
+            found.push({ datei: rel, zeile: i + 1, plan: item[1], code: trimmed.slice(0, 160) });
+          }
         }
       });
     }

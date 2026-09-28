@@ -1847,9 +1847,16 @@ html, body {
    `cyan` bleibt aus Kompatibilität — er trägt hier Waldgrün. */
 /* Das Cookie-Banner hängt an der App-Wurzel, außerhalb der Seiten-Scopes:
    Über `:has` übernimmt es die Palette nur, solange eine Papier-Seite
-   gerendert ist — in App und Dashboard bleibt es dunkel. */
+   gerendert ist — in App und Dashboard bleibt es dunkel.
+
+   Der `:not([data-landing-design='governance-v3'])`-Ausschluss hält die
+   kanonische Landing außen vor: sie trägt `rs-paper` weiterhin am Wrapper,
+   ist seit Visual v3 aber dunkel. Ohne den Ausschluss bekäme ein
+   Erstbesucher ein helles Papier-Banner mit Waldgrün-Buttons vor einer
+   Graphit-Seite. Das Banner braucht hier keine eigenen Werte — sein
+   Default ist schon dunkel. */
 .rs-paper,
-body:has(.rs-paper) .cookie-consent {
+body:has(.rs-paper:not([data-landing-design='governance-v3'])) .cookie-consent {
   color-scheme: light;
   --color-rs-hero:          #EFEAE1;
   --color-rs-bg-0:          #EFEAE1;
@@ -1946,15 +1953,15 @@ body:has(.rs-paper) .cookie-consent {
   color: var(--color-rs-fg-0);
 }
 /* Banner-Buttons: grau-auf-weiß wäre auf Papier unlesbar → Waldgrün. */
-body:has(.rs-paper) .cookie-consent :is(button.bg-titanium-700, button.bg-security-500) {
+body:has(.rs-paper:not([data-landing-design='governance-v3'])) .cookie-consent :is(button.bg-titanium-700, button.bg-security-500) {
   background: var(--color-rs-primary);
   border-color: var(--color-rs-primary);
   color: #F7F4EE;
 }
-body:has(.rs-paper) .cookie-consent :is(button.bg-titanium-700, button.bg-security-500):hover {
+body:has(.rs-paper:not([data-landing-design='governance-v3'])) .cookie-consent :is(button.bg-titanium-700, button.bg-security-500):hover {
   background: var(--color-rs-primary-hover);
 }
-body:has(.rs-paper) .cookie-consent :is(p, div).font-display {
+body:has(.rs-paper:not([data-landing-design='governance-v3'])) .cookie-consent :is(p, div).font-display {
   font-family: var(--font-rs-serif);
   font-weight: 400;
 }

@@ -53,9 +53,9 @@ export interface SEOConfig {
 const SITE_URL = 'https://realsyncdynamicsai.de';
 
 export const DEFAULT_SEO: SEOConfig = {
-  title: 'RealSyncDynamics.AI — The Governance OS for Autonomous AI',
+  title: 'KI-Governance & Kontrollschicht | RealSyncDynamics.AI',
   description:
-    'Die Control Plane für Enterprise-KI: Any model. Any agent. One control plane. EU AI Act, DSGVO und ISO 42001 als nachweisbare Proof-Layer.',
+    'Kontroll- und Nachweisschicht für Enterprise-KI: Systeme erfassen, Risiken bewerten, Policies steuern und Evidence für DSGVO und EU AI Act erzeugen.',
 };
 
 // ─── JSON-LD Templates (re-used) ─────────────────────────────────────────────
@@ -253,14 +253,16 @@ function breadcrumbs(items: Array<{ name: string; url: string }>): Record<string
 export const SEO_CONFIG: Record<string, SEOConfig> = {
   // ─── Tier 1 — Hero / Top-Conversion ──────────────────────────────────────
   '/': {
-    // Governance-OS-Positionierung — matches the H1 in GovernanceOsHero.
-    title: 'RealSyncDynamics.AI — The Governance OS for Autonomous AI',
+    // Kontrollschicht-Positionierung — matches the H1 in GovernanceOsHero
+    // (HANDOFF_OVERRIDES.de: "Die Kontrollschicht für KI im Unternehmen.")
+    // and the static <title> in index.html.
+    title: 'KI-Governance & Kontrollschicht | RealSyncDynamics.AI',
     description:
-      'RealSyncDynamics.AI ist die Control Plane für Enterprise-KI: Any model. Any agent. One control plane. EU AI Act, DSGVO und ISO 42001 als Evidence-Proof-Layer.',
+      'Kontroll- und Nachweisschicht für Enterprise-KI: Systeme erfassen, Risiken bewerten, Policies steuern und Evidence für DSGVO und EU AI Act erzeugen.',
     canonical: `${SITE_URL}/`,
-    ogTitle: 'The Governance OS for Autonomous AI',
+    ogTitle: 'Die Kontrollschicht für KI im Unternehmen | RealSyncDynamics.AI',
     ogDescription:
-      'Europa braucht Kontrolle über Frontier-KI: RealSyncDynamics.AI baut die Kontroll-, Autorisierungs- und Evidence-Layer zwischen Unternehmen und KI.',
+      'Enterprise-KI sichtbar machen, Regeln durchsetzen und Entscheidungen mit Evidence belegen — provider-neutral und EU-fokussiert.',
   },
   '/design/titan': {
     title: 'RealSyncDynamics.AI — Titan-Fallbackroute der Governance-Landing',

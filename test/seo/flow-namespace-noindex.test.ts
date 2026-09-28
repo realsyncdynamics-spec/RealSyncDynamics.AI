@@ -70,12 +70,13 @@ describe('SEO: /flow-Namespace ist noindex', () => {
     expect(shadowed).toEqual([]);
   });
 
-  it('hält die Homepage-SEO auf der Control-Plane-Positionierung', () => {
-    expect(SEO_CONFIG['/'].title).toBe('RealSyncDynamics.AI — The Governance OS for Autonomous AI');
-    expect(SEO_CONFIG['/'].description).toContain('Control Plane für Enterprise-KI');
-    expect(SEO_CONFIG['/'].description).toContain('Any model. Any agent. One control plane.');
-    expect(SEO_CONFIG['/'].ogTitle).toBe('The Governance OS for Autonomous AI');
-    expect(SEO_CONFIG['/'].ogDescription).toContain('Kontroll-, Autorisierungs- und Evidence-Layer');
+  it('hält die Homepage-SEO auf der Kontrollschicht-Positionierung', () => {
+    expect(SEO_CONFIG['/'].title).toBe('KI-Governance & Kontrollschicht | RealSyncDynamics.AI');
+    expect(SEO_CONFIG['/'].description).toContain('Kontroll- und Nachweisschicht für Enterprise-KI');
+    expect(SEO_CONFIG['/'].ogTitle).toBe('Die Kontrollschicht für KI im Unternehmen | RealSyncDynamics.AI');
+    expect(SEO_CONFIG['/'].ogDescription).toContain('provider-neutral und EU-fokussiert');
+    // Kein Rückfall auf die alte Frontier-/Autonomous-AI-Positionierung.
+    expect(JSON.stringify(SEO_CONFIG['/'])).not.toMatch(/Autonomous AI|Frontier-KI/);
   });
 
   it('prüft den Namespace vor dem Map-Lookup (Reihenfolge im Quelltext)', () => {

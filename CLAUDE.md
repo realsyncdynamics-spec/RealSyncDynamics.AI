@@ -34,7 +34,7 @@ Default für Landing-/Marketing-Arbeit. **Nur diese Pfade lesen/schreiben:**
 
 **Nicht anfassen und nicht globben:** `supabase/`, `platform/`, `services/`, `apps/`, `docs/` (außer explizit genannt), Root-`*.sql.bak`, `.archive/` (dort liegen u. a. die alten Root-Status-/Phase-Dokumente unter `root-docs/` — nur gezielt greppen, nie einlesen).
 
-Startseite `/` = „Papier & Waldgrün“ (hell, Serif-Headlines, Waldgrün trägt die Handlung); Token zentral in `src/index.css` (`.ga-context.rs-handoff`), siehe `AGENTS.md`. App/Dashboard bleibt dunkel. Design-Freeze: bestehende Tokens/Komponenten nicht umstylen ohne Freigabe.
+Startseite `/` = Graphite/Ink/Ice (dunkel, technische Typografie, Cyan als einzige Aktionsfarbe, Gold nur Enterprise/VIP); wirksame Token in `src/styles/governance-os-landing-v3.css` (Scope `.ga-context.rs-handoff`), Basis in `src/index.css`, siehe `AGENTS.md`. Monospace für Metadaten bleibt Pflicht. Design-Freeze: bestehende Tokens/Komponenten nicht umstylen ohne Freigabe.
 
 ## Harte Verbote
 

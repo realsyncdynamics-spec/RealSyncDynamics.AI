@@ -11,7 +11,7 @@
  */
 import { getSupabase, isSupabaseConfigured } from '../../lib/supabase';
 import { normalizeRuntimeUrl } from './runtimeClient';
-import { LOCAL_AI_ROLES } from './roles';
+import { LOCAL_AI_ROLES, isCloudModel } from './roles';
 import type { GovernanceTestSummary, LocalAiRoleId, LocalAiRuntimeProfile } from './types';
 
 const KEY_PREFIX = 'realsync.localAi.profile.v1';
@@ -19,6 +19,7 @@ const KEY_PREFIX = 'realsync.localAi.profile.v1';
 export type ProfileErrorCode =
   | 'NO_VERIFIED_TENANT'
   | 'TEST_NOT_PASSED'
+  | 'CLOUD_MODEL'
   | 'HEALTHCHECK_MISSING'
   | 'INVALID_PROFILE'
   | 'STORAGE_UNAVAILABLE';
@@ -70,7 +71,8 @@ function parseSummary(raw: unknown): GovernanceTestSummary | null {
 /**
  * Defensives Parsen: unbekannte Felder (auch eine eingeschleuste tenant_id)
  * werden verworfen. `enabled` bleibt nur wahr, wenn der gespeicherte Test
- * tatsächlich bestanden ist.
+ * tatsächlich bestanden ist und das Modell kein Ollama-Cloud-Modell ist
+ * (auch für Profile, die vor dieser Sperre gespeichert wurden).
  */
 export function parseProfile(raw: unknown): LocalAiRuntimeProfile | null {
   if (!raw || typeof raw !== 'object') return null;
@@ -89,7 +91,7 @@ export function parseProfile(raw: unknown): LocalAiRuntimeProfile | null {
     role: p.role as LocalAiRoleId,
     last_healthcheck: typeof p.last_healthcheck === 'string' ? p.last_healthcheck : null,
     test_result: testResult,
-    enabled: p.enabled === true && testResult?.overall === 'success',
+    enabled: p.enabled === true && testResult?.overall === 'success' && !isCloudModel(p.model),
   };
 }
 
@@ -105,6 +107,9 @@ export function loadProfile(verifiedTenantId: string | null, storage = defaultSt
 
 /** Gate für „Lokale KI aktivieren": fail-closed ohne bestandenen Test und Healthcheck. */
 export function assertActivatable(profile: LocalAiRuntimeProfile): void {
+  if (isCloudModel(profile.model)) {
+    throw new ProfileError('CLOUD_MODEL', 'Ein Ollama-Cloud-Modell ist keine lokale Runtime und kann nicht aktiviert werden.');
+  }
   if (!profile.last_healthcheck) {
     throw new ProfileError('HEALTHCHECK_MISSING', 'Ohne erfolgreichen Verbindungstest kann nicht aktiviert werden.');
   }
@@ -146,6 +151,7 @@ export type RegistrationErrorCode =
   | 'BACKEND_NOT_CONFIGURED'
   | 'BACKEND_NOT_DEPLOYED'
   | 'NOT_AUTHORIZED'
+  | 'CLOUD_MODEL'
   | 'BACKEND_ERROR';
 
 export type RegistrationResult =
@@ -177,6 +183,10 @@ export async function registerProfileWithTenant(
   verifiedTenantId: string | null,
   invoke: InvokeFn | null = defaultInvoke(),
 ): Promise<RegistrationResult> {
+  // Fail-closed: ein Cloud-Modell wird nie als geräte-lokale Runtime gemeldet.
+  if (isCloudModel(profile.model)) {
+    return { ok: false, code: 'CLOUD_MODEL', message: 'Ollama-Cloud-Modell — wird nicht als lokale Runtime gemeldet.' };
+  }
   if (!invoke) {
     return { ok: false, code: 'BACKEND_NOT_CONFIGURED', message: 'Backend ist nicht konfiguriert. Profil bleibt nur auf diesem Gerät.' };
   }

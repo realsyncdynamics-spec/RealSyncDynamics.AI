@@ -192,6 +192,9 @@ describe('provision-tenant — Quelltext-Vertraege', () => {
     expect(FN).toContain('state.orphanEventId');
     // Fehlender Nachweis ist kein `done`.
     expect(FN).toContain("reason: 'evidence_missing'");
+    // Kein Umgehen der Pruefung, wenn dieser Lauf etwas angelegt hat.
+    expect(FN).not.toMatch(/r\.created \? \{ covered: false/);
+    expect(FN).toContain('ids.find((id) => !withEvidence.has(id))');
   });
   it('fenced jeden Schritt gegen Lease-Uebernahme', () => {
     expect(FN).toMatch(/for \(const id of BOOT_STEPS\) \{[\s\S]{0,400}\.eq\('updated_at', startedAt\)\.maybeSingle\(\)/);

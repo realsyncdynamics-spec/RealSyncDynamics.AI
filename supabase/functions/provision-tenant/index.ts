@@ -341,8 +341,9 @@ async function lifecycleEvidenceState(c: Ctx, action: string): Promise<{ covered
     .eq('tenant_id', c.tenantId).in('event_id', ids).not('content_hash', 'is', null);
   if (ee) throw ee;
   const withEvidence = new Set((ev ?? []).map((e) => e.event_id as string));
-  if (withEvidence.size > 0) return { covered: true, orphanEventId: null };
-  return { covered: false, orphanEventId: ids[0] };
+  // Ein unbelegtes Event zaehlt auch dann, wenn andere derselben Aktion belegt sind.
+  const orphanEventId = ids.find((id) => !withEvidence.has(id)) ?? null;
+  return { covered: !orphanEventId, orphanEventId };
 }
 
 async function stepFirstEvidence(c: Ctx, prior: BootStepResult[]): Promise<BootStepResult> {
@@ -358,12 +359,21 @@ async function stepFirstEvidence(c: Ctx, prior: BootStepResult[]): Promise<BootS
     const action = LIFECYCLE_ACTION[r.step];
     if (!action || r.status !== 'done') continue;
     obligations++;
-    const state = r.created ? { covered: false, orphanEventId: null } : await lifecycleEvidenceState(c, action);
-    if (state.covered) continue;
+    // Immer den Zustand pruefen — auch wenn dieser Lauf etwas angelegt hat:
+    // ein verwaistes Event eines Vorlaufs wird zuerst belegt, danach bekommt
+    // die neue Anlage ihren eigenen Eintrag.
+    const state = await lifecycleEvidenceState(c, action);
+    if (state.covered && !r.created) continue;
     try {
       // Nur Kennungen in die Chain, nie Token oder Installer-Artefakte.
-      head = await appendLifecycle(c, r.step, action, r.detail ?? {}, state.orphanEventId);
-      appended.push(action);
+      if (state.orphanEventId) {
+        head = await appendLifecycle(c, r.step, action, r.detail ?? {}, state.orphanEventId);
+        appended.push(action);
+      }
+      if (r.created || !state.orphanEventId) {
+        head = await appendLifecycle(c, r.step, action, r.detail ?? {});
+        appended.push(action);
+      }
     } catch (e) {
       console.error(`[provision-tenant] lifecycle evidence ${action} failed`, e);
       missing.push(action);

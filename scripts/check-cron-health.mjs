@@ -165,43 +165,49 @@ export function groupByCause(broken) {
 //   B  seit laenger als seiner Kadenz nicht gelaufen  (ausgebliebene Ausfuehrung)
 //   C  Antwort war kein 2xx               (Antwort-Ebene, neu)
 //
-// ## Warum die Antworten nicht je Job zugeordnet werden
+// ## Wie die Antworten der Dispatch-Jobs zugeordnet werden
 //
-// `net.http_request_queue` wird beim Eintreffen der Antwort geleert; die URL
-// ist danach weg. Eine Zuordnung Antwort→Job ginge nur ueber Zeitstempel und
-// waere bei mehreren Jobs in derselben Minute geraten. Der Guard zaehlt
-// deshalb: Jede Nicht-2xx-Antwort im Fenster ist ein Befund, und der
-// Antwortkoerper benennt die Function ohnehin selbst
-// (`{"error":"cron key required"}` etc.). Lieber eine ehrliche Zaehlung als
-// eine erfundene Zuordnung.
+// `net._http_response` enthaelt auch Antworten anderer `net.http_*`-Aufrufe
+// (`business-metrics-cron-15min` ruft `net.http_post` direkt im selben
+// */15-Takt auf, dazu Trigger wie Stripe-Webhook und Welcome-Mail). Ein
+// Zeitfenster trennt das nicht: fremde 401/5xx erzeugten Rot-Befunde, fremde
+// 2xx verdeckten einen Dispatch ohne Antwort.
+//
+// Deshalb exakt ueber die Request-ID: `dispatch_cron_function` schreibt die ID
+// jedes `net.http_post` nach `public.cron_dispatch_requests`
+// (Migration 20260927170000), und `net._http_response.id` ist dieselbe ID.
+// Gezaehlt werden nur Dispatches, die aelter als zwei Minuten sind — juengere
+// koennen noch unterwegs sein.
 //
 // `net._http_response` haelt nur rund sechs Stunden vor — das Fenster ist
 // deshalb bewusst kurz und wird in der Ausgabe mitgenannt.
 
 export const SQL_ANTWORTEN = `
 WITH fenster AS (SELECT now() - interval '6 hours' AS ab),
+dispatch_laeufe AS (
+  SELECT q.request_id
+  FROM public.cron_dispatch_requests q
+  CROSS JOIN fenster f
+  WHERE q.dispatched_at >= f.ab
+    AND q.dispatched_at < now() - interval '2 minutes'
+),
 antworten AS (
   SELECT coalesce(r.status_code::text, '(keine Antwort)') AS status,
          count(*)::int AS anzahl,
          min(r.created)::text AS von,
          max(r.created)::text AS bis,
-         left((array_agg(r.content ORDER BY r.created DESC))[1], 200) AS beispiel
-  FROM net._http_response r, fenster f
-  WHERE r.created >= f.ab
-  GROUP BY 1
+         left(coalesce(r.content, ''), 200) AS beispiel
+  FROM dispatch_laeufe l
+  JOIN net._http_response r ON r.id = l.request_id
+  GROUP BY 1, left(coalesce(r.content, ''), 200)
 ),
 laeufe AS (
   SELECT count(*)::int AS anzahl
-  FROM cron.job_run_details d
-  JOIN cron.job j ON j.jobid = d.jobid
-  CROSS JOIN fenster f
-  WHERE d.start_time >= f.ab
-    AND j.active
-    AND j.command LIKE '%dispatch_cron_function%'
+  FROM dispatch_laeufe
 )
 SELECT 'antwort' AS art, a.status, a.anzahl, a.von, a.bis, a.beispiel FROM antworten a
 UNION ALL
-SELECT 'dispatch', NULL, l.anzahl, NULL, NULL, NULL FROM laeufe l;`;
+SELECT 'dispatch', NULL, l.anzahl, NULL, NULL, NULL FROM laeufe l;`
 
 /**
  * Groesster erwarteter Abstand zwischen zwei Laeufen, in Minuten.
@@ -288,6 +294,46 @@ export function evaluateAntworten(zeilen) {
   };
 }
 
+export function antwortUrsache(beispiel) {
+  const roh = String(beispiel ?? '').replace(/\s+/g, ' ').trim();
+  if (!roh) return '(ohne Antworttext)';
+
+  let parsed = null;
+  try {
+    parsed = JSON.parse(roh);
+  } catch {
+    // kein JSON, weiter unten als Rohtext behandeln
+  }
+
+  const enthaeltCronOnly = (wert) => typeof wert === 'string' && wert.toLowerCase().includes('cron only');
+  const cronOnlyText =
+    enthaeltCronOnly(roh) ||
+    enthaeltCronOnly(parsed?.error) ||
+    enthaeltCronOnly(parsed?.error?.message) ||
+    enthaeltCronOnly(parsed?.message);
+
+  if (cronOnlyText) {
+    return 'Function Secret mismatch (Bearer-Token passt nicht zum Function Secret) — siehe docs/runbooks/cron-vault-secrets.md';
+  }
+
+  const code = parsed?.error?.code ?? parsed?.code;
+  const message = parsed?.error?.message ?? parsed?.message;
+  if (code && message) return `${code}: ${message}`;
+  if (message) return String(message);
+  return roh.slice(0, 160);
+}
+
+export function groupAntwortenByCause(schlecht) {
+  const nach = new Map();
+  for (const a of schlecht) {
+    const ursache = antwortUrsache(a.beispiel);
+    nach.set(ursache, (nach.get(ursache) ?? 0) + (a.anzahl ?? 0));
+  }
+  return [...nach.entries()]
+    .map(([ursache, anzahl]) => ({ ursache, anzahl }))
+    .sort((a, b) => b.anzahl - a.anzahl);
+}
+
 /**
  * Beschriftung einer Antwortzeile.
  *
@@ -330,12 +376,22 @@ if (direkt) {
     return resp.json();
   }
 
-  let rows, antwortZeilen;
+  let rows;
   try {
-    [rows, antwortZeilen] = await Promise.all([frage(SQL), frage(SQL_ANTWORTEN)]);
+    rows = await frage(SQL);
   } catch (e) {
     console.error('⚠️  Cron-Abfrage nicht ausfuehrbar (Infra, kein Befund):', e.message);
     process.exit(0);
+  }
+
+  // Die Antwort-Ebene darf die Job-Ebene nicht mitreissen: Scheitert nur
+  // diese Abfrage (z. B. solange cron_dispatch_requests noch nicht migriert
+  // ist), werden A und B trotzdem bewertet und C als nicht auswertbar gemeldet.
+  let antwortZeilen = null;
+  try {
+    antwortZeilen = await frage(SQL_ANTWORTEN);
+  } catch (e) {
+    console.error('⚠️  Antwort-Abfrage nicht ausfuehrbar:', e.message);
   }
 
   // Format-Wachhund wie bei den anderen Guards: keine Zeile heisst, dass
@@ -414,8 +470,14 @@ if (direkt) {
     );
     for (const a of antwort.schlecht) {
       console.error(`  ${a.anzahl}× ${beschreibeStatus(a.status)}   ${a.von} … ${a.bis}`);
-      console.error(`      ${String(a.beispiel ?? '').replace(/\s+/g, ' ').slice(0, 160)}\n`);
+      console.error(`      ${antwortUrsache(a.beispiel)}\n`);
     }
+    const gruppiert = groupAntwortenByCause(antwort.schlecht);
+    console.error('Nach Ursache gruppiert:\n');
+    for (const g of gruppiert) {
+      console.error(`  ${g.anzahl}× ${g.ursache}`);
+    }
+    console.error('');
     console.error(
       'Ein abgesetzter Aufruf ist keine ausgefuehrte Function. `job_run_details`\n' +
       'meldet `succeeded`, sobald net.http_post die Anfrage eingereiht hat — die\n' +

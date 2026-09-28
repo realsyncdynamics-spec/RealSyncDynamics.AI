@@ -40,6 +40,8 @@ interface WebsiteGenerationRequest {
 }
 
 interface GeneratedWebsite {
+  /** Der persistierte Projektdatensatz — Quelle fuer die Oberflaeche. */
+  project: Record<string, unknown> | null;
   project_id: string;
   html: string;
   css: string;
@@ -118,7 +120,14 @@ Deno.serve(async (req) => {
     const website = await generateWebsiteWithAI(body, project.id);
 
     if (!website.success) {
-      // Log error but don't fail entirely
+      // Fail closed. Vorher lief der Ablauf hier weiter, und zwar bis zum Ende:
+      // Schritt 4 pruefte die Compliance gegen `website.html || ''`, Schritt 5
+      // schrieb das Projekt mit `generated_html: undefined` auf
+      // `status: 'preview'`, Schritt 6 legte ein Deployment-Log mit
+      // `status: 'success'` und dem Titel "Website Generated" an. Der Aufrufer
+      // bekam 200 mit leerem HTML. Ein ausgefallener Provider war damit von
+      // einem geglueckten Lauf weder an der Antwort noch am Log zu
+      // unterscheiden.
       await admin.from('deployment_logs').insert({
         project_id: project.id,
         tenant_id: tenantId,
@@ -128,6 +137,8 @@ Deno.serve(async (req) => {
         message: website.error,
         triggered_by: 'automation',
       });
+
+      return jsonError(502, 'PROVIDER_UNAVAILABLE', website.error || 'ai generation failed');
     }
 
     // 4. Run compliance checks
@@ -138,8 +149,10 @@ Deno.serve(async (req) => {
       website.aiDisclosures || []
     );
 
-    // 5. Store generated content
-    await admin
+    // 5. Store generated content — der Rueckgabewert ist der persistierte
+    // Stand, nicht das, was wir zu schreiben glaubten. Die Oberflaeche zeigt
+    // damit die Zeile, die auch nach einem Reload in der Datenbank steht.
+    const { data: persisted, error: persistError } = await admin
       .from('website_projects')
       .update({
         status: 'preview',
@@ -154,7 +167,32 @@ Deno.serve(async (req) => {
         compliance_score: complianceResult.score,
         compliance_findings: complianceResult.findings,
       })
-      .eq('id', project.id);
+      .eq('id', project.id)
+      .select('id, name, industry, status, compliance_score, preview_url, deployment_url, last_deployed_at, created_at')
+      .single();
+
+    // Scheitert das Speichern, ist nichts gebaut, was der Nutzer wiederfindet:
+    // kein Erfolgs-Log, keine 200. Der Provider-Aufruf ist zu diesem Zeitpunkt
+    // bereits bezahlt; das sagt die Fehlermeldung, damit ein Retry bewusst
+    // passiert und nicht als stiller Doppelbezug.
+    if (persistError || !persisted) {
+      console.error('[website-operations-agent] persist failed', persistError);
+      await admin.from('deployment_logs').insert({
+        project_id: project.id,
+        tenant_id: tenantId,
+        event_type: 'build',
+        status: 'failed',
+        title: 'Website Generation Not Saved',
+        message: 'Generated content could not be persisted',
+        details: { error: persistError?.message ?? 'no row returned' },
+        triggered_by: 'automation',
+      });
+      return jsonError(
+        500,
+        'DB_UPDATE',
+        'website generated but could not be saved; the project remains a draft',
+      );
+    }
 
     // 6. Log deployment event
     await admin.from('deployment_logs').insert({
@@ -172,6 +210,7 @@ Deno.serve(async (req) => {
     });
 
     const response: GeneratedWebsite = {
+      project: persisted,
       project_id: project.id,
       html: website.html || '',
       css: website.css || '',
@@ -181,7 +220,12 @@ Deno.serve(async (req) => {
       preview_url: `https://${project.id}.preview.realsyncdynamics.pages.dev`,
     };
 
-    return jsonResponse(200, response);
+    // `jsonResponse(body, status)` — Body zuerst. Der Dreher liess
+    // `new Response(..., { status: <Objekt> })` werfen; der Erfolgsfall
+    // landete im catch und antwortete 500, nachdem Projekt, Provider-Aufruf
+    // und Erfolgs-Log bereits geschrieben waren. `jsonError` nimmt den
+    // Status zuerst — daher die Verwechslung.
+    return jsonResponse(response, 200);
   } catch (err) {
     console.error('Error in website-operations-agent:', err);
     return jsonError(500, 'INTERNAL_ERROR', err instanceof Error ? err.message : 'Unknown error');

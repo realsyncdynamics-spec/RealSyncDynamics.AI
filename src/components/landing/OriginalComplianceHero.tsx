@@ -1,14 +1,7 @@
 import { ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { HeroEarthBackdrop } from './HeroEarthBackdrop';
-import {
-  LANDING_ACCENT,
-  LANDING_ACCENT_SOFT,
-  LANDING_MONO,
-  LANDING_MUTED,
-  LANDING_SERIF,
-  LANDING_TEXT,
-} from './landing-theme';
+import { LANDING_MONO, LANDING_SERIF } from './landing-theme';
 import { MODE_ACCENT, MODE_MUTED, MODE_TEXT, modeVeil } from './landing-mode';
 
 const HERO_PLANS = [

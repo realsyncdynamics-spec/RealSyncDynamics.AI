@@ -245,6 +245,16 @@ export const GOVERNANCE_MODULES: GovernanceModule[] = [
     description: 'Governance-Agents und ihre Läufe',
   },
   {
+    // Geräte-lokales Setup: Verbindung, Rolle, Governance-Test, Profil. Kein Server-Speicher.
+    id: 'local-ai',
+    label: 'Local AI',
+    icon: 'Cpu',
+    route: '/app/local-ai/onboarding',
+    status: 'beta',
+    gate: { kind: 'all' },
+    description: 'Lokale KI (Ollama) prüfen, testen und kontrolliert freischalten',
+  },
+  {
     id: 'bots',
     label: 'Bots',
     icon: 'MessageSquare',

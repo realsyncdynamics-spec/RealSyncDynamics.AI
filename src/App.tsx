@@ -283,6 +283,7 @@ const OptimizerOptimizing = lazy(() => import('./pages/optimizer/OptimizerOptimi
 const OptimizerComplete = lazy(() => import('./pages/optimizer/OptimizerComplete').then((m) => ({ default: m.OptimizerComplete })));
 const WebsiteGovernanceView = lazy(() => import('./features/governance/websites/WebsiteGovernanceView').then((m) => ({ default: m.WebsiteGovernanceView })));
 // ── Phase 2: Multi-Framework Governance Views (10 new modules)
+const LocalAiOnboardingView = lazy(() => import('./features/local-ai/LocalAiOnboardingView').then((m) => ({ default: m.LocalAiOnboardingView })));
 const AiRegisterView = lazy(() => import('./features/governance/AiRegisterView').then((m) => ({ default: m.AiRegisterView })));
 const DsgvoDirectoryView = lazy(() => import('./features/governance/DsgvoDirectoryView').then((m) => ({ default: m.DsgvoDirectoryView })));
 const AiActRiskAssessmentView = lazy(() => import('./features/governance/AiActRiskAssessmentView').then((m) => ({ default: m.AiActRiskAssessmentView })));
@@ -795,6 +796,8 @@ function RoutesWithTracking() {
       <Route path="/app/marketplace" element={<AppGate><GovernanceBrowserShell><MarketplaceView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/overview" element={<Navigate to="/app/dashboard" replace />} />
       <Route path="/app/modules" element={<AppGate><GovernanceBrowserShell><ModulesHubView /></GovernanceBrowserShell></AppGate>} />
+      <Route path="/app/local-ai/onboarding" element={<AppGate><GovernanceBrowserShell><LocalAiOnboardingView /></GovernanceBrowserShell></AppGate>} />
+      <Route path="/app/local-ai" element={<Navigate to="/app/local-ai/onboarding" replace />} />
       <Route path="/app/activation" element={<AppGate><GovernanceBrowserShell><GovernanceActivationView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/home" element={<Navigate to="/app/dashboard" replace />} />
       <Route path="/app/company" element={<AppGate><GovernanceBrowserShell><CompanyView /></GovernanceBrowserShell></AppGate>} />

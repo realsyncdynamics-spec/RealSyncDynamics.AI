@@ -1,5 +1,6 @@
 {
   "_comment": "Bekannter Altbestand: live deployte Edge Functions, die (noch) nicht im Repo liegen. Grandfathered, damit der Drift-Guard gruen startet und nur NEUEN Drift blockt. Beim Aufraeumen (supabase functions delete <slug>) Eintrag hier entfernen. Ziel: leere Liste. Kontext: docs/runtime/SYSTEMCHECK-2026-05-28.md, Aufraeum-Runbook: docs/runbooks/edge-function-kontingent.md.",
   "_stand_2026_08_11": "Die fuenf orphaned Functions (debug-secret-shape, vault-set-secret, vault-key-setter, stripe-webhook-fixer, stripe-webhook-provision) wurden via Selective P0 Auth Free Slot Workflow geloescht. Allowlist ist jetzt leer.",
+  "_stand_2026_09_28": "agent-scheduler: Quelle aus dem Repo entfernt, live noch deployt. Loeschung laeuft ueber .github/workflows/free-plan-slot-swap.yml; danach Eintrag hier und in src/config/production-edge-functions.ts entfernen.",
   "allow": ["agent-scheduler"]
 }

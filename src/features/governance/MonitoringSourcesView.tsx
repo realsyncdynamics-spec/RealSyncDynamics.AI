@@ -8,6 +8,7 @@ import { useTenant } from '../../core/access/TenantProvider';
 import { WorkspaceShell } from '../workspace/WorkspaceShell';
 import { getSupabase } from '../../lib/supabase';
 import { withPerformanceMonitoring } from './withPerformanceMonitoring';
+import { getSupabaseUrl } from '../../lib/supabaseUrl';
 
 type SourceType = 'website' | 'ai_system' | 'api' | 'vendor' | 'repository' | 'workflow' | 'document';
 type SourceStatus = 'pending' | 'active' | 'paused' | 'error';
@@ -132,7 +133,7 @@ function Inner() {
       const sb = getSupabase();
       const { data: { session } } = await sb.auth.getSession();
       await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/governance-monitoring-scheduler`,
+        `${getSupabaseUrl()}/functions/v1/governance-monitoring-scheduler`,
         {
           method: 'POST',
           headers: {

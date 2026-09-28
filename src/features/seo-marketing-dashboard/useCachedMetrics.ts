@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
+import { getSupabaseUrl } from '../../lib/supabaseUrl';
 
 interface CacheEntry<T> {
   data: T;
@@ -144,7 +145,7 @@ export function useCachedMetrics({
 
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/calculate-seo-metrics`,
+        `${getSupabaseUrl()}/functions/v1/calculate-seo-metrics`,
         {
           method: 'POST',
           headers: {
@@ -194,7 +195,7 @@ export function useCachedMetrics({
         if (!cached) {
           try {
             const response = await fetch(
-              `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/calculate-seo-metrics`,
+              `${getSupabaseUrl()}/functions/v1/calculate-seo-metrics`,
               {
                 method: 'POST',
                 headers: {

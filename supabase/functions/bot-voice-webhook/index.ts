@@ -11,13 +11,22 @@
 //     Beim Status-Callback (CallStatus=completed, CallDuration gesetzt) werden
 //     Minuten auf limit.bot_voice_minutes_monthly gebucht.
 //
-//  B) Generisch (application/json)
-//     Body: { tenant_id, bot_id, message, conversation_ref?, event?, duration_seconds? }
-//     Antwortet mit JSON { ok, reply, conversation_id }. event='hangup' mit
-//     duration_seconds bucht Minuten.
+//     Zugriffskontrolle (fail-closed):
+//       1. X-Twilio-Signature gegen TWILIO_AUTH_TOKEN über TWILIO_WEBHOOK_URL
+//          (die bei Twilio hinterlegte öffentliche URL dieser Function).
+//          Fehlt eines davon, wird jeder Aufruf abgewiesen.
+//       2. Tenant und Bot kommen ausschließlich aus voice_number_bindings
+//          über die angerufene Nummer (`To`). tenant_id/bot_id in Query oder
+//          Body werden ignoriert — die kontrolliert der Aufrufer.
 //
-// Tenant/Bot werden via Query-Parameter (?tenant_id=…&bot_id=…) ODER im Body
-// übergeben. verify_jwt = false.
+//  B) Generisch (application/json) — Test-/Integrationskanal für Mitglieder
+//     Body: { tenant_id, bot_id, message, conversation_ref?, event?, duration_seconds? }
+//     Verlangt ein Supabase-User-JWT; der Aufrufer muss Mitglied von
+//     tenant_id sein (memberships). Antwortet mit JSON { ok, reply, conversation_id }.
+//     event='hangup' mit duration_seconds bucht Minuten.
+//
+// verify_jwt = false (config.toml): Twilio ruft ohne JWT; Modus B prüft das
+// JWT selbst.
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
@@ -25,6 +34,9 @@ import { gateFeature, EntitlementError } from '../_shared/entitlements.ts';
 import { recordUsage } from '../_shared/usage.ts';
 import { runAiTool, AiInvokeError } from '../_shared/ai.ts';
 import { enforceBotMessage } from '../_shared/pdp/botmessage.ts';
+import { requireAuthAndTenant } from '../_shared/auth.ts';
+import { verifyTwilioSignature } from '../_shared/twilio-signature.ts';
+import { resolveVoiceNumberBinding } from '../_shared/voice-number-binding.ts';
 import { runRestaurantConversationTurn } from '../_shared/restaurant-conversation.ts';
 import {
   resolveBot, upsertConversation, insertMessage, loadRecentHistory,
@@ -33,6 +45,18 @@ import {
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+const TWILIO_AUTH_TOKEN = Deno.env.get('TWILIO_AUTH_TOKEN');
+// Öffentliche URL dieser Function, exakt wie bei Twilio hinterlegt (ohne
+// Query). req.url ist hinter dem Supabase-Gateway nicht die signierte URL.
+const TWILIO_WEBHOOK_URL = Deno.env.get('TWILIO_WEBHOOK_URL');
+
+if (!TWILIO_AUTH_TOKEN || !TWILIO_WEBHOOK_URL) {
+  console.error(JSON.stringify({
+    level: 'warn',
+    scope: 'bot_voice_webhook_startup',
+    msg: 'TWILIO_AUTH_TOKEN or TWILIO_WEBHOOK_URL not set — Twilio requests are rejected (fail-closed).',
+  }));
+}
 
 function xmlEscape(s: string): string {
   return s
@@ -158,23 +182,34 @@ Deno.serve(async (req) => {
   const contentType = req.headers.get('content-type') ?? '';
   const admin = createClient(SUPABASE_URL, SERVICE_ROLE, { auth: { persistSession: false } });
 
-  // Query-Parameter als Fallback für tenant_id/bot_id (Twilio-Number-Mapping).
-  const qTenant = url.searchParams.get('tenant_id');
-  const qBot = url.searchParams.get('bot_id');
-
   try {
     // ── Modus A: Twilio (form-encoded) ──────────────────────────────────────
-    if (contentType.includes('application/x-www-form-urlencoded') || contentType.includes('multipart/form-data')) {
-      const form = await req.formData();
-      const tenantId = qTenant ?? String(form.get('tenant_id') ?? '');
-      const botId = qBot ?? String(form.get('bot_id') ?? '');
-      const callSid = String(form.get('CallSid') ?? '');
-      const from = String(form.get('From') ?? '');
-      const speech = String(form.get('SpeechResult') ?? '').trim();
-      const callStatus = String(form.get('CallStatus') ?? '');
-      const callDuration = Number(form.get('CallDuration') ?? 0);
+    if (contentType.includes('application/x-www-form-urlencoded')) {
+      const params = new URLSearchParams(await req.text());
+      const signedUrl = TWILIO_WEBHOOK_URL ? `${TWILIO_WEBHOOK_URL}${url.search}` : null;
+      const signed = await verifyTwilioSignature(
+        TWILIO_AUTH_TOKEN, signedUrl, params.entries(), req.headers.get('x-twilio-signature'),
+      );
+      if (!signed) {
+        console.error(JSON.stringify({
+          level: 'warn', scope: 'bot_voice_webhook_signature',
+          configured: Boolean(TWILIO_AUTH_TOKEN && TWILIO_WEBHOOK_URL),
+        }));
+        return new Response('forbidden', { status: 403 });
+      }
 
-      const bot = await resolveBot(admin, tenantId, botId);
+      const binding = await resolveVoiceNumberBinding(admin, params.get('To'), 'twilio');
+      if (!binding) {
+        return twiml('<Say language="de-DE">Diese Rufnummer ist derzeit nicht vergeben.</Say>');
+      }
+      const tenantId = binding.tenant_id;
+      const callSid = params.get('CallSid') ?? '';
+      const from = params.get('From') ?? '';
+      const speech = (params.get('SpeechResult') ?? '').trim();
+      const callStatus = params.get('CallStatus') ?? '';
+      const callDuration = Number(params.get('CallDuration') ?? 0);
+
+      const bot = await resolveBot(admin, binding.tenant_id, binding.bot_id);
 
       // Status-Callback am Anrufende → Minuten buchen, leeres TwiML zurück.
       if (callStatus === 'completed' && callDuration > 0) {
@@ -191,7 +226,9 @@ Deno.serve(async (req) => {
         throw e;
       }
 
-      const actionUrl = `${url.origin}${url.pathname}?tenant_id=${encodeURIComponent(tenantId)}&bot_id=${encodeURIComponent(botId)}`;
+      // Folge-Hits laufen wieder über die signierte URL; der Tenant wird dort
+      // erneut aus der Nummer aufgelöst, nicht aus Parametern.
+      const actionUrl = TWILIO_WEBHOOK_URL!;
       const conversationId = await upsertConversation(admin, bot, {
         channel: 'voice', externalRef: callSid || from || null, contactLabel: from || null,
       });
@@ -215,8 +252,10 @@ Deno.serve(async (req) => {
       return jsonError(400, 'BAD_REQUEST', 'invalid json body');
     }
 
-    const tenantId = qTenant ?? String(body.tenant_id ?? '');
-    const botId = qBot ?? String(body.bot_id ?? '');
+    const auth = await requireAuthAndTenant(req, typeof body.tenant_id === 'string' ? body.tenant_id : null);
+    if (auth instanceof Response) return auth;
+    const tenantId = auth.tenantId;
+    const botId = String(body.bot_id ?? '');
     const bot = await resolveBot(admin, tenantId, botId);
 
     const event = String(body.event ?? 'message');

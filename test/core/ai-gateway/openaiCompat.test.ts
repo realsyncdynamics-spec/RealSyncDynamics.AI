@@ -238,6 +238,12 @@ describe('formatChatResponse', () => {
         expansion_stage: 'studio',
         pdp: { mode: 'shadow', decision: null },
         processors: ['RealSyncDynamicsAI Governance Router (EU)'],
+        controls: {
+          policyGateRequired: false,
+          humanApprovalRequired: false,
+          evidenceRequired: true,
+          reasons: ['cloud_processing'],
+        },
       },
     });
     expect(out.model).toBe('gpt-4o-mini');

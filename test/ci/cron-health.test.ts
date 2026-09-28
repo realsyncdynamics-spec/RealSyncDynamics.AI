@@ -16,7 +16,21 @@
  * kaputt gemeldet; eine Regel über den letzten Lauf meldet sie als repariert.
  */
 import { describe, expect, it } from 'vitest';
-import { causeKey, evaluate, groupByCause, SQL } from '../../scripts/check-cron-health.mjs';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+import {
+  antwortUrsache,
+  beschreibeStatus,
+  causeKey,
+  erwarteterAbstandMinuten,
+  evaluate,
+  evaluateAntworten,
+  evaluateFrische,
+  groupAntwortenByCause,
+  groupByCause,
+  SQL,
+  SQL_ANTWORTEN,
+} from '../../scripts/check-cron-health.mjs';
 
 interface Zeile {
   name: string;
@@ -147,5 +161,215 @@ describe('Die Abfrage misst Läufe, nicht Registrierung', () => {
     // alle vier Ausfälle als gesund gemeldet — sie stehen dort als active.
     expect(SQL).toContain('cron.job_run_details');
     expect(SQL).toContain("status = 'failed'");
+  });
+});
+
+/**
+ * Zweite Ebene: die HTTP-Antwort.
+ *
+ * Diese Tests halten einen Befund fest, den der Guard selbst hatte. Vom
+ * 2026-09-10 bis zum 2026-09-15 fielen neun von elf Dispatch-Jobs aus, und
+ * `Cron Health Guard` blieb fünf Tage grün — zu Recht nach seiner damaligen
+ * Regel: `dispatch_cron_function` setzte den Aufruf ab, `job_run_details`
+ * meldete `succeeded`, und die 401 der Empfänger stand nur in
+ * `net._http_response`.
+ *
+ * Die Zahlen unten sind nicht erfunden, sondern am 2026-09-15 gegen die
+ * Live-DB gemessen.
+ */
+describe('Kadenz ableiten', () => {
+  it('leitet die im Repo vorkommenden Formen korrekt ab', () => {
+    expect(erwarteterAbstandMinuten('*/15 * * * *')).toBe(15);
+    expect(erwarteterAbstandMinuten('0 * * * *')).toBe(60);
+    expect(erwarteterAbstandMinuten('15 * * * *')).toBe(60);
+    expect(erwarteterAbstandMinuten('0 */4 * * *')).toBe(240);
+    expect(erwarteterAbstandMinuten('0 6 * * *')).toBe(24 * 60);
+    expect(erwarteterAbstandMinuten('15 3 * * *')).toBe(24 * 60);
+    expect(erwarteterAbstandMinuten('0 0 * * 1')).toBe(7 * 24 * 60);
+  });
+
+  it('gibt für Unbekanntes null statt einer erfundenen Zahl', () => {
+    // Lieber nicht bewerten als falsch bewerten: ein Job mit unverstandener
+    // Kadenz darf nicht als überfällig gemeldet werden.
+    expect(erwarteterAbstandMinuten('unsinn')).toBeNull();
+    expect(erwarteterAbstandMinuten('')).toBeNull();
+    expect(erwarteterAbstandMinuten('0 0 1 */2 *')).toBeNull();
+  });
+});
+
+describe('Klasse B — überfällig', () => {
+  const jetzt = Date.parse('2026-09-15T12:00:00Z');
+
+  it('meldet einen stündlichen Job, der seit drei Stunden nicht lief', () => {
+    const rows = [job({ name: 'still', schedule: '0 * * * *', last_run: '2026-09-15T09:00:00Z' })];
+    expect(evaluateFrische(rows, jetzt).map((r) => r.name)).toEqual(['still']);
+  });
+
+  it('lässt einen einzelnen verpassten Tick durchgehen', () => {
+    // Toleranz ist der doppelte Abstand plus 15 min Karenz — sonst flattert
+    // der Guard bei jedem verschobenen Lauf.
+    const rows = [job({ name: 'knapp', schedule: '0 * * * *', last_run: '2026-09-15T10:50:00Z' })];
+    expect(evaluateFrische(rows, jetzt)).toEqual([]);
+  });
+
+  it('bewertet inaktive und nie gelaufene Jobs nicht', () => {
+    const rows = [
+      job({ name: 'aus', schedule: '0 * * * *', active: false, last_run: '2026-01-01T00:00:00Z' }),
+      job({ name: 'neu', schedule: '0 * * * *', last_run: null, last_status: null }),
+    ];
+    expect(evaluateFrische(rows, jetzt)).toEqual([]);
+  });
+});
+
+describe('Klasse C — Antwort-Ebene', () => {
+  const gemessen = [
+    { art: 'antwort', status: '(keine Antwort)', anzahl: 1, von: 'a', bis: 'b', beispiel: null },
+    { art: 'antwort', status: '200', anzahl: 37, von: 'a', bis: 'b', beispiel: '{"ok":true}' },
+    { art: 'antwort', status: '401', anzahl: 40, von: 'a', bis: 'b', beispiel: '{"error":"cron only"}' },
+    { art: 'dispatch', status: null, anzahl: 47, von: null, bis: null, beispiel: null },
+  ];
+
+  it('zählt die Messung vom 2026-09-15 als Befund', () => {
+    const a = evaluateAntworten(gemessen);
+    expect(a.summeSchlecht).toBe(41);
+    expect(a.summeGut).toBe(37);
+    expect(a.dispatchLaeufe).toBe(47);
+    expect(a.schlecht[0].status).toBe('401');
+  });
+
+  it('DER BEFUND: alle Jobs job-seitig grün, Antwort-Ebene trotzdem rot', () => {
+    // Genau diese Konstellation lag fünf Tage in Produktion. Wäre die
+    // Job-Ebene die einzige Regel, bliebe der Guard grün.
+    const alleGruen = [
+      job({ name: 'scan-scheduler-dispatch', schedule: '*/15 * * * *', last_run: '2026-09-15T11:15:00Z', fehler: 2824 }),
+      job({ name: 'memory-decay-hourly', schedule: '0 * * * *', last_run: '2026-09-15T11:00:00Z', fehler: 696 }),
+    ];
+    expect(evaluate(alleGruen).broken).toEqual([]);
+    expect(evaluateFrische(alleGruen, Date.parse('2026-09-15T11:20:00Z'))).toEqual([]);
+
+    const a = evaluateAntworten(gemessen);
+    expect(a.summeSchlecht).toBeGreaterThan(0);
+  });
+
+  it('meldet Dispatch-Läufe, auf die gar keine Antwort kam', () => {
+    // Der leiseste Fall: kein Fehler, keine Antwort, nichts.
+    const a = evaluateAntworten([
+      { art: 'antwort', status: '200', anzahl: 2, von: 'a', bis: 'b', beispiel: '{}' },
+      { art: 'dispatch', status: null, anzahl: 9, von: null, bis: null, beispiel: null },
+    ]);
+    expect(a.summeSchlecht).toBe(0);
+    expect(a.ohneAntwort).toBe(7);
+  });
+
+  it('ist still, wenn alles 2xx war', () => {
+    const a = evaluateAntworten([
+      { art: 'antwort', status: '200', anzahl: 12, von: 'a', bis: 'b', beispiel: '{}' },
+      { art: 'antwort', status: '204', anzahl: 3, von: 'a', bis: 'b', beispiel: '' },
+      { art: 'dispatch', status: null, anzahl: 15, von: null, bis: null, beispiel: null },
+    ]);
+    expect(a.summeSchlecht).toBe(0);
+    expect(a.ohneAntwort).toBe(0);
+  });
+
+  it('behandelt 5xx wie 4xx — kein Spezialfall für 401', () => {
+    const a = evaluateAntworten([
+      { art: 'antwort', status: '503', anzahl: 4, von: 'a', bis: 'b', beispiel: 'upstream' },
+      { art: 'dispatch', status: null, anzahl: 4, von: null, bis: null, beispiel: null },
+    ]);
+    expect(a.summeSchlecht).toBe(4);
+  });
+
+  it('vereinheitlicht alle cron-only-Antwortformen auf dieselbe Ursache', () => {
+    const ursachen = [
+      antwortUrsache('{"ok":false,"error":{"code":"UNAUTHORIZED","message":"cron only"}}'),
+      antwortUrsache('{"error":"cron only"}'),
+      antwortUrsache('{"ok":false,"error":"cron only"}'),
+    ];
+    expect(new Set(ursachen).size).toBe(1);
+    expect(ursachen[0]).toContain('cron-vault-secrets.md');
+  });
+
+  it('gruppiert die 40x-401-Messung vom 2026-09-22 zu einer Ursache', () => {
+    const gruppen = groupAntwortenByCause([
+      {
+        art: 'antwort',
+        status: '401',
+        anzahl: 40,
+        von: '2026-09-22 06:15:00.339121+00',
+        bis: '2026-09-22 12:00:00.655852+00',
+        beispiel: '{"ok":false,"error":{"code":"UNAUTHORIZED","message":"cron only"}}',
+      },
+    ]);
+    expect(gruppen).toEqual([
+      {
+        anzahl: 40,
+        ursache: expect.stringContaining('cron-vault-secrets.md'),
+      },
+    ]);
+  });
+
+  it('trennt 401 cron-only von 503 upstream als zwei Ursachen', () => {
+    const gruppen = groupAntwortenByCause([
+      { art: 'antwort', status: '401', anzahl: 40, von: 'a', bis: 'b', beispiel: '{"error":"cron only"}' },
+      { art: 'antwort', status: '503', anzahl: 2, von: 'a', bis: 'b', beispiel: '{"code":"UPSTREAM","message":"upstream timeout"}' },
+    ]);
+    expect(gruppen).toHaveLength(2);
+    expect(gruppen[0]).toEqual({
+      anzahl: 40,
+      ursache: expect.stringContaining('cron-vault-secrets.md'),
+    });
+    expect(gruppen[1]).toEqual({
+      anzahl: 2,
+      ursache: 'UPSTREAM: upstream timeout',
+    });
+  });
+});
+
+describe('Beschriftung der Antwortzeilen', () => {
+  it('nennt Statuscodes als HTTP-Code', () => {
+    expect(beschreibeStatus('401')).toBe('HTTP 401');
+    expect(beschreibeStatus('503')).toBe('HTTP 503');
+  });
+
+  it('gibt der ausgebliebenen Antwort eigene Worte', () => {
+    // „HTTP (keine Antwort)" las sich wie ein Fehler in der Ausgabe selbst.
+    expect(beschreibeStatus('(keine Antwort)')).toBe('ohne Antwort (Zeitueberschreitung)');
+    expect(beschreibeStatus(null)).not.toContain('HTTP');
+  });
+});
+
+describe('SQL_ANTWORTEN', () => {
+  it('ordnet Antworten exakt ueber die Request-ID zu, nicht ueber Zeit', () => {
+    expect(SQL_ANTWORTEN).toContain('net._http_response');
+    expect(SQL_ANTWORTEN).toContain('public.cron_dispatch_requests');
+    expect(SQL_ANTWORTEN).toContain('JOIN net._http_response r ON r.id = l.request_id');
+    // Das Zeitfenster-Matching zaehlte fremde net.http_post-Antworten mit.
+    expect(SQL_ANTWORTEN).not.toContain('EXISTS');
+    expect(SQL_ANTWORTEN).not.toContain('l.start_time');
+    // Juengere Dispatches koennen noch unterwegs sein.
+    expect(SQL_ANTWORTEN).toContain("q.dispatched_at < now() - interval '2 minutes'");
+    // Das Fenster muss zur Aufbewahrung von net._http_response passen.
+    expect(SQL_ANTWORTEN).toContain("interval '6 hours'");
+    expect(SQL_ANTWORTEN).toContain("GROUP BY 1, left(coalesce(r.content, ''), 200)");
+  });
+});
+
+describe('Migration 20260927170000: dispatch_cron_function protokolliert die Request-ID', () => {
+  const sql = readFileSync(
+    resolve(__dirname, '../../supabase/migrations/20260927170000_cron_dispatch_request_log.sql'),
+    'utf8',
+  );
+
+  it('legt die Tabelle an und sperrt sie fuer Clients', () => {
+    expect(sql).toContain('CREATE TABLE IF NOT EXISTS public.cron_dispatch_requests');
+    expect(sql).toContain('ENABLE ROW LEVEL SECURITY');
+    expect(sql).toMatch(/REVOKE ALL ON public\.cron_dispatch_requests FROM PUBLIC, anon, authenticated/);
+  });
+
+  it('schreibt die ID von net.http_post und gibt sie weiter zurueck', () => {
+    expect(sql).toContain('v_request_id := net.http_post(');
+    expect(sql).toContain('INSERT INTO public.cron_dispatch_requests (request_id, function_name)');
+    expect(sql).toContain('RETURN v_request_id;');
+    expect(sql).toContain("SET search_path = ''");
   });
 });

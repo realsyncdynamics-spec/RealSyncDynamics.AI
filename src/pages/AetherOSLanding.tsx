@@ -63,7 +63,7 @@ export function AetherOSLanding() {
           <h2 className="text-6xl font-bold mb-6">AetherOS</h2>
           <p className="text-2xl text-white/70 mb-20">Das KI-Betriebssystem für DSGVO, EU AI Act und echte Souveränität</p>
           <div className="grid md:grid-cols-3 gap-8">
-            {[['Kontinuierliche Governance', 'Echtzeit-Audits & unveränderlicher Evidence Vault'], ['Runtime-native Souveränität', 'EU-Residency, lokale Modelle und volle Kontrolle'], ['Transparente Compliance', 'Metered Billing mit klarer Wertschöpfung']].map(([title, desc], i) => (
+            {[['Laufende Governance', 'Audits auf Knopfdruck & unveränderlicher Evidence Vault'], ['Runtime-native Souveränität', 'EU-Residency, lokale Modelle und volle Kontrolle'], ['Transparente Compliance', 'Metered Billing mit klarer Wertschöpfung']].map(([title, desc], i) => (
               <motion.div key={i} initial={{ opacity: 0, y: 80 }} whileInView={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }} whileHover={{ y: -15 }} className="bg-zinc-900/70 border border-white/10 p-10 rounded-3xl hover:border-amber-400/50 transition-all">
                 <h3 className="text-2xl font-semibold mb-4 text-amber-400">{title}</h3>
                 <p className="text-white/70">{desc}</p>

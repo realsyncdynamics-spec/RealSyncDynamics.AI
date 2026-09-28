@@ -74,7 +74,7 @@ const SPINE_STEPS: readonly {
     id: 'monitor',
     step: '07',
     title: 'MONITOR',
-    body: 'Drift und neue Risiken dauerhaft kontrollieren — Grund zu bleiben.',
+    body: 'Dauerhafte Domain-Überwachung (Coming Soon) — öffentlicher Monitor-Funnel geplant.',
   },
   {
     id: 'audit',

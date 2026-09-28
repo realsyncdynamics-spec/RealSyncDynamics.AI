@@ -49,7 +49,7 @@ const TIMELINE = [
     icon: Clock,
     phase: 'Dauerhaft',
     title: 'Was der Optimizer künftig übernimmt',
-    text: 'Kontinuierliches Monitoring erkennt neue Risiken (Drift), alarmiert dich und dokumentiert jeden Nachweis in der Evidence-Chain.',
+    text: 'Kontinuierliches Monitoring (Coming Soon) soll neue Risiken (Drift) erkennen, alarmieren und Nachweise in der Evidence-Chain dokumentieren — Dauerbetrieb laut Registry noch nicht live.',
   },
 ];
 

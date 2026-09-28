@@ -116,6 +116,15 @@ export const GOVERNANCE_MODULES: GovernanceModule[] = [
     description: 'Laufende Überwachung von Assets und Kontrollen',
   },
   {
+    id: 'ambient-ai',
+    label: 'Ambient AI',
+    icon: 'Activity',
+    route: '/app/ambient-ai',
+    status: 'beta',
+    gate: { kind: 'module', module: 'monitoring' },
+    description: 'Governance für Wearables, Sensoren und physische KI-Runtimes',
+  },
+  {
     id: 'security-signals',
     label: 'Security Signals',
     icon: 'ShieldAlert',
@@ -132,6 +141,15 @@ export const GOVERNANCE_MODULES: GovernanceModule[] = [
     status: 'beta',
     gate: { kind: 'module', module: 'policy_engine' },
     description: 'Auftragsverarbeiter und Drittparteienrisiko',
+  },
+  {
+    id: 'vendor-exposure',
+    label: 'Vendor Exposure',
+    icon: 'ShieldAlert',
+    route: '/app/vendor-exposure',
+    status: 'beta',
+    gate: { kind: 'module', module: 'policy_engine' },
+    description: 'Executive Drittparteien-Exposure aus Risiko, DPA und Transferstatus',
   },
   {
     id: 'reports',
@@ -159,6 +177,15 @@ export const GOVERNANCE_MODULES: GovernanceModule[] = [
     status: 'beta',
     gate: { kind: 'module', module: 'alerts' },
     description: 'Benachrichtigungen bei neuen Findings',
+  },
+  {
+    id: 'actions',
+    label: 'Action Center',
+    icon: 'ListChecks',
+    route: '/app/actions',
+    status: 'beta',
+    gate: { kind: 'module', module: 'remediation' },
+    description: 'Mandantenweite Maßnahmen aus Incidents, DSRs und DSFA-Reviews',
   },
   {
     id: 'remediation',
@@ -216,6 +243,16 @@ export const GOVERNANCE_MODULES: GovernanceModule[] = [
     status: 'live',
     gate: { kind: 'all' },
     description: 'Governance-Agents und ihre Läufe',
+  },
+  {
+    // Geräte-lokales Setup: Verbindung, Rolle, Governance-Test, Profil. Kein Server-Speicher.
+    id: 'local-ai',
+    label: 'Local AI',
+    icon: 'Cpu',
+    route: '/app/local-ai/onboarding',
+    status: 'beta',
+    gate: { kind: 'all' },
+    description: 'Lokale KI (Ollama) prüfen, testen und kontrolliert freischalten',
   },
   {
     id: 'bots',

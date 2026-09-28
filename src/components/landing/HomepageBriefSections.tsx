@@ -1,0 +1,336 @@
+/**
+ * Startseite `/` — Architektur-, Provider-, Nutzen-, Executive- und
+ * Prinzipien-Sektionen der Governance-OS-Positionierung.
+ *
+ * Wenig Text, starke Aussagen: Detailwissen liegt auf Unterseiten
+ * (`/agent-governance`, `/governance-runtime`, `/evidence-vault`). Inhalte
+ * stehen in `hero-content.ts`; hier nur Darstellung.
+ *
+ * Das Zielbild „AI Governance OS" (Control Loop + Einstiegspfad) hängt als
+ * Block in der Architektur-Sektion, nicht als eigene Sektion. Statuswörter
+ * kommen aus `STATUS_LABEL`, der Stand aus `implementation-status.ts`.
+ */
+import { Link } from 'react-router-dom';
+import { ArrowRight } from 'lucide-react';
+import {
+  AGENT_GOVERNANCE_RUNTIME_EXAMPLE,
+  AGENT_GOVERNANCE_RUNTIME_SUMMARY,
+  AGENT_CANNOT,
+  AGENT_LAYER,
+  AGENT_RUNTIME_BOUNDARY,
+  CONTROL_PLANE_LAYERS,
+  GOVERNANCE_OS_ENTRY_PATH,
+  GOVERNANCE_OS_LOOP,
+  GOVERNANCE_OS_TARGET_KICKER,
+  GOVERNANCE_OS_TARGET_LEDE,
+  HOMEPAGE_PROVIDERS,
+  HOMEPAGE_PLANNED_PROVIDERS,
+  HOMEPAGE_TRUST_PRINCIPLES,
+  HOMEPAGE_VALUE,
+  PROVIDER_PLANNED_BADGE,
+  PROVIDER_PLANNED_DISCLAIMER,
+  PROVIDER_NEUTRALITY_SUMMARY,
+} from '../governance-frontend/hero-content';
+import { getImplementation, STATUS_LABEL } from '../../product/implementation-status';
+import { useLang } from '../../i18n/useLang';
+
+const MONO = { fontFamily: 'var(--font-rs-mono)' } as const;
+
+export function ArchitectureSection() {
+  const { lang } = useLang();
+  const runtimeSummary = AGENT_GOVERNANCE_RUNTIME_SUMMARY[lang] ?? AGENT_GOVERNANCE_RUNTIME_SUMMARY.de;
+  const runtimeExample = AGENT_GOVERNANCE_RUNTIME_EXAMPLE[lang] ?? AGENT_GOVERNANCE_RUNTIME_EXAMPLE.de;
+
+  return (
+    <section id="architecture" className="os-section scroll-mt-4" aria-labelledby="architecture-heading">
+      <div className="os-inner grid gap-14 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
+        <div>
+          <p className="os-kicker"><b>AGENT GOVERNANCE</b> ARCHITEKTUR</p>
+          <h2 id="architecture-heading" className="os-display" style={{ fontSize: 'clamp(36px, 4.8vw, 76px)' }}>
+            <span>Agenten können</span>
+            <span>ausführen.</span>
+            <span className="os-dim">Sich selbst</span>
+            <span className="os-dim">autorisieren nicht.</span>
+          </h2>
+          <p className="os-lede">
+            Agenten planen, analysieren und handeln. Über ihre Berechtigung entscheidet die Governance-Schicht —
+            serverseitig, nicht der Agent und nicht der Provider.
+          </p>
+          <div className="os-panel mt-7 px-5 py-5">
+            <h3 className="m-0 text-[11px] tracking-[0.16em]" style={{ ...MONO, color: 'var(--color-rs-cyan)' }}>
+              AGENT GOVERNANCE RUNTIME
+            </h3>
+            <p className="m-0 mt-2 text-[14px] leading-[1.7]" style={{ color: 'var(--color-rs-fg-1)' }}>
+              {runtimeSummary}
+            </p>
+            <p className="m-0 mt-3 text-[13px]" style={{ color: 'var(--color-rs-fg-2)' }}>
+              {runtimeExample}
+            </p>
+          </div>
+          <ul className="mt-8 grid gap-3 p-0" style={{ listStyle: 'none' }}>
+            {AGENT_CANNOT.map((item) => (
+              <li key={item} className="flex items-baseline gap-4 border-b pb-3 text-[16px]" style={{ borderColor: 'var(--color-rs-border)', color: 'var(--color-rs-fg-0)' }}>
+                <span className="text-[11px] tracking-[0.14em]" style={{ ...MONO, color: 'var(--color-rs-fg-2)' }}>
+                  AGENT ✕
+                </span>
+                {item}
+              </li>
+            ))}
+          </ul>
+          <Link to="/agent-governance" className="os-link mt-6">
+            Governance-Modell für Agenten
+            <ArrowRight className="h-4 w-4" aria-hidden="true" />
+          </Link>
+        </div>
+
+        <div className="os-stack" aria-label="Schichtmodell: Agent, Governance-Schicht, Execution Provider">
+          <div className="os-stack__node">
+            <p className="m-0 text-[11px] tracking-[0.16em]" style={{ ...MONO, color: 'var(--color-rs-fg-2)' }}>REQUEST</p>
+            <p className="m-0 mt-1 text-[18px] font-semibold" style={{ color: 'var(--color-rs-fg-0)' }}>AI Agent</p>
+          </div>
+          <span className="os-stack__wire" aria-hidden="true" />
+          <div className="os-stack__node os-stack__node--core">
+            <div className="flex items-center justify-between gap-3">
+              <p className="m-0 text-[11px] tracking-[0.16em]" style={{ ...MONO, color: 'var(--color-rs-cyan)' }}>POLICY AUTHORITY</p>
+              <span className="os-status">Preview</span>
+            </div>
+            <p className="m-0 mt-1 text-[18px] font-semibold" style={{ color: 'var(--color-rs-fg-0)' }}>RealSync Governance Layer</p>
+            <ul className="mt-4 grid grid-cols-2 gap-2 p-0 sm:grid-cols-3" style={{ listStyle: 'none' }}>
+              {AGENT_LAYER.map((gate) => (
+                <li key={gate} className="border px-3 py-2 text-[12px] uppercase tracking-[0.12em]" style={{ ...MONO, borderColor: 'var(--color-rs-border-strong)', color: 'var(--color-rs-fg-0)' }}>
+                  {gate}
+                </li>
+              ))}
+            </ul>
+          </div>
+          <span className="os-stack__wire" aria-hidden="true" />
+          <div className="os-stack__node">
+            <p className="m-0 text-[11px] tracking-[0.16em]" style={{ ...MONO, color: 'var(--color-rs-fg-2)' }}>EXECUTION · KEINE POLICY AUTHORITY</p>
+            <p className="m-0 mt-1 text-[18px] font-semibold" style={{ color: 'var(--color-rs-fg-0)' }}>Execution Provider</p>
+          </div>
+        </div>
+      </div>
+
+      <GovernanceOsTarget />
+    </section>
+  );
+}
+
+/**
+ * Zielbild „AI Governance OS" — Control Loop + Einstiegspfad, innerhalb der
+ * Architektur-Sektion (keine eigene Sektion, WP1).
+ *
+ * Statuswörter kommen ausschließlich aus `STATUS_LABEL`; der Stand jeder
+ * Einstiegsstufe aus `getImplementation(statusId)`.
+ */
+function GovernanceOsTarget() {
+  const { lang } = useLang();
+  const lede = GOVERNANCE_OS_TARGET_LEDE[lang] ?? GOVERNANCE_OS_TARGET_LEDE.de;
+
+  return (
+    <div className="os-inner mt-16" data-testid="governance-os-target">
+      <p className="os-kicker"><b>{GOVERNANCE_OS_TARGET_KICKER}</b></p>
+      <h3
+        id="governance-os-target-heading"
+        className="m-0 mt-4 text-[clamp(24px,2.6vw,38px)] tracking-[-0.01em]"
+        style={{ fontFamily: 'var(--font-rs-serif)', color: 'var(--color-rs-fg-0)' }}
+      >
+        AI Governance OS
+      </h3>
+      <p className="os-lede mt-4">{lede}</p>
+
+      <ol
+        className="mt-8 grid gap-px p-0 sm:grid-cols-2 lg:grid-cols-4"
+        style={{ listStyle: 'none', backgroundColor: 'var(--color-rs-border)' }}
+        aria-label="Control Loop: Observe, Evaluate, Decide, Act, Verify, Record, Learn"
+      >
+        {GOVERNANCE_OS_LOOP.map((stage) => (
+          <li
+            key={stage.step}
+            className="px-5 py-5"
+            style={{ backgroundColor: 'var(--color-rs-bg-1)' }}
+            data-testid={`loop-stage-${stage.step.toLowerCase()}`}
+          >
+            <div className="flex items-baseline justify-between gap-2">
+              <p className="m-0 text-[11px] tracking-[0.16em]" style={{ ...MONO, color: 'var(--color-rs-cyan)' }}>
+                {stage.step}
+              </p>
+              {stage.status && (
+                <span className="os-status" style={{ marginTop: 0 }}>{STATUS_LABEL[stage.status]}</span>
+              )}
+            </div>
+            <p className="m-0 mt-2 text-[15px] leading-[1.5]" style={{ color: 'var(--color-rs-fg-0)' }}>
+              {stage.title}
+            </p>
+          </li>
+        ))}
+      </ol>
+
+      <ol
+        className="mt-10 grid gap-px p-0 sm:grid-cols-2 lg:grid-cols-4"
+        style={{ listStyle: 'none', backgroundColor: 'var(--color-rs-border)' }}
+        aria-label="Einstiegspfad"
+        data-testid="governance-os-entry-path"
+      >
+        {GOVERNANCE_OS_ENTRY_PATH.map((stage, i) => {
+          // Der Modulguard in hero-content.ts schlägt an, bevor eine unbekannte
+          // ID hier ankommen kann — kein stiller Default.
+          const status = getImplementation(stage.statusId)!.status;
+          return (
+            <li
+              key={stage.statusId}
+              className="px-5 py-5"
+              style={{ backgroundColor: 'var(--color-rs-bg-0)' }}
+              data-testid={`entry-stage-${stage.statusId}`}
+            >
+              <span className="text-[11px]" style={{ ...MONO, color: 'var(--color-rs-fg-2)' }} aria-hidden="true">
+                {String(i + 1).padStart(2, '0')}
+              </span>
+              <p className="m-0 mt-3 text-[16px] font-medium leading-[1.4]" style={{ color: 'var(--color-rs-fg-0)' }}>
+                {stage.label}
+              </p>
+              <span className="os-status mt-3">{STATUS_LABEL[status]}</span>
+            </li>
+          );
+        })}
+      </ol>
+
+      <p className="mt-8 text-[clamp(18px,1.8vw,24px)] leading-[1.5]" style={{ fontFamily: 'var(--font-rs-serif)', color: 'var(--color-rs-fg-0)' }}>
+        {AGENT_RUNTIME_BOUNDARY}
+      </p>
+    </div>
+  );
+}
+
+export function ProvidersSection() {
+  const { lang } = useLang();
+  const providerSummary = PROVIDER_NEUTRALITY_SUMMARY[lang] ?? PROVIDER_NEUTRALITY_SUMMARY.de;
+  const providerPlannedBadge = PROVIDER_PLANNED_BADGE[lang] ?? PROVIDER_PLANNED_BADGE.de;
+  const providerPlannedDisclaimer = PROVIDER_PLANNED_DISCLAIMER[lang] ?? PROVIDER_PLANNED_DISCLAIMER.de;
+
+  return (
+    <section id="providers" className="os-section os-section--alt" aria-labelledby="providers-heading">
+      <div className="os-inner">
+        <p className="os-kicker"><b>PROVIDER-NEUTRAL</b> INTELLIGENCE LAYER</p>
+        <h2 id="providers-heading" className="os-display" style={{ fontSize: 'clamp(34px, 4.6vw, 72px)' }}>
+          <span>Any model. Any agent.</span>
+          <span className="os-dim">One control plane.</span>
+        </h2>
+        <p className="os-lede mt-5">
+          {providerSummary}
+        </p>
+
+        <div className="mt-12">
+          <div className="os-panel px-6 py-6">
+            <p className="m-0 text-[11px] tracking-[0.16em]" style={{ ...MONO, color: 'var(--color-rs-cyan)' }}>GOVERNANCE LAYER</p>
+            <p className="m-0 mt-2 text-[clamp(22px,2.2vw,32px)] tracking-[-0.01em]" style={{ fontFamily: 'var(--font-rs-serif)', color: 'var(--color-rs-fg-0)' }}>
+              RealSyncDynamics.AI — Identity · Tenant · Policy · Approval · Evidence
+            </p>
+          </div>
+          <ul className="grid grid-cols-2 gap-px p-0 lg:grid-cols-4" style={{ listStyle: 'none', backgroundColor: 'var(--color-rs-border)', marginTop: 1 }}>
+            {HOMEPAGE_PROVIDERS.map((provider) => (
+              <li key={provider.name} className="px-5 py-5" style={{ backgroundColor: 'var(--color-rs-bg-1)' }}>
+                <p className="m-0 text-[16px] font-medium" style={{ color: 'var(--color-rs-fg-0)' }}>{provider.name}</p>
+                <p className="m-0 mt-1 text-[11px] uppercase tracking-[0.12em]" style={{ ...MONO, color: 'var(--color-rs-fg-2)' }}>{provider.note}</p>
+              </li>
+            ))}
+          </ul>
+          <ul className="grid grid-cols-1 gap-px p-0 lg:grid-cols-2" style={{ listStyle: 'none', backgroundColor: 'var(--color-rs-border)', marginTop: 1 }}>
+            {HOMEPAGE_PLANNED_PROVIDERS.map((provider) => (
+              <li key={provider.name} className="px-5 py-5" style={{ backgroundColor: 'var(--color-rs-bg-1)' }}>
+                <div className="flex items-center gap-2">
+                  <p className="m-0 text-[16px] font-medium" style={{ color: 'var(--color-rs-fg-0)' }}>
+                    {provider.name}
+                    <span className="sr-only"> ({providerPlannedBadge})</span>
+                  </p>
+                  <span aria-hidden="true" className="os-status" style={{ marginTop: 0 }}>{providerPlannedBadge}</span>
+                </div>
+                <p className="m-0 mt-1 text-[11px] uppercase tracking-[0.12em]" style={{ ...MONO, color: 'var(--color-rs-fg-2)' }}>{provider.note}</p>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-5 text-[13px]" style={{ color: 'var(--color-rs-fg-2)' }}>
+            Provider-Neutralität ist Kern des Produkts: Intelligence- und Execution-Provider haben keine
+            Policy Authority.
+          </p>
+          <p className="mt-2 text-[12px]" style={{ color: 'var(--color-rs-fg-2)' }}>
+            {providerPlannedDisclaimer}
+          </p>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+export function ValueSection() {
+  return (
+    <section id="value" className="os-section os-section--alt" aria-labelledby="value-heading">
+      <div className="os-inner">
+        <p className="os-kicker"><b>WIRTSCHAFTLICHER NUTZEN</b></p>
+        <h2 id="value-heading" className="os-h2">
+          Governance, die KI <span className="os-dim">nicht ausbremst.</span>
+        </h2>
+        <ul className="mt-10 grid gap-px p-0 sm:grid-cols-2 lg:grid-cols-4" style={{ listStyle: 'none', backgroundColor: 'var(--color-rs-border)' }}>
+          {HOMEPAGE_VALUE.map((item, i) => (
+            <li key={item} className="px-5 py-6" style={{ backgroundColor: 'var(--color-rs-bg-0)' }}>
+              <span className="text-[11px]" style={{ ...MONO, color: 'var(--color-rs-fg-2)' }} aria-hidden="true">
+                {String(i + 1).padStart(2, '0')}
+              </span>
+              <p className="m-0 mt-3 text-[16px] font-medium leading-[1.4]" style={{ color: 'var(--color-rs-fg-0)' }}>{item}</p>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
+  );
+}
+
+export function ExecutiveSection() {
+  return (
+    <section id="executive" className="os-section" aria-labelledby="executive-heading">
+      <div className="os-inner">
+        <p className="os-kicker"><b>FÜR ENTSCHEIDER</b></p>
+        <h2 id="executive-heading" className="os-display" style={{ fontSize: 'clamp(36px, 5vw, 80px)' }}>
+          <span>Eine Control Plane</span>
+          <span className="os-dim">für Unternehmens-KI.</span>
+        </h2>
+        <ol className="mt-12 grid gap-px p-0 md:grid-cols-3" style={{ listStyle: 'none', backgroundColor: 'var(--color-rs-border)' }}>
+          {CONTROL_PLANE_LAYERS.map((layer) => (
+            <li key={layer.layer} className="px-6 py-8" style={{ backgroundColor: 'var(--color-rs-bg-1)' }}>
+              <p className="m-0 text-[11px] tracking-[0.2em]" style={{ ...MONO, color: 'var(--color-rs-cyan)' }}>{layer.layer}</p>
+              <h3 className="m-0 mt-4 text-[22px] font-semibold tracking-[-0.02em]" style={{ fontFamily: 'var(--font-rs-title)', color: 'var(--color-rs-fg-0)' }}>
+                {layer.title}
+              </h3>
+              <p className="m-0 mt-3 text-[15px] leading-[1.6]" style={{ color: 'var(--color-rs-fg-1)' }}>{layer.body}</p>
+            </li>
+          ))}
+        </ol>
+      </div>
+    </section>
+  );
+}
+
+export function PrinciplesSection() {
+  return (
+    <section id="principles" className="os-section os-section--alt" aria-labelledby="principles-heading">
+      <div className="os-inner">
+        <p className="os-kicker"><b>VERTRAUEN DURCH ARCHITEKTUR</b></p>
+        <h2 id="principles-heading" className="os-h2">
+          Prinzipien statt Siegel. <span className="os-dim">Compliance ist ein Ergebnis guter Governance.</span>
+        </h2>
+        <ul className="mt-10 grid gap-px p-0 md:grid-cols-2 lg:grid-cols-5" style={{ listStyle: 'none', backgroundColor: 'var(--color-rs-border)' }}>
+          {HOMEPAGE_TRUST_PRINCIPLES.map((item) => (
+            <li key={item.title} className="px-5 py-6" style={{ backgroundColor: 'var(--color-rs-bg-0)' }}>
+              <h3 className="m-0 text-[15px] font-semibold uppercase tracking-[0.04em]" style={{ color: 'var(--color-rs-fg-0)' }}>{item.title}</h3>
+              <p className="m-0 mt-3 text-[14px] leading-[1.6]" style={{ color: 'var(--color-rs-fg-1)' }}>{item.body}</p>
+            </li>
+          ))}
+        </ul>
+        <p className="mt-5 text-[13px]" style={{ color: 'var(--color-rs-fg-2)' }}>
+          RealSyncDynamics.AI unterstützt Ihre technischen und organisatorischen Kontrollen für DSGVO und EU AI Act —
+          die rechtliche Bewertung bleibt bei Ihnen.
+        </p>
+      </div>
+    </section>
+  );
+}

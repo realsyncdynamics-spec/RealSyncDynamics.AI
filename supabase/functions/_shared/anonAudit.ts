@@ -12,9 +12,10 @@
 
 /**
  * Muss mit dem CHECK auf `anon_chat_runs.op` übereinstimmen (Migrationen
- * 20260606000000 und 20260822180000). Läuft die Liste auseinander, lehnt die
- * Datenbank den Eintrag ab — und weil der Eintrag VOR der Arbeit geschrieben
- * wird, fällt der ganze anonyme Pfad aus, nicht nur das Protokoll.
+ * 20260606000000, 20260822180000, 20260926000000 und 20260927100000). Läuft die Liste
+ * auseinander, lehnt die Datenbank den Eintrag ab — und weil der Eintrag VOR
+ * der Arbeit geschrieben wird, fällt der ganze anonyme Pfad aus, nicht nur das
+ * Protokoll.
  */
 export type AnonOp =
   | 'chat_anon'
@@ -22,7 +23,9 @@ export type AnonOp =
   | 'explain_finding'
   | 'generate_fix_snippet'
   | 'siteos_build_anon'
-  | 'siteos_refine_anon';
+  | 'siteos_refine_anon'
+  | 'audit_copilot_anon'
+  | 'ai_act_classify_anon';
 
 export type AnonOutcome =
   | 'pending'

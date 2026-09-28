@@ -50,12 +50,14 @@ export interface SEOConfig {
   jsonLd?: Record<string, unknown> | Record<string, unknown>[];
 }
 
+import { lv2FaqJsonLd } from '../components/landing/v2/landing-v2-content';
+
 const SITE_URL = 'https://realsyncdynamicsai.de';
 
 export const DEFAULT_SEO: SEOConfig = {
-  title: 'RealSyncDynamics.AI — Das Governance OS für DSGVO & EU AI Act',
+  title: 'KI-Governance & Kontrollschicht | RealSyncDynamics.AI',
   description:
-    'Das Governance OS für DSGVO und EU AI Act: AI-Systeme, Websites, Agents und Datenflüsse erfassen, Risiken bewerten, Governance durchsetzen und Nachweise führen.',
+    'Kontroll- und Nachweisschicht für Enterprise-KI: Systeme erfassen, Risiken bewerten, Policies steuern und Evidence für DSGVO und EU AI Act erzeugen.',
 };
 
 // ─── JSON-LD Templates (re-used) ─────────────────────────────────────────────
@@ -65,7 +67,7 @@ const PRICING_PRODUCT_JSONLD = {
   '@type': 'Product',
   name: 'RealSyncDynamics.AI Compliance Platform',
   description:
-    'EU-native DSGVO- und EU-AI-Act-Compliance-Infrastruktur mit Website-Audit, Consent-Timing-Analyse, Fix-Empfehlungen und Continuous Monitoring.',
+    'EU-native DSGVO- und EU-AI-Act-Compliance-Infrastruktur mit Website-Audit, Consent-Timing-Analyse, Fix-Empfehlungen und Evidence-Export. Dauerhafte Domain-Überwachung: Coming Soon.',
   brand: { '@type': 'Brand', name: 'RealSyncDynamics.AI' },
   offers: [
     {
@@ -250,22 +252,57 @@ function breadcrumbs(items: Array<{ name: string; url: string }>): Record<string
 
 // ─── Route → SEO-Config Map ──────────────────────────────────────────────────
 
+const LANDING_V2_JSONLD: Record<string, unknown>[] = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    name: 'RealSyncDynamics.AI',
+    url: SITE_URL,
+    logo: `${SITE_URL}/og-image.png`,
+    address: {
+      '@type': 'PostalAddress',
+      streetAddress: 'Schwarzburger Str. 31',
+      postalCode: '98724',
+      addressLocality: 'Neuhaus am Rennweg',
+      addressCountry: 'DE',
+    },
+  },
+  PRICING_PRODUCT_JSONLD,
+  lv2FaqJsonLd(),
+];
+
 export const SEO_CONFIG: Record<string, SEOConfig> = {
   // ─── Tier 1 — Hero / Top-Conversion ──────────────────────────────────────
   '/': {
-    // Europe-OS hero lock — matches hero-content.ts H1.
-    title: 'RealSyncDynamics.AI — AI Compliance Operations OS for Europe',
+    title: 'RealSyncDynamics.AI – AI Compliance Operations OS für Europa | EU AI Act & DSGVO',
     description:
-      'Runtime governance for regulated AI systems. Continuous evidence. EU-native by design. Free Audit starten — Acquisition-Scan, dann Governance OS.',
+      'Discover, Classify, Enforce, Prove: KI-Inventar, Risikoklassen nach EU AI Act, Policies zur Laufzeit und Hash-Chain-Evidenz – EU-hosted in Frankfurt. Free Audit ohne Kreditkarte.',
     canonical: `${SITE_URL}/`,
     ogTitle: 'AI Compliance Operations OS for Europe',
     ogDescription:
-      'Runtime governance for regulated AI systems. Continuous evidence. EU-native by design.',
+      'EU AI Act, DSGVO und ISO/IEC 42001 als Betriebsaufgabe: Inventar, Risikoklassen, Runtime-Policies und prüffähige Evidenz aus einer Plattform.',
+    jsonLd: LANDING_V2_JSONLD,
+  },
+  '/design/landing-v2': {
+    title: 'RealSyncDynamics.AI – Landing v2 (Design-Referenz)',
+    description:
+      'Design-Referenz der Startseite „AI Compliance Operations OS für Europa“. Kanonisch ist /.',
+    canonical: `${SITE_URL}/`,
+    noIndex: true,
+  },
+  '/design/titan': {
+    title: 'RealSyncDynamics.AI — Titan-Fallbackroute der Governance-Landing',
+    description:
+      'Fallbackroute der Landing-Positionierung (Legacy-Titan): Control Plane für Enterprise-KI mit Policies, Freigaben, Ausführung und Evidence als Proof-Layer.',
+    canonical: `${SITE_URL}/design/titan`,
+    ogTitle: 'Titan-Fallbackroute der Governance-Landing',
+    ogDescription:
+      'Fallbackroute: Any model. Any agent. One control plane.',
   },
   '/pricing': {
     title: 'Preise – Runtime-native AI-Governance-Plattform | RealSyncDynamics.AI',
     description:
-      'Free Audit (0 €), Starter (79 €), Growth (249 €), Agency (699 €), Enterprise (auf Anfrage). Runtime-native Governance: kontinuierliche Telemetrie, Policy-Engine, kryptografisch nachvollziehbare Evidenz. EU-Hosting, AVV inklusive.',
+      'Free Audit (0 €), Starter (79 €), Growth (249 €), Agency (699 €), Enterprise (auf Anfrage). Runtime-native Governance: Website-Scans, Policy-Engine, kryptografisch nachvollziehbare Evidenz. EU-Hosting, AVV inklusive.',
     canonical: `${SITE_URL}/pricing`,
     jsonLd: [
       PRICING_PRODUCT_JSONLD,
@@ -389,7 +426,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
   '/digitale-souveraenitaet': {
     title: 'Digitale Souveränität als Betriebsmodell | RealSyncDynamics.AI',
     description:
-      'Digitale Souveränität praktisch umsetzen: transparente Anbieterstruktur, nachweisbare DSGVO- & AI-Act-Governance, Kontrolle über Drittanbieter und Datenflüsse, Evidence Vault und kontinuierliches Monitoring — das Governance OS im Browser-Format.',
+      'Digitale Souveränität praktisch umsetzen: transparente Anbieterstruktur, nachweisbare DSGVO- & AI-Act-Governance, Kontrolle über Drittanbieter und Datenflüsse, Evidence Vault; dauerhafte Domain-Überwachung als Coming Soon — das Governance OS im Browser-Format.',
     canonical: `${SITE_URL}/digitale-souveraenitaet`,
     ogTitle: 'Digitale Souveränität als Betriebsmodell',
     ogDescription:
@@ -420,6 +457,17 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     jsonLd: breadcrumbs([
       { name: 'Home', url: '/' },
       { name: 'Founding Access', url: '/contact-sales' },
+    ]),
+  },
+
+  '/frontend-builder': {
+    title: 'Frontend Builder für SaaS, AI und B2B-Websites',
+    description:
+      'Wir planen, designen und bauen performante Frontends mit klarem Scope statt endloser Vorabstimmungen. Projekt jetzt qualifizieren.',
+    canonical: `${SITE_URL}/frontend-builder`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'Frontend Builder', url: '/frontend-builder' },
     ]),
   },
 
@@ -487,7 +535,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
   '/proliance-alternative': {
     title: 'Proliance Alternative — Web-Compliance-Automation | RealSyncDynamics.AI',
     description:
-      'Proliance ist Compliance-Suite. RealSyncDynamics.AI fokussiert auf Web-Compliance: Pre-Consent-Audit, Fix-Empfehlungen und Continuous Monitoring.',
+      'Proliance ist Compliance-Suite. RealSyncDynamics.AI fokussiert auf Web-Compliance: Pre-Consent-Audit, Fix-Empfehlungen und Audit-Trail; dauerhafte Überwachung Coming Soon.',
     canonical: `${SITE_URL}/proliance-alternative`,
     jsonLd: breadcrumbs([
       { name: 'Home', url: '/' },
@@ -497,7 +545,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
   '/caralegal-alternative': {
     title: 'caralegal Alternative — technische Governance-Runtime neben dem DSMS | RealSyncDynamics.AI',
     description:
-      'caralegal ist ein DSMS für die Datenschutzorganisation. RealSyncDynamics.AI ist die technische Compliance-Runtime daneben: Detect, Govern, Enforce, Prove — Befund, Policy-Entscheidung, Nachweis.',
+      'caralegal ist auf Datenschutz- und KI-Governance-Dokumentation ausgelegt. RealSyncDynamics.AI ist die technische Compliance-Runtime daneben: Detect, Govern, Enforce, Prove — Befund, Policy-Entscheidung, Nachweis.',
     canonical: `${SITE_URL}/caralegal-alternative`,
     jsonLd: breadcrumbs([
       { name: 'Home', url: '/' },
@@ -801,6 +849,16 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
       { name: 'Onboarding erklärt', url: '/onboarding-erklaert' },
     ]),
   },
+  '/ki-governance-in-5-schritten': {
+    title: 'KI-Governance in 5 Schritten — vom KI-Register zum laufenden Betrieb | RealSyncDynamics.AI',
+    description:
+      'Unternehmen verstehen, KI-Register aufbauen, Governance-Regeln aktivieren, Nachweise erzeugen, KI sicher betreiben — mehr als eine KI-Richtlinie: ein Betriebssystem für KI-Governance.',
+    canonical: `${SITE_URL}/ki-governance-in-5-schritten`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'KI-Governance in 5 Schritten', url: '/ki-governance-in-5-schritten' },
+    ]),
+  },
   '/schrems-ii-erklaert': {
     title: 'Schrems II erklärt — Was EuGH-Urteil C-311/18 bedeutet | RealSyncDynamics.AI',
     description:
@@ -1035,11 +1093,33 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
 };
 
 /**
- * Liefert SEO-Config für einen Pfad. Normalisiert trailing slash und fällt
- * auf DEFAULT_SEO zurück, wenn keine Map-Eintrag existiert (z.B. Auth-Pages
- * oder neue Routes ohne Eintrag).
+ * Geführter Flow (`/flow`, `/flow/*`, siehe `src/flow/flowRoutes.ts`):
+ * Prozess- und Funnel-Schritte, keine Inhaltsseiten. Der Namespace ist als
+ * Ganzes `noindex` — fail-closed auch für neue Schritte und unbekannte Slugs,
+ * die `App.tsx` über `/flow/*` ins Flow-Modul leitet. Ein Einzeleintrag je
+ * Schritt würde beides nicht abdecken, weil der Lookup unten exakt ist.
+ *
+ * Wirkt im gerenderten React-Dokument (`SEOHead`), nicht serverseitig: Die
+ * Flow-Routen werden nicht vorgerendert, ein Fetcher ohne JavaScript sieht
+ * weiterhin die generische SPA-Shell.
+ */
+const FLOW_NAMESPACE = '/flow';
+
+export function isFlowPath(path: string): boolean {
+  return path === FLOW_NAMESPACE || path.startsWith(`${FLOW_NAMESPACE}/`);
+}
+
+export const FLOW_SEO: SEOConfig = { ...DEFAULT_SEO, noIndex: true };
+
+/**
+ * Liefert SEO-Config für einen Pfad. Normalisiert trailing slash, setzt den
+ * Flow-Namespace auf `noindex` und fällt sonst auf DEFAULT_SEO zurück, wenn
+ * kein Map-Eintrag existiert (z.B. Auth-Pages oder neue Routes ohne Eintrag).
+ * Die Namespace-Prüfung steht vor dem Lookup, damit kein späterer
+ * Einzeleintrag sie still aushebelt.
  */
 export function getSeoForPath(pathname: string): SEOConfig {
   const path = pathname === '/' ? '/' : pathname.replace(/\/$/, '');
+  if (isFlowPath(path)) return FLOW_SEO;
   return SEO_CONFIG[path] ?? DEFAULT_SEO;
 }

@@ -39,6 +39,7 @@ import {
   LOCAL_AI_ROLES,
   OLLAMA_DOWNLOAD_URL,
   getRole,
+  isCloudModel,
   isModelInstalled,
   isRoleUnlocked,
 } from './roles';
@@ -547,13 +548,18 @@ export function LocalAiOnboardingView() {
                   {installedModels
                     .filter((m) => m !== role.recommendedModel && m !== `${role.recommendedModel}:latest`)
                     .map((m) => (
-                      <option key={m} value={m}>
-                        {m}
+                      <option key={m} value={m} disabled={isCloudModel(m)}>
+                        {isCloudModel(m) ? `${m} (Cloud — nicht lokal)` : m}
                       </option>
                     ))}
                 </select>
               </label>
-              {!modelInstalled && (
+              {isCloudModel(flow.model) ? (
+                <Notice tone="failed">
+                  {flow.model} ist ein Ollama-Cloud-Modell: Anfragen verlassen das Gerät. Für die lokale Runtime bitte ein
+                  lokal installiertes Modell wählen. Cloud-Modelle gehören in einen freigegebenen Cloud-/Hybrid-Betrieb.
+                </Notice>
+              ) : !modelInstalled && (
                 <Notice tone="warning">
                   {flow.model} ist auf diesem Gerät nicht installiert. Installieren mit <Mono>ollama pull {flow.model}</Mono>, danach
                   Verbindung erneut testen.

@@ -49,11 +49,12 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     status: 'live',
     group: 'surface',
     description:
-      'Governance OS: H1 „Die Kontrollschicht für KI im Unternehmen.“ (E-F3), Primär-CTA in den Scan (/audit), Sekundär-CTA Enterprise; Papier & Waldgrün, Europa-Karte als Atlas-Druck, Systemzeile mit eu-central-1 (kein 3D-Globus); System-Story 01–07 → Signature Pipeline (Beispielablauf im Browser) → Agent-Architektur (Preview) inkl. Zielbild „AI Governance OS“ mit Control Loop (Learn = Coming Soon) und Einstiegspfad → Provider-Neutralität → Control Room (Beispielwerte, gekennzeichnet) → Nutzen → Executive → Prinzipien → Governance-Check → Plattform-Preise inkl. Enterprise auf Anfrage.',
+      'AI Compliance Operations OS for Europe: Dark/Gold/Cream Hero mit Europa-Nachtansicht + Gold-Netzwerk, DISCOVER → CLASSIFY → ENFORCE → PROVE, Free Audit, monatlichen Starter/Growth/Agency-Ankern und Enterprise auf Anfrage; darunter Runtime, Evidence, Roadmap und Pricing aus bestehenden SSOTs.',
     route: '/',
     evidence: [
-      'src/pages/design/DesignGovernanceAiLanding.tsx',
-      'src/components/landing/GovernanceOsHero.tsx',
+      'src/pages/MainLanding.tsx',
+      'src/components/landing/OriginalComplianceHero.tsx',
+      'src/components/landing/HeroEarthBackdrop.tsx',
       'src/components/landing/HomepageBriefSections.tsx',
       'src/components/landing/GovernanceSelfCheck.tsx',
       'src/components/landing/GovernanceSystemStory.tsx',

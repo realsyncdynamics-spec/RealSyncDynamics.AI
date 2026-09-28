@@ -121,37 +121,48 @@
   color: var(--color-rs-fg-1);
 }
 
-/* Hero: remove paper/atlas treatment; make the map a restrained control-plane signal. */
+/*
+ * Hero: Europa-Nachtkarte als fotorealistisches Hauptmotiv (Ziel: Handoff-Prototyp).
+ * Karte rechts in voller Deckkraft und Farbe, Verlauf nur am linken Rand und
+ * oben/unten — der Text steht auf ruhigem Grund, die Karte wird nicht gedimmt.
+ */
 .ga-context.rs-handoff .rs-hero {
-  background:
-    linear-gradient(90deg, rgba(5, 8, 13, 1) 0%, rgba(5, 8, 13, 0.98) 42%, rgba(5, 8, 13, 0.72) 67%, rgba(5, 8, 13, 0.42) 100%),
-    var(--color-rs-hero);
+  background: var(--color-rs-hero);
+}
+
+.ga-context.rs-handoff .rs-hero__map {
+  width: min(66vw, 1180px);
+  mix-blend-mode: normal;
+  opacity: 1;
+  /* Weicher Bildrand links statt sichtbarer Kante der perspektivischen Ebene. */
+  -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 26%);
+  mask-image: linear-gradient(90deg, transparent 0%, #000 26%);
+}
+
+.ga-context.rs-handoff .rs-hero__map-main {
+  filter: saturate(1.15) contrast(1.1) brightness(1.1);
+}
+
+.ga-context.rs-handoff .rs-hero__map-depth {
+  display: block;
+  opacity: 0.35;
 }
 
 .ga-context.rs-handoff .rs-hero__fade-x {
-  background: linear-gradient(90deg, #05080d 0%, #05080d 38%, rgba(5, 8, 13, 0.82) 58%, transparent 86%);
+  background: linear-gradient(90deg, #05080d 0%, #05080d 30%, rgba(5, 8, 13, 0.7) 42%, rgba(5, 8, 13, 0.2) 52%, transparent 60%);
 }
 
 .ga-context.rs-handoff .rs-hero__vignette {
-  background: linear-gradient(180deg, #05080d 0%, transparent 14%, transparent 72%, #05080d 100%);
+  background: linear-gradient(180deg, rgba(5, 8, 13, 0.85) 0%, transparent 12%, transparent 84%, #05080d 100%);
 }
 
 .ga-context.rs-handoff .rs-hero__glow {
   display: block;
-  background: radial-gradient(55% 52% at 78% 32%, rgba(22, 199, 217, 0.12), transparent 72%);
+  background: radial-gradient(45% 45% at 74% 42%, rgba(22, 199, 217, 0.08), transparent 72%);
 }
 
 .ga-context.rs-handoff .rs-hero__dots {
   background-image: radial-gradient(rgba(115, 228, 238, 0.1) 0.8px, transparent 1px);
-}
-
-.ga-context.rs-handoff .rs-hero__map {
-  mix-blend-mode: screen;
-  opacity: 0.72;
-}
-
-.ga-context.rs-handoff .rs-hero__map-main {
-  filter: saturate(0.72) hue-rotate(-5deg) brightness(0.72) contrast(1.2);
 }
 
 .ga-context.rs-handoff .rs-hero__status {
@@ -255,9 +266,17 @@
     max-width: 11ch;
   }
 
-  .ga-context.rs-handoff .rs-hero__map { opacity: 0.32; }
-  .ga-context.rs-handoff .rs-hero__fade-x {
-    background: linear-gradient(180deg, rgba(5,8,13,0.7), #05080d 70%);
+  /* Mobil ist die Karte ein eigener Block über dem Text (handoff.css) —
+     volle Deckkraft, Übergang nur über die Vignette. */
+  .ga-context.rs-handoff .rs-hero__map {
+    width: 100%;
+    opacity: 1;
+    -webkit-mask-image: linear-gradient(180deg, #000 55%, transparent 100%);
+    mask-image: linear-gradient(180deg, #000 55%, transparent 100%);
+  }
+  .ga-context.rs-handoff .rs-hero__map-depth { display: none; }
+  .ga-context.rs-handoff .rs-hero__vignette {
+    background: linear-gradient(180deg, #05080d 0%, transparent 14%, transparent 44%, #05080d 62%);
   }
 }
 

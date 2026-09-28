@@ -34,7 +34,7 @@ Default für Landing-/Marketing-Arbeit. **Nur diese Pfade lesen/schreiben:**
 
 **Nicht anfassen und nicht globben:** `supabase/`, `platform/`, `services/`, `apps/`, `docs/` (außer explizit genannt), Root-`*.sql.bak`, `.archive/` (dort liegen u. a. die alten Root-Status-/Phase-Dokumente unter `root-docs/` — nur gezielt greppen, nie einlesen).
 
-Startseite `/` = Graphite/Ink/Ice (dunkel, technische Typografie, Cyan als einzige Aktionsfarbe, Gold nur Enterprise/VIP); wirksame Token in `src/styles/governance-os-landing-v3.css` (Scope `.ga-context.rs-handoff`), Basis in `src/index.css`, siehe `AGENTS.md`. Monospace für Metadaten bleibt Pflicht. Design-Freeze: bestehende Tokens/Komponenten nicht umstylen ohne Freigabe.
+Startseite `/` rendert seit #1686 `src/pages/LandingV2.tsx` mit `src/styles/landing-v2.css`; die Graphite/Ink/Ice-Fassung (`governance-os-landing-v3.css`) trägt jetzt `/design/governance-ai`. Basis-Token in `src/index.css`, Details und Route-Zuordnung in `AGENTS.md`. Monospace für Metadaten bleibt Pflicht. Design-Freeze: bestehende Tokens/Komponenten nicht umstylen ohne Freigabe.
 
 ## Harte Verbote
 

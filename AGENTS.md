@@ -9,17 +9,18 @@ Du bist der „RealSync Lead Architect“. Dein Fachgebiet ist die Entwicklung v
 - **Formen:** 90-Grad-Winkel (strikte Kanten, keine abgerundeten Ecken/Rounded Corners).
 - **Typografie:** Monospace-Schriften für technische Daten und Metadaten.
 
-### Public Landing `/`: Graphite / Ink / Ice, Cyan trägt die Handlung
+### Public Landing `/`: Landing v2
 
-Verbindlich seit Visual v3 (PR #1681): dunkles Graphit, technische Typografie
-statt Serif, Cyan als **einzige** Aktions- und Systemfarbe, warmes Gold nur als
-Enterprise/VIP-Akzent, harte Kanten; die Europa-Karte ist ein gedämpftes
-Control-Plane-Signal, kein Atlas-Druck. Scope `.ga-context.rs-handoff`.
+`/` rendert seit PR #1686 `pages/LandingV2` mit `styles/landing-v2.css`, auch
+erreichbar unter `/design/landing-v2`. Die Graphite/Ink/Ice-Fassung aus PR #1681
+(`styles/governance-os-landing-v3.css`) trägt jetzt `/design/governance-ai`,
+nicht mehr `/`.
 
-Damit ist „Papier & Waldgrün“ (PR #1612) aufgehoben — die dritte Kehrtwende
-dieses Abschnitts. **Wer die Richtung erneut dreht, ändert ihn im selben PR.**
-Unverhandelbar bleiben Monospace für Metadaten (siehe unten) und semantisch
-getrennte Risk-/Statusfarben ohne Brand-/VIP-Tokens.
+Dieser Abschnitt nennt **keine verbindliche Richtung**, weil `/` am 27./28.09.
+dreimal gewechselt hat: Papier & Waldgrün (#1612) → v3 (#1681) → v2 (#1686).
+Wer eine festlegt, schreibt sie hier im selben PR fest. Unverhandelbar bleiben
+Monospace für Metadaten (siehe unten) und semantisch getrennte Risk-/Status-
+farben ohne Brand-/VIP-Tokens.
 
 **Dieses Dokument nennt keine Farbwerte.** Das ist Absicht, nicht Faulheit: Die
 Palette wurde seit Juni dreimal verschoben, und jede Fassung dieser Datei, die
@@ -28,16 +29,14 @@ Tokenliste, die zwei Umbauten hinter der Wirklichkeit lag. Wer den geltenden
 Wert braucht, liest ihn dort, wo er steht; wer ihn ändert, ändert ihn an einer
 Stelle.
 
-- **Was `/` rendert, ist die Referenz.** Auf `c79231a` ist das
-  `pages/design/DesignGovernanceAiLanding` mit `GovernanceAiHeader`. Die
-  frühere Titan-Startseite (`MainLanding`, `PublicDarkHeader`) bleibt als
-  reversibler Rückfall auf `/design/titan` erreichbar — sie ist nicht mehr die
-  Referenz, aber auch nicht tot.
-- **Ein Tokensystem, nicht drei.** Basis in `src/index.css` (`.ga-context`),
-  für `/` überschrieben von `src/styles/governance-os-landing-v3.css` — **das
-  ist die wirksame Quelle**; `index.css` allein beantwortet „welche Farbe gilt
-  auf `/`" nicht mehr. `components/landing/landing-theme.ts` bedient nur die
-  Rückfall-Route; wer sie für `/` liest, liest die falsche Datei.
+- **Was `/` rendert, ist die Referenz.** Seit #1686 `pages/LandingV2`. Die
+  Vorgänger bleiben reversibel erreichbar: die Governance-OS-Landing unter
+  `/design/governance-ai`, die Titan-Fassung (`MainLanding`,
+  `PublicDarkHeader`) unter `/design/titan` — nicht mehr Referenz, nicht tot.
+- **Erst die Route, dann die Datei.** `index.css` (`.ga-context`) ist Basis,
+  nicht Antwort: `/` liest `styles/landing-v2.css`, `/design/governance-ai` den
+  v3-Layer, die Rückfall-Route `components/landing/landing-theme.ts`. Wer die
+  Farbe einer Seite ändern will, sucht zuerst die Route in `App.tsx`.
 - **Kein Farbmodus-Umschalter auf `/`.** Ein Schalter macht die geltende Farbe
   zur Laufzeitwahl des Besuchers, und dann gibt es keinen Design-Lock mehr,
   den man prüfen könnte. Wer eine zweite Fassung zeigen will, baut eine eigene

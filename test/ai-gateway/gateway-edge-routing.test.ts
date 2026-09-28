@@ -17,9 +17,9 @@ import { AiGatewayEdgeError } from '../../src/core/ai-gateway/edgeClient';
 function okClient(output = 'echte Modellantwort') {
   return {
     generate: vi.fn().mockResolvedValue({
-      provider: 'openai',
-      model: 'gpt-4.1-mini',
-      profile: 'cloud-fallback',
+      provider: 'ollama',
+      model: 'llama3.1:8b',
+      profile: 'quality-local',
       output,
       usage: { input_tokens: 12, output_tokens: 8 },
       trace_id: 't-1',
@@ -28,16 +28,16 @@ function okClient(output = 'echte Modellantwort') {
   };
 }
 
-const base: GatewayRequest = { prompt: 'Was verlangt Art. 30 DSGVO?', provider: 'openai' };
+const base: GatewayRequest = { prompt: 'Was verlangt Art. 30 DSGVO?', provider: 'local' };
 
 describe('processAIGatewayRequest — Routing ueber die Edge-Function', () => {
-  it('leitet openai auf das cloud-fallback-Profil und reicht die echte Ausgabe durch', async () => {
+  it('leitet local auf das quality-local-Profil und reicht die echte Ausgabe durch', async () => {
     const client = okClient();
     const res = await processAIGatewayRequest(base, { client });
 
     expect(client.generate).toHaveBeenCalledTimes(1);
     expect(client.generate.mock.calls[0]![0]).toMatchObject({
-      model_profile: 'cloud-fallback',
+      model_profile: 'quality-local',
       task_type: 'chat',
       input: base.prompt,
     });
@@ -48,12 +48,14 @@ describe('processAIGatewayRequest — Routing ueber die Edge-Function', () => {
 
   it('meldet den Provider, der tatsaechlich geantwortet hat — nicht den angefragten', async () => {
     const res = await processAIGatewayRequest(base, { client: okClient() });
-    expect(res.provider).toBe('openai');
-    expect(res.model).toBe('gpt-4.1-mini');
+    expect(res.provider).toBe('ollama');
+    expect(res.model).toBe('llama3.1:8b');
   });
 
   // Kern der Regression: kein Platzhaltertext, kein `success: true`.
-  it.each(['claude', 'gemini'] as const)(
+  // Seit 26.09. hat das Gateway keine Cloud-Kette: auch openai wird abgelehnt,
+  // statt still auf ein lokales Modell umgebogen zu werden.
+  it.each(['claude', 'gemini', 'openai'] as const)(
     'lehnt %s ehrlich ab, statt eine Antwort zu erfinden',
     async (provider) => {
       const client = okClient();
@@ -62,10 +64,21 @@ describe('processAIGatewayRequest — Routing ueber die Edge-Function', () => {
       expect(res.success).toBe(false);
       expect(res.modelOutput).toBeUndefined();
       expect(res.error).toContain(provider);
+      expect(res.error).toContain('Lokales Modell (EU)');
       // Kein Netzwerkaufruf: das Gateway kennt diese Provider nicht.
       expect(client.generate).not.toHaveBeenCalled();
     },
   );
+
+  it('fragt nie das abgeschaltete cloud-fallback-Profil an', async () => {
+    for (const provider of ['local', 'openai', 'claude', 'gemini'] as const) {
+      const client = okClient();
+      await processAIGatewayRequest({ ...base, provider }, { client });
+      for (const call of client.generate.mock.calls) {
+        expect(call[0].model_profile).not.toBe('cloud-fallback');
+      }
+    }
+  });
 
   it('faltet den Seitenkontext sichtbar in die Eingabe', async () => {
     const client = okClient();

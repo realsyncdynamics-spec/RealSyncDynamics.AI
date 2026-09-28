@@ -53,6 +53,23 @@ export function isRoleUnlocked(role: LocalAiRole, baseTest: GovernanceTestSummar
 }
 
 /**
+ * Ollama-Cloud-Modelle erscheinen in `/api/tags` wie lokale Modelle, leiten
+ * die Anfrage aber an Ollamas Cloud weiter (z. B. `glm-4.6:cloud`,
+ * `gpt-oss:120b-cloud`). Für eine lokale Runtime sind sie nie zulässig:
+ * Prompts und Dokumente würden das Gerät verlassen. Erkannt wird allein am
+ * Namen — fail-closed, lieber ein lokales Modell zu viel sperren als ein
+ * Cloud-Modell durchlassen.
+ */
+export function isCloudModel(model: string): boolean {
+  const name = model.trim().toLowerCase();
+  if (!name) return false;
+  const colon = name.lastIndexOf(':');
+  const base = colon === -1 ? name : name.slice(0, colon);
+  const tag = colon === -1 ? '' : name.slice(colon + 1);
+  return tag === 'cloud' || tag.endsWith('-cloud') || base.endsWith('-cloud');
+}
+
+/**
  * Ollama-Tags enthalten oft `:latest`. Ein Modell gilt als installiert, wenn
  * der Name exakt oder als `<name>:latest` vorkommt.
  */

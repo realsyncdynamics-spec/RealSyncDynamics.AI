@@ -408,7 +408,13 @@ function BotBuilderInner() {
                 <CodeBlock label="tenant_id" value={bot.tenant_id} />
                 <CodeBlock label="bot_id" value={bot.id} />
                 {bot.channel === 'voice' && (
-                  <CodeBlock label="Voice-Webhook (Twilio)" value={`${FUNCTIONS_BASE}/bot-voice-webhook?tenant_id=${bot.tenant_id}&bot_id=${bot.id}`} />
+                  <>
+                    <CodeBlock label="Voice-Webhook (Twilio)" value={`${FUNCTIONS_BASE}/bot-voice-webhook`} />
+                    <p className="text-xs text-titanium-500">
+                      Anrufe werden über die angerufene Rufnummer diesem Bot zugeordnet und per Twilio-Signatur geprüft.
+                      Die Rufnummer wird serverseitig freigeschaltet.
+                    </p>
+                  </>
                 )}
                 <CodeBlock
                   label="Beispiel-Request"

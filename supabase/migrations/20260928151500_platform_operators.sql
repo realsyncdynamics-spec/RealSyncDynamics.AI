@@ -206,10 +206,27 @@ CREATE TRIGGER trig_platform_operators_sync
 -- bleibt SECURITY INVOKER — als DEFINER wäre `current_user` immer `postgres`
 -- und die Fehlermeldung nutzlos.
 --
--- Notfallweg, bewusst dokumentiert statt versteckt: Wer als `postgres` wirklich
--- direkt schreiben muss, setzt in derselben Transaktion
--- `select set_config('rsd.platform_operator_sync','1',true);`. Das ist dann
--- eine sichtbare, absichtliche Umgehung und kein Versehen.
+-- Der Marker allein reicht NICHT: `set_config` steht jeder Rolle offen, auch
+-- `service_role`. Er zaehlt deshalb nur innerhalb einer Trigger-Kette
+-- (`pg_trigger_depth() > 1`) — also wenn das UPDATE aus dem Sync-Trigger auf
+-- platform_operators kommt, nicht aus einer Sitzung, die ihn selbst setzt.
+-- Befund der CodeRabbit-Review auf #1619.
+--
+-- Auch INSERT ist gesperrt: Ein neues Profil mit is_super_admin = true waere
+-- ebenfalls eine Plattformrolle ohne Quelle. `anon`/`authenticated` haben
+-- live INSERT auf profiles inklusive dieser Spalte und werden heute nur von
+-- RLS (keine INSERT-Policy) aufgehalten — eine Schicht. `service_role` umgeht
+-- RLS ganz. Der Signup-Pfad legt Profile mit dem Default false an und bleibt
+-- unberuehrt.
+--
+-- Notfallweg, bewusst dokumentiert statt versteckt: Wer als Tabelleneigentuemer
+-- (`postgres`) wirklich direkt schreiben muss, schaltet den Waechter in
+-- derselben Transaktion sichtbar ab und wieder an:
+--   ALTER TABLE public.profiles DISABLE TRIGGER trig_profiles_guard_privileged_columns;
+--   ... ;
+--   ALTER TABLE public.profiles ENABLE TRIGGER trig_profiles_guard_privileged_columns;
+-- Das ist eine sichtbare, absichtliche Umgehung und kein Versehen — und sie
+-- steht nur dem Eigentuemer offen, nicht service_role.
 
 CREATE OR REPLACE FUNCTION public.profiles_guard_privileged_columns()
 RETURNS TRIGGER
@@ -218,8 +235,14 @@ SECURITY INVOKER
 SET search_path TO 'public', 'pg_temp'
 AS $fn$
 BEGIN
-    IF NEW.is_super_admin IS DISTINCT FROM OLD.is_super_admin
-       AND coalesce(current_setting('rsd.platform_operator_sync', true), '') <> '1'
+    IF (
+           (TG_OP = 'INSERT' AND NEW.is_super_admin IS TRUE)
+        OR (TG_OP = 'UPDATE' AND NEW.is_super_admin IS DISTINCT FROM OLD.is_super_admin)
+       )
+       AND NOT (
+           coalesce(current_setting('rsd.platform_operator_sync', true), '') = '1'
+           AND pg_trigger_depth() > 1
+       )
     THEN
         RAISE EXCEPTION
             'profiles.is_super_admin ist abgeleitet — Plattformrechte werden in public.platform_operators vergeben (Rolle: %)',
@@ -233,11 +256,12 @@ $fn$;
 COMMENT ON FUNCTION public.profiles_guard_privileged_columns() IS
     'B1 + D5: profiles.is_super_admin ist weder clientseitig noch direkt setzbar. '
     'Einziger Weg ist public.platform_operators; der Sync-Trigger traegt den '
-    'Sitzungsmarker rsd.platform_operator_sync.';
+    'Sitzungsmarker rsd.platform_operator_sync, der nur innerhalb einer '
+    'Trigger-Kette zaehlt. Gilt fuer INSERT und UPDATE.';
 
--- Der Trigger selbst ist unveraendert aus 20260915120000; hier nur zur
--- Sicherheit neu gesetzt, falls er fehlt.
+-- Der Trigger aus 20260915120000 lief nur BEFORE UPDATE; er greift jetzt auch
+-- bei INSERT (siehe oben).
 DROP TRIGGER IF EXISTS trig_profiles_guard_privileged_columns ON public.profiles;
 CREATE TRIGGER trig_profiles_guard_privileged_columns
-    BEFORE UPDATE ON public.profiles
+    BEFORE INSERT OR UPDATE ON public.profiles
     FOR EACH ROW EXECUTE FUNCTION public.profiles_guard_privileged_columns();

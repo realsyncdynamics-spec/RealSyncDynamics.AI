@@ -227,6 +227,39 @@ d('D5 — platform_operators als einzige Quelle der Plattform-Rolle', () => {
     expect(await flag(u.userId)).toBe(false);
   });
 
+  it('der Sync-Marker oeffnet den Direktweg nicht — er zaehlt nur im Trigger', async () => {
+    // set_config steht jeder Rolle offen. Zaehlte der Marker allein, koennte
+    // service_role ihn selbst setzen und das Flag an der Quelle vorbei
+    // schreiben. Befund der CodeRabbit-Review auf #1619.
+    const u = await seedNutzer();
+    await expect(
+      ctx!.withClaims({ sub: u.userId, role: 'service_role' }, async () => {
+        await ctx!.client.query(`SELECT set_config('rsd.platform_operator_sync', '1', true)`);
+        await ctx!.client.query(`UPDATE public.profiles SET is_super_admin = true WHERE id = $1`, [u.userId]);
+      }),
+    ).rejects.toThrow(/platform_operators/);
+    expect(await flag(u.userId)).toBe(false);
+  });
+
+  it('ein neues Profil kann nicht schon mit Plattformrolle angelegt werden', async () => {
+    // Das Profil vorher entfernen: Sonst scheitert der INSERT am Primaerschluessel
+    // und der Test bestuende aus dem falschen Grund.
+    const u = await seedNutzer();
+    await ctx!.client.query(`DELETE FROM public.profiles WHERE id = $1`, [u.userId]);
+    await expect(
+      ctx!.withClaims({ sub: u.userId, role: 'service_role' }, async () => {
+        await ctx!.client.query(
+          `INSERT INTO public.profiles (id, full_name, is_super_admin) VALUES ($1, 'Neu', true)`, [u.userId],
+        );
+      }),
+    ).rejects.toThrow(/platform_operators/);
+    // Gegenprobe: Der Signup-Weg mit dem Default false bleibt offen.
+    await ctx!.withClaims({ sub: u.userId, role: 'service_role' }, async () => {
+      await ctx!.client.query(`INSERT INTO public.profiles (id, full_name) VALUES ($1, 'Neu')`, [u.userId]);
+    });
+    expect(await flag(u.userId)).toBe(false);
+  });
+
   it('eine erlaubte Profilaenderung bleibt moeglich, solange das Flag gleich bleibt', async () => {
     // Gegenprobe zum Waechter: Er darf nur is_super_admin sperren, nicht jedes
     // UPDATE auf profiles.

@@ -1,7 +1,12 @@
 #!/usr/bin/env -S node --experimental-strip-types
 // QA Smoke Test — fetch-only health/contract probes against the public
-// surface + Supabase Edge Functions. No Playwright, no auth tokens.
+// surface + Supabase Edge Functions. No Playwright.
 // Designed for post-deploy verification.
+//
+// Keine Nutzer-Sitzung, kein Geheimnis: Der einzige Schlüssel ist der
+// öffentliche Anon-Key (SUPABASE_ANON_KEY, liegt ohnehin im Frontend-Bundle).
+// Die beiden Autorisierungs-Proben brauchen ihn, weil sie gerade belegen,
+// dass er allein NICHT genügt.
 //
 // Usage:
 //   tsx scripts/qa-smoke-test.ts
@@ -94,6 +99,49 @@ const probes: Probe[] = [
       }
     },
   },
+  // ── Der Anon-Key ist keine Autorisierung ────────────────────────────────
+  //
+  // Der öffentliche Anon-Key liegt im Frontend-Bundle und ist ein gültiges
+  // JWT. `verify_jwt = true` in config.toml lässt ihn deshalb passieren —
+  // die Plattform-Einstellung ist ein Vorfilter gegen tokenlose Aufrufe,
+  // kein Autorisierungs-Tor. Am 2026-09-27 gegen die deployten Functions
+  // gemessen: ohne Header 401, MIT Anon-Key erreichten beide Functions ihre
+  // eigene Validierung (HTTP 400). Genau darauf beruhten #1392, #1615 und
+  // #1627.
+  //
+  // Diese beiden Proben sind der Laufzeit-Nachweis dafür, dass die
+  // Mitgliedschaftsprüfung wirklich VOR der Arbeit steht. Sie sind bis zum
+  // Deploy von #1615/#1627 rot — das ist gewollt und der Punkt.
+  //
+  // Die Körper sind so gewählt, dass sie auf KEINEM Stand Arbeit auslösen:
+  // ohne Fix endet der Aufruf in der Feldprüfung (400), mit Fix im Resolver
+  // (401). Kein Provider-Call, kein Schreibvorgang, keine Kosten.
+  {
+    name: 'optimize-analyze · Anon-Key allein reicht nicht (401, nicht 400)',
+    run: async () => {
+      if (!ANON_KEY) return anonKeyFehlt();
+      return postFn('optimize-analyze', {}, (status) => ({
+        ok: status === 401,
+        detail: status === 400
+          ? 'HTTP 400 — der Aufruf hat die Validierung der Function erreicht, die Autorisierung greift also nicht vor der Arbeit (#1615 nicht deployed)'
+          : `erwartet 401, erhalten ${status}`,
+      }));
+    },
+  },
+  {
+    name: 'website-maintenance-agent · Anon-Key allein reicht nicht (401, nicht 400)',
+    run: async () => {
+      if (!ANON_KEY) return anonKeyFehlt();
+      // 'scan-seo' passiert die Aktions-Prüfung; ohne Fix bleibt der Aufruf
+      // an der project_id hängen (400), mit Fix am Resolver (401).
+      return postFn('website-maintenance-agent', { action: 'scan-seo' }, (status) => ({
+        ok: status === 401,
+        detail: status === 400
+          ? 'HTTP 400 — der Aufruf hat die Feldprüfung der Aktion erreicht, die Autorisierung greift also nicht vor der Arbeit (#1627 nicht deployed)'
+          : `erwartet 401, erhalten ${status}`,
+      }));
+    },
+  },
   {
     name: 'governance-agent · without acknowledge_us_routing returns 412',
     run: async () => postFn('governance-agent', { op: 'chat', tenant_id: '00000000-0000-0000-0000-000000000000', message: 'hi' }, (status) =>
@@ -157,6 +205,21 @@ async function fetchAndExpect(url: string, predicate: (r: { ok: boolean; status:
   } catch (e) {
     return { name: '', ok: false, detail: (e as Error).message };
   }
+}
+
+/**
+ * Ohne den öffentlichen Anon-Key ist der Nachweis nicht zu führen: `postFn`
+ * schickte dann gar keinen Header, die Plattform antwortete 401 — und die
+ * Probe bestünde aus dem falschen Grund. Ein stilles Bestehen ist bei einer
+ * Sicherheitsprobe der schlechteste Ausgang, deshalb gilt der fehlende
+ * Schlüssel als Fehlschlag mit benanntem Grund.
+ */
+function anonKeyFehlt(): Result {
+  return {
+    name: '',
+    ok: false,
+    detail: 'SUPABASE_ANON_KEY nicht gesetzt — ohne ihn belegt die Probe nichts (der Schlüssel ist öffentlich)',
+  };
 }
 
 async function postFn(

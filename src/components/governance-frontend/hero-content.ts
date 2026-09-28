@@ -2,6 +2,7 @@
  * SSOT Hero-Copy — Dominik Go Homepage 2026-09-24 (Positionierungsbrief).
  * Control-/Evidence-Layer für KI (nicht Website-Builder / CodeRabbit).
  */
+import { getImplementation, type ImplementationStatus } from '../../product/implementation-status';
 
 export type HeroHeadlineSegment = {
   text: string;
@@ -21,12 +22,17 @@ export const GOVERNANCE_AI_HERO_KICKER = 'THE GOVERNANCE OS FOR AUTONOMOUS AI' a
 export const GOVERNANCE_AI_HERO_HEADLINE: readonly (readonly HeroHeadlineSegment[])[] = HERO_HEADLINE;
 
 /**
- * Substring der sichtbaren H1 auf `/` („Europa braucht kein weiteres
- * Frontier-Modell. Europa braucht Kontrolle über Frontier-KI.",
- * `src/i18n/handoff.ts`, Governance-OS-Positionierung).
- * Genutzt von tests/e2e/public-routes.spec.ts (FE-001).
+ * Substring der sichtbaren H1 auf `/` („Die Kontrollschicht für KI im
+ * Unternehmen.", gesetzt in `src/i18n/handoff.ts` → `heroA`–`heroC`;
+ * Entscheidung E-F3 vom 2026-09-27).
+ * Genutzt von tests/e2e/public-routes.spec.ts (FE-001); der Abgleich gegen die
+ * wirklich gerenderte H1 liegt in test/landing/homepage-hero.test.tsx.
+ *
+ * Nicht zu verwechseln mit `HERO_HEADLINE_TEST_SUBSTRING`: das gehört zur
+ * `HERO_HEADLINE` der Titan-/Design-Referenzen (`/design/titan`, `/design/ledger`,
+ * `/design/tribunal`), die weiterhin „Frontier-KI" zeigen.
  */
-export const GOVERNANCE_AI_HERO_TEST_SUBSTRING = 'Frontier-KI' as const;
+export const GOVERNANCE_AI_HERO_TEST_SUBSTRING = 'Kontrollschicht' as const;
 
 export const GOVERNANCE_AI_HERO_SUBLINE =
   'RealSyncDynamics.AI ist die Control Plane für Enterprise-KI. Wir bauen nicht die Intelligenz selbst. Wir bauen die Kontroll-, Autorisierungs- und Evidenzschicht zwischen Unternehmen und KI.' as const;
@@ -104,6 +110,27 @@ export const HERO_PROOF_CHIPS = [
 /** Header + final CTA primary. */
 export const HERO_SCAN_CTA_LABEL = 'Governance-Scan starten' as const;
 export const HERO_SCAN_CTA_LONG = 'Governance-Scan starten' as const;
+
+/**
+ * Hero-CTAs auf `/` (WP1). Eigene Konstanten, weil `HERO_SCAN_CTA_LABEL` /
+ * `HERO_SCAN_CTA_LONG` und `PUBLIC_CTA.label` den Header und die
+ * Design-Referenzen tragen — dort bleibt „Governance-Scan starten".
+ * Ziel des Primär-CTA ist `PUBLIC_CTA.to` (`/audit`), nicht hier verdrahtet.
+ */
+export const HERO_FREE_SCAN_CTA_LABEL = {
+  de: 'Kostenlosen KI-/DSGVO-Scan starten',
+  en: 'Start the free AI / GDPR scan',
+} as const;
+
+/*
+ * Der Sekundär-CTA im Hero trägt bewusst KEIN eigenes Label hier: Das WP1-Brief
+ * nennt „Enterprise sprechen", die CTA-SSoT des Repos lässt aber genau eine
+ * kontaktbasierte CTA zu — `runtimeVocab.CTA.enterprise` („Enterprise anfragen",
+ * bilingual über `t('ctaEnterprise')`). Siehe `.github/workflows/cta-enforcement.yml`
+ * und test/content/ctaDiscipline.test.ts. Ein zweites Kontakt-Label wäre genau
+ * die Dublette, die das Brief an anderer Stelle verbietet. Entscheidung über die
+ * Wortwahl liegt beim Merge (siehe PR).
+ */
 /** Hero secondary CTA (Handoff v2, Ziel `/app/dashboard`). */
 export const HERO_DASHBOARD_CTA_LABEL = 'Live Dashboard ansehen' as const;
 /** Anker-CTA auf den Beispiel-Audit-Trail (`#audit-trail`, Titan-Referenzhero). */
@@ -295,6 +322,55 @@ export const AGENT_CANNOT = [
 
 export const AGENT_LAYER = ['Identity', 'Tenant', 'Policy', 'Risk', 'Approval'] as const;
 
+/**
+ * Zielbild „AI Governance OS" in der Architektur-Sektion (WP1).
+ *
+ * Der Control Loop beschreibt die Kontrollschleife, nicht den Funktionsstand.
+ * Genau eine Stufe trägt einen Statuswert: `LEARN / Governed Evolution` ist
+ * `coming-soon` und wird über `STATUS_LABEL` beschriftet — die Landing setzt
+ * keine eigenen Statuswörter.
+ */
+export const GOVERNANCE_OS_TARGET_KICKER = 'AI GOVERNANCE OS · ZIELBILD' as const;
+
+export const GOVERNANCE_OS_TARGET_LEDE = {
+  de: 'Das Zielbild ist ein geschlossener Kontrollkreis über jede KI-Aktion. Was heute schon läuft, steht im Einstiegspfad darunter — mit dem Stand, den die Implementierungs-Registry ausweist.',
+  en: 'The target picture is a closed control loop around every AI action. What already runs today is in the entry path below — with the status the implementation registry reports.',
+} as const;
+
+export const GOVERNANCE_OS_LOOP: readonly {
+  step: string;
+  title: string;
+  /** Gesetzt → Badge aus `STATUS_LABEL`; ohne Statuswert keine Zusage. */
+  status?: ImplementationStatus;
+}[] = [
+  { step: 'OBSERVE', title: 'Beobachten' },
+  { step: 'EVALUATE', title: 'Bewerten' },
+  { step: 'DECIDE', title: 'Entscheiden' },
+  { step: 'ACT', title: 'Handeln' },
+  { step: 'VERIFY', title: 'Verifizieren' },
+  { step: 'RECORD', title: 'Nachweisen' },
+  { step: 'LEARN', title: 'Governed Evolution', status: 'coming-soon' },
+];
+
+/**
+ * Einstiegspfad unter dem Loop. Der Status jeder Stufe kommt aus
+ * `src/product/implementation-status.ts` über `statusId` — ein Statuswechsel
+ * dort ändert die Landing, ohne dass hier Copy angefasst wird.
+ */
+export const GOVERNANCE_OS_ENTRY_PATH: readonly {
+  label: string;
+  statusId: string;
+}[] = [
+  { label: 'Scan', statusId: 'free-audit' },
+  { label: 'Governance Core', statusId: 'governance-runtime-core' },
+  { label: 'Kontrollierte Bots und Agenten', statusId: 'agent-governance' },
+  { label: 'Agent OS Premium', statusId: 'agent-os-mesh-specialists' },
+];
+
+/** Grenze der Agenten-Ausführung — Kernsatz der Architektur-Sektion. */
+export const AGENT_RUNTIME_BOUNDARY =
+  'Agenten dürfen handeln — aber nur innerhalb der Governance-Runtime.' as const;
+
 export const AGENT_GOVERNANCE_RUNTIME_SUMMARY = {
   de: 'Werkzeugzugriffe, Berechtigungen, Risikoklassen, Human-in-the-loop-Freigaben, Budget- und Quotenlimits, Datenzugriffe, Provider-Auswahl, Ausführungsrichtlinien und Evidence-Logs.',
   en: 'Tool access, permissions, risk classes, human-in-the-loop approvals, budget/quota limits, data access, provider selection, execution policies, and evidence logs.',
@@ -469,5 +545,20 @@ if (!HERO_HEADLINE_LINES.some((line) => line.includes(HERO_HEADLINE_TEST_SUBSTRI
   throw new Error(
     'hero-content.ts: HERO_HEADLINE_TEST_SUBSTRING kommt in keiner Zeile der ' +
       'HERO_HEADLINE vor — FE-001 würde fehlschlagen.',
+  );
+}
+
+/**
+ * Ein `statusId` ohne Eintrag in der Registry darf nicht still auf einen
+ * Default zurückfallen — dann stünde ein erfundener Status auf der Startseite.
+ */
+const UNRESOLVED_ENTRY_STATUS_IDS = GOVERNANCE_OS_ENTRY_PATH
+  .filter((stage) => getImplementation(stage.statusId) === undefined)
+  .map((stage) => stage.statusId);
+
+if (UNRESOLVED_ENTRY_STATUS_IDS.length > 0) {
+  throw new Error(
+    'hero-content.ts: GOVERNANCE_OS_ENTRY_PATH verweist auf unbekannte IDs in ' +
+      `implementation-status.ts: ${UNRESOLVED_ENTRY_STATUS_IDS.join(', ')}`,
   );
 }

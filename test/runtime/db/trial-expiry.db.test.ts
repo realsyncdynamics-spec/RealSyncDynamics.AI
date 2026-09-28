@@ -26,9 +26,13 @@ const d = skip ? describe.skip : describe;
 
 const TAG = 86_400_000;
 
+/**
+ * Als Server aufrufen. CI-Bootstrap und scripts/test-db/bootstrap.sql lesen
+ * `auth.role()` aus dem JSON-Setting `request.jwt.claims` (wie bots-quota.db.test.ts),
+ * nicht aus den Einzel-Settings `request.jwt.claim.*`.
+ */
 async function alsServer(ctx: DbCtx): Promise<void> {
-  await ctx.client.query(`SELECT set_config('request.jwt.claim.sub', '', false)`);
-  await ctx.client.query(`SELECT set_config('request.jwt.claim.role', 'service_role', false)`);
+  await ctx.client.query(`SELECT set_config('request.jwt.claims', $1, false)`, [JSON.stringify({ role: 'service_role' })]);
 }
 
 /** Growth-Abo des Mandanten in den gewünschten Zustand setzen (der tenants-Trigger hat bereits ein Free-Abo angelegt). */

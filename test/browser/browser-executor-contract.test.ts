@@ -45,7 +45,13 @@ describe('governed browser executor contract', () => {
 
   it('records browser-execute as measured production state', () => {
     expect(productionRegistry).toContain("'browser-execute'");
-    expect(productionRegistry).toContain('EDGE_FUNCTIONS_OBSERVED_MAX = 191');
+    // browser-execute kam mit der Messung 191 dazu. Der Zähler darf danach
+    // nur steigen — jeder weitere Deploy hebt ihn an. Ein exakter Literal-
+    // Vergleich (`= 191`) brach deshalb bei der nächsten Neumessung
+    // (local-ai-runtime, 192), ohne dass sich an browser-execute etwas änderte.
+    const observed = productionRegistry.match(/EDGE_FUNCTIONS_OBSERVED_MAX = (\d+)/);
+    expect(observed).not.toBeNull();
+    expect(Number(observed![1])).toBeGreaterThanOrEqual(191);
     expect(productionRegistry).not.toContain("{ slug: 'browser-execute'");
   });
 });

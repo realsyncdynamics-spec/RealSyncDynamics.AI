@@ -109,7 +109,7 @@ Deno.serve(async (req) => {
 
     await logDeploymentEvent(body.project_id, tenantId, body.action, 'success', 'OK');
 
-    return jsonResponse(200, { success: true, data: result.data });
+    return jsonResponse({ success: true, data: result.data }, 200);
   } catch (err) {
     console.error('Error in cloudflare-deployer:', err);
     return jsonError(500, 'INTERNAL_ERROR', err instanceof Error ? err.message : 'Unknown error');

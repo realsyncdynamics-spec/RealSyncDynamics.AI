@@ -117,6 +117,8 @@ const FORBIDDEN_CLIENT = [
   // Stand 2026-09-27 in Prod fuer anon ausfuehrbar, obwohl die Migration nur
   // service_role wollte (20260927114512).
   'ai_evidence_purge_expired',
+  // Gate 2 (20260928140100): schreibt in die Evidence-Kette, nur service_role.
+  'append_governance_evidence',
 ];
 
 // ── Ausfuehrung ──────────────────────────────────────────────────────────────

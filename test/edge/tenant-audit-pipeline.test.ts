@@ -34,6 +34,8 @@ interface Db {
   evidence: Array<Record<string, unknown>>;
   websites: Array<WebsiteRow & { tenant_id: string }>;
   failEvidenceInsert?: boolean;
+  /** Called before each append: lets a test move the chain head concurrently. */
+  beforeAppend?: () => void;
   updates: Array<{ table: string; patch: Record<string, unknown>; id: unknown }>;
   failFindingInsert?: boolean;
   failComplete?: boolean;
@@ -86,8 +88,12 @@ function memRepo(db: Db): AuditRepo {
       const own = db.evidence.filter((e) => e.tenant_id === tenantId && e.content_hash);
       return (own.at(-1)?.content_hash as string | undefined) ?? null;
     },
-    async insertEvidence(row) {
+    async appendEvidence(row, expected) {
       if (db.failEvidenceInsert) throw new Error('governance_evidence insert: denied');
+      db.beforeAppend?.();
+      const own = db.evidence.filter((e) => e.tenant_id === row.tenant_id && e.content_hash);
+      const head = (own.at(-1)?.content_hash as string | undefined) ?? null;
+      if (head !== expected) return 'conflict';
       db.evidence.push(row);
       return { id: row.id as string };
     },
@@ -109,6 +115,7 @@ function memRepo(db: Db): AuditRepo {
     async updateFinding(id, expectStatus, patch) {
       const f = db.findings.find((x) => x.id === id && x.status === expectStatus);
       if (f) Object.assign(f, patch);
+      return f ? 1 : 0;
     },
   };
 }
@@ -374,5 +381,53 @@ describe('Gate 2 · re-scan dedupe', () => {
     db.findings.push({ id: 'f-foreign', tenant_id: OTHER_TENANT, detector: 'gdpr-audit', status: 'open', dedupe_key: dedupeKey('csp_missing', 'example.de'), raw_payload: {} });
     await runTenantAuditPipeline(deps, input);
     expect(db.findings.find((f) => f.id === 'f-foreign')).toMatchObject({ status: 'open', raw_payload: {} });
+  });
+});
+
+describe('Gate 2 · review #1698', () => {
+  it('chain head moved by a concurrent writer → re-read, re-hash, append to the new head', async () => {
+    const { db, deps } = setup();
+    db.evidence.push({ id: 'e-0', tenant_id: TENANT, content_hash: 'h0' });
+    let moved = false;
+    db.beforeAppend = () => {
+      if (!moved) { moved = true; db.evidence.push({ id: 'e-concurrent', tenant_id: TENANT, content_hash: 'h-concurrent' }); }
+    };
+    const r = await runTenantAuditPipeline(deps, input);
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    const ev = db.evidence.find((e) => e.id === r.evidence_id)!;
+    const snap = (ev.metadata as { snapshot: Record<string, unknown> }).snapshot;
+    expect(ev.previous_hash).toBe('h-concurrent');
+    expect(snap.previous_hash).toBe('h-concurrent');
+    expect(ev.content_hash).toBe(await evidenceContentHash(snap));
+    // exactly one row hangs off each parent: no branch
+    const parents = db.evidence.filter((e) => e.tenant_id === TENANT).map((e) => e.previous_hash).filter(Boolean);
+    expect(new Set(parents).size).toBe(parents.length);
+  });
+
+  it('chain head keeps moving → run fails, no finding without evidence', async () => {
+    const { db, deps } = setup();
+    let n = 0;
+    db.beforeAppend = () => { db.evidence.push({ id: `e-${n}`, tenant_id: TENANT, content_hash: `h-${n++}` }); };
+    const r = await runTenantAuditPipeline(deps, input);
+    expect(r).toMatchObject({ ok: false, code: 'EVIDENCE_CHAIN_CONFLICT' });
+    expect(db.scan_runs[0]).toMatchObject({ status: 'failed', error_code: 'EVIDENCE_CHAIN_CONFLICT' });
+    expect(db.findings).toEqual([]);
+  });
+
+  it('status changed by a user during the scan → not counted, not overwritten', async () => {
+    const { db, deps } = setup();
+    await runTenantAuditPipeline(deps, input);
+    const repo = deps.repo;
+    const list = repo.listTrackedFindings.bind(repo);
+    // The scan reads `open`, then the user acknowledges before the update lands.
+    repo.listTrackedFindings = async (t, h) => {
+      const rows = await list(t, h);
+      db.findings[0].status = 'acknowledged';
+      return rows;
+    };
+    const r = await runTenantAuditPipeline(deps, input);
+    expect(r).toMatchObject({ ok: true, findings: { refreshed: 1 } });
+    expect(db.findings[0].status).toBe('acknowledged');
   });
 });

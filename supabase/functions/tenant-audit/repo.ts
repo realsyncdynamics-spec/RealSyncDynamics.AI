@@ -7,7 +7,7 @@ import type { AuditRepo, TrackedFinding, TrackedStatus, WebsiteRow } from './pip
 import { DETECTOR } from './pipeline.ts';
 
 // deno-lint-ignore no-explicit-any
-export type ServiceClient = { from(table: string): any };
+export type ServiceClient = { from(table: string): any; rpc(fn: string, args: Record<string, unknown>): any };
 
 type PgResult<T> = { data: T | null; error: { message: string; code?: string } | null };
 
@@ -17,6 +17,7 @@ function unwrap<T>(r: PgResult<T>, what: string): T {
 }
 
 const TRACKED: TrackedStatus[] = ['open', 'acknowledged', 'fixed', 'false_positive', 'ignored'];
+const TRACKED_PAGE = 1000;
 
 /** LIKE pattern for `gdpr_audit.<issue>:<host>`; `_`, `%` and `\` in the host are escaped. */
 export function trackedKeyPattern(host: string): string {
@@ -52,20 +53,32 @@ export function createAuditRepo(db: ServiceClient): AuditRepo {
       return unwrap(r, 'governance_evidence')[0]?.content_hash ?? null;
     },
 
-    async insertEvidence(row) {
-      const r: PgResult<{ id: string }> = await db.from('governance_evidence').insert(row).select('id').single();
-      return unwrap(r, 'governance_evidence insert');
+    async appendEvidence(row, expectedPreviousHash) {
+      const r: PgResult<string | null> = await db.rpc('append_governance_evidence', {
+        p_row: row,
+        p_expected_previous_hash: expectedPreviousHash,
+      });
+      if (r.error) throw new Error(`append_governance_evidence: ${r.error.message}`);
+      return r.data ? { id: r.data } : 'conflict';
     },
 
     async listTrackedFindings(tenantId, host) {
-      const r: PgResult<TrackedFinding[]> = await db.from('findings')
-        .select('id, dedupe_key, status, raw_payload')
-        .eq('tenant_id', tenantId)
-        .eq('detector', DETECTOR)
-        .in('status', TRACKED)
-        .like('dedupe_key', trackedKeyPattern(host))
-        .limit(1000);
-      return unwrap(r, 'findings');
+      // Paged: reconciliation needs the complete set — a truncated list would
+      // leave absent findings unresolved and send observed ones into insert.
+      const out: TrackedFinding[] = [];
+      for (let offset = 0; ; offset += TRACKED_PAGE) {
+        const r: PgResult<TrackedFinding[]> = await db.from('findings')
+          .select('id, dedupe_key, status, raw_payload')
+          .eq('tenant_id', tenantId)
+          .eq('detector', DETECTOR)
+          .in('status', TRACKED)
+          .like('dedupe_key', trackedKeyPattern(host))
+          .order('id', { ascending: true })
+          .range(offset, offset + TRACKED_PAGE - 1);
+        const page = unwrap(r, 'findings');
+        out.push(...page);
+        if (page.length < TRACKED_PAGE) return out;
+      }
     },
 
     async insertFinding(row) {
@@ -75,11 +88,12 @@ export function createAuditRepo(db: ServiceClient): AuditRepo {
     },
 
     async updateFinding(id, expectStatus, patch) {
-      const r: PgResult<unknown> = await db.from('findings')
+      const r: PgResult<Array<{ id: string }>> = await db.from('findings')
         .update(patch)
         .eq('id', id)
-        .eq('status', expectStatus);
-      unwrap(r, 'findings update');
+        .eq('status', expectStatus)
+        .select('id');
+      return unwrap(r, 'findings update').length;
     },
   };
 }

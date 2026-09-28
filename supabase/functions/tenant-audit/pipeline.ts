@@ -89,13 +89,17 @@ export interface AuditRepo {
   findWebsite(tenantId: string, websiteId: string): Promise<WebsiteRow | null>;
   listWebsites(tenantId: string): Promise<WebsiteRow[]>;
   latestEvidenceHash(tenantId: string): Promise<string | null>;
-  insertEvidence(row: Record<string, unknown>): Promise<{ id: string }>;
+  /**
+   * Appends only while `expectedPreviousHash` is still the tenant's chain head
+   * (append_governance_evidence, advisory lock per tenant); 'conflict' otherwise.
+   */
+  appendEvidence(row: Record<string, unknown>, expectedPreviousHash: string | null): Promise<{ id: string } | 'conflict'>;
   /** gdpr-audit findings of this tenant with a dedupe_key for `host`, status in TrackedStatus. */
   listTrackedFindings(tenantId: string, host: string): Promise<TrackedFinding[]>;
   /** 'conflict' when the open dedupe_key index already holds a row. */
   insertFinding(row: Record<string, unknown>): Promise<{ id: string } | 'conflict'>;
-  /** Updates the row only while its status is still `expectStatus`. */
-  updateFinding(id: string, expectStatus: TrackedStatus, patch: Record<string, unknown>): Promise<void>;
+  /** Updates the row only while its status is still `expectStatus`; returns the rows changed. */
+  updateFinding(id: string, expectStatus: TrackedStatus, patch: Record<string, unknown>): Promise<number>;
 }
 
 export interface PipelineDeps {
@@ -160,6 +164,9 @@ export function siteHost(urlOrDomain: string): string {
 export function dedupeKey(issueId: string, host: string): string {
   return `gdpr_audit.${issueId}:${host}`;
 }
+
+/** Attempts to append to the evidence chain before the run fails. */
+export const EVIDENCE_APPEND_ATTEMPTS = 3;
 
 const SEVERITIES = new Set(['critical', 'high', 'medium', 'low', 'info']);
 
@@ -279,54 +286,65 @@ export async function runTenantAuditPipeline(deps: PipelineDeps, input: Pipeline
     const fullCoverage = auditResp.coverage === 'full';
     const checkedAt = now().toISOString();
 
-    // 4. Evidence first — every finding written below cites it.
+    // 4. Evidence first — every finding written below cites it. Appended by
+    //    compare-and-swap on the chain head: a concurrent writer moves the
+    //    head, we re-read, re-hash (previous_hash is part of the snapshot)
+    //    and retry — the chain never branches.
     const evidenceId = uuid();
-    let evidence: { id: string };
+    let evidence: { id: string } | null = null;
     try {
-      const previousHash = await repo.latestEvidenceHash(input.tenantId);
-      const snapshot = {
-        tenant_id: input.tenantId,
-        asset_id: assetId,
-        website_id: websiteId,
-        scan_run_id,
-        evidence_id: evidenceId,
-        detector: DETECTOR,
-        url: input.url,
-        host,
-        checked_at: checkedAt,
-        gdpr_audit_id: auditResp.audit_id,
-        fetched_status: auditResp.fetched_status,
-        coverage: auditResp.coverage ?? null,
-        score: auditResp.score,
-        severity: auditResp.severity,
-        issues: [...issues.values()].map((i) => ({
-          id: i.id, severity: i.severity, title: i.title, paragraph_ref: i.paragraph_ref ?? null,
-        })),
-        previous_hash: previousHash,
-      };
-      evidence = await repo.insertEvidence({
-        id: evidenceId,
-        tenant_id: input.tenantId,
-        event_id: null,
-        asset_id: assetId,
-        evidence_type: 'json',
-        title: `Website-Audit ${host}`.slice(0, 500),
-        storage_path: null,
-        content_hash: await evidenceContentHash(snapshot),
-        previous_hash: previousHash,
-        metadata: {
-          source: 'tenant-audit',
-          detector: DETECTOR,
+      for (let attempt = 0; attempt < EVIDENCE_APPEND_ATTEMPTS && !evidence; attempt++) {
+        const previousHash = await repo.latestEvidenceHash(input.tenantId);
+        const snapshot = {
+          tenant_id: input.tenantId,
+          asset_id: assetId,
+          website_id: websiteId,
           scan_run_id,
-          gdpr_audit_id: auditResp.audit_id,
+          evidence_id: evidenceId,
+          detector: DETECTOR,
           url: input.url,
-          hash_method: EVIDENCE_HASH_METHOD,
-          snapshot,
-        },
-      });
+          host,
+          checked_at: checkedAt,
+          gdpr_audit_id: auditResp.audit_id,
+          fetched_status: auditResp.fetched_status,
+          coverage: auditResp.coverage ?? null,
+          score: auditResp.score,
+          severity: auditResp.severity,
+          issues: [...issues.values()].map((i) => ({
+            id: i.id, severity: i.severity, title: i.title, paragraph_ref: i.paragraph_ref ?? null,
+          })),
+          previous_hash: previousHash,
+        };
+        const appended = await repo.appendEvidence({
+          id: evidenceId,
+          tenant_id: input.tenantId,
+          event_id: null,
+          asset_id: assetId,
+          evidence_type: 'json',
+          title: `Website-Audit ${host}`.slice(0, 500),
+          storage_path: null,
+          content_hash: await evidenceContentHash(snapshot),
+          previous_hash: previousHash,
+          metadata: {
+            source: 'tenant-audit',
+            detector: DETECTOR,
+            scan_run_id,
+            gdpr_audit_id: auditResp.audit_id,
+            url: input.url,
+            hash_method: EVIDENCE_HASH_METHOD,
+            snapshot,
+          },
+        }, previousHash);
+        if (appended !== 'conflict') evidence = appended;
+      }
     } catch (e) {
       return await fail(500, 'EVIDENCE_INSERT', (e as Error)?.message ?? String(e));
     }
+    if (!evidence) {
+      return await fail(503, 'EVIDENCE_CHAIN_CONFLICT',
+        `evidence chain head kept moving (${EVIDENCE_APPEND_ATTEMPTS} attempts)`);
+    }
+    const evidenceRow = evidence;
 
     // 5. Findings — refresh / reopen / create / resolve against the tracked set.
     const outcome: FindingOutcome = { created: 0, refreshed: 0, reopened: 0, resolved: 0, suppressed: 0 };
@@ -345,7 +363,7 @@ export async function runTenantAuditPipeline(deps: PipelineDeps, input: Pipeline
         const fields = {
           scan_run_id,
           correlation_id,
-          evidence_id: evidence.id,
+          evidence_id: evidenceRow.id,
           asset_id: assetId,
           website_id: websiteId,
           severity: issue.severity,
@@ -362,27 +380,28 @@ export async function runTenantAuditPipeline(deps: PipelineDeps, input: Pipeline
 
         const active = pick(key, ['open', 'acknowledged']);
         if (active) {
-          await repo.updateFinding(active.id, active.status, { ...fields, raw_payload: { ...(active.raw_payload ?? {}), ...payload } });
-          outcome.refreshed++;
+          if (await repo.updateFinding(active.id, active.status, { ...fields, raw_payload: { ...(active.raw_payload ?? {}), ...payload } })) {
+            outcome.refreshed++;
+          }
           continue;
         }
         const suppressed = pick(key, ['false_positive', 'ignored']);
         if (suppressed) {
           // The user's decision stands; only the sighting is recorded.
-          await repo.updateFinding(suppressed.id, suppressed.status, {
-            raw_payload: { ...(suppressed.raw_payload ?? {}), last_seen_at: checkedAt, last_scan_run_id: scan_run_id, last_evidence_id: evidence.id },
+          const n = await repo.updateFinding(suppressed.id, suppressed.status, {
+            raw_payload: { ...(suppressed.raw_payload ?? {}), last_seen_at: checkedAt, last_scan_run_id: scan_run_id, last_evidence_id: evidenceRow.id },
           });
-          outcome.suppressed++;
+          if (n) outcome.suppressed++;
           continue;
         }
         const fixed = pick(key, ['fixed']);
         if (fixed) {
           // Marked fixed, still observed: the scan contradicts it → reopen.
-          await repo.updateFinding(fixed.id, 'fixed', {
+          const n = await repo.updateFinding(fixed.id, 'fixed', {
             ...fields, status: 'open', resolved_at: null,
             raw_payload: withHistory({ ...(fixed.raw_payload ?? {}), ...payload }, { from: 'fixed', to: 'open', at: checkedAt, scan_run_id }),
           });
-          outcome.reopened++;
+          if (n) outcome.reopened++;
           continue;
         }
         const ins = await repo.insertFinding({
@@ -407,17 +426,17 @@ export async function runTenantAuditPipeline(deps: PipelineDeps, input: Pipeline
         for (const f of tracked) {
           if (observed.has(f.dedupe_key)) continue;
           if (f.status !== 'open' && f.status !== 'acknowledged' && f.status !== 'fixed') continue;
-          await repo.updateFinding(f.id, f.status, {
+          const n = await repo.updateFinding(f.id, f.status, {
             status: 'resolved',
             resolved_at: checkedAt,
-            evidence_id: evidence.id,
+            evidence_id: evidenceRow.id,
             raw_payload: withHistory(f.raw_payload, { from: f.status, to: 'resolved', at: checkedAt, scan_run_id }),
           });
-          outcome.resolved++;
+          if (n) outcome.resolved++;
         }
       }
     } catch (e) {
-      return await fail(500, 'FINDING_INSERT', (e as Error)?.message ?? String(e), { evidence_id: evidence.id });
+      return await fail(500, 'FINDING_INSERT', (e as Error)?.message ?? String(e), { evidence_id: evidenceRow.id });
     }
 
     // 6. Complete — counters are aggregated from the findings stamped with this run.
@@ -435,7 +454,7 @@ export async function runTenantAuditPipeline(deps: PipelineDeps, input: Pipeline
         severity_max: completed.severity_max ?? null,
         gdpr_audit_id: auditResp.audit_id,
         score: auditResp.score,
-        evidence_id: evidence.id,
+        evidence_id: evidenceRow.id,
         asset_id: assetId,
         findings: outcome,
       },
@@ -452,7 +471,7 @@ export async function runTenantAuditPipeline(deps: PipelineDeps, input: Pipeline
       severity: auditResp.severity,
       website_id: websiteId,
       asset_id: assetId,
-      evidence_id: evidence.id,
+      evidence_id: evidenceRow.id,
       findings: outcome,
     };
   } catch (e) {

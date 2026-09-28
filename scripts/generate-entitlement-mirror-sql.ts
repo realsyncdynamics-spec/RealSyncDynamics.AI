@@ -42,6 +42,24 @@
  * still ueberspringen — dieselbe leise Klasse Fehler, gegen die der
  * Entitlement-Guard ueberhaupt gebaut wurde.
  *
+ * ── Entzug: die eine Richtung, die ein Upsert nicht kann ──────────────────
+ *
+ * Streicht jemand einen Key aus einem Plan, laesst der Generator nur das
+ * Tupel weg — die Zeile in `product_entitlements` bleibt, und
+ * `tenant_entitlements()` gewaehrt das Recht weiter. Ein automatisches
+ * Loeschen waere die falsche Antwort: Die DB darf der Quelle voraus sein
+ * (genau so kam `frontend.modernization` per Feature-Migration hinein, bevor
+ * die Quelle es kannte), und ein Spiegel, der alles Unbekannte loescht, haette
+ * zahlenden Kunden das Tool still wieder entzogen. Destruktive Migrationen
+ * verbietet `CLAUDE.md` ohnehin.
+ *
+ * Deshalb: Der Generator **verweigert** eine neue Spiegel-Migration, solange
+ * die Quelle ein Paar der bisher neuesten nicht mehr fuehrt. Der Entzug ist
+ * eine Geschaeftsentscheidung mit eigener Migration und Begruendung; erst mit
+ * `--entzug-quittiert` schreibt der Generator weiter und vermerkt die Paare
+ * als `-- ENTZOGEN:` in der Datei. Der Paritaetstest prueft, dass zwischen
+ * zwei Spiegeln kein Paar ohne diesen Vermerk verschwindet.
+ *
  * Was das Skript **nicht** tut: Es ruehrt `product_entitlements` von
  * Add-on-Produkten nicht an. Die gehoeren `scripts/generate-plan-catalog-sql.ts`
  * („nur an Add-on-Produkten, nie an Plaenen") — die beiden Generatoren
@@ -87,6 +105,35 @@ function wertezeilen(): string[] {
   return zeilen;
 }
 
+/** Ein (Plan, Key)-Paar als ein Wert, damit Mengen es vergleichen koennen. */
+const paar = (plan: string, key: string): string => `${plan} ${key}`;
+
+/** Die Paare, die die Quelle heute vergibt. */
+export function quellPaare(): Set<string> {
+  const paare = new Set<string>();
+  for (const [plan, satz] of Object.entries(PLAN_ENTITLEMENTS)) {
+    for (const key of Object.keys(satz)) paare.add(paar(plan, key));
+  }
+  return paare;
+}
+
+/** Die Paare, die eine Spiegel-Migration vergibt — aus ihrem GENERATED-Block. */
+export function zuordnungenAus(sql: string): Set<string> {
+  const zeile = /^\s*\('([a-z_]+)',\s*'([a-z0-9_.\-]+)',\s*-?\d+\)/gm;
+  return new Set([...blockAus(sql).matchAll(zeile)].map((m) => paar(m[1]!, m[2]!)));
+}
+
+/** Die Paare, deren Entzug eine Spiegel-Migration ausdruecklich vermerkt. */
+export function quittierteEntzuege(sql: string): Set<string> {
+  const zeile = /^-- ENTZOGEN: ([a-z_]+) ([a-z0-9_.\-]+)\s*$/gm;
+  return new Set([...sql.matchAll(zeile)].map((m) => paar(m[1]!, m[2]!)));
+}
+
+/** Was `vorher` vergab und `jetzt` nicht mehr — sortiert, fuer stabile Meldungen. */
+export function entzogenZwischen(vorher: Set<string>, jetzt: Set<string>): string[] {
+  return [...vorher].filter((p) => !jetzt.has(p)).sort();
+}
+
 /** Jeder Key, den die Quelle ueberhaupt vergibt — fuer das Vokabular. */
 function vergebeneKeys(): string[] {
   const keys = new Set<string>();
@@ -115,8 +162,21 @@ export function generierterBlock(): string {
   ].join('\n');
 }
 
-function vollstaendigeMigration(version: string): string {
+function vollstaendigeMigration(version: string, entzogen: string[]): string {
   const keys = vergebeneKeys();
+  // Nur wenn es einen gibt: der Vermerk, den der Paritaetstest einfordert.
+  const entzug =
+    entzogen.length === 0
+      ? []
+      : [
+          '-- ─── Entzug (quittiert) ─────────────────────────────────────────────',
+          '-- Diese Paare vergab die vorige Spiegel-Migration, die Quelle nicht mehr.',
+          '-- Ein Spiegel entzieht nicht: Die Zeilen bleiben, bis eine eigene',
+          '-- Entzugs-Migration sie mit Begruendung behandelt. Bis dahin meldet der',
+          '-- Entitlement Drift Guard sie zu Recht als Abweichung.',
+          ...entzogen.map((p) => `-- ENTZOGEN: ${p}`),
+          '',
+        ];
   return [
     '-- Spiegel: Entitlement-Katalog auf PLAN_ENTITLEMENTS (shared/pricing.ts).',
     '--',
@@ -139,6 +199,7 @@ function vollstaendigeMigration(version: string): string {
     '-- test/billing/entitlement-catalog-parity.test.ts prueft die ganze Datei',
     '-- dagegen, Kommentare eingeschlossen. Grob, aber in der richtigen Richtung.',
     '',
+    ...entzug,
     'BEGIN;',
     '',
     '-- ─── Waechter: jeder Key der Quelle muss im Vokabular stehen ────────────',
@@ -205,17 +266,41 @@ function pruefen(): never {
   console.error('');
   console.error('    npm run gen:entitlement-mirror');
   console.error('');
+  const weg = entzogenZwischen(zuordnungenAus(readFileSync(join(MIGRATIONS, datei), 'utf8')), quellPaare());
+  if (weg.length > 0) {
+    console.error(`  Achtung: Die Quelle fuehrt ${weg.length} Paar(e) nicht mehr, die ${datei}`);
+    console.error('  vergibt — ein Entzug. Siehe die Meldung beim Erzeugen.');
+    console.error('');
+  }
   process.exit(1);
 }
 
 function schreiben(): void {
-  // Version als Argument, sonst aus der Uhr. Sie muss nach der letzten Datei
-  // auf `main` liegen — der Migration Collision Guard prueft das.
+  // Version als Argument, sonst aus der Uhr. Sie muss eindeutig sein — der
+  // Migration Collision Guard prueft das, auch gegen offene PRs. Keine runde
+  // Stunde: die trifft ein zweiter PR am selben Tag mit derselben Ueberlegung.
   const version =
     [...args].find((a) => /^\d{14}$/.test(a)) ??
     new Date().toISOString().replace(/\D/g, '').slice(0, 14);
+
+  const vorige = neuesteSpiegelMigration();
+  const weg = entzogenZwischen(zuordnungenAus(readFileSync(join(MIGRATIONS, vorige), 'utf8')), quellPaare());
+  if (weg.length > 0 && !args.has('--entzug-quittiert')) {
+    console.error(`✗ Die Quelle fuehrt ${weg.length} Paar(e) nicht mehr, die ${vorige} vergibt:`);
+    for (const p of weg) console.error(`    ${p}`);
+    console.error('');
+    console.error('  Eine Spiegel-Migration entzieht nicht — sie macht nur Upserts, die');
+    console.error('  Zeilen blieben und `tenant_entitlements()` gewaehrte weiter.');
+    console.error('  Ein Entzug ist eine eigene Entscheidung: erst eine Migration, die ihn');
+    console.error('  mit Begruendung umsetzt, dann hier quittieren:');
+    console.error('');
+    console.error('    npm run gen:entitlement-mirror -- --entzug-quittiert');
+    console.error('');
+    process.exit(1);
+  }
+
   const ziel = join(MIGRATIONS, `${version}_entitlement_catalog_mirror.sql`);
-  writeFileSync(ziel, vollstaendigeMigration(version));
+  writeFileSync(ziel, vollstaendigeMigration(version, weg));
   console.log(
     `✓ ${ziel} erzeugt (${wertezeilen().length} Zuordnungen, ${vergebeneKeys().length} Keys).`,
   );

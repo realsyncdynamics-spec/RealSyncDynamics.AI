@@ -33,7 +33,13 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 import { ENTITLEMENT_KEYS, PLAN_ENTITLEMENTS, planGrants, type EntitlementKey } from '../../shared/pricing';
-import { neuesteSpiegelMigration } from '../../scripts/generate-entitlement-mirror-sql';
+import {
+  entzogenZwischen,
+  neuesteSpiegelMigration,
+  quittierteEntzuege,
+  spiegelMigrationen,
+  zuordnungenAus,
+} from '../../scripts/generate-entitlement-mirror-sql';
 
 const MIGRATIONS_DIR = resolve(__dirname, '../../supabase/migrations');
 
@@ -122,6 +128,60 @@ describe('Neueste Spiegel-Migration — Katalog aus PLAN_ENTITLEMENTS', () => {
     if (MIGRATION === ERSTE_MIGRATION) return;
     expect(sql).toMatch(/RAISE EXCEPTION/);
     expect(sql).toContain('Entitlement-Vokabular unvollstaendig');
+  });
+});
+
+/**
+ * Entzug — die eine Richtung, die ein Upsert nicht kann.
+ *
+ * Streicht die Quelle einen Key aus einem Plan, laesst der Generator nur das
+ * Tupel weg; die Zeile in der DB bliebe und gewaehrte weiter. Der Test oben
+ * merkt das nicht, weil er nur die Tupel der neuesten Datei liest. Diese
+ * Pruefung schliesst die Luecke: Zwischen zwei Spiegeln darf kein Paar
+ * verschwinden, ohne dass die neuere es als `-- ENTZOGEN:` vermerkt.
+ * (Befund aus dem Codex-Review zu PR #1616.)
+ */
+describe('Entzug — kein Paar verschwindet still zwischen zwei Spiegeln', () => {
+  it('jedes Paar der vorigen Spiegel-Migration steht in der neuesten oder ist quittiert', () => {
+    const alle = spiegelMigrationen();
+    expect(alle.length).toBeGreaterThanOrEqual(2);
+    const vorige = readFileSync(resolve(MIGRATIONS_DIR, alle[alle.length - 2]!), 'utf8');
+    const weg = entzogenZwischen(zuordnungenAus(vorige), zuordnungenAus(sql));
+    const quittiert = quittierteEntzuege(sql);
+    expect(
+      weg.filter((p) => !quittiert.has(p)),
+      'Paar(e) verschwinden ohne quittierten Entzug — siehe `npm run gen:entitlement-mirror`',
+    ).toEqual([]);
+  });
+
+  // Die Pruefung oben laeuft heute leer (nichts wurde entzogen). Dass sie einen
+  // Entzug ueberhaupt erkennt, zeigt dieser Fall mit erfundenem SQL.
+  const spiegel = (zeilen: string[], vermerk = ''): string =>
+    [
+      vermerk,
+      '-- >>> GENERATED FROM shared/pricing.ts PLAN_ENTITLEMENTS >>>',
+      'FROM (VALUES',
+      zeilen.join(',\n'),
+      ') AS z(plan_key, key, value)',
+      '-- <<< GENERATED <<<',
+    ].join('\n');
+
+  it('erkennt ein verschwundenes Paar — und nimmt es nur mit Vermerk hin', () => {
+    const vorher = spiegel(["  ('starter', 'bots.enabled', 1)", "  ('growth', 'bots.orders', 1)"]);
+    const ohneVermerk = spiegel(["  ('growth', 'bots.orders', 1)"]);
+    const mitVermerk = spiegel(["  ('growth', 'bots.orders', 1)"], '-- ENTZOGEN: starter bots.enabled');
+
+    const weg = entzogenZwischen(zuordnungenAus(vorher), zuordnungenAus(ohneVermerk));
+    expect(weg).toEqual(['starter bots.enabled']);
+    expect(quittierteEntzuege(ohneVermerk).has('starter bots.enabled')).toBe(false);
+    expect(quittierteEntzuege(mitVermerk).has('starter bots.enabled')).toBe(true);
+  });
+
+  it('wertet eine Wertaenderung nicht als Entzug', () => {
+    // 1 → 0 ist eine Aenderung, die der Upsert selbst vollzieht (`DO UPDATE`).
+    const vorher = spiegel(["  ('starter', 'bots.enabled', 1)"]);
+    const nachher = spiegel(["  ('starter', 'bots.enabled', 0)"]);
+    expect(entzogenZwischen(zuordnungenAus(vorher), zuordnungenAus(nachher))).toEqual([]);
   });
 });
 

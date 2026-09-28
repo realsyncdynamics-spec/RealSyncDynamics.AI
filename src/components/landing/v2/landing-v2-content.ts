@@ -11,7 +11,8 @@ export const LV2_BRAND = 'RealSyncDynamics.AI';
 export const LV2_H1_SILVER = 'AI Compliance Operations OS';
 export const LV2_H1_GOLD = 'for Europe';
 
-export const LV2_PIPELINE = ['Discover', 'Classify', 'Enforce', 'Prove'] as const;
+/** Betriebsschleife — sechs Stufen wie auf der Live-Seite (Entscheidung Dominik, 28.09.2026). */
+export const LV2_PIPELINE = ['Discover', 'Assess', 'Govern', 'Execute', 'Verify', 'Prove'] as const;
 
 export const LV2_STACK = [
   'EU-Hosted Runtime',

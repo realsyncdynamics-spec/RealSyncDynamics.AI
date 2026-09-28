@@ -47,7 +47,7 @@ it('renders hero H1, pipeline and tier buttons from the pricing SSoT', () => {
   expect(view.container.querySelectorAll('h1')).toHaveLength(1);
 
   const pipeline = screen.getByRole('list', { name: 'Betriebsschleife' });
-  for (const step of ['Discover', 'Classify', 'Enforce', 'Prove']) {
+  for (const step of ['Discover', 'Assess', 'Govern', 'Execute', 'Verify', 'Prove']) {
     expect(within(pipeline).getByText(step)).toBeInTheDocument();
   }
 
@@ -70,7 +70,18 @@ it('renders hero H1, pipeline and tier buttons from the pricing SSoT', () => {
 it('keeps the handoff section order and resolvable in-page anchors', () => {
   const view = mount();
   const ids = Array.from(view.container.querySelectorAll('main section[id]')).map((s) => s.id);
-  expect(ids).toEqual(['top', 'regulierung', 'produkt', 'evidence', 'architektur', 'preise', 'faq']);
+  expect(ids).toEqual([
+    'top',
+    'regulierung',
+    'produkt',
+    'control-room',
+    'evidence',
+    'architektur',
+    'architecture',
+    'governance-check',
+    'preise',
+    'faq',
+  ]);
 
   for (const a of Array.from(view.container.querySelectorAll('a[href^="#"]'))) {
     const id = a.getAttribute('href')!.slice(1);

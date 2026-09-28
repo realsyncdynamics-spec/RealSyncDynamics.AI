@@ -130,9 +130,20 @@ async function handleTransition(
   const built = buildTransitionPatch(current, body, userEmail ?? userId, new Date().toISOString());
   if (!built.ok) return jsonError(400, 'BAD_REQUEST', built.message);
 
+  // Compare-and-set on the status we read: the timeline is appended in
+  // JS (read-modify-write), so a concurrent transition that already moved
+  // the incident must not be overwritten with a stale timeline. Every valid
+  // transition changes the status, so `status = <read status>` is exactly
+  // the "nobody else wrote in between" check. Zero matched rows → 409.
   const { data, error } = await admin
-    .from('incidents').update(built.value).eq('id', current.id).select('*').single();
+    .from('incidents')
+    .update(built.value)
+    .eq('id', current.id)
+    .eq('status', current.status)
+    .select('*')
+    .maybeSingle();
   if (error) throw error;
+  if (!data) return jsonError(409, 'CONFLICT', 'incident changed concurrently; reload and retry');
 
   await audit(admin as unknown as Parameters<typeof audit>[0], {
     tenant_id: current.tenant_id, actor_user_id: userId, actor_email: userEmail,

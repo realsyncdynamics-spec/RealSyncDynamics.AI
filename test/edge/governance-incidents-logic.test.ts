@@ -123,4 +123,16 @@ describe('governance-incidents — handler contract (source)', () => {
     expect(src).toMatch(/from\('incidents'\)\.insert/);
     expect(src).not.toMatch(/governance_incidents'\)\s*\.insert/);
   });
+
+  it('transitions with compare-and-set on the status it read, 409 on a lost race', () => {
+    // The timeline is appended in JS (read-modify-write). Without the
+    // status predicate two concurrent transitions silently drop one
+    // timeline entry (last writer wins).
+    const transition = src.slice(src.indexOf('async function handleTransition'));
+    const update = transition.match(/\.update\(built\.value\)([\s\S]*?)\.select\('\*'\)/);
+    expect(update).not.toBeNull();
+    expect(update![1]).toMatch(/\.eq\('id', current\.id\)/);
+    expect(update![1]).toMatch(/\.eq\('status', current\.status\)/);
+    expect(transition).toMatch(/\.maybeSingle\(\);\s*if \(error\) throw error;\s*if \(!data\) return jsonError\(409, 'CONFLICT'/);
+  });
 });

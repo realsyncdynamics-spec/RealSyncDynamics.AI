@@ -11,9 +11,10 @@ import { describe, expect, it } from 'vitest';
 const root = resolve(__dirname, '../..');
 
 describe('design landing previews', () => {
-  it('serves Governance AI on / and keeps older design references reversible', () => {
+  it('serves Landing v2 on / and keeps older design references reversible', () => {
     const app = readFileSync(resolve(root, 'src/App.tsx'), 'utf8');
-    expect(app).toMatch(/path="\/"\s+element=\{<DesignGovernanceAiLanding/);
+    expect(app).toMatch(/path="\/"\s+element=\{<LandingV2/);
+    expect(app).toContain('path="/design/landing-v2"');
     expect(app).toContain('path="/design/governance-ai"');
     expect(app).toContain('path="/design/titan"');
     expect(app).toContain('path="/design/ledger"');

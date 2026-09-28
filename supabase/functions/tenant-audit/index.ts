@@ -108,7 +108,9 @@ Deno.serve(async (req) => {
 
   // Rate-Limit pro Mandant. gdpr-audit lässt den internen Aufruf an seinem
   // IP-Limit vorbei (sonst teilten sich alle Mandanten 5 Scans/Stunde), also
-  // begrenzen wir hier. Zählfehler ⇒ kein Scan (fail-closed).
+  // begrenzen wir hier. Verbindlich ist der Trigger auf scan_runs
+  // (20260928150000, Advisory-Lock je Mandant); diese Vorabprüfung spart nur
+  // den Pipeline-Start. Zählfehler ⇒ kein Scan (fail-closed).
   const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
   const { count: recentRuns, error: countErr } = await admin
     .from('scan_runs').select('id', { count: 'exact', head: true })
@@ -138,6 +140,11 @@ Deno.serve(async (req) => {
   }, { tenantId, websiteId, url, userId });
 
   if (!result.ok) {
+    // Parallele Anfragen, die die Vorabprüfung gemeinsam bestanden haben,
+    // weist der Trigger beim Anlegen des Laufs ab.
+    if (result.code === 'PIPELINE_START_FAILED' && result.message.includes('TENANT_SCAN_LIMIT_EXCEEDED')) {
+      return jsonError(429, 'RATE_LIMITED', `max ${TENANT_SCAN_LIMIT_PER_HOUR} scans per tenant and hour`);
+    }
     const code = result.code === 'GDPR_AUDIT_HTTP' || result.code === 'GDPR_AUDIT_FETCH'
       ? 'DETECTOR_FAILED'
       : result.code === 'FINDING_INSERT' || result.code === 'EVIDENCE_INSERT'

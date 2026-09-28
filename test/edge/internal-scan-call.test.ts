@@ -13,6 +13,7 @@ import {
   TENANT_AUDIT_CALLER,
   internalScanHeaders,
   isTrustedInternalScanCall,
+  TENANT_SCAN_LIMIT_PER_HOUR,
 } from '../../supabase/functions/_shared/internal-scan-call';
 
 const KEY = 'service-role-key-for-tests-0123456789';
@@ -79,5 +80,16 @@ describe('tenant-audit: interner Aufruf + Limit pro Mandant', () => {
 
   it('das Limit greift vor dem Pipeline-Start', () => {
     expect(src.indexOf('TENANT_SCAN_LIMIT_PER_HOUR)')).toBeLessThan(src.indexOf('runTenantAuditPipeline({'));
+  });
+
+  it('Trigger-Abweisung paralleler Anfragen wird als 429 gemeldet, nicht als 500', () => {
+    expect(src).toMatch(/result\.code === 'PIPELINE_START_FAILED' && result\.message\.includes\('TENANT_SCAN_LIMIT_EXCEEDED'\)\)\s*\{\s*return jsonError\(429, 'RATE_LIMITED'/);
+  });
+
+  it('das verbindliche Limit liegt atomar in der Datenbank und entspricht der Konstante', () => {
+    const sql = readFileSync('supabase/migrations/20260928150000_tenant_audit_scan_quota.sql', 'utf8');
+    expect(sql).toContain('pg_advisory_xact_lock');
+    expect(sql).toMatch(/BEFORE INSERT ON public\.scan_runs/);
+    expect(sql).toContain(`v_limit CONSTANT integer := ${TENANT_SCAN_LIMIT_PER_HOUR};`);
   });
 });

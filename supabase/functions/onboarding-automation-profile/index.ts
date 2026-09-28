@@ -1,5 +1,6 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
+import { dedupe, granted, recommendedSkillIds, resolveSkillSelections, type EntitlementRow, type SkillRow } from './profile.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -13,58 +14,11 @@ const json = (body: unknown, status = 200) =>
     headers: { ...corsHeaders, 'content-type': 'application/json' },
   });
 
-type SkillState = 'ready' | 'needs_binding' | 'locked' | 'planned';
-
-type EntitlementRow = {
-  key: string;
-  value: boolean | number | string | null;
-};
-
-type SkillRow = {
-  id: string;
-  status: 'available' | 'beta' | 'planned';
-  n8n_workflow_id: string | null;
-};
-
 interface RequestBody {
   tenant_id?: string;
   org_type?: string | null;
   ai_systems?: string[];
   residency_policy?: string | null;
-}
-
-function granted(rows: EntitlementRow[], key: string): boolean {
-  const value = rows.find((row) => row.key === key)?.value;
-  return value === true || value === -1 || (typeof value === 'number' && value > 0);
-}
-
-function dedupe(values: string[]): string[] {
-  return [...new Set(values.filter(Boolean))];
-}
-
-function recommendations(input: {
-  orgType: string | null;
-  aiSystems: string[];
-  residencyPolicy: string | null;
-  entitlements: EntitlementRow[];
-}): string[] {
-  const out: string[] = [];
-
-  if (granted(input.entitlements, 'website.scan')) out.push('dsgvo-audit');
-  if (granted(input.entitlements, 'reports.export') || granted(input.entitlements, 'compliance.export')) {
-    out.push('dokumenten-skill');
-  }
-  if (input.aiSystems.length > 0 && granted(input.entitlements, 'ai.tool.automations')) {
-    out.push('meeting-compliance');
-  }
-  if (input.orgType === 'agency' && granted(input.entitlements, 'ai.tool.automations')) {
-    out.push('lead-risk', 'screenshot-feedback');
-  }
-  if (granted(input.entitlements, 'bots.enabled') && input.aiSystems.length > 0) {
-    out.push('support-skill');
-  }
-
-  return dedupe(out);
 }
 
 Deno.serve(async (req) => {
@@ -135,42 +89,17 @@ Deno.serve(async (req) => {
   const entitlements = (entitlementData ?? []) as EntitlementRow[];
   const automationEntitled = granted(entitlements, 'ai.tool.automations');
   const aiSystems = dedupe((body.ai_systems ?? []).map((value) => String(value).trim()));
-  const recommendedIds = recommendations({
+  const recommendedIds = recommendedSkillIds({
     orgType: body.org_type ?? null,
     aiSystems,
     residencyPolicy: body.residency_policy ?? null,
     entitlements,
   });
 
-  const skillById = new Map(((skillData ?? []) as SkillRow[]).map((skill) => [skill.id, skill]));
-  const selected = recommendedIds.map((id) => {
-    const skill = skillById.get(id);
-    let state: SkillState = 'locked';
-    let reason = 'not_entitled';
-
-    if (!skill) {
-      state = 'locked';
-      reason = 'catalog_missing';
-    } else if (skill.status === 'planned') {
-      state = 'planned';
-      reason = 'catalog_planned';
-    } else if (!automationEntitled) {
-      state = 'locked';
-      reason = 'automation_not_entitled';
-    } else if (!skill.n8n_workflow_id) {
-      state = 'needs_binding';
-      reason = 'runtime_not_bound';
-    } else {
-      state = 'ready';
-      reason = 'entitled_and_bound';
-    }
-
-    return {
-      skill_id: id,
-      state,
-      reason,
-      executor: skill?.n8n_workflow_id ? 'n8n' : null,
-    };
+  const selected = resolveSkillSelections({
+    recommendedIds,
+    skills: (skillData ?? []) as SkillRow[],
+    automationEntitled,
   });
 
   const now = new Date().toISOString();

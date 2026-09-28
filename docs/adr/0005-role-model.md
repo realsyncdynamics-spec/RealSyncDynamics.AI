@@ -2,7 +2,7 @@
 
 > **Status:** Accepted · 2026-05-30
 > **Related:** ADR 0004 (Enterprise Identity), ADR 0006 (MFA/AAL2)
-> **Amended by:** ADR 0011 · umgesetzt 2026-09-26 (`20260928131500`):
+> **Amended by:** ADR 0011 · umgesetzt 2026-09-26 (`20260928151500`):
 > `platform_operators` ist die einzige schreibbare Quelle der Plattformrolle,
 > `profiles.is_super_admin` deren Projektion, direkt nicht mehr setzbar.
 

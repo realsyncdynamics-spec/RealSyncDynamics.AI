@@ -244,7 +244,7 @@ d('B1 — profiles.is_super_admin ist clientseitig unveraenderlich', () => {
   });
 
   it('der administrative Weg fuehrt ueber platform_operators, nicht ueber profiles', async () => {
-    // GEAENDERT am 2026-09-26 durch D5 (20260928131500). Bis dahin pruefte
+    // GEAENDERT am 2026-09-26 durch D5 (20260928151500). Bis dahin pruefte
     // dieser Test das Gegenteil: dass `service_role` das Flag direkt setzen
     // DARF — damals richtig, weil das der administrative Weg war.
     //

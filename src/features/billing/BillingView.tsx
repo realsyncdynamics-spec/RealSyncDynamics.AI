@@ -12,6 +12,7 @@ import { TrialCountdownBanner } from './TrialCountdownBanner';
 import { createCheckoutSession } from '../../lib/stripe';
 import { useAuth } from '../../lib/useAuth';
 import { SELLABLE_PRICING_TIERS, planByKey, type TierId } from '../../config/pricing';
+import { getSupabaseUrl } from '../../lib/supabaseUrl';
 
 interface Subscription {
   plan_key: string | null;
@@ -126,7 +127,7 @@ export function BillingView() {
       const { data: { session } } = await sb.auth.getSession();
       if (!session) throw new Error('not signed in');
       const resp = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/stripe-portal`,
+        `${getSupabaseUrl()}/functions/v1/stripe-portal`,
         {
           method: 'POST',
           headers: {

@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Check, ArrowRight, Lightbulb, ShieldCheck } from 'lucide-react';
-import { PLANS, ADDONS, planById, addonsFor, type AddOn } from '@/shared/pricing';
+import { PLANS, ADDONS, planById, addonsFor, pricingTaxNote, type AddOn } from '@/shared/pricing';
+import { COMPANY } from '../config/company';
 
 /**
  * Enterprise-Konfigurator — individueller Preis ohne Vertriebsgespräch.
@@ -395,7 +396,7 @@ export default function EnterpriseKonfigurator() {
         </section>
 
         <p className="text-xs text-titanium/40 mt-8">
-          Alle Beträge netto zzgl. USt. Grundpreis und Bausteine stammen aus dem
+          {pricingTaxNote(COMPANY.taxMode)} Grundpreis und Bausteine stammen aus dem
           Produktkatalog ({PLANS.length} Produkte); Änderungen dort wirken hier
           unmittelbar.
         </p>

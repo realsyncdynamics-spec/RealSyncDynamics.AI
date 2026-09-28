@@ -374,7 +374,7 @@ ${auditSlide}
       <ul><li>+ SSO / SAML</li><li>+ Org-Governance</li><li>+ Public-Sector-Modus</li><li>unlimitierte AI-Calls</li></ul>
     </div>
   </div>
-  <p class="footnote">Alle Preise zzgl. USt. · monatlich kündbar · AI-Kontingent rollt nicht über</p>
+  <p class="footnote">Preise ohne Umsatzsteuer gemäß § 19 UStG (Kleinunternehmer) · monatlich kündbar · AI-Kontingent rollt nicht über</p>
 </section>
 
 <!-- ─── SLIDE 7: WAS UNS ANDERS MACHT ────────────────────────────── -->

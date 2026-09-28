@@ -2959,5 +2959,24 @@ export const PRODUCT_POSITIONING = 'AI Governance Runtime';
 export const PRICING_TRUST_NOTE =
   'Free Audit kostenlos · 14 Tage kostenlos testen · Monatlich kündbar · Keine Setup-Gebühren · Made in Germany';
 
-/** Alle Preise verstehen sich zzgl. USt. */
-export const PRICING_TAX_NOTE = 'Alle Preise zzgl. gesetzlicher Umsatzsteuer.';
+/** Steuerhinweis — Regelbesteuerung. Nur anzeigen, wenn `COMPANY.taxMode === 'EU_STANDARD'`. */
+export const PRICING_TAX_NOTE_STANDARD = 'Alle Preise zzgl. gesetzlicher Umsatzsteuer.';
+
+/** Steuerhinweis — Kleinunternehmer (§ 19 UStG). Wortlaut identisch mit Impressum und AGB. */
+export const PRICING_TAX_NOTE_EXEMPT =
+  'Kleinunternehmer i. S. v. § 19 UStG — es wird keine Umsatzsteuer ausgewiesen.';
+
+export type PricingTaxMode = 'EU_STANDARD' | 'EXEMPT';
+
+/** Steuerhinweis für den Steuermodus der Firma (`COMPANY.taxMode`). */
+export function pricingTaxNote(mode: PricingTaxMode): string {
+  return mode === 'EXEMPT' ? PRICING_TAX_NOTE_EXEMPT : PRICING_TAX_NOTE_STANDARD;
+}
+
+/**
+ * Gültiger Steuerhinweis. RealSync Dynamics AI ist Kleinunternehmer
+ * (§ 19 UStG, `COMPANY.taxMode = 'EXEMPT'`, Impressum, AGB § 4) — Preise
+ * werden ohne Umsatzsteuer ausgewiesen. Beim Wechsel zur Regelbesteuerung
+ * `COMPANY.taxMode` umstellen; Konsumenten nutzen `pricingTaxNote()`.
+ */
+export const PRICING_TAX_NOTE = PRICING_TAX_NOTE_EXEMPT;

@@ -1,6 +1,7 @@
 import { useState } from 'react';
+import { getSupabaseUrl } from '../../lib/supabaseUrl';
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string | undefined;
+const SUPABASE_URL = getSupabaseUrl();
 
 const DATA_CATEGORY_OPTIONS = [
   { value: 'personal_data', label: 'Personenbezogene Daten' },

@@ -181,13 +181,18 @@ async function callGateway(tenantId: string, system: string, user: string): Prom
       feature: 'governance_brief_daily',
       task_type: 'governance_reasoning',
       model_profile: 'strict-json',
-      input: { system, user },
+      // Native op-API: `input` ist ein STRING, der Systemprompt gehört in
+      // `system_prompt`. Vorher ging `input` als Objekt (system + user) raus —
+      // jeder Provider lehnt `content: {…}` mit einem 4xx ab, der Gateway
+      // meldete das als 500 INFERENCE_ERROR (45/45 Cron-Aufrufe).
+      input: user,
+      system_prompt: system,
+      max_tokens: 1200,
     }),
   });
 
   if (!resp.ok) {
-    const txt = await resp.text().catch(() => '');
-    throw new Error(`ai-gateway ${resp.status}: ${txt.slice(0, 200)}`);
+    throw new Error(await describeGatewayError(resp));
   }
 
   const json = await resp.json() as {
@@ -211,4 +216,23 @@ async function callGateway(tenantId: string, system: string, user: string): Prom
     model: json.model ?? 'unknown',
     usage: json.usage ?? {},
   };
+}
+
+/**
+ * Fehlertext für den Runner-Report (landet in agent-os-runner → errors[]):
+ * HTTP-Status + stabiler Gateway-Code + gekürzte Meldung. Keine Prompts.
+ */
+export async function describeGatewayError(resp: Response): Promise<string> {
+  const txt = await resp.text().catch(() => '');
+  let code = '';
+  let message = '';
+  try {
+    const j = JSON.parse(txt) as { error?: { code?: string; message?: string } };
+    code = j.error?.code ?? '';
+    message = j.error?.message ?? '';
+  } catch {
+    message = txt;
+  }
+  const short = message.replace(/\s+/g, ' ').trim().slice(0, 200);
+  return `ai-gateway ${resp.status}${code ? ` ${code}` : ''}${short ? `: ${short}` : ''}`;
 }

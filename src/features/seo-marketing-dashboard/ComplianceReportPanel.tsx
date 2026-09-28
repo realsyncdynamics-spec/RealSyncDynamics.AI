@@ -10,6 +10,7 @@ import {
   Filter,
   Loader,
 } from 'lucide-react';
+import { getSupabaseUrl } from '../../lib/supabaseUrl';
 
 type ReportType = 'dsgvo_access_log' | 'eu_ai_act_audit' | 'data_processing' | 'export_history';
 type ReportFormat = 'json' | 'csv';
@@ -54,7 +55,7 @@ export function ComplianceReportPanel() {
 
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/seo_audit_summary?tenant_id=eq.${activeTenantId}`,
+        `${getSupabaseUrl()}/rest/v1/seo_audit_summary?tenant_id=eq.${activeTenantId}`,
         {
           headers: {
             Authorization: `Bearer ${session.access_token}`,
@@ -117,7 +118,7 @@ export function ComplianceReportPanel() {
 
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-compliance-report`,
+        `${getSupabaseUrl()}/functions/v1/generate-compliance-report`,
         {
           method: 'POST',
           headers: {

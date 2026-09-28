@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { DiscoveryIntakeForm } from '../components/enterprise-ai-os/DiscoveryIntakeForm';
+import { getSupabaseUrl } from '../lib/supabaseUrl';
 
 interface PendingSystem {
   id: string;
@@ -18,7 +19,7 @@ interface PendingSystem {
   created_at: string;
 }
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string | undefined;
+const SUPABASE_URL = getSupabaseUrl();
 
 const RISK_BADGE: Record<string, string> = {
   prohibited: 'bg-red-500/20 text-red-300 border-red-500/40',

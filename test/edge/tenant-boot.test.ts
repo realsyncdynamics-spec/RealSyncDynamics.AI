@@ -184,6 +184,19 @@ describe('provision-tenant — Quelltext-Vertraege', () => {
     expect(FN).toContain('p_expected_previous_hash: previousHash');
     expect(FN).not.toMatch(/from\('governance_evidence'\)\.insert/);
   });
+  it('leitet Nachweis-Pflichten aus dem Zustand ab, nicht nur aus `created`', () => {
+    // Abgebrochener Vorlauf: Ressource da, Evidence fehlt -> spaeterer Lauf traegt nach.
+    expect(FN).toContain('lifecycleEvidenceState(c, action)');
+    expect(FN).toMatch(/if \(!action \|\| r\.status !== 'done'\) continue;/);
+    // Verwaistes Event wird wiederverwendet, nicht dupliziert.
+    expect(FN).toContain('state.orphanEventId');
+    // Fehlender Nachweis ist kein `done`.
+    expect(FN).toContain("reason: 'evidence_missing'");
+  });
+  it('fenced jeden Schritt gegen Lease-Uebernahme', () => {
+    expect(FN).toMatch(/for \(const id of BOOT_STEPS\) \{[\s\S]{0,400}\.eq\('updated_at', startedAt\)\.maybeSingle\(\)/);
+    expect(FN).toContain("'BOOT_SUPERSEDED'");
+  });
   it('gated den Boot-Key wie governance-keys ueber api.access', () => {
     expect(FN).toContain("hasFeature(ent, 'api.access')");
     expect(FN).toContain("'not_entitled:api.access'");
@@ -202,9 +215,13 @@ describe('Migration — additiv und passend zur Engine', () => {
   });
   it('nutzt nur Event-Quellen, die governance_events erlaubt', () => {
     const allowed = ['website_scanner', 'browser_extension', 'sdk', 'api', 'github', 'ci_cd', 'manual', 'agent_runtime'];
-    const m = SQL.match(/"event_source":\[([^\]]*)\]/);
-    expect(m).not.toBeNull();
-    for (const s of m![1].split(',').map((x) => x.replace(/"/g, ''))) expect(allowed).toContain(s);
+    // Listen UND Einzelwerte, jedes Vorkommen.
+    const matches = [...SQL.matchAll(/"event_source":(\[[^\]]*\]|"[^"]+")/g)];
+    expect(matches.length).toBeGreaterThan(1);
+    for (const [, raw] of matches) {
+      const parsed = JSON.parse(raw) as string | string[];
+      for (const s of Array.isArray(parsed) ? parsed : [parsed]) expect(allowed).toContain(s);
+    }
   });
 });
 

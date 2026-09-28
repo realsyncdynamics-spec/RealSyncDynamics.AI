@@ -272,18 +272,24 @@ async function appendLifecycle(
   step: BootStepId | 'boot',
   action: string,
   detail: Record<string, unknown>,
+  existingEventId: string | null = null,
 ): Promise<string> {
   const occurredAt = new Date().toISOString();
-  const { data: ev, error: ee } = await c.admin.from('governance_events').insert({
-    tenant_id: c.tenantId,
-    asset_id: step === 'catalog' ? c.websiteAssetId : null,
-    event_type: `tenant.lifecycle.${action}`,
-    event_source: 'api',
-    title: `Tenant-Boot: ${action}`,
-    risk_level: 'info',
-    payload: { step, trigger: c.trigger, ...detail },
-  }).select('id').single();
-  if (ee) throw ee;
+  // Ein Event ohne Evidence (abgebrochener Lauf) wird wiederverwendet, nicht dupliziert.
+  let eventId = existingEventId;
+  if (!eventId) {
+    const { data: ev, error: ee } = await c.admin.from('governance_events').insert({
+      tenant_id: c.tenantId,
+      asset_id: step === 'catalog' ? c.websiteAssetId : null,
+      event_type: `tenant.lifecycle.${action}`,
+      event_source: 'api',
+      title: `Tenant-Boot: ${action}`,
+      risk_level: 'info',
+      payload: { step, trigger: c.trigger, ...detail },
+    }).select('id').single();
+    if (ee) throw ee;
+    eventId = ev.id as string;
+  }
   // Anhaengen per Compare-and-Swap auf den Kettenkopf (append_governance_evidence,
   // Advisory-Lock je Tenant): andere Schreiber derselben Kette (tenant-audit,
   // email-auth-rescan) koennen dazwischenkommen — dann neu lesen, neu hashen,
@@ -295,7 +301,7 @@ async function appendLifecycle(
     const { data, error } = await c.admin.rpc('append_governance_evidence', {
       p_row: {
         tenant_id: c.tenantId,
-        event_id: ev.id,
+        event_id: eventId,
         asset_id: step === 'catalog' ? c.websiteAssetId : null,
         evidence_type: 'json',
         title: `Tenant-Boot: ${action}`,
@@ -317,18 +323,55 @@ const LIFECYCLE_ACTION: Partial<Record<BootStepId, string>> = {
   ingest_key: 'key_issued',
 };
 
+/**
+ * Stand der Lifecycle-Evidence fuer eine Aktion: ob schon ein Chain-Eintrag
+ * existiert, und ob ein Event ohne Evidence liegt (Abbruch zwischen beiden
+ * Schreibvorgaengen), das wiederverwendet werden muss.
+ */
+async function lifecycleEvidenceState(c: Ctx, action: string): Promise<{ covered: boolean; orphanEventId: string | null }> {
+  const { data: events, error } = await c.admin
+    .from('governance_events').select('id')
+    .eq('tenant_id', c.tenantId).eq('event_type', `tenant.lifecycle.${action}`)
+    .order('created_at', { ascending: true }).limit(50);
+  if (error) throw error;
+  const ids = (events ?? []).map((e) => e.id as string);
+  if (!ids.length) return { covered: false, orphanEventId: null };
+  const { data: ev, error: ee } = await c.admin
+    .from('governance_evidence').select('event_id')
+    .eq('tenant_id', c.tenantId).in('event_id', ids).not('content_hash', 'is', null);
+  if (ee) throw ee;
+  const withEvidence = new Set((ev ?? []).map((e) => e.event_id as string));
+  if (withEvidence.size > 0) return { covered: true, orphanEventId: null };
+  return { covered: false, orphanEventId: ids[0] };
+}
+
 async function stepFirstEvidence(c: Ctx, prior: BootStepResult[]): Promise<BootStepResult> {
+  // Jeder erledigte Schritt mit Lifecycle-Aktion ist eine Nachweis-Pflicht. Sie
+  // wird aus dem Zustand abgeleitet, nicht aus `created` dieses Laufs: ein
+  // abgebrochener Vorlauf hinterlaesst sonst eine Ressource ohne Nachweis, die
+  // kein spaeterer Lauf mehr nachtraegt.
   let head: string | null = null;
   const appended: string[] = [];
+  const missing: string[] = [];
+  let obligations = 0;
   for (const r of prior) {
     const action = LIFECYCLE_ACTION[r.step];
-    if (!action || !r.created) continue;
-    // Nur Kennungen in die Chain, nie Token oder Installer-Artefakte.
-    head = await appendLifecycle(c, r.step, action, r.detail ?? {});
-    appended.push(action);
+    if (!action || r.status !== 'done') continue;
+    obligations++;
+    const state = r.created ? { covered: false, orphanEventId: null } : await lifecycleEvidenceState(c, action);
+    if (state.covered) continue;
+    try {
+      // Nur Kennungen in die Chain, nie Token oder Installer-Artefakte.
+      head = await appendLifecycle(c, r.step, action, r.detail ?? {}, state.orphanEventId);
+      appended.push(action);
+    } catch (e) {
+      console.error(`[provision-tenant] lifecycle evidence ${action} failed`, e);
+      missing.push(action);
+    }
   }
+  if (missing.length) return { step: 'first_evidence', status: 'pending', reason: 'evidence_missing', detail: { missing, appended } };
+  if (!obligations) return { step: 'first_evidence', status: 'pending', reason: 'no_obligations' };
   head ??= await chainHead(c);
-  if (!head) return { step: 'first_evidence', status: 'pending', reason: 'chain_empty' };
   return { step: 'first_evidence', status: 'done', created: appended.length > 0, detail: { appended, head_hash: head } };
 }
 
@@ -426,6 +469,12 @@ Deno.serve(async (req) => {
   let blockedBy: BootStepId | null = null;
   for (const id of BOOT_STEPS) {
     if (blockedBy) { steps.push({ step: id, status: 'pending', reason: `blocked_by:${blockedBy}` }); continue; }
+    // Lease-Fencing: hat nach Ablauf von LOCK_MS ein neuerer Lauf die Sperre
+    // uebernommen, erzeugt dieser Lauf keine weiteren Seiteneffekte mehr.
+    const { data: lease, error: le } = await admin.from('tenant_provisioning_runs')
+      .select('id').eq('tenant_id', tenantId).eq('updated_at', startedAt).maybeSingle();
+    if (le) return jsonError(500, 'INTERNAL', 'run lease check failed');
+    if (!lease) return jsonError(409, 'BOOT_SUPERSEDED', 'a newer boot run took over this tenant');
     try {
       steps.push(await runners[id]());
     } catch (e) {

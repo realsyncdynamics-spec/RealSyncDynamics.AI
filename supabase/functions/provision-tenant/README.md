@@ -44,6 +44,13 @@ Stand je Tenant in `tenant_provisioning_runs` (lesbar für Mitglieder per RLS).
 - **Lauf-Sperre** (2 min) verhindert parallele Boots. Evidence wird über
   `append_governance_evidence` (Compare-and-Swap auf den Kettenkopf, wie
   tenant-audit) angehängt — auch gegen andere Schreiber verzweigt die Chain nicht.
+- **Lease-Fencing:** vor jedem Schritt prüft der Lauf, ob er die Sperre noch
+  hält; nach einer Übernahme (`BOOT_SUPERSEDED`) erzeugt er keine Seiteneffekte mehr.
+- **Nachweis-Pflichten aus dem Zustand:** jeder erledigte Schritt braucht seinen
+  Lifecycle-Eintrag. Fehlt er (Abbruch zwischen Ressource und Evidence), trägt der
+  nächste Lauf ihn nach und nutzt ein verwaistes Event wieder. `first_evidence`
+  ist erst `done`, wenn alle Pflichten erfüllt sind — nicht schon bei irgendeinem
+  Kettenkopf.
 
 ## Nicht in diesem Release
 

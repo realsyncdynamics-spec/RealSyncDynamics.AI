@@ -29,7 +29,7 @@ import {
 
 export function GovernanceScorePage() {
   usePageMeta({
-    title: 'Governance Complexity Score — passende Governance-Abdeckung | RealSyncDynamics.AI',
+    title: 'Governance Complexity Score — passende Governance-Abdeckung | RealSync Dynamics AI',
     description:
       'Ermitteln Sie Ihren Governance Complexity Score aus Branche, Datenkategorien, KI-Nutzung, ' +
       'Drittanbietern, Tracking und Dokumentationspflichten — und sehen Sie die passende ' +

@@ -7,18 +7,6 @@
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://realsyncdynamicsai.de/about</loc>
-    <lastmod>2026-08-01</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://realsyncdynamicsai.de/agencies</loc>
-    <lastmod>2026-05-09</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
     <loc>https://realsyncdynamicsai.de/ai-act-faq</loc>
     <lastmod>2026-05-09</lastmod>
     <changefreq>monthly</changefreq>
@@ -97,12 +85,6 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://realsyncdynamicsai.de/bildung</loc>
-    <lastmod>2026-05-09</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
     <loc>https://realsyncdynamicsai.de/borlabs-alternative</loc>
     <lastmod>2026-05-09</lastmod>
     <changefreq>monthly</changefreq>
@@ -115,7 +97,7 @@
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://realsyncdynamicsai.de/busseld-rechner</loc>
+    <loc>https://realsyncdynamicsai.de/bussgeld-rechner</loc>
     <lastmod>2026-05-10</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
@@ -217,22 +199,10 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://realsyncdynamicsai.de/education</loc>
-    <lastmod>2026-05-09</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
     <loc>https://realsyncdynamicsai.de/eu-ai-act-check</loc>
     <lastmod>2026-05-09</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
-  </url>
-  <url>
-    <loc>https://realsyncdynamicsai.de/faq</loc>
-    <lastmod>2026-05-09</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://realsyncdynamicsai.de/features</loc>
@@ -409,12 +379,6 @@
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://realsyncdynamicsai.de/market-analysis</loc>
-    <lastmod>2026-05-09</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.5</priority>
-  </url>
-  <url>
     <loc>https://realsyncdynamicsai.de/marktanalyse</loc>
     <lastmod>2026-05-09</lastmod>
     <changefreq>monthly</changefreq>
@@ -449,12 +413,6 @@
     <lastmod>2026-05-09</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://realsyncdynamicsai.de/press</loc>
-    <lastmod>2026-05-09</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.5</priority>
   </url>
   <url>
     <loc>https://realsyncdynamicsai.de/presse</loc>
@@ -493,12 +451,6 @@
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://realsyncdynamicsai.de/resources</loc>
-    <lastmod>2026-05-09</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
     <loc>https://realsyncdynamicsai.de/ressourcen</loc>
     <lastmod>2026-05-09</lastmod>
     <changefreq>monthly</changefreq>
@@ -506,12 +458,6 @@
   </url>
   <url>
     <loc>https://realsyncdynamicsai.de/saas-anbieter</loc>
-    <lastmod>2026-05-09</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://realsyncdynamicsai.de/saas-providers</loc>
     <lastmod>2026-05-09</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
@@ -553,12 +499,6 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://realsyncdynamicsai.de/sicherheit</loc>
-    <lastmod>2026-05-09</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
     <loc>https://realsyncdynamicsai.de/trust</loc>
     <lastmod>2026-05-15</lastmod>
     <changefreq>monthly</changefreq>
@@ -578,12 +518,6 @@
   </url>
   <url>
     <loc>https://realsyncdynamicsai.de/steuerberater</loc>
-    <lastmod>2026-05-09</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://realsyncdynamicsai.de/steuerkanzlei</loc>
     <lastmod>2026-05-09</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>

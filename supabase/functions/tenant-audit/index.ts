@@ -34,6 +34,7 @@
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { observeAal2 } from '../_shared/requireAal2.ts';
+import { internalScanHeaders, TENANT_SCAN_LIMIT_PER_HOUR } from '../_shared/internal-scan-call.ts';
 import { handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 import { runTenantAuditPipeline, type GdprAuditResponse } from './pipeline.ts';
 import { createAuditRepo } from './repo.ts';
@@ -105,6 +106,18 @@ Deno.serve(async (req) => {
   if (memErr) return jsonError(500, 'INTERNAL', memErr.message);
   if (!membership) return jsonError(403, 'FORBIDDEN', 'not a member of this tenant');
 
+  // Rate-Limit pro Mandant. gdpr-audit lässt den internen Aufruf an seinem
+  // IP-Limit vorbei (sonst teilten sich alle Mandanten 5 Scans/Stunde), also
+  // begrenzen wir hier. Zählfehler ⇒ kein Scan (fail-closed).
+  const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+  const { count: recentRuns, error: countErr } = await admin
+    .from('scan_runs').select('id', { count: 'exact', head: true })
+    .eq('tenant_id', tenantId).eq('detector', 'gdpr-audit').gte('created_at', oneHourAgo);
+  if (countErr) return jsonError(500, 'INTERNAL', countErr.message);
+  if ((recentRuns ?? 0) >= TENANT_SCAN_LIMIT_PER_HOUR) {
+    return jsonError(429, 'RATE_LIMITED', `max ${TENANT_SCAN_LIMIT_PER_HOUR} scans per tenant and hour`);
+  }
+
   const result = await runTenantAuditPipeline({
     // deno-lint-ignore no-explicit-any
     admin: admin as any,
@@ -112,17 +125,11 @@ Deno.serve(async (req) => {
     callGdprAudit: async () => {
       const r = await fetch(`${SUPABASE_URL}/functions/v1/gdpr-audit`, {
         method:  'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          // gdpr-audit ist verify_jwt=false, braucht aber email — wir nutzen
-          // den user-email als technisches Identifikator (taucht im sales_lead
-          // auf, der ohnehin Lead-Tracking ist; OK für authenticated path).
-        },
-        body: JSON.stringify({
-          url,
-          email:  userResult.user.email ?? 'no-email@tenant-audit',
-          source: 'tenant-audit',
-        }),
+        // Interner Aufruf (Service-Role-Key + Caller-Header): gdpr-audit
+        // überspringt dann IP-Limit, sales_leads und E-Mail
+        // (_shared/internal-scan-call.ts). Die E-Mail des Nutzers geht nicht mit.
+        headers: internalScanHeaders(SRK),
+        body: JSON.stringify({ url, source: 'tenant-audit' }),
       });
       if (!r.ok) return { httpStatus: r.status, text: await r.text() };
       return await r.json() as GdprAuditResponse;

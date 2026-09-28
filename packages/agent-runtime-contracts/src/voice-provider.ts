@@ -19,7 +19,7 @@
  *  - tenantId/botId stammen aus der serverseitigen Auflösung
  *    (voice_number_bindings bzw. memberships), nie aus Provider-Payloads.
  *
- * Datenmodell: supabase/migrations/20260927143000_voice_runtime_foundation.sql
+ * Datenmodell: supabase/migrations/20260928130000_voice_runtime_foundation.sql
  */
 
 import type { RiskLevel, ToolName, ToolRequest } from "./index";

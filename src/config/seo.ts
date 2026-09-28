@@ -253,8 +253,10 @@ function breadcrumbs(items: Array<{ name: string; url: string }>): Record<string
 export const SEO_CONFIG: Record<string, SEOConfig> = {
   // ─── Tier 1 — Hero / Top-Conversion ──────────────────────────────────────
   '/': {
-    // Governance-OS-Positionierung — matches the H1 in GovernanceOsHero.
-    title: 'RealSyncDynamics.AI — The Governance OS for Autonomous AI',
+    // Kontrollschicht-Positionierung — matches the H1 in GovernanceOsHero
+    // (HANDOFF_OVERRIDES.de: "Die Kontrollschicht für KI im Unternehmen.")
+    // and the static <title> in index.html.
+    title: 'KI-Governance & Kontrollschicht | RealSyncDynamics.AI',
     description:
       'Kontroll- und Nachweisschicht für Enterprise-KI: Systeme erfassen, Risiken bewerten, Policies steuern und Evidence für DSGVO und EU AI Act erzeugen.',
     canonical: `${SITE_URL}/`,

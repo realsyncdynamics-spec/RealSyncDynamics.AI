@@ -178,3 +178,5 @@ export interface EvidenceEvent {
 
 export const GENESIS_HASH =
   "0000000000000000000000000000000000000000000000000000000000000000";
+
+export * from "./voice-provider";

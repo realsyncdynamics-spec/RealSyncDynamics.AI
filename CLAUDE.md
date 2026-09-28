@@ -34,7 +34,7 @@ Default für Landing-/Marketing-Arbeit. **Nur diese Pfade lesen/schreiben:**
 
 **Nicht anfassen und nicht globben:** `supabase/`, `platform/`, `services/`, `apps/`, `docs/` (außer explizit genannt), Root-`*.sql.bak`, `.archive/` (dort liegen u. a. die alten Root-Status-/Phase-Dokumente unter `root-docs/` — nur gezielt greppen, nie einlesen).
 
-Startseite `/` = „Papier & Waldgrün“ (hell, Serif-Headlines, Waldgrün trägt die Handlung); Token zentral in `src/index.css` (`.ga-context.rs-handoff`), siehe `AGENTS.md`. App/Dashboard bleibt dunkel. Design-Freeze: bestehende Tokens/Komponenten nicht umstylen ohne Freigabe.
+Startseite `/` = **Landing v2** (`src/pages/LandingV2.tsx`, gemergt mit #1686). Die aktive visuelle Quelle ist `src/styles/landing-v2.css`; eingebettete Governance-Module nutzen zusätzlich `src/styles/governance-os-landing.css` im `.lv2-embed`-Wrapper. Der vorhandene Hell/Dunkel-Schalter gehört zum aktuellen Design und bleibt bestehen. Ältere Design-Routen und frühere Landing-v3-Anweisungen sind Referenzen, keine Vorgabe für `/`. Design-Freeze: die aktuelle Landing v2 nicht ersetzen oder grundlegend umstylen ohne Freigabe.
 
 ## Harte Verbote
 

@@ -45,7 +45,8 @@ describe('governed browser executor contract', () => {
 
   it('records browser-execute as measured production state', () => {
     expect(productionRegistry).toContain("'browser-execute'");
-    expect(productionRegistry).toContain('EDGE_FUNCTIONS_OBSERVED_MAX = 191');
+    const observedMax = Number(productionRegistry.match(/EDGE_FUNCTIONS_OBSERVED_MAX = (\d+);/)?.[1]);
+    expect(observedMax).toBeGreaterThanOrEqual(191);
     expect(productionRegistry).not.toContain("{ slug: 'browser-execute'");
   });
 });

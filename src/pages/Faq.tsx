@@ -60,11 +60,16 @@ const ITEMS: Item[] = [
     q: 'Was kostet die Plattform?',
     a: (
       <>
-        <p>Vier Tiers — Starter und Growth mit 14-Tage-Pilot, Enterprise nach Vertrag:</p>
+        <p>Fünf Tiers — Starter und Growth mit 14-Tage-Pilot, Agency direkt buchbar, Enterprise nach Vertrag:</p>
         <ul className="list-disc pl-5 space-y-1 mt-2">
           <li><strong className="text-titanium-50">Free Audit</strong> kostenlos — einmaliger Compliance-Snapshot, kein Account</li>
           <li><strong className="text-titanium-50">Starter</strong> 79 €/Monat — eine Domain, Audit-Trail, Re-Scan-Monitoring (Coming Soon)</li>
           <li><strong className="text-titanium-50">Growth</strong> 249 €/Monat — bis 3 Domains, tägliches Monitoring + Drift-Detection (Coming Soon)</li>
+          {/* COMMERCIAL-SSOT: Agency hat einen echten Stripe-Monatspreis und
+              ist ueber /checkout/agency einloesbar — der Betrag darf deshalb
+              hier stehen. Die Jahresvariante ist es nicht
+              (`yearlyCheckoutUnavailable`), also kein Jahresbetrag. */}
+          <li><strong className="text-titanium-50">Agency</strong> 699 €/Monat — bis 10 Kunden-Sites, White-Label-Berichte, REST-API + Webhooks</li>
           {/* COMMERCIAL-SSOT: kein Festpreis — Enterprise wird vertraglich
               vereinbart und manuell fakturiert; der Self-Service-Checkout
               kann 1.249 € nicht einloesen. */}

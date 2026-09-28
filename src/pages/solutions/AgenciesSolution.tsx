@@ -1,8 +1,14 @@
 import { Link } from 'react-router-dom';
 import { ArrowRight, Check, Globe, Users, TrendingUp, Lock } from 'lucide-react';
 import { Logo } from '../../components/Logo';
+import { planById, formatPriceEur } from '@/shared/pricing';
 
 export function AgenciesSolution() {
+  // COMMERCIAL-SSOT: Preis und Kontingente kommen aus der Quelle, damit die
+  // Seite nicht erneut von ihr wegdriftet. Canonical migration tracked in
+  // Phase 2.
+  const agency = planById('agency');
+
   return (
     <div className="bg-hero-only min-h-screen flex flex-col text-titanium-50">
       {/* Top bar */}
@@ -197,29 +203,38 @@ export function AgenciesSolution() {
       <section className="px-4 sm:px-6 lg:px-8 py-12 border-t border-silver-700">
         <div className="max-w-3xl mx-auto text-center">
           <h2 className="font-display font-bold text-2xl text-titanium-50 mb-6">
-            Enterprise-Paket: Professional Governance
+            {agency.name} — {agency.outcomeHeadline}
           </h2>
           <div className="border border-silver-700 p-8 bg-obsidian-900 rounded-none mb-8">
             {/*
-              COMMERCIAL-SSOT: temporary production hotfix.
+              COMMERCIAL-SSOT: Betrag aus der SSoT, nicht gepflegt.
               Canonical source migration tracked in Phase 2.
-              Kein Festpreis: Enterprise wird vertraglich vereinbart und
-              manuell fakturiert (`priceOnRequest`), der Self-Service-Checkout
-              kann 1.249 € nicht einloesen. Agency stand hier bis AP2 und ist
-              stillgelegt — ersetzt wird der Plan nicht durch einen Betrag,
-              sondern durch den Vertriebsweg.
+
+              Agency ist `availability: 'self_service'` / `purchaseMode:
+              'checkout'` und in Stripe mit einem echten Monatspreis
+              verdrahtet — der Betrag ist hier also einloesbar. Nur die
+              Jahresvariante ist es nicht (`yearlyCheckoutUnavailable`),
+              deshalb steht hier ausschliesslich der Monatsbetrag.
+
+              Kontingente kommen aus `agency.limits`: was die Seite
+              zusichert, ist damit dasselbe, was der Plan nach dem Kauf
+              freischaltet.
             */}
-            <div className="font-display font-bold text-4xl text-titanium-50 mb-2">Auf Anfrage</div>
-            <p className="text-silver-400 mb-6">Enterprise — White-Label, Sites nach Vertrag, API + Webhooks</p>
-            <ul className="space-y-3 text-sm text-silver-300 mb-8 max-w-lg mx-auto">
+            <div className="font-display font-bold text-4xl text-titanium-50 mb-1">
+              {formatPriceEur(agency.price.monthlyEur)}
+            </div>
+            <p className="text-xs font-mono uppercase tracking-wider text-silver-400 mb-4">/ Monat</p>
+            <p className="text-silver-400 mb-6">{agency.technicalSubheadline}</p>
+            <ul className="space-y-3 text-sm text-silver-300 mb-8 max-w-lg mx-auto text-left">
               {[
-                'White-Label (dein Logo, deine Domain)',
-                'Kunden-Domains nach Vertrag',
-                'DSGVO + AI-Act Monitoring',
-                'Evidence Vault',
-                'Team-Zugang (5 Nutzer)',
-                'API zum Einbau in dein Portal',
-                'Reseller-Support',
+                'White-Label-Berichte (dein Logo, deine Domain)',
+                `Bis zu ${agency.limits.sites} Kunden-Sites auf ${agency.limits.domains} Domains`,
+                `${agency.limits.seats} Team-Plätze`,
+                'DSGVO, EU AI Act, ISO 27001, NIS2 und TISAX',
+                `Evidence Vault mit ${agency.limits.evidenceStorageGb} GB Nachweisspeicher`,
+                `REST-API (${agency.limits.apiCallsPerMonth.toLocaleString('de-DE')} Calls/Monat) und Webhooks`,
+                'Scheduler, Bulk Jobs und signierter Herkunftsnachweis',
+                'Priority Support',
               ].map((feature, i) => (
                 <li key={i} className="flex gap-2">
                   <Check className="h-4 w-4 text-violet-400 flex-shrink-0 mt-0.5" />
@@ -227,11 +242,14 @@ export function AgenciesSolution() {
                 </li>
               ))}
             </ul>
-            <Link to="/contact-sales?tier=enterprise&source=solutions" className="surface-mono inline-block px-8 py-3 font-bold">Enterprise anfragen</Link>
+            <Link to="/checkout/agency" className="surface-mono inline-block px-8 py-3 font-bold">
+              {agency.ctaLabel}
+            </Link>
           </div>
 
           <p className="text-silver-400 text-sm">
-            Mehr als 25 Kunden-Websites? Der Umfang wird im Enterprise-Vertrag festgelegt — <Link to="/contact-sales?tier=enterprise&source=solutions" className="text-security-500 hover:text-security-400">Enterprise anfragen</Link>.
+            Mehr Sites, mehrere Mandanten oder SSO? Dann wird der Umfang im
+            Enterprise-Vertrag festgelegt — <Link to="/contact-sales?tier=enterprise&source=solutions" className="text-security-500 hover:text-security-400">Enterprise anfragen</Link>.
           </p>
         </div>
       </section>

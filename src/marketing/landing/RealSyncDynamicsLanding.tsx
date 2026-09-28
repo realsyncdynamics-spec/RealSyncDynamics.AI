@@ -12,9 +12,10 @@ export const RealSyncDynamicsLanding = () => {
   const growthPrice = planById('growth').price.monthlyEur;
   // COMMERCIAL-SSOT: temporary production hotfix.
   // Canonical source migration tracked in Phase 2.
-  // `agencyPrice` ist entfallen: Agency ist seit AP2 stillgelegt und wird
-  // hier nicht mehr als Karte gefuehrt. Den Betrag aus der SSoT abzuleiten
-  // haette ihn korrekt, aber weiterhin uneinloesbar gemacht.
+  // Agency ist `self_service` und in Stripe mit einem echten Monatspreis
+  // verdrahtet, steht also wieder als Karte im Raster. Der Betrag kommt
+  // wie bei Starter und Growth aus der SSoT statt aus dem Markup.
+  const agencyPrice = planById('agency').price.monthlyEur;
 
   const sections = [
     'Product',
@@ -469,29 +470,25 @@ export const RealSyncDynamicsLanding = () => {
 
               <div className="bg-slate-900/80 backdrop-blur p-6 rounded-lg border border-petrol/30 hover:border-petrol/60 flex flex-col transition">
                 {/*
-                  COMMERCIAL-SSOT: temporary production hotfix.
+                  COMMERCIAL-SSOT: Betrag aus der SSoT, nicht gepflegt.
                   Canonical source migration tracked in Phase 2.
-                  Diese Karte fuehrte Agency mit dem Betrag aus der SSoT. Den
-                  Preis abzuleiten macht ihn korrekt, aber nicht einloesbar:
-                  Agency ist seit AP2 stillgelegt, `/checkout/agency` weist
-                  neue Abschluesse ab. Die Zielgruppe laeuft ueber Enterprise
-                  — nach Vertrag, deshalb ohne Betrag.
 
-                  `tier` muss dabei zur Ueberschrift passen: `ContactSales`
-                  baut daraus die Seitenueberschrift **und** schickt den Wert
-                  mit dem Lead an den Server. Ein Restwert `agency` fuehrte
-                  den Besucher auf „Agency — Founding Access" und verbuchte
-                  seine Anfrage unter einem stillgelegten Plan.
+                  Diese Karte fuehrt wieder Agency. Der Monatspreis ist in
+                  Stripe verdrahtet und ueber `/checkout/agency` einloesbar —
+                  anders als die Jahresvariante, die deshalb hier nicht
+                  auftaucht. Enterprise hat direkt unter diesem Raster einen
+                  eigenen Anfrage-Banner; eine zweite Enterprise-Karte hier
+                  war eine Dublette ohne eigenen Kaufpfad.
                 */}
-                <h3 className="text-lg font-bold text-petrol mb-2" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Enterprise</h3>
-                <p className="text-3xl font-bold text-titanium mb-1">Auf Anfrage</p>
-                <p className="text-xs font-mono uppercase tracking-wider text-titanium/50 mb-4">nach Vertrag</p>
+                <h3 className="text-lg font-bold text-petrol mb-2" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Agency</h3>
+                <p className="text-3xl font-bold text-titanium mb-1">{agencyPrice} €</p>
+                <p className="text-xs font-mono uppercase tracking-wider text-titanium/50 mb-4">pro Monat</p>
                 <ul className="space-y-2 text-sm text-titanium/70 mb-6 flex-1">
-                  <li>✓ White-Label</li>
-                  <li>✓ Mandanten-Kapazität nach Vereinbarung</li>
-                  <li>✓ API-Zugang</li>
+                  <li>✓ White-Label-Berichte</li>
+                  <li>✓ Bis zu 10 Kunden-Sites</li>
+                  <li>✓ REST-API + Webhooks</li>
                 </ul>
-                <Link to="/contact-sales?tier=enterprise&source=realsync-landing" className="block text-center w-full bg-slate-800 hover:bg-slate-700 py-2 rounded text-sm transition">
+                <Link to="/checkout/agency" className="block text-center w-full bg-slate-800 hover:bg-slate-700 py-2 rounded text-sm transition">
                   Buchen
                 </Link>
               </div>

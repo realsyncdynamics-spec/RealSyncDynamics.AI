@@ -198,9 +198,11 @@ export function SaaSSolution() {
               Canonical source migration tracked in Phase 2.
               Kein Festpreis: Enterprise wird vertraglich vereinbart und
               manuell fakturiert (`priceOnRequest`), der Self-Service-Checkout
-              kann 1.249 € nicht einloesen. Agency stand hier bis AP2 und ist
-              stillgelegt — ersetzt wird der Plan nicht durch einen Betrag,
-              sondern durch den Vertriebsweg.
+              kann 1.249 € nicht einloesen. Hier stand bis AP2 Agency; die
+              Karte fuehrt bewusst weiterhin Enterprise, weil SaaS-Anbieter
+              ueber Mandanten und SLA einsteigen, nicht ueber Site-Kontingente.
+              Das ist eine Positionierung, keine Stilllegung: Agency ist
+              `self_service` und unter /solutions/agencies regulaer buchbar.
             */}
             <div className="font-display font-bold text-4xl text-titanium-50 mb-2">Auf Anfrage</div>
             <p className="text-silver-400 mb-6">Enterprise — für SaaS-Anbieter, Websites/Produkte nach Vertrag</p>

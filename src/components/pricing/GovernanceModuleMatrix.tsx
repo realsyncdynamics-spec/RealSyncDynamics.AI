@@ -9,8 +9,9 @@ import { SALES_PLANS } from '@/shared/pricing';
 // wäre genau die Duplikation, die der Governance-Refactor beseitigt hat.
 //
 // `SALES_PLANS` statt `ORDERED_PLANS`: Die Matrix steht neben den Karten und
-// muss dieselben Spalten zeigen. Agency und Partner sind seit AP2
-// stillgelegt.
+// muss dieselben Spalten zeigen. Gefiltert wird auf `availability !== 'legacy'`
+// — das trifft heute nur Partner. Agency ist `self_service` und bekommt
+// deshalb eine eigene Spalte.
 const MATRIX_PLANS = SALES_PLANS.map((plan) => ({ id: plan.id, label: plan.name }));
 
 export function GovernanceModuleMatrix() {

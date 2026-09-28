@@ -45,7 +45,7 @@ RealSyncDynamics.AI betreibt DSGVO, EU AI Act, Evidence, Monitoring und Automati
 18. ⬜ Browser-Extensions (`extension`, `extension-ai-monitor`, `extension-governance`) konsolidieren auf eine.
 19. ⬜ Connector-Wildwuchs (`connectors/`, `services/`, `worker/`) auf ein einheitliches Schnittstellen-Muster bringen.
 20. ⬜ Doku-Konsolidierung: `ROADMAP.md`, `docs/PRODUCT_FOCUS.md`, dieser Plan → eine konsistente Quelle, Widersprüche raus.
-21. ⬜ Terminologie-Lint: „Prüfpfad"/„Herkunftsnachweis" durchgängig erzwingen (CI-Check).
+21. 🟡 Terminologie-Lint: „Prüfpfad"/„Herkunftsnachweis" durchgängig erzwingen (CI-Check). **Ratsche aktiv** (`test/config/terminology-ratchet.test.ts`, Baseline `test/config/terminology-baseline.json`, Stand 2026-09-28: „Audit Trail" 77 Dateien/123 Treffer, „Provenance" 5/5) — neue Abweichungen sind rot, die Baseline kann nur sinken. Offen: Copy-Sweep in Scheiben bis 0.
 22. ⬜ Design-System-Konsistenz: App = Hard-Edge Industrial, Landing = Trust-Light — keine Vermischung.
 
 ## Block B — Phase 1: Aufräumen — PR-Backlog & Schulden (23–32)

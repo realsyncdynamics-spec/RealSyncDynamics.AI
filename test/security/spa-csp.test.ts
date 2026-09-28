@@ -60,6 +60,16 @@ describe('SPA CSP (Pages + meta)', () => {
     expect(directive(meta, 'script-src')).not.toMatch(/unsafe-inline/);
   });
 
+  // Ohne 'unsafe-inline' wird jedes ausführbare Inline-Script still blockiert —
+  // es läuft nicht und erzeugt nur einen CSP-Fehler in der Konsole.
+  it('index.html has no executable inline scripts', () => {
+    const html = readFileSync(join(ROOT, 'index.html'), 'utf-8');
+    const inline = [...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)]
+      .filter(([, attrs, body]) => !/\bsrc=/.test(attrs) && body.trim() !== '')
+      .filter(([, attrs]) => !/type="application\/(ld\+)?json"/.test(attrs));
+    expect(inline.map(([tag]) => tag.slice(0, 80))).toEqual([]);
+  });
+
   it('keeps consent-gated tracker hosts so pixels.ts can load after opt-in', () => {
     expect(directive(header, 'script-src')).toContain('https://www.googletagmanager.com');
     expect(directive(header, 'script-src')).toContain('https://connect.facebook.net');

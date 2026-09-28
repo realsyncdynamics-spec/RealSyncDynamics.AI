@@ -62,7 +62,7 @@ export const SKILL_REGISTRY: Record<SkillKey, SkillDef> = {
     ],
     useCases: [
       'Nutzungs-Kategorie einer AI-Act-Risikoklasse zuordnen',
-      'Pflichten je Risikoklasse ableiten (Doku, Human Oversight, Audit-Trail)',
+      'Pflichten je Risikoklasse ableiten (Doku, Human Oversight, Prüfpfad)',
       'Transparenz-/Offenlegungspflichten fuer Chatbots und generierte Inhalte pruefen',
     ],
     guardrails: [NO_LEGAL_OPINION],

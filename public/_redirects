@@ -54,5 +54,9 @@ https://www.realsyncdynamicsai.de/* https://realsyncdynamicsai.de/:splat 301
 /contact            /kontakt  301
 /domain-check       /audit  301
 /domain-checker     /audit  301
+/preise             /pricing  301
+/produkt            /runtime  301
+/loesungen          /branchen  301
+/demo               /demo-tour  301
 
 /*  /index.html  200

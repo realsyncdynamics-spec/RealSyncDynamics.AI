@@ -54,6 +54,58 @@ export async function getScanRun(scanRunId: string): Promise<ScanRun | null> {
   return (data as ScanRun | null) ?? null;
 }
 
+/**
+ * Status, in denen ein Befund noch nicht erledigt ist. `fixed` gehört dazu:
+ * Die Behebung ist gemeldet, aber erst die Nachprüfung setzt `resolved`
+ * (FINDING_NEXT_STATUS; der Report zählt `fixed` noch mit 50 %).
+ */
+export const OPEN_FINDING_STATUSES: readonly FindingStatus[] = ['open', 'acknowledged', 'fixed'];
+
+/** Schlanke Befund-Zeile fürs Dashboard (kein raw_payload). */
+export type OpenFindingRow = Pick<
+  Finding,
+  'id' | 'severity' | 'status' | 'summary' | 'detector' | 'scan_run_id' | 'website_id' | 'created_at'
+> & {
+  /**
+   * governance_events-Zwilling (raw_payload.event_id): email-auth-rescan
+   * schreibt denselben Befund in beide Speicher — zum Entdoppeln.
+   */
+  event_id?: string | null;
+};
+
+/** Stufen, die als Handlungsbedarf zählen — nie durch das Limit verdrängt. */
+const PRIORITY_SEVERITIES = ['critical', 'high', 'medium'] as const;
+
+const OPEN_FINDING_COLUMNS =
+  'id,severity,status,summary,detector,scan_run_id,website_id,created_at,event_id:raw_payload->>event_id';
+
+/**
+ * Offene Befunde eines Mandanten aus der kanonischen `findings`-Tabelle —
+ * dorthin schreibt der Website-Audit (tenant-audit). Neueste zuerst.
+ * Wirft bei RLS-/Netzfehler; der Aufrufer darf das nicht als „0 Befunde“ lesen.
+ *
+ * Zwei Abfragen: die neuesten `limit` Befunde UND die neuesten `limit`
+ * Befunde mit Handlungsbedarf (kritisch/hoch/mittel). Sonst könnten 50
+ * jüngere Niedrig-/Info-Befunde einen älteren kritischen verdrängen, und das
+ * Dashboard meldete „keine kritischen Befunde“.
+ */
+export async function listOpenFindingsForTenant(tenantId: string, limit = 50): Promise<OpenFindingRow[]> {
+  const sb = getSupabase();
+  const base = () => sb.from('findings')
+    .select(OPEN_FINDING_COLUMNS)
+    .eq('tenant_id', tenantId)
+    .in('status', [...OPEN_FINDING_STATUSES]);
+  const [recent, priority] = await Promise.all([
+    base().order('created_at', { ascending: false }).limit(limit),
+    base().in('severity', [...PRIORITY_SEVERITIES]).order('created_at', { ascending: false }).limit(limit),
+  ]);
+  if (recent.error) throw new Error(recent.error.message);
+  if (priority.error) throw new Error(priority.error.message);
+  const byId = new Map<string, OpenFindingRow>();
+  for (const row of [...(priority.data ?? []), ...(recent.data ?? [])] as OpenFindingRow[]) byId.set(row.id, row);
+  return [...byId.values()].sort((a, b) => b.created_at.localeCompare(a.created_at));
+}
+
 /** All findings produced by a scan_run. */
 export async function listFindingsForScan(scanRunId: string): Promise<Finding[]> {
   const sb = getSupabase();

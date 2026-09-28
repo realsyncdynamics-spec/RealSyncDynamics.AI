@@ -28,6 +28,7 @@ const DemoTourDashboard = lazy(() => import('./pages/DemoTourDashboard').then((m
 const DesignLedgerLanding = lazy(() => import('./pages/design/DesignLedgerLanding').then((m) => ({ default: m.DesignLedgerLanding })));
 const DesignTribunalLanding = lazy(() => import('./pages/design/DesignTribunalLanding').then((m) => ({ default: m.DesignTribunalLanding })));
 const MainLanding = lazy(() => import('./pages/MainLanding').then((m) => ({ default: m.MainLanding })));
+const LandingV2 = lazy(() => import('./pages/LandingV2').then((m) => ({ default: m.LandingV2 })));
 const GovernanceRuntimeLayerPage = lazy(() => import('./pages/GovernanceRuntimeLayerPage').then((m) => ({ default: m.GovernanceRuntimeLayerPage })));
 const ScanStartPage = lazy(() => import('./pages/product-entry-points/ScanStartPage').then((m) => ({ default: m.ScanStartPage })));
 const ChatbotStartPage = lazy(() => import('./pages/product-entry-points/ChatbotStartPage').then((m) => ({ default: m.ChatbotStartPage })));
@@ -501,11 +502,14 @@ function RoutesWithTracking() {
           <Route path="/demo-tour/checkout" element={<DemoTourProvider><DemoTourCheckoutPage /></DemoTourProvider>} />
           <Route path="/demo-tour/dashboard" element={<DemoTourProvider><DemoTourDashboard /></DemoTourProvider>} />
       {/* Public — Claude Design visual layer, existing RealSync backend routes. */}
-      <Route path="/" element={<DesignGovernanceAiLanding />} />
+      {/* Public `/` = Landing v2 (Claude-Design-Handoff). Governance-OS-Landing bleibt unter /design/governance-ai. */}
+      <Route path="/" element={<LandingV2 />} />
 
       {/* Reversible design references; no duplicate backend/runtime paths. */}
       <Route path="/design/governance-ai" element={<DesignGovernanceAiLanding />} />
       <Route path="/design/titan" element={<MainLanding />} />
+      {/* Landing v2 — Claude-Design-Handoff „AI Compliance Operations OS for Europe“. */}
+      <Route path="/design/landing-v2" element={<LandingV2 />} />
       <Route path="/governance-runtime-layer" element={<GovernanceRuntimeLayerPage />} />
       <Route path="/design/ledger" element={<DesignLedgerLanding />} />
       <Route path="/design/tribunal" element={<DesignTribunalLanding />} />

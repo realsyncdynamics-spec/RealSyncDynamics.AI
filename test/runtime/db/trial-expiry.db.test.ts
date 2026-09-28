@@ -35,7 +35,11 @@ async function alsServer(ctx: DbCtx): Promise<void> {
   await ctx.client.query(`SELECT set_config('request.jwt.claims', $1, false)`, [JSON.stringify({ role: 'service_role' })]);
 }
 
-/** Growth-Abo des Mandanten in den gewünschten Zustand setzen (der tenants-Trigger hat bereits ein Free-Abo angelegt). */
+/**
+ * Growth-Abo des Mandanten in den gewünschten Zustand setzen. Der tenants-Trigger
+ * hat bereits ein Free-Abo angelegt, deshalb Upsert statt Insert; beide
+ * Ende-Spalten werden explizit gesetzt, damit kein Rest aus dem Vorfall bleibt.
+ */
 async function abo(
   ctx: DbCtx,
   tenantId: string,
@@ -57,6 +61,7 @@ async function abo(
   );
 }
 
+/** Wirksame Entitlements des Mandanten als sortierte [key, value]-Paare, damit Ergebnismengen vergleichbar sind. */
 async function entitlements(ctx: DbCtx, tenantId: string): Promise<[string, number][]> {
   const res = await ctx.client.query<{ key: string; value: number }>(
     'SELECT key, value FROM public.tenant_entitlements($1::uuid) ORDER BY key',

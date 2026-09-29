@@ -33,7 +33,7 @@ export function findTags(html: string, name: string, limit = 500): Tag[] {
   const isVoid = VOID_TAGS.has(name);
   const pattern = isVoid
     ? new RegExp(`<${name}\\b([^>]*)>`, 'gi')
-    : new RegExp(`<${name}\\b([^>]*)>([\\s\\S]*?)<\\/${name}\\s*>`, 'gi');
+    : new RegExp(`<${name}\\b([^>]*)>([\\s\\S]*?)<\\/${name}\\b[^>]*>`, 'gi');
   for (const match of html.matchAll(pattern)) {
     out.push({ full: match[0], attrs: match[1] ?? '', inner: isVoid ? '' : (match[2] ?? ''), index: match.index ?? 0 });
     if (out.length >= limit) break;
@@ -51,22 +51,26 @@ export function getAttr(attrs: string, name: string): string | null {
   return present ? '' : null;
 }
 
+const NAMED_ENTITIES: Readonly<Record<string, string>> = Object.freeze({
+  nbsp: ' ', amp: '&', quot: '"', apos: "'", lt: '<', gt: '>',
+});
+
+/**
+ * Dekodiert Entities in **einem** Durchlauf. Mehrere `replace`-Aufrufe
+ * hintereinander würden `&amp;lt;` zweimal dekodieren — erst zu `&lt;`,
+ * dann zu `<` — und damit Markup erzeugen, das die Quelle nie enthielt.
+ */
 export function decodeEntities(value: string): string {
-  return value
-    .replace(/&nbsp;/gi, ' ')
-    .replace(/&amp;/gi, '&')
-    .replace(/&quot;/gi, '"')
-    .replace(/&#39;|&apos;/gi, "'")
-    .replace(/&lt;/gi, '<')
-    .replace(/&gt;/gi, '>')
-    .replace(/&#(\d+);/g, (_, code: string) => {
-      const n = Number(code);
+  return value.replace(/&(?:#(\d+)|#x([0-9a-f]+)|([a-z]+));/gi, (match, dec: string | undefined, hex: string | undefined, name: string | undefined) => {
+    if (dec !== undefined || hex !== undefined) {
+      const n = dec !== undefined ? Number(dec) : parseInt(hex ?? '', 16);
       return Number.isFinite(n) && n > 0 && n < 0x110000 ? String.fromCodePoint(n) : '';
-    })
-    .replace(/&#x([0-9a-f]+);/gi, (_, code: string) => {
-      const n = parseInt(code, 16);
-      return Number.isFinite(n) && n > 0 && n < 0x110000 ? String.fromCodePoint(n) : '';
-    });
+    }
+    if (name === undefined) return match;
+    if (name === '#39') return "'";
+    const decoded = NAMED_ENTITIES[name.toLowerCase()];
+    return decoded ?? match;
+  });
 }
 
 /** Entfernt Tags, dekodiert Entities, normalisiert Leerraum. */
@@ -79,26 +83,27 @@ export function cleanText(value: string | null | undefined): string {
 export function stripNonVisible(html: string): string {
   return html
     .replace(/<!--[\s\S]*?-->/g, ' ')
-    .replace(/<head\b[\s\S]*?<\/head\s*>/gi, ' ')
-    .replace(/<script\b[\s\S]*?<\/script\s*>/gi, ' ')
-    .replace(/<style\b[\s\S]*?<\/style\s*>/gi, ' ')
-    .replace(/<noscript\b[\s\S]*?<\/noscript\s*>/gi, ' ')
-    .replace(/<svg\b[\s\S]*?<\/svg\s*>/gi, ' ')
-    .replace(/<template\b[\s\S]*?<\/template\s*>/gi, ' ');
+    .replace(/<head\b[\s\S]*?<\/head\b[^>]*>/gi, ' ')
+    .replace(/<script\b[\s\S]*?<\/script\b[^>]*>/gi, ' ')
+    .replace(/<style\b[\s\S]*?<\/style\b[^>]*>/gi, ' ')
+    .replace(/<noscript\b[\s\S]*?<\/noscript\b[^>]*>/gi, ' ')
+    .replace(/<svg\b[\s\S]*?<\/svg\b[^>]*>/gi, ' ')
+    .replace(/<template\b[\s\S]*?<\/template\b[^>]*>/gi, ' ');
 }
 
 /** Navigation und Kopfbereich entfernt — für Textanalysen, die Menüpunkte nicht als Sätze lesen sollen. */
 export function withoutChrome(html: string): string {
-  return html.replace(/<nav\b[\s\S]*?<\/nav\s*>/gi, ' ').replace(/<header\b[\s\S]*?<\/header\s*>/gi, ' ');
+  return html.replace(/<nav\b[\s\S]*?<\/nav\b[^>]*>/gi, ' ').replace(/<header\b[\s\S]*?<\/header\b[^>]*>/gi, ' ');
 }
 
 /** Sichtbarer Text des Dokuments. Blockelemente werden zu Satzgrenzen. */
 export function visibleText(html: string): string {
   const withBreaks = stripNonVisible(html).replace(
-    /<\/(?:p|div|section|article|li|h[1-6]|tr|td|th|blockquote|figcaption|footer|header|nav|main|aside|dd|dt)\s*>|<br\s*\/?>/gi,
+    /<\/(?:p|div|section|article|li|h[1-6]|tr|td|th|blockquote|figcaption|footer|header|nav|main|aside|dd|dt)\b[^>]*>|<br\b[^>]*>/gi,
     ' . ',
   );
-  return cleanText(withBreaks).replace(/(?:\s*\.\s*){2,}/g, '. ').trim();
+  // Nach `cleanText` ist Leerraum ein einzelnes Leerzeichen — ". . ." wird linear zusammengezogen.
+  return cleanText(withBreaks).replace(/\.(?: \.)+/g, '.').trim();
 }
 
 /** Meta-Inhalt über `name` oder `property`. */
@@ -174,8 +179,27 @@ export function unique<T>(values: T[], key: (value: T) => string): T[] {
 export function sentences(text: string): string[] {
   return text
     .split(/(?<=[.!?])\s+(?=[A-ZÄÖÜ0-9„"])|\s\.\s|\s[·|]\s/u)
-    .map((s) => s.replace(/^[.\s]+|[.\s]+$/g, '').trim())
+    .map((s) => trimChars(s, '. \t\n\r'))
     .filter((s) => s.length >= 3);
+}
+
+/**
+ * Entfernt die genannten Zeichen an Anfang und Ende — ohne Regex. Ein
+ * `[…]+$` ist auf langen Läufen quadratisch (CodeQL: polynomial regex).
+ */
+export function trimChars(value: string, chars: string): string {
+  let start = 0;
+  let end = value.length;
+  while (start < end && chars.includes(value[start])) start += 1;
+  while (end > start && chars.includes(value[end - 1])) end -= 1;
+  return value.slice(start, end);
+}
+
+/** Nur am Ende — für Kürzungen, die vorn nichts anfassen dürfen. */
+export function trimTrailing(value: string, chars: string): string {
+  let end = value.length;
+  while (end > 0 && chars.includes(value[end - 1])) end -= 1;
+  return value.slice(0, end);
 }
 
 export function wordCount(text: string): number {

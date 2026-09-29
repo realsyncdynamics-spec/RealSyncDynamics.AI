@@ -24,7 +24,7 @@ import { INDUSTRY_PRESETS } from '../blueprint/industries.ts';
 import type { IndustryKey } from '../types.ts';
 import { clip, createComponent } from './components.ts';
 import { deriveDesignSystem } from './design-system.ts';
-import { sentences, wordCount } from './html.ts';
+import { hostnameOf, sentences, trimTrailing, wordCount } from './html.ts';
 import {
   REBUILD_DIRECTION_LABEL,
   type ImportedCta,
@@ -97,7 +97,7 @@ function editorialFrom(imp: SiteImport): Editorial {
     ...imp.headings.filter((h) => h.level === 2).map((h) => ({ label: h.text, ref: 'headings' })),
     ...imp.navigation.map((l) => ({ label: l.label, ref: 'nav' })),
   ]
-    .map((c) => ({ ...c, label: c.label.replace(/[.:!]+$/, '').trim() }))
+    .map((c) => ({ ...c, label: trimTrailing(c.label.trim(), '.:!').trim() }))
     .filter((c) => c.label.length >= 3 && c.label.length <= 60 && !GENERIC_NAV.test(c.label) && !/\?$/.test(c.label) && wordCount(c.label) <= 6);
   const seen = new Set<string>();
   const services: RebuildItem[] = [];
@@ -123,7 +123,7 @@ function editorialFrom(imp: SiteImport): Editorial {
   const heroImage = imp.seo.ogImage
     ? { src: imp.seo.ogImage, alt: imp.seo.ogTitle ?? imp.title, origin: 'import' as const }
     : (() => {
-        const img = imp.images.find((i) => !i.isLogo && (i.width === null || i.width >= 600) && !/icon|sprite|pixel|badge|\.svg$/i.test(i.src));
+        const img = imp.images.find((i) => !i.isLogo && (i.width === null || i.width >= 600) && !/(?:icon|sprite|pixel|badge)/i.test(i.src) && !/\.svg$/i.test(i.src));
         return img ? { src: img.src, alt: img.alt, origin: 'import' as const } : null;
       })();
 
@@ -160,13 +160,23 @@ function hostLabel(url: string): string {
   }
 }
 
-function stripBrand(offer: string, brand: string): string {
-  const cleaned = offer.replace(new RegExp(`\\s*[|–—\\-·:]\\s*${escapeRegExp(brand)}\\s*$`, 'i'), '').replace(new RegExp(`^${escapeRegExp(brand)}\\s*[|–—\\-·:]\\s*`, 'i'), '').trim();
-  return cleaned.length >= 3 ? cleaned : offer;
-}
+const BRAND_SEPARATORS = ['|', '–', '—', '-', '·', ':'];
 
-function escapeRegExp(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+/** „Angebot | Marke" bzw. „Marke – Angebot" → Angebot. String-Vergleich statt Regex aus Nutzerdaten. */
+function stripBrand(offer: string, brand: string): string {
+  const o = offer.trim();
+  const lo = o.toLowerCase();
+  const b = brand.trim().toLowerCase();
+  if (!b) return o;
+  let candidate: string | null = null;
+  if (lo.endsWith(b)) {
+    const rest = o.slice(0, o.length - b.length).trimEnd();
+    if (rest && BRAND_SEPARATORS.includes(rest[rest.length - 1])) candidate = rest.slice(0, -1).trimEnd();
+  } else if (lo.startsWith(b)) {
+    const rest = o.slice(b.length).trimStart();
+    if (rest && BRAND_SEPARATORS.includes(rest[0])) candidate = rest.slice(1).trimStart();
+  }
+  return candidate !== null && candidate.length >= 3 ? candidate : o;
 }
 
 function sentenceAbout(term: string, paragraphs: string[]): string | null {
@@ -342,13 +352,13 @@ function limitChars(value: string, max: number): string {
   if (v.length <= max) return v;
   const cut = v.slice(0, max);
   const at = cut.lastIndexOf(' ');
-  return (at > max * 0.6 ? cut.slice(0, at) : cut).replace(/[\s,;:|–-]+$/, '');
+  return trimTrailing(at > max * 0.6 ? cut.slice(0, at) : cut, ' \t,;:|–-');
 }
 
 export function limitWords(value: string, max: number): string {
   const words = value.trim().split(/\s+/);
   if (words.length <= max) return value.trim();
-  return `${words.slice(0, max).join(' ').replace(/[,;:–-]+$/, '')}`;
+  return trimTrailing(words.slice(0, max).join(' '), ',;:–-');
 }
 
 // ─────────────────────────────────────────────────────────────────────

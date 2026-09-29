@@ -498,7 +498,8 @@ function extractFonts(html: string, styles: string): string[] {
   }
   for (const m of styles.matchAll(/@font-face\s*{[^}]*font-family\s*:\s*([^;}]+)/gi)) bump(m[1] ?? '', 3);
   for (const href of [...linkHrefs(html, 'stylesheet'), ...linkHrefs(html, 'preload')]) {
-    if (!/fonts\.googleapis\.com|fonts\.bunny\.net/i.test(href)) continue;
+    const fontHost = hostnameOf(href);
+    if (fontHost !== 'fonts.googleapis.com' && fontHost !== 'fonts.bunny.net') continue;
     for (const m of href.matchAll(/family=([^&:]+)/gi)) {
       for (const fam of (m[1] ?? '').split('|')) bump(decodeURIComponent(fam.replace(/\+/g, ' ')), 5);
     }

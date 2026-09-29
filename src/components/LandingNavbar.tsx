@@ -10,7 +10,7 @@ const NAV_ITEMS = [
   // bis 2026-08 keinen einzigen Link im gesamten Frontend.
   { label: 'Funktionen',      to: '/features' },
   { label: 'Lösungen',        to: '/branchen' },
-  { label: 'Automatisierung', to: '/ai-governance' },
+  { label: 'EU AI Act',       to: '/ai-act' },
   { label: 'Sicherheit',      to: '/sicherheit' },
   { label: 'Preise',          to: '/pricing' },
   { label: 'Dokumentation',   to: '/docs' },

@@ -62,7 +62,7 @@ export function GovernanceRuntimePage() {
             </Link>
 
             <Link
-              to="/audit?source=governance-runtime"
+              to="/runtime?source=governance-runtime"
               className="inline-flex items-center justify-center gap-2 px-6 py-3.5 border border-silver-500 hover:border-titanium-200 text-silver-100 hover:text-titanium-50 text-base font-semibold rounded-none transition-colors"
             >
               Plattform ansehen

@@ -2,6 +2,8 @@
  * scansApi tests for the new helpers added in the onboarding-and-
  * status-UI PR: domain normalisation, status-transition validation.
  *
+ * `updateFindingStatus` goes through the `set_finding_status` RPC (Gate 2).
+ *
  * `addWebsiteForTenant` and `triggerTenantAudit` involve Supabase
  * client + fetch and are exercised via integration tests against
  * staging; here we lock the pure surface that doesn't need a network.
@@ -9,22 +11,15 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const calls: { method: string; args: unknown[] }[] = [];
-let updateResultError: { message: string } | null = null;
+let updateResultError: { message: string; code?: string } | null = null;
+let rpcRows: unknown[] | null = null;
 
 vi.mock('../../../../src/lib/supabase', () => ({
   getSupabase: () => ({
-    from() {
-      return {
-        update(patch: unknown) {
-          calls.push({ method: 'update', args: [patch] });
-          return {
-            eq(col: string, val: unknown) {
-              calls.push({ method: 'eq', args: [col, val] });
-              return Promise.resolve({ error: updateResultError });
-            },
-          };
-        },
-      };
+    rpc(fn: string, args: { p_finding_id: string; p_status: string }) {
+      calls.push({ method: 'rpc', args: [fn, args] });
+      if (updateResultError) return Promise.resolve({ data: null, error: updateResultError });
+      return Promise.resolve({ data: rpcRows ?? [{ id: args.p_finding_id, status: args.p_status }], error: null });
     },
   }),
 }));
@@ -39,6 +34,7 @@ const { normaliseDomain, auditTargetUrl } = __test;
 beforeEach(() => {
   calls.length = 0;
   updateResultError = null;
+  rpcRows = null;
 });
 
 describe('normaliseDomain', () => {
@@ -72,12 +68,11 @@ describe('auditTargetUrl', () => {
 });
 
 describe('updateFindingStatus', () => {
-  it('allows open → acknowledged', async () => {
+  it('writes through the set_finding_status RPC, never a direct UPDATE', async () => {
     await updateFindingStatus('f-1', 'open', 'acknowledged');
-    const upd = calls.find((c) => c.method === 'update');
-    expect(upd?.args[0]).toEqual({ status: 'acknowledged' });
-    const eq = calls.find((c) => c.method === 'eq');
-    expect(eq?.args).toEqual(['id', 'f-1']);
+    expect(calls).toEqual([
+      { method: 'rpc', args: ['set_finding_status', { p_finding_id: 'f-1', p_status: 'acknowledged' }] },
+    ]);
   });
 
   it('allows open → fixed', async () => {
@@ -95,6 +90,7 @@ describe('updateFindingStatus', () => {
   it('rejects acknowledged → resolved (must go through fixed)', async () => {
     await expect(updateFindingStatus('f-1', 'acknowledged', 'resolved'))
       .rejects.toThrow(/nicht erlaubt/);
+    expect(calls).toEqual([]);
   });
 
   it('rejects open → resolved (must go through fixed)', async () => {
@@ -111,5 +107,29 @@ describe('updateFindingStatus', () => {
     updateResultError = { message: 'rls-blocked' };
     await expect(updateFindingStatus('f-1', 'open', 'acknowledged'))
       .rejects.toThrow(/rls-blocked/);
+  });
+
+  it('maps a missing write permission to a readable error', async () => {
+    updateResultError = { message: 'role may not change finding status', code: '42501' };
+    await expect(updateFindingStatus('f-1', 'open', 'acknowledged'))
+      .rejects.toThrow(/Keine Berechtigung/);
+  });
+
+  it('no written row is a failure, not a silent success', async () => {
+    rpcRows = [];
+    await expect(updateFindingStatus('f-1', 'open', 'acknowledged'))
+      .rejects.toThrow(/nicht gespeichert/);
+  });
+
+  it('announces the change for the tenant so dashboards reload', async () => {
+    const seen: unknown[] = [];
+    const on = (e: Event) => seen.push((e as CustomEvent).detail);
+    window.addEventListener('realsync:tenant-data-changed', on);
+    try {
+      await updateFindingStatus('f-1', 'open', 'acknowledged', 't-1');
+    } finally {
+      window.removeEventListener('realsync:tenant-data-changed', on);
+    }
+    expect(seen).toEqual([{ tenantId: 't-1' }]);
   });
 });

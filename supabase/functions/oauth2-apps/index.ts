@@ -12,9 +12,9 @@
 //   'delete_app':    Delete app and revoke all active tokens
 //   'get_app':       Retrieve app details (client_id visible, client_secret hidden)
 
-import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 import { audit } from '../_shared/auditLog.ts';
+import { requireAuthAndTenant } from '../_shared/auth.ts';
 
 interface SupabaseAdminClient {
   from(table: string): {
@@ -34,8 +34,6 @@ interface SupabaseAdminClient {
   };
 }
 
-const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
-const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
 interface SupabaseAdminClient {
   from(table: string): {
@@ -67,27 +65,35 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const auth = req.headers.get('Authorization');
-    if (!auth?.startsWith('Bearer ')) {
-      return jsonError(401, 'UNAUTHORIZED', 'Missing bearer token');
-    }
-
     const body = await req.json();
     const { op, tenant_id, app_id } = body;
 
-    if (!op || !tenant_id || !app_id) {
-      return jsonError(400, 'INVALID_REQUEST', 'Missing op, tenant_id, or app_id');
+    if (!op || !app_id) {
+      return jsonError(400, 'INVALID_REQUEST', 'Missing op or app_id');
     }
 
-    const sb = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+    // OAuth2-Apps sind Zugangsdaten: `rotate_secret` und `delete_app` sind
+    // zerstoerend, `get_app` legt Client-Metadaten offen. Zuvor wurde nur das
+    // Bearer-Praefix geprueft und die `tenant_id` ungeprueft aus dem Body in
+    // einen Service-Role-Client gegeben — jeder eingeloggte Nutzer konnte damit
+    // die OAuth-App eines FREMDEN Mandanten rotieren oder loeschen, sofern er
+    // tenant_id und app_id kannte (Befund F-04, AUDIT/18_FINDINGS.md).
+    //
+    // requireAuthAndTenant verifiziert den Token gegen Supabase UND die
+    // Mitgliedschaft im Zieltenant, bevor Service-Role zum Einsatz kommt.
+    const authed = await requireAuthAndTenant(req, tenant_id, ['owner', 'admin']);
+    if (authed instanceof Response) return authed;
+
+    const sb = authed.admin as unknown as SupabaseAdminClient;
+    const tenantId = authed.tenantId;
 
     switch (op) {
       case 'rotate_secret':
-        return await handleRotateSecret(sb, tenant_id, app_id, req);
+        return await handleRotateSecret(sb, tenantId, app_id, req);
       case 'delete_app':
-        return await handleDeleteApp(sb, tenant_id, app_id, req);
+        return await handleDeleteApp(sb, tenantId, app_id, req);
       case 'get_app':
-        return await handleGetApp(sb, tenant_id, app_id);
+        return await handleGetApp(sb, tenantId, app_id);
       default:
         return jsonError(400, 'INVALID_OP', `Unknown operation: ${op}`);
     }

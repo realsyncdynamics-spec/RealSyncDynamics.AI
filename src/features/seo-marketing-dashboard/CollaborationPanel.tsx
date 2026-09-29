@@ -14,6 +14,7 @@ import {
   Calendar,
   MoreVertical,
 } from 'lucide-react';
+import { getSupabaseUrl } from '../../lib/supabaseUrl';
 
 interface DashboardShare {
   id: string;
@@ -57,7 +58,7 @@ export function CollaborationPanel() {
 
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/seo_dashboard_shares?tenant_id=eq.${activeTenantId}&select=*`,
+        `${getSupabaseUrl()}/rest/v1/seo_dashboard_shares?tenant_id=eq.${activeTenantId}&select=*`,
         {
           headers: {
             Authorization: `Bearer ${session.access_token}`,
@@ -80,7 +81,7 @@ export function CollaborationPanel() {
 
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/seo_dashboard_annotations?tenant_id=eq.${activeTenantId}&select=*&order=created_at.desc`,
+        `${getSupabaseUrl()}/rest/v1/seo_dashboard_annotations?tenant_id=eq.${activeTenantId}&select=*&order=created_at.desc`,
         {
           headers: {
             Authorization: `Bearer ${session.access_token}`,
@@ -105,7 +106,7 @@ export function CollaborationPanel() {
 
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/share-dashboard`,
+        `${getSupabaseUrl()}/functions/v1/share-dashboard`,
         {
           method: 'POST',
           headers: {
@@ -137,7 +138,7 @@ export function CollaborationPanel() {
 
     try {
       await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/seo_dashboard_shares?id=eq.${shareId}`,
+        `${getSupabaseUrl()}/rest/v1/seo_dashboard_shares?id=eq.${shareId}`,
         {
           method: 'DELETE',
           headers: {
@@ -157,7 +158,7 @@ export function CollaborationPanel() {
 
     try {
       await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/seo_dashboard_annotations`,
+        `${getSupabaseUrl()}/rest/v1/seo_dashboard_annotations`,
         {
           method: 'POST',
           headers: {

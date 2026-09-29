@@ -119,6 +119,10 @@ const FORBIDDEN_CLIENT = [
   'ai_evidence_purge_expired',
   // Gate 2 (20260928140100): schreibt in die Evidence-Kette, nur service_role.
   'append_governance_evidence',
+  // Browser-Runtime (20260929100000): verbrauchen/abschliessen einer Freigabe.
+  // Client-aufrufbar waere das ein Freigabe-Bypass — nur browser-execute.
+  'consume_browser_approval',
+  'finish_browser_approval',
 ];
 
 // ── Ausfuehrung ──────────────────────────────────────────────────────────────

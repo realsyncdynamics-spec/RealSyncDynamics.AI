@@ -10,5 +10,5 @@
     "types": ["node"],
     "noEmit": true
   },
-  "include": ["server.ts", "executor.ts"]
+  "include": ["server.ts", "executor.ts", "netguard.ts"]
 }

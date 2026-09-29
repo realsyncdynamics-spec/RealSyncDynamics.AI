@@ -1,11 +1,16 @@
 // Playwright Scanner Microservice — server.ts
-// REST-API fuer DSGVO-Consent-Timing-Analysis + vollstaendigen Website-Scan
+// REST-API fuer DSGVO-Consent-Timing-Analysis, Website-Scan und den
+// Governed Browser Executor (Sessions fuer browser-execute).
 //
 // Endpoints:
-//   GET  /health                — Liveness-Check
+//   GET  /health                — Liveness + Capabilities (runtime, version, active_sessions)
 //   POST /scan/full             — Vollstaendiger Scan (Cookies, Requests, Tracker, HTML)
 //   POST /scan/consent-timing   — Consent-Timing: welche Tracker laden VOR Consent-Click?
 //   POST /scan/screenshot       — Screenshot + HTML-Dump
+//   POST /session/open          — Executor-Session anlegen/wiederverwenden { session_id }
+//   POST /session/frame         — aktuelles Bild DERSELBEN Session (JPEG) { session_id }
+//   POST /session/close         — Session schliessen { session_id }
+//   POST /execute               — Aktionen in einer Session { session_id, actions, require_session, include_frame }
 //
 // Auth: SCANNER_API_KEY Header (Basic-Auth via Traefik als erste Schicht)
 // Port: 3001
@@ -13,12 +18,22 @@
 
 import { chromium, Browser, BrowserContext, Page, Request, Response } from 'playwright';
 import * as http from 'http';
-import { assertPublicHttpUrl, executeBrowserActions, type BrowserExecuteRequest } from './executor.js';
+import { timingSafeEqual } from 'node:crypto';
+import { EXECUTOR_CAPABILITIES, ExecutorError, SessionRegistry, type BrowserExecuteRequest } from './executor.js';
+import { assertNavigable, createHostGuard, parseAllowlist } from './netguard.js';
 
 const PORT = parseInt(process.env.PORT ?? '3001', 10);
 const API_KEY = process.env.SCANNER_API_KEY ?? '';
 const MAX_CONCURRENT = parseInt(process.env.MAX_CONCURRENT ?? '3', 10);
+const MAX_SESSIONS = parseInt(process.env.MAX_SESSIONS ?? '20', 10);
 const DEFAULT_TIMEOUT = 30_000;
+const MAX_BODY_BYTES = 1_000_000;
+export const EXECUTOR_VERSION = '2026.09.1';
+const STARTED_AT = Date.now();
+
+// Nur ausdruecklich administrativ freigegebene private Hosts (z. B. lokale
+// Integrationstests). Leer = keine Ausnahme.
+const hostGuard = createHostGuard(parseAllowlist(process.env.EXECUTOR_PRIVATE_HOST_ALLOWLIST));
 
 if (!API_KEY) {
   console.error('[playwright-scanner] FATAL: SCANNER_API_KEY is required');
@@ -55,6 +70,7 @@ async function getBrowser(): Promise<Browser> {
   if (!browser || !browser.isConnected()) {
     browser = await chromium.launch({
       headless: true,
+      ...(process.env.EXECUTOR_CHROMIUM_PATH ? { executablePath: process.env.EXECUTOR_CHROMIUM_PATH } : {}),
       args: [
         '--no-sandbox', '--disable-setuid-sandbox',
         '--disable-dev-shm-usage', '--disable-gpu',
@@ -65,6 +81,31 @@ async function getBrowser(): Promise<Browser> {
     console.log('[playwright] browser launched');
   }
   return browser;
+}
+
+const registry = new SessionRegistry(getBrowser, hostGuard, MAX_SESSIONS);
+setInterval(() => { registry.prune().catch(() => undefined); }, 60_000).unref();
+
+// Scan-Kontexte bekommen denselben Netzwerk-Schutz wie Executor-Sessions:
+// keine Unterressourcen aus privaten Netzen / Metadaten-Endpunkten.
+async function guardContext(ctx: BrowserContext): Promise<void> {
+  await ctx.route('**/*', async (route) => {
+    let u: URL;
+    try { u = new URL(route.request().url()); } catch { await route.abort('blockedbyclient'); return; }
+    if (u.protocol === 'data:' || u.protocol === 'blob:') { await route.continue(); return; }
+    if ((u.protocol !== 'http:' && u.protocol !== 'https:') || !(await hostGuard.allows(u.hostname, u.port))) {
+      await route.abort('blockedbyclient');
+      return;
+    }
+    await route.continue();
+  });
+}
+
+function apiKeyMatches(provided: string | undefined): boolean {
+  if (typeof provided !== 'string') return false;
+  const a = Buffer.from(provided);
+  const b = Buffer.from(API_KEY);
+  return a.length === b.length && timingSafeEqual(a, b);
 }
 
 // ─── Hilfsfunktionen ──────────────────────────────────────────────────────────
@@ -95,6 +136,7 @@ async function scanFull(url: string, timeout = DEFAULT_TIMEOUT) {
     viewport: { width: 1280, height: 800 },
     ignoreHTTPSErrors: false,
   });
+  await guardContext(ctx);
 
   const requestUrls: string[] = [];
   const responseCodes: Record<string, number> = {};
@@ -158,6 +200,7 @@ async function scanConsentTiming(url: string, timeout = DEFAULT_TIMEOUT) {
     userAgent: 'RealSyncDynamics-ConsentTiming/1.0 (+https://realsyncdynamicsai.de)',
     viewport: { width: 1280, height: 800 },
   });
+  await guardContext(ctx);
 
   const preConsentRequests: string[] = [];
   const postConsentRequests: string[] = [];
@@ -259,6 +302,7 @@ async function scanConsentTiming(url: string, timeout = DEFAULT_TIMEOUT) {
 async function scanScreenshot(url: string, timeout = DEFAULT_TIMEOUT) {
   const b = await getBrowser();
   const ctx: BrowserContext = await b.newContext({ viewport: { width: 1280, height: 800 } });
+  await guardContext(ctx);
   const page: Page = await ctx.newPage();
   try {
     await page.goto(url, { waitUntil: 'networkidle', timeout });
@@ -277,59 +321,117 @@ async function scanScreenshot(url: string, timeout = DEFAULT_TIMEOUT) {
 }
 
 // ─── HTTP-Server ──────────────────────────────────────────────────────────────
+function send(res: http.ServerResponse, status: number, body: unknown): void {
+  res.writeHead(status);
+  res.end(JSON.stringify(body));
+}
+
+function sendExecutorError(res: http.ServerResponse, err: unknown): void {
+  if (err instanceof ExecutorError) {
+    send(res, err.status, { ok: false, error: err.code });
+    return;
+  }
+  console.error('[executor] internal error:', err instanceof Error ? err.message : String(err));
+  send(res, 500, { ok: false, error: 'INTERNAL' });
+}
+
 const server = http.createServer(async (req, res) => {
-  const url = req.url ?? '/';
+  const path = new URL(req.url ?? '/', 'http://executor.local').pathname;
   const method = req.method ?? 'GET';
 
   res.setHeader('Content-Type', 'application/json');
   res.setHeader('Access-Control-Allow-Origin', '*');
 
-  // Auth-Check — required for health, scans and executor.
-  const provided = req.headers['x-api-key'] ?? req.headers['authorization']?.replace(/^Bearer\s+/i, '');
-  if (provided !== API_KEY) {
-    res.writeHead(401);
-    return res.end(JSON.stringify({ ok: false, error: 'UNAUTHORIZED' }));
+  // Auth — Pflicht fuer Health, Scans und Executor (konstante Vergleichszeit).
+  const header = req.headers['x-api-key'] ?? req.headers['authorization']?.replace(/^Bearer\s+/i, '');
+  const provided = Array.isArray(header) ? header[0] : header;
+  if (!apiKeyMatches(provided)) {
+    return send(res, 401, { ok: false, error: 'UNAUTHORIZED' });
   }
 
-  if (url === '/health' && method === 'GET') {
-    res.writeHead(200);
-    return res.end(JSON.stringify({ ok: true, version: '2026.05.0', active_scans: activeSans }));
+  if (path === '/health' && method === 'GET') {
+    let browserConnected = false;
+    let browserVersion: string | null = null;
+    try {
+      const b = await getBrowser();
+      browserConnected = b.isConnected();
+      browserVersion = b.version();
+    } catch { /* browserConnected = false */ }
+    return send(res, 200, {
+      ok: true,
+      status: browserConnected ? 'ok' : 'degraded',
+      version: EXECUTOR_VERSION,
+      runtime: 'playwright-chromium',
+      browser_version: browserVersion,
+      browser_connected: browserConnected,
+      active_sessions: registry.activeSessions,
+      max_sessions: MAX_SESSIONS,
+      active_scans: activeSans,
+      capabilities: EXECUTOR_CAPABILITIES,
+      uptime_seconds: Math.round((Date.now() - STARTED_AT) / 1000),
+    });
   }
 
   if (method !== 'POST') {
-    res.writeHead(405);
-    return res.end(JSON.stringify({ ok: false, error: 'POST only' }));
+    return send(res, 405, { ok: false, error: 'POST only' });
   }
 
-  // Body lesen
+  // Body lesen (gedeckelt)
+  let tooLarge = false;
   const body = await new Promise<string>((resolve, reject) => {
     let data = '';
-    req.on('data', (chunk) => { data += chunk; });
+    req.on('data', (chunk) => {
+      data += chunk;
+      if (data.length > MAX_BODY_BYTES) { tooLarge = true; req.destroy(); }
+    });
     req.on('end', () => resolve(data));
-    req.on('error', reject);
-  });
+    req.on('error', (e) => (tooLarge ? resolve('') : reject(e)));
+  }).catch(() => '');
+  if (tooLarge) return send(res, 413, { ok: false, error: 'BODY_TOO_LARGE' });
 
   let parsed: unknown;
   try { parsed = JSON.parse(body); } catch {
-    res.writeHead(400);
-    return res.end(JSON.stringify({ ok: false, error: 'INVALID_JSON' }));
+    return send(res, 400, { ok: false, error: 'INVALID_JSON' });
+  }
+  const sessionId = (parsed as { session_id?: unknown })?.session_id;
+
+  if (path === '/session/open') {
+    try {
+      if (typeof sessionId !== 'string') throw new ExecutorError('INVALID_SESSION');
+      const state = await registry.open(sessionId);
+      const page = await registry.pageInfo(state);
+      const frame = await registry.frame(state).catch(() => null);
+      return send(res, 200, { ok: true, session_id: sessionId, version: EXECUTOR_VERSION, page, frame });
+    } catch (err) {
+      return sendExecutorError(res, err);
+    }
   }
 
-  if (url === '/execute') {
+  if (path === '/session/frame') {
     try {
-      const execBody = parsed as BrowserExecuteRequest;
-      const results = await executeBrowserActions(await getBrowser(), execBody);
-      res.writeHead(200);
-      return res.end(JSON.stringify({
-        ok: true,
-        session_id: execBody.session_id,
-        results,
+      if (typeof sessionId !== 'string') throw new ExecutorError('INVALID_SESSION');
+      const out = await registry.withSession(sessionId, async (state) => ({
+        page: await registry.pageInfo(state),
+        frame: await registry.frame(state),
       }));
+      return send(res, 200, { ok: true, session_id: sessionId, ...out });
     } catch (err) {
-      const code = err instanceof Error ? err.message : String(err);
-      const status = code === 'PRIVATE_NETWORK_BLOCKED' ? 403 : 400;
-      res.writeHead(status);
-      return res.end(JSON.stringify({ ok: false, error: code }));
+      return sendExecutorError(res, err);
+    }
+  }
+
+  if (path === '/session/close') {
+    if (typeof sessionId !== 'string') return send(res, 400, { ok: false, error: 'INVALID_SESSION' });
+    const closed = await registry.close(sessionId);
+    return send(res, closed ? 200 : 404, closed ? { ok: true, closed: true } : { ok: false, error: 'SESSION_NOT_FOUND' });
+  }
+
+  if (path === '/execute') {
+    try {
+      const out = await registry.execute(parsed as BrowserExecuteRequest);
+      return send(res, 200, { ok: true, session_id: sessionId, ...out });
+    } catch (err) {
+      return sendExecutorError(res, err);
     }
   }
 
@@ -340,7 +442,7 @@ const server = http.createServer(async (req, res) => {
     return res.end(JSON.stringify({ ok: false, error: 'INVALID_URL' }));
   }
   try {
-    await assertPublicHttpUrl(targetUrl);
+    await assertNavigable(targetUrl, hostGuard);
   } catch (err) {
     const code = err instanceof Error ? err.message : String(err);
     res.writeHead(code === 'PRIVATE_NETWORK_BLOCKED' ? 403 : 400);
@@ -357,15 +459,15 @@ const server = http.createServer(async (req, res) => {
 
   try {
     let result: unknown;
-    if (url === '/scan/full') {
+    if (path === '/scan/full') {
       result = await scanFull(targetUrl, timeout);
-    } else if (url === '/scan/consent-timing') {
+    } else if (path === '/scan/consent-timing') {
       result = await scanConsentTiming(targetUrl, timeout);
-    } else if (url === '/scan/screenshot') {
+    } else if (path === '/scan/screenshot') {
       result = await scanScreenshot(targetUrl, timeout);
     } else {
       res.writeHead(404);
-      return res.end(JSON.stringify({ ok: false, error: 'NOT_FOUND', available: ['/health', '/scan/full', '/scan/consent-timing', '/scan/screenshot', '/execute'] }));
+      return res.end(JSON.stringify({ ok: false, error: 'NOT_FOUND', available: ['/health', '/scan/full', '/scan/consent-timing', '/scan/screenshot', '/session/open', '/session/frame', '/session/close', '/execute'] }));
     }
     res.writeHead(200);
     res.end(JSON.stringify(result));
@@ -387,6 +489,7 @@ server.listen(PORT, () => {
 // Graceful shutdown
 process.on('SIGTERM', async () => {
   console.log('[playwright-scanner] SIGTERM received, shutting down...');
+  await registry.closeAll().catch(() => undefined);
   if (browser) await browser.close();
   server.close(() => process.exit(0));
 });

@@ -37,6 +37,7 @@ import { observeAal2 } from '../_shared/requireAal2.ts';
 import { handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 import { runTenantAuditPipeline, type GdprAuditResponse } from './pipeline.ts';
 import { createAuditRepo } from './repo.ts';
+import { checkNavigationUrl } from '../_shared/browser-runtime/url.ts';
 
 const URL_RE = /^https?:\/\/[^\s/$.?#].[^\s]*$/i;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -77,6 +78,11 @@ Deno.serve(async (req) => {
   const url = (body.url ?? '').trim();
   if (!url || !URL_RE.test(url)) return jsonError(400, 'INVALID_URL', 'valid http(s) URL required');
   if (url.length > 1000)         return jsonError(400, 'INVALID_URL', 'url too long');
+
+  // Statische SSRF-Schranke vor dem Detektor: private Netze, Loopback,
+  // Metadaten-Endpunkte, *.internal/*.local, IPv6-Literale (browser-runtime/url.ts).
+  const target = checkNavigationUrl(url);
+  if (!target.ok) return jsonError(400, 'URL_BLOCKED', `scan target rejected (${target.reason})`);
 
   const websiteId = body.website_id ? body.website_id.trim() : null;
   if (websiteId && !UUID_RE.test(websiteId)) {
@@ -136,7 +142,7 @@ Deno.serve(async (req) => {
       : result.code === 'FINDING_INSERT' || result.code === 'EVIDENCE_INSERT'
         ? 'PIPELINE_INSERT_FAILED'
         : result.code;
-    return jsonError(result.status, code, result.message);
+    return jsonError(result.status, code, result.message, undefined, result.details);
   }
 
   return jsonResponse({
@@ -150,6 +156,9 @@ Deno.serve(async (req) => {
     severity:       result.severity,
     website_id:     result.website_id,
     asset_id:       result.asset_id,
+    // 'website': an registrierte Website gebunden · 'none': keine Website mit
+    // diesem Host (definierter Fall, Lauf ohne Asset).
+    asset_binding:  result.website_id ? 'website' : 'none',
     evidence_id:    result.evidence_id,
     findings:       result.findings,
   });

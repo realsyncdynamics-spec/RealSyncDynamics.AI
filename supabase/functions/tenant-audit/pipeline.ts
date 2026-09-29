@@ -147,7 +147,7 @@ export type PipelineResult =
     evidence_id: string;
     findings: FindingOutcome;
   }
-  | { ok: false; status: number; code: string; message: string; scan_run_id?: string };
+  | { ok: false; status: number; code: string; message: string; scan_run_id?: string; details?: Record<string, unknown> };
 
 /** Host without scheme, port, path and leading `www.` — lowercase. '' when unparsable. */
 export function siteHost(urlOrDomain: string): string {
@@ -172,12 +172,15 @@ const SEVERITIES = new Set(['critical', 'high', 'medium', 'low', 'info']);
 
 type ResolvedTarget =
   | { ok: true; website: WebsiteRow | null }
-  | { ok: false; status: number; code: string; message: string };
+  | { ok: false; status: number; code: string; message: string; details?: Record<string, unknown> };
 
 /**
  * The website a scan is anchored to. A given website_id must belong to the
- * tenant and match the scanned host; without one, the tenant's website with
- * exactly this host is used (none or ambiguous → unanchored scan).
+ * tenant and match the scanned host; without one:
+ *   0 matches → unanchored scan (defined: asset_binding 'none')
+ *   1 match   → that website
+ *   >1        → 409 WEBSITE_AMBIGUOUS with the candidates — never guessed;
+ *               the caller must choose a website_id or abort (2026-09-29).
  */
 export async function resolveTarget(repo: AuditRepo, input: PipelineInput, host: string): Promise<ResolvedTarget> {
   if (input.websiteId) {
@@ -189,7 +192,16 @@ export async function resolveTarget(repo: AuditRepo, input: PipelineInput, host:
     return { ok: true, website: w };
   }
   const matches = (await repo.listWebsites(input.tenantId)).filter((w) => siteHost(w.domain) === host);
-  return { ok: true, website: matches.length === 1 ? matches[0] : null };
+  if (matches.length > 1) {
+    return {
+      ok: false,
+      status: 409,
+      code: 'WEBSITE_AMBIGUOUS',
+      message: `${matches.length} websites of this tenant match ${host}; choose website_id`,
+      details: { candidates: matches.map((w) => ({ id: w.id, domain: w.domain })) },
+    };
+  }
+  return { ok: true, website: matches[0] ?? null };
 }
 
 function uuidv4(): string {
@@ -260,6 +272,10 @@ export async function runTenantAuditPipeline(deps: PipelineDeps, input: Pipeline
     try {
       const r = await deps.callGdprAudit();
       if ('httpStatus' in r) {
+        // Limit des Detektors erreicht: als 429 weitergeben, nicht als 502.
+        if (r.httpStatus === 429) {
+          return await fail(429, 'RATE_LIMITED', 'detector rate limit reached, retry later', { status: 429 });
+        }
         return await fail(502, 'GDPR_AUDIT_HTTP', `${r.httpStatus}: ${r.text.slice(0, 300)}`, { status: r.httpStatus });
       }
       auditResp = r;

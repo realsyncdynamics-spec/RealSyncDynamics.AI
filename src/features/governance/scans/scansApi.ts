@@ -227,7 +227,19 @@ const SCAN_ERROR_BY_CODE: Record<string, string> = {
     'Die Website war nicht erreichbar. Es wurde nichts bewertet und kein Befund geändert.',
   WEBSITE_NOT_FOUND: 'Diese Website gehört nicht zu Ihrem Workspace.',
   URL_WEBSITE_MISMATCH: 'Die Scan-Adresse passt nicht zur hinterlegten Domain der Website.',
+  WEBSITE_AMBIGUOUS: 'Mehrere Websites passen zu dieser Domain. Bitte die gemeinte Website wählen.',
+  URL_BLOCKED: 'Dieses Ziel darf nicht gescannt werden (private Netze, lokale Adressen, Metadaten-Endpunkte).',
+  // Keine Zahl im Text: Das Limit setzt der Server (tenant-audit bzw. Detektor).
+  RATE_LIMITED: 'Scan-Limit erreicht. Bitte später erneut versuchen.',
 };
+
+/** Fehler von tenant-audit mit stabilem Code (z. B. für die Asset-Auswahl bei WEBSITE_AMBIGUOUS). */
+export class TenantAuditError extends Error {
+  constructor(message: string, readonly code: string | null, readonly status: number, readonly details?: unknown) {
+    super(message);
+    this.name = 'TenantAuditError';
+  }
+}
 
 /**
  * Trigger an authenticated scan for the active tenant. Calls the
@@ -238,7 +250,14 @@ export async function triggerTenantAudit(
   tenantId: string,
   url: string,
   opts: { website_id?: string } = {},
-): Promise<{ scan_run_id: string; finding_count: number; severity_max: string | null }> {
+): Promise<{
+  scan_run_id: string;
+  finding_count: number;
+  severity_max: string | null;
+  asset_binding: 'website' | 'none';
+  website_id: string | null;
+  evidence_id: string | null;
+}> {
   const sb = getSupabase();
   const { data: sess } = await sb.auth.getSession();
   const accessToken = sess?.session?.access_token;
@@ -272,7 +291,10 @@ export async function triggerTenantAudit(
     scan_run_id?: string;
     finding_count?: number;
     severity_max?: string | null;
-    error?: { code?: string; message?: string };
+    error?: { code?: string; message?: string; details?: unknown };
+    asset_binding?: 'website' | 'none';
+    website_id?: string | null;
+    evidence_id?: string;
   } = {};
   if (raw.trim()) {
     try {
@@ -287,12 +309,18 @@ export async function triggerTenantAudit(
   }
 
   if (!r.ok) {
-    const known = body.error?.code ? SCAN_ERROR_BY_CODE[body.error.code] : undefined;
-    if (known) throw new Error(known);
+    const code = body.error?.code ?? null;
+    const known = code ? SCAN_ERROR_BY_CODE[code] : undefined;
+    if (known) throw new TenantAuditError(known, code, r.status, body.error?.details);
     // 5xx u. a. (tenant-audit antwortet derzeit mit 500): Status immer
     // sichtbar, Server-Detail nur als Zusatz — nie still verschlucken.
     const detail = body.error?.message;
-    throw new Error(detail ? `${scanErrorForStatus(r.status)} Details: ${detail}` : scanErrorForStatus(r.status));
+    throw new TenantAuditError(
+      detail ? `${scanErrorForStatus(r.status)} Details: ${detail}` : scanErrorForStatus(r.status),
+      code,
+      r.status,
+      body.error?.details,
+    );
   }
   if (!body.ok || !body.scan_run_id) {
     throw new Error(body.error?.message ?? 'Website-Audit fehlgeschlagen — der Audit-Dienst hat keinen Lauf angelegt.');
@@ -301,6 +329,9 @@ export async function triggerTenantAudit(
     scan_run_id:   body.scan_run_id,
     finding_count: body.finding_count ?? 0,
     severity_max:  body.severity_max ?? null,
+    asset_binding: body.asset_binding ?? (body.website_id ? 'website' : 'none'),
+    website_id:    body.website_id ?? null,
+    evidence_id:   body.evidence_id ?? null,
   };
 }
 

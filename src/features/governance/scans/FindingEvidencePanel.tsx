@@ -104,7 +104,7 @@ function StatusActions({
   async function go(target: FindingStatus) {
     setBusy(target); setErr(null);
     try {
-      await updateFindingStatus(finding.id, finding.status, target);
+      await updateFindingStatus(finding.id, finding.status, target, finding.tenant_id);
       onChange?.();
     } catch (e) {
       setErr(e instanceof Error ? e.message : String(e));

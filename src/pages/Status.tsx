@@ -117,9 +117,9 @@ export function Status() {
           <Section title="Incident melden">
             <p>
               Falls du eine Störung erlebst, die hier nicht angezeigt wird:{' '}
-              <Link to="/contact-sales?source=status-incident" className="text-security-400 hover:text-security-300 underline-offset-4 hover:underline">
-                Sales/Support kontaktieren
-              </Link>
+              <a href="mailto:support@realsyncdynamicsai.de?subject=St%C3%B6rung" className="text-security-400 hover:text-security-300 underline-offset-4 hover:underline">
+                Support kontaktieren
+              </a>
               .
             </p>
             <p>

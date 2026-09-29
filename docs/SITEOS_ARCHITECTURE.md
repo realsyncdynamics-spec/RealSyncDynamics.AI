@@ -587,11 +587,11 @@ leitet hierher weiter — ein Builder, nicht zwei.
 | Vorschau | derselbe Renderer (`renderSite`, `showcase`), sandboxed iframe | LIVE |
 | Probleme | `analyzeBlueprint` der lokalen Fassung + Blocker/Hinweise der letzten Gate-Bewertung | LIVE — keine erfundenen Befunde |
 | Prüfen | `siteos/publish-gate` für die **gespeicherte** Version; gesperrt bei ungespeicherten Änderungen | LIVE (Code) |
-| Veröffentlichen | Tab „Veröffentlichen": Checkliste, Backend-Vergleich, Bewertung, GO → geprüftes ZIP (§5b) | LIVE (Code); Upload PLANNED |
+| Veröffentlichen | Checkliste, Vergleich, Bewertung, GO → ZIP (§5b) | LIVE (Code); Upload PLANNED |
 | Verlauf | `listBlueprintChain` | LIVE |
 | Governance | Version, Hash, Vorgänger, Herkunft, KI-Anteil, Custody (`provenance_*`, RLS), Bewertungen, Agentenläufe; Status-Chip in der Kopfzeile aus der jüngsten Bewertung der gespeicherten Version | LIVE (lesend) — `governanceStatus()` in `panels.tsx`, `test/siteos/workspace.test.tsx` |
 | Eigenschaften | Puck-Felder des gewählten Bausteins (`renderRight` des Editors), im Vorschau-Modus benannt statt leer | LIVE (Code) |
-| Assistent | Übernommene Sites: benannte Regeln + Freitext → `siteos/rebuild-refine` (§5e), **kein LLM** | LIVE (Code); andere Sites PARTIAL |
+| Assistent | Regeln + Freitext → `siteos/rebuild-refine` (§5e), **kein LLM** | LIVE (Code) für Rebuilds |
 | Seiten anlegen/umbenennen/löschen | — | PLANNED (Schritt B) |
 | Medien · Daten · Integrationen · Code | — | PLANNED, als Platzhalter benannt |
 
@@ -601,17 +601,15 @@ Schreibpfad.
 
 ## 5e. Rebuild-Workflow — bestehende Website → belegter Neubau
 
-`/app/siteos/rebuild`; Details in den Dateiköpfen von
-`packages/siteos-core/src/rebuild/` und `supabase/functions/siteos/`.
+`/app/siteos/rebuild`; Details in den Dateiköpfen von `rebuild/`.
 
 ```text
-DISCOVER  rebuild-analyze   robots.txt, Sitemap, ≤ 6 Seiten; nur öffentlich auflösende Namen (fail-closed)
-ASSESS    assess.ts         8 Kriterien, jeder Befund mit Beleg (Seite, Pfad, Auszug, Zeit, SHA-256)
-REBUILD   directions.ts     2–3 Richtungen, Design-System aus der Marke, Herkunft `import`
-REFINE    rebuild-refine    benannte Regeln + Freitext, idempotent, erfindet nichts
-PUBLISH   Gate + Export     Backend-Vergleich, Checkliste, frische Bewertung, GO → ZIP
-AUTOMATE  next-steps.ts     Verbindungsstand nur aus connector_registry
-GOVERN    governance_evidence  Analyse, Verzicht, GO
+DISCOVER  rebuild-analyze  robots.txt, Sitemap, ≤ 6 Seiten, DNS fail-closed
+ASSESS    assess.ts        8 Kriterien, jeder Befund mit Beleg (SHA-256)
+REBUILD   directions.ts    2–3 Richtungen, Design-System aus der Marke
+REFINE    rebuild-refine   benannte Regeln + Freitext, idempotent
+PUBLISH   Gate + Export    Vergleich, Checkliste, frische Bewertung, GO → ZIP
+AUTOMATE  next-steps.ts    Verbindungsstand nur aus connector_registry
 ```
 
 - **Lauf:** `siteos_rebuild_runs` (Snapshot ohne HTML, nur `service_role`
@@ -623,8 +621,7 @@ GOVERN    governance_evidence  Analyse, Verzicht, GO
   Freigabe, gebunden an den Vergleich (`backend_sha256`).
 - **Recht:** ohne `legal-text.body` und Formularziel sperrt es;
   rechtswirksame Felder ändern nur `owner`/`admin`/`editor`.
-- **Grenze:** DNS-Rebinding zwischen Prüfung und `fetch` (Egress-Proxy im
-  Betrieb). Ein Link mit `?url=` startet nichts ohne Klick.
+- **Grenze:** DNS-Rebinding zwischen Prüfung und `fetch` (Egress-Proxy).
 
 ## 6. Stand und Grenzen
 
@@ -636,11 +633,8 @@ Behebung, Datenmodell mit RLS, drei Edge Functions, Dashboard unter
 
 **Noch nicht umgesetzt** — bewusst außerhalb dieser Phase:
 
-- **Upload und Domain.** Aus dem Blueprint entsteht ein geprüftes Bündel,
-  das nach Publish Gate und GO als ZIP exportiert wird (§5b). Der Upload
-  über `cloudflare-deployer` (deployt) samt Domain fehlt — es fehlen die
-  Cloudflare-Zugangsdaten und die Wahl des Ziels
-  (`website_projects.cloudflare_project_id` ist vorbereitet).
+- **Upload und Domain.** Export als geprüftes ZIP (§5b); der Upload über
+  `cloudflare-deployer` fehlt (Zugangsdaten, Wahl des Ziels).
 - **Rechtstexte im gerenderten HTML.** Gerendert wird der eingesetzte
   Wortlaut (`body`), sonst nur die Stelle (`<!-- legal:content -->`). Der
   Renderer erfindet keinen Rechtstext; der Export verweigert ein Bündel

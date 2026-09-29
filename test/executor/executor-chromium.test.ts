@@ -92,7 +92,8 @@ describe.skipIf(!RUN)('Browser-Executor (echtes Chromium, HTTP-Vertrag)', () => 
       }
       if (url.pathname === '/submitted') {
         res.writeHead(200, { 'content-type': 'text/html' });
-        res.end(`<!doctype html><title>Submitted</title><p>q=${url.searchParams.get('q')}</p>`);
+        // Eingaben nicht zurückspiegeln (CodeQL: reflected XSS) — geprüft wird nur Titel + URL.
+        res.end('<!doctype html><title>Submitted</title><p>Formular empfangen</p>');
         return;
       }
       if (url.pathname === '/download') {

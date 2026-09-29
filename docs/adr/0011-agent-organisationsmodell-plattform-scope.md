@@ -348,8 +348,8 @@ Datei ist mit einem datierten Hinweis korrigiert.
   `is_platform_operator()` zwischen ihnen unterscheidet, oder ob die Funktion
   bewusst grobkörnig `boolean` bleibt und feinere Prüfungen eigene Funktionen
   bekommen.
-- ~~Verhältnis zu ADR 0005~~ · ~~Fix zu B1~~ — **beide erledigt** und in
-  Produktion: B1 am 2026-09-15 (`20260915120000`), D5 am 2026-09-26
-  (`20260928151500`). `platform_operators` ist die einzige schreibbare
-  Quelle, `profiles.is_super_admin` deren Projektion — keine zweite Quelle.
+- ~~Verhältnis zu ADR 0005~~ · ~~Fix zu B1~~ — **beide erledigt**: B1 seit
+  2026-09-15 in Produktion (`20260915120000`), D5 mit `20260928151500`.
+  `platform_operators` ist die einzige schreibbare Quelle,
+  `profiles.is_super_admin` deren Projektion — keine zweite Quelle.
   Messung und Begründung im Kopf der Migration.

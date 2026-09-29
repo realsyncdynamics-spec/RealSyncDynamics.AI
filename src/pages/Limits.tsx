@@ -95,9 +95,9 @@ export function Limits() {
               an unser Partner-Netzwerk in DACH (Datenschutz-Anwälte, externe DSBs, Notified Bodies).
             </p>
             <div className="flex flex-col sm:flex-row gap-2">
-              <Link to="/contact-sales?source=limits" className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-security-500 hover:bg-security-600 text-white text-sm font-bold rounded-none">
-                Partner anfragen <ArrowRight className="h-4 w-4" />
-              </Link>
+              <a href="mailto:hello@realsyncdynamicsai.de?subject=Vermittlung%20Anwalt%20%2F%20DSB" className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-security-500 hover:bg-security-600 text-white text-sm font-bold rounded-none">
+                Vermittlung anfragen <ArrowRight className="h-4 w-4" />
+              </a>
               <Link to="/legal/methodology" className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-obsidian-950 border border-titanium-700 hover:border-security-500 text-titanium-200 text-sm font-bold rounded-none">
                 Methodik-Details
               </Link>

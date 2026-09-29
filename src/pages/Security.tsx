@@ -124,9 +124,9 @@ export function Security() {
               Bug-Bounty-Programm ist für Q4/26 geplant.
             </p>
             <div className="flex flex-col sm:flex-row gap-2">
-              <Link to="/contact-sales?source=security-disclosure" className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-security-500 hover:bg-security-600 text-white text-sm font-bold rounded-none">
+              <a href="mailto:security@realsyncdynamicsai.de?subject=Security%20Disclosure" className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-security-500 hover:bg-security-600 text-white text-sm font-bold rounded-none">
                 Schwachstelle melden <ArrowRight className="h-4 w-4" />
-              </Link>
+              </a>
               <Link to="/legal/sub-processors" className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-obsidian-950 border border-titanium-700 hover:border-security-500 text-titanium-200 text-sm font-bold rounded-none">
                 Sub-Processors ansehen
               </Link>

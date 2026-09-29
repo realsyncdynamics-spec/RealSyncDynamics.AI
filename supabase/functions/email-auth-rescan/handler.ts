@@ -44,6 +44,9 @@ import {
   type WebsiteRow,
 } from './logic.ts';
 
+/** Attempts to append to the evidence chain before the domain fails. */
+const EVIDENCE_APPEND_ATTEMPTS = 3;
+
 export interface OpenFindingRow {
   id: string;
   dedupe_key: string | null;
@@ -59,7 +62,11 @@ export interface RescanRepo {
   listEmailAuthEvents(tenantId: string): Promise<EventRow[]>;
   listOpenEmailAuthFindings(tenantId: string): Promise<OpenFindingRow[]>;
   latestEvidenceHash(tenantId: string): Promise<string | null>;
-  insertEvidence(row: Record<string, unknown>): Promise<{ id: string }>;
+  /**
+   * Appends only while `expectedPreviousHash` is still the tenant's chain head
+   * (append_governance_evidence, advisory lock per tenant); 'conflict' otherwise.
+   */
+  appendEvidence(row: Record<string, unknown>, expectedPreviousHash: string | null): Promise<{ id: string } | 'conflict'>;
   insertEvent(row: Record<string, unknown>): Promise<{ id: string }>;
   /** Returns 'conflict' when the partial unique index (open dedupe_key) already holds a row. */
   insertFinding(row: Record<string, unknown>): Promise<{ id: string } | 'conflict'>;
@@ -308,27 +315,42 @@ async function persistDomain(a: PersistArgs): Promise<void> {
   // this run for the same tenant). Written FIRST, so every event/finding that
   // cites evidence_id points at an existing row; therefore event_id is null
   // (events reference the evidence via payload.evidence_id instead).
+  //
+  // Appended by compare-and-swap on the chain head (append_governance_evidence):
+  // tenant-audit writes to the same per-tenant chain, so a head moved by a
+  // concurrent writer is re-read, the snapshot re-hashed and the append retried.
   if (ctx.lastHash === undefined) ctx.lastHash = await repo.latestEvidenceHash(tenantId);
   const evidenceId = a.uuid();
-  const snapshot = buildSnapshot({
-    tenantId, assetId: target.primary_asset_id, eventId: null, evidenceId,
-    previousHash: ctx.lastHash, result,
-  });
   const resolves = plans.flatMap((p) => (p.kind === 'resolve' ? p.events.map((e) => e.id) : []));
-  const metadata = evidenceMetadata(result, ctx.mode, snapshot, resolves);
-  const contentHash = await evidenceContentHash(snapshot);
-  const evidence = await repo.insertEvidence({
-    id: evidenceId,
-    tenant_id: tenantId,
-    event_id: null,
-    asset_id: target.primary_asset_id,
-    evidence_type: 'json',
-    title: EVIDENCE_TITLE,
-    storage_path: null,
-    content_hash: contentHash,
-    previous_hash: ctx.lastHash,
-    metadata,
-  });
+  let evidence: { id: string } | null = null;
+  let contentHash = '';
+  for (let attempt = 0; attempt < EVIDENCE_APPEND_ATTEMPTS && !evidence; attempt++) {
+    if (attempt > 0) ctx.lastHash = await repo.latestEvidenceHash(tenantId);
+    const previousHash: string | null = ctx.lastHash ?? null;
+    const snapshot = buildSnapshot({
+      tenantId, assetId: target.primary_asset_id, eventId: null, evidenceId,
+      previousHash, result,
+    });
+    const metadata = evidenceMetadata(result, ctx.mode, snapshot, resolves);
+    contentHash = await evidenceContentHash(snapshot);
+    const appended = await repo.appendEvidence({
+      id: evidenceId,
+      tenant_id: tenantId,
+      event_id: null,
+      asset_id: target.primary_asset_id,
+      evidence_type: 'json',
+      title: EVIDENCE_TITLE,
+      storage_path: null,
+      content_hash: contentHash,
+      previous_hash: previousHash,
+      metadata,
+    }, previousHash);
+    if (appended !== 'conflict') evidence = appended;
+  }
+  if (!evidence) {
+    ctx.lastHash = undefined; // head unknown: re-read before the next domain
+    throw new Error(`evidence chain head kept moving (${EVIDENCE_APPEND_ATTEMPTS} attempts)`);
+  }
   ctx.lastHash = contentHash;
   outcome.evidence_id = evidence.id;
   const nowIso = a.now().toISOString();

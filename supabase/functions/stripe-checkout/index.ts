@@ -200,16 +200,22 @@ Deno.serve(async (req) => {
   // Aufrufer ein Abo als Einmalzahlung abschließen.
   const isOneTime = plan.purchaseMode === 'one_time';
 
-  // Pilot-Trial: 14 Tage kostenlos für Demo-zu-Customer-Conversion.
-  // Triggered via body.pilot=true (typically set from /contact-sales after
-  // a sales call agreed on the pilot terms in marketing/demo-skript.md).
-  // Stripe will not charge until day 15 — user can cancel anytime in trial.
+  // Trial: Die Pricing-SSoT (`plan.trialDays`) entscheidet allein, ob ein
+  // Abo mit Testphase startet. Die Preisseite bewirbt „14 Tage kostenlos
+  // testen" für Starter/Growth — bis hierher wurde der Trial aber nur mit
+  // `body.pilot === true` gesetzt, das öffentliche CTAs nie senden. Ergebnis:
+  // beworbener Trial, sofortige Abbuchung. Stripe belastet erst nach Ablauf
+  // der Testphase — Kündigung innerhalb der Frist bleibt kostenfrei.
+  // `pilot` markiert nur noch Sales-Piloten (Metadaten für Auswertung),
+  // ändert an der Abrechnung nichts mehr.
   // Für Einmalkäufe existiert keine Subscription und damit auch kein Trial.
   const subscriptionData: Stripe.Checkout.SessionCreateParams.SubscriptionData = {
     metadata: { tenant_id: body.tenant_id, plan_key: body.plan_key },
   };
-  if (!isOneTime && body.pilot === true && plan.trialDays > 0) {
+  if (!isOneTime && plan.trialDays > 0) {
     subscriptionData.trial_period_days = plan.trialDays;
+  }
+  if (!isOneTime && body.pilot === true) {
     subscriptionData.metadata = { ...subscriptionData.metadata, pilot: 'true' };
   }
 

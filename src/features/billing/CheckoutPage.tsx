@@ -52,6 +52,11 @@ export function CheckoutPage() {
   // 1. Validate planKey gegen die SSoT
   const validPlan: PlanKey | null = normalizePlanKey(planKey);
   const tier = validPlan ? tierByPlanKey(validPlan) : undefined;
+  // Trial-Tage kommen aus der Pricing-SSoT (`trialDays`), nicht aus der URL.
+  // Die Preisseite bewirbt „14 Tage kostenlos testen" — der Checkout muss
+  // dasselbe zeigen, was `stripe-checkout` serverseitig als
+  // `trial_period_days` setzt. `?pilot=true` markiert nur noch Sales-Piloten.
+  const trialDays = validPlan ? (planByKey(validPlan)?.trialDays ?? 0) : 0;
 
   // 2. Free + Enterprise + Invalid: redirect away — diese Page nicht zustaendig
   useEffect(() => {
@@ -234,6 +239,7 @@ export function CheckoutPage() {
       tier={tier}
       userEmail={auth.userEmail}
       isPilot={isPilot}
+      trialDays={trialDays}
       agreedToTerms={agreedToTerms}
       onAgreedToTerms={setAgreedToTerms}
       acknowledgedWithdrawal={acknowledgedWithdrawal}
@@ -407,6 +413,7 @@ function ConsentGateShell({
   tier,
   userEmail,
   isPilot,
+  trialDays,
   agreedToTerms,
   onAgreedToTerms,
   acknowledgedWithdrawal,
@@ -420,6 +427,7 @@ function ConsentGateShell({
   tier:                     { name: string; priceEur: number };
   userEmail:                string;
   isPilot:                  boolean;
+  trialDays:                number;
   agreedToTerms:            boolean;
   onAgreedToTerms:          (value: boolean) => void;
   acknowledgedWithdrawal:   boolean;
@@ -430,6 +438,12 @@ function ConsentGateShell({
   backTo?:                  string;
 }) {
   const canSubmit = agreedToTerms && acknowledgedWithdrawal && !redirecting;
+  // Trial-Banner, sobald der Plan Trial-Tage hat — unabhängig vom Pilot-Flag.
+  // Vorher hing er nur an `?pilot=true`, das öffentliche CTAs nie setzen:
+  // Preisseite versprach 14 Tage gratis, Checkout zeigte Sofort-Abbuchung.
+  // Ein Pilot auf einem Plan ohne Trial-Tage (z. B. Agency) bekommt auch in
+  // Stripe keinen Trial — also auch kein Banner.
+  const hasTrial = trialDays > 0;
 
   return (
     <div className="min-h-screen rs-paper bg-obsidian-950 text-titanium-100">
@@ -456,17 +470,19 @@ function ConsentGateShell({
           <p className="text-center text-silver-300 text-sm sm:text-base mb-1">
             <span>{tier.priceEur} €</span> / Monat · monatlich kündbar · keine Setup-Gebühren
           </p>
-          {isPilot && (
-            <div className="mb-6 p-4 bg-emerald-950 border-2 border-emerald-600 rounded-sm text-center">
+          {hasTrial ? (
+            <div
+              className="mb-6 p-4 bg-emerald-950 border-2 border-emerald-600 rounded-sm text-center"
+              data-testid="checkout-trial-banner"
+            >
               <p className="font-mono font-bold text-base uppercase tracking-wider text-emerald-300 mb-1">
-                ✅ 14 TAGE KOSTENLOS
+                ✅ {trialDays} TAGE KOSTENLOS
               </p>
               <p className="font-mono text-xs text-emerald-200">
-                Keine Zahlung erforderlich. Abo startet automatisch nach der Testphase.
+                Erste Abbuchung erst nach {trialDays} Tagen. Vorher jederzeit kündbar — dann fällt nichts an.
               </p>
             </div>
-          )}
-          {!isPilot && (
+          ) : (
             <p className="text-center font-mono text-[10px] uppercase tracking-wider text-silver-500 mb-6">
               Erste Abbuchung sofort nach Bestellung
             </p>

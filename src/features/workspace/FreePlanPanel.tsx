@@ -23,17 +23,24 @@ const FREE_SCOPE = [
 
 export function FreePlanPanel() {
   const { activeTenantId } = useTenant();
-  const [reason, setReason] = useState<FreeAccessReason | null>(null);
+  // An den Mandanten gebunden: Beim Wechsel darf die alte Antwort nicht
+  // für den neuen Mandanten gelten, bis dessen Entitlements geladen sind.
+  const [reason, setReason] = useState<{ tenantId: string; value: FreeAccessReason } | null>(null);
   const [trialState, setTrialState] = useState<'idle' | 'starting' | 'started' | 'error'>('idle');
   const [trialError, setTrialError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    if (!activeTenantId) { setReason(null); return; }
+    setReason(null);
+    setTrialState('idle');
+    setTrialError(null);
+    if (!activeTenantId) return;
+    const tenantId = activeTenantId;
     (async () => {
       try {
-        const decision = await getEntitlementsForTenant(activeTenantId);
-        if (!cancelled) setReason(getFreeAccessReason(decision));
+        const decision = await getEntitlementsForTenant(tenantId);
+        const next = getFreeAccessReason(decision);
+        if (!cancelled) setReason(next ? { tenantId, value: next } : null);
       } catch {
         // Der Hinweis ist informativ — bei Fehler einfach nicht anzeigen.
         if (!cancelled) setReason(null);
@@ -42,7 +49,8 @@ export function FreePlanPanel() {
     return () => { cancelled = true; };
   }, [activeTenantId]);
 
-  if (!reason) return null;
+  const currentReason = reason?.tenantId === activeTenantId ? reason.value : null;
+  if (!currentReason) return null;
 
   const handleStartTrial = async () => {
     setTrialState('starting');
@@ -71,13 +79,13 @@ export function FreePlanPanel() {
       <div className="px-4 py-3 border-b border-titanium-900 flex items-center gap-2">
         <Sparkles className="h-4 w-4 text-cyan-300 shrink-0" />
         <p className="font-mono text-[9px] uppercase tracking-widest text-titanium-500">
-          {reason === 'trial_expired' ? 'Kostenloser Zugang · Testphase beendet' : 'Kostenloser Zugang'}
+          {currentReason === 'trial_expired' ? 'Kostenloser Zugang · Testphase beendet' : 'Kostenloser Zugang'}
         </p>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-6 px-4 py-5">
         <div>
           <h3 className="font-display font-bold text-lg text-titanium-50 tracking-tight">
-            {reason === 'trial_expired'
+            {currentReason === 'trial_expired'
               ? 'Ihre Testphase ist beendet — Ihr Zugang bleibt.'
               : 'Dauerhaft kostenlos. Kein Zeitdruck.'}
           </h3>
@@ -104,7 +112,7 @@ export function FreePlanPanel() {
 
         <div className="flex flex-col gap-2 md:min-w-[240px] md:border-l md:border-titanium-900 md:pl-6">
           <p className="font-mono text-[9px] uppercase tracking-widest text-titanium-600">Wenn Sie mehr brauchen</p>
-          {reason === 'free_plan' && (
+          {currentReason === 'free_plan' && (
             <button
               type="button"
               onClick={handleStartTrial}
@@ -128,7 +136,7 @@ export function FreePlanPanel() {
           >
             Alle Pakete vergleichen <ArrowRight className="h-3 w-3" />
           </Link>
-          {reason === 'free_plan' && (
+          {currentReason === 'free_plan' && (
             <p className="text-[10px] text-titanium-600">Testphase ohne Karte. Endet automatisch, kein Abo entsteht.</p>
           )}
           {trialError && (

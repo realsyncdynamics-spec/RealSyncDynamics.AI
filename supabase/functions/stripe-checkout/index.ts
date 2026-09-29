@@ -186,8 +186,19 @@ Deno.serve(async (req) => {
   // Re-use or create the tenant's Stripe Customer.
   let stripeCustomerId: string | null = null;
   const { data: existingSub } = await admin
-    .from('subscriptions').select('stripe_customer_id')
+    .from('subscriptions').select('stripe_customer_id, status, trial_end, trial_ends_at')
     .eq('tenant_id', body.tenant_id).limit(1).maybeSingle();
+
+  // Eine Testphase pro Mandant. Wer schon eine hatte (kartenlos über
+  // `create-trial-subscription` oder über Stripe — beide hinterlassen ein
+  // Trial-Ende in der Abo-Zeile) oder ein laufendes Abo führt (Upgrade),
+  // zahlt ab der ersten Abbuchung. Ohne diese Prüfung bekäme jeder erneute
+  // Checkout desselben Mandanten wieder 14 Tage geschenkt. Spiegelbild:
+  // `isTrialEligible()` in src/core/billing/trial.ts für die Anzeige.
+  const LIVE_SUBSCRIPTION_STATES = new Set(['active', 'trialing', 'past_due']);
+  const hadTrial = Boolean(existingSub?.trial_end || existingSub?.trial_ends_at);
+  const hasLiveSubscription = LIVE_SUBSCRIPTION_STATES.has(existingSub?.status ?? '');
+  const trialEligible = !hadTrial && !hasLiveSubscription;
 
   const SITE = Deno.env.get('PUBLIC_SITE_URL') ?? 'https://realsyncdynamicsai.de';
   const base = req.headers.get('origin') ?? body.return_url ?? SITE;
@@ -212,7 +223,7 @@ Deno.serve(async (req) => {
   const subscriptionData: Stripe.Checkout.SessionCreateParams.SubscriptionData = {
     metadata: { tenant_id: body.tenant_id, plan_key: body.plan_key },
   };
-  if (!isOneTime && plan.trialDays > 0) {
+  if (!isOneTime && plan.trialDays > 0 && trialEligible) {
     subscriptionData.trial_period_days = plan.trialDays;
   }
   if (!isOneTime && body.pilot === true) {

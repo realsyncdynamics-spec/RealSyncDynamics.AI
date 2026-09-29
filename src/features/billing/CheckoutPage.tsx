@@ -9,6 +9,8 @@ import { classifyStripeError, getStripeDiagnostic, type StripeDiagnostic } from 
 import { OAuthProviderButtons } from '../auth/OAuthProviderButtons';
 import { trackMarketingEvent } from '../../lib/marketingAnalytics';
 import { trackConversion } from '../../lib/pixels';
+import { getEntitlementsForTenant } from '../../core/usage/usage-service';
+import { isTrialEligible } from '../../core/billing/trial';
 
 /**
  * /checkout/:planKey — Real-Stripe-Checkout-Bridge.
@@ -48,6 +50,10 @@ export function CheckoutPage() {
   // /legal/terms §12. Both must be checked to enable submit.
   const [agreedToTerms,    setAgreedToTerms]    = useState(false);
   const [acknowledgedWithdrawal, setAcknowledgedWithdrawal] = useState(false);
+  // Eine Testphase pro Mandant (Spiegel der Regel in `stripe-checkout`):
+  // Wer schon eine hatte oder ein Abo führt, sieht die Sofort-Abbuchung —
+  // sonst verspräche die Seite 14 Tage, die Stripe nicht gewährt.
+  const [trialEligible, setTrialEligible] = useState(true);
 
   // 1. Validate planKey gegen die SSoT
   const validPlan: PlanKey | null = normalizePlanKey(planKey);
@@ -152,6 +158,13 @@ export function CheckoutPage() {
         return;
       }
       setAuth({ status: 'ready', userEmail, tenantId: firstTenant.tenant_id });
+      try {
+        const decision = await getEntitlementsForTenant(firstTenant.tenant_id);
+        if (!cancelled) setTrialEligible(isTrialEligible(decision));
+      } catch {
+        // Anzeige-Hinweis: Bei Fehler bleibt der Katalogwert; die Abrechnung
+        // entscheidet ohnehin serverseitig.
+      }
     })();
     return () => { cancelled = true; clearTimeout(timeout); };
   }, [validPlan]);
@@ -238,7 +251,7 @@ export function CheckoutPage() {
       planKey={validPlan}
       tier={tier}
       userEmail={auth.userEmail}
-      trialDays={trialDays}
+      trialDays={trialEligible ? trialDays : 0}
       agreedToTerms={agreedToTerms}
       onAgreedToTerms={setAgreedToTerms}
       acknowledgedWithdrawal={acknowledgedWithdrawal}

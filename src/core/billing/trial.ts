@@ -51,7 +51,30 @@ export function getFreeAccessReason(
     // bis dahin gilt sie als laufend.
     return trial && trial.daysRemaining <= 0 ? 'trial_expired' : null;
   }
+  // Stripe-Testphase, die ohne Zahlungsmethode auslief: Der Sync setzt den
+  // Status auf canceled/unpaid, `trial_end` bleibt als Spur stehen. Ein
+  // bezahltes Abo, das nie eine Testphase hatte, trägt kein `trial_end`.
+  if (!decision.isActive && decision.trialEnd) {
+    const end = new Date(decision.trialEnd);
+    if (!Number.isNaN(end.getTime()) && end.getTime() <= now.getTime()) return 'trial_expired';
+  }
   // Kaufmodus statt Plan-Name (target-architecture §10): „kostenlos" ist
   // eine Eigenschaft des Katalogs, kein Vergleich gegen 'free_audit'.
   return planByKey(decision.planKey)?.purchaseMode === 'free' ? 'free_plan' : null;
+}
+
+/** Abo-Zustände, die ein laufendes Vertragsverhältnis ausweisen. */
+const LIVE_SUBSCRIPTION_STATES: ReadonlySet<string> = new Set(['active', 'trialing', 'past_due']);
+
+/**
+ * Darf dieser Mandant im Stripe-Checkout eine Testphase bekommen?
+ *
+ * Eine Testphase pro Mandant: Wer schon eine hatte (kartenlos oder über
+ * Stripe, `trialEnd` gesetzt) oder ein laufendes Abo führt (Upgrade), zahlt
+ * ab der ersten Abbuchung. Dieselbe Regel gilt serverseitig in
+ * `stripe-checkout` gegen die Abo-Zeile — hier nur für die ehrliche Anzeige.
+ */
+export function isTrialEligible(decision: EntitlementDecision): boolean {
+  if (LIVE_SUBSCRIPTION_STATES.has(decision.status)) return false;
+  return !decision.trialEnd;
 }

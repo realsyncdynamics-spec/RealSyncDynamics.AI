@@ -484,6 +484,13 @@ function ConsentGateShell({
               Erste Abbuchung sofort nach Bestellung
             </p>
           )}
+          <p className="text-center text-xs text-silver-500 -mt-3 mb-6">
+            Lieber erst in Ruhe umsehen?{' '}
+            <Link to="/audit?source=checkout-free" className="text-gold-300 underline hover:text-gold-200">
+              Dauerhaft kostenlos starten
+            </Link>{' '}
+            — ohne Karte.
+          </p>
 
           <div className="space-y-3 mb-5">
             <label className="flex items-start gap-3 p-3 border border-silver-700/50 hover:border-silver-500 cursor-pointer transition-colors">

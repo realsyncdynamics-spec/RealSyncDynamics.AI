@@ -6,8 +6,9 @@ import {
 } from 'lucide-react';
 import { ensureCsrfCookie } from '../lib/csrf';
 import { edgeFunctionUrl, fnFetchInit, shouldUseFnProxy } from '../lib/fn-proxy';
+import { getSupabaseUrl } from '../lib/supabaseUrl';
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
+const SUPABASE_URL = getSupabaseUrl();
 
 /* ── Loading-Sequenz ──────────────────────────────────────────── */
 // Rotiert während der Scan-Request läuft, damit User die ~2-5 s

@@ -7,6 +7,7 @@ import { getSupabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/useAuth';
 import { useCurrentTenant } from '../../lib/useCurrentTenant';
 import { useBrowserSession } from '../../lib/useBrowserSession';
+import { getSupabaseUrl } from '../../lib/supabaseUrl';
 
 interface EmbeddedBrowserCanvasProps {
   url: string;
@@ -38,7 +39,7 @@ async function logBrowserAction(payload: {
   metadata?: Record<string, unknown>;
 }) {
   try {
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const supabaseUrl = getSupabaseUrl();
     if (!supabaseUrl) {
       console.warn('Supabase URL not configured');
       return null;

@@ -231,7 +231,13 @@ jobs:
         run: |
           BASE="https://realsyncdynamicsai.de"
           PRERENDERED="/pricing /audit /governance-runtime"
-          SHELL_ROUTES="/ /app"
+          # /realsync-landing: hier ueberschattete bis 2026-09-28 die statische
+          # Datei public/realsync-landing.html die SPA-Route. Ihr Inline-
+          # Redirect wurde ab der CSP-Haertung vom 2026-09-18 blockiert; die
+          # Seite zeigte zehn Tage nur „Redirecting…" und lieferte weiter 200.
+          # Die Shell-Pruefung unten erkennt genau das: Eine solche Stub-Datei
+          # hat weder das Root-Element noch das Einstiegs-Bundle.
+          SHELL_ROUTES="/ /app /realsync-landing"
           FAILED=""
 
           title_of() {

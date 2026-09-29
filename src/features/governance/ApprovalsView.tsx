@@ -8,7 +8,7 @@ import { useTenant } from '../../core/access/TenantProvider';
 import { AuthGate } from '../kodee/connections/AuthGate';
 import {
   listApprovals, approveApproval, rejectApproval,
-  type Approval, type ApprovalStatus,
+  type Approval, type ApprovalStatus, type BrowserActionPayload,
 } from './approvalsApi';
 import type { GovernanceRiskLevel } from './types';
 import { withPerformanceMonitoring } from './withPerformanceMonitoring';
@@ -29,11 +29,17 @@ export const ApprovalsView = withPerformanceMonitoring(
 );
 
 const FILTERS: Array<{ key: ApprovalStatus; label: string }> = [
-  { key: 'pending',  label: 'Offen' },
-  { key: 'approved', label: 'Genehmigt' },
-  { key: 'rejected', label: 'Abgelehnt' },
-  { key: 'expired',  label: 'Abgelaufen' },
+  { key: 'pending',   label: 'Offen' },
+  { key: 'approved',  label: 'Genehmigt' },
+  { key: 'executed',  label: 'Ausgeführt' },
+  { key: 'failed',    label: 'Fehlgeschlagen' },
+  { key: 'rejected',  label: 'Abgelehnt' },
+  { key: 'cancelled', label: 'Zurückgezogen' },
+  { key: 'expired',   label: 'Abgelaufen' },
 ];
+
+/** Offene Freigaben ohne Neuladen aktuell halten (Polling, sichtbarer Tab). */
+const PENDING_POLL_MS = 15_000;
 
 function Inner() {
   const { tenants, activeTenantId, setActiveTenant } = useTenant();
@@ -52,6 +58,16 @@ function Inner() {
   };
 
   useEffect(() => { void reload(); /* eslint-disable-next-line */ }, [activeTenantId, filter]);
+
+  useEffect(() => {
+    if (!activeTenantId || filter !== 'pending') return;
+    const timer = setInterval(async () => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
+      const r = await listApprovals(activeTenantId, 'pending');
+      if (r.ok) setItems(r.approvals ?? []);
+    }, PENDING_POLL_MS);
+    return () => clearInterval(timer);
+  }, [activeTenantId, filter]);
 
   const approve = async (a: Approval) => {
     setBusy(a.id);
@@ -74,7 +90,7 @@ function Inner() {
     <div className="min-h-screen bg-obsidian-950 text-titanium-100">
       <header className="h-14 border-b border-titanium-900 bg-obsidian-900 flex items-center justify-between px-4">
         <div className="flex items-center gap-3">
-          <Link to="/app/websites" className="p-1.5 rounded-none hover:bg-obsidian-800 text-titanium-400 hover:text-titanium-200">
+          <Link to="/app/dashboard" className="p-1.5 rounded-none hover:bg-obsidian-800 text-titanium-400 hover:text-titanium-200" aria-label="Zurück zur Übersicht">
             <ArrowLeft className="h-4 w-4" />
           </Link>
           <div className="flex items-center gap-2.5">
@@ -83,7 +99,7 @@ function Inner() {
             </div>
             <div className="leading-tight">
               <div className="font-display font-bold text-sm tracking-tight text-titanium-50">Approvals</div>
-              <div className="text-[11px] text-titanium-400 font-medium">Events mit require_approval</div>
+              <div className="text-[11px] text-titanium-400 font-medium">Freigabepflichtige Events und Browser-Aktionen</div>
             </div>
           </div>
         </div>
@@ -98,7 +114,7 @@ function Inner() {
         )}
       </header>
 
-      <div className="border-b border-titanium-900 bg-obsidian-900/50 px-4 py-2 flex items-center gap-2">
+      <div className="border-b border-titanium-900 bg-obsidian-900/50 px-4 py-2 flex flex-wrap items-center gap-2">
         {FILTERS.map((f) => (
           <button
             key={f.key}
@@ -133,8 +149,8 @@ function Inner() {
             <Gavel className="h-8 w-8 mx-auto text-titanium-600 mb-3" />
             <p className="text-sm text-titanium-400">
               {filter === 'pending'
-                ? 'Keine offenen Approvals. Schick es.'
-                : `Keine Einträge im Status "${filter}".`}
+                ? 'Keine offenen Freigaben.'
+                : `Keine Einträge im Status „${FILTERS.find((f) => f.key === filter)?.label ?? filter}“.`}
             </p>
           </div>
         ) : (
@@ -202,6 +218,8 @@ function Row({
         {ev && <RiskBadge level={ev.risk_level} />}
       </div>
 
+      <BrowserActionDetails approval={approval} />
+
       <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
         {policy && (
           <RefBox icon={<ShieldCheck className="h-3.5 w-3.5" />} title="Policy" body={policy.name} meta={`${policy.policy_type} · ${policy.severity}`} />
@@ -240,6 +258,55 @@ function Row({
         </div>
       )}
     </li>
+  );
+}
+
+function expiresIn(expiresAt: string): string {
+  const ms = Date.parse(expiresAt) - Date.now();
+  if (!Number.isFinite(ms)) return '';
+  if (ms <= 0) return 'abgelaufen';
+  const minutes = Math.round(ms / 60_000);
+  return minutes < 120 ? `läuft in ${minutes} min ab` : `läuft in ${Math.round(minutes / 60)} Std. ab`;
+}
+
+/** Details einer Browser-Aktion — redigiert (eingegebener Text nie im Klartext). */
+function BrowserActionDetails({ approval }: { approval: Approval }) {
+  const ev = approval.event;
+  if (!ev || !ev.event_type?.startsWith('browser.')) {
+    return approval.status === 'pending'
+      ? <div className="mt-2 text-[11px] font-mono text-amber-300">{expiresIn(approval.expires_at)}</div>
+      : null;
+  }
+  const payload = (ev.payload ?? {}) as BrowserActionPayload;
+  const action = payload.action ?? {};
+  const type = String(action.type ?? 'unbekannt');
+  const selector = typeof action.selector === 'string' ? action.selector : null;
+  const text = typeof action.text === 'string' ? action.text : null;
+  const value = typeof action.value === 'string' ? action.value : null;
+  return (
+    <div className="mt-3 border border-titanium-900 bg-obsidian-950/60 p-2.5 text-[12px]" data-testid="approval-browser-details">
+      <div className="text-[10px] font-mono uppercase tracking-wider text-titanium-500">Browser-Aktion</div>
+      <div className="mt-1 text-titanium-100">
+        <span className="font-semibold">{type}</span>
+        {selector && <span className="font-mono text-titanium-300"> · {selector}</span>}
+        {text && <span className="text-titanium-400"> · Eingabe {text}</span>}
+        {value && <span className="text-titanium-400"> · Wert {value}</span>}
+      </div>
+      {payload.page_url && <div className="mt-1 truncate font-mono text-[11px] text-titanium-400" title={payload.page_url}>Seite: {payload.page_url}</div>}
+      {payload.policy && (
+        <div className="mt-1 font-mono text-[11px] text-titanium-400">
+          Policy {payload.policy.decision} · {payload.policy.policy_id}@{payload.policy.policy_version} · Risiko {payload.policy.risk_level}
+        </div>
+      )}
+      <div className="mt-1 text-[11px] text-titanium-500">
+        Einmalig gültig, gebunden an Session {payload.browser_session_id?.slice(0, 8) ?? '—'} und diese Seite.
+        {approval.status === 'pending' && <span className="ml-1 font-mono text-amber-300">{expiresIn(approval.expires_at)}</span>}
+        {approval.executed_at && <span className="ml-1">Ausgeführt {new Date(approval.executed_at).toLocaleString('de-DE')}.</span>}
+      </div>
+      {approval.status === 'approved' && !approval.consumed_at && (
+        <div className="mt-1 text-[11px] text-cyan-300">Freigegeben — die Ausführung startet der Anfragende in der Browser-Runtime.</div>
+      )}
+    </div>
   );
 }
 

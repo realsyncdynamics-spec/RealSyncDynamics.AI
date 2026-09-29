@@ -10,6 +10,9 @@
  *
  * ## Stand der Messung
  *
+ * 2026-09-29T08:43Z, Drift-Guard (PR #1668) gegen RealSyncDynamicsLive:
+ * **193 ACTIVE**, neu `provision-tenant` (#1695) als STALE_PROD_LIST — Liste hier nachgezogen.
+ *
  * 2026-09-28T11:01Z, Drift-Guard (PR #1668) gegen RealSyncDynamicsLive:
  * **192 ACTIVE**, neu `local-ai-runtime` als STALE_PROD_LIST — Liste hier nachgezogen.
  *
@@ -83,10 +86,10 @@
  * Sie darf steigen, sobald jemand einen höheren Stand misst — und sie ist
  * kein Argument dafür, dass ein weiterer Deploy scheitern wird.
  */
-export const EDGE_FUNCTIONS_OBSERVED_MAX = 192;
+export const EDGE_FUNCTIONS_OBSERVED_MAX = 193;
 
 /** Datum der letzten Messung gegen das Live-Projekt. */
-export const PRODUCTION_EDGE_FUNCTIONS_MEASURED_AT = '2026-09-28T11:01Z';
+export const PRODUCTION_EDGE_FUNCTIONS_MEASURED_AT = '2026-09-29T08:43Z';
 
 /**
  * Die in Produktion aktiven Function-Slugs — alphabetisch, damit ein Diff
@@ -230,6 +233,7 @@ export const PRODUCTION_EDGE_FUNCTIONS: readonly string[] = [
   'plans',
   'policy-packs',
   'provenance',
+  'provision-tenant',
   'rebuild-website',
   'remediation-agent',
   'remediation-workflow',

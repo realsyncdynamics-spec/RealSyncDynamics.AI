@@ -8,6 +8,7 @@ import {
 } from '../lib/enterprise-ai-os/mock-data';
 import { enterpriseAgents } from '../lib/enterprise-ai-os/agents/registry';
 import { EnterpriseFeedbackWidget } from '../components/enterprise-ai-os/FeedbackWidget';
+import { getSupabaseUrl } from '../lib/supabaseUrl';
 
 interface AgentRunRow {
   id: string;
@@ -19,7 +20,7 @@ interface AgentRunRow {
   created_at: string;
 }
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string | undefined;
+const SUPABASE_URL = getSupabaseUrl();
 
 function useRecentAgentRuns(limit = 10) {
   const [runs, setRuns] = useState<AgentRunRow[]>([]);

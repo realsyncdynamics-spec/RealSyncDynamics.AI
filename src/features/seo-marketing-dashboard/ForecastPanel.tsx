@@ -21,6 +21,7 @@ import {
   Activity,
   Target,
 } from 'lucide-react';
+import { getSupabaseUrl } from '../../lib/supabaseUrl';
 
 interface ForecastData {
   date: string;
@@ -73,7 +74,7 @@ export function ForecastPanel() {
     try {
       // Load predictions
       const predResponse = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/seo_forecast_predictions?tenant_id=eq.${activeTenantId}&prediction_type=eq.${selectedModel}&order=prediction_date.asc&limit=30`,
+        `${getSupabaseUrl()}/rest/v1/seo_forecast_predictions?tenant_id=eq.${activeTenantId}&prediction_type=eq.${selectedModel}&order=prediction_date.asc&limit=30`,
         {
           headers: {
             Authorization: `Bearer ${session.access_token}`,
@@ -99,7 +100,7 @@ export function ForecastPanel() {
 
       // Load model metrics
       const modelResponse = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/seo_forecast_models?tenant_id=eq.${activeTenantId}&model_type=eq.${selectedModel}&select=*`,
+        `${getSupabaseUrl()}/rest/v1/seo_forecast_models?tenant_id=eq.${activeTenantId}&model_type=eq.${selectedModel}&select=*`,
         {
           headers: {
             Authorization: `Bearer ${session.access_token}`,
@@ -124,7 +125,7 @@ export function ForecastPanel() {
 
       // Load active alerts
       const alertResponse = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/seo_forecast_alerts?tenant_id=eq.${activeTenantId}&is_active=eq.true&order=severity.asc,created_at.desc&limit=5`,
+        `${getSupabaseUrl()}/rest/v1/seo_forecast_alerts?tenant_id=eq.${activeTenantId}&is_active=eq.true&order=severity.asc,created_at.desc&limit=5`,
         {
           headers: {
             Authorization: `Bearer ${session.access_token}`,
@@ -162,7 +163,7 @@ export function ForecastPanel() {
 
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/train-forecast-models`,
+        `${getSupabaseUrl()}/functions/v1/train-forecast-models`,
         {
           method: 'POST',
           headers: {

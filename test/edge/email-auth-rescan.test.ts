@@ -142,6 +142,8 @@ interface Store {
   websites: WebsiteRow[];
   events: Array<EventRow & { tenant_id: string; [k: string]: unknown }>;
   evidence: Array<Record<string, unknown> & { tenant_id: string; content_hash: string | null }>;
+  /** Called before each append: lets a test move the chain head concurrently. */
+  beforeAppend?: () => void;
   findings: Array<Record<string, unknown> & { id: string; tenant_id: string; status: string; dedupe_key: string | null }>;
   calls: string[];
 }
@@ -181,8 +183,12 @@ function memRepo(s: Store): RescanRepo {
       const rows = s.evidence.filter((e) => e.tenant_id === t && e.content_hash);
       return rows.length ? rows[rows.length - 1].content_hash : null;
     },
-    async insertEvidence(row) {
-      log('insertEvidence');
+    async appendEvidence(row, expected) {
+      log('appendEvidence');
+      s.beforeAppend?.();
+      const own = s.evidence.filter((e) => e.tenant_id === row.tenant_id && e.content_hash);
+      const head = own.length ? own[own.length - 1].content_hash : null;
+      if (head !== expected) return 'conflict';
       s.evidence.push(row as Store['evidence'][number]);
       return { id: row.id as string };
     },
@@ -413,7 +419,7 @@ describe('auto-resolve legacy email_auth_finding (e712035d-style)', () => {
     const { dns } = fakeDns(zone);
     await handleEmailAuthRescan(post(), deps(s, dns));
     expect(resolvedEvents(s)).toHaveLength(0);
-    expect(s.calls).not.toContain('insertEvidence');
+    expect(s.calls).not.toContain('appendEvidence');
   });
 
   it('DMARC still missing (NXDOMAIN) → legacy event stays open, no resolve', async () => {
@@ -580,6 +586,22 @@ describe('evidence: DNS snapshot chained onto the tenant\'s latest hash', () => 
     expect((links[1].metadata as Record<string, Record<string, unknown>>).snapshot.previous_hash).toBe(links[0].content_hash);
   });
 
+  it('head moved by a concurrent writer (tenant-audit) → re-read, re-hash, append to the new head', async () => {
+    const s = baseStore();
+    let moved = false;
+    s.beforeAppend = () => {
+      if (!moved) { moved = true; s.evidence.push({ id: 'e-concurrent', tenant_id: TENANT, content_hash: 'h-concurrent' }); }
+    };
+    await handleEmailAuthRescan(post(), deps(s, fakeDns(healthyZone()).dns));
+    const ev = s.evidence[s.evidence.length - 1] as Record<string, unknown>;
+    const snap = (ev.metadata as Record<string, Record<string, unknown>>).snapshot;
+    expect(ev.previous_hash).toBe('h-concurrent');
+    expect(snap.previous_hash).toBe('h-concurrent');
+    expect(ev.content_hash).toBe(await evidenceContentHash(snap));
+    const parents = s.evidence.map((e) => e.previous_hash).filter(Boolean);
+    expect(new Set(parents).size).toBe(parents.length);
+  });
+
   it('tenant without any evidence starts the chain with previous_hash null', async () => {
     const s = baseStore();
     s.evidence = [];
@@ -659,10 +681,10 @@ describe('targets, cap and per-domain isolation', () => {
     const s = baseStore();
     s.assets.push({ id: '66666666-6666-4666-8666-666666666666', tenant_id: TENANT_B, system_url: 'https://broken.example', name: null });
     const repo = memRepo(s);
-    const orig = repo.insertEvidence;
-    repo.insertEvidence = async (row) => {
+    const orig = repo.appendEvidence;
+    repo.appendEvidence = async (row, expected) => {
       if (row.tenant_id === TENANT_B) throw new Error('boom');
-      return orig(row);
+      return orig(row, expected);
     };
     const res = await handleEmailAuthRescan(post(), deps(s, fakeDns(healthyZone()).dns, { repo }, { [TENANT_B]: 'full' }));
     const body = await res.json();

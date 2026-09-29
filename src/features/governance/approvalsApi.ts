@@ -1,7 +1,25 @@
 import { getSupabase } from '../../lib/supabase';
 import type { GovernanceRiskLevel } from './types';
 
-export type ApprovalStatus = 'pending' | 'approved' | 'rejected' | 'expired';
+export type ApprovalStatus = 'pending' | 'approved' | 'rejected' | 'expired' | 'cancelled' | 'executed' | 'failed';
+
+/** Redigierte Details einer Browser-Aktion (governance_events.payload, browser-execute). */
+export interface BrowserActionPayload {
+  browser_session_id?: string;
+  action?: Record<string, unknown>;
+  target?: string | null;
+  page_url?: string | null;
+  correlation_id?: string;
+  initiated_by?: string;
+  policy?: {
+    decision: string;
+    policy_id: string;
+    policy_version: string;
+    reason: string;
+    risk_level: string;
+    conditions: string[];
+  };
+}
 
 export interface ApprovalEventRef {
   id: string;
@@ -14,6 +32,7 @@ export interface ApprovalEventRef {
   model_name: string | null;
   data_types: string[];
   created_at: string;
+  payload?: BrowserActionPayload | Record<string, unknown> | null;
 }
 export interface ApprovalPolicyRef {
   id: string;
@@ -41,6 +60,10 @@ export interface Approval {
   resolution_reason: string | null;
   expires_at: string;
   created_at: string;
+  requested_by?: string | null;
+  browser_session_id?: string | null;
+  consumed_at?: string | null;
+  executed_at?: string | null;
   event: ApprovalEventRef | null;
   policy: ApprovalPolicyRef | null;
   asset: ApprovalAssetRef | null;

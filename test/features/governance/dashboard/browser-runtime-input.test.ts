@@ -21,21 +21,27 @@ describe('describeAction', () => {
   });
 });
 
-describe('runtimeStatus — Badges nur aus geprüften Zuständen', () => {
+describe('runtimeStatus — Badges nur aus geprüften Server-Zuständen', () => {
   it('ohne mitgliedschaftsgebundenen Mandanten ist alles inaktiv', () => {
-    expect(runtimeStatus({ tenantBound: false, executorConnected: true })).toEqual({
+    expect(runtimeStatus({ tenantBound: false, executorReady: true, evidenceAvailable: true })).toEqual({
       navigation: 'inactive', evidence: 'inactive',
     });
   });
 
-  it('Executor offline ⇒ nur Preview, keine Evidence (die Preview schreibt keine)', () => {
-    expect(runtimeStatus({ tenantBound: true, executorConnected: false })).toEqual({
-      navigation: 'preview', evidence: 'inactive',
+  it('Executor nicht bereit ⇒ keine Navigation, keine Evidence (es gibt keine Ersatz-Vorschau mehr)', () => {
+    expect(runtimeStatus({ tenantBound: true, executorReady: false, evidenceAvailable: true })).toEqual({
+      navigation: 'inactive', evidence: 'inactive',
     });
   });
 
-  it('Executor per Health-Probe erreichbar ⇒ Navigation und Evidence aktiv', () => {
-    expect(runtimeStatus({ tenantBound: true, executorConnected: true })).toEqual({
+  it('Evidence-Speicher nicht erreichbar ⇒ Evidence inaktiv, auch wenn der Executor bereit ist', () => {
+    expect(runtimeStatus({ tenantBound: true, executorReady: true, evidenceAvailable: false })).toEqual({
+      navigation: 'active', evidence: 'inactive',
+    });
+  });
+
+  it('Executor bereit und Evidence erreichbar ⇒ Navigation und Evidence aktiv', () => {
+    expect(runtimeStatus({ tenantBound: true, executorReady: true, evidenceAvailable: true })).toEqual({
       navigation: 'active', evidence: 'active',
     });
   });

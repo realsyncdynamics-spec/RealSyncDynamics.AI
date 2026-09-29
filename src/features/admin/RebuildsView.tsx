@@ -7,6 +7,7 @@ import {
 import type { Session } from '@supabase/supabase-js';
 import { AuthGate } from '../kodee/connections/AuthGate';
 import { getSupabase } from '../../lib/supabase';
+import { getSupabaseUrl } from '../../lib/supabaseUrl';
 
 /**
  * /admin/rebuilds — Live-Tracking laufender DSGVO-Website-Rebuilds.
@@ -123,7 +124,7 @@ function Inner({ session }: { session: Session }) {
     setResumeBusy(rebuildId);
     setError(null);
     try {
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
+      const supabaseUrl = getSupabaseUrl();
       if (!supabaseUrl) throw new Error('VITE_SUPABASE_URL fehlt');
       const sb = getSupabase();
       const { data: { session: s } } = await sb.auth.getSession();

@@ -39,6 +39,7 @@ import {
   LOCAL_AI_ROLES,
   OLLAMA_DOWNLOAD_URL,
   getRole,
+  isCloudModel,
   isModelInstalled,
   isRoleUnlocked,
 } from './roles';
@@ -278,11 +279,14 @@ export function LocalAiOnboardingView() {
   const probe = flow.probe;
   const installedModels = probe?.ok ? probe.data.models : [];
   const currentTest = flow.test?.ok && flow.test.data.model === flow.model ? flow.test.data : null;
-  // Basistest: irgendein in dieser Sitzung bestandener Test oder der gespeicherte.
+  // Basistest: irgendein in dieser Sitzung bestandener Test oder der gespeicherte —
+  // ein gespeicherter Test gegen ein Cloud-Modell zählt nie.
   const baseTest: GovernanceTestSummary | null =
     flow.test?.ok && flow.test.data.overall === 'success'
       ? summarizeTest(flow.test.data)
-      : flow.savedProfile?.test_result ?? null;
+      : flow.savedProfile?.test_result && !isCloudModel(flow.savedProfile.test_result.model)
+        ? flow.savedProfile.test_result
+        : null;
 
   const checkConnection = async () => {
     patch({ probing: true, test: null });
@@ -547,13 +551,18 @@ export function LocalAiOnboardingView() {
                   {installedModels
                     .filter((m) => m !== role.recommendedModel && m !== `${role.recommendedModel}:latest`)
                     .map((m) => (
-                      <option key={m} value={m}>
-                        {m}
+                      <option key={m} value={m} disabled={isCloudModel(m)}>
+                        {isCloudModel(m) ? `${m} (Cloud — nicht lokal)` : m}
                       </option>
                     ))}
                 </select>
               </label>
-              {!modelInstalled && (
+              {isCloudModel(flow.model) ? (
+                <Notice tone="failed">
+                  {flow.model} ist ein Ollama-Cloud-Modell: Anfragen verlassen das Gerät. Für die lokale Runtime bitte ein
+                  lokal installiertes Modell wählen. Cloud-Modelle gehören in einen freigegebenen Cloud-/Hybrid-Betrieb.
+                </Notice>
+              ) : !modelInstalled && (
                 <Notice tone="warning">
                   {flow.model} ist auf diesem Gerät nicht installiert. Installieren mit <Mono>ollama pull {flow.model}</Mono>, danach
                   Verbindung erneut testen.

@@ -26,6 +26,7 @@ import {
   createRiskInventory,
   type Severity as InventorySeverity,
 } from '../features/governance/aiActRiskInventoryApi';
+import { getSupabaseUrl } from '../lib/supabaseUrl';
 
 /**
  * /ai-act-klassifikator — registry-backed EU-AI-Act-Risiko-Klassifikator.
@@ -272,7 +273,7 @@ export function AiActClassifier() {
     if (!description.trim()) return;
     setExtracting(true);
     try {
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
+      const supabaseUrl = getSupabaseUrl();
       const result = supabaseUrl
         ? await extractSignalsLLM(description, supabaseUrl)
         : extractSignalsLocal(description);

@@ -7,7 +7,7 @@ import {
   canStartLoop,
   type OnboardingFlowState,
 } from '@/src/features/local-ai/stepStatus';
-import { LOCAL_AI_ROLES, isRoleUnlocked, isModelInstalled } from '@/src/features/local-ai/roles';
+import { LOCAL_AI_ROLES, isCloudModel, isRoleUnlocked, isModelInstalled } from '@/src/features/local-ai/roles';
 import type { GovernanceTestResult } from '@/src/features/local-ai/types';
 
 const reachable = (models: string[]): OnboardingFlowState['probe'] => ({
@@ -90,5 +90,32 @@ describe('roles', () => {
   it('treats :latest tags as installed', () => {
     expect(isModelInstalled('muse-glimmer', ['muse-glimmer:latest'])).toBe(true);
     expect(isModelInstalled('granite4.2:8b', ['granite4.2:2b'])).toBe(false);
+  });
+});
+
+describe('cloud models', () => {
+  it('detects Ollama cloud tags by name', () => {
+    expect(isCloudModel('glm-4.6:cloud')).toBe(true);
+    expect(isCloudModel('gpt-oss:120b-cloud')).toBe(true);
+    expect(isCloudModel('deepseek-v3.1-cloud')).toBe(true);
+    expect(isCloudModel('GLM-5.3-Flash:Cloud')).toBe(true);
+    expect(isCloudModel('granite4.2:8b')).toBe(false);
+    expect(isCloudModel('qwen3.8:27b')).toBe(false);
+    expect(isCloudModel('glm-5.3-flash')).toBe(false);
+    expect(isCloudModel('')).toBe(false);
+  });
+
+  it('never unlocks test or activation for a cloud model, even if listed and tested', () => {
+    const model = 'glm-5.3-flash:cloud';
+    const s: OnboardingFlowState = {
+      ...INITIAL_FLOW_STATE,
+      probe: reachable([model]),
+      role: 'vision',
+      model,
+      test: testResult('success', model),
+    };
+    expect(deriveStepStatuses(s).role).toBe('failed');
+    expect(canRunTest(s)).toBe(false);
+    expect(canActivate(s)).toBe(false);
   });
 });

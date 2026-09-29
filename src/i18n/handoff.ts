@@ -365,6 +365,10 @@ export const HANDOFF_EXTRA = {
     billingToggle: 'Abrechnungszeitraum',
     moreInfo: 'Mehr erfahren',
     trialNote: '{days} Tage kostenlos testen',
+    residencyLabel: 'Wo sollen KI-Daten verarbeitet werden? (optional)',
+    residencyLocal: 'Lokal im Haus',
+    residencyEu: 'EU-Cloud',
+    residencyHybrid: 'Gemischt / offen',
   },
   en: {
     brandName: 'RealSync Dynamics',
@@ -440,6 +444,10 @@ export const HANDOFF_EXTRA = {
     billingToggle: 'Billing period',
     moreInfo: 'Learn more',
     trialNote: '{days}-day free trial',
+    residencyLabel: 'Where should AI data be processed? (optional)',
+    residencyLocal: 'On-premises',
+    residencyEu: 'EU cloud',
+    residencyHybrid: 'Mixed / undecided',
   },
 } as const;
 

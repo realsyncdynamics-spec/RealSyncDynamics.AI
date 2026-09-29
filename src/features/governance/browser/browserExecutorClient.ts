@@ -1,4 +1,5 @@
 import { getSupabase } from '../../../lib/supabase';
+import { getSupabaseUrl } from '../../../lib/supabaseUrl';
 
 export type BrowserExecutorAction =
   | { type: 'navigate'; url: string }
@@ -44,7 +45,7 @@ async function invokeBrowserExecutor(body: Record<string, unknown>): Promise<unk
     throw new BrowserExecutorError('Anmeldung erforderlich', 'UNAUTHORIZED', 401);
   }
 
-  const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/browser-execute`;
+  const url = `${getSupabaseUrl()}/functions/v1/browser-execute`;
   const response = await fetch(url, {
     method: 'POST',
     headers: {

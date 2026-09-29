@@ -6,6 +6,7 @@ import { TrendChart } from './TrendChart';
 import { ShadowSaasTable } from './ShadowSaasTable';
 import { BarChart3, DollarSign, TrendingUp, AlertTriangle, Calendar } from 'lucide-react';
 import type { DashboardData, Metrics } from './types';
+import { getSupabaseUrl } from '../../lib/supabaseUrl';
 
 export function SEOMarketingDashboard() {
   const { session } = useSupabaseAuth();
@@ -29,7 +30,7 @@ export function SEOMarketingDashboard() {
       try {
         // Fetch dashboard data
         const dashboardRes = await fetch(
-          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/seo-dashboard-data`,
+          `${getSupabaseUrl()}/functions/v1/seo-dashboard-data`,
           {
             method: 'GET',
             headers: {
@@ -45,7 +46,7 @@ export function SEOMarketingDashboard() {
 
         // Calculate metrics
         const metricsRes = await fetch(
-          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/calculate-seo-metrics`,
+          `${getSupabaseUrl()}/functions/v1/calculate-seo-metrics`,
           {
             method: 'POST',
             headers: {

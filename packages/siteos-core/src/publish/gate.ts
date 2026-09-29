@@ -116,6 +116,18 @@ export interface BackendComparison {
   lostApiEndpoints: string[];
   /** Einwilligungs-/Tracking-Kategorien, die fehlen. */
   lostConsentCategories: string[];
+  /**
+   * Bewusst entfallene Funktionen, je mit Person und Begründung (G4).
+   * Sperren nicht — ein Verzicht ist eine Entscheidung, kein Verlust —,
+   * stehen aber als Hinweis in jeder Bewertung.
+   */
+  waived?: string[];
+  /**
+   * Bereiche der Ausgangsseite, die der Vergleich nicht geprüft hat (z. B.
+   * nicht gelesene Unterseiten). Ohne Prüfung keine Zusage: Eine Person
+   * muss freigeben, statt dass „nichts gefunden" als „nichts verloren" gilt.
+   */
+  unverified?: string[];
 }
 
 /**
@@ -284,8 +296,17 @@ export function evaluatePublishGate(input: PublishGateInput): PublishGateEvaluat
       break;
   }
 
+  // ── Backend: Verzicht und Prüfumfang ──────────────────────────────
+  const backendApprovalReasons: string[] = [];
+  if (input.backend.kind === 'transformation' && input.backend.comparison) {
+    for (const entry of input.backend.comparison.waived ?? []) warnings.push(`Bewusst entfallen: ${entry}`);
+    for (const entry of input.backend.comparison.unverified ?? []) {
+      backendApprovalReasons.push(`Backend-Vergleich unvollständig: ${entry} — Freigabe erforderlich.`);
+    }
+  }
+
   // ── Freigabepflicht ───────────────────────────────────────────────
-  const approvalReasons = [...deriveApprovalReasons(input.blueprint, input.findings), ...policyApprovalReasons];
+  const approvalReasons = [...deriveApprovalReasons(input.blueprint, input.findings), ...policyApprovalReasons, ...backendApprovalReasons];
   const approvalGranted =
     input.approval.grantedForArtifactSha256 === input.artifactSha256 &&
     input.approval.grantedBy !== null &&

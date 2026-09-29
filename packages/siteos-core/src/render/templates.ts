@@ -37,7 +37,15 @@ export function defaultDesignTemplate(): DesignTemplate {
   return 'bento-bold';
 }
 
+/**
+ * Wendet eine Vorlage auf das Theme an. Trägt der Blueprint ein
+ * Design-System (Rebuild), bleibt er unverändert: Seine Farben, Schriften und
+ * Formen sind aus der Marke der Ausgangsseite abgeleitet und AA-geprüft —
+ * eine generische Vorlage darüber wäre genau die Zufallsoptik, die das
+ * Design-System verhindern soll.
+ */
 export function applySiteDesignTemplate(blueprint: SiteBlueprint, template: SiteDesignTemplate): SiteBlueprint {
+  if (blueprint.design) return blueprint;
   const selected = designTemplateById(template);
   return {
     ...blueprint,

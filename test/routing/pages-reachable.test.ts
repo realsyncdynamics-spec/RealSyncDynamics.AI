@@ -63,6 +63,9 @@ const KNOWN_UNREACHABLE: Readonly<Record<string, string>> = {
     'Einstiegsvariante der Builder-Vorschau, ohne Route.',
   'src/pages/DemoLoginPage.tsx':
     'Abgelöst: /demo-login leitet auf /welcome (kanonische OTP/OAuth-Anmeldung).',
+  'src/unified-entry/pages/PreviewSelectionPage.tsx':
+    'Abgelöst durch den Rebuild-Workflow (2026-09-29): /unified-entry/transformation und ' +
+    '/app/siteos/builder leiten auf /app/siteos/rebuild. Entfernen nur mit Freigabe (CLAUDE.md §10).',
 };
 
 function resolveSpecifier(fromFile: string, spec: string): string | null {

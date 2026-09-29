@@ -12,6 +12,12 @@
 //   POST /functions/v1/siteos/session          Sitzung lesen, ohne Konto
 //   POST /functions/v1/siteos/claim            Sitzung -> Mandant (idempotent)
 //   POST /functions/v1/siteos/code-persist     Web-App-Builder Dateibaum (nicht Puck)
+//   POST /functions/v1/siteos/publish-export   GO + Bündel (nur mit bestandener Bewertung)
+//   POST /functions/v1/siteos/rebuild-analyze  Rebuild: Ausgangsseite lesen, belegen, bewerten
+//   POST /functions/v1/siteos/rebuild-select   Rebuild: Richtung → Blueprint (Herkunft import)
+//   POST /functions/v1/siteos/rebuild-refine   Rebuild: benannte Überarbeitungen + Freitext
+//   POST /functions/v1/siteos/rebuild-status   Rebuild: Backend-Vergleich, Checkliste, nächste Schritte
+//   POST /functions/v1/siteos/rebuild-waive    Rebuild: bewusster Verzicht (Person + Grund)
 // 2026-09-18: gezieltes Production-Redeploy (siteos + ai-gateway), nicht die Flotte.
 //
 // ## Warum ein Router und nicht vier Functions
@@ -45,7 +51,14 @@ import { handle as builder } from './handlers/builder.ts';
 import { handle as discover } from './handlers/discover.ts';
 import { handle as edit } from './handlers/edit.ts';
 import { handle as runtimeScan } from './handlers/runtime-scan.ts';
-import { handle as publishGate, handleApprove as publishApprove } from './handlers/publish-gate.ts';
+import { handle as publishGate, handleApprove as publishApprove, handleExport as publishExport } from './handlers/publish-gate.ts';
+import {
+  handleAnalyze as rebuildAnalyze,
+  handleRefine as rebuildRefine,
+  handleSelect as rebuildSelect,
+  handleStatus as rebuildStatus,
+  handleWaive as rebuildWaive,
+} from './handlers/rebuild.ts';
 import { handleBuildAnon, handleClaim, handleGetSession, handleRefineAnon } from './handlers/anonymous.ts';
 import { handle as codePersist } from './handlers/code-persist.ts';
 
@@ -61,6 +74,8 @@ const routes: Record<string, (req: Request) => Response | Promise<Response>> = {
   // Begründung wie oben, und beide teilen Auswertung und Persistenz.
   'publish-gate': publishGate,
   'publish-approve': publishApprove,
+  // GO + Bündel: nur für ein Artefakt mit bestandener Bewertung (G6).
+  'publish-export': publishExport,
   // Anonymer Pfad: bauen und verfeinern ohne Konto, uebernehmen mit.
   'build-anon': handleBuildAnon,
   'refine-anon': handleRefineAnon,
@@ -68,6 +83,13 @@ const routes: Record<string, (req: Request) => Response | Promise<Response>> = {
   'claim': handleClaim,
   // Web App Builder file trees. Distinct from Puck `edit` / siteos_blueprints.
   'code-persist': codePersist,
+  // Rebuild-Workflow: bestehende Website → gestalteter Neubau mit Nachweisen.
+  // Ein Handler-Modul, fünf Pfade — sie teilen Snapshot, Kontext und Nachweis.
+  'rebuild-analyze': rebuildAnalyze,
+  'rebuild-select': rebuildSelect,
+  'rebuild-refine': rebuildRefine,
+  'rebuild-status': rebuildStatus,
+  'rebuild-waive': rebuildWaive,
 };
 
 Deno.serve((req) => {

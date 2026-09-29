@@ -16,6 +16,16 @@
 import { canonicalHash, sha256Hex } from '../canonical.ts';
 import { renderSite, type RenderOptions } from '../render/renderer.ts';
 import type { SiteBlueprint } from '../types.ts';
+import { buildSiteFiles, type SiteFilesOptions } from './site-files.ts';
+
+export interface ArtifactOptions extends RenderOptions {
+  /**
+   * Begleitdateien der statischen Auslieferung (robots.txt, sitemap.xml,
+   * `_redirects`, `_headers`). Nur auf Anforderung: Bestehende Bündel
+   * bleiben ohne sie bytegleich, und ihre Hashes gültig.
+   */
+  siteFiles?: SiteFilesOptions;
+}
 
 export interface ArtifactFile {
   /** Pfad im Bündel, immer mit führendem Slash, z. B. `/kontakt/index.html`. */
@@ -62,9 +72,10 @@ export function filePathForRoute(route: string): string {
  */
 export async function buildDeploymentArtifact(
   blueprint: SiteBlueprint,
-  options: RenderOptions = {},
+  options: ArtifactOptions = {},
 ): Promise<DeploymentArtifact> {
-  const rendered = renderSite(blueprint, options);
+  const { siteFiles, ...renderOptions } = options;
+  const rendered = renderSite(blueprint, renderOptions);
 
   const files: ArtifactFile[] = [];
   for (const page of rendered) {
@@ -74,6 +85,16 @@ export async function buildDeploymentArtifact(
       sha256: await sha256Hex(page.html),
       bytes: new TextEncoder().encode(page.html).length,
     });
+  }
+  if (siteFiles) {
+    for (const file of buildSiteFiles(blueprint, { ...siteFiles, baseUrl: siteFiles.baseUrl ?? renderOptions.baseUrl })) {
+      files.push({
+        path: file.path,
+        content: file.content,
+        sha256: await sha256Hex(file.content),
+        bytes: new TextEncoder().encode(file.content).length,
+      });
+    }
   }
 
   files.sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0));
@@ -90,4 +111,31 @@ export async function buildDeploymentArtifact(
     blueprintSha256: await canonicalHash(blueprint),
     totalBytes: files.reduce((sum, f) => sum + f.bytes, 0),
   };
+}
+
+export type ArtifactVerification = { ok: true } | { ok: false; problem: string };
+
+/**
+ * Prüft ein empfangenes Bündel, bevor es weitergegeben wird (Export-ZIP):
+ * jede Datei gegen ihren Hash, die Dateiliste gegen das Manifest und das
+ * Ganze gegen den Bündel-Hash — derselbe Rechenweg wie beim Bauen. Was
+ * unterwegs verändert wurde, geht so nicht als „geprüftes Bündel" hinaus.
+ */
+export async function verifyArtifactFiles(
+  files: readonly { path: string; content: string; sha256: string }[],
+  expected: { artifactSha256: string; files?: readonly { path: string; sha256: string }[] },
+): Promise<ArtifactVerification> {
+  for (const file of files) {
+    if (await sha256Hex(file.content) !== file.sha256) return { ok: false, problem: `Inhalt von ${file.path} passt nicht zu seinem Hash` };
+  }
+  const listed = [...files].map((f) => ({ path: f.path, sha256: f.sha256 })).sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0));
+  if (expected.files) {
+    const manifest = [...expected.files].map((f) => `${f.path}\u0000${f.sha256}`).sort();
+    const received = listed.map((f) => `${f.path}\u0000${f.sha256}`);
+    if (manifest.length !== received.length || manifest.some((entry, index) => entry !== received[index])) {
+      return { ok: false, problem: 'Dateiliste weicht vom Manifest ab' };
+    }
+  }
+  if (await canonicalHash(listed) !== expected.artifactSha256) return { ok: false, problem: 'Bündel-Hash stimmt nicht' };
+  return { ok: true };
 }

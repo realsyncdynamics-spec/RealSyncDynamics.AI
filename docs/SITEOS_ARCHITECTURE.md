@@ -445,6 +445,8 @@ siteos_publish_evaluations         ← publishable ist GENERATED
 | Schwerer Befund in Barrierefreiheit · Sicherheit | **Freigabe** — verbindlich, aber die Abwägung hat Kontext |
 | DSFA indiziert oder besondere Kategorien | **Freigabe** durch `owner`, `admin` oder `dpo` |
 | Backend-Vergleich nicht durchgeführt | **sperrt** (`unknown`) — „wir wissen es nicht" ist kein Freigabegrund |
+| Funktion der Ausgangsseite fehlt (§5e) | **sperrt** — bis erhalten oder begründet aufgegeben |
+| Ausgangsseite nicht vollständig geprüft (§5e) | **Freigabe** |
 | Mittlerer Befund in einer Rechtsdimension | Hinweis, keine Sperre |
 
 ### Warum `greenfield` kein Schlupfloch ist
@@ -478,12 +480,11 @@ Die freigegebene Bewertung bleibt als `pending` stehen; die Freigabe erzeugt
 eine **neue** Bewertung. Im Prüfpfad bleibt damit sichtbar, dass eine Person
 entschieden hat und nicht das System.
 
-### Noch nicht angeschlossen
+### Auslieferung (seit 2026-09-29)
 
-Es gibt keinen Publish-Knopf. Das Gate ist absichtlich vor dem Pfad gebaut,
-den es absichert — anders herum ließe es sich nachträglich umgehen. Der
-nächste Schritt ist der Deploy von `cloudflare-deployer` und die Bindung des
-Deployments an genau eine `evaluation_id` (G5).
+`siteos/publish-export`: Checkliste ohne Sperrpunkt, **frische** Bewertung
+genau dieses Bündels, GO durch `owner`/`admin` mit bestätigter Vorschau,
+belegt vor der Auslieferung. Der Client prüft die Hashes vor dem ZIP.
 
 ---
 
@@ -573,8 +574,8 @@ wurde. Eine Bewertung einer anderen Version der Kette zählt nicht.
 **Identifikator ist der Slug.** `siteos_blueprints` führt je `(tenant_id,
 slug)` eine append-only Kette; `website_projects` ist leer und wird nirgends
 verknüpft (Live-DB, 2026-09-07). Ein „Projekt" ist diese Kette. Der Erstbau
-(`/unified-entry/transformation`, `/app/siteos/builder`) leitet nach Erfolg
-hierher weiter — ein Builder, nicht zwei.
+aus einer bestehenden Website läuft über den Rebuild-Workflow (§5e) und
+leitet hierher weiter — ein Builder, nicht zwei.
 
 **Was der Workspace tut und woher es kommt**
 
@@ -586,11 +587,11 @@ hierher weiter — ein Builder, nicht zwei.
 | Vorschau | derselbe Renderer (`renderSite`, `showcase`), sandboxed iframe | LIVE |
 | Probleme | `analyzeBlueprint` der lokalen Fassung + Blocker/Hinweise der letzten Gate-Bewertung | LIVE — keine erfundenen Befunde |
 | Prüfen | `siteos/publish-gate` für die **gespeicherte** Version; gesperrt bei ungespeicherten Änderungen | LIVE (Code) |
-| Veröffentlichen | — | PLANNED: kein Pfad vom Artefakt zu einer Adresse; Knopf gesperrt mit Begründung |
+| Veröffentlichen | Tab „Veröffentlichen": Checkliste, Backend-Vergleich, Bewertung, GO → geprüftes ZIP (§5b) | LIVE (Code); Upload PLANNED |
 | Verlauf | `listBlueprintChain` | LIVE |
 | Governance | Version, Hash, Vorgänger, Herkunft, KI-Anteil, Custody (`provenance_*`, RLS), Bewertungen, Agentenläufe; Status-Chip in der Kopfzeile aus der jüngsten Bewertung der gespeicherten Version | LIVE (lesend) — `governanceStatus()` in `panels.tsx`, `test/siteos/workspace.test.tsx` |
 | Eigenschaften | Puck-Felder des gewählten Bausteins (`renderRight` des Editors), im Vorschau-Modus benannt statt leer | LIVE (Code) |
-| Assistent | Eingabe + Vorschläge → vorhandener KI-Neubau über den Erstbau (`?instruction=`), **kein LLM** | PARTIAL: ersetzt die Fassung, wendet nichts an — Actions folgen in Schritt C |
+| Assistent | Übernommene Sites: benannte Regeln + Freitext → `siteos/rebuild-refine` (§5e), **kein LLM** | LIVE (Code); andere Sites PARTIAL |
 | Seiten anlegen/umbenennen/löschen | — | PLANNED (Schritt B) |
 | Medien · Daten · Integrationen · Code | — | PLANNED, als Platzhalter benannt |
 
@@ -598,11 +599,32 @@ hierher weiter — ein Builder, nicht zwei.
 Reihenfolge, Art und redaktionelle Felder. Der Workspace hat keinen zweiten
 Schreibpfad.
 
-**Im Browser nachgesehen** (Chromium, Vite-Dev-Server, Supabase-Antworten
-abgefangen): Laden → `saved`, Feldänderung in Puck → `unsaved` und neue
-Überschrift in der Leinwand, Speichern → `Gespeichert · v4`; die Anfrage
-trug genau ein Feld (`hero.headline`) und `base_sha256`. Bei 390 px kein
-horizontaler Überlauf in allen vier Bereichen.
+## 5e. Rebuild-Workflow — bestehende Website → belegter Neubau
+
+`/app/siteos/rebuild`; Details in den Dateiköpfen von
+`packages/siteos-core/src/rebuild/` und `supabase/functions/siteos/`.
+
+```text
+DISCOVER  rebuild-analyze   robots.txt, Sitemap, ≤ 6 Seiten; nur öffentlich auflösende Namen (fail-closed)
+ASSESS    assess.ts         8 Kriterien, jeder Befund mit Beleg (Seite, Pfad, Auszug, Zeit, SHA-256)
+REBUILD   directions.ts     2–3 Richtungen, Design-System aus der Marke, Herkunft `import`
+REFINE    rebuild-refine    benannte Regeln + Freitext, idempotent, erfindet nichts
+PUBLISH   Gate + Export     Backend-Vergleich, Checkliste, frische Bewertung, GO → ZIP
+AUTOMATE  next-steps.ts     Verbindungsstand nur aus connector_registry
+GOVERN    governance_evidence  Analyse, Verzicht, GO
+```
+
+- **Lauf:** `siteos_rebuild_runs` (Snapshot ohne HTML, nur `service_role`
+  schreibt). `origin.rebuild = { runId, snapshotSha256 }` steht im
+  Blueprint-Hash; Gate, Status und Verzicht laden genau diesen Lauf.
+- **Nichts erfunden:** `findUnbackedClaims`; kein Ort aus „in Sachen …",
+  kein „Startseite" als H1, keine unsichtbare JSON-LD-Bewertung.
+- **Backend-Vergleich:** Funktion, nicht Adresse. Ungeprüftes →
+  Freigabe, gebunden an den Vergleich (`backend_sha256`).
+- **Recht:** ohne `legal-text.body` und Formularziel sperrt es;
+  rechtswirksame Felder ändern nur `owner`/`admin`/`editor`.
+- **Grenze:** DNS-Rebinding zwischen Prüfung und `fetch` (Egress-Proxy im
+  Betrieb). Ein Link mit `?url=` startet nichts ohne Klick.
 
 ## 6. Stand und Grenzen
 
@@ -614,33 +636,19 @@ Behebung, Datenmodell mit RLS, drei Edge Functions, Dashboard unter
 
 **Noch nicht umgesetzt** — bewusst außerhalb dieser Phase:
 
-- **Deployment-Pfad.** Der Renderer erzeugt das HTML (siehe §3.5), aber es
-  wird noch nicht auf Cloudflare Pages hochgeladen und unter einer Domain
-  veröffentlicht. **Der Publish Gate steht bereits** (§5b) — er wurde
-  bewusst vor dem Pfad gebaut, den er absichert. `cloudflare-deployer` und
-  `website-domain-manager` sind **deployt** (`PRODUCTION_SET`, am 2026-09-04
-  nachgemessen); diese Stelle behauptete bis dahin das Gegenteil. Was fehlt,
-  sind allein die Cloudflare-Zugangsdaten. Das ist die verbliebene Hälfte der ursprünglich größten
-  Lücke: aus dem Blueprint entsteht jetzt ein vollständiges, geprüftes
-  Auslieferungsartefakt — was fehlt, ist der Upload samt Domain-Anbindung.
-  Dafür sind Cloudflare-Zugangsdaten und eine Entscheidung über das
-  Deployment-Ziel nötig (`website_projects.cloudflare_project_id` ist
-  vorbereitet). Bis dahin arbeitet `siteos/runtime-scan` gegen extern
-  gehostete Adressen.
-- **Rechtstexte im gerenderten HTML.** Der Renderer setzt für
-  `legal-text`-Blöcke nur die Stelle (`<!-- legal:content -->`) und das
-  `data-legal-document`-Attribut. Der Text selbst kommt zur Build-Zeit aus
-  dem Legal-Modul (`scripts/generate-static-legal-pages.mjs`) — der
-  Renderer erfindet keinen Rechtstext.
-- **Keine Komponentenbibliothek.** Das Kern-Stylesheet deckt Grundgestaltung
-  ab (Kontrast, Zeilenlänge, Fokus, Sprungmarke). Die Layoutschicht aus
-  §5a (`presentation: 'showcase'`) ergänzt Raster, Karten und Formulare —
-  aber weiterhin genau **eine** Variante je Blocktyp. Alternativen je Block
-  fehlen.
-- ~~Visueller Drag-&-Drop-Editor (React Flow)~~ — **seit 2026-09-06 umgesetzt**,
-  aber nicht mit React Flow und nicht selbst gebaut: Der Block-Editor auf
-  `/unified-entry/transformation` ist **Puck** (`@puckeditor/core`, MIT).
-  Siehe §5c.
+- **Upload und Domain.** Aus dem Blueprint entsteht ein geprüftes Bündel,
+  das nach Publish Gate und GO als ZIP exportiert wird (§5b). Der Upload
+  über `cloudflare-deployer` (deployt) samt Domain fehlt — es fehlen die
+  Cloudflare-Zugangsdaten und die Wahl des Ziels
+  (`website_projects.cloudflare_project_id` ist vorbereitet).
+- **Rechtstexte im gerenderten HTML.** Gerendert wird der eingesetzte
+  Wortlaut (`body`), sonst nur die Stelle (`<!-- legal:content -->`). Der
+  Renderer erfindet keinen Rechtstext; der Export verweigert ein Bündel
+  ohne Wortlaut.
+- **Keine freie Komponentenbibliothek.** Kern-Stylesheet, Layoutschicht
+  (§5a) und das Design-System übernommener Sites (§5e) bieten feste
+  Varianten, keine frei gestaltbaren Komponenten.
+- ~~Drag-&-Drop-Editor~~ — seit 2026-09-06 **Puck** (MIT), §5c.
 - Mehrsprachigkeit über die Modellebene hinaus (`locales` ist vorbereitet,
   Übersetzungspfad fehlt)
 - White-Label, SSO, öffentliche API, Audit-Export für SiteOS-Objekte
@@ -655,8 +663,8 @@ Behebung, Datenmodell mit RLS, drei Edge Functions, Dashboard unter
 ```bash
 npm run lint                     # tsc --noEmit
 npx vitest run test/siteos/      # 201 Tests des Kerns
-supabase db push                 # Migration
-supabase functions deploy siteos            # ein Slot, sechs Endpunkte
+supabase db push                 # Migration zuerst (siteos_rebuild_runs, backend_sha256)
+supabase functions deploy siteos            # ein Slot, alle Endpunkte (inkl. rebuild-*, publish-export)
 ```
 
 Optionale Umgebungsvariable: `SITEOS_BUILDER_MODEL` — Modell-ID für den

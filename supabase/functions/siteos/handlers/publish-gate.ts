@@ -38,13 +38,21 @@ import { handleOptions, jsonResponse, jsonError, methodNotAllowed } from '../../
 import { audit } from '../../_shared/auditLog.ts';
 import { appendCustodyEvent } from '../../_shared/provenanceCore.ts';
 import { gateSitePublish } from '../site-entitlements.ts';
+import { appendSiteosEvidence } from '../evidence.ts';
+import { artifactOptionsFor, baseUrlFor, resolveRebuildContext, type RebuildContext } from '../rebuild-context.ts';
 import {
   analyzeBlueprint,
+  backendDigest,
   buildDeploymentArtifact,
+  buildPublishChecklist,
+  compareBackend,
+  redirectsForBlueprint,
   computeScores,
   evaluatePublishGate,
   type ApprovalState,
+  type BackendComparison,
   type BackendState,
+  type DeploymentArtifact,
   type PublishGateEvaluation,
   type SiteBlueprint,
 } from '../../../../packages/siteos-core/src/index.ts';
@@ -53,6 +61,13 @@ import { decide, logShadowComparison } from '../../_shared/pdp/decide.ts';
 
 /** Rollen, die eine Freigabe erteilen dürfen. */
 const APPROVER_ROLES = new Set(['owner', 'admin', 'dpo']);
+
+/**
+ * Rollen, die das GO zur Veröffentlichung geben dürfen. Bewusst enger als
+ * die Freigabe: Der DSB gibt frei, was rechtlich trägt; ob die Site online
+ * geht, entscheidet, wer für das Unternehmen handelt.
+ */
+const PUBLISHER_ROLES = new Set(['owner', 'admin']);
 
 const MAX_REASON_LENGTH = 1000;
 
@@ -103,7 +118,7 @@ export async function handle(req: Request): Promise<Response> {
   if (!blueprintId) return jsonError(400, 'BAD_REQUEST', 'blueprint_id required');
 
   try {
-    const result = await runEvaluation(ctx, blueprintId, typeof body.base_url === 'string' ? body.base_url : undefined);
+    const result = await runEvaluation(ctx, blueprintId, body.base_url);
     if (result instanceof Response) return result;
     return jsonResponse({ ok: true, evaluation: result });
   } catch (e) {
@@ -174,7 +189,7 @@ export async function handleApprove(req: Request): Promise<Response> {
   // Die alte bleibt als „pending" stehen, damit im Prüfpfad sichtbar
   // bleibt, dass eine Person entschieden hat und nicht das System.
   try {
-    const result = await runEvaluation(ctx, evaluation.blueprint_id, typeof body.base_url === 'string' ? body.base_url : undefined);
+    const result = await runEvaluation(ctx, evaluation.blueprint_id, body.base_url);
     if (result instanceof Response) return result;
     return jsonResponse({ ok: true, approved_evaluation_id: evaluationId, evaluation: result });
   } catch (e) {
@@ -183,28 +198,196 @@ export async function handleApprove(req: Request): Promise<Response> {
   }
 }
 
+/**
+ * PUBLISH — das explizite GO und die Auslieferung als Bündel.
+ *
+ * Voraussetzungen, alle serverseitig und **zum Zeitpunkt des GO**
+ * festgestellt:
+ *
+ *   1. Das Bündel ist vollständig (Rechtstexte, Formularziel) — geprüft,
+ *      bevor irgendetwas geschrieben wird.
+ *   2. Eine frische Bewertung genau dieses Bündels besteht den Publish Gate.
+ *      Nicht „irgendeine frühere bestandene Bewertung desselben Hashes":
+ *      Verzichte, der Analyse-Lauf und Mandanten-Richtlinien stehen nicht im
+ *      Bündel-Hash und können sich seither geändert haben — ein
+ *      zurückgenommener Verzicht muss das GO sperren, auch wenn die Dateien
+ *      bytegleich sind.
+ *   3. Eine berechtigte Person gibt das GO ausdrücklich — mit bestätigter
+ *      Vorschau. Das GO wird in die Evidence-Kette geschrieben, bevor
+ *      irgendeine Datei das Haus verlässt (fail-closed).
+ *
+ * Zurück kommen die Dateien mit ihren Hashes; das ZIP baut der Client aus
+ * genau diesen Bytes (und prüft sie vorher). Veröffentlicht (hochgeladen)
+ * wird nichts von hier aus.
+ */
+export async function handleExport(req: Request): Promise<Response> {
+  const pre = handleOptions(req);
+  if (pre) return pre;
+  if (req.method !== 'POST') return methodNotAllowed();
+
+  const parsed = await authorize(req);
+  if (parsed instanceof Response) return parsed;
+  const { ctx, body } = parsed;
+
+  {
+    const denied = await gateSitePublish(ctx.admin, ctx.tenantId);
+    if (denied) return denied;
+  }
+  if (!PUBLISHER_ROLES.has(ctx.role)) {
+    return jsonError(403, 'FORBIDDEN', `role "${ctx.role}" may not give the publish GO`);
+  }
+  if (body.confirm_go !== true || body.confirm_preview !== true) {
+    return jsonError(400, 'BAD_REQUEST', 'Veröffentlichung nur mit ausdrücklichem GO und bestätigter Vorschau (confirm_go, confirm_preview).');
+  }
+
+  const blueprintId = String(body.blueprint_id ?? '').trim();
+  if (!blueprintId) return jsonError(400, 'BAD_REQUEST', 'blueprint_id required');
+
+  const prepared = await prepareRelease(ctx, blueprintId, body.base_url);
+  if (prepared instanceof Response) return prepared;
+  const { row, rebuild, artifact, baseUrl } = prepared;
+
+  // Vollständigkeit des Bündels — keine zweite Freigabeentscheidung (die
+  // trifft das Gate), sondern die Frage, ob ausgeliefert werden KANN: Ein
+  // Impressum ohne Wortlaut oder ein Formular ohne Ziel verlässt das Haus
+  // nicht, auch bei Sites, deren Analyse das nicht als Befund führt.
+  const checklist = buildPublishChecklist({
+    blueprint: row.blueprint,
+    files: artifact.files,
+    baseUrl: baseUrl ?? null,
+    sourceHost: rebuild?.snapshot.host ?? null,
+    redirects: rebuild ? redirectsForBlueprint(rebuild.snapshot, row.blueprint) : [],
+  });
+  const incomplete = checklist.items.filter((i) => i.status === 'blocker');
+  if (incomplete.length > 0) {
+    return jsonError(409, 'INCOMPLETE', `Das Bündel ist nicht vollständig: ${incomplete.map((i) => `${i.title} — ${i.detail}`).join(' · ')}`);
+  }
+
+  // Frische Bewertung genau dieses Bündels (siehe oben, Punkt 2).
+  let evaluation: PublishGateEvaluation;
+  try {
+    const result = await evaluatePrepared(ctx, prepared);
+    if (result instanceof Response) return result;
+    evaluation = result;
+  } catch (e) {
+    console.error(JSON.stringify({ level: 'error', scope: 'siteos_publish_export_eval_failed', error: (e as Error)?.message ?? String(e) }));
+    return jsonError(500, 'INTERNAL', 'publish gate evaluation failed');
+  }
+  if (!evaluation.publishable || evaluation.artifact_sha256 !== artifact.artifactSha256) {
+    const reason = evaluation.blockers.length > 0
+      ? evaluation.blockers.join(' · ')
+      : evaluation.human_approval_required ? 'Für diesen Stand steht eine Freigabe aus.' : 'Der Publish Gate hat diesen Stand nicht bestanden.';
+    return jsonError(409, 'NOT_PUBLISHABLE', `Nicht veröffentlichbar (Bewertung ${evaluation.evaluation_id.slice(0, 8)}): ${reason}`);
+  }
+
+  const nowIso = new Date().toISOString();
+  const evidence = await appendSiteosEvidence(ctx.admin, ctx.tenantId, {
+    title: `Website veröffentlicht (GO): ${row.slug} v${row.version}`,
+    source: 'siteos.publish',
+    metadata: { kind: 'siteos.publish.go', blueprint_id: row.id },
+    body: {
+      kind: 'siteos.publish.go',
+      blueprint_id: row.id,
+      slug: row.slug,
+      version: row.version,
+      blueprint_sha256: artifact.blueprintSha256,
+      artifact_sha256: artifact.artifactSha256,
+      evaluation_id: evaluation.evaluation_id,
+      rebuild_run_id: rebuild?.runId ?? null,
+      base_url: baseUrl ?? null,
+      files: artifact.files.map((f) => ({ path: f.path, sha256: f.sha256, bytes: f.bytes })),
+      confirmed_preview: true,
+      go_by: ctx.userId,
+      go_role: ctx.role,
+      go_at: nowIso,
+    },
+  });
+  if ('error' in evidence) return jsonError(evidence.status, evidence.code, evidence.error);
+
+  await audit(ctx.admin, {
+    tenant_id: ctx.tenantId, actor_user_id: ctx.userId, actor_email: ctx.userEmail,
+    action: 'siteos.publish.go', target_type: 'siteos_blueprint', target_id: row.id,
+    payload: { artifact_sha256: artifact.artifactSha256, evaluation_id: evaluation.evaluation_id, evidence_id: evidence.id, base_url: baseUrl ?? null, role: ctx.role },
+  });
+
+  return jsonResponse({
+    ok: true,
+    manifest: {
+      format: 'realsync-siteos-export/1',
+      slug: row.slug,
+      version: row.version,
+      blueprint_sha256: artifact.blueprintSha256,
+      artifact_sha256: artifact.artifactSha256,
+      evaluation_id: evaluation.evaluation_id,
+      evidence_id: evidence.id,
+      base_url: baseUrl ?? null,
+      go_by: ctx.userId,
+      go_at: nowIso,
+      files: artifact.files.map((f) => ({ path: f.path, sha256: f.sha256, bytes: f.bytes })),
+    },
+    files: artifact.files.map((f) => ({ path: f.path, content: f.content, sha256: f.sha256, bytes: f.bytes })),
+  });
+}
+
 // ─────────────────────────────────────────────────────────────────────
 // Auswertung
 // ─────────────────────────────────────────────────────────────────────
 
-async function runEvaluation(
-  ctx: Context,
-  blueprintId: string,
-  baseUrl: string | undefined,
-): Promise<PublishGateEvaluation | Response> {
+interface BlueprintRow {
+  id: string;
+  slug: string;
+  version: number;
+  blueprint: SiteBlueprint;
+  content_sha256: string;
+  origin_source: string | null;
+}
+
+/**
+ * Was bewertet und ausgeliefert wird — an genau einer Stelle gebaut:
+ * Zeile, Rebuild-Kontext (über die Bindung im Blueprint), Zieladresse und
+ * Bündel. Bewertung und Export benutzen dasselbe Ergebnis; sonst bewertete
+ * das Gate ein anderes Bündel als das ausgelieferte (G6).
+ */
+interface PreparedRelease {
+  row: BlueprintRow;
+  rebuild: RebuildContext | null;
+  baseUrl: string | undefined;
+  artifact: DeploymentArtifact;
+}
+
+async function prepareRelease(ctx: Context, blueprintId: string, rawBaseUrl: unknown): Promise<PreparedRelease | Response> {
   const { data: row } = await ctx.admin
     .from('siteos_blueprints')
-    .select('id, slug, blueprint, content_sha256, origin_source')
+    .select('id, slug, version, blueprint, content_sha256, origin_source')
     .eq('id', blueprintId).eq('tenant_id', ctx.tenantId)
-    .maybeSingle<{ id: string; slug: string; blueprint: SiteBlueprint; content_sha256: string; origin_source: string | null }>();
+    .maybeSingle<BlueprintRow>();
 
   if (!row?.blueprint) return jsonError(404, 'NOT_FOUND', 'blueprint not found for this tenant');
 
-  // ── Artefakt und Befunde neu erzeugen ──────────────────────────────
+  // Übernommene Sites (Rebuild) werden gegen den gespeicherten Snapshot
+  // ihrer Ausgangsseite verglichen, und ihr Bündel trägt die Begleitdateien
+  // der Auslieferung (Weiterleitungen, Header) — beides serverseitig aus
+  // dem Lauf, an den der Blueprint gebunden ist, nie aus der Anfrage.
+  const baseUrl = baseUrlFor(row.origin_source, rawBaseUrl);
+  const { context: rebuild } = await resolveRebuildContext(ctx.admin, ctx.tenantId, row);
   // Veröffentlicht wird die gestaltete Fassung; sie ist das, was ein
-  // Besucher sähe. Der Hash muss über genau dieses Bündel gehen — sonst
-  // bewertet das Gate ein anderes Dokument als das ausgelieferte.
-  const artifact = await buildDeploymentArtifact(row.blueprint, { baseUrl, presentation: 'showcase' });
+  // Besucher sähe. Der Hash muss über genau dieses Bündel gehen.
+  const artifact = await buildDeploymentArtifact(row.blueprint, artifactOptionsFor(row.origin_source, rebuild, row.blueprint, baseUrl));
+  return { row, rebuild, baseUrl, artifact };
+}
+
+async function runEvaluation(
+  ctx: Context,
+  blueprintId: string,
+  rawBaseUrl: unknown,
+): Promise<PublishGateEvaluation | Response> {
+  const prepared = await prepareRelease(ctx, blueprintId, rawBaseUrl);
+  if (prepared instanceof Response) return prepared;
+  return evaluatePrepared(ctx, prepared);
+}
+
+async function evaluatePrepared(ctx: Context, prepared: PreparedRelease): Promise<PublishGateEvaluation | Response> {
+  const { row, rebuild, artifact } = prepared;
   const findings = analyzeBlueprint(row.blueprint);
   const scores = computeScores(findings);
 
@@ -245,25 +428,44 @@ async function runEvaluation(
     }));
   }
 
-  // ── Freigabelage ───────────────────────────────────────────────────
-  // Die jüngste erteilte Freigabe zu dieser Blueprint-Version — unabhängig
-  // vom Artefakt-Hash. Ob sie noch gilt, entscheidet das Gate (G6); hier
-  // wird sie nur beigebracht.
-  const { data: approvalRow } = await ctx.admin
-    .from('siteos_publish_evaluations')
-    .select('artifact_sha256, approved_by, approval_reason')
-    .eq('tenant_id', ctx.tenantId).eq('blueprint_id', row.id)
-    .not('approved_by', 'is', null)
-    .order('approved_at', { ascending: false }).limit(1)
-    .maybeSingle<{ artifact_sha256: string; approved_by: string; approval_reason: string }>();
+  // ── Backend-Lage ───────────────────────────────────────────────────
+  // Serverseitig festgestellt, nicht vom Aufrufer entgegengenommen. Für
+  // übernommene Sites zusätzlich ihr Hash (Lauf, Verluste, Verzichte,
+  // Ungeprüftes) — daran wird eine Freigabe gebunden.
+  const comparison = backendComparison(rebuild, row.blueprint);
+  const backendSha256 = rebuild && comparison ? await backendDigest(rebuild.runId, comparison) : null;
 
-  const approval: ApprovalState = approvalRow
-    ? {
-        grantedForArtifactSha256: approvalRow.artifact_sha256,
-        grantedBy: approvalRow.approved_by,
-        reason: approvalRow.approval_reason,
-      }
-    : { grantedForArtifactSha256: null, grantedBy: null, reason: null };
+  // ── Freigabelage ───────────────────────────────────────────────────
+  // Die jüngste erteilte Freigabe zu dieser Blueprint-Version. Ob sie für
+  // dieses Bündel gilt, entscheidet das Gate (G6); hier wird sie nur
+  // beigebracht. Bei übernommenen Sites zählt sie außerdem nur für genau den
+  // Backend-Vergleich, den die freigebende Person gesehen hat: Kam seither
+  // etwas hinzu, das niemand freigegeben hat, gilt sie nicht.
+  const noApproval: ApprovalState = { grantedForArtifactSha256: null, grantedBy: null, reason: null };
+  let approval: ApprovalState = noApproval;
+  if (row.origin_source === 'import') {
+    const { data: approvalRow } = await ctx.admin
+      .from('siteos_publish_evaluations')
+      .select('artifact_sha256, approved_by, approval_reason, backend_sha256')
+      .eq('tenant_id', ctx.tenantId).eq('blueprint_id', row.id)
+      .not('approved_by', 'is', null)
+      .order('approved_at', { ascending: false }).limit(1)
+      .maybeSingle<{ artifact_sha256: string; approved_by: string; approval_reason: string; backend_sha256: string | null }>();
+    if (approvalRow && backendSha256 !== null && approvalRow.backend_sha256 === backendSha256) {
+      approval = { grantedForArtifactSha256: approvalRow.artifact_sha256, grantedBy: approvalRow.approved_by, reason: approvalRow.approval_reason };
+    }
+  } else {
+    const { data: approvalRow } = await ctx.admin
+      .from('siteos_publish_evaluations')
+      .select('artifact_sha256, approved_by, approval_reason')
+      .eq('tenant_id', ctx.tenantId).eq('blueprint_id', row.id)
+      .not('approved_by', 'is', null)
+      .order('approved_at', { ascending: false }).limit(1)
+      .maybeSingle<{ artifact_sha256: string; approved_by: string; approval_reason: string }>();
+    if (approvalRow) {
+      approval = { grantedForArtifactSha256: approvalRow.artifact_sha256, grantedBy: approvalRow.approved_by, reason: approvalRow.approval_reason };
+    }
+  }
 
   // ── Mandanten-Richtlinien befragen (P2-3) ──────────────────────────
   //
@@ -282,7 +484,7 @@ async function runEvaluation(
     artifactSha256: artifact.artifactSha256,
     evidence: { snapshotWritten: scan !== null, custodyLinked },
     // Serverseitig festgestellt, nicht vom Aufrufer entgegengenommen.
-    backend: deriveBackendState(row.origin_source),
+    backend: deriveBackendState(row.origin_source, comparison),
     approval,
     evaluationId,
     evaluatedAt: nowIso,
@@ -316,6 +518,9 @@ async function runEvaluation(
     severity_max: scores.severityMax,
     evaluated_at: nowIso,
     created_by: ctx.userId,
+    // Nur für übernommene Sites (Migration 20260929120000): der Vergleich,
+    // den diese Bewertung gesehen hat. Andere Zeilen bleiben unverändert.
+    ...(backendSha256 ? { backend_sha256: backendSha256 } : {}),
   });
 
   if (insertErr) {
@@ -383,10 +588,18 @@ async function runEvaluation(
  * nicht veroeffentlichbar. Das ist die richtige Reihenfolge: lieber ein
  * Weg, der noch fehlt, als eine Schranke, die nur so aussieht.
  */
-function deriveBackendState(originSource: string | null): BackendState {
-  return originSource === 'ai-builder'
-    ? { kind: 'greenfield' }
-    : { kind: 'transformation', comparison: null };
+function deriveBackendState(originSource: string | null, comparison: BackendComparison | null): BackendState {
+  if (originSource === 'ai-builder') return { kind: 'greenfield' };
+  // Nachtrag (Rebuild-Workflow): Den Vergleichslauf gibt es jetzt — für
+  // übernommene Sites mit gespeichertem Snapshot der Ausgangsseite
+  // (`siteos_rebuild_runs`). Er kommt aus `compareBackend` auf Server-Daten,
+  // nie aus dem Request. Ohne Lauf bleibt es bei `comparison: null` ⇒
+  // `unknown` ⇒ gesperrt.
+  return { kind: 'transformation', comparison: originSource === 'import' ? comparison : null };
+}
+
+function backendComparison(context: RebuildContext | null, blueprint: SiteBlueprint): BackendComparison | null {
+  return context ? compareBackend(context.snapshot, blueprint, context.waivers).comparison : null;
 }
 
 async function authorize(req: Request): Promise<{ ctx: Context; body: Record<string, unknown> } | Response> {

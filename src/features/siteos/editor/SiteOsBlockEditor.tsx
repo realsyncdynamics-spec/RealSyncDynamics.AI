@@ -166,7 +166,7 @@ export default function SiteOsBlockEditor(props: SiteOsBlockEditorProps): ReactE
   );
 
   const themed = useMemo(() => applySiteDesignTemplate(localBlueprint, template), [localBlueprint, template]);
-  const canvasCss = useMemo(() => renderCanvasCss(themed.theme), [themed.theme]);
+  const canvasCss = useMemo(() => renderCanvasCss(themed.theme, themed.design), [themed.theme, themed.design]);
 
   const metadata = useMemo<CanvasMetadata>(() => {
     const headings: Record<string, 'h1' | 'h2'> = {};

@@ -245,10 +245,11 @@ const SchedulerView = lazy(() => import('./features/scheduler/SchedulerView').th
 const EvidenceVaultAdvancedView = lazy(() => import('./features/evidence-vault/EvidenceVaultAdvancedView').then((m) => ({ default: m.EvidenceVaultAdvancedView })));
 const PolicyPacksView = lazy(() => import('./features/policy-packs/PolicyPacksView').then((m) => ({ default: m.PolicyPacksView })));
 const SiteOsDashboardView = lazy(() => import('./features/siteos/SiteOsDashboardView').then((m) => ({ default: m.SiteOsDashboardView })));
-// Der SiteOS-Builder (Prompt → Blueprint → Vorschau). Die Oberflaeche lag
-// seit ihrer Entstehung ohne Route im Repo — fertiger Code, den niemand
-// erreichen konnte (CLAUDE.md §14).
-const SiteOsBuilderPage = lazy(() => import('./unified-entry/pages/PreviewSelectionPage'));
+// Rebuild-Workflow: bestehende Website → belegte Analyse → Richtungen →
+// Workspace (Verfeinern, Veröffentlichen, nächste Schritte). Ersetzt den
+// URL-Neubau der Builder-Seite (siehe RebuildRedirect).
+const RebuildPage = lazy(() => import('./features/siteos/rebuild/RebuildPage'));
+const RebuildRedirect = lazy(() => import('./features/siteos/rebuild/RebuildRedirect').then((m) => ({ default: m.RebuildRedirect })));
 // App Builder Workspace: Topbar · Projekt-Navigation · Puck-Leinwand ·
 // Assistent · Konsole/Probleme/Verlauf/Governance. Lazy aus demselben Grund
 // wie der Editor: Puck gehört nicht in den kritischen Pfad.
@@ -858,7 +859,9 @@ function RoutesWithTracking() {
       <Route path="/app/evidence-vault" element={<AppGate><GovernanceBrowserShell><EvidenceVaultAdvancedView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/policy-packs" element={<AppGate><GovernanceBrowserShell><EnforcementPanel /><PolicyPacksView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/siteos" element={<AppGate><GovernanceBrowserShell><SiteOsDashboardView /></GovernanceBrowserShell></AppGate>} />
-      <Route path="/app/siteos/builder" element={<AppGate><SiteOsBuilderPage /></AppGate>} />
+      <Route path="/app/siteos/builder" element={<AppGate><RebuildRedirect /></AppGate>} />
+      <Route path="/app/siteos/rebuild" element={<AppGate><RebuildPage /></AppGate>} />
+      <Route path="/app/siteos/rebuild/:runId" element={<AppGate><RebuildPage /></AppGate>} />
       <Route path="/app/siteos/modernize" element={<AppGate><GovernanceBrowserShell><FmtModernizeWizard /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/siteos/modernize/:projectId" element={<AppGate><GovernanceBrowserShell><FmtModernizeWizard /></GovernanceBrowserShell></AppGate>} />
       {/* Claim: AppGate + View-eigener Resume nach /welcome?next=. */}
@@ -1162,7 +1165,7 @@ function RoutesWithTracking() {
           </UnifiedEntryShell>
         }
       />
-      <Route path="/unified-entry/transformation" element={<SiteOsBuilderPage />} />
+      <Route path="/unified-entry/transformation" element={<RebuildRedirect />} />
       {/* App Builder Workspace: Puck bleibt der visuelle Editor unter /builder/:slug.
           Die Code-Workbench ist additiv unter /builder/:slug/code — kein zweites Produkt.
           Anmeldung prüft die jeweilige Seite selbst, damit `next` erhalten bleibt. */}

@@ -209,13 +209,16 @@ export function AssistantPanel(props: {
 // Rechte Spalte — vier Tabs (Zielbild §4: Assistent · Properties · Problems · Governance)
 // ─────────────────────────────────────────────────────────────────────
 
-export type RightTab = 'assistant' | 'properties' | 'problems' | 'governance';
+export type RightTab = 'assistant' | 'properties' | 'problems' | 'governance' | 'publish' | 'next';
 
 export const RIGHT_TABS: ReadonlyArray<{ id: RightTab; label: string }> = [
   { id: 'assistant', label: 'Assistent' },
   { id: 'properties', label: 'Eigenschaften' },
   { id: 'problems', label: 'Probleme' },
   { id: 'governance', label: 'Governance' },
+  // Rebuild-Workflow: PUBLISH (Checkliste, Bewertung, GO) und AUTOMATE/GOVERN.
+  { id: 'publish', label: 'Veröffentlichen' },
+  { id: 'next', label: 'Nächste Schritte' },
 ];
 
 // ─────────────────────────────────────────────────────────────────────

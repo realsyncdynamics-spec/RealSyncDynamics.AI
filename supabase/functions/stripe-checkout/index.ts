@@ -185,9 +185,13 @@ Deno.serve(async (req) => {
 
   // Re-use or create the tenant's Stripe Customer.
   let stripeCustomerId: string | null = null;
-  const { data: existingSub } = await admin
+  const { data: existingSub, error: subErr } = await admin
     .from('subscriptions').select('stripe_customer_id, status, trial_end, trial_ends_at')
     .eq('tenant_id', body.tenant_id).limit(1).maybeSingle();
+  // Ein Lookup-Fehler darf nicht wie „kein Abo" aussehen — sonst bekäme ein
+  // Bestandskunde bei einem DB-Aussetzer eine zweite Testphase und einen
+  // zweiten Stripe-Customer.
+  if (subErr) return jsonError(500, 'INTERNAL', subErr.message);
 
   // Eine Testphase pro Mandant. Wer schon eine hatte (kartenlos über
   // `create-trial-subscription` oder über Stripe — beide hinterlassen ein

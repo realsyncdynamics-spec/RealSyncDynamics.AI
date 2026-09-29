@@ -53,7 +53,12 @@ export function CheckoutPage() {
   // Eine Testphase pro Mandant (Spiegel der Regel in `stripe-checkout`):
   // Wer schon eine hatte oder ein Abo führt, sieht die Sofort-Abbuchung —
   // sonst verspräche die Seite 14 Tage, die Stripe nicht gewährt.
-  const [trialEligible, setTrialEligible] = useState(true);
+  // `pending`: Konditionen werden noch geprüft, Bestellen ist gesperrt.
+  // `unavailable`: Prüfung fehlgeschlagen — angezeigt wird die strengere
+  // Sofort-Abbuchung; gewährt Stripe doch eine Testphase, ist das für den
+  // Kunden nur besser, nie schlechter als zugesagt.
+  const [trialEligibility, setTrialEligibility] =
+    useState<'pending' | 'eligible' | 'ineligible' | 'unavailable'>('pending');
 
   // 1. Validate planKey gegen die SSoT
   const validPlan: PlanKey | null = normalizePlanKey(planKey);
@@ -160,10 +165,9 @@ export function CheckoutPage() {
       setAuth({ status: 'ready', userEmail, tenantId: firstTenant.tenant_id });
       try {
         const decision = await getEntitlementsForTenant(firstTenant.tenant_id);
-        if (!cancelled) setTrialEligible(isTrialEligible(decision));
+        if (!cancelled) setTrialEligibility(isTrialEligible(decision) ? 'eligible' : 'ineligible');
       } catch {
-        // Anzeige-Hinweis: Bei Fehler bleibt der Katalogwert; die Abrechnung
-        // entscheidet ohnehin serverseitig.
+        if (!cancelled) setTrialEligibility('unavailable');
       }
     })();
     return () => { cancelled = true; clearTimeout(timeout); };
@@ -251,7 +255,8 @@ export function CheckoutPage() {
       planKey={validPlan}
       tier={tier}
       userEmail={auth.userEmail}
-      trialDays={trialEligible ? trialDays : 0}
+      trialDays={trialEligibility === 'eligible' ? trialDays : 0}
+      termsPending={trialEligibility === 'pending'}
       agreedToTerms={agreedToTerms}
       onAgreedToTerms={setAgreedToTerms}
       acknowledgedWithdrawal={acknowledgedWithdrawal}
@@ -425,6 +430,7 @@ function ConsentGateShell({
   tier,
   userEmail,
   trialDays,
+  termsPending,
   agreedToTerms,
   onAgreedToTerms,
   acknowledgedWithdrawal,
@@ -438,6 +444,8 @@ function ConsentGateShell({
   tier:                     { name: string; priceEur: number };
   userEmail:                string;
   trialDays:                number;
+  /** Trial-Berechtigung noch nicht geprüft: Konditionen offen, Bestellen gesperrt. */
+  termsPending:             boolean;
   agreedToTerms:            boolean;
   onAgreedToTerms:          (value: boolean) => void;
   acknowledgedWithdrawal:   boolean;
@@ -447,7 +455,7 @@ function ConsentGateShell({
   onConfirm:                () => void;
   backTo?:                  string;
 }) {
-  const canSubmit = agreedToTerms && acknowledgedWithdrawal && !redirecting;
+  const canSubmit = agreedToTerms && acknowledgedWithdrawal && !redirecting && !termsPending;
   // Trial-Banner, sobald der Plan Trial-Tage hat — unabhängig vom Pilot-Flag.
   // Vorher hing er nur an `?pilot=true`, das öffentliche CTAs nie setzen:
   // Preisseite versprach 14 Tage gratis, Checkout zeigte Sofort-Abbuchung.
@@ -492,6 +500,13 @@ function ConsentGateShell({
                 Erste Abbuchung erst nach {trialDays} Tagen. Vorher jederzeit kündbar — dann fällt nichts an.
               </p>
             </div>
+          ) : termsPending ? (
+            <p
+              className="text-center font-mono text-[10px] uppercase tracking-wider text-silver-500 mb-6"
+              data-testid="checkout-terms-pending"
+            >
+              Konditionen werden geprüft …
+            </p>
           ) : (
             <p className="text-center font-mono text-[10px] uppercase tracking-wider text-silver-500 mb-6">
               Erste Abbuchung sofort nach Bestellung

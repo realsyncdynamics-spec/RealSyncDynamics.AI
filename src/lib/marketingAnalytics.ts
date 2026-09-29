@@ -13,8 +13,9 @@ import type {
   MarketingEvent,
   MarketingEventName,
 } from '../core/marketing-analytics/types';
+import { getSupabaseUrl } from './supabaseUrl';
 
-const SUPABASE_URL = (import.meta.env.VITE_SUPABASE_URL ?? '') as string;
+const SUPABASE_URL = getSupabaseUrl();
 const ENDPOINT = SUPABASE_URL ? `${SUPABASE_URL}/functions/v1/marketing-event` : null;
 // PROD-only by default. Set VITE_MARKETING_ANALYTICS_ENABLED=1 to also collect
 // in staging/preview builds so funnel changes can be validated pre-prod.

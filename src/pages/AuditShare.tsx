@@ -5,9 +5,10 @@ import {
 } from 'lucide-react';
 import { ConfidenceScore } from '../components/ConfidenceScore';
 import { HumanVerificationGate } from '../components/HumanVerificationGate';
+import { getSupabaseUrl, getSupabaseAnonKey } from '../lib/supabaseUrl';
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+const SUPABASE_URL = getSupabaseUrl();
+const SUPABASE_ANON_KEY = getSupabaseAnonKey();
 
 // Audit-Engine-Version: Frontend-Side, bei Major-Engine-Bump manuell anpassen
 // und in /changelog dokumentieren.

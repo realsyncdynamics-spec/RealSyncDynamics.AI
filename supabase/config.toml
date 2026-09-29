@@ -121,7 +121,8 @@ verify_jwt = false
 verify_jwt = false
 
 # Audit-Report-Email: fire-and-forget vom Browser nach dem Scan (kein JWT).
-# Sicher: Zugriff nur per UUID, idempotent (email_sent_at-Guard).
+# Grenze im Code (audit-report-email/gate.ts): ohne Bearer nur 10 min nach
+# created_at, mit Service-Role-Bearer jederzeit. Antwort ohne Empfaengeradresse.
 [functions.audit-report-email]
 verify_jwt = false
 
@@ -433,7 +434,7 @@ verify_jwt = false
 # All other functions (stripe-checkout, stripe-portal, ai-invoke,
 # workflow-trigger, gdpr-export, gdpr-delete, tenant-invite,
 # governance-agent, governance-remediate,
-# hostinger-agent-brief, kodee*, audit-report-email, generate-document,
+# hostinger-agent-brief, kodee*, generate-document,
 # shopify-scan, skills, evidence-vault-export,
 # usage-increment, ceo-brief-pdf, pitch-deck-pdf) keep the default
 # verify_jwt = true — they require an authenticated user session.

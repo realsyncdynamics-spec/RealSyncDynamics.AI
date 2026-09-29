@@ -12,6 +12,7 @@
 
 import { createClient, type SupabaseClient } from 'jsr:@supabase/supabase-js@2';
 import { jsonError } from './gateway.ts';
+import { timingSafeEqual } from './timingSafeEqual.ts';
 
 export interface AuthUser {
   id: string;
@@ -124,4 +125,48 @@ export async function requireAuthAndTenant(
   }
 
   return { ...auth, tenantId: clientTenantId };
+}
+
+// Liegt in einer eigenen, Deno-freien Datei, damit Tests die Funktion
+// importieren koennen, ohne den `jsr:`-Specifier oben in das TS-Programm des
+// Frontends zu ziehen. Re-Export, damit Aufrufer sie weiter hier finden.
+export { timingSafeEqual };
+
+/**
+ * Machine-caller gate for endpoints that are NOT invoked by a human: pg_cron
+ * jobs and database triggers. They authenticate with the service-role key,
+ * which `net.http_post` sends as `Bearer <service_role_key>` (see
+ * 20260719000000_stripe_trial_webhook_trigger.sql).
+ *
+ * Why this is not a loophole: whoever holds the service-role key already has
+ * full, RLS-free database access, so gating the function adds nothing against
+ * that holder. What it DOES stop is the case these endpoints actually had — an
+ * ordinary logged-in user passing the platform JWT gate and then triggering a
+ * cross-tenant recalculation or injecting billing state, because the function
+ * only ever checked that the header started with "Bearer ".
+ *
+ * The comparison is against the EXACT key, in constant time. Never use this as
+ * a substitute for requireUser on an endpoint a human calls.
+ *
+ * Returns null when the caller is the platform itself, or a 401/500 Response.
+ */
+export function requireServiceRole(req: Request): Response | null {
+  const SRK = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+  if (!SRK) {
+    return jsonError(500, 'INTERNAL', 'Supabase environment variables missing');
+  }
+
+  const authHeader = req.headers.get('Authorization') ?? '';
+  if (!authHeader.startsWith('Bearer ')) {
+    return jsonError(401, 'UNAUTHORIZED', 'missing or invalid Authorization header');
+  }
+
+  const token = authHeader.slice(7).trim();
+  // An empty token must never pass: `startsWith('Bearer ')` alone was exactly
+  // the bug this helper exists to close.
+  if (!token || !timingSafeEqual(token, SRK)) {
+    return jsonError(401, 'UNAUTHORIZED', 'internal endpoint — service role required');
+  }
+
+  return null;
 }

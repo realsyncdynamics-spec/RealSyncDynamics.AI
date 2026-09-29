@@ -12,6 +12,7 @@
  */
 
 import { createClient } from 'npm:@supabase/supabase-js@2';
+import { requireServiceRole } from '../_shared/auth.ts';
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -28,10 +29,12 @@ interface ComplianceScores {
 }
 
 Deno.serve(async (req: Request) => {
-  const authHeader = req.headers.get('Authorization');
-  if (!authHeader?.startsWith('Bearer ')) {
-    return new Response('Unauthorized', { status: 401 });
-  }
+  // Cron-Endpunkt: rechnet die Compliance-Scores ALLER Tenants neu. Die
+  // Praefix-Pruefung liess jeden Aufrufer durch, der das Plattform-Gate
+  // passiert hatte — also jeden eingeloggten Nutzer (Befund F-04,
+  // AUDIT/18_FINDINGS.md). Jetzt nur noch der Plattform-Aufrufer selbst.
+  const denied = requireServiceRole(req);
+  if (denied) return denied;
 
   try {
     console.log('Starting compliance score calculation...');

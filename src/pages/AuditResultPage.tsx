@@ -3,6 +3,7 @@ import { useLocation, useParams } from 'react-router-dom';
 import { AuditResultView, type AuditResultFinding } from '../features/audit/AuditResultView';
 import { rememberPendingAudit } from '../features/audit/pendingAudit';
 import { SEOHead } from '../components/SEOHead';
+import { getSupabaseUrl, getSupabaseAnonKey } from '../lib/supabaseUrl';
 
 // AuditResultPage — sharable permalink for an audit result.
 //
@@ -18,8 +19,8 @@ import { SEOHead } from '../components/SEOHead';
 // Damit verschwindet die alte "Keine Befunde geladen" Anzeige bei jedem
 // Reload — vorausgesetzt der Audit existiert und ist nicht revoked.
 
-const SUPABASE_URL     = import.meta.env.VITE_SUPABASE_URL     as string | undefined;
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
+const SUPABASE_URL     = getSupabaseUrl();
+const SUPABASE_ANON_KEY = getSupabaseAnonKey();
 
 interface AuditReportState {
   domain?:          string;

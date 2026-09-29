@@ -8,6 +8,7 @@ import {
 import { useTenant } from '../../core/access/TenantProvider';
 import { AuthGate } from '../kodee/connections/AuthGate';
 import { getSupabase } from '../../lib/supabase';
+import { getSupabaseUrl } from '../../lib/supabaseUrl';
 
 interface Workflow {
   id: string;
@@ -266,7 +267,7 @@ function WorkflowRow({
     if (!session) { setRunState('error'); setRunMsg('Nicht eingeloggt'); return; }
     try {
       const resp = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/workflow-trigger`,
+        `${getSupabaseUrl()}/functions/v1/workflow-trigger`,
         {
           method: 'POST',
           headers: {

@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Mail, Loader2, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { getSupabaseUrl } from '../lib/supabaseUrl';
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
+const SUPABASE_URL = getSupabaseUrl();
 
 interface Props {
   source?: string;

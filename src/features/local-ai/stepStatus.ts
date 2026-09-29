@@ -3,7 +3,7 @@
  * Kein Schritt wird ohne eindeutigen Nachweis als `success` markiert.
  */
 import { connectionOutcome } from './runtimeClient';
-import { isModelInstalled } from './roles';
+import { isCloudModel, isModelInstalled } from './roles';
 import type {
   GovernanceTestResult,
   HealthLoopSnapshot,
@@ -62,6 +62,8 @@ export function connectionStatus(s: OnboardingFlowState): StepStatus {
 
 export function roleStatus(s: OnboardingFlowState): StepStatus {
   if (!s.role || !s.model.trim()) return 'pending';
+  // Cloud-Modell über Ollama ist keine lokale KI — nie freigeben.
+  if (isCloudModel(s.model)) return 'failed';
   if (!s.probe?.ok) return 'warning';
   return isModelInstalled(s.model, s.probe.data.models) ? 'success' : 'warning';
 }
@@ -106,7 +108,7 @@ export function canRunTest(s: OnboardingFlowState): boolean {
 
 /** Aktivieren nur, wenn der Test für genau dieses Modell bestanden ist. */
 export function canActivate(s: OnboardingFlowState): boolean {
-  return testStatus(s) === 'success' && connectionStatus(s) === 'success';
+  return testStatus(s) === 'success' && connectionStatus(s) === 'success' && !isCloudModel(s.model);
 }
 
 /** Loop nur für ein gespeichertes, aktiviertes Profil. */

@@ -457,10 +457,18 @@ export default function BuildStudioPage() {
             Sie haben bereits eine Website?{' '}
             <button
               type="button"
-              onClick={() => navigate('/audit')}
+              onClick={() => navigate('/build/rebuild')}
               className="text-[#e4cfa2] underline underline-offset-4 hover:text-[#f0e6d4]"
             >
-              Bestehende Website analysieren
+              Bestehende Website neu bauen (AI Rebuild)
+            </button>
+            {' · '}
+            <button
+              type="button"
+              onClick={() => navigate('/audit')}
+              className="text-titanium-300 underline underline-offset-4 hover:text-titanium-100"
+            >
+              nur analysieren
             </button>
           </div>
         </div>

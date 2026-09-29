@@ -31,6 +31,7 @@ const ENDPOINTS = [
   'publish-approve', 'publish-gate',
   'build-anon', 'refine-anon', 'session', 'claim',
   'code-persist',
+  'rebuild-start', 'rebuild-get', 'rebuild-refine', 'rebuild-readiness', 'rebuild-approve',
 ];
 
 /**
@@ -64,6 +65,13 @@ const HANDLER_FILES: Readonly<Record<string, string>> = Object.freeze({
   'session': 'anonymous',
   'claim': 'anonymous',
   'code-persist': 'code-persist',
+  // AI Rebuild Workflow: fuenf Endpunkte teilen Laden, Sperranker und
+  // Gate-Auswertung — eine Datei, aus demselben Grund wie `anonymous`.
+  'rebuild-start': 'rebuild',
+  'rebuild-get': 'rebuild',
+  'rebuild-refine': 'rebuild',
+  'rebuild-readiness': 'rebuild',
+  'rebuild-approve': 'rebuild',
 });
 
 describe('siteos Router — resolveEndpoint', () => {

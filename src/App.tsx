@@ -262,6 +262,10 @@ const BoltCodeBuilderPage = lazy(() => import('./features/app-builder/BoltCodeBu
 // Blueprint-Synthese, Analyse und Renderer in ihr Bündel. Eager importiert
 // läge das im kritischen Pfad jeder Landingpage.
 const BuildStudioPage = lazy(() => import('./unified-entry/pages/BuildStudioPage'));
+// AI Rebuild Workflow: bestehende URL → belegte Bewertung → Richtungen →
+// Klartext-Revision → Publish-Prüfung → GO → nächste Schritte. Kern in
+// `packages/siteos-core/src/rebuild`, Server in `siteos/rebuild-*`.
+const RebuildWorkflowPage = lazy(() => import('./features/siteos/rebuild/RebuildWorkflowPage'));
 const SiteOsClaimView = lazy(() => import('./features/siteos/SiteOsClaimView').then((m) => ({ default: m.SiteOsClaimView })));
 const FmtModernizeWizard = lazy(() => import('./features/siteos/fmt/FmtModernizeWizard').then((m) => ({ default: m.FmtModernizeWizard })));
 const LegalRagView = lazy(() => import('./features/legal-rag/LegalRagView').then((m) => ({ default: m.LegalRagView })));
@@ -1138,6 +1142,7 @@ function RoutesWithTracking() {
       <Route path="/unified-entry" element={<Navigate to="/build" replace />} />
       <Route path="/unified-entry/build" element={<Navigate to="/build" replace />} />
       <Route path="/build" element={<BuildStudioPage />} />
+      <Route path="/build/rebuild" element={<RebuildWorkflowPage />} />
       <Route
         path="/unified-entry/scan"
         element={

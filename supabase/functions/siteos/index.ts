@@ -12,6 +12,11 @@
 //   POST /functions/v1/siteos/session          Sitzung lesen, ohne Konto
 //   POST /functions/v1/siteos/claim            Sitzung -> Mandant (idempotent)
 //   POST /functions/v1/siteos/code-persist     Web-App-Builder Dateibaum (nicht Puck)
+//   POST /functions/v1/siteos/rebuild-start      AI Rebuild: URL -> Import, Bewertung, Richtungen
+//   POST /functions/v1/siteos/rebuild-get        AI Rebuild: Zustand lesen
+//   POST /functions/v1/siteos/rebuild-refine     AI Rebuild: Klartext / Editor / Richtung
+//   POST /functions/v1/siteos/rebuild-readiness  AI Rebuild: Publish-Pruefung inkl. Gate
+//   POST /functions/v1/siteos/rebuild-approve    AI Rebuild: ausdrueckliches GO
 // 2026-09-18: gezieltes Production-Redeploy (siteos + ai-gateway), nicht die Flotte.
 //
 // ## Warum ein Router und nicht vier Functions
@@ -48,6 +53,13 @@ import { handle as runtimeScan } from './handlers/runtime-scan.ts';
 import { handle as publishGate, handleApprove as publishApprove } from './handlers/publish-gate.ts';
 import { handleBuildAnon, handleClaim, handleGetSession, handleRefineAnon } from './handlers/anonymous.ts';
 import { handle as codePersist } from './handlers/code-persist.ts';
+import {
+  handleApprove as rebuildApprove,
+  handleGet as rebuildGet,
+  handleReadiness as rebuildReadiness,
+  handleRefine as rebuildRefine,
+  handleStart as rebuildStart,
+} from './handlers/rebuild.ts';
 
 const routes: Record<string, (req: Request) => Response | Promise<Response>> = {
   'agents': agents,
@@ -68,6 +80,13 @@ const routes: Record<string, (req: Request) => Response | Promise<Response>> = {
   'claim': handleClaim,
   // Web App Builder file trees. Distinct from Puck `edit` / siteos_blueprints.
   'code-persist': codePersist,
+  // AI Rebuild Workflow (DISCOVER → … → GOVERN). Fuenf Endpunkte, eine
+  // Datei: Sie teilen Laden, Sperranker (base_sha256) und Gate-Auswertung.
+  'rebuild-start': rebuildStart,
+  'rebuild-get': rebuildGet,
+  'rebuild-refine': rebuildRefine,
+  'rebuild-readiness': rebuildReadiness,
+  'rebuild-approve': rebuildApprove,
 };
 
 Deno.serve((req) => {
